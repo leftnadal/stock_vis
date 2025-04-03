@@ -19,7 +19,7 @@ class Stock(models.Model):
     )
 
     # 주식이름(예: "Apple Inc")
-    name = models.CharField(max_length=50)
+    stock_name = models.CharField(max_length=50)
     
     # 주식 심볼(예: "AAPL" )
     symbol = models.CharField(max_length=20, unique=True, blank=True, null=True)

@@ -8,7 +8,7 @@ from .models import User
 class CustomUserAdmin(UserAdmin):
     fieldsets = (
         (None, {
-            'fields': ('username', 'password', 'nick_name', 'name', 'favorite_stock')
+            'fields': ('user_name', 'password', 'nick_name', 'favorite_stock')
         }),
         (
             "Permissions",
