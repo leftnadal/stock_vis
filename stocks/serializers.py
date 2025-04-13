@@ -1,11 +1,10 @@
-##1차 작성중..
 from rest_framework import serializers
 from .models import Stock, HistoricalPrice, BalanceSheet, IncomeStatement, CashFlowStatement
 
 class StockSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stock
-        fields = ['id', 'name', 'symbol', 'exchange', 'sector', 'real_time_price', 
+        fields = ['id', 'stock_name', 'symbol', 'exchange', 'sector', 'real_time_price', 
                   'currency', 'overview', 'last_updated']
 
 class StockDetailSerializer(serializers.ModelSerializer):

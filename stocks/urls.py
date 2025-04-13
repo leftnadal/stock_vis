@@ -1,4 +1,3 @@
-##1차 작성중
 from django.urls import path
 from . import views
 

@@ -32,7 +32,7 @@ class Stock(models.Model):
     
     # 실시간 가격
     # - 정밀도가 필요한 경우 Decimal Field를 사용할수 있음.
-    real_time_price = models.DateTimeField(default=0.0)
+    real_time_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
 
     # 통화
     currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default="USD")
