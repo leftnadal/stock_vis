@@ -13,5 +13,5 @@ class EconomicIndicator(models.Model):
     unit = models.CharField(max_length=50, blank=True, null=True)  # 예: %, USD, 등
 
     def __str__(self):
-        return f"{self.name} - {self.date} = {self.value} {self.unit}"
+        return f"{self.indicator_name} - {self.date} = {self.value} {self.unit}"
    

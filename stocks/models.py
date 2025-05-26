@@ -44,7 +44,7 @@ class Stock(models.Model):
     last_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.name} ({self.symbol})"
+        return f"{self.stock_name} ({self.symbol})"
     
 class BasicFinancialStatement(models.Model):
 
@@ -134,52 +134,115 @@ class BalanceSheet(BasicFinancialStatement):
     ## 대차대조표 항목
     # 총 자산
     # - 기업이 보유한 모든 자산의 총합
-    total_assets=models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_Assets=models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 유동자산 총계
     # - 1년 이내에 현금화하거나 사용할 수 있는 자산의 총액
-    total_current_assets= models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_Current_Assets= models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 현금 및 현금성 자산( in 유동자산)
-    # - 기업이 보유한 현금과 단기적으로 현금화 가능한 자산의 가치
-    cash_and_cash_equivalents_at_carrying_value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # - 즉시 사용 가능한 현금과 만기 3개월 이내의 단기투자 자산
+    cash_And_Cash_Equivalents_At_Carrying_Value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 현금 및 단기투자 ( in 유동자산)
-    # - 현금과 단기투자 자산의 합계
-    cash_and_short_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # - 현금과 만기 1년 이내 단기투자상품 합계
+    cash_And_Short_Term_Investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 재고자산 ( in 유동자산)
-    # - 판매를 목적으로 보유 중인 상품이나 원자재 등의 가치
+    # - 원재료, 재공품, 완성품 등 재고의 장부가치
     inventory = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    # 유동매출채권  ( in 유동자산)
-    # - 고객 등으로부터 단기 내에 회수할 매출채권의 총액
-    current_net_receivables = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 유동매출채권
+    # - 총매출에서 회수하지 못한 금액 중 1년 이내에 회수될 금액
+    current_Net_Receivables = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 비유동자산 총계 
     # - 1년 이상의 장기 보유 자산들의 총합
-    total_non_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_Non_Current_Assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 유형자산
-    # - 건물, 설비, 기계 등 물리적 자산
-    property_plant_equipment = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # - 토지, 건물, 기계·설비 등의 취득원가 합계
+    property_Plant_Equipment = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 유형자산 감가상각누계액 ( in 비유동자산)
     # - 유형자산에 대한 지금까지의 감가상각 총액
-    accumulated_depreciation_amortization_ppe = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    accumulated_Depreciation_Amortization_Ppe = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 무형자산 ( in 비유동자산)
     # - 물리적 형태는 없으나 가치가 있는 자산으로, 특허, 저작권, 브랜드 등이 포함
-    intangible_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    intangible_Assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 영업권 제외 무형자산 ( in 무형자산)
     # - 무형자산 중 영업권을 제외한 나머지 가치
-    intangible_assets_excluding_goodwill = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    intangible_Assets_Excluding_Goodwill = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 영업권 ( in 무형자산)
     # - 주로 기업 인수시 지급한 프리미엄 등으로 발생하는 무형자산
     goodwill = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 투자자산 
     # - 기타 투자 목적의 자산
     investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    # 장기투자 ( in 투자자산)
-    # - 장기간 보유할 목적으로 투자한 자산
-    long_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    # 단기투자 ( in 투자자산)
-    # - 단기적인 투자목적으로 보유한 자산
-    short_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 장기투자자산 ( in 투자자산)
+    # - 만기 1년 초과 또는 전략적 보유 목적으로 장기간 보유하는 투자자산
+    long_Term_Investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 단기투자자산 ( in 투자자산)
+    # - 만기 1년 이내 매매목적의 투자자산
+    short_Term_Investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 기타유동자산
+    # - 유동자산이나 세부항목으로 분류하지 않는 자산항목( 기타 미수금, 선급금, 단기 투자 자산 등과 같은 자산을 포함)
+    other_Current_Assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 기타 비유동 자산
-    # - 위에 명시되지 않은 기타 비유동자산 항목
-    other_non_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # - 비유동자산에 포함되는 자산 중, 구체적인 항목으로 분류되지 않거나 분류하기 어려운 자산(장기 선급비용, 장기 미수금, 장기 투자 자산, 무형자산 등)
+    other_Non_Current_Assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 총 부채
+    # - 유동부채 + 비유동부채
+    total_Liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 총 유동부채
+    # - 1년 이내에 상환해야 할 부채(매입채무, 단기차입금 등)
+    total_Current_Liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 매입채무 총액
+    # - 지급어음·외상매입금 등 공급자에 대한 미지급금이며 매입채무회전율(매입원가÷평균매입채무) 분석에 활용.
+    current_Accounts_Payable = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 선수수익(선수금)
+    # - 선금으로 받은 대가 중 아직 제공되지 않은 용역·상품(향후 매출 인식 가능 물량, 계약형 매출 비중 가늠)
+    deferred_Revenue = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 유동부채
+    # - 1년 이내에 상환해야 할 모든 부채(단기 차입금, 단기 사채, 매입채무 등)
+    current_Debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 단기차입금
+    # - 충당부채(퇴직급여충당금), 미지급비용 등 ( 숨은 지급 의무 규모 파악, 현금흐름 예측 시 반영)
+    short_Term_Debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 비유동부채
+    # - 1년 이후 상환해야 할 장기부채로 장기차입금, 사채, 이연법인세부채 등을 말함. (장기적 자금 조달 구조, 이자비용 부담 전망.)
+    total_Non_Current_Liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 자본리스부채
+    # - 자본리스로 인식된 리스부채의 현재가치(숨은 부채(운용리스에도 대차대조표 반영) 규모 확인)
+    capital_Lease_Obligations = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 장기 차입금
+    # - 만기 1년 초과의 장기 대출금·사채 등 ( 장기 자본 조달 의존도, 이자율 리스크 평가 시 참고.)
+    long_Term_Debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 1년 내 상환해야할 장기차입금
+    # - 장기 부채 중에서 1년 이내에 상환해야 하는 부분(기업의 단기 상환 능력과 현금흐름 관리에 중요한 역할)
+    current_Longterm_Debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 1년 이후 상환 장기차입금
+    # - 장기부채 중 1년 이후에 상환 예정인 금액(장기 자금 상환 계획 수립, 이자비용 예측에 활용)
+    longterm_Debt_Noncurrent = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 총차입금
+    # - 단기차입금과 장기차입금 합계
+    short_LongTerm_Debt_Total = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 기타 유동부채
+    # - 충당부채(퇴직급여충당금), 미지급비용 등 (숨은 지급 의무 규모 파악에 이용)
+    other_Current_Liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 기타 유동부채
+    # - 미지급비용, 충당부채 등 주요 항목 외 유동부채
+    other_Non_Current_Liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 자기자본
+    # - 자산에서 부채를 차감한 순자산
+    total_Shareholder_Equity = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 자사주
+    # - 회사가 취득하여 보유 중인 자사주 금액 (자본 차감 항목)
+    treasury_Stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 이익잉여금
+    # - 누적 순이익 중 배당으로 지급되지 않고 유보된 금액
+    retained_Earnings = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 보통주 자본금
+    # - 발행된 보통주의 액면가액 합계
+    common_Stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    # 발행주식 수
+    # - 현재 시장에 유통 중인 보통주 총 발행 주식 수
+    common_Stock_Shares_Outstanding = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+
+
+
 
     
     def __str__(self):

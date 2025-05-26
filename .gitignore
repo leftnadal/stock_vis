@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# API KEY
+.env
+
 # Distribution / packaging
 .Python
 build/
@@ -172,3 +175,5 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# claude example

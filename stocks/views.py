@@ -1,5 +1,5 @@
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
+from django.db.models import Q, Prefetch
 from django.utils import timezone
 from django.core.paginator import Paginator
 from django.core.cache import cache
@@ -78,7 +78,7 @@ class StockList(APIView):
             # 검색 기능
             if query:
                 stocks = stocks.filter(
-                    Q(name__icontains=query) |
+                    Q(stock_name__icontains=query) |
                     Q(symbol__icontains=query)
                 )
                 
@@ -217,7 +217,7 @@ class StockPriceHistory(APIView):
             response_data = {
                 "stock": {
                     "id": stock.id,
-                    "name": stock.name,
+                    "name": stock.stock_name,
                     "symbol": stock.symbol
                 },
                 "prices": serializer.data,
