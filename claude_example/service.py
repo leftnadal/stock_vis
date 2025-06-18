@@ -1,5 +1,8 @@
 """
 Service for saving Alpha Vantage data to the database.
+
+처리해야 할일
+1. balancesheet, incomestatement, cashflow 세부내용 업데이트
 """
 import logging
 from typing import Dict, Any, List, Optional, Union

@@ -7,7 +7,7 @@ from config.settings import ALPHA_VANTAGE_API_KEY
 
 logger = logging.getLogger(__name__)
 
-class AlphavantageClient:
+class AlphaVantageClient:
     """
     주식정보제공 서비스인 alphavantage의 API에서 주식정보를 받는 client
     """
@@ -51,7 +51,7 @@ class AlphavantageClient:
 
         #Check for errors
         if response.status_code !=200:
-            logger.error(f"Error {response.status_code} from alpha vantage: {response.text}")
+            logger.error(f"Error {response.status_code} from Alpha Vantage: {response.text}")
             response.raise_for_status()
 
         #API data
@@ -99,7 +99,24 @@ class AlphavantageClient:
             "symbol": symbol,
             "outputsize": outputsize,
         }
-        return self.make_request(params)
+        return self._make_request(params)
+    
+    def get_weekly_stock_data(self, symbol:str) -> Dict[str, Any]:
+        """
+        Get Weekly stock price data for a specific symbol.
+        
+        Args:
+            symbol (str): Stock symbol (e.g., "AAPL")
+            outputsize (str): "compact" for latest 100 datapoints, "full" for 20+ years of data
+            
+        Returns:
+            Dict[str, Any]: Historical Weekly stock data
+        """
+        params = {
+            "function": "TIME_SERIES_WEEKLY",
+            "symbol": symbol,
+        }
+        return self._make_request(params)
     
     def get_company_overview(self, symbol: str) -> Dict[str, Any]:
         """
@@ -116,7 +133,7 @@ class AlphavantageClient:
         }
         return self._make_request(params)
     
-    def search_stock(self, keywords:str) -> List[Dict[str, Any]]:
+    def search_stocks(self, keywords:str) -> List[Dict[str, Any]]:
         """
         키워드에 대한 주식 검색
         Args:
