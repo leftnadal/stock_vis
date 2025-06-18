@@ -1,7 +1,6 @@
 import json
 
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import 
 
 
 from .models import Stock, DailyPrice, WeeklyPrice, BalanceSheet, IncomeStatement, CashFlowStatement
@@ -19,5 +18,3 @@ def dashboard(request):
     }
 
     return render(request, 'stocks/dashboard.html', context)
-
-class StockDetailView
