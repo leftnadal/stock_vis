@@ -95,6 +95,8 @@ class Stock(models.Model):
             models.Index(fields=['industry']),
             models.Index(fields=['market_capitalization']),
             models.Index(fields=['last_updated']),
+            models.Index(fields=['symbol', 'sector']),  # 복합 인덱스
+            models.Index(fields=['real_time_price']),   # 가격 기준 조회용
         ]
 
     def __str__(self):

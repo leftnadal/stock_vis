@@ -89,7 +89,7 @@ class ChartDataSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """ 차트 라이브러리용"""
         return {
-            'time' : instance.date.strftime('%Y-%M-%D'),
+            'time' : instance.date.strftime('%Y-%m-%d'),
             'open' : float(instance.open_price),
             'high' : float(instance.high_price),
             'low' : float(instance.low_price),
@@ -124,14 +124,14 @@ class OverviewTabSerializer(serializers.ModelSerializer):
             # 가격 정보  
             'real_time_price', 'change', 'change_percent', 'change_percent_numeric',
             'previous_close', 'week_52_high', 'week_52_low',
-            'volume', 'volume_formatted', 'avg_volume_30d',
+            'volume', 'volume_formatted',
             
             # 시장 정보
             'market_capitalization', 'market_cap_formatted',
             'shares_outstanding',
             
             # 재무 비율
-            'ebidta','pe_ratio', 'peg_ratio', 'book_value', 'eps',
+            'ebitda','pe_ratio', 'peg_ratio', 'book_value', 'eps',
             'dividend_per_share', 'dividend_yield',
             
             # 주식 성과

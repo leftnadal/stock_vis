@@ -9,6 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 from django.views.generic import TemplateView, DetailView
 from django.http import JsonResponse, Http404
+from django.core.cache import cache
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -17,7 +18,17 @@ from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
 from .models import Stock, DailyPrice, WeeklyPrice, BalanceSheet, IncomeStatement, CashFlowStatement
-from .serializers import StockListSerializer, StockHeaderSerializer, StockDetailPageSerializer, StockSearchSerializer, WatchListStockSerializer, WeeklyChartDataSerializer, ChartDataSerializer, OverviewTabSerializer
+from .serializers import (
+    StockListSerializer, 
+    StockHeaderSerializer, 
+    StockSearchSerializer, 
+    WeeklyChartDataSerializer, 
+    ChartDataSerializer, 
+    OverviewTabSerializer,
+    BalanceSheetTabSerializer,
+    IncomeStatementTabSerializer, 
+    CashFlowTabSerializer,
+)
 
 logger = logging.getLogger(__name__)
 ### 메인 대시보드
@@ -94,7 +105,7 @@ class StockDetailView(DetailView):
         주식 심볼을 대문자로 변환하여 조회
         - 대소문자 구분 없이 조회 가능하도록 대문자로 변환 처리
         """
-        symbol = self.kwargs.get['symbol',''].upper()
+        symbol = self.kwargs.get('symbol','').upper()
         try:
             return Stock.objects.get(symbol=symbol)
         except Stock.DoesNotExist:
@@ -127,7 +138,7 @@ class StockDetailView(DetailView):
 
 
 ### 주식 검색 API    
-class StockSearchView(APIView):
+class StockSearchAPIView(APIView):
     """
         ### 주식 검색 API
         # - 주식 심볼이나 회사명으로 검색
@@ -137,7 +148,7 @@ class StockSearchView(APIView):
     def get(self, request):
         # 검색어 파라미터 받기
         # - 'q' 파라미터로 검색어를 받음 (예: /search/?q=apple)
-        query = request.Get.get("q", "").strip()
+        query = request.GET.get("q", "").strip()
         
         if not query:
             return Response({
@@ -164,12 +175,11 @@ class StockSearchView(APIView):
 
             # 직렬화
             # - 검색 결과를 JSON 형태로 변환
-
             serializer = StockSearchSerializer(stocks, many=True)
 
             return Response({
                 'results': serializer.data,
-                'count': stocks.count(),
+                'count': len(stocks),
                 'query': query,
             }, status=status.HTTP_200_OK)
         
@@ -178,59 +188,17 @@ class StockSearchView(APIView):
             return Response({
                 'error': '검색 중 오류가 발생했습니다.'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-
-
-
-
-    
-### 주식 상세정보 관련 API
-class StockOverviewAPIView(APIView):
-    """
-    주식 개요 탭 데이터 API
-    - 주식의 전반적인 정보 (재무비율, 기술적 지표, 분석가 의견 등)
-    """
-    permission_classes = [IsAuthenticatedOrReadOnly]
-
-    def get(self, request, symbol):
-        """
-            ## 주식 객체 조회 헬퍼 메서드
-            # - 주식 심볼로 Stock 객체 조회
-            # - 존재하지 않을 경우 NotFound 발생
-        """
-        try:
-            ## 주식정보 조회
-            # - Overview 탭에 표시할 주식의 상세 정보
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
-
-            ## 직렬화
-            # - 주식의 모든 정보를 json화 시킴.
-            serializer = OverviewTabSerializer(stock)
-
-            return Response({
-                'symbol' : symbol.upper(),
-                'data' : serializer.data,
-            }, status=status.HTTP_200_OK)
-        
-        except Exception as e:
-            logger.error(f"Overview data error for {symbol}: {e}")
-            return Response({
-                'error': f'개요 데이터 조회 중 오류가 발생했습니다: {str(e)}'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-
 
     
 ### Stock 차트 관련 view
 class StockChartDataAPIView(APIView):
     """
-    주식 차트 데이터 API
+    주식 차트 데이터 API (짧은 캐싱 적용)
     - 표준 기간 옵션 (1d, 5d, 1m, 3m, 6m, 1y, 2y, 5y, max) + 커스텀 일수 모두 지원
     - 일일/주간 가격 데이터 제공
     - 사용자 친화적이면서 유연한 API
     """
-    # 표준 기간 옵션 정의
+    ## 표준 기간 옵션 정의
     PERIOD_MAPPING = {
         '1d': 1,       # 1일 (장중 차트용)
         '5d': 5,       # 5일
@@ -244,17 +212,29 @@ class StockChartDataAPIView(APIView):
     }
     def get(self, request, symbol):
         """
-        차트 데이터 GET 요청 처리
+        차트 데이터 GET 요청 처리 (짧은 캐싱 적용)
         - URL 경로에서 symbol을 받고, 쿼리 파라미터로 period와 range를 처리
         """
         try:
-            # 주식 객체 조회 (없으면 404 에러)
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
-            
             ## 파라미터 처리: 표준 기간 vs 커스텀 일수
             chart_type = request.GET.get('type', 'daily').lower()
             period_param = request.GET.get('period', '3m').lower()
             custom_days = request.GET.get('days')
+
+            ## 캐싱 키 생성 (모든 파라미터 포함)
+            # - 차트 타입, 기간, 커스텀 일수를 모두 포함하여 정확한 캐싱
+            cache_key = f"chart_{symbol.upper()}_{chart_type}_{period_param}"
+            if custom_days:
+                cache_key += f"_{custom_days}"
+            
+            ## 캐시에서 먼저 확인
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.info(f"Cache hit for chart: {symbol} ({chart_type}, {period_param})")
+                return Response(cached_data, status=status.HTTP_200_OK)
+            
+            ## 캐시에 없으면 실제 데이터 조회
+            stock = get_object_or_404(Stock, symbol=symbol.upper())
 
             ## 날짜범위 계산
             end_date = datetime.now().date()
@@ -267,7 +247,8 @@ class StockChartDataAPIView(APIView):
             else:
                 price_data = self._get_daily_data(stock, start_date, end_date)
                 serializer = ChartDataSerializer(price_data, many=True)
-            return Response({
+                        ## 응답 데이터 구성
+            response_data = {
                 'symbol': symbol.upper(),
                 'period': period_display,
                 'chart_type': chart_type,
@@ -276,7 +257,16 @@ class StockChartDataAPIView(APIView):
                 'start_date': start_date.isoformat() if start_date else None,
                 'end_date': end_date.isoformat(),
                 'available_periods': list(self.PERIOD_MAPPING.keys())
-            })
+            }
+            
+            ## 캐시에 저장 (1분 = 60초)
+            # - 차트 데이터는 실시간성이 중요하므로 짧은 캐싱만 적용
+            # - 하지만 동일한 요청이 반복될 경우 DB 부하 감소 효과
+            cache.set(cache_key, response_data, 60)
+            logger.info(f"Cache set for chart: {symbol} ({chart_type}, {period_param})")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+
 
         except ValueError as e:
             # 파라미터 관련 오류 (사용자 실수)
@@ -333,21 +323,22 @@ class StockChartDataAPIView(APIView):
                     raise ValueError("일수는 1이상이어야 합니다.")
                 if days >3650:
                     raise ValueError("최대 10년까지만 조회가 가능합니다.")
-                start_date = end_date - timedelta(custom_days)
+                start_date = end_date - timedelta(days= days)
                 return start_date, f"{days}일"
             
             except ValueError as e:
                 if "invalid literal" in str(e):
                     raise ValueError("일수는 숫자여야 합니다.")
+                raise
         
         #2. 표준기간 옵션 처리
         if period_param in self.PERIOD_MAPPING:
             days = self.PERIOD_MAPPING(period_param)
 
             if days is None:
-                return None
+                return None, "전체기간"
             else:
-                start_date = end_date - timedelta(days)
+                start_date = end_date - timedelta(days=days)
                 return start_date, period_param.upper()
         
         #3. 잘못된 기간 옵션
@@ -355,35 +346,63 @@ class StockChartDataAPIView(APIView):
         raise ValueError(f"지원하지 않는 기간입니다. 사용 가능: {available}")
     
 
-## 3번 영역: Overview 탭 데이터 클래스 기반 API 뷰
+### 주식 상세정보 관련 API
+## Overview API
 class StockOverviewAPIView(APIView):
     """
-    Overview 탭 데이터 클래스 기반 API 뷰
-    - 주식의 종합 정보 제공 (가격, 재무비율, 기술적 지표, 분석가 의견 등)
+    주식 개요 탭 데이터 API(캐싱 적용)
+    - 주식의 전반적인 정보 (재무비율, 기술적 지표, 분석가 의견 등)
     """
-    
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
     def get(self, request, symbol):
         """
-        Overview 데이터 GET 요청 처리
-        - 주식의 전반적인 정보를 OverviewTabSerializer로 직렬화하여 제공
+        ## Overview 데이터 GET 요청 처리(캐싱 적용)
+        # - 주식의 전반적인 정보를 OverviewTabSerializer로 직렬화하여 제공
         """
-        stock = get_object_or_404(Stock, symbol=symbol.upper())
+        ## 캐싱 키 생성
+        cache_key = f"stock_overview_{symbol.upper()}"
         
-        # Overview 데이터 직렬화
-        # - 주식의 기본 정보, 가격 정보, 재무 비율, 기술적 지표 등 포함
-        serializer = OverviewTabSerializer(stock)
-        
-        return Response({
-            'symbol': symbol.upper(),
-            'tab': 'overview',
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
+        ## 캐시에서 먼저 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit for overview: {symbol}")
+            return Response(cached_data, status=status.HTTP_200_OK)
+        try:
+            ## 주식정보 조회
+            # - Overview 탭에 표시할 주식의 상세 정보
+            stock = get_object_or_404(Stock, symbol=symbol.upper())
+
+            ## 직렬화
+            # - 주식의 모든 정보를 json화 시킴.
+            serializer = OverviewTabSerializer(stock)
+
+            ## 응답 데이터 구성
+            response_data = {
+                'symbol': symbol.upper(),
+                'tab': 'overview',
+                'data': serializer.data,
+            }
+            
+            ## 캐시에 저장 (10분 = 600초)
+            # - 기본 정보와 가격 정보가 섞여있어서 중간 정도의 캐싱 시간 적용
+            cache.set(cache_key, response_data, 600)
+            logger.info(f"Cache set for overview: {symbol}")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Overview data error for {symbol}: {e}")
+            return Response({
+                'error': f'개요 데이터 조회 중 오류가 발생했습니다: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Balance Sheet 탭 데이터 클래스 기반 API 뷰
 class StockBalanceSheetAPIView(APIView):
     """
-    Balance Sheet 탭 데이터 클래스 기반 API 뷰
-    - 대차대조표 데이터 제공 (연간/분기별 선택 가능)
+    ## Balance Sheet 탭 데이터 API 뷰 (캐싱 적용)
+    # - 대차대조표 데이터 제공 (연간/분기별 선택 가능)
+    # - 재무제표 데이터는 자주 변하지 않으므로 1시간 캐싱 적용
     """
     
     def get(self, request, symbol):
@@ -391,72 +410,127 @@ class StockBalanceSheetAPIView(APIView):
         대차대조표 데이터 GET 요청 처리
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
-        stock = get_object_or_404(Stock, symbol=symbol.upper())
-        
-        # 요청 파라미터 처리 및 기본값 설정
+
+        ## 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
+
+        ## 캐싱 키 생성 (심볼, 기간, 제한수 포함)
+        # - 파라미터별로 다른 캐시 키 생성하여 정확한 캐싱
+        cache_key = f"balance_sheet_{symbol.upper()}_{period}_{limit}"
         
-        # 대차대조표 데이터 조회
-        # - period_type으로 연간/분기별 구분
-        # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-        balance_sheets = BalanceSheet.objects.filter(
-            stock=stock,
-            period_type=period
-        ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+        ## 캐시에서 먼저 확인
+        # - 캐시에 있으면 바로 반환하여 DB 조회 생략
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit for balance sheet: {symbol} ({period})")
+            return Response(cached_data, status=status.HTTP_200_OK)
+
+        try:
+            ## 캐시에 없으면 DB에서 조회
+            stock = get_object_or_404(Stock, symbol=symbol.upper())
+
+            ## 대차대조표 데이터 조회
+            # - period_type으로 연간/분기별 구분
+            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            balance_sheets = BalanceSheet.objects.filter(
+                stock=stock,
+                period_type=period
+            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+            
+            ## 대차대조표 데이터 직렬화
+            # - 자산, 부채, 자본 관련 모든 항목 포함
+            serializer = BalanceSheetTabSerializer(balance_sheets, many=True)
         
-        # 대차대조표 데이터 직렬화
-        # - 자산, 부채, 자본 관련 모든 항목 포함
-        serializer = BalanceSheetTabSerializer(balance_sheets, many=True)
+            ## 응답 데이터 구성
+            response_data = {
+                'symbol': symbol.upper(),
+                'tab': 'balance_sheet',
+                'period': period,
+                'data': serializer.data
+            }
+            
+            ## 캐시에 저장 (1시간 = 3600초)
+            # - 재무제표는 분기/연간 단위로만 업데이트되므로 긴 캐싱 적용
+            cache.set(cache_key, response_data, 3600)
+            logger.info(f"Cache set for balance sheet: {symbol} ({period})")
+            
+            return Response(response_data, status=status.HTTP_200_OK)  
         
-        return Response({
-            'symbol': symbol.upper(),
-            'tab': 'balance_sheet',
-            'period': period,
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)    
+        except Exception as e:
+            logger.error(f"Balance sheet error for {symbol}: {e}")
+            return Response({
+                'error': f'대차대조표 데이터 조회 중 오류가 발생했습니다: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 ## Income Statement 탭 데이터 클래스 기반 API 뷰
 class StockIncomeStatementAPIView(APIView):
     """
-    Income Statement 탭 데이터 클래스 기반 API 뷰
-    - 손익계산서 데이터 제공 (연간/분기별 선택 가능)
+    ## Income Statement 탭 데이터 API 뷰 (캐싱 적용)
+    # - 손익계산서 데이터 제공 (연간/분기별 선택 가능)
+    # - 재무제표 데이터는 자주 변하지 않으므로 1시간 캐싱 적용
     """
     
     def get(self, request, symbol):
         """
-        손익계산서 데이터 GET 요청 처리
+        손익계산서 데이터 GET 요청 처리 ( 캐싱 적용 )
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
-        stock = get_object_or_404(Stock, symbol=symbol.upper())
-        
+
         # 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
+
+        ## 캐싱
+        # 캐싱키 생성
+        cache_key = f"incomestatement_{symbol.upper()}_{period}_{limit}"
+        # 캐싱 조회
+        cached_data = cache.get(cache_key)
+        if cached_data :
+            logger.info(f"Cache hit for income statement: {symbol} ({period})")
+            return Response(cached_data, status = status.HTTP_200_OK)
         
-        # 손익계산서 데이터 조회
-        # - period_type으로 연간/분기별 구분
-        # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-        income_statements = IncomeStatement.objects.filter(
-            stock=stock,
-            period_type=period
-        ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+        try:
+            ## 캐시 없으면 DB 조회
+            stock = get_object_or_404(Stock, symbol=symbol.upper())
+
+            ## 손익계산서 데이터 조회
+            # - period_type으로 연간/분기별 구분
+            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            income_statements = IncomeStatement.objects.filter(
+                stock=stock,
+                period_type=period
+            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+            
+            ## 손익계산서 데이터 직렬화
+            # - 매출, 비용, 이익 관련 모든 항목 포함
+            serializer = IncomeStatementTabSerializer(income_statements, many=True)
+            
+            ## 응답 데이터 구성
+            response_data = {
+                'symbol': symbol.upper(),
+                'tab': 'income_statement',
+                'period': period,
+                'data': serializer.data
+            }
+
+            ## 캐시에 저장(1시간)
+            cache.set(cache_key, response_data, 3600)
+            logger.info(f"Cache set for income statement: {symbol} ({period})")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
         
-        # 손익계산서 데이터 직렬화
-        # - 매출, 비용, 이익 관련 모든 항목 포함
-        serializer = IncomeStatementTabSerializer(income_statements, many=True)
-        
-        return Response({
-            'symbol': symbol.upper(),
-            'tab': 'income_statement',
-            'period': period,
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Income statement error for {symbol}: {e}")
+            return Response({
+                'error': f'손익계산서 데이터 조회 중 오류가 발생했습니다: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 ## Cash Flow 탭 데이터 클래스 기반 API 뷰
 class StockCashFlowAPIView(APIView):
     """
-    Cash Flow 탭 데이터 클래스 기반 API 뷰
+    Cash Flow 탭 데이터 클래스 기반 API 뷰 (캐싱적용)
     - 현금흐름표 데이터 제공 (연간/분기별 선택 가능)
     """
     
@@ -465,31 +539,55 @@ class StockCashFlowAPIView(APIView):
         현금흐름표 데이터 GET 요청 처리
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
-        stock = get_object_or_404(Stock, symbol=symbol.upper())
         
-        # 요청 파라미터 처리 및 기본값 설정
+        ## 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
+
+        ## 캐싱
+        # 캐싱키 생성
+        cache_key = f"cash_flow_{symbol.upper()}_{period}_{limit}"
+        # 캐시에서 먼저 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit for cash flow: {symbol} ({period})")
+            return Response(cached_data, status=status.HTTP_200_OK)
         
-        # 현금흐름표 데이터 조회
-        # - period_type으로 연간/분기별 구분
-        # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-        cash_flows = CashFlowStatement.objects.filter(
-            stock=stock,
-            period_type=period
-        ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+        try:
+            stock = get_object_or_404(Stock, symbol=symbol.upper())
+
+            ## 현금흐름표 데이터 조회
+            # - period_type으로 연간/분기별 구분
+            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            cash_flows = CashFlowStatement.objects.filter(
+                stock=stock,
+                period_type=period
+            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+            
+            ## 현금흐름표 데이터 직렬화
+            # - 영업활동, 투자활동, 재무활동 관련 현금흐름 항목 포함
+            serializer = CashFlowTabSerializer(cash_flows, many=True)
+            
+            ## 응답 데이터 구성
+            response_data = {
+                'symbol': symbol.upper(),
+                'tab': 'cash_flow',
+                'period': period,
+                'data': serializer.data
+            }
+            
+            ## 캐시에 저장 (1시간)
+            cache.set(cache_key, response_data, 3600)
+            logger.info(f"Cache set for cash flow: {symbol} ({period})")
+            
+            return Response(response_data, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            logger.error(f"Cash flow error for {symbol}: {e}")
+            return Response({
+                'error': f'현금흐름표 데이터 조회 중 오류가 발생했습니다: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
-        # 현금흐름표 데이터 직렬화
-        # - 영업활동, 투자활동, 재무활동 관련 현금흐름 항목 포함
-        serializer = CashFlowTabSerializer(cash_flows, many=True)
-        
-        return Response({
-            'symbol': symbol.upper(),
-            'tab': 'cash_flow',
-            'period': period,
-            'data': serializer.data
-        }, status=status.HTTP_200_OK)
-    
 ## 통합 API 클래스 기반 뷰
 class StockCompleteDataAPIView(APIView):
     """

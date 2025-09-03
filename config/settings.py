@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 
 ## ALPHA_VANTAGE API KEY
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
@@ -139,3 +138,23 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #AUTH
 
 AUTH_USER_MODEL = 'users.User'
+
+#Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'stocks.log',
+        },
+    },
+    'loggers': {
+        'stocks': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
