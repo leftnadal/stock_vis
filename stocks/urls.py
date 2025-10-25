@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_mvp  # MVP용 뷰 추가
 
 app_name = 'stocks'
 
@@ -29,4 +30,17 @@ urlpatterns = [
     
     # Cash Flow 탭 데이터 API (현금흐름표)
     path('api/cashflow/<str:symbol>/', views.StockCashFlowAPIView.as_view(), name='stock_cashflow_data'),
+
+    ## MVP API 엔드포인트 (간소화 버전)
+    # 주식 목록 (요약)
+    path('api/mvp/stocks/', views_mvp.StockMVPListView.as_view(), name='mvp_stock_list'),
+
+    # 주식 상세 (RAG용 핵심 데이터)
+    path('api/mvp/stock/<str:symbol>/', views_mvp.StockMVPDetailView.as_view(), name='mvp_stock_detail'),
+
+    # RAG 컨텍스트 생성
+    path('api/mvp/rag/<str:symbol>/', views_mvp.StockRAGContextView.as_view(), name='mvp_rag_context'),
+
+    # 섹터 목록
+    path('api/mvp/sectors/', views_mvp.SectorListView.as_view(), name='mvp_sectors'),
 ]

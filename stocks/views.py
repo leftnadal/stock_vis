@@ -63,7 +63,8 @@ class StockListAPIView(generics.ListAPIView):
     """
     serializer_class = StockListSerializer
 
-    def get_request(self, request):
+    def get_queryset(self):
+        """쿼리셋을 동적으로 필터링하여 반환"""
         queryset = Stock.objects.all()
 
         # 필터링 파라미터들
@@ -71,10 +72,10 @@ class StockListAPIView(generics.ListAPIView):
         # - min_cap: 최소 시가총액 이상의 주식들만 조회
 
         sector = self.request.GET.get('sector')
-        min_market_cap = self.request.GET.get('sort_by', 'market_cap')
+        min_market_cap = self.request.GET.get('min_market_cap')
 
         if sector:
-            queryset = queryset.filter(sector_icontains = sector)
+            queryset = queryset.filter(sector__icontains = sector)
         
         if min_market_cap:
             try:
@@ -333,7 +334,7 @@ class StockChartDataAPIView(APIView):
         
         #2. 표준기간 옵션 처리
         if period_param in self.PERIOD_MAPPING:
-            days = self.PERIOD_MAPPING(period_param)
+            days = self.PERIOD_MAPPING[period_param]
 
             if days is None:
                 return None, "전체기간"

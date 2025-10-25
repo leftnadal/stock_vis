@@ -4,7 +4,7 @@ Alpha vantage API 데이터를 데이터베이스로 보내기 위해 변환 프
 import logging
 from typing import Dict, Any, List, Optional, Tuple
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import re
 
 logger = logging.getLogger(__name__)
@@ -28,14 +28,14 @@ class AlphaVantageProcessor:
         # Transform data for the stock model
         stock_data = {
             "symbol": symbol,
-            "open": Decimal(quote_data.get("02. open", "0")),
-            "high": Decimal(quote_data.get("03. high", "0")),
-            "low": Decimal(quote_data.get("04. low", "0")),
-            "real_time_price": Decimal(quote_data.get("05. price", "0")),
-            "volume": Decimal(quote_data.get("06. volume", "0")),
-            "previous_close": Decimal(quote_data.get("08. previous close", "0")),
-            "change": Decimal(quote_data.get("09. change", "0")),
-            "change_percent": Decimal(quote_data.get("10. change percent", "0")),
+            "open_price": _safe_decimal(quote_data.get("02. open", "0")),
+            "high_price": _safe_decimal(quote_data.get("03. high", "0")),
+            "low_price": _safe_decimal(quote_data.get("04. low", "0")),
+            "real_time_price": _safe_decimal(quote_data.get("05. price", "0")),
+            "volume": int(quote_data.get("06. volume", "0")),
+            "previous_close": _safe_decimal(quote_data.get("08. previous close", "0")),
+            "change": _safe_decimal(quote_data.get("09. change", "0")),
+            "change_percent": quote_data.get("10. change percent", "0"),
             "last_updated": datetime.now()
         }
 
@@ -69,52 +69,106 @@ class AlphaVantageProcessor:
             "industry": overview_data.get("Industry"),
             "sector": overview_data.get("Sector"),
             "address": overview_data.get("Address"),
-            "official_Site": overview_data.get("OfficialSite"),
-            "fiscal_Year_End": overview_data.get("FiscalYearEnd"),
-            "latest_Quarter": overview_data.get("LatestQuarter"),
-            "market_Capitalization": Decimal(overview_data.get("MarketCapitalization", "0")),
-            "ebitda": Decimal(overview_data.get("EBITDA", "0")),
-            "pe_Ratio": Decimal(overview_data.get("PERatio", "0")),
-            "peg_Ratio": Decimal(overview_data.get("PEGRatio", "0")),
-            "book_Value": Decimal(overview_data.get("BookValue", "0")),
-            "dividend_Per_Share": Decimal(overview_data.get("DividendPerShare", "0")),
-            "dividend_Yield": Decimal(overview_data.get("DividendYield", "0")),
-            "eps": Decimal(overview_data.get("EPS", "0")),
-            "revenue_Per_Share_Ttm": Decimal(overview_data.get("RevenuePerShareTTM", "0")),
-            "profit_Margin": Decimal(overview_data.get("ProfitMargin", "0")),
-            "operating_Margin_Ttm": Decimal(overview_data.get("OperatingMarginTTM", "0")),
-            "return_On_Assets_Ttm": Decimal(overview_data.get("ReturnOnAssetsTTM", "0")),
-            "return_On_Equity_Ttm": Decimal(overview_data.get("ReturnOnEquityTTM", "0")),
-            "revenue_Ttm": Decimal(overview_data.get("RevenueTTM", "0")),
-            "gross_Profit_Ttm": Decimal(overview_data.get("GrossProfitTTM", "0")),
-            "diluted_Eps_Ttm": Decimal(overview_data.get("DilutedEPSTTM", "0")),
-            "quarterly_Earnings_Growth_Yoy": Decimal(overview_data.get("QuarterlyEarningsGrowthYOY", "0")),
-            "quarterly_Revenue_Growth_Yoy": Decimal(overview_data.get("QuarterlyRevenueGrowthYOY", "0")),
-            "analyst_Target_Price": Decimal(overview_data.get("AnalystTargetPrice", "0")),
-            "analyst_Rating_Strong_Buy": Decimal(overview_data.get("AnalystRatingStrongBuy", "0")),
-            "analyst_Rating_Buy": Decimal(overview_data.get("AnalystRatingBuy", "0")),
-            "analyst_Rating_Hold": Decimal(overview_data.get("AnalystRatingHold", "0")),
-            "analyst_Rating_Sell": Decimal(overview_data.get("AnalystRatingSell", "0")),
-            "analyst_Rating_Strong_Sell": Decimal(overview_data.get("AnalystRatingStrongSell", "0")),
-            "trailing_Pe": Decimal(overview_data.get("TrailingPE", "0")),
-            "forward_Pe": Decimal(overview_data.get("ForwardPE", "0")),
-            "price_To_Sales_Ratio_Ttm": Decimal(overview_data.get("PriceToSalesRatioTTM", "0")),
-            "price_To_Book_Ratio": Decimal(overview_data.get("PriceToBookRatio", "0")),
-            "ev_To_Revenue": Decimal(overview_data.get("EVToRevenue", "0")),
-            "ev_To_Ebitda": Decimal(overview_data.get("EVToEBITDA", "0")),
-            "beta": Decimal(overview_data.get("Beta", "0")),
-            "52_Week_High": Decimal(overview_data.get("52WeekHigh", "0")),
-            "52_Week_Low": Decimal(overview_data.get("52WeekLow", "0")),
-            "50_Day_Moving_Average": Decimal(overview_data.get("50DayMovingAverage", "0")),
-            "200_Day_Moving_Average": Decimal(overview_data.get("200DayMovingAverage", "0")),
-            "shares_Outstanding": Decimal(overview_data.get("SharesOutstanding", "0")),
-            "dividend_Date": overview_data.get("DividendDate"),
-            "ex_Dividend_Date": overview_data.get("ExDividendDate"),
-            "last_Updated": datetime.now(),
+            "official_site": overview_data.get("OfficialSite"),
+            "fiscal_year_end": overview_data.get("FiscalYearEnd"),
+            "latest_quarter": _safe_date(overview_data.get("LatestQuarter")),
+            "market_capitalization": Decimal(overview_data.get("MarketCapitalization", "0")),
+            #재무 데이터
+            "ebitda": _safe_decimal(overview_data.get("EBITDA", "0")),
+            "pe_ratio": _safe_decimal(overview_data.get("PERatio", "0")),
+            "peg_ratio": _safe_decimal(overview_data.get("PEGRatio", "0")),
+            "book_value": _safe_decimal(overview_data.get("BookValue", "0")),
+            "dividend_per_share": _safe_decimal(overview_data.get("DividendPerShare", "0")),
+            "dividend_yield": _safe_decimal(overview_data.get("DividendYield", "0")),
+            "eps": _safe_decimal(overview_data.get("EPS", "0")),
+            "revenue_per_share_ttm": _safe_decimal(overview_data.get("RevenuePerShareTTM", "0")),
+            "profit_margin": _safe_decimal(overview_data.get("ProfitMargin", "0")),
+            "operating_margin_ttm": _safe_decimal(overview_data.get("OperatingMarginTTM", "0")),
+            "return_on_assets_ttm": _safe_decimal(overview_data.get("ReturnOnAssetsTTM", "0")),
+            "return_on_equity_ttm": _safe_decimal(overview_data.get("ReturnOnEquityTTM", "0")),
+            "revenue_ttm": _safe_decimal(overview_data.get("RevenueTTM", "0")),
+            "gross_profit_ttm": _safe_decimal(overview_data.get("GrossProfitTTM", "0")),
+            "diluted_eps_ttm": _safe_decimal(overview_data.get("DilutedEPSTTM", "0")),
+            "quarterly_earnings_growth_yoy": _safe_decimal(overview_data.get("QuarterlyEarningsGrowthYOY", "0")),
+            "quarterly_revenue_growth_yoy": _safe_decimal(overview_data.get("QuarterlyRevenueGrowthYOY", "0")),
+
+            # 분석정보
+            "analyst_target_price": _safe_decimal(overview_data.get("AnalystTargetPrice", "0")),
+            "analyst_rating_strong_buy": _safe_decimal(overview_data.get("AnalystRatingStrongBuy", "0")),
+            "analyst_rating_buy": _safe_decimal(overview_data.get("AnalystRatingBuy", "0")),
+            "analyst_rating_hold": _safe_decimal(overview_data.get("AnalystRatingHold", "0")),
+            "analyst_rating_sell": _safe_decimal(overview_data.get("AnalystRatingSell", "0")),
+            "analyst_rating_strong_sell": _safe_decimal(overview_data.get("AnalystRatingStrongSell", "0")),
+
+            # 기술적 지표
+            "trailing_pe": _safe_decimal(overview_data.get("TrailingPE", "0")),
+            "forward_pe": _safe_decimal(overview_data.get("ForwardPE", "0")),
+            "price_to_sales_ratio_ttm": _safe_decimal(overview_data.get("PriceToSalesRatioTTM", "0")),
+            "price_to_book_ratio": _safe_decimal(overview_data.get("PriceToBookRatio", "0")),
+            "ev_to_revenue": _safe_decimal(overview_data.get("EVToRevenue", "0")),
+            "ev_to_ebitda": _safe_decimal(overview_data.get("EVToEBITDA", "0")),
+            "beta": _safe_decimal(overview_data.get("Beta", "0")),
+            "week_52_high": _safe_decimal(overview_data.get("52WeekHigh", "0")),
+            "week_52_low": _safe_decimal(overview_data.get("52WeekLow", "0")),
+            "day_50_moving_average": _safe_decimal(overview_data.get("50DayMovingAverage", "0")),
+            "day_200_moving_average": _safe_decimal(overview_data.get("200DayMovingAverage", "0")),
+            "shares_outstanding": _safe_decimal(overview_data.get("SharesOutstanding", "0")),
+
+            # 배당정보
+            "dividend_date": _safe_date(overview_data.get("DividendDate")),
+            "ex_dividend_date": _safe_date(overview_data.get("ExDividendDate")),
+            "last_updated": datetime.now(),
         }
 
         return stock_data
     
+    @staticmethod
+    def process_historical_prices(symbol: str, time_series: Dict[str, Any], data_type: str) -> List[Dict[str, Any]]:
+        """
+        과거 가격 데이터 처리 (일간/주간 공통)
+        - Alpha Vantage API에서 받은 시계열 데이터를 DB 모델에 맞게 변환
+        """
+        if not time_series:
+            logger.warning(f"No time series data for {symbol}")
+            return []
+        
+        processed_data = []
+
+        for date_str, price_data in time_series.items():
+            try:
+                #날짜 파싱
+                price_date = datetime.strptime(date_str,"%Y-%m-%d").date()
+
+                # 가격데이터 변환
+                price_entry = {
+                    "stock_symbol": symbol,
+                    "currency": "USD",  # 기본값
+                    "date": price_date,
+                    "open_price": _safe_decimal(price_data.get("1. open", "0")),
+                    "high_price": _safe_decimal(price_data.get("2. high", "0")),
+                    "low_price": _safe_decimal(price_data.get("3. low", "0")),
+                    "close_price": _safe_decimal(price_data.get("4. close", "0")),
+                    "volume": _safe_int(price_data.get("5. volume", "0")),
+                }
+
+                # 주간 데이터의 경우 추가 필드
+                if data_type == "weekly":
+                    # 실제로는 주의 시작일과 종료일을 계산해야 하지만
+                    # 간단히 해당 날짜를 사용 (추후 개선 가능)
+                    price_entry.update({
+                        "week_start_date": price_date,
+                        "week_end_date": price_date,
+                        "average_volume": _safe_int(price_data.get("5. volume", "0")),
+                    })
+                
+                processed_data.append(price_entry)
+
+            except (ValueError, TypeError, KeyError) as e:
+                logger.error(f"Error processing price data for {symbol} on {date_str}: {e}")
+                continue
+
+        return processed_data
+
     @staticmethod
     def process_daily_historical_prices(symbol: str, data: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -176,42 +230,42 @@ class AlphaVantageProcessor:
                     "period_type": "annual",
                     "fiscal_year": fiscal_date.year,
                     "currency": "USD",  # Default currency assumption
-                    "total_Assets": Decimal(report.get("totalAssets", "0")),
-                    "total_Current_Assets": Decimal(report.get("totalCurrentAssets", "0")),
-                    "cash_And_Cash_Equivalents_At_Carrying_Value": Decimal(report.get("cashAndCashEquivalentsAtCarryingValue", "0")),
-                    "cash_And_Short_Term_Investments": Decimal(report.get("cashAndShortTermInvestments", "0")),
-                    "inventory": Decimal(report.get("inventory", "0")),
-                    "current_Net_Receivables": Decimal(report.get("currentNetReceivables", "0")),
-                    "total_Non_Current_Assets": Decimal(report.get("totalNonCurrentAssets", "0")),
-                    "property_Plant_Equipment": Decimal(report.get("propertyPlantEquipment", "0")),
-                    "accumulated_Depreciation_Amortization_Ppe": Decimal(report.get("accumulatedDepreciationAmortizationPPE", "0")),
-                    "intangible_Assets": Decimal(report.get("intangibleAssets", "0")),
-                    "intangible_Assets_Excluding_Goodwill": Decimal(report.get("intangibleAssetsExcludingGoodwill", "0")),
-                    "goodwill": Decimal(report.get("goodwill", "0")),
-                    "investments": Decimal(report.get("investments", "0")),
-                    "long_Term_Investments": Decimal(report.get("longTermInvestments", "0")),
-                    "short_Term_Investments": Decimal(report.get("shortTermInvestments", "0")),
-                    "other_Current_Assets": Decimal(report.get("otherCurrentAssets", "0")),
-                    "other_Non_Current_Assets": Decimal(report.get("otherNonCurrentAssets", "0")),
-                    "total_Liabilities": Decimal(report.get("totalLiabilities", "0")),
-                    "total_Current_Liabilities": Decimal(report.get("totalCurrentLiabilities", "0")),
-                    "current_Accounts_Payable": Decimal(report.get("currentAccountsPayable", "0")),
-                    "deferred_Revenue": Decimal(report.get("deferredRevenue", "0")),
-                    "current_Debt": Decimal(report.get("currentDebt", "0")),
-                    "short_Term_Debt": Decimal(report.get("shortTermDebt", "0")),
-                    "total_Non_Current_Liabilities": Decimal(report.get("totalNonCurrentLiabilities", "0")),
-                    "capital_Lease_Obligations": Decimal(report.get("capitalLeaseObligations", "0")),
-                    "long_Term_Debt": Decimal(report.get("longTermDebt", "0")),
-                    "current_Longterm_Debt": Decimal(report.get("currentLongtermDebt", "0")),
-                    "longterm_Debt_Noncurrent": Decimal(report.get("longtermDebtNoncurrent", "0")),
-                    "short_LongTerm_Debt_Total": Decimal(report.get("shortLongTermDebtTotal", "0")),
-                    "other_Current_Liabilities": Decimal(report.get("otherCurrentLiabilities", "0")),
-                    "other_Non_Current_Liabilities": Decimal(report.get("otherNonCurrentLiabilities", "0")),
-                    "total_Shareholder_Equity": Decimal(report.get("totalShareholderEquity", "0")),
-                    "treasury_Stock": Decimal(report.get("treasuryStock", "0")),
-                    "retained_Earnings": Decimal(report.get("retainedEarnings", "0")),
-                    "common_Stock": Decimal(report.get("commonStock", "0")),
-                    "common_Stock_Shares_Outstanding": Decimal(report.get("commonStockSharesOutstanding", "0")),
+                    "total_assets": _safe_decimal(report.get("totalAssets", "0")),
+                    "total_current_assets": _safe_decimal(report.get("totalCurrentAssets", "0")),
+                    "cash_and_cash_equivalents_at_carrying_value": _safe_decimal(report.get("cashAndCashEquivalentsAtCarryingValue", "0")),
+                    "cash_and_short_term_investments": _safe_decimal(report.get("cashAndShortTermInvestments", "0")),
+                    "inventory": _safe_decimal(report.get("inventory", "0")),
+                    "current_net_receivables": _safe_decimal(report.get("currentNetReceivables", "0")),
+                    "total_non_current_assets": _safe_decimal(report.get("totalNonCurrentAssets", "0")),
+                    "property_plant_equipment": _safe_decimal(report.get("propertyPlantEquipment", "0")),
+                    "accumulated_depreciation_amortization_ppe": _safe_decimal(report.get("accumulatedDepreciationAmortizationPPE", "0")),
+                    "intangible_assets": _safe_decimal(report.get("intangibleAssets", "0")),
+                    "intangible_assets_excluding_goodwill": _safe_decimal(report.get("intangibleAssetsExcludingGoodwill", "0")),
+                    "goodwill": _safe_decimal(report.get("goodwill", "0")),
+                    "investments": _safe_decimal(report.get("investments", "0")),
+                    "long_term_investments": _safe_decimal(report.get("longTermInvestments", "0")),
+                    "short_term_investments": _safe_decimal(report.get("shortTermInvestments", "0")),
+                    "other_current_assets": _safe_decimal(report.get("otherCurrentAssets", "0")),
+                    "other_non_current_assets": _safe_decimal(report.get("otherNonCurrentAssets", "0")),
+                    "total_liabilities": _safe_decimal(report.get("totalLiabilities", "0")),
+                    "total_current_liabilities": _safe_decimal(report.get("totalCurrentLiabilities", "0")),
+                    "current_accounts_payable": _safe_decimal(report.get("currentAccountsPayable", "0")),
+                    "deferred_revenue": _safe_decimal(report.get("deferredRevenue", "0")),
+                    "current_debt": _safe_decimal(report.get("currentDebt", "0")),
+                    "short_term_debt": _safe_decimal(report.get("shortTermDebt", "0")),
+                    "total_non_current_liabilities": _safe_decimal(report.get("totalNonCurrentLiabilities", "0")),
+                    "capital_lease_obligations": _safe_decimal(report.get("capitalLeaseObligations", "0")),
+                    "long_term_debt": _safe_decimal(report.get("longTermDebt", "0")),
+                    "current_longterm_debt": _safe_decimal(report.get("currentLongtermDebt", "0")),
+                    "longterm_debt_noncurrent": _safe_decimal(report.get("longtermDebtNoncurrent", "0")),
+                    "short_longterm_debt_total": _safe_decimal(report.get("shortLongTermDebtTotal", "0")),
+                    "other_current_liabilities": _safe_decimal(report.get("otherCurrentLiabilities", "0")),
+                    "other_non_current_liabilities": _safe_decimal(report.get("otherNonCurrentLiabilities", "0")),
+                    "total_shareholder_equity": _safe_decimal(report.get("totalShareholderEquity", "0")),
+                    "treasury_stock": _safe_decimal(report.get("treasuryStock", "0")),
+                    "retained_earnings": _safe_decimal(report.get("retainedEarnings", "0")),
+                    "common_stock": _safe_decimal(report.get("commonStock", "0")),
+                    "common_stock_shares_outstanding": _safe_decimal(report.get("commonStockSharesOutstanding", "0")),
                 }
                 
                 reports.append(balance_sheet_data)
@@ -231,42 +285,42 @@ class AlphaVantageProcessor:
                     "fiscal_year": fiscal_date.year,
                     "fiscal_quarter": (fiscal_date.month - 1) // 3 + 1,  # Estimate quarter from month
                     "currency": "USD",  # Default currency assumption
-                    "total_Assets": Decimal(report.get("totalAssets", "0")),
-                    "total_Current_Assets": Decimal(report.get("totalCurrentAssets", "0")),
-                    "cash_And_Cash_Equivalents_At_Carrying_Value": Decimal(report.get("cashAndCashEquivalentsAtCarryingValue", "0")),
-                    "cash_And_Short_Term_Investments": Decimal(report.get("cashAndShortTermInvestments", "0")),
+                    "total_assets": Decimal(report.get("totalAssets", "0")),
+                    "total_current_assets": Decimal(report.get("totalCurrentAssets", "0")),
+                    "cash_and_cash_equivalents_at_carrying_value": Decimal(report.get("cashAndCashEquivalentsAtCarryingValue", "0")),
+                    "cash_and_short_term_investments": Decimal(report.get("cashAndShortTermInvestments", "0")),
                     "inventory": Decimal(report.get("inventory", "0")),
-                    "current_Net_Receivables": Decimal(report.get("currentNetReceivables", "0")),
-                    "total_Non_Current_Assets": Decimal(report.get("totalNonCurrentAssets", "0")),
-                    "property_Plant_Equipment": Decimal(report.get("propertyPlantEquipment", "0")),
-                    "accumulated_Depreciation_Amortization_Ppe": Decimal(report.get("accumulatedDepreciationAmortizationPPE", "0")),
-                    "intangible_Assets": Decimal(report.get("intangibleAssets", "0")),
-                    "intangible_Assets_Excluding_Goodwill": Decimal(report.get("intangibleAssetsExcludingGoodwill", "0")),
+                    "current_net_receivables": Decimal(report.get("currentNetReceivables", "0")),
+                    "total_non_current_assets": Decimal(report.get("totalNonCurrentAssets", "0")),
+                    "property_plant_equipment": Decimal(report.get("propertyPlantEquipment", "0")),
+                    "accumulated_depreciation_amortization_ppe": Decimal(report.get("accumulatedDepreciationAmortizationPPE", "0")),
+                    "intangible_assets": Decimal(report.get("intangibleAssets", "0")),
+                    "intangible_assets_excluding_goodwill": Decimal(report.get("intangibleAssetsExcludingGoodwill", "0")),
                     "goodwill": Decimal(report.get("goodwill", "0")),
                     "investments": Decimal(report.get("investments", "0")),
-                    "long_Term_Investments": Decimal(report.get("longTermInvestments", "0")),
-                    "short_Term_Investments": Decimal(report.get("shortTermInvestments", "0")),
-                    "other_Current_Assets": Decimal(report.get("otherCurrentAssets", "0")),
-                    "other_Non_Current_Assets": Decimal(report.get("otherNonCurrentAssets", "0")),
-                    "total_Liabilities": Decimal(report.get("totalLiabilities", "0")),
-                    "total_Current_Liabilities": Decimal(report.get("totalCurrentLiabilities", "0")),
-                    "current_Accounts_Payable": Decimal(report.get("currentAccountsPayable", "0")),
-                    "deferred_Revenue": Decimal(report.get("deferredRevenue", "0")),
-                    "current_Debt": Decimal(report.get("currentDebt", "0")),
-                    "short_Term_Debt": Decimal(report.get("shortTermDebt", "0")),
-                    "total_Non_Current_Liabilities": Decimal(report.get("totalNonCurrentLiabilities", "0")),
-                    "capital_Lease_Obligations": Decimal(report.get("capitalLeaseObligations", "0")),
-                    "long_Term_Debt": Decimal(report.get("longTermDebt", "0")),
-                    "current_Longterm_Debt": Decimal(report.get("currentLongtermDebt", "0")),
-                    "longterm_Debt_Noncurrent": Decimal(report.get("longtermDebtNoncurrent", "0")),
-                    "short_LongTerm_Debt_Total": Decimal(report.get("shortLongTermDebtTotal", "0")),
-                    "other_Current_Liabilities": Decimal(report.get("otherCurrentLiabilities", "0")),
-                    "other_Non_Current_Liabilities": Decimal(report.get("otherNonCurrentLiabilities", "0")),
-                    "total_Shareholder_Equity": Decimal(report.get("totalShareholderEquity", "0")),
-                    "treasury_Stock": Decimal(report.get("treasuryStock", "0")),
-                    "retained_Earnings": Decimal(report.get("retainedEarnings", "0")),
-                    "common_Stock": Decimal(report.get("commonStock", "0")),
-                    "common_Stock_Shares_Outstanding": Decimal(report.get("commonStockSharesOutstanding", "0")),
+                    "long_term_investments": Decimal(report.get("longTermInvestments", "0")),
+                    "short_term_investments": Decimal(report.get("shortTermInvestments", "0")),
+                    "other_current_assets": Decimal(report.get("otherCurrentAssets", "0")),
+                    "other_non_current_assets": Decimal(report.get("otherNonCurrentAssets", "0")),
+                    "total_liabilities": Decimal(report.get("totalLiabilities", "0")),
+                    "total_current_liabilities": Decimal(report.get("totalCurrentLiabilities", "0")),
+                    "current_accounts_payable": Decimal(report.get("currentAccountsPayable", "0")),
+                    "deferred_revenue": Decimal(report.get("deferredRevenue", "0")),
+                    "current_debt": Decimal(report.get("currentDebt", "0")),
+                    "short_term_debt": Decimal(report.get("shortTermDebt", "0")),
+                    "total_non_current_liabilities": Decimal(report.get("totalNonCurrentLiabilities", "0")),
+                    "capital_lease_obligations": Decimal(report.get("capitalLeaseObligations", "0")),
+                    "long_term_debt": Decimal(report.get("longTermDebt", "0")),
+                    "current_longterm_debt": Decimal(report.get("currentLongtermDebt", "0")),
+                    "longterm_debt_noncurrent": Decimal(report.get("longtermDebtNoncurrent", "0")),
+                    "short_longterm_debt_total": Decimal(report.get("shortLongTermDebtTotal", "0")),
+                    "other_current_liabilities": Decimal(report.get("otherCurrentLiabilities", "0")),
+                    "other_non_current_liabilities": Decimal(report.get("otherNonCurrentLiabilities", "0")),
+                    "total_shareholder_equity": Decimal(report.get("totalShareholderEquity", "0")),
+                    "treasury_stock": Decimal(report.get("treasuryStock", "0")),
+                    "retained_earnings": Decimal(report.get("retainedEarnings", "0")),
+                    "common_stock": Decimal(report.get("commonStock", "0")),
+                    "common_stock_shares_outstanding": Decimal(report.get("commonStockSharesOutstanding", "0")),
                 }
                 
                 reports.append(balance_sheet_data)
@@ -305,30 +359,30 @@ class AlphaVantageProcessor:
                     "period_type": "annual",
                     "fiscal_year": fiscal_date.year,
                     "currency": "USD",  # Default currency assumption
-                    "gross_Profit": Decimal(report.get("grossProfit", "0")),
-                    "total_Revenue": Decimal(report.get("totalRevenue", "0")),
-                    "cost_Of_Revenue": Decimal(report.get("costOfRevenue", "0")),
-                    "cost_of_Goods_And_Services_Sold": Decimal(report.get("costofGoodsAndServicesSold", "0")),
-                    "operating_Income": Decimal(report.get("operatingIncome", "0")),
-                    "selling_General_And_Administrative": Decimal(report.get("sellingGeneralAndAdministrative", "0")),
-                    "research_And_Development": Decimal(report.get("researchAndDevelopment", "0")),
-                    "operating_Expenses": Decimal(report.get("operatingExpenses", "0")),
-                    "investment_Income_Net": Decimal(report.get("investmentIncomeNet", "0")),
-                    "net_Interest_Income": Decimal(report.get("netInterestIncome", "0")),
-                    "interest_Income": Decimal(report.get("interestIncome", "0")),
-                    "interest_Expense": Decimal(report.get("interestExpense", "0")),
-                    "non_Interest_Income": Decimal(report.get("nonInterestIncome", "0")),
-                    "other_Non_Operating_Income": Decimal(report.get("otherNonOperatingIncome", "0")),
-                    "depreciation": Decimal(report.get("depreciation", "0")),
-                    "depreciation_And_Amortization": Decimal(report.get("depreciationAndAmortization", "0")),
-                    "income_Before_Tax": Decimal(report.get("incomeBeforeTax", "0")),
-                    "income_Tax_Expense": Decimal(report.get("incomeTaxExpense", "0")),
-                    "interest_And_Debt_Expense": Decimal(report.get("interestAndDebtExpense", "0")),
-                    "net_Income_From_Continuing_Operations": Decimal(report.get("netIncomeFromContinuingOperations", "0")),
-                    "comprehensive_Income_Net_Of_Tax": Decimal(report.get("comprehensiveIncomeNetOfTax", "0")),
-                    "ebit": Decimal(report.get("ebit", "0")),
-                    "ebitda": Decimal(report.get("ebitda", "0")),
-                    "net_Income": Decimal(report.get("netIncome", "0")),
+                    "gross_profit": _safe_decimal(report.get("grossProfit", "0")),
+                    "total_revenue": _safe_decimal(report.get("totalRevenue", "0")),
+                    "cost_of_revenue": _safe_decimal(report.get("costOfRevenue", "0")),
+                    "cost_of_goods_and_services_sold": _safe_decimal(report.get("costofGoodsAndServicesSold", "0")),
+                    "operating_income": _safe_decimal(report.get("operatingIncome", "0")),
+                    "selling_general_and_administrative": _safe_decimal(report.get("sellingGeneralAndAdministrative", "0")),
+                    "research_and_development": _safe_decimal(report.get("researchAndDevelopment", "0")),
+                    "operating_expenses": _safe_decimal(report.get("operatingExpenses", "0")),
+                    "investment_income_net": _safe_decimal(report.get("investmentIncomeNet", "0")),
+                    "net_interest_income": _safe_decimal(report.get("netInterestIncome", "0")),
+                    "interest_income": _safe_decimal(report.get("interestIncome", "0")),
+                    "interest_expense": _safe_decimal(report.get("interestExpense", "0")),
+                    "non_interest_income": _safe_decimal(report.get("nonInterestIncome", "0")),
+                    "other_non_operating_income": _safe_decimal(report.get("otherNonOperatingIncome", "0")),
+                    "depreciation": _safe_decimal(report.get("depreciation", "0")),
+                    "depreciation_and_amortization": _safe_decimal(report.get("depreciationAndAmortization", "0")),
+                    "income_before_tax": _safe_decimal(report.get("incomeBeforeTax", "0")),
+                    "income_tax_expense": _safe_decimal(report.get("incomeTaxExpense", "0")),
+                    "interest_and_debt_expense": _safe_decimal(report.get("interestAndDebtExpense", "0")),
+                    "net_income_from_continuing_operations": _safe_decimal(report.get("netIncomeFromContinuingOperations", "0")),
+                    "comprehensive_income_net_of_tax": _safe_decimal(report.get("comprehensiveIncomeNetOfTax", "0")),
+                    "ebit": _safe_decimal(report.get("ebit", "0")),
+                    "ebitda": _safe_decimal(report.get("ebitda", "0")),
+                    "net_income": _safe_decimal(report.get("netIncome", "0")),
             }               
                 reports.append(income_data)
             except (ValueError, TypeError) as e:
@@ -347,30 +401,30 @@ class AlphaVantageProcessor:
                     "fiscal_year": fiscal_date.year,
                     "fiscal_quarter": (fiscal_date.month - 1) // 3 + 1,  # Estimate quarter from month
                     "currency": "USD",  # Default currency assumption
-                    "gross_Profit": Decimal(report.get("grossProfit", "0")),
-                    "total_Revenue": Decimal(report.get("totalRevenue", "0")),
-                    "cost_Of_Revenue": Decimal(report.get("costOfRevenue", "0")),
-                    "cost_of_GoodsAndServicesSold": Decimal(report.get("costofGoodsAndServicesSold", "0")),
-                    "operating_Income": Decimal(report.get("operatingIncome", "0")),
-                    "selling_General_And_Administrative": Decimal(report.get("sellingGeneralAndAdministrative", "0")),
-                    "research_And_Development": Decimal(report.get("researchAndDevelopment", "0")),
-                    "operating_Expenses": Decimal(report.get("operatingExpenses", "0")),
-                    "investment_IncomeNet": Decimal(report.get("investmentIncomeNet", "0")),
-                    "net_Interest_Income": Decimal(report.get("netInterestIncome", "0")),
-                    "interest_Income": Decimal(report.get("interestIncome", "0")),
-                    "interest_Expense": Decimal(report.get("interestExpense", "0")),
-                    "non_Interest_Income": Decimal(report.get("nonInterestIncome", "0")),
-                    "other_Non_Operating_Income": Decimal(report.get("otherNonOperatingIncome", "0")),
-                    "depreciation": Decimal(report.get("depreciation", "0")),
-                    "depreciation_And_Amortization": Decimal(report.get("depreciationAndAmortization", "0")),
-                    "income_Before_Tax": Decimal(report.get("incomeBeforeTax", "0")),
-                    "income_Tax_Expense": Decimal(report.get("incomeTaxExpense", "0")),
-                    "interest_And_Debt_Expense": Decimal(report.get("interestAndDebtExpense", "0")),
-                    "net_Income_From_Continuing_Operations": Decimal(report.get("netIncomeFromContinuingOperations", "0")),
-                    "comprehensive_Income_Net_Of_Tax": Decimal(report.get("comprehensive_IncomeNetOfTax", "0")),
-                    "ebit": Decimal(report.get("ebit", "0")),
-                    "ebitda": Decimal(report.get("ebitda", "0")),
-                    "net_Income": Decimal(report.get("netIncome", "0")),
+                    "gross_profit": _safe_decimal(report.get("grossProfit", "0")),
+                    "total_revenue": _safe_decimal(report.get("totalRevenue", "0")),
+                    "cost_of_revenue": _safe_decimal(report.get("costOfRevenue", "0")),
+                    "cost_of_goods_and_services_sold": _safe_decimal(report.get("costofGoodsAndServicesSold", "0")),
+                    "operating_income": _safe_decimal(report.get("operatingIncome", "0")),
+                    "selling_general_and_administrative": _safe_decimal(report.get("sellingGeneralAndAdministrative", "0")),
+                    "research_and_development": _safe_decimal(report.get("researchAndDevelopment", "0")),
+                    "operating_expenses": _safe_decimal(report.get("operatingExpenses", "0")),
+                    "investment_income_net": _safe_decimal(report.get("investmentIncomeNet", "0")),
+                    "net_interest_income": _safe_decimal(report.get("netInterestIncome", "0")),
+                    "interest_income": _safe_decimal(report.get("interestIncome", "0")),
+                    "interest_expense": _safe_decimal(report.get("interestExpense", "0")),
+                    "non_interest_income": _safe_decimal(report.get("nonInterestIncome", "0")),
+                    "other_non_operating_income": _safe_decimal(report.get("otherNonOperatingIncome", "0")),
+                    "depreciation": _safe_decimal(report.get("depreciation", "0")),
+                    "depreciation_and_amortization": _safe_decimal(report.get("depreciationAndAmortization", "0")),
+                    "income_before_tax": _safe_decimal(report.get("incomeBeforeTax", "0")),
+                    "income_tax_expense": _safe_decimal(report.get("incomeTaxExpense", "0")),
+                    "interest_and_debt_expense": _safe_decimal(report.get("interestAndDebtExpense", "0")),
+                    "net_income_from_continuing_operations": _safe_decimal(report.get("netIncomeFromContinuingOperations", "0")),
+                    "comprehensive_income_net_of_tax": _safe_decimal(report.get("comprehensive_IncomeNetOfTax", "0")),
+                    "ebit": _safe_decimal(report.get("ebit", "0")),
+                    "ebitda": _safe_decimal(report.get("ebitda", "0")),
+                    "net_income": _safe_decimal(report.get("netIncome", "0")),
                 }
                 
                 reports.append(income_data)
@@ -409,33 +463,33 @@ class AlphaVantageProcessor:
                     "period_type": "annual",
                     "fiscal_year": fiscal_date.year,
                     "currency": "USD",  # Default currency assumption
-                    "operating_Cashflow": Decimal(report.get("operatingCashflow", "0")),
-                    "payments_For_Operating_Activities": Decimal(report.get("paymentsForOperatingActivities", "0")),
-                    "proceeds_From_Operating_Activities": Decimal(report.get("proceedsFromOperatingActivities", "0")),
-                    "change_In_Operating_Liabilities": Decimal(report.get("changeInOperatingLiabilities", "0")),
-                    "change_In_Operating_Assets": Decimal(report.get("changeInOperatingAssets", "0")),
-                    "depreciation_Depletion_And_Amortization": Decimal(report.get("depreciationDepletionAndAmortization", "0")),
-                    "capital_Expenditures": Decimal(report.get("capitalExpenditures", "0")),
-                    "change_In_Receivables": Decimal(report.get("changeInReceivables", "0")),
-                    "change_In_Inventory": Decimal(report.get("changeInInventory", "0")),
-                    "profit_Loss": Decimal(report.get("profitLoss", "0")),
-                    "cashflow_From_Investment": Decimal(report.get("cashflowFromInvestment", "0")),
-                    "cashflow_From_Financing": Decimal(report.get("cashflowFromFinancing", "0")),
-                    "proceeds_From_Repayments_Of_Short_Term_Debt": Decimal(report.get("proceedsFromRepaymentsOfShortTermDebt", "0")),
-                    "payments_For_Repurchase_Of_Common_Stock": Decimal(report.get("paymentsForRepurchaseOfCommonStock", "0")),
-                    "payments_For_Repurchase_Of_Equity": Decimal(report.get("paymentsForRepurchaseOfEquity", "0")),
-                    "payments_For_Repurchase_Of_Preferred_Stock": Decimal(report.get("paymentsForRepurchaseOfPreferredStock", "0")),
-                    "dividend_Payout": Decimal(report.get("dividendPayout", "0")),
-                    "dividend_Payout_Common_Stock": Decimal(report.get("dividendPayoutCommonStock", "0")),
-                    "dividend_Payout_Preferred_Stock": Decimal(report.get("dividendPayoutPreferredStock", "0")),
-                    "proceeds_From_Issuance_Of_Common_Stock": Decimal(report.get("proceedsFromIssuanceOfCommonStock", "0")),
-                    "proceeds_From_Issuance_Of_Long_Term_Debt_And_Capital_Securities_Net": Decimal(report.get("proceedsFromIssuanceOfLongTermDebtAndCapitalSecuritiesNet", "0")),
-                    "proceeds_From_Issuance_Of_Preferred_Stock": Decimal(report.get("proceedsFromIssuanceOfPreferredStock", "0")),
-                    "proceeds_From_Repurchase_Of_Equity": Decimal(report.get("proceedsFromRepurchaseOfEquity", "0")),
-                    "proceeds_From_Sale_Of_Treasury_Stock": Decimal(report.get("proceedsFromSaleOfTreasuryStock", "0")),
-                    "change_In_Cash_And_Cash_Equivalents": Decimal(report.get("changeInCashAndCashEquivalents", "0")),
-                    "change_In_Exchange_Rate": Decimal(report.get("changeInExchangeRate", "0")),
-                    "net_Income": Decimal(report.get("netIncome", "0")),
+                    "operating_cashflow": _safe_decimal(report.get("operatingCashflow", "0")),
+                    "payments_for_operating_activities": _safe_decimal(report.get("paymentsForOperatingActivities", "0")),
+                    "proceeds_from_operating_activities": _safe_decimal(report.get("proceedsFromOperatingActivities", "0")),
+                    "change_in_operating_liabilities": _safe_decimal(report.get("changeInOperatingLiabilities", "0")),
+                    "change_in_operating_sssets": _safe_decimal(report.get("changeInOperatingAssets", "0")),
+                    "depreciation_depletion_and_amortization": _safe_decimal(report.get("depreciationDepletionAndAmortization", "0")),
+                    "capital_expenditures": _safe_decimal(report.get("capitalExpenditures", "0")),
+                    "change_in_receivables": _safe_decimal(report.get("changeInReceivables", "0")),
+                    "change_in_inventory": _safe_decimal(report.get("changeInInventory", "0")),
+                    "profit_loss": _safe_decimal(report.get("profitLoss", "0")),
+                    "cashflow_from_investment": _safe_decimal(report.get("cashflowFromInvestment", "0")),
+                    "cashflow_from_financing": _safe_decimal(report.get("cashflowFromFinancing", "0")),
+                    "proceeds_from_repayments_of_short_term_debt": _safe_decimal(report.get("proceedsFromRepaymentsOfShortTermDebt", "0")),
+                    "payments_for_repurchase_of_common_stock": _safe_decimal(report.get("paymentsForRepurchaseOfCommonStock", "0")),
+                    "payments_for_repurchase_of_equity": _safe_decimal(report.get("paymentsForRepurchaseOfEquity", "0")),
+                    "payments_for_repurchase_of_preferred_stock": _safe_decimal(report.get("paymentsForRepurchaseOfPreferredStock", "0")),
+                    "dividend_payout": _safe_decimal(report.get("dividendPayout", "0")),
+                    "dividend_payout_common_stock": _safe_decimal(report.get("dividendPayoutCommonStock", "0")),
+                    "dividend_payout_preferred_stock": _safe_decimal(report.get("dividendPayoutPreferredStock", "0")),
+                    "proceeds_from_issuance_of_common_stock": _safe_decimal(report.get("proceedsFromIssuanceOfCommonStock", "0")),
+                    "proceeds_from_issuance_of_long_term_debt_and_capital_securities_net": _safe_decimal(report.get("proceedsFromIssuanceOfLongTermDebtAndCapitalSecuritiesNet", "0")),
+                    "proceeds_from_issuance_of_preferred_stock": _safe_decimal(report.get("proceedsFromIssuanceOfPreferredStock", "0")),
+                    "proceeds_from_repurchase_of_equity": _safe_decimal(report.get("proceedsFromRepurchaseOfEquity", "0")),
+                    "proceeds_from_sale_of_treasury_stock": _safe_decimal(report.get("proceedsFromSaleOfTreasuryStock", "0")),
+                    "change_in_cash_and_cash_equivalents": _safe_decimal(report.get("changeInCashAndCashEquivalents", "0")),
+                    "change_in_exchange_rate": _safe_decimal(report.get("changeInExchangeRate", "0")),
+                    "net_income": _safe_decimal(report.get("netIncome", "0")),
             }
                 
                 reports.append(cash_flow_data)
@@ -455,33 +509,33 @@ class AlphaVantageProcessor:
                     "fiscal_year": fiscal_date.year,
                     "fiscal_quarter": (fiscal_date.month - 1) // 3 + 1,  # Estimate quarter from month
                     "currency": "USD",  # Default currency assumption
-                    "operating_Cashflow": Decimal(report.get("operatingCashflow", "0")),
-                    "payments_For_Operating_Activities": Decimal(report.get("paymentsForOperatingActivities", "0")),
-                    "proceeds_From_Operating_Activities": Decimal(report.get("proceedsFromOperatingActivities", "0")),
-                    "change_In_Operating_Liabilities": Decimal(report.get("changeInOperatingLiabilities", "0")),
-                    "change_In_Operating_Assets": Decimal(report.get("changeInOperatingAssets", "0")),
-                    "depreciation_Depletion_And_Amortization": Decimal(report.get("depreciationDepletionAndAmortization", "0")),
-                    "capital_Expenditures": Decimal(report.get("capitalExpenditures", "0")),
-                    "change_In_Receivables": Decimal(report.get("changeInReceivables", "0")),
-                    "change_In_Inventory": Decimal(report.get("changeInInventory", "0")),
-                    "profit_Loss": Decimal(report.get("profitLoss", "0")),
-                    "cashflow_From_Investment": Decimal(report.get("cashflowFromInvestment", "0")),
-                    "cashflow_From_Financing": Decimal(report.get("cashflowFromFinancing", "0")),
-                    "proceeds_From_Repayments_Of_Short_Term_Debt": Decimal(report.get("proceedsFromRepaymentsOfShortTermDebt", "0")),
-                    "payments_For_Repurchase_Of_Common_Stock": Decimal(report.get("paymentsForRepurchaseOfCommonStock", "0")),
-                    "payments_For_Repurchase_Of_Equity": Decimal(report.get("paymentsForRepurchaseOfEquity", "0")),
-                    "payments_For_Repurchase_Of_Preferred_Stock": Decimal(report.get("paymentsForRepurchaseOfPreferredStock", "0")),
-                    "dividend_Payout": Decimal(report.get("dividendPayout", "0")),
-                    "dividend_Payout_Common_Stock": Decimal(report.get("dividendPayoutCommonStock", "0")),
-                    "dividend_Payout_Preferred_Stock": Decimal(report.get("dividendPayoutPreferredStock", "0")),
-                    "proceeds_From_Issuance_Of_Common_Stock": Decimal(report.get("proceedsFromIssuanceOfCommonStock", "0")),
-                    "proceeds_From_Issuance_Of_Long_Term_Debt_And_Capital_Securities_Net": Decimal(report.get("proceedsFromIssuanceOfLongTermDebtAndCapitalSecuritiesNet", "0")),
-                    "proceeds_From_Issuance_Of_Preferred_Stock": Decimal(report.get("proceedsFromIssuanceOfPreferredStock", "0")),
-                    "proceeds_From_Repurchase_Of_Equity": Decimal(report.get("proceedsFromRepurchaseOfEquity", "0")),
-                    "proceeds_From_Sale_Of_Treasury_Stock": Decimal(report.get("proceedsFromSaleOfTreasuryStock", "0")),
-                    "change_In_Cash_And_Cash_Equivalents": Decimal(report.get("changeInCashAndCashEquivalents", "0")),
-                    "change_In_Exchange_Rate": Decimal(report.get("changeInExchangeRate", "0")),
-                    "net_Income": Decimal(report.get("netIncome", "0")),
+                    "operating_cashflow": _safe_decimal(report.get("operatingCashflow", "0")),
+                    "payments_for_operating_activities": _safe_decimal(report.get("paymentsForOperatingActivities", "0")),
+                    "proceeds_from_operating_activities": _safe_decimal(report.get("proceedsFromOperatingActivities", "0")),
+                    "change_in_operating_liabilities": _safe_decimal(report.get("changeInOperatingLiabilities", "0")),
+                    "change_in_operating_assets": _safe_decimal(report.get("changeInOperatingAssets", "0")),
+                    "depreciation_depletion_and_amortization": _safe_decimal(report.get("depreciationDepletionAndAmortization", "0")),
+                    "capital_expenditures": _safe_decimal(report.get("capitalExpenditures", "0")),
+                    "change_in_receivables": _safe_decimal(report.get("changeInReceivables", "0")),
+                    "change_in_inventory": _safe_decimal(report.get("changeInInventory", "0")),
+                    "profit_loss": _safe_decimal(report.get("profitLoss", "0")),
+                    "cashflow_from_investment": _safe_decimal(report.get("cashflowFromInvestment", "0")),
+                    "cashflow_from_financing": _safe_decimal(report.get("cashflowFromFinancing", "0")),
+                    "proceeds_from_repayments_of_short_term_debt": _safe_decimal(report.get("proceedsFromRepaymentsOfShortTermDebt", "0")),
+                    "payments_for_repurchase_of_common_stock": _safe_decimal(report.get("paymentsForRepurchaseOfCommonStock", "0")),
+                    "payments_for_repurchase_of_equity": _safe_decimal(report.get("paymentsForRepurchaseOfEquity", "0")),
+                    "payments_for_repurchase_of_preferred_stock": _safe_decimal(report.get("paymentsForRepurchaseOfPreferredStock", "0")),
+                    "dividend_payout": _safe_decimal(report.get("dividendPayout", "0")),
+                    "dividend_payout_common_stock": _safe_decimal(report.get("dividendPayoutCommonStock", "0")),
+                    "dividend_payout_preferred_stock": _safe_decimal(report.get("dividendPayoutPreferredStock", "0")),
+                    "proceeds_from_issuance_of_common_stock": _safe_decimal(report.get("proceedsFromIssuanceOfCommonStock", "0")),
+                    "proceeds_from_issuance_of_long_term_debt_and_capital_securities_net": _safe_decimal(report.get("proceedsFromIssuanceOfLongTermDebtAndCapitalSecuritiesNet", "0")),
+                    "proceeds_from_issuance_of_preferred_stock": _safe_decimal(report.get("proceedsFromIssuanceOfPreferredStock", "0")),
+                    "proceeds_from_repurchase_of_equity": _safe_decimal(report.get("proceedsFromRepurchaseOfEquity", "0")),
+                    "proceeds_from_sale_of_treasury_stock": _safe_decimal(report.get("proceedsFromSaleOfTreasuryStock", "0")),
+                    "change_in_cash_and_cash_equivalents": _safe_decimal(report.get("changeInCashAndCashEquivalents", "0")),
+                    "change_in_exchange_rate": _safe_decimal(report.get("changeInExchangeRate", "0")),
+                    "net_income": _safe_decimal(report.get("netIncome", "0")),
                 }
                 
                 reports.append(cash_flow_data)
@@ -490,3 +544,82 @@ class AlphaVantageProcessor:
                 continue
         
         return reports
+    
+def _safe_decimal(value: Any) -> Decimal:
+    """
+    ## 안전한 Decimal 변환
+    # - None이나 'None', '-', 빈 문자열 등 처리
+    # - 잘못된 형식의 문자열도 안전하게 처리
+    """
+    if not value or value in ['None', '-', '', 'N/A']:
+        return Decimal('0')
+    
+    try:
+        # 문자열에서 %나 쉼표 제거
+        if isinstance(value, str):
+            # %나 $, 쉼표 제거
+            cleaned_value = re.sub(r'[,%$]', '', str(value)).strip()
+            if not cleaned_value:
+                return Decimal('0')
+            return Decimal(cleaned_value)
+        else:
+            return Decimal(str(value))
+    except (ValueError, TypeError, InvalidOperation) as e:
+        logger.warning(f"Error converting to Decimal: {value}, error: {e}")
+        return Decimal('0')
+
+
+def _safe_int(value: Any) -> int:
+    """
+    ## 안전한 int 변환
+    # - BigIntegerField나 IntegerField를 위한 안전한 변환
+    """
+    if not value or value in ['None', '-', '', 'N/A']:
+        return 0
+    
+    try:
+        # 문자열에서 쉼표나 소수점 처리
+        if isinstance(value, str):
+            cleaned_value = re.sub(r'[,]', '', str(value)).strip()
+            if not cleaned_value:
+                return 0
+            # 소수점이 있으면 float으로 먼저 변환 후 int
+            return int(float(cleaned_value))
+        else:
+            return int(float(str(value)))
+    except (ValueError, TypeError) as e:
+        logger.warning(f"Error converting to int: {value}, error: {e}")
+        return 0
+
+
+def _safe_date(value: Any) -> Optional[datetime]:
+    """
+    ## 안전한 날짜 변환
+    # - 다양한 날짜 형식 처리
+    """
+    if not value or value in ['None', '-', '', 'N/A']:
+        return None
+    
+    try:
+        if isinstance(value, str):
+            # 일반적인 날짜 형식들 시도
+            date_formats = [
+                "%Y-%m-%d",
+                "%m/%d/%Y", 
+                "%d/%m/%Y",
+                "%Y.%m.%d",
+                "%Y%m%d"
+            ]
+            
+            for fmt in date_formats:
+                try:
+                    return datetime.strptime(value.strip(), fmt).date()
+                except ValueError:
+                    continue
+            
+            # 모든 형식이 실패하면 None 반환
+            logger.warning(f"Could not parse date: {value}")
+            return None
+    except Exception as e:
+        logger.warning(f"Error converting to date: {value}, error: {e}")
+        return None

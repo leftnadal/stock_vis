@@ -3,9 +3,12 @@ import hashlib
 import logging
 from django.core.cache import cache
 from django.conf import settings
-from django.core.cache.utils import make_key
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.views import APIView
+from stocks.models import Stock, BalanceSheet
+from stocks.serializers import BalanceSheetTabSerializer
+from django.shortcuts import get_object_or_404
 
 # 캐시 보안 로거 설정
 cache_security_logger = logging.getLogger('stocks.cache.security')

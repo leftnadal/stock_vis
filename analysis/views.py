@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ParseError
 
 from .models import EconomicIndicator
-from stocks.models import Stock, HistoricalPrice
+from stocks.models import Stock, DailyPrice
 from .serializers import EconomicIndicatorSerializer, IndicatorHistorySerializer
 
 from datetime import datetime, timedelta
@@ -35,7 +35,7 @@ class AnalysisDashboard(APIView):
         price_changes = []
         for stock in Stock.objects.all()[:50]:  # 상위 50개 주식만 확인 (성능 고려)
             try:
-                latest_prices = HistoricalPrice.objects.filter(stock=stock).order_by('-date')[:2]
+                latest_prices = DailyPrice.objects.filter(stock=stock).order_by('-date')[:2]
                 if len(latest_prices) >= 2:
                     today_price = latest_prices[0].close_price
                     prev_price = latest_prices[1].close_price
@@ -150,7 +150,7 @@ class MarketTrends(APIView):
             sector_changes = []
             for stock in stocks:
                 try:
-                    recent_prices = HistoricalPrice.objects.filter(
+                    recent_prices = DailyPrice.objects.filter(
                         stock=stock
                     ).order_by('-date')[:30]
                     
@@ -214,11 +214,11 @@ class StockComparison(APIView):
             start_date = end_date - timedelta(days=365)  # 기본값: 1년
         
         # 각 주식별 가격 및 성과 데이터 수집
-        from stocks.serializers import StockSerializer, HistoricalPriceSerializer
-        
+        from stocks.serializers import StockSerializer, ChartDataSerializer
+
         comparison_data = []
         for stock in stocks:
-            prices = HistoricalPrice.objects.filter(
+            prices = DailyPrice.objects.filter(
                 stock=stock,
                 date__gte=start_date,
                 date__lte=end_date
@@ -228,9 +228,9 @@ class StockComparison(APIView):
                 first_price = prices.first().close_price
                 last_price = prices.last().close_price
                 change_percent = (last_price - first_price) / first_price * 100
-                
-                price_serializer = HistoricalPriceSerializer(prices, many=True)
-                
+
+                price_serializer = ChartDataSerializer(prices, many=True)
+
                 comparison_data.append({
                     'stock': StockSerializer(stock).data,
                     'price_data': price_serializer.data,

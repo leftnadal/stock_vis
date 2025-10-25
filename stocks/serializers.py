@@ -137,6 +137,7 @@ class OverviewTabSerializer(serializers.ModelSerializer):
             # 주식 성과
             'revenue_per_share_ttm',
             'profit_margin',
+            'is_profitable',
             'operating_margin_ttm',
             'return_on_assets_ttm',
             'return_on_equity_ttm',

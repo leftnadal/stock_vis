@@ -50,11 +50,13 @@ INSTALLED_APPS = [
     'users',
     'analysis',
     'rest_framework',
+    'corsheaders',  # CORS 지원 추가
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # CORS 미들웨어 추가
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -138,6 +140,44 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 #AUTH
 
 AUTH_USER_MODEL = 'users.User'
+
+# CORS 설정
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # Next.js 개발 서버
+    "http://127.0.0.1:3000",
+]
+
+# 개발 환경과 프로덕션 환경 분리
+if DEBUG:
+    # 개발 환경에서만 모든 origin 허용
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # 프로덕션에서는 명시적으로 허용된 origins만
+    CORS_ALLOW_ALL_ORIGINS = False
+    # 프로덕션 도메인 추가 시 CORS_ALLOWED_ORIGINS에 추가
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 #Logging
 LOGGING = {
