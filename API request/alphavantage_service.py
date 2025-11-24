@@ -211,7 +211,9 @@ class AlphaVantageService:
             logger.info(f"Updated financial statements for {symbol}: {results}")
 
         except Exception as e:
-            logger.error(f"Error updating financial statements for {symbol}: {e}")
+            import traceback
+            error_details = traceback.format_exc()
+            logger.error(f"Error updating financial statements for {symbol}: {e}\nTraceback:\n{error_details}")
             raise
 
         return results
@@ -362,6 +364,135 @@ class AlphaVantageService:
         
         return saved_count
     
+    def update_previous_close(self, symbol: str, force: bool = False) -> Dict[str, Any]:
+        """
+        Update stock with previous day's closing price from daily data.
+        Only makes API call if not called today (unless force=True).
+
+        Args:
+            symbol: Stock symbol
+            force: Force API call even if already called today
+
+        Returns:
+            Dict with update status and data
+        """
+        from django.utils import timezone
+        from datetime import datetime, timedelta
+
+        symbol = symbol.upper().strip()
+
+        try:
+            # Get or create stock
+            stock, created = Stock.objects.get_or_create(
+                symbol=symbol,
+                defaults={'stock_name': symbol}
+            )
+
+            # Check if we already called API today
+            now = timezone.now()
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+
+            if not force and stock.last_api_call and stock.last_api_call >= today_start:
+                logger.info(f"Already fetched {symbol} today at {stock.last_api_call}")
+                return {
+                    'status': 'cached',
+                    'symbol': symbol,
+                    'price': float(stock.real_time_price),
+                    'message': f'Already fetched today at {stock.last_api_call}'
+                }
+
+            # Fetch daily data (only compact = last 100 days)
+            logger.info(f"Fetching daily data for {symbol}")
+            daily_data = self.client.get_daily_stock_data(symbol, outputsize="compact")
+
+            if not daily_data or 'Time Series (Daily)' not in daily_data:
+                logger.error(f"No daily data received for {symbol}")
+                return {
+                    'status': 'error',
+                    'symbol': symbol,
+                    'message': 'No daily data available'
+                }
+
+            time_series = daily_data['Time Series (Daily)']
+            dates = sorted(time_series.keys(), reverse=True)
+
+            if not dates:
+                return {
+                    'status': 'error',
+                    'symbol': symbol,
+                    'message': 'No price data available'
+                }
+
+            # Get the latest trading day (usually yesterday)
+            latest_date = dates[0]
+            latest_data = time_series[latest_date]
+
+            # Extract price data
+            close_price = float(latest_data['4. close'])
+            open_price = float(latest_data['1. open'])
+            high_price = float(latest_data['2. high'])
+            low_price = float(latest_data['3. low'])
+            volume = int(latest_data['5. volume'])
+
+            # Calculate change from previous day if available
+            if len(dates) > 1:
+                prev_date = dates[1]
+                prev_close = float(time_series[prev_date]['4. close'])
+                change = close_price - prev_close
+                change_percent = (change / prev_close * 100) if prev_close > 0 else 0
+            else:
+                change = 0
+                change_percent = 0
+
+            # Update stock with previous day's close as current price
+            stock.real_time_price = close_price
+            stock.previous_close = close_price  # Same as close for end of day
+            stock.open_price = open_price
+            stock.high_price = high_price
+            stock.low_price = low_price
+            stock.volume = volume
+            stock.change = change
+            stock.change_percent = f"{change_percent:.2f}%"
+            stock.last_api_call = now  # Mark API call time
+            stock.save()
+
+            # Also save to DailyPrice table
+            try:
+                DailyPrice.objects.update_or_create(
+                    stock=stock,
+                    date=datetime.strptime(latest_date, '%Y-%m-%d').date(),
+                    defaults={
+                        'open_price': open_price,
+                        'high_price': high_price,
+                        'low_price': low_price,
+                        'close_price': close_price,
+                        'volume': volume
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Could not save DailyPrice for {symbol}: {e}")
+
+            logger.info(f"Updated {symbol} with close price ${close_price:.2f} from {latest_date}")
+
+            return {
+                'status': 'updated',
+                'symbol': symbol,
+                'date': latest_date,
+                'price': close_price,
+                'change': change,
+                'change_percent': change_percent,
+                'volume': volume,
+                'message': f'Updated with close price from {latest_date}'
+            }
+
+        except Exception as e:
+            logger.error(f"Error updating previous close for {symbol}: {e}")
+            return {
+                'status': 'error',
+                'symbol': symbol,
+                'message': str(e)
+            }
+
     def get_stock_summary(self, symbol: str) -> Dict[str, Any]:
         """
         ## 주식 요약 정보 조회

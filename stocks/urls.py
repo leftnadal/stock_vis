@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 from . import views_mvp  # MVP용 뷰 추가
+from . import views_indicators  # 기술적 지표 뷰 추가
+from . import views_search  # 종목 검색 뷰 추가
 
 app_name = 'stocks'
 
@@ -43,4 +45,24 @@ urlpatterns = [
 
     # 섹터 목록
     path('api/mvp/sectors/', views_mvp.SectorListView.as_view(), name='mvp_sectors'),
+
+    ## 기술적 지표 API 엔드포인트
+    # 기술적 지표 계산 (RSI, MACD, Bollinger Bands 등)
+    path('api/indicators/<str:symbol>/', views_indicators.TechnicalIndicatorView.as_view(), name='technical_indicators'),
+
+    # 매매 신호 분석
+    path('api/signal/<str:symbol>/', views_indicators.IndicatorSignalView.as_view(), name='indicator_signal'),
+
+    # 여러 종목 지표 비교
+    path('api/indicators/compare/', views_indicators.IndicatorComparisonView.as_view(), name='indicator_comparison'),
+
+    ## 종목 검색 API 엔드포인트
+    # 종목 심볼 검색 (자동완성)
+    path('api/search/symbols/', views_search.SymbolSearchView.as_view(), name='symbol_search'),
+
+    # 종목 심볼 유효성 검증
+    path('api/search/validate/<str:symbol>/', views_search.SymbolValidateView.as_view(), name='symbol_validate'),
+
+    # 인기 종목 리스트
+    path('api/search/popular/', views_search.PopularSymbolsView.as_view(), name='popular_symbols'),
 ]

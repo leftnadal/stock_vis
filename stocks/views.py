@@ -1,14 +1,10 @@
-import json
 import logging
-
 from datetime import datetime, timedelta
 
-from django.conf import settings
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from django.utils import timezone
 from django.views.generic import TemplateView, DetailView
-from django.http import JsonResponse, Http404
+from django.http import Http404
 from django.core.cache import cache
 
 from rest_framework import generics, status
@@ -204,10 +200,11 @@ class StockChartDataAPIView(APIView):
         '1d': 1,       # 1일 (장중 차트용)
         '5d': 5,       # 5일
         '1m': 30,      # 1개월
-        '3m': 90,      # 3개월  
+        '3m': 90,      # 3개월
         '6m': 180,     # 6개월
         '1y': 365,     # 1년
         '2y': 730,     # 2년
+        '3y': 1095,    # 3년
         '5y': 1825,    # 5년
         'max': None,   # 전체 기간
     }
@@ -433,10 +430,12 @@ class StockBalanceSheetAPIView(APIView):
 
             ## 대차대조표 데이터 조회
             # - period_type으로 연간/분기별 구분
+            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
             # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            db_period = 'quarter' if period == 'quarterly' else period
             balance_sheets = BalanceSheet.objects.filter(
                 stock=stock,
-                period_type=period
+                period_type=db_period
             ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
             
             ## 대차대조표 데이터 직렬화
@@ -498,10 +497,12 @@ class StockIncomeStatementAPIView(APIView):
 
             ## 손익계산서 데이터 조회
             # - period_type으로 연간/분기별 구분
+            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
             # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            db_period = 'quarter' if period == 'quarterly' else period
             income_statements = IncomeStatement.objects.filter(
                 stock=stock,
-                period_type=period
+                period_type=db_period
             ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
             
             ## 손익계산서 데이터 직렬화
@@ -559,10 +560,12 @@ class StockCashFlowAPIView(APIView):
 
             ## 현금흐름표 데이터 조회
             # - period_type으로 연간/분기별 구분
+            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
             # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
+            db_period = 'quarter' if period == 'quarterly' else period
             cash_flows = CashFlowStatement.objects.filter(
                 stock=stock,
-                period_type=period
+                period_type=db_period
             ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
             
             ## 현금흐름표 데이터 직렬화

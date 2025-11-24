@@ -87,6 +87,8 @@ class Stock(models.Model):
     # === 메타 정보 ===
     last_updated = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    last_api_call = models.DateTimeField(blank=True, null=True,
+                                         help_text="Last time Alpha Vantage API was called for this stock")
 
     class Meta:
         db_table = 'stocks_stock'

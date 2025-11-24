@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os
+from dotenv import load_dotenv
+
+# .env 파일 로드
+load_dotenv()
 
 ## ALPHA_VANTAGE API KEY
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
@@ -40,6 +44,7 @@ CUSTOM_APPS = [
 ]
 
 INSTALLED_APPS = [
+    'daphne',  # Channels ASGI 서버 (맨 위에 위치)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -50,7 +55,12 @@ INSTALLED_APPS = [
     'users',
     'analysis',
     'rest_framework',
+    'rest_framework_simplejwt',  # JWT 인증 추가
+    'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
     'corsheaders',  # CORS 지원 추가
+    'django_celery_beat',  # Celery Beat 스케줄러
+    'django_celery_results',  # Celery 작업 결과 저장
+    'channels',  # WebSocket 지원
 ]
 
 MIDDLEWARE = [
@@ -69,7 +79,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -179,6 +189,48 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
+# REST Framework 설정
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+}
+
+# Simple JWT 설정
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),  # Access Token 유효 시간: 60분
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),     # Refresh Token 유효 시간: 7일
+    'ROTATE_REFRESH_TOKENS': True,                   # Refresh Token 재발급
+    'BLACKLIST_AFTER_ROTATION': True,               # 이전 Refresh Token 블랙리스트
+    'UPDATE_LAST_LOGIN': True,                      # 마지막 로그인 시간 업데이트
+
+    'ALGORITHM': 'HS256',                           # 암호화 알고리즘
+    'SIGNING_KEY': SECRET_KEY,                      # 서명 키
+    'VERIFYING_KEY': None,
+    'AUDIENCE': None,
+    'ISSUER': None,
+
+    'AUTH_HEADER_TYPES': ('Bearer',),              # 인증 헤더 타입
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',      # 인증 헤더 이름
+    'USER_ID_FIELD': 'id',                         # 사용자 ID 필드
+    'USER_ID_CLAIM': 'user_id',                    # JWT Claim의 사용자 ID
+
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    'TOKEN_TYPE_CLAIM': 'token_type',
+
+    'JTI_CLAIM': 'jti',
+
+    'SLIDING_TOKEN_REFRESH_EXP_CLAIM': 'refresh_exp',
+    'SLIDING_TOKEN_LIFETIME': timedelta(minutes=5),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+}
+
 #Logging
 LOGGING = {
     'version': 1,
@@ -195,6 +247,37 @@ LOGGING = {
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,
+        },
+    },
+}
+
+# Celery 설정
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'America/New_York'  # NYSE 시간대
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Celery 작업 결과 저장
+CELERY_RESULT_BACKEND = 'django-db'
+
+# Redis 캐시 백엔드 (기존 로컬 메모리 캐시를 Redis로 변경)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+
+# Channels WebSocket 설정
+ASGI_APPLICATION = 'config.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)],
         },
     },
 }
