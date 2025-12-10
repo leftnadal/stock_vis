@@ -13,7 +13,27 @@ import {
   FileText,
   Newspaper,
   Info,
+  Settings2,
 } from 'lucide-react';
+import UnitSelector from '@/components/financial/UnitSelector';
+import FormattedFinancialCell from '@/components/financial/FormattedFinancialCell';
+import FieldSettingsModal from '@/components/financial/FieldSettingsModal';
+import QuickAddDropdown from '@/components/financial/QuickAddDropdown';
+import { useFinancialUnit } from '@/hooks/useFinancialUnit';
+import { useFinancialFields } from '@/hooks/useFinancialFields';
+import {
+  determineOptimalUnit,
+  getFormatConfig,
+  extractNumericValues,
+} from '@/utils/formatters/financialFormatter';
+import {
+  FinancialTabType,
+  getFieldLabel,
+  getFieldsForTab,
+} from '@/constants/financialDefaults';
+import NewsList from '@/components/news/NewsList';
+import SentimentChart from '@/components/news/SentimentChart';
+import NewsDetailModal from '@/components/news/NewsDetailModal';
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news';
 
@@ -315,10 +335,14 @@ function MetricItem({ label, value }: { label: string; value: string }) {
 }
 
 // Financial Tab Component (Balance Sheet, Income Statement, Cash Flow)
-function FinancialTab({ symbol, type }: { symbol: string; type: string }) {
+function FinancialTab({ symbol, type }: { symbol: string; type: FinancialTabType }) {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'annual' | 'quarterly'>('annual');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Use the financial fields hook for this tab type
+  const { selectedFields, setSelectedFields, addField } = useFinancialFields(type);
 
   useEffect(() => {
     loadFinancialData();
@@ -357,8 +381,28 @@ function FinancialTab({ symbol, type }: { symbol: string; type: string }) {
 
   return (
     <div>
-      {/* Period Selector */}
-      <div className="flex justify-end mb-4">
+      {/* Period Selector and Settings */}
+      <div className="flex justify-between items-center mb-4">
+        {/* Left: Quick Add + Settings */}
+        <div className="flex items-center gap-2">
+          {/* Quick Add Dropdown */}
+          <QuickAddDropdown
+            tabType={type}
+            selectedFields={selectedFields}
+            onAddField={addField}
+          />
+
+          {/* Settings Button */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <Settings2 className="w-4 h-4" />
+            전체 설정
+          </button>
+        </div>
+
+        {/* Period Selector */}
         <div className="flex space-x-2">
           <button
             onClick={() => setPeriod('annual')}
@@ -385,63 +429,175 @@ function FinancialTab({ symbol, type }: { symbol: string; type: string }) {
 
       {/* Financial Data Table */}
       {data.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="min-w-full">
-            <thead>
-              <tr className="border-b dark:border-gray-700">
-                <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  항목
-                </th>
-                {data.map((item, index) => (
-                  <th key={`header-${item.fiscal_date_ending || item.reported_date || index}`} className="text-right py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {new Date(item.fiscal_date_ending || item.reported_date).toLocaleDateString('ko-KR', {
-                      year: 'numeric',
-                      month: 'short',
-                    })}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {/* Display first few key metrics */}
-              {Object.keys(data[0])
-                .filter((key) => !['fiscal_date_ending', 'reported_date', 'fiscal_year', 'fiscal_quarter', 'period_type', 'stock', 'id', 'created_at', 'currency'].includes(key))
-                .slice(0, 10)
-                .map((key) => (
-                  <tr key={key} className="border-b dark:border-gray-700">
-                    <td className="py-2 px-4 text-sm text-gray-600 dark:text-gray-400">
-                      {key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                    </td>
-                    {data.map((item, index) => (
-                      <td key={`${key}-${item.fiscal_date_ending || item.reported_date || index}`} className="text-right py-2 px-4 text-sm text-gray-900 dark:text-white">
-                        {typeof item[key] === 'number'
-                          ? new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 }).format(item[key])
-                          : item[key] || '-'}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        </div>
+        <FinancialTable data={data} tabType={type} selectedFields={selectedFields} />
       ) : (
         <p className="text-center text-gray-500 dark:text-gray-400 py-8">데이터가 없습니다.</p>
       )}
+
+      {/* Field Settings Modal */}
+      <FieldSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        tabType={type}
+        selectedFields={selectedFields}
+        onSave={setSelectedFields}
+      />
+    </div>
+  );
+}
+
+// Financial Table Component with Unit Selector and Field Filtering
+interface FinancialTableProps {
+  data: any[];
+  tabType: FinancialTabType;
+  selectedFields: string[];
+}
+
+function FinancialTable({ data, tabType, selectedFields }: FinancialTableProps) {
+  const [selectedUnit, setSelectedUnit] = useFinancialUnit();
+  const excludeKeys = ['fiscal_date_ending', 'reported_date', 'fiscal_year', 'fiscal_quarter', 'period_type', 'stock', 'id', 'created_at', 'currency'];
+
+  // Helper to convert string numbers to actual numbers
+  const parseNumericValue = (value: any): number | null => {
+    if (value === null || value === undefined || value === '') return null;
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  };
+
+  // Check if a value is numeric (number or numeric string)
+  const isNumericValue = (value: any): boolean => {
+    if (typeof value === 'number') return true;
+    if (typeof value === 'string' && value !== '') {
+      const parsed = parseFloat(value);
+      return !isNaN(parsed);
+    }
+    return false;
+  };
+
+  // Extract all numeric values for auto unit determination (handles string numbers)
+  const extractAllNumericValues = (): number[] => {
+    const values: number[] = [];
+    data.forEach((item) => {
+      Object.entries(item).forEach(([key, value]) => {
+        if (!excludeKeys.includes(key) && selectedFields.includes(key)) {
+          const parsed = parseNumericValue(value);
+          if (parsed !== null) {
+            values.push(parsed);
+          }
+        }
+      });
+    });
+    return values;
+  };
+
+  const numericValues = extractAllNumericValues();
+
+  // Get format configuration based on selected unit
+  const formatConfig = selectedUnit === 'auto'
+    ? determineOptimalUnit(numericValues)
+    : getFormatConfig(selectedUnit);
+
+  // Filter data keys to only include selected fields that exist in the data
+  const availableKeys = Object.keys(data[0]).filter((key) => !excludeKeys.includes(key));
+  const displayKeys = selectedFields.filter((key) => availableKeys.includes(key));
+
+  // Handle unit change
+  const handleUnitChange = (unit: typeof selectedUnit) => {
+    setSelectedUnit(unit);
+  };
+
+  // Get unit display label for header
+  const getUnitLabel = () => {
+    if (selectedUnit === 'auto') {
+      return formatConfig.suffix ? `Auto (${formatConfig.suffix})` : 'Auto (Raw)';
+    }
+    return selectedUnit === 'raw' ? 'Raw' : selectedUnit;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Unit Selector with current unit display */}
+      <div className="flex justify-between items-center">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
+          단위: <span className="font-medium text-gray-700 dark:text-gray-300">{getUnitLabel()}</span>
+          <span className="ml-4">({displayKeys.length}개 항목 표시)</span>
+        </span>
+        <UnitSelector selectedUnit={selectedUnit} onChange={handleUnitChange} />
+      </div>
+
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b dark:border-gray-700">
+              <th className="text-left py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                항목
+              </th>
+              {data.map((item, index) => (
+                <th key={`header-${item.fiscal_date_ending || item.reported_date || index}`} className="text-right py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {new Date(item.fiscal_date_ending || item.reported_date).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'short',
+                  })}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {displayKeys.map((key) => (
+              <tr key={key} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30">
+                <td className="py-2 px-4 text-sm text-gray-600 dark:text-gray-400">
+                  {getFieldLabel(tabType, key)}
+                </td>
+                {data.map((item, index) => {
+                  const rawValue = item[key];
+                  const numericValue = parseNumericValue(rawValue);
+
+                  return isNumericValue(rawValue) && numericValue !== null ? (
+                    <FormattedFinancialCell
+                      key={`${key}-${item.fiscal_date_ending || item.reported_date || index}-${selectedUnit}`}
+                      value={numericValue}
+                      config={formatConfig}
+                    />
+                  ) : (
+                    <td key={`${key}-${item.fiscal_date_ending || item.reported_date || index}`} className="text-right py-2 px-4 text-sm text-gray-400 dark:text-gray-500">
+                      {rawValue || '-'}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 // News Tab Component
 function NewsTab({ symbol }: { symbol: string }) {
+  const [selectedNewsId, setSelectedNewsId] = useState<string | null>(null);
+
   return (
-    <div className="text-center py-12">
-      <Newspaper className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-      <p className="text-gray-500 dark:text-gray-400">
-        뉴스 기능은 준비 중입니다.
-      </p>
-      <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
-        {symbol} 관련 뉴스가 곧 제공될 예정입니다.
-      </p>
+    <div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left: News List */}
+        <div>
+          <NewsList symbol={symbol} onArticleClick={(id) => setSelectedNewsId(id)} />
+        </div>
+
+        {/* Right: Sentiment Chart */}
+        <div>
+          <SentimentChart symbol={symbol} />
+        </div>
+      </div>
+
+      {/* News Detail Modal */}
+      <NewsDetailModal newsId={selectedNewsId} onClose={() => setSelectedNewsId(null)} />
     </div>
   );
 }
