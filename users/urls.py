@@ -37,4 +37,14 @@ urlpatterns = [
     path('portfolio/symbol/<str:symbol>/', views.PortfolioBySymbolView.as_view(), name='portfolio-by-symbol'),
     path('portfolio/symbol/<str:symbol>/refresh/', views.RefreshStockDataView.as_view(), name='stock-refresh'),
     path('portfolio/symbol/<str:symbol>/status/', views.StockDataStatusView.as_view(), name='stock-data-status'),
+
+    # Watchlist 관련
+    path('watchlist/', views.WatchlistListCreateView.as_view(), name='watchlist-list'),
+    path('watchlist/<int:pk>/', views.WatchlistDetailView.as_view(), name='watchlist-detail'),
+    path('watchlist/<int:pk>/add-stock/', views.WatchlistItemAddView.as_view(), name='watchlist-add-stock'),
+    path('watchlist/<int:pk>/bulk-add/', views.WatchlistBulkAddView.as_view(), name='watchlist-bulk-add'),
+    path('watchlist/<int:pk>/bulk-remove/', views.WatchlistBulkRemoveView.as_view(), name='watchlist-bulk-remove'),
+    path('watchlist/<int:pk>/stocks/', views.WatchlistStocksView.as_view(), name='watchlist-stocks'),
+    path('watchlist/<int:pk>/stocks/<str:symbol>/', views.WatchlistItemUpdateView.as_view(), name='watchlist-item-update'),
+    path('watchlist/<int:pk>/stocks/<str:symbol>/remove/', views.WatchlistItemRemoveView.as_view(), name='watchlist-item-remove'),
 ]
