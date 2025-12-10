@@ -127,28 +127,59 @@ class AlphaVantageProcessor:
         """
         과거 가격 데이터 처리 (일간/주간 공통)
         - Alpha Vantage API에서 받은 시계열 데이터를 DB 모델에 맞게 변환
+        - 주말 데이터 필터링
+        - 유효하지 않은 가격 데이터 필터링
         """
         if not time_series:
             logger.warning(f"No time series data for {symbol}")
             return []
-        
+
         processed_data = []
 
         for date_str, price_data in time_series.items():
             try:
-                #날짜 파싱
-                price_date = datetime.strptime(date_str,"%Y-%m-%d").date()
+                # 날짜 파싱
+                price_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+
+                # 🔥 주말 데이터 필터링 (일일 데이터의 경우만)
+                if data_type == "daily" and price_date.weekday() >= 5:  # 5=토, 6=일
+                    logger.warning(f"Skipping weekend data for {symbol} on {date_str}")
+                    continue
+
+                # 🔥 미래 날짜 필터링
+                from datetime import date as date_type
+                if price_date > date_type.today():
+                    logger.warning(f"Skipping future date for {symbol} on {date_str}")
+                    continue
+
+                # 가격 데이터 추출
+                open_price = _safe_decimal(price_data.get("1. open", "0"))
+                high_price = _safe_decimal(price_data.get("2. high", "0"))
+                low_price = _safe_decimal(price_data.get("3. low", "0"))
+                close_price = _safe_decimal(price_data.get("4. close", "0"))
+                volume = _safe_int(price_data.get("5. volume", "0"))
+
+                # 🔥 유효하지 않은 가격 필터링
+                if close_price <= 0 or open_price <= 0:
+                    logger.error(f"Invalid price data for {symbol} on {date_str}: open={open_price}, close={close_price}")
+                    continue
+
+                # 🔥 가격 논리 검증 (high >= low)
+                if high_price < low_price:
+                    logger.warning(f"Invalid price range for {symbol} on {date_str}: high={high_price} < low={low_price}")
+                    # 스왑하여 수정
+                    high_price, low_price = low_price, high_price
 
                 # 가격데이터 변환
                 price_entry = {
                     "stock_symbol": symbol,
                     "currency": "USD",  # 기본값
                     "date": price_date,
-                    "open_price": _safe_decimal(price_data.get("1. open", "0")),
-                    "high_price": _safe_decimal(price_data.get("2. high", "0")),
-                    "low_price": _safe_decimal(price_data.get("3. low", "0")),
-                    "close_price": _safe_decimal(price_data.get("4. close", "0")),
-                    "volume": _safe_int(price_data.get("5. volume", "0")),
+                    "open_price": open_price,
+                    "high_price": high_price,
+                    "low_price": low_price,
+                    "close_price": close_price,
+                    "volume": volume,
                 }
 
                 # 주간 데이터의 경우 추가 필드
@@ -158,9 +189,9 @@ class AlphaVantageProcessor:
                     price_entry.update({
                         "week_start_date": price_date,
                         "week_end_date": price_date,
-                        "average_volume": _safe_int(price_data.get("5. volume", "0")),
+                        "average_volume": volume,
                     })
-                
+
                 processed_data.append(price_entry)
 
             except (ValueError, TypeError, KeyError) as e:
