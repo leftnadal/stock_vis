@@ -1,0 +1,9 @@
+# Engineering Knowledge Base Dependencies
+
+# Pinecone - 벡터 데이터베이스
+pinecone>=3.0.0
+
+# Sentence Transformers - 임베딩 생성
+sentence-transformers>=2.2.0
+
+# 참고: torch는 sentence-transformers 설치 시 자동 설치됨

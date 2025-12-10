@@ -17,8 +17,111 @@ from dotenv import load_dotenv
 # .env 파일 로드
 load_dotenv()
 
-## ALPHA_VANTAGE API KEY
+## API Keys
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+FMP_API_KEY = os.getenv('FMP_API_KEY')
+FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
+MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
+FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
+
+# ============================================================
+# Stock Data Provider Configuration
+# ============================================================
+# Provider 선택: "alpha_vantage" 또는 "fmp"
+# 각 엔드포인트별로 다른 provider를 사용할 수 있습니다.
+# 환경변수로 오버라이드 가능합니다.
+
+STOCK_PROVIDERS = {
+    # Feature Flags - 환경변수로 오버라이드 가능
+    'quote': os.getenv('STOCK_PROVIDER_QUOTE', 'alpha_vantage'),
+    'profile': os.getenv('STOCK_PROVIDER_PROFILE', 'alpha_vantage'),
+    'daily_prices': os.getenv('STOCK_PROVIDER_DAILY_PRICES', 'alpha_vantage'),
+    'weekly_prices': os.getenv('STOCK_PROVIDER_WEEKLY_PRICES', 'alpha_vantage'),
+    'balance_sheet': os.getenv('STOCK_PROVIDER_BALANCE_SHEET', 'alpha_vantage'),
+    'income_statement': os.getenv('STOCK_PROVIDER_INCOME_STATEMENT', 'alpha_vantage'),
+    'cash_flow': os.getenv('STOCK_PROVIDER_CASH_FLOW', 'alpha_vantage'),
+    'search': os.getenv('STOCK_PROVIDER_SEARCH', 'alpha_vantage'),
+    'sector': os.getenv('STOCK_PROVIDER_SECTOR', 'alpha_vantage'),
+}
+
+# Provider 캐시 TTL (초)
+PROVIDER_CACHE_TTL = {
+    'quote': 300,           # 5분 - 실시간 시세
+    'profile': 86400,       # 24시간 - 회사 프로필
+    'daily_prices': 3600,   # 1시간 - 일별 가격
+    'weekly_prices': 3600,  # 1시간 - 주별 가격
+    'balance_sheet': 604800,      # 7일 - 대차대조표
+    'income_statement': 604800,   # 7일 - 손익계산서
+    'cash_flow': 604800,          # 7일 - 현금흐름표
+    'search': 1800,         # 30분 - 검색 결과
+    'sector': 3600,         # 1시간 - 섹터 성과
+}
+
+# Rate Limiting 설정
+PROVIDER_RATE_LIMITS = {
+    'alpha_vantage': {
+        'per_minute': 5,
+        'per_day': 500,
+        'request_delay': 12.0,  # 초
+    },
+    'fmp': {
+        'per_minute': 10,
+        'per_day': 250,
+        'request_delay': 0.5,  # 초
+    }
+}
+
+# Fallback Provider 활성화
+PROVIDER_FALLBACK_ENABLED = os.getenv('PROVIDER_FALLBACK_ENABLED', 'True').lower() == 'true'
+
+# ============================================================
+# News API Configuration
+# ============================================================
+
+# News Rate Limits
+NEWS_RATE_LIMITS = {
+    'finnhub': {
+        'per_minute': 60,          # Finnhub API: 60 calls/min (무료 티어)
+        'wait_seconds': 1,         # 요청 간 최소 대기 시간
+    },
+    'marketaux': {
+        'per_day': 100,            # Marketaux API: 100 calls/day (무료 티어)
+        'articles_per_request': 3, # 응답당 최대 기사 수 제한
+        'wait_seconds': 1,         # 요청 간 최소 대기 시간
+    },
+}
+
+# News Cache TTL (초)
+NEWS_CACHE_TTL = {
+    'stock_news': 3600,      # 1시간 - 종목별 뉴스 리스트
+    'trending': 300,         # 5분 - 트렌딩 뉴스
+    'sentiment': 900,        # 15분 - 감성 분석 결과
+    'entity': 1800,          # 30분 - 엔티티 추출 결과
+}
+
+# News API 우선순위 (1차: Finnhub, 2차: Marketaux)
+NEWS_PRIMARY_PROVIDER = os.getenv('NEWS_PRIMARY_PROVIDER', 'finnhub')
+NEWS_FALLBACK_PROVIDER = os.getenv('NEWS_FALLBACK_PROVIDER', 'marketaux')
+
+# ============================================================
+# Neo4j Configuration
+# ============================================================
+
+# Neo4j 연결 설정 (로컬 개발 환경 기본값)
+NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+NEO4J_USERNAME = os.getenv('NEO4J_USERNAME', 'neo4j')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'password')
+NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
+
+# Neo4j 연결 풀 설정
+NEO4J_CONNECTION_POOL = {
+    'max_connection_lifetime': 3600,  # 1시간
+    'max_connection_pool_size': 50,
+    'connection_acquisition_timeout': 60,
+}
+
+# Neo4j Aura (클라우드) 사용 여부
+NEO4J_USE_AURA = os.getenv('NEO4J_USE_AURA', 'False').lower() == 'true'
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -54,6 +157,8 @@ INSTALLED_APPS = [
     'stocks',
     'users',
     'analysis',
+    'news',
+    'macro',  # 거시경제 대시보드 (Market Pulse)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -100,8 +205,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'stock_vis',
+        'USER': os.getenv('DB_USER', 'byeongjinjeong'),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', '5432'),
+        'OPTIONS': {
+            'connect_timeout': 10,
+        },
     }
 }
 
