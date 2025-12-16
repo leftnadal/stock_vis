@@ -2072,3 +2072,78 @@ const pollSyncStatus = async () => {
 1. 경제 캘린더 대체 API 검토 (Investing.com 등)
 2. 섹터/환율/원자재 데이터 DB 저장 구현
 3. Market Pulse 데이터 캐싱 최적화
+
+---
+
+## 2025-12-16: RAG Analysis Phase 3 통합 완료
+
+### 작업 요약
+Phase 3 비용 최적화 컴포넌트를 통합한 `AnalysisPipelineFinal` 완성
+
+### 구현 내용
+
+#### 1. AnalysisPipelineFinal 생성 (`rag_analysis/services/pipeline.py`)
+모든 Phase 3 컴포넌트를 통합한 최종 파이프라인:
+- **Stage 0**: Semantic Cache (유사도 0.85 임계값)
+- **Stage 1**: Complexity Classifier (simple/moderate/complex)
+- **Stage 2**: Token Budget Manager (복잡도별 예산 할당)
+- **Stage 3**: Adaptive LLM (Gemini 2.5 Flash)
+- **Stage 4**: Cost Tracker (비용 추적 및 로깅)
+
+#### 2. Views 업데이트 (`rag_analysis/views.py`)
+- `ChatStreamView`에 `?pipeline=final` 파라미터 지원
+- 파이프라인 선택: lite, v2, final
+
+#### 3. Frontend 업데이트
+- `ragService.ts`: PipelineVersion 타입 추가, 기본값 'final'
+- `useSSEStream.ts`: complexity 상태 추가
+- `TokenUsageDisplay.tsx`: 복잡도 배지 표시
+
+#### 4. E2E 테스트 추가
+- `test_final_pipeline_complexity_classification`
+- `test_final_pipeline_token_budget_allocation`
+- `test_final_pipeline_with_cache_hit`
+- `test_final_pipeline_graceful_degradation`
+
+### 성능 목표 설정
+
+| 지표 | 설정 | 목표 |
+|------|------|------|
+| 캐시 히트율 | SIMILARITY_THRESHOLD=0.85 | ≥60% |
+| 응답 지연 | 스트리밍 방식 | <5초 |
+| 요청당 비용 | Gemini 2.5 Flash | ≤$0.001 |
+
+### 복잡도별 토큰 설정
+
+| 복잡도 | max_tokens | context 예산 | 예상 비용 |
+|--------|------------|-------------|----------|
+| simple | 800 | 400 | ~$0.0002 |
+| moderate | 1500 | 800 | ~$0.0004 |
+| complex | 2500 | 1500 | ~$0.0006 |
+
+### API 사용법
+```bash
+# Final 파이프라인 (기본값, 권장)
+POST /api/v1/rag/sessions/{id}/chat/stream/?pipeline=final
+
+# 모니터링
+GET /api/v1/rag/monitoring/usage/?hours=24
+GET /api/v1/rag/monitoring/cost/
+GET /api/v1/rag/monitoring/cache/
+```
+
+### 수정된 파일
+- `rag_analysis/services/pipeline.py` - AnalysisPipelineFinal 추가
+- `rag_analysis/services/__init__.py` - export 추가
+- `rag_analysis/views.py` - 파이프라인 선택 지원
+- `rag_analysis/tests/test_e2e.py` - E2E 테스트 추가
+- `frontend/services/ragService.ts` - pipeline 파라미터 추가
+- `frontend/hooks/useSSEStream.ts` - complexity 상태 추가
+- `frontend/components/rag/TokenUsageDisplay.tsx` - 복잡도 표시
+
+### 작업 완성도
+- **RAG Analysis Phase 3**: 100% ✅
+  - Week 1 (Semantic Cache): 100%
+  - Week 2 (Monitoring): 100%
+  - Week 3 (Cost Optimization): 100%
+  - Week 4 (Integration): 100%
