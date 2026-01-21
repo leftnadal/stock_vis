@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Plus, ListPlus, Loader2, AlertCircle } from 'lucide-react'
 import { watchlistService } from '@/services/watchlistService'
+import { AuthGuard } from '@/components/auth/AuthGuard'
 import WatchlistCard from '@/components/watchlist/WatchlistCard'
 import WatchlistItemRow from '@/components/watchlist/WatchlistItemRow'
 import WatchlistModal from '@/components/watchlist/WatchlistModal'
@@ -372,8 +373,10 @@ function WatchlistPageContent() {
 
 export default function WatchlistPage() {
   return (
-    <WatchlistErrorBoundary>
-      <WatchlistPageContent />
-    </WatchlistErrorBoundary>
+    <AuthGuard>
+      <WatchlistErrorBoundary>
+        <WatchlistPageContent />
+      </WatchlistErrorBoundary>
+    </AuthGuard>
   )
 }

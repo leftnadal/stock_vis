@@ -84,6 +84,39 @@ app.conf.beat_schedule = {
         'task': 'macro.tasks.cleanup_old_data',
         'schedule': crontab(hour=3, minute=0, day_of_week=0),
     },
+
+    # ============================================================
+    # RAG Analysis 태스크
+    # ============================================================
+
+    # Neo4j 헬스체크 (5분마다)
+    'neo4j-health-check': {
+        'task': 'rag_analysis.tasks.health_check_neo4j',
+        'schedule': crontab(minute='*/5'),
+    },
+
+    # ============================================================
+    # Semantic Cache 태스크
+    # ============================================================
+
+    # 만료된 캐시 정리 (매일 새벽 4시)
+    'cleanup-expired-semantic-cache': {
+        'task': 'rag_analysis.tasks.cleanup_expired_semantic_cache',
+        'schedule': crontab(hour=4, minute=0),
+    },
+
+    # 캐시 워밍 (매주 일요일 새벽 4시 30분)
+    'warm-semantic-cache': {
+        'task': 'rag_analysis.tasks.warm_semantic_cache',
+        'schedule': crontab(hour=4, minute=30, day_of_week=0),
+        'kwargs': {'limit': 100}
+    },
+
+    # 캐시 통계 조회 (매시간, 모니터링용)
+    'semantic-cache-stats': {
+        'task': 'rag_analysis.tasks.get_semantic_cache_stats',
+        'schedule': crontab(minute=0),
+    },
 }
 
 # 테스트 태스크 (선택적)

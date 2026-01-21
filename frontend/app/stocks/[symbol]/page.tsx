@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import StockChart from '@/components/stock/StockChart';
 import {
   Building2,
@@ -14,6 +15,7 @@ import {
   Newspaper,
   Info,
   Settings2,
+  Calculator,
 } from 'lucide-react';
 import UnitSelector from '@/components/financial/UnitSelector';
 import FormattedFinancialCell from '@/components/financial/FormattedFinancialCell';
@@ -34,10 +36,11 @@ import {
 import NewsList from '@/components/news/NewsList';
 import SentimentChart from '@/components/news/SentimentChart';
 import NewsDetailModal from '@/components/news/NewsDetailModal';
+import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 
-type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news';
+type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals';
 
-export default function StockDetailPage() {
+function StockDetailContent() {
   const params = useParams();
   const symbol = params?.symbol as string;
 
@@ -134,6 +137,7 @@ export default function StockDetailPage() {
     { id: 'balance-sheet' as TabType, label: 'Balance Sheet', icon: FileText },
     { id: 'income-statement' as TabType, label: 'Income Statement', icon: BarChart3 },
     { id: 'cash-flow' as TabType, label: 'Cash Flow', icon: DollarSign },
+    { id: 'other-fundamentals' as TabType, label: 'Other Fundamentals', icon: Calculator },
     { id: 'news' as TabType, label: 'Stock News', icon: Newspaper },
   ];
 
@@ -272,11 +276,22 @@ export default function StockDetailPage() {
             {activeTab === 'cash-flow' && (
               <FinancialTab symbol={symbol.toUpperCase()} type="cash-flow" />
             )}
+            {activeTab === 'other-fundamentals' && (
+              <OtherFundamentalsTab symbol={symbol.toUpperCase()} />
+            )}
             {activeTab === 'news' && <NewsTab symbol={symbol.toUpperCase()} />}
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StockDetailPage() {
+  return (
+    <AuthGuard>
+      <StockDetailContent />
+    </AuthGuard>
   );
 }
 

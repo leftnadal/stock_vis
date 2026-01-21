@@ -4,10 +4,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { User, Mail, Calendar, Shield, Edit2, Save, X } from 'lucide-react';
+import { AuthGuard } from '@/components/auth/AuthGuard';
 import axios from 'axios';
 
-export default function MyPage() {
-  const router = useRouter();
+function MyPageContent() {
   const { user, setUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,16 +20,13 @@ export default function MyPage() {
   });
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
+    if (user) {
+      setFormData({
+        nick_name: user.nick_name || '',
+        email: user.email || '',
+      });
     }
-
-    setFormData({
-      nick_name: user.nick_name || '',
-      email: user.email || '',
-    });
-  }, [user, router]);
+  }, [user]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -89,7 +86,11 @@ export default function MyPage() {
   };
 
   if (!user) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
   }
 
   return (
@@ -291,5 +292,13 @@ export default function MyPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MyPage() {
+  return (
+    <AuthGuard>
+      <MyPageContent />
+    </AuthGuard>
   );
 }

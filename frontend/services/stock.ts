@@ -226,13 +226,20 @@ export const stockService = {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_URL}/stocks/api/balance-sheet/${symbol}/?${params}`, {
+    const url = `${API_URL}/stocks/api/balance-sheet/${symbol}/?${params}`;
+    console.log('[DEBUG] Balance Sheet URL:', url);
+
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
+    console.log('[DEBUG] Balance Sheet Response:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[DEBUG] Balance Sheet Error Body:', errorText);
       throw new Error('Failed to fetch balance sheet');
     }
 
@@ -276,13 +283,20 @@ export const stockService = {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_URL}/stocks/api/cashflow/${symbol}/?${params}`, {
+    const url = `${API_URL}/stocks/api/cashflow/${symbol}/?${params}`;
+    console.log('[DEBUG] Cash Flow URL:', url);
+
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
+    console.log('[DEBUG] Cash Flow Response:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[DEBUG] Cash Flow Error Body:', errorText);
       throw new Error('Failed to fetch cash flow');
     }
 
@@ -304,5 +318,105 @@ export const stockService = {
 
     const data = await response.json();
     return data.results || [];
+  },
+
+  // Get key metrics (fundamental data)
+  async getKeyMetrics(
+    symbol: string,
+    period: 'annual' | 'quarterly' = 'annual',
+    limit: number = 5
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      period,
+      limit: limit.toString(),
+    });
+
+    const response = await fetch(`${API_URL}/stocks/api/key-metrics/${symbol}/?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch key metrics');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  // Get financial ratios
+  async getFinancialRatios(
+    symbol: string,
+    period: 'annual' | 'quarterly' = 'annual',
+    limit: number = 5
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      period,
+      limit: limit.toString(),
+    });
+
+    const response = await fetch(`${API_URL}/stocks/api/ratios/${symbol}/?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch financial ratios');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  // Get DCF valuation
+  async getDCF(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/dcf/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch DCF valuation');
+    }
+
+    const data = await response.json();
+    return data.data || null;
+  },
+
+  // Get investment rating
+  async getRating(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/rating/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch investment rating');
+    }
+
+    const data = await response.json();
+    return data.data || null;
+  },
+
+  // Get all fundamentals at once
+  async getAllFundamentals(symbol: string): Promise<any> {
+    const [keyMetrics, ratios, dcf, rating] = await Promise.allSettled([
+      this.getKeyMetrics(symbol, 'annual', 5),
+      this.getFinancialRatios(symbol, 'annual', 5),
+      this.getDCF(symbol),
+      this.getRating(symbol),
+    ]);
+
+    return {
+      symbol,
+      keyMetrics: keyMetrics.status === 'fulfilled' ? keyMetrics.value : [],
+      ratios: ratios.status === 'fulfilled' ? ratios.value : [],
+      dcf: dcf.status === 'fulfilled' ? dcf.value : null,
+      rating: rating.status === 'fulfilled' ? rating.value : null,
+    };
   },
 };

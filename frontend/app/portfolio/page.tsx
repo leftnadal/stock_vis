@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { portfolioService, Portfolio, PortfolioSummary as IPortfolioSummary } from '@/services/portfolio'
+import { AuthGuard } from '@/components/auth/AuthGuard'
 import PortfolioSummary from '@/components/portfolio/PortfolioSummary'
 import PortfolioStockCard from '@/components/portfolio/PortfolioStockCard'
 import PortfolioModal from '@/components/portfolio/PortfolioModal'
@@ -11,10 +12,7 @@ import PortfolioChart from '@/components/portfolio/PortfolioChart'
 import PortfolioTable from '@/components/portfolio/PortfolioTable'
 import { Plus, RefreshCw, PieChart, BarChart2, Grid, Table } from 'lucide-react'
 
-export default function PortfolioPage() {
-  const { isAuthenticated, loading: authLoading } = useAuth()
-  const router = useRouter()
-
+function PortfolioContent() {
   const [portfolios, setPortfolios] = useState<Portfolio[]>([])
   const [summary, setSummary] = useState<IPortfolioSummary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,12 +24,8 @@ export default function PortfolioPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/login')
-    } else if (isAuthenticated) {
-      loadPortfolioData()
-    }
-  }, [authLoading, isAuthenticated, router])
+    loadPortfolioData()
+  }, [])
 
   const loadPortfolioData = async () => {
     try {
@@ -77,16 +71,12 @@ export default function PortfolioPage() {
     loadPortfolioData()
   }
 
-  if (authLoading || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     )
-  }
-
-  if (!isAuthenticated) {
-    return null
   }
 
   // Transform portfolio data for PortfolioStockCard component
@@ -266,5 +256,13 @@ export default function PortfolioPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function PortfolioPage() {
+  return (
+    <AuthGuard>
+      <PortfolioContent />
+    </AuthGuard>
   )
 }

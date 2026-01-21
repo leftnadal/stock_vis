@@ -1,0 +1,8 @@
+# OAG KB (Ontology Augmented Generation Knowledge Base) Dependencies
+# Neo4j 기반 지식 그래프 시스템
+
+# Neo4j Python Driver
+neo4j>=5.0.0
+
+# (선택적) 시맨틱 검색용 임베딩
+# sentence-transformers>=2.2.0

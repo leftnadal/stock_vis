@@ -62,7 +62,8 @@ export const watchlistService = {
   // 관심종목 리스트 목록 조회
   async getWatchlists(): Promise<Watchlist[]> {
     const response = await api.get('/users/watchlist/')
-    return response.data
+    // API가 페이지네이션 형태로 응답하면 results를, 배열이면 그대로 반환
+    return response.data.results ?? response.data
   },
 
   // 관심종목 리스트 생성
@@ -112,6 +113,7 @@ export const watchlistService = {
   // 종목 상세 조회 (실시간 가격 포함)
   async getWatchlistStocks(watchlistId: number): Promise<WatchlistItem[]> {
     const response = await api.get(`/users/watchlist/${watchlistId}/stocks/`)
-    return response.data
+    // API가 페이지네이션 형태로 응답하면 results를, 배열이면 그대로 반환
+    return response.data.results ?? response.data
   },
 }

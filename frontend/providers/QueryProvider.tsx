@@ -13,9 +13,12 @@ export default function QueryProvider({ children }: QueryProviderProps) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60 * 1000, // 1분
+            staleTime: 5 * 60 * 1000, // 5분 - 거시경제 데이터는 빠르게 변하지 않음
+            gcTime: 30 * 60 * 1000,   // 30분 - 캐시를 오래 유지
             refetchOnWindowFocus: false,
-            retry: 1,
+            refetchOnReconnect: true, // 네트워크 재연결 시 리페치
+            retry: 2,
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
           },
         },
       })

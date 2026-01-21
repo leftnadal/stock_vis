@@ -21,6 +21,7 @@ poetry install
 
 # 환경 변수 (.env 파일)
 ALPHA_VANTAGE_API_KEY=your_key_here
+FMP_API_KEY=your_fmp_key_here  # Market Movers용
 DATABASE_URL=postgresql://user:password@localhost:5432/stock_vis
 
 # 데이터베이스
@@ -81,10 +82,12 @@ API Client → Processor → Service → Models/Views → REST API
 | 앱 | 역할 | URL |
 |----|------|-----|
 | stocks | 주가, 재무제표 데이터 | `/api/v1/stocks/*` |
-| users | 사용자, 포트폴리오 관리 | `/api/v1/users/*` |
+| users | 사용자, 포트폴리오 관리, Watchlist | `/api/v1/users/*` |
 | analysis | 기술적 지표, 시장 분석 | `/api/v1/analysis/*` |
 | macro | 거시경제 대시보드 (Market Pulse) | `/api/v1/macro/*` |
+| **graph_analysis** | **그래프 온톨로지 상관관계 분석 (Phase 1)** | `/api/v1/graph/*` |
 | rag_analysis | LLM 기반 분석 | `/api/v1/rag/*` |
+| **serverless** | **Market Movers 지표 (AWS 전환 예정)** | `/api/v1/serverless/*` |
 
 ### 모델 관계
 
@@ -138,6 +141,16 @@ User
 - `POST /api/v1/macro/sync/` - 데이터 동기화 시작
 - `GET /api/v1/macro/sync/status/` - 동기화 상태 확인
 
+### Market Movers (서버리스)
+
+- `GET /api/v1/serverless/movers?type=gainers&date=2026-01-07` - Market Movers 조회
+  - Query Params:
+    - `type`: 'gainers', 'losers', 'actives' (필수)
+    - `date`: YYYY-MM-DD 형식 (선택, 기본값: 오늘)
+  - Response: TOP 20 종목 + 5개 지표
+    - **Phase 1 지표**: RVOL (거래량 배수), Trend Strength (추세 강도)
+    - **Phase 2 지표**: Sector Alpha (섹터 초과수익), ETF Sync Rate (ETF 동행률), Volatility Percentile (변동성 백분위)
+
 ---
 
 ## 코딩 규칙
@@ -173,9 +186,37 @@ User
 - 요청 간 12초 대기 필수
 - 응답: camelCase → Processor가 snake_case로 변환
 
+### FMP (Financial Modeling Prep)
+
+**Market Movers 전용 API**
+
+- **플랜**: Starter Plan 사용
+- **Rate Limit**: 10 calls/분, 250 calls/일
+- **엔드포인트**: `/stable/*` 경로 사용 (Legacy `/api/v3/*` 더 이상 지원 안 함)
+- **주요 API**:
+  - `/stable/biggest-gainers` - 상승 TOP 종목
+  - `/stable/biggest-losers` - 하락 TOP 종목
+  - `/stable/most-actives` - 거래량 TOP 종목
+  - `/stable/quote?symbol=AAPL` - 실시간 시세 (volume 포함)
+  - `/stable/historical-price-eod/full?symbol=AAPL` - 히스토리 OHLCV
+  - `/stable/profile?symbol=AAPL` - 기업 프로필 (섹터 정보)
+- **캐싱**: Redis 5분~24시간 (엔드포인트별 상이)
+- **섹터 ETF 매핑**:
+  ```python
+  SECTOR_ETF_MAP = {
+      'Technology': 'XLK',
+      'Financial Services': 'XLF',
+      'Healthcare': 'XLV',
+      'Consumer Cyclical': 'XLY',
+      'Industrials': 'XLI',
+      'Energy': 'XLE',
+      # ... 총 11개 섹터
+  }
+  ```
+
 ### yfinance (Yahoo Finance)
 
-FMP API 대체용 - 무료, Rate limit 없음
+Market Pulse 전용 - 무료, Rate limit 없음
 
 ```python
 # 주요 심볼
@@ -197,6 +238,10 @@ FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
 | 거시경제 지표 | 3600초 | FRED 데이터 |
 | Watchlist 목록 | 300초 | 사용자별 캐시 키 |
 | Watchlist 종목 | 60초 | 실시간 가격 포함 |
+| **Market Movers 리스트** | **300초** | **FMP Gainers/Losers/Actives** |
+| **FMP Quote** | **60초** | **실시간 시세** |
+| **FMP Historical** | **3600초** | **OHLCV 히스토리** |
+| **FMP Profile** | **86400초** | **섹터 정보 (24시간)** |
 
 ---
 
@@ -210,6 +255,280 @@ FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
 6. **SSE Async Loop 충돌**: Django ASGI(Daphne)에서 동기 뷰 내 `asyncio.new_event_loop()` 사용 시 연결 끊김
    - 증상: "Application instance took too long to shut down" 에러, 요청 pending
    - 해결: 비동기 이벤트를 먼저 수집 후 동기적으로 yield하거나, 완전한 async 뷰 사용
+7. **FMP API volume 데이터 누락**: `/stable/biggest-gainers` 응답에 `volume` 필드 없음
+   - 증상: RVOL이 0.00x로 계산됨
+   - 해결: `item.get('volume')` 대신 `quote.get('volume')` 사용
+   - 참고: Market Movers 엔드포인트는 volume 미제공, Quote API에서 별도 조회 필요
+
+---
+
+## Market Movers 5개 지표 시스템
+
+### 지표 설명
+
+| 지표 | 계산 방식 | 해석 | Phase |
+|------|----------|------|-------|
+| **RVOL** | 당일 거래량 / 20일 평균 | 2.0 이상: 비정상적 관심도<br>1.5~2.0: 높은 관심<br>1.0 미만: 평균 이하 | Phase 1 |
+| **Trend Strength** | (종가-시가) / (고가-저가) | +0.7 이상: 강한 상승<br>-0.7 이하: 강한 하락<br>0 전후: 횡보 | Phase 1 |
+| **Sector Alpha** | 종목 수익률 - 섹터 ETF 수익률 | 양수: 섹터 평균 초과<br>음수: 섹터 평균 미달 | Phase 2 |
+| **ETF Sync Rate** | 피어슨 상관계수(종목, 섹터 ETF) | 0.8 이상: 강한 동조<br>0.5~0.8: 중간<br>0.5 미만: 독립적 움직임 | Phase 2 |
+| **Volatility %ile** | 당일 변동성의 백분위 (0-100) | 90 이상: 매우 높은 변동성<br>50 전후: 평균<br>10 이하: 낮은 변동성 | Phase 2 |
+
+### Market Movers 아키텍처
+
+```
+FMP API (/stable/*)
+    │
+    ├─ biggest-gainers ────┐
+    ├─ biggest-losers ─────┤
+    └─ most-actives ───────┤
+                           │
+                           ▼
+              MarketMoversSync (data_sync.py)
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+    FMP Quote      FMP Historical      FMP Profile
+    (volume)         (20일 OHLC)        (섹터 정보)
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+                           │
+                           ▼
+              IndicatorCalculator (순수 Python)
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+    Phase 1 지표      Phase 2 지표      Display 포맷
+    (RVOL, Trend)   (Alpha, Sync, Vol)  (2.5x, ▲0.83 등)
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+                           │
+                           ▼
+                    PostgreSQL (MarketMover 모델)
+                           │
+                           ▼
+                  REST API (/api/v1/serverless/movers)
+                           │
+                           ▼
+                Frontend (MoverCard 컴포넌트)
+```
+
+### Celery Beat 스케줄
+
+```python
+CELERY_BEAT_SCHEDULE = {
+    'sync-market-movers': {
+        'task': 'serverless.tasks.sync_daily_market_movers',
+        'schedule': crontab(hour=7, minute=30),  # 매일 07:30 EST
+        'options': {'expires': 3600}  # 1시간 후 만료
+    }
+}
+```
+
+### 테스트 커버리지
+
+- **파일**: `tests/serverless/test_indicators.py`
+- **테스트 수**: 21개
+- **커버리지**: 100% (21/21 passed)
+- **테스트 대상**:
+  - Phase 1 지표 계산 (6개)
+  - Phase 2 지표 계산 (9개)
+  - Display 포맷터 (5개)
+  - Edge cases (데이터 부족, 0 나누기 등)
+
+---
+
+## Graph Analysis (그래프 온톨로지) - Phase 1
+
+### 개요
+
+주식 간 가격 변동 상관관계를 그래프 네트워크로 분석하는 시스템. 사용자 Watchlist의 종목들을 노드로, 상관계수를 엣지로 표현하여 실시간 모니터링.
+
+### 핵심 개념
+
+| 개념 | 설명 | 기술 |
+|------|------|------|
+| **Node** | Watchlist 내 각 종목 | Stock 모델 |
+| **Edge** | 두 종목 간 상관계수 | CorrelationEdge 모델 |
+| **Correlation** | 3개월 가격 변동 상관성 | Pearson correlation (pandas) |
+| **Anomaly** | ±0.2 이상 상관계수 변화 | AnomalyDetector |
+| **Graph** | NetworkX 네트워크 그래프 | NetworkX library |
+
+### 계산 파라미터
+
+```python
+DEFAULT_PERIOD_DAYS = 90  # 3개월 rolling window
+MIN_DATA_POINTS = 20  # 최소 20일 데이터 필요
+ANOMALY_THRESHOLD = 0.2  # ±0.2 변화 감지
+MAX_ALERTS_PER_DAY = 5  # 일일 최대 알림 5개
+COOLDOWN_HOURS = 24  # 동일 페어 24시간 쿨다운
+```
+
+### 데이터베이스 모델
+
+**CorrelationMatrix** - 전체 상관계수 행렬
+```python
+{
+    watchlist: FK(Watchlist),
+    date: DateField,
+    matrix_data: JSONField,  # {AAPL: {MSFT: 0.85, GOOGL: 0.72}}
+    stock_count: Integer,
+    calculation_period: Integer (default: 90)
+}
+```
+
+**CorrelationEdge** - 개별 상관관계
+```python
+{
+    watchlist: FK(Watchlist),
+    stock_a: FK(Stock),
+    stock_b: FK(Stock),
+    date: DateField,
+    correlation: Decimal(-1.0 ~ 1.0),
+    previous_correlation: Decimal,
+    correlation_change: Decimal,
+    is_anomaly: Boolean
+}
+```
+
+**CorrelationAnomaly** - 이상 패턴
+```python
+{
+    watchlist: FK(Watchlist),
+    edge: FK(CorrelationEdge),
+    date: DateField,
+    anomaly_type: Choice('divergence', 'convergence', 'reversal'),
+    previous_correlation: Decimal,
+    current_correlation: Decimal,
+    change_magnitude: Decimal,
+    alerted: Boolean,
+    dismissed: Boolean
+}
+```
+
+**PriceCache** - 가격 데이터 캐싱
+```python
+{
+    stock: FK(Stock),
+    date: DateField,
+    prices: JSONField,  # 90일 가격 [{date, close}]
+    period_days: Integer (default: 90)
+}
+```
+
+**GraphMetadata** - 계산 메타데이터
+```python
+{
+    watchlist: FK(Watchlist),
+    date: DateField,
+    stock_count: Integer,
+    edge_count: Integer,
+    anomaly_count: Integer,
+    calculation_time_ms: Integer,
+    status: Choice('pending', 'processing', 'completed', 'failed')
+}
+```
+
+### Services
+
+**CorrelationCalculator** (`graph_analysis/services/correlation_calculator.py`)
+- 3개월 rolling correlation 계산
+- NetworkX 그래프 생성
+- 가격 데이터 캐싱 (PostgreSQL + Redis)
+- 평균 계산 시간: < 100ms (50개 종목)
+
+```python
+from graph_analysis.services import CorrelationCalculator
+
+# Usage
+calculator = CorrelationCalculator(watchlist, period_days=90)
+matrix = calculator.calculate_correlation_matrix()
+graph = calculator.build_network_graph()
+```
+
+**AnomalyDetector** (`graph_analysis/services/anomaly_detector.py`)
+- ±0.2 변화 감지
+- 3가지 anomaly 타입 분류:
+  - **Divergence**: 상관계수 약화
+  - **Convergence**: 상관계수 강화
+  - **Reversal**: 부호 변경 (positive ↔ negative)
+- 24시간 쿨다운 로직
+- 일일 최대 5개 알림
+
+```python
+from graph_analysis.services import AnomalyDetector
+
+# Usage
+detector = AnomalyDetector(watchlist, detection_date=today)
+anomalies = detector.detect_anomalies()
+pending_alerts = detector.get_pending_alerts()
+```
+
+### API 엔드포인트 (예정)
+
+```bash
+GET  /api/v1/graph/{watchlist_id}/correlation-matrix/  # 상관계수 행렬
+GET  /api/v1/graph/{watchlist_id}/anomalies/           # 이상 패턴
+GET  /api/v1/graph/{watchlist_id}/network/             # NetworkX 그래프 (JSON)
+POST /api/v1/graph/{watchlist_id}/calculate/           # 수동 계산 트리거
+```
+
+### Celery 태스크 (예정)
+
+```python
+# config/celery.py 스케줄 추가
+from celery.schedules import crontab
+
+CELERYBEAT_SCHEDULE = {
+    'compute-daily-correlations': {
+        'task': 'graph_analysis.tasks.compute_all_correlations',
+        'schedule': crontab(hour=16, minute=15),  # 16:15 ET (장 종료 후)
+        'options': {'expires': 3600}
+    }
+}
+```
+
+### 상관계수 해석
+
+| 값 | 강도 | 의미 |
+|----|------|------|
+| 0.8 ~ 1.0 | Very Strong | 거의 동일한 움직임 |
+| 0.6 ~ 0.8 | Strong | 강한 동조 |
+| 0.4 ~ 0.6 | Moderate | 중간 수준 관련성 |
+| 0.2 ~ 0.4 | Weak | 약한 관련성 |
+| -0.2 ~ 0.2 | Very Weak | 관련성 없음 |
+| -0.4 ~ -0.2 | Weak Negative | 약한 역관계 |
+| -1.0 ~ -0.4 | Negative | 역관계 |
+
+### Phase 1 목표 (6주)
+
+- ✅ Week 1-2: PostgreSQL 스키마, Django 모델, migrations
+- ✅ Week 1-2: NetworkX 상관계수 계산 엔진
+- ⏳ Week 3-4: REST API 엔드포인트, Frontend 그래프 시각화 (D3.js)
+- ⏳ Week 5-6: 이상 감지 알림, 테스트 작성 (단위/통합)
+
+### 외부 API
+
+**EODHD Historical Data** (`api_request/eodhd_client.py`)
+- Bulk EOD API: 5,000+ US 종목 일괄 다운로드
+- Cost: $19.99/월 (Basic Plan)
+- No rate limits
+- CSV (GZIP) 포맷
+- 30초~2분 (bulk download)
+
+```python
+from api_request.eodhd_client import EODHDClient
+
+client = EODHDClient()
+# Bulk download all US stocks
+bulk_data = client.get_bulk_eod_data(exchange='US', date=today)
+# Returns: [{symbol, date, open, high, low, close, volume}, ...]
+```
+
+### 참고 문서
+
+- Phase 1 설계: `docs/GRAPH_ONTOLOGY_INFRA_REDESIGN.md`
+- 데이터 인프라 평가: `docs/DATA_INFRASTRUCTURE_ROADMAP_EVALUATION.md`
 
 ---
 
@@ -219,12 +538,14 @@ FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
 
 | 에이전트 | 담당 영역 |
 |---------|----------|
-| @backend | stocks/, users/, analysis/, API_request/ |
+| @backend | stocks/, users/, analysis/, API_request/, **serverless/** |
 | @frontend | frontend/ 전체 |
 | @rag-llm | rag_analysis/ 전체 |
 | @infra | */tasks.py, */consumers.py, config/, docker/ |
 | @qa | tests/, docs/ |
 | @investment-advisor | 투자 도메인 콘텐츠 |
+
+**참고**: serverless/ 앱은 백엔드 에이전트가 담당하지만, AWS Lambda 전환 시 인프라 에이전트와 협업 필요
 
 ### 워크플로우
 
@@ -286,8 +607,20 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
 - ✅ yfinance 글로벌 시장 데이터
 - ✅ Watchlist 관심종목 관리 (목표가, 메모, 실시간 가격)
 - ✅ RAG Analysis Phase 3 (Semantic Cache, Cost Optimization)
+- ✅ **Market Movers (Phase 1 + Phase 2)**
+  - ✅ **5개 지표 시스템**: RVOL, Trend Strength, Sector Alpha, ETF Sync Rate, Volatility Percentile
+  - ✅ **FMP API 통합**: Gainers/Losers/Actives TOP 20
+  - ✅ **Celery Beat 스케줄**: 매일 07:30 EST 자동 동기화
+  - ✅ **유닛 테스트**: 21개 테스트 (100% 통과)
+  - ⏳ **Phase 3: AWS Lambda 전환** (보류)
+- ✅ **Graph Analysis (Phase 1 Week 1-2)**
+  - ✅ **PostgreSQL 스키마**: CorrelationMatrix, CorrelationEdge, CorrelationAnomaly, PriceCache, GraphMetadata
+  - ✅ **NetworkX 상관계수 계산 엔진**: 3개월 rolling window, ±0.2 anomaly detection
+  - ✅ **EODHD API Client**: Bulk EOD data download (5,000+ US stocks)
+  - ✅ **Services**: CorrelationCalculator, AnomalyDetector
+  - ⏳ **REST API 엔드포인트**: Week 3-4 예정
+  - ⏳ **Frontend 그래프 시각화 (D3.js)**: Week 3-4 예정
 - ⏳ ML/DL 모델 통합
-- ⏳ PostgreSQL 마이그레이션
 
 ---
 

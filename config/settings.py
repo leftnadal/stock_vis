@@ -19,10 +19,13 @@ load_dotenv()
 
 ## API Keys
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
+EODHD_API_KEY = os.getenv('EODHD_API_KEY', '')  # EODHD Historical Data
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
 MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
 FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
 # ============================================================
 # Stock Data Provider Configuration
@@ -159,6 +162,9 @@ INSTALLED_APPS = [
     'analysis',
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
+    'graph_analysis',  # 그래프 온톨로지 분석 (Phase 1)
+    'rag_analysis',  # RAG 기반 AI 분석
+    'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -391,5 +397,18 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             "hosts": [('127.0.0.1', 6379)],
         },
+    },
+}
+
+# Celery Beat 스케줄
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    'sync-market-movers': {
+        'task': 'serverless.tasks.sync_daily_market_movers',
+        'schedule': crontab(hour=7, minute=30),  # 매일 07:30 (EST)
+        'options': {
+            'expires': 3600,  # 1시간 후 만료
+        }
     },
 }

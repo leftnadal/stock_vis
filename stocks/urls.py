@@ -3,6 +3,10 @@ from . import views
 from . import views_mvp  # MVP용 뷰 추가
 from . import views_indicators  # 기술적 지표 뷰 추가
 from . import views_search  # 종목 검색 뷰 추가
+from . import views_market_movers  # Market Movers 뷰 추가
+from . import views_fundamentals  # Fundamentals 뷰 추가
+from . import views_screener  # Stock Screener 뷰 추가
+from . import views_exchange  # Exchange Quotes 뷰 추가
 
 app_name = 'stocks'
 
@@ -65,4 +69,59 @@ urlpatterns = [
 
     # 인기 종목 리스트
     path('api/search/popular/', views_search.PopularSymbolsView.as_view(), name='popular_symbols'),
+
+    ## Market Movers API 엔드포인트
+    # 시장 주도 종목 (상승/하락/거래량 TOP)
+    path('api/market-movers/', views_market_movers.MarketMoversView.as_view(), name='market_movers'),
+
+    ## Fundamentals API 엔드포인트
+    # 핵심 재무 지표
+    path('api/fundamentals/key-metrics/<str:symbol>/', views_fundamentals.KeyMetricsView.as_view(), name='key_metrics'),
+
+    # 재무 비율
+    path('api/fundamentals/ratios/<str:symbol>/', views_fundamentals.RatiosView.as_view(), name='ratios'),
+
+    # DCF 분석
+    path('api/fundamentals/dcf/<str:symbol>/', views_fundamentals.DCFView.as_view(), name='dcf'),
+
+    # 투자 등급
+    path('api/fundamentals/rating/<str:symbol>/', views_fundamentals.RatingView.as_view(), name='rating'),
+
+    # 전체 펀더멘털 데이터 (한 번에)
+    path('api/fundamentals/all/<str:symbol>/', views_fundamentals.AllFundamentalsView.as_view(), name='all_fundamentals'),
+
+    ## Stock Screener API 엔드포인트
+    # 조건별 종목 검색
+    path('api/screener/', views_screener.StockScreenerView.as_view(), name='stock_screener'),
+
+    # 대형주 스크리너
+    path('api/screener/large-cap/', views_screener.LargeCapStocksView.as_view(), name='large_cap_stocks'),
+
+    # 고배당주 스크리너
+    path('api/screener/high-dividend/', views_screener.HighDividendStocksView.as_view(), name='high_dividend_stocks'),
+
+    # 섹터별 종목 스크리너
+    path('api/screener/sector/<str:sector>/', views_screener.SectorStocksView.as_view(), name='sector_stocks'),
+
+    # 저변동성 종목 스크리너
+    path('api/screener/low-beta/', views_screener.LowBetaStocksView.as_view(), name='low_beta_stocks'),
+
+    # 거래소별 종목 스크리너
+    path('api/screener/exchange/<str:exchange>/', views_screener.ExchangeStocksView.as_view(), name='exchange_stocks'),
+
+    ## Exchange Quotes API 엔드포인트
+    # 주요 지수 시세
+    path('api/quotes/index/', views_exchange.IndexQuotesView.as_view(), name='index_quotes'),
+
+    # 개별 종목 실시간 시세
+    path('api/quotes/<str:symbol>/', views_exchange.StockQuoteView.as_view(), name='stock_quote'),
+
+    # 여러 종목 일괄 시세 조회
+    path('api/quotes/batch/', views_exchange.BatchQuotesView.as_view(), name='batch_quotes'),
+
+    # 주요 3대 지수 (S&P 500, NASDAQ, Dow Jones)
+    path('api/quotes/major-indices/', views_exchange.MajorIndicesView.as_view(), name='major_indices'),
+
+    # 섹터 성과 (섹터 ETF 기반)
+    path('api/quotes/sector-performance/', views_exchange.SectorPerformanceView.as_view(), name='sector_performance'),
 ]

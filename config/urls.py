@@ -33,6 +33,8 @@ urlpatterns = [
     path('api/v1/analysis/', include("analysis.urls")),
     path('api/v1/news/', include("news.api.urls")),
     path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
+    path('api/v1/rag/', include("rag_analysis.urls")),  # RAG 분석
+    path('api/v1/serverless/', include("serverless.urls")),  # Market Movers (AWS 전환 대상)
 
     # Provider Admin API
     path('api/v1/', include('api_request.urls')),

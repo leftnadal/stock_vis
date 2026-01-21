@@ -1,5 +1,8 @@
 // 주식 관련 타입 정의
 
+// Re-export fundamentals types
+export * from './fundamentals';
+
 export interface Stock {
   symbol: string;
   stock_name: string;

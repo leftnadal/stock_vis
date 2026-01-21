@@ -193,7 +193,7 @@ class StockChartDataAPIView(APIView):
     주식 차트 데이터 API (짧은 캐싱 적용)
     - 표준 기간 옵션 (1d, 5d, 1m, 3m, 6m, 1y, 2y, 5y, max) + 커스텀 일수 모두 지원
     - 일일/주간 가격 데이터 제공
-    - 사용자 친화적이면서 유연한 API
+    - 로컬 DB에 없는 종목은 FMP API Fallback
     """
     ## 표준 기간 옵션 정의
     PERIOD_MAPPING = {
@@ -212,7 +212,9 @@ class StockChartDataAPIView(APIView):
         """
         차트 데이터 GET 요청 처리 (짧은 캐싱 적용)
         - URL 경로에서 symbol을 받고, 쿼리 파라미터로 period와 range를 처리
+        - 로컬 DB에 없는 종목은 FMP API Fallback
         """
+        symbol = symbol.upper()
         try:
             ## 파라미터 처리: 표준 기간 vs 커스텀 일수
             chart_type = request.GET.get('type', 'daily').lower()
@@ -220,66 +222,132 @@ class StockChartDataAPIView(APIView):
             custom_days = request.GET.get('days')
 
             ## 캐싱 키 생성 (모든 파라미터 포함)
-            # - 차트 타입, 기간, 커스텀 일수를 모두 포함하여 정확한 캐싱
-            cache_key = f"chart_{symbol.upper()}_{chart_type}_{period_param}"
+            cache_key = f"chart_{symbol}_{chart_type}_{period_param}"
             if custom_days:
                 cache_key += f"_{custom_days}"
-            
+
             ## 캐시에서 먼저 확인
             cached_data = cache.get(cache_key)
             if cached_data:
                 logger.info(f"Cache hit for chart: {symbol} ({chart_type}, {period_param})")
                 return Response(cached_data, status=status.HTTP_200_OK)
-            
-            ## 캐시에 없으면 실제 데이터 조회
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
 
             ## 날짜범위 계산
             end_date = datetime.now().date()
             start_date, period_display = self._calculate_date_range(period_param, custom_days, end_date)
 
-            # 차트타입에 따른 데이터 조회
-            if chart_type == "weekly":
-                price_data = self._get_weekly_data(stock, start_date, end_date)
-                serializer = WeeklyChartDataSerializer(price_data, many=True)
+            ## 로컬 DB 조회 (우선)
+            stock = Stock.objects.filter(symbol=symbol).first()
+
+            if stock:
+                # 로컬 DB에서 데이터 조회
+                if chart_type == "weekly":
+                    price_data = self._get_weekly_data(stock, start_date, end_date)
+                    serializer = WeeklyChartDataSerializer(price_data, many=True)
+                else:
+                    price_data = self._get_daily_data(stock, start_date, end_date)
+                    serializer = ChartDataSerializer(price_data, many=True)
+
+                response_data = {
+                    'symbol': symbol,
+                    'period': period_display,
+                    'chart_type': chart_type,
+                    'data': serializer.data,
+                    'count': price_data.count(),
+                    'start_date': start_date.isoformat() if start_date else None,
+                    'end_date': end_date.isoformat(),
+                    'available_periods': list(self.PERIOD_MAPPING.keys())
+                }
+                cache_ttl = 60  # 1분
             else:
-                price_data = self._get_daily_data(stock, start_date, end_date)
-                serializer = ChartDataSerializer(price_data, many=True)
-                        ## 응답 데이터 구성
-            response_data = {
-                'symbol': symbol.upper(),
-                'period': period_display,
-                'chart_type': chart_type,
-                'data': serializer.data,
-                'count': price_data.count(),
-                'start_date': start_date.isoformat() if start_date else None,
-                'end_date': end_date.isoformat(),
-                'available_periods': list(self.PERIOD_MAPPING.keys())
-            }
-            
-            ## 캐시에 저장 (1분 = 60초)
-            # - 차트 데이터는 실시간성이 중요하므로 짧은 캐싱만 적용
-            # - 하지만 동일한 요청이 반복될 경우 DB 부하 감소 효과
-            cache.set(cache_key, response_data, 60)
-            logger.info(f"Cache set for chart: {symbol} ({chart_type}, {period_param})")
-            
+                # FMP API Fallback
+                response_data = self._get_fmp_chart_data(symbol, period_display, chart_type, start_date, end_date)
+                if response_data is None:
+                    return Response({
+                        'error': f'종목 {symbol}의 차트 데이터를 찾을 수 없습니다.'
+                    }, status=status.HTTP_404_NOT_FOUND)
+                cache_ttl = 120  # FMP는 2분
+
+            ## 캐시에 저장
+            cache.set(cache_key, response_data, cache_ttl)
+            logger.info(f"Cache set for chart: {symbol} ({chart_type}, {period_param}) source={'db' if stock else 'fmp'}")
+
             return Response(response_data, status=status.HTTP_200_OK)
 
-
         except ValueError as e:
-            # 파라미터 관련 오류 (사용자 실수)
             logger.info(f"Invalid chart parameter: {e}, symbol: {symbol}")
             return Response({
                 'error': f'잘못된 파라미터입니다: {str(e)}',
                 'available_periods': list(self.PERIOD_MAPPING.keys())
             }, status=status.HTTP_400_BAD_REQUEST)
-            
+
         except Exception as e:
-            # 예상치 못한 서버 오류
             logger.error(f"Chart data error for {symbol}: {e}", exc_info=True)
             return Response({
                 'error': f'데이터 조회 중 오류가 발생했습니다: {str(e)}'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def _get_fmp_chart_data(self, symbol, period_display, chart_type, start_date, end_date):
+        """FMP API에서 차트 데이터 조회"""
+        import httpx
+        from django.conf import settings
+
+        api_key = settings.FMP_API_KEY
+        if not api_key:
+            return None
+
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                response = client.get(
+                    "https://financialmodelingprep.com/stable/historical-price-eod/full",
+                    params={"symbol": symbol, "apikey": api_key}
+                )
+                response.raise_for_status()
+                fmp_data = response.json()
+
+            if not isinstance(fmp_data, list) or len(fmp_data) == 0:
+                return None
+
+            # 날짜 필터링
+            filtered_data = []
+            for item in fmp_data:
+                try:
+                    item_date = datetime.strptime(item['date'], '%Y-%m-%d').date()
+                    if start_date and item_date < start_date:
+                        continue
+                    if item_date > end_date:
+                        continue
+                    filtered_data.append(item)
+                except (ValueError, KeyError):
+                    continue
+
+            # FMP 데이터를 차트 형식으로 변환
+            chart_data = []
+            for item in filtered_data:
+                chart_data.append({
+                    'time': item.get('date'),
+                    'open': item.get('open', 0),
+                    'high': item.get('high', 0),
+                    'low': item.get('low', 0),
+                    'close': item.get('close', 0),
+                    'volume': item.get('volume', 0),
+                })
+
+            return {
+                'symbol': symbol,
+                'period': period_display,
+                'chart_type': chart_type,
+                'data': chart_data,
+                'count': len(chart_data),
+                'start_date': start_date.isoformat() if start_date else None,
+                'end_date': end_date.isoformat(),
+                'available_periods': list(self.PERIOD_MAPPING.keys()),
+                '_source': 'fmp_historical'
+            }
+
+        except Exception as e:
+            logger.error(f"FMP chart data error for {symbol}: {e}")
+            return None
     
     def _get_daily_data(self, stock, start_date, end_date):
         """일간 데이터 조회"""
@@ -350,6 +418,7 @@ class StockOverviewAPIView(APIView):
     """
     주식 개요 탭 데이터 API(캐싱 적용)
     - 주식의 전반적인 정보 (재무비율, 기술적 지표, 분석가 의견 등)
+    - 로컬 DB에 없는 종목은 FMP API에서 실시간 조회
     """
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -357,38 +426,78 @@ class StockOverviewAPIView(APIView):
         """
         ## Overview 데이터 GET 요청 처리(캐싱 적용)
         # - 주식의 전반적인 정보를 OverviewTabSerializer로 직렬화하여 제공
+        # - 로컬 DB에 없는 종목은 FMP API Fallback
         """
+        symbol = symbol.upper()
+
         ## 캐싱 키 생성
-        cache_key = f"stock_overview_{symbol.upper()}"
-        
+        cache_key = f"stock_overview_{symbol}"
+
         ## 캐시에서 먼저 확인
         cached_data = cache.get(cache_key)
         if cached_data:
             logger.info(f"Cache hit for overview: {symbol}")
             return Response(cached_data, status=status.HTTP_200_OK)
+
         try:
-            ## 주식정보 조회
-            # - Overview 탭에 표시할 주식의 상세 정보
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
+            ## 주식정보 조회 (로컬 DB 우선)
+            stock = Stock.objects.filter(symbol=symbol).first()
 
-            ## 직렬화
-            # - 주식의 모든 정보를 json화 시킴.
-            serializer = OverviewTabSerializer(stock)
+            if stock:
+                ## 직렬화
+                serializer = OverviewTabSerializer(stock)
+                response_data = {
+                    'symbol': symbol,
+                    'tab': 'overview',
+                    'data': serializer.data,
+                }
+            else:
+                ## FMP API Fallback (로컬 DB에 없는 종목)
+                from .services.fmp_exchange_quotes import FMPExchangeQuotesService
+                fmp_service = FMPExchangeQuotesService()
+                quote_data = fmp_service.get_quote(symbol)
 
-            ## 응답 데이터 구성
-            response_data = {
-                'symbol': symbol.upper(),
-                'tab': 'overview',
-                'data': serializer.data,
-            }
-            
-            ## 캐시에 저장 (10분 = 600초)
-            # - 기본 정보와 가격 정보가 섞여있어서 중간 정도의 캐싱 시간 적용
-            cache.set(cache_key, response_data, 600)
-            logger.info(f"Cache set for overview: {symbol}")
-            
+                if not quote_data:
+                    return Response({
+                        'error': f'종목 {symbol}을(를) 찾을 수 없습니다.'
+                    }, status=status.HTTP_404_NOT_FOUND)
+
+                ## FMP 데이터를 Overview 형식으로 변환
+                # Stable API 필드명: changePercentage (Legacy: changesPercentage)
+                change_pct = quote_data.get('changePercentage') or quote_data.get('changesPercentage', 0)
+                response_data = {
+                    'symbol': symbol,
+                    'tab': 'overview',
+                    'data': {
+                        'symbol': symbol,
+                        'stock_name': quote_data.get('name', symbol),
+                        'real_time_price': quote_data.get('price', 0),
+                        'change': quote_data.get('change', 0),
+                        'change_percent': f"{change_pct:+.2f}%" if change_pct else "0.00%",
+                        'previous_close': quote_data.get('previousClose', 0),
+                        'open_price': quote_data.get('open', 0),
+                        'high_price': quote_data.get('dayHigh', 0),
+                        'low_price': quote_data.get('dayLow', 0),
+                        'volume': quote_data.get('volume', 0),
+                        'market_capitalization': quote_data.get('marketCap', 0),
+                        'pe_ratio': quote_data.get('pe', 0),
+                        'eps': quote_data.get('eps', 0),
+                        'week_52_high': quote_data.get('yearHigh', 0),
+                        'week_52_low': quote_data.get('yearLow', 0),
+                        'exchange': quote_data.get('exchange', ''),
+                        'avg_volume': quote_data.get('avgVolume') or quote_data.get('priceAvg50', 0),
+                        # FMP에서 가져온 데이터임을 표시
+                        '_source': 'fmp_realtime',
+                    },
+                }
+
+            ## 캐시에 저장 (10분 = 600초, FMP는 2분)
+            cache_ttl = 600 if stock else 120
+            cache.set(cache_key, response_data, cache_ttl)
+            logger.info(f"Cache set for overview: {symbol} (source: {'db' if stock else 'fmp'})")
+
             return Response(response_data, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.error(f"Overview data error for {symbol}: {e}")
             return Response({
@@ -401,62 +510,69 @@ class StockBalanceSheetAPIView(APIView):
     ## Balance Sheet 탭 데이터 API 뷰 (캐싱 적용)
     # - 대차대조표 데이터 제공 (연간/분기별 선택 가능)
     # - 재무제표 데이터는 자주 변하지 않으므로 1시간 캐싱 적용
+    # - Fallback 체인: 로컬 DB → FMP → Alpha Vantage → yfinance
     """
-    
+
     def get(self, request, symbol):
         """
         대차대조표 데이터 GET 요청 처리
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
+        symbol = symbol.upper()
 
         ## 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
 
         ## 캐싱 키 생성 (심볼, 기간, 제한수 포함)
-        # - 파라미터별로 다른 캐시 키 생성하여 정확한 캐싱
-        cache_key = f"balance_sheet_{symbol.upper()}_{period}_{limit}"
-        
+        cache_key = f"balance_sheet_{symbol}_{period}_{limit}"
+
         ## 캐시에서 먼저 확인
-        # - 캐시에 있으면 바로 반환하여 DB 조회 생략
         cached_data = cache.get(cache_key)
         if cached_data:
             logger.info(f"Cache hit for balance sheet: {symbol} ({period})")
             return Response(cached_data, status=status.HTTP_200_OK)
 
         try:
-            ## 캐시에 없으면 DB에서 조회
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
+            ## 로컬 DB 조회 (우선)
+            stock = Stock.objects.filter(symbol=symbol).first()
+            data = []
+            source = 'empty'
 
-            ## 대차대조표 데이터 조회
-            # - period_type으로 연간/분기별 구분
-            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
-            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-            db_period = 'quarter' if period == 'quarterly' else period
-            balance_sheets = BalanceSheet.objects.filter(
-                stock=stock,
-                period_type=db_period
-            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
-            
-            ## 대차대조표 데이터 직렬화
-            # - 자산, 부채, 자본 관련 모든 항목 포함
-            serializer = BalanceSheetTabSerializer(balance_sheets, many=True)
-        
+            if stock:
+                ## 대차대조표 데이터 조회
+                db_period = 'quarter' if period == 'quarterly' else period
+                balance_sheets = BalanceSheet.objects.filter(
+                    stock=stock,
+                    period_type=db_period
+                ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+
+                serializer = BalanceSheetTabSerializer(balance_sheets, many=True)
+                data = serializer.data
+                source = 'db'
+
+            # 로컬 DB에 없거나 데이터가 비어있으면 Fallback 체인 사용
+            if not data:
+                from .services.financial_statements_fallback import FinancialStatementsFallbackService
+                fallback_service = FinancialStatementsFallbackService()
+                data, source = fallback_service.get_balance_sheet(symbol, period, limit)
+
             ## 응답 데이터 구성
             response_data = {
-                'symbol': symbol.upper(),
+                'symbol': symbol,
                 'tab': 'balance_sheet',
                 'period': period,
-                'data': serializer.data
+                'data': data,
+                '_source': source
             }
-            
-            ## 캐시에 저장 (1시간 = 3600초)
-            # - 재무제표는 분기/연간 단위로만 업데이트되므로 긴 캐싱 적용
-            cache.set(cache_key, response_data, 3600)
-            logger.info(f"Cache set for balance sheet: {symbol} ({period})")
-            
-            return Response(response_data, status=status.HTTP_200_OK)  
-        
+
+            ## 캐시에 저장 (DB: 1시간, 외부 API: 10분, 빈 데이터: 5분)
+            cache_ttl = 3600 if source == 'db' else (600 if source != 'empty' else 300)
+            cache.set(cache_key, response_data, cache_ttl)
+            logger.info(f"Cache set for balance sheet: {symbol} ({period}, source: {source})")
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
         except Exception as e:
             logger.error(f"Balance sheet error for {symbol}: {e}")
             return Response({
@@ -470,59 +586,67 @@ class StockIncomeStatementAPIView(APIView):
     ## Income Statement 탭 데이터 API 뷰 (캐싱 적용)
     # - 손익계산서 데이터 제공 (연간/분기별 선택 가능)
     # - 재무제표 데이터는 자주 변하지 않으므로 1시간 캐싱 적용
+    # - Fallback 체인: 로컬 DB → FMP → Alpha Vantage → yfinance
     """
-    
+
     def get(self, request, symbol):
         """
         손익계산서 데이터 GET 요청 처리 ( 캐싱 적용 )
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
+        symbol = symbol.upper()
 
         # 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
 
-        ## 캐싱
-        # 캐싱키 생성
-        cache_key = f"incomestatement_{symbol.upper()}_{period}_{limit}"
-        # 캐싱 조회
+        ## 캐싱키 생성
+        cache_key = f"incomestatement_{symbol}_{period}_{limit}"
         cached_data = cache.get(cache_key)
-        if cached_data :
+        if cached_data:
             logger.info(f"Cache hit for income statement: {symbol} ({period})")
-            return Response(cached_data, status = status.HTTP_200_OK)
-        
-        try:
-            ## 캐시 없으면 DB 조회
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
+            return Response(cached_data, status=status.HTTP_200_OK)
 
-            ## 손익계산서 데이터 조회
-            # - period_type으로 연간/분기별 구분
-            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
-            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-            db_period = 'quarter' if period == 'quarterly' else period
-            income_statements = IncomeStatement.objects.filter(
-                stock=stock,
-                period_type=db_period
-            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
-            
-            ## 손익계산서 데이터 직렬화
-            # - 매출, 비용, 이익 관련 모든 항목 포함
-            serializer = IncomeStatementTabSerializer(income_statements, many=True)
-            
+        try:
+            ## 로컬 DB 조회 (우선)
+            stock = Stock.objects.filter(symbol=symbol).first()
+            data = []
+            source = 'empty'
+
+            if stock:
+                ## 손익계산서 데이터 조회
+                db_period = 'quarter' if period == 'quarterly' else period
+                income_statements = IncomeStatement.objects.filter(
+                    stock=stock,
+                    period_type=db_period
+                ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+
+                serializer = IncomeStatementTabSerializer(income_statements, many=True)
+                data = serializer.data
+                source = 'db'
+
+            # 로컬 DB에 없거나 데이터가 비어있으면 Fallback 체인 사용
+            if not data:
+                from .services.financial_statements_fallback import FinancialStatementsFallbackService
+                fallback_service = FinancialStatementsFallbackService()
+                data, source = fallback_service.get_income_statement(symbol, period, limit)
+
             ## 응답 데이터 구성
             response_data = {
-                'symbol': symbol.upper(),
+                'symbol': symbol,
                 'tab': 'income_statement',
                 'period': period,
-                'data': serializer.data
+                'data': data,
+                '_source': source
             }
 
-            ## 캐시에 저장(1시간)
-            cache.set(cache_key, response_data, 3600)
-            logger.info(f"Cache set for income statement: {symbol} ({period})")
-            
+            ## 캐시에 저장 (DB: 1시간, 외부 API: 10분, 빈 데이터: 5분)
+            cache_ttl = 3600 if source == 'db' else (600 if source != 'empty' else 300)
+            cache.set(cache_key, response_data, cache_ttl)
+            logger.info(f"Cache set for income statement: {symbol} ({period}, source: {source})")
+
             return Response(response_data, status=status.HTTP_200_OK)
-        
+
         except Exception as e:
             logger.error(f"Income statement error for {symbol}: {e}")
             return Response({
@@ -534,58 +658,67 @@ class StockCashFlowAPIView(APIView):
     """
     Cash Flow 탭 데이터 클래스 기반 API 뷰 (캐싱적용)
     - 현금흐름표 데이터 제공 (연간/분기별 선택 가능)
+    - Fallback 체인: 로컬 DB → FMP → Alpha Vantage → yfinance
     """
-    
+
     def get(self, request, symbol):
         """
         현금흐름표 데이터 GET 요청 처리
         - 연간/분기별 기간 선택 및 조회 개수 제한 가능
         """
-        
+        symbol = symbol.upper()
+
         ## 요청 파라미터 처리 및 기본값 설정
         period = request.GET.get('period', 'annual').lower()  # 기본: 연간
         limit = int(request.GET.get('limit', 5))  # 기본: 최대 5개
 
-        ## 캐싱
-        # 캐싱키 생성
-        cache_key = f"cash_flow_{symbol.upper()}_{period}_{limit}"
-        # 캐시에서 먼저 확인
+        ## 캐싱키 생성
+        cache_key = f"cash_flow_{symbol}_{period}_{limit}"
         cached_data = cache.get(cache_key)
         if cached_data:
             logger.info(f"Cache hit for cash flow: {symbol} ({period})")
             return Response(cached_data, status=status.HTTP_200_OK)
-        
-        try:
-            stock = get_object_or_404(Stock, symbol=symbol.upper())
 
-            ## 현금흐름표 데이터 조회
-            # - period_type으로 연간/분기별 구분
-            # - 'quarterly'를 'quarter'로 변환 (DB에 'quarter'로 저장됨)
-            # - 최신 데이터부터 내림차순으로 정렬 (회계연도, 분기 순)
-            db_period = 'quarter' if period == 'quarterly' else period
-            cash_flows = CashFlowStatement.objects.filter(
-                stock=stock,
-                period_type=db_period
-            ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
-            
-            ## 현금흐름표 데이터 직렬화
-            # - 영업활동, 투자활동, 재무활동 관련 현금흐름 항목 포함
-            serializer = CashFlowTabSerializer(cash_flows, many=True)
-            
+        try:
+            ## 로컬 DB 조회 (우선)
+            stock = Stock.objects.filter(symbol=symbol).first()
+            data = []
+            source = 'empty'
+
+            if stock:
+                ## 현금흐름표 데이터 조회
+                db_period = 'quarter' if period == 'quarterly' else period
+                cash_flows = CashFlowStatement.objects.filter(
+                    stock=stock,
+                    period_type=db_period
+                ).order_by('-fiscal_year', '-fiscal_quarter')[:limit]
+
+                serializer = CashFlowTabSerializer(cash_flows, many=True)
+                data = serializer.data
+                source = 'db'
+
+            # 로컬 DB에 없거나 데이터가 비어있으면 Fallback 체인 사용
+            if not data:
+                from .services.financial_statements_fallback import FinancialStatementsFallbackService
+                fallback_service = FinancialStatementsFallbackService()
+                data, source = fallback_service.get_cash_flow(symbol, period, limit)
+
             ## 응답 데이터 구성
             response_data = {
-                'symbol': symbol.upper(),
+                'symbol': symbol,
                 'tab': 'cash_flow',
                 'period': period,
-                'data': serializer.data
+                'data': data,
+                '_source': source
             }
-            
-            ## 캐시에 저장 (1시간)
-            cache.set(cache_key, response_data, 3600)
-            logger.info(f"Cache set for cash flow: {symbol} ({period})")
-            
+
+            ## 캐시에 저장 (DB: 1시간, 외부 API: 10분, 빈 데이터: 5분)
+            cache_ttl = 3600 if source == 'db' else (600 if source != 'empty' else 300)
+            cache.set(cache_key, response_data, cache_ttl)
+            logger.info(f"Cache set for cash flow: {symbol} ({period}, source: {source})")
+
             return Response(response_data, status=status.HTTP_200_OK)
-            
+
         except Exception as e:
             logger.error(f"Cash flow error for {symbol}: {e}")
             return Response({

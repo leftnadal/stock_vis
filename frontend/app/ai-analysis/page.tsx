@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ShoppingBasket, Plus, Coins, Activity } from 'lucide-react'
+import { AuthGuard } from '@/components/auth/AuthGuard'
 import { ChatInterface } from '@/components/rag/ChatInterface'
 import { DataBasket } from '@/components/rag/DataBasket'
 import { TokenUsageDisplay } from '@/components/rag/TokenUsageDisplay'
@@ -19,7 +20,7 @@ const QUERY_KEYS = {
   messages: (sessionId: number) => ['sessions', sessionId, 'messages'] as const,
 }
 
-export default function AIAnalysisPage() {
+function AIAnalysisContent() {
   const queryClient = useQueryClient()
   const [isBasketOpen, setIsBasketOpen] = useState(false)
   const [isTokenPanelOpen, setIsTokenPanelOpen] = useState(false)
@@ -342,5 +343,13 @@ export default function AIAnalysisPage() {
         onClear={handleClearBasket}
       />
     </div>
+  )
+}
+
+export default function AIAnalysisPage() {
+  return (
+    <AuthGuard>
+      <AIAnalysisContent />
+    </AuthGuard>
   )
 }
