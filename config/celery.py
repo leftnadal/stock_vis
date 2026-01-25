@@ -117,6 +117,18 @@ app.conf.beat_schedule = {
         'task': 'rag_analysis.tasks.get_semantic_cache_stats',
         'schedule': crontab(minute=0),
     },
+
+    # ============================================================
+    # Market Movers 키워드 생성 태스크
+    # ============================================================
+
+    # 키워드 생성 파이프라인 (매일 오전 8시 - Market Movers 동기화 30분 후)
+    'keyword-generation-pipeline': {
+        'task': 'serverless.tasks.keyword_generation_pipeline',
+        'schedule': crontab(hour=8, minute=0),  # 08:00 EST
+        'kwargs': {'mover_type': 'gainers'},  # Gainers만 우선 처리
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
 }
 
 # 테스트 태스크 (선택적)

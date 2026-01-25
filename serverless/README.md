@@ -178,8 +178,76 @@ python manage.py migrate --fake-initial
 - FMP API Market Movers 구현 패턴
 - Django 3계층 아키텍처
 
+## 키워드 시스템 (Phase 2.5)
+
+### 개요
+
+Market Movers 각 종목에 대해 **LLM 기반 3-5개 핵심 키워드** 자동 생성
+
+**목표**: 사용자가 한눈에 급등/급락 이유 파악
+
+### 모델
+
+**StockKeyword**:
+- `symbol`, `company_name`, `date`
+- `keywords` (JSONField, 문자열 배열)
+- `status` ('pending', 'processing', 'completed', 'failed')
+- `llm_model`, `generation_time_ms`, `prompt_tokens`, `completion_tokens`
+- `expires_at` (TTL 7일)
+
+### 서비스 레이어
+
+**KeywordGenerationService** (`services/keyword_service.py`):
+- `generate_keyword()`: 단일 종목 키워드 생성
+- `batch_generate()`: 일괄 생성 (Celery 태스크용)
+- Fallback 키워드 (LLM 실패 시)
+
+**MarketMoversProcessor** (`processors.py`):
+- `get_movers_with_keywords()`: MarketMover + StockKeyword 조합 (N+1 방지)
+
+### API 응답 (키워드 포함)
+
+```json
+{
+  "success": true,
+  "data": {
+    "movers": [
+      {
+        "symbol": "NVDA",
+        "keywords": ["AI 반도체 수요", "데이터센터 확장", "실적 서프라이즈"]
+      }
+    ]
+  }
+}
+```
+
+### Celery 태스크 (by @infra)
+
+1. **generate_daily_keywords**: 매일 08:00 (Market Movers 동기화 후)
+2. **cleanup_expired_keywords**: 매일 02:00 (만료 데이터 정리)
+
+### 테스트
+
+```bash
+# 단위 테스트
+pytest tests/serverless/test_keyword_service.py -v
+pytest tests/serverless/test_processors.py -v
+```
+
+### 비용
+
+- **LLM**: Gemini 2.5 Flash
+- **일일**: 60개 종목 × $0.0018 = **월 75원**
+
+### 참고 문서
+
+- 설계 문서: `/docs/MARKET_MOVERS_KEYWORD_DESIGN.md`
+- 상세 가이드: `serverless/KEYWORD_SYSTEM_SUMMARY.md`
+
+---
+
 ## 다음 단계
 
-1. @infra: `python manage.py migrate` 실행
-2. @qa: 단위 테스트 작성
-3. @frontend: `serverlessService.ts`, `useMarketMovers` Hook 구현
+1. **@infra**: Celery 태스크 구현 (`generate_daily_keywords`, `cleanup_expired_keywords`)
+2. **@qa**: 통합 테스트 작성
+3. **@frontend**: MoverCard에 키워드 배지 UI 추가

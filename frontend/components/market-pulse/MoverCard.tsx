@@ -4,14 +4,24 @@ import { memo } from 'react';
 import Link from 'next/link';
 import type { MarketMoverItem } from '@/types/market';
 import { ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
+import { KeywordList } from '@/components/keywords/KeywordList';
+import { useKeywords } from '@/hooks/useKeywords';
 
 interface MoverCardProps {
   mover: MarketMoverItem;
+  showKeywords?: boolean;
 }
 
-export const MoverCard = memo(function MoverCard({ mover }: MoverCardProps) {
+export const MoverCard = memo(function MoverCard({ mover, showKeywords = true }: MoverCardProps) {
   const changePercent = parseFloat(mover.change_percent);
   const isPositive = changePercent > 0;
+
+  // 키워드 조회 (optional)
+  const { data: keywordData, isLoading: keywordsLoading, error: keywordsError } = useKeywords(
+    mover.symbol,
+    undefined,
+  );
+  const keywords = keywordData?.data?.keywords ?? [];
 
   // RVOL 색상 결정
   const getRvolColor = (rvol: string) => {
@@ -98,6 +108,20 @@ export const MoverCard = memo(function MoverCard({ mover }: MoverCardProps) {
           </p>
         )}
         {!mover.sector && !mover.industry && <div className="mb-2" />}
+
+        {/* LLM 키워드 (선택 사항) */}
+        {showKeywords && (
+          <div className="mb-2">
+            <KeywordList
+              keywords={keywords}
+              isLoading={keywordsLoading}
+              error={keywordsError}
+              maxVisible={3}
+              size="sm"
+              layout="horizontal"
+            />
+          </div>
+        )}
 
         {/* 하단: 지표 5개 (2줄) */}
         <div className="space-y-1">

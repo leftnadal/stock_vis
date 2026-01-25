@@ -23,6 +23,7 @@ export interface NewsArticle {
 
 export interface NewsListItem {
   id: string;
+  url: string;
   title: string;
   summary: string;
   image_url: string | null;
@@ -68,4 +69,12 @@ export interface TrendingNewsResponse {
   timeframe: string;
   count: number;
   stocks: TrendingStock[];
+}
+
+export type MarketNewsCategory = 'general' | 'forex' | 'crypto' | 'merger';
+
+export interface MarketNewsResponse {
+  category: string;
+  count: number;
+  articles: NewsListItem[];
 }

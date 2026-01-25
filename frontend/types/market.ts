@@ -102,3 +102,9 @@ export const MOVER_TABS: MoverTabConfig[] = [
     description: '최근 거래일 기준 거래량 상위 종목',
   },
 ];
+
+/**
+ * LLM 키워드 관련 타입 (from types/keyword.ts)
+ * - 상세 타입은 types/keyword.ts 참고
+ */
+export type { Keyword, StockKeywords } from './keyword';

@@ -1,12 +1,19 @@
 'use client';
 
-import { Plus, ExternalLink, TrendingUp, TrendingDown } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, ExternalLink, TrendingUp, TrendingDown, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import Link from 'next/link';
 import type { ScreenerStock } from '@/services/strategyService';
+import { KeywordList } from '@/components/keywords/KeywordList';
+
+type SortField = 'price' | 'change' | 'market_cap' | 'volume' | 'dividend_yield' | null;
+type SortDirection = 'asc' | 'desc';
 
 interface ScreenerTableProps {
   stocks: ScreenerStock[];
   onAddToBasket?: (symbol: string) => void;
+  keywords?: Record<string, string[]>;  // symbol -> keywords 매핑
+  isLoadingKeywords?: boolean;
 }
 
 // 시가총액 포맷팅 함수
@@ -39,7 +46,74 @@ function formatVolume(volume?: number, formatted?: string): string {
   return volume.toLocaleString();
 }
 
-export function ScreenerTable({ stocks, onAddToBasket }: ScreenerTableProps) {
+export function ScreenerTable({ stocks, onAddToBasket, keywords = {}, isLoadingKeywords = false }: ScreenerTableProps) {
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // 정렬된 종목 목록
+  const sortedStocks = useMemo(() => {
+    if (!sortField) return stocks;
+
+    return [...stocks].sort((a, b) => {
+      let aValue: number | null = null;
+      let bValue: number | null = null;
+
+      switch (sortField) {
+        case 'price':
+          aValue = a.price ?? null;
+          bValue = b.price ?? null;
+          break;
+        case 'change':
+          aValue = a.changes_percentage ?? a.change ?? null;
+          bValue = b.changes_percentage ?? b.change ?? null;
+          break;
+        case 'market_cap':
+          aValue = a.market_cap ?? null;
+          bValue = b.market_cap ?? null;
+          break;
+        case 'volume':
+          aValue = a.volume ?? null;
+          bValue = b.volume ?? null;
+          break;
+        case 'dividend_yield':
+          aValue = a.dividend_yield ?? null;
+          bValue = b.dividend_yield ?? null;
+          break;
+      }
+
+      // null 값 처리: null은 항상 뒤로
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
+
+      // 정렬 방향에 따라 비교
+      const comparison = aValue - bValue;
+      return sortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [stocks, sortField, sortDirection]);
+
+  // 정렬 핸들러
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // 같은 필드 클릭 시 방향 토글
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      // 다른 필드 클릭 시 해당 필드로 변경, 기본 내림차순
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  // 정렬 아이콘 컴포넌트
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-3 w-3 text-[#484F58] ml-1" />;
+    }
+    return sortDirection === 'asc'
+      ? <ArrowUp className="h-3 w-3 text-[#58A6FF] ml-1" />
+      : <ArrowDown className="h-3 w-3 text-[#58A6FF] ml-1" />;
+  };
+
   if (stocks.length === 0) {
     return (
       <div className="rounded-lg border border-[#30363D] bg-[#161B22] p-8 text-center">
@@ -58,20 +132,61 @@ export function ScreenerTable({ stocks, onAddToBasket }: ScreenerTableProps) {
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#8B949E]">종목</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#8B949E]">거래소</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold text-[#8B949E]">섹터</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">가격</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">변동률</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">시가총액</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">거래량 (주)</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">배당률</th>
+                <th
+                  onClick={() => handleSort('price')}
+                  className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E] cursor-pointer hover:text-[#E6EDF3] transition-colors select-none"
+                >
+                  <div className="flex items-center justify-end">
+                    가격
+                    <SortIcon field="price" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('change')}
+                  className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E] cursor-pointer hover:text-[#E6EDF3] transition-colors select-none"
+                >
+                  <div className="flex items-center justify-end">
+                    변동률
+                    <SortIcon field="change" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('market_cap')}
+                  className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E] cursor-pointer hover:text-[#E6EDF3] transition-colors select-none"
+                >
+                  <div className="flex items-center justify-end">
+                    시가총액
+                    <SortIcon field="market_cap" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('volume')}
+                  className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E] cursor-pointer hover:text-[#E6EDF3] transition-colors select-none"
+                >
+                  <div className="flex items-center justify-end">
+                    거래량 (주)
+                    <SortIcon field="volume" />
+                  </div>
+                </th>
+                <th
+                  onClick={() => handleSort('dividend_yield')}
+                  className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E] cursor-pointer hover:text-[#E6EDF3] transition-colors select-none"
+                >
+                  <div className="flex items-center justify-end">
+                    배당률
+                    <SortIcon field="dividend_yield" />
+                  </div>
+                </th>
                 <th className="px-4 py-3 text-right text-xs font-semibold text-[#8B949E]">베타</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-[#8B949E]">유형</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-[#8B949E]">AI 키워드</th>
                 {onAddToBasket && (
                   <th className="px-4 py-3 text-center text-xs font-semibold text-[#8B949E]">액션</th>
                 )}
               </tr>
             </thead>
           <tbody>
-            {stocks.map((stock) => {
+            {sortedStocks.map((stock) => {
               const displayName = stock.company_name || stock.name || '';
               const exchangeName = stock.exchange_short_name || stock.exchange || '-';
               const changePercent = stock.changes_percentage ?? stock.change ?? null;
@@ -185,6 +300,19 @@ export function ScreenerTable({ stocks, onAddToBasket }: ScreenerTableProps) {
                         주식
                       </span>
                     )}
+                  </td>
+
+                  {/* AI 키워드 */}
+                  <td className="px-4 py-3">
+                    <div className="max-w-[200px]">
+                      <KeywordList
+                        keywords={keywords[stock.symbol] || []}
+                        isLoading={isLoadingKeywords}
+                        maxVisible={3}
+                        size="sm"
+                        emptyMessage="-"
+                      />
+                    </div>
                   </td>
 
                   {/* 액션 */}

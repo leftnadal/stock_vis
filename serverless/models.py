@@ -145,3 +145,100 @@ class VolatilityBaseline(models.Model):
 
     def __str__(self):
         return f"{self.symbol} {self.date} P{self.percentile}"
+
+
+class StockKeyword(models.Model):
+    """
+    Market Movers 종목별 AI 생성 키워드
+
+    LLM이 생성한 3-5개의 핵심 키워드를 저장합니다.
+    일일 배치로 생성되며, TTL은 7일입니다.
+
+    Note: FK 없이 symbol로 직접 매핑 (독립적 TTL 관리)
+    """
+
+    # 종목 정보 (FK 없이 symbol로 직접 매핑)
+    symbol = models.CharField(max_length=10, db_index=True)
+    company_name = models.CharField(max_length=255)
+
+    # 생성 일자
+    date = models.DateField(db_index=True)
+
+    # 키워드 리스트 (3-5개)
+    keywords = models.JSONField(
+        help_text="LLM 생성 키워드 리스트 (3-5개)",
+        default=list
+    )
+    # 예시: ["AI 반도체 수요", "데이터센터 확장", "실적 서프라이즈"]
+
+    # 메타데이터
+    llm_model = models.CharField(
+        max_length=50,
+        default="gemini-2.5-flash",
+        help_text="사용된 LLM 모델"
+    )
+    generation_time_ms = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="키워드 생성 소요 시간 (밀리초)"
+    )
+    prompt_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="입력 토큰 수"
+    )
+    completion_tokens = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="출력 토큰 수"
+    )
+
+    # 생성 상태
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),      # 생성 대기
+        ('processing', 'Processing'), # 생성 중
+        ('completed', 'Completed'),   # 성공
+        ('failed', 'Failed'),         # 실패
+    ]
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        db_index=True
+    )
+    error_message = models.TextField(
+        null=True,
+        blank=True,
+        help_text="실패 시 에러 메시지"
+    )
+
+    # TTL 관리
+    expires_at = models.DateTimeField(
+        db_index=True,
+        help_text="키워드 만료 시점 (생성일 + 7일)"
+    )
+
+    # 타임스탬프
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_stock_keyword'
+        unique_together = [['symbol', 'date']]
+        ordering = ['-date', 'symbol']
+        indexes = [
+            models.Index(fields=['date', 'status']),
+            models.Index(fields=['symbol', '-date']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} ({self.date}): {len(self.keywords)}개 키워드"
+
+    def save(self, *args, **kwargs):
+        """expires_at 자동 설정"""
+        if not self.expires_at:
+            from datetime import timedelta
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timedelta(days=7)
+        super().save(*args, **kwargs)

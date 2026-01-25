@@ -1,10 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { useMarketMovers, useSyncMarketMovers } from '@/hooks/useMarketMovers';
+import { useMarketMovers, useSyncMarketMovers, useGenerateKeywords } from '@/hooks/useMarketMovers';
 import { MoverCard } from './MoverCard';
 import { MOVER_TABS, type MoverType } from '@/types/market';
-import { Loader2, Clock, TrendingUp, TrendingDown, BarChart3, AlertCircle, RefreshCw, CheckCircle } from 'lucide-react';
+import { Loader2, Clock, TrendingUp, TrendingDown, BarChart3, AlertCircle, RefreshCw, CheckCircle, Sparkles } from 'lucide-react';
 
 // 탭 아이콘 매핑
 const TAB_ICONS: Record<MoverType, typeof TrendingUp> = {
@@ -17,6 +17,7 @@ export function MarketMoversSection() {
   const [activeTab, setActiveTab] = useState<MoverType>('gainers');
   const { data, isLoading, error, dataUpdatedAt } = useMarketMovers(activeTab);
   const syncMutation = useSyncMarketMovers();
+  const keywordMutation = useGenerateKeywords();
 
   const activeConfig = MOVER_TABS.find(tab => tab.id === activeTab)!;
   const movers = data?.data?.movers ?? [];
@@ -24,6 +25,10 @@ export function MarketMoversSection() {
 
   const handleSync = () => {
     syncMutation.mutate(undefined);
+  };
+
+  const handleGenerateKeywords = () => {
+    keywordMutation.mutate({ type: activeTab, date });
   };
 
   // 날짜 포맷팅
@@ -67,6 +72,32 @@ export function MarketMoversSection() {
                 실패
               </span>
             )}
+            {keywordMutation.isSuccess && (
+              <span className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
+                <CheckCircle className="w-3.5 h-3.5" />
+                생성 시작
+              </span>
+            )}
+            {keywordMutation.isError && (
+              <span className="flex items-center gap-1 text-xs text-red-500">
+                <AlertCircle className="w-3.5 h-3.5" />
+                생성 실패
+              </span>
+            )}
+            <button
+              onClick={handleGenerateKeywords}
+              disabled={keywordMutation.isPending || movers.length === 0}
+              className={`
+                flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200
+                ${keywordMutation.isPending || movers.length === 0
+                  ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                  : 'bg-purple-500 hover:bg-purple-600 text-white'
+                }
+              `}
+            >
+              <Sparkles className={`w-3.5 h-3.5 ${keywordMutation.isPending ? 'animate-pulse' : ''}`} />
+              <span>{keywordMutation.isPending ? 'AI 생성 중...' : 'AI 키워드'}</span>
+            </button>
             <button
               onClick={handleSync}
               disabled={syncMutation.isPending}

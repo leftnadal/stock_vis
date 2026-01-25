@@ -2,7 +2,7 @@
 Serverless App Admin
 """
 from django.contrib import admin
-from serverless.models import MarketMover, SectorETFMapping, StockSectorInfo, VolatilityBaseline
+from serverless.models import MarketMover, SectorETFMapping, StockSectorInfo, VolatilityBaseline, StockKeyword
 
 
 @admin.register(MarketMover)
@@ -58,3 +58,37 @@ class VolatilityBaselineAdmin(admin.ModelAdmin):
     list_filter = ['date']
     search_fields = ['symbol']
     ordering = ['-date', 'symbol']
+
+
+@admin.register(StockKeyword)
+class StockKeywordAdmin(admin.ModelAdmin):
+    list_display = [
+        'symbol', 'date', 'status', 'keyword_count',
+        'generation_time_ms', 'llm_model', 'created_at'
+    ]
+    list_filter = ['date', 'status', 'llm_model']
+    search_fields = ['symbol', 'company_name']
+    ordering = ['-date', 'symbol']
+    readonly_fields = ['created_at', 'updated_at', 'expires_at']
+
+    fieldsets = (
+        ('종목 정보', {
+            'fields': ('symbol', 'company_name', 'date')
+        }),
+        ('키워드', {
+            'fields': ('keywords', 'status', 'error_message')
+        }),
+        ('메타데이터', {
+            'fields': (
+                'llm_model', 'generation_time_ms',
+                'prompt_tokens', 'completion_tokens',
+                'expires_at', 'created_at', 'updated_at'
+            ),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def keyword_count(self, obj):
+        """키워드 개수"""
+        return len(obj.keywords) if obj.keywords else 0
+    keyword_count.short_description = '키워드 수'

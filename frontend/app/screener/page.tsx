@@ -1,11 +1,13 @@
 'use client';
 
-import { useCallback, useMemo, Suspense } from 'react';
+import { useCallback, useMemo, Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Search, Loader2, AlertCircle, Filter, TrendingUp, DollarSign, Shield, Zap, BarChart3 } from 'lucide-react';
+import { Search, Loader2, AlertCircle, Filter, TrendingUp, DollarSign, Shield, Zap, BarChart3, Sparkles, RefreshCw } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useStockScreener } from '@/hooks/useStockScreener';
 import { ScreenerTable } from '@/components/strategy/ScreenerTable';
 import { AuthGuard } from '@/components/auth/AuthGuard';
+import { keywordService } from '@/services/keywordService';
 import type { ScreenerFilters } from '@/services/strategyService';
 
 // 섹터 목록
@@ -103,13 +105,88 @@ function ScreenerContent() {
 
       if (presetKeys.length !== filtersKeys.length) continue;
 
-      const matches = presetKeys.every(key => filters[key] === preset.filters[key]);
+      const presetFilters = preset.filters as Partial<ScreenerFilters>;
+      const matches = presetKeys.every(key => filters[key] === presetFilters[key]);
       if (matches) return preset.id;
     }
     return null;
   }, [filters]);
 
   const { data: stocks, isLoading, error, refetch } = useStockScreener(filters);
+  const queryClient = useQueryClient();
+
+  // 키워드 상태
+  const [keywords, setKeywords] = useState<Record<string, string[]>>({});
+  const [isLoadingKeywords, setIsLoadingKeywords] = useState(false);
+  const [isGeneratingKeywords, setIsGeneratingKeywords] = useState(false);
+
+  // 키워드 생성 mutation
+  const keywordMutation = useMutation({
+    mutationFn: (stocksToGenerate: Array<{
+      symbol: string;
+      company_name?: string;
+      sector?: string;
+      change_percent?: number;
+    }>) => keywordService.generateScreenerKeywords(stocksToGenerate),
+    onMutate: () => {
+      setIsGeneratingKeywords(true);
+    },
+    onSuccess: (data) => {
+      // Celery 태스크가 비동기로 실행되므로 일정 시간 후 재조회
+      const stockCount = data?.data?.stock_count || 0;
+      const delayMs = Math.min(stockCount * 6000, 60000); // 종목당 6초, 최대 60초
+
+      setTimeout(() => {
+        if (stocks && stocks.length > 0) {
+          fetchKeywords(stocks.map(s => s.symbol));
+        }
+        setIsGeneratingKeywords(false);
+      }, delayMs);
+    },
+    onError: () => {
+      setIsGeneratingKeywords(false);
+    },
+  });
+
+  // 키워드 조회 함수
+  const fetchKeywords = useCallback(async (symbols: string[]) => {
+    if (symbols.length === 0) return;
+
+    setIsLoadingKeywords(true);
+    try {
+      const response = await keywordService.getBatchKeywords({ symbols });
+      if (response.success && response.data?.keywords) {
+        // API 응답: { keywords: { AAPL: [...], NVDA: [...] } }
+        setKeywords(response.data.keywords as unknown as Record<string, string[]>);
+      }
+    } catch (err) {
+      console.error('키워드 조회 실패:', err);
+    } finally {
+      setIsLoadingKeywords(false);
+    }
+  }, []);
+
+  // stocks 변경 시 키워드 조회
+  useEffect(() => {
+    if (stocks && stocks.length > 0) {
+      fetchKeywords(stocks.map(s => s.symbol));
+    }
+  }, [stocks, fetchKeywords]);
+
+  // AI 키워드 생성 핸들러
+  const handleGenerateKeywords = useCallback(() => {
+    if (!stocks || stocks.length === 0) return;
+
+    // 최대 50개까지만 생성 (API 제한)
+    const stocksToGenerate = stocks.slice(0, 50).map(s => ({
+      symbol: s.symbol,
+      company_name: s.company_name || s.name,
+      sector: s.sector,
+      change_percent: s.changes_percentage ?? s.change ?? 0,
+    }));
+
+    keywordMutation.mutate(stocksToGenerate);
+  }, [stocks, keywordMutation]);
 
   // URL 업데이트 함수
   const updateUrl = useCallback((newFilters: ScreenerFilters) => {
@@ -308,12 +385,30 @@ function ScreenerContent() {
               )}
             </div>
             {stocks && stocks.length > 0 && (
-              <button
-                onClick={() => refetch()}
-                className="text-xs text-[#8B949E] hover:text-[#E6EDF3]"
-              >
-                새로고침
-              </button>
+              <div className="flex items-center gap-2">
+                {/* AI 키워드 생성 버튼 */}
+                <button
+                  onClick={handleGenerateKeywords}
+                  disabled={isGeneratingKeywords}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                    isGeneratingKeywords
+                      ? 'bg-[#21262D] text-[#8B949E] cursor-not-allowed'
+                      : 'bg-[#8957E5] hover:bg-[#9D6EE8] text-white'
+                  }`}
+                >
+                  <Sparkles className={`h-3.5 w-3.5 ${isGeneratingKeywords ? 'animate-pulse' : ''}`} />
+                  <span>{isGeneratingKeywords ? 'AI 생성 중...' : 'AI 키워드'}</span>
+                </button>
+
+                {/* 새로고침 버튼 */}
+                <button
+                  onClick={() => refetch()}
+                  className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-[#8B949E] hover:bg-[#21262D] hover:text-[#E6EDF3] transition-all"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>새로고침</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -353,7 +448,11 @@ function ScreenerContent() {
           {/* 테이블 */}
           {!isLoading && !error && stocks && stocks.length > 0 && (
             <div className="p-4">
-              <ScreenerTable stocks={stocks} />
+              <ScreenerTable
+                stocks={stocks}
+                keywords={keywords}
+                isLoadingKeywords={isLoadingKeywords || isGeneratingKeywords}
+              />
             </div>
           )}
         </div>
