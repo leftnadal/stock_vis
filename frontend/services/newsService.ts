@@ -5,6 +5,7 @@ import {
   StockNewsResponse,
   StockSentiment,
   TrendingNewsResponse,
+  MarketNewsResponse,
 } from '@/types/news';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -105,6 +106,36 @@ export const newsService = {
 
     if (!response.ok) {
       throw new Error('Failed to fetch news detail');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get market-wide news
+   * @param category - News category (general, forex, crypto, merger)
+   * @param limit - Maximum number of results (default: 20)
+   * @param refresh - Force refresh from API (default: false)
+   */
+  async getMarketNews(
+    category: string = 'general',
+    limit: number = 20,
+    refresh: boolean = false
+  ): Promise<MarketNewsResponse> {
+    const params = new URLSearchParams({
+      category,
+      limit: limit.toString(),
+      refresh: refresh.toString(),
+    });
+
+    const response = await fetch(`${API_URL}/news/market/?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch market news');
     }
 
     return response.json();

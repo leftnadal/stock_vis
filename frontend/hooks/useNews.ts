@@ -7,6 +7,7 @@ import {
   StockNewsResponse,
   StockSentiment,
   TrendingNewsResponse,
+  MarketNewsResponse,
 } from '@/types/news';
 
 /**
@@ -57,5 +58,21 @@ export function useNewsDetail(uuid: string | null) {
     enabled: !!uuid,
     staleTime: 1000 * 60 * 30, // 30 minutes
     retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch market-wide news
+ */
+export function useMarketNews(
+  category: string = 'general',
+  limit: number = 20,
+  refresh: boolean = false
+) {
+  return useQuery<MarketNewsResponse>({
+    queryKey: ['market-news', category, limit, refresh],
+    queryFn: () => newsService.getMarketNews(category, limit, refresh),
+    staleTime: 1000 * 60 * 10, // 10 minutes
+    retry: 2,
   });
 }

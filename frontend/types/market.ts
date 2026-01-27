@@ -53,6 +53,10 @@ export interface MarketMoverItem {
     has_20d_volume: boolean;
     has_ohlc: boolean;
   };
+  // Corporate Action 정보
+  has_corporate_action?: boolean;
+  corporate_action_type?: 'reverse_split' | 'split' | 'spinoff' | 'dividend';
+  corporate_action_display?: string;
 }
 
 export interface ServerlessMarketMoversResponse {

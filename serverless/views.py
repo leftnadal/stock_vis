@@ -2,7 +2,7 @@
 Market Movers REST API Views
 """
 import logging
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 
 @api_view(['GET'])
+@authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def market_movers_api(request):
     """
@@ -93,6 +94,7 @@ def market_movers_api(request):
 
 
 @api_view(['GET'])
+@authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def market_mover_detail(request, symbol):
     """
@@ -255,6 +257,7 @@ def sync_now(request):
 
 
 @api_view(['GET'])
+@authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def get_keywords(request, symbol):
     """
@@ -306,6 +309,7 @@ def get_keywords(request, symbol):
 
 
 @api_view(['POST'])
+@authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def get_batch_keywords(request):
     """
@@ -426,6 +430,7 @@ def trigger_keyword_generation(request):
 
 
 @api_view(['POST'])
+@authentication_classes([])  # TODO: 프로덕션에서는 인증 추가
 @permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
 def generate_screener_keywords(request):
     """
@@ -499,6 +504,7 @@ def generate_screener_keywords(request):
 
 
 @api_view(['GET'])
+@authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def health_check(request):
     """

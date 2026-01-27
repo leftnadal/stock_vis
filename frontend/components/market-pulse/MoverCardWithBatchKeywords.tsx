@@ -3,26 +3,33 @@
 import { memo } from 'react';
 import Link from 'next/link';
 import type { MarketMoverItem } from '@/types/market';
+import type { StockKeywords } from '@/types/keyword';
 import { ArrowUpRight, ArrowDownRight, Info } from 'lucide-react';
 import { KeywordList } from '@/components/keywords/KeywordList';
-import { useKeywords } from '@/hooks/useKeywords';
 import { CorporateActionBadge } from '@/components/common/CorporateActionBadge';
 
-interface MoverCardProps {
+interface MoverCardWithBatchKeywordsProps {
   mover: MarketMoverItem;
+  keywords?: StockKeywords;
+  keywordsLoading?: boolean;
+  keywordsError?: Error | null;
   showKeywords?: boolean;
 }
 
-export const MoverCard = memo(function MoverCard({ mover, showKeywords = true }: MoverCardProps) {
+/**
+ * 배치 조회 최적화 버전 MoverCard
+ * - 부모 컴포넌트에서 useBatchKeywords()로 일괄 조회한 데이터를 props로 전달받음
+ * - N+1 쿼리 문제 방지
+ */
+export const MoverCardWithBatchKeywords = memo(function MoverCardWithBatchKeywords({
+  mover,
+  keywords,
+  keywordsLoading = false,
+  keywordsError = null,
+  showKeywords = true,
+}: MoverCardWithBatchKeywordsProps) {
   const changePercent = parseFloat(mover.change_percent);
   const isPositive = changePercent > 0;
-
-  // 키워드 조회 (optional)
-  const { data: keywordData, isLoading: keywordsLoading, error: keywordsError } = useKeywords(
-    mover.symbol,
-    undefined,
-  );
-  const keywords = keywordData?.data?.keywords ?? [];
 
   // RVOL 색상 결정
   const getRvolColor = (rvol: string) => {
@@ -110,11 +117,11 @@ export const MoverCard = memo(function MoverCard({ mover, showKeywords = true }:
         )}
         {!mover.sector && !mover.industry && <div className="mb-2" />}
 
-        {/* LLM 키워드 (선택 사항) */}
+        {/* LLM 키워드 */}
         {showKeywords && (
           <div className="mb-2">
             <KeywordList
-              keywords={keywords}
+              keywords={keywords?.keywords ?? []}
               isLoading={keywordsLoading}
               error={keywordsError}
               maxVisible={3}

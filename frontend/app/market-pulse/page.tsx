@@ -8,6 +8,7 @@ import YieldCurveChart from '@/components/macro/YieldCurveChart';
 import EconomicIndicators from '@/components/macro/EconomicIndicators';
 import GlobalMarketsCard from '@/components/macro/GlobalMarketsCard';
 import { MarketMoversSection } from '@/components/market-pulse/MarketMoversSection';
+// import { MarketNewsSection } from '@/components/market-pulse/MarketNewsSection';  // TODO: 컴포넌트 미구현
 import { useMarketPulse, isMarketPulseDataEmpty, useSyncStatus, useStartDataSync, useRefreshOnSyncComplete } from '@/hooks/useMarketPulse';
 
 // 섹션별 스켈레톤 컴포넌트
@@ -162,6 +163,9 @@ function MarketPulseContent() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Section 0: Market Movers - 가장 빠르게 로드됨 (독립 훅 사용) */}
         <MarketMoversSection />
+
+        {/* Section 0.5: Market News - TODO: 컴포넌트 미구현 */}
+        {/* <MarketNewsSection /> */}
 
         {/* Section 1: Fear & Greed + Yield Curve */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

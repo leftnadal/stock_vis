@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.views.generic import TemplateView, DetailView
 from django.http import Http404
 from django.core.cache import cache
+from django.utils import timezone
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
@@ -15,18 +16,38 @@ from rest_framework.exceptions import NotFound
 
 from .models import Stock, DailyPrice, WeeklyPrice, BalanceSheet, IncomeStatement, CashFlowStatement
 from .serializers import (
-    StockListSerializer, 
-    StockHeaderSerializer, 
-    StockSearchSerializer, 
-    WeeklyChartDataSerializer, 
-    ChartDataSerializer, 
+    StockListSerializer,
+    StockHeaderSerializer,
+    StockSearchSerializer,
+    WeeklyChartDataSerializer,
+    ChartDataSerializer,
     OverviewTabSerializer,
     BalanceSheetTabSerializer,
-    IncomeStatementTabSerializer, 
+    IncomeStatementTabSerializer,
     CashFlowTabSerializer,
 )
+from .exceptions import (
+    StockNotFoundError,
+    ExternalAPIError,
+    RateLimitError,
+    DataSyncError,
+    InvalidParameterError,
+)
+from .services.stock_sync_service import StockSyncService, SyncResult
+from .services.rate_limiter import check_rate_limit, record_api_call
 
 logger = logging.getLogger(__name__)
+
+# 동기화 서비스 싱글톤
+_sync_service = None
+
+
+def get_sync_service() -> StockSyncService:
+    """StockSyncService 싱글톤 반환"""
+    global _sync_service
+    if _sync_service is None:
+        _sync_service = StockSyncService()
+    return _sync_service
 ### 메인 대시보드
 class DashboardView(TemplateView):
     """
@@ -238,6 +259,7 @@ class StockChartDataAPIView(APIView):
 
             ## 로컬 DB 조회 (우선)
             stock = Stock.objects.filter(symbol=symbol).first()
+            source = 'db'
 
             if stock:
                 # 로컬 DB에서 데이터 조회
@@ -248,19 +270,41 @@ class StockChartDataAPIView(APIView):
                     price_data = self._get_daily_data(stock, start_date, end_date)
                     serializer = ChartDataSerializer(price_data, many=True)
 
-                response_data = {
-                    'symbol': symbol,
-                    'period': period_display,
-                    'chart_type': chart_type,
-                    'data': serializer.data,
-                    'count': price_data.count(),
-                    'start_date': start_date.isoformat() if start_date else None,
-                    'end_date': end_date.isoformat(),
-                    'available_periods': list(self.PERIOD_MAPPING.keys())
-                }
-                cache_ttl = 60  # 1분
+                # DB에 데이터가 있으면 사용
+                if price_data.count() > 0:
+                    response_data = {
+                        'symbol': symbol,
+                        'period': period_display,
+                        'chart_type': chart_type,
+                        'data': serializer.data,
+                        'count': price_data.count(),
+                        'start_date': start_date.isoformat() if start_date else None,
+                        'end_date': end_date.isoformat(),
+                        'available_periods': list(self.PERIOD_MAPPING.keys()),
+                        '_source': 'db'
+                    }
+                    cache_ttl = 60  # 1분
+                else:
+                    # DB에 Stock은 있지만 가격 데이터가 없으면 FMP에서 가져오기
+                    logger.info(f"No price data in DB for {symbol}, fetching from FMP")
+                    response_data = self._get_fmp_chart_data(symbol, period_display, chart_type, start_date, end_date)
+                    if response_data is None or len(response_data.get('data', [])) == 0:
+                        # FMP에서도 데이터가 없으면 빈 응답 반환
+                        response_data = {
+                            'symbol': symbol,
+                            'period': period_display,
+                            'chart_type': chart_type,
+                            'data': [],
+                            'count': 0,
+                            'start_date': start_date.isoformat() if start_date else None,
+                            'end_date': end_date.isoformat(),
+                            'available_periods': list(self.PERIOD_MAPPING.keys()),
+                            '_source': 'empty',
+                            '_message': '해당 기간의 차트 데이터가 없습니다.'
+                        }
+                    cache_ttl = 120  # FMP는 2분
             else:
-                # FMP API Fallback
+                # Stock 자체가 없으면 FMP API Fallback
                 response_data = self._get_fmp_chart_data(symbol, period_display, chart_type, start_date, end_date)
                 if response_data is None:
                     return Response({
@@ -416,19 +460,21 @@ class StockChartDataAPIView(APIView):
 ## Overview API
 class StockOverviewAPIView(APIView):
     """
-    주식 개요 탭 데이터 API(캐싱 적용)
+    주식 개요 탭 데이터 API(캐싱 적용 + 자동 저장)
     - 주식의 전반적인 정보 (재무비율, 기술적 지표, 분석가 의견 등)
-    - 로컬 DB에 없는 종목은 FMP API에서 실시간 조회
+    - 로컬 DB에 없는 종목은 FMP API에서 실시간 조회 후 자동 저장
+    - _meta 정보 포함 (source, synced_at, freshness, can_sync)
     """
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request, symbol):
         """
-        ## Overview 데이터 GET 요청 처리(캐싱 적용)
+        ## Overview 데이터 GET 요청 처리(캐싱 + 자동 저장 적용)
         # - 주식의 전반적인 정보를 OverviewTabSerializer로 직렬화하여 제공
-        # - 로컬 DB에 없는 종목은 FMP API Fallback
+        # - 로컬 DB에 없는 종목은 FMP API Fallback + 자동 저장
         """
         symbol = symbol.upper()
+        sync_service = get_sync_service()
 
         ## 캐싱 키 생성
         cache_key = f"stock_overview_{symbol}"
@@ -442,6 +488,7 @@ class StockOverviewAPIView(APIView):
         try:
             ## 주식정보 조회 (로컬 DB 우선)
             stock = Stock.objects.filter(symbol=symbol).first()
+            source = 'db'
 
             if stock:
                 ## 직렬화
@@ -452,56 +499,82 @@ class StockOverviewAPIView(APIView):
                     'data': serializer.data,
                 }
             else:
-                ## FMP API Fallback (로컬 DB에 없는 종목)
-                from .services.fmp_exchange_quotes import FMPExchangeQuotesService
-                fmp_service = FMPExchangeQuotesService()
-                quote_data = fmp_service.get_quote(symbol)
+                ## FMP API Fallback + 자동 저장
+                sync_result = sync_service.sync_overview(symbol, force=True)
 
-                if not quote_data:
-                    return Response({
-                        'error': f'종목 {symbol}을(를) 찾을 수 없습니다.'
-                    }, status=status.HTTP_404_NOT_FOUND)
-
-                ## FMP 데이터를 Overview 형식으로 변환
-                # Stable API 필드명: changePercentage (Legacy: changesPercentage)
-                change_pct = quote_data.get('changePercentage') or quote_data.get('changesPercentage', 0)
-                response_data = {
-                    'symbol': symbol,
-                    'tab': 'overview',
-                    'data': {
+                if sync_result.success:
+                    # 저장 성공 - DB에서 다시 조회
+                    stock = Stock.objects.get(symbol=symbol)
+                    serializer = OverviewTabSerializer(stock)
+                    response_data = {
                         'symbol': symbol,
-                        'stock_name': quote_data.get('name', symbol),
-                        'real_time_price': quote_data.get('price', 0),
-                        'change': quote_data.get('change', 0),
-                        'change_percent': f"{change_pct:+.2f}%" if change_pct else "0.00%",
-                        'previous_close': quote_data.get('previousClose', 0),
-                        'open_price': quote_data.get('open', 0),
-                        'high_price': quote_data.get('dayHigh', 0),
-                        'low_price': quote_data.get('dayLow', 0),
-                        'volume': quote_data.get('volume', 0),
-                        'market_capitalization': quote_data.get('marketCap', 0),
-                        'pe_ratio': quote_data.get('pe', 0),
-                        'eps': quote_data.get('eps', 0),
-                        'week_52_high': quote_data.get('yearHigh', 0),
-                        'week_52_low': quote_data.get('yearLow', 0),
-                        'exchange': quote_data.get('exchange', ''),
-                        'avg_volume': quote_data.get('avgVolume') or quote_data.get('priceAvg50', 0),
-                        # FMP에서 가져온 데이터임을 표시
-                        '_source': 'fmp_realtime',
-                    },
-                }
+                        'tab': 'overview',
+                        'data': serializer.data,
+                    }
+                    source = 'fmp'
+                else:
+                    # 저장 실패 - FMP에서 직접 조회 (저장 없이)
+                    from .services.fmp_exchange_quotes import FMPExchangeQuotesService
+                    fmp_service = FMPExchangeQuotesService()
+                    quote_data = fmp_service.get_quote(symbol)
+
+                    if not quote_data:
+                        raise StockNotFoundError(
+                            symbol=symbol,
+                            tried_sources=['db', 'fmp']
+                        )
+
+                    ## FMP 데이터를 Overview 형식으로 변환
+                    change_pct = quote_data.get('changePercentage') or quote_data.get('changesPercentage', 0)
+                    response_data = {
+                        'symbol': symbol,
+                        'tab': 'overview',
+                        'data': {
+                            'symbol': symbol,
+                            'stock_name': quote_data.get('name', symbol),
+                            'real_time_price': quote_data.get('price', 0),
+                            'change': quote_data.get('change', 0),
+                            'change_percent': f"{change_pct:+.2f}%" if change_pct else "0.00%",
+                            'previous_close': quote_data.get('previousClose', 0),
+                            'open_price': quote_data.get('open', 0),
+                            'high_price': quote_data.get('dayHigh', 0),
+                            'low_price': quote_data.get('dayLow', 0),
+                            'volume': quote_data.get('volume', 0),
+                            'market_capitalization': quote_data.get('marketCap', 0),
+                            'pe_ratio': quote_data.get('pe', 0),
+                            'eps': quote_data.get('eps', 0),
+                            'week_52_high': quote_data.get('yearHigh', 0),
+                            'week_52_low': quote_data.get('yearLow', 0),
+                            'exchange': quote_data.get('exchange', ''),
+                            'avg_volume': quote_data.get('avgVolume') or quote_data.get('priceAvg50', 0),
+                        },
+                    }
+                    source = 'fmp_realtime'
+
+            ## _meta 정보 추가
+            response_data['_meta'] = sync_service.get_sync_meta(symbol, 'overview', source)
 
             ## 캐시에 저장 (10분 = 600초, FMP는 2분)
-            cache_ttl = 600 if stock else 120
+            cache_ttl = 600 if source == 'db' else 120
             cache.set(cache_key, response_data, cache_ttl)
-            logger.info(f"Cache set for overview: {symbol} (source: {'db' if stock else 'fmp'})")
+            logger.info(f"Cache set for overview: {symbol} (source: {source})")
 
             return Response(response_data, status=status.HTTP_200_OK)
 
+        except StockNotFoundError as e:
+            return e.to_response()
         except Exception as e:
             logger.error(f"Overview data error for {symbol}: {e}")
             return Response({
-                'error': f'개요 데이터 조회 중 오류가 발생했습니다: {str(e)}'
+                'error': {
+                    'code': 'OVERVIEW_ERROR',
+                    'message': f'개요 데이터 조회 중 오류가 발생했습니다.',
+                    'details': {
+                        'symbol': symbol,
+                        'original_error': str(e),
+                        'can_retry': True,
+                    }
+                }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 ## Balance Sheet 탭 데이터 클래스 기반 API 뷰
@@ -780,4 +853,150 @@ class StockCompleteDataAPIView(APIView):
             'balance_sheets': BalanceSheetTabSerializer(balance_sheets, many=True).data,
             'income_statements': IncomeStatementTabSerializer(income_statements, many=True).data,
             'cash_flows': CashFlowTabSerializer(cash_flows, many=True).data,
+        }, status=status.HTTP_200_OK)
+
+
+## 데이터 동기화 API
+class StockSyncAPIView(APIView):
+    """
+    주식 데이터 동기화 API
+    - 외부 API에서 데이터를 가져와 DB에 저장
+    - Rate Limit 체크 포함
+    - 공개 데이터 동기화이므로 인증 불필요
+    """
+    # 공개 주식 데이터 동기화는 인증 없이 허용
+    permission_classes = []
+
+    def post(self, request, symbol):
+        """
+        데이터 동기화 요청
+
+        Request Body:
+            {
+                "data_types": ["overview", "price"],  # 동기화할 데이터 타입 (선택)
+                "force": false  # 강제 동기화 여부 (선택)
+            }
+
+        Response:
+            {
+                "symbol": "AAPL",
+                "status": "success" | "partial" | "failed",
+                "synced": {
+                    "overview": {"success": true, "source": "fmp"},
+                    "price": {"success": true, "records": 30}
+                },
+                "next_sync_available": "2026-01-26T15:00:00Z"
+            }
+        """
+        symbol = symbol.upper()
+        sync_service = get_sync_service()
+
+        # 요청 파라미터 파싱
+        data_types = request.data.get('data_types', ['overview'])
+        force = request.data.get('force', False)
+
+        # Rate Limit 체크
+        can_call, usage = check_rate_limit('fmp')
+        if not can_call:
+            return Response({
+                'error': {
+                    'code': 'RATE_LIMIT_EXCEEDED',
+                    'message': 'API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.',
+                    'details': {
+                        'usage': usage,
+                        'can_retry': True,
+                    }
+                }
+            }, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+        # 동기화 실행
+        results = {}
+        all_success = True
+        any_success = False
+
+        valid_data_types = ['overview', 'price']
+
+        for data_type in data_types:
+            if data_type not in valid_data_types:
+                results[data_type] = {
+                    'success': False,
+                    'error': f'지원하지 않는 데이터 타입: {data_type}'
+                }
+                continue
+
+            try:
+                if data_type == 'overview':
+                    result = sync_service.sync_overview(symbol, force=force)
+                elif data_type == 'price':
+                    result = sync_service.sync_prices(symbol, force=force)
+
+                # API 호출 기록
+                record_api_call('fmp')
+
+                results[data_type] = {
+                    'success': result.success,
+                    'source': result.source,
+                    'error': result.error,
+                }
+
+                if result.success:
+                    any_success = True
+                else:
+                    all_success = False
+
+            except Exception as e:
+                logger.error(f"Sync error for {symbol} ({data_type}): {e}")
+                results[data_type] = {
+                    'success': False,
+                    'error': str(e)
+                }
+                all_success = False
+
+        # 응답 구성
+        if all_success:
+            sync_status = 'success'
+        elif any_success:
+            sync_status = 'partial'
+        else:
+            sync_status = 'failed'
+
+        return Response({
+            'symbol': symbol,
+            'status': sync_status,
+            'synced': results,
+            'next_sync_available': (timezone.now() + timedelta(minutes=5)).isoformat(),
+        }, status=status.HTTP_200_OK if any_success else status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request, symbol):
+        """
+        동기화 상태 조회
+
+        Response:
+            {
+                "symbol": "AAPL",
+                "sync_status": {
+                    "overview": {"freshness": "fresh", "synced_at": "..."},
+                    "price": {"freshness": "stale", "synced_at": "..."}
+                },
+                "can_sync": true
+            }
+        """
+        symbol = symbol.upper()
+        sync_service = get_sync_service()
+
+        # Rate Limit 상태 조회
+        can_call, usage = check_rate_limit('fmp')
+
+        sync_status = {}
+        for data_type in ['overview', 'price']:
+            sync_status[data_type] = {
+                'freshness': sync_service.get_freshness(symbol, data_type),
+                **sync_service.get_sync_meta(symbol, data_type, 'unknown'),
+            }
+
+        return Response({
+            'symbol': symbol,
+            'sync_status': sync_status,
+            'can_sync': can_call,
+            'rate_limit': usage,
         }, status=status.HTTP_200_OK)

@@ -67,3 +67,26 @@ export interface RAGContext {
   context: string;
   tokenCount: number;
 }
+
+// Corporate Actions (기업 행동)
+export type CorporateActionType = 'reverse_split' | 'split' | 'spinoff' | 'dividend';
+
+export interface CorporateAction {
+  type: CorporateActionType;
+  date: string;
+  display: string; // 표시 텍스트 (예: "1:10", "2:1", "$5.00")
+  description?: string; // 추가 설명
+  ratio?: number; // 분할 비율 (split/reverse_split)
+  amount?: number; // 배당 금액 (dividend)
+}
+
+export interface StockWithActions extends StockBasic {
+  actions?: CorporateAction[];
+}
+
+export interface PriceDataPoint {
+  date: string;
+  close: number;
+  volume?: number;
+  action?: CorporateAction; // 해당 날짜에 발생한 corporate action
+}

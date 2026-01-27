@@ -74,6 +74,24 @@ class MarketMover(models.Model):
         help_text="변동성 백분위 (0-100)"
     )
 
+    # Corporate Action 정보
+    has_corporate_action = models.BooleanField(
+        default=False,
+        help_text="기업 이벤트(분할/배당) 존재 여부"
+    )
+    corporate_action_type = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        help_text="이벤트 타입 (split, reverse_split, dividend)"
+    )
+    corporate_action_display = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        help_text="이벤트 표시 텍스트 (예: '1:28 역분할')"
+    )
+
     # 메타데이터
     data_quality = models.JSONField(
         default=dict,
@@ -242,3 +260,54 @@ class StockKeyword(models.Model):
             from django.utils import timezone
             self.expires_at = timezone.now() + timedelta(days=7)
         super().save(*args, **kwargs)
+
+
+class CorporateAction(models.Model):
+    """
+    기업 이벤트 (주식분할, 역분할, 배당 등) 기록
+
+    가격 변동 ±50% 이상 시 yfinance로 자동 감지합니다.
+    """
+
+    ACTION_TYPES = [
+        ('reverse_split', '역주식분할'),
+        ('split', '주식분할'),
+        ('spinoff', '분사'),
+        ('dividend', '특별배당'),
+    ]
+
+    symbol = models.CharField(max_length=10, db_index=True)
+    date = models.DateField(db_index=True)
+    action_type = models.CharField(max_length=20, choices=ACTION_TYPES)
+    ratio = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="분할/역분할 비율"
+    )
+    dividend_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text="배당금 (USD)"
+    )
+    display_text = models.CharField(
+        max_length=50,
+        help_text="표시 텍스트 (예: '1:28 역분할')"
+    )
+    source = models.CharField(max_length=20, default='yfinance')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'serverless_corporate_action'
+        unique_together = [['symbol', 'date', 'action_type']]
+        ordering = ['-date', 'symbol']
+        indexes = [
+            models.Index(fields=['symbol', 'date']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} ({self.date}): {self.display_text}"

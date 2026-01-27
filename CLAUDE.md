@@ -141,15 +141,27 @@ User
 - `POST /api/v1/macro/sync/` - 데이터 동기화 시작
 - `GET /api/v1/macro/sync/status/` - 동기화 상태 확인
 
+### Stock 동기화
+
+- `POST /api/v1/stocks/api/sync/<symbol>/` - 수동 데이터 동기화
+  - Body: `{"data_types": ["overview", "price"], "force": false}`
+  - Response: `{"symbol": "AAPL", "status": "success", "synced": {...}}`
+- `GET /api/v1/stocks/api/sync/<symbol>/` - 동기화 상태 조회
+- API 응답에 `_meta` 필드 포함:
+  ```json
+  {"source": "db", "synced_at": "...", "freshness": "fresh", "can_sync": true}
+  ```
+
 ### Market Movers (서버리스)
 
-- `GET /api/v1/serverless/movers?type=gainers&date=2026-01-07` - Market Movers 조회
+- `GET /api/v1/serverless/movers?type=gainers&date=2026-01-07` - Market Movers 조회 (키워드 포함)
   - Query Params:
     - `type`: 'gainers', 'losers', 'actives' (필수)
     - `date`: YYYY-MM-DD 형식 (선택, 기본값: 오늘)
-  - Response: TOP 20 종목 + 5개 지표
+  - Response: TOP 20 종목 + 5개 지표 + AI 키워드
     - **Phase 1 지표**: RVOL (거래량 배수), Trend Strength (추세 강도)
     - **Phase 2 지표**: Sector Alpha (섹터 초과수익), ETF Sync Rate (ETF 동행률), Volatility Percentile (변동성 백분위)
+    - **Phase 2.5 키워드**: LLM 생성 3-5개 핵심 키워드 (예: ["AI 반도체 수요", "데이터센터 확장"])
 
 ---
 
@@ -216,7 +228,9 @@ User
 
 ### yfinance (Yahoo Finance)
 
-Market Pulse 전용 - 무료, Rate limit 없음
+**사용처**: Market Pulse (거시경제 지표), Corporate Action 감지
+
+**특징**: 무료, Rate limit 없음
 
 ```python
 # 주요 심볼
@@ -224,7 +238,18 @@ INDEX_SYMBOLS = {'^GSPC': 'S&P 500', '^DJI': 'Dow Jones', '^IXIC': 'NASDAQ'}
 SECTOR_ETFS = {'XLK': 'Technology', 'XLF': 'Financials', ...}
 COMMODITIES = {'GC=F': 'Gold', 'CL=F': 'Crude Oil', ...}
 FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
+
+# Corporate Action 데이터
+ticker.splits      # 주식분할/역분할 이력
+ticker.dividends   # 배당 이력
+ticker.fast_info.last_price  # 현재 가격
 ```
+
+**주의사항**:
+- Lazy import 필수 (`import yfinance as yf` - 사용 시점에 import)
+- `ticker.splits`, `ticker.dividends`는 pandas Series (`.items()` 메서드 사용)
+- `split.date()`로 날짜 변환 (pandas Timestamp → Python date)
+- 에러 발생 시 로깅만 하고 None 반환 (메인 플로우 중단 안 함)
 
 ---
 
@@ -259,6 +284,72 @@ FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
    - 증상: RVOL이 0.00x로 계산됨
    - 해결: `item.get('volume')` 대신 `quote.get('volume')` 사용
    - 참고: Market Movers 엔드포인트는 volume 미제공, Quote API에서 별도 조회 필요
+8. **Celery Worker에서 async LLM 호출 금지**
+   - 증상: "Event loop is closed" 에러, LLM 호출 실패
+   - 원인: Celery Worker는 자체 이벤트 루프를 관리, async 코드와 충돌
+   - 해결: `genai.Client`의 동기 API 직접 사용 (async 대신)
+   ```python
+   # ❌ 잘못된 방법
+   async def call_llm():
+       return await async_client.generate(...)
+
+   # ✅ 올바른 방법
+   def call_llm():
+       return sync_client.models.generate_content(...)
+   ```
+9. **LLM max_output_tokens 부족으로 JSON 잘림**
+   - 증상: "Unterminated string" JSON 파싱 에러
+   - 원인: 한국어 응답은 토큰 소비가 많아 출력이 중간에 잘림
+   - 해결: max_output_tokens 충분히 설정 (800 → 1200) + regex 복구 로직
+   ```python
+   # JSON 잘림 복구
+   pattern = r'"([^"]+)"'
+   matches = re.findall(pattern, text)
+   if len(matches) >= 2:
+       return matches[:5]  # 부분 복구
+   ```
+10. **Celery 비동기 태스크 완료 전 onSuccess 호출**
+    - 증상: mutation.onSuccess에서 데이터 재조회해도 결과 없음
+    - 원인: onSuccess는 API 요청 완료 시점, Celery 태스크 완료 시점 아님
+    - 해결: setTimeout으로 예상 완료 시간 후 재조회 또는 폴링
+    ```typescript
+    onSuccess: (data) => {
+      const delayMs = stockCount * 6000; // 종목당 6초
+      setTimeout(() => fetchKeywords(), delayMs);
+    }
+    ```
+11. **프론트엔드 string[] vs Keyword[] 타입 불일치**
+    - 증상: "Each child should have unique key" 또는 undefined 에러
+    - 원인: API가 `string[]` 반환, 컴포넌트가 `Keyword[]` 기대
+    - 해결: 정규화 함수로 타입 변환
+    ```typescript
+    function normalizeKeywords(keywords: string[] | Keyword[]): Keyword[] {
+      if (typeof keywords[0] === 'string') {
+        return keywords.map((text, i) => ({ id: `kw-${i}`, text, ... }));
+      }
+      return keywords;
+    }
+    ```
+12. **React 컴포넌트 undefined props 접근**
+    - 증상: "undefined is not an object (evaluating 'colors.bg')"
+    - 원인: optional 필드가 undefined일 때 객체 속성 접근
+    - 해결: 기본값 폴백 패턴 사용
+    ```typescript
+    const colors = CATEGORY_COLORS[keyword.category] || DEFAULT_COLORS;
+    ```
+13. **yfinance pandas Series 타입 불일치**
+    - 증상: "AttributeError: 'Series' object has no attribute 'date'"
+    - 원인: `ticker.splits`, `ticker.dividends`는 pandas Series (Timestamp 인덱스)
+    - 해결: `.items()` 메서드로 반복, `timestamp.date()`로 변환
+    ```python
+    # ❌ 잘못된 방법
+    for split_date in ticker.splits:
+        date_obj = split_date.date()  # 에러!
+
+    # ✅ 올바른 방법
+    for split_timestamp, ratio in ticker.splits.items():
+        date_obj = split_timestamp.date()
+    ```
 
 ---
 
@@ -324,6 +415,149 @@ CELERY_BEAT_SCHEDULE = {
     }
 }
 ```
+
+### Corporate Action 감지 시스템
+
+**개요**: 가격 변동 ±50% 이상 시 주식분할/역분할/배당을 자동 감지
+
+| 컴포넌트 | 역할 |
+|---------|------|
+| **CorporateActionService** | yfinance로 Corporate Action 감지 |
+| **CorporateAction 모델** | 이벤트 이력 저장 |
+| **MarketMover 필드** | has_corporate_action, corporate_action_type, corporate_action_display |
+
+**감지 조건**:
+- **주식분할**: ratio < 1 (예: 0.5 → 2:1 분할)
+- **역분할**: ratio > 1 (예: 28.0 → 1:28 역분할)
+- **특별배당**: 배당 수익률 5% 이상
+- **LOOKBACK_DAYS**: 최근 7일 이내 이벤트만 체크
+
+**예시 (GRI Bio 역분할)**:
+```json
+{
+  "symbol": "GRI",
+  "change_percent": 2772.0,
+  "has_corporate_action": true,
+  "corporate_action_type": "reverse_split",
+  "corporate_action_display": "1:28 역분할"
+}
+```
+
+**테스트**: `tests/serverless/test_corporate_action_service.py` (12개 테스트)
+
+---
+
+## AI 키워드 생성 시스템 (Phase 2.5)
+
+### 개요
+
+Market Movers 및 Screener 종목에 대해 LLM 기반 핵심 키워드를 생성하는 시스템.
+Gemini 2.5 Flash 사용, Celery 비동기 파이프라인으로 처리.
+
+### 아키텍처
+
+```
+프론트엔드 (AI 키워드 버튼)
+        │
+        ▼
+REST API (trigger_keyword_generation)
+        │
+        ▼
+Celery 파이프라인 (collect → generate → save)
+        │
+        ├─ KeywordDataCollector (뉴스 수집)
+        │     ├─ Marketaux API (우선)
+        │     └─ Finnhub API (폴백)
+        │
+        └─ KeywordGenerationService (LLM 호출)
+              └─ Gemini 2.5 Flash (동기 API)
+        │
+        ▼
+StockKeyword 모델 (PostgreSQL)
+        │
+        ▼
+프론트엔드 (KeywordList 컴포넌트)
+```
+
+### API 엔드포인트
+
+```bash
+# Market Movers용
+POST /api/v1/serverless/keywords/generate-all
+     Body: {"type": "gainers", "date": "2026-01-26"}
+
+# Screener용
+POST /api/v1/serverless/keywords/generate-screener
+     Body: {"stocks": [{"symbol": "AAPL", "company_name": "...", "sector": "..."}]}
+
+# 키워드 조회
+GET  /api/v1/serverless/keywords/<symbol>?date=2026-01-26
+POST /api/v1/serverless/keywords/batch
+     Body: {"symbols": ["AAPL", "MSFT"], "date": "2026-01-26"}
+```
+
+### StockKeyword 모델
+
+```python
+{
+    symbol: CharField(max_length=10),
+    date: DateField,
+    company_name: CharField,
+    keywords: JSONField,  # ["AI 수요 증가", "실적 호조", "목표가 상향"]
+    status: CharField,    # 'pending', 'completed', 'failed'
+    error_message: TextField,
+    llm_model: CharField,  # 'gemini-2.5-flash'
+    generation_time_ms: IntegerField,
+    prompt_tokens: IntegerField,
+    completion_tokens: IntegerField,
+    expires_at: DateTimeField  # 7일 후 만료
+}
+```
+
+### LLM 프롬프트 설계
+
+```python
+SYSTEM_PROMPT = """
+규칙:
+- 정확히 3개 키워드만 반환
+- 각 키워드는 15자 이내로 짧게
+- 반드시 완전한 JSON 배열 형식
+
+예시: ["AI 수요 증가", "실적 호조", "목표가 상향"]
+"""
+```
+
+### 폴백 키워드
+
+LLM 호출 실패 시 기본 키워드 사용:
+```python
+FALLBACK_KEYWORDS = {
+    'gainers': ["급등", "거래량 증가", "모멘텀"],
+    'losers': ["급락", "매도 압력", "조정"],
+    'actives': ["거래량 급증", "변동성", "투자자 관심"],
+    'screener': ["분석 대상", "투자 검토", "모니터링"],
+}
+```
+
+### Rate Limit 대응
+
+| Provider | Rate Limit | 대응 |
+|----------|------------|------|
+| Marketaux | 100/일, 15분 간격 | 5초 이상 대기 시 Finnhub 폴백 |
+| Finnhub | 60/분, 1초 간격 | 기본 폴백 provider |
+| Gemini Free | 15 RPM, 1500 RPD | 지수 백오프 재시도 |
+
+### 프론트엔드 컴포넌트
+
+- **KeywordTag**: 개별 키워드 태그 (색상, 툴팁)
+- **KeywordList**: 키워드 목록 (로딩, 에러, 빈 상태 처리)
+- **normalizeKeywords()**: string[] → Keyword[] 변환
+
+### 성능 지표
+
+- 종목당 키워드 생성: 약 6초
+- 50개 종목 배치: 약 5분
+- max_output_tokens: 1200 (한국어 지원)
 
 ### 테스트 커버리지
 
@@ -607,12 +841,19 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
 - ✅ yfinance 글로벌 시장 데이터
 - ✅ Watchlist 관심종목 관리 (목표가, 메모, 실시간 가격)
 - ✅ RAG Analysis Phase 3 (Semantic Cache, Cost Optimization)
-- ✅ **Market Movers (Phase 1 + Phase 2)**
+- ✅ **Market Movers (Phase 1 + Phase 2 + Phase 2.5 + Phase 2.6)**
   - ✅ **5개 지표 시스템**: RVOL, Trend Strength, Sector Alpha, ETF Sync Rate, Volatility Percentile
   - ✅ **FMP API 통합**: Gainers/Losers/Actives TOP 20
   - ✅ **Celery Beat 스케줄**: 매일 07:30 EST 자동 동기화
   - ✅ **유닛 테스트**: 21개 테스트 (100% 통과)
+  - ✅ **AI 키워드 생성 (Phase 2.5)**: Gemini 2.5 Flash 기반 3개 핵심 키워드
+  - ✅ **Corporate Action 감지 (Phase 2.6)**: yfinance 기반 주식분할/역분할/배당 자동 감지
   - ⏳ **Phase 3: AWS Lambda 전환** (보류)
+- ✅ **AI 키워드 시스템**
+  - ✅ **Backend**: StockKeyword 모델, KeywordGenerationService, Celery 파이프라인
+  - ✅ **Frontend**: KeywordTag/KeywordList 컴포넌트, Market Movers/Screener 통합
+  - ✅ **Rate Limit 대응**: Marketaux → Finnhub 폴백, Gemini 지수 백오프
+  - ✅ **JSON 복구**: 잘린 LLM 응답 regex 복구
 - ✅ **Graph Analysis (Phase 1 Week 1-2)**
   - ✅ **PostgreSQL 스키마**: CorrelationMatrix, CorrelationEdge, CorrelationAnomaly, PriceCache, GraphMetadata
   - ✅ **NetworkX 상관계수 계산 엔진**: 3개월 rolling window, ±0.2 anomaly detection
@@ -620,6 +861,12 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **Services**: CorrelationCalculator, AnomalyDetector
   - ⏳ **REST API 엔드포인트**: Week 3-4 예정
   - ⏳ **Frontend 그래프 시각화 (D3.js)**: Week 3-4 예정
+- ✅ **Stock Auto Sync System**
+  - ✅ **자동 저장**: 외부 API 응답 DB 자동 저장 (StockSyncService)
+  - ✅ **Rate Limiter**: Redis 기반 FMP/Alpha Vantage 호출 제한
+  - ✅ **_meta 응답**: 데이터 소스/신선도/동기화 시간 정보 포함
+  - ✅ **Frontend 훅**: useStockData (TanStack Query), useDataSync
+  - ✅ **공통 컴포넌트**: DataLoadingState, DataSourceBadge, CorporateActionBadge
 - ⏳ ML/DL 모델 통합
 
 ---

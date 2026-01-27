@@ -37,6 +37,10 @@ urlpatterns = [
     # Cash Flow 탭 데이터 API (현금흐름표)
     path('api/cashflow/<str:symbol>/', views.StockCashFlowAPIView.as_view(), name='stock_cashflow_data'),
 
+    ## 데이터 동기화 API
+    # 주식 데이터 동기화 (POST: 동기화 실행, GET: 상태 조회)
+    path('api/sync/<str:symbol>/', views.StockSyncAPIView.as_view(), name='stock_sync'),
+
     ## MVP API 엔드포인트 (간소화 버전)
     # 주식 목록 (요약)
     path('api/mvp/stocks/', views_mvp.StockMVPListView.as_view(), name='mvp_stock_list'),

@@ -74,6 +74,26 @@ export interface StockOverview {
   ex_dividend_date?: string;
 }
 
+// Meta information for data freshness tracking
+export interface DataMeta {
+  source: 'db' | 'fmp' | 'fmp_realtime' | 'alpha_vantage' | 'yfinance' | 'unknown';
+  synced_at: string | null;
+  freshness: 'fresh' | 'stale' | 'expired';
+  can_sync: boolean;
+}
+
+export interface SyncResponse {
+  symbol: string;
+  status: 'success' | 'partial' | 'failed';
+  synced: Record<string, { success: boolean; source?: string; error?: string }>;
+  next_sync_available: string;
+}
+
+export interface OverviewWithMeta {
+  overview: StockOverview;
+  _meta: DataMeta | null;
+}
+
 export interface FinancialStatement {
   fiscal_date_ending: string;
   fiscal_year: number;
@@ -121,6 +141,12 @@ export const stockService = {
 
   // Get stock overview (detailed info)
   async getStockOverview(symbol: string): Promise<StockOverview> {
+    const result = await this.getStockOverviewWithMeta(symbol);
+    return result.overview;
+  },
+
+  // Get stock overview with meta information
+  async getStockOverviewWithMeta(symbol: string): Promise<OverviewWithMeta> {
     const response = await fetch(`${API_URL}/stocks/api/overview/${symbol}/`, {
       headers: {
         'Content-Type': 'application/json',
@@ -128,14 +154,17 @@ export const stockService = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch stock overview');
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error('Failed to fetch stock overview') as any;
+      error.response = { data: errorData, status: response.status };
+      throw error;
     }
 
     const result = await response.json();
     const data = result.data;
 
     // Transform the data to match our interface
-    return {
+    const overview: StockOverview = {
       symbol: data.symbol,
       stock_name: data.stock_name,
       description: data.description,
@@ -178,6 +207,59 @@ export const stockService = {
       dividend_date: data.dividend_date,
       ex_dividend_date: data.ex_dividend_date,
     };
+
+    // Extract meta information
+    const _meta: DataMeta | null = result._meta || null;
+
+    return { overview, _meta };
+  },
+
+  // Sync stock data from external API to DB
+  async syncData(
+    symbol: string,
+    dataTypes: string[] = ['overview'],
+    force: boolean = false
+  ): Promise<SyncResponse> {
+    // 인증 토큰 가져오기 (선택적)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/stocks/api/sync/${symbol}/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ data_types: dataTypes, force }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error('Failed to sync stock data') as any;
+      error.response = { data: errorData, status: response.status };
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // Get sync status
+  async getSyncStatus(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/sync/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get sync status');
+    }
+
+    return response.json();
   },
 
   // Get chart data

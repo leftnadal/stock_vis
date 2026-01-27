@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
 import { AuthGuard } from '@/components/auth/AuthGuard';
@@ -16,6 +16,7 @@ import {
   Info,
   Settings2,
   Calculator,
+  RefreshCw,
 } from 'lucide-react';
 import UnitSelector from '@/components/financial/UnitSelector';
 import FormattedFinancialCell from '@/components/financial/FormattedFinancialCell';
@@ -37,8 +38,18 @@ import NewsList from '@/components/news/NewsList';
 import SentimentChart from '@/components/news/SentimentChart';
 import NewsDetailModal from '@/components/news/NewsDetailModal';
 import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
+import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
+import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
+import useDataSync from '@/hooks/useDataSync';
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals';
+
+interface DataMeta {
+  source: DataSource;
+  synced_at: string | null;
+  freshness: DataFreshness;
+  can_sync: boolean;
+}
 
 function StockDetailContent() {
   const params = useParams();
@@ -46,39 +57,76 @@ function StockDetailContent() {
 
   const [stockQuote, setStockQuote] = useState<StockQuote | null>(null);
   const [stockOverview, setStockOverview] = useState<StockOverview | null>(null);
+  const [dataMeta, setDataMeta] = useState<DataMeta | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<DataStatus>('loading');
+  const [error, setError] = useState<DataError | null>(null);
+  const [progress, setProgress] = useState<LoadingProgress | null>(null);
+
+  // Use sync hook
+  const {
+    sync,
+    isSyncing,
+    status: syncStatus,
+    results: syncResults,
+  } = useDataSync(symbol, {
+    onSuccess: () => {
+      // Reload data after successful sync
+      loadStockData();
+    },
+  });
+
+  const loadStockData = useCallback(async () => {
+    if (!symbol) {
+      setStatus('empty');
+      return;
+    }
+
+    try {
+      setStatus('loading');
+      setError(null);
+      setProgress({ current: 0, total: 2, currentItem: 'Quote 데이터 로딩 중...' });
+
+      const upperSymbol = symbol.toUpperCase();
+
+      // Step 1: Load quote data
+      setProgress({ current: 1, total: 2, currentItem: 'Quote 데이터 로딩 중...' });
+      const quote = await stockService.getStockQuote(upperSymbol);
+
+      // Step 2: Load overview data with meta
+      setProgress({ current: 2, total: 2, currentItem: 'Overview 데이터 로딩 중...' });
+      const overviewResponse = await stockService.getStockOverviewWithMeta(upperSymbol);
+
+      setStockQuote(quote);
+      setStockOverview(overviewResponse.overview);
+      setDataMeta(overviewResponse._meta);
+      setStatus('success');
+      setProgress(null);
+    } catch (err: any) {
+      console.error('Failed to load stock data:', err);
+
+      // Parse error response
+      const errorData: DataError = err.response?.data?.error || {
+        code: 'NETWORK_ERROR',
+        message: err.message || '주식 데이터를 불러오는 중 오류가 발생했습니다.',
+        canRetry: true,
+      };
+
+      setError(errorData);
+      setStatus('error');
+      setProgress(null);
+    }
+  }, [symbol]);
 
   useEffect(() => {
     if (symbol) {
       loadStockData();
     }
-  }, [symbol]);
+  }, [symbol, loadStockData]);
 
-  const loadStockData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      // Convert symbol to uppercase
-      const upperSymbol = symbol.toUpperCase();
-
-      // Load quote and overview data in parallel
-      const [quote, overview] = await Promise.all([
-        stockService.getStockQuote(upperSymbol),
-        stockService.getStockOverview(upperSymbol),
-      ]);
-
-      setStockQuote(quote);
-      setStockOverview(overview);
-    } catch (err) {
-      console.error('Failed to load stock data:', err);
-      setError('주식 데이터를 불러오는 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleSync = useCallback(() => {
+    sync(['overview', 'price']);
+  }, [sync]);
 
   const formatCurrency = (value: number | undefined) => {
     if (value === undefined || value === null) return '-';
@@ -100,31 +148,32 @@ function StockDetailContent() {
     return `${numValue > 0 ? '+' : ''}${numValue.toFixed(2)}%`;
   };
 
-  if (loading) {
+  // Loading state
+  if (status === 'loading' || isSyncing) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
         <div className="max-w-7xl mx-auto">
-          <div className="animate-pulse space-y-4">
-            <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-            <div className="h-96 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-            <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
-          </div>
+          <DataLoadingState
+            status={isSyncing ? 'syncing' : 'loading'}
+            progress={progress || undefined}
+            loadingMessage={`${symbol?.toUpperCase()} 데이터를 불러오는 중...`}
+          />
         </div>
       </div>
     );
   }
 
-  if (error || !stockQuote) {
+  // Error state
+  if (status === 'error' || !stockQuote) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8">
-        <div className="max-w-7xl mx-auto text-center">
-          <p className="text-red-600 dark:text-red-400">{error || '주식을 찾을 수 없습니다.'}</p>
-          <button
-            onClick={loadStockData}
-            className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            다시 시도
-          </button>
+        <div className="max-w-7xl mx-auto">
+          <DataLoadingState
+            status="error"
+            error={error || { code: 'STOCK_NOT_FOUND', message: '주식을 찾을 수 없습니다.', canRetry: true }}
+            onRetry={loadStockData}
+            onSync={handleSync}
+          />
         </div>
       </div>
     );
@@ -151,9 +200,21 @@ function StockDetailContent() {
             <div>
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {stockQuote.stock_name}
-                  </h1>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {stockQuote.stock_name}
+                    </h1>
+                    {/* Data Source Badge */}
+                    {dataMeta && (
+                      <DataSourceWithTooltip
+                        source={dataMeta.source}
+                        syncedAt={dataMeta.synced_at}
+                        freshness={dataMeta.freshness}
+                        canSync={dataMeta.can_sync}
+                        onSync={handleSync}
+                      />
+                    )}
+                  </div>
                   <p className="text-lg text-gray-600 dark:text-gray-400 mt-1">
                     {stockQuote.symbol}
                     {stockOverview?.exchange && (
@@ -167,6 +228,20 @@ function StockDetailContent() {
                     </p>
                   )}
                 </div>
+                {/* Sync Button */}
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                    isSyncing
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed dark:bg-gray-700'
+                      : 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50'
+                  }`}
+                  title="데이터 새로고침"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? '동기화 중...' : '새로고침'}
+                </button>
               </div>
 
               <div className="flex items-baseline space-x-4">
@@ -264,8 +339,12 @@ function StockDetailContent() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'overview' && stockOverview && (
-              <OverviewTab overview={stockOverview} />
+            {activeTab === 'overview' && (
+              stockOverview ? (
+                <OverviewTab overview={stockOverview} />
+              ) : (
+                <EmptyOverviewData />
+              )
             )}
             {activeTab === 'balance-sheet' && (
               <FinancialTab symbol={symbol.toUpperCase()} type="balance-sheet" />
@@ -345,6 +424,56 @@ function MetricItem({ label, value }: { label: string; value: string }) {
     <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
       <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</p>
       <p className="text-sm font-semibold text-gray-900 dark:text-white">{value}</p>
+    </div>
+  );
+}
+
+// Empty Overview Data Component
+function EmptyOverviewData() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="rounded-full bg-gray-100 dark:bg-gray-700 p-4 mb-4">
+        <Info className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        공개된 기업 개요 정보가 없습니다
+      </h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
+        이 종목의 기업 정보가 아직 수집되지 않았거나,
+        데이터 제공자가 해당 정보를 제공하지 않습니다.
+      </p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+        상단의 &apos;동기화&apos; 버튼을 눌러 데이터를 가져올 수 있습니다.
+      </p>
+    </div>
+  );
+}
+
+// Empty Financial Data Component
+function EmptyFinancialData({ type }: { type: FinancialTabType }) {
+  const typeLabels: Record<FinancialTabType, string> = {
+    'balance-sheet': '대차대조표',
+    'income-statement': '손익계산서',
+    'cash-flow': '현금흐름표',
+  };
+
+  const typeName = typeLabels[type] || '재무제표';
+
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4">
+      <div className="rounded-full bg-gray-100 dark:bg-gray-700 p-4 mb-4">
+        <FileText className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+      </div>
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+        공개된 {typeName} 정보가 없습니다
+      </h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-md">
+        이 종목은 아직 {typeName} 데이터가 공시되지 않았거나,
+        데이터 제공자가 해당 정보를 제공하지 않습니다.
+      </p>
+      <p className="text-xs text-gray-400 dark:text-gray-500 mt-4">
+        일부 소규모 기업이나 신규 상장 기업의 경우 재무 데이터가 제한적일 수 있습니다.
+      </p>
     </div>
   );
 }
@@ -446,7 +575,7 @@ function FinancialTab({ symbol, type }: { symbol: string; type: FinancialTabType
       {data.length > 0 ? (
         <FinancialTable data={data} tabType={type} selectedFields={selectedFields} />
       ) : (
-        <p className="text-center text-gray-500 dark:text-gray-400 py-8">데이터가 없습니다.</p>
+        <EmptyFinancialData type={type} />
       )}
 
       {/* Field Settings Modal */}

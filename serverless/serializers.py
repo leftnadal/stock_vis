@@ -2,7 +2,13 @@
 Market Movers Serializers
 """
 from rest_framework import serializers
-from serverless.models import MarketMover, SectorETFMapping, StockSectorInfo, VolatilityBaseline
+from serverless.models import (
+    MarketMover,
+    SectorETFMapping,
+    StockSectorInfo,
+    VolatilityBaseline,
+    CorporateAction,
+)
 
 
 class MarketMoverSerializer(serializers.ModelSerializer):
@@ -54,6 +60,9 @@ class MarketMoverSerializer(serializers.ModelSerializer):
             'sector_alpha',
             'etf_sync_rate',
             'volatility_pct',
+            'has_corporate_action',
+            'corporate_action_type',
+            'corporate_action_display',
             'data_quality',
             'created_at',
         ]
@@ -94,6 +103,10 @@ class MarketMoverListSerializer(serializers.ModelSerializer):
             'sector_alpha_display',
             'etf_sync_display',
             'volatility_pct_display',
+            # Corporate Action 정보
+            'has_corporate_action',
+            'corporate_action_type',
+            'corporate_action_display',
         ]
 
     def get_sector_alpha_display(self, obj):
@@ -134,3 +147,21 @@ class VolatilityBaselineSerializer(serializers.ModelSerializer):
     class Meta:
         model = VolatilityBaseline
         fields = '__all__'
+
+
+class CorporateActionSerializer(serializers.ModelSerializer):
+    """Corporate Action 직렬화"""
+    class Meta:
+        model = CorporateAction
+        fields = [
+            'id',
+            'symbol',
+            'date',
+            'action_type',
+            'ratio',
+            'dividend_amount',
+            'display_text',
+            'source',
+            'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']

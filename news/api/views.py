@@ -206,6 +206,75 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(data)
 
     @action(detail=False, methods=['get'])
+    def market(self, request):
+        """
+        시장 전체 뉴스 조회
+
+        Query Parameters:
+            - category: general, forex, crypto, merger (기본값: general)
+            - limit: 결과 개수 (기본값: 20)
+            - refresh: 데이터 새로고침 여부 (기본값: false)
+        """
+        category = request.query_params.get('category', 'general')
+        limit = int(request.query_params.get('limit', 20))
+        refresh = request.query_params.get('refresh', 'false').lower() == 'true'
+
+        # 유효한 카테고리 검증
+        valid_categories = ['general', 'forex', 'crypto', 'merger']
+        if category not in valid_categories:
+            raise ValidationError({
+                'category': f'Invalid category. Choose from: {", ".join(valid_categories)}'
+            })
+
+        # Finnhub 카테고리 매핑 (Finnhub는 자체 카테고리명 사용)
+        # general -> top news, general, business 등
+        category_mapping = {
+            'general': ['general', 'top news', 'business', 'company news'],
+            'forex': ['forex'],
+            'crypto': ['crypto'],
+            'merger': ['merger'],
+        }
+        db_categories = category_mapping.get(category, [category])
+
+        # 캐시 키
+        cache_key = f"news:market:{category}:{limit}"
+
+        # 캐시 확인 (refresh=false일 때만)
+        if not refresh:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.info(f"Cache hit: {cache_key}")
+                return Response(cached_data)
+
+        # refresh=true인 경우, 새로운 뉴스 수집
+        if refresh:
+            try:
+                service = NewsAggregatorService()
+                result = service.fetch_and_save_market_news(category=category)
+                logger.info(f"Market news refresh result: {result}")
+            except Exception as e:
+                logger.error(f"Failed to refresh market news: {e}")
+
+        # 데이터베이스에서 조회 (최근 7일, 매핑된 카테고리로 필터)
+        from_date = timezone.now() - timedelta(days=7)
+        articles = NewsArticle.objects.filter(
+            category__in=db_categories,
+            published_at__gte=from_date
+        ).order_by('-published_at')[:limit]
+
+        serializer = self.get_serializer(articles, many=True)
+        data = {
+            'category': category,
+            'count': len(serializer.data),
+            'articles': serializer.data
+        }
+
+        # 캐시 저장 (10분)
+        cache.set(cache_key, data, 600)
+
+        return Response(data)
+
+    @action(detail=False, methods=['get'])
     def trending(self, request):
         """
         트렌딩 종목 (뉴스가 많이 나온 종목)

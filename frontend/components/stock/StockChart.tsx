@@ -456,6 +456,51 @@ export default function StockChart({ symbol }: StockChartProps) {
     );
   }
 
+  // Empty data state - 차트 데이터가 없을 경우
+  if (chartData.length === 0) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">주가 차트</h3>
+          </div>
+          <div className="flex space-x-1">
+            {PERIOD_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => setSelectedPeriod(option.value)}
+                className={`px-3 py-1 text-xs rounded transition-colors ${
+                  selectedPeriod === option.value
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+            <BarChart3 className="h-8 w-8 text-gray-400 dark:text-gray-500" />
+          </div>
+          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            차트 데이터가 없습니다
+          </h4>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm mb-4">
+            이 종목의 가격 데이터가 아직 수집되지 않았거나, 거래가 없는 종목입니다.
+          </p>
+          <button
+            onClick={loadChartData}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+          >
+            다시 시도
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate price change
   const firstPrice = chartData.length > 0 ? chartData[0].close_price : 0;
   const lastPrice = chartData.length > 0 ? chartData[chartData.length - 1].close_price : 0;

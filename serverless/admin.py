@@ -2,7 +2,14 @@
 Serverless App Admin
 """
 from django.contrib import admin
-from serverless.models import MarketMover, SectorETFMapping, StockSectorInfo, VolatilityBaseline, StockKeyword
+from serverless.models import (
+    MarketMover,
+    SectorETFMapping,
+    StockSectorInfo,
+    VolatilityBaseline,
+    StockKeyword,
+    CorporateAction,
+)
 
 
 @admin.register(MarketMover)
@@ -28,6 +35,10 @@ class MarketMoverAdmin(admin.ModelAdmin):
         }),
         ('Phase 2 지표', {
             'fields': ('sector_alpha', 'etf_sync_rate', 'volatility_pct'),
+            'classes': ('collapse',),
+        }),
+        ('Corporate Action', {
+            'fields': ('has_corporate_action', 'corporate_action_type', 'corporate_action_display'),
             'classes': ('collapse',),
         }),
         ('메타데이터', {
@@ -92,3 +103,28 @@ class StockKeywordAdmin(admin.ModelAdmin):
         """키워드 개수"""
         return len(obj.keywords) if obj.keywords else 0
     keyword_count.short_description = '키워드 수'
+
+
+@admin.register(CorporateAction)
+class CorporateActionAdmin(admin.ModelAdmin):
+    list_display = [
+        'symbol', 'date', 'action_type', 'display_text',
+        'ratio', 'dividend_amount', 'source', 'created_at'
+    ]
+    list_filter = ['date', 'action_type', 'source']
+    search_fields = ['symbol']
+    ordering = ['-date', 'symbol']
+    readonly_fields = ['created_at']
+
+    fieldsets = (
+        ('기본 정보', {
+            'fields': ('symbol', 'date', 'action_type', 'display_text')
+        }),
+        ('상세 정보', {
+            'fields': ('ratio', 'dividend_amount', 'source')
+        }),
+        ('메타데이터', {
+            'fields': ('created_at',),
+            'classes': ('collapse',),
+        }),
+    )

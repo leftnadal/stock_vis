@@ -13,6 +13,7 @@ from django.utils import timezone
 from serverless.models import MarketMover
 from serverless.services.fmp_client import FMPClient, FMPAPIError
 from serverless.services.indicators import IndicatorCalculator
+from serverless.services.corporate_action_service import CorporateActionService
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ class MarketMoversSync:
     def __init__(self, api_key: Optional[str] = None):
         self.fmp = FMPClient(api_key=api_key)
         self.calc = IndicatorCalculator()
+        self.action_service = CorporateActionService()
 
     @transaction.atomic
     def sync_daily_movers(self, target_date=None) -> Dict[str, int]:
@@ -157,7 +159,29 @@ class MarketMoversSync:
         etf_sync = self._calculate_etf_sync_with_profile(symbol, historical, profile)
         volatility_pct = self._calculate_volatility_pct(historical)
 
-        # 6. 데이터 품질 정보
+        # 6. Corporate Action 감지 (±50% 이상 변동 시)
+        change_percent = float(item.get('changesPercentage', 0))
+        corporate_action_detected = None
+        has_corporate_action = False
+        corporate_action_type = None
+        corporate_action_display = None
+
+        if self.action_service.should_check(change_percent):
+            try:
+                corporate_action_detected = self.action_service.check_actions(symbol, date)
+                if corporate_action_detected:
+                    # DB에 저장
+                    self.action_service.save_action(symbol, corporate_action_detected)
+                    has_corporate_action = True
+                    corporate_action_type = corporate_action_detected['action_type']
+                    corporate_action_display = corporate_action_detected['display_text']
+                    logger.info(
+                        f"  📢 {symbol} Corporate Action 감지: {corporate_action_display}"
+                    )
+            except Exception as e:
+                logger.warning(f"  ⚠️ {symbol} Corporate Action 감지 실패: {e}")
+
+        # 7. 데이터 품질 정보
         data_quality = {
             'has_20d_volume': len(historical) >= 20,
             'has_ohlc': all([
@@ -168,7 +192,7 @@ class MarketMoversSync:
             'historical_days': len(historical),
         }
 
-        # 7. DB 저장
+        # 8. DB 저장
         MarketMover.objects.update_or_create(
             date=date,
             mover_type=mover_type,
@@ -194,6 +218,10 @@ class MarketMoversSync:
                 'sector_alpha': sector_alpha,
                 'etf_sync_rate': etf_sync,
                 'volatility_pct': volatility_pct,
+                # Corporate Action 정보
+                'has_corporate_action': has_corporate_action,
+                'corporate_action_type': corporate_action_type,
+                'corporate_action_display': corporate_action_display,
                 'data_quality': data_quality,
             }
         )
