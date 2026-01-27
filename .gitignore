@@ -177,3 +177,7 @@ cython_debug/
 .pypirc
 
 # claude example
+
+# OAG KB
+shared_kb/__pycache__/
+shared_kb/queue_data.json

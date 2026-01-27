@@ -38,7 +38,7 @@ def update_realtime_prices(self, symbols=None, priority='normal'):
 
         # AlphaVantageService 동적 import (순환 참조 방지)
         try:
-            from API_request.alphavantage_service import AlphaVantageService
+            from api_request.alphavantage_service import AlphaVantageService
         except ImportError:
             logger.error("AlphaVantageService not found")
             return "Service not available"
@@ -119,7 +119,7 @@ def update_batch_daily_prices(symbols):
         if not api_key:
             return "API key not configured"
 
-        from API_request.alphavantage_service import AlphaVantageService
+        from api_request.alphavantage_service import AlphaVantageService
         service = AlphaVantageService(api_key=api_key)
 
         stats = {
@@ -167,7 +167,7 @@ def update_weekly_prices():
         # 모든 활성 종목
         symbols = Stock.objects.filter(is_active=True).values_list('symbol', flat=True)[:20]
 
-        from API_request.alphavantage_service import AlphaVantageService
+        from api_request.alphavantage_service import AlphaVantageService
         service = AlphaVantageService(api_key=api_key)
 
         updated = 0
@@ -216,7 +216,7 @@ def update_single_financial_statement(symbol):
         if not api_key:
             return f"API key not configured for {symbol}"
 
-        from API_request.alphavantage_service import AlphaVantageService
+        from api_request.alphavantage_service import AlphaVantageService
         service = AlphaVantageService(api_key=api_key)
 
         try:
@@ -283,7 +283,7 @@ def fetch_and_save_stock_data(symbol):
         # API 경로 추가
         import sys
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        api_path = os.path.join(project_root, 'API request')
+        api_path = os.path.join(project_root, 'api_request')
         if api_path not in sys.path:
             sys.path.insert(0, api_path)
 
@@ -355,3 +355,160 @@ def fetch_and_save_stock_data(symbol):
     except Exception as e:
         logger.error(f"Task completely failed for {symbol}: {e}")
         return f"Failed: Could not fetch data for {symbol}. Error: {e}"
+
+
+# ============================================================
+# StockService 기반 태스크 (Provider 추상화 사용)
+# ============================================================
+
+@shared_task(bind=True, max_retries=3)
+def update_stock_with_provider(self, symbol, use_fallback=True):
+    """
+    Provider 추상화를 사용한 주식 데이터 업데이트
+
+    StockService를 통해 Feature Flag에 따라 Alpha Vantage 또는 FMP 사용.
+    Fallback 기능으로 주 provider 실패 시 대체 provider 자동 사용.
+
+    Args:
+        symbol: 주식 심볼
+        use_fallback: Fallback 사용 여부 (기본: True)
+
+    Returns:
+        결과 문자열
+    """
+    try:
+        from api_request.stock_service import get_stock_service
+
+        service = get_stock_service()
+        symbol = symbol.upper().strip()
+
+        results = {
+            'symbol': symbol,
+            'stock_data': False,
+            'prices': False,
+            'financials': False,
+        }
+
+        # 1. 주식 기본 정보 업데이트
+        try:
+            logger.info(f"[Provider] Updating stock data for {symbol}")
+            stock = service.update_stock_data(symbol)
+            results['stock_data'] = True
+            logger.info(f"[Provider] Stock data updated for {symbol}")
+            time.sleep(12)  # Rate limiting
+        except Exception as e:
+            logger.error(f"[Provider] Failed to update stock data for {symbol}: {e}")
+
+        # 2. 가격 데이터 업데이트
+        try:
+            logger.info(f"[Provider] Updating prices for {symbol}")
+            price_result = service.update_historical_prices(symbol, days=730)
+            results['prices'] = True
+            logger.info(f"[Provider] Prices updated for {symbol}: {price_result}")
+            time.sleep(12)
+        except Exception as e:
+            logger.error(f"[Provider] Failed to update prices for {symbol}: {e}")
+
+        # 3. 재무제표 업데이트
+        try:
+            logger.info(f"[Provider] Updating financial statements for {symbol}")
+            financial_result = service.update_financial_statements(symbol)
+            results['financials'] = True
+            logger.info(f"[Provider] Financials updated for {symbol}: {financial_result}")
+        except Exception as e:
+            logger.error(f"[Provider] Failed to update financials for {symbol}: {e}")
+
+        # 캐시 무효화
+        cache.delete(f'stock_quote_{symbol}')
+        cache.delete(f'overview_{symbol}')
+        cache.delete(f'chart_{symbol}_daily_1d')
+
+        success_count = sum(1 for v in results.values() if v is True)
+        return f"[Provider] Success: {success_count}/3 for {symbol}"
+
+    except Exception as e:
+        logger.error(f"[Provider] Task failed for {symbol}: {e}")
+        raise self.retry(exc=e, countdown=60)
+
+
+@shared_task
+def update_realtime_with_provider(symbols=None):
+    """
+    Provider를 사용한 실시간 가격 업데이트
+
+    Args:
+        symbols: 업데이트할 심볼 리스트 (없으면 포트폴리오 종목)
+
+    Returns:
+        결과 문자열
+    """
+    try:
+        from api_request.stock_service import get_stock_service
+
+        if not symbols:
+            from users.models import Portfolio
+            symbols = list(Portfolio.objects.values_list('stock__symbol', flat=True).distinct()[:10])
+
+        if not symbols:
+            return "[Provider] No symbols to update"
+
+        service = get_stock_service()
+
+        stats = {'updated': 0, 'cached': 0, 'errors': 0}
+
+        for symbol in symbols:
+            try:
+                result = service.update_previous_close(symbol, force=False)
+
+                if result['status'] == 'cached':
+                    stats['cached'] += 1
+                    logger.info(f"[Provider] Cached: {symbol}")
+                elif result['status'] == 'updated':
+                    stats['updated'] += 1
+                    logger.info(f"[Provider] Updated: {symbol} @ ${result.get('price', 0):.2f}")
+                    cache.delete(f'stock_quote_{symbol}')
+                    if stats['updated'] < len(symbols):
+                        time.sleep(12)
+                else:
+                    stats['errors'] += 1
+                    logger.error(f"[Provider] Error: {symbol} - {result.get('message')}")
+
+            except Exception as e:
+                stats['errors'] += 1
+                logger.error(f"[Provider] Exception for {symbol}: {e}")
+
+        return f"[Provider] Updated: {stats['updated']}, Cached: {stats['cached']}, Errors: {stats['errors']}"
+
+    except Exception as e:
+        logger.error(f"[Provider] Task failed: {e}")
+        return f"[Provider] Error: {e}"
+
+
+@shared_task
+def update_financials_with_provider(symbol):
+    """
+    Provider를 사용한 재무제표 업데이트
+
+    Args:
+        symbol: 주식 심볼
+
+    Returns:
+        결과 문자열
+    """
+    try:
+        from api_request.stock_service import get_stock_service
+
+        service = get_stock_service()
+        symbol = symbol.upper().strip()
+
+        logger.info(f"[Provider] Updating financials for {symbol}")
+
+        with transaction.atomic():
+            result = service.update_financial_statements(symbol)
+
+        logger.info(f"[Provider] Financials updated for {symbol}: {result}")
+        return f"[Provider] Success: {symbol} - {result}"
+
+    except Exception as e:
+        logger.error(f"[Provider] Failed for {symbol}: {e}")
+        return f"[Provider] Error: {symbol} - {e}"

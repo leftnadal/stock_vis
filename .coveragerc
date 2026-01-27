@@ -1,0 +1,41 @@
+[run]
+source = api_request,stocks,users,analysis
+omit =
+    */migrations/*
+    */tests/*
+    */test_*.py
+    */venv/*
+    */virtualenv/*
+    */.venv/*
+    */site-packages/*
+    */__pycache__/*
+    */manage.py
+    */asgi.py
+    */wsgi.py
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+skip_empty = True
+
+# 커버리지에서 제외할 코드 패턴
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    pass
+    \.\.\.
+
+[html]
+directory = htmlcov
+title = Stock-Vis Coverage Report
+
+[xml]
+output = coverage.xml

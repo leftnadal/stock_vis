@@ -17,10 +17,10 @@ def get_alphavantage_service():
     if not api_key:
         raise ValueError("ALPHA_VANTAGE_API_KEY environment variable not set")
 
-    # API request 경로 추가
+    # api_request 경로 추가
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(current_dir)
-    api_request_path = os.path.join(project_root, 'API request')
+    api_request_path = os.path.join(project_root, 'api_request')
 
     if api_request_path not in sys.path:
         sys.path.insert(0, api_request_path)
@@ -179,7 +179,7 @@ def fetch_stock_data_sync(symbol: str) -> dict:
         # 더 안전한 경로 처리
         current_dir = os.path.dirname(os.path.abspath(__file__))
         project_root = os.path.dirname(current_dir)
-        api_request_path = os.path.join(project_root, 'API request')
+        api_request_path = os.path.join(project_root, 'api_request')
 
         if api_request_path not in sys.path:
             sys.path.insert(0, api_request_path)

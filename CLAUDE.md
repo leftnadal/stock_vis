@@ -1,188 +1,95 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# CLAUDE.md - Stock-Vis
 
 ## 프로젝트 개요
 
-**프로젝트명**: Stock-Vis (인공지능이 도와주는 투자분석 페이지)
+**Stock-Vis**: AI 기반 투자 분석 플랫폼
 
-Alpha Vantage API를 통해 수집된 미국 주식 데이터(주가, 재무제표, 기업 정보)를 기반으로 머신러닝/딥러닝 모델을 활용한 퀀트 투자 분석 플랫폼입니다.
+- **Backend**: Django REST Framework + PostgreSQL
+- **Frontend**: Next.js 14+ (TypeScript)
+- **Async**: Celery + Redis
+- **LLM**: Claude API (RAG 분석)
 
-**기술 스택**:
-
-- Backend: Django REST Framework (Python 3.12+)
-- Frontend: Next.js + TypeScript (예정)
-- Database: PostgreSQL (예정, 현재는 SQLite 사용 중)
-- ML/DL: 투자 예측 및 분석 모델 (개발 예정)
+---
 
 ## 개발 환경 설정
 
-### Backend (Django)
-
-**의존성 관리**: Poetry 사용 (`pyproject.toml` 참조)
-
-- Python 3.12+
-- Django 5.1.7
-- Django REST Framework
-- psycopg2-binary (PostgreSQL 연결용, 추가 예정)
-
-**환경 설정**:
+### Backend
 
 ```bash
 # 의존성 설치
 poetry install
 
-# PostgreSQL 설치 (macOS)
-brew install postgresql@15
-brew services start postgresql@15
+# 환경 변수 (.env 파일)
+ALPHA_VANTAGE_API_KEY=your_key_here
+FMP_API_KEY=your_fmp_key_here  # Market Movers용
+DATABASE_URL=postgresql://user:password@localhost:5432/stock_vis
 
-# 환경 변수 설정 (필수)
-export ALPHA_VANTAGE_API_KEY=your_key_here
-export DATABASE_URL=postgresql://user:password@localhost:5432/stock_vis
-# 또는 .env 파일 생성:
-# ALPHA_VANTAGE_API_KEY=your_key_here
-# DATABASE_URL=postgresql://user:password@localhost:5432/stock_vis
-
-# 데이터베이스 생성
+# 데이터베이스
 createdb stock_vis
-
-# 마이그레이션 실행
 python manage.py migrate
 
-# 백엔드 개발 서버 실행
+# 서버 실행
 python manage.py runserver
-
-# 시스템 체크
-python manage.py check
 ```
 
-### Frontend (Next.js + TypeScript, 예정)
+### Frontend
 
 ```bash
-# 프론트엔드 디렉토리로 이동
 cd frontend
-
-# 의존성 설치
 npm install
-# 또는
-yarn install
-
-# 개발 서버 실행
-npm run dev
-# 또는
-yarn dev
-
-# 프로덕션 빌드
-npm run build
-# 또는
-yarn build
+npm run dev        # 개발 서버
+npm run build      # 프로덕션 빌드
 ```
 
-**데이터베이스**: PostgreSQL (권장) / SQLite (현재 개발 환경)
+### 비동기 작업 (Celery + Redis)
+
+```bash
+# Redis 시작
+brew services start redis
+
+# Celery Worker/Beat 실행
+celery -A config worker -l info
+celery -A config beat -l info
+```
+
+---
 
 ## 아키텍처
 
-### 전체 시스템 구조
+### 전체 구조
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Frontend (Next.js)                      │
-│  - TypeScript                                               │
-│  - React Components                                         │
-│  - TanStack Query (데이터 페칭)                             │
-│  - Recharts/TradingView (차트 라이브러리)                   │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              │ REST API
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Backend (Django REST Framework)                │
-│  - API Endpoints (stocks, users, analysis)                 │
-│  - Authentication & Authorization                           │
-│  - Caching Layer (Redis 예정)                              │
-│  - ML Model Serving (예정)                                 │
-└─────────────────────────────────────────────────────────────┘
-         │                              │
-         │ Data Collection              │ ML/DL Processing
-         ▼                              ▼
-┌──────────────────────┐    ┌──────────────────────────┐
-│  Alpha Vantage API   │    │   ML/DL Models (예정)    │
-│  - Stock Quotes      │    │   - 가격 예측            │
-│  - Financial Data    │    │   - 패턴 인식            │
-│  - Company Info      │    │   - 포트폴리오 최적화    │
-└──────────────────────┘    └──────────────────────────┘
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │  PostgreSQL Database │
-                    │  - Stock Data        │
-                    │  - Financial Records │
-                    │  - ML Predictions    │
-                    └──────────────────────┘
+Frontend (Next.js) ──REST API──▶ Backend (Django)
+                                      │
+                    ┌─────────────────┼─────────────────┐
+                    ▼                 ▼                 ▼
+             Alpha Vantage      PostgreSQL        ML Models
+               yfinance          (Data)           (예정)
 ```
 
-### Backend 3계층 데이터 플로우 패턴
-
-외부 API 통합을 위한 일관된 3계층 아키텍처를 따릅니다:
+### Backend 3계층 패턴
 
 ```
-API Client → Processor → Service → Django Models/Views → REST API
+API Client → Processor → Service → Models/Views → REST API
 ```
 
-**1계층: Client** (`API request/alphavantage_client.py`)
+- **Client**: 외부 API 통신 (Rate limiting, 에러 핸들링)
+- **Processor**: 응답 데이터 변환 (snake_case 변환, 타입 처리)
+- **Service**: 트랜잭션 관리, 데이터베이스 저장
 
-- Alpha Vantage API와 직접 통신
-- Rate limiting 처리 (무료 티어: 요청 간 12초 대기)
-- API 응답 에러 핸들링
-- 메서드: `get_stock_quote()`, `get_company_overview()`, `get_daily_stock_data()`, `get_balance_sheet()` 등
+### Django 앱 구조
 
-**2계층: Processor** (`API request/alphavantage_processor.py`)
+| 앱 | 역할 | URL |
+|----|------|-----|
+| stocks | 주가, 재무제표 데이터 | `/api/v1/stocks/*` |
+| users | 사용자, 포트폴리오 관리, Watchlist | `/api/v1/users/*` |
+| analysis | 기술적 지표, 시장 분석 | `/api/v1/analysis/*` |
+| macro | 거시경제 대시보드 (Market Pulse) | `/api/v1/macro/*` |
+| **graph_analysis** | **그래프 온톨로지 상관관계 분석 (Phase 1)** | `/api/v1/graph/*` |
+| rag_analysis | LLM 기반 분석 | `/api/v1/rag/*` |
+| **serverless** | **Market Movers 지표 (AWS 전환 예정)** | `/api/v1/serverless/*` |
 
-- API 응답을 데이터베이스 저장 가능한 형태로 변환
-- 각 데이터 타입별 정적 메서드: `process_stock_quote()`, `process_company_overview()`, `process_historical_prices()` 등
-- 안전 변환 유틸리티: `_safe_decimal()`, `_safe_int()`, `_safe_date()` - None, 빈 문자열, 잘못된 데이터 처리
-- **중요**: 모든 processor 메서드는 반드시 처리된 데이터를 return해야 함 (return문 누락 주의)
-
-**3계층: Service** (`API request/alphavantage_service.py`)
-
-- Client + Processor + 데이터베이스 작업을 조율
-- 배치 저장을 위한 트랜잭션 관리
-- 메서드: `update_stock_data()`, `update_historical_prices()`, `update_financial_statements()` 등
-- 중복 방지를 위해 `update_or_create()` 사용
-
-### Backend Django 앱 구조
-
-**stocks** (핵심 데이터 앱):
-
-- 모델: `Stock`, `DailyPrice`, `WeeklyPrice`, `BalanceSheet`, `IncomeStatement`, `CashFlowStatement`
-- 뷰에서 다른 TTL로 캐싱 구현:
-  - 차트 데이터: 60초 (실시간성 중요)
-  - Overview: 600초 (10분 - 가격 + 기본 정보)
-  - 재무제표: 3600초 (1시간 - 분기/연간 업데이트)
-- URL 패턴: `/api/v1/stocks/*`
-- **PostgreSQL 최적화**: 대용량 시계열 데이터 처리를 위한 인덱싱 필수
-
-**users**:
-
-- 커스텀 유저 모델: `AUTH_USER_MODEL = 'users.User'`
-- 포트폴리오, 관심종목, 알림 설정 관리
-- URL 패턴: `/api/v1/users/*`
-
-**analysis** (ML/DL 통합 예정):
-
-- 경제 지표 및 시장 분석
-- **예정**: ML 모델 예측 결과 저장 및 제공
-- **예정**: 기술적 지표 계산 (RSI, MACD, Bollinger Bands 등)
-- **중요**: `DailyPrice` 모델 사용, `HistoricalPrice`는 존재하지 않음
-- URL 패턴: `/api/v1/analysis/*`
-
-**ml_models** (앱 생성 예정):
-
-- 머신러닝/딥러닝 모델 관리
-- 모델 학습, 평가, 예측 파이프라인
-- 모델: `PredictionModel`, `TrainingHistory`, `ModelPrediction` 등
-
-### 모델 관계도
+### 모델 관계
 
 ```
 Stock (PK: symbol)
@@ -191,764 +98,780 @@ Stock (PK: symbol)
   ├── BalanceSheet (FK: stock, unique: stock+period_type+fiscal_year+fiscal_quarter)
   ├── IncomeStatement (FK: stock, unique: stock+period_type+fiscal_year+fiscal_quarter)
   └── CashFlowStatement (FK: stock, unique: stock+period_type+fiscal_year+fiscal_quarter)
+
+User
+  └── Watchlist (FK: user, unique: user+name)
+        └── WatchlistItem (FK: watchlist+stock, unique: watchlist+stock)
+              - target_entry_price: 목표 진입가
+              - notes: 메모
+              - position_order: 정렬 순서
 ```
 
-모든 가격/재무 모델은 `to_field='symbol'`과 `on_delete=models.CASCADE`로 Stock에 ForeignKey 연결됨.
+---
 
-### 캐싱 전략
+## 주요 API 엔드포인트
 
-두 가지 캐싱 구현이 존재:
+### 주식 데이터
 
-1. **기본 캐싱** (현재 `stocks/views.py`에서 사용):
+- `GET /api/v1/stocks/api/chart/<symbol>/` - 차트 데이터
+- `GET /api/v1/stocks/api/overview/<symbol>/` - 기업 개요
+- `GET /api/v1/stocks/api/balance-sheet/<symbol>/` - 재무상태표
+- `GET /api/v1/stocks/api/income-statement/<symbol>/` - 손익계산서
+- `GET /api/v1/stocks/api/cashflow/<symbol>/` - 현금흐름표
+- `GET /api/v1/stocks/api/indicators/<symbol>/` - 기술적 지표
 
-   - Django 기본 캐시 백엔드 (현재 로컬 메모리)
-   - 단순한 캐시 키: `f"chart_{symbol}_{type}_{period}"`
-   - 각 뷰에서 수동으로 cache get/set
+### Watchlist (관심종목)
 
-2. **보안 강화 캐싱** (`stocks/cache_utils.py`):
-   - `SecureStockCache` 클래스 - 검증, 로깅, 해시 키 생성
-   - 데코레이터 패턴: `@secure_cached_api(cache_type='...', timeout=...)`
-   - 입력값 검증, 레이트 리미팅, DoS 방지
-   - 구현되었으나 아직 완전히 통합되지 않음
+- `GET /api/v1/users/watchlist/` - 관심종목 리스트 목록
+- `POST /api/v1/users/watchlist/` - 관심종목 리스트 생성
+- `GET /api/v1/users/watchlist/<id>/` - 관심종목 리스트 상세
+- `PATCH /api/v1/users/watchlist/<id>/` - 관심종목 리스트 수정
+- `DELETE /api/v1/users/watchlist/<id>/` - 관심종목 리스트 삭제
+- `POST /api/v1/users/watchlist/<id>/add-stock/` - 종목 추가
+- `GET /api/v1/users/watchlist/<id>/stocks/` - 종목 목록 + 실시간 가격
+- `PATCH /api/v1/users/watchlist/<id>/stocks/<symbol>/` - 종목 설정 수정
+- `DELETE /api/v1/users/watchlist/<id>/stocks/<symbol>/remove/` - 종목 제거
 
-**프로덕션 환경 계획**:
+### Market Pulse (거시경제)
 
-- Redis 캐시 백엔드로 변경 예정
-- Celery + Redis를 활용한 비동기 작업 처리
-- ML 모델 예측 결과 캐싱
+- `GET /api/v1/macro/pulse/` - 전체 대시보드
+- `GET /api/v1/macro/fear-greed/` - 공포/탐욕 지수
+- `GET /api/v1/macro/interest-rates/` - 금리/수익률 곡선
+- `GET /api/v1/macro/global-markets/` - 글로벌 시장
+- `POST /api/v1/macro/sync/` - 데이터 동기화 시작
+- `GET /api/v1/macro/sync/status/` - 동기화 상태 확인
 
-## API 엔드포인트
+### Stock 동기화
 
-### Backend REST API
+- `POST /api/v1/stocks/api/sync/<symbol>/` - 수동 데이터 동기화
+  - Body: `{"data_types": ["overview", "price"], "force": false}`
+  - Response: `{"symbol": "AAPL", "status": "success", "synced": {...}}`
+- `GET /api/v1/stocks/api/sync/<symbol>/` - 동기화 상태 조회
+- API 응답에 `_meta` 필드 포함:
+  ```json
+  {"source": "db", "synced_at": "...", "freshness": "fresh", "can_sync": true}
+  ```
 
-모든 엔드포인트는 URL 경로에 symbol 사용 (예: `/api/v1/stocks/api/chart/AAPL/`)
+### Market Movers (서버리스)
 
-**차트 데이터**: `/api/v1/stocks/api/chart/<symbol>/`
+- `GET /api/v1/serverless/movers?type=gainers&date=2026-01-07` - Market Movers 조회 (키워드 포함)
+  - Query Params:
+    - `type`: 'gainers', 'losers', 'actives' (필수)
+    - `date`: YYYY-MM-DD 형식 (선택, 기본값: 오늘)
+  - Response: TOP 20 종목 + 5개 지표 + AI 키워드
+    - **Phase 1 지표**: RVOL (거래량 배수), Trend Strength (추세 강도)
+    - **Phase 2 지표**: Sector Alpha (섹터 초과수익), ETF Sync Rate (ETF 동행률), Volatility Percentile (변동성 백분위)
+    - **Phase 2.5 키워드**: LLM 생성 3-5개 핵심 키워드 (예: ["AI 반도체 수요", "데이터센터 확장"])
 
-- 쿼리 파라미터: `type` (daily/weekly), `period` (1d, 5d, 1m, 3m, 6m, 1y, 2y, 5y, max), `days` (커스텀)
-- 응답 형식: Next.js 차트 라이브러리에 최적화된 JSON
+---
 
-**재무 탭**: `/api/v1/stocks/api/{overview|balance-sheet|income-statement|cashflow}/<symbol>/`
+## 코딩 규칙
 
-- 쿼리 파라미터: `period` (annual/quarterly), `limit` (기본값 5)
+### Backend
 
-**ML 예측 (예정)**: `/api/v1/analysis/predict/<symbol>/`
+- 심볼 처리: `symbol.upper()` 필수
+- 모델 조회: `get_object_or_404(Stock, symbol=symbol.upper())`
+- Processor: 반드시 `return` 문 포함
+- 기간 타입: `period_type='annual'` 또는 `'quarterly'`
+- 가격 모델: `DailyPrice` 사용 (`HistoricalPrice` 없음)
 
-- 쿼리 파라미터: `model_type` (price_prediction, trend_analysis, risk_assessment)
-- 응답: 예측값, 신뢰도, 시각화 데이터
+### Frontend
 
-### Frontend-Backend 통신
+- TypeScript strict mode
+- 서버 상태: TanStack Query
+- 클라이언트 상태: Zustand
+- `'use client'` 필요한 컴포넌트만
 
-**데이터 페칭 패턴** (Next.js):
+### 비동기 (Celery)
 
-```typescript
-// TanStack Query 사용 예시
-const { data, isLoading } = useQuery({
-	queryKey: ["stock", symbol, "chart", period],
-	queryFn: () => fetch(`/api/v1/stocks/api/chart/${symbol}/?period=${period}`),
-});
-```
+- Rate limiting: Alpha Vantage 12초 간격
+- 태스크 idempotent 구현
+- 재시도: max_retries=3, exponential backoff
 
-**TypeScript 타입 정의**:
+---
 
-- Backend serializer에서 생성된 JSON 스키마를 TypeScript 타입으로 변환
-- `api/types.ts`에 중앙 집중식 타입 정의 (예정)
+## 외부 API
 
-## 일반적인 패턴 및 주의사항
-
-### PostgreSQL 마이그레이션 시 주의사항
-
-현재 SQLite에서 PostgreSQL로 전환 예정:
-
-1. **데이터 타입 차이**:
-
-   - SQLite의 유연한 타입 시스템과 달리 PostgreSQL은 엄격함
-   - `DecimalField`의 `max_digits`, `decimal_places` 검증 강화
-   - `DateField`, `DateTimeField`의 타임존 처리 주의
-
-2. **마이그레이션 전략**:
-
-   ```bash
-   # 기존 데이터 덤프
-   python manage.py dumpdata > backup.json
-
-   # PostgreSQL 설정 후 마이그레이션
-   python manage.py migrate
-
-   # 데이터 복원
-   python manage.py loaddata backup.json
-   ```
-
-3. **인덱스 최적화**:
-   - 시계열 데이터(`DailyPrice`, `WeeklyPrice`)에 대한 복합 인덱스 추가
-   - `Stock.symbol`, `date` 필드 조합 인덱싱 필수
-   - PostgreSQL 특화 인덱스 타입 고려 (B-tree, GiST 등)
-
-### ML/DL 모델 통합 시
-
-1. **모델 저장 및 버전 관리**:
-
-   - 학습된 모델 파일은 `media/ml_models/` 디렉토리에 저장
-   - 모델 버전별로 성능 메트릭 기록
-   - 프로덕션 배포 전 백테스팅 필수
-
-2. **예측 파이프라인**:
-
-   - 실시간 예측: Celery 비동기 작업으로 처리
-   - 배치 예측: Django management command로 스케줄링
-   - 예측 결과 캐싱으로 API 응답 속도 개선
-
-3. **데이터 전처리**:
-   - 주가 데이터 정규화/스케일링
-   - 결측치 처리 (forward fill, interpolation)
-   - Feature engineering (기술적 지표 계산)
-
-### 새 데이터 타입 추가 시
-
-1. `alphavantage_processor.py`에 processor 메서드 생성 - **return문 누락 금지**
-2. `alphavantage_service.py`에 transaction.atomic()과 함께 service 메서드 추가
-3. 적절한 unique_together 제약조건으로 모델 생성/업데이트
-4. 기존 명명 규칙 따라 시리얼라이저 추가: 탭용은 `<Model>TabSerializer`, 일반용은 `<Model>Serializer`
-5. **Frontend 타입 정의**: TypeScript 인터페이스 생성 및 동기화
-
-### Backend 모델 작업 시
-
-- `Stock.symbol`이 기본 키 (CharField, AutoField 아님)
-- `get_object_or_404(Stock, symbol=symbol.upper())` 사용 - 항상 심볼을 대문자로
-- 재무 데이터 기간: `period_type='annual'` 또는 `'quarterly'` 사용, `'quarter'` 아님
-- 가격 데이터: `DailyPrice`와 `WeeklyPrice`는 `BasePriceData` 추상 모델 상속
-- **PostgreSQL 전환 시**: 대용량 시계열 데이터 쿼리 최적화 필요 (select_related, prefetch_related 활용)
-
-### Frontend 컴포넌트 작업 시 (예정)
-
-- **차트 컴포넌트**: Recharts 또는 TradingView 라이브러리 사용
-- **상태 관리**:
-  - 서버 상태: TanStack Query (React Query)
-  - 클라이언트 상태: Zustand 또는 Context API
-- **타입 안정성**:
-  - Backend API 응답에 대한 Zod 스키마 검증
-  - TypeScript strict mode 활성화
-
-### 시리얼라이저
-
-- 차트 시리얼라이저는 프론트엔드 차트 라이브러리용으로 `to_representation()` 오버라이드
-- 모델 프로퍼티(`change_percent_numeric`, `is_profitable`)에는 `ReadOnlyField()` 사용
-- 재무 시리얼라이저는 `fields = '__all__'` 사용 (포괄적 데이터 필요)
-
-### 자주 발생하는 버그
-
-**Backend**:
-
-1. Processor 메서드에서 return문 누락 (암묵적으로 None 반환)
-2. analysis 앱에서 `DailyPrice` 대신 `HistoricalPrice` 사용
-3. 주식 심볼에 `.upper()` 호출 누락
-4. Alpha Vantage 응답에서 None/빈 값 처리 누락
-5. 배치 작업 시 트랜잭션 관리 누락
-6. PostgreSQL 전환 시 타임존 설정 불일치 (USE_TZ=True 필수)
-7. 대용량 쿼리 시 N+1 문제 (select_related/prefetch_related 미사용)
-
-**Frontend** (예정):
-
-1. API 응답 타입 불일치 (Backend 변경 시 타입 동기화 필수)
-2. 차트 데이터 포맷 변환 오류
-3. 무한 스크롤/페이지네이션에서 중복 데이터 요청
-4. 서버 상태와 클라이언트 상태 동기화 문제
-
-## 로깅 및 모니터링
-
-**Backend 로깅**:
-
-- 로거는 `config/settings.py`에서 설정
-- 로그 파일: `stocks.log`
-- 모듈 레벨 로거 사용: `logger = logging.getLogger(__name__)`
-- Service/Client 계층은 API 호출, 에러, rate limiting 로깅
-- **프로덕션 환경**: 구조화된 로깅 (JSON 포맷) 권장
-
-**ML 모델 모니터링** (예정):
-
-- 모델 성능 메트릭 추적 (정확도, 손실, 예측 신뢰도)
-- 데이터 드리프트 감지
-- 예측 결과 실제 값과의 비교 분석
-
-**Frontend 모니터링** (예정):
-
-- 에러 추적: Sentry 또는 유사 서비스
-- 성능 모니터링: Web Vitals, Lighthouse CI
-- 사용자 행동 분석
-
-## 실시간 데이터 업데이트 시스템 (Celery + Redis)
-
-### 시스템 아키텍처
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Celery Beat (스케줄러)                    │
-│  - 주기적 태스크 스케줄링                                    │
-│  - 시장 시간대 고려한 스케줄 조정                            │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Redis (메시지 브로커)                      │
-│  - 태스크 큐 관리                                           │
-│  - 캐싱 백엔드                                              │
-│  - 실시간 데이터 저장                                       │
-└─────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-┌─────────────────────────────────────────────────────────────┐
-│                   Celery Workers (작업자)                    │
-│  - 비동기 태스크 실행                                       │
-│  - Alpha Vantage API 호출                                   │
-│  - 데이터베이스 업데이트                                    │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### 구현 계획
-
-#### 1. 환경 설정
-
-**필요한 패키지 설치**:
-
-```bash
-# Poetry로 패키지 추가
-poetry add celery redis django-celery-beat django-celery-results channels channels-redis
-
-# Redis 설치 (macOS)
-brew install redis
-brew services start redis
-
-# Redis 동작 확인
-redis-cli ping  # PONG 응답 확인
-```
-
-**Django 설정** (`config/settings.py`):
-
-```python
-# Celery 설정
-CELERY_BROKER_URL = 'redis://localhost:6379/0'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'America/New_York'  # NYSE 시간대
-CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
-# Redis 캐시 백엔드
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-        'OPTIONS': {
-            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
-        }
-    }
-}
-
-# WebSocket 설정 (실시간 알림용)
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-        },
-    },
-}
-```
-
-#### 2. Celery 앱 구성
-
-**`config/celery.py` 생성**:
-
-```python
-import os
-from celery import Celery
-from celery.schedules import crontab
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
-
-app = Celery('stock_vis')
-app.config_from_object('django.conf:settings', namespace='CELERY')
-app.autodiscover_tasks()
-
-# 정기 태스크 스케줄 설정
-app.conf.beat_schedule = {
-    # 실시간 주가 업데이트 (시장 개장 시간)
-    'update-realtime-prices': {
-        'task': 'stocks.tasks.update_realtime_prices',
-        'schedule': crontab(minute='*/1', hour='9-16', day_of_week='1-5'),
-        'kwargs': {'priority': 'high'}
-    },
-
-    # 일일 종가 업데이트 (시장 마감 후)
-    'update-daily-prices': {
-        'task': 'stocks.tasks.update_daily_prices',
-        'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
-    },
-
-    # 주간 데이터 업데이트 (주말)
-    'update-weekly-prices': {
-        'task': 'stocks.tasks.update_weekly_prices',
-        'schedule': crontab(hour=0, minute=0, day_of_week=6),
-    },
-
-    # 재무제표 업데이트 (분기별)
-    'update-financial-statements': {
-        'task': 'stocks.tasks.update_financial_statements',
-        'schedule': crontab(hour=2, minute=0, day_of_month=1),
-    },
-
-    # 포트폴리오 가치 계산
-    'calculate-portfolio-values': {
-        'task': 'users.tasks.calculate_portfolio_values',
-        'schedule': crontab(minute='*/5', hour='9-16', day_of_week='1-5'),
-    },
-}
-```
-
-#### 3. 태스크 구현
-
-**`stocks/tasks.py` 생성**:
-
-```python
-from celery import shared_task
-from celery.utils.log import get_task_logger
-from django.core.cache import cache
-from django.db import transaction
-from .models import Stock, DailyPrice
-from API_request.alphavantage_service import AlphaVantageService
-import time
-
-logger = get_task_logger(__name__)
-
-@shared_task(bind=True, max_retries=3)
-def update_realtime_prices(self, symbols=None, priority='normal'):
-    """실시간 주가 업데이트 태스크"""
-    try:
-        if not symbols:
-            # 관심종목 또는 포트폴리오에 있는 종목만 업데이트
-            symbols = Stock.objects.filter(
-                portfolio__isnull=False
-            ).distinct().values_list('symbol', flat=True)[:10]  # Rate limit 고려
-
-        service = AlphaVantageService()
-        updated_count = 0
-
-        for symbol in symbols:
-            try:
-                # Rate limiting (12초 대기)
-                if updated_count > 0:
-                    time.sleep(12)
-
-                # API 호출 및 업데이트
-                data = service.update_stock_quote(symbol)
-
-                # 캐시 무효화
-                cache.delete(f'stock_quote_{symbol}')
-
-                # WebSocket으로 실시간 알림 (선택적)
-                send_price_update_notification(symbol, data)
-
-                updated_count += 1
-                logger.info(f"Updated realtime price for {symbol}")
-
-            except Exception as e:
-                logger.error(f"Error updating {symbol}: {e}")
-                continue
-
-        return f"Updated {updated_count} stocks"
-
-    except Exception as e:
-        logger.error(f"Task failed: {e}")
-        raise self.retry(exc=e, countdown=60)
-
-@shared_task
-def update_daily_prices():
-    """일일 종가 데이터 업데이트"""
-    # 포트폴리오에 있는 모든 종목
-    symbols = Stock.objects.filter(
-        portfolio__isnull=False
-    ).distinct().values_list('symbol', flat=True)
-
-    service = AlphaVantageService()
-
-    for batch in chunks(symbols, 5):  # 5개씩 배치 처리
-        update_batch_daily_prices.delay(batch)
-
-@shared_task
-def update_batch_daily_prices(symbols):
-    """배치 단위 일일 가격 업데이트"""
-    service = AlphaVantageService()
-
-    for symbol in symbols:
-        try:
-            with transaction.atomic():
-                service.update_historical_prices(symbol, period='1d')
-                time.sleep(12)  # Rate limiting
-        except Exception as e:
-            logger.error(f"Failed to update daily prices for {symbol}: {e}")
-
-@shared_task(bind=True)
-def update_financial_statements(self):
-    """재무제표 업데이트 (월별 실행)"""
-    symbols = Stock.objects.all().values_list('symbol', flat=True)
-
-    for symbol in symbols:
-        update_single_financial_statement.delay(symbol)
-
-@shared_task
-def update_single_financial_statement(symbol):
-    """단일 종목 재무제표 업데이트"""
-    service = AlphaVantageService()
-
-    try:
-        with transaction.atomic():
-            service.update_balance_sheet(symbol)
-            time.sleep(12)
-            service.update_income_statement(symbol)
-            time.sleep(12)
-            service.update_cash_flow(symbol)
-
-        logger.info(f"Updated financial statements for {symbol}")
-    except Exception as e:
-        logger.error(f"Failed to update financial statements for {symbol}: {e}")
-```
-
-**`users/tasks.py` 생성**:
-
-```python
-from celery import shared_task
-from django.db.models import Sum, F
-from .models import Portfolio, PortfolioHistory
-from stocks.models import Stock
-from decimal import Decimal
-
-@shared_task
-def calculate_portfolio_values():
-    """포트폴리오 가치 계산 및 히스토리 저장"""
-    from django.contrib.auth import get_user_model
-    User = get_user_model()
-
-    for user in User.objects.filter(portfolio__isnull=False).distinct():
-        try:
-            portfolios = Portfolio.objects.filter(user=user).select_related('stock')
-
-            total_value = Decimal('0')
-            total_cost = Decimal('0')
-
-            for portfolio in portfolios:
-                # 현재가 * 수량으로 가치 계산
-                current_price = portfolio.stock.real_time_price or Decimal('0')
-                portfolio_value = current_price * portfolio.quantity
-                portfolio_cost = portfolio.average_price * portfolio.quantity
-
-                total_value += portfolio_value
-                total_cost += portfolio_cost
-
-            # 히스토리 저장
-            PortfolioHistory.objects.create(
-                user=user,
-                total_value=total_value,
-                total_cost=total_cost,
-                profit_loss=total_value - total_cost,
-                profit_loss_percentage=((total_value - total_cost) / total_cost * 100) if total_cost > 0 else 0
-            )
-
-        except Exception as e:
-            logger.error(f"Failed to calculate portfolio for user {user.id}: {e}")
-```
-
-#### 4. WebSocket 실시간 통신 (선택적)
-
-**`stocks/consumers.py` 생성**:
-
-```python
-import json
-from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.db import database_sync_to_async
-
-class StockPriceConsumer(AsyncWebsocketConsumer):
-    async def connect(self):
-        self.symbol = self.scope['url_route']['kwargs']['symbol']
-        self.room_group_name = f'stock_{self.symbol}'
-
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-        await self.accept()
-
-    async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-
-    async def price_update(self, event):
-        """실시간 가격 업데이트 전송"""
-        await self.send(text_data=json.dumps({
-            'type': 'price_update',
-            'symbol': event['symbol'],
-            'price': event['price'],
-            'change': event['change'],
-            'change_percent': event['change_percent'],
-            'timestamp': event['timestamp']
-        }))
-```
-
-#### 5. 실행 및 모니터링
-
-**개발 환경 실행**:
-
-```bash
-# Redis 서버 시작
-redis-server
-
-# Celery Worker 시작 (별도 터미널)
-celery -A config worker -l info
-
-# Celery Beat 시작 (별도 터미널)
-celery -A config beat -l info
-
-# Flower 모니터링 도구 (선택적)
-poetry add flower
-celery -A config flower
-# http://localhost:5555 에서 모니터링
-```
-
-**프로덕션 환경 실행 (Supervisor 사용)**:
-
-```ini
-# /etc/supervisor/conf.d/celery_worker.conf
-[program:celery_worker]
-command=/path/to/venv/bin/celery -A config worker -l info
-directory=/path/to/project
-user=www-data
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/celery/worker.log
-
-[program:celery_beat]
-command=/path/to/venv/bin/celery -A config beat -l info
-directory=/path/to/project
-user=www-data
-autostart=true
-autorestart=true
-redirect_stderr=true
-stdout_logfile=/var/log/celery/beat.log
-```
-
-### 성능 최적화 전략
-
-1. **우선순위 큐 설정**:
-
-   - 실시간 가격: high priority
-   - 일일 업데이트: medium priority
-   - 재무제표: low priority
-
-2. **Rate Limiting 최적화**:
-
-   - Alpha Vantage API 호출 간 12초 대기
-   - 배치 처리로 효율성 향상
-   - 캐싱으로 중복 호출 방지
-
-3. **데이터베이스 최적화**:
-
-   - bulk_create/bulk_update 사용
-   - select_for_update로 동시성 제어
-   - 인덱스 최적화
-
-4. **모니터링 및 알림**:
-   - Flower로 태스크 모니터링
-   - Sentry로 에러 추적
-   - 중요 이벤트 로깅
-
-### 장애 대응
-
-1. **재시도 전략**:
-
-   - API 실패 시 exponential backoff
-   - 최대 3회 재시도
-   - Dead Letter Queue 활용
-
-2. **서킷 브레이커**:
-
-   - API 연속 실패 시 일시 중단
-   - 복구 후 점진적 재개
-
-3. **데이터 일관성**:
-   - 트랜잭션 보장
-   - 중복 실행 방지 (idempotency)
-   - 정합성 체크 태스크
-
-## Alpha Vantage API 참고사항
+### Alpha Vantage
 
 - 무료 티어: 5 calls/분, 500 calls/일
-- Rate limiting 강제: 요청 간 12초 대기
-- camelCase 필드명 반환 (예: "fiscalDateEnding") - processor가 snake_case로 변환
-- 일반적인 응답 패턴:
-  - 에러: `{"Error Message": "..."}`
-  - Rate limit: `{"Note": "API call frequency..."}`
-  - 빈 데이터는 null이 아닌 `{}` 반환
+- 요청 간 12초 대기 필수
+- 응답: camelCase → Processor가 snake_case로 변환
 
-## 최근 주요 업데이트 (2025-11-24)
+### FMP (Financial Modeling Prep)
 
-### 백그라운드 데이터 수집 시스템 (신규)
-포트폴리오에 종목 추가 시 HTTP 응답 지연 문제를 해결하기 위한 백그라운드 처리 시스템:
+**Market Movers 전용 API**
 
-**문제점**:
-- 데이터 수집에 36초+ 소요 (Rate limiting 12초 x 3회)
-- 사용자 페이지 이탈 시 데이터 수집 불완전
-
-**해결책**:
-- Python threading으로 백그라운드 데이터 수집
-- Frontend 폴링으로 실시간 상태 표시
-
-**구현 내용**:
-```python
-# users/views.py - 포트폴리오 생성 시 즉시 응답 후 백그라운드 수집
-def post(self, request):
-    portfolio = serializer.save()
-
-    def background_fetch():
-        fetch_stock_data_background(portfolio.stock.symbol)
-
-    thread = threading.Thread(target=background_fetch, daemon=True)
-    thread.start()
-
-    return Response(PortfolioSerializer(portfolio).data, status=201)
-```
-
-**새로운 API 엔드포인트**:
-- `GET /api/v1/users/portfolio/symbol/<symbol>/status/` - 데이터 수집 상태 확인
-
-**Frontend 폴링 패턴** (`PortfolioStockCard.tsx`):
-```typescript
-useEffect(() => {
-  const intervalId = setInterval(async () => {
-    const status = await portfolioService.getStockDataStatus(symbol);
-    if (status.is_complete) {
-      clearInterval(intervalId);
-      onDataComplete?.();
-    }
-  }, 10000); // 10초 간격
-  return () => clearInterval(intervalId);
-}, [symbol]);
-```
-
-**데이터 상태 응답 구조**:
-```json
-{
-  "symbol": "AAPL",
-  "stock_exists": true,
-  "has_overview": true,
-  "has_prices": true,
-  "has_financial": true,
-  "is_complete": true,
-  "details": {
-    "daily_prices": 730,
-    "weekly_prices": 129,
-    "balance_sheets": 24,
-    "income_statements": 25,
-    "cash_flows": 23
+- **플랜**: Starter Plan 사용
+- **Rate Limit**: 10 calls/분, 250 calls/일
+- **엔드포인트**: `/stable/*` 경로 사용 (Legacy `/api/v3/*` 더 이상 지원 안 함)
+- **주요 API**:
+  - `/stable/biggest-gainers` - 상승 TOP 종목
+  - `/stable/biggest-losers` - 하락 TOP 종목
+  - `/stable/most-actives` - 거래량 TOP 종목
+  - `/stable/quote?symbol=AAPL` - 실시간 시세 (volume 포함)
+  - `/stable/historical-price-eod/full?symbol=AAPL` - 히스토리 OHLCV
+  - `/stable/profile?symbol=AAPL` - 기업 프로필 (섹터 정보)
+- **캐싱**: Redis 5분~24시간 (엔드포인트별 상이)
+- **섹터 ETF 매핑**:
+  ```python
+  SECTOR_ETF_MAP = {
+      'Technology': 'XLK',
+      'Financial Services': 'XLF',
+      'Healthcare': 'XLV',
+      'Consumer Cyclical': 'XLY',
+      'Industrials': 'XLI',
+      'Energy': 'XLE',
+      # ... 총 11개 섹터
   }
+  ```
+
+### yfinance (Yahoo Finance)
+
+**사용처**: Market Pulse (거시경제 지표), Corporate Action 감지
+
+**특징**: 무료, Rate limit 없음
+
+```python
+# 주요 심볼
+INDEX_SYMBOLS = {'^GSPC': 'S&P 500', '^DJI': 'Dow Jones', '^IXIC': 'NASDAQ'}
+SECTOR_ETFS = {'XLK': 'Technology', 'XLF': 'Financials', ...}
+COMMODITIES = {'GC=F': 'Gold', 'CL=F': 'Crude Oil', ...}
+FOREX = {'EURUSD=X': 'EUR/USD', 'KRW=X': 'USD/KRW', ...}
+
+# Corporate Action 데이터
+ticker.splits      # 주식분할/역분할 이력
+ticker.dividends   # 배당 이력
+ticker.fast_info.last_price  # 현재 가격
+```
+
+**주의사항**:
+- Lazy import 필수 (`import yfinance as yf` - 사용 시점에 import)
+- `ticker.splits`, `ticker.dividends`는 pandas Series (`.items()` 메서드 사용)
+- `split.date()`로 날짜 변환 (pandas Timestamp → Python date)
+- 에러 발생 시 로깅만 하고 None 반환 (메인 플로우 중단 안 함)
+
+---
+
+## 캐싱 전략
+
+| 데이터 타입 | TTL | 비고 |
+|-----------|-----|------|
+| 차트 데이터 | 60초 | 실시간성 중요 |
+| Overview | 600초 | 가격 + 기본 정보 |
+| 재무제표 | 3600초 | 분기/연간 업데이트 |
+| 거시경제 지표 | 3600초 | FRED 데이터 |
+| Watchlist 목록 | 300초 | 사용자별 캐시 키 |
+| Watchlist 종목 | 60초 | 실시간 가격 포함 |
+| **Market Movers 리스트** | **300초** | **FMP Gainers/Losers/Actives** |
+| **FMP Quote** | **60초** | **실시간 시세** |
+| **FMP Historical** | **3600초** | **OHLCV 히스토리** |
+| **FMP Profile** | **86400초** | **섹터 정보 (24시간)** |
+
+---
+
+## 자주 발생하는 버그
+
+1. Processor 메서드에서 return문 누락
+2. `DailyPrice` 대신 `HistoricalPrice` 사용
+3. 심볼에 `.upper()` 호출 누락
+4. Alpha Vantage None/빈 값 처리 누락
+5. N+1 쿼리 문제 (select_related/prefetch_related 미사용)
+6. **SSE Async Loop 충돌**: Django ASGI(Daphne)에서 동기 뷰 내 `asyncio.new_event_loop()` 사용 시 연결 끊김
+   - 증상: "Application instance took too long to shut down" 에러, 요청 pending
+   - 해결: 비동기 이벤트를 먼저 수집 후 동기적으로 yield하거나, 완전한 async 뷰 사용
+7. **FMP API volume 데이터 누락**: `/stable/biggest-gainers` 응답에 `volume` 필드 없음
+   - 증상: RVOL이 0.00x로 계산됨
+   - 해결: `item.get('volume')` 대신 `quote.get('volume')` 사용
+   - 참고: Market Movers 엔드포인트는 volume 미제공, Quote API에서 별도 조회 필요
+8. **Celery Worker에서 async LLM 호출 금지**
+   - 증상: "Event loop is closed" 에러, LLM 호출 실패
+   - 원인: Celery Worker는 자체 이벤트 루프를 관리, async 코드와 충돌
+   - 해결: `genai.Client`의 동기 API 직접 사용 (async 대신)
+   ```python
+   # ❌ 잘못된 방법
+   async def call_llm():
+       return await async_client.generate(...)
+
+   # ✅ 올바른 방법
+   def call_llm():
+       return sync_client.models.generate_content(...)
+   ```
+9. **LLM max_output_tokens 부족으로 JSON 잘림**
+   - 증상: "Unterminated string" JSON 파싱 에러
+   - 원인: 한국어 응답은 토큰 소비가 많아 출력이 중간에 잘림
+   - 해결: max_output_tokens 충분히 설정 (800 → 1200) + regex 복구 로직
+   ```python
+   # JSON 잘림 복구
+   pattern = r'"([^"]+)"'
+   matches = re.findall(pattern, text)
+   if len(matches) >= 2:
+       return matches[:5]  # 부분 복구
+   ```
+10. **Celery 비동기 태스크 완료 전 onSuccess 호출**
+    - 증상: mutation.onSuccess에서 데이터 재조회해도 결과 없음
+    - 원인: onSuccess는 API 요청 완료 시점, Celery 태스크 완료 시점 아님
+    - 해결: setTimeout으로 예상 완료 시간 후 재조회 또는 폴링
+    ```typescript
+    onSuccess: (data) => {
+      const delayMs = stockCount * 6000; // 종목당 6초
+      setTimeout(() => fetchKeywords(), delayMs);
+    }
+    ```
+11. **프론트엔드 string[] vs Keyword[] 타입 불일치**
+    - 증상: "Each child should have unique key" 또는 undefined 에러
+    - 원인: API가 `string[]` 반환, 컴포넌트가 `Keyword[]` 기대
+    - 해결: 정규화 함수로 타입 변환
+    ```typescript
+    function normalizeKeywords(keywords: string[] | Keyword[]): Keyword[] {
+      if (typeof keywords[0] === 'string') {
+        return keywords.map((text, i) => ({ id: `kw-${i}`, text, ... }));
+      }
+      return keywords;
+    }
+    ```
+12. **React 컴포넌트 undefined props 접근**
+    - 증상: "undefined is not an object (evaluating 'colors.bg')"
+    - 원인: optional 필드가 undefined일 때 객체 속성 접근
+    - 해결: 기본값 폴백 패턴 사용
+    ```typescript
+    const colors = CATEGORY_COLORS[keyword.category] || DEFAULT_COLORS;
+    ```
+13. **yfinance pandas Series 타입 불일치**
+    - 증상: "AttributeError: 'Series' object has no attribute 'date'"
+    - 원인: `ticker.splits`, `ticker.dividends`는 pandas Series (Timestamp 인덱스)
+    - 해결: `.items()` 메서드로 반복, `timestamp.date()`로 변환
+    ```python
+    # ❌ 잘못된 방법
+    for split_date in ticker.splits:
+        date_obj = split_date.date()  # 에러!
+
+    # ✅ 올바른 방법
+    for split_timestamp, ratio in ticker.splits.items():
+        date_obj = split_timestamp.date()
+    ```
+
+---
+
+## Market Movers 5개 지표 시스템
+
+### 지표 설명
+
+| 지표 | 계산 방식 | 해석 | Phase |
+|------|----------|------|-------|
+| **RVOL** | 당일 거래량 / 20일 평균 | 2.0 이상: 비정상적 관심도<br>1.5~2.0: 높은 관심<br>1.0 미만: 평균 이하 | Phase 1 |
+| **Trend Strength** | (종가-시가) / (고가-저가) | +0.7 이상: 강한 상승<br>-0.7 이하: 강한 하락<br>0 전후: 횡보 | Phase 1 |
+| **Sector Alpha** | 종목 수익률 - 섹터 ETF 수익률 | 양수: 섹터 평균 초과<br>음수: 섹터 평균 미달 | Phase 2 |
+| **ETF Sync Rate** | 피어슨 상관계수(종목, 섹터 ETF) | 0.8 이상: 강한 동조<br>0.5~0.8: 중간<br>0.5 미만: 독립적 움직임 | Phase 2 |
+| **Volatility %ile** | 당일 변동성의 백분위 (0-100) | 90 이상: 매우 높은 변동성<br>50 전후: 평균<br>10 이하: 낮은 변동성 | Phase 2 |
+
+### Market Movers 아키텍처
+
+```
+FMP API (/stable/*)
+    │
+    ├─ biggest-gainers ────┐
+    ├─ biggest-losers ─────┤
+    └─ most-actives ───────┤
+                           │
+                           ▼
+              MarketMoversSync (data_sync.py)
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+    FMP Quote      FMP Historical      FMP Profile
+    (volume)         (20일 OHLC)        (섹터 정보)
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+                           │
+                           ▼
+              IndicatorCalculator (순수 Python)
+                           │
+        ┌──────────────────┼──────────────────┐
+        ▼                  ▼                  ▼
+    Phase 1 지표      Phase 2 지표      Display 포맷
+    (RVOL, Trend)   (Alpha, Sync, Vol)  (2.5x, ▲0.83 등)
+        │                  │                  │
+        └──────────────────┴──────────────────┘
+                           │
+                           ▼
+                    PostgreSQL (MarketMover 모델)
+                           │
+                           ▼
+                  REST API (/api/v1/serverless/movers)
+                           │
+                           ▼
+                Frontend (MoverCard 컴포넌트)
+```
+
+### Celery Beat 스케줄
+
+```python
+CELERY_BEAT_SCHEDULE = {
+    'sync-market-movers': {
+        'task': 'serverless.tasks.sync_daily_market_movers',
+        'schedule': crontab(hour=7, minute=30),  # 매일 07:30 EST
+        'options': {'expires': 3600}  # 1시간 후 만료
+    }
 }
 ```
 
-### 429 Rate Limit 에러 처리
-- 종목 검색 시 429 에러 발생 시 "해당 종목은 관찰되지 않습니다." 메시지 표시
-- `PortfolioModal.tsx`에서 처리
+### Corporate Action 감지 시스템
 
-## 이전 업데이트 (2025-11-21)
+**개요**: 가격 변동 ±50% 이상 시 주식분할/역분할/배당을 자동 감지
 
-### 주식 상세 페이지 구현 완료
-- 종목별 상세 정보 페이지 (`/stocks/[symbol]`)
-- 실시간 차트 및 재무제표 탭
-- 포트폴리오 종목 간 빠른 네비게이션
+| 컴포넌트 | 역할 |
+|---------|------|
+| **CorporateActionService** | yfinance로 Corporate Action 감지 |
+| **CorporateAction 모델** | 이벤트 이력 저장 |
+| **MarketMover 필드** | has_corporate_action, corporate_action_type, corporate_action_display |
 
-## 이전 업데이트 (2025-11-19)
+**감지 조건**:
+- **주식분할**: ratio < 1 (예: 0.5 → 2:1 분할)
+- **역분할**: ratio > 1 (예: 28.0 → 1:28 역분할)
+- **특별배당**: 배당 수익률 5% 이상
+- **LOOKBACK_DAYS**: 최근 7일 이내 이벤트만 체크
 
-### 1. WebSocket 실시간 통신 시스템 구현
-- **Django Channels 통합**: ASGI 서버 설정 및 WebSocket 라우팅 구현
-- **실시간 주가 업데이트**: WebSocket을 통한 1초 간격 가격 푸시
-- **포트폴리오 실시간 계산**: 보유 종목 가치 자동 업데이트
-- **Frontend WebSocket 컴포넌트**:
-  - RealtimePortfolio: 실시간 포트폴리오 관리
-  - useWebSocket 커스텀 훅: 재사용 가능한 WebSocket 연결 관리
-  - 자동 재연결 로직 구현
-
-### 2. Celery 태스크 시스템 완성
-- **스케줄링 태스크**:
-  - 실시간 주가 업데이트 (시장 시간대 1분마다)
-  - 일일 종가 업데이트 (시장 마감 후)
-  - 포트폴리오 가치 계산 (5분마다)
-  - 재무제표 업데이트 (월 1회)
-- **우선순위 큐**: high/medium/low 우선순위 설정
-- **Rate Limiting**: Alpha Vantage API 제한 고려
-
-### 3. Frontend 실시간 컴포넌트 개발
-- **RealtimePortfolio 컴포넌트**: WebSocket 연결 상태 관리 및 실시간 업데이트
-- **PortfolioChart 개선**: 실시간 데이터 반영 및 애니메이션
-- **연결 상태 인디케이터**: 시각적 연결 상태 표시
-
-### 4. 시스템 통합 및 성능 최적화
-- **ASGI 설정**: HTTP + WebSocket 동시 처리
-- **Redis Channel Layer**: 다중 클라이언트 메시지 브로드캐스팅
-- **메모리 최적화**: 효율적인 구독 관리 및 메시지 배치 처리
-
-## 이전 업데이트 (2025-11-18)
-
-### 1. 사용자 인터페이스 개선
-- **마이페이지 구현**: 사용자 프로필 편집 기능 추가
-- **Header 네비게이션**: 로그인 상태별 조건부 UI 렌더링
-- **인증 UI**: lucide-react 아이콘을 활용한 직관적인 디자인
-
-### 2. Alpha Vantage 종목 검색 통합
-- **실시간 검색**: 300ms 디바운스로 최적화된 API 호출
-- **API 엔드포인트**:
-  - `/api/v1/stocks/api/search/symbols/` - 종목 심볼 검색
-  - `/api/v1/stocks/api/search/validate/<symbol>/` - 심볼 유효성 검증
-  - `/api/v1/stocks/api/search/popular/` - 인기 종목 리스트
-- **Frontend 통합**: PortfolioModal에 드롭다운 자동완성 구현
-
-### 3. 기술적 지표 시스템
-- **구현된 지표**: RSI, MACD, Bollinger Bands, SMA, EMA, Stochastic, OBV, ATR
-- **매매 신호 시스템**: 개별 및 종합 신호 계산
-- **API 엔드포인트**: `/api/v1/stocks/api/indicators/<symbol>/`
-
-## 환경 설정 필수사항
-
-```bash
-# .env 파일 필수 설정
-ALPHA_VANTAGE_API_KEY="your_api_key_here"
-
-# settings.py 상단에 필수 (이미 적용됨)
-from dotenv import load_dotenv
-load_dotenv()
-
-# Redis 실행 (실시간 기능 필수)
-redis-server
-
-# Celery Worker 실행
-celery -A config worker -l info
-
-# Celery Beat 실행 (스케줄링)
-celery -A config beat -l info
+**예시 (GRI Bio 역분할)**:
+```json
+{
+  "symbol": "GRI",
+  "change_percent": 2772.0,
+  "has_corporate_action": true,
+  "corporate_action_type": "reverse_split",
+  "corporate_action_display": "1:28 역분할"
+}
 ```
 
-## 구현 완료 기능 체크리스트
+**테스트**: `tests/serverless/test_corporate_action_service.py` (12개 테스트)
+
+---
+
+## AI 키워드 생성 시스템 (Phase 2.5)
+
+### 개요
+
+Market Movers 및 Screener 종목에 대해 LLM 기반 핵심 키워드를 생성하는 시스템.
+Gemini 2.5 Flash 사용, Celery 비동기 파이프라인으로 처리.
+
+### 아키텍처
+
+```
+프론트엔드 (AI 키워드 버튼)
+        │
+        ▼
+REST API (trigger_keyword_generation)
+        │
+        ▼
+Celery 파이프라인 (collect → generate → save)
+        │
+        ├─ KeywordDataCollector (뉴스 수집)
+        │     ├─ Marketaux API (우선)
+        │     └─ Finnhub API (폴백)
+        │
+        └─ KeywordGenerationService (LLM 호출)
+              └─ Gemini 2.5 Flash (동기 API)
+        │
+        ▼
+StockKeyword 모델 (PostgreSQL)
+        │
+        ▼
+프론트엔드 (KeywordList 컴포넌트)
+```
+
+### API 엔드포인트
+
+```bash
+# Market Movers용
+POST /api/v1/serverless/keywords/generate-all
+     Body: {"type": "gainers", "date": "2026-01-26"}
+
+# Screener용
+POST /api/v1/serverless/keywords/generate-screener
+     Body: {"stocks": [{"symbol": "AAPL", "company_name": "...", "sector": "..."}]}
+
+# 키워드 조회
+GET  /api/v1/serverless/keywords/<symbol>?date=2026-01-26
+POST /api/v1/serverless/keywords/batch
+     Body: {"symbols": ["AAPL", "MSFT"], "date": "2026-01-26"}
+```
+
+### StockKeyword 모델
+
+```python
+{
+    symbol: CharField(max_length=10),
+    date: DateField,
+    company_name: CharField,
+    keywords: JSONField,  # ["AI 수요 증가", "실적 호조", "목표가 상향"]
+    status: CharField,    # 'pending', 'completed', 'failed'
+    error_message: TextField,
+    llm_model: CharField,  # 'gemini-2.5-flash'
+    generation_time_ms: IntegerField,
+    prompt_tokens: IntegerField,
+    completion_tokens: IntegerField,
+    expires_at: DateTimeField  # 7일 후 만료
+}
+```
+
+### LLM 프롬프트 설계
+
+```python
+SYSTEM_PROMPT = """
+규칙:
+- 정확히 3개 키워드만 반환
+- 각 키워드는 15자 이내로 짧게
+- 반드시 완전한 JSON 배열 형식
+
+예시: ["AI 수요 증가", "실적 호조", "목표가 상향"]
+"""
+```
+
+### 폴백 키워드
+
+LLM 호출 실패 시 기본 키워드 사용:
+```python
+FALLBACK_KEYWORDS = {
+    'gainers': ["급등", "거래량 증가", "모멘텀"],
+    'losers': ["급락", "매도 압력", "조정"],
+    'actives': ["거래량 급증", "변동성", "투자자 관심"],
+    'screener': ["분석 대상", "투자 검토", "모니터링"],
+}
+```
+
+### Rate Limit 대응
+
+| Provider | Rate Limit | 대응 |
+|----------|------------|------|
+| Marketaux | 100/일, 15분 간격 | 5초 이상 대기 시 Finnhub 폴백 |
+| Finnhub | 60/분, 1초 간격 | 기본 폴백 provider |
+| Gemini Free | 15 RPM, 1500 RPD | 지수 백오프 재시도 |
+
+### 프론트엔드 컴포넌트
+
+- **KeywordTag**: 개별 키워드 태그 (색상, 툴팁)
+- **KeywordList**: 키워드 목록 (로딩, 에러, 빈 상태 처리)
+- **normalizeKeywords()**: string[] → Keyword[] 변환
+
+### 성능 지표
+
+- 종목당 키워드 생성: 약 6초
+- 50개 종목 배치: 약 5분
+- max_output_tokens: 1200 (한국어 지원)
+
+### 테스트 커버리지
+
+- **파일**: `tests/serverless/test_indicators.py`
+- **테스트 수**: 21개
+- **커버리지**: 100% (21/21 passed)
+- **테스트 대상**:
+  - Phase 1 지표 계산 (6개)
+  - Phase 2 지표 계산 (9개)
+  - Display 포맷터 (5개)
+  - Edge cases (데이터 부족, 0 나누기 등)
+
+---
+
+## Graph Analysis (그래프 온톨로지) - Phase 1
+
+### 개요
+
+주식 간 가격 변동 상관관계를 그래프 네트워크로 분석하는 시스템. 사용자 Watchlist의 종목들을 노드로, 상관계수를 엣지로 표현하여 실시간 모니터링.
+
+### 핵심 개념
+
+| 개념 | 설명 | 기술 |
+|------|------|------|
+| **Node** | Watchlist 내 각 종목 | Stock 모델 |
+| **Edge** | 두 종목 간 상관계수 | CorrelationEdge 모델 |
+| **Correlation** | 3개월 가격 변동 상관성 | Pearson correlation (pandas) |
+| **Anomaly** | ±0.2 이상 상관계수 변화 | AnomalyDetector |
+| **Graph** | NetworkX 네트워크 그래프 | NetworkX library |
+
+### 계산 파라미터
+
+```python
+DEFAULT_PERIOD_DAYS = 90  # 3개월 rolling window
+MIN_DATA_POINTS = 20  # 최소 20일 데이터 필요
+ANOMALY_THRESHOLD = 0.2  # ±0.2 변화 감지
+MAX_ALERTS_PER_DAY = 5  # 일일 최대 알림 5개
+COOLDOWN_HOURS = 24  # 동일 페어 24시간 쿨다운
+```
+
+### 데이터베이스 모델
+
+**CorrelationMatrix** - 전체 상관계수 행렬
+```python
+{
+    watchlist: FK(Watchlist),
+    date: DateField,
+    matrix_data: JSONField,  # {AAPL: {MSFT: 0.85, GOOGL: 0.72}}
+    stock_count: Integer,
+    calculation_period: Integer (default: 90)
+}
+```
+
+**CorrelationEdge** - 개별 상관관계
+```python
+{
+    watchlist: FK(Watchlist),
+    stock_a: FK(Stock),
+    stock_b: FK(Stock),
+    date: DateField,
+    correlation: Decimal(-1.0 ~ 1.0),
+    previous_correlation: Decimal,
+    correlation_change: Decimal,
+    is_anomaly: Boolean
+}
+```
+
+**CorrelationAnomaly** - 이상 패턴
+```python
+{
+    watchlist: FK(Watchlist),
+    edge: FK(CorrelationEdge),
+    date: DateField,
+    anomaly_type: Choice('divergence', 'convergence', 'reversal'),
+    previous_correlation: Decimal,
+    current_correlation: Decimal,
+    change_magnitude: Decimal,
+    alerted: Boolean,
+    dismissed: Boolean
+}
+```
+
+**PriceCache** - 가격 데이터 캐싱
+```python
+{
+    stock: FK(Stock),
+    date: DateField,
+    prices: JSONField,  # 90일 가격 [{date, close}]
+    period_days: Integer (default: 90)
+}
+```
+
+**GraphMetadata** - 계산 메타데이터
+```python
+{
+    watchlist: FK(Watchlist),
+    date: DateField,
+    stock_count: Integer,
+    edge_count: Integer,
+    anomaly_count: Integer,
+    calculation_time_ms: Integer,
+    status: Choice('pending', 'processing', 'completed', 'failed')
+}
+```
+
+### Services
+
+**CorrelationCalculator** (`graph_analysis/services/correlation_calculator.py`)
+- 3개월 rolling correlation 계산
+- NetworkX 그래프 생성
+- 가격 데이터 캐싱 (PostgreSQL + Redis)
+- 평균 계산 시간: < 100ms (50개 종목)
+
+```python
+from graph_analysis.services import CorrelationCalculator
+
+# Usage
+calculator = CorrelationCalculator(watchlist, period_days=90)
+matrix = calculator.calculate_correlation_matrix()
+graph = calculator.build_network_graph()
+```
+
+**AnomalyDetector** (`graph_analysis/services/anomaly_detector.py`)
+- ±0.2 변화 감지
+- 3가지 anomaly 타입 분류:
+  - **Divergence**: 상관계수 약화
+  - **Convergence**: 상관계수 강화
+  - **Reversal**: 부호 변경 (positive ↔ negative)
+- 24시간 쿨다운 로직
+- 일일 최대 5개 알림
+
+```python
+from graph_analysis.services import AnomalyDetector
+
+# Usage
+detector = AnomalyDetector(watchlist, detection_date=today)
+anomalies = detector.detect_anomalies()
+pending_alerts = detector.get_pending_alerts()
+```
+
+### API 엔드포인트 (예정)
+
+```bash
+GET  /api/v1/graph/{watchlist_id}/correlation-matrix/  # 상관계수 행렬
+GET  /api/v1/graph/{watchlist_id}/anomalies/           # 이상 패턴
+GET  /api/v1/graph/{watchlist_id}/network/             # NetworkX 그래프 (JSON)
+POST /api/v1/graph/{watchlist_id}/calculate/           # 수동 계산 트리거
+```
+
+### Celery 태스크 (예정)
+
+```python
+# config/celery.py 스케줄 추가
+from celery.schedules import crontab
+
+CELERYBEAT_SCHEDULE = {
+    'compute-daily-correlations': {
+        'task': 'graph_analysis.tasks.compute_all_correlations',
+        'schedule': crontab(hour=16, minute=15),  # 16:15 ET (장 종료 후)
+        'options': {'expires': 3600}
+    }
+}
+```
+
+### 상관계수 해석
+
+| 값 | 강도 | 의미 |
+|----|------|------|
+| 0.8 ~ 1.0 | Very Strong | 거의 동일한 움직임 |
+| 0.6 ~ 0.8 | Strong | 강한 동조 |
+| 0.4 ~ 0.6 | Moderate | 중간 수준 관련성 |
+| 0.2 ~ 0.4 | Weak | 약한 관련성 |
+| -0.2 ~ 0.2 | Very Weak | 관련성 없음 |
+| -0.4 ~ -0.2 | Weak Negative | 약한 역관계 |
+| -1.0 ~ -0.4 | Negative | 역관계 |
+
+### Phase 1 목표 (6주)
+
+- ✅ Week 1-2: PostgreSQL 스키마, Django 모델, migrations
+- ✅ Week 1-2: NetworkX 상관계수 계산 엔진
+- ⏳ Week 3-4: REST API 엔드포인트, Frontend 그래프 시각화 (D3.js)
+- ⏳ Week 5-6: 이상 감지 알림, 테스트 작성 (단위/통합)
+
+### 외부 API
+
+**EODHD Historical Data** (`api_request/eodhd_client.py`)
+- Bulk EOD API: 5,000+ US 종목 일괄 다운로드
+- Cost: $19.99/월 (Basic Plan)
+- No rate limits
+- CSV (GZIP) 포맷
+- 30초~2분 (bulk download)
+
+```python
+from api_request.eodhd_client import EODHDClient
+
+client = EODHDClient()
+# Bulk download all US stocks
+bulk_data = client.get_bulk_eod_data(exchange='US', date=today)
+# Returns: [{symbol, date, open, high, low, close, volume}, ...]
+```
+
+### 참고 문서
+
+- Phase 1 설계: `docs/GRAPH_ONTOLOGY_INFRA_REDESIGN.md`
+- 데이터 인프라 평가: `docs/DATA_INFRASTRUCTURE_ROADMAP_EVALUATION.md`
+
+---
+
+## 멀티에이전트 시스템
+
+### 에이전트 담당 영역
+
+| 에이전트 | 담당 영역 |
+|---------|----------|
+| @backend | stocks/, users/, analysis/, API_request/, **serverless/** |
+| @frontend | frontend/ 전체 |
+| @rag-llm | rag_analysis/ 전체 |
+| @infra | */tasks.py, */consumers.py, config/, docker/ |
+| @qa | tests/, docs/ |
+| @investment-advisor | 투자 도메인 콘텐츠 |
+
+**참고**: serverless/ 앱은 백엔드 에이전트가 담당하지만, AWS Lambda 전환 시 인프라 에이전트와 협업 필요
+
+### 워크플로우
+
+1. Orchestrator가 작업 분배 미리보기 제공
+2. 사용자 확인 후 에이전트 순차 호출
+3. 에이전트 완료/도움 요청 시 사용자가 조율
+
+---
+
+## RAG Analysis (AI 분석) - Phase 3
+
+### 파이프라인 버전
+
+| 버전 | 설명 | API 파라미터 |
+|------|------|-------------|
+| lite | 기존 바구니 기반 | `?pipeline=lite` |
+| v2 | RAG 기반 (Entity + Hybrid Search) | `?pipeline=v2` |
+| **final** | **Phase 3 통합 (권장)** | `?pipeline=final` |
+
+### AnalysisPipelineFinal 스테이지
+
+| Stage | 컴포넌트 | 역할 |
+|-------|---------|------|
+| 0 | Semantic Cache | 유사 질문 캐시 (SIMILARITY=0.85) |
+| 1 | Complexity Classifier | 질문 복잡도 분류 |
+| 2 | Token Budget Manager | 토큰 예산 할당 |
+| 3 | Adaptive LLM | 복잡도 기반 모델 선택 |
+| 4 | Cost Tracker | 비용 추적 및 로깅 |
+
+### 복잡도별 설정
+
+| 복잡도 | max_tokens | context 예산 |
+|--------|------------|-------------|
+| simple | 800 | 400 |
+| moderate | 1500 | 800 |
+| complex | 2500 | 1500 |
+
+### 모니터링 API
+
+```bash
+GET /api/v1/rag/monitoring/usage/?hours=24   # 사용량 통계
+GET /api/v1/rag/monitoring/cost/             # 비용 요약
+GET /api/v1/rag/monitoring/cache/            # 캐시 통계
+```
+
+---
+
+## 구현 완료 기능
+
 - ✅ JWT 인증 시스템
 - ✅ 포트폴리오 CRUD
-- ✅ 기술적 지표 계산 (RSI, MACD, Bollinger Bands 등)
-- ✅ Alpha Vantage API 통합 (실시간 가격, 종목 검색)
-- ✅ 마이페이지 및 사용자 프로필 관리
-- ✅ 종목 검색 자동완성
+- ✅ 기술적 지표 (RSI, MACD, Bollinger Bands 등)
+- ✅ Alpha Vantage API 통합
 - ✅ WebSocket 실시간 통신
-- ✅ 백그라운드 데이터 수집 (Python threading)
-- ✅ Frontend 데이터 상태 폴링 (10초 간격)
-- ✅ 429 Rate Limit 에러 처리
-- ✅ Celery 비동기 태스크 시스템
-- ✅ Redis 캐싱 및 메시지 브로커
-- ⏳ ML/DL 모델 통합 (미구현)
-- ⏳ PostgreSQL 마이그레이션 (미구현)
+- ✅ Celery 비동기 태스크
+- ✅ Redis 캐싱
+- ✅ 차트 UX (Nice Numbers, 색상 테마, 반응형)
+- ✅ Market Pulse 거시경제 대시보드
+- ✅ yfinance 글로벌 시장 데이터
+- ✅ Watchlist 관심종목 관리 (목표가, 메모, 실시간 가격)
+- ✅ RAG Analysis Phase 3 (Semantic Cache, Cost Optimization)
+- ✅ **Market Movers (Phase 1 + Phase 2 + Phase 2.5 + Phase 2.6)**
+  - ✅ **5개 지표 시스템**: RVOL, Trend Strength, Sector Alpha, ETF Sync Rate, Volatility Percentile
+  - ✅ **FMP API 통합**: Gainers/Losers/Actives TOP 20
+  - ✅ **Celery Beat 스케줄**: 매일 07:30 EST 자동 동기화
+  - ✅ **유닛 테스트**: 21개 테스트 (100% 통과)
+  - ✅ **AI 키워드 생성 (Phase 2.5)**: Gemini 2.5 Flash 기반 3개 핵심 키워드
+  - ✅ **Corporate Action 감지 (Phase 2.6)**: yfinance 기반 주식분할/역분할/배당 자동 감지
+  - ⏳ **Phase 3: AWS Lambda 전환** (보류)
+- ✅ **AI 키워드 시스템**
+  - ✅ **Backend**: StockKeyword 모델, KeywordGenerationService, Celery 파이프라인
+  - ✅ **Frontend**: KeywordTag/KeywordList 컴포넌트, Market Movers/Screener 통합
+  - ✅ **Rate Limit 대응**: Marketaux → Finnhub 폴백, Gemini 지수 백오프
+  - ✅ **JSON 복구**: 잘린 LLM 응답 regex 복구
+- ✅ **Graph Analysis (Phase 1 Week 1-2)**
+  - ✅ **PostgreSQL 스키마**: CorrelationMatrix, CorrelationEdge, CorrelationAnomaly, PriceCache, GraphMetadata
+  - ✅ **NetworkX 상관계수 계산 엔진**: 3개월 rolling window, ±0.2 anomaly detection
+  - ✅ **EODHD API Client**: Bulk EOD data download (5,000+ US stocks)
+  - ✅ **Services**: CorrelationCalculator, AnomalyDetector
+  - ⏳ **REST API 엔드포인트**: Week 3-4 예정
+  - ⏳ **Frontend 그래프 시각화 (D3.js)**: Week 3-4 예정
+- ✅ **Stock Auto Sync System**
+  - ✅ **자동 저장**: 외부 API 응답 DB 자동 저장 (StockSyncService)
+  - ✅ **Rate Limiter**: Redis 기반 FMP/Alpha Vantage 호출 제한
+  - ✅ **_meta 응답**: 데이터 소스/신선도/동기화 시간 정보 포함
+  - ✅ **Frontend 훅**: useStockData (TanStack Query), useDataSync
+  - ✅ **공통 컴포넌트**: DataLoadingState, DataSourceBadge, CorporateActionBadge
+- ⏳ ML/DL 모델 통합
+
+---
+
+## 로깅
+
+- 로그 파일: `stocks.log`
+- 사용법: `logger = logging.getLogger(__name__)`

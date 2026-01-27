@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { TrendingUp, Search, Menu, User, LogOut, LogIn } from 'lucide-react';
+import { TrendingUp, Search, Menu, User, LogOut, LogIn, Activity, Target, Filter } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -57,20 +57,39 @@ export default function Header() {
               포트폴리오
             </Link>
             <Link
-              href="/stocks"
+              href="/watchlist"
               className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/stocks') ? 'text-blue-600 dark:text-blue-400' : ''
+                pathname.startsWith('/watchlist') ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
-              주식 목록
+              관심종목
             </Link>
             <Link
-              href="/analysis"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/analysis') ? 'text-blue-600 dark:text-blue-400' : ''
+              href="/strategy-analysis"
+              className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
+                pathname.startsWith('/strategy-analysis') ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
-              분석
+              <Target className="h-4 w-4" />
+              전략분석실
+            </Link>
+            <Link
+              href="/market-pulse"
+              className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
+                pathname.startsWith('/market-pulse') ? 'text-blue-600 dark:text-blue-400' : ''
+              }`}
+            >
+              <Activity className="h-4 w-4" />
+              Market Pulse
+            </Link>
+            <Link
+              href="/screener"
+              className={`flex items-center gap-1 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
+                pathname.startsWith('/screener') ? 'text-blue-600 dark:text-blue-400' : ''
+              }`}
+            >
+              <Filter className="h-4 w-4" />
+              스크리너
             </Link>
             {user && (
               <Link
@@ -154,16 +173,31 @@ export default function Header() {
                 포트폴리오
               </Link>
               <Link
-                href="/stocks"
+                href="/watchlist"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                주식 목록
+                관심종목
               </Link>
               <Link
-                href="/analysis"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+                href="/strategy-analysis"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
-                분석
+                <Target className="h-4 w-4" />
+                전략분석실
+              </Link>
+              <Link
+                href="/market-pulse"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <Activity className="h-4 w-4" />
+                Market Pulse
+              </Link>
+              <Link
+                href="/screener"
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <Filter className="h-4 w-4" />
+                스크리너
               </Link>
               {user && (
                 <Link

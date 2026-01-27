@@ -162,3 +162,85 @@ class Portfolio(models.Model):
         if self.stock.change_percent:
             return self.stock.change_percent
         return "0%"
+
+
+class Watchlist(models.Model):
+    """
+    사용자의 관심종목 리스트
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watchlists')
+    name = models.CharField(max_length=100, help_text="관심종목 리스트 이름 (예: 진입준비, 기술주)")
+    description = models.TextField(blank=True, help_text="리스트 설명")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'users_watchlist'
+        unique_together = ('user', 'name')
+        indexes = [
+            models.Index(fields=['user', '-updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.name}"
+
+    @property
+    def stock_count(self):
+        """리스트에 포함된 종목 수"""
+        return self.items.count()
+
+
+class WatchlistItem(models.Model):
+    """
+    Watchlist에 포함된 개별 종목
+    """
+    watchlist = models.ForeignKey(Watchlist, on_delete=models.CASCADE, related_name='items')
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, to_field='symbol')
+
+    # 사용자 설정
+    target_entry_price = models.DecimalField(
+        max_digits=15,
+        decimal_places=4,
+        blank=True,
+        null=True,
+        validators=[MinValueValidator(Decimal('0.01'))],
+        help_text="목표 진입가"
+    )
+    notes = models.TextField(blank=True, help_text="메모")
+
+    # 메타데이터
+    added_at = models.DateTimeField(auto_now_add=True)
+    position_order = models.IntegerField(default=0, help_text="리스트 내 표시 순서")
+
+    class Meta:
+        db_table = 'users_watchlist_item'
+        unique_together = ('watchlist', 'stock')
+        indexes = [
+            models.Index(fields=['watchlist', 'position_order']),
+            models.Index(fields=['watchlist', '-added_at']),
+        ]
+        ordering = ['position_order', '-added_at']
+
+    def __str__(self):
+        return f"{self.watchlist.name} - {self.stock.symbol}"
+
+    @property
+    def current_price(self):
+        """현재가"""
+        return float(self.stock.real_time_price) if self.stock.real_time_price else 0
+
+    @property
+    def distance_from_entry(self):
+        """목표 진입가까지의 거리 (%)"""
+        if self.target_entry_price:
+            current = float(self.stock.real_time_price)
+            target = float(self.target_entry_price)
+            return ((current - target) / target) * 100
+        return None
+
+    @property
+    def is_below_target(self):
+        """현재가가 목표 진입가 이하인지"""
+        if self.target_entry_price:
+            return float(self.stock.real_time_price) <= float(self.target_entry_price)
+        return None

@@ -51,7 +51,18 @@ export default function PortfolioStockCard({ stock, onDataComplete }: PortfolioS
           // 데이터가 불완전하면 폴링 시작
           setIsPolling(true);
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        // 401 에러는 인증 만료 - 폴링 중지
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response?: { status?: number } };
+          if (axiosError.response?.status === 401) {
+            setIsPolling(false);
+            if (intervalId) {
+              clearInterval(intervalId);
+            }
+            return;
+          }
+        }
         console.error('Failed to check data status:', error);
       }
     };

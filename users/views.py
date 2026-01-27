@@ -2,13 +2,17 @@ import logging
 import threading
 
 from django.contrib.auth import authenticate, login, logout
+from django.db import transaction
 from django.db.models import Sum, F
+from django.utils.translation import gettext_lazy as _
+from django.core.paginator import Paginator, EmptyPage
 
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
-from rest_framework.exceptions import ParseError, NotFound
+from rest_framework.exceptions import ParseError, NotFound, ValidationError
+from rest_framework.throttling import UserRateThrottle
 
 from .serializers import (
     UserSerializer,
@@ -16,12 +20,25 @@ from .serializers import (
     PortfolioSerializer,
     PortfolioDetailSerializer,
     PortfolioCreateUpdateSerializer,
-    PortfolioSummarySerializer
+    PortfolioSummarySerializer,
+    WatchlistSerializer,
+    WatchlistDetailSerializer,
+    WatchlistCreateUpdateSerializer,
+    WatchlistItemSerializer,
+    WatchlistItemCreateSerializer,
+    WatchlistItemUpdateSerializer
 )
 from stocks.models import Stock
-from .models import User, Portfolio
+from .models import User, Portfolio, Watchlist, WatchlistItem
+from .cache_utils import WatchlistCache, watchlist_cached_api
 
 logger = logging.getLogger(__name__)
+
+
+# Rate Limiting 설정
+class WatchlistRateThrottle(UserRateThrottle):
+    """Watchlist API 전용 Rate Throttle (100회/시간)"""
+    rate = '100/hour'
 
 
 # 현재 로그인한 사용자 정보 조회 및 수정
@@ -548,6 +565,7 @@ class StockDataStatusView(APIView):
     특정 주식의 데이터 수집 상태를 확인합니다.
     프론트엔드에서 폴링으로 호출하여 로딩 상태를 업데이트합니다.
     """
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, symbol):
         """주식 데이터 상태 조회"""
@@ -555,3 +573,384 @@ class StockDataStatusView(APIView):
 
         status_data = get_stock_data_status(symbol)
         return Response(status_data)
+
+
+# ============ Watchlist Views ============
+
+class WatchlistListCreateView(APIView):
+    """
+    GET: Watchlist 목록 조회 (캐싱 적용, 페이지네이션)
+    POST: 새로운 Watchlist 생성 (캐시 무효화)
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    @watchlist_cached_api(cache_type='list', timeout=300)
+    def get(self, request):
+        """사용자의 Watchlist 목록 조회 (페이지네이션 적용)"""
+        watchlists = Watchlist.objects.filter(user=request.user).order_by('-updated_at')
+
+        # 페이지네이션 파라미터 추출
+        page_number = request.query_params.get('page', 1)
+        page_size = int(request.query_params.get('page_size', 20))
+
+        # 페이지 크기 제한 (최대 100개)
+        if page_size > 100:
+            page_size = 100
+
+        # 페이지네이션 적용
+        paginator = Paginator(watchlists, page_size)
+        try:
+            page_obj = paginator.page(page_number)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        serializer = WatchlistSerializer(page_obj.object_list, many=True)
+
+        return Response({
+            'results': serializer.data,
+            'pagination': {
+                'count': paginator.count,
+                'page': page_obj.number,
+                'page_size': page_size,
+                'num_pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous()
+            }
+        })
+
+    def post(self, request):
+        """새로운 Watchlist 생성 (캐시 무효화)"""
+        serializer = WatchlistCreateUpdateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            watchlist = serializer.save()
+
+            # 캐시 무효화 - Watchlist 목록 캐시 삭제
+            WatchlistCache.invalidate_watchlist_list(request.user.id)
+
+            return Response(WatchlistSerializer(watchlist).data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WatchlistDetailView(APIView):
+    """
+    GET: Watchlist 상세 조회 (종목 리스트 포함)
+    PATCH: Watchlist 수정
+    DELETE: Watchlist 삭제
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def get_object(self, pk, user):
+        """Watchlist 객체 가져오기"""
+        try:
+            return Watchlist.objects.prefetch_related('items__stock').get(pk=pk, user=user)
+        except Watchlist.DoesNotExist:
+            raise NotFound(_("Watchlist not found"))
+
+    def get(self, request, pk):
+        """Watchlist 상세 조회"""
+        watchlist = self.get_object(pk, request.user)
+        serializer = WatchlistDetailSerializer(watchlist)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        """Watchlist 수정"""
+        watchlist = self.get_object(pk, request.user)
+        serializer = WatchlistCreateUpdateSerializer(
+            watchlist,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            watchlist = serializer.save()
+            return Response(WatchlistSerializer(watchlist).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        """Watchlist 삭제 (캐시 무효화)"""
+        watchlist = self.get_object(pk, request.user)
+        watchlist.delete()
+
+        # 캐시 무효화 - Watchlist 목록과 해당 Watchlist 종목 데이터 캐시 삭제
+        WatchlistCache.invalidate_watchlist_list(request.user.id)
+        WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class WatchlistItemAddView(APIView):
+    """
+    POST: Watchlist에 종목 추가 (캐시 무효화, 트랜잭션 보호)
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def post(self, request, pk):
+        """Watchlist에 종목 추가 (트랜잭션 보호)"""
+        with transaction.atomic():
+            # Watchlist 확인 및 락 획득
+            try:
+                watchlist = Watchlist.objects.select_for_update().get(pk=pk, user=request.user)
+            except Watchlist.DoesNotExist:
+                raise NotFound(_("Watchlist not found"))
+
+            # 종목 추가
+            serializer = WatchlistItemCreateSerializer(data=request.data)
+            if serializer.is_valid():
+                stock = serializer.validated_data['stock']
+
+                # 이미 해당 종목이 리스트에 있는지 확인
+                if WatchlistItem.objects.filter(watchlist=watchlist, stock=stock).exists():
+                    return Response(
+                        {"error": _(f"'{stock.symbol}' stock is already in this watchlist")},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
+                # WatchlistItem 생성
+                item = WatchlistItem.objects.create(
+                    watchlist=watchlist,
+                    stock=stock,
+                    target_entry_price=serializer.validated_data.get('target_entry_price'),
+                    notes=serializer.validated_data.get('notes', ''),
+                    position_order=serializer.validated_data.get('position_order', 0)
+                )
+
+                # 캐시 무효화 - 종목 데이터 캐시 삭제
+                WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+                return Response(WatchlistItemSerializer(item).data, status=status.HTTP_201_CREATED)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WatchlistItemRemoveView(APIView):
+    """
+    DELETE: Watchlist에서 종목 제거 (캐시 무효화)
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def delete(self, request, pk, symbol):
+        """Watchlist에서 종목 제거 (캐시 무효화)"""
+        # Watchlist 확인
+        try:
+            watchlist = Watchlist.objects.get(pk=pk, user=request.user)
+        except Watchlist.DoesNotExist:
+            raise NotFound(_("Watchlist not found"))
+
+        # WatchlistItem 확인 및 삭제
+        try:
+            item = WatchlistItem.objects.get(watchlist=watchlist, stock__symbol=symbol.upper())
+            item.delete()
+
+            # 캐시 무효화 - 종목 데이터 캐시 삭제
+            WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except WatchlistItem.DoesNotExist:
+            raise NotFound(_(f"Stock {symbol} not found in this watchlist"))
+
+
+class WatchlistItemUpdateView(APIView):
+    """
+    PATCH: Watchlist 종목 설정 수정 (목표가, 메모 등, 캐시 무효화)
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def patch(self, request, pk, symbol):
+        """Watchlist 종목 설정 수정 (캐시 무효화)"""
+        # Watchlist 확인
+        try:
+            watchlist = Watchlist.objects.get(pk=pk, user=request.user)
+        except Watchlist.DoesNotExist:
+            raise NotFound(_("Watchlist not found"))
+
+        # WatchlistItem 확인
+        try:
+            item = WatchlistItem.objects.select_related('stock').get(
+                watchlist=watchlist,
+                stock__symbol=symbol.upper()
+            )
+        except WatchlistItem.DoesNotExist:
+            raise NotFound(_(f"Stock {symbol} not found in this watchlist"))
+
+        # 수정
+        serializer = WatchlistItemUpdateSerializer(item, data=request.data, partial=True)
+        if serializer.is_valid():
+            item = serializer.save()
+
+            # 캐시 무효화 - 종목 데이터 캐시 삭제
+            WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+            return Response(WatchlistItemSerializer(item).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class WatchlistStocksView(APIView):
+    """
+    GET: Watchlist의 종목 상세 조회 (실시간 가격 포함, 캐싱 적용, 페이지네이션)
+    - 캐싱 TTL: 60초 (실시간 가격 포함)
+    - 캐시 키: user_id + watchlist_id
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    @watchlist_cached_api(cache_type='stocks', timeout=60)
+    def get(self, request, pk):
+        """Watchlist 종목 상세 조회 (페이지네이션 적용)"""
+        # Watchlist 확인
+        try:
+            watchlist = Watchlist.objects.get(pk=pk, user=request.user)
+        except Watchlist.DoesNotExist:
+            raise NotFound(_("Watchlist not found"))
+
+        # 종목 조회 (N+1 쿼리 방지)
+        items = WatchlistItem.objects.filter(watchlist=watchlist).select_related('stock').order_by('position_order', '-added_at')
+
+        # 페이지네이션 파라미터 추출
+        page_number = request.query_params.get('page', 1)
+        page_size = int(request.query_params.get('page_size', 20))
+
+        # 페이지 크기 제한 (최대 100개)
+        if page_size > 100:
+            page_size = 100
+
+        # 페이지네이션 적용
+        paginator = Paginator(items, page_size)
+        try:
+            page_obj = paginator.page(page_number)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+
+        serializer = WatchlistItemSerializer(page_obj.object_list, many=True)
+
+        return Response({
+            'results': serializer.data,
+            'pagination': {
+                'count': paginator.count,
+                'page': page_obj.number,
+                'page_size': page_size,
+                'num_pages': paginator.num_pages,
+                'has_next': page_obj.has_next(),
+                'has_previous': page_obj.has_previous()
+            }
+        })
+
+
+class WatchlistBulkAddView(APIView):
+    """
+    POST: Watchlist에 여러 종목 한 번에 추가 (트랜잭션 보호)
+    Request Body: {"symbols": ["AAPL", "MSFT", "GOOGL"], "target_entry_price": 150.00, "notes": ""}
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def post(self, request, pk):
+        """여러 종목을 한 번에 추가"""
+        symbols = request.data.get('symbols', [])
+        if not symbols or not isinstance(symbols, list):
+            raise ValidationError(_("'symbols' field is required and must be a list"))
+
+        target_entry_price = request.data.get('target_entry_price')
+        notes = request.data.get('notes', '')
+        position_order = request.data.get('position_order', 0)
+
+        with transaction.atomic():
+            # Watchlist 확인 및 락 획득
+            try:
+                watchlist = Watchlist.objects.select_for_update().get(pk=pk, user=request.user)
+            except Watchlist.DoesNotExist:
+                raise NotFound(_("Watchlist not found"))
+
+            added = []
+            skipped = []
+            errors = []
+
+            for symbol in symbols:
+                try:
+                    # 종목 조회
+                    stock = Stock.objects.get(symbol=symbol.upper())
+
+                    # 중복 확인
+                    if WatchlistItem.objects.filter(watchlist=watchlist, stock=stock).exists():
+                        skipped.append(symbol)
+                        continue
+
+                    # WatchlistItem 생성
+                    item = WatchlistItem.objects.create(
+                        watchlist=watchlist,
+                        stock=stock,
+                        target_entry_price=target_entry_price,
+                        notes=notes,
+                        position_order=position_order
+                    )
+                    added.append(WatchlistItemSerializer(item).data)
+
+                except Stock.DoesNotExist:
+                    errors.append({'symbol': symbol, 'error': _('Stock not found')})
+                except Exception as e:
+                    errors.append({'symbol': symbol, 'error': str(e)})
+
+            # 캐시 무효화
+            WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+            return Response({
+                'added': added,
+                'skipped': skipped,
+                'errors': errors,
+                'summary': {
+                    'total': len(symbols),
+                    'added_count': len(added),
+                    'skipped_count': len(skipped),
+                    'error_count': len(errors)
+                }
+            }, status=status.HTTP_201_CREATED if added else status.HTTP_200_OK)
+
+
+class WatchlistBulkRemoveView(APIView):
+    """
+    POST: Watchlist에서 여러 종목 한 번에 제거 (트랜잭션 보호)
+    Request Body: {"symbols": ["AAPL", "MSFT", "GOOGL"]}
+    """
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistRateThrottle]
+
+    def post(self, request, pk):
+        """여러 종목을 한 번에 제거"""
+        symbols = request.data.get('symbols', [])
+        if not symbols or not isinstance(symbols, list):
+            raise ValidationError(_("'symbols' field is required and must be a list"))
+
+        with transaction.atomic():
+            # Watchlist 확인
+            try:
+                watchlist = Watchlist.objects.get(pk=pk, user=request.user)
+            except Watchlist.DoesNotExist:
+                raise NotFound(_("Watchlist not found"))
+
+            removed = []
+            not_found = []
+
+            for symbol in symbols:
+                try:
+                    item = WatchlistItem.objects.get(watchlist=watchlist, stock__symbol=symbol.upper())
+                    item.delete()
+                    removed.append(symbol)
+                except WatchlistItem.DoesNotExist:
+                    not_found.append(symbol)
+
+            # 캐시 무효화
+            WatchlistCache.invalidate_watchlist_stocks(request.user.id, pk)
+
+            return Response({
+                'removed': removed,
+                'not_found': not_found,
+                'summary': {
+                    'total': len(symbols),
+                    'removed_count': len(removed),
+                    'not_found_count': len(not_found)
+                }
+            }, status=status.HTTP_200_OK)

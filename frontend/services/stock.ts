@@ -74,6 +74,26 @@ export interface StockOverview {
   ex_dividend_date?: string;
 }
 
+// Meta information for data freshness tracking
+export interface DataMeta {
+  source: 'db' | 'fmp' | 'fmp_realtime' | 'alpha_vantage' | 'yfinance' | 'unknown';
+  synced_at: string | null;
+  freshness: 'fresh' | 'stale' | 'expired';
+  can_sync: boolean;
+}
+
+export interface SyncResponse {
+  symbol: string;
+  status: 'success' | 'partial' | 'failed';
+  synced: Record<string, { success: boolean; source?: string; error?: string }>;
+  next_sync_available: string;
+}
+
+export interface OverviewWithMeta {
+  overview: StockOverview;
+  _meta: DataMeta | null;
+}
+
 export interface FinancialStatement {
   fiscal_date_ending: string;
   fiscal_year: number;
@@ -121,6 +141,12 @@ export const stockService = {
 
   // Get stock overview (detailed info)
   async getStockOverview(symbol: string): Promise<StockOverview> {
+    const result = await this.getStockOverviewWithMeta(symbol);
+    return result.overview;
+  },
+
+  // Get stock overview with meta information
+  async getStockOverviewWithMeta(symbol: string): Promise<OverviewWithMeta> {
     const response = await fetch(`${API_URL}/stocks/api/overview/${symbol}/`, {
       headers: {
         'Content-Type': 'application/json',
@@ -128,14 +154,17 @@ export const stockService = {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch stock overview');
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error('Failed to fetch stock overview') as any;
+      error.response = { data: errorData, status: response.status };
+      throw error;
     }
 
     const result = await response.json();
     const data = result.data;
 
     // Transform the data to match our interface
-    return {
+    const overview: StockOverview = {
       symbol: data.symbol,
       stock_name: data.stock_name,
       description: data.description,
@@ -178,6 +207,59 @@ export const stockService = {
       dividend_date: data.dividend_date,
       ex_dividend_date: data.ex_dividend_date,
     };
+
+    // Extract meta information
+    const _meta: DataMeta | null = result._meta || null;
+
+    return { overview, _meta };
+  },
+
+  // Sync stock data from external API to DB
+  async syncData(
+    symbol: string,
+    dataTypes: string[] = ['overview'],
+    force: boolean = false
+  ): Promise<SyncResponse> {
+    // 인증 토큰 가져오기 (선택적)
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_URL}/stocks/api/sync/${symbol}/`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ data_types: dataTypes, force }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const error = new Error('Failed to sync stock data') as any;
+      error.response = { data: errorData, status: response.status };
+      throw error;
+    }
+
+    return response.json();
+  },
+
+  // Get sync status
+  async getSyncStatus(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/sync/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to get sync status');
+    }
+
+    return response.json();
   },
 
   // Get chart data
@@ -226,13 +308,20 @@ export const stockService = {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_URL}/stocks/api/balance-sheet/${symbol}/?${params}`, {
+    const url = `${API_URL}/stocks/api/balance-sheet/${symbol}/?${params}`;
+    console.log('[DEBUG] Balance Sheet URL:', url);
+
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
+    console.log('[DEBUG] Balance Sheet Response:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[DEBUG] Balance Sheet Error Body:', errorText);
       throw new Error('Failed to fetch balance sheet');
     }
 
@@ -276,13 +365,20 @@ export const stockService = {
       limit: limit.toString(),
     });
 
-    const response = await fetch(`${API_URL}/stocks/api/cashflow/${symbol}/?${params}`, {
+    const url = `${API_URL}/stocks/api/cashflow/${symbol}/?${params}`;
+    console.log('[DEBUG] Cash Flow URL:', url);
+
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
 
+    console.log('[DEBUG] Cash Flow Response:', response.status, response.statusText);
+
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[DEBUG] Cash Flow Error Body:', errorText);
       throw new Error('Failed to fetch cash flow');
     }
 
@@ -304,5 +400,105 @@ export const stockService = {
 
     const data = await response.json();
     return data.results || [];
+  },
+
+  // Get key metrics (fundamental data)
+  async getKeyMetrics(
+    symbol: string,
+    period: 'annual' | 'quarterly' = 'annual',
+    limit: number = 5
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      period,
+      limit: limit.toString(),
+    });
+
+    const response = await fetch(`${API_URL}/stocks/api/key-metrics/${symbol}/?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch key metrics');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  // Get financial ratios
+  async getFinancialRatios(
+    symbol: string,
+    period: 'annual' | 'quarterly' = 'annual',
+    limit: number = 5
+  ): Promise<any[]> {
+    const params = new URLSearchParams({
+      period,
+      limit: limit.toString(),
+    });
+
+    const response = await fetch(`${API_URL}/stocks/api/ratios/${symbol}/?${params}`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch financial ratios');
+    }
+
+    const data = await response.json();
+    return data.data || [];
+  },
+
+  // Get DCF valuation
+  async getDCF(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/dcf/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch DCF valuation');
+    }
+
+    const data = await response.json();
+    return data.data || null;
+  },
+
+  // Get investment rating
+  async getRating(symbol: string): Promise<any> {
+    const response = await fetch(`${API_URL}/stocks/api/rating/${symbol}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch investment rating');
+    }
+
+    const data = await response.json();
+    return data.data || null;
+  },
+
+  // Get all fundamentals at once
+  async getAllFundamentals(symbol: string): Promise<any> {
+    const [keyMetrics, ratios, dcf, rating] = await Promise.allSettled([
+      this.getKeyMetrics(symbol, 'annual', 5),
+      this.getFinancialRatios(symbol, 'annual', 5),
+      this.getDCF(symbol),
+      this.getRating(symbol),
+    ]);
+
+    return {
+      symbol,
+      keyMetrics: keyMetrics.status === 'fulfilled' ? keyMetrics.value : [],
+      ratios: ratios.status === 'fulfilled' ? ratios.value : [],
+      dcf: dcf.status === 'fulfilled' ? dcf.value : null,
+      rating: rating.status === 'fulfilled' ? rating.value : null,
+    };
   },
 };

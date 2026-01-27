@@ -504,7 +504,10 @@ class CashFlowStatement(BasicFinancialStatement):
     # 보통주 발행 수익금
     proceeds_from_issuance_of_common_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 장기 부채 및 자본증권 발행 수익금 (순액)
-    proceeds_from_issuance_of_long_term_debt_and_capital_securities_net = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_issuance_of_long_term_debt_and_capital_securities_net = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True,
+        db_column='proceeds_lt_debt_capital_securities_net'
+    )
     # 우선주 발행 수익금
     proceeds_from_issuance_of_preferred_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 자본 재매입을 통한 수익금
