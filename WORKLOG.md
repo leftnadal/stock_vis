@@ -1899,6 +1899,189 @@ if created:
 
 ---
 
+## 2026-01-27 (월) - Stock Auto Sync & Corporate Action 시스템
+
+### 작업 목표
+1. Stock 페이지 자동 데이터 저장 및 UX 개선
+2. Corporate Action 감지 시스템 (가격 ±50% 변동 시 주식분할/역분할/배당 감지)
+
+### 완료된 작업
+
+#### 1. Backend: Stock 자동 저장 서비스 ✅
+
+**구현된 기능**:
+- `stocks/services/stock_sync_service.py`: 외부 API 응답 DB 자동 저장
+- `stocks/services/rate_limiter.py`: Redis 기반 Rate Limiter (FMP 10/분, 250/일)
+- `stocks/exceptions.py`: 표준화된 예외 클래스 (StockNotFoundError, ExternalAPIError, RateLimitError)
+- API 응답에 `_meta` 필드 포함 (source, synced_at, freshness, can_sync)
+- `/api/v1/stocks/api/sync/<symbol>/` 엔드포인트 추가
+
+**동기화 간격**:
+- Overview: 6시간
+- Price: 1시간
+- Financial: 7일
+
+#### 2. Backend: Corporate Action 감지 시스템 ✅
+
+**GRI Bio 사례**: +2772% 상승 → 실제로는 1:28 역주식분할
+
+**구현된 기능**:
+- `serverless/models.py`: CorporateAction 모델 추가
+- `serverless/services/corporate_action_service.py`: yfinance 기반 감지 서비스
+- MarketMover 모델에 3개 필드 추가:
+  - `has_corporate_action`: Boolean
+  - `corporate_action_type`: 'reverse_split', 'split', 'spinoff', 'dividend'
+  - `corporate_action_display`: 표시 텍스트 (예: "28:1 역분할")
+- `serverless/services/data_sync.py`: 감지 로직 통합
+
+**감지 로직**:
+- 트리거: |change_percent| >= 50%
+- yfinance ratio 해석:
+  - ratio > 1: 정분할 (예: 4.0 → 1:4 정분할)
+  - ratio < 1: 역분할 (예: 0.0357 → 28:1 역분할)
+- 특별배당: 주가 대비 5% 이상
+- LOOKBACK_DAYS: 최근 7일 이내 이벤트만 체크
+
+**테스트**: 12개 테스트 (100% 통과)
+```bash
+pytest tests/serverless/test_corporate_action_service.py -v
+# 12 passed in 0.46s
+```
+
+#### 3. Frontend: 공통 컴포넌트 ✅
+
+**신규 파일**:
+- `components/common/CorporateActionBadge.tsx`: Corporate Action 표시 배지
+  - 4가지 타입: reverse_split(amber), split(blue), spinoff(purple), dividend(green)
+  - 3가지 변형: 기본, Compact, Icon Only
+  - 호버 툴팁 지원
+- `components/common/index.ts`: Central export
+- `types/stock.ts`: CorporateAction 타입 추가
+
+**기존 컴포넌트 확인**:
+- DataLoadingState.tsx: 로딩/에러 상태 UI
+- DataSourceBadge.tsx: 데이터 소스 배지
+
+#### 4. Frontend: Stock 데이터 훅 ✅
+
+**신규 파일**:
+- `hooks/useStockData.ts`: TanStack Query 기반 통합 훅
+  - Overview, Chart, Financials 병렬 fetch
+  - `_meta` 필드 파싱
+  - 캐싱 전략: Overview(10분), Chart(1분), Financials(1시간)
+- `hooks/useDataSync.ts`: 동기화 훅 개선
+- `hooks/useStockDataLegacy.ts`: 레거시 호환 어댑터
+- `hooks/index.ts`: Central export
+- `hooks/README.md`, `USAGE_EXAMPLES.md`: 문서화
+
+#### 5. Frontend: 컴포넌트 통합 ✅
+
+**수정된 파일**:
+- `components/market-pulse/MoverCard.tsx`: Corporate Action 배지 추가
+- `components/market-pulse/MoverCardWithBatchKeywords.tsx`: 배지 추가
+- `types/market.ts`: MarketMoverItem 타입 확장
+
+### 코드 변경사항
+
+```
+Backend 신규:
+- serverless/services/corporate_action_service.py
+- serverless/migrations/0004_add_corporate_action_fields.py
+- tests/serverless/test_corporate_action_service.py
+- scripts/test_corporate_action_detection.py
+- scripts/test_stock_sync.py
+- docs/STOCK_AUTO_SYNC_SYSTEM.md
+- serverless/services/CORPORATE_ACTION_README.md
+
+Backend 수정:
+- serverless/models.py (CorporateAction 모델, MarketMover 필드 추가)
+- serverless/serializers.py (3개 필드 추가)
+- serverless/services/data_sync.py (감지 로직 통합)
+- serverless/admin.py (CorporateAction 등록)
+- stocks/views.py (_meta 추가)
+- stocks/urls.py (sync 엔드포인트)
+- CLAUDE.md (Stock Sync, Corporate Action 섹션 추가)
+
+Frontend 신규:
+- components/common/CorporateActionBadge.tsx
+- components/common/index.ts
+- hooks/useStockData.ts
+- hooks/useDataSync.ts
+- hooks/useStockDataLegacy.ts
+- hooks/index.ts
+- hooks/README.md
+- hooks/USAGE_EXAMPLES.md
+
+Frontend 수정:
+- components/market-pulse/MoverCard.tsx
+- components/market-pulse/MoverCardWithBatchKeywords.tsx
+- types/market.ts
+- types/stock.ts
+```
+
+### 검증
+
+```bash
+# Django 시스템 체크
+python manage.py check
+# System check identified no issues (0 silenced)
+
+# 마이그레이션 적용
+python manage.py migrate serverless
+# serverless.0004_add_corporate_action_fields... OK
+
+# Corporate Action 테스트
+pytest tests/serverless/test_corporate_action_service.py -v
+# 12 passed in 0.46s
+```
+
+### API 응답 형식
+
+**Stock Overview (with _meta)**:
+```json
+{
+  "symbol": "AAPL",
+  "data": { ... },
+  "_meta": {
+    "source": "db",
+    "synced_at": "2026-01-26T12:00:00Z",
+    "freshness": "fresh",
+    "can_sync": true
+  }
+}
+```
+
+**Market Movers (with Corporate Action)**:
+```json
+{
+  "rank": 1,
+  "symbol": "GRI",
+  "change_percent": "2772.00",
+  "has_corporate_action": true,
+  "corporate_action_type": "reverse_split",
+  "corporate_action_display": "28:1 역분할"
+}
+```
+
+### 작업 완성도
+- **전체 프로젝트 진행률**: ~99%
+  - Backend 기본 구조: 99%
+  - Frontend 구조: 99%
+  - 데이터 수집: 95%
+  - 뉴스 시스템: 100%
+  - **Stock Auto Sync**: 100% ✅ (신규)
+  - **Corporate Action 감지**: 100% ✅ (신규)
+  - OAG KB 시스템: 100%
+  - ML/DL 통합: 0%
+  - 배포 준비: 10%
+
+### 다음 작업 계획
+1. Celery Beat에 Corporate Action 자동 감지 스케줄 추가
+2. Watchlist 종목 Corporate Action 알림
+3. Stock 상세 페이지에 DataLoadingState, DataSourceBadge 완전 통합
+
+---
+
 ## 2025-12-09 (월요일)
 
 ### 작업 요약
