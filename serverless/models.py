@@ -262,6 +262,303 @@ class StockKeyword(models.Model):
         super().save(*args, **kwargs)
 
 
+class MarketBreadth(models.Model):
+    """
+    시장 건강도 지표 (서버리스 전환 대상)
+
+    상승/하락 비율, 신고가/신저가, 거래량 흐름을 통해
+    "지금 시장이 좋은가?"를 한눈에 파악할 수 있는 지표.
+
+    데이터 소스: FMP API (gainers/losers + market performance)
+    """
+    date = models.DateField(unique=True, db_index=True)
+
+    # 상승/하락/보합 종목 수
+    advancing_count = models.IntegerField(default=0, help_text="상승 종목 수")
+    declining_count = models.IntegerField(default=0, help_text="하락 종목 수")
+    unchanged_count = models.IntegerField(default=0, help_text="보합 종목 수")
+
+    # 52주 신고가/신저가
+    new_highs = models.IntegerField(default=0, help_text="52주 신고가 종목 수")
+    new_lows = models.IntegerField(default=0, help_text="52주 신저가 종목 수")
+
+    # 거래량 흐름
+    up_volume = models.BigIntegerField(default=0, help_text="상승 종목 총 거래량")
+    down_volume = models.BigIntegerField(default=0, help_text="하락 종목 총 거래량")
+
+    # 계산된 비율
+    advance_decline_ratio = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        default=1.0,
+        help_text="상승/하락 비율 (advancing / declining)"
+    )
+    advance_decline_line = models.IntegerField(
+        default=0,
+        help_text="A/D Line (누적 상승-하락)"
+    )
+
+    # 시장 신호
+    SIGNAL_CHOICES = [
+        ('strong_bullish', '강한 상승'),
+        ('bullish', '상승'),
+        ('neutral', '중립'),
+        ('bearish', '하락'),
+        ('strong_bearish', '강한 하락'),
+    ]
+    breadth_signal = models.CharField(
+        max_length=20,
+        choices=SIGNAL_CHOICES,
+        default='neutral',
+        help_text="시장 건강도 신호"
+    )
+
+    # 추가 지표
+    new_high_low_ratio = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text="신고가/신저가 비율"
+    )
+    volume_ratio = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text="상승종목 거래량 / 하락종목 거래량"
+    )
+
+    # 메타데이터
+    data_source = models.CharField(max_length=50, default='fmp')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_market_breadth'
+        ordering = ['-date']
+        verbose_name = 'Market Breadth'
+        verbose_name_plural = 'Market Breadths'
+
+    def __str__(self):
+        return f"{self.date} Breadth: {self.breadth_signal} (A/D: {self.advance_decline_ratio})"
+
+
+class ScreenerPreset(models.Model):
+    """
+    스크리너 프리셋 (서버리스 전환 대상)
+
+    시스템 프리셋(초보자/중급자용)과 사용자 정의 프리셋을 관리.
+    """
+    CATEGORY_CHOICES = [
+        ('system', '시스템 프리셋'),
+        ('beginner', '초보자용'),
+        ('intermediate', '중급자용'),
+        ('advanced', '고급자용'),
+        ('custom', '사용자 정의'),
+    ]
+
+    # 사용자 (null이면 시스템 프리셋)
+    user = models.ForeignKey(
+        'users.User',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name='screener_presets'
+    )
+
+    # 기본 정보
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    description_ko = models.TextField(blank=True, help_text="한국어 설명")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='custom')
+    icon = models.CharField(max_length=10, default='📊', help_text="이모지 아이콘")
+
+    # 필터 조건 (JSON)
+    filters_json = models.JSONField(
+        default=dict,
+        help_text="필터 조건 (예: {'pe_max': 20, 'roe_min': 15})"
+    )
+
+    # 정렬 조건
+    sort_by = models.CharField(max_length=50, default='change_percent', help_text="정렬 기준")
+    sort_order = models.CharField(max_length=10, default='desc', help_text="정렬 방향")
+
+    # 공유 설정
+    is_public = models.BooleanField(default=False, help_text="공개 프리셋 여부")
+    share_code = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        unique=True,
+        help_text="공유 코드 (URL 인코딩용)"
+    )
+
+    # 통계
+    use_count = models.IntegerField(default=0, help_text="사용 횟수")
+    view_count = models.IntegerField(default=0, help_text="조회 횟수 (Phase 2.1)")
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    # 메타데이터
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_screener_preset'
+        ordering = ['-use_count', 'name']
+        indexes = [
+            models.Index(fields=['category', '-use_count']),
+            models.Index(fields=['user', '-use_count']),
+            models.Index(fields=['share_code']),
+            models.Index(fields=['is_public', '-view_count']),  # Phase 2.1: 트렌딩용
+        ]
+
+    def __str__(self):
+        owner = self.user.email if self.user else 'System'
+        return f"{self.icon} {self.name} ({owner})"
+
+
+class ScreenerFilter(models.Model):
+    """
+    필터 정의 메타데이터 (서버리스 전환 대상)
+
+    프론트엔드 필터 UI 렌더링 및 백엔드 필터 검증에 사용.
+    50개 이상의 필터를 카테고리별로 관리.
+    """
+    CATEGORY_CHOICES = [
+        ('price', '가격'),
+        ('volume', '거래량'),
+        ('fundamental', '펀더멘탈'),
+        ('technical', '기술적'),
+        ('dividend', '배당'),
+        ('other', '기타'),
+    ]
+
+    OPERATOR_CHOICES = [
+        ('range', '범위 (min-max)'),
+        ('gte', '이상'),
+        ('lte', '이하'),
+        ('eq', '동일'),
+        ('select', '선택'),
+        ('multi_select', '다중 선택'),
+        ('boolean', '참/거짓'),
+    ]
+
+    # 필터 ID (예: 'pe_ratio', 'market_cap')
+    filter_id = models.CharField(max_length=50, primary_key=True)
+
+    # 카테고리
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
+
+    # 표시 정보
+    label = models.CharField(max_length=100, help_text="영문 라벨")
+    label_ko = models.CharField(max_length=100, help_text="한국어 라벨")
+    description = models.TextField(blank=True, help_text="필터 설명")
+    description_ko = models.TextField(blank=True, help_text="한국어 설명")
+
+    # 데이터 필드 매핑
+    data_field = models.CharField(max_length=100, help_text="API/DB 필드명")
+    api_param = models.CharField(max_length=100, blank=True, help_text="FMP API 파라미터명")
+
+    # 연산자 타입
+    operator_type = models.CharField(max_length=20, choices=OPERATOR_CHOICES, default='range')
+
+    # 값 제약
+    unit = models.CharField(max_length=20, blank=True, help_text="단위 (%, $, B 등)")
+    min_value = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
+    max_value = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
+    default_min = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
+    default_max = models.DecimalField(max_digits=20, decimal_places=4, null=True, blank=True)
+    step = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True, help_text="증가 단위")
+
+    # 선택 옵션 (select/multi_select 타입용)
+    options = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="선택 옵션 리스트"
+    )
+
+    # KB 연동
+    tooltip_key = models.CharField(max_length=50, blank=True, help_text="KB 문서 키")
+
+    # 표시 순서 및 상태
+    display_order = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    is_premium = models.BooleanField(default=False, help_text="프리미엄 전용 필터")
+    is_popular = models.BooleanField(default=False, help_text="인기 필터")
+
+    # FMP API 지원 여부
+    fmp_supported = models.BooleanField(default=True, help_text="FMP API에서 직접 지원")
+
+    # 메타데이터
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_screener_filter'
+        ordering = ['category', 'display_order', 'label']
+
+    def __str__(self):
+        return f"[{self.category}] {self.label_ko} ({self.filter_id})"
+
+
+class SectorPerformance(models.Model):
+    """
+    섹터별 일일 성과 (히트맵용, 서버리스 전환 대상)
+
+    11개 섹터의 일일 성과를 저장하여 히트맵 시각화에 사용.
+    """
+    SECTOR_CHOICES = [
+        ('Technology', '기술'),
+        ('Healthcare', '헬스케어'),
+        ('Financial Services', '금융'),
+        ('Consumer Cyclical', '경기소비재'),
+        ('Industrials', '산업재'),
+        ('Energy', '에너지'),
+        ('Communication Services', '통신'),
+        ('Real Estate', '부동산'),
+        ('Utilities', '유틸리티'),
+        ('Basic Materials', '소재'),
+        ('Consumer Defensive', '필수소비재'),
+    ]
+
+    date = models.DateField(db_index=True)
+    sector = models.CharField(max_length=50, choices=SECTOR_CHOICES)
+
+    # 성과 지표
+    return_pct = models.DecimalField(
+        max_digits=8,
+        decimal_places=3,
+        help_text="일일 수익률 (%)"
+    )
+    market_cap = models.BigIntegerField(help_text="섹터 총 시가총액")
+    stock_count = models.IntegerField(help_text="섹터 내 종목 수")
+
+    # ETF 정보
+    etf_symbol = models.CharField(max_length=10, help_text="대표 ETF")
+    etf_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    etf_change_pct = models.DecimalField(max_digits=8, decimal_places=3, null=True, blank=True)
+
+    # Top Movers
+    top_gainers = models.JSONField(default=list, help_text="상위 상승 종목 (symbol, name, change_pct)")
+    top_losers = models.JSONField(default=list, help_text="상위 하락 종목 (symbol, name, change_pct)")
+
+    # 메타데이터
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'serverless_sector_performance'
+        unique_together = [['date', 'sector']]
+        ordering = ['-date', 'sector']
+        indexes = [
+            models.Index(fields=['date', '-return_pct']),
+        ]
+
+    def __str__(self):
+        sign = '+' if self.return_pct >= 0 else ''
+        return f"{self.date} {self.sector}: {sign}{self.return_pct}%"
+
+
 class CorporateAction(models.Model):
     """
     기업 이벤트 (주식분할, 역분할, 배당 등) 기록
@@ -311,3 +608,256 @@ class CorporateAction(models.Model):
 
     def __str__(self):
         return f"{self.symbol} ({self.date}): {self.display_text}"
+
+
+# ========================================
+# Screener Alert System (Phase 1)
+# ========================================
+
+class ScreenerAlert(models.Model):
+    """
+    스크리너 알림 설정
+
+    사용자가 설정한 조건에 맞는 종목이 발견되면 알림을 발송합니다.
+    프리셋 기반 또는 커스텀 필터 기반으로 설정 가능합니다.
+    """
+    ALERT_TYPE_CHOICES = [
+        ('filter_match', '필터 조건 충족'),
+        ('price_target', '목표가 도달'),
+        ('volume_spike', '거래량 급증'),
+        ('ai_signal', 'AI 신호'),
+        ('new_high', '신고가'),
+        ('new_low', '신저가'),
+    ]
+
+    # 사용자 (필수)
+    user = models.ForeignKey(
+        'users.User',
+        on_delete=models.CASCADE,
+        related_name='screener_alerts'
+    )
+
+    # 알림 설정
+    name = models.CharField(max_length=100, help_text="알림 이름")
+    description = models.TextField(blank=True, help_text="알림 설명")
+
+    # 프리셋 기반 또는 커스텀 필터
+    preset = models.ForeignKey(
+        'ScreenerPreset',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='alerts',
+        help_text="프리셋 기반 알림 (null이면 커스텀 필터)"
+    )
+    filters_json = models.JSONField(
+        default=dict,
+        help_text="커스텀 필터 조건 (프리셋 없을 때 사용)"
+    )
+
+    # 알림 타입 및 조건
+    alert_type = models.CharField(
+        max_length=20,
+        choices=ALERT_TYPE_CHOICES,
+        default='filter_match'
+    )
+    target_count = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="필터 매칭 종목 수 임계값 (예: 10개 이상이면 알림)"
+    )
+    target_symbols = models.JSONField(
+        default=list,
+        blank=True,
+        help_text="특정 종목 모니터링 (price_target용)"
+    )
+
+    # 알림 상태
+    is_active = models.BooleanField(default=True, help_text="알림 활성화 여부")
+    cooldown_hours = models.IntegerField(
+        default=24,
+        help_text="동일 조건 재알림 대기 시간 (시간)"
+    )
+
+    # 알림 이력
+    last_triggered_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="마지막 알림 발송 시간"
+    )
+    trigger_count = models.IntegerField(default=0, help_text="총 알림 발송 횟수")
+
+    # 알림 채널 (향후 확장용)
+    notify_in_app = models.BooleanField(default=True, help_text="인앱 알림")
+    notify_email = models.BooleanField(default=False, help_text="이메일 알림")
+    notify_push = models.BooleanField(default=False, help_text="푸시 알림 (PWA)")
+
+    # 타임스탬프
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_screener_alert'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_active']),
+            models.Index(fields=['is_active', '-created_at']),
+        ]
+
+    def __str__(self):
+        status = "활성" if self.is_active else "비활성"
+        return f"[{status}] {self.name} ({self.user.email})"
+
+    def get_effective_filters(self):
+        """
+        실제 적용될 필터 반환 (프리셋 또는 커스텀)
+        """
+        if self.preset:
+            return self.preset.filters_json
+        return self.filters_json
+
+    def can_trigger(self):
+        """
+        쿨다운 체크 - 알림 발송 가능 여부
+        """
+        if not self.is_active:
+            return False
+        if not self.last_triggered_at:
+            return True
+
+        from django.utils import timezone
+        from datetime import timedelta
+
+        cooldown_end = self.last_triggered_at + timedelta(hours=self.cooldown_hours)
+        return timezone.now() >= cooldown_end
+
+
+class AlertHistory(models.Model):
+    """
+    알림 발송 이력
+
+    스크리너 알림이 발송될 때마다 기록됩니다.
+    """
+    alert = models.ForeignKey(
+        ScreenerAlert,
+        on_delete=models.CASCADE,
+        related_name='history'
+    )
+
+    # 발송 정보
+    triggered_at = models.DateTimeField(auto_now_add=True)
+
+    # 매칭 결과
+    matched_count = models.IntegerField(help_text="매칭된 종목 수")
+    matched_symbols = models.JSONField(
+        default=list,
+        help_text="매칭된 종목 리스트 (최대 10개)"
+    )
+    snapshot = models.JSONField(
+        default=dict,
+        help_text="알림 시점 필터 조건 스냅샷"
+    )
+
+    # 발송 상태
+    STATUS_CHOICES = [
+        ('sent', '발송 완료'),
+        ('failed', '발송 실패'),
+        ('skipped', '쿨다운으로 스킵'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='sent')
+    error_message = models.TextField(blank=True, help_text="실패 시 에러 메시지")
+
+    # 사용자 확인
+    read_at = models.DateTimeField(null=True, blank=True, help_text="사용자 확인 시간")
+    dismissed = models.BooleanField(default=False, help_text="알림 해제 여부")
+
+    class Meta:
+        db_table = 'serverless_alert_history'
+        ordering = ['-triggered_at']
+        indexes = [
+            models.Index(fields=['alert', '-triggered_at']),
+            models.Index(fields=['triggered_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.alert.name} @ {self.triggered_at.strftime('%Y-%m-%d %H:%M')}"
+
+
+class InvestmentThesis(models.Model):
+    """
+    투자 테제 (Phase 2 - Chain Sight DNA)
+
+    스크리너 결과에서 AI가 생성한 투자 테제를 저장합니다.
+    """
+    # 사용자
+    user = models.ForeignKey(
+        'users.User',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='investment_theses'
+    )
+
+    # 테제 기본 정보
+    title = models.CharField(max_length=200, help_text="투자 테제 제목")
+    summary = models.TextField(help_text="투자 테제 요약 (1-2문장)")
+
+    # 필터 기반
+    filters_snapshot = models.JSONField(
+        default=dict,
+        help_text="테제 생성 시 적용된 필터"
+    )
+    preset_ids = models.JSONField(
+        default=list,
+        help_text="사용된 프리셋 IDs"
+    )
+
+    # 테제 내용
+    key_metrics = models.JSONField(
+        default=list,
+        help_text="핵심 지표 (예: ['PER < 15', 'ROE > 20%'])"
+    )
+    top_picks = models.JSONField(
+        default=list,
+        help_text="추천 종목 (최대 5개)"
+    )
+    risks = models.JSONField(
+        default=list,
+        help_text="리스크 요인"
+    )
+    rationale = models.TextField(blank=True, help_text="투자 근거 상세")
+
+    # AI 메타데이터
+    llm_model = models.CharField(max_length=50, default='gemini-2.5-flash')
+    generation_time_ms = models.IntegerField(null=True, blank=True)
+
+    # 공유 설정
+    is_public = models.BooleanField(default=False)
+    share_code = models.CharField(
+        max_length=20,
+        null=True,
+        blank=True,
+        unique=True
+    )
+
+    # 통계
+    view_count = models.IntegerField(default=0)
+    save_count = models.IntegerField(default=0)
+
+    # 타임스탬프
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_investment_thesis'
+        ordering = ['-created_at']
+        verbose_name_plural = 'Investment Theses'
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['is_public', '-view_count']),
+            models.Index(fields=['share_code']),
+        ]
+
+    def __str__(self):
+        owner = self.user.email if self.user else 'Anonymous'
+        return f"{self.title} ({owner})"
