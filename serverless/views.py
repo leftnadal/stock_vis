@@ -607,58 +607,70 @@ def market_breadth_api(request):
     if cached:
         return Response(cached)
 
-    try:
-        breadth = MarketBreadth.objects.get(date=target_date)
-        serializer = MarketBreadthSerializer(breadth)
+    # 오늘 데이터 조회, 없으면 최신 데이터로 폴백
+    breadth = MarketBreadth.objects.filter(date=target_date).first()
+    is_fallback = False
 
-        # 주요 지수 데이터 추가 (yfinance)
-        indices = _get_market_indices()
+    if not breadth:
+        # 최신 데이터로 폴백
+        breadth = MarketBreadth.objects.order_by('-date').first()
+        is_fallback = True
 
-        # 방법론 설명 추가
-        methodology = {
-            'sample_size': 50,
-            'total_market': 5000,
-            'sample_rate': '1%',
-            'data_source': 'FMP API (Most Active Stocks)',
-            'accuracy': {
-                'direction': '높음 (시장 방향성 판단)',
-                'exact_count': '낮음 (1% 샘플링)',
-                'volume': '추정치 (실제 거래량 데이터 없음)',
-            },
-            'interpretation_guide': {
-                'strong_bullish': 'A/D 비율 2.0 이상 - 상승 종목이 하락 종목의 2배 이상',
-                'bullish': 'A/D 비율 1.5~2.0 - 상승 우위',
-                'neutral': 'A/D 비율 0.67~1.5 - 상승/하락 비슷',
-                'bearish': 'A/D 비율 0.5~0.67 - 하락 우위',
-                'strong_bearish': 'A/D 비율 0.5 미만 - 하락 종목이 2배 이상',
-            },
-            'limitations': [
-                '거래량 상위 50개 종목만 샘플링 (대형주 편향)',
-                '실제 NYSE/NASDAQ A/D 데이터와 다를 수 있음',
-                '거래량은 가격 변동률로 추정한 값',
-            ],
-        }
-
-        response_data = {
-            'success': True,
-            'data': {
-                **serializer.data,
-                'indices': indices,
-                'methodology': methodology,
-            }
-        }
-
-        cache.set(cache_key, response_data, 300)  # 5분 캐시
-        return Response(response_data)
-
-    except MarketBreadth.DoesNotExist:
+    if not breadth:
         return Response({
             'success': False,
             'error': {
                 'code': 'NOT_FOUND',
-                'message': f"Market breadth data not found for {target_date}"
+                'message': f"Market breadth data not found"
             }
         }, status=status.HTTP_404_NOT_FOUND)
+
+    serializer = MarketBreadthSerializer(breadth)
+
+    # 주요 지수 데이터 추가 (yfinance)
+    indices = _get_market_indices()
+
+    # 방법론 설명 추가
+    methodology = {
+        'sample_size': 50,
+        'total_market': 5000,
+        'sample_rate': '1%',
+        'data_source': 'FMP API (Most Active Stocks)',
+        'accuracy': {
+            'direction': '높음 (시장 방향성 판단)',
+            'exact_count': '낮음 (1% 샘플링)',
+            'volume': '추정치 (실제 거래량 데이터 없음)',
+        },
+        'interpretation_guide': {
+            'strong_bullish': 'A/D 비율 2.0 이상 - 상승 종목이 하락 종목의 2배 이상',
+            'bullish': 'A/D 비율 1.5~2.0 - 상승 우위',
+            'neutral': 'A/D 비율 0.67~1.5 - 상승/하락 비슷',
+            'bearish': 'A/D 비율 0.5~0.67 - 하락 우위',
+            'strong_bearish': 'A/D 비율 0.5 미만 - 하락 종목이 2배 이상',
+        },
+        'limitations': [
+            '거래량 상위 50개 종목만 샘플링 (대형주 편향)',
+            '실제 NYSE/NASDAQ A/D 데이터와 다를 수 있음',
+            '거래량은 가격 변동률로 추정한 값',
+        ],
+    }
+
+    response_data = {
+        'success': True,
+        'data': {
+            **serializer.data,
+            'indices': indices,
+            'methodology': methodology,
+        }
+    }
+
+    # 폴백 데이터임을 표시
+    if is_fallback:
+        response_data['data']['is_fallback'] = True
+        response_data['data']['fallback_message'] = f"오늘({target_date}) 데이터 없음. {breadth.date} 데이터 표시 중"
+
+    cache.set(cache_key, response_data, 300)  # 5분 캐시
+    return Response(response_data)
 
 
 def _get_market_indices():
@@ -840,7 +852,18 @@ def sector_heatmap_api(request):
     if cached:
         return Response(cached)
 
+    # 오늘 데이터 조회
     sectors = SectorPerformance.objects.filter(date=target_date).order_by('-return_pct')
+    is_fallback = False
+    actual_date = target_date
+
+    if not sectors.exists():
+        # 최신 데이터로 폴백
+        latest_sector = SectorPerformance.objects.order_by('-date').first()
+        if latest_sector:
+            actual_date = latest_sector.date
+            sectors = SectorPerformance.objects.filter(date=actual_date).order_by('-return_pct')
+            is_fallback = True
 
     if not sectors.exists():
         return Response({
@@ -848,7 +871,7 @@ def sector_heatmap_api(request):
             'data': {
                 'date': target_date.isoformat(),
                 'sectors': [],
-                'message': 'No sector data for this date'
+                'message': 'No sector data available'
             }
         })
 
@@ -863,7 +886,7 @@ def sector_heatmap_api(request):
     response_data = {
         'success': True,
         'data': {
-            'date': target_date.isoformat(),
+            'date': actual_date.isoformat(),
             'sectors': serializer.data,
             'summary': {
                 'sectors_up': len(gains),
@@ -874,6 +897,11 @@ def sector_heatmap_api(request):
             }
         }
     }
+
+    # 폴백 데이터임을 표시
+    if is_fallback:
+        response_data['data']['is_fallback'] = True
+        response_data['data']['fallback_message'] = f"오늘({target_date}) 데이터 없음. {actual_date} 데이터 표시 중"
 
     cache.set(cache_key, response_data, 300)  # 5분 캐시
     return Response(response_data)
