@@ -238,11 +238,14 @@ def sync_now(request):
         sync = MarketMoversSync()
         results = sync.sync_daily_movers(target_date=date_str)
 
-        # 캐시 무효화
+        # 캐시 무효화 (market_movers_api와 동일한 키 패턴 사용)
         today = date_str or timezone.now().date().isoformat()
         for mover_type in ['gainers', 'losers', 'actives']:
-            cache_key = f'movers:{today}:{mover_type}'
+            # 키워드 포함 캐시 (market_movers_api에서 사용)
+            cache_key = f'movers_with_keywords:{today}:{mover_type}'
             cache.delete(cache_key)
+            # 기존 캐시 키도 삭제 (하위 호환)
+            cache.delete(f'movers:{today}:{mover_type}')
 
         logger.info(f"✅ 즉시 동기화 완료: date={today}, results={results}")
 
@@ -1844,3 +1847,425 @@ def trending_presets(request):
             'presets': serializer.data
         }
     })
+
+
+# ========================================
+# Chain Sight DNA API (Phase 2.2)
+# ========================================
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_api(request):
+    """
+    Chain Sight DNA - 연관 종목 발견
+
+    스크리너 결과에서 연관 종목을 3가지 방식으로 찾습니다:
+    1. 섹터 피어 (같은 섹터의 유사 종목)
+    2. 펀더멘탈 유사 (PER, ROE, 시가총액 유사)
+    3. AI 추천 (LLM 기반 관계 설명) - Optional
+
+    POST /api/v1/serverless/screener/chain-sight
+    {
+        "symbols": ["AAPL", "MSFT", "NVDA"],
+        "filters": {
+            "market_cap_min": 1000000000,
+            "pe_ratio_max": 30,
+            "roe_min": 20
+        },
+        "limit": 10,
+        "use_ai": false
+    }
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "sector_peers": [
+                    {
+                        "symbol": "GOOGL",
+                        "company_name": "Alphabet Inc.",
+                        "reason": "동일 Technology 섹터 유사 기업",
+                        "similarity": 0.85,
+                        "metrics": {
+                            "sector": "Technology",
+                            "pe": 28.0,
+                            "roe": 25.0,
+                            "market_cap": 1800000000000
+                        }
+                    }
+                ],
+                "fundamental_similar": [...],
+                "ai_insights": "이 종목들은 AI 반도체 수요 증가의 수혜 기업입니다...",
+                "chains_count": 10,
+                "metadata": {
+                    "original_count": 3,
+                    "filters": {...},
+                    "computation_time_ms": 150,
+                    "use_ai": false
+                }
+            }
+        }
+    """
+    from serverless.services.chain_sight_service import ChainSightService
+
+    # 요청 데이터 파싱
+    symbols = request.data.get('symbols', [])
+    filters = request.data.get('filters', {})
+    limit = int(request.data.get('limit', 10))
+    use_ai = request.data.get('use_ai', False)
+
+    # 유효성 검사
+    if not symbols:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'NO_SYMBOLS',
+                'message': 'No symbols provided'
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if len(symbols) > 50:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'TOO_MANY_SYMBOLS',
+                'message': f'Maximum 50 symbols allowed, got {len(symbols)}'
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 심볼 대문자 변환
+    symbols = [s.upper() for s in symbols]
+
+    # limit 범위 제한
+    limit = min(limit, 20)  # 최대 20개
+
+    try:
+        # Chain Sight 분석
+        service = ChainSightService()
+        result = service.find_related_chains(
+            filtered_symbols=symbols,
+            filters_applied=filters,
+            limit=limit,
+            use_ai=use_ai
+        )
+
+        logger.info(
+            f"✅ Chain Sight DNA 완료: "
+            f"원본 {len(symbols)}개 → 연관 {result['chains_count']}개 "
+            f"(섹터피어 {len(result['sector_peers'])}개, 펀더멘탈 {len(result['fundamental_similar'])}개)"
+        )
+
+        return Response({
+            'success': True,
+            'data': result
+        })
+
+    except Exception as e:
+        logger.exception(f"❌ Chain Sight DNA 실패: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'CHAIN_SIGHT_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ========================================
+# Investment Thesis (Phase 2.3)
+# ========================================
+
+@api_view(['POST'])
+@authentication_classes([])  # 인증 불필요 (만료된 토큰으로 인한 401 방지)
+@permission_classes([AllowAny])
+def generate_thesis(request):
+    """
+    투자 테제 생성 API
+
+    POST /api/v1/serverless/thesis/generate
+
+    Request Body:
+        {
+            "stocks": [
+                {
+                    "symbol": "AAPL",
+                    "company_name": "Apple Inc.",
+                    "price": 150.0,
+                    "change_percent": 2.5,
+                    "sector": "Technology",
+                    "pe_ratio": 28.5,
+                    "roe": 147.0,
+                    ...
+                },
+                ...
+            ],
+            "filters": {
+                "pe_max": 20,
+                "roe_min": 15,
+                "sector": "Technology",
+                ...
+            },
+            "user_notes": "추가 메모 (선택)",
+            "preset_ids": [1, 2]  # 선택
+        }
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "id": 1,
+                "title": "저평가 고수익 기술주",
+                "summary": "...",
+                "key_metrics": [...],
+                "top_picks": ["AAPL", "MSFT", ...],
+                "risks": [...],
+                "rationale": "...",
+                "share_code": "A3F8K2J9",
+                "created_at": "..."
+            }
+        }
+    """
+    from serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
+    from serverless.serializers import InvestmentThesisSerializer
+
+    # 요청 데이터 파싱
+    stocks = request.data.get('stocks', [])
+    filters = request.data.get('filters', {})
+    user_notes = request.data.get('user_notes', '')
+    preset_ids = request.data.get('preset_ids', [])
+
+    # 유효성 검사
+    if not stocks:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'NO_STOCKS',
+                'message': '종목 리스트가 비어있습니다.'
+            }
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # 사용자 정보 (인증된 경우)
+    user = request.user if request.user.is_authenticated else None
+
+    logger.info(
+        f"투자 테제 생성 요청: {len(stocks)}개 종목, "
+        f"{len(filters)}개 필터, user={user}"
+    )
+
+    try:
+        # ThesisBuilder 사용
+        logger.info(f"ThesisBuilder 초기화 시작...")
+        builder = ThesisBuilder(language='ko')
+        logger.info(f"ThesisBuilder 초기화 완료, build_thesis 호출...")
+
+        thesis = builder.build_thesis(
+            stocks=stocks,
+            filters=filters,
+            user=user,
+            user_notes=user_notes,
+            preset_ids=preset_ids
+        )
+
+        # 직렬화
+        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+
+        logger.info(f"✅ 투자 테제 생성 완료: ID={thesis.id}, 제목='{thesis.title}'")
+
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+
+    except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"❌ 투자 테제 생성 실패: {type(e).__name__}: {e}")
+        logger.error(f"Traceback:\n{error_traceback}")
+        print(f"[THESIS ERROR] {type(e).__name__}: {e}")  # 콘솔 출력
+        print(f"[THESIS ERROR] Traceback:\n{error_traceback}")
+
+        # 폴백 테제 생성 시도
+        try:
+            fallback_thesis = create_fallback_thesis(
+                stocks=stocks,
+                filters=filters,
+                user=user,
+                preset_ids=preset_ids
+            )
+            serializer = InvestmentThesisSerializer(fallback_thesis, context={'request': request})
+
+            logger.warning(f"⚠️ 폴백 테제 생성 완료: ID={fallback_thesis.id}")
+
+            return Response({
+                'success': True,
+                'data': serializer.data,
+                'warning': f'LLM 생성 실패로 기본 테제가 생성되었습니다. (에러: {type(e).__name__}: {str(e)[:100]})'
+            })
+
+        except Exception as fallback_error:
+            logger.exception(f"❌ 폴백 테제 생성 실패: {fallback_error}")
+
+            return Response({
+                'success': False,
+                'error': {
+                    'code': 'THESIS_GENERATION_FAILED',
+                    'message': str(e)
+                }
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def get_thesis(request, thesis_id):
+    """
+    투자 테제 상세 조회
+
+    GET /api/v1/serverless/thesis/{thesis_id}
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "id": 1,
+                "title": "...",
+                ...
+            }
+        }
+    """
+    from serverless.serializers import InvestmentThesisSerializer
+
+    try:
+        thesis = InvestmentThesis.objects.get(id=thesis_id)
+
+        # 조회수 증가
+        thesis.view_count += 1
+        thesis.save(update_fields=['view_count'])
+
+        # 직렬화
+        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+
+    except InvestmentThesis.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'NOT_FOUND',
+                'message': f'투자 테제를 찾을 수 없습니다: ID={thesis_id}'
+            }
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def list_theses(request):
+    """
+    내 투자 테제 목록 조회
+
+    GET /api/v1/serverless/thesis
+
+    Query Parameters:
+        - limit: 최대 개수 (기본값: 10)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "count": 5,
+                "theses": [...]
+            }
+        }
+    """
+    from serverless.serializers import InvestmentThesisListSerializer
+
+    # 인증 확인
+    if not request.user.is_authenticated:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'AUTHENTICATION_REQUIRED',
+                'message': '로그인이 필요합니다.'
+            }
+        }, status=status.HTTP_401_UNAUTHORIZED)
+
+    # 쿼리 파라미터
+    limit = int(request.GET.get('limit', 10))
+    limit = min(limit, 50)  # 최대 50개
+
+    # 내 테제 조회
+    theses = InvestmentThesis.objects.filter(
+        user=request.user
+    ).order_by('-created_at')[:limit]
+
+    # 직렬화
+    serializer = InvestmentThesisListSerializer(theses, many=True)
+
+    return Response({
+        'success': True,
+        'data': {
+            'count': len(serializer.data),
+            'theses': serializer.data
+        }
+    })
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_shared_thesis(request, share_code):
+    """
+    공유 테제 조회
+
+    GET /api/v1/serverless/thesis/shared/{share_code}
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "id": 1,
+                "title": "...",
+                ...
+            }
+        }
+    """
+    from serverless.serializers import InvestmentThesisSerializer
+
+    try:
+        thesis = InvestmentThesis.objects.get(share_code=share_code.upper())
+
+        # 비공개 테제는 소유자만 조회 가능
+        if not thesis.is_public:
+            if not request.user.is_authenticated or thesis.user != request.user:
+                return Response({
+                    'success': False,
+                    'error': {
+                        'code': 'FORBIDDEN',
+                        'message': '비공개 테제입니다.'
+                    }
+                }, status=status.HTTP_403_FORBIDDEN)
+
+        # 조회수 증가
+        thesis.view_count += 1
+        thesis.save(update_fields=['view_count'])
+
+        # 직렬화
+        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+
+        return Response({
+            'success': True,
+            'data': serializer.data
+        })
+
+    except InvestmentThesis.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'NOT_FOUND',
+                'message': f'공유 테제를 찾을 수 없습니다: {share_code}'
+            }
+        }, status=status.HTTP_404_NOT_FOUND)

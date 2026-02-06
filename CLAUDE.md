@@ -212,6 +212,8 @@ User
   - `/stable/quote?symbol=AAPL` - 실시간 시세 (volume 포함)
   - `/stable/historical-price-eod/full?symbol=AAPL` - 히스토리 OHLCV
   - `/stable/profile?symbol=AAPL` - 기업 프로필 (섹터 정보)
+  - `/stable/company-screener` - 종목 스크리닝 (market_cap, volume 등)
+  - `/stable/key-metrics-ttm?symbol=AAPL` - 펀더멘탈 지표 (PE, ROE 등)
 - **캐싱**: Redis 5분~24시간 (엔드포인트별 상이)
 - **섹터 ETF 매핑**:
   ```python
@@ -267,6 +269,8 @@ ticker.fast_info.last_price  # 현재 가격
 | **FMP Quote** | **60초** | **실시간 시세** |
 | **FMP Historical** | **3600초** | **OHLCV 히스토리** |
 | **FMP Profile** | **86400초** | **섹터 정보 (24시간)** |
+| **FMP Company Screener** | **300초** | **종목 스크리닝 결과** |
+| **FMP Key Metrics TTM** | **3600초** | **펀더멘탈 지표 (PE/ROE)** |
 
 ---
 
@@ -350,6 +354,40 @@ ticker.fast_info.last_price  # 현재 가격
     for split_timestamp, ratio in ticker.splits.items():
         date_obj = split_timestamp.date()
     ```
+14. **FMP Key Metrics TTM API 필드명 불일치**
+    - 증상: Enhanced 스크리너에서 PE, ROE가 항상 None
+    - 원인: FMP API 필드명이 직관적이지 않음
+      - `peRatioTTM` 필드 존재 안 함 → `earningsYieldTTM` 사용 (역수 계산)
+      - `roeTTM` 존재 안 함 → `returnOnEquityTTM` 사용 (decimal, 1.5 = 150%)
+    - 해결: 정확한 필드명 사용 + 값 변환
+    ```python
+    # ❌ 잘못된 방법
+    pe_ratio = m.get('peRatioTTM')  # None!
+    roe = m.get('roeTTM')  # None!
+
+    # ✅ 올바른 방법
+    earnings_yield = m.get('earningsYieldTTM')
+    pe_ratio = round(1 / earnings_yield, 2) if earnings_yield > 0 else None
+
+    roe_decimal = m.get('returnOnEquityTTM')
+    roe_percent = round(roe_decimal * 100, 2) if roe_decimal else None
+    ```
+    - 참고: FMP API 문서가 불완전하므로 실제 응답 확인 필수
+15. **Market Movers 캐시 키 불일치**
+    - 증상: 업데이트 버튼 클릭 후에도 데이터가 빈 배열로 반환됨
+    - 원인: `sync_now`에서 `movers:{date}:{type}` 키를 삭제하지만, `market_movers_api`는 `movers_with_keywords:{date}:{type}` 키를 사용
+    - 해결: `sync_now`에서 올바른 캐시 키 삭제
+    ```python
+    # ❌ 잘못된 방법 (캐시 키 불일치)
+    cache_key = f'movers:{today}:{mover_type}'
+    cache.delete(cache_key)
+
+    # ✅ 올바른 방법 (API와 동일한 키 패턴)
+    cache_key = f'movers_with_keywords:{today}:{mover_type}'
+    cache.delete(cache_key)
+    cache.delete(f'movers:{today}:{mover_type}')  # 하위 호환
+    ```
+    - 참고: 캐시 키 패턴은 읽기/쓰기/삭제 모두 일치해야 함
 
 ---
 
@@ -572,6 +610,236 @@ FALLBACK_KEYWORDS = {
 
 ---
 
+## News-based Stock Insights (뉴스 기반 종목 인사이트)
+
+### 개요
+
+뉴스에서 언급된 종목을 팩트(사실) 중심으로 정리하여 보여주는 시스템.
+"추천", "점수" 같은 주관적 표현 대신 뉴스 언급 횟수, 감성 분포, 시장 데이터를 표시.
+
+### 핵심 원칙
+
+| 제거 | 보여줄 것 |
+|------|----------|
+| 추천 점수, Score | 뉴스 언급 횟수 |
+| 강한 추천, 약한 추천 | 감성 분포 (긍정/부정/중립) |
+| 주관적 판단 | 키워드별 뉴스 헤드라인 |
+| - | 시장 데이터 (52주 범위, MA, 밸류에이션) |
+
+### 아키텍처
+
+```
+NewsEntity (PostgreSQL)
+        │
+        ▼
+NewsBasedStockInsights (Service)
+        │
+        ├─ 뉴스 언급 수집 (symbol별)
+        ├─ 감성 분포 계산 (positive/negative/neutral)
+        ├─ 키워드 매칭 (DailyKeyword 연결)
+        └─ 시장 데이터 조회 (Stock 모델)
+        │
+        ▼
+REST API (/api/v1/news/insights/)
+        │
+        ▼
+Frontend Components
+        ├─ NewsHighlightedStocks (컨테이너)
+        ├─ StockInsightCard (개별 종목)
+        ├─ SentimentBar (감성 분포 차트)
+        ├─ KeywordMentionList (키워드 + 뉴스)
+        └─ MarketDataBadge (시장 데이터)
+```
+
+### API 엔드포인트
+
+```bash
+GET /api/v1/news/insights/?date=2026-02-06&limit=10&include_market_data=true
+```
+
+**응답 예시**:
+```json
+{
+  "date": "2026-02-06",
+  "insights": [
+    {
+      "symbol": "NVDA",
+      "company_name": "NVIDIA Corporation",
+      "total_news_count": 5,
+      "sentiment_distribution": {
+        "positive": 3,
+        "negative": 1,
+        "neutral": 1,
+        "total": 5
+      },
+      "keyword_mentions": [
+        {
+          "keyword": "AI 투자 확대",
+          "sentiment": "positive",
+          "news_headline": "NVIDIA AI chip revenue surges 220%",
+          "news_source": "Marketaux",
+          "published_at": "2026-02-06T10:30:00Z"
+        }
+      ],
+      "market_data": {
+        "price_position": {
+          "current_price": 856.50,
+          "week_52_high": 974.00,
+          "week_52_low": 473.20,
+          "distance_from_52w_high": -12.1,
+          "distance_from_52w_low": 81.0
+        },
+        "valuation": {
+          "pe_ratio": 65.2,
+          "roe": 123.5,
+          "analyst_upside": 15.3
+        },
+        "analyst_ratings": {
+          "buy": 45,
+          "hold": 8,
+          "sell": 2
+        }
+      }
+    }
+  ],
+  "total_keywords": 12,
+  "computation_time_ms": 45
+}
+```
+
+### 주요 파일
+
+| 파일 | 역할 |
+|------|------|
+| `news/services/stock_insights.py` | 팩트 기반 인사이트 서비스 |
+| `news/api/views.py` | `/insights/` 엔드포인트 |
+| `frontend/types/news.ts` | StockInsight, SentimentDistribution 타입 |
+| `frontend/components/news/NewsHighlightedStocks.tsx` | 인사이트 컨테이너 |
+| `frontend/components/news/StockInsightCard.tsx` | 개별 종목 카드 |
+| `frontend/components/news/SentimentBar.tsx` | 감성 분포 바 |
+| `frontend/components/news/MarketDataBadge.tsx` | 시장 데이터 배지 |
+
+### 용어 변경
+
+| 기존 | 변경 |
+|------|------|
+| AI 추천 종목 | 뉴스 언급 종목 |
+| StockRecommendations | NewsHighlightedStocks |
+| RecommendationCard | StockInsightCard |
+| 추천 점수 | (제거) |
+
+---
+
+## Chain Sight DNA (연관 종목 발견) - Phase 2.2
+
+### 개요
+
+스크리너 결과에서 연관 종목을 발견하는 시스템. 3가지 방식으로 관련 종목을 찾아 투자 아이디어를 확장합니다.
+
+### 연관 종목 발견 방식
+
+| 방식 | 설명 | 알고리즘 |
+|------|------|----------|
+| **섹터 피어** | 같은 섹터의 유사 종목 | 동일 섹터 + 펀더멘탈 유사도 계산 |
+| **펀더멘탈 유사** | PER, ROE, 시가총액 유사 | 평균 메트릭 ±20% 범위 |
+| **AI 인사이트** | LLM 기반 관계 설명 (옵션) | Gemini 2.5 Flash (예정) |
+
+### API 엔드포인트
+
+```bash
+POST /api/v1/serverless/screener/chain-sight
+{
+    "symbols": ["AAPL", "MSFT", "NVDA"],
+    "filters": {
+        "market_cap_min": 1000000000,
+        "pe_ratio_max": 30,
+        "roe_min": 20
+    },
+    "limit": 10,
+    "use_ai": false
+}
+```
+
+### 응답 형식
+
+```json
+{
+    "success": true,
+    "data": {
+        "sector_peers": [
+            {
+                "symbol": "GOOGL",
+                "company_name": "Alphabet Inc.",
+                "reason": "동일 Technology 섹터 유사 기업",
+                "similarity": 0.85,
+                "metrics": {
+                    "sector": "Technology",
+                    "pe": 28.0,
+                    "roe": 25.0,
+                    "market_cap": 1800000000000
+                }
+            }
+        ],
+        "fundamental_similar": [...],
+        "ai_insights": "이 종목들은 AI 반도체 수요 증가의 수혜 기업입니다...",
+        "chains_count": 10,
+        "metadata": {
+            "original_count": 3,
+            "filters": {...},
+            "computation_time_ms": 150,
+            "use_ai": false
+        }
+    }
+}
+```
+
+### 유사도 계산 로직
+
+**펀더멘탈 유사도** (0.0 ~ 1.0):
+- PER 유사도: `1 - abs(stock_pe - avg_pe) / avg_pe`
+- ROE 유사도: `1 - abs(stock_roe - avg_roe) / avg_roe`
+- 시가총액 유사도: `1 - abs(stock_mc - avg_mc) / avg_mc`
+- 이익률 유사도: `1 - abs(stock_pm - avg_pm) / avg_pm`
+- **최종 유사도**: 4개 지표 평균
+
+**임계값**:
+- 섹터 피어: 유사도 순으로 정렬 (제한 없음)
+- 펀더멘탈 유사: 유사도 0.5 이상만 반환
+
+### 캐싱 전략
+
+- **Cache Key**: 종목 심볼 + 필터 조건 해시
+- **TTL**: 1시간
+- **효과**: 동일 조건 재조회 시 즉시 반환
+
+### 테스트 커버리지
+
+- **파일**: `tests/serverless/test_chain_sight_service.py`
+- **테스트 수**: 13개
+- **커버리지**: 100% (13/13 passed, 1 skipped)
+- **테스트 대상**:
+  - 평균 메트릭 계산 (3개)
+  - 펀더멘탈 유사도 계산 (4개)
+  - 캐시 키 생성 (2개)
+  - 빈 결과 처리 (1개)
+  - 섹터 피어 유사도 (1개)
+  - AI 인사이트 생성 (2개)
+
+### FMP API 사용
+
+| 엔드포인트 | 용도 | 캐시 TTL |
+|----------|------|----------|
+| `/stable/company-screener` | 섹터별 종목 조회 | 5분 |
+| `/stable/profile` | 종목 프로필 (섹터/산업) | 24시간 |
+
+### 성능 지표
+
+- 평균 처리 시간: 150ms (캐시 미스 시)
+- 최대 연관 종목 수: 각 카테고리별 5개 (기본)
+- 최대 원본 종목 수: 50개
+
+---
+
 ## Graph Analysis (그래프 온톨로지) - Phase 1
 
 ### 개요
@@ -766,6 +1034,233 @@ bulk_data = client.get_bulk_eod_data(exchange='US', date=today)
 
 ---
 
+## Investment Thesis Builder (Phase 2.3)
+
+### 개요
+
+스크리너 결과를 바탕으로 LLM이 투자 테제를 자동 생성하는 시스템.
+Gemini 2.5 Flash 사용, 동기 API 호출 (Celery 호환).
+
+### 아키텍처
+
+```
+스크리너 결과 (종목 + 필터)
+        │
+        ▼
+ThesisBuilder (서비스)
+        │
+        ├─ Prompt 구성 (System + User)
+        │     - 필터 조건 → 투자 기준 변환
+        │     - 종목 데이터 요약
+        │
+        ├─ Gemini 2.5 Flash 호출 (동기)
+        │     - MAX_TOKENS: 2000
+        │     - TEMPERATURE: 0.5
+        │
+        └─ 응답 파싱 (JSON)
+              - title, summary, key_metrics
+              - top_picks, risks, rationale
+        │
+        ▼
+InvestmentThesis 모델 (PostgreSQL)
+        │
+        ├─ share_code 자동 생성 (8자 UUID)
+        ├─ generation_time_ms 기록
+        └─ view_count, save_count 추적
+        │
+        ▼
+REST API (/api/v1/serverless/thesis/*)
+```
+
+### InvestmentThesis 모델
+
+```python
+{
+    user: FK(User),  # nullable
+    title: CharField(200),  # "저평가 고수익 기술주"
+    summary: TextField,  # 1-2문장 요약
+    filters_snapshot: JSONField,  # 적용된 필터
+    preset_ids: JSONField,  # 사용된 프리셋 IDs
+    key_metrics: JSONField,  # ["PER < 15", "ROE > 20%"]
+    top_picks: JSONField,  # ["AAPL", "MSFT", ...]
+    risks: JSONField,  # ["금리 상승 리스크", ...]
+    rationale: TextField,  # 투자 근거 상세
+    llm_model: CharField(50),  # "gemini-2.5-flash"
+    generation_time_ms: IntegerField,
+    is_public: BooleanField,
+    share_code: CharField(20, unique=True),  # 공유 URL용
+    view_count: IntegerField,
+    save_count: IntegerField,
+}
+```
+
+### API 엔드포인트
+
+```bash
+# 테제 생성
+POST /api/v1/serverless/thesis/generate
+     Body: {"stocks": [...], "filters": {...}, "user_notes": "", "preset_ids": []}
+     Response: InvestmentThesis 객체
+
+# 테제 조회
+GET  /api/v1/serverless/thesis/{thesis_id}
+     Response: InvestmentThesis 객체 (view_count +1)
+
+# 내 테제 목록
+GET  /api/v1/serverless/thesis?limit=10
+     Response: {"count": 5, "theses": [...]}
+
+# 공유 테제 조회
+GET  /api/v1/serverless/thesis/shared/{share_code}
+     Response: InvestmentThesis 객체 (is_public 확인)
+```
+
+### LLM 프롬프트 설계
+
+**System Prompt**:
+- 역할: 전문 투자 분석가
+- 작성 원칙: 간결성, 구체성, 균형 (리스크 포함), 실행 가능성
+- 출력 형식: JSON (title, summary, key_metrics, top_picks, risks, rationale)
+
+**User Prompt**:
+- 적용된 필터 조건 (읽기 쉬운 형태로 포맷팅)
+- 선별된 종목 (최대 20개 표시)
+  - symbol, company_name, sector
+  - 주요 지표: PER, ROE, Market Cap, Change %
+- 사용자 추가 메모 (선택)
+
+### 폴백 전략
+
+LLM 호출 실패 시 `create_fallback_thesis()` 함수 사용:
+- title: "스크리너 결과 분석"
+- summary: 종목 수 표시, 필터 검토 권장
+- key_metrics: 필터 조건을 문자열로 변환
+- top_picks: 상위 5개 종목
+- risks: ["자동 생성 실패로 기본 테제 생성됨"]
+- llm_model: "fallback"
+
+### 비용 추정
+
+- 시스템 프롬프트: 1800 토큰
+- 필터당 입력: 30 토큰
+- 종목당 입력: 50 토큰 (최대 20개)
+- 출력: 800 토큰
+- **총 토큰**: 약 3600 토큰 (50개 종목 기준)
+- **비용**: ~$0.005 USD/테제
+
+### 특징
+
+- **동기 API 호출**: `client.models.generate_content()` (async 없음, Celery 호환)
+- **share_code 자동 생성**: 8자 UUID (예: "A3F8K2J9")
+- **조회수 추적**: view_count 자동 증가
+- **비공개 테제**: is_public=False 시 소유자만 조회 가능
+- **JSON 파싱 복구**: 응답 파싱 실패 시 폴백 테제 생성
+
+### 사용 예시
+
+```python
+from serverless.services.thesis_builder import ThesisBuilder
+
+# 테제 생성
+builder = ThesisBuilder(language='ko')
+thesis = builder.build_thesis(
+    stocks=[
+        {'symbol': 'AAPL', 'company_name': 'Apple Inc.', 'pe_ratio': 28, 'roe': 147, ...},
+        # ... more stocks
+    ],
+    filters={'pe_max': 20, 'roe_min': 15, 'sector': 'Technology'},
+    user=request.user,
+    user_notes="AI 관련 종목 선호"
+)
+
+print(thesis.title)  # "저평가 고수익 기술주"
+print(thesis.share_code)  # "A3F8K2J9"
+print(thesis.top_picks)  # ["AAPL", "MSFT", "GOOGL", "META", "NVDA"]
+```
+
+---
+
+## Enhanced Screener Service (Phase 2.4)
+
+### 개요
+
+FMP API가 직접 지원하지 않는 펀더멘탈 필터(PE, ROE, EPS Growth 등)를 위해
+2단계 필터링을 수행하는 서비스.
+
+### 문제 해결
+
+**문제**: 프리셋 "시총>0.5B, EPS>20" 선택 시 "시가총액>1B"만 적용됨
+- FMP `/stable/company-screener`가 PE/ROE/EPS Growth 필터 미지원
+- 응답에 펀더멘탈 필드 자체가 없음
+
+**해결**: 2단계 필터링 + 온디맨드 API 호출
+1. FMP 스크리너로 1차 필터링 (market_cap, volume 등)
+2. FMP `/stable/key-metrics-ttm`으로 펀더멘탈 데이터 조회
+3. 클라이언트 사이드 2차 필터링
+
+### 프리셋 타입 분리
+
+| 타입 | 설명 | 필터 예시 |
+|------|------|----------|
+| **instant** | FMP 직접 지원 | market_cap, volume, sector, dividend |
+| **enhanced** | 추가 API 필요 | PE, ROE, EPS Growth, D/E Ratio |
+
+### FMP Key Metrics TTM API 필드 매핑
+
+```python
+# ⚠️ 주의: FMP API 필드명이 직관적이지 않음!
+# PE Ratio: earningsYieldTTM의 역수 (1 / earningsYieldTTM)
+# ROE: returnOnEquityTTM (decimal, 1.5 = 150%)
+
+FMP_METRICS_FIELD_MAP = {
+    'pe_ratio': 'earningsYieldTTM',      # 역수 계산 필요!
+    'roe': 'returnOnEquityTTM',          # * 100 변환 필요
+    'roa': 'returnOnAssetsTTM',          # * 100 변환 필요
+    'current_ratio': 'currentRatioTTM',
+    'debt_equity': 'debtToEquityTTM',
+    'profit_margin': 'netProfitMarginTTM',  # * 100 변환 필요
+}
+```
+
+### 변환 로직
+
+```python
+# PE Ratio: 1 / earningsYield
+earnings_yield = m.get('earningsYieldTTM')
+pe_ratio = round(1 / earnings_yield, 2) if earnings_yield > 0 else None
+
+# ROE: decimal → percentage (1.5994 → 159.94%)
+roe_decimal = m.get('returnOnEquityTTM')
+roe_percent = round(roe_decimal * 100, 2) if roe_decimal else None
+```
+
+### API 엔드포인트
+
+```bash
+# Enhanced 필터 자동 감지
+GET /api/v1/serverless/screener/?market_cap_min=1e9&pe_ratio_max=20&roe_min=15
+
+# 응답
+{
+  "results": [...],
+  "count": 5,
+  "is_enhanced": true,
+  "filters_applied": {
+    "fmp": ["marketCapMoreThan"],
+    "enhanced": ["pe_ratio_max", "roe_min"],
+    "client": []
+  }
+}
+```
+
+### 테스트 커버리지
+
+- **파일**: `tests/serverless/test_enhanced_screener_service.py`
+- **테스트 수**: 14개
+- **커버리지**: 100%
+
+---
+
 ## 멀티에이전트 시스템
 
 ### 에이전트 담당 영역
@@ -867,6 +1362,11 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **_meta 응답**: 데이터 소스/신선도/동기화 시간 정보 포함
   - ✅ **Frontend 훅**: useStockData (TanStack Query), useDataSync
   - ✅ **공통 컴포넌트**: DataLoadingState, DataSourceBadge, CorporateActionBadge
+- ✅ **Screener Upgrade (Phase 2)**
+  - ✅ **Phase 2.1: 프리셋 공유 시스템**: share_code 기반 URL 공유, 트렌딩 프리셋, 복사 기능
+  - ✅ **Phase 2.2: Chain Sight DNA**: 연관 종목 발견 (섹터 피어, 펀더멘탈 유사, AI 인사이트)
+  - ✅ **Phase 2.3: 투자 테제 빌더**: LLM 기반 투자 논리 자동 생성, 공유 코드, 폴백 전략
+  - ✅ **Phase 2.4: 프리셋-필터 완벽 동기화**: 2단계 필터링, Enhanced 프리셋 타입, FMP Key Metrics TTM
 - ⏳ ML/DL 모델 통합
 
 ---

@@ -15,7 +15,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 
-from ..models import NewsArticle, NewsEntity, SentimentHistory
+from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword
 from ..services import NewsAggregatorService
 from .serializers import (
     NewsArticleListSerializer,
@@ -335,3 +335,431 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         cache.set(cache_key, results, 300)
 
         return Response(results)
+
+    @action(detail=False, methods=['get'], url_path='all')
+    def all_news(self, request):
+        """
+        모든 뉴스 조회 (소스 필터 지원)
+
+        GET /api/v1/news/all/?source=finnhub&category=general&days=7&limit=50&offset=0&refresh=false
+
+        Query Parameters:
+            - source: 뉴스 소스 필터 (finnhub, marketaux, all) 기본값: all
+            - category: 카테고리 필터 (general, forex, crypto, merger) 기본값: all
+            - days: 조회 기간 (기본값: 7)
+            - limit: 결과 개수 (기본값: 50)
+            - offset: 페이지 오프셋 (기본값: 0)
+            - refresh: 새 뉴스 수집 여부 (기본값: false)
+        """
+        source = request.query_params.get('source', 'all').lower()
+        category = request.query_params.get('category', 'all').lower()
+        days = int(request.query_params.get('days', 7))
+        limit = min(int(request.query_params.get('limit', 50)), 100)  # 최대 100개
+        offset = int(request.query_params.get('offset', 0))
+        refresh = request.query_params.get('refresh', 'false').lower() == 'true'
+
+        # refresh=true인 경우, 새 뉴스 수집
+        if refresh:
+            try:
+                service = NewsAggregatorService()
+                # 카테고리별 뉴스 수집
+                fetch_category = category if category != 'all' else 'general'
+                result = service.fetch_and_save_market_news(category=fetch_category)
+                logger.info(f"News refresh result: {result}")
+            except Exception as e:
+                logger.error(f"Failed to refresh news: {e}")
+
+        # 캐시 키
+        cache_key = f"news:all:{source}:{category}:{days}:{limit}:{offset}"
+
+        # 캐시 확인 (refresh=true일 때는 캐시 무시)
+        if not refresh:
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                logger.info(f"Cache hit: {cache_key}")
+                return Response(cached_data)
+
+        # 기본 쿼리
+        from_date = timezone.now() - timedelta(days=days)
+        queryset = NewsArticle.objects.filter(
+            published_at__gte=from_date
+        ).prefetch_related('entities')
+
+        # 소스 필터
+        if source != 'all':
+            # finnhub_id가 있으면 finnhub 소스, marketaux_uuid가 있으면 marketaux 소스
+            if source == 'finnhub':
+                queryset = queryset.filter(finnhub_id__isnull=False)
+            elif source == 'marketaux':
+                queryset = queryset.filter(marketaux_uuid__isnull=False)
+
+        # 카테고리 필터
+        if category != 'all':
+            category_mapping = {
+                'general': ['general', 'top news', 'business', 'company news'],
+                'forex': ['forex'],
+                'crypto': ['crypto'],
+                'merger': ['merger'],
+            }
+            db_categories = category_mapping.get(category, [category])
+            queryset = queryset.filter(category__in=db_categories)
+
+        # 정렬 및 페이지네이션
+        total_count = queryset.count()
+        articles = queryset.order_by('-published_at')[offset:offset + limit]
+
+        serializer = self.get_serializer(articles, many=True)
+        data = {
+            'source': source,
+            'category': category,
+            'days': days,
+            'total': total_count,
+            'count': len(serializer.data),
+            'offset': offset,
+            'limit': limit,
+            'has_more': (offset + limit) < total_count,
+            'articles': serializer.data
+        }
+
+        # 캐시 저장 (10분)
+        cache.set(cache_key, data, 600)
+
+        return Response(data)
+
+    @action(detail=False, methods=['get'])
+    def sources(self, request):
+        """
+        사용 가능한 뉴스 소스 목록 + 건수
+
+        GET /api/v1/news/sources/
+
+        Returns:
+            [
+                {"name": "finnhub", "label": "Finnhub", "count": 150},
+                {"name": "marketaux", "label": "Marketaux", "count": 50}
+            ]
+        """
+        # 캐시 키
+        cache_key = "news:sources"
+
+        # 캐시 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # 최근 7일 기준 소스별 건수 집계
+        from_date = timezone.now() - timedelta(days=7)
+
+        # Finnhub 뉴스 건수 (finnhub_id가 있는 기사)
+        finnhub_count = NewsArticle.objects.filter(
+            published_at__gte=from_date,
+            finnhub_id__isnull=False
+        ).count()
+
+        # Marketaux 뉴스 건수 (marketaux_uuid가 있는 기사)
+        marketaux_count = NewsArticle.objects.filter(
+            published_at__gte=from_date,
+            marketaux_uuid__isnull=False
+        ).count()
+
+        # 전체 뉴스 건수
+        total_count = NewsArticle.objects.filter(
+            published_at__gte=from_date
+        ).count()
+
+        sources = [
+            {
+                'name': 'all',
+                'label': '전체',
+                'count': total_count
+            },
+            {
+                'name': 'finnhub',
+                'label': 'Finnhub',
+                'count': finnhub_count
+            },
+            {
+                'name': 'marketaux',
+                'label': 'Marketaux',
+                'count': marketaux_count
+            }
+        ]
+
+        # 캐시 저장 (1시간)
+        cache.set(cache_key, sources, 3600)
+
+        return Response(sources)
+
+    # ===== Phase 2: Daily Keywords API =====
+
+    @action(detail=False, methods=['get'], url_path='daily-keywords')
+    def daily_keywords(self, request):
+        """
+        일별 뉴스 키워드 조회
+
+        GET /api/v1/news/daily-keywords/?date=2026-02-06
+
+        Query Parameters:
+            - date: 조회 날짜 (YYYY-MM-DD 형식, 기본값: 오늘)
+
+        Returns:
+            {
+                "date": "2026-02-06",
+                "keywords": [...],
+                "total_news_count": 50,
+                "sources": {"finnhub": 45, "marketaux": 5},
+                "llm_model": "gemini-2.5-flash",
+                "status": "completed"
+            }
+        """
+        from datetime import datetime
+
+        # 날짜 파라미터 파싱
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
+        else:
+            target_date = timezone.now().date()
+
+        # 캐시 키
+        cache_key = f"news:daily_keywords:{target_date}"
+
+        # 캐시 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # DailyNewsKeyword 조회
+        keyword_obj = DailyNewsKeyword.objects.filter(date=target_date).first()
+
+        if not keyword_obj:
+            # 키워드가 없으면 빈 응답 (pending 상태로)
+            data = {
+                'date': str(target_date),
+                'keywords': [],
+                'total_news_count': 0,
+                'sources': {},
+                'llm_model': None,
+                'status': 'not_found',
+                'message': 'Keywords not yet generated for this date'
+            }
+            return Response(data)
+
+        # 응답 데이터 구성
+        data = {
+            'date': str(keyword_obj.date),
+            'keywords': keyword_obj.keywords,
+            'total_news_count': keyword_obj.total_news_count,
+            'sources': keyword_obj.sources,
+            'llm_model': keyword_obj.llm_model,
+            'status': keyword_obj.status,
+            'generation_time_ms': keyword_obj.generation_time_ms,
+        }
+
+        # 완료 상태일 때만 캐시 (24시간)
+        if keyword_obj.status == 'completed':
+            cache.set(cache_key, data, 86400)
+
+        return Response(data)
+
+    @action(detail=False, methods=['post'], url_path='daily-keywords/generate')
+    def generate_daily_keywords(self, request):
+        """
+        일별 뉴스 키워드 수동 생성 트리거
+
+        POST /api/v1/news/daily-keywords/generate
+        Body: {"date": "2026-02-06", "force": false}
+
+        Returns:
+            {"status": "started", "task_id": "..."}
+        """
+        from datetime import datetime
+        from news.tasks import extract_daily_news_keywords
+
+        # 요청 파라미터
+        date_str = request.data.get('date')
+        force = request.data.get('force', False)
+
+        # 날짜 검증
+        if date_str:
+            try:
+                datetime.strptime(date_str, '%Y-%m-%d')
+            except ValueError:
+                raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
+
+        # Celery 태스크 시작
+        task = extract_daily_news_keywords.delay(
+            target_date=date_str,
+            force=force
+        )
+
+        return Response({
+            'status': 'started',
+            'task_id': task.id,
+            'date': date_str or str(timezone.now().date()),
+        })
+
+    # ===== Phase 3: Stock Insights API (Fact-Based) =====
+
+    @action(detail=False, methods=['get'])
+    def insights(self, request):
+        """
+        뉴스 기반 종목 인사이트 (팩트 중심)
+
+        GET /api/v1/news/insights/?date=2026-02-06&limit=10
+
+        Query Parameters:
+            - date: 조회 날짜 (YYYY-MM-DD 형식, 기본값: 오늘)
+            - limit: 종목 수 (기본값: 10, 최대: 20)
+            - include_market_data: 시장 데이터 포함 여부 (기본값: true)
+
+        Returns:
+            {
+                "date": "2026-02-06",
+                "insights": [
+                    {
+                        "symbol": "NVDA",
+                        "company_name": "NVIDIA Corp",
+                        "keyword_mentions": [
+                            {
+                                "keyword": "AI 반도체 수요",
+                                "sentiment": "positive",
+                                "news_headline": "NVIDIA's AI chip...",
+                                "news_source": "Marketaux",
+                                "published_at": "2026-02-06T10:30:00Z"
+                            }
+                        ],
+                        "sentiment_distribution": {
+                            "positive": 3,
+                            "negative": 1,
+                            "neutral": 1,
+                            "total": 5
+                        },
+                        "market_data": {...},
+                        "total_news_count": 5
+                    }
+                ],
+                "total_keywords": 10,
+                "computation_time_ms": 50
+            }
+        """
+        from datetime import datetime
+        from news.services import NewsBasedStockInsights
+
+        # 날짜 파라미터 파싱
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
+        else:
+            target_date = timezone.now().date()
+
+        # limit 파라미터
+        try:
+            limit = min(int(request.query_params.get('limit', 10)), 20)
+        except ValueError:
+            limit = 10
+
+        # include_market_data 파라미터
+        include_market_data = request.query_params.get(
+            'include_market_data', 'true'
+        ).lower() == 'true'
+
+        # 캐시 키
+        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}"
+
+        # 캐시 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # 인사이트 서비스 호출
+        insights_service = NewsBasedStockInsights()
+        result = insights_service.get_insights(
+            target_date=target_date,
+            limit=limit,
+            include_market_data=include_market_data
+        )
+
+        # 캐시 저장 (1시간)
+        cache.set(cache_key, result, 3600)
+
+        return Response(result)
+
+    # ===== Legacy: Stock Recommendations API (Deprecated) =====
+
+    @action(detail=False, methods=['get'])
+    def recommendations(self, request):
+        """
+        뉴스 기반 주식 추천
+
+        GET /api/v1/news/recommendations/?date=2026-02-06&limit=10
+
+        Query Parameters:
+            - date: 조회 날짜 (YYYY-MM-DD 형식, 기본값: 오늘)
+            - limit: 추천 수 (기본값: 10, 최대: 20)
+
+        Returns:
+            {
+                "date": "2026-02-06",
+                "recommendations": [
+                    {
+                        "symbol": "NVDA",
+                        "company_name": "NVIDIA Corp",
+                        "score": 0.95,
+                        "reasons": ["AI 반도체 수요", "실적 호조"],
+                        "avg_sentiment": 0.45,
+                        "mention_count": 15
+                    }
+                ],
+                "total_keywords": 10,
+                "computation_time_ms": 50
+            }
+        """
+        from datetime import datetime
+        from news.services import NewsBasedStockRecommender
+
+        # 날짜 파라미터 파싱
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
+        else:
+            target_date = timezone.now().date()
+
+        # limit 파라미터
+        try:
+            limit = min(int(request.query_params.get('limit', 10)), 20)
+        except ValueError:
+            limit = 10
+
+        # 캐시 키
+        cache_key = f"news:recommendations:{target_date}:{limit}"
+
+        # 캐시 확인
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # 추천 서비스 호출
+        recommender = NewsBasedStockRecommender()
+        result = recommender.get_recommendations(
+            target_date=target_date,
+            limit=limit
+        )
+
+        # 캐시 저장 (1시간)
+        cache.set(cache_key, result, 3600)
+
+        return Response(result)
