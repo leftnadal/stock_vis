@@ -1367,6 +1367,19 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **Phase 2.2: Chain Sight DNA**: 연관 종목 발견 (섹터 피어, 펀더멘탈 유사, AI 인사이트)
   - ✅ **Phase 2.3: 투자 테제 빌더**: LLM 기반 투자 논리 자동 생성, 공유 코드, 폴백 전략
   - ✅ **Phase 2.4: 프리셋-필터 완벽 동기화**: 2단계 필터링, Enhanced 프리셋 타입, FMP Key Metrics TTM
+- ✅ **Chain Sight Stock (개별 종목 연관 탐색)**
+  - ✅ **모델**: StockRelationship (PEER_OF, SAME_INDUSTRY, CO_MENTIONED), CategoryCache
+  - ✅ **서비스**: RelationshipService, CategoryGenerator, ChainSightStockService
+  - ✅ **API 엔드포인트**: `/chain-sight/stock/{symbol}`, `/chain-sight/stock/{symbol}/category/{id}`
+  - ✅ **Frontend**: ChainSightExplorer, CategorySelector, RelatedStockGrid, AIInsightPanel
+  - ✅ **Celery 태스크**: 일일 관계 동기화 (05:00 EST), 캐시 정리 (06:00 EST)
+  - ✅ **유닛 테스트**: 24개 테스트 (100% 통과)
+- ✅ **Chain Sight Neo4j 온톨로지**
+  - ✅ **Neo4jChainSightService**: 노드/관계 CRUD, N-depth 그래프 탐색
+  - ✅ **Neo4j 우선, PostgreSQL fallback**: ChainSightStockService에서 하이브리드 조회
+  - ✅ **그래프 API**: `/chain-sight/graph/{symbol}`, `/chain-sight/graph/stats`
+  - ✅ **마이그레이션 커맨드**: `python manage.py migrate_chain_sight_to_neo4j --all`
+  - ✅ **유닛 테스트**: 19개 테스트 (18 passed, 1 skipped)
 - ⏳ ML/DL 모델 통합
 
 ---
@@ -1393,6 +1406,7 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
 docs/
 ├── architecture/          # 시스템 아키텍처, 설계 문서
 ├── features/              # 기능별 설계 및 구현 가이드
+│   ├── chain-sight/
 │   ├── screener/
 │   ├── market-movers/
 │   ├── keywords/
