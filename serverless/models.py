@@ -358,6 +358,11 @@ class ScreenerPreset(models.Model):
         ('custom', '사용자 정의'),
     ]
 
+    PRESET_TYPE_CHOICES = [
+        ('instant', 'Instant'),      # FMP 직접 지원 필터만 사용 → 즉시 실행
+        ('enhanced', 'Enhanced'),    # 추가 API 호출 필요 (PE/ROE/EPS Growth 등)
+    ]
+
     # 사용자 (null이면 시스템 프리셋)
     user = models.ForeignKey(
         'users.User',
@@ -372,6 +377,12 @@ class ScreenerPreset(models.Model):
     description = models.TextField(blank=True)
     description_ko = models.TextField(blank=True, help_text="한국어 설명")
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='custom')
+    preset_type = models.CharField(
+        max_length=20,
+        choices=PRESET_TYPE_CHOICES,
+        default='instant',
+        help_text="instant: FMP 직접 지원, enhanced: 추가 API 필요 (PE/ROE/EPS 등)"
+    )
     icon = models.CharField(max_length=10, default='📊', help_text="이모지 아이콘")
 
     # 필터 조건 (JSON)
@@ -861,3 +872,107 @@ class InvestmentThesis(models.Model):
     def __str__(self):
         owner = self.user.email if self.user else 'Anonymous'
         return f"{self.title} ({owner})"
+
+
+# ========================================
+# Chain Sight Stock (개별 종목 연관 탐험)
+# ========================================
+
+class StockRelationship(models.Model):
+    """
+    주식 간 관계 저장 (Chain Sight Stock용)
+
+    개별 주식 페이지에서 사용되는 관계 데이터입니다.
+    경쟁사, 동일 산업, 뉴스 동시언급 등 관계를 저장합니다.
+    """
+    RELATIONSHIP_TYPES = [
+        ('PEER_OF', '경쟁사'),
+        ('SAME_INDUSTRY', '동일 산업'),
+        ('CO_MENTIONED', '뉴스 동시언급'),
+        ('HAS_THEME', '테마 공유'),       # Phase 2
+        ('SUPPLIED_BY', '공급사'),        # Phase 2
+        ('CUSTOMER_OF', '고객사'),        # Phase 2
+    ]
+
+    SOURCE_PROVIDERS = [
+        ('finnhub', 'Finnhub Peers API'),
+        ('fmp', 'FMP Company Profile'),
+        ('news', 'NewsEntity Co-mention'),
+        ('manual', 'Manual Entry'),
+        ('ai', 'AI Generated'),
+    ]
+
+    source_symbol = models.CharField(max_length=10, db_index=True)
+    target_symbol = models.CharField(max_length=10, db_index=True)
+    relationship_type = models.CharField(max_length=20, choices=RELATIONSHIP_TYPES)
+    strength = models.DecimalField(
+        max_digits=4,
+        decimal_places=3,
+        default=1.0,
+        help_text="관계 강도 (0.0 ~ 1.0)"
+    )
+    source_provider = models.CharField(
+        max_length=20,
+        choices=SOURCE_PROVIDERS,
+        default='manual'
+    )
+    context = models.JSONField(
+        default=dict,
+        help_text="관계 컨텍스트 (예: 뉴스 헤드라인, 산업 분류 등)"
+    )
+    discovered_at = models.DateTimeField(auto_now_add=True)
+    last_verified_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_stock_relationship'
+        unique_together = [['source_symbol', 'target_symbol', 'relationship_type']]
+        indexes = [
+            models.Index(fields=['source_symbol', 'relationship_type']),
+            models.Index(fields=['target_symbol', 'relationship_type']),
+            models.Index(fields=['source_symbol', '-strength']),
+        ]
+
+    def __str__(self):
+        return f"{self.source_symbol} --{self.relationship_type}--> {self.target_symbol}"
+
+
+class CategoryCache(models.Model):
+    """
+    AI 생성 카테고리 캐시 (Chain Sight Stock용)
+
+    개별 종목에 대해 AI가 생성한 카테고리(경쟁사, AI 반도체 생태계 등)를 캐싱합니다.
+    24시간 TTL로 관리됩니다.
+    """
+    symbol = models.CharField(max_length=10, db_index=True)
+    date = models.DateField(db_index=True)
+    categories = models.JSONField(
+        default=list,
+        help_text="카테고리 리스트 [{id, name, tier, count, description, icon}]"
+    )
+    # 예시: [
+    #   {"id": "peer", "name": "경쟁사", "tier": 0, "count": 5, "icon": "⚔️"},
+    #   {"id": "ai_ecosystem", "name": "AI 반도체 생태계", "tier": 1, "count": 8, "icon": "🧠"}
+    # ]
+    llm_model = models.CharField(max_length=50, default='gemini-2.5-flash')
+    generation_time_ms = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(help_text="캐시 만료 시점 (생성일 + 24시간)")
+
+    class Meta:
+        db_table = 'serverless_category_cache'
+        unique_together = [['symbol', 'date']]
+        indexes = [
+            models.Index(fields=['symbol', 'date']),
+            models.Index(fields=['expires_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} ({self.date}): {len(self.categories)}개 카테고리"
+
+    def save(self, *args, **kwargs):
+        """expires_at 자동 설정"""
+        if not self.expires_at:
+            from datetime import timedelta
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timedelta(hours=24)
+        super().save(*args, **kwargs)

@@ -60,6 +60,7 @@ urlpatterns = [
     # Advanced Screener (고급 스크리너)
     # ========================================
     path('screener', views.advanced_screener_api, name='advanced-screener'),
+    path('screener/chain-sight', views.chain_sight_api, name='chain-sight'),
 
     # ========================================
     # Screener Alerts (알림 시스템 - Phase 1)
@@ -70,6 +71,28 @@ urlpatterns = [
     path('alerts/history/<int:history_id>/dismiss', views.dismiss_alert, name='dismiss-alert'),
     path('alerts/<int:alert_id>', views.screener_alert_detail, name='screener-alert-detail'),
     path('alerts/<int:alert_id>/toggle', views.toggle_alert, name='toggle-alert'),
+
+    # ========================================
+    # Investment Thesis (Phase 2.3)
+    # ========================================
+    path('thesis/generate', views.generate_thesis, name='generate-thesis'),
+    path('thesis/shared/<str:share_code>', views.get_shared_thesis, name='get-shared-thesis'),
+    path('thesis/<int:thesis_id>', views.get_thesis, name='get-thesis'),
+    path('thesis', views.list_theses, name='list-theses'),
+
+    # ========================================
+    # Chain Sight Stock (개별 종목 탐험)
+    # ========================================
+    path('chain-sight/stock/<str:symbol>', views.chain_sight_stock_api, name='chain-sight-stock'),
+    path('chain-sight/stock/<str:symbol>/category/<str:category_id>', views.chain_sight_category_api, name='chain-sight-category'),
+    path('chain-sight/stock/<str:symbol>/sync', views.chain_sight_sync_api, name='chain-sight-sync'),
+
+    # ========================================
+    # Chain Sight Neo4j Graph (온톨로지 그래프)
+    # ========================================
+    path('chain-sight/graph/stats', views.chain_sight_neo4j_stats_api, name='chain-sight-graph-stats'),
+    path('chain-sight/graph/<str:symbol>', views.chain_sight_graph_api, name='chain-sight-graph'),
+    path('chain-sight/graph/<str:symbol>/sync', views.chain_sight_neo4j_sync_api, name='chain-sight-graph-sync'),
 
     # ========================================
     # Health Check

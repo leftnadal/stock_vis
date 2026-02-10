@@ -269,3 +269,97 @@ class FMPClient:
         profile = data[0]
         cache.set(cache_key, profile, 86400)  # 24시간 캐시 (섹터는 자주 변하지 않음)
         return profile
+
+    def get_stock_peers(self, symbol: str) -> List[Dict]:
+        """
+        종목의 피어(경쟁사) 목록 조회
+
+        Args:
+            symbol: 종목 심볼
+
+        Returns:
+            피어 종목 리스트 (예: [{"symbol": "MSFT", "companyName": "...", ...}])
+        """
+        cache_key = f'fmp:peers:{symbol.upper()}'
+        cached = cache.get(cache_key)
+        if cached:
+            logger.debug(f"FMP 캐시 HIT: peers:{symbol}")
+            return cached
+
+        data = self._make_request(
+            '/stable/stock-peers',
+            params={'symbol': symbol.upper()}
+        )
+
+        if not isinstance(data, list):
+            logger.warning(f"No peers data for {symbol}")
+            return []
+
+        cache.set(cache_key, data, 86400)  # 24시간 캐시
+        return data
+
+    def get_sector_stocks(self, sector: str, limit: int = 50) -> List[Dict]:
+        """
+        특정 섹터의 종목 조회
+
+        Args:
+            sector: 섹터 이름 (예: "Technology")
+            limit: 최대 반환 개수
+
+        Returns:
+            종목 리스트
+        """
+        cache_key = f'fmp:sector_stocks:{sector}:{limit}'
+        cached = cache.get(cache_key)
+        if cached:
+            logger.debug(f"FMP 캐시 HIT: sector_stocks:{sector}")
+            return cached
+
+        data = self._make_request(
+            '/stable/company-screener',
+            params={
+                'sector': sector,
+                'limit': limit,
+                'isEtf': 'false',
+                'isFund': 'false',
+            }
+        )
+
+        if not isinstance(data, list):
+            return []
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return data
+
+    def get_industry_stocks(self, industry: str, limit: int = 30) -> List[Dict]:
+        """
+        특정 산업의 종목 조회
+
+        Args:
+            industry: 산업 이름 (예: "Semiconductors")
+            limit: 최대 반환 개수
+
+        Returns:
+            종목 리스트
+        """
+        cache_key = f'fmp:industry_stocks:{industry}:{limit}'
+        cached = cache.get(cache_key)
+        if cached:
+            logger.debug(f"FMP 캐시 HIT: industry_stocks:{industry}")
+            return cached
+
+        data = self._make_request(
+            '/stable/company-screener',
+            params={
+                'industry': industry,
+                'limit': limit,
+                'isEtf': 'false',
+                'isFund': 'false',
+            }
+        )
+
+        if not isinstance(data, list):
+            return []
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return data

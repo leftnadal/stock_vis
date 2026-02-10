@@ -41,6 +41,17 @@ class ScreenedStockSerializer(serializers.Serializer):
     pe = serializers.FloatField(allow_null=True, required=False)
     eps = serializers.FloatField(allow_null=True, required=False)
 
+    # Enhanced 필터용 펀더멘탈 지표 (key-metrics-ttm API에서 병합)
+    pe_ratio = serializers.FloatField(allow_null=True, required=False)
+    pb_ratio = serializers.FloatField(allow_null=True, required=False)
+    roe = serializers.FloatField(allow_null=True, required=False)
+    roa = serializers.FloatField(allow_null=True, required=False)
+    debt_equity = serializers.FloatField(allow_null=True, required=False)
+    current_ratio = serializers.FloatField(allow_null=True, required=False)
+    profit_margin = serializers.FloatField(allow_null=True, required=False)
+    eps_growth = serializers.FloatField(allow_null=True, required=False)
+    revenue_growth = serializers.FloatField(allow_null=True, required=False)
+
     # ETF/펀드 여부
     is_etf = serializers.BooleanField(source='isEtf', default=False, required=False)
     is_fund = serializers.BooleanField(source='isFund', default=False, required=False)
@@ -216,6 +227,84 @@ class ScreenerRequestSerializer(serializers.Serializer):
         min_value=1,
         max_value=1000,
         help_text="반환할 종목 수 (최대 1000)"
+    )
+
+    # === Enhanced 필터 (추가 API 호출 필요) ===
+    pe_ratio_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 PER (Enhanced)"
+    )
+    pe_ratio_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 PER (Enhanced)"
+    )
+    roe_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 ROE (%) (Enhanced)"
+    )
+    roe_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 ROE (%) (Enhanced)"
+    )
+    eps_growth_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 EPS 성장률 (%) (Enhanced)"
+    )
+    eps_growth_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 EPS 성장률 (%) (Enhanced)"
+    )
+    revenue_growth_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 매출 성장률 (%) (Enhanced)"
+    )
+    revenue_growth_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 매출 성장률 (%) (Enhanced)"
+    )
+    debt_equity_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 부채비율 (D/E) (Enhanced)"
+    )
+    current_ratio_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 유동비율 (Enhanced)"
+    )
+    rsi_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=100,
+        help_text="최소 RSI (Enhanced)"
+    )
+    rsi_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        min_value=0,
+        max_value=100,
+        help_text="최대 RSI (Enhanced)"
+    )
+
+    # === 클라이언트 필터 (FMP 응답에 포함) ===
+    change_percent_min = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최소 변동률 (%)"
+    )
+    change_percent_max = serializers.FloatField(
+        required=False,
+        allow_null=True,
+        help_text="최대 변동률 (%)"
     )
 
     def validate(self, attrs):

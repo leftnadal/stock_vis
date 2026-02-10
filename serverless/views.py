@@ -2297,3 +2297,521 @@ def get_shared_thesis(request, share_code):
                 'message': f'공유 테제를 찾을 수 없습니다: {share_code}'
             }
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+# ========================================
+# Chain Sight Stock API (개별 종목 탐험)
+# ========================================
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_stock_api(request, symbol):
+    """
+    Chain Sight Stock - 종목 카테고리 조회
+
+    GET /api/v1/serverless/chain-sight/stock/NVDA
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "NVDA",
+                "company_name": "NVIDIA Corporation",
+                "categories": [
+                    {
+                        "id": "peer",
+                        "name": "경쟁사",
+                        "tier": 0,
+                        "count": 5,
+                        "icon": "⚔️",
+                        "description": "NVDA와 경쟁하는 동종업계 기업"
+                    },
+                    {
+                        "id": "ai_ecosystem",
+                        "name": "AI 생태계",
+                        "tier": 1,
+                        "count": "?",
+                        "icon": "🧠",
+                        "description": "NVDA와 AI 기술로 연결된 기업들"
+                    }
+                ],
+                "is_cold_start": false,
+                "generation_time_ms": 150
+            }
+        }
+    """
+    from serverless.services.chain_sight_stock_service import ChainSightStockService
+
+    symbol = symbol.upper()
+
+    # 캐시 확인
+    cache_key = f'chain_sight_stock_api:{symbol}'
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"캐시 HIT: {cache_key}")
+        return Response(cached)
+
+    try:
+        service = ChainSightStockService()
+        result = service.get_categories(symbol)
+
+        response_data = {
+            'success': True,
+            'data': result
+        }
+
+        # Cold Start가 아닌 경우에만 캐시
+        if not result.get('is_cold_start'):
+            cache.set(cache_key, response_data, 300)  # 5분 캐시
+
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Chain Sight Stock 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'CHAIN_SIGHT_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_category_api(request, symbol, category_id):
+    """
+    Chain Sight Stock - 카테고리별 종목 조회
+
+    GET /api/v1/serverless/chain-sight/stock/NVDA/category/peer
+
+    Query Parameters:
+        - limit: 최대 반환 개수 (기본값: 10, 최대: 20)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "NVDA",
+                "category": {
+                    "id": "peer",
+                    "name": "경쟁사",
+                    "tier": 0,
+                    "icon": "⚔️"
+                },
+                "stocks": [
+                    {
+                        "symbol": "AMD",
+                        "company_name": "Advanced Micro Devices",
+                        "strength": 0.85,
+                        "current_price": 125.50,
+                        "change_percent": 2.3,
+                        "market_cap": 200000000000,
+                        "sector": "Technology"
+                    }
+                ],
+                "ai_insights": "AMD는 NVIDIA의 주요 GPU 경쟁사로...",
+                "follow_up_questions": ["GPU 시장 점유율 비교가 궁금하신가요?"],
+                "computation_time_ms": 120
+            }
+        }
+    """
+    from serverless.services.chain_sight_stock_service import ChainSightStockService
+
+    symbol = symbol.upper()
+    limit = min(int(request.GET.get('limit', 10)), 20)
+
+    # 캐시 확인
+    cache_key = f'chain_sight_category_api:{symbol}:{category_id}:{limit}'
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"캐시 HIT: {cache_key}")
+        return Response(cached)
+
+    try:
+        service = ChainSightStockService()
+        result = service.get_category_stocks(symbol, category_id, limit)
+
+        response_data = {
+            'success': True,
+            'data': result
+        }
+
+        cache.set(cache_key, response_data, 300)  # 5분 캐시
+
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Chain Sight Category 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'CHAIN_SIGHT_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chain_sight_sync_api(request, symbol):
+    """
+    Chain Sight Stock - 관계 동기화 트리거
+
+    POST /api/v1/serverless/chain-sight/stock/NVDA/sync
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "message": "Sync completed",
+                "peer_count": 10,
+                "industry_count": 15,
+                "co_mentioned_count": 5
+            }
+        }
+    """
+    from serverless.services.chain_sight_stock_service import ChainSightStockService
+
+    symbol = symbol.upper()
+
+    try:
+        service = ChainSightStockService()
+        results = service.trigger_sync(symbol)
+
+        # 캐시 무효화
+        today = timezone.now().date().isoformat()
+        cache.delete(f'chain_sight_stock_api:{symbol}')
+        cache.delete(f'chain_sight:categories:{symbol}:{today}')
+
+        logger.info(f"Chain Sight 동기화 완료: {symbol} -> {results}")
+
+        return Response({
+            'success': True,
+            'data': {
+                'message': 'Sync completed',
+                **results
+            }
+        })
+
+    except Exception as e:
+        logger.exception(f"Chain Sight Sync 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'SYNC_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ========================================
+# Chain Sight Neo4j Graph API (Phase 2 Ontology)
+# ========================================
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_graph_api(request, symbol):
+    """
+    Chain Sight Neo4j Graph - N-depth 관계 그래프 조회
+
+    Neo4j 온톨로지 기반으로 종목의 관계 네트워크를 시각화용으로 반환.
+    프론트엔드에서 react-force-graph, cytoscape.js 등으로 시각화 가능.
+
+    GET /api/v1/serverless/chain-sight/graph/NVDA?depth=2
+
+    Query Parameters:
+        - depth: 탐색 깊이 (기본값: 2, 최대: 3)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "NVDA",
+                "nodes": [
+                    {"id": "NVDA", "name": "NVIDIA", "sector": "Technology", "group": "center"},
+                    {"id": "AMD", "name": "AMD", "sector": "Technology", "group": "related"},
+                    {"id": "INTC", "name": "Intel", "sector": "Technology", "group": "related"}
+                ],
+                "edges": [
+                    {"source": "NVDA", "target": "AMD", "type": "PEER_OF", "weight": 0.85},
+                    {"source": "NVDA", "target": "INTC", "type": "SAME_INDUSTRY", "weight": 0.70}
+                ],
+                "metadata": {
+                    "depth": 2,
+                    "node_count": 15,
+                    "edge_count": 24,
+                    "source": "neo4j",
+                    "computation_time_ms": 45
+                }
+            }
+        }
+
+    Note:
+        Neo4j 연결 실패 시 PostgreSQL fallback 사용
+    """
+    import time
+    from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+
+    symbol = symbol.upper()
+    depth = min(int(request.GET.get('depth', 2)), 3)  # 최대 3
+
+    start_time = time.time()
+
+    # 캐시 확인
+    cache_key = f'chain_sight_graph_api:{symbol}:{depth}'
+    cached = cache.get(cache_key)
+    if cached:
+        logger.debug(f"캐시 HIT: {cache_key}")
+        return Response(cached)
+
+    try:
+        service = Neo4jChainSightService()
+
+        if service.is_available():
+            # Neo4j 사용
+            graph = service.get_n_depth_graph(symbol, depth=depth)
+            source = 'neo4j'
+        else:
+            # PostgreSQL fallback
+            graph = _get_fallback_graph(symbol, depth)
+            source = 'postgresql'
+
+        computation_time = int((time.time() - start_time) * 1000)
+
+        response_data = {
+            'success': True,
+            'data': {
+                'symbol': symbol,
+                'nodes': graph.get('nodes', []),
+                'edges': graph.get('edges', []),
+                'metadata': {
+                    'depth': depth,
+                    'node_count': len(graph.get('nodes', [])),
+                    'edge_count': len(graph.get('edges', [])),
+                    'source': source,
+                    'computation_time_ms': computation_time
+                }
+            }
+        }
+
+        # 캐시 저장 (5분)
+        cache.set(cache_key, response_data, 300)
+
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Chain Sight Graph 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'GRAPH_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def _get_fallback_graph(symbol: str, depth: int) -> dict:
+    """
+    Neo4j 불가 시 PostgreSQL StockRelationship에서 그래프 데이터 생성
+    """
+    from serverless.models import StockRelationship
+    from serverless.services.fmp_client import FMPClient, FMPAPIError
+
+    nodes = {}
+    edges = []
+
+    # 중심 노드
+    try:
+        fmp_client = FMPClient()
+        profile = fmp_client.get_company_profile(symbol)
+        nodes[symbol] = {
+            'id': symbol,
+            'name': profile.get('companyName', symbol),
+            'sector': profile.get('sector'),
+            'group': 'center'
+        }
+    except FMPAPIError:
+        nodes[symbol] = {
+            'id': symbol,
+            'name': symbol,
+            'sector': None,
+            'group': 'center'
+        }
+
+    # 1-depth 관계만 (PostgreSQL fallback은 단순화)
+    relationships = StockRelationship.objects.filter(
+        source_symbol=symbol
+    ).order_by('-strength')[:20]
+
+    for rel in relationships:
+        target = rel.target_symbol
+
+        # 노드 추가
+        if target not in nodes:
+            nodes[target] = {
+                'id': target,
+                'name': target,
+                'sector': rel.context.get('sector') if rel.context else None,
+                'group': 'related'
+            }
+
+        # 엣지 추가
+        edges.append({
+            'source': symbol,
+            'target': target,
+            'type': rel.relationship_type,
+            'weight': float(rel.strength)
+        })
+
+    return {
+        'nodes': list(nodes.values()),
+        'edges': edges
+    }
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def chain_sight_neo4j_sync_api(request, symbol):
+    """
+    Chain Sight Neo4j 동기화 트리거
+
+    PostgreSQL의 StockRelationship 데이터를 Neo4j로 동기화.
+
+    POST /api/v1/serverless/chain-sight/graph/NVDA/sync
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "message": "Neo4j sync completed",
+                "symbol": "NVDA",
+                "synced": 15,
+                "failed": 0,
+                "source": "neo4j"
+            }
+        }
+    """
+    from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+
+    symbol = symbol.upper()
+
+    try:
+        service = Neo4jChainSightService()
+
+        if not service.is_available():
+            return Response({
+                'success': False,
+                'error': {
+                    'code': 'NEO4J_UNAVAILABLE',
+                    'message': 'Neo4j connection not available'
+                }
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        # 동기화 실행
+        result = service.sync_from_postgres(symbol)
+
+        # 캐시 무효화
+        for depth in range(1, 4):
+            cache.delete(f'chain_sight_graph_api:{symbol}:{depth}')
+
+        logger.info(f"Neo4j 동기화 완료: {symbol} -> {result}")
+
+        return Response({
+            'success': True,
+            'data': {
+                'message': 'Neo4j sync completed',
+                'symbol': symbol,
+                'synced': result['synced'],
+                'failed': result['failed'],
+                'source': 'neo4j'
+            }
+        })
+
+    except Exception as e:
+        logger.exception(f"Neo4j Sync 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'SYNC_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_neo4j_stats_api(request):
+    """
+    Chain Sight Neo4j 통계 조회
+
+    GET /api/v1/serverless/chain-sight/graph/stats
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "neo4j_available": true,
+                "statistics": {
+                    "stock_nodes": 500,
+                    "sector_nodes": 11,
+                    "peer_of_relationships": 1200,
+                    "same_industry_relationships": 800,
+                    "co_mentioned_relationships": 300
+                },
+                "postgresql": {
+                    "total_relationships": 2300
+                },
+                "sync_rate": 100.0
+            }
+        }
+    """
+    from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+    from serverless.models import StockRelationship
+
+    try:
+        service = Neo4jChainSightService()
+
+        if service.is_available():
+            stats = service.get_statistics()
+            neo4j_available = True
+        else:
+            stats = {}
+            neo4j_available = False
+
+        # PostgreSQL 카운트
+        pg_count = StockRelationship.objects.count()
+
+        # 동기화 비율 계산
+        neo4j_total = (
+            stats.get('peer_of_relationships', 0) +
+            stats.get('same_industry_relationships', 0) +
+            stats.get('co_mentioned_relationships', 0)
+        )
+        sync_rate = (neo4j_total / pg_count * 100) if pg_count > 0 else 0
+
+        return Response({
+            'success': True,
+            'data': {
+                'neo4j_available': neo4j_available,
+                'statistics': stats,
+                'postgresql': {
+                    'total_relationships': pg_count
+                },
+                'sync_rate': round(sync_rate, 1)
+            }
+        })
+
+    except Exception as e:
+        logger.exception(f"Neo4j Stats 에러: {e}")
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'STATS_ERROR',
+                'message': str(e)
+            }
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
