@@ -19,6 +19,28 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Stock-Vis | 쉽고 간단한 포트폴리오 관리",
   description: "초보자도 쉽게 관리할 수 있는 AI 기반 포트폴리오 분석 플랫폼",
+  manifest: "/manifest.json",
+  themeColor: "#58A6FF",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Stock-Vis",
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/icons/icon.svg", type: "image/svg+xml" },
+    ],
+  },
 };
 
 export default function RootLayout({

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#0D1117"/>
+  <path d="M128 384 L192 256 L256 320 L320 192 L384 256" stroke="#58A6FF" stroke-width="24" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="128" cy="384" r="16" fill="#58A6FF"/>
+  <circle cx="192" cy="256" r="16" fill="#58A6FF"/>
+  <circle cx="256" cy="320" r="16" fill="#58A6FF"/>
+  <circle cx="320" cy="192" r="16" fill="#58A6FF"/>
+  <circle cx="384" cy="256" r="16" fill="#58A6FF"/>
+  <text x="256" y="460" text-anchor="middle" font-family="system-ui" font-size="48" font-weight="bold" fill="#E6EDF3">Stock-Vis</text>
+</svg>

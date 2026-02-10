@@ -89,6 +89,10 @@ export default function PortfolioTable() {
 
   const fetchPortfolioTable = async () => {
     try {
+      if (typeof window === 'undefined') {
+        setLoading(false);
+        return;
+      }
       const token = localStorage.getItem('access_token'); // access_token으로 수정
       if (!token) {
         console.error('No access token found');
@@ -129,6 +133,7 @@ export default function PortfolioTable() {
 
   const handleSave = async (id: number) => {
     try {
+      if (typeof window === 'undefined') return;
       const token = localStorage.getItem('access_token'); // access_token으로 수정
       if (!token) {
         console.error('No access token found');

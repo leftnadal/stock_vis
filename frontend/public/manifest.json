@@ -1,0 +1,36 @@
+{
+  "name": "Stock-Vis",
+  "short_name": "Stock-Vis",
+  "description": "AI 기반 투자 분석 플랫폼",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D1117",
+  "theme_color": "#58A6FF",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["finance", "business"],
+  "lang": "ko",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "스크리너",
+      "short_name": "Screener",
+      "description": "종목 스크리너 열기",
+      "url": "/screener"
+    },
+    {
+      "name": "Market Movers",
+      "short_name": "Movers",
+      "description": "오늘의 주목 종목",
+      "url": "/strategy-analysis"
+    }
+  ]
+}

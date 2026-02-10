@@ -47,15 +47,23 @@ const api = axios.create({
   },
 })
 
-// 토큰 저장/불러오기 유틸리티
+// 토큰 저장/불러오기 유틸리티 (SSR 호환)
 const tokenUtils = {
-  getAccessToken: () => localStorage.getItem('access_token'),
-  getRefreshToken: () => localStorage.getItem('refresh_token'),
+  getAccessToken: () => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('access_token')
+  },
+  getRefreshToken: () => {
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('refresh_token')
+  },
   setTokens: (access: string, refresh: string) => {
+    if (typeof window === 'undefined') return
     localStorage.setItem('access_token', access)
     localStorage.setItem('refresh_token', refresh)
   },
   clearTokens: () => {
+    if (typeof window === 'undefined') return
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
   },
@@ -92,14 +100,18 @@ api.interceptors.response.use(
           })
 
           const { access } = response.data
-          localStorage.setItem('access_token', access)
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('access_token', access)
+          }
 
           originalRequest.headers.Authorization = `Bearer ${access}`
           return api(originalRequest)
         }
       } catch (refreshError) {
         tokenUtils.clearTokens()
-        window.location.href = '/login'
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
+        }
         return Promise.reject(refreshError)
       }
     }
@@ -214,7 +226,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
 
         const { access } = response.data
-        localStorage.setItem('access_token', access)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('access_token', access)
+        }
       }
     } catch (error) {
       console.error('Token refresh failed:', error)

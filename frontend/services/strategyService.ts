@@ -45,12 +45,41 @@ export interface ScreenerStock {
 }
 
 export interface ScreenerFilters {
+  // URL 파라미터 (프론트엔드 UI)
   per_min?: number;
   per_max?: number;
   roe_min?: number;
+  roe_max?: number;
   market_cap_min?: number;
   market_cap_max?: number;
   sector?: string;
+  sectors?: string[];
+  beta_min?: number;
+  beta_max?: number;
+  dividend_min?: number;
+  volume_min?: number;
+
+  // === Enhanced 필터 (Phase 3: PE/ROE/EPS Growth 등) ===
+  eps_growth_min?: number;
+  eps_growth_max?: number;
+  revenue_growth_min?: number;
+  revenue_growth_max?: number;
+  debt_equity_max?: number;
+  current_ratio_min?: number;
+  rsi_min?: number;
+  rsi_max?: number;
+  change_percent_min?: number;
+  change_percent_max?: number;
+
+  // 프리셋 필터 호환 (백엔드 스타일)
+  min_pe?: number;
+  max_pe?: number;
+  min_roe?: number;
+  min_market_cap?: number;
+  max_market_cap?: number;
+  min_dividend_yield?: number;
+  min_volume?: number;
+
   // 백엔드 API 파라미터
   market_cap_more_than?: number;
   market_cap_lower_than?: number;
@@ -113,14 +142,23 @@ export const strategyService = {
       }
 
       // 베타 필터
+      if (filters.beta_min !== undefined) {
+        params.append('beta_more_than', filters.beta_min.toString());
+      }
       if (filters.beta_more_than !== undefined) {
         params.append('beta_more_than', filters.beta_more_than.toString());
+      }
+      if (filters.beta_max !== undefined) {
+        params.append('beta_lower_than', filters.beta_max.toString());
       }
       if (filters.beta_lower_than !== undefined) {
         params.append('beta_lower_than', filters.beta_lower_than.toString());
       }
 
       // 거래량 필터
+      if (filters.volume_min !== undefined) {
+        params.append('volume_more_than', filters.volume_min.toString());
+      }
       if (filters.volume_more_than !== undefined) {
         params.append('volume_more_than', filters.volume_more_than.toString());
       }
@@ -129,6 +167,9 @@ export const strategyService = {
       }
 
       // 배당률 필터
+      if (filters.dividend_min !== undefined) {
+        params.append('dividend_more_than', filters.dividend_min.toString());
+      }
       if (filters.dividend_more_than !== undefined) {
         params.append('dividend_more_than', filters.dividend_more_than.toString());
       }
@@ -152,6 +193,72 @@ export const strategyService = {
       if (filters.limit !== undefined) {
         params.append('limit', filters.limit.toString());
       }
+
+      // === Enhanced 필터 (PE/ROE/EPS Growth 등 - 백엔드 EnhancedScreenerService에서 처리) ===
+      // PER 필터
+      if (filters.per_min !== undefined) {
+        params.append('pe_ratio_min', filters.per_min.toString());
+      }
+      if (filters.min_pe !== undefined) {
+        params.append('pe_ratio_min', filters.min_pe.toString());
+      }
+      if (filters.per_max !== undefined) {
+        params.append('pe_ratio_max', filters.per_max.toString());
+      }
+      if (filters.max_pe !== undefined) {
+        params.append('pe_ratio_max', filters.max_pe.toString());
+      }
+
+      // ROE 필터
+      if (filters.roe_min !== undefined) {
+        params.append('roe_min', filters.roe_min.toString());
+      }
+      if (filters.min_roe !== undefined) {
+        params.append('roe_min', filters.min_roe.toString());
+      }
+      if (filters.roe_max !== undefined) {
+        params.append('roe_max', filters.roe_max.toString());
+      }
+
+      // EPS Growth 필터
+      if (filters.eps_growth_min !== undefined) {
+        params.append('eps_growth_min', filters.eps_growth_min.toString());
+      }
+      if (filters.eps_growth_max !== undefined) {
+        params.append('eps_growth_max', filters.eps_growth_max.toString());
+      }
+
+      // Revenue Growth 필터
+      if (filters.revenue_growth_min !== undefined) {
+        params.append('revenue_growth_min', filters.revenue_growth_min.toString());
+      }
+      if (filters.revenue_growth_max !== undefined) {
+        params.append('revenue_growth_max', filters.revenue_growth_max.toString());
+      }
+
+      // 재무 건전성 필터
+      if (filters.debt_equity_max !== undefined) {
+        params.append('debt_equity_max', filters.debt_equity_max.toString());
+      }
+      if (filters.current_ratio_min !== undefined) {
+        params.append('current_ratio_min', filters.current_ratio_min.toString());
+      }
+
+      // 기술적 지표 필터 (RSI)
+      if (filters.rsi_min !== undefined) {
+        params.append('rsi_min', filters.rsi_min.toString());
+      }
+      if (filters.rsi_max !== undefined) {
+        params.append('rsi_max', filters.rsi_max.toString());
+      }
+
+      // 변동률 필터
+      if (filters.change_percent_min !== undefined) {
+        params.append('change_percent_min', filters.change_percent_min.toString());
+      }
+      if (filters.change_percent_max !== undefined) {
+        params.append('change_percent_max', filters.change_percent_max.toString());
+      }
     }
 
     const url = `${API_URL}/stocks/api/screener/${params.toString() ? `?${params}` : ''}`;
@@ -173,24 +280,10 @@ export const strategyService = {
     const result = await response.json();
 
     // 응답 데이터 변환 (백엔드 응답 형식에 맞춤)
+    // Enhanced 필터 (PE/ROE/EPS Growth 등)는 백엔드 EnhancedScreenerService에서 처리됨
     const stocks = result.data?.stocks || result.data || [];
 
-    // PER/ROE 클라이언트 사이드 필터링 (FMP API가 직접 지원하지 않는 경우)
-    let filteredStocks = stocks;
-    if (filters?.per_min !== undefined || filters?.per_max !== undefined || filters?.roe_min !== undefined) {
-      filteredStocks = stocks.filter((stock: ScreenerStock) => {
-        const pe = stock.pe_ratio ?? 0;
-        const roe = stock.roe ?? 0;
-
-        if (filters.per_min !== undefined && pe < filters.per_min) return false;
-        if (filters.per_max !== undefined && pe > filters.per_max) return false;
-        if (filters.roe_min !== undefined && roe < filters.roe_min) return false;
-
-        return true;
-      });
-    }
-
-    return filteredStocks;
+    return stocks;
   },
 
   // Get large cap stocks

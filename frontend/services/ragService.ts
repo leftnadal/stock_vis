@@ -21,9 +21,11 @@ const api = axios.create({
 // Request interceptor - 토큰 추가
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token')
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`
+      }
     }
     return config
   },
@@ -52,7 +54,7 @@ api.interceptors.response.use(
       const { status, data } = error.response
       console.error(`Server error - status: ${status}`, data)
 
-      if (status === 401) {
+      if (status === 401 && typeof window !== 'undefined') {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
       }
@@ -167,7 +169,7 @@ export const streamAnalysis = async (
   onError: (error: Error) => void,
   pipeline: PipelineVersion = 'final'  // 기본값: 최적화된 파이프라인
 ): Promise<void> => {
-  const token = localStorage.getItem('access_token')
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
 
   class RetriableError extends Error {}
   class FatalError extends Error {}

@@ -54,6 +54,7 @@ function MyPageContent() {
     setError('');
 
     try {
+      if (typeof window === 'undefined') return;
       const token = localStorage.getItem('access_token');
       const response = await axios.patch('http://localhost:8000/api/v1/users/me/', {
         nick_name: formData.nick_name,

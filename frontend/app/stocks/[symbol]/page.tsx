@@ -17,7 +17,9 @@ import {
   Settings2,
   Calculator,
   RefreshCw,
+  Compass,
 } from 'lucide-react';
+import { ChainSightExplorer } from '@/components/chain-sight';
 import UnitSelector from '@/components/financial/UnitSelector';
 import FormattedFinancialCell from '@/components/financial/FormattedFinancialCell';
 import FieldSettingsModal from '@/components/financial/FieldSettingsModal';
@@ -42,7 +44,7 @@ import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/comp
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
 
-type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals';
+type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight';
 
 interface DataMeta {
   source: DataSource;
@@ -188,6 +190,7 @@ function StockDetailContent() {
     { id: 'cash-flow' as TabType, label: 'Cash Flow', icon: DollarSign },
     { id: 'other-fundamentals' as TabType, label: 'Other Fundamentals', icon: Calculator },
     { id: 'news' as TabType, label: 'Stock News', icon: Newspaper },
+    { id: 'chain-sight' as TabType, label: 'Chain Sight', icon: Compass },
   ];
 
   return (
@@ -359,6 +362,9 @@ function StockDetailContent() {
               <OtherFundamentalsTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'news' && <NewsTab symbol={symbol.toUpperCase()} />}
+            {activeTab === 'chain-sight' && (
+              <ChainSightExplorer symbol={symbol.toUpperCase()} />
+            )}
           </div>
         </div>
       </div>

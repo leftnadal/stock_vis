@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, PieChart, Search, TrendingUp, User } from 'lucide-react';
+import { Home, PieChart, Newspaper, TrendingUp, User } from 'lucide-react';
 
 export default function MobileNav() {
   const pathname = usePathname();
@@ -10,7 +10,7 @@ export default function MobileNav() {
   const navItems = [
     { name: '홈', href: '/', icon: Home },
     { name: '종목', href: '/stocks', icon: TrendingUp },
-    { name: '검색', href: '/search', icon: Search },
+    { name: '뉴스', href: '/news', icon: Newspaper },
     { name: '포트폴리오', href: '/portfolio', icon: PieChart },
     { name: '내정보', href: '/profile', icon: User },
   ];
