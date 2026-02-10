@@ -148,6 +148,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
         """
         params = {
             'language': 'en',
+            'filter_entities': 'true',  # 엔티티 데이터 포함
             'limit': min(limit, 3)  # Free tier: 3 articles/request
         }
 

@@ -103,7 +103,7 @@ class NewsAggregatorService:
     def fetch_and_save_market_news(
         self,
         category: str = 'general',
-        use_marketaux: bool = False
+        use_marketaux: bool = True
     ) -> Dict[str, Any]:
         """
         일반 시장 뉴스 수집 및 저장
@@ -127,10 +127,10 @@ class NewsAggregatorService:
         except Exception as e:
             logger.error(f"Finnhub fetch failed: {e}")
 
-        # Marketaux (선택적)
+        # Marketaux (선택적 - Entity 데이터 포함)
         if use_marketaux:
             try:
-                marketaux_articles = self.marketaux.fetch_market_news(category, limit=3)
+                marketaux_articles = self.marketaux.fetch_market_news(category, limit=10)
                 all_articles.extend(marketaux_articles)
                 logger.info(f"Marketaux: {len(marketaux_articles)} articles")
             except Exception as e:
@@ -176,10 +176,13 @@ class NewsAggregatorService:
 
                 if created:
                     saved_count += 1
-                    # 새 뉴스인 경우에만 Entity 저장 (기존 뉴스에는 entity 추가하지 않음)
+                    # 새 뉴스인 경우 Entity 저장
                     self._save_entities(article, raw_article.entities)
                 elif article:
                     updated_count += 1
+                    # 기존 뉴스에 Entity가 없고, 새 Entity가 있으면 추가
+                    if not article.entities.exists() and raw_article.entities:
+                        self._save_entities(article, raw_article.entities)
                 else:
                     skipped_count += 1
                     continue
