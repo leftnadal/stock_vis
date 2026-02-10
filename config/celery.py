@@ -129,6 +129,43 @@ app.conf.beat_schedule = {
         'kwargs': {'mover_type': 'gainers'},  # Gainers만 우선 처리
         'options': {'expires': 3600}  # 1시간 후 만료
     },
+
+    # ============================================================
+    # News 키워드 추출 태스크 (Phase 2)
+    # ============================================================
+
+    # 일일 뉴스 키워드 추출 (매일 오전 8시 - 뉴스 수집 후)
+    'extract-daily-news-keywords': {
+        'task': 'news.tasks.extract_daily_news_keywords',
+        'schedule': crontab(hour=8, minute=0),  # 08:00 EST
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # ============================================================
+    # Screener 태스크 (Market Breadth, Sector Heatmap, Alerts)
+    # ============================================================
+
+    # Market Breadth 일일 계산 (장 마감 후 16:30 ET)
+    'calculate-market-breadth': {
+        'task': 'serverless.tasks.calculate_daily_market_breadth',
+        'schedule': crontab(hour=16, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # Sector Heatmap 일일 계산 (장 마감 후 16:35 ET)
+    'calculate-sector-heatmap': {
+        'task': 'serverless.tasks.calculate_daily_sector_heatmap',
+        'schedule': crontab(hour=16, minute=35, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # Screener Alerts 체크 (시장 시간 중 15분마다)
+    'check-screener-alerts': {
+        'task': 'serverless.tasks.check_screener_alerts',
+        'schedule': crontab(minute='*/15', hour='9-16', day_of_week='1-5'),
+        'options': {'expires': 600}  # 10분 후 만료
+    },
+
 }
 
 # 테스트 태스크 (선택적)

@@ -404,11 +404,24 @@ CHANNEL_LAYERS = {
 from celery.schedules import crontab
 
 CELERY_BEAT_SCHEDULE = {
+    # Market Movers 동기화 (매일 07:30 EST)
     'sync-market-movers': {
         'task': 'serverless.tasks.sync_daily_market_movers',
-        'schedule': crontab(hour=7, minute=30),  # 매일 07:30 (EST)
-        'options': {
-            'expires': 3600,  # 1시간 후 만료
-        }
+        'schedule': crontab(hour=7, minute=30),
+        'options': {'expires': 3600},
+    },
+
+    # Market Breadth 일일 계산 (장 마감 후 16:30 ET, 평일만)
+    'calculate-market-breadth': {
+        'task': 'serverless.tasks.calculate_daily_market_breadth',
+        'schedule': crontab(hour=16, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600},
+    },
+
+    # Sector Heatmap 일일 계산 (장 마감 후 16:35 ET, 평일만)
+    'calculate-sector-heatmap': {
+        'task': 'serverless.tasks.calculate_daily_sector_heatmap',
+        'schedule': crontab(hour=16, minute=35, day_of_week='1-5'),
+        'options': {'expires': 3600},
     },
 }

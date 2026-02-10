@@ -1,0 +1,299 @@
+[
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 1,
+    "fields": {
+      "user": null,
+      "name": "Strong Uptrend",
+      "description": "Stocks with strong upward momentum and high trading volume",
+      "description_ko": "강한 상승 추세를 보이는 종목들입니다. 거래량도 평균 이상으로 시장의 관심을 받고 있습니다.",
+      "category": "beginner",
+      "preset_type": "instant",
+      "icon": "📈",
+      "filters_json": {
+        "change_percent_min": 2.0,
+        "volume_min": 1000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "change_percent",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 2,
+    "fields": {
+      "user": null,
+      "name": "Undervalued Quality",
+      "description": "Quality stocks trading at low valuations with strong returns on equity",
+      "description_ko": "저평가된 우량주입니다. P/E 비율이 낮고 ROE가 높아 투자 가치가 있습니다.",
+      "category": "beginner",
+      "preset_type": "enhanced",
+      "icon": "💰",
+      "filters_json": {
+        "pe_ratio_max": 15,
+        "roe_min": 15,
+        "market_cap_min": 1000000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "pe",
+      "sort_order": "asc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 3,
+    "fields": {
+      "user": null,
+      "name": "Dividend Income",
+      "description": "Stocks paying above-average dividends for income-focused investing",
+      "description_ko": "안정적인 배당 수익을 제공하는 종목들입니다. 배당률 2% 이상으로 현금 흐름을 원하는 투자자에게 적합합니다.",
+      "category": "beginner",
+      "preset_type": "instant",
+      "icon": "🎯",
+      "filters_json": {
+        "dividend_min": 2.0,
+        "market_cap_min": 5000000000,
+        "is_etf": false,
+        "is_actively_trading": true
+      },
+      "sort_by": "dividendYield",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 4,
+    "fields": {
+      "user": null,
+      "name": "High Growth",
+      "description": "Companies showing strong earnings and revenue growth potential",
+      "description_ko": "빠르게 성장하는 기업들입니다. 실적 성장률이 높아 미래 가치가 기대됩니다.",
+      "category": "beginner",
+      "preset_type": "enhanced",
+      "icon": "🚀",
+      "filters_json": {
+        "eps_growth_min": 20,
+        "revenue_growth_min": 15,
+        "market_cap_min": 500000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "epsGrowth",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 5,
+    "fields": {
+      "user": null,
+      "name": "Sector Leaders",
+      "description": "Top performers outperforming their sector average",
+      "description_ko": "섹터 평균을 상회하는 종목들입니다. 섹터 내에서 가장 강한 모멘텀을 보입니다.",
+      "category": "beginner",
+      "preset_type": "instant",
+      "icon": "📊",
+      "filters_json": {
+        "change_percent_min": 3.0,
+        "volume_min": 500000,
+        "market_cap_min": 1000000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "change_percent",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 6,
+    "fields": {
+      "user": null,
+      "name": "Volume Surge",
+      "description": "Stocks experiencing unusually high trading volume today",
+      "description_ko": "거래량이 급증한 종목들입니다. 기관이나 대형 투자자의 관심이 집중되고 있을 수 있습니다.",
+      "category": "beginner",
+      "preset_type": "instant",
+      "icon": "⚡",
+      "filters_json": {
+        "volume_min": 10000000,
+        "market_cap_min": 500000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "volume",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 7,
+    "fields": {
+      "user": null,
+      "name": "Bounce Opportunity",
+      "description": "Oversold stocks (RSI below 30) that may be due for a bounce",
+      "description_ko": "과매도 상태의 반등 기회 종목입니다. RSI가 30 이하로 떨어져 반등 가능성이 있습니다.",
+      "category": "intermediate",
+      "preset_type": "enhanced",
+      "icon": "📉",
+      "filters_json": {
+        "rsi_max": 30,
+        "market_cap_min": 1000000000,
+        "volume_min": 500000,
+        "is_actively_trading": true
+      },
+      "sort_by": "rsi",
+      "sort_order": "asc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 8,
+    "fields": {
+      "user": null,
+      "name": "Mean Reversion",
+      "description": "Stocks trading near Bollinger Band lows, potential reversion candidates",
+      "description_ko": "평균회귀 전략에 적합한 종목입니다. 볼린저 밴드 하단에 근접해 반등 가능성이 있습니다.",
+      "category": "intermediate",
+      "preset_type": "instant",
+      "icon": "🔄",
+      "filters_json": {
+        "change_percent_max": -5.0,
+        "volume_min": 1000000,
+        "market_cap_min": 2000000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "change_percent",
+      "sort_order": "asc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 9,
+    "fields": {
+      "user": null,
+      "name": "High Volatility",
+      "description": "Highly volatile stocks for active traders seeking big moves",
+      "description_ko": "변동성이 높은 종목들입니다. 큰 움직임을 노리는 적극적인 트레이더에게 적합합니다.",
+      "category": "intermediate",
+      "preset_type": "instant",
+      "icon": "🎢",
+      "filters_json": {
+        "beta_min": 1.5,
+        "volume_min": 2000000,
+        "market_cap_min": 1000000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "beta",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 10,
+    "fields": {
+      "user": null,
+      "name": "Quality Value",
+      "description": "Financially strong companies with low debt and high returns",
+      "description_ko": "재무적으로 건전한 가치주입니다. 낮은 부채비율과 높은 수익성을 갖추고 있습니다.",
+      "category": "intermediate",
+      "preset_type": "enhanced",
+      "icon": "💎",
+      "filters_json": {
+        "debt_equity_max": 1.0,
+        "roe_min": 10,
+        "pe_ratio_max": 25,
+        "market_cap_min": 5000000000,
+        "is_actively_trading": true
+      },
+      "sort_by": "roe",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  },
+  {
+    "model": "serverless.screenerpreset",
+    "pk": 11,
+    "fields": {
+      "user": null,
+      "name": "Technical Breakout",
+      "description": "Stocks showing bullish technical signals with multiple MA alignment",
+      "description_ko": "기술적 매수 신호가 나타난 종목입니다. 이동평균선이 정배열되어 상승 추세가 확인됩니다.",
+      "category": "intermediate",
+      "preset_type": "instant",
+      "icon": "🌟",
+      "filters_json": {
+        "change_percent_min": 1.0,
+        "volume_min": 500000,
+        "market_cap_min": 1000000000,
+        "price_min": 5,
+        "is_actively_trading": true
+      },
+      "sort_by": "change_percent",
+      "sort_order": "desc",
+      "is_public": true,
+      "share_code": null,
+      "use_count": 0,
+      "last_used_at": null,
+      "created_at": "2026-01-29T00:00:00Z",
+      "updated_at": "2026-01-29T00:00:00Z"
+    }
+  }
+]
