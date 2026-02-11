@@ -448,6 +448,22 @@ ticker.fast_info.last_price  # 현재 가격
         else:
             seen[h['symbol']] = h
     ```
+19. **프론트엔드 API URL 중복 (/api/v1/api/v1)**
+    - 증상: ETF 동기화 등 API 호출 시 404 에러
+    - 원인: `.env`에 `NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1` 설정되어 있는데, 코드에서 `${API_BASE}/api/v1/...` 사용
+    - 해결: 코드에서 중복 `/api/v1` 제거
+    ```typescript
+    // ❌ 잘못된 방법 (URL 중복)
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const url = `${API_BASE}/api/v1/serverless/etf/sync`;
+    // 결과: http://localhost:8000/api/v1/api/v1/serverless/etf/sync
+
+    // ✅ 올바른 방법
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+    const url = `${API_BASE}/serverless/etf/sync`;
+    // 결과: http://localhost:8000/api/v1/serverless/etf/sync
+    ```
+    - 참고: `.env` 파일과 코드의 URL 패턴 일관성 확인 필수
 
 ---
 
@@ -1548,7 +1564,7 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **신뢰도 계산**: high (10%+ 매출), medium-high (qualifier), medium (단순 언급)
   - ✅ **카테고리 확장**: suppliers, customers (CategoryGenerator)
   - ✅ **Celery Beat 스케줄**: 매월 15일 03:00 EST 배치 동기화
-  - ✅ **유닛 테스트**: SEC EDGAR Client, Parser, Service 테스트
+  - ✅ **유닛 테스트**: 54개 테스트 (SEC EDGAR Client 12개, Parser 24개, Service 18개)
 - ⏳ **Chain Sight 로드맵** (상세: `docs/features/chain-sight/CHAIN_SIGHT_ROADMAP.md`)
   - ⏳ **Phase 2**: 프론트엔드 그래프 시각화 (react-force-graph)
   - ✅ **Phase 4**: Supply Chain (SUPPLIED_BY, CUSTOMER_OF) - SEC 10-K 파싱
