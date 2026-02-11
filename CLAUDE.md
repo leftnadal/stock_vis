@@ -171,6 +171,16 @@ User
 
 - `GET /api/v1/serverless/chain-sight/stock/<symbol>/supply-chain` - 공급망 조회
   - Response: `{"suppliers": [...], "customers": [...], "cached": true}`
+
+### LLM Relation Extraction (Chain Sight Phase 5)
+
+- `POST /api/v1/serverless/llm-relations/extract` - 뉴스에서 LLM 관계 추출
+  - Body: `{"news_id": "uuid"}` 또는 `{"batch": true, "hours": 24, "limit": 100}`
+- `GET /api/v1/serverless/llm-relations/<symbol>` - 종목의 LLM 추출 관계 조회
+  - Query Params: `relation_type`, `confidence`, `days`, `include_expired`
+- `POST /api/v1/serverless/llm-relations/sync` - LLM 관계를 StockRelationship/Neo4j에 동기화
+  - Body: `{"days": 7}`
+- `GET /api/v1/serverless/llm-relations/stats` - LLM 관계 추출 통계
 - `POST /api/v1/serverless/chain-sight/stock/<symbol>/sync-supply-chain` - 공급망 동기화 트리거
   - Response: `{"status": "success", "customer_count": 2, "supplier_count": 1}`
 - `GET /api/v1/serverless/chain-sight/stock/<symbol>/category/suppliers` - 공급사 카테고리
@@ -1565,10 +1575,20 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **카테고리 확장**: suppliers, customers (CategoryGenerator)
   - ✅ **Celery Beat 스케줄**: 매월 15일 03:00 EST 배치 동기화
   - ✅ **유닛 테스트**: 54개 테스트 (SEC EDGAR Client 12개, Parser 24개, Service 18개)
+- ✅ **Chain Sight Phase 5: LLM Relation Extraction (Gemini)**
+  - ✅ **LLMExtractedRelation 모델**: 30일 TTL, 5가지 관계 타입, 신뢰도 레벨 (`serverless/models.py`)
+  - ✅ **관계 타입**: ACQUIRED, INVESTED_IN, PARTNER_OF, SPIN_OFF, SUED_BY
+  - ✅ **RelationPreFilter**: Regex 사전 필터링으로 ~80% LLM 호출 절감 (`serverless/services/relation_pre_filter.py`)
+  - ✅ **SymbolMatcher**: 회사명 → 티커 매칭 (100+ 하드코딩 + DB 조회) (`serverless/services/symbol_matcher.py`)
+  - ✅ **LLMRelationExtractor**: Gemini 2.5 Flash 기반 관계 추출 (`serverless/services/llm_relation_extractor.py`)
+  - ✅ **API 엔드포인트**: `/llm-relations/extract`, `/llm-relations/{symbol}`, `/llm-relations/sync`, `/llm-relations/stats`
+  - ✅ **Celery 태스크**: extract_relations_from_news, batch_extract_relations_from_news, sync_llm_relations_to_graph
+  - ✅ **비용 최적화**: 사전 필터링, 배치 처리, 캐싱으로 월 ~$5 예산
+  - ✅ **유닛 테스트**: 66개 테스트 (RelationPreFilter 30개, SymbolMatcher 22개, LLMRelationExtractor 14개)
 - ⏳ **Chain Sight 로드맵** (상세: `docs/features/chain-sight/CHAIN_SIGHT_ROADMAP.md`)
   - ⏳ **Phase 2**: 프론트엔드 그래프 시각화 (react-force-graph)
   - ✅ **Phase 4**: Supply Chain (SUPPLIED_BY, CUSTOMER_OF) - SEC 10-K 파싱
-  - ⏳ **Phase 5**: Gemini LLM 관계 추출 (~$5/월)
+  - ✅ **Phase 5**: Gemini LLM 관계 추출 (~$5/월)
   - ⏳ **Phase 6**: 뉴스 자연 축적 + 사용자 행동 Edge Weight ($0)
   - ⏳ **Phase 7**: Insider/Institution (HELD_BY_SAME_FUND) - SEC 13F
   - ⏳ **Phase 8**: Regulatory + Patent Network - SEC 8-K, USPTO

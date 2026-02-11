@@ -18,10 +18,9 @@ logger = logging.getLogger(__name__)
 
 
 class FMPExchangeQuotesService:
-    """FMP API Exchange Quotes 서비스 (Stable API 사용)"""
+    """FMP API Exchange Quotes 서비스 (Starter Plan - Stable API)"""
 
     BASE_URL = "https://financialmodelingprep.com/stable"
-    LEGACY_URL = "https://financialmodelingprep.com/api/v3"  # 일부 엔드포인트용
     CACHE_TTL = 60  # 1분 (실시간 데이터이므로 짧게)
 
     def __init__(self):

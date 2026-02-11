@@ -16,7 +16,14 @@ Relationship Types:
 - CO_MENTIONED: Stock -> Stock (뉴스 동시언급)
 - BELONGS_TO_SECTOR: Stock -> Sector
 - BELONGS_TO_INDUSTRY: Stock -> Industry
-- HAS_THEME: Stock -> Theme (Phase 2)
+- HAS_THEME: Stock -> Theme (Phase 3)
+- SUPPLIED_BY: Stock -> Stock (공급사, Phase 4)
+- CUSTOMER_OF: Stock -> Stock (고객사, Phase 4)
+- ACQUIRED: Stock -> Stock (인수, Phase 5)
+- INVESTED_IN: Stock -> Stock (투자, Phase 5)
+- PARTNER_OF: Stock -> Stock (파트너, Phase 5)
+- SPIN_OFF: Stock -> Stock (분사, Phase 5)
+- SUED_BY: Stock -> Stock (소송, Phase 5)
 
 Usage:
     service = Neo4jChainSightService()
@@ -66,6 +73,12 @@ class Neo4jChainSightService:
         'SUPPLIES_TO': 'SUPPLIES_TO',
         'CUSTOMER_OF': 'CUSTOMER_OF',
         'SUPPLIED_BY': 'SUPPLIED_BY',  # Phase 4: Supply Chain
+        # Phase 5: LLM Extracted Relations
+        'ACQUIRED': 'ACQUIRED',
+        'INVESTED_IN': 'INVESTED_IN',
+        'PARTNER_OF': 'PARTNER_OF',
+        'SPIN_OFF': 'SPIN_OFF',
+        'SUED_BY': 'SUED_BY',
     }
 
     def __init__(self):

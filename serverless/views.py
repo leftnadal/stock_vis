@@ -3431,3 +3431,282 @@ def refresh_theme_matches_api(request):
         'success': True,
         'data': result
     })
+
+
+# ========================================
+# Chain Sight Phase 5: LLM Relation Extraction
+# ========================================
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def extract_relations_from_news_api(request):
+    """
+    뉴스에서 LLM 관계 추출 트리거
+
+    POST /api/v1/serverless/llm-relations/extract
+    Body: {"news_id": "uuid-string"} 또는 {"batch": true, "hours": 24, "limit": 100}
+
+    Response (single):
+        {
+            "success": true,
+            "data": {
+                "task_id": "celery-task-id",
+                "news_id": "uuid-string"
+            }
+        }
+
+    Response (batch):
+        {
+            "success": true,
+            "data": {
+                "task_id": "celery-task-id",
+                "mode": "batch",
+                "hours": 24,
+                "limit": 100
+            }
+        }
+    """
+    from serverless.tasks import (
+        extract_relations_from_news,
+        batch_extract_relations_from_news
+    )
+
+    data = request.data
+    is_batch = data.get('batch', False)
+
+    if is_batch:
+        hours = int(data.get('hours', 24))
+        limit = int(data.get('limit', 100))
+
+        task = batch_extract_relations_from_news.delay(hours=hours, limit=limit)
+
+        return Response({
+            'success': True,
+            'data': {
+                'task_id': task.id,
+                'mode': 'batch',
+                'hours': hours,
+                'limit': limit
+            }
+        })
+    else:
+        news_id = data.get('news_id')
+        if not news_id:
+            return Response({
+                'success': False,
+                'error': 'news_id is required'
+            }, status=400)
+
+        task = extract_relations_from_news.delay(news_id=news_id)
+
+        return Response({
+            'success': True,
+            'data': {
+                'task_id': task.id,
+                'news_id': news_id
+            }
+        })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def get_llm_relations_api(request, symbol):
+    """
+    종목의 LLM 추출 관계 조회
+
+    GET /api/v1/serverless/llm-relations/{symbol}
+    Query Params:
+        - relation_type: ACQUIRED, INVESTED_IN, PARTNER_OF, SPIN_OFF, SUED_BY
+        - confidence: high, medium, low
+        - days: 최근 N일 (기본: 30)
+        - include_expired: true/false (기본: false)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "MSFT",
+                "relations": [
+                    {
+                        "id": 1,
+                        "source_symbol": "MSFT",
+                        "target_symbol": "ATVI",
+                        "relation_type": "ACQUIRED",
+                        "confidence": "high",
+                        "evidence": "Microsoft acquired Activision...",
+                        "context": {"deal_value": "$68.7B"},
+                        "extracted_at": "2026-01-15T10:30:00Z",
+                        "expires_at": "2026-02-14T10:30:00Z"
+                    }
+                ],
+                "count": 1
+            }
+        }
+    """
+    from serverless.models import LLMExtractedRelation
+    from datetime import timedelta
+    from django.db.models import Q
+
+    symbol = symbol.upper()
+    relation_type = request.query_params.get('relation_type')
+    confidence = request.query_params.get('confidence')
+    days = int(request.query_params.get('days', 30))
+    include_expired = request.query_params.get('include_expired', 'false').lower() == 'true'
+
+    # 기본 쿼리: source 또는 target이 해당 종목인 관계
+    cutoff = timezone.now() - timedelta(days=days)
+    relations = LLMExtractedRelation.objects.filter(
+        Q(source_symbol=symbol) | Q(target_symbol=symbol),
+        extracted_at__gte=cutoff
+    )
+
+    # 만료되지 않은 것만
+    if not include_expired:
+        relations = relations.filter(expires_at__gt=timezone.now())
+
+    # 필터링
+    if relation_type:
+        relations = relations.filter(relation_type=relation_type.upper())
+    if confidence:
+        relations = relations.filter(confidence=confidence.lower())
+
+    relations = relations.order_by('-extracted_at')[:50]
+
+    data = []
+    for rel in relations:
+        data.append({
+            'id': rel.id,
+            'source_symbol': rel.source_symbol,
+            'target_symbol': rel.target_symbol,
+            'relation_type': rel.relation_type,
+            'confidence': rel.confidence,
+            'evidence': rel.evidence,
+            'context': rel.context,
+            'source_type': rel.source_type,
+            'llm_confidence_score': float(rel.llm_confidence_score) if rel.llm_confidence_score else None,
+            'extracted_at': rel.extracted_at.isoformat(),
+            'expires_at': rel.expires_at.isoformat(),
+            'is_synced': rel.is_synced_to_graph,
+        })
+
+    return Response({
+        'success': True,
+        'data': {
+            'symbol': symbol,
+            'relations': data,
+            'count': len(data)
+        }
+    })
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def sync_llm_relations_api(request):
+    """
+    LLM 관계를 StockRelationship/Neo4j에 동기화
+
+    POST /api/v1/serverless/llm-relations/sync
+    Body: {"days": 7}
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "task_id": "celery-task-id",
+                "days": 7
+            }
+        }
+    """
+    from serverless.tasks import sync_llm_relations_to_graph
+
+    days = int(request.data.get('days', 7))
+
+    task = sync_llm_relations_to_graph.delay(days=days)
+
+    return Response({
+        'success': True,
+        'data': {
+            'task_id': task.id,
+            'days': days
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def llm_relations_stats_api(request):
+    """
+    LLM 관계 추출 통계
+
+    GET /api/v1/serverless/llm-relations/stats
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "total": 150,
+                "by_type": {
+                    "ACQUIRED": 30,
+                    "INVESTED_IN": 45,
+                    "PARTNER_OF": 50,
+                    "SPIN_OFF": 10,
+                    "SUED_BY": 15
+                },
+                "by_confidence": {
+                    "high": 80,
+                    "medium": 50,
+                    "low": 20
+                },
+                "synced": 100,
+                "pending_sync": 50,
+                "expired": 20
+            }
+        }
+    """
+    from serverless.models import LLMExtractedRelation
+    from django.db.models import Count
+
+    now = timezone.now()
+
+    # 전체 통계
+    total = LLMExtractedRelation.objects.count()
+
+    # 타입별
+    by_type = dict(
+        LLMExtractedRelation.objects
+        .values('relation_type')
+        .annotate(count=Count('id'))
+        .values_list('relation_type', 'count')
+    )
+
+    # 신뢰도별
+    by_confidence = dict(
+        LLMExtractedRelation.objects
+        .values('confidence')
+        .annotate(count=Count('id'))
+        .values_list('confidence', 'count')
+    )
+
+    # 동기화 상태
+    synced = LLMExtractedRelation.objects.filter(is_synced_to_graph=True).count()
+    pending_sync = LLMExtractedRelation.objects.filter(
+        is_synced_to_graph=False,
+        expires_at__gt=now
+    ).count()
+    expired = LLMExtractedRelation.objects.filter(expires_at__lt=now).count()
+
+    return Response({
+        'success': True,
+        'data': {
+            'total': total,
+            'by_type': by_type,
+            'by_confidence': by_confidence,
+            'synced': synced,
+            'pending_sync': pending_sync,
+            'expired': expired
+        }
+    })

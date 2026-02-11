@@ -140,30 +140,18 @@ def main():
     # ========================================
     if FMP_API_KEY:
         test_api(
-            "FMP Stock Peers API (stable)",
+            "FMP Stock Peers API",
             f"https://financialmodelingprep.com/stable/stock-peers?symbol=AAPL&apikey={FMP_API_KEY}",
-            "Stable 경로 - 피어 종목"
-        )
-
-        test_api(
-            "FMP Stock Peers API (legacy v3)",
-            f"https://financialmodelingprep.com/api/v3/stock_peers?symbol=AAPL&apikey={FMP_API_KEY}",
-            "Legacy 경로 - 피어 종목"
+            "피어 종목 조회"
         )
 
         # ========================================
         # 4. FMP ETF Holdings API
         # ========================================
         test_api(
-            "FMP ETF Holder API (stable)",
+            "FMP ETF Holder API",
             f"https://financialmodelingprep.com/stable/etf-holder?symbol=SPY&apikey={FMP_API_KEY}",
-            "Stable 경로 - SPY ETF 보유 종목"
-        )
-
-        test_api(
-            "FMP ETF Holder API (legacy v3)",
-            f"https://financialmodelingprep.com/api/v3/etf-holder/SPY?apikey={FMP_API_KEY}",
-            "Legacy 경로 - SPY ETF 보유 종목"
+            "SPY ETF 보유 종목"
         )
 
         # ========================================

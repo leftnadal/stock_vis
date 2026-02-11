@@ -311,15 +311,18 @@ class TestWatchlistAPI:
         """
         Given: 인증된 사용자
         When: GET /api/v1/users/watchlist/
-        Then: 사용자의 Watchlist 목록 반환
+        Then: 사용자의 Watchlist 목록 반환 (페이지네이션 포함)
         """
         api_client.force_authenticate(user=authenticated_user)
 
         response = api_client.get('/api/v1/users/watchlist/')
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
-        assert response.data[0]['name'] == '진입준비'
+        # 페이지네이션 응답 구조: {'results': [...], 'pagination': {...}}
+        assert 'results' in response.data
+        assert 'pagination' in response.data
+        assert len(response.data['results']) == 1
+        assert response.data['results'][0]['name'] == '진입준비'
 
     @pytest.mark.django_db
     def test_list_watchlists_unauthenticated(self, api_client):
@@ -548,7 +551,7 @@ class TestWatchlistItemAPI:
         """
         Given: 종목이 포함된 Watchlist
         When: GET /api/v1/users/watchlist/{pk}/stocks/
-        Then: 종목 상세 리스트 반환
+        Then: 종목 상세 리스트 반환 (페이지네이션 포함)
         """
         api_client.force_authenticate(user=authenticated_user)
 
@@ -557,10 +560,13 @@ class TestWatchlistItemAPI:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 2
-        assert response.data[0]['stock_symbol'] in ['AAPL', 'MSFT']
-        assert 'current_price' in response.data[0]
-        assert 'change_percent' in response.data[0]
+        # 페이지네이션 응답 구조: {'results': [...], 'pagination': {...}}
+        assert 'results' in response.data
+        assert 'pagination' in response.data
+        assert len(response.data['results']) == 2
+        assert response.data['results'][0]['stock_symbol'] in ['AAPL', 'MSFT']
+        assert 'current_price' in response.data['results'][0]
+        assert 'change_percent' in response.data['results'][0]
 
 
 class TestWatchlistItemValidation:
@@ -636,8 +642,9 @@ class TestWatchlistQueryOptimization:
         """
         api_client.force_authenticate(user=authenticated_user)
 
-        # select_related('stock') 사용으로 최소 쿼리 (1: watchlist, 2: items+stock JOIN)
-        with django_assert_num_queries(2):  # 최적화된 쿼리 수
+        # select_related('stock') 사용으로 최소 쿼리
+        # (1: auth, 2: watchlist, 3: items+stock JOIN)
+        with django_assert_num_queries(3):  # 최적화된 쿼리 수
             response = api_client.get(
                 f'/api/v1/users/watchlist/{watchlist_with_items.pk}/stocks/'
             )

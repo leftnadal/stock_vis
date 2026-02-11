@@ -108,6 +108,14 @@ urlpatterns = [
     path('themes/<str:theme_id>/stocks', views.theme_stocks_api, name='theme-stocks'),
 
     # ========================================
+    # Chain Sight Phase 5: LLM Relation Extraction
+    # ========================================
+    path('llm-relations/extract', views.extract_relations_from_news_api, name='llm-relations-extract'),
+    path('llm-relations/sync', views.sync_llm_relations_api, name='llm-relations-sync'),
+    path('llm-relations/stats', views.llm_relations_stats_api, name='llm-relations-stats'),
+    path('llm-relations/<str:symbol>', views.get_llm_relations_api, name='llm-relations-get'),
+
+    # ========================================
     # Health Check
     # ========================================
     path('health', views.health_check, name='health-check'),

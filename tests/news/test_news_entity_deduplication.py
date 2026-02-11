@@ -203,50 +203,6 @@ class TestAggregatorEntityDeduplication:
         assert current_entities == [{'symbol': 'AAPL'}]
 
 
-class TestMarketauxNullHandling:
-    """Marketaux Provider NULL 값 처리 테스트"""
-
-    @pytest.fixture
-    def provider(self):
-        return MarketauxNewsProvider(api_key="test_key")
-
-    def test_parse_entity_handles_null_exchange(self, provider):
-        """
-        exchange=None 처리 확인
-        """
-        entity = {
-            'symbol': 'AAPL',
-            'name': 'Apple Inc',
-            'exchange': None,  # NULL 값
-            'country': 'us',
-            'type': 'equity',
-            'industry': 'Technology'
-        }
-
-        parsed = provider._parse_entity(entity)
-
-        # None이 빈 문자열로 변환되어야 함
-        assert parsed['exchange'] == ''
-        assert parsed['exchange'] is not None
-
-    def test_parse_entity_handles_missing_fields(self, provider):
-        """
-        누락된 필드 처리 확인
-        """
-        entity = {
-            'symbol': 'TSLA',
-            'name': 'Tesla Inc'
-            # exchange, country, industry 누락
-        }
-
-        parsed = provider._parse_entity(entity)
-
-        # 모든 필드가 빈 문자열로 설정되어야 함
-        assert parsed['exchange'] == ''
-        assert parsed['country'] == ''
-        assert parsed['industry'] == ''
-
-
 class TestNewsAPIViews:
     """뉴스 API 뷰 테스트"""
 

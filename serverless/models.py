@@ -890,8 +890,14 @@ class StockRelationship(models.Model):
         ('SAME_INDUSTRY', '동일 산업'),
         ('CO_MENTIONED', '뉴스 동시언급'),
         ('HAS_THEME', '테마 공유'),       # Phase 2
-        ('SUPPLIED_BY', '공급사'),        # Phase 2
-        ('CUSTOMER_OF', '고객사'),        # Phase 2
+        ('SUPPLIED_BY', '공급사'),        # Phase 4
+        ('CUSTOMER_OF', '고객사'),        # Phase 4
+        # Phase 5: LLM 추출 관계
+        ('ACQUIRED', '인수'),             # A acquired B
+        ('INVESTED_IN', '투자'),          # A invested in B
+        ('PARTNER_OF', '파트너'),         # A partnered with B
+        ('SPIN_OFF', '분사'),             # A spun off B
+        ('SUED_BY', '소송'),              # A sued by B
     ]
 
     SOURCE_PROVIDERS = [
@@ -900,6 +906,8 @@ class StockRelationship(models.Model):
         ('news', 'NewsEntity Co-mention'),
         ('manual', 'Manual Entry'),
         ('ai', 'AI Generated'),
+        ('llm_news', 'LLM News Extraction'),    # Phase 5
+        ('llm_sec', 'LLM SEC Filing Extraction'),  # Phase 5
     ]
 
     source_symbol = models.CharField(max_length=10, db_index=True)
@@ -1157,3 +1165,168 @@ class ThemeMatch(models.Model):
 
     def __str__(self):
         return f"{self.stock_symbol} → {self.theme_id} ({self.confidence})"
+
+
+# ========================================
+# Chain Sight Phase 5: LLM Relation Extraction
+# ========================================
+
+class LLMExtractedRelation(models.Model):
+    """
+    LLM이 추출한 기업 관계 (Phase 5)
+
+    뉴스/SEC 공시에서 Gemini가 추출한 관계 데이터입니다.
+    30일 TTL로 관리되며, StockRelationship으로 동기화됩니다.
+
+    관계 타입:
+    - ACQUIRED: 인수 (예: Microsoft acquired Activision)
+    - INVESTED_IN: 투자 (예: SoftBank invested in Arm)
+    - PARTNER_OF: 파트너십 (예: Apple partnered with Goldman Sachs)
+    - SPIN_OFF: 분사 (예: GE spun off GE Healthcare)
+    - SUED_BY: 소송 (예: Apple sued by Epic Games)
+    """
+
+    RELATION_TYPES = [
+        ('ACQUIRED', '인수'),
+        ('INVESTED_IN', '투자'),
+        ('PARTNER_OF', '파트너'),
+        ('SPIN_OFF', '분사'),
+        ('SUED_BY', '소송'),
+    ]
+
+    SOURCE_TYPES = [
+        ('news', '뉴스'),
+        ('sec_10k', 'SEC 10-K'),
+        ('sec_8k', 'SEC 8-K'),
+        ('sec_13f', 'SEC 13-F'),
+    ]
+
+    CONFIDENCE_LEVELS = [
+        ('high', 'High'),        # LLM 점수 0.8+ 또는 SEC 공시 확인
+        ('medium', 'Medium'),    # LLM 점수 0.6-0.8
+        ('low', 'Low'),          # LLM 점수 0.6 미만
+    ]
+
+    # 관계 당사자
+    source_symbol = models.CharField(
+        max_length=10,
+        db_index=True,
+        help_text="관계의 주체 (예: MSFT in 'MSFT acquired ATVI')"
+    )
+    target_symbol = models.CharField(
+        max_length=10,
+        db_index=True,
+        help_text="관계의 대상 (예: ATVI in 'MSFT acquired ATVI')"
+    )
+    relation_type = models.CharField(
+        max_length=20,
+        choices=RELATION_TYPES,
+        db_index=True
+    )
+
+    # 출처 정보
+    source_type = models.CharField(
+        max_length=20,
+        choices=SOURCE_TYPES,
+        default='news'
+    )
+    source_id = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text="뉴스 UUID 또는 SEC 파일링 ID"
+    )
+    source_url = models.URLField(
+        null=True,
+        blank=True,
+        help_text="원본 소스 URL"
+    )
+
+    # 추출 컨텍스트
+    evidence = models.TextField(
+        help_text="관계를 증명하는 원문 발췌 (최대 500자)"
+    )
+    context = models.JSONField(
+        default=dict,
+        help_text="추가 컨텍스트 (금액, 날짜, 조건 등)"
+    )
+    # 예시: {"deal_value": "68.7B", "announced_date": "2022-01-18", "status": "completed"}
+
+    # 신뢰도
+    confidence = models.CharField(
+        max_length=20,
+        choices=CONFIDENCE_LEVELS,
+        default='medium'
+    )
+    llm_confidence_score = models.DecimalField(
+        max_digits=4,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text="LLM이 반환한 신뢰도 점수 (0.0 ~ 1.0)"
+    )
+
+    # LLM 메타데이터
+    llm_model = models.CharField(
+        max_length=50,
+        default='gemini-2.5-flash'
+    )
+    prompt_tokens = models.IntegerField(null=True, blank=True)
+    completion_tokens = models.IntegerField(null=True, blank=True)
+    extraction_time_ms = models.IntegerField(null=True, blank=True)
+
+    # 상태 관리
+    is_verified = models.BooleanField(
+        default=False,
+        help_text="수동 검증 완료 여부"
+    )
+    is_synced_to_graph = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="StockRelationship/Neo4j 동기화 여부"
+    )
+
+    # 시간 관리
+    extracted_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(
+        db_index=True,
+        help_text="TTL 만료 시점 (기본 30일)"
+    )
+
+    class Meta:
+        db_table = 'serverless_llm_extracted_relation'
+        unique_together = [
+            ['source_symbol', 'target_symbol', 'relation_type', 'source_id']
+        ]
+        ordering = ['-extracted_at']
+        indexes = [
+            models.Index(fields=['source_symbol', 'relation_type']),
+            models.Index(fields=['target_symbol', 'relation_type']),
+            models.Index(fields=['extracted_at']),
+            models.Index(fields=['is_synced_to_graph', '-extracted_at']),
+            models.Index(fields=['confidence', '-llm_confidence_score']),
+        ]
+
+    def __str__(self):
+        return f"{self.source_symbol} --{self.relation_type}--> {self.target_symbol}"
+
+    def save(self, *args, **kwargs):
+        """expires_at 자동 설정 (30일 TTL)"""
+        if not self.expires_at:
+            from datetime import timedelta
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timedelta(days=30)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self) -> bool:
+        """만료 여부 확인"""
+        from django.utils import timezone
+        return timezone.now() > self.expires_at
+
+    @property
+    def days_until_expiry(self) -> int:
+        """만료까지 남은 일수"""
+        from django.utils import timezone
+        delta = self.expires_at - timezone.now()
+        return max(0, delta.days)

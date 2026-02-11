@@ -60,11 +60,11 @@ class TestProviderFactoryBasic:
 class TestProviderFactoryEnvConfig:
     """환경 변수 기반 Provider 선택 테스트"""
 
-    def test_default_provider_is_alphavantage(self):
+    def test_default_provider_is_fmp(self):
         """
         Given: 환경 변수 미설정
         When: Provider 요청
-        Then: Alpha Vantage Provider 반환
+        Then: FMP Provider 반환 (기본 Provider가 FMP로 변경됨)
         """
         from api_request.providers.factory import ProviderFactory, EndpointType
 
@@ -72,7 +72,7 @@ class TestProviderFactoryEnvConfig:
 
         provider = ProviderFactory.get_provider(EndpointType.QUOTE)
 
-        assert provider.PROVIDER_NAME == "alpha_vantage"
+        assert provider.PROVIDER_NAME == "fmp"
 
     def test_env_selects_fmp_provider(self, monkeypatch):
         """
@@ -210,10 +210,10 @@ class TestProviderFactoryFallback:
         assert result.success is False
         assert result.error_code == "ALL_PROVIDERS_FAILED"
 
-    @patch('api_request.providers.alphavantage.AlphaVantageProvider.get_quote')
-    def test_primary_success_no_fallback(self, mock_av_quote):
+    @patch('api_request.providers.fmp.FMPProvider.get_quote')
+    def test_primary_success_no_fallback(self, mock_fmp_quote):
         """
-        Given: Primary Provider 성공
+        Given: Primary Provider (FMP) 성공
         When: call_with_fallback() 호출
         Then: Primary 결과 반환, Fallback 호출 안함
         """
@@ -222,19 +222,19 @@ class TestProviderFactoryFallback:
 
         ProviderFactory.clear_cache()
 
-        mock_av_quote.return_value = ProviderResponse.success_response(
+        mock_fmp_quote.return_value = ProviderResponse.success_response(
             data=NormalizedQuote(
                 symbol='AAPL',
                 price=Decimal('150.25'),
                 volume=50000000,
             ),
-            provider='alpha_vantage'
+            provider='fmp'
         )
 
         result = call_with_fallback(EndpointType.QUOTE, 'get_quote', 'AAPL')
 
         assert result.success is True
-        assert result.provider == 'alpha_vantage'
+        assert result.provider == 'fmp'
 
 
 class TestConvenienceFunction:
@@ -244,7 +244,7 @@ class TestConvenienceFunction:
         """
         Given: 문자열 endpoint
         When: get_provider() 호출
-        Then: 올바른 Provider 반환
+        Then: 올바른 Provider 반환 (기본값: FMP)
         """
         from api_request.providers.factory import get_provider, ProviderFactory
 
@@ -253,7 +253,7 @@ class TestConvenienceFunction:
         provider = get_provider("quote")
 
         assert provider is not None
-        assert provider.PROVIDER_NAME == "alpha_vantage"
+        assert provider.PROVIDER_NAME == "fmp"
 
     def test_get_provider_unknown_endpoint(self):
         """
@@ -306,7 +306,7 @@ class TestProviderFactoryAllProviders:
         """
         Given: 여러 Provider 사용
         When: get_all_providers() 호출
-        Then: 캐시된 Provider 딕셔너리 반환
+        Then: 캐시된 Provider 딕셔너리 반환 (기본값: FMP)
         """
         from api_request.providers.factory import ProviderFactory, EndpointType, ProviderType
 
@@ -316,7 +316,7 @@ class TestProviderFactoryAllProviders:
 
         providers = ProviderFactory.get_all_providers()
 
-        assert ProviderType.ALPHA_VANTAGE in providers
+        assert ProviderType.FMP in providers
 
 
 class TestEndpointTypes:

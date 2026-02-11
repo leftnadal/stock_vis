@@ -272,9 +272,9 @@ class TestChainSightIntegration:
     def service(self):
         return ChainSightService()
 
-    @pytest.mark.skip(reason="FMP API 호출 필요 (유료)")
+    @pytest.mark.skip(reason="FMP Starter Plan 필요 - 통합 테스트용")
     def test_find_related_chains_real_api(self, service):
-        """실제 API 호출 테스트 (스킵)"""
+        """실제 FMP API 호출 테스트 (수동 실행)"""
         # 실제 API 호출 테스트는 수동으로 실행
         result = service.find_related_chains(
             filtered_symbols=['AAPL', 'MSFT'],

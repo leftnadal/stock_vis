@@ -2,7 +2,8 @@
 FMP (Financial Modeling Prep) API Client
 
 시장 지수, 섹터 성과, 환율, 원자재 데이터 제공
-- 무료 티어: 250 calls/일
+- Starter Plan (유료): 250 calls/일
+- 모든 엔드포인트는 /stable/* 사용
 """
 import logging
 import time
@@ -16,9 +17,9 @@ logger = logging.getLogger(__name__)
 
 
 class FMPClient:
-    """FMP API 클라이언트"""
+    """FMP API 클라이언트 (Starter Plan - Stable API)"""
 
-    BASE_URL = "https://financialmodelingprep.com/api/v3"
+    BASE_URL = "https://financialmodelingprep.com"
 
     # 주요 지수 심볼
     INDEX_SYMBOLS = {
@@ -90,7 +91,7 @@ class FMPClient:
         FMP API 요청
 
         Args:
-            endpoint: API 엔드포인트
+            endpoint: API 엔드포인트 (예: /stable/quote)
             params: 쿼리 파라미터
 
         Returns:
@@ -107,7 +108,7 @@ class FMPClient:
         if time_since_last < self.request_delay:
             time.sleep(self.request_delay - time_since_last)
 
-        url = f"{self.BASE_URL}/{endpoint}"
+        url = f"{self.BASE_URL}{endpoint}"
         logger.info(f"FMP API Request: {endpoint}")
 
         try:
@@ -142,7 +143,7 @@ class FMPClient:
             시세 데이터
         """
         try:
-            data = self._make_request(f"quote/{symbol}")
+            data = self._make_request("/stable/quote", {"symbol": symbol})
             if data and len(data) > 0:
                 return data[0]
         except Exception as e:
@@ -161,7 +162,7 @@ class FMPClient:
         """
         try:
             symbols_str = ','.join(symbols)
-            data = self._make_request(f"quote/{symbols_str}")
+            data = self._make_request("/stable/quote", {"symbol": symbols_str})
             return data if isinstance(data, list) else []
         except Exception as e:
             logger.error(f"Failed to fetch batch quotes: {e}")
@@ -238,7 +239,7 @@ class FMPClient:
             섹터별 성과 리스트
         """
         try:
-            data = self._make_request("sector-performance")
+            data = self._make_request("/stable/sector-performance")
             return data if isinstance(data, list) else []
         except Exception as e:
             logger.error(f"Failed to fetch sector performance: {e}")
@@ -334,7 +335,7 @@ class FMPClient:
             if to_date:
                 params['to'] = to_date.strftime('%Y-%m-%d')
 
-            data = self._make_request("economic_calendar", params)
+            data = self._make_request("/stable/economic-calendar", params)
 
             # 미국 이벤트만 필터링 및 중요도별 정렬
             us_events = [
@@ -365,7 +366,7 @@ class FMPClient:
             기간별 국채 금리
         """
         try:
-            data = self._make_request("treasury")
+            data = self._make_request("/stable/treasury")
             if data and len(data) > 0:
                 latest = data[0]
                 return {
@@ -393,13 +394,13 @@ class FMPClient:
         result = {'gainers': [], 'losers': []}
 
         try:
-            gainers = self._make_request("stock_market/gainers")
+            gainers = self._make_request("/stable/biggest-gainers")
             result['gainers'] = gainers[:10] if isinstance(gainers, list) else []
         except Exception as e:
             logger.error(f"Failed to fetch gainers: {e}")
 
         try:
-            losers = self._make_request("stock_market/losers")
+            losers = self._make_request("/stable/biggest-losers")
             result['losers'] = losers[:10] if isinstance(losers, list) else []
         except Exception as e:
             logger.error(f"Failed to fetch losers: {e}")
@@ -414,7 +415,7 @@ class FMPClient:
             시장 상태 정보
         """
         try:
-            data = self._make_request("is-the-market-open")
+            data = self._make_request("/stable/is-the-market-open")
             return data if isinstance(data, dict) else {}
         except Exception as e:
             logger.error(f"Failed to fetch market hours: {e}")

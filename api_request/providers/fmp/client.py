@@ -34,16 +34,17 @@ class FMPAuthError(FMPClientError):
 
 class FMPClient:
     """
-    Financial Modeling Prep API Client
+    Financial Modeling Prep API Client (Starter Plan)
 
     주요 특징:
-    - 무료 티어: 250 calls/day
+    - Starter Plan 사용 (유료)
+    - 모든 엔드포인트는 /stable/* 사용
+    - Rate Limit: 10 calls/분, 250 calls/일
     - Rate limiting 자동 처리
     - 재시도 로직 포함
     """
 
-    BASE_URL = "https://financialmodelingprep.com/api"
-    API_VERSION = "v3"
+    BASE_URL = "https://financialmodelingprep.com"
 
     def __init__(
         self,
@@ -67,24 +68,21 @@ class FMPClient:
         if not self.api_key:
             raise ValueError("FMP API Key is required")
 
-    def _get_url(self, endpoint: str, version: str = None) -> str:
-        """API URL 생성"""
-        version = version or self.API_VERSION
-        return f"{self.BASE_URL}/{version}/{endpoint}"
+    def _get_url(self, endpoint: str) -> str:
+        """API URL 생성 (/stable/* 엔드포인트)"""
+        return f"{self.BASE_URL}{endpoint}"
 
     def _make_request(
         self,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        version: str = None
+        params: Optional[Dict[str, Any]] = None
     ) -> Any:
         """
         FMP API 요청 실행
 
         Args:
-            endpoint: API 엔드포인트 (예: "quote/AAPL")
+            endpoint: API 엔드포인트 (예: "/stable/quote")
             params: 추가 쿼리 파라미터
-            version: API 버전 (기본: v3)
 
         Returns:
             API 응답 데이터 (JSON parsed)
@@ -108,7 +106,7 @@ class FMPClient:
             logger.warning(f"FMP daily limit reached ({self.daily_limit} calls)")
             raise FMPRateLimitError("Daily API limit exceeded")
 
-        url = self._get_url(endpoint, version)
+        url = self._get_url(endpoint)
         logger.debug(f"FMP request: {endpoint}")
 
         # 재시도 로직
@@ -167,9 +165,9 @@ class FMPClient:
         Returns:
             시세 데이터
 
-        API: GET /api/v3/quote/{symbol}
+        API: GET /stable/quote?symbol={symbol}
         """
-        data = self._make_request(f"quote/{symbol.upper()}")
+        data = self._make_request("/stable/quote", {"symbol": symbol.upper()})
         if isinstance(data, list) and len(data) > 0:
             return data[0]
         return {}
@@ -178,9 +176,9 @@ class FMPClient:
         """
         간단한 시세 조회 (더 적은 데이터)
 
-        API: GET /api/v3/quote-short/{symbol}
+        API: GET /stable/quote-short?symbol={symbol}
         """
-        data = self._make_request(f"quote-short/{symbol.upper()}")
+        data = self._make_request("/stable/quote-short", {"symbol": symbol.upper()})
         if isinstance(data, list) and len(data) > 0:
             return data[0]
         return {}
@@ -202,18 +200,19 @@ class FMPClient:
         Returns:
             일별 가격 리스트
 
-        API: GET /api/v3/historical-price-full/{symbol}
+        API: GET /stable/historical-price-eod/full?symbol={symbol}
         """
-        params = {}
+        params = {"symbol": symbol.upper()}
         if from_date:
             params["from"] = from_date
         if to_date:
             params["to"] = to_date
 
-        data = self._make_request(f"historical-price-full/{symbol.upper()}", params)
+        data = self._make_request("/stable/historical-price-eod/full", params)
 
-        if isinstance(data, dict):
-            return data.get("historical", [])
+        # /stable/historical-price-eod/full은 리스트로 직접 반환
+        if isinstance(data, list):
+            return data
         return []
 
     # ============================================================
@@ -230,9 +229,9 @@ class FMPClient:
         Returns:
             회사 프로필 데이터
 
-        API: GET /api/v3/profile/{symbol}
+        API: GET /stable/profile?symbol={symbol}
         """
-        data = self._make_request(f"profile/{symbol.upper()}")
+        data = self._make_request("/stable/profile", {"symbol": symbol.upper()})
         if isinstance(data, list) and len(data) > 0:
             return data[0]
         return {}
@@ -248,10 +247,10 @@ class FMPClient:
         Returns:
             핵심 지표 리스트
 
-        API: GET /api/v3/key-metrics/{symbol}
+        API: GET /stable/key-metrics?symbol={symbol}
         """
-        params = {"period": period}
-        data = self._make_request(f"key-metrics/{symbol.upper()}", params)
+        params = {"symbol": symbol.upper(), "period": period}
+        data = self._make_request("/stable/key-metrics", params)
         return data if isinstance(data, list) else []
 
     def get_ratios(self, symbol: str, period: str = "annual") -> List[Dict[str, Any]]:
@@ -265,10 +264,10 @@ class FMPClient:
         Returns:
             재무 비율 리스트
 
-        API: GET /api/v3/ratios/{symbol}
+        API: GET /stable/ratios?symbol={symbol}
         """
-        params = {"period": period}
-        data = self._make_request(f"ratios/{symbol.upper()}", params)
+        params = {"symbol": symbol.upper(), "period": period}
+        data = self._make_request("/stable/ratios", params)
         return data if isinstance(data, list) else []
 
     # ============================================================
@@ -292,10 +291,10 @@ class FMPClient:
         Returns:
             손익계산서 리스트
 
-        API: GET /api/v3/income-statement/{symbol}
+        API: GET /stable/income-statement?symbol={symbol}
         """
-        params = {"period": period, "limit": limit}
-        data = self._make_request(f"income-statement/{symbol.upper()}", params)
+        params = {"symbol": symbol.upper(), "period": period, "limit": limit}
+        data = self._make_request("/stable/income-statement", params)
         return data if isinstance(data, list) else []
 
     def get_balance_sheet(
@@ -315,10 +314,10 @@ class FMPClient:
         Returns:
             대차대조표 리스트
 
-        API: GET /api/v3/balance-sheet-statement/{symbol}
+        API: GET /stable/balance-sheet-statement?symbol={symbol}
         """
-        params = {"period": period, "limit": limit}
-        data = self._make_request(f"balance-sheet-statement/{symbol.upper()}", params)
+        params = {"symbol": symbol.upper(), "period": period, "limit": limit}
+        data = self._make_request("/stable/balance-sheet-statement", params)
         return data if isinstance(data, list) else []
 
     def get_cash_flow(
@@ -338,10 +337,10 @@ class FMPClient:
         Returns:
             현금흐름표 리스트
 
-        API: GET /api/v3/cash-flow-statement/{symbol}
+        API: GET /stable/cash-flow-statement?symbol={symbol}
         """
-        params = {"period": period, "limit": limit}
-        data = self._make_request(f"cash-flow-statement/{symbol.upper()}", params)
+        params = {"symbol": symbol.upper(), "period": period, "limit": limit}
+        data = self._make_request("/stable/cash-flow-statement", params)
         return data if isinstance(data, list) else []
 
     # ============================================================
@@ -359,10 +358,10 @@ class FMPClient:
         Returns:
             검색 결과 리스트
 
-        API: GET /api/v3/search
+        API: GET /stable/search?query={query}
         """
         params = {"query": query, "limit": limit}
-        data = self._make_request("search", params)
+        data = self._make_request("/stable/search", params)
         return data if isinstance(data, list) else []
 
     def search_name(self, query: str, limit: int = 10) -> List[Dict[str, Any]]:
@@ -376,10 +375,10 @@ class FMPClient:
         Returns:
             검색 결과 리스트
 
-        API: GET /api/v3/search-name
+        API: GET /stable/search-name?query={query}
         """
         params = {"query": query, "limit": limit}
-        data = self._make_request("search-name", params)
+        data = self._make_request("/stable/search-name", params)
         return data if isinstance(data, list) else []
 
     # ============================================================
@@ -393,9 +392,9 @@ class FMPClient:
         Returns:
             섹터별 성과 데이터
 
-        API: GET /api/v3/sector-performance
+        API: GET /stable/sector-performance
         """
-        data = self._make_request("sector-performance")
+        data = self._make_request("/stable/sector-performance")
         return data if isinstance(data, list) else []
 
     def get_stock_list(self) -> List[Dict[str, Any]]:
@@ -405,9 +404,9 @@ class FMPClient:
         Returns:
             종목 리스트
 
-        API: GET /api/v3/stock/list
+        API: GET /stable/stock-list
         """
-        data = self._make_request("stock/list")
+        data = self._make_request("/stable/stock-list")
         return data if isinstance(data, list) else []
 
     # ============================================================

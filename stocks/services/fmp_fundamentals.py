@@ -19,9 +19,9 @@ logger = logging.getLogger(__name__)
 
 
 class FMPFundamentalsService:
-    """FMP API Fundamentals 서비스"""
+    """FMP API Fundamentals 서비스 (Starter Plan - Stable API)"""
 
-    BASE_URL = "https://financialmodelingprep.com/api/v3"
+    BASE_URL = "https://financialmodelingprep.com"
     CACHE_TTL = 600  # 10분
 
     def __init__(self):
@@ -58,8 +58,9 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/key-metrics/{symbol}",
+                    f"{self.BASE_URL}/stable/key-metrics",
                     params={
+                        "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
                         "limit": limit
@@ -70,7 +71,7 @@ class FMPFundamentalsService:
 
             # 데이터 검증
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: key-metrics/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/key-metrics?symbol={symbol}")
                 return []
 
             # 캐시 저장
@@ -118,8 +119,9 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/ratios/{symbol}",
+                    f"{self.BASE_URL}/stable/ratios",
                     params={
+                        "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
                         "limit": limit
@@ -130,7 +132,7 @@ class FMPFundamentalsService:
 
             # 데이터 검증
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: ratios/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/ratios?symbol={symbol}")
                 return []
 
             # 캐시 저장
@@ -176,8 +178,8 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/discounted-cash-flow/{symbol}",
-                    params={"apikey": self.api_key}
+                    f"{self.BASE_URL}/stable/discounted-cash-flow",
+                    params={"symbol": symbol, "apikey": self.api_key}
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -186,7 +188,7 @@ class FMPFundamentalsService:
             if isinstance(data, list) and len(data) > 0:
                 data = data[0]
             elif not isinstance(data, dict):
-                logger.error(f"FMP API 응답 형식 오류: dcf/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/discounted-cash-flow?symbol={symbol}")
                 return None
 
             # 캐시 저장
@@ -232,8 +234,8 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/rating/{symbol}",
-                    params={"apikey": self.api_key}
+                    f"{self.BASE_URL}/stable/rating",
+                    params={"symbol": symbol, "apikey": self.api_key}
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -242,7 +244,7 @@ class FMPFundamentalsService:
             if isinstance(data, list) and len(data) > 0:
                 data = data[0]
             elif not isinstance(data, dict):
-                logger.error(f"FMP API 응답 형식 오류: rating/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/rating?symbol={symbol}")
                 return None
 
             # 캐시 저장
@@ -288,8 +290,9 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/balance-sheet-statement/{symbol}",
+                    f"{self.BASE_URL}/stable/balance-sheet-statement",
                     params={
+                        "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
                         "limit": limit
@@ -299,7 +302,7 @@ class FMPFundamentalsService:
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: balance-sheet-statement/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/balance-sheet-statement?symbol={symbol}")
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)
@@ -344,8 +347,9 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/income-statement/{symbol}",
+                    f"{self.BASE_URL}/stable/income-statement",
                     params={
+                        "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
                         "limit": limit
@@ -355,7 +359,7 @@ class FMPFundamentalsService:
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: income-statement/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/income-statement?symbol={symbol}")
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)
@@ -400,8 +404,9 @@ class FMPFundamentalsService:
         try:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
-                    f"{self.BASE_URL}/cash-flow-statement/{symbol}",
+                    f"{self.BASE_URL}/stable/cash-flow-statement",
                     params={
+                        "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
                         "limit": limit
@@ -411,7 +416,7 @@ class FMPFundamentalsService:
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: cash-flow-statement/{symbol}")
+                logger.error(f"FMP API 응답 형식 오류: /stable/cash-flow-statement?symbol={symbol}")
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)

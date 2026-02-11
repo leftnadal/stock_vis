@@ -1218,6 +1218,291 @@ def sync_supply_chain_batch(self, symbols: list = None):
 
 
 # ============================================================
+# Chain Sight Phase 5: LLM Relation Extraction
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60 * 5,  # 5분 후 재시도
+)
+def extract_relations_from_news(self, news_id: str):
+    """
+    단일 뉴스에서 LLM 관계 추출
+
+    Args:
+        news_id: NewsEntity UUID
+
+    Returns:
+        {
+            'news_id': str,
+            'relations_count': int,
+            'relations': List[dict]
+        }
+
+    Usage:
+        from serverless.tasks import extract_relations_from_news
+        result = extract_relations_from_news.delay('abc123-uuid')
+    """
+    from news.models import NewsEntity
+    from serverless.services.llm_relation_extractor import get_relation_extractor
+
+    try:
+        logger.info(f"🔍 뉴스 관계 추출 시작: {news_id}")
+
+        # 뉴스 조회
+        try:
+            news = NewsEntity.objects.get(id=news_id)
+        except NewsEntity.DoesNotExist:
+            logger.warning(f"뉴스를 찾을 수 없음: {news_id}")
+            return {'news_id': news_id, 'relations_count': 0, 'error': 'Not found'}
+
+        # 관계 추출 및 저장
+        extractor = get_relation_extractor()
+        text = f"{news.headline}\n\n{news.content}" if news.content else news.headline
+
+        relations = extractor.extract_and_save(
+            text=text,
+            source_id=str(news.id),
+            source_type='news',
+            source_url=news.source_url
+        )
+
+        result = {
+            'news_id': news_id,
+            'relations_count': len(relations),
+            'relations': [
+                {
+                    'source': r.source_symbol,
+                    'target': r.target_symbol,
+                    'type': r.relation_type,
+                    'confidence': r.confidence
+                }
+                for r in relations
+            ]
+        }
+
+        logger.info(f"✅ 뉴스 관계 추출 완료: {len(relations)}개 관계")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"❌ 뉴스 관계 추출 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 10,  # 10분 후 재시도
+)
+def batch_extract_relations_from_news(
+    self,
+    hours: int = 24,
+    limit: int = 100
+):
+    """
+    최근 뉴스 배치 관계 추출
+
+    Args:
+        hours: 최근 N시간 내 뉴스
+        limit: 최대 처리 건수
+
+    Returns:
+        {
+            'processed': int,
+            'relations_extracted': int,
+            'errors': int
+        }
+
+    Usage:
+        from serverless.tasks import batch_extract_relations_from_news
+        result = batch_extract_relations_from_news.delay(hours=24, limit=100)
+    """
+    from news.models import NewsEntity
+    from serverless.services.llm_relation_extractor import get_relation_extractor
+    from datetime import timedelta
+    import time
+
+    try:
+        logger.info(f"🔍 뉴스 배치 관계 추출 시작: hours={hours}, limit={limit}")
+
+        # 최근 N시간 내 뉴스 조회
+        cutoff = timezone.now() - timedelta(hours=hours)
+        news_list = NewsEntity.objects.filter(
+            published_at__gte=cutoff
+        ).order_by('-published_at')[:limit]
+
+        extractor = get_relation_extractor()
+        processed = 0
+        total_relations = 0
+        errors = 0
+
+        for news in news_list:
+            try:
+                text = f"{news.headline}\n\n{news.content}" if news.content else news.headline
+
+                relations = extractor.extract_and_save(
+                    text=text,
+                    source_id=str(news.id),
+                    source_type='news',
+                    source_url=news.source_url
+                )
+
+                processed += 1
+                total_relations += len(relations)
+
+                # Rate limiting (4초 간격)
+                time.sleep(4)
+
+            except Exception as e:
+                logger.warning(f"뉴스 처리 실패 ({news.id}): {e}")
+                errors += 1
+                continue
+
+        result = {
+            'processed': processed,
+            'relations_extracted': total_relations,
+            'errors': errors
+        }
+
+        logger.info(f"✅ 뉴스 배치 관계 추출 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"❌ 뉴스 배치 관계 추출 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,
+)
+def sync_llm_relations_to_graph(self, days: int = 7):
+    """
+    LLM 추출 관계를 StockRelationship/Neo4j에 동기화
+
+    Args:
+        days: 최근 N일 내 추출 관계
+
+    Returns:
+        {
+            'synced': int,
+            'skipped': int,
+            'errors': int
+        }
+
+    Usage:
+        from serverless.tasks import sync_llm_relations_to_graph
+        result = sync_llm_relations_to_graph.delay(days=7)
+    """
+    from serverless.models import LLMExtractedRelation, StockRelationship
+    from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+    from datetime import timedelta
+
+    try:
+        logger.info(f"🔄 LLM 관계 동기화 시작: days={days}")
+
+        cutoff = timezone.now() - timedelta(days=days)
+
+        # 동기화 안 된 관계 조회 (confidence=high만)
+        relations = LLMExtractedRelation.objects.filter(
+            is_synced_to_graph=False,
+            extracted_at__gte=cutoff,
+            confidence='high'
+        )
+
+        neo4j = Neo4jChainSightService()
+        synced = 0
+        skipped = 0
+        errors = 0
+
+        for rel in relations:
+            try:
+                # PostgreSQL StockRelationship에 저장
+                source_provider = 'llm_news' if rel.source_type == 'news' else 'llm_sec'
+
+                StockRelationship.objects.update_or_create(
+                    source_symbol=rel.source_symbol,
+                    target_symbol=rel.target_symbol,
+                    relationship_type=rel.relation_type,
+                    defaults={
+                        'strength': float(rel.llm_confidence_score or 0.8),
+                        'source_provider': source_provider,
+                        'context': {
+                            'evidence': rel.evidence[:200],
+                            'llm_model': rel.llm_model,
+                            'extracted_at': rel.extracted_at.isoformat(),
+                            **rel.context
+                        }
+                    }
+                )
+
+                # Neo4j에도 동기화 (가능한 경우)
+                if neo4j.is_available():
+                    neo4j.create_relationship(
+                        source_symbol=rel.source_symbol,
+                        target_symbol=rel.target_symbol,
+                        relationship_type=rel.relation_type,
+                        strength=float(rel.llm_confidence_score or 0.8),
+                        source_provider=source_provider
+                    )
+
+                # 동기화 완료 표시
+                rel.is_synced_to_graph = True
+                rel.save(update_fields=['is_synced_to_graph'])
+
+                synced += 1
+
+            except Exception as e:
+                logger.warning(f"관계 동기화 실패: {rel.id} - {e}")
+                errors += 1
+
+        result = {
+            'synced': synced,
+            'skipped': skipped,
+            'errors': errors
+        }
+
+        logger.info(f"✅ LLM 관계 동기화 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"❌ LLM 관계 동기화 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task
+def cleanup_expired_llm_relations():
+    """
+    만료된 LLM 추출 관계 정리
+
+    Returns:
+        {'deleted': int}
+
+    Usage:
+        from serverless.tasks import cleanup_expired_llm_relations
+        result = cleanup_expired_llm_relations.delay()
+    """
+    from serverless.models import LLMExtractedRelation
+
+    try:
+        logger.info("🧹 만료된 LLM 관계 정리 시작")
+
+        now = timezone.now()
+        expired = LLMExtractedRelation.objects.filter(expires_at__lt=now)
+        count = expired.count()
+        expired.delete()
+
+        logger.info(f"✅ 만료된 LLM 관계 {count}개 삭제")
+        return {'deleted': count}
+
+    except Exception as e:
+        logger.exception(f"❌ LLM 관계 정리 실패: {e}")
+        return {'deleted': 0, 'error': str(e)}
+
+
+# ============================================================
 # Celery Beat 스케줄 (config/celery.py에 등록 필요)
 # ============================================================
 #

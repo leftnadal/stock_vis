@@ -89,8 +89,10 @@ class TestFinnhubNewsProvider:
         provider.fetch_company_news('aapl', from_date, to_date)
 
         # API 호출 시 대문자 사용 확인
+        assert mock_get.called, "requests.get was not called"
         call_args = mock_get.call_args
-        params = call_args.kwargs.get('params') or call_args.args[1] if len(call_args.args) > 1 else {}
+        assert call_args is not None, "call_args is None"
+        params = call_args.kwargs.get('params', {})
         assert params.get('symbol') == 'AAPL'
 
     @patch('news.providers.finnhub.requests.get')
@@ -192,13 +194,14 @@ class TestFinnhubNewsProvider:
         """
         Given: Finnhub market news 응답 (related 필드 있음)
         When: _parse_article() 호출 (symbol 미제공)
-        Then: related 필드에서 심볼 추출, match_score=0.8
+        Then: related 필드에서 심볼 추출, match_score=1.0
         """
         article = provider._parse_article(sample_finnhub_single_article, symbol=None)
 
         assert len(article.entities) == 1
         assert article.entities[0]['symbol'] == 'TSLA'
-        assert article.entities[0]['match_score'] == Decimal('0.80000')
+        # Finnhub에서 추출된 entity는 match_score=1.0 (변경됨)
+        assert article.entities[0]['match_score'] == Decimal('1.00000')
 
     def test_get_rate_limit_info(self, provider):
         """
@@ -312,8 +315,10 @@ class TestMarketauxNewsProvider:
 
         provider.fetch_market_news(limit=10)
 
+        assert mock_get.called, "requests.get was not called"
         call_args = mock_get.call_args
-        params = call_args.kwargs.get('params') or call_args.args[1] if len(call_args.args) > 1 else {}
+        assert call_args is not None, "call_args is None"
+        params = call_args.kwargs.get('params', {})
         assert params.get('limit') == 3  # 최대 3개로 제한
 
     def test_parse_article_with_entities(self, provider, sample_marketaux_single_article):

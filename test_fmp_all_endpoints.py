@@ -150,14 +150,11 @@ def main():
 
     results = []
 
-    # /api/v3/* 엔드포인트 테스트
-    print("\n【 /api/v3/* 엔드포인트 테스트 】")
+    # /stable/* 엔드포인트 테스트 (Starter Plan)
+    print("\n【 /stable/* 엔드포인트 테스트 (Starter Plan) 】")
     results.append(("Quote", test_quote()))
     results.append(("Historical OHLCV", test_historical()))
     results.append(("Company Profile", test_profile()))
-
-    # /stable/* 엔드포인트 테스트
-    print("\n【 /stable/* 엔드포인트 테스트 】")
     results.append(("Market Gainers", test_market_gainers()))
     results.append(("Market Losers", test_market_losers()))
     results.append(("Market Actives", test_market_actives()))

@@ -23,18 +23,18 @@ class FMPAPIError(Exception):
 
 class FMPClient:
     """
-    FMP API 클라이언트
+    FMP API 클라이언트 (Starter Plan)
 
     Usage:
         client = FMPClient()
         gainers = client.get_market_gainers()
 
-    Note: FMP API는 두 가지 base URL을 사용합니다:
-        - /api/v3/* : 기존 엔드포인트 (quote, historical 등)
-        - /stable/* : 새로운 엔드포인트 (market movers 등)
+    Note:
+        - FMP Starter Plan 사용 (유료)
+        - 모든 엔드포인트는 /stable/* 사용
+        - Rate Limit: 10 calls/분, 250 calls/일
     """
-    BASE_URL = "https://financialmodelingprep.com/api/v3"
-    BASE_URL_STABLE = "https://financialmodelingprep.com"  # /stable/* 경로는 직접 사용
+    BASE_URL = "https://financialmodelingprep.com"  # /stable/* 엔드포인트 전용
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or settings.FMP_API_KEY
@@ -53,7 +53,7 @@ class FMPClient:
         FMP API 요청 헬퍼
 
         Args:
-            endpoint: API 엔드포인트 (예: /stock_market/gainers 또는 /stable/biggest-gainers)
+            endpoint: API 엔드포인트 (예: /stable/biggest-gainers)
             params: 추가 쿼리 파라미터
 
         Returns:
@@ -62,11 +62,7 @@ class FMPClient:
         Raises:
             FMPAPIError: API 호출 실패 시
         """
-        # /stable/* 경로는 BASE_URL_STABLE 사용
-        if endpoint.startswith('/stable/'):
-            url = f"{self.BASE_URL_STABLE}{endpoint}"
-        else:
-            url = f"{self.BASE_URL}{endpoint}"
+        url = f"{self.BASE_URL}{endpoint}"
 
         request_params = {'apikey': self.api_key}
         if params:

@@ -142,7 +142,6 @@ class TestNewsViewSet:
         mock_fetch.assert_called_once_with('AAPL', days=7)
 
     @pytest.mark.django_db
-    @pytest.mark.skip(reason="BUG: views.py:148 timezone comparison issue - needs fix in production code")
     def test_stock_sentiment_basic(self, api_client, news_article_aapl, news_entity_aapl):
         """
         Given: AAPL 뉴스 (감성 점수 포함)
@@ -169,16 +168,17 @@ class TestNewsViewSet:
         """
         Given: 뉴스가 없는 종목
         When: GET /api/v1/news/stock/UNKNOWN/sentiment/ 호출
-        Then: 404 에러 반환
+        Then: 200 OK with empty data (뉴스가 없어도 빈 데이터 반환)
         """
         url = reverse('news-stock-sentiment', args=['UNKNOWN'])
         response = api_client.get(url)
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert 'error' in response.data
+        # API는 뉴스가 없어도 200 OK와 빈 데이터를 반환 (UX 개선)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data['news_count'] == 0
+        assert response.data['symbol'] == 'UNKNOWN'
 
     @pytest.mark.django_db
-    @pytest.mark.skip(reason="BUG: views.py:148 timezone comparison issue")
     def test_stock_sentiment_cache_hit(self, api_client, news_article_aapl, news_entity_aapl):
         """
         Given: 이미 캐시된 감성 분석 데이터
@@ -197,7 +197,6 @@ class TestNewsViewSet:
         assert response1.data == response2.data
 
     @pytest.mark.django_db
-    @pytest.mark.skip(reason="BUG: views.py:148 timezone comparison issue")
     def test_stock_sentiment_trend_calculation(self, api_client):
         """
         Given: 최근 3일과 이전 기간의 감성 점수가 다른 뉴스
@@ -389,7 +388,6 @@ class TestNewsAPIEdgeCases:
         assert response.data['count'] == 0
 
     @pytest.mark.django_db
-    @pytest.mark.skip(reason="BUG: views.py:148 timezone comparison issue")
     def test_stock_sentiment_no_sentiment_scores(self, api_client):
         """
         Given: NewsEntity는 있지만 sentiment_score가 모두 None
