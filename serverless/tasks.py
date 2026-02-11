@@ -895,6 +895,329 @@ def cleanup_expired_category_cache():
 
 
 # ============================================================
+# ETF Holdings 자동 수집 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def sync_etf_holdings(self, send_failure_email: bool = True):
+    """
+    ETF Holdings 자동 수집 태스크
+
+    매주 월요일 06:00 EST에 실행됩니다.
+    수집 실패한 ETF 목록을 이메일로 알림합니다.
+
+    Args:
+        send_failure_email: 실패 알림 이메일 발송 여부
+
+    Returns:
+        {
+            'total': 21,
+            'success': 15,
+            'failed': 6,
+            'total_holdings': 701,
+            'failed_etfs': ['ARKK', 'ARKG', ...]
+        }
+
+    Usage:
+        from serverless.tasks import sync_etf_holdings
+        result = sync_etf_holdings.delay()
+    """
+    from serverless.services.etf_csv_downloader import ETFCSVDownloader
+    from serverless.services.theme_matching_service import ThemeMatchingService
+    from serverless.models import ETFProfile, ETFHolding
+
+    try:
+        logger.info("📊 ETF Holdings 자동 수집 시작")
+
+        # 모든 해시 클리어 (변경 감지를 위해)
+        ETFProfile.objects.all().update(last_hash='')
+
+        downloader = ETFCSVDownloader(auto_resolve_url=True, max_retries=2)
+
+        success_list = []
+        failed_list = []
+
+        for profile in ETFProfile.objects.filter(is_active=True).order_by('tier', 'symbol'):
+            try:
+                holdings = downloader.download_holdings(profile.symbol)
+                success_list.append({
+                    'symbol': profile.symbol,
+                    'name': profile.name,
+                    'tier': profile.tier,
+                    'count': len(holdings)
+                })
+                logger.info(f"  ✅ {profile.symbol}: {len(holdings)}개")
+            except Exception as e:
+                error_msg = str(e)[:100]
+                failed_list.append({
+                    'symbol': profile.symbol,
+                    'name': profile.name,
+                    'tier': profile.tier,
+                    'error': error_msg
+                })
+                logger.warning(f"  ❌ {profile.symbol}: {error_msg}")
+
+        # 테마 매칭 갱신
+        if success_list:
+            try:
+                theme_service = ThemeMatchingService()
+                theme_result = theme_service.refresh_all_matches()
+                logger.info(f"  🏷️ 테마 매칭 갱신: {theme_result}")
+            except Exception as e:
+                logger.warning(f"  ⚠️ 테마 매칭 갱신 실패: {e}")
+
+        total_holdings = ETFHolding.objects.count()
+
+        result = {
+            'total': len(success_list) + len(failed_list),
+            'success': len(success_list),
+            'failed': len(failed_list),
+            'total_holdings': total_holdings,
+            'success_etfs': [s['symbol'] for s in success_list],
+            'failed_etfs': [f['symbol'] for f in failed_list],
+        }
+
+        logger.info(f"✅ ETF Holdings 수집 완료: 성공 {result['success']} / 실패 {result['failed']}")
+
+        # 실패 알림 이메일 발송
+        if send_failure_email and failed_list:
+            send_etf_sync_failure_email.delay(failed_list, success_list)
+
+        return result
+
+    except Exception as exc:
+        logger.exception(f"❌ ETF Holdings 수집 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task
+def send_etf_sync_failure_email(failed_list: list, success_list: list):
+    """
+    ETF 수집 실패 알림 이메일 발송
+
+    Args:
+        failed_list: 실패한 ETF 리스트
+        success_list: 성공한 ETF 리스트
+    """
+    from django.core.mail import send_mail
+    from django.conf import settings
+
+    try:
+        recipients = ['goid545@naver.com', 'jinie545@gmail.com']
+
+        # 이메일 본문 생성
+        subject = f"[Stock-Vis] ETF Holdings 수집 실패 알림 ({len(failed_list)}개)"
+
+        body_lines = [
+            "ETF Holdings 자동 수집 결과입니다.",
+            "",
+            f"📊 성공: {len(success_list)}개",
+            f"❌ 실패: {len(failed_list)}개",
+            "",
+            "=" * 50,
+            "실패 목록 (수동 수집 필요)",
+            "=" * 50,
+            "",
+        ]
+
+        for f in failed_list:
+            body_lines.append(f"• {f['symbol']} ({f['name']})")
+            body_lines.append(f"  - Tier: {f['tier']}")
+            body_lines.append(f"  - 에러: {f['error']}")
+            body_lines.append("")
+
+        body_lines.extend([
+            "=" * 50,
+            "수동 수집 방법",
+            "=" * 50,
+            "",
+            "1. 운용사 웹사이트에서 Holdings CSV 다운로드",
+            "2. 서버에서 다음 명령 실행:",
+            "",
+            "   python manage.py import_etf_csv {SYMBOL} /path/to/holdings.csv",
+            "",
+            "운용사 다운로드 페이지:",
+            "• ARK: https://ark-funds.com/funds/arkk/ (Download Holdings)",
+            "• Invesco: https://www.invesco.com/us/financial-products/etfs/",
+            "",
+        ])
+
+        body = "\n".join(body_lines)
+
+        # 이메일 발송
+        send_mail(
+            subject=subject,
+            message=body,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=recipients,
+            fail_silently=False,
+        )
+
+        logger.info(f"✉️ ETF 수집 실패 알림 이메일 발송 완료: {recipients}")
+        return {'sent_to': recipients, 'failed_count': len(failed_list)}
+
+    except Exception as e:
+        logger.exception(f"❌ 이메일 발송 실패: {e}")
+        # 이메일 실패해도 태스크는 성공으로 처리
+        return {'error': str(e)}
+
+
+# ============================================================
+# Supply Chain (Phase 4) 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,  # 5분 후 재시도
+    soft_time_limit=300,  # 5분 소프트 타임아웃
+    time_limit=360,  # 6분 하드 타임아웃
+)
+def sync_supply_chain_single(self, symbol: str):
+    """
+    단일 종목 공급망 동기화 태스크
+
+    SEC 10-K에서 공급사/고객사 관계를 추출합니다.
+
+    Args:
+        symbol: 종목 심볼
+
+    Returns:
+        {
+            'symbol': 'TSM',
+            'status': 'success',
+            'customer_count': 3,
+            'supplier_count': 2
+        }
+
+    Usage:
+        from serverless.tasks import sync_supply_chain_single
+        result = sync_supply_chain_single.delay('TSM')
+    """
+    from serverless.services.supply_chain_service import SupplyChainService
+
+    try:
+        symbol = symbol.upper()
+        logger.info(f"🔗 공급망 동기화 시작: {symbol}")
+
+        service = SupplyChainService()
+        result = service.sync_supply_chain(symbol)
+
+        logger.info(
+            f"✅ 공급망 동기화 완료: {symbol} - "
+            f"고객 {result.get('customer_count', 0)}개, "
+            f"공급사 {result.get('supplier_count', 0)}개"
+        )
+
+        return {
+            'symbol': symbol,
+            'status': result.get('status', 'unknown'),
+            'customer_count': result.get('customer_count', 0),
+            'supplier_count': result.get('supplier_count', 0),
+            'processing_time_ms': result.get('processing_time_ms', 0)
+        }
+
+    except Exception as exc:
+        logger.exception(f"❌ 공급망 동기화 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=3600,  # 60분 소프트 타임아웃
+    time_limit=3660,  # 61분 하드 타임아웃
+)
+def sync_supply_chain_batch(self, symbols: list = None):
+    """
+    배치 공급망 동기화 태스크
+
+    S&P 500 종목들의 공급망 관계를 일괄 동기화합니다.
+    매월 15일 03:00 EST에 실행됩니다.
+
+    Args:
+        symbols: 종목 심볼 리스트 (None이면 S&P 500 상위 100개)
+
+    Returns:
+        {
+            'total': 100,
+            'success': 85,
+            'failed': 15,
+            'total_customers': 250,
+            'total_suppliers': 180
+        }
+
+    Usage:
+        from serverless.tasks import sync_supply_chain_batch
+        result = sync_supply_chain_batch.delay()
+        result = sync_supply_chain_batch.delay(['TSM', 'NVDA', 'AAPL'])
+    """
+    from serverless.services.supply_chain_service import SupplyChainService
+    from stocks.models import Stock
+
+    try:
+        logger.info("🔗 공급망 배치 동기화 시작")
+
+        # 심볼 리스트 결정
+        if not symbols:
+            # 시가총액 상위 100개 종목
+            symbols = list(
+                Stock.objects.filter(
+                    market_capitalization__isnull=False
+                ).order_by('-market_capitalization')
+                .values_list('symbol', flat=True)[:100]
+            )
+
+        if not symbols:
+            logger.warning("동기화할 종목 없음")
+            return {
+                'total': 0,
+                'success': 0,
+                'failed': 0,
+                'total_customers': 0,
+                'total_suppliers': 0
+            }
+
+        logger.info(f"  대상 종목: {len(symbols)}개")
+
+        service = SupplyChainService()
+        batch_result = service.sync_batch(symbols)
+
+        # 통계 계산
+        total_customers = sum(
+            r.get('customer_count', 0)
+            for r in batch_result.get('results', {}).values()
+            if isinstance(r, dict)
+        )
+        total_suppliers = sum(
+            r.get('supplier_count', 0)
+            for r in batch_result.get('results', {}).values()
+            if isinstance(r, dict)
+        )
+
+        result = {
+            'total': batch_result.get('total', 0),
+            'success': batch_result.get('success', 0),
+            'failed': batch_result.get('failed', 0),
+            'total_customers': total_customers,
+            'total_suppliers': total_suppliers,
+            'failed_symbols': batch_result.get('failed_symbols', [])
+        }
+
+        logger.info(f"✅ 공급망 배치 동기화 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"❌ 공급망 배치 동기화 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
 # Celery Beat 스케줄 (config/celery.py에 등록 필요)
 # ============================================================
 #

@@ -976,3 +976,184 @@ class CategoryCache(models.Model):
             from django.utils import timezone
             self.expires_at = timezone.now() + timedelta(hours=24)
         super().save(*args, **kwargs)
+
+
+# ========================================
+# Chain Sight Phase 3: ETF Holdings
+# ========================================
+
+class ETFProfile(models.Model):
+    """
+    ETF 기본 정보
+
+    운용사 CSV 직링크 기반 Holdings 수집용.
+    Tier 1 (섹터 ETF): XLK, XLV 등 11개
+    Tier 2 (테마 ETF): SOXX, ARKK 등 10+개
+    """
+    TIER_CHOICES = [
+        ('sector', '섹터 ETF'),      # Tier 1: S&P 500 섹터 커버리지
+        ('theme', '테마 ETF'),       # Tier 2: 중소형주 발견용
+    ]
+
+    PARSER_CHOICES = [
+        ('spdr', 'State Street (SPDR)'),
+        ('ishares', 'iShares (BlackRock)'),
+        ('ark', 'ARK Invest'),
+        ('invesco', 'Invesco'),
+        ('vanguard', 'Vanguard'),
+        ('generic', 'Generic CSV'),
+    ]
+
+    symbol = models.CharField(max_length=10, primary_key=True)
+    name = models.CharField(max_length=200)
+    tier = models.CharField(max_length=10, choices=TIER_CHOICES)
+    theme_id = models.CharField(
+        max_length=50,
+        db_index=True,
+        help_text="테마 식별자 (예: semiconductor, ai, ev)"
+    )
+
+    # CSV 소스 정보
+    csv_url = models.URLField(max_length=500, blank=True)
+    parser_type = models.CharField(
+        max_length=20,
+        choices=PARSER_CHOICES,
+        default='generic'
+    )
+
+    # 수집 상태
+    last_updated = models.DateTimeField(null=True, blank=True)
+    last_row_count = models.IntegerField(default=0)
+    last_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        help_text="CSV 콘텐츠 해시 (변경 감지용)"
+    )
+    last_error = models.TextField(blank=True, help_text="마지막 수집 에러")
+
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'serverless_etf_profile'
+        ordering = ['tier', 'symbol']
+        indexes = [
+            models.Index(fields=['tier', 'is_active']),
+            models.Index(fields=['theme_id']),
+        ]
+
+    def __str__(self):
+        return f"[{self.tier}] {self.symbol}: {self.name}"
+
+
+class ETFHolding(models.Model):
+    """
+    ETF 구성 종목
+
+    운용사 CSV에서 파싱한 Holdings 데이터.
+    전체 Holdings 저장 (상위 30개 제한 없음).
+    """
+    etf = models.ForeignKey(
+        ETFProfile,
+        on_delete=models.CASCADE,
+        related_name='holdings'
+    )
+    stock_symbol = models.CharField(max_length=10, db_index=True)
+    weight_percent = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        help_text="비중 (%)"
+    )
+    shares = models.BigIntegerField(null=True, blank=True, help_text="보유 주식 수")
+    rank = models.IntegerField(help_text="비중 순위")
+    market_value = models.DecimalField(
+        max_digits=18,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="시장 가치 (USD)"
+    )
+    snapshot_date = models.DateField()
+
+    class Meta:
+        db_table = 'serverless_etf_holding'
+        unique_together = [['etf', 'stock_symbol', 'snapshot_date']]
+        ordering = ['etf', 'rank']
+        indexes = [
+            models.Index(fields=['stock_symbol', 'snapshot_date']),
+            models.Index(fields=['etf', 'rank']),
+        ]
+
+    def __str__(self):
+        return f"{self.etf.symbol}: {self.stock_symbol} ({self.weight_percent}%)"
+
+
+class ThemeMatch(models.Model):
+    """
+    테마 매칭 결과 (Tier A + Tier B)
+
+    Tier A (confidence: high): ETF Holdings 기반 확정 테마
+    Tier B (confidence: medium): 키워드 매칭 기반 추정 테마
+    Tier B+ (confidence: medium-high): 다중 근거로 승격된 테마
+    """
+    CONFIDENCE_CHOICES = [
+        ('high', 'High'),           # Tier A: ETF Holdings 확인
+        ('medium-high', 'Medium-High'),  # Tier B 승격
+        ('medium', 'Medium'),       # Tier B: 키워드 매칭
+    ]
+
+    SOURCE_CHOICES = [
+        ('etf_holding', 'ETF Holdings'),
+        ('keyword', 'Keyword Matching'),
+        ('co_mentioned', 'Co-mentioned with Theme'),
+        ('multi_etf', 'Multiple ETF Match'),
+    ]
+
+    stock_symbol = models.CharField(max_length=10, db_index=True)
+    theme_id = models.CharField(max_length=50, db_index=True)
+    confidence = models.CharField(
+        max_length=20,
+        choices=CONFIDENCE_CHOICES,
+        default='medium'
+    )
+    source = models.CharField(
+        max_length=20,
+        choices=SOURCE_CHOICES,
+        default='keyword'
+    )
+
+    # Tier A 전용 필드
+    etf_symbol = models.CharField(
+        max_length=10,
+        null=True,
+        blank=True,
+        help_text="Tier A: Holdings 출처 ETF"
+    )
+    weight_in_etf = models.DecimalField(
+        max_digits=6,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        help_text="Tier A: ETF 내 비중 (%)"
+    )
+
+    # 근거 목록
+    evidence = models.JSONField(
+        default=list,
+        help_text="매칭 근거 리스트"
+    )
+    # 예시: ["SOXX 상위 10위", "반도체 관련 키워드 다수", "NVDA와 뉴스 동시언급"]
+
+    last_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_theme_match'
+        unique_together = [['stock_symbol', 'theme_id']]
+        ordering = ['stock_symbol', 'theme_id']
+        indexes = [
+            models.Index(fields=['theme_id', 'confidence']),
+            models.Index(fields=['stock_symbol', '-confidence']),
+        ]
+
+    def __str__(self):
+        return f"{self.stock_symbol} → {self.theme_id} ({self.confidence})"

@@ -95,6 +95,19 @@ urlpatterns = [
     path('chain-sight/graph/<str:symbol>/sync', views.chain_sight_neo4j_sync_api, name='chain-sight-graph-sync'),
 
     # ========================================
+    # Chain Sight Phase 3: ETF Holdings
+    # ========================================
+    path('etf/status', views.etf_collection_status, name='etf-status'),
+    path('etf/sync', views.trigger_etf_holdings_sync, name='etf-sync'),
+    path('etf/resolve-url', views.resolve_etf_csv_url, name='etf-resolve-url'),
+    path('etf/<str:etf_symbol>/holdings', views.etf_holdings_api, name='etf-holdings'),
+    path('etf/stock/<str:symbol>/themes', views.stock_themes_api, name='stock-themes'),
+    path('etf/stock/<str:symbol>/peers', views.etf_peers_api, name='etf-peers'),
+    path('themes', views.theme_list_api, name='themes'),
+    path('themes/refresh', views.refresh_theme_matches_api, name='themes-refresh'),
+    path('themes/<str:theme_id>/stocks', views.theme_stocks_api, name='theme-stocks'),
+
+    # ========================================
     # Health Check
     # ========================================
     path('health', views.health_check, name='health-check'),

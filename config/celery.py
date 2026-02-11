@@ -142,6 +142,30 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
+    # ETF Holdings 자동 수집 태스크
+    # ============================================================
+
+    # ETF Holdings 자동 수집 (매주 월요일 06:00 EST)
+    # 실패 시 이메일 알림 발송: goid545@naver.com, jinie545@gmail.com
+    'sync-etf-holdings': {
+        'task': 'serverless.tasks.sync_etf_holdings',
+        'schedule': crontab(hour=6, minute=0, day_of_week=1),  # 월요일 06:00 EST
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # ============================================================
+    # Supply Chain (Phase 4) 태스크
+    # ============================================================
+
+    # 공급망 배치 동기화 (매월 15일 03:00 EST)
+    # S&P 500 상위 100개 종목의 공급사/고객사 관계를 SEC 10-K에서 추출
+    'sync-supply-chain-batch': {
+        'task': 'serverless.tasks.sync_supply_chain_batch',
+        'schedule': crontab(hour=3, minute=0, day_of_month=15),
+        'options': {'expires': 86400}  # 24시간 후 만료
+    },
+
+    # ============================================================
     # Screener 태스크 (Market Breadth, Sector Heatmap, Alerts)
     # ============================================================
 

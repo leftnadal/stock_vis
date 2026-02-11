@@ -2815,3 +2815,619 @@ def chain_sight_neo4j_stats_api(request):
                 'message': str(e)
             }
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ========================================
+# Chain Sight Phase 3: ETF Holdings
+# ========================================
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def etf_collection_status(request):
+    """
+    ETF 수집 상태 조회
+
+    GET /api/v1/serverless/etf/status
+
+    Query Params:
+        tier: 'sector' | 'theme' (선택)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "etfs": [
+                    {
+                        "symbol": "XLK",
+                        "name": "Technology Select Sector SPDR Fund",
+                        "tier": "sector",
+                        "theme_id": "technology",
+                        "is_active": true,
+                        "last_updated": "2026-02-10T10:30:00Z",
+                        "last_row_count": 75,
+                        "holdings_count": 75,
+                        "status": "synced"
+                    },
+                    ...
+                ],
+                "summary": {
+                    "total": 21,
+                    "synced": 15,
+                    "pending": 6,
+                    "sector_count": 11,
+                    "theme_count": 10
+                }
+            }
+        }
+    """
+    from serverless.models import ETFProfile, ETFHolding
+
+    tier = request.query_params.get('tier')
+
+    profiles = ETFProfile.objects.all().order_by('tier', 'symbol')
+    if tier:
+        profiles = profiles.filter(tier=tier)
+
+    etfs = []
+    synced = 0
+    pending = 0
+    sector_count = 0
+    theme_count = 0
+
+    for profile in profiles:
+        holdings_count = ETFHolding.objects.filter(etf=profile).count()
+        is_synced = profile.last_updated is not None and holdings_count > 0
+
+        status_str = 'synced' if is_synced else 'pending'
+        if profile.last_error:
+            status_str = 'failed'
+
+        if is_synced:
+            synced += 1
+        else:
+            pending += 1
+
+        if profile.tier == 'sector':
+            sector_count += 1
+        else:
+            theme_count += 1
+
+        etfs.append({
+            'symbol': profile.symbol,
+            'name': profile.name,
+            'tier': profile.tier,
+            'theme_id': profile.theme_id,
+            'is_active': profile.is_active,
+            'csv_url': profile.csv_url or None,
+            'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
+            'last_row_count': profile.last_row_count,
+            'holdings_count': holdings_count,
+            'last_error': profile.last_error or None,
+            'status': status_str,
+        })
+
+    return Response({
+        'success': True,
+        'data': {
+            'etfs': etfs,
+            'summary': {
+                'total': len(etfs),
+                'synced': synced,
+                'pending': pending,
+                'sector_count': sector_count,
+                'theme_count': theme_count,
+            }
+        }
+    })
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def trigger_etf_holdings_sync(request):
+    """
+    ETF Holdings 수동 수집 트리거
+
+    POST /api/v1/serverless/etf/sync
+
+    Body:
+        {
+            "etf_symbol": "XLK"  // 선택. 없으면 전체 동기화
+        }
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "results": [
+                    {
+                        "etf": "XLK",
+                        "status": "success",
+                        "holdings_count": 75,
+                        "last_updated": "2026-02-10T10:30:00Z"
+                    },
+                    ...
+                ],
+                "summary": {
+                    "total": 21,
+                    "success": 18,
+                    "failed": 3
+                }
+            }
+        }
+    """
+    from serverless.services.etf_csv_downloader import (
+        ETFCSVDownloader,
+        ETFCSVDownloadError,
+        ETFCSVParseError,
+    )
+    from serverless.models import ETFProfile
+
+    etf_symbol = request.data.get('etf_symbol')
+
+    downloader = ETFCSVDownloader()
+
+    # ETFProfile 초기화 (최초 실행 시)
+    init_count = downloader.initialize_etf_profiles()
+    if init_count > 0:
+        logger.info(f"ETFProfile {init_count}개 초기화 완료")
+
+    results = []
+    success_count = 0
+    failed_count = 0
+
+    if etf_symbol:
+        # 단일 ETF 동기화
+        profiles = ETFProfile.objects.filter(symbol=etf_symbol.upper())
+    else:
+        # 전체 ETF 동기화
+        profiles = ETFProfile.objects.filter(is_active=True)
+
+    for profile in profiles:
+        try:
+            holdings = downloader.download_holdings(profile.symbol)
+            results.append({
+                'etf': profile.symbol,
+                'status': 'success',
+                'holdings_count': len(holdings),
+                'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
+            })
+            success_count += 1
+        except ETFCSVDownloadError as e:
+            results.append({
+                'etf': profile.symbol,
+                'status': 'download_failed',
+                'error': str(e),
+            })
+            failed_count += 1
+        except ETFCSVParseError as e:
+            results.append({
+                'etf': profile.symbol,
+                'status': 'parse_failed',
+                'error': str(e),
+            })
+            failed_count += 1
+        except Exception as e:
+            results.append({
+                'etf': profile.symbol,
+                'status': 'error',
+                'error': str(e),
+            })
+            failed_count += 1
+
+    return Response({
+        'success': True,
+        'data': {
+            'results': results,
+            'summary': {
+                'total': len(results),
+                'success': success_count,
+                'failed': failed_count,
+            }
+        }
+    })
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def resolve_etf_csv_url(request):
+    """
+    ETF CSV URL 자동 복구
+
+    404 에러가 발생한 ETF의 CSV URL을 자동으로 찾아 업데이트합니다.
+
+    POST /api/v1/serverless/etf/resolve-url
+
+    Body:
+        {
+            "etf_symbol": "XLK"  // 선택. 없으면 404 에러 있는 모든 ETF
+        }
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "results": [
+                    {
+                        "etf": "XLK",
+                        "status": "resolved",
+                        "old_url": "https://...",
+                        "new_url": "https://..."
+                    },
+                    {
+                        "etf": "SOXX",
+                        "status": "failed",
+                        "error": "URL 복구 실패"
+                    }
+                ],
+                "summary": {
+                    "total": 5,
+                    "resolved": 3,
+                    "failed": 2
+                }
+            }
+        }
+    """
+    from serverless.services.csv_url_resolver import CSVURLResolver
+    from serverless.models import ETFProfile
+
+    etf_symbol = request.data.get('etf_symbol')
+
+    resolver = CSVURLResolver()
+    results = []
+    resolved_count = 0
+    failed_count = 0
+
+    if etf_symbol:
+        # 단일 ETF URL 복구
+        profiles = ETFProfile.objects.filter(symbol=etf_symbol.upper())
+    else:
+        # 다운로드 실패 에러가 있는 ETF만
+        profiles = ETFProfile.objects.filter(
+            is_active=True,
+            last_error__icontains='다운로드 실패'
+        )
+        # 404/403 에러 포함
+        profiles = profiles | ETFProfile.objects.filter(
+            is_active=True,
+            last_error__icontains='HTTP'
+        )
+
+    for profile in profiles.distinct():
+        old_url = profile.csv_url
+        success, result = resolver.resolve_and_update(profile.symbol)
+
+        if success:
+            results.append({
+                'etf': profile.symbol,
+                'status': 'resolved',
+                'old_url': old_url[:80] + '...' if len(old_url) > 80 else old_url,
+                'new_url': result[:80] + '...' if len(result) > 80 else result,
+            })
+            resolved_count += 1
+        else:
+            results.append({
+                'etf': profile.symbol,
+                'status': 'failed',
+                'error': result,
+            })
+            failed_count += 1
+
+    return Response({
+        'success': True,
+        'data': {
+            'results': results,
+            'summary': {
+                'total': len(results),
+                'resolved': resolved_count,
+                'failed': failed_count,
+            }
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def etf_holdings_api(request, etf_symbol: str):
+    """
+    특정 ETF의 Holdings 조회
+
+    GET /api/v1/serverless/etf/<etf_symbol>/holdings
+
+    Query Params:
+        limit: 최대 반환 개수 (기본: 50)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "etf": {
+                    "symbol": "SOXX",
+                    "name": "iShares Semiconductor ETF",
+                    "tier": "theme",
+                    "theme_id": "semiconductor",
+                    "last_updated": "2026-02-10T10:30:00Z"
+                },
+                "holdings": [
+                    {
+                        "rank": 1,
+                        "symbol": "NVDA",
+                        "weight": 8.5,
+                        "shares": 1000000,
+                        "market_value": 150000000.00
+                    },
+                    ...
+                ],
+                "total_count": 30
+            }
+        }
+    """
+    from serverless.models import ETFProfile, ETFHolding
+
+    limit = int(request.query_params.get('limit', 50))
+    etf_symbol = etf_symbol.upper()
+
+    try:
+        profile = ETFProfile.objects.get(symbol=etf_symbol)
+    except ETFProfile.DoesNotExist:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'ETF_NOT_FOUND',
+                'message': f'ETF not found: {etf_symbol}'
+            }
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    holdings = ETFHolding.objects.filter(etf=profile).order_by('rank')[:limit]
+
+    return Response({
+        'success': True,
+        'data': {
+            'etf': {
+                'symbol': profile.symbol,
+                'name': profile.name,
+                'tier': profile.tier,
+                'theme_id': profile.theme_id,
+                'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
+            },
+            'holdings': [
+                {
+                    'rank': h.rank,
+                    'symbol': h.stock_symbol,
+                    'weight': float(h.weight_percent),
+                    'shares': h.shares,
+                    'market_value': float(h.market_value) if h.market_value else None,
+                }
+                for h in holdings
+            ],
+            'total_count': ETFHolding.objects.filter(etf=profile).count(),
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def theme_list_api(request):
+    """
+    테마 목록 조회
+
+    GET /api/v1/serverless/themes
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "themes": [
+                    {
+                        "id": "semiconductor",
+                        "name": "반도체",
+                        "icon": "🔌",
+                        "etf_symbol": "SOXX",
+                        "stock_count": 45
+                    },
+                    ...
+                ]
+            }
+        }
+    """
+    from serverless.services.theme_matching_service import get_theme_matching_service
+
+    service = get_theme_matching_service()
+    themes = service.get_all_themes()
+
+    return Response({
+        'success': True,
+        'data': {
+            'themes': themes
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def theme_stocks_api(request, theme_id: str):
+    """
+    테마별 종목 조회
+
+    GET /api/v1/serverless/themes/<theme_id>/stocks
+
+    Query Params:
+        limit: 최대 반환 개수 (기본: 20)
+        min_confidence: 최소 confidence ('high', 'medium-high', 'medium')
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "theme": {
+                    "id": "semiconductor",
+                    "name": "반도체",
+                    "icon": "🔌"
+                },
+                "stocks": [
+                    {
+                        "symbol": "NVDA",
+                        "confidence": "high",
+                        "etf_symbol": "SOXX",
+                        "weight_in_etf": 8.5,
+                        "evidence": ["SOXX #1위 (8.5%)"]
+                    },
+                    ...
+                ]
+            }
+        }
+    """
+    from serverless.services.theme_matching_service import get_theme_matching_service
+
+    limit = int(request.query_params.get('limit', 20))
+    min_confidence = request.query_params.get('min_confidence', 'medium')
+
+    service = get_theme_matching_service()
+    theme_info = service.get_theme_info(theme_id)
+
+    if not theme_info:
+        return Response({
+            'success': False,
+            'error': {
+                'code': 'THEME_NOT_FOUND',
+                'message': f'Theme not found: {theme_id}'
+            }
+        }, status=status.HTTP_404_NOT_FOUND)
+
+    stocks = service.get_theme_stocks(theme_id, limit=limit, min_confidence=min_confidence)
+
+    return Response({
+        'success': True,
+        'data': {
+            'theme': {
+                'id': theme_info['id'],
+                'name': theme_info['name'],
+                'icon': theme_info['icon'],
+            },
+            'stocks': stocks
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def stock_themes_api(request, symbol: str):
+    """
+    종목의 테마 조회
+
+    GET /api/v1/serverless/etf/stock/<symbol>/themes
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "NVDA",
+                "themes": [
+                    {
+                        "theme_id": "semiconductor",
+                        "name": "반도체",
+                        "icon": "🔌",
+                        "confidence": "high",
+                        "etf_symbol": "SOXX",
+                        "evidence": ["SOXX #1위 (8.5%)"]
+                    },
+                    ...
+                ]
+            }
+        }
+    """
+    from serverless.services.theme_matching_service import get_theme_matching_service
+
+    symbol = symbol.upper()
+    service = get_theme_matching_service()
+    themes = service.get_stock_themes(symbol)
+
+    return Response({
+        'success': True,
+        'data': {
+            'symbol': symbol,
+            'themes': themes
+        }
+    })
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def etf_peers_api(request, symbol: str):
+    """
+    ETF 동반 종목 조회
+
+    GET /api/v1/serverless/etf/stock/<symbol>/peers
+
+    Query Params:
+        limit: 최대 반환 개수 (기본: 10)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "NVDA",
+                "peers": [
+                    {
+                        "symbol": "AMD",
+                        "etfs_in_common": ["SOXX", "XLK"],
+                        "total_weight": 15.5,
+                        "reason": "SOXX, XLK 공통 보유"
+                    },
+                    ...
+                ]
+            }
+        }
+    """
+    from serverless.services.theme_matching_service import get_theme_matching_service
+
+    symbol = symbol.upper()
+    limit = int(request.query_params.get('limit', 10))
+
+    service = get_theme_matching_service()
+    peers = service.get_etf_peers(symbol, limit=limit)
+
+    return Response({
+        'success': True,
+        'data': {
+            'symbol': symbol,
+            'peers': peers
+        }
+    })
+
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def refresh_theme_matches_api(request):
+    """
+    전체 ThemeMatch 갱신
+
+    POST /api/v1/serverless/themes/refresh
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "created": 100,
+                "updated": 50,
+                "total": 150
+            }
+        }
+    """
+    from serverless.services.theme_matching_service import get_theme_matching_service
+
+    service = get_theme_matching_service()
+    result = service.refresh_all_matches()
+
+    return Response({
+        'success': True,
+        'data': result
+    })

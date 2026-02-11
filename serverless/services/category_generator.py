@@ -47,6 +47,21 @@ CATEGORY_ICONS = {
     'fintech_ecosystem': '💳',
     'cloud_ecosystem': '☁️',
     'biotech_ecosystem': '🧬',
+    'etf_peers': '📊',
+    # Phase 3: 테마별 아이콘
+    'theme_semiconductor': '🔌',
+    'theme_innovation': '🚀',
+    'theme_genomics': '🧬',
+    'theme_robotics_ai': '🤖',
+    'theme_solar': '☀️',
+    'theme_cybersecurity': '🔐',
+    'theme_lithium_battery': '🔋',
+    'theme_clean_energy': '🌱',
+    'theme_china_internet': '🇨🇳',
+    'theme_igaming': '🎰',
+    # Phase 4: 공급망 아이콘
+    'suppliers': '🔧',
+    'customers': '🛒',
     'default': '📊',
 }
 
@@ -206,6 +221,154 @@ class CategoryGenerator:
                 "description": "최근 뉴스에서 함께 언급된 기업",
                 "relationship_type": "CO_MENTIONED"
             })
+
+        # Phase 3: ETF 동반 종목 카테고리
+        etf_peers_count = self._get_etf_peers_count(symbol)
+        if etf_peers_count > 0:
+            categories.append({
+                "id": "etf_peers",
+                "name": "ETF 동반 종목",
+                "tier": 0,
+                "count": etf_peers_count,
+                "icon": CATEGORY_ICONS['etf_peers'],
+                "description": f"{symbol}과 같은 ETF에 포함된 종목",
+                "relationship_type": "ETF_PEER"
+            })
+
+        # Phase 3: 테마 기반 카테고리
+        theme_categories = self._build_theme_categories(symbol)
+        categories.extend(theme_categories)
+
+        # Phase 4: 공급망 카테고리 (공급사/고객사)
+        supply_chain_categories = self._build_supply_chain_categories(symbol)
+        categories.extend(supply_chain_categories)
+
+        return categories
+
+    def _get_etf_peers_count(self, symbol: str) -> int:
+        """ETF 동반 종목 수 조회"""
+        try:
+            from serverless.models import ETFHolding
+            from django.db.models import Count
+
+            # 해당 종목을 보유한 ETF 목록
+            my_etfs = list(
+                ETFHolding.objects.filter(
+                    stock_symbol=symbol.upper()
+                ).values_list('etf__symbol', flat=True)
+            )
+
+            if not my_etfs:
+                return 0
+
+            # 같은 ETF에 있는 다른 종목 수
+            peer_count = ETFHolding.objects.filter(
+                etf__symbol__in=my_etfs
+            ).exclude(
+                stock_symbol=symbol.upper()
+            ).values('stock_symbol').distinct().count()
+
+            return peer_count
+
+        except Exception as e:
+            logger.warning(f"ETF peers count 조회 실패 {symbol}: {e}")
+            return 0
+
+    def _build_theme_categories(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        Phase 3: 테마 기반 카테고리 생성
+
+        ETF Holdings 또는 ThemeMatch에서 테마 정보를 가져옵니다.
+        """
+        categories = []
+
+        try:
+            from serverless.models import ThemeMatch
+            from serverless.services.theme_matching_service import THEME_KEYWORDS
+
+            # 해당 종목의 테마 조회
+            matches = ThemeMatch.objects.filter(
+                stock_symbol=symbol.upper()
+            ).order_by('confidence')[:5]  # 최대 5개 테마
+
+            for match in matches:
+                theme_config = THEME_KEYWORDS.get(match.theme_id, {})
+                if not theme_config:
+                    continue
+
+                category_id = f"theme_{match.theme_id}"
+                categories.append({
+                    "id": category_id,
+                    "name": theme_config.get('name', match.theme_id),
+                    "tier": 0 if match.confidence == 'high' else 1,
+                    "count": self._get_theme_stock_count(match.theme_id),
+                    "icon": CATEGORY_ICONS.get(category_id, CATEGORY_ICONS['default']),
+                    "description": f"{theme_config.get('name', match.theme_id)} 테마 종목",
+                    "relationship_type": "HAS_THEME",
+                    "theme_id": match.theme_id,
+                    "confidence": match.confidence,
+                })
+
+        except Exception as e:
+            logger.warning(f"테마 카테고리 생성 실패 {symbol}: {e}")
+
+        return categories
+
+    def _get_theme_stock_count(self, theme_id: str) -> int:
+        """테마별 종목 수 조회"""
+        try:
+            from serverless.models import ThemeMatch
+            return ThemeMatch.objects.filter(theme_id=theme_id).count()
+        except Exception:
+            return 0
+
+    def _build_supply_chain_categories(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        Phase 4: 공급망 카테고리 생성
+
+        SEC 10-K 기반 공급사/고객사 관계를 카테고리로 표시합니다.
+        """
+        categories = []
+
+        try:
+            from serverless.models import StockRelationship
+
+            # 공급사 수 조회 (SUPPLIED_BY)
+            supplier_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='SUPPLIED_BY'
+            ).count()
+
+            if supplier_count > 0:
+                categories.append({
+                    "id": "suppliers",
+                    "name": "공급사",
+                    "tier": 0,
+                    "count": supplier_count,
+                    "icon": CATEGORY_ICONS['suppliers'],
+                    "description": f"{symbol}의 핵심 공급사 (10-K 기반)",
+                    "relationship_type": "SUPPLIED_BY"
+                })
+
+            # 고객사 수 조회 (CUSTOMER_OF)
+            customer_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='CUSTOMER_OF'
+            ).count()
+
+            if customer_count > 0:
+                categories.append({
+                    "id": "customers",
+                    "name": "주요 고객사",
+                    "tier": 0,
+                    "count": customer_count,
+                    "icon": CATEGORY_ICONS['customers'],
+                    "description": f"{symbol}의 주요 고객사 (10-K 기반)",
+                    "relationship_type": "CUSTOMER_OF"
+                })
+
+        except Exception as e:
+            logger.warning(f"공급망 카테고리 생성 실패 {symbol}: {e}")
 
         return categories
 

@@ -65,6 +65,7 @@ class Neo4jChainSightService:
         'HAS_THEME': 'HAS_THEME',
         'SUPPLIES_TO': 'SUPPLIES_TO',
         'CUSTOMER_OF': 'CUSTOMER_OF',
+        'SUPPLIED_BY': 'SUPPLIED_BY',  # Phase 4: Supply Chain
     }
 
     def __init__(self):
@@ -707,4 +708,441 @@ class Neo4jChainSightService:
 
         except Exception as e:
             logger.error(f"데이터 삭제 실패: {e}")
+            return False
+
+    # ========================================
+    # ETF & Theme Operations (Phase 3)
+    # ========================================
+
+    def create_etf_node(
+        self,
+        symbol: str,
+        name: str,
+        tier: str,
+        theme_id: str
+    ) -> bool:
+        """
+        ETF 노드 생성/업데이트
+
+        Args:
+            symbol: ETF 심볼 (예: SOXX)
+            name: ETF 이름
+            tier: 'sector' 또는 'theme'
+            theme_id: 테마 식별자
+
+        Returns:
+            성공 여부
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MERGE (e:ETF {symbol: $symbol})
+                SET e.name = $name,
+                    e.tier = $tier,
+                    e.theme_id = $theme_id,
+                    e.updated_at = datetime()
+                RETURN e.symbol AS symbol
+                """
+                result = session.run(
+                    query,
+                    symbol=symbol.upper(),
+                    name=name,
+                    tier=tier,
+                    theme_id=theme_id
+                )
+                record = result.single()
+                return record is not None
+
+        except Exception as e:
+            logger.error(f"ETF 노드 생성 실패 {symbol}: {e}")
+            return False
+
+    def create_theme_node(
+        self,
+        theme_id: str,
+        name: str,
+        icon: Optional[str] = None,
+        description: Optional[str] = None
+    ) -> bool:
+        """
+        Theme 노드 생성/업데이트
+
+        Args:
+            theme_id: 테마 식별자 (예: semiconductor)
+            name: 테마 이름
+            icon: 이모지 아이콘
+            description: 테마 설명
+
+        Returns:
+            성공 여부
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MERGE (t:Theme {id: $theme_id})
+                SET t.name = $name,
+                    t.icon = $icon,
+                    t.description = $description,
+                    t.updated_at = datetime()
+                RETURN t.id AS id
+                """
+                result = session.run(
+                    query,
+                    theme_id=theme_id,
+                    name=name,
+                    icon=icon,
+                    description=description
+                )
+                record = result.single()
+                return record is not None
+
+        except Exception as e:
+            logger.error(f"Theme 노드 생성 실패 {theme_id}: {e}")
+            return False
+
+    def create_held_by_relationship(
+        self,
+        stock_symbol: str,
+        etf_symbol: str,
+        weight: float,
+        rank: int
+    ) -> bool:
+        """
+        HELD_BY 관계 생성 (Stock → ETF)
+
+        Args:
+            stock_symbol: 종목 심볼
+            etf_symbol: ETF 심볼
+            weight: 비중 (%)
+            rank: 비중 순위
+
+        Returns:
+            성공 여부
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (s:Stock {symbol: $stock_symbol})
+                MATCH (e:ETF {symbol: $etf_symbol})
+                MERGE (s)-[r:HELD_BY]->(e)
+                SET r.weight = $weight,
+                    r.rank = $rank,
+                    r.updated_at = datetime()
+                RETURN r
+                """
+                result = session.run(
+                    query,
+                    stock_symbol=stock_symbol.upper(),
+                    etf_symbol=etf_symbol.upper(),
+                    weight=weight,
+                    rank=rank
+                )
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"HELD_BY 관계 생성 실패 {stock_symbol}->{etf_symbol}: {e}")
+            return False
+
+    def create_has_theme_relationship(
+        self,
+        stock_symbol: str,
+        theme_id: str,
+        confidence: str,
+        source: str,
+        evidence: Optional[List[str]] = None
+    ) -> bool:
+        """
+        HAS_THEME 관계 생성 (Stock → Theme)
+
+        Args:
+            stock_symbol: 종목 심볼
+            theme_id: 테마 ID
+            confidence: 신뢰도 (high, medium-high, medium)
+            source: 소스 (etf_holding, keyword, co_mentioned)
+            evidence: 근거 목록
+
+        Returns:
+            성공 여부
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (s:Stock {symbol: $stock_symbol})
+                MATCH (t:Theme {id: $theme_id})
+                MERGE (s)-[r:HAS_THEME]->(t)
+                SET r.confidence = $confidence,
+                    r.source = $source,
+                    r.evidence = $evidence,
+                    r.updated_at = datetime()
+                RETURN r
+                """
+                result = session.run(
+                    query,
+                    stock_symbol=stock_symbol.upper(),
+                    theme_id=theme_id,
+                    confidence=confidence,
+                    source=source,
+                    evidence=evidence or []
+                )
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"HAS_THEME 관계 생성 실패 {stock_symbol}->{theme_id}: {e}")
+            return False
+
+    def get_etf_peers(self, symbol: str, limit: int = 10) -> List[Dict[str, Any]]:
+        """
+        같은 ETF에 포함된 동반 종목 조회
+
+        Args:
+            symbol: 종목 심볼
+            limit: 최대 반환 개수
+
+        Returns:
+            [
+                {
+                    'symbol': 'AMD',
+                    'name': 'Advanced Micro Devices',
+                    'etfs_in_common': ['SOXX', 'XLK'],
+                    'total_weight': 15.5
+                },
+                ...
+            ]
+        """
+        if not self.is_available():
+            return []
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (s:Stock {symbol: $symbol})-[:HELD_BY]->(e:ETF)<-[r:HELD_BY]-(peer:Stock)
+                WHERE peer.symbol <> $symbol
+                WITH peer, collect(e.symbol) AS etfs, sum(r.weight) AS total_weight
+                RETURN peer.symbol AS symbol,
+                       peer.name AS name,
+                       etfs,
+                       total_weight
+                ORDER BY size(etfs) DESC, total_weight DESC
+                LIMIT $limit
+                """
+                result = session.run(
+                    query,
+                    symbol=symbol.upper(),
+                    limit=limit
+                )
+
+                return [
+                    {
+                        'symbol': record['symbol'],
+                        'name': record['name'],
+                        'etfs_in_common': record['etfs'],
+                        'total_weight': record['total_weight'],
+                    }
+                    for record in result
+                ]
+
+        except Exception as e:
+            logger.error(f"ETF peers 조회 실패 {symbol}: {e}")
+            return []
+
+    def get_theme_stocks(
+        self,
+        theme_id: str,
+        min_confidence: str = 'medium',
+        limit: int = 20
+    ) -> List[Dict[str, Any]]:
+        """
+        테마에 속한 종목 조회
+
+        Args:
+            theme_id: 테마 ID
+            min_confidence: 최소 신뢰도
+            limit: 최대 반환 개수
+
+        Returns:
+            종목 목록
+        """
+        if not self.is_available():
+            return []
+
+        # confidence 순서 정의
+        confidence_order = {
+            'high': 1,
+            'medium-high': 2,
+            'medium': 3
+        }
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (s:Stock)-[r:HAS_THEME]->(t:Theme {id: $theme_id})
+                WHERE r.confidence IN $confidence_list
+                RETURN s.symbol AS symbol,
+                       s.name AS name,
+                       s.sector AS sector,
+                       r.confidence AS confidence,
+                       r.source AS source,
+                       r.evidence AS evidence
+                ORDER BY CASE r.confidence
+                    WHEN 'high' THEN 1
+                    WHEN 'medium-high' THEN 2
+                    WHEN 'medium' THEN 3
+                    ELSE 4
+                END
+                LIMIT $limit
+                """
+
+                # 최소 confidence 이상 목록
+                min_order = confidence_order.get(min_confidence, 3)
+                confidence_list = [
+                    c for c, o in confidence_order.items()
+                    if o <= min_order
+                ]
+
+                result = session.run(
+                    query,
+                    theme_id=theme_id,
+                    confidence_list=confidence_list,
+                    limit=limit
+                )
+
+                return [
+                    {
+                        'symbol': record['symbol'],
+                        'name': record['name'],
+                        'sector': record['sector'],
+                        'confidence': record['confidence'],
+                        'source': record['source'],
+                        'evidence': record['evidence'],
+                    }
+                    for record in result
+                ]
+
+        except Exception as e:
+            logger.error(f"Theme stocks 조회 실패 {theme_id}: {e}")
+            return []
+
+    def sync_etf_holdings_to_neo4j(self) -> Dict[str, int]:
+        """
+        ETF Holdings 데이터를 Neo4j로 동기화
+
+        Returns:
+            {'etfs': 21, 'holdings': 1500, 'themes': 21}
+        """
+        from serverless.models import ETFProfile, ETFHolding, ThemeMatch
+        from serverless.services.theme_matching_service import THEME_KEYWORDS
+
+        if not self.is_available():
+            return {'etfs': 0, 'holdings': 0, 'themes': 0}
+
+        etf_count = 0
+        holding_count = 0
+        theme_count = 0
+
+        try:
+            # 1. Theme 노드 생성
+            for theme_id, config in THEME_KEYWORDS.items():
+                success = self.create_theme_node(
+                    theme_id=theme_id,
+                    name=config['name'],
+                    icon=config['icon'],
+                    description=', '.join(config['keywords'][:5])
+                )
+                if success:
+                    theme_count += 1
+
+            # 2. ETF 노드 생성
+            for profile in ETFProfile.objects.filter(is_active=True):
+                success = self.create_etf_node(
+                    symbol=profile.symbol,
+                    name=profile.name,
+                    tier=profile.tier,
+                    theme_id=profile.theme_id
+                )
+                if success:
+                    etf_count += 1
+
+                # 3. Stock 노드 및 HELD_BY 관계 생성
+                for holding in ETFHolding.objects.filter(etf=profile):
+                    # Stock 노드 생성 (존재하지 않으면)
+                    self.create_stock_node(
+                        symbol=holding.stock_symbol,
+                        name=holding.stock_symbol  # 이름은 나중에 업데이트
+                    )
+
+                    # HELD_BY 관계 생성
+                    success = self.create_held_by_relationship(
+                        stock_symbol=holding.stock_symbol,
+                        etf_symbol=profile.symbol,
+                        weight=float(holding.weight_percent),
+                        rank=holding.rank
+                    )
+                    if success:
+                        holding_count += 1
+
+            # 4. HAS_THEME 관계 생성
+            for match in ThemeMatch.objects.all():
+                self.create_has_theme_relationship(
+                    stock_symbol=match.stock_symbol,
+                    theme_id=match.theme_id,
+                    confidence=match.confidence,
+                    source=match.source,
+                    evidence=match.evidence
+                )
+
+            logger.info(
+                f"ETF Holdings Neo4j 동기화 완료: "
+                f"ETFs={etf_count}, Holdings={holding_count}, Themes={theme_count}"
+            )
+
+            return {
+                'etfs': etf_count,
+                'holdings': holding_count,
+                'themes': theme_count
+            }
+
+        except Exception as e:
+            logger.error(f"ETF Holdings Neo4j 동기화 실패: {e}")
+            return {
+                'etfs': etf_count,
+                'holdings': holding_count,
+                'themes': theme_count
+            }
+
+    def create_etf_indexes(self) -> bool:
+        """ETF 관련 인덱스 생성"""
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                # ETF.symbol 인덱스
+                session.run(
+                    "CREATE INDEX chain_sight_etf_symbol IF NOT EXISTS "
+                    "FOR (e:ETF) ON (e.symbol)"
+                )
+
+                # Theme.id 인덱스
+                session.run(
+                    "CREATE INDEX chain_sight_theme_id IF NOT EXISTS "
+                    "FOR (t:Theme) ON (t.id)"
+                )
+
+                logger.info("Neo4j ETF/Theme 인덱스 생성 완료")
+                return True
+
+        except Exception as e:
+            logger.error(f"ETF/Theme 인덱스 생성 실패: {e}")
             return False

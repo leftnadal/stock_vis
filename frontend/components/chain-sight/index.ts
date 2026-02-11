@@ -9,3 +9,4 @@ export { default as CategorySelector } from './CategorySelector';
 export { default as RelatedStockGrid } from './RelatedStockGrid';
 export { default as RelatedStockCard } from './RelatedStockCard';
 export { default as AIInsightPanel } from './AIInsightPanel';
+export { default as ETFCollectionPanel } from './ETFCollectionPanel';

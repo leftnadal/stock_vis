@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Compass, RefreshCw, AlertCircle } from 'lucide-react';
+import { Compass, RefreshCw, AlertCircle, Database } from 'lucide-react';
 import { useChainSightCategories, useChainSightSync } from '@/hooks/useChainSightCategories';
 import { useChainSightStocks } from '@/hooks/useChainSightStocks';
 import CategorySelector from './CategorySelector';
 import RelatedStockGrid from './RelatedStockGrid';
 import AIInsightPanel from './AIInsightPanel';
+import ETFCollectionPanel from './ETFCollectionPanel';
 
 interface ChainSightExplorerProps {
   symbol: string;
@@ -20,6 +21,7 @@ interface ChainSightExplorerProps {
  */
 export default function ChainSightExplorer({ symbol }: ChainSightExplorerProps) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
+  const [showETFPanel, setShowETFPanel] = useState(false);
 
   // 카테고리 조회
   const {
@@ -129,17 +131,39 @@ export default function ChainSightExplorer({ symbol }: ChainSightExplorerProps) 
             </div>
           </div>
 
-          {/* 새로고침 버튼 */}
-          <button
-            onClick={() => sync()}
-            disabled={isSyncing}
-            className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
-            title="관계 데이터 새로고침"
-          >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            {/* ETF 패널 토글 */}
+            <button
+              onClick={() => setShowETFPanel(!showETFPanel)}
+              className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+                showETFPanel
+                  ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400'
+                  : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+              }`}
+              title="ETF Holdings 수집 패널"
+            >
+              <Database className="h-4 w-4" />
+            </button>
+
+            {/* 새로고침 버튼 */}
+            <button
+              onClick={() => sync()}
+              disabled={isSyncing}
+              className="flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700"
+              title="관계 데이터 새로고침"
+            >
+              <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* ETF 수집 패널 (토글) */}
+      {showETFPanel && (
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <ETFCollectionPanel />
+        </div>
+      )}
 
       {/* 카테고리 선택 */}
       <CategorySelector

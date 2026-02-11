@@ -152,6 +152,30 @@ User
   {"source": "db", "synced_at": "...", "freshness": "fresh", "can_sync": true}
   ```
 
+### ETF Holdings (Chain Sight Phase 3)
+
+- `GET /api/v1/serverless/etf/status` - ETF 수집 상태 조회
+  - Query Params: `tier` (선택, 'sector' 또는 'theme')
+- `POST /api/v1/serverless/etf/sync` - ETF Holdings 동기화
+  - Body: `{"etf_symbol": "XLK"}` (선택, 없으면 전체)
+- `POST /api/v1/serverless/etf/resolve-url` - 실패한 ETF URL 자동 복구
+  - Body: `{"etf_symbol": "XLK"}` (선택, 없으면 전체 실패 ETF)
+- `GET /api/v1/serverless/etf/<symbol>/holdings` - 특정 ETF Holdings
+- `GET /api/v1/serverless/etf/stock/<symbol>/themes` - 종목의 테마 조회
+- `GET /api/v1/serverless/etf/stock/<symbol>/peers` - ETF 동반 종목 조회
+- `GET /api/v1/serverless/themes` - 전체 테마 목록
+- `GET /api/v1/serverless/themes/<theme_id>/stocks` - 테마별 종목 조회
+- `POST /api/v1/serverless/themes/refresh` - 테마 매치 갱신
+
+### Supply Chain (Chain Sight Phase 4)
+
+- `GET /api/v1/serverless/chain-sight/stock/<symbol>/supply-chain` - 공급망 조회
+  - Response: `{"suppliers": [...], "customers": [...], "cached": true}`
+- `POST /api/v1/serverless/chain-sight/stock/<symbol>/sync-supply-chain` - 공급망 동기화 트리거
+  - Response: `{"status": "success", "customer_count": 2, "supplier_count": 1}`
+- `GET /api/v1/serverless/chain-sight/stock/<symbol>/category/suppliers` - 공급사 카테고리
+- `GET /api/v1/serverless/chain-sight/stock/<symbol>/category/customers` - 고객사 카테고리
+
 ### Market Movers (서버리스)
 
 - `GET /api/v1/serverless/movers?type=gainers&date=2026-01-07` - Market Movers 조회 (키워드 포함)
@@ -388,6 +412,42 @@ ticker.fast_info.last_price  # 현재 가격
     cache.delete(f'movers:{today}:{mover_type}')  # 하위 호환
     ```
     - 참고: 캐시 키 패턴은 읽기/쓰기/삭제 모두 일치해야 함
+16. **ETF CSV 다운로드 실패 (SPDR XLSX)**
+    - 증상: SPDR ETF (XLK, XLV 등) CSV 파싱 실패, 0개 holdings
+    - 원인: SPDR은 CSV가 아닌 XLSX 형식 반환
+    - 해결: openpyxl로 XLSX 파싱, Content-Type 자동 감지
+    ```python
+    # XLSX 감지 및 파싱
+    if content[:4] == b'PK\x03\x04':  # ZIP 시그니처 = XLSX
+        return self._parse_xlsx(content, parser_type, etf_symbol)
+    ```
+17. **ETF XLSX iter_rows 소비 문제**
+    - 증상: XLSX 파싱 시 0개 holdings 반환
+    - 원인: `ws.iter_rows()`는 제너레이터, 헤더 검색 시 소비됨
+    - 해결: `list(ws.iter_rows(values_only=True))`로 미리 변환
+    ```python
+    # ❌ 잘못된 방법
+    for row in ws.iter_rows():  # 제너레이터 소비
+        if 'Ticker' in row: break
+    for row in ws.iter_rows():  # 이미 소비됨!
+
+    # ✅ 올바른 방법
+    all_rows = list(ws.iter_rows(values_only=True))
+    for row in all_rows:
+        # 안전하게 반복 가능
+    ```
+18. **ETF Holdings 중복 키 제약 위반**
+    - 증상: "duplicate key value violates unique constraint" (ICLN 등)
+    - 원인: 동일 종목이 CSV에 2회 등장 (다른 클래스)
+    - 해결: 중복 ticker 감지 후 weight 합산
+    ```python
+    seen = {}
+    for h in holdings:
+        if h['symbol'] in seen:
+            seen[h['symbol']]['weight'] += h['weight']
+        else:
+            seen[h['symbol']] = h
+    ```
 
 ---
 
@@ -450,6 +510,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'serverless.tasks.sync_daily_market_movers',
         'schedule': crontab(hour=7, minute=30),  # 매일 07:30 EST
         'options': {'expires': 3600}  # 1시간 후 만료
+    },
+    'sync-etf-holdings': {
+        'task': 'serverless.tasks.sync_etf_holdings',
+        'schedule': crontab(hour=6, minute=0, day_of_week=1),  # 매주 월요일 06:00 EST
+        'options': {'expires': 3600}  # 1시간 후 만료
+        # 실패 시 이메일 알림: goid545@naver.com, jinie545@gmail.com
     }
 }
 ```
@@ -837,6 +903,86 @@ POST /api/v1/serverless/screener/chain-sight
 - 평균 처리 시간: 150ms (캐시 미스 시)
 - 최대 연관 종목 수: 각 카테고리별 5개 (기본)
 - 최대 원본 종목 수: 50개
+
+---
+
+## Chain Sight Phase 3: ETF Holdings 자동화
+
+### 개요
+
+ETF Holdings 기반 테마 관계를 자동 수집하여 "숨겨진 보석" 중소형주 발견을 지원하는 시스템.
+운용사 공식 CSV/XLSX에서 직접 다운로드하여 비용 $0.
+
+### ETF 자동화 현황
+
+| Tier | 자동화 | 수동 필요 | 총 |
+|------|--------|----------|-----|
+| Tier 1 (섹터) | 11개 | 0개 | 11개 |
+| Tier 2 (테마) | 4개 | 6개 | 10개 |
+| **합계** | **15개** | **6개** | **21개** |
+
+### 운용사별 파서
+
+| 운용사 | 파서 | 형식 | ETF 예시 |
+|--------|------|------|---------|
+| State Street (SPDR) | `spdr` | XLSX | XLK, XLV, XLF 등 |
+| iShares | `ishares` | CSV | SOXX |
+| GlobalX | `globalx` | CSV | BOTZ, LIT |
+| ARK Invest | `ark` | CSV | ARKK, ARKG (수동) |
+| Invesco | `invesco` | CSV | TAN, KWEB (수동) |
+
+### 수동 수집이 필요한 ETF
+
+| ETF | 이유 | 운용사 링크 |
+|-----|------|------------|
+| ARKK, ARKG | Cloudflare 차단 | [ark-funds.com](https://ark-funds.com) |
+| TAN, KWEB | 403 Forbidden | [invesco.com](https://www.invesco.com/us/financial-products/etfs/) |
+| HACK | 서버 연결 실패 | - |
+| BETZ | PDF만 제공 | - |
+
+### 수동 수집 명령어
+
+```bash
+# ARK ETF 수동 임포트
+python manage.py import_etf_csv ARKK /path/to/ARKK_holdings.csv --parser ark
+
+# iShares ETF 수동 임포트
+python manage.py import_etf_csv TAN /path/to/TAN_holdings.csv --parser ishares
+
+# 파서 자동 감지
+python manage.py import_etf_csv KWEB /path/to/holdings.csv --parser auto
+```
+
+### Celery 자동화 스케줄
+
+| 태스크 | 스케줄 | 설명 |
+|--------|--------|------|
+| `sync_etf_holdings` | 매주 월요일 06:00 EST | 전체 ETF 자동 수집 |
+| `send_etf_sync_failure_email` | 수집 후 | 실패 목록 이메일 발송 |
+
+**이메일 수신자**: goid545@naver.com, jinie545@gmail.com
+
+### Chain Sight 전용 페이지
+
+**URL**: `/chain-sight`
+
+| 기능 | 설명 |
+|------|------|
+| 전체 수집 | 모든 ETF Holdings 한 번에 수집 |
+| URL 복구 | 실패한 ETF의 CSV URL 자동 복구 |
+| 개별 수집 | ETF별 개별 수집 버튼 |
+| 상태 대시보드 | 전체/완료/대기/실패 통계 |
+| 수동 수집 안내 | ARKK 등 수동 필요 ETF 가이드 |
+
+### 주요 파일
+
+| 파일 | 역할 |
+|------|------|
+| `serverless/services/etf_csv_downloader.py` | CSV/XLSX 다운로드 및 파싱 |
+| `serverless/tasks.py` | Celery 태스크 (sync_etf_holdings) |
+| `serverless/management/commands/import_etf_csv.py` | 수동 임포트 커맨드 |
+| `frontend/app/chain-sight/page.tsx` | Chain Sight 전용 페이지 |
+| `frontend/components/chain-sight/ETFCollectionPanel.tsx` | 수집 UI 컴포넌트 |
 
 ---
 
@@ -1373,13 +1519,43 @@ GET /api/v1/rag/monitoring/cache/            # 캐시 통계
   - ✅ **API 엔드포인트**: `/chain-sight/stock/{symbol}`, `/chain-sight/stock/{symbol}/category/{id}`
   - ✅ **Frontend**: ChainSightExplorer, CategorySelector, RelatedStockGrid, AIInsightPanel
   - ✅ **Celery 태스크**: 일일 관계 동기화 (05:00 EST), 캐시 정리 (06:00 EST)
-  - ✅ **유닛 테스트**: 24개 테스트 (100% 통과)
+- ✅ **Chain Sight Phase 3: ETF Holdings**
+  - ✅ **모델**: ETFProfile, ETFHolding, ThemeMatch
+  - ✅ **서비스**: ETFCSVDownloader, ThemeMatchingService
+  - ✅ **ETF Tier 시스템**: Tier 1 (섹터 ETF 11개), Tier 2 (테마 ETF 10개)
+  - ✅ **테마 매칭**: Tier A (high), Tier B (medium), Tier B+ 승격 로직
+  - ✅ **API 엔드포인트**: `/etf/status`, `/etf/sync`, `/etf/resolve-url`, `/themes`, `/themes/{id}/stocks`
+  - ✅ **Neo4j 확장**: ETF, Theme 노드, HELD_BY, HAS_THEME 관계
+  - ✅ **Frontend**: ETFCollectionPanel, Chain Sight 전용 페이지 (`/chain-sight`)
+  - ✅ **자동 수집**: 15/21 ETF (SPDR, iShares, GlobalX)
+  - ✅ **XLSX 파싱**: openpyxl로 SPDR XLSX 자동 변환
+  - ✅ **Celery Beat 스케줄**: 매주 월요일 06:00 EST 자동 수집
+  - ✅ **이메일 알림**: 실패 ETF 목록 자동 발송 (goid545@naver.com, jinie545@gmail.com)
+  - ✅ **수동 수집 커맨드**: `python manage.py import_etf_csv {SYMBOL} /path/to/holdings.csv`
+  - ✅ **수동 필요 ETF**: ARKK, ARKG (Cloudflare), TAN, KWEB (403), HACK, BETZ (PDF)
+  - ✅ **유닛 테스트**: 58개 테스트 (100% 통과)
 - ✅ **Chain Sight Neo4j 온톨로지**
   - ✅ **Neo4jChainSightService**: 노드/관계 CRUD, N-depth 그래프 탐색
   - ✅ **Neo4j 우선, PostgreSQL fallback**: ChainSightStockService에서 하이브리드 조회
   - ✅ **그래프 API**: `/chain-sight/graph/{symbol}`, `/chain-sight/graph/stats`
   - ✅ **마이그레이션 커맨드**: `python manage.py migrate_chain_sight_to_neo4j --all`
   - ✅ **유닛 테스트**: 19개 테스트 (18 passed, 1 skipped)
+- ✅ **Chain Sight Phase 4: Supply Chain (공급망)**
+  - ✅ **SEC EDGAR Client**: CIK 조회, 10-K 다운로드, Item 1A 추출 (`api_request/sec_edgar_client.py`)
+  - ✅ **Supply Chain Parser**: Regex 패턴 기반 고객/공급사 추출 (`serverless/services/supply_chain_parser.py`)
+  - ✅ **Supply Chain Service**: 동기화 파이프라인, PostgreSQL + Neo4j 저장 (`serverless/services/supply_chain_service.py`)
+  - ✅ **관계 타입**: SUPPLIED_BY, CUSTOMER_OF (StockRelationship 모델)
+  - ✅ **신뢰도 계산**: high (10%+ 매출), medium-high (qualifier), medium (단순 언급)
+  - ✅ **카테고리 확장**: suppliers, customers (CategoryGenerator)
+  - ✅ **Celery Beat 스케줄**: 매월 15일 03:00 EST 배치 동기화
+  - ✅ **유닛 테스트**: SEC EDGAR Client, Parser, Service 테스트
+- ⏳ **Chain Sight 로드맵** (상세: `docs/features/chain-sight/CHAIN_SIGHT_ROADMAP.md`)
+  - ⏳ **Phase 2**: 프론트엔드 그래프 시각화 (react-force-graph)
+  - ✅ **Phase 4**: Supply Chain (SUPPLIED_BY, CUSTOMER_OF) - SEC 10-K 파싱
+  - ⏳ **Phase 5**: Gemini LLM 관계 추출 (~$5/월)
+  - ⏳ **Phase 6**: 뉴스 자연 축적 + 사용자 행동 Edge Weight ($0)
+  - ⏳ **Phase 7**: Insider/Institution (HELD_BY_SAME_FUND) - SEC 13F
+  - ⏳ **Phase 8**: Regulatory + Patent Network - SEC 8-K, USPTO
 - ⏳ ML/DL 모델 통합
 
 ---

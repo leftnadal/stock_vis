@@ -261,7 +261,8 @@ class RelationshipService:
             {
                 'peer_count': 10,
                 'industry_count': 15,
-                'co_mentioned_count': 5
+                'co_mentioned_count': 5,
+                'supply_chain_count': 3
             }
         """
         symbol = symbol.upper()
@@ -271,6 +272,45 @@ class RelationshipService:
             'industry_count': self.sync_industry(symbol),
             'co_mentioned_count': self.sync_co_mentioned(symbol),
         }
+
+    def sync_supply_chain(self, symbol: str) -> Dict[str, int]:
+        """
+        Phase 4: 공급망 관계 동기화
+
+        SEC 10-K에서 공급사/고객사 관계를 추출하여 동기화합니다.
+
+        Args:
+            symbol: 종목 심볼
+
+        Returns:
+            {
+                'customer_count': 3,
+                'supplier_count': 2,
+                'status': 'success'
+            }
+        """
+        symbol = symbol.upper()
+        logger.info(f"공급망 동기화 시작: {symbol}")
+
+        try:
+            from serverless.services.supply_chain_service import SupplyChainService
+            service = SupplyChainService()
+            result = service.sync_supply_chain(symbol)
+
+            return {
+                'customer_count': result.get('customer_count', 0),
+                'supplier_count': result.get('supplier_count', 0),
+                'status': result.get('status', 'unknown')
+            }
+
+        except Exception as e:
+            logger.error(f"공급망 동기화 실패 {symbol}: {e}")
+            return {
+                'customer_count': 0,
+                'supplier_count': 0,
+                'status': 'error',
+                'error': str(e)
+            }
 
     def get_relationships(
         self,

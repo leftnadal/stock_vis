@@ -500,13 +500,18 @@ NEO4J_PASSWORD=your_password
 
 ---
 
-## Phase 2+ 로드맵
+## Phase 로드맵
 
-| Phase | 기능 | 상태 |
-|-------|------|------|
-| 1 (MVP) | PEER_OF, SAME_INDUSTRY, CO_MENTIONED | ✅ 완료 |
-| 1.5 | Neo4j 온톨로지 통합 | ✅ 완료 |
-| 2 | 프론트엔드 그래프 시각화 (react-force-graph) | 예정 |
-| 3 | ETF Holdings (HAS_THEME) | 예정 |
-| 4 | Supply Chain (SUPPLIED_BY, CUSTOMER_OF) | 예정 |
-| 5 | Gemini LLM 관계 추출 | 예정 |
+| Phase | 기능 | 상태 | 비용 |
+|-------|------|------|------|
+| 1 (MVP) | PEER_OF, SAME_INDUSTRY, CO_MENTIONED | ✅ 완료 | $0 |
+| 1.5 | Neo4j 온톨로지 통합 | ✅ 완료 | $0 |
+| 2 | 프론트엔드 그래프 시각화 (react-force-graph) | 예정 | $0 |
+| 3 | ETF Holdings (HAS_THEME) | ✅ 완료 | $0 |
+| 4 | Supply Chain (SUPPLIED_BY, CUSTOMER_OF) | 예정 | $0 |
+| 5 | Gemini LLM 관계 추출 | 예정 | ~$5/월 |
+| 6 | 뉴스 자연 축적 + 사용자 행동 Edge Weight | 예정 | $0 |
+| 7 | Insider/Institution (HELD_BY_SAME_FUND) | 예정 | $0~30/월 |
+| 8 | Regulatory + Patent Network | 예정 | $0 |
+
+> 상세 로드맵: [CHAIN_SIGHT_ROADMAP.md](./CHAIN_SIGHT_ROADMAP.md)
