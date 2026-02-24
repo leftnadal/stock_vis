@@ -7,7 +7,7 @@ FMP API를 사용하여 StockDataProvider 인터페이스를 구현합니다.
 주요 장점:
 - 재무제표 데이터 품질이 우수
 - 회사 프로필 상세 정보
-- 낮은 Rate Limit (250/day) 지만 배치 API 지원
+- Starter Plan (300/min, 10000/day)
 """
 
 import logging
@@ -42,9 +42,9 @@ class FMPProvider(StockDataProvider):
     """
 
     PROVIDER_NAME = "fmp"
-    RATE_LIMIT_CALLS = 10  # 분당 (무료 티어 기준)
-    RATE_LIMIT_DAILY = 250  # 일일 250회
-    REQUEST_DELAY = 0.5  # Alpha Vantage보다 관대
+    RATE_LIMIT_CALLS = 300  # 분당 (Starter Plan)
+    RATE_LIMIT_DAILY = 10000  # 일일 10,000회
+    REQUEST_DELAY = 0.2  # Starter Plan
 
     def __init__(self, api_key: str = None):
         """

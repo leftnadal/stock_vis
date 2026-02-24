@@ -35,34 +35,40 @@ from serverless.services.fmp_client import FMPClient, FMPAPIError
 logger = logging.getLogger(__name__)
 
 
-# 카테고리 아이콘 매핑
+# 카테고리 아이콘 매핑 (lucide-react 아이콘명 사용, 이모지 금지)
 CATEGORY_ICONS = {
-    'peer': '⚔️',
-    'same_industry': '🏭',
-    'co_mentioned': '📰',
-    'sector_leaders': '👑',
-    'supply_chain': '🔗',
-    'ai_ecosystem': '🧠',
-    'ev_ecosystem': '🔋',
-    'fintech_ecosystem': '💳',
-    'cloud_ecosystem': '☁️',
-    'biotech_ecosystem': '🧬',
-    'etf_peers': '📊',
+    'peer': 'swords',
+    'same_industry': 'factory',
+    'co_mentioned': 'newspaper',
+    'sector_leaders': 'crown',
+    'supply_chain': 'link',
+    'ai_ecosystem': 'brain',
+    'ev_ecosystem': 'battery-charging',
+    'fintech_ecosystem': 'credit-card',
+    'cloud_ecosystem': 'cloud',
+    'biotech_ecosystem': 'dna',
+    'etf_peers': 'bar-chart-3',
     # Phase 3: 테마별 아이콘
-    'theme_semiconductor': '🔌',
-    'theme_innovation': '🚀',
-    'theme_genomics': '🧬',
-    'theme_robotics_ai': '🤖',
-    'theme_solar': '☀️',
-    'theme_cybersecurity': '🔐',
-    'theme_lithium_battery': '🔋',
-    'theme_clean_energy': '🌱',
-    'theme_china_internet': '🇨🇳',
-    'theme_igaming': '🎰',
+    'theme_semiconductor': 'cpu',
+    'theme_innovation': 'rocket',
+    'theme_genomics': 'dna',
+    'theme_robotics_ai': 'bot',
+    'theme_solar': 'sun',
+    'theme_cybersecurity': 'shield-check',
+    'theme_lithium_battery': 'battery-charging',
+    'theme_clean_energy': 'leaf',
+    'theme_china_internet': 'globe',
+    'theme_igaming': 'gamepad-2',
     # Phase 4: 공급망 아이콘
-    'suppliers': '🔧',
-    'customers': '🛒',
-    'default': '📊',
+    'suppliers': 'wrench',
+    'customers': 'shopping-cart',
+    # Phase 7: 기관 보유
+    'held_by_same_fund': 'users',
+    # Phase 8: 규제 + 특허
+    'same_regulation': 'scale',
+    'patent_cited': 'link',
+    'patent_dispute': 'shield-alert',
+    'default': 'bar-chart-3',
 }
 
 
@@ -243,6 +249,10 @@ class CategoryGenerator:
         supply_chain_categories = self._build_supply_chain_categories(symbol)
         categories.extend(supply_chain_categories)
 
+        # Phase 7/8: 기관 보유, 규제, 특허 카테고리
+        phase7_8_categories = self._build_phase7_8_categories(symbol)
+        categories.extend(phase7_8_categories)
+
         return categories
 
     def _get_etf_peers_count(self, symbol: str) -> int:
@@ -369,6 +379,88 @@ class CategoryGenerator:
 
         except Exception as e:
             logger.warning(f"공급망 카테고리 생성 실패 {symbol}: {e}")
+
+        return categories
+
+    def _build_phase7_8_categories(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        Phase 7/8: 기관 보유, 규제, 특허 카테고리 생성
+        """
+        categories = []
+
+        try:
+            from serverless.models import StockRelationship
+
+            # Phase 7: 동일 펀드 보유 (HELD_BY_SAME_FUND)
+            fund_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='HELD_BY_SAME_FUND'
+            ).count()
+
+            if fund_count > 0:
+                categories.append({
+                    "id": "held_by_same_fund",
+                    "name": "동일 펀드 보유",
+                    "tier": 0,
+                    "count": fund_count,
+                    "icon": CATEGORY_ICONS['held_by_same_fund'],
+                    "description": f"{symbol}과 같은 기관이 보유한 종목 (SEC 13F)",
+                    "relationship_type": "HELD_BY_SAME_FUND"
+                })
+
+            # Phase 8: 규제 공유 (SAME_REGULATION)
+            regulation_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='SAME_REGULATION'
+            ).count()
+
+            if regulation_count > 0:
+                categories.append({
+                    "id": "same_regulation",
+                    "name": "규제 공유",
+                    "tier": 0,
+                    "count": regulation_count,
+                    "icon": CATEGORY_ICONS['same_regulation'],
+                    "description": f"{symbol}과 같은 규제 영향을 받는 종목",
+                    "relationship_type": "SAME_REGULATION"
+                })
+
+            # Phase 8: 특허 인용 (PATENT_CITED)
+            citation_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='PATENT_CITED'
+            ).count()
+
+            if citation_count > 0:
+                categories.append({
+                    "id": "patent_cited",
+                    "name": "특허 인용",
+                    "tier": 0,
+                    "count": citation_count,
+                    "icon": CATEGORY_ICONS['patent_cited'],
+                    "description": f"{symbol}의 특허를 인용하거나 인용된 기업 (USPTO)",
+                    "relationship_type": "PATENT_CITED"
+                })
+
+            # Phase 8: 특허 분쟁 (PATENT_DISPUTE)
+            dispute_count = StockRelationship.objects.filter(
+                source_symbol=symbol.upper(),
+                relationship_type='PATENT_DISPUTE'
+            ).count()
+
+            if dispute_count > 0:
+                categories.append({
+                    "id": "patent_dispute",
+                    "name": "특허 분쟁",
+                    "tier": 0,
+                    "count": dispute_count,
+                    "icon": CATEGORY_ICONS['patent_dispute'],
+                    "description": f"{symbol}과 특허 소송/분쟁 관계 기업",
+                    "relationship_type": "PATENT_DISPUTE"
+                })
+
+        except Exception as e:
+            logger.warning(f"Phase 7/8 카테고리 생성 실패 {symbol}: {e}")
 
         return categories
 

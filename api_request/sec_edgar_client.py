@@ -47,6 +47,29 @@ class Filing10K:
     form_type: str = "10-K"
 
 
+@dataclass
+class Filing13F:
+    """13-F Filing metadata"""
+    accession_number: str
+    filing_date: date
+    report_date: date
+    info_table_document: str
+    cik: str
+    institution_name: str
+    form_type: str = "13-F"
+
+
+@dataclass
+class Filing8K:
+    """8-K Filing metadata"""
+    accession_number: str
+    filing_date: date
+    items_reported: List[str]
+    cik: str
+    company_name: str
+    form_type: str = "8-K"
+
+
 class SECEdgarClient:
     """
     SEC EDGAR API Client
@@ -472,3 +495,207 @@ class SECEdgarClient:
                 sections.append(section)
 
         return '\n\n---\n\n'.join(sections) if sections else text[:50000]
+
+    def get_13f_filings(self, cik: str, limit: int = 4) -> List[Filing13F]:
+        """
+        Get list of 13-F filings for an institution
+
+        Similar to get_10k_filings but for 13-F form type.
+        """
+        cik = cik.zfill(10)
+        try:
+            company_data = self.get_company_info(cik)
+            institution_name = company_data.get('name', 'Unknown')
+            filings_data = company_data.get('filings', {}).get('recent', {})
+
+            forms = filings_data.get('form', [])
+            accession_numbers = filings_data.get('accessionNumber', [])
+            filing_dates_raw = filings_data.get('filingDate', [])
+            report_dates_raw = filings_data.get('reportDate', [])
+            primary_documents = filings_data.get('primaryDocument', [])
+
+            filings = []
+            for i, form in enumerate(forms):
+                if form in ('13-F', '13-F-HR', '13-F-HR/A'):
+                    try:
+                        # 13F info table is typically in a separate XML document
+                        # The primary document is the cover page, we need the info table
+                        filing = Filing13F(
+                            accession_number=accession_numbers[i].replace('-', ''),
+                            filing_date=datetime.strptime(filing_dates_raw[i], '%Y-%m-%d').date(),
+                            report_date=datetime.strptime(report_dates_raw[i], '%Y-%m-%d').date() if report_dates_raw[i] else None,
+                            info_table_document=primary_documents[i],
+                            cik=cik,
+                            institution_name=institution_name
+                        )
+                        filings.append(filing)
+                        if len(filings) >= limit:
+                            break
+                    except (IndexError, ValueError) as e:
+                        logger.warning(f"Error parsing 13F filing {i}: {e}")
+                        continue
+
+            logger.info(f"Found {len(filings)} 13-F filings for CIK {cik}")
+            return filings
+        except SECEdgarError:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting 13-F filings for CIK {cik}: {e}")
+            raise SECEdgarError(f"Failed to get 13-F filings: {e}")
+
+    def download_13f_holdings(self, filing: Filing13F) -> List[Dict]:
+        """
+        Download and parse 13-F holdings from info table
+
+        Returns list of holdings: [{'cusip': str, 'name': str, 'shares': int, 'value': int, ...}]
+        """
+        try:
+            # Get the filing index page to find the info table XML
+            acc_formatted = f"{filing.accession_number[:10]}-{filing.accession_number[10:12]}-{filing.accession_number[12:]}"
+            index_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/"
+
+            response = self._make_request(index_url)
+
+            # Find the info table document (usually ends with .xml and contains 'infotable' or 'information')
+            info_table_url = None
+
+            # Try to find XML info table from the index page
+            soup = BeautifulSoup(response.text, 'html.parser')
+            for link in soup.find_all('a'):
+                href = link.get('href', '').lower()
+                if ('infotable' in href or 'information' in href or 'holdings' in href) and href.endswith('.xml'):
+                    info_table_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/{link.get('href')}"
+                    break
+
+            if not info_table_url:
+                # Fallback: try the primary document
+                info_table_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/{filing.info_table_document}"
+
+            logger.info(f"Downloading 13F info table: {info_table_url}")
+            response = self._make_request(info_table_url, timeout=60)
+
+            return self._parse_13f_xml(response.text)
+
+        except SECEdgarError:
+            raise
+        except Exception as e:
+            logger.error(f"Error downloading 13F holdings: {e}")
+            raise SECEdgarError(f"Failed to download 13F holdings: {e}")
+
+    def _parse_13f_xml(self, xml_content: str) -> List[Dict]:
+        """Parse 13-F info table XML"""
+        try:
+            soup = BeautifulSoup(xml_content, 'html.parser')
+            holdings = []
+
+            # 13F XML uses <infoTable> elements
+            for entry in soup.find_all(['infotable', 'ns1:infotable', 'informationtable']):
+                try:
+                    # Extract fields - handle various XML formats
+                    cusip = self._get_xml_text(entry, ['cusip', 'ns1:cusip'])
+                    name = self._get_xml_text(entry, ['nameofissuer', 'ns1:nameofissuer', 'issuer'])
+                    value = self._get_xml_text(entry, ['value', 'ns1:value'])
+                    shares_tag = entry.find(['shrsorprnamt', 'ns1:shrsorprnamt', 'sharesOrPrincipalAmount'])
+                    shares = '0'
+                    if shares_tag:
+                        shares = self._get_xml_text(shares_tag, ['sshprnamt', 'ns1:sshprnamt']) or '0'
+
+                    if cusip:
+                        holdings.append({
+                            'cusip': cusip.strip(),
+                            'name': (name or '').strip(),
+                            'shares': int(re.sub(r'[^\d]', '', shares or '0') or '0'),
+                            'value': int(re.sub(r'[^\d]', '', value or '0') or '0'),
+                        })
+                except Exception as e:
+                    logger.debug(f"Error parsing 13F entry: {e}")
+                    continue
+
+            logger.info(f"Parsed {len(holdings)} holdings from 13F")
+            return holdings
+
+        except Exception as e:
+            logger.error(f"Error parsing 13F XML: {e}")
+            return []
+
+    def _get_xml_text(self, element, tag_names: List[str]) -> Optional[str]:
+        """Get text from XML element, trying multiple tag names"""
+        for tag in tag_names:
+            found = element.find(tag)
+            if found and found.string:
+                return found.string.strip()
+        return None
+
+    def get_8k_filings(self, cik: str, limit: int = 5) -> List[Filing8K]:
+        """
+        Get list of 8-K filings for a company
+        """
+        cik = cik.zfill(10)
+        try:
+            company_data = self.get_company_info(cik)
+            company_name = company_data.get('name', 'Unknown')
+            filings_data = company_data.get('filings', {}).get('recent', {})
+
+            forms = filings_data.get('form', [])
+            accession_numbers = filings_data.get('accessionNumber', [])
+            filing_dates_raw = filings_data.get('filingDate', [])
+            items_raw = filings_data.get('items', [])
+
+            filings = []
+            for i, form in enumerate(forms):
+                if form in ('8-K', '8-K/A'):
+                    try:
+                        items = []
+                        if i < len(items_raw) and items_raw[i]:
+                            items = [item.strip() for item in items_raw[i].split(',') if item.strip()]
+
+                        filing = Filing8K(
+                            accession_number=accession_numbers[i].replace('-', ''),
+                            filing_date=datetime.strptime(filing_dates_raw[i], '%Y-%m-%d').date(),
+                            items_reported=items,
+                            cik=cik,
+                            company_name=company_name
+                        )
+                        filings.append(filing)
+                        if len(filings) >= limit:
+                            break
+                    except (IndexError, ValueError) as e:
+                        logger.warning(f"Error parsing 8-K filing {i}: {e}")
+                        continue
+
+            logger.info(f"Found {len(filings)} 8-K filings for CIK {cik}")
+            return filings
+        except SECEdgarError:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting 8-K filings: {e}")
+            raise SECEdgarError(f"Failed to get 8-K filings: {e}")
+
+    def download_8k_text(self, filing: Filing8K) -> str:
+        """Download 8-K filing text content"""
+        try:
+            # Similar pattern to download_10k_text
+            url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/"
+
+            response = self._make_request(url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Find primary document (usually .htm)
+            doc_url = None
+            for link in soup.find_all('a'):
+                href = link.get('href', '')
+                if href.endswith(('.htm', '.html')) and 'R' not in href:
+                    doc_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/{href}"
+                    break
+
+            if not doc_url:
+                raise SECEdgarError(f"Could not find 8-K document for {filing.accession_number}")
+
+            response = self._make_request(doc_url, timeout=60)
+            return self._html_to_text(response.text)
+
+        except SECEdgarError:
+            raise
+        except Exception as e:
+            logger.error(f"Error downloading 8-K: {e}")
+            raise SECEdgarError(f"Failed to download 8-K: {e}")

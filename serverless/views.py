@@ -2508,6 +2508,57 @@ def chain_sight_sync_api(request, symbol):
 
 
 # ========================================
+# Chain Sight Phase 6: Edge Weight Tracking
+# ========================================
+
+@api_view(['POST'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def chain_sight_track_api(request, symbol):
+    """
+    사용자 행동 트래킹 -> edge weight 증가 (Phase 6)
+
+    POST /api/v1/serverless/chain-sight/stock/NVDA/track
+    Body: {"action": "card_click", "target_symbol": "AMD"}
+
+    action types:
+        - category_click: +0.05
+        - card_click: +0.10
+        - navigate: +0.20 (파도타기)
+    """
+    from decimal import Decimal
+    from django.db.models import F
+    from serverless.models import StockRelationship
+
+    symbol = symbol.upper()
+    action = request.data.get('action')
+    target_symbol = request.data.get('target_symbol', '').upper()
+
+    if not action or not target_symbol:
+        return Response({
+            'success': False,
+            'error': {'code': 'INVALID_REQUEST', 'message': 'action and target_symbol required'}
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    WEIGHT_INCREMENTS = {
+        'category_click': Decimal('0.05'),
+        'card_click': Decimal('0.10'),
+        'navigate': Decimal('0.20'),
+    }
+    increment = WEIGHT_INCREMENTS.get(action, Decimal('0'))
+
+    if increment > 0:
+        updated = StockRelationship.objects.filter(
+            source_symbol=symbol,
+            target_symbol=target_symbol
+        ).update(strength=F('strength') + increment)
+
+        logger.debug(f"Edge weight updated: {symbol}->{target_symbol} ({action}, +{increment}, rows={updated})")
+
+    return Response({'success': True})
+
+
+# ========================================
 # Chain Sight Neo4j Graph API (Phase 2 Ontology)
 # ========================================
 
@@ -3710,3 +3761,316 @@ def llm_relations_stats_api(request):
             'expired': expired
         }
     })
+
+
+# ========================================
+# Chain Sight Phase 7: Institutional Holdings (SEC 13F)
+# ========================================
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def institutional_holdings_api(request, symbol):
+    """
+    종목의 기관 보유 현황 조회
+
+    GET /api/v1/serverless/institutional/AAPL
+
+    Query Parameters:
+        - limit: 최대 기관 수 (기본값: 20, 최대: 50)
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "AAPL",
+                "holders": [
+                    {
+                        "institution_name": "Berkshire Hathaway",
+                        "institution_cik": "0001067983",
+                        "shares": 905560000,
+                        "value_thousands": 174300000,
+                        "filing_date": "2025-11-14",
+                        "position_change": "increased"
+                    }
+                ],
+                "total_institutions": 15
+            }
+        }
+    """
+    from serverless.services.institutional_holdings_service import InstitutionalHoldingsService
+
+    symbol = symbol.upper()
+    limit = min(int(request.GET.get('limit', 20)), 50)
+
+    cache_key = f'institutional_holdings:{symbol}:{limit}'
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
+    try:
+        service = InstitutionalHoldingsService()
+        holders = service.get_stock_institutional_holders(symbol)[:limit]
+
+        response_data = {
+            'success': True,
+            'data': {
+                'symbol': symbol,
+                'holders': holders,
+                'total_institutions': len(holders),
+            }
+        }
+
+        cache.set(cache_key, response_data, 3600)  # 1시간 캐시
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Institutional holdings 조회 실패: {symbol} - {e}")
+        return Response({
+            'success': False,
+            'error': {'code': 'INSTITUTIONAL_ERROR', 'message': str(e)}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def institutional_peers_api(request, symbol):
+    """
+    같은 펀드가 보유한 종목 조회
+
+    GET /api/v1/serverless/institutional/AAPL/peers?limit=20
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "AAPL",
+                "peers": [
+                    {
+                        "symbol": "MSFT",
+                        "shared_institutions": 12,
+                        "total_shared_value_thousands": 50000000
+                    }
+                ],
+                "total_peers": 10
+            }
+        }
+    """
+    from serverless.services.institutional_holdings_service import InstitutionalHoldingsService
+
+    symbol = symbol.upper()
+    limit = min(int(request.GET.get('limit', 20)), 50)
+
+    cache_key = f'institutional_peers:{symbol}:{limit}'
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
+    try:
+        service = InstitutionalHoldingsService()
+        peers = service.get_same_fund_peers(symbol, limit=limit)
+
+        response_data = {
+            'success': True,
+            'data': {
+                'symbol': symbol,
+                'peers': peers,
+                'total_peers': len(peers),
+            }
+        }
+
+        cache.set(cache_key, response_data, 3600)  # 1시간 캐시
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Institutional peers 조회 실패: {symbol} - {e}")
+        return Response({
+            'success': False,
+            'error': {'code': 'INSTITUTIONAL_PEERS_ERROR', 'message': str(e)}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+def institutional_sync_api(request):
+    """
+    기관 보유 현황 수동 동기화 트리거
+
+    POST /api/v1/serverless/institutional/sync
+
+    Body:
+        {
+            "cik": "0001067983"  // 선택. 없으면 전체 동기화
+        }
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "message": "Sync started",
+                "task_id": "abc-123"
+            }
+        }
+    """
+    from serverless.tasks import sync_institutional_holdings
+
+    try:
+        task = sync_institutional_holdings.delay()
+
+        return Response({
+            'success': True,
+            'data': {
+                'message': 'Institutional holdings sync started',
+                'task_id': task.id,
+            }
+        })
+
+    except Exception as e:
+        logger.exception(f"Institutional sync 트리거 실패: {e}")
+        return Response({
+            'success': False,
+            'error': {'code': 'SYNC_FAILED', 'message': str(e)}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ========================================
+# Chain Sight Phase 8: Regulatory + Patent Network
+# ========================================
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def get_regulatory_relations_api(request, symbol):
+    """
+    규제 공유 관계 조회
+
+    GET /api/v1/serverless/regulatory/AAPL
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "AAPL",
+                "relations": [...],
+                "count": 5
+            }
+        }
+    """
+    from serverless.models import StockRelationship
+
+    symbol = symbol.upper()
+
+    cache_key = f'regulatory_relations:{symbol}'
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
+    try:
+        relations = StockRelationship.objects.filter(
+            source_symbol=symbol,
+            relationship_type='SAME_REGULATION'
+        ).order_by('-strength')
+
+        relations_data = [
+            {
+                'target_symbol': rel.target_symbol,
+                'strength': float(rel.strength),
+                'context': rel.context,
+                'source_provider': rel.source_provider,
+                'discovered_at': rel.discovered_at.isoformat(),
+            }
+            for rel in relations
+        ]
+
+        response_data = {
+            'success': True,
+            'data': {
+                'symbol': symbol,
+                'relations': relations_data,
+                'count': len(relations_data),
+            }
+        }
+
+        cache.set(cache_key, response_data, 3600)
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Regulatory relations 조회 실패: {symbol} - {e}")
+        return Response({
+            'success': False,
+            'error': {'code': 'REGULATORY_ERROR', 'message': str(e)}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def get_patent_relations_api(request, symbol):
+    """
+    특허 인용/분쟁 관계 조회
+
+    GET /api/v1/serverless/patent-network/AAPL
+
+    Response:
+        {
+            "success": true,
+            "data": {
+                "symbol": "AAPL",
+                "citations": [...],
+                "disputes": [...],
+                "total": 10
+            }
+        }
+    """
+    from serverless.models import StockRelationship
+
+    symbol = symbol.upper()
+
+    cache_key = f'patent_relations:{symbol}'
+    cached = cache.get(cache_key)
+    if cached:
+        return Response(cached)
+
+    try:
+        citations = StockRelationship.objects.filter(
+            source_symbol=symbol,
+            relationship_type='PATENT_CITED'
+        ).order_by('-strength')
+
+        disputes = StockRelationship.objects.filter(
+            source_symbol=symbol,
+            relationship_type='PATENT_DISPUTE'
+        ).order_by('-strength')
+
+        def serialize_rel(rel):
+            return {
+                'target_symbol': rel.target_symbol,
+                'strength': float(rel.strength),
+                'context': rel.context,
+                'source_provider': rel.source_provider,
+                'discovered_at': rel.discovered_at.isoformat(),
+            }
+
+        citations_data = [serialize_rel(r) for r in citations]
+        disputes_data = [serialize_rel(r) for r in disputes]
+
+        response_data = {
+            'success': True,
+            'data': {
+                'symbol': symbol,
+                'citations': citations_data,
+                'disputes': disputes_data,
+                'total': len(citations_data) + len(disputes_data),
+            }
+        }
+
+        cache.set(cache_key, response_data, 3600)
+        return Response(response_data)
+
+    except Exception as e:
+        logger.exception(f"Patent relations 조회 실패: {symbol} - {e}")
+        return Response({
+            'success': False,
+            'error': {'code': 'PATENT_ERROR', 'message': str(e)}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -8,7 +8,9 @@ Node Types:
 - Stock: symbol, name, sector, industry, market_cap
 - Sector: name, display_name
 - Industry: name, sector
-- Theme: id, name, description (Phase 2)
+- Theme: id, name, description (Phase 3)
+- Institution: cik, name, aum (Phase 7)
+- Regulation: category, name, description (Phase 8)
 
 Relationship Types:
 - PEER_OF: Stock -> Stock (경쟁사)
@@ -24,6 +26,12 @@ Relationship Types:
 - PARTNER_OF: Stock -> Stock (파트너, Phase 5)
 - SPIN_OFF: Stock -> Stock (분사, Phase 5)
 - SUED_BY: Stock -> Stock (소송, Phase 5)
+- HELD_BY_SAME_FUND: Stock -> Stock (동일 펀드 보유, Phase 7)
+- HOLDS: Institution -> Stock (기관 보유, Phase 7)
+- SAME_REGULATION: Stock -> Stock (규제 공유, Phase 8)
+- PATENT_CITED: Stock -> Stock (특허 인용, Phase 8)
+- PATENT_DISPUTE: Stock -> Stock (특허 분쟁, Phase 8)
+- AFFECTED_BY: Stock -> Regulation (규제 영향, Phase 8)
 
 Usage:
     service = Neo4jChainSightService()
@@ -79,6 +87,12 @@ class Neo4jChainSightService:
         'PARTNER_OF': 'PARTNER_OF',
         'SPIN_OFF': 'SPIN_OFF',
         'SUED_BY': 'SUED_BY',
+        # Phase 7: Institutional Holdings
+        'HELD_BY_SAME_FUND': 'HELD_BY_SAME_FUND',
+        # Phase 8: Regulatory + Patent
+        'SAME_REGULATION': 'SAME_REGULATION',
+        'PATENT_CITED': 'PATENT_CITED',
+        'PATENT_DISPUTE': 'PATENT_DISPUTE',
     }
 
     def __init__(self):
@@ -1133,6 +1147,174 @@ class Neo4jChainSightService:
                 'holdings': holding_count,
                 'themes': theme_count
             }
+
+    # ========================================
+    # Phase 7: Institutional Holdings Operations
+    # ========================================
+
+    def create_institution_node(
+        self,
+        cik: str,
+        name: str,
+        aum: Optional[float] = None
+    ) -> bool:
+        """
+        Institution 노드 생성/업데이트
+
+        Args:
+            cik: SEC CIK 번호
+            name: 기관명
+            aum: 운용 자산 규모
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MERGE (i:Institution {cik: $cik})
+                SET i.name = $name,
+                    i.aum = $aum,
+                    i.updated_at = datetime()
+                RETURN i.cik AS cik
+                """
+                result = session.run(query, cik=cik, name=name, aum=aum)
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"Institution 노드 생성 실패 {cik}: {e}")
+            return False
+
+    def create_holds_relationship(
+        self,
+        institution_cik: str,
+        stock_symbol: str,
+        shares: int,
+        value_thousands: int
+    ) -> bool:
+        """Institution -> Stock HOLDS 관계 생성"""
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (i:Institution {cik: $cik})
+                MATCH (s:Stock {symbol: $symbol})
+                MERGE (i)-[r:HOLDS]->(s)
+                SET r.shares = $shares,
+                    r.value_thousands = $value_thousands,
+                    r.updated_at = datetime()
+                RETURN r
+                """
+                result = session.run(
+                    query,
+                    cik=institution_cik,
+                    symbol=stock_symbol.upper(),
+                    shares=shares,
+                    value_thousands=value_thousands
+                )
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"HOLDS 관계 생성 실패 {institution_cik}->{stock_symbol}: {e}")
+            return False
+
+    # ========================================
+    # Phase 8: Regulatory + Patent Operations
+    # ========================================
+
+    def create_regulation_node(
+        self,
+        category: str,
+        name: str,
+        description: Optional[str] = None
+    ) -> bool:
+        """
+        Regulation 노드 생성/업데이트
+
+        Args:
+            category: 규제 카테고리 ID (예: antitrust, fda)
+            name: 규제 표시명 (예: 반독점)
+            description: 설명
+        """
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MERGE (r:Regulation {category: $category})
+                SET r.name = $name,
+                    r.description = $description,
+                    r.updated_at = datetime()
+                RETURN r.category AS category
+                """
+                result = session.run(
+                    query,
+                    category=category,
+                    name=name,
+                    description=description
+                )
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"Regulation 노드 생성 실패 {category}: {e}")
+            return False
+
+    def create_affected_by_relationship(
+        self,
+        stock_symbol: str,
+        regulation_category: str,
+        evidence: Optional[str] = None
+    ) -> bool:
+        """Stock -> Regulation AFFECTED_BY 관계 생성"""
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                query = """
+                MATCH (s:Stock {symbol: $symbol})
+                MATCH (r:Regulation {category: $category})
+                MERGE (s)-[rel:AFFECTED_BY]->(r)
+                SET rel.evidence = $evidence,
+                    rel.updated_at = datetime()
+                RETURN rel
+                """
+                result = session.run(
+                    query,
+                    symbol=stock_symbol.upper(),
+                    category=regulation_category,
+                    evidence=evidence
+                )
+                return result.single() is not None
+
+        except Exception as e:
+            logger.error(f"AFFECTED_BY 관계 생성 실패 {stock_symbol}->{regulation_category}: {e}")
+            return False
+
+    def create_phase7_8_indexes(self) -> bool:
+        """Phase 7/8 인덱스 생성"""
+        if not self.is_available():
+            return False
+
+        try:
+            with self.driver.session() as session:
+                session.run(
+                    "CREATE INDEX chain_sight_institution_cik IF NOT EXISTS "
+                    "FOR (i:Institution) ON (i.cik)"
+                )
+                session.run(
+                    "CREATE INDEX chain_sight_regulation_category IF NOT EXISTS "
+                    "FOR (r:Regulation) ON (r.category)"
+                )
+                logger.info("Neo4j Phase 7/8 인덱스 생성 완료")
+                return True
+
+        except Exception as e:
+            logger.error(f"Phase 7/8 인덱스 생성 실패: {e}")
+            return False
 
     def create_etf_indexes(self) -> bool:
         """ETF 관련 인덱스 생성"""

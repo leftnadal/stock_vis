@@ -420,3 +420,67 @@ class DailyNewsKeyword(models.Model):
             reverse=True
         )
         return sorted_keywords[:limit]
+
+
+class NewsCollectionCategory(models.Model):
+    """뉴스 수집 카테고리 (Admin 정의)"""
+
+    CATEGORY_TYPE_CHOICES = [
+        ('sector', 'Sector'),
+        ('sub_sector', 'Sub-Sector'),
+        ('custom', 'Custom'),
+    ]
+    PRIORITY_CHOICES = [
+        ('high', 'High'),
+        ('medium', 'Medium'),
+        ('low', 'Low'),
+    ]
+
+    name = models.CharField(max_length=100)
+    category_type = models.CharField(max_length=20, choices=CATEGORY_TYPE_CHOICES)
+    value = models.CharField(max_length=500)
+    is_active = models.BooleanField(default=True, db_index=True)
+    priority = models.CharField(max_length=10, choices=PRIORITY_CHOICES, default='medium')
+    max_symbols = models.PositiveIntegerField(default=20)
+
+    # 수집 통계
+    last_collected_at = models.DateTimeField(null=True, blank=True)
+    last_article_count = models.PositiveIntegerField(default=0)
+    last_symbol_count = models.PositiveIntegerField(default=0)
+    total_collections = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'news_collection_categories'
+        ordering = ['priority', 'name']
+        indexes = [models.Index(fields=['is_active', 'priority'])]
+
+    def __str__(self):
+        return f"{self.name} ({self.category_type}: {self.value[:30]})"
+
+    def resolve_symbols(self) -> list[str]:
+        """카테고리 타입에 따라 심볼 리스트 해석"""
+        from stocks.models import SP500Constituent
+
+        if self.category_type == 'sector':
+            return list(
+                SP500Constituent.objects.filter(
+                    sector=self.value, is_active=True
+                ).values_list('symbol', flat=True)[:self.max_symbols]
+            )
+        elif self.category_type == 'sub_sector':
+            return list(
+                SP500Constituent.objects.filter(
+                    sub_sector=self.value, is_active=True
+                ).values_list('symbol', flat=True)[:self.max_symbols]
+            )
+        elif self.category_type == 'custom':
+            return [
+                s.strip().upper()
+                for s in self.value.split(',')
+                if s.strip()
+            ][:self.max_symbols]
+        return []

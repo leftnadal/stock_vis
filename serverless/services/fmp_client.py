@@ -32,7 +32,7 @@ class FMPClient:
     Note:
         - FMP Starter Plan 사용 (유료)
         - 모든 엔드포인트는 /stable/* 사용
-        - Rate Limit: 10 calls/분, 250 calls/일
+        - Rate Limit: 300 calls/분, 10,000 calls/일
     """
     BASE_URL = "https://financialmodelingprep.com"  # /stable/* 엔드포인트 전용
 
@@ -325,6 +325,66 @@ class FMPClient:
             return []
 
         cache.set(cache_key, data, 300)  # 5분 캐시
+        return data
+
+    def get_sp500_constituents(self) -> List[Dict]:
+        """
+        S&P 500 구성 종목 조회
+
+        datahub.io의 S&P 500 CSV를 사용합니다.
+        (FMP /stable/sp500-constituent는 Professional Plan 이상 필요)
+
+        Returns:
+            [
+                {
+                    "symbol": "AAPL",
+                    "name": "Apple Inc.",
+                    "sector": "Technology",
+                    "subSector": "Consumer Electronics",
+                    "headQuarter": "Cupertino, California",
+                    "dateFirstAdded": "1982-11-30",
+                    "cik": "0000320193",
+                    "founded": "1976",
+                },
+                ...
+            ]
+        """
+        import csv
+        from io import StringIO
+
+        cache_key = 'fmp:sp500_constituents'
+        cached = cache.get(cache_key)
+        if cached:
+            logger.debug("SP500 cache HIT: sp500_constituents")
+            return cached
+
+        url = 'https://datahub.io/core/s-and-p-500-companies/r/constituents.csv'
+        try:
+            response = self.client.get(url, timeout=30.0, follow_redirects=True)
+            response.raise_for_status()
+        except Exception as e:
+            logger.error(f"SP500 CSV 다운로드 실패: {e}")
+            raise FMPAPIError(f"Failed to fetch SP500 constituents: {e}")
+
+        reader = csv.DictReader(StringIO(response.text))
+        data = []
+        for row in reader:
+            data.append({
+                'symbol': row.get('Symbol', '').strip(),
+                'name': row.get('Security', ''),
+                'sector': row.get('GICS Sector', ''),
+                'subSector': row.get('GICS Sub-Industry', ''),
+                'headQuarter': row.get('Headquarters Location', ''),
+                'dateFirstAdded': row.get('Date added', ''),
+                'cik': row.get('CIK', ''),
+                'founded': row.get('Founded', ''),
+            })
+
+        if not data:
+            raise FMPAPIError("SP500 CSV is empty")
+
+        logger.info(f"SP500 구성 종목 {len(data)}개 로드 완료 (datahub.io)")
+        cache.set(cache_key, data, 86400)  # 24시간 캐시
         return data
 
     def get_industry_stocks(self, industry: str, limit: int = 30) -> List[Dict]:

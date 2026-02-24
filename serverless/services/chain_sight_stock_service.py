@@ -24,6 +24,7 @@ from django.core.cache import cache
 from serverless.services.category_generator import CategoryGenerator
 from serverless.services.relationship_service import RelationshipService
 from serverless.services.fmp_client import FMPClient, FMPAPIError
+from serverless.models import StockRelationship, ThemeMatch, ETFHolding
 
 if TYPE_CHECKING:
     from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
@@ -164,11 +165,20 @@ class ChainSightStockService:
             }
 
         # 카테고리 타입에 따른 종목 조회
-        if category.get('relationship_type'):
+        rel_type = category.get('relationship_type')
+        if rel_type == 'ETF_PEER':
+            # ETF 동반 종목: ETFHolding 모델에서 조회
+            stocks = self._get_etf_peer_stocks(symbol, limit)
+        elif rel_type == 'HAS_THEME':
+            # 테마 종목: ThemeMatch 모델에서 조회
+            stocks = self._get_theme_stocks(
+                symbol, category.get('theme_id', ''), limit
+            )
+        elif rel_type:
             # Tier 0: DB 기반 (PEER_OF, SAME_INDUSTRY, CO_MENTIONED)
             stocks = self._get_relationship_stocks(
                 symbol,
-                category['relationship_type'],
+                rel_type,
                 limit
             )
         elif category.get('is_dynamic'):
@@ -276,7 +286,8 @@ class ChainSightStockService:
                     "sector": rel.get('sector'),
                     "industry": rel.get('industry'),
                     "relationship_context": rel.get('context', {}),
-                    "data_source": "neo4j"
+                    "data_source": "neo4j",
+                    "tags": self._get_stock_tags(symbol, target_symbol),
                 })
 
             return stocks
@@ -317,7 +328,108 @@ class ChainSightStockService:
                 "sector": profile.get('sector'),
                 "industry": profile.get('industry'),
                 "relationship_context": rel.get('context', {}),
-                "data_source": "postgres"
+                "data_source": "postgres",
+                "tags": self._get_stock_tags(symbol, target_symbol),
+            })
+
+        return stocks
+
+    def _get_etf_peer_stocks(
+        self,
+        symbol: str,
+        limit: int
+    ) -> List[Dict[str, Any]]:
+        """ETF 동반 종목 조회 (ETFHolding 모델 기반)"""
+        from serverless.services.theme_matching_service import get_theme_matching_service
+
+        try:
+            theme_service = get_theme_matching_service()
+            peers = theme_service.get_etf_peers(symbol, limit=limit)
+        except Exception as e:
+            logger.warning(f"ETF peers 조회 실패: {e}")
+            return []
+
+        stocks = []
+        for peer in peers:
+            target_symbol = peer['symbol']
+            profile = self.relationship_service.get_target_profile(target_symbol)
+            if not profile:
+                continue
+
+            stocks.append({
+                "symbol": target_symbol,
+                "company_name": profile.get('company_name', target_symbol),
+                "strength": min(1.0, peer.get('total_weight', 0) / 20.0),
+                "current_price": profile.get('price'),
+                "change_percent": profile.get('changes_percentage'),
+                "market_cap": profile.get('market_cap'),
+                "sector": profile.get('sector'),
+                "industry": profile.get('industry'),
+                "relationship_context": {
+                    "etfs_in_common": peer.get('etfs_in_common', []),
+                    "reason": peer.get('reason', ''),
+                },
+                "data_source": "postgres",
+                "tags": [
+                    {
+                        "type": "ETF_PEER",
+                        "label": "ETF 동반",
+                        "detail": peer.get('reason', ''),
+                    }
+                ] + self._get_stock_tags(symbol, target_symbol),
+            })
+
+        return stocks
+
+    def _get_theme_stocks(
+        self,
+        symbol: str,
+        theme_id: str,
+        limit: int
+    ) -> List[Dict[str, Any]]:
+        """테마 종목 조회 (ThemeMatch 모델 기반)"""
+        # 같은 테마의 종목들을 조회 (자기 자신 제외)
+        theme_matches = ThemeMatch.objects.filter(
+            theme_id=theme_id,
+            confidence__in=['high', 'medium-high']
+        ).exclude(
+            stock_symbol=symbol
+        ).order_by('-confidence', 'stock_symbol')[:limit]
+
+        stocks = []
+        for match in theme_matches:
+            target_symbol = match.stock_symbol
+            profile = self.relationship_service.get_target_profile(target_symbol)
+            if not profile:
+                continue
+
+            detail = ''
+            if match.etf_symbol and match.weight_in_etf:
+                detail = f"{match.etf_symbol} {match.weight_in_etf}%"
+
+            stocks.append({
+                "symbol": target_symbol,
+                "company_name": profile.get('company_name', target_symbol),
+                "strength": 0.8 if match.confidence == 'high' else 0.6,
+                "current_price": profile.get('price'),
+                "change_percent": profile.get('changes_percentage'),
+                "market_cap": profile.get('market_cap'),
+                "sector": profile.get('sector'),
+                "industry": profile.get('industry'),
+                "relationship_context": {
+                    "theme_id": theme_id,
+                    "confidence": match.confidence,
+                    "source": match.source,
+                },
+                "data_source": "postgres",
+                "tags": [
+                    {
+                        "type": "THEME",
+                        "label": theme_id,
+                        "confidence": match.confidence,
+                        "detail": detail,
+                    }
+                ] + self._get_stock_tags(symbol, target_symbol),
             })
 
         return stocks
@@ -365,6 +477,59 @@ class ChainSightStockService:
 
         return stocks
 
+    def _get_stock_tags(self, source_symbol: str, target_symbol: str) -> List[Dict]:
+        """source와 target 간 모든 관계 + 테마를 태그로 수집"""
+        tags = []
+
+        # 1. StockRelationship에서 모든 관계 타입
+        rels = StockRelationship.objects.filter(
+            source_symbol=source_symbol, target_symbol=target_symbol
+        )
+        for rel in rels:
+            tag: Dict[str, Any] = {
+                "type": rel.relationship_type,
+                "label": rel.get_relationship_type_display(),
+            }
+            ctx = rel.context or {}
+            if rel.relationship_type == 'CO_MENTIONED' and ctx.get('mention_count'):
+                tag["detail"] = f"뉴스 {ctx['mention_count']}건"
+            elif rel.relationship_type in ('SUPPLIED_BY', 'CUSTOMER_OF') and ctx.get('revenue_percent'):
+                tag["detail"] = f"매출 {ctx['revenue_percent']}%"
+            elif rel.relationship_type == 'ACQUIRED' and ctx.get('deal_value'):
+                tag["detail"] = ctx['deal_value']
+            elif rel.relationship_type == 'HELD_BY_SAME_FUND' and ctx.get('shared_count'):
+                tag["detail"] = f"공유 펀드 {ctx['shared_count']}개"
+            elif rel.relationship_type == 'SAME_REGULATION' and ctx.get('category_name'):
+                tag["detail"] = ctx['category_name']
+            elif rel.relationship_type == 'PATENT_CITED' and ctx.get('citation_count'):
+                tag["detail"] = f"인용 {ctx['citation_count']}건"
+            tags.append(tag)
+
+            # Phase 6: 관계 키워드 태그 추가
+            if ctx.get('keywords'):
+                for keyword in ctx['keywords'][:3]:
+                    tags.append({
+                        "type": "KEYWORD",
+                        "label": keyword,
+                    })
+
+        # 2. ThemeMatch에서 테마 태그 (high/medium-high만)
+        themes = ThemeMatch.objects.filter(
+            stock_symbol=target_symbol,
+            confidence__in=['high', 'medium-high']
+        ).order_by('-confidence')[:5]
+        for theme in themes:
+            tag = {
+                "type": "THEME",
+                "label": theme.theme_id,
+                "confidence": theme.confidence,
+            }
+            if theme.etf_symbol and theme.weight_in_etf:
+                tag["detail"] = f"{theme.etf_symbol} {theme.weight_in_etf}%"
+            tags.append(tag)
+
+        return tags
+
     def _format_fmp_stock(self, stock: Dict) -> Dict[str, Any]:
         """FMP 종목 데이터 포맷팅"""
         return {
@@ -376,6 +541,7 @@ class ChainSightStockService:
             "market_cap": stock.get('marketCap'),
             "sector": stock.get('sector'),
             "industry": stock.get('industry'),
+            "tags": [],
         }
 
     def _generate_insights(

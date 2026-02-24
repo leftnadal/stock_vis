@@ -39,7 +39,7 @@ class FMPClient:
     주요 특징:
     - Starter Plan 사용 (유료)
     - 모든 엔드포인트는 /stable/* 사용
-    - Rate Limit: 10 calls/분, 250 calls/일
+    - Rate Limit: 300 calls/분, 10,000 calls/일
     - Rate limiting 자동 처리
     - 재시도 로직 포함
     """
@@ -49,7 +49,7 @@ class FMPClient:
     def __init__(
         self,
         api_key: str,
-        request_delay: float = 0.5,  # FMP는 Alpha Vantage보다 관대
+        request_delay: float = 0.2,  # FMP Starter Plan
         max_retries: int = 3
     ):
         """
@@ -63,7 +63,7 @@ class FMPClient:
         self.max_retries = max_retries
         self.last_request_time = 0
         self.daily_calls = 0
-        self.daily_limit = 250
+        self.daily_limit = 10000
 
         if not self.api_key:
             raise ValueError("FMP API Key is required")

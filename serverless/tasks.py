@@ -1503,6 +1503,233 @@ def cleanup_expired_llm_relations():
 
 
 # ============================================================
+# Chain Sight Phase 6: News Relation Matcher
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,  # 5분 후 재시도
+    soft_time_limit=120,  # 2분 소프트 타임아웃
+    time_limit=150,  # 2.5분 하드 타임아웃
+)
+def extract_news_relations(self, hours=24):
+    """
+    뉴스에서 관계 키워드 자동 추출 (매일 실행)
+
+    Args:
+        hours: 최근 N시간 내 뉴스 처리
+
+    Returns:
+        {"processed": 50, "relations_created": 12, "co_mentions_updated": 8}
+
+    Usage:
+        from serverless.tasks import extract_news_relations
+        result = extract_news_relations.delay()
+        result = extract_news_relations.delay(hours=168)  # 최근 7일
+    """
+    from serverless.services.news_relation_matcher import NewsRelationMatcher
+
+    try:
+        logger.info(f"Phase 6 뉴스 관계 추출 시작: hours={hours}")
+
+        matcher = NewsRelationMatcher()
+        result = matcher.process_recent_news(hours=hours)
+
+        logger.info(f"Phase 6 뉴스 관계 추출 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"Phase 6 뉴스 관계 추출 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# Chain Sight Phase 6D: Relationship Keyword Enrichment
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=1800,  # 30분 소프트 타임아웃
+    time_limit=1860,  # 31분 하드 타임아웃
+)
+def enrich_relationship_keywords(self, limit=100):
+    """
+    관계 키워드 Enrichment (Gemini)
+
+    키워드가 없는 StockRelationship에 대해 Gemini로 키워드 3개를 생성합니다.
+    매일 05:30 EST에 실행됩니다.
+
+    Args:
+        limit: 배치 처리할 최대 관계 수
+
+    Returns:
+        {'enriched': int, 'skipped': int, 'failed': int, 'duration_ms': int}
+
+    Usage:
+        from serverless.tasks import enrich_relationship_keywords
+        result = enrich_relationship_keywords.delay(limit=50)
+    """
+    from serverless.services.relationship_keyword_enricher import RelationshipKeywordEnricher
+
+    try:
+        logger.info(f"Phase 6D 관계 키워드 Enrichment 시작: limit={limit}")
+
+        enricher = RelationshipKeywordEnricher()
+        result = enricher.enrich_batch(limit=limit)
+
+        logger.info(f"Phase 6D 관계 키워드 Enrichment 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"Phase 6D 관계 키워드 Enrichment 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# Chain Sight Phase 7: Institutional Holdings (SEC 13F)
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=3600,  # 60분 소프트 타임아웃
+    time_limit=3660,  # 61분 하드 타임아웃
+)
+def sync_institutional_holdings(self):
+    """
+    SEC 13F 기관 보유 현황 동기화
+
+    주요 기관투자자의 13F 공시를 수집하고 HELD_BY_SAME_FUND 관계를 생성합니다.
+    분기별 실행 (2/5/8/11월 16일 04:00 EST).
+    태스크 내에서 현재 월이 2/5/8/11월인지 체크하고, 아니면 skip합니다.
+
+    Returns:
+        {'total_institutions': int, 'success': int, 'failed': int,
+         'total_holdings': int, 'relationships_created': int}
+
+    Usage:
+        from serverless.tasks import sync_institutional_holdings
+        result = sync_institutional_holdings.delay()
+    """
+    from serverless.services.institutional_holdings_service import InstitutionalHoldingsService
+    from datetime import datetime
+
+    try:
+        # 분기별 실행 체크 (2/5/8/11월만)
+        current_month = datetime.now().month
+        if current_month not in (2, 5, 8, 11):
+            logger.info(f"Phase 7 기관 보유 동기화 스킵: 현재 {current_month}월 (2/5/8/11월만 실행)")
+            return {'skipped': True, 'reason': f'Not a quarter month ({current_month})'}
+
+        logger.info("Phase 7 기관 보유 현황 동기화 시작")
+
+        service = InstitutionalHoldingsService()
+
+        # 1. 모든 주요 기관 13F 동기화
+        sync_result = service.sync_all_institutions()
+        logger.info(f"  13F 동기화: {sync_result}")
+
+        # 2. HELD_BY_SAME_FUND 관계 생성
+        relationships_created = service.generate_held_by_same_fund()
+        logger.info(f"  관계 생성: {relationships_created}개")
+
+        result = {
+            **sync_result,
+            'relationships_created': relationships_created
+        }
+
+        logger.info(f"Phase 7 기관 보유 동기화 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"Phase 7 기관 보유 동기화 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# Chain Sight Phase 8: Regulatory + Patent Network
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def scan_regulatory_relationships(self):
+    """
+    규제 공유 관계 스캔 (주간)
+
+    뉴스와 SEC 8-K에서 규제 키워드를 스캔하고 SAME_REGULATION 관계를 생성합니다.
+    매주 월요일 04:00 EST에 실행됩니다.
+
+    Returns:
+        {'categories_found': int, 'relationships_created': int}
+
+    Usage:
+        from serverless.tasks import scan_regulatory_relationships
+        result = scan_regulatory_relationships.delay()
+    """
+    from serverless.services.regulatory_service import RegulatoryService
+
+    try:
+        logger.info("Phase 8.1 규제 관계 스캔 시작")
+
+        service = RegulatoryService()
+        result = service.scan_regulatory_news(hours=168)  # 최근 7일
+
+        logger.info(f"Phase 8.1 규제 관계 스캔 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"Phase 8.1 규제 관계 스캔 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=1800,  # 30분 소프트 타임아웃
+    time_limit=1860,  # 31분 하드 타임아웃
+)
+def build_patent_network(self, symbols=None):
+    """
+    특허 네트워크 빌드 (월간)
+
+    USPTO API로 특허 인용/분쟁 관계를 빌드합니다.
+    매월 1일 04:30 EST에 실행됩니다.
+
+    Args:
+        symbols: 분석 대상 종목 리스트 (None이면 기본 25개)
+
+    Returns:
+        {'symbols_processed': int, 'citation_links': int,
+         'dispute_links': int, 'total_relationships': int}
+
+    Usage:
+        from serverless.tasks import build_patent_network
+        result = build_patent_network.delay()
+        result = build_patent_network.delay(symbols=['AAPL', 'MSFT', 'NVDA'])
+    """
+    from serverless.services.patent_network_service import PatentNetworkService
+
+    try:
+        logger.info("Phase 8.2 특허 네트워크 빌드 시작")
+
+        service = PatentNetworkService()
+        result = service.build_patent_network(symbols=symbols)
+
+        logger.info(f"Phase 8.2 특허 네트워크 빌드 완료: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"Phase 8.2 특허 네트워크 빌드 실패: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
 # Celery Beat 스케줄 (config/celery.py에 등록 필요)
 # ============================================================
 #

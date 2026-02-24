@@ -644,6 +644,35 @@ class PriceDataView(models.Model):
         managed = False  # Django가 이 테이블을 관리하지 않음 (DB 뷰)
         db_table = 'price_data_view'
 
+class SP500Constituent(models.Model):
+    """
+    S&P 500 구성 종목
+
+    FMP API에서 가져온 S&P 500 인덱스 구성 종목 정보.
+    월 1회 동기화하여 최신 상태 유지.
+    """
+    symbol = models.CharField(max_length=10, unique=True, db_index=True)
+    company_name = models.CharField(max_length=255)
+    sector = models.CharField(max_length=100, db_index=True)
+    sub_sector = models.CharField(max_length=100, blank=True, default='')
+    head_quarter = models.CharField(max_length=200, blank=True, default='')
+    date_added = models.DateField(blank=True, null=True)
+    cik = models.CharField(max_length=20, blank=True, default='')
+    founded = models.CharField(max_length=20, blank=True, default='')
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'stocks_sp500_constituent'
+        indexes = [
+            models.Index(fields=['is_active', 'symbol']),
+        ]
+
+    def __str__(self):
+        return f"{self.company_name} ({self.symbol})"
+
+
 """
 데이터베이스 뷰 생성 SQL (선택사항):
 

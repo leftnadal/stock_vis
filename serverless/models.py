@@ -898,6 +898,12 @@ class StockRelationship(models.Model):
         ('PARTNER_OF', '파트너'),         # A partnered with B
         ('SPIN_OFF', '분사'),             # A spun off B
         ('SUED_BY', '소송'),              # A sued by B
+        # Phase 7: Institutional Holdings
+        ('HELD_BY_SAME_FUND', '동일 펀드 보유'),
+        # Phase 8: Regulatory + Patent
+        ('SAME_REGULATION', '규제 공유'),
+        ('PATENT_CITED', '특허 인용'),
+        ('PATENT_DISPUTE', '특허 분쟁'),
     ]
 
     SOURCE_PROVIDERS = [
@@ -908,6 +914,10 @@ class StockRelationship(models.Model):
         ('ai', 'AI Generated'),
         ('llm_news', 'LLM News Extraction'),    # Phase 5
         ('llm_sec', 'LLM SEC Filing Extraction'),  # Phase 5
+        ('sec_13f', 'SEC 13F Filing'),        # Phase 7
+        ('sec_8k', 'SEC 8-K Filing'),          # Phase 8
+        ('regulatory_llm', 'Regulatory LLM'),  # Phase 8
+        ('uspto', 'USPTO PatentsView'),         # Phase 8
     ]
 
     source_symbol = models.CharField(max_length=10, db_index=True)
@@ -1330,3 +1340,80 @@ class LLMExtractedRelation(models.Model):
         from django.utils import timezone
         delta = self.expires_at - timezone.now()
         return max(0, delta.days)
+
+
+# ========================================
+# Chain Sight Phase 7: Institutional Holdings
+# ========================================
+
+class InstitutionalHolding(models.Model):
+    """
+    SEC 13F 기관 보유 현황
+
+    대형 기관투자자($100M+ AUM)의 분기별 주식 보유 현황을 저장합니다.
+    SEC 13F 공시에서 자동 수집됩니다.
+    """
+    POSITION_CHANGE_CHOICES = [
+        ('new', '신규 매수'),
+        ('increased', '증가'),
+        ('decreased', '감소'),
+        ('sold_all', '전량 매도'),
+        ('unchanged', '변동 없음'),
+    ]
+
+    institution_cik = models.CharField(max_length=20, db_index=True, help_text="기관 CIK (SEC 식별번호)")
+    institution_name = models.CharField(max_length=300, help_text="기관명")
+    filing_date = models.DateField(db_index=True, help_text="공시일")
+    report_date = models.DateField(help_text="보고 기준일")
+    accession_number = models.CharField(max_length=30, help_text="SEC 접수번호")
+    stock_symbol = models.CharField(max_length=10, db_index=True, help_text="종목 심볼")
+    shares = models.BigIntegerField(help_text="보유 주식 수")
+    value_thousands = models.BigIntegerField(help_text="보유 가치 (천 달러)")
+    shares_change = models.BigIntegerField(null=True, blank=True, help_text="전 분기 대비 주식 수 변동")
+    position_change = models.CharField(
+        max_length=20,
+        choices=POSITION_CHANGE_CHOICES,
+        null=True,
+        blank=True,
+        help_text="포지션 변화"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'serverless_institutional_holding'
+        unique_together = [['institution_cik', 'stock_symbol', 'report_date']]
+        ordering = ['-report_date', 'institution_name']
+        indexes = [
+            models.Index(fields=['institution_cik', '-report_date']),
+            models.Index(fields=['stock_symbol', '-report_date']),
+            models.Index(fields=['report_date', 'institution_cik']),
+        ]
+
+    def __str__(self):
+        return f"{self.institution_name}: {self.stock_symbol} ({self.shares:,} shares)"
+
+
+# ========================================
+# Admin Dashboard Actions (감사 추적)
+# ========================================
+
+class AdminActionLog(models.Model):
+    """관리자 액션 실행 이력 (감사 추적)"""
+    action = models.CharField(max_length=50, db_index=True)
+    label = models.CharField(max_length=100)
+    user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
+    params = models.JSONField(default=dict, blank=True)
+    task_id = models.CharField(max_length=255, blank=True, default='')
+    status = models.CharField(max_length=20, default='dispatched')  # dispatched, success, failure
+    result_summary = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'serverless_admin_action_log'
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['-created_at', 'action'])]
+
+    def __str__(self):
+        return f"[{self.status}] {self.action} by {self.user} @ {self.created_at}"

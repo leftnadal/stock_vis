@@ -9,7 +9,7 @@ Finnhub 뉴스 API Provider
 import requests
 import logging
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, List
 from decimal import Decimal
 
@@ -217,7 +217,7 @@ class FinnhubNewsProvider(BaseNewsProvider):
             title=item.get('headline', ''),
             summary=item.get('summary', ''),
             source=item.get('source', 'Unknown'),
-            published_at=datetime.fromtimestamp(item.get('datetime', 0)),
+            published_at=datetime.fromtimestamp(item.get('datetime', 0), tz=timezone.utc),
             image_url=item.get('image', ''),
             language='en',
             category=item.get('category', category),

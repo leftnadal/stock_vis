@@ -1,15 +1,37 @@
 """
 Serverless App URLs
 
-Market Movers, Market Breadth, Screener Presets, Sector Heatmap, Alerts
+Market Movers, Market Breadth, Screener Presets, Sector Heatmap, Alerts, Admin Dashboard
 """
 from django.urls import path
 from serverless import views
+from serverless.views_admin import (
+    AdminOverviewView, AdminStocksView, AdminScreenerView,
+    AdminMarketPulseView, AdminNewsView, AdminSystemView, AdminTaskLogsView,
+    AdminActionView, AdminTaskStatusView,
+    AdminNewsCategoryView, AdminNewsCategoryDetailView, AdminNewsSectorOptionsView,
+)
 
 
 app_name = 'serverless'
 
 urlpatterns = [
+    # ========================================
+    # Admin Dashboard
+    # ========================================
+    path('admin/dashboard/overview/', AdminOverviewView.as_view(), name='admin-overview'),
+    path('admin/dashboard/stocks/', AdminStocksView.as_view(), name='admin-stocks'),
+    path('admin/dashboard/screener/', AdminScreenerView.as_view(), name='admin-screener'),
+    path('admin/dashboard/market-pulse/', AdminMarketPulseView.as_view(), name='admin-market-pulse'),
+    path('admin/dashboard/news/', AdminNewsView.as_view(), name='admin-news'),
+    path('admin/dashboard/system/', AdminSystemView.as_view(), name='admin-system'),
+    path('admin/dashboard/tasks/', AdminTaskLogsView.as_view(), name='admin-tasks'),
+    path('admin/dashboard/actions/', AdminActionView.as_view(), name='admin-actions'),
+    path('admin/dashboard/actions/status/<str:task_id>/', AdminTaskStatusView.as_view(), name='admin-task-status'),
+    path('admin/dashboard/news/categories/', AdminNewsCategoryView.as_view(), name='admin-news-categories'),
+    path('admin/dashboard/news/categories/<int:category_id>/', AdminNewsCategoryDetailView.as_view(), name='admin-news-category-detail'),
+    path('admin/dashboard/news/sector-options/', AdminNewsSectorOptionsView.as_view(), name='admin-news-sector-options'),
+
     # ========================================
     # Market Movers
     # ========================================
@@ -86,6 +108,7 @@ urlpatterns = [
     path('chain-sight/stock/<str:symbol>', views.chain_sight_stock_api, name='chain-sight-stock'),
     path('chain-sight/stock/<str:symbol>/category/<str:category_id>', views.chain_sight_category_api, name='chain-sight-category'),
     path('chain-sight/stock/<str:symbol>/sync', views.chain_sight_sync_api, name='chain-sight-sync'),
+    path('chain-sight/stock/<str:symbol>/track', views.chain_sight_track_api, name='chain-sight-track'),
 
     # ========================================
     # Chain Sight Neo4j Graph (온톨로지 그래프)
@@ -114,6 +137,19 @@ urlpatterns = [
     path('llm-relations/sync', views.sync_llm_relations_api, name='llm-relations-sync'),
     path('llm-relations/stats', views.llm_relations_stats_api, name='llm-relations-stats'),
     path('llm-relations/<str:symbol>', views.get_llm_relations_api, name='llm-relations-get'),
+
+    # ========================================
+    # Chain Sight Phase 7: Institutional Holdings (SEC 13F)
+    # ========================================
+    path('institutional/sync', views.institutional_sync_api, name='institutional-sync'),
+    path('institutional/<str:symbol>/peers', views.institutional_peers_api, name='institutional-peers'),
+    path('institutional/<str:symbol>', views.institutional_holdings_api, name='institutional-holdings'),
+
+    # ========================================
+    # Chain Sight Phase 8: Regulatory + Patent Network
+    # ========================================
+    path('regulatory/<str:symbol>', views.get_regulatory_relations_api, name='regulatory-get'),
+    path('patent-network/<str:symbol>', views.get_patent_relations_api, name='patent-network-get'),
 
     # ========================================
     # Health Check
