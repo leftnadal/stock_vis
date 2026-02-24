@@ -33,16 +33,18 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
     },
 
-    # 주간 데이터 업데이트 (주말)
-    'update-weekly-prices': {
-        'task': 'stocks.tasks.update_weekly_prices',
-        'schedule': crontab(hour=0, minute=0, day_of_week=6),
+    # 주간 데이터 집계 — DailyPrice → WeeklyPrice (API 호출 없음, 토요일 01:00)
+    'aggregate-weekly-prices': {
+        'task': 'stocks.tasks.aggregate_weekly_prices',
+        'schedule': crontab(hour=1, minute=0, day_of_week=6),
+        'options': {'expires': 3600}
     },
 
-    # 재무제표 업데이트 (월 1일)
-    'update-financial-statements': {
-        'task': 'stocks.tasks.update_financial_statements',
-        'schedule': crontab(hour=2, minute=0, day_of_month=1),
+    # S&P 500 재무제표 순환 배치 (FMP, 101개/일, 5일에 전체 1회전, 평일 20:00)
+    'sync-sp500-financials': {
+        'task': 'stocks.tasks.sync_sp500_financials',
+        'schedule': crontab(hour=20, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}
     },
 
     # 포트폴리오 가치 계산 (시장 개장 시간, 10분마다)
@@ -119,8 +121,15 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
-    # Market Movers 키워드 생성 태스크
+    # Market Movers 동기화 + 키워드 생성 태스크
     # ============================================================
+
+    # Market Movers 동기화 (매일 07:30 EST, 시장 개장 전)
+    'sync-daily-market-movers': {
+        'task': 'serverless.tasks.sync_daily_market_movers',
+        'schedule': crontab(hour=7, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
 
     # 키워드 생성 파이프라인 (매일 오전 8시 - Market Movers 동기화 30분 후)
     'keyword-generation-pipeline': {
@@ -131,14 +140,72 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
-    # News 키워드 추출 태스크 (Phase 2)
+    # News 수집 + 감성 분석 + 키워드 추출 태스크
     # ============================================================
+
+    # 일일 종목 뉴스 수집 (매일 06:00 EST, Market Movers 수집 전)
+    'collect-daily-news': {
+        'task': 'news.tasks.collect_daily_news',
+        'schedule': crontab(hour=6, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # 시장 뉴스 수집 (매일 12:00 EST)
+    'collect-market-news-noon': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=12, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}  # 10분 후 만료
+    },
+
+    # 시장 뉴스 수집 (매일 18:00 EST)
+    'collect-market-news-evening': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}  # 10분 후 만료
+    },
+
+    # 일일 감성 분석 집계 (매일 09:00 EST, 뉴스 수집 후)
+    'aggregate-daily-sentiment': {
+        'task': 'news.tasks.aggregate_daily_sentiment',
+        'schedule': crontab(hour=9, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
 
     # 일일 뉴스 키워드 추출 (매일 오전 8시 - 뉴스 수집 후)
     'extract-daily-news-keywords': {
         'task': 'news.tasks.extract_daily_news_keywords',
         'schedule': crontab(hour=8, minute=0),  # 08:00 EST
         'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # 카테고리 뉴스 수집 - High (2회/일: 06:30 + 17:00 EST, 평일)
+    'collect-category-news-high-morning': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=6, minute=30, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'high'},
+        'options': {'expires': 3600}
+    },
+    'collect-category-news-high-evening': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'high'},
+        'options': {'expires': 3600}
+    },
+
+    # 카테고리 뉴스 수집 - Medium (1회/일: 07:00 EST, 평일)
+    'collect-category-news-medium': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=7, minute=0, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'medium'},
+        'options': {'expires': 3600}
+    },
+
+    # 카테고리 뉴스 수집 - Low (주 1회: 월요일 07:30 EST)
+    'collect-category-news-low': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=7, minute=30, day_of_week=1),
+        'kwargs': {'priority_filter': 'low'},
+        'options': {'expires': 3600}
     },
 
     # ============================================================
@@ -188,6 +255,77 @@ app.conf.beat_schedule = {
         'task': 'serverless.tasks.check_screener_alerts',
         'schedule': crontab(minute='*/15', hour='9-16', day_of_week='1-5'),
         'options': {'expires': 600}  # 10분 후 만료
+    },
+
+    # ============================================================
+    # S&P 500 동기화 태스크
+    # ============================================================
+
+    # S&P 500 구성 종목 동기화 (매월 1일 02:00 ET)
+    'sync-sp500-constituents': {
+        'task': 'stocks.tasks.sync_sp500_constituents',
+        'schedule': crontab(hour=2, minute=0, day_of_month=1),
+        'options': {'expires': 86400}  # 24시간 후 만료
+    },
+
+    # S&P 500 EOD 가격 동기화 (매일 18:00 ET, Mon-Fri, 장 마감 + 2시간)
+    'sync-sp500-eod-prices': {
+        'task': 'stocks.tasks.sync_sp500_eod_prices',
+        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # ============================================================
+    # Chain Sight Phase 6: News Relation Matcher
+    # ============================================================
+
+    # 뉴스에서 관계 키워드 자동 추출 (매일 09:00 EST, 뉴스 수집 후)
+    'extract-news-relations': {
+        'task': 'serverless.tasks.extract_news_relations',
+        'schedule': crontab(hour=9, minute=0),
+        'args': (24,),  # 최근 24시간
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # ============================================================
+    # Chain Sight Phase 6D: Relationship Keyword Enrichment
+    # ============================================================
+
+    # 관계 키워드 Enrichment (매일 05:30 EST, Gemini Free Tier)
+    'enrich-relationship-keywords': {
+        'task': 'serverless.tasks.enrich_relationship_keywords',
+        'schedule': crontab(hour=5, minute=30),
+        'kwargs': {'limit': 100},
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # ============================================================
+    # Chain Sight Phase 7: Institutional Holdings (SEC 13F)
+    # ============================================================
+
+    # 기관 보유 현황 동기화 (매월 16일 04:00 EST, 태스크 내에서 분기 체크)
+    'sync-institutional-holdings': {
+        'task': 'serverless.tasks.sync_institutional_holdings',
+        'schedule': crontab(hour=4, minute=0, day_of_month=16),
+        'options': {'expires': 86400}  # 24시간 후 만료
+    },
+
+    # ============================================================
+    # Chain Sight Phase 8: Regulatory + Patent Network
+    # ============================================================
+
+    # 규제 관계 스캔 (매주 월요일 04:00 EST)
+    'scan-regulatory-relationships': {
+        'task': 'serverless.tasks.scan_regulatory_relationships',
+        'schedule': crontab(hour=4, minute=0, day_of_week=1),
+        'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # 특허 네트워크 빌드 (매월 1일 04:30 EST)
+    'build-patent-network': {
+        'task': 'serverless.tasks.build_patent_network',
+        'schedule': crontab(hour=4, minute=30, day_of_month=1),
+        'options': {'expires': 86400}  # 24시간 후 만료
     },
 
 }

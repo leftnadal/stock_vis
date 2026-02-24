@@ -68,9 +68,9 @@ PROVIDER_RATE_LIMITS = {
         'request_delay': 12.0,  # 초
     },
     'fmp': {
-        'per_minute': 10,
-        'per_day': 250,
-        'request_delay': 0.5,  # 초
+        'per_minute': 300,     # Starter Plan
+        'per_day': 10000,      # Starter Plan
+        'request_delay': 0.2,  # 초
     }
 }
 
@@ -400,28 +400,5 @@ CHANNEL_LAYERS = {
     },
 }
 
-# Celery Beat 스케줄
-from celery.schedules import crontab
-
-CELERY_BEAT_SCHEDULE = {
-    # Market Movers 동기화 (매일 07:30 EST)
-    'sync-market-movers': {
-        'task': 'serverless.tasks.sync_daily_market_movers',
-        'schedule': crontab(hour=7, minute=30),
-        'options': {'expires': 3600},
-    },
-
-    # Market Breadth 일일 계산 (장 마감 후 16:30 ET, 평일만)
-    'calculate-market-breadth': {
-        'task': 'serverless.tasks.calculate_daily_market_breadth',
-        'schedule': crontab(hour=16, minute=30, day_of_week='1-5'),
-        'options': {'expires': 3600},
-    },
-
-    # Sector Heatmap 일일 계산 (장 마감 후 16:35 ET, 평일만)
-    'calculate-sector-heatmap': {
-        'task': 'serverless.tasks.calculate_daily_sector_heatmap',
-        'schedule': crontab(hour=16, minute=35, day_of_week='1-5'),
-        'options': {'expires': 3600},
-    },
-}
+# Celery Beat 스케줄은 config/celery.py의 app.conf.beat_schedule에서 관리
+# (settings.py에 CELERY_BEAT_SCHEDULE 정의 시 celery.py 설정을 오버라이드하므로 주의)
