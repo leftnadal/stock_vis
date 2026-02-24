@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { macroService } from '@/services/macroService';
 import type { MarketPulseDashboard } from '@/types/macro';
 
@@ -137,9 +137,9 @@ export function useStartDataSync() {
 export function useRefreshOnSyncComplete() {
   const queryClient = useQueryClient();
 
-  return {
-    invalidateMarketPulse: () => {
-      queryClient.invalidateQueries({ queryKey: ['market-pulse'] });
-    },
-  };
+  const invalidateMarketPulse = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['market-pulse'] });
+  }, [queryClient]);
+
+  return { invalidateMarketPulse };
 }

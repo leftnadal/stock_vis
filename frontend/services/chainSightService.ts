@@ -84,6 +84,23 @@ export const chainSightService = {
     );
     return response.data;
   },
+
+  /**
+   * 사용자 행동 트래킹 (Phase 6)
+   *
+   * 카드 클릭, 카테고리 클릭, 파도타기 등의 행동을 기록하여
+   * edge weight를 강화합니다. fire-and-forget으로 호출합니다.
+   *
+   * @param symbol - 원본 종목 심볼
+   * @param action - 행동 타입 ('card_click', 'category_click', 'navigate')
+   * @param targetSymbol - 대상 종목 심볼
+   */
+  async trackInteraction(symbol: string, action: string, targetSymbol: string): Promise<void> {
+    await api.post(`/serverless/chain-sight/stock/${symbol.toUpperCase()}/track`, {
+      action,
+      target_symbol: targetSymbol,
+    });
+  },
 };
 
 export default chainSightService;

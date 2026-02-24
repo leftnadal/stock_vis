@@ -3,11 +3,16 @@
 import Link from 'next/link';
 import { TrendingUp, TrendingDown, ArrowRight } from 'lucide-react';
 import { ChainSightStock } from '@/types/chainSight';
+import RelationshipTagBadge from './RelationshipTagBadge';
+import { chainSightService } from '@/services/chainSightService';
 
 interface RelatedStockCardProps {
   stock: ChainSightStock;
+  sourceSymbol?: string;
   onClick?: () => void;
 }
+
+const MAX_VISIBLE_TAGS = 5;
 
 /**
  * 관련 종목 카드 컴포넌트
@@ -15,7 +20,7 @@ interface RelatedStockCardProps {
  * 종목 정보를 카드 형태로 표시합니다.
  * 클릭 시 해당 종목 페이지로 이동합니다.
  */
-export default function RelatedStockCard({ stock, onClick }: RelatedStockCardProps) {
+export default function RelatedStockCard({ stock, sourceSymbol, onClick }: RelatedStockCardProps) {
   const isPositive = (stock.change_percent ?? 0) >= 0;
   const changePercent = stock.change_percent?.toFixed(2) ?? '-';
 
@@ -31,10 +36,22 @@ export default function RelatedStockCard({ stock, onClick }: RelatedStockCardPro
   // 강도 표시 (0.0 ~ 1.0 -> 진한 색상)
   const strengthOpacity = Math.max(0.3, stock.strength);
 
+  const tags = stock.tags ?? [];
+  const visibleTags = tags.slice(0, MAX_VISIBLE_TAGS);
+  const overflowCount = tags.length - MAX_VISIBLE_TAGS;
+
+  const handleClick = () => {
+    // fire-and-forget 클릭 트래킹
+    if (sourceSymbol) {
+      chainSightService.trackInteraction(sourceSymbol, 'card_click', stock.symbol).catch(() => {});
+    }
+    onClick?.();
+  };
+
   return (
     <Link
       href={`/stocks/${stock.symbol}`}
-      onClick={onClick}
+      onClick={handleClick}
       className="group block rounded-lg border border-gray-200 bg-white p-4 transition-all hover:border-blue-300 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-500"
     >
       <div className="flex items-start justify-between">
@@ -54,11 +71,6 @@ export default function RelatedStockCard({ stock, onClick }: RelatedStockCardPro
           <p className="mt-1 truncate text-sm text-gray-600 dark:text-gray-400">
             {stock.company_name}
           </p>
-          {stock.sector && (
-            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-500">
-              {stock.sector}
-            </p>
-          )}
         </div>
 
         {/* 오른쪽: 가격 정보 */}
@@ -84,11 +96,26 @@ export default function RelatedStockCard({ stock, onClick }: RelatedStockCardPro
         </div>
       </div>
 
+      {/* 태그 영역 (Phase 6) */}
+      {visibleTags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {visibleTags.map((tag, index) => (
+            <RelationshipTagBadge key={`${tag.type}-${tag.label}-${index}`} tag={tag} />
+          ))}
+          {overflowCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-700/50 dark:text-gray-400">
+              +{overflowCount}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* 하단: 추가 정보 + 이동 힌트 */}
       <div className="mt-3 flex items-center justify-between border-t border-gray-100 pt-3 dark:border-gray-700">
-        <span className="text-xs text-gray-500 dark:text-gray-400">
-          시가총액: {formatMarketCap(stock.market_cap)}
-        </span>
+        <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          {stock.sector && <span>{stock.sector}</span>}
+          <span>시가총액: {formatMarketCap(stock.market_cap)}</span>
+        </div>
         <span className="flex items-center gap-1 text-xs text-blue-500 opacity-0 transition-opacity group-hover:opacity-100">
           탐험하기
           <ArrowRight className="h-3 w-3" />

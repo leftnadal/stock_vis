@@ -1,10 +1,12 @@
 'use client';
 
+import { Search } from 'lucide-react';
 import { ChainSightStock } from '@/types/chainSight';
 import RelatedStockCard from './RelatedStockCard';
 
 interface RelatedStockGridProps {
   stocks: ChainSightStock[];
+  sourceSymbol?: string;
   isLoading?: boolean;
   onStockClick?: (symbol: string) => void;
 }
@@ -16,6 +18,7 @@ interface RelatedStockGridProps {
  */
 export default function RelatedStockGrid({
   stocks,
+  sourceSymbol,
   isLoading = false,
   onStockClick,
 }: RelatedStockGridProps) {
@@ -36,7 +39,7 @@ export default function RelatedStockGrid({
     return (
       <div className="p-8 text-center">
         <div className="mx-auto mb-4 h-12 w-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-          <span className="text-2xl">🔍</span>
+          <Search className="h-6 w-6 text-gray-400" />
         </div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
           관련 종목이 없습니다
@@ -56,6 +59,7 @@ export default function RelatedStockGrid({
         <RelatedStockCard
           key={stock.symbol}
           stock={stock}
+          sourceSymbol={sourceSymbol}
           onClick={() => onStockClick?.(stock.symbol)}
         />
       ))}

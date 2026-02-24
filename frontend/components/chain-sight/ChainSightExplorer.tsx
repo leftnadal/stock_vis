@@ -186,6 +186,7 @@ export default function ChainSightExplorer({ symbol }: ChainSightExplorerProps) 
           {/* 관련 종목 그리드 */}
           <RelatedStockGrid
             stocks={stocks}
+            sourceSymbol={symbol}
             isLoading={isStocksLoading}
           />
         </>

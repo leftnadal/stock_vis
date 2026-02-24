@@ -6,7 +6,9 @@
 
 export { default as ChainSightExplorer } from './ChainSightExplorer';
 export { default as CategorySelector } from './CategorySelector';
+export { default as CategoryIcon } from './CategoryIcon';
 export { default as RelatedStockGrid } from './RelatedStockGrid';
 export { default as RelatedStockCard } from './RelatedStockCard';
+export { default as RelationshipTagBadge } from './RelationshipTagBadge';
 export { default as AIInsightPanel } from './AIInsightPanel';
 export { default as ETFCollectionPanel } from './ETFCollectionPanel';

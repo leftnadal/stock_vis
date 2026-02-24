@@ -45,12 +45,9 @@ api.interceptors.response.use(
       const { status, data } = error.response
       console.error(`Server error - status: ${status}`, data)
 
-      if (status === 401 && typeof window !== 'undefined') {
-        // 인증 토큰 만료
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        // 로그인 페이지로 리다이렉트 (필요한 경우)
-        // window.location.href = '/login'
+      if (status === 401) {
+        // 토큰 만료는 AuthContext의 interceptor가 refresh 처리
+        // 여기서 토큰을 삭제하면 AuthContext의 refresh 로직이 동작하지 않음
       }
     }
 

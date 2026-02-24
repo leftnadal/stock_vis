@@ -1,6 +1,7 @@
 'use client';
 
 import { ChainSightCategory } from '@/types/chainSight';
+import CategoryIcon from './CategoryIcon';
 
 interface CategorySelectorProps {
   categories: ChainSightCategory[];
@@ -62,7 +63,7 @@ export default function CategorySelector({
             `}
             title={category.description}
           >
-            <span className="text-base">{category.icon}</span>
+            <CategoryIcon name={category.icon} className="h-4 w-4" />
             <span>{category.name}</span>
             {count && (
               <span

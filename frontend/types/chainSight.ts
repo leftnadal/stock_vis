@@ -38,6 +38,16 @@ export interface ChainSightCategoriesResponse {
 }
 
 /**
+ * 관계 태그 (Phase 6)
+ */
+export interface RelationshipTag {
+  type: string;        // "PEER_OF", "THEME", "SUPPLIED_BY" 등
+  label: string;       // "경쟁사", "semiconductor" 등
+  confidence?: string; // "high", "medium-high", "medium"
+  detail?: string;     // "뉴스 3건", "매출 25%", "SOXX 5.5%"
+}
+
+/**
  * 관련 종목
  */
 export interface ChainSightStock {
@@ -50,6 +60,7 @@ export interface ChainSightStock {
   sector: string | null;
   industry?: string | null;
   relationship_context?: Record<string, any>;
+  tags?: RelationshipTag[];
 }
 
 /**
