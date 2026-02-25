@@ -430,6 +430,427 @@ def collect_category_news(self, category_id=None, priority_filter=None):
         raise self.retry(exc=exc)
 
 
+# ============================================================
+# News Intelligence Pipeline v3 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def classify_news_batch(self, article_ids=None, hours=4):
+    """
+    뉴스 배치 분류 태스크 (수집 직후 체이닝)
+
+    Engine A(종목 매칭) + Engine B(섹터 분류) + Engine C(5-factor 스코어링)
+    적용하여 importance_score, rule_tickers, rule_sectors를 계산합니다.
+
+    Args:
+        article_ids: 분류할 뉴스 ID 리스트 (None이면 최근 N시간 미분류 뉴스)
+        hours: article_ids가 None일 때 조회 범위 (기본: 4시간)
+
+    Returns:
+        dict: {classified: int, skipped: int, errors: int}
+    """
+    try:
+        from news.services.news_classifier import NewsClassifier
+
+        classifier = NewsClassifier()
+        result = classifier.classify_batch(article_ids=article_ids, hours=hours)
+
+        logger.info(f"classify_news_batch completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"classify_news_batch failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 10,
+    soft_time_limit=1800,  # 30분 소프트 타임아웃
+    time_limit=1860,  # 31분 하드 타임아웃
+)
+def analyze_news_deep(self, max_articles=50):
+    """
+    뉴스 LLM 심층 분석 배치 태스크
+
+    당일 누적 기준 상위 15% 뉴스 중 미분석 건을 Gemini 2.5 Flash로
+    심층 분석합니다 (Tier A/B/C 프롬프트 분기).
+
+    매 2시간 실행, 4초 간격으로 RPM 준수.
+
+    Args:
+        max_articles: 배치당 최대 분석 건수 (기본: 50)
+
+    Returns:
+        dict: {analyzed: int, errors: int, skipped: int}
+    """
+    try:
+        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+
+        analyzer = NewsDeepAnalyzer()
+        result = analyzer.analyze_batch(max_articles=max_articles)
+
+        logger.info(f"analyze_news_deep completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"analyze_news_deep failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 10,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def collect_ml_labels(self, lookback_days=2):
+    """
+    ML Label 수집 태스크
+
+    DailyPrice 기반 +24h 변동폭 계산. Company News 우선.
+    매일 19:00 EST 실행 (장 마감 + 1시간).
+
+    Args:
+        lookback_days: 조회 범위 일수 (기본: 2일)
+
+    Returns:
+        dict: {processed: int, labeled: int, skipped: int, errors: int}
+    """
+    try:
+        from news.services.ml_label_collector import MLLabelCollector
+
+        collector = MLLabelCollector()
+        result = collector.collect_labels(lookback_days=lookback_days)
+
+        logger.info(f"collect_ml_labels completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"collect_ml_labels failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def sync_news_to_neo4j(self, max_articles=100):
+    """
+    뉴스 LLM 분석 결과를 Neo4j에 동기화하는 태스크
+
+    llm_analyzed=True인 기사 중 Neo4j에 미동기화된 것을 처리합니다.
+    LLM 분석 완료 후 또는 스케줄로 실행.
+
+    Args:
+        max_articles: 배치당 최대 동기화 건수 (기본: 100)
+
+    Returns:
+        dict: {synced: int, skipped: int, errors: int, total_nodes: int, total_rels: int}
+    """
+    try:
+        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+
+        sync_service = NewsNeo4jSyncService()
+        if not sync_service.is_available():
+            logger.warning("sync_news_to_neo4j: Neo4j not available, skipping")
+            return {'synced': 0, 'skipped': 0, 'errors': 0, 'neo4j_unavailable': True}
+
+        result = sync_service.sync_batch(max_articles=max_articles)
+        logger.info(f"sync_news_to_neo4j completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"sync_news_to_neo4j failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 5,
+    soft_time_limit=300,  # 5분 소프트 타임아웃
+    time_limit=360,  # 6분 하드 타임아웃
+)
+def cleanup_expired_news_relationships(self):
+    """
+    만료된 뉴스 이벤트 관계 정리 태스크
+
+    TTL 기반으로 만료된 Neo4j 관계를 삭제하고,
+    고립된 NewsEvent 노드를 정리합니다.
+
+    매일 04:00 EST에 실행.
+
+    Returns:
+        dict: {deleted_relationships: int, deleted_nodes: int}
+    """
+    try:
+        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+
+        sync_service = NewsNeo4jSyncService()
+        if not sync_service.is_available():
+            logger.warning("cleanup_expired_news_relationships: Neo4j not available, skipping")
+            return {'deleted_relationships': 0, 'deleted_nodes': 0, 'neo4j_unavailable': True}
+
+        result = sync_service.cleanup_expired_relationships()
+        logger.info(f"cleanup_expired_news_relationships completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"cleanup_expired_news_relationships failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# News Intelligence Pipeline v3 - Phase 4: ML 학습 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 10,
+    soft_time_limit=1800,  # 30분 소프트 타임아웃
+    time_limit=1860,  # 31분 하드 타임아웃
+)
+def train_importance_model(self):
+    """
+    ML 가중치 학습 파이프라인 (주간)
+
+    Logistic Regression으로 Engine C의 β₁~β₅ 가중치를 최적화합니다.
+    - Company News 데이터만 사용
+    - Time-Series Split 검증
+    - Safety Gate 3단계 통과 시 Shadow Mode로 저장
+    - Weight Smoothing (0.7 × new + 0.3 × prev) 적용
+
+    매주 일요일 03:00 EST 실행.
+
+    Returns:
+        dict: {status, model_version, metrics, safety_gate, weights}
+    """
+    try:
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
+
+        optimizer = MLWeightOptimizer()
+        result = optimizer.run_training_pipeline()
+
+        logger.info(f"train_importance_model completed: {result.get('status')}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"train_importance_model failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 5,
+    soft_time_limit=300,  # 5분 소프트 타임아웃
+    time_limit=360,  # 6분 하드 타임아웃
+)
+def generate_shadow_report(self, days=7):
+    """
+    Shadow Mode 비교 리포트 생성
+
+    현재 Shadow/Deployed 모델의 ML 가중치와 수동 가중치를
+    비교하여 선별 결과 차이를 분석합니다.
+
+    매주 일요일 03:30 EST 실행 (학습 직후).
+
+    Args:
+        days: 비교 기간 (기본: 7일)
+
+    Returns:
+        dict: {model_version, comparison}
+    """
+    try:
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from news.models import MLModelHistory
+
+        # 최신 shadow 또는 deployed 모델 조회
+        latest = MLModelHistory.objects.filter(
+            deployment_status__in=['shadow', 'deployed'],
+            smoothed_weights__isnull=False,
+        ).order_by('-trained_at').first()
+
+        if not latest:
+            logger.info("generate_shadow_report: No shadow/deployed model found")
+            return {'status': 'no_model'}
+
+        optimizer = MLWeightOptimizer()
+        comparison = optimizer.generate_shadow_comparison(
+            ml_weights=latest.smoothed_weights,
+            days=days,
+        )
+
+        # 비교 결과를 모델에 업데이트
+        latest.shadow_comparison = comparison
+        latest.save(update_fields=['shadow_comparison'])
+
+        result = {
+            'model_version': latest.model_version,
+            'comparison': comparison,
+        }
+        logger.info(f"generate_shadow_report completed: {result}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"generate_shadow_report failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# News Intelligence Pipeline v3 - Phase 5: ML Production 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 5,
+    soft_time_limit=300,  # 5분 소프트 타임아웃
+    time_limit=360,  # 6분 하드 타임아웃
+)
+def check_auto_deploy(self):
+    """
+    ML 모델 자동 배포 체크
+
+    4주 연속 Safety Gate 통과 + agreement_rate >= 0.70이면
+    최신 Shadow 모델을 자동 배포합니다.
+
+    매주 일요일 04:00 EST 실행 (학습 + shadow 리포트 이후).
+
+    Returns:
+        dict: {action, reason, model_version?}
+    """
+    try:
+        from news.services.ml_production_manager import MLProductionManager
+
+        manager = MLProductionManager()
+        result = manager.check_auto_deploy()
+
+        logger.info(f"check_auto_deploy: {result.get('action')} - {result.get('reason')}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"check_auto_deploy failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 5,
+    soft_time_limit=600,  # 10분 소프트 타임아웃
+    time_limit=660,  # 11분 하드 타임아웃
+)
+def generate_weekly_ml_report(self):
+    """
+    주간 ML 성능 리포트 생성
+
+    모델 상태, 성능 추이, LLM 정확도, 데이터 통계를 종합합니다.
+
+    매주 일요일 04:15 EST 실행 (auto deploy 이후).
+
+    Returns:
+        dict: {period, model_status, performance_trend, llm_accuracy, ...}
+    """
+    try:
+        from news.services.ml_production_manager import MLProductionManager
+
+        manager = MLProductionManager()
+        report = manager.generate_weekly_report()
+
+        logger.info(f"generate_weekly_ml_report completed")
+        return report
+
+    except Exception as exc:
+        logger.exception(f"generate_weekly_ml_report failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 5,
+    soft_time_limit=300,  # 5분
+    time_limit=360,  # 6분
+)
+def monitor_ml_performance(self):
+    """
+    ML 모델 연속 하락 감지 태스크
+
+    3주 연속 F1 하락 시 Rolling Window 축소 권고 +
+    Feature Importance 리포트 생성 + 관리자 알림 로깅.
+
+    매주 일요일 04:20 EST 실행 (weekly report 직후).
+    """
+    try:
+        from news.services.ml_production_manager import MLProductionManager
+
+        manager = MLProductionManager()
+        result = manager.detect_consecutive_decline(weeks=3)
+
+        if result.get('consecutive_decline'):
+            logger.warning(
+                f"ML PERFORMANCE ALERT: {result.get('alert_message')}"
+            )
+
+        logger.info(f"monitor_ml_performance: {result.get('action_taken', 'none')}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"monitor_ml_performance failed: {exc}")
+        raise self.retry(exc=exc)
+
+
+# ============================================================
+# News Intelligence Pipeline v3 - Phase 6: LightGBM 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    default_retry_delay=60 * 10,
+    soft_time_limit=1800,  # 30분 소프트 타임아웃
+    time_limit=1860,  # 31분 하드 타임아웃
+)
+def train_lightgbm_model(self):
+    """
+    LightGBM 학습 파이프라인 (Phase 6)
+
+    전환 조건 확인 후 LightGBM 모델 학습 + A/B 테스트.
+    조건 미충족 시 skip합니다.
+
+    매주 일요일 04:30 EST 실행 (주간 리포트 이후).
+
+    Returns:
+        dict: {status, model_version?, metrics?, ab_test?}
+    """
+    try:
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
+
+        optimizer = MLWeightOptimizer()
+        result = optimizer.run_lightgbm_pipeline()
+
+        logger.info(f"train_lightgbm_model: {result.get('status')}")
+        return result
+
+    except Exception as exc:
+        logger.exception(f"train_lightgbm_model failed: {exc}")
+        raise self.retry(exc=exc)
+
+
 def _get_mover_symbols(max_symbols=30):
     """MarketMover에서 최근 거래일의 심볼 추출"""
     try:

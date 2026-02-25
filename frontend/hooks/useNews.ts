@@ -14,6 +14,13 @@ import {
   DailyNewsKeywordResponse,
   RecommendationsResponse,
   StockInsightsResponse,
+  MarketFeedResponse,
+  InterestOptionsResponse,
+  MLStatusResponse,
+  MLShadowReportResponse,
+  NewsEventsResponse,
+  MLWeeklyReportResponse,
+  LightGBMReadinessResponse,
 } from '@/types/news';
 
 /**
@@ -153,5 +160,101 @@ export function useNewsRecommendations(date?: string, limit: number = 10) {
     queryFn: () => newsService.getRecommendations(date, limit),
     staleTime: 1000 * 60 * 30, // 30 minutes
     retry: 2,
+  });
+}
+
+// ===== Phase A: Market Feed Hook (Cold Start) =====
+
+/**
+ * Hook to fetch market feed for unauthenticated / cold-start users
+ * Includes AI briefing keywords, sector performance, and hot movers
+ */
+export function useMarketFeed() {
+  return useQuery<MarketFeedResponse>({
+    queryKey: ['market-feed'],
+    queryFn: () => newsService.getMarketFeed(),
+    staleTime: 1000 * 60 * 10, // 10분
+    retry: 2,
+  });
+}
+
+// ===== Phase B: Interest Options Hook =====
+
+/**
+ * Hook to fetch available interest options (themes + sectors) for onboarding
+ */
+export function useInterestOptions() {
+  return useQuery<InterestOptionsResponse>({
+    queryKey: ['interest-options'],
+    queryFn: () => newsService.getInterestOptions(),
+    staleTime: 1000 * 60 * 60, // 1시간
+    retry: 2,
+  });
+}
+
+// ===== Phase 4: ML Model Status Hooks =====
+
+/**
+ * Hook to fetch ML model current status
+ */
+export function useMLStatus() {
+  return useQuery<MLStatusResponse>({
+    queryKey: ['ml-status'],
+    queryFn: () => newsService.getMLStatus(),
+    staleTime: 1000 * 60 * 5, // 5분
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch ML shadow mode comparison report
+ */
+export function useMLShadowReport() {
+  return useQuery<MLShadowReportResponse>({
+    queryKey: ['ml-shadow-report'],
+    queryFn: () => newsService.getMLShadowReport(),
+    staleTime: 1000 * 60 * 10, // 10분
+    retry: 1,
+  });
+}
+
+/**
+ * Hook to fetch news events for a symbol (Neo4j)
+ */
+export function useNewsEvents(symbol: string, days: number = 7) {
+  return useQuery<NewsEventsResponse>({
+    queryKey: ['news-events', symbol, days],
+    queryFn: () => newsService.getNewsEvents(symbol, days),
+    enabled: !!symbol,
+    staleTime: 1000 * 60 * 5, // 5분
+    retry: 1,
+  });
+}
+
+// ===== Phase 5: ML Weekly Report Hook =====
+
+/**
+ * Hook to fetch ML weekly performance report
+ */
+export function useMLWeeklyReport() {
+  return useQuery<MLWeeklyReportResponse>({
+    queryKey: ['ml-weekly-report'],
+    queryFn: () => newsService.getMLWeeklyReport(),
+    staleTime: 1000 * 60 * 60, // 1시간
+    retry: 1,
+  });
+}
+
+// ===== Phase 6: LightGBM Readiness Hook =====
+
+/**
+ * Hook to check LightGBM transition readiness
+ */
+export function useLightGBMReadiness() {
+  return useQuery<LightGBMReadinessResponse>({
+    queryKey: ['lightgbm-readiness'],
+    queryFn: () => newsService.getLightGBMReadiness(),
+    staleTime: 1000 * 60 * 30, // 30분
+    retry: 1,
   });
 }

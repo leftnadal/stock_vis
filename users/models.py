@@ -244,3 +244,25 @@ class WatchlistItem(models.Model):
         if self.target_entry_price:
             return float(self.stock.real_time_price) <= float(self.target_entry_price)
         return None
+
+
+class UserInterest(models.Model):
+    """사용자 관심 테마 (뉴스 개인화용)"""
+    INTEREST_TYPE_CHOICES = [
+        ('sector', 'Sector'),
+        ('theme', 'Theme'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interests')
+    interest_type = models.CharField(max_length=20, choices=INTEREST_TYPE_CHOICES)
+    value = models.CharField(max_length=100)
+    display_name = models.CharField(max_length=100)
+    auto_category_id = models.IntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'users_interest'
+        unique_together = ('user', 'interest_type', 'value')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.display_name} ({self.interest_type})"

@@ -115,6 +115,7 @@ export interface DailyKeyword {
   sentiment: 'positive' | 'negative' | 'neutral';
   related_symbols: string[];
   importance?: number;
+  reason?: string;  // AI 분석 이유
 }
 
 export interface DailyNewsKeywordResponse {
@@ -240,4 +241,222 @@ export interface StockInsightsResponse {
   insights: StockInsight[];
   total_keywords: number;
   computation_time_ms?: number;
+}
+
+// ===== Phase A: Market Feed Types (Cold Start) =====
+
+export interface BriefingKeyword extends DailyKeyword {
+  news_count: number;
+  headlines: { title: string; url: string }[];
+}
+
+export interface MarketFeedSector {
+  name: string;
+  return_pct: number;
+  stock_count: number;
+}
+
+export interface MarketFeedMover {
+  symbol: string;
+  company_name: string;
+  change_percent: number;
+  sector: string;
+}
+
+export interface MarketFeedResponse {
+  date: string;
+  is_fallback: boolean;
+  fallback_message: string | null;
+  briefing: {
+    keywords: BriefingKeyword[];
+    total_news_count: number;
+    llm_model: string | null;
+  };
+  market_context: {
+    top_sectors: MarketFeedSector[];
+    hot_movers: MarketFeedMover[];
+  };
+}
+
+// ===== Phase B: Interest Types (Onboarding) =====
+
+export interface InterestOption {
+  interest_type: 'theme' | 'sector';
+  value: string;
+  display_name: string;
+  sample_symbols: string[];
+}
+
+export interface InterestOptionsResponse {
+  themes: InterestOption[];
+  sectors: InterestOption[];
+}
+
+export interface UserInterest {
+  id: number;
+  interest_type: 'theme' | 'sector';
+  value: string;
+  display_name: string;
+  auto_category_id: number | null;
+  created_at: string;
+}
+
+// ===== Phase 4: ML Model Status Types =====
+
+export interface MLModelMetrics {
+  f1: number;
+  precision: number;
+  recall: number;
+  accuracy: number;
+}
+
+export interface MLModelInfo {
+  version: string | null;
+  f1_score: number | null;
+  status: string | null;
+  trained_at: string | null;
+  safety_gate: boolean | null;
+}
+
+export interface MLDeployedModel {
+  version: string | null;
+  f1_score: number | null;
+  weights: Record<string, number> | null;
+  deployed_at: string | null;
+}
+
+export interface MLModelHistoryItem {
+  version: string;
+  f1: number;
+  precision: number;
+  recall: number;
+  gate_passed: boolean;
+  status: string;
+  trained_at: string;
+}
+
+export interface MLStatusResponse {
+  latest_model: MLModelInfo | null;
+  deployed_model: MLDeployedModel | null;
+  recent_history: MLModelHistoryItem[];
+  labeled_data_count: number;
+  min_required: number;
+  ready_for_training: boolean;
+}
+
+export interface ShadowComparison {
+  period: string;
+  total_articles: number;
+  manual_selected: number;
+  ml_selected: number;
+  overlap: number;
+  agreement_rate: number;
+  only_manual_count?: number;
+  only_ml_count?: number;
+}
+
+export interface MLShadowReportResponse {
+  model_version?: string;
+  deployment_status?: string;
+  shadow_comparison?: ShadowComparison;
+  metrics?: MLModelMetrics;
+  weights?: Record<string, number>;
+  safety_gate?: Record<string, unknown>;
+  trained_at?: string;
+  status?: string;
+  message?: string;
+}
+
+// ===== Phase 4: News Events Types =====
+
+export interface NewsEventImpact {
+  symbol: string;
+  direction: string;
+  confidence: number;
+  reason: string;
+  chain_logic?: string;
+}
+
+export interface NewsEventData {
+  article_id: string;
+  title: string;
+  source: string;
+  importance_score: number;
+  tier: string;
+  published_at: string;
+  direct_impacts: NewsEventImpact[];
+  indirect_impacts: NewsEventImpact[];
+}
+
+export interface NewsEventSummary {
+  total_events: number;
+  bullish_count: number;
+  bearish_count: number;
+  avg_confidence: number;
+  direct_count: number;
+  indirect_count: number;
+  opportunity_count: number;
+}
+
+export interface NewsEventsResponse {
+  symbol: string;
+  days: number;
+  events: NewsEventData[];
+  summary: NewsEventSummary;
+}
+
+// ===== Phase 5: ML Weekly Report Types =====
+
+export interface MLWeeklyReportResponse {
+  period: {
+    start: string;
+    end: string;
+  };
+  model_status: {
+    deployed_version: string | null;
+    deployed_f1: number | null;
+    latest_version: string | null;
+    latest_f1: number | null;
+    latest_status: string | null;
+  };
+  performance_trend: {
+    trend: 'improving' | 'stable' | 'declining';
+    recent_f1_scores: { version: string; f1: number }[];
+    gate_pass_rate: number;
+  };
+  llm_accuracy: {
+    direction_accuracy: number;
+    importance_accuracy: number;
+    total_measured: number;
+  };
+  data_stats: {
+    total_labeled: number;
+    new_labeled_this_week: number;
+    new_analyzed_this_week: number;
+  };
+  recommendations: string[];
+  generated_at: string;
+}
+
+// ===== Phase 6: LightGBM Readiness Types =====
+
+export interface LightGBMReadinessResponse {
+  ready: boolean;
+  conditions: {
+    data_sufficient: {
+      met: boolean;
+      current: number;
+      required: number;
+    };
+    lr_stagnation: {
+      met: boolean;
+      weeks_checked: number;
+      f1_range: number | null;
+    };
+    feature_stability: {
+      met: boolean;
+      sector_coverage: number;
+      required: number;
+    };
+  };
 }

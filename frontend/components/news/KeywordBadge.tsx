@@ -72,6 +72,7 @@ export default function KeywordBadge({
   return (
     <button
       onClick={onClick}
+      title={keyword.reason || undefined}
       className={`
         inline-flex items-center ${sizeStyles.gap} ${sizeStyles.padding}
         ${styles.bg} ${styles.border} border rounded-full

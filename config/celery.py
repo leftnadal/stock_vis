@@ -209,6 +209,92 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
+    # News Intelligence Pipeline v3 태스크
+    # ============================================================
+
+    # 뉴스 분류 배치 (매 2시간, 평일, 수집 후 분류)
+    'classify-news-batch-morning': {
+        'task': 'news.tasks.classify_news_batch',
+        'schedule': crontab(hour='8,10,12,14,16,18', minute=15, day_of_week='1-5'),
+        'kwargs': {'hours': 3},
+        'options': {'expires': 3600}
+    },
+
+    # LLM 심층 분석 배치 (매 2시간, 평일, 분류 후 분석)
+    'analyze-news-deep-batch': {
+        'task': 'news.tasks.analyze_news_deep',
+        'schedule': crontab(hour='8,10,12,14,16,18', minute=30, day_of_week='1-5'),
+        'kwargs': {'max_articles': 50},
+        'options': {'expires': 3600}
+    },
+
+    # ML Label 수집 (매일 19:00 EST, 장 마감 + 1시간)
+    'collect-ml-labels': {
+        'task': 'news.tasks.collect_ml_labels',
+        'schedule': crontab(hour=19, minute=0, day_of_week='1-5'),
+        'kwargs': {'lookback_days': 2},
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j 뉴스 이벤트 동기화 (매 2시간, 평일, LLM 분석 후)
+    'sync-news-to-neo4j': {
+        'task': 'news.tasks.sync_news_to_neo4j',
+        'schedule': crontab(hour='8,10,12,14,16,18', minute=45, day_of_week='1-5'),
+        'kwargs': {'max_articles': 100},
+        'options': {'expires': 3600}
+    },
+
+    # 만료된 뉴스 이벤트 관계 정리 (매일 04:00 EST)
+    'cleanup-expired-news-relationships': {
+        'task': 'news.tasks.cleanup_expired_news_relationships',
+        'schedule': crontab(hour=4, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # ML 가중치 학습 (매주 일요일 03:00 EST)
+    'train-importance-model': {
+        'task': 'news.tasks.train_importance_model',
+        'schedule': crontab(hour=3, minute=0, day_of_week=0),
+        'options': {'expires': 7200}  # 2시간 후 만료
+    },
+
+    # Shadow Mode 비교 리포트 (매주 일요일 03:30 EST, 학습 직후)
+    'generate-shadow-report': {
+        'task': 'news.tasks.generate_shadow_report',
+        'schedule': crontab(hour=3, minute=30, day_of_week=0),
+        'kwargs': {'days': 7},
+        'options': {'expires': 3600}
+    },
+
+    # ML 자동 배포 체크 (매주 일요일 04:00 EST, Shadow 리포트 이후)
+    'check-auto-deploy': {
+        'task': 'news.tasks.check_auto_deploy',
+        'schedule': crontab(hour=4, minute=0, day_of_week=0),
+        'options': {'expires': 3600}
+    },
+
+    # 주간 ML 성능 리포트 (매주 일요일 04:15 EST, auto deploy 이후)
+    'generate-weekly-ml-report': {
+        'task': 'news.tasks.generate_weekly_ml_report',
+        'schedule': crontab(hour=4, minute=15, day_of_week=0),
+        'options': {'expires': 3600}
+    },
+
+    # ML 성능 모니터링 (매주 일요일 04:20 EST, 주간 리포트 직후)
+    'monitor-ml-performance': {
+        'task': 'news.tasks.monitor_ml_performance',
+        'schedule': crontab(hour=4, minute=20, day_of_week=0),
+        'options': {'expires': 3600}
+    },
+
+    # LightGBM 학습 (매주 일요일 04:30 EST, 조건 충족 시만 실행)
+    'train-lightgbm-model': {
+        'task': 'news.tasks.train_lightgbm_model',
+        'schedule': crontab(hour=4, minute=30, day_of_week=0),
+        'options': {'expires': 7200}  # 2시간 후 만료
+    },
+
+    # ============================================================
     # ETF Holdings 자동 수집 태스크
     # ============================================================
 

@@ -34,15 +34,15 @@ class NewsKeywordExtractor:
     """
 
     MODEL = "gemini-2.5-flash"
-    MAX_OUTPUT_TOKENS = 4000  # 충분한 응답 토큰 (한국어는 토큰 소비가 많음)
+    MAX_OUTPUT_TOKENS = 6000  # 충분한 응답 토큰 (한국어는 토큰 소비가 많음)
     TEMPERATURE = 0.3  # 일관된 키워드 생성
     MAX_NEWS_PER_REQUEST = 100  # 한 번에 처리할 최대 뉴스 수
 
     # 기본 키워드 (LLM 실패 시)
     FALLBACK_KEYWORDS = [
-        {"text": "시장 동향", "sentiment": "neutral", "related_symbols": []},
-        {"text": "거래량 증가", "sentiment": "neutral", "related_symbols": []},
-        {"text": "변동성 확대", "sentiment": "neutral", "related_symbols": []},
+        {"text": "시장 동향", "sentiment": "neutral", "related_symbols": [], "reason": "전반적인 시장 흐름을 확인하세요"},
+        {"text": "거래량 증가", "sentiment": "neutral", "related_symbols": [], "reason": "주요 종목의 거래량 변화를 주시하세요"},
+        {"text": "변동성 확대", "sentiment": "neutral", "related_symbols": [], "reason": "시장 변동성이 높아 주의가 필요합니다"},
     ]
 
     def __init__(self, language: str = "ko"):
@@ -205,6 +205,9 @@ class NewsKeywordExtractor:
    - sentiment: "positive", "negative", "neutral" 중 하나
    - related_symbols: 관련 종목 심볼 리스트 (최대 3개) - 가능한 한 관련 종목을 찾아 포함하세요!
    - importance: 중요도 (0.0 ~ 1.0)
+   - reason: 이 키워드가 왜 중요한지 투자자 관점에서 1-2문장 설명 (50자 이내)
+     예: "NVDA 실적 발표 임박, AI 칩 수요 지속 확인 기대"
+     예: "Fed 의사록 공개 예정, 금리 인하 시점 단서 주목"
 3. 키워드는 중요도 순으로 정렬하세요
 4. 다양한 주제를 다루세요 (섹터, 이슈, 트렌드 등)
 5. 반드시 완전한 JSON 배열 형식으로 응답하세요
@@ -220,9 +223,9 @@ class NewsKeywordExtractor:
 
 ## 출력 형식:
 [
-  {"text": "AI 반도체 수요", "sentiment": "positive", "related_symbols": ["NVDA", "AMD", "INTC"], "importance": 0.95},
-  {"text": "빅테크 실적 우려", "sentiment": "negative", "related_symbols": ["AAPL", "MSFT", "GOOGL"], "importance": 0.90},
-  {"text": "비트코인 급락", "sentiment": "negative", "related_symbols": ["COIN", "MSTR"], "importance": 0.85},
+  {"text": "AI 반도체 수요", "sentiment": "positive", "related_symbols": ["NVDA", "AMD", "INTC"], "importance": 0.95, "reason": "NVDA 실적 발표 임박, 공급망 전체 주목"},
+  {"text": "빅테크 실적 우려", "sentiment": "negative", "related_symbols": ["AAPL", "MSFT", "GOOGL"], "importance": 0.90, "reason": "어닝 시즌 시작, 가이던스 하향 우려 확산"},
+  {"text": "비트코인 급락", "sentiment": "negative", "related_symbols": ["COIN", "MSTR"], "importance": 0.85, "reason": "규제 불확실성 재부각, 관련주 동반 약세"},
   ...
 ]"""
 
@@ -265,7 +268,8 @@ class NewsKeywordExtractor:
                             'text': str(kw.get('text', ''))[:15],
                             'sentiment': kw.get('sentiment', 'neutral'),
                             'related_symbols': kw.get('related_symbols', [])[:3],
-                            'importance': float(kw.get('importance', 0.5))
+                            'importance': float(kw.get('importance', 0.5)),
+                            'reason': str(kw.get('reason', ''))[:80],
                         })
                 return validated[:10]
 
@@ -277,7 +281,7 @@ class NewsKeywordExtractor:
             matches = re.findall(pattern, response_text)
             if matches:
                 return [
-                    {"text": text[:15], "sentiment": "neutral", "related_symbols": [], "importance": 0.5}
+                    {"text": text[:15], "sentiment": "neutral", "related_symbols": [], "importance": 0.5, "reason": ""}
                     for text in matches[:10]
                 ]
 

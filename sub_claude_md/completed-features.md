@@ -86,8 +86,21 @@
 - ✅ Frontend: NewsCategoryManager 컴포넌트, NewsTab 통합
 - ✅ 테스트 46개 (모델 10, 태스크 10, API 26)
 
+## News Intelligence Pipeline v3 (Phase 1~6 전체 완료)
+
+- ✅ Phase 1: 규칙 엔진 (Engine A/B/C) + 모델 변경
+- ✅ Phase 2: LLM 심층 분석 (Gemini 2.5 Flash Tier A/B/C) + ML Label 수집
+- ✅ Phase 3: Neo4j 통합 (NewsEvent 노드, Impact/Sector Ripple 관계) + API
+- ✅ Phase 4: ML 학습 (Logistic Regression, Safety Gate, Shadow Mode) + 프론트엔드
+- ✅ Phase 5: ML Production Mode (자동 배포, 롤백, 연속 하락 감지, 주간 리포트)
+- ✅ Phase 6: LightGBM (확장 10-Feature, A/B 테스트, 자동 전환 조건)
+- ✅ Sector Ripple 2-hop 확산 (대형주 → 같은 섹터 중소형주, 20개 캡, 0.4배 감쇠)
+- ✅ NewsEventTimeline 프론트엔드 (chain_logic tooltip)
+- ✅ 테스트 607개
+
+> 상세: `docs/news_intelligence_plan/FINAL_SUMMARY.md`, `sub_claude_md/news-insights.md`
+
 ## 미완성
 
 - ⏳ Market Movers Phase 3: AWS Lambda 전환
 - ⏳ Graph Analysis: REST API (urls.py), tasks.py, Frontend 시각화
-- ⏳ ML/DL 모델 통합

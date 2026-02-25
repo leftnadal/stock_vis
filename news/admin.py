@@ -3,7 +3,7 @@
 """
 
 from django.contrib import admin
-from .models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory
+from .models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory, MLModelHistory
 
 
 class NewsEntityInline(admin.TabularInline):
@@ -24,10 +24,10 @@ class EntityHighlightInline(admin.TabularInline):
 @admin.register(NewsArticle)
 class NewsArticleAdmin(admin.ModelAdmin):
     """뉴스 기사 관리"""
-    list_display = ['title', 'source', 'published_at', 'sentiment_score', 'category', 'is_press_release']
-    list_filter = ['category', 'sentiment_source', 'is_press_release', 'source', 'published_at']
+    list_display = ['title', 'source', 'published_at', 'sentiment_score', 'category', 'importance_score', 'llm_analyzed']
+    list_filter = ['category', 'sentiment_source', 'is_press_release', 'source', 'published_at', 'llm_analyzed', 'ml_label_important']
     search_fields = ['title', 'summary', 'source']
-    readonly_fields = ['id', 'url_hash', 'created_at', 'updated_at']
+    readonly_fields = ['id', 'url_hash', 'created_at', 'updated_at', 'importance_score', 'rule_tickers', 'rule_sectors', 'llm_analyzed', 'ml_label_24h', 'ml_label_important', 'ml_label_confidence', 'ml_label_updated_at']
     date_hierarchy = 'published_at'
     inlines = [NewsEntityInline]
 
@@ -44,6 +44,14 @@ class NewsArticleAdmin(admin.ModelAdmin):
         }),
         ('감성 분석', {
             'fields': ('sentiment_score', 'sentiment_source')
+        }),
+        ('Intelligence Pipeline v3', {
+            'fields': ('importance_score', 'rule_tickers', 'rule_sectors', 'llm_analyzed', 'llm_analysis'),
+            'classes': ('collapse',)
+        }),
+        ('ML Labels', {
+            'fields': ('ml_label_24h', 'ml_label_important', 'ml_label_confidence', 'ml_label_updated_at'),
+            'classes': ('collapse',)
         }),
         ('타임스탬프', {
             'fields': ('created_at', 'updated_at'),
@@ -96,3 +104,31 @@ class SentimentHistoryAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         """집계 데이터는 삭제 불가"""
         return False
+
+
+@admin.register(MLModelHistory)
+class MLModelHistoryAdmin(admin.ModelAdmin):
+    """ML 모델 학습 이력 관리"""
+    list_display = ['model_version', 'algorithm', 'f1_score', 'training_samples', 'deployment_status', 'safety_gate_passed', 'trained_at']
+    list_filter = ['deployment_status', 'algorithm', 'safety_gate_passed']
+    readonly_fields = ['trained_at']
+
+    fieldsets = (
+        ('모델 정보', {
+            'fields': ('model_version', 'algorithm', 'training_samples', 'feature_count', 'trained_at')
+        }),
+        ('성능 지표', {
+            'fields': ('f1_score', 'precision', 'recall', 'accuracy')
+        }),
+        ('가중치', {
+            'fields': ('weights', 'smoothed_weights', 'feature_importance', 'training_config'),
+            'classes': ('collapse',)
+        }),
+        ('Safety Gate', {
+            'fields': ('safety_gate_passed', 'safety_gate_details')
+        }),
+        ('배포', {
+            'fields': ('deployment_status', 'deployed_at', 'shadow_comparison'),
+            'classes': ('collapse',)
+        }),
+    )

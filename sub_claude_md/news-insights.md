@@ -123,3 +123,88 @@ Frontend Components
 - `tests/news/test_news_collection_category.py`: 모델 10개
 - `tests/news/test_collect_category_news.py`: 태스크 10개
 - `tests/serverless/test_news_categories_api.py`: API 26개
+
+---
+
+## News Intelligence Pipeline v3
+
+> 상세 설계: `docs/news_intelligence_plan/FINAL_SUMMARY.md`
+
+### 개요
+
+뉴스 수집 → 규칙 기반 분류 → LLM 심층 분석 → ML 가중치 최적화 → 자동 배포 파이프라인. 6단계 Phase 전체 완료.
+
+### 서비스 클래스
+
+| 서비스 | 파일 | 역할 |
+|--------|------|------|
+| `NewsClassifier` | `news/services/news_classifier.py` | Engine A(종목) + B(섹터) + C(5-factor 스코어링) |
+| `NewsDeepAnalyzer` | `news/services/news_deep_analyzer.py` | Gemini 2.5 Flash Tier A/B/C LLM 분석 |
+| `MLLabelCollector` | `news/services/ml_label_collector.py` | DailyPrice +24h 변동폭, label_confidence |
+| `NewsNeo4jSyncService` | `news/services/news_neo4j_sync.py` | Neo4j 동기화, Sector Ripple 2-hop 확산 |
+| `MLWeightOptimizer` | `news/services/ml_weight_optimizer.py` | LR/LightGBM 학습, Safety Gate, Shadow Mode |
+| `MLProductionManager` | `news/services/ml_production_manager.py` | 자동 배포, 롤백, 연속 하락 감지, 주간 리포트 |
+
+### 주요 모델 필드 (NewsArticle)
+
+- `importance_score` (Float): Engine C 스코어
+- `rule_sectors/rule_tickers` (JSONField): 규칙 엔진 추출 결과
+- `llm_analyzed` (Boolean) + `llm_analysis` (JSONField): LLM 분석
+- `ml_label_24h/ml_label_important/ml_label_confidence`: ML Label
+
+### MLModelHistory 모델
+
+- `model_version`, `algorithm` (logistic_regression/lightgbm)
+- `f1_score`, `weights`, `smoothed_weights`, `feature_importance`
+- `safety_gate_passed`, `deployment_status` (shadow/deployed/rolled_back/failed)
+
+### Neo4j 관계
+
+| 관계 | TTL | 설명 |
+|------|-----|------|
+| DIRECTLY_IMPACTS | 30일 | 직접 영향 |
+| INDIRECTLY_IMPACTS | 21일 | 간접 영향 + Sector Ripple (2-hop, 20개 캡, 0.4배 감쇠) |
+| CREATES_OPPORTUNITY | 14일 | 투자 기회 |
+| AFFECTS_SECTOR | 21일 | 섹터 영향 |
+
+### Celery Beat (일요일 ML 파이프라인)
+
+```
+03:00  train_importance_model       LR 학습
+03:30  generate_shadow_report       Shadow 비교
+04:00  check_auto_deploy            자동 배포 (4주 연속 Gate 통과 시)
+04:15  generate_weekly_ml_report    주간 리포트
+04:20  monitor_ml_performance       연속 하락 감지 (3주 F1 하락 → Window 축소)
+04:30  train_lightgbm_model         LightGBM (조건부)
+```
+
+### API 엔드포인트 (Pipeline v3)
+
+| 엔드포인트 | 설명 |
+|-----------|------|
+| `GET /api/v1/news/news-events/?symbol=X&days=7` | Neo4j 뉴스 이벤트 |
+| `GET /api/v1/news/news-events/impact-map/` | 영향도 맵 |
+| `GET /api/v1/news/ml-status/` | ML 모델 상태 |
+| `GET /api/v1/news/ml-shadow-report/` | Shadow 비교 리포트 |
+| `GET /api/v1/news/ml-weekly-report/` | 주간 ML 리포트 |
+| `GET /api/v1/news/ml-lightgbm-readiness/` | LightGBM 전환 준비 |
+
+### 프론트엔드
+
+| 파일 | 역할 |
+|------|------|
+| `MLModelStatusCard.tsx` | ML 모델 상태 카드 |
+| `NewsEventTimeline.tsx` | 뉴스 이벤트 타임라인 + chain_logic tooltip |
+
+### 테스트: 607개
+
+| 파일 | 수 |
+|------|---|
+| `test_news_classifier.py` | 100+ |
+| `test_news_deep_analyzer.py` | 80+ |
+| `test_ml_label_collector.py` | 60+ |
+| `test_news_neo4j_sync.py` | 80+ |
+| `test_ml_weight_optimizer.py` | 61 |
+| `test_ml_production_manager.py` | 68 |
+| `test_lightgbm.py` | 41 |
+| `test_market_feed.py` | 기타 |

@@ -38,6 +38,10 @@ urlpatterns = [
     path('portfolio/symbol/<str:symbol>/refresh/', views.RefreshStockDataView.as_view(), name='stock-refresh'),
     path('portfolio/symbol/<str:symbol>/status/', views.StockDataStatusView.as_view(), name='stock-data-status'),
 
+    # 관심사 관련 (뉴스 개인화용)
+    path('interests/', views.UserInterestListCreateView.as_view(), name='interest-list'),
+    path('interests/<int:pk>/', views.UserInterestDeleteView.as_view(), name='interest-detail'),
+
     # Watchlist 관련
     path('watchlist/', views.WatchlistListCreateView.as_view(), name='watchlist-list'),
     path('watchlist/<int:pk>/', views.WatchlistDetailView.as_view(), name='watchlist-detail'),

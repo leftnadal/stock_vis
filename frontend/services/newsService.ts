@@ -12,6 +12,13 @@ import {
   DailyNewsKeywordResponse,
   RecommendationsResponse,
   StockInsightsResponse,
+  MarketFeedResponse,
+  InterestOptionsResponse,
+  MLStatusResponse,
+  MLShadowReportResponse,
+  NewsEventsResponse,
+  MLWeeklyReportResponse,
+  LightGBMReadinessResponse,
 } from '@/types/news';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -273,6 +280,86 @@ export const newsService = {
       throw new Error('Failed to fetch recommendations');
     }
 
+    return response.json();
+  },
+
+  // ===== Phase A: Market Feed (Cold Start) =====
+
+  /**
+   * Get market feed for unauthenticated / cold-start users
+   * AllowAny endpoint — no auth header required
+   */
+  async getMarketFeed(): Promise<MarketFeedResponse> {
+    const response = await fetch(`${API_URL}/news/market-feed/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch market feed');
+    return response.json();
+  },
+
+  // ===== Phase B: Interest Options =====
+
+  /**
+   * Get available interest options (themes + sectors) for onboarding
+   * AllowAny endpoint — no auth header required
+   */
+  async getInterestOptions(): Promise<InterestOptionsResponse> {
+    const response = await fetch(`${API_URL}/news/interest-options/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch interest options');
+    return response.json();
+  },
+
+  // ===== Phase 4: ML Model Status API =====
+
+  async getMLStatus(): Promise<MLStatusResponse> {
+    const response = await fetch(`${API_URL}/news/ml-status/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch ML status');
+    return response.json();
+  },
+
+  async getMLShadowReport(): Promise<MLShadowReportResponse> {
+    const response = await fetch(`${API_URL}/news/ml-shadow-report/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch ML shadow report');
+    return response.json();
+  },
+
+  // ===== Phase 4: News Events API =====
+
+  async getNewsEvents(symbol: string, days: number = 7): Promise<NewsEventsResponse> {
+    const params = new URLSearchParams({
+      symbol,
+      days: days.toString(),
+    });
+    const response = await fetch(`${API_URL}/news/news-events/?${params}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch news events');
+    return response.json();
+  },
+
+  // ===== Phase 5: ML Weekly Report API =====
+
+  async getMLWeeklyReport(): Promise<MLWeeklyReportResponse> {
+    const response = await fetch(`${API_URL}/news/ml-weekly-report/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch ML weekly report');
+    return response.json();
+  },
+
+  // ===== Phase 6: LightGBM Readiness API =====
+
+  async getLightGBMReadiness(): Promise<LightGBMReadinessResponse> {
+    const response = await fetch(`${API_URL}/news/ml-lightgbm-readiness/`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch LightGBM readiness');
     return response.json();
   },
 };

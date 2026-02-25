@@ -29,7 +29,7 @@ from .serializers import (
     WatchlistItemUpdateSerializer
 )
 from stocks.models import Stock
-from .models import User, Portfolio, Watchlist, WatchlistItem
+from .models import User, Portfolio, Watchlist, WatchlistItem, UserInterest
 from .cache_utils import WatchlistCache, watchlist_cached_api
 
 logger = logging.getLogger(__name__)
@@ -954,3 +954,128 @@ class WatchlistBulkRemoveView(APIView):
                     'not_found_count': len(not_found)
                 }
             }, status=status.HTTP_200_OK)
+
+
+class UserInterestListCreateView(APIView):
+    """
+    GET: 사용자 관심사 목록 조회
+    POST: 관심사 bulk 추가 (중복 무시)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        interests = UserInterest.objects.filter(user=request.user).order_by('-created_at')
+        data = [
+            {
+                'id': i.id,
+                'interest_type': i.interest_type,
+                'value': i.value,
+                'display_name': i.display_name,
+                'auto_category_id': i.auto_category_id,
+                'created_at': i.created_at.isoformat(),
+            }
+            for i in interests
+        ]
+        return Response(data)
+
+    def post(self, request):
+        """
+        Request Body:
+        {
+            "interests": [
+                {"interest_type": "theme", "value": "ai_semiconductor", "display_name": "AI & 반도체"},
+                {"interest_type": "sector", "value": "Technology", "display_name": "Technology"}
+            ]
+        }
+        """
+        from news.models import NewsCollectionCategory
+
+        interests_data = request.data.get('interests', [])
+        if not interests_data or not isinstance(interests_data, list):
+            raise ValidationError("'interests' 필드가 필요합니다 (리스트)")
+
+        created = []
+        skipped = []
+
+        for item in interests_data:
+            interest_type = item.get('interest_type')
+            value = item.get('value')
+            display_name = item.get('display_name', value)
+
+            if not interest_type or not value:
+                continue
+
+            interest, was_created = UserInterest.objects.get_or_create(
+                user=request.user,
+                interest_type=interest_type,
+                value=value,
+                defaults={'display_name': display_name},
+            )
+
+            if was_created:
+                # NewsCollectionCategory 자동 연결
+                self._link_category(interest)
+                created.append({
+                    'id': interest.id,
+                    'interest_type': interest.interest_type,
+                    'value': interest.value,
+                    'display_name': interest.display_name,
+                    'auto_category_id': interest.auto_category_id,
+                })
+            else:
+                skipped.append(value)
+
+        return Response({
+            'created': created,
+            'skipped': skipped,
+            'total_interests': UserInterest.objects.filter(user=request.user).count(),
+        }, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    def _link_category(self, interest):
+        """관심사에 맞는 NewsCollectionCategory 자동 연결"""
+        from news.models import NewsCollectionCategory
+
+        try:
+            if interest.interest_type == 'sector':
+                cat, _ = NewsCollectionCategory.objects.get_or_create(
+                    name=interest.display_name,
+                    category_type='sector',
+                    defaults={
+                        'value': interest.value,
+                        'is_active': True,
+                        'priority': 'medium',
+                    },
+                )
+                interest.auto_category_id = cat.id
+                interest.save(update_fields=['auto_category_id'])
+
+            elif interest.interest_type == 'theme':
+                from news.services.interest_options import InterestOptionsService
+                symbols = InterestOptionsService.get_theme_symbols(interest.value)
+                if symbols:
+                    cat, _ = NewsCollectionCategory.objects.get_or_create(
+                        name=interest.display_name,
+                        category_type='custom',
+                        defaults={
+                            'value': ','.join(symbols),
+                            'is_active': True,
+                            'priority': 'medium',
+                        },
+                    )
+                    interest.auto_category_id = cat.id
+                    interest.save(update_fields=['auto_category_id'])
+        except Exception as e:
+            logger.warning(f"Failed to link category for interest {interest}: {e}")
+
+
+class UserInterestDeleteView(APIView):
+    """DELETE: 특정 관심사 삭제"""
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, pk):
+        try:
+            interest = UserInterest.objects.get(pk=pk, user=request.user)
+            interest.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except UserInterest.DoesNotExist:
+            raise NotFound("Interest not found")

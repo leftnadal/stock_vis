@@ -14,6 +14,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword
 from ..services import NewsAggregatorService
@@ -693,6 +694,337 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         cache.set(cache_key, result, 3600)
 
         return Response(result)
+
+    # ===== Phase 4: Cold Start + Personalized Feed =====
+
+    @action(detail=False, methods=['get'], url_path='market-feed', permission_classes=[AllowAny])
+    def market_feed(self, request):
+        """
+        AI 뉴스 브리핑 + 시장 컨텍스트. AllowAny (콜드 스타트용).
+
+        GET /api/v1/news/market-feed/
+
+        Returns:
+            {
+                "date": "2026-02-24",
+                "is_fallback": false,
+                "fallback_message": null,
+                "briefing": {
+                    "keywords": [
+                        {
+                            "text": "AI 반도체 수요",
+                            "sentiment": "positive",
+                            "related_symbols": ["NVDA", "AMD"],
+                            "importance": 0.95,
+                            "reason": "NVDA 실적 발표 임박, 공급망 전체 주목",
+                            "news_count": 5,
+                            "headlines": [{"title": "...", "url": "..."}]
+                        }
+                    ],
+                    "total_news_count": 100,
+                    "llm_model": "gemini-2.5-flash"
+                },
+                "market_context": {
+                    "top_sectors": [...],
+                    "hot_movers": [...]
+                }
+            }
+        """
+        from news.services.market_feed import MarketFeedService
+        service = MarketFeedService()
+        data = service.get_feed()
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='interest-options', permission_classes=[AllowAny])
+    def interest_options(self, request):
+        """
+        관심사 선택 옵션 (테마 + 섹터). AllowAny (온보딩용).
+
+        GET /api/v1/news/interest-options/
+
+        Returns:
+            {
+                "themes": [
+                    {
+                        "interest_type": "theme",
+                        "value": "ai_semiconductor",
+                        "display_name": "AI & 반도체",
+                        "sample_symbols": ["NVDA", "AMD", "INTC"]
+                    }
+                ],
+                "sectors": [
+                    {
+                        "interest_type": "sector",
+                        "value": "Technology",
+                        "display_name": "Technology",
+                        "sample_symbols": ["AAPL", "MSFT", "NVDA"]
+                    }
+                ]
+            }
+        """
+        from news.services.interest_options import InterestOptionsService
+        service = InterestOptionsService()
+        data = service.get_options()
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='personalized-feed', permission_classes=[IsAuthenticated])
+    def personalized_feed(self, request):
+        """
+        사용자 맞춤 뉴스 피드 (포트폴리오 > Watchlist > 관심사 > 시장 피드 순서).
+
+        GET /api/v1/news/personalized-feed/
+
+        Returns:
+            {
+                "source_type": "portfolio|watchlist|interests|market_feed",
+                "personalized": true,
+                "articles": [...],
+                "symbols_used": {
+                    "portfolio": ["AAPL", "NVDA"],
+                    "watchlist": ["TSLA"]
+                }
+            }
+        """
+        from news.services.personalized_feed import PersonalizedFeedService
+        service = PersonalizedFeedService()
+        data = service.get_feed(request.user)
+        return Response(data)
+
+    # ===== Phase 3: News Events (Neo4j) API =====
+
+    @action(detail=False, methods=['get'], url_path='news-events')
+    def news_events(self, request):
+        """
+        뉴스 이벤트 조회 (Neo4j 기반)
+
+        GET /api/v1/news/news-events/?symbol=NVDA&days=7
+
+        Query Parameters:
+            - symbol: 종목 심볼 (필수)
+            - days: 조회 기간 (기본값: 7, 최대: 30)
+
+        Returns:
+            {
+                "symbol": "NVDA",
+                "days": 7,
+                "events": [...],
+                "summary": {
+                    "total_events": 5,
+                    "bullish_count": 3,
+                    "bearish_count": 1,
+                    "avg_confidence": 0.75,
+                    "direct_count": 3,
+                    "indirect_count": 2,
+                    "opportunity_count": 1
+                }
+            }
+        """
+        symbol = request.query_params.get('symbol')
+        if not symbol:
+            raise ValidationError({'symbol': 'symbol parameter is required'})
+
+        symbol = symbol.upper()
+        days = min(int(request.query_params.get('days', 7)), 30)
+
+        cache_key = f"news:events:{symbol}:{days}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        from news.services import NewsNeo4jSyncService
+        sync_service = NewsNeo4jSyncService()
+
+        events = sync_service.get_news_events_for_symbol(
+            symbol=symbol, days=days, limit=20,
+        )
+        summary = sync_service.get_symbol_impact_summary(
+            symbol=symbol, days=days,
+        )
+
+        data = {
+            'symbol': symbol,
+            'days': days,
+            'events': events,
+            'summary': summary,
+        }
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='news-events/impact-map')
+    def news_events_impact_map(self, request):
+        """
+        뉴스 영향도 맵 (시각화용)
+
+        GET /api/v1/news/news-events/impact-map/?days=7
+
+        Query Parameters:
+            - days: 조회 기간 (기본값: 7, 최대: 30)
+
+        Returns:
+            {
+                "nodes": [
+                    {"id": "article-uuid", "label": "Fed raises...", "type": "NewsEvent", ...},
+                    {"id": "NVDA", "label": "NVIDIA", "type": "Stock"},
+                    {"id": "Technology", "label": "Technology", "type": "Sector"}
+                ],
+                "edges": [
+                    {"source": "article-uuid", "target": "NVDA", "type": "DIRECTLY_IMPACTS", ...}
+                ],
+                "stats": {
+                    "total_events": 10,
+                    "total_stocks": 15,
+                    "total_sectors": 5,
+                    "total_relationships": 25
+                }
+            }
+        """
+        days = min(int(request.query_params.get('days', 7)), 30)
+
+        cache_key = f"news:impact_map:{days}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        from news.services import NewsNeo4jSyncService
+        sync_service = NewsNeo4jSyncService()
+        data = sync_service.get_impact_map(days=days, limit=50)
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return Response(data)
+
+    # ===== Phase 4: ML Model Status + Shadow Report API =====
+
+    @action(detail=False, methods=['get'], url_path='ml-status')
+    def ml_status(self, request):
+        """
+        ML 모델 현재 상태 조회
+
+        GET /api/v1/news/ml-status/
+
+        Returns:
+            {
+                "latest_model": {"version": "lr_v1_20260225_1", "f1_score": 0.72, ...},
+                "deployed_model": {"version": ..., "weights": {...}, ...},
+                "recent_history": [...],
+                "labeled_data_count": 3500,
+                "min_required": 200,
+                "ready_for_training": true
+            }
+        """
+        cache_key = "news:ml_status"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        data = MLWeightOptimizer.get_current_status()
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='ml-shadow-report')
+    def ml_shadow_report(self, request):
+        """
+        Shadow Mode 비교 리포트 조회
+
+        GET /api/v1/news/ml-shadow-report/
+
+        Returns:
+            {
+                "model_version": "lr_v1_20260225_1",
+                "shadow_comparison": {
+                    "period": "Last 7 days",
+                    "total_articles": 500,
+                    "manual_selected": 75,
+                    "ml_selected": 75,
+                    "overlap": 60,
+                    "agreement_rate": 0.80
+                },
+                "metrics": {"f1": 0.72, "precision": 0.68, ...},
+                "weights": {"source_credibility": 0.15, ...}
+            }
+        """
+        from ..models import MLModelHistory
+
+        latest = MLModelHistory.objects.filter(
+            deployment_status__in=['shadow', 'deployed'],
+            shadow_comparison__isnull=False,
+        ).order_by('-trained_at').first()
+
+        if not latest:
+            return Response({
+                'status': 'no_report',
+                'message': 'No shadow comparison report available',
+            })
+
+        data = {
+            'model_version': latest.model_version,
+            'deployment_status': latest.deployment_status,
+            'shadow_comparison': latest.shadow_comparison,
+            'metrics': {
+                'f1': latest.f1_score,
+                'precision': latest.precision,
+                'recall': latest.recall,
+                'accuracy': latest.accuracy,
+            },
+            'weights': latest.smoothed_weights,
+            'safety_gate': latest.safety_gate_details,
+            'trained_at': str(latest.trained_at),
+        }
+        return Response(data)
+
+    # ===== Phase 5: ML Production + Weekly Report API =====
+
+    @action(detail=False, methods=['get'], url_path='ml-weekly-report')
+    def ml_weekly_report(self, request):
+        """
+        주간 ML 성능 리포트 조회
+
+        GET /api/v1/news/ml-weekly-report/
+
+        Returns:
+            {
+                "period": {"start": "2026-02-18", "end": "2026-02-25"},
+                "model_status": {...},
+                "performance_trend": {...},
+                "llm_accuracy": {...},
+                "data_stats": {...},
+                "recommendations": [...]
+            }
+        """
+        cache_key = "news:ml_weekly_report"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        from news.services.ml_production_manager import MLProductionManager
+        manager = MLProductionManager()
+        data = manager.generate_weekly_report()
+
+        cache.set(cache_key, data, 3600)  # 1시간 캐시
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='ml-lightgbm-readiness')
+    def ml_lightgbm_readiness(self, request):
+        """
+        LightGBM 전환 준비 상태 조회
+
+        GET /api/v1/news/ml-lightgbm-readiness/
+
+        Returns:
+            {
+                "ready": false,
+                "conditions": {
+                    "data_sufficient": {"met": false, "current": 5000, "required": 10000},
+                    "lr_stagnation": {"met": true, "weeks_checked": 3, "f1_range": 0.005},
+                    "feature_stability": {"met": true, "sector_coverage": 0.65}
+                }
+            }
+        """
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        data = MLWeightOptimizer.check_lightgbm_readiness()
+        return Response(data)
 
     # ===== Legacy: Stock Recommendations API (Deprecated) =====
 

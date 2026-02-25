@@ -8,7 +8,11 @@ import NewsFilterBar from '@/components/news/NewsFilterBar';
 import NewsGrid from '@/components/news/NewsGrid';
 import DailyKeywordCard from '@/components/news/DailyKeywordCard';
 import NewsHighlightedStocks from '@/components/news/NewsHighlightedStocks';
+import AINewsBriefingCard from '@/components/news/AINewsBriefingCard';
+import OnboardingBanner from '@/components/news/OnboardingBanner';
+import MLModelStatusCard from '@/components/news/MLModelStatusCard';
 import { useAllNews, useNewsSources } from '@/hooks/useNews';
+import { useAuth } from '@/contexts/AuthContext';
 import { newsService } from '@/services/newsService';
 import { DailyKeyword } from '@/types/news';
 import { NewsSourceType, MarketNewsCategory, AllNewsParams } from '@/types/news';
@@ -27,6 +31,7 @@ export default function NewsPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const queryClient = useQueryClient();
+  const { user, loading: authLoading } = useAuth();
 
   // Build query params
   const queryParams: AllNewsParams = {
@@ -149,18 +154,35 @@ export default function NewsPage() {
         totalCount={newsData?.total}
       />
 
-      {/* News Insights Section - Keywords and Mentioned Stocks */}
-      <div className="px-4 sm:px-6 py-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Daily Keywords */}
-        <DailyKeywordCard
-          onKeywordClick={(keyword: DailyKeyword) => {
-            // TODO: Search news by keyword
-            console.log('Keyword clicked:', keyword);
-          }}
-        />
+      {/* News Insights Section */}
+      <div className="px-4 sm:px-6 py-4 space-y-4">
+        {/* Onboarding Banner - 인증 사용자에게만 표시 */}
+        {!authLoading && user && <OnboardingBanner />}
 
-        {/* News Highlighted Stocks (fact-based, no scores) */}
-        <NewsHighlightedStocks limit={6} />
+        {/* 콜드 스타트 vs 기존 사용자 분기 */}
+        {authLoading ? (
+          // 인증 상태 로딩 중 스켈레톤
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+            <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+          </div>
+        ) : !user ? (
+          // 미인증(콜드 스타트): AI 브리핑 카드 풀 너비
+          <div className="grid grid-cols-1 gap-4">
+            <AINewsBriefingCard />
+          </div>
+        ) : (
+          // 인증 사용자: 기존 키워드 카드 + 종목 인사이트 + ML 상태
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <DailyKeywordCard
+              onKeywordClick={(keyword: DailyKeyword) => {
+                console.log('Keyword clicked:', keyword);
+              }}
+            />
+            <NewsHighlightedStocks limit={6} />
+            <MLModelStatusCard />
+          </div>
+        )}
       </div>
 
       {/* Error state */}

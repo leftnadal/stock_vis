@@ -120,6 +120,46 @@ class NewsArticle(models.Model):
         help_text=_("보도 자료 여부")
     )
 
+    # ── News Intelligence Pipeline v3 ──
+    importance_score = models.FloatField(
+        null=True, blank=True, db_index=True,
+        help_text=_("규칙 기반 중요도 점수 (Engine C)")
+    )
+    rule_sectors = models.JSONField(
+        null=True, blank=True,
+        help_text=_("규칙 엔진 추출 섹터 리스트")
+    )
+    rule_tickers = models.JSONField(
+        null=True, blank=True,
+        help_text=_("규칙 엔진 추출 티커 리스트")
+    )
+    llm_analyzed = models.BooleanField(
+        default=False, db_index=True,
+        help_text=_("LLM 심층 분석 완료 여부")
+    )
+    llm_analysis = models.JSONField(
+        null=True, blank=True,
+        help_text=_("LLM 심층 분석 결과 JSON")
+    )
+
+    # ML Label fields
+    ml_label_24h = models.FloatField(
+        null=True, blank=True,
+        help_text=_("발행 후 다음 거래일 변동폭 (%)")
+    )
+    ml_label_important = models.BooleanField(
+        null=True, blank=True,
+        help_text=_("섹터별 threshold 적용 중요 뉴스 여부")
+    )
+    ml_label_confidence = models.FloatField(
+        null=True, blank=True,
+        help_text=_("Label 신뢰도 (0~1)")
+    )
+    ml_label_updated_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text=_("ML Label 업데이트 시간")
+    )
+
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -131,6 +171,8 @@ class NewsArticle(models.Model):
             models.Index(fields=['-published_at', 'category']),
             models.Index(fields=['source', '-published_at']),
             models.Index(fields=['sentiment_score', '-published_at']),
+            models.Index(fields=['importance_score', '-published_at']),
+            models.Index(fields=['llm_analyzed', '-published_at']),
         ]
 
     def save(self, *args, **kwargs):
@@ -420,6 +462,111 @@ class DailyNewsKeyword(models.Model):
             reverse=True
         )
         return sorted_keywords[:limit]
+
+
+class MLModelHistory(models.Model):
+    """ML 모델 학습 이력 (News Intelligence Pipeline v3)"""
+
+    DEPLOYMENT_STATUS_CHOICES = [
+        ('shadow', 'Shadow Mode'),
+        ('deployed', 'Deployed'),
+        ('rolled_back', 'Rolled Back'),
+        ('failed', 'Failed'),
+    ]
+
+    id = models.AutoField(primary_key=True)
+    trained_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text=_("학습 완료 시각")
+    )
+    model_version = models.CharField(
+        max_length=50,
+        help_text=_("모델 버전 (예: lr_v1_week8)")
+    )
+    algorithm = models.CharField(
+        max_length=50, default='logistic_regression',
+        help_text=_("알고리즘 (logistic_regression, lightgbm)")
+    )
+    training_samples = models.PositiveIntegerField(
+        help_text=_("학습 데이터 건수")
+    )
+    feature_count = models.PositiveIntegerField(
+        default=5,
+        help_text=_("feature 수")
+    )
+
+    # Performance metrics
+    f1_score = models.FloatField(
+        help_text=_("F1 Score")
+    )
+    precision = models.FloatField(
+        null=True, blank=True,
+        help_text=_("Precision")
+    )
+    recall = models.FloatField(
+        null=True, blank=True,
+        help_text=_("Recall")
+    )
+    accuracy = models.FloatField(
+        null=True, blank=True,
+        help_text=_("Accuracy")
+    )
+
+    # Weights & config
+    weights = models.JSONField(
+        null=True, blank=True,
+        help_text=_("Engine C β₁~β₅ 가중치")
+    )
+    smoothed_weights = models.JSONField(
+        null=True, blank=True,
+        help_text=_("Smoothing 적용 후 가중치 (0.7×new + 0.3×prev)")
+    )
+    feature_importance = models.JSONField(
+        null=True, blank=True,
+        help_text=_("Feature importance 리포트")
+    )
+    training_config = models.JSONField(
+        null=True, blank=True,
+        help_text=_("학습 설정 (window, split 등)")
+    )
+
+    # Safety Gate
+    safety_gate_passed = models.BooleanField(
+        default=False,
+        help_text=_("Safety Gate 통과 여부")
+    )
+    safety_gate_details = models.JSONField(
+        null=True, blank=True,
+        help_text=_("Safety Gate 상세 결과")
+    )
+
+    # Deployment
+    deployment_status = models.CharField(
+        max_length=20,
+        choices=DEPLOYMENT_STATUS_CHOICES,
+        default='shadow',
+        help_text=_("배포 상태")
+    )
+    deployed_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text=_("실적용 시각")
+    )
+
+    # Shadow mode comparison
+    shadow_comparison = models.JSONField(
+        null=True, blank=True,
+        help_text=_("Shadow Mode: ML vs 수동 선별 비교 리포트")
+    )
+
+    class Meta:
+        db_table = 'ml_model_history'
+        ordering = ['-trained_at']
+        indexes = [
+            models.Index(fields=['-trained_at', 'deployment_status']),
+        ]
+
+    def __str__(self):
+        return f"{self.model_version} (F1={self.f1_score:.3f}, {self.deployment_status})"
 
 
 class NewsCollectionCategory(models.Model):
