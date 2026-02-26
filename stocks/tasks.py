@@ -862,3 +862,66 @@ def backfill_signal_accuracy(lookback_days=10):
 
     logger.info(f"Signal accuracy backfill 완료: {total_updated} records updated")
     return {'updated': total_updated, 'dates_checked': len(target_dates)}
+
+
+# ============================================================
+# 한글 기업 개요 생성 태스크
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=60 * 5,
+    soft_time_limit=30,
+    time_limit=60,
+)
+def generate_korean_overview(self, symbol: str, force: bool = False):
+    """
+    단일 종목 한글 개요 생성 태스크
+
+    Usage:
+        generate_korean_overview.delay('AAPL')
+    """
+    try:
+        from stocks.services.korean_overview_service import KoreanOverviewService
+
+        service = KoreanOverviewService()
+        overview = service.generate_for_stock(symbol, force=force)
+
+        return {
+            'symbol': symbol,
+            'status': 'success',
+            'generated_at': str(overview.generated_at),
+        }
+    except Exception as exc:
+        logger.exception(f"generate_korean_overview failed for {symbol}: {exc}")
+        raise self.retry(exc=exc)
+
+
+@shared_task(
+    bind=True,
+    max_retries=1,
+    soft_time_limit=7200,   # 2시간
+    time_limit=7260,
+)
+def bulk_generate_korean_overviews(self, batch_size: int = 50, force: bool = False):
+    """
+    S&P 500 한글 개요 배치 생성 태스크
+
+    월 1회 실행. batch_size 단위로 처리.
+
+    Usage:
+        bulk_generate_korean_overviews.delay()
+        bulk_generate_korean_overviews.delay(force=True)  # 전체 재생성
+    """
+    try:
+        from stocks.services.korean_overview_service import KoreanOverviewService
+
+        service = KoreanOverviewService()
+        result = service.batch_generate(force=force)
+
+        logger.info(f"bulk_generate_korean_overviews completed: {result}")
+        return result
+    except Exception as exc:
+        logger.exception(f"bulk_generate_korean_overviews failed: {exc}")
+        raise self.retry(exc=exc)

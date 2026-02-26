@@ -4,7 +4,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { ChevronDown, ChevronUp, Newspaper, BarChart3, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronUp, Newspaper, BarChart3, ArrowRight, Info } from 'lucide-react';
 import { StockInsight } from '@/types/news';
 import SentimentBar from './SentimentBar';
 import KeywordMentionList from './KeywordMentionList';
@@ -12,11 +12,13 @@ import MarketDataBadge from './MarketDataBadge';
 
 interface StockInsightCardProps {
   insight: StockInsight;
+  periodLabel?: string;
   defaultExpanded?: boolean;
 }
 
 export default function StockInsightCard({
   insight,
+  periodLabel,
   defaultExpanded = false,
 }: StockInsightCardProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -58,6 +60,15 @@ export default function StockInsightCard({
             <span className="font-medium text-gray-700 dark:text-gray-300">
               {insight.total_news_count}건
             </span>
+            {periodLabel && (
+              <span
+                className="inline-flex items-center gap-0.5 text-gray-400 dark:text-gray-500 cursor-help"
+                title={`${periodLabel} 동안 수집된 뉴스에서 해당 종목이 언급된 횟수입니다`}
+              >
+                <Info className="w-3 h-3" />
+                <span>{periodLabel}</span>
+              </span>
+            )}
           </div>
 
           {/* Sentiment distribution bar */}

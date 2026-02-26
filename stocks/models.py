@@ -673,6 +673,36 @@ class SP500Constituent(models.Model):
         return f"{self.company_name} ({self.symbol})"
 
 
+class StockOverviewKo(models.Model):
+    """
+    S&P 500 종목 한글 기업 개요 (LLM 생성)
+
+    Gemini를 사용하여 기업 개요를 한국어로 생성.
+    주 1회 또는 월 1회 갱신.
+    """
+    stock = models.OneToOneField('Stock', on_delete=models.CASCADE, related_name='overview_ko', primary_key=True)
+
+    # 한글 개요 내용
+    summary = models.TextField(help_text="한글 기업 개요 요약 (2-3문단)")
+    business_model = models.TextField(blank=True, default='', help_text="사업 모델 설명")
+    competitive_edge = models.TextField(blank=True, default='', help_text="경쟁 우위 및 해자")
+    risk_factors = models.TextField(blank=True, default='', help_text="주요 리스크 요인")
+
+    # 메타데이터
+    llm_model = models.CharField(max_length=50, default='gemini-2.5-flash')
+    generated_at = models.DateTimeField()
+    generation_time_ms = models.PositiveIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'stocks_overview_ko'
+
+    def __str__(self):
+        return f"{self.stock_id} 한글 개요"
+
+
 import uuid
 
 

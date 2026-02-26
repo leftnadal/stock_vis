@@ -3,7 +3,7 @@
 'use client';
 
 import React from 'react';
-import { Newspaper, RefreshCw, AlertCircle, Clock, TrendingUp } from 'lucide-react';
+import { Newspaper, RefreshCw, AlertCircle, Clock, TrendingUp, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import StockInsightCard from './StockInsightCard';
@@ -45,10 +45,13 @@ export default function NewsHighlightedStocks({
 }: NewsHighlightedStocksProps) {
   const { data, isLoading, error, refetch, isFetching } = useStockInsights(date, limit, true);
 
-  // Format date for display
-  const displayDate = date
-    ? format(new Date(date), 'yyyy년 M월 d일', { locale: ko })
-    : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
+  // Format period for display
+  const periodLabel = data?.period_days
+    ? `최근 ${data.period_days}일`
+    : '오늘';
+  const periodRange = data?.period_start && data?.period_end
+    ? `${format(new Date(data.period_start + 'T00:00:00'), 'M/d', { locale: ko })} ~ ${format(new Date(data.period_end + 'T00:00:00'), 'M/d', { locale: ko })}`
+    : '';
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
@@ -62,8 +65,12 @@ export default function NewsHighlightedStocks({
             <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
               뉴스 언급 종목
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              {displayDate} 기준
+            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+              <CalendarDays className="w-3 h-3" />
+              <span>{periodLabel}</span>
+              {periodRange && (
+                <span className="text-gray-400 dark:text-gray-500">({periodRange})</span>
+              )}
             </p>
           </div>
         </div>
@@ -120,6 +127,7 @@ export default function NewsHighlightedStocks({
                 <StockInsightCard
                   key={insight.symbol}
                   insight={insight}
+                  periodLabel={periodLabel}
                 />
               ))}
             </div>

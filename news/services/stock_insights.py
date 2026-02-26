@@ -50,7 +50,7 @@ class NewsBasedStockInsights:
         self,
         target_date: Optional[date] = None,
         limit: int = 10,
-        min_mentions: int = 2,
+        min_mentions: int = 1,
         include_market_data: bool = True
     ) -> Dict:
         """
@@ -151,6 +151,9 @@ class NewsBasedStockInsights:
 
         result = {
             'date': str(target_date),
+            'period_days': 7,
+            'period_start': str(target_date - timedelta(days=6)),
+            'period_end': str(target_date),
             'insights': insights,
             'total_keywords': len(keywords),
             'computation_time_ms': computation_time_ms,
@@ -167,7 +170,7 @@ class NewsBasedStockInsights:
         keywords: List[Dict],
         min_mentions: int
     ) -> Dict[str, Dict]:
-        """종목별 데이터 수집"""
+        """종목별 데이터 수집 (7일 범위 + 키워드 fallback)"""
         symbol_data = defaultdict(lambda: {
             'company_name': None,
             'keyword_mentions': [],
@@ -184,9 +187,9 @@ class NewsBasedStockInsights:
         # 1. 키워드에서 종목-키워드 매핑 수집
         keyword_symbol_map = self._build_keyword_symbol_map(keywords)
 
-        # 2. 해당 날짜 뉴스 멘션 조회
-        start_datetime = datetime.combine(target_date, datetime.min.time())
+        # 2. 최근 7일 뉴스 멘션 조회 (오늘만 보면 데이터 부족)
         end_datetime = datetime.combine(target_date, datetime.max.time())
+        start_datetime = datetime.combine(target_date - timedelta(days=6), datetime.min.time())
 
         if timezone.is_naive(start_datetime):
             start_datetime = timezone.make_aware(start_datetime)
@@ -222,7 +225,13 @@ class NewsBasedStockInsights:
                 'sentiment_score': float(entity.sentiment_score) if entity.sentiment_score else None,
             })
 
-        # 3. 키워드 멘션 정보 추가
+        # 3. Fallback: 엔티티가 부족하면 키워드 related_symbols로 보충
+        if len(symbol_data) < min_mentions + 2:
+            self._supplement_from_keywords(
+                symbol_data, keywords, start_datetime, end_datetime
+            )
+
+        # 4. 키워드 멘션 정보 추가
         for symbol, data in symbol_data.items():
             # 해당 종목과 연관된 키워드 찾기
             related_keywords = keyword_symbol_map.get(symbol, [])
@@ -243,7 +252,7 @@ class NewsBasedStockInsights:
                         'published_at': news_item['published_at'],
                     })
 
-        # 4. 최소 멘션 필터 적용 및 news_articles 필드 제거
+        # 5. 최소 멘션 필터 적용 및 news_articles 필드 제거
         filtered_data = {}
         for symbol, data in symbol_data.items():
             if data['total_news_count'] >= min_mentions:
@@ -252,6 +261,73 @@ class NewsBasedStockInsights:
                 filtered_data[symbol] = data
 
         return filtered_data
+
+    def _supplement_from_keywords(
+        self,
+        symbol_data: Dict,
+        keywords: List[Dict],
+        start_datetime: datetime,
+        end_datetime: datetime,
+    ):
+        """
+        NewsEntity가 부족할 때 키워드 related_symbols로 보충.
+        키워드에서 종목을 추출하고 NewsArticle에서 직접 검색.
+        """
+        # 키워드에서 종목 추출
+        keyword_symbols = set()
+        symbol_keyword_info = defaultdict(list)
+        for kw in keywords:
+            for sym in kw.get('related_symbols', []):
+                sym_upper = sym.upper()
+                keyword_symbols.add(sym_upper)
+                symbol_keyword_info[sym_upper].append({
+                    'text': kw.get('text', ''),
+                    'sentiment': kw.get('sentiment', 'neutral'),
+                })
+
+        # 이미 symbol_data에 있는 종목 제외
+        new_symbols = keyword_symbols - set(symbol_data.keys())
+        if not new_symbols:
+            return
+
+        # 해당 종목명이 제목에 포함된 뉴스 검색
+        for symbol in list(new_symbols)[:20]:  # 최대 20개
+            articles = NewsArticle.objects.filter(
+                published_at__gte=start_datetime,
+                published_at__lte=end_datetime,
+            ).filter(
+                Q(title__icontains=symbol) |
+                Q(rule_tickers__contains=[symbol])
+            ).order_by('-published_at')[:5]
+
+            if not articles:
+                continue
+
+            # 회사명 조회
+            company_name = None
+            try:
+                from stocks.models import Stock
+                stock = Stock.objects.filter(symbol=symbol).first()
+                if stock:
+                    company_name = stock.stock_name or symbol
+            except Exception:
+                pass
+
+            for article in articles:
+                sentiment = self._classify_sentiment(article.sentiment_score)
+                symbol_data[symbol]['sentiment_distribution'][sentiment] += 1
+                symbol_data[symbol]['sentiment_distribution']['total'] += 1
+                symbol_data[symbol]['total_news_count'] += 1
+                symbol_data[symbol]['news_articles'].append({
+                    'headline': article.title,
+                    'source': article.source,
+                    'published_at': article.published_at.isoformat(),
+                    'sentiment': sentiment,
+                    'sentiment_score': float(article.sentiment_score) if article.sentiment_score else None,
+                })
+
+            if company_name:
+                symbol_data[symbol]['company_name'] = company_name
 
     def _build_keyword_symbol_map(self, keywords: List[Dict]) -> Dict[str, List[Dict]]:
         """키워드-종목 매핑 구축"""
