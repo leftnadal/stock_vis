@@ -21,20 +21,13 @@ class FMPClient:
 
     BASE_URL = "https://financialmodelingprep.com"
 
-    # 주요 지수 심볼
+    # 주요 지수 ETF 심볼 (FMP Starter Plan은 ^인덱스 미지원 → ETF로 대체)
     INDEX_SYMBOLS = {
-        # 미국 주요 지수
-        '^GSPC': 'S&P 500',
-        '^DJI': 'Dow Jones Industrial Average',
-        '^IXIC': 'NASDAQ Composite',
-        '^RUT': 'Russell 2000',
-        '^VIX': 'CBOE Volatility Index',
-
-        # 글로벌 지수
-        '^FTSE': 'FTSE 100',
-        '^GDAXI': 'DAX',
-        '^N225': 'Nikkei 225',
-        '^HSI': 'Hang Seng Index',
+        # 미국 주요 지수 ETF
+        'SPY': 'S&P 500 (SPY)',
+        'DIA': 'Dow Jones (DIA)',
+        'QQQ': 'NASDAQ 100 (QQQ)',
+        'IWM': 'Russell 2000 (IWM)',
     }
 
     # 섹터 ETF 심볼
@@ -137,7 +130,7 @@ class FMPClient:
         실시간 시세 조회
 
         Args:
-            symbol: 심볼 (예: 'AAPL', '^GSPC')
+            symbol: 심볼 (예: 'AAPL', 'SPY')
 
         Returns:
             시세 데이터
@@ -152,7 +145,10 @@ class FMPClient:
 
     def get_batch_quotes(self, symbols: List[str]) -> List[Dict[str, Any]]:
         """
-        복수 심볼 시세 조회
+        복수 심볼 시세 조회 (개별 요청 방식)
+
+        FMP Starter Plan에서 콤마 구분 배치 조회가 402 에러를 반환하므로
+        개별 심볼 조회로 처리.
 
         Args:
             symbols: 심볼 리스트
@@ -160,13 +156,12 @@ class FMPClient:
         Returns:
             시세 리스트
         """
-        try:
-            symbols_str = ','.join(symbols)
-            data = self._make_request("/stable/quote", {"symbol": symbols_str})
-            return data if isinstance(data, list) else []
-        except Exception as e:
-            logger.error(f"Failed to fetch batch quotes: {e}")
-            return []
+        results = []
+        for symbol in symbols:
+            quote = self.get_quote(symbol)
+            if quote:
+                results.append(quote)
+        return results
 
     def get_market_indices(self) -> Dict[str, Any]:
         """

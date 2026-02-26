@@ -100,6 +100,22 @@
 
 > 상세: `docs/news_intelligence_plan/FINAL_SUMMARY.md`, `sub_claude_md/news-insights.md`
 
+## EOD Dashboard (시그널 기반 종목 발굴)
+
+- ✅ DB 모델: EODSignal, SignalAccuracy, EODDashboardSnapshot, PipelineLog, StockNews
+- ✅ 14개 시그널 벡터 연산 (EODSignalCalculator) + VIX 레짐 분기
+- ✅ 시그널 태거 (EODSignalTagger) + primary/sub_tags + 교육 팁/리스크
+- ✅ 뉴스 Enrichment (EODNewsEnricher) + 5단계 계층 매칭 + confidence 차등
+- ✅ JSON Baker (Atomic Write, 3단계 디렉토리 swap)
+- ✅ 파이프라인 오케스트레이터 (EODPipeline, 8+1 Stage)
+- ✅ Celery Beat: run_eod_pipeline (18:30 ET), backfill_signal_accuracy (19:00 ET)
+- ✅ Management Command: pipeline_status (--run, --quality)
+- ✅ Admin API: 3개 엔드포인트 (dashboard, signal, pipeline status)
+- ✅ Frontend: 11개 컴포넌트, 메인 페이지 교체
+- ✅ 테스트: signal_calculator, pipeline, ingest_quality, api
+
+> 상세: `sub_claude_md/eod-dashboard.md`, `docs/features/eod-dashboard/README.md`
+
 ## 미완성
 
 - ⏳ Market Movers Phase 3: AWS Lambda 전환

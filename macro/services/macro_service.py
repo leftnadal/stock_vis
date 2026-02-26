@@ -13,7 +13,6 @@ from django.db import transaction
 
 from .fred_client import FREDClient
 from .fmp_client import FMPClient
-from .yfinance_client import YFinanceClient
 from ..constants import get_insight_message, calculate_fear_greed_index
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ class MacroEconomicService:
     def __init__(self):
         self.fred = FREDClient()
         self.fmp = FMPClient()
-        self.yfinance = YFinanceClient()  # FMP 대체용
 
     # =========================================================================
     # 1. Market Sentiment (공포/탐욕 지수)
@@ -211,38 +209,32 @@ class MacroEconomicService:
             return cached
 
         try:
-            # yfinance 사용 (FMP API 403 에러 대응)
             # 주요 지수
-            indices = self.yfinance.get_market_indices()
+            indices = self.fmp.get_market_indices()
 
             # 섹터 성과
-            sectors = self.yfinance.get_sector_performance()
+            sectors = self.fmp.get_sector_performance()
 
             # 환율
-            forex = self.yfinance.get_forex_rates()
+            forex = self.fmp.get_forex_rates()
 
             # 원자재
-            commodities = self.yfinance.get_commodities()
+            commodities = self.fmp.get_commodities()
 
             # 달러 인덱스
-            dxy = self.yfinance.get_dollar_index()
+            dxy = self.fmp.get_dollar_index()
 
             # VIX (FRED에서 가져옴)
             vix = self.fred.get_vix()
 
             result = {
                 'indices': {
-                    'sp500': indices.get('^GSPC'),
-                    'nasdaq': indices.get('^IXIC'),
-                    'dow': indices.get('^DJI'),
-                    'russell2000': indices.get('^RUT'),
+                    'sp500': indices.get('SPY'),
+                    'nasdaq': indices.get('QQQ'),
+                    'dow': indices.get('DIA'),
+                    'russell2000': indices.get('IWM'),
                 },
-                'global_indices': {
-                    'ftse': indices.get('^FTSE'),
-                    'dax': indices.get('^GDAXI'),
-                    'nikkei': indices.get('^N225'),
-                    'hangseng': indices.get('^HSI'),
-                },
+                'global_indices': {},
                 'sectors': sectors,
                 'forex': forex,
                 'commodities': commodities,
@@ -478,7 +470,7 @@ class MacroEconomicService:
 
     def sync_market_indices(self) -> int:
         """
-        시장 지수 데이터 동기화 (yfinance 사용)
+        시장 지수 데이터 동기화 (FMP API 사용)
 
         Returns:
             저장된 레코드 수
@@ -486,8 +478,7 @@ class MacroEconomicService:
         from ..models import MarketIndex, MarketIndexPrice
 
         try:
-            # yfinance 사용 (FMP API 403 에러 대응)
-            indices_data = self.yfinance.get_market_indices()
+            indices_data = self.fmp.get_market_indices()
             saved_count = 0
             today = date.today()
 
@@ -528,7 +519,7 @@ class MacroEconomicService:
 
     def sync_global_markets(self) -> Dict[str, int]:
         """
-        글로벌 시장 데이터 동기화 (섹터, 환율, 원자재) - yfinance 사용
+        글로벌 시장 데이터 동기화 (섹터, 환율, 원자재) - FMP API 사용
 
         Returns:
             카테고리별 저장된 레코드 수
@@ -536,19 +527,18 @@ class MacroEconomicService:
         results = {'sectors': 0, 'forex': 0, 'commodities': 0}
 
         try:
-            # yfinance 사용 (FMP API 403 에러 대응)
             # 섹터 데이터
-            sectors = self.yfinance.get_sector_performance()
+            sectors = self.fmp.get_sector_performance()
             if sectors:
                 results['sectors'] = len(sectors.get('sectors', {}))
 
             # 환율 데이터
-            forex = self.yfinance.get_forex_rates()
+            forex = self.fmp.get_forex_rates()
             if forex:
                 results['forex'] = len(forex)
 
             # 원자재 데이터
-            commodities = self.yfinance.get_commodities()
+            commodities = self.fmp.get_commodities()
             if commodities:
                 results['commodities'] = len(commodities)
 

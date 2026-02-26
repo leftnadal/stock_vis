@@ -28,12 +28,15 @@ class FMPExchangeQuotesService:
         if not self.api_key:
             logger.warning("FMP_API_KEY가 설정되지 않았습니다.")
 
+    # 지수 ETF 심볼 (FMP Starter Plan은 ^인덱스 미지원 → ETF로 대체)
+    INDEX_ETF_SYMBOLS = ['SPY', 'DIA', 'QQQ', 'IWM']
+
     def get_index_quotes(self) -> list[dict]:
         """
-        주요 지수 시세 조회
+        주요 지수 ETF 시세 조회 (FMP Starter Plan 호환)
 
         Returns:
-            주요 지수 리스트 (^GSPC, ^DJI, ^IXIC 등)
+            주요 지수 ETF 리스트 (SPY, DIA, QQQ, IWM)
             각 지수: symbol, name, price, change, changesPercentage
         """
         cache_key = "fmp:quotes:index"
@@ -44,39 +47,22 @@ class FMPExchangeQuotesService:
             logger.debug(f"캐시 히트: {cache_key}")
             return cached
 
-        # API 호출
-        if not self.api_key:
-            logger.error("FMP API 호출 실패: API 키가 없습니다.")
-            return []
-
+        # API 호출 — batch quote로 ETF 조회
         try:
-            with httpx.Client(timeout=10.0) as client:
-                response = client.get(
-                    f"{self.BASE_URL}/quotes/index",
-                    params={"apikey": self.api_key}
-                )
-                response.raise_for_status()
-                data = response.json()
+            data = self.get_batch_quotes(self.INDEX_ETF_SYMBOLS)
 
-            # 데이터 검증
-            if not isinstance(data, list):
-                logger.error("FMP API 응답 형식 오류: quotes/index")
+            if not isinstance(data, list) or not data:
+                logger.error("FMP API 응답 형식 오류: index ETF quotes")
                 return []
 
             # 캐시 저장
             cache.set(cache_key, data, self.CACHE_TTL)
-            logger.info(f"FMP API 호출 성공: quotes/index, {len(data)}개 지수")
+            logger.info(f"FMP API 호출 성공: index ETF quotes, {len(data)}개 지수")
 
             return data
 
-        except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (quotes/index): {e.response.status_code}")
-            return []
-        except httpx.TimeoutException:
-            logger.error("FMP API 타임아웃 (quotes/index)")
-            return []
         except Exception as e:
-            logger.error(f"FMP API 오류 (quotes/index): {e}")
+            logger.error(f"FMP API 오류 (index ETF quotes): {e}")
             return []
 
     def get_quote(self, symbol: str) -> Optional[dict]:
@@ -210,12 +196,12 @@ class FMPExchangeQuotesService:
         """
         indices = self.get_index_quotes()
 
-        # 주요 지수 필터링
+        # 주요 지수 ETF 필터링
         result = {}
         symbol_map = {
-            "^GSPC": "sp500",
-            "^IXIC": "nasdaq",
-            "^DJI": "dow_jones"
+            "SPY": "sp500",
+            "QQQ": "nasdaq",
+            "DIA": "dow_jones"
         }
 
         for index in indices:

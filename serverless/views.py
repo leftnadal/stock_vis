@@ -674,32 +674,41 @@ def market_breadth_api(request):
 
 
 def _get_market_indices():
-    """주요 시장 지수 데이터 조회 (yfinance)"""
-    import yfinance as yf
+    """주요 시장 지수 데이터 조회 (FMP API)"""
+    from serverless.services.fmp_client import FMPClient
 
     indices = {}
     index_symbols = {
-        'sp500': ('^GSPC', 'S&P 500'),
-        'nasdaq': ('^IXIC', 'NASDAQ'),
-        'dow': ('^DJI', 'Dow Jones'),
+        'sp500': ('SPY', 'S&P 500 (SPY)'),
+        'nasdaq': ('QQQ', 'NASDAQ 100 (QQQ)'),
+        'dow': ('DIA', 'Dow Jones (DIA)'),
     }
 
+    fmp = FMPClient()
     for key, (symbol, name) in index_symbols.items():
         try:
-            ticker = yf.Ticker(symbol)
-            info = ticker.fast_info
-            price = info.last_price
-            prev_close = info.previous_close
-            change = price - prev_close
-            change_pct = (change / prev_close) * 100 if prev_close else 0
+            quote = fmp.get_quote(symbol)
+            if quote:
+                price = quote.get('price')
+                prev_close = quote.get('previousClose')
+                change = quote.get('change', 0)
+                change_pct = quote.get('changesPercentage', 0)
 
-            indices[key] = {
-                'name': name,
-                'symbol': symbol,
-                'price': round(price, 2),
-                'change': round(change, 2),
-                'change_pct': round(change_pct, 2),
-            }
+                indices[key] = {
+                    'name': name,
+                    'symbol': symbol,
+                    'price': round(price, 2) if price else None,
+                    'change': round(change, 2) if change else None,
+                    'change_pct': round(change_pct, 2) if change_pct else None,
+                }
+            else:
+                indices[key] = {
+                    'name': name,
+                    'symbol': symbol,
+                    'price': None,
+                    'change': None,
+                    'change_pct': None,
+                }
         except Exception as e:
             logger.warning(f"지수 조회 실패 {symbol}: {e}")
             indices[key] = {

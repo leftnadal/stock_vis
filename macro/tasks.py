@@ -45,7 +45,13 @@ def update_economic_indicators(self):
                 continue
 
         # 캐시 무효화
-        cache.delete_pattern('macro:*')
+        cache.delete_many([
+            'macro:fear_greed_index',
+            'macro:interest_rates_dashboard',
+            'macro:inflation_dashboard',
+            'macro:global_markets_dashboard',
+            'macro:market_pulse_full',
+        ])
 
         logger.info(f"Economic indicators update complete. Total new values: {total_saved}")
         return {'status': 'success', 'total_saved': total_saved}
@@ -104,7 +110,7 @@ def update_market_indices(self):
                 continue
 
         # 캐시 무효화
-        cache.delete_pattern('macro:global_markets*')
+        cache.delete('macro:global_markets_dashboard')
 
         logger.info(f"Market indices update complete. Saved: {saved_count}")
         return {'status': 'success', 'saved': saved_count}
@@ -175,7 +181,7 @@ def update_economic_calendar(self):
                 continue
 
         # 캐시 무효화
-        cache.delete_pattern('macro:economic_calendar*')
+        cache.delete('macro:market_pulse_full')
 
         logger.info(f"Economic calendar update complete. Saved: {saved_count}")
         return {'status': 'success', 'saved': saved_count}

@@ -184,3 +184,9 @@ cython_debug/
 # OAG KB
 shared_kb/__pycache__/
 shared_kb/queue_data.json
+
+# EOD Pipeline generated JSON (파이프라인이 매일 재생성)
+frontend/public/static/signals/
+
+# macOS
+.DS_Store

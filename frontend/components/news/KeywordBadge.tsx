@@ -65,7 +65,7 @@ export default function KeywordBadge({
   showSymbols = false,
 }: KeywordBadgeProps) {
   const sentiment = keyword.sentiment || 'neutral';
-  const styles = SENTIMENT_STYLES[sentiment];
+  const styles = SENTIMENT_STYLES[sentiment as keyof typeof SENTIMENT_STYLES] ?? SENTIMENT_STYLES.neutral;
   const sizeStyles = SIZE_STYLES[size];
   const Icon = styles.icon;
 

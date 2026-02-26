@@ -7,6 +7,7 @@ from . import views_market_movers  # Market Movers 뷰 추가
 from . import views_fundamentals  # Fundamentals 뷰 추가
 from . import views_screener  # Stock Screener 뷰 추가
 from . import views_exchange  # Exchange Quotes 뷰 추가
+from . import views_eod  # EOD Dashboard 뷰 추가
 
 app_name = 'stocks'
 
@@ -128,4 +129,14 @@ urlpatterns = [
 
     # 섹터 성과 (섹터 ETF 기반)
     path('api/quotes/sector-performance/', views_exchange.SectorPerformanceView.as_view(), name='sector_performance'),
+
+    ## EOD Dashboard API (admin/debug)
+    # 대시보드 스냅샷 조회
+    path('eod/dashboard/', views_eod.EODDashboardView.as_view(), name='eod_dashboard'),
+
+    # 특정 시그널 종목 목록
+    path('eod/signal/<str:signal_id>/', views_eod.EODSignalDetailView.as_view(), name='eod_signal_detail'),
+
+    # 파이프라인 실행 상태
+    path('eod/pipeline/status/', views_eod.EODPipelineStatusView.as_view(), name='eod_pipeline_status'),
 ]

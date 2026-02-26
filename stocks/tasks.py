@@ -732,4 +732,133 @@ def update_financials_with_provider(symbol):
 
     except Exception as e:
         logger.error(f"[Provider] Failed for {symbol}: {e}")
-        return f"[Provider] Error: {symbol} - {e}"
+
+
+# ============================================================
+# EOD Dashboard Pipeline 태스크
+# ============================================================
+
+@shared_task(bind=True, max_retries=2, soft_time_limit=600, time_limit=660)
+def run_eod_pipeline(self, target_date=None):
+    """
+    EOD 시그널 파이프라인 전체 실행.
+    idempotent — 같은 날짜로 재실행해도 안전 (bulk_create ON CONFLICT DO UPDATE).
+
+    Args:
+        target_date: 대상 날짜 (YYYY-MM-DD 문자열, 기본: 직전 거래일)
+    """
+    try:
+        from stocks.services.eod_pipeline import EODPipeline
+        from datetime import date as date_type
+
+        target = None
+        if target_date:
+            target = date_type.fromisoformat(target_date)
+
+        pipeline = EODPipeline()
+        log = pipeline.run(target_date=target)
+
+        logger.info(f"EOD Pipeline 완료: {log.date} [{log.status}] {log.total_duration_seconds:.1f}s")
+        return {
+            'date': str(log.date),
+            'status': log.status,
+            'duration': log.total_duration_seconds,
+            'run_id': str(log.run_id),
+        }
+
+    except Exception as e:
+        logger.error(f"EOD Pipeline 태스크 실패: {e}")
+        raise self.retry(exc=e, countdown=120 * (self.request.retries + 1))
+
+
+@shared_task
+def backfill_signal_accuracy(lookback_days=10):
+    """
+    시그널 정확도 소급 계산.
+    과거 시그널의 1일/5일/20일 수익률을 업데이트.
+    update_or_create로 멱등.
+
+    Args:
+        lookback_days: 소급 대상 일수 (기본: 10일)
+    """
+    from datetime import date as date_type, timedelta
+    from stocks.models import EODSignal, SignalAccuracy, DailyPrice
+    from decimal import Decimal
+
+    target_dates = []
+    today = date_type.today()
+
+    for i in range(1, lookback_days + 1):
+        d = today - timedelta(days=i)
+        if d.weekday() < 5:  # 주말 제외
+            target_dates.append(d)
+
+    total_updated = 0
+
+    for signal_date in target_dates:
+        signals = EODSignal.objects.filter(date=signal_date).select_related('stock')
+
+        for signal in signals:
+            for sig in signal.signals:
+                sig_id = sig.get('id', '')
+                sig_value = sig.get('value', 0)
+
+                # 이미 완전히 채워진 레코드는 스킵
+                existing = SignalAccuracy.objects.filter(
+                    stock=signal.stock,
+                    signal_date=signal_date,
+                    signal_tag=sig_id,
+                ).first()
+
+                if existing and existing.return_20d is not None:
+                    continue
+
+                # 수익률 계산
+                returns = {}
+                for days, field in [(1, 'return_1d'), (5, 'return_5d'), (20, 'return_20d')]:
+                    future_date = signal_date + timedelta(days=days)
+                    future_price = DailyPrice.objects.filter(
+                        stock=signal.stock,
+                        date__gte=future_date,
+                    ).order_by('date').first()
+
+                    if future_price and signal.close_price:
+                        ret = (float(future_price.close_price) - float(signal.close_price)) / float(signal.close_price) * 100
+                        returns[field] = round(ret, 2)
+
+                if not returns:
+                    continue
+
+                # SPY 수익률 (excess 계산용)
+                spy_returns = {}
+                for days, field in [(1, 'excess_1d'), (5, 'excess_5d'), (20, 'excess_20d')]:
+                    future_date = signal_date + timedelta(days=days)
+                    spy_price_at_signal = DailyPrice.objects.filter(
+                        stock_id='SPY', date=signal_date
+                    ).first()
+                    spy_price_future = DailyPrice.objects.filter(
+                        stock_id='SPY', date__gte=future_date
+                    ).order_by('date').first()
+
+                    ret_field = f'return_{days}d'
+                    if spy_price_at_signal and spy_price_future and ret_field in returns:
+                        spy_ret = (float(spy_price_future.close_price) - float(spy_price_at_signal.close_price)) / float(spy_price_at_signal.close_price) * 100
+                        spy_returns[field] = round(returns[ret_field] - spy_ret, 2)
+
+                SignalAccuracy.objects.update_or_create(
+                    stock=signal.stock,
+                    signal_date=signal_date,
+                    signal_tag=sig_id,
+                    defaults={
+                        'signal_value': float(sig_value) if sig_value else 0,
+                        'close_at_signal': signal.close_price,
+                        'market_cap': signal.market_cap,
+                        'sector': signal.sector,
+                        **returns,
+                        **spy_returns,
+                    }
+                )
+                total_updated += 1
+
+    logger.info(f"Signal accuracy backfill 완료: {total_updated} records updated")
+    return {'updated': total_updated, 'dates_checked': len(target_dates)}

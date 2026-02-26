@@ -77,7 +77,6 @@ export default function GlobalMarketsCard({ data }: GlobalMarketsCardProps) {
           </h4>
           <div className="space-y-1">
             <IndexRow name="FTSE 100" data={global_indices.ftse} />
-            <IndexRow name="DAX" data={global_indices.dax} />
             <IndexRow name="Nikkei 225" data={global_indices.nikkei} />
             <IndexRow name="Hang Seng" data={global_indices.hangseng} />
           </div>

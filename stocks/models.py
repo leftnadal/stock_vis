@@ -673,6 +673,171 @@ class SP500Constituent(models.Model):
         return f"{self.company_name} ({self.symbol})"
 
 
+import uuid
+
+
+class EODSignal(models.Model):
+    """일별 종목 시그널 (EOD Dashboard 핵심 테이블)"""
+    stock = models.ForeignKey('Stock', on_delete=models.CASCADE)
+    date = models.DateField(db_index=True)
+
+    # 시그널 데이터 (JSONB)
+    signals = models.JSONField(default=list)       # [{"id":"V1","category":"volume",...}]
+    tag_details = models.JSONField(default=dict)   # {"primary":"V1","sub_tags":["P1","MA1"]}
+
+    # 집계
+    signal_count = models.IntegerField(default=0)
+    bullish_count = models.IntegerField(default=0)
+    bearish_count = models.IntegerField(default=0)
+    composite_score = models.FloatField(default=0.0)  # -1.0 ~ +1.0
+
+    # 뉴스 enrichment
+    news_context = models.JSONField(default=dict)
+
+    # 가격 스냅샷
+    close_price = models.DecimalField(max_digits=15, decimal_places=4)
+    change_percent = models.FloatField(default=0.0)
+    volume = models.BigIntegerField(default=0)
+    dollar_volume = models.DecimalField(max_digits=20, decimal_places=2, default=0)
+
+    # 섹터 캐시 (relation 시그널 계산용)
+    sector = models.CharField(max_length=100, blank=True, default='')
+    industry = models.CharField(max_length=100, blank=True, default='')
+    market_cap = models.BigIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stocks_eod_signal'
+        unique_together = ('stock', 'date')
+        indexes = [
+            models.Index(fields=['date', '-composite_score']),
+            models.Index(fields=['date', '-signal_count']),
+            models.Index(fields=['stock', '-date']),
+            models.Index(fields=['date', 'sector']),
+        ]
+
+    def __str__(self):
+        return f"{self.stock_id} {self.date} ({self.signal_count} signals)"
+
+
+class SignalAccuracy(models.Model):
+    """시그널 정확도 추적"""
+    stock = models.ForeignKey('Stock', on_delete=models.CASCADE)
+    signal_date = models.DateField()
+    signal_tag = models.CharField(max_length=10)
+    signal_value = models.FloatField()
+
+    # 시그널 시점 스냅샷
+    close_at_signal = models.DecimalField(max_digits=15, decimal_places=4)
+    market_cap = models.BigIntegerField(null=True)
+    sector = models.CharField(max_length=100, blank=True)
+    vix_at_signal = models.FloatField(null=True)
+    spy_change_at_signal = models.FloatField(null=True)
+
+    # 수익률 (배치 매일 업데이트, null=아직 미도래)
+    return_1d = models.FloatField(null=True, blank=True)
+    return_5d = models.FloatField(null=True, blank=True)
+    return_20d = models.FloatField(null=True, blank=True)
+    excess_1d = models.FloatField(null=True, blank=True)
+    excess_5d = models.FloatField(null=True, blank=True)
+    excess_20d = models.FloatField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stocks_signal_accuracy'
+        unique_together = ('stock', 'signal_date', 'signal_tag')
+        indexes = [
+            models.Index(fields=['signal_date', 'signal_tag']),
+        ]
+
+    def __str__(self):
+        return f"{self.stock_id} {self.signal_date} {self.signal_tag}"
+
+
+class EODDashboardSnapshot(models.Model):
+    """Baked JSON 스냅샷"""
+    date = models.DateField(unique=True)
+    json_data = models.JSONField()
+    total_signals = models.IntegerField(default=0)
+    total_stocks = models.IntegerField(default=0)
+    signal_distribution = models.JSONField(default=dict)
+    generated_at = models.DateTimeField()
+    pipeline_duration_seconds = models.FloatField(default=0.0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stocks_eod_dashboard_snapshot'
+
+    def __str__(self):
+        return f"Snapshot {self.date} ({self.total_signals} signals)"
+
+
+class PipelineLog(models.Model):
+    """파이프라인 실행 로그"""
+    STATUS_CHOICES = [
+        ('running', 'Running'),
+        ('success', 'Success'),
+        ('partial', 'Partial'),
+        ('failed', 'Failed'),
+    ]
+
+    date = models.DateField(db_index=True)
+    run_id = models.UUIDField(default=uuid.uuid4, unique=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES)
+
+    # 각 Stage 결과
+    stages = models.JSONField(default=dict)
+
+    # 품질 모니터링
+    ingest_quality = models.JSONField(default=dict)
+
+    total_duration_seconds = models.FloatField(default=0.0)
+    error_message = models.TextField(blank=True, default='')
+
+    started_at = models.DateTimeField()
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stocks_pipeline_log'
+        indexes = [models.Index(fields=['-date', 'status'])]
+
+    def __str__(self):
+        return f"Pipeline {self.date} [{self.status}] ({self.run_id})"
+
+
+class StockNews(models.Model):
+    """뉴스 기사 저장. News Enricher가 계층적 매칭에 사용."""
+    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, null=True, blank=True)
+    symbol = models.CharField(max_length=10, db_index=True, blank=True, default='')
+    headline = models.TextField()
+    summary = models.TextField(blank=True, default='')
+    source = models.CharField(max_length=100, blank=True, default='')
+    url = models.URLField(max_length=500, blank=True, default='')
+    published_at = models.DateTimeField(db_index=True)
+
+    # 매칭용 메타데이터
+    sector = models.CharField(max_length=100, blank=True, default='')
+    industry = models.CharField(max_length=100, blank=True, default='')
+    sentiment = models.CharField(max_length=20, blank=True, default='')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'stocks_stock_news'
+        indexes = [
+            models.Index(fields=['symbol', '-published_at']),
+            models.Index(fields=['sector', '-published_at']),
+            models.Index(fields=['industry', '-published_at']),
+            models.Index(fields=['-published_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.symbol} - {self.headline[:50]}"
+
+
 """
 데이터베이스 뷰 생성 SQL (선택사항):
 

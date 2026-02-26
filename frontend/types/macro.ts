@@ -117,7 +117,6 @@ export interface USIndices {
 
 export interface GlobalIndices {
   ftse: IndexData | null;
-  dax: IndexData | null;
   nikkei: IndexData | null;
   hangseng: IndexData | null;
 }

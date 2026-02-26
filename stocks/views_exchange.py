@@ -32,11 +32,11 @@ class IndexQuotesView(APIView):
     GET /api/v1/stocks/quotes/index/
 
     Response:
-        주요 지수 리스트 (S&P 500, NASDAQ, Dow Jones 등)
+        주요 지수 ETF 리스트 (SPY, QQQ, DIA, IWM)
         [
             {
-                "symbol": "^GSPC",
-                "name": "S&P 500",
+                "symbol": "SPY",
+                "name": "SPDR S&P 500 ETF Trust",
                 "price": 4500.25,
                 "change": 25.30,
                 "changes_percentage": 0.56,

@@ -105,6 +105,7 @@ celery -A config beat -l info
 
 | 기능 | 상세 문서 |
 |------|----------|
+| EOD Dashboard (14개 시그널, JSON Baking) | [sub_claude_md/eod-dashboard.md](sub_claude_md/eod-dashboard.md) |
 | Market Movers (5개 지표, Corporate Action) | [sub_claude_md/market-movers.md](sub_claude_md/market-movers.md) |
 | AI 키워드 생성 (Gemini + Celery) | [sub_claude_md/ai-keywords.md](sub_claude_md/ai-keywords.md) |
 | News 기반 종목 인사이트 + 수집 카테고리 + Intelligence Pipeline v3 | [sub_claude_md/news-insights.md](sub_claude_md/news-insights.md) |
@@ -132,7 +133,7 @@ celery -A config beat -l info
 ## 구현 상태 요약
 
 ### 완료
-JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개)
+JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지)
 
 ### 진행 중
 Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화

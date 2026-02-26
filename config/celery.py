@@ -414,6 +414,24 @@ app.conf.beat_schedule = {
         'options': {'expires': 86400}  # 24시간 후 만료
     },
 
+    # ============================================================
+    # EOD Dashboard Pipeline 태스크
+    # ============================================================
+
+    # EOD 시그널 파이프라인 (매일 18:30 ET, 장 마감 + 2.5시간, EOD 가격 동기화 이후)
+    'run-eod-pipeline': {
+        'task': 'stocks.tasks.run_eod_pipeline',
+        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # 시그널 정확도 소급 계산 (매일 19:00 ET, 파이프라인 이후)
+    'backfill-signal-accuracy': {
+        'task': 'stocks.tasks.backfill_signal_accuracy',
+        'schedule': crontab(hour=19, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
 }
 
 # 테스트 태스크 (선택적)

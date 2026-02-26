@@ -490,6 +490,20 @@ class StockOverviewAPIView(APIView):
             stock = Stock.objects.filter(symbol=symbol).first()
             source = 'db'
 
+            # DB에 Stock이 있지만 가격 데이터가 비어있으면 자동 sync
+            needs_price_sync = (
+                stock and
+                (not stock.real_time_price or float(stock.real_time_price) == 0) and
+                (not stock.volume or stock.volume == 0)
+            )
+
+            if needs_price_sync:
+                logger.info(f"Stock {symbol} exists but price data is empty, triggering auto-sync")
+                sync_result = sync_service.sync_overview(symbol, force=True)
+                if sync_result.success:
+                    stock.refresh_from_db()
+                    source = 'fmp'
+
             if stock:
                 ## 직렬화
                 serializer = OverviewTabSerializer(stock)

@@ -53,3 +53,39 @@ body {
 .animate-slideUp {
   animation: slideUp 0.25s ease-out forwards;
 }
+
+/* EOD Dashboard Animations */
+@keyframes slideUpSheet {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRightSheet {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpSheet 0.25s ease-out forwards;
+}
+
+.animate-slide-right {
+  animation: slideRightSheet 0.25s ease-out forwards;
+}
+
+/* Hide scrollbar while keeping scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

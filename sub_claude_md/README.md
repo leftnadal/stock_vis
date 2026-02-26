@@ -17,5 +17,6 @@ CLAUDE.md의 상세 내용을 주제별로 분할한 참조 문서입니다.
 | `screener.md` | Enhanced Screener, 투자 테제 빌더 | Screener 관련 작업 시 |
 | `rag-analysis.md` | RAG Analysis Phase 3 파이프라인 | RAG/LLM 분석 작업 시 |
 | `multi-agent.md` | 멀티에이전트 담당 영역 | 에이전트 분배 시 |
+| `eod-dashboard.md` | EOD Dashboard 시그널 기반 종목 발굴 | EOD 대시보드 관련 작업 시 |
 | `completed-features.md` | 구현 완료/미완성 기능 목록 | 진행 상태 확인 시 |
 | `documentation.md` | 문서화 워크플로우, docs/ 구조 | 문서 작성 시 |
