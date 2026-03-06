@@ -72,10 +72,10 @@ export default function NewsCard({ article, onClick }: NewsCardProps) {
                 <Clock className="w-3 h-3" />
                 <span>{relativeTime}</span>
               </div>
-              {article.entity_count > 0 && (
+              {(article.entities?.length || article.entity_count || 0) > 0 && (
                 <>
                   <span>•</span>
-                  <span>{article.entity_count}개 종목</span>
+                  <span>{article.entities?.length || article.entity_count}개 종목</span>
                 </>
               )}
             </div>

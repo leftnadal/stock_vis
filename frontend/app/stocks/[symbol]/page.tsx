@@ -18,6 +18,8 @@ import {
   Calculator,
   RefreshCw,
   Compass,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { ChainSightExplorer } from '@/components/chain-sight';
 import UnitSelector from '@/components/financial/UnitSelector';
@@ -392,15 +394,64 @@ function OverviewTab({ overview }: { overview: StockOverview }) {
 
   return (
     <div className="space-y-6">
-      {/* Company Description */}
-      {overview.description && (
+      {/* Korean Overview (LLM 생성) */}
+      {overview.korean_overview ? (
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">기업 개요</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">
+              {overview.korean_overview.summary}
+            </p>
+          </div>
+
+          {overview.korean_overview.business_model && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                <Building2 className="w-4 h-4 text-blue-500" />
+                사업 모델
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                {overview.korean_overview.business_model}
+              </p>
+            </div>
+          )}
+
+          {overview.korean_overview.competitive_edge && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                <Shield className="w-4 h-4 text-green-500" />
+                경쟁 우위
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                {overview.korean_overview.competitive_edge}
+              </p>
+            </div>
+          )}
+
+          {overview.korean_overview.risk_factors && (
+            <div>
+              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1.5 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-500" />
+                리스크 요인
+              </h4>
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                {overview.korean_overview.risk_factors}
+              </p>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-400 dark:text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-700">
+            AI 생성 · {overview.korean_overview.llm_model} · {new Date(overview.korean_overview.generated_at).toLocaleDateString('ko-KR')}
+          </p>
+        </div>
+      ) : overview.description ? (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">회사 소개</h3>
           <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
             {overview.description}
           </p>
         </div>
-      )}
+      ) : null}
 
       {/* Key Metrics Grid */}
       <div>

@@ -29,8 +29,12 @@ export interface NewsListItem {
   image_url: string | null;
   source: string;
   published_at: string;
+  category?: string;
   sentiment_score: number | null;
-  entity_count: number;
+  sentiment_source?: string;
+  is_press_release?: boolean;
+  entities?: NewsEntity[];
+  entity_count?: number;
 }
 
 export interface SentimentHistory {
@@ -238,6 +242,9 @@ export interface StockInsight {
  */
 export interface StockInsightsResponse {
   date: string;
+  period_days?: number;
+  period_start?: string;
+  period_end?: string;
   insights: StockInsight[];
   total_keywords: number;
   computation_time_ms?: number;

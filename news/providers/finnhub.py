@@ -201,16 +201,19 @@ class FinnhubNewsProvider(BaseNewsProvider):
         entities = []
 
         # related 필드에서 실제 관련 종목 추출 (Finnhub API가 제공하는 실제 관련 종목)
+        # related는 쉼표로 구분된 심볼 문자열일 수 있음 (e.g., "AAPL,MSFT,GOOG")
         related = item.get('related', '')
         if related:
-            related_symbol = related.upper()
-            entities.append({
-                'symbol': related_symbol,
-                'entity_name': '',  # Finnhub는 엔티티명 미제공
-                'entity_type': 'equity',
-                'source': 'finnhub',
-                'match_score': Decimal('1.00000')
-            })
+            for sym in related.split(','):
+                sym = sym.strip().upper()
+                if sym:
+                    entities.append({
+                        'symbol': sym,
+                        'entity_name': '',  # Finnhub는 엔티티명 미제공
+                        'entity_type': 'equity',
+                        'source': 'finnhub',
+                        'match_score': Decimal('1.00000')
+                    })
 
         return RawNewsArticle(
             url=self.normalize_url(item.get('url', '')),

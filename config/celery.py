@@ -432,6 +432,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # S&P 500 한글 기업 개요 갱신 (매월 1일 03:00 EST)
+    'refresh-korean-overviews-monthly': {
+        'task': 'stocks.tasks.bulk_generate_korean_overviews',
+        'schedule': crontab(hour=3, minute=0, day_of_month=1),
+        'options': {'expires': 86400}
+    },
+
 }
 
 # 테스트 태스크 (선택적)

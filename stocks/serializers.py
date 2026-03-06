@@ -108,32 +108,33 @@ class WeeklyChartDataSerializer(ChartDataSerializer):
 ### Overview serializer
 class OverviewTabSerializer(serializers.ModelSerializer):
     """Overview 탭 - 종합 정보"""
-    
+
     change_percent_numeric = serializers.ReadOnlyField()
     is_profitable = serializers.ReadOnlyField()
     market_cap_formatted = serializers.SerializerMethodField()
     volume_formatted = serializers.SerializerMethodField()
-    
+    korean_overview = serializers.SerializerMethodField()
+
     class Meta:
         model = Stock
         fields = [
             # 기본 정보
             'symbol', 'stock_name', 'description', 'sector', 'industry',
             'exchange', 'currency', 'official_site',
-            
-            # 가격 정보  
+
+            # 가격 정보
             'real_time_price', 'change', 'change_percent', 'change_percent_numeric',
             'previous_close', 'week_52_high', 'week_52_low',
             'volume', 'volume_formatted',
-            
+
             # 시장 정보
             'market_capitalization', 'market_cap_formatted',
             'shares_outstanding',
-            
+
             # 재무 비율
             'ebitda','pe_ratio', 'peg_ratio', 'book_value', 'eps',
             'dividend_per_share', 'dividend_yield',
-            
+
             # 주식 성과
             'revenue_per_share_ttm',
             'profit_margin',
@@ -149,12 +150,15 @@ class OverviewTabSerializer(serializers.ModelSerializer):
 
             # 기술적 지표
             'day_50_moving_average', 'day_200_moving_average',
-            'beta', 
-            
+            'beta',
+
             # 분석가 정보
             'analyst_target_price',
             'analyst_rating_strong_buy', 'analyst_rating_buy',
-            'analyst_rating_hold', 'analyst_rating_sell', 'analyst_rating_strong_sell'
+            'analyst_rating_hold', 'analyst_rating_sell', 'analyst_rating_strong_sell',
+
+            # 한글 개요
+            'korean_overview',
         ]
     
     def get_market_cap_formatted(self, obj):
@@ -178,6 +182,21 @@ class OverviewTabSerializer(serializers.ModelSerializer):
                 return f"{vol/1e3:.1f}K"
             return f"{vol:,}"
         return None
+
+    def get_korean_overview(self, obj):
+        """한글 기업 개요 (LLM 생성)"""
+        try:
+            ko = obj.overview_ko
+            return {
+                'summary': ko.summary,
+                'business_model': ko.business_model,
+                'competitive_edge': ko.competitive_edge,
+                'risk_factors': ko.risk_factors,
+                'generated_at': ko.generated_at.isoformat(),
+                'llm_model': ko.llm_model,
+            }
+        except Exception:
+            return None
 
 ### Balance sheet serializer
 class BalanceSheetTabSerializer(serializers.ModelSerializer):

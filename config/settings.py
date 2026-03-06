@@ -92,6 +92,15 @@ NEWS_RATE_LIMITS = {
         'articles_per_request': 3, # 응답당 최대 기사 수 제한
         'wait_seconds': 1,         # 요청 간 최소 대기 시간
     },
+    'fmp': {
+        'per_minute': 300,         # FMP API: 300 calls/min (Starter Plan)
+        'per_day': 10000,          # FMP API: 10,000 calls/day
+        'wait_seconds': 0.2,       # 요청 간 최소 대기 시간
+    },
+    'alpha_vantage': {
+        'per_minute': 5,           # Alpha Vantage: 5 calls/min (무료 티어)
+        'wait_seconds': 12,        # 요청 간 최소 대기 시간
+    },
 }
 
 # News Cache TTL (초)
@@ -165,6 +174,7 @@ INSTALLED_APPS = [
     'graph_analysis',  # 그래프 온톨로지 분석 (Phase 1)
     'rag_analysis',  # RAG 기반 AI 분석
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
+    'thesis',  # Thesis Control (가설 통제실)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -380,6 +390,7 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 # Celery 작업 결과 저장
 CELERY_RESULT_BACKEND = 'django-db'
+CELERY_RESULT_EXTENDED = True
 
 # Redis 캐시 백엔드 (기존 로컬 메모리 캐시를 Redis로 변경)
 CACHES = {

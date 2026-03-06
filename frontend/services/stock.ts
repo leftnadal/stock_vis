@@ -72,6 +72,15 @@ export interface StockOverview {
   shares_outstanding?: number;
   dividend_date?: string;
   ex_dividend_date?: string;
+  // 한글 개요 (LLM 생성)
+  korean_overview?: {
+    summary: string;
+    business_model: string;
+    competitive_edge: string;
+    risk_factors: string;
+    generated_at: string;
+    llm_model: string;
+  } | null;
 }
 
 // Meta information for data freshness tracking
@@ -206,6 +215,7 @@ export const stockService = {
       shares_outstanding: parseFloat(data.shares_outstanding) || undefined,
       dividend_date: data.dividend_date,
       ex_dividend_date: data.ex_dividend_date,
+      korean_overview: data.korean_overview || null,
     };
 
     // Extract meta information
