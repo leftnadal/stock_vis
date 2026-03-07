@@ -18,7 +18,6 @@ class ThesisSnapshot(models.Model):
     ordered_indicator_ids = models.JSONField(default=list)
 
     # 기존 필드
-    date = models.DateField()
     overall_score = models.FloatField()
     state = models.CharField(max_length=20)
     premise_scores = models.JSONField(default=dict)

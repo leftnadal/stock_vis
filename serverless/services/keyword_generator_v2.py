@@ -262,6 +262,7 @@ class EnhancedKeywordGenerator:
             system_instruction=system_prompt,
             max_output_tokens=self.MAX_TOKENS,
             temperature=self.TEMPERATURE,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         # 비동기 호출
@@ -296,6 +297,7 @@ class EnhancedKeywordGenerator:
             system_instruction=system_prompt,
             max_output_tokens=2000,  # 단일 종목은 2000 토큰으로 충분
             temperature=self.TEMPERATURE,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         # 비동기 호출

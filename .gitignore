@@ -185,8 +185,14 @@ cython_debug/
 shared_kb/__pycache__/
 shared_kb/queue_data.json
 
+# Logs (celery, django 로그 파일)
+logs/
+
 # EOD Pipeline generated JSON (파이프라인이 매일 재생성)
 frontend/public/static/signals/
+
+# Frontend misplaced log
+frontend/stocks.log
 
 # macOS
 .DS_Store

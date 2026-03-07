@@ -33,6 +33,7 @@ class HypothesisEvent(models.Model):
         'thesis.Thesis',
         on_delete=models.CASCADE,
         null=True,
+        blank=True,
         related_name='events',
     )
 

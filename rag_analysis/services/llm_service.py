@@ -167,6 +167,7 @@ class LLMServiceLite:
             system_instruction=self.get_system_prompt(),
             max_output_tokens=max_tokens,
             temperature=temperature,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         for attempt in range(retries):

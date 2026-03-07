@@ -183,6 +183,7 @@ class NewsKeywordExtractor:
                 system_instruction=system_prompt,
                 max_output_tokens=self.MAX_OUTPUT_TOKENS,
                 temperature=self.TEMPERATURE,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 

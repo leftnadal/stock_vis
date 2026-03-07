@@ -129,6 +129,7 @@ class NewsDeepAnalyzer:
                     system_instruction=system_prompt,
                     max_output_tokens=max_tokens,
                     temperature=self.TEMPERATURE,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
             raw = response.text

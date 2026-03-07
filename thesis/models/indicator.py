@@ -27,7 +27,6 @@ class ThesisIndicator(models.Model):
             ('macro', 'Macro Economic'),
             ('sentiment', 'News Sentiment'),
             ('technical', 'Technical'),
-            ('fundamental', 'Fundamental'),
             ('custom', 'Custom'),
         ],
     )
@@ -114,8 +113,8 @@ class IndicatorReading(models.Model):
         related_name='readings',
     )
 
-    value = models.FloatField()
-    raw_value = models.FloatField()
+    value = models.FloatField(null=True, blank=True)
+    raw_value = models.FloatField(null=True, blank=True)
     asof = models.DateTimeField()
 
     # v2.3.2 추가 필드

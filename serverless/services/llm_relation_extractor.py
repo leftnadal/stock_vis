@@ -396,6 +396,7 @@ Return only valid JSON with the extracted relations."""
                     temperature=self.TEMPERATURE,
                     max_output_tokens=self.MAX_OUTPUT_TOKENS,
                     response_mime_type="application/json",
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 )
             )
 

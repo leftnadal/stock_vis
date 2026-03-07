@@ -240,6 +240,7 @@ class KeywordGeneratorService:
             system_instruction=system_prompt,
             max_output_tokens=self.MAX_TOKENS,
             temperature=self.TEMPERATURE,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         # 비동기 호출

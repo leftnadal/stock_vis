@@ -66,6 +66,7 @@ class KoreanOverviewService:
                 config=types.GenerateContentConfig(
                     temperature=self.TEMPERATURE,
                     response_mime_type="application/json",
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 ),
             )
 

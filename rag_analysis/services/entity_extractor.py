@@ -81,6 +81,7 @@ JSON:"""
             config = types.GenerateContentConfig(
                 max_output_tokens=self.MAX_TOKENS,
                 temperature=0.1,  # 낮은 온도로 일관된 JSON 출력
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
             response = await self.client.aio.models.generate_content(
