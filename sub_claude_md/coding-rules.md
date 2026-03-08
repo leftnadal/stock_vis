@@ -85,6 +85,10 @@
   - `/stable/company-screener` - 종목 스크리닝 (market_cap, volume 등)
   - `/stable/key-metrics-ttm?symbol=AAPL` - 펀더멘탈 지표 (PE, ROE 등)
 - **캐싱**: Redis 5분~24시간 (엔드포인트별 상이)
+- **프리미엄 심볼 제외**: `.` 포함 심볼(BRK.B, BF.B)은 Starter Plan 미지원 (402 에러)
+  - `FMPPremiumError` 예외로 즉시 실패 (재시도 안 함)
+  - 재무제표 배치 동기화에서 자동 제외
+  - 상세: `docs/infrastructure/fmp-premium-symbols.md`
 - **섹터 ETF 매핑**:
   ```python
   SECTOR_ETF_MAP = {

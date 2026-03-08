@@ -85,7 +85,7 @@ celery -A config beat -l info
 
 ---
 
-## 자주 발생하는 버그 (핵심 6개)
+## 자주 발생하는 버그 (핵심 8개)
 
 | # | 버그 | 핵심 해결 |
 |---|------|----------|
@@ -96,8 +96,10 @@ celery -A config beat -l info
 | 19 | API URL 중복 `/api/v1/api/v1` | `.env` 확인, 코드에서 중복 제거 |
 | 20 | Next.js dev lock 충돌 | `predev` 스크립트로 `.next/dev/lock` 자동 삭제 |
 | 21 | Chain Sight count만 표시, 목록 빈 배열 | `ETF_PEER`→ETFHolding, `HAS_THEME`→ThemeMatch 분기 |
+| 22 | 재무제표 저장 시 모델 필드명 불일치 | `fiscal_date_ending`→`reported_date`, `accounts_payable`→`current_accounts_payable` 등 6개 |
+| 23 | FMP 프리미엄 심볼 402 에러 | `FMPPremiumError` 즉시 실패 + `.` 포함 심볼 배치에서 제외 |
 
-> 전체 21개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
+> 전체 23개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
 
 ---
 

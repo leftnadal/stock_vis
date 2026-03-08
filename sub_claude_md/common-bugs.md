@@ -207,3 +207,29 @@ elif rel_type:
     stocks = self._get_relationship_stocks(symbol, rel_type, limit)  # StockRelationship
 ```
 - 교훈: 새 카테고리 추가 시 count 계산과 종목 조회가 **같은 모델/쿼리**를 사용하는지 반드시 확인
+
+## 재무제표 저장 시 모델 필드명 불일치 (#22)
+
+- 증상: 모든 종목의 재무제표가 `balance_sheets: 0, income_statements: 0, cash_flows: 0`으로 저장됨
+- 원인: `stock_service.py`의 `update_or_create(defaults=...)` 에서 사용하는 키가 Django 모델 필드명과 불일치
+- 해결: 6개 필드명 수정 (`stock_service.py`의 `_save_balance_sheets`, `_save_income_statements`, `_save_cash_flows`)
+```python
+# ❌ 잘못된 필드명 → ✅ 올바른 모델 필드명
+'fiscal_date_ending'        → 'reported_date'                          # 3개 모델 전체
+'reported_currency'         → 'currency'                               # 3개 모델 전체
+'cash_and_cash_equivalents' → 'cash_and_cash_equivalents_at_carrying_value'  # BalanceSheet
+'accounts_payable'          → 'current_accounts_payable'               # BalanceSheet
+'depreciation_amortization' → 'depreciation_depletion_and_amortization'  # CashFlowStatement
+'change_in_cash'            → 'change_in_cash_and_cash_equivalents'    # CashFlowStatement
+```
+- 교훈: Normalized 데이터클래스 필드명과 Django 모델 필드명은 다를 수 있음. 저장 전 반드시 모델 필드 확인
+
+## FMP 프리미엄 전용 심볼 402 에러 (#23)
+
+- 증상: BRK.B, BF.B 등 `.` 포함 심볼에서 FMP 402 에러 + 3회 재시도 + Alpha Vantage fallback도 실패
+- 원인: FMP Starter Plan에서 `.` 포함 심볼(Share Class 구분) 미지원
+- 해결:
+  1. `fmp/client.py`: `FMPPremiumError` 예외 추가, 402 시 재시도 없이 즉시 실패
+  2. `fmp/provider.py`: `FMPPremiumError` catch → `PREMIUM_ONLY` 에러코드 반환
+  3. `stocks/tasks.py`: `sync_sp500_financials`, `bulk_sync_sp500_financials`에서 `.` 포함 심볼 자동 제외
+- 참고: `docs/infrastructure/fmp-premium-symbols.md`에 전체 목록 문서화

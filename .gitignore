@@ -189,7 +189,7 @@ shared_kb/queue_data.json
 logs/
 
 # EOD Pipeline generated JSON (파이프라인이 매일 재생성)
-frontend/public/static/signals/
+frontend/public/static/
 
 # Frontend misplaced log
 frontend/stocks.log
