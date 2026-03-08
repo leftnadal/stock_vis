@@ -467,11 +467,11 @@ class StockService:
                     fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
 
                     defaults = {
-                        'fiscal_date_ending': fiscal_date,
-                        'reported_currency': sheet.reported_currency,
+                        'reported_date': fiscal_date,
+                        'currency': sheet.reported_currency,
                         'total_assets': sheet.total_assets,
                         'total_current_assets': sheet.current_assets,
-                        'cash_and_cash_equivalents': sheet.cash_and_equivalents,
+                        'cash_and_cash_equivalents_at_carrying_value': sheet.cash_and_equivalents,
                         'short_term_investments': sheet.short_term_investments,
                         'inventory': sheet.inventory,
                         'current_net_receivables': sheet.accounts_receivable,
@@ -481,7 +481,7 @@ class StockService:
                         'intangible_assets': sheet.intangible_assets,
                         'total_liabilities': sheet.total_liabilities,
                         'total_current_liabilities': sheet.current_liabilities,
-                        'accounts_payable': sheet.accounts_payable,
+                        'current_accounts_payable': sheet.accounts_payable,
                         'short_term_debt': sheet.short_term_debt,
                         'long_term_debt': sheet.long_term_debt,
                         'total_shareholder_equity': sheet.total_shareholder_equity,
@@ -527,8 +527,8 @@ class StockService:
                     fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
 
                     defaults = {
-                        'fiscal_date_ending': fiscal_date,
-                        'reported_currency': stmt.reported_currency,
+                        'reported_date': fiscal_date,
+                        'currency': stmt.reported_currency,
                         'total_revenue': stmt.total_revenue,
                         'cost_of_revenue': stmt.cost_of_revenue,
                         'gross_profit': stmt.gross_profit,
@@ -578,16 +578,16 @@ class StockService:
                     fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
 
                     defaults = {
-                        'fiscal_date_ending': fiscal_date,
-                        'reported_currency': flow.reported_currency,
+                        'reported_date': fiscal_date,
+                        'currency': flow.reported_currency,
                         'operating_cashflow': flow.operating_cash_flow,
                         'net_income': flow.net_income,
-                        'depreciation_amortization': flow.depreciation,
+                        'depreciation_depletion_and_amortization': flow.depreciation,
                         'cashflow_from_investment': flow.investing_cash_flow,
                         'capital_expenditures': flow.capital_expenditures,
                         'cashflow_from_financing': flow.financing_cash_flow,
                         'dividend_payout': flow.dividends_paid,
-                        'change_in_cash': flow.net_change_in_cash,
+                        'change_in_cash_and_cash_equivalents': flow.net_change_in_cash,
                     }
 
                     # None 값 필터링

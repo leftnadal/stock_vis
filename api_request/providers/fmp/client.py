@@ -32,6 +32,11 @@ class FMPAuthError(FMPClientError):
     pass
 
 
+class FMPPremiumError(FMPClientError):
+    """프리미엄 전용 심볼/엔드포인트 에러 (402)"""
+    pass
+
+
 class FMPClient:
     """
     Financial Modeling Prep API Client (Starter Plan)
@@ -120,6 +125,8 @@ class FMPClient:
                 # HTTP 에러 체크
                 if response.status_code == 401:
                     raise FMPAuthError("Invalid API key")
+                elif response.status_code == 402:
+                    raise FMPPremiumError(f"Premium-only symbol/endpoint (402): {endpoint}")
                 elif response.status_code == 403:
                     raise FMPAuthError("API access forbidden")
                 elif response.status_code == 429:
@@ -139,6 +146,8 @@ class FMPClient:
 
                 return data
 
+            except (FMPPremiumError, FMPAuthError, FMPRateLimitError):
+                raise  # 재시도 불필요한 에러는 즉시 전파
             except (requests.RequestException, FMPClientError) as e:
                 last_error = e
                 if attempt < self.max_retries - 1:
@@ -407,6 +416,59 @@ class FMPClient:
         API: GET /stable/stock-list
         """
         data = self._make_request("/stable/stock-list")
+        return data if isinstance(data, list) else []
+
+    # ============================================================
+    # News Endpoints
+    # ============================================================
+
+    def get_stock_news(self, symbol: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        종목별 뉴스 조회
+
+        Args:
+            symbol: 주식 심볼
+            limit: 반환할 뉴스 수
+
+        Returns:
+            뉴스 리스트
+
+        API: GET /stable/stock-news?symbol={symbol}&limit={limit}
+        """
+        params = {"symbol": symbol.upper(), "limit": limit}
+        data = self._make_request("/stable/stock-news", params)
+        return data if isinstance(data, list) else []
+
+    def get_general_news(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """
+        일반 시장 뉴스 조회
+
+        Args:
+            limit: 반환할 뉴스 수
+
+        Returns:
+            뉴스 리스트
+
+        API: GET /stable/general-news?limit={limit}
+        """
+        data = self._make_request("/stable/general-news", {"limit": limit})
+        return data if isinstance(data, list) else []
+
+    def get_press_releases(self, symbol: str, limit: int = 20) -> List[Dict[str, Any]]:
+        """
+        보도자료 조회
+
+        Args:
+            symbol: 주식 심볼
+            limit: 반환할 보도자료 수
+
+        Returns:
+            보도자료 리스트
+
+        API: GET /stable/press-releases?symbol={symbol}&limit={limit}
+        """
+        params = {"symbol": symbol.upper(), "limit": limit}
+        data = self._make_request("/stable/press-releases", params)
         return data if isinstance(data, list) else []
 
     # ============================================================

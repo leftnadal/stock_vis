@@ -28,7 +28,7 @@ from ..base import (
     NormalizedCashFlow,
     NormalizedSearchResult,
 )
-from .client import FMPClient, FMPRateLimitError, FMPClientError
+from .client import FMPClient, FMPRateLimitError, FMPClientError, FMPPremiumError
 from .processor import FMPProcessor
 
 logger = logging.getLogger(__name__)
@@ -244,6 +244,13 @@ class FMPProvider(StockDataProvider):
                 meta={"count": len(balance_sheets), "period": period.value}
             )
 
+        except FMPPremiumError:
+            logger.warning(f"FMP premium-only symbol skipped: {symbol}")
+            return ProviderResponse.error_response(
+                error=f"Premium-only symbol: {symbol}",
+                provider=self.PROVIDER_NAME,
+                error_code="PREMIUM_ONLY"
+            )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
@@ -283,6 +290,13 @@ class FMPProvider(StockDataProvider):
                 meta={"count": len(statements), "period": period.value}
             )
 
+        except FMPPremiumError:
+            logger.warning(f"FMP premium-only symbol skipped: {symbol}")
+            return ProviderResponse.error_response(
+                error=f"Premium-only symbol: {symbol}",
+                provider=self.PROVIDER_NAME,
+                error_code="PREMIUM_ONLY"
+            )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
@@ -322,6 +336,13 @@ class FMPProvider(StockDataProvider):
                 meta={"count": len(cash_flows), "period": period.value}
             )
 
+        except FMPPremiumError:
+            logger.warning(f"FMP premium-only symbol skipped: {symbol}")
+            return ProviderResponse.error_response(
+                error=f"Premium-only symbol: {symbol}",
+                provider=self.PROVIDER_NAME,
+                error_code="PREMIUM_ONLY"
+            )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
