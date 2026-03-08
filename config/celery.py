@@ -295,6 +295,91 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
+    # FMP 대량 뉴스 수집 태스크 (S&P 500 전체)
+    # ============================================================
+
+    # FMP S&P 500 News — orchestrator (하루 5회, 평일)
+    'collect-sp500-news-fmp-0615': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=6, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1015': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=10, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1315': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=13, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1515': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=15, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1715': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=17, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # FMP Press Releases (1회/일)
+    'collect-press-releases-fmp': {
+        'task': 'news.tasks.collect_press_releases_fmp',
+        'schedule': crontab(hour=7, minute=45, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 50},
+        'options': {'expires': 3600}
+    },
+
+    # FMP General News (3회/일)
+    'collect-general-news-fmp-morning': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=6, minute=45, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+    'collect-general-news-fmp-noon': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=12, minute=30, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+    'collect-general-news-fmp-evening': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=17, minute=45, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+
+    # ============================================================
+    # Alpha Vantage 감성 뉴스 수집 태스크
+    # ============================================================
+
+    # AV Sentiment News (2회/일, 25개 종목)
+    'collect-sentiment-av-morning': {
+        'task': 'news.tasks.collect_sentiment_news_av',
+        'schedule': crontab(hour=8, minute=30, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 25},
+        'options': {'expires': 3600}
+    },
+    'collect-sentiment-av-afternoon': {
+        'task': 'news.tasks.collect_sentiment_news_av',
+        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 25},
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # 데이터 보존 (아카이브) 태스크
+    # ============================================================
+
+    # 6개월 이상 기사 아카이브 (매월 1일 02:30 EST)
+    'archive-old-articles': {
+        'task': 'news.tasks.archive_old_articles',
+        'schedule': crontab(hour=2, minute=30, day_of_month=1),
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
     # ETF Holdings 자동 수집 태스크
     # ============================================================
 
