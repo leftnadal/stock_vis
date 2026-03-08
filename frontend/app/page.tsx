@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense, useCallback } from 'react';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useEODDashboard } from '@/hooks/useEODDashboard';
 import { DataFreshnessBadge } from '@/components/eod/DataFreshnessBadge';
 import { MarketSummaryBar } from '@/components/eod/MarketSummaryBar';
@@ -10,10 +11,34 @@ import { SignalDetailSheet } from '@/components/eod/SignalDetailSheet';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import type { SignalCategory, SignalCard } from '@/types/eod';
 
-export default function Home() {
+const VALID_CATEGORIES: Set<string> = new Set([
+  'all', 'momentum', 'volume', 'breakout', 'reversal', 'relation', 'technical',
+]);
+
+function HomeContent() {
   const { data, isLoading, error } = useEODDashboard();
-  const [activeCategory, setActiveCategory] = useState<SignalCategory | 'all'>('all');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // URL에서 activeCategory 읽기
+  const categoryParam = searchParams.get('category') ?? 'all';
+  const activeCategory: SignalCategory | 'all' = VALID_CATEGORIES.has(categoryParam)
+    ? (categoryParam as SignalCategory | 'all')
+    : 'all';
+
   const [selectedCard, setSelectedCard] = useState<SignalCard | null>(null);
+
+  const handleCategoryChange = useCallback((category: SignalCategory | 'all') => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (category === 'all') {
+      params.delete('category');
+    } else {
+      params.set('category', category);
+    }
+    const qs = params.toString();
+    router.replace(pathname + (qs ? '?' + qs : ''), { scroll: false });
+  }, [searchParams, router, pathname]);
 
   if (isLoading) return <EODSkeleton />;
 
@@ -59,13 +84,14 @@ export default function Home() {
         <SignalFilterTabs
           cards={data.signal_cards}
           activeCategory={activeCategory}
-          onCategoryChange={setActiveCategory}
+          onCategoryChange={handleCategoryChange}
         />
 
         {/* Level 4: 시그널 카드 그리드 */}
         <SignalCardGrid
           cards={filteredCards}
           onCardClick={(card) => setSelectedCard(card)}
+          onCategoryChange={handleCategoryChange}
         />
       </div>
 
@@ -77,5 +103,13 @@ export default function Home() {
         />
       )}
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<EODSkeleton />}>
+      <HomeContent />
+    </Suspense>
   );
 }

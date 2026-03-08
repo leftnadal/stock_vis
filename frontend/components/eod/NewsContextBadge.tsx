@@ -66,6 +66,7 @@ export function NewsContextBadge({ news }: NewsContextBadgeProps) {
       className={`
         flex items-start gap-1.5 px-2 py-1 rounded-md text-[11px] border
         ${config.bg} ${config.text} ${config.border}
+        ${news.confidence === 'very_high' ? 'ring-2 ring-blue-300 dark:ring-blue-600' : ''}
       `}
     >
       <IconComponent className="w-3 h-3 mt-0.5 flex-shrink-0 opacity-70" />

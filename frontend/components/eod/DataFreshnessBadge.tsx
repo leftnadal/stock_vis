@@ -74,7 +74,10 @@ export function DataFreshnessBadge({
   }
 
   return (
-    <div className="mb-3 flex items-center justify-end">
+    <div className="mb-3 flex items-center justify-between">
+      <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+        오늘의 시그널
+      </h1>
       <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
         <CheckCircle className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
         <span className="text-xs text-green-700 dark:text-green-300 font-medium">

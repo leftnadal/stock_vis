@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
-import { HelpCircle, ChevronRight, TrendingUp, TrendingDown, AlertTriangle, Network } from 'lucide-react';
+import { HelpCircle, ChevronRight, TrendingUp, AlertTriangle, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
 import { SIGNAL_CATEGORY_COLORS, SIGNAL_CATEGORY_LABELS } from '@/types/eod';
@@ -18,6 +18,50 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
   const categoryColor = SIGNAL_CATEGORY_COLORS[card.category] ?? card.color;
   const categoryLabel = SIGNAL_CATEGORY_LABELS[card.category];
 
+  // 모바일 터치/스크롤 충돌 방지
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const isInteractionBlockedRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    isInteractionBlockedRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartRef.current || isInteractionBlockedRef.current) return;
+    const touch = e.touches[0];
+    const dx = Math.abs(touch.clientX - touchStartRef.current.x);
+    const dy = Math.abs(touch.clientY - touchStartRef.current.y);
+    if (dx > 10 || dy > 10) {
+      isInteractionBlockedRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartRef.current = null;
+  };
+
+  const handleTouchCancel = () => {
+    touchStartRef.current = null;
+    isInteractionBlockedRef.current = true;
+  };
+
+  const handleClick = () => {
+    if (isInteractionBlockedRef.current) {
+      isInteractionBlockedRef.current = false;
+      return;
+    }
+    onCardClick(card);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onCardClick(card);
+    }
+  };
+
   const handleTipToggle = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowTip((prev) => !prev);
@@ -25,14 +69,21 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
 
   return (
     <div
-      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col"
+      role="button"
+      tabIndex={0}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchCancel}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       style={{ borderLeft: `4px solid ${categoryColor}` }}
     >
       {/* 카드 헤더 */}
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex items-center gap-2 min-w-0">
-            {/* 카테고리 도트 + 레이블 */}
             <span
               className="inline-block w-2 h-2 rounded-full flex-shrink-0"
               style={{ backgroundColor: categoryColor }}
@@ -42,14 +93,12 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
             </span>
           </div>
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* 카운트 배지 */}
             <span
               className="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-bold text-white"
               style={{ backgroundColor: categoryColor }}
             >
               {card.count}
             </span>
-            {/* 교육 팁 버튼 */}
             <button
               onClick={handleTipToggle}
               className={`
@@ -66,7 +115,7 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
           </div>
         </div>
 
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white leading-tight mb-1">
+        <h3 className="text-base font-bold text-gray-900 dark:text-white leading-tight mb-1">
           {card.title}
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -76,7 +125,10 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
 
       {/* 교육 팁 (토글) */}
       {showTip && (
-        <div className="mx-4 mb-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-3 space-y-2">
+        <div
+          className="mx-4 mb-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-3 space-y-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <div className="flex items-start gap-2">
             <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
@@ -98,12 +150,12 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
       <div className="flex-1 px-4 space-y-2.5 pb-3">
         {card.preview_stocks.slice(0, 3).map((stock) => {
           const isPositive = stock.change_percent >= 0;
+          const showChainSight = stock.chain_sight_cta || process.env.NEXT_PUBLIC_FORCE_CHAIN_SIGHT === 'true';
           return (
             <div
               key={stock.symbol}
               className="flex items-start gap-2"
             >
-              {/* 심볼 + 회사명 */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1 mb-0.5">
                   <Link
@@ -113,20 +165,25 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
                   >
                     {stock.symbol}
                   </Link>
-                  {stock.chain_sight_cta && (
-                    <Network className="w-2.5 h-2.5 text-purple-400 flex-shrink-0" />
+                  {showChainSight && (
+                    <Link
+                      href={`/stocks/${stock.symbol}?tab=chain-sight`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="text-purple-400 hover:text-purple-600 transition-colors"
+                      title="Chain Sight 연계 분석"
+                    >
+                      <Network className="w-2.5 h-2.5" />
+                    </Link>
                   )}
                   <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">
                     {stock.signal_label}
                   </span>
                 </div>
-                {/* 뉴스 인라인 */}
                 {stock.news_context?.headline && (
                   <NewsContextBadge news={stock.news_context} />
                 )}
               </div>
 
-              {/* 스파크라인 + 변동률 */}
               <div className="flex-shrink-0 flex flex-col items-end gap-0.5">
                 <MiniSparkline data={stock.mini_chart_20d} width={52} height={20} />
                 <span
@@ -147,17 +204,18 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
       {/* CTA 버튼 */}
       <div className="px-4 pb-4">
         <button
-          onClick={() => onCardClick(card)}
+          onClick={(e) => { e.stopPropagation(); onCardClick(card); }}
           className="w-full flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all duration-150 border"
           style={{
             borderColor: categoryColor,
             color: categoryColor,
+            backgroundColor: categoryColor + '1A',
           }}
           onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = categoryColor + '15';
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = categoryColor + '26';
           }}
           onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
+            (e.currentTarget as HTMLButtonElement).style.backgroundColor = categoryColor + '1A';
           }}
         >
           {card.more_count > 0 ? (

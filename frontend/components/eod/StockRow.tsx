@@ -41,10 +41,14 @@ export function StockRow({ stock }: StockRowProps) {
             >
               {stock.symbol}
             </Link>
-            {stock.chain_sight_cta && (
-              <span title="Chain Sight 연계 분석 가능">
-                <Network className="w-3 h-3 text-purple-500 dark:text-purple-400" />
-              </span>
+            {(stock.chain_sight_cta || process.env.NEXT_PUBLIC_FORCE_CHAIN_SIGHT === 'true') && (
+              <Link
+                href={`/stocks/${stock.symbol}?tab=chain-sight`}
+                className="text-purple-500 dark:text-purple-400 hover:text-purple-600 dark:hover:text-purple-300 transition-colors"
+                title="Chain Sight 연계 분석"
+              >
+                <Network className="w-3 h-3" />
+              </Link>
             )}
             <ConfidenceBadge score={stock.composite_score} />
           </div>

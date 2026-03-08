@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { X, ChevronDown, TrendingUp, AlertTriangle, Layers } from 'lucide-react';
+import Link from 'next/link';
+import { X, ChevronDown, TrendingUp, AlertTriangle, Layers, ArrowRight } from 'lucide-react';
 import { StockRow } from './StockRow';
 import { useSignalDetail } from '@/hooks/useEODDashboard';
 import { SIGNAL_CATEGORY_COLORS, SIGNAL_CATEGORY_LABELS } from '@/types/eod';
@@ -45,6 +46,7 @@ function sortStocks(
 export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
   const [sortBy, setSortBy] = useState<SortOption>('volume');
   const [showSortMenu, setShowSortMenu] = useState(false);
+  const [showTip, setShowTip] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   const { data: detail, isLoading } = useSignalDetail(card.id);
@@ -101,6 +103,11 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
         "
         onClick={(e) => e.stopPropagation()}
       >
+        {/* 모바일 드래그 핸들 */}
+        <div className="flex justify-center pt-2 pb-1 md:hidden">
+          <div className="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        </div>
+
         {/* 헤더 */}
         <div
           className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0"
@@ -134,23 +141,34 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
           </button>
         </div>
 
-        {/* 교육 팁 요약 */}
+        {/* 교육 팁 (기본 접기) */}
         {(card.education_tip || card.education_risk) && (
-          <div className="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-            {card.education_tip && (
-              <div className="flex items-start gap-2 mb-1">
-                <TrendingUp className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                  {card.education_tip}
-                </p>
-              </div>
-            )}
-            {card.education_risk && (
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
-                  {card.education_risk}
-                </p>
+          <div className="border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+            <button
+              onClick={() => setShowTip((prev) => !prev)}
+              className="w-full flex items-center justify-between px-5 py-2.5 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+            >
+              <span className="font-medium">투자 팁</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showTip ? 'rotate-180' : ''}`} />
+            </button>
+            {showTip && (
+              <div className="px-5 pb-3 bg-gray-50 dark:bg-gray-800/50">
+                {card.education_tip && (
+                  <div className="flex items-start gap-2 mb-1">
+                    <TrendingUp className="w-3.5 h-3.5 text-blue-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                      {card.education_tip}
+                    </p>
+                  </div>
+                )}
+                {card.education_risk && (
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-amber-600 dark:text-amber-400 leading-relaxed">
+                      {card.education_risk}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -162,16 +180,26 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
             <div className="flex items-center gap-2">
               <Layers className="w-3.5 h-3.5 text-purple-500" />
               <span className="text-xs text-gray-500 dark:text-gray-400">Chain Sight 연계:</span>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 flex-1">
                 {card.chain_sight_sectors.map((sector) => (
-                  <span
+                  <Link
                     key={sector}
-                    className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800"
+                    href={`/stocks?sector=${encodeURIComponent(sector)}`}
+                    className="text-[10px] px-1.5 py-0.5 rounded bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 border border-purple-100 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-800/30 cursor-pointer transition-colors"
                   >
                     {sector}
-                  </span>
+                  </Link>
                 ))}
               </div>
+              {sortedStocks.length > 0 && (
+                <Link
+                  href={`/stocks/${sortedStocks[0].symbol}?tab=chain-sight`}
+                  className="inline-flex items-center gap-0.5 text-[10px] text-purple-600 dark:text-purple-400 hover:text-purple-700 font-medium whitespace-nowrap"
+                >
+                  관계 지도
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
             </div>
           </div>
         )}
@@ -190,7 +218,7 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
               <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showSortMenu ? 'rotate-180' : ''}`} />
             </button>
             {showSortMenu && (
-              <div className="absolute right-0 top-full mt-1 z-10 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
+              <div className="absolute right-0 top-full mt-1 z-20 w-36 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg overflow-hidden">
                 {(Object.keys(SORT_LABELS) as SortOption[]).map((option) => (
                   <button
                     key={option}
@@ -220,9 +248,11 @@ export function SignalDetailSheet({ card, onClose }: SignalDetailSheetProps) {
               ))}
             </div>
           ) : (
-            sortedStocks.map((stock) => (
-              <StockRow key={stock.symbol} stock={stock} />
-            ))
+            <div key={sortBy} className="animate-fadeIn">
+              {sortedStocks.map((stock) => (
+                <StockRow key={stock.symbol} stock={stock} />
+              ))}
+            </div>
           )}
         </div>
       </div>
