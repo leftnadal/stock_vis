@@ -36,6 +36,28 @@ class NewsAggregatorService:
             request_delay=900.0  # 100 calls/day (15분 간격)
         )
 
+        # FMP Provider (FMP_API_KEY가 있을 때만 초기화)
+        self.fmp = None
+        if getattr(settings, 'FMP_API_KEY', None):
+            try:
+                from api_request.providers.fmp.client import FMPClient
+                from ..providers.fmp import FMPNewsProvider
+                fmp_client = FMPClient(api_key=settings.FMP_API_KEY)
+                self.fmp = FMPNewsProvider(fmp_client)
+            except Exception as e:
+                logger.warning(f"FMP news provider init failed: {e}")
+
+        # Alpha Vantage Provider (AV_API_KEY가 있을 때만 초기화)
+        self.alphavantage = None
+        if getattr(settings, 'ALPHA_VANTAGE_API_KEY', None):
+            try:
+                from ..providers.alphavantage import AlphaVantageNewsProvider
+                self.alphavantage = AlphaVantageNewsProvider(
+                    api_key=settings.ALPHA_VANTAGE_API_KEY
+                )
+            except Exception as e:
+                logger.warning(f"Alpha Vantage news provider init failed: {e}")
+
         # Deduplicator
         self.deduplicator = NewsDeduplicator(title_similarity_threshold=0.85)
 
@@ -223,6 +245,12 @@ class NewsAggregatorService:
                 elif raw_article.provider_name == 'marketaux' and not article.marketaux_uuid:
                     article.marketaux_uuid = raw_article.provider_id
                     updated = True
+                elif raw_article.provider_name == 'fmp' and not article.fmp_id:
+                    article.fmp_id = raw_article.provider_id
+                    updated = True
+                elif raw_article.provider_name == 'alpha_vantage' and not article.alphavantage_id:
+                    article.alphavantage_id = raw_article.provider_id
+                    updated = True
 
             if updated:
                 article.save()
@@ -242,11 +270,131 @@ class NewsAggregatorService:
                 category=raw_article.category,
                 finnhub_id=int(raw_article.provider_id) if raw_article.provider_name == 'finnhub' and raw_article.provider_id else None,
                 marketaux_uuid=raw_article.provider_id if raw_article.provider_name == 'marketaux' else '',
+                fmp_id=raw_article.provider_id if raw_article.provider_name == 'fmp' else '',
+                alphavantage_id=raw_article.provider_id if raw_article.provider_name == 'alpha_vantage' else '',
                 sentiment_score=raw_article.sentiment_score,
                 sentiment_source=raw_article.sentiment_source,
-                is_press_release=raw_article.is_press_release
+                is_press_release=raw_article.is_press_release,
+                is_official=raw_article.is_press_release,
             )
             return article, True
+
+    def fetch_and_save_company_news_fmp(
+        self,
+        symbol: str,
+        days: int = 1,
+    ) -> Dict[str, Any]:
+        """
+        FMP 전용 종목 뉴스 수집
+
+        Args:
+            symbol: 주식 심볼
+            days: 수집 기간 (일)
+
+        Returns:
+            Dict: 결과 통계
+        """
+        if not self.fmp:
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': 'fmp_not_configured'}
+
+        symbol = symbol.upper()
+        to_date = datetime.now()
+        from_date = to_date - timedelta(days=days)
+
+        try:
+            articles = self.fmp.fetch_company_news(symbol, from_date, to_date)
+        except Exception as e:
+            logger.error(f"FMP company news fetch failed for {symbol}: {e}")
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': str(e)}
+
+        unique_articles = self.deduplicator.deduplicate(articles)
+        saved, updated, skipped = self._save_articles(unique_articles)
+
+        return {
+            'symbol': symbol,
+            'total_fetched': len(articles),
+            'saved': saved,
+            'updated': updated,
+            'skipped': skipped,
+        }
+
+    def fetch_and_save_press_releases(
+        self,
+        symbol: str,
+        limit: int = 20,
+    ) -> Dict[str, Any]:
+        """FMP 보도자료 수집"""
+        if not self.fmp:
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': 'fmp_not_configured'}
+
+        symbol = symbol.upper()
+        try:
+            articles = self.fmp.fetch_press_releases(symbol, limit=limit)
+        except Exception as e:
+            logger.error(f"FMP press releases fetch failed for {symbol}: {e}")
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': str(e)}
+
+        unique_articles = self.deduplicator.deduplicate(articles)
+        saved, updated, skipped = self._save_articles(unique_articles)
+
+        return {
+            'symbol': symbol,
+            'total_fetched': len(articles),
+            'saved': saved,
+            'updated': updated,
+            'skipped': skipped,
+        }
+
+    def fetch_and_save_general_news_fmp(self, limit: int = 50) -> Dict[str, Any]:
+        """FMP 일반 시장 뉴스 수집"""
+        if not self.fmp:
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': 'fmp_not_configured'}
+
+        try:
+            articles = self.fmp.fetch_market_news(limit=limit)
+        except Exception as e:
+            logger.error(f"FMP general news fetch failed: {e}")
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': str(e)}
+
+        unique_articles = self.deduplicator.deduplicate(articles)
+        saved, updated, skipped = self._save_articles(unique_articles)
+
+        return {
+            'total_fetched': len(articles),
+            'saved': saved,
+            'updated': updated,
+            'skipped': skipped,
+        }
+
+    def fetch_and_save_company_news_av(
+        self,
+        symbol: str,
+        days: int = 1,
+    ) -> Dict[str, Any]:
+        """Alpha Vantage 종목 감성 뉴스 수집"""
+        if not self.alphavantage:
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': 'av_not_configured'}
+
+        symbol = symbol.upper()
+        to_date = datetime.now()
+        from_date = to_date - timedelta(days=days)
+
+        try:
+            articles = self.alphavantage.fetch_company_news(symbol, from_date, to_date)
+        except Exception as e:
+            logger.error(f"AV company news fetch failed for {symbol}: {e}")
+            return {'saved': 0, 'updated': 0, 'skipped': 0, 'error': str(e)}
+
+        unique_articles = self.deduplicator.deduplicate(articles)
+        saved, updated, skipped = self._save_articles(unique_articles)
+
+        return {
+            'symbol': symbol,
+            'total_fetched': len(articles),
+            'saved': saved,
+            'updated': updated,
+            'skipped': skipped,
+        }
 
     def _save_entities(
         self,

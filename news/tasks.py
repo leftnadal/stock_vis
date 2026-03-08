@@ -124,7 +124,7 @@ def collect_daily_news(self, symbols=None, days=1):
 
         # 심볼 목록 결정
         if symbols is None:
-            symbols = _get_mover_symbols(max_symbols=30)
+            symbols = _get_mover_symbols(max_symbols=20)
         logger.info(f"collect_daily_news: {len(symbols)} symbols, days={days}")
 
         # 종목별 뉴스 수집
@@ -849,6 +849,314 @@ def train_lightgbm_model(self):
     except Exception as exc:
         logger.exception(f"train_lightgbm_model failed: {exc}")
         raise self.retry(exc=exc)
+
+
+# ============================================================
+# FMP 대량 뉴스 수집 태스크 (Phase 1)
+# ============================================================
+
+@shared_task(
+    bind=True,
+    rate_limit='100/m',
+    max_retries=2,
+    soft_time_limit=600,
+    time_limit=660,
+)
+def collect_sp500_news_fmp_batch(self, symbols: list):
+    """
+    배치 단위 FMP 뉴스 수집
+
+    rate_limit='100/m'으로 Celery 레벨에서 FMP 300/min 한도 내 제어.
+
+    Args:
+        symbols: 수집할 심볼 리스트
+
+    Returns:
+        dict: {saved, updated, errors}
+    """
+    from news.services.aggregator import NewsAggregatorService
+    from news.services.circuit_breaker import CircuitBreaker
+
+    breaker = CircuitBreaker('fmp')
+    if breaker.is_open():
+        logger.warning("FMP Circuit OPEN, skipping batch")
+        return {'skipped': True, 'reason': 'circuit_open'}
+
+    aggregator = NewsAggregatorService()
+    results = {'saved': 0, 'updated': 0, 'errors': 0, 'symbols': len(symbols)}
+    start_time = time.time()
+
+    for symbol in symbols:
+        try:
+            result = aggregator.fetch_and_save_company_news_fmp(symbol)
+            results['saved'] += result.get('saved', 0)
+            results['updated'] += result.get('updated', 0)
+            breaker.record_success()
+        except Exception as e:
+            logger.error(f"FMP news {symbol}: {e}")
+            results['errors'] += 1
+            breaker.record_failure()
+
+    duration = time.time() - start_time
+    _log_collection('collect_sp500_news_fmp_batch', 'fmp', len(symbols), results, duration)
+    return results
+
+
+@shared_task
+def collect_sp500_news_fmp_orchestrator():
+    """
+    S&P 500 FMP 뉴스 수집 orchestrator
+
+    chord로 6개 배치를 병렬 실행합니다.
+    """
+    from celery import chord
+    from stocks.models import SP500Constituent
+
+    sp500 = list(
+        SP500Constituent.objects.filter(is_active=True)
+        .order_by('symbol')
+        .values_list('symbol', flat=True)
+    )
+
+    if not sp500:
+        logger.warning("collect_sp500_news_fmp_orchestrator: no SP500 constituents")
+        return {'error': 'no_sp500_data'}
+
+    batch_size = 84  # 503 / 6 ≈ 84
+    batches = [sp500[i:i + batch_size] for i in range(0, len(sp500), batch_size)]
+
+    logger.info(f"collect_sp500_news_fmp_orchestrator: {len(sp500)} symbols in {len(batches)} batches")
+
+    chord(
+        collect_sp500_news_fmp_batch.s(batch) for batch in batches
+    )(collect_sp500_news_fmp_done.si())
+
+    return {'dispatched': len(batches), 'total_symbols': len(sp500)}
+
+
+@shared_task
+def collect_sp500_news_fmp_done():
+    """chord 완료 콜백"""
+    logger.info("collect_sp500_news_fmp: all batches completed")
+    return {'status': 'all_batches_done'}
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=600,
+    time_limit=660,
+)
+def collect_press_releases_fmp(self, max_symbols=50):
+    """
+    FMP 보도자료 수집 (시가총액 상위 종목)
+
+    1회/일 실행.
+
+    Args:
+        max_symbols: 수집할 최대 종목 수 (기본: 50)
+
+    Returns:
+        dict: {saved, updated, errors}
+    """
+    from news.services.aggregator import NewsAggregatorService
+    from news.services.circuit_breaker import CircuitBreaker
+    from stocks.models import SP500Constituent
+
+    breaker = CircuitBreaker('fmp')
+    if breaker.is_open():
+        logger.warning("FMP Circuit OPEN, skipping press releases")
+        return {'skipped': True, 'reason': 'circuit_open'}
+
+    # 시가총액 상위 종목
+    symbols = list(
+        SP500Constituent.objects.filter(is_active=True)
+        .order_by('-market_cap')
+        .values_list('symbol', flat=True)[:max_symbols]
+    )
+
+    aggregator = NewsAggregatorService()
+    results = {'saved': 0, 'updated': 0, 'errors': 0}
+    start_time = time.time()
+
+    for symbol in symbols:
+        try:
+            result = aggregator.fetch_and_save_press_releases(symbol)
+            results['saved'] += result.get('saved', 0)
+            results['updated'] += result.get('updated', 0)
+            breaker.record_success()
+        except Exception as e:
+            logger.error(f"FMP press release {symbol}: {e}")
+            results['errors'] += 1
+            breaker.record_failure()
+
+    duration = time.time() - start_time
+    _log_collection('collect_press_releases_fmp', 'fmp', len(symbols), results, duration)
+    logger.info(f"collect_press_releases_fmp completed: {results}")
+    return results
+
+
+@shared_task(
+    bind=True,
+    max_retries=2,
+    soft_time_limit=300,
+    time_limit=360,
+)
+def collect_general_news_fmp(self):
+    """FMP 일반 시장 뉴스 수집"""
+    from news.services.aggregator import NewsAggregatorService
+    from news.services.circuit_breaker import CircuitBreaker
+
+    breaker = CircuitBreaker('fmp')
+    if breaker.is_open():
+        logger.warning("FMP Circuit OPEN, skipping general news")
+        return {'skipped': True, 'reason': 'circuit_open'}
+
+    start_time = time.time()
+    aggregator = NewsAggregatorService()
+
+    try:
+        result = aggregator.fetch_and_save_general_news_fmp(limit=50)
+        breaker.record_success()
+    except Exception as e:
+        logger.error(f"FMP general news failed: {e}")
+        breaker.record_failure()
+        result = {'saved': 0, 'error': str(e)}
+
+    duration = time.time() - start_time
+    _log_collection('collect_general_news_fmp', 'fmp', 0, result, duration)
+    logger.info(f"collect_general_news_fmp completed: {result}")
+    return result
+
+
+# ============================================================
+# Alpha Vantage 감성 뉴스 수집 태스크 (Phase 2)
+# ============================================================
+
+@shared_task(
+    bind=True,
+    max_retries=10,
+    soft_time_limit=120,
+    time_limit=180,
+)
+def collect_av_single_symbol(self, symbol: str):
+    """
+    AV 단일 종목 감성 뉴스 수집
+
+    RateLimitExceeded 시 60초 후 자동 재시도.
+
+    Args:
+        symbol: 수집할 심볼
+
+    Returns:
+        dict: {saved, updated}
+    """
+    try:
+        from news.services.aggregator import NewsAggregatorService
+        aggregator = NewsAggregatorService()
+        result = aggregator.fetch_and_save_company_news_av(symbol)
+        _log_collection('collect_av_single_symbol', 'alpha_vantage', 1, result)
+        return result
+    except Exception as exc:
+        # RateLimitExceeded 감지
+        if 'rate' in str(exc).lower() or 'limit' in str(exc).lower():
+            raise self.retry(countdown=60, exc=exc)
+        raise self.retry(exc=exc, countdown=300)
+
+
+@shared_task
+def collect_sentiment_news_av(symbols=None, max_symbols=25):
+    """
+    AV 감성 뉴스 수집 orchestrator
+
+    개별 태스크로 분산하여 13초 간격으로 stagger.
+
+    Args:
+        symbols: 수집할 심볼 리스트 (None이면 Tier1 자동 선택)
+        max_symbols: 최대 종목 수
+
+    Returns:
+        dict: {dispatched: int}
+    """
+    if symbols is None:
+        symbols = _get_tier1_symbols(max_symbols)
+
+    count = min(len(symbols), max_symbols)
+    for i, symbol in enumerate(symbols[:count]):
+        collect_av_single_symbol.apply_async(
+            args=[symbol],
+            countdown=i * 13,  # 13초 간격 stagger
+        )
+
+    logger.info(f"collect_sentiment_news_av: dispatched {count} symbols")
+    return {'dispatched': count}
+
+
+# ============================================================
+# 데이터 보존 태스크 (Phase 4)
+# ============================================================
+
+@shared_task
+def archive_old_articles():
+    """6개월 이상 기사 → soft delete (is_archived=True)"""
+    from news.models import NewsArticle
+
+    cutoff = timezone.now() - timedelta(days=180)
+    count = NewsArticle.objects.filter(
+        published_at__lt=cutoff,
+        is_archived=False,
+    ).update(is_archived=True)
+
+    logger.info(f"Archived {count} old articles")
+    return {'archived': count}
+
+
+# ============================================================
+# 헬퍼 함수
+# ============================================================
+
+def _log_collection(task_name, provider, symbols_tried, results, duration=0):
+    """뉴스 수집 로그 기록"""
+    try:
+        from news.models import NewsCollectionLog
+        NewsCollectionLog.objects.create(
+            task_name=task_name,
+            provider=provider,
+            symbols_tried=symbols_tried,
+            articles_new=results.get('saved', 0),
+            articles_dup=results.get('skipped', results.get('updated', 0)),
+            errors=results.get('errors', 0),
+            duration_sec=duration,
+        )
+    except Exception as e:
+        logger.error(f"_log_collection failed: {e}")
+
+
+def _get_tier1_symbols(max_symbols=25):
+    """Tier 1 심볼 목록: Watchlist + Top Movers"""
+    symbols = set()
+
+    # Top Movers
+    mover_symbols = _get_mover_symbols(max_symbols=15)
+    symbols.update(mover_symbols)
+
+    # Watchlist 인기 종목 (남은 슬롯 채움)
+    if len(symbols) < max_symbols:
+        try:
+            from users.models import WatchlistItem
+            from django.db.models import Count
+
+            popular = list(
+                WatchlistItem.objects.values('symbol')
+                .annotate(count=Count('id'))
+                .order_by('-count')
+                .values_list('symbol', flat=True)[:max_symbols - len(symbols)]
+            )
+            symbols.update(popular)
+        except Exception:
+            pass
+
+    return list(symbols)[:max_symbols]
 
 
 def _get_mover_symbols(max_symbols=30):

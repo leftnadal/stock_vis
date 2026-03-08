@@ -22,6 +22,7 @@ class NewsArticle(models.Model):
     CATEGORY_CHOICES = [
         ('general', 'General'),
         ('company', 'Company'),
+        ('press_release', 'Press Release'),
         ('forex', 'Forex'),
         ('crypto', 'Crypto'),
         ('merger', 'Merger'),
@@ -29,6 +30,8 @@ class NewsArticle(models.Model):
 
     SENTIMENT_SOURCE_CHOICES = [
         ('marketaux', 'Marketaux'),
+        ('alpha_vantage', 'Alpha Vantage'),
+        ('fmp', 'FMP'),
         ('computed', 'Computed'),
         ('none', 'None'),
     ]
@@ -94,6 +97,16 @@ class NewsArticle(models.Model):
         blank=True,
         help_text=_("Marketaux 기사 UUID")
     )
+    fmp_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text=_("FMP 기사 ID")
+    )
+    alphavantage_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text=_("Alpha Vantage 기사 ID")
+    )
 
     # Sentiment Analysis
     sentiment_score = models.DecimalField(
@@ -118,6 +131,15 @@ class NewsArticle(models.Model):
     is_press_release = models.BooleanField(
         default=False,
         help_text=_("보도 자료 여부")
+    )
+    is_official = models.BooleanField(
+        default=False,
+        help_text=_("공식 발표 (보도자료 등)")
+    )
+    is_archived = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text=_("아카이브 여부")
     )
 
     # ── News Intelligence Pipeline v3 ──
@@ -256,7 +278,12 @@ class NewsEntity(models.Model):
     )
     source = models.CharField(
         max_length=20,
-        choices=[('finnhub', 'Finnhub'), ('marketaux', 'Marketaux')],
+        choices=[
+            ('finnhub', 'Finnhub'),
+            ('marketaux', 'Marketaux'),
+            ('fmp', 'FMP'),
+            ('alpha_vantage', 'Alpha Vantage'),
+        ],
         help_text=_("데이터 소스")
     )
 
@@ -631,3 +658,24 @@ class NewsCollectionCategory(models.Model):
                 if s.strip()
             ][:self.max_symbols]
         return []
+
+
+class NewsCollectionLog(models.Model):
+    """태스크 실행 결과 — 운영 모니터링용"""
+
+    task_name = models.CharField(max_length=100)
+    provider = models.CharField(max_length=20)
+    executed_at = models.DateTimeField(auto_now_add=True)
+    symbols_tried = models.IntegerField(default=0)
+    articles_new = models.IntegerField(default=0)
+    articles_dup = models.IntegerField(default=0)
+    api_calls = models.IntegerField(default=0)
+    errors = models.IntegerField(default=0)
+    duration_sec = models.FloatField(default=0)
+
+    class Meta:
+        db_table = 'news_collection_logs'
+        indexes = [models.Index(fields=['provider', '-executed_at'])]
+
+    def __str__(self):
+        return f"{self.task_name} ({self.provider}) at {self.executed_at}: +{self.articles_new}"
