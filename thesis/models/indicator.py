@@ -12,7 +12,7 @@ class ThesisIndicator(models.Model):
     )
     premise = models.ForeignKey(
         'thesis.ThesisPremise',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='indicators',
         null=True,
         blank=True,

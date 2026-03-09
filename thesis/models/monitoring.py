@@ -63,7 +63,7 @@ class ThesisAlert(models.Model):
     )
     indicator = models.ForeignKey(
         'thesis.ThesisIndicator',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='alerts',

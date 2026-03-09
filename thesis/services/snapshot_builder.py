@@ -125,10 +125,11 @@ def build_snapshot(thesis, as_of_date=None):
     days_active = (timezone.now() - thesis.created_at).days
     prev_score = prev_snapshot.overall_score if prev_snapshot else None
 
-    # 최근 5일 score_history
+    # 최근 5일 score_history (오늘 스냅샷 제외하여 중복 방지)
     recent_snapshots = ThesisSnapshot.objects.filter(
         thesis=thesis,
-    ).order_by('-asof_date')[:5]
+        asof_date__lt=as_of_date,
+    ).order_by('-asof_date')[:4]
     score_history = [s.overall_score for s in reversed(recent_snapshots)]
     score_history.append(overall_score)
 

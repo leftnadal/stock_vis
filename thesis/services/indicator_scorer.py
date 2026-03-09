@@ -20,11 +20,11 @@ EXTREME_VOL_THRESHOLD = 5.0  # |z_raw| >= 5.0
 
 
 def get_scoring_params(indicator):
-    """지표별 스코어링 파라미터 조회."""
+    """지표별 스코어링 파라미터 조회. 모델 기본값과 일치하도록 None 체크."""
     return {
-        'epsilon': indicator.epsilon or EPSILON_DEFAULTS.get(indicator.indicator_type, 0.01),
-        'window': indicator.window or 20,
-        'decay': indicator.decay or 0.95,
+        'epsilon': indicator.epsilon if indicator.epsilon is not None else EPSILON_DEFAULTS.get(indicator.indicator_type, 0.01),
+        'window': indicator.window if indicator.window is not None else 60,
+        'decay': indicator.decay if indicator.decay is not None else 0.95,
     }
 
 

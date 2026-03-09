@@ -99,7 +99,7 @@ def determine_state(thesis, overall_score, prev_score,
             'reminder_needed': reminder_needed,
         }
 
-    # 최근 스냅샷 기반 판정
+    # 최근 스냅샷 기반 판정 (수학 모델 Section 5 의사코드 순서 그대로)
     recent = score_history[-5:] if score_history else []
 
     if len(recent) < TREND_MIN_SNAPSHOTS:
@@ -119,21 +119,15 @@ def determine_state(thesis, overall_score, prev_score,
             'reminder_needed': False,
         }
 
-    # critical: overall_score <= -0.6
-    if overall_score <= CRITICAL_SCORE_THRESHOLD:
-        new_state = 'critical'
-        return {
-            'state': new_state,
-            'state_changed': new_state != current_state,
-            'reminder_needed': False,
-        }
-
     # strengthening/weakening: 추세 판정
     trend = recent[-1] - recent[0]
     if trend > TREND_THRESHOLD:
         new_state = 'strengthening'
     elif trend < -TREND_THRESHOLD:
         new_state = 'weakening'
+    # critical: overall_score < -0.6 (추세 판정 후 체크)
+    elif overall_score < CRITICAL_SCORE_THRESHOLD:
+        new_state = 'critical'
     else:
         new_state = 'active'
 

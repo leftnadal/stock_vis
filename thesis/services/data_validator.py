@@ -57,7 +57,7 @@ def validate_reading(indicator, raw_value, asof, fetched_at=None):
     # 5. 전일 대비 급변 - stale이 아닌 정상 데이터끼리만 비교
     prev = indicator.latest_validated_value
     if prev is not None and prev != 0:
-        threshold = indicator.max_change_pct or 0.5
+        threshold = indicator.max_change_pct if indicator.max_change_pct is not None else 0.5
         change_pct = abs((raw_value - prev) / prev)
         if change_pct > threshold:
             if indicator.allow_extreme_jump:

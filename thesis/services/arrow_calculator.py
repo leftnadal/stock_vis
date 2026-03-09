@@ -2,13 +2,24 @@
 
 from thesis.services.indicator_scorer import score_indicator_from_model
 
-# 수학 모델 Section 3.5 COLOR_MAP
-COLOR_MAP = [
-    (0, 36, '#2563EB', '강하게 지지'),
-    (36, 72, '#60A5FA', '지지하는 편'),
-    (72, 108, '#9CA3AF', '중립'),
-    (108, 144, '#FB923C', '약화하는 편'),
-    (144, 180, '#DC2626', '강하게 반박'),
+# 설계 문서 Section 5.4: 색상 5단계
+COLOR_BANDS = [
+    (0, 45, '#2563EB'),     # 강한 지지
+    (45, 75, '#60A5FA'),    # 지지
+    (75, 105, '#9CA3AF'),   # 중립
+    (105, 135, '#FB923C'),  # 약화
+    (135, 180, '#DC2626'),  # 강한 반박
+]
+
+# 설계 문서 Section 5.4: 라벨 7단계
+LABEL_BANDS = [
+    (0, 30, '강하게 지지'),
+    (30, 60, '지지하는 중'),
+    (60, 80, '살짝 지지'),
+    (80, 100, '중립'),
+    (100, 120, '살짝 약화'),
+    (120, 150, '약화 중'),
+    (150, 180, '강하게 반박'),
 ]
 
 
@@ -19,15 +30,15 @@ def score_to_degree(score):
 
 def degree_to_color(degree):
     """degree -> hex color string."""
-    for low, high, color, _ in COLOR_MAP:
+    for low, high, color in COLOR_BANDS:
         if low <= degree < high:
             return color
     return '#DC2626'  # 180
 
 
 def degree_to_label(degree):
-    """degree -> 한글 라벨."""
-    for low, high, _, label in COLOR_MAP:
+    """degree -> 한글 라벨 (7단계)."""
+    for low, high, label in LABEL_BANDS:
         if low <= degree < high:
             return label
     return '강하게 반박'  # 180

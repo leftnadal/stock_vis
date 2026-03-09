@@ -27,13 +27,16 @@ COOLDOWN_HOURS = {
 USER_VISIBLE_ALERTS = {
     'push_email': [
         'extreme_volatility', 'direction_flip', 'sharp_move',
-        'weakest_link', 'critical', 'expired', 'needs_review',
+        'weakest_link', 'needs_review',
     ],
     'feed_only': [
         'state_change', 'milestone', 'indicator_overlap',
         'indicator_bias', 'premise_divergence', 'stale_data',
     ],
 }
+
+# state_change 중 push 대상 상태 (critical/expired/needs_review)
+PUSH_WORTHY_STATES = {'critical', 'expired', 'needs_review'}
 
 SEVERITY_MAP = {
     'extreme_volatility': 'critical',
@@ -66,7 +69,8 @@ def should_send_alert(thesis, alert_type, target_id, cooldown_hours):
 
 
 def create_alert_if_needed(thesis, alert_type, title, message,
-                           indicator=None, target_id=''):
+                           indicator=None, target_id='',
+                           push_override=False):
     """throttling 통과 시에만 ThesisAlert 생성. 반환: 생성된 alert or None."""
     cooldown = COOLDOWN_HOURS.get(alert_type, 24)
     severity = SEVERITY_MAP.get(alert_type, 'low')
@@ -74,7 +78,7 @@ def create_alert_if_needed(thesis, alert_type, title, message,
     if not should_send_alert(thesis, alert_type, target_id, cooldown):
         return None
 
-    is_pushed = alert_type in USER_VISIBLE_ALERTS.get('push_email', [])
+    is_pushed = push_override or alert_type in USER_VISIBLE_ALERTS.get('push_email', [])
 
     alert = ThesisAlert.objects.create(
         thesis=thesis,
@@ -221,17 +225,24 @@ def check_and_create_alerts(thesis, scoring_result, prev_snapshot=None):
         if alert:
             alerts.append(alert)
 
-    # 8. state_change
+    # 8. state_change (critical/expired/needs_review → push)
     state_result = scoring_result.get('state_result')
     if state_result and state_result.get('state_changed'):
         new_state = state_result['state']
+        is_push_worthy = new_state in PUSH_WORTHY_STATES
+        severity_override = 'high' if is_push_worthy else SEVERITY_MAP.get('state_change', 'low')
         alert = create_alert_if_needed(
             thesis=thesis,
             alert_type='state_change',
             title=f'상태 변경: {new_state}',
             message=f'가설 상태가 "{new_state}"(으)로 변경되었어요.',
+            push_override=is_push_worthy,
         )
         if alert:
+            # push worthy 상태면 severity 상향
+            if is_push_worthy and alert.severity != severity_override:
+                alert.severity = severity_override
+                alert.save(update_fields=['severity'])
             alerts.append(alert)
 
     # 9. needs_review
