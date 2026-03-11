@@ -57,9 +57,9 @@ export default function Header() {
               포트폴리오
             </Link>
             <Link
-              href="/thesis-control"
+              href="/thesis"
               className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/thesis-control') ? 'text-blue-600 dark:text-blue-400' : ''
+                pathname.startsWith('/thesis') ? 'text-blue-600 dark:text-blue-400' : ''
               }`}
             >
               Thesis Control
@@ -170,7 +170,7 @@ export default function Header() {
                 포트폴리오
               </Link>
               <Link
-                href="/thesis-control"
+                href="/thesis"
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Thesis Control
