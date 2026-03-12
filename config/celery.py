@@ -57,10 +57,10 @@ app.conf.beat_schedule = {
     # Macro (거시경제) 태스크
     # ============================================================
 
-    # 거시경제 지표 업데이트 (매시간 - FRED API)
+    # 거시경제 지표 업데이트 (4회/일, 평일 - FRED API)
     'update-economic-indicators': {
         'task': 'macro.tasks.update_economic_indicators',
-        'schedule': crontab(minute=0),  # 매시 정각
+        'schedule': crontab(minute=0, hour='6,12,18,22', day_of_week='1-5'),
     },
 
     # 시장 지수 업데이트 (시장 시간 중 5분마다 - FMP API)
@@ -143,25 +143,38 @@ app.conf.beat_schedule = {
     # News 수집 + 감성 분석 + 키워드 추출 태스크
     # ============================================================
 
-    # 일일 종목 뉴스 수집 (매일 06:00 EST, Market Movers 수집 전)
-    'collect-daily-news': {
+    # 일일 종목 뉴스 수집 (2회/일: 06:00 + 14:30 EST, 평일)
+    'collect-daily-news-morning': {
         'task': 'news.tasks.collect_daily_news',
         'schedule': crontab(hour=6, minute=0, day_of_week='1-5'),
-        'options': {'expires': 3600}  # 1시간 후 만료
+        'options': {'expires': 3600}
+    },
+    'collect-daily-news-afternoon': {
+        'task': 'news.tasks.collect_daily_news',
+        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
     },
 
-    # 시장 뉴스 수집 (매일 12:00 EST)
+    # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
+    'collect-market-news-morning': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=8, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
     'collect-market-news-noon': {
         'task': 'news.tasks.collect_market_news',
         'schedule': crontab(hour=12, minute=0, day_of_week='1-5'),
-        'options': {'expires': 600}  # 10분 후 만료
+        'options': {'expires': 600}
     },
-
-    # 시장 뉴스 수집 (매일 18:00 EST)
+    'collect-market-news-afternoon': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=15, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
     'collect-market-news-evening': {
         'task': 'news.tasks.collect_market_news',
         'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
-        'options': {'expires': 600}  # 10분 후 만료
+        'options': {'expires': 600}
     },
 
     # 일일 감성 분석 집계 (매일 09:00 EST, 뉴스 수집 후)
@@ -178,10 +191,16 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 카테고리 뉴스 수집 - High (2회/일: 06:30 + 17:00 EST, 평일)
+    # 카테고리 뉴스 수집 - High (3회/일: 06:30 + 13:00 + 17:00 EST, 평일)
     'collect-category-news-high-morning': {
         'task': 'news.tasks.collect_category_news',
         'schedule': crontab(hour=6, minute=30, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'high'},
+        'options': {'expires': 3600}
+    },
+    'collect-category-news-high-midday': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=13, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'high'},
         'options': {'expires': 3600}
     },
@@ -192,18 +211,24 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # 카테고리 뉴스 수집 - Medium (1회/일: 07:00 EST, 평일)
-    'collect-category-news-medium': {
+    # 카테고리 뉴스 수집 - Medium (2회/일: 07:00 + 14:00 EST, 평일)
+    'collect-category-news-medium-morning': {
         'task': 'news.tasks.collect_category_news',
         'schedule': crontab(hour=7, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'medium'},
         'options': {'expires': 3600}
     },
+    'collect-category-news-medium-afternoon': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=14, minute=0, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'medium'},
+        'options': {'expires': 3600}
+    },
 
-    # 카테고리 뉴스 수집 - Low (주 1회: 월요일 07:30 EST)
+    # 카테고리 뉴스 수집 - Low (매일 1회: 07:30 EST, 평일)
     'collect-category-news-low': {
         'task': 'news.tasks.collect_category_news',
-        'schedule': crontab(hour=7, minute=30, day_of_week=1),
+        'schedule': crontab(hour=7, minute=30, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'low'},
         'options': {'expires': 3600}
     },
@@ -522,6 +547,31 @@ app.conf.beat_schedule = {
         'task': 'stocks.tasks.bulk_generate_korean_overviews',
         'schedule': crontab(hour=3, minute=0, day_of_month=1),
         'options': {'expires': 86400}
+    },
+
+    # ============================================================
+    # Thesis Control EOD Pipeline (수학 모델 v2.3.2, Section 7)
+    # ============================================================
+
+    # 지표 데이터 수집 (매일 18:00 ET, 장 마감 후)
+    'thesis-update-readings': {
+        'task': 'thesis.tasks.eod_pipeline.update_indicator_readings',
+        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # 스코어 계산 (매일 18:15 ET, 데이터 수집 완료 후)
+    'thesis-calculate-scores': {
+        'task': 'thesis.tasks.eod_pipeline.calculate_scores',
+        'schedule': crontab(hour=18, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # 스냅샷 생성 + 알림 (매일 18:30 ET, 스코어 계산 완료 후)
+    'thesis-create-snapshots': {
+        'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
+        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
     },
 
 }

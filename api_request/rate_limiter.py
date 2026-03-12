@@ -46,13 +46,17 @@ RATE_LIMITS = {
     "fmp": {
         LimitType.PER_MINUTE: 10,
         LimitType.PER_DAY: 250,
-    }
+    },
+    "fred": {
+        LimitType.PER_MINUTE: 100,  # 120/min 중 100 (안전 마진)
+    },
 }
 
 # Request Delay 설정 (초)
 REQUEST_DELAYS = {
     "alpha_vantage": 12.0,  # 분당 5회 = 12초 간격
     "fmp": 0.5,  # FMP는 더 관대
+    "fred": 0.6,  # 분당 100회 기준
 }
 
 
@@ -122,24 +126,20 @@ class RateLimiter:
         window = self._get_window_seconds(limit_type)
 
         try:
-            # Redis 원자적 증가
-            from django_redis import get_redis_connection
-            redis_conn = get_redis_connection("default")
-
-            pipe = redis_conn.pipeline()
+            # Django 내장 RedisCache에서 직접 client 접근 (원자적 증가)
+            client = cache._cache.get_client()
+            pipe = client.pipeline()
             pipe.incr(cache_key)
             pipe.expire(cache_key, window)
             result = pipe.execute()
             return result[0]
-        except ImportError:
-            # Django 기본 캐시 fallback
+        except (AttributeError, Exception) as e:
+            # Redis 미사용 또는 접근 실패 시 Django 캐시 fallback
+            logger.debug(f"Rate limiter Redis fallback: {e}")
             current = cache.get(cache_key, 0)
             new_count = current + 1
             cache.set(cache_key, new_count, window)
             return new_count
-        except Exception as e:
-            logger.warning(f"Rate limiter increment error: {e}")
-            return 0
 
     def acquire(self) -> bool:
         """
@@ -186,12 +186,10 @@ class RateLimiter:
         cache_key = self._get_cache_key(limit_type)
 
         try:
-            from django_redis import get_redis_connection
-            redis_conn = get_redis_connection("default")
-            ttl = redis_conn.ttl(cache_key)
+            client = cache._cache.get_client()
+            ttl = client.ttl(cache_key)
             return max(0, ttl)
-        except:
-            # 기본값
+        except (AttributeError, Exception):
             return self._get_window_seconds(limit_type)
 
     def get_status(self) -> Dict[str, Any]:

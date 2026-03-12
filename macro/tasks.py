@@ -58,7 +58,7 @@ def update_economic_indicators(self):
 
     except Exception as e:
         logger.error(f"update_economic_indicators failed: {e}")
-        self.retry(countdown=60 * 5)  # 5분 후 재시도
+        self.retry(countdown=60 * (2 ** self.request.retries))  # Exponential backoff
 
 
 @shared_task(bind=True, max_retries=3)
