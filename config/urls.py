@@ -35,6 +35,7 @@ urlpatterns = [
     path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
     path('api/v1/rag/', include("rag_analysis.urls")),  # RAG 분석
     path('api/v1/serverless/', include("serverless.urls")),  # Market Movers (AWS 전환 대상)
+    path('api/v1/thesis/', include("thesis.urls")),  # Thesis Control (가설 통제실)
 
     # Provider Admin API
     path('api/v1/', include('api_request.urls')),

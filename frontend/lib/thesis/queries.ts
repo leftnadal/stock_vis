@@ -17,11 +17,12 @@ const THESIS_DEFAULTS = {
   retry: 1,
 }
 
-export function useThesisList() {
+export function useThesisList(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEYS.list,
     queryFn: () => thesisApi.list(),
     ...THESIS_DEFAULTS,
+    ...options,
   })
 }
 
@@ -52,11 +53,12 @@ export function useIndicators(thesisId: string) {
   })
 }
 
-export function useAlerts(thesisId?: string) {
+export function useAlerts(thesisId?: string, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: QUERY_KEYS.alerts(thesisId),
     queryFn: () => thesisApi.listAlerts(thesisId),
     ...THESIS_DEFAULTS,
+    ...options,
   })
 }
 

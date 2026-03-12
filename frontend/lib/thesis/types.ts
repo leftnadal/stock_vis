@@ -99,3 +99,18 @@ export interface ConversationResponse {
   total_steps: number
   thesis?: Thesis                // 가설 완성 시 포함
 }
+
+// ═══ 상태 아이콘 키 (v2 M6) ═══
+// ThesisBadge에서 사용. lucide-react 컴포넌트와 1:1 매핑.
+// 문자열 오타를 컴파일 타임에 잡기 위한 union type.
+export type ThesisStateIconKey =
+  | 'loader'
+  | 'eye'
+  | 'trending_up'
+  | 'trending_down'
+  | 'alert_triangle'
+  | 'clock'
+  | 'timer'
+  | 'check_circle'
+  | 'x_circle'
+  | 'minus_circle'

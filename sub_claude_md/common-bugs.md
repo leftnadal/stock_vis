@@ -233,3 +233,29 @@ elif rel_type:
   2. `fmp/provider.py`: `FMPPremiumError` catch → `PREMIUM_ONLY` 에러코드 반환
   3. `stocks/tasks.py`: `sync_sp500_financials`, `bulk_sync_sp500_financials`에서 `.` 포함 심볼 자동 제외
 - 참고: `docs/infrastructure/fmp-premium-symbols.md`에 전체 목록 문서화
+
+## Next.js Client Component에서 Date.now() hydration 불일치 (#24)
+
+- 증상: "Hydration failed because the server rendered text didn't match the client" 에러
+- 원인: Next.js App Router는 `'use client'` 컴포넌트도 서버에서 pre-render함. 모듈 레벨 `Date.now()`가 SSR 시점과 CSR hydration 시점에 다른 값을 생성 → 렌더링 결과 불일치
+- 사례: Mock 데이터에서 `new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()` 사용 → `relativeTime()` 결과가 서버("3시간 전")와 클라이언트("5시간 전")에서 다름
+- 해결: 고정 ISO 문자열 사용 또는 `useEffect`/`useState`로 클라이언트 전용 렌더링
+```tsx
+// ❌ 잘못된 방법 (모듈 레벨 Date.now() — SSR/CSR 불일치)
+export const MOCK_DATA = {
+  created_at: new Date(Date.now() - 3 * 3600000).toISOString(),
+}
+
+// ✅ 올바른 방법 1: 고정 값
+export const MOCK_DATA = {
+  created_at: '2026-03-11T07:00:00Z',
+}
+
+// ✅ 올바른 방법 2: 클라이언트 전용 (suppressHydrationWarning)
+<span suppressHydrationWarning>{relativeTime(dateStr)}</span>
+
+// ✅ 올바른 방법 3: useEffect로 클라이언트 전용 렌더링
+const [time, setTime] = useState('')
+useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
+```
+- 교훈: **Next.js Client Component는 서버에서도 실행됨**. `Date.now()`, `Math.random()`, `new Date()` 등 비결정적 값을 모듈/컴포넌트 레벨에서 직접 사용하면 hydration 불일치 발생. 시간 기반 렌더링은 반드시 클라이언트 전용으로 처리

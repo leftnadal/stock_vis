@@ -7,6 +7,7 @@
 
 > 설계 문서: `docs/thesis_control/thesis_control_design.md`
 > FE-PR-1 완료 보고서: `docs/thesis_control/frontend/task_done/FE-PR-1_routing_common_components.md`
+> FE-PR-2 완료 보고서: `docs/thesis_control/frontend/task_done/FE-PR-2_thesis_list_page.md`
 
 ---
 
@@ -39,11 +40,13 @@ frontend/
 │   ├── api/authAxios.ts          # 공통 JWT Axios (AuthContext와 공유)
 │   └── thesis/
 │       ├── types.ts               # 전체 타입 정의
-│       ├── utils.ts               # 색상/라벨/점수 매핑
+│       ├── utils.ts               # 색상/라벨/점수/relativeTime/정렬 매핑
 │       ├── api.ts                 # thesisApi 클라이언트
-│       └── queries.ts             # TanStack Query hooks 7개
+│       ├── queries.ts             # TanStack Query hooks 7개
+│       └── mock.ts                # Mock 데이터 (USE_MOCK 환경변수)
 ├── components/thesis/
 │   ├── common/                    # ArrowIndicator, MoonPhase, IndicatorCard, ThesisBadge, AlertBell
+│   ├── list/                      # ThesisListCard, TodayChangeCard, EntryPointGrid
 │   ├── skeleton/                  # ThesisListSkeleton, ThesisDashboardSkeleton, ThesisAlertsSkeleton
 │   └── index.ts                   # barrel (skeleton 미포함)
 └── app/thesis/                    # 7개 라우트 (layout + 6 pages)
@@ -91,11 +94,38 @@ frontend/
 | PR | 내용 | 상태 |
 |----|------|------|
 | FE-PR-1 | 라우팅 + 공통 컴포넌트 + authAxios | **완료** |
-| FE-PR-2 | 가설 목록 페이지 | 예정 |
+| FE-PR-2 | 가설 목록 + 오늘의 변화 + 진입점 + Mock + lucide 아이콘 | **완료** |
 | FE-PR-3 | 대화형 빌더 | 예정 |
 | FE-PR-4 | 지표 설정 | 예정 |
 | FE-PR-5 | 관제실 대시보드 | 예정 |
 | FE-PR-6 | 알림 + 마감 | 예정 |
+
+---
+
+## PR-2 추가 유틸
+
+### stateToDisplay (리팩토링)
+
+- 반환 타입: `{ label, colorClass, icon: ThesisStateIconKey }`
+- 10개 상태 각각 고유 색상 + border 클래스 포함
+- `ThesisStateIconKey` union type: 오타 컴파일 타임 방지
+
+### relativeTime
+
+- `lib/thesis/utils.ts` — 상대 시간 포맷 ("3시간 전", "2일 전" 등)
+- 미래 시간 방어: `diff < 0` → "방금 전"
+- 재사용: TodayChangeCard, 알림 목록(PR-6), 대시보드(PR-5)
+
+### sortThesesByPriority
+
+- `STATE_PRIORITY: Record<ThesisState, number>` — critical(0) ~ closed(7)
+- 2차 정렬: `created_at` 최신순 (동순위 안정성)
+- `useMemo`로 감싸서 불필요한 재정렬 방지
+
+### Mock 모드
+
+- `NEXT_PUBLIC_USE_MOCK=true` → `enabled: !USE_MOCK`으로 query 비활성화
+- **주의**: Mock 데이터에 `Date.now()` 사용 금지 (hydration 불일치, 버그 #24)
 
 ---
 
@@ -105,3 +135,4 @@ frontend/
 - tokenUtils 메서드명: `getAccess()`, `getRefresh()`, `setTokens()`, `setAccess()`, `clear()` (기존 `getAccessToken`/`clearTokens` 아님)
 - skeleton은 barrel(`index.ts`)에 미포함 → 직접 import: `from '@/components/thesis/skeleton/ThesisSkeleton'`
 - Header.tsx의 thesis 경로: `/thesis` (이전 `/thesis-control` 제거됨)
+- **Next.js Client Component는 서버에서도 실행됨** — 모듈 레벨 `Date.now()`, `Math.random()` 사용 금지 (hydration 불일치)

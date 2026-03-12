@@ -98,8 +98,9 @@ celery -A config beat -l info
 | 21 | Chain Sight count만 표시, 목록 빈 배열 | `ETF_PEER`→ETFHolding, `HAS_THEME`→ThemeMatch 분기 |
 | 22 | 재무제표 저장 시 모델 필드명 불일치 | `fiscal_date_ending`→`reported_date`, `accounts_payable`→`current_accounts_payable` 등 6개 |
 | 23 | FMP 프리미엄 심볼 402 에러 | `FMPPremiumError` 즉시 실패 + `.` 포함 심볼 배치에서 제외 |
+| 24 | Next.js Client Component Date.now() hydration 불일치 | 모듈 레벨 `Date.now()` 금지, 고정값 또는 `useEffect` 사용 |
 
-> 전체 23개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
+> 전체 24개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
 
 ---
 
