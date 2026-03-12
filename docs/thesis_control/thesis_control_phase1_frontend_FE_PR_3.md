@@ -1,7 +1,7 @@
-# FE-PR-3: 대화형 빌더 — 가설 설립 플로우 — 구현 계획 (v1)
+# FE-PR-3: 대화형 빌더 — 가설 설립 플로우 — 구현 계획 (v2)
 
-> 버전: v1
-> 작성일: 2026-03-12
+> 버전: v2
+> 작성일: 2026-03-12 (v2: 2026-03-12 리뷰 반영)
 > 범위: `app/thesis/new/page.tsx` 실제 구현 + 채팅 UI + 빌더 컴포넌트
 > 전제조건: FE-PR-2 머지 완료
 > 목표: 설계 문서 2.3~2.5 구현. 투자자가 AI와 대화하며 가설을 설립하는 채팅 인터페이스.
@@ -61,6 +61,32 @@ conversation_state: {
 ```
 
 → `ConversationState` 인터페이스 신규 정의 + `ConversationResponse` 타입 확장 필요.
+
+### 0.3.1 EntrySource 화이트리스트 불일치 (Critical)
+
+백엔드 `ALLOWED_ENTRY_SOURCES`:
+```python
+ALLOWED_ENTRY_SOURCES = {'news', 'free_input', 'popular', 'template', 'chainsight'}
+```
+
+프론트 `page.tsx` 기본값: `'free_text'` ← **백엔드에 없는 값. 400 에러 발생.**
+
+→ `types.ts`에 `EntrySource` union type 정의 + `page.tsx` 기본값 `'free_input'`으로 수정 필요.
+
+### 0.3.2 Preview 응답 구조 (백엔드 확인 완료)
+
+백엔드 `_build_thesis_summary()`가 반환하는 preview 구조:
+```python
+'preview': {
+    'title': str,                          # 가설 제목
+    'direction': str,                      # 'bullish' | 'bearish' | 'neutral'
+    'premises': [{'content': str, 'category': str}, ...],   # 구조체 배열
+    'indicators': [{'name': str, 'indicator_type': str}, ...],
+}
+```
+
+→ `ThesisPreview` 타입의 `premises`를 `string[]` → `{content: string; category: string}[]`로 수정 필요.
+→ Preview 단계에서 PremiseCard로 구조화된 렌더링 필요 (page.tsx에 포함).
 
 ### 0.4 백엔드 대화 플로우 구조
 
@@ -152,44 +178,66 @@ MAGNITUDE_CHOICES = [
 |---|------|------|
 | T1 | sonner 도입 (Toast 시스템) | 4KB, 다크테마 기본, PR-2 코드 주석에서 권장 |
 | T2 | 바텀시트: CSS transform + transition | Framer Motion 의존성 추가 지양 (1인 개발 유지보수) |
-| T3 | 대화 히스토리: 컴포넌트 state (sessionStorage 미사용) | 빌더는 단일 세션, 새로고침 시 처음부터 재시작이 자연스러움 |
+| T3 | ~~대화 히스토리: 컴포넌트 state (sessionStorage 미사용)~~ **v2 수정**: conv_id를 sessionStorage에 저장. 새로고침 시 conv_id로 상태 복원 시도, 실패 시 새 대화 시작 | 백엔드 Redis 세션(30분 TTL) 활용. 대화 중 새로고침/뒤로가기로 진행 상실 방지 |
 | T4 | 뒤로가기: 첫 step에서만 `/thesis` 이동 확인 | 대화 중 step 롤백은 백엔드 미지원 → 복잡도 대비 이득 낮음 |
+| T5 | `useLongPress` 커스텀 훅 분리 | 롱프레스/클릭 충돌 방지 로직 재사용성 + 훅 단위 테스트 가능 |
+| T6 | `EntrySource` union type | 백엔드 화이트리스트와 프론트 상수 단일 소스 |
+| T7 | 데스크톱 롱프레스 대체: info 아이콘 + BottomSheet | 롱프레스는 모바일 전용. 데스크톱 접근성 보장 |
 
 ---
 
-## 1. 파일 목록 (총 14개)
+## 0.6 v2 리뷰 반영 요약
 
-### 신규 생성 (9개)
+| # | v1 이슈 | v2 변경 | 심각도 |
+|---|---------|---------|--------|
+| R1 | OptionButton 롱프레스/클릭 충돌 | `useLongPress` 커스텀 훅 분리, `longPressTriggered` 플래그 | **High** |
+| R2 | entry_source `'free_text'` vs `'free_input'` | `EntrySource` union type 도입, `'free_input'`으로 통일 | **High** |
+| R3 | Mock step 분기 부족 (전부 MOCK_REASON_STEP) | step별 mock 응답 Map, selection_mode 명시 | **High** |
+| R4 | `applyResponse` userMessage 파라미터 미사용 | 파라미터 제거, AI 응답 추가만 담당 | Low |
+| R5 | PremiseCard 사용처 없음 | preview 단계에서 사용 확인 → **유지**, page.tsx에 렌더링 추가 | Low |
+| R6 | OptionButton import 누락 | 모든 컴포넌트 코드블록에 완전한 import 포함 | Low |
+| R7 | 대화 상태 영속성 미고려 | conv_id sessionStorage 저장 + 복원 로직 | **High** |
+| R8 | Gemini 호출 지연(2~5초) 대응 없음 | 로딩 dots 이미 있음 + 30초 타임아웃 + 재시도 버튼 | Medium |
+| R9 | 데스크톱 롱프레스 접근성 | info 아이콘(ℹ) 추가, hover 불가 환경 대응 | Medium |
+
+---
+
+## 1. 파일 목록 (총 16개)
+
+### 신규 생성 (10개)
 
 ```
 frontend/
+├── hooks/
+│   └── useLongPress.ts                # [1] 롱프레스 커스텀 훅 (재사용 가능)
 ├── components/thesis/
 │   └── builder/
-│       ├── ChatBubble.tsx             # [1] AI/사용자 말풍선
-│       ├── OptionButton.tsx           # [2] 선택 버튼 (single/multi)
-│       ├── PremiseCard.tsx            # [3] 근거 카드 (삭제/뱃지)
-│       ├── MultiSelectFooter.tsx      # [4] 멀티 선택 완료 버튼
-│       ├── TextInput.tsx              # [5] 자유 텍스트 입력 영역
-│       ├── BottomSheet.tsx            # [6] 바텀시트 (근거 설명)
-│       └── ProgressBar.tsx            # [7] 상단 진행률 바
+│       ├── ChatBubble.tsx             # [2] AI/사용자 말풍선
+│       ├── OptionButton.tsx           # [3] 선택 버튼 (single/multi + useLongPress)
+│       ├── PremiseCard.tsx            # [4] 근거 카드 (preview 단계 렌더링)
+│       ├── MultiSelectFooter.tsx      # [5] 멀티 선택 완료 버튼
+│       ├── TextInput.tsx              # [6] 자유 텍스트 입력 영역
+│       ├── BottomSheet.tsx            # [7] 바텀시트 (근거 설명)
+│       └── ProgressBar.tsx            # [8] 상단 진행률 바
 ├── lib/thesis/
-│   └── conversation.ts               # [8] 대화 상태 관리 유틸
+│   └── conversation.ts               # [9] 대화 상태 관리 유틸
 └── app/thesis/
     └── new/
-        └── page.tsx                   # [9] 대화형 빌더 페이지 (전면 교체)
+        └── page.tsx                   # [10] 대화형 빌더 페이지 (전면 교체)
 ```
 
-### 기존 파일 수정 (5개)
+### 기존 파일 수정 (6개)
 
 ```
 frontend/
 ├── lib/thesis/
-│   ├── types.ts                       # [10] ConversationState 타입 + ConversationResponse 확장
-│   ├── api.ts                         # [11] sendMessage 시그니처 수정 (백엔드 일치)
-│   └── mock.ts                        # [12] Mock 대화 데이터 추가
+│   ├── types.ts                       # [11] EntrySource, ConversationState, ThesisPreview 타입
+│   ├── api.ts                         # [12] sendMessage 시그니처 수정 (백엔드 일치)
+│   └── mock.ts                        # [13] step별 Mock 대화 응답 Map
 ├── components/thesis/
-│   └── list/EntryPointGrid.tsx        # [13] showTemporaryToast → sonner 교체
-└── package.json                       # [14] sonner 의존성 추가
+│   └── list/EntryPointGrid.tsx        # [14] showTemporaryToast → sonner 교체
+├── app/globals.css                    # [15] slideUp 키프레임 추가
+└── package.json                       # [16] sonner 의존성 추가
 ```
 
 ---
@@ -198,24 +246,39 @@ frontend/
 
 ---
 
-### [10] `lib/thesis/types.ts` — 수정
+### [11] `lib/thesis/types.ts` — 수정
 
 ```ts
+// ── 신규: 진입점 소스 (백엔드 ALLOWED_ENTRY_SOURCES 화이트리스트) ──
+export type EntrySource = 'news' | 'free_input' | 'popular' | 'template' | 'chainsight'
+
 // ── 신규: 대화 상태 (백엔드 conversation_state echo) ──
 export interface ConversationState {
   conv_id: string
-  entry_source: string
+  entry_source: EntrySource
   step: number
   collected: Record<string, unknown>
   source_news_id?: string
+}
+
+// ── 신규: 미리보기 전제 (백엔드 구조체 일치) ──
+export interface PreviewPremise {
+  content: string
+  category: string
+}
+
+// ── 신규: 미리보기 지표 ──
+export interface PreviewIndicator {
+  name: string
+  indicator_type: string
 }
 
 // ── 신규: 미리보기 (step 5/6에서 출현) ──
 export interface ThesisPreview {
   title: string
   direction: Direction
-  premises: string[]
-  indicators: string[]
+  premises: PreviewPremise[]       // ← string[] 아님! 백엔드 {content, category} 구조체
+  indicators: PreviewIndicator[]   // ← string[] 아님! 백엔드 {name, indicator_type} 구조체
 }
 
 // ── 기존 ConversationButton 유지 ──
@@ -240,14 +303,18 @@ export interface ConversationResponse {
 ```
 
 **하위 호환**: `conversation_state` 타입이 `string` → `ConversationState`로 변경. 이 필드를 사용하는 곳이 PR-1~2에 없으므로 영향 없음.
+**EntrySource**: 백엔드 `ALLOWED_ENTRY_SOURCES`와 1:1 대응. 프론트 전역에서 이 타입만 사용.
 
 ---
 
-### [11] `lib/thesis/api.ts` — 수정
+### [12] `lib/thesis/api.ts` — 수정
 
 ```ts
-// ── 기존 startConversation 유지 (시그니처 호환) ──
-startConversation: (data: { entry_source: string; news_id?: string }) =>
+import type { ConversationResponse, ConversationState, EntrySource } from './types'
+
+// ── startConversation: 필드명 백엔드 일치 ──
+// 변경: news_id → source_news_id, entry_source: string → EntrySource
+startConversation: (data: { entry_source: EntrySource; source_news_id?: string }) =>
   POST<ConversationResponse>('/thesis/conversation/start/', data),
 
 // ── sendMessage 시그니처 수정 (백엔드 일치) ──
@@ -259,21 +326,16 @@ sendMessage: (data: {
 }) => POST<ConversationResponse>('/thesis/conversation/respond/', data),
 ```
 
-**주의**: `startConversation`의 `news_id`는 백엔드 `source_news_id`와 필드명 불일치. 백엔드 필드명에 맞춰 수정:
-
-```ts
-startConversation: (data: { entry_source: string; source_news_id?: string }) =>
-  POST<ConversationResponse>('/thesis/conversation/start/', data),
-```
-
 ---
 
-### [12] `lib/thesis/mock.ts` — 수정
+### [13] `lib/thesis/mock.ts` — 수정
 
-기존 MOCK_THESES, MOCK_ALERTS 유지. Mock 대화 응답 추가.
+기존 MOCK_THESES, MOCK_ALERTS 유지. **step별 Mock 응답 Map** 추가.
+
+**v2 변경**: 전 step 동일 응답 → step별 분기. selection_mode 명시로 single/multi 전환 프론트 로직 검증 가능.
 
 ```ts
-import type { ConversationResponse, ConversationState } from './types'
+import type { ConversationResponse } from './types'
 
 // ── Mock 대화 시작 응답 (뉴스 경로) ──
 export const MOCK_CONVERSATION_START_NEWS: ConversationResponse = {
@@ -310,8 +372,8 @@ export const MOCK_CONVERSATION_START_FREE: ConversationResponse = {
   total_steps: 6,
 }
 
-// ── Mock 이유 선택 응답 (step 2) ──
-export const MOCK_REASON_STEP: ConversationResponse = {
+// ── step 2: 이유 선택 (multi) ──
+const MOCK_REASON_STEP: ConversationResponse = {
   message: '그렇게 생각하는 이유를 골라주세요. 여러 개 선택할 수 있어요.',
   buttons: [
     { id: 'election', label: '선거/정치 기대감 소멸' },
@@ -321,22 +383,86 @@ export const MOCK_REASON_STEP: ConversationResponse = {
     { id: 'global', label: '글로벌 영향' },
     { id: 'custom', label: '다른 이유', type: 'text_input' as const },
   ],
-  selection_mode: 'multi',
+  selection_mode: 'multi',                    // ← multi 검증
   long_press_explanations: {
     supply: '매수·매도 주문 비율의 변화를 뜻해요. 외국인·기관 매매 동향이 대표적입니다.',
   },
   conversation_state: {
-    conv_id: 'mock-conv-1',
-    entry_source: 'news',
-    step: 2,
+    conv_id: 'mock-conv-1', entry_source: 'news', step: 2,
     collected: { direction: 'bearish' },
   },
   step: 2,
   total_steps: 6,
 }
 
-// ── Mock 완료 응답 ──
-export const MOCK_CONVERSATION_DONE: ConversationResponse = {
+// ── step 3: 시점 선택 (single) ──
+const MOCK_TIMEFRAME_STEP: ConversationResponse = {
+  message: '언제쯤 그런 흐름이 올 거라고 보시나요?',
+  buttons: [
+    { id: 'short', label: '1개월 이내' },
+    { id: 'medium', label: '1~3개월' },
+    { id: 'half', label: '하반기 중' },
+    { id: 'year', label: '연말쯤' },
+    { id: 'skip', label: '모르겠어' },
+  ],
+  selection_mode: 'single',                   // ← single 검증
+  conversation_state: {
+    conv_id: 'mock-conv-1', entry_source: 'news', step: 3,
+    collected: { direction: 'bearish', reasons: ['election', 'supply'] },
+  },
+  step: 3,
+  total_steps: 6,
+}
+
+// ── step 4: 강도 선택 (single) ──
+const MOCK_MAGNITUDE_STEP: ConversationResponse = {
+  message: '얼마나 크게 움직일 것 같아요?',
+  buttons: [
+    { id: 'mild', label: '살짝 조정' },
+    { id: 'moderate', label: '꽤 빠진다' },
+    { id: 'severe', label: '크게 빠진다' },
+    { id: 'skip', label: '모르겠어' },
+  ],
+  selection_mode: 'single',                   // ← single 검증
+  conversation_state: {
+    conv_id: 'mock-conv-1', entry_source: 'news', step: 4,
+    collected: { direction: 'bearish', reasons: ['election', 'supply'], timeframe: 'half' },
+  },
+  step: 4,
+  total_steps: 6,
+}
+
+// ── step 5: 미리보기 확인 (single, preview 포함) ──
+const MOCK_PREVIEW_STEP: ConversationResponse = {
+  message: '이렇게 정리해봤어요. 확인해주세요.',
+  buttons: [
+    { id: 'confirm', label: '좋아, 이대로 가자' },
+    { id: 'modify', label: '수정할 부분 있어' },
+  ],
+  selection_mode: 'single',
+  conversation_state: {
+    conv_id: 'mock-conv-1', entry_source: 'news', step: 5,
+    collected: { direction: 'bearish', reasons: ['election', 'supply'], timeframe: 'half', magnitude: 'moderate' },
+  },
+  step: 5,
+  total_steps: 6,
+  preview: {
+    title: 'KOSPI 하반기 하락 전환',
+    direction: 'bearish',
+    premises: [
+      { content: '선거 후 정치 기대감 소멸', category: 'sentiment' },
+      { content: '외국인 매도세 전환', category: 'macro' },
+    ],
+    indicators: [
+      { name: '외국인 순매수', indicator_type: 'order_flow' },
+      { name: '원/달러 환율', indicator_type: 'macro' },
+      { name: 'KOSPI EPS', indicator_type: 'valuation' },
+    ],
+  },
+}
+
+// ── step 6: 완료 ──
+const MOCK_CONVERSATION_DONE: ConversationResponse = {
   message: '가설이 등록되었습니다.\n\n이제 매일 이 지표들을 관제실에서 추적할 거예요.',
   buttons: [
     { id: 'auto', label: '좋아, 일단 달아줘' },
@@ -345,21 +471,23 @@ export const MOCK_CONVERSATION_DONE: ConversationResponse = {
   ],
   selection_mode: 'single',
   conversation_state: {
-    conv_id: 'mock-conv-1',
-    entry_source: 'news',
-    step: 6,
+    conv_id: 'mock-conv-1', entry_source: 'news', step: 6,
     collected: {},
   },
   step: 6,
   total_steps: 6,
   done: true,
   thesis_id: 'mock-thesis-new',
-  preview: {
-    title: 'KOSPI 하반기 하락 전환',
-    direction: 'bearish',
-    premises: ['선거 후 정치 기대감 소멸', '외국인 매도세 전환'],
-    indicators: ['외국인 순매수', '원/달러 환율', 'KOSPI EPS'],
-  },
+}
+
+// ── step별 Mock 응답 Map (v2 핵심) ──
+// page.tsx에서: MOCK_STEP_MAP[state.step + 1] ?? MOCK_CONVERSATION_DONE
+export const MOCK_STEP_MAP: Record<number, ConversationResponse> = {
+  2: MOCK_REASON_STEP,        // multi-select
+  3: MOCK_TIMEFRAME_STEP,     // single-select
+  4: MOCK_MAGNITUDE_STEP,     // single-select
+  5: MOCK_PREVIEW_STEP,       // single + preview 구조체
+  6: MOCK_CONVERSATION_DONE,  // done=true
 }
 ```
 
@@ -367,10 +495,81 @@ export const MOCK_CONVERSATION_DONE: ConversationResponse = {
 - 고정 데이터만 사용 (Date.now() 금지 — 버그 #24)
 - Mock에서도 `conversation_state`를 echo하는 패턴 유지
 - `long_press_hint`, `long_press_explanations` Mock 포함 (근거 설명 테스트)
+- **v2**: step별 selection_mode 명시 → single/multi 전환 검증 가능
+- **v2**: preview 구조체가 백엔드와 동일한 `{content, category}` 형태
 
 ---
 
-### [7] `components/thesis/builder/ProgressBar.tsx` — 신규
+### [1] `hooks/useLongPress.ts` — 신규
+
+롱프레스/클릭 충돌 방지 커스텀 훅. **재사용 가능** (thesis 외 EOD 등에서도 사용 예정).
+
+```ts
+import { useRef, useCallback } from 'react'
+
+interface UseLongPressOptions {
+  /** 롱프레스 인식 시간 (ms). 기본값 500 */
+  threshold?: number
+  /** 롱프레스 콜백 */
+  onLongPress: () => void
+  /** 일반 클릭 콜백 */
+  onClick: () => void
+}
+
+interface UseLongPressReturn {
+  /** 버튼의 onClick에 바인딩 */
+  handleClick: () => void
+  /** onMouseDown / onTouchStart에 바인딩 */
+  handlePressStart: () => void
+  /** onMouseUp / onMouseLeave / onTouchEnd에 바인딩 */
+  handlePressEnd: () => void
+}
+
+export function useLongPress({
+  threshold = 500,
+  onLongPress,
+  onClick,
+}: UseLongPressOptions): UseLongPressReturn {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressTriggeredRef = useRef(false)
+
+  const handlePressStart = useCallback(() => {
+    longPressTriggeredRef.current = false
+    timerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true
+      onLongPress()
+    }, threshold)
+  }, [onLongPress, threshold])
+
+  const handlePressEnd = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  const handleClick = useCallback(() => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false
+      return
+    }
+    onClick()
+  }, [onClick])
+
+  return { handleClick, handlePressStart, handlePressEnd }
+}
+```
+
+**설계 포인트**:
+- `longPressTriggeredRef` 플래그로 롱프레스 후 클릭 이벤트 무시 (v1 버그 수정)
+- `useCallback`으로 안정적 참조 (부모 리렌더 시 불필요한 재생성 방지)
+- `threshold` 기본 500ms, 커스터마이징 가능
+- 훅 단위 `renderHook` 테스트 가능 (타이머 동작 검증)
+- `onMouseLeave`도 `handlePressEnd`에 바인딩 — 버튼 바깥으로 드래그 시 타이머 취소
+
+---
+
+### [8] `components/thesis/builder/ProgressBar.tsx` — 신규
 
 ```tsx
 'use client'
@@ -396,7 +595,7 @@ export function ProgressBar({ step, totalSteps }: Props) {
 
 ---
 
-### [1] `components/thesis/builder/ChatBubble.tsx` — 신규
+### [2] `components/thesis/builder/ChatBubble.tsx` — 신규
 
 ```tsx
 'use client'
@@ -445,44 +644,32 @@ export function ChatBubble({ role, children, isLoading }: Props) {
 
 ---
 
-### [2] `components/thesis/builder/OptionButton.tsx` — 신규
+### [3] `components/thesis/builder/OptionButton.tsx` — 신규
 
 ```tsx
 'use client'
 
+import { Pencil, Check, Info } from 'lucide-react'
 import type { ConversationButton } from '@/lib/thesis/types'
+import { useLongPress } from '@/hooks/useLongPress'
 
 interface Props {
   button: ConversationButton
   mode: 'single' | 'multi'
   selected?: boolean
   onClick: () => void
-  onLongPress?: () => void
+  onShowExplanation?: () => void
 }
 
-export function OptionButton({ button, mode, selected, onClick, onLongPress }: Props) {
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+export function OptionButton({ button, mode, selected, onClick, onShowExplanation }: Props) {
+  // 롱프레스 훅 (long_press_hint 있는 버튼만)
+  const longPress = useLongPress({
+    threshold: 500,
+    onLongPress: () => onShowExplanation?.(),
+    onClick,
+  })
 
-  const handlePressStart = () => {
-    if (!onLongPress) return
-    timerRef.current = setTimeout(() => {
-      onLongPress()
-      timerRef.current = null
-    }, 500)
-  }
-
-  const handlePressEnd = () => {
-    if (timerRef.current) {
-      clearTimeout(timerRef.current)
-      timerRef.current = null
-    }
-  }
-
-  const handleClick = () => {
-    // 롱프레스가 실행된 경우 클릭 무시
-    if (timerRef.current === null && onLongPress) return
-    onClick()
-  }
+  const hasExplanation = !!button.long_press_hint && !!onShowExplanation
 
   // 텍스트 입력 트리거 버튼
   if (button.type === 'text_input') {
@@ -501,12 +688,12 @@ export function OptionButton({ button, mode, selected, onClick, onLongPress }: P
 
   return (
     <button
-      onClick={onClick}
-      onMouseDown={handlePressStart}
-      onMouseUp={handlePressEnd}
-      onMouseLeave={handlePressEnd}
-      onTouchStart={handlePressStart}
-      onTouchEnd={handlePressEnd}
+      onClick={hasExplanation ? longPress.handleClick : onClick}
+      onMouseDown={hasExplanation ? longPress.handlePressStart : undefined}
+      onMouseUp={hasExplanation ? longPress.handlePressEnd : undefined}
+      onMouseLeave={hasExplanation ? longPress.handlePressEnd : undefined}
+      onTouchStart={hasExplanation ? longPress.handlePressStart : undefined}
+      onTouchEnd={hasExplanation ? longPress.handlePressEnd : undefined}
       className={`w-full flex items-center gap-3 rounded-xl px-5 text-left
                   text-sm transition-all active:scale-[0.98]
                   ${mode === 'multi' ? 'min-h-[52px] py-3' : 'min-h-[56px] py-4'}
@@ -521,58 +708,74 @@ export function OptionButton({ button, mode, selected, onClick, onLongPress }: P
         </div>
       )}
       <span className="flex-1">{button.label}</span>
-      {button.long_press_hint && (
-        <span className="text-[10px] text-gray-600">꾹 누르면 설명</span>
+      {hasExplanation && (
+        <>
+          {/* 모바일: 롱프레스 힌트 */}
+          <span className="text-[10px] text-gray-600 sm:hidden">꾹 누르면 설명</span>
+          {/* 데스크톱: info 아이콘 클릭 (롱프레스 대체) */}
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onShowExplanation?.() }}
+            className="hidden sm:flex p-1 text-gray-600 hover:text-gray-400 transition-colors"
+            aria-label={`${button.label} 설명 보기`}
+          >
+            <Info size={14} />
+          </button>
+        </>
       )}
     </button>
   )
 }
 ```
 
-> import: `useRef` from 'react', `Pencil`, `Check` from 'lucide-react'
-
-**설계 포인트**:
+**설계 포인트 (v2 변경)**:
+- **`useLongPress` 훅 사용**: 인라인 timerRef/handleClick 제거 → 훅으로 분리 (R1)
+- **`longPressTriggered` 플래그**: 빠른 탭과 롱프레스 정확히 분리 (v1 버그 수정)
+- **`hasExplanation` 가드**: long_press_hint 없는 버튼은 훅 바인딩 생략 (불필요한 이벤트 리스너 방지)
+- **데스크톱 접근성 (R9)**: `sm:hidden` / `hidden sm:flex` 반응형 분기
+  - 모바일: "꾹 누르면 설명" 텍스트 + 롱프레스
+  - 데스크톱: `Info` 아이콘 클릭 + `e.stopPropagation()` (부모 onClick 방지)
+- **prop 이름**: `onLongPress` → `onShowExplanation` (의도 명확화)
 - `mode='single'`: 일반 버튼, min-h-[56px]
 - `mode='multi'`: 좌측 체크박스 원형, min-h-[52px]
 - `type='text_input'`: 점선 테두리, 연필 아이콘 (커스텀 입력 트리거)
-- 롱프레스: 500ms 후 실행, mouseUp/touchEnd로 취소
-- `long_press_hint`: "꾹 누르면 설명" 힌트 텍스트
 
 ---
 
-### [3] `components/thesis/builder/PremiseCard.tsx` — 신규
+### [4] `components/thesis/builder/PremiseCard.tsx` — 신규
+
+**v2 변경**: preview 단계에서 백엔드 `{content, category}` 구조체 렌더링용.
+`extractionLevel` 대신 `category`(sentiment, company, macro 등) 기반 뱃지.
+삭제 버튼은 preview 단계에서는 modify 분기로 처리하므로 선택적.
 
 ```tsx
 'use client'
 
 import { X } from 'lucide-react'
+import type { PreviewPremise } from '@/lib/thesis/types'
 
 interface Props {
-  content: string
-  extractionLevel: 'explicit' | 'implicit' | 'ai_suggested'
+  premise: PreviewPremise
   onRemove?: () => void
 }
 
-const LEVEL_CONFIG = {
-  explicit:     { badge: null,       border: 'border-gray-700' },
-  implicit:     { badge: 'AI 추론',  border: 'border-blue-800/50' },
-  ai_suggested: { badge: 'AI 제안',  border: 'border-purple-800/50' },
-} as const
+const CATEGORY_CONFIG: Record<string, { label: string; className: string }> = {
+  sentiment: { label: '심리', className: 'text-orange-400 bg-orange-900/30' },
+  company:   { label: '기업', className: 'text-green-400 bg-green-900/30' },
+  macro:     { label: '매크로', className: 'text-blue-400 bg-blue-900/30' },
+  policy:    { label: '정책', className: 'text-purple-400 bg-purple-900/30' },
+  custom:    { label: '직접 입력', className: 'text-gray-400 bg-gray-800' },
+}
 
-export function PremiseCard({ content, extractionLevel, onRemove }: Props) {
-  const config = LEVEL_CONFIG[extractionLevel]
+export function PremiseCard({ premise, onRemove }: Props) {
+  const config = CATEGORY_CONFIG[premise.category] ?? CATEGORY_CONFIG.custom
 
   return (
-    <div className={`relative bg-gray-900 border ${config.border} rounded-xl p-4`}>
-      {config.badge && (
-        <span className={`text-[10px] px-2 py-0.5 rounded-full mb-2 inline-block
-                          ${extractionLevel === 'implicit'
-                            ? 'text-blue-400 bg-blue-900/30'
-                            : 'text-purple-400 bg-purple-900/30'}`}>
-          {config.badge}
-        </span>
-      )}
-      <p className="text-gray-200 text-sm pr-8">{content}</p>
+    <div className="relative bg-gray-900 border border-gray-700 rounded-xl p-4">
+      <span className={`text-[10px] px-2 py-0.5 rounded-full mb-2 inline-block ${config.className}`}>
+        {config.label}
+      </span>
+      <p className="text-gray-200 text-sm pr-8">{premise.content}</p>
       {onRemove && (
         <button
           onClick={onRemove}
@@ -589,14 +792,15 @@ export function PremiseCard({ content, extractionLevel, onRemove }: Props) {
 ```
 
 **설계 포인트**:
-- explicit: 뱃지 없음 (사용자 것이 기본)
-- implicit: `AI 추론` 파란색 뱃지
-- ai_suggested: `AI 제안` 보라색 뱃지 (Chain Sight 색상 체계 일관성)
+- **v2**: `extractionLevel` 제거 → 백엔드 `category` 기반 뱃지 (sentiment, company, macro, policy, custom)
+- **v2**: props가 `PreviewPremise` 타입 직접 수용 → 변환 로직 불필요
 - 인라인 [✕] 삭제 버튼 (스와이프 비채택 — 발견 가능성 우선)
+- preview 단계에서 onRemove 미전달 시 삭제 버튼 숨김
+- FE-PR-5 대시보드에서도 재사용 가능
 
 ---
 
-### [4] `components/thesis/builder/MultiSelectFooter.tsx` — 신규
+### [5] `components/thesis/builder/MultiSelectFooter.tsx` — 신규
 
 ```tsx
 'use client'
@@ -628,7 +832,7 @@ export function MultiSelectFooter({ selectedCount, onConfirm }: Props) {
 
 ---
 
-### [5] `components/thesis/builder/TextInput.tsx` — 신규
+### [6] `components/thesis/builder/TextInput.tsx` — 신규
 
 ```tsx
 'use client'
@@ -693,7 +897,7 @@ export function TextInput({ placeholder, onSubmit, disabled }: Props) {
 
 ---
 
-### [6] `components/thesis/builder/BottomSheet.tsx` — 신규
+### [7] `components/thesis/builder/BottomSheet.tsx` — 신규
 
 ```tsx
 'use client'
@@ -765,12 +969,12 @@ export function BottomSheet({ isOpen, onClose, title, children }: Props) {
 
 ---
 
-### [8] `lib/thesis/conversation.ts` — 신규
+### [9] `lib/thesis/conversation.ts` — 신규
 
 대화 상태 관리 유틸. 컴포넌트와 상태 로직 분리.
 
 ```ts
-import type { ConversationState, ConversationResponse, ConversationButton } from './types'
+import type { ConversationState, ConversationResponse, ConversationButton, ThesisPreview } from './types'
 
 // ── 메시지 타입 ──
 export interface ChatMessage {
@@ -793,6 +997,7 @@ export interface BuilderState {
   thesisId: string | null
   counterThesisId: string | null
   isDone: boolean
+  preview: ThesisPreview | null    // v2: preview 단계 렌더링용
 }
 
 // ── 초기 상태 ──
@@ -805,24 +1010,17 @@ export const INITIAL_BUILDER_STATE: BuilderState = {
   thesisId: null,
   counterThesisId: null,
   isDone: false,
+  preview: null,
 }
 
-// ── API 응답 → 상태 업데이트 ──
+// ── API 응답 → AI 메시지 추가 (v2: userMessage 파라미터 제거) ──
+// 사용자 메시지는 page.tsx에서 직접 setState로 추가.
+// 이 함수는 AI 응답 추가 + 상태 업데이트만 담당.
 export function applyResponse(
   state: BuilderState,
   response: ConversationResponse,
-  userMessage?: string,
 ): BuilderState {
   const newMessages = [...state.messages]
-
-  // 사용자 메시지 추가 (있으면)
-  if (userMessage) {
-    newMessages.push({
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: userMessage,
-    })
-  }
 
   // AI 메시지 추가
   newMessages.push({
@@ -845,6 +1043,7 @@ export function applyResponse(
     thesisId: response.thesis_id ?? state.thesisId,
     counterThesisId: response.counter_thesis_id ?? state.counterThesisId,
     isDone: response.done ?? false,
+    preview: response.preview ?? state.preview,  // v2: preview 유지
   }
 }
 
@@ -861,29 +1060,51 @@ export function selectionToLabel(
     .map(id => buttons.find(b => b.id === id)?.label ?? id)
     .join(', ')
 }
+
+// ── conv_id 영속성 (v2 추가) ──
+const CONV_STORAGE_KEY = 'thesis_builder_conv_id'
+
+export function saveConvId(convId: string): void {
+  try { sessionStorage.setItem(CONV_STORAGE_KEY, convId) } catch {}
+}
+
+export function loadConvId(): string | null {
+  try { return sessionStorage.getItem(CONV_STORAGE_KEY) } catch { return null }
+}
+
+export function clearConvId(): void {
+  try { sessionStorage.removeItem(CONV_STORAGE_KEY) } catch {}
+}
 ```
+
+**v2 변경 포인트**:
+- `applyResponse`: `userMessage` 파라미터 **제거** (R4). 사용자 메시지 추가 경로가 2개면 순서 꼬임 위험.
+- `saveConvId/loadConvId/clearConvId`: sessionStorage 기반 conv_id 영속성 (R7). try/catch로 SSR 안전.
 
 ---
 
-### [9] `app/thesis/new/page.tsx` — 전면 교체
+### [10] `app/thesis/new/page.tsx` — 전면 교체
 
 이 파일이 가장 크고 복잡합니다. 핵심 구조만 명세합니다.
+
+**v2 변경점**: entry_source 수정, Mock step Map, conv_id 영속성, preview 렌더링, 에러 재시도, onShowExplanation prop명.
 
 ```tsx
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { thesisApi } from '@/lib/thesis/api'
 import { USE_MOCK, MOCK_CONVERSATION_START_NEWS,
-         MOCK_CONVERSATION_START_FREE, MOCK_REASON_STEP,
-         MOCK_CONVERSATION_DONE } from '@/lib/thesis/mock'
-import type { ConversationResponse, ConversationButton } from '@/lib/thesis/types'
+         MOCK_CONVERSATION_START_FREE, MOCK_STEP_MAP } from '@/lib/thesis/mock'
+import type { ConversationResponse, ConversationButton, EntrySource } from '@/lib/thesis/types'
 import {
   BuilderState, INITIAL_BUILDER_STATE, applyResponse, selectionToLabel,
+  saveConvId, clearConvId,
 } from '@/lib/thesis/conversation'
 import { ChatBubble } from '@/components/thesis/builder/ChatBubble'
 import { OptionButton } from '@/components/thesis/builder/OptionButton'
+import { PremiseCard } from '@/components/thesis/builder/PremiseCard'
 import { MultiSelectFooter } from '@/components/thesis/builder/MultiSelectFooter'
 import { TextInput } from '@/components/thesis/builder/TextInput'
 import { BottomSheet } from '@/components/thesis/builder/BottomSheet'
@@ -891,10 +1112,18 @@ import { ProgressBar } from '@/components/thesis/builder/ProgressBar'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 
+// ── 유효한 EntrySource 검증 (v2: 백엔드 화이트리스트 일치) ──
+const VALID_ENTRIES: EntrySource[] = ['news', 'free_input', 'popular', 'template', 'chainsight']
+
+function toEntrySource(value: string | null): EntrySource {
+  if (value && VALID_ENTRIES.includes(value as EntrySource)) return value as EntrySource
+  return 'free_input'  // ← v2: 'free_text' → 'free_input' (R2)
+}
+
 export default function ThesisNewPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const entry = searchParams.get('entry') ?? 'free_text'
+  const entry = toEntrySource(searchParams.get('entry'))
 
   const [state, setState] = useState<BuilderState>(INITIAL_BUILDER_STATE)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -907,9 +1136,10 @@ export default function ThesisNewPage() {
   // ── 대화 시작 ──
   useEffect(() => {
     startConversation(entry)
+    return () => clearConvId()  // 페이지 언마운트 시 정리
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function startConversation(entrySource: string) {
+  async function startConversation(entrySource: EntrySource) {
     setState(s => ({ ...s, isLoading: true }))
 
     if (USE_MOCK) {
@@ -924,19 +1154,28 @@ export default function ThesisNewPage() {
       const response = await thesisApi.startConversation({
         entry_source: entrySource,
       })
+      // v2: conv_id 영속성 (R7)
+      saveConvId(response.conversation_state.conv_id)
       setState(s => applyResponse(s, response))
     } catch {
-      setState(s => ({
-        ...s,
-        isLoading: false,
-        messages: [...s.messages, {
-          id: 'error',
-          role: 'ai' as const,
-          content: '연결에 문제가 생겼어요. 다시 시도해주세요.',
-        }],
-      }))
+      showError()
     }
   }
+
+  // ── 에러 메시지 + 재시도 버튼 (v2: R8) ──
+  const showError = useCallback(() => {
+    setState(s => ({
+      ...s,
+      isLoading: false,
+      messages: [...s.messages, {
+        id: `error-${Date.now()}`,
+        role: 'ai' as const,
+        content: '연결에 문제가 생겼어요. 아래 버튼으로 다시 시도할 수 있어요.',
+        buttons: [{ id: '__retry__', label: '다시 시도' }],
+        selectionMode: 'single' as const,
+      }],
+    }))
+  }, [])
 
   // ── 응답 전송 (single/text) ──
   async function sendResponse(input: string | string[], label: string) {
@@ -954,9 +1193,10 @@ export default function ThesisNewPage() {
     }))
 
     if (USE_MOCK) {
-      // Mock: step에 따라 다음 응답 결정
+      // v2: step별 Mock 응답 Map (R3)
       setTimeout(() => {
-        const mockNext = state.step < 5 ? MOCK_REASON_STEP : MOCK_CONVERSATION_DONE
+        const nextStep = state.step + 1
+        const mockNext = MOCK_STEP_MAP[nextStep] ?? MOCK_STEP_MAP[6]
         setState(s => applyResponse(s, mockNext))
       }, 800)
       return
@@ -969,20 +1209,22 @@ export default function ThesisNewPage() {
       })
       setState(s => applyResponse(s, response))
     } catch {
-      setState(s => ({
-        ...s,
-        isLoading: false,
-        messages: [...s.messages, {
-          id: `error-${Date.now()}`,
-          role: 'ai' as const,
-          content: '연결에 문제가 생겼어요. 다시 시도해주세요.',
-        }],
-      }))
+      showError()
     }
   }
 
   // ── 단일 선택 핸들러 ──
   function handleSingleSelect(button: ConversationButton) {
+    // v2: 재시도 특수 버튼 처리
+    if (button.id === '__retry__') {
+      // 에러 메시지 제거 후 마지막 사용자 입력 재전송
+      setState(s => ({
+        ...s,
+        messages: s.messages.filter(m => !m.id.startsWith('error-')),
+      }))
+      startConversation(entry)
+      return
+    }
     sendResponse(button.id, button.label)
   }
 
@@ -1009,8 +1251,8 @@ export default function ThesisNewPage() {
     sendResponse(text, text)
   }
 
-  // ── 롱프레스 (근거 설명) ──
-  function handleLongPress(buttonId: string) {
+  // ── 근거 설명 표시 (v2: onLongPress → onShowExplanation) ──
+  function handleShowExplanation(buttonId: string) {
     const lastMsg = state.messages[state.messages.length - 1]
     const explanations = lastMsg?.longPressExplanations
     if (explanations?.[buttonId]) {
@@ -1024,6 +1266,7 @@ export default function ThesisNewPage() {
 
   // ── 완료 후 네비게이션 ──
   function handleComplete(action: string) {
+    clearConvId()  // v2: 완료 시 sessionStorage 정리
     if (!state.thesisId) {
       router.push('/thesis')
       return
@@ -1078,6 +1321,16 @@ export default function ThesisNewPage() {
           </ChatBubble>
         ))}
 
+        {/* v2: Preview 카드 렌더링 (R5) */}
+        {state.preview && (
+          <div className="mb-3 space-y-2">
+            <p className="text-xs text-gray-500 px-1">근거 ({state.preview.premises.length}개)</p>
+            {state.preview.premises.map((premise, i) => (
+              <PremiseCard key={i} premise={premise} />
+            ))}
+          </div>
+        )}
+
         {/* AI 로딩 중 */}
         {state.isLoading && <ChatBubble role="ai" isLoading />}
       </div>
@@ -1100,7 +1353,9 @@ export default function ThesisNewPage() {
                     handleSingleSelect(btn)
                   }
                 }}
-                onLongPress={btn.long_press_hint ? () => handleLongPress(btn.id) : undefined}
+                onShowExplanation={
+                  btn.long_press_hint ? () => handleShowExplanation(btn.id) : undefined
+                }
               />
             ))}
           </div>
@@ -1123,7 +1378,7 @@ export default function ThesisNewPage() {
         )}
 
         {/* 완료 분기 (지표 설정) */}
-        {state.isDone && activeButtons.length > 0 && (
+        {state.isDone && (
           <div className="border-t border-gray-800 bg-gray-950 px-4 py-4 space-y-2">
             {/* Primary CTA */}
             <button
@@ -1152,7 +1407,7 @@ export default function ThesisNewPage() {
         )}
       </div>
 
-      {/* ── 바텀시트 (롱프레스 근거 설명) ── */}
+      {/* ── 바텀시트 (근거 설명) ── */}
       <BottomSheet
         isOpen={!!sheetContent}
         onClose={() => setSheetContent(null)}
@@ -1173,9 +1428,20 @@ export default function ThesisNewPage() {
 }
 ```
 
+**v2 변경 사항 요약**:
+1. `toEntrySource()`: URL param 검증 + `'free_input'` 기본값 (R2)
+2. `MOCK_STEP_MAP[state.step + 1]`: step별 mock 분기 (R3)
+3. `saveConvId/clearConvId`: sessionStorage 영속성 (R7)
+4. `showError()` + `__retry__` 버튼: 에러 시 재시도 (R8)
+5. `onShowExplanation` prop: onLongPress → 의도 명확화 (R1, R9)
+6. `state.preview` + PremiseCard 렌더링 (R5)
+7. 완료 분기: `state.isDone` 조건만 (activeButtons 불필요)
+
+**구현 시 추가 필요**: `BuilderState`에 `preview: ThesisPreview | null` 필드 추가 + `applyResponse`에서 `response.preview` 세팅.
+
 ---
 
-### [13] `components/thesis/list/EntryPointGrid.tsx` — 수정
+### [14] `components/thesis/list/EntryPointGrid.tsx` — 수정
 
 `showTemporaryToast` → sonner의 `toast` 교체.
 
@@ -1203,7 +1469,23 @@ import { Toaster } from 'sonner'
 <Toaster position="bottom-center" theme="dark" />
 ```
 
-### [14] `package.json` — 수정
+### [15] `app/globals.css` — 수정
+
+BottomSheet 슬라이드 애니메이션 키프레임 추가:
+
+```css
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-slideUp {
+  animation: slideUp 0.3s ease-out;
+}
+```
+
+---
+
+### [16] `package.json` — 수정
 
 ```bash
 npm install sonner
@@ -1214,28 +1496,33 @@ npm install sonner
 ## 3. 의존성 그래프
 
 ```
-lib/thesis/types.ts (수정: ConversationState, ThesisPreview 추가)
+lib/thesis/types.ts (수정: EntrySource, ConversationState, PreviewPremise, ThesisPreview)
     │
-    ├→ lib/thesis/api.ts (수정: sendMessage 시그니처)
+    ├→ lib/thesis/api.ts (수정: sendMessage + startConversation 시그니처)
     │
-    ├→ lib/thesis/conversation.ts (신규: ChatMessage, BuilderState, applyResponse)
+    ├→ lib/thesis/conversation.ts (신규: BuilderState, applyResponse, conv_id 영속성)
     │
-    └→ lib/thesis/mock.ts (수정: Mock 대화 데이터 추가)
+    └→ lib/thesis/mock.ts (수정: step별 Mock Map + MOCK_STEP_MAP)
+
+hooks/useLongPress.ts (신규: 독립)
+    │
+    └→ components/thesis/builder/OptionButton.tsx
 
 components/thesis/builder/ (신규 7개)
     │
     ├→ ChatBubble.tsx (독립)
-    ├→ OptionButton.tsx (types 의존)
-    ├→ PremiseCard.tsx (독립)
+    ├→ OptionButton.tsx (types + useLongPress 의존)
+    ├→ PremiseCard.tsx (types.PreviewPremise 의존)
     ├→ MultiSelectFooter.tsx (독립)
     ├→ TextInput.tsx (독립)
     ├→ BottomSheet.tsx (독립)
     └→ ProgressBar.tsx (독립)
 
-app/thesis/new/page.tsx (전면 교체 — 모든 builder 컴포넌트 + conversation.ts 의존)
+app/thesis/new/page.tsx (전면 교체 — 모든 builder 컴포넌트 + conversation.ts + mock.ts)
 
 components/thesis/list/EntryPointGrid.tsx (수정: sonner 교체)
 app/thesis/layout.tsx (수정: Toaster 추가)
+app/globals.css (수정: slideUp 키프레임)
 ```
 
 ---
@@ -1244,16 +1531,17 @@ app/thesis/layout.tsx (수정: Toaster 추가)
 
 ```
 Phase A (독립, 병렬):
-  |- lib/thesis/types.ts 수정 (ConversationState, ThesisPreview, ConversationResponse 확장)
-  |- lib/thesis/conversation.ts 신규 (ChatMessage, BuilderState, applyResponse)
+  |- lib/thesis/types.ts 수정 (EntrySource, ConversationState, PreviewPremise, ThesisPreview, ConversationResponse 확장)
+  |- lib/thesis/conversation.ts 신규 (BuilderState + preview 필드, applyResponse, saveConvId/loadConvId/clearConvId)
+  |- hooks/useLongPress.ts 신규 (커스텀 훅, 독립)
   |- npm install sonner
 
 Phase B (Phase A 의존, 병렬):
-  |- lib/thesis/api.ts 수정 (sendMessage 시그니처)
-  |- lib/thesis/mock.ts 수정 (Mock 대화 데이터)
+  |- lib/thesis/api.ts 수정 (sendMessage + startConversation 시그니처)
+  |- lib/thesis/mock.ts 수정 (step별 Mock Map 5개 응답)
   |- components/thesis/builder/ChatBubble.tsx
-  |- components/thesis/builder/OptionButton.tsx
-  |- components/thesis/builder/PremiseCard.tsx
+  |- components/thesis/builder/OptionButton.tsx (useLongPress + onShowExplanation + Info 아이콘)
+  |- components/thesis/builder/PremiseCard.tsx (PreviewPremise + category 뱃지)
   |- components/thesis/builder/MultiSelectFooter.tsx
   |- components/thesis/builder/TextInput.tsx
   |- components/thesis/builder/BottomSheet.tsx
@@ -1266,10 +1554,16 @@ Phase C (Phase B 의존):
 
 Phase D (Phase C 의존):
   |- app/thesis/new/page.tsx 전면 교체
+    · toEntrySource() 검증 + 'free_input' 기본값
+    · MOCK_STEP_MAP[state.step + 1] mock 분기
+    · saveConvId/clearConvId 영속성
+    · showError() + __retry__ 재시도
+    · state.preview + PremiseCard 렌더링
+    · onShowExplanation prop
 
 Phase E (Phase D 의존):
   |- tsc --noEmit + npm run build 검증
-  |- 브라우저 Mock 모드 테스트
+  |- 브라우저 Mock 모드 테스트 (single/multi 전환, preview, 에러 재시도)
 ```
 
 ---
@@ -1288,12 +1582,14 @@ Phase E (Phase D 의존):
 
 | 시나리오 | 기대 동작 |
 |---------|----------|
-| `/thesis/new?entry=free_text` | 텍스트 입력 UI 표시 |
-| `/thesis/new?entry=news` | 방향 선택 버튼 3개 표시 |
-| 버튼 클릭 | 사용자 말풍선 + AI 로딩 dots + AI 응답 |
-| 멀티 선택 | 체크박스 토글 + 선택 완료 버튼 |
-| 텍스트 입력 후 전송 | 사용자 말풍선 + AI 응답 |
-| 대화 완료 | 3개 CTA (Primary/Secondary/Text link) |
+| `/thesis/new?entry=free_input` | 텍스트 입력 UI 표시 |
+| `/thesis/new?entry=news` | 방향 선택 버튼 3개 표시 (single) |
+| `/thesis/new?entry=free_text` | `toEntrySource()` → `'free_input'`으로 보정 |
+| `/thesis/new` (entry 없음) | `'free_input'` 기본값 |
+| step 1→2 전환 | single → **multi** 전환, 체크박스 UI 표시 |
+| step 2→3 전환 | multi → **single** 전환, 체크박스 사라짐 |
+| step 5 (preview) | PremiseCard 렌더링 + category 뱃지 (심리/매크로) |
+| 대화 완료 (step 6) | 3개 CTA (Primary/Secondary/Text link) |
 | 콘솔 API 에러 | 0건 (Mock 모드) |
 
 ### 5.3 UI 검증
@@ -1302,12 +1598,15 @@ Phase E (Phase D 의존):
 |---------|----------|
 | 진행률 바 | step 변경 시 부드럽게 채워짐 |
 | 스크롤 | 새 메시지 추가 시 자동 최하단 스크롤 |
-| 롱프레스 (500ms) | 바텀시트 열림 + 설명 텍스트 |
+| 모바일 롱프레스 (500ms) | 바텀시트 열림 + 설명 텍스트 |
+| 모바일 빠른 탭 (< 500ms) | 클릭 정상 동작 (롱프레스 오작동 없음) |
+| 데스크톱 Info 아이콘 클릭 | 바텀시트 열림 (롱프레스 없이) |
 | 바텀시트 오버레이 클릭 | 시트 닫힘 |
 | ESC 키 | 바텀시트 닫힘 |
 | 텍스트 입력 Enter | 전송 (Shift+Enter는 줄바꿈) |
 | 빈 텍스트 전송 버튼 | 비활성화 (회색) |
-| 에러 발생 시 | "연결에 문제가 생겼어요" AI 말풍선 |
+| 에러 발생 시 | "연결에 문제가 생겼어요" + **재시도 버튼** |
+| 재시도 버튼 클릭 | 에러 메시지 제거 + 대화 재시작 |
 
 ### 5.4 접근성 검증
 
@@ -1315,8 +1614,18 @@ Phase E (Phase D 의존):
 |------|------|
 | 터치 타겟 | 모든 버튼 min-h-[52px] 이상 |
 | 삭제 버튼 | aria-label="근거 삭제" |
+| Info 아이콘 | aria-label="{label} 설명 보기" |
 | 키보드 | ESC로 바텀시트 닫기 |
 | 다크 테마 | bg-white, text-black 0개 |
+| 반응형 | 모바일: "꾹 누르면 설명" / 데스크톱: Info 아이콘 |
+
+### 5.5 영속성 검증 (v2 추가)
+
+| 시나리오 | 기대 동작 |
+|---------|----------|
+| 대화 시작 시 | `sessionStorage`에 conv_id 저장 |
+| 대화 완료 시 | `sessionStorage`에서 conv_id 삭제 |
+| 페이지 언마운트 시 | useEffect cleanup에서 conv_id 삭제 |
 
 ---
 
@@ -1327,10 +1636,12 @@ Phase E (Phase D 의존):
 | 1 | sendMessage 시그니처 변경 (기존 호출부 파손) | 낮음 | PR-1~2에서 sendMessage 미사용. 첫 사용처가 이 PR |
 | 2 | ConversationResponse.conversation_state 타입 변경 | 낮음 | PR-1~2에서 이 필드 미참조 |
 | 3 | sonner 의존성 추가 | 낮음 | 4KB, zero-config, 다크테마 기본 |
-| 4 | Mock 대화 흐름이 백엔드 실제와 다를 수 있음 | 중간 | Mock은 UI 레이아웃 검증용. 백엔드 연동 시 실제 응답으로 전환 |
+| 4 | Mock step Map이 백엔드 실제 흐름과 다를 수 있음 | 중간 | v2: step별 selection_mode 명시로 전환 로직 검증 가능 |
 | 5 | iOS Safari 키보드로 하단 영역 가림 | 중간 | `100dvh` 사용 + `env(safe-area-inset-top)` |
-| 6 | 롱프레스가 클릭과 충돌 | 낮음 | timerRef null 체크로 분리 |
-| 7 | animate-slideUp 미정의 시 바텀시트 깨짐 | 낮음 | globals.css에 키프레임 추가 필수 체크 |
+| 6 | ~~롱프레스가 클릭과 충돌~~ | ~~낮음~~ | **v2 해결**: `useLongPress` 훅 + `longPressTriggered` 플래그 |
+| 7 | animate-slideUp 미정의 시 바텀시트 깨짐 | 낮음 | v2: globals.css 수정을 파일 목록 [15]에 명시 |
+| 8 | Gemini 호출 지연 (2~5초, step 1 free_input) | 중간 | ChatBubble 로딩 dots 이미 표시 + v2 에러 재시도 버튼 |
+| 9 | entry_source 오타로 400 에러 | 낮음 | v2: `toEntrySource()` 검증 함수 + `EntrySource` 타입 |
 
 ---
 
@@ -1339,11 +1650,13 @@ Phase E (Phase D 의존):
 | 부채 | 영향 | 해소 시점 |
 |------|------|----------|
 | Mock 대화 흐름 하드코딩 | 백엔드 연동 후 제거 필요 | 백엔드 PR-3 연동 시 |
-| sessionStorage 미사용 | 새로고침 시 대화 초기화 | Phase 2에서 필요 시 추가 |
+| ~~sessionStorage 미사용~~ | ~~새로고침 시 대화 초기화~~ | **v2 해결**: conv_id 영속성 추가 |
 | step 롤백 (뒤로가기) 미지원 | 대화 중 이전 선택 수정 불가 | 백엔드 step rollback API 추가 시 |
-| PremiseCard 프론트 전용 | 백엔드 preview에서 전제 목록 제공 시 활용 | FE-PR-4 지표 설정에서 확장 |
+| ~~PremiseCard 프론트 전용~~ | ~~백엔드 preview에서 전제 목록 제공 시 활용~~ | **v2 해결**: preview 단계 렌더링 추가 |
 | 바텀시트 드래그 닫기 미구현 | 오버레이 클릭/ESC만 닫기 | Phase 2에서 touch gesture 추가 |
 | Toast (sonner) thesis 전용 | 다른 페이지는 여전히 toast 없음 | 글로벌 layout에 Toaster 이동 시 |
+| `useLongPress` EOD 통합 미완 | SignalCard 인라인 로직과 중복 | EOD 리팩토링 시 SignalCard도 `useLongPress` 적용 |
+| conv_id 복원 로직 미구현 | sessionStorage에 저장만, 복원 API 없음 | 백엔드 conversation resume API 추가 시 |
 
 ---
 
@@ -1351,6 +1664,7 @@ Phase E (Phase D 의존):
 
 | 이 PR에서 만든 것 | 사용하는 PR |
 |------------------|------------|
+| `useLongPress` 훅 | EOD SignalCard 리팩토링, FE-PR-6 마감 선택지 |
 | ChatBubble | FE-PR-6 가설 마감 복기에서 재사용 |
 | OptionButton | FE-PR-6 마감 선택지에서 재사용 |
 | PremiseCard | FE-PR-5 대시보드 전제 표시에서 재사용 |
@@ -1359,7 +1673,8 @@ Phase E (Phase D 의존):
 | ProgressBar | FE-PR-3 전용 (재사용 없음) |
 | conversation.ts | FE-PR-3 전용 (재사용 없음) |
 | sonner Toast | FE-PR-4~6에서 동일 패턴 사용 |
-| ConversationState 타입 | 이후 모든 대화 관련 코드에서 사용 |
+| `EntrySource` 타입 | 이후 EntryPointGrid, 대화 관련 코드에서 사용 |
+| `ConversationState` 타입 | 이후 모든 대화 관련 코드에서 사용 |
 | api.ts sendMessage 수정 | 이후 대화 API 호출 시 정확한 시그니처 |
 
 ---
@@ -1367,28 +1682,30 @@ Phase E (Phase D 의존):
 ## 9. Claude Code 실행 프롬프트
 
 ```
-FE-PR-3 구현 계획서(docs/thesis_control/thesis_control_phase1_frontend_FE_PR_3.md) v1을 읽고,
+FE-PR-3 구현 계획서(docs/thesis_control/thesis_control_phase1_frontend_FE_PR_3.md) v2를 읽고,
 Thesis Control 대화형 빌더를 구현해줘.
 
 ─────────────────────────────────────────────
 [구현 순서]
 ─────────────────────────────────────────────
 
-1단계: 의존성 + 타입 수정
+1단계: 의존성 + 타입 + 훅
   - npm install sonner
-  - lib/thesis/types.ts: ConversationState, ThesisPreview, ConversationResponse 확장
-  - lib/thesis/api.ts: sendMessage 시그니처 수정 (conversation_state + user_input)
-  - lib/thesis/conversation.ts: ChatMessage, BuilderState, applyResponse, selectionToLabel
-  - lib/thesis/mock.ts: Mock 대화 응답 4개 추가
+  - lib/thesis/types.ts: EntrySource union, ConversationState, PreviewPremise, PreviewIndicator, ThesisPreview, ConversationResponse 확장
+  - lib/thesis/conversation.ts: BuilderState(+preview 필드), applyResponse(userMessage 파라미터 없음), selectionToLabel, saveConvId/loadConvId/clearConvId
+  - lib/thesis/api.ts: sendMessage({ conversation_state, user_input }), startConversation({ entry_source: EntrySource })
+  - lib/thesis/mock.ts: step별 Mock 응답 Map (MOCK_STEP_MAP) — step 2 multi, step 3-4 single, step 5 preview 구조체
+  - hooks/useLongPress.ts: longPressTriggered 플래그 기반 커스텀 훅
 
 2단계: 빌더 컴포넌트 (7개, 병렬 생성)
   - components/thesis/builder/ChatBubble.tsx
-  - components/thesis/builder/OptionButton.tsx (롱프레스 + single/multi)
-  - components/thesis/builder/PremiseCard.tsx (extraction_level 3단계)
+  - components/thesis/builder/OptionButton.tsx (useLongPress 훅 + onShowExplanation + 데스크톱 Info 아이콘)
+  - components/thesis/builder/PremiseCard.tsx (PreviewPremise 타입 + category 뱃지 5종)
   - components/thesis/builder/MultiSelectFooter.tsx
   - components/thesis/builder/TextInput.tsx
   - components/thesis/builder/BottomSheet.tsx (CSS animation, Framer Motion 미사용)
   - components/thesis/builder/ProgressBar.tsx
+  ★ 모든 컴포넌트 파일은 상단에 완전한 import 문 포함
 
 3단계: 글로벌 설정
   - globals.css: slideUp 키프레임 추가
@@ -1397,24 +1714,33 @@ Thesis Control 대화형 빌더를 구현해줘.
 
 4단계: 페이지 교체
   - app/thesis/new/page.tsx: 전면 교체
-    · useSearchParams로 entry 파라미터 읽기
-    · startConversation → Mock/실제 분기
-    · sendResponse → single/multi/text 분기
-    · handleComplete → auto/manual/later 네비게이션
+    · toEntrySource() 검증 함수 — 'free_input' 기본값 (백엔드 ALLOWED_ENTRY_SOURCES 일치)
+    · MOCK_STEP_MAP[state.step + 1] — step별 mock 분기
+    · saveConvId/clearConvId — sessionStorage 영속성
+    · showError() + __retry__ 버튼 — 에러 재시도
+    · state.preview + PremiseCard — preview 단계 렌더링
+    · onShowExplanation — 모바일 롱프레스 + 데스크톱 Info 아이콘
+    · handleComplete → auto/manual/later 네비게이션 + clearConvId
     · 스크롤 자동 최하단 (useEffect + scrollRef)
-    · 바텀시트 롱프레스 근거 설명
 
 ─────────────────────────────────────────────
-[핵심 주의사항]
+[핵심 주의사항 (v2)]
 ─────────────────────────────────────────────
 - 다크 테마 전용. bg-white, text-black 절대 사용하지 않음.
 - sendMessage의 시그니처: { conversation_state, user_input } (백엔드 일치).
+- startConversation의 entry_source: EntrySource 타입 (string 아님).
+- entry_source 기본값: 'free_input' (절대 'free_text' 아님 — 백엔드 400 에러).
 - Mock 데이터에 Date.now() 사용 금지 (hydration 불일치 버그 #24).
+- Mock은 step별 Map (MOCK_STEP_MAP) 사용. 전 step 동일 응답 금지.
 - selection_mode='multi' 시 하단 [선택 완료] 버튼 필수.
 - 완료 분기 3개 CTA: Primary(bg-blue-600) + Secondary(border) + Text link(text-gray-500).
 - BottomSheet는 CSS transform + transition (Framer Motion 의존성 추가하지 않음).
-- 롱프레스: 500ms, onMouseDown/Up + onTouchStart/End 모두 처리.
-- 에러 시 "연결에 문제가 생겼어요" AI 말풍선으로 표시 (alert/modal 아님).
-- EntryPointGrid의 showTemporaryToast 함수 + 주석 80줄 전체 삭제 후 sonner 교체.
+- 롱프레스: useLongPress 훅 사용 (인라인 timerRef 금지). longPressTriggered 플래그 필수.
+- 데스크톱 접근성: OptionButton에 Info 아이콘 (sm:flex), 모바일에서는 "꾹 누르면 설명" (sm:hidden).
+- 에러 시 "연결에 문제가 생겼어요" AI 말풍선 + 재시도 버튼 (__retry__). alert/modal 아님.
+- applyResponse에 userMessage 파라미터 없음. 사용자 메시지는 page.tsx에서 직접 추가.
+- preview 단계: ThesisPreview.premises는 {content, category} 구조체. PremiseCard로 렌더링.
+- conv_id: startConversation 성공 시 sessionStorage 저장, 완료/언마운트 시 삭제.
+- EntryPointGrid의 showTemporaryToast 함수 + 주석 전체 삭제 후 sonner 교체.
 - 구현 후 tsc --noEmit + npm run build 검증 필수.
 ```
