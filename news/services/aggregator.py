@@ -33,7 +33,7 @@ class NewsAggregatorService:
         # Marketaux Provider
         self.marketaux = MarketauxNewsProvider(
             api_key=settings.MARKETAUX_API_KEY,
-            request_delay=900.0  # 100 calls/day (15분 간격)
+            request_delay=10.0  # 2,500 calls/day (Basic plan, 10초 간격)
         )
 
         # FMP Provider (FMP_API_KEY가 있을 때만 초기화)
@@ -152,7 +152,7 @@ class NewsAggregatorService:
         # Marketaux (선택적 - Entity 데이터 포함)
         if use_marketaux:
             try:
-                marketaux_articles = self.marketaux.fetch_market_news(category, limit=10)
+                marketaux_articles = self.marketaux.fetch_market_news(category, limit=20)
                 all_articles.extend(marketaux_articles)
                 logger.info(f"Marketaux: {len(marketaux_articles)} articles")
             except Exception as e:

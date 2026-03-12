@@ -1,7 +1,7 @@
 """
 Marketaux 뉴스 API Provider
 
-- Free Tier: 100 calls/day, 3 articles/request
+- Basic Plan: 2,500 calls/day, 20 articles/request
 - 내장 감성 분석 + 엔티티 하이라이트
 - 필터링 기능 강력
 """
@@ -23,13 +23,13 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
     BASE_URL = "https://api.marketaux.com/v1"
 
-    def __init__(self, api_key: str, request_delay: float = 900.0):
+    def __init__(self, api_key: str, request_delay: float = 10.0):
         """
         Args:
             api_key: Marketaux API 키
             request_delay: 요청 간 대기 시간 (초)
-                         100 calls/day = 86400초 / 100 = 864초 (약 15분)
-                         안전하게 900초(15분) 설정
+                         Basic Plan: 2,500 calls/day
+                         실제 사용량 ~500/day → 10초 간격으로 충분
         """
         self.api_key = api_key
         self.request_delay = request_delay
@@ -52,7 +52,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
         # API key 추가
         params['api_token'] = self.api_key
 
-        # Rate limiting (100 calls/day - 15분 간격)
+        # Rate limiting (2,500 calls/day - 10초 간격)
         current_time = time.time()
         time_since_last_request = current_time - self.last_request_time
 
@@ -106,7 +106,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
             'language': 'en',
             'published_after': from_date.strftime('%Y-%m-%dT%H:%M:%S'),
             'published_before': to_date.strftime('%Y-%m-%dT%H:%M:%S'),
-            'limit': 3  # Free tier: 3 articles/request
+            'limit': 20  # Basic plan: 20 articles/request
         }
 
         try:
@@ -149,7 +149,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
         params = {
             'language': 'en',
             'filter_entities': 'true',  # 엔티티 데이터 포함
-            'limit': min(limit, 3)  # Free tier: 3 articles/request
+            'limit': min(limit, 20)  # Basic plan: 20 articles/request
         }
 
         # 카테고리별 필터링 (Marketaux는 industries 파라미터 사용)
@@ -305,5 +305,5 @@ class MarketauxNewsProvider(BaseNewsProvider):
         return "news_rate_limit:marketaux"
 
     def get_rate_limit(self) -> Dict[str, int]:
-        """Rate limit 정보: 100 calls per day"""
-        return {'calls': 100, 'period': 86400}  # 86400초 = 24시간
+        """Rate limit 정보: 2,500 calls per day (Basic plan)"""
+        return {'calls': 2500, 'period': 86400}  # 86400초 = 24시간

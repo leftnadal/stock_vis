@@ -88,8 +88,8 @@ NEWS_RATE_LIMITS = {
         'wait_seconds': 1,         # 요청 간 최소 대기 시간
     },
     'marketaux': {
-        'per_day': 100,            # Marketaux API: 100 calls/day (무료 티어)
-        'articles_per_request': 3, # 응답당 최대 기사 수 제한
+        'per_day': 2500,           # Marketaux API: 2,500 calls/day (Basic 플랜)
+        'articles_per_request': 20, # 응답당 최대 기사 수 (Basic: 최대 20)
         'wait_seconds': 1,         # 요청 간 최소 대기 시간
     },
     'fmp': {

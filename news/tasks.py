@@ -133,7 +133,7 @@ def collect_daily_news(self, symbols=None, days=1):
                 result = aggregator.fetch_and_save_company_news(
                     symbol=symbol,
                     days=days,
-                    use_marketaux=False,  # rate limit 보존
+                    use_marketaux=True,  # Basic plan (2,500/day)
                 )
                 total_saved += result.get('saved', 0)
                 total_updated += result.get('updated', 0)
@@ -148,7 +148,7 @@ def collect_daily_news(self, symbols=None, days=1):
         try:
             market_result = aggregator.fetch_and_save_market_news(
                 category='general',
-                use_marketaux=False,
+                use_marketaux=True,  # Basic plan (2,500/day)
             )
             total_saved += market_result.get('saved', 0)
             total_updated += market_result.get('updated', 0)
@@ -179,7 +179,7 @@ def collect_daily_news(self, symbols=None, days=1):
 )
 def collect_market_news(self, category='general'):
     """
-    시장 전반 뉴스 수집 (Finnhub market news)
+    시장 전반 뉴스 수집 (Finnhub + Marketaux)
 
     매일 12:00, 18:00 EST에 실행.
 
@@ -195,7 +195,7 @@ def collect_market_news(self, category='general'):
         aggregator = NewsAggregatorService()
         result = aggregator.fetch_and_save_market_news(
             category=category,
-            use_marketaux=False,
+            use_marketaux=True,  # Basic plan (2,500/day)
         )
         logger.info(f"collect_market_news completed: {result}")
         return result
@@ -370,7 +370,7 @@ def collect_category_news(self, category_id=None, priority_filter=None):
                 result = aggregator.fetch_and_save_company_news(
                     symbol=symbol,
                     days=1,
-                    use_marketaux=False,
+                    use_marketaux=True,  # Basic plan (2,500/day)
                 )
                 saved = result.get('saved', 0)
                 updated = result.get('updated', 0)
