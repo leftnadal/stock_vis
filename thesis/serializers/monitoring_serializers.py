@@ -18,7 +18,7 @@ class ThesisAlertSerializer(serializers.ModelSerializer):
     class Meta:
         model = ThesisAlert
         fields = [
-            'id', 'alert_type', 'severity',
+            'id', 'thesis', 'alert_type', 'severity',
             'title', 'message',
             'is_read', 'is_pushed',
             'indicator', 'created_at',

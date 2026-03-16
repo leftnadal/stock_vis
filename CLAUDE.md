@@ -137,10 +137,10 @@ celery -A config beat -l info
 ## 구현 상태 요약
 
 ### 완료
-JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지), **Thesis Control 백엔드** (Views, Serializers, Builder, Tasks)
+JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지), **Thesis Control 백엔드** (Views, Serializers, Builder, Tasks), **Thesis Control 프론트엔드 Phase 2** (FE-PR-1~6 완료: 라우팅 + 공통 컴포넌트 + 가설 목록 + 대화형 빌더 + 지표 설정 + 관제실 대시보드 + 알림/마감, 컴포넌트 30개 + 페이지 8개)
 
 ### 진행 중
-**Thesis Control 프론트엔드** (FE-PR-1 완료: 라우팅 7개 + 공통 컴포넌트 5개 + authAxios 공유 모듈 + TanStack Query hooks, FE-PR-2~6 진행 예정), Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화
+**Thesis Control Phase 3** (깊이 + 회고 + 프로필: FE-PR-7~11 — 대시보드 탭 구조, 전제 관리, 히트맵, 히스토리 차트, 마감 아카이브, 투자자 DNA), Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화
 
 ### 보류
 Market Movers AWS Lambda 전환

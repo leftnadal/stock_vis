@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { thesisApi } from './api'
+import { USE_MOCK } from './mock'
 
-const QUERY_KEYS = {
+export const QUERY_KEYS = {
   list:        ['thesis', 'list'] as const,
   detail:      (id: string) => ['thesis', id] as const,
   dashboard:   (id: string) => ['thesis', id, 'dashboard'] as const,
   indicators:  (id: string) => ['thesis', id, 'indicators'] as const,
-  alerts:      (id?: string) => ['thesis', 'alerts', id ?? 'all'] as const,
+  alerts:      ['thesis', 'alerts'] as const,
   alertsCount: ['thesis', 'alerts-count'] as const,
 } as const
 
@@ -30,7 +31,7 @@ export function useThesis(thesisId: string) {
   return useQuery({
     queryKey: QUERY_KEYS.detail(thesisId),
     queryFn: () => thesisApi.get(thesisId),
-    enabled: !!thesisId,
+    enabled: !USE_MOCK && !!thesisId,
     ...THESIS_DEFAULTS,
   })
 }
@@ -39,7 +40,7 @@ export function useDashboard(thesisId: string) {
   return useQuery({
     queryKey: QUERY_KEYS.dashboard(thesisId),
     queryFn: () => thesisApi.dashboard(thesisId),
-    enabled: !!thesisId,
+    enabled: !USE_MOCK && !!thesisId,
     ...THESIS_DEFAULTS,
   })
 }
@@ -48,29 +49,32 @@ export function useIndicators(thesisId: string) {
   return useQuery({
     queryKey: QUERY_KEYS.indicators(thesisId),
     queryFn: () => thesisApi.listIndicators(thesisId),
-    enabled: !!thesisId,
+    enabled: !USE_MOCK && !!thesisId,
     ...THESIS_DEFAULTS,
   })
 }
 
-export function useAlerts(thesisId?: string, options?: { enabled?: boolean }) {
+export function useAlerts(options?: { enabled?: boolean }) {
   return useQuery({
-    queryKey: QUERY_KEYS.alerts(thesisId),
-    queryFn: () => thesisApi.listAlerts(thesisId),
+    queryKey: QUERY_KEYS.alerts,
+    queryFn: async () => {
+      const response = await thesisApi.listAlerts()
+      return response.alerts
+    },
     ...THESIS_DEFAULTS,
     ...options,
   })
 }
 
-// 벨 아이콘 전용 — 기존 alerts 목록 API로 프론트 filter
-// alertsCount와 alerts는 다른 queryKey이므로 staleTime 충돌 없음
+// 벨 아이콘 전용 — 백엔드 unread_count 직접 사용
 export function useUnreadAlertCount() {
   const { data } = useQuery({
     queryKey: QUERY_KEYS.alertsCount,
     queryFn: () => thesisApi.listAlerts(),
+    enabled: !USE_MOCK,
     staleTime: 1000 * 60 * 10,
     refetchOnWindowFocus: true,
     retry: 1,
   })
-  return data?.filter(a => !a.is_read).length ?? 0
+  return data?.unread_count ?? 0
 }

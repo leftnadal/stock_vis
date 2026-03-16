@@ -1,6 +1,8 @@
 import os
+import logging
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import task_failure, task_retry
 
 # Django 설정 모듈을 설정
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -13,6 +15,28 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Django 앱에서 태스크 자동 발견
 app.autodiscover_tasks()
+
+# ============================================================
+# Celery Error Monitoring — 시그널 핸들러
+# ============================================================
+error_monitor_logger = logging.getLogger('celery.error_monitor')
+
+
+@task_failure.connect
+def handle_task_failure(sender=None, task_id=None, exception=None, **kw):
+    error_monitor_logger.error(
+        f"[TASK FAILURE] {sender.name} | task_id={task_id} | "
+        f"{type(exception).__name__}: {str(exception)[:200]}"
+    )
+
+
+@task_retry.connect
+def handle_task_retry(sender=None, request=None, reason=None, **kwargs):
+    error_monitor_logger.warning(
+        f"[TASK RETRY] {sender.name} | task_id={request.id} | "
+        f"retries={request.retries} | reason={str(reason)[:200]}"
+    )
+
 
 # 정기 태스크 스케줄 설정
 app.conf.beat_schedule = {
@@ -574,6 +598,22 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # ============================================================
+    # Celery 에러 모니터링
+    # ============================================================
+
+    # 일일 에러 요약 이메일 (매일 07:00 EST, 전날 에러 집계)
+    'celery-error-digest': {
+        'task': 'config.tasks.send_celery_error_digest',
+        'schedule': crontab(hour=7, minute=0),
+    },
+
+    # TaskResult 정리 (매주 일요일 05:00 EST)
+    # SUCCESS: 30일 보관, FAILURE: 90일 보관
+    'cleanup-task-results': {
+        'task': 'config.tasks.cleanup_old_task_results',
+        'schedule': crontab(hour=5, minute=0, day_of_week=0),
+    },
 }
 
 # 테스트 태스크 (선택적)

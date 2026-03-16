@@ -1,5 +1,5 @@
 import { differenceInDays } from 'date-fns'
-import type { ThesisState, ThesisStateIconKey } from './types'
+import type { ThesisState, ThesisStateIconKey, ThesisStatus } from './types'
 
 export function degreeToColor(degree: number): string {
   const d = Math.max(0, Math.min(180, degree))
@@ -109,4 +109,38 @@ export function sortThesesByPriority<
       // 2차 정렬 (P4): 동순위 시 최신 생성순 — 목록 순서 안정성 보장
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
   )
+}
+
+// ── PR-5: score → ThesisBadge 상태 유추 ──
+// 기술 부채: 백엔드에 current_state 필드 추가 시 이 함수만 교체
+export function scoreToBadgeState(
+  score: number,
+  status: ThesisStatus,
+): ThesisState {
+  if (status !== 'active') return 'active'
+  if (score > 0.2) return 'strengthening'
+  if (score < -0.2) return 'weakening'
+  return 'active'
+}
+
+// ── PR-5: hex color 검증 ──
+const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/
+
+export function sanitizeHexColor(color: string, fallback = '#9CA3AF'): string {
+  return HEX_COLOR_RE.test(color) ? color : fallback
+}
+
+// ── PR-6: 알림 severity 스타일 ──
+export function severityToStyle(severity: string): {
+  label: string
+  className: string
+} {
+  switch (severity) {
+    case 'critical':
+      return { label: '긴급', className: 'text-red-400 bg-red-900/30' }
+    case 'warning':
+      return { label: '주의', className: 'text-yellow-400 bg-yellow-900/30' }
+    default:
+      return { label: '정보', className: 'text-blue-400 bg-blue-900/30' }
+  }
 }

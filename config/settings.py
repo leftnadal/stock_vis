@@ -182,6 +182,7 @@ INSTALLED_APPS = [
     'django_celery_beat',  # Celery Beat 스케줄러
     'django_celery_results',  # Celery 작업 결과 저장
     'channels',  # WebSocket 지원
+    'config',  # Celery 에러 모니터링 management commands
 ]
 
 MIDDLEWARE = [
@@ -376,6 +377,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'celery.error_monitor': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
 }
 
@@ -413,3 +419,33 @@ CHANNEL_LAYERS = {
 
 # Celery Beat 스케줄은 config/celery.py의 app.conf.beat_schedule에서 관리
 # (settings.py에 CELERY_BEAT_SCHEDULE 정의 시 celery.py 설정을 오버라이드하므로 주의)
+
+# ============================================================
+# Email Configuration
+# ============================================================
+# 콘솔 백엔드 기본, 프로덕션에서 SMTP로 교체
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
+
+# ============================================================
+# Celery Error Monitoring
+# ============================================================
+# 에러 알림 수신자
+CELERY_ERROR_RECIPIENTS = [
+    'goid545@naver.com',
+    'jinie545@gmail.com',
+]
+
+# 반복 에러 무시 목록 (알림 피로 방지)
+# digest에서 "Known Issues" 섹션으로 분리 표시
+CELERY_IGNORED_ERRORS = [
+    # 'rag_analysis.tasks.health_check_neo4j',  # AuraDB free tier 간헐적 끊김
+]

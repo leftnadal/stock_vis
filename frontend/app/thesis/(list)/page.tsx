@@ -93,7 +93,7 @@ function ActiveThesesSection() {
 
 // ═══ 섹션 2: 오늘의 변화 ═══
 function TodayChangesSection() {
-  const { data } = useAlerts(undefined, {
+  const { data } = useAlerts({
     enabled: !USE_MOCK,
   })
 
