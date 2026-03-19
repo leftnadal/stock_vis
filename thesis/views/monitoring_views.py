@@ -1,6 +1,7 @@
 """Monitoring Views: 관제실 대시보드 + 알림 API"""
 
 import logging
+from datetime import timedelta
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -9,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from thesis.models import Thesis, ThesisAlert
+from thesis.models import Thesis, ThesisAlert, ThesisIndicator
 from thesis.serializers import ThesisAlertSerializer
 from thesis.services.arrow_calculator import (
     calculate_indicator_arrow,
@@ -64,6 +65,26 @@ class DashboardView(APIView):
             if indicator.premise:
                 premise_name = indicator.premise.content[:50]
 
+            # Phase 3: raw_value 추출 (latest validated reading)
+            latest_reading = indicator.readings.filter(
+                validation_status__in=['ok', 'extreme_jump_allowed']
+            ).order_by('-asof').first()
+
+            prev_reading = indicator.readings.filter(
+                validation_status__in=['ok', 'extreme_jump_allowed']
+            ).order_by('-asof')[1:2].first() if latest_reading else None
+
+            raw_value = latest_reading.raw_value if latest_reading else None
+            previous_raw_value = prev_reading.raw_value if prev_reading else None
+
+            change_pct = None
+            if raw_value is not None and previous_raw_value and previous_raw_value != 0:
+                change_pct = round(
+                    ((raw_value - previous_raw_value) / abs(previous_raw_value)) * 100, 2
+                )
+
+            raw_value_unit = indicator.display_unit or _infer_unit(indicator)
+
             indicators_data.append({
                 'id': str(indicator.id),
                 'name': indicator.name,
@@ -75,6 +96,11 @@ class DashboardView(APIView):
                 'trend': trend,
                 'premise_name': premise_name,
                 'is_extreme_vol': arrow.get('is_extreme_vol', False),
+                'raw_value': raw_value,
+                'raw_value_unit': raw_value_unit,
+                'previous_raw_value': previous_raw_value,
+                'change_pct': change_pct,
+                'raw_value_asof': latest_reading.asof.isoformat() if latest_reading else None,
             })
 
             heatmap_cells.append({
@@ -117,6 +143,9 @@ class DashboardView(APIView):
                 'overall_label': phase['label'],
                 'overall_phase': phase['phase'],
                 'recent_change': recent_change,
+                'ai_summary': latest_snapshot.ai_summary if latest_snapshot else '',
+                'notable_changes': (latest_snapshot.notable_changes or [])[:5] if latest_snapshot else [],
+                'snapshot_date': latest_snapshot.asof_date.isoformat() if latest_snapshot else None,
             },
             'indicators': indicators_data,
             'heatmap': {
@@ -156,3 +185,53 @@ class AlertReadView(APIView):
         alert.is_read = True
         alert.save(update_fields=['is_read'])
         return Response({'status': 'read'})
+
+
+class IndicatorReadingsView(APIView):
+    """GET /{thesis_id}/indicators/{indicator_id}/readings/?days=14"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, thesis_id, indicator_id):
+        thesis = get_object_or_404(Thesis, id=thesis_id, user=request.user)
+        indicator = get_object_or_404(
+            thesis.indicators, id=indicator_id
+        )
+        days = min(int(request.query_params.get('days', 14)), 90)
+        cutoff = timezone.now() - timedelta(days=days)
+
+        readings = list(
+            indicator.readings.filter(
+                validation_status__in=['ok', 'extreme_jump_allowed'],
+                asof__gte=cutoff,
+            ).order_by('asof').values('asof', 'value', 'raw_value')
+        )
+
+        return Response({
+            'indicator_id': str(indicator.id),
+            'indicator_name': indicator.name,
+            'support_direction': indicator.support_direction,
+            'unit': indicator.display_unit or _infer_unit(indicator),
+            'readings': readings,
+            'count': len(readings),
+        })
+
+
+def _infer_unit(indicator):
+    """data_params + indicator_type으로 단위 추론. display_unit이 비어있을 때만 사용."""
+    params = indicator.data_params or {}
+    series_id = params.get('series_id', '')
+
+    if series_id in ('FEDFUNDS', 'DGS10', 'DGS2'):
+        return '%'
+    if indicator.indicator_type == 'sentiment':
+        return ''
+
+    symbol = params.get('symbol', '').upper()
+    if 'KRW' in symbol or 'USDKRW' in symbol:
+        return '원'
+    if symbol.startswith('^'):
+        return 'pt'
+
+    if indicator.data_source == 'fmp':
+        return '$'
+    return ''

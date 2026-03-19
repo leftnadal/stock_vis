@@ -1,6 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueries } from '@tanstack/react-query'
 import { thesisApi } from './api'
-import { USE_MOCK } from './mock'
+import { USE_MOCK, MOCK_READINGS } from './mock'
+import type { ChartPeriod, IndicatorReadingsResponse } from './types'
 
 export const QUERY_KEYS = {
   list:        ['thesis', 'list'] as const,
@@ -9,6 +10,8 @@ export const QUERY_KEYS = {
   indicators:  (id: string) => ['thesis', id, 'indicators'] as const,
   alerts:      ['thesis', 'alerts'] as const,
   alertsCount: ['thesis', 'alerts-count'] as const,
+  readings:    (thesisId: string, indicatorId: string, days: number) =>
+    ['thesis', thesisId, 'indicators', indicatorId, 'readings', days] as const,
 } as const
 
 // 전역 QueryProvider: staleTime=5min, retry=2, refetchOnWindowFocus=false
@@ -63,6 +66,25 @@ export function useAlerts(options?: { enabled?: boolean }) {
     },
     ...THESIS_DEFAULTS,
     ...options,
+  })
+}
+
+// Phase 3: 전체 지표 readings 병렬 fetch
+export function useAllIndicatorReadings(
+  thesisId: string,
+  indicatorIds: string[],
+  days: ChartPeriod,
+) {
+  return useQueries({
+    queries: indicatorIds.map((id) => ({
+      queryKey: QUERY_KEYS.readings(thesisId, id, days),
+      queryFn: (): Promise<IndicatorReadingsResponse> =>
+        USE_MOCK
+          ? Promise.resolve(MOCK_READINGS[id] ?? { indicator_id: id, indicator_name: '', support_direction: 'positive' as const, unit: '', readings: [], count: 0 })
+          : thesisApi.indicatorReadings(thesisId, id, days),
+      enabled: !!thesisId && indicatorIds.length > 0,
+      staleTime: 1000 * 60 * 30,
+    })),
   })
 }
 

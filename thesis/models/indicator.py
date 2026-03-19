@@ -63,6 +63,11 @@ class ThesisIndicator(models.Model):
     current_color = models.CharField(max_length=10, blank=True)
     current_label = models.CharField(max_length=50, blank=True)
 
+    display_unit = models.CharField(
+        max_length=10, default='',
+        help_text="UI 표시 단위: '$', '원', '%', 'pt', '' 등"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     # v2.3.2 추가 필드 (수학 모델 Section 9)

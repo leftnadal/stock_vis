@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from thesis.views import (
     ThesisViewSet, ThesisPremiseViewSet, ThesisIndicatorViewSet,
     ConversationStartView, ConversationRespondView,
-    DashboardView, AlertListView, AlertReadView,
+    DashboardView, AlertListView, AlertReadView, IndicatorReadingsView,
 )
 
 router = DefaultRouter()
@@ -24,6 +24,11 @@ urlpatterns = [
 
     # Monitoring
     path('<uuid:thesis_id>/dashboard/', DashboardView.as_view(), name='thesis-dashboard'),
+    path(
+        '<uuid:thesis_id>/indicators/<uuid:indicator_id>/readings/',
+        IndicatorReadingsView.as_view(),
+        name='indicator-readings',
+    ),
 
     # Alerts
     path('alerts/', AlertListView.as_view(), name='alert-list'),

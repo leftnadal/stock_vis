@@ -5,6 +5,7 @@ import type {
   ConversationState, EntrySource,
   AutoRecommendResponse, IndicatorCreatePayload,
   AlertListResponse, CloseResponse,
+  IndicatorReadingsResponse,
 } from './types'
 
 const GET   = <T>(url: string) => authAxios.get<T>(url).then(r => r.data)
@@ -41,6 +42,12 @@ export const thesisApi = {
     PATCH<ThesisIndicator>(
       `/thesis/${thesisId}/indicators/${indicatorId}/`,
       { is_active: isActive },
+    ),
+
+  // 차트 readings
+  indicatorReadings: (thesisId: string, indicatorId: string, days: number = 14) =>
+    GET<IndicatorReadingsResponse>(
+      `/thesis/${thesisId}/indicators/${indicatorId}/readings/?days=${days}`
     ),
 
   // 알림

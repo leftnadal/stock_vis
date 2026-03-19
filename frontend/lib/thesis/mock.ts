@@ -1,4 +1,8 @@
-import type { Thesis, ThesisAlert, AlertListResponse, ConversationResponse, ThesisIndicator, RecommendedIndicator, DashboardResponse } from './types'
+import type {
+  Thesis, ThesisAlert, AlertListResponse, ConversationResponse,
+  ThesisIndicator, RecommendedIndicator, DashboardResponse,
+  NotableChange, IndicatorReadingsResponse, IndicatorReadingPoint,
+} from './types'
 
 export const MOCK_THESES: Thesis[] = [
   {
@@ -360,6 +364,30 @@ export const MOCK_DASHBOARD: DashboardResponse = {
     overall_phase: 'waxing',
     recent_change: '외국인 순매수가 3일 연속 증가하며 강한 지지 신호를 보이고 있어요.',
     overall_delta: null,
+    snapshot_date: '2026-03-18',
+    ai_summary: '지난 7일간 외국인 순매수가 감소 추세를 보이고 있어요. 원/달러 환율은 소폭 상승했지만 VIX는 안정적이에요. 전체적으로 가설을 약하게 지지하는 흐름이에요.',
+    notable_changes: [
+      {
+        indicator_id: 'dash-ind-1',
+        indicator_name: '외국인 순매수 추이',
+        change_type: 'sharp_move' as const,
+        description: '전일 대비 급변 (+22.4%)',
+        raw_value_before: 9.8e11,
+        raw_value_after: 1.2e12,
+        change_pct: 22.4,
+        severity: 'warning' as const,
+      },
+      {
+        indicator_id: 'dash-ind-2',
+        indicator_name: '원/달러 환율',
+        change_type: 'direction_flip' as const,
+        description: '하락 추세에서 상승 전환',
+        raw_value_before: 1365,
+        raw_value_after: 1380,
+        change_pct: 1.1,
+        severity: 'info' as const,
+      },
+    ],
   },
   indicators: [
     {
@@ -373,6 +401,11 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       trend: 'strengthening',
       premise_name: 'AI 반도체 수급 개선',
       is_extreme_vol: false,
+      raw_value: 1.2e12,
+      raw_value_unit: '원',
+      previous_raw_value: 9.8e11,
+      change_pct: 22.4,
+      raw_value_asof: '2026-03-18T09:00:00Z',
     },
     {
       id: 'dash-ind-2',
@@ -385,6 +418,11 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       trend: 'weakening',
       premise_name: '글로벌 달러 강세',
       is_extreme_vol: false,
+      raw_value: 1380,
+      raw_value_unit: '원',
+      previous_raw_value: 1365,
+      change_pct: 1.1,
+      raw_value_asof: '2026-03-18T09:00:00Z',
     },
     {
       id: 'dash-ind-3',
@@ -397,6 +435,11 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       trend: 'stable',
       premise_name: '시장 심리',
       is_extreme_vol: false,
+      raw_value: 18.5,
+      raw_value_unit: 'pt',
+      previous_raw_value: 18.2,
+      change_pct: 1.6,
+      raw_value_asof: '2026-03-17T21:00:00Z',
     },
   ],
   heatmap: {
@@ -407,6 +450,54 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       { name: '원/달러 환율', color: '#FB923C', degree: 110.5 },
       { name: 'VIX', color: '#D1D5DB', degree: 88.0 },
     ],
+  },
+}
+
+// ═══ Phase 3: Mock Readings 데이터 ═══
+
+function generateMockReadings(
+  base: number, vol: number, days: number,
+): IndicatorReadingPoint[] {
+  const points: IndicatorReadingPoint[] = []
+  const now = new Date()
+  for (let i = days; i >= 0; i--) {
+    const date = new Date(now)
+    date.setDate(date.getDate() - i)
+    const noise = (Math.random() - 0.5) * 2 * vol
+    const trend = ((days - i) / days) * vol * 0.3
+    points.push({
+      asof: date.toISOString(),
+      value: Math.random() * 2 - 1,
+      raw_value: base + noise + trend,
+    })
+  }
+  return points
+}
+
+export const MOCK_READINGS: Record<string, IndicatorReadingsResponse> = {
+  'dash-ind-1': {
+    indicator_id: 'dash-ind-1',
+    indicator_name: '외국인 순매수 추이',
+    support_direction: 'positive',
+    unit: '원',
+    readings: generateMockReadings(1e12, 1e11, 30),
+    count: 31,
+  },
+  'dash-ind-2': {
+    indicator_id: 'dash-ind-2',
+    indicator_name: '원/달러 환율',
+    support_direction: 'negative',
+    unit: '원',
+    readings: generateMockReadings(1365, 15, 30),
+    count: 31,
+  },
+  'dash-ind-3': {
+    indicator_id: 'dash-ind-3',
+    indicator_name: 'VIX (공포지수)',
+    support_direction: 'positive',
+    unit: 'pt',
+    readings: generateMockReadings(17.5, 2, 30),
+    count: 31,
   },
 }
 

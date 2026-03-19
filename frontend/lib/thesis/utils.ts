@@ -1,4 +1,4 @@
-import { differenceInDays } from 'date-fns'
+import { differenceInDays, format, parseISO } from 'date-fns'
 import type { ThesisState, ThesisStateIconKey, ThesisStatus } from './types'
 
 export function degreeToColor(degree: number): string {
@@ -128,6 +128,62 @@ const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/
 
 export function sanitizeHexColor(color: string, fallback = '#9CA3AF'): string {
   return HEX_COLOR_RE.test(color) ? color : fallback
+}
+
+// ── Phase 3: 실제 값 포맷팅 ──
+
+/** raw_value를 단위에 맞게 포맷 (KR 타겟 전용 포매팅) */
+export function formatRawValue(value: number | null, unit: string): string {
+  if (value == null) return '--'
+  const abs = Math.abs(value)
+  if (abs >= 1e12) {
+    const v = (value / 1e12).toFixed(1)
+    return unit === '$' ? `$${v}T` : `${v}조${unit}`
+  }
+  if (abs >= 1e8) {
+    const v = (value / 1e8).toFixed(1)
+    return unit === '$' ? `$${v}B` : `${v}억${unit}`
+  }
+  const formatted = abs >= 100
+    ? value.toLocaleString('ko-KR', { maximumFractionDigits: 1 })
+    : value.toFixed(2)
+  if (unit === '$') return `$${formatted}`
+  if (unit === '%') return `${formatted}%`
+  return unit ? `${formatted}${unit}` : formatted
+}
+
+/** 변동률 포맷 */
+export function formatChangePct(pct: number | null): {
+  text: string
+  colorClass: string
+} {
+  if (pct == null) return { text: '--', colorClass: 'text-gray-500' }
+  const sign = pct >= 0 ? '+' : ''
+  return {
+    text: `${sign}${pct.toFixed(1)}%`,
+    colorClass: pct > 0 ? 'text-green-400' : pct < 0 ? 'text-red-400' : 'text-gray-400',
+  }
+}
+
+/** support_direction에 따른 지지/반박 판정 (score 기반 — 내부 사용, UI에는 라벨만 표시) */
+export function supportLabel(score: number): {
+  text: string
+  colorClass: string
+} {
+  if (score > 0.2) return { text: '지지', colorClass: 'text-blue-400' }
+  if (score < -0.2) return { text: '반박', colorClass: 'text-orange-400' }
+  return { text: '중립', colorClass: 'text-gray-400' }
+}
+
+/** 날짜 문자열 → 'M/d' 또는 'M/d HH:mm' 포맷 */
+export function formatAsofDate(dateStr: string | null | undefined, withTime = false): string {
+  if (!dateStr) return ''
+  try {
+    const d = parseISO(dateStr)
+    return withTime ? format(d, 'M/d HH:mm') : format(d, 'M월 d일')
+  } catch {
+    return ''
+  }
 }
 
 // ── PR-6: 알림 severity 스타일 ──

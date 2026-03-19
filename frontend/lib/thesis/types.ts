@@ -107,6 +107,9 @@ export interface DashboardThesis {
   overall_phase: string          // 'full_moon' | 'waxing' | 'half_moon' | 'waning' | 'new_moon'
   recent_change: string          // 최신 변화 텍스트 (1줄)
   overall_delta?: number | null  // 전일 대비 전체 점수 변화 (백엔드 추가 시 활용)
+  ai_summary: string             // Phase 3: AI 분석 텍스트 (PR-10에서 채움)
+  notable_changes: NotableChange[] // Phase 3: 오늘의 변화 목록
+  snapshot_date: string | null   // 스냅샷 기준일 (ISO date)
 }
 
 // 대시보드 전용 indicator (ThesisIndicator와 필드명 다름)
@@ -121,6 +124,12 @@ export interface DashboardIndicator {
   trend: 'stable' | 'strengthening' | 'weakening'
   premise_name: string           // premise.content[:50]
   is_extreme_vol: boolean        // |z_raw| >= 5.0
+  // Phase 3: 실제 값
+  raw_value: number | null
+  raw_value_unit: string         // '$', '원', '%', 'pt', ''
+  previous_raw_value: number | null
+  change_pct: number | null
+  raw_value_asof: string | null  // 데이터 기준일 (ISO datetime)
 }
 
 // 히트맵 셀
@@ -241,6 +250,40 @@ export const DIRECTION_LABELS: Record<string, { text: string; className: string 
   positive: { text: '↑ 유리', className: 'text-blue-400 bg-blue-900/30' },
   negative: { text: '↑ 불리', className: 'text-orange-400 bg-orange-900/30' },
 }
+
+// ═══ Phase 3: Dashboard 리디자인 — 실제 값 확장 ═══
+
+/** alert_engine 이벤트 기반 변화 기록 */
+export interface NotableChange {
+  indicator_id: string
+  indicator_name: string
+  change_type: 'sharp_move' | 'direction_flip' | 'threshold_cross' | 'streak'
+  description: string
+  raw_value_before: number | null
+  raw_value_after: number | null
+  change_pct: number | null
+  severity: 'info' | 'warning'
+}
+
+/** 차트용 시계열 포인트 */
+export interface IndicatorReadingPoint {
+  asof: string
+  value: number | null
+  raw_value: number | null
+}
+
+/** Readings API 응답 */
+export interface IndicatorReadingsResponse {
+  indicator_id: string
+  indicator_name: string
+  support_direction: SupportDirection
+  unit: string
+  readings: IndicatorReadingPoint[]
+  count: number
+}
+
+/** 차트 기간 타입 */
+export type ChartPeriod = 7 | 14 | 30
 
 // ═══ 상태 아이콘 키 (v2 M6) ═══
 // ThesisBadge에서 사용. lucide-react 컴포넌트와 1:1 매핑.
