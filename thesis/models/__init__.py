@@ -3,6 +3,7 @@ from .indicator import ThesisIndicator, IndicatorReading
 from .monitoring import ThesisSnapshot, ThesisAlert
 from .community import ThesisFollow, PopularThesisCache
 from .learning import HypothesisEvent, ValidityRecord, InvestorDNA
+from .keyword import KeywordCache
 
 __all__ = [
     'Thesis',
@@ -16,4 +17,5 @@ __all__ = [
     'HypothesisEvent',
     'ValidityRecord',
     'InvestorDNA',
+    'KeywordCache',
 ]

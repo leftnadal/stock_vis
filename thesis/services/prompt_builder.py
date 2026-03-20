@@ -139,6 +139,21 @@ def build_system_prompt(state, flags):
     if flags.get('INDICATOR_CONTEXT_ENABLED'):
         blocks.append(build_indicator_block())
 
+    # Phase B: Keyword Hint Enrichment
+    if flags.get('KEYWORD_HINTS_ENABLED') and state:
+        target = None
+        if hasattr(state, 'collected') and hasattr(state.collected, 'target'):
+            target = state.collected.target
+        elif isinstance(state, dict):
+            target = state.get('collected', {}).get('target')
+
+        if target:
+            from thesis.services.keyword_hint import collect_context_keywords, build_keyword_hint_block
+            keywords = collect_context_keywords(target, flags)
+            hint_block = build_keyword_hint_block(keywords)
+            if hint_block:
+                blocks.append(hint_block)
+
     return "\n\n".join(blocks)
 
 
