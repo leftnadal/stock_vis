@@ -1,5 +1,6 @@
 'use client';
 
+import { AlertList } from './AlertList';
 import { PipelineStatusBar } from './PipelineStatusBar';
 import { CollectionStatsTable } from './CollectionStatsTable';
 import { MLModelCard } from './MLModelCard';
@@ -17,6 +18,7 @@ interface NewsPipelineSubTabProps {
 export function NewsPipelineSubTab({ enabled = true }: NewsPipelineSubTabProps) {
   return (
     <div className="space-y-6">
+      <AlertList />
       <PipelineStatusBar enabled={enabled} />
       {/* Phase B: 24시간 태스크 타임라인 */}
       <TaskTimelineChart hours={24} enabled={enabled} />

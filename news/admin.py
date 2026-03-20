@@ -3,7 +3,7 @@
 """
 
 from django.contrib import admin
-from .models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory, MLModelHistory
+from .models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory, MLModelHistory, AlertLog
 
 
 class NewsEntityInline(admin.TabularInline):
@@ -103,6 +103,20 @@ class SentimentHistoryAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         """집계 데이터는 삭제 불가"""
+        return False
+
+
+@admin.register(AlertLog)
+class AlertLogAdmin(admin.ModelAdmin):
+    """파이프라인 알림 로그 관리"""
+    list_display = ['trigger_type', 'severity', 'message', 'is_resolved', 'created_at']
+    list_filter = ['severity', 'trigger_type', 'is_resolved']
+    search_fields = ['message']
+    readonly_fields = ['trigger_type', 'severity', 'message', 'context', 'created_at']
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request):
+        """알림은 시스템에서 자동 생성"""
         return False
 
 

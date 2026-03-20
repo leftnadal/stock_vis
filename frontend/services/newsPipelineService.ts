@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type {
+  AlertsResponse,
   CollectionLogsResponse,
   LLMUsageResponse,
   MLRollbackPreviewResponse,
@@ -87,5 +88,24 @@ export const newsPipelineService = {
 
   executeMLRollback: (): Promise<MLRollbackResponse> => {
     return api.post('/news/ml-rollback/', { confirm: true }).then((r) => r.data);
+  },
+
+  getAlerts: (params?: {
+    resolved?: boolean;
+    severity?: string;
+    limit?: number;
+  }): Promise<AlertsResponse> => {
+    return api.get('/news/alerts/', { params }).then((r) => r.data);
+  },
+
+  resolveAlert: (
+    alertId: number,
+    acknowledgedBy?: string
+  ): Promise<{ status: string; id: number; resolved_at: string }> => {
+    return api
+      .post(`/news/alerts/${alertId}/resolve/`, {
+        acknowledged_by: acknowledgedBy || '',
+      })
+      .then((r) => r.data);
   },
 };

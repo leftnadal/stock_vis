@@ -232,3 +232,37 @@ export interface LLMUsageResponse {
     coverage_warning: string;
   };
 }
+
+// ============================================================
+// Phase C — Pipeline Alerts
+// ============================================================
+
+export type AlertSeverity = 'low' | 'medium' | 'high' | 'critical';
+
+export type AlertTriggerType =
+  | 'consecutive_task_failure'
+  | 'ml_f1_decline'
+  | 'keyword_extraction_failure'
+  | 'llm_error_spike'
+  | 'neo4j_unavailable'
+  | 'collection_drop'
+  | 'unclassified_backlog';
+
+export interface PipelineAlert {
+  id: number;
+  trigger_type: AlertTriggerType;
+  trigger_type_display: string;
+  severity: AlertSeverity;
+  message: string;
+  context: Record<string, unknown> | null;
+  is_resolved: boolean;
+  resolved_at: string | null;
+  acknowledged_by: string;
+  created_at: string;
+}
+
+export interface AlertsResponse {
+  total: number;
+  unresolved_count: number;
+  alerts: PipelineAlert[];
+}

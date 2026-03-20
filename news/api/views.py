@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
-from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword, NewsCollectionLog, MLModelHistory
+from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword, NewsCollectionLog, MLModelHistory, AlertLog
 from ..services import NewsAggregatorService
 from .serializers import (
     NewsArticleListSerializer,
@@ -1876,3 +1876,105 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         }
 
         return Response(data)
+
+    # ===== Phase C: Alert API =====
+
+    @action(detail=False, methods=['get'], url_path='alerts', permission_classes=[IsAdminUser])
+    def alerts(self, request):
+        """
+        파이프라인 알림 목록 조회
+
+        GET /api/v1/news/alerts/
+
+        Query Parameters:
+            - resolved: true/false — 해결 여부 필터 (기본: 미해결만)
+            - severity: high/medium/low/critical — 심각도 필터
+            - trigger_type: 트리거 타입 필터
+            - limit: 최대 개수 (기본 50, max 200)
+
+        Returns:
+            {total, unresolved_count, alerts: [...]}
+        """
+        resolved_param = request.query_params.get('resolved', 'false').lower()
+        severity = request.query_params.get('severity')
+        trigger_type = request.query_params.get('trigger_type')
+        try:
+            limit = min(int(request.query_params.get('limit', 50)), 200)
+        except (ValueError, TypeError):
+            limit = 50
+
+        qs = AlertLog.objects.all()
+
+        # resolved 필터 (기본: 미해결만)
+        if resolved_param == 'true':
+            qs = qs.filter(is_resolved=True)
+        else:
+            qs = qs.filter(is_resolved=False)
+
+        if severity:
+            qs = qs.filter(severity=severity)
+
+        if trigger_type:
+            qs = qs.filter(trigger_type=trigger_type)
+
+        qs = qs.order_by('-created_at')
+
+        total = qs.count()
+        unresolved_count = AlertLog.objects.filter(is_resolved=False).count()
+
+        alert_list = []
+        for alert in qs[:limit]:
+            alert_list.append({
+                'id': alert.id,
+                'trigger_type': alert.trigger_type,
+                'trigger_type_display': alert.get_trigger_type_display(),
+                'severity': alert.severity,
+                'message': alert.message,
+                'context': alert.context,
+                'is_resolved': alert.is_resolved,
+                'resolved_at': alert.resolved_at.isoformat() if alert.resolved_at else None,
+                'acknowledged_by': alert.acknowledged_by,
+                'created_at': alert.created_at.isoformat(),
+            })
+
+        return Response({
+            'total': total,
+            'unresolved_count': unresolved_count,
+            'alerts': alert_list,
+        })
+
+    @action(detail=False, methods=['post'], url_path=r'alerts/(?P<alert_pk>\d+)/resolve', permission_classes=[IsAdminUser])
+    def alerts_resolve(self, request, alert_pk=None):
+        """
+        알림 해결 처리
+
+        POST /api/v1/news/alerts/<alert_pk>/resolve/
+        Body: {"acknowledged_by": "admin"} (선택)
+
+        Returns:
+            {status, id, resolved_at}
+        """
+        try:
+            alert = AlertLog.objects.get(pk=alert_pk)
+        except AlertLog.DoesNotExist:
+            return Response(
+                {'error': '알림을 찾을 수 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if alert.is_resolved:
+            return Response(
+                {'error': '이미 해결된 알림입니다.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        alert.is_resolved = True
+        alert.resolved_at = timezone.now()
+        alert.acknowledged_by = request.data.get('acknowledged_by', '')
+        alert.save(update_fields=['is_resolved', 'resolved_at', 'acknowledged_by', 'updated_at'])
+
+        return Response({
+            'status': 'resolved',
+            'id': alert.id,
+            'resolved_at': alert.resolved_at.isoformat(),
+        })

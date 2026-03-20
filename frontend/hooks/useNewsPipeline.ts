@@ -91,3 +91,35 @@ export function useMLRollback() {
     },
   });
 }
+
+export function useAlerts(
+  params?: { resolved?: boolean; severity?: string; limit?: number },
+  enabled = true
+) {
+  return useQuery({
+    queryKey: [...PIPELINE_KEYS.base, 'alerts', params],
+    queryFn: () => newsPipelineService.getAlerts(params),
+    staleTime: 30_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
+    enabled,
+  });
+}
+
+export function useResolveAlert() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      alertId,
+      acknowledgedBy,
+    }: {
+      alertId: number;
+      acknowledgedBy?: string;
+    }) => newsPipelineService.resolveAlert(alertId, acknowledgedBy),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: [...PIPELINE_KEYS.base, 'alerts'],
+      });
+    },
+  });
+}

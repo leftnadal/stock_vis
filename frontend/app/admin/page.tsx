@@ -11,11 +11,20 @@ import ScreenerTab from '@/components/admin/ScreenerTab';
 import MarketPulseTab from '@/components/admin/MarketPulseTab';
 import NewsTab from '@/components/admin/NewsTab';
 import SystemTab from '@/components/admin/SystemTab';
+import { AlertBadge } from '@/components/admin/news/AlertBadge';
 import type { AdminTab } from '@/types/admin';
 
 function AdminContent() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [newsInitialSubTab, setNewsInitialSubTab] = useState<
+    'overview' | 'pipeline'
+  >('overview');
+
+  const handleAlertBadgeClick = () => {
+    setNewsInitialSubTab('pipeline');
+    setActiveTab('news');
+  };
 
   if (!user?.is_staff) {
     return (
@@ -38,18 +47,21 @@ function AdminContent() {
       <div className="mx-auto max-w-7xl px-4 py-6">
         {/* Header */}
         <header className="mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
-              <Shield className="h-5 w-5 text-white" />
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+                <Shield className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                  Admin Dashboard
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  시스템 상태 모니터링 및 데이터 관리
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Admin Dashboard
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                시스템 상태 모니터링 및 데이터 관리
-              </p>
-            </div>
+            <AlertBadge onNavigate={handleAlertBadgeClick} />
           </div>
         </header>
 
@@ -62,7 +74,12 @@ function AdminContent() {
           {activeTab === 'stocks' && <StocksTab />}
           {activeTab === 'screener' && <ScreenerTab />}
           {activeTab === 'market-pulse' && <MarketPulseTab />}
-          {activeTab === 'news' && <NewsTab />}
+          {activeTab === 'news' && (
+            <NewsTab
+              key={newsInitialSubTab}
+              initialSubTab={newsInitialSubTab}
+            />
+          )}
           {activeTab === 'system' && <SystemTab />}
         </div>
       </div>

@@ -9,8 +9,12 @@ import { NewsPipelineSubTab } from './news/NewsPipelineSubTab';
 
 type NewsSubTab = 'overview' | 'pipeline';
 
-export default function NewsTab() {
-  const [subTab, setSubTab] = useState<NewsSubTab>('overview');
+interface NewsTabProps {
+  initialSubTab?: NewsSubTab;
+}
+
+export default function NewsTab({ initialSubTab = 'overview' }: NewsTabProps) {
+  const [subTab, setSubTab] = useState<NewsSubTab>(initialSubTab);
   const { data, isLoading, error } = useAdminNews();
 
   const overviewLoading = isLoading && subTab === 'overview';

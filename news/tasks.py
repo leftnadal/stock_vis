@@ -1158,6 +1158,272 @@ def archive_old_articles():
 
 
 # ============================================================
+# Phase C: 파이프라인 알림 체크 태스크
+# ============================================================
+
+@shared_task(bind=True, max_retries=1, default_retry_delay=60)
+def check_pipeline_alerts(self):
+    """
+    파이프라인 이상 징후 감지 + AlertLog 생성 (30분마다 실행)
+
+    7개 트리거 체크:
+    1. 태스크 연속 실패 (HIGH)
+    2. ML F1 급락 (HIGH)
+    3. 키워드 추출 실패 (MEDIUM)
+    4. LLM 에러율 급등 (MEDIUM)
+    5. Neo4j 연결 실패 (HIGH)
+    6. 수집량 급감 (MEDIUM)
+    7. 미분류 뉴스 누적 (LOW)
+
+    Returns:
+        dict: {alerts_created: int, checks_run: int}
+    """
+    from news.models import AlertLog, NewsCollectionLog, MLModelHistory, DailyNewsKeyword, NewsArticle
+    from django.db.models import Sum
+    import pytz
+
+    KST = pytz.timezone('Asia/Seoul')
+    now = timezone.now()
+    alerts_created = 0
+
+    def _create_alert_if_new(trigger_type, severity, message, context=None):
+        """같은 trigger_type + context(task_name)로 미해결 알림이 없을 때만 생성"""
+        nonlocal alerts_created
+        existing = AlertLog.objects.filter(
+            trigger_type=trigger_type,
+            is_resolved=False,
+        )
+        if context and 'task_name' in context:
+            existing = existing.filter(context__task_name=context['task_name'])
+        if not existing.exists():
+            AlertLog.objects.create(
+                trigger_type=trigger_type,
+                severity=severity,
+                message=message,
+                context=context,
+            )
+            alerts_created += 1
+            logger.warning(f"check_pipeline_alerts: [{severity}] {trigger_type} — {message}")
+
+    # ── 1. 태스크 연속 실패 (HIGH) ──────────────────────────────
+    task_names = list(
+        NewsCollectionLog.objects.values_list('task_name', flat=True).distinct()
+    )
+    for task_name in task_names:
+        recent_logs = list(
+            NewsCollectionLog.objects.filter(task_name=task_name)
+            .order_by('-executed_at')[:3]
+        )
+        if len(recent_logs) == 3 and all(log.errors > 0 for log in recent_logs):
+            _create_alert_if_new(
+                trigger_type=AlertLog.TriggerType.CONSECUTIVE_TASK_FAILURE,
+                severity=AlertLog.Severity.HIGH,
+                message=f"{task_name} 태스크가 3회 연속 실패했습니다.",
+                context={'task_name': task_name, 'error_count': 3},
+            )
+
+    # ── 2. ML F1 급락 (HIGH) ──────────────────────────────────────
+    try:
+        recent_models = list(
+            MLModelHistory.objects.order_by('-trained_at')[:2]
+        )
+        if len(recent_models) == 2:
+            latest, previous = recent_models[0], recent_models[1]
+            f1_diff = latest.f1_score - previous.f1_score
+            if f1_diff < -0.05:
+                _create_alert_if_new(
+                    trigger_type=AlertLog.TriggerType.ML_F1_DECLINE,
+                    severity=AlertLog.Severity.HIGH,
+                    message=(
+                        f"ML F1 점수가 급락했습니다: "
+                        f"{previous.f1_score:.3f} → {latest.f1_score:.3f} "
+                        f"(변화: {f1_diff:.3f})"
+                    ),
+                    context={
+                        'previous_version': previous.model_version,
+                        'previous_f1': previous.f1_score,
+                        'latest_version': latest.model_version,
+                        'latest_f1': latest.f1_score,
+                        'f1_change': round(f1_diff, 4),
+                    },
+                )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: ML F1 체크 실패 — {e}")
+
+    # ── 3. 키워드 추출 실패 (MEDIUM) ─────────────────────────────
+    try:
+        cutoff_24h = now - timedelta(hours=24)
+        failed_keywords = DailyNewsKeyword.objects.filter(
+            status='failed',
+            created_at__gte=cutoff_24h,
+        ).exists()
+        if failed_keywords:
+            _create_alert_if_new(
+                trigger_type=AlertLog.TriggerType.KEYWORD_EXTRACTION_FAILURE,
+                severity=AlertLog.Severity.MEDIUM,
+                message="최근 24시간 내 키워드 추출 실패가 발생했습니다.",
+                context={'window_hours': 24},
+            )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: 키워드 추출 체크 실패 — {e}")
+
+    # ── 4. LLM 에러율 급등 (MEDIUM) ──────────────────────────────
+    try:
+        cutoff_24h = now - timedelta(hours=24)
+        llm_logs = NewsCollectionLog.objects.filter(
+            task_name='analyze_news_deep',
+            executed_at__gte=cutoff_24h,
+        ).aggregate(
+            total_new=Sum('articles_new'),
+            total_errors=Sum('errors'),
+        )
+        total_new = llm_logs['total_new'] or 0
+        total_errors = llm_logs['total_errors'] or 0
+        denominator = total_new + total_errors
+        if denominator > 0:
+            error_rate = total_errors / denominator
+            if error_rate > 0.2:
+                _create_alert_if_new(
+                    trigger_type=AlertLog.TriggerType.LLM_ERROR_SPIKE,
+                    severity=AlertLog.Severity.MEDIUM,
+                    message=(
+                        f"LLM 심층 분석 에러율이 {error_rate:.1%}로 임계값(20%)을 초과했습니다. "
+                        f"(성공: {total_new}, 에러: {total_errors})"
+                    ),
+                    context={
+                        'error_rate': round(error_rate, 4),
+                        'total_new': total_new,
+                        'total_errors': total_errors,
+                        'window_hours': 24,
+                    },
+                )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: LLM 에러율 체크 실패 — {e}")
+
+    # ── 5. Neo4j 연결 실패 (HIGH) ─────────────────────────────────
+    try:
+        neo4j_log = NewsCollectionLog.objects.filter(
+            task_name='sync_news_to_neo4j'
+        ).order_by('-executed_at').first()
+
+        if neo4j_log and neo4j_log.errors > 0:
+            _create_alert_if_new(
+                trigger_type=AlertLog.TriggerType.NEO4J_UNAVAILABLE,
+                severity=AlertLog.Severity.HIGH,
+                message=(
+                    f"Neo4j 동기화 태스크에서 에러가 발생했습니다. "
+                    f"마지막 실행: {neo4j_log.executed_at.isoformat()}, "
+                    f"에러 수: {neo4j_log.errors}"
+                ),
+                context={
+                    'task_name': 'sync_news_to_neo4j',
+                    'errors': neo4j_log.errors,
+                    'executed_at': neo4j_log.executed_at.isoformat(),
+                },
+            )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: Neo4j 체크 실패 — {e}")
+
+    # ── 6. 수집량 급감 (MEDIUM) ───────────────────────────────────
+    try:
+        # 최근 5 평일의 일별 수집량 계산 (KST 기준)
+        collection_task_names = [
+            'collect_daily_news', 'collect_market_news', 'collect_category_news',
+            'collect_sp500_news_fmp_batch', 'collect_press_releases_fmp',
+            'collect_general_news_fmp', 'collect_av_single_symbol',
+        ]
+
+        # 오늘 KST 자정 계산
+        now_kst = now.astimezone(KST)
+        kst_today_midnight = now_kst.replace(hour=0, minute=0, second=0, microsecond=0)
+
+        # 최근 10일(평일 5일 확보용) 데이터 집계
+        lookback_days = 10
+        cutoff_lookback = (kst_today_midnight - timedelta(days=lookback_days)).astimezone(pytz.utc)
+
+        daily_aggregated = {}
+        lookback_qs = (
+            NewsCollectionLog.objects
+            .filter(
+                task_name__in=collection_task_names,
+                executed_at__gte=cutoff_lookback,
+            )
+            .values('executed_at')
+            .annotate(articles_sum=Sum('articles_new'))
+        )
+        for row in lookback_qs:
+            # KST 날짜로 변환
+            kst_date = row['executed_at'].astimezone(KST).date()
+            # 평일만 (weekday 0=월 ~ 4=금)
+            if kst_date.weekday() < 5:
+                daily_aggregated[kst_date] = daily_aggregated.get(kst_date, 0) + (row['articles_sum'] or 0)
+
+        # 오늘 제외, 최근 평일 5일
+        today_date = now_kst.date()
+        past_weekdays = sorted(
+            [d for d in daily_aggregated.keys() if d < today_date],
+            reverse=True
+        )[:5]
+
+        if len(past_weekdays) >= 3:
+            avg_collection = sum(daily_aggregated[d] for d in past_weekdays) / len(past_weekdays)
+
+            # 오늘 수집량
+            today_start_utc = kst_today_midnight.astimezone(pytz.utc)
+            today_collected = (
+                NewsCollectionLog.objects
+                .filter(
+                    task_name__in=collection_task_names,
+                    executed_at__gte=today_start_utc,
+                )
+                .aggregate(total=Sum('articles_new'))['total'] or 0
+            )
+
+            if avg_collection > 0 and today_collected < avg_collection * 0.5:
+                _create_alert_if_new(
+                    trigger_type=AlertLog.TriggerType.COLLECTION_DROP,
+                    severity=AlertLog.Severity.MEDIUM,
+                    message=(
+                        f"오늘 뉴스 수집량({today_collected}건)이 "
+                        f"최근 평일 평균({avg_collection:.0f}건)의 50% 미만입니다."
+                    ),
+                    context={
+                        'today_collected': today_collected,
+                        'avg_collection': round(avg_collection, 1),
+                        'past_weekdays_used': len(past_weekdays),
+                        'today_date': str(today_date),
+                    },
+                )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: 수집량 급감 체크 실패 — {e}")
+
+    # ── 7. 미분류 뉴스 누적 (LOW) ─────────────────────────────────
+    try:
+        unclassified_count = NewsArticle.objects.filter(
+            importance_score__isnull=True
+        ).count()
+        if unclassified_count > 500:
+            _create_alert_if_new(
+                trigger_type=AlertLog.TriggerType.UNCLASSIFIED_BACKLOG,
+                severity=AlertLog.Severity.LOW,
+                message=(
+                    f"미분류 뉴스가 {unclassified_count}건 누적되었습니다. "
+                    f"(임계값: 500건)"
+                ),
+                context={'unclassified_count': unclassified_count},
+            )
+    except Exception as e:
+        logger.error(f"check_pipeline_alerts: 미분류 뉴스 체크 실패 — {e}")
+
+    result = {
+        'alerts_created': alerts_created,
+        'checks_run': 7,
+    }
+    logger.info(f"check_pipeline_alerts completed: {result}")
+    return result
+
+
+# ============================================================
 # 헬퍼 함수
 # ============================================================
 
