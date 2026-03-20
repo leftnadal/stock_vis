@@ -1669,3 +1669,210 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
         cache.set(cache_key, data, 3600)  # 1시간 캐시
         return Response(data)
+
+    # ===== Phase B: Advanced Monitoring API =====
+
+    @action(detail=False, methods=['get'], url_path='task-timeline', permission_classes=[IsAdminUser])
+    def task_timeline(self, request):
+        """
+        24시간 태스크 실행 간트 차트 데이터
+
+        GET /api/v1/news/task-timeline/?hours=24
+
+        Query Parameters:
+            - hours: 조회 기간 (기본값: 24, 최대: 72)
+
+        Returns:
+            {hours, timeline: [{task_name, provider, start, end, duration_sec, articles_new, errors, status}]}
+        """
+        try:
+            hours = min(int(request.query_params.get('hours', 24)), 72)
+        except (ValueError, TypeError):
+            hours = 24
+
+        cache_key = f"news:task_timeline:{hours}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        cutoff = timezone.now() - timedelta(hours=hours)
+        qs = NewsCollectionLog.objects.filter(
+            executed_at__gte=cutoff
+        ).order_by('executed_at')
+
+        timeline = []
+        for log in qs:
+            start_dt = log.executed_at
+            duration = log.duration_sec or 0.0
+            end_dt = start_dt + timedelta(seconds=duration)
+
+            if log.errors == 0:
+                task_status = "ok"
+            elif log.articles_new > 0:
+                task_status = "warning"
+            else:
+                task_status = "error"
+
+            timeline.append({
+                'task_name': log.task_name,
+                'provider': log.provider,
+                'start': start_dt.isoformat(),
+                'end': end_dt.isoformat(),
+                'duration_sec': duration,
+                'articles_new': log.articles_new,
+                'errors': log.errors,
+                'status': task_status,
+            })
+
+        data = {
+            'hours': hours,
+            'timeline': timeline,
+        }
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='neo4j-status', permission_classes=[IsAdminUser])
+    def neo4j_status(self, request):
+        """
+        Neo4j 동기화 상태 확인
+
+        GET /api/v1/news/neo4j-status/
+
+        Returns:
+            {available, last_sync, synced_today, pending_sync, cleanup_last_run}
+        """
+        cache_key = "news:neo4j_status"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # Neo4j 가용성 확인
+        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        sync_service = NewsNeo4jSyncService()
+        available = sync_service.is_available()
+
+        # last_sync: sync_news_to_neo4j 태스크 최신 로그
+        sync_log = NewsCollectionLog.objects.filter(
+            task_name='sync_news_to_neo4j'
+        ).order_by('-executed_at').first()
+        last_sync = sync_log.executed_at.isoformat() if sync_log else None
+
+        # synced_today: 오늘(KST) sync 로그의 articles_new 합산
+        today_start = _kst_today_start()
+        synced_today = NewsCollectionLog.objects.filter(
+            task_name='sync_news_to_neo4j',
+            executed_at__gte=today_start,
+        ).aggregate(total=Sum('articles_new'))['total'] or 0
+
+        # pending_sync: 마지막 sync 이후 llm_analyzed 된 기사로 미동기화 건수 추정
+        # (NewsArticle에 neo4j_synced 전용 필드 없음)
+        if sync_log:
+            pending_sync = NewsArticle.objects.filter(
+                llm_analyzed=True,
+                updated_at__gt=sync_log.executed_at,
+            ).count()
+        else:
+            pending_sync = NewsArticle.objects.filter(llm_analyzed=True).count()
+
+        # cleanup_last_run: cleanup 관련 로그
+        cleanup_log = NewsCollectionLog.objects.filter(
+            task_name__icontains='cleanup'
+        ).order_by('-executed_at').first()
+        cleanup_last_run = cleanup_log.executed_at.isoformat() if cleanup_log else None
+
+        data = {
+            'available': available,
+            'last_sync': last_sync,
+            'synced_today': synced_today,
+            'pending_sync': pending_sync,
+            'cleanup_last_run': cleanup_last_run,
+        }
+
+        cache.set(cache_key, data, 300)  # 5분 캐시
+        return Response(data)
+
+    @action(detail=False, methods=['get'], url_path='ml-rollback-preview', permission_classes=[IsAdminUser])
+    def ml_rollback_preview(self, request):
+        """
+        현재 배포 모델 vs 롤백 대상(기본 가중치) 비교
+
+        GET /api/v1/news/ml-rollback-preview/
+
+        Returns:
+            {current_deployed, rollback_target, default_weights, impact_warning}
+        """
+        from news.services.news_classifier import DEFAULT_WEIGHTS
+
+        deployed = MLModelHistory.objects.filter(
+            deployment_status='deployed'
+        ).order_by('-trained_at').first()
+
+        if not deployed:
+            return Response(
+                {'error': '현재 배포된 모델이 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = {
+            'current_deployed': {
+                'model_version': deployed.model_version,
+                'algorithm': deployed.algorithm,
+                'f1_score': deployed.f1_score,
+                'deployed_at': deployed.deployed_at.isoformat() if deployed.deployed_at else None,
+                'smoothed_weights': deployed.smoothed_weights,
+            },
+            'rollback_target': 'DEFAULT_WEIGHTS (수동 가중치)',
+            'default_weights': DEFAULT_WEIGHTS,
+            'impact_warning': (
+                '롤백 시 Engine C가 학습된 가중치 대신 기본 가중치를 사용합니다. '
+                '다음 일요일 학습까지 수동 가중치로 분류됩니다.'
+            ),
+        }
+
+        return Response(data)
+
+    @action(detail=False, methods=['post'], url_path='ml-rollback', permission_classes=[IsAdminUser])
+    def ml_rollback(self, request):
+        """
+        ML 모델 롤백 실행
+
+        POST /api/v1/news/ml-rollback/
+        Body: {"confirm": true}
+
+        Returns:
+            {status, rolled_back_version, fallback, rolled_back_at}
+        """
+        confirm = request.data.get('confirm')
+        if confirm is not True:
+            return Response(
+                {'error': '롤백을 실행하려면 {"confirm": true}를 전송하세요.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deployed = MLModelHistory.objects.filter(
+            deployment_status='deployed'
+        ).order_by('-trained_at').first()
+
+        if not deployed:
+            return Response(
+                {'error': '현재 배포된 모델이 없습니다.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        from news.services.ml_production_manager import MLProductionManager
+        manager = MLProductionManager()
+        result = manager.rollback_model()
+
+        rolled_back_at = timezone.now()
+
+        data = {
+            'status': result.get('status', 'rolled_back'),
+            'rolled_back_version': result.get('rolled_back_version'),
+            'fallback': result.get('fallback', 'manual_weights'),
+            'rolled_back_at': rolled_back_at.isoformat(),
+        }
+
+        return Response(data)

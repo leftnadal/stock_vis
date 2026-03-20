@@ -1,9 +1,13 @@
 import axios from 'axios';
 import type {
   CollectionLogsResponse,
-  PipelineHealthResponse,
-  MLTrendResponse,
   LLMUsageResponse,
+  MLRollbackPreviewResponse,
+  MLRollbackResponse,
+  MLTrendResponse,
+  Neo4jStatusResponse,
+  PipelineHealthResponse,
+  TaskTimelineResponse,
 } from '@/types/newsPipeline';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -67,5 +71,21 @@ export const newsPipelineService = {
     const params: Record<string, number> = {};
     if (days !== undefined) params.days = days;
     return api.get('/news/llm-usage/', { params }).then((r) => r.data);
+  },
+
+  getTaskTimeline: (hours = 24): Promise<TaskTimelineResponse> => {
+    return api.get('/news/task-timeline/', { params: { hours } }).then((r) => r.data);
+  },
+
+  getNeo4jStatus: (): Promise<Neo4jStatusResponse> => {
+    return api.get('/news/neo4j-status/').then((r) => r.data);
+  },
+
+  getMLRollbackPreview: (): Promise<MLRollbackPreviewResponse> => {
+    return api.get('/news/ml-rollback-preview/').then((r) => r.data);
+  },
+
+  executeMLRollback: (): Promise<MLRollbackResponse> => {
+    return api.post('/news/ml-rollback/', { confirm: true }).then((r) => r.data);
   },
 };

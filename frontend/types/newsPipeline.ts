@@ -138,6 +138,62 @@ export interface MLTrendResponse {
 }
 
 // ============================================================
+// Phase B — Task Timeline
+// ============================================================
+
+export interface TimelineEntry {
+  task_name: string;
+  provider: string;
+  start: string;
+  end: string;
+  duration_sec: number;
+  articles_new: number;
+  errors: number;
+  status: 'ok' | 'warning' | 'error';
+}
+
+export interface TaskTimelineResponse {
+  hours: number;
+  timeline: TimelineEntry[];
+}
+
+// ============================================================
+// Phase B — Neo4j Status
+// ============================================================
+
+export interface Neo4jStatusResponse {
+  available: boolean;
+  last_sync: string | null;
+  synced_today: number;
+  pending_sync: number;
+  cleanup_last_run: string | null;
+}
+
+// ============================================================
+// Phase B — ML Rollback
+// ============================================================
+
+export interface MLRollbackPreviewResponse {
+  current_deployed: {
+    model_version: string;
+    algorithm: string;
+    f1_score: number;
+    deployed_at: string;
+    smoothed_weights: Record<string, number>;
+  };
+  rollback_target: string;
+  default_weights: Record<string, number>;
+  impact_warning: string;
+}
+
+export interface MLRollbackResponse {
+  status: string;
+  rolled_back_version: string;
+  fallback: string;
+  rolled_back_at: string;
+}
+
+// ============================================================
 // LLM Usage
 // ============================================================
 
