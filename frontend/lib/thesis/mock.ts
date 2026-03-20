@@ -294,6 +294,157 @@ export const MOCK_FREE_STEP_MAP: Record<number, ConversationResponse> = {
 
 export const MOCK_STEP_MAP = MOCK_NEWS_STEP_MAP
 
+// ═══ LLM 모드 Mock 응답 (Phase A-MVP) ═══
+
+// ── LLM 기본 경로: "삼성전자 반등" → proposal → preset → confirm → complete ──
+
+export const MOCK_LLM_PROPOSAL: ConversationResponse = {
+  message: '삼성전자의 반등 가설을 설계했어요.\n\nHBM3E 양산 본격화와 외국인 매수 전환을 주요 근거로 보고 있어요. 어떻게 생각하세요?',
+  buttons: [
+    { id: 'short', label: '⚡ 단기 (1개월)' },
+    { id: 'medium', label: '📈 중기 (1~3개월)' },
+    { id: 'long', label: '🔭 장기 (6개월+)' },
+  ],
+  selection_mode: 'single',
+  conversation_state: {
+    conv_id: 'mock-llm-1',
+    entry_source: 'free_input',
+    step: 2,
+    collected: { direction: 'bullish', target: '삼성전자' },
+    mode: 'llm',
+    phase: 'preset',
+    turn_count: 1,
+  },
+  step: 2,
+  total_steps: 3,
+  phase: 'preset',
+  confidence: 'high',
+  needs_preset: true,
+  indicator_recommendations: [
+    {
+      premise_title: 'HBM3E 양산 본격화',
+      indicator_name: 'EPS 추이',
+      why: '실적 개선 추적',
+      signal_type: 'coincident',
+      auto_matched: true,
+      match_method: 'pk',
+    },
+    {
+      premise_title: '외국인 매수 전환',
+      indicator_name: '외국인 순매수 추이',
+      why: '수급 변화 감지',
+      signal_type: 'leading',
+      auto_matched: true,
+      match_method: 'pk',
+    },
+    {
+      premise_title: '반도체 사이클 회복',
+      indicator_name: 'KOSPI 지수',
+      why: '시장 전체 방향',
+      signal_type: 'coincident',
+      auto_matched: false,
+      match_method: 'text',
+    },
+  ],
+}
+
+export const MOCK_LLM_CONFIRM: ConversationResponse = {
+  message: '등록 준비 완료!\n\n    가설: 삼성전자 2분기 반등\n    방향: 상승\n    모니터링: 📈 중기 (1~3개월)\n    전제: 2개\n\n등록할까요?',
+  buttons: [
+    { id: 'confirm', label: '등록' },
+    { id: 'restart', label: '다시 만들기' },
+  ],
+  selection_mode: 'single',
+  conversation_state: {
+    conv_id: 'mock-llm-1',
+    entry_source: 'free_input',
+    step: 3,
+    collected: { direction: 'bullish', target: '삼성전자' },
+    mode: 'llm',
+    phase: 'confirm',
+    turn_count: 2,
+  },
+  step: 3,
+  total_steps: 3,
+  phase: 'confirm',
+}
+
+export const MOCK_LLM_COMPLETE: ConversationResponse = {
+  message: '가설이 등록되었어요! 관제실에서 지표 변화를 추적할 수 있어요.',
+  buttons: [],
+  selection_mode: 'single',
+  conversation_state: {
+    conv_id: 'mock-llm-1',
+    entry_source: 'free_input',
+    step: 3,
+    collected: {},
+    mode: 'llm',
+    phase: 'complete',
+    turn_count: 3,
+  },
+  step: 3,
+  total_steps: 3,
+  phase: 'complete',
+  done: true,
+  is_complete: true,
+  thesis_id: 'mock-llm-thesis-1',
+  created_thesis: {
+    thesis_id: 'mock-llm-thesis-1',
+    title: '삼성전자 2분기 반등',
+    dashboard_url: '/thesis/mock-llm-thesis-1',
+  },
+}
+
+// ── LLM fallback 경로: proposal 실패 → wizard 전환 ──
+
+export const MOCK_LLM_FALLBACK: ConversationResponse = {
+  message: 'AI 분석에 문제가 생겼어요.\n단계별로 진행할게요.',
+  buttons: [
+    { id: 'wizard', label: '단계별로 진행' },
+    { id: 'retry', label: '다시 시도' },
+  ],
+  selection_mode: 'single',
+  conversation_state: {
+    conv_id: 'mock-llm-2',
+    entry_source: 'free_input',
+    step: 1,
+    collected: {},
+  },
+  step: 1,
+  total_steps: 6,
+  phase: 'fallback',
+  fallback_reason: 'llm_api_error',
+}
+
+// ── LLM step map (mock에서 사용) ──
+
+export const MOCK_LLM_STEP_MAP: Record<number, ConversationResponse> = {
+  2: MOCK_LLM_PROPOSAL,
+  3: MOCK_LLM_CONFIRM,
+  4: MOCK_LLM_COMPLETE,
+}
+
+// ── LLM 시작 응답 ──
+
+export const MOCK_LLM_START: ConversationResponse = {
+  message: '어떤 투자 아이디어가 있으세요?\n한 줄이면 충분해요.',
+  buttons: [],
+  selection_mode: 'single',
+  input_type: 'text',
+  conversation_state: {
+    conv_id: 'mock-llm-1',
+    entry_source: 'free_input',
+    step: 1,
+    collected: {},
+    mode: 'llm',
+    phase: 'proposal',
+    turn_count: 0,
+  },
+  step: 1,
+  total_steps: 3,
+  phase: 'proposal',
+}
+
 // ═══ PR-4: 지표 설정 Mock 데이터 ═══
 
 export const MOCK_INDICATORS: ThesisIndicator[] = [

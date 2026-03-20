@@ -9,8 +9,11 @@ import {
   USE_MOCK, MOCK_CONVERSATION_START_NEWS,
   MOCK_CONVERSATION_START_FREE, MOCK_NEWS_STEP_MAP, MOCK_FREE_STEP_MAP,
   MOCK_CONVERSATION_DONE,
+  MOCK_LLM_START, MOCK_LLM_STEP_MAP,
 } from '@/lib/thesis/mock'
 import { ENTRY_SOURCES, type EntrySource, type ConversationButton } from '@/lib/thesis/types'
+import { PresetSelector } from '@/components/thesis/PresetSelector'
+import { IndicatorCard } from '@/components/thesis/IndicatorCard'
 import {
   type BuilderState, INITIAL_BUILDER_STATE, applyResponse, selectionToLabel,
   generateMessageId, saveConvId, clearConvId,
@@ -72,9 +75,12 @@ function ThesisBuilder() {
     setState(s => ({ ...s, isLoading: true }))
 
     if (USE_MOCK) {
-      const mockResponse = entrySource === 'news'
-        ? MOCK_CONVERSATION_START_NEWS
-        : MOCK_CONVERSATION_START_FREE
+      // LLM mock이 활성화된 경우 LLM 시작 사용
+      const mockResponse = MOCK_LLM_START.conversation_state.mode === 'llm'
+        ? MOCK_LLM_START
+        : entrySource === 'news'
+          ? MOCK_CONVERSATION_START_NEWS
+          : MOCK_CONVERSATION_START_FREE
       setState(s => applyResponse(s, mockResponse))
       return
     }
@@ -128,6 +134,12 @@ function ThesisBuilder() {
       setTimeout(() => {
         setState(s => {
           const nextStep = s.step + 1
+          // LLM 모드 mock
+          if (s.mode === 'llm') {
+            const mockNext = MOCK_LLM_STEP_MAP[nextStep] ?? MOCK_CONVERSATION_DONE
+            return applyResponse(s, mockNext)
+          }
+          // wizard 모드 mock
           const stepMap = entry === 'free_input' ? MOCK_FREE_STEP_MAP : MOCK_NEWS_STEP_MAP
           const mockNext = stepMap[nextStep] ?? MOCK_CONVERSATION_DONE
           return applyResponse(s, mockNext)
@@ -202,19 +214,28 @@ function ThesisBuilder() {
     }
   }
 
+  // ── 프리셋 선택 (LLM 모드) ──
+  function handlePresetSelect(presetId: string) {
+    sendResponse(presetId, presetId)
+  }
+
   // ── 완료 후 네비게이션 ──
   function handleComplete(action: string) {
     clearConvId()
-    if (USE_MOCK || !state.thesisId) {
+    const thesisId = state.thesisId || state.createdThesis?.thesis_id
+    if (USE_MOCK || !thesisId) {
       router.push('/thesis')
       return
     }
     switch (action) {
       case 'auto':
-        router.push(`/thesis/${state.thesisId}/indicators?auto=true`)
+        router.push(`/thesis/${thesisId}/indicators?auto=true`)
         break
       case 'manual':
-        router.push(`/thesis/${state.thesisId}/indicators`)
+        router.push(`/thesis/${thesisId}/indicators`)
+        break
+      case 'dashboard':
+        router.push(state.createdThesis?.dashboard_url ?? `/thesis/${thesisId}`)
         break
       default:
         router.push('/thesis')
@@ -265,12 +286,24 @@ function ThesisBuilder() {
           </ChatBubble>
         ))}
 
-        {/* Preview 카드 렌더링 */}
+        {/* Preview 카드 렌더링 (wizard 모드) */}
         {state.preview && (
           <div className="mb-3 space-y-2">
             <p className="text-xs text-gray-500 px-1">근거 ({state.preview.premises.length}개)</p>
             {state.preview.premises.map((premise, i) => (
               <PremiseCard key={i} premise={premise} />
+            ))}
+          </div>
+        )}
+
+        {/* LLM 모드: 지표 추천 카드 */}
+        {state.indicatorRecommendations.length > 0 && state.phase === 'preset' && (
+          <div className="mb-3 space-y-2">
+            <p className="text-xs text-gray-500 px-1">
+              AI 추천 지표 ({state.indicatorRecommendations.length}개)
+            </p>
+            {state.indicatorRecommendations.map((rec, i) => (
+              <IndicatorCard key={i} recommendation={rec} />
             ))}
           </div>
         )}
@@ -281,8 +314,17 @@ function ThesisBuilder() {
 
       {/* 하단 고정 영역 */}
       <div className="flex-shrink-0">
-        {/* 버튼 선택지 */}
-        {activeButtons.length > 0 && !state.isDone && (
+        {/* LLM 모드: 프리셋 선택 */}
+        {state.mode === 'llm' && state.phase === 'preset' && !state.isLoading && !state.isDone && (
+          <PresetSelector
+            onSelect={handlePresetSelect}
+            disabled={state.isLoading}
+          />
+        )}
+
+        {/* 버튼 선택지 (preset이 아닌 경우에만) */}
+        {activeButtons.length > 0 && !state.isDone
+          && !(state.mode === 'llm' && state.phase === 'preset') && (
           <div className="border-t border-gray-800 bg-gray-950 px-4 py-3 space-y-2">
             {activeButtons.map((btn) => (
               <OptionButton

@@ -1,4 +1,7 @@
-import type { ConversationState, ConversationResponse, ConversationButton, ThesisPreview } from './types'
+import type {
+  ConversationState, ConversationResponse, ConversationButton,
+  ThesisPreview, BuilderPhase, LLMIndicatorRecommendation,
+} from './types'
 
 // ── 메시지 타입 ──
 export interface ChatMessage {
@@ -31,6 +34,12 @@ export interface BuilderState {
   preview: ThesisPreview | null
   messageCounter: number
   lastRequest: LastRequest | null
+  // LLM mode extensions
+  mode: 'llm' | 'wizard'
+  phase: BuilderPhase | null
+  confidence: 'high' | 'medium' | 'low' | null
+  indicatorRecommendations: LLMIndicatorRecommendation[]
+  createdThesis: { thesis_id: string; title: string; dashboard_url: string } | null
 }
 
 // ── 초기 상태 ──
@@ -46,11 +55,25 @@ export const INITIAL_BUILDER_STATE: BuilderState = {
   preview: null,
   messageCounter: 0,
   lastRequest: null,
+  mode: 'wizard',
+  phase: null,
+  confidence: null,
+  indicatorRecommendations: [],
+  createdThesis: null,
 }
 
 // ── 메시지 id 생성 헬퍼 ──
 export function generateMessageId(state: BuilderState, prefix: 'ai' | 'user' | 'error'): string {
   return `${prefix}-${state.messageCounter}`
+}
+
+// ── LLM phase → step 매핑 ──
+const PHASE_STEP_MAP: Record<string, number> = {
+  proposal: 1,
+  preset: 2,
+  confirm: 3,
+  complete: 3,
+  fallback: 1,
 }
 
 // ── API 응답 → AI 메시지 추가 ──
@@ -70,19 +93,29 @@ export function applyResponse(
     longPressExplanations: response.long_press_explanations,
   })
 
+  // LLM 모드 감지
+  const isLLM = response.conversation_state?.mode === 'llm' || !!response.phase
+  const phase = response.phase ?? state.phase
+
   return {
     ...state,
     messages: newMessages,
     conversationState: response.conversation_state,
-    step: response.step,
-    totalSteps: response.total_steps,
+    step: isLLM ? (PHASE_STEP_MAP[phase ?? ''] ?? 1) : response.step,
+    totalSteps: isLLM ? 3 : response.total_steps,
     isLoading: false,
-    thesisId: response.thesis_id ?? state.thesisId,
+    thesisId: response.thesis_id ?? response.created_thesis?.thesis_id ?? state.thesisId,
     counterThesisId: response.counter_thesis_id ?? state.counterThesisId,
-    isDone: response.done ?? false,
+    isDone: response.done ?? response.is_complete ?? false,
     preview: response.preview ?? state.preview,
     messageCounter: state.messageCounter + 1,
     lastRequest: null,
+    // LLM extensions
+    mode: isLLM ? 'llm' : state.mode,
+    phase: phase ?? null,
+    confidence: response.confidence ?? state.confidence,
+    indicatorRecommendations: response.indicator_recommendations ?? state.indicatorRecommendations,
+    createdThesis: response.created_thesis ?? state.createdThesis,
   }
 }
 

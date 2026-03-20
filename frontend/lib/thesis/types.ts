@@ -160,6 +160,10 @@ export interface ConversationButton {
   long_press_hint?: boolean
 }
 
+// ═══ LLM 빌더 Phase (Phase A-MVP) ═══
+
+export type BuilderPhase = 'proposal' | 'preset' | 'confirm' | 'complete' | 'fallback'
+
 // ═══ 대화 상태 (백엔드 conversation_state echo) ═══
 
 export interface ConversationState {
@@ -168,6 +172,11 @@ export interface ConversationState {
   step: number
   collected: Record<string, unknown>
   source_news_id?: string
+  // LLM mode extensions
+  mode?: 'llm' | 'wizard'
+  phase?: BuilderPhase
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+  turn_count?: number
 }
 
 // ═══ 미리보기 (step 5/6에서 출현) ═══
@@ -189,6 +198,17 @@ export interface ThesisPreview {
   indicators: PreviewIndicator[]
 }
 
+// ═══ LLM 빌더 지표 추천 (Phase A-MVP) ═══
+
+export interface LLMIndicatorRecommendation {
+  premise_title: string
+  indicator_name: string
+  why: string
+  signal_type: 'leading' | 'coincident' | 'lagging'
+  auto_matched: boolean
+  match_method: 'pk' | 'text'
+}
+
 export interface ConversationResponse {
   message: string
   buttons: ConversationButton[]
@@ -203,6 +223,18 @@ export interface ConversationResponse {
   done?: boolean
   counter_thesis_id?: string
   thesis?: Thesis
+  // LLM mode extensions
+  phase?: BuilderPhase
+  confidence?: 'high' | 'medium' | 'low'
+  needs_preset?: boolean
+  indicator_recommendations?: LLMIndicatorRecommendation[]
+  is_complete?: boolean
+  created_thesis?: {
+    thesis_id: string
+    title: string
+    dashboard_url: string
+  }
+  fallback_reason?: string
 }
 
 // ═══ PR-4: AI 추천 결과 (아직 DB에 저장되지 않은 상태) ═══

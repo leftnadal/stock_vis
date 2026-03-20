@@ -1,4 +1,4 @@
-"""Thesis Builder: 대화형 가설 구조화 서비스 (설계 문서 2.3)"""
+"""Thesis Builder: 대화형 가설 구조화 서비스 (설계 문서 2.3 + Phase A-MVP LLM 모드)"""
 
 import json
 import logging
@@ -9,7 +9,14 @@ from django.conf import settings
 from django.utils import timezone
 
 from thesis.models import Thesis, ThesisPremise, ThesisIndicator, HypothesisEvent
-from thesis.services.indicator_matcher import match_indicators_for_premise
+from thesis.services.indicator_matcher import match_indicators_for_premise, match_indicators_for_llm
+from thesis.services.builder_state import (
+    ConversationState, ChatMessage, CollectedData,
+    BuilderPhase, BuilderMode, FallbackReason,
+    MONITORING_PRESETS,
+)
+from thesis.services.builder_events import log_event, EVENT_BUILDER_STARTED
+from thesis.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -757,3 +764,411 @@ def _default_response(state):
         'step': state.get('step', 1),
         'total_steps': 6,
     }
+
+
+# ──────────────────────────────────────────────
+# LLM Mode
+# ──────────────────────────────────────────────
+
+def start_llm_conversation(entry_source, source_news_id=None):
+    """LLM 모드 대화 시작. ConversationState 생성 → 초기 메시지 반환."""
+    conv_id = str(uuid.uuid4())
+    state = ConversationState(
+        conv_id=conv_id,
+        entry_source=entry_source,
+        source_news_id=source_news_id,
+    )
+
+    log_event(EVENT_BUILDER_STARTED, {
+        'conv_id': conv_id,
+        'entry_source': entry_source,
+        'mode': 'llm',
+    })
+
+    if entry_source == 'news' and source_news_id:
+        news_title = _get_news_title(source_news_id)
+        return {
+            'conversation_state': state.model_dump(),
+            'message': f'"{news_title}" — 이 흐름에 대한 생각을 자유롭게 써주세요.',
+            'buttons': [],
+            'input_type': 'text',
+            'phase': 'proposal',
+        }
+
+    return {
+        'conversation_state': state.model_dump(),
+        'message': '어떤 투자 아이디어가 있으세요?\n한 줄이면 충분해요.',
+        'buttons': [],
+        'input_type': 'text',
+        'phase': 'proposal',
+    }
+
+
+def process_llm_turn(raw_state, user_input, user=None):
+    """LLM 모드 턴 처리. phase 기반 분기."""
+    try:
+        state = ConversationState.model_validate(raw_state)
+    except Exception as e:
+        logger.exception(f"State validation failed: {e}")
+        return _fallback_to_wizard(raw_state, user_input, FallbackReason.STATE_ERROR)
+
+    # history에 사용자 메시지 추가
+    text = user_input if isinstance(user_input, str) else str(user_input)
+    state.history.append(ChatMessage(role='user', content=text))
+    state.turn_count += 1
+
+    phase = state.phase
+
+    if phase == BuilderPhase.PRESET.value:
+        return _handle_preset(state, text)
+    elif phase == BuilderPhase.CONFIRM.value:
+        if _is_confirm_intent(text):
+            return _handle_confirm(state, user)
+        elif _is_restart_intent(text):
+            state.phase = BuilderPhase.PROPOSAL.value
+            state.collected = CollectedData()
+            state.history = []
+            state.turn_count = 0
+            return {
+                'conversation_state': state.model_dump(),
+                'message': '다시 시작할게요! 어떤 아이디어가 있으세요?',
+                'buttons': [],
+                'input_type': 'text',
+                'phase': 'proposal',
+            }
+        else:
+            return {
+                'conversation_state': state.model_dump(),
+                'message': '등록할까요, 아니면 다시 만들까요?',
+                'buttons': [
+                    {'id': 'confirm', 'label': '등록'},
+                    {'id': 'restart', 'label': '다시 만들기'},
+                ],
+                'selection_mode': 'single',
+                'phase': 'confirm',
+            }
+    else:
+        # PROPOSAL (default)
+        return _handle_proposal(state, text)
+
+
+def _handle_proposal(state, user_input):
+    """One-shot proposal: Gemini 호출 → normalize → validate → merge → match."""
+    from thesis.services.prompt_builder import build_system_prompt, call_gemini
+    from thesis.services.llm_postprocess import normalize_llm_output, validate_llm_output, merge_to_collected
+    from thesis.services.builder_events import (
+        EVENT_PROPOSAL_GENERATED, EVENT_LLM_PARSE_FAILED,
+    )
+
+    flags = get_feature_flags()
+
+    # 1. 시스템 프롬프트 빌드
+    system_prompt = build_system_prompt(state, flags)
+
+    # 2. Gemini 호출
+    history_dicts = [{'role': m.role, 'content': m.content} for m in state.history]
+    raw_output = call_gemini(system_prompt, history_dicts)
+
+    if raw_output is None:
+        return _fallback_to_wizard(state, user_input, FallbackReason.LLM_API_ERROR)
+
+    # 3. normalize → validate
+    normalized = normalize_llm_output(raw_output)
+    validated, warnings, errors = validate_llm_output(normalized)
+
+    if errors:
+        log_event(EVENT_LLM_PARSE_FAILED, {
+            'conv_id': state.conv_id,
+            'errors': errors,
+            'warnings': warnings,
+        })
+        return _fallback_to_wizard(state, user_input, FallbackReason.VALIDATION_ERROR)
+
+    # 4. merge to collected
+    state.collected = merge_to_collected(state.collected, validated)
+
+    # 5. match indicators (PK → text 2단계)
+    indicator_recommendations = match_indicators_for_llm(state.collected)
+
+    # 6. 응답 메시지
+    confidence = validated.get('confidence', 'medium')
+    message = validated.get('message', '')
+    state.history.append(ChatMessage(role='assistant', content=message))
+
+    # 7. confidence → phase 전이
+    if confidence == 'low':
+        state.phase = BuilderPhase.PROPOSAL.value
+
+        if state.turn_count >= 3:
+            message += '\n\n예: "삼성전자 2분기 반등", "금리 인하 수혜주", "비만치료제 테마"'
+
+        log_event(EVENT_PROPOSAL_GENERATED, {
+            'conv_id': state.conv_id,
+            'confidence': confidence,
+            'premise_count': 0,
+            'turn_count': state.turn_count,
+        })
+
+        return {
+            'conversation_state': state.model_dump(),
+            'message': message,
+            'buttons': [],
+            'input_type': 'text',
+            'confidence': confidence,
+            'phase': 'proposal',
+        }
+
+    # high/medium → PRESET
+    state.phase = BuilderPhase.PRESET.value
+
+    log_event(EVENT_PROPOSAL_GENERATED, {
+        'conv_id': state.conv_id,
+        'confidence': confidence,
+        'premise_count': len(validated.get('premises', [])),
+        'turn_count': state.turn_count,
+    })
+
+    preset_buttons = [
+        {'id': 'short', 'label': MONITORING_PRESETS['short']['label']},
+        {'id': 'medium', 'label': MONITORING_PRESETS['medium']['label']},
+        {'id': 'long', 'label': MONITORING_PRESETS['long']['label']},
+    ]
+
+    return {
+        'conversation_state': state.model_dump(),
+        'message': message,
+        'buttons': preset_buttons,
+        'selection_mode': 'single',
+        'confidence': confidence,
+        'needs_preset': True,
+        'indicator_recommendations': indicator_recommendations,
+        'phase': 'preset',
+    }
+
+
+def _handle_preset(state, user_input):
+    """프리셋 선택 → timeframe/magnitude/sensitivity 설정 → CONFIRM."""
+    from thesis.services.builder_events import EVENT_PRESET_SELECTED
+
+    preset_key = _detect_preset(user_input)
+    if not preset_key:
+        preset_buttons = [
+            {'id': 'short', 'label': MONITORING_PRESETS['short']['label']},
+            {'id': 'medium', 'label': MONITORING_PRESETS['medium']['label']},
+            {'id': 'long', 'label': MONITORING_PRESETS['long']['label']},
+        ]
+        return {
+            'conversation_state': state.model_dump(),
+            'message': '모니터링 기간을 선택해주세요.',
+            'buttons': preset_buttons,
+            'selection_mode': 'single',
+            'needs_preset': True,
+            'phase': 'preset',
+        }
+
+    preset = MONITORING_PRESETS[preset_key]
+    state.collected.timeframe = preset['timeframe']
+    state.collected.magnitude = preset['magnitude']
+    state.collected.sensitivity = preset['sensitivity']
+    state.phase = BuilderPhase.CONFIRM.value
+
+    log_event(EVENT_PRESET_SELECTED, {
+        'conv_id': state.conv_id,
+        'preset': preset_key,
+    })
+
+    direction_label = {'bullish': '상승', 'bearish': '하락'}.get(
+        state.collected.direction, ''
+    )
+    summary_parts = [
+        f'가설: {state.collected.title or state.collected.target}',
+        f'방향: {direction_label}',
+        f'모니터링: {preset["label"]}',
+    ]
+    if state.collected.premises:
+        summary_parts.append(f'전제: {len(state.collected.premises)}개')
+
+    message = '등록 준비 완료!\n\n' + '\n'.join(f'    {p}' for p in summary_parts) + '\n\n등록할까요?'
+    state.history.append(ChatMessage(role='assistant', content=message))
+
+    return {
+        'conversation_state': state.model_dump(),
+        'message': message,
+        'buttons': [
+            {'id': 'confirm', 'label': '등록'},
+            {'id': 'restart', 'label': '다시 만들기'},
+        ],
+        'selection_mode': 'single',
+        'phase': 'confirm',
+    }
+
+
+def _handle_confirm(state, user):
+    """등록 확인 → validate → DB 저장."""
+    from thesis.services.builder_events import EVENT_CONFIRM_CLICKED, EVENT_THESIS_CREATED
+
+    log_event(EVENT_CONFIRM_CLICKED, {'conv_id': state.conv_id})
+
+    collected = state.collected
+    if not collected.direction or not collected.target or not collected.premises:
+        return _fallback_to_wizard(state, '', FallbackReason.VALIDATION_ERROR)
+
+    result = _create_thesis_from_llm(state, user)
+    if 'error' in result:
+        return result
+
+    state.phase = BuilderPhase.COMPLETE.value
+
+    log_event(EVENT_THESIS_CREATED, {
+        'conv_id': state.conv_id,
+        'thesis_id': result.get('thesis_id'),
+    })
+
+    return {
+        'conversation_state': state.model_dump(),
+        'message': '가설이 등록되었어요! 관제실에서 지표 변화를 추적할 수 있어요.',
+        'thesis_id': result['thesis_id'],
+        'is_complete': True,
+        'done': True,
+        'created_thesis': {
+            'thesis_id': result['thesis_id'],
+            'title': collected.title or collected.target,
+            'dashboard_url': f'/thesis/{result["thesis_id"]}',
+        },
+        'phase': 'complete',
+    }
+
+
+def _create_thesis_from_llm(state, user):
+    """LLM 모드에서 Thesis + Premise + Indicator 생성. 기존 _create_thesis() 래핑."""
+    if not user:
+        return {'error': '로그인이 필요합니다.', 'done': False}
+
+    collected = state.collected
+    from thesis.services.prompt_builder import get_indicator_by_id
+
+    # thesis_type: list → DB 단일값 매핑
+    thesis_type_raw = collected.thesis_type[0] if collected.thesis_type else 'custom'
+    THESIS_TYPE_MAP = {
+        'earnings': 'custom', 'flow': 'custom', 'macro': 'custom',
+        'chain': 'custom', 'event': 'event',
+    }
+    db_thesis_type = THESIS_TYPE_MAP.get(thesis_type_raw, 'custom')
+
+    thesis = Thesis.objects.create(
+        user=user,
+        title=(collected.title or collected.target or '')[:200],
+        direction=collected.direction,
+        target=(collected.target or '')[:100],
+        target_type=collected.target_type or 'index',
+        thesis_type=db_thesis_type,
+        entry_source=state.entry_source,
+        expected_timeframe=collected.timeframe or '',
+        expected_magnitude=collected.magnitude or '',
+        source_news_id=state.source_news_id,
+        status='active',
+    )
+
+    # 전제 생성
+    created_premises = []
+    for i, p in enumerate(collected.premises):
+        premise = ThesisPremise.objects.create(
+            thesis=thesis,
+            content=p.title,
+            category='custom',
+            order=i,
+        )
+        created_premises.append(premise)
+
+    # 지표 생성 — PremiseData.recommended_indicators → INDICATOR_CATALOG 매핑
+    created_indicators = []
+    seen_indicator_ids = set()
+    for p in collected.premises:
+        for rec in p.recommended_indicators:
+            if rec.indicator_db_id and rec.indicator_db_id not in seen_indicator_ids:
+                cat_ind = get_indicator_by_id(rec.indicator_db_id)
+                if cat_ind:
+                    ti = ThesisIndicator.objects.create(
+                        thesis=thesis,
+                        name=cat_ind['name'],
+                        indicator_type=cat_ind.get('category', 'custom'),
+                        data_source=cat_ind.get('data_source', 'manual'),
+                        data_params=cat_ind.get('data_params', {}),
+                        support_direction=cat_ind.get('support_direction', 'positive'),
+                    )
+                    created_indicators.append(ti)
+                    seen_indicator_ids.add(rec.indicator_db_id)
+
+    # HypothesisEvent
+    try:
+        HypothesisEvent.objects.create(
+            user=user,
+            thesis=thesis,
+            event_type='thesis_created',
+            event_data={
+                'entry_source': state.entry_source,
+                'mode': 'llm',
+                'premise_count': len(created_premises),
+                'indicator_count': len(created_indicators),
+            },
+        )
+    except Exception as e:
+        logger.warning(f"Failed to record thesis_created event: {e}")
+
+    return {'thesis_id': str(thesis.id)}
+
+
+def _fallback_to_wizard(state, user_input, reason):
+    """LLM 실패 시 wizard 모드로 전환."""
+    from thesis.services.builder_events import EVENT_FALLBACK_TRIGGERED
+
+    conv_id = state.conv_id if hasattr(state, 'conv_id') else state.get('conv_id', '')
+    log_event(EVENT_FALLBACK_TRIGGERED, {
+        'conv_id': conv_id,
+        'reason': reason.value if isinstance(reason, FallbackReason) else str(reason),
+    })
+
+    # wizard 모드 state로 변환
+    entry_source = state.entry_source if hasattr(state, 'entry_source') else state.get('entry_source', 'free_input')
+    source_news_id = state.source_news_id if hasattr(state, 'source_news_id') else state.get('source_news_id')
+    wizard_state = {
+        'conv_id': conv_id or str(uuid.uuid4()),
+        'entry_source': entry_source,
+        'step': 1,
+        'collected': {},
+        'source_news_id': source_news_id,
+    }
+
+    return {
+        'conversation_state': wizard_state,
+        'message': 'AI 분석에 문제가 생겼어요.\n단계별로 진행할게요.',
+        'buttons': [
+            {'id': 'wizard', 'label': '단계별로 진행'},
+            {'id': 'retry', 'label': '다시 시도'},
+        ],
+        'selection_mode': 'single',
+        'phase': 'fallback',
+        'fallback_reason': reason.value if isinstance(reason, FallbackReason) else str(reason),
+    }
+
+
+def _detect_preset(text):
+    """사용자 입력에서 프리셋 키 탐지."""
+    text_lower = text.lower().strip()
+    if text_lower in ('short', '단기'):
+        return 'short'
+    elif text_lower in ('medium', '중기'):
+        return 'medium'
+    elif text_lower in ('long', '장기'):
+        return 'long'
+    return None
+
+
+def _is_confirm_intent(text):
+    """등록 의도 탐지."""
+    return text.lower().strip() in ('confirm', '등록', '좋아', '네', '예', 'yes', 'ok')
+
+
+def _is_restart_intent(text):
+    """재시작 의도 탐지."""
+    return text.lower().strip() in ('restart', '다시', '다시 만들기', '처음부터')

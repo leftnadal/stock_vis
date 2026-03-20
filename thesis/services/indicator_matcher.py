@@ -266,3 +266,61 @@ def match_indicators_for_premise(premise_text, thesis=None, user=None):
         matched = match_by_gemini(premise_text, thesis)
 
     return matched
+
+
+def match_indicators_for_llm(collected):
+    """
+    LLM 빌더용 지표 매칭: PK 우선 2단계.
+
+    1순위: indicator_db_id → INDICATOR_CATALOG 조회
+    2순위: premise text → match_indicators_for_premise() fallback
+
+    Args:
+        collected: CollectedData (Pydantic model)
+
+    Returns:
+        list[dict] — {premise_title, indicator_name, why, signal_type, auto_matched, match_method, indicator}
+    """
+    from thesis.services.prompt_builder import get_indicator_by_id
+
+    results = []
+    seen_names = set()
+
+    for premise in collected.premises:
+        # 1순위: LLM이 추천한 indicator_db_id로 조회
+        for rec in premise.recommended_indicators:
+            if rec.indicator_db_id:
+                cat_ind = get_indicator_by_id(rec.indicator_db_id)
+                if cat_ind and cat_ind['name'] not in seen_names:
+                    results.append({
+                        'premise_title': premise.title,
+                        'indicator': cat_ind,
+                        'indicator_name': cat_ind['name'],
+                        'why': rec.why,
+                        'signal_type': rec.signal_type,
+                        'auto_matched': True,
+                        'match_method': 'pk',
+                    })
+                    seen_names.add(cat_ind['name'])
+
+        # 2순위: PK 매칭 실패 시 텍스트 기반 fallback
+        pk_matched = any(
+            rec.indicator_db_id and get_indicator_by_id(rec.indicator_db_id)
+            for rec in premise.recommended_indicators
+        )
+        if not pk_matched:
+            text_matches = match_indicators_for_premise(premise.title)
+            for ind in text_matches:
+                if ind['name'] not in seen_names:
+                    results.append({
+                        'premise_title': premise.title,
+                        'indicator': ind,
+                        'indicator_name': ind['name'],
+                        'why': ind.get('reason', ''),
+                        'signal_type': 'coincident',
+                        'auto_matched': False,
+                        'match_method': 'text',
+                    })
+                    seen_names.add(ind['name'])
+
+    return results
