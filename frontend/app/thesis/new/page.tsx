@@ -63,6 +63,8 @@ function ThesisBuilder() {
   const [sheetContent, setSheetContent] = useState<{
     title: string; text: string
   } | null>(null)
+  const [showSlowHint, setShowSlowHint] = useState(false)
+  const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -153,6 +155,13 @@ function ThesisBuilder() {
         conversation_state: state.conversationState,
         user_input: input,
       })
+
+      // fallback 응답 처리: conversation_state 파싱 실패 방어
+      if (!response?.conversation_state) {
+        showError()
+        return false
+      }
+
       setState(s => applyResponse(s, response))
       return true
     } catch {
@@ -242,6 +251,22 @@ function ThesisBuilder() {
     }
   }
 
+  // ── Gemini 지연 힌트 (2초 이상 로딩 시) ──
+  useEffect(() => {
+    if (state.isLoading && state.mode === 'llm') {
+      slowTimerRef.current = setTimeout(() => setShowSlowHint(true), 2000)
+    } else {
+      setShowSlowHint(false)
+      if (slowTimerRef.current) {
+        clearTimeout(slowTimerRef.current)
+        slowTimerRef.current = null
+      }
+    }
+    return () => {
+      if (slowTimerRef.current) clearTimeout(slowTimerRef.current)
+    }
+  }, [state.isLoading, state.mode])
+
   // ── 스크롤 최하단 유지 ──
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -260,7 +285,7 @@ function ThesisBuilder() {
     && !isErrorMessage
   ) ? lastMessage.buttons ?? [] : []
   const activeMode = lastMessage?.selectionMode ?? 'single'
-  const showTextInput = lastMessage?.inputType === 'text' && !state.isLoading
+  const showTextInput = (lastMessage?.inputType === 'text' || state.phase === 'proposal') && !state.isLoading && !state.isDone
 
   return (
     <div className="flex flex-col h-[calc(100dvh-env(safe-area-inset-top))]
@@ -309,7 +334,16 @@ function ThesisBuilder() {
         )}
 
         {/* AI 로딩 중 */}
-        {state.isLoading && <ChatBubble role="ai" isLoading />}
+        {state.isLoading && (
+          <div>
+            <ChatBubble role="ai" isLoading />
+            {showSlowHint && (
+              <p className="text-xs text-gray-500 px-3 mt-1 animate-fade-in">
+                AI가 가설을 설계하고 있어요...
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 하단 고정 영역 */}

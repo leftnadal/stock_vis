@@ -817,7 +817,15 @@ def process_llm_turn(raw_state, user_input, user=None):
     state.history.append(ChatMessage(role='user', content=text))
     state.turn_count += 1
 
+    # turn_count 방어 (무한 루프 방지)
+    if state.turn_count > 20:
+        return _fallback_to_wizard(state, text, FallbackReason.STATE_ERROR)
+
     phase = state.phase
+
+    # fallback phase에서 사용자 선택 처리
+    if phase == BuilderPhase.FALLBACK.value:
+        return _handle_fallback_choice(state, text, user)
 
     if phase == BuilderPhase.PRESET.value:
         return _handle_preset(state, text)
@@ -1118,8 +1126,56 @@ def _create_thesis_from_llm(state, user):
     return {'thesis_id': str(thesis.id)}
 
 
+def _handle_fallback_choice(state, user_input, user):
+    """fallback phase에서 wizard/retry 선택 처리."""
+    text = user_input.lower().strip()
+
+    if text in ('retry', '다시 시도', '다시'):
+        # LLM 재시도: phase를 proposal로 되돌리고 마지막 user 메시지로 재시도
+        state.phase = BuilderPhase.PROPOSAL.value
+        # history에서 마지막 user 메시지를 찾아서 재사용
+        last_user_msg = ''
+        for msg in reversed(state.history):
+            if msg.role == 'user' and msg.content not in ('retry', '다시 시도', '다시'):
+                last_user_msg = msg.content
+                break
+        if last_user_msg:
+            return _handle_proposal(state, last_user_msg)
+        # 원래 입력이 없으면 텍스트 입력 요청
+        return {
+            'conversation_state': state.model_dump(),
+            'message': '다시 시도할게요! 어떤 아이디어가 있으세요?',
+            'buttons': [],
+            'input_type': 'text',
+            'phase': 'proposal',
+        }
+
+    # wizard 선택 또는 기타 → wizard 전환
+    return _switch_to_wizard(state)
+
+
+def _switch_to_wizard(state):
+    """LLM state → wizard state 변환 후 wizard 시작 응답."""
+    entry_source = state.entry_source if hasattr(state, 'entry_source') else 'free_input'
+    source_news_id = state.source_news_id if hasattr(state, 'source_news_id') else None
+    conv_id = state.conv_id if hasattr(state, 'conv_id') else str(uuid.uuid4())
+
+    wizard_state = {
+        'conv_id': conv_id,
+        'entry_source': entry_source,
+        'step': 1,
+        'collected': {},
+        'source_news_id': source_news_id,
+    }
+
+    # wizard 시작 응답 (start_conversation과 동일)
+    result = start_conversation(entry_source, source_news_id)
+    result['conversation_state']['conv_id'] = conv_id
+    return result
+
+
 def _fallback_to_wizard(state, user_input, reason):
-    """LLM 실패 시 wizard 모드로 전환."""
+    """LLM 실패 시 fallback 선택 화면 반환."""
     from thesis.services.builder_events import EVENT_FALLBACK_TRIGGERED
 
     conv_id = state.conv_id if hasattr(state, 'conv_id') else state.get('conv_id', '')
@@ -1128,20 +1184,28 @@ def _fallback_to_wizard(state, user_input, reason):
         'reason': reason.value if isinstance(reason, FallbackReason) else str(reason),
     })
 
-    # wizard 모드 state로 변환
-    entry_source = state.entry_source if hasattr(state, 'entry_source') else state.get('entry_source', 'free_input')
-    source_news_id = state.source_news_id if hasattr(state, 'source_news_id') else state.get('source_news_id')
-    wizard_state = {
-        'conv_id': conv_id or str(uuid.uuid4()),
-        'entry_source': entry_source,
-        'step': 1,
-        'collected': {},
-        'source_news_id': source_news_id,
-    }
+    # LLM state 유지 (retry 가능하도록)
+    if hasattr(state, 'model_dump'):
+        state.phase = BuilderPhase.FALLBACK.value
+        response_state = state.model_dump()
+    else:
+        # dict state (state validation 실패 시)
+        entry_source = state.get('entry_source', 'free_input') if isinstance(state, dict) else 'free_input'
+        source_news_id = state.get('source_news_id') if isinstance(state, dict) else None
+        response_state = {
+            'conv_id': conv_id or str(uuid.uuid4()),
+            'entry_source': entry_source,
+            'mode': 'llm',
+            'phase': 'fallback',
+            'history': [],
+            'collected': {},
+            'turn_count': 0,
+            'source_news_id': source_news_id,
+        }
 
     return {
-        'conversation_state': wizard_state,
-        'message': 'AI 분석에 문제가 생겼어요.\n단계별로 진행할게요.',
+        'conversation_state': response_state,
+        'message': 'AI 분석에 문제가 생겼어요.\n단계별로 진행하거나, 다시 시도할 수 있어요.',
         'buttons': [
             {'id': 'wizard', 'label': '단계별로 진행'},
             {'id': 'retry', 'label': '다시 시도'},

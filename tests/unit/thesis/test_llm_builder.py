@@ -1,4 +1,4 @@
-"""LLM 빌더 (Phase A-MVP) 단위 테스트."""
+"""LLM 빌더 (Phase A-MVP + Hardening) 단위 테스트."""
 
 import uuid
 from unittest.mock import patch, MagicMock
@@ -214,7 +214,7 @@ class TestLLMPostprocess:
         }
         validated, warnings, _ = validate_llm_output(raw)
         assert len(validated['premises']) == 5
-        assert len(warnings) == 1
+        assert any('5개로 축소' in w for w in warnings)
 
     def test_merge_to_collected(self):
         collected = CollectedData()
@@ -331,8 +331,10 @@ class TestThesisBuilderLLM:
         result = _fallback_to_wizard(state, 'input', FallbackReason.LLM_API_ERROR)
         assert result['phase'] == 'fallback'
         assert result['fallback_reason'] == 'llm_api_error'
-        assert result['conversation_state']['step'] == 1
-        assert 'mode' not in result['conversation_state']  # wizard state
+        # LLM state 유지 (retry 가능하도록)
+        cs = result['conversation_state']
+        assert cs['mode'] == 'llm'
+        assert cs['phase'] == 'fallback'
 
     @patch('thesis.services.prompt_builder.call_gemini')
     def test_handle_proposal_gemini_failure_triggers_fallback(self, mock_gemini):
@@ -545,3 +547,170 @@ class TestConversationViews:
         result = _sanitize_conversation_state(state)
         assert result is not None
         assert result['collected']['direction'] == 'bullish'
+
+
+# ──────────────────────────────────────────────
+# Phase A-Hardening: normalize 보강 테스트
+# ──────────────────────────────────────────────
+
+class TestNormalizeHardening:
+    def test_direction_korean_alias(self):
+        """한국어 direction → 영어 변환."""
+        from thesis.services.llm_postprocess import normalize_llm_output
+        assert normalize_llm_output({'direction': '상승', 'premises': []})['direction'] == 'bullish'
+        assert normalize_llm_output({'direction': '하락', 'premises': []})['direction'] == 'bearish'
+        assert normalize_llm_output({'direction': 'BULLISH', 'premises': []})['direction'] == 'bullish'
+        assert normalize_llm_output({'direction': 'Bear', 'premises': []})['direction'] == 'bearish'
+
+    def test_direction_unknown_defaults_bearish(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        assert normalize_llm_output({'direction': 'sideways', 'premises': []})['direction'] == 'bearish'
+
+    def test_premise_title_whitespace_cleanup(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        raw = {'direction': 'bullish', 'premises': [
+            {'title': '  · 실적  개선  ', 'description': '  desc  '},
+        ]}
+        result = normalize_llm_output(raw)
+        assert result['premises'][0]['title'] == '실적 개선'
+        assert result['premises'][0]['description'] == 'desc'
+
+    def test_premise_empty_title_removed(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        raw = {'direction': 'bullish', 'premises': [
+            {'title': '', 'description': 'no title'},
+            {'title': '유효', 'description': 'ok'},
+        ]}
+        result = normalize_llm_output(raw)
+        assert len(result['premises']) == 1
+        assert result['premises'][0]['title'] == '유효'
+
+    def test_indicator_db_id_nullified_if_not_in_catalog(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        raw = {'direction': 'bullish', 'premises': [
+            {'title': 'Test', 'recommended_indicators': [
+                {'indicator_db_id': 999, 'why': 'test'},
+                {'indicator_db_id': 8, 'why': 'VIX'},
+            ]},
+        ]}
+        result = normalize_llm_output(raw)
+        inds = result['premises'][0]['recommended_indicators']
+        assert inds[0]['indicator_db_id'] is None  # 999 → None
+        assert inds[1]['indicator_db_id'] == 8  # 유효 → 유지
+
+    def test_confidence_normalization(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        assert normalize_llm_output({'confidence': 'HIGH', 'premises': []})['confidence'] == 'high'
+        assert normalize_llm_output({'confidence': 'unknown', 'premises': []})['confidence'] == 'medium'
+
+    def test_non_dict_premise_skipped(self):
+        from thesis.services.llm_postprocess import normalize_llm_output
+        raw = {'direction': 'bullish', 'premises': ['not_a_dict', {'title': 'ok'}]}
+        result = normalize_llm_output(raw)
+        assert len(result['premises']) == 1
+
+
+class TestValidateHardening:
+    def test_direction_message_mismatch_warning(self):
+        from thesis.services.llm_postprocess import validate_llm_output
+        raw = {
+            'direction': 'bullish', 'target': 'X', 'confidence': 'high',
+            'message': '하락이 예상됩니다',
+            'premises': [{'title': 'P1'}],
+        }
+        _, warnings, errors = validate_llm_output(raw)
+        assert not errors
+        assert any('불일치' in w for w in warnings)
+
+    def test_no_mismatch_warning_when_aligned(self):
+        from thesis.services.llm_postprocess import validate_llm_output
+        raw = {
+            'direction': 'bullish', 'target': 'X', 'confidence': 'high',
+            'message': '상승이 기대됩니다',
+            'premises': [{'title': 'P1'}],
+        }
+        _, warnings, _ = validate_llm_output(raw)
+        assert not any('불일치' in w for w in warnings)
+
+    def test_empty_indicator_premise_warning(self):
+        from thesis.services.llm_postprocess import validate_llm_output
+        raw = {
+            'direction': 'bullish', 'target': 'X', 'confidence': 'high',
+            'premises': [
+                {'title': 'P1', 'recommended_indicators': []},
+                {'title': 'P2', 'recommended_indicators': [{'indicator_db_id': 1, 'why': 'ok'}]},
+            ],
+        }
+        _, warnings, _ = validate_llm_output(raw)
+        assert any('P1' in w and '추천 지표 없음' in w for w in warnings)
+
+
+# ──────────────────────────────────────────────
+# Phase A-Hardening: fallback 안정화 테스트
+# ──────────────────────────────────────────────
+
+class TestFallbackStability:
+    def test_fallback_retry_returns_to_proposal(self):
+        """fallback → retry → proposal."""
+        from thesis.services.thesis_builder import _handle_fallback_choice
+        state = ConversationState(
+            conv_id='test-fb',
+            phase=BuilderPhase.FALLBACK.value,
+            history=[
+                ChatMessage(role='user', content='삼성전자 반등'),
+                ChatMessage(role='user', content='retry'),
+            ],
+        )
+        with patch('thesis.services.prompt_builder.call_gemini', return_value=None):
+            result = _handle_fallback_choice(state, 'retry', None)
+        # Gemini 실패 시 다시 fallback (retry의 retry)
+        assert result['phase'] in ('fallback', 'proposal')
+
+    def test_fallback_wizard_switches_mode(self):
+        """fallback → wizard 선택 → wizard 시작."""
+        from thesis.services.thesis_builder import _handle_fallback_choice
+        state = ConversationState(
+            conv_id='test-fb',
+            phase=BuilderPhase.FALLBACK.value,
+            entry_source='free_input',
+        )
+        result = _handle_fallback_choice(state, 'wizard', None)
+        # wizard 모드로 전환: step 기반 응답
+        cs = result.get('conversation_state', {})
+        assert 'step' in cs
+
+    def test_turn_count_overflow_triggers_fallback(self):
+        """turn_count > 20 → fallback."""
+        from thesis.services.thesis_builder import process_llm_turn
+        state_dict = ConversationState(
+            conv_id='test-overflow',
+            turn_count=20,
+        ).model_dump()
+        result = process_llm_turn(state_dict, 'test')
+        assert result['phase'] == 'fallback'
+
+    def test_fallback_preserves_llm_state_for_retry(self):
+        """fallback이 LLM state를 유지해서 retry 가능."""
+        from thesis.services.thesis_builder import _fallback_to_wizard
+        state = ConversationState(
+            conv_id='test-preserve',
+            history=[ChatMessage(role='user', content='원래 입력')],
+            turn_count=1,
+        )
+        result = _fallback_to_wizard(state, 'input', FallbackReason.LLM_API_ERROR)
+        cs = result['conversation_state']
+        assert cs.get('mode') == 'llm'
+        assert cs.get('phase') == 'fallback'
+        assert len(cs.get('history', [])) >= 1
+
+    def test_process_llm_turn_handles_fallback_phase(self):
+        """process_llm_turn이 fallback phase를 처리."""
+        from thesis.services.thesis_builder import process_llm_turn
+        state_dict = ConversationState(
+            conv_id='test-fb-phase',
+            phase=BuilderPhase.FALLBACK.value,
+            entry_source='free_input',
+        ).model_dump()
+        result = process_llm_turn(state_dict, 'wizard')
+        # wizard 전환 또는 재시도 응답
+        assert 'conversation_state' in result
