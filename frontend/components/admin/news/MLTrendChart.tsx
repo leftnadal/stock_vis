@@ -15,9 +15,9 @@ import { useMLTrend } from '@/hooks/useNewsPipeline';
 
 interface ChartDataPoint {
   date: string;
-  f1: number;
-  precision: number;
-  recall: number;
+  f1: number | null;
+  precision: number | null;
+  recall: number | null;
   model_version: string;
 }
 
@@ -34,7 +34,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
       <p className="text-gray-400 mb-1">{label}</p>
       {payload.map((item) => (
         <p key={item.name} style={{ color: item.color }}>
-          {item.name}: {item.value.toFixed(3)}
+          {item.name}: {item.value?.toFixed(3) ?? '--'}
         </p>
       ))}
     </div>

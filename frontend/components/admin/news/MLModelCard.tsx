@@ -108,15 +108,15 @@ export function MLModelCard({ enabled = true }: MLModelCardProps) {
       <p className="text-xs font-mono text-gray-400 mb-4 truncate">{model.model_version}</p>
 
       <div className="grid grid-cols-3 gap-3 mb-4">
-        <MetricItem label="F1 Score" value={model.f1_score.toFixed(3)} />
-        <MetricItem label="Precision" value={model.precision.toFixed(3)} />
-        <MetricItem label="Recall" value={model.recall.toFixed(3)} />
+        <MetricItem label="F1 Score" value={model.f1_score?.toFixed(3) ?? '--'} />
+        <MetricItem label="Precision" value={model.precision?.toFixed(3) ?? '--'} />
+        <MetricItem label="Recall" value={model.recall?.toFixed(3) ?? '--'} />
       </div>
 
       <div className="grid grid-cols-2 gap-3 border-t border-gray-700 pt-3">
         <MetricItem
           label="학습 샘플"
-          value={model.training_samples.toLocaleString()}
+          value={model.training_samples?.toLocaleString() ?? '--'}
         />
         <MetricItem label="알고리즘" value={model.algorithm} />
       </div>

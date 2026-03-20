@@ -116,11 +116,11 @@ export interface MLModelEntry {
   model_version: string;
   trained_at: string;
   algorithm: string;
-  f1_score: number;
-  precision: number;
-  recall: number;
-  accuracy: number;
-  training_samples: number;
+  f1_score: number | null;
+  precision: number | null;
+  recall: number | null;
+  accuracy: number | null;
+  training_samples: number | null;
   safety_gate_passed: boolean;
   deployment_status: 'deployed' | 'shadow' | 'rolled_back' | 'archived';
 }
