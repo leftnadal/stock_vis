@@ -32,7 +32,11 @@ function KeywordSkeleton() {
 export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordCardProps) {
   const { data, isLoading, error, refetch, isFetching } = useDailyKeywords(date);
 
-  // Format date for display
+  // Format date for display — 폴백 시 실제 키워드 날짜 표시
+  const isFallback = data?.is_fallback === true;
+  const keywordDate = isFallback && data?.date
+    ? format(new Date(data.date + 'T00:00:00'), 'M월 d일', { locale: ko })
+    : null;
   const displayDate = date
     ? format(new Date(date), 'yyyy년 M월 d일', { locale: ko })
     : format(new Date(), 'yyyy년 M월 d일', { locale: ko });
@@ -50,7 +54,7 @@ export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordC
               오늘의 키워드
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              {displayDate}
+              {isFallback ? `${keywordDate} 기준` : displayDate}
             </p>
           </div>
         </div>

@@ -208,10 +208,10 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 일일 뉴스 키워드 추출 (매일 오전 8시 - 뉴스 수집 후)
+    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:30 EST = KST 06:30)
     'extract-daily-news-keywords': {
         'task': 'news.tasks.extract_daily_news_keywords',
-        'schedule': crontab(hour=8, minute=0),  # 08:00 EST
+        'schedule': crontab(hour=16, minute=30),  # 16:30 EST (장 마감 30분 후)
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 

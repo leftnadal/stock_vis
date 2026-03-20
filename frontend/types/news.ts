@@ -131,6 +131,8 @@ export interface DailyNewsKeywordResponse {
   status: 'pending' | 'completed' | 'failed' | 'not_found';
   generation_time_ms?: number;
   message?: string;
+  is_fallback?: boolean;
+  requested_date?: string;
 }
 
 // Phase 3: Stock Recommendation Types (Legacy)

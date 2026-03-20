@@ -549,16 +549,36 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         keyword_obj = DailyNewsKeyword.objects.filter(date=target_date).first()
 
         if not keyword_obj:
-            # 키워드가 없으면 빈 응답 (pending 상태로)
+            # 오늘 데이터 없으면 가장 최근 completed 키워드로 폴백
+            keyword_obj = DailyNewsKeyword.objects.filter(
+                date__lt=target_date,
+                status='completed',
+            ).order_by('-date').first()
+
+            if not keyword_obj:
+                data = {
+                    'date': str(target_date),
+                    'keywords': [],
+                    'total_news_count': 0,
+                    'sources': {},
+                    'llm_model': None,
+                    'status': 'not_found',
+                    'message': 'Keywords not yet generated for this date'
+                }
+                return Response(data)
+
+            # 폴백 데이터 반환 — 실제 날짜 명시
             data = {
-                'date': str(target_date),
-                'keywords': [],
-                'total_news_count': 0,
-                'sources': {},
-                'llm_model': None,
-                'status': 'not_found',
-                'message': 'Keywords not yet generated for this date'
+                'date': str(keyword_obj.date),
+                'keywords': keyword_obj.keywords,
+                'total_news_count': keyword_obj.total_news_count,
+                'sources': keyword_obj.sources,
+                'llm_model': keyword_obj.llm_model,
+                'status': 'completed',
+                'is_fallback': True,
+                'requested_date': str(target_date),
             }
+            cache.set(f"news:daily_keywords:{target_date}", data, 1800)  # 30분 캐시
             return Response(data)
 
         # 응답 데이터 구성
