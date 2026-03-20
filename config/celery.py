@@ -343,6 +343,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 7200}  # 2시간 후 만료
     },
 
+    # 파이프라인 알림 체크 (30분마다, 7개 트리거 감지)
+    'check-pipeline-alerts': {
+        'task': 'news.tasks.check_pipeline_alerts',
+        'schedule': crontab(minute='*/30'),
+        'options': {'expires': 1500}  # 25분 후 만료 (다음 실행 전)
+    },
+
     # ============================================================
     # FMP 대량 뉴스 수집 태스크 (S&P 500 전체)
     # ============================================================
