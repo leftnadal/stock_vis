@@ -15,22 +15,22 @@ export default function NewsTab() {
 
   const overviewLoading = isLoading && subTab === 'overview';
 
-  if (overviewLoading) {
-    return (
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+  const renderOverview = () => {
+    if (overviewLoading) {
+      return (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-28 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
+            ))}
+          </div>
+          {[...Array(2)].map((_, i) => (
+            <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
           ))}
         </div>
-        {[...Array(2)].map((_, i) => (
-          <div key={i} className="h-48 bg-gray-100 dark:bg-gray-800 rounded-xl animate-pulse" />
-        ))}
-      </div>
-    );
-  }
+      );
+    }
 
-  const renderOverview = () => {
     if (error || !data) {
       return <div className="text-center py-12 text-red-500">데이터 로드 실패</div>;
     }

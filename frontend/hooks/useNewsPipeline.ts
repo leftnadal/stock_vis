@@ -13,6 +13,7 @@ export function usePipelineHealth(enabled = true) {
     queryKey: PIPELINE_KEYS.health,
     queryFn: () => newsPipelineService.getPipelineHealth(),
     staleTime: 60_000,
+    refetchInterval: 5 * 60_000,
     refetchOnWindowFocus: false,
     enabled,
   });

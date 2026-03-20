@@ -10,7 +10,7 @@ export interface PipelinePhase {
   expected_interval_hours: number;
   weekday_only: boolean;
   last_run: string | null;
-  hours_since_last_run: number;
+  hours_since_last_run: number | null;
   status: PhaseStatus;
   // Phase 1 추가 필드
   recent_errors?: number;

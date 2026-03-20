@@ -35,7 +35,8 @@ api.interceptors.response.use(
   (error) => {
     if (!error.response) {
       console.error('[NewsPipeline] Network error');
-    } else {
+    } else if (error.response.status !== 429) {
+      // 429(쿨다운)은 예상된 응답이므로 에러 로깅 제외
       console.error(`[NewsPipeline] Error ${error.response.status}:`, error.response.data);
     }
     return Promise.reject(error);

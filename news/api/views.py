@@ -33,6 +33,12 @@ KST = pytz.timezone('Asia/Seoul')
 logger = logging.getLogger(__name__)
 
 
+def _kst_today_start():
+    """KST 기준 오늘 자정을 UTC로 변환"""
+    now = timezone.now()
+    return now.astimezone(KST).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
+
+
 class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     """뉴스 API ViewSet"""
 
@@ -1117,7 +1123,10 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         Returns:
             {period_days, total_records, logs, aggregated: {by_provider, daily_summary}}
         """
-        days = min(int(request.query_params.get('days', 7)), 30)
+        try:
+            days = min(int(request.query_params.get('days', 7)), 30)
+        except (ValueError, TypeError):
+            days = 7
         provider_filter = request.query_params.get('provider')
         task_name_filter = request.query_params.get('task_name')
 
@@ -1159,7 +1168,8 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         for row in provider_agg:
             total_runs = row['total_runs'] or 0
             total_errors = row['total_errors'] or 0
-            success_rate = round(1.0 - (total_errors / total_runs), 3) if total_runs > 0 else 1.0
+            error_runs = qs.filter(provider=row['provider'], errors__gt=0).count()
+            success_rate = round(1.0 - (error_runs / total_runs), 3) if total_runs > 0 else 1.0
             by_provider[row['provider']] = {
                 'total_runs': total_runs,
                 'total_new': row['total_new'] or 0,
@@ -1300,7 +1310,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         phase2_config = PHASE_CONFIG[2]
         phase2_log = NewsCollectionLog.objects.filter(task_name='classify_news_batch').order_by('-executed_at').first()
         phase2_last_run = phase2_log.executed_at if phase2_log else None
-        today_start = now.astimezone(KST).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
+        today_start = _kst_today_start()
         classified_today = NewsArticle.objects.filter(
             importance_score__isnull=False,
             updated_at__gte=today_start,
@@ -1374,13 +1384,15 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         phase4_errors = phase4_window_logs['total_errors'] or 0
         phase4_error_rate = phase4_errors / phase4_runs if phase4_runs > 0 else 0
         neo4j_last_run = neo4j_log.executed_at if neo4j_log else None
+        phase4_neo4j_last_run = neo4j_last_run.isoformat() if neo4j_last_run else None
         phases.append({
             'phase': 4,
             'name': phase4_config['name'],
             'expected_interval_hours': phase4_config['expected_interval_hours'],
             'weekday_only': phase4_config['weekday_only'],
+            'last_run': phase4_neo4j_last_run,  # PipelineStatusBar 호환
             'last_label_run': phase4_last_run.isoformat() if phase4_last_run else None,
-            'last_neo4j_run': neo4j_last_run.isoformat() if neo4j_last_run else None,
+            'last_neo4j_run': phase4_neo4j_last_run,
             'hours_since_last_run': round((now - phase4_last_run).total_seconds() / 3600, 2) if phase4_last_run else None,
             'status': _determine_status(phase4_config, phase4_last_run, phase4_error_rate),
             'labeled_total': labeled_total,
@@ -1413,7 +1425,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         lgbm_model = MLModelHistory.objects.filter(
             algorithm='lightgbm'
         ).order_by('-trained_at').first()
-        phase6_last_run = lgbm_model.trained_at if lgbm_model else phase5_last_run
+        phase6_last_run = lgbm_model.trained_at if lgbm_model else None
         phases.append({
             'phase': 6,
             'name': phase6_config['name'],
@@ -1425,14 +1437,13 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             'lightgbm_ready': lgbm_model is not None,
         })
 
-        # ml_summary
-        labeled_data_count = NewsArticle.objects.filter(ml_label_important__isnull=False).count()
+        # ml_summary (labeled_total은 Phase 4 블록에서 이미 계산됨)
         ml_summary = {
             'deployed_version': deployed_model.model_version if deployed_model else None,
             'deployed_f1': deployed_model.f1_score if deployed_model else None,
             'deployment_status': deployed_model.deployment_status if deployed_model else None,
-            'labeled_data_count': labeled_data_count,
-            'ready_for_training': labeled_data_count >= 200,
+            'labeled_data_count': labeled_total,
+            'ready_for_training': labeled_total >= 200,
         }
 
         # llm_summary
@@ -1474,7 +1485,10 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         Returns:
             {weeks, history, latest_feature_importance, trend_summary}
         """
-        weeks = min(int(request.query_params.get('weeks', 12)), 52)
+        try:
+            weeks = min(int(request.query_params.get('weeks', 12)), 52)
+        except (ValueError, TypeError):
+            weeks = 12
 
         cache_key = f"news:ml_trend:{weeks}"
         cached_data = cache.get(cache_key)
@@ -1555,7 +1569,10 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             키워드 추출 비용만 반영됩니다.
             Phase 3 심층 분석 비용은 미포함 (Phase B에서 추가 예정).
         """
-        days = int(request.query_params.get('days', 30))
+        try:
+            days = int(request.query_params.get('days', 30))
+        except (ValueError, TypeError):
+            days = 30
 
         cache_key = f"news:llm_usage:{days}"
         cached_data = cache.get(cache_key)
@@ -1603,7 +1620,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
         # deep analysis 통계 (건수만, 토큰 미추적)
         now = timezone.now()
-        today_start_kst = now.astimezone(KST).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
+        today_start_kst = _kst_today_start()
         total_analyzed = NewsArticle.objects.filter(llm_analyzed=True).count()
         today_analyzed = NewsArticle.objects.filter(
             llm_analyzed=True,

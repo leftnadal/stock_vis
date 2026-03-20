@@ -115,6 +115,8 @@ def collect_daily_news(self, symbols=None, days=1):
         dict: {'symbols_processed': N, 'total_saved': N, 'total_updated': N, 'errors': N}
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _symbols_tried = 0
     try:
         from news.services.aggregator import NewsAggregatorService
 
@@ -164,14 +166,17 @@ def collect_daily_news(self, symbols=None, days=1):
             'errors': errors,
         }
         logger.info(f"collect_daily_news completed: {result}")
-        _log_collection('collect_daily_news', 'finnhub_marketaux', len(symbols),
-                        {'saved': total_saved, 'skipped': total_updated, 'errors': errors},
-                        duration=time.time() - _start)
+        _result = {'saved': total_saved, 'skipped': total_updated, 'errors': errors}
+        _symbols_tried = len(symbols)
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         logger.exception(f"collect_daily_news failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('collect_daily_news', 'finnhub_marketaux', _symbols_tried,
+                        _result, duration=time.time() - _start)
 
 
 @shared_task(
@@ -194,6 +199,7 @@ def collect_market_news(self, category='general'):
         dict: 수집 결과
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
     try:
         from news.services.aggregator import NewsAggregatorService
 
@@ -203,14 +209,16 @@ def collect_market_news(self, category='general'):
             use_marketaux=True,  # Basic plan (2,500/day)
         )
         logger.info(f"collect_market_news completed: {result}")
-        _log_collection('collect_market_news', 'finnhub_marketaux', 0,
-                        {'saved': result.get('saved', 0), 'skipped': result.get('updated', 0), 'errors': result.get('errors', 0)},
-                        duration=time.time() - _start)
+        _result = {'saved': result.get('saved', 0), 'skipped': result.get('updated', 0), 'errors': result.get('errors', 0)}
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         logger.exception(f"collect_market_news failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('collect_market_news', 'finnhub_marketaux', 0,
+                        _result, duration=time.time() - _start)
 
 
 # ============================================================
@@ -335,6 +343,8 @@ def collect_category_news(self, category_id=None, priority_filter=None):
         dict: {categories_processed, total_symbols, total_saved, total_updated, errors, per_category}
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _symbols_tried = 0
     try:
         from news.models import NewsCollectionCategory
         from news.services.aggregator import NewsAggregatorService
@@ -423,12 +433,12 @@ def collect_category_news(self, category_id=None, priority_filter=None):
             'per_category': per_category,
         }
         logger.info(f"collect_category_news completed: {result}")
-        _log_collection('collect_category_news', 'finnhub_marketaux', len(unique_symbols),
-                        {'saved': total_saved, 'skipped': total_updated, 'errors': errors},
-                        duration=time.time() - _start)
+        _result = {'saved': total_saved, 'skipped': total_updated, 'errors': errors}
+        _symbols_tried = len(unique_symbols)
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         # 에러 시 카테고리에 기록
         if category_id:
             try:
@@ -440,6 +450,9 @@ def collect_category_news(self, category_id=None, priority_filter=None):
                 pass
         logger.exception(f"collect_category_news failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('collect_category_news', 'finnhub_marketaux', _symbols_tried,
+                        _result, duration=time.time() - _start)
 
 
 # ============================================================
@@ -468,6 +481,7 @@ def classify_news_batch(self, article_ids=None, hours=4):
         dict: {classified: int, skipped: int, errors: int}
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
     try:
         from news.services.news_classifier import NewsClassifier
 
@@ -475,14 +489,16 @@ def classify_news_batch(self, article_ids=None, hours=4):
         result = classifier.classify_batch(article_ids=article_ids, hours=hours)
 
         logger.info(f"classify_news_batch completed: {result}")
-        _log_collection('classify_news_batch', 'internal', 0,
-                        {'saved': result.get('classified', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)},
-                        duration=time.time() - _start)
+        _result = {'saved': result.get('classified', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         logger.exception(f"classify_news_batch failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('classify_news_batch', 'internal', 0,
+                        _result, duration=time.time() - _start)
 
 
 @shared_task(
@@ -508,6 +524,7 @@ def analyze_news_deep(self, max_articles=50):
         dict: {analyzed: int, errors: int, skipped: int}
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
     try:
         from news.services.news_deep_analyzer import NewsDeepAnalyzer
 
@@ -515,14 +532,16 @@ def analyze_news_deep(self, max_articles=50):
         result = analyzer.analyze_batch(max_articles=max_articles)
 
         logger.info(f"analyze_news_deep completed: {result}")
-        _log_collection('analyze_news_deep', 'gemini', 0,
-                        {'saved': result.get('analyzed', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)},
-                        duration=time.time() - _start)
+        _result = {'saved': result.get('analyzed', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         logger.exception(f"analyze_news_deep failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('analyze_news_deep', 'gemini', 0,
+                        _result, duration=time.time() - _start)
 
 
 @shared_task(
@@ -580,27 +599,27 @@ def sync_news_to_neo4j(self, max_articles=100):
         dict: {synced: int, skipped: int, errors: int, total_nodes: int, total_rels: int}
     """
     _start = time.time()
+    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
     try:
         from news.services.news_neo4j_sync import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         if not sync_service.is_available():
             logger.warning("sync_news_to_neo4j: Neo4j not available, skipping")
-            _log_collection('sync_news_to_neo4j', 'neo4j', 0,
-                            {'saved': 0, 'skipped': 0, 'errors': 0},
-                            duration=time.time() - _start)
             return {'synced': 0, 'skipped': 0, 'errors': 0, 'neo4j_unavailable': True}
 
         result = sync_service.sync_batch(max_articles=max_articles)
         logger.info(f"sync_news_to_neo4j completed: {result}")
-        _log_collection('sync_news_to_neo4j', 'neo4j', 0,
-                        {'saved': result.get('synced', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)},
-                        duration=time.time() - _start)
+        _result = {'saved': result.get('synced', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
         return result
 
     except Exception as exc:
+        _result['errors'] = _result.get('errors', 0) + 1
         logger.exception(f"sync_news_to_neo4j failed: {exc}")
         raise self.retry(exc=exc)
+    finally:
+        _log_collection('sync_news_to_neo4j', 'neo4j', 0,
+                        _result, duration=time.time() - _start)
 
 
 @shared_task(
