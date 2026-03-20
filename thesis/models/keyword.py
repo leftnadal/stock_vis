@@ -25,6 +25,16 @@ class KeywordCache(models.Model):
             ('theme', 'Theme'),
         ],
     )
+    strength = models.CharField(
+        max_length=10,
+        default='medium',
+        choices=[
+            ('high', 'High'),
+            ('medium', 'Medium'),
+            ('low', 'Low'),
+        ],
+        help_text="키워드 강도: high=중요 단서, medium=일반, low=약한 힌트",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

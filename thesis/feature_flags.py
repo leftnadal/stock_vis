@@ -1,4 +1,4 @@
-"""Feature Flags: LLM 빌더 기능 플래그 (Phase A-MVP)"""
+"""Feature Flags: LLM 빌더 기능 플래그 (Phase A~C)"""
 
 FEATURE_FLAGS = {
     'LLM_BUILDER_ENABLED': True,

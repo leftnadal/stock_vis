@@ -21,9 +21,10 @@ SOURCE_TTL = {
 @dataclass
 class ContextKeyword:
     """빌더 프롬프트에 주입될 힌트 키워드."""
-    text: str           # 8~30자 명사구
-    source: str         # "chain" | "eod" | "news"
-    role: str = 'theme'  # "support" | "risk" | "signal" | "theme"
+    text: str               # 8~30자 명사구
+    source: str             # "chain" | "eod" | "news"
+    role: str = 'theme'     # "support" | "risk" | "signal" | "theme"
+    strength: str = 'medium'  # "high" | "medium" | "low"
 
 
 def save_keywords(target: str, source: str, keywords: list[ContextKeyword]):
@@ -43,6 +44,7 @@ def save_keywords(target: str, source: str, keywords: list[ContextKeyword]):
             source=source,
             text=kw.text[:200],
             role=kw.role,
+            strength=kw.strength,
         )
         for kw in keywords
     ], ignore_conflicts=True)
@@ -71,6 +73,6 @@ def collect_from_cache(target: str, source: str) -> list[ContextKeyword]:
         })
 
     return [
-        ContextKeyword(text=kw.text, source=kw.source, role=kw.role)
+        ContextKeyword(text=kw.text, source=kw.source, role=kw.role, strength=kw.strength)
         for kw in cached
     ]

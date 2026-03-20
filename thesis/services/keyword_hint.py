@@ -84,6 +84,8 @@ def build_keyword_hint_block(keywords: list[ContextKeyword]) -> str:
         "",
     ]
 
+    STRENGTH_PREFIX = {'high': '★ ', 'low': '(약) ', 'medium': ''}
+
     for role in ROLE_ORDER:
         kws = by_role.get(role, [])
         if not kws:
@@ -91,7 +93,8 @@ def build_keyword_hint_block(keywords: list[ContextKeyword]) -> str:
         header = ROLE_HEADERS.get(role, f'[{role}]')
         lines.append(header)
         for kw in kws:
-            lines.append(f"  - {kw.text}")
+            prefix = STRENGTH_PREFIX.get(kw.strength, '')
+            lines.append(f"  - {prefix}{kw.text}")
         lines.append("")
 
     return "\n".join(lines)

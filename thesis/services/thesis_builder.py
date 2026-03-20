@@ -20,6 +20,14 @@ from thesis.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
 
+# C-7: Guided Suggestion — low confidence 연속 시 제안할 인기 템플릿
+POPULAR_TEMPLATES = [
+    'AI 반도체 수요 증가로 관련주 상승',
+    '금리 인하 기대감으로 부동산/REITs 반등',
+    '원화 약세 지속으로 수출주 수혜',
+    '고금리 장기화로 은행주 수혜',
+]
+
 # 방향 선택지
 DIRECTION_CHOICES = [
     {'id': 'bullish', 'label': '계속 오른다'},
@@ -812,8 +820,13 @@ def process_llm_turn(raw_state, user_input, user=None):
         logger.exception(f"State validation failed: {e}")
         return _fallback_to_wizard(raw_state, user_input, FallbackReason.STATE_ERROR)
 
-    # history에 사용자 메시지 추가
+    # guided suggestion 버튼 클릭 → 해당 텍스트로 proposal
     text = user_input if isinstance(user_input, str) else str(user_input)
+    if text == '__guided__':
+        # label이 전송됨 (프론트에서 button.label을 user_input으로 전송)
+        text = user_input
+
+    # history에 사용자 메시지 추가
     state.history.append(ChatMessage(role='user', content=text))
     state.turn_count += 1
 
@@ -907,7 +920,15 @@ def _handle_proposal(state, user_input):
     if confidence == 'low':
         state.phase = BuilderPhase.PROPOSAL.value
 
-        if state.turn_count >= 3:
+        # C-7: Guided Suggestion — low 2회 연속 시 인기 템플릿 제안
+        guided_buttons = []
+        if state.turn_count >= 2 and flags.get('GUIDED_SUGGESTION'):
+            message += '\n\n이런 가설은 어떨까요?'
+            guided_buttons = [
+                {'id': '__guided__', 'label': t}
+                for t in POPULAR_TEMPLATES
+            ]
+        elif state.turn_count >= 3:
             message += '\n\n예: "삼성전자 2분기 반등", "금리 인하 수혜주", "비만치료제 테마"'
 
         log_event(EVENT_PROPOSAL_GENERATED, {
@@ -920,7 +941,7 @@ def _handle_proposal(state, user_input):
         return {
             'conversation_state': state.model_dump(),
             'message': message,
-            'buttons': [],
+            'buttons': guided_buttons,
             'input_type': 'text',
             'confidence': confidence,
             'phase': 'proposal',
