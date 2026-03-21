@@ -207,6 +207,7 @@ export interface LLMIndicatorRecommendation {
   signal_type: 'leading' | 'coincident' | 'lagging'
   auto_matched: boolean
   match_method: 'pk' | 'text'
+  indicator?: { id: number; [key: string]: unknown }
 }
 
 export interface ConversationResponse {

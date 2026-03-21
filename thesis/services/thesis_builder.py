@@ -911,6 +911,15 @@ def _handle_proposal(state, user_input):
     # 5. match indicators (PK → text 2단계)
     indicator_recommendations = match_indicators_for_llm(state.collected)
 
+    # 5.1 매칭된 indicator_db_id를 collected에 저장 (사용자가 수정 가능)
+    matched_ids = []
+    for rec in indicator_recommendations:
+        ind = rec.get('indicator', {})
+        db_id = ind.get('id') if isinstance(ind, dict) else None
+        if db_id:
+            matched_ids.append(db_id)
+    state.collected.selected_indicator_ids = matched_ids
+
     # 6. 응답 메시지
     confidence = validated.get('confidence', 'medium')
     message = validated.get('message', '')
@@ -1109,24 +1118,31 @@ def _create_thesis_from_llm(state, user):
         )
         created_premises.append(premise)
 
-    # 지표 생성 — PremiseData.recommended_indicators → INDICATOR_CATALOG 매핑
+    # 지표 생성 — selected_indicator_ids 우선, 없으면 premises에서 추출
     created_indicators = []
+    indicator_ids_to_create = collected.selected_indicator_ids
+    if not indicator_ids_to_create:
+        # fallback: premises의 recommended_indicators에서 추출
+        for p in collected.premises:
+            for rec in p.recommended_indicators:
+                if rec.indicator_db_id:
+                    indicator_ids_to_create.append(rec.indicator_db_id)
+
     seen_indicator_ids = set()
-    for p in collected.premises:
-        for rec in p.recommended_indicators:
-            if rec.indicator_db_id and rec.indicator_db_id not in seen_indicator_ids:
-                cat_ind = get_indicator_by_id(rec.indicator_db_id)
-                if cat_ind:
-                    ti = ThesisIndicator.objects.create(
-                        thesis=thesis,
-                        name=cat_ind['name'],
-                        indicator_type=cat_ind.get('category', 'custom'),
-                        data_source=cat_ind.get('data_source', 'manual'),
-                        data_params=cat_ind.get('data_params', {}),
-                        support_direction=cat_ind.get('support_direction', 'positive'),
-                    )
-                    created_indicators.append(ti)
-                    seen_indicator_ids.add(rec.indicator_db_id)
+    for db_id in indicator_ids_to_create:
+        if db_id not in seen_indicator_ids:
+            cat_ind = get_indicator_by_id(db_id)
+            if cat_ind:
+                ti = ThesisIndicator.objects.create(
+                    thesis=thesis,
+                    name=cat_ind['name'],
+                    indicator_type=cat_ind.get('category', 'custom'),
+                    data_source=cat_ind.get('data_source', 'manual'),
+                    data_params=cat_ind.get('data_params', {}),
+                    support_direction=cat_ind.get('support_direction', 'positive'),
+                )
+                created_indicators.append(ti)
+                seen_indicator_ids.add(db_id)
 
     # HypothesisEvent
     try:

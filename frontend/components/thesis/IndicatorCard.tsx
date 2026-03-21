@@ -1,5 +1,6 @@
 'use client'
 
+import { X } from 'lucide-react'
 import type { LLMIndicatorRecommendation } from '@/lib/thesis/types'
 
 const SIGNAL_TYPE_LABELS: Record<string, { text: string; className: string }> = {
@@ -10,13 +11,14 @@ const SIGNAL_TYPE_LABELS: Record<string, { text: string; className: string }> = 
 
 interface IndicatorCardProps {
   recommendation: LLMIndicatorRecommendation
+  onRemove?: () => void
 }
 
-export function IndicatorCard({ recommendation }: IndicatorCardProps) {
+export function IndicatorCard({ recommendation, onRemove }: IndicatorCardProps) {
   const signalStyle = SIGNAL_TYPE_LABELS[recommendation.signal_type] ?? SIGNAL_TYPE_LABELS.coincident
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl">
+    <div className="flex items-start gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl group">
       {/* 매칭 상태 */}
       <span className="flex-shrink-0 mt-0.5 text-sm">
         {recommendation.auto_matched ? '\u2705' : '\u26A0\uFE0F'}
@@ -45,6 +47,18 @@ export function IndicatorCard({ recommendation }: IndicatorCardProps) {
           </p>
         )}
       </div>
+
+      {/* 삭제 버튼 */}
+      {onRemove && (
+        <button
+          onClick={onRemove}
+          className="flex-shrink-0 p-1 text-gray-600 hover:text-gray-300
+                     opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="지표 제거"
+        >
+          <X size={14} />
+        </button>
+      )}
     </div>
   )
 }

@@ -14,6 +14,7 @@ import {
 import { ENTRY_SOURCES, type EntrySource, type ConversationButton } from '@/lib/thesis/types'
 import { PresetSelector } from '@/components/thesis/PresetSelector'
 import { IndicatorCard } from '@/components/thesis/IndicatorCard'
+import { AddIndicatorSheet } from '@/components/thesis/AddIndicatorSheet'
 import {
   type BuilderState, INITIAL_BUILDER_STATE, applyResponse, selectionToLabel,
   generateMessageId, saveConvId, clearConvId,
@@ -65,6 +66,7 @@ function ThesisBuilder() {
   } | null>(null)
   const [showSlowHint, setShowSlowHint] = useState(false)
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showAddIndicator, setShowAddIndicator] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -223,6 +225,53 @@ function ThesisBuilder() {
     }
   }
 
+  // ── 지표 제거 ──
+  function handleRemoveIndicator(index: number) {
+    setState(s => {
+      const updated = [...s.indicatorRecommendations]
+      updated.splice(index, 1)
+      // conversation_state의 selected_indicator_ids도 업데이트
+      const cs = s.conversationState
+      if (cs?.mode === 'llm' && cs.collected) {
+        const ids = updated
+          .map(r => r.indicator?.id)
+          .filter((id): id is number => id != null)
+        ;(cs.collected as Record<string, unknown>).selected_indicator_ids = ids
+      }
+      return { ...s, indicatorRecommendations: updated }
+    })
+  }
+
+  // ── 지표 추가/토글 ──
+  function handleToggleIndicator(id: number, name: string) {
+    setState(s => {
+      const existing = s.indicatorRecommendations.find(r => r.indicator?.id === id)
+      let updated
+      if (existing) {
+        updated = s.indicatorRecommendations.filter(r => r.indicator?.id !== id)
+      } else {
+        updated = [...s.indicatorRecommendations, {
+          premise_title: '',
+          indicator_name: name,
+          why: '사용자 추가',
+          signal_type: 'coincident' as const,
+          auto_matched: false,
+          match_method: 'text' as const,
+          indicator: { id },
+        }]
+      }
+      // conversation_state 업데이트
+      const cs = s.conversationState
+      if (cs?.mode === 'llm' && cs.collected) {
+        const ids = updated
+          .map(r => r.indicator?.id)
+          .filter((id): id is number => id != null)
+        ;(cs.collected as Record<string, unknown>).selected_indicator_ids = ids
+      }
+      return { ...s, indicatorRecommendations: updated }
+    })
+  }
+
   // ── 프리셋 선택 (LLM 모드) ──
   function handlePresetSelect(presetId: string) {
     sendResponse(presetId, presetId)
@@ -321,15 +370,27 @@ function ThesisBuilder() {
           </div>
         )}
 
-        {/* LLM 모드: 지표 추천 카드 */}
+        {/* LLM 모드: 지표 추천 카드 (수정 가능) */}
         {state.indicatorRecommendations.length > 0 && state.phase === 'preset' && (
           <div className="mb-3 space-y-2">
             <p className="text-xs text-gray-500 px-1">
               AI 추천 지표 ({state.indicatorRecommendations.length}개)
             </p>
             {state.indicatorRecommendations.map((rec, i) => (
-              <IndicatorCard key={i} recommendation={rec} />
+              <IndicatorCard
+                key={`${rec.indicator_name}-${i}`}
+                recommendation={rec}
+                onRemove={() => handleRemoveIndicator(i)}
+              />
             ))}
+            <button
+              onClick={() => setShowAddIndicator(true)}
+              className="w-full py-2.5 border border-dashed border-gray-700 text-gray-400
+                         text-sm rounded-xl hover:border-gray-500 hover:text-gray-300
+                         transition-colors"
+            >
+              + 지표 추가
+            </button>
           </div>
         )}
 
@@ -453,6 +514,17 @@ function ThesisBuilder() {
           이해했어
         </button>
       </BottomSheet>
+
+      {/* 지표 추가 바텀시트 */}
+      <AddIndicatorSheet
+        isOpen={showAddIndicator}
+        onClose={() => setShowAddIndicator(false)}
+        selectedIds={state.indicatorRecommendations
+          .map(r => r.indicator?.id)
+          .filter((id): id is number => id != null)
+        }
+        onToggle={handleToggleIndicator}
+      />
     </div>
   )
 }

@@ -54,6 +54,7 @@ class CollectedData(BaseModel):
     magnitude: Optional[str] = None
     sensitivity: Optional[str] = None
     title: Optional[str] = None
+    selected_indicator_ids: list[int] = Field(default_factory=list)
 
 
 class ConversationState(BaseModel):
