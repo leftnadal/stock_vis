@@ -26,6 +26,7 @@ import { MultiSelectFooter } from '@/components/thesis/builder/MultiSelectFooter
 import { TextInput } from '@/components/thesis/builder/TextInput'
 import { BottomSheet } from '@/components/thesis/common/BottomSheet'
 import { ProgressBar } from '@/components/thesis/builder/ProgressBar'
+import { NewsSelector } from '@/components/thesis/builder/NewsSelector'
 
 function toEntrySource(value: string | null): EntrySource {
   if (value && (ENTRY_SOURCES as readonly string[]).includes(value)) return value as EntrySource
@@ -67,15 +68,30 @@ function ThesisBuilder() {
   const [showSlowHint, setShowSlowHint] = useState(false)
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showAddIndicator, setShowAddIndicator] = useState(false)
+  const [showNewsSelector, setShowNewsSelector] = useState(entry === 'news')
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
   // ── 대화 시작 ──
   useEffect(() => {
+    // news 진입 시 NewsSelector를 먼저 표시
+    if (entry === 'news') return
     startConversation(entry)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function startConversation(entrySource: EntrySource) {
+  // ── 뉴스 선택 후 대화 시작 ──
+  function handleNewsSelect(newsId: string, newsTitle: string) {
+    setShowNewsSelector(false)
+    startConversation('news', newsId)
+  }
+
+  // ── 뉴스 선택 취소 → 내 생각으로 전환 ──
+  function handleNewsBack() {
+    setShowNewsSelector(false)
+    startConversation('free_input')
+  }
+
+  async function startConversation(entrySource: EntrySource, sourceNewsId?: string) {
     setState(s => ({ ...s, isLoading: true }))
 
     if (USE_MOCK) {
@@ -92,6 +108,7 @@ function ThesisBuilder() {
     try {
       const response = await thesisApi.startConversation({
         entry_source: entrySource,
+        ...(sourceNewsId ? { source_news_id: sourceNewsId } : {}),
       })
       saveConvId(response.conversation_state.conv_id)
       setState(s => applyResponse(s, response))
@@ -335,6 +352,15 @@ function ThesisBuilder() {
   ) ? lastMessage.buttons ?? [] : []
   const activeMode = lastMessage?.selectionMode ?? 'single'
   const showTextInput = (lastMessage?.inputType === 'text' || state.phase === 'proposal') && !state.isLoading && !state.isDone
+
+  // ── 뉴스 선택 화면 ──
+  if (showNewsSelector) {
+    return (
+      <div className="flex flex-col h-[calc(100dvh-env(safe-area-inset-top))] bg-gray-950">
+        <NewsSelector onSelect={handleNewsSelect} onBack={handleNewsBack} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-[calc(100dvh-env(safe-area-inset-top))]
