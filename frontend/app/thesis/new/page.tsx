@@ -68,27 +68,172 @@ function ThesisBuilder() {
   const [showSlowHint, setShowSlowHint] = useState(false)
   const slowTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [showAddIndicator, setShowAddIndicator] = useState(false)
-  const [showNewsSelector, setShowNewsSelector] = useState(entry === 'news')
+
+  // 대화 내 진입 선택 상태
+  type EntryPhase = 'entry_select' | 'news_select' | 'active'
+  const [entryPhase, setEntryPhase] = useState<EntryPhase>('entry_select')
+  const [newsItems, setNewsItems] = useState<Array<{id: string; title: string; source: string; sentiment_score: number | null}>>([])
+  const [newsLoading, setNewsLoading] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // ── 대화 시작 ──
+  // ── 대화 시작: 진입 선택 카드를 첫 메시지로 표시 ──
   useEffect(() => {
-    // news 진입 시 NewsSelector를 먼저 표시
-    if (entry === 'news') return
-    startConversation(entry)
+    // entry param이 있으면 바로 해당 모드로 시작
+    if (entry === 'news') {
+      handleEntrySelect('news')
+      return
+    }
+    if (entry !== 'free_input' || searchParams.get('entry')) {
+      // entry param이 명시적으로 free_input이면 바로 시작
+      if (searchParams.get('entry') === 'free_input') {
+        handleEntrySelect('free_input')
+        return
+      }
+    }
+    // 기본: 진입 선택 화면
+    setState(s => ({
+      ...s,
+      messages: [{
+        id: 'welcome-0',
+        role: 'ai' as const,
+        content: '어떤 투자 가설을 세워볼까요?',
+      }],
+      messageCounter: 1,
+    }))
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 뉴스 선택 후 대화 시작 ──
-  function handleNewsSelect(newsId: string, newsTitle: string) {
-    setShowNewsSelector(false)
+  // ── 진입 선택 핸들러 ──
+  function handleEntrySelect(type: 'free_input' | 'news' | 'popular') {
+    if (type === 'free_input') {
+      setEntryPhase('active')
+      setState(s => ({
+        ...s,
+        messages: [...s.messages.filter(m => m.id !== 'welcome-0'), {
+          id: 'welcome-0',
+          role: 'ai' as const,
+          content: '어떤 투자 가설을 세워볼까요?',
+        }, {
+          id: 'user-entry',
+          role: 'user' as const,
+          content: '내 생각으로 시작',
+        }],
+      }))
+      startConversation('free_input')
+    } else if (type === 'news') {
+      // 뉴스 목록을 대화 내에서 로드
+      setState(s => ({
+        ...s,
+        messages: [...s.messages.filter(m => !m.id.startsWith('user-entry')), {
+          id: 'user-entry',
+          role: 'user' as const,
+          content: '오늘 이슈에서 시작',
+        }],
+      }))
+      setEntryPhase('news_select')
+      fetchNewsForChat()
+    } else if (type === 'popular') {
+      setEntryPhase('active')
+      setState(s => ({
+        ...s,
+        messages: [...s.messages, {
+          id: 'user-entry',
+          role: 'user' as const,
+          content: '인기 가설로 시작',
+        }],
+      }))
+      startConversation('free_input')
+    }
+  }
+
+  // ── 대화 내 뉴스 로드 ──
+  async function fetchNewsForChat() {
+    setNewsLoading(true)
+    try {
+      const { authAxios } = await import('@/lib/api/authAxios')
+      const res = await authAxios.get('/news/', {
+        params: { ordering: '-published_at', page_size: 8 },
+      })
+      const data = res.data?.results ?? res.data ?? []
+      const items = (Array.isArray(data) ? data : []).slice(0, 8)
+      setNewsItems(items)
+      setState(s => ({
+        ...s,
+        messages: [...s.messages, {
+          id: 'ai-news-list',
+          role: 'ai' as const,
+          content: items.length > 0
+            ? '최근 주요 이슈를 가져왔어요. 관심 있는 이슈를 선택하세요.'
+            : '최근 뉴스가 없어요. 직접 입력해보세요.',
+          inputType: items.length === 0 ? 'text' as const : undefined,
+        }],
+        messageCounter: s.messageCounter + 1,
+      }))
+    } catch {
+      setState(s => ({
+        ...s,
+        messages: [...s.messages, {
+          id: 'ai-news-error',
+          role: 'ai' as const,
+          content: '뉴스를 가져오지 못했어요. 직접 입력해주세요.',
+          inputType: 'text' as const,
+        }],
+      }))
+      setEntryPhase('active')
+      startConversation('free_input')
+    } finally {
+      setNewsLoading(false)
+    }
+  }
+
+  // ── 뉴스 카드 선택 ──
+  function handleNewsCardSelect(newsId: string, newsTitle: string) {
+    setEntryPhase('active')
+    setState(s => ({
+      ...s,
+      messages: [...s.messages, {
+        id: `user-news-${newsId}`,
+        role: 'user' as const,
+        content: newsTitle,
+      }],
+    }))
     startConversation('news', newsId)
   }
 
-  // ── 뉴스 선택 취소 → 내 생각으로 전환 ──
-  function handleNewsBack() {
-    setShowNewsSelector(false)
-    startConversation('free_input')
+  // ── 인기 가설 템플릿 선택 ──
+  function handlePopularSelect(template: string) {
+    setEntryPhase('active')
+    setState(s => ({
+      ...s,
+      messages: [...s.messages, {
+        id: 'user-popular',
+        role: 'user' as const,
+        content: template,
+      }],
+    }))
+    // startConversation 후 바로 해당 텍스트로 proposal
+    startConversationAndSend('free_input', template)
+  }
+
+  // ── startConversation + 즉시 sendResponse ──
+  async function startConversationAndSend(entrySource: EntrySource, text: string) {
+    setState(s => ({ ...s, isLoading: true }))
+    try {
+      const response = await thesisApi.startConversation({ entry_source: entrySource })
+      saveConvId(response.conversation_state.conv_id)
+      // 즉시 sendResponse
+      const respond = await thesisApi.sendMessage({
+        conversation_state: response.conversation_state,
+        user_input: text,
+      })
+      if (respond?.conversation_state) {
+        setState(s => applyResponse(s, respond))
+      } else {
+        showError()
+      }
+    } catch {
+      showError()
+    }
   }
 
   async function startConversation(entrySource: EntrySource, sourceNewsId?: string) {
@@ -353,14 +498,13 @@ function ThesisBuilder() {
   const activeMode = lastMessage?.selectionMode ?? 'single'
   const showTextInput = (lastMessage?.inputType === 'text' || state.phase === 'proposal') && !state.isLoading && !state.isDone
 
-  // ── 뉴스 선택 화면 ──
-  if (showNewsSelector) {
-    return (
-      <div className="flex flex-col h-[calc(100dvh-env(safe-area-inset-top))] bg-gray-950">
-        <NewsSelector onSelect={handleNewsSelect} onBack={handleNewsBack} />
-      </div>
-    )
-  }
+  // 인기 가설 템플릿
+  const POPULAR_TEMPLATES = [
+    'AI 반도체 수요 증가로 관련주 상승',
+    '금리 인하 기대감으로 부동산/REITs 반등',
+    '원화 약세 지속으로 수출주 수혜',
+    '고금리 장기화로 은행주 수혜',
+  ]
 
   return (
     <div className="flex flex-col h-[calc(100dvh-env(safe-area-inset-top))]
@@ -420,8 +564,75 @@ function ThesisBuilder() {
           </div>
         )}
 
+        {/* ── 대화 내 진입 선택 카드 ── */}
+        {entryPhase === 'entry_select' && !state.isLoading && (
+          <div className="space-y-2 mb-3">
+            {[
+              { type: 'free_input' as const, icon: '💬', label: '내 생각', desc: '자유롭게 입력해보세요' },
+              { type: 'news' as const, icon: '📰', label: '오늘 이슈', desc: '최근 시장 이슈에서 시작' },
+              { type: 'popular' as const, icon: '⭐', label: '인기 가설', desc: '검증된 템플릿으로 시작' },
+            ].map((opt) => (
+              <button
+                key={opt.type}
+                onClick={() => handleEntrySelect(opt.type)}
+                className="w-full flex items-center gap-3 p-3.5 bg-gray-900 border border-gray-700
+                           rounded-xl text-left hover:border-blue-500/50 active:scale-[0.98]
+                           transition-all"
+              >
+                <span className="text-xl flex-shrink-0">{opt.icon}</span>
+                <div className="min-w-0">
+                  <p className="text-sm text-white font-medium">{opt.label}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ── 대화 내 뉴스 카드 ── */}
+        {entryPhase === 'news_select' && !newsLoading && newsItems.length > 0 && (
+          <div className="space-y-1.5 mb-3">
+            {newsItems.map((article) => (
+              <button
+                key={article.id}
+                onClick={() => handleNewsCardSelect(article.id, article.title)}
+                className="w-full text-left p-3 bg-gray-900 border border-gray-800
+                           rounded-xl hover:border-gray-600 active:scale-[0.99]
+                           transition-all"
+              >
+                <p className="text-sm text-white line-clamp-2">{article.title}</p>
+                <span className="text-[10px] text-gray-500 mt-1">{article.source}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => handleEntrySelect('free_input')}
+              className="w-full py-2 text-gray-500 text-xs text-center"
+            >
+              직접 입력하기
+            </button>
+          </div>
+        )}
+
+        {/* ── 대화 내 인기 가설 템플릿 ── */}
+        {entryPhase === 'active' && state.messages.some(m => m.content === '인기 가설로 시작') && state.messages.length <= 3 && !state.isLoading && !state.conversationState && (
+          <div className="space-y-1.5 mb-3">
+            <p className="text-xs text-gray-500 px-1">인기 가설 템플릿</p>
+            {POPULAR_TEMPLATES.map((t, i) => (
+              <button
+                key={i}
+                onClick={() => handlePopularSelect(t)}
+                className="w-full text-left p-3 bg-gray-900 border border-gray-800
+                           rounded-xl hover:border-blue-500/50 active:scale-[0.99]
+                           transition-all text-sm text-gray-300"
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* AI 로딩 중 */}
-        {state.isLoading && (
+        {(state.isLoading || newsLoading) && (
           <div>
             <ChatBubble role="ai" isLoading />
             {showSlowHint && (
