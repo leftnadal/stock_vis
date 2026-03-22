@@ -72,7 +72,16 @@ function ThesisBuilder() {
   // 대화 내 진입 선택 상태
   type EntryPhase = 'entry_select' | 'news_select' | 'active'
   const [entryPhase, setEntryPhase] = useState<EntryPhase>('entry_select')
-  const [newsItems, setNewsItems] = useState<Array<{id: string; title: string; source: string; sentiment_score: number | null}>>([])
+  interface NewsIssue {
+    id: string
+    title: string
+    keyword: string
+    summary: string
+    source: string
+    url: string
+    sentiment_score: number | null
+  }
+  const [newsItems, setNewsItems] = useState<NewsIssue[]>([])
   const [newsLoading, setNewsLoading] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -146,26 +155,62 @@ function ThesisBuilder() {
     }
   }
 
+  // ── 뉴스 제목 → 핵심 키워드 추출 ──
+  function extractKeyword(title: string): string {
+    // 콜론/대시 앞부분 추출
+    for (const sep of [':', '–', '—', '-', '|', '…']) {
+      const idx = title.indexOf(sep)
+      if (idx > 4 && idx < 30) return title.slice(0, idx).trim()
+    }
+    // 쉼표나 마침표 앞부분
+    const comma = title.indexOf(',')
+    if (comma > 4 && comma < 30) return title.slice(0, comma).trim()
+    // 20자 이내에서 자연스러운 끊김
+    if (title.length <= 20) return title
+    const spaceIdx = title.lastIndexOf(' ', 20)
+    return spaceIdx > 8 ? title.slice(0, spaceIdx) : title.slice(0, 20)
+  }
+
   // ── 대화 내 뉴스 로드 ──
   async function fetchNewsForChat() {
     setNewsLoading(true)
     try {
       const { authAxios } = await import('@/lib/api/authAxios')
       const res = await authAxios.get('/news/', {
-        params: { ordering: '-published_at', page_size: 8 },
+        params: { ordering: '-published_at', page_size: 10 },
       })
       const data = res.data?.results ?? res.data ?? []
-      const items = (Array.isArray(data) ? data : []).slice(0, 8)
-      setNewsItems(items)
+      const raw = Array.isArray(data) ? data : []
+
+      // 키워드 추출 + 중복 제거
+      const seen = new Set<string>()
+      const issues: NewsIssue[] = []
+      for (const article of raw) {
+        const keyword = extractKeyword(article.title || '')
+        if (seen.has(keyword) || !keyword) continue
+        seen.add(keyword)
+        issues.push({
+          id: article.id,
+          title: article.title || '',
+          keyword,
+          summary: article.summary?.slice(0, 80) || article.title?.slice(0, 80) || '',
+          source: article.source || '',
+          url: article.url || '',
+          sentiment_score: article.sentiment_score,
+        })
+        if (issues.length >= 6) break
+      }
+
+      setNewsItems(issues)
       setState(s => ({
         ...s,
         messages: [...s.messages, {
           id: 'ai-news-list',
           role: 'ai' as const,
-          content: items.length > 0
-            ? '최근 주요 이슈를 가져왔어요. 관심 있는 이슈를 선택하세요.'
+          content: issues.length > 0
+            ? '최근 주요 이슈를 정리했어요. 관심 있는 이슈를 선택하면 가설을 설계해드릴게요.'
             : '최근 뉴스가 없어요. 직접 입력해보세요.',
-          inputType: items.length === 0 ? 'text' as const : undefined,
+          inputType: issues.length === 0 ? 'text' as const : undefined,
         }],
         messageCounter: s.messageCounter + 1,
       }))
@@ -589,24 +634,63 @@ function ThesisBuilder() {
           </div>
         )}
 
-        {/* ── 대화 내 뉴스 카드 ── */}
+        {/* ── 대화 내 이슈 카드 (키워드 + 요약 + 링크) ── */}
         {entryPhase === 'news_select' && !newsLoading && newsItems.length > 0 && (
-          <div className="space-y-1.5 mb-3">
-            {newsItems.map((article) => (
-              <button
-                key={article.id}
-                onClick={() => handleNewsCardSelect(article.id, article.title)}
-                className="w-full text-left p-3 bg-gray-900 border border-gray-800
-                           rounded-xl hover:border-gray-600 active:scale-[0.99]
-                           transition-all"
+          <div className="space-y-2 mb-3">
+            {newsItems.map((issue) => (
+              <div
+                key={issue.id}
+                className="p-3 bg-gray-900 border border-gray-800 rounded-xl
+                           hover:border-gray-600 transition-all"
               >
-                <p className="text-sm text-white line-clamp-2">{article.title}</p>
-                <span className="text-[10px] text-gray-500 mt-1">{article.source}</span>
-              </button>
+                <div className="flex items-start gap-2">
+                  {/* 감성 아이콘 */}
+                  <span className="flex-shrink-0 mt-0.5 text-sm">
+                    {issue.sentiment_score != null && issue.sentiment_score > 0.2 ? '📈'
+                      : issue.sentiment_score != null && issue.sentiment_score < -0.2 ? '📉'
+                      : '📰'}
+                  </span>
+
+                  <div className="min-w-0 flex-1">
+                    {/* 핵심 키워드 — 클릭 → 가설 빌더 */}
+                    <button
+                      onClick={() => handleNewsCardSelect(issue.id, issue.keyword)}
+                      className="text-sm text-white font-medium hover:text-blue-300
+                                 text-left transition-colors"
+                    >
+                      {issue.keyword}
+                    </button>
+
+                    {/* 한 줄 요약 */}
+                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+                      {issue.summary}
+                    </p>
+
+                    {/* 출처 + 링크 */}
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[10px] text-gray-500">{issue.source}</span>
+                      {issue.url && (
+                        <>
+                          <span className="text-[10px] text-gray-700">·</span>
+                          <a
+                            href={issue.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[10px] text-gray-500 hover:text-blue-400 transition-colors"
+                          >
+                            원문 보기 ↗
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
             ))}
             <button
               onClick={() => handleEntrySelect('free_input')}
-              className="w-full py-2 text-gray-500 text-xs text-center"
+              className="w-full py-2 text-gray-500 text-xs text-center hover:text-gray-300"
             >
               직접 입력하기
             </button>
