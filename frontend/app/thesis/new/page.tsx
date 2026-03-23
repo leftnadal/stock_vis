@@ -155,51 +155,21 @@ function ThesisBuilder() {
     }
   }
 
-  // ── 뉴스 제목 → 핵심 키워드 추출 ──
-  function extractKeyword(title: string): string {
-    // 콜론/대시 앞부분 추출
-    for (const sep of [':', '–', '—', '-', '|', '…']) {
-      const idx = title.indexOf(sep)
-      if (idx > 4 && idx < 30) return title.slice(0, idx).trim()
-    }
-    // 쉼표나 마침표 앞부분
-    const comma = title.indexOf(',')
-    if (comma > 4 && comma < 30) return title.slice(0, comma).trim()
-    // 20자 이내에서 자연스러운 끊김
-    if (title.length <= 20) return title
-    const spaceIdx = title.lastIndexOf(' ', 20)
-    return spaceIdx > 8 ? title.slice(0, spaceIdx) : title.slice(0, 20)
-  }
-
-  // ── 대화 내 뉴스 로드 ──
+  // ── 대화 내 뉴스 이슈 로드 (Gemini 한국어 변환) ──
   async function fetchNewsForChat() {
     setNewsLoading(true)
     try {
       const { authAxios } = await import('@/lib/api/authAxios')
-      const res = await authAxios.get('/news/', {
-        params: { ordering: '-published_at', page_size: 10 },
-      })
-      const data = res.data?.results ?? res.data ?? []
-      const raw = Array.isArray(data) ? data : []
-
-      // 키워드 추출 + 중복 제거
-      const seen = new Set<string>()
-      const issues: NewsIssue[] = []
-      for (const article of raw) {
-        const keyword = extractKeyword(article.title || '')
-        if (seen.has(keyword) || !keyword) continue
-        seen.add(keyword)
-        issues.push({
-          id: article.id,
-          title: article.title || '',
-          keyword,
-          summary: article.summary?.slice(0, 80) || article.title?.slice(0, 80) || '',
-          source: article.source || '',
-          url: article.url || '',
-          sentiment_score: article.sentiment_score,
-        })
-        if (issues.length >= 6) break
-      }
+      const res = await authAxios.get('/thesis/conversation/news-issues/')
+      const issues: NewsIssue[] = (res.data?.issues ?? []).map((item: Record<string, unknown>) => ({
+        id: item.id as string,
+        title: '',
+        keyword: item.keyword as string || '',
+        summary: item.summary as string || '',
+        source: item.source as string || 'news',
+        url: item.url as string || '',
+        sentiment_score: item.sentiment === 'positive' ? 0.5 : item.sentiment === 'negative' ? -0.5 : 0,
+      }))
 
       setNewsItems(issues)
       setState(s => ({
@@ -232,14 +202,14 @@ function ThesisBuilder() {
   }
 
   // ── 뉴스 카드 선택 ──
-  function handleNewsCardSelect(newsId: string, newsTitle: string) {
+  function handleNewsCardSelect(newsId: string, keyword: string) {
     setEntryPhase('active')
     setState(s => ({
       ...s,
       messages: [...s.messages, {
         id: `user-news-${newsId}`,
         role: 'user' as const,
-        content: newsTitle,
+        content: keyword,
       }],
     }))
     startConversation('news', newsId)

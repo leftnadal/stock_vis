@@ -6,6 +6,7 @@ from thesis.views import (
     ConversationStartView, ConversationRespondView,
     DashboardView, AlertListView, AlertReadView, IndicatorReadingsView,
 )
+from thesis.views.conversation_views import NewsIssuesView
 
 router = DefaultRouter()
 router.register('', ThesisViewSet, basename='thesis')
@@ -21,6 +22,7 @@ urlpatterns = [
     # Conversation
     path('conversation/start/', ConversationStartView.as_view(), name='conversation-start'),
     path('conversation/respond/', ConversationRespondView.as_view(), name='conversation-respond'),
+    path('conversation/news-issues/', NewsIssuesView.as_view(), name='news-issues'),
 
     # Monitoring
     path('<uuid:thesis_id>/dashboard/', DashboardView.as_view(), name='thesis-dashboard'),
