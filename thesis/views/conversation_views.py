@@ -228,21 +228,32 @@ class NewsIssuesView(APIView):
                 f'{i+1}. {t["title"][:80]}' for i, t in enumerate(titles[:8])
             )
 
-            prompt = f"""아래 영문 뉴스 제목들을 한국어 투자 이슈로 변환해줘.
+            prompt = f"""아래 영문 뉴스 제목들을 분석해서, 투자자가 가설을 세울 수 있는 "시장 이슈"로 정리해줘.
 
 {title_list}
 
-각 뉴스에 대해 다음 JSON 배열로 반환해:
+## 분류 기준
+- **거시(macro)**: 금리, 환율, 유가, 정책, 경기, 인플레이션 등 시장 전체에 영향을 주는 이슈
+- **미시(micro)**: 특정 기업/섹터의 실적, 사업 변화, 규제 등. 반드시 관련 기업명을 keyword에 포함할 것
+
+## 제외 대상
+- 단순 매수/매도 추천 기사 (예: "Top 10 Reasons To Buy", "Strong Buy")
+- 배당/소득 전략 기사 (가설보다는 포트폴리오 전략)
+- 실적 발표 단순 공지 (분석 없이 날짜만 언급)
+- 특정 펀드/ETF 운용 전략 리뷰
+
+## 출력 형식
+JSON 배열로 반환:
 [
-  {{"index": 1, "keyword": "핵심 키워드 (15자 이내)", "summary": "한 줄 요약 (40자 이내)", "sentiment": "positive" 또는 "negative" 또는 "neutral"}}
+  {{"index": 원본번호, "category": "macro" 또는 "micro", "keyword": "한국어 키워드 (15자 이내)", "summary": "이 이슈로 어떤 가설을 세울 수 있는지 한 줄 (40자 이내)", "sentiment": "positive" 또는 "negative" 또는 "neutral"}}
 ]
 
-규칙:
-- keyword는 투자자가 바로 이해할 수 있는 한국어 핵심 키워드
-- summary는 투자 관점에서 의미 있는 한 줄 요약
-- 같은 주제의 뉴스는 하나로 합쳐서
-- 투자와 무관한 뉴스는 제외
-- 최대 6개만
+## 예시
+- macro: keyword="유가 급등 리스크", summary="에너지 비용 상승이 기업 마진에 미칠 영향"
+- micro: keyword="테슬라 판매량 급감", summary="중국 시장 점유율 하락이 실적에 미칠 영향"
+
+제외 대상에 해당하는 기사가 많으면, 남은 기사에서 투자 가설로 발전 가능한 것만 골라줘.
+결과가 0개여도 괜찮아. 최대 6개.
 
 JSON만 반환해."""
 
@@ -275,6 +286,7 @@ JSON만 반환해."""
                     original = titles[idx]
                     result.append({
                         'id': original['id'],
+                        'category': item.get('category', 'macro'),
                         'keyword': item.get('keyword', '')[:20],
                         'summary': item.get('summary', '')[:60],
                         'sentiment': item.get('sentiment', 'neutral'),

@@ -77,6 +77,7 @@ function ThesisBuilder() {
     title: string
     keyword: string
     summary: string
+    category: 'macro' | 'micro'
     source: string
     url: string
     sentiment_score: number | null
@@ -166,6 +167,7 @@ function ThesisBuilder() {
         title: '',
         keyword: item.keyword as string || '',
         summary: item.summary as string || '',
+        category: (item.category as string) === 'micro' ? 'micro' as const : 'macro' as const,
         source: item.source as string || 'news',
         url: item.url as string || '',
         sentiment_score: item.sentiment === 'positive' ? 0.5 : item.sentiment === 'negative' ? -0.5 : 0,
@@ -606,58 +608,40 @@ function ThesisBuilder() {
 
         {/* ── 대화 내 이슈 카드 (키워드 + 요약 + 링크) ── */}
         {entryPhase === 'news_select' && !newsLoading && newsItems.length > 0 && (
-          <div className="space-y-2 mb-3">
-            {newsItems.map((issue) => (
-              <div
-                key={issue.id}
-                className="p-3 bg-gray-900 border border-gray-800 rounded-xl
-                           hover:border-gray-600 transition-all"
-              >
-                <div className="flex items-start gap-2">
-                  {/* 감성 아이콘 */}
-                  <span className="flex-shrink-0 mt-0.5 text-sm">
-                    {issue.sentiment_score != null && issue.sentiment_score > 0.2 ? '📈'
-                      : issue.sentiment_score != null && issue.sentiment_score < -0.2 ? '📉'
-                      : '📰'}
-                  </span>
-
-                  <div className="min-w-0 flex-1">
-                    {/* 핵심 키워드 — 클릭 → 가설 빌더 */}
-                    <button
-                      onClick={() => handleNewsCardSelect(issue.id, issue.keyword)}
-                      className="text-sm text-white font-medium hover:text-blue-300
-                                 text-left transition-colors"
-                    >
-                      {issue.keyword}
-                    </button>
-
-                    {/* 한 줄 요약 */}
-                    <p className="text-xs text-gray-400 mt-1 line-clamp-2">
-                      {issue.summary}
-                    </p>
-
-                    {/* 출처 + 링크 */}
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[10px] text-gray-500">{issue.source}</span>
-                      {issue.url && (
-                        <>
-                          <span className="text-[10px] text-gray-700">·</span>
-                          <a
-                            href={issue.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] text-gray-500 hover:text-blue-400 transition-colors"
-                          >
-                            원문 보기 ↗
-                          </a>
-                        </>
-                      )}
-                    </div>
-                  </div>
+          <div className="space-y-3 mb-3">
+            {/* 거시 이슈 */}
+            {newsItems.filter(i => i.category === 'macro').length > 0 && (
+              <div>
+                <p className="text-[10px] text-blue-400/70 font-medium px-1 mb-1.5 uppercase tracking-wider">거시 Macro</p>
+                <div className="space-y-1.5">
+                  {newsItems.filter(i => i.category === 'macro').map((issue) => (
+                    <IssueCard key={issue.id} issue={issue} onSelect={handleNewsCardSelect} />
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* 미시 이슈 */}
+            {newsItems.filter(i => i.category === 'micro').length > 0 && (
+              <div>
+                <p className="text-[10px] text-amber-400/70 font-medium px-1 mb-1.5 uppercase tracking-wider">미시 Micro</p>
+                <div className="space-y-1.5">
+                  {newsItems.filter(i => i.category === 'micro').map((issue) => (
+                    <IssueCard key={issue.id} issue={issue} onSelect={handleNewsCardSelect} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 분류 없는 경우 */}
+            {newsItems.filter(i => i.category !== 'macro' && i.category !== 'micro').length > 0 && (
+              <div className="space-y-1.5">
+                {newsItems.filter(i => i.category !== 'macro' && i.category !== 'micro').map((issue) => (
+                  <IssueCard key={issue.id} issue={issue} onSelect={handleNewsCardSelect} />
+                ))}
+              </div>
+            )}
+
             <button
               onClick={() => handleEntrySelect('free_input')}
               className="w-full py-2 text-gray-500 text-xs text-center hover:text-gray-300"
@@ -816,6 +800,43 @@ function ThesisBuilder() {
         }
         onToggle={handleToggleIndicator}
       />
+    </div>
+  )
+}
+
+// ── 이슈 카드 컴포넌트 ──
+function IssueCard({ issue, onSelect }: {
+  issue: { id: string; keyword: string; summary: string; sentiment_score: number | null; url: string }
+  onSelect: (id: string, keyword: string) => void
+}) {
+  const sentIcon = issue.sentiment_score != null && issue.sentiment_score > 0.2 ? '📈'
+    : issue.sentiment_score != null && issue.sentiment_score < -0.2 ? '📉' : '📰'
+
+  return (
+    <div className="p-3 bg-gray-900 border border-gray-800 rounded-xl hover:border-gray-600 transition-all">
+      <div className="flex items-start gap-2.5">
+        <span className="flex-shrink-0 mt-0.5 text-sm">{sentIcon}</span>
+        <div className="min-w-0 flex-1">
+          <button
+            onClick={() => onSelect(issue.id, issue.keyword)}
+            className="text-sm text-white font-medium hover:text-blue-300 text-left transition-colors"
+          >
+            {issue.keyword}
+          </button>
+          <p className="text-xs text-gray-400 mt-0.5 line-clamp-2">{issue.summary}</p>
+          {issue.url && (
+            <a
+              href={issue.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] text-gray-500 hover:text-blue-400 mt-1 inline-block"
+            >
+              원문 ↗
+            </a>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
