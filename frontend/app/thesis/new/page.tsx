@@ -404,31 +404,49 @@ function ThesisBuilder() {
     }
   }
 
-  // ── 지표 제거 ──
-  function handleRemoveIndicator(index: number) {
-    setState(s => {
-      const updated = [...s.indicatorRecommendations]
-      updated.splice(index, 1)
-      // conversation_state의 selected_indicator_ids도 업데이트
-      const cs = s.conversationState
-      if (cs?.mode === 'llm' && cs.collected) {
-        const ids = updated
-          .map(r => r.indicator?.id)
-          .filter((id): id is number => id != null)
-        ;(cs.collected as Record<string, unknown>).selected_indicator_ids = ids
+  // ── 지표 체크 토글 (체크 해제 = selected_indicator_ids에서 제외) ──
+  const [uncheckedIds, setUncheckedIds] = useState<Set<number>>(new Set())
+
+  function handleIndicatorCheck(indicatorId: number | undefined) {
+    if (indicatorId == null) return
+    setUncheckedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(indicatorId)) {
+        next.delete(indicatorId)
+      } else {
+        next.add(indicatorId)
       }
-      return { ...s, indicatorRecommendations: updated }
+      // conversation_state 업데이트
+      setState(s => {
+        const cs = s.conversationState
+        if (cs?.mode === 'llm' && cs.collected) {
+          const allIds = s.indicatorRecommendations
+            .map(r => r.indicator?.id)
+            .filter((id): id is number => id != null)
+          ;(cs.collected as Record<string, unknown>).selected_indicator_ids =
+            allIds.filter(id => !next.has(id))
+        }
+        return { ...s }
+      })
+      return next
     })
   }
 
-  // ── 지표 추가/토글 ──
+  // ── 지표 추가/토글 (AddIndicatorSheet에서 사용) ──
   function handleToggleIndicator(id: number, name: string) {
     setState(s => {
       const existing = s.indicatorRecommendations.find(r => r.indicator?.id === id)
       let updated
       if (existing) {
-        updated = s.indicatorRecommendations.filter(r => r.indicator?.id !== id)
+        // 이미 있으면 체크 해제만
+        setUncheckedIds(prev => {
+          const next = new Set(prev)
+          next.has(id) ? next.delete(id) : next.add(id)
+          return next
+        })
+        return s
       } else {
+        // 새로 추가
         updated = [...s.indicatorRecommendations, {
           premise_title: '',
           indicator_name: name,
@@ -438,14 +456,20 @@ function ThesisBuilder() {
           match_method: 'text' as const,
           indicator: { id },
         }]
+        // 새로 추가한 건 체크 상태로
+        setUncheckedIds(prev => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
       }
       // conversation_state 업데이트
       const cs = s.conversationState
       if (cs?.mode === 'llm' && cs.collected) {
-        const ids = updated
+        const allIds = updated
           .map(r => r.indicator?.id)
           .filter((id): id is number => id != null)
-        ;(cs.collected as Record<string, unknown>).selected_indicator_ids = ids
+        ;(cs.collected as Record<string, unknown>).selected_indicator_ids = allIds
       }
       return { ...s, indicatorRecommendations: updated }
     })
@@ -567,7 +591,8 @@ function ThesisBuilder() {
               <IndicatorCard
                 key={`${rec.indicator_name}-${i}`}
                 recommendation={rec}
-                onRemove={() => handleRemoveIndicator(i)}
+                checked={!uncheckedIds.has(rec.indicator?.id ?? -1)}
+                onToggle={() => handleIndicatorCheck(rec.indicator?.id)}
               />
             ))}
             <button
@@ -796,7 +821,7 @@ function ThesisBuilder() {
         onClose={() => setShowAddIndicator(false)}
         selectedIds={state.indicatorRecommendations
           .map(r => r.indicator?.id)
-          .filter((id): id is number => id != null)
+          .filter((id): id is number => id != null && !uncheckedIds.has(id))
         }
         onToggle={handleToggleIndicator}
       />

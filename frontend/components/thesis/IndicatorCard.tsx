@@ -1,6 +1,6 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { Check } from 'lucide-react'
 import type { LLMIndicatorRecommendation } from '@/lib/thesis/types'
 
 const SIGNAL_TYPE_LABELS: Record<string, { text: string; className: string }> = {
@@ -11,23 +11,36 @@ const SIGNAL_TYPE_LABELS: Record<string, { text: string; className: string }> = 
 
 interface IndicatorCardProps {
   recommendation: LLMIndicatorRecommendation
-  onRemove?: () => void
+  checked?: boolean
+  onToggle?: () => void
 }
 
-export function IndicatorCard({ recommendation, onRemove }: IndicatorCardProps) {
+export function IndicatorCard({ recommendation, checked = true, onToggle }: IndicatorCardProps) {
   const signalStyle = SIGNAL_TYPE_LABELS[recommendation.signal_type] ?? SIGNAL_TYPE_LABELS.coincident
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-900 border border-gray-800 rounded-xl group">
-      {/* 매칭 상태 */}
-      <span className="flex-shrink-0 mt-0.5 text-sm">
-        {recommendation.auto_matched ? '\u2705' : '\u26A0\uFE0F'}
-      </span>
+    <button
+      onClick={onToggle}
+      className={`w-full flex items-start gap-3 p-3 rounded-xl text-left transition-all
+                  ${checked
+                    ? 'bg-gray-900 border border-gray-700'
+                    : 'bg-gray-950 border border-gray-800 opacity-50'
+                  }
+                  ${onToggle ? 'hover:border-gray-600 active:scale-[0.99] cursor-pointer' : ''}`}
+    >
+      {/* 체크박스 */}
+      <div className={`flex-shrink-0 mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors
+                        ${checked
+                          ? 'bg-blue-600 border-blue-600'
+                          : 'bg-transparent border-gray-600'
+                        }`}>
+        {checked && <Check size={12} className="text-white" />}
+      </div>
 
       <div className="min-w-0 flex-1">
         {/* 지표명 + signal_type 뱃지 */}
         <div className="flex items-center gap-2">
-          <p className="text-sm text-white font-medium truncate">
+          <p className={`text-sm font-medium truncate ${checked ? 'text-white' : 'text-gray-500 line-through'}`}>
             {recommendation.indicator_name}
           </p>
           <span className={`text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${signalStyle.className}`}>
@@ -36,7 +49,7 @@ export function IndicatorCard({ recommendation, onRemove }: IndicatorCardProps) 
         </div>
 
         {/* why */}
-        <p className="text-xs text-gray-400 mt-1 line-clamp-2">
+        <p className={`text-xs mt-1 line-clamp-2 ${checked ? 'text-gray-400' : 'text-gray-600'}`}>
           {recommendation.why}
         </p>
 
@@ -47,18 +60,6 @@ export function IndicatorCard({ recommendation, onRemove }: IndicatorCardProps) 
           </p>
         )}
       </div>
-
-      {/* 삭제 버튼 */}
-      {onRemove && (
-        <button
-          onClick={onRemove}
-          className="flex-shrink-0 p-1 text-gray-600 hover:text-gray-300
-                     opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="지표 제거"
-        >
-          <X size={14} />
-        </button>
-      )}
-    </div>
+    </button>
   )
 }
