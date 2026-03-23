@@ -784,7 +784,7 @@ def start_llm_conversation(entry_source, source_news_id=None):
     state = ConversationState(
         conv_id=conv_id,
         entry_source=entry_source,
-        source_news_id=source_news_id,
+        source_news_id=str(source_news_id) if source_news_id else None,
     )
 
     log_event(EVENT_BUILDER_STARTED, {
