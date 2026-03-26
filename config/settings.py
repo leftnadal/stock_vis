@@ -175,6 +175,7 @@ INSTALLED_APPS = [
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
     'metrics',  # 공유 지표 메타데이터 + 배치 실행 이력
+    'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트

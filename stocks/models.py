@@ -660,6 +660,22 @@ class SP500Constituent(models.Model):
     cik = models.CharField(max_length=20, blank=True, default='')
     founded = models.CharField(max_length=20, blank=True, default='')
     is_active = models.BooleanField(default=True, db_index=True)
+    is_core_universe = models.BooleanField(
+        default=True, db_index=True,
+        help_text="핵심 커버리지 여부"
+    )
+    universe_source = models.CharField(
+        max_length=50, default='sp500',
+        choices=[
+            ('sp500', 'S&P 500 Index'),
+            ('manual', 'Manual Addition'),
+            ('screener', 'Screener Result'),
+        ]
+    )
+    industry = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="세부 산업 (FMP Profile industry)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
