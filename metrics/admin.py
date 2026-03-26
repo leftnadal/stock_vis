@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import MetricDefinition, BatchJobRun, CompanyMetricSnapshot, PeerListCache
+from .models import (
+    MetricDefinition, BatchJobRun, CompanyMetricSnapshot,
+    PeerListCache, IndustryMetricBenchmark, PeerMetricBenchmark,
+)
 
 
 @admin.register(MetricDefinition)
@@ -26,3 +29,17 @@ class CompanyMetricSnapshotAdmin(admin.ModelAdmin):
 class PeerListCacheAdmin(admin.ModelAdmin):
     list_display = ['symbol', 'peer_count', 'use_industry_fallback', 'updated_at']
     list_filter = ['use_industry_fallback']
+
+
+@admin.register(IndustryMetricBenchmark)
+class IndustryMetricBenchmarkAdmin(admin.ModelAdmin):
+    list_display = ['industry', 'fiscal_year', 'metric_code', 'median_value', 'sample_count', 'benchmark_confidence']
+    list_filter = ['benchmark_confidence', 'fiscal_year', 'is_sector_fallback']
+    search_fields = ['industry']
+
+
+@admin.register(PeerMetricBenchmark)
+class PeerMetricBenchmarkAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'fiscal_year', 'metric_code', 'median_value', 'peer_count', 'benchmark_confidence']
+    list_filter = ['benchmark_confidence', 'fiscal_year']
+    search_fields = ['symbol__symbol']
