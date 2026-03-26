@@ -63,7 +63,8 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
         # Make request
         url = f"{self.BASE_URL}{endpoint}"
-        logger.info(f"Making request to Marketaux: {url} with params: {params}")
+        safe_params = {k: v for k, v in params.items() if k != 'api_token'}
+        logger.info(f"Making request to Marketaux: {url} with params: {safe_params}")
 
         response = requests.get(url, params=params)
         self.last_request_time = time.time()
