@@ -166,6 +166,7 @@ export interface KeywordMention {
   news_headline: string;
   news_source: string;
   published_at: string;  // ISO 8601 format
+  article_url?: string;
 }
 
 /**

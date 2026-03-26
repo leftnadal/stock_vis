@@ -111,7 +111,7 @@ export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordC
         {/* Success state */}
         {data?.status === 'completed' && data.keywords && !isLoading && (
           <div className="space-y-3">
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 max-h-[200px] overflow-y-auto">
               {data.keywords.map((keyword, index) => (
                 <KeywordBadge
                   key={index}

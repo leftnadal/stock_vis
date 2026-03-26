@@ -54,7 +54,7 @@ export default function NewsHighlightedStocks({
     : '';
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-visible">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export default function NewsHighlightedStocks({
         {/* Insights list */}
         {data?.insights && data.insights.length > 0 && !isLoading && (
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 items-start">
               {data.insights.map((insight) => (
                 <StockInsightCard
                   key={insight.symbol}

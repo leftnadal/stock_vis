@@ -168,7 +168,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'stocks',
     'users',
-    'analysis',
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'graph_analysis',  # 그래프 온톨로지 분석 (Phase 1)

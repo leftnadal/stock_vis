@@ -159,11 +159,14 @@ function BriefingSkeleton() {
   );
 }
 
+const INITIAL_KEYWORD_COUNT = 3;
+
 export default function AINewsBriefingCard() {
+  const [showAll, setShowAll] = useState(false);
   const { data, isLoading, error } = useMarketFeed();
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:col-span-2">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/10 dark:to-blue-900/10">
         <div className="flex items-center justify-between">
@@ -215,9 +218,30 @@ export default function AINewsBriefingCard() {
 
         {data && !isLoading && data.briefing.keywords.length > 0 && (
           <div>
-            {data.briefing.keywords.map((kw, index) => (
+            {(showAll
+              ? data.briefing.keywords
+              : data.briefing.keywords.slice(0, INITIAL_KEYWORD_COUNT)
+            ).map((kw, index) => (
               <KeywordItem key={index} keyword={kw} rank={index + 1} />
             ))}
+            {data.briefing.keywords.length > INITIAL_KEYWORD_COUNT && (
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="w-full py-2 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 flex items-center justify-center gap-1 transition-colors"
+              >
+                {showAll ? (
+                  <>
+                    <ChevronUp className="w-3 h-3" />
+                    접기
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-3 h-3" />
+                    {data.briefing.keywords.length - INITIAL_KEYWORD_COUNT}개 더보기
+                  </>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>

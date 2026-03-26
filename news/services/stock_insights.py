@@ -105,11 +105,17 @@ class NewsBasedStockInsights:
             logger.info(f"Cache hit: {cache_key}")
             return cached
 
-        # 당일 키워드 조회
+        # 당일 키워드 조회 (없으면 최근 완료 키워드 fallback)
         keyword_obj = DailyNewsKeyword.objects.filter(
             date=target_date,
             status='completed'
         ).first()
+
+        if not keyword_obj:
+            keyword_obj = DailyNewsKeyword.objects.filter(
+                date__lt=target_date,
+                status='completed',
+            ).order_by('-date').first()
 
         keywords = keyword_obj.keywords if keyword_obj else []
 
@@ -223,6 +229,7 @@ class NewsBasedStockInsights:
                 'published_at': news.published_at.isoformat(),
                 'sentiment': sentiment,
                 'sentiment_score': float(entity.sentiment_score) if entity.sentiment_score else None,
+                'article_url': news.url,
             })
 
         # 3. Fallback: 엔티티가 부족하면 키워드 related_symbols로 보충
@@ -250,9 +257,27 @@ class NewsBasedStockInsights:
                         'news_headline': news_item['headline'],
                         'news_source': news_item['source'],
                         'published_at': news_item['published_at'],
+                        'article_url': news_item.get('article_url', ''),
                     })
 
-        # 5. 최소 멘션 필터 적용 및 news_articles 필드 제거
+        # 5. 키워드 매핑이 없는 종목: 최신 뉴스 헤드라인으로 보충
+        for symbol, data in symbol_data.items():
+            if not data['keyword_mentions'] and data['news_articles']:
+                seen_headlines = set()
+                for article in data['news_articles'][:3]:
+                    if article['headline'] in seen_headlines:
+                        continue
+                    seen_headlines.add(article['headline'])
+                    data['keyword_mentions'].append({
+                        'keyword': '최신 뉴스',
+                        'sentiment': article['sentiment'],
+                        'news_headline': article['headline'],
+                        'news_source': article['source'],
+                        'published_at': article['published_at'],
+                        'article_url': article.get('article_url', ''),
+                    })
+
+        # 6. 최소 멘션 필터 적용 및 news_articles 필드 제거
         filtered_data = {}
         for symbol, data in symbol_data.items():
             if data['total_news_count'] >= min_mentions:
@@ -530,6 +555,7 @@ class NewsBasedStockInsights:
                 'source': entity.news.source,
                 'published_at': entity.news.published_at.isoformat(),
                 'sentiment': sentiment,
+                'article_url': entity.news.url,
             })
 
         # 키워드 멘션 조회
@@ -551,6 +577,7 @@ class NewsBasedStockInsights:
                             'news_headline': matching[0]['headline'],
                             'news_source': matching[0]['source'],
                             'published_at': matching[0]['published_at'],
+                            'article_url': matching[0].get('article_url', ''),
                         })
 
         result = {

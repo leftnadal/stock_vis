@@ -32,6 +32,17 @@ function ActiveThesesSection() {
 
   const theses = USE_MOCK ? MOCK_THESES : data
 
+  // ── 상태 우선순위 정렬 (M8) ──
+  // critical → needs_review → weakening → strengthening → active → warming_up
+  // useMemo를 early return 위에 배치하여 Rules of Hooks 준수
+  const activeTheses = (theses ?? []).filter((t) => t.status === 'active')
+  const sorted = useMemo(
+    () => sortThesesByPriority(activeTheses),
+    // activeTheses는 매 렌더마다 새 배열 참조 — JSON 문자열로 안정화
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(activeTheses)],
+  )
+
   if (isLoading && !USE_MOCK) return <ThesisListSkeleton />
 
   if (isError && !USE_MOCK) {
@@ -51,19 +62,6 @@ function ActiveThesesSection() {
       </div>
     )
   }
-
-  const activeTheses = (theses ?? []).filter((t) => t.status === 'active')
-
-  // ── 상태 우선순위 정렬 (M8) ──
-  // critical → needs_review → weakening → strengthening → active → warming_up
-  // useMemo로 감싸서 theses 변경 시에만 정렬 재실행 (P5)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const sorted = useMemo(
-    () => sortThesesByPriority(activeTheses),
-    // activeTheses는 매 렌더마다 새 배열 참조 — JSON 문자열로 안정화
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(activeTheses)],
-  )
 
   return (
     <section>

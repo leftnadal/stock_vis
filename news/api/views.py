@@ -548,14 +548,14 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         # DailyNewsKeyword 조회
         keyword_obj = DailyNewsKeyword.objects.filter(date=target_date).first()
 
-        if not keyword_obj:
-            # 오늘 데이터 없으면 가장 최근 completed 키워드로 폴백
-            keyword_obj = DailyNewsKeyword.objects.filter(
+        # 레코드 없거나 failed 상태면 가장 최근 completed 키워드로 폴백
+        if not keyword_obj or keyword_obj.status == 'failed':
+            fallback_obj = DailyNewsKeyword.objects.filter(
                 date__lt=target_date,
                 status='completed',
             ).order_by('-date').first()
 
-            if not keyword_obj:
+            if not fallback_obj:
                 data = {
                     'date': str(target_date),
                     'keywords': [],
@@ -569,11 +569,11 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
             # 폴백 데이터 반환 — 실제 날짜 명시
             data = {
-                'date': str(keyword_obj.date),
-                'keywords': keyword_obj.keywords,
-                'total_news_count': keyword_obj.total_news_count,
-                'sources': keyword_obj.sources,
-                'llm_model': keyword_obj.llm_model,
+                'date': str(fallback_obj.date),
+                'keywords': fallback_obj.keywords,
+                'total_news_count': fallback_obj.total_news_count,
+                'sources': fallback_obj.sources,
+                'llm_model': fallback_obj.llm_model,
                 'status': 'completed',
                 'is_fallback': True,
                 'requested_date': str(target_date),
