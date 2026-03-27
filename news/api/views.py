@@ -635,6 +635,182 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             'date': date_str or str(timezone.now().date()),
         })
 
+    # ===== Phase 2.5: Keyword Detail API =====
+
+    @action(detail=False, methods=['get'], url_path='keyword-detail')
+    def keyword_detail(self, request):
+        """
+        키워드 상세 조회 — 관련 기사 + LLM 투자 관점 요약
+
+        GET /api/v1/news/keyword-detail/?date=2026-03-26&index=0
+
+        Query Parameters:
+            - date: 키워드 날짜 (YYYY-MM-DD, 기본: 오늘)
+            - index: 키워드 인덱스 (0-based, 필수)
+
+        Returns:
+            {keyword, sentiment, analysis, articles, related_symbols}
+        """
+        from datetime import datetime as dt
+
+        # 파라미터 파싱
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                target_date = dt.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
+        else:
+            target_date = timezone.now().date()
+
+        index_str = request.query_params.get('index')
+        if index_str is None:
+            raise ValidationError({'index': 'index parameter is required'})
+        try:
+            index = int(index_str)
+        except ValueError:
+            raise ValidationError({'index': 'index must be an integer'})
+
+        # DailyNewsKeyword 조회
+        keyword_obj = DailyNewsKeyword.objects.filter(date=target_date).first()
+        if not keyword_obj or keyword_obj.status != 'completed':
+            return Response(
+                {'error': f'No completed keywords for {target_date}'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        keywords = keyword_obj.keywords or []
+        if index < 0 or index >= len(keywords):
+            return Response(
+                {'error': f'Invalid index {index}. Available: 0-{len(keywords) - 1}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        kw = keywords[index]
+        keyword_text = kw.get('text', '')
+        sentiment_val = kw.get('sentiment', 'neutral')
+        related_symbols = kw.get('related_symbols', [])
+        search_terms = kw.get('search_terms_en', [])
+
+        # 캐시 확인 (updated_at epoch 포함 → force 재생성 시 자동 miss)
+        updated_epoch = int(keyword_obj.updated_at.timestamp())
+        cache_key = f"news:keyword_detail:{target_date}:{index}:{updated_epoch}"
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            logger.info(f"Cache hit: {cache_key}")
+            return Response(cached_data)
+
+        # 기사 검색
+        article_ids = kw.get('article_ids', [])
+
+        if article_ids:
+            # Direct: 키워드 생성 시 저장된 article_ids로 직접 조회
+            articles_qs = NewsArticle.objects.filter(
+                id__in=article_ids
+            ).order_by('-published_at')[:10]
+        else:
+            # Fallback: 레거시 키워드 호환 (article_ids 없는 경우 2단 매칭)
+            start_dt = dt.combine(target_date, dt.min.time())
+            end_dt = dt.combine(target_date, dt.max.time())
+            if timezone.is_naive(start_dt):
+                start_dt = timezone.make_aware(start_dt)
+                end_dt = timezone.make_aware(end_dt)
+
+            articles_qs = NewsArticle.objects.none()
+            if related_symbols:
+                articles_qs = NewsArticle.objects.filter(
+                    entities__symbol__in=[s.upper() for s in related_symbols],
+                    published_at__gte=start_dt,
+                    published_at__lte=end_dt,
+                ).distinct()
+
+            if search_terms:
+                title_q = Q()
+                for term in search_terms:
+                    title_q |= Q(title__icontains=term)
+                secondary_qs = NewsArticle.objects.filter(
+                    title_q,
+                    published_at__gte=start_dt,
+                    published_at__lte=end_dt,
+                )
+                articles_qs = (articles_qs | secondary_qs).distinct()
+
+            articles_qs = articles_qs.order_by('-published_at')[:10]
+
+        # 기사 직렬화
+        articles_data = [
+            {
+                'id': str(a.id),
+                'title': a.title,
+                'source': a.source,
+                'url': a.url,
+                'published_at': a.published_at.isoformat() if a.published_at else None,
+            }
+            for a in articles_qs
+        ]
+
+        # Gemini 호출 (투자 관점 요약)
+        analysis_text = None
+        if articles_data:
+            try:
+                analysis_text = self._generate_keyword_analysis(
+                    keyword_text, sentiment_val, articles_data
+                )
+            except Exception as e:
+                logger.warning(f"Gemini keyword analysis failed: {e}")
+                # analysis=null → 프론트에서 분석 섹션 숨김
+
+        data = {
+            'keyword': keyword_text,
+            'sentiment': sentiment_val,
+            'analysis': analysis_text,
+            'articles': articles_data,
+            'related_symbols': related_symbols,
+        }
+
+        # 캐시 저장 (1시간)
+        cache.set(cache_key, data, 3600)
+
+        return Response(data)
+
+    def _generate_keyword_analysis(self, keyword: str, sentiment: str, articles: list) -> str:
+        """Gemini로 키워드 관련 기사들의 투자 관점 요약 생성"""
+        from django.conf import settings as django_settings
+        from google import genai
+        from google.genai import types
+
+        api_key = getattr(django_settings, 'GOOGLE_AI_API_KEY', None) or getattr(django_settings, 'GEMINI_API_KEY', None)
+        if not api_key:
+            raise ValueError("Gemini API key not configured")
+
+        client = genai.Client(api_key=api_key)
+
+        titles = "\n".join(f"- {a['title']} ({a['source']})" for a in articles[:8])
+
+        prompt = f"""키워드: "{keyword}" (감성: {sentiment})
+
+관련 뉴스 기사 제목:
+{titles}
+
+위 뉴스들을 종합하여 투자자 관점에서 핵심 요약을 3-4문장으로 작성하세요.
+- 무슨 일이 일어나고 있는지
+- 어떤 종목/섹터에 영향이 있는지
+- 투자자가 주목해야 할 포인트
+
+한국어로 작성하세요. JSON이 아닌 일반 텍스트로 응답하세요."""
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                max_output_tokens=500,
+                temperature=0.3,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+            ),
+        )
+
+        return response.text.strip()
+
     # ===== Phase 3: Stock Insights API (Fact-Based) =====
 
     @action(detail=False, methods=['get'])

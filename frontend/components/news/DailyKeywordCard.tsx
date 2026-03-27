@@ -2,11 +2,12 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, RefreshCw, AlertCircle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import KeywordBadge from './KeywordBadge';
+import KeywordDetailSheet from './KeywordDetailSheet';
 import { useDailyKeywords } from '@/hooks/useNews';
 import { DailyKeyword } from '@/types/news';
 
@@ -31,6 +32,15 @@ function KeywordSkeleton() {
 
 export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordCardProps) {
   const { data, isLoading, error, refetch, isFetching } = useDailyKeywords(date);
+  const [selectedKeyword, setSelectedKeyword] = useState<{ index: number; text: string } | null>(null);
+
+  // 키워드 실제 날짜 (폴백 시 data.date 사용)
+  const effectiveDate = data?.date || date || format(new Date(), 'yyyy-MM-dd');
+
+  const handleKeywordClick = (keyword: DailyKeyword, index: number) => {
+    setSelectedKeyword({ index, text: keyword.text });
+    onKeywordClick?.(keyword);
+  };
 
   // Format date for display — 폴백 시 실제 키워드 날짜 표시
   const isFallback = data?.is_fallback === true;
@@ -101,7 +111,7 @@ export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordC
                 <KeywordBadge
                   key={index}
                   keyword={keyword}
-                  onClick={onKeywordClick ? () => onKeywordClick(keyword) : undefined}
+                  onClick={() => handleKeywordClick(keyword, index)}
                 />
               ))}
             </div>
@@ -116,7 +126,7 @@ export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordC
                 <KeywordBadge
                   key={index}
                   keyword={keyword}
-                  onClick={onKeywordClick ? () => onKeywordClick(keyword) : undefined}
+                  onClick={() => handleKeywordClick(keyword, index)}
                   showSymbols
                 />
               ))}
@@ -141,6 +151,17 @@ export default function DailyKeywordCard({ date, onKeywordClick }: DailyKeywordC
           </div>
         )}
       </div>
+
+      {/* Keyword Detail Sheet */}
+      {selectedKeyword && (
+        <KeywordDetailSheet
+          isOpen={!!selectedKeyword}
+          onClose={() => setSelectedKeyword(null)}
+          date={effectiveDate}
+          initialIndex={selectedKeyword.index}
+          keywords={data?.keywords ?? []}
+        />
+      )}
     </div>
   );
 }

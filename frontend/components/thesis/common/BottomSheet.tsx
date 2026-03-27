@@ -35,7 +35,7 @@ export function BottomSheet({ isOpen, onClose, title, children }: Props) {
       />
       <div className="absolute bottom-0 left-0 right-0
                        bg-gray-900 rounded-t-2xl max-h-[50vh] overflow-y-auto
-                       animate-slideUp">
+                       max-w-2xl mx-auto animate-slideUp">
         <div className="flex justify-center py-3">
           <div className="w-8 h-1 bg-gray-600 rounded-full" />
         </div>

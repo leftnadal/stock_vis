@@ -253,14 +253,47 @@ class NewsBasedStockInsights:
                 for news_item in matching_news[:2]:  # 키워드당 최대 2개 뉴스
                     symbol_data[symbol]['keyword_mentions'].append({
                         'keyword': kw_info['text'],
-                        'sentiment': kw_info['sentiment'],
+                        'sentiment': news_item.get('sentiment', kw_info['sentiment']),
                         'news_headline': news_item['headline'],
                         'news_source': news_item['source'],
                         'published_at': news_item['published_at'],
                         'article_url': news_item.get('article_url', ''),
                     })
 
-        # 5. 키워드 매핑이 없는 종목: 최신 뉴스 헤드라인으로 보충
+        # 5. 반대 sentiment 보충 — 양쪽 관점 보장
+        for symbol, data in symbol_data.items():
+            if data['keyword_mentions'] and data['news_articles']:
+                existing_sentiments = {m['sentiment'] for m in data['keyword_mentions']}
+                existing_headlines = {m['news_headline'] for m in data['keyword_mentions']}
+                dist = data['sentiment_distribution']
+
+                # 긍정만 있는데 부정 뉴스가 존재하면 보충
+                # 부정만 있는데 긍정 뉴스가 존재하면 보충
+                missing = []
+                if 'negative' not in existing_sentiments and dist.get('negative', 0) > 0:
+                    missing.append('negative')
+                if 'positive' not in existing_sentiments and dist.get('positive', 0) > 0:
+                    missing.append('positive')
+
+                for target_sentiment in missing:
+                    for article in data['news_articles']:
+                        if (article['sentiment'] == target_sentiment
+                                and article['headline'] not in existing_headlines):
+                            # 헤드라인에서 요약 키워드 생성 (20자 + …)
+                            headline = article['headline']
+                            short_kw = headline[:20].rstrip() + '…' if len(headline) > 20 else headline
+                            data['keyword_mentions'].append({
+                                'keyword': short_kw,
+                                'sentiment': target_sentiment,
+                                'news_headline': headline,
+                                'news_source': article['source'],
+                                'published_at': article['published_at'],
+                                'article_url': article.get('article_url', ''),
+                            })
+                            existing_headlines.add(headline)
+                            break  # 반대 sentiment당 1개만 보충
+
+        # 6. 키워드 매핑이 없는 종목: 최신 뉴스 헤드라인으로 보충
         for symbol, data in symbol_data.items():
             if not data['keyword_mentions'] and data['news_articles']:
                 seen_headlines = set()
@@ -277,7 +310,25 @@ class NewsBasedStockInsights:
                         'article_url': article.get('article_url', ''),
                     })
 
-        # 6. 최소 멘션 필터 적용 및 news_articles 필드 제거
+        # 7. sentiment 인터리브 정렬 — 첫 3개에 양쪽 관점 포함
+        for symbol, data in symbol_data.items():
+            mentions = data['keyword_mentions']
+            if len(mentions) > 1:
+                by_sentiment = {'positive': [], 'negative': [], 'neutral': []}
+                for m in mentions:
+                    by_sentiment.get(m['sentiment'], by_sentiment['neutral']).append(m)
+
+                # 라운드로빈: positive → negative → neutral 순으로 인터리브
+                reordered = []
+                buckets = [by_sentiment['positive'], by_sentiment['negative'], by_sentiment['neutral']]
+                max_len = max(len(b) for b in buckets)
+                for i in range(max_len):
+                    for bucket in buckets:
+                        if i < len(bucket):
+                            reordered.append(bucket[i])
+                data['keyword_mentions'] = reordered
+
+        # 8. 최소 멘션 필터 적용 및 news_articles 필드 제거
         filtered_data = {}
         for symbol, data in symbol_data.items():
             if data['total_news_count'] >= min_mentions:

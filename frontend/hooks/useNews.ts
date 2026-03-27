@@ -1,6 +1,6 @@
 // Custom hooks for news data fetching with TanStack Query
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { newsService } from '@/services/newsService';
 import {
   NewsArticle,
@@ -12,6 +12,7 @@ import {
   AllNewsParams,
   NewsSource,
   DailyNewsKeywordResponse,
+  KeywordDetailResponse,
   RecommendationsResponse,
   StockInsightsResponse,
   MarketFeedResponse,
@@ -127,6 +128,22 @@ export function useDailyKeywords(date?: string) {
     queryFn: () => newsService.getDailyKeywords(date),
     staleTime: 1000 * 60 * 60, // 1 hour (keywords don't change frequently)
     retry: 2,
+  });
+}
+
+// ===== Phase 2.5: Keyword Detail Hook =====
+
+/**
+ * Hook to fetch keyword detail with articles and LLM analysis
+ */
+export function useKeywordDetail(date: string | null, index: number | null) {
+  return useQuery<KeywordDetailResponse>({
+    queryKey: ['keyword-detail', date, index],
+    queryFn: () => newsService.getKeywordDetail(date!, index!),
+    enabled: !!date && index !== null && index >= 0,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    placeholderData: keepPreviousData,
+    retry: 1,
   });
 }
 
