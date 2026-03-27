@@ -193,6 +193,9 @@ class NewsBasedStockInsights:
 
             insights.append(insight)
 
+        # 9. 영문 키워드 → 한국어 변환 (Gemini 배치)
+        self._translate_keywords_to_korean(insights)
+
         computation_time_ms = int((time.time() - start_time) * 1000)
 
         result = {
@@ -505,6 +508,78 @@ class NewsBasedStockInsights:
             matching = news_articles[:1]
 
         return matching
+
+    def _translate_keywords_to_korean(self, insights: List[Dict]):
+        """영문 키워드를 Gemini로 한국어 변환 (배치, in-place 수정)"""
+        import re
+
+        # 한국어가 아닌 키워드 수집
+        headlines_to_translate = []
+        mention_refs = []  # (insight_idx, mention_idx)
+        for i, insight in enumerate(insights):
+            for j, mention in enumerate(insight.get('keyword_mentions', [])):
+                kw = mention['keyword']
+                if not re.search(r'[가-힣]', kw):
+                    headlines_to_translate.append(mention['news_headline'])
+                    mention_refs.append((i, j))
+
+        if not headlines_to_translate:
+            return
+
+        # 중복 제거하며 순서 유지
+        unique_headlines = list(dict.fromkeys(headlines_to_translate))[:20]
+
+        try:
+            from django.conf import settings as django_settings
+            from google import genai
+            from google.genai import types
+            import json
+
+            api_key = getattr(django_settings, 'GOOGLE_AI_API_KEY', None) or getattr(django_settings, 'GEMINI_API_KEY', None)
+            if not api_key:
+                return
+
+            client = genai.Client(api_key=api_key)
+
+            numbered = "\n".join(f"{idx + 1}. {h}" for idx, h in enumerate(unique_headlines))
+
+            prompt = f"""다음 영문 뉴스 헤드라인을 각각 20자 이내의 한국어 키워드로 요약하세요.
+투자자 관점에서 핵심 내용만 간결하게 "주어 + 동사" 구조로 작성하세요.
+예: "Tesla Q1 deliveries beat" → "테슬라 1분기 인도량 상회"
+
+{numbered}
+
+정확히 {len(unique_headlines)}개의 한국어 키워드를 JSON 배열로만 응답하세요."""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=500,
+                    temperature=0.2,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+
+            json_match = re.search(r'\[[\s\S]*\]', response.text)
+            if not json_match:
+                return
+
+            summaries = json.loads(json_match.group())
+            translation_map = {
+                h: str(s)[:20] for h, s in zip(unique_headlines, summaries)
+                if isinstance(s, str)
+            }
+
+            # 인사이트에 적용
+            for i, j in mention_refs:
+                headline = insights[i]['keyword_mentions'][j]['news_headline']
+                korean_kw = translation_map.get(headline)
+                if korean_kw:
+                    insights[i]['keyword_mentions'][j]['keyword'] = korean_kw
+
+        except Exception as e:
+            logger.warning(f"Korean keyword translation failed: {e}")
 
     def _get_market_data(self, symbol: str) -> Optional[Dict]:
         """
