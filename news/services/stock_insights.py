@@ -345,10 +345,12 @@ class NewsBasedStockInsights:
                     if article['headline'] in seen_headlines:
                         continue
                     seen_headlines.add(article['headline'])
+                    headline = article['headline']
+                    short_kw = headline[:20].rstrip() + '…' if len(headline) > 20 else headline
                     data['keyword_mentions'].append({
-                        'keyword': '최신 뉴스',
+                        'keyword': short_kw,
                         'sentiment': article['sentiment'],
-                        'news_headline': article['headline'],
+                        'news_headline': headline,
                         'news_source': article['source'],
                         'published_at': article['published_at'],
                         'article_url': article.get('article_url', ''),
