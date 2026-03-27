@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import (
     CompanySensitivityProfile, CompanyGrowthStage, CompanyCapitalDNA,
     CompanyInsiderSignal, CompanyNarrativeTag, CompanyEventReaction,
+    CompanyRevenueStructure, CompanyChainProfile, ChainNewsEvent,
 )
 
 
@@ -45,3 +46,24 @@ class CompanyEventReactionAdmin(admin.ModelAdmin):
     list_display = ['symbol', 'event_type', 'sample_count', 'avg_return_1d', 'reaction_grade', 'confidence']
     list_filter = ['reaction_grade', 'confidence', 'event_type']
     search_fields = ['symbol__symbol', 'event_type']
+
+
+@admin.register(CompanyRevenueStructure)
+class CompanyRevenueStructureAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'business_model_type', 'customer_concentration_risk', 'extraction_method']
+    list_filter = ['business_model_type', 'customer_concentration_risk', 'extraction_method']
+    search_fields = ['symbol__symbol']
+
+
+@admin.register(CompanyChainProfile)
+class CompanyChainProfileAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'growth_stage', 'capital_type', 'overall_grade', 'profile_completeness']
+    list_filter = ['growth_stage', 'capital_type', 'overall_grade']
+    search_fields = ['symbol__symbol']
+
+
+@admin.register(ChainNewsEvent)
+class ChainNewsEventAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'source', 'title', 'sentiment_label', 'event_type', 'published_at']
+    list_filter = ['source', 'sentiment_label', 'event_importance', 'is_duplicate']
+    search_fields = ['symbol__symbol', 'title']
