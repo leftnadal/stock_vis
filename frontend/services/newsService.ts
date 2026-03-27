@@ -250,16 +250,19 @@ export const newsService = {
    * @param date - Date in YYYY-MM-DD format (default: today)
    * @param limit - Maximum number of insights (default: 10)
    * @param includeMarketData - Include market data in response (default: true)
+   * @param sector - Filter by sector name (default: undefined = all sectors)
    */
   async getInsights(
     date?: string,
     limit: number = 10,
-    includeMarketData: boolean = true
+    includeMarketData: boolean = true,
+    sector?: string
   ): Promise<StockInsightsResponse> {
     const params = new URLSearchParams();
     if (date) params.set('date', date);
     params.set('limit', limit.toString());
     params.set('include_market_data', includeMarketData.toString());
+    if (sector) params.set('sector', sector);
 
     const response = await fetch(`${API_URL}/news/insights/?${params}`, {
       headers: {

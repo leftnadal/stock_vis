@@ -879,8 +879,14 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             'include_market_data', 'true'
         ).lower() == 'true'
 
+        # sector 파라미터 (None이면 전체)
+        sector = request.query_params.get('sector') or None
+
+        # 섹터 정규화 (캐시 키 일관성 보장)
+        normalized_sector = sector.strip().title() if sector else None
+
         # 캐시 키
-        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}"
+        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}:{normalized_sector or 'all'}"
 
         # 캐시 확인
         cached_data = cache.get(cache_key)
@@ -893,7 +899,8 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         result = insights_service.get_insights(
             target_date=target_date,
             limit=limit,
-            include_market_data=include_market_data
+            include_market_data=include_market_data,
+            sector=sector,
         )
 
         # 캐시 저장 (1시간)

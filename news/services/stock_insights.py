@@ -51,7 +51,8 @@ class NewsBasedStockInsights:
         target_date: Optional[date] = None,
         limit: int = 10,
         min_mentions: int = 1,
-        include_market_data: bool = True
+        include_market_data: bool = True,
+        sector: Optional[str] = None,
     ) -> Dict:
         """
         종목 인사이트 목록 반환 (팩트 중심)
@@ -61,6 +62,7 @@ class NewsBasedStockInsights:
             limit: 최대 종목 수
             min_mentions: 최소 멘션 수 필터
             include_market_data: 시장 데이터 포함 여부
+            sector: 섹터 필터 (None이면 전체, 대소문자 무관)
 
         Returns:
             {
@@ -98,8 +100,11 @@ class NewsBasedStockInsights:
         if target_date is None:
             target_date = timezone.now().date()
 
+        # 섹터 정규화 (.title() — "TECHNOLOGY" → "Technology")
+        normalized_sector = sector.strip().title() if sector else None
+
         # 캐시 확인
-        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}"
+        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}:{normalized_sector or 'all'}"
         cached = cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit: {cache_key}")
@@ -122,6 +127,40 @@ class NewsBasedStockInsights:
         # 종목별 데이터 수집
         symbol_data = self._collect_symbol_data(target_date, keywords, min_mentions)
 
+        # 섹터 정보 일괄 조회 (N+1 방지)
+        from stocks.models import Stock
+        all_symbols = list(symbol_data.keys())
+        sector_map: Dict[str, Optional[str]] = {}
+        if all_symbols:
+            stock_rows = Stock.objects.filter(
+                symbol__in=all_symbols
+            ).values('symbol', 'sector')
+            for row in stock_rows:
+                raw_sector = row['sector']
+                sector_map[row['symbol']] = raw_sector.strip().title() if raw_sector else None
+
+        # available_sectors 계산 (sector 필터 없을 때만)
+        available_sectors = None
+        if not normalized_sector:
+            sector_counts: Dict[str, int] = {}
+            for symbol in all_symbols:
+                sym_sector = sector_map.get(symbol)
+                if sym_sector:
+                    sector_counts[sym_sector] = sector_counts.get(sym_sector, 0) + 1
+            available_sectors = sorted(
+                [{'sector': s, 'count': c} for s, c in sector_counts.items()],
+                key=lambda x: x['count'],
+                reverse=True,
+            )
+
+        # 섹터 필터 적용 (sector 파라미터가 있을 때만)
+        if normalized_sector:
+            symbol_data = {
+                sym: data
+                for sym, data in symbol_data.items()
+                if (sector_map.get(sym) or '') == normalized_sector
+            }
+
         # 뉴스 언급 횟수 기준 정렬
         sorted_symbols = sorted(
             symbol_data.items(),
@@ -135,6 +174,7 @@ class NewsBasedStockInsights:
             insight = {
                 'symbol': symbol,
                 'company_name': data.get('company_name'),
+                'sector': sector_map.get(symbol),
                 'keyword_mentions': data.get('keyword_mentions', []),
                 'sentiment_distribution': data.get('sentiment_distribution', {
                     'positive': 0,
@@ -160,10 +200,14 @@ class NewsBasedStockInsights:
             'period_days': 7,
             'period_start': str(target_date - timedelta(days=6)),
             'period_end': str(target_date),
+            'sector_filter': normalized_sector,
             'insights': insights,
             'total_keywords': len(keywords),
             'computation_time_ms': computation_time_ms,
         }
+
+        if available_sectors is not None:
+            result['available_sectors'] = available_sectors
 
         # 캐시 저장
         cache.set(cache_key, result, self.CACHE_TTL_SECONDS)

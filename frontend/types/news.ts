@@ -251,6 +251,7 @@ export interface MarketData {
 export interface StockInsight {
   symbol: string;
   company_name?: string;
+  sector?: string;
   keyword_mentions: KeywordMention[];
   sentiment_distribution: SentimentDistribution;
   market_data?: MarketData;
@@ -268,6 +269,7 @@ export interface StockInsightsResponse {
   insights: StockInsight[];
   total_keywords: number;
   computation_time_ms?: number;
+  available_sectors?: { sector: string; count: number }[];
 }
 
 // ===== Phase A: Market Feed Types (Cold Start) =====

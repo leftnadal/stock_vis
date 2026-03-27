@@ -155,11 +155,12 @@ export function useKeywordDetail(date: string | null, index: number | null) {
 export function useStockInsights(
   date?: string,
   limit: number = 10,
-  includeMarketData: boolean = true
+  includeMarketData: boolean = true,
+  sector?: string
 ) {
   return useQuery<StockInsightsResponse>({
-    queryKey: ['stock-insights', date, limit, includeMarketData],
-    queryFn: () => newsService.getInsights(date, limit, includeMarketData),
+    queryKey: ['stock-insights', date, limit, includeMarketData, sector],
+    queryFn: () => newsService.getInsights(date, limit, includeMarketData, sector),
     staleTime: 1000 * 60 * 30, // 30 minutes
     retry: 2,
   });
