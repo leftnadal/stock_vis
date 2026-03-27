@@ -213,9 +213,11 @@ class NewsKeywordExtractor:
 ## 규칙:
 1. 정확히 10개의 키워드를 추출하세요
 2. 각 키워드는 다음 형식을 따르세요:
-   - text: 핵심 문구 (25자 이내, 한국어)
+   - text: 핵심 문구 (35자 이내, 한국어)
      ★ 반드시 "주어/목적어 + 동사" 구조로 작성하세요.
-     ✅ 좋은 예: "NVDA 실적 기대 상회", "Fed 금리 동결 시사", "테슬라 중국 판매 급증", "반도체 재고 바닥 확인"
+     ★ 회사명은 가능하면 심볼로 대체하여 글자수를 줄이세요.
+       예: "Applied Materials" → "AMAT", "Merck" → "MRK", "Tesla" → "TSLA"
+     ✅ 좋은 예: "NVDA 실적 기대 상회", "Fed 금리 동결 시사", "TSLA 중국 판매 급증", "AMAT 칩 사이클 성숙 압력"
      ❌ 나쁜 예: "AI 반도체", "금리 인하", "실적 발표" (명사만 나열 금지)
    - sentiment: "positive", "negative", "neutral" 중 하나만 사용
    - related_symbols: 관련 종목 심볼 리스트 (최대 3개) - 가능한 한 관련 종목을 찾아 포함하세요!
@@ -298,7 +300,7 @@ class NewsKeywordExtractor:
                         if raw_sentiment not in VALID_SENTIMENTS:
                             raw_sentiment = 'neutral'
                         validated.append({
-                            'text': str(kw.get('text', ''))[:25],
+                            'text': str(kw.get('text', ''))[:35],
                             'sentiment': raw_sentiment,
                             'related_symbols': kw.get('related_symbols', [])[:3],
                             'search_terms_en': [str(t)[:50] for t in kw.get('search_terms_en', [])][:4],
@@ -316,7 +318,7 @@ class NewsKeywordExtractor:
             matches = re.findall(pattern, response_text)
             if matches:
                 return [
-                    {"text": text[:25], "sentiment": "neutral", "related_symbols": [], "search_terms_en": [], "importance": 0.5, "reason": ""}
+                    {"text": text[:35], "sentiment": "neutral", "related_symbols": [], "search_terms_en": [], "importance": 0.5, "reason": ""}
                     for text in matches[:10]
                 ]
 
