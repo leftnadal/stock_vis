@@ -118,8 +118,25 @@ export interface DailyKeyword {
   text: string;
   sentiment: 'positive' | 'negative' | 'neutral';
   related_symbols: string[];
+  search_terms_en?: string[];
   importance?: number;
   reason?: string;  // AI 분석 이유
+}
+
+export interface KeywordDetailArticle {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  published_at: string | null;
+}
+
+export interface KeywordDetailResponse {
+  keyword: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  analysis: string | null;
+  articles: KeywordDetailArticle[];
+  related_symbols: string[];
 }
 
 export interface DailyNewsKeywordResponse {

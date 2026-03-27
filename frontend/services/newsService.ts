@@ -10,6 +10,7 @@ import {
   AllNewsParams,
   NewsSource,
   DailyNewsKeywordResponse,
+  KeywordDetailResponse,
   RecommendationsResponse,
   StockInsightsResponse,
   MarketFeedResponse,
@@ -220,6 +221,25 @@ export const newsService = {
       throw new Error('Failed to fetch daily keywords');
     }
 
+    return response.json();
+  },
+
+  // ===== Phase 2.5: Keyword Detail API =====
+
+  /**
+   * Get keyword detail with related articles and LLM analysis
+   * @param date - Date in YYYY-MM-DD format
+   * @param index - Keyword index (0-based)
+   */
+  async getKeywordDetail(date: string, index: number): Promise<KeywordDetailResponse> {
+    const params = new URLSearchParams({
+      date,
+      index: index.toString(),
+    });
+    const response = await fetch(`${API_URL}/news/keyword-detail/?${params}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch keyword detail');
     return response.json();
   },
 
