@@ -487,7 +487,11 @@ class StockOverviewAPIView(APIView):
 
         try:
             ## 주식정보 조회 (로컬 DB 우선)
-            stock = Stock.objects.filter(symbol=symbol).first()
+            # select_related: OneToOne 역참조 (overview_ko + chainsight 모델)
+            # TODO: CategoryScore 등 ManyToOne은 prefetch_related로 별도 처리 필요 (Step 2~4)
+            stock = Stock.objects.select_related(
+                'overview_ko',
+            ).filter(symbol=symbol).first()
             source = 'db'
 
             # DB에 Stock이 있지만 가격 데이터가 비어있으면 자동 sync

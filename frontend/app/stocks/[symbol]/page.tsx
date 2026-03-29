@@ -453,6 +453,23 @@ function OverviewTab({ overview }: { overview: StockOverview }) {
         </div>
       ) : null}
 
+      {/* 동적 레이어: validation + chainsight (Step 2~4에서 각 섹션 구현) */}
+      {overview.dynamic_layers && (
+        <div className="space-y-4">
+          {/* B. 리스크 알림 바 — Step 4에서 RiskAlertBar 컴포넌트로 교체 */}
+          {overview.dynamic_layers.news_summary && null}
+
+          {/* C. 종합 진단 스코어카드 — Step 2에서 CategoryScoreGrid 컴포넌트로 교체 */}
+          {overview.dynamic_layers.category_scores && null}
+
+          {/* D. 기업 DNA 패널 — Step 3에서 CompanyDNAGrid 컴포넌트로 교체 */}
+          {(overview.dynamic_layers.growth_stage || overview.dynamic_layers.capital_dna || overview.dynamic_layers.sensitivity) && null}
+
+          {/* E. 내러티브 & 테마 — Step 4에서 NarrativeTagBar 컴포넌트로 교체 */}
+          {overview.dynamic_layers.narrative && null}
+        </div>
+      )}
+
       {/* Key Metrics Grid */}
       <div>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">주요 지표</h3>
