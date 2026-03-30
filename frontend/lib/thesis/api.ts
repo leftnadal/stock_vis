@@ -6,6 +6,7 @@ import type {
   AutoRecommendResponse, IndicatorCreatePayload,
   AlertListResponse, CloseResponse,
   IndicatorReadingsResponse,
+  SuggestResponse,
 } from './types'
 
 const GET   = <T>(url: string) => authAxios.get<T>(url).then(r => r.data)
@@ -21,6 +22,12 @@ export const thesisApi = {
   // 대화형 빌더
   startConversation: (data: { entry_source: EntrySource; source_news_id?: string }) =>
     POST<ConversationResponse>('/thesis/conversation/start/', data),
+  suggestTheses: (data: {
+    source_news_id: string;
+    keyword?: string;
+    summary?: string;
+    sentiment?: string;
+  }) => POST<SuggestResponse>('/thesis/conversation/suggest/', data),
   sendMessage: (data: {
     conversation_state: ConversationState;
     user_input: string | string[];

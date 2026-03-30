@@ -11,11 +11,17 @@ from django.utils import timezone
 from thesis.models import Thesis, ThesisPremise, ThesisIndicator, HypothesisEvent
 from thesis.services.indicator_matcher import match_indicators_for_premise, match_indicators_for_llm
 from thesis.services.builder_state import (
-    ConversationState, ChatMessage, CollectedData,
+    ConversationState, ChatMessage, CollectedData, SuggestionData,
+    PremiseData, IndicatorRecommendation,
     BuilderPhase, BuilderMode, FallbackReason,
     MONITORING_PRESETS,
 )
-from thesis.services.builder_events import log_event, EVENT_BUILDER_STARTED
+from thesis.services.builder_events import (
+    log_event, EVENT_BUILDER_STARTED,
+    EVENT_SUGGESTION_REQUEST_STARTED, EVENT_SUGGESTION_REQUEST_SUCCEEDED,
+    EVENT_SUGGESTION_REQUEST_FAILED, EVENT_SUGGESTION_FALLBACK_USED,
+    EVENT_SUGGESTION_SELECTED, EVENT_SUGGESTION_TO_PRESET,
+)
 from thesis.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
@@ -836,6 +842,10 @@ def process_llm_turn(raw_state, user_input, user=None):
 
     phase = state.phase
 
+    # suggestions phase: 카드 선택 또는 전제 multi-select 처리
+    if phase == BuilderPhase.SUGGESTIONS.value:
+        return _handle_suggestion_select(state, user_input, user)
+
     # fallback phase에서 사용자 선택 처리
     if phase == BuilderPhase.FALLBACK.value:
         return _handle_fallback_choice(state, text, user)
@@ -1273,3 +1283,330 @@ def _is_confirm_intent(text):
 def _is_restart_intent(text):
     """재시작 의도 탐지."""
     return text.lower().strip() in ('restart', '다시', '다시 만들기', '처음부터')
+
+
+# ──────────────────────────────────────────────
+# Suggestion Mode (뉴스 이슈 → 자동 가설 2개 제안)
+# ──────────────────────────────────────────────
+
+def generate_suggestions(source_news_id, keyword='', summary='', sentiment='neutral'):
+    """
+    뉴스 이슈에서 bullish/bearish 가설 2개 자동 생성.
+
+    Returns:
+        dict: 통합 응답 shape (conversation_state, suggestions, phase, entry_mode)
+    """
+    import hashlib
+    from django.core.cache import cache
+    from thesis.services.prompt_builder import (
+        build_suggestion_prompt, call_gemini_suggestions,
+    )
+    from thesis.services.llm_postprocess import normalize_llm_output, validate_llm_output
+
+    conv_id = str(uuid.uuid4())
+
+    log_event(EVENT_SUGGESTION_REQUEST_STARTED, {
+        'conv_id': conv_id,
+        'source_news_id': str(source_news_id),
+        'keyword': keyword,
+    })
+
+    # 1. 캐시 체크
+    kw_hash = hashlib.md5((keyword or '').encode()).hexdigest()[:8]
+    cache_key = f'thesis:suggest:{source_news_id}:{kw_hash}'
+    cached = cache.get(cache_key)
+    if cached:
+        # 캐시 히트 → ConversationState 새로 생성 + 캐시된 suggestions 사용
+        state = ConversationState(
+            conv_id=conv_id,
+            entry_source='news',
+            phase=BuilderPhase.SUGGESTIONS.value,
+            source_news_id=str(source_news_id),
+        )
+        state.collected.suggestions = [SuggestionData(**s) for s in cached]
+        return {
+            'conversation_state': state.model_dump(),
+            'suggestions': cached,
+            'phase': 'suggestions',
+            'entry_mode': 'suggestions',
+        }
+
+    # 2. 뉴스 제목 조회
+    news_title = _get_news_title(source_news_id)
+    if not news_title:
+        news_title = keyword or '뉴스 이슈'
+
+    # 3. Gemini 호출
+    system_prompt, user_prompt = build_suggestion_prompt(
+        news_title, keyword, summary, sentiment,
+    )
+    raw_result = call_gemini_suggestions(system_prompt, user_prompt)
+
+    if not raw_result or not raw_result.get('suggestions'):
+        log_event(EVENT_SUGGESTION_REQUEST_FAILED, {
+            'conv_id': conv_id,
+            'reason': 'gemini_returned_none',
+        })
+        return None  # View에서 fallback 처리
+
+    # 4. normalize + validate 각 suggestion 개별 적용
+    valid_suggestions = []
+    for raw_s in raw_result['suggestions']:
+        normalized = normalize_llm_output(raw_s)
+        validated, warnings, errors = validate_llm_output(normalized)
+        if not errors:
+            valid_suggestions.append(validated)
+
+    if not valid_suggestions:
+        log_event(EVENT_SUGGESTION_REQUEST_FAILED, {
+            'conv_id': conv_id,
+            'reason': 'all_suggestions_invalid',
+        })
+        return None
+
+    # 5. SuggestionData로 변환 + 정확히 2개 보장
+    suggestion_datas = []
+    for vs in valid_suggestions[:2]:
+        premises = []
+        for p in vs.get('premises', []):
+            indicators = []
+            for ind in p.get('recommended_indicators', []):
+                indicators.append({
+                    'indicator_db_id': ind.get('indicator_db_id'),
+                    'indicator_name': ind.get('indicator_name'),
+                    'why': ind.get('why', ''),
+                    'signal_type': ind.get('signal_type', 'coincident'),
+                })
+            premises.append({
+                'title': p.get('title', ''),
+                'description': p.get('description', ''),
+                'recommended_indicators': indicators,
+            })
+        suggestion_datas.append({
+            'direction': vs.get('direction', 'bullish'),
+            'title': vs.get('title', ''),
+            'summary': vs.get('message', vs.get('summary', '')),
+            'target': vs.get('target', ''),
+            'target_type': vs.get('target_type', 'index'),
+            'thesis_type': vs.get('thesis_type', []),
+            'premises': premises,
+        })
+
+    # 6. ConversationState 생성
+    state = ConversationState(
+        conv_id=conv_id,
+        entry_source='news',
+        phase=BuilderPhase.SUGGESTIONS.value,
+        source_news_id=str(source_news_id),
+    )
+    state.collected.suggestions = [SuggestionData(**s) for s in suggestion_datas]
+
+    # 7. 캐시 저장 (suggestions 배열만, TTL 10분)
+    cache.set(cache_key, suggestion_datas, timeout=600)
+
+    log_event(EVENT_SUGGESTION_REQUEST_SUCCEEDED, {
+        'conv_id': conv_id,
+        'suggestion_count': len(suggestion_datas),
+    })
+
+    return {
+        'conversation_state': state.model_dump(),
+        'suggestions': suggestion_datas,
+        'phase': 'suggestions',
+        'entry_mode': 'suggestions',
+    }
+
+
+def _handle_suggestion_select(state, user_input, user):
+    """
+    suggestions phase 2단계 처리:
+      Step 1: select_suggestion:N → 전제 multi-select 표시
+      Step 2: 전제 인덱스 리스트 → 선택된 전제로 지표 매칭 → PRESET
+    """
+    import re as _re
+    from thesis.services.llm_postprocess import merge_to_collected
+    from thesis.services.indicator_matcher import match_indicators_for_llm
+
+    # ── Step 1: 카드 선택 → 전제 multi-select ──
+    if isinstance(user_input, str):
+        text = user_input.strip()
+        match = _re.match(r'^select_suggestion:(\d+)$', text)
+        if match:
+            idx = int(match.group(1))
+            suggestions = state.collected.suggestions
+            if idx < 0 or idx >= len(suggestions):
+                return {
+                    'conversation_state': state.model_dump(),
+                    'message': f'잘못된 선택입니다. 0~{len(suggestions)-1} 사이를 선택해주세요.',
+                    'buttons': [],
+                    'phase': 'suggestions',
+                }
+
+            selected = suggestions[idx]
+
+            # 기본 정보 병합 (premises는 아직 확정 아님 — 사용자가 골라야 함)
+            merge_data = {
+                'direction': selected.direction,
+                'target': selected.target,
+                'target_type': selected.target_type,
+                'title': selected.title,
+                'thesis_type': selected.thesis_type,
+            }
+            state.collected = merge_to_collected(state.collected, merge_data)
+
+            # 전제를 collected.premises에 임시 저장 (사용자 선택 대기)
+            state.collected.premises = [
+                PremiseData(
+                    title=p.title,
+                    description=p.description,
+                    recommended_indicators=p.recommended_indicators,
+                )
+                for p in selected.premises
+            ]
+
+            log_event(EVENT_SUGGESTION_SELECTED, {
+                'conv_id': state.conv_id,
+                'direction': selected.direction,
+                'index': idx,
+            })
+
+            # 전제를 multi-select 버튼으로 반환
+            direction_label = {'bullish': '상승', 'bearish': '하락'}.get(selected.direction, '')
+            buttons = [
+                {'id': str(i), 'label': p.title, 'long_press_hint': bool(p.description)}
+                for i, p in enumerate(selected.premises)
+            ]
+            long_press = {
+                str(i): p.description
+                for i, p in enumerate(selected.premises)
+                if p.description
+            }
+
+            message = (
+                f'"{selected.title}" ({direction_label}) 가설의 전제들이에요.\n'
+                f'추적할 전제를 선택해주세요.'
+            )
+            state.history.append(ChatMessage(role='assistant', content=message))
+
+            result = {
+                'conversation_state': state.model_dump(),
+                'message': message,
+                'buttons': buttons,
+                'selection_mode': 'multi',
+                'phase': 'suggestions',
+            }
+            if long_press:
+                result['long_press_explanations'] = long_press
+            return result
+
+        # select_suggestion:N 형식이 아닌 문자열 → 안내
+        return {
+            'conversation_state': state.model_dump(),
+            'message': '가설 카드를 선택해주세요.',
+            'buttons': [],
+            'phase': 'suggestions',
+        }
+
+    # ── Step 2: 전제 multi-select 확인 → 지표 매칭 → PRESET ──
+    if isinstance(user_input, list):
+        selected_indices = []
+        for item in user_input:
+            try:
+                selected_indices.append(int(item))
+            except (ValueError, TypeError):
+                continue
+
+        all_premises = state.collected.premises
+
+        if not selected_indices:
+            return {
+                'conversation_state': state.model_dump(),
+                'message': '최소 1개의 전제를 선택해주세요.',
+                'buttons': [
+                    {'id': str(i), 'label': p.title}
+                    for i, p in enumerate(all_premises)
+                ],
+                'selection_mode': 'multi',
+                'phase': 'suggestions',
+            }
+
+        # 선택된 전제만 유지
+        kept_premises = [
+            all_premises[i] for i in selected_indices
+            if 0 <= i < len(all_premises)
+        ]
+        if not kept_premises:
+            return {
+                'conversation_state': state.model_dump(),
+                'message': '최소 1개의 전제를 선택해주세요.',
+                'buttons': [
+                    {'id': str(i), 'label': p.title}
+                    for i, p in enumerate(all_premises)
+                ],
+                'selection_mode': 'multi',
+                'phase': 'suggestions',
+            }
+
+        state.collected.premises = kept_premises
+
+        # validation
+        try:
+            CollectedData.model_validate(state.collected.model_dump())
+        except Exception as e:
+            logger.exception(f"CollectedData validation failed after premise selection: {e}")
+            return {
+                'conversation_state': state.model_dump(),
+                'message': '전제 처리 중 오류가 발생했어요. 다시 시도해주세요.',
+                'buttons': [],
+                'phase': 'suggestions',
+            }
+
+        # 선택된 전제 기반 지표 정밀 매칭
+        indicator_recommendations = match_indicators_for_llm(state.collected)
+        matched_ids = []
+        for rec in indicator_recommendations:
+            ind = rec.get('indicator', {})
+            db_id = ind.get('id') if isinstance(ind, dict) else None
+            if db_id:
+                matched_ids.append(db_id)
+        state.collected.selected_indicator_ids = matched_ids
+
+        # phase → PRESET
+        state.phase = BuilderPhase.PRESET.value
+
+        log_event(EVENT_SUGGESTION_TO_PRESET, {
+            'conv_id': state.conv_id,
+            'premise_count': len(kept_premises),
+            'indicator_count': len(indicator_recommendations),
+        })
+
+        message = (
+            f'전제 {len(kept_premises)}개를 선택했어요.\n'
+            f'추천 지표 {len(indicator_recommendations)}개를 찾았어요.\n\n'
+            f'모니터링 기간을 선택해주세요.'
+        )
+        state.history.append(ChatMessage(role='assistant', content=message))
+
+        preset_buttons = [
+            {'id': 'short', 'label': MONITORING_PRESETS['short']['label']},
+            {'id': 'medium', 'label': MONITORING_PRESETS['medium']['label']},
+            {'id': 'long', 'label': MONITORING_PRESETS['long']['label']},
+        ]
+
+        return {
+            'conversation_state': state.model_dump(),
+            'message': message,
+            'buttons': preset_buttons,
+            'selection_mode': 'single',
+            'needs_preset': True,
+            'indicator_recommendations': indicator_recommendations,
+            'phase': 'preset',
+        }
+
+    # ── Fallback ──
+    return {
+        'conversation_state': state.model_dump(),
+        'message': '가설 카드를 선택해주세요.',
+        'buttons': [],
+        'phase': 'suggestions',
+    }

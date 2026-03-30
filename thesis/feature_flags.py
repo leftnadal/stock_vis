@@ -11,6 +11,7 @@ FEATURE_FLAGS = {
     'GUIDED_SUGGESTION': False,
     'MULTI_TURN_EDIT': False,
     'STREAMING_RESPONSE': False,
+    'NEWS_SUGGESTIONS_ENABLED': True,
 }
 
 

@@ -1,6 +1,7 @@
 import type {
   ConversationState, ConversationResponse, ConversationButton,
   ThesisPreview, BuilderPhase, LLMIndicatorRecommendation,
+  ThesisSuggestion, SuggestResponse,
 } from './types'
 
 // ── 메시지 타입 ──
@@ -40,6 +41,8 @@ export interface BuilderState {
   confidence: 'high' | 'medium' | 'low' | null
   indicatorRecommendations: LLMIndicatorRecommendation[]
   createdThesis: { thesis_id: string; title: string; dashboard_url: string } | null
+  // Suggestion mode
+  suggestions: ThesisSuggestion[]
 }
 
 // ── 초기 상태 ──
@@ -60,6 +63,7 @@ export const INITIAL_BUILDER_STATE: BuilderState = {
   confidence: null,
   indicatorRecommendations: [],
   createdThesis: null,
+  suggestions: [],
 }
 
 // ── 메시지 id 생성 헬퍼 ──
@@ -69,6 +73,7 @@ export function generateMessageId(state: BuilderState, prefix: 'ai' | 'user' | '
 
 // ── LLM phase → step 매핑 ──
 const PHASE_STEP_MAP: Record<string, number> = {
+  suggestions: 1,
   proposal: 1,
   preset: 2,
   confirm: 3,
@@ -142,4 +147,28 @@ export function saveConvId(convId: string): void {
 
 export function clearConvId(): void {
   try { sessionStorage.removeItem(CONV_STORAGE_KEY) } catch { /* SSR */ }
+}
+
+// ── Suggest 응답 처리 ──
+export function applySuggestResponse(
+  state: BuilderState,
+  response: SuggestResponse,
+): BuilderState {
+  if (response.entry_mode === 'fallback_start') {
+    // fallback → 기존 start 응답 처리
+    return applyResponse(state, response as unknown as ConversationResponse)
+  }
+
+  // suggestions 모드
+  return {
+    ...state,
+    conversationState: response.conversation_state,
+    suggestions: response.suggestions,
+    phase: 'suggestions',
+    mode: 'llm',
+    step: 1,
+    totalSteps: 3,
+    isLoading: false,
+    messageCounter: state.messageCounter + 1,
+  }
 }

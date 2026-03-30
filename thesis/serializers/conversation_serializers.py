@@ -8,6 +8,17 @@ class ConversationStartSerializer(serializers.Serializer):
     source_news_id = serializers.UUIDField(required=False, allow_null=True)
 
 
+class SuggestionRequestSerializer(serializers.Serializer):
+    source_news_id = serializers.UUIDField()
+    keyword = serializers.CharField(max_length=100, required=False, allow_blank=True, default='')
+    summary = serializers.CharField(max_length=300, required=False, allow_blank=True, default='')
+    sentiment = serializers.ChoiceField(
+        choices=['positive', 'negative', 'neutral'],
+        required=False,
+        default='neutral',
+    )
+
+
 class ConversationResponseSerializer(serializers.Serializer):
     conversation_state = serializers.DictField()
     user_input = serializers.JSONField()

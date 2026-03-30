@@ -423,3 +423,160 @@ def call_gemini(system_prompt, history):
 def get_indicator_by_id(indicator_id):
     """INDICATOR_CATALOG에서 ID로 지표 조회."""
     return _INDICATOR_BY_ID.get(indicator_id, None)
+
+
+# ──────────────────────────────────────────────
+# Suggestion Prompt (뉴스 이슈 → bullish/bearish 2개 가설)
+# ──────────────────────────────────────────────
+
+def build_suggestion_prompt(news_title, keyword='', summary='', sentiment='neutral'):
+    """뉴스 이슈 기반 가설 제안 프롬프트 생성."""
+    indicator_block = build_indicator_block()
+
+    context_parts = [f'뉴스 제목: {news_title}']
+    if keyword:
+        context_parts.append(f'키워드: {keyword}')
+    if summary:
+        context_parts.append(f'요약: {summary}')
+    if sentiment and sentiment != 'neutral':
+        context_parts.append(f'센티먼트: {sentiment}')
+    context = '\n'.join(context_parts)
+
+    system_prompt = f"""당신은 투자 가설 설계 전문가입니다.
+
+## 목표
+아래 뉴스 이슈를 바탕으로, 같은 팩트를 다른 관점으로 해석한 **정확히 2개** 가설을 생성합니다.
+- 1번: bullish (상승/긍정적 관점)
+- 2번: bearish (하락/부정적 관점)
+
+## 규칙
+1. 한국어로 응답
+2. 각 가설의 title은 20자 이내로 핵심을 표현
+3. summary는 40자 이내로 "왜 그렇게 볼 수 있는지" 한 줄 설명
+4. 각 가설에 전제(premise) 2~3개를 포함
+5. 전제마다 추적할 지표의 indicator_db_id를 매핑
+6. target은 이슈와 가장 관련 있는 시장/종목/섹터
+7. thesis_type은 가설 성격에 맞게 선택 (복수 가능)
+
+{indicator_block}"""
+
+    user_prompt = f"""다음 뉴스 이슈를 분석해서 bullish 1개 + bearish 1개 가설을 만들어주세요.
+
+{context}"""
+
+    return system_prompt, user_prompt
+
+
+def get_suggestion_response_schema():
+    """Suggestion Structured Output JSON 스키마."""
+    suggestion_schema = {
+        "type": "object",
+        "properties": {
+            "direction": {
+                "type": "string",
+                "enum": ["bullish", "bearish"],
+            },
+            "title": {"type": "string"},
+            "summary": {"type": "string"},
+            "target": {"type": "string"},
+            "target_type": {
+                "type": "string",
+                "enum": ["index", "stock", "sector", "macro"],
+            },
+            "thesis_type": {
+                "type": "array",
+                "items": {
+                    "type": "string",
+                    "enum": ["earnings", "flow", "macro", "chain", "event"],
+                },
+            },
+            "premises": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "description": {"type": "string"},
+                        "recommended_indicators": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "indicator_db_id": {"type": "integer"},
+                                    "why": {"type": "string"},
+                                    "signal_type": {
+                                        "type": "string",
+                                        "enum": ["leading", "coincident", "lagging"],
+                                    },
+                                },
+                                "required": ["indicator_db_id", "why"],
+                            },
+                        },
+                    },
+                    "required": ["title"],
+                },
+            },
+        },
+        "required": ["direction", "title", "summary", "target", "target_type",
+                      "thesis_type", "premises"],
+    }
+
+    return {
+        "type": "object",
+        "properties": {
+            "suggestions": {
+                "type": "array",
+                "items": suggestion_schema,
+            },
+        },
+        "required": ["suggestions"],
+    }
+
+
+def call_gemini_suggestions(system_prompt, user_prompt):
+    """Gemini 호출: 가설 제안 (suggestion 전용 스키마)."""
+    try:
+        from google import genai
+        from google.genai import types
+
+        api_key = (
+            getattr(settings, 'GOOGLE_AI_API_KEY', None)
+            or getattr(settings, 'GEMINI_API_KEY', None)
+        )
+        if not api_key:
+            logger.warning("Gemini API key not configured")
+            return None
+
+        client = genai.Client(api_key=api_key)
+
+        contents = [
+            types.Content(role='user', parts=[types.Part(text=user_prompt)])
+        ]
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            max_output_tokens=2000,
+            temperature=0.4,
+            response_mime_type="application/json",
+            response_schema=get_suggestion_response_schema(),
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=contents,
+            config=config,
+        )
+
+        text = response.text if hasattr(response, 'text') and response.text else ''
+        if not text:
+            return None
+
+        return json.loads(text)
+
+    except json.JSONDecodeError as e:
+        logger.exception(f"Gemini suggestion JSON parse failed: {e}")
+        return None
+    except Exception as e:
+        logger.exception(f"Gemini suggestion call failed: {e}")
+        return None

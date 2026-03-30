@@ -17,7 +17,7 @@ import { IndicatorCard } from '@/components/thesis/IndicatorCard'
 import { AddIndicatorSheet } from '@/components/thesis/AddIndicatorSheet'
 import {
   type BuilderState, INITIAL_BUILDER_STATE, applyResponse, selectionToLabel,
-  generateMessageId, saveConvId, clearConvId,
+  generateMessageId, saveConvId, clearConvId, applySuggestResponse,
 } from '@/lib/thesis/conversation'
 import { ChatBubble } from '@/components/thesis/builder/ChatBubble'
 import { OptionButton } from '@/components/thesis/builder/OptionButton'
@@ -26,6 +26,7 @@ import { MultiSelectFooter } from '@/components/thesis/builder/MultiSelectFooter
 import { TextInput } from '@/components/thesis/builder/TextInput'
 import { BottomSheet } from '@/components/thesis/common/BottomSheet'
 import { ProgressBar } from '@/components/thesis/builder/ProgressBar'
+import { SuggestionCard } from '@/components/thesis/builder/SuggestionCard'
 import { NewsSelector } from '@/components/thesis/builder/NewsSelector'
 
 function toEntrySource(value: string | null): EntrySource {
@@ -203,18 +204,51 @@ function ThesisBuilder() {
     }
   }
 
-  // ── 뉴스 카드 선택 ──
-  function handleNewsCardSelect(newsId: string, keyword: string) {
+  // ── 뉴스 카드 선택 → suggest 호출 ──
+  async function handleNewsCardSelect(newsId: string, keyword: string) {
     setEntryPhase('active')
     setState(s => ({
       ...s,
+      isLoading: true,
       messages: [...s.messages, {
         id: `user-news-${newsId}`,
         role: 'user' as const,
         content: keyword,
       }],
+      messageCounter: s.messageCounter + 1,
     }))
-    startConversation('news', newsId)
+
+    try {
+      const issue = newsItems.find(n => n.id === newsId)
+      const response = await thesisApi.suggestTheses({
+        source_news_id: newsId,
+        keyword,
+        summary: issue?.summary,
+        sentiment: issue?.sentiment_score != null && issue.sentiment_score > 0.2
+          ? 'positive' : issue?.sentiment_score != null && issue.sentiment_score < -0.2
+            ? 'negative' : 'neutral',
+      })
+
+      saveConvId(response.conversation_state.conv_id)
+
+      if (response.entry_mode === 'fallback_start') {
+        // Gemini 실패 또는 feature flag OFF → 기존 start 흐름
+        setState(s => applySuggestResponse(s, response))
+      } else {
+        // suggestions 모드 → 카드 표시
+        setState(s => ({
+          ...applySuggestResponse(s, response),
+          messages: [...s.messages, {
+            id: `ai-suggest-${s.messageCounter}`,
+            role: 'ai' as const,
+            content: '이 이슈를 두 가지 관점으로 정리해봤어요. 마음에 드는 가설을 선택하세요.',
+          }],
+        }))
+      }
+    } catch {
+      // 네트워크 에러 → 기존 startConversation fallback
+      startConversation('news', newsId)
+    }
   }
 
   // ── 인기 가설 템플릿 선택 ──
@@ -475,6 +509,27 @@ function ThesisBuilder() {
     })
   }
 
+  // ── 가설 제안 카드 선택 → 전제 multi-select 표시 ──
+  function handleSuggestionSelect(index: number) {
+    if (!state.conversationState) return
+    const selected = state.suggestions[index]
+    if (!selected) return
+    // 전제 전체를 pre-select (사용자가 해제하여 제외)
+    const premiseIds = selected.premises.map((_, i) => String(i))
+    setSelectedIds(premiseIds)
+    sendResponse(`select_suggestion:${index}`, selected.title)
+  }
+
+  // ── "직접 작성하기" (suggestion에서 기존 start 흐름) ──
+  function handleDirectWrite() {
+    const newsId = state.conversationState?.source_news_id
+    if (newsId) {
+      startConversation('news', newsId)
+    } else {
+      startConversation('free_input')
+    }
+  }
+
   // ── 프리셋 선택 (LLM 모드) ──
   function handlePresetSelect(presetId: string) {
     sendResponse(presetId, presetId)
@@ -578,6 +633,29 @@ function ThesisBuilder() {
             {state.preview.premises.map((premise, i) => (
               <PremiseCard key={i} premise={premise} />
             ))}
+          </div>
+        )}
+
+        {/* Suggestion 모드: 가설 카드 2개 + 직접 작성 (전제 선택 단계에서는 숨김) */}
+        {state.phase === 'suggestions' && state.suggestions.length > 0 && activeButtons.length === 0 && !state.isLoading && (
+          <div className="mb-3 space-y-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {state.suggestions.map((suggestion, i) => (
+                <SuggestionCard
+                  key={`${suggestion.direction}-${i}`}
+                  suggestion={suggestion}
+                  onSelect={() => handleSuggestionSelect(i)}
+                  isLoading={state.isLoading}
+                />
+              ))}
+            </div>
+            <button
+              onClick={handleDirectWrite}
+              className="w-full py-2 text-gray-500 text-xs text-center hover:text-gray-300
+                         transition-colors"
+            >
+              직접 작성하기
+            </button>
           </div>
         )}
 

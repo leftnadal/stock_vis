@@ -10,10 +10,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from thesis.serializers import ConversationStartSerializer, ConversationResponseSerializer
+from thesis.serializers import (
+    ConversationStartSerializer, ConversationResponseSerializer,
+    SuggestionRequestSerializer,
+)
 from thesis.services.thesis_builder import (
     start_conversation, process_response,
     start_llm_conversation, process_llm_turn,
+    generate_suggestions,
 )
 from thesis.feature_flags import get_feature_flags
 
@@ -88,7 +92,7 @@ def _sanitize_llm_state(state):
         return None
 
     # mode 검증
-    if sanitized.get('mode') != 'llm':
+    if sanitized.get('mode') not in ('llm',):
         return None
 
     # history 길이 제한
@@ -312,3 +316,66 @@ JSON만 반환해."""
             }
             for t in titles[:6]
         ]
+
+
+class SuggestThesesView(APIView):
+    """POST /conversation/suggest/ → 뉴스 이슈에서 bullish/bearish 가설 2개 자동 제안."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = SuggestionRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        source_news_id = serializer.validated_data['source_news_id']
+        keyword = serializer.validated_data.get('keyword', '')
+        summary = serializer.validated_data.get('summary', '')
+        sentiment = serializer.validated_data.get('sentiment', 'neutral')
+
+        flags = get_feature_flags()
+
+        # feature flag 비활성 → 기존 /start/ 흐름으로 fallback
+        if not flags.get('NEWS_SUGGESTIONS_ENABLED'):
+            from thesis.services.builder_events import log_event, EVENT_SUGGESTION_FALLBACK_USED
+            log_event(EVENT_SUGGESTION_FALLBACK_USED, {
+                'reason': 'feature_flag_disabled',
+            })
+            return self._fallback_start(source_news_id)
+
+        # Gemini 호출
+        result = generate_suggestions(
+            source_news_id=source_news_id,
+            keyword=keyword,
+            summary=summary,
+            sentiment=sentiment,
+        )
+
+        if result is None:
+            # Gemini 실패 → fallback
+            from thesis.services.builder_events import log_event, EVENT_SUGGESTION_FALLBACK_USED
+            log_event(EVENT_SUGGESTION_FALLBACK_USED, {
+                'reason': 'gemini_failed',
+                'source_news_id': str(source_news_id),
+            })
+            return self._fallback_start(source_news_id)
+
+        return Response(result)
+
+    def _fallback_start(self, source_news_id):
+        """기존 /start/ 흐름으로 fallback 응답."""
+        flags = get_feature_flags()
+        if flags.get('LLM_BUILDER_ENABLED'):
+            result = start_llm_conversation(
+                entry_source='news',
+                source_news_id=source_news_id,
+            )
+        else:
+            result = start_conversation(
+                entry_source='news',
+                source_news_id=source_news_id,
+            )
+        # 통합 shape: entry_mode로 FE가 분기
+        result['entry_mode'] = 'fallback_start'
+        result['suggestions'] = []
+        if 'phase' not in result:
+            result['phase'] = 'proposal'
+        return Response(result)

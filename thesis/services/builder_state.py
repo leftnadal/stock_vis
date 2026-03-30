@@ -12,6 +12,7 @@ class BuilderMode(str, Enum):
 
 
 class BuilderPhase(str, Enum):
+    SUGGESTIONS = 'suggestions'
     PROPOSAL = 'proposal'
     PRESET = 'preset'
     CONFIRM = 'confirm'
@@ -44,6 +45,17 @@ class PremiseData(BaseModel):
     recommended_indicators: list[IndicatorRecommendation] = Field(default_factory=list)
 
 
+class SuggestionData(BaseModel):
+    """자동 가설 제안 1건 (bullish 또는 bearish)."""
+    direction: str
+    title: str
+    summary: str
+    target: str
+    target_type: str = 'index'
+    thesis_type: list[str] = Field(default_factory=list)
+    premises: list[PremiseData] = Field(default_factory=list)
+
+
 class CollectedData(BaseModel):
     direction: Optional[str] = None
     target: Optional[str] = None
@@ -55,6 +67,7 @@ class CollectedData(BaseModel):
     sensitivity: Optional[str] = None
     title: Optional[str] = None
     selected_indicator_ids: list[int] = Field(default_factory=list)
+    suggestions: list[SuggestionData] = Field(default_factory=list)
 
 
 class ConversationState(BaseModel):

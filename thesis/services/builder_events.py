@@ -18,6 +18,16 @@ EVENT_PRESET_SELECTED = 'preset_selected'
 EVENT_CONFIRM_CLICKED = 'confirm_clicked'
 EVENT_THESIS_CREATED = 'thesis_created'
 
+# ── Suggestion 퍼널 이벤트 ──
+EVENT_SUGGESTION_REQUEST_STARTED = 'suggestion_request_started'
+EVENT_SUGGESTION_REQUEST_SUCCEEDED = 'suggestion_request_succeeded'
+EVENT_SUGGESTION_REQUEST_FAILED = 'suggestion_request_failed'
+EVENT_SUGGESTION_FALLBACK_USED = 'suggestion_fallback_used'
+EVENT_SUGGESTION_SELECTED = 'suggestion_selected'
+EVENT_SUGGESTION_DIRECT_WRITE = 'suggestion_direct_write_clicked'
+EVENT_SUGGESTION_TO_PRESET = 'suggestion_to_preset_completed'
+EVENT_SUGGESTION_REGISTERED = 'suggestion_registration_completed'
+
 
 def log_event(name, data=None):
     """구조화된 JSON 이벤트 로그."""

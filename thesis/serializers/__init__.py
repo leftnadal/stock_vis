@@ -15,4 +15,5 @@ from .monitoring_serializers import (
 from .conversation_serializers import (
     ConversationStartSerializer,
     ConversationResponseSerializer,
+    SuggestionRequestSerializer,
 )

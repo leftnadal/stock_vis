@@ -162,7 +162,36 @@ export interface ConversationButton {
 
 // ═══ LLM 빌더 Phase (Phase A-MVP) ═══
 
-export type BuilderPhase = 'proposal' | 'preset' | 'confirm' | 'complete' | 'fallback'
+export type BuilderPhase = 'suggestions' | 'proposal' | 'preset' | 'confirm' | 'complete' | 'fallback'
+
+// ═══ 가설 제안 (Suggestion Mode) ═══
+
+export interface ThesisSuggestionPremise {
+  title: string
+  description?: string
+  recommended_indicators?: Array<{
+    indicator_db_id?: number
+    why: string
+    signal_type?: string
+  }>
+}
+
+export interface ThesisSuggestion {
+  direction: 'bullish' | 'bearish'
+  title: string
+  summary: string
+  target: string
+  target_type: string
+  thesis_type: string[]
+  premises: ThesisSuggestionPremise[]
+}
+
+export interface SuggestResponse {
+  conversation_state: ConversationState
+  suggestions: ThesisSuggestion[]
+  phase: BuilderPhase
+  entry_mode: 'suggestions' | 'fallback_start'
+}
 
 // ═══ 대화 상태 (백엔드 conversation_state echo) ═══
 
