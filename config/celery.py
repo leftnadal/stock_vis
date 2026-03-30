@@ -2,7 +2,7 @@ import os
 import logging
 from celery import Celery
 from celery.schedules import crontab
-from celery.signals import task_failure, task_retry
+from celery.signals import task_failure, task_retry, worker_process_init, worker_shutdown
 
 # Django 설정 모듈을 설정
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -15,6 +15,20 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Django 앱에서 태스크 자동 발견
 app.autodiscover_tasks()
+
+# Neo4j 태스크 → neo4j 큐로 격리 (--pool=solo 워커에서 처리, SIGSEGV 방지)
+app.conf.task_routes = {
+    'rag_analysis.tasks.health_check_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.cleanup_expired_semantic_cache': {'queue': 'neo4j'},
+    'rag_analysis.tasks.warm_semantic_cache': {'queue': 'neo4j'},
+    'rag_analysis.tasks.get_semantic_cache_stats': {'queue': 'neo4j'},
+    'rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
+    'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
+    'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
+    'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
+}
 
 # ============================================================
 # Celery Error Monitoring — 시그널 핸들러
@@ -36,6 +50,38 @@ def handle_task_retry(sender=None, request=None, reason=None, **kwargs):
         f"[TASK RETRY] {sender.name} | task_id={request.id} | "
         f"retries={request.retries} | reason={str(reason)[:200]}"
     )
+
+
+# ============================================================
+# Neo4j Fork Safety — SIGSEGV 방지
+# ============================================================
+
+@worker_process_init.connect
+def reset_neo4j_after_fork(**kwargs):
+    """
+    Fork된 워커 프로세스에서 부모의 Neo4j 드라이버 참조를 안전하게 해제.
+    close() 없이 None으로 덮어씀 (C 확장 SIGSEGV 방지).
+    """
+    try:
+        from rag_analysis.services.neo4j_driver import force_reset_after_fork
+        from rag_analysis.services.neo4j_service import reset_neo4j_service
+        force_reset_after_fork()
+        reset_neo4j_service()
+    except ImportError:
+        pass
+
+
+@worker_shutdown.connect
+def close_neo4j_on_shutdown(**kwargs):
+    """
+    메인 워커 프로세스 종료 시 Neo4j 드라이버 정리.
+    atexit 대신 사용 (fork 자식에 복사되지 않음).
+    """
+    try:
+        from rag_analysis.services.neo4j_driver import close_neo4j_driver
+        close_neo4j_driver()
+    except ImportError:
+        pass
 
 
 # 정기 태스크 스케줄 설정
@@ -115,10 +161,11 @@ app.conf.beat_schedule = {
     # RAG Analysis 태스크
     # ============================================================
 
-    # Neo4j 헬스체크 (5분마다)
+    # Neo4j 헬스체크 (6시간마다, 이전 5분 → SIGSEGV 워커 소모 방지)
     'neo4j-health-check': {
         'task': 'rag_analysis.tasks.health_check_neo4j',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute=0, hour='*/6'),
+        'options': {'queue': 'neo4j'},
     },
 
     # ============================================================
@@ -129,19 +176,22 @@ app.conf.beat_schedule = {
     'cleanup-expired-semantic-cache': {
         'task': 'rag_analysis.tasks.cleanup_expired_semantic_cache',
         'schedule': crontab(hour=4, minute=0),
+        'options': {'queue': 'neo4j'},
     },
 
     # 캐시 워밍 (매주 일요일 새벽 4시 30분)
     'warm-semantic-cache': {
         'task': 'rag_analysis.tasks.warm_semantic_cache',
         'schedule': crontab(hour=4, minute=30, day_of_week=0),
-        'kwargs': {'limit': 100}
+        'kwargs': {'limit': 100},
+        'options': {'queue': 'neo4j'},
     },
 
     # 캐시 통계 조회 (매시간, 모니터링용)
     'semantic-cache-stats': {
         'task': 'rag_analysis.tasks.get_semantic_cache_stats',
         'schedule': crontab(minute=0),
+        'options': {'queue': 'neo4j'},
     },
 
     # ============================================================
@@ -290,14 +340,14 @@ app.conf.beat_schedule = {
         'task': 'news.tasks.sync_news_to_neo4j',
         'schedule': crontab(hour='8,10,12,14,16,18', minute=45, day_of_week='1-5'),
         'kwargs': {'max_articles': 100},
-        'options': {'expires': 3600}
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # 만료된 뉴스 이벤트 관계 정리 (매일 04:00 EST)
     'cleanup-expired-news-relationships': {
         'task': 'news.tasks.cleanup_expired_news_relationships',
         'schedule': crontab(hour=4, minute=0),
-        'options': {'expires': 3600}
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ML 가중치 학습 (매주 일요일 03:00 EST)
@@ -523,7 +573,7 @@ app.conf.beat_schedule = {
         'task': 'serverless.tasks.enrich_relationship_keywords',
         'schedule': crontab(hour=5, minute=30),
         'kwargs': {'limit': 100},
-        'options': {'expires': 3600}  # 1시간 후 만료
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ============================================================

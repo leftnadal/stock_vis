@@ -10,13 +10,5 @@ class RagAnalysisConfig(AppConfig):
         # Signal 등록
         import rag_analysis.signals  # noqa
 
-        # Neo4j driver cleanup 등록
-        from django.core.signals import request_finished
-        from .services.neo4j_driver import close_neo4j_driver
-
-        # Django shutdown 시 Neo4j driver 종료
-        # Note: request_finished는 매 요청마다 호출되므로 실제로는
-        # Django 종료 시에만 close하도록 별도 처리 필요
-        # 현재는 placeholder로 등록만 함
-        import atexit
-        atexit.register(close_neo4j_driver)
+        # Note: Neo4j driver cleanup은 Celery worker_shutdown 시그널로 처리
+        # atexit는 fork 시 자식에 복사되어 SIGSEGV를 유발하므로 사용하지 않음

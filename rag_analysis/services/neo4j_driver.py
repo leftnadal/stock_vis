@@ -96,3 +96,17 @@ def reset_connection():
     close_neo4j_driver()
     _connection_attempted = False
     logger.info("Neo4j connection state reset")
+
+
+def force_reset_after_fork():
+    """
+    Fork된 자식 프로세스에서 부모의 드라이버를 안전하게 버림.
+
+    close() 호출 없이 참조만 해제합니다.
+    fork된 프로세스에서 부모의 C 확장 드라이버를 close()하면
+    SIGSEGV가 발생하므로, 참조만 None으로 덮어씁니다.
+    """
+    global _driver, _connection_attempted
+    _driver = None
+    _connection_attempted = False
+    logger.debug("Neo4j driver reference cleared after fork (no close)")
