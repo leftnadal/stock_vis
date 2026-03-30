@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  LineChart, Line, Area, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import type { ChartDataPoint } from '@/types/validation';
@@ -50,24 +50,26 @@ interface Props {
 export default function MetricBarChart({ history, unit, rank, total }: Props) {
   if (history.length === 0) return null;
 
+  // p25~p75 밴드를 표현하기 위해 [p25, p75] 범위를 Area로 그림
   const chartData = history.map((h) => ({
     year: h.fiscal_year,
     company: h.company_value,
     median: h.peer_median,
+    // Area range: [p25, p75] — Recharts Area with base
+    peerRange: h.peer_p25 !== null && h.peer_p75 !== null ? [h.peer_p25, h.peer_p75] : undefined,
     p25: h.peer_p25,
     p75: h.peer_p75,
   }));
 
   return (
     <div className="w-full h-48 relative">
-      {/* 우측 상단 순위 미니 배지 */}
       {rank && total && (
         <div className="absolute top-0 right-0 z-10 text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 px-1.5 py-0.5 rounded">
           {rank}위/{total}
         </div>
       )}
       <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="year"
@@ -107,25 +109,29 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
             }}
           />
 
-          {/* Peer p25~p75 밴드 (Area — 연한 파랑, 높은 opacity) */}
+          {/* Peer P25~P75 밴드: p75 Area를 그린 뒤 p25 Line으로 하단 경계 */}
           <Area
             dataKey="p75"
             name="p75"
-            stroke="none"
-            fill="#93C5FD"
-            fillOpacity={0.3}
+            stroke="#93C5FD"
+            strokeWidth={0.5}
+            fill="#DBEAFE"
+            fillOpacity={0.6}
             connectNulls
+            dot={false}
+            activeDot={false}
           />
-          <Area
+          <Line
             dataKey="p25"
-            stroke="none"
-            fill="#FFFFFF"
-            fillOpacity={1}
+            stroke="#93C5FD"
+            strokeWidth={0.5}
+            dot={false}
+            activeDot={false}
             legendType="none"
             connectNulls
           />
 
-          {/* Peer 중앙값 (실선, 명확하게) */}
+          {/* Peer 중앙값 (실선) */}
           <Line
             dataKey="median"
             name="median"
@@ -145,7 +151,7 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
             activeDot={{ r: 6 }}
             connectNulls
           />
-        </LineChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );
