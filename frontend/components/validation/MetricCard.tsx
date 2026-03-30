@@ -3,6 +3,7 @@
 import { AlertTriangle } from 'lucide-react';
 import type { MetricData } from '@/types/validation';
 import MetricBarChart from './MetricBarChart';
+import MetricInfoTooltip from './MetricInfoTooltip';
 
 const SIGNAL_DOT: Record<string, string> = {
   green: 'bg-green-500',
@@ -53,6 +54,7 @@ export default function MetricCard({ metric }: Props) {
         <div className="flex items-center gap-2 mb-2">
           <div className={`w-3 h-3 rounded-full ${SIGNAL_DOT.gray}`} />
           <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{metric.display_name}</h4>
+          <MetricInfoTooltip metricCode={metric.metric_code} />
           <span className="text-xs text-gray-400">{metric.display_name_en}</span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">해당 없음 — {interpretation}</p>
@@ -67,6 +69,7 @@ export default function MetricCard({ metric }: Props) {
         <div className="flex items-center gap-2 mb-2">
           <div className={`w-3 h-3 rounded-full ${SIGNAL_DOT.gray}`} />
           <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{metric.display_name}</h4>
+          <MetricInfoTooltip metricCode={metric.metric_code} />
           <span className="text-xs text-gray-400">{metric.display_name_en}</span>
         </div>
         <p className="text-sm text-gray-500 dark:text-gray-400">데이터 누락</p>
@@ -79,10 +82,11 @@ export default function MetricCard({ metric }: Props) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700">
-      {/* 상단: 신호등 + 지표명 */}
+      {/* 상단: 신호등 + 지표명 + ⓘ */}
       <div className="flex items-center gap-2 mb-3">
         <div className={`w-3 h-3 rounded-full ${SIGNAL_DOT[signal]}`} />
         <h4 className="text-sm font-semibold text-gray-900 dark:text-white">{metric.display_name}</h4>
+        <MetricInfoTooltip metricCode={metric.metric_code} />
         <span className="text-xs text-gray-400">{metric.display_name_en}</span>
       </div>
 
