@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { thesisApi } from '@/lib/thesis/api'
 import {
@@ -85,6 +85,13 @@ function ThesisBuilder() {
   }
   const [newsItems, setNewsItems] = useState<NewsIssue[]>([])
   const [newsLoading, setNewsLoading] = useState(false)
+
+  // ── Decision Trail: 선택 이력 추적 ──
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState<number | null>(null)
+  const [confirmedPremises, setConfirmedPremises] = useState<{
+    selected: string[]
+    excluded: string[]
+  } | null>(null)
 
   const scrollRef = useRef<HTMLDivElement>(null)
 
@@ -416,6 +423,23 @@ function ThesisBuilder() {
     if (selectedIds.length === 0) return
     const lastMsg = state.messages[state.messages.length - 1]
     const label = selectionToLabel(selectedIds, lastMsg?.buttons ?? [])
+
+    // Decision Trail: 전제 선택 결과 캡처 (suggestions phase에서 multi-select 확인 시)
+    if (state.phase === 'suggestions' && selectedSuggestionIndex !== null) {
+      const suggestion = state.suggestions[selectedSuggestionIndex]
+      if (suggestion) {
+        const selectedSet = new Set(selectedIds)
+        setConfirmedPremises({
+          selected: suggestion.premises
+            .filter((_, i) => selectedSet.has(String(i)))
+            .map(p => p.title),
+          excluded: suggestion.premises
+            .filter((_, i) => !selectedSet.has(String(i)))
+            .map(p => p.title),
+        })
+      }
+    }
+
     const success = await sendResponse(selectedIds, label)
     if (success) setSelectedIds([])
   }
@@ -514,6 +538,7 @@ function ThesisBuilder() {
     if (!state.conversationState) return
     const selected = state.suggestions[index]
     if (!selected) return
+    setSelectedSuggestionIndex(index)
     // 전제 전체를 pre-select (사용자가 해제하여 제외)
     const premiseIds = selected.premises.map((_, i) => String(i))
     setSelectedIds(premiseIds)
@@ -636,8 +661,51 @@ function ThesisBuilder() {
           </div>
         )}
 
-        {/* Suggestion 모드: 가설 카드 2개 + 직접 작성 (전제 선택 단계에서는 숨김) */}
-        {state.phase === 'suggestions' && state.suggestions.length > 0 && activeButtons.length === 0 && !state.isLoading && (
+        {/* ── Decision Trail: 가설 카드 히스토리 (선택 후 비활성 유지) ── */}
+        {selectedSuggestionIndex !== null && state.suggestions.length > 0 && (
+          <div className="mb-3">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {state.suggestions.map((suggestion, i) => (
+                <SuggestionCard
+                  key={`trail-${suggestion.direction}-${i}`}
+                  suggestion={suggestion}
+                  onSelect={() => {}}
+                  variant={i === selectedSuggestionIndex ? 'selected' : 'dimmed'}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Decision Trail: 전제 선택 히스토리 ── */}
+        {confirmedPremises && (
+          <div className="mb-3 p-3 bg-gray-900/50 border border-gray-800 rounded-xl">
+            <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider mb-2">
+              선택한 전제
+            </p>
+            <div className="space-y-1.5">
+              {confirmedPremises.selected.map((title, i) => (
+                <div key={`sel-${i}`} className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-4 h-4 rounded bg-blue-600/20 flex items-center justify-center">
+                    <Check size={10} className="text-blue-400" />
+                  </div>
+                  <span className="text-xs text-gray-300">{title}</span>
+                </div>
+              ))}
+              {confirmedPremises.excluded.map((title, i) => (
+                <div key={`exc-${i}`} className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-4 h-4 rounded bg-gray-800 flex items-center justify-center">
+                    <X size={10} className="text-gray-600" />
+                  </div>
+                  <span className="text-xs text-gray-600 line-through">{title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Suggestion 모드: 가설 카드 (최초 선택 전에만 인터랙티브) */}
+        {selectedSuggestionIndex === null && state.phase === 'suggestions' && state.suggestions.length > 0 && activeButtons.length === 0 && !state.isLoading && (
           <div className="mb-3 space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {state.suggestions.map((suggestion, i) => (

@@ -48,15 +48,19 @@ export function IndicatorCard({ recommendation, checked = true, onToggle }: Indi
           </span>
         </div>
 
-        {/* why */}
-        <p className={`text-xs mt-1 line-clamp-2 ${checked ? 'text-gray-400' : 'text-gray-600'}`}>
-          {recommendation.why}
-        </p>
+        {/* 추천 이유 */}
+        {recommendation.why && (
+          <div className={`mt-1.5 px-2 py-1.5 rounded-md ${checked ? 'bg-gray-800/60' : 'bg-gray-900/40'}`}>
+            <p className={`text-[11px] leading-relaxed ${checked ? 'text-gray-300' : 'text-gray-600'}`}>
+              {recommendation.why}
+            </p>
+          </div>
+        )}
 
         {/* 전제 연결 */}
         {recommendation.premise_title && (
-          <p className="text-[10px] text-gray-500 mt-1">
-            {recommendation.premise_title}
+          <p className="text-[10px] text-gray-500 mt-1.5">
+            전제: {recommendation.premise_title}
           </p>
         )}
       </div>

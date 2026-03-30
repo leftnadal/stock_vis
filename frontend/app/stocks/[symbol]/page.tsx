@@ -45,9 +45,11 @@ import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
-import { useValidationSummary } from '@/hooks/useValidation';
+import { useValidationSummary, useValidationMetrics } from '@/hooks/useValidation';
 import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
 import PeerContextBar from '@/components/validation/PeerContextBar';
+import CategorySection from '@/components/validation/CategorySection';
+import CategorySidebar from '@/components/validation/CategorySidebar';
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
 
@@ -892,18 +894,31 @@ function NewsTab({ symbol }: { symbol: string }) {
 
 // Validation Tab — 1차 검증
 function ValidationTab({ symbol }: { symbol: string }) {
-  const { data: summary, isLoading, error } = useValidationSummary(symbol);
+  const { data: summary, isLoading: summaryLoading, error: summaryError } = useValidationSummary(symbol);
+  const { data: metricsData, isLoading: metricsLoading } = useValidationMetrics(symbol, 'all');
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const [mobileCategory, setMobileCategory] = useState<string>('profitability');
 
-  if (isLoading) {
+  // 반응형: 768px 이하를 모바일로 판단
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  if (summaryLoading || metricsLoading) {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg" />
         <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg" />
       </div>
     );
   }
 
-  if (error || !summary) {
+  if (summaryError || !summary) {
     return (
       <div className="text-center py-12">
         <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
@@ -913,7 +928,6 @@ function ValidationTab({ symbol }: { symbol: string }) {
     );
   }
 
-  // Empty state: not_in_universe or no_data
   if (summary.error === 'not_in_universe') {
     return (
       <div className="text-center py-12">
@@ -934,6 +948,12 @@ function ValidationTab({ symbol }: { symbol: string }) {
     );
   }
 
+  const categories = metricsData?.categories || [];
+
+  const handleToggleMetric = (code: string) => {
+    setExpandedMetric(expandedMetric === code ? null : code);
+  };
+
   return (
     <div className="space-y-4">
       {/* ① 종합 요약 카드 */}
@@ -949,6 +969,51 @@ function ValidationTab({ symbol }: { symbol: string }) {
           peerInfo={summary.peer_info}
           fiscalYear={summary.data_fiscal_year}
         />
+      )}
+
+      {/* ③ 카테고리별 상세 */}
+      {categories.length > 0 && (
+        isMobile ? (
+          /* 모바일: 카테고리 Chip + 선택된 카테고리만 표시 */
+          <div>
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
+              {categories.map((cat) => (
+                <button
+                  key={cat.category}
+                  onClick={() => { setMobileCategory(cat.category); setExpandedMetric(null); }}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    mobileCategory === cat.category
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}
+                >
+                  {cat.display_name}
+                </button>
+              ))}
+            </div>
+            {categories.filter(c => c.category === mobileCategory).map((cat) => (
+              <CategorySection
+                key={cat.category}
+                category={cat}
+                expandedMetric={expandedMetric}
+                onToggleMetric={handleToggleMetric}
+                isMobile
+              />
+            ))}
+          </div>
+        ) : (
+          /* 데스크톱: Sidebar + 전체 카테고리 */
+          <div className="flex gap-6">
+            <div className="w-48 flex-shrink-0 hidden lg:block">
+              <CategorySidebar categories={categories} activeCategory={categories[0]?.category || ''} />
+            </div>
+            <div className="flex-1 space-y-8">
+              {categories.map((cat) => (
+                <CategorySection key={cat.category} category={cat} />
+              ))}
+            </div>
+          </div>
+        )
       )}
     </div>
   );
