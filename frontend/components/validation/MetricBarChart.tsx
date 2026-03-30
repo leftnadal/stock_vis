@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import type { ChartDataPoint } from '@/types/validation';
@@ -109,22 +109,23 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
             }}
           />
 
-          {/* Peer P25~P75 밴드: p75 Area를 그린 뒤 p25 Line으로 하단 경계 */}
-          <Area
+          {/* Peer P75 (상단 경계, 연한 점선) */}
+          <Line
             dataKey="p75"
             name="p75"
             stroke="#93C5FD"
-            strokeWidth={0.5}
-            fill="#DBEAFE"
-            fillOpacity={0.6}
-            connectNulls
+            strokeWidth={1}
+            strokeDasharray="3 3"
             dot={false}
             activeDot={false}
+            connectNulls
           />
+          {/* Peer P25 (하단 경계, 연한 점선) */}
           <Line
             dataKey="p25"
             stroke="#93C5FD"
-            strokeWidth={0.5}
+            strokeWidth={1}
+            strokeDasharray="3 3"
             dot={false}
             activeDot={false}
             legendType="none"
