@@ -460,7 +460,7 @@ function OverviewTab({ overview }: { overview: StockOverview }) {
           {overview.dynamic_layers.news_summary && null}
 
           {/* C. 종합 진단 스코어카드 — Step 2에서 CategoryScoreGrid 컴포넌트로 교체 */}
-          {overview.dynamic_layers.category_scores && null}
+          {overview.dynamic_layers.category_signals && null}
 
           {/* D. 기업 DNA 패널 — Step 3에서 CompanyDNAGrid 컴포넌트로 교체 */}
           {(overview.dynamic_layers.growth_stage || overview.dynamic_layers.capital_dna || overview.dynamic_layers.sensitivity) && null}

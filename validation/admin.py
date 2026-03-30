@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     CompanyMetricLatest, CompanyBenchmarkDelta,
-    CategoryScore, ValidationNewsSummary,
+    CategorySignal, ValidationNewsSummary,
 )
 
 
@@ -19,10 +19,10 @@ class CompanyBenchmarkDeltaAdmin(admin.ModelAdmin):
     search_fields = ['symbol__symbol']
 
 
-@admin.register(CategoryScore)
-class CategoryScoreAdmin(admin.ModelAdmin):
-    list_display = ['symbol', 'category', 'signal', 'score', 'grade']
-    list_filter = ['category', 'signal']
+@admin.register(CategorySignal)
+class CategorySignalAdmin(admin.ModelAdmin):
+    list_display = ['symbol', 'category', 'fiscal_year', 'signal', 'score', 'metric_count', 'valid_metric_count']
+    list_filter = ['category', 'signal', 'fiscal_year']
     search_fields = ['symbol__symbol']
 
 

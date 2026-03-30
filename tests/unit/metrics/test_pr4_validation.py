@@ -5,7 +5,7 @@ PR-4~5 validation 앱 모델 테스트
 - SP500Constituent: 새 필드 3개 (is_core_universe, universe_source, industry)
 - CompanyMetricLatest: FK, unique_together, signal/trend
 - CompanyBenchmarkDelta: FK, unique_together, benchmark_type
-- CategoryScore: unique_together, score/grade nullable
+- CategorySignal: unique_together, score/grade nullable
 - ValidationNewsSummary: OneToOne, risk flags
 """
 
@@ -18,7 +18,7 @@ from stocks.models import SP500Constituent
 from validation.models import (
     CompanyMetricLatest,
     CompanyBenchmarkDelta,
-    CategoryScore,
+    CategorySignal,
     ValidationNewsSummary,
 )
 from metrics.models import MetricDefinition
@@ -188,13 +188,13 @@ class TestCompanyBenchmarkDelta:
         assert delta.benchmark_confidence == 'medium'
 
 
-# ===== PR-5: CategoryScore =====
+# ===== PR-5: CategorySignal =====
 
-class TestCategoryScore:
+class TestCategorySignal:
 
     @pytest.mark.django_db
     def test_create_category_score(self, stock_aapl):
-        cs = CategoryScore.objects.create(
+        cs = CategorySignal.objects.create(
             symbol=stock_aapl,
             category='profitability',
             signal='green',
@@ -210,41 +210,48 @@ class TestCategoryScore:
     @pytest.mark.django_db
     def test_unique_together(self, stock_aapl):
         """같은 (symbol, category) 중복 불가"""
-        CategoryScore.objects.create(
+        CategorySignal.objects.create(
             symbol=stock_aapl, category='growth', signal='yellow',
         )
         with pytest.raises(IntegrityError):
-            CategoryScore.objects.create(
+            CategorySignal.objects.create(
                 symbol=stock_aapl, category='growth', signal='red',
             )
 
     @pytest.mark.django_db
-    def test_score_grade_nullable(self, stock_aapl):
-        """MVP에서 score/grade는 nullable"""
-        cs = CategoryScore.objects.create(
+    def test_score_nullable(self, stock_aapl):
+        """score는 내부 계산용, nullable"""
+        cs = CategorySignal.objects.create(
             symbol=stock_aapl, category='financial_structure',
-            signal='yellow',
-            score=None, grade='',
+            signal='yellow', score=None,
         )
         assert cs.score is None
-        assert cs.grade == ''
 
     @pytest.mark.django_db
-    def test_phase2_fields(self, stock_aapl):
-        """Phase 2 필드들도 저장 가능"""
-        cs = CategoryScore.objects.create(
+    def test_gray_signal(self, stock_aapl):
+        """특수 산업은 gray 신호"""
+        cs = CategorySignal.objects.create(
+            symbol=stock_aapl, category='financial_structure',
+            fiscal_year=2025,
+            signal='gray',
+            signal_reason='금융업 특성상 일반 해석과 다를 수 있습니다',
+            metric_count=6, valid_metric_count=0,
+        )
+        assert cs.signal == 'gray'
+        assert cs.valid_metric_count == 0
+
+    @pytest.mark.django_db
+    def test_metric_counts(self, stock_aapl):
+        """metric_count, valid_metric_count 필드"""
+        cs = CategorySignal.objects.create(
             symbol=stock_aapl, category='cash_flow_quality',
             signal='green',
             score=Decimal('82.50'),
-            grade='A',
-            rank_in_industry=5,
-            total_in_industry=30,
-            score_1y_ago=Decimal('78.00'),
-            score_change=Decimal('4.50'),
+            metric_count=6, valid_metric_count=5,
+            signal_reason='5개 지표 중 4개 업종 상위 35%',
         )
-        assert cs.score == Decimal('82.50')
-        assert cs.grade == 'A'
-        assert cs.rank_in_industry == 5
+        assert cs.metric_count == 6
+        assert cs.valid_metric_count == 5
 
     @pytest.mark.django_db
     def test_all_7_categories(self, stock_aapl):
@@ -255,10 +262,10 @@ class TestCategoryScore:
             'dilution_shareholder', 'valuation',
         ]
         for cat in categories:
-            CategoryScore.objects.create(
+            CategorySignal.objects.create(
                 symbol=stock_aapl, category=cat, signal='green',
             )
-        assert CategoryScore.objects.filter(symbol=stock_aapl).count() == 7
+        assert CategorySignal.objects.filter(symbol=stock_aapl).count() == 7
 
 
 # ===== PR-5: ValidationNewsSummary =====

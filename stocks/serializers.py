@@ -210,25 +210,25 @@ class OverviewTabSerializer(serializers.ModelSerializer):
         layers = {}
         has_any = False
 
-        # CategoryScore (ForeignKey reverse — 여러 건)
+        # CategorySignal (ForeignKey reverse — 여러 건)
         try:
-            scores = list(obj.category_scores.all())
-            if scores:
-                layers['category_scores'] = [
+            signals = list(obj.category_signals.all())
+            if signals:
+                layers['category_signals'] = [
                     {
                         'category': s.category,
                         'signal': s.signal,
-                        'grade': s.grade,
                         'signal_reason': s.signal_reason,
-                        'contributing_metrics': s.contributing_metrics,
+                        'metric_count': s.metric_count,
+                        'valid_metric_count': s.valid_metric_count,
                     }
-                    for s in scores
+                    for s in signals
                 ]
                 has_any = True
             else:
-                layers['category_scores'] = None
+                layers['category_signals'] = None
         except Exception:
-            layers['category_scores'] = None
+            layers['category_signals'] = None
 
         # ValidationNewsSummary (OneToOne)
         try:

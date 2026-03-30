@@ -7,7 +7,7 @@
  */
 
 export interface DynamicLayers {
-  category_scores: CategoryScoreData[] | null;
+  category_signals: CategorySignalData[] | null;
   news_summary: NewsSummaryData | null;
   sensitivity: SensitivityData | null;
   growth_stage: GrowthStageData | null;
@@ -15,16 +15,12 @@ export interface DynamicLayers {
   narrative: NarrativeData | null;
 }
 
-export interface CategoryScoreData {
+export interface CategorySignalData {
   category: string;
-  signal: 'green' | 'yellow' | 'red';
-  grade: string;
+  signal: 'green' | 'yellow' | 'red' | 'gray';
   signal_reason: string;
-  contributing_metrics: Array<{
-    metric: string;
-    value: number;
-    signal: string;
-  }>;
+  metric_count: number;
+  valid_metric_count: number;
 }
 
 export interface NewsSummaryData {

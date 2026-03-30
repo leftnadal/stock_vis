@@ -719,6 +719,35 @@ class StockOverviewKo(models.Model):
         return f"{self.stock_id} 한글 개요"
 
 
+class IndustryClassification(models.Model):
+    """
+    산업별 분류 및 특수 처리 모드.
+    금융/보험/REIT/유틸리티 등 특수 산업은 일부 카테고리 해석 제한.
+    """
+    industry = models.CharField(max_length=100, unique=True)
+    sector = models.CharField(max_length=100, blank=True, default='')
+    handling_mode = models.CharField(
+        max_length=10, default='standard',
+        choices=[
+            ('standard', '일반'),
+            ('special', '특수 산업'),
+        ],
+        help_text="special: 금융/보험/REIT/유틸리티 등. 일부 카테고리 해석 제한 표시."
+    )
+    special_note = models.CharField(
+        max_length=200, blank=True, default='',
+        help_text="special일 때 UI 고지문. e.g. '금융업 특성상 일반 해석과 다를 수 있습니다'"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'stocks_industry_classification'
+
+    def __str__(self):
+        return f"{self.industry} ({self.handling_mode})"
+
+
 import uuid
 
 

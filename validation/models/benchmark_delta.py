@@ -23,14 +23,27 @@ class CompanyBenchmarkDelta(models.Model):
     benchmark_p25 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
     benchmark_p75 = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
 
+    benchmark_basis = models.CharField(
+        max_length=20, default='industry_size',
+        choices=[
+            ('industry_size', '업종+규모'),
+            ('industry', '업종 전체'),
+            ('sector', '섹터 전체'),
+        ],
+    )
     benchmark_confidence = models.CharField(
         max_length=10, default='low',
-        choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')],
-        help_text='high: peer>=8, medium: 3-7, low: <3'
+        choices=[
+            ('high', 'High'), ('medium', 'Medium'),
+            ('low', 'Low'), ('limited', 'Limited'),
+        ],
+        help_text='high: peer>=15+industry_size, medium: 8~14, low: <8, limited: <4'
     )
 
     delta_vs_median = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
     percentile_rank = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    rank = models.IntegerField(null=True, blank=True)
+    total = models.IntegerField(null=True, blank=True)
 
     relative_signal = models.CharField(
         max_length=10, blank=True,

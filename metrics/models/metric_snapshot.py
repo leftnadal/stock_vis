@@ -39,6 +39,22 @@ class CompanyMetricSnapshot(models.Model):
         ]
     )
 
+    # 값 상태 판정 (배치에서 판정, 프론트에서 표시 분기 기준)
+    value_status = models.CharField(
+        max_length=20, default='normal',
+        choices=[
+            ('normal', '정상'),
+            ('missing', '데이터 누락'),
+            ('not_applicable', '해당 없음'),
+            ('unstable', '값 불안정'),
+            ('low_confidence', '신뢰도 낮음'),
+        ],
+    )
+    exclusion_reason = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="not_applicable/unstable일 때 사유. e.g. '흑자 기업', '값 변동 과대'"
+    )
+
     # 원천 추적
     source_detail = models.JSONField(
         default=dict,

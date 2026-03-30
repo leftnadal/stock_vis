@@ -25,6 +25,25 @@ class PeerListCache(models.Model):
     fallback_reason = models.CharField(max_length=200, blank=True)
 
     source = models.CharField(max_length=20, default='fmp_peers')
+
+    # peer 선정 기준 (설계서 섹션 3.2)
+    benchmark_basis = models.CharField(
+        max_length=20, default='industry_size',
+        choices=[
+            ('industry_size', '업종+규모'),
+            ('industry', '업종 전체'),
+            ('sector', '섹터 전체'),
+        ],
+    )
+    size_bucket = models.CharField(
+        max_length=10, blank=True, default='',
+        choices=[('mega', 'Mega'), ('large', 'Large'), ('mid', 'Mid'), ('small', 'Small')],
+    )
+    peer_tier = models.CharField(
+        max_length=20, blank=True, default='',
+        help_text="Phase 2: Chain Sight 연계 시 strict/broad/industry. Phase 1에서는 빈 문자열."
+    )
+
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
