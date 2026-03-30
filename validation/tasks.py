@@ -3,6 +3,8 @@
 
 Task 1: fetch_annual_financials — 재무제표 가용성 확인
 Task 2: calculate_derived_metrics — 33개 지표 계산 + value_status 판정
+Task 3: calculate_benchmarks — Peer 선정 + Benchmark 계산
+Task 3.5: calculate_relative_metrics — rev_growth_vs_industry 계산
 """
 
 import logging
@@ -44,4 +46,39 @@ def calculate_derived_metrics(self, symbols=None):
         return result
     except Exception as exc:
         logger.exception(f"calculate_derived_metrics failed: {exc}")
+        raise self.retry(exc=exc, countdown=300)
+
+
+@shared_task(bind=True, max_retries=1, soft_time_limit=7200, time_limit=7260)
+def calculate_benchmarks(self, symbols=None):
+    """
+    Task 3: Peer 선정 + Benchmark 계산 (peer/industry).
+    종목별 peer 선정 → median/p25/p75 계산 → delta 저장 → peer_list_cache 갱신.
+    """
+    try:
+        from validation.services.benchmark_calculator import BenchmarkCalculator
+        calc = BenchmarkCalculator()
+        result = calc.calculate_for_symbols(symbols)
+        logger.info(f"calculate_benchmarks: {result['total']} total, "
+                     f"{result['success']} success, {result['errors']} errors")
+        return result
+    except Exception as exc:
+        logger.exception(f"calculate_benchmarks failed: {exc}")
+        raise self.retry(exc=exc, countdown=300)
+
+
+@shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
+def calculate_relative_metrics(self, symbols=None):
+    """
+    Task 3.5: rev_growth_vs_industry 계산.
+    Task 3에서 계산된 IndustryMetricBenchmark 참조.
+    """
+    try:
+        from validation.services.relative_metrics import RelativeMetricCalculator
+        calc = RelativeMetricCalculator()
+        result = calc.calculate_for_symbols(symbols)
+        logger.info(f"calculate_relative_metrics: {result}")
+        return result
+    except Exception as exc:
+        logger.exception(f"calculate_relative_metrics failed: {exc}")
         raise self.retry(exc=exc, countdown=300)
