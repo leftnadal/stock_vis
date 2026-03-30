@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import StockChart from '@/components/stock/StockChart';
@@ -46,7 +46,36 @@ import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/comp
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
 
-type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight';
+type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
+
+type L1Tab = 'fundamentals' | 'news' | 'analysis';
+
+const L1_TABS: { id: L1Tab; label: string }[] = [
+  { id: 'fundamentals', label: '기본정보' },
+  { id: 'news', label: '뉴스' },
+  { id: 'analysis', label: '분석 및 검증' },
+];
+
+const L2_TABS: Record<L1Tab, { id: TabType; label: string }[]> = {
+  fundamentals: [
+    { id: 'overview', label: 'Overview' },
+    { id: 'balance-sheet', label: 'Balance Sheet' },
+    { id: 'income-statement', label: 'Income Statement' },
+    { id: 'cash-flow', label: 'Cash Flow' },
+    { id: 'other-fundamentals', label: '기타 펀더멘탈' },
+  ],
+  news: [],
+  analysis: [
+    { id: 'validation', label: '1차 검증 (재무 체질)' },
+    { id: 'chain-sight', label: 'Chain Sight (관계 탐색)' },
+  ],
+};
+
+function getL1ForTab(tab: TabType): L1Tab {
+  if (tab === 'news') return 'news';
+  if (tab === 'validation' || tab === 'chain-sight') return 'analysis';
+  return 'fundamentals';
+}
 
 interface DataMeta {
   source: DataSource;
@@ -62,7 +91,31 @@ function StockDetailContent() {
   const [stockQuote, setStockQuote] = useState<StockQuote | null>(null);
   const [stockOverview, setStockOverview] = useState<StockOverview | null>(null);
   const [dataMeta, setDataMeta] = useState<DataMeta | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // query param → activeTab 초기화
+  const queryParams = useSearchParams();
+  const tabFromUrl = (queryParams?.get('tab') as TabType) || 'overview';
+  const [activeTab, setActiveTabState] = useState<TabType>(tabFromUrl);
+  const [activeL1, setActiveL1] = useState<L1Tab>(getL1ForTab(tabFromUrl));
+
+  const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabState(tab);
+    setActiveL1(getL1ForTab(tab));
+    const url = tab === 'overview'
+      ? `/stocks/${symbol}`
+      : `/stocks/${symbol}?tab=${tab}`;
+    window.history.replaceState(null, '', url);
+  }, [symbol]);
+
+  const handleL1Click = useCallback((l1: L1Tab) => {
+    setActiveL1(l1);
+    if (l1 === 'news') {
+      setActiveTab('news');
+    } else {
+      const firstL2 = L2_TABS[l1][0];
+      if (firstL2) setActiveTab(firstL2.id);
+    }
+  }, [setActiveTab]);
   const [status, setStatus] = useState<DataStatus>('loading');
   const [error, setError] = useState<DataError | null>(null);
   const [progress, setProgress] = useState<LoadingProgress | null>(null);
@@ -185,15 +238,7 @@ function StockDetailContent() {
 
   const isPositive = stockQuote.change >= 0;
 
-  const tabs = [
-    { id: 'overview' as TabType, label: 'Overview', icon: Info },
-    { id: 'balance-sheet' as TabType, label: 'Balance Sheet', icon: FileText },
-    { id: 'income-statement' as TabType, label: 'Income Statement', icon: BarChart3 },
-    { id: 'cash-flow' as TabType, label: 'Cash Flow', icon: DollarSign },
-    { id: 'other-fundamentals' as TabType, label: 'Other Fundamentals', icon: Calculator },
-    { id: 'news' as TabType, label: 'Stock News', icon: Newspaper },
-    { id: 'chain-sight' as TabType, label: 'Chain Sight', icon: Compass },
-  ];
+  // L1/L2 탭 구조 (상단 L1_TABS, L2_TABS 참조)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -318,29 +363,46 @@ function StockDetailContent() {
         {/* Stock Chart - 기본 1주일, 1일로 변경 가능 */}
         <StockChart symbol={symbol.toUpperCase()} />
 
-        {/* Tabs Navigation */}
+        {/* L1 Primary Tab Navigation (Pill 스타일) */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mt-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-1 px-6 pt-4">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-400'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {tab.label}
-                  </button>
-                );
-              })}
+          <div className="px-6 pt-4">
+            <nav className="flex space-x-2">
+              {L1_TABS.map((l1) => (
+                <button
+                  key={l1.id}
+                  onClick={() => handleL1Click(l1.id)}
+                  className={`px-5 py-2 text-sm font-medium rounded-full transition-colors ${
+                    activeL1 === l1.id
+                      ? 'bg-blue-600 text-white dark:bg-blue-500'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {l1.label}
+                </button>
+              ))}
             </nav>
           </div>
+
+          {/* L2 Secondary Tab Navigation (Underline 스타일) */}
+          {L2_TABS[activeL1].length > 0 && (
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 mt-2">
+              <nav className="flex space-x-6">
+                {L2_TABS[activeL1].map((l2) => (
+                  <button
+                    key={l2.id}
+                    onClick={() => setActiveTab(l2.id)}
+                    className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === l2.id
+                        ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    {l2.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Tab Content */}
           <div className="p-6">
@@ -364,6 +426,9 @@ function StockDetailContent() {
               <OtherFundamentalsTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'news' && <NewsTab symbol={symbol.toUpperCase()} />}
+            {activeTab === 'validation' && (
+              <ValidationTab symbol={symbol.toUpperCase()} />
+            )}
             {activeTab === 'chain-sight' && (
               <ChainSightExplorer symbol={symbol.toUpperCase()} />
             )}
@@ -377,7 +442,9 @@ function StockDetailContent() {
 export default function StockDetailPage() {
   return (
     <AuthGuard>
-      <StockDetailContent />
+      <Suspense fallback={null}>
+        <StockDetailContent />
+      </Suspense>
     </AuthGuard>
   );
 }
@@ -816,6 +883,19 @@ function NewsTab({ symbol }: { symbol: string }) {
 
       {/* News Detail Modal */}
       <NewsDetailModal newsId={selectedNewsId} onClose={() => setSelectedNewsId(null)} />
+    </div>
+  );
+}
+
+// Validation Tab — 1차 검증 (FE-PR-2~7에서 구현)
+function ValidationTab({ symbol }: { symbol: string }) {
+  return (
+    <div className="text-center py-12">
+      <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 체질 진단</h3>
+      <p className="text-sm text-gray-500 dark:text-gray-400">
+        재무 분석 데이터 준비 중입니다.
+      </p>
     </div>
   );
 }
