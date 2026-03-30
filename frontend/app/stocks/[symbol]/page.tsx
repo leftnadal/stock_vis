@@ -896,7 +896,7 @@ function NewsTab({ symbol }: { symbol: string }) {
 
 // Validation Tab — 1차 검증
 function ValidationTab({ symbol }: { symbol: string }) {
-  const { data: summary, isLoading: summaryLoading, error: summaryError } = useValidationSummary(symbol);
+  const { data: summary, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useValidationSummary(symbol);
   const { data: metricsData, isLoading: metricsLoading } = useValidationMetrics(symbol, 'all');
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
   const [mobileCategory, setMobileCategory] = useState<string>('profitability');
@@ -920,16 +920,24 @@ function ValidationTab({ symbol }: { symbol: string }) {
     );
   }
 
+  // Case: API 에러 + retry 버튼
   if (summaryError || !summary) {
     return (
       <div className="text-center py-12">
         <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">데이터를 불러올 수 없습니다</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">잠시 후 다시 시도해주세요.</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">잠시 후 다시 시도해주세요.</p>
+        <button
+          onClick={() => refetchSummary()}
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          다시 시도
+        </button>
       </div>
     );
   }
 
+  // Case 4: S&P 500 외 종목
   if (summary.error === 'not_in_universe') {
     return (
       <div className="text-center py-12">
@@ -940,12 +948,23 @@ function ValidationTab({ symbol }: { symbol: string }) {
     );
   }
 
+  // Case 1: 배치 미실행
   if (summary.error === 'no_data') {
     return (
       <div className="text-center py-12">
         <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 체질 진단</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400">{summary.message}</p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 분석 데이터 준비 중</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{summary.message}</p>
+        <button
+          onClick={() => {
+            const url = `/stocks/${symbol}`;
+            window.history.replaceState(null, '', url);
+            window.location.reload();
+          }}
+          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          기본정보 보기 →
+        </button>
       </div>
     );
   }
@@ -972,6 +991,12 @@ function ValidationTab({ symbol }: { symbol: string }) {
           fiscalYear={summary.data_fiscal_year}
         />
       )}
+
+      {/* 데이터 기준일 */}
+      <p className="text-xs text-gray-400 dark:text-gray-500">
+        데이터 기준: {summary.data_fiscal_year} FY
+        {summary.data_freshness && ` | 마지막 업데이트: ${new Date(summary.data_freshness).toLocaleDateString('ko-KR')}`}
+      </p>
 
       {/* ③ 카테고리별 상세 */}
       {categories.length > 0 && (
