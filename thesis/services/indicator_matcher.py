@@ -303,18 +303,21 @@ def match_indicators_for_llm(collected):
                     })
                     seen_names.add(cat_ind['name'])
 
-        # 2순위: PK 매칭 실패 시 텍스트 기반 fallback
+        # 2순위: PK 매칭 실패 시 키워드 룰 매칭만 사용
+        # (match_by_gemini fallback은 카탈로그에 없는 환각 지표를 생성하므로 제외)
         pk_matched = any(
             rec.indicator_db_id and get_indicator_by_id(rec.indicator_db_id)
             for rec in premise.recommended_indicators
         )
         if not pk_matched:
-            text_matches = match_indicators_for_premise(premise.title)
+            text_matches = match_by_keywords(premise.title)
             for ind in text_matches:
                 if ind['name'] not in seen_names:
+                    # 카탈로그에 존재하는 지표인지 최종 검증
+                    catalog_entry = _find_in_catalog(ind['name'])
                     results.append({
                         'premise_title': premise.title,
-                        'indicator': ind,
+                        'indicator': catalog_entry or ind,
                         'indicator_name': ind['name'],
                         'why': ind.get('reason', ''),
                         'signal_type': 'coincident',
@@ -324,3 +327,12 @@ def match_indicators_for_llm(collected):
                     seen_names.add(ind['name'])
 
     return results
+
+
+def _find_in_catalog(name):
+    """INDICATOR_CATALOG에서 이름으로 지표 검색."""
+    from thesis.services.prompt_builder import INDICATOR_CATALOG
+    for ind in INDICATOR_CATALOG:
+        if ind['name'] == name:
+            return ind
+    return None
