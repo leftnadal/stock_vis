@@ -1,8 +1,8 @@
 'use client';
 
 import {
-  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, Label,
 } from 'recharts';
 import type { ChartDataPoint } from '@/types/validation';
 
@@ -39,6 +39,16 @@ function formatTooltipValue(value: number | null, unit: string): string {
   }
 }
 
+/** 마지막 dot에 라벨 표시하는 커스텀 dot */
+function LastPointLabel({ cx, cy, index, data, label, color }: any) {
+  if (index !== data.length - 1) return null;
+  return (
+    <text x={cx + 6} y={cy + 3} fontSize={9} fill={color} fontWeight={label === '이 기업' ? 600 : 400}>
+      {label}
+    </text>
+  );
+}
+
 interface Props {
   history: ChartDataPoint[];
   unit: string;
@@ -50,13 +60,10 @@ interface Props {
 export default function MetricBarChart({ history, unit, rank, total }: Props) {
   if (history.length === 0) return null;
 
-  // p25~p75 밴드를 표현하기 위해 [p25, p75] 범위를 Area로 그림
   const chartData = history.map((h) => ({
     year: h.fiscal_year,
     company: h.company_value,
     median: h.peer_median,
-    // Area range: [p25, p75] — Recharts Area with base
-    peerRange: h.peer_p25 !== null && h.peer_p75 !== null ? [h.peer_p25, h.peer_p75] : undefined,
     p25: h.peer_p25,
     p75: h.peer_p75,
   }));
@@ -69,7 +76,7 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
         </div>
       )}
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <ComposedChart data={chartData} margin={{ top: 5, right: 50, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="year"
@@ -97,60 +104,66 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
               );
             }}
           />
-          <Legend
-            wrapperStyle={{ fontSize: 11 }}
-            formatter={(value: string) => {
-              const labels: Record<string, string> = {
-                company: '이 기업',
-                median: 'Peer 중앙값',
-                p75: 'Peer P25~P75',
-              };
-              return labels[value] || value;
-            }}
-          />
 
-          {/* Peer P75 (상단 경계, 연한 점선) */}
-          <Line
+          {/* 1) P75 Area — 하늘색으로 0~p75 전체 채움 */}
+          <Area
             dataKey="p75"
-            name="p75"
             stroke="#93C5FD"
-            strokeWidth={1}
+            strokeWidth={0.5}
             strokeDasharray="3 3"
+            fill="#DBEAFE"
+            fillOpacity={0.5}
+            isAnimationActive={false}
             dot={false}
             activeDot={false}
             connectNulls
+            legendType="none"
           />
-          {/* Peer P25 (하단 경계, 연한 점선) */}
-          <Line
+          {/* 2) P25 Area — 흰색으로 0~p25 덮어씌움 → p25~p75만 하늘색 */}
+          <Area
             dataKey="p25"
             stroke="#93C5FD"
-            strokeWidth={1}
+            strokeWidth={0.5}
             strokeDasharray="3 3"
+            fill="#FFFFFF"
+            fillOpacity={1}
+            isAnimationActive={false}
             dot={false}
             activeDot={false}
-            legendType="none"
             connectNulls
+            legendType="none"
           />
 
-          {/* Peer 중앙값 (실선) */}
+          {/* Peer 중앙값 (실선) + 끝 라벨 */}
           <Line
             dataKey="median"
-            name="median"
             stroke="#6B7280"
             strokeWidth={1.5}
-            dot={{ r: 2.5, fill: '#6B7280' }}
+            dot={(props: any) => (
+              <g key={props.index}>
+                <circle cx={props.cx} cy={props.cy} r={2.5} fill="#6B7280" />
+                <LastPointLabel {...props} data={chartData} label="Median" color="#6B7280" />
+              </g>
+            )}
+            activeDot={false}
             connectNulls
+            legendType="none"
           />
 
-          {/* 이 기업 (실선, 파란색) */}
+          {/* 이 기업 (실선, 파란색) + 끝 라벨 */}
           <Line
             dataKey="company"
-            name="company"
             stroke="#3B82F6"
             strokeWidth={2}
-            dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }}
+            dot={(props: any) => (
+              <g key={props.index}>
+                <circle cx={props.cx} cy={props.cy} r={4} fill="#3B82F6" stroke="#fff" strokeWidth={2} />
+                <LastPointLabel {...props} data={chartData} label="이 기업" color="#3B82F6" />
+              </g>
+            )}
             activeDot={{ r: 6 }}
             connectNulls
+            legendType="none"
           />
         </ComposedChart>
       </ResponsiveContainer>
