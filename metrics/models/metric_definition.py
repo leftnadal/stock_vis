@@ -18,8 +18,10 @@ class MetricDefinition(models.Model):
 
     UNIT_CHOICES = [
         ('ratio', 'Ratio'),
+        ('multiple', 'Multiple (배)'),
         ('days', 'Days'),
         ('pct', 'Percentage'),
+        ('percent_point', 'Percentage Point (%p)'),
         ('years', 'Years'),
         ('flag', 'Boolean Flag'),
     ]
@@ -45,6 +47,12 @@ class MetricDefinition(models.Model):
     threshold_direction = models.CharField(
         max_length=10, default='above',
         choices=[('above', 'Above'), ('below', 'Below')]
+    )
+
+    # value_status 판정용
+    not_applicable_reason = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="이 지표가 특정 기업에 적용 불가할 때 사유. e.g. '흑자 기업', '서비스 기업 (재고 없음)'"
     )
 
     # 관리
