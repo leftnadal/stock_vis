@@ -19,9 +19,7 @@ export function SuggestionCard({ suggestion, onSelect, isLoading }: SuggestionCa
   const ctaBg = isBullish
     ? 'bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700'
     : 'bg-red-600 hover:bg-red-500 active:bg-red-700'
-
-  const visiblePremises = suggestion.premises.slice(0, 2)
-  const hiddenCount = Math.max(0, suggestion.premises.length - 2)
+  const premiseDot = isBullish ? 'text-emerald-600' : 'text-red-600'
 
   return (
     <div
@@ -36,36 +34,45 @@ export function SuggestionCard({ suggestion, onSelect, isLoading }: SuggestionCa
         {directionIcon} {directionLabel}
       </span>
 
-      {/* 제목 + 요약 */}
-      <h3 className="text-sm text-white font-semibold mt-2 leading-snug">
+      {/* 제목 */}
+      <h3 className="text-sm text-white font-semibold mt-2.5 leading-snug">
         {suggestion.title}
       </h3>
-      <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">
+
+      {/* 핵심 논리 (summary) */}
+      <p className="text-[13px] text-gray-300 mt-1.5 leading-relaxed">
         {suggestion.summary}
       </p>
 
-      {/* 전제 목록 */}
-      {visiblePremises.length > 0 && (
-        <ul className="mt-3 space-y-1">
-          {visiblePremises.map((p, i) => (
-            <li key={i} className="text-xs text-gray-400 flex items-start gap-1.5">
-              <span className="text-gray-600 mt-0.5 flex-shrink-0">·</span>
-              <span className="line-clamp-1">{p.title}</span>
-            </li>
+      {/* 전제 목록 — 제목 + 설명 */}
+      {suggestion.premises.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-gray-800 space-y-2.5">
+          <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">
+            근거
+          </p>
+          {suggestion.premises.map((p, i) => (
+            <div key={i} className="flex items-start gap-2">
+              <span className={`${premiseDot} mt-1 flex-shrink-0 text-sm leading-none`}>•</span>
+              <div className="min-w-0">
+                <p className="text-xs text-gray-200 font-medium leading-snug">
+                  {p.title}
+                </p>
+                {p.description && (
+                  <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                    {p.description}
+                  </p>
+                )}
+              </div>
+            </div>
           ))}
-          {hiddenCount > 0 && (
-            <li className="text-xs text-gray-500 pl-3">
-              +{hiddenCount}개 더보기
-            </li>
-          )}
-        </ul>
+        </div>
       )}
 
       {/* CTA 버튼 */}
       <button
         onClick={onSelect}
         disabled={isLoading}
-        className={`mt-3 w-full py-2.5 text-white text-sm font-medium rounded-lg
+        className={`mt-4 w-full py-2.5 text-white text-sm font-medium rounded-lg
                     ${ctaBg} active:scale-[0.98] transition-all
                     disabled:opacity-50 disabled:cursor-not-allowed`}
       >
