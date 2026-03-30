@@ -123,40 +123,48 @@ const KEYWORD_INDICATOR_MAP: KeywordRule[] = [
 
 interface RelatedIndicator {
   id: number
-  reason: string
+  premiseHint: string  // 어떤 전제 때문에 추천되었는지
+  reason: string       // 이 지표가 그 전제와 어떤 관계인지
   score: number
 }
 
 /**
- * 전제 텍스트에서 관련 지표 ID + 이유를 추출 (이미 선택된 것 제외).
+ * 전제 텍스트에서 관련 지표 ID + 문맥적 이유를 추출 (이미 선택된 것 제외).
+ * 각 전제를 개별 매칭하여 "어떤 전제 → 어떤 지표" 연결을 유지.
  */
 function findRelatedIndicators(premiseTexts: string[], alreadySelectedIds: number[]): RelatedIndicator[] {
   const excludeSet = new Set(alreadySelectedIds)
-  const resultMap = new Map<number, { reason: string; score: number }>()
+  const resultMap = new Map<number, RelatedIndicator>()
 
-  const allText = premiseTexts.join(' ').toLowerCase()
+  for (const premiseText of premiseTexts) {
+    const textLower = premiseText.toLowerCase()
+    const premiseHint = premiseText.length > 30
+      ? premiseText.slice(0, 30) + '…'
+      : premiseText
 
-  for (const rule of KEYWORD_INDICATOR_MAP) {
-    for (const keyword of rule.keywords) {
-      if (allText.includes(keyword.toLowerCase())) {
-        for (const id of rule.indicatorIds) {
-          if (!excludeSet.has(id)) {
-            const existing = resultMap.get(id)
-            if (existing) {
-              existing.score += 1
-            } else {
-              resultMap.set(id, { reason: rule.reason, score: 1 })
-            }
-          }
+    for (const rule of KEYWORD_INDICATOR_MAP) {
+      let matched = false
+      for (const keyword of rule.keywords) {
+        if (textLower.includes(keyword.toLowerCase())) {
+          matched = true
+          break
         }
-        break
+      }
+      if (!matched) continue
+
+      for (const id of rule.indicatorIds) {
+        if (excludeSet.has(id)) continue
+        const existing = resultMap.get(id)
+        if (existing) {
+          existing.score += 1
+        } else {
+          resultMap.set(id, { id, premiseHint, reason: rule.reason, score: 1 })
+        }
       }
     }
   }
 
-  return [...resultMap.entries()]
-    .sort((a, b) => b[1].score - a[1].score)
-    .map(([id, { reason, score }]) => ({ id, reason, score }))
+  return [...resultMap.values()].sort((a, b) => b.score - a.score)
 }
 
 interface AddIndicatorSheetProps {
@@ -174,7 +182,7 @@ export function AddIndicatorSheet({
     ? findRelatedIndicators(premiseTexts, selectedIds)
     : []
   const relatedIdSet = new Set(relatedItems.map(r => r.id))
-  const reasonMap = new Map(relatedItems.map(r => [r.id, r.reason]))
+  const relatedDataMap = new Map(relatedItems.map(r => [r.id, r]))
 
   const byCategory: Record<string, CatalogIndicator[]> = {}
   for (const ind of INDICATOR_CATALOG) {
@@ -189,7 +197,7 @@ export function AddIndicatorSheet({
     '기술적', '펀더멘털', '심리',
   ]
 
-  function renderButton(ind: CatalogIndicator, reason?: string) {
+  function renderButton(ind: CatalogIndicator, context?: { premiseHint: string; reason: string }) {
     const isSelected = selectedIds.includes(ind.id)
     const freqStyle = FREQ_STYLE[ind.freq]
 
@@ -201,7 +209,7 @@ export function AddIndicatorSheet({
                    rounded-lg text-left text-xs transition-colors
                    ${isSelected
                      ? 'bg-blue-900/30 border border-blue-500/50'
-                     : reason
+                     : context
                        ? 'bg-gray-800 border border-gray-600 hover:border-blue-500/50'
                        : 'bg-gray-900 border border-gray-800 hover:border-gray-600'
                    }`}
@@ -220,10 +228,15 @@ export function AddIndicatorSheet({
             }
           </div>
         </div>
-        {reason && (
-          <span className="text-[10px] text-gray-500 leading-tight">
-            {reason}
-          </span>
+        {context && (
+          <div className="space-y-0.5 w-full">
+            <span className="text-[10px] text-blue-400/70 leading-tight block truncate">
+              「{context.premiseHint}」
+            </span>
+            <span className="text-[10px] text-gray-500 leading-tight block">
+              {context.reason}
+            </span>
+          </div>
         )}
       </button>
     )
@@ -240,11 +253,12 @@ export function AddIndicatorSheet({
               <Sparkles size={12} />
               전제 관련 추천
             </p>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
               {relatedItems.map(({ id }) => {
                 const ind = INDICATOR_BY_ID.get(id)
                 if (!ind) return null
-                return renderButton(ind, reasonMap.get(id))
+                const data = relatedDataMap.get(id)
+                return renderButton(ind, data ? { premiseHint: data.premiseHint, reason: data.reason } : undefined)
               })}
             </div>
           </div>
