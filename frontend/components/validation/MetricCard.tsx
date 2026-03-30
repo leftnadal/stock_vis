@@ -138,6 +138,8 @@ export default function MetricCard({ metric }: Props) {
           history={history}
           unit={metric.unit}
           higherIsBetter={metric.higher_is_better}
+          rank={benchmark?.rank}
+          total={benchmark?.total}
         />
       )}
 

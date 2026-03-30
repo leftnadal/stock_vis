@@ -43,9 +43,11 @@ interface Props {
   history: ChartDataPoint[];
   unit: string;
   higherIsBetter: boolean;
+  rank?: number | null;
+  total?: number | null;
 }
 
-export default function MetricBarChart({ history, unit }: Props) {
+export default function MetricBarChart({ history, unit, rank, total }: Props) {
   if (history.length === 0) return null;
 
   const chartData = history.map((h) => ({
@@ -57,7 +59,13 @@ export default function MetricBarChart({ history, unit }: Props) {
   }));
 
   return (
-    <div className="w-full h-48">
+    <div className="w-full h-48 relative">
+      {/* 우측 상단 순위 미니 배지 */}
+      {rank && total && (
+        <div className="absolute top-0 right-0 z-10 text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-white/80 dark:bg-gray-800/80 px-1.5 py-0.5 rounded">
+          {rank}위/{total}
+        </div>
+      )}
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
@@ -99,13 +107,13 @@ export default function MetricBarChart({ history, unit }: Props) {
             }}
           />
 
-          {/* Peer p25~p75 밴드 (Area) */}
+          {/* Peer p25~p75 밴드 (Area — 연한 파랑, 높은 opacity) */}
           <Area
             dataKey="p75"
             name="p75"
             stroke="none"
-            fill="#E5E7EB"
-            fillOpacity={0.5}
+            fill="#93C5FD"
+            fillOpacity={0.3}
             connectNulls
           />
           <Area
@@ -117,14 +125,13 @@ export default function MetricBarChart({ history, unit }: Props) {
             connectNulls
           />
 
-          {/* Peer 중앙값 (점선) */}
+          {/* Peer 중앙값 (실선, 명확하게) */}
           <Line
             dataKey="median"
             name="median"
-            stroke="#9CA3AF"
+            stroke="#6B7280"
             strokeWidth={1.5}
-            strokeDasharray="4 4"
-            dot={{ r: 3, fill: '#9CA3AF' }}
+            dot={{ r: 2.5, fill: '#6B7280' }}
             connectNulls
           />
 
