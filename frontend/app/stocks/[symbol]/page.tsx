@@ -50,6 +50,8 @@ import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
 import PeerContextBar from '@/components/validation/PeerContextBar';
 import CategorySection from '@/components/validation/CategorySection';
 import CategorySidebar from '@/components/validation/CategorySidebar';
+import IndustryPosition from '@/components/validation/IndustryPosition';
+import LeaderComparisonSection from '@/components/validation/LeaderComparisonSection';
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
 
@@ -1015,6 +1017,14 @@ function ValidationTab({ symbol }: { symbol: string }) {
           </div>
         )
       )}
+
+      {/* ④ 산업 위치 요약 */}
+      {summary.industry_position.ranks.length > 0 && (
+        <IndustryPosition ranks={summary.industry_position.ranks} />
+      )}
+
+      {/* ⑤ 업종 리더 대비 비교 */}
+      <LeaderComparisonSection symbol={symbol} />
     </div>
   );
 }
