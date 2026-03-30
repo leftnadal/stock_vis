@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Check } from 'lucide-react'
+import { Plus, Check, Sparkles } from 'lucide-react'
 import { BottomSheet } from '@/components/thesis/common/BottomSheet'
 
 // INDICATOR_CATALOG 미러 (prompt_builder.py와 동기화)
@@ -67,16 +67,90 @@ const INDICATOR_CATALOG = [
   { id: 11, name: '뉴스 센티먼트', category: '심리' },
 ]
 
+// 키워드 → 지표 ID 매핑 (indicator_matcher.py KEYWORD_RULES 경량 미러)
+const KEYWORD_INDICATOR_MAP: Array<{ keywords: string[]; indicatorIds: number[] }> = [
+  { keywords: ['외국인', '외인', '순매수', '순매도', 'foreign'], indicatorIds: [1] },
+  { keywords: ['기관', '기관투자자', '연기금', '보험', '자산운용'], indicatorIds: [2] },
+  { keywords: ['금리', '연준', 'fomc', 'fed', '기준금리', '금리인하', '금리인상', '이자율', '통화정책'], indicatorIds: [6, 7, 30] },
+  { keywords: ['vix', '공포', '변동성', '리스크', '불확실'], indicatorIds: [8] },
+  { keywords: ['환율', '달러', '원달러', 'usd', 'krw', '원화', '강달러', '약달러'], indicatorIds: [9, 39] },
+  { keywords: ['s&p', 's&p500', '나스닥', 'nasdaq', '미국시장', '미국 주식', '월가'], indicatorIds: [3, 12] },
+  { keywords: ['코스피', 'kospi', '한국시장', '종합주가'], indicatorIds: [4] },
+  { keywords: ['유가', '원유', 'wti', '석유', '에너지', 'opec', '오일'], indicatorIds: [21] },
+  { keywords: ['금', 'gold', '금값', '안전자산'], indicatorIds: [20] },
+  { keywords: ['구리', 'copper', '산업금속', '경기선행'], indicatorIds: [23] },
+  { keywords: ['천연가스', 'lng', '가스'], indicatorIds: [24] },
+  { keywords: ['비트코인', 'btc', '암호화폐', '크립토', '코인'], indicatorIds: [25, 26] },
+  { keywords: ['rsi', 'macd', '기술적', '과매수', '과매도', '이동평균'], indicatorIds: [10, 40] },
+  { keywords: ['실적', 'eps', '매출', '영업이익', '순이익', 'earnings', '분기 실적'], indicatorIds: [5, 50, 57, 58] },
+  { keywords: ['per', 'pbr', '밸류에이션', '저평가', '고평가', '가치'], indicatorIds: [50, 51] },
+  { keywords: ['roe', 'roa', '수익성', '이익률'], indicatorIds: [52, 53, 57] },
+  { keywords: ['부채', '레버리지', 'debt', '재무건전'], indicatorIds: [54] },
+  { keywords: ['배당', 'dividend', '현금흐름', 'fcf'], indicatorIds: [55, 56] },
+  { keywords: ['인플레', 'cpi', '물가', '소비자물가'], indicatorIds: [33] },
+  { keywords: ['고용', '실업', 'nfp', '비농업', '일자리'], indicatorIds: [31, 32] },
+  { keywords: ['gdp', '성장', '경기', '산업생산'], indicatorIds: [34, 35] },
+  { keywords: ['주택', '부동산', '모기지', 'reit'], indicatorIds: [36, 37] },
+  { keywords: ['뉴스', '센티먼트', '심리', '여론', '규제', '정책', '정치', '선거'], indicatorIds: [11, 8] },
+  { keywords: ['반도체', '테크', 'ai', '엔비디아', 'nvidia', '칩'], indicatorIds: [12, 3] },
+  { keywords: ['중국', '항셍', '홍콩'], indicatorIds: [16] },
+  { keywords: ['일본', '니케이', '엔화'], indicatorIds: [15] },
+  { keywords: ['광고', '디지털', '플랫폼', 'meta', '구글', 'google'], indicatorIds: [3, 12] },
+]
+
+/**
+ * 전제 텍스트 목록에서 관련 지표 ID를 추출 (이미 선택된 것 제외).
+ */
+function findRelatedIndicatorIds(premiseTexts: string[], alreadySelectedIds: number[]): number[] {
+  const excludeSet = new Set(alreadySelectedIds)
+  const scoredIds = new Map<number, number>() // id → 매칭 횟수
+
+  const allText = premiseTexts.join(' ').toLowerCase()
+
+  for (const rule of KEYWORD_INDICATOR_MAP) {
+    for (const keyword of rule.keywords) {
+      if (allText.includes(keyword.toLowerCase())) {
+        for (const id of rule.indicatorIds) {
+          if (!excludeSet.has(id)) {
+            scoredIds.set(id, (scoredIds.get(id) ?? 0) + 1)
+          }
+        }
+        break // 한 rule에서 첫 keyword 매칭이면 충분
+      }
+    }
+  }
+
+  // 매칭 횟수 높은 순으로 정렬
+  return [...scoredIds.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id)
+}
+
 interface AddIndicatorSheetProps {
   isOpen: boolean
   onClose: () => void
   selectedIds: number[]
   onToggle: (id: number, name: string) => void
+  premiseTexts?: string[]  // 현재 전제 텍스트 (관련 지표 추천용)
 }
 
-export function AddIndicatorSheet({ isOpen, onClose, selectedIds, onToggle }: AddIndicatorSheetProps) {
+export function AddIndicatorSheet({
+  isOpen, onClose, selectedIds, onToggle, premiseTexts = [],
+}: AddIndicatorSheetProps) {
+  // 관련 지표 추천
+  const relatedIds = premiseTexts.length > 0
+    ? findRelatedIndicatorIds(premiseTexts, selectedIds)
+    : []
+  const relatedIndicators = relatedIds
+    .map(id => INDICATOR_CATALOG.find(ind => ind.id === id))
+    .filter((ind): ind is (typeof INDICATOR_CATALOG)[number] => ind != null)
+
+  // 추천 지표에 포함된 ID (나머지 카탈로그에서 제외)
+  const relatedIdSet = new Set(relatedIds)
+
   const byCategory: Record<string, typeof INDICATOR_CATALOG> = {}
   for (const ind of INDICATOR_CATALOG) {
+    if (relatedIdSet.has(ind.id)) continue // 추천에 이미 있으면 카탈로그에서 제외
     if (!byCategory[ind.category]) byCategory[ind.category] = []
     byCategory[ind.category].push(ind)
   }
@@ -87,37 +161,56 @@ export function AddIndicatorSheet({ isOpen, onClose, selectedIds, onToggle }: Ad
     '기술적', '펀더멘털', '심리',
   ]
 
+  function renderButton(ind: { id: number; name: string }, highlight?: boolean) {
+    const isSelected = selectedIds.includes(ind.id)
+    return (
+      <button
+        key={ind.id}
+        onClick={() => onToggle(ind.id, ind.name)}
+        className={`flex items-center justify-between px-2.5 py-2
+                   rounded-lg text-left text-xs transition-colors
+                   ${isSelected
+                     ? 'bg-blue-900/30 border border-blue-500/50 text-blue-300'
+                     : highlight
+                       ? 'bg-gray-800 border border-gray-600 text-gray-200 hover:border-blue-500/50'
+                       : 'bg-gray-900 border border-gray-800 text-gray-300 hover:border-gray-600'
+                   }`}
+      >
+        <span className="truncate">{ind.name}</span>
+        {isSelected
+          ? <Check size={12} className="text-blue-400 flex-shrink-0 ml-1" />
+          : <Plus size={12} className="text-gray-600 flex-shrink-0 ml-1" />
+        }
+      </button>
+    )
+  }
+
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="지표 추가">
       <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+        {/* 전제 기반 추천 지표 */}
+        {relatedIndicators.length > 0 && (
+          <div>
+            <p className="text-xs text-blue-400 mb-2 sticky top-0 bg-gray-950 py-1
+                          flex items-center gap-1">
+              <Sparkles size={12} />
+              전제 관련 추천
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {relatedIndicators.map(ind => renderButton(ind, true))}
+            </div>
+          </div>
+        )}
+
+        {/* 전체 지표 카탈로그 */}
         {categoryOrder.map((category) => {
           const indicators = byCategory[category]
-          if (!indicators) return null
+          if (!indicators || indicators.length === 0) return null
           return (
             <div key={category}>
               <p className="text-xs text-gray-500 mb-2 sticky top-0 bg-gray-950 py-1">{category}</p>
               <div className="grid grid-cols-2 gap-1.5">
-                {indicators.map((ind) => {
-                  const isSelected = selectedIds.includes(ind.id)
-                  return (
-                    <button
-                      key={ind.id}
-                      onClick={() => onToggle(ind.id, ind.name)}
-                      className={`flex items-center justify-between px-2.5 py-2
-                                 rounded-lg text-left text-xs transition-colors
-                                 ${isSelected
-                                   ? 'bg-blue-900/30 border border-blue-500/50 text-blue-300'
-                                   : 'bg-gray-900 border border-gray-800 text-gray-300 hover:border-gray-600'
-                                 }`}
-                    >
-                      <span className="truncate">{ind.name}</span>
-                      {isSelected
-                        ? <Check size={12} className="text-blue-400 flex-shrink-0 ml-1" />
-                        : <Plus size={12} className="text-gray-600 flex-shrink-0 ml-1" />
-                      }
-                    </button>
-                  )
-                })}
+                {indicators.map(ind => renderButton(ind))}
               </div>
             </div>
           )

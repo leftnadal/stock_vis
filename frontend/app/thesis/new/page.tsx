@@ -902,6 +902,13 @@ function ThesisBuilder() {
           .filter((id): id is number => id != null && !uncheckedIds.has(id))
         }
         onToggle={handleToggleIndicator}
+        premiseTexts={
+          state.conversationState?.collected
+            ? ((state.conversationState.collected as Record<string, unknown>).premises as Array<{ title?: string }> ?? [])
+                .map(p => p?.title ?? '')
+                .filter(Boolean)
+            : []
+        }
       />
     </div>
   )
