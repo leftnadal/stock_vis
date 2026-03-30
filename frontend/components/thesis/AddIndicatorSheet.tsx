@@ -71,6 +71,21 @@ const INDICATOR_CATALOG: CatalogIndicator[] = [
   { id: 56, name: '배당수익률', category: '펀더멘털', freq: '분기' },
   { id: 57, name: '영업이익률', category: '펀더멘털', freq: '분기' },
   { id: 58, name: '매출성장률 (YoY)', category: '펀더멘털', freq: '분기' },
+  // 펀더멘털 (재무 체질)
+  { id: 60, name: '매출총이익률 (Gross Margin)', category: '재무 체질', freq: '분기' },
+  { id: 61, name: '순이익률 (Net Margin)', category: '재무 체질', freq: '분기' },
+  { id: 62, name: 'ROIC (투하자본이익률)', category: '재무 체질', freq: '분기' },
+  { id: 63, name: '유동비율 (Current Ratio)', category: '재무 체질', freq: '분기' },
+  { id: 64, name: '이자보상배율', category: '재무 체질', freq: '분기' },
+  { id: 65, name: '순부채/EBITDA', category: '재무 체질', freq: '분기' },
+  { id: 66, name: 'FCF 마진', category: '재무 체질', freq: '분기' },
+  { id: 67, name: 'EV/EBITDA', category: '밸류에이션', freq: '분기' },
+  { id: 68, name: 'FCF 수익률', category: '밸류에이션', freq: '분기' },
+  { id: 69, name: '영업이익 성장률', category: '성장', freq: '분기' },
+  { id: 70, name: '매출채권 회전일수 (DSO)', category: '운영 효율', freq: '분기' },
+  { id: 71, name: '총자산회전율', category: '운영 효율', freq: '분기' },
+  { id: 72, name: '발생액 비율 (Accruals)', category: '이익 품질', freq: '분기' },
+  { id: 73, name: '순주주수익률', category: '주주환원', freq: '분기' },
   // 심리
   { id: 11, name: '뉴스 센티먼트', category: '심리', freq: '일간' },
 ]
@@ -105,11 +120,13 @@ const KEYWORD_INDICATOR_MAP: KeywordRule[] = [
   { keywords: ['천연가스', 'lng', '가스'], indicatorIds: [24], reason: '에너지 비용 변동 추적' },
   { keywords: ['비트코인', 'btc', '암호화폐', '크립토', '코인'], indicatorIds: [25, 26], reason: '위험자산 선호도/유동성 지표' },
   { keywords: ['rsi', 'macd', '기술적', '과매수', '과매도', '이동평균'], indicatorIds: [10, 40], reason: '단기 과매수/과매도 상태 파악' },
-  { keywords: ['실적', 'eps', '매출', '영업이익', '순이익', 'earnings', '분기 실적'], indicatorIds: [5, 50, 57, 58], reason: '기업 수익성과 성장 추적' },
-  { keywords: ['per', 'pbr', '밸류에이션', '저평가', '고평가', '가치'], indicatorIds: [50, 51], reason: '현재 주가 수준의 적정성 판단' },
-  { keywords: ['roe', 'roa', '수익성', '이익률'], indicatorIds: [52, 53, 57], reason: '자본 효율성/수익성 추적' },
-  { keywords: ['부채', '레버리지', 'debt', '재무건전'], indicatorIds: [54], reason: '재무 건전성 리스크 모니터링' },
-  { keywords: ['배당', 'dividend', '현금흐름', 'fcf'], indicatorIds: [55, 56], reason: '주주환원/현금창출 능력 추적' },
+  { keywords: ['실적', 'eps', '매출', '영업이익', '순이익', 'earnings', '분기 실적'], indicatorIds: [5, 50, 57, 58, 60, 61, 69], reason: '기업 수익성과 성장 추적' },
+  { keywords: ['per', 'pbr', '밸류에이션', '저평가', '고평가', '가치'], indicatorIds: [50, 51, 67, 68], reason: '현재 주가 수준의 적정성 판단' },
+  { keywords: ['roe', 'roa', '수익성', '이익률', 'roic', '마진'], indicatorIds: [52, 53, 57, 62, 60, 61], reason: '자본 효율성/수익성 추적' },
+  { keywords: ['부채', '레버리지', 'debt', '재무건전', '유동성', '현금'], indicatorIds: [54, 63, 64, 65], reason: '재무 건전성/유동성 리스크 모니터링' },
+  { keywords: ['배당', 'dividend', '현금흐름', 'fcf', '자사주', '주주환원'], indicatorIds: [55, 56, 66, 68, 73], reason: '주주환원/현금창출 능력 추적' },
+  { keywords: ['회전율', '효율', '재고', '매출채권', '운영'], indicatorIds: [70, 71], reason: '운영 효율성/자산 활용도 추적' },
+  { keywords: ['이익 품질', '발생액', 'accrual', '분식', '회계'], indicatorIds: [72, 66], reason: '이익 품질 — 현금 뒷받침 여부 확인' },
   { keywords: ['인플레', 'cpi', '물가', '소비자물가'], indicatorIds: [33], reason: '물가 상승이 소비/금리에 영향' },
   { keywords: ['고용', '실업', 'nfp', '비농업', '일자리'], indicatorIds: [31, 32], reason: '경기 과열/침체 판단 핵심 지표' },
   { keywords: ['gdp', '성장', '경기', '산업생산'], indicatorIds: [34, 35], reason: '경제 성장 속도 직접 측정' },
@@ -194,7 +211,8 @@ export function AddIndicatorSheet({
   const categoryOrder = [
     '수급', '주요 지수', '원자재', '암호화폐',
     '금리', '환율/변동성', '고용/성장', '물가/주택',
-    '기술적', '펀더멘털', '심리',
+    '기술적', '펀더멘털', '재무 체질', '밸류에이션', '성장',
+    '운영 효율', '이익 품질', '주주환원', '심리',
   ]
 
   function renderButton(ind: CatalogIndicator, context?: { premiseHint: string; reason: string }) {
