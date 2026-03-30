@@ -1,20 +1,10 @@
 'use client';
 
 import {
-  ComposedChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, Cell, ResponsiveContainer,
-  Scatter, ErrorBar,
+  LineChart, Line, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer,
 } from 'recharts';
 import type { ChartDataPoint } from '@/types/validation';
-
-function getSignalColor(companyValue: number | null, median: number | null, higherIsBetter: boolean): string {
-  if (companyValue === null || median === null) return '#9CA3AF'; // gray
-  const diff = higherIsBetter ? companyValue - median : median - companyValue;
-  const ratio = median !== 0 ? diff / Math.abs(median) : 0;
-  if (ratio > 0.15) return '#10B981'; // green
-  if (ratio > -0.15) return '#F59E0B'; // yellow
-  return '#EF4444'; // red
-}
 
 function formatAxisValue(value: number, unit: string): string {
   switch (unit) {
@@ -55,7 +45,7 @@ interface Props {
   higherIsBetter: boolean;
 }
 
-export default function MetricBarChart({ history, unit, higherIsBetter }: Props) {
+export default function MetricBarChart({ history, unit }: Props) {
   if (history.length === 0) return null;
 
   const chartData = history.map((h) => ({
@@ -64,15 +54,12 @@ export default function MetricBarChart({ history, unit, higherIsBetter }: Props)
     median: h.peer_median,
     p25: h.peer_p25,
     p75: h.peer_p75,
-    // ErrorBar용: p25~p75 범위
-    errorLow: h.peer_median !== null && h.peer_p25 !== null ? h.peer_median - h.peer_p25 : 0,
-    errorHigh: h.peer_median !== null && h.peer_p75 !== null ? h.peer_p75 - h.peer_median : 0,
   }));
 
   return (
     <div className="w-full h-48">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+        <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
           <XAxis
             dataKey="year"
@@ -106,40 +93,52 @@ export default function MetricBarChart({ history, unit, higherIsBetter }: Props)
               const labels: Record<string, string> = {
                 company: '이 기업',
                 median: 'Peer 중앙값',
+                p75: 'Peer P25~P75',
               };
               return labels[value] || value;
             }}
           />
 
-          {/* 이 기업 Bar (연도별 색상) */}
-          <Bar dataKey="company" name="company" barSize={24} radius={[2, 2, 0, 0]}>
-            {chartData.map((d, idx) => (
-              <Cell key={idx} fill={getSignalColor(d.company, d.median, higherIsBetter)} />
-            ))}
-          </Bar>
+          {/* Peer p25~p75 밴드 (Area) */}
+          <Area
+            dataKey="p75"
+            name="p75"
+            stroke="none"
+            fill="#E5E7EB"
+            fillOpacity={0.5}
+            connectNulls
+          />
+          <Area
+            dataKey="p25"
+            stroke="none"
+            fill="#FFFFFF"
+            fillOpacity={1}
+            legendType="none"
+            connectNulls
+          />
 
-          {/* Peer 중앙값 Scatter (dash 마커) */}
-          <Scatter
+          {/* Peer 중앙값 (점선) */}
+          <Line
             dataKey="median"
             name="median"
-            fill="#6B7280"
-            shape={(props: any) => {
-              const { cx, cy } = props;
-              if (!cx || !cy) return <rect width={0} height={0} />;
-              return (
-                <line x1={cx - 12} y1={cy} x2={cx + 12} y2={cy} stroke="#6B7280" strokeWidth={2} />
-              );
-            }}
-          >
-            <ErrorBar
-              dataKey="errorHigh"
-              direction="y"
-              width={8}
-              stroke="#9CA3AF"
-              strokeWidth={1}
-            />
-          </Scatter>
-        </ComposedChart>
+            stroke="#9CA3AF"
+            strokeWidth={1.5}
+            strokeDasharray="4 4"
+            dot={{ r: 3, fill: '#9CA3AF' }}
+            connectNulls
+          />
+
+          {/* 이 기업 (실선, 파란색) */}
+          <Line
+            dataKey="company"
+            name="company"
+            stroke="#3B82F6"
+            strokeWidth={2}
+            dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }}
+            activeDot={{ r: 6 }}
+            connectNulls
+          />
+        </LineChart>
       </ResponsiveContainer>
     </div>
   );
