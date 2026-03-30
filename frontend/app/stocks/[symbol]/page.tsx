@@ -45,6 +45,9 @@ import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
+import { useValidationSummary } from '@/hooks/useValidation';
+import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
+import PeerContextBar from '@/components/validation/PeerContextBar';
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
 
@@ -887,15 +890,66 @@ function NewsTab({ symbol }: { symbol: string }) {
   );
 }
 
-// Validation Tab — 1차 검증 (FE-PR-2~7에서 구현)
+// Validation Tab — 1차 검증
 function ValidationTab({ symbol }: { symbol: string }) {
+  const { data: summary, isLoading, error } = useValidationSummary(symbol);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+      </div>
+    );
+  }
+
+  if (error || !summary) {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">데이터를 불러올 수 없습니다</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">잠시 후 다시 시도해주세요.</p>
+      </div>
+    );
+  }
+
+  // Empty state: not_in_universe or no_data
+  if (summary.error === 'not_in_universe') {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">현재 S&P 500 종목 대상</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{summary.message}</p>
+      </div>
+    );
+  }
+
+  if (summary.error === 'no_data') {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 체질 진단</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{summary.message}</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="text-center py-12">
-      <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 체질 진단</h3>
-      <p className="text-sm text-gray-500 dark:text-gray-400">
-        재무 분석 데이터 준비 중입니다.
-      </p>
+    <div className="space-y-4">
+      {/* ① 종합 요약 카드 */}
+      <SignalSummaryCard
+        companyName={summary.company_name}
+        categorySignals={summary.category_signals}
+        summaryText={summary.summary_text}
+      />
+
+      {/* ② Peer 정보 바 */}
+      {summary.peer_info && (
+        <PeerContextBar
+          peerInfo={summary.peer_info}
+          fiscalYear={summary.data_fiscal_year}
+        />
+      )}
     </div>
   );
 }
