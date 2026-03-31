@@ -1469,7 +1469,10 @@ def _handle_modify_premise(state, user_input):
  "recommended_indicators": [
    {{"indicator_db_id": 숫자, "why": "이유 1문장", "signal_type": "leading|coincident|lagging"}}
  ],
- "message": "사용자에게 보여줄 대화 메시지 (1~2문장)"}}
+ "message": "사용자에게 보여줄 대화 메시지 (3~5문장). 반드시 아래 내용을 포함:
+   1) 왜 이 전제를 추가/삭제하는지 (기존 전제와의 관계, 빠져있던 관점)
+   2) 이 전제가 가설 전체에 어떤 의미를 더하는지
+   3) 추천한 지표가 이 전제를 어떻게 검증하는지"}}
 
 ## 중복 방지 규칙 (매우 중요)
 1. **위 전제 목록과 동일하거나 유사한 내용은 절대 추가하지 마세요.**
