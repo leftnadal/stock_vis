@@ -50,12 +50,14 @@ class CompanyBenchmarkDelta(models.Model):
         choices=[('above', 'Above'), ('inline', 'Inline'), ('below', 'Below')]
     )
 
+    preset_key = models.CharField(max_length=30, default='default', db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     calculated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'validation_company_benchmark_delta'
-        unique_together = ['symbol', 'fiscal_year', 'metric_code']
+        unique_together = ['symbol', 'fiscal_year', 'metric_code', 'preset_key']
         indexes = [
             models.Index(fields=['symbol', 'fiscal_year']),
         ]

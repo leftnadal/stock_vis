@@ -48,12 +48,14 @@ class CategorySignal(models.Model):
         help_text='[{"metric": "roe", "value": 0.25, "signal": "green"}, ...]'
     )
 
+    preset_key = models.CharField(max_length=30, default='default', db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     calculated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'validation_category_signal'
-        unique_together = ['symbol', 'category', 'fiscal_year']
+        unique_together = ['symbol', 'category', 'fiscal_year', 'preset_key']
         indexes = [
             models.Index(fields=['symbol']),
         ]

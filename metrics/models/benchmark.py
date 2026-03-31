@@ -128,12 +128,14 @@ class PeerMetricBenchmark(models.Model):
     min_value = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
     max_value = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
 
+    preset_key = models.CharField(max_length=30, default='default', db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     calculated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         db_table = 'metrics_peer_metric_benchmark'
-        unique_together = ['symbol', 'fiscal_year', 'metric_code']
+        unique_together = ['symbol', 'fiscal_year', 'metric_code', 'preset_key']
         indexes = [
             models.Index(fields=['symbol', 'fiscal_year']),
         ]
