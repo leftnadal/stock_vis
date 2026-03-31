@@ -1585,7 +1585,10 @@ def _return_current_phase(state, message=None, indicator_recommendations=None):
     selection_mode = 'single'
     needs_preset = False
 
-    if phase == BuilderPhase.PRESET.value:
+    if phase == BuilderPhase.SUGGESTIONS.value:
+        # suggestions phase에서는 버튼 없이 텍스트 입력만 유지
+        pass
+    elif phase == BuilderPhase.PRESET.value:
         buttons = [
             {'id': 'short', 'label': MONITORING_PRESETS['short']['label']},
             {'id': 'medium', 'label': MONITORING_PRESETS['medium']['label']},
@@ -1826,13 +1829,8 @@ def _handle_suggestion_select(state, user_input, user):
                 result['long_press_explanations'] = long_press
             return result
 
-        # select_suggestion:N 형식이 아닌 문자열 → 안내
-        return {
-            'conversation_state': state.model_dump(),
-            'message': '가설 카드를 선택해주세요.',
-            'buttons': [],
-            'phase': 'suggestions',
-        }
+        # select_suggestion:N 형식이 아닌 문자열 → 대화형 처리
+        return _handle_conversational_edit(state, user_input, user)
 
     # ── Step 2: 전제 multi-select 확인 → 지표 매칭 → PRESET ──
     if isinstance(user_input, list):
@@ -1930,10 +1928,7 @@ def _handle_suggestion_select(state, user_input, user):
             'phase': 'preset',
         }
 
-    # ── Fallback ──
-    return {
-        'conversation_state': state.model_dump(),
-        'message': '가설 카드를 선택해주세요.',
-        'buttons': [],
-        'phase': 'suggestions',
-    }
+    # ── Fallback: 문자열도 리스트도 아닌 경우 → 대화형 처리 ──
+    if isinstance(user_input, str):
+        return _handle_conversational_edit(state, user_input, user)
+    return _return_current_phase(state, message='가설 카드를 선택하거나 질문을 입력해주세요.')
