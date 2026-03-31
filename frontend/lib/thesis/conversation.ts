@@ -121,6 +121,15 @@ export function applyResponse(
     confidence: response.confidence ?? state.confidence,
     indicatorRecommendations: response.indicator_recommendations ?? state.indicatorRecommendations,
     createdThesis: response.created_thesis ?? state.createdThesis,
+    // suggestions 동기화: 대화로 수정된 경우 conversation_state에서 최신값 반영
+    suggestions: (() => {
+      const collected = response.conversation_state?.collected as Record<string, unknown> | undefined
+      const updatedSuggestions = collected?.suggestions as ThesisSuggestion[] | undefined
+      if (updatedSuggestions && updatedSuggestions.length > 0) {
+        return updatedSuggestions
+      }
+      return state.suggestions
+    })(),
   }
 }
 

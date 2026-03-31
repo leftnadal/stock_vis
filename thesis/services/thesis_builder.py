@@ -1399,14 +1399,67 @@ def _handle_question(state, user_input):
 
 
 def _handle_modify_premise(state, user_input):
-    """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected에 적용."""
+    """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected/suggestions에 적용."""
     from thesis.services.prompt_builder import (
         build_modify_premise_prompt, call_gemini_light, get_indicator_by_id,
     )
     from thesis.services.indicator_matcher import match_indicators_for_llm
 
+    # suggestions phase에서는 suggestion 카드의 전제 목록을 수정 대상으로 사용
+    has_suggestions = bool(state.collected.suggestions)
+    target_suggestion_idx = None
+
+    if has_suggestions:
+        # 사용자 입력에서 방향(상승/하락) 감지 → 해당 suggestion 찾기
+        text_lower = user_input.lower()
+        for idx, s in enumerate(state.collected.suggestions):
+            if s.direction == 'bearish' and any(kw in text_lower for kw in ['하락', 'bearish', '부정', '리스크', '위축', '둔화']):
+                target_suggestion_idx = idx
+                break
+            elif s.direction == 'bullish' and any(kw in text_lower for kw in ['상승', 'bullish', '긍정', '수혜', '성장']):
+                target_suggestion_idx = idx
+                break
+        # 방향 키워드 없으면 마지막 suggestion (보통 bearish)
+        if target_suggestion_idx is None:
+            target_suggestion_idx = len(state.collected.suggestions) - 1
+
+    # 수정 대상 전제 목록 결정
+    if has_suggestions and target_suggestion_idx is not None:
+        modify_target = state.collected.suggestions[target_suggestion_idx]
+        current_premises_for_prompt = modify_target.premises
+    else:
+        current_premises_for_prompt = state.collected.premises
+
+    # Gemini 호출 (수정 대상 전제 목록을 프롬프트에 포함)
     recent_history = state.history[-6:] if len(state.history) > 6 else list(state.history)
-    system_prompt = build_modify_premise_prompt(state.collected)
+
+    # 프롬프트에 현재 전제 목록 직접 포함
+    premises_desc = '\n'.join(
+        f'{i}. {p.title}' for i, p in enumerate(current_premises_for_prompt)
+    ) if current_premises_for_prompt else '(없음)'
+
+    from thesis.services.prompt_builder import build_indicator_block
+    indicator_block = build_indicator_block()
+    system_prompt = f"""현재 가설의 전제 목록:
+{premises_desc}
+
+사용자가 전제를 수정하려고 합니다.
+아래 JSON 형식으로만 응답하세요:
+
+{{"action": "add" 또는 "remove",
+ "premise_title": "전제 제목 (15~30자)",
+ "premise_description": "전제를 뒷받침하는 구체적 근거 (1~2문장)",
+ "target_index": 삭제 시 인덱스 번호 (0부터),
+ "recommended_indicators": [
+   {{"indicator_db_id": 숫자, "why": "이유 1문장", "signal_type": "leading|coincident|lagging"}}
+ ],
+ "message": "사용자에게 보여줄 대화 메시지 (1~2문장)"}}
+
+{indicator_block}
+
+**카탈로그에 있는 지표만 사용하세요. 목록에 없는 지표를 만들지 마세요.**
+**당신이 아는 지식을 활용하여 구체적인 근거와 수치를 포함하세요.**"""
+
     raw = call_gemini_light(system_prompt, user_input, history=recent_history)
 
     if not raw:
@@ -1425,8 +1478,9 @@ def _handle_modify_premise(state, user_input):
     action = delta.get('action', 'add')
     message = delta.get('message', '')
 
+    # 새 전제 생성
+    new_premise = None
     if action == 'add':
-        # 전제 추가
         indicators = []
         for ind in delta.get('recommended_indicators', []):
             db_id = ind.get('indicator_db_id')
@@ -1441,27 +1495,46 @@ def _handle_modify_premise(state, user_input):
             description=delta.get('premise_description', ''),
             recommended_indicators=indicators,
         )
-        state.collected.premises.append(new_premise)
-        if not message:
-            message = f'전제 "{new_premise.title}"를 추가했어요.'
 
-    elif action == 'remove':
-        idx = delta.get('target_index')
-        if idx is not None and 0 <= idx < len(state.collected.premises):
-            removed = state.collected.premises.pop(idx)
+    # 적용 대상 분기: suggestions 카드 vs collected.premises
+    if has_suggestions and target_suggestion_idx is not None:
+        target = state.collected.suggestions[target_suggestion_idx]
+        if action == 'add' and new_premise:
+            target.premises.append(new_premise)
             if not message:
-                message = f'전제 "{removed.title}"를 삭제했어요.'
-        else:
-            return _return_current_phase(state, message='삭제할 전제를 찾지 못했어요.')
+                dir_label = {'bullish': '상승', 'bearish': '하락'}.get(target.direction, '')
+                message = f'{dir_label} 가설에 전제 "{new_premise.title}"를 추가했어요.'
+        elif action == 'remove':
+            idx = delta.get('target_index')
+            if idx is not None and 0 <= idx < len(target.premises):
+                removed = target.premises.pop(idx)
+                if not message:
+                    message = f'전제 "{removed.title}"를 삭제했어요.'
+    else:
+        # 일반 모드: collected.premises 수정
+        if action == 'add' and new_premise:
+            state.collected.premises.append(new_premise)
+            if not message:
+                message = f'전제 "{new_premise.title}"를 추가했어요.'
+        elif action == 'remove':
+            idx = delta.get('target_index')
+            if idx is not None and 0 <= idx < len(state.collected.premises):
+                removed = state.collected.premises.pop(idx)
+                if not message:
+                    message = f'전제 "{removed.title}"를 삭제했어요.'
+            else:
+                return _return_current_phase(state, message='삭제할 전제를 찾지 못했어요.')
 
-    # 지표 재매칭
-    indicator_recommendations = match_indicators_for_llm(state.collected)
-    matched_ids = [
-        rec['indicator']['id']
-        for rec in indicator_recommendations
-        if isinstance(rec.get('indicator'), dict) and rec['indicator'].get('id')
-    ]
-    state.collected.selected_indicator_ids = matched_ids
+    # 지표 재매칭 (collected.premises가 있는 경우만)
+    indicator_recommendations = None
+    if state.collected.premises:
+        indicator_recommendations = match_indicators_for_llm(state.collected)
+        matched_ids = [
+            rec['indicator']['id']
+            for rec in indicator_recommendations
+            if isinstance(rec.get('indicator'), dict) and rec['indicator'].get('id')
+        ]
+        state.collected.selected_indicator_ids = matched_ids
 
     state.history.append(ChatMessage(role='assistant', content=message))
 
