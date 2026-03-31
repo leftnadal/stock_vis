@@ -139,12 +139,15 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
             dataKey="median"
             stroke="#6B7280"
             strokeWidth={1.5}
-            dot={(props: any) => (
-              <g key={props.index}>
-                <circle cx={props.cx} cy={props.cy} r={2.5} fill="#6B7280" />
-                <LastPointLabel {...props} data={chartData} label="Median" color="#6B7280" />
-              </g>
-            )}
+            dot={(props: any) => {
+              const { key, ...rest } = props;
+              return (
+                <g key={key ?? rest.index}>
+                  <circle cx={rest.cx} cy={rest.cy} r={2.5} fill="#6B7280" />
+                  <LastPointLabel {...rest} data={chartData} label="Median" color="#6B7280" />
+                </g>
+              );
+            }}
             activeDot={false}
             connectNulls
             legendType="none"
@@ -155,12 +158,15 @@ export default function MetricBarChart({ history, unit, rank, total }: Props) {
             dataKey="company"
             stroke="#3B82F6"
             strokeWidth={2}
-            dot={(props: any) => (
-              <g key={props.index}>
-                <circle cx={props.cx} cy={props.cy} r={4} fill="#3B82F6" stroke="#fff" strokeWidth={2} />
-                <LastPointLabel {...props} data={chartData} label="이 기업" color="#3B82F6" />
-              </g>
-            )}
+            dot={(props: any) => {
+              const { key, ...rest } = props;
+              return (
+                <g key={key ?? rest.index}>
+                  <circle cx={rest.cx} cy={rest.cy} r={4} fill="#3B82F6" stroke="#fff" strokeWidth={2} />
+                  <LastPointLabel {...rest} data={chartData} label="이 기업" color="#3B82F6" />
+                </g>
+              );
+            }}
             activeDot={{ r: 6 }}
             connectNulls
             legendType="none"
