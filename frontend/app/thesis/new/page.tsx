@@ -732,6 +732,46 @@ function ThesisBuilder() {
           </div>
         )}
 
+        {/* ── 현재 가설 구성 (대화 중 실시간 반영) ── */}
+        {state.conversationState?.collected && (() => {
+          const collected = state.conversationState.collected as Record<string, unknown>
+          const premises = collected.premises as Array<{ title?: string; description?: string }> | undefined
+          const title = collected.title as string | undefined
+          const direction = collected.direction as string | undefined
+          const hasContent = title && premises && premises.length > 0
+          // suggestions phase에서 카드 선택 전이면 표시 안 함
+          const isPastSelection = selectedSuggestionIndex !== null || state.phase === 'preset' || state.phase === 'confirm'
+          if (!hasContent || !isPastSelection) return null
+
+          const dirLabel = direction === 'bullish' ? '상승' : direction === 'bearish' ? '하락' : ''
+          const dirColor = direction === 'bullish' ? 'text-emerald-400' : direction === 'bearish' ? 'text-red-400' : 'text-gray-400'
+
+          return (
+            <div className="mb-3 p-3 bg-gray-900/70 border border-gray-700 rounded-xl">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[10px] text-gray-500 font-medium uppercase tracking-wider">현재 가설</p>
+                <span className={`text-[10px] px-1.5 py-0.5 rounded ${dirColor} bg-gray-800`}>
+                  {dirLabel}
+                </span>
+              </div>
+              <p className="text-sm text-white font-medium mb-2">{title}</p>
+              <div className="space-y-1.5">
+                {premises.map((p, i) => (
+                  <div key={`live-p-${i}`} className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5 flex-shrink-0 text-xs">•</span>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-300">{p.title}</p>
+                      {p.description && (
+                        <p className="text-[10px] text-gray-600 mt-0.5">{p.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {/* LLM 모드: 지표 추천 카드 (수정 가능) */}
         {state.indicatorRecommendations.length > 0 && state.phase === 'preset' && (
           <div className="mb-3 space-y-2">
