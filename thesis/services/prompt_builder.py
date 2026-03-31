@@ -497,6 +497,165 @@ def get_indicator_by_id(indicator_id):
 
 
 # ──────────────────────────────────────────────
+# Conversational Edit: 대화형 가설 수정 프롬프트
+# ──────────────────────────────────────────────
+
+def build_intent_classification_prompt(phase, collected):
+    """사용자 메시지의 의도를 분류하는 프롬프트."""
+    # 현재 가설 상태 요약
+    ctx_parts = []
+    if collected.title:
+        ctx_parts.append(f'가설: {collected.title}')
+    if collected.direction:
+        ctx_parts.append(f'방향: {collected.direction}')
+    if collected.premises:
+        premise_list = ', '.join(p.title for p in collected.premises)
+        ctx_parts.append(f'전제({len(collected.premises)}개): {premise_list}')
+    if collected.selected_indicator_ids:
+        ctx_parts.append(f'지표: {len(collected.selected_indicator_ids)}개 선택됨')
+    context = '\n'.join(ctx_parts) if ctx_parts else '(아직 가설 없음)'
+
+    return f"""사용자가 투자 가설 빌더에서 메시지를 보냈습니다.
+현재 단계: {phase}
+{context}
+
+사용자 메시지를 다음 중 하나로 분류하세요:
+- "question": 질문이나 설명 요청 (예: "이 지표 왜 추천했어?", "bearish가 뭐야?", "이게 무슨 뜻이야?")
+- "modify_premise": 전제 추가/삭제/변경 (예: "전제 하나 더 추가해줘", "환율 전제 빼줘")
+- "modify_indicator": 지표 추가/삭제/변경 (예: "VIX 말고 다른 거", "금 지표 추가해줘")
+- "modify_thesis": 가설 자체 변경 (예: "방향 바꿔볼까", "대상을 삼성전자로 바꿔줘")
+- "proceed": 다음 단계 진행 (예: "좋아", "이대로 가자", "등록", "단기로")
+- "restart": 처음부터 다시 (예: "다시 만들자", "처음부터")
+
+JSON만 반환: {{"intent": "...", "detail": "추출된 핵심 내용"}}"""
+
+
+def build_question_answer_prompt(collected):
+    """사용자 질문에 답변하기 위한 시스템 프롬프트."""
+    ctx_parts = ['## 현재 사용자의 가설 상태']
+    if collected.title:
+        ctx_parts.append(f'- 제목: {collected.title}')
+    if collected.direction:
+        dir_label = {'bullish': '상승', 'bearish': '하락'}.get(collected.direction, collected.direction)
+        ctx_parts.append(f'- 방향: {dir_label}')
+    if collected.target:
+        ctx_parts.append(f'- 대상: {collected.target}')
+    if collected.premises:
+        ctx_parts.append(f'- 전제 ({len(collected.premises)}개):')
+        for i, p in enumerate(collected.premises, 1):
+            desc = f' — {p.description}' if p.description else ''
+            ctx_parts.append(f'  {i}. {p.title}{desc}')
+            if p.recommended_indicators:
+                for ind in p.recommended_indicators:
+                    cat_ind = get_indicator_by_id(ind.indicator_db_id) if ind.indicator_db_id else None
+                    name = cat_ind['name'] if cat_ind else (ind.indicator_name or '?')
+                    ctx_parts.append(f'     → 지표: {name} ({ind.why})')
+    context = '\n'.join(ctx_parts)
+
+    return f"""당신은 친절한 투자 가설 빌더 어시스턴트입니다.
+사용자가 가설을 만드는 중에 질문을 했습니다.
+
+{context}
+
+## 규칙
+1. 한국어로 답변합니다.
+2. 2~3문장으로 간결하게.
+3. 현재 가설 맥락에 맞게 답변합니다.
+4. 전문 용어는 쉽게 풀어서 설명합니다.
+5. 필요하면 "전제를 추가해볼까요?" 같은 제안도 합니다."""
+
+
+def build_modify_premise_prompt(collected):
+    """전제 수정용 시스템 프롬프트."""
+    indicator_block = build_indicator_block()
+    premises_desc = '\n'.join(
+        f'{i}. {p.title}' for i, p in enumerate(collected.premises)
+    ) if collected.premises else '(없음)'
+
+    return f"""현재 가설의 전제 목록:
+{premises_desc}
+
+사용자가 전제를 수정하려고 합니다.
+아래 JSON 형식으로만 응답하세요:
+
+{{"action": "add" 또는 "remove",
+ "premise_title": "전제 제목 (15~30자)",
+ "premise_description": "전제를 뒷받침하는 구체적 근거 (1~2문장)",
+ "target_index": 삭제 시 인덱스 번호 (0부터),
+ "recommended_indicators": [
+   {{"indicator_db_id": 숫자, "why": "이유 1문장", "signal_type": "leading|coincident|lagging"}}
+ ],
+ "message": "사용자에게 보여줄 대화 메시지 (1~2문장)"}}
+
+{indicator_block}
+
+**카탈로그에 있는 지표만 사용하세요. 목록에 없는 지표를 만들지 마세요.**"""
+
+
+def build_modify_indicator_prompt(collected):
+    """지표 수정용 시스템 프롬프트."""
+    indicator_block = build_indicator_block()
+    current_ids = collected.selected_indicator_ids
+    current_names = []
+    for db_id in current_ids:
+        cat_ind = get_indicator_by_id(db_id)
+        if cat_ind:
+            current_names.append(f'- {cat_ind["name"]} (id:{db_id})')
+    current_desc = '\n'.join(current_names) if current_names else '(없음)'
+
+    return f"""현재 선택된 지표:
+{current_desc}
+
+사용자가 지표를 수정하려고 합니다.
+아래 JSON 형식으로만 응답하세요:
+
+{{"action": "add" 또는 "remove" 또는 "replace",
+ "indicator_db_id": 추가/교체할 지표의 카탈로그 id,
+ "remove_indicator_id": 삭제/교체 대상 id (remove/replace 시),
+ "why": "추가/교체 이유 (1문장)",
+ "message": "사용자에게 보여줄 대화 메시지 (1~2문장)"}}
+
+{indicator_block}
+
+**카탈로그에 있는 지표만 사용하세요.**"""
+
+
+def call_gemini_light(system_prompt, user_message):
+    """가벼운 Gemini 호출 (Structured Output 없이, 빠른 응답)."""
+    try:
+        from google import genai
+        from google.genai import types
+
+        api_key = (
+            getattr(settings, 'GOOGLE_AI_API_KEY', None)
+            or getattr(settings, 'GEMINI_API_KEY', None)
+        )
+        if not api_key:
+            return None
+
+        client = genai.Client(api_key=api_key)
+
+        config = types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            max_output_tokens=500,
+            temperature=0.3,
+            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        )
+
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=user_message,
+            config=config,
+        )
+
+        return response.text if hasattr(response, 'text') and response.text else None
+
+    except Exception as e:
+        logger.exception(f"Gemini light call failed: {e}")
+        return None
+
+
+# ──────────────────────────────────────────────
 # Suggestion Prompt (뉴스 이슈 → bullish/bearish 2개 가설)
 # ──────────────────────────────────────────────
 

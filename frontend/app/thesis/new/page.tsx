@@ -617,7 +617,12 @@ function ThesisBuilder() {
     && !isErrorMessage
   ) ? lastMessage.buttons ?? [] : []
   const activeMode = lastMessage?.selectionMode ?? 'single'
-  const showTextInput = (lastMessage?.inputType === 'text' || state.phase === 'proposal') && !state.isLoading && !state.isDone
+  // 모든 phase에서 텍스트 입력 가능 (대화형 수정)
+  const conversationalPhases = ['proposal', 'suggestions', 'preset', 'confirm']
+  const showTextInput = (
+    lastMessage?.inputType === 'text'
+    || (state.phase && conversationalPhases.includes(state.phase))
+  ) && !state.isLoading && !state.isDone
 
   // 인기 가설 템플릿
   const POPULAR_TEMPLATES = [
@@ -896,11 +901,18 @@ function ThesisBuilder() {
           />
         )}
 
-        {/* 텍스트 입력 */}
+        {/* 텍스트 입력 (모든 phase에서 대화 가능) */}
         {showTextInput && (
           <TextInput
             onSubmit={handleTextSubmit}
             disabled={state.isLoading}
+            placeholder={
+              state.phase === 'preset'
+                ? '질문하거나 전제/지표를 수정해보세요...'
+                : state.phase === 'confirm'
+                  ? '수정할 내용이 있으면 말씀해주세요...'
+                  : undefined
+            }
           />
         )}
 

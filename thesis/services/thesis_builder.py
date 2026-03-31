@@ -851,7 +851,12 @@ def process_llm_turn(raw_state, user_input, user=None):
         return _handle_fallback_choice(state, text, user)
 
     if phase == BuilderPhase.PRESET.value:
-        return _handle_preset(state, text)
+        # 프리셋 버튼 입력이면 기존 로직
+        if _detect_preset(text):
+            return _handle_preset(state, text)
+        # 자유 텍스트 → 대화형 처리
+        return _handle_conversational_edit(state, text, user)
+
     elif phase == BuilderPhase.CONFIRM.value:
         if _is_confirm_intent(text):
             return _handle_confirm(state, user)
@@ -867,17 +872,8 @@ def process_llm_turn(raw_state, user_input, user=None):
                 'input_type': 'text',
                 'phase': 'proposal',
             }
-        else:
-            return {
-                'conversation_state': state.model_dump(),
-                'message': '등록할까요, 아니면 다시 만들까요?',
-                'buttons': [
-                    {'id': 'confirm', 'label': '등록'},
-                    {'id': 'restart', 'label': '다시 만들기'},
-                ],
-                'selection_mode': 'single',
-                'phase': 'confirm',
-            }
+        # 자유 텍스트 → 대화형 처리
+        return _handle_conversational_edit(state, text, user)
     else:
         # PROPOSAL (default)
         return _handle_proposal(state, text)
@@ -1283,6 +1279,337 @@ def _is_confirm_intent(text):
 def _is_restart_intent(text):
     """재시작 의도 탐지."""
     return text.lower().strip() in ('restart', '다시', '다시 만들기', '처음부터')
+
+
+# ──────────────────────────────────────────────
+# Conversational Edit (대화형 가설 수정)
+# ──────────────────────────────────────────────
+
+def _handle_conversational_edit(state, user_input, user):
+    """
+    PRESET/CONFIRM phase에서 자유 텍스트 입력 처리.
+    1) Intent 분류 (Gemini light)
+    2) Intent별 분기: question / modify_premise / modify_indicator / modify_thesis / proceed / restart
+    """
+    from thesis.services.prompt_builder import (
+        build_intent_classification_prompt,
+        build_question_answer_prompt,
+        build_modify_premise_prompt,
+        build_modify_indicator_prompt,
+        call_gemini_light,
+        get_indicator_by_id,
+    )
+
+    collected = state.collected
+
+    # 1. Intent 분류
+    intent_prompt = build_intent_classification_prompt(state.phase, collected)
+    raw_intent = call_gemini_light(intent_prompt, user_input)
+
+    intent = 'question'  # default
+    detail = user_input
+    if raw_intent:
+        try:
+            import json as _json
+            import re as _re
+            json_match = _re.search(r'\{.*\}', raw_intent, _re.DOTALL)
+            if json_match:
+                parsed = _json.loads(json_match.group())
+                intent = parsed.get('intent', 'question')
+                detail = parsed.get('detail', user_input)
+        except Exception:
+            pass
+
+    logger.info(f"Conversational edit: intent={intent}, detail={detail[:50]}")
+
+    # 2. Intent별 처리
+    if intent == 'proceed':
+        return _handle_proceed_intent(state, detail, user)
+
+    if intent == 'restart':
+        state.phase = BuilderPhase.PROPOSAL.value
+        state.collected = CollectedData()
+        state.history = []
+        state.turn_count = 0
+        return {
+            'conversation_state': state.model_dump(),
+            'message': '다시 시작할게요! 어떤 아이디어가 있으세요?',
+            'buttons': [],
+            'input_type': 'text',
+            'phase': 'proposal',
+        }
+
+    if intent == 'question':
+        return _handle_question(state, user_input)
+
+    if intent == 'modify_premise':
+        return _handle_modify_premise(state, user_input)
+
+    if intent == 'modify_indicator':
+        return _handle_modify_indicator(state, user_input)
+
+    if intent == 'modify_thesis':
+        return _handle_modify_thesis(state, user_input)
+
+    # fallback → 질문으로 처리
+    return _handle_question(state, user_input)
+
+
+def _handle_proceed_intent(state, detail, user):
+    """proceed intent → 현재 phase에 맞는 진행 처리."""
+    phase = state.phase
+    if phase == BuilderPhase.PRESET.value:
+        # 프리셋 감지 시도
+        preset_key = _detect_preset(detail)
+        if preset_key:
+            return _handle_preset(state, preset_key)
+        # "좋아", "이대로" 같은 경우 → medium 프리셋 기본 적용
+        return _handle_preset(state, 'medium')
+    elif phase == BuilderPhase.CONFIRM.value:
+        return _handle_confirm(state, user)
+    return _return_current_phase(state)
+
+
+def _handle_question(state, user_input):
+    """질문 → Gemini가 현재 가설 맥락에서 답변."""
+    from thesis.services.prompt_builder import build_question_answer_prompt, call_gemini_light
+
+    system_prompt = build_question_answer_prompt(state.collected)
+    answer = call_gemini_light(system_prompt, user_input)
+
+    if not answer:
+        answer = '죄송해요, 답변을 생성하지 못했어요. 다시 질문해주세요.'
+
+    state.history.append(ChatMessage(role='assistant', content=answer))
+
+    return _return_current_phase(state, message=answer)
+
+
+def _handle_modify_premise(state, user_input):
+    """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected에 적용."""
+    from thesis.services.prompt_builder import (
+        build_modify_premise_prompt, call_gemini_light, get_indicator_by_id,
+    )
+    from thesis.services.indicator_matcher import match_indicators_for_llm
+
+    system_prompt = build_modify_premise_prompt(state.collected)
+    raw = call_gemini_light(system_prompt, user_input)
+
+    if not raw:
+        return _return_current_phase(state, message='전제 수정을 처리하지 못했어요. 다시 시도해주세요.')
+
+    try:
+        import json as _json
+        import re as _re
+        json_match = _re.search(r'\{.*\}', raw, _re.DOTALL)
+        if not json_match:
+            raise ValueError('No JSON found')
+        delta = _json.loads(json_match.group())
+    except Exception:
+        return _return_current_phase(state, message='전제 수정을 이해하지 못했어요. 좀 더 구체적으로 말씀해주세요.')
+
+    action = delta.get('action', 'add')
+    message = delta.get('message', '')
+
+    if action == 'add':
+        # 전제 추가
+        indicators = []
+        for ind in delta.get('recommended_indicators', []):
+            db_id = ind.get('indicator_db_id')
+            if db_id and get_indicator_by_id(db_id):
+                indicators.append(IndicatorRecommendation(
+                    indicator_db_id=db_id,
+                    why=ind.get('why', ''),
+                    signal_type=ind.get('signal_type', 'coincident'),
+                ))
+        new_premise = PremiseData(
+            title=delta.get('premise_title', ''),
+            description=delta.get('premise_description', ''),
+            recommended_indicators=indicators,
+        )
+        state.collected.premises.append(new_premise)
+        if not message:
+            message = f'전제 "{new_premise.title}"를 추가했어요.'
+
+    elif action == 'remove':
+        idx = delta.get('target_index')
+        if idx is not None and 0 <= idx < len(state.collected.premises):
+            removed = state.collected.premises.pop(idx)
+            if not message:
+                message = f'전제 "{removed.title}"를 삭제했어요.'
+        else:
+            return _return_current_phase(state, message='삭제할 전제를 찾지 못했어요.')
+
+    # 지표 재매칭
+    indicator_recommendations = match_indicators_for_llm(state.collected)
+    matched_ids = [
+        rec['indicator']['id']
+        for rec in indicator_recommendations
+        if isinstance(rec.get('indicator'), dict) and rec['indicator'].get('id')
+    ]
+    state.collected.selected_indicator_ids = matched_ids
+
+    state.history.append(ChatMessage(role='assistant', content=message))
+
+    return _return_current_phase(
+        state,
+        message=message,
+        indicator_recommendations=indicator_recommendations,
+    )
+
+
+def _handle_modify_indicator(state, user_input):
+    """지표 추가/삭제/교체 → Gemini가 delta JSON 생성 → collected에 적용."""
+    from thesis.services.prompt_builder import (
+        build_modify_indicator_prompt, call_gemini_light, get_indicator_by_id,
+    )
+
+    system_prompt = build_modify_indicator_prompt(state.collected)
+    raw = call_gemini_light(system_prompt, user_input)
+
+    if not raw:
+        return _return_current_phase(state, message='지표 수정을 처리하지 못했어요. 다시 시도해주세요.')
+
+    try:
+        import json as _json
+        import re as _re
+        json_match = _re.search(r'\{.*\}', raw, _re.DOTALL)
+        if not json_match:
+            raise ValueError('No JSON found')
+        delta = _json.loads(json_match.group())
+    except Exception:
+        return _return_current_phase(state, message='지표 수정을 이해하지 못했어요. 좀 더 구체적으로 말씀해주세요.')
+
+    action = delta.get('action', 'add')
+    message = delta.get('message', '')
+    current_ids = list(state.collected.selected_indicator_ids)
+
+    if action == 'add':
+        db_id = delta.get('indicator_db_id')
+        cat_ind = get_indicator_by_id(db_id) if db_id else None
+        if cat_ind and db_id not in current_ids:
+            current_ids.append(db_id)
+            if not message:
+                message = f'{cat_ind["name"]} 지표를 추가했어요.'
+        elif not cat_ind:
+            return _return_current_phase(state, message='카탈로그에 없는 지표예요. 다른 지표를 선택해주세요.')
+
+    elif action == 'remove':
+        remove_id = delta.get('remove_indicator_id')
+        if remove_id and remove_id in current_ids:
+            cat_ind = get_indicator_by_id(remove_id)
+            current_ids.remove(remove_id)
+            name = cat_ind['name'] if cat_ind else str(remove_id)
+            if not message:
+                message = f'{name} 지표를 삭제했어요.'
+
+    elif action == 'replace':
+        remove_id = delta.get('remove_indicator_id')
+        add_id = delta.get('indicator_db_id')
+        if remove_id in current_ids:
+            current_ids.remove(remove_id)
+        cat_ind = get_indicator_by_id(add_id) if add_id else None
+        if cat_ind and add_id not in current_ids:
+            current_ids.append(add_id)
+            if not message:
+                old = get_indicator_by_id(remove_id)
+                old_name = old['name'] if old else str(remove_id)
+                message = f'{old_name} → {cat_ind["name"]}로 교체했어요.'
+
+    state.collected.selected_indicator_ids = current_ids
+    state.history.append(ChatMessage(role='assistant', content=message))
+
+    # indicator_recommendations 재구성
+    from thesis.services.indicator_matcher import match_indicators_for_llm
+    indicator_recommendations = match_indicators_for_llm(state.collected)
+
+    return _return_current_phase(
+        state,
+        message=message,
+        indicator_recommendations=indicator_recommendations,
+    )
+
+
+def _handle_modify_thesis(state, user_input):
+    """가설 자체(방향/대상/제목) 변경 → 간단한 키워드 파싱."""
+    text_lower = user_input.lower()
+    message = ''
+
+    if any(kw in text_lower for kw in ['bullish', '상승', '오른다', '올라']):
+        state.collected.direction = 'bullish'
+        message = '방향을 상승(bullish)으로 변경했어요.'
+    elif any(kw in text_lower for kw in ['bearish', '하락', '내린다', '빠진다']):
+        state.collected.direction = 'bearish'
+        message = '방향을 하락(bearish)으로 변경했어요.'
+
+    if not message:
+        # Gemini에게 위임
+        from thesis.services.prompt_builder import call_gemini_light
+        prompt = f"""현재 가설: 제목="{state.collected.title}", 방향={state.collected.direction}, 대상={state.collected.target}
+사용자 요청: "{user_input}"
+
+변경할 필드와 값을 JSON으로 반환: {{"field": "title|direction|target", "new_value": "...", "message": "사용자에게 보여줄 메시지"}}"""
+        raw = call_gemini_light(prompt, user_input)
+        if raw:
+            try:
+                import json as _json
+                import re as _re
+                json_match = _re.search(r'\{.*\}', raw, _re.DOTALL)
+                if json_match:
+                    delta = _json.loads(json_match.group())
+                    field = delta.get('field')
+                    value = delta.get('new_value')
+                    if field == 'title' and value:
+                        state.collected.title = value
+                    elif field == 'direction' and value in ('bullish', 'bearish'):
+                        state.collected.direction = value
+                    elif field == 'target' and value:
+                        state.collected.target = value
+                    message = delta.get('message', f'{field}을(를) 변경했어요.')
+            except Exception:
+                pass
+
+    if not message:
+        message = '변경 사항을 이해하지 못했어요. "방향 바꿔줘" 또는 "대상을 삼성전자로" 처럼 말씀해주세요.'
+
+    state.history.append(ChatMessage(role='assistant', content=message))
+    return _return_current_phase(state, message=message)
+
+
+def _return_current_phase(state, message=None, indicator_recommendations=None):
+    """현재 phase를 유지하면서 응답 반환 (대화형 수정 후)."""
+    phase = state.phase
+
+    # 기본 버튼 (현재 phase에 맞게)
+    buttons = []
+    selection_mode = 'single'
+    needs_preset = False
+
+    if phase == BuilderPhase.PRESET.value:
+        buttons = [
+            {'id': 'short', 'label': MONITORING_PRESETS['short']['label']},
+            {'id': 'medium', 'label': MONITORING_PRESETS['medium']['label']},
+            {'id': 'long', 'label': MONITORING_PRESETS['long']['label']},
+        ]
+        needs_preset = True
+    elif phase == BuilderPhase.CONFIRM.value:
+        buttons = [
+            {'id': 'confirm', 'label': '등록'},
+            {'id': 'restart', 'label': '다시 만들기'},
+        ]
+
+    result = {
+        'conversation_state': state.model_dump(),
+        'message': message or '',
+        'buttons': buttons,
+        'selection_mode': selection_mode,
+        'phase': phase,
+    }
+    if needs_preset:
+        result['needs_preset'] = True
+    if indicator_recommendations is not None:
+        result['indicator_recommendations'] = indicator_recommendations
+    return result
 
 
 # ──────────────────────────────────────────────
