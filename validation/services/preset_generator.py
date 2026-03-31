@@ -2,11 +2,13 @@
 Peer 프리셋 자동 생성 서비스
 
 Phase 2: default, sector_all, size_peers
-Phase 3: quality_top, lifecycle (추후)
+Phase 3: quality_top, lifecycle
 """
 
 import logging
+import numpy as np
 from stocks.models import Stock, SP500Constituent
+from metrics.models import CompanyMetricSnapshot
 from validation.models import PeerPreset
 from validation.services.benchmark_calculator import assign_size_bucket, get_adjacent_buckets
 
@@ -41,6 +43,12 @@ class PresetGenerator:
         bucket = assign_size_bucket(mcap)
         if bucket in ('mega', 'large'):
             presets_created += self._generate_size_peers(stock, base_qs, bucket)
+
+        # 4. quality_top (우량주 비교) — sector >= 25종목
+        presets_created += self._generate_quality_top(stock, base_qs)
+
+        # 5. lifecycle (성장단계 유사) — sector >= 25종목 + CAGR 데이터
+        presets_created += self._generate_lifecycle(stock, base_qs)
 
         return {'symbol': symbol, 'presets_created': presets_created}
 
@@ -192,6 +200,176 @@ class PresetGenerator:
             elif bucket == 'small':
                 conditions |= Q(market_capitalization__lt=2_000_000_000)
         return qs.filter(conditions)
+
+    def _generate_quality_top(self, stock, base_qs) -> int:
+        """우량주 비교: sector 내 ROIC/Operating Margin/FCF Margin 상위 20%"""
+        if not stock.sector:
+            return 0
+
+        sector_peers = list(
+            base_qs.filter(sector__iexact=stock.sector)
+            .values_list('symbol', flat=True)
+        )
+        if len(sector_peers) < 25:
+            return 0
+
+        # 최신 fiscal_year 결정
+        latest_fy = (
+            CompanyMetricSnapshot.objects.filter(symbol_id=stock.symbol)
+            .values_list('fiscal_year', flat=True)
+            .distinct().order_by('-fiscal_year').first()
+        )
+        if not latest_fy:
+            return 0
+
+        # 특수 산업: ROIC → ROE
+        from stocks.models import IndustryClassification
+        is_special = False
+        if stock.industry:
+            ic = IndustryClassification.objects.filter(industry__iexact=stock.industry).first()
+            is_special = ic and ic.handling_mode == 'special'
+
+        quality_metrics = ['roe' if is_special else 'roic', 'operating_margin', 'fcf_margin']
+
+        # sector 내 모든 종목의 quality 지표 수집
+        all_symbols = sector_peers + [stock.symbol]
+        snaps = CompanyMetricSnapshot.objects.filter(
+            symbol_id__in=all_symbols,
+            fiscal_year=latest_fy,
+            metric_code_id__in=quality_metrics,
+            value_status='normal',
+            metric_value__isnull=False,
+        ).values('symbol_id', 'metric_code_id', 'metric_value')
+
+        # 종목별 평균 percentile 계산
+        from collections import defaultdict
+        symbol_values = defaultdict(dict)
+        for s in snaps:
+            symbol_values[s['symbol_id']][s['metric_code_id']] = float(s['metric_value'])
+
+        # 각 지표별 percentile 계산
+        symbol_scores = {}
+        for sym, vals in symbol_values.items():
+            if len(vals) < 2:  # 최소 2개 지표 필요
+                continue
+            pct_sum = 0
+            pct_count = 0
+            for mc in quality_metrics:
+                if mc not in vals:
+                    continue
+                all_vals = sorted([v.get(mc, None) for s2, v in symbol_values.items() if mc in v])
+                all_vals = [v for v in all_vals if v is not None]
+                if not all_vals:
+                    continue
+                rank = sum(1 for v in all_vals if v < vals[mc])
+                pct = (rank / len(all_vals)) * 100
+                pct_sum += pct
+                pct_count += 1
+            if pct_count > 0:
+                symbol_scores[sym] = pct_sum / pct_count
+
+        if not symbol_scores:
+            return 0
+
+        # 상위 20% 추출
+        threshold = np.percentile(list(symbol_scores.values()), 80)
+        top_symbols = [s for s, sc in symbol_scores.items() if sc >= threshold and s != stock.symbol]
+
+        if len(top_symbols) < 5:
+            return 0
+
+        confidence = self._calc_confidence(len(top_symbols), stock)
+
+        PeerPreset.objects.update_or_create(
+            symbol=stock, preset_key='quality_top',
+            defaults={
+                'display_name': '우량주 비교',
+                'logic_summary': f"{stock.sector} 섹터 내 수익성 상위 {len(top_symbols)}개와 비교",
+                'peer_symbols': top_symbols[:50],
+                'peer_count': len(top_symbols),
+                'generation_method': 'auto_quality',
+                'confidence_score': confidence,
+                'is_default': False,
+                'is_active': True,
+            }
+        )
+        return 1
+
+    def _generate_lifecycle(self, stock, base_qs) -> int:
+        """성장단계 유사: sector 내 Revenue CAGR 3Y 기준 그룹핑"""
+        if not stock.sector:
+            return 0
+
+        sector_peers = list(
+            base_qs.filter(sector__iexact=stock.sector)
+            .values_list('symbol', flat=True)
+        )
+        if len(sector_peers) < 25:
+            return 0
+
+        all_symbols = sector_peers + [stock.symbol]
+
+        # revenue_growth_yoy의 최신 값으로 성장 단계 근사
+        latest_fy = (
+            CompanyMetricSnapshot.objects.filter(symbol_id=stock.symbol)
+            .values_list('fiscal_year', flat=True)
+            .distinct().order_by('-fiscal_year').first()
+        )
+        if not latest_fy:
+            return 0
+
+        growth_snaps = CompanyMetricSnapshot.objects.filter(
+            symbol_id__in=all_symbols,
+            fiscal_year=latest_fy,
+            metric_code_id='revenue_growth_yoy',
+            value_status='normal',
+            metric_value__isnull=False,
+        ).values('symbol_id', 'metric_value')
+
+        growth_map = {s['symbol_id']: float(s['metric_value']) for s in growth_snaps}
+
+        if len(growth_map) < 10:
+            return 0
+
+        # percentile 기준 그룹핑
+        all_growths = list(growth_map.values())
+        p25 = float(np.percentile(all_growths, 25))
+        p75 = float(np.percentile(all_growths, 75))
+
+        my_growth = growth_map.get(stock.symbol)
+        if my_growth is None:
+            return 0
+
+        # 내 그룹 결정
+        if my_growth > p75:
+            group_label = '고성장'
+            group_symbols = [s for s, g in growth_map.items() if g > p75 and s != stock.symbol]
+        elif my_growth >= p25:
+            group_label = '안정형'
+            group_symbols = [s for s, g in growth_map.items() if p25 <= g <= p75 and s != stock.symbol]
+        else:
+            group_label = '저성장/턴어라운드'
+            group_symbols = [s for s, g in growth_map.items() if g < p25 and s != stock.symbol]
+
+        if len(group_symbols) < 5:
+            return 0
+
+        confidence = self._calc_confidence(len(group_symbols), stock)
+
+        PeerPreset.objects.update_or_create(
+            symbol=stock, preset_key='lifecycle',
+            defaults={
+                'display_name': '성장단계 유사',
+                'logic_summary': f"{group_label} {stock.sector} {len(group_symbols)}개와 비교 (매출 성장률 기준)",
+                'peer_symbols': group_symbols[:50],
+                'peer_count': len(group_symbols),
+                'generation_method': 'auto_lifecycle',
+                'confidence_score': confidence,
+                'is_default': False,
+                'is_active': True,
+            }
+        )
+        return 1
 
     def _calc_confidence(self, peer_count: int, stock) -> float:
         """confidence_score 계산 (설계서 섹션 5)"""
