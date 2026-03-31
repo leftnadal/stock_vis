@@ -620,8 +620,15 @@ def build_modify_indicator_prompt(collected):
 **카탈로그에 있는 지표만 사용하세요.**"""
 
 
-def call_gemini_light(system_prompt, user_message):
-    """가벼운 Gemini 호출 (Structured Output 없이, 빠른 응답)."""
+def call_gemini_light(system_prompt, user_message, history=None):
+    """
+    가벼운 Gemini 호출 (Structured Output 없이, 빠른 응답).
+
+    Args:
+        system_prompt: 시스템 프롬프트
+        user_message: 현재 사용자 메시지
+        history: 대화 이력 (최근 N개). list[ChatMessage] 또는 list[dict]
+    """
     try:
         from google import genai
         from google.genai import types
@@ -635,6 +642,21 @@ def call_gemini_light(system_prompt, user_message):
 
         client = genai.Client(api_key=api_key)
 
+        # 대화 이력 → Gemini contents 변환
+        contents = []
+        if history:
+            for msg in history:
+                role_val = msg.role if hasattr(msg, 'role') else msg.get('role', 'user')
+                content_val = msg.content if hasattr(msg, 'content') else msg.get('content', '')
+                gem_role = 'user' if role_val == 'user' else 'model'
+                contents.append(
+                    types.Content(role=gem_role, parts=[types.Part(text=content_val)])
+                )
+        # 현재 메시지 추가
+        contents.append(
+            types.Content(role='user', parts=[types.Part(text=user_message)])
+        )
+
         config = types.GenerateContentConfig(
             system_instruction=system_prompt,
             max_output_tokens=500,
@@ -644,7 +666,7 @@ def call_gemini_light(system_prompt, user_message):
 
         response = client.models.generate_content(
             model='gemini-2.5-flash',
-            contents=user_message,
+            contents=contents,
             config=config,
         )
 

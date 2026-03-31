@@ -1302,9 +1302,12 @@ def _handle_conversational_edit(state, user_input, user):
 
     collected = state.collected
 
-    # 1. Intent 분류
+    # 최근 대화 이력 (마지막 8개 — 맥락 유지 + 토큰 절약)
+    recent_history = state.history[-8:] if len(state.history) > 8 else list(state.history)
+
+    # 1. Intent 분류 (이력 포함)
     intent_prompt = build_intent_classification_prompt(state.phase, collected)
-    raw_intent = call_gemini_light(intent_prompt, user_input)
+    raw_intent = call_gemini_light(intent_prompt, user_input, history=recent_history)
 
     intent = 'question'  # default
     detail = user_input
@@ -1371,11 +1374,12 @@ def _handle_proceed_intent(state, detail, user):
 
 
 def _handle_question(state, user_input):
-    """질문 → Gemini가 현재 가설 맥락에서 답변."""
+    """질문 → Gemini가 현재 가설 맥락 + 대화 이력에서 답변."""
     from thesis.services.prompt_builder import build_question_answer_prompt, call_gemini_light
 
+    recent_history = state.history[-8:] if len(state.history) > 8 else list(state.history)
     system_prompt = build_question_answer_prompt(state.collected)
-    answer = call_gemini_light(system_prompt, user_input)
+    answer = call_gemini_light(system_prompt, user_input, history=recent_history)
 
     if not answer:
         answer = '죄송해요, 답변을 생성하지 못했어요. 다시 질문해주세요.'
@@ -1392,8 +1396,9 @@ def _handle_modify_premise(state, user_input):
     )
     from thesis.services.indicator_matcher import match_indicators_for_llm
 
+    recent_history = state.history[-6:] if len(state.history) > 6 else list(state.history)
     system_prompt = build_modify_premise_prompt(state.collected)
-    raw = call_gemini_light(system_prompt, user_input)
+    raw = call_gemini_light(system_prompt, user_input, history=recent_history)
 
     if not raw:
         return _return_current_phase(state, message='전제 수정을 처리하지 못했어요. 다시 시도해주세요.')
@@ -1464,8 +1469,9 @@ def _handle_modify_indicator(state, user_input):
         build_modify_indicator_prompt, call_gemini_light, get_indicator_by_id,
     )
 
+    recent_history = state.history[-6:] if len(state.history) > 6 else list(state.history)
     system_prompt = build_modify_indicator_prompt(state.collected)
-    raw = call_gemini_light(system_prompt, user_input)
+    raw = call_gemini_light(system_prompt, user_input, history=recent_history)
 
     if not raw:
         return _return_current_phase(state, message='지표 수정을 처리하지 못했어요. 다시 시도해주세요.')
