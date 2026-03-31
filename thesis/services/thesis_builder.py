@@ -1440,13 +1440,13 @@ def _handle_modify_premise(state, user_input):
 
     from thesis.services.prompt_builder import build_indicator_block
     indicator_block = build_indicator_block()
-    system_prompt = f"""현재 가설의 전제 목록:
+    system_prompt = f"""현재 가설의 전제 목록 (이미 존재하는 전제):
 {premises_desc}
 
 사용자가 전제를 수정하려고 합니다.
 아래 JSON 형식으로만 응답하세요:
 
-{{"action": "add" 또는 "remove",
+{{"action": "add" 또는 "remove" 또는 "none",
  "premise_title": "전제 제목 (15~30자)",
  "premise_description": "전제를 뒷받침하는 구체적 근거 (1~2문장)",
  "target_index": 삭제 시 인덱스 번호 (0부터),
@@ -1454,6 +1454,15 @@ def _handle_modify_premise(state, user_input):
    {{"indicator_db_id": 숫자, "why": "이유 1문장", "signal_type": "leading|coincident|lagging"}}
  ],
  "message": "사용자에게 보여줄 대화 메시지 (1~2문장)"}}
+
+## 중복 방지 규칙 (매우 중요)
+1. **위 전제 목록과 동일하거나 유사한 내용은 절대 추가하지 마세요.**
+   - 같은 주제를 다른 표현으로 바꾸는 것도 중복입니다.
+   - 예: "기업 실적 개선"이 이미 있으면 "기업 이익 증가"는 중복.
+   - 예: "금리 인하 기대감"이 이미 있으면 "통화 완화 정책"은 중복.
+2. **더 이상 의미 있는 새 전제를 추가할 수 없으면 action을 "none"으로 설정하고,
+   message에 "충분한 근거가 마련된 것 같아요. 혹시 직접 추가하고 싶은 전제가 있으세요?"로 답하세요.**
+3. 전제는 해당 가설의 방향(상승/하락)에 맞는 **구체적이고 차별화된 논거**여야 합니다.
 
 {indicator_block}
 
@@ -1477,6 +1486,13 @@ def _handle_modify_premise(state, user_input):
 
     action = delta.get('action', 'add')
     message = delta.get('message', '')
+
+    # "none" → 더 추가할 전제가 없음
+    if action == 'none':
+        if not message:
+            message = '충분한 근거가 마련된 것 같아요. 혹시 직접 추가하고 싶은 전제가 있으세요?'
+        state.history.append(ChatMessage(role='assistant', content=message))
+        return _return_current_phase(state, message=message)
 
     # 새 전제 생성
     new_premise = None
