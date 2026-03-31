@@ -1374,11 +1374,20 @@ def _handle_proceed_intent(state, detail, user):
 
 
 def _handle_question(state, user_input):
-    """질문 → Gemini가 현재 가설 맥락 + 대화 이력에서 답변."""
+    """질문 → Gemini가 가설 카드 + 뉴스 + 대화 이력 맥락에서 답변."""
     from thesis.services.prompt_builder import build_question_answer_prompt, call_gemini_light
 
     recent_history = state.history[-8:] if len(state.history) > 8 else list(state.history)
-    system_prompt = build_question_answer_prompt(state.collected)
+
+    # suggestions 데이터 + 뉴스 원문 전달
+    suggestions = state.collected.suggestions if state.collected.suggestions else None
+    source_news_id = state.source_news_id
+
+    system_prompt = build_question_answer_prompt(
+        state.collected,
+        suggestions=suggestions,
+        source_news_id=source_news_id,
+    )
     answer = call_gemini_light(system_prompt, user_input, history=recent_history)
 
     if not answer:

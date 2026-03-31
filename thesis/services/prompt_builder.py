@@ -504,6 +504,10 @@ def build_intent_classification_prompt(phase, collected):
     """사용자 메시지의 의도를 분류하는 프롬프트."""
     # 현재 가설 상태 요약
     ctx_parts = []
+    # 가설 카드 컨텍스트 (선택 전)
+    if collected.suggestions:
+        titles = [f'{s.direction}: {s.title}' for s in collected.suggestions]
+        ctx_parts.append(f'제시된 가설 카드: {" / ".join(titles)}')
     if collected.title:
         ctx_parts.append(f'가설: {collected.title}')
     if collected.direction:
@@ -530,10 +534,38 @@ def build_intent_classification_prompt(phase, collected):
 JSON만 반환: {{"intent": "...", "detail": "추출된 핵심 내용"}}"""
 
 
-def build_question_answer_prompt(collected):
+def build_question_answer_prompt(collected, suggestions=None, source_news_id=None):
     """사용자 질문에 답변하기 위한 시스템 프롬프트."""
-    ctx_parts = ['## 현재 사용자의 가설 상태']
+    ctx_parts = ['## 현재 가설 빌더 컨텍스트']
+
+    # 뉴스 원문 컨텍스트
+    if source_news_id:
+        try:
+            from news.models import NewsArticle
+            article = NewsArticle.objects.filter(id=source_news_id).first()
+            if article:
+                ctx_parts.append(f'### 기반 뉴스')
+                ctx_parts.append(f'- 제목: {article.title}')
+                if hasattr(article, 'content') and article.content:
+                    ctx_parts.append(f'- 내용 요약: {article.content[:300]}')
+        except Exception:
+            pass
+
+    # 제안된 가설 카드 (선택 전이면 이 정보가 핵심)
+    if suggestions:
+        ctx_parts.append(f'### 현재 제시된 가설 카드 ({len(suggestions)}개)')
+        for i, s in enumerate(suggestions):
+            dir_label = {'bullish': '상승', 'bearish': '하락'}.get(s.direction, s.direction)
+            ctx_parts.append(f'\n**가설 {i+1} ({dir_label})**: {s.title}')
+            ctx_parts.append(f'요약: {s.summary}')
+            if s.premises:
+                for j, p in enumerate(s.premises, 1):
+                    desc = f' — {p.description}' if p.description else ''
+                    ctx_parts.append(f'  전제 {j}: {p.title}{desc}')
+
+    # 확정된 가설 상태
     if collected.title:
+        ctx_parts.append(f'\n### 사용자가 선택/수정한 가설')
         ctx_parts.append(f'- 제목: {collected.title}')
     if collected.direction:
         dir_label = {'bullish': '상승', 'bearish': '하락'}.get(collected.direction, collected.direction)
@@ -559,10 +591,11 @@ def build_question_answer_prompt(collected):
 
 ## 규칙
 1. 한국어로 답변합니다.
-2. 2~3문장으로 간결하게.
-3. 현재 가설 맥락에 맞게 답변합니다.
-4. 전문 용어는 쉽게 풀어서 설명합니다.
-5. 필요하면 "전제를 추가해볼까요?" 같은 제안도 합니다."""
+2. 위 컨텍스트(뉴스, 가설 카드, 전제)를 기반으로 구체적으로 답변합니다.
+3. 2~3문장으로 간결하게. 필요하면 더 길어도 됩니다.
+4. 사용자가 "규제 리스크"를 물으면 위 가설 카드에 나온 구체적 규제 내용으로 답변합니다.
+5. 전문 용어는 쉽게 풀어서 설명합니다.
+6. 필요하면 "이 내용을 전제에 추가해볼까요?" 같은 제안도 합니다."""
 
 
 def build_modify_premise_prompt(collected):
