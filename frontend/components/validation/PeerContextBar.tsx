@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
-import type { PeerInfo } from '@/types/validation';
+import type { PeerInfo, PresetInfo } from '@/types/validation';
 
 const CONFIDENCE_BADGE = {
   high: { label: '높음', color: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' },
@@ -11,19 +11,14 @@ const CONFIDENCE_BADGE = {
   limited: { label: '제한적', color: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300' },
 } as const;
 
-const SIZE_LABELS: Record<string, string> = {
-  mega: 'Mega Cap',
-  large: 'Large Cap',
-  mid: 'Mid Cap',
-  small: 'Small Cap',
-};
-
 interface Props {
   peerInfo: PeerInfo;
   fiscalYear: number;
+  presets?: PresetInfo[];
+  onSelectPreset?: (presetKey: string) => void;
 }
 
-export default function PeerContextBar({ peerInfo, fiscalYear }: Props) {
+export default function PeerContextBar({ peerInfo, fiscalYear, presets, onSelectPreset }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const confidenceKey = peerInfo.confidence as keyof typeof CONFIDENCE_BADGE;
@@ -31,6 +26,27 @@ export default function PeerContextBar({ peerInfo, fiscalYear }: Props) {
 
   return (
     <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+      {/* 프리셋 탭 */}
+      {presets && presets.length > 1 && onSelectPreset && (
+        <div className="flex flex-wrap gap-2 mb-3 pb-3 border-b border-blue-100 dark:border-blue-800">
+          {presets.map((p) => (
+            <button
+              key={p.preset_key}
+              onClick={() => onSelectPreset(p.preset_key)}
+              className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                p.is_selected
+                  ? 'bg-blue-600 text-white dark:bg-blue-500'
+                  : 'bg-white text-gray-600 hover:bg-blue-100 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
+              }`}
+              title={p.logic_summary}
+            >
+              {p.display_name}
+              <span className="ml-1 opacity-60">{p.peer_count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 메인 라인 */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
         <span className="font-medium text-gray-900 dark:text-white">
@@ -38,9 +54,6 @@ export default function PeerContextBar({ peerInfo, fiscalYear }: Props) {
         </span>
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
           비교 신뢰도: {badge.label}
-        </span>
-        <span className="text-gray-500 dark:text-gray-400">
-          {SIZE_LABELS[peerInfo.size_bucket] || peerInfo.size_bucket}
         </span>
         <span className="text-gray-500 dark:text-gray-400">
           데이터 기준: {fiscalYear} FY

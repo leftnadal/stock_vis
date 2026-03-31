@@ -46,6 +46,24 @@ export interface IndustryLeader {
   market_cap: number | null;
 }
 
+// ── Presets API ──
+
+export interface PresetListResponse {
+  symbol: string;
+  presets: PresetInfo[];
+}
+
+export interface PresetInfo {
+  preset_key: string;
+  display_name: string;
+  logic_summary: string;
+  peer_count: number;
+  confidence_score: number;
+  confidence_label: '높음' | '보통' | '낮음';
+  is_selected: boolean;
+  is_default: boolean;
+}
+
 export interface IndustryPosition {
   ranks: IndustryRank[];
 }

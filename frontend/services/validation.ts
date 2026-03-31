@@ -6,6 +6,7 @@ import type {
   ValidationSummary,
   ValidationMetricsResponse,
   LeaderComparison,
+  PresetListResponse,
 } from '@/types/validation';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -36,4 +37,17 @@ export async function fetchValidationMetrics(
 
 export async function fetchLeaderComparison(symbol: string): Promise<LeaderComparison> {
   return fetchJson<LeaderComparison>(`${API_URL}/validation/${symbol.toUpperCase()}/leader-comparison/`);
+}
+
+export async function fetchPresets(symbol: string): Promise<PresetListResponse> {
+  return fetchJson<PresetListResponse>(`${API_URL}/validation/${symbol.toUpperCase()}/presets/`);
+}
+
+export async function selectPreset(symbol: string, presetKey: string): Promise<void> {
+  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ mode: 'preset', preset_key: presetKey }),
+  });
 }

@@ -5,16 +5,19 @@
  * gcTime: 24시간
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchValidationSummary,
   fetchValidationMetrics,
   fetchLeaderComparison,
+  fetchPresets,
+  selectPreset,
 } from '@/services/validation';
 import type {
   ValidationSummary,
   ValidationMetricsResponse,
   LeaderComparison,
+  PresetListResponse,
 } from '@/types/validation';
 
 const STALE_TIME = 1000 * 60 * 60;      // 1시간
@@ -24,6 +27,7 @@ export const VALIDATION_QUERY_KEYS = {
   summary: (symbol: string) => ['validation', 'summary', symbol] as const,
   metrics: (symbol: string, category: string) => ['validation', 'metrics', symbol, category] as const,
   leader: (symbol: string) => ['validation', 'leader', symbol] as const,
+  presets: (symbol: string) => ['validation', 'presets', symbol] as const,
 };
 
 export function useValidationSummary(symbol: string) {
@@ -54,4 +58,26 @@ export function useLeaderComparison(symbol: string) {
     gcTime: GC_TIME,
     enabled: !!symbol,
   });
+}
+
+export function usePresets(symbol: string) {
+  return useQuery<PresetListResponse>({
+    queryKey: VALIDATION_QUERY_KEYS.presets(symbol),
+    queryFn: () => fetchPresets(symbol),
+    staleTime: STALE_TIME,
+    gcTime: GC_TIME,
+    enabled: !!symbol,
+  });
+}
+
+export function useSelectPreset(symbol: string) {
+  const queryClient = useQueryClient();
+  return async (presetKey: string) => {
+    await selectPreset(symbol, presetKey);
+    // 프리셋 목록 + summary + metrics 캐시 무효화
+    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.presets(symbol) });
+    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.summary(symbol) });
+    queryClient.invalidateQueries({ queryKey: ['validation', 'metrics', symbol] });
+    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.leader(symbol) });
+  };
 }

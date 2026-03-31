@@ -4,10 +4,14 @@
 1. GET /api/v1/validation/{symbol}/summary/
 2. GET /api/v1/validation/{symbol}/metrics/?category=all
 3. GET /api/v1/validation/{symbol}/leader-comparison/
+4. GET /api/v1/validation/{symbol}/presets/
+5. POST /api/v1/validation/{symbol}/peer-preference/
+6. DELETE /api/v1/validation/{symbol}/peer-preference/
 """
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status
 
 from stocks.models import Stock, SP500Constituent
@@ -15,7 +19,10 @@ from metrics.models import (
     MetricDefinition, CompanyMetricSnapshot,
     PeerListCache, PeerMetricBenchmark, IndustryMetricBenchmark,
 )
-from validation.models import CompanyBenchmarkDelta, CategorySignal
+from validation.models import (
+    CompanyBenchmarkDelta, CategorySignal,
+    PeerPreset, UserPeerPreference,
+)
 from validation.services.interpretation import (
     generate_summary_text, generate_metric_interpretation,
     determine_trend, generate_leader_summary,
@@ -399,3 +406,77 @@ class LeaderComparisonView(APIView):
             'summary': summary,
             'summary_source': 'rule',
         })
+
+
+class PresetListView(APIView):
+    """프리셋 목록 API"""
+
+    def get(self, request, symbol):
+        symbol = symbol.upper()
+        presets = PeerPreset.objects.filter(symbol_id=symbol).order_by('preset_key')
+
+        # 현재 사용자의 선택된 프리셋 확인
+        selected_key = 'default'
+        if request.user.is_authenticated:
+            pref = UserPeerPreference.objects.filter(
+                user=request.user, symbol_id=symbol
+            ).first()
+            if pref and pref.mode == 'preset':
+                selected_key = pref.preset_key
+
+        result = []
+        for p in presets:
+            if not p.is_active:
+                continue
+            conf_label = '높음' if p.confidence_score >= 0.7 else ('보통' if p.confidence_score >= 0.4 else '낮음')
+            result.append({
+                'preset_key': p.preset_key,
+                'display_name': p.display_name,
+                'logic_summary': p.logic_summary,
+                'peer_count': p.peer_count,
+                'confidence_score': p.confidence_score,
+                'confidence_label': conf_label,
+                'is_selected': p.preset_key == selected_key,
+                'is_default': p.is_default,
+            })
+
+        return Response({'symbol': symbol, 'presets': result})
+
+
+class PeerPreferenceView(APIView):
+    """프리셋 선택 / 커스텀 설정 API"""
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def post(self, request, symbol):
+        symbol = symbol.upper()
+        if not request.user.is_authenticated:
+            return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        mode = request.data.get('mode', 'preset')
+        preset_key = request.data.get('preset_key', 'default')
+        custom_peers = request.data.get('custom_peers', [])
+
+        # 프리셋 모드: 해당 프리셋이 존재하는지 확인
+        if mode == 'preset':
+            exists = PeerPreset.objects.filter(symbol_id=symbol, preset_key=preset_key, is_active=True).exists()
+            if not exists:
+                return Response({'error': f'프리셋 {preset_key}을(를) 찾을 수 없습니다.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        UserPeerPreference.objects.update_or_create(
+            user=request.user, symbol_id=symbol,
+            defaults={
+                'mode': mode,
+                'preset_key': preset_key if mode == 'preset' else 'custom',
+                'custom_peers': custom_peers if mode == 'custom' else [],
+            }
+        )
+
+        return Response({'status': 'ok', 'mode': mode, 'preset_key': preset_key})
+
+    def delete(self, request, symbol):
+        symbol = symbol.upper()
+        if not request.user.is_authenticated:
+            return Response({'error': '로그인이 필요합니다.'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        UserPeerPreference.objects.filter(user=request.user, symbol_id=symbol).delete()
+        return Response({'status': 'ok', 'message': 'default로 리셋'})

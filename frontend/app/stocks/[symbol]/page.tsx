@@ -45,7 +45,7 @@ import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
-import { useValidationSummary, useValidationMetrics } from '@/hooks/useValidation';
+import { useValidationSummary, useValidationMetrics, usePresets, useSelectPreset } from '@/hooks/useValidation';
 import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
 import PeerContextBar from '@/components/validation/PeerContextBar';
 import CategorySection from '@/components/validation/CategorySection';
@@ -898,6 +898,8 @@ function NewsTab({ symbol }: { symbol: string }) {
 function ValidationTab({ symbol }: { symbol: string }) {
   const { data: summary, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useValidationSummary(symbol);
   const { data: metricsData, isLoading: metricsLoading } = useValidationMetrics(symbol, 'all');
+  const { data: presetsData } = usePresets(symbol);
+  const handleSelectPreset = useSelectPreset(symbol);
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
   const [mobileCategory, setMobileCategory] = useState<string>('profitability');
 
@@ -984,11 +986,13 @@ function ValidationTab({ symbol }: { symbol: string }) {
         summaryText={summary.summary_text}
       />
 
-      {/* ② Peer 정보 바 */}
+      {/* ② Peer 정보 바 + 프리셋 선택 */}
       {summary.peer_info && (
         <PeerContextBar
           peerInfo={summary.peer_info}
           fiscalYear={summary.data_fiscal_year}
+          presets={presetsData?.presets}
+          onSelectPreset={handleSelectPreset}
         />
       )}
 
