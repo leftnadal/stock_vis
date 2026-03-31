@@ -87,6 +87,10 @@ def normalize_llm_output(raw):
             if db_id is not None and get_indicator_by_id(db_id) is None:
                 logger.info(f"indicator_db_id {db_id} not in catalog, nullified")
                 ind['indicator_db_id'] = None
+            # target_symbol 정규화: 대문자 + 공백 제거
+            symbol = ind.get('target_symbol')
+            if symbol and isinstance(symbol, str):
+                ind['target_symbol'] = symbol.strip().upper()
 
     raw['premises'] = unique_premises
 
@@ -201,6 +205,7 @@ def merge_to_collected(collected, validated):
                     indicator_name=ind.get('indicator_name'),
                     why=ind.get('why', ''),
                     signal_type=ind.get('signal_type', 'coincident'),
+                    target_symbol=ind.get('target_symbol'),
                 ))
             premises.append(PremiseData(
                 title=p.get('title', ''),

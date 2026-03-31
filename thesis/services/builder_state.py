@@ -37,6 +37,7 @@ class IndicatorRecommendation(BaseModel):
     indicator_name: Optional[str] = None
     why: str = ''
     signal_type: str = 'coincident'  # leading / coincident / lagging
+    target_symbol: Optional[str] = None  # 펀더멘털 지표의 대상 종목 (예: "META")
 
 
 class PremiseData(BaseModel):

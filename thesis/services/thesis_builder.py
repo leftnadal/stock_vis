@@ -1128,23 +1128,39 @@ def _create_thesis_from_llm(state, user):
     created_indicators = []
     indicator_ids_to_create = collected.selected_indicator_ids
     if not indicator_ids_to_create:
-        # fallback: premises의 recommended_indicators에서 추출
         for p in collected.premises:
             for rec in p.recommended_indicators:
                 if rec.indicator_db_id:
                     indicator_ids_to_create.append(rec.indicator_db_id)
+
+    # indicator_db_id → target_symbol 매핑 구축 (premises에서 추출)
+    symbol_map = {}  # {db_id: 'META'}
+    for p in collected.premises:
+        for rec in p.recommended_indicators:
+            if rec.indicator_db_id and rec.target_symbol:
+                symbol_map[rec.indicator_db_id] = rec.target_symbol
 
     seen_indicator_ids = set()
     for db_id in indicator_ids_to_create:
         if db_id not in seen_indicator_ids:
             cat_ind = get_indicator_by_id(db_id)
             if cat_ind:
+                # data_params에 target_symbol 병합
+                data_params = dict(cat_ind.get('data_params', {}))
+                target_sym = symbol_map.get(db_id)
+                if target_sym and 'symbol' not in data_params:
+                    data_params['symbol'] = target_sym
+
+                indicator_name = cat_ind['name']
+                if target_sym:
+                    indicator_name = f'{cat_ind["name"]} ({target_sym})'
+
                 ti = ThesisIndicator.objects.create(
                     thesis=thesis,
-                    name=cat_ind['name'],
+                    name=indicator_name,
                     indicator_type=cat_ind.get('category', 'custom'),
                     data_source=cat_ind.get('data_source', 'manual'),
-                    data_params=cat_ind.get('data_params', {}),
+                    data_params=data_params,
                     support_direction=cat_ind.get('support_direction', 'positive'),
                 )
                 created_indicators.append(ti)

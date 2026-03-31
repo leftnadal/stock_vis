@@ -315,6 +315,13 @@ def build_indicator_block():
         "indicator_db_id에는 괄호 안의 id 숫자를 반드시 사용하세요.",
         "각 지표 옆의 [일간/주간/월간/분기]는 데이터 업데이트 주기입니다.",
         "",
+        "### target_symbol 규칙",
+        "펀더멘털 지표(EPS, PER, ROE, FCF, 영업이익률 등)와 기술적 지표(RSI, MACD 등)는",
+        "**반드시 추적할 종목의 티커를 target_symbol에 지정**하세요.",
+        "- 예: 'EU 규제 대형 플랫폼' 가설 → EPS 추천 시 target_symbol: 'META'",
+        "- 예: '반도체 수요 증가' 가설 → RSI 추천 시 target_symbol: 'NVDA'",
+        "- 시장 지수(S&P500, KOSPI 등), 거시지표(VIX, 금리, 환율), 원자재는 target_symbol 불필요",
+        "",
     ]
 
     by_category = {}
@@ -412,6 +419,7 @@ def get_gemini_response_schema():
                                         "type": "string",
                                         "enum": ["leading", "coincident", "lagging"],
                                     },
+                                    "target_symbol": {"type": "string"},
                                 },
                                 "required": ["indicator_db_id", "why"],
                             },
@@ -812,6 +820,7 @@ def get_suggestion_response_schema():
                                         "type": "string",
                                         "enum": ["leading", "coincident", "lagging"],
                                     },
+                                    "target_symbol": {"type": "string"},
                                 },
                                 "required": ["indicator_db_id", "why"],
                             },
