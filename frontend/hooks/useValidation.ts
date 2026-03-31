@@ -12,6 +12,7 @@ import {
   fetchLeaderComparison,
   fetchPresets,
   selectPreset,
+  setCustomPeers,
 } from '@/services/validation';
 import type {
   ValidationSummary,
@@ -74,10 +75,21 @@ export function useSelectPreset(symbol: string) {
   const queryClient = useQueryClient();
   return async (presetKey: string) => {
     await selectPreset(symbol, presetKey);
-    // 프리셋 목록 + summary + metrics 캐시 무효화
-    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.presets(symbol) });
-    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.summary(symbol) });
-    queryClient.invalidateQueries({ queryKey: ['validation', 'metrics', symbol] });
-    queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.leader(symbol) });
+    _invalidateAll(queryClient, symbol);
   };
+}
+
+export function useSetCustomPeers(symbol: string) {
+  const queryClient = useQueryClient();
+  return async (peers: string[]) => {
+    await setCustomPeers(symbol, peers);
+    _invalidateAll(queryClient, symbol);
+  };
+}
+
+function _invalidateAll(queryClient: any, symbol: string) {
+  queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.presets(symbol) });
+  queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.summary(symbol) });
+  queryClient.invalidateQueries({ queryKey: ['validation', 'metrics', symbol] });
+  queryClient.invalidateQueries({ queryKey: VALIDATION_QUERY_KEYS.leader(symbol) });
 }

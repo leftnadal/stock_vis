@@ -45,7 +45,7 @@ import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
-import { useValidationSummary, useValidationMetrics, usePresets, useSelectPreset } from '@/hooks/useValidation';
+import { useValidationSummary, useValidationMetrics, usePresets, useSelectPreset, useSetCustomPeers } from '@/hooks/useValidation';
 import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
 import PeerContextBar from '@/components/validation/PeerContextBar';
 import CategorySection from '@/components/validation/CategorySection';
@@ -900,6 +900,7 @@ function ValidationTab({ symbol }: { symbol: string }) {
   const { data: metricsData, isLoading: metricsLoading } = useValidationMetrics(symbol, 'all');
   const { data: presetsData } = usePresets(symbol);
   const handleSelectPreset = useSelectPreset(symbol);
+  const handleSetCustomPeers = useSetCustomPeers(symbol);
   const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
   const [mobileCategory, setMobileCategory] = useState<string>('profitability');
 
@@ -993,6 +994,7 @@ function ValidationTab({ symbol }: { symbol: string }) {
           fiscalYear={summary.data_fiscal_year}
           presets={presetsData?.presets}
           onSelectPreset={handleSelectPreset}
+          onSetCustomPeers={handleSetCustomPeers}
         />
       )}
 

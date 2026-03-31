@@ -51,3 +51,19 @@ export async function selectPreset(symbol: string, presetKey: string): Promise<v
     body: JSON.stringify({ mode: 'preset', preset_key: presetKey }),
   });
 }
+
+export async function setCustomPeers(symbol: string, peers: string[]): Promise<void> {
+  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ mode: 'custom', custom_peers: peers }),
+  });
+}
+
+export async function resetPeerPreference(symbol: string): Promise<void> {
+  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+}

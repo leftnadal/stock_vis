@@ -66,6 +66,16 @@ class ValidationSummaryView(APIView):
                 'message': '현재 S&P 500 종목만 지원합니다.',
             }, status=status.HTTP_200_OK)
 
+        # 커스텀 peer 분기
+        if request.user.is_authenticated:
+            pref = UserPeerPreference.objects.filter(user=request.user, symbol_id=symbol).first()
+            if pref and pref.mode == 'custom' and pref.custom_peers:
+                from validation.services.custom_benchmark_engine import CustomBenchmarkEngine
+                engine = CustomBenchmarkEngine()
+                result = engine.compute_summary(symbol, pref.custom_peers, user_id=request.user.id)
+                result['company_name'] = stock.stock_name or symbol
+                return Response(result)
+
         # CategorySignal
         signals = list(CategorySignal.objects.filter(symbol=stock).order_by('category'))
         if not signals:
