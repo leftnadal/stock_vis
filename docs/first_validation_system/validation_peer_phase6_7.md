@@ -303,3 +303,80 @@ Phase 7 (4~5일):
 | Gemini 응답 지연 (>5초) | 타임아웃 3초 + "처리 중..." 로딩 상태 |
 | 필터 결과 0건 | "조건에 맞는 종목이 없습니다. 조건을 완화해보세요." |
 | Thesis 모델 스키마 변경 | nullable 필드만 추가 (기존 Thesis에 영향 없음) |
+
+---
+
+## 구현 준비 상태 평가 (2026-04-01 기준)
+
+### chainsight 모델 데이터 현황
+
+| 모델 | 레코드 | Phase 6 의존 | Phase 7 의존 |
+|------|--------|-------------|-------------|
+| CompanyNarrativeTag | **0** | **블로킹** (theme_tags) | - |
+| CompanySensitivityProfile | **0** | - | **블로킹** (foreign_revenue_pct) |
+| CompanyCapitalDNA | **0** | - | **블로킹** (rd_to_revenue) |
+| CompanyRevenueStructure | **0** | - | 선택사항 |
+| CompanyGrowthStage | **0** | - | 선택사항 |
+| CompanyMetricSnapshot | **79,061** | - | ✅ 지표 필터 가능 (31개) |
+| Stock (sector/industry/mcap) | **515** | - | ✅ 속성 필터 가능 |
+
+### 구현 난이도
+
+| 항목 | 난이도 | 이유 |
+|------|--------|------|
+| Phase 6 태깅 배치 | ⭐⭐ 낮음 | Gemini 호출 + DB 저장, KoreanOverviewService 패턴 재활용 |
+| Phase 6 클러스터링 | ⭐ 매우 낮음 | ArrayField __overlap 쿼리 그룹핑 |
+| Phase 7 필터 파서 | ⭐⭐⭐ 중간 | LLM JSON 파싱 안정적이나 에지케이스 처리 필요 |
+| Phase 7 chainsight 데이터 채우기 | ⭐⭐⭐⭐ 높음 | foreign_revenue_pct, rd_to_revenue는 10-K 파싱 or FMP 별도 API |
+| Phase 7 Thesis 연동 | ⭐⭐⭐ 중간 | thesis 모델 필드 추가 + 관제실 탭 |
+
+### 유지보수 어려움
+
+| 항목 | 어려움 | 이유 |
+|------|--------|------|
+| LLM 태깅 품질 | ⭐⭐⭐ 중간 | 분기 재실행 시 태그 변동 → 프리셋 변동 가능 |
+| LLM 파싱 안정성 | ⭐⭐⭐⭐ 높음 | 애매한 자연어 입력 ("부채 적은 기업") 처리 |
+| chainsight 데이터 갱신 | ⭐⭐⭐⭐ 높음 | foreign_revenue_pct 연 1회(10-K), 별도 파이프라인 필요 |
+| Redis 캐시 관리 | ⭐⭐ 낮음 | TTL 1시간, 자동 만료 |
+
+### 판단: Chain Sight 완성 후 진행
+
+**Phase 6~7은 Chain Sight 데이터 파이프라인이 선행되어야 함.**
+
+이유:
+1. **테스트 불가** — chainsight 모델이 전부 0건이라 태깅/필터링 결과를 검증할 수 없음
+2. **Phase 6은 CompanyNarrativeTag.theme_tags에 의존** — Chain Sight 배치에서 theme_tags를 채우는 파이프라인이 먼저 필요
+3. **Phase 7-Full은 SensitivityProfile/CapitalDNA에 의존** — 10-K 파싱 또는 FMP API 파이프라인이 선행
+4. **Phase 7-Lite(MetricSnapshot 지표만)는 지금도 가능** — 하지만 5개 시나리오 중 2개(해외매출/R&D)가 빠져 가치가 제한적
+
+### Phase 7-Lite 옵션 (Chain Sight 없이 가능)
+
+MetricSnapshot 31개 지표만으로 필터링하면 Chain Sight 없이도 아래 시나리오는 커버 가능:
+
+| # | 시나리오 | 필요 데이터 | 가능 여부 |
+|---|---------|-----------|----------|
+| 1 | "성숙 기업만" (growth<10%, ROE>15%) | MetricSnapshot | ✅ |
+| 2 | "해외매출 50% 이상" | SensitivityProfile | ❌ Chain Sight 필요 |
+| 3 | "부채비율 30% 이하" | MetricSnapshot | ✅ |
+| 4 | "R&D 매출 10% 이상" | CapitalDNA | ❌ Chain Sight 필요 |
+| 5 | "반도체 빼줘" | Stock.industry | ✅ |
+
+→ 5개 중 3개 커버. Chain Sight 완성 후 나머지 2개 추가.
+
+### 최종 로드맵
+
+```
+[현재] Peer System Phase 1~5 완료 ✅
+  ↓
+[다음] Chain Sight 데이터 파이프라인 구축
+  → CompanyNarrativeTag (theme_tags 태깅)
+  → CompanySensitivityProfile (foreign_revenue_pct 등)
+  → CompanyCapitalDNA (rd_to_revenue 등)
+  → CompanyGrowthStage (lifecycle 분류)
+  ↓
+[이후] Phase 6: Thematic 프리셋 (Chain Sight theme_tags 기반)
+  ↓
+[이후] Phase 7: LLM 대화형 (Chain Sight + MetricSnapshot 통합 필터)
+  ↓
+[이후] Thesis Control 연동
+```
