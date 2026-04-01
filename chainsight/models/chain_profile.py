@@ -60,6 +60,10 @@ class CompanyChainProfile(models.Model):
     )
     last_updated = models.DateTimeField(auto_now=True)
 
+    # Neo4j 동기화 (CS-3-1)
+    neo4j_synced = models.BooleanField(default=False, db_index=True)
+    neo4j_synced_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         db_table = 'chainsight_chain_profile'
 

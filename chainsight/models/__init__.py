@@ -7,6 +7,7 @@ from .event_reaction import CompanyEventReaction
 from .revenue_structure import CompanyRevenueStructure
 from .chain_profile import CompanyChainProfile
 from .news_event import ChainNewsEvent
+from .relation_discovery import CoMentionEdge, PriceCoMovement, RelationConfidence
 
 __all__ = [
     'CompanySensitivityProfile',
@@ -18,4 +19,7 @@ __all__ = [
     'CompanyRevenueStructure',
     'CompanyChainProfile',
     'ChainNewsEvent',
+    'CoMentionEdge',
+    'PriceCoMovement',
+    'RelationConfidence',
 ]
