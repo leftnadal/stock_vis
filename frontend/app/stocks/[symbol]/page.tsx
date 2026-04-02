@@ -21,7 +21,7 @@ import {
   Shield,
   AlertTriangle,
 } from 'lucide-react';
-import { ChainSightExplorer } from '@/components/chain-sight';
+// LEGACY REMOVED: ChainSightExplorer (CS-0-0). chainsight/ 앱에서 재구축 예정.
 import UnitSelector from '@/components/financial/UnitSelector';
 import FormattedFinancialCell from '@/components/financial/FormattedFinancialCell';
 import FieldSettingsModal from '@/components/financial/FieldSettingsModal';
@@ -437,7 +437,11 @@ function StockDetailContent() {
               <ValidationTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'chain-sight' && (
-              <ChainSightExplorer symbol={symbol.toUpperCase()} />
+              <div className="text-center py-12">
+                <Compass className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Chain Sight</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400">기업 관계 탐색 기능을 재구축 중입니다.</p>
+              </div>
             )}
           </div>
         </div>

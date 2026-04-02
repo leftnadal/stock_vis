@@ -82,7 +82,7 @@ urlpatterns = [
     # Advanced Screener (고급 스크리너)
     # ========================================
     path('screener', views.advanced_screener_api, name='advanced-screener'),
-    path('screener/chain-sight', views.chain_sight_api, name='chain-sight'),
+    # LEGACY REMOVED: screener/chain-sight (CS-0-0)
 
     # ========================================
     # Screener Alerts (알림 시스템 - Phase 1)
@@ -103,22 +103,12 @@ urlpatterns = [
     path('thesis', views.list_theses, name='list-theses'),
 
     # ========================================
-    # Chain Sight Stock (개별 종목 탐험)
+    # LEGACY REMOVED: Chain Sight Stock + Neo4j Graph (CS-0-0)
+    # 8개 URL 제거됨. chainsight/ 앱에서 재구축 예정.
     # ========================================
-    path('chain-sight/stock/<str:symbol>', views.chain_sight_stock_api, name='chain-sight-stock'),
-    path('chain-sight/stock/<str:symbol>/category/<str:category_id>', views.chain_sight_category_api, name='chain-sight-category'),
-    path('chain-sight/stock/<str:symbol>/sync', views.chain_sight_sync_api, name='chain-sight-sync'),
-    path('chain-sight/stock/<str:symbol>/track', views.chain_sight_track_api, name='chain-sight-track'),
 
     # ========================================
-    # Chain Sight Neo4j Graph (온톨로지 그래프)
-    # ========================================
-    path('chain-sight/graph/stats', views.chain_sight_neo4j_stats_api, name='chain-sight-graph-stats'),
-    path('chain-sight/graph/<str:symbol>', views.chain_sight_graph_api, name='chain-sight-graph'),
-    path('chain-sight/graph/<str:symbol>/sync', views.chain_sight_neo4j_sync_api, name='chain-sight-graph-sync'),
-
-    # ========================================
-    # Chain Sight Phase 3: ETF Holdings
+    # Chain Sight Phase 3: ETF Holdings (LEGACY_KEEP_UNTIL_DC2)
     # ========================================
     path('etf/status', views.etf_collection_status, name='etf-status'),
     path('etf/sync', views.trigger_etf_holdings_sync, name='etf-sync'),
