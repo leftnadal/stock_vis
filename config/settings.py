@@ -30,7 +30,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 ## Neo4j (Chain Sight 그래프 DB)
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'password')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
 
 # ============================================================
 # Stock Data Provider Configuration
@@ -127,7 +127,7 @@ NEWS_FALLBACK_PROVIDER = os.getenv('NEWS_FALLBACK_PROVIDER', 'marketaux')
 # Neo4j 연결 설정 (로컬 개발 환경 기본값)
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USERNAME = os.getenv('NEO4J_USERNAME', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'password')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
 NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
 
 # Neo4j 연결 풀 설정
