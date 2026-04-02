@@ -190,3 +190,165 @@ def calculate_price_co_movement(self, period_days: int = 90):
     result = {"total_peers": len(peers), "success": success, "fail": fail}
     logger.info(f"PriceCoMovement: {result}")
     return result
+
+
+@shared_task(bind=True, max_retries=1, soft_time_limit=3600, time_limit=3660)
+def update_relation_confidence(self):
+    """
+    CS-2-4: RelationConfidence 종합 판정. Celery Beat: 주 1회 (일요일 04:00).
+    """
+    from chainsight.models import CoMentionEdge, PriceCoMovement, RelationConfidence
+    from chainsight.graph import get_graph_repository
+    from chainsight.utils import normalize_pair
+
+    repo = get_graph_repository()
+
+    # 1) 모든 PEER_OF 쌍 수집
+    peers = repo.run_query("""
+        MATCH (a:Stock)-[:PEER_OF]-(b:Stock)
+        WHERE a.ticker < b.ticker
+        RETURN DISTINCT a.ticker AS sym_a, b.ticker AS sym_b
+    """)
+
+    # 2) 같은 industry 쌍
+    same_industry = repo.run_query("""
+        MATCH (a:Stock)-[:BELONGS_TO_INDUSTRY]->(i:Industry)<-[:BELONGS_TO_INDUSTRY]-(b:Stock)
+        WHERE a.ticker < b.ticker
+        RETURN DISTINCT a.ticker AS sym_a, b.ticker AS sym_b
+    """)
+
+    # 모든 후보 쌍 통합
+    all_pairs = set()
+    peer_set = set()
+    industry_set = set()
+
+    for p in peers:
+        pair = (p["sym_a"], p["sym_b"])
+        all_pairs.add(pair)
+        peer_set.add(pair)
+
+    for p in same_industry:
+        pair = (p["sym_a"], p["sym_b"])
+        all_pairs.add(pair)
+        industry_set.add(pair)
+
+    # co-mention 쌍
+    co_mention_map = {}
+    for cm in CoMentionEdge.objects.filter(co_mention_count__gte=2):
+        pair = normalize_pair(cm.symbol_a, cm.symbol_b)
+        co_mention_map[pair] = cm.co_mention_count
+        all_pairs.add(pair)
+
+    # price correlation 쌍
+    price_map = {}
+    for pc in PriceCoMovement.objects.filter(correlation__gte=0.5):
+        pair = normalize_pair(pc.symbol_a, pc.symbol_b)
+        price_map[pair] = float(pc.correlation)
+        all_pairs.add(pair)
+
+    # 3) 각 쌍에 대해 RelationConfidence 판정
+    created, updated = 0, 0
+    for sym_a, sym_b in all_pairs:
+        has_peer = (sym_a, sym_b) in peer_set
+        has_industry = (sym_a, sym_b) in industry_set
+        has_news = (sym_a, sym_b) in co_mention_map
+        has_price = (sym_a, sym_b) in price_map
+
+        # 증거 카운트
+        sources = []
+        if has_peer: sources.append('peer')
+        if has_industry: sources.append('industry')
+        if has_news: sources.append('news')
+        if has_price: sources.append('price')
+        source_count = len(sources)
+
+        # Tier 판정
+        if source_count >= 3:
+            tier = 1
+            status = 'confirmed'
+            score = 85
+        elif source_count >= 2:
+            tier = 2
+            status = 'probable'
+            score = 60
+        elif source_count == 1:
+            tier = 3
+            status = 'weak'
+            score = 35
+        else:
+            tier = 3
+            status = 'hidden'
+            score = 15
+
+        # Summary
+        parts = []
+        if has_peer: parts.append('Peer 관계')
+        if has_industry: parts.append('같은 산업')
+        if has_news: parts.append(f'뉴스 동시출현 {co_mention_map.get((sym_a,sym_b), 0)}회')
+        if has_price:
+            corr = price_map.get((sym_a, sym_b), 0)
+            parts.append(f'주가 상관 {corr:.2f}')
+        summary = ' + '.join(parts) if parts else '증거 없음'
+
+        obj, is_new = RelationConfidence.objects.update_or_create(
+            symbol_a=sym_a, symbol_b=sym_b, relation_type='PEER_OF',
+            defaults={
+                'relation_category': 'truth',
+                'canonical_direction': 'both',
+                'relation_status': status,
+                'truth_score': score,
+                'evidence_tier_best': tier,
+                'evidence_count_total': source_count,
+                'evidence_count_independent': source_count,
+                'evidence_sources': {'sources': sources},
+                'has_peer_source': has_peer,
+                'has_industry_source': has_industry,
+                'has_news_source': has_news,
+                'has_price_source': has_price,
+                'relation_basis_summary': summary,
+                'synced_to_neo4j': False,
+            }
+        )
+        if is_new:
+            created += 1
+        else:
+            updated += 1
+
+    result = {"total_pairs": len(all_pairs), "created": created, "updated": updated}
+    logger.info(f"RelationConfidence: {result}")
+    return result
+
+
+@shared_task(bind=True, max_retries=0, soft_time_limit=600, time_limit=660)
+def check_stale_and_decay(self):
+    """
+    CS-2-4: Stale 하향 전이. Celery Beat: 주 1회 (일요일 04:30).
+    """
+    from chainsight.models import RelationConfidence
+
+    now = timezone.now()
+    decayed = 0
+
+    # confirmed → stale (90일)
+    stale = RelationConfidence.objects.filter(
+        relation_status='confirmed',
+        last_observed_at__lt=now - timedelta(days=90),
+    )
+    decayed += stale.update(relation_status='stale', synced_to_neo4j=False)
+
+    # probable → weak (60일)
+    weak = RelationConfidence.objects.filter(
+        relation_status='probable',
+        last_observed_at__lt=now - timedelta(days=60),
+    )
+    decayed += weak.update(relation_status='weak', synced_to_neo4j=False)
+
+    # weak → hidden (30일)
+    hidden = RelationConfidence.objects.filter(
+        relation_status='weak',
+        last_observed_at__lt=now - timedelta(days=30),
+    )
+    decayed += hidden.update(relation_status='hidden', synced_to_neo4j=False)
+
+    logger.info(f"Stale decay: {decayed}건 하향 전이")
+    return {"decayed": decayed}
