@@ -95,14 +95,109 @@ def aggregate_chain_profiles(self):
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def sync_profiles_to_neo4j(self):
-    """CS-3-1: ChainProfile → Neo4j 속성 동기화. Phase 3 완료 후 활성화."""
-    # Phase 3에서 구현
-    logger.info("sync_profiles_to_neo4j: Phase 3에서 구현 예정")
-    return {"status": "not_implemented"}
+    """CS-3-1: ChainProfile → Neo4j :Stock 속성 Delta Sync."""
+    from chainsight.models import CompanyChainProfile
+    from chainsight.graph import get_graph_repository
+
+    repo = get_graph_repository()
+    pending = CompanyChainProfile.objects.filter(neo4j_synced=False)
+    total = pending.count()
+    success, fail = 0, 0
+
+    for profile in pending.iterator():
+        try:
+            props = {}
+            for field in ['growth_stage', 'capital_type', 'rate_sensitivity', 'forex_sensitivity',
+                          'commodity_sensitivity', 'regulation_type', 'primary_narrative', 'narrative_sentiment',
+                          'business_model_type', 'overall_grade']:
+                val = getattr(profile, field, None)
+                if val:
+                    props[field] = str(val)
+
+            for field in ['revenue_cagr_3y', 'beta', 'score_profitability', 'score_growth',
+                          'score_financial_structure', 'profile_completeness']:
+                val = getattr(profile, field, None)
+                if val is not None:
+                    props[field] = float(val)
+
+            if profile.net_cash_position is not None:
+                props['net_cash_position'] = profile.net_cash_position
+
+            if profile.theme_tags:
+                props['theme_tags'] = profile.theme_tags
+
+            if props:
+                repo.run_query(
+                    "MATCH (s:Stock {ticker: $ticker}) SET s += $props",
+                    {"ticker": profile.symbol_id, "props": props}
+                )
+
+            profile.neo4j_synced = True
+            profile.neo4j_synced_at = timezone.now()
+            profile.save(update_fields=["neo4j_synced", "neo4j_synced_at"])
+            success += 1
+        except Exception as e:
+            fail += 1
+            logger.error(f"Profile sync {profile.symbol_id}: {e}")
+
+    logger.info(f"Profile sync: {success}/{total} 성공, {fail} 실패")
+    return {"total": total, "success": success, "fail": fail}
 
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def sync_relations_to_neo4j(self):
-    """CS-3-2: RelationConfidence → Neo4j 엣지 동기화. Phase 3 완료 후 활성화."""
-    logger.info("sync_relations_to_neo4j: Phase 3에서 구현 예정")
-    return {"status": "not_implemented"}
+    """CS-3-2: RelationConfidence → Neo4j 엣지 동기화."""
+    from chainsight.models import RelationConfidence
+    from chainsight.graph import get_graph_repository
+
+    repo = get_graph_repository()
+
+    # confirmed/probable Truth → 엣지 MERGE
+    to_sync = RelationConfidence.objects.filter(
+        relation_category='truth',
+        relation_status__in=['confirmed', 'probable'],
+        synced_to_neo4j=False,
+    )
+    merged = 0
+    for rc in to_sync.iterator():
+        try:
+            repo.run_query("""
+                MATCH (a:Stock {ticker: $a}), (b:Stock {ticker: $b})
+                MERGE (a)-[r:RELATED_TO]-(b)
+                SET r.relation_type = $type, r.status = $status,
+                    r.truth_score = $score, r.evidence_tier = $tier,
+                    r.basis_summary = $summary
+            """, {
+                "a": rc.symbol_a, "b": rc.symbol_b,
+                "type": rc.relation_type, "status": rc.relation_status,
+                "score": rc.truth_score, "tier": rc.evidence_tier_best,
+                "summary": rc.relation_basis_summary[:200],
+            })
+            rc.synced_to_neo4j = True
+            rc.save(update_fields=["synced_to_neo4j"])
+            merged += 1
+        except Exception as e:
+            logger.error(f"Relation sync {rc.symbol_a}-{rc.symbol_b}: {e}")
+
+    # stale/hidden (이전에 synced) → 엣지 DELETE
+    to_delete = RelationConfidence.objects.filter(
+        relation_category='truth',
+        relation_status__in=['stale', 'hidden'],
+        synced_to_neo4j=True,
+    )
+    deleted = 0
+    for rc in to_delete.iterator():
+        try:
+            repo.run_query("""
+                MATCH (a:Stock {ticker: $a})-[r:RELATED_TO]-(b:Stock {ticker: $b})
+                WHERE r.relation_type = $type
+                DELETE r
+            """, {"a": rc.symbol_a, "b": rc.symbol_b, "type": rc.relation_type})
+            rc.synced_to_neo4j = False
+            rc.save(update_fields=["synced_to_neo4j"])
+            deleted += 1
+        except Exception:
+            pass
+
+    logger.info(f"Relation sync: merged {merged}, deleted {deleted}")
+    return {"merged": merged, "deleted": deleted}
