@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/v1/serverless/', include("serverless.urls")),  # Market Movers (AWS 전환 대상)
     path('api/v1/thesis/', include("thesis.urls")),  # Thesis Control (가설 통제실)
     path('api/v1/validation/', include("validation.api.urls")),  # 1차 검증
+    path('api/v1/chainsight/', include("chainsight.api.urls")),  # Chain Sight 그래프 탐색
 
     # Provider Admin API
     path('api/v1/', include('api_request.urls')),
