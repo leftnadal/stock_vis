@@ -1,13 +1,10 @@
 """
 종목 검색 및 자동완성 API 뷰
-Alpha Vantage Symbol Search API를 활용
+StockService Provider 추상화 사용 (FMP 기본)
 """
 import logging
-import os
-import time
 from typing import Optional
 
-import requests
 from django.core.cache import cache
 from rest_framework import status
 from rest_framework.response import Response
@@ -19,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class SymbolSearchView(APIView):
-    """Alpha Vantage API를 통한 종목 검색"""
+    """StockService를 통한 종목 검색"""
 
     def get(self, request):
         """
@@ -43,56 +40,32 @@ class SymbolSearchView(APIView):
         if cached_result:
             return Response(cached_result)
 
-        # Alpha Vantage API 호출
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            return Response(
-                {'error': 'API 키가 설정되지 않았습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        url = 'https://www.alphavantage.co/query'
-        params = {
-            'function': 'SYMBOL_SEARCH',
-            'keywords': keywords,
-            'apikey': api_key
-        }
-
         try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            from api_request.stock_service import get_stock_service
 
-            # 에러 체크
-            if 'Error Message' in data:
+            service = get_stock_service()
+            response = service.search_symbols(keywords)
+
+            if not response.success:
                 return Response(
-                    {'error': 'Invalid API request'},
-                    status=status.HTTP_400_BAD_REQUEST
+                    {'error': f'검색 실패: {response.error}'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
                 )
 
-            if 'Note' in data:
-                return Response(
-                    {'error': 'API rate limit reached. Please try again later.'},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
-            # 결과 파싱
-            matches = data.get('bestMatches', [])
             results = []
-
-            for match in matches[:10]:  # 최대 10개 결과
-                # US 주식만 필터링 (선택사항)
-                if match.get('4. region') == 'United States':
+            for idx, r in enumerate(response.data[:10]):
+                # US 주식만 필터링 (exchange에 NYSE, NASDAQ, AMEX 포함)
+                if r.exchange and any(
+                    ex in r.exchange.upper()
+                    for ex in ['NYSE', 'NASDAQ', 'AMEX']
+                ):
                     results.append({
-                        'symbol': match.get('1. symbol'),
-                        'name': match.get('2. name'),
-                        'type': match.get('3. type'),
-                        'region': match.get('4. region'),
-                        'market_open': match.get('5. marketOpen'),
-                        'market_close': match.get('6. marketClose'),
-                        'timezone': match.get('7. timezone'),
-                        'currency': match.get('8. currency'),
-                        'match_score': float(match.get('9. matchScore', 0))
+                        'symbol': r.symbol,
+                        'name': r.name,
+                        'type': r.type or 'Equity',
+                        'region': r.exchange or 'United States',
+                        'currency': r.currency or 'USD',
+                        'match_score': 1.0 - (idx * 0.05),
                     })
 
             # 매치 스코어로 정렬
@@ -108,11 +81,6 @@ class SymbolSearchView(APIView):
 
             return Response(response_data)
 
-        except requests.exceptions.RequestException as e:
-            return Response(
-                {'error': f'API 요청 실패: {str(e)}'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
         except Exception as e:
             return Response(
                 {'error': f'서버 오류: {str(e)}'},
@@ -139,56 +107,28 @@ class SymbolValidateView(APIView):
         if cached_result:
             return Response(cached_result)
 
-        # Alpha Vantage API 호출 (GLOBAL_QUOTE)
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            return Response(
-                {'error': 'API 키가 설정되지 않았습니다.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-        url = 'https://www.alphavantage.co/query'
-        params = {
-            'function': 'GLOBAL_QUOTE',
-            'symbol': symbol,
-            'apikey': api_key
-        }
-
         try:
-            response = requests.get(url, params=params, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            from api_request.stock_service import get_stock_service
 
-            # 에러 체크
-            if 'Error Message' in data:
-                return Response(
-                    {'valid': False, 'error': 'Invalid symbol'},
-                    status=status.HTTP_404_NOT_FOUND
-                )
+            service = get_stock_service()
+            response = service.get_quote(symbol)
 
-            if 'Note' in data:
-                return Response(
-                    {'error': 'API rate limit reached. Please try again later.'},
-                    status=status.HTTP_429_TOO_MANY_REQUESTS
-                )
-
-            quote = data.get('Global Quote', {})
-
-            if not quote or not quote.get('01. symbol'):
+            if not response.success:
                 return Response(
                     {'valid': False, 'error': 'Symbol not found'},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # 결과 포맷팅
+            quote = response.data
+
             result = {
                 'valid': True,
-                'symbol': quote.get('01. symbol'),
-                'price': float(quote.get('05. price', 0)),
-                'change': float(quote.get('09. change', 0)),
-                'change_percent': quote.get('10. change percent', '0%').replace('%', ''),
-                'volume': int(quote.get('06. volume', 0)),
-                'latest_trading_day': quote.get('07. latest trading day')
+                'symbol': quote.symbol,
+                'price': float(quote.price) if quote.price else 0,
+                'change': float(quote.change) if quote.change else 0,
+                'change_percent': str(quote.change_percent) if quote.change_percent else '0',
+                'volume': quote.volume or 0,
+                'latest_trading_day': str(quote.latest_trading_day) if quote.latest_trading_day else None,
             }
 
             # 10분간 캐시
@@ -196,11 +136,6 @@ class SymbolValidateView(APIView):
 
             return Response(result)
 
-        except requests.exceptions.RequestException as e:
-            return Response(
-                {'error': f'API 요청 실패: {str(e)}'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
         except Exception as e:
             return Response(
                 {'error': f'서버 오류: {str(e)}'},
@@ -254,111 +189,40 @@ def validate_and_create_stock(symbol: str) -> Optional[Stock]:
     # 이미 Stock이 존재하는지 확인
     try:
         stock = Stock.objects.get(symbol=symbol)
-        logger.info(f"Stock {symbol} already exists in database")
         return stock
     except Stock.DoesNotExist:
-        logger.info(f"Stock {symbol} not found in database, fetching from API")
-
-    # Alpha Vantage API로 종목 정보 조회
-    api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-    if not api_key:
-        logger.error("ALPHA_VANTAGE_API_KEY not set")
-        return None
-
-    # GLOBAL_QUOTE API로 유효성 검증
-    url = 'https://www.alphavantage.co/query'
-    params = {
-        'function': 'GLOBAL_QUOTE',
-        'symbol': symbol,
-        'apikey': api_key
-    }
+        pass
 
     try:
-        logger.info(f"Fetching GLOBAL_QUOTE for {symbol}")
-        response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+        from api_request.stock_service import get_stock_service
 
-        # 에러 체크
-        if 'Error Message' in data:
-            logger.error(f"Alpha Vantage error for {symbol}: {data.get('Error Message')}")
+        service = get_stock_service()
+
+        # 1. Quote로 유효성 검증
+        quote_response = service.get_quote(symbol)
+        if not quote_response.success:
+            logger.error(f"Could not validate {symbol}: {quote_response.error}")
             return None
 
-        if 'Note' in data:
-            logger.error(f"Alpha Vantage rate limit for {symbol}: {data.get('Note')}")
+        quote = quote_response.data
+        if not quote or not quote.symbol:
             return None
 
-        quote = data.get('Global Quote', {})
+        # 2. Profile로 회사명 조회
+        company_name = symbol
+        profile_response = service.get_company_profile(symbol)
+        if profile_response.success and profile_response.data:
+            company_name = profile_response.data.name or symbol
 
-        if not quote or not quote.get('01. symbol'):
-            logger.error(f"No quote data found for {symbol}")
-            return None
-
-        logger.info(f"Got quote data for {symbol}: price={quote.get('05. price')}")
-
-        # Rate limit 대응을 위해 잠시 대기
-        time.sleep(12)  # Alpha Vantage 무료 티어는 5 calls/min
-
-        # COMPANY_OVERVIEW API로 회사 정보 조회
-        overview_params = {
-            'function': 'OVERVIEW',
-            'symbol': symbol,
-            'apikey': api_key
-        }
-
-        company_name = symbol  # 기본값
-
-        try:
-            logger.info(f"Fetching OVERVIEW for {symbol}")
-            overview_response = requests.get(url, params=overview_params, timeout=10)
-            overview_response.raise_for_status()
-            overview_data = overview_response.json()
-
-            if 'Name' in overview_data:
-                company_name = overview_data['Name']
-                logger.info(f"Got company name for {symbol}: {company_name}")
-            else:
-                logger.warning(f"No company name in overview for {symbol}")
-        except Exception as e:
-            logger.warning(f"Failed to get overview for {symbol}: {e}")
-            # Overview 조회 실패 시 SYMBOL_SEARCH로 시도
-            time.sleep(12)  # Rate limit 대응
-
-            search_params = {
-                'function': 'SYMBOL_SEARCH',
-                'keywords': symbol,
-                'apikey': api_key
-            }
-
-            try:
-                logger.info(f"Fetching SYMBOL_SEARCH for {symbol}")
-                search_response = requests.get(url, params=search_params, timeout=10)
-                search_response.raise_for_status()
-                search_data = search_response.json()
-
-                matches = search_data.get('bestMatches', [])
-                for match in matches:
-                    if match.get('1. symbol') == symbol:
-                        company_name = match.get('2. name', symbol)
-                        logger.info(f"Got company name from search for {symbol}: {company_name}")
-                        break
-            except Exception as e:
-                logger.warning(f"Failed to search for {symbol}: {e}")
-
-        # Stock 객체 생성
-        try:
-            stock = Stock.objects.create(
-                symbol=symbol,
-                stock_name=company_name,
-                real_time_price=float(quote.get('05. price', 0)),
-                change=float(quote.get('09. change', 0)),
-                change_percent=quote.get('10. change percent', '0%')  # 필드명 수정: change_percentage -> change_percent
-            )
-            logger.info(f"Created new stock {symbol} in database")
-            return stock
-        except Exception as e:
-            logger.error(f"Failed to create stock {symbol} in database: {e}")
-            return None
+        # 3. Stock 생성
+        stock = Stock.objects.create(
+            symbol=symbol,
+            stock_name=company_name,
+            real_time_price=float(quote.price) if quote.price else 0,
+            change=float(quote.change) if quote.change else 0,
+            change_percent=f"{quote.change_percent}%" if quote.change_percent else '0%',
+        )
+        return stock
 
     except Exception as e:
         logger.error(f"Error validating/creating stock {symbol}: {e}")

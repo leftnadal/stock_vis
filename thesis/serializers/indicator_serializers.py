@@ -18,6 +18,7 @@ class ThesisIndicatorSerializer(serializers.ModelSerializer):
             'current_score', 'current_degree', 'current_color', 'current_label',
             'premise', 'override_score',
             'window', 'decay', 'epsilon',
+            'recommendation_reason',
             'created_at',
         ]
         read_only_fields = [

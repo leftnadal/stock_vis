@@ -633,6 +633,7 @@ def _create_thesis(state, collected, user):
             data_source=ind.get('data_source', 'manual'),
             data_params=ind.get('data_params', {}),
             support_direction=ind.get('support_direction', 'positive'),
+            recommendation_reason=ind.get('reason', ''),
         )
         created_indicators.append(ti)
 
@@ -711,6 +712,7 @@ def _create_thesis(state, collected, user):
                 data_source=ind.get('data_source', 'manual'),
                 data_params=ind.get('data_params', {}),
                 support_direction=flipped_dir,
+                recommendation_reason=ind.get('reason', ''),
             )
         try:
             HypothesisEvent.objects.create(
@@ -1133,12 +1135,16 @@ def _create_thesis_from_llm(state, user):
                 if rec.indicator_db_id:
                     indicator_ids_to_create.append(rec.indicator_db_id)
 
-    # indicator_db_id → target_symbol 매핑 구축 (premises에서 추출)
+    # indicator_db_id → target_symbol / why 매핑 구축 (premises에서 추출)
     symbol_map = {}  # {db_id: 'META'}
+    why_map = {}     # {db_id: '추천 이유'}
     for p in collected.premises:
         for rec in p.recommended_indicators:
-            if rec.indicator_db_id and rec.target_symbol:
-                symbol_map[rec.indicator_db_id] = rec.target_symbol
+            if rec.indicator_db_id:
+                if rec.target_symbol:
+                    symbol_map[rec.indicator_db_id] = rec.target_symbol
+                if rec.why:
+                    why_map.setdefault(rec.indicator_db_id, rec.why)
 
     seen_indicator_ids = set()
     for db_id in indicator_ids_to_create:
@@ -1162,6 +1168,7 @@ def _create_thesis_from_llm(state, user):
                     data_source=cat_ind.get('data_source', 'manual'),
                     data_params=data_params,
                     support_direction=cat_ind.get('support_direction', 'positive'),
+                    recommendation_reason=why_map.get(db_id, ''),
                 )
                 created_indicators.append(ti)
                 seen_indicator_ids.add(db_id)

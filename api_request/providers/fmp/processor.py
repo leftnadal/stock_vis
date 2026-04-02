@@ -118,7 +118,7 @@ class FMPProcessor:
                 dividend_yield=FMPProcessor._safe_decimal(data.get("lastDiv")),
                 high_52week=high_52,
                 low_52week=low_52,
-                shares_outstanding=FMPProcessor._safe_int(data.get("volAvg")),  # 대략적
+                shares_outstanding=None,  # FMP profile에 shares_outstanding 미제공
                 website=data.get("website"),
                 ceo=data.get("ceo"),
                 full_time_employees=FMPProcessor._safe_int(data.get("fullTimeEmployees")),

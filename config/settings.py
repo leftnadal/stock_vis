@@ -36,15 +36,15 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
 STOCK_PROVIDERS = {
     # Feature Flags - 환경변수로 오버라이드 가능
-    'quote': os.getenv('STOCK_PROVIDER_QUOTE', 'alpha_vantage'),
-    'profile': os.getenv('STOCK_PROVIDER_PROFILE', 'alpha_vantage'),
-    'daily_prices': os.getenv('STOCK_PROVIDER_DAILY_PRICES', 'alpha_vantage'),
-    'weekly_prices': os.getenv('STOCK_PROVIDER_WEEKLY_PRICES', 'alpha_vantage'),
-    'balance_sheet': os.getenv('STOCK_PROVIDER_BALANCE_SHEET', 'alpha_vantage'),
-    'income_statement': os.getenv('STOCK_PROVIDER_INCOME_STATEMENT', 'alpha_vantage'),
-    'cash_flow': os.getenv('STOCK_PROVIDER_CASH_FLOW', 'alpha_vantage'),
-    'search': os.getenv('STOCK_PROVIDER_SEARCH', 'alpha_vantage'),
-    'sector': os.getenv('STOCK_PROVIDER_SECTOR', 'alpha_vantage'),
+    'quote': os.getenv('STOCK_PROVIDER_QUOTE', 'fmp'),
+    'profile': os.getenv('STOCK_PROVIDER_PROFILE', 'fmp'),
+    'daily_prices': os.getenv('STOCK_PROVIDER_DAILY_PRICES', 'fmp'),
+    'weekly_prices': os.getenv('STOCK_PROVIDER_WEEKLY_PRICES', 'fmp'),
+    'balance_sheet': os.getenv('STOCK_PROVIDER_BALANCE_SHEET', 'fmp'),
+    'income_statement': os.getenv('STOCK_PROVIDER_INCOME_STATEMENT', 'fmp'),
+    'cash_flow': os.getenv('STOCK_PROVIDER_CASH_FLOW', 'fmp'),
+    'search': os.getenv('STOCK_PROVIDER_SEARCH', 'fmp'),
+    'sector': os.getenv('STOCK_PROVIDER_SECTOR', 'fmp'),
 }
 
 # Provider 캐시 TTL (초)
@@ -232,6 +232,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
         'OPTIONS': {
             'connect_timeout': 10,
+            'gssencmode': 'disable',  # macOS fork 후 GSS/Kerberos XPC 크래시 방지
         },
     }
 }
@@ -399,6 +400,9 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # Celery 작업 결과 저장
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_RESULT_EXTENDED = True
+
+# Fork pool worker 재활용: C 확장(Neo4j bolt) 상태 누적으로 인한 SIGSEGV 방지
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
 
 # Redis 캐시 백엔드 (기존 로컬 메모리 캐시를 Redis로 변경)
 CACHES = {

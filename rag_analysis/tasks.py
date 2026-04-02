@@ -8,7 +8,6 @@ Critical:
 
 import logging
 from celery import shared_task
-from .services.neo4j_service import get_neo4j_service
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +41,7 @@ def sync_stock_to_neo4j(self, symbol: str, name: str, sector: str = None, indust
         - Idempotent: MERGE를 사용하여 중복 생성 방지
         - Neo4j 연결 실패 시 'skipped' 반환 (재시도 없음)
     """
+    from .services.neo4j_service import get_neo4j_service
     neo4j_service = get_neo4j_service()
 
     # Neo4j 연결 확인
@@ -111,6 +111,7 @@ def delete_stock_from_neo4j(self, symbol: str):
         - DETACH DELETE로 모든 관계 함께 삭제
         - Neo4j 연결 실패 시 'skipped' 반환
     """
+    from .services.neo4j_service import get_neo4j_service
     neo4j_service = get_neo4j_service()
 
     # Neo4j 연결 확인
@@ -175,6 +176,7 @@ def batch_sync_stocks_to_neo4j(stock_data_list: list):
         - 100개 단위로 청킹하여 메모리 관리
     """
     import gc
+    from .services.neo4j_service import get_neo4j_service
 
     neo4j_service = get_neo4j_service()
 
@@ -278,21 +280,49 @@ def health_check_neo4j():
 
     Note:
         - Celery Beat로 주기적 실행 (예: 5분마다)
-        - 연결 상태 모니터링
+        - 임시 드라이버를 생성/폐기하여 fork 환경에서 SIGSEGV 방지
     """
-    neo4j_service = get_neo4j_service()
+    from neo4j import GraphDatabase
+    from django.conf import settings
 
     try:
-        health = neo4j_service.health_check()
-        logger.info(f"Neo4j health check: {health['status']}")
-        return health
+        driver = GraphDatabase.driver(
+            settings.NEO4J_URI,
+            auth=(settings.NEO4J_USERNAME, settings.NEO4J_PASSWORD),
+            max_connection_lifetime=300,
+            max_connection_pool_size=1,
+            connection_acquisition_timeout=10,
+        )
+        try:
+            driver.verify_connectivity()
+            with driver.session() as session:
+                node_count = session.run(
+                    "MATCH (n) RETURN count(n) AS count"
+                ).single()['count']
+                rel_count = session.run(
+                    "MATCH ()-[r]->() RETURN count(r) AS count"
+                ).single()['count']
+
+            health = {
+                'status': 'healthy',
+                'connected': True,
+                'error': None,
+                'node_count': node_count,
+                'relationship_count': rel_count,
+            }
+            logger.info(f"Neo4j health check: {health['status']}")
+            return health
+        finally:
+            driver.close()
 
     except Exception as e:
         logger.error(f"Neo4j health check failed: {e}")
         return {
             'status': 'error',
             'connected': False,
-            'error': str(e)
+            'error': str(e),
+            'node_count': None,
+            'relationship_count': None,
         }
 
 

@@ -112,6 +112,13 @@ export interface DashboardThesis {
   snapshot_date: string | null   // 스냅샷 기준일 (ISO date)
 }
 
+/** 분기 지표 히스토리 포인트 */
+export interface QuarterlyPoint {
+  fy: number
+  fq: number
+  value: number
+}
+
 // 대시보드 전용 indicator (ThesisIndicator와 필드명 다름)
 export interface DashboardIndicator {
   id: string
@@ -130,6 +137,14 @@ export interface DashboardIndicator {
   previous_raw_value: number | null
   change_pct: number | null
   raw_value_asof: string | null  // 데이터 기준일 (ISO datetime)
+  // 분기 지표 확장 (BE-PR-2)
+  fiscal_label: string | null           // "2025 Q3" 또는 "2024 FY"
+  quarterly_history: QuarterlyPoint[] | null  // 최근 4분기 히스토리
+  is_quarterly: boolean                 // metrics 소스 여부
+  comparison_type: 'qoq' | 'yoy' | null  // 비교 타입
+  // 지표 설명 + 가설 관계성
+  description: string                   // 카탈로그 기반 지표 설명
+  recommendation_reason: string         // 이 가설에 추천된 이유
 }
 
 // 히트맵 셀

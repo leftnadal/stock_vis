@@ -1,8 +1,19 @@
 import os
+import platform
 import logging
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import task_failure, task_retry, worker_process_init, worker_shutdown
+
+# macOS fork 안전성:
+# 1. Objective-C 런타임 fork safety 체크 비활성화 (SIGSEGV 방지)
+# 2. libpq GSS/Kerberos 암호화 비활성화 (fork 후 XPC 크래시 방지)
+# 3. macOS에서는 solo pool 강제 (fork 자체를 제거하여 C 확장 크래시 원천 차단)
+if platform.system() == 'Darwin':
+    os.environ.setdefault('OBJC_DISABLE_INITIALIZE_FORK_SAFETY', 'YES')
+    os.environ.setdefault('PGGSSENCMODE', 'disable')
+
+IS_MACOS = platform.system() == 'Darwin'
 
 # Django 설정 모듈을 설정
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -12,6 +23,12 @@ app = Celery('stock_vis')
 
 # Django 설정 파일에서 Celery 설정 가져오기
 app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# macOS: solo pool 강제 — fork를 사용하지 않아 모든 C 확장 크래시 방지
+# (PyTorch, scikit-learn/OpenMP, libpq/GSS 등)
+# 프로덕션 Linux에서는 prefork가 기본값으로 유지됨
+if IS_MACOS:
+    app.conf.worker_pool = 'solo'
 
 # Django 앱에서 태스크 자동 발견
 app.autodiscover_tasks()
@@ -25,6 +42,7 @@ app.conf.task_routes = {
     'rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
     'rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
     'rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
     'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
     'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
     'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
@@ -57,11 +75,17 @@ def handle_task_retry(sender=None, request=None, reason=None, **kwargs):
 # ============================================================
 
 @worker_process_init.connect
-def reset_neo4j_after_fork(**kwargs):
+def reset_connections_after_fork(**kwargs):
     """
-    Fork된 워커 프로세스에서 부모의 Neo4j 드라이버 참조를 안전하게 해제.
-    close() 없이 None으로 덮어씀 (C 확장 SIGSEGV 방지).
+    Fork된 워커 프로세스에서:
+    1. Django DB 연결을 강제 닫기 (부모의 libpq 소켓 상속 → GSS 크래시 방지)
+    2. Neo4j 드라이버 참조를 안전하게 해제
     """
+    # Django DB 연결 닫기 — 워커가 새 연결을 만들도록 강제
+    from django import db
+    db.connections.close_all()
+
+    # Neo4j 드라이버 해제
     try:
         from rag_analysis.services.neo4j_driver import force_reset_after_fork
         from rag_analysis.services.neo4j_service import reset_neo4j_service
@@ -90,16 +114,15 @@ app.conf.beat_schedule = {
     # Stocks 태스크
     # ============================================================
 
-    # 실시간 주가 업데이트 (시장 개장 시간, 5분마다)
+    # 실시간 주가 업데이트 (시장 개장 시간, 5분마다) — FMP Provider
     'update-realtime-prices': {
-        'task': 'stocks.tasks.update_realtime_prices',
+        'task': 'stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(minute='*/5', hour='9-16', day_of_week='1-5'),
-        'kwargs': {'priority': 'high'}
     },
 
-    # 일일 종가 업데이트 (시장 마감 후)
+    # 일일 종가 업데이트 (시장 마감 후) — FMP Provider
     'update-daily-prices': {
-        'task': 'stocks.tasks.update_daily_prices',
+        'task': 'stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
     },
 
@@ -168,31 +191,8 @@ app.conf.beat_schedule = {
         'options': {'queue': 'neo4j'},
     },
 
-    # ============================================================
-    # Semantic Cache 태스크
-    # ============================================================
-
-    # 만료된 캐시 정리 (매일 새벽 4시)
-    'cleanup-expired-semantic-cache': {
-        'task': 'rag_analysis.tasks.cleanup_expired_semantic_cache',
-        'schedule': crontab(hour=4, minute=0),
-        'options': {'queue': 'neo4j'},
-    },
-
-    # 캐시 워밍 (매주 일요일 새벽 4시 30분)
-    'warm-semantic-cache': {
-        'task': 'rag_analysis.tasks.warm_semantic_cache',
-        'schedule': crontab(hour=4, minute=30, day_of_week=0),
-        'kwargs': {'limit': 100},
-        'options': {'queue': 'neo4j'},
-    },
-
-    # 캐시 통계 조회 (매시간, 모니터링용)
-    'semantic-cache-stats': {
-        'task': 'rag_analysis.tasks.get_semantic_cache_stats',
-        'schedule': crontab(minute=0),
-        'options': {'queue': 'neo4j'},
-    },
+    # Semantic Cache 태스크 — 제거됨 (미초기화 상태, 향후 폐기 예정)
+    # cleanup-expired-semantic-cache, warm-semantic-cache, semantic-cache-stats
 
     # ============================================================
     # Market Movers 동기화 + 키워드 생성 태스크
@@ -454,24 +454,6 @@ app.conf.beat_schedule = {
         'task': 'news.tasks.collect_general_news_fmp',
         'schedule': crontab(hour=17, minute=45, day_of_week='1-5'),
         'options': {'expires': 600}
-    },
-
-    # ============================================================
-    # Alpha Vantage 감성 뉴스 수집 태스크
-    # ============================================================
-
-    # AV Sentiment News (2회/일, 25개 종목)
-    'collect-sentiment-av-morning': {
-        'task': 'news.tasks.collect_sentiment_news_av',
-        'schedule': crontab(hour=8, minute=30, day_of_week='1-5'),
-        'kwargs': {'max_symbols': 25},
-        'options': {'expires': 3600}
-    },
-    'collect-sentiment-av-afternoon': {
-        'task': 'news.tasks.collect_sentiment_news_av',
-        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
-        'kwargs': {'max_symbols': 25},
-        'options': {'expires': 3600}
     },
 
     # ============================================================

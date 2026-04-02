@@ -557,6 +557,10 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       previous_raw_value: 9.8e11,
       change_pct: 22.4,
       raw_value_asof: '2026-03-18T09:00:00Z',
+      fiscal_label: null,
+      quarterly_history: null,
+      is_quarterly: false,
+      comparison_type: null,
     },
     {
       id: 'dash-ind-2',
@@ -574,6 +578,10 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       previous_raw_value: 1365,
       change_pct: 1.1,
       raw_value_asof: '2026-03-18T09:00:00Z',
+      fiscal_label: null,
+      quarterly_history: null,
+      is_quarterly: false,
+      comparison_type: null,
     },
     {
       id: 'dash-ind-3',
@@ -591,6 +599,10 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       previous_raw_value: 18.2,
       change_pct: 1.6,
       raw_value_asof: '2026-03-17T21:00:00Z',
+      fiscal_label: null,
+      quarterly_history: null,
+      is_quarterly: false,
+      comparison_type: null,
     },
   ],
   heatmap: {
