@@ -1,7 +1,11 @@
 /**
  * 1차 검증 API client
+ *
+ * GET은 인증 불필요 (IsAuthenticatedOrReadOnly).
+ * POST/DELETE(peer-preference)는 JWT 필요 → authAxios 사용.
  */
 
+import { authAxios } from '@/lib/api/authAxios';
 import type {
   ValidationSummary,
   ValidationMetricsResponse,
@@ -44,26 +48,19 @@ export async function fetchPresets(symbol: string): Promise<PresetListResponse> 
 }
 
 export async function selectPreset(symbol: string, presetKey: string): Promise<void> {
-  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ mode: 'preset', preset_key: presetKey }),
+  await authAxios.post(`/validation/${symbol.toUpperCase()}/peer-preference/`, {
+    mode: 'preset',
+    preset_key: presetKey,
   });
 }
 
 export async function setCustomPeers(symbol: string, peers: string[]): Promise<void> {
-  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ mode: 'custom', custom_peers: peers }),
+  await authAxios.post(`/validation/${symbol.toUpperCase()}/peer-preference/`, {
+    mode: 'custom',
+    custom_peers: peers,
   });
 }
 
 export async function resetPeerPreference(symbol: string): Promise<void> {
-  await fetch(`${API_URL}/validation/${symbol.toUpperCase()}/peer-preference/`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
+  await authAxios.delete(`/validation/${symbol.toUpperCase()}/peer-preference/`);
 }
