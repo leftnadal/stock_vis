@@ -182,6 +182,7 @@ INSTALLED_APPS = [
     'metrics',  # 공유 지표 메타데이터 + 배치 실행 이력
     'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
+    'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트

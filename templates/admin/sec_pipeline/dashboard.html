@@ -1,0 +1,72 @@
+{% extends "admin/base_site.html" %}
+{% block title %}SEC Pipeline Dashboard{% endblock %}
+
+{% block content %}
+<h1>SEC Pipeline Dashboard</h1>
+
+{% if alerts %}
+<div style="background:#fff3cd;border:1px solid #ffc107;padding:12px;border-radius:4px;margin-bottom:20px;">
+  <strong>Alerts (last 24h)</strong>
+  <ul style="margin:8px 0 0;">
+    {% for alert in alerts %}
+    <li>{{ alert }}</li>
+    {% endfor %}
+  </ul>
+</div>
+{% else %}
+<div style="background:#d4edda;border:1px solid #28a745;padding:12px;border-radius:4px;margin-bottom:20px;">
+  All checks passed (last 24h)
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+
+  <!-- Collection -->
+  <div style="border:1px solid #ddd;border-radius:6px;padding:16px;">
+    <h3 style="margin-top:0;">Collection</h3>
+    <table style="width:100%;">
+      <tr><td>Total</td><td style="text-align:right;font-weight:bold;">{{ stats.collection.total }}</td></tr>
+      <tr><td>Success</td><td style="text-align:right;color:green;">{{ stats.collection.success }}</td></tr>
+      <tr><td>Partial</td><td style="text-align:right;color:orange;">{{ stats.collection.partial }}</td></tr>
+      <tr><td>Failed</td><td style="text-align:right;color:red;">{{ stats.collection.failed }}</td></tr>
+    </table>
+  </div>
+
+  <!-- Track A -->
+  <div style="border:1px solid #ddd;border-radius:6px;padding:16px;">
+    <h3 style="margin-top:0;">Track A (Supply Chain)</h3>
+    <table style="width:100%;">
+      <tr><td>Total Evidences</td><td style="text-align:right;font-weight:bold;">{{ stats.track_a.total_evidences }}</td></tr>
+      <tr><td>Matched</td><td style="text-align:right;color:green;">{{ stats.track_a.matched }}</td></tr>
+      <tr><td>Unmatched</td><td style="text-align:right;color:orange;">{{ stats.track_a.unmatched }}</td></tr>
+      <tr><td>Neo4j Synced</td><td style="text-align:right;color:green;">{{ stats.track_a.neo4j_synced }}</td></tr>
+      <tr><td>Neo4j Pending</td><td style="text-align:right;color:orange;">{{ stats.track_a.neo4j_pending }}</td></tr>
+      <tr><td>Avg Confidence</td><td style="text-align:right;">{{ stats.track_a.avg_confidence }}</td></tr>
+    </table>
+  </div>
+
+  <!-- Track B -->
+  <div style="border:1px solid #ddd;border-radius:6px;padding:16px;">
+    <h3 style="margin-top:0;">Track B (Business Model)</h3>
+    <table style="width:100%;">
+      <tr><td>Total Snapshots</td><td style="text-align:right;font-weight:bold;">{{ stats.track_b.total_snapshots }}</td></tr>
+      <tr><td>High Grade</td><td style="text-align:right;color:green;">{{ stats.track_b.high_grade }}</td></tr>
+      <tr><td>Medium Grade</td><td style="text-align:right;color:orange;">{{ stats.track_b.medium_grade }}</td></tr>
+      <tr><td>Low Grade</td><td style="text-align:right;color:red;">{{ stats.track_b.low_grade }}</td></tr>
+    </table>
+  </div>
+
+  <!-- Matching Queue -->
+  <div style="border:1px solid #ddd;border-radius:6px;padding:16px;">
+    <h3 style="margin-top:0;">Matching Queue</h3>
+    <table style="width:100%;">
+      <tr><td>Total</td><td style="text-align:right;font-weight:bold;">{{ stats.matching.queue_total }}</td></tr>
+      <tr><td>Pending</td><td style="text-align:right;color:orange;">{{ stats.matching.queue_pending }}</td></tr>
+      <tr><td>Matched</td><td style="text-align:right;color:green;">{{ stats.matching.queue_matched }}</td></tr>
+      <tr><td>Not Public</td><td style="text-align:right;">{{ stats.matching.queue_not_public }}</td></tr>
+      <tr><td>Person</td><td style="text-align:right;">{{ stats.matching.queue_person }}</td></tr>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

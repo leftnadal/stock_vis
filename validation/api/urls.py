@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import (
     ValidationSummaryView, ValidationMetricsView, LeaderComparisonView,
-    PresetListView, PeerPreferenceView,
+    PresetListView, PeerPreferenceView, LLMPeerFilterView,
 )
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
     path('<str:symbol>/leader-comparison/', LeaderComparisonView.as_view(), name='validation-leader'),
     path('<str:symbol>/presets/', PresetListView.as_view(), name='validation-presets'),
     path('<str:symbol>/peer-preference/', PeerPreferenceView.as_view(), name='validation-peer-preference'),
+    path('<str:symbol>/llm-filter/', LLMPeerFilterView.as_view(), name='validation-llm-filter'),
 ]

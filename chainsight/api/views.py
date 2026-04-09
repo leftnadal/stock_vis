@@ -8,6 +8,7 @@ CS-4-3: GET /chainsight/trace/
 
 import time
 import logging
+from datetime import date, datetime
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -17,6 +18,22 @@ from chainsight.graph import get_graph_repository
 from chainsight.models import CoMentionEdge, PriceCoMovement
 
 logger = logging.getLogger(__name__)
+
+
+def _sanitize_neo4j(obj):
+    """Neo4j DateTime/Date 등 직렬화 불가 타입을 문자열로 변환."""
+    if isinstance(obj, dict):
+        return {k: _sanitize_neo4j(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_sanitize_neo4j(v) for v in obj]
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    # neo4j.time.DateTime 등
+    if hasattr(obj, 'isoformat'):
+        return obj.isoformat()
+    if hasattr(obj, 'iso_format'):
+        return obj.iso_format()
+    return obj
 
 
 class ChainSightGraphView(APIView):
@@ -56,7 +73,7 @@ class ChainSightGraphView(APIView):
 
         elapsed_ms = int((time.time() - start) * 1000)
 
-        return Response({
+        return Response(_sanitize_neo4j({
             "center": result["center"],
             "nodes": result["nodes"],
             "edges": result["edges"],
@@ -66,7 +83,7 @@ class ChainSightGraphView(APIView):
                 "edge_count": len(result["edges"]),
                 "query_ms": elapsed_ms,
             }
-        })
+        }))
 
 
 class ChainSightSuggestionView(APIView):
@@ -186,12 +203,12 @@ class ChainSightTraceView(APIView):
                     entry["next_relation"] = None
                 path.append(entry)
 
-            return Response({
+            return Response(_sanitize_neo4j({
                 "from": from_sym, "to": to_sym,
                 "found": True,
                 "path_length": len(edges),
                 "path": path,
-            })
+            }))
         except Exception as e:
             logger.error(f"Trace {from_sym}→{to_sym}: {e}")
             return Response({"from": from_sym, "to": to_sym, "found": False, "error": str(e)})

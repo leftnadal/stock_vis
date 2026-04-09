@@ -1,0 +1,70 @@
+[
+  {
+    "symbol": "AAPL",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [],
+    "notes": "AAPL 10-K는 구체적 회사명을 거의 언급하지 않음"
+  },
+  {
+    "symbol": "MSFT",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [
+      {"target_ticker": "LNKD", "target_name": "LinkedIn", "primary_type": "PARTNER_WITH"},
+      {"target_ticker": "ATVI", "target_name": "Activision Blizzard", "primary_type": "PARTNER_WITH"},
+      {"target_ticker": "OPENAI", "target_name": "OpenAI", "primary_type": "PARTNER_WITH"}
+    ]
+  },
+  {
+    "symbol": "NVDA",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [
+      {"target_ticker": "TSM", "target_name": "Taiwan Semiconductor Manufacturing Company", "primary_type": "CUSTOMER_OF"},
+      {"target_ticker": "SSNLF", "target_name": "Samsung Electronics", "primary_type": "CUSTOMER_OF"},
+      {"target_ticker": "SKM", "target_name": "SK Hynix", "primary_type": "CUSTOMER_OF"},
+      {"target_ticker": "MU", "target_name": "Micron Technology", "primary_type": "CUSTOMER_OF"},
+      {"target_ticker": "HNHPF", "target_name": "Hon Hai Precision Industry", "primary_type": "CUSTOMER_OF"}
+    ]
+  },
+  {
+    "symbol": "GOOGL",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [
+      {"target_ticker": "AAPL", "target_name": "Apple", "primary_type": "PARTNER_WITH"},
+      {"target_ticker": "SSNLF", "target_name": "Samsung Electronics", "primary_type": "PARTNER_WITH"}
+    ]
+  },
+  {
+    "symbol": "JPM",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [],
+    "notes": "은행 10-K는 supply chain 관계가 일반적으로 적음"
+  },
+  {
+    "symbol": "GS",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": []
+  },
+  {
+    "symbol": "JNJ",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": []
+  },
+  {
+    "symbol": "UNH",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": []
+  },
+  {
+    "symbol": "XOM",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": []
+  },
+  {
+    "symbol": "AMZN",
+    "section_presence": {"item_1": true, "item_1a": true, "item_7": true},
+    "supply_chain_relations": [
+      {"target_ticker": "AMZN", "target_name": "AWS", "primary_type": "PARTNER_WITH"}
+    ],
+    "notes": "AMZN은 자사 AWS를 별도 사업으로 서술"
+  }
+]

@@ -46,6 +46,11 @@ app.conf.task_routes = {
     'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
     'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
     'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
+    # Chain Sight Neo4j 동기화
+    'chainsight.tasks.sync_tasks.sync_profiles_to_neo4j': {'queue': 'neo4j'},
+    'chainsight.tasks.sync_tasks.sync_relations_to_neo4j': {'queue': 'neo4j'},
+    # SEC Pipeline Neo4j 동기화
+    'sec_pipeline.tasks.sync_dirty_to_neo4j': {'queue': 'neo4j'},
 }
 
 # ============================================================
@@ -634,6 +639,97 @@ app.conf.beat_schedule = {
     'thesis-create-snapshots': {
         'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
         'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # Chain Sight — Tier A 프로파일 + 관계 파이프라인
+    # ============================================================
+
+    # Tier A 통합 프로파일 (매주 토요일 02:00 EST)
+    # GrowthStage + CapitalDNA + SensitivityProfile + InsiderSignal
+    'chainsight-all-profiles': {
+        'task': 'chainsight.tasks.profile_tasks.calculate_all_profiles',
+        'schedule': crontab(hour=2, minute=0, day_of_week=6),
+        'options': {'expires': 7200}
+    },
+
+    # 뉴스 CoMention 추출 (매일 10:00 EST, 뉴스 분류 후)
+    'chainsight-co-mentions': {
+        'task': 'chainsight.tasks.relation_tasks.extract_co_mentions',
+        'schedule': crontab(hour=10, minute=0),
+        'kwargs': {'days_back': 7},
+        'options': {'expires': 3600}
+    },
+
+    # PriceCoMovement 계산 (매주 토요일 03:00 EST, 프로파일 후)
+    'chainsight-price-co-movement': {
+        'task': 'chainsight.tasks.relation_tasks.calculate_price_co_movement',
+        'schedule': crontab(hour=3, minute=0, day_of_week=6),
+        'options': {'expires': 7200}
+    },
+
+    # RelationConfidence 갱신 (매일 11:00 EST, CoMention 후)
+    'chainsight-relation-confidence': {
+        'task': 'chainsight.tasks.relation_tasks.update_relation_confidence',
+        'schedule': crontab(hour=11, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Stale 관계 감쇠 (매주 토요일 04:00 EST)
+    'chainsight-stale-decay': {
+        'task': 'chainsight.tasks.relation_tasks.check_stale_and_decay',
+        'schedule': crontab(hour=4, minute=0, day_of_week=6),
+        'options': {'expires': 600}
+    },
+
+    # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
+    'chainsight-aggregate-profiles': {
+        'task': 'chainsight.tasks.sync_tasks.aggregate_chain_profiles',
+        'schedule': crontab(hour=4, minute=30, day_of_week=6),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j 프로파일 동기화 (매일 12:00 EST, 관계 갱신 후)
+    'chainsight-sync-profiles-neo4j': {
+        'task': 'chainsight.tasks.sync_tasks.sync_profiles_to_neo4j',
+        'schedule': crontab(hour=12, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j 관계 동기화 (매일 12:30 EST, 프로파일 동기화 후)
+    'chainsight-sync-relations-neo4j': {
+        'task': 'chainsight.tasks.sync_tasks.sync_relations_to_neo4j',
+        'schedule': crontab(hour=12, minute=30),
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # Validation — 1차 검증 주간 배치
+    # ============================================================
+
+    # 주간 검증 배치 (매주 토요일 05:00 EST, Chain Sight 후)
+    'validation-weekly-batch': {
+        'task': 'validation.tasks.run_weekly_validation_batch',
+        'schedule': crontab(hour=5, minute=0, day_of_week=6),
+        'options': {'expires': 14400}
+    },
+
+    # ============================================================
+    # SEC Pipeline — Neo4j 동기화 + 신규 filing 감지
+    # ============================================================
+
+    # SEC dirty evidence → Neo4j 동기화 (5분마다)
+    'sec-sync-dirty-neo4j': {
+        'task': 'sec_pipeline.tasks.sync_dirty_to_neo4j',
+        'schedule': crontab(minute='*/5'),
+        'options': {'expires': 240}
+    },
+
+    # SEC 신규 10-K filing 감지 (매월 1일 06:00 EST)
+    'sec-check-new-filings': {
+        'task': 'sec_pipeline.tasks.check_new_filings',
+        'schedule': crontab(hour=6, minute=0, day_of_month=1),
         'options': {'expires': 3600}
     },
 

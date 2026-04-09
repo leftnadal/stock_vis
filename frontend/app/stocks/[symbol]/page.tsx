@@ -52,6 +52,12 @@ import CategorySection from '@/components/validation/CategorySection';
 import CategorySidebar from '@/components/validation/CategorySidebar';
 import IndustryPosition from '@/components/validation/IndustryPosition';
 import LeaderComparisonSection from '@/components/validation/LeaderComparisonSection';
+import dynamic from 'next/dynamic';
+
+const ChainSightMiniView = dynamic(
+  () => import('@/components/chainsight/GraphMiniView'),
+  { ssr: false }
+);
 
 type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
 
@@ -437,11 +443,7 @@ function StockDetailContent() {
               <ValidationTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'chain-sight' && (
-              <div className="text-center py-12">
-                <Compass className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Chain Sight</h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">기업 관계 탐색 기능을 재구축 중입니다.</p>
-              </div>
+              <ChainSightMiniView symbol={symbol.toUpperCase()} />
             )}
           </div>
         </div>

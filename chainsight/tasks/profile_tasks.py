@@ -203,8 +203,13 @@ def calculate_capital_dna(self):
 @shared_task(bind=True, max_retries=1, soft_time_limit=7200, time_limit=7260)
 def calculate_all_profiles(self):
     """Tier A 통합 task. Celery Beat 주 1회."""
+    from .sensitivity_tasks import calculate_sensitivity_profiles
+    from .insider_tasks import calculate_insider_signals
+
     results = {}
     results["growth_stage"] = calculate_growth_stages()
     results["capital_dna"] = calculate_capital_dna()
+    results["sensitivity"] = calculate_sensitivity_profiles()
+    results["insider"] = calculate_insider_signals()
     logger.info(f"All profiles: {results}")
     return results
