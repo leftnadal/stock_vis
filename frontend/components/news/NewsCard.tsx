@@ -15,11 +15,21 @@ export interface NewsCardProps {
   onClick?: () => void;
 }
 
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function NewsCard({ article, onClick }: NewsCardProps) {
   const relativeTime = formatDistanceToNow(new Date(article.published_at), {
     addSuffix: true,
     locale: ko,
   });
+  const hasValidImage = !!article.image_url && isValidUrl(article.image_url);
 
   return (
     <div
@@ -29,7 +39,7 @@ export default function NewsCard({ article, onClick }: NewsCardProps) {
       <div className="flex gap-4 p-4">
         {/* Thumbnail Image */}
         <div className="flex-shrink-0">
-          {article.image_url ? (
+          {hasValidImage ? (
             <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
               <Image
                 src={article.image_url}

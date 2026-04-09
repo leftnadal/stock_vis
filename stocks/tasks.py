@@ -172,10 +172,11 @@ def sync_sp500_financials(batch_size=101):
         batch = priority_list[:batch_size]
 
         for i, symbol in enumerate(batch):
-            # FMP 300 calls/min 한도 보호: 2초 간격 분산 (10 워커 × 3 calls/종목 = 90 calls/min)
+            # FMP rate limit 보호: 7초 간격 (태스크 실행 ~6초, 동시 실행 방지)
+            # 101개 × 7초 = ~12분 소요
             update_financials_with_provider.apply_async(
                 args=[symbol],
-                countdown=i * 2,
+                countdown=i * 7,
             )
 
         oldest_update = str(update_map[has_data[0]]) if has_data else None
@@ -444,7 +445,7 @@ def sync_sp500_eod_prices(self, target_date=None):
         raise self.retry(exc=e, countdown=300 * (self.request.retries + 1))
 
 
-@shared_task
+@shared_task(rate_limit='6/m')
 def update_financials_with_provider(symbol):
     """
     Provider를 사용한 재무제표 업데이트
