@@ -39,7 +39,8 @@ cd frontend && npm install && npm run dev
 
 ```bash
 brew services start redis
-celery -A config worker -l info
+celery -A config worker -l info                          # default queue
+celery -A config worker -Q neo4j -l info --pool=solo     # neo4j queue (fork 없이)
 celery -A config beat -l info
 ```
 
@@ -59,6 +60,11 @@ celery -A config beat -l info
 | news | 뉴스 기반 종목 인사이트 | `/api/v1/news/*` |
 | rag_analysis | LLM 기반 RAG 분석 | `/api/v1/rag/*` |
 | serverless | Market Movers, Screener, Chain Sight, 키워드 | `/api/v1/serverless/*` |
+| thesis | 가설 통제실 (빌더, 관제실, 알림) | `/api/v1/thesis/*` |
+| metrics | 공유 지표 메타데이터 + 배치 실행 이력 | (내부 서비스) |
+| validation | 1차 검증 (Peer 비교, 벤치마크) | `/api/v1/validation/*` |
+| chainsight | 기업 프로파일 (성장단계, 자본DNA, 민감도) | `/api/v1/chainsight/*` |
+| sec_pipeline | SEC EDGAR 파이프라인 (Supply Chain + Business Model) | `/api/v1/sec/*` |
 
 > 상세: [sub_claude_md/architecture.md](sub_claude_md/architecture.md), [sub_claude_md/api-endpoints.md](sub_claude_md/api-endpoints.md)
 
@@ -99,8 +105,10 @@ celery -A config beat -l info
 | 22 | 재무제표 저장 시 모델 필드명 불일치 | `fiscal_date_ending`→`reported_date`, `accounts_payable`→`current_accounts_payable` 등 6개 |
 | 23 | FMP 프리미엄 심볼 402 에러 | `FMPPremiumError` 즉시 실패 + `.` 포함 심볼 배치에서 제외 |
 | 24 | Next.js Client Component Date.now() hydration 불일치 | 모듈 레벨 `Date.now()` 금지, 고정값 또는 `useEffect` 사용 |
+| 25 | Celery macOS SIGSEGV (fork + Obj-C) | `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` + `PGGSSENCMODE=disable` + fork 후 `db.connections.close_all()` |
+| 26 | Validation peer group 전환 안 됨 | `selectPreset` 등 POST/DELETE에서 raw `fetch()` → `authAxios` (JWT 필수) |
 
-> 전체 24개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
+> 전체 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
 
 ---
 
@@ -117,6 +125,9 @@ celery -A config beat -l info
 | Screener (Enhanced + 투자 테제) | [sub_claude_md/screener.md](sub_claude_md/screener.md) |
 | RAG Analysis (Phase 3 파이프라인) | [sub_claude_md/rag-analysis.md](sub_claude_md/rag-analysis.md) |
 | Thesis Control (가설 통제실, 화살표/달 시각화) | [sub_claude_md/thesis-control.md](sub_claude_md/thesis-control.md) |
+| 1차 검증 (Peer 비교, 프리셋, LLM 필터) | `docs/first_validation_system/` |
+| Chain Sight v2 (프로파일, 관계, Neo4j GDS) | `docs/chain_sight/plan/` |
+| SEC Pipeline (10-K 공급망 + 사업모델) | `docs/sec_pipeline/` |
 
 ---
 
@@ -124,7 +135,7 @@ celery -A config beat -l info
 
 | 에이전트 | 영역 |
 |---------|------|
-| @backend | stocks/, users/, analysis/, API_request/, serverless/, news/, macro/, thesis_control/ |
+| @backend | stocks/, users/, analysis/, API_request/, serverless/, news/, macro/, thesis/, metrics/, validation/, chainsight/, sec_pipeline/ |
 | @frontend | frontend/ 전체 |
 | @rag-llm | rag_analysis/ 전체 |
 | @infra | */tasks.py, */consumers.py, config/, docker/ |
@@ -137,13 +148,13 @@ celery -A config beat -l info
 ## 구현 상태 요약
 
 ### 완료
-JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지), **Thesis Control 백엔드** (Views, Serializers, Builder, Tasks), **Thesis Control 프론트엔드 Phase 2** (FE-PR-1~6 완료: 라우팅 + 공통 컴포넌트 + 가설 목록 + 대화형 빌더 + 지표 설정 + 관제실 대시보드 + 알림/마감, 컴포넌트 30개 + 페이지 8개)
+JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight v1 (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지), **Thesis Control 백엔드** (Views, Serializers, Builder, Tasks), **Thesis Control 프론트엔드 Phase 2** (FE-PR-1~6 완료: 라우팅 + 공통 컴포넌트 + 가설 목록 + 대화형 빌더 + 지표 설정 + 관제실 대시보드 + 알림/마감), **관제실 지표 설명** (INDICATOR_CATALOG description 73개 + recommendation_reason 저장), **1차 검증** (Peer 프리셋 6종 + Compute-on-Read 엔진 + LLM 대화형 필터 + 커스텀 Peer), **Chain Sight v2 Phase 0~5** (기업 프로파일 + 관계 파이프라인 + Neo4j GDS + REST API 3개 + 프론트엔드 그래프 시각화), **SEC Pipeline** (10-K Supply Chain + Business Model 추출)
 
 ### 진행 중
-**Thesis Control Phase 3** (깊이 + 회고 + 프로필: FE-PR-7~11 — 대시보드 탭 구조, 전제 관리, 히트맵, 히스토리 차트, 마감 아카이브, 투자자 DNA), Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화
+**Thesis Control Phase 3** (깊이 + 회고 + 프로필: FE-PR-7~11), **Chain Sight v2 프론트엔드 개선** (redesign v1), **서비스 리모델링** (데이터 구조 개편)
 
 ### 보류
-Market Movers AWS Lambda 전환
+Market Movers AWS Lambda 전환, Graph Analysis (모델/서비스 완료, API 미구현)
 
 > 상세: [sub_claude_md/completed-features.md](sub_claude_md/completed-features.md)
 
