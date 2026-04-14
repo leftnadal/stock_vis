@@ -561,6 +561,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: '',
+      recommendation_reason: '',
     },
     {
       id: 'dash-ind-2',
@@ -582,6 +584,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: '',
+      recommendation_reason: '',
     },
     {
       id: 'dash-ind-3',
@@ -603,6 +607,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: '',
+      recommendation_reason: '',
     },
   ],
   heatmap: {

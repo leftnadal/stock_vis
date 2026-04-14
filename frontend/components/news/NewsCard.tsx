@@ -42,7 +42,7 @@ export default function NewsCard({ article, onClick }: NewsCardProps) {
           {hasValidImage ? (
             <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
               <Image
-                src={article.image_url}
+                src={article.image_url!}
                 alt={article.title}
                 fill
                 className="object-cover"
