@@ -561,6 +561,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: '외국인 투자자의 순매수 금액 추이',
+      recommendation_reason: 'AI 반도체 수급 개선 가설의 수급 흐름 판단에 필요',
     },
     {
       id: 'dash-ind-2',
@@ -582,6 +584,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: '원/달러 환율 변동 추이',
+      recommendation_reason: '글로벌 달러 강세가 수출 기업 실적에 미치는 영향 추적',
     },
     {
       id: 'dash-ind-3',
@@ -603,6 +607,8 @@ export const MOCK_DASHBOARD: DashboardResponse = {
       quarterly_history: null,
       is_quarterly: false,
       comparison_type: null,
+      description: 'CBOE 변동성 지수 (시장 공포 수준)',
+      recommendation_reason: '시장 심리 판단을 위한 핵심 변동성 지표',
     },
   ],
   heatmap: {
