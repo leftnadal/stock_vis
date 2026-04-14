@@ -445,6 +445,67 @@ def sync_sp500_eod_prices(self, target_date=None):
         raise self.retry(exc=e, countdown=300 * (self.request.retries + 1))
 
 
+@shared_task(name='update-sp500-change-percent', max_retries=2, soft_time_limit=120, time_limit=150)
+def update_sp500_change_percent():
+    """
+    DailyPrice 최신 2일에서 Stock.change_percent를 일괄 계산.
+    FMP API 호출 없음 — 이미 동기화된 DailyPrice 데이터 활용.
+    sync_sp500_eod_prices() 직후 실행.
+    """
+    from stocks.models import DailyPrice, Stock
+
+    latest_dates = list(
+        DailyPrice.objects
+        .order_by('-date')
+        .values_list('date', flat=True)
+        .distinct()[:2]
+    )
+    if len(latest_dates) < 2:
+        logger.warning('update_sp500_change_percent: 최신 2일 데이터 부족')
+        return 0
+
+    today, prev = latest_dates[0], latest_dates[1]
+
+    # 전일 종가 map (bulk query 1회)
+    prev_map = dict(
+        DailyPrice.objects.filter(date=prev)
+        .values_list('stock_id', 'close_price')
+    )
+
+    # 오늘 종가 + 거래량 (bulk query 1회, list()로 메모리에 로드)
+    today_data = list(DailyPrice.objects.filter(date=today).values_list(
+        'stock_id', 'close_price', 'volume'
+    ))
+
+    # stock_id → Stock 인스턴스 bulk 조회 (1 query)
+    stock_ids = [row[0] for row in today_data]
+    stock_map = {s.symbol: s for s in Stock.objects.filter(symbol__in=stock_ids)}
+
+    stocks_to_update = []
+    for stock_id, close_price, volume in today_data:
+        prev_close = prev_map.get(stock_id)
+        if not prev_close or prev_close == 0:
+            continue
+        stock = stock_map.get(stock_id)
+        if not stock:
+            continue
+        pct = (float(close_price) - float(prev_close)) / float(prev_close) * 100
+        stock.change_percent = f"{pct:+.2f}%"
+        stock.real_time_price = close_price
+        stock.volume = volume
+        stocks_to_update.append(stock)
+
+    if stocks_to_update:
+        Stock.objects.bulk_update(
+            stocks_to_update,
+            ['change_percent', 'real_time_price', 'volume'],
+            batch_size=100,
+        )
+
+    logger.info(f'update_sp500_change_percent: {len(stocks_to_update)} stocks updated (date={today})')
+    return len(stocks_to_update)
+
+
 @shared_task(rate_limit='6/m')
 def update_financials_with_provider(symbol):
     """

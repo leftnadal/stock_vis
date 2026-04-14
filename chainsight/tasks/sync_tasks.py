@@ -146,58 +146,31 @@ def sync_profiles_to_neo4j(self):
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def sync_relations_to_neo4j(self):
-    """CS-3-2: RelationConfidence → Neo4j 엣지 동기화."""
+    """
+    CS-3-2: RelationConfidence → Neo4j 엣지 동기화.
+    동적 타입 지원하는 dirty sync로 위임. 레거시 RELATED_TO 엣지 1회 정리.
+    """
+    from django.core.cache import cache
     from chainsight.models import RelationConfidence
-    from chainsight.graph import get_graph_repository
+    from chainsight.services.neo4j_sync import sync_dirty_relations
 
-    repo = get_graph_repository()
-
-    # confirmed/probable Truth → 엣지 MERGE
-    to_sync = RelationConfidence.objects.filter(
-        relation_category='truth',
-        relation_status__in=['confirmed', 'probable'],
-        synced_to_neo4j=False,
-    )
-    merged = 0
-    for rc in to_sync.iterator():
+    # ── 레거시 RELATED_TO 엣지 1회 정리 ──
+    cleanup_key = 'chainsight:related_to_cleanup_v1'
+    if not cache.get(cleanup_key):
         try:
-            repo.run_query("""
-                MATCH (a:Stock {ticker: $a}), (b:Stock {ticker: $b})
-                MERGE (a)-[r:RELATED_TO]-(b)
-                SET r.relation_type = $type, r.status = $status,
-                    r.truth_score = $score, r.evidence_tier = $tier,
-                    r.basis_summary = $summary
-            """, {
-                "a": rc.symbol_a, "b": rc.symbol_b,
-                "type": rc.relation_type, "status": rc.relation_status,
-                "score": rc.truth_score, "tier": rc.evidence_tier_best,
-                "summary": rc.relation_basis_summary[:200],
-            })
-            rc.synced_to_neo4j = True
-            rc.save(update_fields=["synced_to_neo4j"])
-            merged += 1
+            from chainsight.graph import get_graph_repository
+            repo = get_graph_repository()
+            repo.run_query("MATCH ()-[r:RELATED_TO]-() DELETE r")
+            # 기존 레코드 dirty 리셋 → dirty sync가 동적 타입으로 재생성
+            reset_count = RelationConfidence.objects.filter(
+                relation_status__in=['confirmed', 'probable']
+            ).update(synced_to_neo4j=False, neo4j_dirty=True)
+            cache.set(cleanup_key, True, timeout=86400 * 365)
+            logger.info(f"Legacy RELATED_TO cleanup: edges deleted, {reset_count} records reset")
         except Exception as e:
-            logger.error(f"Relation sync {rc.symbol_a}-{rc.symbol_b}: {e}")
+            logger.error(f"Legacy cleanup failed: {e}")
 
-    # stale/hidden (이전에 synced) → 엣지 DELETE
-    to_delete = RelationConfidence.objects.filter(
-        relation_category='truth',
-        relation_status__in=['stale', 'hidden'],
-        synced_to_neo4j=True,
-    )
-    deleted = 0
-    for rc in to_delete.iterator():
-        try:
-            repo.run_query("""
-                MATCH (a:Stock {ticker: $a})-[r:RELATED_TO]-(b:Stock {ticker: $b})
-                WHERE r.relation_type = $type
-                DELETE r
-            """, {"a": rc.symbol_a, "b": rc.symbol_b, "type": rc.relation_type})
-            rc.synced_to_neo4j = False
-            rc.save(update_fields=["synced_to_neo4j"])
-            deleted += 1
-        except Exception:
-            pass
-
-    logger.info(f"Relation sync: merged {merged}, deleted {deleted}")
-    return {"merged": merged, "deleted": deleted}
+    # ── dirty sync 위임 (동적 타입: PEER_OF, CO_MENTIONED, PRICE_CORRELATED 등) ──
+    count = sync_dirty_relations()
+    logger.info(f"Relation sync via dirty sync: {count} relations synced")
+    return {"synced": count}

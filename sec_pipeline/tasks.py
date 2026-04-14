@@ -193,15 +193,35 @@ def extract_from_document(self, doc_id: int, symbol: str):
             validated = validate_supply_chain_result(raw, symbol)
 
             if validated:
-                save_supply_chain_evidences(validated, doc, symbol)
+                created = save_supply_chain_evidences(validated, doc, symbol)
+
+                # Phase 1.5: 티커 매칭
+                matched_count = 0
+                if created:
+                    _log_stage(symbol, 'ticker_match', 'started')
+                    try:
+                        from .ticker_matcher import TickerMatcher
+                        matcher = TickerMatcher()
+                        for evidence in created:
+                            ticker, method = matcher.match_with_queue(
+                                evidence.target_company_name, evidence, doc, symbol
+                            )
+                            if ticker:
+                                matched_count += 1
+                        _log_stage(symbol, 'ticker_match', 'success',
+                                   f"matched={matched_count}/{len(created)}")
+                    except Exception as match_err:
+                        _log_stage(symbol, 'ticker_match', 'failed', str(match_err))
 
             result['track_a'] = {
                 'raw': len(raw.get('relationships', [])),
                 'validated': len(validated),
+                'matched': matched_count if validated else 0,
             }
             _log_stage(symbol, 'track_a_extract', 'success',
                        f"raw={len(raw.get('relationships', []))}, "
-                       f"validated={len(validated)}", time.time() - start)
+                       f"validated={len(validated)}, matched={matched_count if validated else 0}",
+                       time.time() - start)
         else:
             result['track_a'] = {'raw': 0, 'validated': 0, 'note': 'no_paragraphs'}
             _log_stage(symbol, 'track_a_extract', 'skipped',
@@ -255,6 +275,61 @@ def extract_from_document(self, doc_id: int, symbol: str):
         _log_stage(symbol, 'track_b_extract', 'failed', str(exc), time.time() - start)
         result['track_b'] = {'error': str(exc)}
 
+    return result
+
+
+@shared_task(name='sec-seed-relations-to-chainsight', max_retries=1)
+def seed_relations_to_chainsight():
+    """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
+    from chainsight.models import RelationConfidence
+    from chainsight.utils import normalize_pair
+
+    matched = SupplyChainEvidence.objects.filter(target_company__isnull=False)
+    if not matched.exists():
+        logger.info('seed_relations_to_chainsight: no matched evidence')
+        return {'created': 0, 'updated': 0}
+
+    created, updated = 0, 0
+    for ev in matched:
+        rel_type = ev.relationship_type
+
+        # CUSTOMER_OF → SUPPLIES_TO로 정규화 (방향 반전)
+        if rel_type == 'CUSTOMER_OF':
+            sym_a, sym_b = ev.target_company_id, ev.source_company_id
+            rel_type = 'SUPPLIES_TO'
+            direction = 'a→b'
+        elif rel_type == 'COMPETES_WITH':
+            sym_a, sym_b = normalize_pair(ev.source_company_id, ev.target_company_id)
+            direction = 'both'
+        elif rel_type in ('SUPPLIES_TO', 'DEPENDS_ON', 'PARTNER_WITH'):
+            sym_a, sym_b = ev.source_company_id, ev.target_company_id
+            direction = 'a→b'
+        else:
+            continue
+
+        score_map = {'high': 85, 'medium': 60, 'low': 35}
+        score = score_map.get(ev.confidence_grade, 60)
+
+        obj, is_new = RelationConfidence.objects.update_or_create(
+            symbol_a=sym_a, symbol_b=sym_b, relation_type=rel_type,
+            defaults={
+                'relation_category': 'truth',
+                'canonical_direction': direction,
+                'relation_status': 'confirmed' if score >= 85 else 'probable',
+                'truth_score': score,
+                'evidence_tier_best': 1,
+                'has_supply_chain_source': True,
+                'relation_basis_summary': f'SEC 10-K: {ev.evidence_text[:100]}',
+                'synced_to_neo4j': False,
+            }
+        )
+        if is_new:
+            created += 1
+        else:
+            updated += 1
+
+    result = {'created': created, 'updated': updated}
+    logger.info(f'seed_relations_to_chainsight: {result}')
     return result
 
 

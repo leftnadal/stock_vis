@@ -23,10 +23,12 @@ _DEBOUNCE_TTL = 10
 def _should_dispatch(action: str, symbol: str) -> bool:
     """Redis 기반 debounce — 동일 (action, symbol) 조합을 TTL 내 1회만 허용"""
     key = f'signal:debounce:{action}:{symbol}'
-    if cache.get(key):
-        return False
-    cache.set(key, 1, _DEBOUNCE_TTL)
-    return True
+    try:
+        # cache.add()는 키가 없을 때만 설정 (atomic check-and-set)
+        return cache.add(key, 1, _DEBOUNCE_TTL)
+    except Exception:
+        # Redis 연결 실패 시 dispatch 허용 (sync 누락보다 중복이 나음)
+        return True
 
 
 @receiver(post_save, sender=Stock)

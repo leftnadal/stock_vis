@@ -433,10 +433,10 @@ class FMPClient:
         Returns:
             뉴스 리스트
 
-        API: GET /stable/stock-news?symbol={symbol}&limit={limit}
+        API: GET /stable/news/stock?symbols={symbol}&limit={limit}
         """
-        params = {"symbol": symbol.upper(), "limit": limit}
-        data = self._make_request("/stable/stock-news", params)
+        params = {"symbols": symbol.upper(), "limit": limit}
+        data = self._make_request("/stable/news/stock", params)
         return data if isinstance(data, list) else []
 
     def get_general_news(self, limit: int = 50) -> List[Dict[str, Any]]:
@@ -449,9 +449,9 @@ class FMPClient:
         Returns:
             뉴스 리스트
 
-        API: GET /stable/general-news?limit={limit}
+        API: GET /stable/news/general-latest?limit={limit}
         """
-        data = self._make_request("/stable/general-news", {"limit": limit})
+        data = self._make_request("/stable/news/general-latest", {"limit": limit})
         return data if isinstance(data, list) else []
 
     def get_press_releases(self, symbol: str, limit: int = 20) -> List[Dict[str, Any]]:
@@ -465,10 +465,10 @@ class FMPClient:
         Returns:
             보도자료 리스트
 
-        API: GET /stable/press-releases?symbol={symbol}&limit={limit}
+        API: GET /stable/news/press-releases?symbols={symbol}&limit={limit}
         """
-        params = {"symbol": symbol.upper(), "limit": limit}
-        data = self._make_request("/stable/press-releases", params)
+        params = {"symbols": symbol.upper(), "limit": limit}
+        data = self._make_request("/stable/news/press-releases", params)
         return data if isinstance(data, list) else []
 
     # ============================================================

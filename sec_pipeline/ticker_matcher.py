@@ -160,7 +160,7 @@ class TickerMatcher:
 
         return None
 
-    def _match_fuzzy(self, name: str, threshold: int = 85) -> tuple:
+    def _match_fuzzy(self, name: str, threshold: int = 80) -> tuple:
         """rapidfuzz token_sort_ratio 매칭."""
         self._ensure_loaded()
         best_score = 0

@@ -328,12 +328,12 @@ class MLWeightOptimizer:
             for name, abs_c in zip(FEATURE_NAMES, abs_coeffs)
         }
 
-        # CV 평균 메트릭
+        # CV 평균 메트릭 (float()로 numpy.float64 → native 변환)
         avg_metrics = {
-            'f1': round(np.mean([s['f1'] for s in cv_scores]), 4),
-            'precision': round(np.mean([s['precision'] for s in cv_scores]), 4),
-            'recall': round(np.mean([s['recall'] for s in cv_scores]), 4),
-            'accuracy': round(np.mean([s['accuracy'] for s in cv_scores]), 4),
+            'f1': round(float(np.mean([s['f1'] for s in cv_scores])), 4),
+            'precision': round(float(np.mean([s['precision'] for s in cv_scores])), 4),
+            'recall': round(float(np.mean([s['recall'] for s in cv_scores])), 4),
+            'accuracy': round(float(np.mean([s['accuracy'] for s in cv_scores])), 4),
         }
 
         return {
@@ -358,15 +358,16 @@ class MLWeightOptimizer:
         Returns:
             {'passed': bool, 'tier1': dict, 'tier2': dict, 'tier3': dict}
         """
-        f1 = metrics.get('f1', 0)
-        precision = metrics.get('precision', 0)
+        # float()로 numpy 타입 → native 변환 (JSONField 직렬화 호환)
+        f1 = float(metrics.get('f1', 0))
+        precision = float(metrics.get('precision', 0))
 
         # Tier 1: 기본 F1 임계값
         tier1 = {
             'check': 'F1 >= 0.55',
             'value': f1,
             'threshold': SAFETY_GATE['tier1_f1'],
-            'passed': f1 >= SAFETY_GATE['tier1_f1'],
+            'passed': bool(f1 >= SAFETY_GATE['tier1_f1']),
         }
 
         # Tier 2: Precision 임계값 (false positive 통제)
@@ -374,7 +375,7 @@ class MLWeightOptimizer:
             'check': 'Precision >= 0.50',
             'value': precision,
             'threshold': SAFETY_GATE['tier2_precision'],
-            'passed': precision >= SAFETY_GATE['tier2_precision'],
+            'passed': bool(precision >= SAFETY_GATE['tier2_precision']),
         }
 
         # Tier 3: 이전 모델 대비 성능 저하 체크
@@ -383,14 +384,14 @@ class MLWeightOptimizer:
         ).order_by('-trained_at').first()
 
         if prev_model:
-            prev_f1 = prev_model.f1_score
+            prev_f1 = float(prev_model.f1_score)
             degradation = prev_f1 - f1
             tier3 = {
                 'check': f'F1 degradation <= {SAFETY_GATE["tier3_degradation_max"]}',
                 'value': round(degradation, 4),
                 'prev_f1': round(prev_f1, 4),
                 'threshold': SAFETY_GATE['tier3_degradation_max'],
-                'passed': degradation <= SAFETY_GATE['tier3_degradation_max'],
+                'passed': bool(degradation <= SAFETY_GATE['tier3_degradation_max']),
             }
         else:
             # 이전 모델 없음 → 자동 통과
@@ -402,7 +403,7 @@ class MLWeightOptimizer:
                 'passed': True,
             }
 
-        all_passed = tier1['passed'] and tier2['passed'] and tier3['passed']
+        all_passed = bool(tier1['passed'] and tier2['passed'] and tier3['passed'])
 
         return {
             'passed': all_passed,

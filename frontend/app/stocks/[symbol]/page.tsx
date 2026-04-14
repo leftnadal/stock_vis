@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import StockChart from '@/components/stock/StockChart';
@@ -443,7 +444,18 @@ function StockDetailContent() {
               <ValidationTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'chain-sight' && (
-              <ChainSightMiniView symbol={symbol.toUpperCase()} />
+              <div>
+                <div className="mb-4 flex justify-end">
+                  <Link
+                    href={`/chainsight?focus=${symbol.toUpperCase()}`}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
+                  >
+                    <Compass className="h-4 w-4" />
+                    Chain Sight에서 보기
+                  </Link>
+                </div>
+                <ChainSightMiniView symbol={symbol.toUpperCase()} />
+              </div>
             )}
           </div>
         </div>

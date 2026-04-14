@@ -119,8 +119,20 @@ class RelationConfidence(models.Model):
     last_verified_at = models.DateTimeField(null=True, blank=True)
     stale_threshold_days = models.IntegerField(default=90)
 
-    # 동기화
+    # 상태 전이 추적 (시드 선정용)
+    previous_status = models.CharField(
+        max_length=12, choices=RELATION_STATUS_CHOICES,
+        blank=True, default='',
+        help_text='직전 상태. 시드 선정 시 relation_upgrade/downgrade 판단용.',
+    )
+
+    # 동기화 (neo4j_dirty 패턴)
     synced_to_neo4j = models.BooleanField(default=False)
+    neo4j_dirty = models.BooleanField(
+        default=True, db_index=True,
+        help_text='True이면 Neo4j 동기화 필요. save() 시 자동 True.',
+    )
+    neo4j_synced_at = models.DateTimeField(null=True, blank=True)
     score_version = models.CharField(max_length=10, default='2.1')
 
     class Meta:
@@ -130,7 +142,23 @@ class RelationConfidence(models.Model):
             models.Index(fields=['relation_status']),
             models.Index(fields=['relation_type']),
             models.Index(fields=['synced_to_neo4j']),
+            models.Index(fields=['neo4j_dirty']),
         ]
+
+    def save(self, *args, **kwargs):
+        # 상태 전이 추적: DB에서 기존 상태 읽어서 previous_status에 보존
+        if self.pk:
+            try:
+                old = RelationConfidence.objects.filter(pk=self.pk).values_list(
+                    'relation_status', flat=True
+                ).first()
+                if old and old != self.relation_status:
+                    self.previous_status = old
+            except Exception:
+                pass
+        # neo4j_dirty 자동 세팅 (bulk_update에서는 save() 미호출되므로 수동 관리 필요)
+        self.neo4j_dirty = True
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.symbol_a} → {self.symbol_b} [{self.relation_type}]: {self.relation_status}"

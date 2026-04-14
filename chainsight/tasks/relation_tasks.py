@@ -246,7 +246,10 @@ def update_relation_confidence(self):
         price_map[pair] = float(pc.correlation)
         all_pairs.add(pair)
 
-    # 3) 각 쌍에 대해 RelationConfidence 판정
+    # 3) 각 쌍에 대해 관계 타입별 RelationConfidence 판정
+    #    - peer/industry → PEER_OF (truth)
+    #    - co_mention → CO_MENTIONED (market)
+    #    - price_corr → PRICE_CORRELATED (market)
     created, updated = 0, 0
     for sym_a, sym_b in all_pairs:
         has_peer = (sym_a, sym_b) in peer_set
@@ -254,65 +257,114 @@ def update_relation_confidence(self):
         has_news = (sym_a, sym_b) in co_mention_map
         has_price = (sym_a, sym_b) in price_map
 
-        # 증거 카운트
-        sources = []
-        if has_peer: sources.append('peer')
-        if has_industry: sources.append('industry')
-        if has_news: sources.append('news')
-        if has_price: sources.append('price')
-        source_count = len(sources)
+        # ── PEER_OF (truth): peer 또는 industry 증거가 있을 때 ──
+        if has_peer or has_industry:
+            peer_sources = []
+            if has_peer: peer_sources.append('peer')
+            if has_industry: peer_sources.append('industry')
+            if len(peer_sources) >= 2:
+                tier, status, score = 1, 'confirmed', 85
+            else:
+                tier, status, score = 2, 'probable', 60
 
-        # Tier 판정
-        if source_count >= 3:
-            tier = 1
-            status = 'confirmed'
-            score = 85
-        elif source_count >= 2:
-            tier = 2
-            status = 'probable'
-            score = 60
-        elif source_count == 1:
-            tier = 3
-            status = 'weak'
-            score = 35
-        else:
-            tier = 3
-            status = 'hidden'
-            score = 15
+            parts = []
+            if has_peer: parts.append('Peer 관계')
+            if has_industry: parts.append('같은 산업')
+            summary = ' + '.join(parts)
 
-        # Summary
-        parts = []
-        if has_peer: parts.append('Peer 관계')
-        if has_industry: parts.append('같은 산업')
-        if has_news: parts.append(f'뉴스 동시출현 {co_mention_map.get((sym_a,sym_b), 0)}회')
+            obj, is_new = RelationConfidence.objects.update_or_create(
+                symbol_a=sym_a, symbol_b=sym_b, relation_type='PEER_OF',
+                defaults={
+                    'relation_category': 'truth',
+                    'canonical_direction': 'both',
+                    'relation_status': status,
+                    'truth_score': score,
+                    'evidence_tier_best': tier,
+                    'evidence_count_total': len(peer_sources),
+                    'evidence_count_independent': len(peer_sources),
+                    'evidence_sources': {'sources': peer_sources},
+                    'has_peer_source': has_peer,
+                    'has_industry_source': has_industry,
+                    'has_news_source': False,
+                    'has_price_source': False,
+                    'relation_basis_summary': summary,
+                    'synced_to_neo4j': False,
+                }
+            )
+            if is_new:
+                created += 1
+            else:
+                updated += 1
+
+        # ── CO_MENTIONED (market): 뉴스 동시출현 증거 ──
+        if has_news:
+            count = co_mention_map[(sym_a, sym_b)]
+            if count >= 10:
+                tier, status, score = 1, 'confirmed', 85
+            elif count >= 5:
+                tier, status, score = 2, 'probable', 60
+            else:
+                tier, status, score = 3, 'weak', 35
+
+            obj, is_new = RelationConfidence.objects.update_or_create(
+                symbol_a=sym_a, symbol_b=sym_b, relation_type='CO_MENTIONED',
+                defaults={
+                    'relation_category': 'market',
+                    'canonical_direction': 'both',
+                    'relation_status': status,
+                    'market_score': score,
+                    'truth_score': 0,
+                    'evidence_tier_best': tier,
+                    'evidence_count_total': 1,
+                    'evidence_count_independent': 1,
+                    'evidence_sources': {'sources': ['news'], 'co_mention_count': count},
+                    'has_peer_source': False,
+                    'has_industry_source': False,
+                    'has_news_source': True,
+                    'has_price_source': False,
+                    'relation_basis_summary': f'뉴스 동시출현 {count}회',
+                    'synced_to_neo4j': False,
+                }
+            )
+            if is_new:
+                created += 1
+            else:
+                updated += 1
+
+        # ── PRICE_CORRELATED (market): 주가 상관 증거 ──
         if has_price:
-            corr = price_map.get((sym_a, sym_b), 0)
-            parts.append(f'주가 상관 {corr:.2f}')
-        summary = ' + '.join(parts) if parts else '증거 없음'
+            corr = price_map[(sym_a, sym_b)]
+            if corr >= 0.8:
+                tier, status, score = 1, 'confirmed', 85
+            elif corr >= 0.6:
+                tier, status, score = 2, 'probable', 60
+            else:
+                tier, status, score = 3, 'weak', 35
 
-        obj, is_new = RelationConfidence.objects.update_or_create(
-            symbol_a=sym_a, symbol_b=sym_b, relation_type='PEER_OF',
-            defaults={
-                'relation_category': 'truth',
-                'canonical_direction': 'both',
-                'relation_status': status,
-                'truth_score': score,
-                'evidence_tier_best': tier,
-                'evidence_count_total': source_count,
-                'evidence_count_independent': source_count,
-                'evidence_sources': {'sources': sources},
-                'has_peer_source': has_peer,
-                'has_industry_source': has_industry,
-                'has_news_source': has_news,
-                'has_price_source': has_price,
-                'relation_basis_summary': summary,
-                'synced_to_neo4j': False,
-            }
-        )
-        if is_new:
-            created += 1
-        else:
-            updated += 1
+            obj, is_new = RelationConfidence.objects.update_or_create(
+                symbol_a=sym_a, symbol_b=sym_b, relation_type='PRICE_CORRELATED',
+                defaults={
+                    'relation_category': 'market',
+                    'canonical_direction': 'both',
+                    'relation_status': status,
+                    'market_score': score,
+                    'truth_score': 0,
+                    'evidence_tier_best': tier,
+                    'evidence_count_total': 1,
+                    'evidence_count_independent': 1,
+                    'evidence_sources': {'sources': ['price'], 'correlation': corr},
+                    'has_peer_source': False,
+                    'has_industry_source': False,
+                    'has_news_source': False,
+                    'has_price_source': True,
+                    'relation_basis_summary': f'주가 상관 {corr:.2f}',
+                    'synced_to_neo4j': False,
+                }
+            )
+            if is_new:
+                created += 1
+            else:
+                updated += 1
 
     result = {"total_pairs": len(all_pairs), "created": created, "updated": updated}
     logger.info(f"RelationConfidence: {result}")

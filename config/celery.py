@@ -49,6 +49,7 @@ app.conf.task_routes = {
     # Chain Sight Neo4j 동기화
     'chainsight.tasks.sync_tasks.sync_profiles_to_neo4j': {'queue': 'neo4j'},
     'chainsight.tasks.sync_tasks.sync_relations_to_neo4j': {'queue': 'neo4j'},
+    'chainsight-neo4j-dirty-sync': {'queue': 'neo4j'},
     # SEC Pipeline Neo4j 동기화
     'sec_pipeline.tasks.sync_dirty_to_neo4j': {'queue': 'neo4j'},
 }
@@ -539,6 +540,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
+    # DailyPrice → Stock.change_percent 일괄 계산 (EOD sync 직후, API 호출 없음)
+    'update-sp500-change-percent': {
+        'task': 'update-sp500-change-percent',
+        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 1800}
+    },
+
     # ============================================================
     # Chain Sight Phase 6: News Relation Matcher
     # ============================================================
@@ -704,6 +712,20 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # 시드 선정 (매일 13:00 UTC, 관계 동기화 후)
+    'chainsight-seed-selection': {
+        'task': 'chainsight-seed-selection',
+        'schedule': crontab(hour=13, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j dirty 동기화 (매주 일요일 04:30 UTC)
+    'chainsight-neo4j-dirty-sync': {
+        'task': 'chainsight-neo4j-dirty-sync',
+        'schedule': crontab(hour=4, minute=30, day_of_week=0),
+        'options': {'expires': 3600, 'queue': 'neo4j'}
+    },
+
     # ============================================================
     # Validation — 1차 검증 주간 배치
     # ============================================================
@@ -724,6 +746,13 @@ app.conf.beat_schedule = {
         'task': 'sec_pipeline.tasks.sync_dirty_to_neo4j',
         'schedule': crontab(minute='*/5'),
         'options': {'expires': 240}
+    },
+
+    # SEC → Chain Sight RelationConfidence 연결 (매일 12:00 EST)
+    'sec-seed-relations-to-chainsight': {
+        'task': 'sec-seed-relations-to-chainsight',
+        'schedule': crontab(hour=12, minute=0),
+        'options': {'expires': 1800}
     },
 
     # SEC 신규 10-K filing 감지 (매월 1일 06:00 EST)

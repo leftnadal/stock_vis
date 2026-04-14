@@ -20,6 +20,44 @@ ALLOWED_RELATIONSHIP_TYPES = {
     'DEPENDS_ON', 'COMPETES_WITH',
 }
 
+# LLM이 회사명 대신 추출하는 제네릭 용어 — 관계로 저장하지 않음
+GENERIC_COMPANY_TERMS = {
+    'third parties', 'third-party', 'suppliers', 'customers',
+    'hyperscalers', 'oems', 'distributors', 'vendors', 'partners',
+    'competitors', 'resellers', 'developers', 'retailers',
+    'manufacturers', 'service providers', 'contract manufacturers',
+    'system integrators', 'business partners', 'cable companies',
+    'other partners', 'other resellers', 'other manufacturers',
+    'external experts', 'web agencies', 'money market funds',
+    'authorized replicators', 'hosting service providers',
+    'independent software vendors', 'licensing solution partners',
+    'identity vendors', 'security solution vendors',
+    'value-added resellers', 'retail outlets',
+    'mobile communications companies', 'incumbent telephone companies',
+    'device manufacturers', 'chip manufacturers',
+    'pharmaceutical manufacturers',
+}
+
+# 제네릭 접미사 — "independent ~ distributors", "Windows OEMs" 등 패턴 매칭
+_GENERIC_SUFFIXES = (
+    'oems', 'vendors', 'partners', 'distributors', 'resellers',
+    'manufacturers', 'providers', 'carriers', 'companies', 'retailers',
+    'integrators', 'advisors',
+)
+
+
+def _is_generic_term(name: str) -> bool:
+    """회사명이 아닌 제네릭 용어인지 판별."""
+    lower = name.lower().strip()
+    if lower in GENERIC_COMPANY_TERMS:
+        return True
+    for suffix in _GENERIC_SUFFIXES:
+        if lower.endswith(suffix):
+            return True
+    if lower.startswith('third-party') or lower.startswith('third parties'):
+        return True
+    return False
+
 
 def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
     """
@@ -51,6 +89,10 @@ def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
 
         # target 2자 미만 제거
         if len(target_name) < 2:
+            continue
+
+        # 제네릭 용어 제거 ("third parties", "suppliers" 등)
+        if _is_generic_term(target_name):
             continue
 
         # relationship_type 허용 목록 외 → DEPENDS_ON 폴백
