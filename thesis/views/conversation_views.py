@@ -212,7 +212,6 @@ class NewsIssuesView(APIView):
 
     def _convert_to_korean_issues(self, titles):
         """뉴스 제목 목록 → Gemini 한국어 이슈 변환 (1회 호출)."""
-        import re
         from django.conf import settings
 
         try:

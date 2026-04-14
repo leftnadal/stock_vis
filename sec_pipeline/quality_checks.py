@@ -9,7 +9,7 @@ import logging
 from datetime import timedelta
 
 from django.utils import timezone
-from django.db.models import Count, Avg, Q
+from django.db.models import Avg
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,7 @@ import time
 from celery import shared_task
 from django.utils import timezone
 
-from .exceptions import SECFetchError, SectionExtractionError, LLMExtractionError
+from .exceptions import SECFetchError, SectionExtractionError
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ def collect_and_extract(self, symbol: str):
     Step 5: extract_from_document.delay(doc.id, symbol)
     """
     from .collector import SECFilingCollector
-    from .models import RawDocumentStore, FilingProcessLog
+    from .models import RawDocumentStore
 
     symbol = symbol.upper()
     collector = SECFilingCollector()
@@ -283,8 +283,9 @@ def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
     from chainsight.models import RelationConfidence
     from chainsight.utils import normalize_pair
+    from .models import SupplyChainEvidence as SCE
 
-    matched = SupplyChainEvidence.objects.filter(target_company__isnull=False)
+    matched = SCE.objects.filter(target_company__isnull=False)
     if not matched.exists():
         logger.info('seed_relations_to_chainsight: no matched evidence')
         return {'created': 0, 'updated': 0}

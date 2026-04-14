@@ -11,7 +11,6 @@ Peer Phase 7: LLM 대화형 Peer 조정
 
 import json
 import logging
-from typing import Optional
 
 from django.conf import settings
 

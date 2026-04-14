@@ -9,8 +9,6 @@ Usage:
     python manage.py load_themes_to_neo4j --dry-run
 """
 
-from collections import defaultdict
-
 from django.core.management.base import BaseCommand
 
 from chainsight.graph import get_graph_repository

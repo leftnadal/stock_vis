@@ -13,7 +13,6 @@ from decimal import Decimal
 from typing import Optional
 
 from django.db.models import Q
-from django.utils import timezone
 
 from stocks.models import Stock, SP500Constituent
 from metrics.models import (

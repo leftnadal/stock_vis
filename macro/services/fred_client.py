@@ -7,9 +7,7 @@ Federal Reserve Economic Data API
 """
 import logging
 import time
-from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
-from decimal import Decimal
 
 import requests
 from django.conf import settings
