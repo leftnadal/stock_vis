@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 3: Map Centric</title>
+    <style>
+        :root { --bg: #000; --text: #fff; }
+        body { margin:0; padding:2rem; background:#222; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5); border:1px solid #333; }
+        
+        .header { position:absolute; top:40px; left:20px; right:20px; z-index:10;}
+        .top-bar { display:flex; justify-content:space-between; align-items:center;}
+        .logo { font-size:1.5rem; font-weight:800; letter-spacing:-1px;}
+        .controls { display:flex; gap:10px; background:rgba(0,0,0,0.5); padding:8px 12px; border-radius:20px; backdrop-filter:blur(10px);}
+        .ctrl-btn { color:#a1a1aa; font-size:0.8rem; font-weight:600;}
+        .ctrl-btn.active { color:#fff;}
+
+        /* Heatmap mapping */
+        .heatmap-container { width:100%; height:60%; display:grid; grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr 1.5fr; gap:2px; background:#000; padding:2px; box-sizing:border-box;}
+        .block { display:flex; flex-direction:column; justify-content:center; align-items:center; color:white; cursor:pointer;}
+        .block:active { opacity:0.8; }
+        .b-title { font-size:1.2rem; font-weight:700; margin-bottom:5px;}
+        .b-val { font-size:1rem; font-weight:500;}
+        
+        /* Technology */
+        .blk-tech { grid-column:1; grid-row:1 / span 2; background:#10b981; }
+        /* Fin */
+        .blk-fin { grid-column:2; grid-row:1; background:#ef4444; }
+        /* Health */
+        .blk-health { grid-column:2; grid-row:2; background:#3b82f6; }
+        /* Consumer */
+        .blk-cons { grid-column:1 / span 2; grid-row:3; display:grid; grid-template-columns:1fr 1fr;}
+        .blk-cons-1 { background:#22c55e; display:flex; flex-direction:column; justify-content:center; align-items:center;}
+        .blk-cons-2 { background:#f43f5e; display:flex; flex-direction:column; justify-content:center; align-items:center;}
+
+        /* Bottom Sheet */
+        .bottom-sheet { position:absolute; bottom:0; left:0; width:100%; height:45%; background:#1c1c1e; border-top-left-radius:30px; border-top-right-radius:30px; box-shadow:0 -10px 30px rgba(0,0,0,0.5); padding:20px; box-sizing:border-box; display:flex; flex-direction:column; transition:transform 0.3s;}
+        
+        .handle { width:40px; height:5px; background:#444; border-radius:5px; margin:0 auto 20px auto; }
+        
+        .sheet-title { font-size:1.1rem; font-weight:600; margin-bottom:15px; }
+        .trend-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px;}
+        .trend-item { background:#2c2c2e; padding:15px; border-radius:16px; display:flex; justify-content:space-between; align-items:center;}
+        .t-left h4 { margin:0 0 5px 0; font-size:0.95rem;}
+        .t-left p { margin:0; font-size:0.8rem; color:#8e8e93;}
+        .t-right { background:rgba(52, 199, 89, 0.2); color:#34c759; padding:6px 12px; border-radius:12px; font-weight:600; font-size:0.9rem;}
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <div class="top-bar">
+                <div class="logo">S.VIS</div>
+                <div class="controls">
+                    <span class="ctrl-btn active">1D</span>
+                    <span class="ctrl-btn">1W</span>
+                    <span class="ctrl-btn">1M</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="heatmap-container">
+            <div class="block blk-tech">
+                <span class="b-title">Technology</span>
+                <span class="b-val">+2.4%</span>
+            </div>
+            <div class="block blk-fin">
+                <span style="font-size:0.9rem; font-weight:600;">Financial</span>
+                <span style="font-size:0.8rem;">-1.2%</span>
+            </div>
+            <div class="block blk-health">
+                <span style="font-size:0.9rem; font-weight:600;">Healthcare</span>
+                <span style="font-size:0.8rem;">+0.5%</span>
+            </div>
+            <div class="blk-cons">
+                <div class="blk-cons-1">
+                    <span style="font-size:0.9rem; font-weight:600;">Consumer</span>
+                    <span style="font-size:0.8rem;">+1.1%</span>
+                </div>
+                <div class="blk-cons-2">
+                    <span style="font-size:0.9rem; font-weight:600;">Energy</span>
+                    <span style="font-size:0.8rem;">-2.1%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-sheet">
+            <div class="handle"></div>
+            <div class="sheet-title">📍 Technology 포커스 (EOD 시그널)</div>
+            <div class="trend-list">
+                <div class="trend-item">
+                    <div class="t-left">
+                        <h4>NVDA</h4>
+                        <p>강한 거래량 동반 돌파 (Breakout)</p>
+                    </div>
+                    <div class="t-right">+4.2%</div>
+                </div>
+                <div class="trend-item">
+                    <div class="t-left">
+                        <h4>MSFT</h4>
+                        <p>모멘텀 지속 (Momentum)</p>
+                    </div>
+                    <div class="t-right">+1.8%</div>
+                </div>
+                <div class="trend-item" style="opacity:0.6;">
+                    <div class="t-left">
+                        <h4>[더보기] 섹터 분석 리포트</h4>
+                        <p>AI 스캐너 생성</p>
+                    </div>
+                    <div class="t-right" style="color:white; background:#3b82f6;">&rsaquo;</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#3. Financial Map (Heatmap)</h3>
+        <p>Finviz 스타일의 히트맵을 모바일 폰의 상단 절반에 가득 채워 "전체 시장의 온도"를 먼저 느끼게 합니다. 지도를 클릭하면 하단의 Bottom Sheet가 해당 섹터/종목의 시그널 리스트로 변경됩니다.</p>
+    </div>
+</body>
+</html>

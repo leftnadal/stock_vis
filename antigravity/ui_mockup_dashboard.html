@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Control - Dashboard UI/UX Mockup</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --surface-hover: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+            --color-support: #ef4444; /* 빨강 */
+            --color-neutral: #94a3b8; /* 회색 */
+            --color-reject: #3b82f6;  /* 파랑 */
+            
+            --score: 0; /* -100 to 100 */
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background-color: #000;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        /* Phone Frame */
+        .phone {
+            width: 375px;
+            height: 812px;
+            background-color: var(--bg-color);
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        /* Ambient Glow */
+        .ambient-bg {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--ambient-color) 0%, transparent 70%);
+            opacity: 0.15;
+            pointer-events: none;
+            transition: background 0.5s ease;
+            z-index: 0;
+            filter: blur(40px);
+        }
+
+        /* Content Layer */
+        .content {
+            position: relative;
+            z-index: 1;
+            padding: 24px;
+            height: 100%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-top: 2rem;
+        }
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+        }
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        /* Moon Phase Idea */
+        .moon-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+        .moon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, #334155 50%, #0f172a 50%);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,255,255,0.05);
+            transition: all 0.3s ease;
+        }
+        /* A simple CSS trick to simulate moon phases based on score */
+        .moon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background-color: var(--ambient-color);
+            opacity: 0.8;
+            transform: scaleX(var(--moon-scale));
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            transform-origin: center;
+            mix-blend-mode: screen;
+        }
+        .moon-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--ambient-text);
+            transition: color 0.3s ease;
+        }
+
+        /* View Toggle */
+        .view-toggle {
+            display: flex;
+            background: rgba(30, 41, 59, 0.6);
+            border-radius: 12px;
+            padding: 4px;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+        .view-btn {
+            flex: 1;
+            padding: 8px 0;
+            text-align: center;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .view-btn.active {
+            background: var(--surface-hover);
+            color: var(--text-primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* View Containers */
+        .view-container {
+            flex: 1;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .view-container.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Card View */
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .indicator-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.1s ease, background 0.2s ease;
+            cursor: pointer;
+        }
+        .indicator-card:active {
+            transform: scale(0.95); /* Haptic UI feedback */
+            background: var(--surface-hover);
+        }
+        .arrow {
+            font-size: 1.5rem;
+            color: var(--color-support);
+        }
+        .ind-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-align: center;
+        }
+        .ind-label {
+            font-size: 0.75rem;
+            color: var(--color-support);
+        }
+
+        /* Heatmap View */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        .heat-block {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .heat-block:hover { opacity: 0.8; }
+        .bg-support-strong { background: var(--color-support); }
+        .bg-support-weak { background: #f87171; }
+        .bg-neutral { background: var(--color-neutral); }
+        .bg-reject-weak { background: #60a5fa; }
+        .bg-reject-strong { background: var(--color-reject); }
+
+        /* Graph View */
+        .graph-view {
+            height: 200px;
+            background: var(--surface-color);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .graph-line {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
+        }
+        .axis-line {
+            stroke: var(--border-color);
+            stroke-width: 1;
+            stroke-dasharray: 4 4;
+        }
+        .graph-labels {
+            position: absolute;
+            left: 10px;
+            top: 20px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+        }
+
+        /* Controls outside the phone for demo */
+        .controls {
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+            width: 335px;
+            color: white;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type=range] {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone" id="phoneBox">
+        <!-- Ambient Background -->
+        <div class="ambient-bg" id="ambientBg"></div>
+
+        <div class="content">
+            <div class="header">
+                <h1>📌 KOSPI 하락</h1>
+                <p>32일째 관제 중</p>
+            </div>
+
+            <div class="moon-container">
+                <div class="moon" id="moon"></div>
+                <div class="moon-label" id="moonLabel">내 가설 쪽으로 기울고 있어요</div>
+            </div>
+
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="view-btn active" onclick="switchView('card')">카드뷰</button>
+                <button class="view-btn" onclick="switchView('heatmap')">히트맵</button>
+                <button class="view-btn" onclick="switchView('graph')">흐름 그래프</button>
+            </div>
+
+            <!-- Card View -->
+            <div id="view-card" class="view-container active">
+                <div class="card-grid">
+                    <div class="indicator-card" onclick="simulateHaptic(this)">
+                        <div class="arrow" style="transform: rotate(-45deg); color: var(--color-support);">↑</div>
+                        <div class="ind-name">외국인 순매수</div>
+                        <div class="ind-label" style="color: var(--color-support);">지지 중</div>
+                    </div>
+                    <div class="indicator-card" onclick="simulateHaptic(this)">
+                        <div class="arrow" style="transform: rotate(0deg); color: #f87171;">↗</div>
+                        <div class="ind-name">원/달러 환율</div>
+                        <div class="ind-label" style="color: #f87171;">약한 지지</div>
+                    </div>
+                    <div class="indicator-card" onclick="simulateHaptic(this)">
+                        <div class="arrow" style="transform: rotate(90deg); color: var(--color-neutral);">→</div>
+                        <div class="ind-name">S&P 500</div>
+                        <div class="ind-label" style="color: var(--color-neutral);">중립</div>
+                    </div>
+                    <div class="indicator-card" onclick="simulateHaptic(this)">
+                        <div class="arrow" style="transform: rotate(135deg); color: #60a5fa;">↘</div>
+                        <div class="ind-name">금리 동향</div>
+                        <div class="ind-label" style="color: #60a5fa;">약화 중</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap View -->
+            <div id="view-heatmap" class="view-container">
+                <div class="heatmap-grid">
+                    <div class="heat-block bg-support-strong">외국인</div>
+                    <div class="heat-block bg-support-weak">환율</div>
+                    <div class="heat-block bg-neutral">S&P D</div>
+                    <div class="heat-block bg-reject-weak">금리</div>
+                    <div class="heat-block bg-support-strong">공매도</div>
+                    <div class="heat-block bg-support-weak">VIX</div>
+                </div>
+            </div>
+
+            <!-- Graph View -->
+            <div id="view-graph" class="view-container">
+                <div class="graph-view">
+                    <div class="graph-labels">
+                        <span>지지</span>
+                        <span>중립</span>
+                        <span>반박</span>
+                    </div>
+                    <svg width="100%" height="100%" viewBox="0 0 200 100" preserveAspectRatio="none">
+                        <!-- Neutral Axis -->
+                        <line x1="0" y1="50" x2="200" y2="50" class="axis-line" />
+                        
+                        <!-- The Beautiful Curve representing flow -->
+                        <!-- A path that moves from neutral towards support based on score -->
+                        <path id="graphCurve" d="M0,50 Q40,50 80,40 T150,20 T200,10" class="graph-line" stroke="var(--ambient-color)" />
+                    </svg>
+                </div>
+                <p style="text-align:center; font-size:0.75rem; color:var(--text-secondary); margin-top:12px;">
+                    숫자 없이 흐름(선)으로만 전체 방향성을 직관적으로 관찰합니다.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Interactive controls -->
+    <div class="controls">
+        <h3>💡 아이디어 1. 앰비언트 글로우 & 달 위상</h3>
+        <p style="font-size:0.8rem; color:#aaa; margin-bottom:15px;">슬라이더를 움직여 전체 스코어 변화에 따른 분위기 변화를 체감해 보세요.</p>
+        <div class="slider-container">
+            <span>반박(-1)</span>
+            <input type="range" id="scoreSlider" min="-100" max="100" value="50">
+            <span>지지(+1)</span>
+        </div>
+        <p style="margin-top: 15px; font-size:0.8rem; color:#aaa;">* 아이디어 3(햅틱) 체감: [카드뷰] 탭에서 표시된 카드를 클릭 시 스케일 축소/복원(물리적 터치감 재현).</p>
+        <p style="font-size:0.8rem; color:#aaa;">* 아이디어 4: 상단의 뷰 토글 버튼을 눌러 전환 확인.</p>
+    </div>
+
+    <script>
+        const slider = document.getElementById('scoreSlider');
+        const phoneBox = document.getElementById('phoneBox');
+        const moonLabel = document.getElementById('moonLabel');
+        const graphCurve = document.getElementById('graphCurve');
+
+        function updateScore(val) {
+            // val is -100 to 100
+            let color, text, yEnd, yMid;
+            
+            if (val > 40) {
+                color = '#ef4444'; // Red
+                text = '내 가설 쪽으로 기울고 있어요';
+                yEnd = 10; yMid = 25;
+            } else if (val > 10) {
+                color = '#f87171'; // Light Red
+                text = '지지 흐름이 나타나고 있어요';
+                yEnd = 30; yMid = 40;
+            } else if (val >= -10) {
+                color = '#94a3b8'; // Neutral
+                text = '아직 판단하기 이른 상태예요';
+                yEnd = 50; yMid = 50;
+            } else if (val >= -40) {
+                color = '#60a5fa'; // Light Blue
+                text = '가설과 조금 다르게 움직여요';
+                yEnd = 70; yMid = 60;
+            } else {
+                color = '#3b82f6'; // Blue
+                text = '강하게 반박되고 있어요';
+                yEnd = 90; yMid = 75;
+            }
+
+            // Calculate moon scale (css trick)
+            // 0 -> 1 (full), -100 -> 0 (hide), 100 -> 0 (hide)
+            const absVal = Math.abs(val);
+            let moonScale = 1 - (absVal / 100);
+
+            phoneBox.style.setProperty('--ambient-color', color);
+            phoneBox.style.setProperty('--ambient-text', color);
+            // Moon scale logic for visual representation
+            // Actually, let's keep it simple: just shift color and width
+            phoneBox.style.setProperty('--moon-scale', (val / 100).toString());
+
+            moonLabel.textContent = text;
+
+            // Animate graph path
+            graphCurve.setAttribute('d', `M0,50 Q40,50 80,${yMid} T150,${yEnd} T200,${yEnd}`);
+            graphCurve.style.stroke = color;
+        }
+
+        slider.addEventListener('input', (e) => {
+            updateScore(parseInt(e.target.value));
+        });
+
+        // Initialize
+        updateScore(50);
+
+        function switchView(viewId) {
+            // Remove active from all btns
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            // Add active to clicked ptnt
+            event.target.classList.add('active');
+
+            // Hide all views
+            document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+            // Show target
+            document.getElementById('view-' + viewId).classList.add('active');
+        }
+
+        function simulateHaptic(el) {
+            // In a real app we'd call navigator.vibrate(50)
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            // Visual feedback handled by CSS :active
+            // But we can add a quick pulse to the arrow for extra flair
+            const arrow = el.querySelector('.arrow');
+            arrow.style.transform = arrow.style.transform + ' scale(1.2)';
+            setTimeout(() => {
+                arrow.style.transform = arrow.style.transform.replace(' scale(1.2)', '');
+            }, 100);
+        }
+    </script>
+</body>
+</html>

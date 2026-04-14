@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockVis Main Page Mockups</title>
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f8fafc; color: #0f172a; padding: 40px; margin: 0; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { margin-top: 0; font-size: 2.5rem; letter-spacing: -1px; }
+        p { color: #64748b; font-size: 1.1rem; margin-bottom: 40px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { 
+            background: white; border-radius: 12px; padding: 20px; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            border: 1px solid #e2e8f0; text-decoration: none; color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; flex-direction: column;
+        }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); border-color: #cbd5e1; }
+        .c-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 10px; color: #2563eb; }
+        .c-desc { font-size: 0.95rem; color: #475569; line-height: 1.5; flex: 1; margin-bottom: 15px; }
+        .c-action { font-size: 0.85rem; font-weight: 600; color: #10b981; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>StockVis UI/UX Mockups</h1>
+        <p>10개의 메인 페이지 (홈 화면) 컨셉 목업입니다. 각 카드를 클릭하면 새 탭에서 해당 목업이 열립니다.</p>
+        
+        <div class="grid">
+            <a href="main_mockup_1_briefing.html" target="_blank" class="card">
+                <div class="c-title">1. Morning Briefing</div>
+                <div class="c-desc">토스/로빈후드 스타일의 깔끔한 세로 스크롤 피드. 뉴스 펄스와 시그널을 위에서 아래로 읽어 내려갑니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_2_widgets.html" target="_blank" class="card">
+                <div class="c-title">2. Widget OS</div>
+                <div class="c-desc">iOS 14+ 홈 화면 스타일. 각 도메인(매크로, 시그널 등)을 모듈화된 블록으로 구성합니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_3_heatmap.html" target="_blank" class="card">
+                <div class="c-title">3. Financial Map</div>
+                <div class="c-desc">Finviz 스타일 히트맵 중심 화면. 화면 윗면에 섹터별 맵을 배치하고 클릭 시 시그널이 하단 팝업됩니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_4_copilot.html" target="_blank" class="card">
+                <div class="c-title">4. AI Copilot</div>
+                <div class="c-desc">Perplexity 스타일 검색/채팅창 화면. 복잡한 데이터를 숨기고 궁금한 것을 직접 물어보는 AI 중심 화면입니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_5_shorts.html" target="_blank" class="card">
+                <div class="c-title">5. Story/Shorts</div>
+                <div class="c-desc">인스타그램/틱톡 스타일 세로 스와이프 피드. 매일 아침 필수 브리핑을 카드 단위 애니메이션으로 넘겨봅니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_6_terminal.html" target="_blank" class="card">
+                <div class="c-title">6. Terminal Hacker</div>
+                <div class="c-desc">검은 배경과 녹색 폰트 코딩 스타일. CLI 명령어와 ASCII 테이블, 극도의 데이터 밀도에 집착하는 뷰.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_7_galaxy.html" target="_blank" class="card">
+                <div class="c-title">7. Galaxy Nodes</div>
+                <div class="c-desc">Chain Sight 기능 중심 화면. 거대한 노드 맵 위에 떠다니는 섹터 별자리들을 직접 터치해 탐험합니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_8_zen.html" target="_blank" class="card">
+                <div class="c-title">8. One Metric Zen</div>
+                <div class="c-desc">극단적인 미니멀리즘. 복잡함을 숨기고 "과열 상태입니다" 같은 가장 중요한 단 하나의 메시지를 대문짝만하게 보여줍니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_9_portfolio.html" target="_blank" class="card">
+                <div class="c-title">9. Portfolio First</div>
+                <div class="c-desc">자산 중심의 뷰. 거시 정보보다 "내 자산에 영향을 주는 위협 시그널"을 상단에 고정하는 개인화 맞춤형 뷰입니다.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+            <a href="main_mockup_10_arc.html" target="_blank" class="card">
+                <div class="c-title">10. Arc Browser</div>
+                <div class="c-desc">Arc 브라우저 스타일 탭 디자인. 하단 네비게이션을 없애고 지구/보관함 등 카테고리별로 스페이스를 분류.</div>
+                <div class="c-action">새 탭에서 열기 &rarr;</div>
+            </a>
+        </div>
+    </div>
+</body>
+</html>

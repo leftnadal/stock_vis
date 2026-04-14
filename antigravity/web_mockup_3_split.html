@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Mockup 3: Split Screen</title>
+    <style>
+        :root { --bg: #fdfbf7; --surface: #ffffff; --text: #2d2a26; --accent: #ea580c; --border: #e7e5e4; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system, sans-serif; display:flex; height:100vh; overflow:hidden;}
+        
+        /* Layout */
+        .sidebar { width:70px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0;}
+        .main { flex:1; display:flex; }
+        
+        /* Split */
+        .split-left { flex:1; border-right:1px solid var(--border); display:flex; flex-direction:column; background:var(--surface); overflow-y:auto;}
+        .split-right { flex:1.2; display:flex; flex-direction:column; background:#f5f5f4; position:relative; overflow:hidden;}
+
+        /* Menu */
+        .menu-btn { width:40px; height:40px; border-radius:10px; display:flex; justify-content:center; align-items:center; font-size:1.2rem; cursor:pointer; color:#78716c; margin-bottom:15px; transition:0.2s;}
+        .menu-btn:hover { background:#f5f5f4; }
+        .menu-btn.active { background:#ffedd5; color:var(--accent); }
+
+        /* Left Content: Feed (Morning Briefing & Portfolio) */
+        .left-header { padding:30px; border-bottom:1px solid var(--border); position:sticky; top:0; background:rgba(255,255,255,0.9); backdrop-filter:blur(10px); z-index:10;}
+        .page-title { font-size:1.8rem; font-weight:800; margin:0 0 10px 0; letter-spacing:-1px;}
+        
+        /* Portfolio Pill */
+        .port-pill { display:inline-flex; align-items:center; gap:10px; background:#f8fafc; border:1px solid #cbd5e1; padding:8px 15px; border-radius:30px; margin-bottom:20px; font-weight:600;}
+        .port-val { font-size:1.1rem; }
+        .port-chg { color:#10b981; font-size:0.9rem;}
+
+        .feed { padding:0 30px 30px; }
+        
+        .pulse-card { background:linear-gradient(135deg, #1e293b, #0f172a); color:white; padding:25px; border-radius:20px; margin-bottom:20px; margin-top:20px; box-shadow:0 10px 20px rgba(0,0,0,0.1);}
+        .pulse-head { color:#cbd5e1; font-size:0.85rem; font-weight:600; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;}
+        .pulse-text { font-size:1.3rem; font-weight:700; line-height:1.4; margin-bottom:20px;}
+        .pulse-action { background:white; color:black; padding:10px 20px; border-radius:10px; font-weight:600; font-size:0.9rem; cursor:pointer; display:inline-block;}
+
+        .news-section { margin-top:30px; }
+        .n-title { font-size:1.2rem; font-weight:700; margin-bottom:15px; border-bottom:2px solid #000; display:inline-block; padding-bottom:5px;}
+        .n-item { padding:15px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:flex-start; cursor:pointer;}
+        .n-item:hover { opacity:0.7; }
+
+        /* Right Content: Chain Sight / Thesis */
+        .right-header { position:absolute; top:20px; left:20px; right:20px; z-index:10; display:flex; justify-content:space-between; align-items:center;}
+        .view-toggle { background:white; padding:5px; border-radius:12px; display:flex; gap:5px; box-shadow:0 4px 10px rgba(0,0,0,0.05); border:1px solid var(--border);}
+        .v-btn { padding:8px 20px; border-radius:8px; font-weight:600; font-size:0.9rem; cursor:pointer; color:#78716c;}
+        .v-btn.active { background:var(--accent); color:white;}
+        
+        .interactive-area { flex:1; background:radial-gradient(circle at center, #ffffff, #f5f5f4); position:relative; overflow:hidden;}
+        
+        /* Thesis Overlay Panel */
+        .thesis-panel { position:absolute; bottom:20px; right:20px; width:350px; background:rgba(255,255,255,0.95); backdrop-filter:blur(20px); border-radius:20px; padding:20px; border:1px solid var(--border); box-shadow:0 20px 40px rgba(0,0,0,0.1);}
+        .tp-header { font-weight:800; font-size:1.1rem; margin-bottom:15px; display:flex; justify-content:space-between;}
+        .t-card { background:#fff7ed; border:1px solid #fed7aa; padding:15px; border-radius:12px; margin-bottom:10px;}
+        .t-name { font-weight:700; color:#9a3412; margin-bottom:5px;}
+        
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div style="font-weight:900; font-size:1.2rem; margin-bottom:40px; color:var(--accent);">SV</div>
+        <div class="menu-btn active">📊</div>
+        <div class="menu-btn">🔍</div>
+        <div class="menu-btn">💼</div>
+        <div class="menu-btn">⚙️</div>
+    </div>
+
+    <div class="main">
+        <!-- LEFT: Feed (Briefing & Action items) -->
+        <div class="split-left">
+            <div class="left-header">
+                <h1 class="page-title">Morning Board</h1>
+                <div class="port-pill">
+                    <span>포트폴리오 총액:</span>
+                    <span class="port-val">₩45,230,000</span>
+                    <span class="port-chg">정상 궤도 유지중</span>
+                </div>
+                <div><input type="text" placeholder="종목, 가설, 뉴스 검색..." style="width:100%; padding:10px 15px; border-radius:10px; border:1px solid #d6d3d1; outline:none;"></div>
+            </div>
+
+            <div class="feed">
+                <div class="pulse-card">
+                    <div class="pulse-head">AI Market Pulse</div>
+                    <div class="pulse-text">엔비디아 발 훈풍이 시장 전체 거시경제 둔화 우려를 덮고 있습니다. 관련 가설 2개가 영향을 받고 있습니다.</div>
+                    <div class="pulse-action">Chain Sight로 흐름 분석 &rarr;</div>
+                </div>
+
+                <div class="news-section">
+                    <div class="n-title">오늘의 주요 액션 시그널</div>
+                    
+                    <div class="n-item">
+                        <div>
+                            <div style="font-weight:700; font-size:1.1rem; margin-bottom:5px;">VRT (Vertiv) 매수 시그널 발생</div>
+                            <div style="font-size:0.85rem; color:#78716c;">대기 중이던 가설 조건 도달. 거래량 급증.</div>
+                        </div>
+                        <div style="color:var(--accent); font-weight:800;">&rsaquo;</div>
+                    </div>
+                    
+                    <div class="n-item" style="opacity:0.6;">
+                        <div>
+                            <div style="font-weight:700; font-size:1.1rem; margin-bottom:5px;">환율 상승에 따른 외인 매도세 지속</div>
+                            <div style="font-size:0.85rem; color:#78716c;">매크로 지표 변동. 코스피 하락 가설에 긍정적 지표.</div>
+                        </div>
+                        <div style="font-weight:800;">&rsaquo;</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Interactive Map & Control (Chain & Thesis) -->
+        <div class="split-right">
+            <div class="right-header">
+                <div class="view-toggle">
+                    <div class="v-btn active">Chain Sight 맵</div>
+                    <div class="v-btn">가설 설계 (Thesis)</div>
+                </div>
+            </div>
+
+            <div class="interactive-area">
+                <!-- Placeholder for huge interactive map -->
+                <div style="position:absolute; top:40%; left:50%; transform:translate(-50%, -50%); text-align:center;">
+                    <svg width="300" height="200" style="opacity:0.2;">
+                        <!-- Node connections lines drawn here -->
+                        <line x1="50" y1="50" x2="250" y2="150" stroke="#000" stroke-width="4"></line>
+                        <circle cx="50" cy="50" r="30" fill="var(--accent)"></circle>
+                        <circle cx="250" cy="150" r="40" fill="#000"></circle>
+                    </svg>
+                    <div style="font-weight:800; font-size:1.5rem; color:#a8a29e; margin-top:20px;">
+                        Interactive Sector Map Area
+                    </div>
+                </div>
+                
+                <!-- Thesis Control Panel Overlay -->
+                <div class="thesis-panel">
+                    <div class="tp-header">
+                        <span>🎯 가설 통제실 (2 Active)</span>
+                        <span style="color:#a8a29e; cursor:pointer;">+ 추가</span>
+                    </div>
+                    
+                    <div class="t-card">
+                        <div class="t-name">전력 인프라주 단기 매수</div>
+                        <div style="font-size:0.8rem; color:#9a3412;">좌측 뉴스탭에서 VRT 조건 충족 알림 발생! 모니터링이 완료되었습니다.</div>
+                        <button style="width:100%; margin-top:10px; padding:8px; background:var(--accent); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">지금 포트폴리오에 담기</button>
+                    </div>
+
+                    <div class="t-card" style="background:#f8fafc; border-color:var(--border);">
+                        <div class="t-name" style="color:var(--text); opacity:0.8;">코스피 하락 배팅</div>
+                        <div style="font-size:0.8rem; color:#78716c;">Alignment 72% / 보합 유지 상태</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Explanation overlay -->
+    <div style="position:absolute; bottom:20px; left:90px; background:#2d2a26; color:white; padding:15px; border-radius:12px; width:300px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-size:0.9rem; z-index:20;">
+        <b>Option 3: Split Screen Focus</b><br>
+        모니터의 가로가 넓은 웹 스크린의 장점을 활용하여 <b>좌측: 뉴스 요약 및 해야할 일 (Feed) / 우측: 시각화 및 액션 (Interactive)</b> 로 50:50을 분할합니다. 왼쪽에서 정보를 얻고 바로 오른쪽 그래픽 맵에서 검증 후 가설(Thesis)을 통제합니다.
+    </div>
+</body>
+</html>

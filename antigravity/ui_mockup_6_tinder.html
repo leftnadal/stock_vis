@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 6: Tinder Style Cards</title>
+    <style>
+        :root { --bg: #f1f5f9; --text: #1e293b; --accent: #3b82f6; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        .title { position: absolute; top: 60px; text-align: center; width:100%;}
+        .title h2 { margin: 0; font-size: 1.2rem; }
+        .title p { color: #64748b; font-size: 0.8rem; }
+
+        .card-container {
+            position: relative;
+            width: 300px;
+            height: 400px;
+        }
+
+        .card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            transform-origin: 50% 100%;
+            cursor: grab;
+            transition: transform 0.3s, opacity 0.3s;
+            user-select: none;
+        }
+        .card:active { cursor: grabbing; }
+        
+        /* The stamps */
+        .stamp {
+            position: absolute;
+            top: 40px;
+            font-size: 2rem;
+            font-weight: 900;
+            padding: 5px 10px;
+            border: 4px solid;
+            border-radius: 10px;
+            opacity: 0;
+            transform: rotate(-15deg);
+        }
+        .stamp-reject { right: 30px; color: #ef4444; border-color: #ef4444; transform: rotate(15deg); }
+        .stamp-keep { left: 30px; color: #10b981; border-color: #10b981; }
+
+        .btn-row {
+            position: absolute;
+            bottom: 60px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+        .btn-action {
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5rem;
+            background: #fff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            display:flex; justify-content:center; align-items:center;
+            color: #ef4444;
+        }
+        .btn-action.right { color: #10b981; }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="title">
+            <h2>오늘의 지표 리뷰</h2>
+            <p>스와이프하여 가설에 반영할지 결정하세요</p>
+        </div>
+        
+        <div class="card-container" id="cards">
+            <!-- Cards will be injected by JS -->
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-action" onclick="swipe('left')">✖</button>
+            <button class="btn-action right" onclick="swipe('right')">❤</button>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#6. Tinder-style Review</h3>
+        <p>매일 아침 'AI가 추천하는 내 가설의 새로운 변화/지표'를 틴더처럼 좌우로 스와이프하며 무시(왼쪽)하거나 추적 항목에 추가(오른쪽)합니다. 마우스로 카드를 드래그해보세요!</p>
+    </div>
+
+    <script>
+        const data = [
+            "환율이 1,380원대로 하락했습니다. 가설에 긍정적입니다.",
+            "외국인 순매수가 3일 연속 마이너스입니다.",
+            "나스닥 선물이 상승 중입니다.",
+            "완료! 내일 또 만나요."
+        ];
+        
+        const cardContainer = document.getElementById('cards');
+        let currentCard = null;
+
+        data.reverse().forEach((text, i) => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `
+                <div class="stamp stamp-keep">추가</div>
+                <div class="stamp stamp-reject">무시</div>
+                <p>${text}</p>
+            `;
+            // Small visual stack offset
+            card.style.transform = `scale(${1 - i*0.05}) translateY(${-i*10}px)`;
+            card.style.zIndex = data.length - i;
+            if(i===0) card.style.background = "#e2e8f0"; // Last card
+            cardContainer.appendChild(card);
+        });
+
+        const cards = Array.from(document.querySelectorAll('.card')).reverse();
+        let topIndex = 0;
+
+        function initDrag() {
+            if(topIndex >= cards.length - 1) return; // Last card is just message
+            currentCard = cards[topIndex];
+            
+            let isDragging = false;
+            let startX = 0;
+
+            currentCard.addEventListener('mousedown', e => { isDragging = true; startX = e.clientX; });
+            document.addEventListener('mouseup', handleUp);
+            document.addEventListener('mousemove', handleMove);
+            
+            // Touch params
+            currentCard.addEventListener('touchstart', e => { isDragging = true; startX = e.touches[0].clientX; });
+            document.addEventListener('touchend', handleUp);
+            document.addEventListener('touchmove', e => { if(isDragging) handleMove(e.touches[0]); });
+
+            function handleMove(e) {
+                if(!isDragging) return;
+                const dx = e.clientX - startX;
+                const rotate = dx * 0.05;
+                currentCard.style.transform = `translate(${dx}px, 0) rotate(${rotate}deg)`;
+                
+                // Opacity of stamps
+                if(dx > 50) currentCard.querySelector('.stamp-keep').style.opacity = Math.min(1, (dx-50)/100);
+                else currentCard.querySelector('.stamp-keep').style.opacity = 0;
+                
+                if(dx < -50) currentCard.querySelector('.stamp-reject').style.opacity = Math.min(1, Math.abs(dx+50)/100);
+                else currentCard.querySelector('.stamp-reject').style.opacity = 0;
+            }
+
+            function handleUp() {
+                if(!isDragging) return;
+                isDragging = false;
+                const transform = currentCard.style.transform;
+                const xMatch = transform.match(/translate\(([^p]+)px/);
+                const dx = xMatch ? parseFloat(xMatch[1]) : 0;
+                
+                if(dx > 100) swipe('right');
+                else if(dx < -100) swipe('left');
+                else {
+                    // Snap back
+                    currentCard.style.transform = 'translate(0px, 0) rotate(0deg)';
+                    currentCard.querySelector('.stamp-keep').style.opacity = 0;
+                    currentCard.querySelector('.stamp-reject').style.opacity = 0;
+                }
+            }
+        }
+
+        window.swipe = function(dir) {
+            if(topIndex >= cards.length - 1) return;
+            const c = cards[topIndex];
+            const moveX = dir === 'right' ? 400 : -400;
+            const rotate = dir === 'right' ? 30 : -30;
+            c.style.transform = `translate(${moveX}px, 50px) rotate(${rotate}deg)`;
+            c.style.opacity = '0';
+            topIndex++;
+            setTimeout(() => { c.style.display = 'none'; }, 300);
+            initDrag();
+            
+            // Bring next cards up
+            for(let i=topIndex; i<cards.length; i++) {
+                const offset = i - topIndex;
+                cards[i].style.transform = `scale(${1 - offset*0.05}) translateY(${-offset*10}px)`;
+            }
+        }
+
+        initDrag();
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 2: Liquid Fluid Battery</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; --liquid-red: #ef4444; --liquid-blue: #3b82f6; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        .title { position: absolute; top: 60px; text-align: center; }
+        .title h2 { margin: 0; font-size: 1.5rem; }
+        .title p { color: #94a3b8; font-size: 0.9rem; }
+
+        /* Liquid Battery container */
+        .battery {
+            width: 140px;
+            height: 300px;
+            border: 4px solid #334155;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+            background: #1e293b;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        /* The liquid */
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50%; /* driven by JS */
+            background: var(--liquid-red);
+            transition: height 0.5s ease, background 0.5s ease;
+        }
+
+        /* Waves using SVG animation via CSS pseudo elements */
+        .liquid::before, .liquid::after {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            top: -50%;
+            left: 50%;
+            transform: translate(-50%, -75%);
+            background: #1e293b;
+            border-radius: 40%;
+            animation: spin 6s linear infinite;
+            z-index: 1;
+        }
+        .liquid::after {
+            border-radius: 45%;
+            background: rgba(30, 41, 59, 0.5);
+            animation: spin 5s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .status-text {
+            margin-top: 30px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--liquid-red);
+            transition: color 0.5s;
+        }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="title">
+            <h2>KOSPI 하락 가설</h2>
+            <p>현재 에너지 레벨</p>
+        </div>
+        
+        <div class="battery">
+            <div class="liquid" id="liquid"></div>
+        </div>
+
+        <div class="status-text" id="status">지표들이 당신을 지지합니다 (75%)</div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#2. Liquid/Fluid Battery</h3>
+        <p>복잡한 차트 대신, 내 가설이 얼마나 힘("에너지")을 얻고 있는지를 액체가 차오르는 모습으로 직관적으로 표현합니다.</p>
+        <input type="range" id="slider" min="0" max="100" value="75" style="width:100%">
+    </div>
+
+    <script>
+        const slider = document.getElementById('slider');
+        const liquid = document.getElementById('liquid');
+        const status = document.getElementById('status');
+
+        slider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            liquid.style.height = `${val}%`;
+            
+            if (val > 60) {
+                liquid.style.background = 'var(--liquid-red)';
+                status.style.color = 'var(--liquid-red)';
+                status.innerText = `지지 받고 있습니다 (${val}%)`;
+            } else if (val > 40) {
+                liquid.style.background = '#94a3b8';
+                status.style.color = '#94a3b8';
+                status.innerText = `중립 상태 (${val}%)`;
+            } else {
+                liquid.style.background = 'var(--liquid-blue)';
+                status.style.color = 'var(--liquid-blue)';
+                status.innerText = `반대 방향으로 흐릅니다 (${val}%)`;
+            }
+        });
+    </script>
+</body>
+</html>

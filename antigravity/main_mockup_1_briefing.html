@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 1: Morning Briefing</title>
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-sec: #64748b; --accent: #2563eb; }
+        body { margin:0; padding:2rem; background:#cbd5e1; color:var(--text); font-family:-apple-system, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow-y:auto; overflow-x:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.2); border:1px solid #333; }
+        .phone::-webkit-scrollbar { display: none; }
+        
+        .header { padding: 50px 20px 20px 20px; background:var(--surface); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; z-index:10; box-shadow:0 2px 10px rgba(0,0,0,0.05);}
+        .greeting h1 { margin:0; font-size:1.5rem; font-weight:700;}
+        .greeting p { margin:0; font-size:0.85rem; color:var(--text-sec);}
+        .avatar { width:40px; height:40px; border-radius:50%; background:linear-gradient(135deg, #3b82f6, #8b5cf6); }
+
+        .section { padding: 20px; }
+        .section-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 15px; display:flex; justify-content:space-between; align-items:center;}
+        .section-title a { font-size:0.8rem; color:var(--accent); text-decoration:none; font-weight:500;}
+
+        /* Pulse Summary */
+        .pulse-card { background:linear-gradient(135deg, #1e293b, #0f172a); border-radius:16px; padding:20px; color:white; box-shadow:0 10px 20px rgba(0,0,0,0.1); position:relative; overflow:hidden;}
+        .pulse-card::after { content:''; position:absolute; top:0; right:0; width:150px; height:150px; background:radial-gradient(circle, rgba(59,130,246,0.3) 0%, transparent 70%); border-radius:50%; transform:translate(30%, -30%);}
+        .pulse-title { font-size:0.85rem; color:#94a3b8; margin-bottom:10px; text-transform:uppercase; letter-spacing:1px;}
+        .pulse-text { font-size:1.1rem; line-height:1.5; font-weight:500; margin-bottom:15px;}
+        .pulse-tags { display:flex; gap:8px; }
+        .pulse-tag { background:rgba(255,255,255,0.1); padding:4px 10px; border-radius:20px; font-size:0.75rem; backdrop-filter:blur(5px);}
+
+        /* Horizontal Scroll for Signals */
+        .h-scroll { display:flex; gap:12px; overflow-x:auto; padding-bottom:15px; scroll-snap-type: x mandatory; }
+        .h-scroll::-webkit-scrollbar { display:none; }
+        .signal-card { min-width:140px; background:var(--surface); border-radius:16px; padding:15px; box-shadow:0 4px 10px rgba(0,0,0,0.03); scroll-snap-align: start; border:1px solid #e2e8f0; }
+        .sig-ticker { font-weight:700; font-size:1.1rem; margin-bottom:5px;}
+        .sig-type { font-size:0.75rem; color:var(--accent); background:#eff6ff; padding:2px 8px; border-radius:10px; display:inline-block; margin-bottom:10px;}
+        .sig-price { font-weight:600; }
+        .sig-change { font-size:0.8rem; color:#10b981; }
+
+        /* Setup Thesis List */
+        .thesis-item { background:var(--surface); border-radius:16px; padding:15px; display:flex; align-items:center; gap:15px; margin-bottom:10px; border:1px solid #e2e8f0; box-shadow:0 2px 5px rgba(0,0,0,0.02);}
+        .t-icon { width:40px; height:40px; border-radius:12px; background:#fef2f2; color:#ef4444; display:flex; justify-content:center; align-items:center; font-size:1.2rem; }
+        .t-content { flex:1; }
+        .t-title { font-weight:600; font-size:0.95rem; margin-bottom:4px;}
+        .t-status { font-size:0.75rem; color:var(--text-sec);}
+        .t-arrow { color:#cbd5e1; }
+
+        .bottom-nav { position:sticky; bottom:0; background:var(--surface); display:flex; justify-content:space-around; padding:15px 20px 25px 20px; border-top:1px solid #e2e8f0; z-index:10;}
+        .nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; color:var(--text-sec); font-size:0.7rem; font-weight:500;}
+        .nav-item.active { color:var(--accent); }
+        .nav-icon { width:24px; height:24px; background:#e2e8f0; border-radius:6px; margin-bottom:2px;}
+        .nav-item.active .nav-icon { background:var(--accent); }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <div class="greeting">
+                <p>3월 19일 목요일</p>
+                <h1>좋은 아침입니다, 진정님</h1>
+            </div>
+            <div class="avatar"></div>
+        </div>
+
+        <div class="section">
+            <div class="pulse-card">
+                <div class="pulse-title">AI Market Pulse</div>
+                <div class="pulse-text">FOMC 금리 동결 여파로 기술주 전반에 강력한 수급이 유입되고 있습니다.</div>
+                <div class="pulse-tags">
+                    <span class="pulse-tag">#기술주강세</span>
+                    <span class="pulse-tag">#환율안정</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="padding-top:0;">
+            <div class="section-title">
+                오늘의 발생 시그널
+                <a href="#">더보기 &rsaquo;</a>
+            </div>
+            <div class="h-scroll">
+                <div class="signal-card">
+                    <div class="sig-ticker">NVDA</div>
+                    <div class="sig-type">Breakout</div>
+                    <div class="sig-price">$892.50</div>
+                    <div class="sig-change">+4.2% 상향돌파</div>
+                </div>
+                <div class="signal-card">
+                    <div class="sig-ticker">AAPL</div>
+                    <div class="sig-type">Momentum</div>
+                    <div class="sig-price">$173.20</div>
+                    <div class="sig-change" style="color:#ef4444">-1.2% 약세</div>
+                </div>
+                <div class="signal-card">
+                    <div class="sig-ticker">TSLA</div>
+                    <div class="sig-type">Volume</div>
+                    <div class="sig-price">$162.50</div>
+                    <div class="sig-change">+2.1% 거래량급증</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="padding-top:0;">
+            <div class="section-title">
+                내 통제실 (가설)
+                <a href="#">관리 &rsaquo;</a>
+            </div>
+            <div class="thesis-item">
+                <div class="t-icon">📉</div>
+                <div class="t-content">
+                    <div class="t-title">코스피 2,800 저항 하락</div>
+                    <div class="t-status">외국인 순매도 전환 임박 (강한 지지)</div>
+                </div>
+                <div class="t-arrow">&rsaquo;</div>
+            </div>
+            <div class="thesis-item">
+                <div class="t-icon" style="background:#ecfdf5; color:#10b981;">📈</div>
+                <div class="t-content">
+                    <div class="t-title">AI 인프라 수혜주 랠리</div>
+                    <div class="t-status">S&P500 신고가 지속 (중립성)</div>
+                </div>
+                <div class="t-arrow">&rsaquo;</div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active"><div class="nav-icon"></div>홈</div>
+            <div class="nav-item"><div class="nav-icon"></div>시그널</div>
+            <div class="nav-item"><div class="nav-icon"></div>통제실</div>
+            <div class="nav-item"><div class="nav-icon"></div>체인사이트</div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#1. Morning Briefing Style</h3>
+        <p>토스증권이나 로빈후드처럼 매우 깔끔하고 읽기 편한 세로 피드(Feed) 구조입니다. 최상단에 마켓 펄스 요약, 이어서 필터링된 EOD 시그널, 그리고 Thesis를 차례로 보여줍니다.</p>
+    </div>
+</body>
+</html>

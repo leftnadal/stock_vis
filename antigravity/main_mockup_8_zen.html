@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 8: Zen Focus</title>
+    <style>
+        :root { --bg: #f9fafb; --text: #111827; }
+        body { margin:0; padding:2rem; background:#cbd5e1; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.1); border:1px solid #e2e8f0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px; box-sizing:border-box; text-align:center;}
+        
+        .date { font-size:0.9rem; color:#64748b; margin-bottom:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px;}
+        .zen-message { font-size:2.5rem; font-weight:300; line-height:1.2; letter-spacing:-1px; margin-bottom:40px; color:#0f172a;}
+        
+        strong { font-weight: 700; color: #ef4444; }
+
+        .action-chip { background:white; border:1px solid #e2e8f0; padding:12px 24px; border-radius:30px; font-size:1rem; font-weight:500; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05); cursor:pointer;}
+        .action-chip:hover { background:#f8fafc; }
+
+        .nav-dock { position:absolute; bottom:40px; background:white; padding:15px 30px; border-radius:40px; display:flex; gap:30px; box-shadow:0 10px 30px rgba(0,0,0,0.05); border:1px solid #e2e8f0;}
+        .n-icon { font-size:1.5rem; opacity:0.4; cursor:pointer;}
+        .n-icon.active { opacity:1; color:#0f172a;}
+
+        /* Subtle animated background shape */
+        .shape { position:absolute; width:400px; height:400px; border-radius:50%; background:radial-gradient(circle, rgba(239, 68, 68, 0.05) 0%, transparent 60%); top:-100px; right:-100px; animation:float 10s infinite alternate ease-in-out; z-index:0;}
+        @keyframes float { 100% { transform:translate(-50px, 50px) scale(1.1); } }
+        
+        .content { position:relative; z-index:10; }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="shape"></div>
+
+        <div class="content">
+            <div class="date">오늘의 통찰</div>
+            <div class="zen-message">
+                지금 시장은<br>
+                <strong>과열 구간</strong>으로<br>
+                진입했습니다.
+            </div>
+            
+            <div class="action-chip">
+                <span>자세한 이유 보기</span>
+                <span style="color:#ef4444;">&rsaquo;</span>
+            </div>
+            
+            <p style="margin-top:20px; font-size:0.8rem; color:#94a3b8;">관련된 매도 시그널 12개 포착</p>
+        </div>
+
+        <div class="nav-dock">
+            <div class="n-icon active">⌂</div>
+            <div class="n-icon">⚡</div>
+            <div class="n-icon">◎</div>
+            <div class="n-icon">⚙</div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#8. "One Metric" Zen Style</h3>
+        <p>엄청난 양의 데이터를 완전히 숨기고, AI가 수십 개의 시그널을 종합해 내린 "가장 중요한 단 하나의 인사이트"만 거대한 타이포그래피로 중앙에 띄우는 극도의 미니멀리즘 디자인입니다. 정보의 피로도를 0으로 만듭니다.</p>
+    </div>
+</body>
+</html>

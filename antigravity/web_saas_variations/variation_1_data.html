@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Var 1: Data Focus</title>
+    <style>
+        :root { --surface: #ffffff; --bg: #f8fafc; --text: #0f172a; --text-sec: #64748b; --border: #e2e8f0; --accent: #2563eb; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:system-ui; display:flex; height:100vh;}
+        
+        /* Layout Structure */
+        .sidebar { width:220px; background:var(--surface); border-right:1px solid var(--border); padding:20px; display:flex; flex-direction:column;}
+        .main { flex:1; display:flex; flex-direction:column; overflow:hidden;}
+        .top-nav { height:60px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 30px; gap:20px;}
+        .content { flex:1; padding:30px; overflow-y:auto; display:flex; flex-direction:column; gap:20px;}
+
+        /* Sidebar & Nav */
+        .logo { font-size:1.4rem; font-weight:800; color:var(--accent); margin-bottom:30px;}
+        .s-link { padding:10px 15px; border-radius:8px; color:var(--text); text-decoration:none; font-weight:500; font-size:0.9rem; margin-bottom:5px; display:block;}
+        .s-link.active { background:#eff6ff; color:var(--accent); font-weight:700;}
+        .search { input[type=text] { border:1px solid var(--border); border-radius:20px; padding:8px 15px; width:300px; outline:none; background:#f1f5f9; }}
+
+        /* Data Tables / Panels */
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:20px; box-shadow:0 1px 2px rgba(0,0,0,0.05);}
+        .p-title { font-size:1.1rem; font-weight:700; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;}
+        
+        table { width:100%; border-collapse:collapse; font-size:0.9rem;}
+        th { text-align:left; padding:12px 10px; border-bottom:1px solid var(--border); color:var(--text-sec); font-weight:600; font-size:0.8rem; text-transform:uppercase;}
+        td { padding:12px 10px; border-bottom:1px solid #f1f5f9; vertical-align:middle;}
+        tr:hover td { background:#f8fafc; }
+        
+        .badge { padding:4px 8px; border-radius:6px; font-size:0.75rem; font-weight:600;}
+        .b-green { background:#dcfce7; color:#166534; }
+        .b-blue { background:#dbeafe; color:#1e40af; }
+        .b-red { background:#fee2e2; color:#991b1b; }
+        .b-gray { background:#f1f5f9; color:#475569; }
+
+        .sparkline { width:60px; height:20px; background:linear-gradient(90deg, #dcfce7, var(--surface)); border-left:2px solid #22c55e;}
+        
+        .grid-2 { display:grid; grid-template-columns: 1fr 1fr; gap:20px;}
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">StockVis</div>
+        <a href="#" class="s-link active">데이터 대시보드</a>
+        <a href="#" class="s-link">시그널 테이블</a>
+        <a href="#" class="s-link">가설 모니터(Thesis)</a>
+        <a href="#" class="s-link">포트폴리오 내역</a>
+    </div>
+    
+    <div class="main">
+        <div class="top-nav">
+            <div class="search"><input type="text" placeholder="종목, 가설, 시그널 검색..."></div>
+            <div style="margin-left:auto; font-weight:600; font-size:0.9rem;">총 자산: ₩45,230,000 (+2.8%)</div>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <div class="p-title">오전 시황 요약 (Market Pulse) <span class="badge b-gray">오늘 07:30 기준</span></div>
+                <div style="font-size:0.95rem; line-height:1.6; color:#334155;">
+                    전일 뉴욕 증시는 <b>테슬라(-3.4%)</b> 인도량 쇼크에도 불구하고, <b>엔비디아(+4.2%)</b> 및 AI 반도체 밸류체인의 강한 반등으로 혼조세를 보였습니다. <br>
+                    관련하여 오늘 귀하의 포트폴리오(IT 장비, 전력 인프라)에 <b>12개의 신규 EOD 시그널</b>이 데이터베이스에 추가되었습니다.
+                </div>
+            </div>
+
+            <div class="grid-2">
+                <!-- EOD Signals Table -->
+                <div class="panel">
+                    <div class="p-title">발생 시그널 (EOD) <a href="#" style="font-size:0.8rem; color:var(--accent);">전체보기 &rarr;</a></div>
+                    <table>
+                        <thead>
+                            <tr><th>Ticker</th><th>Signal</th><th>Price</th><th>Trend</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>NVDA</b></td>
+                                <td><span class="badge b-blue">Breakout</span></td>
+                                <td>$892.50</td>
+                                <td><div class="sparkline" style="border-color:#22c55e;"></div></td>
+                            </tr>
+                            <tr>
+                                <td><b>VRT</b></td>
+                                <td><span class="badge b-blue">Volume</span></td>
+                                <td>$85.20</td>
+                                <td><div class="sparkline" style="border-color:#22c55e;"></div></td>
+                            </tr>
+                            <tr>
+                                <td><b>TSLA</b></td>
+                                <td><span class="badge b-red">Reversal</span></td>
+                                <td>$162.50</td>
+                                <td><div class="sparkline" style="border-color:#ef4444; background:linear-gradient(90deg, #fee2e2, #fff);"></div></td>
+                            </tr>
+                            <tr>
+                                <td><b>CEG</b></td>
+                                <td><span class="badge b-green">Momentum</span></td>
+                                <td>$205.10</td>
+                                <td><div class="sparkline" style="border-color:#22c55e;"></div></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Thesis Control Table -->
+                <div class="panel">
+                    <div class="p-title">활성 가설 통제 (Thesis Control) <span class="badge b-blue">+ 새 가설</span></div>
+                    <table>
+                        <thead>
+                            <tr><th>Thesis Name</th><th>Alignment</th><th>Status / Action</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>전력 인프라 단기 매수</td>
+                                <td><b>85%</b></td>
+                                <td><span class="badge b-green">조건 충족 (대기)</span></td>
+                            </tr>
+                            <tr>
+                                <td>코스피 2,800 하락 포지션</td>
+                                <td><b>72%</b></td>
+                                <td><span class="badge b-blue">모니터링 중</span></td>
+                            </tr>
+                            <tr>
+                                <td>반도체 밸류체인 차익실현</td>
+                                <td><b>45%</b></td>
+                                <td><span class="badge b-gray">대기 중</span></td>
+                            </tr>
+                            <tr>
+                                <td>전기차 비중 축소</td>
+                                <td><b>95%</b></td>
+                                <td><span class="badge b-red">매도 요망</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="p-title">포트폴리오 (보유 자산) 상세 내역</div>
+                <table>
+                    <thead>
+                        <tr><th>Asset Name</th><th>Ticker</th><th>Avg Price</th><th>Current Price</th><th>Return</th><th>Chain Sight (연관성)</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>Apple Inc.</td><td>AAPL</td><td>$180.50</td><td>$173.20</td><td><span style="color:#ef4444;">-4.0%</span></td><td>소비재 심리 악화 영향</td></tr>
+                        <tr><td>Samsung Elec</td><td>005930</td><td>₩71,000</td><td>₩74,000</td><td><span style="color:#22c55e;">+4.2%</span></td><td>엔비디아 동조화 장세</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+    
+    <div style="position:absolute; bottom:20px; right:30px; background:#1e293b; color:white; padding:15px; border-radius:12px; width:300px; box-shadow:0 10px 30px rgba(0,0,0,0.2); font-size:0.85rem;">
+        <b>Variation 1: Data Heavy (테이블/리스트 집중)</b><br>
+        SaaS의 뼈대를 가져오되, 카드의 시인성보다 정보의 <b>'밀도'</b>를 우선합니다. CRM 툴(Salesforce, Hubspot 등) 처럼 빡빡한 테이블과 상태 뱃지(Badge) 위주로 구성되어 한 번에 수십 개의 시그널과 가설을 관리하는 유저에게 최적화되어 있습니다.
+    </div>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 7: Voice AI Interface</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; --accent: #8b5cf6; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        .siri-wave {
+            width: 200px; height: 100px;
+            display: flex; justify-content: center; align-items: center; gap: 6px;
+        }
+        .bar {
+            width: 8px; height: 10px;
+            background: var(--accent);
+            border-radius: 4px;
+            animation: pulse-bar 1.2s ease-in-out infinite var(--delay);
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .bar.listening { height: 40px; animation-duration: 0.5s; background:#ec4899; box-shadow: 0 0 20px #ec4899; }
+
+        @keyframes pulse-bar {
+            0%, 100% { transform: scaleY(1); opacity: 0.5; }
+            50% { transform: scaleY(3); opacity: 1; }
+        }
+
+        .mic-btn {
+            width: 70px; height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+            border: none;
+            color: white;
+            font-size: 24px;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 10px 20px rgba(139, 92, 246, 0.4);
+            cursor: pointer;
+            margin-top: 50px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .mic-btn:active { transform: scale(0.9); box-shadow: 0 5px 10px rgba(139, 92, 246, 0.4); }
+
+        .transcript {
+            margin-top: 40px;
+            font-size: 1.2rem;
+            text-align: center;
+            min-height: 80px;
+            padding: 0 20px;
+            color: #cbd5e1;
+            font-weight: 300;
+        }
+
+        .ai-response {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 20px;
+            width: 80%;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s;
+        }
+        .ai-response.show { opacity: 1; transform: translateY(0); }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <!-- Visual wave -->
+        <div class="siri-wave" id="wave">
+            <div class="bar" style="--delay: 0s;"></div>
+            <div class="bar" style="--delay: 0.2s;"></div>
+            <div class="bar" style="--delay: 0.4s;"></div>
+            <div class="bar" style="--delay: 0.1s;"></div>
+            <div class="bar" style="--delay: 0.3s;"></div>
+        </div>
+
+        <div class="transcript" id="textLine">"가설 통제실 AI 대기 중입니다."</div>
+
+        <button class="mic-btn" onclick="startListen()">🎤</button>
+
+        <div class="ai-response" id="responseBox">
+            <h4 style="margin:0 0 10px 0; color:#8b5cf6;">분석 완료</h4>
+            <p style="margin:0; font-size:0.9rem; color:#f8fafc;">코스피 하락 가설에 대해 "외국인 매도세" 지표를 추적 목록에 추가했습니다.</p>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#7. Voice/AI Assistant</h3>
+        <p>복잡한 타이핑 없이 마이크 버튼을 누르고 "코스피 빠질 것 같은데 외국인 팔면 알려줘" 라고 음성으로 지시하는 컨셉입니다. 마이크를 클릭해보세요.</p>
+    </div>
+
+    <script>
+        const wave = document.getElementById('wave');
+        const textLine = document.getElementById('textLine');
+        const resp = document.getElementById('responseBox');
+        
+        function startListen() {
+            resp.classList.remove('show');
+            const bars = wave.querySelectorAll('.bar');
+            bars.forEach(b => b.classList.add('listening'));
+            textLine.innerHTML = "듣고 있어요...";
+            textLine.style.color = "#ec4899";
+
+            setTimeout(() => {
+                textLine.innerHTML = "코스피 빠질 것 같아. 외국인 팔면 알려줘.";
+            }, 1500);
+
+            setTimeout(() => {
+                bars.forEach(b => b.classList.remove('listening'));
+                textLine.innerHTML = "";
+                resp.classList.add('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

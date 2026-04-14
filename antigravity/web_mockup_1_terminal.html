@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Mockup 1: Pro Terminal</title>
+    <style>
+        :root { --bg: #09090b; --surface: #18181b; --panel: #27272a; --text: #fafafa; --text-dim: #a1a1aa; --accent: #3b82f6; --green: #22c55e; --red: #ef4444; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system, system-ui, sans-serif; height:100vh; display:flex; font-size:14px; overflow:hidden;}
+        
+        /* Layout */
+        .sidebar { width:60px; background:var(--surface); border-right:1px solid #333; display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:25px;}
+        .main-content { flex:1; display:flex; overflow:hidden;}
+        
+        .col-left { flex:1.2; border-right:1px solid #333; display:flex; flex-direction:column; padding:20px; overflow-y:auto;}
+        .col-mid { flex:2; border-right:1px solid #333; display:flex; flex-direction:column; position:relative; overflow:hidden;}
+        .col-right { flex:1; display:flex; flex-direction:column; padding:20px; overflow-y:auto;}
+
+        /* Sidebar Icons */
+        .s-icon { font-size:1.5rem; color:var(--text-dim); cursor:pointer; }
+        .s-icon.active { color:var(--accent); }
+
+        /* Generic Panel */
+        .panel-title { font-size:0.85rem; font-weight:700; text-transform:uppercase; color:var(--text-dim); margin-bottom:15px; display:flex; justify-content:space-between;}
+        
+        /* Col Left: Morning Briefing & News */
+        .news-item { padding:15px 0; border-bottom:1px solid #333; cursor:pointer;}
+        .news-item:hover { background:var(--surface); }
+        .n-tag { display:inline-block; font-size:0.7rem; background:#333; padding:2px 6px; border-radius:4px; margin-bottom:8px;}
+        .n-title { font-weight:600; font-size:1rem; margin-bottom:5px; line-height:1.4;}
+        .n-meta { font-size:0.75rem; color:var(--text-dim);}
+        
+        .pulse-box { background:linear-gradient(135deg, rgba(59,130,246,0.1), rgba(0,0,0,0)); border:1px solid rgba(59,130,246,0.3); padding:15px; border-radius:8px; margin-bottom:20px;}
+        
+        /* Col Mid: Chain Sight (Exploration) */
+        .mid-header { padding:20px; border-bottom:1px solid #333; background:var(--surface); position:absolute; top:0; width:100%; z-index:10;}
+        .graph-area { flex:1; background:radial-gradient(circle at center, #111, #000); position:relative; display:flex; justify-content:center; align-items:center; margin-top:60px;}
+        
+        .node { position:absolute; padding:8px 12px; border-radius:15px; font-weight:600; cursor:pointer; font-size:0.85rem; border:1px solid #444; background:var(--panel);}
+        .node:hover { border-color:var(--accent); z-index:10;}
+        
+        /* Col Right: Thesis & Portfolio (Execution) */
+        .thesis-card { background:var(--surface); border:1px solid #333; padding:15px; border-radius:8px; margin-bottom:15px;}
+        .t-head { display:flex; justify-content:space-between; margin-bottom:10px;}
+        .t-badge { background:rgba(34,197,94,0.1); color:var(--green); font-size:0.75rem; padding:2px 6px; border-radius:4px; font-weight:600;}
+        .t-prog { width:100%; height:4px; background:#333; border-radius:2px; margin-top:10px; overflow:hidden;}
+        .t-fill { width:75%; height:100%; background:var(--green);}
+
+        .port-item { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #333;}
+        .port-tkr { font-weight:bold;}
+        .port-px { text-align:right;}
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="s-icon" style="color:white; font-weight:bold;">S.</div>
+        <div class="s-icon active">📊</div>
+        <div class="s-icon">🪐</div>
+        <div class="s-icon">🎯</div>
+        <div class="s-icon">💼</div>
+        <div class="s-icon" style="margin-top:auto;">⚙️</div>
+    </div>
+
+    <div class="main-content">
+        <!-- 1. Discovery (Briefing / Pulse) -->
+        <div class="col-left">
+            <div class="panel-title">출근 요약 (Market Pulse)</div>
+            
+            <div class="pulse-box">
+                <div style="color:var(--accent); font-weight:bold; margin-bottom:5px;">AI Overnight Summary</div>
+                <div>엔비디아 서프라이즈로 기술주 전반에 강한 훈풍유입. 그러나 환율 급등으로 외인 수급은 제한적.</div>
+            </div>
+
+            <div class="panel-title" style="margin-top:10px;">주목할 뉴스 & EOD</div>
+            <div class="news-item">
+                <div class="n-tag" style="background:rgba(239,68,68,0.2); color:var(--red);">Risk🚨</div>
+                <div class="n-title">FOMC 연내 금리 인하 회의적 시각 대두</div>
+                <div class="n-meta">20분 전 • 매크로 영향</div>
+            </div>
+            <div class="news-item">
+                <div class="n-tag" style="background:rgba(59,130,246,0.2); color:var(--accent);">Breakout🚀</div>
+                <div class="n-title">VRT (Vertiv) 거래량 300% 급증하며 저항선 돌파</div>
+                <div class="n-meta">1시간 전 • 인프라 섹터</div>
+            </div>
+            <div class="news-item">
+                <div class="n-tag">Earnings</div>
+                <div class="n-title">CEG 실적발표 무난히 예상치 상회</div>
+                <div class="n-meta">3시간 전</div>
+            </div>
+        </div>
+
+        <!-- 2. Exploration (Chain Sight) -->
+        <div class="col-mid">
+            <div class="mid-header">
+                <div style="font-weight:700; font-size:1.1rem;">Chain Sight: 전력 인프라 섹터</div>
+                <div style="font-size:0.8rem; color:var(--text-dim); margin-top:5px;">선택된 뉴스(VRT)를 바탕으로 데이터센터 관련주를 탐험합니다.</div>
+            </div>
+            
+            <div class="graph-area">
+                <svg style="position:absolute; width:100%; height:100%; top:0; left:0;">
+                    <line x1="50%" y1="50%" x2="30%" y2="30%" stroke="#444" stroke-width="2"/>
+                    <line x1="50%" y1="50%" x2="70%" y2="25%" stroke="rgba(34,197,94,0.5)" stroke-dasharray="4" stroke-width="2"/>
+                    <line x1="50%" y1="50%" x2="60%" y2="70%" stroke="#444" stroke-width="2"/>
+                </svg>
+                
+                <div class="node" style="top:50%; left:50%; transform:translate(-50%, -50%); border-color:var(--accent); background:rgba(59,130,246,0.1); width:120px; text-align:center;">
+                    <div style="font-size:1.2rem; margin-bottom:5px;">VRT</div>
+                    <div style="color:var(--green); font-size:0.8rem;">+14.2% 상향돌파</div>
+                </div>
+                
+                <div class="node" style="top:30%; left:30%; transform:translate(-50%, -50%);">
+                    <div>AI 전력 부족</div>
+                    <div style="color:var(--text-dim); font-size:0.7rem;">거시 테마</div>
+                </div>
+
+                <div class="node" style="top:25%; left:70%; transform:translate(-50%, -50%); border-color:var(--green);">
+                    <div>CEG (Exelon)</div>
+                    <div style="color:var(--green); font-size:0.7rem;">+2.1% 동조화</div>
+                </div>
+
+                <div class="node" style="top:70%; left:60%; transform:translate(-50%, -50%);">
+                    <div>구리 (원자재)</div>
+                    <div style="color:var(--text-dim); font-size:0.7rem;">수요 급증 예상</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3 & 4. Control & Portfolio (Execution) -->
+        <div class="col-right">
+            <div class="panel-title">내 가설 통제실 (Thesis) <span style="color:var(--accent); cursor:pointer;">+ 추가</span></div>
+            
+            <div class="thesis-card">
+                <div class="t-head">
+                    <div style="font-weight:700;">전력 인프라주 단기 매수</div>
+                    <div class="t-badge">진입조건 충족중</div>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-dim);">VRT의 기관 매수세 유입 시 CEG 추격 매수 대응. (목표수익 10%)</div>
+                <div class="t-prog"><div class="t-fill"></div></div>
+                <div style="font-size:0.7rem; color:var(--green); text-align:right; margin-top:5px;">Alignment 75%</div>
+            </div>
+            
+            <div class="thesis-card" style="opacity:0.7;">
+                <div class="t-head">
+                    <div style="font-weight:700;">반도체 차익실현 플랜</div>
+                    <div class="t-badge" style="background:#333; color:var(--text-dim);">관망</div>
+                </div>
+                <div style="font-size:0.8rem; color:var(--text-dim);">엔비디아 $900선 붕괴 시 비중 30% 축소 대기.</div>
+            </div>
+
+            <div class="panel-title" style="margin-top:30px;">포트폴리오 자산 <span style="color:var(--green);">₩45M</span></div>
+            <div class="port-item">
+                <div class="port-tkr">AAPL <span style="font-size:0.7rem; color:var(--text-dim); font-weight:normal;">12주</span></div>
+                <div class="port-px">
+                    <div>$2,078.4</div>
+                    <div style="color:var(--green); font-size:0.8rem;">+4.2%</div>
+                </div>
+            </div>
+            <div class="port-item">
+                <div class="port-tkr">TSLA <span style="font-size:0.7rem; color:var(--text-dim); font-weight:normal;">5주</span></div>
+                <div class="port-px">
+                    <div>$812.5</div>
+                    <div style="color:var(--red); font-size:0.8rem;">-1.5%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Explanation overlay for presentation -->
+    <div style="position:absolute; bottom:20px; right:20px; background:rgba(255,255,255,0.9); color:black; padding:15px; border-radius:12px; width:300px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-size:0.9rem;">
+        <b>Option 1: Pro Terminal</b><br>
+        블룸버그 터미널처럼 한 화면에 <b>1) 발견(좌) -> 2) 딥다이브 탐험(중앙) -> 3) 가설/실행(우)</b> 의 3단계 유저 플로우를 밀도 있게 모두 구겨넣은 전문가용 데스크톱 레이아웃입니다. 화면 전환 없이 즉각적인 판단을 돕습니다.
+    </div>
+</body>
+</html>

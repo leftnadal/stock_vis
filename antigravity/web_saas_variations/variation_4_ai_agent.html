@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Var 4: AI Agent Overlay</title>
+    <style>
+        :root { --surface: #ffffff; --bg: #f9fafb; --text: #111827; --border: #e5e7eb; --accent: #8b5cf6; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:system-ui; display:flex; height:100vh; overflow:hidden;}
+        
+        .sidebar { width:80px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:30px;}
+        .s-logo { width:40px; height:40px; background:var(--accent); border-radius:12px; color:white; display:flex; justify-content:center; align-items:center; font-weight:900;}
+        .s-icon { font-size:1.5rem; color:#9ca3af; cursor:pointer;}
+        .s-icon.active { color:var(--accent);}
+
+        .main { flex:1; display:flex; flex-direction:column; position:relative;}
+        .top-nav { height:70px; display:flex; align-items:center; padding:0 40px; justify-content:space-between; border-bottom:1px solid var(--border); background:var(--surface);}
+        
+        /* Grid Content (Blurred out partially to emphasize agent) */
+        .content { flex:1; padding:40px; display:grid; grid-template-columns: 2fr 1fr; gap:30px; overflow-y:auto; transition:filter 0.3s;}
+        
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:25px; box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+        .p-title { font-weight:800; font-size:1.1rem; margin-bottom:20px;}
+        
+        /* The AI Agent Overlay Box */
+        .ai-overlay { position:absolute; bottom:30px; right:40px; width:450px; height:500px; background:rgba(255,255,255,0.85); backdrop-filter:blur(30px); border:1px solid rgba(139, 92, 246, 0.3); border-radius:24px; box-shadow:0 20px 40px rgba(139, 92, 246, 0.15); display:flex; flex-direction:column; overflow:hidden;}
+        
+        .ai-header { background:linear-gradient(135deg, var(--accent), #d946ef); color:white; padding:20px; font-weight:700; display:flex; justify-content:space-between; align-items:center;}
+        
+        .chat-area { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:15px;}
+        
+        .msg { max-width:85%; padding:15px; border-radius:16px; font-size:0.95rem; line-height:1.5;}
+        .msg.ai { background:#f5f3ff; border:1px solid #ede9fe; color:#4c1d95; align-self:flex-start; border-bottom-left-radius:4px;}
+        .msg.user { background:var(--accent); color:white; align-self:flex-end; border-bottom-right-radius:4px;}
+
+        /* Rich Widget in Chat */
+        .chat-widget { background:white; border:1px solid #ddd; padding:15px; border-radius:12px; margin-top:10px; box-shadow:0 2px 5px rgba(0,0,0,0.05);}
+
+        .input-area { padding:15px 20px; border-top:1px solid var(--border); background:white; display:flex; gap:10px;}
+        .input-area input { flex:1; padding:12px 15px; border-radius:20px; border:1px solid var(--border); outline:none; font-size:0.9rem;}
+        .input-area button { background:var(--accent); color:white; border:none; width:40px; height:40px; border-radius:50%; font-weight:bold; cursor:pointer;}
+
+        /* Background grid dummy content */
+        .dummy-grid { display:grid; grid-template-columns: 1fr 1fr; gap:20px; margin-bottom:20px;}
+        .d-box { height:150px; background:#f3f4f6; border-radius:12px; border:1px dashed #d1d5db; display:flex; justify-content:center; align-items:center; color:#9ca3af; font-weight:600;}
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="s-logo">SV</div>
+        <div class="s-icon active">📊</div>
+        <div class="s-icon">🌐</div>
+        <div class="s-icon">🎯</div>
+        <div class="s-icon">💼</div>
+    </div>
+
+    <div class="main">
+        <div class="top-nav">
+            <h1>StockVis Workspace</h1>
+            <div>포트폴리오: ₩45.2M (+2.8%)</div>
+        </div>
+
+        <div class="content">
+            <div class="panel">
+                <div class="p-title">대시보드 메인 브리핑</div>
+                <div class="dummy-grid">
+                    <div class="d-box" style="grid-column: span 2;">EOD Market Pulse & Trends</div>
+                    <div class="d-box">Chain Sight Node Map</div>
+                    <div class="d-box">Active Thesis Controls</div>
+                </div>
+                <div class="d-box" style="height:200px;">Portfolio Performance Chart</div>
+            </div>
+            
+            <div class="panel" style="background:#f9fafb; opacity:0.5;">
+                <div class="p-title">서브 패널 정보</div>
+                <div class="d-box" style="height:500px">News Feed</div>
+            </div>
+        </div>
+
+        <!-- The Floating AI Copilot for Journey navigation -->
+        <div class="ai-overlay">
+            <div class="ai-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:1.5rem;">✨</span>
+                    <span>StockVis AI 에이전트</span>
+                </div>
+                <span style="cursor:pointer;">&times;</span>
+            </div>
+
+            <div class="chat-area">
+                <div class="msg ai">
+                    좋은 아침입니다, 진정님. 간밤 <b>엔비디아가 이끄는 기술주 랠리</b>가 시장을 주도했습니다. 이로 인해 분석해두신 가설에 변동이 생겼습니다.
+                </div>
+                
+                <div class="msg ai" style="margin-top:-5px;">
+                    다음은 포트폴리오에 영향을 주는 <b>EOD 시그널(VRT)</b>과 <b>과열 위험 가설</b>에 대한 브리핑 위젯입니다.
+                    
+                    <div class="chat-widget">
+                        <div style="font-weight:700; color:#1f2937; margin-bottom:5px;">⚠️ 테슬라 비중 축소 가설 (일치율 92%)</div>
+                        <div style="font-size:0.85rem; color:#6b7280; margin-bottom:10px;">판매량 급감 뉴스로 인해 지지선이 붕괴될 확률이 높습니다. 체인사이트 분석 결과 에너지 섹터 전반으로의 파급 위험이 있습니다.</div>
+                        <button style="width:100%; border:none; background:#fee2e2; color:#ef4444; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer;">즉시 매도 실행 포트폴리오 열기</button>
+                    </div>
+                </div>
+
+                <div class="msg user">
+                    엔비디아 랠리랑 VRT가 얼마나 연관되는지 체인사이트로 보여줘.
+                </div>
+                
+                <div class="msg ai">
+                    네, 좌측 백그라운드 대시보드를 <b>체인사이트 뷰</b>로 전환했습니다. 차트를 확인하시고 매수 가설(Thesis)을 설정하시겠습니까?
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input type="text" placeholder="명령, 질문 혹은 가설 입력을 해주세요...">
+                <button>&uarr;</button>
+            </div>
+        </div>
+    </div>
+    
+    <div style="position:absolute; bottom:20px; left:120px; background:#1e293b; color:white; padding:15px; border-radius:12px; width:400px; box-shadow:0 10px 30px rgba(0,0,0,0.2); font-size:0.85rem;">
+        <b>Variation 4: AI Agent Overlay (에이전트 중심)</b><br>
+        SaaS 대시보드는 백그라운드의 시각적 캔버스로만 동작하고, <b>실제 사용자의 흐름(Morning -> Chain Sight -> Thesis -> Port)은 화면 우측에 떠 있는 AI 에이전트 채팅창을 통해 주도</b>됩니다. 테이블이나 메뉴를 뒤져볼 필요 없이 AI의 대화 문맥에 얹혀진 위젯들을 클릭하며 여정을 마칩니다.
+    </div>
+</body>
+</html>

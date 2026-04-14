@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 8: Zen Ring</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        
+        .zen-container {
+            position: relative;
+            width: 250px; height: 250px;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .ring-bg {
+            position: absolute;
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.05);
+        }
+
+        /* SVG Circle progress */
+        svg {
+            position: absolute;
+            width: 100%; height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .ring-path {
+            fill: none;
+            stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 753; /* 2 * PI * r(120) */
+            stroke-dashoffset: 753; /* hides it completely */
+            transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1), stroke 1.5s ease;
+        }
+
+        /* Ambient breathing effect */
+        .glow {
+            position: absolute;
+            width: 180px; height: 180px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.4) 0%, transparent 70%);
+            animation: breathe 4s infinite alternate ease-in-out;
+            transition: background 1.5s ease;
+        }
+
+        @keyframes breathe {
+            0% { transform: scale(0.9); opacity: 0.6; }
+            100% { transform: scale(1.2); opacity: 1; }
+        }
+
+        .center-text {
+            position: absolute;
+            text-align: center;
+            z-index: 10;
+        }
+        .center-text h2 { margin: 0; font-size: 2.5rem; font-weight: 300; }
+        .center-text p { margin: 0; color: #94a3b8; font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase;}
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="zen-container">
+            <div class="ring-bg"></div>
+            <div class="glow" id="glow"></div>
+            
+            <svg>
+                <circle class="ring-path" id="progressRing" cx="125" cy="125" r="120" stroke="#ef4444"></circle>
+            </svg>
+
+            <div class="center-text">
+                <h2 id="scoreTxt">72</h2>
+                <p>Alignment</p>
+            </div>
+        </div>
+        
+        <p style="position:absolute; bottom:100px; color:#64748b; font-size:0.8rem; text-align:center; width:80%;">
+            "가설과 시장의 호흡이 일치합니다"
+        </p>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#8. Minimalist Zen Ring</h3>
+        <p>복잡한 지표를 모두 숨기고, 오직 '가설과의 일치율(Alignment)' 하나만을 명상적인 원형 진행바와 호흡(Breathing) 애니메이션으로 극도로 미니멀하게 보여줍니다.</p>
+        <button onclick="randomize()" style="padding:10px; background:#333; color:white; border:1px solid #555; border-radius:8px; cursor:pointer; width:100%;">상태 변경 시뮬레이션</button>
+    </div>
+
+    <script>
+        const ring = document.getElementById('progressRing');
+        const glow = document.getElementById('glow');
+        const scoreTxt = document.getElementById('scoreTxt');
+        
+        // C = 2 * PI * r = 2 * Math.PI * 120 ≈ 753.98
+        const C = 753;
+
+        function setScore(score) { // 0 to 100
+            const offset = C - (score / 100) * C;
+            ring.style.strokeDashoffset = offset;
+            
+            scoreTxt.innerText = score;
+            
+            let color = '#94a3b8';
+            if(score > 60) color = '#ef4444'; // Red (Support)
+            else if(score < 40) color = '#3b82f6'; // Blue (Reject)
+            
+            ring.style.stroke = color;
+            glow.style.background = `radial-gradient(circle, ${color}66 0%, transparent 70%)`; // 66 is approx 40% opacity in hex
+        }
+
+        setTimeout(() => setScore(72), 500);
+
+        function randomize() {
+            setScore(Math.floor(Math.random() * 100));
+        }
+    </script>
+</body>
+</html>
