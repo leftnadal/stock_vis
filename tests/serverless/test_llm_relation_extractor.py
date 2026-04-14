@@ -83,8 +83,9 @@ class TestLLMRelationExtractorParsing:
     """LLM 응답 파싱 테스트 (LLM 호출 없음)"""
 
     @pytest.fixture
-    def mock_extractor(self):
+    def mock_extractor(self, settings):
         """LLM 클라이언트 모킹된 Extractor"""
+        settings.GEMINI_API_KEY = 'test-api-key'
         with patch('serverless.services.llm_relation_extractor.genai.Client'):
             extractor = LLMRelationExtractor()
             return extractor
@@ -265,8 +266,9 @@ class TestLLMRelationExtractorIntegration:
     """통합 테스트 (PreFilter, SymbolMatcher 연동)"""
 
     @pytest.fixture
-    def mock_extractor(self):
+    def mock_extractor(self, settings):
         """모든 외부 의존성 모킹"""
+        settings.GEMINI_API_KEY = 'test-api-key'
         with patch('serverless.services.llm_relation_extractor.genai.Client'):
             with patch('serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
                 with patch('serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
@@ -352,8 +354,9 @@ class TestLLMRelationExtractorDB:
     """DB 저장 테스트"""
 
     @pytest.fixture
-    def mock_extractor(self):
+    def mock_extractor(self, settings):
         """LLM 모킹된 Extractor"""
+        settings.GEMINI_API_KEY = 'test-api-key'
         with patch('serverless.services.llm_relation_extractor.genai.Client'):
             with patch('serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
                 with patch('serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:

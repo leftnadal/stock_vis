@@ -304,8 +304,8 @@ class TestNormalCase:
         assert result is not None
         assert isinstance(result['value'], float)
 
-    def test_quarterly_history_has_at_most_4_entries(self):
-        """quarterly_history는 최대 4분기."""
+    def test_quarterly_history_has_at_most_20_entries(self):
+        """quarterly_history는 최대 20분기 (HISTORY_QUARTERS=20)."""
         stock = _make_stock("NORM5D")
         for fy, fq in [(2023, 1), (2023, 2), (2023, 3), (2023, 4), (2024, 1)]:
             _create_quarter_data(stock, fy, fq)
@@ -314,7 +314,7 @@ class TestNormalCase:
 
         assert result is not None
         assert result['quarterly_history'] is not None
-        assert len(result['quarterly_history']) <= 4
+        assert len(result['quarterly_history']) <= 20
 
     def test_quarterly_history_is_oldest_first(self):
         """quarterly_history가 오래된 것부터 정렬되는지 확인."""
