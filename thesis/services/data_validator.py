@@ -2,7 +2,6 @@
 
 import math
 import logging
-from datetime import timedelta
 
 from django.utils import timezone
 
@@ -71,8 +70,6 @@ def check_stale_indicators(thesis):
     """72시간 이상 validated reading이 없는 지표 목록 반환.
     manual/custom data_source는 자동 갱신이 불가능하므로 제외.
     """
-    from thesis.models import ThesisIndicator
-
     stale = []
     # manual/custom 지표 제외 — 자동 fetch 불가능한 지표에 stale 알림은 무의미
     indicators = thesis.indicators.filter(

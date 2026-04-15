@@ -7,7 +7,7 @@ FMP (Financial Modeling Prep) API Client
 """
 import logging
 import time
-from datetime import datetime, date
+from datetime import date
 from typing import Dict, Any, List, Optional
 
 import requests

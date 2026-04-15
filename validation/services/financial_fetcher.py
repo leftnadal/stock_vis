@@ -7,7 +7,7 @@ Task 1: 재무제표 데이터 존재 확인 + 필요 시 FMP API 수집
 
 import logging
 from stocks.models import (
-    Stock, IncomeStatement, BalanceSheet, CashFlowStatement,
+    IncomeStatement, BalanceSheet, CashFlowStatement,
     SP500Constituent,
 )
 

@@ -18,7 +18,7 @@ from rest_framework import status
 from stocks.models import Stock
 from chainsight.graph import get_graph_repository
 from chainsight.graph.exceptions import GraphConnectionError
-from chainsight.models import CoMentionEdge, PriceCoMovement, RelationConfidence
+from chainsight.models import CoMentionEdge, PriceCoMovement
 from chainsight.utils import get_market_date
 
 REASON_LABELS = {

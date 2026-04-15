@@ -13,7 +13,6 @@ from datetime import date
 
 from celery import shared_task
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)

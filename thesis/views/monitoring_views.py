@@ -5,17 +5,13 @@ from datetime import timedelta
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from thesis.models import Thesis, ThesisAlert, ThesisIndicator
+from thesis.models import Thesis, ThesisAlert
 from thesis.serializers import ThesisAlertSerializer
-from thesis.services.arrow_calculator import (
-    calculate_indicator_arrow,
-    score_to_degree, degree_to_color,
-)
+from thesis.services.arrow_calculator import calculate_indicator_arrow
 from thesis.services.prompt_builder import get_indicator_description
 from thesis.services.thesis_state_machine import score_to_phase
 
@@ -298,7 +294,6 @@ def _fetch_fmp_history(indicator, days: int) -> list:
     """FMP get_historical_price로 히스토리 조회. DB readings 부족 시 fallback."""
     from api_request.providers.fmp.client import FMPClient, FMPClientError, FMPPremiumError
     from django.conf import settings
-    from datetime import datetime
 
     params = indicator.data_params or {}
     symbol = params.get('symbol')

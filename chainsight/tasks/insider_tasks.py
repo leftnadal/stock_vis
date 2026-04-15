@@ -8,7 +8,6 @@ Finnhub Insider Transactions API 기반.
 import logging
 import time
 from datetime import datetime, timedelta
-from decimal import Decimal
 
 import requests
 from celery import shared_task

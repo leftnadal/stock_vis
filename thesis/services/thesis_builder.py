@@ -6,20 +6,19 @@ import re
 import uuid
 
 from django.conf import settings
-from django.utils import timezone
 
 from thesis.models import Thesis, ThesisPremise, ThesisIndicator, HypothesisEvent
 from thesis.services.indicator_matcher import match_indicators_for_premise, match_indicators_for_llm
 from thesis.services.builder_state import (
     ConversationState, ChatMessage, CollectedData, SuggestionData,
     PremiseData, IndicatorRecommendation,
-    BuilderPhase, BuilderMode, FallbackReason,
+    BuilderPhase, FallbackReason,
     MONITORING_PRESETS,
 )
 from thesis.services.builder_events import (
     log_event, EVENT_BUILDER_STARTED,
     EVENT_SUGGESTION_REQUEST_STARTED, EVENT_SUGGESTION_REQUEST_SUCCEEDED,
-    EVENT_SUGGESTION_REQUEST_FAILED, EVENT_SUGGESTION_FALLBACK_USED,
+    EVENT_SUGGESTION_REQUEST_FAILED,
     EVENT_SUGGESTION_SELECTED, EVENT_SUGGESTION_TO_PRESET,
 )
 from thesis.feature_flags import get_feature_flags
@@ -1316,11 +1315,7 @@ def _handle_conversational_edit(state, user_input, user):
     """
     from thesis.services.prompt_builder import (
         build_intent_classification_prompt,
-        build_question_answer_prompt,
-        build_modify_premise_prompt,
-        build_modify_indicator_prompt,
         call_gemini_light,
-        get_indicator_by_id,
     )
 
     collected = state.collected
@@ -1424,7 +1419,7 @@ def _handle_question(state, user_input):
 def _handle_modify_premise(state, user_input):
     """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected/suggestions에 적용."""
     from thesis.services.prompt_builder import (
-        build_modify_premise_prompt, call_gemini_light, get_indicator_by_id,
+        call_gemini_light, get_indicator_by_id,
     )
     from thesis.services.indicator_matcher import match_indicators_for_llm
 

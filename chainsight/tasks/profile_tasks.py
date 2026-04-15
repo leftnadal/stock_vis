@@ -5,7 +5,6 @@ CS-2-1: Tier A 프로파일 계산 — GrowthStage + CapitalDNA (+ SensitivityPr
 import logging
 from decimal import Decimal
 from celery import shared_task
-from django.utils import timezone
 
 from stocks.models import Stock, SP500Constituent, IncomeStatement, BalanceSheet, CashFlowStatement
 from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA

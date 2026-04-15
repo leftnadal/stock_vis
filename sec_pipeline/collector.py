@@ -18,7 +18,6 @@ from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup, XMLParsedAsHTMLWarning
-from django.conf import settings
 
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 

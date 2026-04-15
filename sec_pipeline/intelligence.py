@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import timedelta
 
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)

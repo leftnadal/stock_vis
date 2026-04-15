@@ -17,7 +17,7 @@ from rest_framework import status
 from stocks.models import Stock, SP500Constituent
 from metrics.models import (
     MetricDefinition, CompanyMetricSnapshot,
-    PeerListCache, PeerMetricBenchmark, IndustryMetricBenchmark,
+    PeerListCache, PeerMetricBenchmark,
 )
 from validation.models import (
     CompanyBenchmarkDelta, CategorySignal,

@@ -3,7 +3,6 @@
 
 스케줄링된 데이터 업데이트 태스크
 """
-import logging
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache

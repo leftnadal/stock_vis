@@ -9,7 +9,6 @@ SEC-PR-3: Track A 추출 결과 검증 + DB 저장
 """
 
 import logging
-from django.utils import timezone
 
 from .prompts import PROMPT_VERSION
 
