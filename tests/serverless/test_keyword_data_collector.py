@@ -22,18 +22,16 @@ class TestKeywordDataCollector:
 
     @pytest.fixture
     def mock_overview_data(self):
-        """Alpha Vantage Overview 모의 데이터"""
+        """FMP Company Profile 모의 데이터"""
         return {
-            'Symbol': 'AAPL',
-            'Name': 'Apple Inc.',
-            'Sector': 'Technology',
-            'Industry': 'Consumer Electronics',
-            'Description': 'Apple Inc. designs, manufactures, and markets smartphones...',
-            'MarketCapitalization': '2500000000000',  # 2.5T
-            'PERatio': '28.5',
-            '52WeekHigh': '199.62',
-            '52WeekLow': '164.08',
-            'DividendYield': '0.0045',  # 0.45%
+            'symbol': 'AAPL',
+            'companyName': 'Apple Inc.',
+            'sector': 'Technology',
+            'industry': 'Consumer Electronics',
+            'description': 'Apple Inc. designs, manufactures, and markets smartphones...',
+            'mktCap': 2500000000000,  # 2.5T
+            'range': '164.08-199.62',
+            'lastDiv': '0.96',
         }
 
     @pytest.fixture
@@ -54,24 +52,20 @@ class TestKeywordDataCollector:
 
     def test_init(self, collector):
         """초기화 테스트"""
-        assert collector.av_client is not None
-        assert collector.rate_limiter is not None
-        assert collector.MAX_WORKERS == 5
+        assert collector.MAX_WORKERS == 10
         assert collector.CACHE_TTL == 3600
 
     def test_fetch_overview(self, collector, mock_overview_data):
         """Overview 수집 테스트"""
-        # av_client Mock 설정 (인스턴스 속성 직접 교체)
-        collector.av_client = MagicMock()
-        collector.av_client.get_company_overview.return_value = mock_overview_data
-        collector.rate_limiter = MagicMock()
+        # fmp_client Mock 설정 (인스턴스 속성 직접 교체)
+        collector.fmp_client = MagicMock()
+        collector.fmp_client.get_company_profile.return_value = mock_overview_data
 
         result = collector._fetch_overview('AAPL')
 
         assert result is not None
         assert 'description' in result
         assert result['market_cap'] == '2.50T'
-        assert result['pe_ratio'] == 28.5
         assert result['52_week_high'] == 199.62
         assert result['52_week_low'] == 164.08
 
@@ -186,9 +180,8 @@ class TestKeywordDataCollector:
         assert context['news'] == []
         assert context['indicators'] == {}
 
-    @patch('serverless.services.keyword_data_collector.AlphaVantageClient')
     @patch('serverless.services.keyword_data_collector.cache')
-    def test_collect_single_cache_hit(self, mock_cache, mock_av_client, collector):
+    def test_collect_single_cache_hit(self, mock_cache, collector):
         """단일 종목 수집 - 캐시 HIT 테스트"""
         # 캐시 HIT
         cached_data = {'overview': {}, 'news': [], 'indicators': {}}
@@ -201,9 +194,6 @@ class TestKeywordDataCollector:
         assert result['from_cache'] is True
         assert result['error'] is None
         assert result['context'] == cached_data
-
-        # API 호출 없음
-        mock_av_client.return_value.get_company_overview.assert_not_called()
 
     def test_collect_batch(self, collector):
         """배치 수집 테스트 - _collect_single 모킹"""

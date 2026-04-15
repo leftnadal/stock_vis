@@ -15,9 +15,11 @@ class TestKeywordGenerationService:
     """KeywordGenerationService 단위 테스트"""
 
     @pytest.fixture
-    def service(self):
-        """서비스 인스턴스"""
-        return KeywordGenerationService()
+    def service(self, settings):
+        """서비스 인스턴스 (API 키 없는 환경에서도 동작)"""
+        settings.GEMINI_API_KEY = 'test-api-key'
+        with patch('serverless.services.keyword_service.genai.Client'):
+            return KeywordGenerationService()
 
     @pytest.fixture
     def sample_mover(self):
