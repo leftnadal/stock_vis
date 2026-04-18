@@ -106,3 +106,150 @@ def build_initial_why_now(path_nodes: List[str], edge_snapshot: List[Dict]) -> D
         'strong_edges': strong_count,
         'total_edges': len(edge_snapshot),
     }
+
+
+# ─── Summary Path (CS-6-3) ──────────────────────
+
+def generate_summary_path(path_nodes: List[str]) -> List[str]:
+    """5+ 노드 경로를 3~4개 landmark로 압축. 4개 이하는 그대로."""
+    if len(path_nodes) <= 4:
+        return list(path_nodes)
+
+    middle = path_nodes[1:-1]
+    total = len(path_nodes)
+    k = 1 if total <= 6 else 2
+
+    scores = compute_landmark_scores(middle, path_nodes)
+
+    top_k_indices = sorted(
+        range(len(middle)),
+        key=lambda i: scores[i],
+        reverse=True,
+    )[:k]
+    top_k_indices.sort()
+
+    selected_middle = [middle[i] for i in top_k_indices]
+    return [path_nodes[0]] + selected_middle + [path_nodes[-1]]
+
+
+def compute_landmark_scores(middle_nodes: List[str],
+                             full_path: List[str]) -> List[float]:
+    """중간 노드들의 landmark_score를 계산."""
+    if not middle_nodes:
+        return []
+
+    centrality = _fetch_centrality(middle_nodes)
+
+    pagerank_valid = any(
+        centrality.get(n, {}).get('pagerank') is not None for n in middle_nodes
+    )
+    betweenness_valid = any(
+        centrality.get(n, {}).get('betweenness') is not None for n in middle_nodes
+    )
+
+    if pagerank_valid and betweenness_valid:
+        w = {'pagerank': 0.25, 'betweenness': 0.20, 'bridge': 0.30, 'sector': 0.25}
+    elif pagerank_valid:
+        w = {'pagerank': 0.25, 'betweenness': 0.0, 'bridge': 0.50, 'sector': 0.25}
+    elif betweenness_valid:
+        w = {'pagerank': 0.0, 'betweenness': 0.20, 'bridge': 0.55, 'sector': 0.25}
+    else:
+        w = {'pagerank': 0.0, 'betweenness': 0.0, 'bridge': 0.75, 'sector': 0.25}
+
+    pagerank_ranks = _normalize_rank(
+        {n: centrality.get(n, {}).get('pagerank') or 0 for n in middle_nodes}
+    )
+    betweenness_ranks = _normalize_rank(
+        {n: centrality.get(n, {}).get('betweenness') or 0 for n in middle_nodes}
+    )
+    bridge_scores = _compute_bridge_scores(middle_nodes, full_path, centrality)
+    sector_scores = _compute_sector_uniqueness(middle_nodes, full_path)
+
+    scores = []
+    for i, node in enumerate(middle_nodes):
+        s = (
+            w['pagerank'] * pagerank_ranks.get(node, 0)
+            + w['betweenness'] * betweenness_ranks.get(node, 0)
+            + w['bridge'] * bridge_scores[i]
+            + w['sector'] * sector_scores[i]
+        )
+        scores.append(s)
+
+    return scores
+
+
+def _fetch_centrality(tickers: List[str]) -> Dict[str, Dict]:
+    """Neo4j에서 pagerank_score, betweenness_score, degree 조회."""
+    repo = get_graph_repository()
+    rows = repo.run_query(
+        """
+        UNWIND $tickers AS t
+        MATCH (s:Stock {ticker: t})
+        OPTIONAL MATCH (s)-[r]-(other:Stock)
+        RETURN s.ticker AS ticker,
+               s.pagerank_score AS pagerank,
+               s.betweenness_score AS betweenness,
+               count(DISTINCT other) AS degree
+        """,
+        {'tickers': tickers}
+    )
+    return {
+        row['ticker']: {
+            'pagerank': row['pagerank'],
+            'betweenness': row['betweenness'],
+            'degree': row['degree'],
+        }
+        for row in rows
+    }
+
+
+def _normalize_rank(values: Dict[str, float]) -> Dict[str, float]:
+    """값들을 0~1 percentile rank로 변환."""
+    if not values:
+        return {}
+    sorted_items = sorted(values.items(), key=lambda x: x[1])
+    n = len(sorted_items)
+    return {
+        ticker: (i / (n - 1)) if n > 1 else 1.0
+        for i, (ticker, _) in enumerate(sorted_items)
+    }
+
+
+def _compute_bridge_scores(middle: List[str], full_path: List[str],
+                            centrality: Dict[str, Dict]) -> List[float]:
+    """bridge_score = 0.5 * position_weight + 0.5 * degree_weight"""
+    scores = []
+    total_middle = len(middle)
+    degrees = {n: centrality.get(n, {}).get('degree', 0) for n in middle}
+    max_degree = max(degrees.values()) if degrees else 1
+    if max_degree == 0:
+        max_degree = 1
+
+    for i, node in enumerate(middle):
+        if total_middle == 1:
+            position_weight = 1.0
+        else:
+            center = (total_middle - 1) / 2
+            position_weight = 1.0 - abs(i - center) / center
+        degree_weight = degrees[node] / max_degree
+        scores.append(0.5 * position_weight + 0.5 * degree_weight)
+
+    return scores
+
+
+def _compute_sector_uniqueness(middle: List[str],
+                                full_path: List[str]) -> List[float]:
+    """경로 내 섹터 다양성 기여도."""
+    stocks = Stock.objects.filter(symbol__in=full_path).values_list('symbol', 'sector')
+    sector_map = dict(stocks)
+    path_sectors = [sector_map.get(t) for t in full_path if sector_map.get(t)]
+    sector_counts = Counter(path_sectors)
+
+    scores = []
+    for node in middle:
+        sector = sector_map.get(node)
+        if sector is None:
+            scores.append(0.5)
+        else:
+            scores.append(1.0 / sector_counts[sector])
+    return scores

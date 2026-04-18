@@ -13,6 +13,7 @@ from chainsight.services.path_service import (
     build_edge_snapshot,
     build_path_signature,
     build_initial_why_now,
+    generate_summary_path,
 )
 
 
@@ -49,7 +50,7 @@ class WatchlistViewSet(viewsets.ModelViewSet):
         edge_snapshot = build_edge_snapshot(path_nodes)
         path_signature = build_path_signature(path_nodes, edge_snapshot)
         why_now = build_initial_why_now(path_nodes, edge_snapshot)
-        summary_path = path_nodes  # CS-6-3에서 generate_summary_path로 교체 예정
+        summary_path = generate_summary_path(path_nodes)
 
         user = request.user if request.user.is_authenticated else None
 
