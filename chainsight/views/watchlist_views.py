@@ -15,6 +15,7 @@ from chainsight.services.path_service import (
     build_initial_why_now,
     generate_summary_path,
 )
+from chainsight.services.alternatives_service import find_alternatives
 from chainsight.services.expand_service import find_expansion_candidates
 from chainsight.services.recheck_service import run_recheck
 
@@ -165,6 +166,45 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 'target_ticker': target,
                 'candidates_count': len(result['candidates']),
                 'top_candidates': [c['ticker'] for c in result['candidates'][:3]],
+            }
+        )
+        return Response(result)
+
+    @action(detail=True, methods=['post'])
+    def alternatives(self, request, pk=None):
+        saved_path = self.get_object()
+        if saved_path.status in (SavedPath.Status.ARCHIVED, SavedPath.Status.RESOLVED):
+            return Response(
+                {'detail': f'{saved_path.status} 상태에서는 Alternatives 탐색 불가.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        target = request.data.get('target_ticker')
+        if not target:
+            return Response(
+                {'detail': 'target_ticker는 필수입니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if target not in saved_path.path_nodes:
+            return Response(
+                {'detail': 'target_ticker가 경로에 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        limit = min(int(request.data.get('limit', 10)), 50)
+        try:
+            result = find_alternatives(
+                path_nodes=saved_path.path_nodes,
+                target_ticker=target,
+                limit=limit,
+            )
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        PathAction.objects.create(
+            saved_path=saved_path,
+            action_type=PathAction.ActionType.ALTERNATIVES,
+            metadata={
+                'target_ticker': target,
+                'candidates_count': len(result['alternatives']),
+                'top_candidates': [c['ticker'] for c in result['alternatives'][:3]],
             }
         )
         return Response(result)
