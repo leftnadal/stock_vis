@@ -712,6 +712,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # Heat Score 배치 (매일 07:00 UTC, 시드 선정 전)
+    'chainsight-heat-score-daily': {
+        'task': 'chainsight-heat-score-daily',
+        'schedule': crontab(hour=7, minute=0),
+        'options': {'expires': 1800}
+    },
+
     # 시드 선정 (매일 13:00 UTC, 관계 동기화 후)
     'chainsight-seed-selection': {
         'task': 'chainsight-seed-selection',
