@@ -3,6 +3,7 @@ from .models import (
     CompanySensitivityProfile, CompanyGrowthStage, CompanyCapitalDNA,
     CompanyInsiderSignal, CompanyNarrativeTag, CompanyEventReaction,
     CompanyRevenueStructure, CompanyChainProfile, ChainNewsEvent,
+    SavedPath, PathAction,
 )
 
 
@@ -67,3 +68,21 @@ class ChainNewsEventAdmin(admin.ModelAdmin):
     list_display = ['symbol', 'source', 'title', 'sentiment_label', 'event_type', 'published_at']
     list_filter = ['source', 'sentiment_label', 'event_importance', 'is_duplicate']
     search_fields = ['symbol__symbol', 'title']
+
+
+@admin.register(SavedPath)
+class SavedPathAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'status', 'path_signature',
+                    'recheck_count', 'updated_at')
+    list_filter = ('status', 'updated_at')
+    search_fields = ('path_signature', 'source_center')
+    readonly_fields = ('created_at', 'updated_at')
+    ordering = ('-updated_at',)
+
+
+@admin.register(PathAction)
+class PathActionAdmin(admin.ModelAdmin):
+    list_display = ('id', 'saved_path', 'action_type', 'created_at')
+    list_filter = ('action_type', 'created_at')
+    readonly_fields = ('created_at',)
+    ordering = ('-created_at',)
