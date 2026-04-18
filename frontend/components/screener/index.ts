@@ -3,7 +3,6 @@ export { default as SectorHeatmap } from './SectorHeatmap';
 export { default as PresetGallery } from './PresetGallery';
 export { default as Pagination } from './Pagination';
 export { default as ScreenerDashboard } from './ScreenerDashboard';
-export { default as ChainSightPanel } from './ChainSightPanel';
 export { default as ThesisBuilder } from './ThesisBuilder';
 export { default as SharePresetModal } from './SharePresetModal';
 export { default as AdvancedFilterPanel } from './AdvancedFilterPanel';

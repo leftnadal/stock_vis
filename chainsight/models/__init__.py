@@ -8,6 +8,7 @@ from .revenue_structure import CompanyRevenueStructure
 from .chain_profile import CompanyChainProfile
 from .news_event import ChainNewsEvent
 from .relation_discovery import CoMentionEdge, PriceCoMovement, RelationConfidence
+from .saved_path import SavedPath, PathAction
 
 __all__ = [
     'CompanySensitivityProfile',
@@ -22,4 +23,6 @@ __all__ = [
     'CoMentionEdge',
     'PriceCoMovement',
     'RelationConfidence',
+    'SavedPath',
+    'PathAction',
 ]

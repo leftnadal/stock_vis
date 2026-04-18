@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, Suspense, useState, useEffect } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { Search, Loader2, AlertCircle, BarChart3, Sparkles, RefreshCw, X, AlertTriangle, Grid, List, Dna, Lightbulb, Share2 } from 'lucide-react';
+import { Search, Loader2, AlertCircle, BarChart3, Sparkles, RefreshCw, X, AlertTriangle, Grid, List, Lightbulb, Share2 } from 'lucide-react';
 import { useMutation } from '@tanstack/react-query';
 import { useStockScreener } from '@/hooks/useStockScreener';
 import { ScreenerTable } from '@/components/strategy/ScreenerTable';
@@ -18,7 +18,7 @@ import Pagination from '@/components/screener/Pagination';
 import AdvancedFilterPanel from '@/components/screener/AdvancedFilterPanel';
 import MobileStockCard from '@/components/screener/MobileStockCard';
 import SharePresetModal from '@/components/screener/SharePresetModal';
-import ChainSightPanel from '@/components/screener/ChainSightPanel';
+// LEGACY REMOVED (CS-0-0): ChainSightPanel → /chainsight 마켓 뷰로 이전
 import ThesisBuilder from '@/components/screener/ThesisBuilder';
 import { useMarketBreadth } from '@/hooks/useMarketBreadth';
 import { screenerService } from '@/services/screenerService';
@@ -75,8 +75,7 @@ function ScreenerContent() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedPresetForShare, setSelectedPresetForShare] = useState<ScreenerPreset | null>(null);
 
-  // Phase 2: Chain Sight / Thesis 패널 표시 상태
-  const [showChainSight, setShowChainSight] = useState(false);
+  // Phase 2: Thesis 패널 표시 상태
   const [showThesisBuilder, setShowThesisBuilder] = useState(false);
 
   // 활성 프리셋 추적 (다중 선택 지원)
@@ -789,21 +788,6 @@ function ScreenerContent() {
                 <span className="hidden sm:inline">AI 키워드</span>
               </button>
 
-              {/* Phase 2: Chain Sight DNA 버튼 */}
-              <button
-                onClick={() => setShowChainSight(!showChainSight)}
-                disabled={!stocks || stocks.length === 0}
-                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                  showChainSight
-                    ? 'bg-[#A371F7] text-white'
-                    : 'bg-[#21262D] text-[#8B949E] hover:text-[#E6EDF3]'
-                }`}
-                title="연관 종목 DNA"
-              >
-                <Dna className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">DNA</span>
-              </button>
-
               {/* Phase 2: 투자 테제 버튼 */}
               <button
                 onClick={() => setShowThesisBuilder(!showThesisBuilder)}
@@ -911,15 +895,6 @@ function ScreenerContent() {
             </>
           )}
         </div>
-
-        {/* Phase 2: Chain Sight DNA 패널 */}
-        {showChainSight && stocks && stocks.length > 0 && (
-          <ChainSightPanel
-            symbols={stocks.slice(0, 20).map(s => s.symbol)}
-            filters={filters}
-            className="mt-6"
-          />
-        )}
 
         {/* Phase 2: 투자 테제 빌더 */}
         {showThesisBuilder && stocks && stocks.length > 0 && (
