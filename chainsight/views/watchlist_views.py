@@ -15,6 +15,7 @@ from chainsight.services.path_service import (
     build_initial_why_now,
     generate_summary_path,
 )
+from chainsight.services.recheck_service import run_recheck
 
 
 class WatchlistViewSet(viewsets.ModelViewSet):
@@ -109,3 +110,27 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             action_type=PathAction.ActionType.RESOLVE,
         )
         return Response(SavedPathDetailSerializer(saved_path).data)
+
+    @action(detail=True, methods=['post'])
+    def recheck(self, request, pk=None):
+        saved_path = self.get_object()
+        if saved_path.status in (SavedPath.Status.ARCHIVED, SavedPath.Status.RESOLVED):
+            return Response(
+                {'detail': f'{saved_path.status} 상태에서는 Recheck할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        result = run_recheck(saved_path)
+        saved_path.refresh_from_db()
+        return Response({
+            'headline': result.headline,
+            'strengthened': result.strengthened,
+            'weakened': result.weakened,
+            'unchanged': result.unchanged,
+            'broken_edges': result.broken_edges,
+            'path_intact': result.path_intact,
+            'suggested_action': result.suggested_action,
+            'suggested_reason': result.suggested_reason,
+            'updated_why_now': result.updated_why_now,
+            'status': saved_path.status,
+            'recheck_count': saved_path.recheck_count,
+        })
