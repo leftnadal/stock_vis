@@ -15,6 +15,7 @@ from chainsight.services.path_service import (
     build_initial_why_now,
     generate_summary_path,
 )
+from chainsight.services.expand_service import find_expansion_candidates
 from chainsight.services.recheck_service import run_recheck
 
 
@@ -134,3 +135,36 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             'status': saved_path.status,
             'recheck_count': saved_path.recheck_count,
         })
+
+    @action(detail=True, methods=['post'])
+    def expand(self, request, pk=None):
+        saved_path = self.get_object()
+        if saved_path.status in (SavedPath.Status.ARCHIVED, SavedPath.Status.RESOLVED):
+            return Response(
+                {'detail': f'{saved_path.status} 상태에서는 Expand할 수 없습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        target = request.data.get('target_ticker')
+        if not target:
+            target = saved_path.path_nodes[-1]
+        if target not in saved_path.path_nodes:
+            return Response(
+                {'detail': 'target_ticker가 경로에 포함되지 않습니다.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        limit = min(int(request.data.get('limit', 10)), 50)
+        result = find_expansion_candidates(
+            source_ticker=target,
+            excluded_tickers=saved_path.path_nodes,
+            limit=limit,
+        )
+        PathAction.objects.create(
+            saved_path=saved_path,
+            action_type=PathAction.ActionType.EXPAND,
+            metadata={
+                'target_ticker': target,
+                'candidates_count': len(result['candidates']),
+                'top_candidates': [c['ticker'] for c in result['candidates'][:3]],
+            }
+        )
+        return Response(result)
