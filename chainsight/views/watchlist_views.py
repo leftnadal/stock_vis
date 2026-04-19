@@ -2,7 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+from django.db import transaction
 
+from chainsight.graph.exceptions import GraphConnectionError, GraphQueryError
 from chainsight.models import SavedPath, PathAction
 from chainsight.serializers.path_watchlist import (
     SavedPathListSerializer,
@@ -20,8 +23,13 @@ from chainsight.services.expand_service import find_expansion_candidates
 from chainsight.services.recheck_service import run_recheck
 
 
+class WatchlistAnonThrottle(AnonRateThrottle):
+    rate = '30/minute'
+
+
 class WatchlistViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]
+    throttle_classes = [WatchlistAnonThrottle]
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
@@ -50,33 +58,38 @@ class WatchlistViewSet(viewsets.ModelViewSet):
         validated = serializer.validated_data
         path_nodes = validated['path_nodes']
 
-        edge_snapshot = build_edge_snapshot(path_nodes)
+        try:
+            edge_snapshot = build_edge_snapshot(path_nodes)
+        except (GraphConnectionError, GraphQueryError):
+            edge_snapshot = []
+
         path_signature = build_path_signature(path_nodes, edge_snapshot)
         why_now = build_initial_why_now(path_nodes, edge_snapshot)
         summary_path = generate_summary_path(path_nodes)
 
         user = request.user if request.user.is_authenticated else None
 
-        saved_path = SavedPath.objects.create(
-            user=user,
-            path_nodes=path_nodes,
-            summary_path=summary_path,
-            path_signature=path_signature,
-            edge_snapshot=edge_snapshot,
-            why_now_snapshot=why_now,
-            source_center=validated.get('source_center'),
-            source_slot=validated.get('source_slot'),
-            status=SavedPath.Status.WATCHING,
-        )
+        with transaction.atomic():
+            saved_path = SavedPath.objects.create(
+                user=user,
+                path_nodes=path_nodes,
+                summary_path=summary_path,
+                path_signature=path_signature,
+                edge_snapshot=edge_snapshot,
+                why_now_snapshot=why_now,
+                source_center=validated.get('source_center'),
+                source_slot=validated.get('source_slot'),
+                status=SavedPath.Status.WATCHING,
+            )
 
-        PathAction.objects.create(
-            saved_path=saved_path,
-            action_type=PathAction.ActionType.WATCH,
-            metadata={
-                'source_center': validated.get('source_center'),
-                'source_slot': validated.get('source_slot'),
-            }
-        )
+            PathAction.objects.create(
+                saved_path=saved_path,
+                action_type=PathAction.ActionType.WATCH,
+                metadata={
+                    'source_center': validated.get('source_center'),
+                    'source_slot': validated.get('source_slot'),
+                }
+            )
 
         response_serializer = SavedPathDetailSerializer(saved_path)
         return Response(response_serializer.data, status=status.HTTP_201_CREATED)
@@ -89,12 +102,13 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 {'detail': '이미 archived 상태입니다.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        saved_path.status = SavedPath.Status.ARCHIVED
-        saved_path.save(update_fields=['status', 'updated_at'])
-        PathAction.objects.create(
-            saved_path=saved_path,
-            action_type=PathAction.ActionType.ARCHIVE,
-        )
+        with transaction.atomic():
+            saved_path.status = SavedPath.Status.ARCHIVED
+            saved_path.save(update_fields=['status', 'updated_at'])
+            PathAction.objects.create(
+                saved_path=saved_path,
+                action_type=PathAction.ActionType.ARCHIVE,
+            )
         return Response(SavedPathDetailSerializer(saved_path).data)
 
     @action(detail=True, methods=['post'])
@@ -105,12 +119,13 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 {'detail': '이미 resolved 상태입니다.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        saved_path.status = SavedPath.Status.RESOLVED
-        saved_path.save(update_fields=['status', 'updated_at'])
-        PathAction.objects.create(
-            saved_path=saved_path,
-            action_type=PathAction.ActionType.RESOLVE,
-        )
+        with transaction.atomic():
+            saved_path.status = SavedPath.Status.RESOLVED
+            saved_path.save(update_fields=['status', 'updated_at'])
+            PathAction.objects.create(
+                saved_path=saved_path,
+                action_type=PathAction.ActionType.RESOLVE,
+            )
         return Response(SavedPathDetailSerializer(saved_path).data)
 
     @action(detail=True, methods=['post'])
@@ -121,7 +136,13 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 {'detail': f'{saved_path.status} 상태에서는 Recheck할 수 없습니다.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        result = run_recheck(saved_path)
+        try:
+            result = run_recheck(saved_path)
+        except (GraphConnectionError, GraphQueryError):
+            return Response(
+                {'detail': 'Neo4j 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         saved_path.refresh_from_db()
         return Response({
             'headline': result.headline,
@@ -153,12 +174,21 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 {'detail': 'target_ticker가 경로에 포함되지 않습니다.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        limit = min(int(request.data.get('limit', 10)), 50)
-        result = find_expansion_candidates(
-            source_ticker=target,
-            excluded_tickers=saved_path.path_nodes,
-            limit=limit,
-        )
+        try:
+            limit = min(int(request.data.get('limit', 10)), 50)
+        except (ValueError, TypeError):
+            limit = 10
+        try:
+            result = find_expansion_candidates(
+                source_ticker=target,
+                excluded_tickers=saved_path.path_nodes,
+                limit=limit,
+            )
+        except (GraphConnectionError, GraphQueryError):
+            return Response(
+                {'detail': 'Neo4j 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         PathAction.objects.create(
             saved_path=saved_path,
             action_type=PathAction.ActionType.EXPAND,
@@ -189,7 +219,10 @@ class WatchlistViewSet(viewsets.ModelViewSet):
                 {'detail': 'target_ticker가 경로에 없습니다.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        limit = min(int(request.data.get('limit', 10)), 50)
+        try:
+            limit = min(int(request.data.get('limit', 10)), 50)
+        except (ValueError, TypeError):
+            limit = 10
         try:
             result = find_alternatives(
                 path_nodes=saved_path.path_nodes,
@@ -198,6 +231,11 @@ class WatchlistViewSet(viewsets.ModelViewSet):
             )
         except ValueError as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except (GraphConnectionError, GraphQueryError):
+            return Response(
+                {'detail': 'Neo4j 연결에 실패했습니다. 잠시 후 다시 시도해주세요.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         PathAction.objects.create(
             saved_path=saved_path,
             action_type=PathAction.ActionType.ALTERNATIVES,

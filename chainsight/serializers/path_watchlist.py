@@ -1,3 +1,5 @@
+import re
+
 from rest_framework import serializers
 from chainsight.models import SavedPath, PathAction
 
@@ -65,7 +67,7 @@ class SavedPathCreateSerializer(serializers.ModelSerializer):
         if len(value) > 10:
             raise serializers.ValidationError('경로는 최대 10개 노드까지.')
         for ticker in value:
-            if not isinstance(ticker, str) or not ticker.isalpha() or not (1 <= len(ticker) <= 5):
+            if not isinstance(ticker, str) or not re.match(r'^[A-Za-z]{1,5}$', ticker):
                 raise serializers.ValidationError(f'유효하지 않은 ticker: {ticker}')
         if len(set(value)) != len(value):
             raise serializers.ValidationError('경로 내 중복 ticker 불가.')

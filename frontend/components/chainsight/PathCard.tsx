@@ -90,7 +90,7 @@ export default function PathCard({ path }: PathCardProps) {
           className="flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 transition-colors"
         >
           <Maximize2 className="w-3 h-3" />
-          Expand
+          열기
         </button>
 
         <div className="ml-auto relative">

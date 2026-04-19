@@ -172,7 +172,7 @@ export default function FullPathView({ path: initialPath }: FullPathViewProps) {
         </h2>
         <div className="flex items-center gap-1 overflow-x-auto py-2 scrollbar-thin">
           {initialPath.path_nodes.map((ticker, i) => {
-            const edge = initialPath.edge_snapshot?.[i] ?? null;
+            const edge = i > 0 ? (initialPath.edge_snapshot?.[i - 1] ?? null) : null;
             const isSelected = selectedNode === ticker;
 
             return (
