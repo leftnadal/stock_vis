@@ -114,7 +114,24 @@ def close_neo4j_on_shutdown(**kwargs):
         pass
 
 
-# 정기 태스크 스케줄 설정
+# ============================================================
+# beat_schedule — 주의: 이 dict는 런타임에 무시됨
+# ============================================================
+# config/settings.py의 `CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'`
+# 설정 때문에 Celery Beat는 DB의 `django_celery_beat.PeriodicTask` 테이블을 진실의 소스로 사용한다.
+# 아래 dict는 "원래 설계된 스케줄의 선언적 reference"로만 존재한다.
+#
+# 스케줄 추가/변경 방법:
+#   1) Django admin → Periodic Tasks (/admin/django_celery_beat/periodictask/)
+#   2) 또는 shell에서 PeriodicTask.objects.create(...)
+#
+# Drift 관리: config dict와 DB `PeriodicTask`가 어긋나면 dict의 태스크는 실행되지 않는다.
+# 2026-04-24 복구: 누락 상태였던 두 태스크를 DB에 등록 완료 (수동 실행으로 동작 확인).
+#   - chainsight-heat-score-daily (NY 07:00, 시드 선정 전)
+#   - sec-seed-relations-to-chainsight (NY 12:00, 시드 선정 전)
+# Drift 재발 방지 체크는 `python manage.py shell`에서
+# `set(PeriodicTask.objects.values_list('name', flat=True)) vs config dict 키` diff로 수동 진행.
+# ============================================================
 app.conf.beat_schedule = {
     # ============================================================
     # Stocks 태스크

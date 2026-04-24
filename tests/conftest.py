@@ -176,10 +176,21 @@ def sample_balance_sheet_data():
 @pytest.fixture(autouse=True)
 @pytest.mark.django_db
 def clear_cache_after_test():
-    """각 테스트 후 캐시 초기화"""
+    """각 테스트 후 캐시 초기화.
+
+    SAFETY GUARD: cache.clear()는 django-redis 백엔드에서 FLUSHDB를 호출한다.
+    운영 Redis DB=1에 실행되면 chainsight:seeds 등 모든 운영 캐시가 삭제된다.
+    config/settings_test.py가 로드되어 LocMemCache로 격리되었는지 확인한다.
+    """
     yield
 
-    # 캐시 초기화
+    from django.conf import settings
+    backend = settings.CACHES['default']['BACKEND']
+    assert 'locmem' in backend.lower(), (
+        f"cache.clear() blocked: non-LocMem backend detected ({backend}). "
+        f"Run pytest with DJANGO_SETTINGS_MODULE=config.settings_test."
+    )
+
     from django.core.cache import cache
     cache.clear()
 

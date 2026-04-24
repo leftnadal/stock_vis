@@ -2,16 +2,21 @@
 Chain Sight 유틸리티 함수
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
+
+NYSE_TZ = ZoneInfo('America/New_York')
 
 
 def get_market_date() -> date:
     """
     미국장 EOD 기준 시장 날짜 반환.
-    주말이면 직전 금요일을 반환한다.
-    (공휴일은 간략 처리 — 주말만 보정)
+
+    시스템 TZ가 아닌 America/New_York 기준 현재 날짜를 사용하여
+    KST/UTC 환경에서도 NYSE 거래일과 키가 일관되도록 한다.
+    주말이면 직전 금요일을 반환한다. (공휴일은 간략 처리 — 주말만 보정)
     """
-    today = date.today()
+    today = datetime.now(NYSE_TZ).date()
     weekday = today.weekday()  # 0=Mon ... 6=Sun
     if weekday == 5:  # Saturday
         return today - timedelta(days=1)

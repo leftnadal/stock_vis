@@ -9,6 +9,7 @@ from .chain_profile import CompanyChainProfile
 from .news_event import ChainNewsEvent
 from .relation_discovery import CoMentionEdge, PriceCoMovement, RelationConfidence
 from .saved_path import SavedPath, PathAction
+from .seed_snapshot import SeedSnapshot
 
 __all__ = [
     'CompanySensitivityProfile',
@@ -25,4 +26,5 @@ __all__ = [
     'RelationConfidence',
     'SavedPath',
     'PathAction',
+    'SeedSnapshot',
 ]

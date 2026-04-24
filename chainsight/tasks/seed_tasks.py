@@ -158,6 +158,17 @@ def calculate_heat_scores():
     return {'processed': processed, 'errors': errors, 'elapsed_s': round(elapsed, 1)}
 
 
+@shared_task(name='chainsight-seed-snapshot-cleanup', max_retries=1)
+def cleanup_seed_snapshots(retain_days: int = 30) -> dict:
+    """SeedSnapshot 행이 무한 누적되는 것을 방지. 기본 30일 이전 스냅샷 삭제."""
+    from chainsight.models import SeedSnapshot
+
+    cutoff = timezone.now().date() - timedelta(days=retain_days)
+    deleted, _ = SeedSnapshot.objects.filter(market_date__lt=cutoff).delete()
+    logger.info(f'SeedSnapshot cleanup: deleted {deleted} rows older than {cutoff}')
+    return {'deleted': deleted, 'cutoff': str(cutoff)}
+
+
 def _compute_price_signals_batch(price_df, symbols):
     """5일 수익률 절댓값 → percentile rank."""
     if price_df.empty:

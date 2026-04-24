@@ -38,6 +38,25 @@ export default function ChainSightPage() {
     );
   }
 
+  const hasSeeds = (seedData?.sector_summary?.length ?? 0) > 0;
+
+  if (!hasSeeds) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-16">
+        <div className="flex flex-col items-center justify-center gap-3 text-center">
+          <div className="h-10 w-10 rounded-full border-2 border-blue-400/60 border-t-transparent animate-spin" />
+          <p className="text-gray-800 dark:text-gray-200 text-base font-medium">
+            오늘의 시드 데이터를 준비하고 있어요
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm max-w-md">
+            시장 종료 후 자동으로 선정됩니다. 잠시 후 자동으로 갱신돼요.
+            계속 이 화면이면 잠시 뒤 새로고침해 주세요.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-4 space-y-4">
       {/* ① 섹터 바 */}

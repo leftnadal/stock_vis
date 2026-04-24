@@ -23,6 +23,7 @@
 
 | Feature | Agent | Completed | Notes |
 |---------|-------|-----------|-------|
+| Chain Sight 시드 캐시 안정화 (#27) + Beat drift 복구 (#28) | orchestrator | 2026-04-24 | settings_test.py LocMem 격리, SeedSnapshot 영속화, `_get_today_seeds` 3단 폴백, heat_score / sec-seed-relations PeriodicTask 재등록, snapshot cleanup 주간 배치 |
 | 하네스 잔여 개선 3건 | orchestrator + @qa | 2026-04-13 | sec-pipeline 스펙 상세화, shared-types.ts 연결, QA 검증 |
 | 하네스 contracts/ 정합성 검증 | @qa | 2026-04-13 | 6건 불일치 수정 (chainsight/validation API) |
 | 하네스 엔지니어링 전환 | orchestrator | 2026-04-12 | PROGRESS/DECISIONS/TASKQUEUE/contracts/HARNESS_FITNESS |
@@ -37,6 +38,7 @@
 
 ## 다음 세션에서 할 일
 
+- [ ] #27/#28 수정분 커밋 (settings_test.py, SeedSnapshot 모델/migration, `_get_today_seeds` 폴백, cleanup 태스크, conftest 가드, common-bugs.md #27-28)
 - [ ] Chain Sight 마켓 뷰 PR-1~7 커밋 (CS-R9)
 - [ ] Thesis Control FE-PR-3 (대화형 빌더) 착수 (TC-3)
 - [ ] 서비스 리모델링 Phase 1 계속 (SR-1)

@@ -387,15 +387,38 @@ def build_sector_summary(seeds: dict, market_date: date) -> list[dict]:
     return sorted(sector_map.values(), key=lambda x: x['seed_count'], reverse=True)
 
 
-# ── 5. Redis 캐싱 ──
+# ── 5. 영속 저장 + Redis 캐싱 ──
+
+# Redis TTL을 48h로 두어 Beat 지연/Redis 장애에 여유를 준다(2026-04-24 사건 기반).
+SEED_CACHE_TTL = 60 * 60 * 48
+
 
 def cache_seed_result(market_date: date, sector_summary: list, seeds_list: list):
-    """시드 결과를 Redis에 캐싱."""
-    cache_key = f'chainsight:seeds:{market_date}'
+    """시드 결과를 DB(SeedSnapshot)에 영속화하고 Redis에도 캐싱한다.
+
+    Redis 휘발 시(테스트 flush, 재시작, maxmemory eviction) DB에서 복구 가능.
+    Redis write 실패는 경고로만 남기고 DB write는 반드시 성공시킨다.
+    """
+    from chainsight.models import SeedSnapshot  # 순환 import 회피
+
     payload = {
         'date': str(market_date),
         'total_seeds': len(seeds_list),
         'sector_summary': sector_summary,
         'seeds': seeds_list,
     }
-    cache.set(cache_key, json.dumps(payload), timeout=86400)
+
+    SeedSnapshot.objects.update_or_create(
+        market_date=market_date,
+        defaults={
+            'payload': payload,
+            'total_seeds': len(seeds_list),
+            'sector_count': len(sector_summary),
+        },
+    )
+
+    try:
+        cache_key = f'chainsight:seeds:{market_date}'
+        cache.set(cache_key, json.dumps(payload), timeout=SEED_CACHE_TTL)
+    except Exception as e:
+        logger.warning(f'seed cache write failed (DB persisted): {e}')
