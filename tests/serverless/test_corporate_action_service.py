@@ -52,7 +52,8 @@ class TestCorporateActionService:
         }
         mock_div.return_value = None
 
-        with patch.object(service, 'yf') as mock_yf:
+        with patch.object(service, 'yf') as mock_yf, \
+             patch.object(service, '_available', True):
             mock_ticker = Mock()
             mock_ticker.splits = Mock()
             mock_ticker.dividends = Mock()
@@ -80,7 +81,8 @@ class TestCorporateActionService:
             'display_text': '특별배당 $5.00 (5.5%)',
         }
 
-        with patch.object(service, 'yf') as mock_yf:
+        with patch.object(service, 'yf') as mock_yf, \
+             patch.object(service, '_available', True):
             mock_ticker = Mock()
             mock_ticker.splits = Mock()
             mock_ticker.dividends = Mock()

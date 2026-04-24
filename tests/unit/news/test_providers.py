@@ -241,7 +241,7 @@ class TestMarketauxNewsProvider:
         provider = MarketauxNewsProvider(api_key='test_key')
 
         assert provider.api_key == 'test_key'
-        assert provider.request_delay == 900.0  # 기본값 (15분)
+        assert provider.request_delay == 10.0  # 기본값 (10초)
 
     def test_init_without_api_key(self):
         """
@@ -302,24 +302,24 @@ class TestMarketauxNewsProvider:
         assert len(articles) == 2
 
     @patch('news.providers.marketaux.requests.get')
-    def test_fetch_market_news_limit_capped_at_3(self, mock_get, provider, sample_marketaux_response):
+    def test_fetch_market_news_limit_capped_at_20(self, mock_get, provider, sample_marketaux_response):
         """
-        Given: limit=10 요청
+        Given: limit=50 요청
         When: fetch_market_news() 호출
-        Then: Free tier 제한으로 limit=3 적용
+        Then: Basic plan 제한으로 limit=20 적용 (min(limit, 20))
         """
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json.return_value = sample_marketaux_response
         mock_get.return_value = mock_response
 
-        provider.fetch_market_news(limit=10)
+        provider.fetch_market_news(limit=50)
 
         assert mock_get.called, "requests.get was not called"
         call_args = mock_get.call_args
         assert call_args is not None, "call_args is None"
         params = call_args.kwargs.get('params', {})
-        assert params.get('limit') == 3  # 최대 3개로 제한
+        assert params.get('limit') == 20  # Basic plan: 20 articles/request
 
     def test_parse_article_with_entities(self, provider, sample_marketaux_single_article):
         """
@@ -372,11 +372,11 @@ class TestMarketauxNewsProvider:
         """
         Given: MarketauxNewsProvider 인스턴스
         When: get_rate_limit() 호출
-        Then: 100 calls per day (86400 seconds) 반환
+        Then: Basic plan 기준 2,500 calls per day (86400 seconds) 반환
         """
         rate_limit = provider.get_rate_limit()
 
-        assert rate_limit == {'calls': 100, 'period': 86400}
+        assert rate_limit == {'calls': 2500, 'period': 86400}
 
     def test_get_rate_limit_key(self, provider):
         """

@@ -1,7 +1,7 @@
 # Stock-Vis Portfolio Coach — 문서 인덱스
 
-> 최종 갱신: 2026-04-18 v3 (Dictionary ↔ 코드 동기화 완료)
-> 상태: Metric Dictionary v1.2 + 구현 코드 완전 동기화. 세션 D(LLM 프롬프트 설계) 진입 가능
+> 최종 갱신: 2026-04-24 v6 (D-0b ~ D-8 작업 지시서 9개 추가)
+> 상태: 세션 D 설계 + 모든 구현 지시서 완성. Claude Code가 D-0a부터 순차 실행 가능한 상태.
 
 ---
 
@@ -11,22 +11,39 @@
 docs/portfolio/
 ├── INDEX.md                                  ← 이 파일
 │
-├── design/                                   ← 최신 설계 문서 (5개)
+├── design/                                   ← 설계 문서 (8개)
 │   ├── preset-design-v3.1.md                 ← 프리셋 시스템 설계서 (확정 결정 38개)
 │   ├── preset-metrics-matrix.md              ← 12개 프리셋 × 지표 × 계층 매트릭스
-│   ├── metric-dictionary-v1.2.md             ← 57개 지표 정의서 (Type1: 39 / Type2: 13 / Type3: 5)
+│   ├── metric-dictionary-v1.2.md             ← 57개 지표 정의서
 │   ├── portfolio-requirements-v0.2.md        ← Portfolio 기능 요구사항
-│   └── service-restructure.md                ← 서비스 아키텍처 재설계
+│   ├── service-restructure.md                ← 서비스 아키텍처 재설계
+│   │
+│   │   ★ 세션 D (2026-04-20) 결과물 ─────────────────────────────────────
+│   ├── wallet-portfolio-architecture-v1.md   ← Wallet/Portfolio 데이터 모델 분리
+│   ├── return-tracking-design-v1.md          ← 수익률 추적 설계 (RV1~RV4)
+│   └── coach-llm-design-v1.md                ← Coach LLM 아키텍처 (E1~E6, B3, D3, PV3)
 │
 ├── reference/                                ← 레퍼런스 (1개, 변경 없이 유지)
 │   └── preset-reference.md                   ← 투자 전략 40개 + 포트폴리오 이론 17개
 │
+├── instructions/                             ← 세션별 작업 지시서 (10개)
+│   ├── d-0a-instructions.md                  ← 데이터 모델 리팩토링 (Wallet/Portfolio 재설계)
+│   ├── d-0b-instructions.md                  ← Pydantic 스키마 (AnalysisContext 전체)
+│   ├── d-1-instructions.md                   ← Tier 0 시스템 프롬프트 (정체성 + PV3 용어)
+│   ├── d-2-instructions.md                   ← E1 한 줄 진단 프롬프트
+│   ├── d-3-instructions.md                   ← E2 진단 카드 프롬프트 (4요소 JSON)
+│   ├── d-4-instructions.md                   ← E3 지표별 한 줄 코멘트
+│   ├── d-5-instructions.md                   ← E4 대화 Q&A (Tier 1~3 전체 주입)
+│   ├── d-6-instructions.md                   ← E5 조정 파싱 (자연어 → overrides JSON)
+│   ├── d-7-instructions.md                   ← E6 조정 후 비교 해설
+│   └── d-8-instructions.md                   ← 통합 검증 + E2E 시나리오 테스트
+│
 ├── implementation/                           ← 구현 산출물 (7개)
-│   ├── models.py                             ← Django DB 모델 9개
+│   ├── models.py                             ← Django DB 모델 9개 (세션 D에서 리팩토링 예정)
 │   └── metrics/definitions/
 │       ├── __init__.py
-│       ├── metrics.py                        ← 57개 지표 코드 상수 (Dictionary와 1:1 대응)
-│       ├── presets.py                        ← 12개 프리셋 코드 상수
+│       ├── metrics.py                        ← 57개 지표 코드 상수
+│       ├── presets.py                        ← 12개 프리셋 (applicable_scope 추가 예정)
 │       ├── preset_metrics.py                 ← 136개 프리셋-지표 매핑
 │       └── versions.py                       ← 버전 번들 (metric_version=1.2)
 │
@@ -36,143 +53,217 @@ docs/portfolio/
     └── portfolio-requirements-v0.1.md
 ```
 
-**파일 수 합계**: 16개 (`.md` 10개 + `.py` 6개), 약 8,944줄
+**파일 수 합계**: 29개 (`.md` 23개 + `.py` 6개).
 
 ---
 
-## 2. 현재 상태 (2026-04-18 기준)
+## 2. 현재 상태 (2026-04-20 기준)
 
 ### 2-1. Metric & Preset
 
-| 항목 | 수량 | 비고 |
-|---|---|---|
-| **총 지표 (Dictionary = 코드)** | **57개** | Type 1 (stock_level) 39 + Type 2 (portfolio_level) 13 + Type 3 (composite) 5 |
-| **MVP 프리셋** | **12개** | Value 2, Growth 2, Income 2, Factor 4, Special 2 |
-| **프리셋-지표 매핑** | **136개** | 모든 57개 지표가 최소 1개 프리셋에서 사용 (미참조 0개) |
-| **Piotroski 서브** | **9개** | Dictionary §5 #37 내부 표로 통합 (f_score_total + details JSON 철학) |
-
-### 2-2. 버전
-
-| 버전 항목 | 현재 | 직전 변경 |
-|---|---|---|
-| `metric_version` | **1.2** | 2026-04-18: Dictionary ↔ 코드 완전 동기화 |
-| `preset_version` | 1.0 | — |
-| `scoring_version` | 1.0 | — |
-| `prompt_version` | 1.0 | — |
-| `universe_version` | sp500_v1 | — |
-
-### 2-3. 프리셋별 tier 분포
-
-| 프리셋 | Core | Supporting | Context | 총 |
-|---|---|---|---|---|
-| buffett_quality_value | 4 | 7 | 4 | 15 |
-| piotroski_f_score | 1 | 3 | 3 | 7 |
-| garp | 3 | 4 | 3 | 10 |
-| quality_growth | 4 | 5 | 4 | 13 |
-| dividend_growth | 3 | 4 | 3 | 10 |
-| shareholder_yield | 4 | 3 | 3 | 10 |
-| quality_factor | 4 | 4 | 3 | 11 |
-| low_volatility | 5 | 6 | 3 | 14 |
-| price_momentum | 4 | 3 | 3 | 10 |
-| multi_factor | 5 | 5 | 2 | 12 |
-| contrarian | 4 | 5 | 3 | 12 |
-| concentrated_portfolio | 7 | 2 | 3 | 12 |
-
----
-
-## 3. 2026-04-18 동기화 작업 (완료)
-
-INDEX.md v2에서 계획된 "동기화 20건 + Piotroski 서브 9건"이 이번 세션에 전부 완료되었고, placeholder 확장 작업도 포함해 **총 57건이 한 번에 처리**됨.
-
-### 3-1. Batch 1 — Dictionary (v1.1 → v1.2)
-
-| 작업 | 건수 | 상세 |
-|---|---|---|
-| Rename | 4 | `stock_count`→`holding_count`, `factor_value/quality/momentum`→`composite_*` |
-| 재구성 | 2 | `factor_size`→`composite_growth` (EPS/매출 성장 합성으로 교체), `factor_balance_score`→`composite_low_vol` (변동성 합성으로 교체) |
-| 신규 엔트리 | 4 | `f_score_total` (Piotroski 9개 서브 표 포함), `ulcer_index`, `up_capture_ratio`, `dividend_yield_portfolio` |
-| Piotroski 서브 정의 | 9 | #37 엔트리 내부에 판정 조건 + FMP 필드 매핑 + 결측 처리 표로 통합 |
-| 번호 재정렬 | — | Type 1: 36→39, Type 2: 12→13, Type 3: 5 유지. 총 53→57 |
-| 섹션 동기화 | — | §4 (목록), §9 (버전 예시), §11 (변경이력) 모두 v1.2 반영 |
-
-### 3-2. Batch 2 — metrics.py (Dictionary 1:1 대응)
-
-| 작업 | 건수 | 상세 |
-|---|---|---|
-| f_score_total 보강 | 1 | 서브 9개 참조 + FMP 필드 9개 명시 + `aggregation_type=composite_checklist` |
-| placeholder → full detail | 25 | Type 1 13개 (beta, return_*, volatility_1y 등), Type 2 7개, Type 3 5개 모두 확장 |
-| 신규 지표 추가 | 8 | Type 1: `volume_change_ratio`, `buyback_yield`. Type 2: `portfolio_volatility`, `sharpe_ratio`, `sortino_ratio`, `avg_correlation`, `max_risk_contribution`, `max_position_weight` |
-| 헤더 docstring | — | v1.1 → v1.2, Type별 개수 명시 |
-
-**파일 크기**: 526줄 → **1,105줄**
-
-### 3-3. Batch 3 — preset_metrics.py + versions.py
-
-| 프리셋 | 변경 |
+| 항목 | 수량 |
 |---|---|
-| Contrarian | `volume_change_ratio` Supporting 추가 |
-| Buffett Quality Value | `buyback_yield` Supporting 추가 |
-| Low Volatility | `portfolio_volatility` Core 추가. `sharpe_ratio`, `sortino_ratio`, `max_risk_contribution` Supporting 추가 |
-| Concentrated Portfolio | `max_position_weight`, `avg_correlation` Core 추가. `portfolio_volatility` Context 추가 |
-| versions.py | `metric_version` 1.0 → **1.2** + pre-MVP 버전 정책 주석 |
+| 총 지표 (Dictionary = 코드) | **57개** |
+| MVP 프리셋 | **12개** |
+| 프리셋-지표 매핑 | **136개** |
 
-**매핑 엔트리**: 126개 → **136개** (+10)
+### 2-2. 세션 D 결정 사항
 
-### 3-4. 부가 수정 (이번 세션 발견)
+세션 D는 Portfolio Coach LLM 아키텍처 + 데이터 모델 재설계를 다룸. 총 **34개 결정** 확정. §4 참조.
 
-- Dictionary 헤더의 "총 지표 수 53개" → 57개 (Batch 1 수정 중 놓친 부분)
-- Dictionary §1 본문 "53개 지표" → 57개 (2곳)
+### 2-3. 버전
+
+| 버전 항목 | 현재 |
+|---|---|
+| metric_version | 1.2 |
+| preset_version | 1.0 |
+| scoring_version | 1.0 |
+| prompt_version | 1.0 (세션 D-1 작성 후 1.1로 bump 예정) |
+| universe_version | sp500_v1 |
 
 ---
 
-## 4. 확정된 설계 결정 — 누적 52개+
+## 3. 2026-04-20 세션 D 완료 작업
 
-### 4-1. 설계서 v3.1 내 (38개)
-→ `design/preset-design-v3.1.md` 부록 참조
+### 3-1. 신규 설계 문서 3개
 
-### 4-2. Metric Dictionary 공통 결정 (8개, D-1 ~ D-8)
-→ `design/metric-dictionary-v1.2.md` 부록 A 참조
+세션 D에서 결정한 34개 사항을 주제별로 분리한 3개 문서로 완전 문서화.
 
-### 4-3. Django 모델 결정 (6개, M-1 ~ M-6)
-→ `implementation/models.py` 헤더 docstring 참조
+#### `wallet-portfolio-architecture-v1.md`
+- Wallet / Portfolio 개념 분리 (컨설턴트 비유)
+- I2-a-refined 데이터 모델 (Wallet, WalletHolding, Portfolio 재정의, WalletSnapshot)
+- UX 탭 구조 (자산 지갑 / 자산 전략실)
+- 전략 저장 정책 (F3), 개별/포트폴리오 전략 (G3), 자산 변경 처리 (H3)
+- Saved Analysis 스냅샷 (③)
+- 마이그레이션 플랜
 
-### 4-4. 네이밍 결정 (7개, N-1 ~ N-7, 2026-04-18 확정)
+#### `return-tracking-design-v1.md`
+- 수익률 요구사항 (해석 1 계층, 해석 2-c 기여도)
+- R3 하이브리드 (MVP는 avg_cost, Trade는 Phase 2)
+- sector/industry 필드 위치 (RV2-b, Stock 모델)
+- ReturnCalculator 인터페이스 (RV3-a, 단일 메소드)
+- 저장 시점 + 현재 시점 혼합 (RV4-b)
+- 2개 독립 스코프 (Portfolio / Wallet, RV1-b)
+
+#### `coach-llm-design-v1.md`
+- MVP 진입점 E1~E6 정의
+- 4-Tier 컨텍스트 전략 (B3)
+- Tier 2.5 Pydantic 스키마 구조
+- 대화형 Coach 레벨 1 조정 UX (A2)
+- 의사결정 이력 D3 (raw + 추출)
+- 사용자 프로필 전략 (Tier 3)
+- LLM 혼동 방지 (PV3 + 부분 PV5)
+- Wallet 분석 범위 (W2.5, A1)
+
+### 3-2. INDEX.md 업데이트 (이 파일)
+
+- 폴더 구조에 신규 design 문서 3개 추가
+- 네이밍 결정 N-8 추가 (Wallet/Portfolio 의미 분리)
+- 다음 작업 로드맵 갱신 (세션 D 구현 단계 D-0a~D-8)
+- 변경 이력 v4 추가
+
+---
+
+## 4. 확정된 설계 결정 — 전체 목록
+
+### 4-1. 누적 결정 개요
+
+| 출처 | 결정 수 |
+|---|---|
+| 설계서 v3.1 부록 | 38 |
+| Metric Dictionary 공통 결정 (D-1~D-8) | 8 |
+| Django 모델 결정 (M-1~M-6) | 6 |
+| 네이밍 결정 (N-1~N-8) | 8 |
+| **세션 D 결정** | **34** |
+| **합계** | **94** |
+
+### 4-2. 세션 D 결정 상세 (34개)
+
+#### 요구사항 범위
+| # | 결정 |
+|---|---|
+| Req-1 | 사후 분석 (시점 A/B 비교) |
+| Req-2 | 대화 저장 (질문-답변 스레드) |
+| Req-3 | 의사결정 이력 (사용자 프로필) |
+| Req-4 | 대화로 레벨 1 프리셋 조정 |
+
+#### 기반
+| # | 결정 |
+|---|---|
+| A2 | MVP = Q&A + 레벨 1 조정 |
+| B3 | 4-Tier 계층적 요약 (retrieval 없음) |
+| C1 | 수동 저장 기준 사후 분석 |
+| D3 | raw + 구조화 Decision 추출 |
+
+#### UX 확인
+| # | 결정 |
+|---|---|
+| 확인1 | 분석 실행: 프리셋 선택 후 즉시 |
+| 확인2 | 조정 UX: 확인 카드 → 실행 |
+| 확인3 | 조정 범위: 프리셋/종목/비교군 전부 |
+| 확인4 | MVP 진입점: E1~E6 |
+| 확인5 | 대화 지속성: Saved Analysis에 포함 |
+
+#### UI/UX
+| # | 결정 |
+|---|---|
+| 탭 구조 | 자산 지갑 / 자산 전략실 분리 |
+| 재분석 배지 | 제거 |
+| Tier 2.5 | β (분석 결과 + 확장 슬롯) |
+| 분석 스냅샷 | ③ (Saved=스냅샷, Temp=라이브) |
+| Thesis | Y1 (수동 텍스트) |
+| 전략실 진입 | A (이전 결과 + 재분석 버튼) |
+
+#### 수익률 추적
+| # | 결정 |
+|---|---|
+| 해석 1 | 섹터/인더스트리/종목 계층 |
+| 해석 2 | c (현재 보유 기여도 분해) |
+| R | R3 (하이브리드) |
+| RV1 | b (Portfolio + Wallet 독립 필드) |
+| RV2 | b (Stock 모델에 sector/industry) |
+| RV3 | a (ReturnCalculator 단일 메소드) |
+| RV4 | b (저장 시점 + 현재 시점) |
+
+#### 분석 스코프
+| # | 결정 |
+|---|---|
+| F3 | 전략 저장: 일회성 + 명명 그룹 |
+| G3 | 개별/포트폴리오: applicable_scope 필드 |
+| H3 | 자산 변경: 참조 링크 + 자동 필터링 |
+| I2-a-refined | 모델: Wallet 신규 + Portfolio 의미 재정의 |
+
+#### LLM 아키텍처
+| # | 결정 |
+|---|---|
+| PV3 | 정의 블록 + 자기설명 필드명 |
+| 부분 PV5 | E1~E3, E5~E6 Wallet 최소, E4만 전체 |
+| W2.5 | Wallet 분석: 시나리오 A+B (C 제외) |
+| A1 | Wallet 시계열: WalletSnapshot (주기 배치 없음) |
+
+### 4-3. 네이밍 결정 (N-1~N-8)
+
+이전 N-1~N-7 유지. 세션 D에서 N-8 추가.
 
 | # | 대상 | 결정 |
 |---|---|---|
 | N-1~3 | Multi-Factor 합성 | `composite_*` 통일 |
-| N-4 | 5번째 팩터 슬롯 | `composite_low_vol` (저변동성) |
+| N-4 | 5번째 팩터 슬롯 | `composite_low_vol` |
 | N-5 | 보유 종목 수 | `holding_count` |
-| N-6 | 집중도 지표 | `hhi_concentration` + `sector_hhi` (2개 분리) |
+| N-6 | 집중도 지표 | `hhi_concentration` + `sector_hhi` |
 | N-7 | 상위 종목 비중 | `top3_weight` |
+| **N-8** | **Wallet/Portfolio 의미 분리** | **Wallet=자산 지갑, Portfolio=분석 대상 슬라이스** |
 
 ---
 
 ## 5. 다음 작업 로드맵
 
-### 5-1. 즉시 (현재 사이클)
+### 5-1. 세션 D 구현 단계 (다음 진입)
 
-| 순위 | 작업 | 예상 | 상태 |
-|---|---|---|---|
-| 1 | Dictionary ↔ 코드 동기화 | ~1세션 | ✅ **완료** |
-| C | Piotroski 서브 9개 내부 스펙 | 0.5세션 | ✅ **완료** (Dictionary §5 #37) |
-| **D** | **Portfolio Coach LLM 프롬프트 설계** | **2~3세션** | **다음 작업** |
+| 세션 | 작업 | 예상 |
+|---|---|---|
+| D-0a | 데이터 모델 리팩토링 (models.py: Wallet, WalletHolding, Portfolio 재정의, WalletSnapshot, ChatSession, Message, Decision) | 1.5 세션 |
+| D-0b | Tier 2.5 Pydantic 스키마 (AnalysisContext 전체) | 0.5 세션 |
+| D-1 | Tier 0 시스템 프롬프트 (정체성 + 정의 블록) | 0.5 세션 |
+| D-2 | E1 한 줄 진단 프롬프트 | 0.5 세션 |
+| D-3 | E2 진단 카드 프롬프트 (4요소 JSON) | 1 세션 |
+| D-4 | E3 지표 코멘트 프롬프트 | 0.5 세션 |
+| D-5 | E4 대화 Q&A 프롬프트 | 1 세션 |
+| D-6 | E5 조정 파싱 프롬프트 | 1 세션 |
+| D-7 | E6 조정 해설 프롬프트 | 0.5 세션 |
+| D-8 | 통합 검증 + 예시 시나리오 end-to-end | 1 세션 |
 
-### 5-2. 다음 사이클 (MVP 준비)
+**총 예상**: 약 9~10세션.
 
-| 작업 | 산출물 |
-|---|---|
-| 비교군 정책 상세화 | 산업 분류, fallback, 최소 표본, 특수군 처리 |
-| 강점/약점 선정 알고리즘 | 단일 이상치 vs 구조적 약점 구분, Core 우선 + 비중 가중 영향도 |
-| API 설계 | 분석 요청/결과/저장 REST 스펙 |
-| UI 와이어프레임 | 현황 ↔ 코칭 전환, 진단 카드 레이아웃 |
+### 5-2. D-0a 사전 확인 결과 (2026-04-20 완료)
 
-### 5-3. Phase 2+ (MVP 이후)
+Stock 모델 확인 완료 — **RV2-b 경로 확정**:
+- `stocks/models.py:27` — `sector = CharField(max_length=100, blank=True, null=True)` ✅
+- `stocks/models.py:26` — `industry = CharField(max_length=100, blank=True, null=True)` ✅
+- 인덱스: `Index(["sector"])`, `Index(["industry"])`, `Index(["symbol", "sector"])` 복합 인덱스 모두 존재
 
-| 시점 | 작업 |
-|---|---|
-| Phase 2 | Core 세분화 (Definitional/Evaluative), Hard Gate, Chain Sight/Thesis Layer 2, Screener, 대화형 Coach, 비교 뷰, Russell 3000, 글로벌 세율 테이블 |
-| Phase 3 | 행동 편향(BPT), 글로벌 유니버스, 시뮬레이션 진단 |
+**결론**:
+- Stock 모델 수정 작업 **불필요**
+- WalletHolding에 sector/industry 캐시 필드 추가 **금지** (RV2-a 폴백 배제)
+- WalletHolding은 Stock FK로 sector/industry 조회하는 RV2-b 그대로 진행
+
+### 5-3. MVP 준비 단계 (세션 D 이후)
+
+- 비교군 정책 상세화 (산업 분류 fallback)
+- 강점/약점 선정 알고리즘 상세
+- API 설계 (REST 엔드포인트)
+- UI 와이어프레임
+
+### 5-4. Phase 2+ (MVP 이후)
+
+- 진입점 E7~E12 추가 (사후 비교, Decision 추출, 프로필 생성, Portfolio 후보 추천, Watchlist 제안, 모니터링 지표 추천)
+- 조정 레벨 2/3 (세션 스코프 → 영구 커스텀 프리셋)
+- Trade 모델 도입 (정밀 수익률, 세금 계산)
+- PortfolioSnapshot 일별 배치
+- Chain Sight / Thesis Layer 2 연결
+- 대화형 Coach 확장 (Watchlist/모니터링 대화)
+- Russell 3000 유니버스 확장
+- 행동 편향 분석 (BPT, Phase 3)
 
 ---
 
@@ -180,94 +271,65 @@ INDEX.md v2에서 계획된 "동기화 20건 + Piotroski 서브 9건"이 이번 
 
 ### 처음 읽을 순서
 
-1. **`design/preset-design-v3.1.md`** — 전체 시스템 철학과 설계 결정 이해
-2. **`design/metric-dictionary-v1.2.md`** — 57개 지표의 정확한 정의, FMP 매핑, 결측 처리
-3. **`design/preset-metrics-matrix.md`** — 12개 프리셋 각각의 상세 (진단 카드 예시, 차별화)
-4. **`implementation/metrics/definitions/*.py`** — 설계 → 코드 구현 결과
-5. **`reference/preset-reference.md`** — 이론적 배경 (투자 전략, 포트폴리오 이론)
+1. **`design/preset-design-v3.1.md`** — 전체 Coach 철학, 설계 결정 38개
+2. **`design/wallet-portfolio-architecture-v1.md`** — Wallet/Portfolio 데이터 모델 (세션 D)
+3. **`design/return-tracking-design-v1.md`** — 수익률 추적 설계 (세션 D)
+4. **`design/coach-llm-design-v1.md`** — Coach LLM 아키텍처 (세션 D)
+5. **`design/metric-dictionary-v1.2.md`** — 57개 지표 정의
+6. **`design/preset-metrics-matrix.md`** — 12개 프리셋 상세
 
 ### 목적별 참조
 
 | 목적 | 문서 |
 |---|---|
-| 특정 지표 산식·FMP 필드 | `design/metric-dictionary-v1.2.md` |
-| 프리셋 철학과 진단 카드 예시 | `design/preset-metrics-matrix.md` |
-| 설계 결정 배경 (왜 이렇게?) | `design/preset-design-v3.1.md` 부록 |
-| 구현 시 유효 metric_id 검증 | `implementation/metrics/definitions/metrics.py` |
-| DB 스키마 | `implementation/models.py` |
-| Portfolio 기능 스펙 (CandidateHolding 등) | `design/portfolio-requirements-v0.2.md` |
-| 서비스 플로우 (Dashboard → Chain Sight → Portfolio) | `design/service-restructure.md` |
+| 특정 지표 산식·FMP 필드 | metric-dictionary-v1.2.md |
+| 프리셋 철학과 진단 카드 예시 | preset-metrics-matrix.md |
+| Wallet과 Portfolio 관계 | wallet-portfolio-architecture-v1.md |
+| 수익률 분해 로직 | return-tracking-design-v1.md |
+| LLM 진입점/프롬프트 전략 | coach-llm-design-v1.md |
+| 대화/의사결정 이력 구조 | coach-llm-design-v1.md §5-6 |
+| DB 스키마 현재 구현 | implementation/models.py |
+| Portfolio 기능 스펙 | portfolio-requirements-v0.2.md |
+| 서비스 플로우 | service-restructure.md |
+| 설계 결정 배경 | preset-design-v3.1.md 부록 + 각 세션 D 문서 §확정 결정 |
+| D-0a 모델 리팩토링 작업 지시 | instructions/d-0a-instructions.md |
+| D-0b Pydantic 스키마 작성 지시 | instructions/d-0b-instructions.md |
+| D-1 Tier 0 시스템 프롬프트 작성 지시 | instructions/d-1-instructions.md |
+| D-2~D-7 E1~E6 프롬프트 작성 지시 | instructions/d-2~d-7-instructions.md |
+| D-8 통합 검증 + E2E 테스트 지시 | instructions/d-8-instructions.md |
 
 ---
 
-## 7. 파일 상세 정보
-
-### design/ (5개, 4,454줄)
-
-| 파일 | 줄 | 내용 |
-|---|---|---|
-| preset-design-v3.1.md | 804 | 프리셋 시스템 설계서. 확정 결정 38개 |
-| preset-metrics-matrix.md | 1,001 | 12개 프리셋 상세 (해설·진단 카드·차별화) |
-| **metric-dictionary-v1.2.md** | **1,464** | 57개 지표 정의 (+Piotroski 9서브 통합) |
-| portfolio-requirements-v0.2.md | 851 | Portfolio 기능 요구사항 |
-| service-restructure.md | 334 | 서비스 3단계 플로우 |
-
-### reference/ (1개, 759줄)
-
-| 파일 | 줄 | 내용 |
-|---|---|---|
-| preset-reference.md | 759 | 투자 전략 40 + 포트폴리오 이론 17 |
-
-### implementation/ (7개, 2,121줄)
-
-| 파일 | 줄 | 내용 |
-|---|---|---|
-| models.py | 608 | Django 모델 9개 |
-| **metrics.py** | **1,105** | 57개 지표 코드 상수 |
-| presets.py | 107 | 12개 프리셋 |
-| **preset_metrics.py** | **263** | 136개 매핑 |
-| versions.py | 25 | 버전 번들 (metric_version=1.2) |
-| __init__.py | 13 | 패키지 초기화 |
-
-### archive/ (3개, 1,610줄)
-
-| 파일 | 줄 | 용도 |
-|---|---|---|
-| preset-design-v1.md | 459 | 방향 설계 이력 |
-| preset-design-v2.md | 566 | 중간 리뷰 반영 이력 |
-| portfolio-requirements-v0.1.md | 585 | 요구사항 초안 이력 |
-
----
-
-## 8. Git 커밋 권장 구조
-
-동기화 작업을 기능 단위 3개 커밋으로 나눠 기록하면 이력 추적과 롤백이 쉬워:
+## 7. Git 커밋 권장 구조 (세션 D 완료 시점)
 
 ```bash
-# Commit 1: Dictionary 동기화
-git add docs/portfolio/design/metric-dictionary-v1.2.md
-git commit -m "docs(metrics): sync v1.1→v1.2 — rename 4 + restructure 2 + add 4 + Piotroski 9 subs"
+# Commit 1: 세션 D 설계 문서 3개 추가
+git add docs/portfolio/design/wallet-portfolio-architecture-v1.md
+git add docs/portfolio/design/return-tracking-design-v1.md
+git add docs/portfolio/design/coach-llm-design-v1.md
+git commit -m "docs(session-d): Add 3 design documents — Wallet/Portfolio architecture, return tracking, Coach LLM"
 
-# Commit 2: metrics.py Dictionary 1:1 대응
-git add docs/portfolio/implementation/metrics/definitions/metrics.py
-git commit -m "feat(metrics): expand 25 placeholders to full detail + add 8 new metrics"
-
-# Commit 3: 프리셋 배정 + 버전업
-git add docs/portfolio/implementation/metrics/definitions/preset_metrics.py
-git add docs/portfolio/implementation/metrics/definitions/versions.py
-git commit -m "feat(presets): assign 8 new metrics to presets + bump metric_version 1.0→1.2"
-
-# Commit 4: 문서 이력
+# Commit 2: INDEX.md v4 업데이트
 git add docs/portfolio/INDEX.md
-git commit -m "docs: update INDEX.md v3 (sync completion reflected)"
+git commit -m "docs: update INDEX.md v4 with session D results"
+
+# ---- 이후 D-0a, D-0b 등 진행 시 ----
+# Commit 3: models.py 리팩토링 (세션 D-0a)
+git add docs/portfolio/implementation/models.py
+git commit -m "refactor(models): introduce Wallet/Portfolio separation — session D-0a"
+
+# (이후 D-1, D-2, ... 각 프롬프트 추가 시 개별 커밋)
 ```
 
 ---
 
-## 9. 변경 이력
+## 8. 변경 이력
 
 | 날짜 | 버전 | 변경 |
 |---|---|---|
-| 2026-04-18 | v3 | Dictionary ↔ 코드 동기화 완료 반영. 지표 53→57개, 매핑 126→136개, metric_version 1.0→1.2. Piotroski 서브 9개 Dictionary 통합 완료. 파일명 정리 (`metric-dictionary-v1.1.md` → `metric-dictionary-v1.2.md`). Dictionary 본문 "53개" 잔재 수정 (3곳) |
-| 2026-04-18 | v2 | 파일 16개 실물 분석 + 대화 이력 교차 검증. 누락 파일 2건 정정, Dict 53 ↔ 코드 49 불일치 발견. 네이밍 결정 7건 확정 + 코드 일부 반영. 동기화 액션 플랜 20건 작성 |
+| 2026-04-24 | v6 | D-0b ~ D-8 작업 지시서 9개 추가 (instructions/d-0b ~ d-8). Claude Code가 D-0a 완료 후 순차 실행 가능. 파일 수 20→29 |
+| 2026-04-20 | v5 | D-0a 작업 지시서 추가 (`instructions/d-0a-instructions.md`). Stock 모델 확인 결과 반영 (RV2-b 확정). 파일 수 19→20 |
+| 2026-04-20 | v4 | 세션 D 완료. 설계 문서 3개 추가 (wallet-portfolio-architecture-v1, return-tracking-design-v1, coach-llm-design-v1). 설계 결정 34개 추가 (총 94개). 네이밍 결정 N-8 추가. 다음 작업 로드맵 D-0a~D-8 정의 |
+| 2026-04-20 | v3.1 | Dictionary ↔ 코드 동기화 완료. 지표 53→57개, 매핑 126→136개, metric_version 1.0→1.2. Piotroski 서브 9개 Dictionary 통합. 파일명 v1.1→v1.2 |
+| 2026-04-18 | v2 | 파일 16개 실물 분석 + 대화 이력 교차 검증. 누락 파일 2건 정정. 네이밍 결정 7건 확정. 동기화 액션 플랜 20건 작성 |
 | 2026-04-18 | v1 | 초판 (대화 기반 추정) |
