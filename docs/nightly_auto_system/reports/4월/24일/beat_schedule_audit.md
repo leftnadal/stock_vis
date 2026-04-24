@@ -1,422 +1,574 @@
 # Beat Schedule 감사 보고서
 
-- **날짜**: 2026-04-24
-- **대상**: `config/celery.py` (beat_schedule, 라인 117~788)
-- **타임존**: `CELERY_TIMEZONE = 'America/New_York'` (ET, DST 적용) — `config/settings.py:403`
-- **Queue 구성**: `default` + `neo4j`(solo pool, 동시 1개)
-- **감사 범위**: 전체 60+ 스케줄 항목, Rate Limit / Queue 경합 / 시간대 분포 / 의존 관계
+- **작성일**: 2026-04-24
+- **대상 파일**: `config/celery.py` (L135-L805)
+- **모드**: 읽기 전용 (코드 수정 없음)
+- **Celery TIME_ZONE**: `America/New_York` (ET, DST 적용) — `config/settings.py:403` 기준 (기존 보고서에서 검증됨)
+- **Queue 구성**: `default` + `neo4j` (solo pool, 동시 1개)
+- **분석 범위**: `app.conf.beat_schedule` dict 에 선언된 총 **68개 태스크**
+
+> 주의: `config/celery.py` L120~L134 주석에 따라 `CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler'` 설정으로 이 dict 는 **런타임 비활성**이며 실제 실행은 `PeriodicTask` 테이블에서 결정된다. 이번 감사는 dict 선언 기준이며 DB 와 drift 가 있을 수 있다.
 
 ---
 
-## 1. Executive Summary
+## 0. 요약 (Executive Summary)
 
-**결론**: 피크 시간대(12:00, 18:00, 18:30 ET)에서 **FMP Starter 300 req/min 초과 가능성 높음**, **Gemini Free 15 RPM의 반복적 초과**, **neo4j 큐 solo pool의 12:00 동시 몰림 8건** 등 구조적 리스크 3건이 동시에 존재한다.
-
-**최우선 리스크 TOP 5**:
-
-| 순위 | 구간 | 리스크 | 심각도 |
-|------|------|--------|--------|
-| 1 | **18:00 ET** | `sync-sp500-eod-prices`(500심볼 FMP) + `thesis-update-readings`(FMP) + `collect-market-news-evening`(FMP) 동시 실행 → FMP 300 RPM 초과 | Critical |
-| 2 | **12:00 ET 전후** | neo4j 큐에 `chainsight-sync-profiles-neo4j`, `sec-seed-relations-to-chainsight`, `neo4j-health-check`, `sec-sync-dirty-neo4j`(12:00 tick) 4건 동시 도착 + 12:30 / 12:45 후속 → solo pool 직렬화로 최소 20분 밀림 예상 | Critical |
-| 3 | **:30 매시 (08, 10, 12, 14, 16, 18)** | `analyze-news-deep-batch` 최대 50건/회 × 6회 = **Gemini 300 req/회분**. 1회 처리에 15 RPM → 최소 3.3분 지속. 병행 `classify-news-batch`(:15, Gemini)와 간격 15분 → **매시 RPM 한계 이월 위험** | High |
-| 4 | **18:00 → 18:30** | `run-eod-pipeline`(18:30)은 `sync-sp500-eod-prices`(18:00) 완료 전제. 500 심볼 FMP 배치가 30분 내 끝난다는 **명시적 가드 없음**(chord/depends_on 미사용) | High |
-| 5 | **05:30 ET** | `enrich-relationship-keywords` limit=100 → 100건 LLM 호출. Gemini Free 15 RPM 기준 **최소 6.7분 연속 지속**. 재시도 누적 시 RPD 1500 잠식 | Medium |
-
----
-
-## 2. Rate Limit 초과 구간 분석
-
-### 2.1 FMP Starter 300 calls/min
-
-#### 위험 구간 A: 18:00 ET (EOD 집중 처리)
-
-| 태스크 | 스케줄 | 추정 FMP 호출량 | 출처 |
-|--------|--------|-----------------|------|
-| `sync-sp500-eod-prices` | 18:00 Mon-Fri | **~500 calls** (심볼별 `/stable/historical-price-eod`) | 라인 538-541 |
-| `collect-market-news-evening` | 18:00 Mon-Fri | 일반 시장 뉴스 배치 | 라인 254-258 |
-| `thesis-update-readings` | 18:00 Mon-Fri | 지표별 FMP 재무 호출 | 라인 633-637 |
-| `update-economic-indicators` | 18:00 Mon-Fri | FRED API (별도 계정, FMP 미사용) | 라인 160-163 |
-
-**판단**: `sync-sp500-eod-prices`가 단독으로도 500/300 = **2분 이상의 rate limit 슬롯을 점유**. `thesis-update-readings`가 같은 1분 window에 FMP를 호출하면 429가 터진다. FMP `/stable/*` 배치 엔드포인트를 쓰지 않는 한 **동시 실행 충돌 확실**.
-
-**권고**: `thesis-update-readings`를 **18:05 또는 18:10**으로 밀거나, `sync-sp500-eod-prices` 완료를 트리거로 하는 `chord`로 묶어야 안전.
-
-#### 위험 구간 B: 17:00~17:45 ET (EOD 뉴스 + 종가 혼재)
-
-| 태스크 | 시각 | 호출 성격 |
+| 심각도 | 개수 | 대표 항목 |
 |--------|------|----------|
-| `update-daily-prices` | 17:00 | FMP 전체 종가 재적용 (FMP provider) |
-| `collect-category-news-high-evening` | 17:00 | 카테고리 뉴스 (provider 혼용) |
-| `collect-sp500-news-fmp-1715` | 17:15 | FMP S&P 500 뉴스 orchestrator (500 심볼 fan-out) |
-| `collect-general-news-fmp-evening` | 17:45 | FMP general news |
+| 🔴 CRITICAL | 4 | 18:00 FMP 4중 / 18:30 4중 겹침 / analyze-news-deep 50건 Gemini / neo4j queue solo-pool 12:00 3중 |
+| 🟠 WARNING | 6 | 16:30 LLM 2중, 14:30 수집-분석 역순, 시각 기준 EST/UTC 혼재(chainsight-heat-score/seed-selection), 05:30 enrich 지연→sec-sync expires 폐기, 일요일 04시 ML 체인 부하, 08:00 market-movers 선행 의존 |
+| 🟡 INFO | 5 | refresh-market-pulse-cache 480회/일, sec-sync-dirty-neo4j 288회/일, check-pipeline-alerts 48회/일, 시장시간 정각 7태스크 동시 시작, 토요일 Chain Sight 선형 체인(정상) |
 
-**판단**: 17:00 + 17:15 가 15분 간격으로 S&P 500 전체를 훑는 FMP 호출을 연속 트리거. Orchestrator가 내부 sub-task로 throttle 하지 않으면 300 RPM 초과.
-
-#### 위험 구간 C: 09:00~16:00 ET (시장 시간)
-
-| 태스크 | 빈도 | FMP/hour |
-|--------|------|----------|
-| `update-realtime-prices` | 매 5분 | 12 회/hour |
-| `update-market-indices` | 매 5분 | 12 회/hour |
-| `refresh-market-pulse-cache` | 매 **1분** | 60 회/hour (외부 API 호출 여부 **확인 필요**) |
-
-**판단**: `refresh-market-pulse-cache`가 캐시 전용이면 무해, 외부 호출 시 **60 req/min 기저 점유**. 정상 상태이면 FMP 여유 있으나, `update-realtime-prices`가 대량 심볼 병렬 fan-out을 하면 300 RPM에 근접.
+**핵심 수치**:
+- 정각(분=00) 시장시간 동시 실행 태스크: **7개** (realtime+indices+pulse+portfolio+screener+sec-sync+pipeline-alerts)
+- Gemini 일일 LLM 호출 추정 상한: `analyze-news-deep-batch 50 × 6` + `classify-news-batch ~30~50 × 6` + `enrich 100` + `extract/keyword ~60` ≈ **약 600~900 호출/일** (Gemini Free 1500 RPD 의 40~60%)
+- Gemini 분 단위 RPM 위험: `analyze-news-deep-batch` 가 내부 sleep 없이 50건 연속 호출 시 15 RPM 의 **3배 이상** 초과
+- neo4j queue 최소 점유: `sec-sync-dirty-neo4j` **288회/일** + 다른 배치
 
 ---
 
-### 2.2 Gemini Free 15 RPM / 1500 RPD
+## 1. 태스크 인벤토리 (68개)
 
-#### 일일 총 LLM 호출 추정
+### 1.1 주기형 태스크 (분 단위 반복)
 
-| 태스크 | 시각 (ET) | 호출량 추정 | 주당 RPD |
-|--------|-----------|-------------|----------|
-| `enrich-relationship-keywords` | 05:30 (매일) | limit=100 → **100 req** | 700 |
-| `keyword-generation-pipeline` | 08:00 (매일) | gainers ~5~20 | 35~140 |
-| `classify-news-batch` × 6 | :15 (8,10,12,14,16,18) | 배치당 20~50 → 120~300 | 600~1500 |
-| `analyze-news-deep-batch` × 6 | :30 (8,10,12,14,16,18) | `max_articles=50` × 6 = **최대 300** | 2100 |
-| `sync-news-to-neo4j` × 6 | :45 (8,10,12,14,16,18) | LLM 호출 아님 (DB→Neo4j 전송만) | 0 |
-| `extract-daily-news-keywords` | 16:30 (매일) | 일일 뉴스 키워드 배치 | 가변 |
-| `extract-news-relations` | 09:00 (매일) | 관계 추출 | 가변 |
-| `chainsight-co-mentions` | 10:00 (매일) | 배치 | 가변 |
+| 태스크 | 주기 | 시간 범위 | 요일 | 큐 | API | 일 실행 수 (평일) |
+|--------|------|----------|------|-----|-----|------------------|
+| update-realtime-prices | `*/5` | 9-16 | 월-금 | default | FMP | 96 |
+| update-market-indices | `*/5` | 9-16 | 월-금 | default | FMP | 96 |
+| refresh-market-pulse-cache | `*` | 9-16 | 월-금 | default | (내부 캐시) | 480 |
+| calculate-portfolio-values | `*/10` | 9-16 | 월-금 | default | (DB) | 48 |
+| check-screener-alerts | `*/15` | 9-16 | 월-금 | default | (DB) | 32 |
+| check-pipeline-alerts | `*/30` | 24시간 | 매일 | default | (내부) | 48 |
+| sec-sync-dirty-neo4j | `*/5` | 24시간 | 매일 | **neo4j** | (Neo4j) | **288** |
 
-**일일 추정치**: `analyze-news-deep(300)` + `enrich-relationship-keywords(100)` + `classify-news(120~300)` + 기타(~100) ≈ **620~800 req/day**.
+### 1.2 평일 시간 고정 태스크 (ET)
 
-**판단 — RPD**: Free tier **1500 RPD 이내**, 안전 마진 50% 확보. 단, `analyze-news-deep`가 실제 50건을 매번 채우고 재시도가 섞이면 **1000+ 도달 가능**.
+| 시각 | 태스크 | 큐 | API |
+|------|--------|-----|-----|
+| 06:00 | update-economic-indicators (1/4) | default | FRED |
+| 06:00 | collect-daily-news-morning | default | 뉴스 API |
+| 06:15 | collect-sp500-news-fmp-0615 | default | **FMP** |
+| 06:30 | collect-category-news-high-morning | default | 뉴스 API |
+| 06:45 | collect-general-news-fmp-morning | default | **FMP** |
+| 07:00 | collect-category-news-medium-morning | default | 뉴스 API |
+| 07:30 | sync-daily-market-movers | default | **FMP** |
+| 07:30 | collect-category-news-low | default | 뉴스 API |
+| 07:45 | collect-press-releases-fmp | default | **FMP** (50 심볼) |
+| 08:00 | keyword-generation-pipeline | default | **Gemini** |
+| 08:00 | collect-market-news-morning | default | 뉴스 API |
+| 08:15 | classify-news-batch | default | **Gemini** |
+| 08:30 | analyze-news-deep-batch | default | **Gemini** (50건) |
+| 08:45 | sync-news-to-neo4j | **neo4j** | (Neo4j, 100건) |
+| 09:00 | aggregate-daily-sentiment | default | (DB) |
+| 10:15 | classify-news-batch | default | **Gemini** |
+| 10:30 | analyze-news-deep-batch | default | **Gemini** |
+| 10:45 | sync-news-to-neo4j | **neo4j** | (Neo4j) |
+| 12:00 | update-economic-indicators (2/4) | default | FRED |
+| 12:00 | chainsight-sync-profiles-neo4j | **neo4j** | (Neo4j) |
+| 12:00 | sec-seed-relations-to-chainsight | default | (DB) |
+| 12:15 | classify-news-batch | default | **Gemini** |
+| 12:30 | analyze-news-deep-batch | default | **Gemini** |
+| 12:30 | chainsight-sync-relations-neo4j | **neo4j** | (Neo4j) |
+| 12:30 | collect-general-news-fmp-noon | default | **FMP** |
+| 12:45 | sync-news-to-neo4j | **neo4j** | (Neo4j) |
+| 13:00 | collect-category-news-high-midday | default | 뉴스 API |
+| 13:00 | chainsight-seed-selection | default | (DB) — **UTC 주석** |
+| 13:15 | collect-sp500-news-fmp-1315 | default | **FMP** |
+| 14:00 | collect-category-news-medium-afternoon | default | 뉴스 API |
+| 14:15 | classify-news-batch | default | **Gemini** |
+| 14:30 | collect-daily-news-afternoon | default | 뉴스 API |
+| 14:30 | analyze-news-deep-batch | default | **Gemini** — ※ 수집 동시 |
+| 14:45 | sync-news-to-neo4j | **neo4j** | (Neo4j) |
+| 15:00 | collect-market-news-afternoon | default | 뉴스 API |
+| 15:15 | collect-sp500-news-fmp-1515 | default | **FMP** |
+| 16:15 | classify-news-batch | default | **Gemini** |
+| 16:30 | extract-daily-news-keywords | default | **Gemini** |
+| 16:30 | calculate-market-breadth | default | (DB) |
+| 16:30 | analyze-news-deep-batch | default | **Gemini** |
+| 16:35 | calculate-sector-heatmap | default | (DB) |
+| 16:45 | sync-news-to-neo4j | **neo4j** | (Neo4j) |
+| 17:00 | update-daily-prices | default | **FMP** (일일 종가) |
+| 17:00 | collect-category-news-high-evening | default | 뉴스 API |
+| 17:15 | collect-sp500-news-fmp-1715 | default | **FMP** |
+| 17:45 | collect-general-news-fmp-evening | default | **FMP** |
+| 18:00 | update-economic-indicators (3/4) | default | FRED |
+| 18:00 | collect-market-news-evening | default | 뉴스 API |
+| 18:00 | sync-sp500-eod-prices | default | **FMP (SP500 대량)** |
+| 18:00 | thesis-update-readings | default | **FMP/FRED** (지표 대량) |
+| 18:15 | classify-news-batch | default | **Gemini** |
+| 18:15 | thesis-calculate-scores | default | (DB) |
+| 18:30 | update-sp500-change-percent | default | (DB) |
+| 18:30 | run-eod-pipeline | default | (DB, 14 시그널) |
+| 18:30 | thesis-create-snapshots | default | (DB + Email) |
+| 18:30 | analyze-news-deep-batch | default | **Gemini** |
+| 18:45 | sync-news-to-neo4j | **neo4j** | (Neo4j) |
+| 19:00 | collect-ml-labels | default | (DB) |
+| 19:00 | backfill-signal-accuracy | default | (DB) |
+| 20:00 | sync-sp500-financials | default | **FMP (101심볼/일)** |
+| 22:00 | update-economic-indicators (4/4) | default | FRED |
 
-**판단 — RPM (훨씬 더 빡빡함)**:
-- `analyze-news-deep-batch` 1회가 50건 × 평균 1 LLM req = 50 req → 15 RPM 한계로 **최소 3분 20초 연속 호출** 필요.
-- `:15 classify` 완료 후 `:30 analyze` 시작 사이 **간격 15분 — RPM 버킷이 겨우 다 소진되는 속도**. 재시도 1회만 끼어도 초과.
-- `05:30 enrich-relationship-keywords(100건)` = 최소 **6분 40초** 연속 호출. 그 사이 `classify-news-batch-morning` 이 **08:15**에 시작하므로 05:30~06:30 구간은 상대적으로 여유 (OK).
+### 1.3 매일 고정 (요일 무관)
 
-**권고**:
-1. `analyze-news-deep-batch` `max_articles`를 **30 이하**로 줄이거나, 각 batch 내부에 ≥4초 간격 삽입 (현재 가드 **확인 필요**).
-2. `enrich-relationship-keywords` limit=100은 너무 공격적. **25~40**으로 축소 권고.
+| 시각 | 태스크 | 비고 |
+|------|--------|------|
+| 01:00 | update-economic-calendar | FRED |
+| 04:00 | cleanup-expired-news-relationships | **neo4j queue** |
+| 05:30 | enrich-relationship-keywords | **neo4j queue + Gemini (limit=100)** |
+| 07:00 | chainsight-heat-score-daily | 주석 `07:00 UTC` — **시각 기준 혼재** |
+| 07:00 | celery-error-digest | ET 기준 |
+| 09:00 | extract-news-relations | |
+| 10:00 | chainsight-co-mentions | days_back=7 |
+| 11:00 | chainsight-relation-confidence | |
+| 12:00 | chainsight-sync-profiles-neo4j | |
+| 12:30 | chainsight-sync-relations-neo4j | |
+| 13:00 | chainsight-seed-selection | 주석 `13:00 UTC` — **시각 기준 혼재** |
+| 16:30 | extract-daily-news-keywords | |
+
+### 1.4 요일/월 배치
+
+| 시점 | 태스크 | 비고 |
+|------|--------|------|
+| 토 01:00 | aggregate-weekly-prices | DB 집계 |
+| 토 02:00 | chainsight-all-profiles | Tier A 통합 |
+| 토 03:00 | chainsight-price-co-movement | |
+| 토 04:00 | chainsight-stale-decay | |
+| 토 04:30 | chainsight-aggregate-profiles | |
+| 토 05:00 | validation-weekly-batch | |
+| 월 04:00 | scan-regulatory-relationships | |
+| 월 06:00 | sync-etf-holdings | |
+| 일 03:00 | cleanup-old-macro-data | |
+| 일 03:00 | train-importance-model | ML |
+| 일 03:30 | generate-shadow-report | |
+| 일 04:00 | check-auto-deploy | |
+| 일 04:15 | generate-weekly-ml-report | |
+| 일 04:20 | monitor-ml-performance | |
+| 일 04:30 | train-lightgbm-model | ML (CPU 부하 大) |
+| 일 04:30 | chainsight-neo4j-dirty-sync | **neo4j queue** |
+| 일 05:00 | cleanup-task-results | |
+| 매월 1일 02:00 | sync-sp500-constituents | |
+| 매월 1일 02:30 | archive-old-articles | |
+| 매월 1일 03:00 | refresh-korean-overviews-monthly | **Gemini 대량** |
+| 매월 1일 04:30 | build-patent-network | |
+| 매월 1일 06:00 | sec-check-new-filings | SEC EDGAR |
+| 매월 15일 03:00 | sync-supply-chain-batch | SEC 10-K |
+| 매월 16일 04:00 | sync-institutional-holdings | 13F |
+
+### 1.5 Neo4j 전용 (6시간 주기)
+
+| 시각 | 태스크 |
+|------|--------|
+| 00/06/12/18:00 | neo4j-health-check (`hour=*/6`) |
 
 ---
 
-### 2.3 Alpha Vantage 5 calls/min
+## 2. Rate Limit 분석
 
-**Beat schedule 내에서 Alpha Vantage 직접 호출하는 태스크 없음** — 모두 FMP Provider로 통일된 것으로 판단.
+### 2.1 FMP (Starter 300 calls/min) 🔴 CRITICAL
 
-**확인 필요**: `stocks.tasks.update_realtime_with_provider`, `stocks.tasks.sync_sp500_eod_prices` 내부 fallback path가 AV로 전환될 수 있는지. 전환 시 `AlphaVantageClient`의 12초 sleep이 EOD 배치를 **500 × 12 = 100분**으로 늘어뜨릴 수 있어 다음 태스크(18:30 EOD pipeline) 침범.
+**분 단위 피크 지점**:
 
----
+| 시각 | 동시 FMP 태스크 | 설명 |
+|------|-----------------|------|
+| 18:00 | 3개 + 뉴스 API | `sync-sp500-eod-prices` (500 심볼) + `thesis-update-readings` (지표 대량) + `collect-market-news-evening` + `update-economic-indicators` |
+| 17:00 | 1개 | `update-daily-prices` 만 |
+| 17:15/17:45 | 1개/1개 (15~45분 간격) | collect-sp500-news-fmp-1715, collect-general-news-fmp-evening |
+| 06:15/06:45 | 분산 | 대체로 분리됨 |
+| 09-16 시장시간 5분 주기 | 2개 | `update-realtime-prices` + `update-market-indices` |
 
-## 3. Queue 부하 분석
+**가장 위험**: 18:00 ET — **`sync-sp500-eod-prices`** 와 **`thesis-update-readings`** 가 동시 시작. 각각 S&P 500 전체 및 대량 지표 호출로 수백~수천 call 필요. 태스크 내부 분산 (`time.sleep`, batch API) 없이는 300/min 한도 초과 거의 확실.
 
-### 3.1 `neo4j` Queue (solo pool, 동시 1개)
+**시장시간 `*/5` 호출**: `update-realtime-prices` 가 S&P 500 개별 호출이면 1회 ≈ 500 calls > 300/min. 코드상 `/stable/batch-quote` 사용 여부 검증 필요 (감사 범위 밖).
 
-#### Routing 테이블 (라인 37-55)
+**일 총량 (추정)**: S&P 500 수준의 호출이 하루 ~100회 발생 → 100 × 500 = **50,000 calls/일** 규모. Starter 플랜 일 쿼터 (통상 250K/일) 내이나 분 단위 초과가 실질 리스크.
 
-10건의 태스크가 `neo4j` 큐로 라우팅됨. **solo pool 제약으로 이들은 직렬 실행된다**.
+### 2.2 Gemini Free (15 RPM, 1500 RPD) 🔴 CRITICAL
 
-#### neo4j 큐 24시간 타임라인 (평일 기준)
+**LLM 호출 분포**:
 
-| 시각 ET | 태스크 | expires |
-|---------|--------|---------|
-| 00:00, 00:05, ... 매 5분 | `sec-sync-dirty-neo4j` (**288회/일**) | 240s |
-| 00:00 / 06:00 / 12:00 / 18:00 | `neo4j-health-check` | - |
-| 04:00 daily | `cleanup-expired-news-relationships` | 3600s |
-| **04:30 Sun** | `chainsight-neo4j-dirty-sync` | 3600s |
-| **05:30 daily** | `enrich-relationship-keywords` (100 LLM → 장시간 점유) | 3600s |
-| 08:45 / 10:45 / 12:45 / 14:45 / 16:45 / 18:45 Mon-Fri | `sync-news-to-neo4j` | 3600s |
-| **12:00 daily** | `chainsight-sync-profiles-neo4j` | 3600s |
-| **12:30 daily** | `chainsight-sync-relations-neo4j` | 3600s |
+| 시각 | 태스크 | 추정 호출 |
+|------|--------|----------|
+| 05:30 | enrich-relationship-keywords (limit=100) | ~100 |
+| 08:00 | keyword-generation-pipeline (gainers) | ~20 |
+| 08:15/10:15/12:15/14:15/16:15/18:15 | classify-news-batch × 6 | 각 ~30~50 |
+| 08:30/10:30/12:30/14:30/16:30/18:30 | analyze-news-deep-batch (50) × 6 | 각 50 |
+| 16:30 | extract-daily-news-keywords | ~30 |
+| 매월 1일 03:00 | refresh-korean-overviews-monthly | ~500 (월간 batch) |
 
-#### Critical 몰림 지점: **12:00 ET**
+**일 총 LLM 호출**: `~100 + ~20 + (30~50)×6 + 50×6 + ~30 ≈ 약 640~760 호출/일` (평일 기준).
 
-```
-12:00:00  sec-sync-dirty-neo4j          ← 매 5분 tick (점유 ~수초)
-12:00:00  neo4j-health-check            ← 6시간 tick
-12:00:00  chainsight-sync-profiles-neo4j ← 일일 (heavy: 프로파일 배치 upsert)
-12:00:00  sec-seed-relations-to-chainsight ← default 큐이지만 Neo4j DB 접근
-12:05:00  sec-sync-dirty-neo4j
-12:10:00  sec-sync-dirty-neo4j
-12:15:00  sec-sync-dirty-neo4j
-12:20:00  sec-sync-dirty-neo4j
-12:25:00  sec-sync-dirty-neo4j
-12:30:00  chainsight-sync-relations-neo4j ← 일일 (heavy: 관계 엣지 대량 MERGE)
-12:30:00  sec-sync-dirty-neo4j
-12:45:00  sync-news-to-neo4j             ← max_articles=100 (heavy)
-12:45:00  sec-sync-dirty-neo4j
-```
+→ Gemini Free **1500 RPD 의 ~50%** 사용. 일 쿼터는 여유.
 
-**문제**:
-- solo pool 1개 워커 가정 시 `chainsight-sync-profiles-neo4j`가 15~30분 소요되면 이 동안 **`sec-sync-dirty-neo4j`(expires=240s)가 줄줄이 만료 폐기**.
-- `sec-sync-dirty-neo4j`를 **5분마다 돌리는 것 자체**가 neo4j 큐 혼잡의 주범. dirty flag 기반이면 차라리 이벤트 기반 또는 15분 간격으로 조정.
+**RPM 위험 (핵심)**:
+- `analyze-news-deep-batch` 가 50건을 태스크 내부 sleep 없이 순차 호출 시, 50 call / (LLM 응답 시간 기준 수 십초) = **50 RPM 이상 → 15 RPM 의 3배 초과**.
+- Gemini 429 에러 → 태스크 실패 → retry 백오프 → 다음 배치와 겹침 가능.
 
-#### Critical 몰림 지점: **05:30 ET**
+**16:30 LLM 2중 겹침**:
+- `extract-daily-news-keywords` (매일) + `analyze-news-deep-batch` (평일) 동시 시작.
+- 양쪽 모두 Gemini 사용 → 단일 태스크보다 RPM 압박 2배.
 
-`enrich-relationship-keywords` limit=100 → Gemini 15 RPM 기준 **~7분 연속 점유** → 05:30~05:37 동안 neo4j 큐 단독 점유. 이 시간대에 `sec-sync-dirty-neo4j`(05:30, 05:35) 2회 폐기 가능.
+**권고**: 태스크 내부 `time.sleep(4)` (=15/min 제한) 또는 `@shared_task(rate_limit='15/m')` 적용 여부를 코드에서 재확인 필요.
 
-#### Critical 몰림 지점: **Sunday 04:00~05:00 ET**
+### 2.3 Alpha Vantage (5 calls/min) 🟡 INFO
 
-```
-04:00  cleanup-expired-news-relationships (neo4j)
-04:30  chainsight-neo4j-dirty-sync (neo4j)
-04:30  train-lightgbm-model (default, but heavy)
-05:00  cleanup-task-results (default)
-```
-
-Sunday 새벽 neo4j 큐는 2건만 있지만 `chainsight-neo4j-dirty-sync`가 장시간 돌면 이후 `sec-sync-dirty-neo4j` 연속 폐기.
+beat_schedule dict 에 AV 의존 명시 태스크 없음. 경제지표는 FRED, 가격은 FMP 사용. **beat 스케줄 관점에서 AV rate limit 은 문제 없음**. (온디맨드 호출 경로는 감사 범위 밖.)
 
 ---
 
-### 3.2 `default` Queue
+## 3. Queue 몰림 분석
 
-#### 고빈도 태스크 (시장 시간 09:00~16:00 ET, 평일)
+### 3.1 neo4j queue (solo pool) 🔴 CRITICAL
 
-| 태스크 | 빈도 | 시간당 회수 |
-|--------|------|-------------|
-| `refresh-market-pulse-cache` | 매 1분 | **60** |
-| `update-realtime-prices` | 매 5분 | 12 |
-| `update-market-indices` | 매 5분 | 12 |
-| `calculate-portfolio-values` | 매 10분 | 6 |
-| `check-screener-alerts` | 매 15분 | 4 |
-| **합계 (기저)** | | **94 tasks/hour** |
+**고정 점유**:
+- `sec-sync-dirty-neo4j`: 5분마다, **288회/일**, `expires=240s`
+- `neo4j-health-check`: 6시간마다 (00/06/12/18)
 
-**판단**: default queue의 워커 concurrency가 2~4면 평균 처리 가능. 단 `refresh-market-pulse-cache`가 매분 60초 이상 걸리면 큐 적체. 현재 `expires` 설정이 없어 **적체된 백로그가 영원히 남는다** — 1분 이내 실패 감지 시 drop 하도록 `expires=50` 권고.
+**배치 점유**:
+| 시각 | 태스크 |
+|------|--------|
+| 매일 04:00 | cleanup-expired-news-relationships |
+| 매일 05:30 | enrich-relationship-keywords (100 × Gemini) |
+| 평일 08:45 / 10:45 / 12:45 / 14:45 / 16:45 / 18:45 | sync-news-to-neo4j (max=100) |
+| 매일 12:00 | chainsight-sync-profiles-neo4j |
+| 매일 12:30 | chainsight-sync-relations-neo4j |
+| 일 04:30 | chainsight-neo4j-dirty-sync |
+
+**12:00 neo4j 3중 겹침**:
+- `neo4j-health-check` (6h, 12:00)
+- `chainsight-sync-profiles-neo4j` (매일 12:00)
+- `sec-sync-dirty-neo4j` (*/5, 12:00)
+
+solo pool 이므로 순차 실행. profiles 가 5분 초과하면 12:05 sec-sync 밀림 → `expires=240s` 로 **만료 폐기 가능성**.
+
+**05:30 경합**:
+- enrich-relationship-keywords 가 Gemini 15 RPM 준수 시 100 호출 × 4초 = 약 7분 소요.
+- 05:35 / 05:40 sec-sync 가 밀려 expires 로 폐기될 수 있음.
+
+**18:45 / sync-news (max=100)**:
+- 100건 Neo4j 업서트 시간이 4분 초과하면 18:50 sec-sync 폐기 위험.
+
+### 3.2 default queue 🟡 INFO
+
+**시장시간 정각 동시 시작 (09-16)**:
+- update-realtime-prices
+- update-market-indices
+- refresh-market-pulse-cache
+- calculate-portfolio-values (10분 배수에서만)
+- check-screener-alerts (15분 배수에서만)
+- sec-sync-dirty-neo4j (→ neo4j queue)
+- check-pipeline-alerts (30분 배수에서만)
+
+→ 정각에 최대 **7태스크 동시 시작**. default queue 워커 concurrency 에 따라 병렬/직렬.
+
+**18:30 4중 겹침 (CRITICAL)**:
+- `update-sp500-change-percent` (DB)
+- `run-eod-pipeline` (14 시그널 벡터)
+- `thesis-create-snapshots` (DB + Email)
+- `analyze-news-deep-batch` (Gemini)
+
+의존 관계: `run-eod-pipeline` 이 `Stock.change_percent` 를 참조한다면 `update-sp500-change-percent` 완료 후 시작해야 한다. 같은 분 시작은 **경합 가능**.
 
 ---
 
 ## 4. 시간대별 ASCII 히트맵 (평일 기준)
 
-### 4.1 태스크 빈도 (외부 API + LLM + DB 조회 포함)
+### 4.1 시간별 태스크 실행 빈도 (시간당 시작 수)
+
+`refresh-market-pulse-cache` 가 시장시간 매 1분 (60회/시간) 기여. `sec-sync-dirty-neo4j` + `check-pipeline-alerts` 는 24h 기본 (12+2 = 14회/시간).
 
 ```
-시  |0                                                                                                   124
-----+----------------------------------------------------------------------------------------------------
-00  |██                                                 (14)
-01  |██                                                 (15) update-economic-calendar
-02  |██                                                 (14)
-03  |██                                                 (14)
-04  |██                                                 (15) cleanup-expired-news-relationships
-05  |██                                                 (15) enrich-relationship-keywords ⚠
-06  |███                                                (20) 뉴스 수집 집중 시작
-07  |███                                                (20) movers + press + category
-08  |███                                                (19) keyword + market news + LLM 시작
-09  |█████████████████████████████████████████          (110) 시장 개장 — 5/10/15분 tick
-10  |█████████████████████████████████████████          (112) + co-mentions + LLM
-11  |█████████████████████████████████████████          (109) + relation-confidence
-12  |█████████████████████████████████████████████      (120) 🔴 FMP+Neo4j+Gemini 동시 피크
-13  |█████████████████████████████████████████          (111) + seed-selection
-14  |██████████████████████████████████████████████     (124) 🔴 피크 (LLM + 뉴스 수집)
-15  |█████████████████████████████████████████          (110)
-16  |█████████████████████████████████████████          (112) 🔴 keyword + breadth + heatmap
-17  |███                                                (18) EOD FMP 개시
-18  |████                                               (26) 🔴🔴 SP500 EOD + thesis + pipeline
-19  |██                                                 (16) ML labels + backfill
-20  |██                                                 (15) sync-sp500-financials
-21  |██                                                 (14)
-22  |██                                                 (15) update-economic-indicators
-23  |██                                                 (14)
+시간(ET) | 실행수 | 히트맵
+  00    |   14  | ███░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  01    |   16  | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (update-economic-calendar, 토: +aggregate-weekly)
+  02    |   14~17| ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (토/매월1일 피크)
+  03    |   14~22| ██████░░░░░░░░░░░░░░░░░░░░░░░░  (일 ML 2 + 토 1 + 매월1일 2, 매월15일 1)
+  04    |   15~23| ██████░░░░░░░░░░░░░░░░░░░░░░░░  ★ 일요일 ML+Neo4j 6중
+  05    |   15~17| ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (enrich-relationship-keywords)
+  06    |   19   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (평일 4 + 월 1 + 매월1일 1)
+  07    |   17   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (매일 2 + 평일 3)
+  08    |   18   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (평일 4 + 매일 1)
+  09    |  110   | ██████████████████████████████  ★ 시장 개장
+  10    |  112   | ██████████████████████████████  ★ (LLM 3회)
+  11    |  109   | █████████████████████████████░  ★
+  12    |  116   | ██████████████████████████████  ★ neo4j 3중 + FMP
+  13    |  111   | ██████████████████████████████  ★
+  14    |  113   | ██████████████████████████████  ★ 수집-분석 역순
+  15    |  110   | ██████████████████████████████  ★
+  16    |  114   | ██████████████████████████████  ★ 장마감 + LLM 2중
+  17    |   18   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (평일 4)
+  18    |   23   | █████░░░░░░░░░░░░░░░░░░░░░░░░░  ★ 4중 겹침 (18:30)
+  19    |   16   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (평일 2)
+  20    |   15   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (평일 1)
+  21    |   14   | ███░░░░░░░░░░░░░░░░░░░░░░░░░░░
+  22    |   15   | ████░░░░░░░░░░░░░░░░░░░░░░░░░░  (update-economic-indicators)
+  23    |   14   | ███░░░░░░░░░░░░░░░░░░░░░░░░░░░
 ```
+(1 막대 ≈ 약 4 이벤트. 시장시간은 pulse-cache 1/분이 주 기여.)
 
-(괄호 안은 시간당 총 fire 이벤트 수, 매 분 fire 되는 `refresh-market-pulse-cache`와 `sec-sync-dirty-neo4j`(매 5분) 포함)
-
-### 4.2 외부 API 호출 부하 히트맵 (FMP + Gemini 가중)
+### 4.2 분 단위 히트맵 — 시장시간 내부 (예: 10:00-10:59, 평일)
 
 ```
-시  |Low          Med          High         VeryHigh    Peak
-----+------------------------------------------------------
-00  |░░                                                 (1)
-01  |░░                                                 (1)
-02  |░                                                  (0)
-03  |░                                                  (0)
-04  |░░                                                 (1)  neo4j cleanup
-05  |████                                               (3)  Gemini enrich (100)  ⚠
-06  |██████████                                         (5)  FMP news×3 + FRED
-07  |██████████████                                     (7)  FMP movers + press + category
-08  |████████████████                                   (8)  FMP news + Gemini classify + analyze
-09  |██████████████████                                 (10) 시장 개장 FMP ×30/hour
-10  |████████████████████                               (11) FMP + Gemini (classify+analyze)
-11  |██████████████                                     (7)  FMP 기저
-12  |██████████████████████████                         (13) 🔴 FMP + FRED + Gemini + Neo4j
-13  |██████████████████                                 (9)  FMP + sp500-news 1315
-14  |██████████████████████                             (11) 🔴 Gemini + 뉴스 대량
-15  |██████████████████                                 (9)  FMP + sp500-news 1515
-16  |████████████████████                               (11) 🔴 Gemini keywords + breadth
-17  |████████████████████                               (10) FMP EOD 개시 + sp500-news 1715
-18  |██████████████████████████████████                 (17) 🔴🔴🔴 SP500 EOD+FRED+thesis+news+pipeline
-19  |████████                                           (4)  ML labels
-20  |████████████                                       (6)  SP500 financials 101심볼
-21  |░                                                  (0)
-22  |████                                               (2)  FRED
-23  |░                                                  (0)
+분  | 수 | 히트맵                  | 주요 태스크
+00 | 7 | █████████████████████   | realtime, indices, pulse, portfolio, screener, sec-sync, pipeline-alerts
+01 | 1 | ██                      | pulse
+02 | 1 | ██                      | pulse
+03 | 1 | ██                      | pulse
+04 | 1 | ██                      | pulse
+05 | 4 | ████████████            | realtime, indices, pulse, sec-sync
+06 | 1 | ██                      | pulse
+07 | 1 | ██                      | pulse
+08 | 1 | ██                      | pulse
+09 | 1 | ██                      | pulse
+10 | 5 | ███████████████         | realtime, indices, pulse, portfolio, sec-sync
+11 | 1 | ██                      | pulse
+12 | 1 | ██                      | pulse
+13 | 1 | ██                      | pulse
+14 | 1 | ██                      | pulse
+15 | 6 | ██████████████████      | realtime, indices, pulse, screener, sec-sync, (매시간별 classify 15분 → 10:15)
+16 | 1 | ██                      | pulse
+17 | 1 | ██                      | pulse
+18 | 1 | ██                      | pulse
+19 | 1 | ██                      | pulse
+20 | 5 | ███████████████         | realtime, indices, pulse, portfolio, sec-sync
+21 | 1 | ██                      | pulse
+22 | 1 | ██                      | pulse
+23 | 1 | ██                      | pulse
+24 | 1 | ██                      | pulse
+25 | 4 | ████████████            | realtime, indices, pulse, sec-sync
+26 | 1 | ██                      | pulse
+27 | 1 | ██                      | pulse
+28 | 1 | ██                      | pulse
+29 | 1 | ██                      | pulse
+30 | 8 | ████████████████████████| ★ realtime, indices, pulse, portfolio, screener, sec-sync, pipeline-alerts, analyze-news-deep (10:30)
+31 | 1 | ██                      | pulse
+32 | 1 | ██                      | pulse
+33 | 1 | ██                      | pulse
+34 | 1 | ██                      | pulse
+35 | 4 | ████████████            | realtime, indices, pulse, sec-sync
+36 | 1 | ██                      | pulse
+37 | 1 | ██                      | pulse
+38 | 1 | ██                      | pulse
+39 | 1 | ██                      | pulse
+40 | 5 | ███████████████         | realtime, indices, pulse, portfolio, sec-sync
+41 | 1 | ██                      | pulse
+42 | 1 | ██                      | pulse
+43 | 1 | ██                      | pulse
+44 | 1 | ██                      | pulse
+45 | 6 | ██████████████████      | realtime, indices, pulse, screener, sec-sync, sync-news-to-neo4j(10:45)
+46 | 1 | ██                      | pulse
+47 | 1 | ██                      | pulse
+48 | 1 | ██                      | pulse
+49 | 1 | ██                      | pulse
+50 | 4 | ████████████            | realtime, indices, pulse, sec-sync
+51-54 | pulse
+55 | 4 | ████████████            | realtime, indices, pulse, sec-sync
 ```
 
-(가중치: FMP 호출 1 = 1, Gemini 호출 1 = 1.5, FRED/내부 = 0.3)
-
-### 4.3 neo4j Queue 점유 히트맵 (solo pool, 동시 1건)
+### 4.3 18시 내부 히트맵 (EOD 피크)
 
 ```
-시  |평일
-----+-------------------------------------------------------
-00  |████ (sec-sync 12회)
-01  |████ (sec-sync 12회)
-02  |████
-03  |████
-04  |██████ (cleanup-expired-news + sec-sync)
-05  |██████████████ (enrich-relationship-keywords 7분 점유 ⚠)
-06  |██████ (health-check 06:00 + sec-sync)
-07  |████
-08  |████████ (sync-news-to-neo4j + sec-sync)
-09  |████ (sec-sync)
-10  |████████ (sync-news-to-neo4j + sec-sync)
-11  |████
-12  |██████████████████ (🔴 chainsight-profiles + sync-relations + health-check + sync-news + sec-sync)
-13  |████
-14  |████████
-15  |████
-16  |████████
-17  |████
-18  |██████████ (health-check + sync-news + sec-sync)
-19  |████
-20  |████
-21  |████
-22  |████
-23  |████
+분 | 수 | 히트맵                    | 태스크
+00 | 5 | ███████████████           | update-economic-indicators(FRED), collect-market-news-evening, sync-sp500-eod-prices(FMP), thesis-update-readings(FMP), sec-sync
+05 | 1 | ██                        | sec-sync
+10 | 1 | ██                        | sec-sync
+15 | 3 | █████████                 | classify-news-batch(Gemini), thesis-calculate-scores, sec-sync
+20 | 1 | ██                        | sec-sync
+25 | 1 | ██                        | sec-sync
+30 | 6 | ██████████████████        | ★ update-sp500-change-percent, run-eod-pipeline, thesis-create-snapshots, analyze-news-deep(Gemini), sec-sync, check-pipeline-alerts
+35 | 1 | ██                        | sec-sync
+40 | 1 | ██                        | sec-sync
+45 | 2 | ██████                    | sync-news-to-neo4j(neo4j), sec-sync
+50 | 1 | ██                        | sec-sync
+55 | 1 | ██                        | sec-sync
 ```
 
-**최대 부하 지점**: **12:00~12:59 (neo4j solo pool 경쟁 6건 + sec-sync 12회)**
+**18:00 과 18:30 이 하루 최대 밀집도**.
+
+### 4.4 일요일 04시 ML 체인
+
+```
+분 | 태스크                                   | 큐
+00 | cleanup-expired-news-relationships       | neo4j
+00 | check-auto-deploy                        | default
+15 | generate-weekly-ml-report                | default
+20 | monitor-ml-performance                   | default
+30 | train-lightgbm-model                     | default (CPU 부하 大)
+30 | chainsight-neo4j-dirty-sync              | neo4j
+```
+
+`train-lightgbm-model` + `chainsight-neo4j-dirty-sync` 동시 시작. LightGBM 은 멀티코어 CPU 점유 → 시스템 부하 피크.
 
 ---
 
-## 5. 스케줄 겹침 / 선후 의존성 분석
+## 5. 스케줄 겹침 / 의존성 이슈
 
-### 5.1 확인된 의존 체인 (암묵적 순서 의존)
+### 5.1 🔴 CRITICAL — 18:30 4중 겹침
 
-| 선행 | 후속 | 간격 | 위험도 |
-|------|------|------|--------|
-| `sync-daily-market-movers` (07:30) | `keyword-generation-pipeline` (08:00) | 30분 | OK |
-| `sync-sp500-eod-prices` (18:00) | `run-eod-pipeline` (18:30) | **30분** | ⚠ 500 심볼 FMP가 30분에 못 끝날 가능성 (300 RPM × 30min = 9000 이론치지만, 병행 부하로 실제 3~5배 느려짐) |
-| `run-eod-pipeline` (18:30) | `backfill-signal-accuracy` (19:00) | 30분 | ⚠ 의존성 불확실 — 파이프라인 완료 가드 없음 |
-| `thesis-update-readings` (18:00) | `thesis-calculate-scores` (18:15) | **15분** | ⚠ 지표 수집이 15분 내 끝난다는 보장 없음 |
-| `thesis-calculate-scores` (18:15) | `thesis-create-snapshots` (18:30) | 15분 | ⚠ 상동 |
-| `classify-news-batch` (:15) | `analyze-news-deep-batch` (:30) | 15분 | ⚠ 50건 분류가 15분 내 완료되어야 다음 단계 시작 |
-| `analyze-news-deep-batch` (:30) | `sync-news-to-neo4j` (:45) | 15분 | ⚠ 상동, 추가로 neo4j 큐 경합 |
-| `chainsight-co-mentions` (10:00) | `chainsight-relation-confidence` (11:00) | 60분 | OK |
-| `chainsight-all-profiles` (Sat 02:00) | `chainsight-price-co-movement` (Sat 03:00) | 60분 | OK |
-| `train-importance-model` (Sun 03:00) | `generate-shadow-report` (Sun 03:30) | 30분 | ⚠ 모델 학습이 30분 내 끝난다는 보장 없음 |
-| `generate-shadow-report` (Sun 03:30) | `check-auto-deploy` (Sun 04:00) | 30분 | ⚠ 상동 |
-| `collect-*-news` (06:00~) | `classify-news-batch` (08:15) | 2h+ | OK (버퍼 충분) |
+| 태스크 | 선행 의존 | 리스크 |
+|--------|----------|--------|
+| update-sp500-change-percent | sync-sp500-eod-prices (18:00) | 30분 여유, OK |
+| run-eod-pipeline | sync-sp500-eod-prices + **update-sp500-change-percent** | 같은 분 시작 — **change_percent 갱신 전 참조 가능** |
+| thesis-create-snapshots | thesis-calculate-scores (18:15) | 15분 여유, OK |
+| analyze-news-deep-batch | 독립 | Gemini + default queue 점유 |
 
-**공통 문제**: **모든 의존 체인이 `crontab` 간격으로 암묵적 순서를 가정한다**. 선행 실패/지연 시 후속은 **불완전 데이터로 실행**. `chord` / `chain` / `signature.link()`로 명시적 묶음 처리 권고.
+**핵심**: `run-eod-pipeline` 가 `Stock.change_percent` 에 의존한다면 같은 18:30 시작은 race 이다. 의존성 직렬화 (예: chord, chain) 또는 시각 분리 (18:35) 필요.
 
-### 5.2 동시 시작 충돌
+### 5.2 🔴 CRITICAL — 18:00 FMP 3중 동시
 
-#### 18:00 ET (5건 동시)
+- `sync-sp500-eod-prices` (S&P 500 대량)
+- `thesis-update-readings` (지표 대량)
+- `collect-market-news-evening` (뉴스 API, FMP 사용 가능)
+- (FRED) `update-economic-indicators`
 
-- `update-economic-indicators` (FRED)
-- `collect-market-news-evening` (provider 혼용)
-- `sync-sp500-eod-prices` (FMP heavy)
-- `thesis-update-readings` (FMP/DB)
-- `neo4j-health-check` (neo4j)
+FMP Starter 300/min 한도에서 **분 단위 초과 거의 확실**. 내부 batch API + sleep 전략 없이는 429 에러 다발.
 
-→ **FMP RPM 초과 위험**, neo4j 큐 여유 (단건), default 큐 다건 병렬.
+### 5.3 🔴 CRITICAL — 12:00 neo4j 3중
 
-#### 18:30 ET (4건 동시)
+- `neo4j-health-check` (6h, 12:00)
+- `chainsight-sync-profiles-neo4j` (12:00)
+- `sec-sync-dirty-neo4j` (*/5, 12:00)
+- 이어 12:30 `chainsight-sync-relations-neo4j`
 
-- `analyze-news-deep-batch` (Gemini, 최대 50)
-- `run-eod-pipeline` (LLM 포함된 뉴스 매핑 5단계)
-- `thesis-create-snapshots` (DB)
-- `update-sp500-change-percent` (DB)
+solo pool 에서 순차 실행. profiles + relations 배치가 각 수 분 소요 시 그 사이 sec-sync 가 `expires=240s` 로 폐기. **데이터는 dirty 플래그로 복구 가능**하나 **실행 누락 로그 증가**.
 
-→ **Gemini 15 RPM 초과 확실**. `analyze-news-deep` + `run-eod-pipeline`이 같은 LLM 자원을 두고 경쟁.
+### 5.4 🟠 WARNING — 14:30 수집-분석 역순
 
-#### 04:00~04:30 Sunday (5건 동시/근접)
+- `collect-daily-news-afternoon` (14:30) + `analyze-news-deep-batch` (14:30) 동시.
+- 14:30 analyze 는 직전 classify (14:15) 기준 이전 배치 처리 → 논리 경합은 낮음.
+- 그러나 **14:30 수집분은 classify 를 16:15 까지, analyze 를 16:30 까지 대기** → 처리 지연.
 
-- 04:00 `cleanup-expired-news-relationships` (neo4j)
-- 04:00 `check-auto-deploy` (default)
-- 04:15 `generate-weekly-ml-report` (default)
-- 04:20 `monitor-ml-performance` (default)
-- 04:30 `train-lightgbm-model` (default, CPU/메모리 heavy)
-- 04:30 `chainsight-neo4j-dirty-sync` (neo4j)
+### 5.5 🟠 WARNING — 16:30 LLM 2중
 
-→ default 큐에 heavy 학습 작업이 연속 5건. 워커 CPU/메모리 경합 가능성.
+- `extract-daily-news-keywords` (매일) + `analyze-news-deep-batch` (평일) 동시 시작.
+- Gemini RPM 경합.
 
-#### Saturday 02:00~05:00 Chain Sight 배치
+### 5.6 🟠 WARNING — 시각 기준 EST/UTC 혼재
 
-- 02:00 `chainsight-all-profiles` (heavy)
-- 03:00 `chainsight-price-co-movement` (heavy, 상관계수 계산)
-- 04:00 `chainsight-stale-decay`
-- 04:30 `chainsight-aggregate-profiles`
-- 05:00 `validation-weekly-batch`
+`CELERY_TIMEZONE = 'America/New_York'` 이므로 `crontab(hour=7)` 은 ET 07:00 이다. 그러나 아래 2개 태스크 주석은 UTC 로 표기:
 
-→ 1시간 간격 확보됨. 단 `chainsight-all-profiles`가 1시간 안에 끝난다는 **명시 가드 없음**. 길어지면 `price-co-movement`가 아직 미완성 profile을 참조.
+- `chainsight-heat-score-daily`: 주석 "매일 07:00 UTC" — 실제 ET 07:00 실행 (UTC 기준 11:00~12:00 with DST)
+- `chainsight-seed-selection`: 주석 "매일 13:00 UTC" — 실제 ET 13:00 실행
 
----
+→ **주석과 실제 실행시각 불일치**. 주석 의도는 UTC 07:00 (= ET 03:00 EST / 02:00 EDT) 였을 가능성. **주석 수정 또는 crontab 수정 필요** (감사 범위 밖, 별도 PR).
 
-## 6. 타임존 / 주말 실행 이슈
+### 5.7 🟠 WARNING — 05:30 enrich → 05:35 sec-sync 폐기
 
-| 태스크 | 문제 |
-|--------|------|
-| `extract-daily-news-keywords` | `crontab(hour=16, minute=30)` — **day_of_week 미지정**. 주말에도 실행되어 빈 뉴스셋에 Gemini 호출 낭비 |
-| `chainsight-co-mentions` | 상동, 주말 실행됨 |
-| `chainsight-relation-confidence` | 상동 |
-| `chainsight-sync-profiles-neo4j` | 상동 |
-| `chainsight-sync-relations-neo4j` | 상동 |
-| `chainsight-heat-score-daily` | `crontab(hour=7, minute=0)` — 주석은 "UTC"지만 `CELERY_TIMEZONE=America/New_York` → **실제로는 07:00 ET = 12:00 UTC**. 주석과 실제 동작 불일치 |
-| `chainsight-seed-selection` | 상동 (13:00 ET = 18:00 UTC, 주석은 UTC 주장) |
-| `chainsight-neo4j-dirty-sync` | 상동 (04:30 Sun ET = 09:30 Sun UTC, 주석 UTC 주장) |
+- `enrich-relationship-keywords` (limit=100, Gemini rate-limit 준수 시 ~7분).
+- neo4j queue solo pool → 05:35 `sec-sync-dirty-neo4j` 가 밀림 → `expires=240s` 초과 → 폐기.
+- 05:40 sec-sync 도 밀릴 가능. **연쇄 skip**.
 
-**권고**: `chainsight-*` 3건의 주석/스케줄 타임존을 일치시키거나, `schedule.utc` 명시.
+### 5.8 🟠 WARNING — 일요일 04시 ML 체인 부하
 
----
+- 04:00 cleanup(neo4j) + check-auto-deploy(default) 병렬
+- 04:15 / 04:20 / 04:30 까지 ML 태스크 연쇄
+- 04:30 LightGBM + Neo4j dirty sync 동시 → CPU + Neo4j 동시 부하
 
-## 7. 만료(expires) 설정 누락
+### 5.9 🟠 WARNING — 08:00 market-movers 선행 의존
 
-`expires` 미설정 태스크 → Redis broker 적체 시 오래된 job이 영원히 대기:
+- `sync-daily-market-movers` (07:30) → `keyword-generation-pipeline` (08:00, mover_type='gainers')
+- 30분 여유. 07:30 FMP batch 가 지연되면 08:00 에 빈/불완전 mover 로 Gemini 호출.
 
-- `update-realtime-prices` (매 5분)
-- `calculate-portfolio-values` (매 10분)
-- `update-economic-indicators` (4회/일)
-- `update-market-indices` (매 5분)
-- `update-economic-calendar` (매일 01:00)
-- `refresh-market-pulse-cache` (매 분) — **특히 위험**: 1분 주기인데 만료 없음
-- `cleanup-old-macro-data` (Sun)
-- `neo4j-health-check`
-- `celery-error-digest`
-- `cleanup-task-results`
+### 5.10 🟡 INFO — 토요일 Chain Sight 선형 체인 (정상)
 
-**권고**: 반복 주기보다 짧은 `expires` 필수 (예: 매 분 태스크 → `expires=50`).
+```
+02:00 chainsight-all-profiles
+03:00 chainsight-price-co-movement
+04:00 chainsight-stale-decay
+04:30 chainsight-aggregate-profiles
+05:00 validation-weekly-batch
+```
+
+각 1시간 (또는 30분) 여유. 선형. 정상 설계.
+
+### 5.11 🟡 INFO — 뉴스 v3 파이프라인 (정상)
+
+`hour='8,10,12,14,16,18'` 공통:
+- :15 classify (Gemini)
+- :30 analyze (Gemini)
+- :45 sync-to-neo4j (neo4j queue)
+
+각 15분 간격. 정상 설계. 단 RPM/큐 압박은 섹션 2.2 / 3.1 참조.
 
 ---
 
-## 8. 개선 권고 요약
+## 6. 권고 (읽기 전용, 코드 변경 없음)
 
-### P0 (즉시)
+### 6.1 즉시 조사 필요 (P0)
 
-1. **18:00 ET FMP 충돌 해소**: `thesis-update-readings`를 18:05 또는 18:10으로 이동. `sync-sp500-eod-prices`와 `chord`로 묶는 것이 근본책.
-2. **neo4j 큐 12:00 ET 몰림 분산**: `chainsight-sync-profiles-neo4j`를 11:30으로, `chainsight-sync-relations-neo4j`를 13:00으로 이동. `neo4j-health-check`는 `hour='1,7,13,19'` 등으로 피크 회피.
-3. **`sec-sync-dirty-neo4j` 주기 완화**: 5분 → **15분**으로. expires=240 → 900. dirty flag 누적량이 많지 않으면 이벤트 트리거 고려.
-4. **`analyze-news-deep-batch` max_articles**: 50 → **25**. 15 RPM × 15분 = 이론 225 req 마진 확보.
+1. **Gemini 태스크 내부 rate-limit 존재 여부 코드 확인**
+   - `analyze-news-deep-batch` 50건 순차 호출 시 15 RPM 준수 확인.
+   - `enrich-relationship-keywords` 100건 순차 호출 확인.
+   - `classify-news-batch`, `extract-daily-news-keywords` 확인.
+2. **FMP 18:00 호출 패턴**: `sync-sp500-eod-prices` / `thesis-update-readings` 가 `/stable/batch-quote` 등 묶음 API 사용 여부.
+3. **`run-eod-pipeline` 의 `Stock.change_percent` 의존성**: 18:30 동시 시작이 race 인지 분석.
+4. **주석 UTC/ET 불일치**: `chainsight-heat-score-daily` / `chainsight-seed-selection` 의 주석 의도 재확인.
 
-### P1 (1주일 내)
+### 6.2 스케줄 재배치 후보 (P1)
 
-5. **`enrich-relationship-keywords` limit**: 100 → 40.
-6. **의존 체인 명시화**: Thesis EOD 3단계, News 분류→분석→동기화 3단계를 `chain()`으로 묶기.
-7. **주말 실행 게이팅**: 5개 chainsight 태스크에 `day_of_week='1-5'` 추가 (또는 태스크 내 guard).
-8. **`expires` 일괄 설정**: 10개 태스크에 기본값 추가.
+- `analyze-news-deep-batch` 16:30 → 16:50 (LLM 2중 해소)
+- `run-eod-pipeline` 18:30 → 18:35 (change_percent 직렬화)
+- `thesis-update-readings` 18:00 → 18:05 (FMP 피크 분리)
+- `sec-sync-dirty-neo4j` `*/5` → `*/10` (neo4j 압박 감소 + expires 폐기 감소)
 
-### P2 (리팩토링)
+### 6.3 워커 구성 변경 후보 (P2)
 
-9. **FMP 호출 중앙 throttle**: `fmp_rate_limiter` 데코레이터를 모든 FMP 호출 태스크에 강제 적용 (현재 분산된 것으로 추정 — **확인 필요**).
-10. **Beat schedule 섹션 분리**: 800줄 단일 dict를 `config/beat_schedules/{stocks,news,chainsight,sec}.py`로 분할하면 동시 실행 파악이 쉬워진다.
+- neo4j queue 전용 워커 2개 (`--pool=solo --concurrency=1` 프로세스 2개).
+- default queue 워커 concurrency 를 18:30 4중 기준 재산정.
 
----
+### 6.4 모니터링 권고 (P3)
 
-## 9. 확인 필요 항목 (본 감사에서 미확정)
-
-- `refresh-market-pulse-cache`가 외부 API 호출하는지 또는 캐시 전용인지
-- `update-realtime-with-provider`가 실제 1분당 몇 건의 FMP 호출을 내는지
-- `run-eod-pipeline` 내부의 LLM 호출 빈도
-- FMP `/stable/*` 배치 엔드포인트 사용 여부 (500 심볼을 한 번에 vs. 500회 순차)
-- `sec-sync-dirty-neo4j`의 평균 dirty 레코드 건수
-- `analyze-news-deep-batch`의 1건당 LLM 호출 수 (1 vs. 여러)
+- `expires` 만료 폐기 태스크 카운트 주간 보고서 포함.
+- FMP/Gemini 분당 호출수 Redis 카운터 + 대시보드.
+- neo4j queue 대기 길이 실시간 모니터링.
 
 ---
 
-_감사자: Beat Schedule Auditor (read-only)_
-_대상 파일: `config/celery.py`, `config/settings.py`_
-_관련 문서: `docs/architecture/beat_schedule_audit_20260421.md` (이전 버전, 현재 경로에서 삭제됨)_
+## 7. Drift 점검 (PeriodicTask DB ↔ config dict)
+
+`config/celery.py` L129~L133 주석에 2026-04-24 복구 기록:
+> 누락 상태였던 두 태스크를 DB에 등록 완료
+> - chainsight-heat-score-daily (NY 07:00, 시드 선정 전)
+> - sec-seed-relations-to-chainsight (NY 12:00, 시드 선정 전)
+
+본 감사는 DB 조회 미수행 (읽기 전용 dict 분석). **야간 자동 감사에 drift 체크 루틴 포함 권고**:
+
+```python
+# 읽기 전용 체크 (예시)
+from django_celery_beat.models import PeriodicTask
+from config.celery import app
+
+db_names = set(PeriodicTask.objects.values_list('name', flat=True))
+dict_names = set(app.conf.beat_schedule.keys())
+
+print("DB에 없음 (실행 안됨):", dict_names - db_names)
+print("dict에 없음 (문서화 누락):", db_names - dict_names)
+```
+
+---
+
+## 8. 부록 — 태스크 통계
+
+| 분류 | 수 |
+|------|----|
+| 주기형 (`*/N` 분) | 7 |
+| 평일 시간 고정 | 40+ |
+| 매일 고정 (요일 무관) | 11 |
+| 주간 배치 (토/일/월) | 14 |
+| 월간 배치 (매월 1/15/16일) | 7 |
+| Neo4j queue 전용 | 9 |
+| **총** | **68** |
+
+| 큐 | 수 |
+|----|----|
+| default | 59 |
+| **neo4j** | **9** |
+
+| API 의존 (추정) | 수 |
+|-----------------|----|
+| FMP | 14 |
+| Gemini | 10 |
+| FRED | 4 |
+| Neo4j | 9 |
+
+---
+
+**보고서 종료**. 코드는 수정하지 않았다.

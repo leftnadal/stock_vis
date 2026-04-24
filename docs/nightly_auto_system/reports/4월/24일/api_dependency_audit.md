@@ -1,231 +1,400 @@
 # 외부 API 의존성 감사 보고서
 
 - **작성일**: 2026-04-24
-- **범위**: FMP, Gemini, FRED, SEC EDGAR, Neo4j, Redis
-- **모드**: 읽기 전용. 코드 수정 없음.
-- **조사 파일 수**: FMP 계열 35개, Gemini 계열 22개, 기타(FRED/SEC/Neo4j/Redis) 약 15개
+- **범위**: FMP, Gemini, FRED, SEC EDGAR, Neo4j, Redis, Alpha Vantage, MarketAux/Finnhub
+- **모드**: 읽기 전용 감사. 코드 수정 없음.
+- **감사 방법**: 파일 전수 스캔 + 호출 패턴 분석 + 장애 전파 매핑
 
 ---
 
-## 1. 의존성 매트릭스
+## 의존성 매트릭스
 
-서비스 도메인별로 외부 API 호출의 존재 여부, 에러 처리, Fallback, 장애 시 사용자 영향을 정리.
+### 서비스 × 외부 API 매트릭스
 
-| 도메인 (앱) | FMP | Gemini | FRED | SEC EDGAR | Neo4j | Redis(cache) | Fallback 존재 | 장애 시 사용자 영향 |
-|---|---|---|---|---|---|---|---|---|
-| `stocks/` (tasks, services) | ✅ (핵심) | ❌ | ❌ | ❌ | ❌ | ✅ | 부분(yfinance 폴백 1곳) | 재무제표/가격 업데이트 실패 → EOD 파이프라인 중단 |
-| `stocks/services/korean_overview_service.py` | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | 기업 개요 조회 실패 시 에러 전파 |
-| `serverless/` (screener, chain sight) | ✅ (독립 client) | ✅ (다수) | ❌ | ✅ | ✅ | ✅ | ❌ | Screener/Chain Sight 카드 빈 응답 |
-| `macro/` (market pulse) | ✅ (독립 client) | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | Market Pulse 대시보드 공백 |
-| `news/` (providers, services) | ✅ | ✅ | ❌ | ❌ | ❌(간접) | ✅ | 부분(Circuit Breaker 존재) | 뉴스 피드 빈 응답 / 인사이트 실패 |
-| `rag_analysis/` (LLM 서비스) | ❌ | ✅ (핵심) | ❌ | ❌ | ✅ | ✅ | 부분(PostgreSQL 폴백) | 분석 응답 실패 또는 부분 결과 |
-| `thesis/` (가설 통제실) | ✅ (EOD) | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | 가설 빌더 대화 중단, 지표 매칭 실패 |
-| `validation/` (1차 검증) | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | Peer LLM 필터 실패 시 기본 Peer 반환(소프트 폴백) |
-| `chainsight/` (기업 프로파일) | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | 부분(neo4j_dirty 플래그) | Neo4j 다운 시 동기화 스킵, PG만으로 부분 동작 |
-| `sec_pipeline/` (10-K) | ❌ | ✅ | ❌ | ✅ (핵심) | ❌ | ✅ | ❌ | 10-K 공급망/사업모델 수집 실패 |
+| 서비스 영역 | FMP | Gemini | FRED | Neo4j | SEC EDGAR | Redis | Alpha Vantage | News APIs |
+|------------|:---:|:------:|:----:|:-----:|:---------:|:-----:|:-------------:|:---------:|
+| Stock Service | ✅ Primary | — | — | — | — | ✅ Cache | ✅ Fallback | — |
+| Market Movers (serverless) | ✅ Primary | ✅ Keyword | — | — | — | ✅ Cache | — | — |
+| Screener / Filter Engine | ✅ Primary | ✅ LLM Filter | — | — | — | ✅ Cache | — | — |
+| Chain Sight | ✅ Primary | ✅ Relations | — | ✅ Graph | ✅ 10-K | ✅ Cache | — | — |
+| Macro (Market Pulse) | ✅ Secondary | — | ✅ Primary | — | — | ✅ Cache | — | — |
+| News Intelligence v3 | ✅ News | ✅ Deep Analyzer | — | ✅ Events | — | ✅ Cache | — | ✅ Primary |
+| RAG Pipeline | — | ✅ **필수** | — | ✅ Context | — | ✅ Cache | — | — |
+| Thesis Control | ✅ 지표 | ✅ **필수** | — | — | — | ✅ Cache | — | — |
+| EOD Dashboard | ✅ Primary | — | — | — | — | ✅ Cache | — | — |
+| Validation (Peer) | ✅ Primary | ✅ LLM Filter | — | — | — | ✅ Cache | — | — |
+| SEC Pipeline | — | ✅ Intelligence | — | — | ✅ Primary | — | — | — |
+| Celery Queue | — | — | — | — | — | ✅ **Broker** | — | — |
 
-**요약 관찰**:
-- `stocks/`, `serverless/`, `macro/`는 **각자 FMP 클라이언트를 독립 구현**(3종) → 에러 처리 불일치.
-- `rag_analysis/`, `thesis/`, `serverless/`, `news/`, `sec_pipeline/`, `validation/`의 LLM 호출은 **중앙 LLM 서비스 통합 미완**. 대부분 `genai.Client`를 직접 생성.
-- 전역 Circuit Breaker는 `news/services/circuit_breaker.py` **1곳에만 구현**되어 있고 FMP/AlphaVantage 일부에만 적용. Gemini 미적용.
+### Fallback/Graceful Degradation 요약
 
----
-
-## 2. FMP 상세
-
-### 2.1 클라이언트 중앙 집중화 부재
-
-동일 FMP API를 호출하는 클라이언트가 **3개 공존**:
-
-| 클라이언트 | 위치 | 특이사항 |
-|---|---|---|
-| 정규 클라이언트 | `api_request/providers/fmp/client.py` | 401/402/403/429 분기, 지수 백오프, `FMPPremiumError`/`FMPRateLimitError` 정의 |
-| serverless 전용 | `serverless/services/fmp_client.py` | `HTTPStatusError` → `FMPAPIError`로 일괄 래핑. 402/429 구분 없음 |
-| macro 전용 | `macro/services/fmp_client.py` | 자체 Rate Limiter 내장, 하지만 402 처리 없음 |
-
-**영향**: serverless/macro 경로에서는
-- `.` 포함 심볼 필터링이 일관되지 않아 402가 반복 발생
-- 429를 일반 예외로 처리 → 재시도 로직 미작동
-- Rate Limit 상태가 3개 클라이언트 간 공유되지 않아 멀티프로세스 Celery에서 race condition 가능
-
-### 2.2 파일별 에러 핸들링 요약
-
-| 파일 | try/except | 재시도 | Fallback | Rate Limit | 402 처리 | 타임아웃 | 영향 |
-|---|---|---|---|---|---|---|---|
-| `api_request/providers/fmp/client.py` | ✅ | ✅ 지수 백오프 | ❌ | ✅ 내부 sleep | ✅ 즉시 raise | 30초 | 상위 레이어로 전파 |
-| `api_request/providers/fmp/provider.py` | ✅ | ❌ | ❌ | ❌ | ✅ (balance/income/cash만) | 30초 | `error_response` 반환 |
-| `api_request/stock_service.py` (팩토리) | ✅ | ❌ | ✅ Provider 전환 | ❌ | ❌ | 30초 | `error_response` |
-| `stocks/tasks.py::update_financials_with_provider` | ❌ | Celery retry만 | ❌ | ❌ | ❌ | 30초 | 전체 태스크 실패 |
-| `stocks/services/sp500_service.py::sync_constituents` | ❌ | ❌ | ❌ | ❌ | 부분(`.` 심볼 스킵 로직만) | 30초 | 빈 응답/무조치 |
-| `stocks/services/financial_statements_fallback.py` | ✅ | ❌ | ✅ FMP→yfinance | ❌ | ❌ | - | 빈 결과 가능 |
-| `stocks/services/fmp_screener.py` | ✅ | ❌ | ❌ | ✅(stocks rate_limiter) | ❌ | 30초 | 빈 응답 |
-| `stocks/services/fmp_market_movers.py` | ✅ | ❌ | ❌ | ✅ | ❌ | 30초 | 빈 응답 |
-| `stocks/services/rate_limiter.py` | ✅ | - | - | ✅ Redis 분산 | - | - | 캐시 장애 시 sleep 폴백 |
-| `serverless/services/fmp_client.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | `FMPAPIError` raise |
-| `serverless/services/data_sync.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 로그 + 스킵 |
-| `serverless/services/chain_sight_service.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 부분 데이터 |
-| `serverless/services/enhanced_screener_service.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 빈 리스트 |
-| `serverless/services/sector_heatmap_service.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 빈 응답 |
-| `serverless/services/market_breadth_service.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 빈 응답 |
-| `serverless/services/keyword_data_collector.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 로그 |
-| `serverless/services/cusip_mapper.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | None 반환 |
-| `serverless/services/quote_enricher.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 부분 데이터 |
-| `macro/services/fmp_client.py` | ✅ | ❌ | ❌ | ✅ 내부 | ❌ | 30초 | Exception raise |
-| `macro/services/macro_service.py` | ✅ | ❌ | ❌ | - | - | - | 에러 전파 |
-| `news/providers/fmp.py` | ✅ | ✅ tenacity | ❌ | ✅ (Circuit Breaker 경로) | ❌ | 30초 | Circuit open 시 스킵 |
-| `news/services/aggregator.py` | ✅ | ❌ | ✅ 다른 프로바이더 | - | - | - | 다른 소스로 대체 |
-| `thesis/tasks/eod_pipeline.py` | ✅ | Celery retry | ❌ | ❌ | ❌ | 30초 | 파이프라인 재시도 |
-| `users/utils.py` | ✅ | ❌ | ❌ | ❌ | ❌ | 30초 | 에러 메시지 반환 |
-
-### 2.3 FMP 핵심 약점 5개
-
-1. **클라이언트 3종 분산** — 에러 시맨틱/Rate Limit/402 처리가 서로 다름. serverless/macro 계층의 호출은 402를 일반 `FMPAPIError`로 일괄 래핑해 원래 상태 코드가 손실됨.
-2. **402 Premium 처리 비일관** — `api_request/providers/fmp/provider.py`의 financial statements 3메서드에만 `FMPPremiumError` 분기가 있고 그 외 엔드포인트(프로필, 스크리너, ETF holdings 등)는 402를 에러로만 카운트.
-3. **`.` 포함 심볼 필터링 산발적** — `SP500Service.sync_constituents()`만 `.` 스킵 로직을 가짐. 다른 배치 경로(screener, chain sight)는 필터링 없이 402를 반복 유발.
-4. **Tasks 레이어의 try/except 부재** — `stocks/tasks.py::update_financials_with_provider`, `update_stock_with_provider`는 FMP 호출을 직접 수행하면서 자체 에러 처리를 하지 않아, 일시적 429/502에서도 태스크 전체가 실패하고 Celery `max_retries=3`를 그대로 소진.
-5. **Rate Limiter 이중화** — `api_request/rate_limiter.py`(Redis 분산)와 `api_request/providers/fmp/client.py`의 내부 `time.sleep()`, `macro/services/fmp_client.py`의 자체 limiter가 병존. 분산 락이 공유되지 않아 실제 **5 calls/min**(Free) 또는 **300 calls/min**(Starter) 기준을 넘을 수 있음.
-
-### 2.4 상세 권장사항 (구현은 본 감사 범위 외)
-
-- `api_request/providers/fmp/client.py`를 유일한 HTTP 레이어로 승격하고, serverless/macro는 이를 import하여 사용.
-- `FMPPremiumError` 분기를 Provider의 모든 메서드 + serverless/macro 클라이언트에 일괄 추가.
-- `stocks/tasks.py`에 `FMPPremiumError`/`FMPRateLimitError`별 Celery retry 정책(429 → countdown=60, 402 → retry 안 함) 적용.
+| 의존성 | 재시도 | Fallback 경로 | Graceful Degradation | Circuit Breaker | 장애 영향도 |
+|--------|:-----:|--------------|:--------------------:|:---------------:|:----------:|
+| **FMP** | 부분(Core만 3회) | Alpha Vantage (일부) | ❌ | ❌ | **Critical** |
+| **Gemini** | 부분(llm_service만) | ❌ | 부분 (news Circuit Breaker 존재) | 부분 | **High** |
+| **FRED** | ✅ 3회 | ❌ | 부분 | ❌ | Medium |
+| **Neo4j** | ✅ Celery 재시도 | ❌ | ✅ 완전 (is_available 패턴) | ❌ | High |
+| **SEC EDGAR** | ❌ | ✅ edgartools | 부분 (partial status) | ❌ | Medium |
+| **Redis** | 부분 (API 재호출) | ❌ | 제한적 | ❌ | **Critical (Broker)** |
+| **Alpha Vantage** | ❌ | ✅ FMP | ✅ | ❌ | Low |
+| **MarketAux** | ❌ | 호출자 선택 | ❌ | ✅ 일부 | Medium |
+| **Finnhub** | ❌ | MarketAux | ❌ | ✅ 일부 | Medium |
 
 ---
 
-## 3. Gemini 상세
+## FMP 상세
 
-### 3.1 호출 지점 22개 — 중앙 서비스 통합 미완
+### 호출 포인트 매트릭스 (13개 주요 위치)
 
-대부분의 파일이 `genai.Client` 또는 `GenerativeModel`을 **직접 생성**. 단일 래퍼(예: `rag_analysis/services/llm_service.py`)는 존재하지만 다른 앱은 이를 재사용하지 않음.
+| 레이어 | 파일 | Rate Limit | 402 처리 | 재시도 | Fallback |
+|--------|------|:----------:|:--------:|:------:|:--------:|
+| Core Client | `api_request/providers/fmp/client.py` | ✅ 0.2s 딜레이 | ✅ 감지/전파 | ✅ 2s×3회 exp | ❌ |
+| Provider | `api_request/providers/fmp/provider.py` | ✅ 상속 | ✅ 로깅+PREMIUM_ONLY 코드 | ✅ 상속 | ✅ AV |
+| Stock Service | `api_request/stock_service.py` | ✅ 상속 | ✅ 감지 | ✅ 상속 | ✅ 자동 전환 |
+| Market Movers | `serverless/services/fmp_client.py` | ⚠️ 캐시 5분만 | ❌ 미감지 | ❌ try-except만 | ❌ |
+| Macro | `macro/services/fmp_client.py` | ✅ 0.5s 딜레이 | ❌ 미감지 | ❌ bare raise | ❌ |
+| Filter Engine | `serverless/services/filter_engine.py` | ✅ 상속 | ❌ 미감지 | ❌ | ❌ |
+| Chain Sight | `serverless/services/chain_sight_service.py` | ⚠️ 1h 캐시만 | ❌ 미감지 | ❌ | ❌ |
+| Market Breadth | `serverless/services/market_breadth_service.py` | ⚠️ 5분 캐시만 | ❌ 미감지 | ❌ | ❌ |
+| News (FMP) | `news/providers/fmp.py` | ❌ 없음 | ❌ 미감지 | ❌ | ❌ |
+| Thesis EOD | `thesis/tasks/eod_pipeline.py` | ✅ 상속 | ✅ 감지 | ✅ None 반환 | ❌ |
 
-### 3.2 파일별 요약
+### 핵심 이슈
 
-| 파일 | 모델 | 429 감지 | 재시도 | JSON 파싱 | 응답 빈 검증 | 타임아웃 | 영향 |
-|---|---|---|---|---|---|---|---|
-| `rag_analysis/services/llm_service.py` | 2.5 flash | ✅ 명시 | ✅ 3회 지수 | ✅ ```json``` 제거 | ✅ | 기본 | 폴백 후 전파 |
-| `rag_analysis/services/adaptive_llm_service.py` | 제공자별 | ❌ generic | ❌ | - | ✅ | 기본 | 에러 전파 |
-| `rag_analysis/services/entity_extractor.py` | 2.5 flash | ❌ | ❌ | ✅ `_clean_json_response` | 부분 | 기본 | 빈 엔티티 |
-| `rag_analysis/services/context_compressor.py` | 2.5 flash | ❌ | ❌ | - | 부분 | 기본 | `asyncio.gather(..., return_exceptions=True)`로 실패 흡수 |
-| `serverless/services/thesis_builder.py` | 2.5 flash | ❌ | ❌ | ✅ regex | 부분 | 기본 | 제안 생성 실패 |
-| `serverless/services/prompt_builder.py` | 2.5 flash | ❌ | ❌ | ✅ regex | 부분 | 기본 | 실패 |
-| `serverless/services/keyword_generator.py` / `_v2.py` | 2.5 flash | ❌ | ❌ | ✅ | ❌ | 기본 | 부분 결과로 DB 기록 (나머지 NIL) |
-| `serverless/services/keyword_service.py` | 2.5 flash | ❌ | ❌ | ✅ | ❌ | 기본 | 로그만 |
-| `serverless/services/llm_relation_extractor.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 배치 전체 스킵 가능 |
-| `serverless/services/regulatory_service.py` | 2.5 flash | ❌ | ❌ | ❌ | ❌ | 기본 | lazy init 실패 시 None |
-| `serverless/services/relationship_keyword_enricher.py` | 2.5 flash | ❌ | ❌ | ✅ | ❌ | 기본 | 부분 실패 후 진행 |
-| `serverless/services/csv_url_resolver.py` | 2.5 flash | ❌ | ❌ | ✅ | ❌ | 기본 | None |
-| `news/services/keyword_extractor.py` | 2.5 flash | ❌ | ❌ | ✅ | ❌ | 기본 | 빈 키워드 |
-| `news/services/news_deep_analyzer.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 분석 실패 |
-| `news/services/stock_insights.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 인사이트 공백 |
-| `news/api/views.py` | 2.5 flash | ❌ | ❌ | - | 부분 | 기본 | API 500 가능 |
-| `thesis/services/thesis_builder.py` | 2.5 flash | ❌ | ❌ | ✅ regex | 부분 | 기본 | 대화 응답 지연/실패 |
-| `thesis/services/prompt_builder.py` | 2.5 flash | ❌ | ❌ | ✅ regex | 부분 | 기본 | - |
-| `thesis/services/indicator_matcher.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 매칭 실패 |
-| `thesis/views/conversation_views.py` | 2.5 flash | ❌ | ❌ | - | 부분 | 기본 | - |
-| `sec_pipeline/intelligence.py` / `extractor.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 10-K 파싱 실패 |
-| `validation/services/llm_peer_filter.py` | 2.5 flash | ❌ | ❌ | ✅ | 부분 | 기본 | 기본 Peer로 폴백(소프트) |
-| `stocks/services/korean_overview_service.py` | 2.5 flash | ❌ | ❌ | - | ❌ | 기본 | 에러 전파 |
+**1) Rate Limit (Starter: 300 calls/min)**
+- Core 계층은 0.2s 딜레이 + 일일 10,000 카운터 보유.
+- `serverless/services/fmp_client.py`, `chain_sight_service.py`, `market_breadth_service.py`는 **캐시 TTL에만 의존**하여 캐시 미스 폭주 시 초과 가능.
+- `news/providers/fmp.py`는 **sleep/throttle 전무**.
 
-### 3.3 Gemini 핵심 약점 4개
+**2) FMPPremiumError (402) 처리**
+```python
+# 양호: api_request/providers/fmp/provider.py
+except FMPPremiumError:
+    logger.warning(f"FMP premium-only symbol skipped: {symbol}")
+    return ProviderResponse.error_response(..., error_code="PREMIUM_ONLY")
+```
+- **감지되는 곳**: Balance Sheet / Income Statement / Cash Flow / EOD 지표 fetch
+- **미감지**: Market Movers, Macro, News, Chain Sight, Filter Engine, Market Breadth (**13개 중 6개 = 46%**)
+- **블랙리스트 부재**: BRK.B, BF.B 등 `.` 포함 심볼 사전 필터링이 stocks/tasks.py 일부에만 적용
 
-1. **429 Rate Limit 구분 부재** — `rag_analysis/services/llm_service.py` 1곳만 429를 감지해 지수 백오프. 나머지 21개는 모든 예외를 `Exception`으로 일괄 catch → 1500 RPD 초과 시 `bare except`가 재시도 없이 실패를 삼킴.
-2. **JSON 파싱 유틸 중복** — `_clean_json_response`/`regex ```json``` 제거` 로직이 최소 6개 파일에 중복. 파싱 실패 시 기본값 반환 패턴이 일관되지 않음(어떤 곳은 `{}`, 어떤 곳은 raise).
-3. **Celery 배경 작업의 부분 실패 누적** — `keyword_generator`, `relationship_keyword_enricher`, `regulatory_service`는 배치 루프 내부에서 `try/except Exception: log; continue` 패턴을 사용 → 성공한 항목만 DB에 커밋되고 나머지는 **영구 누락**(NIL). 재실행 트리거가 없음.
-4. **타임아웃 명시 부재** — 거의 모든 호출이 SDK 기본값에 의존. 긴 컨텍스트(RAG Phase 3) 응답이 90~120초 이상 소요될 때 상위 API가 먼저 타임아웃될 가능성.
+**3) 재시도 로직**
+```python
+# api_request/providers/fmp/client.py (L119-159)
+for attempt in range(self.max_retries):  # 3회
+    try:
+        response = requests.get(url, params=params, timeout=30)
+    except (FMPPremiumError, FMPAuthError, FMPRateLimitError):
+        raise  # 즉시 전파 (정답)
+    except (requests.RequestException, FMPClientError) as e:
+        wait_time = (attempt + 1) * 2  # 2s, 4s, 6s
+        time.sleep(wait_time)
+```
+- **문제**: 429 (Rate Limit)는 재시도되지 않고 즉시 전파. Celery 계층에서만 별도 재시도.
+- **다른 클라이언트**: `serverless/fmp_client.py`, `macro/fmp_client.py`는 **bare raise** (재시도 없음).
 
-### 3.4 CLAUDE.md 규칙 준수 현황
+**4) 예외 처리 패턴 위험**
+```python
+# serverless/services/fmp_client.py
+except Exception as e:
+    logger.error(f"FMP API 예상치 못한 에러: {e}")
+    raise FMPAPIError(...)  # 모든 예외를 단일 타입으로 wrapping → 세밀 분기 불가
+```
 
-- **"Celery에서 async LLM 호출 금지"**: `rag_analysis/services/context_compressor.py`는 `asyncio.gather`를 사용하지만 Django ORM 컨텍스트에서만 호출 → Celery 태스크 내부 호출 여부는 `rag_analysis/tasks.py`를 재확인 필요. 본 감사에서는 파일 목록만 확인했으며 규칙 위반 여부는 미확정.
+**5) Timeout 설정**
+- requests/httpx: `timeout=30` (core, macro, serverless market movers)
+- `news/providers/fmp.py`: **timeout 누락** (네트워크 hang 위험)
 
----
+### 장애 전파 경로
 
-## 4. 기타 의존성
+```
+FMP API 장애 (402/429/5xx)
+  ├─ Market Movers / Market Breadth [Hard Fail]
+  │  └─ Dashboard TOP 상승/하락 미표시
+  ├─ Screener/Filter Engine [Soft Fail]
+  │  └─ 필터 결과 Null → 빈 스크린
+  ├─ Chain Sight [Soft Fail]
+  │  └─ 피어/펀더멘탈 조회 실패
+  ├─ News FMP Provider [Soft Fail]
+  │  └─ 뉴스 수집 누락 (로깅만)
+  ├─ Macro Service [Hard Fail]
+  │  └─ Fear&Greed / 금리 대시보드 중단
+  └─ EOD Pipeline [Soft Fail]
+     └─ 지표 fetch 실패 → None 반환
+```
 
-### 4.1 FRED (`macro/`)
-- `macro/services/fred_client.py`: 5XX transient 감지, 지수 백오프 3회. 4XX는 즉시 예외 전파.
-- `macro/services/macro_service.py`: 특정 지표 실패 시 다른 지표는 계속 수집. **Fallback 없음** — 장애가 길어지면 Market Pulse 대시보드 공백.
-- **장애 시나리오**: FRED 전체 다운 → Market Pulse 지표 중 FRED 의존 카드(금리, 실업률 등) 빈 응답.
-
-### 4.2 SEC EDGAR (`sec_pipeline/`, `api_request/sec_edgar_client.py`)
-- `sec_edgar_client.py`: User-Agent 강제, 10req/sec 제한 준수, 0.1초 간격 내부 sleep.
-- `sec_pipeline/collector.py`: 개별 10-K 수집 실패 시 로그 후 다음으로 진행.
-- `sec_pipeline/exceptions.py`: `SECRateLimitError`, `SECFilingNotFoundError` 정의.
-- **장애 시나리오**: SEC 502/503 반복 시 재시도 3회 후 태스크 실패, 해당 분기 10-K만 미수집. Chain Sight 공급망 카드는 **이전 분기 데이터로 대체**(DB에 남아있음).
-
-### 4.3 Neo4j (`rag_analysis/services/neo4j_*`, `chainsight/tasks/`, `serverless/services/neo4j_chain_sight_service.py`)
-- `rag_analysis/services/neo4j_driver.py`: Lazy init, `verify_connectivity()` 실패 시 `None` 반환.
-- `chainsight/tasks/sync_tasks.py`: `neo4j_dirty` 플래그 기반. Neo4j 다운 시 PostgreSQL만 업데이트하고 dirty 플래그 설정 → 복구 후 재동기화.
-- **장애 시나리오**: Neo4j 전체 다운 → Chain Sight 그래프 탐색/경로 API 실패. 기업 프로파일 기본 데이터(PG)만 조회 가능. 단기 degraded mode 동작함.
-- **잠재 위험**: 쿼리 타임아웃 기본 60초 → 프론트엔드가 먼저 타임아웃, 사용자 경험 악화.
-
-### 4.4 Redis / Django cache
-- `config/settings.py`: `django_redis.cache.RedisCache` 사용.
-- `api_request/cache/decorators.py`: `cache.get` 실패 시 백엔드 API 직접 호출(자동 폴백).
-- `stocks/cache_utils.py`: 동일 패턴.
-- **장애 시나리오**: Redis 다운 → 캐시 미스 폭주 → FMP/Gemini 호출 급증 → Rate Limit 초과 → 2차 장애. **Redis 장애는 Gemini/FMP 장애로 전이될 수 있음.**
-- **추가 위험**: `stocks/services/rate_limiter.py`도 Redis에 의존. Redis 다운 시 Rate Limiter 자체가 무력화되어 외부 API 호출이 무제한으로 발생할 수 있음.
-
-### 4.5 Circuit Breaker 현황
-- **존재**: `news/services/circuit_breaker.py`. Redis 기반, provider별 격리. FMP, Alpha Vantage의 news 프로바이더에만 적용.
-- **부재**: Gemini, Neo4j, FRED, SEC EDGAR, 그리고 news 이외의 FMP 호출 경로(stocks, serverless, macro).
-
----
-
-## 5. Circuit Breaker 후보
-
-우선순위는 "장애 시 사용자 노출 + 전이 위험 + 재시도 무용성" 기준.
-
-### 🔴 최우선 (즉시 도입 권장)
-
-| # | 지점 | 이유 |
-|---|---|---|
-| 1 | **Gemini 호출 전반** (중앙 래퍼에 적용) | 429 미구분 + JSON 파싱 실패 + Celery 배치 부분 실패. RAG/키워드/관계/가설 대화 전체가 Cascading. 재시도가 429 상황을 악화시킬 수 있음. |
-| 2 | **`api_request/providers/fmp/client.py`** | 재시도 로직은 있으나 402는 재시도 무용. 401/403/402 즉시 open 상태로 전환하고 TTL 동안 호출 차단. |
-| 3 | **`serverless/services/fmp_client.py`, `macro/services/fmp_client.py`** | 독립 클라이언트. 402/429 무구분 → 장애 시 호출량 증폭. |
-| 4 | **`stocks/services/rate_limiter.py` → Redis 의존** | Redis 다운 시 외부 API 무제한 호출 위험. Redis 장애 시 fail-closed(안전 실패) 폴백 필요. |
-
-### 🟠 높음
-
-| # | 지점 | 이유 |
-|---|---|---|
-| 5 | `rag_analysis/services/neo4j_service.py` 쿼리 | Neo4j 타임아웃 60초 → 프론트 UX 저하. Circuit open 시 PG 전용 응답. |
-| 6 | `serverless/services/llm_relation_extractor.py` | 배치 전체 실패 시 전 뉴스에 관계 미추출. Circuit open → 규칙 기반 대체 or 큐 이동. |
-| 7 | `thesis/services/thesis_builder.py`, `thesis/services/indicator_matcher.py` | 대화형 API 응답 지연 → 사용자 이탈. 실패 시 "지표 직접 선택" UX로 전환. |
-| 8 | `macro/services/fred_client.py` | FRED 반복 장애 시 Market Pulse 카드 공백. 직전 캐시 재사용 권장. |
-
-### 🟡 중간
-
-| # | 지점 | 이유 |
-|---|---|---|
-| 9 | `sec_pipeline/collector.py` | 배경 작업이라 즉각 영향은 낮으나 rate limit 위반 시 IP 차단 위험. |
-| 10 | `news/services/keyword_extractor.py`, `stock_insights.py` | Gemini 전역 Circuit Breaker로 흡수 가능. |
-| 11 | `serverless/services/regulatory_service.py` | lazy init 실패 시 영구 미동작. 헬스 체크 필요. |
+**Critical Path**: Market Movers → Market Breadth → Dashboard.
 
 ---
 
-## 6. 종합 평가
+## Gemini 상세
 
-| 항목 | 상태 | 비고 |
-|---|---|---|
-| 외부 API 에러 핸들링 일관성 | ⚠️ 부분적 | FMP 클라이언트 3종, Gemini 래퍼 미통합 |
-| 재시도 정책 | ⚠️ 불일치 | 일부만 지수 백오프, 대부분 Celery `max_retries=3`에만 의존 |
-| Rate Limit 준수 | ⚠️ 위험 | Redis 의존 + 이중화 → 멀티프로세스에서 초과 가능 |
-| Fallback / Graceful Degradation | ⚠️ 부족 | `financial_statements_fallback`(yfinance), `chainsight neo4j_dirty`, `news/circuit_breaker`만 존재 |
-| Circuit Breaker 도입률 | ❌ 낮음 | news/FMP 일부에만 존재, Gemini/Neo4j/FRED/SEC 미적용 |
-| 모니터링 | ❓ 미확인 | 본 감사 범위 외 (별도 관측성 감사 필요) |
+### 호출 포인트 매트릭스 (23개 파일 · 40+ 호출 지점)
 
-**핵심 위험 Top 3**
-1. **Redis 장애 → FMP/Gemini 호출 폭주** (Rate Limiter + 캐시 모두 Redis 의존) — **가장 전이 위험 큰 단일 실패 지점**.
-2. **Gemini 429/JSON 파싱 실패 → RAG·뉴스·가설·키워드 Cascading 부분 실패** (22개 지점에서 개별 처리).
-3. **FMP 클라이언트 3종 분산 → 402/429 처리 불일치** (Starter 300 calls/min 기준도 보장되지 않음).
+| 파일 | 모델 | Sync/Async | 429 재시도 | JSON 파싱 | 응답 검증 | 주요 위험 |
+|------|------|:----------:|:---------:|:---------:|:--------:|----------|
+| `rag_analysis/services/llm_service.py` | 2.5-flash | ✅ async | ✅ 3회(1,2,4s) | ❌ | ❌ chunk.text만 | 토큰 추정 의존 |
+| `rag_analysis/services/adaptive_llm_service.py` | configurable | ⚠️ 혼용 | ❌ | N/A | ⚠️ 에러만 | `genai.configure()` 동기 |
+| `rag_analysis/services/context_compressor.py` | 2.5-flash | ✅ async | ❌ | N/A | ❌ strip만 | truncate fallback 존재 |
+| `rag_analysis/services/entity_extractor.py` | 2.5-flash | ✅ async | ❌ | ✅ `_clean_json_response` | ⚠️ JSONDecode → fallback | 마크다운 제거만 |
+| `rag_analysis/services/pipeline.py` | 2.5-flash | ✅ async stream | ⚠️ 체크만 | ✅ suggestions | ✅ complete/error | **Celery에서 async 스트리밍** |
+| `thesis/services/prompt_builder.py` | 2.5-flash | ❌ sync | ❌ | ✅ json.loads | ⚠️ try-except | 3개 동기 함수 |
+| `thesis/services/indicator_matcher.py` | 2.5-flash | ❌ sync | ❌ | ✅ Structured Output | ⚠️ 최소 | 동기 호출만 |
+| `thesis/views/conversation_views.py` | 2.5-flash | ⚠️ Django view | ⚠️ 불명확 | 미추적 | 미추적 | **View 내 직접 호출** |
+| `serverless/services/thesis_builder.py` | 2.5-flash | ❌ sync (의도됨) | ❌ | ✅ Structured Output | ⚠️ try-except | Celery 호환 |
+| `serverless/services/keyword_generator.py` | 2.5-flash | ✅ async | ❌ | ⚠️ 파서 클래스 | 미추적 | 배치 20×300 토큰 |
+| `serverless/services/keyword_generator_v2.py` | 2.5-flash | — | ❌ | — | — | 확인 필요 |
+| `serverless/services/keyword_service.py` | 2.5-flash | — | ❌ | — | — | 확인 필요 |
+| `serverless/services/llm_relation_extractor.py` | 2.5-flash | ❌ sync | ⚠️ CACHE_TTL | ✅ JSON | ✅ confidence 검증 | 호출 컨텍스트 모호 |
+| `serverless/services/regulatory_service.py` | 2.5-flash | ⚠️ lazy init | ❌ | — | — | Lazy client |
+| `serverless/services/relationship_keyword_enricher.py` | — | — | ❌ | — | — | 확인 필요 |
+| `serverless/services/csv_url_resolver.py` | — | — | ❌ | — | — | 확인 필요 |
+| `news/services/keyword_extractor.py` | 2.5-flash | ❌ sync | ❌ | ✅ Structured Output | ⚠️ try-except | 동기 호출 |
+| `news/services/news_deep_analyzer.py` | 2.5-flash | ❌ sync | ⚠️ RPM_DELAY 4s | ✅ JSON | ✅ tier 검증 | 15 RPM 하드코딩 |
+| `news/services/stock_insights.py` | 2.5-flash | ❌ sync | ❌ | ✅ Structured Output | ⚠️ try-except | — |
+| `news/api/views.py` | 2.5-flash | ❌ sync | ❌ | ✅ json.loads | ⚠️ 기본 | View 내 직접 호출 |
+| `stocks/services/korean_overview_service.py` | — | — | — | — | — | 확인 필요 |
+| `sec_pipeline/intelligence.py` | — (프롬프트) | — | N/A | N/A | N/A | 프롬프트 템플릿만 |
+| `sec_pipeline/extractor.py` | — | — | — | — | — | 확인 필요 |
+| `validation/services/llm_peer_filter.py` | 2.5-flash | ❌ sync | ❌ | ✅ JSON | ⚠️ error 필드만 | 동기 `parse_filter_with_llm()` |
 
-**즉시 검토 권고**
-- Gemini 중앙 래퍼를 `rag_analysis/services/llm_service.py` 수준으로 승격 후 22개 호출 지점을 migration.
-- FMP 클라이언트 단일화(`api_request/providers/fmp/client.py`).
-- Redis 장애 시 Rate Limiter fail-closed 정책 정의.
-- Circuit Breaker를 Gemini/Neo4j/FRED/SEC/FMP 전 경로로 확장 (기존 `news/services/circuit_breaker.py` 재사용).
+### 핵심 이슈
+
+**1) 동기/비동기 혼용 (P0 위험)**
+- `rag_analysis/services/pipeline.py`는 async 스트리밍을 사용하지만 **Celery 태스크에서 호출될 가능성** → Bug #8 재발 위험.
+- `serverless/services/thesis_builder.py`는 주석에 "Celery 호환용 **동기 API만**" 명시하여 올바른 패턴.
+- `adaptive_llm_service.py`의 `genai.configure()` + `generate_content_async()` 혼용 구조 점검 필요.
+
+**2) 429 Rate Limit 처리 (P1 위험)**
+- **구현된 곳**: `llm_service.py`만 `MAX_RETRIES=3` + `RETRY_DELAYS=[1,2,4]` + 429/rate/quota 문자열 감지.
+- **부분 구현**: `news_deep_analyzer.py`는 `RPM_DELAY=4s` 하드코딩 (15 RPM = 4초 간격) — 재시도는 없음.
+- **미구현 (대다수)**: `context_compressor`, `entity_extractor`, `prompt_builder`, `keyword_generator`, `regulatory_service`, `llm_peer_filter`, `thesis_builder` 등.
+- 1500 RPD / 15 RPM 초과 시 **연쇄 실패** (Keyword → Thesis → RAG 순차 중단 가능).
+
+**3) JSON 파싱 에러 처리**
+- 강건: `entity_extractor._clean_json_response()`가 마크다운 코드 블록 제거 후 파싱.
+- `response_mime_type="application/json"`을 설정한 파일도 여전히 빈 응답/부분 응답에 취약.
+- `context_compressor.py`는 `response.text.strip()`만 하여 빈 응답 감지 불가.
+
+**4) 응답 검증 부족**
+- `response.finish_reason`(STOP / MAX_TOKENS / SAFETY) 체크가 **프로젝트 전체에서 관찰되지 않음**.
+- `safety_ratings` 검사 부재 → 안전 차단 시 빈 응답이 정상 응답으로 처리됨.
+- `llm_service.py`는 `chunk.text` 존재만 확인.
+
+**5) 모델명 혼용**
+- 대부분 `gemini-2.5-flash`로 통일. `adaptive_llm_service`만 설정값 기반.
+- `gemini-2.0-flash`, `gemini-1.5-flash`는 프로젝트 내 미사용 (긍정).
+
+**6) 클라이언트 생성 패턴**
+```python
+# ❌ 중복 생성: prompt_builder.py, llm_peer_filter.py
+client = genai.Client(api_key=api_key)  # 매 호출마다 신규
+
+# ✅ 싱글톤: llm_service.py, context_compressor.py
+def __init__(self):
+    self.client = genai.Client(api_key=api_key)
+
+# ⚠️ Lazy init: regulatory_service.py
+def _get_gemini_client(self):
+    if self._gemini_client is None:
+        self._gemini_client = genai.Client(api_key=api_key)
+```
+
+**7) Timeout**
+- `config/settings.py`에 Gemini 전용 timeout 설정 부재.
+- SDK 기본값에 의존 → Celery 태스크 타임아웃 초과 시 작업 큐 drift 가능.
+
+### 장애 전파 경로
+
+```
+Gemini 429 / 5xx / Timeout
+    ├─ RAG (llm_service + context_compressor) → 회원 질문 응답 중단
+    ├─ Thesis Builder (prompt_builder + indicator_matcher) → 테제 생성 중단
+    ├─ Keyword Generator → Market Movers 키워드 중단
+    ├─ News Deep Analyzer → 뉴스 분석 배치 중단
+    ├─ LLM Relation Extractor → 공급망 관계 추출 중단
+    ├─ Stock Insights → 종목 인사이트 요청 실패
+    ├─ Validation/Peer Filter → 유사 종목 필터 중단
+    └─ Regulatory Service → 규제 그룹 탐지 중단
+```
+
+**Critical Path**: RAG 파이프라인 (사용자 대면) + Thesis Builder (배치) 동시 타격.
 
 ---
 
-*본 보고서는 읽기 전용 감사이며 코드 변경을 포함하지 않습니다. 실제 개선 작업은 별도 plan/implementation 세션에서 진행 권장.*
+## 기타 의존성
+
+### FRED API (`macro/services/fred_client.py`)
+
+| 항목 | 상태 |
+|------|------|
+| Rate Limit | 120 req/min (준수) |
+| 재시도 | ✅ 3회 exponential backoff (2/4/6s) |
+| Timeout | 30초 |
+| 401/403/404 | 즉시 실패 |
+| 5xx | 재시도 |
+| Fallback | ❌ 없음 — 호출자에 예외 전파 |
+
+**장애 영향**: Market Pulse 금리/인플레이션/고용 지표 중단. 월간 주기라 즉시 복구 압력 낮음.
+
+---
+
+### Neo4j (`rag_analysis/services/neo4j_driver.py`, `serverless/services/neo4j_chain_sight_service.py`, `chainsight/services/neo4j_sync.py`)
+
+| 항목 | 상태 |
+|------|------|
+| 연결 풀 | max_connection_pool_size=50, lifetime=3600s |
+| Graceful Degradation | ✅ 완전 (`is_available()` 패턴 + None 캐싱) |
+| 더티 플래그 동기화 | ✅ `neo4j_dirty=True` → 배치 재시도 |
+| Celery 재시도 | max_retries=2, default_retry_delay=60s |
+| 명시적 Timeout | ❌ (driver 기본값) |
+
+```python
+# 표준 패턴
+def create_stock_node(...) -> bool:
+    if not self.is_available():
+        return False  # False 반환, 호출자가 처리
+```
+
+**장애 영향**: Chain Sight 온톨로지 조회 불가. PostgreSQL 데이터 유지로 기본 기능은 동작. 동기화 큐가 누적될 수 있음.
+
+---
+
+### SEC EDGAR (`sec_pipeline/collector.py`)
+
+| 항목 | 상태 |
+|------|------|
+| Rate Limit | 10 req/s 준수 (0.12s sleep) |
+| User-Agent | ✅ 설정 (`Stock-Vis stockvis@example.com`) |
+| 재시도 | ❌ 단일 시도만 |
+| Timeout | 30초(CIK) / 60초(HTML) |
+| Fallback | ✅ edgartools (선택 의존성) |
+| 부분 실패 처리 | ✅ status=`partial`/`failed` 반환 |
+
+**장애 영향**: 10-K 미수집 → Supply Chain 관계 추출 중단. 뉴스/FMP 데이터로 부분 대체 가능.
+
+---
+
+### Redis (`config/settings.py`)
+
+```python
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',
+    }
+}
+```
+
+| 항목 | 상태 |
+|------|------|
+| TTL 정책 | quote 5m / profile 24h / financial 7d |
+| `cache.get()` 실패 | None 반환 → API 재호출 (부분 degradation) |
+| `cache.set()` 실패 | 로그만, 예외 처리 없음 |
+| Celery Broker 역할 | ✅ **단일 장애점** |
+
+**장애 영향**:
+1. API 캐시 미스 폭주 → FMP/Gemini 호출 급증 → Rate Limit 연쇄 초과.
+2. **Celery 전면 중단** → SEC 수집, Neo4j 동기화, EOD 파이프라인, 뉴스 배치 정지.
+
+---
+
+### Alpha Vantage (`api_request/providers/alphavantage/provider.py`)
+
+| 항목 | 상태 |
+|------|------|
+| Rate Limit | 5 calls/min (12초 대기) |
+| 재시도 | ❌ (base provider 인터페이스만) |
+| Fallback | ✅ FMP로 자동 전환 (기본값이 FMP) |
+
+**장애 영향**: 대비용 사용이므로 실질 영향 낮음.
+
+---
+
+### News Providers (`news/providers/marketaux.py`, `news/providers/finnhub.py`)
+
+| 항목 | MarketAux | Finnhub |
+|------|-----------|---------|
+| Rate Limit | 2,500/day (10s 간격) | 60/min (1s 간격) |
+| 재시도 | ❌ | ❌ |
+| Timeout | 요청 간 sleep만 | 요청 간 sleep만 |
+| Circuit Breaker | ✅ 일부 존재 (`news/services/circuit_breaker.py`) | ✅ 일부 존재 |
+| Fallback | 호출자 선택 | ✅ MarketAux |
+
+**장애 영향**: 뉴스 피드 일시 중단 + AI 분석 중단 (사용자 대면).
+
+---
+
+## Circuit Breaker 후보
+
+### 우선순위 **P0 (Critical — 즉시 도입 권장)**
+
+| 지점 | 이유 | 제안 패턴 |
+|------|-----|----------|
+| **Gemini llm_service.py (RAG)** | 회원 질문 응답 — 사용자 대면 연쇄 실패 시 전면 다운 | 3회 연속 429 → `LLM_UNAVAILABLE` 플래그 → 정적 사용자 메시지 반환 |
+| **FMP Market Movers / Market Breadth** | Dashboard TOP 종목 미표시 (사용자 대면) | 5분 내 실패 3회 → 60s circuit open, stale cache 반환 |
+| **Redis (Celery Broker)** | 단일 장애점 — 모든 배치 파이프라인 정지 | Sentinel/Cluster + Celery producer 측 백오프 |
+
+### 우선순위 **P1 (High)**
+
+| 지점 | 이유 | 제안 패턴 |
+|------|-----|----------|
+| **FMP Screener/Filter Engine** | 고장 시 500 에러 노출 | 실패율 >20% → 이전 결과 캐시 반환 |
+| **FMP Chain Sight** | 예외 무시(로깅만) → 사용자에게 빈 결과 표시 | 실패 후 이전 스냅샷(Postgres) 재사용 |
+| **Gemini Thesis Builder** | Celery에서 연쇄 실패 → 테제 생성 drift | `retry(countdown=300)` + 3회 초과 시 dead letter |
+| **Gemini News Deep Analyzer** | 배치 중 429 → 전체 배치 실패 | 429 감지 시 루프 탈출 + checkpoint 저장 |
+| **Neo4j 동기화 큐** | 장시간 실패 시 dirty 플래그 누적 | 누적 카운트 모니터링 + circuit breaker 트리거 |
+
+### 우선순위 **P2 (Medium)**
+
+| 지점 | 이유 | 제안 패턴 |
+|------|-----|----------|
+| **FMP EOD Pipeline (402)** | `.` 포함 심볼 반복 시도 | 402 연속 5회 → 심볼 블랙리스트 자동 등록 |
+| **FMP News Provider** | timeout 누락 + 재시도 없음 | 명시적 timeout + 3회 재시도 |
+| **SEC EDGAR collector** | 네트워크 오류 시 단일 시도 | 최소 1회 재시도 (backoff) |
+| **News Providers (MarketAux/Finnhub)** | 기존 circuit breaker 범위 확장 필요 | 모든 provider에 통일된 breaker 적용 |
+
+### 우선순위 **P3 (Low)**
+
+| 지점 | 이유 | 제안 패턴 |
+|------|-----|----------|
+| **FRED Macro** | 월간 주기, 즉시 복구 압력 낮음 | Fallback 캐시만 추가 |
+| **Alpha Vantage** | FMP로 이미 fallback 존재 | 현행 유지 |
+
+---
+
+## 권장 조치 요약
+
+### 즉시 실행 (P0)
+
+1. **FMP Premium 심볼 블랙리스트 전역 적용** — BRK.B, BF.B 등 사전 필터링 공통 모듈화.
+2. **Gemini Celery 태스크 async 호출 검사** — `rag_analysis/services/pipeline.py` Celery 컨텍스트 사용 여부 확인 후 동기 변환.
+3. **Redis Sentinel/Cluster 검토** — 단일 장애점 제거.
+4. **RAG/Thesis Circuit Breaker** — Redis 기반 실패 카운터 + 정적 fallback 메시지.
+
+### 단기 (P1)
+
+5. **Gemini 공용 재시도 데코레이터** — `llm_service.py` 수준의 `RETRY_DELAYS=[1,2,4]` + 429/quota 감지를 모든 호출 지점에 적용.
+6. **FMP 429 재시도** — Celery 태스크 exponential backoff (현재 5분 고정).
+7. **Gemini 클라이언트 싱글톤 통합** — `config/gemini_client.py` 공통 모듈화.
+8. **`response.finish_reason` / `safety_ratings` 검증 추가**.
+
+### 중기 (P2)
+
+9. **config/settings.py에 `GEMINI_CONFIG` / `FMP_CONFIG`** — 환경변수 기반 rate_limit, timeout, retry 설정 구조화.
+10. **`news/services/circuit_breaker.py` 범위 확대** — RAG, Thesis, Chain Sight, Screener에 동일 패턴 적용.
+11. **`response.finish_reason`, safety 체크 공통화**.
+
+---
+
+## 통계
+
+- **FMP 호출 지점**: 13개 주요 위치 중 **6개(46%) 402/429 미처리**
+- **Gemini 호출 파일**: 23개 · 추적된 40+ 호출 지점 중 **429 재시도 구현은 2개(~5%)**
+- **Circuit Breaker 도입된 영역**: News Providers (부분)만 — 전체 외부 의존성의 **<10%**
+- **Graceful Degradation 완전 구현**: Neo4j만 (1개)
+
+---
+
+**보고서 작성 완료**: 2026-04-24
+**감사자**: Claude Code (읽기 전용)
+**다음 단계**: P0 권장 조치의 우선 순위 검토 후 백로그 티켓화

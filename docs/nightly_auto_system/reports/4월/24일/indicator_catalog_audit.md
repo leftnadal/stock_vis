@@ -1,235 +1,217 @@
 # 지표 카탈로그 동기화 감사 보고서
 
-- 감사 일자: 2026-04-24
-- 대상 파일
-  - BE 정의: `thesis/services/prompt_builder.py` (`INDICATOR_CATALOG`)
-  - BE 후처리: `thesis/services/llm_postprocess.py` (`normalize_llm_output`)
-  - BE 매칭: `thesis/services/indicator_matcher.py` (`KEYWORD_RULES`, `match_*`)
-  - FE 표시: `frontend/components/thesis/AddIndicatorSheet.tsx` (`INDICATOR_CATALOG`, `KEYWORD_INDICATOR_MAP`)
-- 감사 모드: **Read-only**(코드 변경 없음)
+- **감사일**: 2026-04-24
+- **범위**: INDICATOR_CATALOG (BE/FE) · KEYWORD_RULES · data_params 포맷
+- **대상 파일**
+  - BE 정의: `thesis/services/prompt_builder.py`
+  - BE 후처리: `thesis/services/llm_postprocess.py`
+  - BE 매칭: `thesis/services/indicator_matcher.py`
+  - BE 페처: `thesis/tasks/eod_pipeline.py`
+  - FE 표시: `frontend/components/thesis/AddIndicatorSheet.tsx`
+- **유형**: 읽기 전용 감사 — 코드 변경 없음
 
 ---
 
 ## 요약 (동기화 상태)
 
-| 항목 | 결과 | 비고 |
-|------|------|------|
-| 카탈로그 ID 집합 (BE ↔ FE) | **일치** | 양쪽 64개 동일 |
-| 카탈로그 ID → 이름 | **부분 불일치** | 4건(id=6,7,30,54)에서 FE가 BE보다 축약 표기 |
-| 카탈로그 ID → 업데이트 주기(`freq`) | **일치** | BE `INDICATOR_FREQUENCY`와 FE `freq` 동일 |
-| 카테고리 구조 | **이질적** | BE 5개 상위 vs FE 17개 세부 — 설계상 의도 가능 |
-| description 품질 | **양호** | 모든 64개에 description 존재, 최단 24자 |
-| `KEYWORD_RULES`(BE) 고아 | **없음** | 전부 CATALOG 내 존재 |
-| `KEYWORD_INDICATOR_MAP`(FE) 고아 | **없음** | 전부 CATALOG 내 존재 |
-| BE ↔ FE 키워드 룰 커버리지 | **큰 격차** | BE 11개 그룹 vs FE 28개 그룹 — BE 누락 약 18개 |
-| `data_params` 포맷 | **혼종** | 4종 포맷 공존(fmp symbol / fmp metric / fred / metrics / news) |
-| FMP 필드명 실제성 | **일부 위험** | `revenueGrowthYoY`, `foreign_net_buy`, `institutional_net_buy` 표준 FMP 필드 아님 |
+| 항목 | 결과 |
+|------|------|
+| BE 카탈로그 항목 수 | **64개** (`prompt_builder.py:14-294`) |
+| FE 카탈로그 항목 수 | **64개** (`AddIndicatorSheet.tsx:15-91`) |
+| ID 기준 교집합 | **64개** (누락/추가 없음) |
+| 이름 불일치 | **4건** (id 6, 7, 30, 54) |
+| BE description 빈 값 | **0건** (전 항목 20자 이상, 10자 미만 없음) |
+| FE description 필드 | **부재** (`CatalogIndicator` 인터페이스에 `description` 없음) |
+| BE `KEYWORD_RULES` ↔ BE 카탈로그 | 모든 이름 매칭, **고아 0건** (11개 룰/11개 지표) |
+| FE `KEYWORD_INDICATOR_MAP` ↔ FE 카탈로그 | 모든 `indicatorIds` 매칭, **고아 0건** (29개 룰) |
+| BE vs FE 키워드 룰 커버리지 | **심한 비대칭** — BE 11개 / FE 50개 |
+| FMP `data_params` vs 실제 fetcher(`_fetch_fmp_value`) | **21건 포맷 불일치** |
 
-**핵심 리스크 Top 3**
-1. BE `KEYWORD_RULES`가 FE 대비 크게 뒤처져 있어, LLM이 `indicator_db_id`를 빠뜨리고 전제 텍스트만 반환할 때 BE fallback 품질이 FE 추천 품질에 못 미친다.
-2. BE catalog의 일부 `data_params.metric` 값이 실제 FMP 엔드포인트 필드와 다르다. 예: `revenueGrowthYoY`, `foreign_net_buy`, `institutional_net_buy`.
-3. BE `INDICATOR_CATALOG`와 FE `INDICATOR_CATALOG`가 각각 하드코딩되어 있어, 카탈로그 변경 시 두 곳을 수동으로 동기화해야 한다(feedback_indicator_catalog_sync 메모리와 일치).
+결론: ID 셋은 동기화되었으나 이름·키워드 룰 커버리지·FMP 필드 포맷에 체계적 불일치가 남아있음. 특히 `data_params.metric`가 FMP `/quote` 응답 필드와 어긋나 펀더멘털 TTM 지표 9건, 기술적 지표 9건이 실시간 값 수집에서 조용히 `None`을 반환할 가능성이 있다.
 
 ---
 
 ## BE ↔ FE 불일치 목록
 
-### 1) ID 집합
+### 1) 이름 불일치 (4건, 동일 ID)
 
-- BE (`prompt_builder.py:14-294`) **64개**: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 21, 22, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73
-- FE (`AddIndicatorSheet.tsx:15-91`) **64개**: 위 집합과 동일
-
-→ **동일**. BE-only / FE-only 지표 없음.
-
-### 2) 동일 ID, 다른 이름 (사용자 표시 라벨 표류)
-
-| id | BE 이름 (`prompt_builder.py`) | FE 이름 (`AddIndicatorSheet.tsx`) | 영향 |
+| id | BE name (`prompt_builder.py`) | FE name (`AddIndicatorSheet.tsx`) | 영향 |
 |----|-------------------------------|-----------------------------------|------|
-| 6 | `미국 기준금리 (Fed Funds Rate)` | `미국 기준금리` | FE에서 영문명 누락 — 프롬프트 표기와 UI 표기 차이 |
-| 7 | `미국 10년 국채 금리` | `미국 10년 국채` | FE가 "금리" 생략 |
-| 30 | `미국 2년 국채 금리` | `미국 2년 국채` | 동상 |
-| 54 | `부채비율 (Debt/Equity)` | `부채비율 (D/E)` | 부기 표기 상이 |
+| 6  | `미국 기준금리 (Fed Funds Rate)` | `미국 기준금리` | `get_indicator_description(name)`의 접두사 매칭(`prompt_builder.py:335-345`)으로 흡수 — 현재는 문제 없음 |
+| 7  | `미국 10년 국채 금리` | `미국 10년 국채` | 접두사 흡수 가능. 단, FE 라벨 그대로 역조회 시 실패 |
+| 30 | `미국 2년 국채 금리` | `미국 2년 국채` | 동일 |
+| 54 | `부채비율 (Debt/Equity)` | `부채비율 (D/E)` | 괄호 안 표기 차이 — 접두사 `부채비율 `만 일치, 정확 매칭 실패 |
 
-영향 범위
-- `match_indicators_for_llm()`은 ID로 조회 후 CATALOG 이름을 결과에 채운다(`indicator_matcher.py:297`). FE가 같은 ID로 저장된 지표를 표시할 때는 FE 로컬 이름이 쓰이므로, 사용자가 "가설 빌더 LLM 출력"과 "지표 추가 시트"에서 같은 지표를 다른 라벨로 보게 된다.
+**권고**: id 54는 BE/FE 한쪽을 고정해 표기 통일 필요. id 6, 7, 30은 현재 접두사 매칭으로 덮이지만 "FE 라벨 → BE 조회" 경로가 생기면 즉시 깨짐.
 
-### 3) 카테고리 구조
+### 2) ID 셋
 
-- BE (`CATEGORY_LABELS`): `market_data / macro / technical / fundamental / sentiment` (5개, LLM 프롬프트 그룹핑용)
-- FE (`categoryOrder`): `수급 / 주요 지수 / 원자재 / 암호화폐 / 금리 / 환율/변동성 / 고용/성장 / 물가/주택 / 기술적 / 펀더멘털 / 재무 체질 / 밸류에이션 / 성장 / 운영 효율 / 이익 품질 / 주주환원 / 심리` (17개, UI 세부 그룹핑용)
+- BE IDs (64): `{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,20,21,22,23,24,25,26,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,50,51,52,53,54,55,56,57,58,60,61,62,63,64,65,66,67,68,69,70,71,72,73}`
+- FE IDs (64): **BE와 완전 동일**
+- 결번 구간 `17,18,19,27,28,29,48,49,59`는 양쪽 모두 의도적 예약(동기 일치).
 
-→ 의도적 이질성으로 보이지만, BE가 카테고리를 프롬프트에 노출하므로 LLM은 거시/시장/기술/펀더/심리 5분류만 인식한다. FE가 보여주는 "재무 체질/밸류에이션/성장/운영 효율/이익 품질/주주환원"은 모두 BE에서는 `fundamental`로 묶인다. **불일치가 아니라 설계 격차**.
+### 3) 카테고리 라벨링 구조 차이 (정보성)
 
-### 4) 업데이트 주기(`freq` vs `INDICATOR_FREQUENCY`)
+- BE `category` (5개 시스템 키): `market_data`, `macro`, `technical`, `fundamental`, `sentiment`
+- FE `category` (17개 한글 소분류): `수급`, `주요 지수`, `원자재`, `암호화폐`, `금리`, `환율/변동성`, `고용/성장`, `물가/주택`, `기술적`, `펀더멘털`, `재무 체질`, `밸류에이션`, `성장`, `운영 효율`, `이익 품질`, `주주환원`, `심리`
+- 두 구조를 잇는 단일 소스가 없음 → 신규 지표를 추가할 때 양쪽 분류를 수동으로 맞춰야 한다.
 
-전 64개 ID를 대조한 결과 불일치 없음. 예:
-- id=6 `주간` ✓ / id=7 `일간` ✓ / id=34 `분기` ✓ / id=31 `월간` ✓ / id=37 `주간` ✓.
+### 4) frequency(주기)
+
+- BE: `INDICATOR_FREQUENCY` dict(`prompt_builder.py:305-326`), ID→주기 매핑
+- FE: 항목 객체의 `freq` 필드로 인라인
+- 모든 ID에서 값 일치(일간/주간/월간/분기). **이상 없음**.
 
 ---
 
 ## description 품질
 
-BE `INDICATOR_CATALOG` 64개 전부 `description` 필드를 가진다.
+- BE `description`: **64/64 전 항목 비어 있지 않음**, 모두 20자 이상. `< 10자` 항목 **0건**.
+- 정규식 `description.*''`는 `_INDICATOR_NAME_TO_DESC` 빌더(`prompt_builder.py:332`)와 validator 스키마 정의에서만 검출됨 — **실제 데이터에 빈 값 없음**.
+- FE `CatalogIndicator` 타입(`AddIndicatorSheet.tsx:8-13`)에는 `description` 필드 자체가 없음. FE에서 지표 설명을 보여주려면 BE API 응답을 경유해야 하는 구조.
 
-| 검사 | 결과 |
-|------|------|
-| 빈 description | **0건** |
-| 10자 미만 | **0건** |
-| 최단 description | id=14 `코스닥 지수` → `한국 중소형 성장주 시장 지수.` (15자) |
-| 중복 description | 0건 (모두 상이) |
-
-FE는 description을 보유하지 않고 `category`/`freq`만 표시한다. 즉, **BE description은 프롬프트(`build_indicator_block`)에는 쓰이지 않으며**(프롬프트에는 이름+주기만 노출), `get_indicator_description()` 경로를 통해서만 소비된다.
-
-**검토 권장 포인트 (품질 이슈는 아님)**
-- `get_indicator_description()`을 호출하는 경로가 현재 `thesis` 앱 내 어디에서 쓰이는지 점검 — 미사용이라면 dead path 가능성. (본 감사 범위 밖)
+**결론**: BE description 품질에는 문제 없음. FE 미러에 description이 빠져있다는 구조적 공백만 존재.
 
 ---
 
 ## keyword_rules 고아
 
-### BE `KEYWORD_RULES` (`indicator_matcher.py:12-154`)
+### BE `KEYWORD_RULES` (`indicator_matcher.py:12-154`) — 11개 룰
 
-**지표 참조 방식**: 이름 문자열. 11개 그룹 전부 CATALOG에 존재.
+| 키워드 그룹 | 추천 지표 이름 (BE) | 카탈로그 매칭 | 비고 |
+|-------------|-----------------------|------------------|------|
+| 외국인/외인/순매수/foreign | 외국인 순매수 추이 (id 1) | ✓ |  |
+| 금리/연준/FOMC/… | 미국 기준금리 (Fed Funds Rate)(6), 미국 10년 국채 금리(7) | ✓ | id 30(2년 국채) 미포함 |
+| VIX/공포/변동성 | VIX (공포지수)(8) | ✓ |  |
+| 환율/달러/원달러 | 원/달러 환율(9) | ✓ | DXY(39) 미포함 |
+| RSI/MACD/기술적 | RSI (14일)(10) | ✓ | MACD(40) 키워드만 있고 추천 누락 |
+| 센티먼트/여론/뉴스 | 뉴스 센티먼트(11) | ✓ |  |
+| 실적/EPS/매출/PER | EPS 추이(5) | ✓ | PER(50) 키워드만 있고 추천 누락 |
+| 기관/연기금 | 기관 순매수 추이(2) | ✓ |  |
+| S&P/나스닥 | S&P 500(3) | ✓ | NASDAQ(12) 미포함 |
+| 코스피 | KOSPI 지수(4) | ✓ |  |
+| 선거/정치/정책 | VIX(8), KOSPI(4) | ✓ |  |
 
-| # | 대표 키워드 | 참조 이름 | CATALOG 존재 |
-|---|-------------|----------|-------------|
-| 1 | 외국인/순매수 | `외국인 순매수 추이` | ✓ (id:1) |
-| 2 | 금리/연준 | `미국 기준금리 (Fed Funds Rate)`, `미국 10년 국채 금리` | ✓ (id:6, 7) |
-| 3 | VIX/변동성 | `VIX (공포지수)` | ✓ (id:8) |
-| 4 | 환율/달러 | `원/달러 환율` | ✓ (id:9) |
-| 5 | RSI/MACD | `RSI (14일)` | ✓ (id:10) |
-| 6 | 센티먼트/뉴스 | `뉴스 센티먼트` | ✓ (id:11) |
-| 7 | 실적/EPS | `EPS 추이` | ✓ (id:5) |
-| 8 | 기관 | `기관 순매수 추이` | ✓ (id:2) |
-| 9 | S&P/나스닥 | `S&P 500` | ✓ (id:3) |
-| 10 | 코스피 | `KOSPI 지수` | ✓ (id:4) |
-| 11 | 선거/정치 | `VIX (공포지수)`, `KOSPI 지수` | ✓ (id:8, 4) |
+- **BE 카탈로그에 없는 이름을 추천하는 고아 룰: 0건.** 모든 `KEYWORD_RULES[*].indicators[*].name`이 카탈로그 이름과 정확 일치.
+- **카탈로그엔 있으나 BE 키워드 룰이 안 건드리는 지표(커버리지 공백)**: 53개. 예: NASDAQ(12), MACD(40), DXY(39), 원자재(20·21·23·24), 암호화폐(25·26), 재무 체질(60-73), 거시 고용/성장/물가(31-36, 38) 등.
 
-→ **고아 규칙 0건**. 단, `'MACD'`, `'이동평균'`, `'MA'` 키워드가 RSI만 매칭하고 실제 MACD(id:40), SMA(id:45/46), EMA(id:47) 카탈로그 엔트리에는 매핑되지 않는다(**커버리지 누락**).
+### FE `KEYWORD_INDICATOR_MAP` (`AddIndicatorSheet.tsx:109-139`) — 29개 룰
 
-### FE `KEYWORD_INDICATOR_MAP` (`AddIndicatorSheet.tsx:109-139`)
+- 모든 `indicatorIds`가 FE 카탈로그에 존재 → **고아 ID 0건**.
+- 커버 ID(중복 제외): `{1, 2, 3, 6, 7, 8, 9, 10, 11, 12, 16, 20, 21, 23, 24, 25, 26, 30, 31, 32, 33, 34, 35, 36, 37, 39, 40, 50, 51, 52, 53, 54, 55, 56, 57, 58, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73}` → **50개**.
+- 미커버: `{4, 5, 13, 14, 15, 22, 38, 41, 42, 43, 44, 45, 46, 47}` (KOSPI, EPS 추이, 다우, 코스닥, 니케이, 은, EUR/USD, 스토캐스틱, 볼린저밴드, ATR, OBV, SMA50/200, EMA12).
 
-**지표 참조 방식**: 숫자 ID. 28개 그룹 전부 유효한 카탈로그 ID 참조.
+### BE ↔ FE 룰 커버리지 비대칭
 
-| 검사 | 결과 |
-|------|------|
-| CATALOG에 없는 ID 참조 | **0건** |
-| 중복 키워드 그룹 | 0건 |
-| 존재하는 ID이지만 카테고리가 상이 | — (FE 카테고리 기준 매칭이므로 해당 없음) |
+| | BE (`match_by_keywords`) | FE (`findRelatedIndicators`) |
+|---|---|---|
+| 룰 수 | 11 | 29 |
+| 지표 커버리지 | 11/64 (17%) | 50/64 (78%) |
 
-### 커버리지 격차 (BE가 FE 대비 누락한 키워드 그룹)
+`indicator_matcher.match_indicators_for_llm()`(`indicator_matcher.py:271-329`)은 LLM이 `indicator_db_id`를 찾지 못한 전제에 대해 2순위로 `match_by_keywords`만 사용한다(주석: *Gemini fallback은 카탈로그에 없는 환각 지표를 생성하므로 제외*). 따라서 BE 경로는 11개 지표 범위 안에서만 추천이 이뤄지고, 나머지 53개 지표는 LLM이 `indicator_db_id`를 정확히 짚어주지 않으면 선택될 수 없다. FE는 별도 키워드 맵으로 UI에서는 훨씬 폭넓게 추천되는 반면, BE는 좁은 병목이 된다.
 
-BE `KEYWORD_RULES`에 없고 FE `KEYWORD_INDICATOR_MAP`에만 있는 그룹:
-
-| FE 키워드 | 매핑 지표 ID | BE 누락 영향 |
-|-----------|------------|------------|
-| 유가/원유/WTI | 21 | BE는 "원유" 관련 전제에서 지표 추천 실패 |
-| 금/Gold/안전자산 | 20 | 동상 |
-| 구리/Dr. Copper | 23 | 동상 |
-| 천연가스/LNG | 24 | 동상 |
-| 비트코인/암호화폐 | 25, 26 | 동상 |
-| PER/PBR/밸류에이션 | 50, 51, 67, 68 | 밸류에이션 전제 추천 불가 |
-| ROE/ROA/수익성 | 52, 53, 57, 62, 60, 61 | 수익성 전제 추천 불가 |
-| 부채/레버리지/유동성 | 54, 63, 64, 65 | 재무건전성 전제 추천 불가 |
-| 배당/FCF/주주환원 | 55, 56, 66, 68, 73 | 현금흐름/환원 전제 추천 불가 |
-| 회전율/효율/재고 | 70, 71 | 운영 효율 전제 추천 불가 |
-| 이익 품질/발생액 | 72, 66 | 회계 품질 전제 추천 불가 |
-| 인플레/CPI/물가 | 33 | CPI 전제 추천 불가 |
-| 고용/실업/NFP | 31, 32 | 고용지표 전제 추천 불가 |
-| GDP/성장/산업생산 | 34, 35 | 거시 성장 전제 추천 불가 |
-| 주택/부동산/모기지 | 36, 37 | 동상 |
-| 반도체/테크/AI/NVIDIA | 12, 3 | — (지수만 매핑이라 우선순위 낮음) |
-| 중국/항셍 | 16 | 동상 |
-| 일본/니케이 | 15 | 동상 |
-| 광고/디지털/플랫폼 | 3, 12 | 동상 |
-
-→ **BE 키워드 커버리지가 약 18개 그룹 부족**. 이는 `match_indicators_for_premise()`의 fallback 품질에 직접 영향.
-
-운영상 의미: 현재 `match_indicators_for_llm()`은 1순위로 LLM이 `indicator_db_id`를 정확히 지정한 경우만 신뢰하고, 누락 시 `match_by_keywords()`만 사용한다(`indicator_matcher.py:307`에서 `match_by_gemini`는 고의적으로 제외). 따라서 BE 키워드 룰이 빈약할수록 "LLM이 ID를 빠뜨린 전제"는 지표 없이 통과한다.
-
-### 추가 관찰
-
-- BE 키워드 `'MACD'`, `'이동평균'`, `'MA'`가 `RSI (14일)`만 추천하도록 매핑되어 있다(`indicator_matcher.py:68-77`). MACD·SMA·EMA 엔트리가 CATALOG에 존재하므로(id:40, 45, 46, 47), 키워드가 실제 해당 지표를 가리키도록 매핑되지 않은 **의미적 고아**에 가깝다.
+**시사점**: 같은 "전제 → 지표 추천" 로직이 양쪽에 이중 구현되어 있고 커버리지/추천 이유 텍스트가 서로 다른 상태로 드리프트 중. 단일 소스(예: BE `KEYWORD_RULES`를 FE가 API로 가져오기) 또는 FE 커버리지 수준까지 BE를 확장하는 정리가 필요하다.
 
 ---
 
 ## data_params 형식
 
-### BE 실제 포맷 분류
+### 1) FMP (`data_source='fmp'`) — 시장지수/원자재/크립토 (16건)
 
-| 포맷 | `data_source` | 예시 | 개수(대략) |
-|------|---------------|------|-----------|
-| A. FMP 심볼 | `fmp` | `{'symbol': '^GSPC'}`, `{'symbol': 'GCUSD'}`, `{'symbol': 'USDKRW'}`, `{'symbol': 'DX-Y.NYB'}` | 14 |
-| B. FMP 수급/펀더 metric | `fmp` | `{'metric': 'foreign_net_buy'}`, `{'metric': 'eps'}`, `{'metric': 'peRatioTTM'}`, `{'metric': 'revenueGrowthYoY'}` | 13 |
-| C. FMP 기술적 indicator | `fmp` | `{'indicator': 'RSI', 'period': 14}`, `{'indicator': 'MACD', 'fast': 12, 'slow': 26, 'signal': 9}` | 9 |
-| D. FRED 시리즈 | `fred` | `{'series_id': 'FEDFUNDS'}`, `{'series_id': 'DGS10'}`, `{'series_id': 'CPIAUCSL'}` | 12 |
-| E. 내부 metrics | `metrics` | `{'metric_code': 'gross_margin'}`, `{'metric_code': 'roic'}` | 14 |
-| F. 뉴스 센티먼트 | `news_sentiment` | `{}` | 1 |
-| G. FMP 환율(ticker 직결) | `fmp` | `{'symbol': 'USDKRW'}` | (A에 포함) |
+현재 포맷: `{'symbol': '^GSPC'}` 등. 실제 수집 경로 `eod_pipeline._fetch_fmp_value()`는 `FMPClient.get_quote(symbol)`을 호출하고 metric으로 dict 매핑 수행(`eod_pipeline.py:52-65`).
 
-→ **총 6종 포맷 혼재**. `fmp` 하나 안에서도 `symbol` / `metric` / `indicator` 3가지 키를 쓴다. 데이터 제공자 계층(가상 `FmpClient`/`FredClient`/metrics 서비스)이 `data_source` 분기 후 다시 내부 키를 분기 해석해야 한다.
+| 카탈로그 심볼 예시 | FMP `/quote` 호환성 | 메모 |
+|--------------------|----------------------|------|
+| `^GSPC`, `^IXIC`, `^DJI`, `^VIX` | ✓ 표준 FMP 규약 일치 | |
+| `^KS11`, `^KQ11` | ⚠ FMP의 한국 지수 Quote 커버리지 제한적 — 운영 확인 필요 | |
+| `^N225`, `^HSI` | ⚠ 프리미엄/지역 제한 가능성 — 실측 필요 | |
+| `GCUSD`, `CLUSD`, `SIUSD`, `HGUSD`, `NGUSD` | ⚠ FMP 원자재 티커 관례상 대부분 지원되나 일부 응답 필드 누락 보고 사례 존재 | |
+| `BTCUSD`, `ETHUSD` | ✓ | |
+| `USDKRW` (id 9) | ⚠ FMP FX 표기는 종종 `KRW=X` 또는 `USD/KRW` 계열 — 실측 필요 | |
+| `DX-Y.NYB` (id 39, DXY) | ⚠ 드문 표기, FMP에서는 `^DXY`/`DXY`가 일반적 — `FMPPremiumError` 또는 `None` 가능 | |
 
-### 실제 제공자와의 형식 일치성 점검
+### 2) FMP — 수급 가짜 metric (2건, 구조적 수집 불가)
 
-아래는 **도메인 지식과 CLAUDE.md에 기록된 알려진 버그(#14 FMP Key Metrics 필드명)** 를 기준으로 한 정적 검토 결과다. 실제 API 호출 로그/응답까지 대조하지는 않았다.
+| id | 카탈로그 `data_params` | 문제 |
+|----|------------------------|------|
+| 1 | `{'metric': 'foreign_net_buy'}` | `symbol` 키 없음 → `_fetch_fmp_value`가 즉시 `None` 반환(`eod_pipeline.py:35-37`). FMP `/quote` 응답에 해당 필드 자체 없음 |
+| 2 | `{'metric': 'institutional_net_buy'}` | 동일 — 수집 경로 부재 |
 
-**A. FMP 심볼 (`data_params.symbol`)** — 14건
-- `^GSPC`, `^KS11`, `^IXIC`, `^DJI`, `^KQ11`, `^N225`, `^HSI`, `^VIX` — FMP `/stable/quote` 호환 ✓
-- `GCUSD`, `CLUSD`, `SIUSD`, `HGUSD`, `NGUSD` — FMP 원자재 상품 티커 규약 ✓
-- `BTCUSD`, `ETHUSD` — FMP 암호화폐 티커 ✓
-- `USDKRW` — FMP FX 티커 ✓
-- `DX-Y.NYB` (id:39 달러 인덱스) — **주의**: FMP에서 달러 인덱스를 `DXY` 또는 `=USD` 계열로 표기하는 경우가 있음. 실제 `GET /stable/quote?symbol=DX-Y.NYB`가 404/빈 응답을 반환할 수 있어 호출 로그 확인 필요.
+→ 구조적으로 데이터 수집 불가. 다른 소스(예: KRX, 국내 증권사 API)로 `data_source` 분기 신설이 필요하거나, 해당 지표를 수집 대상에서 제외해야 함.
 
-**B. FMP metric (`data_params.metric`)** — 13건
-- `foreign_net_buy` (id:1), `institutional_net_buy` (id:2) — **표준 FMP 필드 아님**. FMP는 한국 수급 데이터를 제공하지 않는다. 외부 소스 매핑 또는 자체 계산 파이프라인이 전제되어야 하며, `data_source: 'fmp'`라는 태깅이 오해를 유발한다.
-- `eps` (id:5) — FMP는 `eps` 또는 `epsTTM` 모두 상황별로 등장. 정확한 엔드포인트 명세 필요.
-- `peRatioTTM`, `pbRatioTTM`, `returnOnEquityTTM`, `returnOnAssetsTTM`, `debtToEquityTTM`, `freeCashFlowTTM`, `dividendYieldTTM`, `operatingProfitMarginTTM` — FMP `/stable/key-metrics-ttm` 표준 필드. CLAUDE.md 알려진 버그 #14 참고(`returnOnEquityTTM`은 *100 필요, `earningsYieldTTM`의 역수가 PE).
-- `revenueGrowthYoY` (id:58) — **표준 FMP 필드 아님**. FMP는 `/stable/income-statement-growth`의 `growthRevenue` 또는 `financial-growth`의 `revenueGrowth`를 제공. "YoY"는 계산 속성이다. 데이터 제공자 계층에서 별도 매핑/계산이 필요.
+### 3) FMP — 펀더멘털 TTM (9건, 필드명 불일치)
 
-**C. FMP indicator (`data_params.indicator`)** — 9건
-- `RSI`, `MACD`, `stochastic`, `bollinger`, `ATR`, `OBV`, `SMA`, `EMA` — FMP `/stable/technical-indicators/*` 엔드포인트 군과 이름 매핑 필요.
-- `stochastic` 값은 FMP 쪽에서는 `stochasticoscillator` 또는 `stoch`로 표기되는 경우가 있어, 제공자 클라이언트의 소문자 정규화가 전제되어야 한다. 표기 계약이 명문화돼 있지 않으면 위험.
-- `bollinger`(id:42) — FMP에서 정확한 키는 `bb` 또는 `bollingerbands`이며 `%B`는 파생 계산. 단일 파라미터 표기 대비 실제 제공자 응답과의 간극이 가장 큰 축.
+`_fetch_fmp_value`의 `value_map`(`eod_pipeline.py:53-63`)에 정의된 허용 metric:
+```
+price, change_percent, volume, pe, eps, market_cap, previous_close, day_high, day_low
+```
+`value_map.get(metric, metric)` 패턴이므로 매핑에 없으면 metric을 그대로 `quote.get(metric)`에 시도한다. 그러나 FMP `/quote` 응답에는 TTM 필드가 없음 (`/key-metrics-ttm`, `/ratios-ttm`, `/financial-growth` 등 별도 엔드포인트 필요).
 
-**D. FRED (`data_params.series_id`)** — 12건
-- `FEDFUNDS`, `DGS10`, `DGS2`, `MORTGAGE30US`, `UNRATE`, `PAYEMS`, `GDPC1`, `INDPRO`, `CPIAUCSL`, `HOUST`, `DEXUSEU` — 모두 실제 FRED series ID. ✓
-- 포맷 일관성 높음, 위험 낮음.
+| id | 카탈로그 `metric` | 기대 엔드포인트 | `_fetch_fmp_value` 결과 |
+|----|-------------------|-----------------|-------------------------|
+| 50 | `peRatioTTM` | `/key-metrics-ttm` | `quote['peRatioTTM']` 없음 → `None` |
+| 51 | `pbRatioTTM` | `/key-metrics-ttm` 또는 `/ratios-ttm` | `None` |
+| 52 | `returnOnEquityTTM` | `/ratios-ttm` | `None` |
+| 53 | `returnOnAssetsTTM` | `/ratios-ttm` | `None` |
+| 54 | `debtToEquityTTM` | `/ratios-ttm` | `None` |
+| 55 | `freeCashFlowTTM` | `/key-metrics-ttm` | `None` |
+| 56 | `dividendYieldTTM` | `/ratios-ttm` | `None` |
+| 57 | `operatingProfitMarginTTM` | `/ratios-ttm` | `None` |
+| 58 | `revenueGrowthYoY` | `/financial-growth` (실제 필드명 `revenueGrowth`) | `None`, 필드명 자체도 틀림 |
 
-**E. metrics (`data_params.metric_code`)** — 14건
-- `gross_margin`, `net_margin`, `roic`, `current_ratio`, `interest_coverage`, `net_debt_to_ebitda`, `fcf_margin`, `ev_to_ebitda`, `fcf_yield`, `operating_income_growth`, `dso`, `asset_turnover`, `accruals_ratio`, `net_shareholder_yield` — 내부 `metrics` 앱의 지표 코드. 실제 `metrics/*`에 동일 코드가 정의돼 있는지 별도 교차 검증이 필요(본 감사 범위 밖, @backend가 `metrics` 앱 정의와 대조 권장).
+**참고**: `common-bugs.md` #14에서 이미 같은 증상이 기록됨 — *"FMP Key Metrics 필드명 불일치: `earningsYieldTTM` 역수 = PE, `returnOnEquityTTM` × 100 = ROE"*. 즉 `/key-metrics-ttm` 응답에는 `peRatioTTM` 대신 `earningsYieldTTM`이 있을 수 있고 ROE 등은 소수→퍼센트 변환이 필요하다. 현재 `_fetch_fmp_value`는 이 경로를 구현하지 않는다.
 
-**F. news_sentiment** — 1건(id:11)
-- `data_params: {}` — 정의상 파라미터 없음. 소비자가 기본 계산 규칙을 알고 있어야 한다는 점에서 **암묵적 계약** 존재.
+→ 펀더멘털 TTM 지표는 `data_source='fmp'`로 선언되었지만 실제 fetcher는 Quote 기반이라 **값 수집 불가**. 동등한 데이터는 `data_source='metrics'`(id 60-73, `metric_code` 기반)에서 `fetch_quarterly_metric`으로 이미 커버되므로 id 50-58과 **중복/경쟁 관계**이기도 하다.
 
-### FE 측 data_params
+### 4) FMP — 기술적 지표 (9건, 엔드포인트 불일치)
 
-FE `INDICATOR_CATALOG`에는 `data_params`가 없고 `(id, name, category, freq)`만 유지한다. 즉, BE-FE 간 `data_params` 불일치 자체는 발생할 수 없으며, **BE-제공자 간 불일치**가 유일한 위험축이다.
+| id | `data_params` | 실제 `_fetch_fmp_value` 동작 |
+|----|----------------|------------------------------|
+| 10 | `{'indicator': 'RSI', 'period': 14}` | `symbol` 키 없음 → 즉시 `None` |
+| 40-47 | 동일 패턴 | 동일 — `symbol` 없어 조기 종료 |
 
-### 결론 (data_params)
+FMP 기술적 지표는 `/technical-indicator/{interval}/{symbol}?type=...&period=...` 경로가 별도. 현재 fetcher(`get_quote` 기반)는 이 호출을 **전혀 처리하지 않음**. 카탈로그와 수집기 사이 포맷 약속이 어긋나 있다.
 
-| 카테고리 | 상태 |
-|---------|------|
-| FMP 심볼 | 대체로 정확 (id:39 `DX-Y.NYB` 확인 필요) |
-| FMP metric (수급 2개) | `foreign_net_buy`/`institutional_net_buy`는 FMP 표준 아님 — 제공자 계층 매핑 필수, 오해 유발 |
-| FMP metric (펀더 9개) | FMP key-metrics-ttm과 대체로 일치, 단 `revenueGrowthYoY`는 계산 필드 |
-| FMP indicator (기술) | FMP 실제 키와의 매핑 규약이 명문화돼야 함 (`stochastic`, `bollinger`) |
-| FRED | 일치, 위험 낮음 |
-| metrics | 내부 코드와 교차 검증 필요 |
-| news_sentiment | 암묵적 계약 |
+### 5) FMP — EPS (id 5)
+
+`{'metric': 'eps'}`. `value_map`에 `eps`가 있지만 `symbol`이 없음 → 조기 종료. 실제 수집에는 가설의 `target` 심볼 주입이 필요한데, FMP 경로는 `thesis.target` fallback 로직을 갖고 있지 않다(`_fetch_metrics_value`만 해당 fallback 구현, `eod_pipeline.py:164`).
+
+### 6) FRED (`data_source='fred'`) — 6건
+
+`{'series_id': 'FEDFUNDS'}` 등. `_fetch_fred_value`(`eod_pipeline.py:84-124`)가 `series_id` 키만 기대 → **포맷 정합. 이상 없음**.
+
+### 7) metrics (`data_source='metrics'`) — 14건 (id 60-73)
+
+`{'metric_code': 'gross_margin', ...}`. `_fetch_metrics_value`가 `metric_code` + `symbol`(`thesis.target` fallback)을 사용 → **포맷 정합. 이상 없음**.
+
+### 8) news_sentiment (`data_source='news_sentiment'`) — 1건
+
+카탈로그: `{'data_params': {}}` (id 11). `_fetch_news_sentiment_value`는 `params.get('symbol')`을 요구하며 없으면 조기 반환. 카탈로그 빈 dict → **항상 `None`**. `thesis.target` fallback 로직이 없어 실질 수집 불가.
+
+### 9) FMP 소스 요약
+
+| 구분 | 카탈로그 건수 | fetcher 정합 | 예상 결과 |
+|------|---------------|--------------|-----------|
+| 시장지수/원자재/크립토(`symbol` 기반) | 16 | ✓ (심볼 유효성은 운영 확인 필요) | 수집 가능 |
+| 수급 가짜 metric(id 1, 2) | 2 | ✗ | 항상 `None` |
+| EPS 추이(id 5) | 1 | ✗ (`symbol` 주입 경로 없음) | 항상 `None` |
+| 펀더멘털 TTM(id 50-58) | 9 | ✗ (엔드포인트/필드 불일치) | 항상 `None` |
+| 기술적 지표(id 10, 40-47) | 9 | ✗ (기술적 엔드포인트 미구현) | 항상 `None` |
+
+→ FMP 선언 지표 37건 중 **약 21건이 구조적으로 값 수집 불가 상태**.
 
 ---
 
-## 부록: 참고 위치
+## 종합 결론
 
-- BE 카탈로그: `thesis/services/prompt_builder.py:14-294`
-- BE 주기표: `thesis/services/prompt_builder.py:305-326`
-- BE description 조회: `thesis/services/prompt_builder.py:332-345`
-- BE 카탈로그 검증(후처리): `thesis/services/llm_postprocess.py:82-94`
-- BE 키워드 룰: `thesis/services/indicator_matcher.py:12-154`
-- BE LLM 매칭(PK 우선): `thesis/services/indicator_matcher.py:271-329`
-- FE 카탈로그: `frontend/components/thesis/AddIndicatorSheet.tsx:15-91`
-- FE 주기 스타일: `frontend/components/thesis/AddIndicatorSheet.tsx:95-100`
-- FE 키워드 맵: `frontend/components/thesis/AddIndicatorSheet.tsx:109-139`
-- FE 카테고리 순서: `frontend/components/thesis/AddIndicatorSheet.tsx:211-216`
+1. **ID 셋은 동기화** (BE = FE = 64개).
+2. **이름 4건 불일치** — id 6/7/30은 접두사 매칭으로 흡수되나 id 54는 정확 매칭 실패.
+3. **description**은 BE에서 품질 문제 없음. FE 미러 타입에 `description` 필드가 없는 구조적 공백.
+4. **keyword_rules 고아는 없으나** BE/FE 커버리지 비대칭이 심하고(BE 11 vs FE 50) 같은 추천 로직을 이중 구현해 드리프트 위험.
+5. **data_params**는 FMP 쪽에서 체계적 결함:
+   - 펀더멘털 TTM 9건, 기술적 지표 9건, 수급 2건, EPS 1건 — 총 **21건이 fetcher와 포맷 호환 불가**.
+   - 카탈로그는 FMP TTM 엔드포인트를 전제하고 선언되어 있으나 fetcher는 Quote 엔드포인트만 처리.
+   - id 11 뉴스 센티먼트도 `symbol` 주입 경로가 없어 실질 수집 불가.
+6. 단일 소스 관리 부재 — BE 카탈로그, FE 미러, BE 키워드 룰, FE 키워드 맵 네 곳이 각각 수동 동기화되고 있으며 카테고리 라벨링 기준도 상이.
 
-> 본 보고서는 읽기 전용 감사이며 소스 파일을 수정하지 않았다.
+감사는 읽기 전용으로 종료하며, 수정은 별도 PR/티켓으로 다루는 것을 권고한다.
