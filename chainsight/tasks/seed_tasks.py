@@ -100,7 +100,7 @@ def calculate_heat_scores():
     start_time = timezone.now()
 
     # 1) 최근 가격 데이터 로드
-    cutoff = timezone.now().date() - timedelta(days=25)
+    cutoff = timezone.localdate() - timedelta(days=25)
     qs = DailyPrice.objects.filter(date__gte=cutoff).values_list(
         'stock_id', 'date', 'close_price', 'volume'
     )
@@ -163,7 +163,7 @@ def cleanup_seed_snapshots(retain_days: int = 30) -> dict:
     """SeedSnapshot 행이 무한 누적되는 것을 방지. 기본 30일 이전 스냅샷 삭제."""
     from chainsight.models import SeedSnapshot
 
-    cutoff = timezone.now().date() - timedelta(days=retain_days)
+    cutoff = timezone.localdate() - timedelta(days=retain_days)
     deleted, _ = SeedSnapshot.objects.filter(market_date__lt=cutoff).delete()
     logger.info(f'SeedSnapshot cleanup: deleted {deleted} rows older than {cutoff}')
     return {'deleted': deleted, 'cutoff': str(cutoff)}

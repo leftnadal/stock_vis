@@ -63,7 +63,7 @@ def market_movers_api(request):
 
     # 쿼리 파라미터
     mover_type = request.GET.get('type', 'gainers')
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
@@ -122,7 +122,7 @@ def market_mover_detail(request, symbol):
         }
     """
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # 캐시 확인
     cache_key = f'mover_detail:{symbol}:{date_str}'
@@ -194,7 +194,7 @@ def trigger_sync(request):
             'data': {
                 'message': 'Sync task started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
 
@@ -239,7 +239,7 @@ def sync_now(request):
         results = sync.sync_daily_movers(target_date=date_str)
 
         # 캐시 무효화 (market_movers_api와 동일한 키 패턴 사용)
-        today = date_str or timezone.now().date().isoformat()
+        today = date_str or timezone.localdate().isoformat()
         for mover_type in ['gainers', 'losers', 'actives']:
             # 키워드 포함 캐시 (market_movers_api에서 사용)
             cache_key = f'movers_with_keywords:{today}:{mover_type}'
@@ -297,7 +297,7 @@ def get_keywords(request, symbol):
     from serverless.models import StockKeyword
 
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # DB 조회
     try:
@@ -350,7 +350,7 @@ def get_batch_keywords(request):
     from serverless.models import StockKeyword
 
     symbols = request.data.get('symbols', [])
-    date_str = request.data.get('date', timezone.now().date().isoformat())
+    date_str = request.data.get('date', timezone.localdate().isoformat())
 
     # 심볼 대문자 변환
     symbols = [s.upper() for s in symbols]
@@ -403,7 +403,7 @@ def trigger_keyword_generation(request):
     from serverless.tasks import keyword_generation_pipeline
 
     mover_type = request.data.get('type', 'gainers')
-    date_str = request.data.get('date', timezone.now().date().isoformat())
+    date_str = request.data.get('date', timezone.localdate().isoformat())
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
@@ -535,7 +535,7 @@ def health_check(request):
         }
     """
     # 오늘 날짜 데이터 개수 확인
-    today = timezone.now().date()
+    today = timezone.localdate()
     movers_count = MarketMover.objects.filter(date=today).count()
 
     return Response({
@@ -599,7 +599,7 @@ def market_breadth_api(request):
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     # 캐시 확인
     cache_key = f'market_breadth_api:{target_date}'
@@ -758,7 +758,7 @@ def market_breadth_history(request):
     if cached:
         return Response(cached)
 
-    start_date = timezone.now().date() - timedelta(days=days)
+    start_date = timezone.localdate() - timedelta(days=days)
     breadths = MarketBreadth.objects.filter(date__gte=start_date).order_by('-date')
 
     serializer = MarketBreadthHistorySerializer(breadths, many=True)
@@ -796,7 +796,7 @@ def trigger_breadth_sync(request):
             'data': {
                 'message': 'Market breadth sync started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
     except Exception as e:
@@ -853,7 +853,7 @@ def sector_heatmap_api(request):
                 'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     # 캐시 확인
     cache_key = f'sector_heatmap_api:{target_date}'
@@ -952,7 +952,7 @@ def sector_stocks_api(request, sector):
                 'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     service = SectorHeatmapService()
     result = service.get_top_movers_by_sector(sector, limit=limit, target_date=target_date)
@@ -983,7 +983,7 @@ def trigger_heatmap_sync(request):
             'data': {
                 'message': 'Sector heatmap sync started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
     except Exception as e:

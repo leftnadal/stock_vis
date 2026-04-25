@@ -46,7 +46,7 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
         if target_date:
             date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
         else:
-            date_obj = timezone.now().date()
+            date_obj = timezone.localdate()
 
         logger.info(f"Starting news keyword extraction for {date_obj}")
 

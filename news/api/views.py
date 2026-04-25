@@ -534,7 +534,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 캐시 키
         cache_key = f"news:daily_keywords:{target_date}"
@@ -632,7 +632,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({
             'status': 'started',
             'task_id': task.id,
-            'date': date_str or str(timezone.now().date()),
+            'date': date_str or str(timezone.localdate()),
         })
 
     # ===== Phase 2.5: Keyword Detail API =====
@@ -661,7 +661,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         index_str = request.query_params.get('index')
         if index_str is None:
@@ -866,7 +866,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # limit 파라미터
         try:
@@ -1280,7 +1280,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # limit 파라미터
         try:

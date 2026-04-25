@@ -80,7 +80,7 @@ def determine_state(thesis, overall_score, prev_score,
         }
 
     # expired: target_date_end 지남
-    if thesis.target_date_end and timezone.now().date() > thesis.target_date_end:
+    if thesis.target_date_end and timezone.localdate() > thesis.target_date_end:
         new_state = 'expired'
         return {
             'state': new_state,

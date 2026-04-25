@@ -308,7 +308,7 @@ class EconomicEvent(models.Model):
     @property
     def is_past(self) -> bool:
         """이벤트가 지났는지 확인"""
-        return self.event_date < timezone.now().date()
+        return self.event_date < timezone.localdate()
 
     @property
     def surprise(self) -> str | None:

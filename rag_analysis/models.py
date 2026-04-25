@@ -349,7 +349,7 @@ class UsageLog(models.Model):
         from datetime import date as date_type
 
         if date is None:
-            date = timezone.now().date()
+            date = timezone.localdate()
 
         result = cls.objects.filter(
             user=user,

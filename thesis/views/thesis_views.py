@@ -108,7 +108,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
                 thesis=thesis,
                 event_type='thesis_closed',
                 event_data={
-                    'duration_days': (timezone.now().date() - thesis.created_at.date()).days,
+                    'duration_days': (timezone.localdate() - thesis.created_at.date()).days,
                 },
             )
             outcome_event_map = {
