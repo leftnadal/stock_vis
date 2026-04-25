@@ -1478,7 +1478,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         phase1_logs = NewsCollectionLog.objects.filter(
             task_name__in=['collect_daily_news', 'collect_market_news', 'collect_category_news',
                            'collect_sp500_news_fmp_batch', 'collect_press_releases_fmp',
-                           'collect_general_news_fmp', 'collect_av_single_symbol']
+                           'collect_general_news_fmp']
         ).order_by('-executed_at')
         phase1_recent = phase1_logs.first()
         phase1_last_run = phase1_recent.executed_at if phase1_recent else None

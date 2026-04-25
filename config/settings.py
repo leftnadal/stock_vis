@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ## API Keys
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 EODHD_API_KEY = os.getenv('EODHD_API_KEY', '')  # EODHD Historical Data
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
@@ -35,9 +34,8 @@ NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
 # ============================================================
 # Stock Data Provider Configuration
 # ============================================================
-# Provider 선택: "alpha_vantage" 또는 "fmp"
+# Provider 선택: 현재 "fmp" 단독. 추가 provider 도입 시 환경변수로 전환.
 # 각 엔드포인트별로 다른 provider를 사용할 수 있습니다.
-# 환경변수로 오버라이드 가능합니다.
 
 STOCK_PROVIDERS = {
     # Feature Flags - 환경변수로 오버라이드 가능
@@ -67,11 +65,6 @@ PROVIDER_CACHE_TTL = {
 
 # Rate Limiting 설정
 PROVIDER_RATE_LIMITS = {
-    'alpha_vantage': {
-        'per_minute': 5,
-        'per_day': 500,
-        'request_delay': 12.0,  # 초
-    },
     'fmp': {
         'per_minute': 300,     # Starter Plan
         'per_day': 10000,      # Starter Plan
@@ -101,10 +94,6 @@ NEWS_RATE_LIMITS = {
         'per_minute': 300,         # FMP API: 300 calls/min (Starter Plan)
         'per_day': 10000,          # FMP API: 10,000 calls/day
         'wait_seconds': 0.2,       # 요청 간 최소 대기 시간
-    },
-    'alpha_vantage': {
-        'per_minute': 5,           # Alpha Vantage: 5 calls/min (무료 티어)
-        'wait_seconds': 12,        # 요청 간 최소 대기 시간
     },
 }
 

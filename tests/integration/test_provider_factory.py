@@ -90,103 +90,26 @@ class TestProviderFactoryEnvConfig:
 
         assert provider.PROVIDER_NAME == "fmp"
 
-    def test_different_endpoints_different_providers(self, monkeypatch):
-        """
-        Given: Quote=alpha_vantage, Balance Sheet=fmp 설정
-        When: 각 Provider 요청
-        Then: 다른 Provider 반환
-        """
-        from api_request.providers.factory import ProviderFactory, EndpointType
-
-        monkeypatch.setenv("STOCK_PROVIDER_QUOTE", "alpha_vantage")
-        monkeypatch.setenv("STOCK_PROVIDER_BALANCE_SHEET", "fmp")
-        monkeypatch.setenv("FMP_API_KEY", "test_key")
-        ProviderFactory.clear_cache()
-
-        quote_provider = ProviderFactory.get_provider(EndpointType.QUOTE)
-        balance_provider = ProviderFactory.get_provider(EndpointType.BALANCE_SHEET)
-
-        assert quote_provider.PROVIDER_NAME == "alpha_vantage"
-        assert balance_provider.PROVIDER_NAME == "fmp"
-
-    def test_force_provider_override(self, monkeypatch):
-        """
-        Given: 환경 변수 alpha_vantage 설정
-        When: force_provider=FMP로 호출
-        Then: FMP Provider 반환
-        """
-        from api_request.providers.factory import ProviderFactory, EndpointType, ProviderType
-
-        monkeypatch.setenv("STOCK_PROVIDER_QUOTE", "alpha_vantage")
-        monkeypatch.setenv("FMP_API_KEY", "test_key")
-        ProviderFactory.clear_cache()
-
-        provider = ProviderFactory.get_provider(
-            EndpointType.QUOTE,
-            force_provider=ProviderType.FMP
-        )
-
-        assert provider.PROVIDER_NAME == "fmp"
-
 
 class TestProviderFactoryFallback:
-    """Fallback 메커니즘 테스트"""
+    """Fallback 메커니즘 테스트 (현재 FMP 단독, fallback 체인 비어있음)."""
 
-    def test_get_fallback_providers(self):
+    def test_fmp_has_no_fallbacks(self):
         """
-        Given: Alpha Vantage Provider
-        When: get_fallback_providers() 호출
-        Then: FMP Provider 리스트 반환
+        Given: 현재 provider 구성에서 FMP만 활성
+        When: FMP의 fallback 조회
+        Then: 빈 리스트 (fallback 체인 없음)
         """
         from api_request.providers.factory import ProviderFactory, ProviderType
 
         ProviderFactory.clear_cache()
+        fallbacks = ProviderFactory.get_fallback_providers(ProviderType.FMP)
+        assert fallbacks == []
 
-        fallbacks = ProviderFactory.get_fallback_providers(ProviderType.ALPHA_VANTAGE)
-
-        assert len(fallbacks) == 1
-        assert fallbacks[0].PROVIDER_NAME == "fmp"
-
-    @patch('api_request.providers.alphavantage.AlphaVantageProvider.get_quote')
     @patch('api_request.providers.fmp.FMPProvider.get_quote')
-    def test_fallback_on_primary_failure(self, mock_fmp_quote, mock_av_quote):
+    def test_primary_failure_returns_all_failed(self, mock_fmp_quote):
         """
-        Given: Primary Provider 실패
-        When: call_with_fallback() 호출
-        Then: Fallback Provider로 자동 전환
-        """
-        from api_request.providers.factory import call_with_fallback, EndpointType, ProviderFactory
-        from api_request.providers.base import ProviderResponse, NormalizedQuote
-
-        ProviderFactory.clear_cache()
-
-        # Alpha Vantage 실패 Mock
-        mock_av_quote.return_value = ProviderResponse.error_response(
-            error="Rate limit exceeded",
-            provider="alpha_vantage",
-            error_code="RATE_LIMIT"
-        )
-
-        # FMP 성공 Mock
-        mock_fmp_quote.return_value = ProviderResponse.success_response(
-            data=NormalizedQuote(
-                symbol='AAPL',
-                price=Decimal('150.25'),
-                volume=50000000,
-            ),
-            provider='fmp'
-        )
-
-        result = call_with_fallback(EndpointType.QUOTE, 'get_quote', 'AAPL')
-
-        assert result.success is True
-        assert result.provider == 'fmp'
-
-    @patch('api_request.providers.alphavantage.AlphaVantageProvider.get_quote')
-    @patch('api_request.providers.fmp.FMPProvider.get_quote')
-    def test_all_providers_fail(self, mock_fmp_quote, mock_av_quote):
-        """
-        Given: 모든 Provider 실패
+        Given: FMP 실패 + fallback 없음
         When: call_with_fallback() 호출
         Then: ALL_PROVIDERS_FAILED 에러 반환
         """
@@ -194,15 +117,8 @@ class TestProviderFactoryFallback:
         from api_request.providers.base import ProviderResponse
 
         ProviderFactory.clear_cache()
-
-        # 모든 Provider 실패 Mock
-        mock_av_quote.return_value = ProviderResponse.error_response(
-            error="Alpha Vantage error",
-            provider="alpha_vantage"
-        )
         mock_fmp_quote.return_value = ProviderResponse.error_response(
-            error="FMP error",
-            provider="fmp"
+            error="FMP error", provider="fmp"
         )
 
         result = call_with_fallback(EndpointType.QUOTE, 'get_quote', 'AAPL')

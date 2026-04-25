@@ -93,8 +93,7 @@ def _fetch_fred_value(indicator):
         return None, None
 
     try:
-        api_key = getattr(settings, 'ALPHA_VANTAGE_API_KEY', None)
-        fred_key = getattr(settings, 'FRED_API_KEY', api_key)
+        fred_key = getattr(settings, 'FRED_API_KEY', None)
         if not fred_key:
             logger.error("[FRED] API 키 미설정")
             return None, None

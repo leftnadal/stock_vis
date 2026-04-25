@@ -16,7 +16,7 @@ class CircuitBreaker:
     def __init__(self, provider_name: str, threshold: int = 5, timeout: int = 300):
         """
         Args:
-            provider_name: Provider 이름 (fmp, alpha_vantage 등)
+            provider_name: Provider 이름 (fmp, marketaux, finnhub 등)
             threshold: 연속 실패 임계값 (기본: 5회)
             timeout: 차단 시간 (기본: 300초 = 5분)
         """

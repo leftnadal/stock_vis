@@ -26,14 +26,6 @@ def env_fmp(monkeypatch):
 
 
 @pytest.fixture
-def env_alphavantage(monkeypatch):
-    """Alpha Vantage Provider 환경 변수"""
-    monkeypatch.setenv('STOCK_DATA_PROVIDER', 'alphavantage')
-    monkeypatch.setenv('ALPHA_VANTAGE_API_KEY', 'test_av_key')
-    yield
-
-
-@pytest.fixture
 def env_fallback_enabled(monkeypatch):
     """Fallback 활성화 환경 변수"""
     monkeypatch.setenv('ENABLE_PROVIDER_FALLBACK', 'true')

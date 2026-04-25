@@ -176,7 +176,7 @@ class ProviderTestView(APIView):
 
     def post(self, request):
         """특정 Provider 연결 테스트"""
-        provider_name = request.data.get("provider", "alpha_vantage")
+        provider_name = request.data.get("provider", "fmp")
         symbol = request.data.get("symbol", "AAPL")
 
         try:

@@ -61,7 +61,7 @@ class TestStockServiceProviderMethods:
 
         return ProviderResponse.success_response(
             data=quote,
-            provider='alpha_vantage'
+            provider='fmp'
         )
 
     @patch('api_request.stock_service.call_with_fallback')
@@ -117,7 +117,7 @@ class TestStockServiceProviderMethods:
         )
         mock_call.return_value = ProviderResponse.success_response(
             data=profile,
-            provider='alpha_vantage'
+            provider='fmp'
         )
         service = StockService()
 
@@ -167,9 +167,9 @@ class TestStockServiceDBMethods:
         ]
 
         return {
-            'profile': ProviderResponse.success_response(data=profile, provider='alpha_vantage'),
-            'quote': ProviderResponse.success_response(data=quote, provider='alpha_vantage'),
-            'daily': ProviderResponse.success_response(data=daily_prices, provider='alpha_vantage'),
+            'profile': ProviderResponse.success_response(data=profile, provider='fmp'),
+            'quote': ProviderResponse.success_response(data=quote, provider='fmp'),
+            'daily': ProviderResponse.success_response(data=daily_prices, provider='fmp'),
         }
 
     @pytest.mark.django_db
@@ -282,7 +282,7 @@ class TestStockServiceUpdatePreviousClose:
             ),
         ]
         mock_call.return_value = ProviderResponse.success_response(
-            data=prices, provider='alpha_vantage'
+            data=prices, provider='fmp'
         )
 
         service = StockService()
@@ -339,7 +339,7 @@ class TestStockServiceUpdatePreviousClose:
             ),
         ]
         mock_call.return_value = ProviderResponse.success_response(
-            data=prices, provider='alpha_vantage'
+            data=prices, provider='fmp'
         )
 
         service = StockService()

@@ -39,10 +39,6 @@ class LimitType(Enum):
 
 # Provider별 Rate Limit 설정
 RATE_LIMITS = {
-    "alpha_vantage": {
-        LimitType.PER_MINUTE: 5,
-        LimitType.PER_DAY: 500,
-    },
     "fmp": {
         LimitType.PER_MINUTE: 10,
         LimitType.PER_DAY: 250,
@@ -54,7 +50,6 @@ RATE_LIMITS = {
 
 # Request Delay 설정 (초)
 REQUEST_DELAYS = {
-    "alpha_vantage": 12.0,  # 분당 5회 = 12초 간격
     "fmp": 0.5,  # FMP는 더 관대
     "fred": 0.6,  # 분당 100회 기준
 }
@@ -72,7 +67,7 @@ class RateLimiter:
     def __init__(self, provider: str):
         """
         Args:
-            provider: Provider 이름 (alpha_vantage, fmp)
+            provider: Provider 이름 (fmp, fred)
         """
         self.provider = provider
         self.limits = RATE_LIMITS.get(provider, {})

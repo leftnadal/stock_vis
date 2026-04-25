@@ -19,7 +19,6 @@ logger = logging.getLogger(__name__)
 
 class ProviderType(Enum):
     """Provider 타입 열거형"""
-    ALPHA_VANTAGE = "alpha_vantage"
     FMP = "fmp"
 
 
@@ -64,10 +63,9 @@ DEFAULT_PROVIDERS: Dict[EndpointType, ProviderType] = {
 }
 
 
-# Fallback 체인 정의
+# Fallback 체인 정의 — Alpha Vantage 제거 후 FMP 단독. 추후 다른 provider 추가 시 확장.
 FALLBACK_CHAIN: Dict[ProviderType, List[ProviderType]] = {
-    ProviderType.ALPHA_VANTAGE: [ProviderType.FMP],
-    ProviderType.FMP: [ProviderType.ALPHA_VANTAGE],
+    ProviderType.FMP: [],
 }
 
 
@@ -120,8 +118,6 @@ class ProviderFactory:
             env_value = os.getenv(env_key, "").lower()
             if env_value == "fmp":
                 return ProviderType.FMP
-            elif env_value == "alpha_vantage":
-                return ProviderType.ALPHA_VANTAGE
 
         return DEFAULT_PROVIDERS.get(endpoint, ProviderType.FMP)
 
@@ -152,12 +148,7 @@ class ProviderFactory:
         Returns:
             StockDataProvider: 새 Provider 인스턴스
         """
-        if provider_type == ProviderType.ALPHA_VANTAGE:
-            from .alphavantage import AlphaVantageProvider
-            api_key = os.getenv("ALPHA_VANTAGE_API_KEY", "")
-            return AlphaVantageProvider(api_key=api_key)
-
-        elif provider_type == ProviderType.FMP:
+        if provider_type == ProviderType.FMP:
             from .fmp import FMPProvider
             api_key = os.getenv("FMP_API_KEY", "")
             return FMPProvider(api_key=api_key)

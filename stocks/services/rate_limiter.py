@@ -25,10 +25,6 @@ class APIRateLimiter:
             'per_minute': 10,
             'per_day': 250,
         },
-        'alpha_vantage': {
-            'per_minute': 5,
-            'per_day': 500,
-        },
         'yfinance': {
             'per_minute': 60,  # yfinance는 제한이 느슨함
             'per_day': 10000,
@@ -42,7 +38,7 @@ class APIRateLimiter:
     def __init__(self, api_name: str):
         """
         Args:
-            api_name: API 이름 ('fmp', 'alpha_vantage', 'yfinance')
+            api_name: API 이름 ('fmp', 'yfinance')
         """
         self.api_name = api_name.lower()
         if self.api_name not in self.LIMITS:
