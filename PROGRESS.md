@@ -23,7 +23,10 @@
 
 | Feature | Agent | Completed | Notes |
 |---------|-------|-----------|-------|
-| Chain Sight 시드 캐시 안정화 (#27) + Beat drift 복구 (#28) | orchestrator | 2026-04-24 | settings_test.py LocMem 격리, SeedSnapshot 영속화, `_get_today_seeds` 3단 폴백, heat_score / sec-seed-relations PeriodicTask 재등록, snapshot cleanup 주간 배치 |
+| Alpha Vantage provider 전면 제거 | orchestrator | 2026-04-25 | df85496. -3001 lines, 26 files. PeriodicTask 좀비 2건(collect-sentiment-av-*) 삭제. .env/scripts/settings.local.json 평문 키 제거 |
+| 보안: SSH 키 차단 + settings.local.json 평문 API 키 제거 + deny/ask 정책 | orchestrator | 2026-04-25 | d96e434. .gitignore에 OpenSSH/PEM 패턴 + dlswnl545/heaven545 명시. local 권한 정책 deny 11건/ask 12건 추가 |
+| 마켓 그래프 초기 노드 간격 + zoomToFit 개선 | orchestrator | 2026-04-24 | b97408c. ResizeObserver, force 동적, onEngineStop fit |
+| Chain Sight 시드 캐시 안정화 (#27) + Beat drift 복구 (#28) | orchestrator | 2026-04-24 | f50b3f3. settings_test.py LocMem 격리, SeedSnapshot 영속화, `_get_today_seeds` 3단 폴백, heat_score / sec-seed-relations PeriodicTask 재등록, snapshot cleanup 주간 배치 |
 | 하네스 잔여 개선 3건 | orchestrator + @qa | 2026-04-13 | sec-pipeline 스펙 상세화, shared-types.ts 연결, QA 검증 |
 | 하네스 contracts/ 정합성 검증 | @qa | 2026-04-13 | 6건 불일치 수정 (chainsight/validation API) |
 | 하네스 엔지니어링 전환 | orchestrator | 2026-04-12 | PROGRESS/DECISIONS/TASKQUEUE/contracts/HARNESS_FITNESS |
@@ -38,9 +41,11 @@
 
 ## 다음 세션에서 할 일
 
-- [ ] #27/#28 수정분 커밋 (settings_test.py, SeedSnapshot 모델/migration, `_get_today_seeds` 폴백, cleanup 태스크, conftest 가드, common-bugs.md #27-28)
+- [ ] working tree 잔존 `docs/` 21개 deleted 처리 결정 (복원 / 삭제 확정 / 보류)
+- [ ] Alpha Vantage 무료 티어 키 방치 확인 (revoke UI 부재 → 사실상 사문화로 처리하지만 만약을 위해 Alpha Vantage 계정 자체 비활성화 검토)
 - [ ] Chain Sight 마켓 뷰 PR-1~7 커밋 (CS-R9)
 - [ ] Thesis Control FE-PR-3 (대화형 빌더) 착수 (TC-3)
 - [ ] 서비스 리모델링 Phase 1 계속 (SR-1)
 - [ ] QA follow-up: chainsightService.ts fetch() → authAxios 통일
 - [ ] QA follow-up: RelationCardPanel 에러 UI 추가
+- [ ] 정기 시크릿 스캔 스크립트 도입 검토 (KB 큐 cdc4d19e 참고)
