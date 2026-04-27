@@ -10,6 +10,8 @@ import {
   inferSecondaryNeighbors,
   type RadialNeighbor,
 } from './radialLayout';
+import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
+import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -100,6 +102,27 @@ export default function MarketGraphCanvas() {
   const graphRef = useRef<any>(null);
   const [containerWidth, setContainerWidth] = useState(800);
 
+  // §FE-PR-4: 툴팁 상태
+  const [tooltipNode, setTooltipNode] = useState<TooltipNodeInfo | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // §FE-PR-4: 컨텍스트 메뉴 상태
+  const [contextMenuNode, setContextMenuNode] = useState<ContextMenuNodeInfo | null>(null);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
+  const [contextMenuVisible, setContextMenuVisible] = useState(false);
+
+  // §FE-PR-4: 모바일 탭 상태 (첫 탭=툴팁, 두 번째 탭=center)
+  const lastTappedNodeRef = useRef<string | null>(null);
+  const lastTapTimeRef = useRef<number>(0);
+  // 롱프레스: pointerdown 시작 시각
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressPosRef = useRef({ x: 0, y: 0 });
+
+  // 컨테이너 DOMRect — 툴팁·메뉴 경계 계산용
+  const [containerRect, setContainerRect] = useState<DOMRect | null>(null);
+
   // §8-1 우회법: graphData 변경 시 fx/fy 초기화 문제 → nodePositions ref 별도 관리
   // onEngineStop 직후 한 번 주입하고, 이후 d3ReheatSimulation 미호출
   // graphData 재생성(다른 종목 클릭) 시에도 이 ref에서 fx/fy를 복구
@@ -125,7 +148,10 @@ export default function MarketGraphCanvas() {
   useEffect(() => {
     if (!containerRef.current) return;
     const el = containerRef.current;
-    const update = () => setContainerWidth(el.clientWidth);
+    const update = () => {
+      setContainerWidth(el.clientWidth);
+      setContainerRect(el.getBoundingClientRect());
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -238,6 +264,107 @@ export default function MarketGraphCanvas() {
     return { nodes: [], links: [] };
   }, [centerSymbol, neighborData, selectedSector, sectorData, historyNodes]);
 
+  // §FE-PR-4: nodeMap — symbol → GraphNode (툴팁/메뉴에서 노드 정보 조회)
+  const nodeMap = useMemo(() => {
+    const map = new Map<string, GraphNode>();
+    for (const n of nodes) map.set(n.id, n);
+    return map;
+  }, [nodes]);
+
+  // §FE-PR-4: 이웃 관계 맵 — symbol → relType (center와의 관계, neighborData에서 파생)
+  const neighborRelMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (!neighborData) return map;
+    for (const nb of neighborData.neighbors) {
+      map.set(nb.symbol, nb.relation.type);
+    }
+    return map;
+  }, [neighborData]);
+
+  // §FE-PR-4: 이웃 시드 사유 맵 — symbol → seed_reasons[]
+  const neighborSeedReasonsMap = useMemo(() => {
+    const map = new Map<string, string[]>();
+    if (!neighborData) return map;
+    // center 노드 포함
+    map.set(neighborData.center.symbol, neighborData.center.seed_reasons ?? []);
+    for (const nb of neighborData.neighbors) {
+      map.set(nb.symbol, nb.seed_reasons ?? []);
+    }
+    return map;
+  }, [neighborData]);
+
+  // §FE-PR-4: 섹터 그래프용 시드 사유/관계 맵 (sectorData.nodes)
+  const sectorNodeInfoMap = useMemo(() => {
+    const map = new Map<string, { sector: string; seedReasons: string[]; seedType: string | null }>();
+    if (!sectorData) return map;
+    for (const n of sectorData.nodes) {
+      map.set(n.symbol, {
+        sector: n.sector,
+        seedReasons: n.seed_reasons ?? [],
+        seedType: n.seed_type,
+      });
+    }
+    return map;
+  }, [sectorData]);
+
+  // §FE-PR-4: 툴팁 닫기 헬퍼
+  const hideTooltip = useCallback(() => {
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = null;
+    }
+    setTooltipVisible(false);
+    setTooltipNode(null);
+  }, []);
+
+  // §FE-PR-4: 컨텍스트 메뉴 닫기 헬퍼
+  const closeContextMenu = useCallback(() => {
+    setContextMenuVisible(false);
+    setContextMenuNode(null);
+  }, []);
+
+  // §FE-PR-4: 노드의 TooltipNodeInfo 빌더
+  const buildTooltipInfo = useCallback((symbol: string): TooltipNodeInfo | null => {
+    const graphNode = nodeMap.get(symbol);
+    if (!graphNode) return null;
+
+    if (centerSymbol) {
+      // 이웃 그래프 모드
+      const relType = symbol === centerSymbol ? undefined : neighborRelMap.get(symbol);
+      const seedReasons = neighborSeedReasonsMap.get(symbol) ?? [];
+      return {
+        symbol,
+        name: graphNode.name,
+        sector: neighborData?.neighbors.find((n) => n.symbol === symbol)?.sector
+          ?? neighborData?.center.sector
+          ?? undefined,
+        seedReasons,
+        relType,
+        seedType: graphNode.seed_type,
+      };
+    } else {
+      // 섹터 그래프 모드
+      const info = sectorNodeInfoMap.get(symbol);
+      return {
+        symbol,
+        name: graphNode.name,
+        sector: info?.sector,
+        seedReasons: info?.seedReasons ?? [],
+        relType: undefined,       // 섹터 그래프에서는 관계 라벨 없음
+        seedType: info?.seedType ?? null,
+      };
+    }
+  }, [nodeMap, centerSymbol, neighborRelMap, neighborSeedReasonsMap, neighborData, sectorNodeInfoMap]);
+
+  // §FE-PR-4: 캔버스 내 픽셀 좌표를 forceGraph 좌표에서 변환
+  // react-force-graph-2d onNodeHover 콜백이 canvas 픽셀 좌표를 제공하지 않으므로
+  // graphRef에서 screen 좌표 변환 (graph2ScreenCoords)
+  const getCanvasPos = useCallback((nodeObj: any): { x: number; y: number } => {
+    const fg = graphRef.current;
+    if (!fg?.graph2ScreenCoords) return { x: 0, y: 0 };
+    return fg.graph2ScreenCoords(nodeObj.x ?? 0, nodeObj.y ?? 0) as { x: number; y: number };
+  }, []);
+
   // d3 force 파라미터 — 노드 수에 따라 charge strength 동적 조정
   // §1-6: 각도는 fx/fy로 고정, 동일 구간 내 분산은 charge에 위임
   // §8-1: 방사형 모드에서는 d3ReheatSimulation 미호출 (onEngineStop에서 fx/fy 주입 후 불변 유지)
@@ -328,10 +455,93 @@ export default function MarketGraphCanvas() {
     [selectNode],
   );
 
-  // § 7: 노드 호버 핸들러
+  // §FE-PR-4: 우클릭 컨텍스트 메뉴
+  const handleNodeRightClick = useCallback((node: any, event: MouseEvent) => {
+    event.preventDefault();
+    if (!node?.id) return;
+
+    const graphNode = nodeMap.get(node.id);
+    if (!graphNode) return;
+
+    const pos = getCanvasPos(node);
+    setContextMenuPos(pos);
+    setContextMenuNode({ symbol: node.id, name: graphNode.name });
+    setContextMenuVisible(true);
+
+    // 우클릭 시 툴팁 닫기
+    hideTooltip();
+  }, [nodeMap, getCanvasPos, hideTooltip]);
+
+  // §FE-PR-4: 모바일 롱프레스 + 두 번째 탭 처리
+  // react-force-graph-2d의 onNodeClick을 모바일에서도 사용하되,
+  // 첫 탭/두 번째 탭 구분은 별도 래퍼로 처리
+  const handleNodeClickMobile = useCallback((node: any) => {
+    if (!node?.id) return;
+
+    const now = Date.now();
+    const TAP_DOUBLE_THRESHOLD = 500; // ms 이내 같은 노드 두 번째 탭 = center 전환
+
+    const isMobile = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
+    if (isMobile) {
+      if (
+        lastTappedNodeRef.current === node.id &&
+        now - lastTapTimeRef.current < TAP_DOUBLE_THRESHOLD
+      ) {
+        // 두 번째 탭: center 전환
+        selectNode(node.id);
+        lastTappedNodeRef.current = null;
+        hideTooltip();
+      } else {
+        // 첫 탭: 툴팁 표시
+        lastTappedNodeRef.current = node.id;
+        lastTapTimeRef.current = now;
+
+        const info = buildTooltipInfo(node.id);
+        if (info) {
+          const pos = getCanvasPos(node);
+          setTooltipPos(pos);
+          setTooltipNode(info);
+          setTooltipVisible(true);
+
+          // 모바일: 다른 곳 탭 시 닫힘은 외부 클릭으로 자동 처리
+        }
+      }
+    } else {
+      // 데스크톱: 일반 좌클릭 = center 전환
+      selectNode(node.id);
+    }
+  }, [selectNode, buildTooltipInfo, getCanvasPos, hideTooltip]);
+
+  // § 7: 노드 호버 핸들러 + §FE-PR-4 툴팁 (200ms 지연)
   const handleNodeHover = useCallback((node: any) => {
     setHoveredNode(node?.id ?? null);
-  }, []);
+
+    // 툴팁 타이머 초기화
+    if (tooltipTimerRef.current) {
+      clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = null;
+    }
+
+    if (!node) {
+      // 호버 해제: 즉시 툴팁 숨김
+      setTooltipVisible(false);
+      setTooltipNode(null);
+      return;
+    }
+
+    // 200ms 지연 후 툴팁 표시 (§3-2 명세)
+    const info = buildTooltipInfo(node.id);
+    if (!info) return;
+
+    const pos = getCanvasPos(node);
+    setTooltipPos(pos);
+    setTooltipNode(info);
+
+    tooltipTimerRef.current = setTimeout(() => {
+      setTooltipVisible(true);
+    }, 200);
+  }, [buildTooltipInfo, getCanvasPos]);
 
   const isLoading = sectorLoading || neighborLoading;
   const isEmpty = !selectedSector && !centerSymbol;
@@ -452,13 +662,34 @@ export default function MarketGraphCanvas() {
           // § 6-1 점선 패턴 적용
           return EDGE_DASHES[link.type] ?? [];
         }}
-        onNodeClick={handleNodeClick}
+        onNodeClick={handleNodeClickMobile}
+        onNodeRightClick={handleNodeRightClick}
         onNodeHover={handleNodeHover}
         cooldownTicks={100}
         warmupTicks={50}
         d3AlphaDecay={0.035}
         d3VelocityDecay={0.3}
         onEngineStop={handleEngineStop}
+      />
+
+      {/* §FE-PR-4: 툴팁 overlay */}
+      <NodeTooltip
+        node={tooltipNode}
+        canvasX={tooltipPos.x}
+        canvasY={tooltipPos.y}
+        containerRect={containerRect}
+        visible={tooltipVisible}
+      />
+
+      {/* §FE-PR-4: 컨텍스트 메뉴 overlay */}
+      <NodeContextMenu
+        node={contextMenuNode}
+        x={contextMenuPos.x}
+        y={contextMenuPos.y}
+        containerRect={containerRect}
+        visible={contextMenuVisible}
+        onClose={closeContextMenu}
+        onExplore={(symbol) => selectNode(symbol)}
       />
     </div>
   );
