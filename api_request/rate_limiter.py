@@ -38,10 +38,12 @@ class LimitType(Enum):
 
 
 # Provider별 Rate Limit 설정
+# FMP: Starter 플랜 기준 (300/min, 10000/day). 안전 마진 80% 적용
+# 무료 티어로 다운그레이드할 경우 수동으로 10/min, 250/day로 되돌릴 것
 RATE_LIMITS = {
     "fmp": {
-        LimitType.PER_MINUTE: 10,
-        LimitType.PER_DAY: 250,
+        LimitType.PER_MINUTE: 240,   # Starter 300/min × 0.8 안전 마진
+        LimitType.PER_DAY: 8000,     # Starter 10000/day × 0.8 안전 마진
     },
     "fred": {
         LimitType.PER_MINUTE: 100,  # 120/min 중 100 (안전 마진)
@@ -50,7 +52,7 @@ RATE_LIMITS = {
 
 # Request Delay 설정 (초)
 REQUEST_DELAYS = {
-    "fmp": 0.5,  # FMP는 더 관대
+    "fmp": 0.25,  # 240/min ≈ 4 req/s → 250ms 간격
     "fred": 0.6,  # 분당 100회 기준
 }
 
