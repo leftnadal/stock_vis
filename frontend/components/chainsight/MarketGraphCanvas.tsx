@@ -3,7 +3,7 @@
 import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
-import { useSectorGraph, useNeighbors } from '@/hooks/useMarketView';
+import { useSectorGraph, useNeighbors, useSeedData } from '@/hooks/useMarketView';
 import type { MarketNode, MarketEdge, Neighbor, CrossEdge } from '@/types/chainsight';
 import {
   computeRadialPositions,
@@ -12,6 +12,7 @@ import {
 } from './radialLayout';
 import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
 import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
+import RelationLegend from './RelationLegend';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -143,6 +144,7 @@ export default function MarketGraphCanvas() {
     selectedSector, centerSymbol, historyNodes, highlightedChain,
     enabledRelTypes,
     selectNode,
+    selectSector,
   } = useExplorationStore();
 
   useEffect(() => {
@@ -197,6 +199,7 @@ export default function MarketGraphCanvas() {
     };
   }, [hoveredNode]);
 
+  const { data: seedData } = useSeedData();
   const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
     selectedSector && !centerSymbol ? selectedSector : null,
   );
@@ -586,29 +589,175 @@ export default function MarketGraphCanvas() {
     [enabledRelTypes, hoveredNode],
   );
 
+  // § 4-3: 인기 섹터 3개 — |pct_change| 절댓값 기준 상위 3개
+  const popularSectors = useMemo(() => {
+    if (!seedData?.sector_summary) return [];
+    return [...seedData.sector_summary]
+      .sort((a, b) => Math.abs(b.pct_change) - Math.abs(a.pct_change))
+      .slice(0, 3);
+  }, [seedData]);
+
   if (isEmpty) {
+    // § 4-1: 빈 상태 카피 + § 4-2: SVG 장식 일러스트 + § 4-3: CTA 버튼
     return (
-      // § 5-1 빈 상태 높이 통일: 560px
-      <div className="flex items-center justify-center h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-        <p className="text-gray-500 dark:text-gray-400 text-sm">
-          섹터를 선택하세요
-        </p>
+      <div className="flex flex-col items-center justify-center h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 px-4 gap-6">
+        {/* § 4-2 SVG 장식 그래프 일러스트 (정적, 실제 데이터 없음) */}
+        <svg
+          width="160"
+          height="120"
+          viewBox="0 0 160 120"
+          aria-hidden
+          className="opacity-60"
+        >
+          {/* 외곽 점 장식 */}
+          {[
+            [80, 8], [120, 20], [148, 50], [140, 90], [80, 112],
+            [20, 90], [12, 50], [40, 20],
+          ].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="3" fill="#D1D5DB" className="dark:fill-gray-600" />
+          ))}
+          {/* 연결선 */}
+          {[
+            [60, 50, 100, 50], [80, 40, 60, 50], [80, 40, 100, 50],
+            [60, 50, 50, 75], [100, 50, 110, 75],
+            [80, 40, 80, 20],
+          ].map(([x1, y1, x2, y2], i) => (
+            <line
+              key={i}
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="#E5E7EB"
+              strokeWidth="1.5"
+              className="dark:stroke-gray-700"
+            />
+          ))}
+          {/* 보조 노드 */}
+          {[
+            [60, 50], [100, 50], [50, 75], [110, 75],
+          ].map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r="8"
+              fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1.5"
+              className="dark:fill-gray-700 dark:stroke-gray-600"
+            />
+          ))}
+          {/* 최상단 보조 */}
+          <circle cx="80" cy="20" r="6"
+            fill="#F3F4F6" stroke="#D1D5DB" strokeWidth="1"
+            className="dark:fill-gray-700 dark:stroke-gray-600"
+          />
+          {/* center 노드 — 연파랑 브랜드 힌트 */}
+          <circle cx="80" cy="40" r="13"
+            fill="#DBEAFE" stroke="#93C5FD" strokeWidth="2"
+            className="dark:fill-blue-900/40 dark:stroke-blue-400"
+          />
+          {/* center 점 */}
+          <circle cx="80" cy="40" r="4" fill="#3B82F6" />
+        </svg>
+
+        {/* § 4-1 메인 카피 */}
+        <div className="text-center space-y-1.5">
+          <p className="text-base font-medium text-gray-800 dark:text-gray-200">
+            오늘 시장에서 연결된 종목들을 탐색하세요
+          </p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            섹터를 선택하면 관계 지도가 펼쳐집니다
+          </p>
+        </div>
+
+        {/* § 4-3 인기 섹터 빠른 접근 버튼 — |pct_change| 상위 3개 */}
+        {popularSectors.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-3">
+            {popularSectors.map((s) => (
+              <button
+                key={s.sector}
+                type="button"
+                onClick={() => selectSector(s.sector)}
+                className={[
+                  'flex flex-col items-start',
+                  'w-[110px] min-h-[68px] px-3 py-2',
+                  'rounded-xl border border-gray-200 dark:border-gray-700',
+                  'bg-white dark:bg-gray-800',
+                  'text-left',
+                  'hover:border-blue-400 hover:bg-blue-50 dark:hover:border-blue-500 dark:hover:bg-blue-900/20',
+                  'transition-colors duration-150',
+                  'shadow-sm',
+                ].join(' ')}
+              >
+                <span className="text-xs font-semibold text-gray-800 dark:text-gray-100 leading-tight">
+                  {s.sector_display}
+                </span>
+                <span
+                  className={[
+                    'mt-1 text-[11px] font-medium tabular-nums',
+                    s.pct_change >= 0
+                      ? 'text-emerald-600 dark:text-emerald-400'
+                      : 'text-red-500 dark:text-red-400',
+                  ].join(' ')}
+                >
+                  {s.pct_change >= 0 ? '+' : ''}{s.pct_change.toFixed(2)}%
+                </span>
+                <span className="mt-0.5 text-[10px] text-gray-400 dark:text-gray-500">
+                  {s.seed_count}개 시드
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
   if (isLoading) {
+    // § 4-2 로딩 스켈레톤: 노드·엣지 placeholder 펄스 + 섹터명 안내 텍스트
     return (
-      // § 5-1 로딩 상태 높이 통일: 560px
-      <div className="flex items-center justify-center h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+      <div className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        {/* 스켈레톤 SVG — 노드 8개 + 엣지 8개 랜덤 배치 */}
+        <svg
+          className="absolute inset-0 w-full h-full"
+          aria-hidden
+        >
+          {/* 엣지 placeholder */}
+          {[
+            [180, 200, 280, 160], [280, 160, 380, 220], [380, 220, 300, 300],
+            [300, 300, 200, 320], [200, 320, 180, 200], [280, 160, 300, 300],
+            [180, 200, 300, 300], [380, 220, 200, 320],
+          ].map(([x1, y1, x2, y2], i) => (
+            <line
+              key={i}
+              x1={x1} y1={y1} x2={x2} y2={y2}
+              stroke="#E5E7EB"
+              strokeWidth="1.5"
+              className="dark:stroke-gray-700 animate-pulse"
+            />
+          ))}
+          {/* 노드 placeholder */}
+          {[
+            [180, 200, 12], [280, 160, 18], [380, 220, 12],
+            [300, 300, 12], [200, 320, 10], [130, 280, 10],
+            [420, 300, 10], [320, 380, 10],
+          ].map(([cx, cy, r], i) => (
+            <circle
+              key={i}
+              cx={cx} cy={cy} r={r}
+              fill="#E5E7EB"
+              className="dark:fill-gray-700 animate-pulse"
+              style={{ animationDelay: `${i * 0.12}s`, animationDuration: '1.4s' }}
+            />
+          ))}
+        </svg>
+        {/* 로딩 텍스트 */}
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center">
+          <p className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">
+            {selectedSector ? `${selectedSector} 섹터 관계 지도를 불러오는 중...` : '관계 지도를 불러오는 중...'}
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     // § 5-1 메인 캔버스 560px (기존 400px → 560px)
-    <div ref={containerRef} className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    // § 7 cross-fade: opacity transition 200ms (스켈레톤→실제 그래프)
+    <div ref={containerRef} className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity duration-200 opacity-100">
       <ForceGraph2D
         ref={graphRef}
         graphData={{ nodes, links }}
@@ -691,6 +840,9 @@ export default function MarketGraphCanvas() {
         onClose={closeContextMenu}
         onExplore={(symbol) => selectNode(symbol)}
       />
+
+      {/* §FE-PR-5 §5-3: 범례 — 캔버스 내 좌하단 absolute overlay */}
+      <RelationLegend />
     </div>
   );
 }
