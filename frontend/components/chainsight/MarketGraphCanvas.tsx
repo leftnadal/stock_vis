@@ -5,6 +5,11 @@ import dynamic from 'next/dynamic';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useSectorGraph, useNeighbors } from '@/hooks/useMarketView';
 import type { MarketNode, MarketEdge, Neighbor, CrossEdge } from '@/types/chainsight';
+import {
+  computeRadialPositions,
+  inferSecondaryNeighbors,
+  type RadialNeighbor,
+} from './radialLayout';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -68,8 +73,13 @@ interface GraphNode {
   node_size: string;
   isCenter: boolean;
   isHistory: boolean;
+  /** §FE-PR-3: 이 노드가 center와 연결된 관계 타입 (radialLayout 좌표 계산에 사용) */
+  relType?: string;
   x?: number;
   y?: number;
+  /** d3 고정 좌표 — §8-1 fx/fy 수동 주입 */
+  fx?: number;
+  fy?: number;
 }
 
 interface GraphLink {
@@ -89,6 +99,15 @@ export default function MarketGraphCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const [containerWidth, setContainerWidth] = useState(800);
+
+  // §8-1 우회법: graphData 변경 시 fx/fy 초기화 문제 → nodePositions ref 별도 관리
+  // onEngineStop 직후 한 번 주입하고, 이후 d3ReheatSimulation 미호출
+  // graphData 재생성(다른 종목 클릭) 시에도 이 ref에서 fx/fy를 복구
+  const nodePositionsRef = useRef<Map<string, { fx: number; fy: number }>>(new Map());
+  // 현재 center 심볼 추적 — 변경 감지 시 positions 재계산
+  const positionsCenterRef = useRef<string | null>(null);
+  // fx/fy 이미 주입되었는지 추적 (한 번만 zoomToFit 실행)
+  const positionsInjectedRef = useRef<boolean>(false);
 
   // § 7: hoveredNode 상태 — 호버 중인 노드 ID
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -160,38 +179,146 @@ export default function MarketGraphCanvas() {
   // 데이터 변환
   const { nodes, links } = useMemo(() => {
     if (centerSymbol && neighborData) {
-      return buildNeighborGraph(neighborData, centerSymbol, historyNodes);
+      const result = buildNeighborGraph(neighborData, centerSymbol, historyNodes);
+
+      // §FE-PR-3: center가 바뀌었으면 방사형 좌표를 재계산하여 ref에 저장
+      // graphData 객체를 새로 생성해도 ref는 살아있으므로 §8-1 문제 우회
+      if (positionsCenterRef.current !== centerSymbol) {
+        positionsCenterRef.current = centerSymbol;
+        positionsInjectedRef.current = false;
+
+        // 이웃 노드를 RadialNeighbor 형태로 변환
+        const radialNeighbors: RadialNeighbor[] = result.nodes
+          .filter((n) => !n.isCenter)
+          .map((n) => ({
+            symbol: n.id,
+            relType: n.relType ?? 'CO_MENTIONED',
+            depth: 1, // 기본 1차 이웃
+          }));
+
+        // cross_edges에서 2차 이웃 추론
+        const neighborSymbols = new Set(radialNeighbors.map((r) => r.symbol));
+        const secondaries = inferSecondaryNeighbors(
+          neighborSymbols,
+          centerSymbol,
+          neighborData.cross_edges.map((ce) => ({ source: ce.source, target: ce.target })),
+        );
+
+        // 2차 이웃도 RadialNeighbor에 추가 (relType 없으면 CO_MENTIONED fallback)
+        const crossEdgeRelTypes = new Map<string, string>();
+        for (const ce of neighborData.cross_edges) {
+          if (secondaries.has(ce.source)) crossEdgeRelTypes.set(ce.source, ce.type);
+          if (secondaries.has(ce.target)) crossEdgeRelTypes.set(ce.target, ce.type);
+        }
+        for (const sym of secondaries) {
+          radialNeighbors.push({
+            symbol: sym,
+            relType: crossEdgeRelTypes.get(sym) ?? 'CO_MENTIONED',
+            depth: 2,
+          });
+        }
+
+        // computeRadialPositions는 순수 함수 — center=원점, 이웃=방사형 배치
+        const positions = computeRadialPositions(centerSymbol, radialNeighbors, {
+          ring1Radius: 160,
+          ring2Radius: 280,
+        });
+        nodePositionsRef.current = positions;
+      }
+
+      return result;
     }
     if (selectedSector && sectorData) {
+      // 섹터 그래프: center 개념 없음 → 방사형 미적용, 기존 force 유지
+      positionsCenterRef.current = null;
+      positionsInjectedRef.current = false;
+      nodePositionsRef.current = new Map();
       return buildSectorGraph(sectorData, historyNodes);
     }
     return { nodes: [], links: [] };
   }, [centerSymbol, neighborData, selectedSector, sectorData, historyNodes]);
 
-  // d3 force 파라미터 — 노드 수에 따라 간격 동적 조정
+  // d3 force 파라미터 — 노드 수에 따라 charge strength 동적 조정
+  // §1-6: 각도는 fx/fy로 고정, 동일 구간 내 분산은 charge에 위임
+  // §8-1: 방사형 모드에서는 d3ReheatSimulation 미호출 (onEngineStop에서 fx/fy 주입 후 불변 유지)
   useEffect(() => {
     const fg = graphRef.current;
     if (!fg?.d3Force || nodes.length === 0) return;
     try {
       const n = nodes.length;
-      const linkDist = n <= 8 ? 170 : n <= 20 ? 130 : n <= 40 ? 100 : 80;
-      const chargeStr = n <= 8 ? -800 : n <= 20 ? -550 : n <= 40 ? -380 : -280;
+      const isRadialMode = positionsCenterRef.current !== null;
 
-      const linkForce = fg.d3Force('link') as { distance?: (fn: () => number) => void } | null;
-      linkForce?.distance?.(() => linkDist);
+      if (isRadialMode) {
+        // §1-6 권고치: 방사형 모드에서 charge는 분산용으로만 사용
+        // linkForce distance 영향력 약화 (fx/fy가 거리 결정권을 가져가므로)
+        const chargeStr = n <= 8 ? -600 : n <= 20 ? -400 : n <= 40 ? -280 : -200;
 
-      const chargeForce = fg.d3Force('charge') as { strength?: (fn: () => number) => void } | null;
-      chargeForce?.strength?.(() => chargeStr);
+        const linkForce = fg.d3Force('link') as {
+          distance?: (fn: () => number) => void;
+          strength?: (fn: () => number) => void;
+        } | null;
+        // linkForce strength를 낮춰서 fx/fy 고정 좌표에 간섭 최소화
+        linkForce?.strength?.(() => 0.1);
 
-      fg.d3ReheatSimulation?.();
+        const chargeForce = fg.d3Force('charge') as {
+          strength?: (fn: () => number) => void;
+        } | null;
+        chargeForce?.strength?.(() => chargeStr);
+
+        // §8-1: 방사형 모드에서는 d3ReheatSimulation 미호출
+        // (onEngineStop 이후 한 번만 fx/fy 주입 → 이후 불변)
+      } else {
+        // 섹터 그래프: 기존 force-directed 유지
+        const linkDist = n <= 8 ? 170 : n <= 20 ? 130 : n <= 40 ? 100 : 80;
+        const chargeStr = n <= 8 ? -800 : n <= 20 ? -550 : n <= 40 ? -380 : -280;
+
+        const linkForce = fg.d3Force('link') as {
+          distance?: (fn: () => number) => void;
+        } | null;
+        linkForce?.distance?.(() => linkDist);
+
+        const chargeForce = fg.d3Force('charge') as {
+          strength?: (fn: () => number) => void;
+        } | null;
+        chargeForce?.strength?.(() => chargeStr);
+
+        fg.d3ReheatSimulation?.();
+      }
     } catch {
       // force API 미지원 시 무시
     }
   }, [nodes, links]);
 
-  // 시뮬레이션 안정화 후 모든 노드가 화면에 보이도록 fit
+  // §FE-PR-3 §8-1: onEngineStop 직후 한 번만 fx/fy 주입 → d3ReheatSimulation 미호출
+  // 시뮬레이션이 cooldown 완료 후 발화 → 이 시점에 노드 객체에 fx/fy 직접 주입
+  // 이후 graphData가 새 객체로 교체되어도 nodePositionsRef에서 복구 가능
   const handleEngineStop = useCallback(() => {
-    graphRef.current?.zoomToFit(400, 80);
+    const fg = graphRef.current;
+    if (!fg) return;
+
+    const positions = nodePositionsRef.current;
+    const isRadialMode = positionsCenterRef.current !== null;
+
+    if (isRadialMode && positions.size > 0 && !positionsInjectedRef.current) {
+      // §8-1: graphData의 노드 객체에 직접 fx/fy 주입
+      // react-force-graph-2d는 노드 객체를 직접 참조하므로 이 방식으로 고정
+      const graphData = fg.graphData?.() as { nodes: any[] } | undefined;
+      if (graphData?.nodes) {
+        for (const node of graphData.nodes) {
+          const pos = positions.get(node.id);
+          if (pos !== undefined) {
+            node.fx = pos.fx;
+            node.fy = pos.fy;
+          }
+        }
+      }
+
+      positionsInjectedRef.current = true;
+      // §8-1: d3ReheatSimulation 호출 금지 — fx/fy 주입 후 시뮬레이션 재가동 없음
+    }
+
+    // 모든 노드가 화면에 보이도록 fit (한 번만)
+    fg.zoomToFit?.(400, 80);
   }, []);
 
   const handleNodeClick = useCallback(
@@ -471,6 +598,7 @@ function buildNeighborGraph(
       node_size: 'xl',
       isCenter: true,
       isHistory: false,
+      // center는 §FE-PR-3: fx=0, fy=0 — nodePositionsRef에서 주입
     },
     ...data.neighbors.map((n) => ({
       id: n.symbol,
@@ -480,6 +608,8 @@ function buildNeighborGraph(
       node_size: 'md' as const,
       isCenter: false,
       isHistory: historyNodes.includes(n.symbol),
+      // §FE-PR-3: relType 메타데이터 보존 → computeRadialPositions에 전달
+      relType: n.relation.type,
     })),
   ];
 
