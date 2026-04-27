@@ -45,11 +45,20 @@ const EDGE_DASHES: Record<string, number[]> = {
   PRICE_CORRELATED: [3, 3],
 };
 
-// § 2-4 비활성 엣지 alpha
+// § 2-4 비활성 엣지 alpha (칩 토글)
 const ALPHA_ACTIVE   = 0.85;
 const ALPHA_INACTIVE = 0.15;
 
-const NODE_SIZE_MAP = { xl: 14, lg: 11, md: 8, sm: 6 };
+// § 6-1 약한 관계(3계층) 활성 시 alpha — 강한 관계보다 낮게 차등 적용
+const ALPHA_WEAK_ACTIVE = 0.55;
+const WEAK_REL_TYPES = new Set(['CO_MENTIONED', 'HAS_THEME', 'PRICE_CORRELATED']);
+
+// § 1-5 노드 크기 위계 (3단계 고대비)
+// center=28px, 1차 이웃: xl=20, lg=17, md=14 (pagerank 비례), 2차=8~12
+const NODE_SIZE_MAP = { xl: 20, lg: 17, md: 14, sm: 10 };
+
+// § 7 호버 애니메이션 duration (ms)
+const HOVER_FADE_DURATION = 100;
 
 interface GraphNode {
   id: string;
@@ -71,10 +80,22 @@ interface GraphLink {
   relation_category: string;
 }
 
+// § 7: 호버 alpha를 부드럽게 보간하는 헬퍼
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * Math.min(1, Math.max(0, t));
+}
+
 export default function MarketGraphCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
   const [containerWidth, setContainerWidth] = useState(800);
+
+  // § 7: hoveredNode 상태 — 호버 중인 노드 ID
+  const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  // § 7: 호버 애니메이션 진행값 (0.0~1.0), 애니메이션 프레임 ref
+  const hoverProgressRef = useRef<number>(0);
+  const hoverAnimFrameRef = useRef<number | null>(null);
+  const hoverStartTimeRef = useRef<number | null>(null);
 
   const {
     selectedSector, centerSymbol, historyNodes, highlightedChain,
@@ -91,6 +112,45 @@ export default function MarketGraphCanvas() {
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+
+  // § 7: 호버 fade-in/dim 애니메이션 (100ms)
+  useEffect(() => {
+    const direction = hoveredNode !== null ? 1 : -1; // 1=dim-in, -1=dim-out
+
+    if (hoverAnimFrameRef.current !== null) {
+      cancelAnimationFrame(hoverAnimFrameRef.current);
+    }
+
+    const startProgress = hoverProgressRef.current;
+    hoverStartTimeRef.current = null;
+
+    const animate = (ts: number) => {
+      if (hoverStartTimeRef.current === null) hoverStartTimeRef.current = ts;
+      const elapsed = ts - hoverStartTimeRef.current;
+      const t = Math.min(elapsed / HOVER_FADE_DURATION, 1);
+
+      hoverProgressRef.current = direction > 0
+        ? lerp(startProgress, 1, t)
+        : lerp(startProgress, 0, t);
+
+      // 그래프를 다시 그리도록 강제 리렌더
+      graphRef.current?.refresh?.();
+
+      if (t < 1) {
+        hoverAnimFrameRef.current = requestAnimationFrame(animate);
+      } else {
+        hoverAnimFrameRef.current = null;
+      }
+    };
+
+    hoverAnimFrameRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (hoverAnimFrameRef.current !== null) {
+        cancelAnimationFrame(hoverAnimFrameRef.current);
+      }
+    };
+  }, [hoveredNode]);
 
   const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
     selectedSector && !centerSymbol ? selectedSector : null,
@@ -141,12 +201,58 @@ export default function MarketGraphCanvas() {
     [selectNode],
   );
 
+  // § 7: 노드 호버 핸들러
+  const handleNodeHover = useCallback((node: any) => {
+    setHoveredNode(node?.id ?? null);
+  }, []);
+
   const isLoading = sectorLoading || neighborLoading;
   const isEmpty = !selectedSector && !centerSymbol;
 
+  // § 7 링크 alpha 합성 계산 — 칩 토글(chip) + 호버 dim(hover) 누적
+  //
+  // 규칙:
+  //  1) 칩이 비활성이면 항상 ALPHA_INACTIVE (0.15) — 호버로도 완전 숨김은 안 함
+  //  2) 칩이 활성 + 호버 없음 → chipAlpha (강한=0.85, 약한=0.55)
+  //  3) 칩이 활성 + 호버 있음
+  //     - 호버된 노드에 연결된 엣지 → 1.0 (강조)
+  //     - 비연결 엣지 → ALPHA_INACTIVE (0.15, dim)
+  //     - 칩 비활성 엣지는 호버 연결이어도 ALPHA_INACTIVE 유지 (칩 우선)
+  const getLinkAlpha = useCallback(
+    (link: any): number => {
+      const isActive = enabledRelTypes.has(link.type);
+      if (enabledRelTypes.size === 0) return 0; // 모두 끔: 투명
+
+      // § 6-1 약한 엣지 vs 강한 엣지 chip alpha
+      const chipAlpha = isActive
+        ? (WEAK_REL_TYPES.has(link.type) ? ALPHA_WEAK_ACTIVE : ALPHA_ACTIVE)
+        : ALPHA_INACTIVE;
+
+      // § 7 호버 dim — hoveredNode 없으면 칩 alpha만 적용
+      const progress = hoverProgressRef.current;
+      if (hoveredNode === null || progress === 0) return chipAlpha;
+
+      // 호버 중: 연결된 링크면 1.0, 아니면 0.15 (progress에 따라 보간)
+      const srcId = typeof link.source === 'object' ? link.source.id : link.source;
+      const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
+      const isConnectedToHovered = srcId === hoveredNode || tgtId === hoveredNode;
+
+      if (isActive) {
+        // 활성 칩: 연결→1.0 강조, 비연결→0.15 dim (보간)
+        const hoverTargetAlpha = isConnectedToHovered ? 1.0 : ALPHA_INACTIVE;
+        return lerp(chipAlpha, hoverTargetAlpha, progress);
+      } else {
+        // 비활성 칩: 호버와 무관하게 0.15 유지
+        return ALPHA_INACTIVE;
+      }
+    },
+    [enabledRelTypes, hoveredNode],
+  );
+
   if (isEmpty) {
     return (
-      <div className="flex items-center justify-center h-[400px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+      // § 5-1 빈 상태 높이 통일: 560px
+      <div className="flex items-center justify-center h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
         <p className="text-gray-500 dark:text-gray-400 text-sm">
           섹터를 선택하세요
         </p>
@@ -156,24 +262,44 @@ export default function MarketGraphCanvas() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-[400px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
+      // § 5-1 로딩 상태 높이 통일: 560px
+      <div className="flex items-center justify-center h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
       </div>
     );
   }
 
   return (
-    <div ref={containerRef} className="relative h-[400px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+    // § 5-1 메인 캔버스 560px (기존 400px → 560px)
+    <div ref={containerRef} className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
       <ForceGraph2D
         ref={graphRef}
         graphData={{ nodes, links }}
         width={containerWidth}
-        height={400}
+        height={560}
         nodeId="id"
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D) => {
-          paintNode(node, ctx, highlightedChain);
+          // § 7: 호버 dim — 호버 중이면 비연결 노드 alpha 감소
+          const progress = hoverProgressRef.current;
+          let nodeAlpha: number | undefined;
+          if (hoveredNode !== null && progress > 0) {
+            // hoveredNode 본인 또는 직접 이웃인지 확인
+            const isHoveredSelf = node.id === hoveredNode;
+            const isNeighbor = links.some((l) => {
+              const srcId = typeof l.source === 'object' ? (l.source as any).id : l.source;
+              const tgtId = typeof l.target === 'object' ? (l.target as any).id : l.target;
+              return (srcId === hoveredNode && tgtId === node.id) ||
+                     (tgtId === hoveredNode && srcId === node.id);
+            });
+            const targetAlpha = isHoveredSelf || isNeighbor ? 1.0 : ALPHA_INACTIVE;
+            // 현재 노드의 기본 alpha (히스토리=0.4, 나머지=1.0)
+            const baseAlpha = node.isHistory ? 0.4 : 1.0;
+            nodeAlpha = lerp(baseAlpha, targetAlpha, progress);
+          }
+          paintNode(node, ctx, highlightedChain, nodeAlpha);
         }}
         nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+          // § 1-5: center는 28px, 호버 영역도 동일하게
           const r = getNodeRadius(node);
           ctx.fillStyle = color;
           ctx.beginPath();
@@ -181,19 +307,15 @@ export default function MarketGraphCanvas() {
           ctx.fill();
         }}
         linkColor={(link: any) => {
+          // § 6-1 + § 7: 칩 토글 alpha + 호버 dim alpha 합성
+          const alpha = getLinkAlpha(link);
+          if (alpha <= 0) return 'rgba(0,0,0,0)';
           const baseColor = EDGE_COLORS[link.type] || '#9CA3AF';
-          // § 2-4: 모두 끈 경우 엣지 자체를 그리지 않는 것은 linkVisibility로 처리.
-          // 비활성 엣지는 alpha 0.15 — canvas linkCanvasObject 대신 linkColor에 alpha를 직접 인코딩.
-          // react-force-graph-2d는 linkColor에 rgba 문자열을 지원함.
-          const isActive = enabledRelTypes.has(link.type);
-          if (enabledRelTypes.size === 0) return 'rgba(0,0,0,0)'; // 모두 끔: 투명
-          const alpha = isActive ? ALPHA_ACTIVE : ALPHA_INACTIVE;
-          // hex → rgba 변환 (6자리 hex 가정)
           const hex = baseColor.replace('#', '');
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          return `rgba(${r},${g},${b},${alpha})`;
+          const rr = parseInt(hex.substring(0, 2), 16);
+          const gg = parseInt(hex.substring(2, 4), 16);
+          const bb = parseInt(hex.substring(4, 6), 16);
+          return `rgba(${rr},${gg},${bb},${alpha.toFixed(3)})`;
         }}
         linkWidth={(link: any) => {
           // § 6-1 엣지 굵기 적용
@@ -204,6 +326,7 @@ export default function MarketGraphCanvas() {
           return EDGE_DASHES[link.type] ?? [];
         }}
         onNodeClick={handleNodeClick}
+        onNodeHover={handleNodeHover}
         cooldownTicks={100}
         warmupTicks={50}
         d3AlphaDecay={0.035}
@@ -216,53 +339,98 @@ export default function MarketGraphCanvas() {
 
 // ── 헬퍼 ──
 
+// § 1-5: 노드 크기 위계 — center=28px (Level 0)
 function getNodeRadius(node: GraphNode): number {
-  if (node.isCenter) return 16;
-  return NODE_SIZE_MAP[node.node_size as keyof typeof NODE_SIZE_MAP] || 8;
+  if (node.isCenter) return 28;
+  return NODE_SIZE_MAP[node.node_size as keyof typeof NODE_SIZE_MAP] || 10;
 }
 
-function paintNode(node: any, ctx: CanvasRenderingContext2D, highlightedChain: string | null) {
+// § 6-2: 섹터 색상 매핑 (center 노드 glow용)
+function getSectorFillColor(node: GraphNode): string {
+  if (node.is_seed && node.seed_type) {
+    return SEED_COLORS[node.seed_type]?.bg ?? '#F3F4F6';
+  }
+  return '#F3F4F6';
+}
+
+function getSectorStrokeColor(node: GraphNode): string {
+  if (node.is_seed && node.seed_type) {
+    return SEED_COLORS[node.seed_type]?.border ?? '#D1D5DB';
+  }
+  return '#D1D5DB';
+}
+
+// § 1-5 + § 6-2: paintNode — center는 glow halo + 흰 링 3px
+// nodeAlpha: undefined이면 기본 alpha 적용, 숫자이면 호버 dim 적용
+function paintNode(
+  node: any,
+  ctx: CanvasRenderingContext2D,
+  highlightedChain: string | null,
+  nodeAlpha?: number,
+) {
   const r = getNodeRadius(node);
   const { x, y } = node;
 
-  // 히스토리 노드 반투명
-  if (node.isHistory) {
-    ctx.globalAlpha = 0.4;
-  }
+  // 히스토리 노드 기본 반투명 (호버 dim이 없을 때)
+  const baseAlpha = node.isHistory ? 0.4 : 1.0;
+  ctx.globalAlpha = nodeAlpha !== undefined ? nodeAlpha : baseAlpha;
 
-  // 배경
-  if (node.is_seed && node.seed_type) {
-    const colors = SEED_COLORS[node.seed_type] || SEED_COLORS.price;
-    ctx.fillStyle = colors.bg;
-    ctx.strokeStyle = colors.border;
+  const fillColor  = getSectorFillColor(node);
+  const strokeColor = getSectorStrokeColor(node);
+
+  if (node.isCenter) {
+    // § 6-2 center 노드: shadowBlur glow halo 먼저 그린 뒤 원 칠
+    ctx.shadowColor = '#FFFFFF';
+    ctx.shadowBlur  = 8;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+    ctx.shadowBlur = 0; // glow 끄기
+
+    // § 1-5 흰색 외곽선 3px
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth   = 3;
+    ctx.stroke();
   } else {
-    ctx.fillStyle = '#F3F4F6';
-    ctx.strokeStyle = '#D1D5DB';
+    // 일반 노드
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, 2 * Math.PI);
+    ctx.fillStyle   = fillColor;
+    ctx.strokeStyle = strokeColor;
+    // § 1-5 Level1: 흰색 1.5px, Level2: 없음 (node_size sm = 10px 이하는 외곽선 생략)
+    ctx.lineWidth   = r >= 14 ? 1.5 : 0.5;
+    ctx.fill();
+    if (r >= 14) {
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.stroke();
+    } else {
+      ctx.stroke(); // 연한 원 테두리 유지 (가시성)
+    }
   }
 
-  ctx.lineWidth = node.isCenter ? 2.5 : 1.5;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, 2 * Math.PI);
-  ctx.fill();
-  ctx.stroke();
-
-  // 라벨
-  ctx.globalAlpha = 1;
+  // 라벨 — alpha를 1로 리셋하지 않고 노드 alpha 위에 그림
   ctx.fillStyle = '#1F2937';
-  ctx.font = `${node.isCenter ? 'bold ' : ''}${r > 10 ? 10 : 8}px sans-serif`;
+  ctx.font = `${node.isCenter ? 'bold ' : ''}${r > 14 ? 11 : r > 10 ? 9 : 7}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  const label = node.id.length > 5 ? node.id.slice(0, 5) : node.id;
+  // center는 ticker 그대로, 나머지는 최대 5자
+  const label = node.isCenter
+    ? node.id
+    : (node.id.length > 5 ? node.id.slice(0, 5) : node.id);
   ctx.fillText(label, x, y);
 
-  // 이름 (큰 노드만)
-  if (r >= 10 && node.name) {
-    ctx.font = '7px sans-serif';
-    ctx.fillStyle = '#6B7280';
-    const name = node.name.length > 12 ? node.name.slice(0, 12) + '…' : node.name;
-    ctx.fillText(name, x, y + r + 8);
+  // 이름 (큰 노드만 — center 포함)
+  if (r >= 14 && node.name) {
+    ctx.font = '8px sans-serif';
+    ctx.fillStyle = node.isCenter ? '#374151' : '#6B7280';
+    const name = node.name.length > 14 ? node.name.slice(0, 14) + '…' : node.name;
+    ctx.fillText(name, x, y + r + 10);
   }
+
+  // globalAlpha 초기화
+  ctx.globalAlpha = 1;
 }
 
 function buildSectorGraph(
