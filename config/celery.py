@@ -281,10 +281,12 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:30 EST = KST 06:30)
+    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:45 EST = KST 06:45)
+    # 16:30 EST에 analyze-news-deep-batch(hour='...,16,...', minute=30)와 Gemini 동시 호출 충돌
+    # → Gemini 15 RPM 2배 초과 위험. 15분 분산하여 회피 (audit P0 #8, 2026-04-26)
     'extract-daily-news-keywords': {
         'task': 'news.tasks.extract_daily_news_keywords',
-        'schedule': crontab(hour=16, minute=30),  # 16:30 EST (장 마감 30분 후)
+        'schedule': crontab(hour=16, minute=45),  # 16:45 EST (analyze-deep와 15분 간격)
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
