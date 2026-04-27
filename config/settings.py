@@ -26,10 +26,7 @@ FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
-## Neo4j (Chain Sight 그래프 DB)
-NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
-NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
+# Neo4j 설정은 아래 통합 블록(line ~117)에서 일원화 정의
 
 # ============================================================
 # Stock Data Provider Configuration
@@ -113,10 +110,11 @@ NEWS_FALLBACK_PROVIDER = os.getenv('NEWS_FALLBACK_PROVIDER', 'marketaux')
 # Neo4j Configuration
 # ============================================================
 
-# Neo4j 연결 설정 (로컬 개발 환경 기본값)
+# Neo4j 연결 설정 (Chain Sight 그래프 DB)
+# NEO4J_PASSWORD는 환경변수 필수. 디폴트 제거 (기존 'stockvis123'은 보안 약점)
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USERNAME = os.getenv('NEO4J_USERNAME', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', '')  # 빈 값 = 미설정. 운영 가드는 DEBUG 정의 후 SECRET_KEY 가드와 함께 처리
 NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
 
 # Neo4j 연결 풀 설정
@@ -137,12 +135,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hvwb-ms8%a@fh7_pf@obr@edq6(h41bj+$yetj#h!wg7#(b(&8'
+# 운영: .env의 SECRET_KEY 필수. 누락 시 dev 전용 placeholder 사용 (운영 배포 차단됨)
+_SECRET_KEY_DEV_FALLBACK = 'django-insecure-DEV-ONLY-DO-NOT-USE-IN-PRODUCTION-' + 'x' * 30
+# `or` 사용: 빈 문자열도 미설정으로 처리 (os.getenv 기본값은 빈 문자열을 "있는 값"으로 취급)
+SECRET_KEY = os.getenv('SECRET_KEY') or _SECRET_KEY_DEV_FALLBACK
+
+# JWT 서명 키는 SECRET_KEY와 분리 (위조 공격 표면 축소). 미설정 시 SECRET_KEY로 fallback
+JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY') or SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()] or (
+    ['*'] if DEBUG else []
+)
+
+# 운영 배포 가드: DEBUG=False에서 필수 보안 환경변수 누락 시 즉시 실패
+if not DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+    if SECRET_KEY == _SECRET_KEY_DEV_FALLBACK:
+        raise ImproperlyConfigured(
+            "SECRET_KEY 환경변수가 설정되지 않았습니다. "
+            "운영 환경(DEBUG=False)에서는 .env에 SECRET_KEY를 반드시 지정하세요. "
+            "예: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+        )
+    if not NEO4J_PASSWORD:
+        raise ImproperlyConfigured(
+            "NEO4J_PASSWORD 환경변수가 설정되지 않았습니다. "
+            "운영 환경(DEBUG=False)에서는 .env에 NEO4J_PASSWORD를 반드시 지정하세요."
+        )
 
 
 # Application definition
@@ -285,14 +306,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# 개발 환경과 프로덕션 환경 분리
-if DEBUG:
-    # 개발 환경에서만 모든 origin 허용
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    # 프로덕션에서는 명시적으로 허용된 origins만
-    CORS_ALLOW_ALL_ORIGINS = False
-    # 프로덕션 도메인 추가 시 CORS_ALLOWED_ORIGINS에 추가
+# CORS_ALLOW_ALL_ORIGINS은 별도 env로 명시 제어 (DEBUG 의존 제거 — 운영 배포 시 의도치 않은 전체 허용 방지)
+# 기본 False. 개발에서 모든 origin 허용이 필요하면 .env에 DJANGO_CORS_ALLOW_ALL=True 명시
+CORS_ALLOW_ALL_ORIGINS = os.getenv('DJANGO_CORS_ALLOW_ALL', 'False').lower() == 'true'
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -339,7 +355,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,                      # 마지막 로그인 시간 업데이트
 
     'ALGORITHM': 'HS256',                           # 암호화 알고리즘
-    'SIGNING_KEY': SECRET_KEY,                      # 서명 키
+    'SIGNING_KEY': JWT_SIGNING_KEY,                 # 서명 키 (SECRET_KEY와 분리, env로 별도 회전 가능)
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,

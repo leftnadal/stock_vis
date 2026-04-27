@@ -8,9 +8,17 @@ Test-only Django settings.
   tests/conftest.py의 `cache.clear()` autouse fixture가 운영 시드/시그널
   캐시를 날리던 사건(2026-04-24) 재발 방지.
 - CELERY_TASK_ALWAYS_EAGER: 테스트에서 Celery 태스크가 브로커 없이 즉시 실행.
+- 보안 env(SECRET_KEY/NEO4J_PASSWORD): 테스트 환경 기본값을 setdefault로 주입해
+  settings.py의 운영 가드가 실수로 트리거되지 않게 한다.
+  (load_dotenv는 기존 env를 덮어쓰지 않으므로 setdefault 충분)
 """
+import os
 
-from .settings import *  # noqa: F401,F403
+os.environ.setdefault('DJANGO_DEBUG', 'True')
+os.environ.setdefault('SECRET_KEY', 'test-secret-key-not-for-production-use-only')
+os.environ.setdefault('NEO4J_PASSWORD', 'test-neo4j-password')
+
+from .settings import *  # noqa: F401,F403,E402
 
 
 CACHES = {
