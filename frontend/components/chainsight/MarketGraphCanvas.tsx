@@ -16,14 +16,38 @@ const SEED_COLORS: Record<string, { bg: string; border: string }> = {
   comention: { bg: '#F3E8FF', border: '#9333EA' },
 };
 
-// ── 엣지 색상 ──
+// ── 엣지 색상 (§6-1 명세 계층) ──
 const EDGE_COLORS: Record<string, string> = {
-  SUPPLIES_TO:      '#5DCAA5',
-  COMPETES_WITH:    '#F0997B',
-  PEER_OF:          '#85B7EB',
-  CO_MENTIONED:     '#AFA9EC',
-  PRICE_CORRELATED: '#D3D1C7',
+  SUPPLIES_TO:      '#F97316',  // 오렌지 — 1계층 구조적 비즈니스
+  CUSTOMER_OF:      '#F97316',  // 오렌지 — 1계층 구조적 비즈니스 (공급망 묶음)
+  COMPETES_WITH:    '#EF4444',  // 빨강  — 1계층 구조적 비즈니스
+  PEER_OF:          '#3B82F6',  // 파랑  — 2계층 구조적 비교
+  CO_MENTIONED:     '#A855F7',  // 보라  — 3계층 시장 신호
+  HAS_THEME:        '#14B8A6',  // 틸   — 3계층 시장 신호
+  PRICE_CORRELATED: '#9CA3AF',  // 회색  — 3계층 시장 신호
 };
+
+// § 6-1 엣지 굵기
+const EDGE_WIDTHS: Record<string, number> = {
+  SUPPLIES_TO:      3,
+  CUSTOMER_OF:      3,
+  COMPETES_WITH:    2.5,
+  PEER_OF:          2,
+  CO_MENTIONED:     1.5,
+  HAS_THEME:        1,
+  PRICE_CORRELATED: 1,
+};
+
+// § 6-1 엣지 점선 패턴
+const EDGE_DASHES: Record<string, number[]> = {
+  CO_MENTIONED:     [5, 4],
+  HAS_THEME:        [8, 4],
+  PRICE_CORRELATED: [3, 3],
+};
+
+// § 2-4 비활성 엣지 alpha
+const ALPHA_ACTIVE   = 0.85;
+const ALPHA_INACTIVE = 0.15;
 
 const NODE_SIZE_MAP = { xl: 14, lg: 11, md: 8, sm: 6 };
 
@@ -54,6 +78,7 @@ export default function MarketGraphCanvas() {
 
   const {
     selectedSector, centerSymbol, historyNodes, highlightedChain,
+    enabledRelTypes,
     selectNode,
   } = useExplorationStore();
 
@@ -155,15 +180,28 @@ export default function MarketGraphCanvas() {
           ctx.arc(node.x, node.y, r, 0, 2 * Math.PI);
           ctx.fill();
         }}
-        linkColor={(link: any) => EDGE_COLORS[link.type] || '#9CA3AF'}
+        linkColor={(link: any) => {
+          const baseColor = EDGE_COLORS[link.type] || '#9CA3AF';
+          // § 2-4: 모두 끈 경우 엣지 자체를 그리지 않는 것은 linkVisibility로 처리.
+          // 비활성 엣지는 alpha 0.15 — canvas linkCanvasObject 대신 linkColor에 alpha를 직접 인코딩.
+          // react-force-graph-2d는 linkColor에 rgba 문자열을 지원함.
+          const isActive = enabledRelTypes.has(link.type);
+          if (enabledRelTypes.size === 0) return 'rgba(0,0,0,0)'; // 모두 끔: 투명
+          const alpha = isActive ? ALPHA_ACTIVE : ALPHA_INACTIVE;
+          // hex → rgba 변환 (6자리 hex 가정)
+          const hex = baseColor.replace('#', '');
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          return `rgba(${r},${g},${b},${alpha})`;
+        }}
         linkWidth={(link: any) => {
-          if (link.truth_score != null) return Math.max(1, link.truth_score / 30);
-          return 1;
+          // § 6-1 엣지 굵기 적용
+          return EDGE_WIDTHS[link.type] ?? 1;
         }}
         linkLineDash={(link: any) => {
-          if (['CO_MENTIONED', 'PRICE_CORRELATED'].includes(link.type)) return [3, 3];
-          if (link.type === 'PEER_OF') return [4, 3];
-          return [];
+          // § 6-1 점선 패턴 적용
+          return EDGE_DASHES[link.type] ?? [];
         }}
         onNodeClick={handleNodeClick}
         cooldownTicks={100}

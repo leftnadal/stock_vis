@@ -55,6 +55,7 @@ export type RelationType =
   | 'COMPETES_WITH'
   | 'CO_MENTIONED'
   | 'HAS_THEME'
+  | 'PRICE_CORRELATED'
   | 'BELONGS_TO_SECTOR'
   | 'BELONGS_TO_INDUSTRY'
   | 'RELATED_TO';
