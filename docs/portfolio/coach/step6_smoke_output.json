@@ -2,25 +2,28 @@
   "metadata": {
     "provider": "anthropic",
     "model": "claude-sonnet-4-5",
+    "latency_ms": 4659,
+    "input_tokens": 4162,
+    "output_tokens": 190,
+    "cost_usd": 0.015336,
+    "fallback_from": "gemini",
     "fixture": "garp_tech",
-    "timestamp": "2026-04-29T02:28:43.204124+00:00",
-    "input_tokens": 4096,
-    "output_tokens": 193,
-    "latency_ms": 4740,
-    "cost_usd": 0.015183,
-    "fallback_from": "gemini"
+    "timestamp": "2026-04-29T03:29:51.934016+00:00"
   },
-  "raw_text": "```json\n{\n  \"headline\": \"자본효율 우수하나 성장 대비 고평가\",\n  \"summary\": \"GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 산업 상위 25% 이내로 견조합니다. 다만 평균 PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장률 대비 밸류에이션 부담이 뚜렷하고 성장 둔화 시 조정 리스크가 커질 수 있습니다.\"\n}\n```",
-  "parsed": null,
+  "raw_text": "```json\n{\n  \"headline\": \"자본효율 우수하나 밸류에이션 과열\",\n  \"summary\": \"GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 뛰어나 5종목 중 4개가 산업 상위 25%에 위치합니다. 다만 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 대비 가격이 과도하게 높아 조정 시 하방 리스크가 클 수 있습니다.\"\n}\n```",
+  "parsed": {
+    "headline": "자본효율 우수하나 밸류에이션 과열",
+    "summary": "GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 뛰어나 5종목 중 4개가 산업 상위 25%에 위치합니다. 다만 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 대비 가격이 과도하게 높아 조정 시 하방 리스크가 클 수 있습니다."
+  },
   "judgments": {
-    "schema_pass": false,
-    "schema_error": "1 validation error for OneLineDiagnosis\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='```json\\n{\\n  \"headline\"... 있습니다.\"\\n}\\n```', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid",
-    "cost_pass": false,
+    "schema_pass": true,
+    "schema_error": null,
+    "cost_pass": true,
     "latency_pass": true,
     "naturalness": "MANUAL_REVIEW_PENDING"
   },
   "thresholds": {
-    "cost_usd_max": 0.001,
+    "cost_usd_max": 0.02,
     "latency_ms_max": 5000
   }
 }

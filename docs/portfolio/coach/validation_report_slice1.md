@@ -167,16 +167,40 @@
 - Haiku는 Sonnet 대비 약 **53% 빠름** — 사용자 체감에 유의미.
 - garp_misfit×gemini가 5,536ms — Slice 1 임계값 5,000ms 초과. retry/fallback 경로 영향.
 
-### 4.6 Gemini API 호출 실패 (이상 신호)
+### 4.6 Gemini API 호출 실패 → 진단 완료 (2026-04-29)
 
-`gemini` label 3건 **모두 LLMClient 폴백 발동** (`fallback_from=gemini`). 즉 1차 시도 + 1회 재시도 모두 RateLimit 또는 Timeout으로 실패 → Anthropic Sonnet으로 폴백.
+`gemini` label 3건 **모두 LLMClient 폴백 발동** (`fallback_from=gemini`). 1차 시도 + 1회 재시도 모두 RateLimit으로 실패 → Anthropic Sonnet 폴백.
 
-원인 후보:
-1. `GEMINI_API_KEY` 권한/할당량 이슈 (Step 6 단발 호출도 동일 패턴인지 확인 필요).
-2. Gemini 2.0 Flash 모델 ID 혹은 SDK 버전 호환성.
-3. 본 Slice 시점 일시적 RateLimit / Timeout.
+#### 진단 결과 (사후 수행)
 
-**원인 미진단인 채로 Slice 2 진입 시**: 모든 Gemini 호출이 자동 Anthropic 폴백 → 비용이 Haiku 채택 효과를 상쇄할 위험.
+| 항목 | 결과 |
+|---|---|
+| `GEMINI_API_KEY` 존재 | ✅ length 39, prefix `AIzaSyD` |
+| REST `models?key=...` 권한 | ✅ 200, 50개 모델 응답 |
+| 단발 호출 `gemini-2.0-flash` | ❌ **`429 RESOURCE_EXHAUSTED, limit: 0`** — Free tier에서 모델 자체 사용 불가 |
+| 단발 호출 `gemini-2.0-flash-lite` | ❌ free tier limit=0 |
+| 단발 호출 `gemini-2.5-flash` | ✅ 직접 호출 성공 |
+| 단발 호출 `gemini-2.5-flash-lite` | ✅ |
+| 단발 호출 `gemini-flash-latest` | ✅ |
+
+**근본 원인**: `gemini-2.0-flash` (Slice 1 LLMClient 기본 모델) **무료 티어 한도 = 0**. Slice 1 9회 호출 모두 즉시 `429 RESOURCE_EXHAUSTED` → LLMClient의 RateLimit 매핑 → Anthropic 폴백.
+
+quotaId 인용: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `GenerateRequestsPerMinutePerProjectPerModel-FreeTier`.
+
+#### 적용 조치
+
+1. `portfolio/llm/client.py` `GEMINI_MODEL` = `"gemini-2.0-flash"` → `"gemini-2.5-flash"` (free tier 사용 가능 확인).
+2. `scripts/validation/measure_tokens.py` `GEMINI_TOKENIZER_MODEL` 동일 갱신 (일관성).
+3. Step 6 재실행 (2026-04-29 03:29 UTC):
+   - 자동 판정 3/3 PASS (Schema OK / Cost $0.0153 ≤ $0.020 / Latency 4,659ms ≤ 5,000).
+   - **단, `fallback_from=gemini` 여전 발생** — `gemini-2.5-flash`도 무료 티어 RPM 한도 매우 작아 ~3,700 tokens 큰 prompt 호출 시 RateLimit. 폴백된 Sonnet 응답이 schema 통과하여 산출물 자체는 PASS.
+   - 즉 "Gemini Flash 직접 응답" 0건 상태가 본 모델 변경만으로는 해소 안 됨.
+
+#### Slice 2 진입 시 권장
+
+- Primary `haiku` 채택 + **Gemini 폴백 비활성화 (또는 paid tier 활성화)**.
+- Free tier 환경에서 `gemini-2.5-flash`로 큰 prompt 안정 호출이 어려움 → fallback 메커니즘은 Anthropic 모델 간(Sonnet ↔ Haiku)에만 유효하도록 단순화 검토.
+- paid tier 활성화 시 본 진단 재실행 (단발 호출 9~12회로 검증).
 
 ---
 
@@ -201,10 +225,11 @@
 
 ### 5.3 Slice 2 진입 시 change 사항
 
-1. **🔴 Gemini API 호출 실패 원인 진단 필수** (Slice 2 진입 전 Blocker로 격상).
-   - .env `GEMINI_API_KEY` 권한/할당량 확인.
-   - Gemini 2.0 Flash 모델 ID 갱신 (`gemini-2.0-flash` → `gemini-2.5-flash` 또는 최신 ID 검증).
-   - `LLMClient._classify_gemini_error`가 실제 raw 에러를 어떤 클래스로 매핑하는지 로그.
+1. **✅ Gemini API 호출 실패 원인 진단 — 완료 (2026-04-29)**.
+   - .env `GEMINI_API_KEY` 권한 확인: 정상 (REST 200).
+   - 근본 원인: `gemini-2.0-flash` 무료 티어 한도 = 0 (단발 호출로 `429 RESOURCE_EXHAUSTED limit: 0` 확인).
+   - 모델 ID 갱신: `gemini-2.0-flash` → `gemini-2.5-flash` (free tier 사용 가능). `client.py:42`, `measure_tokens.py:39` 동일 갱신.
+   - 잔여 이슈: `gemini-2.5-flash`도 free tier RPM 한도 작아 ~3,700 token prompt에서 RateLimit. Slice 2 진입 시 paid tier 활성화 또는 Gemini 폴백 비활성화 권장. (§4.6 진단 결과 참조)
 2. **prompt instructions 펜스 금지 강화**: Step 8에서 robust parser로 사후 처리하지만, prompt에서 출력 형식을 더 강하게 제약.
    본 Slice에 적용 완료 — `instructions.py`에 "first character must be `{`" 명시.
 3. **Step 6 cost 임계 현실화**: $0.001 → $0.020 (실측 기반). `run_step6_smoke.py` 갱신 완료.
@@ -222,12 +247,14 @@
 
 | 항목                           | 값      |
 | ------------------------------ | ------- |
-| Slice 1 누적 LLM 호출          | 10 / 50 |
-| 누적 비용 (USD)                | $0.1066 |
-| Step 6 비용                    | $0.0152 (실 cost — 임계 $0.001 미달이었으나 Slice 1 갱신 임계 $0.020 내) |
+| Slice 1 누적 LLM 호출          | 11~16 / 50 (Step 6 1 + Step 8 9 + Step 6 재실행 1 + Gemini 진단 단발 5) |
+| 누적 비용 (USD)                | ~$0.122 + $0.0153 (Step 6 재실행) + ~$0.0001×5 (진단) ≈ **$0.137** |
+| Step 6 1차 비용                | $0.0152 (모델 ID `gemini-2.0-flash` 폴백) |
+| Step 6 재실행 비용             | $0.0153 (모델 ID `gemini-2.5-flash` 폴백) |
 | Step 8 비용                    | $0.1064 (9 calls) |
 | Step 8 재시도                  | 0 (모든 9건 1회로 완료, Gemini는 폴백 1회 포함) |
-| 잔여 호출 한도                 | 40 |
+| Gemini 진단 단발               | $0.0005 추정 (5회 단발, 응답 길이 짧음) |
+| 잔여 호출 한도                 | 34~39 |
 | Slice 2 진입 시 비용 가드 리셋 | 권장 — `LLM_BUDGET_MAX_CALLS` env 별도 명시 또는 인스턴스 카운터 reset |
 
 ---

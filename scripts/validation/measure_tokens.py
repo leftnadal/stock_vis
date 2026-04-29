@@ -36,7 +36,7 @@ TOKEN_BUDGETS = {
     "E1_input": 5000,
 }
 
-GEMINI_TOKENIZER_MODEL = "gemini-2.0-flash"
+GEMINI_TOKENIZER_MODEL = "gemini-2.5-flash"  # client.py와 일관 (2.0-flash free tier=0)
 
 
 def count_tokens(prompt: str) -> int:

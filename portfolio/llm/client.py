@@ -38,8 +38,10 @@ ANTHROPIC_SONNET_OUTPUT_USD_PER_1M = 15.0
 ANTHROPIC_HAIKU_INPUT_USD_PER_1M = 0.80
 ANTHROPIC_HAIKU_OUTPUT_USD_PER_1M = 4.0
 
-# 기본 모델명 (slice 1 시점 채택)
-GEMINI_MODEL = "gemini-2.0-flash"
+# 기본 모델명 (slice 1 part 2 사후 진단 결과 채택)
+# - gemini-2.0-flash: free tier limit=0 (사용 불가). Slice 1 9/9 폴백 원인.
+# - gemini-2.5-flash: free tier 정상 동작 확인 (2026-04-29 진단).
+GEMINI_MODEL = "gemini-2.5-flash"
 ANTHROPIC_MODEL = "claude-sonnet-4-5"
 ANTHROPIC_SONNET_MODEL = "claude-sonnet-4-5"
 ANTHROPIC_HAIKU_MODEL = "claude-haiku-4-5"
