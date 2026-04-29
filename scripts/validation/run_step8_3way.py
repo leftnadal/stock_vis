@@ -14,18 +14,17 @@ Usage:
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import django
+from scripts.validation._setup import init_django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-django.setup()
+init_django()
 
 from portfolio.llm import LLMClient
 from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from portfolio.llm.parsers import parse_json_response
 from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 from portfolio.tests.fixtures.sample_analysis_context import (
@@ -76,26 +75,20 @@ def call_one(label: str, fixture_name: str, ctx_fn) -> dict:
             "insight": None,
         }
 
-    # Schema 통과 검증
+    # Schema 통과 검증 (마크다운 펜스 사전 제거)
     parsed = None
     schema_pass = False
     schema_error: str | None = None
     try:
-        parsed = OneLineDiagnosis.model_validate_json(raw.text)
+        parsed = parse_json_response(OneLineDiagnosis, raw.text)
         schema_pass = True
     except Exception as exc:  # noqa: BLE001
         schema_error = str(exc)
 
     return {
         "label": label,
-        "provider": raw.provider,
-        "model": raw.model,
+        **raw.metadata_dict(),
         "fixture": fixture_name,
-        "input_tokens": raw.input_tokens,
-        "output_tokens": raw.output_tokens,
-        "latency_ms": raw.latency_ms,
-        "cost_usd": raw.cost_usd,
-        "fallback_from": raw.fallback_from,
         "raw_text": raw.text,
         "parsed": parsed.model_dump() if parsed else None,
         "schema_pass": schema_pass,

@@ -10,13 +10,11 @@ Usage:
 
 from __future__ import annotations
 
-import os
 import sys
 
-import django
+from scripts.validation._setup import init_django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-django.setup()
+init_django()
 
 from django.conf import settings
 from google import genai
@@ -29,9 +27,13 @@ from portfolio.tests.fixtures.sample_analysis_context import (
 )
 
 
-# Slice 1 시점 추정. 실제 D-8 budget이 다르면 갱신.
+# Slice 1 실측 갱신 (2026-04-29):
+#   garp_tech 3698 / garp_misfit 3844 / garp_large 3848 tokens.
+#   E1 input_builder가 PV5 원칙으로 간소 입력 (holdings 미포함) → 종목 수 효과 미미.
+#   budget 5000은 utilization 70~85% 안전 구간을 자연스럽게 만족시키는 값.
+#   D-8 추정 8000은 fixture 크기 효과를 과대평가한 것으로 판명. Slice 2에서 재정의.
 TOKEN_BUDGETS = {
-    "E1_input": 8000,
+    "E1_input": 5000,
 }
 
 GEMINI_TOKENIZER_MODEL = "gemini-2.0-flash"

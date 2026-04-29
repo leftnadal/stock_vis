@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Literal
 
 from portfolio.llm import LLMClient
+from portfolio.llm.parsers import parse_json_response
 from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm import LLMResponse
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
@@ -52,19 +53,11 @@ def run_e1_garp(
         client = LLMClient()
     llm_response: LLMResponse = client.complete(prompt=prompt, provider=provider)
 
-    # 4. schema 파싱
-    diagnosis = OneLineDiagnosis.model_validate_json(llm_response.text)
+    # 4. schema 파싱 (마크다운 펜스 사전 제거 — LLM이 ```json``` 감싸는 경향)
+    diagnosis = parse_json_response(OneLineDiagnosis, llm_response.text)
 
     # 5. 응답 dict 구성
     return {
         "diagnosis": diagnosis.model_dump(),
-        "llm_metadata": {
-            "provider": llm_response.provider,
-            "model": llm_response.model,
-            "latency_ms": llm_response.latency_ms,
-            "input_tokens": llm_response.input_tokens,
-            "output_tokens": llm_response.output_tokens,
-            "cost_usd": llm_response.cost_usd,
-            "fallback_from": llm_response.fallback_from,
-        },
+        "llm_metadata": llm_response.metadata_dict(),
     }

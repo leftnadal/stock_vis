@@ -11,7 +11,13 @@ You will produce a concise diagnostic summary for the user's
 
 ## Output
 
-Return valid JSON matching this schema (no markdown fences, no surrounding text):
+Return ONLY a single JSON object matching this schema. Strict rules:
+  - DO NOT wrap in markdown code fences (```json ... ```, ``` ... ```).
+  - DO NOT include explanatory text before or after the JSON.
+  - The first character of your response MUST be `{`.
+  - The last character MUST be `}`.
+
+Schema:
 
 {
   "headline": "<25-40 character Korean diagnostic headline>",

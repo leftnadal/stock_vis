@@ -20,3 +20,7 @@ class LLMResponse(BaseModel):
     output_tokens: int
     cost_usd: float
     fallback_from: Optional[Literal["gemini", "anthropic"]] = None
+
+    def metadata_dict(self) -> dict:
+        """text를 제외한 메타데이터 dict (provider/model/latency/tokens/cost/fallback)."""
+        return self.model_dump(exclude={"text"})

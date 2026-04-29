@@ -1,0 +1,199 @@
+{
+  "metadata": {
+    "timestamp": "2026-04-29T02:30:01.762203+00:00",
+    "total_calls": 9,
+    "errors": 0,
+    "total_cost_usd": 0.1064484
+  },
+  "results": [
+    {
+      "label": "gemini",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_tech",
+      "input_tokens": 4096,
+      "output_tokens": 191,
+      "latency_ms": 4437,
+      "cost_usd": 0.015153,
+      "fallback_from": "gemini",
+      "raw_text": "```json\n{\n  \"headline\": \"자본효율 우수하나 밸류에이션 과열\",\n  \"summary\": \"GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 산업 상위 25% 이내에 위치하여 자본 활용 효율이 견조합니다. 다만 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 대비 가격 부담이 높아 조정 시 하방 압력에 취약할 수 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "자본효율 우수하나 밸류에이션 과열",
+        "summary": "GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 산업 상위 25% 이내에 위치하여 자본 활용 효율이 견조합니다. 다만 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 대비 가격 부담이 높아 조정 시 하방 압력에 취약할 수 있습니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 4,
+      "insight": 3,
+      "error": null
+    },
+    {
+      "label": "sonnet",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_tech",
+      "input_tokens": 4096,
+      "output_tokens": 212,
+      "latency_ms": 4688,
+      "cost_usd": 0.015468,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"자본효율 우수하나 성장 대비 고평가\",\n  \"summary\": \"GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 우수하여 5개 중 4개 종목이 산업 상위 25% 이내에 위치합니다. 다만 평균 PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 속도 대비 밸류에이션 부담이 뚜렷하고 성장 둔화 시 조정 리스크가 커질 수 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "자본효율 우수하나 성장 대비 고평가",
+        "summary": "GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 우수하여 5개 중 4개 종목이 산업 상위 25% 이내에 위치합니다. 다만 평균 PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하여, 성장 속도 대비 밸류에이션 부담이 뚜렷하고 성장 둔화 시 조정 리스크가 커질 수 있습니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 5,
+      "insight": 3,
+      "error": null
+    },
+    {
+      "label": "haiku",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fixture": "garp_tech",
+      "input_tokens": 4096,
+      "output_tokens": 197,
+      "latency_ms": 2259,
+      "cost_usd": 0.0040647999999999995,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"자본 효율 우수하나 밸류에이션 압박\",\n  \"summary\": \"GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 5개 종목 중 4개에서 산업 상위 25% 이내로 양호합니다. 다만 평균 PEG 비율이 2.8으로 프리셋 기준 1.5를 크게 상회하여, 현재 가격에서 성장성 대비 밸류에이션 부담이 상당하다고 볼 수 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "자본 효율 우수하나 밸류에이션 압박",
+        "summary": "GARP 관점에서 당신의 Tech 성장주 포트폴리오는 투하자본수익률이 5개 종목 중 4개에서 산업 상위 25% 이내로 양호합니다. 다만 평균 PEG 비율이 2.8으로 프리셋 기준 1.5를 크게 상회하여, 현재 가격에서 성장성 대비 밸류에이션 부담이 상당하다고 볼 수 있습니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 3,
+      "insight": 3,
+      "error": null
+    },
+    {
+      "label": "gemini",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_misfit",
+      "input_tokens": 4243,
+      "output_tokens": 225,
+      "latency_ms": 5536,
+      "cost_usd": 0.016104,
+      "fallback_from": "gemini",
+      "raw_text": "```json\n{\n  \"headline\": \"매출 성장 외 GARP 핵심 지표 전반 취약\",\n  \"summary\": \"GARP 관점에서 고성장 베팅 포트폴리오는 매출 성장률 평균 12%로 산업 기준을 충족하나, 5개 종목 모두 PEG가 1.5를 크게 상회(평균 3.20)하고 EPS 성장률과 ROIC가 임계값에 미달합니다. 성장 대비 가격 부담이 심하고 수익성 기반이 약해, GARP 철학이 추구하는 합리적 가격의 양질 성장과 거리가 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "매출 성장 외 GARP 핵심 지표 전반 취약",
+        "summary": "GARP 관점에서 고성장 베팅 포트폴리오는 매출 성장률 평균 12%로 산업 기준을 충족하나, 5개 종목 모두 PEG가 1.5를 크게 상회(평균 3.20)하고 EPS 성장률과 ROIC가 임계값에 미달합니다. 성장 대비 가격 부담이 심하고 수익성 기반이 약해, GARP 철학이 추구하는 합리적 가격의 양질 성장과 거리가 있습니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 4,
+      "insight": 4,
+      "error": null
+    },
+    {
+      "label": "sonnet",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_misfit",
+      "input_tokens": 4243,
+      "output_tokens": 204,
+      "latency_ms": 4761,
+      "cost_usd": 0.015789,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"매출은 성장하나 수익성·밸류에이션 모두 취약\",\n  \"summary\": \"GARP 관점에서 고성장 베팅 포트폴리오는 매출 성장률 평균 12%로 성장 모멘텀을 보이고 있습니다. 그러나 5종목 모두 PEG가 1.5를 상회하고 EPS 성장률과 ROIC가 임계값에 미달하여, 매출 증가가 수익성으로 전환되지 못하는 가운데 밸류에이션 부담만 높은 구조입니다.\"\n}\n```",
+      "parsed": {
+        "headline": "매출은 성장하나 수익성·밸류에이션 모두 취약",
+        "summary": "GARP 관점에서 고성장 베팅 포트폴리오는 매출 성장률 평균 12%로 성장 모멘텀을 보이고 있습니다. 그러나 5종목 모두 PEG가 1.5를 상회하고 EPS 성장률과 ROIC가 임계값에 미달하여, 매출 증가가 수익성으로 전환되지 못하는 가운데 밸류에이션 부담만 높은 구조입니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 4,
+      "insight": 5,
+      "error": null
+    },
+    {
+      "label": "haiku",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fixture": "garp_misfit",
+      "input_tokens": 4243,
+      "output_tokens": 229,
+      "latency_ms": 2996,
+      "cost_usd": 0.004310400000000001,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"성장성 부족한데 밸류에이션 과다\",\n  \"summary\": \"GARP 관점에서 당신의 포트폴리오는 매출 성장률 12%로 기본 임계값은 통과하였으나, 실질적 수익 성장과 자본 효율성에서 큰 약점을 드러내고 있습니다. 특히 5개 종목 모두의 PEG가 1.5를 크게 상회(평균 3.20)하면서 성장 대비 가격 부담이 매우 높아, GARP가 추구하는 '합리적 가격의 성장'이라는 기본 철학과 멀어 보입니다.\"\n}\n```",
+      "parsed": {
+        "headline": "성장성 부족한데 밸류에이션 과다",
+        "summary": "GARP 관점에서 당신의 포트폴리오는 매출 성장률 12%로 기본 임계값은 통과하였으나, 실질적 수익 성장과 자본 효율성에서 큰 약점을 드러내고 있습니다. 특히 5개 종목 모두의 PEG가 1.5를 크게 상회(평균 3.20)하면서 성장 대비 가격 부담이 매우 높아, GARP가 추구하는 '합리적 가격의 성장'이라는 기본 철학과 멀어 보입니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 5,
+      "insight": 3,
+      "error": null
+    },
+    {
+      "label": "gemini",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_large",
+      "input_tokens": 4254,
+      "output_tokens": 196,
+      "latency_ms": 4887,
+      "cost_usd": 0.015702,
+      "fallback_from": "gemini",
+      "raw_text": "```json\n{\n  \"headline\": \"성장·수익성 양호하나 밸류 일부 과열\",\n  \"summary\": \"GARP 관점에서 당신의 GARP 다양화 15 포트폴리오는 EPS 성장률 평균 13%와 ROIC 14%로 성장성과 자본효율이 견조합니다. 다만 15개 종목 중 5개의 PEG가 평균을 끌어올리고 일부 종목의 PER이 50배를 넘어, 성장 대비 밸류에이션 부담이 국지적으로 존재합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "성장·수익성 양호하나 밸류 일부 과열",
+        "summary": "GARP 관점에서 당신의 GARP 다양화 15 포트폴리오는 EPS 성장률 평균 13%와 ROIC 14%로 성장성과 자본효율이 견조합니다. 다만 15개 종목 중 5개의 PEG가 평균을 끌어올리고 일부 종목의 PER이 50배를 넘어, 성장 대비 밸류에이션 부담이 국지적으로 존재합니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 2,
+      "insight": 4,
+      "error": null
+    },
+    {
+      "label": "sonnet",
+      "provider": "anthropic",
+      "model": "claude-sonnet-4-5",
+      "fixture": "garp_large",
+      "input_tokens": 4254,
+      "output_tokens": 192,
+      "latency_ms": 4787,
+      "cost_usd": 0.015642,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"성장·수익성 양호, 일부 밸류에이션 과열\",\n  \"summary\": \"GARP 관점에서 당신의 GARP 다양화 15 포트폴리오는 EPS 성장률 평균 13%와 ROIC 14%로 성장성과 자본효율이 견조합니다. 다만 15개 종목 중 5개의 PEG가 평균을 끌어올리고 일부는 PER 50배 이상으로, 성장 둔화 시 조정 가능성을 내포하고 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "성장·수익성 양호, 일부 밸류에이션 과열",
+        "summary": "GARP 관점에서 당신의 GARP 다양화 15 포트폴리오는 EPS 성장률 평균 13%와 ROIC 14%로 성장성과 자본효율이 견조합니다. 다만 15개 종목 중 5개의 PEG가 평균을 끌어올리고 일부는 PER 50배 이상으로, 성장 둔화 시 조정 가능성을 내포하고 있습니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 3,
+      "insight": 3,
+      "error": null
+    },
+    {
+      "label": "haiku",
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "fixture": "garp_large",
+      "input_tokens": 4254,
+      "output_tokens": 203,
+      "latency_ms": 2238,
+      "cost_usd": 0.0042152000000000005,
+      "fallback_from": null,
+      "raw_text": "```json\n{\n  \"headline\": \"성장성 견조하나 밸류에이션 산재\",\n  \"summary\": \"GARP 관점에서 당신의 포트폴리오는 EPS 성장률 평균 13%와 ROIC 평균 14%로 질적 기준을 충족하고 있습니다. 다만 15개 종목 중 5개가 PEG 평균을 끌어올리고 일부는 PER 50배 이상으로, 성장 대비 가격 부담이 종목별로 편차가 크다고 읽힐 수 있어 선별의 정교함이 필요합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "성장성 견조하나 밸류에이션 산재",
+        "summary": "GARP 관점에서 당신의 포트폴리오는 EPS 성장률 평균 13%와 ROIC 평균 14%로 질적 기준을 충족하고 있습니다. 다만 15개 종목 중 5개가 PEG 평균을 끌어올리고 일부는 PER 50배 이상으로, 성장 대비 가격 부담이 종목별로 편차가 크다고 읽힐 수 있어 선별의 정교함이 필요합니다."
+      },
+      "schema_pass": true,
+      "schema_error": null,
+      "naturalness": 4,
+      "insight": 3,
+      "error": null
+    }
+  ]
+}

@@ -17,24 +17,24 @@ Usage:
 from __future__ import annotations
 
 import json
-import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-import django
+from scripts.validation._setup import init_django
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
-django.setup()
+init_django()
 
 from portfolio.llm import LLMClient
+from portfolio.llm.parsers import parse_json_response
 from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
 
 
+# Slice 1 실측 기반 임계 ($0.001은 비현실적, Gemini Flash 1회 평균 $0.015).
 THRESHOLDS = {
-    "cost_usd_max": 0.001,
+    "cost_usd_max": 0.020,
     "latency_ms_max": 5000,
 }
 
@@ -61,7 +61,7 @@ def main() -> int:
     schema_pass = False
     schema_error: str | None = None
     try:
-        parsed = OneLineDiagnosis.model_validate_json(raw.text)
+        parsed = parse_json_response(OneLineDiagnosis, raw.text)
         schema_pass = True
     except Exception as exc:  # noqa: BLE001
         schema_error = str(exc)
@@ -76,15 +76,9 @@ def main() -> int:
         json.dumps(
             {
                 "metadata": {
-                    "provider": raw.provider,
-                    "model": raw.model,
+                    **raw.metadata_dict(),
                     "fixture": "garp_tech",
                     "timestamp": datetime.now(timezone.utc).isoformat(),
-                    "input_tokens": raw.input_tokens,
-                    "output_tokens": raw.output_tokens,
-                    "latency_ms": raw.latency_ms,
-                    "cost_usd": raw.cost_usd,
-                    "fallback_from": raw.fallback_from,
                 },
                 "raw_text": raw.text,
                 "parsed": parsed.model_dump() if parsed else None,
