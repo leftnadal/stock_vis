@@ -41,4 +41,7 @@ urlpatterns = [
 
     # Provider Admin API
     path('api/v1/', include('api_request.urls')),
+
+    # Portfolio Coach (slice 1: E1+GARP)
+    path('api/', include('portfolio.urls')),
 ]

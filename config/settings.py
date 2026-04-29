@@ -26,6 +26,10 @@ FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
+# === LLM Provider Settings (Portfolio Coach, slice 1) ===
+# LLMClient 인스턴스별 호출 가드. 임계 도달 시 LLMBudgetExceededError raise.
+LLM_BUDGET_MAX_CALLS = int(os.getenv('LLM_BUDGET_MAX_CALLS', '50'))
+
 # Neo4j 설정은 아래 통합 블록(line ~117)에서 일원화 정의
 
 # ============================================================
