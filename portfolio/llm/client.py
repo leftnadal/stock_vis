@@ -35,10 +35,26 @@ GEMINI_FLASH_INPUT_USD_PER_1M = 0.075
 GEMINI_FLASH_OUTPUT_USD_PER_1M = 0.30
 ANTHROPIC_SONNET_INPUT_USD_PER_1M = 3.0
 ANTHROPIC_SONNET_OUTPUT_USD_PER_1M = 15.0
+ANTHROPIC_HAIKU_INPUT_USD_PER_1M = 0.80
+ANTHROPIC_HAIKU_OUTPUT_USD_PER_1M = 4.0
 
 # 기본 모델명 (slice 1 시점 채택)
 GEMINI_MODEL = "gemini-2.0-flash"
 ANTHROPIC_MODEL = "claude-sonnet-4-5"
+ANTHROPIC_SONNET_MODEL = "claude-sonnet-4-5"
+ANTHROPIC_HAIKU_MODEL = "claude-haiku-4-5"
+
+# Anthropic 모델별 단가 매핑 (model 문자열 → (input, output) 단가)
+_ANTHROPIC_PRICING: dict[str, tuple[float, float]] = {
+    ANTHROPIC_SONNET_MODEL: (
+        ANTHROPIC_SONNET_INPUT_USD_PER_1M,
+        ANTHROPIC_SONNET_OUTPUT_USD_PER_1M,
+    ),
+    ANTHROPIC_HAIKU_MODEL: (
+        ANTHROPIC_HAIKU_INPUT_USD_PER_1M,
+        ANTHROPIC_HAIKU_OUTPUT_USD_PER_1M,
+    ),
+}
 
 
 def _classify_gemini_error(exc: Exception) -> Exception:
@@ -101,14 +117,19 @@ class LLMClient:
         prompt: str,
         provider: Literal["gemini", "anthropic"] = "gemini",
         max_tokens: int = 2000,
+        model: str | None = None,
     ) -> LLMResponse:
         """
         LLM 호출. 폴백·가드 포함.
 
         Args:
             prompt: 시스템+유저 합쳐진 단일 prompt 문자열.
-            provider: "gemini" (기본) 또는 "anthropic".
+            provider: "gemini" (기본) 또는 "anthropic" (Sonnet/Haiku 공통 라벨).
             max_tokens: 응답 최대 토큰.
+            model: provider 내부 모델 변형 지정. None이면 기본값 (Gemini Flash /
+                Sonnet). Anthropic Haiku 호출 시 ANTHROPIC_HAIKU_MODEL 전달.
+                LLMResponse.provider 라벨은 §1.1에 따라 "gemini"/"anthropic"로
+                고정되며, 실제 모델명은 LLMResponse.model에 들어간다.
 
         Returns:
             LLMResponse (text + 메타데이터).
@@ -126,13 +147,15 @@ class LLMClient:
 
         # 2. 1차 시도 + 1회 재시도
         try:
-            return self._call_with_retry(provider, prompt, max_tokens)
+            return self._call_with_retry(provider, prompt, max_tokens, model)
         except (LLMRateLimitError, LLMTimeoutError):
-            # 3. 폴백 시도
+            # 3. 폴백 시도 (반대 provider, 모델은 폴백 측 기본값)
             fallback_provider: Literal["gemini", "anthropic"] = (
                 "anthropic" if provider == "gemini" else "gemini"
             )
-            response = self._call_with_retry(fallback_provider, prompt, max_tokens)
+            response = self._call_with_retry(
+                fallback_provider, prompt, max_tokens, model=None
+            )
             response.fallback_from = provider
             return response
 
@@ -145,12 +168,13 @@ class LLMClient:
         provider: Literal["gemini", "anthropic"],
         prompt: str,
         max_tokens: int,
+        model: str | None,
     ) -> LLMResponse:
         """1회 재시도 포함 단일 provider 호출."""
         last_exc: Exception | None = None
         for attempt in range(2):
             try:
-                return self._call(provider, prompt, max_tokens)
+                return self._call(provider, prompt, max_tokens, model)
             except (LLMRateLimitError, LLMTimeoutError) as exc:
                 last_exc = exc
                 if attempt == 1:
@@ -164,6 +188,7 @@ class LLMClient:
         provider: Literal["gemini", "anthropic"],
         prompt: str,
         max_tokens: int,
+        model: str | None,
     ) -> LLMResponse:
         """단일 provider 호출 (1회). _call_count 증분."""
         self._call_count += 1
@@ -171,7 +196,8 @@ class LLMClient:
         if provider == "gemini":
             return self._call_gemini(prompt, max_tokens, start)
         if provider == "anthropic":
-            return self._call_anthropic(prompt, max_tokens, start)
+            anthropic_model = model or ANTHROPIC_MODEL
+            return self._call_anthropic(prompt, max_tokens, start, anthropic_model)
         raise LLMInvalidPromptError(f"Unknown provider: {provider}")
 
     def _call_gemini(
@@ -218,12 +244,13 @@ class LLMClient:
         prompt: str,
         max_tokens: int,
         start: float,
+        model: str = ANTHROPIC_MODEL,
     ) -> LLMResponse:
-        """Anthropic Sonnet 호출."""
+        """Anthropic 호출. Sonnet/Haiku 등 model로 변형 지정."""
         try:
             client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
             response = client.messages.create(
-                model=ANTHROPIC_MODEL,
+                model=model,
                 max_tokens=max_tokens,
                 messages=[{"role": "user", "content": prompt}],
             )
@@ -241,16 +268,17 @@ class LLMClient:
         usage = getattr(response, "usage", None)
         input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
         output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
-        cost_usd = (
-            input_tokens / 1_000_000 * ANTHROPIC_SONNET_INPUT_USD_PER_1M
-            + output_tokens / 1_000_000 * ANTHROPIC_SONNET_OUTPUT_USD_PER_1M
+        # 모델별 단가 매핑. 미등록 모델은 Sonnet 단가 기본값.
+        in_rate, out_rate = _ANTHROPIC_PRICING.get(
+            model, (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M)
         )
+        cost_usd = input_tokens / 1_000_000 * in_rate + output_tokens / 1_000_000 * out_rate
         latency_ms = int((time.time() - start) * 1000)
 
         return LLMResponse(
             text=text,
             provider="anthropic",
-            model=ANTHROPIC_MODEL,
+            model=model,
             latency_ms=latency_ms,
             input_tokens=input_tokens,
             output_tokens=output_tokens,

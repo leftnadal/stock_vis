@@ -318,3 +318,362 @@ def get_context_dividend() -> AnalysisContext:
         analysis_target_portfolio=portfolio,
         wallet_background=wallet,
     )
+
+
+# ============================================================
+# GARP Misfit — 5종목, GARP 적합도 매우 낮음
+# ============================================================
+
+def _holdings_garp_misfit() -> list[HoldingSummary]:
+    """5종목 모두 GARP 기준 미달 (PEG > 2.5, ROIC < 8% 등)."""
+    return [
+        HoldingSummary(
+            holding_id=f"h-misfit-{i}", stock_symbol=sym, stock_name=name,
+            sector=sector, industry=industry,
+            shares=Decimal("10.0"),
+            weight=Decimal(w), market_value=Decimal(mv),
+            unrealized_return=Decimal(ur),
+            investment_thesis=None,
+        )
+        for i, (sym, name, sector, industry, w, mv, ur) in enumerate([
+            ("TSLA", "Tesla",     "Consumer Discretionary", "Auto",       "0.25", "10000", "-0.10"),
+            ("PLTR", "Palantir",  "Technology",             "Software",   "0.20",  "8000", "-0.05"),
+            ("SHOP", "Shopify",   "Technology",             "E-commerce", "0.20",  "8000",  "0.02"),
+            ("ABNB", "Airbnb",    "Consumer Discretionary", "Travel",     "0.20",  "8000", "-0.03"),
+            ("RBLX", "Roblox",    "Communication Services", "Gaming",     "0.15",  "6000", "-0.12"),
+        ])
+    ]
+
+
+def get_context_garp_misfit() -> AnalysisContext:
+    """
+    GARP 프리셋 부정합 시나리오. 5종목 모두 PEG > 2.5 또는 ROIC < 8%.
+    Coach E1이 약점 강조 + 보완 제안 톤으로 응답해야 하는 케이스.
+    """
+    portfolio = AnalysisTargetPortfolioContext(
+        portfolio_id="55555555-5555-5555-5555-555555555555",
+        portfolio_name="고성장 베팅",
+        preset_id="garp",
+        preset_name="GARP",
+        preset_category="growth",
+        save_type="named",
+        holdings_summary=_holdings_garp_misfit(),
+        holding_count=5,
+        core_metric_results=[
+            MetricResult(
+                metric_id="peg_ratio", metric_display_name="PEG",
+                tier=MetricTier.CORE, value=Decimal("3.20"),
+                percentile=Decimal("0.08"), percentile_scope="industry",
+                level_tag="critical",
+                threshold_applied=Decimal("1.5"), passed_threshold=False,
+            ),
+            MetricResult(
+                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
+                tier=MetricTier.CORE, value=Decimal("0.04"),
+                percentile=Decimal("0.20"), percentile_scope="industry",
+                level_tag="weak",
+                threshold_applied=Decimal("0.10"), passed_threshold=False,
+            ),
+            MetricResult(
+                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
+                tier=MetricTier.CORE, value=Decimal("0.12"),
+                percentile=Decimal("0.55"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=Decimal("0.08"), passed_threshold=True,
+            ),
+        ],
+        supporting_metric_results=[
+            MetricResult(
+                metric_id="roic", metric_display_name="ROIC",
+                tier=MetricTier.SUPPORTING, value=Decimal("0.06"),
+                percentile=Decimal("0.18"), percentile_scope="industry",
+                level_tag="weak",
+                threshold_applied=Decimal("0.10"), passed_threshold=False,
+            ),
+            MetricResult(
+                metric_id="pe_ratio", metric_display_name="PER",
+                tier=MetricTier.SUPPORTING, value=Decimal("65.0"),
+                percentile=Decimal("0.05"), percentile_scope="industry",
+                level_tag="critical",
+                threshold_applied=None, passed_threshold=None,
+            ),
+        ],
+        context_metric_results=[
+            MetricResult(
+                metric_id="debt_to_equity", metric_display_name="부채비율",
+                tier=MetricTier.CONTEXT, value=Decimal("0.45"),
+                percentile=Decimal("0.60"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=None, passed_threshold=None,
+            ),
+        ],
+        strengths=[
+            StrengthWeakness(
+                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
+                level_tag="moderate", rank_within_portfolio=1,
+                reason_hint="5종목 평균 12%로 임계값 8% 통과",
+            ),
+        ],
+        weaknesses=[
+            StrengthWeakness(
+                metric_id="peg_ratio", metric_display_name="PEG",
+                level_tag="critical", rank_within_portfolio=1,
+                reason_hint="평균 3.20, 5종목 모두 임계값 1.5 미달",
+            ),
+            StrengthWeakness(
+                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
+                level_tag="weak", rank_within_portfolio=2,
+                reason_hint="평균 4%, 임계값 10% 미달",
+            ),
+            StrengthWeakness(
+                metric_id="roic", metric_display_name="ROIC",
+                level_tag="weak", rank_within_portfolio=3,
+                reason_hint="평균 6%, 임계값 10% 미달",
+            ),
+        ],
+        diagnostic_cards=[
+            DiagnosticCard(
+                weakness_metric_id="peg_ratio",
+                what_is_wrong="5종목 모두 PEG가 2.5 이상이며 평균 PEG가 3.20입니다.",
+                comparison_basis="비교 기준: 산업 중앙값 (PEG 1.8) 및 프리셋 임계값 (PEG < 1.5).",
+                why_it_matters="GARP 관점에서 성장 대비 가격이 합리적인지가 핵심 판정인데, 현재 구성은 그 전제를 정면으로 위배합니다.",
+                caveat_or_exception="5종목 모두 동일 패턴이라 단일 이상치가 아닌 구조적 이슈로 보입니다.",
+                severity=Severity.HIGH,
+                structural_or_single=StructuralOrSingle.STRUCTURAL,
+            ),
+        ],
+        return_breakdown=_portfolio_return("-0.06"),
+        overrides_applied=None,
+    )
+    wallet = WalletBackgroundContext(
+        wallet_id="66666666-6666-6666-6666-666666666666",
+        total_holdings_count=10,
+        excluded_from_this_portfolio_count=5,
+        sector_distribution={"Technology": 0.40, "Consumer Discretionary": 0.45},
+        industry_distribution={"Software": 0.20, "Auto": 0.25, "E-commerce": 0.20},
+        total_value_estimate="mid",
+        return_breakdown=_wallet_return("-0.02"),
+        historical_snapshots_available=2,
+        notable_recent_changes=["TSLA 비중 15% → 25% (1개월)"],
+    )
+    return AnalysisContext(
+        analysis_target_portfolio=portfolio,
+        wallet_background=wallet,
+    )
+
+
+# ============================================================
+# GARP Large — 15종목, 정합 5 / 부분 5 / 부정합 5 분포
+# ============================================================
+
+# (sym, name, sector, industry, weight, market_value, unrealized_return, fit_class)
+# fit_class ∈ {"fit", "partial", "misfit"} — 분포 검증용 메타.
+_GARP_LARGE_HOLDINGS_RAW: list[tuple[str, str, str, str, str, str, str, str]] = [
+    # 정합 5종목 (PEG 0.8~1.3, EPS_growth > 10%, ROIC > 13%, weight 합 0.37)
+    ("MSFT",  "Microsoft",       "Technology",             "Software",            "0.10", "5000", "0.18", "fit"),
+    ("GOOGL", "Alphabet",        "Communication Services", "Internet",            "0.08", "4000", "0.12", "fit"),
+    ("V",     "Visa",            "Financial Services",     "Credit Services",     "0.07", "3500", "0.09", "fit"),
+    ("MA",    "Mastercard",      "Financial Services",     "Credit Services",     "0.06", "3000", "0.11", "fit"),
+    ("ADBE",  "Adobe",           "Technology",             "Software",            "0.06", "3000", "0.07", "fit"),
+    # 부분 적합 5종목 (지표 일부 통과, weight 합 0.34)
+    ("AAPL",  "Apple",           "Technology",             "Consumer Electronics","0.08", "4000", "0.05", "partial"),
+    ("AMZN",  "Amazon",          "Consumer Discretionary", "E-commerce",          "0.07", "3500", "0.04", "partial"),
+    ("META",  "Meta",            "Communication Services", "Internet",            "0.06", "3000", "0.10", "partial"),
+    ("AVGO",  "Broadcom",        "Technology",             "Semiconductors",      "0.06", "3000", "0.15", "partial"),
+    ("NVDA",  "NVIDIA",          "Technology",             "Semiconductors",      "0.07", "3500", "0.32", "partial"),
+    # 부정합 5종목 (PEG > 2.5 또는 ROIC < 8%, weight 합 0.29)
+    ("TSLA",  "Tesla",           "Consumer Discretionary", "Auto",                "0.05", "2500", "-0.10", "misfit"),
+    ("NFLX",  "Netflix",         "Communication Services", "Streaming",           "0.05", "2500",  "0.06", "misfit"),
+    ("CRM",   "Salesforce",      "Technology",             "Software",            "0.06", "3000",  "0.04", "misfit"),
+    ("PLTR",  "Palantir",        "Technology",             "Software",            "0.06", "3000", "-0.08", "misfit"),
+    ("SHOP",  "Shopify",         "Technology",             "E-commerce",          "0.07", "3500",  "0.02", "misfit"),
+]
+
+
+def garp_large_fit_distribution() -> dict[str, int]:
+    """5/5/5 분포 검증용 (test_fixtures_validation에서 사용)."""
+    counts: dict[str, int] = {"fit": 0, "partial": 0, "misfit": 0}
+    for *_, fit_class in _GARP_LARGE_HOLDINGS_RAW:
+        counts[fit_class] += 1
+    return counts
+
+
+def _holdings_garp_large() -> list[HoldingSummary]:
+    return [
+        HoldingSummary(
+            holding_id=f"h-large-{i}", stock_symbol=sym, stock_name=name,
+            sector=sector, industry=industry,
+            shares=Decimal("10.0"),
+            weight=Decimal(w), market_value=Decimal(mv),
+            unrealized_return=Decimal(ur),
+            investment_thesis=None,
+        )
+        for i, (sym, name, sector, industry, w, mv, ur, _fit) in enumerate(
+            _GARP_LARGE_HOLDINGS_RAW
+        )
+    ]
+
+
+def get_context_garp_large() -> AnalysisContext:
+    """
+    GARP 프리셋 + 종목 15개 large fixture.
+
+    분포:
+      - 정합 5종목 (PEG 0.8~1.3, EPS_growth > 10%, ROIC > 13%) — 강점 카드 후보
+      - 부분 적합 5종목 (지표 일부 통과) — 보완 제안 후보
+      - 부정합 5종목 (PEG > 2.5 또는 ROIC < 8%) — 약점/제외 제안 후보
+    가중치 합 = 1.00.
+    """
+    portfolio = AnalysisTargetPortfolioContext(
+        portfolio_id="77777777-7777-7777-7777-777777777777",
+        portfolio_name="GARP 다양화 15",
+        preset_id="garp",
+        preset_name="GARP",
+        preset_category="growth",
+        save_type="named",
+        holdings_summary=_holdings_garp_large(),
+        holding_count=15,
+        core_metric_results=[
+            MetricResult(
+                metric_id="peg_ratio", metric_display_name="PEG",
+                tier=MetricTier.CORE, value=Decimal("1.85"),
+                percentile=Decimal("0.45"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=Decimal("1.5"), passed_threshold=False,
+            ),
+            MetricResult(
+                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
+                tier=MetricTier.CORE, value=Decimal("0.13"),
+                percentile=Decimal("0.62"), percentile_scope="industry",
+                level_tag="good",
+                threshold_applied=Decimal("0.10"), passed_threshold=True,
+            ),
+            MetricResult(
+                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
+                tier=MetricTier.CORE, value=Decimal("0.11"),
+                percentile=Decimal("0.58"), percentile_scope="industry",
+                level_tag="good",
+                threshold_applied=Decimal("0.08"), passed_threshold=True,
+            ),
+        ],
+        supporting_metric_results=[
+            MetricResult(
+                metric_id="roic", metric_display_name="ROIC",
+                tier=MetricTier.SUPPORTING, value=Decimal("0.14"),
+                percentile=Decimal("0.65"), percentile_scope="industry",
+                level_tag="good",
+                threshold_applied=Decimal("0.10"), passed_threshold=True,
+            ),
+            MetricResult(
+                metric_id="roe", metric_display_name="ROE",
+                tier=MetricTier.SUPPORTING, value=Decimal("0.18"),
+                percentile=Decimal("0.70"), percentile_scope="industry",
+                level_tag="good",
+                threshold_applied=None, passed_threshold=None,
+            ),
+            MetricResult(
+                metric_id="pe_ratio", metric_display_name="PER",
+                tier=MetricTier.SUPPORTING, value=Decimal("28.0"),
+                percentile=Decimal("0.40"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=None, passed_threshold=None,
+            ),
+            MetricResult(
+                metric_id="revenue_growth_consistency_3y",
+                metric_display_name="매출 성장 일관성 (3년)",
+                tier=MetricTier.SUPPORTING, value=Decimal("0.72"),
+                percentile=Decimal("0.55"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=None, passed_threshold=None,
+            ),
+        ],
+        context_metric_results=[
+            MetricResult(
+                metric_id="debt_to_equity", metric_display_name="부채비율",
+                tier=MetricTier.CONTEXT, value=Decimal("0.55"),
+                percentile=Decimal("0.50"), percentile_scope="industry",
+                level_tag="moderate",
+                threshold_applied=None, passed_threshold=None,
+            ),
+            MetricResult(
+                metric_id="beta", metric_display_name="베타",
+                tier=MetricTier.CONTEXT, value=Decimal("1.15"),
+                percentile=Decimal("0.55"), percentile_scope="universe",
+                level_tag="moderate",
+                threshold_applied=None, passed_threshold=None,
+            ),
+            MetricResult(
+                metric_id="market_cap", metric_display_name="시가총액",
+                tier=MetricTier.CONTEXT, value=Decimal("450000000000"),
+                percentile=Decimal("0.85"), percentile_scope="universe",
+                level_tag="excellent",
+                threshold_applied=None, passed_threshold=None,
+            ),
+        ],
+        strengths=[
+            StrengthWeakness(
+                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
+                level_tag="good", rank_within_portfolio=1,
+                reason_hint="15종목 평균 13%, 정합 5종목이 평균을 상향",
+            ),
+            StrengthWeakness(
+                metric_id="roic", metric_display_name="ROIC",
+                level_tag="good", rank_within_portfolio=2,
+                reason_hint="평균 14%, 정합/부분 종목 10개가 임계값 통과",
+            ),
+        ],
+        weaknesses=[
+            StrengthWeakness(
+                metric_id="peg_ratio", metric_display_name="PEG",
+                level_tag="moderate", rank_within_portfolio=1,
+                reason_hint="평균 1.85, 부정합 5종목이 평균을 끌어올림",
+            ),
+            StrengthWeakness(
+                metric_id="pe_ratio", metric_display_name="PER",
+                level_tag="moderate", rank_within_portfolio=2,
+                reason_hint="평균 28, 일부 부정합 종목 50배 이상",
+            ),
+        ],
+        diagnostic_cards=[
+            DiagnosticCard(
+                weakness_metric_id="peg_ratio",
+                what_is_wrong="15종목 평균 PEG는 1.85로 프리셋 임계값 1.5를 상회합니다. 부정합 5종목 (TSLA, PLTR, SHOP 등)이 PEG 2.5 이상으로 평균을 끌어올렸습니다.",
+                comparison_basis="비교 기준: 산업 중앙값 (PEG 1.8) 및 프리셋 임계값 (PEG < 1.5).",
+                why_it_matters="GARP 관점에서 정합 5종목과 부분 5종목은 합리적 성장가에 있으나, 부정합 5종목이 묶음 전체의 GARP 적합도를 희석합니다.",
+                caveat_or_exception="정합 5종목만 분리해서 보면 평균 PEG는 1.05로 양호합니다. 부정합 종목 분리 검토가 가능합니다.",
+                severity=Severity.MEDIUM,
+                structural_or_single=StructuralOrSingle.SINGLE_OUTLIER,
+            ),
+        ],
+        return_breakdown=_portfolio_return("0.10"),
+        overrides_applied=None,
+    )
+    wallet = WalletBackgroundContext(
+        wallet_id="88888888-8888-8888-8888-888888888888",
+        total_holdings_count=20,
+        excluded_from_this_portfolio_count=5,
+        sector_distribution={
+            "Technology": 0.50,
+            "Consumer Discretionary": 0.20,
+            "Communication Services": 0.15,
+            "Financial Services": 0.15,
+        },
+        industry_distribution={
+            "Software": 0.25,
+            "Semiconductors": 0.15,
+            "E-commerce": 0.15,
+            "Internet": 0.15,
+        },
+        total_value_estimate="high",
+        return_breakdown=_wallet_return("0.09"),
+        historical_snapshots_available=4,
+        notable_recent_changes=[
+            "Tech 비중 45% → 50% (3개월)",
+            "TSLA 신규 편입",
+            "AAPL 비중 12% → 8% (1개월)",
+        ],
+    )
+    return AnalysisContext(
+        analysis_target_portfolio=portfolio,
+        wallet_background=wallet,
+    )
