@@ -27,8 +27,10 @@ interface NodeContextMenuProps {
  * 메뉴 항목:
  *  1. 여기서 탐색 시작  (= center 전환)
  *  2. 가설 생성 →       (/thesis/new?symbol=…&from=chainsight)
- *  3. Watchlist 추가    (향후 PR 연기 — 현재는 비활성 표시)
- *  4. 전용 화면에서 보기 (Deep Dive → /chainsight/{symbol})
+ *  3. 전용 화면에서 보기 (Deep Dive → /chainsight/{symbol})
+ *
+ * Watchlist 항목 제거: 단일 종목 watch API 미존재로 인해 제거.
+ * watch 기능 도입 시 재추가 필요.
  *
  * 닫기: ESC 키 또는 외부 클릭
  * 화면 경계 처리: 우/하단 초과 시 좌/상단으로 반전
@@ -77,7 +79,7 @@ export default function NodeContextMenu({
 
   // 화면 경계 계산
   const MENU_W = 200;
-  const MENU_H = 160;
+  const MENU_H = 126;
   const OFFSET = 12;
   const containerW = containerRect?.width ?? 800;
   const containerH = containerRect?.height ?? 560;
@@ -153,20 +155,9 @@ export default function NodeContextMenu({
           가설 생성 →
         </button>
 
-        {/* 3. Watchlist 추가 (향후 PR — 현재 비활성) */}
-        <button
-          role="menuitem"
-          disabled
-          title="Watch 기능은 준비 중입니다"
-          className="w-full text-left px-3 py-2 text-sm text-gray-400 dark:text-gray-600 cursor-not-allowed flex items-center gap-2"
-        >
-          <span>☆</span>
-          Watchlist 추가
-        </button>
-
         <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
 
-        {/* 4. Deep Dive */}
+        {/* 3. Deep Dive */}
         <button
           role="menuitem"
           onClick={handleDeepDive}

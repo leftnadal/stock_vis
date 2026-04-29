@@ -10,7 +10,7 @@ export const RELATION_STYLES: Record<string, RelationStyle> = {
   SUPPLIES_TO:          { color: '#F97316', label: '공급',     width: 3 },
   CUSTOMER_OF:          { color: '#F97316', label: '고객',     width: 3 },
   COMPETES_WITH:        { color: '#EF4444', label: '경쟁',     width: 2.5 },
-  PEER_OF:              { color: '#3B82F6', label: '경쟁사',   width: 2 },
+  PEER_OF:              { color: '#3B82F6', label: 'Peer',     width: 2 },
   CO_MENTIONED:         { color: '#A855F7', label: '동시출현', width: 2, dash: [4, 4] },
   HAS_THEME:            { color: '#14B8A6', label: '테마',     width: 1.5, dash: [6, 3] },
   BELONGS_TO_SECTOR:    { color: '#9CA3AF', label: '섹터',     width: 1 },
