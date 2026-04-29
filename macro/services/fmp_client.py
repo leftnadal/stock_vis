@@ -2,7 +2,7 @@
 FMP (Financial Modeling Prep) API Client
 
 시장 지수, 섹터 성과, 환율, 원자재 데이터 제공
-- Starter Plan (유료): 250 calls/일
+- Starter Plan (유료): 300 calls/min, 10,000 calls/일 (audit P0 #7, 2026-04-29)
 - 모든 엔드포인트는 /stable/* 사용
 """
 import logging
@@ -62,11 +62,11 @@ class FMPClient:
         'USDKRW': 'USD/KRW',
     }
 
-    def __init__(self, api_key: str = None, request_delay: float = 0.5):
+    def __init__(self, api_key: str = None, request_delay: float = 0.2):
         """
         Args:
             api_key: FMP API 키
-            request_delay: 요청 간 대기 시간 (초)
+            request_delay: 요청 간 대기 시간 (초). Starter Plan 300/min = 5 req/s → 0.2s.
         """
         self.api_key = api_key or getattr(settings, 'FMP_API_KEY', None)
         self.request_delay = request_delay

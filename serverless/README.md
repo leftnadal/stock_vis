@@ -161,7 +161,7 @@ SK: TYPE#GAINERS#RANK#01
 
 ### FMP API 에러
 - 확인: `.env` 파일에 `FMP_API_KEY` 설정
-- Rate Limit: FMP는 10 calls/min (Starter Plan)
+- Rate Limit: FMP Starter Plan 300 calls/min, 10,000 calls/day (audit P0 #7, 2026-04-29)
 
 ### httpx 미설치
 ```bash

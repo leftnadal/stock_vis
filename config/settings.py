@@ -198,9 +198,12 @@ INSTALLED_APPS = [
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'portfolio.apps.PortfolioConfig',  # Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
+    'marketpulse.apps.MarketpulseConfig',  # Market Pulse v2 (Phase 1)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
+    'drf_spectacular',  # OpenAPI 자동 생성 (Swagger UI / ReDoc)
+    'drf_spectacular_sidecar',  # Swagger UI / ReDoc 정적 자산
     'corsheaders',  # CORS 지원 추가
     'django_celery_beat',  # Celery Beat 스케줄러
     'django_celery_results',  # Celery 작업 결과 저장
@@ -338,14 +341,75 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # REST Framework 설정
+# audit P0 #5 (2026-04-29):
+#   - DEFAULT_PERMISSION_CLASSES: IsAuthenticatedOrReadOnly → IsAuthenticated (GET 무차별 노출 차단)
+#   - 의도된 공개 뷰는 명시적 [AllowAny] 지정 (users LogIn/PublicUser, simplejwt token 등)
+# audit P0 #14 (페이지네이션 표준)는 별도 PR에서 처리 — 응답 envelope 결정이 선결 조건
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'market_pulse_user': '60/min',
+        'market_pulse_user_hour': '1000/hour',
+        'market_pulse_llm': '5/min',
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# drf-spectacular 설정 (Market Pulse v2 OpenAPI 자동 생성)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Stock-Vis Market Pulse v2 API',
+    'DESCRIPTION': (
+        'Market Pulse v2 Phase 1 — 시장 레짐 + 시장 폭 + 섹터 흐름 + 집중도 + LLM 브리핑 + 이상 신호. '
+        'JWT Bearer 인증. 응답 본체는 영문 키 (한글은 /i18n endpoint).'
+    ),
+    'VERSION': '2.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    'SCHEMA_PATH_PREFIX': r'/api/v[12]',
+    'TAGS': [
+        {'name': 'Market Pulse v2', 'description': 'Layer 0 통합 + Layer 1 카드 detail'},
+    ],
+    # 'unable to guess serializer' 등 graceful fallback noise 무시 (운영 영향 0).
+    # 핵심 영역(marketpulse, chainsight, api_request admin)은 명시적 @extend_schema로 정상 처리됨.
+    # 나머지 v1 endpoint는 schema에서 graceful fallback (string body)로 노출.
+    # 정확한 schema가 필요한 view만 점진적으로 @extend_schema(responses=...) 추가.
+    'DISABLE_ERRORS_AND_WARNINGS': True,
+    # 동일 이름 enum collision 해결 (drf-spectacular 가독성 향상)
+    # (value, label) 튜플 list 형식 — drf-spectacular는 sorted hash로 매칭하므로
+    # 모델 choices와 정확히 동일한 tuple 필요.
+    'ENUM_NAME_OVERRIDES': {
+        # thesis.ThesisPremise.category (6개)
+        'ThesisPremiseCategoryEnum': [
+            ('macro', 'Macro'), ('sector', 'Sector'), ('company', 'Company'),
+            ('technical', 'Technical'), ('sentiment', 'Sentiment'),
+            ('custom', 'Custom'),
+        ],
+        # news.NewsArticle.category (6개)
+        'NewsCategoryEnum': [
+            ('general', 'General'), ('company', 'Company'),
+            ('press_release', 'Press Release'), ('forex', 'Forex'),
+            ('crypto', 'Crypto'), ('merger', 'Merger'),
+        ],
+        # chainsight.SavedPath.status
+        'SavedPathStatusEnum': [
+            ('watching', 'Watching'), ('active', 'Active'),
+            ('archived', 'Archived'), ('resolved', 'Resolved'),
+        ],
+        # thesis.Thesis.status
+        'ThesisStatusEnum': [
+            ('setting_up', 'Setting Up'), ('active', 'Active'),
+            ('closed', 'Closed'), ('paused', 'Paused'),
+        ],
+    },
 }
 
 # Simple JWT 설정

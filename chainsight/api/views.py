@@ -15,6 +15,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+
 from stocks.models import Stock
 from chainsight.graph import get_graph_repository
 from chainsight.graph.exceptions import GraphConnectionError
@@ -51,6 +54,7 @@ def _sanitize_neo4j(obj):
     return obj
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class ChainSightGraphView(APIView):
     """CS-4-1: N-depth 그래프 탐색."""
 
@@ -101,6 +105,7 @@ class ChainSightGraphView(APIView):
         }))
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class ChainSightSuggestionView(APIView):
     """CS-4-2: 카테고리별 탐색 제안."""
 
@@ -176,6 +181,7 @@ class ChainSightSuggestionView(APIView):
         return Response({"symbol": symbol, "categories": categories})
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class ChainSightTraceView(APIView):
     """CS-4-3: 두 종목 간 최단 경로."""
 
@@ -299,6 +305,7 @@ def _trigger_seed_recovery(market_date: date) -> None:
         cache.delete(lock_key)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class SeedListView(APIView):
     """오늘의 시드 전체 + 섹터 요약. Redis 캐시 읽기 전용."""
 
@@ -307,6 +314,7 @@ class SeedListView(APIView):
         return Response(data)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class SectorGraphView(APIView):
     """섹터 overview graph — 탐색 시작점 선택용 구조 파악."""
 
@@ -436,6 +444,7 @@ class SectorGraphView(APIView):
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class NeighborGraphView(APIView):
     """마켓 뷰 탐색 핵심 API. 중심 이동 + 관계 카드 패널 렌더 데이터."""
 
@@ -615,6 +624,7 @@ class NeighborGraphView(APIView):
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class SignalFeedView(APIView):
     """글로벌 chain flow + 새 chain 추천."""
 

@@ -16,6 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
 from . import views
 
 
@@ -44,4 +50,20 @@ urlpatterns = [
 
     # Portfolio Coach (slice 1: E1+GARP)
     path('api/', include('portfolio.urls')),
+
+    # Market Pulse v2 (PR-I/J)
+    path('api/v2/market-pulse/', include('marketpulse.api.urls')),
+
+    # OpenAPI / Swagger / ReDoc (drf-spectacular, Market Pulse v2)
+    path('api/v2/schema/', SpectacularAPIView.as_view(), name='schema-v2'),
+    path(
+        'api/v2/swagger/',
+        SpectacularSwaggerView.as_view(url_name='schema-v2'),
+        name='swagger-v2',
+    ),
+    path(
+        'api/v2/redoc/',
+        SpectacularRedocView.as_view(url_name='schema-v2'),
+        name='redoc-v2',
+    ),
 ]

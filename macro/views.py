@@ -7,7 +7,7 @@ from django.core.cache import cache
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser
 
 from .services import MacroEconomicService
 from .serializers import (
@@ -352,11 +352,11 @@ def _run_data_sync():
 
 class DataSyncView(APIView):
     """
-    데이터 동기화 트리거
+    데이터 동기화 트리거 (audit P0 #6 — IsAdminUser).
 
     POST /api/v1/macro/sync/
     """
-    permission_classes = [AllowAny]
+    permission_classes = [IsAdminUser]
 
     def post(self, request):
         """데이터 동기화 시작"""

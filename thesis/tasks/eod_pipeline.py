@@ -22,8 +22,68 @@ logger = logging.getLogger(__name__)
 # 데이터 소스별 fetch 함수
 # ──────────────────────────────────────────────────────────
 
+def _apply_value_postprocess(raw_value, params):
+    """
+    audit P0 #11 / common-bugs #14 — data_params의 후처리 메타데이터 적용.
+
+    - inverse=True: 1 / value (예: PER = 1 / earningsYieldTTM)
+    - scale_multiplier=N: value * N (예: ROE 0.15 → 15.0%)
+
+    raw_value가 None이거나 0(역수 케이스)이면 None 반환.
+    """
+    if raw_value is None:
+        return None
+    if params.get('inverse'):
+        if raw_value == 0:
+            return None
+        raw_value = 1.0 / raw_value
+    multiplier = params.get('scale_multiplier')
+    if multiplier:
+        raw_value = raw_value * float(multiplier)
+    return raw_value
+
+
+def _fetch_fmp_ttm_or_growth(client, indicator, symbol, params):
+    """
+    audit P0 #11 — TTM metric (earningsYieldTTM/returnOnEquityTTM/...) 또는
+    /stable/financial-growth (growthRevenue 등) 분기.
+
+    Returns: (raw_value, asof) 또는 (None, None)
+    """
+    metric = params.get('metric', '')
+    endpoint_hint = params.get('endpoint')
+
+    # /stable/financial-growth (예: growthRevenue, growthNetIncome)
+    if endpoint_hint == 'financial-growth':
+        try:
+            data = client._make_request('/stable/financial-growth', {'symbol': symbol})
+            if not data or not isinstance(data, list) or not data[0]:
+                return None, None
+            return data[0].get(metric), timezone.now()
+        except Exception as exc:  # noqa: BLE001
+            logger.error(f"[{indicator.name}] FMP financial-growth 예외: {exc}")
+            return None, None
+
+    # /stable/key-metrics-ttm (TTM suffix가 metric에 있을 때)
+    if metric.endswith('TTM'):
+        try:
+            data = client._make_request('/stable/key-metrics-ttm', {'symbol': symbol})
+            if not data or not isinstance(data, list) or not data[0]:
+                return None, None
+            return data[0].get(metric), timezone.now()
+        except Exception as exc:  # noqa: BLE001
+            logger.error(f"[{indicator.name}] FMP key-metrics-ttm 예외: {exc}")
+            return None, None
+
+    return None, None
+
+
 def _fetch_fmp_value(indicator):
-    """FMP API에서 지표 값 fetch. data_params의 symbol/metric으로 조회."""
+    """FMP API에서 지표 값 fetch. data_params의 symbol/metric으로 조회.
+
+    audit P0 #11: data_params에 endpoint/inverse/scale_multiplier 메타가 있으면
+    /stable/key-metrics-ttm 또는 /stable/financial-growth로 분기 + 후처리 적용.
+    """
     from api_request.providers.fmp.client import (
         FMPClient, FMPClientError, FMPPremiumError,
     )
@@ -32,6 +92,11 @@ def _fetch_fmp_value(indicator):
     symbol = params.get('symbol')
     metric = params.get('metric', 'price')  # price, pe, roe, beta 등
 
+    # symbol이 없으면 indicator의 thesis target에서 fallback (펀더멘털 케이스).
+    if not symbol:
+        thesis = getattr(indicator, 'thesis', None)
+        symbol = getattr(thesis, 'target', '') if thesis else ''
+        symbol = (symbol or '').upper()
     if not symbol:
         logger.warning(f"[{indicator.name}] FMP: symbol 없음")
         return None, None
@@ -43,8 +108,16 @@ def _fetch_fmp_value(indicator):
             return None, None
 
         client = FMPClient(api_key=api_key)
-        quote = client.get_quote(symbol)
 
+        # 분기 1: TTM metric 또는 financial-growth endpoint
+        if metric.endswith('TTM') or params.get('endpoint') == 'financial-growth':
+            raw_value, asof = _fetch_fmp_ttm_or_growth(client, indicator, symbol, params)
+            if raw_value is not None:
+                raw_value = float(raw_value)
+            return _apply_value_postprocess(raw_value, params), asof
+
+        # 분기 2: /stable/quote (기본)
+        quote = client.get_quote(symbol)
         if not quote:
             logger.warning(f"[{indicator.name}] FMP: {symbol} 데이터 없음")
             return None, None
@@ -63,12 +136,10 @@ def _fetch_fmp_value(indicator):
         }
         field = value_map.get(metric, metric)
         raw_value = quote.get(field)
-
         if raw_value is not None:
             raw_value = float(raw_value)
 
-        asof = timezone.now()
-        return raw_value, asof
+        return _apply_value_postprocess(raw_value, params), timezone.now()
 
     except FMPPremiumError:
         logger.warning(f"[{indicator.name}] FMP 프리미엄 심볼: {symbol}")

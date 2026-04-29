@@ -16,12 +16,15 @@
 |---------|-------|--------|---------|--------------|
 | Chain Sight v2 마켓 뷰 (redesign v1) | @backend + @frontend | QA 검증 완료 (91%), 커밋 대기 | 커밋 필요 | 2026-04-13 |
 | 서비스 리모델링 (data_structure_remodeling_V1) | @backend | 브랜치 작업 중 | Chain Sight 마켓 뷰 머지 후 | 2026-04-12 |
+| **Market Pulse v2 — Phase 1 + 후속 작업** | @backend + @frontend | Phase 1 복원 + drf-spectacular + Recharts + v1 deprecation 배너 + FRED sync (coverage 0.857) + Yahoo sync (Beat 11 task) + v1 collision 8건 + drf-spectacular noise silence + audit P0 #11/#15 (fetcher 분기 + thesis 요약 task) | (자동 흐름) VIX3M/MOVE 다음 평일 NY 17:35 sync | 2026-04-29 |
 
 ---
 
 ## 완료된 작업 (최근 2주)
 
 | Feature | Agent | Completed | Notes |
+|---------|-------|-----------|-------|
+| Market Pulse v2 Phase 1 코드 복원 + 후속 5건 | @backend + @frontend | 2026-04-29 | (1) marketpulse 도메인/API/tasks/management 복원 + macro 0002~0004 마이그레이션 + 시드 (11 series + 20 indices). (2) drf-spectacular 도입 + `/api/v2/swagger/` `/api/v2/redoc/`. (3) Recharts 5 detail (Regime 레이더 / Breadth AD-line / Sector bar 2종 / Flow 도넛 / Brief 본문). (4) v1 페이지 amber deprecation 배너 + analytics tracking. (5) FRED sync 11 series 622 row 백필 → coverage 0.357→**0.857** (status=OK). 운영 Beat 10 PeriodicTask 등록. 64 tests PASS. 📎 `docs/operations/marketpulse_v2_*.md`, `docs/architecture/marketpulse_v2_api_contract.md` |
 |---------|-------|-----------|-------|
 | audit P0 #8 — Beat NY 16:30 Gemini 충돌 분산 | orchestrator | 2026-04-27 | extract-daily-news-keywords를 16:30 → 16:45로 이동. analyze-news-deep-batch와 15분 간격 확보. **운영: PeriodicTask DB도 동일 시각으로 update 필요(#28 패턴)** |
 | audit P0 #1~4 — settings.py 보안 환경변수화 | orchestrator | 2026-04-27 | 70d6a68. SECRET_KEY/JWT_SIGNING_KEY/DEBUG/CORS/NEO4J_PASSWORD env-driven + 운영 가드 + .env 600. 회귀 2096 passed. 사용자 후속: API 키 회전 + .env 신규 변수 추가 |
@@ -46,14 +49,17 @@
 
 ## 다음 세션에서 할 일
 
-### audit P0 후속 큐 (2026-04-26 야간 자동화 기준, 15건 중 6건 완료)
-- [ ] **#5/#14 Permission/Pagination** — DEFAULT_PERMISSION_CLASSES IsAuthenticated 강화 + DEFAULT_PAGINATION_CLASS 도입 + NewsViewSet/StockListAPIView/Users.get/UserFavorites 무제한 응답 4건 정리. 회귀 영향 큼, 별도 PR
-- [ ] **#6 admin 뷰 권한** — serverless/views.py 16개 + macro/DataSyncView + sec_pipeline/FilingDataView IsAdminUser 적용
-- [ ] **#7 FMP rate_limiter** — 현재 10/min·250/day. Starter 티어면 300/min·10000/day로 정정. **사용자 티어 확인 필요**
-- [ ] **#9 Neo4j 동기화 플래그 단일화** — `synced_to_neo4j`/`neo4j_dirty`/`neo4j_synced` 3종 혼재 (57건 분포). DECISIONS는 `neo4j_dirty` 단일. 마이그레이션 동반 큰 PR
-- [ ] **#10/#11 indicator_catalog 3일 누적** — 표시 이름 4건 BE/FE 불일치(id 6/7/30/54) + 버그 #14 회귀(id 50/52/58 PE 역수·ROE 스케일·revenueGrowth)
-- [ ] **#12/#13 모바일 UX** — MobileNav `/profile` 깨진 라우트 + Header/MobileNav 이중 네비, 터치 타겟 44pt 미달 5건
-- [ ] **#15 thesis generate_thesis_summaries** — Celery task 미구현, AISummarySection이 항상 빈 문자열
+### audit P0 후속 큐 (2026-04-26 야간 자동화 기준, 15건 중 12건 완료)
+- [x] **#5 Permission 강화** — `DEFAULT_PERMISSION_CLASSES`: IsAuthenticatedOrReadOnly → **IsAuthenticated** (GET 무차별 노출 차단). users/PublicUser·LogIn에 명시 [AllowAny] 추가. news ML 모니터링 액션 4종(`ml_status`/`ml_shadow_report`/`ml_weekly_report`/`ml_lightgbm_readiness`)에 [IsAdminUser] 추가. 영향 받는 테스트 44건 force_authenticate/force_login 패턴으로 일괄 수정 (5 파일 fixture override + watchlist `auth_user` fixture). 회귀 2182 PASS / 51 skipped / 0 fail (2026-04-29).
+- [ ] **#14 Pagination 표준** — 응답 envelope 결정(옵션 A: `{success, data, meta}` vs 옵션 B: DRF 기본)이 선결 조건. 별도 PR로 분리. 영향: NewsViewSet list 액션 응답 형식 변경 → 프론트엔드 동시 작업 필수.
+- [x] **#6 admin 뷰 권한** — serverless/views.py 15건 (IsAdminUser 7 + IsAuthenticated 8) + macro/DataSyncView + sec_pipeline/FilingDataView IsAdminUser 적용 (2026-04-29). 73 tests PASS, Django check 0 issues.
+- [x] **#7 FMP rate_limiter (Starter Plan)** — 사용자 티어(Starter) 확인 후 정정. stocks/services/rate_limiter.py LIMITS 10/250 → 300/10000, macro/services/fmp_client.py request_delay 0.5 → 0.2, CLAUDE.md/DECISIONS.md/coding-rules.md/serverless-README/marketpulse_v2_runbook/market-pulse user-guide 6개 docs 정정. api_request/rate_limiter.py는 이미 Starter 80% 안전 마진(240/8000) 적용. 207 tests PASS (2026-04-29).
+- [x] **#9 Neo4j 동기화 플래그 단일화** — `synced_to_neo4j`/`neo4j_synced` 제거, `neo4j_dirty` 단일 소스로 통일. (1) `RelationConfidence.synced_to_neo4j` 제거 (필드 + index + neo4j_sync.py 1 + relation_tasks.py 6 + sync_tasks.py 1 + sec_pipeline/tasks.py 1 = 9건). (2) `CompanyChainProfile.neo4j_synced` (반전 의미) → `neo4j_dirty` 의미 통일 (sync_tasks.py 3건). (3) 마이그레이션 0008_unify_neo4j_flags 작성 (AddField → RunPython 반전 → RemoveField 순서로 데이터 보존). 회귀 2182 PASS / 51 skipped / 0 fail (2026-04-29).
+- [x] **#10 indicator_catalog 표시 이름** — id 6/7/30/54 BE/FE 풀 네임 모두 일치 확인. audit 도구 outdated cache의 false positive로 closing (2026-04-29).
+- [x] **#11 indicator_catalog #14 회귀 메타데이터 + fetcher 분기** — id 50/52/53/58 data_params에 inverse/scale_multiplier/endpoint/audit_note 명시. `thesis/tasks/eod_pipeline.py`에 `_apply_value_postprocess` (inverse/scale_multiplier 후처리) + `_fetch_fmp_ttm_or_growth` (TTM/financial-growth endpoint 분기) 헬퍼 추가, `_fetch_fmp_value`에 thesis target fallback + 분기 통합. tests/thesis/test_fmp_value_postprocess.py 13 tests + thesis 18 tests + marketpulse 68 tests PASS (2026-04-29).
+- [x] **#12 MobileNav 깨진 라우트 + 이중 네비** — `/profile`→`/mypage` + Header 모바일 햄버거 hidden (MobileNav 단일 네비) (2026-04-29). TS strict PASS.
+- [x] **#13 터치 타겟 44pt** — MobileNav `min-h-[44px]` + Header 햄버거 `min-h/min-w-[44px]` + aria-label (2026-04-29).
+- [x] **#15 thesis generate_thesis_summaries** — `thesis/tasks/summary.py` Celery task 구현 + Beat 등록 (NY 18:35 평일, snapshot 후 5분) + 5 tests PASS (2026-04-29)
 
 ### 운영 후속 (사용자 수동)
 - [ ] **노출 위험 키 회전**: FMP / Marketaux / Finnhub API 키 발급사 콘솔에서 회전

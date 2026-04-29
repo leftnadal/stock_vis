@@ -10,9 +10,11 @@ from django.core.paginator import Paginator, EmptyPage
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.exceptions import ParseError, NotFound, ValidationError
 from rest_framework.throttling import UserRateThrottle
+
+from drf_spectacular.utils import extend_schema
 
 from .serializers import (
     UserSerializer,
@@ -107,8 +109,10 @@ class Users(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# 특정 사용자 정보 조회
+# 특정 사용자 정보 조회 (audit P0 #5: 공개 프로필 — AllowAny 명시)
 class PublicUser(APIView):
+    permission_classes = [AllowAny]
+
     def get(self, request, user_name):
         try:
             user = User.objects.get(username=user_name)
@@ -139,9 +143,11 @@ class ChangePassword(APIView):
             raise ParseError("Current password is incorrect")
 
 
-# 로그인
+# 로그인 (audit P0 #5: 비로그인 사용자가 호출해야 함 — AllowAny 명시)
 class LogIn(APIView):
     """사용자 인증 및 세션 생성을 통해 로그인합니다."""
+    permission_classes = [AllowAny]
+
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
@@ -252,6 +258,7 @@ class PortfolioListCreateView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(operation_id='users_portfolio_list')
     def get(self, request):
         """사용자의 포트폴리오 목록 조회"""
         portfolios = Portfolio.objects.filter(user=request.user).select_related('stock')
@@ -585,6 +592,7 @@ class WatchlistListCreateView(APIView):
     permission_classes = [IsAuthenticated]
     throttle_classes = [WatchlistRateThrottle]
 
+    @extend_schema(operation_id='users_watchlist_list')
     @watchlist_cached_api(cache_type='list', timeout=300)
     def get(self, request):
         """사용자의 Watchlist 목록 조회 (페이지네이션 적용)"""

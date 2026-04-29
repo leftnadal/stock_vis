@@ -24,12 +24,12 @@ class SavedPathListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_latest_headline(self, obj):
+    def get_latest_headline(self, obj) -> str:
         if obj.why_now_snapshot and isinstance(obj.why_now_snapshot, dict):
             return obj.why_now_snapshot.get('headline', '')
         return ''
 
-    def get_path_length(self, obj):
+    def get_path_length(self, obj) -> int:
         return len(obj.path_nodes) if obj.path_nodes else 0
 
 

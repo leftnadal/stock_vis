@@ -21,8 +21,18 @@ pytestmark = pytest.mark.unit
 # ───────────────────────────────────────────────
 
 @pytest.fixture
-def client():
-    return APIClient()
+def client(db):
+    """audit P0 #5: 인증된 사용자로 force_authenticate."""
+    import uuid
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    user = User.objects.create_user(
+        username=f'test_{uuid.uuid4().hex[:8]}',
+        password='test1234',
+    )
+    api_client = APIClient()
+    api_client.force_authenticate(user=user)
+    return api_client
 
 
 @pytest.fixture

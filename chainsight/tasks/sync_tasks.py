@@ -30,7 +30,8 @@ def aggregate_chain_profiles(self):
             if not stock:
                 continue
 
-            defaults = {'neo4j_synced': False}
+            # audit P0 #9: neo4j_synced → neo4j_dirty (의미 반전, True=동기화 필요)
+            defaults = {'neo4j_dirty': True}
 
             # GrowthStage
             gs = CompanyGrowthStage.objects.filter(symbol=stock).first()
@@ -100,7 +101,7 @@ def sync_profiles_to_neo4j(self):
     from chainsight.graph import get_graph_repository
 
     repo = get_graph_repository()
-    pending = CompanyChainProfile.objects.filter(neo4j_synced=False)
+    pending = CompanyChainProfile.objects.filter(neo4j_dirty=True)
     total = pending.count()
     success, fail = 0, 0
 
@@ -132,9 +133,9 @@ def sync_profiles_to_neo4j(self):
                     {"ticker": profile.symbol_id, "props": props}
                 )
 
-            profile.neo4j_synced = True
+            profile.neo4j_dirty = False
             profile.neo4j_synced_at = timezone.now()
-            profile.save(update_fields=["neo4j_synced", "neo4j_synced_at"])
+            profile.save(update_fields=["neo4j_dirty", "neo4j_synced_at"])
             success += 1
         except Exception as e:
             fail += 1
@@ -162,9 +163,10 @@ def sync_relations_to_neo4j(self):
             repo = get_graph_repository()
             repo.run_query("MATCH ()-[r:RELATED_TO]-() DELETE r")
             # 기존 레코드 dirty 리셋 → dirty sync가 동적 타입으로 재생성
+            # audit P0 #9: synced_to_neo4j 제거, neo4j_dirty 단일 소스
             reset_count = RelationConfidence.objects.filter(
                 relation_status__in=['confirmed', 'probable']
-            ).update(synced_to_neo4j=False, neo4j_dirty=True)
+            ).update(neo4j_dirty=True)
             cache.set(cleanup_key, True, timeout=86400 * 365)
             logger.info(f"Legacy RELATED_TO cleanup: edges deleted, {reset_count} records reset")
         except Exception as e:

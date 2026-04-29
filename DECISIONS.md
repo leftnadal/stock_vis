@@ -295,5 +295,5 @@ interface ExplorationState {
 | API | 제한 | 방어 |
 |-----|------|------|
 | Alpha Vantage | 5 calls/min | 12초 대기 필수 |
-| FMP | 10 calls/min | `.` 심볼 제외 (FMPPremiumError) |
+| FMP (Starter) | 300 calls/min, 10,000 calls/day | `.` 심볼 제외 (FMPPremiumError), api_request/rate_limiter.py에서 80% 안전 마진 |
 | Gemini Free | 15 RPM, 1500 RPD | Exponential backoff + 배치 |

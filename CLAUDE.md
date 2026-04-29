@@ -84,7 +84,7 @@ celery -A config beat -l info
 
 ### 외부 API Rate Limits
 - **Alpha Vantage**: 5 calls/분, 12초 대기 필수
-- **FMP**: 10 calls/분, `/stable/*` 경로만 사용 (Legacy `/api/v3/*` 지원 안 함)
+- **FMP** (Starter Plan): 300 calls/분, 10,000 calls/일, `/stable/*` 경로만 사용 (Legacy `/api/v3/*` 지원 안 함)
 - **Gemini Free**: 15 RPM, 1500 RPD
 
 > 상세: [sub_claude_md/coding-rules.md](sub_claude_md/coding-rules.md)

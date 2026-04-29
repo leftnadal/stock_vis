@@ -21,7 +21,7 @@ class ThesisListSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
 
-    def get_days_active(self, obj):
+    def get_days_active(self, obj) -> int:
         from django.utils import timezone
         return (timezone.now() - obj.created_at).days
 
@@ -49,11 +49,11 @@ class ThesisDetailSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
 
-    def get_days_active(self, obj):
+    def get_days_active(self, obj) -> int:
         from django.utils import timezone
         return (timezone.now() - obj.created_at).days
 
-    def get_indicator_count(self, obj):
+    def get_indicator_count(self, obj) -> int:
         return obj.indicators.filter(is_active=True).count()
 
 

@@ -669,6 +669,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # AI 요약 생성 (매일 18:35 ET, snapshot 직후 — audit P0 #15)
+    'thesis-generate-summaries': {
+        'task': 'thesis.tasks.summary.generate_thesis_summaries',
+        'schedule': crontab(hour=18, minute=35, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
     # ============================================================
     # Chain Sight — Tier A 프로파일 + 관계 파이프라인
     # ============================================================
