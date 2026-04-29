@@ -16,6 +16,7 @@ from __future__ import annotations
 from typing import Literal
 
 from portfolio.llm import LLMClient
+from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
 from portfolio.llm.parsers import parse_json_response
 from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm import LLMResponse
@@ -23,8 +24,21 @@ from portfolio.schemas.llm_outputs import OneLineDiagnosis
 from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
 
 
+# Slice 1 Decision (validation_report §5): winner = haiku.
+# Free tier 환경에서 gemini는 RateLimit 즉시 폴백 → 진입점 default는 haiku.
+# label → LLMClient kwargs 매핑 (LLMClient 자체는 폴백 호환성 위해 그대로 유지).
+ProviderLabel = Literal["gemini", "anthropic", "sonnet", "haiku"]
+
+PROVIDER_KWARGS: dict[str, dict] = {
+    "gemini":    {"provider": "gemini",    "model": None},
+    "anthropic": {"provider": "anthropic", "model": None},   # = Sonnet (LLMClient 기본)
+    "sonnet":    {"provider": "anthropic", "model": ANTHROPIC_SONNET_MODEL},
+    "haiku":     {"provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},
+}
+
+
 def run_e1_garp(
-    provider: Literal["gemini", "anthropic"] = "gemini",
+    provider: ProviderLabel = "haiku",
     client: LLMClient | None = None,
 ) -> dict:
     """
@@ -48,10 +62,17 @@ def run_e1_garp(
     system_prompt, user_message = build_e1_prompt(context)
     prompt = f"{system_prompt}\n\n{user_message}"
 
-    # 3. LLM 호출 (의존성 주입)
+    # 3. LLM 호출 (의존성 주입). label → (provider, model) 매핑.
     if client is None:
         client = LLMClient()
-    llm_response: LLMResponse = client.complete(prompt=prompt, provider=provider)
+    if provider not in PROVIDER_KWARGS:
+        raise ValueError(
+            f"Unknown provider label: {provider!r}. "
+            f"Valid: {sorted(PROVIDER_KWARGS)}"
+        )
+    llm_response: LLMResponse = client.complete(
+        prompt=prompt, **PROVIDER_KWARGS[provider]
+    )
 
     # 4. schema 파싱 (마크다운 펜스 사전 제거 — LLM이 ```json``` 감싸는 경향)
     diagnosis = parse_json_response(OneLineDiagnosis, llm_response.text)

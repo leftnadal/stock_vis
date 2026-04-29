@@ -206,15 +206,17 @@ quotaId 인용: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `GenerateRe
 
 ## 5. Decision
 
-### 5.1 Slice 2 진입 시 primary provider
-
-**채택: Haiku (`claude-haiku-4-5`)**
+### 5.1 Slice 2 진입 시 primary provider — **Haiku 채택 + 코드 적용 완료**
 
 근거:
 - efficiency mean score 33.68 (sonnet 13.89, gemini 폴백 13.38) — 압도적 1위.
-- 비용 Sonnet 대비 27% 수준.
-- 지연 Sonnet 대비 53% 수준.
+- 비용 Sonnet 대비 27% 수준, 지연 Sonnet 대비 53% 수준.
 - naturalness 4.0 (sonnet과 동급), insight 3.0 (baseline 충족).
+
+**적용 (2026-04-29 d72671a 이후 commit)**:
+- `portfolio/services/e1_garp.py`: default `provider="haiku"`. label → LLMClient kwargs 매핑(`PROVIDER_KWARGS`) 도입.
+- `portfolio/views.py`: default `provider="haiku"`, valid set 4종 (`gemini` / `anthropic` / `sonnet` / `haiku`).
+- LLMClient 자체는 그대로 유지 (Mock 호환, free tier 환경 고려).
 
 ### 5.2 Slice 2 진입 시 retain 사항
 
@@ -240,6 +242,7 @@ quotaId 인용: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `GenerateRe
 - 자연스러움/통찰성 자동 평가 (LLM-as-judge, rule-based heuristic).
 - garp_large fixture가 종목 수 증가 효과를 prompt 토큰에 반영하지 못하는 문제 — E2 (DiagnosticCards) 시점에 fixture 효과 재측정.
 - Sonnet의 garp_misfit insight=5 — 복잡한 부정합 맥락에서 Sonnet의 통찰력 강점이 의미 있는지 E2/E4에서 재검증.
+- **Gemini Flash paid tier 활성화 시 재비교** (Production 출시 직전 비용 최적화 단계). 단발 진단 9~12회로 Haiku vs Gemini Flash 재측정.
 
 ---
 

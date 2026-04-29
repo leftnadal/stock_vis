@@ -53,6 +53,7 @@ class MockLLMClient:
         prompt: str,  # noqa: ARG002 (Mock은 prompt 사용 안 함)
         provider: Literal["gemini", "anthropic"] = "gemini",
         max_tokens: int = 2000,  # noqa: ARG002
+        model: str | None = None,  # LLMClient 시그니처 호환 (Sonnet/Haiku 분기, Mock은 무시)  # noqa: ARG002
     ) -> LLMResponse:
         self._call_count += 1
 

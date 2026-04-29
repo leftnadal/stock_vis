@@ -45,7 +45,7 @@
 |---|------|-----------|
 | 7 | Step 8 CSV 출력 옵션 | PriorityScore 1.0, 운영 편의 — Slice 2/3 활용도 보고 결정 |
 | 8 | Mock LLMClient mode dict 매핑 | PriorityScore 1.0, RiskOfBreakage 2 (Mock 회귀 위험), 가치 미미 |
-| 9 | **Gemini 호출 실패 진단 로깅** | **Slice 2 Blocker로 격상**. PriorityScore 4.0이지만 별도 디버깅 세션 필요 (LLMClient 외 .env / 모델 ID 검증 동반). 단순 리팩토링이 아님 |
+| 9 | ~~Gemini 호출 실패 진단 로깅~~ | **✅ 해소 (d72671a + 후속 commit)**. 진단 결과: free tier `gemini-2.0-flash` 한도 0. 모델 ID `gemini-2.5-flash` 갱신 + Slice 1 Decision §5.1 옵션 A 채택 (default provider = haiku, Gemini 분기는 호환성 위해 보존) |
 
 ---
 

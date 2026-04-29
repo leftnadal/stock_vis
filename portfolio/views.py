@@ -16,17 +16,20 @@ from portfolio.llm import LLMBudgetExceededError, LLMError
 from portfolio.services.e1_garp import run_e1_garp
 
 
-_VALID_PROVIDERS = ("gemini", "anthropic")
+# Slice 1 Decision: default provider = haiku (winner).
+# "gemini"는 호환성 위해 허용하나 free tier에서 RateLimit 즉시 폴백 발생 가능.
+_VALID_PROVIDERS = ("gemini", "anthropic", "sonnet", "haiku")
 
 
 @require_GET
 def coach_e1_garp(request: HttpRequest) -> JsonResponse:
     """
-    GET /api/coach/e1/garp/?provider=gemini
+    GET /api/coach/e1/garp/?provider=haiku
 
     E1 한 줄 진단을 GARP 프리셋 + Mock fixture 기반으로 실행.
+    provider 옵션: haiku (기본) | sonnet | anthropic (= sonnet) | gemini.
     """
-    provider = request.GET.get("provider", "gemini")
+    provider = request.GET.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return JsonResponse(
             {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
