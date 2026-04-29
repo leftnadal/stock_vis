@@ -1,19 +1,26 @@
 """
 Portfolio Coach Django views.
 
-slice 1 전반부 — 단일 진입점:
-  - GET /api/coach/e1/garp/?provider=gemini|anthropic
+진입점:
+  - GET  /api/coach/e1/garp/?provider=haiku       (Slice 1)
+  - POST /api/coach/e5/adjustment/?provider=haiku (Slice 2)
 
-§6.4 자율 판단 금지: 순수 Django view + JsonResponse만 (DRF 미사용).
+순수 Django view + JsonResponse (DRF 미사용).
 """
 
 from __future__ import annotations
 
+import json
+
 from django.http import HttpRequest, JsonResponse
-from django.views.decorators.http import require_GET
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_GET, require_POST
+from pydantic import ValidationError
 
 from portfolio.llm import LLMBudgetExceededError, LLMError
+from portfolio.schemas.llm import E5Request
 from portfolio.services.e1_garp import run_e1_garp
+from portfolio.services.e5_adjustment_parser import run_e5
 
 
 # Slice 1 Decision: default provider = haiku (winner).
@@ -44,3 +51,65 @@ def coach_e1_garp(request: HttpRequest) -> JsonResponse:
         return JsonResponse({"error": str(exc)}, status=500)
 
     return JsonResponse(result, status=200)
+
+
+@csrf_exempt
+@require_POST
+def coach_e5_adjustment(request: HttpRequest) -> JsonResponse:
+    """
+    POST /api/coach/e5/adjustment/?provider=haiku
+
+    body (JSON): {"analysis_context": {...}, "user_command": "...", "session_id": "..."}
+    provider 옵션: haiku (기본) | sonnet | anthropic | gemini.
+
+    응답:
+      200 — {"response": E5Response, "metadata": LLMResponse.metadata_dict()}
+      400 — invalid body or invalid provider
+      429 — budget exceeded
+      500 — LLM 호출 실패
+    """
+    provider = request.GET.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return JsonResponse(
+            {
+                "error": "invalid_provider",
+                "detail": f"{provider!r} not in {list(_VALID_PROVIDERS)}",
+            },
+            status=400,
+        )
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return JsonResponse(
+            {"error": "invalid_request", "detail": f"json parse error: {exc}"},
+            status=400,
+        )
+
+    try:
+        e5_request = E5Request.model_validate(body)
+    except ValidationError as exc:
+        return JsonResponse(
+            {"error": "invalid_request", "detail": str(exc)[:500]},
+            status=400,
+        )
+
+    try:
+        result = run_e5(e5_request, provider=provider)
+    except LLMBudgetExceededError as exc:
+        return JsonResponse(
+            {"error": "budget_exceeded", "detail": str(exc)}, status=429
+        )
+    except LLMError as exc:
+        return JsonResponse(
+            {"error": "llm_invocation_failed", "detail": str(exc)[:300]},
+            status=500,
+        )
+    except ValidationError as exc:
+        # LLM 응답 schema 미일치
+        return JsonResponse(
+            {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
+            status=500,
+        )
+
+    return JsonResponse(result, status=200, json_dumps_params={"ensure_ascii": False})

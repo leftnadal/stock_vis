@@ -10,4 +10,5 @@ app_name = "portfolio"
 
 urlpatterns = [
     path("coach/e1/garp/", views.coach_e1_garp, name="coach_e1_garp"),
+    path("coach/e5/adjustment/", views.coach_e5_adjustment, name="coach_e5_adjustment"),
 ]

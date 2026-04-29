@@ -31,9 +31,15 @@ from .return_breakdown import (
     ReturnBreakdownWithTime,
     ScopeType,
 )
+from .llm import AdjustmentItem, E5Request, E5Response, LLMResponse
 from .user_profile import UserProfile
 
 __all__ = [
+    # E5 schemas (Slice 2)
+    "AdjustmentItem",
+    "E5Request",
+    "E5Response",
+    "LLMResponse",
     # holding
     "HoldingSummary",
     # metric_result
