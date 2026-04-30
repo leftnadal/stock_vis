@@ -65,7 +65,7 @@ def populated(db):
 
     xlk, _ = MarketIndex.objects.update_or_create(
         symbol='XLK',
-        defaults={'name': 'XLK', 'sector_group': 'SECTOR', 'category': 'sector'},
+        defaults={'name': 'XLK', 'sector_group': 'TECH', 'category': 'sector'},
     )
 
     RegimeSnapshot.objects.create(

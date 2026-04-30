@@ -31,9 +31,17 @@ logger = logging.getLogger(__name__)
 
 
 def _ticker_bar() -> list[dict[str, Any]]:
+    """PR-A1 (2026-04-29): GICS 11-sector + BENCHMARK로 그룹 확장.
+    BENCHMARK 먼저, 그다음 GICS 11종을 symbol 정렬로 노출.
+    """
     out = []
     today = django_timezone.localdate()
-    for grp in ('BENCHMARK', 'SECTOR'):
+    sector_groups = (
+        'BENCHMARK',
+        'FINANCIALS', 'TECH', 'HEALTHCARE', 'CONSUMER_DISC', 'CONSUMER_STAPLES',
+        'ENERGY', 'INDUSTRIALS', 'MATERIALS', 'UTILITIES', 'REAL_ESTATE', 'COMMUNICATION',
+    )
+    for grp in sector_groups:
         for idx in MarketIndex.objects.filter(sector_group=grp).order_by('symbol'):
             rows = list(
                 MarketIndexPrice.objects

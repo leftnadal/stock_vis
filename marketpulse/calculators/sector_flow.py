@@ -15,7 +15,11 @@ from marketpulse.models.snapshot import SectorFlowSnapshot
 
 logger = logging.getLogger(__name__)
 
-SECTOR_GROUP = 'SECTOR'
+# PR-A1 (2026-04-29): GICS 11-sector 확장. 기존 'SECTOR' 단일 → GICS 11종 enum.
+GICS_SECTOR_GROUPS = (
+    'FINANCIALS', 'TECH', 'HEALTHCARE', 'CONSUMER_DISC', 'CONSUMER_STAPLES',
+    'ENERGY', 'INDUSTRIALS', 'MATERIALS', 'UTILITIES', 'REAL_ESTATE', 'COMMUNICATION',
+)
 BENCHMARK_SYMBOL = 'SPY'
 
 
@@ -161,9 +165,9 @@ def calculate(target_date: date_cls | None = None) -> list[SectorFlowSnapshot]:
     bench = MarketIndex.objects.filter(symbol=BENCHMARK_SYMBOL).first()
     if bench is None:
         raise RuntimeError(f'benchmark {BENCHMARK_SYMBOL} MarketIndex not found')
-    sectors = list(MarketIndex.objects.filter(sector_group=SECTOR_GROUP).order_by('symbol'))
+    sectors = list(MarketIndex.objects.filter(sector_group__in=GICS_SECTOR_GROUPS).order_by('symbol'))
     if not sectors:
-        raise RuntimeError('SECTOR group MarketIndex empty')
+        raise RuntimeError('GICS sector MarketIndex empty')
     metrics_list = compute_sector_block(
         target_date=target_date,
         sector_indices=sectors,

@@ -158,11 +158,23 @@ class MarketIndex(models.Model):
         SECTOR = 'sector', 'Sector'
 
     class SectorGroup(models.TextChoices):
-        """Market Pulse v2 sector group taxonomy (PR-A1)."""
-        BENCHMARK = 'BENCHMARK', 'Benchmark'  # SPY, QQQ, DIA, IWM
-        SECTOR = 'SECTOR', 'Sector'  # XLK, XLF, ... (11 GICS sectors)
-        SAFE_HAVEN = 'SAFE_HAVEN', 'Safe Haven'  # GLD, SLV, TLT, UUP
-        INTERNATIONAL = 'INTERNATIONAL', 'International'  # VEA / EFA / ACWX
+        """Market Pulse v2 sector group taxonomy (PR-A1: GICS 11-sector + BENCHMARK).
+
+        2026-04-29 확장: 기존 4종(BENCHMARK/SECTOR/SAFE_HAVEN/INTERNATIONAL) →
+        12종(BENCHMARK + GICS 11). PR-C(섹터 흐름)·PR-G(섹터 분석) query 필터로 사용.
+        """
+        BENCHMARK = 'BENCHMARK', 'Benchmark'  # SPY, QQQ, DIA, IWM, VEA, TLT, GLD 등
+        FINANCIALS = 'FINANCIALS', 'Financials'  # XLF
+        TECH = 'TECH', 'Technology'  # XLK
+        HEALTHCARE = 'HEALTHCARE', 'Healthcare'  # XLV
+        CONSUMER_DISC = 'CONSUMER_DISC', 'Consumer Discretionary'  # XLY
+        CONSUMER_STAPLES = 'CONSUMER_STAPLES', 'Consumer Staples'  # XLP
+        ENERGY = 'ENERGY', 'Energy'  # XLE
+        INDUSTRIALS = 'INDUSTRIALS', 'Industrials'  # XLI
+        MATERIALS = 'MATERIALS', 'Materials'  # XLB
+        UTILITIES = 'UTILITIES', 'Utilities'  # XLU
+        REAL_ESTATE = 'REAL_ESTATE', 'Real Estate'  # XLRE
+        COMMUNICATION = 'COMMUNICATION', 'Communication Services'  # XLC
 
     symbol = models.CharField(
         max_length=20,
@@ -181,13 +193,13 @@ class MarketIndex(models.Model):
     # FMP API 심볼 (다를 수 있음)
     fmp_symbol = models.CharField(max_length=20, blank=True)
 
-    # Market Pulse v2 sector_group (PR-A1)
+    # Market Pulse v2 sector_group (PR-A1 — GICS 11-sector + BENCHMARK)
     sector_group = models.CharField(
-        max_length=20,
+        max_length=32,
         choices=SectorGroup.choices,
-        blank=True,
-        default='',
-        help_text='Market Pulse v2 그룹 (BENCHMARK/SECTOR/SAFE_HAVEN/INTERNATIONAL)',
+        default=SectorGroup.BENCHMARK,
+        db_index=True,
+        help_text='Market Pulse v2 그룹 (BENCHMARK + GICS 11-sector). PR-C/G query 필터.',
     )
 
     display_order = models.IntegerField(default=0)
