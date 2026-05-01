@@ -2,7 +2,7 @@
 Slice 2 Step 0.5 — Step 6 산출물 재처리 (LLM 호출 0).
 
 Slice 1에서 도입된 robust parser(`portfolio.llm.parsers.parse_json_response`)와
-갱신 임계($0.020)를 적용해 docs/portfolio/coach/step6_smoke_output.json의
+갱신 임계($0.020)를 적용해 docs/portfolio/coach/slice1/step6_smoke_output.json의
 judgments를 갱신.
 
 naturalness는 사용자 수동 평가를 인자로 받음. 미입력 시 기존 값 보존.
@@ -31,7 +31,7 @@ from portfolio.llm.parsers import parse_json_response
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 
 
-TARGET_PATH = Path("docs/portfolio/coach/step6_smoke_output.json")
+TARGET_PATH = Path("docs/portfolio/coach/slice1/step6_smoke_output.json")
 
 NEW_THRESHOLDS = {
     "cost_usd_max": 0.020,  # Slice 1 회고에서 갱신 ($0.001 → $0.020)

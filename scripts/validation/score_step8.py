@@ -23,8 +23,8 @@ from collections import defaultdict
 from pathlib import Path
 
 
-RAW_PATH = Path("docs/portfolio/coach/step8_3way_raw.json")
-SCORED_PATH = Path("docs/portfolio/coach/step8_3way_scored.json")
+RAW_PATH = Path("docs/portfolio/coach/slice1/step8_3way_raw.json")
+SCORED_PATH = Path("docs/portfolio/coach/slice1/step8_3way_scored.json")
 
 
 def lexicographic_filter(r: dict) -> bool:

@@ -2,7 +2,7 @@
 Slice 2 Step 0 — Gemini API 진단.
 
 30분 한도 안에서 우선순위 6개 원인을 순차 검증. 각 진단 5분 한도.
-결과를 docs/portfolio/coach/gemini_diagnosis.md에 markdown으로 기록.
+결과를 docs/portfolio/coach/slice2/gemini_diagnosis.md에 markdown으로 기록.
 
 Slice 1 종결 시점 진단 결과 (2026-04-29):
   - gemini-2.0-flash free tier limit=0 (RESOURCE_EXHAUSTED)
@@ -31,7 +31,7 @@ from scripts.validation._setup import init_django
 init_django()
 
 
-OUTPUT_PATH = Path("docs/portfolio/coach/gemini_diagnosis.md")
+OUTPUT_PATH = Path("docs/portfolio/coach/slice2/gemini_diagnosis.md")
 TIME_BUDGET_MIN = 30.0
 
 

@@ -117,48 +117,19 @@ def test_e5_view_invalid_body(django_client):
 # Step 4 — Mock LLMClient 폴백/에러 시나리오
 #
 # Slice 1 e1_garp_view 테스트와 동일한 패턴: service의 LLMClient를 patch.
-# Mock의 mode가 LLMClient의 동작 시뮬레이션 (fallback / error / budget).
+# Slice 2 Step 0.5: text_strategy="e5"로 E5Response schema JSON 응답.
 # ============================================================
 
-# ⓐ Slice 1 LLMResponse 스키마는 schema 통과 가능한 OneLineDiagnosis JSON을 반환.
-# ⓑ E5는 다른 schema(E5Response). Mock의 _MOCK_TEXT는 OneLineDiagnosis JSON이라
-#    service.parse_json_response(E5Response, ...) 호출 시 ValidationError 발생.
-# ⓒ 본 테스트는 Mock의 응답을 E5Response schema로 통과시키도록 별도 Mock 클래스 사용.
 
-
-def _e5_mock_text() -> str:
-    """E5Response schema 통과 가능한 결정론적 JSON."""
-    return (
-        '{"adjustments":[{"ticker":"TSLA","action":"decrease",'
-        '"delta_weight":-0.05,"target_weight":null,'
-        '"reason_quote":"TSLA 줄여줘"}],'
-        '"confidence":4,"ambiguity_notes":null,'
-        '"no_actionable_intent":false}'
-    )
-
-
-class _E5MockLLMClient(MockLLMClient):
-    """E5 schema에 맞는 텍스트 반환하는 Mock."""
-
-    def _mock_response(self, provider, fallback_from):  # type: ignore[override]
-        from portfolio.schemas.llm import LLMResponse
-
-        return LLMResponse(
-            text=_e5_mock_text(),
-            provider=provider,
-            model=f"mock-{provider}",
-            latency_ms=100,
-            input_tokens=500,
-            output_tokens=50,
-            cost_usd=0.001,
-            fallback_from=fallback_from,
-        )
+def _build_e5_mock(mode: str) -> MockLLMClient:
+    """E5 진입점 Mock factory — text_strategy='e5'로 고정."""
+    return MockLLMClient(mode=mode, text_strategy="e5")
 
 
 @pytest.mark.django_db
 def test_e5_view_rate_limit_first_fallback(django_client, valid_request_body):
     """Gemini RateLimit → Anthropic 폴백 → 200, fallback_from=gemini."""
-    mock = _E5MockLLMClient(mode="rate_limit_first")
+    mock = _build_e5_mock(mode="rate_limit_first")
     with patch(
         "portfolio.services.e5_adjustment_parser.LLMClient",
         return_value=mock,
@@ -177,7 +148,7 @@ def test_e5_view_rate_limit_first_fallback(django_client, valid_request_body):
 @pytest.mark.django_db
 def test_e5_view_timeout_first_fallback(django_client, valid_request_body):
     """Gemini Timeout → Anthropic 폴백 → 200."""
-    mock = _E5MockLLMClient(mode="timeout_first")
+    mock = _build_e5_mock(mode="timeout_first")
     with patch(
         "portfolio.services.e5_adjustment_parser.LLMClient",
         return_value=mock,
@@ -196,7 +167,7 @@ def test_e5_view_timeout_first_fallback(django_client, valid_request_body):
 @pytest.mark.django_db
 def test_e5_view_auth_error_no_fallback(django_client, valid_request_body):
     """AuthError는 폴백 트리거 아님 → 500."""
-    mock = _E5MockLLMClient(mode="auth_error")
+    mock = _build_e5_mock(mode="auth_error")
     with patch(
         "portfolio.services.e5_adjustment_parser.LLMClient",
         return_value=mock,
@@ -212,7 +183,7 @@ def test_e5_view_auth_error_no_fallback(django_client, valid_request_body):
 @pytest.mark.django_db
 def test_e5_view_budget_exceeded(django_client, valid_request_body):
     """비용 가드 발동 → 429."""
-    mock = _E5MockLLMClient(mode="budget_exceeded")
+    mock = _build_e5_mock(mode="budget_exceeded")
     with patch(
         "portfolio.services.e5_adjustment_parser.LLMClient",
         return_value=mock,

@@ -5,7 +5,7 @@ Slice 1 Part 2 — Step 8: 3 fixture × 3 model = 9회 실제 LLM 호출.
 score_step8 실행.
 
 산출:
-  docs/portfolio/coach/step8_3way_raw.json
+  docs/portfolio/coach/slice1/step8_3way_raw.json
 
 Usage:
     python -m scripts.validation.run_step8_3way
@@ -49,7 +49,7 @@ FIXTURES = {
     "garp_large": get_context_garp_large,
 }
 
-OUTPUT_PATH = Path("docs/portfolio/coach/step8_3way_raw.json")
+OUTPUT_PATH = Path("docs/portfolio/coach/slice1/step8_3way_raw.json")
 
 
 def _assemble_prompt(ctx) -> str:
