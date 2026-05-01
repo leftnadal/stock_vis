@@ -1,0 +1,99 @@
+{
+  "step": "step7_e5_token_measurement",
+  "executed_at": "2026-05-01T12:33:41.868511+00:00",
+  "results": [
+    {
+      "fixture": "clear_decrease",
+      "prompt_chars": 1059,
+      "input_tokens": 696,
+      "budget": 5000,
+      "utilization": 0.1392,
+      "holdings_count": 5,
+      "command_chars": 26
+    },
+    {
+      "fixture": "clear_multi",
+      "prompt_chars": 1055,
+      "input_tokens": 692,
+      "budget": 5000,
+      "utilization": 0.1384,
+      "holdings_count": 5,
+      "command_chars": 22
+    },
+    {
+      "fixture": "unclear_amount",
+      "prompt_chars": 1042,
+      "input_tokens": 679,
+      "budget": 5000,
+      "utilization": 0.1358,
+      "holdings_count": 5,
+      "command_chars": 9
+    },
+    {
+      "fixture": "no_intent_question",
+      "prompt_chars": 1046,
+      "input_tokens": 683,
+      "budget": 5000,
+      "utilization": 0.1366,
+      "holdings_count": 5,
+      "command_chars": 13
+    },
+    {
+      "fixture": "no_intent_chitchat",
+      "prompt_chars": 1053,
+      "input_tokens": 691,
+      "budget": 5000,
+      "utilization": 0.1382,
+      "holdings_count": 5,
+      "command_chars": 21
+    },
+    {
+      "fixture": "remove",
+      "prompt_chars": 1134,
+      "input_tokens": 734,
+      "budget": 5000,
+      "utilization": 0.1468,
+      "holdings_count": 15,
+      "command_chars": 11
+    },
+    {
+      "fixture": "large",
+      "prompt_chars": 1160,
+      "input_tokens": 756,
+      "budget": 5000,
+      "utilization": 0.1512,
+      "holdings_count": 15,
+      "command_chars": 37
+    }
+  ],
+  "stats": {
+    "min": 679,
+    "max": 756,
+    "mean": 704.4,
+    "p50": 692,
+    "p90": 756
+  },
+  "initial_budget": 5000,
+  "recommended_budget": 1134,
+  "budget_decision_required": false,
+  "decision_guide": {
+    "if_recommended_lower_than_initial": "budget 하향. E5 전용 budget 분리 검토.",
+    "if_recommended_higher_than_initial": "budget 상향. E1과 통합 budget 검토.",
+    "safe_zone": "max utilization 70~85% 권장 (E5는 fixture 다양성 우선이라 50%여도 OK)."
+  },
+  "i4_monitoring": {
+    "context": "Part 1 v2 I4 — analysis_summary 200자 truncate 효과 측정",
+    "recommendation_rule": "max utilization 30% 미만이면 200자→300자 상향 가능. 70% 초과면 200자→100자 압축 검토."
+  },
+  "budget_decision": {
+    "decision": "E5_TOKEN_BUDGET = 2000 (E1 5000에서 하향, E5 추출 작업 특성 반영)",
+    "recommended": 1134,
+    "rationale": "P90=756, ×1.5 안전마진 = 1134. 여유 마진 위해 2000으로 round-up. E1과 분리하여 진입점별 budget 관리.",
+    "implementation_note": "코드 상수는 Step 9 일반화 또는 Slice 3 진입 시 도입. 현재는 LLMClient.complete max_tokens가 출력 한도이고 입력 가드레일 부재."
+  },
+  "i4_decision": {
+    "max_utilization_observed": 0.1512,
+    "decision": "analysis_summary 200자 유지 (압축 불필요, 오히려 여유 있음)",
+    "rationale": "max utilization 15.12% << 30% 임계. recommendation_rule에 따라 200자 유지가 안전. 향후 300자 상향 검토 가능하나 현 시점 변경 불필요."
+  }
+}
