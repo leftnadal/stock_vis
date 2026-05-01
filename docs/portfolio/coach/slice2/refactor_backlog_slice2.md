@@ -5,7 +5,7 @@
 
 ## 발견 항목
 
-### 1. fixture `clear_decrease` holdings vs user_command 불일치
+### 1. fixture `clear_decrease` holdings vs user_command 불일치 — RESOLVED 2026-05-01
 
 - **위치**: `portfolio/tests/fixtures/sample_adjustment_context.py`
 - **현상**: user_command="TSLA 비중 좀 줄여줘"인데 holdings는 NVDA/MSFT/AAPL/GOOGL/INTC (TSLA 없음).
@@ -23,11 +23,15 @@
 
 ---
 
-## Step 8 진입 전 결정 항목
+## Step 8 진입 전 결정 항목 — RESOLVED 2026-05-01
 
-위 fixture 수정을 Step 8 전에 적용할지 결정 필요. Step 6은 이미 5점이라 영향 없으나 Step 8의 의도 매칭 평가에서 동일 noise가 7 fixture × 2 model = 14회 반복될 가능성.
+옵션 A 적용 완료. 7 fixture 전수 점검 결과 추가로 발견:
+  - `clear_decrease`/`clear_multi`/`unclear_amount` 모두 garp_tech 기반 → TSLA missing
+  - `ALL_FIXTURES` 키 `'large'` vs `COMMANDS` 키 `'large_multi'` 불일치
 
-옵션 A. Step 8 전에 fixture 수정 (5분 비용)
-옵션 B. Step 8에서 평가 시 ambiguity_notes 출력은 "정상 동작"으로 간주 (fixture 미수정)
+조치:
+  - `_wrap_garp_tech_with_tsla()` helper 도입 — 가장 작은 weight 종목을 TSLA로 치환
+  - `clear_decrease`/`clear_multi`/`unclear_amount` 3 fixture가 helper 사용
+  - `ALL_FIXTURES["large"]` → `ALL_FIXTURES["large_multi"]` 키 통일
 
-**권장: 옵션 A** — Step 8 평가 noise 차단.
+검증: 7 fixture × user_command 정합성 100% PASS, 회귀 76 passed.

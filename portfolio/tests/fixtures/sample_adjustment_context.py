@@ -71,15 +71,29 @@ def _wrap_context(ctx: AnalysisContext) -> dict[str, Any]:
     }
 
 
+def _wrap_garp_tech_with_tsla() -> dict[str, Any]:
+    """garp_tech 기반 + holdings의 가장 작은 weight 종목을 TSLA로 치환.
+
+    Step 6에서 발견된 fixture-command 정합성 이슈 해소용 (refactor_backlog_slice2.md):
+    user_command가 TSLA를 언급하므로 holdings에 TSLA가 존재해야 함.
+    garp_tech 자체는 변경하지 않고 wrap 결과만 후처리.
+    """
+    ctx_dict = _wrap_context(get_context_garp_tech())
+    least = min(ctx_dict["holdings"], key=lambda h: h["weight"])
+    least["ticker"] = "TSLA"
+    least["sector"] = "Consumer Discretionary"
+    return ctx_dict
+
+
 # ============================================================
 # fixture 함수 — 각 함수는 (analysis_context dict, user_command, expected) 반환
 # ============================================================
 
 
 def get_e5_fixture_clear_decrease() -> dict[str, Any]:
-    """단일 종목 명확 축소 명령 (Tech fixture 기반)."""
+    """단일 종목 명확 축소 명령 (Tech fixture + TSLA 보장)."""
     return {
-        "analysis_context": _wrap_context(get_context_garp_tech()),
+        "analysis_context": _wrap_garp_tech_with_tsla(),
         "user_command": COMMANDS["clear_decrease"],
         "expected": {
             "adjustments_min_count": 1,
@@ -91,9 +105,9 @@ def get_e5_fixture_clear_decrease() -> dict[str, Any]:
 
 
 def get_e5_fixture_clear_multi() -> dict[str, Any]:
-    """다중 종목 명확 명령."""
+    """다중 종목 명확 명령 (Tech fixture + TSLA 보장)."""
     return {
-        "analysis_context": _wrap_context(get_context_garp_tech()),
+        "analysis_context": _wrap_garp_tech_with_tsla(),
         "user_command": COMMANDS["clear_multi"],
         "expected": {
             "adjustments_min_count": 2,
@@ -105,9 +119,9 @@ def get_e5_fixture_clear_multi() -> dict[str, Any]:
 
 
 def get_e5_fixture_unclear_amount() -> dict[str, Any]:
-    """비중 수치 미명시 명령 — delta_weight=null 기대."""
+    """비중 수치 미명시 명령 — delta_weight=null 기대 (Tech fixture + TSLA 보장)."""
     return {
-        "analysis_context": _wrap_context(get_context_garp_tech()),
+        "analysis_context": _wrap_garp_tech_with_tsla(),
         "user_command": COMMANDS["unclear_amount"],
         "expected": {
             "adjustments_min_count": 1,
@@ -178,5 +192,5 @@ ALL_FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
     "no_intent_question": get_e5_fixture_no_intent_question,
     "no_intent_chitchat": get_e5_fixture_no_intent_chitchat,
     "remove":             get_e5_fixture_remove,
-    "large":              get_e5_fixture_large,
+    "large_multi":        get_e5_fixture_large,
 }
