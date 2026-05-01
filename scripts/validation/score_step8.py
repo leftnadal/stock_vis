@@ -1,21 +1,26 @@
 """
-Slice 1 Part 2 — Step 8 점수 산출.
+Slice 1 Part 2 — Step 8 점수 산출 (Slice 2 Step 9에서 entrypoint 일반화).
 
-Lexicographic 필터 + 효율 비교 + B fallback 산식.
-
-산식:
-  1차 필터:  schema_pass = True AND naturalness >= 3 AND insight >= 3
-  2차 efficiency:  sqrt(naturalness * insight) / sqrt(cost_usd * latency_seconds)
-  Fallback (전체 미통과):
-    0.25 * schema + 0.25 * naturalness/5 + 0.25 * insight/5
-    + 0.15 * cost_inv_norm + 0.10 * latency_inv_norm
+산식 (entrypoint별):
+  e1 (Slice 1, 글쓰기 차원):
+    1차 필터:  schema_pass=True AND naturalness>=3 AND insight>=3
+    2차 efficiency:  sqrt(naturalness * insight) / sqrt(cost_usd * latency_s)
+    Fallback: 0.25/0.25/0.25/0.15/0.10 (schema/n/i/cost_inv/lat_inv) — 동적 normalize
+  e5 (Slice 2, 추출 차원):
+    1차 필터:  schema_pass=True AND intent>=3 AND no_extra>=3
+              AND cost<=$0.020 AND latency<=5000ms
+    2차 efficiency:  sqrt(intent_match * no_extra_changes) — cost/lat은 임계로 분리
+    Fallback: 동일 가중, 정적 normalize (THRESHOLDS 기반)
+    → score_step8_e5.py로 위임 (Slice 3 진입 시 통합 가능)
 
 Usage:
-    python -m scripts.validation.score_step8
+    python -m scripts.validation.score_step8                  # default e1 (Slice 1)
+    python -m scripts.validation.score_step8 --entrypoint e5  # Slice 2 (delegate)
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import sys
@@ -23,8 +28,33 @@ from collections import defaultdict
 from pathlib import Path
 
 
-RAW_PATH = Path("docs/portfolio/coach/slice1/step8_3way_raw.json")
-SCORED_PATH = Path("docs/portfolio/coach/slice1/step8_3way_scored.json")
+# Slice 2 Step 9 일반화 — entrypoint별 메타데이터 단일 출처.
+# 새 entrypoint 추가 시 (예: e2 진단 카드) 여기 한 곳만 갱신.
+DIMENSION_LOOKUP = {
+    "e1": {
+        "dim1": {"key": "naturalness", "manual_field": "naturalness"},
+        "dim2": {"key": "insight", "manual_field": "insight"},
+        "model_label_field": "label",
+        "result_structure": "flat",  # naturalness/insight 등이 result 최상위
+        "default_raw": "docs/portfolio/coach/slice1/step8_3way_raw.json",
+        "default_scored": "docs/portfolio/coach/slice1/step8_3way_scored.json",
+        "weight": 0.5,
+    },
+    "e5": {
+        "dim1": {"key": "intent_match", "manual_field": "intent_match_manual"},
+        "dim2": {"key": "no_extra_changes", "manual_field": "no_extra_changes_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",  # judgments + metadata 분리
+        "default_raw": "docs/portfolio/coach/slice2/step8_2way_e5_raw.json",
+        "default_scored": "docs/portfolio/coach/slice2/step8_2way_e5_scored.json",
+        "weight": 0.5,
+        "delegated_to": "scripts.validation.score_step8_e5",
+    },
+}
+
+
+RAW_PATH = Path(DIMENSION_LOOKUP["e1"]["default_raw"])
+SCORED_PATH = Path(DIMENSION_LOOKUP["e1"]["default_scored"])
 
 
 def lexicographic_filter(r: dict) -> bool:
@@ -72,11 +102,30 @@ def fallback_score(r: dict, all_results: list[dict]) -> float:
 
 
 def main() -> int:
-    if not RAW_PATH.exists():
-        print(f"[ERROR] {RAW_PATH} 없음. run_step8_3way 먼저 실행.")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--entrypoint",
+        choices=list(DIMENSION_LOOKUP),
+        default="e1",
+        help="평가 진입점 (default: e1 — Slice 1 호환). e5는 score_step8_e5에 위임.",
+    )
+    args = parser.parse_args()
+
+    # e5 → score_step8_e5에 delegation (산식 차이로 인해 별도 모듈 유지)
+    if args.entrypoint == "e5":
+        from scripts.validation import score_step8_e5
+        return score_step8_e5.main()
+
+    # e1 (default) — Slice 1 산식
+    config = DIMENSION_LOOKUP["e1"]
+    raw_path = Path(config["default_raw"])
+    scored_path = Path(config["default_scored"])
+
+    if not raw_path.exists():
+        print(f"[ERROR] {raw_path} 없음. run_step8_3way 먼저 실행.")
         return 1
 
-    raw = json.loads(RAW_PATH.read_text(encoding="utf-8"))
+    raw = json.loads(raw_path.read_text(encoding="utf-8"))
     results = raw["results"]
 
     # 수동 평가 누락 검증
@@ -148,7 +197,7 @@ def main() -> int:
         winner = max(label_means.items(), key=lambda x: x[1])[0]
         print(f"\n[WINNER] {winner}")
 
-    SCORED_PATH.write_text(
+    scored_path.write_text(
         json.dumps(
             {
                 "scored_results": scored,
@@ -161,7 +210,7 @@ def main() -> int:
         ),
         encoding="utf-8",
     )
-    print(f"\n[Saved] {SCORED_PATH}")
+    print(f"\n[Saved] {scored_path}")
     return 0
 
 

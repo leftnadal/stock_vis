@@ -23,6 +23,25 @@
 
 ---
 
+## Step 9 일반화 결과 (2026-05-01)
+
+**완료 항목 (Q5.C 옵션 H — 가벼운 일반화)**:
+- `score_step8.py`에 `DIMENSION_LOOKUP` 추가 (e1/e5 메타데이터 단일 출처)
+- `--entrypoint` 인자 추가, e5는 `score_step8_e5.py`로 위임 (산식 차이)
+- Slice 1/2 회귀 모두 IDENTICAL (diff 0)
+
+**Slice 3 이연 항목**:
+| # | 항목 | PriorityScore | 추정 시간 | Why |
+|---|------|---------------|-----------|------|
+| 2 | score 산식 통합 (e1 efficiency 분모 + e5 임계 분리) | 3.0 | 60분 | 산식이 본질적으로 다름. e1 동적 normalize, e5 정적. 통합하면 코드 ~150줄 추가. |
+| 3 | PROVIDER_KWARGS services 공유 모듈 | 2.0 | 20분 | 현재 portfolio/services/e5_adjustment_parser.py에 중복. e1/e5 공통 |
+| 4 | build_e5_prompt 헬퍼 분리 | 2.0 | 15분 | _format_analysis_summary 등 진입점별 헬퍼 |
+| 5 | E5_TOKEN_BUDGET 상수 신설 + 입력 가드 | 2.0 | 30분 | Step 7 결정 #1 — 코드 상수 도입 후 LLMClient 입력 가드레일 |
+| 6 | Step 8 raw output CSV 옵션 | 1.0 | 10분 | Slice 1 deferred #7 |
+| 7 | Mock LLMClient mode dict 매핑 | 1.0 | 10분 | Slice 1 deferred #8 |
+
+---
+
 ## Step 8 진입 전 결정 항목 — RESOLVED 2026-05-01
 
 옵션 A 적용 완료. 7 fixture 전수 점검 결과 추가로 발견:

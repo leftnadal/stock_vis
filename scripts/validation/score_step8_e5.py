@@ -1,6 +1,11 @@
 """
 Slice 2 Part 2 Step 8 — E5 회고 점수 산출 (Q5.C — 신설 후 Step 9 일반화).
 
+Step 9 (Slice 2) 일반화 결과:
+  score_step8.py가 --entrypoint e5 시 본 모듈에 위임 (산식 차이로 인한 분리).
+  Slice 3 진입 시 두 산식 통합 가능성 검토 — refactor_backlog_slice2.md 참조.
+  현재는 score_step8 --entrypoint e5와 동일 동작.
+
 Slice 1 score_step8.py 패턴 mirror, 차원만 변경:
   naturalness/insight → intent_match/no_extra_changes
 
