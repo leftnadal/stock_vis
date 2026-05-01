@@ -1,0 +1,61 @@
+{
+  "step": "step6_e5_smoke",
+  "fixture": "clear_decrease",
+  "executed_at": "2026-05-01T12:31:23.936775+00:00",
+  "request": {
+    "user_command": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아.",
+    "holdings_count": 5
+  },
+  "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA 비중 좀 줄여줘. 너무 많은 것 같아.\"\n    }\n  ],\n  \"confidence\": 3,\n  \"ambiguity_notes\": \"현재 포트폴리오에 TSLA가 명시되어 있지 않아 기존 비중을 알 수 없으며, 감소 폭의 구체적인 수치가 제시되지 않았습니다.\",\n  \"no_actionable_intent\": false\n}\n```",
+  "parsed": {
+    "adjustments": [
+      {
+        "ticker": "TSLA",
+        "action": "decrease",
+        "delta_weight": null,
+        "target_weight": null,
+        "reason_quote": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+      }
+    ],
+    "confidence": 3,
+    "ambiguity_notes": "현재 포트폴리오에 TSLA가 명시되어 있지 않아 기존 비중을 알 수 없으며, 감소 폭의 구체적인 수치가 제시되지 않았습니다.",
+    "no_actionable_intent": false
+  },
+  "metadata": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "latency_ms": 1774,
+    "input_tokens": 696,
+    "output_tokens": 198,
+    "cost_usd": 0.0013487999999999998,
+    "fallback_from": null
+  },
+  "judgments": {
+    "schema_pass": true,
+    "schema_error": null,
+    "cost_pass": true,
+    "latency_pass": true,
+    "intent_match_manual": 5,
+    "manual_eval_note": "TSLA + decrease 정확히 파싱. delta_weight/target_weight null도 사용자 명령에 수치 없으므로 적절. fixture clear_decrease가 holdings(NVDA,MSFT,AAPL,GOOGL,INTC)에 TSLA를 포함하지 않아 LLM이 ambiguity_notes에 정확히 지적함 — 의도 매칭과는 별개의 fixture 설계 이슈. refactor_backlog_slice2.md에 기록."
+  },
+  "thresholds": {
+    "cost_usd_max": 0.02,
+    "latency_ms_max": 5000
+  },
+  "evaluation_guide": {
+    "intent_match": {
+      "5": "TSLA + decrease 모두 정확. 다른 종목/액션 추가 없음.",
+      "4": "TSLA + decrease OK. 사소한 부수 변경(예: target_weight null 누락 등).",
+      "3": "TSLA decrease는 있으나 추가 임의 변경 1~2개.",
+      "2": "TSLA decrease 부분 매칭. 또는 임의 변경 3+개.",
+      "1": "TSLA 또는 decrease 누락."
+    }
+  },
+  "status_summary": {
+    "schema_pass": true,
+    "cost_pass": true,
+    "latency_pass": true,
+    "manual_eval_required": "intent_match_manual",
+    "intent_match_manual": 5
+  }
+}
