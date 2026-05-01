@@ -33,7 +33,7 @@ def find_pair(
                 category=cat, published_at__gte=cutoff,
             )
             if rule.rule_id == 'R09' and ctx.sector_extreme_symbol:
-                preferred = qs.filter(matched_symbols__contains=[ctx.sector_extreme_symbol])
+                preferred = qs.filter(entities__tickers__contains=ctx.sector_extreme_symbol)
                 hit = preferred.order_by('-published_at').first()
                 if hit:
                     return hit

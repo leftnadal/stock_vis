@@ -206,8 +206,9 @@ def _brief_detail():
         'model_version': log.model_version,
         'status': log.status,
         'headline': log.headline,
-        'content': log.content,
-        'inputs_summary': log.inputs_summary,
+        'body': log.body,
+        'body_sections': log.body_sections or [],
+        'prompt_inputs': log.prompt_inputs,
         'tokens': {
             'prompt': log.prompt_tokens,
             'completion': log.completion_tokens,

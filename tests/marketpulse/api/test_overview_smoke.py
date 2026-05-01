@@ -97,7 +97,7 @@ def populated(db):
     BriefingLog.objects.create(
         date=today, model_version='gemini-2.5-flash',
         status=BriefingLog.Status.OK,
-        headline='headline', content='content ' * 30,
+        headline='headline', body='content ' * 30,
     )
     MarketPulseNews.objects.create(
         category=MarketPulseNews.Category.MACRO,

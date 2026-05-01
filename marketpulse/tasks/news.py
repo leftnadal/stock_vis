@@ -62,8 +62,11 @@ def mp_fetch_news_hourly(self, **kwargs: Any) -> dict[str, Any]:
                     'url': item.url[:1024],
                     'image_url': (item.image_url or '')[:1024],
                     'publisher': (item.publisher or '')[:200],
-                    'matched_symbols': result.matched_symbols,
-                    'matched_keywords': result.matched_keywords,
+                    'entities': {
+                        'tickers': result.matched_symbols,
+                        'sectors': [],
+                        'topics': result.matched_keywords,
+                    },
                     'published_at': item.published_at,
                 },
             )

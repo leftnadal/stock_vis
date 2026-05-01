@@ -69,7 +69,7 @@ def _news_items(limit: int = 6):
             'id': n.pk, 'category': n.category, 'title': n.title,
             'summary': n.summary, 'url': n.url, 'publisher': n.publisher,
             'image_url': n.image_url, 'published_at': n.published_at,
-            'matched_symbols': n.matched_symbols or [],
+            'tickers': (n.entities or {}).get('tickers', []),
         }
         for n in qs
     ]
@@ -189,7 +189,7 @@ def _brief_card():
         return None
     return {
         'headline': log.headline,
-        'content_preview': (log.content or '')[:240],
+        'content_preview': (log.body or '')[:240],
         'status': log.status,
         'model_version': log.model_version,
     }

@@ -29,7 +29,7 @@ class NewsItemSerializer(serializers.Serializer):
     publisher = serializers.CharField(allow_blank=True)
     image_url = serializers.URLField(allow_blank=True, required=False)
     published_at = serializers.DateTimeField()
-    matched_symbols = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+    tickers = serializers.ListField(child=serializers.CharField(), allow_empty=True)
 
 
 class AnomalyItemSerializer(serializers.Serializer):

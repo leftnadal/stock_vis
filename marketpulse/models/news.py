@@ -41,16 +41,17 @@ class MarketPulseNews(models.Model):
     # PR-A2 §3.2: Phase 2 LLM 한국어 번역 (현재는 빈 문자열)
     summary_ko = models.TextField(blank=True, default='')
 
-    matched_symbols = models.JSONField(default=list, blank=True)
-    matched_keywords = models.JSONField(default=list, blank=True)
+    # PR-A2 §3.2: 엔티티 통합 필드 (matched_symbols/matched_keywords 대체)
+    # 구조: {"tickers": [...], "sectors": [...], "topics": [...]}
+    entities = models.JSONField(default=dict, blank=True)
 
     # PR-A2 §3.2: 분류·점수 메타 (PR-B fetcher가 채움. Phase 1은 default)
     category_confidence = models.FloatField(default=0.0, help_text='분류 신뢰도 0.0~1.0')
     relevance_score = models.FloatField(default=0.0, help_text='관련도 0.0~1.0')
     sentiment_score = models.FloatField(null=True, blank=True, help_text='-1.0~1.0 (null=미분석)')
 
-    is_exposed = models.BooleanField(default=False, db_index=True)
-    first_exposed_at = models.DateTimeField(null=True, blank=True)
+    shown_on_layer0 = models.BooleanField(default=False, db_index=True)
+    shown_at = models.DateTimeField(null=True, blank=True)
     # PR-A2 §3.2: anomaly 신호와 페어링 여부 (PR-D 페어러가 토글)
     paired_with_anomaly = models.BooleanField(default=False)
 
@@ -67,7 +68,7 @@ class MarketPulseNews(models.Model):
         verbose_name_plural = 'Market Pulse News'
         ordering = ['-published_at']
         indexes = [
-            models.Index(fields=['published_at', 'is_exposed'], name='mp_news_ttl_idx'),
+            models.Index(fields=['published_at', 'shown_on_layer0'], name='mp_news_ttl_idx'),
             models.Index(fields=['category', '-published_at'], name='mp_news_cat_pub_idx'),
         ]
 
@@ -76,11 +77,11 @@ class MarketPulseNews(models.Model):
 
     def mark_exposed(self) -> None:
         """노출 시점 마킹 + D5 TTL 정책에 따라 expires_at NULL(영구)로 전환."""
-        if not self.is_exposed:
-            self.is_exposed = True
-            self.first_exposed_at = timezone.now()
+        if not self.shown_on_layer0:
+            self.shown_on_layer0 = True
+            self.shown_at = timezone.now()
             self.expires_at = None  # PR-A2 §3.2 D5: shown_on_layer0=True 시점 영구 보존
-            self.save(update_fields=['is_exposed', 'first_exposed_at', 'expires_at', 'updated_at'])
+            self.save(update_fields=['shown_on_layer0', 'shown_at', 'expires_at', 'updated_at'])
 
 
 class NewsViewLog(models.Model):

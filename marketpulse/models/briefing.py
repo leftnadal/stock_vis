@@ -15,9 +15,10 @@ class BriefingLog(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OK)
 
     headline = models.CharField(max_length=300, blank=True, default='')
-    content = models.TextField(blank=True, default='')
+    body = models.TextField(blank=True, default='')
+    body_sections = models.JSONField(default=list, blank=True)
 
-    inputs_summary = models.JSONField(default=dict, blank=True)
+    prompt_inputs = models.JSONField(default=dict, blank=True)
 
     prompt_tokens = models.PositiveIntegerField(default=0)
     completion_tokens = models.PositiveIntegerField(default=0)
