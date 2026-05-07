@@ -1,0 +1,832 @@
+{
+  "step": "step8_2way_e6_raw",
+  "executed_at": "2026-05-07T06:04:29.739605+00:00",
+  "matrix_size": {
+    "fixtures": 7,
+    "models": 2,
+    "total_calls": 14
+  },
+  "providers": [
+    {
+      "label": "haiku",
+      "model": "claude-haiku-4-5"
+    },
+    {
+      "label": "sonnet",
+      "model": "claude-sonnet-4-5"
+    }
+  ],
+  "fixture_groups": {
+    "e5_baseline": [
+      "e5_baseline_decrease",
+      "e5_baseline_multi",
+      "e5_baseline_remove"
+    ],
+    "e6_focused": [
+      "e6_focused_weight_rebalance",
+      "e6_focused_add_defensive",
+      "e6_focused_remove_underperformer",
+      "e6_focused_multi_aspect"
+    ]
+  },
+  "results": [
+    {
+      "fixture": "e5_baseline_decrease",
+      "fixture_id": "e5_baseline_decrease",
+      "fixture_group": "e5_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"고변동성 테슬라 축소로 포트폴리오 안정성 강화\",\n  \"before_summary\": \"빅테크 5개 종목 집중 보유 구조로, NVDA와 MSFT 중심의 AI·클라우드 노출이 강합니다. 다만 TSLA의 10% 비중이 전체 변동성을 상당히 높이고 있으며, 원본 요약에서도 지적된 변동성 우려 요소입니다.\",\n  \"after_summary\": \"TSLA 비중을 5%로 축소하면 상대적으로 변동성이 높은 개별 종목의 영향력이 완화됩니다. 나머지 4개 종목(NVDA, MSFT, AAPL, GOOGL)의 비중이 상승하면서 대형 우량주 중심의 포트폴리오 성격이 더욱 강화될 것으로 예상됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"TSLA 10%에서 5%로 축소되면서, 감소분이 다른 종목들의 상대 비중 상승을 유도합니다. 특히 NVDA와 MSFT 같은 대형 성장주의 영향력이 상대적으로 커질 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"TSLA는 개별 뉴스와 시장 심리에 민감한 종목으로, 비중 축소 자체가 포트폴리오 변동성 완화에 직결됩니다. 일일 등락폭 크기가 전체 포트폴리오에 미치는 영향이 약 절반으로 줄어들 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"여전히 5개 종목 집중 보유 구조이지만, 상대적으로 변동성이 낮은 AAPL·GOOGL의 비중이 늘어나면서 포트폴리오 내 안정성 구성이 개선될 가능성이 있습니다.\"\n    }\n  ],\n  \"risk_assessment\": \"조정의 직접적 효과는 포트폴리오 변동성 감소입니다. TSLA 축소로 인한 낙폭 회복력 약화 가능성도 있지만, 전체적으로는 극단적 변동에 대한 버팀목이 강해질 것으로 예상됩니다. 빅테크 종목들이 여전히 80~85%를 차지하므로 기술주 사이클 리스크는 여전합니다.\",\n  \"closing_remarks\": \"사용자의 우려인 TSLA 과다 노출 완화는 합리적 조정으로 보입니다. 다만 축소분을 특정 종목에 집중 배분할지, 균등 재분배할지에 따라 포트폴리오 성격이 달라질 수 있으므로, 추가 의도 확인 후 실행하시길 권장합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "고변동성 테슬라 축소로 포트폴리오 안정성 강화",
+        "before_summary": "빅테크 5개 종목 집중 보유 구조로, NVDA와 MSFT 중심의 AI·클라우드 노출이 강합니다. 다만 TSLA의 10% 비중이 전체 변동성을 상당히 높이고 있으며, 원본 요약에서도 지적된 변동성 우려 요소입니다.",
+        "after_summary": "TSLA 비중을 5%로 축소하면 상대적으로 변동성이 높은 개별 종목의 영향력이 완화됩니다. 나머지 4개 종목(NVDA, MSFT, AAPL, GOOGL)의 비중이 상승하면서 대형 우량주 중심의 포트폴리오 성격이 더욱 강화될 것으로 예상됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "TSLA 10%에서 5%로 축소되면서, 감소분이 다른 종목들의 상대 비중 상승을 유도합니다. 특히 NVDA와 MSFT 같은 대형 성장주의 영향력이 상대적으로 커질 것으로 예상됩니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "TSLA는 개별 뉴스와 시장 심리에 민감한 종목으로, 비중 축소 자체가 포트폴리오 변동성 완화에 직결됩니다. 일일 등락폭 크기가 전체 포트폴리오에 미치는 영향이 약 절반으로 줄어들 것으로 예상됩니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "여전히 5개 종목 집중 보유 구조이지만, 상대적으로 변동성이 낮은 AAPL·GOOGL의 비중이 늘어나면서 포트폴리오 내 안정성 구성이 개선될 가능성이 있습니다."
+          }
+        ],
+        "risk_assessment": "조정의 직접적 효과는 포트폴리오 변동성 감소입니다. TSLA 축소로 인한 낙폭 회복력 약화 가능성도 있지만, 전체적으로는 극단적 변동에 대한 버팀목이 강해질 것으로 예상됩니다. 빅테크 종목들이 여전히 80~85%를 차지하므로 기술주 사이클 리스크는 여전합니다.",
+        "closing_remarks": "사용자의 우려인 TSLA 과다 노출 완화는 합리적 조정으로 보입니다. 다만 축소분을 특정 종목에 집중 배분할지, 균등 재분배할지에 따라 포트폴리오 성격이 달라질 수 있으므로, 추가 의도 확인 후 실행하시길 권장합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 8754,
+        "input_tokens": 725,
+        "output_tokens": 967,
+        "cost_usd": 0.004448,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 4,
+        "auto_eval_reason": "naturalness=5 (cond_kw=3); insight=4 (kc=3, distinct_aspects=3)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 5,
+        "adjustments_count": 1,
+        "user_intent": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+      }
+    },
+    {
+      "fixture": "e5_baseline_decrease",
+      "fixture_id": "e5_baseline_decrease",
+      "fixture_group": "e5_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"TSLA 5%p 축소로 변동성 노출 완화, 기존 빅테크 4종목 중심 구조 강화\",\n  \"before_summary\": \"NVDA 30%를 필두로 MSFT, AAPL, GOOGL, TSLA 5종목에 분산된 빅테크 중심 포트폴리오입니다. TSLA가 10% 비중으로 포함되어 있어 전기차 섹터 노출과 함께 상대적으로 높은 변동성 요인을 내포하고 있으며, 전반적으로 성장주 성향이 강한 구성입니다.\",\n  \"after_summary\": \"TSLA 비중을 5%로 줄이면서 전기차 섹터 노출이 축소되고, NVDA·MSFT·AAPL·GOOGL 등 상대적으로 안정적인 빅테크 4종목의 상대적 비중이 높아지는 구조로 전환됩니다. 전체적으로 변동성 민감도가 낮아지고 AI·클라우드·소비자 IT 중심의 집중도가 더욱 강화될 것으로 예상됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"TSLA 비중이 10%에서 5%로 축소되며, 축소된 5%p는 다른 종목으로 재배분되거나 현금화됩니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"TSLA의 높은 베타와 변동성이 줄어들면서 포트폴리오 전체의 단기 변동성 노출이 완화될 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"전기차 섹터 비중 축소로 섹터 다양성은 다소 약화되지만, 빅테크 4종목 중심의 응집력은 강화됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"TSLA 축소로 단기 변동성과 뉴스 민감도는 낮아지지만, 여전히 NVDA 30% 단일 종목 집중과 빅테크 섹터 편중이라는 구조적 리스크는 유지됩니다. 전기차 업종 상승 시 기회비용이 발생할 수 있습니다.\",\n  \"closing_remarks\": \"변동성 우려를 줄이려는 방향성은 합리적이나, 축소된 5%p를 어디에 재배분할지에 따라 포트폴리오 성격이 달라질 수 있으므로 후속 배분 계획을 함께 고려하시는 것이 좋습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "TSLA 5%p 축소로 변동성 노출 완화, 기존 빅테크 4종목 중심 구조 강화",
+        "before_summary": "NVDA 30%를 필두로 MSFT, AAPL, GOOGL, TSLA 5종목에 분산된 빅테크 중심 포트폴리오입니다. TSLA가 10% 비중으로 포함되어 있어 전기차 섹터 노출과 함께 상대적으로 높은 변동성 요인을 내포하고 있으며, 전반적으로 성장주 성향이 강한 구성입니다.",
+        "after_summary": "TSLA 비중을 5%로 줄이면서 전기차 섹터 노출이 축소되고, NVDA·MSFT·AAPL·GOOGL 등 상대적으로 안정적인 빅테크 4종목의 상대적 비중이 높아지는 구조로 전환됩니다. 전체적으로 변동성 민감도가 낮아지고 AI·클라우드·소비자 IT 중심의 집중도가 더욱 강화될 것으로 예상됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "TSLA 비중이 10%에서 5%로 축소되며, 축소된 5%p는 다른 종목으로 재배분되거나 현금화됩니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "TSLA의 높은 베타와 변동성이 줄어들면서 포트폴리오 전체의 단기 변동성 노출이 완화될 것으로 예상됩니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "전기차 섹터 비중 축소로 섹터 다양성은 다소 약화되지만, 빅테크 4종목 중심의 응집력은 강화됩니다."
+          }
+        ],
+        "risk_assessment": "TSLA 축소로 단기 변동성과 뉴스 민감도는 낮아지지만, 여전히 NVDA 30% 단일 종목 집중과 빅테크 섹터 편중이라는 구조적 리스크는 유지됩니다. 전기차 업종 상승 시 기회비용이 발생할 수 있습니다.",
+        "closing_remarks": "변동성 우려를 줄이려는 방향성은 합리적이나, 축소된 5%p를 어디에 재배분할지에 따라 포트폴리오 성격이 달라질 수 있으므로 후속 배분 계획을 함께 고려하시는 것이 좋습니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 19659,
+        "input_tokens": 725,
+        "output_tokens": 859,
+        "cost_usd": 0.015059999999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 4,
+        "auto_eval_reason": "naturalness=5 (cond_kw=3); insight=4 (kc=3, distinct_aspects=3)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 5,
+        "adjustments_count": 1,
+        "user_intent": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+      }
+    },
+    {
+      "fixture": "e5_baseline_multi",
+      "fixture_id": "e5_baseline_multi",
+      "fixture_group": "e5_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"NVDA 강화로 AI 칩 쏠림 심화, TSLA 축소로 변동성 완화\",\n  \"before_summary\": \"빅테크 5종목 중심의 집중 포트폴리오로, NVDA와 MSFT의 AI 업종 쏠림이 이미 두드러집니다. TSLA의 10% 비중은 자동차·에너지 섹터 대표이지만, 개별주 변동성이 높아 포트폴리오 리스크를 증가시키는 요인으로 작용 중입니다.\",\n  \"after_summary\": \"NVDA 35%로 확대되면서 AI·반도체 섹터 의존도가 더욱 높아집니다. TSLA 5%로 축소되어 개별주 변동성 영향은 줄어들지만, 대신 포트폴리오의 섹터 다각화는 약화됩니다. 여전히 빅테크 중심 구조는 유지됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"NVDA 쏠림 심화로 상위 2종목(NVDA+MSFT)이 차지하는 비중이 60% 초과로 상승하여 집중도 증가\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"TSLA 축소로 단일 종목의 고변동성 영향은 감소하나, NVDA 편중으로 인한 AI 사이클 변동성 위험이 상대적으로 부각될 수 있음\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"반도체·AI 업종 가중도가 높아지는 반면, 자동차 섹터 노출이 축소되어 업종 분산도가 낮아집니다\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"NVDA는 현재 시장의 고성장 기대가 큰 종목이므로 수익률 상승 잠재력이 있으나, 동시에 밸류에이션 리스크 집중도 높아집니다\"\n    }\n  ],\n  \"risk_assessment\": \"TSLA 축소는 개별 종목 변동성 노출을 낮추는 긍정적 신호이지만, NVDA 강화는 반도체·AI 섹터 시스템 리스크에 대한 포트폴리오 민감도를 높입니다. 빅테크 시장 조정 시 전체 포트폴리오 낙폭이 확대될 가능성을 고려해야 합니다.\",\n  \"closing_remarks\": \"조정은 개별 변동성 완화를 추구하면서도 성장 주도주 비중을 높이는 트레이드오프를 반영합니다. 다만 포트폴리오 집중도는 심화되므로, 추가 분산(다른 섹터 또는 채권 등)을 병행한 재검토를 권장합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "NVDA 강화로 AI 칩 쏠림 심화, TSLA 축소로 변동성 완화",
+        "before_summary": "빅테크 5종목 중심의 집중 포트폴리오로, NVDA와 MSFT의 AI 업종 쏠림이 이미 두드러집니다. TSLA의 10% 비중은 자동차·에너지 섹터 대표이지만, 개별주 변동성이 높아 포트폴리오 리스크를 증가시키는 요인으로 작용 중입니다.",
+        "after_summary": "NVDA 35%로 확대되면서 AI·반도체 섹터 의존도가 더욱 높아집니다. TSLA 5%로 축소되어 개별주 변동성 영향은 줄어들지만, 대신 포트폴리오의 섹터 다각화는 약화됩니다. 여전히 빅테크 중심 구조는 유지됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "NVDA 쏠림 심화로 상위 2종목(NVDA+MSFT)이 차지하는 비중이 60% 초과로 상승하여 집중도 증가"
+          },
+          {
+            "aspect": "risk",
+            "description": "TSLA 축소로 단일 종목의 고변동성 영향은 감소하나, NVDA 편중으로 인한 AI 사이클 변동성 위험이 상대적으로 부각될 수 있음"
+          },
+          {
+            "aspect": "diversification",
+            "description": "반도체·AI 업종 가중도가 높아지는 반면, 자동차 섹터 노출이 축소되어 업종 분산도가 낮아집니다"
+          },
+          {
+            "aspect": "expected_return",
+            "description": "NVDA는 현재 시장의 고성장 기대가 큰 종목이므로 수익률 상승 잠재력이 있으나, 동시에 밸류에이션 리스크 집중도 높아집니다"
+          }
+        ],
+        "risk_assessment": "TSLA 축소는 개별 종목 변동성 노출을 낮추는 긍정적 신호이지만, NVDA 강화는 반도체·AI 섹터 시스템 리스크에 대한 포트폴리오 민감도를 높입니다. 빅테크 시장 조정 시 전체 포트폴리오 낙폭이 확대될 가능성을 고려해야 합니다.",
+        "closing_remarks": "조정은 개별 변동성 완화를 추구하면서도 성장 주도주 비중을 높이는 트레이드오프를 반영합니다. 다만 포트폴리오 집중도는 심화되므로, 추가 분산(다른 섹터 또는 채권 등)을 병행한 재검토를 권장합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 8564,
+        "input_tokens": 741,
+        "output_tokens": 931,
+        "cost_usd": 0.0043168,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=0); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 5,
+        "adjustments_count": 2,
+        "user_intent": "TSLA는 줄이고 NVDA는 좀 늘려줘."
+      }
+    },
+    {
+      "fixture": "e5_baseline_multi",
+      "fixture_id": "e5_baseline_multi",
+      "fixture_group": "e5_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"변동성 높은 TSLA 축소하고 AI 반도체 대장주 NVDA 집중도 강화\",\n  \"before_summary\": \"NVDA·MSFT·AAPL 중심의 빅테크 포트폴리오로, 상위 3개 종목이 75%를 차지합니다. TSLA 10% 보유로 일부 변동성이 존재하며, 전반적으로 대형 기술주 중심의 성장주 구성입니다. GARP 적합도는 보통 수준이며, TSLA의 변동성이 우려 요소로 지적되었습니다.\",\n  \"after_summary\": \"NVDA가 35%로 최대 비중이 되며 AI 반도체 섹터 집중도가 더욱 높아집니다. TSLA는 5%로 축소되어 변동성 노출이 완화될 것으로 예상됩니다. 여전히 빅테크 중심 구조이지만, NVDA 단일 종목 의존도가 심화되고 MSFT·AAPL과의 비중 격차가 더 벌어지는 구조로 변화합니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"NVDA가 포트폴리오 내 최대 비중으로 부상하며 단일 종목 집중도가 30%에서 35%로 증가합니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"TSLA 축소로 높은 변동성 요소가 줄어들지만, NVDA 집중으로 반도체 섹터 의존도가 높아져 새로운 집중 위험이 발생합니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"상위 1개 종목 비중이 커지면서 분산 효과가 약화되고, 전기차에서 AI 반도체로 테마 집중이 이동합니다.\"\n    }\n  ],\n  \"risk_assessment\": \"TSLA의 높은 변동성 노출은 감소하지만, NVDA 35% 집중으로 반도체 업황과 AI 테마에 대한 의존도가 심화됩니다. 단일 종목 리스크가 증가하여 NVDA의 실적 변화나 밸류에이션 조정 시 포트폴리오 전체 변동성이 커질 수 있습니다.\",\n  \"closing_remarks\": \"변동성 관리 측면에서는 개선이 예상되나, 섹터 및 단일 종목 집중도 상승으로 새로운 리스크 구조가 형성됩니다. NVDA의 중장기 전망에 대한 확신이 전제되어야 하는 조정입니다.\"\n}\n```",
+      "parsed": {
+        "headline": "변동성 높은 TSLA 축소하고 AI 반도체 대장주 NVDA 집중도 강화",
+        "before_summary": "NVDA·MSFT·AAPL 중심의 빅테크 포트폴리오로, 상위 3개 종목이 75%를 차지합니다. TSLA 10% 보유로 일부 변동성이 존재하며, 전반적으로 대형 기술주 중심의 성장주 구성입니다. GARP 적합도는 보통 수준이며, TSLA의 변동성이 우려 요소로 지적되었습니다.",
+        "after_summary": "NVDA가 35%로 최대 비중이 되며 AI 반도체 섹터 집중도가 더욱 높아집니다. TSLA는 5%로 축소되어 변동성 노출이 완화될 것으로 예상됩니다. 여전히 빅테크 중심 구조이지만, NVDA 단일 종목 의존도가 심화되고 MSFT·AAPL과의 비중 격차가 더 벌어지는 구조로 변화합니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "NVDA가 포트폴리오 내 최대 비중으로 부상하며 단일 종목 집중도가 30%에서 35%로 증가합니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "TSLA 축소로 높은 변동성 요소가 줄어들지만, NVDA 집중으로 반도체 섹터 의존도가 높아져 새로운 집중 위험이 발생합니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "상위 1개 종목 비중이 커지면서 분산 효과가 약화되고, 전기차에서 AI 반도체로 테마 집중이 이동합니다."
+          }
+        ],
+        "risk_assessment": "TSLA의 높은 변동성 노출은 감소하지만, NVDA 35% 집중으로 반도체 업황과 AI 테마에 대한 의존도가 심화됩니다. 단일 종목 리스크가 증가하여 NVDA의 실적 변화나 밸류에이션 조정 시 포트폴리오 전체 변동성이 커질 수 있습니다.",
+        "closing_remarks": "변동성 관리 측면에서는 개선이 예상되나, 섹터 및 단일 종목 집중도 상승으로 새로운 리스크 구조가 형성됩니다. NVDA의 중장기 전망에 대한 확신이 전제되어야 하는 조정입니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 17660,
+        "input_tokens": 741,
+        "output_tokens": 865,
+        "cost_usd": 0.015198,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 4,
+        "auto_eval_reason": "naturalness=5 (cond_kw=4); insight=4 (kc=3, distinct_aspects=3)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 5,
+        "adjustments_count": 2,
+        "user_intent": "TSLA는 줄이고 NVDA는 좀 늘려줘."
+      }
+    },
+    {
+      "fixture": "e5_baseline_remove",
+      "fixture_id": "e5_baseline_remove",
+      "fixture_group": "e5_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"PLTR 제외로 고변동성 리스크 경감, 기술주 집중도 미소 완화\",\n  \"before_summary\": \"대형 기술주와 성장주 중심의 공격적 포트폴리오. MSFT, AAPL 등 메가캡이 기반을 이루고, TSLA, PLTR 같은 고변동성 주식이 약 11%를 차지하며 포트폴리오 변동성을 높이는 구조. GARP 적합도는 보통 수준.\",\n  \"after_summary\": \"고변동성 성장주 중 PLTR을 제거하여 변동성 노출을 줄인 포트폴리오. 여전히 기술·소비 성장주 중심이지만 극단적 변동성 집중이 완화됨. 남은 TSLA 외에는 상대적으로 안정적 대형주 비중이 높아짐.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"PLTR 제외로 고변동성 포지션이 축소되어, 포트폴리오 전체의 예상 변동성(변동성)이 소폭 낮아질 것으로 예상됨. 심한 일중 변동에서 벗어날 수 있는 기회.\"\n    },\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"6% 비중의 PLTR 제거로 기존 기술주 집중도가 미세하게 완화되나, 나머지 14개 종목의 기술·성장주 비중은 여전히 상당함.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"15종목에서 14종목으로 감소하여 다각화 효과가 극히 미미하게 감소하지만, 제거한 PLTR의 높은 변동성을 고려하면 질적 다각화 개선 가능.\"\n    }\n  ],\n  \"risk_assessment\": \"PLTR은 개별 기업 뉴스 반응성이 큰 변동성 주식으로 알려져 있으며, 이를 제거하면 포트폴리오의 예상 드로다운(낙폭) 시나리오가 완화될 여지가 있음. 다만 TSLA(5%)가 여전히 남아있어 고변동성 노출이 완전히 제거되지는 않으며, 나머지 대부분이 기술주인 점은 시장 섹터 변동에 여전히 민감할 수 있음.\",\n  \"closing_remarks\": \"PLTR 제외는 포트폴리오의 '극단적' 변동성을 다소 줄이려는 의도로 보임. 장기 수익성보다 단기 변동성 완화를 우선하는 조정이므로, 남은 종목들의 장기 성장성 신뢰도와 현재 시장 환경에 맞는지 재검토 권장.\"\n}\n```",
+      "parsed": {
+        "headline": "PLTR 제외로 고변동성 리스크 경감, 기술주 집중도 미소 완화",
+        "before_summary": "대형 기술주와 성장주 중심의 공격적 포트폴리오. MSFT, AAPL 등 메가캡이 기반을 이루고, TSLA, PLTR 같은 고변동성 주식이 약 11%를 차지하며 포트폴리오 변동성을 높이는 구조. GARP 적합도는 보통 수준.",
+        "after_summary": "고변동성 성장주 중 PLTR을 제거하여 변동성 노출을 줄인 포트폴리오. 여전히 기술·소비 성장주 중심이지만 극단적 변동성 집중이 완화됨. 남은 TSLA 외에는 상대적으로 안정적 대형주 비중이 높아짐.",
+        "key_changes": [
+          {
+            "aspect": "risk",
+            "description": "PLTR 제외로 고변동성 포지션이 축소되어, 포트폴리오 전체의 예상 변동성(변동성)이 소폭 낮아질 것으로 예상됨. 심한 일중 변동에서 벗어날 수 있는 기회."
+          },
+          {
+            "aspect": "allocation",
+            "description": "6% 비중의 PLTR 제거로 기존 기술주 집중도가 미세하게 완화되나, 나머지 14개 종목의 기술·성장주 비중은 여전히 상당함."
+          },
+          {
+            "aspect": "diversification",
+            "description": "15종목에서 14종목으로 감소하여 다각화 효과가 극히 미미하게 감소하지만, 제거한 PLTR의 높은 변동성을 고려하면 질적 다각화 개선 가능."
+          }
+        ],
+        "risk_assessment": "PLTR은 개별 기업 뉴스 반응성이 큰 변동성 주식으로 알려져 있으며, 이를 제거하면 포트폴리오의 예상 드로다운(낙폭) 시나리오가 완화될 여지가 있음. 다만 TSLA(5%)가 여전히 남아있어 고변동성 노출이 완전히 제거되지는 않으며, 나머지 대부분이 기술주인 점은 시장 섹터 변동에 여전히 민감할 수 있음.",
+        "closing_remarks": "PLTR 제외는 포트폴리오의 '극단적' 변동성을 다소 줄이려는 의도로 보임. 장기 수익성보다 단기 변동성 완화를 우선하는 조정이므로, 남은 종목들의 장기 성장성 신뢰도와 현재 시장 환경에 맞는지 재검토 권장."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 8981,
+        "input_tokens": 762,
+        "output_tokens": 915,
+        "cost_usd": 0.0042696,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 4,
+        "auto_eval_reason": "naturalness=4 (cond_kw=1); insight=4 (kc=3, distinct_aspects=3)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 15,
+        "adjustments_count": 1,
+        "user_intent": "PLTR은 빼버릴게."
+      }
+    },
+    {
+      "fixture": "e5_baseline_remove",
+      "fixture_id": "e5_baseline_remove",
+      "fixture_group": "e5_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"PLTR 제외로 고변동성 자산 축소, 15개→14개 종목 집중형 포트폴리오로 전환\",\n  \"before_summary\": \"15개 빅테크·성장주 중심 포트폴리오로 MSFT, AAPL, NVDA 등 대형주와 PLTR, TSLA 같은 고변동성 종목을 혼합 보유. PLTR 6% 비중은 데이터 분석·정부계약 섹터 노출을 제공했으나 밸류에이션 논란과 실적 변동성이 리스크 요소로 지적됨. 전체적으로 GARP(적정가 성장주) 성향이지만 일부 종목에서 변동성 우려 존재.\",\n  \"after_summary\": \"14개 종목으로 재편되며 PLTR이 차지하던 6% 비중이 다른 보유 종목으로 재배분될 예정. 데이터 인프라 섹터 노출은 줄어들지만, 상대적으로 안정적인 MSFT·GOOGL·V·MA 등의 비중 확대 가능성이 높아 포트폴리오 전체 변동성은 완화될 것으로 예상. TSLA 단일 고변동 종목 리스크는 남아 있으나, PLTR 제외로 투기적 포지션 감소 효과.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"PLTR 6% 비중 제외로 잔여 14개 종목에 재배분되며, 빅테크 코어(MSFT/GOOGL/AAPL) 중심 구조가 강화될 가능성.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"고변동성·밸류에이션 논란 종목 제거로 단기 변동성 완화 기대, 다만 TSLA 리스크는 여전히 잔존.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"데이터 분석·정부계약 섹터 익스포저 소멸로 산업 다각화 측면에서는 축소되나, 종목 수 감소로 집중도는 상승.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"PLTR의 고성장 잠재력 포기 대신, 안정적 실적 종목 비중 확대로 위험조정 수익률 개선 가능성.\"\n    }\n  ],\n  \"risk_assessment\": \"PLTR 제외는 단기 주가 변동성과 실적 불확실성을 줄이는 효과가 있으나, 고성장 베팅 기회를 포기하는 트레이드오프 존재. TSLA 5% 단일 고변동 종목이 남아 있어 포트폴리오 전체 리스크는 '중→중하' 수준으로 소폭 완화 예상.\",\n  \"closing_remarks\": \"변동성 관리를 우선하는 조정으로, GARP 적합도가 개선되고 안정성이 높아질 것으로 보입니다. 재배분 비중을 어디에 집중하느냐에 따라 최종 성격이 결정되므로, 코어 대형주 vs 성장주 밸런스를 고려해 보세요.\"\n}\n```",
+      "parsed": {
+        "headline": "PLTR 제외로 고변동성 자산 축소, 15개→14개 종목 집중형 포트폴리오로 전환",
+        "before_summary": "15개 빅테크·성장주 중심 포트폴리오로 MSFT, AAPL, NVDA 등 대형주와 PLTR, TSLA 같은 고변동성 종목을 혼합 보유. PLTR 6% 비중은 데이터 분석·정부계약 섹터 노출을 제공했으나 밸류에이션 논란과 실적 변동성이 리스크 요소로 지적됨. 전체적으로 GARP(적정가 성장주) 성향이지만 일부 종목에서 변동성 우려 존재.",
+        "after_summary": "14개 종목으로 재편되며 PLTR이 차지하던 6% 비중이 다른 보유 종목으로 재배분될 예정. 데이터 인프라 섹터 노출은 줄어들지만, 상대적으로 안정적인 MSFT·GOOGL·V·MA 등의 비중 확대 가능성이 높아 포트폴리오 전체 변동성은 완화될 것으로 예상. TSLA 단일 고변동 종목 리스크는 남아 있으나, PLTR 제외로 투기적 포지션 감소 효과.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "PLTR 6% 비중 제외로 잔여 14개 종목에 재배분되며, 빅테크 코어(MSFT/GOOGL/AAPL) 중심 구조가 강화될 가능성."
+          },
+          {
+            "aspect": "risk",
+            "description": "고변동성·밸류에이션 논란 종목 제거로 단기 변동성 완화 기대, 다만 TSLA 리스크는 여전히 잔존."
+          },
+          {
+            "aspect": "diversification",
+            "description": "데이터 분석·정부계약 섹터 익스포저 소멸로 산업 다각화 측면에서는 축소되나, 종목 수 감소로 집중도는 상승."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "PLTR의 고성장 잠재력 포기 대신, 안정적 실적 종목 비중 확대로 위험조정 수익률 개선 가능성."
+          }
+        ],
+        "risk_assessment": "PLTR 제외는 단기 주가 변동성과 실적 불확실성을 줄이는 효과가 있으나, 고성장 베팅 기회를 포기하는 트레이드오프 존재. TSLA 5% 단일 고변동 종목이 남아 있어 포트폴리오 전체 리스크는 '중→중하' 수준으로 소폭 완화 예상.",
+        "closing_remarks": "변동성 관리를 우선하는 조정으로, GARP 적합도가 개선되고 안정성이 높아질 것으로 보입니다. 재배분 비중을 어디에 집중하느냐에 따라 최종 성격이 결정되므로, 코어 대형주 vs 성장주 밸런스를 고려해 보세요."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 24561,
+        "input_tokens": 762,
+        "output_tokens": 1044,
+        "cost_usd": 0.017946,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=5 (cond_kw=3); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": null,
+        "holdings_count": 15,
+        "adjustments_count": 1,
+        "user_intent": "PLTR은 빼버릴게."
+      }
+    },
+    {
+      "fixture": "e6_focused_weight_rebalance",
+      "fixture_id": "e6_focused_weight_rebalance",
+      "fixture_group": "e6_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"구글 강화·애플 축소로 검색·광고 비중 확대, 빅테크 쏠림 심화\",\n  \"before_summary\": \"마이크로소프트·구글·애플이 각각 40%·30%·30%로 균등하게 분산된 GARP 포트폴리오. 세 거대 기술주의 안정성을 추구하되, 상대적으로 모멘텀이 부족하고 개별 기업 간 차별성이 제한적인 구조입니다.\",\n  \"after_summary\": \"구글 비중을 40%로 확대하고 애플을 20%로 축소하여, 검색·광고·클라우드 사업 비중을 강화한 포트폴리오. 마이크로소프트(40%)와 구글(40%)이 쌍축을 이루며, 애플의 하드웨어 생태계 의존도는 낮아집니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"애플의 10% 비중 감소분이 구글로 전량 이동하여, 검색·광고·AI 역량이 강한 구글의 포트폴리오 영향력이 뚜렷하게 증대됩니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"구글의 클라우드·AI 성장성과 광고 사업 안정성이 더 큰 비중으로 반영되며, 애플의 단말기 의존 수익성 기여는 상대적으로 축소됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"마이크로소프트와 구글이 각각 40%씩 차지하면서 포트폴리오 쏠림이 심화되고, 세 기업의 균등 분산 특성이 약해집니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"구글의 광고 사이클 리스크와 규제 불확실성이 더 큰 비중으로 노출되며, 애플 감소로 소비자 기기 수요 리스크는 경감됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"조정 후 포트폴리오는 검색·광고·클라우드 섹터에 더욱 집중되어 경기 둔화 시 광고 시장 위축의 영향을 더 크게 받을 수 있습니다. 한편 애플의 아이폰 수급 리스크는 완화되고, 마이크로소프트·구글의 엔터프라이즈 AI 수혜 비중이 상대적으로 높아져 성장성과 변동성의 트레이드오프를 재조정하는 셈입니다.\",\n  \"closing_remarks\": \"구글 강화 조정은 검색과 AI의 미래 성장성에 베팅하는 방향이며, 결과적으로 빅테크 내에서의 '선택적 집중'을 의미합니다. 진정한 분산을 원한다면 다른 섹터 진출을 병행하는 방안도 고려해 볼 만합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "구글 강화·애플 축소로 검색·광고 비중 확대, 빅테크 쏠림 심화",
+        "before_summary": "마이크로소프트·구글·애플이 각각 40%·30%·30%로 균등하게 분산된 GARP 포트폴리오. 세 거대 기술주의 안정성을 추구하되, 상대적으로 모멘텀이 부족하고 개별 기업 간 차별성이 제한적인 구조입니다.",
+        "after_summary": "구글 비중을 40%로 확대하고 애플을 20%로 축소하여, 검색·광고·클라우드 사업 비중을 강화한 포트폴리오. 마이크로소프트(40%)와 구글(40%)이 쌍축을 이루며, 애플의 하드웨어 생태계 의존도는 낮아집니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "애플의 10% 비중 감소분이 구글로 전량 이동하여, 검색·광고·AI 역량이 강한 구글의 포트폴리오 영향력이 뚜렷하게 증대됩니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "구글의 클라우드·AI 성장성과 광고 사업 안정성이 더 큰 비중으로 반영되며, 애플의 단말기 의존 수익성 기여는 상대적으로 축소됩니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "마이크로소프트와 구글이 각각 40%씩 차지하면서 포트폴리오 쏠림이 심화되고, 세 기업의 균등 분산 특성이 약해집니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "구글의 광고 사이클 리스크와 규제 불확실성이 더 큰 비중으로 노출되며, 애플 감소로 소비자 기기 수요 리스크는 경감됩니다."
+          }
+        ],
+        "risk_assessment": "조정 후 포트폴리오는 검색·광고·클라우드 섹터에 더욱 집중되어 경기 둔화 시 광고 시장 위축의 영향을 더 크게 받을 수 있습니다. 한편 애플의 아이폰 수급 리스크는 완화되고, 마이크로소프트·구글의 엔터프라이즈 AI 수혜 비중이 상대적으로 높아져 성장성과 변동성의 트레이드오프를 재조정하는 셈입니다.",
+        "closing_remarks": "구글 강화 조정은 검색과 AI의 미래 성장성에 베팅하는 방향이며, 결과적으로 빅테크 내에서의 '선택적 집중'을 의미합니다. 진정한 분산을 원한다면 다른 섹터 진출을 병행하는 방안도 고려해 볼 만합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 8904,
+        "input_tokens": 745,
+        "output_tokens": 986,
+        "cost_usd": 0.00454,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=1); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 3,
+        "adjustments_count": 2,
+        "user_intent": "애플 줄이고 구글 늘려"
+      }
+    },
+    {
+      "fixture": "e6_focused_weight_rebalance",
+      "fixture_id": "e6_focused_weight_rebalance",
+      "fixture_group": "e6_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"애플 축소·구글 확대로 MSFT-GOOGL 투톱 체제 강화, 클라우드·AI 편중 심화\",\n  \"before_summary\": \"MSFT 40%, GOOGL 30%, AAPL 30%로 구성된 빅테크 3사 분산 포트폴리오입니다. GARP 철학에 따라 성장성과 밸류에이션 균형을 추구하며, 클라우드(MSFT·GOOGL), 검색(GOOGL), 하드웨어+서비스(AAPL) 영역에 고르게 노출되어 있습니다. 세 종목 간 비중 차이가 10%p 내외로 상대적으로 균등하게 분산된 구조입니다.\",\n  \"after_summary\": \"MSFT 40%, GOOGL 40%, AAPL 20%로 재편되며 MSFT와 GOOGL이 각각 40%씩 차지하는 투톱 구조로 전환됩니다. 클라우드·AI·검색 영역 비중이 80%로 높아지고, 하드웨어 중심인 AAPL은 20%로 축소되어 소프트웨어·플랫폼 중심 성격이 강화됩니다. GARP 프리셋 내에서 고성장 클라우드 기업 선호도가 뚜렷해지는 구조입니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"GOOGL이 MSFT와 동일한 40% 비중을 확보하며 양대 축으로 자리잡고, AAPL은 30%에서 20%로 10%p 축소되어 위성 종목 성격으로 전환됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"하드웨어 매출 의존도가 높은 AAPL 비중 축소로 사업 모델 다각화 효과가 약화되고, 클라우드·AI·광고 플랫폼 중심 집중도가 높아집니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"GOOGL의 클라우드 성장 가속과 AI 투자 효과가 부각될 경우 상승 모멘텀 기대감이 높아지나, AAPL의 안정적 현금흐름 비중 축소로 방어력은 다소 줄어듭니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"세 종목에서 두 종목 중심으로 재편되며 특정 기업 리스크(규제·실적 변동) 노출도가 증가하고, 경기 방어적 소비재 성격이 약화됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"MSFT-GOOGL 합산 비중이 80%로 높아지며 두 종목의 동조화 리스크가 커집니다. 클라우드 업황 둔화나 빅테크 규제 강화 시 포트폴리오 전체 변동성이 확대될 가능성이 있으며, AAPL의 상대적 안정성 기여도가 줄어듭니다.\",\n  \"closing_remarks\": \"클라우드·AI 중심 성장 스토리에 집중하려는 의도가 명확해지지만, 분산 효과는 약화됩니다. GARP 관점에서 GOOGL의 밸류에이션 매력과 성장성을 높게 평가하는 판단이 반영된 조정입니다.\"\n}\n```",
+      "parsed": {
+        "headline": "애플 축소·구글 확대로 MSFT-GOOGL 투톱 체제 강화, 클라우드·AI 편중 심화",
+        "before_summary": "MSFT 40%, GOOGL 30%, AAPL 30%로 구성된 빅테크 3사 분산 포트폴리오입니다. GARP 철학에 따라 성장성과 밸류에이션 균형을 추구하며, 클라우드(MSFT·GOOGL), 검색(GOOGL), 하드웨어+서비스(AAPL) 영역에 고르게 노출되어 있습니다. 세 종목 간 비중 차이가 10%p 내외로 상대적으로 균등하게 분산된 구조입니다.",
+        "after_summary": "MSFT 40%, GOOGL 40%, AAPL 20%로 재편되며 MSFT와 GOOGL이 각각 40%씩 차지하는 투톱 구조로 전환됩니다. 클라우드·AI·검색 영역 비중이 80%로 높아지고, 하드웨어 중심인 AAPL은 20%로 축소되어 소프트웨어·플랫폼 중심 성격이 강화됩니다. GARP 프리셋 내에서 고성장 클라우드 기업 선호도가 뚜렷해지는 구조입니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "GOOGL이 MSFT와 동일한 40% 비중을 확보하며 양대 축으로 자리잡고, AAPL은 30%에서 20%로 10%p 축소되어 위성 종목 성격으로 전환됩니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "하드웨어 매출 의존도가 높은 AAPL 비중 축소로 사업 모델 다각화 효과가 약화되고, 클라우드·AI·광고 플랫폼 중심 집중도가 높아집니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "GOOGL의 클라우드 성장 가속과 AI 투자 효과가 부각될 경우 상승 모멘텀 기대감이 높아지나, AAPL의 안정적 현금흐름 비중 축소로 방어력은 다소 줄어듭니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "세 종목에서 두 종목 중심으로 재편되며 특정 기업 리스크(규제·실적 변동) 노출도가 증가하고, 경기 방어적 소비재 성격이 약화됩니다."
+          }
+        ],
+        "risk_assessment": "MSFT-GOOGL 합산 비중이 80%로 높아지며 두 종목의 동조화 리스크가 커집니다. 클라우드 업황 둔화나 빅테크 규제 강화 시 포트폴리오 전체 변동성이 확대될 가능성이 있으며, AAPL의 상대적 안정성 기여도가 줄어듭니다.",
+        "closing_remarks": "클라우드·AI 중심 성장 스토리에 집중하려는 의도가 명확해지지만, 분산 효과는 약화됩니다. GARP 관점에서 GOOGL의 밸류에이션 매력과 성장성을 높게 평가하는 판단이 반영된 조정입니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 22106,
+        "input_tokens": 745,
+        "output_tokens": 1110,
+        "cost_usd": 0.018885000000000002,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=1); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 3,
+        "adjustments_count": 2,
+        "user_intent": "애플 줄이고 구글 늘려"
+      }
+    },
+    {
+      "fixture": "e6_focused_add_defensive",
+      "fixture_id": "e6_focused_add_defensive",
+      "fixture_group": "e6_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"기술주 중심에서 균형잡힌 포트폴리오로 전환 — 디펜시브 자산 20% 추가\",\n  \"before_summary\": \"TSLA, NVDA, AMD 3개 기술주로 100% 구성된 고집중 포트폴리오입니다. 단일 섹터 노출로 인해 기술주 사이클 변화에 매우 민감하며, 경기 둔화나 금리 상승 시 동반 하락 위험이 큽니다. 성장성은 높으나 변동성과 무계획적 하락 리스크가 상당합니다.\",\n  \"after_summary\": \"기술주 비중을 70%로 축소하고, 헬스케어(JNJ 15%), 생활필수재(PG 5%)를 신규 진입시킨 다섹터 포트폴리오로 변모합니다. 디펜시브 자산 20% 추가로 경기 변동성에 대한 버팀목 역할이 기대되며, 전체적으로 변동성 완화와 포트폴리오 탄력성 개선을 지향합니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"기술주 3종 비중을 100%에서 70%로 20%포인트 단계적 축소하며, 동일 비중으로 헬스케어·생활필수재 등 경기방어주 2개 종목을 신규 편입합니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"단일 섹터 집중 포트폴리오에서 3개 섹터로 다각화됨에 따라 특정 산업 악재의 영향 범위가 축소될 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"기술주 사이클 민감도는 완화되지만, 여전히 기술주 비중이 70%로 우위를 차지해 성장주 특성이 지배적이므로 위험이 중도적 수준으로 조정되는 형태입니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"디펜시브 자산 편입으로 변동성은 낮아질 것으로 예상되나, 기술주 고성장 익스포저 축소는 순수익률 상승 기회비용으로 작용할 가능성이 있습니다.\"\n    }\n  ],\n  \"risk_assessment\": \"조정 후 포트폴리오의 하방 방어력이 개선될 것으로 예상됩니다. JNJ와 PG는 경기 둔화 시에도 비교적 안정적인 실적을 유지하는 특성이 있어, 기술주 부진 시 낙폭을 제한하는 쿠션 역할이 기대됩니다. 다만 기술주 70% 비중은 여전히 상당하므로 완전한 위험 중화는 아닙니다.\",\n  \"closing_remarks\": \"사용자의 조정 의도는 고성장성과 안정성의 균형을 추구하는 GARP 전략과 부합하는 방향입니다. 기술주 축소 대신 품질 디펜시브 자산으로 대체하는 구조는 포트폴리오 회복력 강화에 합리적이나, 개인의 투자 기간, 수익률 목표, 리스크 허용도에 따라 비중 조정의 적절성은 재검토가 필요합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "기술주 중심에서 균형잡힌 포트폴리오로 전환 — 디펜시브 자산 20% 추가",
+        "before_summary": "TSLA, NVDA, AMD 3개 기술주로 100% 구성된 고집중 포트폴리오입니다. 단일 섹터 노출로 인해 기술주 사이클 변화에 매우 민감하며, 경기 둔화나 금리 상승 시 동반 하락 위험이 큽니다. 성장성은 높으나 변동성과 무계획적 하락 리스크가 상당합니다.",
+        "after_summary": "기술주 비중을 70%로 축소하고, 헬스케어(JNJ 15%), 생활필수재(PG 5%)를 신규 진입시킨 다섹터 포트폴리오로 변모합니다. 디펜시브 자산 20% 추가로 경기 변동성에 대한 버팀목 역할이 기대되며, 전체적으로 변동성 완화와 포트폴리오 탄력성 개선을 지향합니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "기술주 3종 비중을 100%에서 70%로 20%포인트 단계적 축소하며, 동일 비중으로 헬스케어·생활필수재 등 경기방어주 2개 종목을 신규 편입합니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "단일 섹터 집중 포트폴리오에서 3개 섹터로 다각화됨에 따라 특정 산업 악재의 영향 범위가 축소될 것으로 예상됩니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "기술주 사이클 민감도는 완화되지만, 여전히 기술주 비중이 70%로 우위를 차지해 성장주 특성이 지배적이므로 위험이 중도적 수준으로 조정되는 형태입니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "디펜시브 자산 편입으로 변동성은 낮아질 것으로 예상되나, 기술주 고성장 익스포저 축소는 순수익률 상승 기회비용으로 작용할 가능성이 있습니다."
+          }
+        ],
+        "risk_assessment": "조정 후 포트폴리오의 하방 방어력이 개선될 것으로 예상됩니다. JNJ와 PG는 경기 둔화 시에도 비교적 안정적인 실적을 유지하는 특성이 있어, 기술주 부진 시 낙폭을 제한하는 쿠션 역할이 기대됩니다. 다만 기술주 70% 비중은 여전히 상당하므로 완전한 위험 중화는 아닙니다.",
+        "closing_remarks": "사용자의 조정 의도는 고성장성과 안정성의 균형을 추구하는 GARP 전략과 부합하는 방향입니다. 기술주 축소 대신 품질 디펜시브 자산으로 대체하는 구조는 포트폴리오 회복력 강화에 합리적이나, 개인의 투자 기간, 수익률 목표, 리스크 허용도에 따라 비중 조정의 적절성은 재검토가 필요합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 10051,
+        "input_tokens": 791,
+        "output_tokens": 1111,
+        "cost_usd": 0.0050768,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=5 (cond_kw=2); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 3,
+        "adjustments_count": 4,
+        "user_intent": "기술주 비중 좀 줄이고 디펜시브 추가해줘"
+      }
+    },
+    {
+      "fixture": "e6_focused_add_defensive",
+      "fixture_id": "e6_focused_add_defensive",
+      "fixture_group": "e6_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"기술주 집중 포트폴리오에서 디펜시브 혼합형으로 전환\",\n  \"before_summary\": \"TSLA, NVDA, AMD 세 종목으로 구성된 100% 기술주 포트폴리오입니다. 반도체·전기차 섹터에 집중되어 있어 성장 잠재력은 높지만 기술주 시장 변동성에 전면 노출되어 있습니다. 단일 섹터 집중으로 인한 비체계적 위험이 매우 높은 구조입니다.\",\n  \"after_summary\": \"기술주 비중을 80%로 축소하고 헬스케어(JNJ 15%)와 필수소비재(PG 5%) 20%를 추가한 혼합 포트폴리오가 됩니다. 여전히 기술주가 주도하지만 경기방어주가 일부 완충 역할을 할 수 있는 구조로, GARP 프리셋에 부합하는 성장·안정 균형을 일부 확보하게 됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"TSLA와 NVDA에서 각 10%p씩 총 20%를 축소해 JNJ(15%)와 PG(5%) 디펜시브 종목에 재배치합니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"단일 섹터(기술)에서 3개 섹터(기술·헬스케어·필수소비재)로 분산되어 섹터 리스크가 완화됩니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"변동성이 낮은 우량 디펜시브주 추가로 포트폴리오 전체 변동성이 일부 감소할 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"고성장주 비중 축소로 상승 탄력은 다소 줄어들 수 있으나, 하방 안정성이 개선되어 위험조정수익률은 개선될 가능성이 있습니다.\"\n    }\n  ],\n  \"risk_assessment\": \"기술주 80% 유지로 여전히 높은 리스크 수준이지만, JNJ·PG 같은 저변동성 종목 편입으로 급락장에서 일부 방어 효과를 기대할 수 있습니다. 다만 디펜시브 비중이 20%에 그쳐 시장 충격 시 제한적 완충만 가능합니다.\",\n  \"closing_remarks\": \"기술주 중심 구조는 유지하되 경기방어 자산을 소량 추가해 GARP 철학에 가까워진 조정입니다. 추가 분산을 원한다면 디펜시브 비중을 점진적으로 늘리는 방안도 고려해볼 수 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "기술주 집중 포트폴리오에서 디펜시브 혼합형으로 전환",
+        "before_summary": "TSLA, NVDA, AMD 세 종목으로 구성된 100% 기술주 포트폴리오입니다. 반도체·전기차 섹터에 집중되어 있어 성장 잠재력은 높지만 기술주 시장 변동성에 전면 노출되어 있습니다. 단일 섹터 집중으로 인한 비체계적 위험이 매우 높은 구조입니다.",
+        "after_summary": "기술주 비중을 80%로 축소하고 헬스케어(JNJ 15%)와 필수소비재(PG 5%) 20%를 추가한 혼합 포트폴리오가 됩니다. 여전히 기술주가 주도하지만 경기방어주가 일부 완충 역할을 할 수 있는 구조로, GARP 프리셋에 부합하는 성장·안정 균형을 일부 확보하게 됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "TSLA와 NVDA에서 각 10%p씩 총 20%를 축소해 JNJ(15%)와 PG(5%) 디펜시브 종목에 재배치합니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "단일 섹터(기술)에서 3개 섹터(기술·헬스케어·필수소비재)로 분산되어 섹터 리스크가 완화됩니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "변동성이 낮은 우량 디펜시브주 추가로 포트폴리오 전체 변동성이 일부 감소할 것으로 예상됩니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "고성장주 비중 축소로 상승 탄력은 다소 줄어들 수 있으나, 하방 안정성이 개선되어 위험조정수익률은 개선될 가능성이 있습니다."
+          }
+        ],
+        "risk_assessment": "기술주 80% 유지로 여전히 높은 리스크 수준이지만, JNJ·PG 같은 저변동성 종목 편입으로 급락장에서 일부 방어 효과를 기대할 수 있습니다. 다만 디펜시브 비중이 20%에 그쳐 시장 충격 시 제한적 완충만 가능합니다.",
+        "closing_remarks": "기술주 중심 구조는 유지하되 경기방어 자산을 소량 추가해 GARP 철학에 가까워진 조정입니다. 추가 분산을 원한다면 디펜시브 비중을 점진적으로 늘리는 방안도 고려해볼 수 있습니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 18641,
+        "input_tokens": 791,
+        "output_tokens": 930,
+        "cost_usd": 0.016323,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=1); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 3,
+        "adjustments_count": 4,
+        "user_intent": "기술주 비중 좀 줄이고 디펜시브 추가해줘"
+      }
+    },
+    {
+      "fixture": "e6_focused_remove_underperformer",
+      "fixture_id": "e6_focused_remove_underperformer",
+      "fixture_group": "e6_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"약세 종목 제외하고 대형 성장주 2개 집중 — 공격성 강화 포트폴리오로 전환\",\n  \"before_summary\": \"마이크로소프트, 아마존, 메타, 페이팔을 각각 25%씩 균등 분산한 GARP 포트폴리오입니다. 네 개 기업의 균형잡힌 배치로 개별 종목 위험을 분산했으나, 최근 약세를 보이는 페이팔의 비중이 전체 수익성을 제약하는 구조입니다.\",\n  \"after_summary\": \"페이팔을 완전 제외하고 마이크로소프트(35%)와 아마존(40%)에 75%를 집중 배치하며, 메타(25%)와 함께 3개 종목 구성으로 개편됩니다. 빅테크 중 성장성과 실적 모멘텀이 강한 기업들로 포트폴리오의 공격성을 높이는 방향입니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"포트폴리오를 4종에서 3종으로 축소하고, 상위 2개 종목(MSFT+AMZN)에 전체 자금의 75%를 집중 배치하여 핵심 종목 중심의 구조로 재편합니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"종목 수 감소와 상위 2개 종목 비중 확대로 포트폴리오 다각화 효과가 약화되며, 특정 기업들의 실적 변동에 더욱 민감해질 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"약세 종목 제외로 포트폴리오 수익성 악화 요인은 제거되나, 아마존과 마이크로소프트 중심으로의 쏠림이 커져 개별 종목 부진 시 전체 영향력이 더 커질 가능성이 있습니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"마이크로소프트와 아마존의 AI, 클라우드 등 고성장 분야 노출 강화로 수익성 개선 가능성이 있으나, 메타 비중 감소는 디지털 광고 부문 노출을 줄입니다.\"\n    }\n  ],\n  \"risk_assessment\": \"종목 집중도 상승으로 포트폴리오 변동성이 커질 것으로 예상됩니다. 다만 페이팔 같은 약세 종목을 제거함으로써 드래그 요인은 제거됩니다. 아마존과 마이크로소프트라는 대형주 두 개에 대한 의존도가 높아지므로, 두 종목의 동시 부진 시 포트폴리오 전체 영향이 상대적으로 크다는 점을 고려할 필요가 있습니다.\",\n  \"closing_remarks\": \"최근 부진 종목 정리 후 고성장성 기업으로의 재집중 전략입니다. GARP 투자 원칙 내에서 더 공격적인 포지셀 취하는 조정이나, 동시에 분산효과는 감소합니다. 아마존과 마이크로소프트의 향후 실적과 시장 환경을 면밀히 모니터링할 필요가 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "약세 종목 제외하고 대형 성장주 2개 집중 — 공격성 강화 포트폴리오로 전환",
+        "before_summary": "마이크로소프트, 아마존, 메타, 페이팔을 각각 25%씩 균등 분산한 GARP 포트폴리오입니다. 네 개 기업의 균형잡힌 배치로 개별 종목 위험을 분산했으나, 최근 약세를 보이는 페이팔의 비중이 전체 수익성을 제약하는 구조입니다.",
+        "after_summary": "페이팔을 완전 제외하고 마이크로소프트(35%)와 아마존(40%)에 75%를 집중 배치하며, 메타(25%)와 함께 3개 종목 구성으로 개편됩니다. 빅테크 중 성장성과 실적 모멘텀이 강한 기업들로 포트폴리오의 공격성을 높이는 방향입니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "포트폴리오를 4종에서 3종으로 축소하고, 상위 2개 종목(MSFT+AMZN)에 전체 자금의 75%를 집중 배치하여 핵심 종목 중심의 구조로 재편합니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "종목 수 감소와 상위 2개 종목 비중 확대로 포트폴리오 다각화 효과가 약화되며, 특정 기업들의 실적 변동에 더욱 민감해질 것으로 예상됩니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "약세 종목 제외로 포트폴리오 수익성 악화 요인은 제거되나, 아마존과 마이크로소프트 중심으로의 쏠림이 커져 개별 종목 부진 시 전체 영향력이 더 커질 가능성이 있습니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "마이크로소프트와 아마존의 AI, 클라우드 등 고성장 분야 노출 강화로 수익성 개선 가능성이 있으나, 메타 비중 감소는 디지털 광고 부문 노출을 줄입니다."
+          }
+        ],
+        "risk_assessment": "종목 집중도 상승으로 포트폴리오 변동성이 커질 것으로 예상됩니다. 다만 페이팔 같은 약세 종목을 제거함으로써 드래그 요인은 제거됩니다. 아마존과 마이크로소프트라는 대형주 두 개에 대한 의존도가 높아지므로, 두 종목의 동시 부진 시 포트폴리오 전체 영향이 상대적으로 크다는 점을 고려할 필요가 있습니다.",
+        "closing_remarks": "최근 부진 종목 정리 후 고성장성 기업으로의 재집중 전략입니다. GARP 투자 원칙 내에서 더 공격적인 포지셀 취하는 조정이나, 동시에 분산효과는 감소합니다. 아마존과 마이크로소프트의 향후 실적과 시장 환경을 면밀히 모니터링할 필요가 있습니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 10656,
+        "input_tokens": 767,
+        "output_tokens": 1102,
+        "cost_usd": 0.005021599999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=5 (cond_kw=3); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 4,
+        "adjustments_count": 3,
+        "user_intent": "페이팔 빼고 마이크로소프트랑 아마존 늘려"
+      }
+    },
+    {
+      "fixture": "e6_focused_remove_underperformer",
+      "fixture_id": "e6_focused_remove_underperformer",
+      "fixture_group": "e6_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"결제 기술주 제외, 클라우드·AI·이커머스 빅테크 2종목 집중 강화\",\n  \"before_summary\": \"GARP 전략에 따라 MSFT, AMZN, META, PYPL 4개 종목을 25%씩 균등 배분한 구조입니다. 클라우드, 소셜미디어, 이커머스, 핀테크 결제 등 빅테크 성장 영역을 고르게 담았으나, PYPL의 최근 약세가 전체 수익률에 부담으로 작용했을 가능성이 있습니다.\",\n  \"after_summary\": \"PYPL을 제외하고 MSFT 35%, AMZN 40%, META 25% 3개 종목으로 재편됩니다. AMZN이 최대 비중을 차지하며 이커머스·클라우드(AWS) 성장에 집중하고, MSFT는 클라우드·AI 테마 강화로 두 번째 축을 형성합니다. META는 기존 비중을 유지하며 소셜·메타버스 영역을 보완하는 구조입니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"4종목 균등 분산에서 AMZN·MSFT 중심 3종목 체제로 전환되며, 상위 2종목이 전체의 75%를 차지하는 집중 구조로 변경됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"핀테크 결제 섹터(PYPL)가 제외되면서 업종 다각화는 축소되고, 클라우드·AI 중심 빅테크 플랫폼 의존도가 높아집니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"종목 수 감소와 상위 집중도 증가로 개별 종목 변동성에 대한 민감도가 커지며, 특히 AMZN·MSFT 실적 변화가 포트폴리오 전체에 미치는 영향이 확대됩니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"약세였던 PYPL 제외로 단기적 하방 압력은 줄어들 수 있으나, AMZN·MSFT의 성장성과 밸류에이션에 대한 의존도가 높아져 수익 변동폭도 커질 것으로 예상됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"종목 수가 4개에서 3개로 줄고 상위 2종목 집중도가 75%로 높아지면서 분산 효과는 약화됩니다. AMZN과 MSFT 모두 거시경제, 금리, 빅테크 규제 등 공통 리스크 팩터에 노출되어 있어 동반 조정 시 포트폴리오 전체 변동성이 커질 수 있습니다.\",\n  \"closing_remarks\": \"핀테크 결제를 정리하고 클라우드·AI 플랫폼 빅테크로 집중하는 선택입니다. 성장 확신이 높은 영역에 베팅을 강화하는 만큼, 해당 섹터 모멘텀과 밸류에이션 변화를 주의 깊게 모니터링할 필요가 있습니다.\"\n}\n```",
+      "parsed": {
+        "headline": "결제 기술주 제외, 클라우드·AI·이커머스 빅테크 2종목 집중 강화",
+        "before_summary": "GARP 전략에 따라 MSFT, AMZN, META, PYPL 4개 종목을 25%씩 균등 배분한 구조입니다. 클라우드, 소셜미디어, 이커머스, 핀테크 결제 등 빅테크 성장 영역을 고르게 담았으나, PYPL의 최근 약세가 전체 수익률에 부담으로 작용했을 가능성이 있습니다.",
+        "after_summary": "PYPL을 제외하고 MSFT 35%, AMZN 40%, META 25% 3개 종목으로 재편됩니다. AMZN이 최대 비중을 차지하며 이커머스·클라우드(AWS) 성장에 집중하고, MSFT는 클라우드·AI 테마 강화로 두 번째 축을 형성합니다. META는 기존 비중을 유지하며 소셜·메타버스 영역을 보완하는 구조입니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "4종목 균등 분산에서 AMZN·MSFT 중심 3종목 체제로 전환되며, 상위 2종목이 전체의 75%를 차지하는 집중 구조로 변경됩니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "핀테크 결제 섹터(PYPL)가 제외되면서 업종 다각화는 축소되고, 클라우드·AI 중심 빅테크 플랫폼 의존도가 높아집니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "종목 수 감소와 상위 집중도 증가로 개별 종목 변동성에 대한 민감도가 커지며, 특히 AMZN·MSFT 실적 변화가 포트폴리오 전체에 미치는 영향이 확대됩니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "약세였던 PYPL 제외로 단기적 하방 압력은 줄어들 수 있으나, AMZN·MSFT의 성장성과 밸류에이션에 대한 의존도가 높아져 수익 변동폭도 커질 것으로 예상됩니다."
+          }
+        ],
+        "risk_assessment": "종목 수가 4개에서 3개로 줄고 상위 2종목 집중도가 75%로 높아지면서 분산 효과는 약화됩니다. AMZN과 MSFT 모두 거시경제, 금리, 빅테크 규제 등 공통 리스크 팩터에 노출되어 있어 동반 조정 시 포트폴리오 전체 변동성이 커질 수 있습니다.",
+        "closing_remarks": "핀테크 결제를 정리하고 클라우드·AI 플랫폼 빅테크로 집중하는 선택입니다. 성장 확신이 높은 영역에 베팅을 강화하는 만큼, 해당 섹터 모멘텀과 밸류에이션 변화를 주의 깊게 모니터링할 필요가 있습니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 21773,
+        "input_tokens": 767,
+        "output_tokens": 1066,
+        "cost_usd": 0.018291,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=1); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 4,
+        "adjustments_count": 3,
+        "user_intent": "페이팔 빼고 마이크로소프트랑 아마존 늘려"
+      }
+    },
+    {
+      "fixture": "e6_focused_multi_aspect",
+      "fixture_id": "e6_focused_multi_aspect",
+      "fixture_group": "e6_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"headline\": \"빅테크 집중도 완화, 가치주와 금융주 분산 추가로 구조적 재편\",\n  \"before_summary\": \"5개 대형 기술주(TSLA, NVDA, MSFT, GOOGL, AAPL)를 동일 비중 20%씩 보유한 순수 성장주 포트폴리오입니다. 높은 기술 섹터 집중도와 강한 성장성이 특징이나, 동일 산업 내 상관도가 높아 분산 효과가 제한적입니다.\",\n  \"after_summary\": \"기술주 비중을 단계적으로 축소(TSLA 제외, NVDA 감소)하고 MSFT 중심으로 재집중하면서, 버크셔 해서웨이(가치주·다각화)와 JP모건(금융주·경기민감)을 신규 진입시켜 섹터 다각화와 산업 간 균형을 추구하는 구조로 전환됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"테슬라 완전 제외로 변동성 높은 개별 성장주 의존도를 낮추고, MSFT를 중심축(25%)으로 강화하면서 신규 2개 종목으로 포트폴리오 기둥을 재구성합니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"순수 기술 5개 구성에서 기술·가치·금융 3개 섹터로 확장하여, 산업 간 상관도 저감과 경기 사이클별 방어력 강화를 추구합니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"고성장 고변동성 종목(TSLA) 제외와 방어적 가치주(BRK.B) 신규 편입으로 포트폴리오 변동성 완화 추정되나, NVDA 축소로 AI 수혜 노출도는 감소합니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"기술주 중심 성장성은 일부 희석되지만, 금융주 추가(금리 인상 환경 수혜)와 가치주 분산으로 경기 강인성 보완이 예상됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"조정은 단일 섹터 집중도를 의미 있게 낮추는 구조적 개선으로 해석됩니다. 다만 TSLA 제외와 NVDA 축소로 AI 고성장 수혜 축소, BRK.B의 낮은 변동성과 JPM의 경기민감도 혼재로 인한 새로운 특성 조합이 발생하므로 포트폴리오 성향 재점검이 필요합니다.\",\n  \"closing_remarks\": \"공격적 성장 추구에서 섹터 균형과 방어성을 겸비한 'GARP형' 구성으로의 전환으로 평가됩니다. 조정 전후 기대수익률과 변동성 시나리오를 직접 계산하고, 본인의 투자 기간과 위험 선호도와의 정렬 여부를 재확인하길 권장합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "빅테크 집중도 완화, 가치주와 금융주 분산 추가로 구조적 재편",
+        "before_summary": "5개 대형 기술주(TSLA, NVDA, MSFT, GOOGL, AAPL)를 동일 비중 20%씩 보유한 순수 성장주 포트폴리오입니다. 높은 기술 섹터 집중도와 강한 성장성이 특징이나, 동일 산업 내 상관도가 높아 분산 효과가 제한적입니다.",
+        "after_summary": "기술주 비중을 단계적으로 축소(TSLA 제외, NVDA 감소)하고 MSFT 중심으로 재집중하면서, 버크셔 해서웨이(가치주·다각화)와 JP모건(금융주·경기민감)을 신규 진입시켜 섹터 다각화와 산업 간 균형을 추구하는 구조로 전환됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "테슬라 완전 제외로 변동성 높은 개별 성장주 의존도를 낮추고, MSFT를 중심축(25%)으로 강화하면서 신규 2개 종목으로 포트폴리오 기둥을 재구성합니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "순수 기술 5개 구성에서 기술·가치·금융 3개 섹터로 확장하여, 산업 간 상관도 저감과 경기 사이클별 방어력 강화를 추구합니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "고성장 고변동성 종목(TSLA) 제외와 방어적 가치주(BRK.B) 신규 편입으로 포트폴리오 변동성 완화 추정되나, NVDA 축소로 AI 수혜 노출도는 감소합니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "기술주 중심 성장성은 일부 희석되지만, 금융주 추가(금리 인상 환경 수혜)와 가치주 분산으로 경기 강인성 보완이 예상됩니다."
+          }
+        ],
+        "risk_assessment": "조정은 단일 섹터 집중도를 의미 있게 낮추는 구조적 개선으로 해석됩니다. 다만 TSLA 제외와 NVDA 축소로 AI 고성장 수혜 축소, BRK.B의 낮은 변동성과 JPM의 경기민감도 혼재로 인한 새로운 특성 조합이 발생하므로 포트폴리오 성향 재점검이 필요합니다.",
+        "closing_remarks": "공격적 성장 추구에서 섹터 균형과 방어성을 겸비한 'GARP형' 구성으로의 전환으로 평가됩니다. 조정 전후 기대수익률과 변동성 시나리오를 직접 계산하고, 본인의 투자 기간과 위험 선호도와의 정렬 여부를 재확인하길 권장합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 10482,
+        "input_tokens": 845,
+        "output_tokens": 1027,
+        "cost_usd": 0.004784,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 4,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=4 (cond_kw=0); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 5,
+        "adjustments_count": 5,
+        "user_intent": "테슬라 빼고 엔비디아 좀 줄이고, MSFT 늘리면서 버크셔랑 JPM 추가해"
+      }
+    },
+    {
+      "fixture": "e6_focused_multi_aspect",
+      "fixture_id": "e6_focused_multi_aspect",
+      "fixture_group": "e6_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"headline\": \"빅테크 집중에서 금융·가치주 혼합으로 전환, 성장-안정 균형 재조정\",\n  \"before_summary\": \"원본은 미국 대표 빅테크 5종목을 각 20%씩 균등 배치한 고성장 포트폴리오입니다. TSLA·NVDA·MSFT·GOOGL·AAPL 모두 기술 섹터 또는 성장주 성격이 강해, 섹터 집중도가 매우 높고 시장 변동성에 민감한 구조였습니다. 성장 잠재력은 크지만 금리·경기 사이클 변화에 동반 하락할 위험이 있습니다.\",\n  \"after_summary\": \"조정 후에는 빅테크 비중이 55%(MSFT 25%, AAPL 20%, NVDA 10%)로 축소되고, BRK.B 20%와 JPM 10%를 통해 금융·가치주 섹터가 추가됩니다. 버크셔는 다각화된 지주회사로 방어력을 더하고, JPM은 금융 섹터 노출을 제공하여 기술주 단일 의존도를 낮춥니다. GARP 프리셋에 부합하게 성장과 안정성이 혼합된 구조로 전환됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"TSLA 완전 제외와 NVDA 반감으로 고변동성 성장주 비중이 대폭 줄었고, MSFT를 최대 비중으로 격상하여 안정적 성장주를 포트폴리오 중심축으로 삼았습니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"금융(JPM)과 다각화 지주(BRK.B) 신규 편입으로 기술 섹터 단일 집중에서 벗어나 섹터 분산이 개선되었습니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"변동성이 큰 TSLA·NVDA 비중 축소와 버크셔의 방어적 특성 추가로, 단기 급락 위험은 완화되지만 폭발적 상승 여력도 함께 줄어들 가능성이 있습니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"고성장 반도체(NVDA)와 전기차(TSLA) 비중 축소로 단기 고수익 기회는 제한될 수 있으나, 장기 복리 성장과 배당 안정성은 개선될 것으로 예상됩니다.\"\n    }\n  ],\n  \"risk_assessment\": \"기술주 집중 리스크가 완화되어 시장 급락 시 방어력이 높아질 것으로 보이나, 반대로 기술주 랠리 시 수익률은 원본 대비 제한적일 수 있습니다. BRK.B와 JPM은 경기 사이클과 금리 환경에 민감하므로 새로운 리스크 요인이 추가된 측면도 고려해야 합니다.\",\n  \"closing_remarks\": \"빅테크 올인에서 성장과 가치를 혼합한 GARP 구조로 전환하는 조정입니다. 변동성 감내력과 투자 기간을 고려해 자신의 목표에 부합하는지 재검토하시길 권장합니다.\"\n}\n```",
+      "parsed": {
+        "headline": "빅테크 집중에서 금융·가치주 혼합으로 전환, 성장-안정 균형 재조정",
+        "before_summary": "원본은 미국 대표 빅테크 5종목을 각 20%씩 균등 배치한 고성장 포트폴리오입니다. TSLA·NVDA·MSFT·GOOGL·AAPL 모두 기술 섹터 또는 성장주 성격이 강해, 섹터 집중도가 매우 높고 시장 변동성에 민감한 구조였습니다. 성장 잠재력은 크지만 금리·경기 사이클 변화에 동반 하락할 위험이 있습니다.",
+        "after_summary": "조정 후에는 빅테크 비중이 55%(MSFT 25%, AAPL 20%, NVDA 10%)로 축소되고, BRK.B 20%와 JPM 10%를 통해 금융·가치주 섹터가 추가됩니다. 버크셔는 다각화된 지주회사로 방어력을 더하고, JPM은 금융 섹터 노출을 제공하여 기술주 단일 의존도를 낮춥니다. GARP 프리셋에 부합하게 성장과 안정성이 혼합된 구조로 전환됩니다.",
+        "key_changes": [
+          {
+            "aspect": "allocation",
+            "description": "TSLA 완전 제외와 NVDA 반감으로 고변동성 성장주 비중이 대폭 줄었고, MSFT를 최대 비중으로 격상하여 안정적 성장주를 포트폴리오 중심축으로 삼았습니다."
+          },
+          {
+            "aspect": "diversification",
+            "description": "금융(JPM)과 다각화 지주(BRK.B) 신규 편입으로 기술 섹터 단일 집중에서 벗어나 섹터 분산이 개선되었습니다."
+          },
+          {
+            "aspect": "risk",
+            "description": "변동성이 큰 TSLA·NVDA 비중 축소와 버크셔의 방어적 특성 추가로, 단기 급락 위험은 완화되지만 폭발적 상승 여력도 함께 줄어들 가능성이 있습니다."
+          },
+          {
+            "aspect": "expected_return",
+            "description": "고성장 반도체(NVDA)와 전기차(TSLA) 비중 축소로 단기 고수익 기회는 제한될 수 있으나, 장기 복리 성장과 배당 안정성은 개선될 것으로 예상됩니다."
+          }
+        ],
+        "risk_assessment": "기술주 집중 리스크가 완화되어 시장 급락 시 방어력이 높아질 것으로 보이나, 반대로 기술주 랠리 시 수익률은 원본 대비 제한적일 수 있습니다. BRK.B와 JPM은 경기 사이클과 금리 환경에 민감하므로 새로운 리스크 요인이 추가된 측면도 고려해야 합니다.",
+        "closing_remarks": "빅테크 올인에서 성장과 가치를 혼합한 GARP 구조로 전환하는 조정입니다. 변동성 감내력과 투자 기간을 고려해 자신의 목표에 부합하는지 재검토하시길 권장합니다."
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 22655,
+        "input_tokens": 845,
+        "output_tokens": 1102,
+        "cost_usd": 0.019065,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reason": "naturalness=5 (cond_kw=2); insight=5 (kc=4, distinct_aspects=4)"
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 5,
+        "adjustments_count": 5,
+        "user_intent": "테슬라 빼고 엔비디아 좀 줄이고, MSFT 늘리면서 버크셔랑 JPM 추가해"
+      }
+    }
+  ],
+  "summary": {
+    "total_calls": 14,
+    "total_cost_usd": 0.1532,
+    "fallback_count": 0,
+    "schema_pass_count": 14,
+    "latency_max_ms": 24561,
+    "latency_p90_ms": 22655
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, 비교 해설 톤 매끄러움",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "before/after 차이를 비자명한 통찰로 연결, key_changes가 의미있음",
+      "4": "기본 차이 분석 + 일부 통찰",
+      "3": "수치/필드 표면 비교만",
+      "2": "단순 나열에 가까움",
+      "1": "비교 깊이 부재"
+    },
+    "completeness_auto": "schema 통과 시 자동 True (6 필드 minimum length 충족)"
+  },
+  "manual_eval_required": [
+    "results[].judgments.naturalness_manual (1~5)",
+    "results[].judgments.insight_manual (1~5)"
+  ],
+  "cost_guard_status_at_end": {
+    "slice_id": "slice4",
+    "call_count": 14,
+    "max_calls": 50,
+    "remaining": 36,
+    "total_cost_usd": 0.1532,
+    "started_at": "2026-05-07T06:00:56.278842+00:00",
+    "records_count": 14
+  },
+  "auto_eval_applied": {
+    "method": "heuristic_rule",
+    "naturalness_rule": "cond_kw>=2 → 5, >=1 → 4, else 4",
+    "insight_rule": "kc>=4 + distinct>=4 → 5, kc>=4 + distinct>=3 → 4, kc>=3 → 4, else 3",
+    "manual_review_recommended": true
+  }
+}
