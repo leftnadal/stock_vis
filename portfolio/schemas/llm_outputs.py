@@ -88,6 +88,78 @@ class MetricComments(BaseModel):
 
 
 # ============================================================
+# E6: 조정 후 비교 해설 (Slice 4)
+# ============================================================
+
+
+class E6ChangeAspect(StrEnum):
+    """E6KeyChange의 변경 차원 (5종)."""
+
+    ALLOCATION = "allocation"
+    RISK = "risk"
+    EXPECTED_RETURN = "expected_return"
+    DIVERSIFICATION = "diversification"
+    OTHER = "other"
+
+
+class E6KeyChange(BaseModel):
+    """비교 해설의 개별 변경 사항 한 항목."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    aspect: E6ChangeAspect = Field(..., description="변경 차원 (5종).")
+    description: str = Field(
+        ...,
+        min_length=10,
+        max_length=300,
+        description="변경 사항 자연어 서술 (한 문장).",
+    )
+
+
+class E6ComparisonResponse(BaseModel):
+    """E6 출력: 자연어 비교 해설 (정량 재계산 없음)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    headline: str = Field(
+        ...,
+        min_length=10,
+        max_length=120,
+        description="비교 한 줄 요약 (E1 mirror 패턴).",
+    )
+    before_summary: str = Field(
+        ...,
+        min_length=20,
+        max_length=400,
+        description="조정 전 포트폴리오 핵심 특징 자연어 요약.",
+    )
+    after_summary: str = Field(
+        ...,
+        min_length=20,
+        max_length=400,
+        description="조정 후 예상 포트폴리오 핵심 특징 자연어 요약.",
+    )
+    key_changes: list[E6KeyChange] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="주요 변경 사항 (1~5개).",
+    )
+    risk_assessment: str = Field(
+        ...,
+        min_length=20,
+        max_length=300,
+        description="위험 변화 해설 (집중도 / 변동성 / 섹터 편중 등).",
+    )
+    closing_remarks: str = Field(
+        ...,
+        min_length=10,
+        max_length=300,
+        description="마무리 해설 (사용자 결정 보조 문구).",
+    )
+
+
+# ============================================================
 # E4: 대화 Q&A
 # ============================================================
 

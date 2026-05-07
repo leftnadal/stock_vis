@@ -226,3 +226,36 @@ class E2Response(BaseModel):
 
     card: E2DiagnosticCard
     preset_id: str = Field(..., description="입력 preset 식별 (garp, buffett 등)")
+
+
+# ============================================================
+# E6 (조정 후 비교 해설) 진입점 — Slice 4
+# ============================================================
+
+
+class E6Request(BaseModel):
+    """E6 입력. E5 결과(adjustments)와 원본 AnalysisContext를 함께 받는다.
+
+    분석 엔진 재계산 의존성 회피 — 조정 후 AnalysisContext를 _수치적으로_ 다시
+    계산하지 않고, 원본 + adjustments를 LLM에 그대로 전달하여 자연어 추론으로만
+    비교 해설을 수행한다 (Phase 2에서 재계산 엔진 별도 슬라이스 추가 예정).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    analysis_context: dict[str, Any] = Field(
+        ...,
+        description="원본 AnalysisContext dict (조정 *전* 상태).",
+    )
+    adjustments: list[AdjustmentItem] = Field(
+        ...,
+        min_length=1,
+        max_length=10,
+        description="E5 결과 — 사용자가 적용하려는 조정 명령 리스트.",
+    )
+    user_intent: Optional[str] = Field(
+        default=None,
+        max_length=500,
+        description="원본 사용자 발화 (E5 raw input). None이면 prompt에서 생략.",
+    )
+    session_id: Optional[str] = None
