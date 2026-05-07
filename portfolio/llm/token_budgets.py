@@ -1,11 +1,12 @@
 """진입점별 LLM input token budget 상수 (Slice 2 백로그 #5, Slice 3 Step 9).
 
 Step 7 토큰 측정 결과 기반:
-  - Slice 1 (E1 글쓰기):    ~3,700 tokens → budget 5,000
-  - Slice 2 (E5 추출):      ~900 tokens   → budget 2,000  (P90 × 1.5)
-  - Slice 3 (E2 4요소 카드): ~620 tokens   → budget 1,500 (P90 × 1.5)
+  - Slice 1 (E1 글쓰기):       ~3,700 tokens → budget 5,000
+  - Slice 2 (E5 추출):         ~900 tokens   → budget 2,000  (P90 × 1.5)
+  - Slice 3 (E2 4요소 카드):    ~620 tokens   → budget 1,500 (P90 × 1.5)
+  - Slice 4 (E6 비교 해설):     ~768 tokens   → budget 1,500 (P90=845 × 1.5 → round-up 500)
 
-새 진입점 추가 시 (e3/e4/e6 등) ENTRYPOINT_TOKEN_BUDGETS dict에 등록.
+새 진입점 추가 시 (e3/e4 등) ENTRYPOINT_TOKEN_BUDGETS dict에 등록.
 """
 
 from __future__ import annotations
@@ -15,7 +16,8 @@ ENTRYPOINT_TOKEN_BUDGETS: dict[str, int] = {
     "e1": 5000,  # Slice 1 결정값
     "e5": 2000,  # Slice 2 Step 7 (P90=756 × 1.5 → round-up 2000)
     "e2": 1500,  # Slice 3 Step 7 (P90=686 × 1.5 → round-up 1500)
-    # Slice 4+: e3/e4/e6 추가 시 등록
+    "e6": 1500,  # Slice 4 Step 7 (P90=845 × 1.5=1267.5 → round-up 500 = 1500, E2와 동일)
+    # Slice 5+: e3/e4 추가 시 등록
 }
 
 
