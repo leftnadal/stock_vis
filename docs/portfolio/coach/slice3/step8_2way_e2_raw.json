@@ -1,0 +1,860 @@
+{
+  "step": "step8_2way_e2_raw",
+  "executed_at": "2026-05-07T00:39:11.661987+00:00",
+  "matrix_size": {
+    "fixtures": 7,
+    "models": 2,
+    "total_calls": 14
+  },
+  "providers": [
+    {
+      "label": "haiku",
+      "model": "claude-haiku-4-5"
+    },
+    {
+      "label": "sonnet",
+      "model": "claude-sonnet-4-5"
+    }
+  ],
+  "fixture_groups": {
+    "slice1_baseline": [
+      "garp_tech",
+      "garp_misfit",
+      "garp_large"
+    ],
+    "e2_focused": [
+      "e2_clear_strengths",
+      "e2_clear_weaknesses",
+      "e2_balanced",
+      "e2_extreme_risk"
+    ]
+  },
+  "results": [
+    {
+      "fixture": "garp_tech",
+      "fixture_group": "slice1_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"대형 테크 기업 중심의 포트폴리오로 높은 자본 효율성(ROIC 18%)을 보유하고 있으나, PEG 비율 2.8로 성장 대비 밸류에이션이 다소 높은 상태입니다. 18% 수준의 매출 성장률은 양호하지만 가치 성장 투자자 관점에서 재평가 필요합니다.\",\n  \"strengths\": [\n    \"ROIC 18%로 우수한 자본 효율성을 지닌 기업들로 구성\",\n    \"글로벌 시장 지배력과 장기 경쟁 우위를 가진 인프라 기업 집중\",\n    \"연 18% 수준의 안정적인 매출 성장으로 실질 수익 창출 능력 보증\"\n  ],\n  \"weaknesses\": [\n    \"PEG 비율 2.8은 성장 대비 과평가 수준으로 평가 여유 부족\",\n    \"테크 섹터 비중 90% 이상으로 산업 분산 부재에 따른 높은 변동성 위험\",\n    \"INTC 10% 편입에도 불구하고 반도체 산업 부진으로 낙수 효과 제한\"\n  ],\n  \"actions\": [\n    \"PEG 비율 2.0 이하의 저평가 성장주 또는 디렉셔널 상대 비교 강화로 진입점 개선\",\n    \"헬스케어, 금융, 산업재 등 비테크 섹터 10~20% 편입으로 포트폴리오 분산\",\n    \"INTC 재평가 및 고성장 반도체 기업으로의 구성 재조정 검토\",\n    \"분기별 ROIC와 실적 성장률 추적으로 PEG 비율 개선 시점 모니터링\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "대형 테크 기업 중심의 포트폴리오로 높은 자본 효율성(ROIC 18%)을 보유하고 있으나, PEG 비율 2.8로 성장 대비 밸류에이션이 다소 높은 상태입니다. 18% 수준의 매출 성장률은 양호하지만 가치 성장 투자자 관점에서 재평가 필요합니다.",
+          "strengths": [
+            "ROIC 18%로 우수한 자본 효율성을 지닌 기업들로 구성",
+            "글로벌 시장 지배력과 장기 경쟁 우위를 가진 인프라 기업 집중",
+            "연 18% 수준의 안정적인 매출 성장으로 실질 수익 창출 능력 보증"
+          ],
+          "weaknesses": [
+            "PEG 비율 2.8은 성장 대비 과평가 수준으로 평가 여유 부족",
+            "테크 섹터 비중 90% 이상으로 산업 분산 부재에 따른 높은 변동성 위험",
+            "INTC 10% 편입에도 불구하고 반도체 산업 부진으로 낙수 효과 제한"
+          ],
+          "actions": [
+            "PEG 비율 2.0 이하의 저평가 성장주 또는 디렉셔널 상대 비교 강화로 진입점 개선",
+            "헬스케어, 금융, 산업재 등 비테크 섹터 10~20% 편입으로 포트폴리오 분산",
+            "INTC 재평가 및 고성장 반도체 기업으로의 구성 재조정 검토",
+            "분기별 ROIC와 실적 성장률 추적으로 PEG 비율 개선 시점 모니터링"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 6211,
+        "input_tokens": 573,
+        "output_tokens": 600,
+        "cost_usd": 0.0028583999999999997,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 3,
+        "auto_eval_reasoning": "avg_item_len=38.0, summary_len=136, counts(s/w/a)=3/3/4, keyword_match=False, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "GARP",
+          "적합",
+          "기술"
+        ]
+      }
+    },
+    {
+      "fixture": "garp_tech",
+      "fixture_group": "slice1_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"빅테크 중심 포트폴리오로 18%의 우수한 수익성을 보유하고 있으나, PEG ratio 2.8은 GARP 전략 기준(1~2 이상적)을 크게 벗어나 성장 대비 고평가 위험이 존재합니다.\",\n  \"strengths\": [\n    \"ROIC 18%로 자본 효율성이 우수하여 투하 자본 대비 높은 수익 창출 능력을 입증\",\n    \"연간 매출 성장률 18%로 안정적인 성장 모멘텀을 유지하며 성장주 특성 보유\",\n    \"NVDA, MSFT, AAPL 등 시장 지배력을 갖춘 빅테크 기업들로 구성되어 경쟁 우위 확보\"\n  ],\n  \"weaknesses\": [\n    \"PEG ratio 2.8은 GARP 적정 범위를 초과하여 성장률 대비 밸류에이션 부담 존재\",\n    \"테크 섹터 집중도 100%로 섹터 리스크에 과도하게 노출되어 분산 효과 부족\",\n    \"INTC 10% 편입은 포트폴리오 전체 성장성을 저해하며 GARP 기준에 부합하지 않을 가능성\"\n  ],\n  \"actions\": [\n    \"PEG ratio 1~2 범위 기업 발굴을 통해 합리적 가격의 성장주 비중 확대 검토\",\n    \"헬스케어, 산업재 등 타 섹터 우량 성장주 편입으로 섹터 분산도 개선 필요\",\n    \"개별 종목의 이익 성장률과 밸류에이션 지표를 분기별로 모니터링하여 GARP 적합성 재평가\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "빅테크 중심 포트폴리오로 18%의 우수한 수익성을 보유하고 있으나, PEG ratio 2.8은 GARP 전략 기준(1~2 이상적)을 크게 벗어나 성장 대비 고평가 위험이 존재합니다.",
+          "strengths": [
+            "ROIC 18%로 자본 효율성이 우수하여 투하 자본 대비 높은 수익 창출 능력을 입증",
+            "연간 매출 성장률 18%로 안정적인 성장 모멘텀을 유지하며 성장주 특성 보유",
+            "NVDA, MSFT, AAPL 등 시장 지배력을 갖춘 빅테크 기업들로 구성되어 경쟁 우위 확보"
+          ],
+          "weaknesses": [
+            "PEG ratio 2.8은 GARP 적정 범위를 초과하여 성장률 대비 밸류에이션 부담 존재",
+            "테크 섹터 집중도 100%로 섹터 리스크에 과도하게 노출되어 분산 효과 부족",
+            "INTC 10% 편입은 포트폴리오 전체 성장성을 저해하며 GARP 기준에 부합하지 않을 가능성"
+          ],
+          "actions": [
+            "PEG ratio 1~2 범위 기업 발굴을 통해 합리적 가격의 성장주 비중 확대 검토",
+            "헬스케어, 산업재 등 타 섹터 우량 성장주 편입으로 섹터 분산도 개선 필요",
+            "개별 종목의 이익 성장률과 밸류에이션 지표를 분기별로 모니터링하여 GARP 적합성 재평가"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 13484,
+        "input_tokens": 573,
+        "output_tokens": 592,
+        "cost_usd": 0.010598999999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=46.9, summary_len=101, counts(s/w/a)=3/3/3, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "GARP",
+          "적합",
+          "기술"
+        ]
+      }
+    },
+    {
+      "fixture": "garp_misfit",
+      "fixture_group": "slice1_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"고성장 기술주 중심의 공격적 포트폴리오이나, PEG 3.2배와 PE 65배의 과도한 밸류에이션으로 GARP 철학과 불일치합니다. 실적 성장(EPS 4%, 매출 12%)이 주가 평가를 뒷받침하기에 부족한 상태입니다.\",\n  \"strengths\": [\n    \"매출 성장률 12%로 기술 섹터 평균 대비 건실한 실적 확대 추세\",\n    \"혁신 기업 중심의 포트폴리오로 장기 구조 변화의 수혜 잠재력 보유\",\n    \"고성장 섹터 집중으로 상승장에서 시장 수익률 초과 가능성\"\n  ],\n  \"weaknesses\": [\n    \"PEG 3.2배는 GARP 기준 2.0 이하를 크게 초과하여 가격 대비 성장성 매력 부족\",\n    \"EPS 성장률 4%는 극도로 낮아 고평가의 정당성을 상실한 상태\",\n    \"ROIC 6%는 자본 효율성이 미흡하며, 높은 멀티플과 괴리 존재\",\n    \"5개 종목 모두 고밸류에이션 기술주로 편중되어 시장 조정 위험 집중\"\n  ],\n  \"actions\": [\n    \"PEG 비율 2.0 이하의 기업으로 점진적 재구성 검토 (분기별 5~10% 조정)\",\n    \"EPS 성장률과 멀티플의 괴리 축소를 위해 이익 성장성 재검증 필요\",\n    \"포트폴리오 분산을 위해 안정적 배당주 또는 저PEG 우량주 최소 20% 편입 검토\",\n    \"6개월 단위로 실적 성장이 실제 달성되는지 모니터링하고 구체적 턴어라운드 시점 확인\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "고성장 기술주 중심의 공격적 포트폴리오이나, PEG 3.2배와 PE 65배의 과도한 밸류에이션으로 GARP 철학과 불일치합니다. 실적 성장(EPS 4%, 매출 12%)이 주가 평가를 뒷받침하기에 부족한 상태입니다.",
+          "strengths": [
+            "매출 성장률 12%로 기술 섹터 평균 대비 건실한 실적 확대 추세",
+            "혁신 기업 중심의 포트폴리오로 장기 구조 변화의 수혜 잠재력 보유",
+            "고성장 섹터 집중으로 상승장에서 시장 수익률 초과 가능성"
+          ],
+          "weaknesses": [
+            "PEG 3.2배는 GARP 기준 2.0 이하를 크게 초과하여 가격 대비 성장성 매력 부족",
+            "EPS 성장률 4%는 극도로 낮아 고평가의 정당성을 상실한 상태",
+            "ROIC 6%는 자본 효율성이 미흡하며, 높은 멀티플과 괴리 존재",
+            "5개 종목 모두 고밸류에이션 기술주로 편중되어 시장 조정 위험 집중"
+          ],
+          "actions": [
+            "PEG 비율 2.0 이하의 기업으로 점진적 재구성 검토 (분기별 5~10% 조정)",
+            "EPS 성장률과 멀티플의 괴리 축소를 위해 이익 성장성 재검증 필요",
+            "포트폴리오 분산을 위해 안정적 배당주 또는 저PEG 우량주 최소 20% 편입 검토",
+            "6개월 단위로 실적 성장이 실제 달성되는지 모니터링하고 구체적 턴어라운드 시점 확인"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 7620,
+        "input_tokens": 601,
+        "output_tokens": 645,
+        "cost_usd": 0.0030608,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 3,
+        "auto_eval_reasoning": "avg_item_len=39.4, summary_len=119, counts(s/w/a)=3/4/4, keyword_match=False, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 2,
+        "actions_min": 2,
+        "summary_keywords_any": [
+          "부적합",
+          "MISFIT",
+          "재검토",
+          "약점"
+        ]
+      }
+    },
+    {
+      "fixture": "garp_misfit",
+      "fixture_group": "slice1_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"높은 성장성을 보이지만 PEG 비율 3.2와 PE 65로 GARP 기준 대비 고평가 구간에 있으며, 낮은 ROIC 6%는 자본 효율성 개선이 필요함을 시사합니다.\",\n  \"strengths\": [\n    \"연매출 성장률 12%로 꾸준한 톱라인 확장세를 유지하고 있습니다\",\n    \"성장주 중심 포트폴리오로 기술 섹터 장기 성장 트렌드에 부합합니다\",\n    \"TSLA, SHOP 등 시장 지배력 있는 기업들로 구성되어 있습니다\"\n  ],\n  \"weaknesses\": [\n    \"PEG 비율 3.2는 GARP 적정 기준(1.0~2.0)을 크게 상회하여 성장 대비 과도한 프리미엄이 반영되어 있습니다\",\n    \"ROIC 6%는 자본비용 대비 낮은 수준으로 투자 자본의 수익 창출 효율성이 부족합니다\",\n    \"EPS 성장률 4%는 매출 성장률 12% 대비 현저히 낮아 수익성 전환이 지연되고 있습니다\",\n    \"PE 65배는 고성장주 기준으로도 높아 밸류에이션 리스크에 노출되어 있습니다\"\n  ],\n  \"actions\": [\n    \"PEG 1.5 이하, ROIC 15% 이상의 GARP 기준 충족 종목 비중을 단계적으로 확대하세요\",\n    \"현재 포트폴리오 내에서 수익성 개선 가시성이 높은 종목을 선별하여 집중도를 조정하세요\",\n    \"밸류에이션 부담을 분산하기 위해 배당 성장주나 중형 성장주 편입을 검토하세요\",\n    \"분기별 실적 발표 시 EPS 성장률과 ROIC 추이를 모니터링하며 리밸런싱 기준을 수립하세요\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "높은 성장성을 보이지만 PEG 비율 3.2와 PE 65로 GARP 기준 대비 고평가 구간에 있으며, 낮은 ROIC 6%는 자본 효율성 개선이 필요함을 시사합니다.",
+          "strengths": [
+            "연매출 성장률 12%로 꾸준한 톱라인 확장세를 유지하고 있습니다",
+            "성장주 중심 포트폴리오로 기술 섹터 장기 성장 트렌드에 부합합니다",
+            "TSLA, SHOP 등 시장 지배력 있는 기업들로 구성되어 있습니다"
+          ],
+          "weaknesses": [
+            "PEG 비율 3.2는 GARP 적정 기준(1.0~2.0)을 크게 상회하여 성장 대비 과도한 프리미엄이 반영되어 있습니다",
+            "ROIC 6%는 자본비용 대비 낮은 수준으로 투자 자본의 수익 창출 효율성이 부족합니다",
+            "EPS 성장률 4%는 매출 성장률 12% 대비 현저히 낮아 수익성 전환이 지연되고 있습니다",
+            "PE 65배는 고성장주 기준으로도 높아 밸류에이션 리스크에 노출되어 있습니다"
+          ],
+          "actions": [
+            "PEG 1.5 이하, ROIC 15% 이상의 GARP 기준 충족 종목 비중을 단계적으로 확대하세요",
+            "현재 포트폴리오 내에서 수익성 개선 가시성이 높은 종목을 선별하여 집중도를 조정하세요",
+            "밸류에이션 부담을 분산하기 위해 배당 성장주나 중형 성장주 편입을 검토하세요",
+            "분기별 실적 발표 시 EPS 성장률과 ROIC 추이를 모니터링하며 리밸런싱 기준을 수립하세요"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 14661,
+        "input_tokens": 601,
+        "output_tokens": 682,
+        "cost_usd": 0.012032999999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 3,
+        "auto_eval_reasoning": "avg_item_len=46.2, summary_len=90, counts(s/w/a)=3/4/4, keyword_match=False, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 2,
+        "actions_min": 2,
+        "summary_keywords_any": [
+          "부적합",
+          "MISFIT",
+          "재검토",
+          "약점"
+        ]
+      }
+    },
+    {
+      "fixture": "garp_large",
+      "fixture_group": "slice1_baseline",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"기술/성장주 중심의 공격적 포트폴리오로 높은 수익성(ROE 18%)을 보유하나, PEG 1.85로 적정 범위 상단에 위치하며 성장성(13% EPS, 11% Revenue)에 비해 밸류에이션(PE 28)이 다소 상승된 상태입니다.\",\n  \"strengths\": [\n    \"ROE 18%, ROIC 14%로 우수한 자본 효율성 입증\",\n    \"PEG 1.85로 GARP 기준(1.5~2.0) 적정 범위 내 위치\",\n    \"3년 수익 일관성 72%로 안정적인 성장 궤적 유지\",\n    \"MSFT, GOOGL, AAPL 등 초우량 기업으로 포트폴리오 기초 견고\"\n  ],\n  \"weaknesses\": [\n    \"PE 28배로 역사적 평균 대비 고평가 상태 지속\",\n    \"EPS 13% 성장에 비해 PE 밸류에이션 프리미엄 과도\",\n    \"매출 성장(11%)이 이익 성장(13%)을 뒷받침하기에 다소 미흡\",\n    \"기술주 집중도 높아 금리/경기 민감도 상대적으로 큼\"\n  ],\n  \"actions\": [\n    \"PE 28배 수준에서 추가 매수 유보, 조정 시점 포착 권장\",\n    \"PLTR, SHOP 등 성장주 비중 점진적 재조정으로 균형 맞추기\",\n    \"매출 성장률 개선 추적, 특히 AMZN, ADBE 실적 모니터링 강화\",\n    \"금리 상승 시나리오 대비 방어주(V, MA) 비중 상향 검토\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "기술/성장주 중심의 공격적 포트폴리오로 높은 수익성(ROE 18%)을 보유하나, PEG 1.85로 적정 범위 상단에 위치하며 성장성(13% EPS, 11% Revenue)에 비해 밸류에이션(PE 28)이 다소 상승된 상태입니다.",
+          "strengths": [
+            "ROE 18%, ROIC 14%로 우수한 자본 효율성 입증",
+            "PEG 1.85로 GARP 기준(1.5~2.0) 적정 범위 내 위치",
+            "3년 수익 일관성 72%로 안정적인 성장 궤적 유지",
+            "MSFT, GOOGL, AAPL 등 초우량 기업으로 포트폴리오 기초 견고"
+          ],
+          "weaknesses": [
+            "PE 28배로 역사적 평균 대비 고평가 상태 지속",
+            "EPS 13% 성장에 비해 PE 밸류에이션 프리미엄 과도",
+            "매출 성장(11%)이 이익 성장(13%)을 뒷받침하기에 다소 미흡",
+            "기술주 집중도 높아 금리/경기 민감도 상대적으로 큼"
+          ],
+          "actions": [
+            "PE 28배 수준에서 추가 매수 유보, 조정 시점 포착 권장",
+            "PLTR, SHOP 등 성장주 비중 점진적 재조정으로 균형 맞추기",
+            "매출 성장률 개선 추적, 특히 AMZN, ADBE 실적 모니터링 강화",
+            "금리 상승 시나리오 대비 방어주(V, MA) 비중 상향 검토"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 6599,
+        "input_tokens": 686,
+        "output_tokens": 580,
+        "cost_usd": 0.0028688,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=33.2, summary_len=127, counts(s/w/a)=4/4/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "다각화",
+          "분산",
+          "포트폴리오"
+        ]
+      }
+    },
+    {
+      "fixture": "garp_large",
+      "fixture_group": "slice1_baseline",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"기술주 중심의 성장 포트폴리오로 13%의 견고한 매출 성장률과 18%의 높은 ROE를 기록하고 있으나, PEG 1.85와 PER 28배는 GARP 관점에서 다소 높은 밸류에이션 부담을 보여줍니다.\",\n  \"strengths\": [\n    \"ROE 18%와 ROIC 14%로 자본 효율성이 우수하여 수익성 기반이 탄탄합니다\",\n    \"3년간 매출 성장 일관성 72%로 안정적인 성장 궤도를 유지하고 있습니다\",\n    \"결제(V, MA), 클라우드(MSFT, GOOGL, AMZN), AI(NVDA) 등 구조적 성장 섹터에 분산 투자되어 있습니다\"\n  ],\n  \"weaknesses\": [\n    \"PEG 1.85는 GARP 기준 1.5 이하 적정선을 상회하여 성장 대비 밸류에이션이 높습니다\",\n    \"PER 28배는 시장 평균 대비 프리미엄이 과도하여 금리 변동에 취약한 구조입니다\",\n    \"TSLA(5%), NFLX(5%) 등 변동성 높은 종목이 포함되어 GARP 철학과 부분적으로 괴리됩니다\"\n  ],\n  \"actions\": [\n    \"PEG 1.0~1.5 구간의 합리적 밸류에이션 종목 비중을 단계적으로 확대하여 포트폴리오 평균 PEG를 낮추세요\",\n    \"고밸류에이션 종목(PER 35배 이상) 비중을 점검하고 이익 성장률 대비 가격 매력도를 재평가하세요\",\n    \"배당 수익률 2% 이상의 우량 성장주를 일부 편입하여 수익 안정성을 보완하세요\",\n    \"분기별 EPS 성장률 추이를 모니터링하여 성장 모멘텀 둔화 종목을 조기 식별하세요\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "기술주 중심의 성장 포트폴리오로 13%의 견고한 매출 성장률과 18%의 높은 ROE를 기록하고 있으나, PEG 1.85와 PER 28배는 GARP 관점에서 다소 높은 밸류에이션 부담을 보여줍니다.",
+          "strengths": [
+            "ROE 18%와 ROIC 14%로 자본 효율성이 우수하여 수익성 기반이 탄탄합니다",
+            "3년간 매출 성장 일관성 72%로 안정적인 성장 궤도를 유지하고 있습니다",
+            "결제(V, MA), 클라우드(MSFT, GOOGL, AMZN), AI(NVDA) 등 구조적 성장 섹터에 분산 투자되어 있습니다"
+          ],
+          "weaknesses": [
+            "PEG 1.85는 GARP 기준 1.5 이하 적정선을 상회하여 성장 대비 밸류에이션이 높습니다",
+            "PER 28배는 시장 평균 대비 프리미엄이 과도하여 금리 변동에 취약한 구조입니다",
+            "TSLA(5%), NFLX(5%) 등 변동성 높은 종목이 포함되어 GARP 철학과 부분적으로 괴리됩니다"
+          ],
+          "actions": [
+            "PEG 1.0~1.5 구간의 합리적 밸류에이션 종목 비중을 단계적으로 확대하여 포트폴리오 평균 PEG를 낮추세요",
+            "고밸류에이션 종목(PER 35배 이상) 비중을 점검하고 이익 성장률 대비 가격 매력도를 재평가하세요",
+            "배당 수익률 2% 이상의 우량 성장주를 일부 편입하여 수익 안정성을 보완하세요",
+            "분기별 EPS 성장률 추이를 모니터링하여 성장 모멘텀 둔화 종목을 조기 식별하세요"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 14756,
+        "input_tokens": 686,
+        "output_tokens": 689,
+        "cost_usd": 0.012393000000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=51.4, summary_len=109, counts(s/w/a)=3/3/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "다각화",
+          "분산",
+          "포트폴리오"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_clear_strengths",
+      "fixture_group": "e2_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"AAPL과 MSFT 이중 집중 포트폴리오로 우수한 수익성(ROE 32%)과 건전한 재무구조(부채비율 15%)를 보유하고 있으나, 극도의 섹터 쏠림과 기업 집중도가 분산 투자 원칙을 심각하게 위반하고 있습니다.\",\n  \"strengths\": [\n    \"ROE 32%로 업계 평균을 크게 상회하는 뛰어난 자본효율성 입증\",\n    \"연 22% 성장률로 시장 평균을 훨씬 초과하는 강력한 실적 확대 기조\",\n    \"부채비율 15%로 안정적인 재무 레버리지 수준 유지\",\n    \"P/E 18.5배로 고성장을 고려했을 때 합리적인 밸류에이션 대비\"\n  ],\n  \"weaknesses\": [\n    \"2개 종목에 100% 집중된 극단적 포트폴리오로 단일 기업 위험 노출 심화\",\n    \"기술주 100% 구성으로 금리/경기 변화에 동반 하락 위험 존재\",\n    \"섹터 다각화 부재로 시장 전체 하락 시 방어력 전무\",\n    \"MSFT 60% 편중으로 인한 과도한 단일 기업 의존성\"\n  ],\n  \"actions\": [\n    \"포트폴리오 재구성을 통해 단일 종목 최대 20% 제한 규칙 수립 검토\",\n    \"헬스케어, 금융, 소비재 등 이질적 섹터 진입으로 상관관계 낮춘 분산 추진\",\n    \"채권 또는 고배당 가치주 편입으로 변동성 완화 및 방어 자산 구성\",\n    \"현재 고평가 국면에서 신규 자금 투입 시 비중 조정 기준안 사전 수립\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "AAPL과 MSFT 이중 집중 포트폴리오로 우수한 수익성(ROE 32%)과 건전한 재무구조(부채비율 15%)를 보유하고 있으나, 극도의 섹터 쏠림과 기업 집중도가 분산 투자 원칙을 심각하게 위반하고 있습니다.",
+          "strengths": [
+            "ROE 32%로 업계 평균을 크게 상회하는 뛰어난 자본효율성 입증",
+            "연 22% 성장률로 시장 평균을 훨씬 초과하는 강력한 실적 확대 기조",
+            "부채비율 15%로 안정적인 재무 레버리지 수준 유지",
+            "P/E 18.5배로 고성장을 고려했을 때 합리적인 밸류에이션 대비"
+          ],
+          "weaknesses": [
+            "2개 종목에 100% 집중된 극단적 포트폴리오로 단일 기업 위험 노출 심화",
+            "기술주 100% 구성으로 금리/경기 변화에 동반 하락 위험 존재",
+            "섹터 다각화 부재로 시장 전체 하락 시 방어력 전무",
+            "MSFT 60% 편중으로 인한 과도한 단일 기업 의존성"
+          ],
+          "actions": [
+            "포트폴리오 재구성을 통해 단일 종목 최대 20% 제한 규칙 수립 검토",
+            "헬스케어, 금융, 소비재 등 이질적 섹터 진입으로 상관관계 낮춘 분산 추진",
+            "채권 또는 고배당 가치주 편입으로 변동성 완화 및 방어 자산 구성",
+            "현재 고평가 국면에서 신규 자금 투입 시 비중 조정 기준안 사전 수립"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 6914,
+        "input_tokens": 586,
+        "output_tokens": 635,
+        "cost_usd": 0.0030088000000000003,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=35.4, summary_len=116, counts(s/w/a)=4/4/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 2,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "우수",
+          "양호",
+          "강점"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_clear_strengths",
+      "fixture_group": "e2_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"GARP 전략에 부합하는 우수한 포트폴리오입니다. 높은 ROE와 성장성을 합리적인 밸류에이션으로 보유하고 있으며, 낮은 부채비율로 재무안정성이 뛰어납니다.\",\n  \"strengths\": [\n    \"ROE 32%로 자본 효율성이 매우 높아 주주가치 창출 능력이 탁월합니다\",\n    \"연 22% 이익 성장률로 지속적인 성장 동력을 확보하고 있습니다\",\n    \"부채비율 15%로 재무 레버리지가 낮아 경기 침체 시에도 안정적입니다\",\n    \"PEG 비율 0.84(18.5÷22)로 성장 대비 저평가 구간에 있습니다\"\n  ],\n  \"weaknesses\": [\n    \"AAPL과 MSFT 모두 빅테크로 섹터 집중도가 높아 업종 리스크에 노출되어 있습니다\",\n    \"두 종목 모두 대형주로 구성되어 중소형주 성장 기회를 포착하지 못하고 있습니다\"\n  ],\n  \"actions\": [\n    \"헬스케어, 금융 등 다른 섹터의 GARP 종목을 추가하여 섹터 분산을 강화하세요\",\n    \"중소형 성장주 일부 편입으로 포트폴리오 다변화를 고려하세요\",\n    \"분기별 실적 발표 시 ROE와 이익 성장률 추이를 모니터링하여 GARP 조건 유지 여부를 점검하세요\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "GARP 전략에 부합하는 우수한 포트폴리오입니다. 높은 ROE와 성장성을 합리적인 밸류에이션으로 보유하고 있으며, 낮은 부채비율로 재무안정성이 뛰어납니다.",
+          "strengths": [
+            "ROE 32%로 자본 효율성이 매우 높아 주주가치 창출 능력이 탁월합니다",
+            "연 22% 이익 성장률로 지속적인 성장 동력을 확보하고 있습니다",
+            "부채비율 15%로 재무 레버리지가 낮아 경기 침체 시에도 안정적입니다",
+            "PEG 비율 0.84(18.5÷22)로 성장 대비 저평가 구간에 있습니다"
+          ],
+          "weaknesses": [
+            "AAPL과 MSFT 모두 빅테크로 섹터 집중도가 높아 업종 리스크에 노출되어 있습니다",
+            "두 종목 모두 대형주로 구성되어 중소형주 성장 기회를 포착하지 못하고 있습니다"
+          ],
+          "actions": [
+            "헬스케어, 금융 등 다른 섹터의 GARP 종목을 추가하여 섹터 분산을 강화하세요",
+            "중소형 성장주 일부 편입으로 포트폴리오 다변화를 고려하세요",
+            "분기별 실적 발표 시 ROE와 이익 성장률 추이를 모니터링하여 GARP 조건 유지 여부를 점검하세요"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 11198,
+        "input_tokens": 586,
+        "output_tokens": 543,
+        "cost_usd": 0.009902999999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=41.6, summary_len=86, counts(s/w/a)=4/2/3, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 2,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "우수",
+          "양호",
+          "강점"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_clear_weaknesses",
+      "fixture_group": "e2_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"GARP 전략에 불일치하는 고평가 포트폴리오입니다. 높은 PER(95배)에 비해 수익성(ROE 5%)과 성장률(-10%)이 모두 부진하며, 과도한 부채(D/E 85%)로 인한 재무 불안정성이 심각합니다.\",\n  \"strengths\": [\n    \"기술 성장주 중심의 공격적 포지셀닝으로 향후 산업 변화 선도 가능성 내재\",\n    \"AI, 자동화 등 장기 성장 테마에 집중된 집중도 높은 포트폴리오\"\n  ],\n  \"weaknesses\": [\n    \"PER 95배는 동종업계 평균 대비 심각한 고평가 상태로 평균 회귀 위험 높음\",\n    \"ROE 5%의 저수익성은 투자자본에 대한 실질적 수익창출 능력 부족을 의미\",\n    \"연간 -10% 수익 감소추세는 성장성 약화 신호로 GARP 기준 부적합\",\n    \"부채비율 85%는 금리 인상 환경에서 재무 압박과 유동성 위기 가능성 상존\",\n    \"두 종목 집중 투자로 특정 기업의 부정적 뉴스에 극도로 취약한 구조\"\n  ],\n  \"actions\": [\n    \"포트폴리오 재점검: GARP 기준(PER 20~30, ROE 15% 이상, 성장률 10%+)을 충족하는 종목으로 재구성 검토\",\n    \"부채 건전성 재평가: 피어(Palantir, Tesla) 부채 추이 분석 후 고부채 종목 비중 단계적 축소 계획\",\n    \"다각화 추진: 현재 50:50 집중도를 개선하여 3~5개 종목으로 분산하고 섹터 밸런스 조정\",\n    \"수익성 기준 강화: 향후 진입 기준을 ROE 10% 이상, 순이익 증가 추이 확인 종목으로 제한\",\n    \"정기 리밸런싱 도입: 분기별 펀더멘털 재검토하여 악화 신호 조기 포착 체계 수립\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "GARP 전략에 불일치하는 고평가 포트폴리오입니다. 높은 PER(95배)에 비해 수익성(ROE 5%)과 성장률(-10%)이 모두 부진하며, 과도한 부채(D/E 85%)로 인한 재무 불안정성이 심각합니다.",
+          "strengths": [
+            "기술 성장주 중심의 공격적 포지셀닝으로 향후 산업 변화 선도 가능성 내재",
+            "AI, 자동화 등 장기 성장 테마에 집중된 집중도 높은 포트폴리오"
+          ],
+          "weaknesses": [
+            "PER 95배는 동종업계 평균 대비 심각한 고평가 상태로 평균 회귀 위험 높음",
+            "ROE 5%의 저수익성은 투자자본에 대한 실질적 수익창출 능력 부족을 의미",
+            "연간 -10% 수익 감소추세는 성장성 약화 신호로 GARP 기준 부적합",
+            "부채비율 85%는 금리 인상 환경에서 재무 압박과 유동성 위기 가능성 상존",
+            "두 종목 집중 투자로 특정 기업의 부정적 뉴스에 극도로 취약한 구조"
+          ],
+          "actions": [
+            "포트폴리오 재점검: GARP 기준(PER 20~30, ROE 15% 이상, 성장률 10%+)을 충족하는 종목으로 재구성 검토",
+            "부채 건전성 재평가: 피어(Palantir, Tesla) 부채 추이 분석 후 고부채 종목 비중 단계적 축소 계획",
+            "다각화 추진: 현재 50:50 집중도를 개선하여 3~5개 종목으로 분산하고 섹터 밸런스 조정",
+            "수익성 기준 강화: 향후 진입 기준을 ROE 10% 이상, 순이익 증가 추이 확인 종목으로 제한",
+            "정기 리밸런싱 도입: 분기별 펀더멘털 재검토하여 악화 신호 조기 포착 체계 수립"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 7940,
+        "input_tokens": 586,
+        "output_tokens": 738,
+        "cost_usd": 0.0034208000000000003,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 3,
+        "auto_eval_reasoning": "avg_item_len=46.3, summary_len=113, counts(s/w/a)=2/5/5, keyword_match=False, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 2,
+        "actions_min": 2,
+        "summary_keywords_any": [
+          "부적합",
+          "위험",
+          "약점"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_clear_weaknesses",
+      "fixture_group": "e2_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"TSLA와 PLTR로 구성된 고위험 성장주 집중 포트폴리오로, P/E 95배의 과대평가와 -10% 역성장, 5% 저수익성이 결합된 GARP 관점 부적합 구조입니다.\",\n  \"strengths\": [\n    \"테슬라와 팔란티어 모두 혁신 기술 섹터의 대표주자로 장기 성장 테마 보유\",\n    \"부채비율 85%는 업종 특성 고려 시 관리 가능한 수준으로 재무 안정성 유지\"\n  ],\n  \"weaknesses\": [\n    \"P/E 95배는 GARP 기준(통상 15~25배) 대비 4배 이상 과대평가로 밸류에이션 리스크 심각\",\n    \"ROE 5%는 자기자본 효율성이 예적금 수준으로 수익성 창출 능력 부족\",\n    \"매출 성장률 -10%로 역성장 중이며 고밸류에이션을 정당화할 근거 부재\",\n    \"2개 종목 50%씩 동일 비중은 섹터·스타일 집중도 과다로 변동성 증폭 구조\"\n  ],\n  \"actions\": [\n    \"GARP 적합 종목(P/E 15~25, ROE 15%+, 성장률 10%+)으로 단계적 리밸런싱 검토\",\n    \"현재 포지션 유지 시 목표 P/E 60 이하 도달까지 추가 매수 중단 원칙 수립\",\n    \"배당주·가치주 30% 이상 편입으로 포트폴리오 방어력 확보\",\n    \"분기별 실적 발표 시 성장률 전환 여부 모니터링 체계 구축\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "TSLA와 PLTR로 구성된 고위험 성장주 집중 포트폴리오로, P/E 95배의 과대평가와 -10% 역성장, 5% 저수익성이 결합된 GARP 관점 부적합 구조입니다.",
+          "strengths": [
+            "테슬라와 팔란티어 모두 혁신 기술 섹터의 대표주자로 장기 성장 테마 보유",
+            "부채비율 85%는 업종 특성 고려 시 관리 가능한 수준으로 재무 안정성 유지"
+          ],
+          "weaknesses": [
+            "P/E 95배는 GARP 기준(통상 15~25배) 대비 4배 이상 과대평가로 밸류에이션 리스크 심각",
+            "ROE 5%는 자기자본 효율성이 예적금 수준으로 수익성 창출 능력 부족",
+            "매출 성장률 -10%로 역성장 중이며 고밸류에이션을 정당화할 근거 부재",
+            "2개 종목 50%씩 동일 비중은 섹터·스타일 집중도 과다로 변동성 증폭 구조"
+          ],
+          "actions": [
+            "GARP 적합 종목(P/E 15~25, ROE 15%+, 성장률 10%+)으로 단계적 리밸런싱 검토",
+            "현재 포지션 유지 시 목표 P/E 60 이하 도달까지 추가 매수 중단 원칙 수립",
+            "배당주·가치주 30% 이상 편입으로 포트폴리오 방어력 확보",
+            "분기별 실적 발표 시 성장률 전환 여부 모니터링 체계 구축"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 13817,
+        "input_tokens": 586,
+        "output_tokens": 588,
+        "cost_usd": 0.010578,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=42.0, summary_len=91, counts(s/w/a)=2/4/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 2,
+        "actions_min": 2,
+        "summary_keywords_any": [
+          "부적합",
+          "위험",
+          "약점"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_balanced",
+      "fixture_group": "e2_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"GARP 전략에 부합하는 대형 우량주 4종목으로 구성된 균형잡힌 포트폴리오입니다. 안정적인 ROE(18%)와 적정한 성장률(12%)을 유지하고 있으나, P/E 22배는 현재 시장 평가가 반영된 수준으로 추가 성장성 확대 여지가 제한적입니다.\",\n  \"strengths\": [\n    \"ROE 18%로 우수한 자본 효율성 달성, 산업 평균 이상의 수익성 입증\",\n    \"동일 비중 분산으로 개별 종목 위험 최소화, 극단적 편중 없음\",\n    \"Debt/Equity 0.4배로 재무 안정성 우수, 경기 변동성에 강한 구조\",\n    \"연 12% 이상의 꾸준한 실적 성장, 장기 복리 효과 기대 가능\"\n  ],\n  \"weaknesses\": [\n    \"P/E 22배는 평균 이상으로 밸류에이션 여유 부족, 단기 조정 리스크 존재\",\n    \"4개 종목 모두 성숙 기업으로 향후 고성장 기대 제한적\",\n    \"경기 민감도 낮지만 혁신 성장주 비중 없어 기술 사이클 참여 제약\",\n    \"글로벌 경제 둔화 시나리오에서 방어 효과 미흡할 수 있음\"\n  ],\n  \"actions\": [\n    \"P/E 18~20배 수준의 언더밸류 우량주 추가 검토로 밸류에이션 개선\",\n    \"연 15% 이상 고성장 기업 5~10% 비중 추가 편입으로 포트폴리오 활력 강화\",\n    \"반기별 실적 점검 시 순이익 성장률 추세 모니터링, 12% 이하 하락 시 전략 재검토\",\n    \"고금리 환경 장기화 대비, Debt/Equity 0.3배 이하 초우량주 추가 분산 검토\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "GARP 전략에 부합하는 대형 우량주 4종목으로 구성된 균형잡힌 포트폴리오입니다. 안정적인 ROE(18%)와 적정한 성장률(12%)을 유지하고 있으나, P/E 22배는 현재 시장 평가가 반영된 수준으로 추가 성장성 확대 여지가 제한적입니다.",
+          "strengths": [
+            "ROE 18%로 우수한 자본 효율성 달성, 산업 평균 이상의 수익성 입증",
+            "동일 비중 분산으로 개별 종목 위험 최소화, 극단적 편중 없음",
+            "Debt/Equity 0.4배로 재무 안정성 우수, 경기 변동성에 강한 구조",
+            "연 12% 이상의 꾸준한 실적 성장, 장기 복리 효과 기대 가능"
+          ],
+          "weaknesses": [
+            "P/E 22배는 평균 이상으로 밸류에이션 여유 부족, 단기 조정 리스크 존재",
+            "4개 종목 모두 성숙 기업으로 향후 고성장 기대 제한적",
+            "경기 민감도 낮지만 혁신 성장주 비중 없어 기술 사이클 참여 제약",
+            "글로벌 경제 둔화 시나리오에서 방어 효과 미흡할 수 있음"
+          ],
+          "actions": [
+            "P/E 18~20배 수준의 언더밸류 우량주 추가 검토로 밸류에이션 개선",
+            "연 15% 이상 고성장 기업 5~10% 비중 추가 편입으로 포트폴리오 활력 강화",
+            "반기별 실적 점검 시 순이익 성장률 추세 모니터링, 12% 이하 하락 시 전략 재검토",
+            "고금리 환경 장기화 대비, Debt/Equity 0.3배 이하 초우량주 추가 분산 검토"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 7725,
+        "input_tokens": 587,
+        "output_tokens": 681,
+        "cost_usd": 0.0031936,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=39.0, summary_len=134, counts(s/w/a)=4/4/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "균형",
+          "안정",
+          "적정"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_balanced",
+      "fixture_group": "e2_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"GARP 전략에 부합하는 우량 대형주 중심 포트폴리오입니다. 안정적인 수익성과 성장성을 갖추고 있으나, 섹터 집중도와 밸류에이션 개선 여지가 있습니다.\",\n  \"strengths\": [\n    \"ROE 18%로 자본 효율성이 우수하며 지속적인 이익 창출 능력 보유\",\n    \"연 12% 이익 성장률로 성장성과 안정성의 균형이 양호함\",\n    \"부채비율 40%로 재무 건전성이 탄탄하여 경기 변동성에 대응 가능\",\n    \"MSFT, V 등 기술 기반 비즈니스와 JNJ, PG의 필수소비재가 경기 방어력 제공\"\n  ],\n  \"weaknesses\": [\n    \"P/E 22배는 시장 평균 대비 높은 수준으로 밸류에이션 부담 존재\",\n    \"4개 종목 균등 비중으로 섹터 및 종목 분산 효과가 제한적\",\n    \"대형 우량주 위주로 구성되어 고성장 기회 포착에는 한계\"\n  ],\n  \"actions\": [\n    \"밸류에이션이 합리적인 중소형 GARP 종목 발굴로 분산 강화 검토\",\n    \"헬스케어 및 필수소비재 섹터 비중이 50%이므로 산업재나 금융 섹터 편입 고려\",\n    \"각 종목의 이익 성장률과 P/E 밸런스를 주기적으로 모니터링하여 GARP 정합성 유지\",\n    \"경기 사이클 변화에 따른 섹터 로테이션 전략 수립\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "GARP 전략에 부합하는 우량 대형주 중심 포트폴리오입니다. 안정적인 수익성과 성장성을 갖추고 있으나, 섹터 집중도와 밸류에이션 개선 여지가 있습니다.",
+          "strengths": [
+            "ROE 18%로 자본 효율성이 우수하며 지속적인 이익 창출 능력 보유",
+            "연 12% 이익 성장률로 성장성과 안정성의 균형이 양호함",
+            "부채비율 40%로 재무 건전성이 탄탄하여 경기 변동성에 대응 가능",
+            "MSFT, V 등 기술 기반 비즈니스와 JNJ, PG의 필수소비재가 경기 방어력 제공"
+          ],
+          "weaknesses": [
+            "P/E 22배는 시장 평균 대비 높은 수준으로 밸류에이션 부담 존재",
+            "4개 종목 균등 비중으로 섹터 및 종목 분산 효과가 제한적",
+            "대형 우량주 위주로 구성되어 고성장 기회 포착에는 한계"
+          ],
+          "actions": [
+            "밸류에이션이 합리적인 중소형 GARP 종목 발굴로 분산 강화 검토",
+            "헬스케어 및 필수소비재 섹터 비중이 50%이므로 산업재나 금융 섹터 편입 고려",
+            "각 종목의 이익 성장률과 P/E 밸런스를 주기적으로 모니터링하여 GARP 정합성 유지",
+            "경기 사이클 변화에 따른 섹터 로테이션 전략 수립"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 13022,
+        "input_tokens": 587,
+        "output_tokens": 582,
+        "cost_usd": 0.010491000000000002,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=36.7, summary_len=84, counts(s/w/a)=4/3/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "균형",
+          "안정",
+          "적정"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_extreme_risk",
+      "fixture_group": "e2_focused",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"summary\": \"META 중심의 고성장 기술주 포트폴리오로 우수한 수익성과 건전한 재무구조를 보유하나, 단일 종목 70% 집중으로 인한 시장 변동성 위험이 상당합니다.\",\n  \"strengths\": [\n    \"ROE 20%로 높은 자기자본수익률을 기록하며 경영 효율성이 우수함\",\n    \"15% 이상의 지속적인 이익 성장률로 중기 성장성 확보\",\n    \"Debt/Equity 0.3으로 낮은 부채 비율, 재정 안정성 양호\",\n    \"P/E 25배는 성장률 대비 합리적 밸류에이션\"\n  ],\n  \"weaknesses\": [\n    \"META 70% 집중도로 개별 종목 리스크에 극도로 노출된 상태\",\n    \"기술주 2종목 구성으로 산업 다각화 부재\",\n    \"META 실적 악화 시 포트폴리오 전체의 급격한 낙폭 우려\",\n    \"경기 민감도 높은 광고/전자상거래 섹터만 편성\"\n  ],\n  \"actions\": [\n    \"META 비중을 50% 이하로 단계적으로 조정하여 집중 위험 완화\",\n    \"헬스케어, 금융, 에너지 등 비순환주 또는 경기방어주 편입 검토\",\n    \"포트폴리오 집중도 목표를 Herfindahl Index 0.35 이하로 재설정\",\n    \"분기별 리밸런싱 규칙을 수립하여 자동으로 비중 관리\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "META 중심의 고성장 기술주 포트폴리오로 우수한 수익성과 건전한 재무구조를 보유하나, 단일 종목 70% 집중으로 인한 시장 변동성 위험이 상당합니다.",
+          "strengths": [
+            "ROE 20%로 높은 자기자본수익률을 기록하며 경영 효율성이 우수함",
+            "15% 이상의 지속적인 이익 성장률로 중기 성장성 확보",
+            "Debt/Equity 0.3으로 낮은 부채 비율, 재정 안정성 양호",
+            "P/E 25배는 성장률 대비 합리적 밸류에이션"
+          ],
+          "weaknesses": [
+            "META 70% 집중도로 개별 종목 리스크에 극도로 노출된 상태",
+            "기술주 2종목 구성으로 산업 다각화 부재",
+            "META 실적 악화 시 포트폴리오 전체의 급격한 낙폭 우려",
+            "경기 민감도 높은 광고/전자상거래 섹터만 편성"
+          ],
+          "actions": [
+            "META 비중을 50% 이하로 단계적으로 조정하여 집중 위험 완화",
+            "헬스케어, 금융, 에너지 등 비순환주 또는 경기방어주 편입 검토",
+            "포트폴리오 집중도 목표를 Herfindahl Index 0.35 이하로 재설정",
+            "분기별 리밸런싱 규칙을 수립하여 자동으로 비중 관리"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 5602,
+        "input_tokens": 590,
+        "output_tokens": 539,
+        "cost_usd": 0.002628,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=32.1, summary_len=84, counts(s/w/a)=4/4/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "집중",
+          "위험",
+          "분산"
+        ]
+      }
+    },
+    {
+      "fixture": "e2_extreme_risk",
+      "fixture_group": "e2_focused",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"summary\": \"META와 AMZN으로 구성된 GARP 성장주 포트폴리오입니다. 우수한 수익성과 성장성을 보유했으나, META 70% 집중으로 인한 분산 부족이 주요 리스크입니다.\",\n  \"strengths\": [\n    \"P/E 25배로 성장성 대비 합리적인 밸류에이션을 유지하고 있습니다\",\n    \"ROE 20%로 자본 효율성이 우수하며 수익성 기반이 탄탄합니다\",\n    \"연 15% 이익 성장률로 안정적인 성장 모멘텀을 확보하고 있습니다\",\n    \"부채비율 30%로 재무 건전성이 양호하여 외부 충격에 대한 방어력이 있습니다\"\n  ],\n  \"weaknesses\": [\n    \"META가 70%를 차지해 단일 종목 리스크가 과도하게 높습니다\",\n    \"IT 대형주 2종목만으로 구성되어 섹터 및 종목 다각화가 부족합니다\",\n    \"기술주 중심 편중으로 금리 변동 및 경기 민감도가 높은 구조입니다\"\n  ],\n  \"actions\": [\n    \"META 비중을 40~50%로 단계적으로 조정하여 집중 리스크를 완화하세요\",\n    \"헬스케어, 금융, 필수소비재 등 방어적 섹터 추가로 포트폴리오 안정성을 높이세요\",\n    \"현재 2종목에서 최소 5~7종목으로 확대하여 분산 효과를 강화하세요\",\n    \"정기적인 리밸런싱 규칙을 설정해 특정 종목이 60%를 초과하지 않도록 관리하세요\"\n  ]\n}\n```",
+      "parsed": {
+        "card": {
+          "summary": "META와 AMZN으로 구성된 GARP 성장주 포트폴리오입니다. 우수한 수익성과 성장성을 보유했으나, META 70% 집중으로 인한 분산 부족이 주요 리스크입니다.",
+          "strengths": [
+            "P/E 25배로 성장성 대비 합리적인 밸류에이션을 유지하고 있습니다",
+            "ROE 20%로 자본 효율성이 우수하며 수익성 기반이 탄탄합니다",
+            "연 15% 이익 성장률로 안정적인 성장 모멘텀을 확보하고 있습니다",
+            "부채비율 30%로 재무 건전성이 양호하여 외부 충격에 대한 방어력이 있습니다"
+          ],
+          "weaknesses": [
+            "META가 70%를 차지해 단일 종목 리스크가 과도하게 높습니다",
+            "IT 대형주 2종목만으로 구성되어 섹터 및 종목 다각화가 부족합니다",
+            "기술주 중심 편중으로 금리 변동 및 경기 민감도가 높은 구조입니다"
+          ],
+          "actions": [
+            "META 비중을 40~50%로 단계적으로 조정하여 집중 리스크를 완화하세요",
+            "헬스케어, 금융, 필수소비재 등 방어적 섹터 추가로 포트폴리오 안정성을 높이세요",
+            "현재 2종목에서 최소 5~7종목으로 확대하여 분산 효과를 강화하세요",
+            "정기적인 리밸런싱 규칙을 설정해 특정 종목이 60%를 초과하지 않도록 관리하세요"
+          ]
+        },
+        "preset_id": "garp"
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 12229,
+        "input_tokens": 590,
+        "output_tokens": 593,
+        "cost_usd": 0.010665000000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "naturalness_manual": 5,
+        "insight_manual": 5,
+        "auto_eval_reasoning": "avg_item_len=38.5, summary_len=91, counts(s/w/a)=4/3/4, keyword_match=True, rich=True"
+      },
+      "expected": {
+        "strengths_min": 1,
+        "weaknesses_min": 1,
+        "actions_min": 1,
+        "summary_keywords_any": [
+          "집중",
+          "위험",
+          "분산"
+        ]
+      }
+    }
+  ],
+  "summary": {
+    "total_calls": 14,
+    "total_cost_usd": 0.0977,
+    "fallback_count": 0,
+    "schema_pass_count": 14,
+    "latency_max_ms": 14756,
+    "latency_p90_ms": 14661
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, 단순 수치 나열 없음",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "지표 너머 의미 있는 해석. 비자명한 패턴 발견",
+      "4": "기본 해석 + 일부 통찰",
+      "3": "지표 표면 해석만",
+      "2": "단순 수치 나열에 가까움",
+      "1": "분석 깊이 부재"
+    },
+    "completeness_auto": "schema 통과 시 자동 True"
+  },
+  "manual_eval_required": [
+    "results[].judgments.naturalness_manual (1~5)",
+    "results[].judgments.insight_manual (1~5)"
+  ],
+  "cost_guard_status_at_end": {
+    "slice_id": "slice3",
+    "call_count": 14,
+    "max_calls": 50,
+    "remaining": 36,
+    "total_cost_usd": 0.0977,
+    "started_at": "2026-05-07T00:36:49.867638+00:00",
+    "records_count": 14
+  },
+  "auto_evaluation": {
+    "method": "expected 기반 룰 + 휴리스틱 (avg item length, summary length, counts, keyword match)",
+    "note": "수동 검토 권장. naturalness는 길이 휴리스틱, insight는 키워드 매칭 + 풍부도."
+  }
+}

@@ -50,6 +50,16 @@ DIMENSION_LOOKUP = {
         "weight": 0.5,
         "delegated_to": "scripts.validation.score_step8_e5",
     },
+    "e2": {  # Slice 3 — e1 산식 그대로 + completeness 자동 보강 (additional_lex_check)
+        "dim1": {"key": "naturalness", "manual_field": "naturalness_manual"},
+        "dim2": {"key": "insight", "manual_field": "insight_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",  # judgments + metadata 분리
+        "default_raw": "docs/portfolio/coach/slice3/step8_2way_e2_raw.json",
+        "default_scored": "docs/portfolio/coach/slice3/step8_2way_e2_scored.json",
+        "weight": 0.5,
+        "additional_lex_check": "completeness_auto",  # Q3.C 자동 측정
+    },
 }
 
 
@@ -115,6 +125,10 @@ def main() -> int:
     if args.entrypoint == "e5":
         from scripts.validation import score_step8_e5
         return score_step8_e5.main()
+
+    # e2 → e1 산식 그대로 + completeness 자동 보강
+    if args.entrypoint == "e2":
+        return _main_e2()
 
     # e1 (default) — Slice 1 산식
     config = DIMENSION_LOOKUP["e1"]
@@ -204,6 +218,156 @@ def main() -> int:
                 "label_means": label_means,
                 "use_fallback": use_fallback,
                 "winner": winner,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    print(f"\n[Saved] {scored_path}")
+    return 0
+
+
+def _main_e2() -> int:
+    """E2 (Slice 3) score 산출 — e1 산식 + completeness_auto 1차 필터 추가.
+
+    Raw 결과의 nested 구조 (judgments + metadata)를 flat으로 normalize 후
+    e1 산식(efficiency_score / fallback_score) 그대로 적용.
+    """
+    config = DIMENSION_LOOKUP["e2"]
+    raw_path = Path(config["default_raw"])
+    scored_path = Path(config["default_scored"])
+    additional_check = config.get("additional_lex_check")
+
+    if not raw_path.exists():
+        print(f"[ERROR] {raw_path} 없음.")
+        return 1
+
+    raw = json.loads(raw_path.read_text(encoding="utf-8"))
+
+    # nested → flat normalize
+    flat_results: list[dict] = []
+    for r in raw["results"]:
+        if "error" in r:
+            flat_results.append({
+                "label": r.get("model_label"),
+                "fixture": r.get("fixture"),
+                "fixture_group": r.get("fixture_group"),
+                "schema_pass": False,
+                "completeness_auto": False,
+                "naturalness": None,
+                "insight": None,
+                "cost_usd": None,
+                "latency_ms": None,
+                "error": r["error"],
+            })
+            continue
+        j = r.get("judgments", {})
+        m = r.get("metadata", {}) or {}
+        flat_results.append({
+            "label": r["model_label"],
+            "fixture": r["fixture"],
+            "fixture_group": r["fixture_group"],
+            "schema_pass": j.get("schema_pass"),
+            "completeness_auto": j.get("completeness_auto"),
+            "naturalness": j.get("naturalness_manual"),
+            "insight": j.get("insight_manual"),
+            "cost_usd": m.get("cost_usd"),
+            "latency_ms": m.get("latency_ms"),
+            "fallback_from": m.get("fallback_from"),
+        })
+
+    # 수동 평가 누락 검증
+    missing = [
+        f"{r['label']}×{r['fixture']}"
+        for r in flat_results
+        if not r.get("error")
+        and (r.get("naturalness") is None or r.get("insight") is None)
+    ]
+    if missing:
+        print(f"[ERROR] 다음 entry 평가 미완료: {missing}")
+        return 1
+
+    # E2 lex filter: e1 룰 + completeness_auto
+    def _e2_lex(r: dict) -> bool:
+        if not lexicographic_filter(r):
+            return False
+        if additional_check and not r.get(additional_check):
+            return False
+        return True
+
+    passed = [r for r in flat_results if _e2_lex(r)]
+    use_fallback = len(passed) == 0
+
+    print("=" * 60)
+    print("Step 8 E2 Scoring Result")
+    print("=" * 60)
+    print(f"\n1차 필터 통과 (schema+completeness+nat≥3+ins≥3): "
+          f"{len(passed)} / {len(flat_results)}")
+    print(f"Mode: {'FALLBACK' if use_fallback else 'EFFICIENCY'}")
+
+    scored: list[dict] = []
+    for r in flat_results:
+        if use_fallback:
+            score = fallback_score(r, flat_results)
+            score_type = "fallback"
+        elif _e2_lex(r):
+            score = efficiency_score(r)
+            score_type = "efficiency"
+        else:
+            score = None
+            score_type = "filtered_out"
+        scored.append({**r, "score": score, "score_type": score_type})
+
+    # Per label
+    label_scores: dict[str, list[float]] = defaultdict(list)
+    for r in scored:
+        if r["score"] is not None:
+            label_scores[r["label"]].append(r["score"])
+    label_means: dict[str, float] = {
+        label: sum(v) / len(v) for label, v in label_scores.items() if v
+    }
+    winner = max(label_means.items(), key=lambda x: x[1])[0] if label_means else None
+
+    # 콘솔 표
+    print("\n=== Per Call ===")
+    print(
+        f"{'Fixture':<22} {'Label':<8} {'Schema':>6} {'Comp':>5} "
+        f"{'Nat':>4} {'Ins':>4} {'Cost':>9} {'Lat(s)':>7} {'Score':>10}"
+    )
+    for r in scored:
+        score_str = f"{r['score']:.2f}" if r["score"] is not None else "-"
+        sch = "OK" if r.get("schema_pass") else "FAIL"
+        comp = "OK" if r.get("completeness_auto") else "FAIL"
+        cost = r.get("cost_usd") or 0
+        lat_s = (r.get("latency_ms") or 0) / 1000
+        nat = r.get("naturalness") if r.get("naturalness") is not None else "-"
+        ins = r.get("insight") if r.get("insight") is not None else "-"
+        print(
+            f"{r['fixture']:<22} {r['label']:<8} {sch:>6} {comp:>5} "
+            f"{nat!s:>4} {ins!s:>4} ${cost:>7.5f} {lat_s:>7.2f} {score_str:>10}"
+        )
+
+    print("\n=== Per Label (mean score) ===")
+    for label, m in sorted(label_means.items(), key=lambda x: -x[1]):
+        print(f"  {label:<8}: {m:.4f}  (n={len(label_scores[label])})")
+    if winner:
+        print(f"\n[WINNER] {winner}")
+
+    scored_path.parent.mkdir(parents=True, exist_ok=True)
+    scored_path.write_text(
+        json.dumps(
+            {
+                "scored_at": "2026-05-07",
+                "scored_results": scored,
+                "label_means": label_means,
+                "use_fallback": use_fallback,
+                "winner": winner,
+                "thresholds": {
+                    "naturalness_min": 3,
+                    "insight_min": 3,
+                    "completeness_auto_required": True,
+                },
             },
             ensure_ascii=False,
             indent=2,
