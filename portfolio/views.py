@@ -18,8 +18,9 @@ from django.views.decorators.http import require_GET, require_POST
 from pydantic import ValidationError
 
 from portfolio.llm import LLMBudgetExceededError, LLMError
-from portfolio.schemas.llm import E5Request
+from portfolio.schemas.llm import E2Request, E5Request
 from portfolio.services.e1_garp import run_e1_garp
+from portfolio.services.e2_diagnostic_card import run_e2
 from portfolio.services.e5_adjustment_parser import run_e5
 
 
@@ -107,6 +108,67 @@ def coach_e5_adjustment(request: HttpRequest) -> JsonResponse:
         )
     except ValidationError as exc:
         # LLM 응답 schema 미일치
+        return JsonResponse(
+            {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
+            status=500,
+        )
+
+    return JsonResponse(result, status=200, json_dumps_params={"ensure_ascii": False})
+
+
+@csrf_exempt
+@require_POST
+def coach_e2_diagnostic_card(request: HttpRequest) -> JsonResponse:
+    """
+    POST /api/coach/e2/diagnostic-card/?provider=haiku
+
+    body (JSON): {"analysis_context": {...}, "session_id": "..."}
+    provider 옵션: haiku (기본 — D2.B 글쓰기) | sonnet | anthropic | gemini.
+
+    응답:
+      200 — {"response": E2Response, "metadata": LLMResponse.metadata_dict()}
+      400 — invalid body or invalid provider
+      429 — budget exceeded
+      500 — LLM 호출 실패
+    """
+    provider = request.GET.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return JsonResponse(
+            {
+                "error": "invalid_provider",
+                "detail": f"{provider!r} not in {list(_VALID_PROVIDERS)}",
+            },
+            status=400,
+        )
+
+    try:
+        body = json.loads(request.body)
+    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+        return JsonResponse(
+            {"error": "invalid_request", "detail": f"json parse error: {exc}"},
+            status=400,
+        )
+
+    try:
+        e2_request = E2Request.model_validate(body)
+    except ValidationError as exc:
+        return JsonResponse(
+            {"error": "invalid_request", "detail": str(exc)[:500]},
+            status=400,
+        )
+
+    try:
+        result = run_e2(e2_request, provider=provider)
+    except LLMBudgetExceededError as exc:
+        return JsonResponse(
+            {"error": "budget_exceeded", "detail": str(exc)}, status=429
+        )
+    except LLMError as exc:
+        return JsonResponse(
+            {"error": "llm_invocation_failed", "detail": str(exc)[:300]},
+            status=500,
+        )
+    except ValidationError as exc:
         return JsonResponse(
             {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
             status=500,
