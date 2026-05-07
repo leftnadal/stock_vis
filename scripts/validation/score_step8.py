@@ -60,6 +60,16 @@ DIMENSION_LOOKUP = {
         "weight": 0.5,
         "additional_lex_check": "completeness_auto",  # Q3.C 자동 측정
     },
+    "e6": {  # Slice 4 — e2 패턴 mirror (글쓰기 + completeness 자동)
+        "dim1": {"key": "naturalness", "manual_field": "naturalness_manual"},
+        "dim2": {"key": "insight", "manual_field": "insight_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",  # judgments + metadata 분리 (E2 mirror)
+        "default_raw": "docs/portfolio/coach/slice4/step8_2way_e6_raw.json",
+        "default_scored": "docs/portfolio/coach/slice4/step8_2way_e6_scored.json",
+        "weight": 0.5,
+        "additional_lex_check": "completeness_auto",  # E2 mirror
+    },
 }
 
 
@@ -111,63 +121,158 @@ def fallback_score(r: dict, all_results: list[dict]) -> float:
     )
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--entrypoint",
-        choices=list(DIMENSION_LOOKUP),
-        default="e1",
-        help="평가 진입점 (default: e1 — Slice 1 호환). e5는 score_step8_e5에 위임.",
-    )
-    args = parser.parse_args()
+def _normalize_results(results: list[dict], structure: str) -> list[dict]:
+    """Result structure에 따라 flat dict 리스트로 변환 (Slice 4 Step 9 통합).
 
-    # e5 → score_step8_e5에 delegation (산식 차이로 인해 별도 모듈 유지)
-    if args.entrypoint == "e5":
-        from scripts.validation import score_step8_e5
-        return score_step8_e5.main()
+    flat (e1): 그대로 반환 (raw 필드가 이미 flat).
+    nested (e2/e6): judgments + metadata → flat dict로 평탄화.
 
-    # e2 → e1 산식 그대로 + completeness 자동 보강
-    if args.entrypoint == "e2":
-        return _main_e2()
+    Raises:
+        ValueError: 미등록 structure
+    """
+    if structure == "flat":
+        return list(results)
+    if structure == "nested":
+        flat: list[dict] = []
+        for r in results:
+            if "error" in r:
+                flat.append({
+                    "label": r.get("model_label"),
+                    "fixture": r.get("fixture"),
+                    "fixture_group": r.get("fixture_group"),
+                    "schema_pass": False,
+                    "completeness_auto": False,
+                    "naturalness": None,
+                    "insight": None,
+                    "cost_usd": None,
+                    "latency_ms": None,
+                    "error": r["error"],
+                })
+                continue
+            j = r.get("judgments", {}) or {}
+            m = r.get("metadata", {}) or {}
+            flat.append({
+                "label": r["model_label"],
+                "fixture": r["fixture"],
+                "fixture_group": r.get("fixture_group"),
+                "schema_pass": j.get("schema_pass"),
+                "completeness_auto": j.get("completeness_auto"),
+                "naturalness": j.get("naturalness_manual"),
+                "insight": j.get("insight_manual"),
+                "cost_usd": m.get("cost_usd"),
+                "latency_ms": m.get("latency_ms"),
+                "fallback_from": m.get("fallback_from"),
+            })
+        return flat
+    raise ValueError(f"Unknown result_structure: {structure!r}")
 
-    # e1 (default) — Slice 1 산식
-    config = DIMENSION_LOOKUP["e1"]
+
+def _build_lex_filter(additional_check: str | None):
+    """e1 base lex (schema + nat>=3 + ins>=3) + optional additional_check.
+
+    additional_check 예: "completeness_auto" (e2/e6용).
+    """
+    def _filter(r: dict) -> bool:
+        if not lexicographic_filter(r):
+            return False
+        if additional_check and not r.get(additional_check):
+            return False
+        return True
+    return _filter
+
+
+def _build_output_dict(
+    entrypoint: str,
+    scored: list[dict],
+    label_means: dict[str, float],
+    use_fallback: bool,
+    winner: str | None,
+) -> dict:
+    """entrypoint별 출력 형식 분기 (IDENTICAL 보존 KPI).
+
+    e1: scored_results / label_means / use_fallback / winner (4 키)
+    e2/e6: scored_at / scored_results / label_means / use_fallback / winner / thresholds (6 키)
+    """
+    if entrypoint == "e1":
+        return {
+            "scored_results": scored,
+            "label_means": label_means,
+            "use_fallback": use_fallback,
+            "winner": winner,
+        }
+    # e2 / e6 — Slice 3·4 형식 (scored_at + thresholds 추가)
+    return {
+        "scored_at": "2026-05-07",
+        "scored_results": scored,
+        "label_means": label_means,
+        "use_fallback": use_fallback,
+        "winner": winner,
+        "thresholds": {
+            "naturalness_min": 3,
+            "insight_min": 3,
+            "completeness_auto_required": True,
+        },
+    }
+
+
+def _main_unified(entrypoint: str) -> int:
+    """e1/e2/e6 통합 score 산출 (Slice 4 Step 9 백로그 #2 PS 3.0).
+
+    e5는 산식 본질 차이로 delegation 유지 (`score_step8_e5.main()`).
+
+    구조:
+      1. config 로드 (DIMENSION_LOOKUP 메타)
+      2. raw → _normalize_results (flat/nested 분기)
+      3. _build_lex_filter (additional_check 분기)
+      4. efficiency / fallback / label_means 산출 (e1 헬퍼 재사용)
+      5. _build_output_dict (entrypoint별 출력 형식 — IDENTICAL 보존)
+
+    회귀 KPI: Slice 1 e1 / Slice 3 e2 산출물 hash IDENTICAL 유지.
+    """
+    config = DIMENSION_LOOKUP[entrypoint]
     raw_path = Path(config["default_raw"])
     scored_path = Path(config["default_scored"])
 
     if not raw_path.exists():
-        print(f"[ERROR] {raw_path} 없음. run_step8_3way 먼저 실행.")
+        print(f"[ERROR] {raw_path} 없음.")
         return 1
 
     raw = json.loads(raw_path.read_text(encoding="utf-8"))
-    results = raw["results"]
+    flat_results = _normalize_results(raw["results"], config["result_structure"])
 
     # 수동 평가 누락 검증
     missing = [
         f"{r.get('label')}×{r.get('fixture')}"
-        for r in results
+        for r in flat_results
         if not r.get("error")
         and (r.get("naturalness") is None or r.get("insight") is None)
     ]
     if missing:
-        print(f"[ERROR] 다음 entry 수동 평가 미완료: {missing}")
+        print(f"[ERROR] 다음 entry 평가 미완료: {missing}")
         return 1
 
-    passed = [r for r in results if lexicographic_filter(r)]
+    lex_filter = _build_lex_filter(config.get("additional_lex_check"))
+    passed = [r for r in flat_results if lex_filter(r)]
     use_fallback = len(passed) == 0
 
     print("=" * 60)
-    print("Step 8 Scoring Result")
+    print(f"Step 8 {entrypoint.upper()} Scoring Result (unified)")
     print("=" * 60)
-    print(f"\n1차 필터 통과: {len(passed)} / {len(results)}")
+    if config.get("additional_lex_check"):
+        print(
+            f"\n1차 필터 통과 (schema+nat≥3+ins≥3+{config['additional_lex_check']}): "
+            f"{len(passed)} / {len(flat_results)}"
+        )
+    else:
+        print(f"\n1차 필터 통과: {len(passed)} / {len(flat_results)}")
     print(f"Mode: {'FALLBACK' if use_fallback else 'EFFICIENCY'}")
 
     scored: list[dict] = []
-    for r in results:
+    for r in flat_results:
         if use_fallback:
-            score = fallback_score(r, results)
+            score = fallback_score(r, flat_results)
             score_type = "fallback"
-        elif lexicographic_filter(r):
+        elif lex_filter(r):
             score = efficiency_score(r)
             score_type = "efficiency"
         else:
@@ -183,170 +288,42 @@ def main() -> int:
     label_means: dict[str, float] = {
         label: sum(v) / len(v) for label, v in label_scores.items() if v
     }
-
-    # 콘솔 표
-    print("\n=== Per Call ===")
-    print(
-        f"{'Fixture':<14} {'Label':<8} {'Schema':>6} {'Nat':>4} {'Ins':>4} "
-        f"{'Cost':>9} {'Lat(s)':>7} {'Score':>10} {'Type':<14}"
-    )
-    for r in scored:
-        score_str = f"{r['score']:.2f}" if r["score"] is not None else "-"
-        sch = "OK" if r.get("schema_pass") else "FAIL"
-        cost = r.get("cost_usd") or 0
-        lat_s = (r.get("latency_ms") or 0) / 1000
-        nat = r.get("naturalness") if r.get("naturalness") is not None else "-"
-        ins = r.get("insight") if r.get("insight") is not None else "-"
-        print(
-            f"{r.get('fixture',''):<14} {r.get('label',''):<8} "
-            f"{sch:>6} {nat!s:>4} {ins!s:>4} "
-            f"${cost:>7.5f} {lat_s:>7.2f} {score_str:>10} {r['score_type']:<14}"
-        )
-
-    print("\n=== Per Label (mean score) ===")
-    winner = None
-    for label, m in sorted(label_means.items(), key=lambda x: -x[1]):
-        print(f"  {label:<8}: {m:.4f}  (n={len(label_scores[label])})")
-    if label_means:
-        winner = max(label_means.items(), key=lambda x: x[1])[0]
-        print(f"\n[WINNER] {winner}")
-
-    scored_path.write_text(
-        json.dumps(
-            {
-                "scored_results": scored,
-                "label_means": label_means,
-                "use_fallback": use_fallback,
-                "winner": winner,
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
-        encoding="utf-8",
-    )
-    print(f"\n[Saved] {scored_path}")
-    return 0
-
-
-def _main_e2() -> int:
-    """E2 (Slice 3) score 산출 — e1 산식 + completeness_auto 1차 필터 추가.
-
-    Raw 결과의 nested 구조 (judgments + metadata)를 flat으로 normalize 후
-    e1 산식(efficiency_score / fallback_score) 그대로 적용.
-    """
-    config = DIMENSION_LOOKUP["e2"]
-    raw_path = Path(config["default_raw"])
-    scored_path = Path(config["default_scored"])
-    additional_check = config.get("additional_lex_check")
-
-    if not raw_path.exists():
-        print(f"[ERROR] {raw_path} 없음.")
-        return 1
-
-    raw = json.loads(raw_path.read_text(encoding="utf-8"))
-
-    # nested → flat normalize
-    flat_results: list[dict] = []
-    for r in raw["results"]:
-        if "error" in r:
-            flat_results.append({
-                "label": r.get("model_label"),
-                "fixture": r.get("fixture"),
-                "fixture_group": r.get("fixture_group"),
-                "schema_pass": False,
-                "completeness_auto": False,
-                "naturalness": None,
-                "insight": None,
-                "cost_usd": None,
-                "latency_ms": None,
-                "error": r["error"],
-            })
-            continue
-        j = r.get("judgments", {})
-        m = r.get("metadata", {}) or {}
-        flat_results.append({
-            "label": r["model_label"],
-            "fixture": r["fixture"],
-            "fixture_group": r["fixture_group"],
-            "schema_pass": j.get("schema_pass"),
-            "completeness_auto": j.get("completeness_auto"),
-            "naturalness": j.get("naturalness_manual"),
-            "insight": j.get("insight_manual"),
-            "cost_usd": m.get("cost_usd"),
-            "latency_ms": m.get("latency_ms"),
-            "fallback_from": m.get("fallback_from"),
-        })
-
-    # 수동 평가 누락 검증
-    missing = [
-        f"{r['label']}×{r['fixture']}"
-        for r in flat_results
-        if not r.get("error")
-        and (r.get("naturalness") is None or r.get("insight") is None)
-    ]
-    if missing:
-        print(f"[ERROR] 다음 entry 평가 미완료: {missing}")
-        return 1
-
-    # E2 lex filter: e1 룰 + completeness_auto
-    def _e2_lex(r: dict) -> bool:
-        if not lexicographic_filter(r):
-            return False
-        if additional_check and not r.get(additional_check):
-            return False
-        return True
-
-    passed = [r for r in flat_results if _e2_lex(r)]
-    use_fallback = len(passed) == 0
-
-    print("=" * 60)
-    print("Step 8 E2 Scoring Result")
-    print("=" * 60)
-    print(f"\n1차 필터 통과 (schema+completeness+nat≥3+ins≥3): "
-          f"{len(passed)} / {len(flat_results)}")
-    print(f"Mode: {'FALLBACK' if use_fallback else 'EFFICIENCY'}")
-
-    scored: list[dict] = []
-    for r in flat_results:
-        if use_fallback:
-            score = fallback_score(r, flat_results)
-            score_type = "fallback"
-        elif _e2_lex(r):
-            score = efficiency_score(r)
-            score_type = "efficiency"
-        else:
-            score = None
-            score_type = "filtered_out"
-        scored.append({**r, "score": score, "score_type": score_type})
-
-    # Per label
-    label_scores: dict[str, list[float]] = defaultdict(list)
-    for r in scored:
-        if r["score"] is not None:
-            label_scores[r["label"]].append(r["score"])
-    label_means: dict[str, float] = {
-        label: sum(v) / len(v) for label, v in label_scores.items() if v
-    }
     winner = max(label_means.items(), key=lambda x: x[1])[0] if label_means else None
 
     # 콘솔 표
+    has_completeness = config.get("additional_lex_check") == "completeness_auto"
     print("\n=== Per Call ===")
-    print(
-        f"{'Fixture':<22} {'Label':<8} {'Schema':>6} {'Comp':>5} "
-        f"{'Nat':>4} {'Ins':>4} {'Cost':>9} {'Lat(s)':>7} {'Score':>10}"
-    )
+    if has_completeness:
+        header = (
+            f"{'Fixture':<22} {'Label':<8} {'Schema':>6} {'Comp':>5} "
+            f"{'Nat':>4} {'Ins':>4} {'Cost':>9} {'Lat(s)':>7} {'Score':>10}"
+        )
+    else:
+        header = (
+            f"{'Fixture':<14} {'Label':<8} {'Schema':>6} {'Nat':>4} {'Ins':>4} "
+            f"{'Cost':>9} {'Lat(s)':>7} {'Score':>10} {'Type':<14}"
+        )
+    print(header)
     for r in scored:
         score_str = f"{r['score']:.2f}" if r["score"] is not None else "-"
         sch = "OK" if r.get("schema_pass") else "FAIL"
-        comp = "OK" if r.get("completeness_auto") else "FAIL"
         cost = r.get("cost_usd") or 0
         lat_s = (r.get("latency_ms") or 0) / 1000
         nat = r.get("naturalness") if r.get("naturalness") is not None else "-"
         ins = r.get("insight") if r.get("insight") is not None else "-"
-        print(
-            f"{r['fixture']:<22} {r['label']:<8} {sch:>6} {comp:>5} "
-            f"{nat!s:>4} {ins!s:>4} ${cost:>7.5f} {lat_s:>7.2f} {score_str:>10}"
-        )
+        if has_completeness:
+            comp = "OK" if r.get("completeness_auto") else "FAIL"
+            print(
+                f"{r.get('fixture','') or '':<22} {r.get('label','') or '':<8} "
+                f"{sch:>6} {comp:>5} {nat!s:>4} {ins!s:>4} "
+                f"${cost:>7.5f} {lat_s:>7.2f} {score_str:>10}"
+            )
+        else:
+            print(
+                f"{r.get('fixture','') or '':<14} {r.get('label','') or '':<8} "
+                f"{sch:>6} {nat!s:>4} {ins!s:>4} "
+                f"${cost:>7.5f} {lat_s:>7.2f} {score_str:>10} {r['score_type']:<14}"
+            )
 
     print("\n=== Per Label (mean score) ===")
     for label, m in sorted(label_means.items(), key=lambda x: -x[1]):
@@ -354,28 +331,39 @@ def _main_e2() -> int:
     if winner:
         print(f"\n[WINNER] {winner}")
 
+    output = _build_output_dict(entrypoint, scored, label_means, use_fallback, winner)
     scored_path.parent.mkdir(parents=True, exist_ok=True)
     scored_path.write_text(
-        json.dumps(
-            {
-                "scored_at": "2026-05-07",
-                "scored_results": scored,
-                "label_means": label_means,
-                "use_fallback": use_fallback,
-                "winner": winner,
-                "thresholds": {
-                    "naturalness_min": 3,
-                    "insight_min": 3,
-                    "completeness_auto_required": True,
-                },
-            },
-            ensure_ascii=False,
-            indent=2,
-        ),
+        json.dumps(output, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     print(f"\n[Saved] {scored_path}")
     return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--entrypoint",
+        choices=list(DIMENSION_LOOKUP),
+        default="e1",
+        help="평가 진입점 (default: e1). e5는 score_step8_e5에 위임. e1/e2/e6는 _main_unified.",
+    )
+    args = parser.parse_args()
+
+    # e5 → score_step8_e5에 delegation (산식 본질 차이로 별도 모듈 유지)
+    if args.entrypoint == "e5":
+        from scripts.validation import score_step8_e5
+        return score_step8_e5.main()
+
+    # e1/e2/e6 → _main_unified (Slice 4 Step 9 백로그 #2 PS 3.0 통합)
+    return _main_unified(args.entrypoint)
+
+
+# Backwards compatibility — 기존 호출자가 _main_e2() 직접 사용했을 가능성 (없음)
+def _main_e2() -> int:
+    """[Deprecated] Slice 4 Step 9 통합 — _main_unified('e2') 호출로 대체."""
+    return _main_unified("e2")
 
 
 if __name__ == "__main__":
