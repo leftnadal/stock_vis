@@ -141,15 +141,21 @@ class LLMClient:
             LLMAuthError, LLMInvalidPromptError: 폴백 안 함, 호출자로 raise.
             LLMRateLimitError, LLMTimeoutError: 1차 + 폴백 모두 실패한 경우.
         """
-        # 1. 비용 가드
+        # 1. 비용 가드 (인스턴스 카운터 + 글로벌 CostGuard 양쪽 검증)
         if self._call_count >= self._budget_max:
             raise LLMBudgetExceededError(
                 f"호출 {self._call_count}회 도달, 가드 임계 {self._budget_max}"
             )
+        from portfolio.llm.cost_guard import CostGuard
+        guard = CostGuard.get_instance()
+        if guard.exceeded():
+            raise LLMBudgetExceededError(
+                f"Slice {guard.slice_id} budget exceeded: {guard.status()}"
+            )
 
         # 2. 1차 시도 + 1회 재시도
         try:
-            return self._call_with_retry(provider, prompt, max_tokens, model)
+            response = self._call_with_retry(provider, prompt, max_tokens, model)
         except (LLMRateLimitError, LLMTimeoutError):
             # 3. 폴백 시도 (반대 provider, 모델은 폴백 측 기본값)
             fallback_provider: Literal["gemini", "anthropic"] = (
@@ -159,7 +165,10 @@ class LLMClient:
                 fallback_provider, prompt, max_tokens, model=None
             )
             response.fallback_from = provider
-            return response
+
+        # 4. 글로벌 CostGuard 누적 기록
+        guard.record_call(cost_usd=response.cost_usd, model=response.model)
+        return response
 
     # ------------------------------------------------------------
     # internals

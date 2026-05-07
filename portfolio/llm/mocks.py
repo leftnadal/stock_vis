@@ -53,9 +53,20 @@ def _mock_text_e5(prompt: str) -> str:  # noqa: ARG001
     )
 
 
+def _mock_text_e2(prompt: str) -> str:  # noqa: ARG001
+    """E2 진입점: DiagnosticCard 4요소 schema 통과 JSON (Slice 3 Step 0.6)."""
+    return (
+        '{"summary":"GARP 적합도 양호. 핵심 지표 균형 잡힌 포트폴리오입니다.",'
+        '"strengths":["P/E 22.5 적정 수준입니다","ROE 18% 우수한 수익성"],'
+        '"weaknesses":["배당수익률 1.2% 다소 낮음","현금흐름 변동성 존재"],'
+        '"actions":["분기별 ROE 모니터링 권장","경쟁사 대비 P/E 추적 필요"]}'
+    )
+
+
 _MOCK_TEXT_STRATEGIES: dict[str, Callable[[str], str]] = {
     "e1": _mock_text_e1,
     "e5": _mock_text_e5,
+    "e2": _mock_text_e2,
 }
 
 

@@ -38,3 +38,16 @@ def test_mock_text_strategy_unknown_rejected():
     """미등록 strategy는 ValueError 즉시 실패 (오타 방지)."""
     with pytest.raises(ValueError, match="Unknown text_strategy"):
         MockLLMClient(text_strategy="e99_nonexistent")
+
+
+def test_mock_text_strategy_e2_explicit():
+    """e2 strategy 선택 시 DiagnosticCard 4요소 JSON (Slice 3 Step 0.6)."""
+    mock = MockLLMClient(text_strategy="e2")
+    resp = mock.complete(prompt="test", provider="anthropic")
+    payload = json.loads(resp.text)
+    assert "summary" in payload
+    assert "strengths" in payload
+    assert "weaknesses" in payload
+    assert "actions" in payload
+    assert isinstance(payload["strengths"], list)
+    assert len(payload["strengths"]) >= 1
