@@ -12,22 +12,14 @@ Slice 1 e1_garp.py 패턴 mirror. v2 (I5): module-level import — Mock 패치
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any
 
 from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
 from portfolio.llm.parsers import parse_json_response
 from portfolio.schemas.llm import E5Request, E5Response
 
-
-ProviderLabel = Literal["gemini", "anthropic", "sonnet", "haiku"]
-
-PROVIDER_KWARGS: dict[str, dict] = {
-    "gemini":    {"provider": "gemini",    "model": None},
-    "anthropic": {"provider": "anthropic", "model": None},
-    "sonnet":    {"provider": "anthropic", "model": ANTHROPIC_SONNET_MODEL},
-    "haiku":     {"provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},
-}
+# Slice 3 Step 2 — _llm_kwargs.py 공유 모듈 흡수 (백로그 #3).
+from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noqa: F401
 
 
 # ============================================================
@@ -103,14 +95,10 @@ def _pct(weight: Any) -> str:
         return "?"
 
 
-def _format_analysis_summary(ctx: dict[str, Any]) -> str:
-    """
-    AnalysisContext에서 요약 추출 (200자 truncate).
-    Step 7 토큰 측정 결과에 따라 100자 압축 검토 (I4 모니터링 항목).
-    """
-    summary = ctx.get("analysis_summary", {}) or {}
-    one_line = summary.get("one_line_diagnosis") or "분석 결과 없음"
-    return str(one_line)[:200]
+# Slice 3 Step 2 — _prompt_helpers.py 공유 모듈 흡수 (백로그 #4).
+from portfolio.services._prompt_helpers import (
+    format_analysis_summary as _format_analysis_summary,  # noqa: F401
+)
 
 
 # ============================================================
