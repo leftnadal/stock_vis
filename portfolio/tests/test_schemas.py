@@ -127,3 +127,74 @@ def test_e5_response_multiple_adjustments():
     )
     assert len(resp.adjustments) == 2
     assert {a.ticker for a in resp.adjustments} == {"TSLA", "NVDA"}
+
+
+# ============================================================
+# E2 (DiagnosticCard 4요소) — Slice 3
+# ============================================================
+from portfolio.schemas.llm import E2DiagnosticCard, E2Request, E2Response
+
+
+def test_e2_diagnostic_card_valid():
+    card = E2DiagnosticCard(
+        summary="GARP 적합도 양호. 균형 잡힌 포트폴리오 분석.",
+        strengths=["P/E 12.5 적정 수준", "ROE 18% 우수한 수익성"],
+        weaknesses=["배당수익률 1.2% 다소 낮음"],
+        actions=["분기별 ROE 모니터링 권장"],
+    )
+    assert card.summary.startswith("GARP")
+    assert len(card.strengths) == 2
+
+
+def test_e2_diagnostic_card_extra_field_rejected():
+    with pytest.raises(ValidationError):
+        E2DiagnosticCard(
+            summary="포트폴리오 요약 텍스트 길이 충분합니다.",
+            strengths=["a" * 20],
+            weaknesses=["a" * 20],
+            actions=["a" * 20],
+            extra_field="rejected",
+        )
+
+
+def test_e2_diagnostic_card_short_summary_rejected():
+    with pytest.raises(ValidationError):
+        E2DiagnosticCard(
+            summary="짧음",  # < 20 chars
+            strengths=["a" * 20],
+            weaknesses=["a" * 20],
+            actions=["a" * 20],
+        )
+
+
+def test_e2_diagnostic_card_empty_list_rejected():
+    """strengths/weaknesses/actions 빈 리스트 거절."""
+    with pytest.raises(ValidationError):
+        E2DiagnosticCard(
+            summary="포트폴리오 요약 텍스트 충분히 길게 작성합니다.",
+            strengths=[],
+            weaknesses=["a" * 20],
+            actions=["a" * 20],
+        )
+
+
+def test_e2_diagnostic_card_short_item_rejected():
+    """리스트 항목 10자 미만 거절 (completeness 자동 측정)."""
+    with pytest.raises(ValidationError, match="too short"):
+        E2DiagnosticCard(
+            summary="포트폴리오 요약 텍스트 충분히 길게 작성하기.",
+            strengths=["짧음"],  # < 10 chars
+            weaknesses=["a" * 20],
+            actions=["a" * 20],
+        )
+
+
+def test_e2_diagnostic_card_too_many_items_rejected():
+    """리스트 항목 6개 이상 거절."""
+    with pytest.raises(ValidationError):
+        E2DiagnosticCard(
+            summary="요약 텍스트 충분히 긴 길이로 작성합니다.",
+            strengths=["item " + "x" * 15] * 6,  # 6개
+            weaknesses=["a" * 20],
+            actions=["a" * 20],
+        )

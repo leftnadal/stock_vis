@@ -31,10 +31,22 @@ from .return_breakdown import (
     ReturnBreakdownWithTime,
     ScopeType,
 )
-from .llm import AdjustmentItem, E5Request, E5Response, LLMResponse
+from .llm import (
+    AdjustmentItem,
+    E2DiagnosticCard,
+    E2Request,
+    E2Response,
+    E5Request,
+    E5Response,
+    LLMResponse,
+)
 from .user_profile import UserProfile
 
 __all__ = [
+    # E2 schemas (Slice 3)
+    "E2DiagnosticCard",
+    "E2Request",
+    "E2Response",
     # E5 schemas (Slice 2)
     "AdjustmentItem",
     "E5Request",

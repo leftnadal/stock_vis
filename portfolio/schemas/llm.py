@@ -143,3 +143,86 @@ class E5Request(BaseModel):
     )
     user_command: str = Field(..., min_length=1, max_length=2000)
     session_id: Optional[str] = None
+
+
+# ============================================================
+# E2 (진단 카드 4요소) 진입점 — Slice 3
+# ============================================================
+
+
+class E2DiagnosticCard(BaseModel):
+    """E2 출력: 진단 카드 4요소 (D-3, Slice 3).
+
+    네이밍 — 기존 portfolio/schemas/diagnostic.py의 단일-약점 DiagnosticCard와
+    이름 충돌 회피. Slice 3 E2 진입점의 4요소 카드는 E2DiagnosticCard로 분리.
+    legacy DiagnosticCard는 weakness 카드용으로 그대로 유지.
+
+    completeness 자동 측정 (Q3.C):
+    - 4개 필드 모두 존재 + 최소 길이 충족 → schema 통과
+    - schema_pass = completeness_auto = True
+
+    필드별 최소 길이는 Step 7 토큰 측정 후 조정 가능.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    summary: str = Field(
+        ...,
+        min_length=20,
+        max_length=500,
+        description="포트폴리오 요약 (1~2문장).",
+    )
+    strengths: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="강점 항목 1~5개. 각 항목 10자 이상.",
+    )
+    weaknesses: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="약점 항목 1~5개. 각 항목 10자 이상.",
+    )
+    actions: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="제안 액션 1~5개. 각 항목 10자 이상.",
+    )
+
+    @model_validator(mode="after")
+    def check_item_min_length(self):
+        """리스트 항목 최소 길이 — completeness 자동 측정 보강."""
+        for field_name in ("strengths", "weaknesses", "actions"):
+            items = getattr(self, field_name)
+            for i, item in enumerate(items):
+                if len(item) < 10:
+                    raise ValueError(
+                        f"{field_name}[{i}] is too short: {len(item)} chars (min 10)"
+                    )
+        return self
+
+
+class E2Request(BaseModel):
+    """E2 입력: AnalysisContext (Tier 1 분석 결과)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    analysis_context: dict[str, Any] = Field(
+        ...,
+        description=(
+            "AnalysisContext dict (preset_id, holdings, metrics, analysis_summary). "
+            "E2는 글쓰기 작업이라 자연어 명령 없음 — context만 입력."
+        ),
+    )
+    session_id: Optional[str] = None
+
+
+class E2Response(BaseModel):
+    """E2 응답 wrapper. E2DiagnosticCard 본체 + preset 메타."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    card: E2DiagnosticCard
+    preset_id: str = Field(..., description="입력 preset 식별 (garp, buffett 등)")
