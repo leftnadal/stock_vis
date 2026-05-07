@@ -21,4 +21,9 @@ urlpatterns = [
         views.coach_e6_comparison,
         name="coach_e6_comparison",
     ),
+    path(
+        "coach/e3/metric-comment/",
+        views.coach_e3_metric_comment,
+        name="coach_e3_metric_comment",
+    ),
 ]
