@@ -1,0 +1,120 @@
+{
+  "step": "step7_e2_token_measurement",
+  "executed_at": "2026-05-07T00:35:20.303746+00:00",
+  "results": [
+    {
+      "fixture": "garp_tech",
+      "fixture_group": "slice1_baseline",
+      "prompt_chars": 784,
+      "input_tokens": 573,
+      "budget": 5000,
+      "utilization": 0.1146,
+      "holdings_count": 5
+    },
+    {
+      "fixture": "garp_misfit",
+      "fixture_group": "slice1_baseline",
+      "prompt_chars": 834,
+      "input_tokens": 601,
+      "budget": 5000,
+      "utilization": 0.1202,
+      "holdings_count": 5
+    },
+    {
+      "fixture": "garp_large",
+      "fixture_group": "slice1_baseline",
+      "prompt_chars": 985,
+      "input_tokens": 686,
+      "budget": 5000,
+      "utilization": 0.1372,
+      "holdings_count": 15
+    },
+    {
+      "fixture": "e2_clear_strengths",
+      "fixture_group": "e2_focused",
+      "prompt_chars": 788,
+      "input_tokens": 586,
+      "budget": 5000,
+      "utilization": 0.1172,
+      "holdings_count": 2
+    },
+    {
+      "fixture": "e2_clear_weaknesses",
+      "fixture_group": "e2_focused",
+      "prompt_chars": 789,
+      "input_tokens": 586,
+      "budget": 5000,
+      "utilization": 0.1172,
+      "holdings_count": 2
+    },
+    {
+      "fixture": "e2_balanced",
+      "fixture_group": "e2_focused",
+      "prompt_chars": 785,
+      "input_tokens": 587,
+      "budget": 5000,
+      "utilization": 0.1174,
+      "holdings_count": 4
+    },
+    {
+      "fixture": "e2_extreme_risk",
+      "fixture_group": "e2_focused",
+      "prompt_chars": 802,
+      "input_tokens": 590,
+      "budget": 5000,
+      "utilization": 0.118,
+      "holdings_count": 2
+    }
+  ],
+  "stats_all": {
+    "min": 573,
+    "max": 686,
+    "mean": 601.3,
+    "p50": 587,
+    "p90": 686
+  },
+  "stats_by_group": {
+    "slice1_baseline": {
+      "min": 573,
+      "max": 686,
+      "mean": 620.0,
+      "fixture_count": 3
+    },
+    "e2_focused": {
+      "min": 586,
+      "max": 590,
+      "mean": 587.2,
+      "fixture_count": 4
+    }
+  },
+  "initial_budget": 5000,
+  "recommended_budget": 1029,
+  "decision_guide": {
+    "if_recommended_lower_than_2500": "E2_TOKEN_BUDGET = 2500. Step 9 #5와 결합.",
+    "if_2500_to_4000": "E2 budget = 4000. E1과 분리.",
+    "if_higher_than_4000": "E1 budget 5000 유지. prompt 압축 검토."
+  },
+  "i4_monitoring": {
+    "context": "Slice 2 I4 — analysis_summary 200자 truncate 효과",
+    "max_utilization_observed": 0.1372,
+    "recommendation": "max < 30% → 200자 유지. 30~70% → 모니터링. > 70% → 100자 압축."
+  },
+  "group_comparison_note": "baseline (garp 3개) vs focused (e2 신규 4개) 토큰 차이 — fixture 다양성이 비용에 미치는 영향. 큰 차이 없으면 hybrid 결정 정당.",
+  "budget_decision": {
+    "decision": "E2_TOKEN_BUDGET = 1500 (E5의 2000보다 작게, E2 prompt 더 압축적)",
+    "recommended": 1029,
+    "rationale": "P90=686 × 1.5 = 1029. round-up 1500. E2 prompt (metrics 표 + 4요소 명시)가 예상보다 압축적 — baseline group과 focused group 토큰 차이 33 (5%) 미미. hybrid 결정 정당화: 다양성 추가 비용 없이 평가 차원 확장.",
+    "implementation_note": "Step 9 백로그 #5에서 token_budgets.py에 \"e2\": 1500으로 도입."
+  },
+  "i4_decision": {
+    "max_utilization_observed": 0.1372,
+    "decision": "analysis_summary 200자 유지 (max util 13.72% << 30% 임계, 300자 상향 가능 여유)",
+    "rationale": "Slice 2 (15.12%)와 비슷한 수준. 압축 불필요."
+  },
+  "hybrid_validation": {
+    "baseline_mean": 620.0,
+    "focused_mean": 587.2,
+    "diff_pct": 5.29,
+    "verdict": "baseline 33 tokens (5.3%) 더 큼 — focused fixture가 더 작아서 비용 부담 낮음. hybrid 결정 정당."
+  }
+}
