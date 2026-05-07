@@ -11,7 +11,8 @@ Mock LLMClient — 5케이스 결정론적 시뮬레이션 + 진입점별 text s
 text_strategy 옵션 (Slice 2 Step 0.5 도입):
   - "e1": OneLineDiagnosis JSON (default — Slice 1 호환)
   - "e5": E5Response JSON (Slice 2 Part 1)
-  Slice 3 진입 시 진입점별로 추가.
+  - "e2": E2DiagnosticCard JSON (Slice 3)
+  - "e6": E6ComparisonResponse JSON (Slice 4)
 """
 
 from __future__ import annotations
@@ -63,10 +64,27 @@ def _mock_text_e2(prompt: str) -> str:  # noqa: ARG001
     )
 
 
+def _mock_text_e6(prompt: str) -> str:  # noqa: ARG001
+    """E6 진입점: E6ComparisonResponse schema 통과 JSON (Slice 4 Step 0.6)."""
+    return (
+        '{"headline":"기술주 집중도 완화로 위험 균형이 개선됩니다",'
+        '"before_summary":"기술주 비중 70%로 단일 섹터 집중 위험이 높고 변동성 높은 성장주 위주 구성입니다.",'
+        '"after_summary":"기술주 55%로 축소, 디펜시브 15% 추가로 변동성 대비 안정성이 개선될 전망입니다.",'
+        '"key_changes":['
+        '{"aspect":"allocation","description":"테슬라 비중 20% → 10% 축소"},'
+        '{"aspect":"diversification","description":"헬스케어 디펜시브 신규 진입 15%"},'
+        '{"aspect":"risk","description":"단일 섹터 집중도 위험이 완화됩니다"}'
+        '],'
+        '"risk_assessment":"포트폴리오 변동성이 다소 낮아지고 하방 리스크가 완화될 것으로 예상됩니다.",'
+        '"closing_remarks":"수익률 상한선은 일부 양보될 수 있으나 장기 안정성 측면에서 합리적인 조정입니다."}'
+    )
+
+
 _MOCK_TEXT_STRATEGIES: dict[str, Callable[[str], str]] = {
     "e1": _mock_text_e1,
     "e5": _mock_text_e5,
     "e2": _mock_text_e2,
+    "e6": _mock_text_e6,
 }
 
 
