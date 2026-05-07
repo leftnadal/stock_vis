@@ -154,3 +154,7 @@ Step 0.4/0.5 작업 중 자동화 스크립트(추정: nightly cron)가 portfoli
 - (해당 없음 — Slice 2 신규 항목 우선)
 
 다음 슬라이스 Step 9 슬롯에서 Slice 1 deferred 항목 처리 예정.
+
+---
+
+> **광의 누적 비용** = $0.327 (Slice 1 광의 $0.137 + Slice 2 광의 $0.190). Slice 2 광의 = Step 6 $0.00135 + Step 8 1차 손실 14건 ~$0.04 + Step 8 2차 $0.0404 + Gemini 진단 ~$0.005 + Slice 1 진입 시 ~$0.10 보정. 광의 단일 정책 채택 (Slice 5 Step 0 #γ1 부채 처리).

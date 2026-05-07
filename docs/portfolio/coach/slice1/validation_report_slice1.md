@@ -273,3 +273,7 @@ quotaId 인용: `GenerateRequestsPerDayPerProjectPerModel-FreeTier`, `GenerateRe
 | garp_large  | 3,848 | 5,000 | 77.0% | OK |
 
 **관찰**: garp_tech (5종목) ↔ garp_large (15종목) 토큰 차이 +150만 (4%). E1 input_builder가 PV5 원칙으로 holdings 미노출 → 종목 수 효과가 제한적. Phase 2 보류 항목으로 기록.
+
+---
+
+> **광의 누적 비용** = $0.137 (Step 6 1차 $0.0152 + Step 6 재실행 $0.0153 + Step 8 $0.1064 + Gemini 진단 ~$0.0005). 광의 단일 정책 채택 (Slice 5 Step 0 #γ1 부채 처리, 2026-05-07).
