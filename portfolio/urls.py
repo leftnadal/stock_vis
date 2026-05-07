@@ -16,4 +16,9 @@ urlpatterns = [
         views.coach_e2_diagnostic_card,
         name="coach_e2_diagnostic_card",
     ),
+    path(
+        "coach/e6/comparison/",
+        views.coach_e6_comparison,
+        name="coach_e6_comparison",
+    ),
 ]
