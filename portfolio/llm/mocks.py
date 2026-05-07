@@ -13,6 +13,7 @@ text_strategy 옵션 (Slice 2 Step 0.5 도입):
   - "e5": E5Response JSON (Slice 2 Part 1)
   - "e2": E2DiagnosticCard JSON (Slice 3)
   - "e6": E6ComparisonResponse JSON (Slice 4)
+  - "e3": MetricComments JSON (Slice 5)
 """
 
 from __future__ import annotations
@@ -64,6 +65,38 @@ def _mock_text_e2(prompt: str) -> str:  # noqa: ARG001
     )
 
 
+def _mock_text_e3(prompt: str) -> str:
+    """E3 진입점: MetricComments schema 통과 JSON (Slice 5).
+
+    prompt에서 metric_id 추출 후 각 지표에 대해 one_liner 생성.
+    metric_id 미발견 시 default 3개 (pe_ratio/roic/revenue_growth).
+    """
+    import re
+
+    metric_ids = re.findall(r'"metric_id"\s*:\s*"([^"]+)"', prompt)
+    # 중복 제거 + 순서 유지
+    seen: set[str] = set()
+    unique_ids: list[str] = []
+    for mid in metric_ids:
+        if mid not in seen:
+            seen.add(mid)
+            unique_ids.append(mid)
+    if not unique_ids:
+        unique_ids = ["pe_ratio", "roic", "revenue_growth_yoy"]
+
+    comments = []
+    for mid in unique_ids[:5]:  # 최대 5개
+        comments.append({
+            "metric_id": mid,
+            "one_liner": (
+                f"{mid} 지표는 동종 업계 대비 양호한 수준으로 보입니다. "
+                "프리셋 관점에서 추가 모니터링이 권장됩니다."
+            ),
+        })
+
+    return json.dumps({"comments": comments}, ensure_ascii=False)
+
+
 def _mock_text_e6(prompt: str) -> str:  # noqa: ARG001
     """E6 진입점: E6ComparisonResponse schema 통과 JSON (Slice 4 Step 0.6)."""
     return (
@@ -85,6 +118,7 @@ _MOCK_TEXT_STRATEGIES: dict[str, Callable[[str], str]] = {
     "e5": _mock_text_e5,
     "e2": _mock_text_e2,
     "e6": _mock_text_e6,
+    "e3": _mock_text_e3,
 }
 
 

@@ -259,3 +259,31 @@ class E6Request(BaseModel):
         description="원본 사용자 발화 (E5 raw input). None이면 prompt에서 생략.",
     )
     session_id: Optional[str] = None
+
+
+# ============================================================
+# E3 (지표 코멘트, 한 줄 자연어) 진입점 — Slice 5
+# ============================================================
+
+
+class E3Request(BaseModel):
+    """E3 입력. AnalysisContext.model_dump() 결과를 받아 Core+Supporting 지표를
+    5단계 level_tag → 자연어 한 줄 코멘트로 변환.
+
+    분석 엔진 의존성 회피 — 산출된 MetricResult만 받음. 정량 재계산 없음.
+    분석 엔진이 산출한 AnalysisContext 전체 구조를 그대로 받음 (다른 슬라이스 일관).
+
+    실제 prompt 작성은 service에서 AnalysisContext.model_validate(dict) 후 build_e3_prompt 호출.
+    Slice 5 진입 시점 자동 변환 — 지시서 §4.1.2 validator는 AnalysisContext nested 구조와 불일치
+    (top-level preset_id/holdings 없음). E5/E2/E6와 일관 (validator 없음).
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    analysis_context: dict[str, Any] = Field(
+        ...,
+        description=(
+            "AnalysisContext.model_dump() 결과 (analysis_target_portfolio + wallet_background 등 nested)."
+        ),
+    )
+    session_id: Optional[str] = None
