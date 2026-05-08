@@ -1,467 +1,335 @@
 # API 응답 일관성 감사 보고서
 
-**감사 일자**: 2026-05-08
-**감사 범위**: Backend Django 앱 25개 views.py 파일
-**총 Response() 호출**: 530건 (20개 파일)
-**분석 방식**: 정적 코드 패턴 분석 (Read + Grep)
+**작성일**: 2026-05-08
+**감사 대상**: 25개 views.py 파일 (Django 앱 전체)
+**범위**: 응답 envelope, HTTP status code, 에러 형식, 페이지네이션
+**모드**: 읽기 전용 — 코드 수정 없음
 
 ---
 
 ## 요약
 
-### 핵심 결론
+`Response()` 호출 530건을 정량 분석한 결과, **앱별로 4가지 응답 패턴이 혼재**하고 있어 클라이언트 통합/유지보수에 일관성 문제가 확인되었다.
 
-Stock-Vis 백엔드는 **표준화된 응답 형식이 존재하지 않으며**, 앱별·뷰별로 응답 래핑 패턴이 심각하게 분산되어 있다. 동일 앱 내에서도 일관성이 깨져 있어 프론트엔드는 매 엔드포인트마다 응답 형태를 따로 파싱해야 한다.
+### 핵심 통계
 
-### 4대 위험
+| 측정 항목 | 수치 | 설명 |
+|---|---|---|
+| `Response()` 호출 총합 | **530회** | 20개 파일 |
+| `{'success': True}` envelope 사용 | **81회 / 6개 파일** | stocks/screener·fundamentals·exchange, serverless, rag_analysis |
+| `status=status.HTTP_*` (DRF 상수) | **248회 / 16개 파일** | 권장 패턴 |
+| `status=400/500` (하드코딩 정수) | **36회 / 3개 파일** | portfolio, serverless, sec_pipeline |
+| `'error'` 키 응답 | **159회 / 12개 파일** | 가장 흔한 에러 키 |
+| `'message'` 키 응답 | **112회 / 10개 파일** | 두 번째로 흔함 |
+| `'detail'` 키 응답 | **27회 / 3개 파일** | DRF 표준이지만 portfolio 위주 |
+| `status.HTTP_201_CREATED` 사용 | **14회 / 5개 파일** | 적절히 사용됨 |
+| `PageNumberPagination` 등 import | **0회** | **페이지네이션 전무** |
+| `DEFAULT_PAGINATION_CLASS` 설정 | **없음** | `config/settings.py:347` 명시적 미루기 |
 
-| # | 위험 | 영향 | 심각도 |
-|---|------|------|--------|
-| 1 | **응답 래핑 패턴 4종 혼재** (`{success, data}` / `{results, pagination}` / `{success, data, meta}` / 직접 반환) | FE 파싱 코드 분기 폭증, 타입 안정성 붕괴 | 🔴 P0 |
-| 2 | **DRF 기본 페이지네이션 미설정** (`DEFAULT_PAGINATION_CLASS` 없음) | 대용량 목록 API 무한 반환 가능, OOM 위험 | 🔴 P0 |
-| 3 | **에러 키 5종 혼재** (`error` / `detail` / `message` / `error.code` / DRF 기본) | 에러 처리 분기 코드 폭증, 사용자 메시지 노출 일관성 깨짐 | 🟠 P1 |
-| 4 | **HTTP 상태 코드 표기 3종 혼재** (`status.HTTP_*` / 숫자 / 생략) | 가독성 저하, 200으로 401/500 반환 사례 존재 | 🟡 P2 |
+### Top-3 발견사항
 
-### 정량 지표
-
-- **Response 래핑 패턴 5종**: `{success, data, meta}` (rag_analysis, stocks fundamentals/exchange, screener), `{success, data}` (serverless), `{success: false, error}` (serverless 에러), `{results, pagination}` (users watchlist), 직접 데이터 반환 (users, stocks main)
-- **에러 키 분포** (Grep 결과): `{'error': ...}` 239건, `{'detail': ...}` 일부 portfolio, `{'message': ...}` users/news 일부, `{success: false, error: {code, message}}` serverless
-- **HTTP 상태 코드 표기**: `status=status.HTTP_*` 248건, `status=숫자` 38건, 미지정 다수
-- **DRF 글로벌 페이지네이션**: 0건 (`DEFAULT_PAGINATION_CLASS` 미설정)
-- **수동 페이지네이션 사용**: 3개 뷰 (users WatchlistList/WatchlistStocks, rag_analysis 1개)
+1. **응답 envelope 4종 혼재** — 직접 데이터, `{success, data, meta}`, `{success, data, error, meta}`, `JsonResponse(dict)`가 동일 프로젝트 내 공존.
+2. **`portfolio/` 앱은 DRF 미사용** — 순수 `JsonResponse` + 하드코딩 `status=400/500/503` 사용. 다른 14개 앱과 스타일 분리.
+3. **페이지네이션 완전 부재** — `User.objects.all()`, `News.objects.all()`, `Stock.objects.all()` 등 무제한 응답 다수. `settings.py:347`에 "audit P0 #14는 별도 PR에서 처리"라는 코멘트로 미해결 부채 명시.
 
 ---
 
 ## 앱별 응답 패턴 매트릭스
 
-| 앱 / 파일 | 라인 | 주요 패턴 | 에러 키 | 페이지네이션 | 일관성 |
-|-----------|------|-----------|---------|------------|-------|
-| **portfolio/views.py** | 305 | 직접 데이터 (`JsonResponse(result, 200)`) | `{error, detail}` | ❌ | ✅ 단일 패턴 (DRF 미사용) |
-| **users/views.py** | 1089 | 직접 데이터 / `{results, pagination}` 혼재 | `{error}` / `{message}` / `{ok}` | ✅ Watchlist 2개만 | ⚠️ 패턴 3종 |
-| **stocks/views.py** | 1021 | 직접 데이터 (`{symbol, tab, data}`) | `{error: {code,message,details}}` / `{error: str}` | ❌ | ⚠️ 에러 형식 2종 |
-| **stocks/views_fundamentals.py** | 305 | `{success, data, meta}` | `{error: str}` | ❌ | ✅ 단일 |
-| **stocks/views_exchange.py** | 295 | `{success, data, meta}` | `{error: str}` | ❌ | ✅ 단일 |
-| **stocks/views_screener.py** | 498 | `{success, data, meta}` | `{error: serializer.errors}` | ❌ | ⚠️ |
-| **stocks/views_search.py** | 229 | 직접 데이터 (`{count, results}`) | `{error: str}` / `{valid: false, error}` | ❌ | ⚠️ |
-| **stocks/views_indicators.py** | 372 | 직접 데이터 (`indicators_data`) | `{error: str}` | ❌ | ✅ |
-| **stocks/views_eod.py** | 137 | 직접 데이터 (`{signal_id,date,count,stocks}`) | `{error: str}` | ❌ | ✅ |
-| **stocks/views_market_movers.py** | 69 | 직접 (Serializer.data) | `{error: str}` | ❌ | ✅ |
-| **stocks/views_mvp.py** | 200 | 직접 (`{mode, count, data}`) | 없음 | ❌ | ✅ |
-| **macro/views.py** | 411 | 직접 (Serializer.data) / `{status, message}` (sync) | `{error: str}` | ❌ | ⚠️ sync vs 데이터 |
-| **serverless/views.py** | 3413 | **`{success, data}` / `{success:false, error:{code,message}}`** | `{success:false, error:{code,message}}` | ❌ (수동 limit/page 일부) | ✅ 가장 일관 |
-| **serverless/views_admin.py** | 694 | 직접 (`data`) / `{success, data}` 혼재 | `{error: str}` | ❌ | ⚠️ |
-| **rag_analysis/views.py** | 868 | **헬퍼 `create_success_response`/`create_error_response`** | `{success:false, error:{code,message}, meta}` | ✅ 1개 | ✅ 헬퍼 통일 |
-| **chainsight/api/views.py** | 814 | 직접 (`{center, nodes, edges}`) | `{error: str}` | ❌ (수동 page/page_size 사용) | ⚠️ |
-| **validation/api/views.py** | 558 | 직접 (`{symbol, ...}`) | `{error: str}` / `{symbol, error, message}` | ❌ | ⚠️ 에러 객체 2종 |
-| **news/api/views.py** | 2189 | 직접 (`data`) | `{error: str}` / `{status, message}` | ❌ | ⚠️ |
-| **sec_pipeline/views.py** | 51 | 직접 (`result`) | 없음 | ❌ | ✅ |
-| **config/views.py** | 104 | `JsonResponse` 직접 | 없음 | ❌ | ✅ |
-| **metrics/views.py** | 3 | (비어있음) | — | — | — |
-| **graph_analysis/views.py** | 4 | (비어있음) | — | — | — |
-| **validation/views.py** | 1 | (비어있음) | — | — | — |
-| **chainsight/views.py** | 1 | (비어있음) | — | — | — |
-| **news/views.py** | 3 | (비어있음) | — | — | — |
+표기:
+- `RAW`: 직렬화 결과를 직접 반환 (DRF 기본 패턴)
+- `WRAP`: `{"success": bool, "data": ..., "meta": ...}` envelope
+- `WRAP+E`: WRAP에 `"error": {"code", "message"}` 구조 추가 (rag_analysis 헬퍼)
+- `JR`: `JsonResponse` 사용 (DRF 비사용)
 
-### 패턴 그룹 정리
+| 앱 | 파일 | Response 수 | 응답 envelope | 에러 키 | status 사용 |
+|---|---|---:|---|---|---|
+| **portfolio** | `views.py` | 32 | **JR** (`{"error", "detail"}`) | `error` + `detail` | **하드코딩 400/429/500/503** |
+| **users** | `views.py` | 56 | **RAW** + 일부 message | `error`, `message`, `detail` | `status.HTTP_*` |
+| **stocks** | `views.py` | 25 | **RAW** | `error`, `message` | `status.HTTP_*` |
+| stocks | `views_screener.py` | 15 | **WRAP** (`success`/`data`/`meta`) | `error` | `status.HTTP_*` |
+| stocks | `views_fundamentals.py` | 15 | **WRAP** | `error` | `status.HTTP_*` |
+| stocks | `views_exchange.py` | 13 | **WRAP** | `error` | `status.HTTP_*` |
+| stocks | `views_market_movers.py` | 2 | **RAW** | `error` | `status.HTTP_*` |
+| stocks | `views_eod.py` | 6 | **RAW** | `error` | `status.HTTP_*` |
+| stocks | `views_indicators.py` | 8 | **RAW** | `error` | `status.HTTP_*` |
+| stocks | `views_search.py` | 10 | **RAW** | `error` | `status.HTTP_*` |
+| stocks | `views_mvp.py` | 4 | **RAW** | (없음) | 없음 |
+| **macro** | `views.py` | 26 | **RAW** | `error` | `status.HTTP_*` |
+| **news** | `api/views.py` | 61 | **RAW** | `error`, `message` | `status.HTTP_*` |
+| **chainsight** | `api/views.py` | 20 | **RAW** | `error` | `status.HTTP_*` |
+| **validation** | `api/views.py` | 23 | **RAW** | `error`, `message` | `status.HTTP_*` |
+| **rag_analysis** | `views.py` | 38 | **WRAP+E** (헬퍼 함수) | `error.code`, `error.message` | `status.HTTP_*` |
+| **serverless** | `views.py` | 126 | **혼재** (RAW + WRAP) | `error` (string + nested object) | 대부분 `status.HTTP_*`, 1회 하드코딩 |
+| serverless | `views_admin.py` | 45 | **WRAP** 일부 | `error`, `message` | `status.HTTP_*` |
+| **sec_pipeline** | `views.py` | 3 | **RAW** | `message` | **하드코딩 200/202** |
+| **config** | `views.py` | 2 | **RAW** | (없음) | 없음 |
+| metrics | `views.py` | 0 | (빈 파일) | — | — |
+| graph_analysis | `views.py` | 0 | (빈 파일) | — | — |
+| chainsight | `views.py` | 0 | (빈 파일) | — | — |
+| validation | `views.py` | 0 | (빈 파일) | — | — |
+| news | `views.py` | 0 | (빈 파일) | — | — |
 
-#### 그룹 A — 직접 반환형 (~54%)
-```python
-return Response(serializer.data)        # macro, market_movers
-return Response({'symbol': sym, 'data': ...})   # stocks main
-return Response({'count': N, 'results': [...]})  # stocks_search
-```
-**특징**: DRF 관례에 가까움, 그러나 페이로드 형태가 뷰마다 제각각.
+### 패턴별 그룹 (요약)
 
-#### 그룹 B — `{success, data, meta}` 래핑 (~15%)
-```python
-return Response({
-    "success": True,
-    "data": serializer.data,
-    "meta": {"count": N, "timestamp": ...}
-})
-```
-**사용처**: stocks/views_fundamentals, views_exchange, views_screener (Enhanced).
+| 패턴 | 앱/파일 | 일관성 |
+|---|---|---|
+| **RAW + DRF 표준** (다수) | users, stocks/views, macro, news, chainsight, validation, stocks/eod·indicators·search·mvp·market_movers, config | 가장 일반적 |
+| **WRAP envelope** (일부) | stocks/screener, fundamentals, exchange, serverless, serverless/admin (혼재) | 같은 stocks 앱 내에서도 분리 |
+| **WRAP+E 헬퍼** | rag_analysis (`create_success_response`/`create_error_response`) | 모듈 내부 일관 |
+| **JsonResponse + 하드코딩** | portfolio (Slice 1~5 coach API 전체) | 다른 앱과 완전 분리 |
 
-#### 그룹 C — `{success, data}` 래핑 (~25%)
-```python
-return Response({'success': True, 'data': {...}})
-return Response({'success': False, 'error': {'code': 'X', 'message': 'Y'}}, status=400)
-```
-**사용처**: serverless/views.py 거의 전체 (가장 일관성 있음).
+### 가장 심각한 불일치 — `serverless/views.py` 내부 혼재
 
-#### 그룹 D — RAG 헬퍼형 (~5%)
-```python
-create_success_response(data, meta=None)  # {success, data, meta:{request_id, timestamp}}
-create_error_response(code, message)      # {success:false, error:{code,message}, meta}
-```
-**사용처**: rag_analysis/views.py만. 가장 진화된 형태이나 다른 앱이 따라가지 않음.
+`serverless/views.py`(126개 Response)에는 같은 파일 안에서 두 가지 envelope이 공존한다:
 
-#### 그룹 E — Django 직접 (`JsonResponse`, ~2%)
-```python
-return JsonResponse(result, status=200, json_dumps_params={"ensure_ascii": False})
-```
-**사용처**: portfolio/views.py 전체 (DRF를 의도적으로 미사용).
+- WRAP 패턴: `market_movers_api`, `screener_alerts`, `extract_relations_from_news` 등
+  ```python
+  return Response({'success': True, 'data': {...}})
+  return Response({'success': False, 'error': {'code': '...', 'message': '...'}}, status=...)
+  ```
+- RAW + 일반 dict 패턴: 다수의 GET endpoint
+  ```python
+  return Response(serializer.data)
+  return Response({'error': '...'}, status=...)
+  ```
+
+또한 line 2887에는 유일한 하드코딩 `status=400`이 존재하여 같은 파일 내에서도 status 표기 통일이 깨져 있다.
 
 ---
 
 ## HTTP 상태 코드 일관성
 
-### 상태 코드 사용 통계
+### `status.HTTP_*` vs 하드코딩 정수 비교
 
-| 표기 방식 | 건수 | 예시 위치 |
-|----------|------|----------|
-| `status=status.HTTP_XXX` | 248건 | DRF 일반적 |
-| `status=숫자` (200, 400, 500 등) | 38건 | portfolio (전체), serverless 1건, sec_pipeline (전체) |
-| `status` 미지정 (200 기본) | 다수 | 정상 응답 대부분 |
+| 표기 방식 | 파일 수 | 호출 수 |
+|---|---:|---:|
+| `status=status.HTTP_*` (권장) | 16 | 248 |
+| `status=400/401/404/500` (하드코딩) | 3 | 36 |
 
-### 발견된 일관성 문제
+#### 하드코딩이 발견된 파일
 
-#### 1) 생성 시 201 vs 200 혼용
-- **201 사용 (정상)**: `users/views.py:107` (User), `users/views.py:296` (Portfolio), `users/views.py:639` (Watchlist), `users/views.py:731` (WatchlistItem), `rag_analysis/views.py:87` (DataBasket), `rag_analysis/views.py:167` (BasketItem)
-- **200 사용 (잘못된 사례)**:
-  - `users/views.py:1040` `UserInterestListCreateView.post`: 생성 후 `created` 비어있으면 200, 비어있지 않으면 201 → 동작은 합리적이나 클라이언트 분기 부담
-  - `users/views.py:918` `WatchlistBulkAddView.post`: `added if added else 200` → bulk 결과에 따라 분기
-- **POST 후 200 반환 (성공/실패 둘 다)**: `validation/api/views.py:484` `UserPeerPreferenceView.put` (`{status: 'ok'}`)
+1. **`portfolio/views.py`** — 32회 (전체)
+   - `status=400`, `status=429`, `status=500`, `status=503`
+   - DRF를 사용하지 않으므로 `rest_framework.status` import 자체가 없음.
+   - `JsonResponse(dict, status=int)` 패턴 일관 (내부 일관성은 있음).
+2. **`sec_pipeline/views.py`** — 3회
+   - `status=200`, `status=202` — DRF Response 사용에도 하드코딩.
+3. **`serverless/views.py`** — 1회 (line 2887)
+   - 거의 모든 호출은 `status.HTTP_*`인데 한 군데만 `status=400` (코드 일관성 결함).
 
-#### 2) 204 No Content 사용 — 적절
-- `users/views.py:342, 688, 759, 1087`, `rag_analysis/views.py:132, 205` (DELETE 시)
+### 201 Created 사용 현황 — 양호
 
-#### 3) 500과 503 혼용 (외부 API 실패)
-- **503 사용**: `stocks/views_search.py:53`, `stocks/views_exchange.py:58, 178, 228, 277` (FMP API 실패 시)
-- **500 사용**: `stocks/views.py:332, 596, 671, 745`, `users/views.py:521, 566`, `macro/views.py 전체` — 외부 API 실패 시에도 500
-- **권고**: 외부 API 의존 실패는 503, 내부 코드 버그는 500으로 통일.
+생성 endpoint에서 201 CREATED가 적절히 사용되고 있다 (총 14회):
 
-#### 4) 401 vs 403
-- `validation/api/views.py:463, 489`: 로그인 필요 시 401 사용 — 그러나 DRF의 `IsAuthenticated`는 기본적으로 403 반환.
-  - 권고: `permission_classes=[IsAuthenticated]`로 통일하거나 DRF 동작에 맞춰 401/403 명시.
+| 파일 | line | 컨텍스트 |
+|---|---:|---|
+| users/views.py | 107, 295, 639, 731 | 회원가입, Portfolio create, Watchlist 생성, WatchlistItem 생성 |
+| users/views.py | 918, 1040 | 동적 분기 (`status.HTTP_201_CREATED if added/created else HTTP_200_OK`) — 모범 |
+| serverless/views.py | 1065, 1435, 1826 | Alert 생성 |
+| serverless/views_admin.py | 568 | Admin 액션 트리거 |
+| rag_analysis/views.py | 87, 167, 349, 459 | DataBasket / Session / Message 생성 |
 
-#### 5) 202 Accepted 사용 — 적절
-- `sec_pipeline/views.py:45`: 비동기 수집 트리거 시 202 반환 (모범 사례).
+> 단, **portfolio coach API**는 POST + 결과 생성임에도 항상 `status=200`을 반환한다. (LLM 결과는 자원 생성이 아니라 계산 결과로 해석한 듯하나, 다른 앱의 POST 패턴과 다름.)
 
-#### 6) 상태 코드 미설정으로 인한 잠재 버그
-- `validation/api/views.py:340, 349`: `{symbol, error: 'no_leader'}` / `{error: 'no_data'}` 반환 시 status 미지정 → **200 OK로 응답** 됨.
-  - 해당 응답은 실패 의미를 담고 있으나 HTTP 200이라 클라이언트가 성공으로 처리할 가능성 있음.
+### 4xx/5xx 분포 (추출 결과)
 
-#### 7) 숫자 하드코딩
-- `portfolio/views.py 전체`: `status=400`, `status=500`, `status=429`, `status=503` 모두 숫자.
-- `sec_pipeline/views.py:45-51`: `status=202`, `status=200` 숫자.
-- `serverless/views.py:2887`: `status=400` 숫자 (다른 라인은 `status=status.HTTP_*`).
-- 권고: 일관성을 위해 `rest_framework.status` 상수를 사용하거나, portfolio처럼 의도적으로 DRF를 회피한 경우 숫자를 명시적으로 통일.
+| 코드 | 사용 위치 (대표) |
+|---|---|
+| 400 BAD_REQUEST | 모든 앱에서 사용 — 입력 검증 실패 |
+| 401 UNAUTHORIZED | users/views.py:173 (LogIn 실패) |
+| 403 FORBIDDEN | (직접 발견 없음 — DRF permission_classes가 자동 처리) |
+| 404 NOT_FOUND | stocks/views_fundamentals.py:79, validation, chainsight 등 다수 |
+| 429 TOO_MANY_REQUESTS | portfolio/views.py (`budget_exceeded`) |
+| 500 INTERNAL_SERVER_ERROR | macro/views.py 8회, stocks/views_search.py 등 |
+| 503 SERVICE_UNAVAILABLE | stocks/views_exchange.py:59, stocks/views_search.py:53 |
 
 ---
 
 ## 에러 응답 형식
 
-### 에러 키 사용 분포 (앱별)
+### 키 사용 빈도
 
-| 에러 키 패턴 | 건수 | 사용처 |
-|-------------|------|--------|
-| `{'error': str}` | ~150건 | macro, stocks (search/eod/quote/market_movers/fundamentals/exchange/screener), users, validation |
-| `{'error': str, 'message': str}` | ~10건 | validation/api/views.py (in_universe, no_data) |
-| `{'error': {'code': str, 'message': str, 'details': dict}}` | ~10건 | stocks/views.py:586 (Overview), stocks/views.py:920 (Sync) |
-| `{'success': False, 'error': {'code': str, 'message': str}}` | ~70건 | serverless/views.py 전체 |
-| `{'success': False, 'error': {'code': str, 'message': str}, 'meta': dict}` | ~30건 | rag_analysis/views.py 전체 |
-| `{'detail': str}` | DRF 기본 (raised exceptions) | DRF 표준 (`raise NotFound`, `raise ParseError`) |
-| `{'message': str}` | ~5건 | users/views.py:213, 242, 248 (favorites), `{'ok': str}` (login/logout) |
-| serializer.errors (raw) | ~30건 | 모든 ModelSerializer is_valid 검증 실패 시 |
-| `{status: 'ok'/'started'/'no_report', message: str}` | ~10건 | macro/sync, news/ml_shadow, validation/preference |
+| 에러 키 | 파일 수 | 호출 수 | 형식 예 |
+|---|---:|---:|---|
+| `error` | 12 | 159 | `{"error": "메시지"}` 또는 `{"error": {"code": "X", "message": "Y"}}` |
+| `message` | 10 | 112 | `{"message": "텍스트"}` (성공/에러 모두) |
+| `detail` | 3 | 27 | DRF 표준 — 그러나 portfolio가 비정형으로 사용 |
 
-### 핵심 문제
+### 형식 불일치 사례
 
-#### 1) **에러 키 5종 혼재** — FE에서 `error?.message ?? detail ?? error ?? message` 같은 로직 필요
-가장 큰 일관성 위반. 같은 stocks 앱 내에서도:
-- `views.py:586` → `{error: {code, message, details}}`
-- `views_fundamentals.py:78` → `{error: str}`
-- `views_search.py:32` → `{error: str}`
+#### 1. `error` 키의 두 가지 구조
 
-#### 2) **serializer.errors 직접 노출**
 ```python
-# users/views.py:299, 336, 474, 640, 677, 733, 797
-return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# 단순 문자열 (대부분의 앱: stocks, users, macro, chainsight, validation)
+return Response({"error": "Stock not found"}, status=404)
+
+# 중첩 구조 (serverless, rag_analysis)
+return Response({
+    "success": False,
+    "error": {"code": "INVALID_TYPE", "message": "..."}
+}, status=400)
 ```
-DRF 기본 동작이지만 다른 앱은 래핑함:
+
+→ 클라이언트가 `error.message`인지 `error` 자체인지 매번 분기해야 함.
+
+#### 2. DRF 표준 `detail` 미사용
+
+DRF의 `APIException`/`NotFound`/`ValidationError` 등은 자동으로 `{"detail": "..."}` 응답을 생성하지만, 대부분의 코드는 **수동으로 `error` 키**를 만들고 있다.
+
 ```python
-# stocks/views_screener.py:65
-return Response({"error": serializer.errors}, status=...)
-# rag_analysis/views.py:90
-return Response(create_error_response("INVALID_INPUT", str(serializer.errors)), ...)
+# users/views.py 다수
+raise NotFound("Stock not found")  # → DRF 자동 {"detail": "Stock not found"}
+return Response({"error": "..."}, status=...)  # 수동 형식
 ```
-- **문제**: serializer.errors는 dict (필드별 에러 리스트). FE는 어떤 모양일지 매번 추론해야 함.
-- **권고**: 전역 exception handler로 `{success:false, error:{code:'VALIDATION_ERROR', fields: serializer.errors}}` 형태로 통일.
 
-#### 3) **DRF 표준 `{detail: ...}` 와 커스텀 형식 충돌**
-- `raise NotFound("...")` → DRF가 `{detail: '...'}` 반환 (users, rag_analysis 다수)
-- `return Response({'error': '...'}, status=404)` → 커스텀 형식 (stocks, validation, serverless)
-- 동일 앱 내에서도 혼재: `users/views.py:120` (NotFound) vs `users/views.py:439` (custom error).
+같은 `users/views.py`(line 14, 99, 120) 안에서 `ParseError`, `NotFound`, `ValidationError` 같은 DRF exception(자동 `detail` 생성)과 수동 `Response({'error': ...})`가 섞여 있다.
 
-#### 4) **에러 메시지에 `{str(e)}` 직접 노출**
+#### 3. portfolio의 `error` + `detail` 결합
+
+`portfolio/views.py`는 자체 패턴을 채택:
+
 ```python
-# stocks/views.py:331, 671, 744, 816
-return Response({'error': f'데이터 조회 중 오류가 발생했습니다: {str(e)}'}, status=500)
-# stocks/views_search.py:86, 142
-return Response({'error': f'서버 오류: {str(e)}'}, status=...)
-# users/views.py:521, 566
-return Response({'error': '...', 'detail': str(e)}, status=500)
+return JsonResponse(
+    {"error": "invalid_request", "detail": str(exc)[:500]},
+    status=400,
+)
 ```
-- **보안 우려**: 내부 트레이스/SQL/파일 경로가 클라이언트로 노출될 수 있음. (`security_audit.md`와 교차 점검 필요)
-- **권고**: `str(exc)[:300]`처럼 길이 제한 및 운영 모드에서는 일반 메시지로 마스킹.
 
-#### 5) **에러 코드 vs 에러 메시지 분리 부재**
-- serverless / rag_analysis 만 `code` 필드를 가짐. 다른 앱은 자연어 메시지만 반환.
-- FE 다국어 처리 시 코드 기반 매핑이 불가능.
+여기서 `error`는 에러 코드(machine-readable), `detail`은 사람이 읽는 메시지로 사용. 의도는 좋으나 다른 앱과 다른 의미론적 구조.
+
+#### 4. `message`의 이중 의미
+
+`message` 키는 성공·에러 두 가지 용도로 사용된다:
+
+```python
+# 성공 (users/views.py:222)
+return Response({"message": "Stock added to favorites", "stock": ...})
+
+# 에러 (sec_pipeline/views.py:44)
+return Response({'symbol': symbol.upper(), 'status': 'collecting',
+                 'message': 'Collection triggered.'}, status=202)
+
+# 에러 (serverless WRAP+E)
+{"error": {"code": "X", "message": "..."}}
+```
+
+같은 키가 컨텍스트에 따라 의미가 달라져 클라이언트 핸들링이 어려워진다.
 
 ---
 
 ## 페이지네이션 현황
 
-### 글로벌 설정
+### 결론: DRF 페이지네이션이 전혀 사용되지 않음
 
-```python
-# config/settings.py:348-362
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (...),
-    'DEFAULT_PERMISSION_CLASSES': [...],
-    'DEFAULT_THROTTLE_RATES': {...},
-    'DEFAULT_SCHEMA_CLASS': '...',
-    # ❌ DEFAULT_PAGINATION_CLASS 없음
-    # ❌ PAGE_SIZE 없음
-}
-```
+| 점검 항목 | 결과 |
+|---|---|
+| `config/settings.py`의 `DEFAULT_PAGINATION_CLASS` | **미설정** (line 348~362 REST_FRAMEWORK dict) |
+| `PageNumberPagination` import | 0건 |
+| `CursorPagination` import | 0건 |
+| `LimitOffsetPagination` import | 0건 |
+| `pagination_class = ...` 명시 | 0건 |
+| `generics.ListAPIView` 사용 | 1건 (`stocks/views.py:75 StockListAPIView`) — pagination_class 없음 |
 
-**결과**: DRF의 모든 ListView/list 액션은 페이지네이션 없이 전체 결과를 반환한다. `Glob`/`Grep`으로 검색한 결과, **`PageNumberPagination`, `CursorPagination`, `LimitOffsetPagination`, `pagination_class`, `paginate_queryset` 사용 0건**.
+### 명시적 인지된 부채
 
-### 페이지네이션을 적용한 뷰 (수동 구현)
+`config/settings.py:347`에 다음과 같은 코멘트가 있다:
 
-| 위치 | 방식 | 응답 형식 |
-|------|------|----------|
-| `users/views.py:597` `WatchlistListCreateView.get` | Django `Paginator` (page/page_size) | `{results, pagination: {count, page, page_size, num_pages, has_next, has_previous}}` |
-| `users/views.py:810` `WatchlistStocksView.get` | Django `Paginator` 동일 | 동일 |
-| `rag_analysis/views.py:782-826` (분석 로그) | Django `Paginator` | `{..., pagination: {page, page_size, total_pages, total_count}}` |
-| `serverless/views.py:1277` 영역 | 수동 `limit`/`offset` 쿼리 파라미터 | 정해진 limit만큼 반환 |
-| `chainsight/api/views.py` | `page`/`page_size` 쿼리 파라미터 | `_build_chain_signals(page, page_size, ...)` |
+> `# audit P0 #14 (페이지네이션 표준)는 별도 PR에서 처리 — 응답 envelope 결정이 선결 조건`
 
-### 페이지네이션이 누락된 위험 뷰 (대용량 잠재)
+→ 페이지네이션 부재는 **알려진 P0 결함**이며, envelope 표준화가 선결 조건으로 묶여 있다.
 
-| 위치 | 쿼리 | 위험도 |
-|------|------|-------|
-| `users/views.py:91` `Users.get` | `User.objects.all()` 전체 | 🔴 (관리자 전용이지만 사용자 폭증 시 OOM) |
-| `users/views.py:264, 358, 404` Portfolio 목록 | `Portfolio.objects.filter(user=request.user)` | 🟡 (사용자별이지만 보유 종목 수 무제한) |
-| `users/views.py:975` UserInterest | `UserInterest.objects.filter(user=...)` | 🟢 (사용자별, 적은 갯수) |
-| `stocks/views.py:75` `StockListAPIView` (`generics.ListAPIView`) | `Stock.objects.all().order_by('-market_capitalization')` | 🔴 (S&P 500 + 전체 = 수천 건이 한 번에 반환됨, 글로벌 페이지네이션 없으므로 무한 반환) |
-| `stocks/views_mvp.py:41` | `Stock.objects.all()[:20]` 하드코딩 | 🟢 (limit 20) |
-| `stocks/views.py:190` 검색 | `[:20]` 하드코딩 | 🟢 |
-| `stocks/views_eod.py:78` 시그널 상세 | `[:50]` 하드코딩 | 🟢 |
-| `stocks/views_eod.py:119` 파이프라인 로그 | `[:7]` 하드코딩 | 🟢 |
-| `news/api/views.py:50` `NewsViewSet.queryset` | `NewsArticle.objects.all().prefetch_related(...)` | 🔴 (DRF ReadOnlyModelViewSet에 페이지네이션이 없으면 전부 반환) |
-| `validation/api/views.py:151, 335` peer 목록 | `Stock.objects.filter(symbol__in=peer_symbols)` | 🟡 (peer는 보통 5–20개) |
-| `serverless/views.py:2963` LLM 관계 | `[:50]` 하드코딩 | 🟢 |
+### 무제한 list 반환이 의심되는 endpoint
 
-### 핵심 문제
+| 파일:라인 | 엔드포인트 | 위험 |
+|---|---|---|
+| `users/views.py:92` | `User.objects.all()` (관리자용) | 사용자 수만큼 직렬화 |
+| `users/views.py:264` | `Portfolio.objects.filter(user=...)` | 사용자별 무제한 |
+| `users/views.py:193` | `user.favorite_stock.all()` | 즐겨찾기 무제한 |
+| `news/api/views.py:50` | `NewsArticle.objects.all().prefetch_related('entities')` | 뉴스 무제한 (ViewSet의 queryset) |
+| `news/api/views.py:95~105` | 7일치 `articles.distinct().order_by(...)` 후 전체 직렬화 | 종목당 수백~수천 가능 |
+| `stocks/views.py:75 StockListAPIView` | `Stock.objects.all()` | S&P 500 = 500건, 향후 확장 시 위험 |
+| `stocks/views.py:190` (`StockSearchAPIView`) | `[:20]` 슬라이싱 | 안전하지만 페이지네이션 부재 |
+| `stocks/views_eod.py:79` | `[:50]` 슬라이싱 | 안전하지만 페이지네이션 부재 |
+| `stocks/views_eod.py:119` | `[:7]` 슬라이싱 | 작아서 무방 |
+| `validation/api/views.py:80` | `CategorySignal.objects.filter(...)` | 카테고리 7개로 한정 — OK |
+| `rag_analysis/views.py:76` | `DataBasket.objects.filter(user=...).prefetch_related('items')` | 사용자당 무제한 |
 
-1. **`stocks/StockListAPIView`** (`generics.ListAPIView`): `DEFAULT_PAGINATION_CLASS`가 없으므로 `Stock.objects.all()`을 전부 반환. S&P 500 ETF 등 수천 건이 한 응답에 들어감.
-2. **`news/NewsViewSet`** (`ReadOnlyModelViewSet`): 동일 이유로 전체 NewsArticle 반환 위험. `prefetch_related('entities')`까지 포함되어 페이로드 폭발.
-3. **수동 페이지네이션 응답 형식 불일치**:
-   - users: `{results, pagination: {count, page, page_size, num_pages, has_next, has_previous}}`
-   - rag_analysis: `{..., pagination: {page, page_size, total_pages, total_count}}` — `count` vs `total_count`, `num_pages` vs `total_pages` 키 불일치.
+### 클라이언트 측 슬라이싱 의존
+
+다수의 endpoint는 페이지네이션 대신 코드 내부에서 `[:N]` 슬라이싱으로 응답 크기를 제한한다(`[:5]`, `[:10]`, `[:20]`, `[:50]`). 이는:
+
+- 즉각적인 응답 폭주 방지에는 효과적
+- 클라이언트가 다음 페이지를 가져올 방법 없음
+- 정렬/필터링 후 잘리므로 결과 누락 가능
+- 무한 스크롤·테이블 ListView UX 불가능
 
 ---
 
 ## 권고사항
 
-### 🔴 P0 — 즉시 수정 (1주 내)
+### 우선순위 P0 (응답 envelope 통일)
 
-#### R1. DRF 글로벌 페이지네이션 활성화
-```python
-# config/settings.py REST_FRAMEWORK
-REST_FRAMEWORK = {
-    ...
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 50,
-}
-```
-- **Why**: `StockListAPIView`, `NewsViewSet` 등 ListView가 무한 반환되는 즉각적 위험 차단.
-- **영향**: 기존 응답이 `[...]` → `{count, next, previous, results}` 로 변경 → FE 동기 변경 필요. 영향 큰 변경이므로 별도 PR로 분리.
+1. **`shared/responses.py`(가칭) 헬퍼 모듈 신설**
+   - `success(data, meta=None, status=200)` 와 `error(code, message, status=400, details=None)` 두 함수 표준화.
+   - 이미 `rag_analysis/views.py:35-61`에 모범 구현(`create_success_response`/`create_error_response`)이 존재 — 이를 프로젝트 전역 모듈로 승격.
+2. **envelope 결정**: 다음 중 1개로 통일하고 `DECISIONS.md`에 명시
+   - **Option A (RAW)**: DRF 표준에 맞춤 — 변경 코스트 최소(81개 WRAP 호출 제거)
+   - **Option B (WRAP)**: `{success, data, meta, error}` 헬퍼 강제 — 449개 RAW 호출 마이그레이션 필요
+3. **portfolio coach API를 DRF로 통합**: 32개 `JsonResponse` 호출을 동일 envelope으로 정렬.
 
-#### R2. 응답 형식 표준 정립
-- **선택지**:
-  - **(권장) Option A**: `rag_analysis`의 헬퍼 패턴을 전역화 — `{success, data, meta:{request_id,timestamp}}` / 에러는 `{success:false, error:{code,message}, meta}`.
-  - Option B: DRF 기본 그대로 (`Response(data)`) + DRF 예외 핸들러 통일.
-- **Why**: 현재 5종 혼재로 FE 코드가 매 엔드포인트마다 분기. 헬퍼 강제 사용 + lint 룰로 점진적 마이그레이션.
-- **How**:
-  1. `core/api_helpers.py`에 `success_response`/`error_response` 신설.
-  2. 새 엔드포인트는 헬퍼 의무화 (CI에 grep 룰 추가).
-  3. 기존 엔드포인트는 `/api/v2/` 네임스페이스에서 마이그레이션, `/api/v1/`은 deprecated.
+### 우선순위 P1 (status 코드 정상화)
 
-#### R3. 전역 DRF 예외 핸들러
-```python
-# REST_FRAMEWORK['EXCEPTION_HANDLER'] = 'core.exceptions.custom_exception_handler'
-```
-- 모든 `raise NotFound`, `raise ValidationError` 등을 `{success:false, error:{code, message}}` 형식으로 변환.
-- serializer.errors도 `{success:false, error:{code:'VALIDATION_ERROR', fields:{...}}}`로 통일.
+4. **하드코딩 status 제거**: `portfolio/views.py`는 DRF로 마이그레이션 시 자동 해결, `serverless/views.py:2887`과 `sec_pipeline/views.py` 4건은 즉시 `status.HTTP_*`로 교체.
+5. **`message` 키 의미 분리**: 성공 메시지는 `data.message` 또는 `meta.message`로, 에러 메시지는 `error.message`로 격리.
 
-### 🟠 P1 — 1개월 내
+### 우선순위 P2 (페이지네이션 도입)
 
-#### R4. 에러 메시지에서 내부 정보 노출 제거
-- `str(e)` 직접 반환을 차단. 운영(`DEBUG=False`) 환경에서는 일반화된 메시지만, 디버그용 상세는 로그로만.
-- 영향: `stocks/views.py:331, 671, 744, 816, 596`, `stocks/views_search.py:86, 142`, `users/views.py:521, 566`, `macro/views.py 다수`.
+6. **`DEFAULT_PAGINATION_CLASS` + `PAGE_SIZE` 설정** — envelope 결정 후 즉시 추가 (settings.py:347 코멘트가 가리키는 P0 #14 부채 해소).
+7. **`generics.ListAPIView` / `viewsets.ReadOnlyModelViewSet` 우선 적용**: `stocks/views.py:75 StockListAPIView`, `news/api/views.py:47 NewsViewSet`에 `pagination_class` 지정.
+8. **수동 list endpoint 마이그레이션**: `User.objects.all()`, `Portfolio.objects.filter(...)`, `DataBasket.objects.filter(...)` 등에 `Paginator` 또는 DRF pagination 적용.
 
-#### R5. HTTP 상태 코드 표기 통일
-- `status=숫자` → `status=status.HTTP_*` 일괄 변환 (sec_pipeline, serverless 일부, portfolio).
-- 단, portfolio는 DRF 미사용이므로 예외 처리.
+### 우선순위 P3 (DRF exception 활용)
 
-#### R6. validation/api 에러 시 status 명시
-- `validation/api/views.py:340, 349`처럼 status 미지정으로 200을 반환하는 케이스를 점검하여 적절한 4xx로 변경.
+9. `Response({"error": "..."}, status=...)` 수동 패턴을 가능한 곳에서 `raise NotFound(...)`, `raise ValidationError(...)`, `raise ParseError(...)`로 대체. 그러면 `detail` 키로 자동 통일됨.
+10. `users/views.py`처럼 한 파일 안에서 DRF exception과 수동 Response가 섞여 있는 곳을 우선 정리.
 
-#### R7. 외부 API 실패 시 503 통일
-- 외부 API(FMP, Alpha Vantage, FRED) 실패 → 503 (사용 처: `stocks/views_search`, `stocks/views_exchange`).
-- 내부 버그 → 500.
-- 현재 macro 전체가 외부 API 실패에도 500을 반환 → 503으로 변경.
+### Post-fix 검증
 
-### 🟡 P2 — 3개월 내 / 점진적
-
-#### R8. 페이지네이션 응답 키 통일
-- users vs rag_analysis 키 불일치 (`num_pages` vs `total_pages`, `count` vs `total_count`).
-- DRF 기본 `PageNumberPagination` 사용으로 자연 해결.
-
-#### R9. 401 vs 403 명시
-- `validation/api/views.py:463, 489`: 수동 401 반환을 DRF `IsAuthenticated`에 위임.
-
-#### R10. 빈 views.py 정리
-- `metrics/views.py`, `graph_analysis/views.py`, `validation/views.py`, `chainsight/views.py`, `news/views.py`: 사용하지 않으면 `# Create your views here.` 주석을 제거하거나 파일 자체를 삭제.
-
-### 우선순위 요약
-
-| 권고 | 파일 영향 범위 | 예상 작업 시간 | 비고 |
-|------|---------------|--------------|------|
-| R1 글로벌 페이지네이션 | 1 (settings) + FE 다수 | 1일 + FE 1주 | API 호환성 깨짐, v2 분기 필요 |
-| R2 응답 형식 표준 | 신규 코드 정책 + 점진 마이그 | 1주 + 분기별 | v1 유지하며 v2로 |
-| R3 전역 예외 핸들러 | 1 (handler) | 2일 | DRF 활용으로 즉시 효과 |
-| R4 내부 정보 노출 | ~10 파일 | 1주 | security_audit과 교차 |
-| R5 status 표기 통일 | ~5 파일 | 반나절 | mechanical |
-| R6 status 미지정 fix | validation 1 파일 | 2시간 | 안전 픽스 |
-| R7 503 통일 | macro 1 파일 | 반나절 | 정책 결정 후 |
-| R8 페이지네이션 키 | 글로벌 페이지네이션 채택 시 자연 해결 | — | R1과 함께 |
-| R9 401/403 | validation 1 파일 | 1시간 | 안전 픽스 |
-| R10 빈 파일 정리 | 5 파일 | 30분 | cleanup |
+- 모든 `Response()` 호출을 정규식으로 grep해 envelope 일관성 자동 검증하는 pre-commit hook(또는 ruff plugin) 도입.
+- contracts/ OpenAPI 스펙에 envelope schema를 강제 정의하고, `drf-spectacular` 응답 schema 검증.
 
 ---
 
-## 부록 A — 패턴 분포 데이터 (Grep 카운트)
+## 부록 A — 분석 명령
 
-### Response 호출 분포 (파일별)
-```
-serverless/views.py: 126
-users/views.py: 56
-serverless/views_admin.py: 45
-news/api/views.py: 61
-rag_analysis/views.py: 38
-portfolio/views.py: 32
-macro/views.py: 26
-stocks/views.py: 25
-validation/api/views.py: 23
-chainsight/api/views.py: 20
-stocks/views_screener.py: 15
-stocks/views_fundamentals.py: 15
-stocks/views_exchange.py: 13
-stocks/views_search.py: 10
-stocks/views_indicators.py: 8
-stocks/views_eod.py: 6
-stocks/views_mvp.py: 4
-sec_pipeline/views.py: 3
-config/views.py: 2
-stocks/views_market_movers.py: 2
+```bash
+# Response 호출 카운트
+grep -rE "Response\(" --include="views*.py"
+
+# Success envelope 사용
+grep -rE "'success':\s*True" --include="views*.py"
+
+# 하드코딩 status
+grep -rE "status=\d{3}" --include="views*.py"
+
+# DRF 표준 status
+grep -rE "status=status\." --include="views*.py"
+
+# 페이지네이션 import (0건 확인)
+grep -rE "PageNumberPagination|CursorPagination|LimitOffsetPagination" --include="*.py"
 ```
 
-### `success` 키 사용 (Multiline grep, ~100건 표본)
-- `serverless/views.py`: 다수 (success: true/false 양쪽)
-- `stocks/views_fundamentals.py`, `views_exchange.py`, `views_screener.py`: success: true (응답 래핑)
-- `rag_analysis/views.py`: 헬퍼 통해 사용
-- 그 외: 미사용
+## 부록 B — 빈 views.py 파일 (미구현 또는 ViewSet 분리)
 
-### 에러 키 사용 분포
-```
-{'error': ...}     239건  18 파일
-{'detail': ...}    portfolio 다수 (커스텀 + DRF NotFound 등 raise)
-{'message': ...}   users 일부, news 일부
-{success:false, error:{...}} serverless, rag_analysis
-```
-
-### HTTP 상태 코드 표기
-```
-status=status.HTTP_*   248건  16 파일
-status=숫자             38건  portfolio (32건), serverless 1건, sec_pipeline 4건, macro 1건
-status 미지정 (200 기본)  다수
-```
+| 파일 | 비고 |
+|---|---|
+| `chainsight/views.py` | API는 `chainsight/api/views.py`로 분리 |
+| `news/views.py` | API는 `news/api/views.py`로 분리 |
+| `validation/views.py` | API는 `validation/api/views.py`로 분리 |
+| `metrics/views.py` | 내부 서비스용으로 view 미작성 |
+| `graph_analysis/views.py` | 모델/서비스만 구현, API 미구현 (CLAUDE.md) |
 
 ---
 
-## 부록 B — 대표 코드 스니펫
-
-### 좋은 예 (참고할 만한 패턴)
-
-**rag_analysis 헬퍼 패턴** (`rag_analysis/views.py:35-61`):
-```python
-def create_success_response(data, meta=None):
-    return {"success": True, "data": data, "meta": meta or {
-        "request_id": str(uuid.uuid4()),
-        "timestamp": datetime.now().isoformat()
-    }}
-
-def create_error_response(code, message, meta=None):
-    return {"success": False, "error": {"code": code, "message": message}, ...}
-```
-
-**serverless 일관 패턴** (`serverless/views.py:73-79`):
-```python
-return Response({
-    'success': False,
-    'error': {'code': 'INVALID_TYPE', 'message': '...'}
-}, status=status.HTTP_400_BAD_REQUEST)
-```
-
-**sec_pipeline 202 사용** (`sec_pipeline/views.py:42-46`):
-```python
-return Response(
-    {'symbol': symbol.upper(), 'status': 'collecting',
-     'message': 'Collection triggered. Check back shortly.'},
-    status=202,
-)
-```
-
-### 위험한 예 (수정 필요)
-
-**str(e) 노출** (`stocks/views.py:331`):
-```python
-return Response({'error': f'데이터 조회 중 오류가 발생했습니다: {str(e)}'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-```
-
-**status 미지정** (`validation/api/views.py:340`):
-```python
-return Response({'symbol': symbol, 'error': 'no_leader'})
-# → HTTP 200 반환됨 (의도와 불일치)
-```
-
-**같은 앱에서 에러 형식 다름** (stocks):
-```python
-# views.py:586 (stocks/Overview)
-return Response({'error': {'code': 'OVERVIEW_ERROR', 'message': '...', 'details': {...}}}, status=500)
-# views_fundamentals.py:78
-return Response({"error": "..."}, status=status.HTTP_404_NOT_FOUND)
-```
-
----
-
-## 부록 C — 영향 받는 프론트엔드 파일 추정
-
-본 감사는 백엔드 전용이지만, 권고 R1·R2·R3 적용 시 프론트엔드 동기화가 필수다. 추정 영향 범위:
-
-- `frontend/lib/api/authAxios.ts` — 응답 파싱 인터셉터
-- `frontend/lib/api/*.ts` — 각 도메인별 API 호출 함수
-- TanStack Query 훅 다수 — 응답 모양 변경 시 일괄 수정 필요
-
-**권고**: R1·R2는 `/api/v2/` 네임스페이스로 별도 도입하고 `/api/v1/`은 6개월 후 sunset.
-
----
-
-**감사자 메모**: 본 보고서는 정적 코드 분석으로 작성되었으며, 실제 런타임 응답은 DRF 미들웨어 / 인증 / 권한 / 시리얼라이저 동작에 따라 부분적으로 차이가 있을 수 있다. 마이그레이션 전에는 통합 테스트(`tests/`)에서 응답 형식 단언이 깨지는지 사전 검증 필요.
+**감사 종료** — 코드 변경 0건. 모든 권고사항은 후속 PR에서 처리.

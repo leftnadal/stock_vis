@@ -1,315 +1,257 @@
 # API 문서 감사 보고서
 
-- 감사 일자: 2026-05-08
-- 대상 브랜치: portfolio
-- 대상 디렉토리: `/Users/byeongjinjeong/Desktop/stock_vis`
-- 모드: 읽기 전용 (코드 변경 없음)
-
-> **주요 변경 (vs 5월 7일 보고서)**: `drf-spectacular`가 설치·등록되어 **자동 OpenAPI 스펙 생성이 가능한 상태**로 전환됨. 단, Swagger UI 노출은 `/api/v2/`에 한정. v1 엔드포인트는 SCHEMA_PATH_PREFIX 매칭으로 스펙엔 포함되나 `@extend_schema`가 없는 view는 graceful fallback(string body)으로 노출.
+- 감사일: 2026-05-09
+- 감사자: 자동 감사 (읽기 전용)
+- 대상: stock_vis 백엔드 (Django 5.1.7 + DRF) 전체 URL 라우팅
+- 비고: 코드 미수정. 실제 등록된 `urls.py` / `views*.py` 만 정적 분석.
 
 ---
 
 ## 현재 상태
 
-### OpenAPI/Swagger 문서화 도구 설치 여부
+### 1.1 OpenAPI 도구 설치 현황
 
 | 항목 | 상태 | 근거 |
 |------|------|------|
-| `drf-spectacular` | ✅ 설치 (^0.29.0) | `pyproject.toml:38` |
-| `drf-spectacular-sidecar` | ✅ 설치 (^2026.4.14) | `pyproject.toml:39` (정적 자산 SIDECAR) |
-| `drf-yasg` | ❌ 미설치 | grep 0건 |
-| `INSTALLED_APPS` 등록 | ✅ 등록 | `config/settings.py:205-206` (`drf_spectacular`, `drf_spectacular_sidecar`) |
-| `DEFAULT_SCHEMA_CLASS` | ✅ 설정 | `config/settings.py:361` (`drf_spectacular.openapi.AutoSchema`) |
-| `SPECTACULAR_SETTINGS` | ✅ 설정 | `config/settings.py:365-413` (TITLE: Market Pulse v2 중심) |
-| 자동 스펙 엔드포인트 | ⚠️ v2만 노출 | `config/urls.py:58-68` (`/api/v2/schema/`, `/api/v2/swagger/`, `/api/v2/redoc/`) |
-| SCHEMA_PATH_PREFIX | `/api/v[12]` | v1·v2 둘 다 스펙 포함 (`config/settings.py:377`) |
-| 경고 억제 플래그 | `DISABLE_ERRORS_AND_WARNINGS: True` | v1 미문서화 view는 graceful fallback (`config/settings.py:385`) |
+| `drf-spectacular` 설치 | **설치됨** (`^0.29.0`) | `pyproject.toml:38` |
+| `drf-spectacular-sidecar` 설치 | **설치됨** (`^2026.4.14`) | `pyproject.toml:39` |
+| `drf-yasg` | 미설치 | `pyproject.toml` 전체 검색 0건 |
+| `INSTALLED_APPS` 등록 | **등록됨** | `config/settings.py:205-206` (`drf_spectacular`, `drf_spectacular_sidecar`) |
+| `DEFAULT_SCHEMA_CLASS` | **설정됨** | `config/settings.py:361` (`drf_spectacular.openapi.AutoSchema`) |
+| `SPECTACULAR_SETTINGS` | **설정됨** | `config/settings.py:365-413` |
+| Schema endpoint | `/api/v2/schema/` | `config/urls.py:58` |
+| Swagger UI endpoint | `/api/v2/swagger/` | `config/urls.py:59-63` |
+| ReDoc endpoint | `/api/v2/redoc/` | `config/urls.py:64-68` |
 
-### `@extend_schema` 적용 현황 (코드 base 기준)
+### 1.2 자동 생성 가능 여부 — 결론: **부분적 가능, 실용적 미흡**
 
-총 **31 회** 사용, 분포 12개 파일:
+**바로 가능한 것**
+- Swagger UI / ReDoc 페이지가 이미 호스팅됨 (`/api/v2/swagger/`, `/api/v2/redoc/`)
+- `SCHEMA_PATH_PREFIX: r'/api/v[12]'` 로 `/api/v1/*` + `/api/v2/*` 모두 스키마에 포함됨
+- ENUM 충돌 회피 처리 완료 (4개 enum 명시 매핑) — `config/spectacular_enums.py`
+- Sidecar 정적 자산 사용으로 CDN 의존성 없음
 
-| 파일 | 횟수 | 비고 |
-|------|----:|------|
-| `chainsight/api/views.py` | 7 | 클래스 단위 데코레이션 (Chain Sight 명시 7개 거의 전부) |
-| `serverless/views.py` | 6 | `movers`, `presets`(GET/POST), `alerts`(GET/POST), `thesis_list` |
-| `api_request/admin_views.py` | 5 | Provider Admin 5개 모두 적용 |
-| `marketpulse/api/views/*.py` | 5 | overview / cards / news_refresh / i18n / health 각 1회 |
-| `rag_analysis/views.py` | 2 | `baskets list`, `sessions list` operation_id만 |
-| `news/api/views.py` | 2 | (전체 32 중 2 — 30개 `@action` 미적용) |
-| `users/views.py` | 2 | (전체 35 중 2) |
-| `config/settings.py` | 2 | 주석 |
+**구조적 한계 (실용성 저해)**
+- `'DISABLE_ERRORS_AND_WARNINGS': True` (`config/settings.py:385`) — drf-spectacular가 추론 실패한 view를 **조용히 string body로 graceful fallback** 처리. 즉 v1 대부분의 endpoint는 `request body / response body = string` 으로만 표현되어 실질적으로 사용 불가능한 스키마.
+- 명시적 `@extend_schema` 사용 view는 **5개 앱 / 약 26개 view** 만 (전체의 약 13%)
+  - `marketpulse/api/views/*.py` (5개 view 모두 처리됨)
+  - `chainsight/api/views.py` (7건)
+  - `serverless/views.py` (6건 — 함수 뷰 일부)
+  - `api_request/admin_views.py` (5건)
+  - `rag_analysis/views.py` (2건)
+  - `news/api/views.py` (2건)
+  - `users/views.py` (2건)
+- 핵심 v1 영역(`stocks/`, `users/jwt_*`, `macro/`, `thesis/`, `validation/`, `sec_pipeline/`, `portfolio/`)에는 `@extend_schema` 0건
+- 응답 시리얼라이저가 정의되지 않은 `Response({...})` 직접 반환이 대부분 → AutoSchema가 추론 불가
 
-> **추정 자동 인식률**: ViewSet/APIView+Serializer 기반은 데코레이터 없이도 파라미터/응답 일부가 추론됨. 그러나 `@action` 메서드, SSE, 비표준 dict 응답은 graceful fallback으로 string body 처리됨 → 정확도 부족.
-
-### 결론
-
-- **자동 OpenAPI 스펙 생성 인프라는 갖춰져 있다.** 다만 현재 SPECTACULAR_SETTINGS는 Market Pulse v2를 1차 대상으로 설계되어 있고, v1은 graceful fallback에 의존하는 부분 적용 상태다.
-- 추가로 필요한 작업은 ❶ v1 Swagger UI 별도 노출(또는 통합), ❷ `@action`·SSE 등 부정확한 영역의 `@extend_schema` 보강, ❸ TAGS 분류 확장이다.
-- DRF ViewSet/APIView 기반이라 점진적 보강에 유리.
+### 1.3 인증/권한 기본값
+- `DEFAULT_PERMISSION_CLASSES = [IsAuthenticated]` (`config/settings.py:353-355`)
+- 인증: `JWTAuthentication` + `SessionAuthentication`
+- 스키마에는 `SECURITY` 정의가 명시되지 않음 → JWT Bearer 표시는 view별 `@extend_schema(security=...)` 없이는 불완전
 
 ---
 
 ## 엔드포인트 목록 (앱별 테이블)
 
-### 집계 요약
+> 동적 path 파라미터 (`<str:symbol>`, `<int:pk>`, `<uuid:thesis_id>`)는 1개로 카운트.
+> DRF `DefaultRouter`로 등록된 ViewSet은 표준 6개 액션(list/create/retrieve/update/partial_update/destroy)을 1세트로 카운트하되 `@action` 메서드는 별도 카운트.
 
-| 앱 | URL 프리픽스 | 패턴 수 | `@extend_schema` 적용 | 비고 |
-|----|--------------|--------:|:--------------------:|------|
-| stocks | `/api/v1/stocks/` | 39 | 0 | APIView 기반, ViewSet 없음 |
-| users | `/api/v1/users/` | 35 | 2 | JWT 7 + 세션 6 + Favorites 3 + Portfolio 9 + Interests 2 + Watchlist 8 |
-| news | `/api/v1/news/` | 32 | 2 | `NewsViewSet` (ReadOnlyModelViewSet) — 표준 2 + `@action` 30 |
-| macro | `/api/v1/macro/` | 10 | 0 | Pulse + 개별 지표 + 동기화 |
-| rag_analysis | `/api/v1/rag/` | 15 | 2 | DataBasket 6 + Session 4 + Monitoring 5 |
-| serverless | `/api/v1/serverless/` | 64 | 6 | Admin 12 + Movers/Keywords 8 + Breadth 3 + Heatmap 3 + Presets 7 + Filter 2 + Alerts 6 + Thesis(legacy) 4 + ETF/LLM/Institutional/Regulatory/Patent 18 + Health 1 |
-| thesis | `/api/v1/thesis/` | 26 | 0 | Conversation 4 + Monitoring 2 + Alert 2 + 3개 ViewSet (Thesis 6 + Premise 6 + Indicator 6) |
-| validation | `/api/v1/validation/` | 6 | 0 | Symbol 기반 6개 |
-| chainsight | `/api/v1/chainsight/` | 16 | 7 | 명시 7 (모두 데코) + `WatchlistViewSet` 9 (표준 4 + `@action` 5) |
-| sec_pipeline | `/api/v1/sec-pipeline/` | 2 | 0 | Dashboard + Filing |
-| api_request | `/api/v1/` | 6 | 5 | Provider Admin 5(전부 데코) + Health 1 |
-| portfolio | `/api/` | **5** | 0 | Coach E1/GARP, E5/Adjustment, E2/Diagnostic, E6/Comparison, **E3/Metric-Comment (신규)** |
-| marketpulse v2 | `/api/v2/market-pulse/` | **5** | 5 | overview / cards/<id>/detail / news/refresh / i18n / health (전부 데코) |
-| v2 schema | `/api/v2/` | **3** | n/a | `schema/`, `swagger/`, `redoc/` (drf-spectacular 노출) |
-| config (root) | `/` | 3 | 0 | `/`, `/health/`, `/admin/` |
-| **합계** | | **267** | **29\*** | (config root 3 포함) |
+### 2.1 앱별 엔드포인트 요약
 
-\* 31회 중 `config/settings.py` 주석 2개 제외한 실 적용 29건. ViewSet 라우터의 표준 액션(list/create/retrieve/update/partial_update/destroy)과 `@action` 데코레이터를 합산.
+| # | 앱 | URL 파일 | 등록 path 수 | ViewSet 수 | 함수 뷰 수 | `@extend_schema` 적용 | 문서화율 |
+|---|----|----|------:|------:|------:|------:|------:|
+| 1 | **stocks** | `stocks/urls.py` | 38 | 0 | 0 (전부 CBV) | 0 | 0% |
+| 2 | **users** | `users/urls.py` | 30 | 0 | 0 | 2 (`views.py`) | ~7% |
+| 3 | **news** | `news/api/urls.py` | router (1 ViewSet) | 1 (`NewsViewSet`) | 0 | 2 | 부분 |
+| 4 | **macro** | `macro/urls.py` | 9 | 0 | 0 | 0 | 0% |
+| 5 | **rag_analysis** | `rag_analysis/urls.py` | 14 | 0 | 0 | 2 | ~14% |
+| 6 | **serverless** | `serverless/urls.py` | 51 | 0 | 52 (`@api_view`) + 12 (admin CBV) | 6 | ~12% |
+| 7 | **thesis** | `thesis/urls.py` | 8 + 3 routers | 3 (`Thesis/Premise/Indicator`) | 0 | 0 | 0% |
+| 8 | **validation** | `validation/api/urls.py` | 6 | 0 | 0 | 0 | 0% |
+| 9 | **chainsight** | `chainsight/api/urls.py` | 7 + 1 router | 1 (`Watchlist`) | 0 | 7 | ~70% |
+| 10 | **sec_pipeline** | `sec_pipeline/urls.py` | 2 | 0 | 1 (`@api_view` 1) | 0 | 0% |
+| 11 | **api_request** | `api_request/urls.py` | 6 | 0 | 6 | 5 | ~83% |
+| 12 | **portfolio** | `portfolio/urls.py` | 5 | 0 | 5 (`@api_view`) | 0 | 0% |
+| 13 | **marketpulse** (v2) | `marketpulse/api/urls.py` | 5 | 0 | 0 | 5 | **100%** |
+| 14 | **config (root)** | `config/urls.py` | 2 (root + health) | 0 | 0 | 0 | 0% |
+| **합계** | | | **약 184 path** | **5 ViewSet** | **76 함수 뷰** | **약 31 view** | **~13%** |
 
-> **변경분 (5월 7일 대비)**: portfolio +3 (E2/E6/E3 신규), marketpulse v2 +5 (신규 앱), v2 schema +3 (Swagger UI 노출). 합계 256 → **267**.
+> ViewSet 액션 포함 시 추정 총 endpoint 수: **약 200~210개**
+> (NewsViewSet/ThesisViewSet/Premise/Indicator/Watchlist 각각 5~7 액션 × 5 = 약 25~30 endpoint 추가)
 
----
+### 2.2 엔드포인트 상세 (CLAUDE.md 명시 앱)
 
-### stocks (39개) — `/api/v1/stocks/`
+#### stocks/ (38)
+- `GET /` (DashboardView)
+- `GET /stock/<symbol>/` (StockDetailView)
+- `GET /search/` (StockSearchAPIView)
+- `GET /api/chart/<symbol>/`
+- `GET /api/overview/<symbol>/`
+- `GET /api/balance-sheet/<symbol>/`
+- `GET /api/income-statement/<symbol>/`
+- `GET /api/cashflow/<symbol>/`
+- `GET|POST /api/sync/<symbol>/`
+- `GET /api/mvp/stocks/`, `/api/mvp/stock/<symbol>/`, `/api/mvp/rag/<symbol>/`, `/api/mvp/sectors/` (4)
+- `GET /api/indicators/<symbol>/`, `/api/signal/<symbol>/`, `/api/indicators/compare/` (3)
+- `GET /api/search/symbols/`, `/api/search/validate/<symbol>/`, `/api/search/popular/` (3)
+- `GET /api/market-movers/`
+- `GET /api/fundamentals/{key-metrics,ratios,dcf,rating,all}/<symbol>/` (5)
+- `GET /api/screener/`, `/api/screener/{large-cap,high-dividend,low-beta}/`, `/api/screener/sector/<sector>/`, `/api/screener/exchange/<exchange>/` (6)
+- `GET /api/quotes/index/`, `/api/quotes/<symbol>/`, `/api/quotes/batch/`, `/api/quotes/major-indices/`, `/api/quotes/sector-performance/` (5)
+- `GET /eod/dashboard/`, `/eod/signal/<signal_id>/`, `/eod/pipeline/status/` (3)
 
-| 그룹 | 경로 | View 클래스 |
-|------|------|-------------|
-| Web | `''`, `stock/<symbol>/`, `search/` | `DashboardView`, `StockDetailView`, `StockSearchAPIView` |
-| API tab | `api/chart/<symbol>/`, `api/overview/<symbol>/`, `api/balance-sheet/<symbol>/`, `api/income-statement/<symbol>/`, `api/cashflow/<symbol>/` | `Stock*APIView` 5개 |
-| Sync | `api/sync/<symbol>/` | `StockSyncAPIView` |
-| MVP | `api/mvp/stocks/`, `api/mvp/stock/<symbol>/`, `api/mvp/rag/<symbol>/`, `api/mvp/sectors/` | 4개 |
-| Indicator | `api/indicators/<symbol>/`, `api/signal/<symbol>/`, `api/indicators/compare/` | 3개 |
-| Search | `api/search/symbols/`, `api/search/validate/<symbol>/`, `api/search/popular/` | 3개 |
-| Movers | `api/market-movers/` | 1개 |
-| Fundamental | `api/fundamentals/{key-metrics, ratios, dcf, rating, all}/<symbol>/` | 5개 |
-| Screener | `api/screener/{,, large-cap/, high-dividend/, sector/<>, low-beta/, exchange/<>}` | 6개 |
-| Quote | `api/quotes/{index/, <symbol>/, batch/, major-indices/, sector-performance/}` | 5개 |
-| EOD | `eod/dashboard/`, `eod/signal/<signal_id>/`, `eod/pipeline/status/` | 3개 |
+#### users/ (30)
+- JWT: `signup/`, `login/`, `logout/`, `refresh/`, `verify/`, `change-password/`, `profile/` (7)
+- 세션 인증: `me/`, `''`(Users), `@<user_name>/`, `change_password/`, `login/`, `logout/` (6)
+- Favorites: `favorites/`, `favorites/add/<id>/`, `favorites/remove/<id>/` (3)
+- Portfolio: `portfolio/`, `summary/`, `table/`, `refresh/`, `<pk>/`, `<pk>/quick-update/`, `symbol/<symbol>/`, `symbol/<symbol>/refresh/`, `symbol/<symbol>/status/` (9)
+- Interests: `interests/`, `interests/<pk>/` (2)
+- Watchlist: `watchlist/`, `watchlist/<pk>/`, `<pk>/add-stock/`, `<pk>/bulk-add/`, `<pk>/bulk-remove/`, `<pk>/stocks/`, `<pk>/stocks/<symbol>/`, `<pk>/stocks/<symbol>/remove/` (8)
 
-### users (35개) — `/api/v1/users/`
+> 단, `users/jwt/refresh/` 는 `simplejwt`의 `TokenRefreshView`라 drf-spectacular가 자동 인식 가능
 
-| 그룹 | 경로 |
-|------|------|
-| JWT | `jwt/{signup, login, logout, refresh, verify, change-password, profile}/` |
-| Session | `me/`, `''`, `@<user_name>/`, `change_password/`, `login/`, `logout/` |
-| Favorites | `favorites/`, `favorites/add/<stock_id>/`, `favorites/remove/<stock_id>/` |
-| Portfolio | `portfolio/`, `portfolio/summary/`, `portfolio/table/`, `portfolio/refresh/`, `portfolio/<pk>/`, `portfolio/<pk>/quick-update/`, `portfolio/symbol/<symbol>/`, `portfolio/symbol/<symbol>/refresh/`, `portfolio/symbol/<symbol>/status/` |
-| Interests | `interests/`, `interests/<pk>/` |
-| Watchlist | `watchlist/`, `watchlist/<pk>/`, `watchlist/<pk>/{add-stock, bulk-add, bulk-remove, stocks}/`, `watchlist/<pk>/stocks/<symbol>/`, `watchlist/<pk>/stocks/<symbol>/remove/` |
+#### news/ (router 기반)
+- `NewsViewSet` 단일 → 표준 액션 + `@action` 메서드. 자세한 액션 수는 `news/api/views.py` 추가 분석 필요.
 
-### news (32개) — `/api/v1/news/`
+#### macro/ (9)
+- `pulse/`, `fear-greed/`, `interest-rates/`, `inflation/`, `global-markets/`, `calendar/`, `vix/`, `sectors/`, `sync/`, `sync/status/`
 
-- `NewsViewSet(ReadOnlyModelViewSet)` 표준: `GET /` (list), `GET /<pk>/` (retrieve) — 2개
-- 커스텀 `@action` 30개 (`@action\(` grep 30건):
+#### rag_analysis/ (14)
+- DataBasket: `baskets/`, `baskets/<pk>/`, `<pk>/add-item/`, `<pk>/add-stock-data/`, `<pk>/items/<item_id>/`, `<pk>/clear/` (6)
+- Session: `sessions/`, `sessions/<pk>/`, `<pk>/messages/`, `<pk>/chat/stream/` (4)
+- Monitoring: `monitoring/{usage,cost,cache,history,pricing}/` (5)
 
-| 카테고리 | url_path |
-|----------|----------|
-| Stock 관련 | `stock/<symbol>`, `stock/<symbol>/sentiment` |
-| 키워드 | `daily-keywords`, `daily-keywords/generate`, `keyword-detail` |
-| 사용자 피드 | `market-feed`, `interest-options`, `personalized-feed` |
-| News Events | `news-events`, `news-events/impact-map` |
-| ML 모니터링 | `ml-status`, `ml-shadow-report`, `ml-weekly-report`, `ml-lightgbm-readiness`, `ml-trend`, `ml-rollback-preview`, `ml-rollback` |
-| 운영 모니터링 | `collection-logs`, `pipeline-health`, `llm-usage`, `task-timeline`, `neo4j-status`, `alerts`, `alerts/<alert_pk>/resolve` |
-| 기타 (default) | 6개 추가 액션 |
+#### serverless/ (51 + admin)
+- Admin Dashboard: `admin/dashboard/{overview,stocks,screener,market-pulse,news,system,tasks,actions}/` + `actions/status/<task_id>/` + news 카테고리 3개 (총 11)
+- Movers: `movers`, `movers/<symbol>`, `sync`, `sync-now` (4)
+- Keywords: `keywords/batch`, `keywords/generate-all`, `keywords/generate-screener`, `keywords/<symbol>` (4)
+- Breadth: `breadth`, `breadth/history`, `breadth/sync` (3)
+- Heatmap: `heatmap/sectors`, `heatmap/sectors/<sector>/stocks`, `heatmap/sync` (3)
+- Presets: `presets`, `trending`, `shared/<code>`, `import/<code>`, `<id>`, `<id>/execute`, `<id>/share` (7)
+- Filters/Screener: `filters`, `screener` (2)
+- Alerts: `alerts`, `history`, `history/<id>/read`, `history/<id>/dismiss`, `<id>`, `<id>/toggle` (6)
+- Thesis: `generate`, `shared/<code>`, `<id>`, `''`(list) (4)
+- ETF: `etf/{status,sync,resolve-url}`, `etf/<symbol>/holdings`, `etf/stock/<symbol>/{themes,peers}`, `themes`, `themes/refresh`, `themes/<id>/stocks` (9)
+- LLM relations: `llm-relations/{extract,sync,stats,<symbol>}` (4)
+- Institutional: `institutional/sync`, `institutional/<symbol>/peers`, `institutional/<symbol>` (3)
+- Regulatory/Patent: `regulatory/<symbol>`, `patent-network/<symbol>` (2)
+- Health: `health`
 
-### macro (10개) — `/api/v1/macro/`
+#### thesis/ (8 explicit + 3 router 합)
+- Conversation: `conversation/start/`, `conversation/respond/`, `conversation/news-issues/`, `conversation/suggest/` (4)
+- Monitoring: `<thesis_id>/dashboard/`, `<thesis_id>/indicators/<indicator_id>/readings/` (2)
+- Alerts: `alerts/`, `alerts/<aid>/read/` (2)
+- Routers: `Thesis`, `Premise`, `Indicator` ViewSet (각 5~7 액션)
 
-`pulse/`, `fear-greed/`, `interest-rates/`, `inflation/`, `global-markets/`, `calendar/`, `vix/`, `sectors/`, `sync/`, `sync/status/`
+#### validation/ (6)
+- `<symbol>/{summary,metrics,leader-comparison,presets,peer-preference,llm-filter}/`
 
-### rag_analysis (15개) — `/api/v1/rag/`
+#### chainsight/ (7 + watchlist router)
+- `seeds/`, `sector/<sector>/graph/`, `signals/`, `trace/`, `<symbol>/{neighbors,graph,suggestions}/` (7)
+- `watchlist/` ViewSet
+- 7개 view에 `@extend_schema` 적용됨 → **본 앱이 가장 많이 문서화되어 있음**
 
-| 그룹 | 경로 |
-|------|------|
-| DataBasket | `baskets/`, `baskets/<pk>/`, `baskets/<pk>/add-item/`, `baskets/<pk>/add-stock-data/`, `baskets/<pk>/items/<item_id>/`, `baskets/<pk>/clear/` |
-| Session | `sessions/`, `sessions/<pk>/`, `sessions/<pk>/messages/`, `sessions/<pk>/chat/stream/` (SSE) |
-| Monitoring | `monitoring/usage/`, `monitoring/cost/`, `monitoring/cache/`, `monitoring/history/`, `monitoring/pricing/` |
+#### sec_pipeline/ (2)
+- `admin/dashboard/` (function), `filing/<symbol>/` (CBV)
 
-### serverless (64개) — `/api/v1/serverless/`
+#### portfolio/ (5)
+- `coach/{e1/garp,e5/adjustment,e2/diagnostic-card,e6/comparison,e3/metric-comment}/`
+- 모두 `@api_view` 기반, schema 미작성
 
-| 카테고리 | 개수 | `@extend_schema` |
-|---------|----:|:----:|
-| Admin Dashboard | 12 | 0 |
-| Market Movers | 2 | 1 (`movers`) |
-| Sync | 2 | 0 |
-| Keywords | 4 | 0 |
-| Market Breadth | 3 | 0 |
-| Sector Heatmap | 3 | 0 |
-| Screener Presets | 7 | 2 (GET/POST) |
-| Screener Filters/Adv | 2 | 0 |
-| Screener Alerts | 6 | 2 (GET/POST) |
-| Investment Thesis (legacy) | 4 | 1 (list) |
-| Chain Sight ETF | 9 | 0 |
-| LLM Relations | 4 | 0 |
-| Institutional 13F | 3 | 0 |
-| Regulatory + Patent | 2 | 0 |
-| Health | 1 | 0 |
+#### marketpulse v2 (5) — **유일하게 100% 문서화 완료된 앱**
+- `overview`, `cards/<card_id>/detail`, `news/refresh`, `i18n`, `health`
 
-### thesis (26개) — `/api/v1/thesis/`
-
-| 그룹 | 경로/액션 |
-|------|----------|
-| Conversation | `conversation/{start, respond, news-issues, suggest}/` |
-| Monitoring | `<thesis_id>/dashboard/`, `<thesis_id>/indicators/<indicator_id>/readings/` |
-| Alerts | `alerts/`, `alerts/<aid>/read/` |
-| `ThesisViewSet` (`http_method_names=['get','post','patch']`) | 표준 4 + `@action` 2 = 6 |
-| `ThesisPremiseViewSet` (nested) | 표준 6 |
-| `ThesisIndicatorViewSet` (nested) | 표준 6 |
-
-### validation (6개) — `/api/v1/validation/`
-
-`<symbol>/{summary, metrics, leader-comparison, presets, peer-preference, llm-filter}/`
-
-### chainsight (16개) — `/api/v1/chainsight/`
-
-| 그룹 | 경로 | `@extend_schema` |
-|------|------|:----:|
-| 명시 경로 (7) | `seeds/`, `sector/<sector>/graph/`, `signals/`, `trace/`, `<symbol>/{neighbors, graph, suggestions}/` | 7 (전부) |
-| `WatchlistViewSet` (`http_method_names=['get','post','delete']`) | 표준 4 (list/create/retrieve/destroy) + `@action` 5 = 9 | 0 |
-
-### sec_pipeline (2개) — `/api/v1/sec-pipeline/`
-
-`admin/dashboard/`, `filing/<symbol>/`
-
-### api_request (6개) — `/api/v1/`
-
-`health/`, `admin/providers/{status, rate-limits, cache, test, config}/` (admin 5개 모두 데코)
-
-### portfolio (5개) — `/api/`
-
-`coach/e1/garp/`, `coach/e5/adjustment/`, `coach/e2/diagnostic-card/`, `coach/e6/comparison/`, `coach/e3/metric-comment/`
-
-> **신규 추가 (5월 7일 → 8일)**: E3/Metric-Comment (commit `72875c7` slice5 Step 3).
-
-### marketpulse v2 (5개) — `/api/v2/market-pulse/`
-
-`overview`, `cards/<card_id>/detail`, `news/refresh`, `i18n`, `health` — 전부 `@extend_schema` 적용 + `Market Pulse v2` 단일 태그.
-
-### v2 schema (3개) — `/api/v2/`
-
-`schema/` (OpenAPI YAML), `swagger/` (Swagger UI), `redoc/` (ReDoc) — drf-spectacular 자동 제공.
-
-### config root (3개)
-
-`/` (api_root), `/health/`, `/admin/`
+#### api_request/ (6)
+- `health/`, `admin/providers/{status,rate-limits,cache,test,config}/`
+- 5/6 문서화됨 (health 제외)
 
 ---
 
 ## 도입 작업 목록
 
-> **현재 Step 1 완료 상태**. 남은 작업은 v1 적용 확장 + 운영 보강.
+### 3.1 인프라 정비 (Phase A — 1~2 PR)
 
-### Step 1. 설치 + 기본 설정 (완료 ✅)
+| 항목 | 현재 | 목표 | 작업량 |
+|------|------|------|--------|
+| `DISABLE_ERRORS_AND_WARNINGS` | `True` | `False` (개발), 단계적 fix | settings 1줄 + 회귀 분석 |
+| `SPECTACULAR_SETTINGS.SECURITY` 정의 | 없음 | JWT Bearer 글로벌 추가 | settings 추가 |
+| `SPECTACULAR_SETTINGS.SERVERS` | 없음 | dev / staging / prod URL | settings 추가 |
+| `TAGS` 카테고리 | 1개 (Market Pulse v2) | 14개 앱별 태그 정의 | settings 정리 |
+| v1/v2 schema 분리 | 단일 schema | `/api/v1/schema/` + `/api/v2/schema/` | `urls.py` + 별도 `SPECTACULAR_SETTINGS_V1` 패턴 검토 |
+| CI 검증 | 없음 | `python manage.py spectacular --validate --fail-on-warn` | GitHub Actions 1 step |
 
-- `drf-spectacular = "^0.29.0"`, `drf-spectacular-sidecar = "^2026.4.14"` 추가됨
-- `INSTALLED_APPS`, `DEFAULT_SCHEMA_CLASS`, `SPECTACULAR_SETTINGS` 모두 설정 완료
-- `/api/v2/schema|swagger|redoc/` 경로 노출됨
+### 3.2 ViewSet/APIView별 `@extend_schema` 추가 범위
 
-### Step 2. 1차 스펙 검증 + 경고 분석 (S, ½일)
+> 산정 기준: 함수 뷰 1개 = 1 schema 작성, ViewSet 1개 = list/retrieve/create/update/destroy + 추가 `@action` 별 schema (평균 5~7 schema/ViewSet)
 
-- 명령: `python manage.py spectacular --file /tmp/openapi.yml --validate`
-- 현재 `DISABLE_ERRORS_AND_WARNINGS=True`로 경고가 무시됨 → **임시로 False로 토글하여 W001/W002 목록 수집** 후 우선순위화
-- 적용된 `ENUM_NAME_OVERRIDES` 4건 외 추가 충돌 가능 enum 식별
+| 앱 | 미문서화 view | 우선순위 | 예상 schema 수 | 예상 시간 (시간 기준) |
+|----|------:|----|------:|----:|
+| **stocks** | 38 (CBV) | **P0** (frontend 핵심) | ~38 | 12~16h |
+| **users** | 28 | **P0** (인증/포트폴리오) | ~30 | 10~12h |
+| **macro** | 9 | P1 | ~9 | 3~4h |
+| **thesis** | 8 + 3 ViewSet | **P0** (Phase 3 진행 중) | ~25 | 8~10h |
+| **validation** | 6 | P1 | ~6 | 2~3h |
+| **chainsight** | router 1 + 일부 액션 | P2 (주요 GET은 완료) | ~5 | 2h |
+| **rag_analysis** | 12 | P1 (스트리밍 SSE 별도) | ~14 | 5~6h |
+| **serverless (movers/breadth/heatmap/...)** | 약 45 | P1 | ~50 | 16~20h |
+| **serverless (admin)** | 12 | P2 | ~12 | 4~5h |
+| **portfolio** | 5 | P1 (Slice 5 진행) | ~5 | 2~3h |
+| **sec_pipeline** | 2 | P2 | ~2 | 1h |
+| **news (ViewSet)** | actions 일부 | P2 | ~3 | 1~2h |
+| **api_request (health)** | 1 | P3 | 1 | 0.5h |
+| **합계** | **약 170 view** | | **약 200 schema** | **~70~85h (약 9~11 인일)** |
 
-### Step 3. v1 Swagger UI 노출 결정 (S, 0.1일)
+### 3.3 부수 작업 (Quality of Life)
 
-현재 `/api/v2/swagger/`만 존재. 두 가지 선택지:
+1. **응답 Serializer 정형화** — 현재 `Response({"key": value, ...})` 직접 반환 패턴 다수.
+   - drf-spectacular는 명시 serializer를 가장 정확히 추론.
+   - `inline_serializer()` 또는 별도 Response Serializer 정의 필요.
+   - 영향 범위: stocks 38, serverless 50+, macro 9 등 **약 100 view**.
+   - 추정 시간: 20~30h (대부분은 한번에 처리 가능, dictionary 구조만 옮기면 됨).
 
-| 옵션 | 장점 | 단점 |
-|------|------|------|
-| A. `/api/v1/swagger/` 별도 노출 (스펙도 v1 only) | 버전 분리 명확 | 스펙 2개 유지 부담 |
-| B. 단일 `/api/swagger/`에 v1+v2 통합 (현재 SCHEMA_PATH_PREFIX 그대로) | 통합 뷰 | TAGS 분류 필수 |
+2. **에러 응답 표준화** — 현재 view마다 에러 포맷 상이.
+   - `OpenApiResponse(response=ErrorSerializer, examples=[...])` 표준 패턴 도입 검토.
+   - 추정 시간: 4~6h (1회 정의 후 재사용).
 
-권장: **B + TAGS 14개로 그룹** (Step 5 참조).
+3. **`@extend_schema` examples** — 실제 응답 예시 첨부.
+   - 핵심 endpoint (stocks, users, thesis) 만 우선 → 4~6h.
 
-### Step 4. `@extend_schema` 데코레이터 추가 (M~L)
+### 3.4 추정 총 작업량 종합
 
-총 **267개** 엔드포인트 중 우선순위:
+| 단계 | 범위 | 시간 | PR 수 |
+|------|------|----:|----:|
+| Phase A: 인프라 정비 | settings, schema split, CI | 6~8h | 1~2 |
+| Phase B: P0 (stocks/users/thesis) | 약 95 schema | 30~38h | 4~6 |
+| Phase C: P1 (macro/serverless main/rag/portfolio/validation) | 약 85 schema | 28~36h | 5~7 |
+| Phase D: P2/P3 (admin/news/sec/health) | 약 18 schema | 6~8h | 2~3 |
+| Phase E: Serializer 정형화 + examples | 횡단 | 24~36h | 3~5 |
+| **합계** | **약 200 schema** | **94~126h (~13~17 인일)** | **15~23 PR** |
 
-| 우선순위 | 대상 | 개수 | 이유 | 예상 시간 |
-|---------|------|----:|------|----------|
-| P0 | `@action` 메서드 (news 30 + thesis 2 + chainsight 5) | 37 | 라우터 자동 검출 한계, request/response 명시 필수 | 2~3일 |
-| P0 | SSE/스트리밍 (`rag_analysis/sessions/<pk>/chat/stream/`) | 1 | 비표준 응답, 수동 명시 필수 | 0.5일 |
-| P0 | EOD/sync admin (`stocks/eod/*` 3, `*/sync/*` 다수) | ~8 | dict 응답 + 실행 트리거 부수효과 | 0.5일 |
-| P1 | symbol 파라미터 사용 APIView (stocks 24 + validation 6 + chainsight 명시는 완료) | ~30 | `OpenApiParameter('symbol', ..., description='upper-case symbol')` 일관 적용 | 1.5일 |
-| P1 | JWT/인증 엔드포인트 (users JWT 7) | 7 | 보안 스킴 명시(`security=[{'jwtAuth': []}]`), 401 응답 스키마 | 0.5일 |
-| P1 | 운영 admin 잔여 (serverless admin 12 + sec_pipeline admin 1) | 13 | `IsAdminUser` 권한 표기 | 1일 |
-| P1 | thesis ViewSet 3개 (Thesis/Premise/Indicator) | 18 | 중첩 라우터 + 비표준 액션 응답 명세 | 1일 |
-| P2 | portfolio coach 5 + macro 10 + 일반 ListCreate (rag, validation 등) | ~70 | Serializer 추론 + 응답 examples 보강 | 2~3일 |
-| P3 | Legacy/제거 예정 (serverless thesis 4, ETF Phase 3 등) | ~13 | `@extend_schema(exclude=True)` 또는 deprecation 표기 | 0.5일 |
+### 3.5 권장 도입 순서
 
-**합계 예상**: P0~P2 핵심 작업 **9~11일** (1.5~2주, 1인 기준).
-
-### Step 5. 태그/그룹/네임스페이스 정리 (S, 1일)
-
-현재 TAGS는 `Market Pulse v2` 1개. v1 통합 노출 시 14개로 확장 권장:
-
-```
-['Stocks', 'Users/Auth', 'Users/Watchlist', 'Users/Portfolio',
- 'News', 'Macro', 'RAG', 'Serverless/Admin', 'Serverless/Movers',
- 'Serverless/Screener', 'Thesis', 'Validation', 'ChainSight',
- 'SEC Pipeline', 'Provider Admin', 'Portfolio Coach', 'Market Pulse v2']
-```
-
-- `serverless`(64개)는 단일 태그가 너무 비대 → 카테고리별 4~5 태그로 세분 권장.
-- `chainsight/api/views.py`는 이미 `tags=['Chain Sight']`로 통일되어 있음 → 표준 모범 사례.
-
-### Step 6. CI/배포 통합 (S, ½일)
-
-- `python manage.py spectacular --file contracts/openapi.yml --validate` 를 pre-commit 또는 CI에 추가
-- CLAUDE.md `Contract-Driven Development` 절과 연결: 생성된 `openapi.yml`을 `contracts/`의 진실의 소스로 채택
-- `ENUM_NAME_OVERRIDES`는 신규 모델 choices 추가 시 동기화 누락 위험 → CI에서 `--validate` 실패로 잡히도록 설정
-
-### Step 7. 운영/보안 (S, 0.5일)
-
-- 운영 환경에서 Swagger/Redoc UI 노출 정책 결정 (예: `IsAdminUser` 또는 IP 화이트리스트)
-- `SPECTACULAR_SETTINGS['SERVE_PERMISSIONS']` 설정 (현재 미지정 → 기본 `AllowAny`)
-- `DISABLE_ERRORS_AND_WARNINGS: True` 운영 사용은 의도된 상태이지만 CI에서는 False로 토글하여 회귀 감지 권장
+1. **Phase A 인프라 PR (즉시 가능)** — `DISABLE_ERRORS_AND_WARNINGS=False` 로 문제 수면 위로, JWT security 정의, 앱별 TAGS, CI validate step.
+2. **Phase B P0 우선 (frontend 의존도)** — `stocks/`, `users/`, `thesis/` 가 frontend가 가장 많이 호출하는 영역. 신규 frontend PR이 contracts 기반 작업할 때 schema가 진실의 소스가 되도록.
+3. **Phase E를 Phase B/C와 병행** — Serializer 정형화는 schema 작성과 동시에 진행하면 효율적.
+4. **Phase C/D는 백로그 형태로 점진적 처리** — 새 endpoint 추가 시 `@extend_schema` 의무화 (PR Completion Checklist 항목 추가 권장).
 
 ---
 
-### 종합 예상 작업량 (남은 분)
+## 부록: 핵심 파일 인덱스
 
-| 단계 | 작업 | 인일(man-day) |
-|------|------|-------------:|
-| Step 1 | 설치 + 기본 설정 | **완료** ✅ |
-| Step 2 | 1차 스펙 + 경고 분석 | 0.5 |
-| Step 3 | v1 Swagger UI 노출 결정 | 0.1 |
-| Step 4 | `@extend_schema` 데코레이터 추가 (P0~P2) | 9~11 |
-| Step 5 | 태그/그룹 정리 | 1 |
-| Step 6 | CI/contracts 통합 | 0.5 |
-| Step 7 | 운영/보안 | 0.5 |
-| **잔여 합계** | | **11.6~13.6 인일 (약 2~2.5주)** |
-
-### 리스크 / 주의사항
-
-1. **`DISABLE_ERRORS_AND_WARNINGS=True`**가 설정되어 v1 영역의 추론 실패가 silent — Step 4 진행 중 회귀를 잡으려면 **CI 한정**으로 False 토글 권장.
-2. **`@action` 메서드 (news 30 + thesis 2 + chainsight 5)**: 자동 추론으로 응답 스키마가 부정확할 가능성이 높다 → P0.
-3. **SSE 스트리밍** (`rag_analysis/sessions/<pk>/chat/stream/`)는 `@extend_schema(responses=OpenApiTypes.STR)` 또는 별도 명시.
-4. **Legacy 경로 (Chain Sight Phase 3 ETF, serverless thesis)**는 문서화 시 혼란 야기 가능 → `exclude=True` 또는 deprecation 표기.
-5. **`/api/` (portfolio) vs `/api/v1/` vs `/api/v2/` 혼재** — `SCHEMA_PATH_PREFIX=/api/v[12]`는 `portfolio`(`/api/`)를 **누락**시킴 → portfolio 5개는 현재 스펙에 포함 안 됨. 별도 prefix 추가 또는 portfolio URL을 `/api/v1/portfolio/`로 정렬 필요.
-6. **Symbol upper 규칙** (`symbol.upper()`): OpenAPI에는 표현되지 않는 비즈니스 규칙 → 설명(description) 또는 examples로 보완.
-7. **인증 스킴 혼재**: `SimpleJWT` + 세션(쿠키) 동시 사용 → `SECURITY` 정의 시 두 스킴 모두 등록.
-8. **`ENUM_NAME_OVERRIDES` 동기화**: 모델 choices 변경 시 settings.py도 업데이트 필요. CI에서 sanity check 권장.
-
----
-
-## 부록: 데이터 산출 방법
-
-| 항목 | 방법 |
+| 파일 | 역할 |
 |------|------|
-| 의존성 | `pyproject.toml` 직접 read |
-| `INSTALLED_APPS`, REST_FRAMEWORK, SPECTACULAR | `config/settings.py` 직접 read (line 200~415) |
-| 엔드포인트 | 14개 `urls.py` 수동 read + 라우터 표준 액션 + `@action` grep |
-| ViewSet 베이스 | `class .*ViewSet` grep, `http_method_names` grep으로 액션 수 산정 |
-| `@extend_schema` 적용 횟수 | `Grep "@extend_schema"` 31건, `config/settings.py` 주석 2건 제외 → 29건 적용 |
+| `pyproject.toml:38-39` | drf-spectacular 의존성 |
+| `config/settings.py:205-206` | INSTALLED_APPS 등록 |
+| `config/settings.py:348-362` | REST_FRAMEWORK + DEFAULT_SCHEMA_CLASS |
+| `config/settings.py:365-413` | SPECTACULAR_SETTINGS |
+| `config/spectacular_enums.py` | ENUM 충돌 회피용 명시 enum |
+| `config/urls.py:58-68` | schema/swagger/redoc URL 등록 |
+| `marketpulse/api/views/*.py` | `@extend_schema` 모범 사례 (5/5) |
+| `chainsight/api/views.py` | `@extend_schema` 적용 7건 (참고용) |
+| `api_request/admin_views.py` | function view에 `@extend_schema` 적용 5건 |
 
-> 본 보고서는 코드 변경 없이 정적 분석만으로 작성되었음.
+---
+
+## 결론 한 줄
+
+> **drf-spectacular은 이미 설치/연결되어 있으나 `DISABLE_ERRORS_AND_WARNINGS=True` + `@extend_schema` 적용률 ~13%로 인해 v1 영역의 자동 생성 스키마는 실용적으로 사용 불가. 약 200개 schema 작성 (~13~17 인일, 15~23 PR) 작업이 필요하며, frontend 핵심 영역인 stocks/users/thesis P0 부터 점진 도입을 권장한다.**
