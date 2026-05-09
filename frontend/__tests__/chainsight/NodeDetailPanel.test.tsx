@@ -90,4 +90,42 @@ describe('NodeDetailPanel', () => {
     fireEvent.click(screen.getByText(/경로 찾기/));
     expect(onStartTrace).toHaveBeenCalledWith('MSFT');
   });
+
+  it('센터 노드일 때는 relationLabel을 표시하지 않는다', () => {
+    render(
+      <NodeDetailPanel
+        node={{ ...sampleNode, ticker: 'AAPL' }}
+        centerSymbol="AAPL"
+        relationLabel="경쟁"
+        onExploreHere={vi.fn()}
+        onStartTrace={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText('경쟁')).not.toBeInTheDocument();
+  });
+
+  it('industry/growth_stage/capital_dna 등 옵션 필드가 누락돼도 렌더링된다', () => {
+    const minimalNode = {
+      ticker: 'XYZ',
+      name: 'Unknown Co',
+    };
+
+    render(
+      <NodeDetailPanel
+        node={minimalNode}
+        centerSymbol="AAPL"
+        onExploreHere={vi.fn()}
+        onStartTrace={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('XYZ')).toBeInTheDocument();
+    expect(screen.getByText('Unknown Co')).toBeInTheDocument();
+    // 옵션 필드 라벨이 표시되지 않아야 함
+    expect(screen.queryByText('섹터')).not.toBeInTheDocument();
+    expect(screen.queryByText('산업')).not.toBeInTheDocument();
+    expect(screen.queryByText('GrowthStage')).not.toBeInTheDocument();
+    expect(screen.queryByText('CapitalDNA')).not.toBeInTheDocument();
+  });
 });

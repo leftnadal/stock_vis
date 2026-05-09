@@ -14,7 +14,7 @@ vi.mock('@/lib/stores/explorationStore', () => ({
 }));
 
 vi.mock('@/hooks/useMarketView', () => ({
-  useSeedData: () => ({ data: { seeds: [] } }),
+  useSeedData: () => ({ data: { seeds: mockSeedList } }),
   useNeighbors: (symbol: string | null) => {
     if (!symbol) return { data: undefined, isLoading: false, isError: false };
     // 상태를 테스트별로 오버라이드
@@ -36,6 +36,8 @@ let mockNeighborResult = {
   isError: false,
 };
 
+let mockSeedList: Array<Record<string, unknown>> = [];
+
 import RelationCardPanel from '@/components/chainsight/RelationCardPanel';
 
 beforeEach(() => {
@@ -43,6 +45,7 @@ beforeEach(() => {
   mockExplorationStore.centerSymbol = null;
   mockExplorationStore.selectNode = vi.fn();
   mockNeighborResult = { data: undefined, isLoading: false, isError: false };
+  mockSeedList = [];
 });
 
 describe('RelationCardPanel', () => {
@@ -70,5 +73,50 @@ describe('RelationCardPanel', () => {
     render(<RelationCardPanel />);
 
     expect(screen.getByText(/관계 데이터를 불러오지 못했습니다/)).toBeInTheDocument();
+  });
+
+  it('selectedSector만 있고 centerSymbol이 없으면 시드 카드를 표시한다', () => {
+    mockExplorationStore.selectedSector = 'Technology';
+    mockExplorationStore.centerSymbol = null;
+    mockSeedList = [
+      {
+        symbol: 'NVDA',
+        name: 'NVIDIA',
+        sector: 'Technology',
+        seed_type: 'price',
+        seed_reasons: ['price_top5'],
+        daily_return: 5.2,
+        volume_ratio: 2.3,
+      },
+    ];
+
+    render(<RelationCardPanel />);
+
+    expect(screen.getByText('NVDA')).toBeInTheDocument();
+    expect(screen.getByText('NVIDIA')).toBeInTheDocument();
+    // REASON_LABELS['price_top5'] === '수익률 상위 이상치'
+    expect(screen.getByText(/수익률 상위 이상치/)).toBeInTheDocument();
+    // 탐색 시작 버튼
+    expect(screen.getByText('여기서 탐색')).toBeInTheDocument();
+  });
+
+  it('selectedSector에 시드가 없으면 빈 메시지를 표시한다', () => {
+    mockExplorationStore.selectedSector = 'Energy';
+    mockExplorationStore.centerSymbol = null;
+    mockSeedList = [
+      {
+        symbol: 'NVDA',
+        name: 'NVIDIA',
+        sector: 'Technology',
+        seed_type: 'price',
+        seed_reasons: ['price_top5'],
+        daily_return: 5.2,
+        volume_ratio: 2.3,
+      },
+    ];
+
+    render(<RelationCardPanel />);
+
+    expect(screen.getByText(/이 섹터에 시드 노드가 없습니다/)).toBeInTheDocument();
   });
 });

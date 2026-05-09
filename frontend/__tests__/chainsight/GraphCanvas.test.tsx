@@ -110,4 +110,60 @@ describe('GraphCanvas', () => {
     expect(gd.nodes).toHaveLength(0);
     expect(gd.links).toHaveLength(0);
   });
+
+  it('ticker가 없는 노드(섹터/테마)를 graphData에서 제외한다', () => {
+    const { MockForceGraph } = makeMockForceGraph();
+    const dataWithSectorNode = {
+      ...graphData,
+      nodes: [
+        ...graphData.nodes,
+        // ticker 없는 노드 (Sector/Industry/Theme)
+        { ticker: '', name: 'Technology Sector', sector: 'Technology', market_cap: 0, pagerank_score: 0 },
+      ],
+    };
+
+    render(
+      <GraphCanvas
+        data={dataWithSectorNode as unknown as typeof graphData}
+        width={800}
+        height={600}
+        selectedNode={null}
+        highlightRelTypes={[]}
+        onNodeClick={vi.fn()}
+        ForceGraph2D={MockForceGraph}
+      />,
+    );
+
+    const props = MockForceGraph.mock.calls[0][0] as Record<string, unknown>;
+    const gd = props.graphData as { nodes: { ticker: string }[]; links: unknown[] };
+    // center + 2 neighbors = 3, ticker 빈 노드는 제외
+    expect(gd.nodes).toHaveLength(3);
+    expect(gd.nodes.every((n) => n.ticker !== '')).toBe(true);
+  });
+
+  it('onNodeHover가 ForceGraph2D의 호버 콜백을 통해 호출된다', () => {
+    const onNodeHover = vi.fn();
+    const MockForceGraph = vi.fn((props: Record<string, unknown>) => {
+      const handler = props.onNodeHover as (node: { ticker: string } | null) => void;
+      handler({ ticker: 'GOOGL' });
+      handler(null);
+      return <div data-testid="force-graph" />;
+    });
+
+    render(
+      <GraphCanvas
+        data={graphData}
+        width={800}
+        height={600}
+        selectedNode={null}
+        highlightRelTypes={[]}
+        onNodeClick={vi.fn()}
+        onNodeHover={onNodeHover}
+        ForceGraph2D={MockForceGraph}
+      />,
+    );
+
+    expect(onNodeHover).toHaveBeenCalledWith('GOOGL');
+    expect(onNodeHover).toHaveBeenCalledWith(null);
+  });
 });
