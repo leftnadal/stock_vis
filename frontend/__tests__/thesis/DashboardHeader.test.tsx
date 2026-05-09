@@ -54,4 +54,23 @@ describe('DashboardHeader', () => {
     // stateToDisplay('active') → label: '추적 중'
     expect(screen.getByText('추적 중')).toBeInTheDocument()
   })
+
+  it('status가 active가 아니면 score와 무관하게 active 상태로 렌더링된다', () => {
+    // scoreToBadgeState: status !== 'active'면 강제로 'active' 반환
+    render(
+      <DashboardHeader
+        thesis={makeThesis({ overall_score: 0.9, status: 'closed' })}
+      />,
+    )
+
+    expect(screen.getByText('추적 중')).toBeInTheDocument()
+    // strengthening 라벨은 나타나지 않아야 함
+    expect(screen.queryByText('지지 신호 증가')).not.toBeInTheDocument()
+  })
+
+  it('days_active가 0이어도 "0일째 관제 중" 라벨을 렌더링한다', () => {
+    render(<DashboardHeader thesis={makeThesis({ days_active: 0 })} />)
+
+    expect(screen.getByText('0일째 관제 중')).toBeInTheDocument()
+  })
 })

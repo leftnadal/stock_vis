@@ -100,4 +100,39 @@ describe('RealValueIndicatorCard', () => {
     expect(screen.getByText('한국 원화 대비 미국 달러 환율')).toBeInTheDocument()
     expect(screen.getByText('수출 기업 실적에 직접 영향')).toBeInTheDocument()
   })
+
+  it('큰 숫자(조 단위)도 한국식 단위로 포맷한다', () => {
+    render(
+      <RealValueIndicatorCard
+        indicator={makeIndicator({ raw_value: 1.2e12, raw_value_unit: '원' })}
+      />,
+    )
+
+    // formatRawValue(1.2e12, '원') → '1.2조원'
+    expect(screen.getByText('1.2조원')).toBeInTheDocument()
+  })
+
+  it('분기 히스토리가 있으면 QuarterlySparkline을 함께 렌더링한다', () => {
+    render(
+      <RealValueIndicatorCard
+        indicator={makeIndicator({
+          is_quarterly: true,
+          comparison_type: 'qoq',
+          fiscal_label: '2025 Q4',
+          quarterly_history: [
+            { fy: 2025, fq: 1, value: 100 },
+            { fy: 2025, fq: 2, value: 110 },
+            { fy: 2025, fq: 3, value: 120 },
+            { fy: 2025, fq: 4, value: 130 },
+          ],
+        })}
+      />,
+    )
+
+    // sparkline 분기 라벨 (Q1~Q4)
+    expect(screen.getByText('Q1')).toBeInTheDocument()
+    expect(screen.getByText('Q4')).toBeInTheDocument()
+    // QoQ 접두사
+    expect(screen.getByText(/QoQ/)).toBeInTheDocument()
+  })
 })
