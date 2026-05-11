@@ -8,6 +8,16 @@
  * 실제 구현: frontend/types/chainsight.ts 기준 (2026-04-12 검증)
  */
 
+// ──────────────── API Error Envelope (전역 표준) ────────────────
+// audit P0 #14 (2026-05-12): config.exception_handler.custom_exception_handler로 일괄 변환
+// 상세: docs/features/api_envelope/policy.md
+export interface ApiError {
+  detail: string;
+  code?: string;
+  errors?: Record<string, string[]>;
+  status_code: number;
+}
+
 // ──────────────── Chain Sight: Seeds ────────────────
 
 export type SeedReason =

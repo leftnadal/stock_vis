@@ -299,7 +299,9 @@ class TestNewsViewSet:
         response = api_client.get(url, {'timeframe': 'invalid'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert 'timeframe' in response.data
+        # PR-0 envelope: ValidationError field-level은 errors dict로 정규화됨
+        # 상세: docs/features/api_envelope/policy.md §4.2
+        assert 'timeframe' in response.data.get('errors', {})
 
     @pytest.mark.django_db
     def test_trending_cache_hit(self, api_client, news_article_aapl, news_entity_aapl):

@@ -217,6 +217,26 @@ interface ExplorationState {
 
 ---
 
+## API 응답 규격
+
+### 응답 표준: DRF 평탄 + 통일 에러 envelope
+- **성공**: `serializer.data` 또는 dict **평탄 반환** (DRF 표준). 기존 `{success, data, meta}` wrapping 폐기.
+- **에러**: 단일 형태 `{detail, code?, errors?, status_code}`
+  - `detail`(필수): 사람이 읽는 메시지. DRF 기본 키 유지.
+  - `code`(optional): snake_case 도메인 코드. 클라 분기용.
+  - `errors`(optional): ValidationError field-level만.
+  - `status_code`(필수): 정수. HTTP status 중복이지만 명시.
+- **변환**: `config.exception_handler.custom_exception_handler` (REST_FRAMEWORK.EXCEPTION_HANDLER 등록, 2026-05-12).
+- **도메인 코드 보존**: `rag_analysis/exceptions.py`(4개), `serverless/exceptions.py`(8개)에 `APIException` 서브클래스로 `default_code` 정의. 500계 도메인 에러 12개는 Sentry breakdown용 분기 의미가 있어 유지. 4xx 16개 코드는 DRF 표준 예외(`NotFound`, `PermissionDenied`, `NotAuthenticated`, `ValidationError`)로 흡수.
+- **예외 범위**:
+  - Market Pulse v2 cards (`marketpulse/api/views/cards.py:_envelope`) — v2 contract `{_meta, data}` 별도 유지.
+  - 포트폴리오 (`portfolio/views.py` JsonResponse) — DRF 미사용, 정책 밖.
+  - SSE 이벤트 페이로드 (`PIPELINE_ERROR`/`STREAM_ERROR`) — HTTP 200 내부 이벤트, 정책 밖.
+- **Why**: 2026-05-06 api_consistency_audit P1 #14. 3종 혼재(W/D/C)로 FE가 라우트별 unwrap 분기 필요 → 같은 view 안에서도 성공은 wrap, 에러는 평탄으로 충돌하는 hotspot 존재. WRAP은 6 파일만 사용 → 마이그레이션 비용이 envelope 통일보다 작다. DRF 표준 정렬로 신규 view 결정 비용 0 + drf-spectacular ErrorSerializer 일관 적용.
+- 📎 상세: `docs/features/api_envelope/policy.md`
+
+---
+
 ## 인프라
 
 ### Neo4j 유지 결정
