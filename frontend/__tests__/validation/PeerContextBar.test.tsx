@@ -106,4 +106,30 @@ describe('PeerContextBar', () => {
 
     expect(onSetCustomPeers).toHaveBeenCalledWith(['TSLA', 'NVDA']);
   });
+
+  it('limited 신뢰도일 때 제한적 배지를 표시한다', () => {
+    const limitedPeerInfo: PeerInfo = {
+      ...basePeerInfo,
+      confidence: 'limited',
+    };
+    render(<PeerContextBar peerInfo={limitedPeerInfo} fiscalYear={2025} />);
+
+    expect(screen.getByText(/비교 신뢰도: 제한적/)).toBeInTheDocument();
+  });
+
+  it('프리셋이 1개 이하면 프리셋 탭을 렌더링하지 않는다', () => {
+    render(
+      <PeerContextBar
+        peerInfo={basePeerInfo}
+        fiscalYear={2025}
+        presets={[presets[0]]}
+        onSelectPreset={vi.fn()}
+      />,
+    );
+
+    // 프리셋 탭이 없으면 '직접 설정' 버튼도 보이지 않음
+    expect(screen.queryByText('직접 설정')).not.toBeInTheDocument();
+    // 프리셋 표시명도 없음
+    expect(screen.queryByText('섹터 전체')).not.toBeInTheDocument();
+  });
 });

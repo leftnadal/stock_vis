@@ -57,4 +57,21 @@ describe('SignalSummaryCard', () => {
     fireEvent.mouseLeave(grayContainer);
     expect(screen.queryByText('데이터 부족으로 평가 불가')).not.toBeInTheDocument();
   });
+
+  it('gray가 아닌 신호등 hover 시에는 툴팁을 표시하지 않는다', () => {
+    render(
+      <SignalSummaryCard
+        companyName="Apple Inc."
+        categorySignals={signals}
+        summaryText="요약"
+      />,
+    );
+
+    // green 카테고리(수익성) 컨테이너에 hover
+    const greenContainer = screen.getByText('수익성').closest('div')!;
+    fireEvent.mouseEnter(greenContainer);
+
+    // gray 사유 텍스트는 표시되지 않아야 함
+    expect(screen.queryByText('데이터 부족으로 평가 불가')).not.toBeInTheDocument();
+  });
 });

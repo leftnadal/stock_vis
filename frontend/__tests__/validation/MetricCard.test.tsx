@@ -94,4 +94,38 @@ describe('MetricCard', () => {
 
     expect(screen.getByText(/값 변동이 크므로 해석 주의/)).toBeInTheDocument();
   });
+
+  it('multiple 단위 지표는 x 접미사로 포맷한다', () => {
+    const metric: MetricData = {
+      ...normalMetric,
+      metric_code: 'pe_ratio',
+      display_name: 'PER',
+      unit: 'multiple',
+      current: { value: 24.567, fiscal_year: 2025, value_status: 'normal' },
+      benchmark: {
+        ...normalMetric.benchmark!,
+        median: 18.2,
+        percentile_rank: 30,
+        rank: 10,
+        total: 15,
+      },
+    };
+
+    render(<MetricCard metric={metric} />);
+
+    // 24.567 → "24.57x"
+    expect(screen.getByText('24.57x')).toBeInTheDocument();
+    expect(screen.getByText('18.20x')).toBeInTheDocument();
+  });
+
+  it('low_confidence 상태에서 비교 표본 부족 배너를 표시한다', () => {
+    const metric: MetricData = {
+      ...normalMetric,
+      current: { value: 0.25, fiscal_year: 2025, value_status: 'low_confidence' },
+    };
+
+    render(<MetricCard metric={metric} />);
+
+    expect(screen.getByText(/비교 표본 부족/)).toBeInTheDocument();
+  });
 });

@@ -64,4 +64,24 @@ describe('ThesisListCard', () => {
     // 추적 일수는 여전히 표시
     expect(screen.getByText(/추적 중/)).toBeInTheDocument()
   })
+
+  it('target이 공백뿐이면 심볼 영역을 비운다 (trim 검증)', () => {
+    render(
+      <ThesisListCard thesis={makeThesis({ target: '   ' })} />,
+    )
+
+    // 공백만 있어도 trim 후 빈 값이 되므로 ' · ' 구분자가 보이면 안 됨
+    expect(screen.queryByText(/^\s+·/)).not.toBeInTheDocument()
+    expect(screen.getByText(/추적 중/)).toBeInTheDocument()
+  })
+
+  it('weakening 상태일 때 ThesisBadge에 "반박 신호 증가" 라벨을 표시한다', () => {
+    render(
+      <ThesisListCard
+        thesis={makeThesis({ current_state: 'weakening', current_score: -0.5 })}
+      />,
+    )
+
+    expect(screen.getByText('반박 신호 증가')).toBeInTheDocument()
+  })
 })

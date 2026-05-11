@@ -39,10 +39,10 @@ export default function NewsCard({ article, onClick }: NewsCardProps) {
       <div className="flex gap-4 p-4">
         {/* Thumbnail Image */}
         <div className="flex-shrink-0">
-          {hasValidImage ? (
+          {hasValidImage && article.image_url ? (
             <div className="relative w-32 h-24 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700">
               <Image
-                src={article.image_url!}
+                src={article.image_url}
                 alt={article.title}
                 fill
                 className="object-cover"

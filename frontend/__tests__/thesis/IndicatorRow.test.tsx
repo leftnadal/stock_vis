@@ -106,4 +106,48 @@ describe('IndicatorRow', () => {
 
     expect(screen.getByText('HBM3E 양산 본격화')).toBeInTheDocument()
   })
+
+  it('분기 지표면 fiscal_label과 비교 라벨(전분기대비)을 표시한다', () => {
+    render(
+      <IndicatorRow
+        thesisId="t-1"
+        indicator={makeIndicator({
+          is_quarterly: true,
+          comparison_type: 'qoq',
+          fiscal_label: '2025 Q3',
+          change_pct: 8.5,
+        })}
+      />,
+    )
+
+    expect(screen.getByText('2025 Q3')).toBeInTheDocument()
+    expect(screen.getByText('전분기대비')).toBeInTheDocument()
+    expect(screen.getByText('+8.5%')).toBeInTheDocument()
+  })
+
+  it('분기 지표 + history가 있으면 펼침 시 분기 차트 영역을 표시한다', () => {
+    render(
+      <IndicatorRow
+        thesisId="t-1"
+        indicator={makeIndicator({
+          is_quarterly: true,
+          comparison_type: 'yoy',
+          fiscal_label: '2025 Q3',
+          quarterly_history: [
+            { fy: 2024, fq: 1, value: 100 },
+            { fy: 2024, fq: 2, value: 120 },
+            { fy: 2024, fq: 3, value: 110 },
+            { fy: 2024, fq: 4, value: 130 },
+            { fy: 2025, fq: 1, value: 140 },
+          ],
+        })}
+      />,
+    )
+
+    fireEvent.click(screen.getAllByRole('button')[0])
+    // 분기 히스토리 안내 문구
+    expect(screen.getByText(/5분기/)).toBeInTheDocument()
+    // 분기 차트는 mocked AreaChart로 렌더링됨
+    expect(screen.getAllByTestId('area-chart').length).toBeGreaterThan(0)
+  })
 })
