@@ -19,8 +19,7 @@
 | 브랜치 | Agent | 작업 내용 | main 대비 | 상태 | 다음 액션 |
 |--------|-------|----------|----------|------|----------|
 | `portfolio` | @backend | Slice 1 (E1+GARP) + Slice 2 (E5) + Slice 3 (E2) 완료 + **Slice 4 (E6) Part 1 완료** | +218 | Slice 4 Part 2 대기 (Step 6~9: 실 LLM 호출 + 토큰 측정 + 회고 + score 산식 통합) | Part 2 지시서 작성 후 진입 |
-| `marketpulse-v2` | @backend | Market Pulse v2 Phase 1 + PR-A1 sector_group GICS 12종 + PR-A2 (저위험/중위험/고위험 모두 완료) | +214 | wip 보관용 (legacy). 새 작업은 `market_pulse_v2`로 | 정리 후 제거 검토 |
-| `market_pulse_v2` | @backend | portfolio 기반 + PR-A1/A2 4 commits cherry-pick 통합 (2026-05-11) | portfolio+4 | PR-A2 검증 완료, push/머지 대기 | PR-A3/C/G 진행 또는 정리 후 push |
+| `market_pulse_v2` | @backend | portfolio 기반 + PR-A1/A2 4 commits cherry-pick 통합 (2026-05-11). 이전 `marketpulse-v2`(legacy, 하이픈)는 본 브랜치로 통합 후 삭제 | portfolio+4 | PR-A2 검증 완료, push/머지 대기 | PR-A3/C/G 진행 또는 정리 후 push |
 | `feature/chainsight-graph-v2` | @frontend | 그래프 재설계 v2 (설계 명세 + FE-PR-1~6) | +210 | **origin push 완료** (2026-05-01), PR 보류 | main catch-up 후 PR |
 | `data_structure_remodeling_V1` | @backend + @frontend | Chain Sight v2 마켓 뷰 (redesign v1, PR-1~7) | +132 | QA 91% 통과, 커밋 대기 | feature/chainsight-graph-v2와 통합 머지 검토 |
 
