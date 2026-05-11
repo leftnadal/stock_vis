@@ -12,6 +12,8 @@ from google import genai
 from google.genai import types
 from django.conf import settings
 
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+
 logger = logging.getLogger(__name__)
 
 
@@ -131,7 +133,9 @@ class ContextCompressor:
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
-            response = await self.client.aio.models.generate_content(
+            cb = get_circuit('gemini_compress', failure_threshold=5, recovery_seconds=60)
+            response = await cb.acall(
+                self.client.aio.models.generate_content,
                 model=self.MODEL,
                 contents=self.COMPRESSION_PROMPT.format(document=original_text),
                 config=config,
@@ -149,6 +153,9 @@ class ContextCompressor:
                 'compression_ratio': compressed_tokens / max(original_tokens, 1)
             }
 
+        except CircuitBreakerError as cb_exc:
+            logger.warning(f"Gemini compress CB open: {cb_exc}")
+            raise
         except Exception as e:
             logger.error(f"Gemini API error during compression: {e}")
             raise
@@ -278,7 +285,9 @@ class QuestionAwareCompressor(ContextCompressor):
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
-            response = await self.client.aio.models.generate_content(
+            cb = get_circuit('gemini_compress', failure_threshold=5, recovery_seconds=60)
+            response = await cb.acall(
+                self.client.aio.models.generate_content,
                 model=self.MODEL,
                 contents=self.COMPRESSION_PROMPT.format(
                     question=question,
@@ -299,6 +308,9 @@ class QuestionAwareCompressor(ContextCompressor):
                 'compression_ratio': compressed_tokens / max(original_tokens, 1)
             }
 
+        except CircuitBreakerError as cb_exc:
+            logger.warning(f"Gemini compress CB open (question-aware): {cb_exc}")
+            raise
         except Exception as e:
             logger.error(f"Gemini API error during compression: {e}")
             raise

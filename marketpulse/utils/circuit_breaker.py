@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Callable
+from typing import Any, Awaitable, Callable
 
 from django.core.cache import cache
 from tenacity import (
+    AsyncRetrying,
     Retrying,
     RetryError,
     retry_if_exception_type,
@@ -91,6 +92,37 @@ class CircuitBreaker:
             ):
                 with attempt:
                     result = func(*args, **kwargs)
+        except RetryError as exc:
+            self._record_failure()
+            raise exc.last_attempt.exception() from exc
+        except self.retry_exceptions as exc:
+            self._record_failure()
+            raise exc
+
+        self._record_success()
+        return result
+
+    async def acall(
+        self,
+        func: Callable[..., Awaitable[Any]],
+        *args: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """call()의 async 버전. coroutine 함수에만 사용."""
+        state = self.get_state()
+        if state == CircuitState.OPEN:
+            opened_at = cache.get(self._opened_at_key(), 0.0)
+            raise CircuitBreakerError(self.name, float(opened_at))
+
+        try:
+            async for attempt in AsyncRetrying(
+                stop=stop_after_attempt(self.retry_attempts),
+                wait=wait_exponential(multiplier=1, min=1, max=4),
+                retry=retry_if_exception_type(self.retry_exceptions),
+                reraise=True,
+            ):
+                with attempt:
+                    result = await func(*args, **kwargs)
         except RetryError as exc:
             self._record_failure()
             raise exc.last_attempt.exception() from exc
