@@ -17,6 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
+from rest_framework.pagination import PageNumberPagination
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 
@@ -41,6 +42,13 @@ def _kst_today_start():
     return now.astimezone(KST).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
 
 
+class NewsArticlePagination(PageNumberPagination):
+    """뉴스 기사 페이지네이션 — 누적 시 응답 크기 폭주 차단."""
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 @extend_schema(parameters=[
     OpenApiParameter('symbol', str, OpenApiParameter.PATH, required=False),
 ])
@@ -49,6 +57,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     queryset = NewsArticle.objects.all().prefetch_related('entities')
     serializer_class = NewsArticleListSerializer
+    pagination_class = NewsArticlePagination
 
     def get_serializer_class(self):
         """액션별 Serializer 선택"""
