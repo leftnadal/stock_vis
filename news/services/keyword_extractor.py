@@ -40,9 +40,9 @@ class NewsKeywordExtractor:
 
     # 기본 키워드 (LLM 실패 시)
     FALLBACK_KEYWORDS = [
-        {"text": "시장 동향", "sentiment": "neutral", "related_symbols": [], "reason": "전반적인 시장 흐름을 확인하세요"},
-        {"text": "거래량 증가", "sentiment": "neutral", "related_symbols": [], "reason": "주요 종목의 거래량 변화를 주시하세요"},
-        {"text": "변동성 확대", "sentiment": "neutral", "related_symbols": [], "reason": "시장 변동성이 높아 주의가 필요합니다"},
+        {"text": "시장 동향", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["market trend"], "reason": "전반적인 시장 흐름을 확인하세요"},
+        {"text": "거래량 증가", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["volume surge"], "reason": "주요 종목의 거래량 변화를 주시하세요"},
+        {"text": "변동성 확대", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["volatility spike"], "reason": "시장 변동성이 높아 주의가 필요합니다"},
     ]
 
     def __init__(self, language: str = "ko"):
@@ -130,6 +130,16 @@ class NewsKeywordExtractor:
             keywords = self._call_llm(news_data, target_date)
             generation_time_ms = int((time.time() - start_time) * 1000)
 
+            # source_indices → article_ids 매핑
+            prompt_limit = min(50, len(news_data))
+            for kw in keywords:
+                indices = kw.pop('source_indices', [])
+                article_ids = []
+                for idx in indices:
+                    if 1 <= idx <= prompt_limit:
+                        article_ids.append(news_data[idx - 1]['id'])
+                kw['article_ids'] = article_ids
+
             return self._create_or_update_keyword(
                 target_date,
                 keywords=keywords,
@@ -161,6 +171,7 @@ class NewsKeywordExtractor:
             symbols = list(article.entities.values_list('symbol', flat=True)[:5])
 
             news_list.append({
+                'id': str(article.id),
                 'title': article.title,
                 'summary': article.summary[:300] if article.summary else '',  # 요약 길이 제한
                 'source': article.source,
@@ -183,6 +194,7 @@ class NewsKeywordExtractor:
                 system_instruction=system_prompt,
                 max_output_tokens=self.MAX_OUTPUT_TOKENS,
                 temperature=self.TEMPERATURE,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             ),
         )
 
@@ -201,9 +213,11 @@ class NewsKeywordExtractor:
 ## 규칙:
 1. 정확히 10개의 키워드를 추출하세요
 2. 각 키워드는 다음 형식을 따르세요:
-   - text: 핵심 문구 (25자 이내, 한국어)
+   - text: 핵심 문구 (35자 이내, 한국어)
      ★ 반드시 "주어/목적어 + 동사" 구조로 작성하세요.
-     ✅ 좋은 예: "NVDA 실적 기대 상회", "Fed 금리 동결 시사", "테슬라 중국 판매 급증", "반도체 재고 바닥 확인"
+     ★ 회사명은 가능하면 심볼로 대체하여 글자수를 줄이세요.
+       예: "Applied Materials" → "AMAT", "Merck" → "MRK", "Tesla" → "TSLA"
+     ✅ 좋은 예: "NVDA 실적 기대 상회", "Fed 금리 동결 시사", "TSLA 중국 판매 급증", "AMAT 칩 사이클 성숙 압력"
      ❌ 나쁜 예: "AI 반도체", "금리 인하", "실적 발표" (명사만 나열 금지)
    - sentiment: "positive", "negative", "neutral" 중 하나만 사용
    - related_symbols: 관련 종목 심볼 리스트 (최대 3개) - 가능한 한 관련 종목을 찾아 포함하세요!
@@ -224,11 +238,24 @@ class NewsKeywordExtractor:
 - 예: "비트코인 10만불 돌파" → COIN, MSTR, RIOT
 - 최소 7개 이상의 키워드에 related_symbols를 포함하세요
 
+## search_terms_en (영문 검색어):
+- 각 키워드에 대해 영문 검색어를 2~4개 추출하세요
+- 뉴스 기사 제목에서 이 키워드와 관련된 기사를 찾기 위한 검색어입니다
+- 가능한 구체적이고 다양한 표현을 포함하세요
+- 예: "반도체 수출 호조" → ["semiconductor export", "HBM", "Samsung chip", "chip export"]
+- 예: "Fed 금리 동결 시사" → ["Fed rate hold", "interest rate pause", "FOMC"]
+
+## source_indices (출처 뉴스 번호):
+- 각 키워드를 추출하는 데 근거가 된 뉴스 기사의 번호를 반드시 포함하세요
+- 위 뉴스 목록의 번호(1부터 시작)를 리스트로 기입하세요
+- 최소 1개, 최대 5개까지 포함하세요
+- 예: 1번, 5번, 12번 뉴스에서 추출한 키워드 → [1, 5, 12]
+
 ## 출력 형식:
 [
-  {"text": "AI 반도체 수요 급증", "sentiment": "positive", "related_symbols": ["NVDA", "AMD", "INTC"], "importance": 0.95, "reason": "NVDA 실적 발표 임박, 공급망 전체 주목"},
-  {"text": "빅테크 가이던스 하향", "sentiment": "negative", "related_symbols": ["AAPL", "MSFT", "GOOGL"], "importance": 0.90, "reason": "어닝 시즌 시작, 실적 우려 확산"},
-  {"text": "비트코인 급락세 지속", "sentiment": "negative", "related_symbols": ["COIN", "MSTR"], "importance": 0.85, "reason": "규제 불확실성 재부각, 관련주 동반 약세"},
+  {"text": "AI 반도체 수요 급증", "sentiment": "positive", "related_symbols": ["NVDA", "AMD", "INTC"], "search_terms_en": ["AI chip demand", "semiconductor surge", "NVIDIA earnings"], "source_indices": [1, 3, 7], "importance": 0.95, "reason": "NVDA 실적 발표 임박, 공급망 전체 주목"},
+  {"text": "빅테크 가이던스 하향", "sentiment": "negative", "related_symbols": ["AAPL", "MSFT", "GOOGL"], "search_terms_en": ["big tech guidance", "earnings miss", "tech outlook"], "source_indices": [2, 8], "importance": 0.90, "reason": "어닝 시즌 시작, 실적 우려 확산"},
+  {"text": "비트코인 급락세 지속", "sentiment": "negative", "related_symbols": ["COIN", "MSTR"], "search_terms_en": ["bitcoin crash", "crypto regulation", "BTC decline"], "source_indices": [5, 11, 15], "importance": 0.85, "reason": "규제 불확실성 재부각, 관련주 동반 약세"},
   ...
 ]"""
 
@@ -273,9 +300,11 @@ class NewsKeywordExtractor:
                         if raw_sentiment not in VALID_SENTIMENTS:
                             raw_sentiment = 'neutral'
                         validated.append({
-                            'text': str(kw.get('text', ''))[:25],
+                            'text': str(kw.get('text', ''))[:35],
                             'sentiment': raw_sentiment,
                             'related_symbols': kw.get('related_symbols', [])[:3],
+                            'search_terms_en': [str(t)[:50] for t in kw.get('search_terms_en', [])][:4],
+                            'source_indices': [int(i) for i in kw.get('source_indices', []) if isinstance(i, (int, float))][:5],
                             'importance': float(kw.get('importance', 0.5)),
                             'reason': str(kw.get('reason', ''))[:80],
                         })
@@ -289,7 +318,7 @@ class NewsKeywordExtractor:
             matches = re.findall(pattern, response_text)
             if matches:
                 return [
-                    {"text": text[:25], "sentiment": "neutral", "related_symbols": [], "importance": 0.5, "reason": ""}
+                    {"text": text[:35], "sentiment": "neutral", "related_symbols": [], "search_terms_en": [], "importance": 0.5, "reason": ""}
                     for text in matches[:10]
                 ]
 

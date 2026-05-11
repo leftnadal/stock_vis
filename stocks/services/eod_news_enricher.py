@@ -27,6 +27,9 @@ class EODNewsEnricher:
     5. profile: Stock 모델에서 기업 기본 정보 팩트 요약
     """
 
+    # confidence 순서 (시간적 인과성 보정에 사용)
+    CONFIDENCE_ORDER = ['none', 'low', 'medium', 'high', 'very_high']
+
     def enrich(self, tagged_signals: list[dict], target_date: date) -> list[dict]:
         """
         tagged_signals 각 항목에 news_context 필드를 추가합니다.
@@ -44,7 +47,14 @@ class EODNewsEnricher:
             sector = item.get('sector', '')
             industry = item.get('industry', '')
 
-            news_context = self._find_news(symbol, sector, industry, target_date)
+            # primary signal direction 추출
+            signals = item.get('signals', [])
+            signal_direction = signals[0].get('direction', 'neutral') if signals else 'neutral'
+
+            news_context = self._find_news(
+                symbol, sector, industry, target_date,
+                signal_direction=signal_direction,
+            )
             enriched_item = dict(item)
             enriched_item['news_context'] = news_context
             enriched.append(enriched_item)
@@ -55,7 +65,10 @@ class EODNewsEnricher:
         )
         return enriched
 
-    def _find_news(self, symbol: str, sector: str, industry: str, target_date: date) -> dict:
+    def _find_news(
+        self, symbol: str, sector: str, industry: str, target_date: date,
+        signal_direction: str = 'neutral',
+    ) -> dict:
         """
         5단계 계층적 매칭으로 최적의 뉴스 컨텍스트를 반환합니다.
         각 단계에서 찾으면 즉시 반환합니다.
@@ -87,7 +100,7 @@ class EODNewsEnricher:
             .first()
         )
         if news:
-            return self._build_news_dict(news, 'symbol_today', 'high', target_date)
+            return self._build_news_dict(news, 'symbol_today', 'high', target_date, signal_direction)
 
         # 2단계: symbol 매칭 + 7일 이내
         cutoff_7d = target_date - timedelta(days=7)
@@ -101,7 +114,7 @@ class EODNewsEnricher:
             .first()
         )
         if news:
-            return self._build_news_dict(news, 'symbol_7d', 'medium', target_date)
+            return self._build_news_dict(news, 'symbol_7d', 'medium', target_date, signal_direction)
 
         # 3단계: symbol 매칭 + 30일 이내
         cutoff_30d = target_date - timedelta(days=30)
@@ -115,7 +128,7 @@ class EODNewsEnricher:
             .first()
         )
         if news:
-            return self._build_news_dict(news, 'symbol_30d', 'low', target_date)
+            return self._build_news_dict(news, 'symbol_30d', 'low', target_date, signal_direction)
 
         # 4단계: industry 매칭 + 7일 이내
         if industry:
@@ -151,12 +164,18 @@ class EODNewsEnricher:
         match_type: str,
         confidence: str,
         target_date: date,
+        signal_direction: str = 'neutral',
     ) -> dict:
         """
         StockNews 인스턴스를 news_context dict로 변환합니다.
+        sentiment-시그널 방향 시간적 인과성 기반으로 confidence를 보정합니다.
         """
         published_date = news.published_at.date() if hasattr(news.published_at, 'date') else target_date
         age_days = (target_date - published_date).days
+
+        adjusted_confidence = self._adjust_confidence(
+            confidence, match_type, news, signal_direction,
+        )
 
         return {
             'headline': news.headline or '',
@@ -164,11 +183,84 @@ class EODNewsEnricher:
             'source': news.source or '',
             'url': news.url or '',
             'match_type': match_type,
-            'confidence': confidence,
+            'confidence': adjusted_confidence,
             'age_days': age_days,
             'sentiment': news.sentiment or '',
             'published_at': news.published_at.isoformat() if news.published_at else '',
         }
+
+    # sentiment 정규화 매핑: 다양한 형식 → positive/negative/neutral
+    _SENTIMENT_MAP = {
+        'positive': 'positive',
+        'bullish': 'positive',
+        'up': 'positive',
+        '+': 'positive',
+        '긍정': 'positive',
+        'negative': 'negative',
+        'bearish': 'negative',
+        'down': 'negative',
+        '-': 'negative',
+        '부정': 'negative',
+        'neutral': 'neutral',
+        'mixed': 'neutral',
+        '0': 'neutral',
+        '중립': 'neutral',
+    }
+
+    @staticmethod
+    def _normalize_sentiment(raw: str | None) -> str:
+        """다양한 sentiment 형식을 positive/negative/neutral로 정규화합니다."""
+        if not raw:
+            return ''
+        cleaned = raw.lower().strip()
+        return EODNewsEnricher._SENTIMENT_MAP.get(cleaned, cleaned)
+
+    def _adjust_confidence(
+        self,
+        base_confidence: str,
+        match_type: str,
+        news: 'StockNews',
+        signal_direction: str,
+    ) -> str:
+        """
+        뉴스 sentiment와 시그널 방향의 관계를 시간적 인과성 기반으로 보정합니다.
+
+        - 당일 뉴스(symbol_today) + 방향 일치 → confidence 유지 (buy the rumor 리스크)
+        - 당일 뉴스 + 방향 충돌 → confidence 하향 (반전 리스크)
+        - 과거 뉴스(symbol_7d) + 방향 일치 → confidence 상향 (모멘텀 지속)
+        - 과거 뉴스 + 방향 충돌 → confidence 하향
+        """
+        sentiment = self._normalize_sentiment(getattr(news, 'sentiment', ''))
+        if not sentiment or signal_direction == 'neutral':
+            return base_confidence
+
+        directions_match = (
+            (sentiment == 'positive' and signal_direction == 'bullish') or
+            (sentiment == 'negative' and signal_direction == 'bearish')
+        )
+        directions_conflict = (
+            (sentiment == 'positive' and signal_direction == 'bearish') or
+            (sentiment == 'negative' and signal_direction == 'bullish')
+        )
+
+        def _shift(conf: str, delta: int) -> str:
+            order = self.CONFIDENCE_ORDER
+            idx = order.index(conf) if conf in order else 2
+            return order[max(0, min(len(order) - 1, idx + delta))]
+
+        if match_type == 'symbol_today':
+            if directions_conflict:
+                return _shift(base_confidence, -1)
+            # 일치해도 올리지 않음 (buy the rumor 리스크)
+            return base_confidence
+
+        elif match_type == 'symbol_7d':
+            if directions_match:
+                return _shift(base_confidence, +1)
+            if directions_conflict:
+                return _shift(base_confidence, -1)
+
+        return base_confidence
 
     def _build_profile_fallback(self, symbol: str) -> dict:
         """

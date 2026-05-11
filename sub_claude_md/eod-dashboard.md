@@ -19,8 +19,9 @@ DailyPrice(250일) → Calculator(벡터연산) → Tagger → NewsEnricher → 
 | 파일 | 역할 |
 |------|------|
 | `stocks/services/eod_signal_calculator.py` | 14개 시그널 벡터 연산 |
+| `stocks/services/eod_regime_calculator.py` | Z-score 기반 VIX 레짐 판별 (3단계: normal/elevated/high_vol) |
 | `stocks/services/eod_signal_tagger.py` | 태깅 + primary/sub_tags |
-| `stocks/services/eod_news_enricher.py` | 5단계 뉴스 매칭 |
+| `stocks/services/eod_news_enricher.py` | 5단계 뉴스 매칭 + sentiment 시간적 인과성 보정 |
 | `stocks/services/eod_json_baker.py` | Atomic Write → static/ |
 | `stocks/services/eod_pipeline.py` | 파이프라인 오케스트레이터 |
 | `stocks/views_eod.py` | admin API (3개) |
@@ -85,17 +86,19 @@ python manage.py pipeline_status --quality # 품질 메트릭
 ## 프론트엔드 컴포넌트
 
 `frontend/components/eod/`:
-DataFreshnessBadge, MarketSummaryBar, SignalFilterTabs, SignalCardGrid,
+DataFreshnessBadge, MarketSummaryBar, VixChip, SignalFilterTabs, SignalCardGrid,
 SignalCard, SignalDetailSheet, StockRow, MiniSparkline, ConfidenceBadge,
 NewsContextBadge, EODSkeleton
 
 ## 테스트
 
 ```
-tests/stocks/test_eod_signal_calculator.py  # 시그널 단위 + VIX 레짐
-tests/stocks/test_eod_pipeline.py           # 통합 + 멱등성
-tests/stocks/test_eod_ingest_quality.py     # 품질 체크
-tests/stocks/test_eod_api.py               # API 엔드포인트
+tests/unit/stocks/test_eod_signal_calculator.py  # 시그널 단위 + VIX 레짐
+tests/unit/stocks/test_eod_regime_calculator.py  # DynamicRegimeCalculator Z-score + 캐싱 + 절대값 하한선
+tests/unit/stocks/test_eod_news_enricher_sentiment.py  # sentiment 시간적 인과성 보정
+tests/unit/stocks/test_eod_pipeline.py           # 통합 + 멱등성
+tests/unit/stocks/test_eod_ingest_quality.py     # 품질 체크
+tests/unit/stocks/test_eod_api.py               # API 엔드포인트
 ```
 
 > 상세: `docs/features/eod-dashboard/README.md`

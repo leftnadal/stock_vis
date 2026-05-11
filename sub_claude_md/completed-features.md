@@ -116,6 +116,29 @@
 
 > 상세: `sub_claude_md/eod-dashboard.md`, `docs/features/eod-dashboard/README.md`
 
+## Thesis Control (가설 통제실)
+
+- ✅ Backend: Views, Serializers, Builder, Tasks (thesis_control/ 앱)
+- ✅ Frontend FE-PR-1: 라우팅 7개 + 공통 컴포넌트 5개
+  - authAxios 공유 모듈 (JWT 인터셉터 단일 소스, 3가지 방어)
+  - AuthContext 마이그레이션 (Token Rotation 대응)
+  - ArrowIndicator, MoonPhase, IndicatorCard, ThesisBadge, AlertBell
+  - TanStack Query hooks 7개, skeleton 3종
+  - Header `/thesis-control` → `/thesis` 수정
+- ✅ Frontend FE-PR-2: 가설 목록 + 오늘의 변화 + 진입점
+  - ThesisListCard, TodayChangeCard, EntryPointGrid 컴포넌트
+  - Mock 모드 (USE_MOCK + enabled 옵션), 고정 ISO 타임스탬프
+  - stateToDisplay 리팩토링 (용어 변경 + icon 타입 안전 + 색상 분리)
+  - ThesisBadge 이모지 → lucide 아이콘 (ThesisStateIconKey Record)
+  - relativeTime, sortThesesByPriority 유틸, sticky 헤더
+  - 시맨틱 HTML (ul/li), useMemo 정렬 최적화
+- ⏳ Frontend FE-PR-3: 대화형 빌더
+- ⏳ Frontend FE-PR-4: 지표 설정
+- ⏳ Frontend FE-PR-5: 관제실 대시보드
+- ⏳ Frontend FE-PR-6: 알림 + 마감
+
+> 상세: `sub_claude_md/thesis-control.md`, `docs/thesis_control/`
+
 ## 미완성
 
 - ⏳ Market Movers Phase 3: AWS Lambda 전환

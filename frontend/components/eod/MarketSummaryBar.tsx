@@ -1,6 +1,7 @@
 'use client';
 
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
+import { VixChip } from './VixChip';
 import type { MarketSummary } from '@/types/eod';
 
 interface MarketSummaryBarProps {
@@ -28,21 +29,6 @@ function ChangeChip({ label, value }: { label: string; value: number }) {
   );
 }
 
-function VixChip({ vix, regime }: { vix: number; regime: MarketSummary['vix_regime'] }) {
-  const isHigh = regime === 'high_vol' || vix > 25;
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-semibold ${
-        isHigh
-          ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300'
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
-      }`}
-    >
-      {isHigh && <AlertTriangle className="w-3 h-3" />}
-      VIX {vix.toFixed(1)}
-    </span>
-  );
-}
 
 function BullBearBar({ bullish, bearish }: { bullish: number; bearish: number }) {
   const total = bullish + bearish;
@@ -52,35 +38,44 @@ function BullBearBar({ bullish, bearish }: { bullish: number; bearish: number })
   return (
     <div className="flex items-center gap-1.5">
       <span className="text-xs text-green-600 dark:text-green-400 font-medium">{bullish}</span>
-      <div className="w-16 h-1.5 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
+      <div className="w-24 h-2 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
         <div
           className="h-full bg-green-500 rounded-full"
           style={{ width: `${bullPct}%` }}
         />
       </div>
       <span className="text-xs text-red-600 dark:text-red-400 font-medium">{bearish}</span>
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-0.5">({bullPct}%)</span>
     </div>
   );
 }
 
 export function MarketSummaryBar({ summary }: MarketSummaryBarProps) {
-  const isVixHigh = summary.vix_regime === 'high_vol' || summary.vix > 25;
+  const regimeLabel = summary.vix_regime === 'high_vol'
+    ? '고변동성 구간'
+    : summary.vix_regime === 'elevated'
+    ? '변동성 주의'
+    : null;
+
+  const regimeBadgeClass = summary.vix_regime === 'high_vol'
+    ? 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-700'
+    : 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700';
 
   return (
     <div className="mb-4 p-4 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
       {/* 헤드라인 */}
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <h2 className="text-base font-bold text-gray-900 dark:text-white">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
           {summary.stock_universe.toLocaleString()}종목에서{' '}
-          <span className="text-blue-600 dark:text-blue-400">
+          <span className="text-blue-600 dark:text-blue-400 text-2xl font-extrabold">
             {summary.total_signals}개
           </span>{' '}
           시그널 감지
         </h2>
-        {isVixHigh && (
-          <span className="inline-flex items-center gap-1 text-xs text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20 px-2 py-0.5 rounded-full border border-orange-200 dark:border-orange-700">
+        {regimeLabel && (
+          <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${regimeBadgeClass}`}>
             <AlertTriangle className="w-3 h-3" />
-            고변동성 구간
+            {regimeLabel}
           </span>
         )}
       </div>

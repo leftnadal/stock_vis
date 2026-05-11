@@ -31,6 +31,13 @@ THRESHOLDS = {
         'P7_bounce_pct': 3.0,
         'V1_vol_ratio': 2.0,
     },
+    'elevated': {
+        'P2_change_pct': 6.0,
+        'P3_gap_ratio': 1.04,
+        'P4_body_pct': 4.0,
+        'P7_bounce_pct': 4.0,
+        'V1_vol_ratio': 2.5,
+    },
     'high_vol': {
         'P2_change_pct': 7.0,
         'P3_gap_ratio': 1.05,
@@ -154,32 +161,14 @@ class EODSignalCalculator:
 
     def _get_vix_regime(self, target_date: date) -> str:
         """
-        macro.MarketIndex에서 VIX 값을 조회하여 레짐 반환.
+        DynamicRegimeCalculator를 사용하여 Z-score 기반 VIX 레짐 반환.
 
         Returns:
-            'high_vol' if VIX > 25, else 'normal'
+            'normal' | 'elevated' | 'high_vol'
         """
-        try:
-            from macro.models import MarketIndexPrice, MarketIndex
-            vix_index = MarketIndex.objects.filter(
-                symbol__in=['VIX', '^VIX', 'VIXX'],
-                category='volatility',
-            ).first()
-            if vix_index:
-                price = (
-                    MarketIndexPrice.objects.filter(
-                        index=vix_index,
-                        date__lte=target_date,
-                    )
-                    .order_by('-date')
-                    .values_list('close', flat=True)
-                    .first()
-                )
-                if price is not None and float(price) > 25:
-                    return 'high_vol'
-        except Exception as e:
-            logger.warning(f"[EODSignalCalculator] VIX 조회 실패 (normal 기본값 사용): {e}")
-        return 'normal'
+        from stocks.services.eod_regime_calculator import DynamicRegimeCalculator
+        calculator = DynamicRegimeCalculator()
+        return calculator.get_regime(target_date)
 
     def _calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
         """

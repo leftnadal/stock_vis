@@ -85,7 +85,7 @@ celery -A config beat -l info
 
 ---
 
-## 자주 발생하는 버그 (핵심 6개)
+## 자주 발생하는 버그 (핵심 8개)
 
 | # | 버그 | 핵심 해결 |
 |---|------|----------|
@@ -96,8 +96,11 @@ celery -A config beat -l info
 | 19 | API URL 중복 `/api/v1/api/v1` | `.env` 확인, 코드에서 중복 제거 |
 | 20 | Next.js dev lock 충돌 | `predev` 스크립트로 `.next/dev/lock` 자동 삭제 |
 | 21 | Chain Sight count만 표시, 목록 빈 배열 | `ETF_PEER`→ETFHolding, `HAS_THEME`→ThemeMatch 분기 |
+| 22 | 재무제표 저장 시 모델 필드명 불일치 | `fiscal_date_ending`→`reported_date`, `accounts_payable`→`current_accounts_payable` 등 6개 |
+| 23 | FMP 프리미엄 심볼 402 에러 | `FMPPremiumError` 즉시 실패 + `.` 포함 심볼 배치에서 제외 |
+| 24 | Next.js Client Component Date.now() hydration 불일치 | 모듈 레벨 `Date.now()` 금지, 고정값 또는 `useEffect` 사용 |
 
-> 전체 21개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
+> 전체 24개 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
 
 ---
 
@@ -113,6 +116,7 @@ celery -A config beat -l info
 | Graph Analysis (상관관계 온톨로지) | [sub_claude_md/graph-analysis.md](sub_claude_md/graph-analysis.md) |
 | Screener (Enhanced + 투자 테제) | [sub_claude_md/screener.md](sub_claude_md/screener.md) |
 | RAG Analysis (Phase 3 파이프라인) | [sub_claude_md/rag-analysis.md](sub_claude_md/rag-analysis.md) |
+| Thesis Control (가설 통제실, 화살표/달 시각화) | [sub_claude_md/thesis-control.md](sub_claude_md/thesis-control.md) |
 
 ---
 
@@ -120,7 +124,7 @@ celery -A config beat -l info
 
 | 에이전트 | 영역 |
 |---------|------|
-| @backend | stocks/, users/, analysis/, API_request/, serverless/, news/, macro/ |
+| @backend | stocks/, users/, analysis/, API_request/, serverless/, news/, macro/, thesis_control/ |
 | @frontend | frontend/ 전체 |
 | @rag-llm | rag_analysis/ 전체 |
 | @infra | */tasks.py, */consumers.py, config/, docker/ |
@@ -133,10 +137,10 @@ celery -A config beat -l info
 ## 구현 상태 요약
 
 ### 완료
-JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지)
+JWT, Portfolio, 기술지표, Watchlist, Market Pulse, Market Movers (5개 지표 + Corporate Action + AI 키워드), Screener (Enhanced + 테제 빌더 + Chain Sight DNA), Chain Sight (ETF Holdings + Supply Chain + LLM Relations + Neo4j + Institutional Holdings + Regulatory/Patent), RAG Phase 3, Stock Auto Sync, News 수집 카테고리 (sector/sub_sector/custom + Celery Beat), **News Intelligence Pipeline v3** (규칙 엔진 + LLM 분석 + ML 학습 + Neo4j 뉴스 이벤트 + Shadow/Production Mode + LightGBM, 테스트 607개), **EOD Dashboard** (14개 시그널 벡터 연산 + VIX 레짐 + JSON Baking + Atomic Write + 5단계 뉴스 매칭 + 메인 페이지), **Thesis Control 백엔드** (Views, Serializers, Builder, Tasks), **Thesis Control 프론트엔드 Phase 2** (FE-PR-1~6 완료: 라우팅 + 공통 컴포넌트 + 가설 목록 + 대화형 빌더 + 지표 설정 + 관제실 대시보드 + 알림/마감, 컴포넌트 30개 + 페이지 8개)
 
 ### 진행 중
-Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화
+**Thesis Control Phase 3** (깊이 + 회고 + 프로필: FE-PR-7~11 — 대시보드 탭 구조, 전제 관리, 히트맵, 히스토리 차트, 마감 아카이브, 투자자 DNA), Graph Analysis (모델/서비스 완료, urls.py+tasks.py 미구현, 시각화 미구현), Chain Sight 프론트엔드 그래프 시각화
 
 ### 보류
 Market Movers AWS Lambda 전환

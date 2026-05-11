@@ -556,10 +556,10 @@ class MLWeightOptimizer:
         """
         logger.info("ML Weight Optimizer: Starting training pipeline")
 
-        # 1. 데이터 준비
+        # 1. 데이터 준비 (entity 없는 일반 뉴스도 포함)
         data = self.prepare_training_data(
             weeks=ROLLING_WINDOW_WEEKS,
-            company_news_only=True,
+            company_news_only=False,
         )
 
         if data.get('error') or data['X'] is None:

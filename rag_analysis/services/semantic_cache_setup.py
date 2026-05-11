@@ -136,6 +136,22 @@ def get_cache_stats() -> dict:
 
     try:
         with driver.session(database=settings.NEO4J_DATABASE) as session:
+            # AnalysisCache 라벨 존재 여부 확인
+            label_result = session.run(
+                "CALL db.labels() YIELD label "
+                "WHERE label = 'AnalysisCache' "
+                "RETURN count(label) AS cnt"
+            )
+            label_record = label_result.single()
+            if not label_record or label_record['cnt'] == 0:
+                return {
+                    'status': 'not_initialized',
+                    'total_entries': 0,
+                    'active_entries': 0,
+                    'expired_entries': 0,
+                    'avg_hit_count': 0
+                }
+
             result = session.run("""
                 MATCH (c:AnalysisCache)
                 WITH

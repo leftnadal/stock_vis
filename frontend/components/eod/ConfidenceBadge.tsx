@@ -16,15 +16,16 @@ export function ConfidenceBadge({ score }: ConfidenceBadgeProps) {
   const { dots, color, label } = getDotConfig(score);
 
   return (
-    <div className="flex items-center gap-0.5" title={`종합점수: ${score.toFixed(2)} (${label})`}>
+    <div className="flex items-center gap-1" title={`종합점수: ${score.toFixed(2)} (${label})`}>
       {Array.from({ length: 5 }).map((_, i) => (
         <span
           key={i}
-          className={`inline-block w-1.5 h-1.5 rounded-full ${
+          className={`inline-block w-2 h-2 rounded-full ${
             i < dots ? color : 'bg-gray-200 dark:bg-gray-600'
           }`}
         />
       ))}
+      <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-0.5">{label}</span>
     </div>
   );
 }

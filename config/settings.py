@@ -88,8 +88,8 @@ NEWS_RATE_LIMITS = {
         'wait_seconds': 1,         # 요청 간 최소 대기 시간
     },
     'marketaux': {
-        'per_day': 100,            # Marketaux API: 100 calls/day (무료 티어)
-        'articles_per_request': 3, # 응답당 최대 기사 수 제한
+        'per_day': 2500,           # Marketaux API: 2,500 calls/day (Basic 플랜)
+        'articles_per_request': 20, # 응답당 최대 기사 수 (Basic: 최대 20)
         'wait_seconds': 1,         # 요청 간 최소 대기 시간
     },
     'fmp': {
@@ -168,13 +168,15 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'stocks',
     'users',
-    'analysis',
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'graph_analysis',  # 그래프 온톨로지 분석 (Phase 1)
     'rag_analysis',  # RAG 기반 AI 분석
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
+    'metrics',  # 공유 지표 메타데이터 + 배치 실행 이력
+    'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
+    'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -182,6 +184,7 @@ INSTALLED_APPS = [
     'django_celery_beat',  # Celery Beat 스케줄러
     'django_celery_results',  # Celery 작업 결과 저장
     'channels',  # WebSocket 지원
+    'config',  # Celery 에러 모니터링 management commands
 ]
 
 MIDDLEWARE = [
@@ -376,6 +379,11 @@ LOGGING = {
             'level': 'INFO',
             'propagate': True,
         },
+        'celery.error_monitor': {
+            'handlers': ['file'],
+            'level': 'WARNING',
+            'propagate': False,
+        },
     },
 }
 
@@ -413,3 +421,33 @@ CHANNEL_LAYERS = {
 
 # Celery Beat 스케줄은 config/celery.py의 app.conf.beat_schedule에서 관리
 # (settings.py에 CELERY_BEAT_SCHEDULE 정의 시 celery.py 설정을 오버라이드하므로 주의)
+
+# ============================================================
+# Email Configuration
+# ============================================================
+# 콘솔 백엔드 기본, 프로덕션에서 SMTP로 교체
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND',
+    'django.core.mail.backends.console.EmailBackend'
+)
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
+
+# ============================================================
+# Celery Error Monitoring
+# ============================================================
+# 에러 알림 수신자
+CELERY_ERROR_RECIPIENTS = [
+    'goid545@naver.com',
+    'jinie545@gmail.com',
+]
+
+# 반복 에러 무시 목록 (알림 피로 방지)
+# digest에서 "Known Issues" 섹션으로 분리 표시
+CELERY_IGNORED_ERRORS = [
+    # 'rag_analysis.tasks.health_check_neo4j',  # AuraDB free tier 간헐적 끊김
+]

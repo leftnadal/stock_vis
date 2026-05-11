@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useParams, useSearchParams } from 'next/navigation';
 import { stockService, StockQuote, StockOverview } from '@/services/stock';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import StockChart from '@/components/stock/StockChart';
@@ -45,8 +45,44 @@ import OtherFundamentalsTab from '@/components/stock/OtherFundamentalsTab';
 import DataLoadingState, { DataStatus, DataError, LoadingProgress } from '@/components/common/DataLoadingState';
 import DataSourceBadge, { DataSourceWithTooltip, DataFreshness, DataSource } from '@/components/common/DataSourceBadge';
 import useDataSync from '@/hooks/useDataSync';
+import { useValidationSummary, useValidationMetrics, usePresets, useSelectPreset, useSetCustomPeers } from '@/hooks/useValidation';
+import SignalSummaryCard from '@/components/validation/SignalSummaryCard';
+import PeerContextBar from '@/components/validation/PeerContextBar';
+import CategorySection from '@/components/validation/CategorySection';
+import CategorySidebar from '@/components/validation/CategorySidebar';
+import IndustryPosition from '@/components/validation/IndustryPosition';
+import LeaderComparisonSection from '@/components/validation/LeaderComparisonSection';
 
-type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight';
+type TabType = 'overview' | 'balance-sheet' | 'income-statement' | 'cash-flow' | 'news' | 'other-fundamentals' | 'chain-sight' | 'validation';
+
+type L1Tab = 'fundamentals' | 'news' | 'analysis';
+
+const L1_TABS: { id: L1Tab; label: string }[] = [
+  { id: 'fundamentals', label: '기본정보' },
+  { id: 'news', label: '뉴스' },
+  { id: 'analysis', label: '분석 및 검증' },
+];
+
+const L2_TABS: Record<L1Tab, { id: TabType; label: string }[]> = {
+  fundamentals: [
+    { id: 'overview', label: 'Overview' },
+    { id: 'balance-sheet', label: 'Balance Sheet' },
+    { id: 'income-statement', label: 'Income Statement' },
+    { id: 'cash-flow', label: 'Cash Flow' },
+    { id: 'other-fundamentals', label: '기타 펀더멘탈' },
+  ],
+  news: [],
+  analysis: [
+    { id: 'validation', label: '1차 검증 (재무 체질)' },
+    { id: 'chain-sight', label: 'Chain Sight (관계 탐색)' },
+  ],
+};
+
+function getL1ForTab(tab: TabType): L1Tab {
+  if (tab === 'news') return 'news';
+  if (tab === 'validation' || tab === 'chain-sight') return 'analysis';
+  return 'fundamentals';
+}
 
 interface DataMeta {
   source: DataSource;
@@ -62,7 +98,31 @@ function StockDetailContent() {
   const [stockQuote, setStockQuote] = useState<StockQuote | null>(null);
   const [stockOverview, setStockOverview] = useState<StockOverview | null>(null);
   const [dataMeta, setDataMeta] = useState<DataMeta | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  // query param → activeTab 초기화
+  const queryParams = useSearchParams();
+  const tabFromUrl = (queryParams?.get('tab') as TabType) || 'overview';
+  const [activeTab, setActiveTabState] = useState<TabType>(tabFromUrl);
+  const [activeL1, setActiveL1] = useState<L1Tab>(getL1ForTab(tabFromUrl));
+
+  const setActiveTab = useCallback((tab: TabType) => {
+    setActiveTabState(tab);
+    setActiveL1(getL1ForTab(tab));
+    const url = tab === 'overview'
+      ? `/stocks/${symbol}`
+      : `/stocks/${symbol}?tab=${tab}`;
+    window.history.replaceState(null, '', url);
+  }, [symbol]);
+
+  const handleL1Click = useCallback((l1: L1Tab) => {
+    setActiveL1(l1);
+    if (l1 === 'news') {
+      setActiveTab('news');
+    } else {
+      const firstL2 = L2_TABS[l1][0];
+      if (firstL2) setActiveTab(firstL2.id);
+    }
+  }, [setActiveTab]);
   const [status, setStatus] = useState<DataStatus>('loading');
   const [error, setError] = useState<DataError | null>(null);
   const [progress, setProgress] = useState<LoadingProgress | null>(null);
@@ -185,15 +245,7 @@ function StockDetailContent() {
 
   const isPositive = stockQuote.change >= 0;
 
-  const tabs = [
-    { id: 'overview' as TabType, label: 'Overview', icon: Info },
-    { id: 'balance-sheet' as TabType, label: 'Balance Sheet', icon: FileText },
-    { id: 'income-statement' as TabType, label: 'Income Statement', icon: BarChart3 },
-    { id: 'cash-flow' as TabType, label: 'Cash Flow', icon: DollarSign },
-    { id: 'other-fundamentals' as TabType, label: 'Other Fundamentals', icon: Calculator },
-    { id: 'news' as TabType, label: 'Stock News', icon: Newspaper },
-    { id: 'chain-sight' as TabType, label: 'Chain Sight', icon: Compass },
-  ];
+  // L1/L2 탭 구조 (상단 L1_TABS, L2_TABS 참조)
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -318,29 +370,46 @@ function StockDetailContent() {
         {/* Stock Chart - 기본 1주일, 1일로 변경 가능 */}
         <StockChart symbol={symbol.toUpperCase()} />
 
-        {/* Tabs Navigation */}
+        {/* L1 Primary Tab Navigation (Pill 스타일) */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm mt-6">
-          <div className="border-b border-gray-200 dark:border-gray-700">
-            <nav className="flex space-x-1 px-6 pt-4">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-700 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-400'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700/50'
-                    }`}
-                  >
-                    <Icon className="h-4 w-4 mr-2" />
-                    {tab.label}
-                  </button>
-                );
-              })}
+          <div className="px-6 pt-4">
+            <nav className="flex space-x-2">
+              {L1_TABS.map((l1) => (
+                <button
+                  key={l1.id}
+                  onClick={() => handleL1Click(l1.id)}
+                  className={`px-5 py-2 text-sm font-medium rounded-full transition-colors ${
+                    activeL1 === l1.id
+                      ? 'bg-blue-600 text-white dark:bg-blue-500'
+                      : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  {l1.label}
+                </button>
+              ))}
             </nav>
           </div>
+
+          {/* L2 Secondary Tab Navigation (Underline 스타일) */}
+          {L2_TABS[activeL1].length > 0 && (
+            <div className="border-b border-gray-200 dark:border-gray-700 px-6 mt-2">
+              <nav className="flex space-x-6">
+                {L2_TABS[activeL1].map((l2) => (
+                  <button
+                    key={l2.id}
+                    onClick={() => setActiveTab(l2.id)}
+                    className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                      activeTab === l2.id
+                        ? 'border-blue-600 text-blue-600 dark:border-blue-400 dark:text-blue-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                  >
+                    {l2.label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Tab Content */}
           <div className="p-6">
@@ -364,6 +433,9 @@ function StockDetailContent() {
               <OtherFundamentalsTab symbol={symbol.toUpperCase()} />
             )}
             {activeTab === 'news' && <NewsTab symbol={symbol.toUpperCase()} />}
+            {activeTab === 'validation' && (
+              <ValidationTab symbol={symbol.toUpperCase()} />
+            )}
             {activeTab === 'chain-sight' && (
               <ChainSightExplorer symbol={symbol.toUpperCase()} />
             )}
@@ -377,7 +449,9 @@ function StockDetailContent() {
 export default function StockDetailPage() {
   return (
     <AuthGuard>
-      <StockDetailContent />
+      <Suspense fallback={null}>
+        <StockDetailContent />
+      </Suspense>
     </AuthGuard>
   );
 }
@@ -452,6 +526,23 @@ function OverviewTab({ overview }: { overview: StockOverview }) {
           </p>
         </div>
       ) : null}
+
+      {/* 동적 레이어: validation + chainsight (Step 2~4에서 각 섹션 구현) */}
+      {overview.dynamic_layers && (
+        <div className="space-y-4">
+          {/* B. 리스크 알림 바 — Step 4에서 RiskAlertBar 컴포넌트로 교체 */}
+          {overview.dynamic_layers.news_summary && null}
+
+          {/* C. 종합 진단 스코어카드 — Step 2에서 CategoryScoreGrid 컴포넌트로 교체 */}
+          {overview.dynamic_layers.category_signals && null}
+
+          {/* D. 기업 DNA 패널 — Step 3에서 CompanyDNAGrid 컴포넌트로 교체 */}
+          {(overview.dynamic_layers.growth_stage || overview.dynamic_layers.capital_dna || overview.dynamic_layers.sensitivity) && null}
+
+          {/* E. 내러티브 & 테마 — Step 4에서 NarrativeTagBar 컴포넌트로 교체 */}
+          {overview.dynamic_layers.narrative && null}
+        </div>
+      )}
 
       {/* Key Metrics Grid */}
       <div>
@@ -799,6 +890,172 @@ function NewsTab({ symbol }: { symbol: string }) {
 
       {/* News Detail Modal */}
       <NewsDetailModal newsId={selectedNewsId} onClose={() => setSelectedNewsId(null)} />
+    </div>
+  );
+}
+
+// Validation Tab — 1차 검증
+function ValidationTab({ symbol }: { symbol: string }) {
+  const { data: summary, isLoading: summaryLoading, error: summaryError, refetch: refetchSummary } = useValidationSummary(symbol);
+  const { data: metricsData, isLoading: metricsLoading } = useValidationMetrics(symbol, 'all');
+  const { data: presetsData } = usePresets(symbol);
+  const handleSelectPreset = useSelectPreset(symbol);
+  const handleSetCustomPeers = useSetCustomPeers(symbol);
+  const [expandedMetric, setExpandedMetric] = useState<string | null>(null);
+  const [mobileCategory, setMobileCategory] = useState<string>('profitability');
+
+  // 반응형: 768px 이하를 모바일로 판단
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  if (summaryLoading || metricsLoading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+        <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+      </div>
+    );
+  }
+
+  // Case: API 에러 + retry 버튼
+  if (summaryError || !summary) {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">데이터를 불러올 수 없습니다</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">잠시 후 다시 시도해주세요.</p>
+        <button
+          onClick={() => refetchSummary()}
+          className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          다시 시도
+        </button>
+      </div>
+    );
+  }
+
+  // Case 4: S&P 500 외 종목
+  if (summary.error === 'not_in_universe') {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">현재 S&P 500 종목 대상</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{summary.message}</p>
+      </div>
+    );
+  }
+
+  // Case 1: 배치 미실행
+  if (summary.error === 'no_data') {
+    return (
+      <div className="text-center py-12">
+        <Shield className="h-12 w-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">재무 분석 데이터 준비 중</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">{summary.message}</p>
+        <button
+          onClick={() => {
+            const url = `/stocks/${symbol}`;
+            window.history.replaceState(null, '', url);
+            window.location.reload();
+          }}
+          className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          기본정보 보기 →
+        </button>
+      </div>
+    );
+  }
+
+  const categories = metricsData?.categories || [];
+
+  const handleToggleMetric = (code: string) => {
+    setExpandedMetric(expandedMetric === code ? null : code);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* ① 종합 요약 카드 */}
+      <SignalSummaryCard
+        companyName={summary.company_name}
+        categorySignals={summary.category_signals}
+        summaryText={summary.summary_text}
+      />
+
+      {/* ② Peer 정보 바 + 프리셋 선택 */}
+      {summary.peer_info && (
+        <PeerContextBar
+          peerInfo={summary.peer_info}
+          fiscalYear={summary.data_fiscal_year}
+          presets={presetsData?.presets}
+          onSelectPreset={handleSelectPreset}
+          onSetCustomPeers={handleSetCustomPeers}
+        />
+      )}
+
+      {/* 데이터 기준일 */}
+      <p className="text-xs text-gray-400 dark:text-gray-500">
+        데이터 기준: {summary.data_fiscal_year} FY
+        {summary.data_freshness && ` | 마지막 업데이트: ${new Date(summary.data_freshness).toLocaleDateString('ko-KR')}`}
+      </p>
+
+      {/* ③ 카테고리별 상세 */}
+      {categories.length > 0 && (
+        isMobile ? (
+          /* 모바일: 카테고리 Chip + 선택된 카테고리만 표시 */
+          <div>
+            <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
+              {categories.map((cat) => (
+                <button
+                  key={cat.category}
+                  onClick={() => { setMobileCategory(cat.category); setExpandedMetric(null); }}
+                  className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    mobileCategory === cat.category
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+                  }`}
+                >
+                  {cat.display_name}
+                </button>
+              ))}
+            </div>
+            {categories.filter(c => c.category === mobileCategory).map((cat) => (
+              <CategorySection
+                key={cat.category}
+                category={cat}
+                expandedMetric={expandedMetric}
+                onToggleMetric={handleToggleMetric}
+                isMobile
+              />
+            ))}
+          </div>
+        ) : (
+          /* 데스크톱: Sidebar + 전체 카테고리 */
+          <div className="flex gap-6">
+            <div className="w-48 flex-shrink-0 hidden lg:block">
+              <CategorySidebar categories={categories} activeCategory={categories[0]?.category || ''} />
+            </div>
+            <div className="flex-1 space-y-8">
+              {categories.map((cat) => (
+                <CategorySection key={cat.category} category={cat} />
+              ))}
+            </div>
+          </div>
+        )
+      )}
+
+      {/* ④ 산업 위치 요약 */}
+      {summary.industry_position.ranks.length > 0 && (
+        <IndustryPosition ranks={summary.industry_position.ranks} />
+      )}
+
+      {/* ⑤ 업종 리더 대비 비교 */}
+      <LeaderComparisonSection symbol={symbol} />
     </div>
   );
 }

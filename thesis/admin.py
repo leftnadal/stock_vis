@@ -4,6 +4,7 @@ from .models import (
     HypothesisEvent,
     IndicatorReading,
     InvestorDNA,
+    KeywordCache,
     PopularThesisCache,
     Thesis,
     ThesisAlert,
@@ -85,3 +86,11 @@ class ThesisFollowAdmin(admin.ModelAdmin):
 @admin.register(PopularThesisCache)
 class PopularThesisCacheAdmin(admin.ModelAdmin):
     list_display = ['thesis', 'follower_count', 'support_ratio', 'rank', 'cached_at']
+
+
+@admin.register(KeywordCache)
+class KeywordCacheAdmin(admin.ModelAdmin):
+    list_display = ['target', 'source', 'role', 'text', 'updated_at']
+    list_filter = ['source', 'role']
+    search_fields = ['target', 'text']
+    ordering = ['-updated_at']

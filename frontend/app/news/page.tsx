@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { AlertCircle, Newspaper, RefreshCw, Clock } from 'lucide-react';
+import { AlertCircle, Newspaper, RefreshCw, Clock, Sparkles } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import DailyKeywordCard from '@/components/news/DailyKeywordCard';
 import NewsHighlightedStocks from '@/components/news/NewsHighlightedStocks';
-import MLModelStatusCard from '@/components/news/MLModelStatusCard';
 import AINewsBriefingCard from '@/components/news/AINewsBriefingCard';
 import OnboardingBanner from '@/components/news/OnboardingBanner';
 import NewsCategorySection from '@/components/news/NewsCategorySection';
@@ -214,16 +213,34 @@ export default function NewsPage() {
               ))}
             </div>
           ) : !user ? (
-            <AINewsBriefingCard />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <AINewsBriefingCard />
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-5 flex flex-col items-center justify-center text-center">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full mb-3">
+                  <Sparkles className="w-6 h-6 text-blue-500 dark:text-blue-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                  더 많은 인사이트
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                  로그인하면 종목 하이라이트를 확인할 수 있어요
+                </p>
+                <a
+                  href="/login"
+                  className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  로그인하기 →
+                </a>
+              </div>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <DailyKeywordCard
                 onKeywordClick={(keyword: DailyKeyword) => {
                   console.log('Keyword clicked:', keyword);
                 }}
               />
               <NewsHighlightedStocks limit={6} />
-              <MLModelStatusCard />
             </div>
           )}
         </section>

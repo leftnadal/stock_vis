@@ -12,7 +12,7 @@ class ThesisIndicator(models.Model):
     )
     premise = models.ForeignKey(
         'thesis.ThesisPremise',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='indicators',
         null=True,
         blank=True,
@@ -27,7 +27,6 @@ class ThesisIndicator(models.Model):
             ('macro', 'Macro Economic'),
             ('sentiment', 'News Sentiment'),
             ('technical', 'Technical'),
-            ('fundamental', 'Fundamental'),
             ('custom', 'Custom'),
         ],
     )
@@ -63,6 +62,11 @@ class ThesisIndicator(models.Model):
     current_degree = models.FloatField(null=True, blank=True)
     current_color = models.CharField(max_length=10, blank=True)
     current_label = models.CharField(max_length=50, blank=True)
+
+    display_unit = models.CharField(
+        max_length=10, default='',
+        help_text="UI 표시 단위: '$', '원', '%', 'pt', '' 등"
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -114,8 +118,8 @@ class IndicatorReading(models.Model):
         related_name='readings',
     )
 
-    value = models.FloatField()
-    raw_value = models.FloatField()
+    value = models.FloatField(null=True, blank=True)
+    raw_value = models.FloatField(null=True, blank=True)
     asof = models.DateTimeField()
 
     # v2.3.2 추가 필드

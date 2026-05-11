@@ -76,11 +76,23 @@ export default function KeywordMentionList({
             </span>
           </div>
 
-          {/* News headline */}
+          {/* News headline with link */}
           <div className="ml-5 pl-2 border-l-2 border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
-              &ldquo;{mention.news_headline}&rdquo;
-            </p>
+            {mention.article_url ? (
+              <a
+                href={mention.article_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-1.5 text-sm text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+              >
+                <span className="line-clamp-2">&ldquo;{mention.news_headline}&rdquo;</span>
+                <ExternalLink className="w-3 h-3 mt-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </a>
+            ) : (
+              <p className="text-sm text-gray-700 dark:text-gray-300 line-clamp-2">
+                &ldquo;{mention.news_headline}&rdquo;
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-1 text-xs text-gray-400 dark:text-gray-500">
               <span>{mention.news_source}</span>
               <span>&middot;</span>

@@ -27,10 +27,10 @@
       "url": "/screener"
     },
     {
-      "name": "Market Movers",
-      "short_name": "Movers",
-      "description": "오늘의 주목 종목",
-      "url": "/strategy-analysis"
+      "name": "Thesis Control",
+      "short_name": "Thesis",
+      "description": "투자 테제 관리",
+      "url": "/thesis-control"
     }
   ]
 }

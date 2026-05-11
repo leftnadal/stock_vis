@@ -507,12 +507,7 @@ class AdminStatusService:
         fear_greed_cached = cache.get('macro:fear_greed_index') is not None
         market_pulse_cached = cache.get('macro:market_pulse_full') is not None
 
-        # Economic Indicators (from analysis app)
-        try:
-            from analysis.models import EconomicIndicator
-            economic_total = EconomicIndicator.objects.count()
-        except Exception:
-            economic_total = 0
+        economic_total = 0
 
         return {
             'movers': {

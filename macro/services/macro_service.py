@@ -10,6 +10,7 @@ from decimal import Decimal
 
 from django.core.cache import cache
 from django.db import transaction
+from django.utils import timezone
 
 from .fred_client import FREDClient
 from .fmp_client import FMPClient
@@ -66,7 +67,7 @@ class MacroEconomicService:
             # 추가 메타데이터
             result['vix'] = vix_data
             result['yield_spread'] = spread_data
-            result['last_updated'] = datetime.now().isoformat()
+            result['last_updated'] = timezone.now().isoformat()
 
             # 캐시 저장
             cache.set(cache_key, result, self.CACHE_TTL['realtime'])
@@ -133,7 +134,7 @@ class MacroEconomicService:
                 'yield_spread': yield_spread,
                 'yield_curve_status': curve_insight,
                 'yield_curve_data': yield_curve_data,
-                'last_updated': datetime.now().isoformat(),
+                'last_updated': timezone.now().isoformat(),
             }
 
             cache.set(cache_key, result, self.CACHE_TTL['daily'])
@@ -182,7 +183,7 @@ class MacroEconomicService:
                     'initial_claims': employment.get('initial_claims', {}).get('value'),
                 },
                 'gdp': gdp,
-                'last_updated': datetime.now().isoformat(),
+                'last_updated': timezone.now().isoformat(),
             }
 
             cache.set(cache_key, result, self.CACHE_TTL['monthly'])
@@ -240,7 +241,7 @@ class MacroEconomicService:
                 'commodities': commodities,
                 'dxy': dxy,
                 'vix': vix,
-                'last_updated': datetime.now().isoformat(),
+                'last_updated': timezone.now().isoformat(),
             }
 
             cache.set(cache_key, result, self.CACHE_TTL['realtime'])
@@ -312,7 +313,7 @@ class MacroEconomicService:
                 'total_count': len(events),
                 'from_date': from_date.isoformat(),
                 'to_date': to_date.isoformat(),
-                'last_updated': datetime.now().isoformat(),
+                'last_updated': timezone.now().isoformat(),
             }
 
             cache.set(cache_key, result, self.CACHE_TTL['daily'])
@@ -357,7 +358,7 @@ class MacroEconomicService:
             'calendar': self.get_economic_calendar(days_ahead=7, importance_filter='high'),
 
             # 메타데이터
-            'last_updated': datetime.now().isoformat(),
+            'last_updated': timezone.now().isoformat(),
         }
 
         # 전체 대시보드 캐시는 가장 짧은 TTL 사용
@@ -420,7 +421,7 @@ class MacroEconomicService:
                     continue
 
         # 지표 최종 업데이트 시간 갱신
-        indicator.last_updated = datetime.now()
+        indicator.last_updated = timezone.now()
         indicator.save(update_fields=['last_updated'])
 
         logger.info(f"Synced {saved_count} new values for {indicator_code}")

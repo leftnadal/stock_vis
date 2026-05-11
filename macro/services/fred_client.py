@@ -14,6 +14,8 @@ from decimal import Decimal
 import requests
 from django.conf import settings
 
+from api_request.rate_limiter import get_rate_limiter
+
 logger = logging.getLogger(__name__)
 
 
@@ -21,6 +23,9 @@ class FREDClient:
     """FRED API 클라이언트"""
 
     BASE_URL = "https://api.stlouisfed.org/fred"
+
+    # Transient HTTP 상태 코드 (재시도 대상)
+    TRANSIENT_STATUS_CODES = {500, 502, 503, 504}
 
     # 주요 FRED 시리즈 코드
     SERIES_CODES = {
@@ -56,15 +61,15 @@ class FREDClient:
         'DTWEXBGS': 'Trade Weighted U.S. Dollar Index',
     }
 
-    def __init__(self, api_key: str = None, request_delay: float = 0.5):
+    def __init__(self, api_key: str = None, max_retries: int = 3):
         """
         Args:
             api_key: FRED API 키 (없으면 settings에서 로드)
-            request_delay: 요청 간 대기 시간 (초)
+            max_retries: 최대 재시도 횟수
         """
         self.api_key = api_key or getattr(settings, 'FRED_API_KEY', None)
-        self.request_delay = request_delay
-        self.last_request_time = 0
+        self.max_retries = max_retries
+        self.rate_limiter = get_rate_limiter("fred")
 
         if not self.api_key:
             logger.warning("FRED API Key not found. Set FRED_API_KEY in settings.")
@@ -88,28 +93,68 @@ class FREDClient:
         params['api_key'] = self.api_key
         params['file_type'] = 'json'
 
-        # Rate limiting
-        current_time = time.time()
-        time_since_last = current_time - self.last_request_time
-        if time_since_last < self.request_delay:
-            time.sleep(self.request_delay - time_since_last)
-
         url = f"{self.BASE_URL}/{endpoint}"
         logger.info(f"FRED API Request: {endpoint}")
 
-        try:
-            response = requests.get(url, params=params, timeout=30)
-            self.last_request_time = time.time()
+        last_error = None
+        for attempt in range(self.max_retries):
+            try:
+                # Rate Limiter로 대기
+                self.rate_limiter.acquire()
 
-            if response.status_code != 200:
-                logger.error(f"FRED API Error {response.status_code}: {response.text}")
-                response.raise_for_status()
+                response = requests.get(url, params=params, timeout=30)
 
-            return response.json()
+                # Permanent 에러 → 즉시 raise
+                if response.status_code in (401, 403):
+                    logger.error(f"FRED API auth error {response.status_code} on {endpoint}")
+                    response.raise_for_status()
+                elif response.status_code == 404:
+                    logger.error(f"FRED API not found: {endpoint}")
+                    response.raise_for_status()
 
-        except requests.exceptions.RequestException as e:
-            logger.error(f"FRED API Request failed: {e}")
-            raise
+                # Transient 에러 → 재시도
+                if response.status_code in self.TRANSIENT_STATUS_CODES:
+                    logger.warning(
+                        f"FRED API transient error {response.status_code} on {endpoint} "
+                        f"(attempt {attempt + 1}/{self.max_retries})"
+                    )
+                    if attempt < self.max_retries - 1:
+                        wait_time = (attempt + 1) * 2  # 2s, 4s, 6s
+                        time.sleep(wait_time)
+                        continue
+                    else:
+                        logger.error(
+                            f"FRED API {endpoint} failed after {self.max_retries} attempts "
+                            f"(last status: {response.status_code})"
+                        )
+                        response.raise_for_status()
+
+                if response.status_code != 200:
+                    logger.error(
+                        f"FRED API Error {response.status_code} on {endpoint}"
+                    )
+                    response.raise_for_status()
+
+                return response.json()
+
+            except requests.exceptions.RequestException as e:
+                last_error = e
+                if attempt < self.max_retries - 1:
+                    wait_time = (attempt + 1) * 2
+                    logger.warning(
+                        f"FRED API request failed on {endpoint} "
+                        f"(attempt {attempt + 1}/{self.max_retries}, "
+                        f"{type(e).__name__}), retrying in {wait_time}s"
+                    )
+                    time.sleep(wait_time)
+                else:
+                    logger.error(
+                        f"FRED API {endpoint} failed after {self.max_retries} attempts: "
+                        f"{type(e).__name__}"
+                    )
+                    raise
+
+        raise last_error
 
     def get_series_info(self, series_id: str) -> Dict[str, Any]:
         """

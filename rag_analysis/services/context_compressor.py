@@ -128,6 +128,7 @@ class ContextCompressor:
             config = types.GenerateContentConfig(
                 max_output_tokens=self.MAX_TOKENS_PER_DOC,
                 temperature=0.3,  # 낮은 온도로 일관된 압축
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
             response = await self.client.aio.models.generate_content(
@@ -274,6 +275,7 @@ class QuestionAwareCompressor(ContextCompressor):
             config = types.GenerateContentConfig(
                 max_output_tokens=self.MAX_TOKENS_PER_DOC,
                 temperature=0.3,
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
             response = await self.client.aio.models.generate_content(

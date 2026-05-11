@@ -114,6 +114,7 @@ class OverviewTabSerializer(serializers.ModelSerializer):
     market_cap_formatted = serializers.SerializerMethodField()
     volume_formatted = serializers.SerializerMethodField()
     korean_overview = serializers.SerializerMethodField()
+    dynamic_layers = serializers.SerializerMethodField()
 
     class Meta:
         model = Stock
@@ -159,6 +160,9 @@ class OverviewTabSerializer(serializers.ModelSerializer):
 
             # 한글 개요
             'korean_overview',
+
+            # 동적 레이어 (validation + chainsight)
+            'dynamic_layers',
         ]
     
     def get_market_cap_formatted(self, obj):
@@ -197,6 +201,111 @@ class OverviewTabSerializer(serializers.ModelSerializer):
             }
         except Exception:
             return None
+
+    def get_dynamic_layers(self, obj):
+        """동적 레이어: validation + chainsight 모델 데이터.
+        6개 모델 중 하나라도 데이터가 있으면 구조체 반환, 전부 없으면 null.
+        # TODO: Step 2~4에서 데이터 유입 시 prefetch_related + 캐싱 레이어 적용 필요
+        """
+        layers = {}
+        has_any = False
+
+        # CategorySignal (ForeignKey reverse — 여러 건)
+        try:
+            signals = list(obj.category_signals.all())
+            if signals:
+                layers['category_signals'] = [
+                    {
+                        'category': s.category,
+                        'signal': s.signal,
+                        'signal_reason': s.signal_reason,
+                        'metric_count': s.metric_count,
+                        'valid_metric_count': s.valid_metric_count,
+                    }
+                    for s in signals
+                ]
+                has_any = True
+            else:
+                layers['category_signals'] = None
+        except Exception:
+            layers['category_signals'] = None
+
+        # ValidationNewsSummary (OneToOne)
+        try:
+            ns = obj.validation_news_summary
+            layers['news_summary'] = {
+                'event_count_30d': ns.event_count_30d,
+                'event_count_90d': ns.event_count_90d,
+                'avg_sentiment_30d': float(ns.avg_sentiment_30d) if ns.avg_sentiment_30d else None,
+                'sentiment_trend': ns.sentiment_trend,
+                'has_regulatory_risk': ns.has_regulatory_risk,
+                'has_exec_change': ns.has_exec_change,
+                'has_guidance_cut': ns.has_guidance_cut,
+                'recent_highlights': ns.recent_highlights,
+            }
+            has_any = True
+        except Exception:
+            layers['news_summary'] = None
+
+        # CompanySensitivityProfile (OneToOne)
+        try:
+            sp = obj.sensitivity_profile
+            layers['sensitivity'] = {
+                'rate_sensitivity': sp.rate_sensitivity,
+                'forex_sensitivity': sp.forex_sensitivity,
+                'commodity_sensitivity': sp.commodity_sensitivity,
+                'regulation_type': sp.regulation_type,
+                'is_regulated_industry': sp.is_regulated_industry,
+                'beta': float(sp.beta) if sp.beta else None,
+            }
+            has_any = True
+        except Exception:
+            layers['sensitivity'] = None
+
+        # CompanyGrowthStage (OneToOne)
+        try:
+            gs = obj.growth_stage
+            layers['growth_stage'] = {
+                'stage': gs.stage,
+                'revenue_cagr_3y': float(gs.revenue_cagr_3y) if gs.revenue_cagr_3y else None,
+                'revenue_cagr_5y': float(gs.revenue_cagr_5y) if gs.revenue_cagr_5y else None,
+                'fcf_trend': gs.fcf_trend,
+                'confidence': gs.confidence,
+            }
+            has_any = True
+        except Exception:
+            layers['growth_stage'] = None
+
+        # CompanyCapitalDNA (OneToOne)
+        try:
+            cd = obj.capital_dna
+            layers['capital_dna'] = {
+                'capital_type': cd.capital_type,
+                'rd_to_revenue': float(cd.rd_to_revenue) if cd.rd_to_revenue else None,
+                'capex_to_revenue': float(cd.capex_to_revenue) if cd.capex_to_revenue else None,
+                'dividend_payout': float(cd.dividend_payout) if cd.dividend_payout else None,
+                'buyback_yield': float(cd.buyback_yield) if cd.buyback_yield else None,
+            }
+            has_any = True
+        except Exception:
+            layers['capital_dna'] = None
+
+        # CompanyNarrativeTag (OneToOne)
+        try:
+            nt = obj.narrative_tag
+            layers['narrative'] = {
+                'primary_narrative': nt.primary_narrative,
+                'theme_tags': nt.theme_tags,
+                'narrative_sentiment': nt.narrative_sentiment,
+                'analyst_consensus': nt.analyst_consensus,
+                'analyst_revision_trend': nt.analyst_revision_trend,
+            }
+            has_any = True
+        except Exception:
+            layers['narrative'] = None
+
+        return layers if has_any else None
+
 
 ### Balance sheet serializer
 class BalanceSheetTabSerializer(serializers.ModelSerializer):

@@ -48,10 +48,11 @@ export function SignalFilterTabs({ cards, activeCategory, onCategoryChange }: Si
                 flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium
                 transition-all duration-150
                 ${isActive
-                  ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-sm'
+                  ? 'text-white shadow-sm'
                   : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                 }
               `}
+              style={isActive ? { backgroundColor: color, color: '#fff' } : undefined}
             >
               {/* 카테고리 색상 도트 */}
               {!isActive && (

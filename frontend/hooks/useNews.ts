@@ -1,6 +1,6 @@
 // Custom hooks for news data fetching with TanStack Query
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { newsService } from '@/services/newsService';
 import {
   NewsArticle,
@@ -12,6 +12,7 @@ import {
   AllNewsParams,
   NewsSource,
   DailyNewsKeywordResponse,
+  KeywordDetailResponse,
   RecommendationsResponse,
   StockInsightsResponse,
   MarketFeedResponse,
@@ -130,6 +131,22 @@ export function useDailyKeywords(date?: string) {
   });
 }
 
+// ===== Phase 2.5: Keyword Detail Hook =====
+
+/**
+ * Hook to fetch keyword detail with articles and LLM analysis
+ */
+export function useKeywordDetail(date: string | null, index: number | null) {
+  return useQuery<KeywordDetailResponse>({
+    queryKey: ['keyword-detail', date, index],
+    queryFn: () => newsService.getKeywordDetail(date!, index!),
+    enabled: !!date && index !== null && index >= 0,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    placeholderData: keepPreviousData,
+    retry: 1,
+  });
+}
+
 // ===== Phase 3.1: Stock Insights Hooks (Fact-Based) =====
 
 /**
@@ -138,11 +155,12 @@ export function useDailyKeywords(date?: string) {
 export function useStockInsights(
   date?: string,
   limit: number = 10,
-  includeMarketData: boolean = true
+  includeMarketData: boolean = true,
+  sector?: string
 ) {
   return useQuery<StockInsightsResponse>({
-    queryKey: ['stock-insights', date, limit, includeMarketData],
-    queryFn: () => newsService.getInsights(date, limit, includeMarketData),
+    queryKey: ['stock-insights', date, limit, includeMarketData, sector],
+    queryFn: () => newsService.getInsights(date, limit, includeMarketData, sector),
     staleTime: 1000 * 60 * 30, // 30 minutes
     retry: 2,
   });

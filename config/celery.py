@@ -1,6 +1,8 @@
 import os
+import logging
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import task_failure, task_retry, worker_process_init, worker_shutdown
 
 # Django 설정 모듈을 설정
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -13,6 +15,74 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Django 앱에서 태스크 자동 발견
 app.autodiscover_tasks()
+
+# Neo4j 태스크 → neo4j 큐로 격리 (--pool=solo 워커에서 처리, SIGSEGV 방지)
+app.conf.task_routes = {
+    'rag_analysis.tasks.health_check_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.cleanup_expired_semantic_cache': {'queue': 'neo4j'},
+    'rag_analysis.tasks.warm_semantic_cache': {'queue': 'neo4j'},
+    'rag_analysis.tasks.get_semantic_cache_stats': {'queue': 'neo4j'},
+    'rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
+    'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
+    'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
+    'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
+}
+
+# ============================================================
+# Celery Error Monitoring — 시그널 핸들러
+# ============================================================
+error_monitor_logger = logging.getLogger('celery.error_monitor')
+
+
+@task_failure.connect
+def handle_task_failure(sender=None, task_id=None, exception=None, **kw):
+    error_monitor_logger.error(
+        f"[TASK FAILURE] {sender.name} | task_id={task_id} | "
+        f"{type(exception).__name__}: {str(exception)[:200]}"
+    )
+
+
+@task_retry.connect
+def handle_task_retry(sender=None, request=None, reason=None, **kwargs):
+    error_monitor_logger.warning(
+        f"[TASK RETRY] {sender.name} | task_id={request.id} | "
+        f"retries={request.retries} | reason={str(reason)[:200]}"
+    )
+
+
+# ============================================================
+# Neo4j Fork Safety — SIGSEGV 방지
+# ============================================================
+
+@worker_process_init.connect
+def reset_neo4j_after_fork(**kwargs):
+    """
+    Fork된 워커 프로세스에서 부모의 Neo4j 드라이버 참조를 안전하게 해제.
+    close() 없이 None으로 덮어씀 (C 확장 SIGSEGV 방지).
+    """
+    try:
+        from rag_analysis.services.neo4j_driver import force_reset_after_fork
+        from rag_analysis.services.neo4j_service import reset_neo4j_service
+        force_reset_after_fork()
+        reset_neo4j_service()
+    except ImportError:
+        pass
+
+
+@worker_shutdown.connect
+def close_neo4j_on_shutdown(**kwargs):
+    """
+    메인 워커 프로세스 종료 시 Neo4j 드라이버 정리.
+    atexit 대신 사용 (fork 자식에 복사되지 않음).
+    """
+    try:
+        from rag_analysis.services.neo4j_driver import close_neo4j_driver
+        close_neo4j_driver()
+    except ImportError:
+        pass
+
 
 # 정기 태스크 스케줄 설정
 app.conf.beat_schedule = {
@@ -57,10 +127,10 @@ app.conf.beat_schedule = {
     # Macro (거시경제) 태스크
     # ============================================================
 
-    # 거시경제 지표 업데이트 (매시간 - FRED API)
+    # 거시경제 지표 업데이트 (4회/일, 평일 - FRED API)
     'update-economic-indicators': {
         'task': 'macro.tasks.update_economic_indicators',
-        'schedule': crontab(minute=0),  # 매시 정각
+        'schedule': crontab(minute=0, hour='6,12,18,22', day_of_week='1-5'),
     },
 
     # 시장 지수 업데이트 (시장 시간 중 5분마다 - FMP API)
@@ -91,10 +161,11 @@ app.conf.beat_schedule = {
     # RAG Analysis 태스크
     # ============================================================
 
-    # Neo4j 헬스체크 (5분마다)
+    # Neo4j 헬스체크 (6시간마다, 이전 5분 → SIGSEGV 워커 소모 방지)
     'neo4j-health-check': {
         'task': 'rag_analysis.tasks.health_check_neo4j',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute=0, hour='*/6'),
+        'options': {'queue': 'neo4j'},
     },
 
     # ============================================================
@@ -105,19 +176,22 @@ app.conf.beat_schedule = {
     'cleanup-expired-semantic-cache': {
         'task': 'rag_analysis.tasks.cleanup_expired_semantic_cache',
         'schedule': crontab(hour=4, minute=0),
+        'options': {'queue': 'neo4j'},
     },
 
     # 캐시 워밍 (매주 일요일 새벽 4시 30분)
     'warm-semantic-cache': {
         'task': 'rag_analysis.tasks.warm_semantic_cache',
         'schedule': crontab(hour=4, minute=30, day_of_week=0),
-        'kwargs': {'limit': 100}
+        'kwargs': {'limit': 100},
+        'options': {'queue': 'neo4j'},
     },
 
     # 캐시 통계 조회 (매시간, 모니터링용)
     'semantic-cache-stats': {
         'task': 'rag_analysis.tasks.get_semantic_cache_stats',
         'schedule': crontab(minute=0),
+        'options': {'queue': 'neo4j'},
     },
 
     # ============================================================
@@ -143,25 +217,38 @@ app.conf.beat_schedule = {
     # News 수집 + 감성 분석 + 키워드 추출 태스크
     # ============================================================
 
-    # 일일 종목 뉴스 수집 (매일 06:00 EST, Market Movers 수집 전)
-    'collect-daily-news': {
+    # 일일 종목 뉴스 수집 (2회/일: 06:00 + 14:30 EST, 평일)
+    'collect-daily-news-morning': {
         'task': 'news.tasks.collect_daily_news',
         'schedule': crontab(hour=6, minute=0, day_of_week='1-5'),
-        'options': {'expires': 3600}  # 1시간 후 만료
+        'options': {'expires': 3600}
+    },
+    'collect-daily-news-afternoon': {
+        'task': 'news.tasks.collect_daily_news',
+        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
     },
 
-    # 시장 뉴스 수집 (매일 12:00 EST)
+    # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
+    'collect-market-news-morning': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=8, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
     'collect-market-news-noon': {
         'task': 'news.tasks.collect_market_news',
         'schedule': crontab(hour=12, minute=0, day_of_week='1-5'),
-        'options': {'expires': 600}  # 10분 후 만료
+        'options': {'expires': 600}
     },
-
-    # 시장 뉴스 수집 (매일 18:00 EST)
+    'collect-market-news-afternoon': {
+        'task': 'news.tasks.collect_market_news',
+        'schedule': crontab(hour=15, minute=0, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
     'collect-market-news-evening': {
         'task': 'news.tasks.collect_market_news',
         'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
-        'options': {'expires': 600}  # 10분 후 만료
+        'options': {'expires': 600}
     },
 
     # 일일 감성 분석 집계 (매일 09:00 EST, 뉴스 수집 후)
@@ -171,17 +258,23 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 일일 뉴스 키워드 추출 (매일 오전 8시 - 뉴스 수집 후)
+    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:30 EST = KST 06:30)
     'extract-daily-news-keywords': {
         'task': 'news.tasks.extract_daily_news_keywords',
-        'schedule': crontab(hour=8, minute=0),  # 08:00 EST
+        'schedule': crontab(hour=16, minute=30),  # 16:30 EST (장 마감 30분 후)
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 카테고리 뉴스 수집 - High (2회/일: 06:30 + 17:00 EST, 평일)
+    # 카테고리 뉴스 수집 - High (3회/일: 06:30 + 13:00 + 17:00 EST, 평일)
     'collect-category-news-high-morning': {
         'task': 'news.tasks.collect_category_news',
         'schedule': crontab(hour=6, minute=30, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'high'},
+        'options': {'expires': 3600}
+    },
+    'collect-category-news-high-midday': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=13, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'high'},
         'options': {'expires': 3600}
     },
@@ -192,18 +285,24 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # 카테고리 뉴스 수집 - Medium (1회/일: 07:00 EST, 평일)
-    'collect-category-news-medium': {
+    # 카테고리 뉴스 수집 - Medium (2회/일: 07:00 + 14:00 EST, 평일)
+    'collect-category-news-medium-morning': {
         'task': 'news.tasks.collect_category_news',
         'schedule': crontab(hour=7, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'medium'},
         'options': {'expires': 3600}
     },
+    'collect-category-news-medium-afternoon': {
+        'task': 'news.tasks.collect_category_news',
+        'schedule': crontab(hour=14, minute=0, day_of_week='1-5'),
+        'kwargs': {'priority_filter': 'medium'},
+        'options': {'expires': 3600}
+    },
 
-    # 카테고리 뉴스 수집 - Low (주 1회: 월요일 07:30 EST)
+    # 카테고리 뉴스 수집 - Low (매일 1회: 07:30 EST, 평일)
     'collect-category-news-low': {
         'task': 'news.tasks.collect_category_news',
-        'schedule': crontab(hour=7, minute=30, day_of_week=1),
+        'schedule': crontab(hour=7, minute=30, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'low'},
         'options': {'expires': 3600}
     },
@@ -241,14 +340,14 @@ app.conf.beat_schedule = {
         'task': 'news.tasks.sync_news_to_neo4j',
         'schedule': crontab(hour='8,10,12,14,16,18', minute=45, day_of_week='1-5'),
         'kwargs': {'max_articles': 100},
-        'options': {'expires': 3600}
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # 만료된 뉴스 이벤트 관계 정리 (매일 04:00 EST)
     'cleanup-expired-news-relationships': {
         'task': 'news.tasks.cleanup_expired_news_relationships',
         'schedule': crontab(hour=4, minute=0),
-        'options': {'expires': 3600}
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ML 가중치 학습 (매주 일요일 03:00 EST)
@@ -292,6 +391,98 @@ app.conf.beat_schedule = {
         'task': 'news.tasks.train_lightgbm_model',
         'schedule': crontab(hour=4, minute=30, day_of_week=0),
         'options': {'expires': 7200}  # 2시간 후 만료
+    },
+
+    # 파이프라인 알림 체크 (30분마다, 7개 트리거 감지)
+    'check-pipeline-alerts': {
+        'task': 'news.tasks.check_pipeline_alerts',
+        'schedule': crontab(minute='*/30'),
+        'options': {'expires': 1500}  # 25분 후 만료 (다음 실행 전)
+    },
+
+    # ============================================================
+    # FMP 대량 뉴스 수집 태스크 (S&P 500 전체)
+    # ============================================================
+
+    # FMP S&P 500 News — orchestrator (하루 5회, 평일)
+    'collect-sp500-news-fmp-0615': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=6, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1015': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=10, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1315': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=13, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1515': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=15, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+    'collect-sp500-news-fmp-1715': {
+        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'schedule': crontab(hour=17, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # FMP Press Releases (1회/일)
+    'collect-press-releases-fmp': {
+        'task': 'news.tasks.collect_press_releases_fmp',
+        'schedule': crontab(hour=7, minute=45, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 50},
+        'options': {'expires': 3600}
+    },
+
+    # FMP General News (3회/일)
+    'collect-general-news-fmp-morning': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=6, minute=45, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+    'collect-general-news-fmp-noon': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=12, minute=30, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+    'collect-general-news-fmp-evening': {
+        'task': 'news.tasks.collect_general_news_fmp',
+        'schedule': crontab(hour=17, minute=45, day_of_week='1-5'),
+        'options': {'expires': 600}
+    },
+
+    # ============================================================
+    # Alpha Vantage 감성 뉴스 수집 태스크
+    # ============================================================
+
+    # AV Sentiment News (2회/일, 25개 종목)
+    'collect-sentiment-av-morning': {
+        'task': 'news.tasks.collect_sentiment_news_av',
+        'schedule': crontab(hour=8, minute=30, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 25},
+        'options': {'expires': 3600}
+    },
+    'collect-sentiment-av-afternoon': {
+        'task': 'news.tasks.collect_sentiment_news_av',
+        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
+        'kwargs': {'max_symbols': 25},
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # 데이터 보존 (아카이브) 태스크
+    # ============================================================
+
+    # 6개월 이상 기사 아카이브 (매월 1일 02:30 EST)
+    'archive-old-articles': {
+        'task': 'news.tasks.archive_old_articles',
+        'schedule': crontab(hour=2, minute=30, day_of_month=1),
+        'options': {'expires': 3600}
     },
 
     # ============================================================
@@ -382,7 +573,7 @@ app.conf.beat_schedule = {
         'task': 'serverless.tasks.enrich_relationship_keywords',
         'schedule': crontab(hour=5, minute=30),
         'kwargs': {'limit': 100},
-        'options': {'expires': 3600}  # 1시간 후 만료
+        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ============================================================
@@ -439,6 +630,47 @@ app.conf.beat_schedule = {
         'options': {'expires': 86400}
     },
 
+    # ============================================================
+    # Thesis Control EOD Pipeline (수학 모델 v2.3.2, Section 7)
+    # ============================================================
+
+    # 지표 데이터 수집 (매일 18:00 ET, 장 마감 후)
+    'thesis-update-readings': {
+        'task': 'thesis.tasks.eod_pipeline.update_indicator_readings',
+        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # 스코어 계산 (매일 18:15 ET, 데이터 수집 완료 후)
+    'thesis-calculate-scores': {
+        'task': 'thesis.tasks.eod_pipeline.calculate_scores',
+        'schedule': crontab(hour=18, minute=15, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # 스냅샷 생성 + 알림 (매일 18:30 ET, 스코어 계산 완료 후)
+    'thesis-create-snapshots': {
+        'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
+        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # Celery 에러 모니터링
+    # ============================================================
+
+    # 일일 에러 요약 이메일 (매일 07:00 EST, 전날 에러 집계)
+    'celery-error-digest': {
+        'task': 'config.tasks.send_celery_error_digest',
+        'schedule': crontab(hour=7, minute=0),
+    },
+
+    # TaskResult 정리 (매주 일요일 05:00 EST)
+    # SUCCESS: 30일 보관, FAILURE: 90일 보관
+    'cleanup-task-results': {
+        'task': 'config.tasks.cleanup_old_task_results',
+        'schedule': crontab(hour=5, minute=0, day_of_week=0),
+    },
 }
 
 # 테스트 태스크 (선택적)

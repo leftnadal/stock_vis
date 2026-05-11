@@ -237,8 +237,8 @@ class SymbolMatcher:
         # 정규화
         normalized = self._normalize_name(company_name)
 
-        # 1. 캐시 확인
-        cache_key = f"{self.CACHE_PREFIX}{normalized}"
+        # 1. 캐시 확인 (공백→언더스코어로 치환하여 memcached 호환)
+        cache_key = f"{self.CACHE_PREFIX}{normalized.replace(' ', '_')}"
         cached = cache.get(cache_key)
         if cached:
             return cached if cached != '__NOT_FOUND__' else None

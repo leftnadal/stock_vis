@@ -51,7 +51,8 @@ class NewsBasedStockInsights:
         target_date: Optional[date] = None,
         limit: int = 10,
         min_mentions: int = 1,
-        include_market_data: bool = True
+        include_market_data: bool = True,
+        sector: Optional[str] = None,
     ) -> Dict:
         """
         종목 인사이트 목록 반환 (팩트 중심)
@@ -61,6 +62,7 @@ class NewsBasedStockInsights:
             limit: 최대 종목 수
             min_mentions: 최소 멘션 수 필터
             include_market_data: 시장 데이터 포함 여부
+            sector: 섹터 필터 (None이면 전체, 대소문자 무관)
 
         Returns:
             {
@@ -98,23 +100,66 @@ class NewsBasedStockInsights:
         if target_date is None:
             target_date = timezone.now().date()
 
+        # 섹터 정규화 (.title() — "TECHNOLOGY" → "Technology")
+        normalized_sector = sector.strip().title() if sector else None
+
         # 캐시 확인
-        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}"
+        cache_key = f"news:insights:{target_date}:{limit}:{include_market_data}:{normalized_sector or 'all'}"
         cached = cache.get(cache_key)
         if cached:
             logger.info(f"Cache hit: {cache_key}")
             return cached
 
-        # 당일 키워드 조회
+        # 당일 키워드 조회 (없으면 최근 완료 키워드 fallback)
         keyword_obj = DailyNewsKeyword.objects.filter(
             date=target_date,
             status='completed'
         ).first()
 
+        if not keyword_obj:
+            keyword_obj = DailyNewsKeyword.objects.filter(
+                date__lt=target_date,
+                status='completed',
+            ).order_by('-date').first()
+
         keywords = keyword_obj.keywords if keyword_obj else []
 
         # 종목별 데이터 수집
         symbol_data = self._collect_symbol_data(target_date, keywords, min_mentions)
+
+        # 섹터 정보 일괄 조회 (N+1 방지)
+        from stocks.models import Stock
+        all_symbols = list(symbol_data.keys())
+        sector_map: Dict[str, Optional[str]] = {}
+        if all_symbols:
+            stock_rows = Stock.objects.filter(
+                symbol__in=all_symbols
+            ).values('symbol', 'sector')
+            for row in stock_rows:
+                raw_sector = row['sector']
+                sector_map[row['symbol']] = raw_sector.strip().title() if raw_sector else None
+
+        # available_sectors 계산 (sector 필터 없을 때만)
+        available_sectors = None
+        if not normalized_sector:
+            sector_counts: Dict[str, int] = {}
+            for symbol in all_symbols:
+                sym_sector = sector_map.get(symbol)
+                if sym_sector:
+                    sector_counts[sym_sector] = sector_counts.get(sym_sector, 0) + 1
+            available_sectors = sorted(
+                [{'sector': s, 'count': c} for s, c in sector_counts.items()],
+                key=lambda x: x['count'],
+                reverse=True,
+            )
+
+        # 섹터 필터 적용 (sector 파라미터가 있을 때만)
+        if normalized_sector:
+            symbol_data = {
+                sym: data
+                for sym, data in symbol_data.items()
+                if (sector_map.get(sym) or '') == normalized_sector
+            }
 
         # 뉴스 언급 횟수 기준 정렬
         sorted_symbols = sorted(
@@ -129,6 +174,7 @@ class NewsBasedStockInsights:
             insight = {
                 'symbol': symbol,
                 'company_name': data.get('company_name'),
+                'sector': sector_map.get(symbol),
                 'keyword_mentions': data.get('keyword_mentions', []),
                 'sentiment_distribution': data.get('sentiment_distribution', {
                     'positive': 0,
@@ -147,6 +193,9 @@ class NewsBasedStockInsights:
 
             insights.append(insight)
 
+        # 9. 영문 키워드 → 한국어 변환 (Gemini 배치)
+        self._translate_keywords_to_korean(insights)
+
         computation_time_ms = int((time.time() - start_time) * 1000)
 
         result = {
@@ -154,10 +203,14 @@ class NewsBasedStockInsights:
             'period_days': 7,
             'period_start': str(target_date - timedelta(days=6)),
             'period_end': str(target_date),
+            'sector_filter': normalized_sector,
             'insights': insights,
             'total_keywords': len(keywords),
             'computation_time_ms': computation_time_ms,
         }
+
+        if available_sectors is not None:
+            result['available_sectors'] = available_sectors
 
         # 캐시 저장
         cache.set(cache_key, result, self.CACHE_TTL_SECONDS)
@@ -223,6 +276,7 @@ class NewsBasedStockInsights:
                 'published_at': news.published_at.isoformat(),
                 'sentiment': sentiment,
                 'sentiment_score': float(entity.sentiment_score) if entity.sentiment_score else None,
+                'article_url': news.url,
             })
 
         # 3. Fallback: 엔티티가 부족하면 키워드 related_symbols로 보충
@@ -246,13 +300,84 @@ class NewsBasedStockInsights:
                 for news_item in matching_news[:2]:  # 키워드당 최대 2개 뉴스
                     symbol_data[symbol]['keyword_mentions'].append({
                         'keyword': kw_info['text'],
-                        'sentiment': kw_info['sentiment'],
+                        'sentiment': news_item.get('sentiment', kw_info['sentiment']),
                         'news_headline': news_item['headline'],
                         'news_source': news_item['source'],
                         'published_at': news_item['published_at'],
+                        'article_url': news_item.get('article_url', ''),
                     })
 
-        # 5. 최소 멘션 필터 적용 및 news_articles 필드 제거
+        # 5. 반대 sentiment 보충 — 양쪽 관점 보장
+        for symbol, data in symbol_data.items():
+            if data['keyword_mentions'] and data['news_articles']:
+                existing_sentiments = {m['sentiment'] for m in data['keyword_mentions']}
+                existing_headlines = {m['news_headline'] for m in data['keyword_mentions']}
+                dist = data['sentiment_distribution']
+
+                # 긍정만 있는데 부정 뉴스가 존재하면 보충
+                # 부정만 있는데 긍정 뉴스가 존재하면 보충
+                missing = []
+                if 'negative' not in existing_sentiments and dist.get('negative', 0) > 0:
+                    missing.append('negative')
+                if 'positive' not in existing_sentiments and dist.get('positive', 0) > 0:
+                    missing.append('positive')
+
+                for target_sentiment in missing:
+                    for article in data['news_articles']:
+                        if (article['sentiment'] == target_sentiment
+                                and article['headline'] not in existing_headlines):
+                            # 헤드라인에서 요약 키워드 생성 (20자 + …)
+                            headline = article['headline']
+                            short_kw = headline[:20].rstrip() + '…' if len(headline) > 20 else headline
+                            data['keyword_mentions'].append({
+                                'keyword': short_kw,
+                                'sentiment': target_sentiment,
+                                'news_headline': headline,
+                                'news_source': article['source'],
+                                'published_at': article['published_at'],
+                                'article_url': article.get('article_url', ''),
+                            })
+                            existing_headlines.add(headline)
+                            break  # 반대 sentiment당 1개만 보충
+
+        # 6. 키워드 매핑이 없는 종목: 최신 뉴스 헤드라인으로 보충
+        for symbol, data in symbol_data.items():
+            if not data['keyword_mentions'] and data['news_articles']:
+                seen_headlines = set()
+                for article in data['news_articles'][:3]:
+                    if article['headline'] in seen_headlines:
+                        continue
+                    seen_headlines.add(article['headline'])
+                    headline = article['headline']
+                    short_kw = headline[:20].rstrip() + '…' if len(headline) > 20 else headline
+                    data['keyword_mentions'].append({
+                        'keyword': short_kw,
+                        'sentiment': article['sentiment'],
+                        'news_headline': headline,
+                        'news_source': article['source'],
+                        'published_at': article['published_at'],
+                        'article_url': article.get('article_url', ''),
+                    })
+
+        # 7. sentiment 인터리브 정렬 — 첫 3개에 양쪽 관점 포함
+        for symbol, data in symbol_data.items():
+            mentions = data['keyword_mentions']
+            if len(mentions) > 1:
+                by_sentiment = {'positive': [], 'negative': [], 'neutral': []}
+                for m in mentions:
+                    by_sentiment.get(m['sentiment'], by_sentiment['neutral']).append(m)
+
+                # 라운드로빈: positive → negative → neutral 순으로 인터리브
+                reordered = []
+                buckets = [by_sentiment['positive'], by_sentiment['negative'], by_sentiment['neutral']]
+                max_len = max(len(b) for b in buckets)
+                for i in range(max_len):
+                    for bucket in buckets:
+                        if i < len(bucket):
+                            reordered.append(bucket[i])
+                data['keyword_mentions'] = reordered
+
+        # 8. 최소 멘션 필터 적용 및 news_articles 필드 제거
         filtered_data = {}
         for symbol, data in symbol_data.items():
             if data['total_news_count'] >= min_mentions:
@@ -383,6 +508,78 @@ class NewsBasedStockInsights:
             matching = news_articles[:1]
 
         return matching
+
+    def _translate_keywords_to_korean(self, insights: List[Dict]):
+        """영문 키워드를 Gemini로 한국어 변환 (배치, in-place 수정)"""
+        import re
+
+        # 한국어가 아닌 키워드 수집
+        headlines_to_translate = []
+        mention_refs = []  # (insight_idx, mention_idx)
+        for i, insight in enumerate(insights):
+            for j, mention in enumerate(insight.get('keyword_mentions', [])):
+                kw = mention['keyword']
+                if not re.search(r'[가-힣]', kw):
+                    headlines_to_translate.append(mention['news_headline'])
+                    mention_refs.append((i, j))
+
+        if not headlines_to_translate:
+            return
+
+        # 중복 제거하며 순서 유지
+        unique_headlines = list(dict.fromkeys(headlines_to_translate))[:20]
+
+        try:
+            from django.conf import settings as django_settings
+            from google import genai
+            from google.genai import types
+            import json
+
+            api_key = getattr(django_settings, 'GOOGLE_AI_API_KEY', None) or getattr(django_settings, 'GEMINI_API_KEY', None)
+            if not api_key:
+                return
+
+            client = genai.Client(api_key=api_key)
+
+            numbered = "\n".join(f"{idx + 1}. {h}" for idx, h in enumerate(unique_headlines))
+
+            prompt = f"""다음 영문 뉴스 헤드라인을 각각 20자 이내의 한국어 키워드로 요약하세요.
+투자자 관점에서 핵심 내용만 간결하게 "주어 + 동사" 구조로 작성하세요.
+예: "Tesla Q1 deliveries beat" → "테슬라 1분기 인도량 상회"
+
+{numbered}
+
+정확히 {len(unique_headlines)}개의 한국어 키워드를 JSON 배열로만 응답하세요."""
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    max_output_tokens=500,
+                    temperature=0.2,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
+                ),
+            )
+
+            json_match = re.search(r'\[[\s\S]*\]', response.text)
+            if not json_match:
+                return
+
+            summaries = json.loads(json_match.group())
+            translation_map = {
+                h: str(s)[:20] for h, s in zip(unique_headlines, summaries)
+                if isinstance(s, str)
+            }
+
+            # 인사이트에 적용
+            for i, j in mention_refs:
+                headline = insights[i]['keyword_mentions'][j]['news_headline']
+                korean_kw = translation_map.get(headline)
+                if korean_kw:
+                    insights[i]['keyword_mentions'][j]['keyword'] = korean_kw
+
+        except Exception as e:
+            logger.warning(f"Korean keyword translation failed: {e}")
 
     def _get_market_data(self, symbol: str) -> Optional[Dict]:
         """
@@ -530,6 +727,7 @@ class NewsBasedStockInsights:
                 'source': entity.news.source,
                 'published_at': entity.news.published_at.isoformat(),
                 'sentiment': sentiment,
+                'article_url': entity.news.url,
             })
 
         # 키워드 멘션 조회
@@ -551,6 +749,7 @@ class NewsBasedStockInsights:
                             'news_headline': matching[0]['headline'],
                             'news_source': matching[0]['source'],
                             'published_at': matching[0]['published_at'],
+                            'article_url': matching[0].get('article_url', ''),
                         })
 
         result = {

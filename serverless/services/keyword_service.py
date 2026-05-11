@@ -287,6 +287,9 @@ JSON:"""
                     config=types.GenerateContentConfig(
                         max_output_tokens=1200,  # 한국어 응답을 위해 증가 (800 → 1200)
                         temperature=0.5,
+                        thinking_config=types.ThinkingConfig(
+                            thinking_budget=0,
+                        ),
                     )
                 )
 

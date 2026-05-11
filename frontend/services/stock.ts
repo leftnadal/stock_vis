@@ -1,4 +1,5 @@
 // Stock service for fetching stock data
+import type { DynamicLayers } from '@/types/overview';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -81,6 +82,8 @@ export interface StockOverview {
     generated_at: string;
     llm_model: string;
   } | null;
+  // 동적 레이어 (validation + chainsight)
+  dynamic_layers?: DynamicLayers | null;
 }
 
 // Meta information for data freshness tracking

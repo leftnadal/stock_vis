@@ -45,7 +45,8 @@ class AlphaVantageClient:
             time.sleep(sleep_time)
 
         #make request
-        logger.info(f"Making request to alpha vantage: {params}")
+        safe_params = {k: v for k, v in params.items() if k != 'apikey'}
+        logger.info(f"Making request to alpha vantage: {safe_params}")
         response = requests.get(self.BASE_URL, params=params)
         self.last_request_time = time.time()
 

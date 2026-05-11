@@ -3,7 +3,7 @@ export interface MarketSummary {
   sp500_change: number;
   qqq_change: number;
   vix: number;
-  vix_regime: 'normal' | 'high_vol';
+  vix_regime: 'normal' | 'elevated' | 'high_vol';
   total_signals: number;
   bullish_count: number;
   bearish_count: number;
@@ -14,7 +14,7 @@ export interface MarketSummary {
 
 // === News Context ===
 export type NewsMatchType = 'symbol_today' | 'symbol_7d' | 'symbol_30d' | 'industry_7d' | 'profile';
-export type NewsConfidence = 'high' | 'medium' | 'low' | 'context' | 'info';
+export type NewsConfidence = 'very_high' | 'high' | 'medium' | 'low' | 'context' | 'info';
 
 export interface NewsContext {
   headline: string;

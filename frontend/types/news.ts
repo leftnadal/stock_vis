@@ -118,8 +118,25 @@ export interface DailyKeyword {
   text: string;
   sentiment: 'positive' | 'negative' | 'neutral';
   related_symbols: string[];
+  search_terms_en?: string[];
   importance?: number;
   reason?: string;  // AI 분석 이유
+}
+
+export interface KeywordDetailArticle {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  published_at: string | null;
+}
+
+export interface KeywordDetailResponse {
+  keyword: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
+  analysis: string | null;
+  articles: KeywordDetailArticle[];
+  related_symbols: string[];
 }
 
 export interface DailyNewsKeywordResponse {
@@ -131,6 +148,8 @@ export interface DailyNewsKeywordResponse {
   status: 'pending' | 'completed' | 'failed' | 'not_found';
   generation_time_ms?: number;
   message?: string;
+  is_fallback?: boolean;
+  requested_date?: string;
 }
 
 // Phase 3: Stock Recommendation Types (Legacy)
@@ -164,6 +183,7 @@ export interface KeywordMention {
   news_headline: string;
   news_source: string;
   published_at: string;  // ISO 8601 format
+  article_url?: string;
 }
 
 /**
@@ -231,6 +251,7 @@ export interface MarketData {
 export interface StockInsight {
   symbol: string;
   company_name?: string;
+  sector?: string;
   keyword_mentions: KeywordMention[];
   sentiment_distribution: SentimentDistribution;
   market_data?: MarketData;
@@ -248,6 +269,7 @@ export interface StockInsightsResponse {
   insights: StockInsight[];
   total_keywords: number;
   computation_time_ms?: number;
+  available_sectors?: { sector: string; count: number }[];
 }
 
 // ===== Phase A: Market Feed Types (Cold Start) =====

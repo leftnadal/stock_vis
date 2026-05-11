@@ -238,6 +238,9 @@ JSON 배열만 반환하세요 (설명 없음):
                 config=types.GenerateContentConfig(
                     max_output_tokens=200,
                     temperature=0.5,
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=0,
+                    ),
                 )
             )
 

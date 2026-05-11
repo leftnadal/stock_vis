@@ -22,6 +22,7 @@ class NewsArticle(models.Model):
     CATEGORY_CHOICES = [
         ('general', 'General'),
         ('company', 'Company'),
+        ('press_release', 'Press Release'),
         ('forex', 'Forex'),
         ('crypto', 'Crypto'),
         ('merger', 'Merger'),
@@ -29,6 +30,8 @@ class NewsArticle(models.Model):
 
     SENTIMENT_SOURCE_CHOICES = [
         ('marketaux', 'Marketaux'),
+        ('alpha_vantage', 'Alpha Vantage'),
+        ('fmp', 'FMP'),
         ('computed', 'Computed'),
         ('none', 'None'),
     ]
@@ -94,6 +97,16 @@ class NewsArticle(models.Model):
         blank=True,
         help_text=_("Marketaux 기사 UUID")
     )
+    fmp_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text=_("FMP 기사 ID")
+    )
+    alphavantage_id = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text=_("Alpha Vantage 기사 ID")
+    )
 
     # Sentiment Analysis
     sentiment_score = models.DecimalField(
@@ -118,6 +131,15 @@ class NewsArticle(models.Model):
     is_press_release = models.BooleanField(
         default=False,
         help_text=_("보도 자료 여부")
+    )
+    is_official = models.BooleanField(
+        default=False,
+        help_text=_("공식 발표 (보도자료 등)")
+    )
+    is_archived = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text=_("아카이브 여부")
     )
 
     # ── News Intelligence Pipeline v3 ──
@@ -256,7 +278,12 @@ class NewsEntity(models.Model):
     )
     source = models.CharField(
         max_length=20,
-        choices=[('finnhub', 'Finnhub'), ('marketaux', 'Marketaux')],
+        choices=[
+            ('finnhub', 'Finnhub'),
+            ('marketaux', 'Marketaux'),
+            ('fmp', 'FMP'),
+            ('alpha_vantage', 'Alpha Vantage'),
+        ],
         help_text=_("데이터 소스")
     )
 
@@ -631,3 +658,70 @@ class NewsCollectionCategory(models.Model):
                 if s.strip()
             ][:self.max_symbols]
         return []
+
+
+class NewsCollectionLog(models.Model):
+    """태스크 실행 결과 — 운영 모니터링용"""
+
+    task_name = models.CharField(max_length=100)
+    provider = models.CharField(max_length=20)
+    executed_at = models.DateTimeField(auto_now_add=True)
+    symbols_tried = models.IntegerField(default=0)
+    articles_new = models.IntegerField(default=0)
+    articles_dup = models.IntegerField(default=0)
+    api_calls = models.IntegerField(default=0)
+    errors = models.IntegerField(default=0)
+    duration_sec = models.FloatField(default=0)
+
+    class Meta:
+        db_table = 'news_collection_logs'
+        indexes = [models.Index(fields=['provider', '-executed_at'])]
+
+    def __str__(self):
+        return f"{self.task_name} ({self.provider}) at {self.executed_at}: +{self.articles_new}"
+
+
+class AlertLog(models.Model):
+    """파이프라인 이상 징후 알림 로그"""
+
+    class Severity(models.TextChoices):
+        LOW = 'low', 'Low'
+        MEDIUM = 'medium', 'Medium'
+        HIGH = 'high', 'High'
+        CRITICAL = 'critical', 'Critical'
+
+    class TriggerType(models.TextChoices):
+        CONSECUTIVE_TASK_FAILURE = 'consecutive_task_failure', '태스크 연속 실패'
+        ML_F1_DECLINE = 'ml_f1_decline', 'ML F1 급락'
+        KEYWORD_EXTRACTION_FAILURE = 'keyword_extraction_failure', '키워드 추출 실패'
+        LLM_ERROR_SPIKE = 'llm_error_spike', 'LLM 에러율 급등'
+        NEO4J_UNAVAILABLE = 'neo4j_unavailable', 'Neo4j 연결 실패'
+        COLLECTION_DROP = 'collection_drop', '수집량 급감'
+        UNCLASSIFIED_BACKLOG = 'unclassified_backlog', '미분류 뉴스 누적'
+
+    trigger_type = models.CharField(max_length=50, choices=TriggerType.choices)
+    severity = models.CharField(max_length=10, choices=Severity.choices)
+    message = models.TextField()
+    context = models.JSONField(
+        null=True,
+        blank=True,
+        help_text=_('예: {"task_name": "collect_sp500_news_fmp_batch", "error_count": 3}')
+    )
+
+    is_resolved = models.BooleanField(default=False, db_index=True)
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    acknowledged_by = models.CharField(max_length=100, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'news_alert_logs'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['is_resolved', '-created_at']),
+            models.Index(fields=['trigger_type', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f"[{self.severity}] {self.get_trigger_type_display()} - {self.created_at:%Y-%m-%d %H:%M}"

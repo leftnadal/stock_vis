@@ -385,6 +385,7 @@ CSV/XLSX 다운로드 URL:"""
                     system_instruction=system_prompt,
                     max_output_tokens=self.LLM_MAX_TOKENS,
                     temperature=self.LLM_TEMPERATURE,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0),
                 )
             )
 

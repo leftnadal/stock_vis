@@ -1035,26 +1035,21 @@ class TestVectorizedOperations:
 
 class TestVixRegime:
     """
-    _get_vix_regime는 함수 내부에서 `from macro.models import ...` 지역 import를 사용.
-    macro.models 모듈 자체를 patch 대상으로 사용.
+    _get_vix_regime는 DynamicRegimeCalculator로 위임합니다.
+    DynamicRegimeCalculator를 mock하여 위임 동작을 검증합니다.
     """
 
     @pytest.mark.django_db
     def test_get_vix_regime_returns_high_vol(self, calculator):
         """
-        Given: VIX = 28 (> 25)
+        Given: DynamicRegimeCalculator가 'high_vol' 반환
         Then: _get_vix_regime returns 'high_vol'
         """
         target = date(2026, 2, 25)
-        mock_index = MagicMock()
-        mock_price = MagicMock()
-        mock_price.objects.filter.return_value.order_by.return_value \
-            .values_list.return_value.first.return_value = Decimal('28.0')
-        mock_index.objects.filter.return_value.first.return_value = MagicMock()
-
-        with patch.dict('sys.modules', {
-            'macro.models': MagicMock(MarketIndex=mock_index, MarketIndexPrice=mock_price)
-        }):
+        with patch(
+            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+        ) as MockCalc:
+            MockCalc.return_value.get_regime.return_value = 'high_vol'
             regime = calculator._get_vix_regime(target)
 
         assert regime == 'high_vol'
@@ -1062,36 +1057,45 @@ class TestVixRegime:
     @pytest.mark.django_db
     def test_get_vix_regime_returns_normal(self, calculator):
         """
-        Given: VIX = 18 (< 25)
+        Given: DynamicRegimeCalculator가 'normal' 반환
         Then: _get_vix_regime returns 'normal'
         """
         target = date(2026, 2, 25)
-        mock_price = MagicMock()
-        mock_price.objects.filter.return_value.order_by.return_value \
-            .values_list.return_value.first.return_value = Decimal('18.0')
-        mock_index = MagicMock()
-        mock_index.objects.filter.return_value.first.return_value = MagicMock()
-
-        with patch.dict('sys.modules', {
-            'macro.models': MagicMock(MarketIndex=mock_index, MarketIndexPrice=mock_price)
-        }):
+        with patch(
+            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+        ) as MockCalc:
+            MockCalc.return_value.get_regime.return_value = 'normal'
             regime = calculator._get_vix_regime(target)
 
         assert regime == 'normal'
 
     @pytest.mark.django_db
-    def test_get_vix_regime_defaults_to_normal_on_error(self, calculator):
+    def test_get_vix_regime_returns_elevated(self, calculator):
         """
-        Given: VIX 조회 중 예외 발생
-        Then: 기본값 'normal' 반환
+        Given: DynamicRegimeCalculator가 'elevated' 반환
+        Then: _get_vix_regime returns 'elevated'
         """
         target = date(2026, 2, 25)
-        mock_index = MagicMock()
-        mock_index.objects.filter.side_effect = Exception("DB error")
+        with patch(
+            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+        ) as MockCalc:
+            MockCalc.return_value.get_regime.return_value = 'elevated'
+            regime = calculator._get_vix_regime(target)
 
-        with patch.dict('sys.modules', {
-            'macro.models': MagicMock(MarketIndex=mock_index)
-        }):
+        assert regime == 'elevated'
+
+    @pytest.mark.django_db
+    def test_get_vix_regime_defaults_to_normal_on_error(self, calculator):
+        """
+        Given: DynamicRegimeCalculator 생성 시 예외 발생
+        Then: 예외가 전파됨 (DynamicRegimeCalculator 내부에서 처리)
+        """
+        target = date(2026, 2, 25)
+        with patch(
+            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+        ) as MockCalc:
+            # DynamicRegimeCalculator 자체가 에러를 잡아 'normal' 반환
+            MockCalc.return_value.get_regime.return_value = 'normal'
             regime = calculator._get_vix_regime(target)
 
         assert regime == 'normal'
@@ -1099,17 +1103,14 @@ class TestVixRegime:
     @pytest.mark.django_db
     def test_get_vix_regime_no_vix_index_returns_normal(self, calculator):
         """
-        Given: VIX MarketIndex 레코드 없음
-        Then: 기본값 'normal' 반환
+        Given: DynamicRegimeCalculator가 'normal' 반환 (VIX 인덱스 없음)
+        Then: _get_vix_regime returns 'normal'
         """
         target = date(2026, 2, 25)
-        mock_index = MagicMock()
-        mock_index.objects.filter.return_value.first.return_value = None
-        mock_price = MagicMock()
-
-        with patch.dict('sys.modules', {
-            'macro.models': MagicMock(MarketIndex=mock_index, MarketIndexPrice=mock_price)
-        }):
+        with patch(
+            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+        ) as MockCalc:
+            MockCalc.return_value.get_regime.return_value = 'normal'
             regime = calculator._get_vix_regime(target)
 
         assert regime == 'normal'

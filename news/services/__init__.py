@@ -12,6 +12,8 @@ from .ml_label_collector import MLLabelCollector
 from .news_neo4j_sync import NewsNeo4jSyncService
 from .ml_weight_optimizer import MLWeightOptimizer
 from .ml_production_manager import MLProductionManager
+from .circuit_breaker import CircuitBreaker
+from .sentiment_normalizer import SentimentNormalizer
 
 __all__ = [
     'NewsAggregatorService',
@@ -28,4 +30,6 @@ __all__ = [
     'NewsNeo4jSyncService',
     'MLWeightOptimizer',
     'MLProductionManager',
+    'CircuitBreaker',
+    'SentimentNormalizer',
 ]

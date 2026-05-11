@@ -10,6 +10,7 @@ import {
   AllNewsParams,
   NewsSource,
   DailyNewsKeywordResponse,
+  KeywordDetailResponse,
   RecommendationsResponse,
   StockInsightsResponse,
   MarketFeedResponse,
@@ -223,6 +224,25 @@ export const newsService = {
     return response.json();
   },
 
+  // ===== Phase 2.5: Keyword Detail API =====
+
+  /**
+   * Get keyword detail with related articles and LLM analysis
+   * @param date - Date in YYYY-MM-DD format
+   * @param index - Keyword index (0-based)
+   */
+  async getKeywordDetail(date: string, index: number): Promise<KeywordDetailResponse> {
+    const params = new URLSearchParams({
+      date,
+      index: index.toString(),
+    });
+    const response = await fetch(`${API_URL}/news/keyword-detail/?${params}`, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) throw new Error('Failed to fetch keyword detail');
+    return response.json();
+  },
+
   // ===== Phase 3.1: Stock Insights API (Fact-Based) =====
 
   /**
@@ -230,16 +250,19 @@ export const newsService = {
    * @param date - Date in YYYY-MM-DD format (default: today)
    * @param limit - Maximum number of insights (default: 10)
    * @param includeMarketData - Include market data in response (default: true)
+   * @param sector - Filter by sector name (default: undefined = all sectors)
    */
   async getInsights(
     date?: string,
     limit: number = 10,
-    includeMarketData: boolean = true
+    includeMarketData: boolean = true,
+    sector?: string
   ): Promise<StockInsightsResponse> {
     const params = new URLSearchParams();
     if (date) params.set('date', date);
     params.set('limit', limit.toString());
     params.set('include_market_data', includeMarketData.toString());
+    if (sector) params.set('sector', sector);
 
     const response = await fetch(`${API_URL}/news/insights/?${params}`, {
       headers: {

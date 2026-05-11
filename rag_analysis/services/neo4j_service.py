@@ -431,3 +431,11 @@ def get_neo4j_service() -> Neo4jServiceLite:
     if _neo4j_service is None:
         _neo4j_service = Neo4jServiceLite()
     return _neo4j_service
+
+
+def reset_neo4j_service():
+    """
+    Fork 후 서비스 싱글톤 리셋 (close 없이 참조만 해제)
+    """
+    global _neo4j_service
+    _neo4j_service = None
