@@ -88,6 +88,68 @@ class MetricComments(BaseModel):
 
 
 # ============================================================
+# E3 portfolio: portfolio-level commentary (Slice 6 Part 1 Step 1)
+# ============================================================
+
+
+class PresetAlignment(StrEnum):
+    """E3PortfolioCommentary preset 의도 정합성 (3종)."""
+
+    ALIGNED = "aligned"
+    PARTIAL = "partial"
+    MISALIGNED = "misaligned"
+
+
+class E3PortfolioCommentary(BaseModel):
+    """E3 portfolio-level 출력: concentrated_portfolio 진단 코멘트 (6 필드).
+
+    Slice 5 E3 (MetricComments, 종목 단위) → Slice 6 portfolio 단위 확장.
+    분석 엔진이 사전 산출한 sector_concentration / diversification_score /
+    risk_concentration_score를 prompt 변수로 받아 자연어 코멘트 생성.
+
+    출력 토큰 추정 (한국어 baseline): str_long 175 + str_medium × 3 (300) +
+    literal 5 + int 3 ≈ 483 → ×1.5 buffer ≈ 725.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    holistic_assessment: str = Field(
+        ...,
+        min_length=30,
+        max_length=300,
+        description="포트폴리오 전체 평가 2~3문장 (한국어).",
+    )
+    diversification_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="분산 정도 한 줄 평가 (한국어).",
+    )
+    sector_balance_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="섹터 균형 평가 (한국어).",
+    )
+    risk_concentration_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="집중 리스크 평가 (한국어).",
+    )
+    preset_alignment: PresetAlignment = Field(
+        ...,
+        description="preset 의도 정합성 (aligned/partial/misaligned).",
+    )
+    confidence: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description="LLM 평가 자신도 1~5.",
+    )
+
+
+# ============================================================
 # E6: 조정 후 비교 해설 (Slice 4)
 # ============================================================
 

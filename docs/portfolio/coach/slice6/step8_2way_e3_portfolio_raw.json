@@ -1,0 +1,433 @@
+{
+  "step": "slice6_step8_2way_e3_portfolio_raw",
+  "executed_at": "2026-05-11T03:51:00.690496+00:00",
+  "matrix_size": {
+    "fixtures": 5,
+    "models": 2,
+    "total_calls": 10
+  },
+  "providers": [
+    {
+      "label": "haiku",
+      "model": "claude-haiku-4-5"
+    },
+    {
+      "label": "sonnet",
+      "model": "claude-sonnet-4-5"
+    }
+  ],
+  "fixture_groups": {
+    "concentrated_baseline": [
+      "v1_concentrated_balanced",
+      "v2_concentrated_misfit"
+    ],
+    "concentrated_focused": [
+      "v3_concentrated_large",
+      "v4_concentrated_value",
+      "v5_concentrated_dividend"
+    ]
+  },
+  "results": [
+    {
+      "fixture": "v1_concentrated_balanced",
+      "fixture_id": "v1_concentrated_balanced",
+      "fixture_group": "concentrated_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "expected_alignment": "partial",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"GARP 전략의 합리적 가격 성장 의도와 부분적으로 정합하는 구성입니다. PEG 1.8과 EPS 성장 15%, ROIC 18%는 품질 기준을 충족하나, Tech 50% 단일 섹터 집중과 분산 점수 0.35는 GARP의 균형적 위험 관리 기대치를 충분히 만족하지 못합니다.\",\n  \"diversification_comment\": \"분산 점수 0.35는 5종목 기준 중간 수준이나, 단일 섹터 의존도가 높아 포트폴리오 분산 효과가 제한적입니다.\",\n  \"sector_balance_comment\": \"Tech 50%로 권장 30~40% 범위를 상회하며, 섹터 사이클 리스크 노출이 증가한 상태입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.45는 중간~상향 수준으로, GARP의 적정 위험 수용도 대비 다소 높은 변동성 가능성을 시사합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+      "parsed": {
+        "holistic_assessment": "GARP 전략의 합리적 가격 성장 의도와 부분적으로 정합하는 구성입니다. PEG 1.8과 EPS 성장 15%, ROIC 18%는 품질 기준을 충족하나, Tech 50% 단일 섹터 집중과 분산 점수 0.35는 GARP의 균형적 위험 관리 기대치를 충분히 만족하지 못합니다.",
+        "diversification_comment": "분산 점수 0.35는 5종목 기준 중간 수준이나, 단일 섹터 의존도가 높아 포트폴리오 분산 효과가 제한적입니다.",
+        "sector_balance_comment": "Tech 50%로 권장 30~40% 범위를 상회하며, 섹터 사이클 리스크 노출이 증가한 상태입니다.",
+        "risk_concentration_comment": "집중 리스크 0.45는 중간~상향 수준으로, GARP의 적정 위험 수용도 대비 다소 높은 변동성 가능성을 시사합니다.",
+        "preset_alignment": "partial",
+        "confidence": 4
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 7259,
+        "input_tokens": 3783,
+        "output_tokens": 378,
+        "cost_usd": 0.004538400000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v1_concentrated_balanced",
+      "fixture_id": "v1_concentrated_balanced",
+      "fixture_group": "concentrated_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "expected_alignment": "partial",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"GARP 의도에 부합하는 Tech 대형주 5종 집중 포트폴리오입니다. PEG 1.8과 EPS 성장 15%, ROIC 18% 조합은 합리적 가격 성장 기준을 충족하나, Tech 단일 섹터 50% 집중으로 섹터 사이클 노출이 과도하여 분산 측면에서 개선 여지가 있습니다.\",\n  \"diversification_comment\": \"분산 점수 0.35는 5종목 집중 기준 중간 수준이며, 단일 섹터 의존도가 분산 효과를 제한합니다.\",\n  \"sector_balance_comment\": \"Tech 50% 집중은 권장 상한 30~40%를 초과하여 섹터 사이클 리스크가 증가하는 구조입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.45는 중간 수준이며 GARP의 안정적 성장 의도 대비 다소 높은 변동성 가능성을 내포합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+      "parsed": {
+        "holistic_assessment": "GARP 의도에 부합하는 Tech 대형주 5종 집중 포트폴리오입니다. PEG 1.8과 EPS 성장 15%, ROIC 18% 조합은 합리적 가격 성장 기준을 충족하나, Tech 단일 섹터 50% 집중으로 섹터 사이클 노출이 과도하여 분산 측면에서 개선 여지가 있습니다.",
+        "diversification_comment": "분산 점수 0.35는 5종목 집중 기준 중간 수준이며, 단일 섹터 의존도가 분산 효과를 제한합니다.",
+        "sector_balance_comment": "Tech 50% 집중은 권장 상한 30~40%를 초과하여 섹터 사이클 리스크가 증가하는 구조입니다.",
+        "risk_concentration_comment": "집중 리스크 0.45는 중간 수준이며 GARP의 안정적 성장 의도 대비 다소 높은 변동성 가능성을 내포합니다.",
+        "preset_alignment": "partial",
+        "confidence": 4
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 8233,
+        "input_tokens": 3783,
+        "output_tokens": 366,
+        "cost_usd": 0.016839,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v2_concentrated_misfit",
+      "fixture_id": "v2_concentrated_misfit",
+      "fixture_group": "concentrated_misfit",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "expected_alignment": "misaligned",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"GARP 의도와 명백히 충돌하는 구성입니다. PEG 3.2 및 PE 65는 합리적 가격 기준을 극도로 상회하고, EPS 성장 4%로 성장성도 미흡합니다. Tech 80% 극단 집중과 분산 0.15는 GARP의 안정적 성장 추구 의도와 정면 어긋나며 고변동성 고위험 구조를 노출하고 있습니다.\",\n  \"diversification_comment\": \"분산 점수 0.15는 매우 낮은 수준이며 5종목 중 단일 섹터 의존도가 분산 효과를 거의 무효화합니다.\",\n  \"sector_balance_comment\": \"Tech 80% 극단 편중으로 섹터 균형이 완전히 붕괴되었으며 단일 섹터 사이클에 portfolio 전체가 종속되는 위험한 구조입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.80은 변동성 위험이 매우 높음을 의미하며 GARP의 합리적 위험 수용 기준을 크게 초과합니다.\",\n  \"preset_alignment\": \"misaligned\",\n  \"confidence\": 5\n}\n```",
+      "parsed": {
+        "holistic_assessment": "GARP 의도와 명백히 충돌하는 구성입니다. PEG 3.2 및 PE 65는 합리적 가격 기준을 극도로 상회하고, EPS 성장 4%로 성장성도 미흡합니다. Tech 80% 극단 집중과 분산 0.15는 GARP의 안정적 성장 추구 의도와 정면 어긋나며 고변동성 고위험 구조를 노출하고 있습니다.",
+        "diversification_comment": "분산 점수 0.15는 매우 낮은 수준이며 5종목 중 단일 섹터 의존도가 분산 효과를 거의 무효화합니다.",
+        "sector_balance_comment": "Tech 80% 극단 편중으로 섹터 균형이 완전히 붕괴되었으며 단일 섹터 사이클에 portfolio 전체가 종속되는 위험한 구조입니다.",
+        "risk_concentration_comment": "집중 리스크 0.80은 변동성 위험이 매우 높음을 의미하며 GARP의 합리적 위험 수용 기준을 크게 초과합니다.",
+        "preset_alignment": "misaligned",
+        "confidence": 5
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 4065,
+        "input_tokens": 3805,
+        "output_tokens": 405,
+        "cost_usd": 0.004664,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "misaligned",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v2_concentrated_misfit",
+      "fixture_id": "v2_concentrated_misfit",
+      "fixture_group": "concentrated_misfit",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "expected_alignment": "misaligned",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"GARP 의도와 명백히 충돌하는 구성입니다. PEG 3.2와 PE 65는 합리적 가격 기준을 크게 벗어나고 EPS 성장 4%는 성장주 기준에도 미달합니다. Tech 80% 극단 집중과 TSLA 40% 단일 종목 쏠림은 GARP의 안정적 성장 철학과 정면으로 배치되는 고위험 투기적 패턴을 보입니다.\",\n  \"diversification_comment\": \"분산 점수 0.15는 매우 낮은 수준이며 5종목 보유에도 불구하고 단일 섹터 80% 집중이 분산 효과를 사실상 무력화합니다.\",\n  \"sector_balance_comment\": \"Tech 80% 극단 집중으로 섹터 균형이 완전히 붕괴되었으며 단일 섹터 사이클에 portfolio 전체가 종속되는 위험 구조입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.80은 매우 높은 변동성 노출을 의미하며 GARP의 합리적 위험 통제 원칙과 근본적으로 부합하지 않습니다.\",\n  \"preset_alignment\": \"misaligned\",\n  \"confidence\": 5\n}\n```",
+      "parsed": {
+        "holistic_assessment": "GARP 의도와 명백히 충돌하는 구성입니다. PEG 3.2와 PE 65는 합리적 가격 기준을 크게 벗어나고 EPS 성장 4%는 성장주 기준에도 미달합니다. Tech 80% 극단 집중과 TSLA 40% 단일 종목 쏠림은 GARP의 안정적 성장 철학과 정면으로 배치되는 고위험 투기적 패턴을 보입니다.",
+        "diversification_comment": "분산 점수 0.15는 매우 낮은 수준이며 5종목 보유에도 불구하고 단일 섹터 80% 집중이 분산 효과를 사실상 무력화합니다.",
+        "sector_balance_comment": "Tech 80% 극단 집중으로 섹터 균형이 완전히 붕괴되었으며 단일 섹터 사이클에 portfolio 전체가 종속되는 위험 구조입니다.",
+        "risk_concentration_comment": "집중 리스크 0.80은 매우 높은 변동성 노출을 의미하며 GARP의 합리적 위험 통제 원칙과 근본적으로 부합하지 않습니다.",
+        "preset_alignment": "misaligned",
+        "confidence": 5
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 6674,
+        "input_tokens": 3805,
+        "output_tokens": 428,
+        "cost_usd": 0.017835,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "misaligned",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v3_concentrated_large",
+      "fixture_id": "v3_concentrated_large",
+      "fixture_group": "concentrated_large",
+      "preset_id": "quality_factor",
+      "preset_category": "factor",
+      "expected_alignment": "partial",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"Quality Factor 의도에 부합하는 고 ROIC + 안정 이익 종목 10개 구성입니다. ROIC 22%, gross margin 58%, earnings quality 0.85 등 수익성 지표가 매우 강하고 EPS 안정성 0.92로 quality factor의 핵심 기준을 충족합니다. 다만 Tech와 Healthcare 2 섹터에 100% 편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 일치합니다.\",\n  \"diversification_comment\": \"분산 점수 0.25는 10종목 보유 기준 중간 하위 수준이며 2 섹터 집중이 분산 효과를 제한합니다.\",\n  \"sector_balance_comment\": \"Tech 52% + Healthcare 48%로 2 섹터 100% 편중되어 quality factor 전반에 대한 cross-sector 노출이 부족합니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.40은 중간 수준이며 quality factor의 낮은 변동성 특성과 부분적으로 부합합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+      "parsed": {
+        "holistic_assessment": "Quality Factor 의도에 부합하는 고 ROIC + 안정 이익 종목 10개 구성입니다. ROIC 22%, gross margin 58%, earnings quality 0.85 등 수익성 지표가 매우 강하고 EPS 안정성 0.92로 quality factor의 핵심 기준을 충족합니다. 다만 Tech와 Healthcare 2 섹터에 100% 편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 일치합니다.",
+        "diversification_comment": "분산 점수 0.25는 10종목 보유 기준 중간 하위 수준이며 2 섹터 집중이 분산 효과를 제한합니다.",
+        "sector_balance_comment": "Tech 52% + Healthcare 48%로 2 섹터 100% 편중되어 quality factor 전반에 대한 cross-sector 노출이 부족합니다.",
+        "risk_concentration_comment": "집중 리스크 0.40은 중간 수준이며 quality factor의 낮은 변동성 특성과 부분적으로 부합합니다.",
+        "preset_alignment": "partial",
+        "confidence": 4
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 5030,
+        "input_tokens": 4030,
+        "output_tokens": 373,
+        "cost_usd": 0.004716,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v3_concentrated_large",
+      "fixture_id": "v3_concentrated_large",
+      "fixture_group": "concentrated_large",
+      "preset_id": "quality_factor",
+      "preset_category": "factor",
+      "expected_alignment": "partial",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"Quality Factor 의도에 부합하는 고 ROIC + 안정 이익 종목 10개 구성입니다. 그러나 Tech와 Healthcare 2 섹터에 100% 편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 일치합니다. 수익성 지표(ROIC 22%, gross margin 58%)는 매우 강합니다.\",\n  \"diversification_comment\": \"분산 점수 0.25는 10종목 보유 기준 중간 하위이며 2 섹터 집중이 분산 효과를 제한합니다.\",\n  \"sector_balance_comment\": \"Tech 52% + Healthcare 48%로 2 섹터 100% 집중되어 quality factor 전반에 대한 cross-sector 노출이 부족합니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.40은 중간 수준이며 quality factor의 낮은 변동성 특성과 부분적으로 부합합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+      "parsed": {
+        "holistic_assessment": "Quality Factor 의도에 부합하는 고 ROIC + 안정 이익 종목 10개 구성입니다. 그러나 Tech와 Healthcare 2 섹터에 100% 편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 일치합니다. 수익성 지표(ROIC 22%, gross margin 58%)는 매우 강합니다.",
+        "diversification_comment": "분산 점수 0.25는 10종목 보유 기준 중간 하위이며 2 섹터 집중이 분산 효과를 제한합니다.",
+        "sector_balance_comment": "Tech 52% + Healthcare 48%로 2 섹터 100% 집중되어 quality factor 전반에 대한 cross-sector 노출이 부족합니다.",
+        "risk_concentration_comment": "집중 리스크 0.40은 중간 수준이며 quality factor의 낮은 변동성 특성과 부분적으로 부합합니다.",
+        "preset_alignment": "partial",
+        "confidence": 4
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 4177,
+        "input_tokens": 4030,
+        "output_tokens": 335,
+        "cost_usd": 0.017115,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v4_concentrated_value",
+      "fixture_id": "v4_concentrated_value",
+      "fixture_group": "concentrated_value",
+      "preset_id": "buffett_quality_value",
+      "preset_category": "value",
+      "expected_alignment": "aligned",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"Buffett 가치 투자 의도와 정합하는 금융주 5종 집중 포트폴리오입니다. ROIC 16% + PE 11 + FCF yield 7.5% 조합은 합리적 가격의 고품질 자본 수익성을 충족하며, earnings quality 0.78과 PB 1.4는 저평가 가치주 특성을 잘 반영합니다. 다만 Financials 100% 극단 편중과 집중 리스크 0.55는 섹터 사이클 노출을 가중시키는 구조적 약점입니다.\",\n  \"diversification_comment\": \"분산 점수 0.20은 5종목 보유 기준 낮은 수준이며 단일 섹터 의존도가 분산 효과를 거의 무력화합니다.\",\n  \"sector_balance_comment\": \"Financials 100% 극단 집중으로 금리·신용 사이클에 portfolio 운명이 전적으로 종속되는 고위험 구조입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.55는 높은 편으로 단일 섹터 5개 유사 발행인 구성이 변동성 확대 가능성을 시사합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+      "parsed": {
+        "holistic_assessment": "Buffett 가치 투자 의도와 정합하는 금융주 5종 집중 포트폴리오입니다. ROIC 16% + PE 11 + FCF yield 7.5% 조합은 합리적 가격의 고품질 자본 수익성을 충족하며, earnings quality 0.78과 PB 1.4는 저평가 가치주 특성을 잘 반영합니다. 다만 Financials 100% 극단 편중과 집중 리스크 0.55는 섹터 사이클 노출을 가중시키는 구조적 약점입니다.",
+        "diversification_comment": "분산 점수 0.20은 5종목 보유 기준 낮은 수준이며 단일 섹터 의존도가 분산 효과를 거의 무력화합니다.",
+        "sector_balance_comment": "Financials 100% 극단 집중으로 금리·신용 사이클에 portfolio 운명이 전적으로 종속되는 고위험 구조입니다.",
+        "risk_concentration_comment": "집중 리스크 0.55는 높은 편으로 단일 섹터 5개 유사 발행인 구성이 변동성 확대 가능성을 시사합니다.",
+        "preset_alignment": "partial",
+        "confidence": 4
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 4376,
+        "input_tokens": 3814,
+        "output_tokens": 419,
+        "cost_usd": 0.004727200000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": false,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v4_concentrated_value",
+      "fixture_id": "v4_concentrated_value",
+      "fixture_group": "concentrated_value",
+      "preset_id": "buffett_quality_value",
+      "preset_category": "value",
+      "expected_alignment": "aligned",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"Buffett Quality Value 의도와 부분적으로 일치하는 금융주 5종 집중 portfolio입니다. ROIC 16% + PE 11 + FCF yield 7.5% 조합은 질적 가치 기준을 충족하나 Financials 100% 극단 집중은 Buffett의 cross-sector 분산 원칙과 충돌하며 금융 규제 및 금리 사이클에 과도하게 노출됩니다.\",\n  \"diversification_comment\": \"분산 점수 0.20은 매우 낮으며 5종목 모두 단일 섹터에 속해 분산 효과가 사실상 제한적입니다.\",\n  \"sector_balance_comment\": \"Financials 100% 극단 집중으로 섹터 균형이 전혀 없으며 금융 섹터 고유 리스크에 portfolio 전체가 종속됩니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.55는 높은 수준이며 단일 섹터 cycle 및 규제 변화에 대한 변동성 위험이 상당합니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 5\n}\n```",
+      "parsed": {
+        "holistic_assessment": "Buffett Quality Value 의도와 부분적으로 일치하는 금융주 5종 집중 portfolio입니다. ROIC 16% + PE 11 + FCF yield 7.5% 조합은 질적 가치 기준을 충족하나 Financials 100% 극단 집중은 Buffett의 cross-sector 분산 원칙과 충돌하며 금융 규제 및 금리 사이클에 과도하게 노출됩니다.",
+        "diversification_comment": "분산 점수 0.20은 매우 낮으며 5종목 모두 단일 섹터에 속해 분산 효과가 사실상 제한적입니다.",
+        "sector_balance_comment": "Financials 100% 극단 집중으로 섹터 균형이 전혀 없으며 금융 섹터 고유 리스크에 portfolio 전체가 종속됩니다.",
+        "risk_concentration_comment": "집중 리스크 0.55는 높은 수준이며 단일 섹터 cycle 및 규제 변화에 대한 변동성 위험이 상당합니다.",
+        "preset_alignment": "partial",
+        "confidence": 5
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 7652,
+        "input_tokens": 3814,
+        "output_tokens": 376,
+        "cost_usd": 0.017082,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "partial",
+        "preset_alignment_matches_expected": false,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v5_concentrated_dividend",
+      "fixture_id": "v5_concentrated_dividend",
+      "fixture_group": "concentrated_dividend",
+      "preset_id": "dividend_growth",
+      "preset_category": "income",
+      "expected_alignment": "aligned",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"Dividend Growth 의도와 정합하는 7종 안정 배당주 portfolio입니다. dividend_yield 3.8% + 5년 성장률 7.2% + 25년 연속 배당 + payout 62% 조합은 배당 안정성과 성장 여력을 모두 갖춘 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 segment 의도와 일치합니다.\",\n  \"diversification_comment\": \"분산 점수 0.30은 안정 배당 portfolio로서 적절한 수준이며 7종 보유로 개별 종목 위험이 분산됩니다.\",\n  \"sector_balance_comment\": \"Consumer Staples 78%는 방어적 배당 의도와 일치하며 배당 안정성을 강화하는 의도적 편중입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.35는 양호한 수준이며 배당 안정성과 변동성 통제 측면에서 균형이 좋습니다.\",\n  \"preset_alignment\": \"aligned\",\n  \"confidence\": 5\n}\n```",
+      "parsed": {
+        "holistic_assessment": "Dividend Growth 의도와 정합하는 7종 안정 배당주 portfolio입니다. dividend_yield 3.8% + 5년 성장률 7.2% + 25년 연속 배당 + payout 62% 조합은 배당 안정성과 성장 여력을 모두 갖춘 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 segment 의도와 일치합니다.",
+        "diversification_comment": "분산 점수 0.30은 안정 배당 portfolio로서 적절한 수준이며 7종 보유로 개별 종목 위험이 분산됩니다.",
+        "sector_balance_comment": "Consumer Staples 78%는 방어적 배당 의도와 일치하며 배당 안정성을 강화하는 의도적 편중입니다.",
+        "risk_concentration_comment": "집중 리스크 0.35는 양호한 수준이며 배당 안정성과 변동성 통제 측면에서 균형이 좋습니다.",
+        "preset_alignment": "aligned",
+        "confidence": 5
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 4986,
+        "input_tokens": 3876,
+        "output_tokens": 351,
+        "cost_usd": 0.004504800000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "aligned",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    },
+    {
+      "fixture": "v5_concentrated_dividend",
+      "fixture_id": "v5_concentrated_dividend",
+      "fixture_group": "concentrated_dividend",
+      "preset_id": "dividend_growth",
+      "preset_category": "income",
+      "expected_alignment": "aligned",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"holistic_assessment\": \"배당 성장 의도와 완벽히 부합하는 7종 안정 배당주 포트폴리오입니다. 배당수익률 3.8%, 5년 성장률 7.2%, 25년 연속 배당 이력과 62% 적정 배당성향은 배당 안정성과 성장 지속성을 모두 확보한 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 배당 전략과 일치하며 FCF 커버리지 1.8배로 배당 지속가능성이 견고합니다.\",\n  \"diversification_comment\": \"분산 점수 0.30은 배당 집중 포트폴리오 기준 적절한 수준이며 7종목 보유로 개별 종목 리스크가 효과적으로 분산됩니다.\",\n  \"sector_balance_comment\": \"Consumer Staples 78%는 배당 안정성과 경기방어력을 강화하는 의도적 편중으로 배당 성장 전략의 핵심 축입니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.35는 양호한 수준으로 배당 안정성 확보와 변동성 통제가 균형있게 이루어진 구조입니다.\",\n  \"preset_alignment\": \"aligned\",\n  \"confidence\": 5\n}\n```",
+      "parsed": {
+        "holistic_assessment": "배당 성장 의도와 완벽히 부합하는 7종 안정 배당주 포트폴리오입니다. 배당수익률 3.8%, 5년 성장률 7.2%, 25년 연속 배당 이력과 62% 적정 배당성향은 배당 안정성과 성장 지속성을 모두 확보한 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 배당 전략과 일치하며 FCF 커버리지 1.8배로 배당 지속가능성이 견고합니다.",
+        "diversification_comment": "분산 점수 0.30은 배당 집중 포트폴리오 기준 적절한 수준이며 7종목 보유로 개별 종목 리스크가 효과적으로 분산됩니다.",
+        "sector_balance_comment": "Consumer Staples 78%는 배당 안정성과 경기방어력을 강화하는 의도적 편중으로 배당 성장 전략의 핵심 축입니다.",
+        "risk_concentration_comment": "집중 리스크 0.35는 양호한 수준으로 배당 안정성 확보와 변동성 통제가 균형있게 이루어진 구조입니다.",
+        "preset_alignment": "aligned",
+        "confidence": 5
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 7175,
+        "input_tokens": 3876,
+        "output_tokens": 427,
+        "cost_usd": 0.018033,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "preset_alignment_llm": "aligned",
+        "preset_alignment_matches_expected": true,
+        "naturalness_manual": null,
+        "insight_manual": null
+      }
+    }
+  ],
+  "summary": {
+    "total_calls": 10,
+    "total_cost_usd": 0.110054,
+    "fallback_count": 0,
+    "schema_pass_count": 10,
+    "completeness_auto_count": 10,
+    "latency_max_ms": 8233,
+    "latency_p90_ms": 8233
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, portfolio commentary 톤 매끄러움",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "preset 의도 + 분산/섹터/리스크를 비자명한 통찰로 종합, portfolio-level 함의 명확",
+      "4": "기본 평가 + 일부 통찰 (preset 맥락 활용)",
+      "3": "수치/태그 표면 반복만",
+      "2": "단순 나열에 가까움",
+      "1": "portfolio 해석 부재"
+    },
+    "completeness_auto": "schema parse 성공 + 6 필드 모두 비공란 시 자동 True"
+  },
+  "manual_eval_required": [
+    "results[].judgments.naturalness_manual (1~5)",
+    "results[].judgments.insight_manual (1~5)"
+  ],
+  "cost_guard_status_at_end": {
+    "slice_id": "slice6",
+    "call_count": 10,
+    "max_calls": 50,
+    "remaining": 40,
+    "total_cost_usd": 0.1101,
+    "started_at": "2026-05-11T03:50:01.049688+00:00",
+    "records_count": 10
+  },
+  "manual_eval_completed_at": null,
+  "manual_eval_source": null
+}

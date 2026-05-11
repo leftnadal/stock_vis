@@ -70,6 +70,26 @@ DIMENSION_LOOKUP = {
         "weight": 0.5,
         "additional_lex_check": "completeness_auto",  # E2 mirror
     },
+    "e3": {  # Slice 5 — e2/e6 패턴 mirror (글쓰기 + completeness 자동)
+        "dim1": {"key": "naturalness", "manual_field": "naturalness_manual"},
+        "dim2": {"key": "insight", "manual_field": "insight_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",  # judgments + metadata 분리
+        "default_raw": "docs/portfolio/coach/slice5/step8_2way_e3_raw.json",
+        "default_scored": "docs/portfolio/coach/slice5/step8_2way_e3_scored.json",
+        "weight": 0.5,
+        "additional_lex_check": "completeness_auto",  # E2/E6 mirror — comments ≥ 1
+    },
+    "e3_portfolio": {  # Slice 6 Part 1 Step 1 — e3 mirror 100% (path만 변경)
+        "dim1": {"key": "naturalness", "manual_field": "naturalness_manual"},
+        "dim2": {"key": "insight", "manual_field": "insight_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",
+        "default_raw": "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json",
+        "default_scored": "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_scored.json",
+        "weight": 0.5,
+        "additional_lex_check": "completeness_auto",  # E3 mirror
+    },
 }
 
 

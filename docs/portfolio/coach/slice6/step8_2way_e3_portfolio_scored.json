@@ -1,0 +1,13 @@
+{
+  "step": "slice6_step8_2way_e3_portfolio_scored_stub",
+  "status": "pending_manual_eval",
+  "instructions": "Part 4 manual eval 후 score_step8.py --entrypoint e3_portfolio 실행으로 채움. raw entry 10건의 naturalness_manual / insight_manual (1~5) 필드 입력 필요.",
+  "raw_path": "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json",
+  "expected_keys_after_eval": [
+    "scored_results",
+    "label_means",
+    "use_fallback",
+    "winner",
+    "thresholds"
+  ]
+}

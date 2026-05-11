@@ -2,11 +2,13 @@
 
 Slice 2 백로그 #4 — _format_analysis_summary 등 진입점 무관 헬퍼 분리.
 Slice 3 Step 2에서 자연 흡수.
+Slice 5 Part 2 Step 9 — 백로그 #11 일반화 (format_metrics_to_str).
 """
 
 from __future__ import annotations
 
-from typing import Any
+import json
+from typing import Any, Literal
 
 
 def format_holdings_summary(holdings: list[dict]) -> str:
@@ -36,16 +38,33 @@ def format_analysis_summary(ctx: dict[str, Any], max_chars: int = 200) -> str:
     return str(one_line)[:max_chars]
 
 
-def format_metrics_table(metrics: dict[str, Any]) -> str:
-    """주요 지표 → markdown 표.
+def format_metrics_to_str(
+    data: dict[str, Any] | list[dict[str, Any]],
+    *,
+    format: Literal["markdown", "json"] = "markdown",
+) -> str:
+    """Metric 데이터를 prompt용 문자열로 직렬화.
 
-    예:
-        | Metric | Value |
-        |---|---|
-        | P/E | 12.50 |
-        | ROE | 0.18 |
+    백로그 #11 일반화 (Slice 5 Part 2 Step 9, PS 1.5).
+
+    - format="markdown": E2 dict[str, value] → markdown 표
+    - format="json":     E3 list[dict] / dict → indented JSON
+                         (한국어 ensure_ascii=False, default=str fallback)
     """
-    if not metrics:
+    if format == "markdown":
+        return _format_markdown(data)
+    if format == "json":
+        return json.dumps(data, ensure_ascii=False, indent=2, default=str)
+    raise ValueError(f"Unknown format: {format!r}. Valid: 'markdown' | 'json'")
+
+
+def _format_markdown(metrics: dict[str, Any]) -> str:
+    """기존 format_metrics_table 본문 (자료 #4 인용).
+
+    빈 dict / list / None 모두 "(지표 데이터 없음)" 반환.
+    list 입력은 markdown 표 부적합 — empty 표시 (백로그 #11 PS 0.5 예외).
+    """
+    if not metrics or not isinstance(metrics, dict):
         return "(지표 데이터 없음)"
     lines = ["| Metric | Value |", "|---|---|"]
     for key, value in metrics.items():
@@ -58,3 +77,18 @@ def format_metrics_table(metrics: dict[str, Any]) -> str:
             display = str(value)
         lines.append(f"| {key} | {display} |")
     return "\n".join(lines)
+
+
+def format_metrics_table(metrics: dict[str, Any]) -> str:
+    """[Deprecated — Slice 5 Part 2 Step 9 백로그 #11 일반화]
+
+    호환성을 위해 유지. format_metrics_to_str(metrics, format='markdown') 호출 wrapper.
+    Slice 6+ 백로그 #21로 제거 검토 (PS 0.5).
+
+    예:
+        | Metric | Value |
+        |---|---|
+        | P/E | 12.50 |
+        | ROE | 0.18 |
+    """
+    return format_metrics_to_str(metrics, format="markdown")

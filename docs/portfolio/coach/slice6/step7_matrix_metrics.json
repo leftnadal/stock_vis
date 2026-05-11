@@ -1,0 +1,74 @@
+{
+  "step": "slice6_part3_step7_matrix_metrics",
+  "executed_at": "2026-05-11T03:51:00.690520+00:00",
+  "kpi_basic": {
+    "total_calls": 10,
+    "schema_pass": "10/10",
+    "completeness_auto": "10/10",
+    "fallback": 0,
+    "total_cost_usd": 0.110054,
+    "max_haiku_cost": 0.004727,
+    "max_sonnet_cost": 0.018033,
+    "cost_per_call_pass": true,
+    "total_cost_pass": true
+  },
+  "token_stats": {
+    "input": {
+      "min": 3783,
+      "max": 4030,
+      "mean": 3861,
+      "p90": 4030
+    },
+    "output": {
+      "min": 335,
+      "max": 428,
+      "mean": 385,
+      "p90": 428
+    },
+    "budget_e3_portfolio": 7000
+  },
+  "latency_stats": {
+    "min": 4065,
+    "max": 8233,
+    "mean": 5962,
+    "p90": 8233
+  },
+  "preset_alignment_analysis": [
+    {
+      "fixture": "v1_concentrated_balanced",
+      "expected": "partial",
+      "haiku_llm": "partial",
+      "sonnet_llm": "partial"
+    },
+    {
+      "fixture": "v2_concentrated_misfit",
+      "expected": "misaligned",
+      "haiku_llm": "misaligned",
+      "sonnet_llm": "misaligned"
+    },
+    {
+      "fixture": "v3_concentrated_large",
+      "expected": "partial",
+      "haiku_llm": "partial",
+      "sonnet_llm": "partial"
+    },
+    {
+      "fixture": "v4_concentrated_value",
+      "expected": "aligned",
+      "haiku_llm": "partial",
+      "sonnet_llm": "partial"
+    },
+    {
+      "fixture": "v5_concentrated_dividend",
+      "expected": "aligned",
+      "haiku_llm": "aligned",
+      "sonnet_llm": "aligned"
+    }
+  ],
+  "cost_breakdown": {
+    "haiku_total": 0.02315,
+    "sonnet_total": 0.086904,
+    "haiku_count": 5,
+    "sonnet_count": 5
+  }
+}

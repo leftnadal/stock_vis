@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "GARP × Tech 5종 집중 portfolio. PEG 1.8 + EPS 성장 15% + ROIC 18%로 합리적 가격 성장 의도와 부합하나 Tech 50% 집중이 sector cycle 리스크를 키웁니다.",
+  "diversification_comment": "분산 0.35는 5종목 기준 중간이며 단일 섹터 의존이 약점입니다.",
+  "sector_balance_comment": "Tech 50%는 권장 상한 초과로 균형 미흡합니다.",
+  "risk_concentration_comment": "리스크 0.45는 GARP 안정성 기대 대비 다소 높습니다.",
+  "preset_alignment": "partial",
+  "confidence": 4
+}

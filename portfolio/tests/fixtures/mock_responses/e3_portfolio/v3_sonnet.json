@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "Quality Factor 10종 portfolio. ROIC 22% + earnings_quality 0.85로 quality 핵심 지표는 매우 강하나 Tech+Healthcare 2 섹터 100%로 cross-sector 분산은 부족합니다.",
+  "diversification_comment": "분산 0.25는 10종목 기준 중간 하위로 2섹터 편중이 영향입니다.",
+  "sector_balance_comment": "Tech 52% + HC 48% = 2섹터 100%로 다양성 미흡합니다.",
+  "risk_concentration_comment": "리스크 0.40은 quality 특성에 부합하는 중간 수준입니다.",
+  "preset_alignment": "partial",
+  "confidence": 4
+}

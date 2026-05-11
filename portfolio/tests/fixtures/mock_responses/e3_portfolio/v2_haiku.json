@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "GARP 의도와 크게 어긋난 구성입니다. PEG 3.2 및 PE 65는 합리적 가격 기준을 크게 상회하고 EPS 성장 4%로 성장성도 미흡합니다. Tech 80% 극단 집중과 분산 0.15는 GARP의 안정적 성장 의도와 정면 충돌하는 high-beta growth-at-any-price 패턴을 보입니다.",
+  "diversification_comment": "분산 점수 0.15는 매우 낮으며 단일 섹터 80% 집중도가 분산 효과를 사실상 무력화합니다.",
+  "sector_balance_comment": "Tech 80% 극단 집중으로 섹터 균형이 완전히 무너진 상태이며 단일 섹터 cycle에 portfolio 운명이 종속됩니다.",
+  "risk_concentration_comment": "집중 리스크 0.80은 변동성 위험이 매우 높음을 의미하며 GARP의 합리적 위험 수용 의도와 부합하지 않습니다.",
+  "preset_alignment": "misaligned",
+  "confidence": 5
+}

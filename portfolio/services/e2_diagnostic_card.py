@@ -20,7 +20,7 @@ from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 from portfolio.services._prompt_helpers import (
     format_analysis_summary,
     format_holdings_summary,
-    format_metrics_table,
+    format_metrics_to_str,
 )
 
 
@@ -38,7 +38,7 @@ def build_e2_prompt(request: E2Request) -> str:
     holdings = ctx.get("holdings", [])
     holdings_str = format_holdings_summary(holdings)
     analysis_str = format_analysis_summary(ctx)
-    metrics_str = format_metrics_table(ctx.get("metrics", {}))
+    metrics_str = format_metrics_to_str(ctx.get("metrics", {}), format="markdown")
     preset_id = ctx.get("preset_id", "unknown")
 
     return f"""당신은 한국 개인 투자자를 위한 포트폴리오 분석 전문가입니다.
