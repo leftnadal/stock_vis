@@ -321,7 +321,7 @@ def seed_relations_to_chainsight():
                 'evidence_tier_best': 1,
                 'has_supply_chain_source': True,
                 'relation_basis_summary': f'SEC 10-K: {ev.evidence_text[:100]}',
-                'synced_to_neo4j': False,
+                # audit P0 #9: synced_to_neo4j 제거. update_or_create의 save()가 neo4j_dirty=True 자동.
             }
         )
         if is_new:

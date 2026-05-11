@@ -64,7 +64,7 @@ class MarketMoversSync:
         Raises:
             FMPAPIError: FMP API 호출 실패 시
         """
-        target_date = target_date or timezone.now().date()
+        target_date = target_date or timezone.localdate()
         logger.info(f"🔄 Market Movers 동기화 시작: {target_date}")
 
         results = {'gainers': 0, 'losers': 0, 'actives': 0, 'errors': 0}

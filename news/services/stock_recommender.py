@@ -79,7 +79,7 @@ class NewsBasedStockRecommender:
         start_time = time.time()
 
         if target_date is None:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 캐시 확인
         cache_key = f"news:recommendations:{target_date}:{limit}"

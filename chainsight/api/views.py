@@ -15,6 +15,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
+
 from stocks.models import Stock
 from chainsight.graph import get_graph_repository
 from chainsight.graph.exceptions import GraphConnectionError
@@ -51,6 +54,7 @@ def _sanitize_neo4j(obj):
     return obj
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class ChainSightGraphView(APIView):
     """CS-4-1: N-depth 그래프 탐색."""
 
@@ -101,6 +105,7 @@ class ChainSightGraphView(APIView):
         }))
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class ChainSightSuggestionView(APIView):
     """CS-4-2: 카테고리별 탐색 제안."""
 
@@ -176,6 +181,7 @@ class ChainSightSuggestionView(APIView):
         return Response({"symbol": symbol, "categories": categories})
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class ChainSightTraceView(APIView):
     """CS-4-3: 두 종목 간 최단 경로."""
 
@@ -234,16 +240,72 @@ class ChainSightTraceView(APIView):
 # ============================================================
 
 def _get_today_seeds() -> dict:
-    """오늘 시드 데이터를 Redis에서 읽기. fallback으로 전일 시도."""
+    """시드 데이터를 3단 폴백으로 읽는다: Redis → SeedSnapshot(DB) → async 복구.
+
+    Redis가 휘발되어도 DB에 남은 가장 최근 스냅샷으로 응답을 유지하고,
+    동시에 백그라운드에서 `run_seed_selection`을 트리거해 캐시를 재생성한다.
+
+    NOTE (2026-04-24): 같은 파일의 SectorGraphView/NeighborGraphView/SignalFeedView가
+    사용하는 캐시는 시드와 달리 "사용자 요청 시 lazy 생성"되므로 DB 영속화하지 않는다.
+    cache miss 시 즉시 재생성되어 자동 복구되며, 파라미터 조합(symbol × limit × rel_types)이
+    많아 영속화하면 stale 데이터만 누적된다. 시드는 Beat 배치(하루 1회)라 다른 취급.
+    """
     today = get_market_date()
-    for offset in range(3):  # 오늘, 어제, 그제
+
+    # 1) Redis — 오늘부터 그제까지
+    for offset in range(3):
         d = today - timedelta(days=offset)
         cached = cache.get(f'chainsight:seeds:{d}')
         if cached:
             return json.loads(cached) if isinstance(cached, str) else cached
+
+    # 2) DB 영속 스냅샷 — 가장 최근 것(최대 7일)
+    from chainsight.models import SeedSnapshot
+
+    snapshot = (
+        SeedSnapshot.objects
+        .filter(market_date__gte=today - timedelta(days=7))
+        .order_by('-market_date')
+        .first()
+    )
+    if snapshot:
+        try:
+            cache.set(
+                f'chainsight:seeds:{snapshot.market_date}',
+                json.dumps(snapshot.payload),
+                timeout=60 * 60 * 48,
+            )
+        except Exception as e:
+            logger.warning(f'seed cache rehydrate failed: {e}')
+        logger.info(
+            f'seed served from SeedSnapshot fallback (date={snapshot.market_date})'
+        )
+        return snapshot.payload
+
+    # 3) 전면 miss — 비동기 복구 트리거 (중복 방지 lock)
+    _trigger_seed_recovery(today)
+    logger.warning(
+        f'seed miss: no cache and no snapshot within 7 days of {today}. '
+        f'Triggered async recovery.'
+    )
     return {'date': str(today), 'total_seeds': 0, 'sector_summary': [], 'seeds': []}
 
 
+def _trigger_seed_recovery(market_date: date) -> None:
+    """Celery 태스크를 중복 없이 트리거. Redis setnx로 5분 lock."""
+    lock_key = f'chainsight:seed-recovery-lock:{market_date}'
+    got_lock = cache.add(lock_key, '1', timeout=300)
+    if not got_lock:
+        return
+    try:
+        from chainsight.tasks.seed_tasks import run_seed_selection
+        run_seed_selection.delay()
+    except Exception as e:
+        logger.error(f'seed recovery trigger failed: {e}')
+        cache.delete(lock_key)
+
+
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class SeedListView(APIView):
     """오늘의 시드 전체 + 섹터 요약. Redis 캐시 읽기 전용."""
 
@@ -252,6 +314,7 @@ class SeedListView(APIView):
         return Response(data)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class SectorGraphView(APIView):
     """섹터 overview graph — 탐색 시작점 선택용 구조 파악."""
 
@@ -381,6 +444,7 @@ class SectorGraphView(APIView):
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT})
 class NeighborGraphView(APIView):
     """마켓 뷰 탐색 핵심 API. 중심 이동 + 관계 카드 패널 렌더 데이터."""
 
@@ -560,6 +624,7 @@ class NeighborGraphView(APIView):
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
+@extend_schema(tags=['Chain Sight'], responses={200: OpenApiTypes.OBJECT})
 class SignalFeedView(APIView):
     """글로벌 chain flow + 새 chain 추천."""
 

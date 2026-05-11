@@ -221,7 +221,7 @@ class Command(BaseCommand):
             return
 
         groups = self._group_by_task_and_exception(failures)
-        today = timezone.now().strftime('%Y-%m-%d')
+        today = timezone.localtime().strftime('%Y-%m-%d')
 
         lines = [f'# Celery 에러 분석 요청 ({today}, 최근 {days}일)', '']
 

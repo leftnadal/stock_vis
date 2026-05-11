@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useMemo, useCallback } from 'react';
+import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useSectorGraph, useNeighbors } from '@/hooks/useMarketView';
@@ -50,11 +50,22 @@ interface GraphLink {
 export default function MarketGraphCanvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<any>(null);
+  const [containerWidth, setContainerWidth] = useState(800);
 
   const {
     selectedSector, centerSymbol, historyNodes, highlightedChain,
     selectNode,
   } = useExplorationStore();
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const el = containerRef.current;
+    const update = () => setContainerWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
     selectedSector && !centerSymbol ? selectedSector : null,
@@ -72,15 +83,31 @@ export default function MarketGraphCanvas() {
     return { nodes: [], links: [] };
   }, [centerSymbol, neighborData, selectedSector, sectorData, historyNodes]);
 
-  // 중심 이동 시 자동 포커스
+  // d3 force 파라미터 — 노드 수에 따라 간격 동적 조정
   useEffect(() => {
-    if (graphRef.current && centerSymbol) {
-      const node = nodes.find((n) => n.id === centerSymbol);
-      if (node?.x != null && node?.y != null) {
-        graphRef.current.centerAt(node.x, node.y, 300);
-      }
+    const fg = graphRef.current;
+    if (!fg?.d3Force || nodes.length === 0) return;
+    try {
+      const n = nodes.length;
+      const linkDist = n <= 8 ? 170 : n <= 20 ? 130 : n <= 40 ? 100 : 80;
+      const chargeStr = n <= 8 ? -800 : n <= 20 ? -550 : n <= 40 ? -380 : -280;
+
+      const linkForce = fg.d3Force('link') as { distance?: (fn: () => number) => void } | null;
+      linkForce?.distance?.(() => linkDist);
+
+      const chargeForce = fg.d3Force('charge') as { strength?: (fn: () => number) => void } | null;
+      chargeForce?.strength?.(() => chargeStr);
+
+      fg.d3ReheatSimulation?.();
+    } catch {
+      // force API 미지원 시 무시
     }
-  }, [centerSymbol, nodes]);
+  }, [nodes, links]);
+
+  // 시뮬레이션 안정화 후 모든 노드가 화면에 보이도록 fit
+  const handleEngineStop = useCallback(() => {
+    graphRef.current?.zoomToFit(400, 80);
+  }, []);
 
   const handleNodeClick = useCallback(
     (node: any) => {
@@ -115,7 +142,7 @@ export default function MarketGraphCanvas() {
       <ForceGraph2D
         ref={graphRef}
         graphData={{ nodes, links }}
-        width={containerRef.current?.clientWidth || 800}
+        width={containerWidth}
         height={400}
         nodeId="id"
         nodeCanvasObject={(node: any, ctx: CanvasRenderingContext2D) => {
@@ -140,8 +167,10 @@ export default function MarketGraphCanvas() {
         }}
         onNodeClick={handleNodeClick}
         cooldownTicks={100}
-        d3AlphaDecay={0.04}
+        warmupTicks={50}
+        d3AlphaDecay={0.035}
         d3VelocityDecay={0.3}
+        onEngineStop={handleEngineStop}
       />
     </div>
   );

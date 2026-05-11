@@ -339,7 +339,7 @@ reversals = MarketMover.objects.filter(
 ### 데이터 소스
 
 - **외부 API**: FMP (Financial Modeling Prep) Starter Plan
-- **Rate Limit**: 10 calls/분, 250 calls/일
+- **Rate Limit**: 300 calls/분, 10,000 calls/일 (audit P0 #7 정정, 2026-04-29)
 - **엔드포인트**:
   - `/stable/biggest-gainers` - 상승 TOP
   - `/stable/biggest-losers` - 하락 TOP

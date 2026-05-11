@@ -43,7 +43,7 @@ def sync_daily_market_movers(self, target_date=None):
             from datetime import datetime
             target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         logger.info(f"🚀 Celery Task 시작: sync_daily_market_movers (date={target_date})")
 
@@ -351,7 +351,7 @@ def generate_screener_keywords_task(self, stocks: list):
         logger.info(f"🚀 스크리너 키워드 생성 시작: {len(stocks)}개 종목")
 
         service = KeywordGenerationService()
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         results = {'success': 0, 'failed': 0, 'results': {}}
 
@@ -440,7 +440,7 @@ def keyword_generation_pipeline(movers_date: str = None, mover_type: str = 'gain
     from celery import chain
 
     if not movers_date:
-        movers_date = timezone.now().strftime('%Y-%m-%d')
+        movers_date = timezone.localtime().strftime('%Y-%m-%d')
 
     logger.info(f"🚀 키워드 생성 파이프라인 시작: {movers_date} ({mover_type})")
 
@@ -491,7 +491,7 @@ def calculate_daily_market_breadth(self, target_date: str = None):
         if target_date:
             date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
         else:
-            date_obj = timezone.now().date()
+            date_obj = timezone.localdate()
 
         logger.info(f"🚀 Market Breadth 계산 시작: {date_obj}")
 
@@ -558,7 +558,7 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
         if target_date:
             date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
         else:
-            date_obj = timezone.now().date()
+            date_obj = timezone.localdate()
 
         logger.info(f"🚀 섹터 히트맵 계산 시작: {date_obj}")
 
@@ -818,7 +818,7 @@ def batch_sync_stock_relationships(self, symbols: list = None):
         # 심볼 리스트 결정
         if not symbols:
             # 최근 7일 Market Movers에서 추출
-            cutoff = timezone.now().date() - timedelta(days=7)
+            cutoff = timezone.localdate() - timedelta(days=7)
             symbols = list(
                 MarketMover.objects.filter(date__gte=cutoff)
                 .values_list('symbol', flat=True)

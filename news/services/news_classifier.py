@@ -340,7 +340,7 @@ class NewsClassifier:
         Returns:
             list: 분석 대상 NewsArticle ID 리스트
         """
-        today = timezone.now().date()
+        today = timezone.localdate()
         start_of_day = timezone.make_aware(
             datetime.combine(today, datetime.min.time())
         )

@@ -152,10 +152,12 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile menu button */}
+          {/* audit P0 #12: Header 햄버거를 모바일에서 비표시 (MobileNav가 모바일 네비 단일 소스).
+              이중 네비 제거 + 데스크톱은 상단 nav 사용. 본 버튼은 hidden — 향후 모바일 검색 패널 등 확장 시 부활 검토. */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+            aria-label="메뉴 열기"
+            className="hidden inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <Menu className="h-6 w-6" />
           </button>

@@ -34,9 +34,9 @@ const INDICATOR_CATALOG: CatalogIndicator[] = [
   { id: 25, name: '비트코인 (BTC)', category: '암호화폐', freq: '일간' },
   { id: 26, name: '이더리움 (ETH)', category: '암호화폐', freq: '일간' },
   // 거시경제: 금리
-  { id: 6, name: '미국 기준금리', category: '금리', freq: '주간' },
-  { id: 7, name: '미국 10년 국채', category: '금리', freq: '일간' },
-  { id: 30, name: '미국 2년 국채', category: '금리', freq: '일간' },
+  { id: 6, name: '미국 기준금리 (Fed Funds Rate)', category: '금리', freq: '주간' },
+  { id: 7, name: '미국 10년 국채 금리', category: '금리', freq: '일간' },
+  { id: 30, name: '미국 2년 국채 금리', category: '금리', freq: '일간' },
   { id: 37, name: '30년 모기지 금리', category: '금리', freq: '주간' },
   // 거시경제: 환율/변동성
   { id: 8, name: 'VIX (공포지수)', category: '환율/변동성', freq: '일간' },
@@ -66,7 +66,7 @@ const INDICATOR_CATALOG: CatalogIndicator[] = [
   { id: 51, name: 'PBR (주가순자산비율)', category: '펀더멘털', freq: '분기' },
   { id: 52, name: 'ROE (자기자본이익률)', category: '펀더멘털', freq: '분기' },
   { id: 53, name: 'ROA (총자산이익률)', category: '펀더멘털', freq: '분기' },
-  { id: 54, name: '부채비율 (D/E)', category: '펀더멘털', freq: '분기' },
+  { id: 54, name: '부채비율 (Debt/Equity)', category: '펀더멘털', freq: '분기' },
   { id: 55, name: '잉여현금흐름 (FCF)', category: '펀더멘털', freq: '분기' },
   { id: 56, name: '배당수익률', category: '펀더멘털', freq: '분기' },
   { id: 57, name: '영업이익률', category: '펀더멘털', freq: '분기' },

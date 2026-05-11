@@ -61,7 +61,7 @@ class NewsDeepAnalyzer:
         Returns:
             dict: {analyzed: int, errors: int, skipped: int}
         """
-        today = timezone.now().date()
+        today = timezone.localdate()
         from datetime import datetime
         start_of_day = timezone.make_aware(
             datetime.combine(today, datetime.min.time())

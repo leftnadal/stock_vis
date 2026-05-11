@@ -31,6 +31,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
     partial_update → PATCH /{id}/ 가설 수정
     close  → POST /{id}/close/  가설 마감
     """
+    queryset = Thesis.objects.none()  # drf-spectacular가 모델/PK 타입을 추론하기 위함 (실제 필터는 get_queryset)
     permission_classes = [IsAuthenticated]
     http_method_names = ['get', 'post', 'patch', 'head', 'options']  # PUT/DELETE 제한
 
@@ -108,7 +109,7 @@ class ThesisViewSet(viewsets.ModelViewSet):
                 thesis=thesis,
                 event_type='thesis_closed',
                 event_data={
-                    'duration_days': (timezone.now().date() - thesis.created_at.date()).days,
+                    'duration_days': (timezone.localdate() - thesis.created_at.date()).days,
                 },
             )
             outcome_event_map = {
@@ -147,6 +148,7 @@ class ThesisPremiseViewSet(viewsets.ModelViewSet):
     """
     부모: thesis/{thesis_id}/premises/
     """
+    queryset = ThesisPremise.objects.none()  # drf-spectacular 모델 추론용
     serializer_class = ThesisPremiseSerializer
     permission_classes = [IsAuthenticated]
 
@@ -191,6 +193,7 @@ class ThesisIndicatorViewSet(viewsets.ModelViewSet):
     부모: thesis/{thesis_id}/indicators/
     + auto_recommend: POST /indicators/auto/
     """
+    queryset = ThesisIndicator.objects.none()  # drf-spectacular 모델 추론용
     serializer_class = ThesisIndicatorSerializer
     permission_classes = [IsAuthenticated]
 

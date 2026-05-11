@@ -46,7 +46,7 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
         if target_date:
             date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
         else:
-            date_obj = timezone.now().date()
+            date_obj = timezone.localdate()
 
         logger.info(f"Starting news keyword extraction for {date_obj}")
 
@@ -1076,69 +1076,6 @@ def collect_general_news_fmp(self):
 
 
 # ============================================================
-# Alpha Vantage 감성 뉴스 수집 태스크 (Phase 2)
-# ============================================================
-
-@shared_task(
-    bind=True,
-    max_retries=10,
-    soft_time_limit=120,
-    time_limit=180,
-)
-def collect_av_single_symbol(self, symbol: str):
-    """
-    AV 단일 종목 감성 뉴스 수집
-
-    RateLimitExceeded 시 60초 후 자동 재시도.
-
-    Args:
-        symbol: 수집할 심볼
-
-    Returns:
-        dict: {saved, updated}
-    """
-    try:
-        from news.services.aggregator import NewsAggregatorService
-        aggregator = NewsAggregatorService()
-        result = aggregator.fetch_and_save_company_news_av(symbol)
-        _log_collection('collect_av_single_symbol', 'alpha_vantage', 1, result)
-        return result
-    except Exception as exc:
-        # RateLimitExceeded 감지
-        if 'rate' in str(exc).lower() or 'limit' in str(exc).lower():
-            raise self.retry(countdown=60, exc=exc)
-        raise self.retry(exc=exc, countdown=300)
-
-
-@shared_task
-def collect_sentiment_news_av(symbols=None, max_symbols=25):
-    """
-    AV 감성 뉴스 수집 orchestrator
-
-    개별 태스크로 분산하여 13초 간격으로 stagger.
-
-    Args:
-        symbols: 수집할 심볼 리스트 (None이면 Tier1 자동 선택)
-        max_symbols: 최대 종목 수
-
-    Returns:
-        dict: {dispatched: int}
-    """
-    if symbols is None:
-        symbols = _get_tier1_symbols(max_symbols)
-
-    count = min(len(symbols), max_symbols)
-    for i, symbol in enumerate(symbols[:count]):
-        collect_av_single_symbol.apply_async(
-            args=[symbol],
-            countdown=i * 13,  # 13초 간격 stagger
-        )
-
-    logger.info(f"collect_sentiment_news_av: dispatched {count} symbols")
-    return {'dispatched': count}
-
-
-# ============================================================
 # 데이터 보존 태스크 (Phase 4)
 # ============================================================
 
@@ -1330,7 +1267,7 @@ def check_pipeline_alerts(self):
         collection_task_names = [
             'collect_daily_news', 'collect_market_news', 'collect_category_news',
             'collect_sp500_news_fmp_batch', 'collect_press_releases_fmp',
-            'collect_general_news_fmp', 'collect_av_single_symbol',
+            'collect_general_news_fmp',
         ]
 
         # 오늘 KST 자정 계산

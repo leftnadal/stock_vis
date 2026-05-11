@@ -80,7 +80,7 @@ def update_market_indices(self):
         all_data = service.fmp.get_all_market_quotes()
 
         saved_count = 0
-        today = timezone.now().date()
+        today = timezone.localdate()
 
         for symbol, data in all_data.items():
             try:

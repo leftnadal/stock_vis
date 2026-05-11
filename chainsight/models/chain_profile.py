@@ -60,8 +60,9 @@ class CompanyChainProfile(models.Model):
     )
     last_updated = models.DateTimeField(auto_now=True)
 
-    # Neo4j 동기화 (CS-3-1)
-    neo4j_synced = models.BooleanField(default=False, db_index=True)
+    # Neo4j 동기화 (audit P0 #9 — neo4j_dirty 단일 소스 통일 2026-04-29)
+    # True=동기화 필요(default), False=Neo4j에 반영됨. 의미는 RelationConfidence와 동일.
+    neo4j_dirty = models.BooleanField(default=True, db_index=True)
     neo4j_synced_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

@@ -184,7 +184,7 @@ class PipelineIntelligenceReporter:
 
         scores = result.get('dimension_scores', {})
         report = PipelineIntelligenceReport.objects.create(
-            report_date=timezone.now().date(),
+            report_date=timezone.localdate(),
             hours_back=hours_back,
             collection_score=scores.get('collection', 0),
             extraction_score=scores.get('extraction', 0),

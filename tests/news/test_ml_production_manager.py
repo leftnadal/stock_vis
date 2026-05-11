@@ -48,6 +48,18 @@ def request_factory():
     return RequestFactory()
 
 
+@pytest.fixture
+def admin_user(db):
+    """audit P0 #5: ML 모니터링 액션은 IsAdminUser 권한이 필요."""
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    return User.objects.create_superuser(
+        username=f'admin_{uuid.uuid4().hex[:8]}',
+        email='admin@test.com',
+        password='test1234',
+    )
+
+
 def make_model(
     version,
     f1=0.65,
@@ -688,7 +700,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
-    def test_ml_weekly_report_returns_200(self, mock_report, request_factory):
+    def test_ml_weekly_report_returns_200(self, mock_report, request_factory, admin_user):
         from django.core.cache import cache
 
         from news.api.views import NewsViewSet
@@ -705,6 +717,7 @@ class TestAPIEndpoints:
         cache.delete('news:ml_weekly_report')
 
         request = request_factory.get('/api/v1/news/ml-weekly-report/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_weekly_report'})
         response = view(request)
@@ -712,10 +725,11 @@ class TestAPIEndpoints:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_ml_lightgbm_readiness_returns_200(self, request_factory):
+    def test_ml_lightgbm_readiness_returns_200(self, request_factory, admin_user):
         from news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-lightgbm-readiness/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_lightgbm_readiness'})
         response = view(request)
@@ -723,10 +737,11 @@ class TestAPIEndpoints:
         assert response.status_code == 200
 
     @pytest.mark.django_db
-    def test_ml_lightgbm_readiness_response_format(self, request_factory):
+    def test_ml_lightgbm_readiness_response_format(self, request_factory, admin_user):
         from news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-lightgbm-readiness/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_lightgbm_readiness'})
         response = view(request)
@@ -740,7 +755,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
-    def test_ml_weekly_report_response_format(self, mock_report, request_factory):
+    def test_ml_weekly_report_response_format(self, mock_report, request_factory, admin_user):
         from django.core.cache import cache
 
         from news.api.views import NewsViewSet
@@ -757,6 +772,7 @@ class TestAPIEndpoints:
         cache.delete('news:ml_weekly_report')
 
         request = request_factory.get('/api/v1/news/ml-weekly-report/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_weekly_report'})
         response = view(request)

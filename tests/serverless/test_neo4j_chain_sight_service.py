@@ -243,6 +243,7 @@ class TestNeo4jChainSightServiceIntegration:
         assert 'co_mentioned_relationships' in stats
 
 
+@pytest.mark.skip(reason="_get_fallback_graph 함수가 serverless/views.py에서 제거됨. Fallback 로직은 Neo4jChainSightService 내부로 통합")
 class TestFallbackGraph:
     """PostgreSQL Fallback 그래프 테스트"""
 

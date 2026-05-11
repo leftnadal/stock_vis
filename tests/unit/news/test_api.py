@@ -21,9 +21,18 @@ class TestNewsViewSet:
     """NewsViewSet API 테스트"""
 
     @pytest.fixture
-    def api_client(self):
-        """REST API 클라이언트"""
-        return APIClient()
+    def api_client(self, db):
+        """REST API 클라이언트 (audit P0 #5: 인증된 사용자로 force_authenticate)."""
+        import uuid
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user = User.objects.create_user(
+            username=f'test_{uuid.uuid4().hex[:8]}',
+            password='test1234',
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
 
     @pytest.fixture(autouse=True)
     def clear_cache(self):
@@ -370,9 +379,18 @@ class TestNewsAPIEdgeCases:
     """API 엣지 케이스 테스트"""
 
     @pytest.fixture
-    def api_client(self):
-        """REST API 클라이언트"""
-        return APIClient()
+    def api_client(self, db):
+        """REST API 클라이언트 (audit P0 #5: 인증된 사용자로 force_authenticate)."""
+        import uuid
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user = User.objects.create_user(
+            username=f'test_{uuid.uuid4().hex[:8]}',
+            password='test1234',
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
+        return client
 
     @pytest.mark.django_db
     def test_stock_news_no_entities(self, api_client, news_article_aapl):

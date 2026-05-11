@@ -96,6 +96,22 @@ function MarketPulseContent() {
   // 각 섹션이 독립적으로 로딩 상태를 표시
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* v1 → v2 Deprecation 안내 (PR-Z 1단계: 배너) */}
+      <div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex items-center justify-between gap-3 text-sm">
+          <p className="text-amber-800 dark:text-amber-200">
+            <span className="font-semibold">Market Pulse v2 베타</span>가 출시되었습니다 — 5 카드 + 6 카테고리 뉴스 + 이상 신호.
+          </p>
+          <a
+            href="/market-pulse-v2"
+            data-analytics="mp-v1-to-v2-banner"
+            className="shrink-0 text-xs font-medium px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-700 text-white"
+          >
+            v2로 이동 →
+          </a>
+        </div>
+      </div>
+
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

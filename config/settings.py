@@ -18,7 +18,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 ## API Keys
-ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE_API_KEY')
 EODHD_API_KEY = os.getenv('EODHD_API_KEY', '')  # EODHD Historical Data
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
@@ -27,17 +26,17 @@ FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
-## Neo4j (Chain Sight 그래프 DB)
-NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
-NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
+# === LLM Provider Settings (Portfolio Coach, slice 1) ===
+# LLMClient 인스턴스별 호출 가드. 임계 도달 시 LLMBudgetExceededError raise.
+LLM_BUDGET_MAX_CALLS = int(os.getenv('LLM_BUDGET_MAX_CALLS', '50'))
+
+# Neo4j 설정은 아래 통합 블록(line ~117)에서 일원화 정의
 
 # ============================================================
 # Stock Data Provider Configuration
 # ============================================================
-# Provider 선택: "alpha_vantage" 또는 "fmp"
+# Provider 선택: 현재 "fmp" 단독. 추가 provider 도입 시 환경변수로 전환.
 # 각 엔드포인트별로 다른 provider를 사용할 수 있습니다.
-# 환경변수로 오버라이드 가능합니다.
 
 STOCK_PROVIDERS = {
     # Feature Flags - 환경변수로 오버라이드 가능
@@ -67,11 +66,6 @@ PROVIDER_CACHE_TTL = {
 
 # Rate Limiting 설정
 PROVIDER_RATE_LIMITS = {
-    'alpha_vantage': {
-        'per_minute': 5,
-        'per_day': 500,
-        'request_delay': 12.0,  # 초
-    },
     'fmp': {
         'per_minute': 300,     # Starter Plan
         'per_day': 10000,      # Starter Plan
@@ -102,10 +96,6 @@ NEWS_RATE_LIMITS = {
         'per_day': 10000,          # FMP API: 10,000 calls/day
         'wait_seconds': 0.2,       # 요청 간 최소 대기 시간
     },
-    'alpha_vantage': {
-        'per_minute': 5,           # Alpha Vantage: 5 calls/min (무료 티어)
-        'wait_seconds': 12,        # 요청 간 최소 대기 시간
-    },
 }
 
 # News Cache TTL (초)
@@ -124,10 +114,11 @@ NEWS_FALLBACK_PROVIDER = os.getenv('NEWS_FALLBACK_PROVIDER', 'marketaux')
 # Neo4j Configuration
 # ============================================================
 
-# Neo4j 연결 설정 (로컬 개발 환경 기본값)
+# Neo4j 연결 설정 (Chain Sight 그래프 DB)
+# NEO4J_PASSWORD는 환경변수 필수. 디폴트 제거 (기존 'stockvis123'은 보안 약점)
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USERNAME = os.getenv('NEO4J_USERNAME', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', '')  # 빈 값 = 미설정. 운영 가드는 DEBUG 정의 후 SECRET_KEY 가드와 함께 처리
 NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
 
 # Neo4j 연결 풀 설정
@@ -148,12 +139,35 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hvwb-ms8%a@fh7_pf@obr@edq6(h41bj+$yetj#h!wg7#(b(&8'
+# 운영: .env의 SECRET_KEY 필수. 누락 시 dev 전용 placeholder 사용 (운영 배포 차단됨)
+_SECRET_KEY_DEV_FALLBACK = 'django-insecure-DEV-ONLY-DO-NOT-USE-IN-PRODUCTION-' + 'x' * 30
+# `or` 사용: 빈 문자열도 미설정으로 처리 (os.getenv 기본값은 빈 문자열을 "있는 값"으로 취급)
+SECRET_KEY = os.getenv('SECRET_KEY') or _SECRET_KEY_DEV_FALLBACK
+
+# JWT 서명 키는 SECRET_KEY와 분리 (위조 공격 표면 축소). 미설정 시 SECRET_KEY로 fallback
+JWT_SIGNING_KEY = os.getenv('JWT_SIGNING_KEY') or SECRET_KEY
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DJANGO_DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('DJANGO_ALLOWED_HOSTS', '').split(',') if h.strip()] or (
+    ['*'] if DEBUG else []
+)
+
+# 운영 배포 가드: DEBUG=False에서 필수 보안 환경변수 누락 시 즉시 실패
+if not DEBUG:
+    from django.core.exceptions import ImproperlyConfigured
+    if SECRET_KEY == _SECRET_KEY_DEV_FALLBACK:
+        raise ImproperlyConfigured(
+            "SECRET_KEY 환경변수가 설정되지 않았습니다. "
+            "운영 환경(DEBUG=False)에서는 .env에 SECRET_KEY를 반드시 지정하세요. "
+            "예: python -c \"from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())\""
+        )
+    if not NEO4J_PASSWORD:
+        raise ImproperlyConfigured(
+            "NEO4J_PASSWORD 환경변수가 설정되지 않았습니다. "
+            "운영 환경(DEBUG=False)에서는 .env에 NEO4J_PASSWORD를 반드시 지정하세요."
+        )
 
 
 # Application definition
@@ -183,9 +197,13 @@ INSTALLED_APPS = [
     'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
+    'portfolio.apps.PortfolioConfig',  # Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
+    'marketpulse.apps.MarketpulseConfig',  # Market Pulse v2 (Phase 1)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
+    'drf_spectacular',  # OpenAPI 자동 생성 (Swagger UI / ReDoc)
+    'drf_spectacular_sidecar',  # Swagger UI / ReDoc 정적 자산
     'corsheaders',  # CORS 지원 추가
     'django_celery_beat',  # Celery Beat 스케줄러
     'django_celery_results',  # Celery 작업 결과 저장
@@ -295,14 +313,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
 ]
 
-# 개발 환경과 프로덕션 환경 분리
-if DEBUG:
-    # 개발 환경에서만 모든 origin 허용
-    CORS_ALLOW_ALL_ORIGINS = True
-else:
-    # 프로덕션에서는 명시적으로 허용된 origins만
-    CORS_ALLOW_ALL_ORIGINS = False
-    # 프로덕션 도메인 추가 시 CORS_ALLOWED_ORIGINS에 추가
+# CORS_ALLOW_ALL_ORIGINS은 별도 env로 명시 제어 (DEBUG 의존 제거 — 운영 배포 시 의도치 않은 전체 허용 방지)
+# 기본 False. 개발에서 모든 origin 허용이 필요하면 .env에 DJANGO_CORS_ALLOW_ALL=True 명시
+CORS_ALLOW_ALL_ORIGINS = os.getenv('DJANGO_CORS_ALLOW_ALL', 'False').lower() == 'true'
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -328,14 +341,75 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # REST Framework 설정
+# audit P0 #5 (2026-04-29):
+#   - DEFAULT_PERMISSION_CLASSES: IsAuthenticatedOrReadOnly → IsAuthenticated (GET 무차별 노출 차단)
+#   - 의도된 공개 뷰는 명시적 [AllowAny] 지정 (users LogIn/PublicUser, simplejwt token 등)
+# audit P0 #14 (페이지네이션 표준)는 별도 PR에서 처리 — 응답 envelope 결정이 선결 조건
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.IsAuthenticated',
     ],
+    'DEFAULT_THROTTLE_RATES': {
+        'market_pulse_user': '60/min',
+        'market_pulse_user_hour': '1000/hour',
+        'market_pulse_llm': '5/min',
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# drf-spectacular 설정 (Market Pulse v2 OpenAPI 자동 생성)
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Stock-Vis Market Pulse v2 API',
+    'DESCRIPTION': (
+        'Market Pulse v2 Phase 1 — 시장 레짐 + 시장 폭 + 섹터 흐름 + 집중도 + LLM 브리핑 + 이상 신호. '
+        'JWT Bearer 인증. 응답 본체는 영문 키 (한글은 /i18n endpoint).'
+    ),
+    'VERSION': '2.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
+    'SCHEMA_PATH_PREFIX': r'/api/v[12]',
+    'TAGS': [
+        {'name': 'Market Pulse v2', 'description': 'Layer 0 통합 + Layer 1 카드 detail'},
+    ],
+    # 'unable to guess serializer' 등 graceful fallback noise 무시 (운영 영향 0).
+    # 핵심 영역(marketpulse, chainsight, api_request admin)은 명시적 @extend_schema로 정상 처리됨.
+    # 나머지 v1 endpoint는 schema에서 graceful fallback (string body)로 노출.
+    # 정확한 schema가 필요한 view만 점진적으로 @extend_schema(responses=...) 추가.
+    'DISABLE_ERRORS_AND_WARNINGS': True,
+    # 동일 이름 enum collision 해결 (drf-spectacular 가독성 향상)
+    # (value, label) 튜플 list 형식 — drf-spectacular는 sorted hash로 매칭하므로
+    # 모델 choices와 정확히 동일한 tuple 필요.
+    'ENUM_NAME_OVERRIDES': {
+        # thesis.ThesisPremise.category (6개)
+        'ThesisPremiseCategoryEnum': [
+            ('macro', 'Macro'), ('sector', 'Sector'), ('company', 'Company'),
+            ('technical', 'Technical'), ('sentiment', 'Sentiment'),
+            ('custom', 'Custom'),
+        ],
+        # news.NewsArticle.category (6개)
+        'NewsCategoryEnum': [
+            ('general', 'General'), ('company', 'Company'),
+            ('press_release', 'Press Release'), ('forex', 'Forex'),
+            ('crypto', 'Crypto'), ('merger', 'Merger'),
+        ],
+        # chainsight.SavedPath.status
+        'SavedPathStatusEnum': [
+            ('watching', 'Watching'), ('active', 'Active'),
+            ('archived', 'Archived'), ('resolved', 'Resolved'),
+        ],
+        # thesis.Thesis.status
+        'ThesisStatusEnum': [
+            ('setting_up', 'Setting Up'), ('active', 'Active'),
+            ('closed', 'Closed'), ('paused', 'Paused'),
+        ],
+    },
 }
 
 # Simple JWT 설정
@@ -349,7 +423,7 @@ SIMPLE_JWT = {
     'UPDATE_LAST_LOGIN': True,                      # 마지막 로그인 시간 업데이트
 
     'ALGORITHM': 'HS256',                           # 암호화 알고리즘
-    'SIGNING_KEY': SECRET_KEY,                      # 서명 키
+    'SIGNING_KEY': JWT_SIGNING_KEY,                 # 서명 키 (SECRET_KEY와 분리, env로 별도 회전 가능)
     'VERIFYING_KEY': None,
     'AUDIENCE': None,
     'ISSUER': None,

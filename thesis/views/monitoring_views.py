@@ -307,7 +307,7 @@ def _fetch_fmp_history(indicator, days: int) -> list:
 
         client = FMPClient(api_key=api_key)
         from_date = (timezone.now() - timedelta(days=days)).strftime('%Y-%m-%d')
-        to_date = timezone.now().strftime('%Y-%m-%d')
+        to_date = timezone.localtime().strftime('%Y-%m-%d')
 
         data = client.get_historical_price(symbol, from_date=from_date, to_date=to_date)
         if not data:

@@ -1,0 +1,28 @@
+'use client'
+
+import { translate } from '@/lib/i18n/marketPulse'
+import type { RegimeCard } from '@/lib/api/marketPulseV2'
+import { CardShell } from './CardShell'
+
+export function RegimeCardSummary({
+  data, labels, onOpen,
+}: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
+  return (
+    <CardShell titleEn="Market Regime" titleKo="시장 국면" status={data?.status} onOpen={onOpen}>
+      {!data ? (
+        <p className="text-sm text-slate-400">레짐 데이터 미생성</p>
+      ) : (
+        <div>
+          <p className="text-lg font-semibold text-slate-900">
+            {translate(`regime.${data.regime}`, labels, data.regime)}
+          </p>
+          <p className="text-xs text-slate-500 mt-1">
+            coverage {(data.coverage * 100).toFixed(0)}%
+            {data.transitioned ? ' · 전환' : ''}
+          </p>
+          {data.headline ? <p className="text-sm text-slate-700 mt-2">{data.headline}</p> : null}
+        </div>
+      )}
+    </CardShell>
+  )
+}

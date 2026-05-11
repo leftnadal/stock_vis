@@ -17,6 +17,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.renderers import BaseRenderer
 
+from drf_spectacular.utils import extend_schema
+
 from .models import DataBasket, BasketItem, AnalysisSession, AnalysisMessage
 from .serializers import (
     DataBasketSerializer,
@@ -68,6 +70,7 @@ class DataBasketListCreateView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(operation_id='rag_baskets_list')
     def get(self, request):
         """사용자의 DataBasket 목록 조회"""
         baskets = DataBasket.objects.filter(user=request.user).prefetch_related('items')
@@ -428,6 +431,7 @@ class AnalysisSessionListCreateView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(operation_id='rag_sessions_list')
     def get(self, request):
         """사용자의 AnalysisSession 목록 조회"""
         sessions = AnalysisSession.objects.filter(user=request.user).prefetch_related('messages')

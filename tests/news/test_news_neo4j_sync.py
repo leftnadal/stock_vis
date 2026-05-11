@@ -25,6 +25,21 @@ from django.utils import timezone
 # ========================================
 
 @pytest.fixture
+def client(db):
+    """audit P0 #5: 인증된 Django test client (force_login)."""
+    from django.test import Client
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    user = User.objects.create_user(
+        username=f'test_{uuid.uuid4().hex[:8]}',
+        password='test1234',
+    )
+    c = Client()
+    c.force_login(user)
+    return c
+
+
+@pytest.fixture
 def mock_neo4j_driver():
     """Neo4j driver mock"""
     driver = MagicMock()

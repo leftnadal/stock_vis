@@ -17,3 +17,17 @@ from .conversation_serializers import (
     ConversationResponseSerializer,
     SuggestionRequestSerializer,
 )
+
+__all__ = [
+    "ThesisListSerializer",
+    "ThesisDetailSerializer",
+    "ThesisCreateSerializer",
+    "ThesisPremiseSerializer",
+    "ThesisIndicatorSerializer",
+    "IndicatorReadingSerializer",
+    "ThesisSnapshotSerializer",
+    "ThesisAlertSerializer",
+    "ConversationStartSerializer",
+    "ConversationResponseSerializer",
+    "SuggestionRequestSerializer",
+]

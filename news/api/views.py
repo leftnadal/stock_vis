@@ -18,6 +18,8 @@ from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
 
+from drf_spectacular.utils import OpenApiParameter, extend_schema
+
 from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword, NewsCollectionLog, MLModelHistory, AlertLog
 from ..services import NewsAggregatorService
 from .serializers import (
@@ -39,6 +41,9 @@ def _kst_today_start():
     return now.astimezone(KST).replace(hour=0, minute=0, second=0, microsecond=0).astimezone(pytz.utc)
 
 
+@extend_schema(parameters=[
+    OpenApiParameter('symbol', str, OpenApiParameter.PATH, required=False),
+])
 class NewsViewSet(viewsets.ReadOnlyModelViewSet):
     """뉴스 API ViewSet"""
 
@@ -51,6 +56,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             return NewsArticleDetailSerializer
         return NewsArticleListSerializer
 
+    @extend_schema(parameters=[OpenApiParameter('symbol', str, OpenApiParameter.PATH)])
     @action(detail=False, methods=['get'], url_path='stock/(?P<symbol>[^/.]+)')
     def stock_news(self, request, symbol=None):
         """
@@ -534,7 +540,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 캐시 키
         cache_key = f"news:daily_keywords:{target_date}"
@@ -632,7 +638,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({
             'status': 'started',
             'task_id': task.id,
-            'date': date_str or str(timezone.now().date()),
+            'date': date_str or str(timezone.localdate()),
         })
 
     # ===== Phase 2.5: Keyword Detail API =====
@@ -661,7 +667,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         index_str = request.query_params.get('index')
         if index_str is None:
@@ -866,7 +872,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # limit 파라미터
         try:
@@ -1108,7 +1114,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     # ===== Phase 4: ML Model Status + Shadow Report API =====
 
-    @action(detail=False, methods=['get'], url_path='ml-status')
+    @action(detail=False, methods=['get'], url_path='ml-status', permission_classes=[IsAdminUser])
     def ml_status(self, request):
         """
         ML 모델 현재 상태 조회
@@ -1136,7 +1142,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         cache.set(cache_key, data, 300)  # 5분 캐시
         return Response(data)
 
-    @action(detail=False, methods=['get'], url_path='ml-shadow-report')
+    @action(detail=False, methods=['get'], url_path='ml-shadow-report', permission_classes=[IsAdminUser])
     def ml_shadow_report(self, request):
         """
         Shadow Mode 비교 리포트 조회
@@ -1189,7 +1195,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     # ===== Phase 5: ML Production + Weekly Report API =====
 
-    @action(detail=False, methods=['get'], url_path='ml-weekly-report')
+    @action(detail=False, methods=['get'], url_path='ml-weekly-report', permission_classes=[IsAdminUser])
     def ml_weekly_report(self, request):
         """
         주간 ML 성능 리포트 조회
@@ -1218,7 +1224,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         cache.set(cache_key, data, 3600)  # 1시간 캐시
         return Response(data)
 
-    @action(detail=False, methods=['get'], url_path='ml-lightgbm-readiness')
+    @action(detail=False, methods=['get'], url_path='ml-lightgbm-readiness', permission_classes=[IsAdminUser])
     def ml_lightgbm_readiness(self, request):
         """
         LightGBM 전환 준비 상태 조회
@@ -1280,7 +1286,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 raise ValidationError({'date': 'Invalid date format. Use YYYY-MM-DD'})
         else:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # limit 파라미터
         try:
@@ -1478,7 +1484,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         phase1_logs = NewsCollectionLog.objects.filter(
             task_name__in=['collect_daily_news', 'collect_market_news', 'collect_category_news',
                            'collect_sp500_news_fmp_batch', 'collect_press_releases_fmp',
-                           'collect_general_news_fmp', 'collect_av_single_symbol']
+                           'collect_general_news_fmp']
         ).order_by('-executed_at')
         phase1_recent = phase1_logs.first()
         phase1_last_run = phase1_recent.executed_at if phase1_recent else None

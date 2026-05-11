@@ -116,11 +116,15 @@ export default function GraphCanvas({
     if (!fg?.d3Force) return;
 
     try {
+      const n = graphData.nodes.length;
+      const linkDist = n <= 8 ? 240 : n <= 20 ? 200 : n <= 40 ? 160 : 130;
+      const chargeStr = n <= 8 ? -1000 : n <= 20 ? -800 : n <= 40 ? -600 : -450;
+
       const linkForce = fg.d3Force('link') as { distance?: (fn: () => number) => void } | null;
-      if (linkForce?.distance) linkForce.distance(() => 180);
+      if (linkForce?.distance) linkForce.distance(() => linkDist);
 
       const chargeForce = fg.d3Force('charge') as { strength?: (fn: () => number) => void } | null;
-      if (chargeForce?.strength) chargeForce.strength(() => -600);
+      if (chargeForce?.strength) chargeForce.strength(() => chargeStr);
 
       fg.d3ReheatSimulation?.();
     } catch {
@@ -130,7 +134,7 @@ export default function GraphCanvas({
 
   // ── 시뮬레이션 안정화 후 zoomToFit ──
   const handleEngineStop = useCallback(() => {
-    graphRef.current?.zoomToFit(400, 60);
+    graphRef.current?.zoomToFit(400, 80);
   }, []);
 
   // ── 노드 Canvas 렌더링 ──

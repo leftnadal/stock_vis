@@ -84,7 +84,7 @@ celery -A config beat -l info
 
 ### 외부 API Rate Limits
 - **Alpha Vantage**: 5 calls/분, 12초 대기 필수
-- **FMP**: 10 calls/분, `/stable/*` 경로만 사용 (Legacy `/api/v3/*` 지원 안 함)
+- **FMP** (Starter Plan): 300 calls/분, 10,000 calls/일, `/stable/*` 경로만 사용 (Legacy `/api/v3/*` 지원 안 함)
 - **Gemini Free**: 15 RPM, 1500 RPD
 
 > 상세: [sub_claude_md/coding-rules.md](sub_claude_md/coding-rules.md)
@@ -107,6 +107,8 @@ celery -A config beat -l info
 | 24 | Next.js Client Component Date.now() hydration 불일치 | 모듈 레벨 `Date.now()` 금지, 고정값 또는 `useEffect` 사용 |
 | 25 | Celery macOS SIGSEGV (fork + Obj-C) | `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` + `PGGSSENCMODE=disable` + fork 후 `db.connections.close_all()` |
 | 26 | Validation peer group 전환 안 됨 | `selectPreset` 등 POST/DELETE에서 raw `fetch()` → `authAxios` (JWT 필수) |
+| 27 | pytest가 운영 Redis flush (Chain Sight 시드 증발) | `settings_test.py`에 LocMemCache 격리 + `SeedSnapshot` DB 영속화 + 3단 폴백 |
+| 28 | Beat schedule drift (config dict vs DB) | DatabaseScheduler 사용 시 dict는 무시됨, `PeriodicTask.objects.create(...)`로 DB 등록 |
 
 > 전체 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
 
@@ -309,3 +311,23 @@ rag-llm ──→ backend (RAG 분석 결과 → API 통합)
 - [ ] `TASKQUEUE.md` 상태 업데이트
 - [ ] `PROGRESS.md` 현재 상태 반영
 - [ ] 세션 중 교훈이 있었다면 KB 큐에 추가했는가?
+
+## Skill routing
+
+When the user's request matches an available skill, ALWAYS invoke it using the Skill
+tool as your FIRST action. Do NOT answer directly, do NOT use other tools first.
+The skill has specialized workflows that produce better results than ad-hoc answers.
+
+Key routing rules:
+- Product ideas, "is this worth building", brainstorming → invoke office-hours
+- Bugs, errors, "why is this broken", 500 errors → invoke investigate
+- Ship, deploy, push, create PR → invoke ship
+- QA, test the site, find bugs → invoke qa
+- Code review, check my diff → invoke review
+- Update docs after shipping → invoke document-release
+- Weekly retro → invoke retro
+- Design system, brand → invoke design-consultation
+- Visual audit, design polish → invoke design-review
+- Architecture review → invoke plan-eng-review
+- Save progress, checkpoint, resume → invoke checkpoint
+- Code quality, health check → invoke health
