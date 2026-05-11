@@ -1,0 +1,707 @@
+{
+  "step": "step8_2way_e5_raw",
+  "executed_at": "2026-05-01T12:51:12.017518+00:00",
+  "matrix_size": {
+    "fixtures": 7,
+    "models": 2,
+    "total_calls": 14
+  },
+  "providers": [
+    {
+      "label": "haiku",
+      "model": "claude-haiku-4-5"
+    },
+    {
+      "label": "sonnet",
+      "model": "claude-sonnet-4-5"
+    }
+  ],
+  "results": [
+    {
+      "fixture": "clear_decrease",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA 비중 좀 줄여줘. 너무 많은 것 같아.\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"감소 폭이 명시되지 않음. 현재 10%에서 얼마나 줄일지 불명확.\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "감소 폭이 명시되지 않음. 현재 10%에서 얼마나 줄일지 불명확.",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 1742,
+        "input_tokens": 696,
+        "output_tokens": 166,
+        "cost_usd": 0.0012208,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "clear_decrease",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA 비중 좀 줄여줘. 너무 많은 것 같아.\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"구체적인 감소 비중이 명시되지 않음\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "구체적인 감소 비중이 명시되지 않음",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 2870,
+        "input_tokens": 696,
+        "output_tokens": 148,
+        "cost_usd": 0.004307999999999999,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "clear_multi",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA는 줄이고\"\n    },\n    {\n      \"ticker\": \"NVDA\",\n      \"action\": \"increase\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"NVDA는 좀 늘려줘\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"구체적인 비중 수치가 명시되지 않아 조정 폭을 정확히 파악할 수 없음\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA는 줄이고"
+          },
+          {
+            "ticker": "NVDA",
+            "action": "increase",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "NVDA는 좀 늘려줘"
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "구체적인 비중 수치가 명시되지 않아 조정 폭을 정확히 파악할 수 없음",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 1557,
+        "input_tokens": 692,
+        "output_tokens": 214,
+        "cost_usd": 0.0014096,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 2,
+        "expected_tickers": [
+          "NVDA",
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease",
+          "increase"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "clear_multi",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA는 줄이고\"\n    },\n    {\n      \"ticker\": \"NVDA\",\n      \"action\": \"increase\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"NVDA는 좀 늘려줘\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"구체적인 비중 수치가 명시되지 않아 조정 폭은 불명확\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA는 줄이고"
+          },
+          {
+            "ticker": "NVDA",
+            "action": "increase",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "NVDA는 좀 늘려줘"
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "구체적인 비중 수치가 명시되지 않아 조정 폭은 불명확",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 4160,
+        "input_tokens": 692,
+        "output_tokens": 205,
+        "cost_usd": 0.005151,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 2,
+        "expected_tickers": [
+          "NVDA",
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease",
+          "increase"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "unclear_amount",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA 좀 줄여\"\n    }\n  ],\n  \"confidence\": 3,\n  \"ambiguity_notes\": \"감소 규모가 명시되지 않음. '좀'은 상대적 표현으로 구체적 수치 해석 필요.\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA 좀 줄여"
+          }
+        ],
+        "confidence": 3,
+        "ambiguity_notes": "감소 규모가 명시되지 않음. '좀'은 상대적 표현으로 구체적 수치 해석 필요.",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 1688,
+        "input_tokens": 679,
+        "output_tokens": 154,
+        "cost_usd": 0.0011592,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "delta_weight_required_null": true,
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "unclear_amount",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"TSLA 좀 줄여\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"구체적인 감소 비중이 명시되지 않음\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "TSLA 좀 줄여"
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "구체적인 감소 비중이 명시되지 않음",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 2734,
+        "input_tokens": 679,
+        "output_tokens": 131,
+        "cost_usd": 0.004002,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "delta_weight_required_null": true,
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "no_intent_question",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [],\n  \"confidence\": 1,\n  \"ambiguity_notes\": \"사용자가 'GARP 프리셋이 뭐야?'라고 질문했으므로 포트폴리오 조정 의도가 없습니다. 이는 GARP 개념 설명을 요청하는 정보성 질문입니다.\",\n  \"no_actionable_intent\": true\n}\n```",
+      "parsed": {
+        "adjustments": [],
+        "confidence": 1,
+        "ambiguity_notes": "사용자가 'GARP 프리셋이 뭐야?'라고 질문했으므로 포트폴리오 조정 의도가 없습니다. 이는 GARP 개념 설명을 요청하는 정보성 질문입니다.",
+        "no_actionable_intent": true
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 1933,
+        "input_tokens": 683,
+        "output_tokens": 128,
+        "cost_usd": 0.0010584000000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_count": 0,
+        "no_actionable_intent": true
+      }
+    },
+    {
+      "fixture": "no_intent_question",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [],\n  \"confidence\": 5,\n  \"ambiguity_notes\": null,\n  \"no_actionable_intent\": true\n}\n```",
+      "parsed": {
+        "adjustments": [],
+        "confidence": 5,
+        "ambiguity_notes": null,
+        "no_actionable_intent": true
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 2150,
+        "input_tokens": 683,
+        "output_tokens": 48,
+        "cost_usd": 0.002769,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_count": 0,
+        "no_actionable_intent": true
+      }
+    },
+    {
+      "fixture": "no_intent_chitchat",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"포트폴리오가 좀 불안한데\"\n    },\n    {\n      \"ticker\": \"PLTR\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"포트폴리오가 좀 불안한데\"\n    }\n  ],\n  \"confidence\": 2,\n  \"ambiguity_notes\": \"사용자가 구체적인 조정 방향이나 목표 비중을 명시하지 않음. '불안하다'는 정성적 표현만 있어 감소 의도는 추론하나, 어느 종목을 어느 정도까지 조정할지 명확하지 않음. 현금 비중 추가 여부도 불명확.\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "포트폴리오가 좀 불안한데"
+          },
+          {
+            "ticker": "PLTR",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "포트폴리오가 좀 불안한데"
+          }
+        ],
+        "confidence": 2,
+        "ambiguity_notes": "사용자가 구체적인 조정 방향이나 목표 비중을 명시하지 않음. '불안하다'는 정성적 표현만 있어 감소 의도는 추론하나, 어느 종목을 어느 정도까지 조정할지 명확하지 않음. 현금 비중 추가 여부도 불명확.",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 2738,
+        "input_tokens": 691,
+        "output_tokens": 293,
+        "cost_usd": 0.0017248,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 2,
+        "no_extra_changes_manual": 3,
+        "auto_eval_intent_reason": "no_intent 정확히 처리 못함",
+        "auto_eval_no_extra_reason": "2개 추가 변경"
+      },
+      "expected": {
+        "adjustments_count": 0,
+        "no_actionable_intent": true
+      }
+    },
+    {
+      "fixture": "no_intent_chitchat",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [],\n  \"confidence\": 1,\n  \"ambiguity_notes\": \"사용자가 포트폴리오의 불안함을 언급했으나 구체적인 조정 지시(매수/매도/비중 변경)가 없음. 조언을 구하는 질문으로 판단됨.\",\n  \"no_actionable_intent\": true\n}\n```",
+      "parsed": {
+        "adjustments": [],
+        "confidence": 1,
+        "ambiguity_notes": "사용자가 포트폴리오의 불안함을 언급했으나 구체적인 조정 지시(매수/매도/비중 변경)가 없음. 조언을 구하는 질문으로 판단됨.",
+        "no_actionable_intent": true
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 3576,
+        "input_tokens": 691,
+        "output_tokens": 118,
+        "cost_usd": 0.003843,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_count": 0,
+        "no_actionable_intent": true
+      }
+    },
+    {
+      "fixture": "remove",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"PLTR\",\n      \"action\": \"remove\",\n      \"delta_weight\": null,\n      \"target_weight\": 0.0,\n      \"reason_quote\": \"PLTR은 빼버릴게.\"\n    }\n  ],\n  \"confidence\": 5,\n  \"ambiguity_notes\": null,\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "PLTR",
+            "action": "remove",
+            "delta_weight": null,
+            "target_weight": 0.0,
+            "reason_quote": "PLTR은 빼버릴게."
+          }
+        ],
+        "confidence": 5,
+        "ambiguity_notes": null,
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 1234,
+        "input_tokens": 734,
+        "output_tokens": 116,
+        "cost_usd": 0.0010512,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "PLTR"
+        ],
+        "expected_actions": [
+          "remove"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "remove",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"PLTR\",\n      \"action\": \"remove\",\n      \"delta_weight\": null,\n      \"target_weight\": 0.0,\n      \"reason_quote\": \"PLTR은 빼버릴게.\"\n    }\n  ],\n  \"confidence\": 5,\n  \"ambiguity_notes\": null,\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "PLTR",
+            "action": "remove",
+            "delta_weight": null,
+            "target_weight": 0.0,
+            "reason_quote": "PLTR은 빼버릴게."
+          }
+        ],
+        "confidence": 5,
+        "ambiguity_notes": null,
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 2687,
+        "input_tokens": 734,
+        "output_tokens": 116,
+        "cost_usd": 0.003942,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 1,
+        "expected_tickers": [
+          "PLTR"
+        ],
+        "expected_actions": [
+          "remove"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "large_multi",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP.\"\n    },\n    {\n      \"ticker\": \"PLTR\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP.\"\n    },\n    {\n      \"ticker\": \"SHOP\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP.\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"감소 비중 규모가 미지정. 분석 결과의 TSLA, PLTR 변동성 우려와 일치하며 SHOP은 사용자가 추가로 지정.\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP."
+          },
+          {
+            "ticker": "PLTR",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP."
+          },
+          {
+            "ticker": "SHOP",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP."
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "감소 비중 규모가 미지정. 분석 결과의 TSLA, PLTR 변동성 우려와 일치하며 SHOP은 사용자가 추가로 지정.",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 2487,
+        "input_tokens": 756,
+        "output_tokens": 360,
+        "cost_usd": 0.0020448000000000003,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 3,
+        "expected_tickers": [
+          "PLTR",
+          "SHOP",
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "no_actionable_intent": false
+      }
+    },
+    {
+      "fixture": "large_multi",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"adjustments\": [\n    {\n      \"ticker\": \"TSLA\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. TSLA\"\n    },\n    {\n      \"ticker\": \"PLTR\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. PLTR\"\n    },\n    {\n      \"ticker\": \"SHOP\",\n      \"action\": \"decrease\",\n      \"delta_weight\": null,\n      \"target_weight\": null,\n      \"reason_quote\": \"변동성 큰 종목들 비중 좀 줄여줘. SHOP\"\n    }\n  ],\n  \"confidence\": 4,\n  \"ambiguity_notes\": \"구체적인 감소 비중이 명시되지 않음\",\n  \"no_actionable_intent\": false\n}\n```",
+      "parsed": {
+        "adjustments": [
+          {
+            "ticker": "TSLA",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. TSLA"
+          },
+          {
+            "ticker": "PLTR",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. PLTR"
+          },
+          {
+            "ticker": "SHOP",
+            "action": "decrease",
+            "delta_weight": null,
+            "target_weight": null,
+            "reason_quote": "변동성 큰 종목들 비중 좀 줄여줘. SHOP"
+          }
+        ],
+        "confidence": 4,
+        "ambiguity_notes": "구체적인 감소 비중이 명시되지 않음",
+        "no_actionable_intent": false
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 3958,
+        "input_tokens": 756,
+        "output_tokens": 299,
+        "cost_usd": 0.006753,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "intent_match_manual": 5,
+        "no_extra_changes_manual": 5,
+        "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+        "auto_eval_no_extra_reason": "추가 변경 없음"
+      },
+      "expected": {
+        "adjustments_min_count": 3,
+        "expected_tickers": [
+          "PLTR",
+          "SHOP",
+          "TSLA"
+        ],
+        "expected_actions": [
+          "decrease"
+        ],
+        "no_actionable_intent": false
+      }
+    }
+  ],
+  "summary": {
+    "total_calls": 14,
+    "total_cost_usd": 0.0404,
+    "fallback_count": 0,
+    "schema_pass_count": 14
+  },
+  "evaluation_guide": {
+    "intent_match": {
+      "5": "모든 종목 + 액션 정확. 누락 없음.",
+      "4": "핵심 정확. 사소한 누락 (예: target_weight null 미처리).",
+      "3": "일부 누락 또는 추가 변경 있으나 핵심 의도 OK.",
+      "2": "절반 이상 누락 또는 잘못된 액션.",
+      "1": "의도 완전 빗나감."
+    },
+    "no_extra_changes": {
+      "5": "추가 변경 없음.",
+      "4": "1개 종목 추가 변경 (사소함).",
+      "3": "2~3개 종목 추가 변경.",
+      "2": "4개 종목 추가 변경.",
+      "1": "5개 이상 추가 변경 (의도 왜곡 수준)."
+    }
+  },
+  "manual_eval_required": [
+    "results[].judgments.intent_match_manual (1~5 정수)",
+    "results[].judgments.no_extra_changes_manual (1~5 정수)"
+  ],
+  "auto_evaluation": {
+    "method": "expected 기반 룰 자동 평가 (intent_match + no_extra_changes)",
+    "note": "수동 검토 권장. 룰: intent_match는 expected_tickers/actions 매칭 비율, no_extra_changes는 expected에 없는 ticker 추가 개수.",
+    "evaluator": "auto-script run_step8_e5_2way post-hoc"
+  }
+}

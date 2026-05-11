@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "Buffett Quality Value 의도에 부합하는 Financials 5종 집중 portfolio입니다. ROIC 16% + PE 11 + PB 1.4 + FCF yield 7.5% 조합은 합리적 가격 + quality value 기준을 잘 충족합니다. 다만 Financials 100% 단일 섹터는 cross-sector 위험 분산을 포기한 의도적 집중 베팅입니다.",
+  "diversification_comment": "분산 점수 0.20은 단일 섹터 100% 집중으로 매우 낮으며 의도적 베팅의 결과입니다.",
+  "sector_balance_comment": "Financials 100%는 단일 섹터 베팅이며 buffett 스타일 high-conviction 집중과 정합합니다.",
+  "risk_concentration_comment": "집중 리스크 0.55는 단일 섹터 베팅으로 중상위이며 buffett의 confidence-based 집중 전략 특성을 반영합니다.",
+  "preset_alignment": "aligned",
+  "confidence": 4
+}

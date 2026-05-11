@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "Buffett Quality Value × Financials 5종 베팅. ROIC 16% + PE 11 + FCF 7.5%로 quality value 기준 부합하며 단일 섹터 집중은 buffett high-conviction 전략과 일치합니다.",
+  "diversification_comment": "분산 0.20은 의도적 단일 섹터 베팅으로 낮은 값이 합리적입니다.",
+  "sector_balance_comment": "Financials 100%는 buffett 집중 베팅 스타일과 부합합니다.",
+  "risk_concentration_comment": "리스크 0.55는 단일 섹터 베팅 특성으로 buffett 전략에 정합합니다.",
+  "preset_alignment": "aligned",
+  "confidence": 4
+}

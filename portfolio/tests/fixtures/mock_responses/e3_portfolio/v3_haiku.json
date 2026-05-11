@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "Quality Factor 의도에 부합하는 고 ROIC + 안정 이익 종목 10개 구성입니다. 그러나 Tech와 Healthcare 2 섹터에 100% 편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 일치합니다. 수익성 지표(ROIC 22%, gross margin 58%)는 매우 강합니다.",
+  "diversification_comment": "분산 점수 0.25는 10종목 보유 기준 중간 하위이며 2 섹터 집중이 분산 효과를 제한합니다.",
+  "sector_balance_comment": "Tech 52% + Healthcare 48%로 2 섹터 100% 집중되어 quality factor 전반에 대한 cross-sector 노출이 부족합니다.",
+  "risk_concentration_comment": "집중 리스크 0.40은 중간 수준이며 quality factor의 낮은 변동성 특성과 부분적으로 부합합니다.",
+  "preset_alignment": "partial",
+  "confidence": 4
+}

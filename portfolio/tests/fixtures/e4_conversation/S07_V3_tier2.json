@@ -1,0 +1,52 @@
+{
+  "scenario_id": "S07",
+  "description": "V3 Quality Factor, Tier 2 follow-up",
+  "preset_id": "V3_quality_factor",
+  "tier": 2,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v3_001",
+    "preset_id": "V3_quality_factor",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.30,
+      "sector_hhi": 0.55,
+      "top3_weight": 0.40,
+      "holding_count": 10,
+      "portfolio_beta": 0.95,
+      "max_position_weight": 0.15,
+      "avg_correlation": 0.45
+    },
+    "holdings_summary": "Tech 52%, Healthcare 48%. 10 holdings: MSFT/AAPL/GOOG/JNJ/UNH/PFE/V/MA/ABT/TMO.",
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "Quality Factor 전략에 부합하나요?",
+        "timestamp": "2026-05-11T12:00:00",
+        "turn_idx": 0
+      },
+      {
+        "role": "assistant",
+        "content": "양질의 종목이지만 sector_hhi 0.55로 2섹터 편중이 cross-sector 분산 의도와 부분 일치입니다.",
+        "timestamp": "2026-05-11T12:00:05",
+        "turn_idx": 1
+      }
+    ],
+    "current_user_question": "Tech, Healthcare 외에 어떤 섹터가 quality factor에 맞나요?",
+    "tier": 2,
+    "session_id": "sess_S07",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Consumer Staples (PG, KO, CL)와 Industrials 일부 (HON, ITW) 종목이 quality factor 핵심 지표인 고 ROIC + 안정 마진 + 낮은 부채 비율에 부합합니다. 두 섹터를 15~20%씩 추가하면 sector_hhi가 0.55에서 0.35 수준으로 개선됩니다.",
+    "referenced_metrics": ["sector_hhi"],
+    "follow_up_suggestions": ["섹터별 비중 적정선?", "현재 종목 일부 교체 vs 신규 추가?"],
+    "confidence": "high"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Quality Factor 추가 섹터 추천 — Staples/Industrials"
+}

@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S04",
+  "description": "V2 GARP misaligned, Tier 1 baseline",
+  "preset_id": "V2_garp",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v2_001",
+    "preset_id": "V2_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.65,
+      "sector_hhi": 0.80,
+      "top3_weight": 0.80,
+      "holding_count": 5,
+      "portfolio_beta": 1.85,
+      "max_position_weight": 0.40,
+      "avg_correlation": 0.75
+    },
+    "holdings_summary": "Tech 80%, Consumer Discretionary 20%. Top 3: TSLA(40%)/PLTR/SHOP.",
+    "conversation_history": [],
+    "current_user_question": "이 포트폴리오 위험한가요?",
+    "tier": 1,
+    "session_id": "sess_S04",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "GARP 전략 기준 매우 위험합니다. portfolio_beta 1.85는 시장 대비 변동성이 큰 고위험 구간이며 sector_hhi 0.80과 max_position_weight 0.40은 단일 섹터·종목 집중이 극단적입니다. 합리적 가격 성장 의도와 정면 배치됩니다.",
+    "referenced_metrics": ["portfolio_beta", "sector_hhi", "max_position_weight"],
+    "follow_up_suggestions": ["어떻게 위험을 줄이나요?", "리밸런싱 우선순위?"],
+    "confidence": "high"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "GARP misalignment 명확, high beta + Tech 극단 집중"
+}

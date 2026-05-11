@@ -8,7 +8,7 @@ Slice 1 Part 2 — Step 6: garp_tech fixture로 실제 Gemini Flash 1회 호출 
   4. 지연: latency_ms <= 5000
 
 산출:
-  docs/portfolio/coach/step6_smoke_output.json
+  docs/portfolio/coach/slice1/step6_smoke_output.json
 
 Usage:
     python -m scripts.validation.run_step6_smoke
@@ -38,7 +38,7 @@ THRESHOLDS = {
     "latency_ms_max": 5000,
 }
 
-OUTPUT_PATH = Path("docs/portfolio/coach/step6_smoke_output.json")
+OUTPUT_PATH = Path("docs/portfolio/coach/slice1/step6_smoke_output.json")
 
 
 def main() -> int:

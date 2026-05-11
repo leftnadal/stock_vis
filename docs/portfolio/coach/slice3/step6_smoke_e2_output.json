@@ -1,0 +1,94 @@
+{
+  "step": "step6_e2_smoke",
+  "fixture": "garp_tech",
+  "fixture_group": "slice1_baseline",
+  "executed_at": "2026-05-07T00:33:52.388806+00:00",
+  "request": {
+    "preset_id": "garp",
+    "holdings_count": 5
+  },
+  "raw_content": "```json\n{\n  \"summary\": \"대형 기술주 중심의 높은 성장성 포트폴리오이나, PEG 비율 2.8배는 성장성 대비 과도한 밸류에이션을 시사합니다. ROIC 18%의 우수한 자본수익률에도 불구하고 가격 대비 성장의 균형을 재검토할 필요가 있습니다.\",\n  \"strengths\": [\n    \"ROIC 18%로 업계 평균 대비 우수한 자본효율성 입증\",\n    \"연 18% 수준의 안정적 수익 성장률로 실적 기반 뒷받침\",\n    \"NVDA, MSFT 등 AI·클라우드 수혜주로 장기 구조적 성장성 보유\",\n    \"상위 5개 기술주로 집중도 높아 섹터 모멘텀 활용 효율성 높음\"\n  ],\n  \"weaknesses\": [\n    \"PEG 비율 2.8배는 GARP 기준(1.0~2.0배) 상한선 초과로 과도한 밸류에이션\",\n    \"초대형주 쏠림으로 인한 포트폴리오 다각화 부족 위험\",\n    \"기술주 사이클 하강 시 동시에 영향받을 높은 상관관계\",\n    \"IT 섹터 규제 및 금리 인상에 취약한 구조적 위험\"\n  ],\n  \"actions\": [\n    \"PEG 비율을 2.0배 이하로 개선하기 위해 밸류에이션 재조정 검토\",\n    \"INTC 비중을 확대하거나 반도체 외 섹터(헬스케어, 금융) 추가 고려\",\n    \"연간 실적 공시 후 성장률 재평가로 PEG 비율 동적 모니터링 강화\",\n    \"포트폴리오 집중도 완화를 위해 상위 2개 종목 합산 비중을 50% 이하 수준으로 검토\"\n  ]\n}\n```",
+  "parsed": {
+    "card": {
+      "summary": "대형 기술주 중심의 높은 성장성 포트폴리오이나, PEG 비율 2.8배는 성장성 대비 과도한 밸류에이션을 시사합니다. ROIC 18%의 우수한 자본수익률에도 불구하고 가격 대비 성장의 균형을 재검토할 필요가 있습니다.",
+      "strengths": [
+        "ROIC 18%로 업계 평균 대비 우수한 자본효율성 입증",
+        "연 18% 수준의 안정적 수익 성장률로 실적 기반 뒷받침",
+        "NVDA, MSFT 등 AI·클라우드 수혜주로 장기 구조적 성장성 보유",
+        "상위 5개 기술주로 집중도 높아 섹터 모멘텀 활용 효율성 높음"
+      ],
+      "weaknesses": [
+        "PEG 비율 2.8배는 GARP 기준(1.0~2.0배) 상한선 초과로 과도한 밸류에이션",
+        "초대형주 쏠림으로 인한 포트폴리오 다각화 부족 위험",
+        "기술주 사이클 하강 시 동시에 영향받을 높은 상관관계",
+        "IT 섹터 규제 및 금리 인상에 취약한 구조적 위험"
+      ],
+      "actions": [
+        "PEG 비율을 2.0배 이하로 개선하기 위해 밸류에이션 재조정 검토",
+        "INTC 비중을 확대하거나 반도체 외 섹터(헬스케어, 금융) 추가 고려",
+        "연간 실적 공시 후 성장률 재평가로 PEG 비율 동적 모니터링 강화",
+        "포트폴리오 집중도 완화를 위해 상위 2개 종목 합산 비중을 50% 이하 수준으로 검토"
+      ]
+    },
+    "preset_id": "garp"
+  },
+  "metadata": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "latency_ms": 7471,
+    "input_tokens": 573,
+    "output_tokens": 644,
+    "cost_usd": 0.0030344000000000005,
+    "fallback_from": null
+  },
+  "judgments": {
+    "schema_pass": true,
+    "schema_error": null,
+    "completeness_auto": true,
+    "cost_pass": true,
+    "latency_pass": false,
+    "naturalness_manual": 5,
+    "insight_manual": 5,
+    "auto_eval_note": "naturalness=5: 자연스러운 한국어, 단순 수치 나열 없음. PEG vs ROIC trade-off 자연스러운 표현. insight=5: 지표 너머 의미 — PEG-ROIC 양면 평가, 섹터 상관관계 위험, 동적 모니터링 제안. cost=/bin/zsh.00303 (임계 6.75% 미만). latency=7471ms (5000ms 임계 초과 — Step 8 분포 후 재검토).",
+    "latency_threshold_note": "E2는 글쓰기 + 4요소 + 항목 10자 이상 강제로 출력 길이가 E1/E5보다 큼. 단일 호출 결과로 결정하지 않고 Step 8 14회 latency 분포로 임계 재검토 예정."
+  },
+  "thresholds": {
+    "cost_usd_max": 0.02,
+    "latency_ms_max": 5000
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, 단순 수치 나열 없음",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "지표 너머 의미 있는 해석. 비자명한 패턴 발견",
+      "4": "기본 해석 + 일부 통찰",
+      "3": "지표 표면 해석만",
+      "2": "단순 수치 나열에 가까움",
+      "1": "분석 깊이 부재"
+    }
+  },
+  "status_summary": {
+    "schema_pass": true,
+    "completeness_auto": true,
+    "cost_pass": true,
+    "latency_pass": false,
+    "manual_eval_required": [
+      "naturalness_manual",
+      "insight_manual"
+    ]
+  },
+  "cost_guard_status": {
+    "slice_id": "slice3",
+    "call_count": 1,
+    "max_calls": 50,
+    "remaining": 49,
+    "total_cost_usd": 0.003,
+    "started_at": "2026-05-07T00:33:44.913225+00:00",
+    "records_count": 1
+  }
+}

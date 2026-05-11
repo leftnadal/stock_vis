@@ -1,0 +1,138 @@
+{
+  "step": "step7_e6_token_measurement",
+  "executed_at": "2026-05-07T05:59:12.152346+00:00",
+  "results": [
+    {
+      "fixture": "e5_baseline_decrease",
+      "fixture_id": "e5_baseline_decrease",
+      "fixture_group": "e5_baseline",
+      "prompt_chars": 999,
+      "char_estimate_tokens": 333,
+      "actual_input_tokens": 725,
+      "delta_pct_vs_estimate": 117.7,
+      "budget": 1500,
+      "utilization": 0.4833,
+      "holdings_count": 5,
+      "adjustments_count": 1
+    },
+    {
+      "fixture": "e5_baseline_multi",
+      "fixture_id": "e5_baseline_multi",
+      "fixture_group": "e5_baseline",
+      "prompt_chars": 1017,
+      "char_estimate_tokens": 339,
+      "actual_input_tokens": 741,
+      "delta_pct_vs_estimate": 118.6,
+      "budget": 1500,
+      "utilization": 0.494,
+      "holdings_count": 5,
+      "adjustments_count": 2
+    },
+    {
+      "fixture": "e5_baseline_remove",
+      "fixture_id": "e5_baseline_remove",
+      "fixture_group": "e5_baseline",
+      "prompt_chars": 1073,
+      "char_estimate_tokens": 357,
+      "actual_input_tokens": 762,
+      "delta_pct_vs_estimate": 113.4,
+      "budget": 1500,
+      "utilization": 0.508,
+      "holdings_count": 15,
+      "adjustments_count": 1
+    },
+    {
+      "fixture": "e6_focused_weight_rebalance",
+      "fixture_id": "e6_focused_weight_rebalance",
+      "fixture_group": "e6_focused",
+      "prompt_chars": 1005,
+      "char_estimate_tokens": 335,
+      "actual_input_tokens": 745,
+      "delta_pct_vs_estimate": 122.4,
+      "budget": 1500,
+      "utilization": 0.4967,
+      "holdings_count": 3,
+      "adjustments_count": 2
+    },
+    {
+      "fixture": "e6_focused_add_defensive",
+      "fixture_id": "e6_focused_add_defensive",
+      "fixture_group": "e6_focused",
+      "prompt_chars": 1056,
+      "char_estimate_tokens": 352,
+      "actual_input_tokens": 791,
+      "delta_pct_vs_estimate": 124.7,
+      "budget": 1500,
+      "utilization": 0.5273,
+      "holdings_count": 3,
+      "adjustments_count": 4
+    },
+    {
+      "fixture": "e6_focused_remove_underperformer",
+      "fixture_id": "e6_focused_remove_underperformer",
+      "fixture_group": "e6_focused",
+      "prompt_chars": 1037,
+      "char_estimate_tokens": 345,
+      "actual_input_tokens": 767,
+      "delta_pct_vs_estimate": 122.3,
+      "budget": 1500,
+      "utilization": 0.5113,
+      "holdings_count": 4,
+      "adjustments_count": 3
+    },
+    {
+      "fixture": "e6_focused_multi_aspect",
+      "fixture_id": "e6_focused_multi_aspect",
+      "fixture_group": "e6_focused",
+      "prompt_chars": 1117,
+      "char_estimate_tokens": 372,
+      "actual_input_tokens": 845,
+      "delta_pct_vs_estimate": 127.2,
+      "budget": 1500,
+      "utilization": 0.5633,
+      "holdings_count": 5,
+      "adjustments_count": 5
+    }
+  ],
+  "stats_all": {
+    "min": 725,
+    "max": 845,
+    "mean": 768.0,
+    "p50": 762,
+    "p90": 845
+  },
+  "stats_by_group": {
+    "e5_baseline": {
+      "min": 725,
+      "max": 762,
+      "mean": 742.7,
+      "fixture_count": 3
+    },
+    "e6_focused": {
+      "min": 745,
+      "max": 845,
+      "mean": 787.0,
+      "fixture_count": 4
+    }
+  },
+  "initial_budget_assumption": 1500,
+  "budget_decision": {
+    "p90": 845,
+    "p90_x_1_5": 1267.5,
+    "round_up_500": 1500,
+    "prior_estimate_chars_div_3": 1000,
+    "delta_from_prior_estimate_pct": 50.0
+  },
+  "compared_to_existing_budgets": {
+    "e1": 5000,
+    "e5": 2000,
+    "e2": 1500,
+    "e6_proposed": 1500
+  },
+  "i4_monitoring": {
+    "context": "I4 — analysis_summary 200자 truncate 효과",
+    "max_utilization_observed": 0.5633,
+    "recommendation": "max < 30% → 200자 유지. 30~70% → 모니터링. > 70% → 100자 압축."
+  },
+  "group_comparison_note": "baseline (e5_baseline 3) vs focused (e6_focused 4) 토큰 차이 — fixture 다양성이 비용에 미치는 영향. 큰 차이 없으면 hybrid 결정 정당."
+}

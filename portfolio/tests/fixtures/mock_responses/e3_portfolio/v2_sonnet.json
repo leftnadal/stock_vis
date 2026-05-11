@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "GARP 의도와 정면 충돌하는 portfolio입니다. PEG 3.2 + PE 65 + EPS 4% 조합은 모든 핵심 지표가 GARP 기준 미달이며 Tech 80% 극단 집중은 안정 성장 의도와 모순됩니다.",
+  "diversification_comment": "분산 0.15는 단일 섹터 80% 집중으로 효과 사실상 없습니다.",
+  "sector_balance_comment": "Tech 80% 극단 편중으로 섹터 균형 완전 붕괴 상태입니다.",
+  "risk_concentration_comment": "리스크 0.80은 매우 높으며 GARP 위험 통제 의도와 충돌합니다.",
+  "preset_alignment": "misaligned",
+  "confidence": 5
+}

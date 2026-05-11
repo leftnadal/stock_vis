@@ -31,9 +31,17 @@ logger = logging.getLogger(__name__)
 
 
 def _ticker_bar() -> list[dict[str, Any]]:
+    """PR-A1 (2026-04-29): GICS 11-sector + BENCHMARK로 그룹 확장.
+    BENCHMARK 먼저, 그다음 GICS 11종을 symbol 정렬로 노출.
+    """
     out = []
     today = django_timezone.localdate()
-    for grp in ('BENCHMARK', 'SECTOR'):
+    sector_groups = (
+        'BENCHMARK',
+        'FINANCIALS', 'TECH', 'HEALTHCARE', 'CONSUMER_DISC', 'CONSUMER_STAPLES',
+        'ENERGY', 'INDUSTRIALS', 'MATERIALS', 'UTILITIES', 'REAL_ESTATE', 'COMMUNICATION',
+    )
+    for grp in sector_groups:
         for idx in MarketIndex.objects.filter(sector_group=grp).order_by('symbol'):
             rows = list(
                 MarketIndexPrice.objects
@@ -61,7 +69,7 @@ def _news_items(limit: int = 6):
             'id': n.pk, 'category': n.category, 'title': n.title,
             'summary': n.summary, 'url': n.url, 'publisher': n.publisher,
             'image_url': n.image_url, 'published_at': n.published_at,
-            'matched_symbols': n.matched_symbols or [],
+            'tickers': (n.entities or {}).get('tickers', []),
         }
         for n in qs
     ]
@@ -181,7 +189,7 @@ def _brief_card():
         return None
     return {
         'headline': log.headline,
-        'content_preview': (log.content or '')[:240],
+        'content_preview': (log.body or '')[:240],
         'status': log.status,
         'model_version': log.model_version,
     }

@@ -1,0 +1,67 @@
+{
+  "step": "step6_e3_smoke",
+  "fixture": "e3_baseline_garp_tech",
+  "fixture_group": "garp_baseline",
+  "fixture_id": "e3_baseline_garp_tech",
+  "preset_id": "garp",
+  "preset_category": "growth",
+  "executed_at": "2026-05-07T23:36:53.719359+00:00",
+  "request": {
+    "preset_id": "garp",
+    "holdings_count": 0,
+    "metric_count": 3
+  },
+  "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"포트폴리오 평균 투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. GARP의 Core 지표인 '견조한 자본 효율성'을 충족하는 구성으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 2.8로 GARP 기준 1.5를 상회하여 업종 하위 15% 구간에 머물러 있습니다. 성장률 대비 밸류에이션이 높은 구조로, 일부 고성장 종목의 영향이 두드러지는 것으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률 평균이 18%로 업종 상위 30% 구간에 위치하며 GARP 관점에서는 양호한 성장 프로필을 시사합니다. 보조 지표이지만 PEG 약세와 함께 고려하면 성장성 대비 현재 밸류에이션 수준을 재평가할 여지가 있을 수 있습니다.\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "comments": [
+      {
+        "metric_id": "roic",
+        "one_liner": "포트폴리오 평균 투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. GARP의 Core 지표인 '견조한 자본 효율성'을 충족하는 구성으로 읽힙니다."
+      },
+      {
+        "metric_id": "peg_ratio",
+        "one_liner": "포트폴리오 평균 PEG가 2.8로 GARP 기준 1.5를 상회하여 업종 하위 15% 구간에 머물러 있습니다. 성장률 대비 밸류에이션이 높은 구조로, 일부 고성장 종목의 영향이 두드러지는 것으로 보입니다."
+      },
+      {
+        "metric_id": "revenue_growth_yoy",
+        "one_liner": "매출 성장률 평균이 18%로 업종 상위 30% 구간에 위치하며 GARP 관점에서는 양호한 성장 프로필을 시사합니다. 보조 지표이지만 PEG 약세와 함께 고려하면 성장성 대비 현재 밸류에이션 수준을 재평가할 여지가 있을 수 있습니다."
+      }
+    ]
+  },
+  "metadata": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "latency_ms": 4100,
+    "input_tokens": 3940,
+    "output_tokens": 443,
+    "cost_usd": 0.004924,
+    "fallback_from": null
+  },
+  "judgments": {
+    "schema_pass": true,
+    "schema_error": null,
+    "completeness_pass": true,
+    "cost_pass": true,
+    "latency_pass": true
+  },
+  "thresholds": {
+    "cost_usd_max": 0.02,
+    "latency_ms_max": 16000
+  },
+  "status_summary": {
+    "schema_pass": true,
+    "completeness_pass": true,
+    "cost_pass": true,
+    "latency_pass": true,
+    "all_pass": true
+  },
+  "cost_guard_status": {
+    "slice_id": "slice5",
+    "call_count": 1,
+    "max_calls": 50,
+    "remaining": 49,
+    "total_cost_usd": 0.0049,
+    "started_at": "2026-05-07T23:36:49.614491+00:00",
+    "records_count": 1
+  }
+}

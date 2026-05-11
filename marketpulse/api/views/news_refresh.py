@@ -87,7 +87,7 @@ class NewsRefreshView(APIView):
                 'summary': n.summary, 'url': n.url, 'publisher': n.publisher,
                 'image_url': n.image_url,
                 'published_at': n.published_at.isoformat(),
-                'matched_symbols': n.matched_symbols or [],
+                'tickers': (n.entities or {}).get('tickers', []),
             }
             for n in picked
         ]

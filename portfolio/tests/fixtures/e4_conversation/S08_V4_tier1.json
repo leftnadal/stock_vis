@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S08",
+  "description": "V4 Buffett Quality Value (concentrated_value), Tier 1 baseline — G6 관찰",
+  "preset_id": "V4_buffett_quality_value",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v4_001",
+    "preset_id": "V4_buffett_quality_value",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.50,
+      "sector_hhi": 1.00,
+      "top3_weight": 0.70,
+      "holding_count": 5,
+      "portfolio_beta": 1.10,
+      "max_position_weight": 0.30,
+      "avg_correlation": 0.80
+    },
+    "holdings_summary": "Financials 100%. Top 3: JPM(30%)/BAC/WFC. PE 11, ROIC 16%, FCF yield 7.5%.",
+    "conversation_history": [],
+    "current_user_question": "Buffett 가치투자 관점에서 평가해 주세요.",
+    "tier": 1,
+    "session_id": "sess_S08",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Buffett 가치 기준 지표(PE 11, ROIC 16%, FCF yield 7.5%)는 충족하나 sector_hhi 1.00 단일 섹터 100% 집중은 Buffett 원칙 중 'cross-sector 분산'과는 충돌합니다. 의도적 집중인지 위험 집중인지 보유 동기 점검이 필요합니다.",
+    "referenced_metrics": ["sector_hhi", "top3_weight"],
+    "follow_up_suggestions": ["다른 섹터의 가치주 후보?", "Financials 집중 정당화 가능?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "G6 V4 관찰 케이스 — alignment partial vs aligned 경계, 지표 좋으나 섹터 100% 집중"
+}

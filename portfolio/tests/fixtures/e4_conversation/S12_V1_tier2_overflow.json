@@ -1,0 +1,46 @@
+{
+  "scenario_id": "S12",
+  "description": "V1 garp, Tier 2 with history overflow (I1 trigger)",
+  "preset_id": "V1_garp",
+  "tier": 2,
+  "trigger_case": "I1",
+  "input": {
+    "portfolio_id": "p_v1_001",
+    "preset_id": "V1_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.35,
+      "sector_hhi": 0.40,
+      "top3_weight": 0.60,
+      "holding_count": 5,
+      "portfolio_beta": 1.05,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.35
+    },
+    "holdings_summary": "Tech 50%, Healthcare 25%, Financials 25%.",
+    "conversation_history": [
+      { "role": "user", "content": "Q1", "timestamp": "2026-05-11T15:00:00", "turn_idx": 0 },
+      { "role": "assistant", "content": "A1 답변 내용 (최소 길이 충족).", "timestamp": "2026-05-11T15:00:01", "turn_idx": 1 },
+      { "role": "user", "content": "Q2", "timestamp": "2026-05-11T15:00:02", "turn_idx": 2 },
+      { "role": "assistant", "content": "A2 답변 내용 (최소 길이 충족).", "timestamp": "2026-05-11T15:00:03", "turn_idx": 3 },
+      { "role": "user", "content": "Q3", "timestamp": "2026-05-11T15:00:04", "turn_idx": 4 },
+      { "role": "assistant", "content": "A3 답변 내용 (최소 길이 충족).", "timestamp": "2026-05-11T15:00:05", "turn_idx": 5 }
+    ],
+    "current_user_question": "추가 질문입니다.",
+    "tier": 2,
+    "session_id": "sess_S12",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "history가 max_history_turns 5 초과 (6턴 보유). 서비스 레이어에서 가장 오래된 턴 제거 후 답변 생성됨. 응답 본문은 정상 처리.",
+    "referenced_metrics": ["hhi_concentration"],
+    "follow_up_suggestions": ["history 정리 정책?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": ["I1"],
+    "history_truncated": true,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "I1 trigger — history 6 > max 5, service layer가 가장 오래된 turn 제거"
+}

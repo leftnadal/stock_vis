@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "GARP 관점에서 Tech 5종 집중 portfolio로 성장 모멘텀은 양호하나 단일 섹터 50% 집중이 시장 사이클 노출도를 확대시키는 구조입니다. PEG 1.8과 EPS 성장 15% 조합은 합리적 가격 성장 의도와 부합하지만 분산 측면에서 보완 여지가 있습니다.",
+  "diversification_comment": "분산 점수 0.35는 5종목 집중도 기준으로 중간 수준이며 단일 섹터 의존도가 분산 효과를 제한합니다.",
+  "sector_balance_comment": "Tech 50%로 단일 섹터 비중이 권장 30~40% 상한을 넘어서 섹터 사이클 리스크가 증가합니다.",
+  "risk_concentration_comment": "집중 리스크 0.45는 변동성 확대 가능성을 시사하며 GARP 전략의 안정성 기대치 대비 다소 높은 편입니다.",
+  "preset_alignment": "partial",
+  "confidence": 4
+}

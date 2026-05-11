@@ -14,8 +14,8 @@ from marketpulse.models.snapshot import (
 
 @admin.register(MarketPulseNews)
 class MarketPulseNewsAdmin(admin.ModelAdmin):
-    list_display = ('category', 'title', 'publisher', 'is_exposed', 'published_at')
-    list_filter = ('category', 'source', 'is_exposed')
+    list_display = ('category', 'title', 'publisher', 'shown_on_layer0', 'published_at')
+    list_filter = ('category', 'source', 'shown_on_layer0')
     search_fields = ('title', 'url')
     date_hierarchy = 'published_at'
 

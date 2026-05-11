@@ -13,10 +13,7 @@ view에서 HTTP 코드를 분리. 비즈니스 로직만 담당:
 
 from __future__ import annotations
 
-from typing import Literal
-
 from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
 from portfolio.llm.parsers import parse_json_response
 from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm import LLMResponse
@@ -26,15 +23,8 @@ from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_te
 
 # Slice 1 Decision (validation_report §5): winner = haiku.
 # Free tier 환경에서 gemini는 RateLimit 즉시 폴백 → 진입점 default는 haiku.
-# label → LLMClient kwargs 매핑 (LLMClient 자체는 폴백 호환성 위해 그대로 유지).
-ProviderLabel = Literal["gemini", "anthropic", "sonnet", "haiku"]
-
-PROVIDER_KWARGS: dict[str, dict] = {
-    "gemini":    {"provider": "gemini",    "model": None},
-    "anthropic": {"provider": "anthropic", "model": None},   # = Sonnet (LLMClient 기본)
-    "sonnet":    {"provider": "anthropic", "model": ANTHROPIC_SONNET_MODEL},
-    "haiku":     {"provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},
-}
+# Slice 3 Step 2 — _llm_kwargs.py 공유 모듈 흡수 (백로그 #3).
+from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noqa: F401
 
 
 def run_e1_garp(

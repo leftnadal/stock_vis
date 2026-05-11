@@ -9,7 +9,7 @@ model_validate_json은 실패. portfolio.llm.parsers.parse_json_response가
 펜스 사전 제거 후 검증.
 
 산출:
-  docs/portfolio/coach/step8_3way_raw.json (in-place 갱신)
+  docs/portfolio/coach/slice1/step8_3way_raw.json (in-place 갱신)
 
 Usage:
     python -m scripts.validation.reparse_step8
@@ -29,7 +29,7 @@ from portfolio.llm.parsers import parse_json_response
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 
 
-RAW_PATH = Path("docs/portfolio/coach/step8_3way_raw.json")
+RAW_PATH = Path("docs/portfolio/coach/slice1/step8_3way_raw.json")
 
 
 def main() -> int:

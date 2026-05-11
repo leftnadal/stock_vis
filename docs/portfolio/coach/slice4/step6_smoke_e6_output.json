@@ -1,0 +1,96 @@
+{
+  "step": "step6_e6_smoke",
+  "fixture": "e5_baseline_decrease",
+  "fixture_group": "e5_baseline",
+  "fixture_id": "e5_baseline_decrease",
+  "executed_at": "2026-05-07T05:58:19.818017+00:00",
+  "request": {
+    "preset_id": null,
+    "holdings_count": 5,
+    "adjustments_count": 1,
+    "user_intent": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아."
+  },
+  "raw_content": "```json\n{\n  \"headline\": \"고변동성 TSLA 축소로 포트폴리오 안정성 개선 방향\",\n  \"before_summary\": \"빅테크 5종 중심의 성장주 포트폴리오로, NVDA·MSFT·AAPL이 75%를 차지해 기술주 쏠림이 심합니다. TSLA 10% 비중은 상대적으로 높은 변동성을 야기하는 요소로 지적되었으며, 전체적으로 GARP 특성은 보통 수준입니다.\",\n  \"after_summary\": \"TSLA 5%p 감축으로 고변동성 노출이 완화되는 구조입니다. 결과적으로 기술·AI 관련 대형주(NVDA·MSFT·AAPL·GOOGL)의 비중이 상대적으로 높아지며, 포트폴리오의 안정성이 개선될 것으로 예상됩니다.\",\n  \"key_changes\": [\n    {\n      \"aspect\": \"allocation\",\n      \"description\": \"TSLA 비중이 10%에서 5%로 축소되어, 개별 종목 리스크 집중도가 낮아집니다.\"\n    },\n    {\n      \"aspect\": \"risk\",\n      \"description\": \"역사적으로 변동성이 높은 TSLA 노출 감소로 포트폴리오 전체 변동성이 완화될 것으로 예상됩니다.\"\n    },\n    {\n      \"aspect\": \"diversification\",\n      \"description\": \"TSLA 축소분이 현금 또는 다른 자산으로 배분될 경우, 기술주 쏠림 구조는 유지되지만 종목 간 가중치 균형이 개선됩니다.\"\n    },\n    {\n      \"aspect\": \"expected_return\",\n      \"description\": \"TSLA의 고수익 잠재력 일부 포기로 예상 수익률은 소폭 하락할 가능성이 있으나, 변동성 대비 수익(위험조정수익)은 개선될 수 있습니다.\"\n    }\n  ],\n  \"risk_assessment\": \"TSLA 축소는 포트폴리오의 극단적 변동성을 줄이는 실질적인 완화책입니다. 다만 5%로 축소된 후에도 여전히 기술주 비중이 높으므로, 시장 광범위한 조정 국면에서의 절대적 보호 효과는 제한적입니다. 감축분의 재배분처(현금, 채권, 배당주 등) 결정이 전체 리스크 프로필에 큰 영향을 미칩니다.\",\n  \"closing_remarks\": \"사용자의 변동성 우려는 합리적이며, 이번 조정은 포트폴리오를 조금 더 '방어적'으로 균형 잡는 실마리가 될 수 있습니다. 다만 축소된 5% 자금의 용도를 명확히 설정해야 조정의 실질적 효과를 평가할 수 있습니다.\"\n}\n```",
+  "parsed": {
+    "headline": "고변동성 TSLA 축소로 포트폴리오 안정성 개선 방향",
+    "before_summary": "빅테크 5종 중심의 성장주 포트폴리오로, NVDA·MSFT·AAPL이 75%를 차지해 기술주 쏠림이 심합니다. TSLA 10% 비중은 상대적으로 높은 변동성을 야기하는 요소로 지적되었으며, 전체적으로 GARP 특성은 보통 수준입니다.",
+    "after_summary": "TSLA 5%p 감축으로 고변동성 노출이 완화되는 구조입니다. 결과적으로 기술·AI 관련 대형주(NVDA·MSFT·AAPL·GOOGL)의 비중이 상대적으로 높아지며, 포트폴리오의 안정성이 개선될 것으로 예상됩니다.",
+    "key_changes": [
+      {
+        "aspect": "allocation",
+        "description": "TSLA 비중이 10%에서 5%로 축소되어, 개별 종목 리스크 집중도가 낮아집니다."
+      },
+      {
+        "aspect": "risk",
+        "description": "역사적으로 변동성이 높은 TSLA 노출 감소로 포트폴리오 전체 변동성이 완화될 것으로 예상됩니다."
+      },
+      {
+        "aspect": "diversification",
+        "description": "TSLA 축소분이 현금 또는 다른 자산으로 배분될 경우, 기술주 쏠림 구조는 유지되지만 종목 간 가중치 균형이 개선됩니다."
+      },
+      {
+        "aspect": "expected_return",
+        "description": "TSLA의 고수익 잠재력 일부 포기로 예상 수익률은 소폭 하락할 가능성이 있으나, 변동성 대비 수익(위험조정수익)은 개선될 수 있습니다."
+      }
+    ],
+    "risk_assessment": "TSLA 축소는 포트폴리오의 극단적 변동성을 줄이는 실질적인 완화책입니다. 다만 5%로 축소된 후에도 여전히 기술주 비중이 높으므로, 시장 광범위한 조정 국면에서의 절대적 보호 효과는 제한적입니다. 감축분의 재배분처(현금, 채권, 배당주 등) 결정이 전체 리스크 프로필에 큰 영향을 미칩니다.",
+    "closing_remarks": "사용자의 변동성 우려는 합리적이며, 이번 조정은 포트폴리오를 조금 더 '방어적'으로 균형 잡는 실마리가 될 수 있습니다. 다만 축소된 5% 자금의 용도를 명확히 설정해야 조정의 실질적 효과를 평가할 수 있습니다."
+  },
+  "metadata": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "latency_ms": 9180,
+    "input_tokens": 725,
+    "output_tokens": 947,
+    "cost_usd": 0.004368,
+    "fallback_from": null
+  },
+  "judgments": {
+    "schema_pass": true,
+    "schema_error": null,
+    "completeness_auto": true,
+    "cost_pass": true,
+    "latency_pass": true,
+    "naturalness_manual": null,
+    "insight_manual": null
+  },
+  "thresholds": {
+    "cost_usd_max": 0.02,
+    "latency_ms_max": 16000
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, 비교 해설 톤 매끄러움",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "before/after 차이를 비자명한 통찰로 연결, key_changes가 의미있음",
+      "4": "기본 차이 분석 + 일부 통찰",
+      "3": "수치/필드 표면 비교만",
+      "2": "단순 나열에 가까움",
+      "1": "비교 깊이 부재"
+    }
+  },
+  "status_summary": {
+    "schema_pass": true,
+    "completeness_auto": true,
+    "cost_pass": true,
+    "latency_pass": true,
+    "manual_eval_required": [
+      "naturalness_manual",
+      "insight_manual"
+    ]
+  },
+  "cost_guard_status": {
+    "slice_id": "slice4",
+    "call_count": 1,
+    "max_calls": 50,
+    "remaining": 49,
+    "total_cost_usd": 0.0044,
+    "started_at": "2026-05-07T05:58:10.633240+00:00",
+    "records_count": 1
+  }
+}

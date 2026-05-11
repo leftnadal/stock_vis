@@ -1,0 +1,34 @@
+{
+  "scenario_id": "S13",
+  "description": "V1 garp, Tier 2 with empty history (I2 trigger — input schema rejects)",
+  "preset_id": "V1_garp",
+  "tier": 2,
+  "trigger_case": "I2",
+  "input": {
+    "portfolio_id": "p_v1_001",
+    "preset_id": "V1_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.35,
+      "sector_hhi": 0.40,
+      "top3_weight": 0.60,
+      "holding_count": 5,
+      "portfolio_beta": 1.05,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.35
+    },
+    "holdings_summary": "Tech 50%, Healthcare 25%, Financials 25%.",
+    "conversation_history": [],
+    "current_user_question": "첫 질문인데 Tier 2로 들어갑니다.",
+    "tier": 2,
+    "session_id": "sess_S13",
+    "max_history_turns": 5
+  },
+  "expected_output": null,
+  "expected_metadata": {
+    "case_flags": ["I2"],
+    "history_truncated": false,
+    "tier_downgraded_from": 2,
+    "hallucinated_metrics": []
+  },
+  "notes": "I2 trigger — Tier 2/3 + empty history → schema ValidationError. Service layer가 Tier 1 다운그레이드 결정."
+}

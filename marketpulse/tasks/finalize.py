@@ -67,7 +67,7 @@ def mp_purge_news_daily(self, *, retention_days: int = 90, **kwargs: Any) -> dic
     cutoff = django_timezone.now() - timedelta(days=retention_days)
     try:
         deleted, _ = MarketPulseNews.objects.filter(
-            is_exposed=False, published_at__lt=cutoff,
+            shown_on_layer0=False, published_at__lt=cutoff,
         ).delete()
     except Exception as exc:
         countdown = 120 * (2 ** self.request.retries)

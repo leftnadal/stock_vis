@@ -1,0 +1,82 @@
+{
+  "1": {
+    "original_idx": 7,
+    "provider": "sonnet",
+    "preset_id": "buffett_quality_value",
+    "v_label": "V4",
+    "fixture": "v4_concentrated_value",
+    "expected_alignment": "aligned"
+  },
+  "2": {
+    "original_idx": 3,
+    "provider": "sonnet",
+    "preset_id": "garp",
+    "v_label": "V2",
+    "fixture": "v2_concentrated_misfit",
+    "expected_alignment": "misaligned"
+  },
+  "3": {
+    "original_idx": 2,
+    "provider": "haiku",
+    "preset_id": "garp",
+    "v_label": "V2",
+    "fixture": "v2_concentrated_misfit",
+    "expected_alignment": "misaligned"
+  },
+  "4": {
+    "original_idx": 8,
+    "provider": "haiku",
+    "preset_id": "dividend_growth",
+    "v_label": "V5",
+    "fixture": "v5_concentrated_dividend",
+    "expected_alignment": "aligned"
+  },
+  "5": {
+    "original_idx": 5,
+    "provider": "sonnet",
+    "preset_id": "quality_factor",
+    "v_label": "V3",
+    "fixture": "v3_concentrated_large",
+    "expected_alignment": "partial"
+  },
+  "6": {
+    "original_idx": 6,
+    "provider": "haiku",
+    "preset_id": "buffett_quality_value",
+    "v_label": "V4",
+    "fixture": "v4_concentrated_value",
+    "expected_alignment": "aligned"
+  },
+  "7": {
+    "original_idx": 9,
+    "provider": "sonnet",
+    "preset_id": "dividend_growth",
+    "v_label": "V5",
+    "fixture": "v5_concentrated_dividend",
+    "expected_alignment": "aligned"
+  },
+  "8": {
+    "original_idx": 4,
+    "provider": "haiku",
+    "preset_id": "quality_factor",
+    "v_label": "V3",
+    "fixture": "v3_concentrated_large",
+    "expected_alignment": "partial"
+  },
+  "9": {
+    "original_idx": 0,
+    "provider": "haiku",
+    "preset_id": "garp",
+    "v_label": "V1",
+    "fixture": "v1_concentrated_balanced",
+    "expected_alignment": "partial"
+  },
+  "10": {
+    "original_idx": 1,
+    "provider": "sonnet",
+    "preset_id": "garp",
+    "v_label": "V1",
+    "fixture": "v1_concentrated_balanced",
+    "expected_alignment": "partial"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "step": "slice6_part3_step6_smoke",
+  "fixture": "v1_concentrated_balanced",
+  "fixture_group": "concentrated_baseline",
+  "preset_id": "garp",
+  "preset_category": "growth",
+  "model_label": "haiku",
+  "executed_at": "2026-05-11T03:48:39.560847+00:00",
+  "request": {
+    "prompt_chars": 6992,
+    "holdings_count": 5,
+    "preset_id": "garp"
+  },
+  "raw_content": "```json\n{\n  \"holistic_assessment\": \"GARP 의도와 부분적으로 부합하는 Tech 5종 집중 포트폴리오입니다. PEG 1.8과 EPS 성장 15%는 합리적 가격대 성장 모멘텀을 보여주지만, Tech 50% 단일 섹터 편중과 분산 0.35는 시장 사이클 노출도를 확대시키는 구조입니다.\",\n  \"diversification_comment\": \"분산 점수 0.35는 5종목 기준 중간 수준이나 단일 섹터 의존도가 포트폴리오 분산 효과를 제한합니다.\",\n  \"sector_balance_comment\": \"Tech 50%로 단일 섹터 비중이 권장 범위를 상회하며 섹터 사이클 리스크가 증가합니다.\",\n  \"risk_concentration_comment\": \"집중 리스크 0.45는 변동성 확대 가능성을 시사하며 GARP 전략의 안정적 성장 기대 대비 다소 높은 편입니다.\",\n  \"preset_alignment\": \"partial\",\n  \"confidence\": 4\n}\n```",
+  "parsed": {
+    "holistic_assessment": "GARP 의도와 부분적으로 부합하는 Tech 5종 집중 포트폴리오입니다. PEG 1.8과 EPS 성장 15%는 합리적 가격대 성장 모멘텀을 보여주지만, Tech 50% 단일 섹터 편중과 분산 0.35는 시장 사이클 노출도를 확대시키는 구조입니다.",
+    "diversification_comment": "분산 점수 0.35는 5종목 기준 중간 수준이나 단일 섹터 의존도가 포트폴리오 분산 효과를 제한합니다.",
+    "sector_balance_comment": "Tech 50%로 단일 섹터 비중이 권장 범위를 상회하며 섹터 사이클 리스크가 증가합니다.",
+    "risk_concentration_comment": "집중 리스크 0.45는 변동성 확대 가능성을 시사하며 GARP 전략의 안정적 성장 기대 대비 다소 높은 편입니다.",
+    "preset_alignment": "partial",
+    "confidence": 4
+  },
+  "metadata": {
+    "provider": "anthropic",
+    "model": "claude-haiku-4-5",
+    "latency_ms": 3825,
+    "input_tokens": 3783,
+    "output_tokens": 361,
+    "cost_usd": 0.0044704,
+    "fallback_from": null
+  },
+  "judgments": {
+    "schema_pass": true,
+    "schema_error": null,
+    "completeness_pass": true,
+    "cost_pass": true,
+    "token_pass": true,
+    "latency_pass": true
+  },
+  "thresholds": {
+    "cost_usd_max": 0.02,
+    "output_tokens_max": 1000,
+    "latency_ms_max": 16000
+  },
+  "status_summary": {
+    "schema_pass": true,
+    "completeness_pass": true,
+    "cost_pass": true,
+    "token_pass": true,
+    "latency_pass": true,
+    "four_judgment_all_pass": true
+  },
+  "cost_guard_status": {
+    "slice_id": "slice6",
+    "call_count": 1,
+    "max_calls": 50,
+    "remaining": 49,
+    "total_cost_usd": 0.0045,
+    "started_at": "2026-05-11T03:48:35.727778+00:00",
+    "records_count": 1
+  }
+}

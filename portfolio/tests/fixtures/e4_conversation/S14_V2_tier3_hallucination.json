@@ -1,0 +1,44 @@
+{
+  "scenario_id": "S14",
+  "description": "V2 garp misaligned, Tier 3 — I4 hallucination (referenced_metrics not in portfolio_metrics)",
+  "preset_id": "V2_garp",
+  "tier": 3,
+  "trigger_case": "I4",
+  "input": {
+    "portfolio_id": "p_v2_001",
+    "preset_id": "V2_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.65,
+      "sector_hhi": 0.80,
+      "top3_weight": 0.80,
+      "holding_count": 5,
+      "portfolio_beta": 1.85,
+      "max_position_weight": 0.40,
+      "avg_correlation": 0.75
+    },
+    "holdings_summary": "Tech 80%, Consumer Discretionary 20%.",
+    "conversation_history": [
+      { "role": "user", "content": "Q1 위험한가요?", "timestamp": "2026-05-11T16:00:00", "turn_idx": 0 },
+      { "role": "assistant", "content": "A1 매우 위험합니다 (충분히 긴 답변).", "timestamp": "2026-05-11T16:00:01", "turn_idx": 1 },
+      { "role": "user", "content": "Q2 무엇 줄여?", "timestamp": "2026-05-11T16:00:02", "turn_idx": 2 },
+      { "role": "assistant", "content": "A2 TSLA 비중 축소 권장 (충분히 긴 답변).", "timestamp": "2026-05-11T16:00:03", "turn_idx": 3 }
+    ],
+    "current_user_question": "리밸런싱 후 sharpe_ratio가 어느 정도 개선될까요?",
+    "tier": 3,
+    "session_id": "sess_S14",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "sharpe_ratio를 추정해 보면 현재 0.45에서 리밸런싱 후 0.85 수준까지 개선 가능합니다. portfolio_beta 1.85가 1.20으로 낮아지면서 위험 대비 수익률이 향상됩니다.",
+    "referenced_metrics": ["sharpe_ratio", "portfolio_beta"],
+    "follow_up_suggestions": ["sharpe 산출 가정?"],
+    "confidence": "low"
+  },
+  "expected_metadata": {
+    "case_flags": ["I4"],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": ["sharpe_ratio"]
+  },
+  "notes": "I4 trigger — sharpe_ratio는 portfolio_metrics에 없는 key. Schema는 snake_case 통과, service layer가 hallucination 감지."
+}

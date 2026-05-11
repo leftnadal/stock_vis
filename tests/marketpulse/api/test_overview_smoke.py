@@ -65,7 +65,7 @@ def populated(db):
 
     xlk, _ = MarketIndex.objects.update_or_create(
         symbol='XLK',
-        defaults={'name': 'XLK', 'sector_group': 'SECTOR', 'category': 'sector'},
+        defaults={'name': 'XLK', 'sector_group': 'TECH', 'category': 'sector'},
     )
 
     RegimeSnapshot.objects.create(
@@ -97,7 +97,7 @@ def populated(db):
     BriefingLog.objects.create(
         date=today, model_version='gemini-2.5-flash',
         status=BriefingLog.Status.OK,
-        headline='headline', content='content ' * 30,
+        headline='headline', body='content ' * 30,
     )
     MarketPulseNews.objects.create(
         category=MarketPulseNews.Category.MACRO,

@@ -1,0 +1,361 @@
+{
+  "step": "step8_2way_e5_scored",
+  "scored_at": "2026-05-01T12:53:04.883764+00:00",
+  "thresholds": {
+    "intent_match_min": 3,
+    "no_extra_changes_min": 3,
+    "cost_usd_max": 0.02,
+    "latency_ms_max": 5000
+  },
+  "fallback_weights": {
+    "schema": 0.25,
+    "intent_match": 0.25,
+    "no_extra_changes": 0.25,
+    "cost": 0.15,
+    "latency": 0.1
+  },
+  "by_fixture_model": {
+    "haiku": [
+      {
+        "fixture": "clear_decrease",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.956,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0012208,
+          "latency_ms": 1742,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "clear_multi",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9583,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0014096,
+          "latency_ms": 1557,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "unclear_amount",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9575,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0011592,
+          "latency_ms": 1688,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "no_intent_question",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9534,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0010584000000000001,
+          "latency_ms": 1933,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "no_intent_chitchat",
+        "model_label": "haiku",
+        "lex_pass": false,
+        "lex_fail_reason": "intent_match<3",
+        "efficiency": 2.4495,
+        "fallback": 0.6198,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 2,
+          "no_extra_changes_manual": 3,
+          "auto_eval_intent_reason": "no_intent 정확히 처리 못함",
+          "auto_eval_no_extra_reason": "2개 추가 변경"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0017248,
+          "latency_ms": 2738,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "remove",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9674,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0010512,
+          "latency_ms": 1234,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "large_multi",
+        "model_label": "haiku",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9349,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.0020448000000000003,
+          "latency_ms": 2487,
+          "fallback_from": null
+        }
+      }
+    ],
+    "sonnet": [
+      {
+        "fixture": "clear_decrease",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9103,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.004307999999999999,
+          "latency_ms": 2870,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "clear_multi",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.8782,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.005151,
+          "latency_ms": 4160,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "unclear_amount",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9153,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.004002,
+          "latency_ms": 2734,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "no_intent_question",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9362,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.002769,
+          "latency_ms": 2150,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "no_intent_chitchat",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.8997,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "no_intent + adjustments=[] 정확",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.003843,
+          "latency_ms": 3576,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "remove",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.9167,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.003942,
+          "latency_ms": 2687,
+          "fallback_from": null
+        }
+      },
+      {
+        "fixture": "large_multi",
+        "model_label": "sonnet",
+        "lex_pass": true,
+        "lex_fail_reason": null,
+        "efficiency": 5.0,
+        "fallback": 0.8702,
+        "raw_judgments": {
+          "schema_pass": true,
+          "schema_error": null,
+          "intent_match_manual": 5,
+          "no_extra_changes_manual": 5,
+          "auto_eval_intent_reason": "모든 ticker+action 매칭, count 충족",
+          "auto_eval_no_extra_reason": "추가 변경 없음"
+        },
+        "raw_metadata": {
+          "cost_usd": 0.006753,
+          "latency_ms": 3958,
+          "fallback_from": null
+        }
+      }
+    ]
+  },
+  "model_summary": {
+    "haiku": {
+      "n_calls": 7,
+      "lex_pass_rate": 0.8571,
+      "label_means": {
+        "intent_match": 4.5714,
+        "no_extra_changes": 4.7143
+      },
+      "efficiency_mean": 4.6356,
+      "fallback_mean": 0.9068,
+      "cost_total": 0.0097
+    },
+    "sonnet": {
+      "n_calls": 7,
+      "lex_pass_rate": 1.0,
+      "label_means": {
+        "intent_match": 5.0,
+        "no_extra_changes": 5.0
+      },
+      "efficiency_mean": 5.0,
+      "fallback_mean": 0.9038,
+      "cost_total": 0.0308
+    }
+  },
+  "winner": "sonnet",
+  "use_fallback": false,
+  "tradeoff_analysis": {
+    "context": "N2.B — 동등 가중. raw 값 보존만, winner 결정에 영향 없음.",
+    "tradeoff_cases": [],
+    "tradeoff_frequency": 0.0,
+    "monitoring_threshold": 0.3,
+    "alert": false,
+    "note": "30% 초과 시 Slice 3에서 가중치 룰 재검토 신호."
+  },
+  "evaluation_dimensions": [
+    "intent_match",
+    "no_extra_changes"
+  ],
+  "_meta_for_step9_generalization": {
+    "context": "Step 9 score_step8 일반화 작업 시 입력 키",
+    "dim1_key": "intent_match_manual",
+    "dim2_key": "no_extra_changes_manual",
+    "weight": 0.5
+  }
+}

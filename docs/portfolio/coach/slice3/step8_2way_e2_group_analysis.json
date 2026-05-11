@@ -1,0 +1,54 @@
+{
+  "step": "step8_e2_group_analysis",
+  "executed_at": "2026-05-07T00:41:40.030600+00:00",
+  "comparison": {
+    "haiku": {
+      "slice1_baseline": {
+        "n": 3,
+        "naturalness_mean": 5.0,
+        "insight_mean": 3.6667,
+        "score_mean": 30.2556,
+        "cost_total_usd": 0.0088,
+        "latency_mean_ms": 6810.0
+      },
+      "e2_focused": {
+        "n": 4,
+        "naturalness_mean": 5.0,
+        "insight_mean": 4.5,
+        "score_mean": 32.8021,
+        "cost_total_usd": 0.0123,
+        "latency_mean_ms": 7045.2
+      }
+    },
+    "sonnet": {
+      "slice1_baseline": {
+        "n": 3,
+        "naturalness_mean": 5.0,
+        "insight_mean": 4.3333,
+        "score_mean": 11.3797,
+        "cost_total_usd": 0.035,
+        "latency_mean_ms": 14300.3
+      },
+      "e2_focused": {
+        "n": 4,
+        "naturalness_mean": 5.0,
+        "insight_mean": 5.0,
+        "score_mean": 13.8665,
+        "cost_total_usd": 0.0416,
+        "latency_mean_ms": 12566.5
+      }
+    }
+  },
+  "hybrid_validation": {
+    "context": "baseline 그룹과 focused 그룹의 점수 차이로 hybrid 결정 정당화.",
+    "interpretation_guide": {
+      "small_diff": "두 그룹 점수 유사 → hybrid 결정 정당.",
+      "baseline_higher": "baseline garp가 친숙 → focused는 도전적.",
+      "focused_higher": "focused가 자연스러움 → E2 특화 fixture 효과."
+    }
+  },
+  "interpretations": [
+    "haiku: baseline=30.26 vs focused=32.80 → small_diff (8.4%)",
+    "sonnet: baseline=11.38 vs focused=13.87 → focused_higher (+21.9%)"
+  ]
+}

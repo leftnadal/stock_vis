@@ -88,6 +88,140 @@ class MetricComments(BaseModel):
 
 
 # ============================================================
+# E3 portfolio: portfolio-level commentary (Slice 6 Part 1 Step 1)
+# ============================================================
+
+
+class PresetAlignment(StrEnum):
+    """E3PortfolioCommentary preset 의도 정합성 (3종)."""
+
+    ALIGNED = "aligned"
+    PARTIAL = "partial"
+    MISALIGNED = "misaligned"
+
+
+class E3PortfolioCommentary(BaseModel):
+    """E3 portfolio-level 출력: concentrated_portfolio 진단 코멘트 (6 필드).
+
+    Slice 5 E3 (MetricComments, 종목 단위) → Slice 6 portfolio 단위 확장.
+    분석 엔진이 사전 산출한 sector_concentration / diversification_score /
+    risk_concentration_score를 prompt 변수로 받아 자연어 코멘트 생성.
+
+    출력 토큰 추정 (한국어 baseline): str_long 175 + str_medium × 3 (300) +
+    literal 5 + int 3 ≈ 483 → ×1.5 buffer ≈ 725.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    holistic_assessment: str = Field(
+        ...,
+        min_length=30,
+        max_length=300,
+        description="포트폴리오 전체 평가 2~3문장 (한국어).",
+    )
+    diversification_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="분산 정도 한 줄 평가 (한국어).",
+    )
+    sector_balance_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="섹터 균형 평가 (한국어).",
+    )
+    risk_concentration_comment: str = Field(
+        ...,
+        min_length=20,
+        max_length=200,
+        description="집중 리스크 평가 (한국어).",
+    )
+    preset_alignment: PresetAlignment = Field(
+        ...,
+        description="preset 의도 정합성 (aligned/partial/misaligned).",
+    )
+    confidence: int = Field(
+        ...,
+        ge=1,
+        le=5,
+        description="LLM 평가 자신도 1~5.",
+    )
+
+
+# ============================================================
+# E6: 조정 후 비교 해설 (Slice 4)
+# ============================================================
+
+
+class E6ChangeAspect(StrEnum):
+    """E6KeyChange의 변경 차원 (5종)."""
+
+    ALLOCATION = "allocation"
+    RISK = "risk"
+    EXPECTED_RETURN = "expected_return"
+    DIVERSIFICATION = "diversification"
+    OTHER = "other"
+
+
+class E6KeyChange(BaseModel):
+    """비교 해설의 개별 변경 사항 한 항목."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    aspect: E6ChangeAspect = Field(..., description="변경 차원 (5종).")
+    description: str = Field(
+        ...,
+        min_length=10,
+        max_length=300,
+        description="변경 사항 자연어 서술 (한 문장).",
+    )
+
+
+class E6ComparisonResponse(BaseModel):
+    """E6 출력: 자연어 비교 해설 (정량 재계산 없음)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    headline: str = Field(
+        ...,
+        min_length=10,
+        max_length=120,
+        description="비교 한 줄 요약 (E1 mirror 패턴).",
+    )
+    before_summary: str = Field(
+        ...,
+        min_length=20,
+        max_length=400,
+        description="조정 전 포트폴리오 핵심 특징 자연어 요약.",
+    )
+    after_summary: str = Field(
+        ...,
+        min_length=20,
+        max_length=400,
+        description="조정 후 예상 포트폴리오 핵심 특징 자연어 요약.",
+    )
+    key_changes: list[E6KeyChange] = Field(
+        ...,
+        min_length=1,
+        max_length=5,
+        description="주요 변경 사항 (1~5개).",
+    )
+    risk_assessment: str = Field(
+        ...,
+        min_length=20,
+        max_length=300,
+        description="위험 변화 해설 (집중도 / 변동성 / 섹터 편중 등).",
+    )
+    closing_remarks: str = Field(
+        ...,
+        min_length=10,
+        max_length=300,
+        description="마무리 해설 (사용자 결정 보조 문구).",
+    )
+
+
+# ============================================================
 # E4: 대화 Q&A
 # ============================================================
 
