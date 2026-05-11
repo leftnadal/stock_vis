@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useSeedData } from '@/hooks/useMarketView';
 import SectorBar from '@/components/chainsight/SectorBar';
+import RelationFilterChips from '@/components/chainsight/RelationFilterChips';
 import MarketGraphCanvas from '@/components/chainsight/MarketGraphCanvas';
 import ExplorationTrail from '@/components/chainsight/ExplorationTrail';
 import RelationCardPanel from '@/components/chainsight/RelationCardPanel';
@@ -62,16 +63,19 @@ export default function ChainSightPage() {
       {/* ① 섹터 바 */}
       <SectorBar sectors={seedData?.sector_summary || []} />
 
-      {/* ② 그래프 캔버스 */}
+      {/* ② 관계 칩 바 — § 5-1: SectorBar와 MarketGraphCanvas 사이, 섹터 미선택 시 disabled */}
+      <RelationFilterChips disabled={!state.selectedSector} />
+
+      {/* ③ 그래프 캔버스 */}
       <MarketGraphCanvas />
 
-      {/* ③ 탐색 트레일 */}
+      {/* ④ 탐색 트레일 */}
       <ExplorationTrail />
 
-      {/* ④ 관계 카드 패널 */}
+      {/* ⑤ 관계 카드 패널 */}
       <RelationCardPanel />
 
-      {/* ⑤ 체인 스토리 피드 */}
+      {/* ⑥ 체인 스토리 피드 */}
       <ChainStoryFeed />
     </div>
   );
