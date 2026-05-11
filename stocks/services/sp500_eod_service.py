@@ -13,6 +13,7 @@ from django.db import transaction
 
 from stocks.models import Stock, DailyPrice, SP500Constituent
 from serverless.services.fmp_client import FMPClient, FMPAPIError
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +127,15 @@ class SP500EODService:
             stats['error_symbols'].append(symbol)
             return
 
-        # FMP에서 최근 5일 데이터 가져오기
+        # FMP에서 최근 5일 데이터 가져오기 (CB로 누적 실패 차단)
+        cb = get_circuit('fmp_sp500_eod', failure_threshold=10, recovery_seconds=120)
         try:
-            historical = self.fmp_client.get_historical_ohlcv(symbol, days=5)
+            historical = cb.call(self.fmp_client.get_historical_ohlcv, symbol, days=5)
+        except CircuitBreakerError as e:
+            logger.warning(f"⚠️ CB open (fmp_sp500_eod) — skip {symbol}: {e}")
+            stats['errors'] += 1
+            stats['error_symbols'].append(symbol)
+            return
         except FMPAPIError as e:
             raise Exception(f"FMP API error for {symbol}: {e}")
 
