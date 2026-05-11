@@ -124,7 +124,7 @@ export default function Pagination({
                 key={page}
                 onClick={() => handlePageChange(page as number)}
                 className={`
-                  min-w-[32px] px-2 py-1.5 rounded text-sm font-medium transition-colors
+                  min-w-[44px] min-h-[44px] px-3 py-2 rounded text-sm font-medium transition-colors
                   ${
                     page === currentPage
                       ? 'bg-blue-600 text-white'

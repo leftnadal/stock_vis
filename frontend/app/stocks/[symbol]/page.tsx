@@ -385,7 +385,7 @@ function StockDetailContent() {
                 <button
                   key={l1.id}
                   onClick={() => handleL1Click(l1.id)}
-                  className={`px-5 py-2 text-sm font-medium rounded-full transition-colors ${
+                  className={`min-h-[44px] px-5 py-2 text-sm font-medium rounded-full transition-colors ${
                     activeL1 === l1.id
                       ? 'bg-blue-600 text-white dark:bg-blue-500'
                       : 'text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-700'
