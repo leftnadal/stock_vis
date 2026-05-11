@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 4: AI Copilot</title>
+    <style>
+        :root { --bg: #09090b; --surface: #18181b; --text: #fafafa; --text-sec: #a1a1aa; --accent: #8b5cf6; }
+        body { margin:0; padding:2rem; background:#222; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5); border:1px solid #333; display:flex; flex-direction:column; }
+        
+        .header { padding: 60px 20px 20px 20px; text-align:center;}
+        .logo-mark { width:60px; height:60px; margin:0 auto; background:linear-gradient(135deg, var(--accent), #ec4899); border-radius:20px; display:flex; justify-content:center; align-items:center; font-size:2rem; box-shadow:0 10px 30px rgba(139, 92, 246, 0.4); margin-bottom:20px;}
+        .header h1 { margin:0 0 10px 0; font-size:1.8rem; font-weight:700;}
+        .header p { margin:0; font-size:1rem; color:var(--text-sec);}
+
+        .search-container { padding:0 20px; margin-top:30px;}
+        .search-box { background:var(--surface); border:1px solid #27272a; border-radius:24px; padding:15px 20px; display:flex; align-items:center; gap:15px; box-shadow:0 10px 20px rgba(0,0,0,0.2);}
+        .search-box input { flex:1; background:none; border:none; color:white; font-size:1.1rem; outline:none;}
+        .search-box input::placeholder { color:#52525b; }
+        .send-btn { background:var(--text); color:var(--bg); width:36px; height:36px; border-radius:50%; display:flex; justify-content:center; align-items:center; font-weight:bold; cursor:pointer;}
+
+        .suggestions { padding:0 20px; margin-top:30px; display:flex; flex-direction:column; gap:15px;}
+        .sugg-chip { background:var(--surface); border:1px solid #27272a; border-radius:16px; padding:16px; display:flex; align-items:center; gap:15px; cursor:pointer; transition:transform 0.1s;}
+        .sugg-chip:active { transform:scale(0.98); }
+        .s-icon { font-size:1.5rem; }
+        .s-text h4 { margin:0 0 5px 0; font-size:0.95rem; font-weight:600;}
+        .s-text p { margin:0; font-size:0.8rem; color:var(--text-sec);}
+
+        .bottom-nav { position:absolute; bottom:0; left:0; width:100%; height:80px; display:flex; justify-content:space-around; align-items:center; background:var(--surface); border-top:1px solid #27272a;}
+        .nav-icon { color:var(--text-sec); font-size:1.2rem; display:flex; flex-direction:column; align-items:center; gap:4px; font-weight:600; font-size:0.7rem;}
+        .nav-icon.active { color:var(--text); }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <div class="logo-mark">✨</div>
+            <h1>무엇을 분석해드릴까요?</h1>
+            <p>시그널, 가설, 포트폴리오를 AI로 탐색하세요.</p>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <span style="font-size:1.2rem;">🔍</span>
+                <input type="text" placeholder="예: 오늘 볼만한 시그널 찾아줘">
+                <div class="send-btn">↑</div>
+            </div>
+        </div>
+
+        <div class="suggestions">
+            <div class="sugg-chip">
+                <div class="s-icon">📈</div>
+                <div class="s-text">
+                    <h4>Market Pulse 브리핑 요약</h4>
+                    <p>밤사이 있었던 주요 시황과 오늘의 체크포인트</p>
+                </div>
+            </div>
+            <div class="sugg-chip">
+                <div class="s-icon">⚡</div>
+                <div class="s-text">
+                    <h4>EOD 돌파(Breakout) 종목 확인</h4>
+                    <p>전일 기준 강력한 거래량이 터진 종목들</p>
+                </div>
+            </div>
+            <div class="sugg-chip">
+                <div class="s-icon">📌</div>
+                <div class="s-text">
+                    <h4>내 가설(Thesis) 모니터링</h4>
+                    <p>'코스피 하락' 가설이 위협받고 있습니다 (확인)</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-icon active"><span style="font-size:1.5rem">🏠</span>홈</div>
+            <div class="nav-icon"><span style="font-size:1.5rem">📊</span>시그널</div>
+            <div class="nav-icon"><span style="font-size:1.5rem">💼</span>포트폴리오</div>
+            <div class="nav-icon"><span style="font-size:1.5rem">⚙️</span>설정</div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#4. AI Copilot (Search First)</h3>
+        <p>Perplexity AI나 ChatGPT 앱처럼 복잡한 차트를 뒤로 숨기고 <b>대화창</b>을 메인에 둡니다. 질문을 하거나 추천 프롬프트(숏컷)를 누르면 AI가 즉시 데이터를 분석해서 대답해주는 방식입니다.</p>
+    </div>
+</body>
+</html>

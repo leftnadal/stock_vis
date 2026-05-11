@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 6: Terminal Quant</title>
+    <style>
+        :root { --bg: #000; --text: #0f0; --dim: #050; }
+        body { margin:0; padding:2rem; background:#111; color:var(--text); font-family:"Courier New", Courier, monospace; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow-y:auto; overflow-x:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5); border:1px solid #333; padding:50px 20px 20px; box-sizing:border-box;}
+        .phone::-webkit-scrollbar { display: none; }
+        
+        .sys-header { border-bottom:1px dashed var(--text); padding-bottom:10px; margin-bottom:20px;}
+        .top-stats { display:flex; justify-content:space-between; font-size:0.8rem;}
+
+        .section { margin-bottom:25px; }
+        .s-title { background:var(--text); color:var(--bg); display:inline-block; padding:2px 8px; font-weight:bold; margin-bottom:10px; text-transform:uppercase;}
+        
+        table { width:100%; border-collapse:collapse; font-size:0.85rem;}
+        th { text-align:left; border-bottom:1px solid var(--dim); padding-bottom:5px; color:var(--dim);}
+        td { padding:8px 0; border-bottom:1px dotted #030;}
+        td.pos { color:#0f0; }
+        td.neg { color:#f00; }
+
+        .ascii-chart { font-size:0.6rem; line-height:1; white-space:pre; margin:10px 0; color:var(--dim);}
+        .ascii-chart span { color:var(--text); }
+
+        .cmd-line { display:flex; align-items:center; gap:10px; margin-top:30px; border-top:1px dashed var(--dim); padding-top:15px;}
+        .cmd-line input { background:none; border:none; color:var(--text); font-family:inherit; font-size:1rem; outline:none; flex:1;}
+        .cursor { width:10px; height:18px; background:var(--text); animation:blink 1s step-end infinite;}
+        
+        @keyframes blink { 50% { opacity:0; } }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="sys-header">
+            <div style="font-size:1.2rem; font-weight:bold; margin-bottom:10px;">STOCK_VIS OS v2.0</div>
+            <div class="top-stats">
+                <span>MEM: 45%</span>
+                <span>PULSE: ACTIVE</span>
+                <span>DATE: 260319</span>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="s-title">EOD SIGNALS [EXEC]</div>
+            <table>
+                <tr><th>TKR</th><th>SIG</th><th>PX</th><th>%CHG</th></tr>
+                <tr><td>NVDA</td><td>BRK_OUT</td><td>892.5</td><td class="pos">+4.2</td></tr>
+                <tr><td>AAPL</td><td>MOMENTM</td><td>173.2</td><td class="neg">-1.2</td></tr>
+                <tr><td>TSLA</td><td>VOL_SPK</td><td>162.5</td><td class="pos">+2.1</td></tr>
+                <tr><td>AMD</td> <td>REVERSL</td><td>180.1</td><td class="pos">+1.5</td></tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="s-title">MACRO TREND (SPX)</div>
+            <div class="ascii-chart">
+                5k  |            <span>/</span><span>-</span><span>-</span>
+                4.8 |       <span>/</span><span>-</span><span>/</span>
+                4.6 |   <span>_</span><span>-</span><span>/</span>
+                4.4 |<span>_</span><span>/</span>
+                    +-------------------
+                     M   A   M   J   J
+            </div>
+            <div style="font-size:0.8rem;">STATUS: UPTREND CONFIRMED</div>
+        </div>
+
+        <div class="section">
+            <div class="s-title">THESIS CONTROL</div>
+            <div style="font-size:0.85rem; line-height:1.4;">
+                [+] ID: 89A2_KOSPI_SHORT<br>
+                > ALIGNMENT: 72%<br>
+                > STATUS: <span style="color:#0f0; background:#050">STRENGTHENING</span><br>
+                > LAST_TRG: FORGN_NET_SELL
+            </div>
+        </div>
+
+        <div class="cmd-line">
+            <span>usr@svis:~$</span>
+            <input type="text" value="analyze sector tech" readonly>
+            <div class="cursor"></div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#6. Terminal / Hacker Theme</h3>
+        <p>엄청난 정보 밀도를 선호하는 하드코어 퀀트 투자자나 개발자를 위한 "CLI 터미널" 컨셉의 테마입니다. 표, ASCII 차트, 명령어 입력 방식을 모사하여 철저히 데이터 중심적인 느낌을 극대화합니다.</p>
+    </div>
+</body>
+</html>

@@ -1,8 +1,19 @@
 import os
+import platform
 import logging
 from celery import Celery
 from celery.schedules import crontab
 from celery.signals import task_failure, task_retry, worker_process_init, worker_shutdown
+
+# macOS fork 안전성:
+# 1. Objective-C 런타임 fork safety 체크 비활성화 (SIGSEGV 방지)
+# 2. libpq GSS/Kerberos 암호화 비활성화 (fork 후 XPC 크래시 방지)
+# 3. macOS에서는 solo pool 강제 (fork 자체를 제거하여 C 확장 크래시 원천 차단)
+if platform.system() == 'Darwin':
+    os.environ.setdefault('OBJC_DISABLE_INITIALIZE_FORK_SAFETY', 'YES')
+    os.environ.setdefault('PGGSSENCMODE', 'disable')
+
+IS_MACOS = platform.system() == 'Darwin'
 
 # Django 설정 모듈을 설정
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
@@ -12,6 +23,12 @@ app = Celery('stock_vis')
 
 # Django 설정 파일에서 Celery 설정 가져오기
 app.config_from_object('django.conf:settings', namespace='CELERY')
+
+# macOS: solo pool 강제 — fork를 사용하지 않아 모든 C 확장 크래시 방지
+# (PyTorch, scikit-learn/OpenMP, libpq/GSS 등)
+# 프로덕션 Linux에서는 prefork가 기본값으로 유지됨
+if IS_MACOS:
+    app.conf.worker_pool = 'solo'
 
 # Django 앱에서 태스크 자동 발견
 app.autodiscover_tasks()
@@ -25,9 +42,16 @@ app.conf.task_routes = {
     'rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
     'rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
     'rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
+    'rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
     'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
     'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
     'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
+    # Chain Sight Neo4j 동기화
+    'chainsight.tasks.sync_tasks.sync_profiles_to_neo4j': {'queue': 'neo4j'},
+    'chainsight.tasks.sync_tasks.sync_relations_to_neo4j': {'queue': 'neo4j'},
+    'chainsight-neo4j-dirty-sync': {'queue': 'neo4j'},
+    # SEC Pipeline Neo4j 동기화
+    'sec_pipeline.tasks.sync_dirty_to_neo4j': {'queue': 'neo4j'},
 }
 
 # ============================================================
@@ -57,11 +81,17 @@ def handle_task_retry(sender=None, request=None, reason=None, **kwargs):
 # ============================================================
 
 @worker_process_init.connect
-def reset_neo4j_after_fork(**kwargs):
+def reset_connections_after_fork(**kwargs):
     """
-    Fork된 워커 프로세스에서 부모의 Neo4j 드라이버 참조를 안전하게 해제.
-    close() 없이 None으로 덮어씀 (C 확장 SIGSEGV 방지).
+    Fork된 워커 프로세스에서:
+    1. Django DB 연결을 강제 닫기 (부모의 libpq 소켓 상속 → GSS 크래시 방지)
+    2. Neo4j 드라이버 참조를 안전하게 해제
     """
+    # Django DB 연결 닫기 — 워커가 새 연결을 만들도록 강제
+    from django import db
+    db.connections.close_all()
+
+    # Neo4j 드라이버 해제
     try:
         from rag_analysis.services.neo4j_driver import force_reset_after_fork
         from rag_analysis.services.neo4j_service import reset_neo4j_service
@@ -90,16 +120,15 @@ app.conf.beat_schedule = {
     # Stocks 태스크
     # ============================================================
 
-    # 실시간 주가 업데이트 (시장 개장 시간, 5분마다)
+    # 실시간 주가 업데이트 (시장 개장 시간, 5분마다) — FMP Provider
     'update-realtime-prices': {
-        'task': 'stocks.tasks.update_realtime_prices',
+        'task': 'stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(minute='*/5', hour='9-16', day_of_week='1-5'),
-        'kwargs': {'priority': 'high'}
     },
 
-    # 일일 종가 업데이트 (시장 마감 후)
+    # 일일 종가 업데이트 (시장 마감 후) — FMP Provider
     'update-daily-prices': {
-        'task': 'stocks.tasks.update_daily_prices',
+        'task': 'stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
     },
 
@@ -168,31 +197,8 @@ app.conf.beat_schedule = {
         'options': {'queue': 'neo4j'},
     },
 
-    # ============================================================
-    # Semantic Cache 태스크
-    # ============================================================
-
-    # 만료된 캐시 정리 (매일 새벽 4시)
-    'cleanup-expired-semantic-cache': {
-        'task': 'rag_analysis.tasks.cleanup_expired_semantic_cache',
-        'schedule': crontab(hour=4, minute=0),
-        'options': {'queue': 'neo4j'},
-    },
-
-    # 캐시 워밍 (매주 일요일 새벽 4시 30분)
-    'warm-semantic-cache': {
-        'task': 'rag_analysis.tasks.warm_semantic_cache',
-        'schedule': crontab(hour=4, minute=30, day_of_week=0),
-        'kwargs': {'limit': 100},
-        'options': {'queue': 'neo4j'},
-    },
-
-    # 캐시 통계 조회 (매시간, 모니터링용)
-    'semantic-cache-stats': {
-        'task': 'rag_analysis.tasks.get_semantic_cache_stats',
-        'schedule': crontab(minute=0),
-        'options': {'queue': 'neo4j'},
-    },
+    # Semantic Cache 태스크 — 제거됨 (미초기화 상태, 향후 폐기 예정)
+    # cleanup-expired-semantic-cache, warm-semantic-cache, semantic-cache-stats
 
     # ============================================================
     # Market Movers 동기화 + 키워드 생성 태스크
@@ -457,24 +463,6 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
-    # Alpha Vantage 감성 뉴스 수집 태스크
-    # ============================================================
-
-    # AV Sentiment News (2회/일, 25개 종목)
-    'collect-sentiment-av-morning': {
-        'task': 'news.tasks.collect_sentiment_news_av',
-        'schedule': crontab(hour=8, minute=30, day_of_week='1-5'),
-        'kwargs': {'max_symbols': 25},
-        'options': {'expires': 3600}
-    },
-    'collect-sentiment-av-afternoon': {
-        'task': 'news.tasks.collect_sentiment_news_av',
-        'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
-        'kwargs': {'max_symbols': 25},
-        'options': {'expires': 3600}
-    },
-
-    # ============================================================
     # 데이터 보존 (아카이브) 태스크
     # ============================================================
 
@@ -550,6 +538,13 @@ app.conf.beat_schedule = {
         'task': 'stocks.tasks.sync_sp500_eod_prices',
         'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
+    },
+
+    # DailyPrice → Stock.change_percent 일괄 계산 (EOD sync 직후, API 호출 없음)
+    'update-sp500-change-percent': {
+        'task': 'update-sp500-change-percent',
+        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 1800}
     },
 
     # ============================================================
@@ -652,6 +647,118 @@ app.conf.beat_schedule = {
     'thesis-create-snapshots': {
         'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
         'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
+    # ============================================================
+    # Chain Sight — Tier A 프로파일 + 관계 파이프라인
+    # ============================================================
+
+    # Tier A 통합 프로파일 (매주 토요일 02:00 EST)
+    # GrowthStage + CapitalDNA + SensitivityProfile + InsiderSignal
+    'chainsight-all-profiles': {
+        'task': 'chainsight.tasks.profile_tasks.calculate_all_profiles',
+        'schedule': crontab(hour=2, minute=0, day_of_week=6),
+        'options': {'expires': 7200}
+    },
+
+    # 뉴스 CoMention 추출 (매일 10:00 EST, 뉴스 분류 후)
+    'chainsight-co-mentions': {
+        'task': 'chainsight.tasks.relation_tasks.extract_co_mentions',
+        'schedule': crontab(hour=10, minute=0),
+        'kwargs': {'days_back': 7},
+        'options': {'expires': 3600}
+    },
+
+    # PriceCoMovement 계산 (매주 토요일 03:00 EST, 프로파일 후)
+    'chainsight-price-co-movement': {
+        'task': 'chainsight.tasks.relation_tasks.calculate_price_co_movement',
+        'schedule': crontab(hour=3, minute=0, day_of_week=6),
+        'options': {'expires': 7200}
+    },
+
+    # RelationConfidence 갱신 (매일 11:00 EST, CoMention 후)
+    'chainsight-relation-confidence': {
+        'task': 'chainsight.tasks.relation_tasks.update_relation_confidence',
+        'schedule': crontab(hour=11, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Stale 관계 감쇠 (매주 토요일 04:00 EST)
+    'chainsight-stale-decay': {
+        'task': 'chainsight.tasks.relation_tasks.check_stale_and_decay',
+        'schedule': crontab(hour=4, minute=0, day_of_week=6),
+        'options': {'expires': 600}
+    },
+
+    # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
+    'chainsight-aggregate-profiles': {
+        'task': 'chainsight.tasks.sync_tasks.aggregate_chain_profiles',
+        'schedule': crontab(hour=4, minute=30, day_of_week=6),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j 프로파일 동기화 (매일 12:00 EST, 관계 갱신 후)
+    'chainsight-sync-profiles-neo4j': {
+        'task': 'chainsight.tasks.sync_tasks.sync_profiles_to_neo4j',
+        'schedule': crontab(hour=12, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j 관계 동기화 (매일 12:30 EST, 프로파일 동기화 후)
+    'chainsight-sync-relations-neo4j': {
+        'task': 'chainsight.tasks.sync_tasks.sync_relations_to_neo4j',
+        'schedule': crontab(hour=12, minute=30),
+        'options': {'expires': 3600}
+    },
+
+    # 시드 선정 (매일 13:00 UTC, 관계 동기화 후)
+    'chainsight-seed-selection': {
+        'task': 'chainsight-seed-selection',
+        'schedule': crontab(hour=13, minute=0),
+        'options': {'expires': 3600}
+    },
+
+    # Neo4j dirty 동기화 (매주 일요일 04:30 UTC)
+    'chainsight-neo4j-dirty-sync': {
+        'task': 'chainsight-neo4j-dirty-sync',
+        'schedule': crontab(hour=4, minute=30, day_of_week=0),
+        'options': {'expires': 3600, 'queue': 'neo4j'}
+    },
+
+    # ============================================================
+    # Validation — 1차 검증 주간 배치
+    # ============================================================
+
+    # 주간 검증 배치 (매주 토요일 05:00 EST, Chain Sight 후)
+    'validation-weekly-batch': {
+        'task': 'validation.tasks.run_weekly_validation_batch',
+        'schedule': crontab(hour=5, minute=0, day_of_week=6),
+        'options': {'expires': 14400}
+    },
+
+    # ============================================================
+    # SEC Pipeline — Neo4j 동기화 + 신규 filing 감지
+    # ============================================================
+
+    # SEC dirty evidence → Neo4j 동기화 (5분마다)
+    'sec-sync-dirty-neo4j': {
+        'task': 'sec_pipeline.tasks.sync_dirty_to_neo4j',
+        'schedule': crontab(minute='*/5'),
+        'options': {'expires': 240}
+    },
+
+    # SEC → Chain Sight RelationConfidence 연결 (매일 12:00 EST)
+    'sec-seed-relations-to-chainsight': {
+        'task': 'sec-seed-relations-to-chainsight',
+        'schedule': crontab(hour=12, minute=0),
+        'options': {'expires': 1800}
+    },
+
+    # SEC 신규 10-K filing 감지 (매월 1일 06:00 EST)
+    'sec-check-new-filings': {
+        'task': 'sec_pipeline.tasks.check_new_filings',
+        'schedule': crontab(hour=6, minute=0, day_of_month=1),
         'options': {'expires': 3600}
     },
 

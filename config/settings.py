@@ -27,6 +27,11 @@ FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
+## Neo4j (Chain Sight 그래프 DB)
+NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
+NEO4J_USER = os.getenv('NEO4J_USER', 'neo4j')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
+
 # ============================================================
 # Stock Data Provider Configuration
 # ============================================================
@@ -36,15 +41,15 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
 STOCK_PROVIDERS = {
     # Feature Flags - 환경변수로 오버라이드 가능
-    'quote': os.getenv('STOCK_PROVIDER_QUOTE', 'alpha_vantage'),
-    'profile': os.getenv('STOCK_PROVIDER_PROFILE', 'alpha_vantage'),
-    'daily_prices': os.getenv('STOCK_PROVIDER_DAILY_PRICES', 'alpha_vantage'),
-    'weekly_prices': os.getenv('STOCK_PROVIDER_WEEKLY_PRICES', 'alpha_vantage'),
-    'balance_sheet': os.getenv('STOCK_PROVIDER_BALANCE_SHEET', 'alpha_vantage'),
-    'income_statement': os.getenv('STOCK_PROVIDER_INCOME_STATEMENT', 'alpha_vantage'),
-    'cash_flow': os.getenv('STOCK_PROVIDER_CASH_FLOW', 'alpha_vantage'),
-    'search': os.getenv('STOCK_PROVIDER_SEARCH', 'alpha_vantage'),
-    'sector': os.getenv('STOCK_PROVIDER_SECTOR', 'alpha_vantage'),
+    'quote': os.getenv('STOCK_PROVIDER_QUOTE', 'fmp'),
+    'profile': os.getenv('STOCK_PROVIDER_PROFILE', 'fmp'),
+    'daily_prices': os.getenv('STOCK_PROVIDER_DAILY_PRICES', 'fmp'),
+    'weekly_prices': os.getenv('STOCK_PROVIDER_WEEKLY_PRICES', 'fmp'),
+    'balance_sheet': os.getenv('STOCK_PROVIDER_BALANCE_SHEET', 'fmp'),
+    'income_statement': os.getenv('STOCK_PROVIDER_INCOME_STATEMENT', 'fmp'),
+    'cash_flow': os.getenv('STOCK_PROVIDER_CASH_FLOW', 'fmp'),
+    'search': os.getenv('STOCK_PROVIDER_SEARCH', 'fmp'),
+    'sector': os.getenv('STOCK_PROVIDER_SECTOR', 'fmp'),
 }
 
 # Provider 캐시 TTL (초)
@@ -122,7 +127,7 @@ NEWS_FALLBACK_PROVIDER = os.getenv('NEWS_FALLBACK_PROVIDER', 'marketaux')
 # Neo4j 연결 설정 (로컬 개발 환경 기본값)
 NEO4J_URI = os.getenv('NEO4J_URI', 'bolt://localhost:7687')
 NEO4J_USERNAME = os.getenv('NEO4J_USERNAME', 'neo4j')
-NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'password')
+NEO4J_PASSWORD = os.getenv('NEO4J_PASSWORD', 'stockvis123')
 NEO4J_DATABASE = os.getenv('NEO4J_DATABASE', 'neo4j')
 
 # Neo4j 연결 풀 설정
@@ -177,6 +182,7 @@ INSTALLED_APPS = [
     'metrics',  # 공유 지표 메타데이터 + 배치 실행 이력
     'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
+    'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -232,6 +238,7 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', '5432'),
         'OPTIONS': {
             'connect_timeout': 10,
+            'gssencmode': 'disable',  # macOS fork 후 GSS/Kerberos XPC 크래시 방지
         },
     }
 }
@@ -399,6 +406,9 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 # Celery 작업 결과 저장
 CELERY_RESULT_BACKEND = 'django-db'
 CELERY_RESULT_EXTENDED = True
+
+# Fork pool worker 재활용: C 확장(Neo4j bolt) 상태 누적으로 인한 SIGSEGV 방지
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 100
 
 # Redis 캐시 백엔드 (기존 로컬 메모리 캐시를 Redis로 변경)
 CACHES = {

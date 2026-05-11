@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 10: Timeline Pulse</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; --red: #ef4444; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column;}
+        
+        .header { margin-top: 60px; text-align: center; }
+        h2 { margin:0; font-size:1.4rem; }
+        p { color:#94a3b8; font-size:0.9rem; }
+
+        .monitor {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            position: relative;
+            background: rgba(255,0,0,0.05); /* very subtle */
+        }
+
+        .pulse-svg {
+            width: 100%;
+            height: 200px;
+        }
+
+        .pulse-path {
+            fill: none;
+            stroke: var(--red);
+            stroke-width: 3;
+            stroke-linecap: round;
+            filter: drop-shadow(0 0 8px var(--red));
+            /* SVG stroke animation trick */
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 3s linear infinite;
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .grid-lines {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            z-index: 0;
+        }
+
+        .stats {
+            position: absolute;
+            bottom: 40px; left: 0; right: 0;
+            display: flex; justify-content: space-around;
+            padding: 0 20px;
+        }
+        .stat-box { text-align: center; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; color: var(--red); }
+        .stat-lbl { font-size: 0.7rem; color: #94a3b8; }
+        
+        /* The sweeping line */
+        .sweeper {
+            position: absolute;
+            top: 0; bottom: 0; left: 0;
+            width: 2px;
+            background: rgba(255,255,255,0.8);
+            box-shadow: 0 0 20px rgba(255,255,255,0.5);
+            animation: sweep 3s linear infinite;
+            z-index: 10;
+        }
+
+        @keyframes sweep { 0% { left: 0; } 100% { left: 100%; } }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <h2>가설 생명력 (Vitality)</h2>
+            <p>시장의 맥박 측정 중</p>
+        </div>
+        
+        <div class="monitor">
+            <div class="grid-lines"></div>
+            <div class="sweeper"></div>
+            
+            <svg class="pulse-svg" viewBox="0 0 375 200" preserveAspectRatio="none">
+                <!-- Heartbeat pattern approx: flat, up, down fast, up, flat... -->
+                <path class="pulse-path" id="heartline" d="M 0 100 L 50 100 L 60 70 L 70 150 L 80 50 L 90 110 L 100 100 L 150 100 L 160 70 L 170 150 L 180 50 L 190 110 L 200 100 L 250 100 L 260 70 L 270 150 L 280 50 L 290 110 L 300 100 L 375 100"></path>
+            </svg>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-val">BULLISH</div>
+                <div class="stat-lbl">현재 기조</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-val" id="bpm">72</div>
+                <div class="stat-lbl">지지 맥박수 (Score)</div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#10. Timeline Pulse (Heartbeat)</h3>
+        <p>가설의 현재 '지지 강도'를 병원의 생명유지장치(Pulse Monitor)처럼 표현합니다. 수많은 지표들이 마치 심장박동처럼 강렬하게 가설을 지지하고 있음을 동적으로 강조합니다.</p>
+    </div>
+</body>
+</html>

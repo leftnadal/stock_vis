@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 5: Story / Shorts Feed</title>
+    <style>
+        :root { --text: #fff; }
+        body { margin:0; padding:2rem; background:#222; color:var(--text); font-family:-apple-system, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        
+        .phone { width:375px; height:812px; background:#000; border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5); border:1px solid #333; display:flex;}
+        
+        /* Simulating TikTok/Reels scroll snap */
+        .feed { width:100%; height:100%; overflow-y:auto; scroll-snap-type: y mandatory;}
+        .feed::-webkit-scrollbar { display:none;}
+
+        .story-page { width:100%; height:100%; scroll-snap-align: start; position:relative; display:flex; flex-direction:column; justify-content:flex-end; padding:40px 20px; box-sizing:border-box;}
+        
+        /* Story 1 bg */
+        .bg-1 { position:absolute; inset:0; background:linear-gradient(wrap, #4f46e5, #0f172a); z-index:0; }
+        .bg-1::after { content:''; position:absolute; inset:0; background:radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.5) 0%, transparent 50%);}
+        
+        /* Content overlay */
+        .content { position:relative; z-index:10; }
+        .tag { background:rgba(0,0,0,0.5); padding:6px 14px; border-radius:20px; font-size:0.8rem; font-weight:600; display:inline-block; margin-bottom:15px; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.2);}
+        
+        .title { font-size:2.5rem; font-weight:800; line-height:1.1; margin-bottom:15px; letter-spacing:-1px;}
+        .desc { font-size:1.1rem; line-height:1.5; color:rgba(255,255,255,0.8); margin-bottom:30px;}
+        
+        .swipe-up { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:5px; opacity:0.6; animation:bounce 2s infinite;}
+        .swipe-up span { font-size:0.7rem; text-transform:uppercase; letter-spacing:2px;}
+        .swipe-up svg { width:20px; height:20px; }
+
+        @keyframes bounce { 0%, 100% { transform:translate(-50%, 0); } 50% { transform:translate(-50%, -10px); } }
+
+        /* Floating action buttons on right */
+        .actions { position:absolute; right:20px; bottom:120px; display:flex; flex-direction:column; gap:20px; z-index:20;}
+        .action { width:45px; height:45px; background:rgba(0,0,0,0.4); backdrop-filter:blur(10px); border-radius:50%; display:flex; justify-content:center; align-items:center; font-size:1.2rem; border:1px solid rgba(255,255,255,0.1);}
+
+        /* Progress bars top */
+        .progress-bar-container { position:absolute; top:50px; left:20px; right:20px; display:flex; gap:5px; z-index:20;}
+        .p-bar { flex:1; height:3px; background:rgba(255,255,255,0.3); border-radius:3px; overflow:hidden;}
+        .p-fill { width:100%; height:100%; background:white; transform-origin:left; animation:fillUp 5s linear forwards;}
+        @keyframes fillUp { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="progress-bar-container">
+            <div class="p-bar"><div class="p-fill"></div></div>
+            <div class="p-bar"></div>
+            <div class="p-bar"></div>
+        </div>
+
+        <div class="feed">
+            <div class="story-page">
+                <div class="bg-1"></div>
+                <div class="content">
+                    <div class="tag">☀️ 오늘의 요약 (Market Pulse)</div>
+                    <div class="title">"테슬라 판매량 급감<br>투자자들 전기차<br>투심 악화"</div>
+                    <div class="desc">어젯밤 시장을 지배한 가장 큰 뉴스입니다. 이로 인해 관련된 EOD 시그널 12개가 새롭게 포착되었습니다.</div>
+                    
+                    <button style="background:white; color:black; border:none; padding:15px 30px; border-radius:30px; font-size:1.1rem; font-weight:700; width:100%;">AI 분석 리포트 보기</button>
+                </div>
+
+                <div class="actions">
+                    <div class="action">❤</div>
+                    <div class="action">💬</div>
+                    <div class="action">↗</div>
+                </div>
+
+                <div class="swipe-up">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                    <span>Swipe</span>
+                </div>
+            </div>
+            
+            <!-- Page 2 placeholder -->
+            <div class="story-page" style="background:#0f172a;">
+                <div class="content">
+                    <div class="tag" style="background:rgba(16, 185, 129, 0.2); color:#34d399; border-color:#34d399;">⚡ 강력한 매수 시그널</div>
+                    <div class="title" style="color:#10b981;">NVDA 상향 돌파</div>
+                    <div class="desc">기관 자금이 3일 연속 대거 유입되고 있습니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#5. Story / Shorts Style</h3>
+        <p>인스타그램 스토리나 틱톡처럼 세로로 스와이프하여 넘기는 방식입니다. 하루 한 번 앱을 켜서 AI가 정리해주는 핵심 뉴스, 시그널, 가설 알림을 풀스크린의 몰입감 넘치는 UI로 빠르게 소비합니다. 하단으로 드래그 해보세요.</p>
+    </div>
+</body>
+</html>

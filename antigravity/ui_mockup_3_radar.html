@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 3: Radar Chart Nexus</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; }
+        
+        .header { margin-top: 60px; text-align: center; }
+        h2 { margin:0; font-size:1.4rem; }
+        p { color:#94a3b8; font-size:0.9rem; }
+
+        /* Hacky CSS Radar using clip-paths & overlays */
+        .radar-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            margin-top: 50px;
+        }
+
+        .radar-bg {
+            position: absolute;
+            inset: 0;
+            background: repeating-radial-gradient(
+                circle at 50% 50%,
+                transparent 0,
+                transparent 19%,
+                rgba(255,255,255,0.1) 20%
+            );
+            border-radius: 50%;
+        }
+
+        .radar-axes {
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(0deg, transparent 49.5%, rgba(255,255,255,0.1) 50%, transparent 50.5%),
+                linear-gradient(90deg, transparent 49.5%, rgba(255,255,255,0.1) 50%, transparent 50.5%),
+                linear-gradient(45deg, transparent 49.5%, rgba(255,255,255,0.1) 50%, transparent 50.5%),
+                linear-gradient(-45deg, transparent 49.5%, rgba(255,255,255,0.1) 50%, transparent 50.5%);
+            border-radius: 50%;
+        }
+
+        /* Value Polygon representation (SVG is cleaner here) */
+        svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        .polygon {
+            fill: rgba(239, 68, 68, 0.4);
+            stroke: #ef4444;
+            stroke-width: 2;
+            transition: all 0.5s ease;
+        }
+
+        .label {
+            position: absolute;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <h2>다차원 가설 스캐너</h2>
+            <p>여러 지표가 가설을 지지하는 형태</p>
+        </div>
+        
+        <div class="radar-container">
+            <div class="radar-bg"></div>
+            <div class="radar-axes"></div>
+            
+            <svg>
+                <!-- 0=top, 1=top-right, etc -->
+                <polygon class="polygon" id="polyShape" points="125,125 125,125 125,125 125,125 125,125"></polygon>
+            </svg>
+
+            <!-- Labels roughly placed -->
+            <div class="label" style="top: -10px; left: 50%;">외국인 매수</div>
+            <div class="label" style="top: 50%; left: 270px;">원/달러 환율</div>
+            <div class="label" style="top: 260px; left: 50%;">S&P 500</div>
+            <div class="label" style="top: 50%; left: -20px;">기관 수급</div>
+        </div>
+
+        <div style="margin-top:40px; text-align:center; padding:0 30px;">
+            <p style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">면적이 넓을수록 가설을 다방면으로 강하게 지지하고 있다는 뜻입니다.</p>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#3. Radar Chart (Nexus)</h3>
+        <p>각기 다른 지표 4~6개의 지지 강도를 다각형 면적으로 보여줍니다. 찌그러져 있다면 특정 지표만 어긋나 있다는 직관적 힌트가 됩니다.</p>
+        <button onclick="randomize()" style="padding:10px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; width:100%;">지표 변화 시뮬레이션</button>
+    </div>
+
+    <script>
+        const poly = document.getElementById('polyShape');
+        // Center is 125,125. Radius max is 125.
+        // Angles: 0(deg/top), 90(right), 180(down), 270(left)
+        function calcPoint(angleDeg, valPercent) {
+            const rad = (angleDeg - 90) * Math.PI / 180;
+            const r = (valPercent / 100) * 125;
+            const x = 125 + r * Math.cos(rad);
+            const y = 125 + r * Math.sin(rad);
+            return `${x},${y}`;
+        }
+
+        function randomize() {
+            // Random values between 20 and 100
+            const v1 = 20 + Math.random() * 80;
+            const v2 = 20 + Math.random() * 80;
+            const v3 = 20 + Math.random() * 80;
+            const v4 = 20 + Math.random() * 80;
+
+            const pts = [
+                calcPoint(0, v1),
+                calcPoint(90, v2),
+                calcPoint(180, v3),
+                calcPoint(270, v4)
+            ].join(' ');
+
+            poly.setAttribute('points', pts);
+
+            // Change color based on overall area roughly
+            if(v1+v2+v3+v4 > 250) {
+                poly.style.fill = 'rgba(239, 68, 68, 0.4)'; // Red (Support)
+                poly.style.stroke = '#ef4444';
+            } else {
+                poly.style.fill = 'rgba(59, 130, 246, 0.4)'; // Blue (Reject/Weak)
+                poly.style.stroke = '#3b82f6';
+            }
+        }
+        
+        // Initial draw
+        randomize();
+    </script>
+</body>
+</html>

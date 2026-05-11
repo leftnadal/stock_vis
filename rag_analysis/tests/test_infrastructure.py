@@ -158,7 +158,7 @@ class CeleryTaskTests(TestCase):
     Celery Task Tests
     """
 
-    @patch('rag_analysis.tasks.get_neo4j_service')
+    @patch('rag_analysis.services.neo4j_service.get_neo4j_service')
     def test_sync_task_when_neo4j_unavailable(self, mock_get_service):
         """Neo4j 연결 불가 시 태스크는 'skipped' 반환"""
         from rag_analysis.tasks import sync_stock_to_neo4j
@@ -175,7 +175,7 @@ class CeleryTaskTests(TestCase):
         self.assertEqual(result['symbol'], 'AAPL')
         self.assertFalse(result['neo4j_available'])
 
-    @patch('rag_analysis.tasks.get_neo4j_service')
+    @patch('rag_analysis.services.neo4j_service.get_neo4j_service')
     def test_delete_task_success(self, mock_get_service):
         """Neo4j 삭제 태스크 성공"""
         from rag_analysis.tasks import delete_stock_from_neo4j
@@ -199,9 +199,10 @@ class SignalTests(TestCase):
     Django Signal Tests
     """
 
+    @patch('rag_analysis.signals._should_dispatch', return_value=True)
     @patch('rag_analysis.signals.sync_stock_to_neo4j')
     @patch('rag_analysis.signals.invalidate_graph_cache')
-    def test_stock_saved_triggers_sync(self, mock_invalidate, mock_sync):
+    def test_stock_saved_triggers_sync(self, mock_invalidate, mock_sync, mock_debounce):
         """Stock 저장 시 Neo4j 동기화 태스크 큐잉"""
         # Create stock
         stock = Stock.objects.create(

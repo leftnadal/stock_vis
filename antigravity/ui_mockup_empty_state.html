@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thesis Control - Empty State & Pager Nav</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent: #3b82f6;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background-color: #000;
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .phone {
+            width: 375px;
+            height: 812px;
+            background-color: var(--bg-color);
+            border-radius: 40px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
+
+        /* Top Header */
+        .top-nav {
+            padding: 24px;
+            padding-top: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .top-nav h1 {
+            font-size: 1.25rem;
+            margin: 0;
+        }
+
+        /* Pager (Simulated) */
+        .pager-container {
+            width: 100%;
+            height: calc(100% - 90px);
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scrollbar-width: none; /* Firefox */
+        }
+        .pager-container::-webkit-scrollbar {
+            display: none; /* Chrome */
+        }
+        
+        .page {
+            min-width: 100%;
+            padding: 24px;
+            box-sizing: border-box;
+            scroll-snap-align: start;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Catchy Placeholder (Empty State) */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .catchy-box {
+            background: linear-gradient(145deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9));
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* Shimmer effect for catchy box */
+        .catchy-box::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent);
+            transform: skewX(-20deg);
+            animation: shimmer 3s infinite;
+        }
+        @keyframes shimmer {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        .catchy-tag {
+            display: inline-block;
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .catchy-title {
+            font-size: 1.2rem;
+            line-height: 1.4;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: white;
+        }
+
+        .catchy-desc {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0 0 24px 0;
+            line-height: 1.5;
+        }
+
+        .action-btn {
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        .action-btn:active {
+            transform: scale(0.97);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Pagination Dots */
+        .dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 24px;
+        }
+        .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transition: background 0.3s, width 0.3s;
+        }
+        .dot.active {
+            background: white;
+            width: 16px;
+            border-radius: 4px;
+        }
+
+        /* Demo panel */
+        .demo-info {
+            background: #222;
+            padding: 20px;
+            border-radius: 12px;
+            width: 335px;
+            color: white;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="phone">
+        <div class="top-nav">
+            <h1>가설 통제실</h1>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-secondary)">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
+
+        <div class="pager-container" id="pager">
+            <!-- Page 1: Empty State Catchy Box -->
+            <div class="page">
+                <div class="empty-state">
+                    <h2 style="font-size:1rem; margin-top:0; color:var(--text-secondary); text-align:center;">추적 중인 가설이 없어요</h2>
+                    <br/>
+                    
+                    <div class="catchy-box">
+                        <span class="catchy-tag">🔥 오늘 가장 뜨거운 이슈</span>
+                        <h3 class="catchy-title">어젯밤 제롬 파월의 매파적 발언,<br/>국내 증시는 어떻게 될까요?</h3>
+                        <p class="catchy-desc">내 지식이 수익이 되는 순간. 직관에 가깝게 당신만의 기조를 세팅해 보세요. 어려운 지표는 AI가 매칭해 줍니다.</p>
+                        
+                        <button class="action-btn">
+                            💡 1분 만에 가설 세우기
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="dots">
+                        <div class="dot active"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page 2: Dummy Page for swipe demo -->
+            <div class="page">
+                <div class="empty-state">
+                    <div class="catchy-box" style="background:#1e293b;">
+                        <span class="catchy-tag" style="background:rgba(96,165,250,0.2); color:#93c5fd; border-color:rgba(96,165,250,0.3);">뉴스 말고 텍스트로</span>
+                        <h3 class="catchy-title">"이런 거 같아" 라고 말만 하세요.</h3>
+                        <p class="catchy-desc">"금리 인하되니까 당연히 바이오 섹터가 뜰 듯" 이라고 입력해도 가설로 자동 포맷팅 됩니다.</p>
+                        
+                        <button class="action-btn" style="background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(255,255,255,0.2); box-shadow:none;">
+                            💬 내 생각 바로 적기
+                        </button>
+                    </div>
+
+                    <div class="dots">
+                        <div class="dot"></div>
+                        <div class="dot active"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="demo-info">
+        <h3 style="margin-top:0;">💡 아이디어 2 & 5: Swipe Pager & Catchy Empty State</h3>
+        <p><strong>아이디어 2 (Swipe Navigation)</strong><br>
+        모바일 폰의 날씨 앱처럼 좌우로 스와이프하여 여러 가설(또는 생성 옵션)을 넘나듭니다. 폰 스크린 안에서 수평으로 마우스를 드래그(모바일 터치 시뮬레이션) 하거나 트랙패드로 스와이프 해보세요.</p>
+        <p><strong>아이디어 5 (Catchy Placeholder)</strong><br>
+        가설이 없을 때 단순한 '텍스트 안내'가 아닌, 역동적인 그라데이션, Shimmer 애니메이션(반짝이는 빛 효과), 그리고 현재 시의성 있는 이슈를 띄워 행동을 즉각 유도(Call To Action)합니다.</p>
+    </div>
+
+    <script>
+        // Track visual dot changes based on scroll position
+        const pager = document.getElementById('pager');
+        const dotsList = document.querySelectorAll('.dots');
+
+        pager.addEventListener('scroll', () => {
+            const pageIndex = Math.round(pager.scrollLeft / pager.offsetWidth);
+            
+            dotsList.forEach(dots => {
+                const dotElements = dots.querySelectorAll('.dot');
+                dotElements.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === pageIndex);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

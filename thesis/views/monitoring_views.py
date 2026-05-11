@@ -5,20 +5,42 @@ from datetime import timedelta
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from thesis.models import Thesis, ThesisAlert, ThesisIndicator
+from thesis.models import Thesis, ThesisAlert
 from thesis.serializers import ThesisAlertSerializer
-from thesis.services.arrow_calculator import (
-    calculate_indicator_arrow,
-    score_to_degree, degree_to_color,
-)
+from thesis.services.arrow_calculator import calculate_indicator_arrow
+from thesis.services.prompt_builder import get_indicator_description
 from thesis.services.thesis_state_machine import score_to_phase
 
 logger = logging.getLogger(__name__)
+
+
+def _prefetch_quarterly_data(indicators) -> dict:
+    """
+    metrics 지표들의 분기 데이터를 batch로 조회.
+    Returns: {(symbol, metric_code): quarterly_data_dict, ...}
+    """
+    from thesis.services.quarterly_metric_fetcher import fetch_quarterly_metric
+
+    cache = {}
+    for indicator in indicators:
+        params = indicator.data_params or {}
+        metric_code = params.get('metric_code')
+        symbol = params.get('symbol') or getattr(indicator.thesis, 'target', '').upper()
+        if not metric_code or not symbol:
+            continue
+
+        key = (symbol.upper(), metric_code)
+        if key in cache:
+            continue  # 동일 symbol+metric은 1번만 조회
+
+        result = fetch_quarterly_metric(symbol.upper(), metric_code)
+        cache[key] = result
+
+    return cache
 
 
 class DashboardView(APIView):
@@ -37,7 +59,11 @@ class DashboardView(APIView):
         # 각 지표의 현재 화살표 계산
         indicators_data = []
         heatmap_cells = []
-        active_indicators = thesis.indicators.filter(is_active=True)
+        active_indicators = list(thesis.indicators.filter(is_active=True))
+
+        # 분기 지표 batch 조회 (metrics 소스만 대상)
+        metrics_indicators = [i for i in active_indicators if i.data_source == 'metrics']
+        quarterly_cache = _prefetch_quarterly_data(metrics_indicators) if metrics_indicators else {}
 
         for indicator in active_indicators:
             try:
@@ -85,6 +111,42 @@ class DashboardView(APIView):
 
             raw_value_unit = indicator.display_unit or _infer_unit(indicator)
 
+            # 분기 지표 확장 필드 초기화 (metrics 소스인 경우 override)
+            fiscal_label = None
+            quarterly_history = None
+            is_quarterly = False
+            comparison_type = None
+
+            if indicator.data_source == 'metrics':
+                from thesis.services.quarterly_metric_fetcher import RATIO_METRICS
+
+                params = indicator.data_params or {}
+                metric_code = params.get('metric_code')
+                symbol = (params.get('symbol') or getattr(indicator.thesis, 'target', '').upper()).upper()
+                qdata = quarterly_cache.get((symbol, metric_code))
+
+                if qdata:
+                    is_quarterly = True
+                    raw_value = qdata['value']
+                    change_pct = qdata.get('change_pct')
+                    quarterly_history = qdata.get('quarterly_history')
+                    comparison_type = qdata.get('comparison_type')
+
+                    # 비율값(0~1)을 % 단위로 변환 (display_unit='%'인 경우)
+                    if raw_value_unit == '%' and metric_code in RATIO_METRICS:
+                        if raw_value is not None:
+                            raw_value = round(raw_value * 100, 2)
+                        if quarterly_history:
+                            quarterly_history = [
+                                {**h, 'value': round(h['value'] * 100, 2)}
+                                for h in quarterly_history
+                            ]
+
+                    if qdata.get('fiscal_quarter'):
+                        fiscal_label = f"{qdata['fiscal_year']} Q{qdata['fiscal_quarter']}"
+                    else:
+                        fiscal_label = f"{qdata['fiscal_year']} FY"
+
             indicators_data.append({
                 'id': str(indicator.id),
                 'name': indicator.name,
@@ -101,6 +163,14 @@ class DashboardView(APIView):
                 'previous_raw_value': previous_raw_value,
                 'change_pct': change_pct,
                 'raw_value_asof': latest_reading.asof.isoformat() if latest_reading else None,
+                # 분기 지표 확장 필드
+                'fiscal_label': fiscal_label,
+                'quarterly_history': quarterly_history,
+                'is_quarterly': is_quarterly,
+                'comparison_type': comparison_type,
+                # 지표 설명 + 가설 관계성
+                'description': get_indicator_description(indicator.name),
+                'recommendation_reason': indicator.recommendation_reason,
             })
 
             heatmap_cells.append({
@@ -196,7 +266,7 @@ class IndicatorReadingsView(APIView):
         indicator = get_object_or_404(
             thesis.indicators, id=indicator_id
         )
-        days = min(int(request.query_params.get('days', 14)), 90)
+        days = min(int(request.query_params.get('days', 14)), 1825)  # 최대 5Y
         cutoff = timezone.now() - timedelta(days=days)
 
         readings = list(
@@ -206,6 +276,10 @@ class IndicatorReadingsView(APIView):
             ).order_by('asof').values('asof', 'value', 'raw_value')
         )
 
+        # DB readings가 부족하면 FMP 히스토리 API fallback
+        if len(readings) < min(days, 30) and indicator.data_source == 'fmp':
+            readings = _fetch_fmp_history(indicator, days)
+
         return Response({
             'indicator_id': str(indicator.id),
             'indicator_name': indicator.name,
@@ -214,6 +288,59 @@ class IndicatorReadingsView(APIView):
             'readings': readings,
             'count': len(readings),
         })
+
+
+def _fetch_fmp_history(indicator, days: int) -> list:
+    """FMP get_historical_price로 히스토리 조회. DB readings 부족 시 fallback."""
+    from api_request.providers.fmp.client import FMPClient, FMPClientError, FMPPremiumError
+    from django.conf import settings
+
+    params = indicator.data_params or {}
+    symbol = params.get('symbol')
+    if not symbol:
+        return []
+
+    try:
+        api_key = getattr(settings, 'FMP_API_KEY', None)
+        if not api_key:
+            return []
+
+        client = FMPClient(api_key=api_key)
+        from_date = (timezone.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+        to_date = timezone.now().strftime('%Y-%m-%d')
+
+        data = client.get_historical_price(symbol, from_date=from_date, to_date=to_date)
+        if not data:
+            return []
+
+        # FMP 응답을 readings 형식으로 변환
+        metric = params.get('metric', 'price')
+        field_map = {
+            'price': 'close', 'change_percent': 'changePercent',
+            'volume': 'volume',
+        }
+        field = field_map.get(metric, 'close')
+
+        readings = []
+        for row in data:
+            date_str = row.get('date')
+            val = row.get(field)
+            if date_str and val is not None:
+                readings.append({
+                    'asof': f"{date_str}T18:00:00Z",
+                    'value': float(val),
+                    'raw_value': float(val),
+                })
+
+        # 오래된 순 정렬
+        readings.sort(key=lambda r: r['asof'])
+        return readings
+
+    except (FMPPremiumError, FMPClientError):
+        return []
+    except Exception as e:
+        logger.warning(f"FMP history fallback 실패 ({symbol}): {e}")
+        return []
 
 
 def _infer_unit(indicator):

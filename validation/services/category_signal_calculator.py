@@ -9,10 +9,7 @@ Task 4: Category Signal 계산
 import logging
 from decimal import Decimal
 
-from django.utils import timezone
-
 from stocks.models import Stock, SP500Constituent, IndustryClassification
-from metrics.models import MetricDefinition
 from validation.models import CompanyBenchmarkDelta, CategorySignal
 
 logger = logging.getLogger(__name__)

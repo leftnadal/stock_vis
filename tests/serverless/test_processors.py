@@ -2,6 +2,7 @@
 Market Movers Processor 테스트
 """
 import pytest
+from unittest.mock import patch
 from decimal import Decimal
 from django.utils import timezone
 
@@ -14,9 +15,11 @@ class TestMarketMoversProcessor:
     """MarketMoversProcessor 단위 테스트"""
 
     @pytest.fixture
-    def processor(self):
+    def processor(self, settings):
         """프로세서 인스턴스"""
-        return MarketMoversProcessor()
+        settings.GEMINI_API_KEY = 'test-api-key'
+        with patch('serverless.services.keyword_service.genai.Client'):
+            return MarketMoversProcessor()
 
     @pytest.fixture
     def sample_data(self):

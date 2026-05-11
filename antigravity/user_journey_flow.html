@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockVis: Unified Journey</title>
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --accent: #2563eb; --border: #e2e8f0; }
+        body { margin:0; padding:2rem; background:#cbd5e1; color:var(--text); font-family:-apple-system, system-ui, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem; overflow:hidden;}
+        
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.1); border:1px solid #d1d5db; display:flex; flex-direction:column; }
+        
+        /* 뷰 컨테이너 */
+        .view-container { flex:1; position:relative; overflow:hidden; }
+        .view { position:absolute; top:0; left:0; width:100%; height:100%; overflow-y:auto; padding-bottom:100px; padding-top:50px; opacity:0; pointer-events:none; transition:opacity 0.3s ease; }
+        .view.active { opacity:1; pointer-events:auto; z-index:10; }
+        .view::-webkit-scrollbar { display:none;}
+
+        /* Bottom Nav */
+        .bottom-nav { position:absolute; bottom:0; left:0; width:100%; height:85px; background:rgba(255,255,255,0.9); backdrop-filter:blur(20px); border-top:1px solid var(--border); display:flex; justify-content:space-around; align-items:flex-start; padding-top:15px; z-index:20;}
+        .nav-item { display:flex; flex-direction:column; align-items:center; gap:4px; font-size:0.75rem; color:#64748b; font-weight:600; cursor:pointer;}
+        .nav-item.active { color:var(--accent); }
+        .nav-icon { font-size:1.5rem; margin-bottom:2px;}
+
+        /* 공통 헤더 */
+        .top-header { position:absolute; top:0; left:0; width:100%; padding:50px 20px 10px; background:rgba(248,250,252,0.9); backdrop-filter:blur(10px); z-index:15; border-bottom:1px solid transparent; transition:background 0.3s;}
+        .top-header h1 { margin:0; font-size:1.4rem; font-weight:800; letter-spacing:-0.5px;}
+        .top-header p { margin:0; font-size:0.85rem; color:#64748b; font-weight:500;}
+
+        /* ---------------------------------
+           [STEP 1] TODAY (Morning Briefing) 
+           --------------------------------- */
+        #view-today .story-card { background:linear-gradient(135deg, #1e293b, #0f172a); color:white; border-radius:24px; padding:25px; margin:20px; box-shadow:0 10px 30px rgba(0,0,0,0.15);}
+        .tag-pill { background:rgba(255,255,255,0.15); padding:4px 10px; border-radius:20px; font-size:0.75rem; display:inline-block; margin-bottom:15px; font-weight:600;}
+        .m-title { font-size:1.6rem; font-weight:800; line-height:1.2; margin-bottom:15px;}
+        .m-desc { font-size:0.95rem; line-height:1.5; color:#cbd5e1; margin-bottom:20px;}
+        .action-btn { background:white; color:black; padding:12px; text-align:center; border-radius:12px; font-weight:700; font-size:0.9rem;}
+
+        .section-title { padding:0 20px; font-weight:700; margin-bottom:10px; font-size:1.1rem;}
+        .mover-list { padding:0 20px; display:flex; flex-direction:column; gap:10px;}
+        .mover-item { background:white; padding:15px; border-radius:16px; display:flex; align-items:center; justify-content:space-between; border:1px solid var(--border);}
+        .tkr { font-weight:700; font-size:1.1rem;}
+        .sig { font-size:0.75rem; color:var(--accent); background:#eff6ff; padding:2px 6px; border-radius:6px; margin-top:4px; display:inline-block;}
+
+        /* ---------------------------------
+           [STEP 2] EXPLORE (Chain Sight) 
+           --------------------------------- */
+        #view-explore { background:#0f172a; color:white; }
+        #view-explore .top-header { background:rgba(15,23,42,0.9); }
+        #view-explore .top-header h1 { color:white; }
+        
+        .node-space { height:350px; position:relative; margin:20px; border-radius:24px; border:1px solid #334155; overflow:hidden;}
+        .node { position:absolute; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); padding:10px 15px; border-radius:20px; font-size:0.85rem; font-weight:600; backdrop-filter:blur(5px);}
+        .n-center { top:140px; left:100px; background:rgba(59,130,246,0.3); border-color:#3b82f6;}
+        .n-1 { top:50px; left:40px; } .n-2 { top:250px; left:50px; } .n-3 { top:90px; left:220px; }
+
+        .sheet { background:#1e293b; border-radius:24px; padding:20px; margin:0 20px; min-height:200px;}
+        .sheet-title { font-weight:700; font-size:1rem; margin-bottom:15px; color:#f8fafc;}
+        .stock-chip { display:flex; justify-content:space-between; padding:12px 0; border-bottom:1px solid #334155;}
+        
+        /* ---------------------------------
+           [STEP 3] THESIS (Control/Timing) 
+           --------------------------------- */
+        .t-card { background:white; margin:20px; border-radius:20px; padding:20px; border:1px solid var(--border); box-shadow:0 4px 10px rgba(0,0,0,0.02);}
+        .t-head { display:flex; justify-content:space-between; margin-bottom:15px;}
+        .t-badge { background:#ecfdf5; color:#10b981; padding:4px 8px; border-radius:8px; font-size:0.75rem; font-weight:700;}
+        .t-title { font-size:1.2rem; font-weight:800; margin-bottom:5px;}
+        
+        .t-metric { background:#f8fafc; padding:15px; border-radius:12px; display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;}
+        .t-score { font-size:1.5rem; font-weight:800; color:var(--accent);}
+        
+        /* ---------------------------------
+           [STEP 4] PORTFOLIO (Execution) 
+           --------------------------------- */
+        .port-hero { padding:20px; text-align:center;}
+        .port-total { font-size:2.5rem; font-weight:800; letter-spacing:-1px;}
+        .port-action { background:var(--accent); color:white; padding:15px; border-radius:16px; margin:0 20px 20px; text-align:center; font-weight:700; cursor:pointer;}
+        
+        .asset-list { padding:0 20px;}
+        .asset { display:flex; justify-content:space-between; padding:15px; background:white; border-radius:16px; margin-bottom:10px; border:1px solid var(--border);}
+        
+    </style>
+</head>
+<body>
+    <div class="phone">
+        
+        <div class="view-container">
+            <!-- 1. TODAY (Morning Briefing) -->
+            <div class="view active" id="view-today">
+                <div class="top-header">
+                    <h1>출근길 요약 (Today)</h1>
+                    <p>어젯밤 어떤 일이 있었나요?</p>
+                </div>
+                
+                <div class="story-card">
+                    <div class="tag-pill">Market Movers</div>
+                    <div class="m-title">"AI 반도체 옥석가리기 돌입, 엔비디아 나홀로 질주"</div>
+                    <div class="m-desc">AMD와 인텔이 부진한 가이던스를 내놓은 반면, 엔비디아에는 강한 매수세가 유입되며 시장을 견인했습니다.</div>
+                    <div class="action-btn" onclick="switchTab('explore')">연관 테마 탐험하기 &rarr;</div>
+                </div>
+
+                <div class="section-title">주목할 EOD 시그널</div>
+                <div class="mover-list">
+                    <div class="mover-item" onclick="switchTab('explore')">
+                        <div><div class="tkr">NVDA</div><div class="sig">강한 상승돌파 (Breakout)</div></div>
+                        <div style="font-weight:700; color:#10b981;">+4.2%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. EXPLORE (Chain Sight) -->
+            <div class="view" id="view-explore">
+                <div class="top-header">
+                    <h1>탐험 (Chain Sight)</h1>
+                    <p>연관 주식과 거시적 흐름 검증</p>
+                </div>
+
+                <div class="node-space">
+                    <svg style="position:absolute; width:100%; height:100%; top:0; left:0; z-index:0;">
+                        <line x1="150" y1="160" x2="80" y2="70" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                        <line x1="150" y1="160" x2="260" y2="110" stroke="#3b82f6" stroke-dasharray="4" stroke-width="2"/>
+                        <line x1="150" y1="160" x2="90" y2="270" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+                    </svg>
+                    <div class="node n-center">AI 반도체 대장주</div>
+                    <div class="node n-1">AMD (약세)</div>
+                    <div class="node n-2">TSMC (동조)</div>
+                    <div class="node n-3" style="border-color:#3b82f6; color:#60a5fa;">데이터센터 전력 (수혜)</div>
+                </div>
+
+                <div class="sheet">
+                    <div class="sheet-title">1차 검증: 연관 주식 발굴</div>
+                    <div class="stock-chip" onclick="switchTab('thesis')">
+                        <div>
+                            <div style="font-weight:600;">VRT (Vertiv Holdings)</div>
+                            <div style="font-size:0.8rem; color:#94a3b8; margin-top:2px;">전력 인프라 • 매물대 소화 중</div>
+                        </div>
+                        <div style="color:#10b981; font-weight:600; display:flex; align-items:center;">
+                            관심담기 &rsaquo;
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. THESIS (Control / Timing) -->
+            <div class="view" id="view-thesis">
+                <div class="top-header">
+                    <h1>통제실 (Thesis)</h1>
+                    <p>시장 흐름 기반 매수/매도 타이밍 재기</p>
+                </div>
+
+                <div class="t-card">
+                    <div class="t-head">
+                        <div class="t-badge">매수 타이밍 대기중</div>
+                        <div style="font-size:1.2rem;">⏱️</div>
+                    </div>
+                    <div class="t-title">전력 인프라주 조정 시 매수</div>
+                    <div style="font-size:0.9rem; color:#64748b; margin-bottom:15px;">VRT, CEG 종목이 단기 과열을 식히고 20일선에 닿을 때 진입합니다.</div>
+                    
+                    <div class="t-metric">
+                        <div>
+                            <div style="font-size:0.8rem; color:#64748b; font-weight:600;">가설 일치율 (Alignment)</div>
+                            <div style="font-size:0.75rem; margin-top:2px;">현재 20일선 근접 중</div>
+                        </div>
+                        <div class="t-score">85%</div>
+                    </div>
+                    
+                    <div style="font-size:0.85rem; padding:10px; background:#fef2f2; border-radius:8px; color:#ef4444; font-weight:600;">⚠️ 단기 시장 변동성 (VIX) 급증가 감지됨. 조금 더 관망하세요.</div>
+                </div>
+            </div>
+
+            <!-- 4. PORTFOLIO (Execution) -->
+            <div class="view" id="view-portfolio">
+                <div class="top-header">
+                    <h1>내 자산 (Portfolio)</h1>
+                    <p>최종 포트폴리오 수정 및 액션</p>
+                </div>
+
+                <div class="port-hero">
+                    <div style="color:#64748b; font-weight:600; margin-bottom:5px;">총 자산</div>
+                    <div class="port-total">₩45,230,000</div>
+                </div>
+
+                <div class="port-action">
+                    [알림] VRT 가설 조건 충족. 매수 플랜 실행하기
+                </div>
+
+                <div class="asset-list">
+                    <div class="asset">
+                        <div>
+                            <div style="font-weight:700;">AAPL</div>
+                            <div style="font-size:0.8rem; color:#64748b;">12주</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-weight:700;">$2,078</div>
+                            <div style="font-size:0.8rem; color:#10b981;">+4.2%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAV -->
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('today')" id="nav-today">
+                <div class="nav-icon">☀️</div>
+                <div>출근요약</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('explore')" id="nav-explore">
+                <div class="nav-icon">🪐</div>
+                <div>탐험검증</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('thesis')" id="nav-thesis">
+                <div class="nav-icon">🎯</div>
+                <div>타이밍</div>
+            </div>
+            <div class="nav-item" onclick="switchTab('portfolio')" id="nav-portfolio">
+                <div class="nav-icon">💼</div>
+                <div>포트폴리오</div>
+            </div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:350px; padding:20px; background:#222; border-radius:12px; line-height:1.5;">
+        <h3>핵심 유저 저니 (User Journey)</h3>
+        <p><b>1. 출근요약:</b> 밤사이 미장 요약(EOD/뉴스)을 보고 시장 분위기를 파악합니다.</p>
+        <p><b>2. 탐험검증(Chain Sight):</b> 방금 눈에 띈 테마/섹터를 체인사이트로 파고들어 관심 종목을 1차로 발굴합니다.</p>
+        <p><b>3. 타이밍(Thesis):</b> 고른 종목을 "지금 살지 기다릴지" 거시경제와 흐름을 모니터링하며 가설을 세웁니다.</p>
+        <p><b>4. 포트폴리오:</b> 가설이 무르익으면 매수/매도 알림을 받고 최종 액션을 취합니다.</p>
+        <p style="color:#10b981; font-weight:bold;">* 앱 네비게이션을 탭하여 플로우를 직접 경험해보세요.</p>
+    </div>
+
+    <script>
+        function switchTab(tabId) {
+            // Hide all views
+            document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            
+            // Show selected view
+            document.getElementById('view-' + tabId).classList.add('active');
+            document.getElementById('nav-' + tabId).classList.add('active');
+        }
+    </script>
+</body>
+</html>

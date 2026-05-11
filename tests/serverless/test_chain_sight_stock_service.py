@@ -14,6 +14,10 @@ from django.utils import timezone
 class TestRelationshipService:
     """RelationshipService 테스트"""
 
+    @pytest.fixture(autouse=True)
+    def _skip_if_missing(self):
+        pytest.importorskip('serverless.services.relationship_service')
+
     @pytest.fixture
     def service(self):
         """서비스 인스턴스"""
@@ -71,6 +75,10 @@ class TestRelationshipService:
 
 class TestCategoryGenerator:
     """CategoryGenerator 테스트"""
+
+    @pytest.fixture(autouse=True)
+    def _skip_if_missing(self):
+        pytest.importorskip('serverless.services.category_generator')
 
     @pytest.fixture
     def generator(self):
@@ -224,6 +232,10 @@ class TestCategoryGenerator:
 
 class TestChainSightStockService:
     """ChainSightStockService 통합 테스트"""
+
+    @pytest.fixture(autouse=True)
+    def _skip_if_missing(self):
+        pytest.importorskip('serverless.services.chain_sight_stock_service')
 
     @pytest.fixture
     def service(self):

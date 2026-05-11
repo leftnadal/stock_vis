@@ -10,11 +10,10 @@ import logging
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
-from django.db import transaction
 from django.utils import timezone
 
 from stocks.models import Stock, SP500Constituent
-from metrics.models import CompanyMetricSnapshot, MetricDefinition
+from metrics.models import CompanyMetricSnapshot
 from validation.models import CompanyMetricLatest
 from validation.services.financial_fetcher import FinancialFetcher
 

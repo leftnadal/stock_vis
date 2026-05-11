@@ -50,6 +50,9 @@ class PresetGenerator:
         # 5. lifecycle (성장단계 유사) — sector >= 25종목 + CAGR 데이터
         presets_created += self._generate_lifecycle(stock, base_qs)
 
+        # 6. thematic (비즈니스 모델 유사) — Phase 6: Chain Sight DNA 기반
+        presets_created += self._generate_thematic(stock, base_qs)
+
         return {'symbol': symbol, 'presets_created': presets_created}
 
     def generate_for_symbols(self, symbols: list[str] = None) -> dict:
@@ -364,6 +367,93 @@ class PresetGenerator:
                 'peer_symbols': group_symbols[:50],
                 'peer_count': len(group_symbols),
                 'generation_method': 'auto_lifecycle',
+                'confidence_score': confidence,
+                'is_default': False,
+                'is_active': True,
+            }
+        )
+        return 1
+
+    def _generate_thematic(self, stock, base_qs) -> int:
+        """
+        Phase 6: 비즈니스 모델 유사 (Chain Sight DNA 기반)
+
+        GrowthStage × CapitalDNA 조합으로 섹터 횡단 테마 클러스터링.
+        같은 (stage, capital_type) 조합 = 비슷한 비즈니스 DNA.
+        """
+        from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA
+
+        # 내 프로파일 조회
+        my_gs = CompanyGrowthStage.objects.filter(symbol_id=stock.symbol).first()
+        my_cd = CompanyCapitalDNA.objects.filter(symbol_id=stock.symbol).first()
+
+        if not my_gs or not my_cd:
+            return 0
+
+        my_stage = my_gs.stage
+        my_capital = my_cd.capital_type
+
+        # 같은 DNA 조합인 종목 찾기 (섹터 무관)
+        same_stage_symbols = set(
+            CompanyGrowthStage.objects.filter(stage=my_stage)
+            .values_list('symbol_id', flat=True)
+        )
+        same_capital_symbols = set(
+            CompanyCapitalDNA.objects.filter(capital_type=my_capital)
+            .values_list('symbol_id', flat=True)
+        )
+
+        # 교집합 (같은 stage + 같은 capital_type)
+        dna_peers = same_stage_symbols & same_capital_symbols
+        dna_peers.discard(stock.symbol)
+
+        # 다른 섹터 종목 위주 (같은 섹터는 이미 default/sector_all에서 커버)
+        cross_sector_peers = [
+            s for s in dna_peers
+            if Stock.objects.filter(symbol=s).exclude(sector__iexact=stock.sector or '').exists()
+        ]
+
+        # 같은 섹터도 포함 (cross_sector가 적으면)
+        all_dna_peers = list(dna_peers)
+
+        # 최소 5개 필요
+        target_peers = cross_sector_peers if len(cross_sector_peers) >= 5 else all_dna_peers
+        if len(target_peers) < 5:
+            return 0
+
+        # 테마 라벨 생성
+        STAGE_LABELS = {
+            'mature': '성숙기', 'accelerating': '성장기', 'declining': '하락기',
+            'turnaround': '턴어라운드', 'cash_cow': '캐시카우', 'early_growth': '초기성장',
+        }
+        CAPITAL_LABELS = {
+            'balanced': '균형형', 'heavy_investor': '적극투자형',
+            'cash_hoarder': '현금축적형', 'shareholder_first': '주주환원형',
+            'aggressive_growth': '공격적성장형',
+        }
+        stage_label = STAGE_LABELS.get(my_stage, my_stage)
+        capital_label = CAPITAL_LABELS.get(my_capital, my_capital)
+        theme_label = f"{stage_label} + {capital_label}"
+
+        is_cross = len(cross_sector_peers) >= 5
+        summary = (
+            f"섹터 횡단 {theme_label} DNA 유사 {len(target_peers)}개"
+            if is_cross else
+            f"{theme_label} DNA 유사 {len(target_peers)}개"
+        )
+
+        confidence = self._calc_confidence(len(target_peers), stock)
+        if is_cross:
+            confidence = min(confidence + 0.1, 1.0)  # cross-sector 보너스
+
+        PeerPreset.objects.update_or_create(
+            symbol=stock, preset_key='thematic',
+            defaults={
+                'display_name': f'비즈니스 DNA ({theme_label})',
+                'logic_summary': summary,
+                'peer_symbols': target_peers[:50],
+                'peer_count': len(target_peers),
+                'generation_method': 'curated',
                 'confidence_score': confidence,
                 'is_default': False,
                 'is_active': True,

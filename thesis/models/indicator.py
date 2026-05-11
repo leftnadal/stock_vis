@@ -38,6 +38,7 @@ class ThesisIndicator(models.Model):
             ('fmp', 'FMP'),
             ('fred', 'FRED'),
             ('news_sentiment', 'News Sentiment'),
+            ('metrics', 'Metrics'),
             ('manual', 'Manual'),
             ('custom', 'Custom'),
         ],
@@ -51,6 +52,12 @@ class ThesisIndicator(models.Model):
             ('positive', 'Positive'),
             ('negative', 'Negative'),
         ],
+    )
+
+    # 추천 이유 (빌더에서 생성, 관제실에 표시)
+    recommendation_reason = models.TextField(
+        blank=True, default='',
+        help_text='이 지표가 가설에 추천된 이유',
     )
 
     # 가중치/활성

@@ -6,20 +6,19 @@ import re
 import uuid
 
 from django.conf import settings
-from django.utils import timezone
 
 from thesis.models import Thesis, ThesisPremise, ThesisIndicator, HypothesisEvent
 from thesis.services.indicator_matcher import match_indicators_for_premise, match_indicators_for_llm
 from thesis.services.builder_state import (
     ConversationState, ChatMessage, CollectedData, SuggestionData,
     PremiseData, IndicatorRecommendation,
-    BuilderPhase, BuilderMode, FallbackReason,
+    BuilderPhase, FallbackReason,
     MONITORING_PRESETS,
 )
 from thesis.services.builder_events import (
     log_event, EVENT_BUILDER_STARTED,
     EVENT_SUGGESTION_REQUEST_STARTED, EVENT_SUGGESTION_REQUEST_SUCCEEDED,
-    EVENT_SUGGESTION_REQUEST_FAILED, EVENT_SUGGESTION_FALLBACK_USED,
+    EVENT_SUGGESTION_REQUEST_FAILED,
     EVENT_SUGGESTION_SELECTED, EVENT_SUGGESTION_TO_PRESET,
 )
 from thesis.feature_flags import get_feature_flags
@@ -633,6 +632,7 @@ def _create_thesis(state, collected, user):
             data_source=ind.get('data_source', 'manual'),
             data_params=ind.get('data_params', {}),
             support_direction=ind.get('support_direction', 'positive'),
+            recommendation_reason=ind.get('reason', ''),
         )
         created_indicators.append(ti)
 
@@ -711,6 +711,7 @@ def _create_thesis(state, collected, user):
                 data_source=ind.get('data_source', 'manual'),
                 data_params=ind.get('data_params', {}),
                 support_direction=flipped_dir,
+                recommendation_reason=ind.get('reason', ''),
             )
         try:
             HypothesisEvent.objects.create(
@@ -1133,12 +1134,16 @@ def _create_thesis_from_llm(state, user):
                 if rec.indicator_db_id:
                     indicator_ids_to_create.append(rec.indicator_db_id)
 
-    # indicator_db_id → target_symbol 매핑 구축 (premises에서 추출)
+    # indicator_db_id → target_symbol / why 매핑 구축 (premises에서 추출)
     symbol_map = {}  # {db_id: 'META'}
+    why_map = {}     # {db_id: '추천 이유'}
     for p in collected.premises:
         for rec in p.recommended_indicators:
-            if rec.indicator_db_id and rec.target_symbol:
-                symbol_map[rec.indicator_db_id] = rec.target_symbol
+            if rec.indicator_db_id:
+                if rec.target_symbol:
+                    symbol_map[rec.indicator_db_id] = rec.target_symbol
+                if rec.why:
+                    why_map.setdefault(rec.indicator_db_id, rec.why)
 
     seen_indicator_ids = set()
     for db_id in indicator_ids_to_create:
@@ -1162,6 +1167,7 @@ def _create_thesis_from_llm(state, user):
                     data_source=cat_ind.get('data_source', 'manual'),
                     data_params=data_params,
                     support_direction=cat_ind.get('support_direction', 'positive'),
+                    recommendation_reason=why_map.get(db_id, ''),
                 )
                 created_indicators.append(ti)
                 seen_indicator_ids.add(db_id)
@@ -1309,11 +1315,7 @@ def _handle_conversational_edit(state, user_input, user):
     """
     from thesis.services.prompt_builder import (
         build_intent_classification_prompt,
-        build_question_answer_prompt,
-        build_modify_premise_prompt,
-        build_modify_indicator_prompt,
         call_gemini_light,
-        get_indicator_by_id,
     )
 
     collected = state.collected
@@ -1417,7 +1419,7 @@ def _handle_question(state, user_input):
 def _handle_modify_premise(state, user_input):
     """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected/suggestions에 적용."""
     from thesis.services.prompt_builder import (
-        build_modify_premise_prompt, call_gemini_light, get_indicator_by_id,
+        call_gemini_light, get_indicator_by_id,
     )
     from thesis.services.indicator_matcher import match_indicators_for_llm
 

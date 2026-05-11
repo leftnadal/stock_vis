@@ -3,7 +3,6 @@
 
 스케줄링된 데이터 업데이트 태스크
 """
-import logging
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache
@@ -64,7 +63,8 @@ def update_economic_indicators(self):
 @shared_task(bind=True, max_retries=3)
 def update_market_indices(self):
     """
-    시장 지수 데이터 업데이트 (FMP API)
+    전체 시장 데이터 업데이트 (FMP API)
+    지수 + 섹터 ETF + 원자재 + 환율 + 달러 인덱스 → MarketIndexPrice에 저장.
 
     실행 주기: 시장 운영 시간 중 5분마다
     """
@@ -76,31 +76,41 @@ def update_market_indices(self):
     try:
         service = MacroEconomicService()
 
-        # 시장 지수 가져오기
-        indices_data = service.fmp.get_market_indices()
+        # 전체 심볼 조회 (지수 + 섹터 + 원자재 + 환율 + DXY)
+        all_data = service.fmp.get_all_market_quotes()
 
         saved_count = 0
         today = timezone.now().date()
 
-        for symbol, data in indices_data.items():
+        for symbol, data in all_data.items():
             try:
-                # MarketIndex 생성/조회
-                index, _ = MarketIndex.objects.get_or_create(
+                index, created = MarketIndex.objects.get_or_create(
                     symbol=symbol,
                     defaults={
                         'name': data.get('name', symbol),
-                        'category': 'us_equity' if symbol.startswith('^') else 'other',
+                        'category': data.get('category', 'us_equity'),
                     }
                 )
+                # 기존 레코드의 category가 잘못되어 있으면 수정
+                if not created and index.category == 'other':
+                    index.category = data.get('category', 'us_equity')
+                    index.name = data.get('name', index.name)
+                    index.save(update_fields=['category', 'name'])
 
-                # 가격 저장
+                price = data.get('price')
+                if price is None:
+                    continue
+
                 MarketIndexPrice.objects.update_or_create(
                     index=index,
                     date=today,
                     defaults={
-                        'close': Decimal(str(data.get('price', 0))),
-                        'change': Decimal(str(data.get('change', 0))) if data.get('change') else None,
-                        'change_percent': Decimal(str(data.get('change_percent', 0))) if data.get('change_percent') else None,
+                        'open': Decimal(str(data['previous_close'])) if data.get('previous_close') else None,
+                        'high': Decimal(str(data['day_high'])) if data.get('day_high') else None,
+                        'low': Decimal(str(data['day_low'])) if data.get('day_low') else None,
+                        'close': Decimal(str(price)),
+                        'change': Decimal(str(data['change'])) if data.get('change') else None,
+                        'change_percent': Decimal(str(data['change_percent'])) if data.get('change_percent') else None,
                     }
                 )
                 saved_count += 1
@@ -112,12 +122,12 @@ def update_market_indices(self):
         # 캐시 무효화
         cache.delete('macro:global_markets_dashboard')
 
-        logger.info(f"Market indices update complete. Saved: {saved_count}")
-        return {'status': 'success', 'saved': saved_count}
+        logger.info(f"Market data update complete. Saved: {saved_count}/{len(all_data)}")
+        return {'status': 'success', 'saved': saved_count, 'total': len(all_data)}
 
     except Exception as e:
         logger.error(f"update_market_indices failed: {e}")
-        self.retry(countdown=60)  # 1분 후 재시도
+        self.retry(countdown=60)
 
 
 @shared_task(bind=True)

@@ -3,8 +3,7 @@ Financial Statements Fallback Service
 
 재무제표 데이터를 다중 소스에서 가져오는 fallback 체인:
 1. FMP API (Primary)
-2. Alpha Vantage API (Secondary)
-3. yfinance (Tertiary)
+2. yfinance (Secondary)
 
 모든 소스의 데이터를 통일된 형식으로 변환합니다.
 """
@@ -23,7 +22,6 @@ class FinancialStatementsFallbackService:
 
     def __init__(self):
         self._fmp_service = None
-        self._av_client = None
         self._yf = None
 
     @property
@@ -36,17 +34,6 @@ class FinancialStatementsFallbackService:
             except Exception as e:
                 logger.warning(f"FMP service init failed: {e}")
         return self._fmp_service
-
-    @property
-    def av_client(self):
-        """Alpha Vantage client lazy loading"""
-        if self._av_client is None:
-            try:
-                from api_request.alphavantage_client import AlphaVantageClient
-                self._av_client = AlphaVantageClient()
-            except Exception as e:
-                logger.warning(f"Alpha Vantage client init failed: {e}")
-        return self._av_client
 
     @property
     def yf(self):
@@ -75,12 +62,7 @@ class FinancialStatementsFallbackService:
         if data:
             return data, 'fmp'
 
-        # 2. Alpha Vantage 시도
-        data = self._try_av_balance_sheet(symbol, period, limit)
-        if data:
-            return data, 'alphavantage'
-
-        # 3. yfinance 시도
+        # 2. yfinance 시도
         data = self._try_yf_balance_sheet(symbol, period, limit)
         if data:
             return data, 'yfinance'
@@ -98,20 +80,6 @@ class FinancialStatementsFallbackService:
                 return self._transform_fmp_balance_sheet(data)
         except Exception as e:
             logger.debug(f"FMP balance sheet failed for {symbol}: {e}")
-        return []
-
-    def _try_av_balance_sheet(self, symbol: str, period: str, limit: int) -> List[Dict]:
-        """Alpha Vantage에서 대차대조표 조회"""
-        if not self.av_client:
-            return []
-        try:
-            response = self.av_client.get_balance_sheet(symbol)
-            key = 'quarterlyReports' if period == 'quarterly' else 'annualReports'
-            data = response.get(key, [])[:limit]
-            if data:
-                return self._transform_av_balance_sheet(data, period)
-        except Exception as e:
-            logger.debug(f"Alpha Vantage balance sheet failed for {symbol}: {e}")
         return []
 
     def _try_yf_balance_sheet(self, symbol: str, period: str, limit: int) -> List[Dict]:
@@ -142,12 +110,7 @@ class FinancialStatementsFallbackService:
         if data:
             return data, 'fmp'
 
-        # 2. Alpha Vantage 시도
-        data = self._try_av_income_statement(symbol, period, limit)
-        if data:
-            return data, 'alphavantage'
-
-        # 3. yfinance 시도
+        # 2. yfinance 시도
         data = self._try_yf_income_statement(symbol, period, limit)
         if data:
             return data, 'yfinance'
@@ -165,20 +128,6 @@ class FinancialStatementsFallbackService:
                 return self._transform_fmp_income_statement(data)
         except Exception as e:
             logger.debug(f"FMP income statement failed for {symbol}: {e}")
-        return []
-
-    def _try_av_income_statement(self, symbol: str, period: str, limit: int) -> List[Dict]:
-        """Alpha Vantage에서 손익계산서 조회"""
-        if not self.av_client:
-            return []
-        try:
-            response = self.av_client.get_income_statement(symbol)
-            key = 'quarterlyReports' if period == 'quarterly' else 'annualReports'
-            data = response.get(key, [])[:limit]
-            if data:
-                return self._transform_av_income_statement(data, period)
-        except Exception as e:
-            logger.debug(f"Alpha Vantage income statement failed for {symbol}: {e}")
         return []
 
     def _try_yf_income_statement(self, symbol: str, period: str, limit: int) -> List[Dict]:
@@ -209,12 +158,7 @@ class FinancialStatementsFallbackService:
         if data:
             return data, 'fmp'
 
-        # 2. Alpha Vantage 시도
-        data = self._try_av_cash_flow(symbol, period, limit)
-        if data:
-            return data, 'alphavantage'
-
-        # 3. yfinance 시도
+        # 2. yfinance 시도
         data = self._try_yf_cash_flow(symbol, period, limit)
         if data:
             return data, 'yfinance'
@@ -232,20 +176,6 @@ class FinancialStatementsFallbackService:
                 return self._transform_fmp_cash_flow(data)
         except Exception as e:
             logger.debug(f"FMP cash flow failed for {symbol}: {e}")
-        return []
-
-    def _try_av_cash_flow(self, symbol: str, period: str, limit: int) -> List[Dict]:
-        """Alpha Vantage에서 현금흐름표 조회"""
-        if not self.av_client:
-            return []
-        try:
-            response = self.av_client.get_cash_flow(symbol)
-            key = 'quarterlyReports' if period == 'quarterly' else 'annualReports'
-            data = response.get(key, [])[:limit]
-            if data:
-                return self._transform_av_cash_flow(data, period)
-        except Exception as e:
-            logger.debug(f"Alpha Vantage cash flow failed for {symbol}: {e}")
         return []
 
     def _try_yf_cash_flow(self, symbol: str, period: str, limit: int) -> List[Dict]:
@@ -389,98 +319,6 @@ class FinancialStatementsFallbackService:
                 'net_change_in_cash': self._safe_float(item.get('netChangeInCash')),
                 'free_cash_flow': self._safe_float(item.get('freeCashFlow')),
                 '_source': 'fmp'
-            })
-        return result
-
-    # --- Alpha Vantage Transformers ---
-
-    def _transform_av_balance_sheet(self, data: List[Dict], period: str) -> List[Dict]:
-        """Alpha Vantage 대차대조표 변환"""
-        result = []
-        for item in data:
-            year, quarter = self._extract_year_quarter(item.get('fiscalDateEnding', ''), period)
-            result.append({
-                'fiscal_date_ending': item.get('fiscalDateEnding'),
-                'fiscal_year': year,
-                'fiscal_quarter': quarter,
-                'period_type': 'quarter' if period == 'quarterly' else 'annual',
-                'currency': item.get('reportedCurrency', 'USD'),
-                'total_assets': self._safe_float(item.get('totalAssets')),
-                'total_current_assets': self._safe_float(item.get('totalCurrentAssets')),
-                'cash_and_cash_equivalents': self._safe_float(item.get('cashAndCashEquivalentsAtCarryingValue')),
-                'short_term_investments': self._safe_float(item.get('shortTermInvestments')),
-                'net_receivables': self._safe_float(item.get('currentNetReceivables')),
-                'inventory': self._safe_float(item.get('inventory')),
-                'total_non_current_assets': self._safe_float(item.get('totalNonCurrentAssets')),
-                'property_plant_equipment': self._safe_float(item.get('propertyPlantEquipment')),
-                'goodwill': self._safe_float(item.get('goodwill')),
-                'intangible_assets': self._safe_float(item.get('intangibleAssets')),
-                'long_term_investments': self._safe_float(item.get('longTermInvestments')),
-                'total_liabilities': self._safe_float(item.get('totalLiabilities')),
-                'total_current_liabilities': self._safe_float(item.get('totalCurrentLiabilities')),
-                'short_term_debt': self._safe_float(item.get('shortTermDebt')),
-                'accounts_payable': self._safe_float(item.get('currentAccountsPayable')),
-                'total_non_current_liabilities': self._safe_float(item.get('totalNonCurrentLiabilities')),
-                'long_term_debt': self._safe_float(item.get('longTermDebt')),
-                'total_shareholder_equity': self._safe_float(item.get('totalShareholderEquity')),
-                'retained_earnings': self._safe_float(item.get('retainedEarnings')),
-                'common_stock': self._safe_float(item.get('commonStock')),
-                '_source': 'alphavantage'
-            })
-        return result
-
-    def _transform_av_income_statement(self, data: List[Dict], period: str) -> List[Dict]:
-        """Alpha Vantage 손익계산서 변환"""
-        result = []
-        for item in data:
-            year, quarter = self._extract_year_quarter(item.get('fiscalDateEnding', ''), period)
-            result.append({
-                'fiscal_date_ending': item.get('fiscalDateEnding'),
-                'fiscal_year': year,
-                'fiscal_quarter': quarter,
-                'period_type': 'quarter' if period == 'quarterly' else 'annual',
-                'currency': item.get('reportedCurrency', 'USD'),
-                'total_revenue': self._safe_float(item.get('totalRevenue')),
-                'cost_of_revenue': self._safe_float(item.get('costOfRevenue')),
-                'gross_profit': self._safe_float(item.get('grossProfit')),
-                'operating_expenses': self._safe_float(item.get('operatingExpenses')),
-                'research_and_development': self._safe_float(item.get('researchAndDevelopment')),
-                'selling_general_administrative': self._safe_float(item.get('sellingGeneralAndAdministrative')),
-                'operating_income': self._safe_float(item.get('operatingIncome')),
-                'interest_expense': self._safe_float(item.get('interestExpense')),
-                'income_before_tax': self._safe_float(item.get('incomeBeforeTax')),
-                'income_tax_expense': self._safe_float(item.get('incomeTaxExpense')),
-                'net_income': self._safe_float(item.get('netIncome')),
-                'eps': self._safe_float(item.get('reportedEPS')),
-                'eps_diluted': self._safe_float(item.get('reportedEPS')),  # AV doesn't separate
-                'ebitda': self._safe_float(item.get('ebitda')),
-                '_source': 'alphavantage'
-            })
-        return result
-
-    def _transform_av_cash_flow(self, data: List[Dict], period: str) -> List[Dict]:
-        """Alpha Vantage 현금흐름표 변환"""
-        result = []
-        for item in data:
-            year, quarter = self._extract_year_quarter(item.get('fiscalDateEnding', ''), period)
-            result.append({
-                'fiscal_date_ending': item.get('fiscalDateEnding'),
-                'fiscal_year': year,
-                'fiscal_quarter': quarter,
-                'period_type': 'quarter' if period == 'quarterly' else 'annual',
-                'currency': item.get('reportedCurrency', 'USD'),
-                'operating_cash_flow': self._safe_float(item.get('operatingCashflow')),
-                'net_income': self._safe_float(item.get('netIncome')),
-                'depreciation_and_amortization': self._safe_float(item.get('depreciationDepletionAndAmortization')),
-                'stock_based_compensation': self._safe_float(item.get('stockBasedCompensation')),
-                'change_in_working_capital': self._safe_float(item.get('changeInOperatingLiabilities')),
-                'investing_cash_flow': self._safe_float(item.get('cashflowFromInvestment')),
-                'capital_expenditure': self._safe_float(item.get('capitalExpenditures')),
-                'financing_cash_flow': self._safe_float(item.get('cashflowFromFinancing')),
-                'dividends_paid': self._safe_float(item.get('dividendPayout')),
-                'net_change_in_cash': self._safe_float(item.get('changeInCashAndCashEquivalents')),
-                'free_cash_flow': None,  # Calculate if needed
-                '_source': 'alphavantage'
             })
         return result
 

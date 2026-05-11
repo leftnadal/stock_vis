@@ -1,0 +1,155 @@
+openapi: "3.0.3"
+info:
+  title: SEC Pipeline API
+  version: "1.0.0"
+  description: |
+    SEC EDGAR 10-K 기반 공급망 + 사업모델 추출 파이프라인.
+    Track A (공급망) + Track B (사업모델) 2-Track 설계.
+    실제 구현: sec_pipeline/views.py + on_demand.py 기준 (2026-04-13 검증)
+
+servers:
+  - url: /api/v1/sec-pipeline
+
+paths:
+  /admin/dashboard/:
+    get:
+      operationId: getSecDashboard
+      summary: 관리자 대시보드 (HTML)
+      description: |
+        Django 템플릿 렌더. quality_checks.py 기반 통계.
+        수집 성공/실패, Track A/B 현황, 매칭 큐 상태, 경고 알림.
+      responses:
+        "200":
+          description: HTML 페이지 (DRF 아님)
+
+  /filing/{symbol}/:
+    get:
+      operationId: getFilingData
+      summary: 종목별 10-K Filing 데이터 (On-Demand)
+      description: |
+        1년 이내 Filing 존재 → 200 (available).
+        없으면 비동기 수집 트리거 → 202 (collecting).
+        이미 수집 중이면 → 200 (collecting, 중복 방지).
+        1시간 이내 중복 수집 차단 (FilingProcessLog 체크).
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Filing 데이터 (available 또는 collecting 상태)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/FilingAvailableResponse"
+                  - $ref: "#/components/schemas/FilingCollectingResponse"
+              examples:
+                available:
+                  summary: 데이터 존재
+                  value:
+                    symbol: "AAPL"
+                    status: "available"
+                    filing_date: "2025-10-31"
+                    fiscal_year: 2025
+                    doc_status: "success"
+                collecting_in_progress:
+                  summary: 수집 진행 중
+                  value:
+                    symbol: "COST"
+                    status: "collecting"
+                    message: "Collection already in progress"
+        "202":
+          description: 비동기 수집 트리거됨
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FilingCollectingResponse"
+              example:
+                symbol: "AAPL"
+                status: "collecting"
+                message: "Collection triggered. Check back shortly."
+
+components:
+  schemas:
+    FilingAvailableResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        status:
+          type: string
+          enum: [available]
+        filing_date:
+          type: string
+          format: date
+        fiscal_year:
+          type: integer
+        doc_status:
+          type: string
+          enum: [success, partial, failed]
+          description: |
+            success: 3/3 섹션 추출 완료
+            partial: 1-2/3 섹션 추출 또는 FAIL 경고 존재
+            failed: 0/3 섹션 또는 전체 실패
+
+    FilingCollectingResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        status:
+          type: string
+          enum: [collecting]
+        message:
+          type: string
+
+    # ── 내부 모델 참조 (API에 직접 노출되지 않지만 계약 문서용) ──
+
+    SupplyChainEvidence:
+      type: object
+      description: "Track A 결과. system_confidence는 API 미노출, confidence_grade만 사용."
+      properties:
+        target_company_name:
+          type: string
+        relationship_type:
+          type: string
+          enum: [SUPPLIES_TO, CUSTOMER_OF, PARTNER_WITH, DEPENDS_ON, COMPETES_WITH]
+        evidence_text:
+          type: string
+          maxLength: 300
+        confidence_grade:
+          type: string
+          enum: [high, medium, low]
+          description: "system_confidence >= 0.8 → high, >= 0.6 → medium, else low"
+        direction:
+          type: string
+          enum: [inbound, outbound]
+
+    BusinessModelSnapshot:
+      type: object
+      description: "Track B 결과. 5개 사업모델 차원."
+      properties:
+        direct_customer_contact:
+          type: string
+          enum: [direct, indirect, hybrid, unknown]
+        contract_model:
+          type: string
+          enum: [subscription, one_time, hybrid, unknown]
+        recurring_revenue_signal:
+          type: string
+          enum: [high, medium, low, unknown]
+        channel_dependency:
+          type: string
+          enum: [high_dependency, moderate, low_dependency, unknown]
+        customer_concentration:
+          type: string
+          enum: [concentrated, diversified, unknown]
+        overall_confidence:
+          type: number
+          description: "5개 필드 confidence 평균"
+        confidence_grade:
+          type: string
+          enum: [high, medium, low]

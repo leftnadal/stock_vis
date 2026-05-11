@@ -50,17 +50,17 @@ ENV_KEYS = {
 }
 
 
-# 기본 Provider 설정 (Phase 2 - Alpha Vantage 유지)
+# 기본 Provider 설정 — FMP (Starter Plan, 300 calls/분)
 DEFAULT_PROVIDERS: Dict[EndpointType, ProviderType] = {
-    EndpointType.QUOTE: ProviderType.ALPHA_VANTAGE,
-    EndpointType.PROFILE: ProviderType.ALPHA_VANTAGE,
-    EndpointType.DAILY_PRICES: ProviderType.ALPHA_VANTAGE,
-    EndpointType.WEEKLY_PRICES: ProviderType.ALPHA_VANTAGE,
-    EndpointType.BALANCE_SHEET: ProviderType.ALPHA_VANTAGE,
-    EndpointType.INCOME_STATEMENT: ProviderType.ALPHA_VANTAGE,
-    EndpointType.CASH_FLOW: ProviderType.ALPHA_VANTAGE,
-    EndpointType.SEARCH: ProviderType.ALPHA_VANTAGE,
-    EndpointType.SECTOR: ProviderType.ALPHA_VANTAGE,
+    EndpointType.QUOTE: ProviderType.FMP,
+    EndpointType.PROFILE: ProviderType.FMP,
+    EndpointType.DAILY_PRICES: ProviderType.FMP,
+    EndpointType.WEEKLY_PRICES: ProviderType.FMP,
+    EndpointType.BALANCE_SHEET: ProviderType.FMP,
+    EndpointType.INCOME_STATEMENT: ProviderType.FMP,
+    EndpointType.CASH_FLOW: ProviderType.FMP,
+    EndpointType.SEARCH: ProviderType.FMP,
+    EndpointType.SECTOR: ProviderType.FMP,
 }
 
 
@@ -123,7 +123,7 @@ class ProviderFactory:
             elif env_value == "alpha_vantage":
                 return ProviderType.ALPHA_VANTAGE
 
-        return DEFAULT_PROVIDERS.get(endpoint, ProviderType.ALPHA_VANTAGE)
+        return DEFAULT_PROVIDERS.get(endpoint, ProviderType.FMP)
 
     @classmethod
     def _get_or_create_provider(cls, provider_type: ProviderType) -> StockDataProvider:

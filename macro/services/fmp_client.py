@@ -7,7 +7,7 @@ FMP (Financial Modeling Prep) API Client
 """
 import logging
 import time
-from datetime import datetime, date
+from datetime import date
 from typing import Dict, Any, List, Optional
 
 import requests
@@ -163,6 +163,36 @@ class FMPClient:
                 results.append(quote)
         return results
 
+    # 전체 심볼 → (이름, 카테고리) 매핑 (DB 저장용)
+    ALL_SYMBOLS = {
+        # 미국 주요 지수
+        'SPY': ('S&P 500 (SPY)', 'us_equity'),
+        'DIA': ('Dow Jones (DIA)', 'us_equity'),
+        'QQQ': ('NASDAQ 100 (QQQ)', 'us_equity'),
+        'IWM': ('Russell 2000 (IWM)', 'us_equity'),
+        # 섹터 ETF
+        'XLK': ('Technology', 'sector'),
+        'XLF': ('Financials', 'sector'),
+        'XLV': ('Healthcare', 'sector'),
+        'XLE': ('Energy', 'sector'),
+        'XLI': ('Industrials', 'sector'),
+        'XLP': ('Consumer Staples', 'sector'),
+        'XLY': ('Consumer Discretionary', 'sector'),
+        'XLU': ('Utilities', 'sector'),
+        'XLRE': ('Real Estate', 'sector'),
+        'XLB': ('Materials', 'sector'),
+        'XLC': ('Communication Services', 'sector'),
+        # 원자재 (CLUSD, NGUSD는 FMP Starter 미지원 → 제외)
+        'GCUSD': ('Gold', 'commodity'),
+        'SIUSD': ('Silver', 'commodity'),
+        # 환율 (DX-Y.NYB는 FMP Starter 미지원 → 제외)
+        'EURUSD': ('EUR/USD', 'currency'),
+        'USDJPY': ('USD/JPY', 'currency'),
+        'GBPUSD': ('GBP/USD', 'currency'),
+        'USDCNY': ('USD/CNY', 'currency'),
+        'USDKRW': ('USD/KRW', 'currency'),
+    }
+
     def get_market_indices(self) -> Dict[str, Any]:
         """
         주요 시장 지수 조회
@@ -190,6 +220,36 @@ class FMPClient:
                 }
 
         return indices
+
+    def get_all_market_quotes(self) -> Dict[str, Any]:
+        """
+        전체 시장 데이터 조회 (지수 + 섹터 + 원자재 + 환율 + DXY).
+        DB 저장용 통합 메서드.
+
+        Returns:
+            {symbol: {'name': str, 'category': str, 'price': float, 'change': float, 'change_percent': float}, ...}
+        """
+        all_quotes = {}
+        symbols = list(self.ALL_SYMBOLS.keys())
+
+        quotes = self.get_batch_quotes(symbols)
+
+        for quote in quotes:
+            symbol = quote.get('symbol', '')
+            if symbol in self.ALL_SYMBOLS:
+                name, category = self.ALL_SYMBOLS[symbol]
+                all_quotes[symbol] = {
+                    'name': name,
+                    'category': category,
+                    'price': quote.get('price'),
+                    'change': quote.get('change'),
+                    'change_percent': quote.get('changesPercentage'),
+                    'previous_close': quote.get('previousClose'),
+                    'day_high': quote.get('dayHigh'),
+                    'day_low': quote.get('dayLow'),
+                }
+
+        return all_quotes
 
     def get_sector_performance(self) -> Dict[str, Any]:
         """

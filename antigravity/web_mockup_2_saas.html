@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Mockup 2: Modern SaaS</title>
+    <style>
+        :root { --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --text-sec: #64748b; --border:#e2e8f0; --accent: #2563eb; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:-apple-system, sans-serif; display:flex; height:100vh; overflow:hidden;}
+        
+        /* Layout */
+        .sidebar { width:240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:20px;}
+        .main { flex:1; display:flex; flex-direction:column; overflow:hidden;}
+        
+        /* Sidebar */
+        .logo { font-size:1.5rem; font-weight:800; color:var(--accent); margin-bottom:40px; }
+        .nav-head { font-size:0.75rem; font-weight:700; color:var(--text-sec); text-transform:uppercase; letter-spacing:1px; margin-bottom:15px;}
+        .nav-btn { display:flex; align-items:center; gap:10px; padding:10px 15px; border-radius:8px; color:var(--text); font-weight:500; cursor:pointer; text-decoration:none; margin-bottom:5px;}
+        .nav-btn:hover { background:#f1f5f9; }
+        .nav-btn.active { background:#eff6ff; color:var(--accent); font-weight:600;}
+        
+        /* Topnav */
+        .top-nav { height:70px; border-bottom:1px solid var(--border); background:var(--surface); display:flex; align-items:center; justify-content:space-between; padding:0 30px;}
+        .search-bar { background:#f1f5f9; border:1px solid var(--border); border-radius:20px; padding:10px 20px; width:400px; color:var(--text); font-size:0.9rem; outline:none;}
+        
+        /* Content Area */
+        .content { flex:1; overflow-y:auto; padding:30px; }
+        .page-title { font-size:1.8rem; font-weight:800; margin:0 0 5px 0;}
+        .page-desc { color:var(--text-sec); margin:0 0 30px 0;}
+
+        /* Grid */
+        .dashboard-grid { display:grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: minmax(150px, auto); gap:20px;}
+        
+        .card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; box-shadow:0 1px 3px rgba(0,0,0,0.05); display:flex; flex-direction:column;}
+        .c-title { font-size:1rem; font-weight:700; margin-bottom:15px; display:flex; justify-content:space-between; align-items:center;}
+        
+        /* 1) Morning Briefing Card (Wide) */
+        .card-brief { grid-column: span 2; background:url('data:image/svg+xml;utf8,<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="dots" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle fill="rgba(37, 99, 235, 0.05)" cx="2" cy="2" r="2"></circle></pattern></defs><rect x="0" y="0" width="100%" height="100%" fill="url(%23dots)"></rect></svg>'), linear-gradient(180deg, #ffffff, #f8fafc); }
+        .brief-highlight { font-size:1.2rem; font-weight:700; line-height:1.5; margin-bottom:15px;}
+        .action-link { color:var(--accent); font-weight:600; text-decoration:none; font-size:0.9rem;}
+
+        /* 2) Portfolio / Value Card */
+        .card-port { grid-column: span 1; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;}
+        .p-val { font-size:2.5rem; font-weight:800; letter-spacing:-1px; margin-bottom:5px;}
+        
+        /* 3) Chain Sight Preview */
+        .card-chain { grid-column: span 2; grid-row: span 2; position:relative; overflow:hidden;}
+        .chain-visual { position:absolute; top:60px; left:20px; right:20px; bottom:20px; background:#f1f5f9; border-radius:12px; border:1px dashed #cbd5e1; display:flex; justify-content:center; align-items:center; cursor:pointer;}
+        
+        /* 4) Active Thesis */
+        .card-thesis { grid-column: span 1; grid-row: span 2;}
+        .t-item { padding:15px; border:1px solid var(--border); border-radius:12px; margin-bottom:10px;}
+        .t-badge { display:inline-block; font-size:0.7rem; font-weight:700; padding:2px 8px; border-radius:10px; background:#ecfdf5; color:#10b981; margin-bottom:5px;}
+        .t-name { font-weight:700; margin-bottom:5px;}
+        .t-desc { font-size:0.8rem; color:var(--text-sec); line-height:1.4;}
+
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo">StockVis</div>
+        
+        <div class="nav-head">유저 저니 플로우</div>
+        <a href="#" class="nav-btn active">📊 대시보드 (발견)</a>
+        <a href="#" class="nav-btn">🪐 체인사이트 (탐험)</a>
+        <a href="#" class="nav-btn">🎯 통제실 (가설)</a>
+        <a href="#" class="nav-btn">💼 포트폴리오 (실행)</a>
+        
+        <div class="nav-head" style="margin-top:30px;">기타 도구</div>
+        <a href="#" class="nav-btn">시그널 스크리너</a>
+        <a href="#" class="nav-btn">설정</a>
+    </div>
+
+    <div class="main">
+        <div class="top-nav">
+            <input type="text" class="search-bar" placeholder="🔍 종목, 섹터 혹은 종목 관련된 질문 입력...">
+            <div style="width:36px; height:36px; border-radius:50%; background:#2563eb; color:white; display:flex; justify-content:center; align-items:center;">P</div>
+        </div>
+
+        <div class="content">
+            <h1 class="page-title">좋은 아침입니다, 진정님.</h1>
+            <p class="page-desc">간밤의 시장 요약부터 보유 종목의 변동성까지, 오늘 대응해야 할 플로우를 확인하세요.</p>
+
+            <div class="dashboard-grid">
+                
+                <!-- 1. Discovery -->
+                <div class="card card-brief">
+                    <div class="c-title">출근길 핵심 브리핑 <span style="font-size:0.8rem; font-weight:normal; color:#64748b;">방금 업데이트됨</span></div>
+                    <div class="brief-highlight">"테슬라 판매량 급감으로 전기차 섹터 전반 투심 악화... 반도체로 자금 쏠림 지속"</div>
+                    <p style="font-size:0.9rem; color:#475569; margin-bottom:20px;">이 현상으로 인해 현재 내 포트폴리오에 영향을 주는 EOD 돌파 시그널 3건이 발견되었습니다.</p>
+                    <a href="#" class="action-link">관련된 시키널 및 체인사이트 분석 열기 &rarr;</a>
+                </div>
+
+                <!-- Portfolio Summary -->
+                <div class="card card-port">
+                    <div class="c-title" style="align-self:flex-start;">내 자산</div>
+                    <div class="p-val">₩45,230,000</div>
+                    <div style="color:#10b981; font-weight:600;">+ 2.8% (오늘)</div>
+                </div>
+
+                <!-- 2. Exploration -->
+                <div class="card card-chain">
+                    <div class="c-title">섹터 연쇄 흐름 (Chain Sight) <a href="#" class="action-link" style="font-weight:normal;">전체 지도 열기 &rsaquo;</a></div>
+                    <div class="chain-visual">
+                        <div style="text-align:center;">
+                            <div style="font-size:2rem; margin-bottom:10px;">🌌</div>
+                            <div style="font-weight:600; color:#475569;">전기차 약세로 인한 자금 이동 맵 (인터랙티브 노드 예정)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3 & 4. Thesis Control -->
+                <div class="card card-thesis">
+                    <div class="c-title">내 가설 통제실 <span style="background:#2563eb; color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; justify-content:center; align-items:center; cursor:pointer;">+</span></div>
+                    
+                    <div class="t-item">
+                        <div class="t-badge">실행 대기중</div>
+                        <div class="t-name">전력 인프라주 조정 시 매수</div>
+                        <div class="t-desc">VRT 20일선 근접 대기 및 매크로 변동성 모니터링 중.</div>
+                    </div>
+                    
+                    <div class="t-item" style="border-color:#fca5a5; background:#fef2f2;">
+                        <div class="t-badge" style="background:#fef2f2; color:#ef4444; padding:0;">긴급 대응 요망</div>
+                        <div class="t-name">테슬라 비중 축소 플랜</div>
+                        <div class="t-desc">설정하신 하락 매물대 붕괴 조짐이 보입니다. 포트폴리오 조정을 권장합니다.</div>
+                    </div>
+                    
+                     <div class="t-item" style="border:none; text-align:center; padding:10px; cursor:pointer;">
+                        <a href="#" class="action-link">모든 가설 관리하기</a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    
+    <!-- Explanation overlay -->
+    <div style="position:absolute; bottom:20px; right:20px; background:#1e293b; color:white; padding:15px; border-radius:12px; width:300px; box-shadow:0 10px 30px rgba(0,0,0,0.5); font-size:0.9rem;">
+        <b>Option 2: Modern SaaS Dashboard</b><br>
+        Vercel이나 Stripe의 대시보드처럼 <b>탁 트인 화이트 스페이스와 깔끔한 카드(Grid)</b>를 활용한 웹 레이아웃입니다. 좌측의 네비게이션을 통해 유저 저니의 단계(발견-탐험-가설-실행)를 명확히 제시하면서, 첫 페이지(대시보드)에서 그 요약본을 모두 조망합니다.
+    </div>
+</body>
+</html>

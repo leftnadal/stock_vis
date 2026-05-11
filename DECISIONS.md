@@ -1,0 +1,273 @@
+# DECISIONS.md — 아키텍처 결정 로그
+
+> 에이전트는 구현 전 이 파일을 확인하고, 기존 결정과 충돌하는 작업은 수행하지 않는다.
+> 각 결정에는 **근거(Why)**를 반드시 포함한다.
+
+---
+
+## 데이터 아키텍처
+
+### 4-Layer 데이터 흐름
+```
+Raw (외부 API) → Metrics (Django 모델) → ChainSight (PostgreSQL 프로파일) → Neo4j (그래프)
+```
+**Why**: 각 계층이 다른 갱신 주기와 소비자를 가짐. Raw는 실시간, Metrics는 일일, Neo4j는 주간.
+
+### neo4j_dirty 플래그 패턴
+- PostgreSQL → `neo4j_dirty=True` 세팅 → Celery 배치로 Neo4j 동기화
+- `synced_to_neo4j` 대신 채택
+- **Why**: 단방향 동기화(PG→Neo4j)에서 "동기화 필요" 의미가 명확. 역방향 없음.
+- 📎 상세: `docs/chain_sight/plan/redesign_v1_260409/chainsight_seed_node_design.md`
+
+### CUSTOMER_OF 파생
+- DB에 별도 저장 안 함. `SUPPLIES_TO`의 역방향을 API 계층에서 `display_type`으로 파생.
+- **Why**: 중복 저장 제거. 방향 반전만으로 충분.
+
+### Undirected 관계 정규화
+- `PEER_OF`, `COMPETES_WITH`, `CO_MENTIONED`, `PRICE_CORRELATED` 4종은 Neo4j에서 무방향.
+- 저장 시 `symbol_a < symbol_b` 순서로 정규화하여 중복 방지.
+- **Why**: 양방향 엣지를 중복 생성하면 GDS 알고리즘 결과 왜곡.
+
+### DailyPrice 단일 모델
+- `HistoricalPrice` 모델 없음. 모든 가격 데이터는 `DailyPrice` 사용.
+- **Why**: 히스토리컬과 일일의 구분 불필요. 중복 모델 방지.
+
+---
+
+## Chain Sight
+
+### 마켓 뷰 이원 구조
+- `/chainsight` = 마켓 뷰 (Breadth-first 탐색)
+- `/chainsight/[symbol]` = Deep Dive Workspace (Depth-first 분석)
+- **Why**: 광범위한 시장 탐색과 개별 종목 심화 분석은 다른 사용자 의도.
+- 📎 상세: `docs/chain_sight/plan/redesign_v1_260409/chainsight_api_design.md`
+
+### 마켓 뷰 4개 API
+| 엔드포인트 | 역할 | 캐시 TTL |
+|-----------|------|---------|
+| `GET /seeds/` | 섹터바 + 시드 카드 | 30분 |
+| `GET /sector/{sector}/graph/` | 섹터 overview 그래프 | 30분 |
+| `GET /{symbol}/neighbors/` | 중심 이동 + 관계 카드 | 5분 |
+| `GET /signals/` | 체인 스토리 피드 | 30분 |
+- **Why**: 4개 엔드포인트로 5개 UI 컴포넌트를 모두 구동. 백엔드 복잡도 최소화.
+- 📎 상세: `docs/chain_sight/plan/redesign_v1_260409/chainsight_ui_ux_design.md`
+
+### 시드 선정 3단계 진화 경로
+- Phase 1: 시장 시그널(B) + 관계 변화(A) → 매일 13:00 UTC, MAX=20
+- Phase 2: Heat Score 복합 랭킹 (SeedHeatScore 모델 필요)
+- Phase 3: 이벤트 전파 모델 (Gemini Embedding + ChromaDB 필요)
+- **Why**: 각 Phase 전제조건이 다르므로 점진적 진화.
+- 📎 상세: `docs/chain_sight/plan/redesign_v1_260409/chainsight_seed_node_design.md`
+
+### seed_reasons 8개 코드
+`price_top5`, `price_bottom5`, `volume_surge`, `sector_outlier`, `relation_upgrade`, `relation_downgrade`, `relation_new`, `comention_surge`
+- **Why**: UI에서 "왜 시드로 선정됐는지" 시각적 배지로 표시.
+
+### Neo4j GDS 알고리즘 유지
+- PageRank, Louvain Community Detection, Betweenness Centrality 사용.
+- **Why**: NetworkX 대비 대규모 그래프에서 성능 우수. APOC 프로시저 활용.
+- 📎 상세: `docs/chain_sight/plan/cs_30_neo4j_sync.md`
+
+### RelationConfidence.previous_status 필드
+- `CharField(max_length=20)`, nullable
+- **Why**: 시드 선정에서 "어제 confirmed → 오늘 probable" 상태 전이 감지 필요.
+
+---
+
+## SEC Pipeline
+
+### 2-Track 추출 설계
+- Track A: Item 1A (Risk Factors) → 공급망 추출
+- Track B: Item 7 (MD&A) + Item 3 (Properties) → 사업모델 추출
+- **Why**: 공급망과 사업모델은 10-K 내 다른 섹션에 위치하고 프롬프트가 다름.
+- 📎 상세: `docs/sec_pipeline/plan/sec_pipeline_base_design.md`
+
+### Ticker 매칭 3단계
+1. `alias` (CompanyAlias 테이블 정확 일치)
+2. `exact` (이름 정확 매칭)
+3. `fuzzy` (Levenshtein 유사도)
+- 실패 → `UnmatchedCompanyQueue` 적재 → 수동 검토
+- **Why**: 100% 자동화 불가. 실패 케이스를 큐에 모아 bulk 등록.
+
+### SEC EDGAR 직접 수집
+- FMP sec-filings API가 Starter 플랜에서 404 → EDGAR submissions API 직접 사용.
+- regex 3단계 + edgartools fallback으로 섹션 추출.
+- **Why**: 비용 0원으로 10-K 원문 확보.
+- 📎 상세: `docs/sec_pipeline/task_done/sec_pipeline_complete_summary.md`
+
+---
+
+## Thesis Control
+
+### 화살표 시스템 (0°~180°, 5색상)
+| 범위 | 색상 | 의미 |
+|------|------|------|
+| 0°~35° | #2563EB | 강하게 지지 |
+| 36°~71° | #60A5FA | 지지하는 편 |
+| 72°~107° | #D1D5DB | 중립 |
+| 108°~143° | #FB923C | 약화하는 편 |
+| 144°~180° | #EF4444 | 강하게 반박 |
+- **Why**: 숫자(-1.0~1.0)보다 화살표 방향+색상이 직관적.
+- 📎 상세: `docs/thesis_control/plan/thesis_control_design.md`
+
+### 달 위상 시각화
+- `overall_score` (-1~1) → 달 밝기 매핑
+- **Why**: 숫자를 자연스러운 메타포로 변환하여 "느낌" 전달.
+
+### authAxios 단일 소스
+- `lib/api/authAxios.ts`: JWT 인터셉터 단일 소스 (AuthContext + thesis 공유)
+- 3중 방어: 단일 탭 race condition, 다중 탭 동기화, Token rotation
+- **Why**: JWT 로직 중복 방지. 한 곳에서 관리.
+
+---
+
+## 1차 검증 (Validation)
+
+### Compute-on-Read 패턴
+- DB에 사전 계산 저장 안 함. 요청 시 peer group 대비 percentile 실시간 계산.
+- **Why**: peer group이 동적으로 변경될 수 있으므로 사전 계산값이 빠르게 stale.
+- 📎 상세: `docs/first_validation_system/validation_design.md`
+
+### Peer 프리셋 6종 + LLM 대화형 필터
+- 프리셋: Industry+Size 기반 자동 선정
+- LLM: 사용자 질문을 peer 조건으로 변환
+- **Why**: MVP는 프리셋만으로 충분, Chain Sight DNA 활용해 고도화 예정.
+
+### 신호등 기준: Percentile 통일
+- `score >= 65`: green, `>= 35`: yellow, else: red
+- **Why**: 절대값이 아닌 peer 상대 위치. 산업 특성 자동 반영.
+
+---
+
+## EOD Dashboard
+
+### JSON Baking + Atomic Write
+- Celery Beat 18:30 ET → 14개 시그널 계산 → JSON 파일 baking → Atomic directory swap
+- **Why**: API 비용 0원. 실패 시 이전 데이터 유지 (partial update 방지).
+- 📎 상세: `sub_claude_md/eod-dashboard.md`
+
+### 14개 시그널 체계
+- Momentum (P1~P4), Breakout (P5), Reversal (P7), Volume (V1, PV1, PV2), Technical (MA1, T1), Relation (S1, S2, S4)
+- VIX > 25: 상위 threshold 부스트
+- **Why**: 각 시그널이 독립적 관찰 관점 제공. 너무 많으면 노이즈, 적으면 신호 부족.
+
+---
+
+## News Intelligence v3
+
+### 3계층 파이프라인
+- 규칙 엔진 → LLM 분석 (Gemini Flash) → ML 학습 (LightGBM)
+- **Why**: 규칙은 저비용+빠름, LLM은 맥락 이해, ML은 패턴 최적화. 계층별 강점 활용.
+- 📎 상세: `sub_claude_md/news-insights.md`
+
+### Sector Ripple 2-hop 확산
+- 대형주 → 같은 섹터 중소형주로 0.4x 감쇠, 20개 상한
+- **Why**: 대형주 뉴스가 섹터 전체에 영향. hop 제한으로 노이즈 방지.
+
+---
+
+## 프론트엔드
+
+### 차트: Recharts ComposedChart
+- Bar + Scatter + ErrorBar 조합
+- **Why**: D3.js보다 React 친화적, 복합 차트 표현력 충분.
+
+### 상태 관리 이원화
+- 서버 상태: TanStack Query (staleTime=5min, gcTime=30min, retry=2)
+- 클라이언트 상태: Zustand (explorationStore 등)
+- **Why**: 서버 캐싱과 UI 상태의 관심사 분리.
+
+### Chain Sight 탐색 상태 공유
+```typescript
+interface ExplorationState {
+  selectedSector: string | null;
+  centerSymbol: string | null;  // null = pre-focus
+  trail: TrailNode[];
+  historyNodes: string[];
+  currentNeighbors: Neighbor[];
+}
+```
+- **Why**: 그래프와 카드가 "같은 탐색 상태를 공유하는 두 인터페이스"이므로 분리하지 않음.
+
+---
+
+## 인프라
+
+### Neo4j 유지 결정
+- GDS 알고리즘(PageRank, Louvain, Betweenness Centrality) + APOC 때문.
+- **Why**: PostgreSQL의 `ltree`/`recursive CTE`로는 커뮤니티 탐지 불가.
+
+### GraphRepository Protocol
+- 백엔드 디커플링용 추상화. Neo4j 구현체만 존재.
+- **Why**: 향후 다른 그래프 DB 전환 가능성 열어둠.
+
+### Celery Beat 스케줄 분리
+- `config/settings.py`: 기본 스케줄 (Market Movers, Breadth, Heatmap)
+- `config/celery.py`: 확장 스케줄 (Chain Sight, EOD, ML, SEC)
+- **Why**: 핵심 스케줄은 settings에, 기능별 스케줄은 celery.py에 분리.
+
+### macOS Celery fork 안전성
+- `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES` + `PGGSSENCMODE=disable`
+- fork 후 `db.connections.close_all()` 필수
+- Neo4j queue: `--pool=solo` (fork 없이)
+- **Why**: macOS에서 fork + Objective-C 런타임 충돌 (SIGSEGV). 버그 #25.
+
+---
+
+## 서비스 리모델링 (진행 중)
+
+### 3단계 플로우 전환
+- **이전**: Dashboard → Chain Sight → Node Monitoring → 1차 검증 → Thesis Control → Portfolio (6단계)
+- **변경**: Dashboard(매크로) → Chain Sight(발견/검증/가설) → Portfolio(보유) (3단계)
+- **Why**: 사용자 여정 단순화. Chain Sight가 발견+검증+가설을 통합.
+- 📎 상세: `docs/stock_vis_service_remodeling/stock_vis_service_remodeling_plan_v1(260404).md`
+
+---
+
+## 지식 그래프 (OAG KB)
+
+### 이중 저장 원칙: 1차 소스 + KB
+- 아키텍처 결정 → `DECISIONS.md` (1차) + KB `DECISION` 타입 (장기 검색)
+- 버그 해결 → `common-bugs.md` (1차) + KB `TROUBLESHOOT` 타입 (상세 과정)
+- 세션 교훈 → KB `LESSON`/`PATTERN` 타입이 유일한 저장소
+- **Why**: 1차 소스는 에이전트가 즉시 참조하는 "작업 메모리", KB는 장기 보존 + 의미 검색이 가능한 "장기 기억". 둘 다 필요.
+
+### KB 큐 → 큐레이션 → Neo4j 파이프라인
+- `queue_data.json`(대기) → `@kb-curator` 큐레이션 → `Neo4j Aura`(영구)
+- **Why**: 품질 게이트 없이 KB에 직접 쓰면 노이즈 누적. 큐레이션이 신호/잡음 분리.
+
+### knowledge_type 체계
+| 타입 | 용도 | 주요 소스 |
+|------|------|----------|
+| `TROUBLESHOOT` | 버그 해결 과정 | common-bugs.md, @backend/@infra 세션 |
+| `LESSON` | 교훈 (잘한 일/못한 일) | @qa 검증, 에이전트 세션 종료 |
+| `DECISION` | 아키텍처 결정 | DECISIONS.md |
+| `PATTERN` | 코딩 패턴 | @backend/@frontend 세션 |
+| `TERM`/`METRIC` | 투자 용어/지표 | @investment-advisor |
+- **Why**: 타입별로 검색 필터링 + 우선순위 규칙 적용 가능.
+
+### 신뢰도 레벨 정책
+- `verified`: 테스트 통과 또는 공식 문서 기반만
+- `high`: 전문가(에이전트) 확인
+- `medium`: 일반 합의 (큐레이션 기본값)
+- `low`: 추정, 미검증
+- **Why**: 에이전트가 검색 시 `confidence_min=high`로 노이즈 제거 가능.
+
+---
+
+## 외부 API
+
+### FMP `/stable/*` 경로만 사용
+- Legacy `/api/v3/*` 지원 안 함.
+- **Why**: FMP가 stable 경로로 마이그레이션. 레거시 경로 deprecation 예정.
+
+### Gemini 2.5 Flash 단일 LLM
+- 키워드 생성, 관계 추출, RAG 분석, SEC 추출, 뉴스 분석 모두 Gemini.
+- **Why**: 비용 효율 + 일관된 프롬프트 엔지니어링. $0.005/thesis 수준.
+
+### Rate Limit 방어 원칙
+| API | 제한 | 방어 |
+|-----|------|------|
+| Alpha Vantage | 5 calls/min | 12초 대기 필수 |
+| FMP | 10 calls/min | `.` 심볼 제외 (FMPPremiumError) |
+| Gemini Free | 15 RPM, 1500 RPD | Exponential backoff + 배치 |

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 9: Portfolio Centric</title>
+    <style>
+        :root { --bg: #ffffff; --text: #1d1d1f; --accent: #0071e3; --card: #f5f5f7; }
+        body { margin:0; padding:2rem; background:#e5e5ea; color:var(--text); font-family:-apple-system, sans-serif; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow-y:auto; overflow-x:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.2); border:1px solid #d1d1d6; padding:0; box-sizing:border-box;}
+        .phone::-webkit-scrollbar { display: none; }
+        
+        .hero { background:linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%); padding:60px 20px 30px; border-bottom:1px solid #e5e5ea; text-align:center;}
+        .total-val { font-size:2.8rem; font-weight:700; letter-spacing:-1px; margin-bottom:5px;}
+        .sub-val { font-size:1rem; font-weight:600; color:#34c759; display:flex; align-items:center; justify-content:center; gap:5px;}
+        
+        .chart-area { height:120px; width:100%; margin-top:20px; position:relative; display:flex; align-items:flex-end; gap:4px;}
+        .bar { flex:1; background:#c7e0f4; border-radius:4px 4px 0 0; }
+        .bar:nth-child(even) { background:var(--accent); }
+
+        .section { padding:20px; }
+        .s-title { font-size:1.2rem; font-weight:700; margin-bottom:15px; letter-spacing:-0.5px;}
+
+        /* Portfolio specific signals */
+        .alert-card { background:white; border:1px solid #ff3b30; border-radius:18px; padding:16px; margin-bottom:12px; box-shadow:0 4px 15px rgba(255, 59, 48, 0.1); position:relative; overflow:hidden;}
+        .alert-card::before { content:'!'; position:absolute; top:-20px; right:10px; font-size:5rem; font-weight:900; color:rgba(255,59,48,0.05); }
+        .alert-title { font-weight:700; color:#ff3b30; font-size:0.9rem; margin-bottom:8px;}
+        .alert-desc { font-size:0.95rem; line-height:1.4;}
+
+        .h-list { display:flex; flex-direction:column; gap:12px; }
+        .h-item { display:flex; justify-content:space-between; align-items:center; padding:16px; background:var(--card); border-radius:16px;}
+        .h-left-top { font-weight:700; font-size:1.1rem;}
+        .h-left-bot { font-size:0.8rem; color:#86868b; margin-top:4px;}
+        .h-right-top { font-weight:600; text-align:right;}
+        .h-right-bot { font-size:0.85rem; color:#34c759; text-align:right; font-weight:500;}
+
+        .bottom-nav { position:absolute; bottom:0; width:100%; height:80px; background:rgba(255,255,255,0.9); backdrop-filter:blur(20px); border-top:1px solid #e5e5ea; display:flex; justify-content:space-around; align-items:center; padding-bottom:10px;}
+        .nav-item { display:flex; flex-direction:column; align-items:center; gap:5px; font-size:0.7rem; color:#86868b; font-weight:600;}
+        .nav-item.active { color:var(--accent);}
+        
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="hero">
+            <div style="font-size:0.9rem; color:#86868b; font-weight:600; margin-bottom:10px;">내 포트폴리오 자산</div>
+            <div class="total-val">₩45,230,000</div>
+            <div class="sub-val">▲ 1,240,000 (2.8%) <span style="color:#86868b; font-weight:400; font-size:0.8rem;">1개월</span></div>
+            
+            <div class="chart-area">
+                <div class="bar" style="height:30%"></div>
+                <div class="bar" style="height:40%"></div>
+                <div class="bar" style="height:35%"></div>
+                <div class="bar" style="height:50%"></div>
+                <div class="bar" style="height:60%"></div>
+                <div class="bar" style="height:55%"></div>
+                <div class="bar" style="height:80%"></div>
+                <div class="bar" style="height:100%"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="alert-card">
+                <div class="alert-title">보유 종목 긴급 시그널</div>
+                <div class="alert-desc"><b>[SAMSUNG]</b> 오늘 EOD 시그널에서 하락 반전(Reversal) 패턴이 강하게 나타났습니다. <b>비중 축소를 권장합니다.</b></div>
+            </div>
+        </div>
+
+        <div class="section" style="padding-top:0;">
+            <div class="s-title">보유 자산</div>
+            <div class="h-list">
+                <div class="h-item">
+                    <div>
+                        <div class="h-left-top">AAPL</div>
+                        <div class="h-left-bot">12주 • IT 기기</div>
+                    </div>
+                    <div>
+                        <div class="h-right-top">$2,078.40</div>
+                        <div class="h-right-bot">+4.2% (시그널 양호)</div>
+                    </div>
+                </div>
+                <div class="h-item">
+                    <div>
+                        <div class="h-left-top">SAMSUNG</div>
+                        <div class="h-left-bot">100주 • 반도체</div>
+                    </div>
+                    <div>
+                        <div class="h-right-top">₩7,400,000</div>
+                        <div class="h-right-bot" style="color:#ff3b30;">-1.5% (위험 감지)</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-nav">
+            <div class="nav-item active"><span style="font-size:1.4rem;">💼</span>보유</div>
+            <div class="nav-item"><span style="font-size:1.4rem;">🔍</span>발견</div>
+            <div class="nav-item"><span style="font-size:1.4rem;">🎯</span>가설</div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#9. Portfolio First</h3>
+        <p>시장의 거시적인 데이터보다 "내 돈"이 가장 중요한 투자자를 위해 포트폴리오를 메인 화면 전면에 세웁니다. AI와 EOD 시그널 기능들도 시장 전체가 아닌 내 '보유 종목'을 필터링하여 맞춤형 위험 알림을 최우선으로 제공합니다.</p>
+    </div>
+</body>
+</html>
