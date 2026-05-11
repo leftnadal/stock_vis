@@ -10,8 +10,9 @@ from django.utils import timezone
 
 from rest_framework import generics, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
 from rest_framework.exceptions import NotFound
 
 from .models import Stock, DailyPrice, WeeklyPrice, BalanceSheet, IncomeStatement, CashFlowStatement
@@ -880,10 +881,10 @@ class StockSyncAPIView(APIView):
     주식 데이터 동기화 API
     - 외부 API에서 데이터를 가져와 DB에 저장
     - Rate Limit 체크 포함
-    - 공개 데이터 동기화이므로 인증 불필요
+    - 인증된 사용자만 외부 API(FMP 등) 호출 트리거 가능 (cost amplification 차단)
     """
-    # 공개 주식 데이터 동기화는 인증 없이 허용
-    permission_classes = []
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [UserRateThrottle]
 
     def post(self, request, symbol):
         """

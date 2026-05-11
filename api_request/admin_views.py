@@ -302,10 +302,11 @@ class HealthCheckView(APIView):
                 "status": "healthy",
                 "type": "postgresql"
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Health check: database probe failed")
             health_status["components"]["database"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "type": "postgresql"
             }
             health_status["status"] = "degraded"
 
@@ -318,11 +319,12 @@ class HealthCheckView(APIView):
                     "type": "redis"
                 }
             else:
-                raise Exception("Cache read/write failed")
-        except Exception as e:
+                raise RuntimeError("Cache read/write mismatch")
+        except Exception:
+            logger.exception("Health check: cache probe failed")
             health_status["components"]["cache"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "type": "redis"
             }
             health_status["status"] = "degraded"
 
@@ -333,10 +335,10 @@ class HealthCheckView(APIView):
                 "status": "healthy",
                 "active": provider.PROVIDER_NAME
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Health check: provider probe failed")
             health_status["components"]["provider"] = {
-                "status": "unhealthy",
-                "error": str(e)
+                "status": "unhealthy"
             }
 
         return Response(health_status)

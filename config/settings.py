@@ -354,6 +354,8 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_THROTTLE_RATES': {
+        'user': '60/min',
+        'anon': '20/min',
         'market_pulse_user': '60/min',
         'market_pulse_user_hour': '1000/hour',
         'market_pulse_llm': '5/min',
