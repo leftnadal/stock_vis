@@ -14,6 +14,7 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 from rest_framework.exceptions import NotFound
+from rest_framework.pagination import PageNumberPagination
 
 from .models import Stock, DailyPrice, WeeklyPrice, BalanceSheet, IncomeStatement, CashFlowStatement
 from .serializers import (
@@ -73,13 +74,21 @@ class DashboardView(TemplateView):
         return context
 
 ### 주식 목록 API
+class StockListPagination(PageNumberPagination):
+    """주식 목록 페이지네이션 — S&P 6000+ 종목 일괄 반환 차단 (DoS 표면 축소)."""
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 200
+
+
 class StockListAPIView(generics.ListAPIView):
     """
-        ## 주식 목록 조희 API
-        # - 전체 주식목록을 pagination으로 조회
+        ## 주식 목록 조회 API
+        # - 전체 주식목록을 pagination으로 조회 (page_size 기본 50, 최대 200)
         # - 섹터별, 시가총액별 필터링 지원
     """
     serializer_class = StockListSerializer
+    pagination_class = StockListPagination
 
     def get_queryset(self):
         """쿼리셋을 동적으로 필터링하여 반환"""

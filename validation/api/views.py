@@ -64,7 +64,7 @@ class ValidationSummaryView(APIView):
             return Response({
                 'symbol': symbol, 'error': 'not_in_universe',
                 'message': '현재 S&P 500 종목만 지원합니다.',
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         # 커스텀 peer 분기
         if request.user.is_authenticated:
@@ -82,7 +82,7 @@ class ValidationSummaryView(APIView):
             return Response({
                 'symbol': symbol, 'error': 'no_data',
                 'message': '재무 분석 데이터 준비 중입니다.',
-            }, status=status.HTTP_200_OK)
+            }, status=status.HTTP_404_NOT_FOUND)
 
         fiscal_year = signals[0].fiscal_year
 
@@ -346,7 +346,10 @@ class LeaderComparisonView(APIView):
             .distinct().order_by('-fiscal_year').first()
         )
         if not latest_fy:
-            return Response({'symbol': symbol, 'error': 'no_data'})
+            return Response(
+                {'symbol': symbol, 'error': 'no_data'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         # 비교 지표 수집
         all_metrics = []
