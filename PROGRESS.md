@@ -12,26 +12,21 @@
 
 ## 현재 활성 작업
 
-> **🔴 main 정체 경고**: `origin/main = 022bb46` (2026-04 초). 4개 활성 브랜치 모두 main 대비 130~214 커밋 ahead. main catch-up 전략 결정이 모든 PR의 선결 조건.
+> **✅ main 정착 완료 (2026-05-11)**: `origin/main = be2d6c7`. 활성 4개 브랜치 (portfolio / market_pulse_v2 / feature/chainsight-graph-v2 / data_structure_remodeling_V1) 모두 main 통합 머지 완료. origin/main만 단일 정착, 모든 stale 브랜치 정리됨.
 
-### 활성 브랜치 현황 (2026-05-01 기준)
+### 활성 브랜치 현황 (2026-05-11 기준)
 
-| 브랜치 | Agent | 작업 내용 | main 대비 | 상태 | 다음 액션 |
-|--------|-------|----------|----------|------|----------|
-| `portfolio` | @backend | Slice 1 (E1+GARP) + Slice 2 (E5) + Slice 3 (E2) 완료 + **Slice 4 (E6) Part 1 완료** | +218 | Slice 4 Part 2 대기 (Step 6~9: 실 LLM 호출 + 토큰 측정 + 회고 + score 산식 통합) | Part 2 지시서 작성 후 진입 |
-| `market_pulse_v2` | @backend | portfolio 기반 + PR-A1/A2 4 commits cherry-pick 통합 (2026-05-11). 이전 `marketpulse-v2`(legacy, 하이픈)는 본 브랜치로 통합 후 삭제 | portfolio+4 | PR-A2 검증 완료, push/머지 대기 | PR-A3/C/G 진행 또는 정리 후 push |
-| `feature/chainsight-graph-v2` | @frontend | 그래프 재설계 v2 (설계 명세 + FE-PR-1~6) | +210 | **origin push 완료** (2026-05-01), PR 보류 | main catch-up 후 PR |
-| `data_structure_remodeling_V1` | @backend + @frontend | Chain Sight v2 마켓 뷰 (redesign v1, PR-1~7) | +132 | QA 91% 통과, 커밋 대기 | feature/chainsight-graph-v2와 통합 머지 검토 |
+| 브랜치 | 상태 | 비고 |
+|--------|------|------|
+| `main` | be2d6c7 (HEAD) | 단일 통합 라인 정착 |
+| `feature/watchlist-and-docs` (origin) | 보존 | 구브랜치, 상태 미확인 — 추후 검토 |
+| `feature/chainsight-graph-v2` (local worktree) | `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2` | 별도 worktree에 체크아웃, 안전 보존 |
 
 ### 작업 단위
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
-| **main 일괄 catch-up** | orchestrator | 전략 결정 대기 | 사용자 의사결정 필요 | 2026-05-01 |
-| Chain Sight v2 마켓 뷰 (redesign v1) | @backend + @frontend | QA 검증 완료 (91%), 커밋 대기 | main catch-up 선행 | 2026-04-13 |
-| Chain Sight 그래프 재설계 v2 (FE-PR-1~6) | @frontend | origin push 완료, PR 보류 | main catch-up 선행 | 2026-05-01 |
-| 서비스 리모델링 (data_structure_remodeling_V1) | @backend | 브랜치 작업 중 | Chain Sight 마켓 뷰 머지 후 | 2026-04-12 |
-| **Market Pulse v2 — Phase 1 + 후속 작업** | @backend + @frontend | Phase 1 복원 + drf-spectacular + Recharts + v1 deprecation 배너 + FRED sync (coverage 0.857) + Yahoo sync (Beat 11 task) + v1 collision 8건 + drf-spectacular noise silence + audit P0 #11/#15 (fetcher 분기 + thesis 요약 task) | (자동 흐름) VIX3M/MOVE 다음 평일 NY 17:35 sync | 2026-04-29 |
+| **audit P0 신규 43건 (Phase 5)** | @backend + @frontend | 대기 | 분할 PR 작업 시작 필요 | 2026-05-11 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | Part 1 (Step 0~5) 완료, 회귀 160 passed | Part 2 지시서 작성 + 실 LLM 호출 환경 확인 | 2026-05-07 |
 
 ---
@@ -40,6 +35,7 @@
 
 | Feature | Agent | Completed | Notes |
 |---------|-------|-----------|-------|
+| **main 정착 — 4개 활성 브랜치 통합 머지 + 브랜치 일괄 정리** | orchestrator | 2026-05-11 | 4개월 정체 main(022bb46→**be2d6c7**) 일괄 정착. (1) market_pulse_v2 시간순 4분할 PR (B1 Spring Foundation 108c / B2 Harness+SEC+Chain Sight v1 44c / B3 Audit P0+Chain Sight v2+Portfolio Slice 1+Pulse Phase 1 56c / B4 Portfolio Slice 2~7+Pulse PR-A 58c) → PR-#3~6 머지. stacked PR base 변경이 GraphQL Projects classic 경고로 머지 직전 적용 실패 → main에 b1/b2 직접 머지로 보정(c5a4d5d, c77a195). (2) 야간 자동화 6 커밋 cherry-pick 통합 PR-#7 (TS 픽스 1 + sec_pipeline/users/validation 단위 테스트 + thesis/validation-chainsight FE 컴포넌트 테스트, +2640L). (3) feature/chainsight-graph-v2 PR-#8 (FE-PR-1~6 그래프 재설계 v2, 자동 머지 충돌 없음). (4) data_structure_remodeling_V1는 ahead=0(main이 superset)이라 머지 작업 불필요. (5) origin 정리 — merge/b1~b4, merge/nightly-2026-05-10, feature/chainsight-graph-v2, portfolio, market_pulse_v2, data_structure_remodeling_V1, feat/eod-dashboard-and-improvements 삭제. feature/watchlist-and-docs만 보존. (6) 로컬 stale 100개 야간 자동화 브랜치(`chore/dead-code-cleanup-*`, `fix/broken-tests-*`, `fix/fe-type-safety-*`, `fix/ts-compile-errors-*`, `test/sec-pipeline-tests-*`, `test/users-unit-tests-*`, `test/validation-unit-tests-*`, `test/fe-thesis-components-*`, `test/fe-validation-chainsight-*`, `test/rag-analysis-unit-tests-*` 각 9~12개) 일괄 정리. 의미있는 6개만 PR-#7로 통합, 5/6 이전 4개 카테고리는 의미있는 변경 없음 확인 후 폐기. |
 | **PR-A3 재해석 — 카드 스냅샷 테스트 보강** | @backend | 2026-05-11 | PR-A3 모델 3개(BreadthSnapshot/SectorFlowSnapshot/ConcentrationSnapshot)는 Phase 1 복원 시점에 marketpulse 0001_initial에 통합되어 있어 원본 지시서 §5.2(T12~T17 마이그레이션 분리 테스트) 적용 불가. 대신 §5.1(T1~T11 모델 제약)과 §5.3(T19 A2 공존) + ConcentrationSnapshot `clean()` validator(top5≤top10 / top10≤1 / hhi∈[0,1]) 보강. `tests/marketpulse/models/test_snapshot.py` 신규 18 tests PASS (universe choices, unique 제약, FK PROTECT, long-format 11 ETF, JSON top_holdings, is_finalized 일관성, __str__, ordering). 회귀 marketpulse+macro 130 → **148 PASS**. |
 | **PR-A2 → `market_pulse_v2` 통합** | @backend | 2026-05-11 | portfolio HEAD에 PR-A1/A2 sub-task 4건(`17c897e` PR-A1 / `a108800` schemas / `2ad8211` 저위험 + 0002 / `f0acbe7` 중·고위험 wip)이 누락된 채로 marketpulse 모델이 옛 스키마로 회귀해 있던 상태. portfolio에서 새 `market_pulse_v2` 브랜치 분기 후 4 commit 시간순 cherry-pick. PROGRESS.md만 매번 충돌해 portfolio 쪽 유지 후 마지막에 통합. 19 파일 변경(+650/-29). PR-A2 0005 마이그레이션은 SeparateDB&State로 reverse-safe 정렬 (RenameField가 인덱스 ProjectState ref 자동 갱신 안 함 문제 보정). marketpulse 검증: `manage.py check` 0 issues, `makemigrations --check --dry-run` no changes, forward/reverse 모두 통과. |
 | Portfolio Slice 4 (E6) Part 1 — Step 0~5 | @backend | 2026-05-07 | E6 schema/service/view/Mock test/hybrid 7 fixture. 회귀 123 → 160 passed (+37). 5 step commit + docs/instructions commit. 케이스 A(D-7 분석 엔진 의존)·D(Slice 2 fixture 함수명 정정) 발생, B/C/E 미발생. D2.B 글쓰기 가설 4번째 외삽 검증 준비. Part 2(Step 6~9)에서 실 LLM 호출 + #2 score 산식 통합 |
@@ -90,11 +86,11 @@
 - [ ] **Alpha Vantage 무료 티어 키 방치 확인** (revoke UI 부재 → Alpha Vantage 계정 자체 비활성화 검토)
 
 ### 작업 중
-- [ ] **main 일괄 catch-up** — origin/main이 022bb46(2026-04 초)에 정체. 200+ 커밋(audit P0, security, marketpulse v2, timezone, chainsight v1/v2/redesign V1/V2, portfolio Slice 1~2 등)이 main 미반영. 도메인별로 PR 분할 정리 필요.
-- [ ] Chain Sight 마켓 뷰 PR-1~7 커밋 (CS-R9) — main catch-up 후
-- [ ] Chain Sight 그래프 재설계 v2 PR — origin push 완료(2026-05-01), main catch-up 후 PR 생성
+- [ ] **Phase 5: audit P0 신규 43건 분할 PR** — 5/10 야간 자동화 audit 누적 미처리. 권장 클러스터: (1) PR-Security 2건 (StockSyncAPIView 비인증 차단 + admin_views 헬스체크 raw exception) (2) PR-CircuitBreaker 7건 (FMP/Gemini fallback) (3) PR-Mobile44pt 9건 (Pagination/IndicatorRow/FilterPanel/MarketGraphCanvas) (4) PR-Pagination/Envelope #14 (응답 래핑 21곳)
+- [ ] Phase 5 후속 P1 — Thesis ValidityScore 주1회 Celery, 역제안(Contrarian Nudge), LLM 프롬프트 인젝션 sanitization, cleanup_seed_snapshots Beat 등록, indicator id 39 `DX-Y.NYB`→`DXY`
 - [ ] Thesis Control FE-PR-3 (대화형 빌더) 착수 (TC-3)
-- [ ] 서비스 리모델링 Phase 1 계속 (SR-1)
+- [ ] Portfolio Slice 4 Part 2 (E6 Step 6~9: 실 LLM + 토큰 측정 + 회고 + #2 score 산식 통합)
 - [ ] QA follow-up: chainsightService.ts fetch() → authAxios 통일
 - [ ] QA follow-up: RelationCardPanel 에러 UI 추가
 - [ ] 정기 시크릿 스캔 스크립트 도입 검토 (KB 큐 cdc4d19e 참고)
+- [ ] feature/watchlist-and-docs 브랜치 상태 검토 (보존 vs 삭제)
