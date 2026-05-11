@@ -14,6 +14,8 @@ from google import genai
 from google.genai import types
 from django.conf import settings
 
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+
 logger = logging.getLogger(__name__)
 
 
@@ -179,7 +181,14 @@ class LLMServiceLite:
                 total_input_tokens = 0
                 total_output_tokens = 0
 
-                stream = await self.client.aio.models.generate_content_stream(
+                cb = get_circuit(
+                    'gemini_rag',
+                    failure_threshold=5,
+                    recovery_seconds=60,
+                    retry_attempts=1,  # 외부 for retry 로직과 중복 방지
+                )
+                stream = await cb.acall(
+                    self.client.aio.models.generate_content_stream,
                     model=self.MODEL,
                     contents=user_content,
                     config=config,
@@ -208,6 +217,15 @@ class LLMServiceLite:
                 }
 
                 # 성공 시 루프 종료
+                return
+
+            except CircuitBreakerError as cb_exc:
+                # CB OPEN → 즉시 사용자 알림 + 재시도 중단
+                logger.warning(f"Gemini RAG CB open: {cb_exc}")
+                yield {
+                    'type': 'error',
+                    'message': 'LLM 서비스가 일시적으로 차단되었습니다. 잠시 후 다시 시도해주세요.'
+                }
                 return
 
             except Exception as e:

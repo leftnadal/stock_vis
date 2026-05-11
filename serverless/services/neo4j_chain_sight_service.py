@@ -54,9 +54,19 @@ from django.conf import settings
 from django.core.cache import cache
 
 from rag_analysis.services.neo4j_driver import get_neo4j_driver
+from marketpulse.utils.circuit_breaker import (
+    get_circuit,
+    CircuitBreakerError,
+    CircuitState,
+)
 
 
 logger = logging.getLogger(__name__)
+
+
+NEO4J_CB_NAME = 'neo4j_chain_sight'
+NEO4J_CB_FAILURE_THRESHOLD = 5
+NEO4J_CB_RECOVERY_SECONDS = 60
 
 
 class Neo4jChainSightService:
@@ -101,8 +111,36 @@ class Neo4jChainSightService:
             logger.warning("Neo4j driver not available, running in fallback mode")
 
     def is_available(self) -> bool:
-        """Neo4j 연결 상태 확인"""
-        return self.driver is not None
+        """Neo4j 연결 + CB 상태 확인. CB가 OPEN이면 silent failure 위장 차단."""
+        if self.driver is None:
+            return False
+        cb = get_circuit(
+            NEO4J_CB_NAME,
+            failure_threshold=NEO4J_CB_FAILURE_THRESHOLD,
+            recovery_seconds=NEO4J_CB_RECOVERY_SECONDS,
+        )
+        if cb.get_state() == CircuitState.OPEN:
+            logger.warning(f"Neo4j CB OPEN — service unavailable until recovery")
+            return False
+        return True
+
+    def _run_with_cb(self, operation: str, func, *args, **kwargs):
+        """Neo4j 호출을 CircuitBreaker로 wrap (누적 실패 추적용 헬퍼).
+
+        is_available() 단독으로는 silent failure를 감지하지 못한다. 이 헬퍼를
+        통과한 호출은 CB에 성공/실패가 기록되어 누적 임계 도달 시 자동 차단된다.
+        """
+        cb = get_circuit(
+            NEO4J_CB_NAME,
+            failure_threshold=NEO4J_CB_FAILURE_THRESHOLD,
+            recovery_seconds=NEO4J_CB_RECOVERY_SECONDS,
+            retry_attempts=1,  # 호출자 측 retry가 있으면 그쪽에 위임
+        )
+        try:
+            return cb.call(func, *args, **kwargs)
+        except CircuitBreakerError as exc:
+            logger.warning(f"Neo4j CB open during {operation}: {exc}")
+            return None
 
     # ========================================
     # Node Operations
@@ -132,7 +170,7 @@ class Neo4jChainSightService:
         if not self.is_available():
             return False
 
-        try:
+        def _exec():
             with self.driver.session() as session:
                 query = """
                 MERGE (s:Stock {symbol: $symbol})
@@ -151,9 +189,11 @@ class Neo4jChainSightService:
                     industry=industry,
                     market_cap=market_cap
                 )
-                record = result.single()
-                return record is not None
+                return result.single()
 
+        try:
+            record = self._run_with_cb(f"create_stock_node({symbol})", _exec)
+            return record is not None
         except Exception as e:
             logger.error(f"Stock 노드 생성 실패 {symbol}: {e}")
             return False
@@ -332,7 +372,7 @@ class Neo4jChainSightService:
         if not self.is_available():
             return []
 
-        try:
+        def _exec():
             with self.driver.session() as session:
                 if rel_type and rel_type in self.RELATIONSHIP_TYPES:
                     cypher_rel_type = self.RELATIONSHIP_TYPES[rel_type]
@@ -368,30 +408,35 @@ class Neo4jChainSightService:
                     LIMIT $limit
                     """
 
-                result = session.run(query, symbol=symbol.upper(), limit=limit)
+                return list(session.run(query, symbol=symbol.upper(), limit=limit))
 
-                stocks = []
-                for record in result:
-                    # context_json 파싱
-                    context_json = record.get('context_json', '{}')
-                    try:
-                        context = json.loads(context_json) if context_json else {}
-                    except (json.JSONDecodeError, TypeError):
-                        context = {}
+        try:
+            records = self._run_with_cb(f"get_related_stocks({symbol})", _exec)
+            if records is None:
+                return []
 
-                    stocks.append({
-                        'symbol': record['symbol'],
-                        'name': record['name'],
-                        'sector': record['sector'],
-                        'industry': record['industry'],
-                        'market_cap': record['market_cap'],
-                        'weight': record['weight'],
-                        'relationship_type': record['relationship_type'],
-                        'source': record['source'],
-                        'context': context,
-                    })
+            stocks = []
+            for record in records:
+                # context_json 파싱
+                context_json = record.get('context_json', '{}')
+                try:
+                    context = json.loads(context_json) if context_json else {}
+                except (json.JSONDecodeError, TypeError):
+                    context = {}
 
-                return stocks
+                stocks.append({
+                    'symbol': record['symbol'],
+                    'name': record['name'],
+                    'sector': record['sector'],
+                    'industry': record['industry'],
+                    'market_cap': record['market_cap'],
+                    'weight': record['weight'],
+                    'relationship_type': record['relationship_type'],
+                    'source': record['source'],
+                    'context': context,
+                })
+
+            return stocks
 
         except Exception as e:
             logger.error(f"관련 종목 조회 실패 {symbol}: {e}")
