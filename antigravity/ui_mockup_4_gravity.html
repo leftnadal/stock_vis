@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 4: Gravity Bounds</title>
+    <style>
+        :root { --bg: #0f172a; --text: #f8fafc; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center; }
+        
+        .header { margin-top: 60px; text-align: center; position: relative; z-index: 10;}
+        h2 { margin:0; font-size:1.4rem; }
+        p { color:#94a3b8; font-size:0.9rem; }
+
+        /* Physics container */
+        .world {
+            position: absolute;
+            bottom: 0; left: 0; right: 0; top: 150px;
+            background: linear-gradient(to bottom, #0f172a, #1e293b);
+            overflow: hidden;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+        }
+
+        .zone-support { position: absolute; bottom:0; left:0; width:50%; height:100px; background: rgba(239, 68, 68, 0.1); border-top: 2px dashed #ef4444; z-index:1;}
+        .zone-reject { position: absolute; bottom:0; right:0; width:50%; height:100px; background: rgba(59, 130, 246, 0.1); border-top: 2px dashed #3b82f6; z-index:1;}
+        
+        .zone-label { position:absolute; bottom:20px; width:100%; text-align:center; font-weight:bold; opacity:0.5;}
+        
+        .ball {
+            position: absolute;
+            width: 60px; height: 60px;
+            border-radius: 50%;
+            display:flex; justify-content:center; align-items:center;
+            font-size: 0.7rem; font-weight: bold; text-align:center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5), inset 0 0 10px rgba(255,255,255,0.2);
+            z-index: 5;
+            cursor: grab;
+            user-select: none;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        .ball:active { cursor: grabbing; }
+        
+        .b-support { background: radial-gradient(circle at 30% 30%, #f87171, #dc2626); }
+        .b-reject { background: radial-gradient(circle at 30% 30%, #60a5fa, #2563eb); }
+        .b-neutral { background: radial-gradient(circle at 30% 30%, #cbd5e1, #64748b); }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="header">
+            <h2>중력 지표 (Gravity)</h2>
+            <p>지표들이 지지/반박 영역으로 떨어집니다</p>
+        </div>
+        
+        <div class="world" id="world">
+            <div class="zone-support"><div class="zone-label" style="color:#ef4444">지지 (Support)</div></div>
+            <div class="zone-reject"><div class="zone-label" style="color:#3b82f6">반박 (Reject)</div></div>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#4. Gravity-based Physics</h3>
+        <p>각 지표(공)가 중력에 의해 화면 아래로 떨어집니다. 가설을 지지하는 지표는 왼쪽(빨강), 반박은 오른쪽(파랑)으로 굴러갑니다. 직접 마우스로 공을 던지며 놀 수 있습니다.</p>
+        <button onclick="addBall()" style="padding:10px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; width:100%;">+ 새 지표 떨어뜨리기</button>
+    </div>
+
+    <!-- Simple JS Physics Engine -->
+    <script>
+        const world = document.getElementById('world');
+        const W = 375; const H = 662; // world size approx
+        let balls = [];
+        
+        const types = [
+            { id:'외국인\n순매수', c:'b-support', targetX: W*0.25 },
+            { id:'환율', c:'b-support', targetX: W*0.25 },
+            { id:'S&P500', c:'b-reject', targetX: W*0.75 },
+            { id:'기관', c:'b-neutral', targetX: W*0.5 }
+        ];
+
+        function createBall(typeObj) {
+            const el = document.createElement('div');
+            el.className = `ball ${typeObj.c}`;
+            el.innerText = typeObj.id;
+            world.appendChild(el);
+            
+            const ball = {
+                el: el,
+                x: Math.random() * (W - 60),
+                y: -60,
+                vx: (Math.random() - 0.5) * 5,
+                vy: 0,
+                radius: 30,
+                targetX: typeObj.targetX,
+                isDragging: false
+            };
+            
+            // Drag events
+            el.addEventListener('mousedown', e => startDrag(e, ball));
+            el.addEventListener('touchstart', e => startDrag(e.touches[0], ball));
+            
+            balls.push(ball);
+        }
+
+        // Add initial
+        types.forEach(t => setTimeout(() => createBall(t), Math.random()*1000));
+
+        function addBall() {
+            createBall(types[Math.floor(Math.random()*types.length)]);
+        }
+
+        let dragTarget = null;
+        function startDrag(e, b) { dragTarget = b; b.isDragging = true; b.vx=0; b.vy=0; }
+        window.addEventListener('mouseup', () => { if(dragTarget) dragTarget.isDragging = false; dragTarget = null; });
+        window.addEventListener('touchend', () => { if(dragTarget) dragTarget.isDragging = false; dragTarget = null; });
+        window.addEventListener('mousemove', e => doDrag(e));
+        window.addEventListener('touchmove', e => doDrag(e.touches[0]));
+        
+        function doDrag(e) {
+            if(!dragTarget) return;
+            const rect = world.getBoundingClientRect();
+            dragTarget.x = e.clientX - rect.left - 30;
+            dragTarget.y = e.clientY - rect.top - 30;
+        }
+
+        // Physics Loop
+        setInterval(() => {
+            balls.forEach(b => {
+                if(b.isDragging) {
+                    b.el.style.transform = `translate(${b.x}px, ${b.y}px)`;
+                    return;
+                }
+                
+                // Gravity
+                b.vy += 0.5;
+                
+                // Horizontal attraction to target zone
+                const dx = b.targetX - (b.x + 30);
+                b.vx += dx * 0.005;
+                
+                // Friction
+                b.vx *= 0.95;
+                b.vy *= 0.99;
+                
+                b.x += b.vx;
+                b.y += b.vy;
+                
+                // Floor collision
+                if(b.y > H - 60 - 20) { // 20 roughly for ground feel
+                    b.y = H - 60 - 20;
+                    b.vy *= -0.6; // bounce
+                }
+                // Wall collision
+                if(b.x < 0) { b.x=0; b.vx *= -0.8; }
+                if(b.x > W - 60) { b.x = W - 60; b.vx *= -0.8; }
+                
+                b.el.style.transform = `translate(${b.x}px, ${b.y}px)`;
+            });
+        }, 16);
+    </script>
+</body>
+</html>

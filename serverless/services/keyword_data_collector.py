@@ -5,12 +5,12 @@ Market Movers 키워드 생성용 추가 데이터 수집 서비스
 LLM 키워드 생성을 위한 풍부한 컨텍스트를 제공합니다.
 
 병렬 처리 및 Redis 캐싱 전략:
-- ThreadPoolExecutor (max_workers=5)
-- Alpha Vantage Rate Limit: 5 calls/분 (12초 간격)
+- ThreadPoolExecutor (max_workers=10)
+- FMP Rate Limit: 300 calls/분 (0.2초 딜레이)
 - Redis 캐싱: msgpack 압축, TTL 1시간
 - 타임아웃: 10초/호출, 5분/전체
 
-KB 참고: Alpha Vantage Rate Limiting, ThreadPoolExecutor 병렬 처리
+KB 참고: FMP Rate Limiting, ThreadPoolExecutor 병렬 처리
 """
 
 import logging
@@ -24,8 +24,7 @@ from decimal import Decimal
 from django.core.cache import cache
 from django.conf import settings
 
-from api_request.alphavantage_client import AlphaVantageClient
-from api_request.rate_limiter import get_rate_limiter, RateLimitExceeded
+from api_request.providers.fmp.client import FMPClient
 
 # News Providers (선택적)
 try:
@@ -47,15 +46,15 @@ class KeywordDataCollector:
     키워드 생성용 추가 데이터 수집기
 
     수집 데이터:
-    1. Overview (Alpha Vantage): 기업 개요, market_cap, PE ratio, 52주 high/low
+    1. Overview (FMP): 기업 개요, market_cap, 52주 high/low
     2. News (MarketAux/Finnhub): 최근 3개 뉴스 + 감성 분석 (선택)
     3. Indicators: 기존 5개 지표 (MarketMover 모델에서 이미 수집됨)
 
     병렬 처리:
-    - ThreadPoolExecutor (max_workers=5)
-    - Alpha Vantage Rate Limit: 5 calls/분 (12초 간격)
-    - 종목당 평균 수집 시간: 12초 (Rate Limiting)
-    - 20개 종목 전체: ~4분 (12초 × 20 = 240초)
+    - ThreadPoolExecutor (max_workers=10)
+    - FMP Rate Limit: 300 calls/분 (0.2초 딜레이)
+    - 종목당 평균 수집 시간: ~0.2초
+    - 20개 종목 전체: ~4초
 
     Redis 캐싱:
     - Cache Key: keyword_context:{date}:{symbol}
@@ -68,24 +67,21 @@ class KeywordDataCollector:
     CACHE_TTL = 3600  # 1시간
 
     # 병렬 처리 설정
-    MAX_WORKERS = 5  # Alpha Vantage Rate Limit에 맞춤
+    MAX_WORKERS = 10  # FMP Rate Limit: 300 calls/분 (0.2초 딜레이)
     API_TIMEOUT = 10  # 10초
     PIPELINE_TIMEOUT = 300  # 5분
 
     def __init__(self):
         """API 클라이언트 초기화"""
-        # Alpha Vantage (Overview)
-        self.av_client = None
-        if hasattr(settings, 'ALPHA_VANTAGE_API_KEY'):
+        # FMP (Overview)
+        self.fmp_client = None
+        if hasattr(settings, 'FMP_API_KEY') and settings.FMP_API_KEY:
             try:
-                self.av_client = AlphaVantageClient(
-                    api_key=settings.ALPHA_VANTAGE_API_KEY
+                self.fmp_client = FMPClient(
+                    api_key=settings.FMP_API_KEY
                 )
             except Exception as e:
-                logger.warning(f"Alpha Vantage client 초기화 실패: {e}")
-
-        # Rate Limiter
-        self.rate_limiter = get_rate_limiter("alpha_vantage")
+                logger.warning(f"FMP client 초기화 실패: {e}")
 
         # News Providers (선택적)
         self.news_providers = []
@@ -293,16 +289,6 @@ class KeywordDataCollector:
                 'context': context,
             }
 
-        except RateLimitExceeded as exc:
-            # Rate Limit 초과 - 재시도 필요
-            return {
-                'success': False,
-                'from_cache': False,
-                'duration_ms': int((time.time() - start_time) * 1000),
-                'error': f"RateLimitExceeded: {exc.limit_type}",
-                'context': None,
-            }
-
         except Exception as exc:
             # 기타 에러
             return {
@@ -315,7 +301,7 @@ class KeywordDataCollector:
 
     def _fetch_overview(self, symbol: str) -> Optional[Dict[str, Any]]:
         """
-        Alpha Vantage로부터 기업 개요 수집 (Rate Limiting 적용)
+        FMP로부터 기업 개요 수집
 
         Args:
             symbol: 주식 심볼
@@ -329,34 +315,28 @@ class KeywordDataCollector:
                 '52_week_low': 164.08
             } or None
         """
-        if not self.av_client:
+        if not self.fmp_client:
             return None
 
         try:
-            # Rate Limiting 적용
-            self.rate_limiter.acquire()
+            data = self.fmp_client.get_company_profile(symbol)
 
-            data = self.av_client.get_company_overview(symbol)
-
-            # Alpha Vantage 빈 응답 체크
-            if not data or 'Symbol' not in data:
+            if not data or 'symbol' not in data:
                 logger.debug(f"    ⚠️ {symbol} overview 없음")
                 return None
 
-            # 필요한 필드만 추출
             overview = {}
 
-            # Description
-            if data.get('Description'):
-                # 너무 긴 설명은 앞부분만 (500자)
-                desc = data['Description'][:500]
-                if len(data['Description']) > 500:
+            # Description (500자 제한)
+            if data.get('description'):
+                desc = data['description'][:500]
+                if len(data['description']) > 500:
                     desc += '...'
                 overview['description'] = desc
 
-            # Market Cap (숫자 → 읽기 쉬운 형식)
-            market_cap = data.get('MarketCapitalization')
-            if market_cap and market_cap != 'None':
+            # Market Cap (mktCap → 읽기 쉬운 형식)
+            market_cap = data.get('mktCap')
+            if market_cap:
                 try:
                     cap_num = float(market_cap)
                     if cap_num >= 1e12:
@@ -368,34 +348,22 @@ class KeywordDataCollector:
                 except (ValueError, TypeError):
                     pass
 
-            # PE Ratio
-            pe_ratio = data.get('PERatio')
-            if pe_ratio and pe_ratio != 'None':
-                try:
-                    overview['pe_ratio'] = float(pe_ratio)
-                except (ValueError, TypeError):
-                    pass
+            # 52 Week High/Low (range 필드 파싱: "164.08-199.62")
+            week_range = data.get('range', '')
+            if week_range and '-' in week_range:
+                parts = week_range.split('-')
+                if len(parts) == 2:
+                    try:
+                        overview['52_week_low'] = float(parts[0].strip())
+                        overview['52_week_high'] = float(parts[1].strip())
+                    except (ValueError, TypeError):
+                        pass
 
-            # 52 Week High/Low
-            week_52_high = data.get('52WeekHigh')
-            if week_52_high and week_52_high != 'None':
+            # Dividend Yield
+            last_div = data.get('lastDiv')
+            if last_div:
                 try:
-                    overview['52_week_high'] = float(week_52_high)
-                except (ValueError, TypeError):
-                    pass
-
-            week_52_low = data.get('52WeekLow')
-            if week_52_low and week_52_low != 'None':
-                try:
-                    overview['52_week_low'] = float(week_52_low)
-                except (ValueError, TypeError):
-                    pass
-
-            # Dividend Yield (추가)
-            div_yield = data.get('DividendYield')
-            if div_yield and div_yield != 'None':
-                try:
-                    overview['dividend_yield'] = float(div_yield) * 100  # 백분율
+                    overview['dividend_yield'] = float(last_div)
                 except (ValueError, TypeError):
                     pass
 

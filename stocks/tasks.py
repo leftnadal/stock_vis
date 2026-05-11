@@ -13,149 +13,6 @@ def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i + n]
 
-@shared_task(bind=True, max_retries=3)
-def update_realtime_prices(self, symbols=None, priority='normal'):
-    """
-    최적화된 실시간 주가 업데이트 태스크
-    - 전날 종가를 현재 가격으로 사용
-    - 당일 이미 업데이트한 종목은 스킵
-    """
-    try:
-        # AlphaVantage API 키 확인
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            logger.error("ALPHA_VANTAGE_API_KEY not found in environment variables")
-            return "API key not configured"
-
-        if not symbols:
-            # 포트폴리오에 있는 종목만 업데이트 (성능 최적화)
-            from users.models import Portfolio
-            symbols = Portfolio.objects.values_list('stock__symbol', flat=True).distinct()[:10]
-
-            if not symbols:
-                logger.info("No symbols to update")
-                return "No symbols to update"
-
-        # AlphaVantageService 동적 import (순환 참조 방지)
-        try:
-            from api_request.alphavantage_service import AlphaVantageService
-        except ImportError:
-            logger.error("AlphaVantageService not found")
-            return "Service not available"
-
-        service = AlphaVantageService(api_key=api_key)
-
-        stats = {
-            'updated': 0,
-            'cached': 0,
-            'errors': 0
-        }
-
-        for symbol in symbols:
-            try:
-                # 최적화된 업데이트 메서드 사용 (자동 캐싱)
-                result = service.update_previous_close(symbol, force=False)
-
-                if result['status'] == 'cached':
-                    stats['cached'] += 1
-                    logger.info(f"Using cached data for {symbol}")
-                elif result['status'] == 'updated':
-                    stats['updated'] += 1
-                    logger.info(f"Updated {symbol} with close price ${result['price']:.2f}")
-
-                    # 캐시 무효화
-                    cache.delete(f'stock_quote_{symbol}')
-                    cache.delete(f'chart_{symbol}_daily_1d')
-
-                    # Rate limiting (API 호출한 경우만)
-                    if stats['updated'] < len(symbols):
-                        time.sleep(12)
-                else:
-                    stats['errors'] += 1
-                    logger.error(f"Error updating {symbol}: {result.get('message', 'Unknown error')}")
-
-            except Exception as e:
-                stats['errors'] += 1
-                logger.error(f"Error updating {symbol}: {e}")
-                continue
-
-        return f"Updated: {stats['updated']}, Cached: {stats['cached']}, Errors: {stats['errors']}"
-
-    except Exception as e:
-        logger.error(f"Task failed: {e}")
-        raise self.retry(exc=e, countdown=60)
-
-@shared_task
-def update_daily_prices():
-    """일일 종가 데이터 업데이트"""
-    try:
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            logger.error("ALPHA_VANTAGE_API_KEY not found")
-            return "API key not configured"
-
-        # 포트폴리오에 있는 모든 종목
-        from users.models import Portfolio
-        symbols = Portfolio.objects.values_list('stock__symbol', flat=True).distinct()
-
-        if not symbols:
-            return "No symbols to update"
-
-        # 5개씩 배치 처리
-        for batch in chunks(list(symbols), 5):
-            update_batch_daily_prices.delay(batch)
-
-        return f"Scheduled {len(symbols)} symbols for update"
-
-    except Exception as e:
-        logger.error(f"Failed to schedule daily price updates: {e}")
-        return f"Error: {e}"
-
-@shared_task
-def update_batch_daily_prices(symbols):
-    """최적화된 배치 단위 일일 가격 업데이트"""
-    try:
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            return "API key not configured"
-
-        from api_request.alphavantage_service import AlphaVantageService
-        service = AlphaVantageService(api_key=api_key)
-
-        stats = {
-            'updated': 0,
-            'cached': 0,
-            'errors': 0
-        }
-
-        for symbol in symbols:
-            try:
-                # 최적화된 메서드 사용
-                result = service.update_previous_close(symbol, force=False)
-
-                if result['status'] == 'cached':
-                    stats['cached'] += 1
-                    logger.info(f"Skipped {symbol} - already updated today")
-                elif result['status'] == 'updated':
-                    stats['updated'] += 1
-                    logger.info(f"Updated daily prices for {symbol}")
-                    # API 호출한 경우만 rate limiting
-                    if stats['updated'] < len(symbols):
-                        time.sleep(12)
-                else:
-                    stats['errors'] += 1
-                    logger.error(f"Failed to update {symbol}: {result.get('message')}")
-
-            except Exception as e:
-                stats['errors'] += 1
-                logger.error(f"Failed to update daily prices for {symbol}: {e}")
-
-        return f"Updated: {stats['updated']}, Cached: {stats['cached']}, Errors: {stats['errors']}"
-
-    except Exception as e:
-        logger.error(f"Batch update failed: {e}")
-        return f"Error: {e}"
-
 @shared_task
 def aggregate_weekly_prices(target_week_end=None):
     """
@@ -314,8 +171,13 @@ def sync_sp500_financials(batch_size=101):
 
         batch = priority_list[:batch_size]
 
-        for symbol in batch:
-            update_financials_with_provider.delay(symbol)
+        for i, symbol in enumerate(batch):
+            # FMP rate limit 보호: 7초 간격 (태스크 실행 ~6초, 동시 실행 방지)
+            # 101개 × 7초 = ~12분 소요
+            update_financials_with_provider.apply_async(
+                args=[symbol],
+                countdown=i * 7,
+            )
 
         oldest_update = str(update_map[has_data[0]]) if has_data else None
 
@@ -383,41 +245,6 @@ def bulk_sync_sp500_financials():
         logger.error(f"Bulk S&P 500 financials sync failed: {e}")
         return f"Error: {e}"
 
-@shared_task
-def update_single_financial_statement(symbol):
-    """단일 종목 재무제표 업데이트"""
-    try:
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            return f"API key not configured for {symbol}"
-
-        from api_request.alphavantage_service import AlphaVantageService
-        service = AlphaVantageService(api_key=api_key)
-
-        try:
-            with transaction.atomic():
-                # Balance Sheet
-                service.update_balance_sheet(symbol)
-                time.sleep(12)
-
-                # Income Statement
-                service.update_income_statement(symbol)
-                time.sleep(12)
-
-                # Cash Flow
-                service.update_cash_flow(symbol)
-
-            logger.info(f"Updated financial statements for {symbol}")
-            return f"Success: {symbol}"
-
-        except Exception as e:
-            logger.error(f"Failed to update financial statements for {symbol}: {e}")
-            return f"Failed: {symbol} - {e}"
-
-    except Exception as e:
-        logger.error(f"Task error for {symbol}: {e}")
-        return f"Error: {symbol} - {e}"
-
 # 테스트 태스크
 @shared_task
 def add_numbers(x, y):
@@ -437,100 +264,6 @@ def test_redis_connection():
     except Exception as e:
         logger.error(f"Redis connection failed: {e}")
         return f"Redis error: {e}"
-
-@shared_task
-def fetch_and_save_stock_data(symbol):
-    """
-    포트폴리오에 주식이 추가될 때 자동으로 모든 데이터를 수집하는 태스크
-
-    Args:
-        symbol: 주식 심볼
-
-    Returns:
-        성공/실패 정보를 담은 문자열
-    """
-    try:
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            logger.error(f"ALPHA_VANTAGE_API_KEY not found for {symbol}")
-            return f"API key not configured for {symbol}"
-
-        # API 경로 추가
-        import sys
-        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        api_path = os.path.join(project_root, 'api_request')
-        if api_path not in sys.path:
-            sys.path.insert(0, api_path)
-
-        from alphavantage_service import AlphaVantageService
-        service = AlphaVantageService(api_key=api_key)
-
-        results = {
-            'symbol': symbol,
-            'overview': False,
-            'daily_prices': False,
-            'weekly_prices': False,
-            'balance_sheet': False,
-            'income_statement': False,
-            'cash_flow': False
-        }
-
-        try:
-            # 1. Stock Overview 업데이트
-            logger.info(f"Fetching overview for {symbol}")
-            stock = service.update_stock_data(symbol)
-            results['overview'] = True
-            logger.info(f"Successfully updated overview for {symbol}")
-            time.sleep(12)  # Rate limiting
-
-            # 2. 일간 및 주간 가격 데이터 (최근 2년)
-            logger.info(f"Fetching daily and weekly prices for {symbol}")
-            # update_historical_prices는 일간과 주간 데이터를 모두 가져옴
-            service.update_historical_prices(symbol, days=730)
-            results['daily_prices'] = True
-            results['weekly_prices'] = True
-            logger.info(f"Successfully updated daily and weekly prices for {symbol}")
-            time.sleep(12)  # Rate limiting
-
-            # 4. Balance Sheet
-            logger.info(f"Fetching balance sheet for {symbol}")
-            service.update_balance_sheet(symbol)
-            results['balance_sheet'] = True
-            logger.info(f"Successfully updated balance sheet for {symbol}")
-            time.sleep(12)  # Rate limiting
-
-            # 5. Income Statement
-            logger.info(f"Fetching income statement for {symbol}")
-            service.update_income_statement(symbol)
-            results['income_statement'] = True
-            logger.info(f"Successfully updated income statement for {symbol}")
-            time.sleep(12)  # Rate limiting
-
-            # 6. Cash Flow Statement
-            logger.info(f"Fetching cash flow statement for {symbol}")
-            service.update_cash_flow(symbol)
-            results['cash_flow'] = True
-            logger.info(f"Successfully updated cash flow for {symbol}")
-
-            # 캐시 무효화
-            cache.delete(f'stock_quote_{symbol}')
-            cache.delete(f'overview_{symbol}')
-            cache.delete(f'chart_{symbol}_daily_1d')
-
-            success_count = sum(1 for v in results.values() if v and isinstance(v, bool))
-            logger.info(f"Successfully fetched {success_count}/6 data types for {symbol}")
-
-            return f"Success: Fetched {success_count}/6 data types for {symbol}"
-
-        except Exception as e:
-            logger.error(f"Error fetching data for {symbol}: {e}")
-            success_count = sum(1 for v in results.values() if v and isinstance(v, bool))
-            return f"Partial success: Fetched {success_count}/6 data types for {symbol}. Error: {e}"
-
-    except Exception as e:
-        logger.error(f"Task completely failed for {symbol}: {e}")
-        return f"Failed: Could not fetch data for {symbol}. Error: {e}"
-
 
 # ============================================================
 # StockService 기반 태스크 (Provider 추상화 사용)
@@ -570,7 +303,7 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
             stock = service.update_stock_data(symbol)
             results['stock_data'] = True
             logger.info(f"[Provider] Stock data updated for {symbol}")
-            time.sleep(12)  # Rate limiting
+            time.sleep(1)  # FMP rate limiting (0.2초면 충분하지만 안전 마진)
         except Exception as e:
             logger.error(f"[Provider] Failed to update stock data for {symbol}: {e}")
 
@@ -580,7 +313,7 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
             price_result = service.update_historical_prices(symbol, days=730)
             results['prices'] = True
             logger.info(f"[Provider] Prices updated for {symbol}: {price_result}")
-            time.sleep(12)
+            time.sleep(1)
         except Exception as e:
             logger.error(f"[Provider] Failed to update prices for {symbol}: {e}")
 
@@ -643,7 +376,7 @@ def update_realtime_with_provider(symbols=None):
                     logger.info(f"[Provider] Updated: {symbol} @ ${result.get('price', 0):.2f}")
                     cache.delete(f'stock_quote_{symbol}')
                     if stats['updated'] < len(symbols):
-                        time.sleep(12)
+                        time.sleep(1)
                 else:
                     stats['errors'] += 1
                     logger.error(f"[Provider] Error: {symbol} - {result.get('message')}")
@@ -712,7 +445,68 @@ def sync_sp500_eod_prices(self, target_date=None):
         raise self.retry(exc=e, countdown=300 * (self.request.retries + 1))
 
 
-@shared_task
+@shared_task(name='update-sp500-change-percent', max_retries=2, soft_time_limit=120, time_limit=150)
+def update_sp500_change_percent():
+    """
+    DailyPrice 최신 2일에서 Stock.change_percent를 일괄 계산.
+    FMP API 호출 없음 — 이미 동기화된 DailyPrice 데이터 활용.
+    sync_sp500_eod_prices() 직후 실행.
+    """
+    from stocks.models import DailyPrice, Stock
+
+    latest_dates = list(
+        DailyPrice.objects
+        .order_by('-date')
+        .values_list('date', flat=True)
+        .distinct()[:2]
+    )
+    if len(latest_dates) < 2:
+        logger.warning('update_sp500_change_percent: 최신 2일 데이터 부족')
+        return 0
+
+    today, prev = latest_dates[0], latest_dates[1]
+
+    # 전일 종가 map (bulk query 1회)
+    prev_map = dict(
+        DailyPrice.objects.filter(date=prev)
+        .values_list('stock_id', 'close_price')
+    )
+
+    # 오늘 종가 + 거래량 (bulk query 1회, list()로 메모리에 로드)
+    today_data = list(DailyPrice.objects.filter(date=today).values_list(
+        'stock_id', 'close_price', 'volume'
+    ))
+
+    # stock_id → Stock 인스턴스 bulk 조회 (1 query)
+    stock_ids = [row[0] for row in today_data]
+    stock_map = {s.symbol: s for s in Stock.objects.filter(symbol__in=stock_ids)}
+
+    stocks_to_update = []
+    for stock_id, close_price, volume in today_data:
+        prev_close = prev_map.get(stock_id)
+        if not prev_close or prev_close == 0:
+            continue
+        stock = stock_map.get(stock_id)
+        if not stock:
+            continue
+        pct = (float(close_price) - float(prev_close)) / float(prev_close) * 100
+        stock.change_percent = f"{pct:+.2f}%"
+        stock.real_time_price = close_price
+        stock.volume = volume
+        stocks_to_update.append(stock)
+
+    if stocks_to_update:
+        Stock.objects.bulk_update(
+            stocks_to_update,
+            ['change_percent', 'real_time_price', 'volume'],
+            batch_size=100,
+        )
+
+    logger.info(f'update_sp500_change_percent: {len(stocks_to_update)} stocks updated (date={today})')
+    return len(stocks_to_update)
+
+
+@shared_task(rate_limit='6/m')
 def update_financials_with_provider(symbol):
     """
     Provider를 사용한 재무제표 업데이트

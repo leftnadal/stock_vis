@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 from .vector_search import VectorSearchService, get_vector_search_service
 from .bm25_search import BM25SearchService, get_bm25_search_service
-from .neo4j_service import Neo4jServiceLite, get_neo4j_service
 
 logger = logging.getLogger(__name__)
 
@@ -110,7 +109,7 @@ class HybridSearchService:
         self,
         vector_service: Optional[VectorSearchService] = None,
         bm25_service: Optional[BM25SearchService] = None,
-        neo4j_service: Optional[Neo4jServiceLite] = None,
+        neo4j_service=None,
         weights: Optional[SearchWeights] = None
     ):
         """
@@ -122,7 +121,11 @@ class HybridSearchService:
         """
         self.vector_service = vector_service or get_vector_search_service()
         self.bm25_service = bm25_service or get_bm25_search_service()
-        self.neo4j_service = neo4j_service or get_neo4j_service()
+        if neo4j_service is not None:
+            self.neo4j_service = neo4j_service
+        else:
+            from .neo4j_service import get_neo4j_service
+            self.neo4j_service = get_neo4j_service()
         self.weights = weights or SearchWeights()
 
     def search(

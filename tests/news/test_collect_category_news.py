@@ -92,12 +92,12 @@ class TestCollectCategoryNews:
         mock_aggregator.fetch_and_save_company_news.assert_any_call(
             symbol='AAPL',
             days=1,
-            use_marketaux=False,
+            use_marketaux=True,
         )
         mock_aggregator.fetch_and_save_company_news.assert_any_call(
             symbol='MSFT',
             days=1,
-            use_marketaux=False,
+            use_marketaux=True,
         )
 
         # time.sleep 호출 검증 (rate limit)

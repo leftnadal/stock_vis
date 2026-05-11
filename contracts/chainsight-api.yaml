@@ -1,0 +1,632 @@
+openapi: "3.0.3"
+info:
+  title: Chain Sight API
+  version: "2.0.0"
+  description: |
+    Chain Sight 마켓 뷰 + Deep Dive Workspace API.
+    마켓 뷰 4개 + Deep Dive 3개 = 총 7개 엔드포인트.
+    실제 구현: chainsight/api/views.py 기준 (2026-04-12 검증)
+
+servers:
+  - url: /api/v1/chainsight
+
+paths:
+  # ──────────────── 마켓 뷰 ────────────────
+  /seeds/:
+    get:
+      operationId: getSeedList
+      summary: 오늘의 시드 노드 + 섹터 요약
+      description: |
+        매일 13:00 UTC seed_selection 결과. Redis 캐시 읽기 전용.
+        캐시 키: chainsight:seeds:{date}. 오늘 없으면 전일/그제 fallback.
+      responses:
+        "200":
+          description: 시드 목록
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SeedListResponse"
+              example:
+                date: "2026-04-12"
+                total_seeds: 12
+                sector_summary:
+                  - sector: "Technology"
+                    sector_display: "기술"
+                    pct_change: 1.2
+                    seed_count: 5
+                    heat_total: 12.3
+                    top_seed: "NVDA"
+                seeds:
+                  - symbol: "NVDA"
+                    name: "NVIDIA Corp"
+                    sector: "Technology"
+                    industry: "Semiconductors"
+                    market_cap: 2800000000000
+                    daily_return: 3.5
+                    volume_ratio: 2.5
+                    seed_reasons: ["price_top5", "volume_surge"]
+                    seed_type: "price"
+                    signal_count: 3
+
+  /sector/{sector}/graph/:
+    get:
+      operationId: getSectorGraph
+      summary: 섹터 overview 그래프
+      description: |
+        해당 섹터의 market_cap 상위 노드 + confirmed/probable 관계.
+        캐시 TTL 1시간. limit 파라미터로 노드 수 제어 (기본 12, 최대 30).
+      parameters:
+        - name: sector
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 12
+            maximum: 30
+      responses:
+        "200":
+          description: 섹터 그래프
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SectorGraphResponse"
+        "404":
+          description: 섹터 없음 또는 비어있음
+
+  /{symbol}/neighbors/:
+    get:
+      operationId: getNeighborGraph
+      summary: 중심 이동 + 관계 카드 데이터
+      description: |
+        특정 종목의 이웃 노드 + 관계 상세 + 이웃 간 cross_edges.
+        관계 카드 패널 렌더용 핵심 데이터 모두 포함.
+        캐시 TTL 30분. limit으로 이웃 수 제어 (기본 8, 최대 30).
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 8
+            maximum: 30
+        - name: rel_types
+          in: query
+          schema:
+            type: string
+            default: "all"
+          description: "관계 타입 필터 (쉼표 구분). 예: PEER_OF,SUPPLIES_TO"
+        - name: min_truth_score
+          in: query
+          schema:
+            type: integer
+            default: 35
+      responses:
+        "200":
+          description: 이웃 그래프 + 관계 카드
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NeighborResponse"
+        "404":
+          description: 종목 없음
+
+  /signals/:
+    get:
+      operationId: getSignalFeed
+      summary: 체인 스토리 피드 (글로벌)
+      description: |
+        시드 노드 간 Neo4j 경로 탐색으로 chain signal 생성.
+        같은 섹터 시드 페어 → shortestPath → confidence 계산.
+        페이징 지원. 캐시 TTL 1시간.
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 5
+            maximum: 20
+        - name: sector
+          in: query
+          schema:
+            type: string
+          description: 섹터 필터 (선택)
+      responses:
+        "200":
+          description: 체인 시그널 피드
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignalFeedResponse"
+
+  # ──────────────── Deep Dive Workspace ────────────────
+  /{symbol}/graph/:
+    get:
+      operationId: getDeepDiveGraph
+      summary: 심화 탐색용 그래프
+      description: |
+        기존 Phase 4 API. N-depth 그래프 순회.
+        edges에 market_signals (co_mention_count, price_correlation) 보강.
+        SUPPLIES_TO 역방향에 derived_type=CUSTOMER_OF 추가.
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 1
+            maximum: 3
+      responses:
+        "200":
+          description: 그래프 데이터
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeepDiveGraphResponse"
+        "404":
+          description: 종목 없음
+
+  /{symbol}/suggestions/:
+    get:
+      operationId: getSuggestions
+      summary: 카테고리별 탐색 제안
+      description: |
+        4개 카테고리: peers(경쟁사), same_industry(같은 산업),
+        co_mentioned(뉴스 동시출현), same_sector(같은 섹터).
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 제안 목록
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuggestionsResponse"
+        "404":
+          description: 종목 없음
+
+  /trace/:
+    get:
+      operationId: getTrace
+      summary: 두 종목 간 최단 경로
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: max_depth
+          in: query
+          schema:
+            type: integer
+            default: 5
+            maximum: 5
+      responses:
+        "200":
+          description: 추적 경로
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TraceResponse"
+        "400":
+          description: from, to 파라미터 누락
+
+components:
+  schemas:
+    # ── Seeds ──
+    SeedListResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        total_seeds:
+          type: integer
+        sector_summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/SectorSummary"
+        seeds:
+          type: array
+          items:
+            $ref: "#/components/schemas/SeedNode"
+
+    SectorSummary:
+      type: object
+      properties:
+        sector:
+          type: string
+        sector_display:
+          type: string
+        pct_change:
+          type: number
+        seed_count:
+          type: integer
+        heat_total:
+          type: number
+        top_seed:
+          type: string
+          nullable: true
+
+    SeedNode:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        sector:
+          type: string
+        industry:
+          type: string
+        market_cap:
+          type: number
+        daily_return:
+          type: number
+        volume_ratio:
+          type: number
+        seed_reasons:
+          type: array
+          items:
+            type: string
+            enum:
+              - price_top5
+              - price_bottom5
+              - volume_surge
+              - sector_outlier
+              - relation_upgrade
+              - relation_downgrade
+              - relation_new
+              - comention_surge
+        seed_type:
+          type: string
+          enum: [price, volume, relation, comention]
+        signal_count:
+          type: integer
+
+    # ── Sector Graph ──
+    SectorGraphResponse:
+      type: object
+      properties:
+        sector:
+          type: string
+        node_count:
+          type: integer
+        edge_count:
+          type: integer
+        nodes:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketNode"
+        edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/MarketEdge"
+
+    MarketNode:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        sector:
+          type: string
+        industry:
+          type: string
+        market_cap:
+          type: number
+        daily_return:
+          type: number
+        volume_ratio:
+          type: number
+        is_seed:
+          type: boolean
+        seed_type:
+          type: string
+          nullable: true
+        seed_reasons:
+          type: array
+          items:
+            type: string
+        node_size:
+          type: string
+          enum: [xl, lg, md, sm]
+
+    MarketEdge:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        type:
+          type: string
+        relation_category:
+          type: string
+        truth_score:
+          type: number
+          nullable: true
+        market_score:
+          type: number
+          nullable: true
+        status:
+          type: string
+
+    # ── Neighbor Graph ──
+    NeighborResponse:
+      type: object
+      properties:
+        center:
+          $ref: "#/components/schemas/MarketNode"
+        neighbors:
+          type: array
+          items:
+            $ref: "#/components/schemas/NeighborNode"
+        cross_edges:
+          type: array
+          items:
+            $ref: "#/components/schemas/CrossEdge"
+        total_neighbor_count:
+          type: integer
+        returned_count:
+          type: integer
+        truncated:
+          type: boolean
+
+    NeighborNode:
+      type: object
+      properties:
+        symbol:
+          type: string
+        name:
+          type: string
+        sector:
+          type: string
+        industry:
+          type: string
+        market_cap:
+          type: number
+        daily_return:
+          type: number
+        volume_ratio:
+          type: number
+        is_seed:
+          type: boolean
+        seed_type:
+          type: string
+          nullable: true
+        seed_reasons:
+          type: array
+          items:
+            type: string
+        relation:
+          $ref: "#/components/schemas/NeighborRelation"
+
+    NeighborRelation:
+      type: object
+      description: "이웃과의 관계 상세. display_type에서 CUSTOMER_OF 파생."
+      properties:
+        type:
+          type: string
+        display_type:
+          type: string
+        direction:
+          type: string
+          enum: [inbound, outbound]
+        truth_score:
+          type: number
+          nullable: true
+        market_score:
+          type: number
+          nullable: true
+        status:
+          type: string
+        relation_category:
+          type: string
+        evidence_tier:
+          type: number
+          nullable: true
+
+    CrossEdge:
+      type: object
+      properties:
+        source:
+          type: string
+        target:
+          type: string
+        type:
+          type: string
+        truth_score:
+          type: number
+          nullable: true
+
+    # ── Signal Feed ──
+    SignalFeedResponse:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_count:
+          type: integer
+        has_next:
+          type: boolean
+        chains:
+          type: array
+          items:
+            $ref: "#/components/schemas/ChainSignal"
+
+    ChainSignal:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "형식: chain_{date}_{seq:03d}"
+        title:
+          type: string
+          description: "형식: {from} → {to} chain"
+        category:
+          type: string
+          enum: [supply_chain, competition, co_mention, price_correlation, peer_network]
+        strength:
+          type: string
+          enum: [strong, moderate, weak]
+        total_confidence:
+          type: number
+          description: "mean*0.7 + min*0.3, 30 미만 필터링"
+        trigger_summary:
+          type: string
+        root_sector:
+          type: string
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+              name:
+                type: string
+              sector:
+                type: string
+        edges:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+              score:
+                type: number
+
+    # ── Deep Dive ──
+    DeepDiveGraphResponse:
+      type: object
+      properties:
+        center:
+          type: object
+          description: "Neo4j 노드 속성 (ticker, name, sector, ...)"
+        nodes:
+          type: array
+          items:
+            type: object
+            description: "Neo4j 노드 속성"
+        edges:
+          type: array
+          items:
+            type: object
+            properties:
+              from:
+                type: string
+              to:
+                type: string
+              type:
+                type: string
+              derived_type:
+                type: string
+                description: "SUPPLIES_TO 역방향일 때 CUSTOMER_OF"
+              market_signals:
+                type: object
+                properties:
+                  co_mention_count:
+                    type: integer
+                  price_correlation:
+                    type: number
+              props:
+                type: object
+        meta:
+          type: object
+          properties:
+            depth:
+              type: integer
+            node_count:
+              type: integer
+            edge_count:
+              type: integer
+            query_ms:
+              type: integer
+
+    # ── Suggestions ──
+    SuggestionsResponse:
+      type: object
+      properties:
+        symbol:
+          type: string
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                enum: [peers, same_industry, co_mentioned, same_sector]
+              label:
+                type: string
+              count:
+                type: integer
+              rel_types:
+                type: array
+                items:
+                  type: string
+              top_tickers:
+                type: array
+                items:
+                  type: string
+              strength:
+                type: string
+                enum: [strong, moderate, signal, weak]
+
+    # ── Trace ──
+    TraceResponse:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        found:
+          type: boolean
+        path_length:
+          type: integer
+        path:
+          type: array
+          items:
+            type: object
+            properties:
+              node:
+                type: object
+              next_relation:
+                type: object
+                nullable: true
+        error:
+          type: string

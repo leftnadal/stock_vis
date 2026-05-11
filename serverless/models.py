@@ -1000,6 +1000,7 @@ class CategoryCache(models.Model):
 # Chain Sight Phase 3: ETF Holdings
 # ========================================
 
+# LEGACY_KEEP_UNTIL_DC2 — DC-2 완료 시 Neo4j :Theme + HAS_THEME로 대체 후 제거
 class ETFProfile(models.Model):
     """
     ETF 기본 정보
@@ -1064,6 +1065,7 @@ class ETFProfile(models.Model):
         return f"[{self.tier}] {self.symbol}: {self.name}"
 
 
+# LEGACY_KEEP_UNTIL_DC2
 class ETFHolding(models.Model):
     """
     ETF 구성 종목
@@ -1106,6 +1108,7 @@ class ETFHolding(models.Model):
         return f"{self.etf.symbol}: {self.stock_symbol} ({self.weight_percent}%)"
 
 
+# LEGACY_KEEP_UNTIL_DC2
 class ThemeMatch(models.Model):
     """
     테마 매칭 결과 (Tier A + Tier B)

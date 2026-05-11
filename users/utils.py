@@ -9,24 +9,10 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 
-def get_alphavantage_service():
-    """AlphaVantage 서비스 인스턴스를 반환합니다."""
-    import sys
-
-    api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-    if not api_key:
-        raise ValueError("ALPHA_VANTAGE_API_KEY environment variable not set")
-
-    # api_request 경로 추가
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(current_dir)
-    api_request_path = os.path.join(project_root, 'api_request')
-
-    if api_request_path not in sys.path:
-        sys.path.insert(0, api_request_path)
-
-    from alphavantage_service import AlphaVantageService
-    return AlphaVantageService(api_key)
+def get_stock_service():
+    """StockService 인스턴스를 반환합니다."""
+    from api_request.stock_service import get_stock_service as _get
+    return _get()
 
 
 def ensure_complete_stock_data(symbol: str) -> dict:
@@ -59,7 +45,7 @@ def ensure_complete_stock_data(symbol: str) -> dict:
     }
 
     try:
-        service = get_alphavantage_service()
+        service = get_stock_service()
     except Exception as e:
         result['errors'].append(f"Failed to initialize service: {str(e)}")
         return result
@@ -77,7 +63,7 @@ def ensure_complete_stock_data(symbol: str) -> dict:
             result['fetched'].append('stock')
             result['summary']['stock'] = 'fetched'
             logger.info(f"Successfully fetched stock overview for {symbol}")
-            time.sleep(12)  # Rate limiting
+            time.sleep(1)  # Rate limiting
         except Exception as e:
             result['errors'].append(f"Failed to fetch stock: {str(e)}")
             return result
@@ -97,7 +83,7 @@ def ensure_complete_stock_data(symbol: str) -> dict:
                 'weekly': price_result.get('weekly_prices', 0)
             }
             logger.info(f"Successfully fetched price data for {symbol}")
-            time.sleep(12)  # Rate limiting
+            time.sleep(1)  # Rate limiting
         except Exception as e:
             result['errors'].append(f"Failed to fetch prices: {str(e)}")
     else:
@@ -164,35 +150,7 @@ def fetch_stock_data_sync(symbol: str) -> dict:
     }
 
     try:
-        # API 키 확인
-        api_key = os.environ.get('ALPHA_VANTAGE_API_KEY')
-        if not api_key:
-            error_msg = "ALPHA_VANTAGE_API_KEY environment variable not set"
-            logger.error(error_msg)
-            results['errors'].append(error_msg)
-            return results
-
-        # AlphaVantage 서비스 초기화
-        import sys
-        import time
-
-        # 더 안전한 경로 처리
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(current_dir)
-        api_request_path = os.path.join(project_root, 'api_request')
-
-        if api_request_path not in sys.path:
-            sys.path.insert(0, api_request_path)
-
-        try:
-            from alphavantage_service import AlphaVantageService
-        except ImportError as e:
-            error_msg = f"Failed to import AlphaVantageService: {str(e)}"
-            logger.error(error_msg)
-            results['errors'].append(error_msg)
-            return results
-
-        service = AlphaVantageService(api_key)
+        service = get_stock_service()
 
         # 1. 기본 주식 정보 업데이트
         try:
@@ -209,13 +167,11 @@ def fetch_stock_data_sync(symbol: str) -> dict:
             logger.error(error_msg)
             results['errors'].append(error_msg)
 
-        # Rate limiting을 위한 대기
-        time.sleep(12)
+        time.sleep(1)
 
         # 2. 가격 데이터 업데이트 - 최근 2년 데이터
         try:
             logger.info(f"Fetching historical prices for {symbol}")
-            # 일간 데이터: 최근 2년 (730일)
             price_results = service.update_historical_prices(symbol, days=730)
             results['data']['prices'] = price_results
             logger.info(f"Successfully updated price data for {symbol}")
@@ -224,14 +180,9 @@ def fetch_stock_data_sync(symbol: str) -> dict:
             logger.error(error_msg)
             results['errors'].append(error_msg)
 
-        # Rate limiting을 위한 대기
-        time.sleep(12)
+        time.sleep(1)
 
-        # 3. 주간 가격 데이터는 이미 update_historical_prices에서 처리됨
-        # (update_historical_prices 메서드가 일간과 주간 데이터를 모두 가져옴)
-        # 따라서 별도로 호출할 필요 없음
-
-        # 4. 재무제표 데이터 업데이트
+        # 3. 재무제표 데이터 업데이트
         try:
             logger.info(f"Fetching financial statements for {symbol}")
             financial_results = service.update_financial_statements(symbol)
@@ -296,7 +247,7 @@ def update_portfolio_stock_data(user_id: int) -> dict:
 
             # Rate limiting을 위한 대기 (API 제한 고려)
             import time
-            time.sleep(12)
+            time.sleep(1)
 
     except Exception as e:
         logger.error(f"Failed to update portfolio stocks for user {user_id}: {e}")
@@ -321,7 +272,7 @@ def fetch_stock_data_background(symbol: str) -> None:
     logger.info(f"[Background] Starting data fetch for {symbol}")
 
     try:
-        service = get_alphavantage_service()
+        service = get_stock_service()
     except Exception as e:
         logger.error(f"[Background] Failed to initialize service for {symbol}: {e}")
         return
@@ -331,7 +282,7 @@ def fetch_stock_data_background(symbol: str) -> None:
         stock = Stock.objects.get(symbol=symbol)
         logger.info(f"[Background] Stock {symbol} exists, updating...")
         service.update_stock_data(symbol)
-        time.sleep(12)
+        time.sleep(1)
     except Stock.DoesNotExist:
         logger.error(f"[Background] Stock {symbol} not found")
         return
@@ -346,7 +297,7 @@ def fetch_stock_data_background(symbol: str) -> None:
         if daily_count < 30 or weekly_count < 10:
             logger.info(f"[Background] Fetching price data for {symbol}")
             service.update_historical_prices(symbol, days=730)
-            time.sleep(12)
+            time.sleep(1)
         else:
             logger.info(f"[Background] Price data exists for {symbol}")
     except Exception as e:

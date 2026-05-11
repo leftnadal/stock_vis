@@ -1,0 +1,312 @@
+openapi: "3.0.3"
+info:
+  title: Validation API (1차 검증)
+  version: "1.0.0"
+  description: |
+    Peer 비교 기반 1차 검증 시스템.
+    Compute-on-Read 패턴: 요청 시 peer group 대비 percentile 실시간 계산.
+    실제 구현: validation/api/views.py 기준 (2026-04-12 검증)
+
+servers:
+  - url: /api/v1/validation
+
+paths:
+  /{symbol}/summary/:
+    get:
+      operationId: getValidationSummary
+      summary: 검증 요약 + 피어 그룹 + 산업 내 순위
+      description: |
+        카테고리별 신호등(green/yellow/red/gray) + peer 정보 + 산업 내 순위.
+        Percentile 기반: >=65 green, >=35 yellow, else red.
+        특수 산업은 gray (signal_reason에 사유 표시).
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 검증 요약
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  symbol:
+                    type: string
+                  company_name:
+                    type: string
+                  data_fiscal_year:
+                    type: integer
+                  data_freshness:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  category_signals:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        category:
+                          type: string
+                        display_name:
+                          type: string
+                        signal:
+                          type: string
+                          enum: [green, yellow, red, gray]
+                        description:
+                          type: string
+                        metric_count:
+                          type: integer
+                        signal_reason:
+                          type: string
+                  summary_text:
+                    type: string
+                  summary_source:
+                    type: string
+                    enum: [rule]
+                  peer_info:
+                    type: object
+                    nullable: true
+                    properties:
+                      peer_count:
+                        type: integer
+                      confidence:
+                        type: string
+                      benchmark_basis:
+                        type: string
+                      size_bucket:
+                        type: string
+                      basis_description:
+                        type: string
+                      top_peers:
+                        type: array
+                        items:
+                          type: string
+                      industry_leader:
+                        type: object
+                        nullable: true
+                        properties:
+                          symbol:
+                            type: string
+                          name:
+                            type: string
+                          market_cap:
+                            type: number
+                            nullable: true
+                  industry_position:
+                    type: object
+                    properties:
+                      ranks:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            metric:
+                              type: string
+                            display_name:
+                              type: string
+                            rank:
+                              type: integer
+                            total:
+                              type: integer
+                            value:
+                              type: number
+                              nullable: true
+              example:
+                symbol: "AAPL"
+                company_name: "Apple Inc"
+                data_fiscal_year: 2025
+                data_freshness: "2026-04-10T18:30:00Z"
+                category_signals:
+                  - category: "profitability"
+                    display_name: "수익성"
+                    signal: "green"
+                    description: "기업이 매출에서 얼마나 효율적으로 이익을 만들어내는지 보여줍니다."
+                    metric_count: 4
+                    signal_reason: "ROE 32.1% (상위 12%)"
+                summary_text: "AAPL은 수익성과 현금흐름에서 강점을 보입니다."
+                summary_source: "rule"
+                peer_info:
+                  peer_count: 8
+                  confidence: "industry_size"
+                  benchmark_basis: "industry_size"
+                  size_bucket: "large"
+                  basis_description: "Technology Hardware 업종 내 유사 규모 기업"
+                  top_peers: ["MSFT", "GOOGL", "META", "AMZN", "NVDA"]
+                  industry_leader:
+                    symbol: "MSFT"
+                    name: "Microsoft Corp"
+                    market_cap: 3100000000000
+                industry_position:
+                  ranks:
+                    - metric: "operating_margin"
+                      display_name: "영업이익률"
+                      rank: 2
+                      total: 8
+                      value: 30.7
+        "404":
+          description: 종목 없음
+
+  /{symbol}/metrics/:
+    get:
+      operationId: getValidationMetrics
+      summary: 카테고리별 지표 상세
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+            default: "all"
+          description: "카테고리 필터 (all이면 전체)"
+      responses:
+        "200":
+          description: Peer 대비 지표 비교
+        "404":
+          description: 종목 없음
+
+  /{symbol}/leader-comparison/:
+    get:
+      operationId: getLeaderComparison
+      summary: Peer 리더 비교 (대표 6개 지표)
+      description: |
+        대장주와 6개 핵심 지표 비교:
+        operating_margin, revenue_growth_yoy, debt_to_equity,
+        fcf_margin, asset_turnover, net_shareholder_yield
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 리더 비교 데이터
+        "404":
+          description: 종목 없음
+
+  /{symbol}/presets/:
+    get:
+      operationId: getPresetList
+      summary: 프리셋 목록 (6종)
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 사용 가능한 프리셋 목록
+
+  /{symbol}/peer-preference/:
+    post:
+      operationId: setPeerPreference
+      summary: Peer 선택 저장
+      description: "JWT 인증 필수 (authAxios 사용). mode: preset 또는 custom."
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [preset, custom]
+                preset_key:
+                  type: string
+                custom_peers:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: 저장 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  mode:
+                    type: string
+                  preset_key:
+                    type: string
+        "401":
+          description: 인증 필요
+    delete:
+      operationId: resetPeerPreference
+      summary: Peer 선택 초기화 (default로 리셋)
+      description: "JWT 인증 필수."
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 리셋 완료
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  message:
+                    type: string
+        "401":
+          description: 인증 필요
+
+  /{symbol}/llm-filter/:
+    post:
+      operationId: applyLLMPeerFilter
+      summary: LLM 대화형 Peer 조정
+      description: |
+        POST 메서드. 자연어 → 구조화 필터 → peer 재선정.
+        Body에 query(필수) + preset_key(선택) 포함.
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  description: "사용자 자연어 질문. 예: 성숙기 기업 중 ROE 15% 이상만"
+                preset_key:
+                  type: string
+                  description: "기반 프리셋 (선택)"
+            example:
+              query: "성숙기 기업 중 ROE 15% 이상만"
+              preset_key: "default"
+      responses:
+        "200":
+          description: LLM 필터 결과
+        "400":
+          description: 검색어 누락
+        "404":
+          description: 종목 없음

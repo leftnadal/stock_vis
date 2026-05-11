@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 9: AR Space</title>
+    <style>
+        :root { --bg: #000; --text: #f8fafc; }
+        body { margin:0; padding:2rem; background:#000; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222; border:1px solid #333; display:flex; flex-direction:column; align-items:center;}
+        
+        .header { margin-top: 60px; text-align: center; position:relative; z-index:10; }
+        h2 { margin:0; font-size:1.4rem; }
+        p { color:#94a3b8; font-size:0.9rem; }
+
+        .ar-scene {
+            width: 100%;
+            height: 100%;
+            perspective: 800px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            /* A fake camera feed background feeling */
+            background: radial-gradient(circle at center, #1e293b 0%, #000 100%);
+        }
+
+        .space {
+            position: relative;
+            width: 200px;
+            height: 200px;
+            transform-style: preserve-3d;
+            animation: rotateSpace 10s infinite linear;
+        }
+
+        @keyframes rotateSpace {
+            0% { transform: rotateY(0deg) rotateX(10deg); }
+            100% { transform: rotateY(360deg) rotateX(10deg); }
+        }
+
+        .node {
+            position: absolute;
+            width: 60px; height: 60px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.7rem; font-weight: bold; text-align:center;
+            backdrop-filter: blur(5px);
+        }
+
+        .n-support { border-color: #ef4444; color: #fca5a5; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        .n-reject { border-color: #3b82f6; color: #93c5fd; box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+
+        /* Positioning in 3D space */
+        .node:nth-child(1) { transform: translate3d(70px, 70px, 100px); }
+        .node:nth-child(2) { transform: translate3d(-50px, -20px, -100px); }
+        .node:nth-child(3) { transform: translate3d(150px, -80px, 50px); }
+        .node:nth-child(4) { transform: translate3d(-100px, 120px, 0px); }
+        
+        /* Central hypothesis node */
+        .center-node {
+            position: absolute;
+            width: 80px; height: 80px;
+            background: rgba(255,0,0,0.2);
+            border: 2px solid #ef4444;
+            border-radius: 50%;
+            transform: translate3d(60px, 60px, 0);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.8rem; font-weight: bold; color:white;
+            box-shadow: inset 0 0 20px #ef4444;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="ar-scene">
+            <div class="space">
+                <div class="center-node">KOSPI 하락</div>
+                
+                <div class="node n-support" style="animation: reverseRotate 10s infinite linear;">외국인</div>
+                <div class="node n-support" style="animation: reverseRotate 10s infinite linear;">환율</div>
+                <div class="node n-reject"  style="animation: reverseRotate 10s infinite linear;">S&P500</div>
+                <div class="node n-reject"  style="animation: reverseRotate 10s infinite linear;">금리</div>
+            </div>
+        </div>
+        
+        <div class="header">
+            <h2>Spatial AR 뷰</h2>
+            <p>공간 속 지표의 거리와 위치</p>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#9. 3D Spatial / AR View</h3>
+        <p>평면적인 대시보드를 넘어, '우주 공간' 컨셉으로 가설(중심) 궤도를 도는 위성(지표)들로 시각화합니다. CSS transform 3D를 이용해 회전하며 각 노드의 지지/반박 강도를 시각적 거리와 빛(box-shadow)으로 표현합니다.</p>
+    </div>
+
+    <script>
+        // Keep nodes facing the camera by rotating them oppositely
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes reverseRotate {
+                0% { transform: rotateY(0deg) }
+                100% { transform: rotateY(-360deg) }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Dynamic reverse rotation based on the parent's current transform
+        const nodes = document.querySelectorAll('.node');
+        const space = document.querySelector('.space');
+
+        let angle = 0;
+        setInterval(() => {
+            angle += 0.36; // 360 / 10s (approx 10000ms / 10ms = 1000 frames)
+            if(angle >= 360) angle = 0;
+            nodes.forEach((n, i) => {
+                // Read original translate to reapply it with counter rotation
+                const t3d = [
+                    'translate3d(70px, 70px, 100px)',
+                    'translate3d(-50px, -20px, -100px)',
+                    'translate3d(150px, -80px, 50px)',
+                    'translate3d(-100px, 120px, 0px)'
+                ];
+                n.style.transform = `${t3d[i]} rotateY(${-angle}deg) rotateX(-10deg)`;
+            });
+        }, 10);
+    </script>
+</body>
+</html>

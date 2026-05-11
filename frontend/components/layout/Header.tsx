@@ -57,6 +57,14 @@ export default function Header() {
               포트폴리오
             </Link>
             <Link
+              href="/chainsight"
+              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
+                pathname.startsWith('/chainsight') ? 'text-blue-600 dark:text-blue-400' : ''
+              }`}
+            >
+              Chain Sight
+            </Link>
+            <Link
               href="/thesis"
               className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
                 pathname.startsWith('/thesis') ? 'text-blue-600 dark:text-blue-400' : ''
@@ -168,6 +176,12 @@ export default function Header() {
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 포트폴리오
+              </Link>
+              <Link
+                href="/chainsight"
+                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                Chain Sight
               </Link>
               <Link
                 href="/thesis"

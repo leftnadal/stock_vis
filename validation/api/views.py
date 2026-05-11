@@ -17,7 +17,7 @@ from rest_framework import status
 from stocks.models import Stock, SP500Constituent
 from metrics.models import (
     MetricDefinition, CompanyMetricSnapshot,
-    PeerListCache, PeerMetricBenchmark, IndustryMetricBenchmark,
+    PeerListCache, PeerMetricBenchmark,
 )
 from validation.models import (
     CompanyBenchmarkDelta, CategorySignal,
@@ -490,3 +490,69 @@ class PeerPreferenceView(APIView):
 
         UserPeerPreference.objects.filter(user=request.user, symbol_id=symbol).delete()
         return Response({'status': 'ok', 'message': 'default로 리셋'})
+
+
+class LLMPeerFilterView(APIView):
+    """
+    Phase 7: LLM 대화형 Peer 조정 API
+
+    POST /api/v1/validation/{symbol}/llm-filter/
+    Body: {"query": "성숙기 기업 중 ROE 15% 이상만", "preset_key": "default"}
+    """
+
+    def post(self, request, symbol):
+        symbol = symbol.upper()
+        query = request.data.get('query', '')
+
+        if not query:
+            return Response(
+                {'error': '검색어를 입력하세요.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        stock = Stock.objects.filter(symbol=symbol).first()
+        if not stock:
+            return Response(
+                {'error': f'Stock {symbol} not found'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # 기반 peer 풀 (프리셋 or 전체)
+        preset_key = request.data.get('preset_key')
+        base_peers = None
+        if preset_key:
+            preset = PeerPreset.objects.filter(
+                symbol_id=symbol, preset_key=preset_key, is_active=True,
+            ).first()
+            if preset:
+                base_peers = preset.peer_symbols
+
+        # Step 1: 자연어 → 구조화 필터
+        from validation.services.llm_peer_filter import (
+            parse_filter_with_llm, execute_peer_filter,
+        )
+
+        parsed = parse_filter_with_llm(
+            user_input=query,
+            symbol=symbol,
+            sector=stock.sector or '',
+        )
+
+        if 'error' in parsed:
+            return Response({
+                'symbol': symbol,
+                'query': query,
+                'error': parsed['error'],
+            })
+
+        # Step 2: 필터 실행
+        result = execute_peer_filter(symbol, parsed, base_peers)
+
+        return Response({
+            'symbol': symbol,
+            'query': query,
+            'parsed_filter': parsed,
+            'peers': result['peers'][:50],
+            'count': result['count'],
+            'filters_applied': result['filters_applied'],
+        })

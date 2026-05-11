@@ -32,7 +32,7 @@ def extract_eod_keywords(target: str) -> list[ContextKeyword]:
     EODSignal에서 target 종목의 최근 시그널을 키워드로 변환.
     target은 종목명 또는 symbol.
     """
-    from stocks.models import EODSignal, Stock
+    from stocks.models import EODSignal
 
     # target → symbol 변환
     symbol = _resolve_symbol(target)

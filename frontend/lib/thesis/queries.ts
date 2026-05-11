@@ -88,6 +88,24 @@ export function useAllIndicatorReadings(
   })
 }
 
+// 단일 지표 readings (지표별 차트 토글용, 5Y까지 지원)
+export function useIndicatorReadings(
+  thesisId: string,
+  indicatorId: string,
+  days: number,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: QUERY_KEYS.readings(thesisId, indicatorId, days),
+    queryFn: (): Promise<IndicatorReadingsResponse> =>
+      USE_MOCK
+        ? Promise.resolve(MOCK_READINGS[indicatorId] ?? { indicator_id: indicatorId, indicator_name: '', support_direction: 'positive' as const, unit: '', readings: [], count: 0 })
+        : thesisApi.indicatorReadings(thesisId, indicatorId, days),
+    enabled: enabled && !!thesisId && !!indicatorId,
+    staleTime: 1000 * 60 * 30,
+  })
+}
+
 // 벨 아이콘 전용 — 백엔드 unread_count 직접 사용
 export function useUnreadAlertCount() {
   const { data } = useQuery({

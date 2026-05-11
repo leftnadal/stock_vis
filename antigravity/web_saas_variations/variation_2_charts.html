@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SaaS Var 2: Charts</title>
+    <style>
+        :root { --surface: #ffffff; --bg: #f9fafb; --text: #111827; --border: #e5e7eb; --accent: #4f46e5; }
+        body { margin:0; padding:0; background:var(--bg); color:var(--text); font-family:system-ui; display:flex; height:100vh;}
+        
+        .sidebar { width:70px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; align-items:center; padding:20px 0; gap:25px;}
+        .main { flex:1; display:flex; flex-direction:column;}
+        .top-nav { height:60px; background:var(--surface); border-bottom:1px solid var(--border); display:flex; align-items:center; padding:0 30px;}
+        .content { flex:1; padding:20px; display:grid; grid-template-columns: 3fr 1fr; grid-template-rows: auto 1fr; gap:20px; overflow-y:auto;}
+
+        .s-icon { font-size:1.5rem; cursor:pointer; opacity:0.5; transition:0.2s;}
+        .s-icon:hover { opacity:1; }
+        .s-icon.active { opacity:1; color:var(--accent); border-right:3px solid var(--accent); padding-right:5px;}
+
+        .panel { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:20px; display:flex; flex-direction:column; box-shadow:0 1px 3px rgba(0,0,0,0.02);}
+        .p-title { font-size:1rem; font-weight:700; margin-bottom:15px; color:#374151; display:flex; justify-content:space-between; align-items:center;}
+
+        /* Hero Chart Area */
+        .chart-hero { grid-column:1; grid-row:1; min-height:350px; position:relative;}
+        .fake-chart { flex:1; background:linear-gradient(180deg, rgba(79,70,229,0.05), transparent); border-bottom:2px solid var(--accent); border-radius:8px; position:relative;}
+        .c-line { position:absolute; bottom:0; left:0; width:100%; height:100%; stroke:var(--accent); stroke-width:3; fill:none;}
+        .candlestick { width:6px; background:#10b981; position:absolute; bottom:50%; margin-left:2px;}
+        
+        /* Briefing Sidebar */
+        .pulse-panel { grid-column:2; grid-row:1 / span 2; display:flex; flex-direction:column; gap:15px;}
+        .brief-card { background:#eff6ff; border:1px solid #bfdbfe; padding:20px; border-radius:12px;}
+        .b-h { font-size:1.1rem; font-weight:800; color:#1e40af; margin-bottom:10px;}
+        
+        .thesis-alert { padding:15px; border-left:4px solid var(--accent); background:#f9fafb; border-radius:8px; margin-top:20px;}
+
+        /* Bottom Row Mpas */
+        .chain-panel { grid-column:1; grid-row:2; min-height:250px; position:relative; overflow:hidden;}
+        .map-bg { position:absolute; inset:0; background:radial-gradient(circle, #f3f4f6 0%, #ffffff 100%); display:flex; justify-content:center; align-items:center; opacity:0.6;}
+        
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div style="font-weight:900; color:var(--accent); font-size:1.2rem; margin-bottom:20px;">SV</div>
+        <div class="s-icon active">📈</div>
+        <div class="s-icon">🕸️</div>
+        <div class="s-icon">🎯</div>
+        <div class="s-icon">💼</div>
+    </div>
+    
+    <div class="main">
+        <div class="top-nav">
+            <div style="font-weight:700; font-size:1.2rem;">StockVis Market View</div>
+            <div style="margin-left:auto; display:flex; gap:15px;">
+                <select style="padding:6px 12px; border-radius:8px; border:1px solid var(--border);"><option>전체 시장 (S&P 500)</option></select>
+                <div style="background:var(--accent); color:white; padding:6px 15px; border-radius:8px; font-weight:600; cursor:pointer;">최신화</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Main Chart (Hero) -->
+            <div class="panel chart-hero">
+                <div class="p-title">
+                    <span>S&P 500 매크로 트렌드 (1D)</span>
+                    <div style="display:flex; gap:10px;"><span style="font-size:0.8rem; color:var(--accent); background:#eef2ff; padding:4px 10px; border-radius:10px;">EOD 오버레이 켜짐</span></div>
+                </div>
+                <div class="fake-chart">
+                    <!-- Fake Candlesticks -->
+                    <div class="candlestick" style="left:10%; height:40px; bottom:20%;"></div>
+                    <div class="candlestick" style="left:20%; height:60px; bottom:25%;"></div>
+                    <div class="candlestick" style="left:30%; height:30px; bottom:35%; background:#ef4444;"></div>
+                    <div class="candlestick" style="left:40%; height:50px; bottom:30%;"></div>
+                    <div class="candlestick" style="left:50%; height:80px; bottom:35%;"></div>
+                    <div class="candlestick" style="left:60%; height:40px; bottom:45%; background:#ef4444;"></div>
+                    <div class="candlestick" style="left:70%; height:90px; bottom:40%;"></div>
+                    <div class="candlestick" style="left:80%; height:120px; bottom:45%;"></div>
+                    
+                    <svg style="position:absolute; inset:0; width:100%; height:100%;">
+                        <circle cx="80%" cy="55%" r="10" fill="var(--accent)"></circle>
+                        <text x="80%" y="45%" fill="var(--accent)" font-size="12" font-weight="bold" text-anchor="middle">Breakout Signal!</text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Right Sidebar: Pulse & Actions -->
+            <div class="pulse-panel panel">
+                <div class="p-title">출근 브리핑 (Pulse)</div>
+                
+                <div class="brief-card">
+                    <div class="b-h">엔비디아 발 시장 견인</div>
+                    <div style="font-size:0.9rem; color:#1e3a8a; line-height:1.5;">지난 밤 거시경제 불확실성에도 IT/반도체 섹터의 강력한 매수세가 지수 전체를 끌어올렸습니다. 옆의 차트에서 S&P 돌파 시그널을 확인하세요.</div>
+                </div>
+
+                <div class="thesis-alert">
+                    <div style="font-weight:700; margin-bottom:5px;">내 포트폴리오 영향</div>
+                    <div style="font-size:0.85rem; color:#4b5563;">보유하신 AAPL, SAMSUNG 종목이 해당 매크로 훈풍 범위 안에 편입되었습니다.</div>
+                </div>
+                
+                <h4 style="margin:20px 0 10px 0;">통제실 (Thesis) 감지</h4>
+                <div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:0.9rem; padding:10px; border:1px solid var(--border); border-radius:8px;">
+                        <span>전력 인프라 연쇄 작용</span>
+                        <span style="color:#10b981; font-weight:bold;">85% 일치</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Chart: Chain Sight -->
+            <div class="panel chain-panel">
+                <div class="p-title">Chain Sight 연관성 (섹터 단위) <span style="font-size:0.8rem; font-weight:normal; color:#6b7280; cursor:pointer;">확대보기 &rsaquo;</span></div>
+                <div class="map-bg">
+                    <div style="display:flex; justify-content:space-around; width:80%; align-items:center;">
+                        <div style="padding:20px; border-radius:50%; background:#eef2ff; border:2px solid var(--accent); font-weight:700;">Tech (Core)</div>
+                        <div style="height:2px; width:50px; background:var(--accent);"></div>
+                        <div style="padding:15px; border-radius:50%; background:white; border:1px solid #9ca3af; color:#4b5563;">Energy</div>
+                        <div style="height:2px; width:50px; background:#9ca3af; border-style:dashed;"></div>
+                        <div style="padding:15px; border-radius:50%; background:white; border:1px solid #9ca3af; color:#4b5563;">Healthcare</div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <div style="position:absolute; bottom:20px; left:100px; background:#1e293b; color:white; padding:15px; border-radius:12px; width:350px; box-shadow:0 10px 30px rgba(0,0,0,0.2); font-size:0.85rem;">
+        <b>Variation 2: Chart-Centric (시각화 우선)</b><br>
+        유저 저니를 텍스트나 표가 아닌 <b>'거대한 차트(트레이딩뷰 스타일)'</b>를 통해 시각적으로 먼저 접하게 합니다. 대형 매크로 차트에 AI EOD 시그널(마커 O)을 렌더링해주고, 우측의 요약 브리핑과 연동시켜 시각적 통찰력을 극대화합니다.
+    </div>
+</body>
+</html>

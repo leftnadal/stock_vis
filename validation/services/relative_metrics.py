@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from stocks.models import Stock, SP500Constituent
 from metrics.models import CompanyMetricSnapshot, IndustryMetricBenchmark
-from validation.models import CompanyBenchmarkDelta
 
 logger = logging.getLogger(__name__)
 

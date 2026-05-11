@@ -18,12 +18,17 @@ interface Props {
 }
 
 export function IndividualMiniCharts({ thesisId, indicators, period }: Props) {
-  const ids = useMemo(() => indicators.map((i) => i.id), [indicators])
+  // 분기 지표는 일간 미니차트에서 제외
+  const dailyIndicators = useMemo(
+    () => indicators.filter((i) => !i.is_quarterly),
+    [indicators],
+  )
+  const ids = useMemo(() => dailyIndicators.map((i) => i.id), [dailyIndicators])
   const results = useAllIndicatorReadings(thesisId, ids, period)
 
   return (
     <div className="space-y-4">
-      {indicators.map((ind, idx) => {
+      {dailyIndicators.map((ind, idx) => {
         const result = results[idx]
         const readings = result?.data?.readings ?? []
         const unit = result?.data?.unit ?? ind.raw_value_unit

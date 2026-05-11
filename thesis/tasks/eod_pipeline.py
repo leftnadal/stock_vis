@@ -13,7 +13,6 @@ from datetime import date
 
 from celery import shared_task
 from django.conf import settings
-from django.db import transaction
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -156,10 +155,34 @@ def _fetch_news_sentiment_value(indicator):
         return None, None
 
 
+def _fetch_metrics_value(indicator):
+    """분기 재무 지표 fetch. data_params의 metric_code로 조회."""
+    from thesis.services.quarterly_metric_fetcher import fetch_quarterly_metric
+
+    params = indicator.data_params or {}
+    metric_code = params.get('metric_code')
+    symbol = params.get('symbol') or getattr(indicator.thesis, 'target', '').upper()
+
+    if not metric_code or not symbol:
+        logger.warning(f"[{indicator.name}] metrics: metric_code 또는 symbol 없음")
+        return None, None
+
+    try:
+        result = fetch_quarterly_metric(symbol, metric_code)
+        if not result or result['value'] is None:
+            return None, None
+
+        return result['value'], timezone.now().replace(hour=18, minute=0, second=0, microsecond=0)
+    except Exception as e:
+        logger.error(f"[{indicator.name}] metrics 예외: {e}")
+        return None, None
+
+
 DATA_SOURCE_FETCHERS = {
     'fmp': _fetch_fmp_value,
     'fred': _fetch_fred_value,
     'news_sentiment': _fetch_news_sentiment_value,
+    'metrics': _fetch_metrics_value,
 }
 
 

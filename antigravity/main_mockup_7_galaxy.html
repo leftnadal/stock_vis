@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup 7: Constellation</title>
+    <style>
+        :root { --bg: #040814; --text: #fff; }
+        body { margin:0; padding:2rem; background:#111; color:var(--text); font-family:system-ui; display:flex; justify-content:center; align-items:center; height:100vh; gap: 2rem;}
+        .phone { width:375px; height:812px; background:var(--bg); border-radius:40px; overflow:hidden; position:relative; box-shadow:0 0 0 10px #222, 0 20px 40px rgba(0,0,0,0.5); border:1px solid #333; display:flex; flex-direction:column; align-items:center;}
+        
+        .header { position:absolute; top:50px; left:20px; z-index:10; pointer-events:none;}
+        h1 { margin:0; font-size:1.8rem; font-weight:300;}
+        p { color:#8b5cf6; font-size:0.9rem; margin-top:5px; font-weight:600;}
+
+        /* Canvas space */
+        .universe {
+            position: absolute;
+            inset: -100px;
+            background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, var(--bg) 80%);
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        /* SVG lines connecting nodes */
+        svg {
+            position: absolute;
+            inset: 0;
+            width: 100%; height: 100%;
+        }
+        .link {
+            stroke: rgba(139, 92, 246, 0.3);
+            stroke-width: 1.5;
+            transition: stroke 0.3s;
+        }
+
+        /* Nodes */
+        .node {
+            position: absolute;
+            border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 0.75rem; font-weight: 600; text-align: center;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            backdrop-filter: blur(5px);
+        }
+        .node:hover { transform: scale(1.1); z-index: 20;}
+
+        .n-center { width: 80px; height: 80px; background: radial-gradient(circle, #8b5cf6, #4c1d95); box-shadow: 0 0 30px #8b5cf6; top: 366px; left: 147px; z-index:10;}
+        .n-1 { width: 60px; height: 60px; background: radial-gradient(circle, #ec4899, #be185d); top: 150px; left: 80px; }
+        .n-2 { width: 70px; height: 70px; background: radial-gradient(circle, #10b981, #047857); top: 250px; left: 250px; }
+        .n-3 { width: 50px; height: 50px; background: radial-gradient(circle, #3b82f6, #1d4ed8); top: 550px; left: 100px; }
+        .n-4 { width: 65px; height: 65px; background: radial-gradient(circle, #f59e0b, #b45309); top: 480px; left: 240px; }
+
+        .bottom-bar { position:absolute; bottom:30px; left:20px; right:20px; display:flex; justify-content:space-between; align-items:center; z-index:10; background:rgba(0,0,0,0.5); backdrop-filter:blur(10px); padding:15px; border-radius:20px; border:1px solid rgba(255,255,255,0.1);}
+        .b-icon { font-size:1.5rem; opacity:0.5;}
+        .b-icon.active { opacity:1; color:#8b5cf6;}
+        
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <div class="universe" id="universe">
+            <svg>
+                <!-- Static lines connecting to center (187, 406 roughly) -->
+                <line x1="187" y1="406" x2="110" y2="180" class="link" />
+                <line x1="187" y1="406" x2="285" y2="285" class="link" />
+                <line x1="187" y1="406" x2="125" y2="575" class="link" />
+                <line x1="187" y1="406" x2="272" y2="512" class="link" />
+            </svg>
+
+            <div class="node n-center">Market<br>Core</div>
+            <div class="node n-1">AI/Tech</div>
+            <div class="node n-2">Macro</div>
+            <div class="node n-3">Energy</div>
+            <div class="node n-4">Bio</div>
+        </div>
+
+        <div class="header">
+            <h1>Chain Sight</h1>
+            <p>시장의 연쇄 반응 맵</p>
+        </div>
+
+        <div class="bottom-bar">
+            <span class="b-icon active">🌐</span>
+            <span class="b-icon">📊</span>
+            <span class="b-icon">📌</span>
+            <span class="b-icon">⚙️</span>
+        </div>
+    </div>
+    
+    <div style="color:white; width:300px; padding:20px; background:#222; border-radius:12px;">
+        <h3>#7. Constellation / Galaxy Map</h3>
+        <p>Chain Sight 기능에서 영감을 받은 테마. 메인 화면이 리스트나 카드가 아닌 자유롭게 떠다니는 노드(별자리) 맵 자체입니다. 노드를 터치하여 해당 섹터의 시그널/뉴스 속으로 다이빙합니다.</p>
+    </div>
+
+    <script>
+        // Simple subtle panning
+        const universe = document.getElementById('universe');
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            universe.style.transform = `translate(${x}px, ${y}px)`;
+        });
+    </script>
+</body>
+</html>

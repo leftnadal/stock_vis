@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { useParams } from 'next/navigation'
 import { Settings } from 'lucide-react'
 import Link from 'next/link'
@@ -9,13 +8,9 @@ import { USE_MOCK, MOCK_DASHBOARD } from '@/lib/thesis/mock'
 import { ThesisDashboardSkeleton } from '@/components/thesis/skeleton/ThesisSkeleton'
 import { DashboardPageHeader } from '@/components/thesis/dashboard/DashboardPageHeader'
 import { DashboardHeader } from '@/components/thesis/dashboard/DashboardHeader'
-import { RealValueIndicatorCard } from '@/components/thesis/dashboard/RealValueIndicatorCard'
+import { IndicatorRow } from '@/components/thesis/dashboard/IndicatorRow'
 import { AISummarySection } from '@/components/thesis/dashboard/AISummarySection'
 import { NotableChangesSection } from '@/components/thesis/dashboard/NotableChangesSection'
-import { ChartToggleButton } from '@/components/thesis/dashboard/ChartToggleButton'
-import { PeriodSelector } from '@/components/thesis/dashboard/PeriodSelector'
-import { IndividualMiniCharts } from '@/components/thesis/dashboard/IndividualMiniCharts'
-import type { ChartPeriod } from '@/lib/thesis/types'
 
 export default function ThesisDashboardPage() {
   const params = useParams()
@@ -29,10 +24,6 @@ export default function ThesisDashboardPage() {
   } = useDashboard(thesisId)
 
   const data = USE_MOCK ? MOCK_DASHBOARD : dashboard
-
-  // 차트 state (PR-9에서 사용)
-  const [chartVisible, setChartVisible] = useState(false)
-  const [chartPeriod, setChartPeriod] = useState<ChartPeriod>(14)
 
   // ── 로딩 ──
   if (isLoading && !USE_MOCK) {
@@ -69,7 +60,7 @@ export default function ThesisDashboardPage() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-4 pb-20">
-      {/* 공통 헤더 — 정상 상태에서만 새로고침 버튼 표시 */}
+      {/* 공통 헤더 */}
       <DashboardPageHeader
         showRefresh
         isLoading={isLoading}
@@ -92,7 +83,7 @@ export default function ThesisDashboardPage() {
           snapshotDate={data.thesis.snapshot_date}
         />
 
-        {/* 지표 그리드 */}
+        {/* 지표 리스트 (세로 나열) */}
         <section>
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-gray-400 text-sm font-medium">
@@ -119,31 +110,17 @@ export default function ThesisDashboardPage() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="space-y-2">
               {data.indicators.map((ind) => (
-                <RealValueIndicatorCard key={ind.id} indicator={ind} />
+                <IndicatorRow
+                  key={ind.id}
+                  thesisId={thesisId}
+                  indicator={ind}
+                />
               ))}
             </div>
           )}
         </section>
-
-        {/* 차트 토글 */}
-        <ChartToggleButton
-          visible={chartVisible}
-          onToggle={() => setChartVisible((v) => !v)}
-        />
-
-        {/* 차트 영역 (토글 시 표시) */}
-        {chartVisible && (
-          <div className="space-y-4">
-            <PeriodSelector period={chartPeriod} onChange={setChartPeriod} />
-            <IndividualMiniCharts
-              thesisId={thesisId}
-              indicators={data.indicators}
-              period={chartPeriod}
-            />
-          </div>
-        )}
 
         {/* 하단 액션 */}
         <div className="space-y-2 pt-2">
