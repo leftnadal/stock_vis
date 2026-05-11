@@ -22,6 +22,7 @@ from thesis.services.builder_events import (
     EVENT_SUGGESTION_SELECTED, EVENT_SUGGESTION_TO_PRESET,
 )
 from thesis.feature_flags import get_feature_flags
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 
@@ -455,11 +456,17 @@ JSON만 반환해. 다른 텍스트 없이."""
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
-        response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt,
-            config=config,
-        )
+        cb = get_circuit('gemini_thesis', failure_threshold=5, recovery_seconds=120)
+        try:
+            response = cb.call(
+                client.models.generate_content,
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=config,
+            )
+        except CircuitBreakerError as cb_exc:
+            logger.warning(f"Gemini CB open (thesis): {cb_exc}")
+            return _fallback_parse(text)
 
         response_text = response.text if hasattr(response, 'text') and response.text else ''
         if not response_text:

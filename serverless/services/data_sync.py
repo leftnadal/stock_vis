@@ -14,6 +14,7 @@ from serverless.models import MarketMover
 from serverless.services.fmp_client import FMPClient, FMPAPIError
 from serverless.services.indicators import IndicatorCalculator
 from serverless.services.corporate_action_service import CorporateActionService
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
 
 
 logger = logging.getLogger(__name__)
@@ -69,16 +70,24 @@ class MarketMoversSync:
 
         results = {'gainers': 0, 'losers': 0, 'actives': 0, 'errors': 0}
 
-        # 1. FMP API에서 3가지 타입 데이터 가져오기
-        try:
-            movers_data = {
-                'gainers': self.fmp.get_market_gainers(),
-                'losers': self.fmp.get_market_losers(),
-                'actives': self.fmp.get_market_actives(),
-            }
-        except FMPAPIError as e:
-            logger.error(f"❌ FMP API 호출 실패: {e}")
-            raise
+        # 1. FMP API에서 3가지 타입 데이터 가져오기 (CB로 부분 실패 허용)
+        cb = get_circuit('fmp_market_movers', failure_threshold=5, recovery_seconds=120)
+        movers_data: Dict[str, list] = {}
+        for mover_type, fetch_fn in (
+            ('gainers', self.fmp.get_market_gainers),
+            ('losers', self.fmp.get_market_losers),
+            ('actives', self.fmp.get_market_actives),
+        ):
+            try:
+                movers_data[mover_type] = cb.call(fetch_fn)
+            except CircuitBreakerError as exc:
+                logger.warning(f"⚠️ CB open ({mover_type}): {exc}")
+                movers_data[mover_type] = []
+                results['errors'] += 1
+            except FMPAPIError as exc:
+                logger.error(f"❌ FMP {mover_type} 실패: {exc}")
+                movers_data[mover_type] = []
+                results['errors'] += 1
 
         # 2. 각 타입별로 종목 처리
         for mover_type, items in movers_data.items():

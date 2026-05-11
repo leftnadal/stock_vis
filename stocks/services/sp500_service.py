@@ -11,6 +11,7 @@ from django.db import transaction
 
 from stocks.models import SP500Constituent
 from serverless.services.fmp_client import FMPClient
+from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,12 @@ class SP500Service:
         """
         logger.info("S&P 500 구성 종목 동기화 시작")
 
-        raw_constituents = self.fmp_client.get_sp500_constituents()
+        cb = get_circuit('fmp_sp500_constituents', failure_threshold=3, recovery_seconds=300)
+        try:
+            raw_constituents = cb.call(self.fmp_client.get_sp500_constituents)
+        except CircuitBreakerError as exc:
+            logger.error(f"FMP CB open — S&P 500 동기화 스킵: {exc}")
+            return {'created': 0, 'updated': 0, 'deactivated': 0, 'total': 0}
 
         if not raw_constituents:
             logger.error("FMP에서 S&P 500 구성 종목을 가져오지 못했습니다")
