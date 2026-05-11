@@ -240,7 +240,7 @@ export default function StockPriceChart({
         </div>
         <div className="flex gap-2">
           <button
-            className={`px-3 py-1 text-sm rounded ${
+            className={`min-h-[44px] px-4 py-2 text-sm rounded ${
               chartType === 'line'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -249,7 +249,7 @@ export default function StockPriceChart({
             라인
           </button>
           <button
-            className={`px-3 py-1 text-sm rounded ${
+            className={`min-h-[44px] px-4 py-2 text-sm rounded ${
               chartType === 'area'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
@@ -258,7 +258,7 @@ export default function StockPriceChart({
             영역
           </button>
           <button
-            className={`px-3 py-1 text-sm rounded ${
+            className={`min-h-[44px] px-4 py-2 text-sm rounded ${
               chartType === 'candlestick'
                 ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'

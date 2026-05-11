@@ -35,15 +35,18 @@ export default function SignalSummaryCard({ companyName, categorySignals, summar
       {/* 7개 카테고리 신호등 */}
       <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {categorySignals.map((sig, idx) => (
-          <div
+          <button
+            type="button"
             key={sig.category}
-            className="flex flex-col items-center min-w-[72px] relative"
+            className="flex flex-col items-center min-w-[72px] min-h-[44px] relative bg-transparent border-0 p-0 cursor-default"
             onMouseEnter={() => sig.signal === 'gray' ? setTooltipIdx(idx) : null}
             onMouseLeave={() => setTooltipIdx(null)}
+            onTouchStart={() => sig.signal === 'gray' ? setTooltipIdx(tooltipIdx === idx ? null : idx) : undefined}
+            aria-label={sig.signal === 'gray' ? `${sig.display_name}: ${sig.signal_reason}` : sig.display_name}
           >
             {/* 신호등 */}
             <div
-              className={`w-10 h-10 rounded-full ${SIGNAL_COLORS[sig.signal]} ring-4 ${SIGNAL_RING_COLORS[sig.signal]} mb-2`}
+              className={`w-11 h-11 rounded-full ${SIGNAL_COLORS[sig.signal]} ring-4 ${SIGNAL_RING_COLORS[sig.signal]} mb-2`}
             />
             {/* 카테고리명 */}
             <span className="text-xs text-gray-600 dark:text-gray-400 text-center whitespace-nowrap">
@@ -57,7 +60,7 @@ export default function SignalSummaryCard({ companyName, categorySignals, summar
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-gray-900 rotate-45" />
               </div>
             )}
-          </div>
+          </button>
         ))}
       </div>
 

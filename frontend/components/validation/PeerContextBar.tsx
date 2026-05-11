@@ -37,7 +37,7 @@ export default function PeerContextBar({ peerInfo, fiscalYear, presets, onSelect
               <button
                 key={p.preset_key}
                 onClick={() => onSelectPreset(p.preset_key)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`min-h-[44px] px-4 py-2 text-xs font-medium rounded-full transition-colors ${
                   p.is_selected
                     ? 'bg-blue-600 text-white dark:bg-blue-500'
                     : 'bg-white text-gray-600 hover:bg-blue-100 dark:bg-gray-700 dark:text-gray-400 dark:hover:bg-gray-600'
@@ -51,7 +51,7 @@ export default function PeerContextBar({ peerInfo, fiscalYear, presets, onSelect
             {onSetCustomPeers && (
               <button
                 onClick={() => setShowCustom(!showCustom)}
-                className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+                className={`min-h-[44px] px-4 py-2 text-xs font-medium rounded-full transition-colors ${
                   (peerInfo.benchmark_basis as string) === 'custom'
                     ? 'bg-purple-600 text-white'
                     : 'bg-white text-purple-600 hover:bg-purple-50 dark:bg-gray-700 dark:text-purple-400 border border-purple-200 dark:border-purple-700'

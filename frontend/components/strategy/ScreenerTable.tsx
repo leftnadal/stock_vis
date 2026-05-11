@@ -320,7 +320,7 @@ export function ScreenerTable({ stocks, onAddToBasket, keywords = {}, isLoadingK
                     <td className="px-4 py-3 text-center">
                       <button
                         onClick={() => onAddToBasket(stock.symbol)}
-                        className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium text-[#58A6FF] transition-colors hover:bg-[#58A6FF]/10"
+                        className="inline-flex items-center gap-1 rounded min-h-[44px] min-w-[44px] justify-center px-3 py-2 text-xs font-medium text-[#58A6FF] transition-colors hover:bg-[#58A6FF]/10"
                         aria-label={`${stock.symbol}을(를) 바구니에 추가`}
                       >
                         <Plus className="h-3 w-3" />

@@ -166,19 +166,19 @@ export default function MobileCardList({
               <div className="flex gap-2 mt-3">
                 <Link
                   href={`/thesis/new?symbol=${node.ticker}&from=${symbol}`}
-                  className="flex-1 text-center text-xs py-1.5 rounded-lg bg-blue-600 text-white"
+                  className="flex-1 min-h-[44px] flex items-center justify-center text-xs py-2 rounded-lg bg-blue-600 text-white"
                 >
                   가설 생성
                 </Link>
                 <Link
                   href={`/chainsight/${node.ticker}`}
-                  className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-100 text-gray-700"
+                  className="flex-1 min-h-[44px] flex items-center justify-center text-xs py-2 rounded-lg bg-gray-100 text-gray-700"
                 >
                   탐색
                 </Link>
                 <Link
                   href={`/stocks/${node.ticker}?tab=validation`}
-                  className="flex-1 text-center text-xs py-1.5 rounded-lg bg-gray-100 text-gray-700"
+                  className="flex-1 min-h-[44px] flex items-center justify-center text-xs py-2 rounded-lg bg-gray-100 text-gray-700"
                 >
                   검증
                 </Link>

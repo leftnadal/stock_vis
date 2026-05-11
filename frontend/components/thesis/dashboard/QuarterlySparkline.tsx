@@ -38,11 +38,14 @@ export function QuarterlySparkline({ history, unit = '' }: Props) {
         const isHovered = hoveredIdx === idx
 
         return (
-          <div
+          <button
+            type="button"
             key={`${point.fy}-${point.fq}`}
-            className="relative flex-1"
+            className="relative flex-1 min-h-[44px] bg-transparent border-0 p-0"
             onMouseEnter={() => setHoveredIdx(idx)}
             onMouseLeave={() => setHoveredIdx(null)}
+            onTouchStart={() => setHoveredIdx(isHovered ? null : idx)}
+            aria-label={`Q${point.fq} ${point.fy}: ${formatValue(point.value)}`}
           >
             <div
               className={`rounded-sm transition-colors ${
@@ -51,7 +54,7 @@ export function QuarterlySparkline({ history, unit = '' }: Props) {
               style={{ height: `${heightPct}%` }}
             />
             {/* 분기 라벨 */}
-            <span className="block text-center text-[8px] text-gray-500 mt-0.5">
+            <span className="block text-center text-[11px] text-gray-500 mt-0.5">
               Q{point.fq}
             </span>
             {/* 호버 툴팁 */}
@@ -60,7 +63,7 @@ export function QuarterlySparkline({ history, unit = '' }: Props) {
                 Q{point.fq} {point.fy}: {formatValue(point.value)}
               </div>
             )}
-          </div>
+          </button>
         )
       })}
     </div>
