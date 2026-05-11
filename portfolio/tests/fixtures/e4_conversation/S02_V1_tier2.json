@@ -1,0 +1,52 @@
+{
+  "scenario_id": "S02",
+  "description": "V1 balanced GARP, Tier 2 follow-up",
+  "preset_id": "V1_garp",
+  "tier": 2,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v1_001",
+    "preset_id": "V1_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.35,
+      "sector_hhi": 0.40,
+      "top3_weight": 0.60,
+      "holding_count": 5,
+      "portfolio_beta": 1.05,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.35
+    },
+    "holdings_summary": "Tech 50%, Healthcare 25%, Financials 25%. Top 3: AAPL/UNH/JPM.",
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "내 포트폴리오의 집중도가 높은 편인가요?",
+        "timestamp": "2026-05-11T10:00:00",
+        "turn_idx": 0
+      },
+      {
+        "role": "assistant",
+        "content": "hhi_concentration 0.35는 중간 수준이며 GARP 전략 기준 분산이 양호한 편입니다.",
+        "timestamp": "2026-05-11T10:00:05",
+        "turn_idx": 1
+      }
+    ],
+    "current_user_question": "그럼 어떻게 분산을 더 늘릴 수 있을까요?",
+    "tier": 2,
+    "session_id": "sess_S02",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Tech 50% 비중을 30~40%로 줄이고 Materials나 Consumer Staples 같은 방어 섹터를 추가하면 sector_hhi가 0.40에서 0.30 이하로 개선됩니다. 보유 종목 수를 5종 → 7~8종으로 확장하는 것도 효과적입니다.",
+    "referenced_metrics": ["sector_hhi", "holding_count"],
+    "follow_up_suggestions": ["어떤 섹터 종목을 추천하나요?", "리밸런싱 시점은?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Tier 2 후속 질문, history 2 turns 누적"
+}

@@ -1,0 +1,52 @@
+{
+  "scenario_id": "S05",
+  "description": "V2 GARP misaligned, Tier 2 follow-up",
+  "preset_id": "V2_garp",
+  "tier": 2,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v2_001",
+    "preset_id": "V2_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.65,
+      "sector_hhi": 0.80,
+      "top3_weight": 0.80,
+      "holding_count": 5,
+      "portfolio_beta": 1.85,
+      "max_position_weight": 0.40,
+      "avg_correlation": 0.75
+    },
+    "holdings_summary": "Tech 80%, Consumer Discretionary 20%. Top 3: TSLA(40%)/PLTR/SHOP.",
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "이 포트폴리오 위험한가요?",
+        "timestamp": "2026-05-11T11:00:00",
+        "turn_idx": 0
+      },
+      {
+        "role": "assistant",
+        "content": "GARP 전략 기준 매우 위험합니다. portfolio_beta 1.85는 고위험 구간입니다.",
+        "timestamp": "2026-05-11T11:00:05",
+        "turn_idx": 1
+      }
+    ],
+    "current_user_question": "그럼 가장 먼저 무엇을 줄여야 하나요?",
+    "tier": 2,
+    "session_id": "sess_S05",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "TSLA 40% 비중부터 단계적으로 축소하세요. max_position_weight 0.40은 GARP 기준 상한 0.20을 2배 초과합니다. avg_correlation 0.75도 종목 간 상관이 높아 분산 효과가 거의 없으니 Tech 외 저상관 섹터 추가 편입이 필요합니다.",
+    "referenced_metrics": ["max_position_weight", "avg_correlation"],
+    "follow_up_suggestions": ["저상관 섹터 후보?", "축소 속도 적정선?"],
+    "confidence": "high"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Tier 2 misalignment 후속 — 구체적 종목 축소 시사점"
+}

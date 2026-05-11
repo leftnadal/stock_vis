@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S01",
+  "description": "V1 balanced GARP, Tier 1 baseline",
+  "preset_id": "V1_garp",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v1_001",
+    "preset_id": "V1_garp",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.35,
+      "sector_hhi": 0.40,
+      "top3_weight": 0.60,
+      "holding_count": 5,
+      "portfolio_beta": 1.05,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.35
+    },
+    "holdings_summary": "Tech 50%, Healthcare 25%, Financials 25%. Top 3: AAPL/UNH/JPM.",
+    "conversation_history": [],
+    "current_user_question": "내 포트폴리오의 집중도가 높은 편인가요?",
+    "tier": 1,
+    "session_id": "sess_S01",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "hhi_concentration 0.35는 중간 수준이며 GARP 전략 기준 분산이 양호한 편입니다. Tech 50% 비중은 사이클 노출이 있으나 5종목 분산으로 통제 가능합니다.",
+    "referenced_metrics": ["hhi_concentration", "top3_weight"],
+    "follow_up_suggestions": ["분산을 더 늘리려면?", "Tech 비중 적절한가요?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "GARP preset baseline, history 없음, Tier 1 표준 응답"
+}

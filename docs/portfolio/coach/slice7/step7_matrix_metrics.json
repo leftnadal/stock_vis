@@ -1,0 +1,13 @@
+{
+  "total_calls": 28,
+  "total_cost": 0.22272,
+  "schema_pass": "28/28",
+  "completeness_pass": "28/28",
+  "fallback_count": 0,
+  "cost_breach_count": 0,
+  "max_single_cost": 0.01468,
+  "input_p90": 858,
+  "input_max": 877,
+  "output_p90": 809,
+  "output_max": 824
+}

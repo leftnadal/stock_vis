@@ -1,0 +1,64 @@
+{
+  "scenario_id": "S11",
+  "description": "V5 Dividend Growth, Tier 3 deep analysis",
+  "preset_id": "V5_dividend_growth",
+  "tier": 3,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v5_001",
+    "preset_id": "V5_dividend_growth",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.25,
+      "sector_hhi": 0.78,
+      "top3_weight": 0.58,
+      "holding_count": 7,
+      "portfolio_beta": 0.75,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.55
+    },
+    "holdings_summary": "Consumer Staples 78%, Healthcare 22%. KO/PG/PEP/JNJ/MMM/MO/CL. Yield 3.8%, 25y consecutive.",
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "이 포트폴리오 배당 성장 전략에 잘 맞나요?",
+        "timestamp": "2026-05-11T14:00:00",
+        "turn_idx": 0
+      },
+      {
+        "role": "assistant",
+        "content": "정합합니다. beta 0.75 방어적, holding_count 7 분산 양호, Staples 78% 의도적 편중.",
+        "timestamp": "2026-05-11T14:00:05",
+        "turn_idx": 1
+      },
+      {
+        "role": "user",
+        "content": "장기 보유 시 인플레이션 위험은요?",
+        "timestamp": "2026-05-11T14:00:10",
+        "turn_idx": 2
+      },
+      {
+        "role": "assistant",
+        "content": "Staples 가격 전가력 우수 + 5년 배당 성장률 7.2%로 인플레이션 헤지력 양호합니다.",
+        "timestamp": "2026-05-11T14:00:15",
+        "turn_idx": 3
+      }
+    ],
+    "current_user_question": "그러면 다음 5년 후 어떤 시나리오에서 이 전략이 흔들릴 수 있을까요?",
+    "tier": 3,
+    "session_id": "sess_S11",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "주요 위험 시나리오 세 가지입니다. 첫째, 장기 금리 5% 이상 고정 시 배당 매력도 상대 하락. 둘째, Staples 가격 전가력 약화 (브랜드 충성도 침식). 셋째, MO/MMM 같은 개별 종목 배당 컷 위험 (avg_correlation 0.55라 일부 동조). top3_weight 0.58 모니터링과 매년 배당 성장률 5% 이상 종목으로의 점진적 교체가 핵심입니다.",
+    "referenced_metrics": ["avg_correlation", "top3_weight"],
+    "follow_up_suggestions": ["배당 컷 위험 신호?", "교체 후보 종목?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Tier 3 시나리오 분석 — 5년 후 위험 + 행동 시사점 다중"
+}

@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S06",
+  "description": "V3 Quality Factor, Tier 1 baseline",
+  "preset_id": "V3_quality_factor",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v3_001",
+    "preset_id": "V3_quality_factor",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.30,
+      "sector_hhi": 0.55,
+      "top3_weight": 0.40,
+      "holding_count": 10,
+      "portfolio_beta": 0.95,
+      "max_position_weight": 0.15,
+      "avg_correlation": 0.45
+    },
+    "holdings_summary": "Tech 52%, Healthcare 48%. 10 holdings: MSFT/AAPL/GOOG/JNJ/UNH/PFE/V/MA/ABT/TMO.",
+    "conversation_history": [],
+    "current_user_question": "Quality Factor 전략에 부합하나요?",
+    "tier": 1,
+    "session_id": "sess_S06",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Quality Factor 기준 양질의 종목 구성이지만 sector_hhi 0.55는 2개 섹터 100% 집중을 의미해 cross-sector 분산 의도와는 부분 일치입니다. portfolio_beta 0.95와 holding_count 10은 quality factor 패턴에 부합합니다.",
+    "referenced_metrics": ["sector_hhi", "portfolio_beta", "holding_count"],
+    "follow_up_suggestions": ["섹터 분산 어떻게 개선?", "어떤 quality 지표가 약한가요?"],
+    "confidence": "medium"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Quality Factor partial alignment — 양질 종목 + 2섹터 편중"
+}

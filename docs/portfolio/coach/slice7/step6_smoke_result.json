@@ -1,0 +1,30 @@
+{
+  "smoke_4_judgment": {
+    "schema": true,
+    "completeness": true,
+    "cost": true,
+    "token": true,
+    "all_pass": true
+  },
+  "schema_error": null,
+  "metrics": {
+    "cost_usd": 0.002878,
+    "cost_threshold": 0.02,
+    "input_tokens_actual": 663,
+    "output_tokens_actual": 587,
+    "budget": 6000,
+    "latency_ms": 5552
+  },
+  "beta2_first_measurement": {
+    "prompt_chars": 1021,
+    "estimated_tokens": 340,
+    "actual_input_tokens": 663,
+    "delta_pct": -48.72,
+    "delta_abs_pct": 48.72,
+    "step7_budget_adjustment_needed": false
+  },
+  "fallback": null,
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5",
+  "raw_text": "```json\n{\n  \"answer\": \"당신의 포트폴리오는 중간 수준의 집중도를 보이고 있습니다. HHI 집중도 0.35는 완전 분산(0.2) 수준보다 높지만, 극도의 집중(0.5 이상)에는 미치지 못합니다. 다만 상위 3개 종목이 전체의 60%를 차지하고 있어 주의가 필요합니다. 특히 Tech 섹터 50% 비중(sector_hhi 0.40)으로 인한 섹터 쏠림이 있으므로, GARP 전략의 합리적 가격과 성장성을 유지하면서도 Healthcare와 Financials의 비중을 조정하거나 종목 수를 늘려 분산을 개선할 것을 검토하세요. 현재 5개 종목 보유는 최소 수준이므로 7~10개로 확대하면 avg_correlation 0.35를 활용한 더 효율적인 포트폴리오를 구성할 수 있습니다.\",\n  \"referenced_metrics\": [\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"holding_count\",\n    \"avg_correlation\"\n  ],\n  \"follow_up_suggestions\": [\n    \"상위 3개 종목(AAPL/UNH/JPM) 중 리밸런싱 대상이 있는지 검토하고 싶으신가요?\",\n    \"Tech 50% 비중을 줄이고 다른 섹터를 추가할 경우 예상 포트폴리오 베타 변화를 알고 싶으신가요?\",\n    \"현재 5개 종목을 10개로 늘릴 때 추가할 종목의 특성(상관계수, 베타)에 대해 조언이 필요하신가요?\"\n  ],\n  \"confidence\": \"high\"\n}\n```"
+}

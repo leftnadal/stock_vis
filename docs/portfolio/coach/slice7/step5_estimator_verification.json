@@ -1,0 +1,156 @@
+{
+  "fixtures_total": 15,
+  "per_fixture": [
+    {
+      "scenario_id": "S01",
+      "tier": 1,
+      "actual_chars": 354,
+      "actual_tokens_approx": 118,
+      "estimated_tokens": 118,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S02",
+      "tier": 2,
+      "actual_chars": 458,
+      "actual_tokens_approx": 152,
+      "estimated_tokens": 152,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S03",
+      "tier": 3,
+      "actual_chars": 573,
+      "actual_tokens_approx": 191,
+      "estimated_tokens": 191,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S04",
+      "tier": 1,
+      "actual_chars": 348,
+      "actual_tokens_approx": 116,
+      "estimated_tokens": 116,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S05",
+      "tier": 2,
+      "actual_chars": 446,
+      "actual_tokens_approx": 148,
+      "estimated_tokens": 148,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S06",
+      "tier": 1,
+      "actual_chars": 385,
+      "actual_tokens_approx": 128,
+      "estimated_tokens": 128,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S07",
+      "tier": 2,
+      "actual_chars": 521,
+      "actual_tokens_approx": 173,
+      "estimated_tokens": 173,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S08",
+      "tier": 1,
+      "actual_chars": 383,
+      "actual_tokens_approx": 127,
+      "estimated_tokens": 127,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S09",
+      "tier": 2,
+      "actual_chars": 509,
+      "actual_tokens_approx": 169,
+      "estimated_tokens": 169,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S10",
+      "tier": 1,
+      "actual_chars": 398,
+      "actual_tokens_approx": 132,
+      "estimated_tokens": 132,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S11",
+      "tier": 3,
+      "actual_chars": 622,
+      "actual_tokens_approx": 207,
+      "estimated_tokens": 207,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S12",
+      "tier": 2,
+      "actual_chars": 461,
+      "actual_tokens_approx": 153,
+      "estimated_tokens": 153,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S13",
+      "tier": 2,
+      "actual_chars": 332,
+      "actual_tokens_approx": 110,
+      "estimated_tokens": 110,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S14",
+      "tier": 3,
+      "actual_chars": 458,
+      "actual_tokens_approx": 152,
+      "estimated_tokens": 152,
+      "delta_pct": 0.0
+    },
+    {
+      "scenario_id": "S15",
+      "tier": 1,
+      "actual_chars": 401,
+      "actual_tokens_approx": 133,
+      "estimated_tokens": 133,
+      "delta_pct": 0.0
+    }
+  ],
+  "tier_kpi": {
+    "1": {
+      "n": 6,
+      "avg_estimated_input": 125.67,
+      "projected_with_buffer": 188.5,
+      "registered_budget": 6000,
+      "delta_pct_vs_budget": -96.86,
+      "pass": false
+    },
+    "2": {
+      "n": 6,
+      "avg_estimated_input": 150.83,
+      "projected_with_buffer": 226.25,
+      "registered_budget": 8000,
+      "delta_pct_vs_budget": -97.17,
+      "pass": false
+    },
+    "3": {
+      "n": 3,
+      "avg_estimated_input": 183.33,
+      "projected_with_buffer": 275.0,
+      "registered_budget": 12000,
+      "delta_pct_vs_budget": -97.71,
+      "pass": false
+    }
+  },
+  "max_delta_pct_abs": 97.71,
+  "avg_delta_pct_abs": 97.25,
+  "kpi_threshold_pct": 30.0,
+  "kpi_pass": false,
+  "beta2_action": "keep_open"
+}

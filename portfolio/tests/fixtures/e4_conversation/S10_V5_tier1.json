@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S10",
+  "description": "V5 Dividend Growth (aligned), Tier 1 baseline",
+  "preset_id": "V5_dividend_growth",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v5_001",
+    "preset_id": "V5_dividend_growth",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.25,
+      "sector_hhi": 0.78,
+      "top3_weight": 0.58,
+      "holding_count": 7,
+      "portfolio_beta": 0.75,
+      "max_position_weight": 0.25,
+      "avg_correlation": 0.55
+    },
+    "holdings_summary": "Consumer Staples 78%, Healthcare 22%. KO/PG/PEP/JNJ/MMM/MO/CL. Yield 3.8%, 25y consecutive.",
+    "conversation_history": [],
+    "current_user_question": "이 포트폴리오 배당 성장 전략에 잘 맞나요?",
+    "tier": 1,
+    "session_id": "sess_S10",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Dividend Growth 의도와 정합합니다. portfolio_beta 0.75 (방어적), holding_count 7 (분산 양호), Consumer Staples 78% 편중은 의도적 배당 안정성 추구로 해석됩니다. 25년 연속 배당과 yield 3.8% 조합이 핵심 가치입니다.",
+    "referenced_metrics": ["portfolio_beta", "holding_count", "sector_hhi"],
+    "follow_up_suggestions": ["배당 성장률 유지 가능?", "추가 편입 후보?"],
+    "confidence": "high"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "Dividend Growth aligned — beta 0.75 방어적 + Staples 의도적 편중"
+}

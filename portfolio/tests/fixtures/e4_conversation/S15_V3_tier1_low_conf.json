@@ -1,0 +1,39 @@
+{
+  "scenario_id": "S15",
+  "description": "V3 Quality Factor, Tier 1 with confidence=low",
+  "preset_id": "V3_quality_factor",
+  "tier": 1,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v3_002",
+    "preset_id": "V3_quality_factor",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.40,
+      "sector_hhi": 0.45,
+      "top3_weight": 0.50,
+      "holding_count": 8,
+      "portfolio_beta": 1.00,
+      "max_position_weight": 0.20,
+      "avg_correlation": 0.50
+    },
+    "holdings_summary": "Tech 35%, Healthcare 25%, Industrials 20%, Financials 20%. 8 mid-cap holdings.",
+    "conversation_history": [],
+    "current_user_question": "이 종목 구성이 quality factor 기준에 맞나요? 종목 이름을 모르겠어요.",
+    "tier": 1,
+    "session_id": "sess_S15",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "portfolio_metrics(holding_count 8, sector_hhi 0.45) 자체는 quality factor에 적절하나, 개별 종목명 정보가 부족해 ROIC/EPS 안정성 등 quality 핵심 지표 확인이 불가합니다. 종목별 상세를 알려주시면 정확한 평가가 가능합니다.",
+    "referenced_metrics": ["holding_count", "sector_hhi"],
+    "follow_up_suggestions": ["종목 리스트 공유?", "어떤 quality 지표를 보고 싶은가요?"],
+    "confidence": "low"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "confidence=low — 종목 정보 부족으로 LLM 자신도 낮음. 후속 follow_up으로 정보 요청."
+}

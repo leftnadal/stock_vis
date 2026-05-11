@@ -53,5 +53,34 @@ def test_e6_budget_smaller_than_e1():
 
 
 def test_token_budgets_full_dict():
-    """ENTRYPOINT_TOKEN_BUDGETS dict가 4 진입점 (e1/e5/e2/e6) 모두 등록."""
-    assert {"e1", "e5", "e2", "e6"}.issubset(set(ENTRYPOINT_TOKEN_BUDGETS.keys()))
+    """ENTRYPOINT_TOKEN_BUDGETS dict가 5 진입점 (e1/e5/e2/e6/e3) 모두 등록."""
+    assert {"e1", "e5", "e2", "e6", "e3"}.issubset(set(ENTRYPOINT_TOKEN_BUDGETS.keys()))
+
+
+# ============================================================
+# Slice 5 Step 7 — e3 budget 단위 테스트 +3건
+# ============================================================
+
+
+def test_e3_budget_registered():
+    """Slice 5 Step 7 — e3 budget 등록 (AnalysisContext 전체 직렬화 반영)."""
+    assert "e3" in ENTRYPOINT_TOKEN_BUDGETS
+    budget = get_token_budget("e3")
+    assert budget > 0
+
+
+def test_e3_budget_round_up_500():
+    """Slice 5 Step 7 — e3 budget round-up 500 단위 (P90 × 1.5 결정 규칙)."""
+    budget = get_token_budget("e3")
+    assert budget % 500 == 0
+
+
+def test_e3_budget_within_estimate_range():
+    """Slice 5 Step 7 — e3 budget 합리적 범위 (실측 P90×1.5 round-up 기반).
+
+    Q3 1차 추정 1500 대비 +366% 갱신 (AnalysisContext 전체 직렬화 영향).
+    Step 7 측정: P90=4359 × 1.5 = 6538.5 → round-up 500 = 7000.
+    측정값 변동 허용 마진: 4000 ≤ budget ≤ 10000.
+    """
+    budget = get_token_budget("e3")
+    assert 4000 <= budget <= 10000

@@ -1,0 +1,52 @@
+{
+  "scenario_id": "S09",
+  "description": "V4 Buffett Quality Value, Tier 2 follow-up — #23 영향 확인",
+  "preset_id": "V4_buffett_quality_value",
+  "tier": 2,
+  "trigger_case": null,
+  "input": {
+    "portfolio_id": "p_v4_001",
+    "preset_id": "V4_buffett_quality_value",
+    "portfolio_metrics": {
+      "hhi_concentration": 0.50,
+      "sector_hhi": 1.00,
+      "top3_weight": 0.70,
+      "holding_count": 5,
+      "portfolio_beta": 1.10,
+      "max_position_weight": 0.30,
+      "avg_correlation": 0.80
+    },
+    "holdings_summary": "Financials 100%. Top 3: JPM(30%)/BAC/WFC. PE 11, ROIC 16%, FCF yield 7.5%.",
+    "conversation_history": [
+      {
+        "role": "user",
+        "content": "Buffett 가치투자 관점에서 평가해 주세요.",
+        "timestamp": "2026-05-11T13:00:00",
+        "turn_idx": 0
+      },
+      {
+        "role": "assistant",
+        "content": "가치 지표는 충족하나 sector_hhi 1.00 Financials 100% 집중은 cross-sector 분산과 충돌합니다.",
+        "timestamp": "2026-05-11T13:00:05",
+        "turn_idx": 1
+      }
+    ],
+    "current_user_question": "그럼 다른 섹터의 어떤 가치주를 추가하는 게 좋을까요?",
+    "tier": 2,
+    "session_id": "sess_S09",
+    "max_history_turns": 5
+  },
+  "expected_output": {
+    "answer": "Buffett 스타일에 부합하는 비금융 가치주로는 Consumer Staples의 KO/PG (FCF 안정), Energy의 CVX/XOM (FCF yield 6%+), Healthcare의 JNJ/MRK (ROIC 18%+) 후보가 있습니다. 각 섹터 15~20% 편입하면 sector_hhi를 1.00에서 0.40대로 낮출 수 있습니다.",
+    "referenced_metrics": ["sector_hhi"],
+    "follow_up_suggestions": ["편입 우선순위?", "Financials 비중 어느 수준까지 줄일까?"],
+    "confidence": "high"
+  },
+  "expected_metadata": {
+    "case_flags": [],
+    "history_truncated": false,
+    "tier_downgraded_from": null,
+    "hallucinated_metrics": []
+  },
+  "notes": "V4 후속 — 다른 섹터 가치주 후보 명시"
+}

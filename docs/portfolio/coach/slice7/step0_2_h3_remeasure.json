@@ -1,0 +1,39 @@
+{
+  "original": {
+    "label": "original",
+    "insight_means_by_preset": {
+      "garp": 3.0,
+      "dividend_growth": 4.0,
+      "buffett_quality_value": 3.0,
+      "quality_factor": 4.0
+    },
+    "insight_gap": 1.0,
+    "distribution_1_to_5": {
+      "3": 7,
+      "4": 3
+    },
+    "total_ratings": 10
+  },
+  "rubric": {
+    "label": "rubric",
+    "insight_means_by_preset": {
+      "garp": 4.0,
+      "dividend_growth": 4.0,
+      "buffett_quality_value": 5.0,
+      "quality_factor": 4.0
+    },
+    "insight_gap": 1.0,
+    "distribution_1_to_5": {
+      "4": 8,
+      "5": 2
+    },
+    "total_ratings": 10
+  },
+  "baseline": 0.5,
+  "verdict": "h3_confirmed",
+  "action": "rubric 재측정 gap 1.0 > 0.5 → H3 진짜 신호. #24(preset 외삽 일반화 PS 2.5) Slice 8 Step 0 유지.",
+  "h3_status": "confirmed_keep",
+  "distribution_width_original": 1,
+  "distribution_width_rubric": 1,
+  "rubric_widened_distribution": false
+}
