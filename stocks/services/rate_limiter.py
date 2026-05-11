@@ -2,8 +2,8 @@
 API Rate Limiter Service
 
 Redis 기반 Rate Limiting으로 외부 API 호출 제한을 관리합니다.
-- FMP: 10 calls/minute, 250 calls/day
-- Alpha Vantage: 5 calls/minute, 500 calls/day
+- FMP Starter: 300 calls/minute, 10,000 calls/day (audit P0 #7, 2026-04-29)
+- yfinance: 느슨함 (60/min)
 """
 
 import logging
@@ -19,15 +19,11 @@ logger = logging.getLogger(__name__)
 class APIRateLimiter:
     """Redis 기반 API Rate Limiter"""
 
-    # API별 Rate Limit 설정
+    # API별 Rate Limit 설정 (FMP Starter Plan: audit P0 #7)
     LIMITS = {
         'fmp': {
-            'per_minute': 10,
-            'per_day': 250,
-        },
-        'alpha_vantage': {
-            'per_minute': 5,
-            'per_day': 500,
+            'per_minute': 300,
+            'per_day': 10000,
         },
         'yfinance': {
             'per_minute': 60,  # yfinance는 제한이 느슨함
@@ -42,7 +38,7 @@ class APIRateLimiter:
     def __init__(self, api_name: str):
         """
         Args:
-            api_name: API 이름 ('fmp', 'alpha_vantage', 'yfinance')
+            api_name: API 이름 ('fmp', 'yfinance')
         """
         self.api_name = api_name.lower()
         if self.api_name not in self.LIMITS:

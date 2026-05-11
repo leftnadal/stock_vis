@@ -1,0 +1,36 @@
+rules:
+  - id: R02
+    name: concentration_extreme
+    description: SPY top10 비중이 임계 이상
+    inputs: [top10_weight]
+    threshold:
+      top10_weight: 0.40
+    op: ">="
+    against: top10_weight
+
+  - id: R04
+    name: vix_spike
+    description: VIX 1일 변화율 임계 이상
+    inputs: [vix_change_pct]
+    threshold:
+      vix_change_pct: 20.0
+    op: ">="
+    against: vix_change_pct
+
+  - id: R09
+    name: sector_extreme_z
+    description: 섹터 rel_strength z-score 절대값 임계 이상
+    inputs: [max_abs_sector_z]
+    threshold:
+      max_abs_sector_z: 3.0
+    op: ">="
+    against: max_abs_sector_z
+
+  - id: R12
+    name: dispersion_spike
+    description: 섹터 cross-section dispersion 임계 이상
+    inputs: [cross_dispersion]
+    threshold:
+      cross_dispersion: 1.5
+    op: ">="
+    against: cross_dispersion

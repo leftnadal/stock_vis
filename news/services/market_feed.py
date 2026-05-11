@@ -21,7 +21,7 @@ class MarketFeedService:
     CACHE_TTL = 600  # 10분
 
     def get_feed(self) -> dict:
-        today = timezone.now().date()
+        today = timezone.localdate()
         cache_key = f"market_feed:{today}"
 
         cached = cache.get(cache_key)
@@ -80,7 +80,7 @@ class MarketFeedService:
 
     def _get_latest_keywords(self):
         """최신 완료된 키워드를 가져옴. 오늘 없으면 최근 거래일 데이터로 fallback."""
-        today = timezone.now().date()
+        today = timezone.localdate()
         kw = DailyNewsKeyword.objects.filter(date=today, status='completed').first()
         if kw:
             return kw, False
@@ -160,7 +160,7 @@ class MarketFeedService:
             from serverless.models import MarketMover
             from django.utils import timezone as tz
             from datetime import timedelta
-            recent_date = tz.now().date() - timedelta(days=3)
+            recent_date = tz.localdate() - timedelta(days=3)
             movers = MarketMover.objects.filter(
                 date__gte=recent_date,
                 category='gainers'

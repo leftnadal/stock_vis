@@ -76,7 +76,7 @@ class NewsKeywordExtractor:
             DailyNewsKeyword: 추출된 키워드 모델
         """
         if target_date is None:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 이미 추출된 키워드가 있는지 확인
         existing = DailyNewsKeyword.objects.filter(date=target_date).first()

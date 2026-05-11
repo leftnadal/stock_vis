@@ -17,8 +17,7 @@ CONSTRAINTS = [
 INDEXES = [
     {"name": "stock_sector", "cypher": "CREATE INDEX stock_sector IF NOT EXISTS FOR (s:Stock) ON (s.sector)", "description": ":Stock 섹터별 필터링"},
     {"name": "stock_community", "cypher": "CREATE INDEX stock_community IF NOT EXISTS FOR (s:Stock) ON (s.community_id)", "description": ":Stock GDS 커뮤니티 조회"},
-    {"name": "stock_market_cap", "cypher": "CREATE INDEX stock_market_cap IF NOT EXISTS FOR (s:Stock) ON (s.market_cap)", "description": ":Stock 시가총액 정렬"},
-    {"name": "stock_industry", "cypher": "CREATE INDEX stock_industry IF NOT EXISTS FOR (s:Stock) ON (s.industry)", "description": ":Stock 산업별 필터링"},
+    # ⚠️ 로드맵 정의 이외의 인덱스 추가 금지. 필요 시 로드맵 먼저 수정.
 ]
 
 

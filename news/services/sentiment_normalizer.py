@@ -15,7 +15,7 @@ class SentimentNormalizer:
 
         Args:
             score: 원본 sentiment 점수
-            provider: Provider 이름 (alpha_vantage, marketaux, fmp, finnhub)
+            provider: Provider 이름 (marketaux, fmp, finnhub)
 
         Returns:
             정규화된 점수 (-1.0 ~ 1.0) 또는 None

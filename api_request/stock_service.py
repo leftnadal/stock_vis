@@ -2,8 +2,7 @@
 """
 Stock Service - Provider 추상화를 활용한 통합 서비스
 
-Provider Factory를 통해 Feature Flag 기반으로 Alpha Vantage 또는 FMP를 선택합니다.
-Fallback 기능을 지원하여 주 provider 실패 시 대체 provider를 자동 사용합니다.
+Provider Factory를 통해 FMP를 호출한다. Fallback 체인은 향후 다른 provider 추가 시 확장.
 
 Usage:
     from api_request.stock_service import StockService
@@ -46,12 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 class StockService:
-    """
-    Provider 추상화를 활용한 통합 Stock 서비스
-
-    기존 AlphaVantageService와 호환되면서
-    FMP Fallback 및 Feature Flag 기능을 지원합니다.
-    """
+    """Provider 추상화를 활용한 통합 Stock 서비스 (FMP)."""
 
     def __init__(self):
         """Initialize Stock Service"""
@@ -185,15 +179,12 @@ class StockService:
         return call_with_fallback(EndpointType.SEARCH, 'search_symbols', keywords)
 
     # ============================================================
-    # DB 저장 메서드 (기존 AlphaVantageService 호환)
+    # DB 저장 메서드
     # ============================================================
 
     def update_stock_data(self, symbol: str) -> Stock:
         """
         주식 기본 정보 및 실시간 가격을 DB에 업데이트
-
-        기존 AlphaVantageService.update_stock_data()와 호환
-
         Args:
             symbol: 주식 심볼
 
@@ -279,9 +270,6 @@ class StockService:
     def update_historical_prices(self, stock: Union[Stock, str], days: int = 100) -> Dict[str, int]:
         """
         가격 데이터(일간, 주간)를 DB에 업데이트
-
-        기존 AlphaVantageService.update_historical_prices()와 호환
-
         Args:
             stock: Stock 객체 또는 심볼 문자열
             days: 가져올 일수 (참고용, 실제로는 COMPACT/FULL로 결정)
@@ -333,9 +321,6 @@ class StockService:
     def update_financial_statements(self, stock: Union[Stock, str]) -> Dict[str, int]:
         """
         재무제표(대차대조표, 손익계산서, 현금흐름표)를 DB에 업데이트
-
-        기존 AlphaVantageService.update_financial_statements()와 호환
-
         Args:
             stock: Stock 객체 또는 심볼 문자열
 
@@ -616,9 +601,6 @@ class StockService:
     def update_previous_close(self, symbol: str, force: bool = False) -> Dict[str, Any]:
         """
         전일 종가로 주식 가격 업데이트
-
-        기존 AlphaVantageService.update_previous_close()와 호환
-
         Args:
             symbol: 주식 심볼
             force: True면 캐시 무시하고 강제 업데이트
@@ -731,8 +713,6 @@ class StockService:
     def get_stock_summary(self, symbol: str) -> Dict[str, Any]:
         """
         주식 요약 정보 조회
-
-        기존 AlphaVantageService.get_stock_summary()와 호환
         """
         try:
             stock = Stock.objects.get(symbol=symbol.upper())

@@ -98,7 +98,7 @@ class NewsBasedStockInsights:
         start_time = time.time()
 
         if target_date is None:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 섹터 정규화 (.title() — "TECHNOLOGY" → "Technology")
         normalized_sector = sector.strip().title() if sector else None
@@ -684,7 +684,7 @@ class NewsBasedStockInsights:
             단일 종목 인사이트 또는 None
         """
         if target_date is None:
-            target_date = timezone.now().date()
+            target_date = timezone.localdate()
 
         # 캐시 확인
         cache_key = f"news:insight:{symbol}:{target_date}:{include_market_data}"

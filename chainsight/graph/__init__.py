@@ -14,7 +14,7 @@ def get_graph_repository():
         from .repository import Neo4jGraphRepository
         _repository = Neo4jGraphRepository(
             uri=settings.NEO4J_URI,
-            user=settings.NEO4J_USER,
+            user=settings.NEO4J_USERNAME,
             password=settings.NEO4J_PASSWORD,
         )
     return _repository

@@ -157,6 +157,13 @@ class MarketIndex(models.Model):
         BOND = 'bond', 'Bond'
         SECTOR = 'sector', 'Sector'
 
+    class SectorGroup(models.TextChoices):
+        """Market Pulse v2 sector group taxonomy (PR-A1)."""
+        BENCHMARK = 'BENCHMARK', 'Benchmark'  # SPY, QQQ, DIA, IWM
+        SECTOR = 'SECTOR', 'Sector'  # XLK, XLF, ... (11 GICS sectors)
+        SAFE_HAVEN = 'SAFE_HAVEN', 'Safe Haven'  # GLD, SLV, TLT, UUP
+        INTERNATIONAL = 'INTERNATIONAL', 'International'  # VEA / EFA / ACWX
+
     symbol = models.CharField(
         max_length=20,
         primary_key=True,
@@ -173,6 +180,15 @@ class MarketIndex(models.Model):
 
     # FMP API 심볼 (다를 수 있음)
     fmp_symbol = models.CharField(max_length=20, blank=True)
+
+    # Market Pulse v2 sector_group (PR-A1)
+    sector_group = models.CharField(
+        max_length=20,
+        choices=SectorGroup.choices,
+        blank=True,
+        default='',
+        help_text='Market Pulse v2 그룹 (BENCHMARK/SECTOR/SAFE_HAVEN/INTERNATIONAL)',
+    )
 
     display_order = models.IntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -308,7 +324,7 @@ class EconomicEvent(models.Model):
     @property
     def is_past(self) -> bool:
         """이벤트가 지났는지 확인"""
-        return self.event_date < timezone.now().date()
+        return self.event_date < timezone.localdate()
 
     @property
     def surprise(self) -> str | None:

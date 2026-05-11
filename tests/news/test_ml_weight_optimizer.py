@@ -86,6 +86,19 @@ def request_factory():
     return RequestFactory()
 
 
+@pytest.fixture
+def admin_user(db):
+    """audit P0 #5: ML 모니터링 액션은 IsAdminUser 권한이 필요."""
+    import uuid
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    return User.objects.create_superuser(
+        username=f'admin_{uuid.uuid4().hex[:8]}',
+        email='admin@test.com',
+        password='test1234',
+    )
+
+
 # ════════════════════════════════════════
 # Feature 추출 테스트
 # ════════════════════════════════════════
@@ -844,10 +857,11 @@ class TestCeleryTasks:
 class TestAPIEndpoints:
 
     @pytest.mark.django_db
-    def test_ml_status_endpoint(self, request_factory):
+    def test_ml_status_endpoint(self, request_factory, admin_user):
         from news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-status/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_status'})
         response = view(request)
@@ -855,10 +869,11 @@ class TestAPIEndpoints:
         assert 'labeled_data_count' in response.data
 
     @pytest.mark.django_db
-    def test_ml_shadow_report_no_data(self, request_factory):
+    def test_ml_shadow_report_no_data(self, request_factory, admin_user):
         from news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-shadow-report/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_shadow_report'})
         response = view(request)
@@ -866,7 +881,7 @@ class TestAPIEndpoints:
         assert response.data.get('status') == 'no_report'
 
     @pytest.mark.django_db
-    def test_ml_shadow_report_with_data(self, request_factory):
+    def test_ml_shadow_report_with_data(self, request_factory, admin_user):
         from news.api.views import NewsViewSet
         from news.models import MLModelHistory
 
@@ -891,6 +906,7 @@ class TestAPIEndpoints:
         )
 
         request = request_factory.get('/api/v1/news/ml-shadow-report/')
+        request.user = admin_user
         request.query_params = {}
         view = NewsViewSet.as_view({'get': 'ml_shadow_report'})
         response = view(request)

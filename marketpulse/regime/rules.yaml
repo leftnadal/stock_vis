@@ -1,0 +1,50 @@
+hysteresis:
+  default_streak_required: 2
+  crisis_immediate: true
+
+coverage:
+  min_ratio: 0.6
+
+rules:
+  - regime: CRISIS
+    description: 위기 국면
+    conditions:
+      any:
+        - {indicator: nfci,           op: ">=", value: 1.0}
+        - {indicator: hy_oas_pct,     op: ">=", value: 8.0}
+        - {indicator: vix,            op: ">=", value: 40}
+        - {indicator: move,           op: ">=", value: 150}
+        - {indicator: drawdown_pct,   op: "<=", value: -20}
+
+  - regime: BEAR_CONTRACTION
+    description: 약세 수축
+    conditions:
+      all:
+        - {indicator: hy_oas_pct, op: ">=", value: 5.0}
+        - any:
+            - {indicator: vix,           op: ">=", value: 30}
+            - {indicator: nfci,          op: ">=", value: 0.5}
+            - {indicator: drawdown_pct,  op: "<=", value: -10}
+
+  - regime: TRANSITION
+    description: 전환
+    conditions:
+      any:
+        - {indicator: hy_oas_pct,     op: ">=", value: 3.5}
+        - {indicator: vix,            op: ">=", value: 25}
+        - {indicator: nfci,           op: ">",  value: 0}
+        - {indicator: t10y2y_pct,     op: "<",  value: 0}
+        - {indicator: t10y3m_pct,     op: "<",  value: 0}
+
+  - regime: LATE_BULL
+    description: 상승 후반 경계
+    conditions:
+      any:
+        - {indicator: vix,            op: ">",  value: 20}
+        - {indicator: hy_oas_pct,     op: ">",  value: 2.5}
+        - {indicator: t10y2y_pct,     op: "<",  value: 0.3}
+
+  - regime: BULL_EXPANSION
+    description: 강세 확장 default
+    conditions:
+      always: true

@@ -6,7 +6,7 @@ Market Movers, Market Breadth, Screener Presets, Sector Heatmap
 import logging
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework import status
 from django.core.cache import cache
 from django.utils import timezone
@@ -23,10 +23,13 @@ from serverless.serializers import (
 )
 from serverless.tasks import sync_daily_market_movers
 
+from drf_spectacular.utils import extend_schema
+
 
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(operation_id='serverless_movers_list')
 @api_view(['GET'])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
@@ -63,7 +66,7 @@ def market_movers_api(request):
 
     # 쿼리 파라미터
     mover_type = request.GET.get('type', 'gainers')
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
@@ -122,7 +125,7 @@ def market_mover_detail(request, symbol):
         }
     """
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # 캐시 확인
     cache_key = f'mover_detail:{symbol}:{date_str}'
@@ -162,7 +165,7 @@ def market_mover_detail(request, symbol):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_sync(request):
     """
     수동 동기화 트리거 (관리자 도구용)
@@ -194,7 +197,7 @@ def trigger_sync(request):
             'data': {
                 'message': 'Sync task started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
 
@@ -210,7 +213,7 @@ def trigger_sync(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def sync_now(request):
     """
     즉시 동기화 (Celery 없이 동기 실행)
@@ -239,7 +242,7 @@ def sync_now(request):
         results = sync.sync_daily_movers(target_date=date_str)
 
         # 캐시 무효화 (market_movers_api와 동일한 키 패턴 사용)
-        today = date_str or timezone.now().date().isoformat()
+        today = date_str or timezone.localdate().isoformat()
         for mover_type in ['gainers', 'losers', 'actives']:
             # 키워드 포함 캐시 (market_movers_api에서 사용)
             cache_key = f'movers_with_keywords:{today}:{mover_type}'
@@ -297,7 +300,7 @@ def get_keywords(request, symbol):
     from serverless.models import StockKeyword
 
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.now().date().isoformat())
+    date_str = request.GET.get('date', timezone.localdate().isoformat())
 
     # DB 조회
     try:
@@ -350,7 +353,7 @@ def get_batch_keywords(request):
     from serverless.models import StockKeyword
 
     symbols = request.data.get('symbols', [])
-    date_str = request.data.get('date', timezone.now().date().isoformat())
+    date_str = request.data.get('date', timezone.localdate().isoformat())
 
     # 심볼 대문자 변환
     symbols = [s.upper() for s in symbols]
@@ -378,7 +381,7 @@ def get_batch_keywords(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_keyword_generation(request):
     """
     AI 키워드 생성 트리거 (Celery 비동기)
@@ -403,7 +406,7 @@ def trigger_keyword_generation(request):
     from serverless.tasks import keyword_generation_pipeline
 
     mover_type = request.data.get('type', 'gainers')
-    date_str = request.data.get('date', timezone.now().date().isoformat())
+    date_str = request.data.get('date', timezone.localdate().isoformat())
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
@@ -444,7 +447,7 @@ def trigger_keyword_generation(request):
 
 @api_view(['POST'])
 @authentication_classes([])  # TODO: 프로덕션에서는 인증 추가
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def generate_screener_keywords(request):
     """
     스크리너 종목들의 AI 키워드 일괄 생성 (Celery 비동기)
@@ -535,7 +538,7 @@ def health_check(request):
         }
     """
     # 오늘 날짜 데이터 개수 확인
-    today = timezone.now().date()
+    today = timezone.localdate()
     movers_count = MarketMover.objects.filter(date=today).count()
 
     return Response({
@@ -599,7 +602,7 @@ def market_breadth_api(request):
                 }
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     # 캐시 확인
     cache_key = f'market_breadth_api:{target_date}'
@@ -758,7 +761,7 @@ def market_breadth_history(request):
     if cached:
         return Response(cached)
 
-    start_date = timezone.now().date() - timedelta(days=days)
+    start_date = timezone.localdate() - timedelta(days=days)
     breadths = MarketBreadth.objects.filter(date__gte=start_date).order_by('-date')
 
     serializer = MarketBreadthHistorySerializer(breadths, many=True)
@@ -777,7 +780,7 @@ def market_breadth_history(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_breadth_sync(request):
     """
     Market Breadth 수동 동기화
@@ -796,7 +799,7 @@ def trigger_breadth_sync(request):
             'data': {
                 'message': 'Market breadth sync started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
     except Exception as e:
@@ -853,7 +856,7 @@ def sector_heatmap_api(request):
                 'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     # 캐시 확인
     cache_key = f'sector_heatmap_api:{target_date}'
@@ -952,7 +955,7 @@ def sector_stocks_api(request, sector):
                 'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
             }, status=status.HTTP_400_BAD_REQUEST)
     else:
-        target_date = timezone.now().date()
+        target_date = timezone.localdate()
 
     service = SectorHeatmapService()
     result = service.get_top_movers_by_sector(sector, limit=limit, target_date=target_date)
@@ -964,7 +967,7 @@ def sector_stocks_api(request, sector):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_heatmap_sync(request):
     """
     섹터 히트맵 수동 동기화
@@ -983,7 +986,7 @@ def trigger_heatmap_sync(request):
             'data': {
                 'message': 'Sector heatmap sync started',
                 'task_id': task.id,
-                'date': date_str or timezone.now().date().isoformat()
+                'date': date_str or timezone.localdate().isoformat()
             }
         })
     except Exception as e:
@@ -998,6 +1001,8 @@ def trigger_heatmap_sync(request):
 # Screener Preset API
 # ========================================
 
+@extend_schema(methods=['GET'], operation_id='serverless_presets_list')
+@extend_schema(methods=['POST'], operation_id='serverless_presets_create')
 @api_view(['GET', 'POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -1369,8 +1374,10 @@ def advanced_screener_api(request):
 # Screener Alert API (Phase 1)
 # ========================================
 
+@extend_schema(methods=['GET'], operation_id='serverless_alerts_list')
+@extend_schema(methods=['POST'], operation_id='serverless_alerts_create')
 @api_view(['GET', 'POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def screener_alerts_api(request):
     """
     스크리너 알림 목록 조회 / 생성
@@ -1434,7 +1441,7 @@ def screener_alerts_api(request):
 
 
 @api_view(['GET', 'PATCH', 'DELETE'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def screener_alert_detail(request, alert_id):
     """
     스크리너 알림 상세 조회 / 수정 / 삭제
@@ -1490,7 +1497,7 @@ def screener_alert_detail(request, alert_id):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def toggle_alert(request, alert_id):
     """
     알림 활성화/비활성화 토글
@@ -1525,7 +1532,7 @@ def toggle_alert(request, alert_id):
 
 
 @api_view(['GET'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def alert_history_api(request):
     """
     알림 이력 조회
@@ -1574,7 +1581,7 @@ def alert_history_api(request):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def mark_alert_read(request, history_id):
     """
     알림 읽음 처리
@@ -1605,7 +1612,7 @@ def mark_alert_read(request, history_id):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def dismiss_alert(request, history_id):
     """
     알림 해제
@@ -1641,7 +1648,7 @@ def dismiss_alert(request, history_id):
 # ========================================
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def share_preset(request, preset_id):
     """
     프리셋 공유 코드 생성
@@ -1754,7 +1761,7 @@ def get_shared_preset(request, share_code):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAuthenticated로 변경
+@permission_classes([IsAuthenticated])  # audit P0 #6
 def import_preset(request, share_code):
     """
     공유 프리셋을 내 프리셋으로 복사
@@ -2078,6 +2085,7 @@ def get_thesis(request, thesis_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema(operation_id='serverless_thesis_list')
 @api_view(['GET'])
 @authentication_classes([])
 @permission_classes([AllowAny])
@@ -3221,7 +3229,7 @@ def institutional_peers_api(request, symbol):
 
 
 @api_view(['POST'])
-@permission_classes([AllowAny])  # TODO: 프로덕션에서는 IsAdminUser로 변경
+@permission_classes([IsAdminUser])  # audit P0 #6
 def institutional_sync_api(request):
     """
     기관 보유 현황 수동 동기화 트리거

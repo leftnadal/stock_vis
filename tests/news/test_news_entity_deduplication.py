@@ -247,9 +247,17 @@ class TestNewsAPIViews:
             source='finnhub'
         )
 
-        # AAPL 뉴스 조회
+        # AAPL 뉴스 조회 (audit P0 #5: 인증된 client)
+        import uuid
         from django.test import Client
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        user = User.objects.create_user(
+            username=f'test_{uuid.uuid4().hex[:8]}',
+            password='test1234',
+        )
         client = Client()
+        client.force_login(user)
         response = client.get('/api/v1/news/stock/AAPL/')
 
         assert response.status_code == 200

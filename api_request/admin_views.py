@@ -11,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework import status
 
+from drf_spectacular.utils import OpenApiResponse, OpenApiTypes, extend_schema
+
 from .providers.factory import (
     ProviderFactory,
     ProviderType,
@@ -28,6 +30,12 @@ from .cache.decorators import (
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    tags=['admin'],
+    summary='Provider 상태 조회',
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
+                                     description='providers/feature_flags/fallback_enabled')},
+)
 class ProviderStatusView(APIView):
     """
     Provider 상태 조회 API
@@ -71,6 +79,13 @@ class ProviderStatusView(APIView):
             )
 
 
+@extend_schema(
+    tags=['admin'],
+    summary='Rate Limit 상태 조회 / 리셋',
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
+                                     description='Rate Limit 카운터')},
+    request=OpenApiTypes.OBJECT,
+)
 class RateLimitStatusView(APIView):
     """
     Rate Limit 상태 조회 API
@@ -114,6 +129,12 @@ class RateLimitStatusView(APIView):
             )
 
 
+@extend_schema(
+    tags=['admin'],
+    summary='Provider 캐시 관리',
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
+                                     description='캐시 통계 / 무효화 결과')},
+)
 class CacheManagementView(APIView):
     """
     캐시 관리 API
@@ -166,6 +187,13 @@ class CacheManagementView(APIView):
             )
 
 
+@extend_schema(
+    tags=['admin'],
+    summary='Provider 연결 테스트',
+    request=OpenApiTypes.OBJECT,
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
+                                     description='Provider quote 테스트 결과')},
+)
 class ProviderTestView(APIView):
     """
     Provider 연결 테스트 API
@@ -176,7 +204,7 @@ class ProviderTestView(APIView):
 
     def post(self, request):
         """특정 Provider 연결 테스트"""
-        provider_name = request.data.get("provider", "alpha_vantage")
+        provider_name = request.data.get("provider", "fmp")
         symbol = request.data.get("symbol", "AAPL")
 
         try:
@@ -212,6 +240,12 @@ class ProviderTestView(APIView):
             )
 
 
+@extend_schema(
+    tags=['admin'],
+    summary='Provider 설정 조회',
+    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
+                                     description='feature_flags/cache_ttl/rate_limits/fallback_enabled')},
+)
 class ProviderConfigView(APIView):
     """
     Provider 설정 조회 API

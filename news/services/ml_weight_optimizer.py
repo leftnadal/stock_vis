@@ -1346,9 +1346,9 @@ class MLWeightOptimizer:
     @staticmethod
     def _generate_version(algorithm: str = 'lr') -> str:
         """모델 버전 생성 (예: lr_v1_20260225_1, lgbm_v2_20260225_1)"""
-        today = timezone.now().strftime('%Y%m%d')
+        today = timezone.localtime().strftime('%Y%m%d')
         count = MLModelHistory.objects.filter(
-            trained_at__date=timezone.now().date(),
+            trained_at__date=timezone.localdate(),
         ).count()
         prefix = 'lgbm_v2' if algorithm == 'lgbm' else 'lr_v1'
         return f"{prefix}_{today}_{count + 1}"

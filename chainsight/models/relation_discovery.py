@@ -126,8 +126,7 @@ class RelationConfidence(models.Model):
         help_text='직전 상태. 시드 선정 시 relation_upgrade/downgrade 판단용.',
     )
 
-    # 동기화 (neo4j_dirty 패턴)
-    synced_to_neo4j = models.BooleanField(default=False)
+    # 동기화 (audit P0 #9 — neo4j_dirty 단일 소스. synced_to_neo4j 제거 2026-04-29)
     neo4j_dirty = models.BooleanField(
         default=True, db_index=True,
         help_text='True이면 Neo4j 동기화 필요. save() 시 자동 True.',
@@ -141,7 +140,6 @@ class RelationConfidence(models.Model):
         indexes = [
             models.Index(fields=['relation_status']),
             models.Index(fields=['relation_type']),
-            models.Index(fields=['synced_to_neo4j']),
             models.Index(fields=['neo4j_dirty']),
         ]
 

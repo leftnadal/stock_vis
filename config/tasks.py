@@ -84,7 +84,7 @@ def send_celery_error_digest(days=1):
         sum(counts.values()) for counts in ignored_errors.values()
     )
 
-    today = timezone.now().strftime('%Y-%m-%d')
+    today = timezone.localtime().strftime('%Y-%m-%d')
     subject = f'[Stock-Vis] Celery 에러 일일 요약 ({today})'
 
     body_lines = [

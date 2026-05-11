@@ -73,7 +73,7 @@
 **Market Movers 전용 API**
 
 - **플랜**: Starter Plan 사용
-- **Rate Limit**: 10 calls/분, 250 calls/일
+- **Rate Limit**: 300 calls/분, 10,000 calls/일 (audit P0 #7 정정, 2026-04-29)
 - **엔드포인트**: `/stable/*` 경로 사용 (Legacy `/api/v3/*` 더 이상 지원 안 함)
 - **주요 API**:
   - `/stable/biggest-gainers` - 상승 TOP 종목

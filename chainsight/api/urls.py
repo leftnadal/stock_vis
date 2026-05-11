@@ -1,8 +1,14 @@
 from django.urls import path
+from rest_framework.routers import DefaultRouter
+
 from .views import (
     ChainSightGraphView, ChainSightSuggestionView, ChainSightTraceView,
     SeedListView, SectorGraphView, NeighborGraphView, SignalFeedView,
 )
+from chainsight.views.watchlist_views import WatchlistViewSet
+
+router = DefaultRouter()
+router.register(r'watchlist', WatchlistViewSet, basename='watchlist')
 
 urlpatterns = [
     # 마켓 뷰 (고정 경로 먼저)
@@ -15,4 +21,4 @@ urlpatterns = [
     path('<str:symbol>/neighbors/', NeighborGraphView.as_view(), name='chainsight-neighbors'),
     path('<str:symbol>/graph/', ChainSightGraphView.as_view(), name='chainsight-graph'),
     path('<str:symbol>/suggestions/', ChainSightSuggestionView.as_view(), name='chainsight-suggestions'),
-]
+] + router.urls

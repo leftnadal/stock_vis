@@ -43,10 +43,10 @@ def sync_dirty_relations() -> int:
             logger.error(f'Failed to sync relation {rc.pk}: {e}')
 
     # queryset.update() 사용 — save() 호출 금지 (dirty가 다시 True로 덮어씌워짐)
+    # audit P0 #9: synced_to_neo4j 제거, neo4j_dirty 단일 소스
     if synced_pks:
         RelationConfidence.objects.filter(pk__in=synced_pks).update(
             neo4j_dirty=False,
-            synced_to_neo4j=True,
             neo4j_synced_at=timezone.now(),
         )
 

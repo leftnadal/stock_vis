@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class SyncResult:
     """동기화 결과를 담는 데이터 클래스"""
     success: bool
-    source: str  # 'db', 'fmp', 'alpha_vantage'
+    source: str  # 'db', 'fmp'
     synced_at: Optional[datetime] = None
     error: Optional[str] = None
     data: Optional[dict] = None

@@ -114,7 +114,24 @@ def close_neo4j_on_shutdown(**kwargs):
         pass
 
 
-# 정기 태스크 스케줄 설정
+# ============================================================
+# beat_schedule — 주의: 이 dict는 런타임에 무시됨
+# ============================================================
+# config/settings.py의 `CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'`
+# 설정 때문에 Celery Beat는 DB의 `django_celery_beat.PeriodicTask` 테이블을 진실의 소스로 사용한다.
+# 아래 dict는 "원래 설계된 스케줄의 선언적 reference"로만 존재한다.
+#
+# 스케줄 추가/변경 방법:
+#   1) Django admin → Periodic Tasks (/admin/django_celery_beat/periodictask/)
+#   2) 또는 shell에서 PeriodicTask.objects.create(...)
+#
+# Drift 관리: config dict와 DB `PeriodicTask`가 어긋나면 dict의 태스크는 실행되지 않는다.
+# 2026-04-24 복구: 누락 상태였던 두 태스크를 DB에 등록 완료 (수동 실행으로 동작 확인).
+#   - chainsight-heat-score-daily (NY 07:00, 시드 선정 전)
+#   - sec-seed-relations-to-chainsight (NY 12:00, 시드 선정 전)
+# Drift 재발 방지 체크는 `python manage.py shell`에서
+# `set(PeriodicTask.objects.values_list('name', flat=True)) vs config dict 키` diff로 수동 진행.
+# ============================================================
 app.conf.beat_schedule = {
     # ============================================================
     # Stocks 태스크
@@ -264,10 +281,12 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
-    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:30 EST = KST 06:30)
+    # 일일 뉴스 키워드 추출 (미국장 마감 후 — 16:45 EST = KST 06:45)
+    # 16:30 EST에 analyze-news-deep-batch(hour='...,16,...', minute=30)와 Gemini 동시 호출 충돌
+    # → Gemini 15 RPM 2배 초과 위험. 15분 분산하여 회피 (audit P0 #8, 2026-04-26)
     'extract-daily-news-keywords': {
         'task': 'news.tasks.extract_daily_news_keywords',
-        'schedule': crontab(hour=16, minute=30),  # 16:30 EST (장 마감 30분 후)
+        'schedule': crontab(hour=16, minute=45),  # 16:45 EST (analyze-deep와 15분 간격)
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
@@ -650,6 +669,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # AI 요약 생성 (매일 18:35 ET, snapshot 직후 — audit P0 #15)
+    'thesis-generate-summaries': {
+        'task': 'thesis.tasks.summary.generate_thesis_summaries',
+        'schedule': crontab(hour=18, minute=35, day_of_week='1-5'),
+        'options': {'expires': 3600}
+    },
+
     # ============================================================
     # Chain Sight — Tier A 프로파일 + 관계 파이프라인
     # ============================================================
@@ -710,6 +736,13 @@ app.conf.beat_schedule = {
         'task': 'chainsight.tasks.sync_tasks.sync_relations_to_neo4j',
         'schedule': crontab(hour=12, minute=30),
         'options': {'expires': 3600}
+    },
+
+    # Heat Score 배치 (매일 07:00 UTC, 시드 선정 전)
+    'chainsight-heat-score-daily': {
+        'task': 'chainsight-heat-score-daily',
+        'schedule': crontab(hour=7, minute=0),
+        'options': {'expires': 1800}
     },
 
     # 시드 선정 (매일 13:00 UTC, 관계 동기화 후)

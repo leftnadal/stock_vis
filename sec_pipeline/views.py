@@ -5,6 +5,7 @@ SEC-PR-15: On-demand filing data API.
 
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import render
+from rest_framework.permissions import IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -26,7 +27,11 @@ def sec_pipeline_dashboard(request):
 
 
 class FilingDataView(APIView):
-    """On-demand filing data API. GET → 200(있음) 또는 202(수집 트리거됨)."""
+    """On-demand filing data API. GET → 200(있음) 또는 202(수집 트리거됨).
+
+    audit P0 #6: IsAdminUser — 외부 SEC fetch 트리거가 비용을 발생시키므로 admin 한정.
+    """
+    permission_classes = [IsAdminUser]
 
     def get(self, request, symbol):
         from .on_demand import get_or_collect_filing

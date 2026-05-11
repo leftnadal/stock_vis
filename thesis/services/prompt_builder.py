@@ -191,20 +191,30 @@ INDICATOR_CATALOG = [
      'data_source': 'fmp', 'data_params': {'metric': 'eps'},
      'support_direction': 'positive',
      'description': '주당순이익. 회사 수익성을 주식 1주 기준으로 나타낸 핵심 지표.'},
+    # audit P0 #11 / common-bugs #14: FMP key-metrics-ttm에 'peRatioTTM' 미존재.
+    # PER = 1 / earningsYieldTTM. 정확 fetch는 quarterly_metric_fetcher 분기 (별도 PR).
     {'id': 50, 'name': 'PER (주가수익비율)', 'category': 'fundamental',
-     'data_source': 'fmp', 'data_params': {'metric': 'peRatioTTM'},
+     'data_source': 'fmp',
+     'data_params': {'metric': 'earningsYieldTTM', 'inverse': True,
+                     'audit_note': 'PER = 1 / earningsYieldTTM (#14 회귀 방지)'},
      'support_direction': 'negative',
      'description': '주가를 EPS로 나눈 값. 수익 대비 주가 수준(밸류에이션) 측정.'},
     {'id': 51, 'name': 'PBR (주가순자산비율)', 'category': 'fundamental',
      'data_source': 'fmp', 'data_params': {'metric': 'pbRatioTTM'},
      'support_direction': 'negative',
      'description': '주가를 주당순자산으로 나눈 값. 자산 대비 주가 할인/할증 수준.'},
+    # audit P0 #11 / common-bugs #14: FMP returnOnEquityTTM 0~1 스케일 → ×100 % 변환 필요.
     {'id': 52, 'name': 'ROE (자기자본이익률)', 'category': 'fundamental',
-     'data_source': 'fmp', 'data_params': {'metric': 'returnOnEquityTTM'},
+     'data_source': 'fmp',
+     'data_params': {'metric': 'returnOnEquityTTM', 'scale_multiplier': 100,
+                     'audit_note': 'ratio 0~1 → % (#14 회귀 방지)'},
      'support_direction': 'positive',
      'description': '자기자본 대비 순이익 비율. 주주 자본의 수익 창출 효율성.'},
+    # ROA 동일 패턴 예방.
     {'id': 53, 'name': 'ROA (총자산이익률)', 'category': 'fundamental',
-     'data_source': 'fmp', 'data_params': {'metric': 'returnOnAssetsTTM'},
+     'data_source': 'fmp',
+     'data_params': {'metric': 'returnOnAssetsTTM', 'scale_multiplier': 100,
+                     'audit_note': 'ratio 0~1 → % (#14 동일 패턴)'},
      'support_direction': 'positive',
      'description': '총자산 대비 순이익 비율. 전체 자산 활용의 수익 효율성.'},
     {'id': 54, 'name': '부채비율 (Debt/Equity)', 'category': 'fundamental',
@@ -223,8 +233,14 @@ INDICATOR_CATALOG = [
      'data_source': 'fmp', 'data_params': {'metric': 'operatingProfitMarginTTM'},
      'support_direction': 'positive',
      'description': '매출 대비 영업이익 비율. 핵심 사업의 수익성과 비용 통제력 측정.'},
+    # audit P0 #11 / common-bugs #14: 'revenueGrowthYoY'는 FMP key-metrics-ttm에 없음.
+    # /financial-growth/ endpoint, 필드명 'growthRevenue', 0~1 스케일.
+    # 권장: data_source='metrics' (quarterly_metric_fetcher의 'revenue_growth_yoy' RATIO_METRICS) 분기.
     {'id': 58, 'name': '매출성장률 (YoY)', 'category': 'fundamental',
-     'data_source': 'fmp', 'data_params': {'metric': 'revenueGrowthYoY'},
+     'data_source': 'fmp',
+     'data_params': {'metric': 'growthRevenue', 'endpoint': 'financial-growth',
+                     'scale_multiplier': 100,
+                     'audit_note': 'FMP /financial-growth/ growthRevenue (#14 표준 필드 아님)'},
      'support_direction': 'positive',
      'description': '전년 동기 대비 매출 증가율. 사업 성장 속도의 기본 지표.'},
 

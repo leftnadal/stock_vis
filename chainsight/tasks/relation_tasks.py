@@ -288,7 +288,7 @@ def update_relation_confidence(self):
                     'has_news_source': False,
                     'has_price_source': False,
                     'relation_basis_summary': summary,
-                    'synced_to_neo4j': False,
+                    # audit P0 #9: synced_to_neo4j 제거. update_or_create는 save()를 호출하므로 neo4j_dirty=True 자동.
                 }
             )
             if is_new:
@@ -323,7 +323,6 @@ def update_relation_confidence(self):
                     'has_news_source': True,
                     'has_price_source': False,
                     'relation_basis_summary': f'뉴스 동시출현 {count}회',
-                    'synced_to_neo4j': False,
                 }
             )
             if is_new:
@@ -358,7 +357,6 @@ def update_relation_confidence(self):
                     'has_news_source': False,
                     'has_price_source': True,
                     'relation_basis_summary': f'주가 상관 {corr:.2f}',
-                    'synced_to_neo4j': False,
                 }
             )
             if is_new:
@@ -381,26 +379,27 @@ def check_stale_and_decay(self):
     now = timezone.now()
     decayed = 0
 
+    # audit P0 #9: queryset.update()는 save() 미호출 → neo4j_dirty 수동 토글
     # confirmed → stale (90일)
     stale = RelationConfidence.objects.filter(
         relation_status='confirmed',
         last_observed_at__lt=now - timedelta(days=90),
     )
-    decayed += stale.update(relation_status='stale', synced_to_neo4j=False)
+    decayed += stale.update(relation_status='stale', neo4j_dirty=True)
 
     # probable → weak (60일)
     weak = RelationConfidence.objects.filter(
         relation_status='probable',
         last_observed_at__lt=now - timedelta(days=60),
     )
-    decayed += weak.update(relation_status='weak', synced_to_neo4j=False)
+    decayed += weak.update(relation_status='weak', neo4j_dirty=True)
 
     # weak → hidden (30일)
     hidden = RelationConfidence.objects.filter(
         relation_status='weak',
         last_observed_at__lt=now - timedelta(days=30),
     )
-    decayed += hidden.update(relation_status='hidden', synced_to_neo4j=False)
+    decayed += hidden.update(relation_status='hidden', neo4j_dirty=True)
 
     logger.info(f"Stale decay: {decayed}건 하향 전이")
     return {"decayed": decayed}
