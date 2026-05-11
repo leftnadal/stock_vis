@@ -1,0 +1,54 @@
+{
+  "step": "step8_e3_group_analysis",
+  "executed_at": "2026-05-08T04:27:48.170495+00:00",
+  "comparison": {
+    "haiku": {
+      "garp_baseline": {
+        "n": 3,
+        "naturalness_mean": 3.6667,
+        "insight_mean": 3.6667,
+        "score_mean": 19.9516,
+        "cost_total_usd": 0.0184,
+        "latency_mean_ms": 5784.0
+      },
+      "preset_focused": {
+        "n": 4,
+        "naturalness_mean": 3.25,
+        "insight_mean": 3.75,
+        "score_mean": 20.3035,
+        "cost_total_usd": 0.0194,
+        "latency_mean_ms": 3761.5
+      }
+    },
+    "sonnet": {
+      "garp_baseline": {
+        "n": 3,
+        "naturalness_mean": 3.0,
+        "insight_mean": 3.3333,
+        "score_mean": 7.3916,
+        "cost_total_usd": 0.0653,
+        "latency_mean_ms": 9999.7
+      },
+      "preset_focused": {
+        "n": 4,
+        "naturalness_mean": 4.0,
+        "insight_mean": 4.0,
+        "score_mean": 11.2159,
+        "cost_total_usd": 0.0712,
+        "latency_mean_ms": 7265.0
+      }
+    }
+  },
+  "hybrid_validation": {
+    "context": "baseline 그룹(garp_baseline 3)과 focused 그룹(preset_focused 4)의 점수 차이로 Slice 5 hybrid 결정 정당화 + 글쓰기 가설 5번째 외삽 검증.",
+    "interpretation_guide": {
+      "small_diff": "두 그룹 점수 유사 (<10%) → preset 외삽 안전, 글쓰기 가설 일관.",
+      "baseline_higher": "GARP fixture가 평가 우수 → 다른 preset에서 글쓰기 품질 약화 (preset 외삽 위험).",
+      "focused_higher": "focused fixture가 평가 우수 → 다양한 preset이 오히려 더 나은 글쓰기 자극."
+    }
+  },
+  "interpretations": [
+    "haiku: baseline=19.95 vs focused=20.30 → small_diff (1.8%)",
+    "sonnet: baseline=7.39 vs focused=11.22 → focused_higher (+51.7%)"
+  ]
+}

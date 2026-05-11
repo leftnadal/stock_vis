@@ -1,0 +1,772 @@
+{
+  "step": "step8_2way_e3_raw",
+  "executed_at": "2026-05-07T23:43:57.766834+00:00",
+  "matrix_size": {
+    "fixtures": 7,
+    "models": 2,
+    "total_calls": 14
+  },
+  "providers": [
+    {
+      "label": "haiku",
+      "model": "claude-haiku-4-5"
+    },
+    {
+      "label": "sonnet",
+      "model": "claude-sonnet-4-5"
+    }
+  ],
+  "fixture_groups": {
+    "garp_baseline": [
+      "e3_baseline_garp_tech",
+      "e3_baseline_garp_misfit",
+      "e3_baseline_garp_large"
+    ],
+    "preset_focused": [
+      "e3_focused_buffett",
+      "e3_focused_dividend_growth",
+      "e3_focused_quality_factor",
+      "e3_focused_contrarian"
+    ]
+  },
+  "results": [
+    {
+      "fixture": "e3_baseline_garp_tech",
+      "fixture_id": "e3_baseline_garp_tech",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 충족합니다. GARP의 Core 지표인 '품질 있는 수익 창출'을 견조히 만족하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율이 2.8로 프리셋 기준값(1.5)을 현저히 상회하며 업종 하위 15% 구간에 분포합니다. GARP의 Core 지표로서 성장성 대비 가격 평가가 높은 편으로, 일부 고평가 종목의 영향이 포트폴리오 전체를 끌어올린 것으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 중위권(상위 30%) 수준을 유지합니다. 보조 지표이지만 GARP의 성장성 요건을 무난히 충족하는 것으로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 충족합니다. GARP의 Core 지표인 '품질 있는 수익 창출'을 견조히 만족하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율이 2.8로 프리셋 기준값(1.5)을 현저히 상회하며 업종 하위 15% 구간에 분포합니다. GARP의 Core 지표로서 성장성 대비 가격 평가가 높은 편으로, 일부 고평가 종목의 영향이 포트폴리오 전체를 끌어올린 것으로 보입니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 중위권(상위 30%) 수준을 유지합니다. 보조 지표이지만 GARP의 성장성 요건을 무난히 충족하는 것으로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 3723,
+        "input_tokens": 3940,
+        "output_tokens": 411,
+        "cost_usd": 0.004796,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 3,
+        "insight_manual": 3
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_baseline_garp_tech",
+      "fixture_id": "e3_baseline_garp_tech",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 GARP 프리셋의 Core 임계값(15%)을 통과합니다. 자본 효율성 측면에서 견조한 구성으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율 평균이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. GARP의 Core 지표인 '성장 대비 밸류에이션 적정성'에서 개선 여지가 있는 것으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표로서 GARP 프리셋의 성장 요건을 양호하게 뒷받침하는 것으로 읽힙니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 GARP 프리셋의 Core 임계값(15%)을 통과합니다. 자본 효율성 측면에서 견조한 구성으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율 평균이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. GARP의 Core 지표인 '성장 대비 밸류에이션 적정성'에서 개선 여지가 있는 것으로 보입니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표로서 GARP 프리셋의 성장 요건을 양호하게 뒷받침하는 것으로 읽힙니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 5738,
+        "input_tokens": 3940,
+        "output_tokens": 371,
+        "cost_usd": 0.017385,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 3,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_baseline_garp_misfit",
+      "fixture_id": "e3_baseline_garp_misfit",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 3.2로 업종 하위 8% 구간에 위치하며 GARP의 Core 임계값 1.5를 크게 상회합니다. 성장 대비 밸류에이션이 상당히 높은 수준으로, GARP 프리셋의 핵심 판단 기준인 '합리적 가격의 성장' 요건을 충족하지 못하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"eps_growth_yoy\",\n      \"one_liner\": \"EPS 성장률 평균이 4%로 업종 하위 20% 구간에 머물며 프리셋 기준 10%를 크게 하회합니다. GARP의 성장 요구치를 만족하지 않아 포트폴리오가 '성장'의 자격을 상실한 상태로 해석될 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률 평균이 12%로 업종 중앙값(50분위) 근처에서 프리셋 임계값 8%를 통과합니다. 다만 EPS 성장의 부진과 대조되어 이익화 효율이 낮아지고 있는 신호로 주목할 만합니다.\"\n    },\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"ROIC 평균이 6%로 업종 하위 18% 구간에 위치하며 보조 지표 임계값 10%를 충족하지 못합니다. 자본 효율성의 약세는 높은 밸류에이션(PER 65)과 함께 수익성 부진을 강화하는 신호로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"pe_ratio\",\n      \"one_liner\": \"PER이 65배로 업종 하위 5% 극단값에 위치하며 극도로 고평가된 상태입니다. Core 성장 지표들의 부진(EPS 4%, PEG 3.2)과 맞물려 GARP 프리셋 관점에서 밸류에이션 리스크가 구조적으로 누적된 것으로 보입니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 3.2로 업종 하위 8% 구간에 위치하며 GARP의 Core 임계값 1.5를 크게 상회합니다. 성장 대비 밸류에이션이 상당히 높은 수준으로, GARP 프리셋의 핵심 판단 기준인 '합리적 가격의 성장' 요건을 충족하지 못하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "eps_growth_yoy",
+            "one_liner": "EPS 성장률 평균이 4%로 업종 하위 20% 구간에 머물며 프리셋 기준 10%를 크게 하회합니다. GARP의 성장 요구치를 만족하지 않아 포트폴리오가 '성장'의 자격을 상실한 상태로 해석될 수 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률 평균이 12%로 업종 중앙값(50분위) 근처에서 프리셋 임계값 8%를 통과합니다. 다만 EPS 성장의 부진과 대조되어 이익화 효율이 낮아지고 있는 신호로 주목할 만합니다."
+          },
+          {
+            "metric_id": "roic",
+            "one_liner": "ROIC 평균이 6%로 업종 하위 18% 구간에 위치하며 보조 지표 임계값 10%를 충족하지 못합니다. 자본 효율성의 약세는 높은 밸류에이션(PER 65)과 함께 수익성 부진을 강화하는 신호로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "pe_ratio",
+            "one_liner": "PER이 65배로 업종 하위 5% 극단값에 위치하며 극도로 고평가된 상태입니다. Core 성장 지표들의 부진(EPS 4%, PEG 3.2)과 맞물려 GARP 프리셋 관점에서 밸류에이션 리스크가 구조적으로 누적된 것으로 보입니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 6246,
+        "input_tokens": 4148,
+        "output_tokens": 753,
+        "cost_usd": 0.0063304,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 5,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_baseline_garp_misfit",
+      "fixture_id": "e3_baseline_garp_misfit",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG가 3.2로 프리셋 기준 1.5를 2배 이상 초과하며 업종 하위 8%에 위치합니다. GARP의 핵심 Core 지표인 '성장 대비 밸류에이션 효율'이 구조적으로 미흡한 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"eps_growth_yoy\",\n      \"one_liner\": \"EPS 성장률이 4%로 프리셋 기준 10%에 미달하며 업종 하위 20%권에 머물러 있습니다. GARP 관점에서 요구하는 수익성 성장 모멘텀이 약한 것으로 판단됩니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률은 12%로 프리셋 기준 8%를 통과하며 업종 중위권(상위 45%)에 위치합니다. Core 지표 중 유일하게 양호한 신호로, 톱라인 성장 기반은 확보된 것으로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"ROIC가 6%로 프리셋 기준 10%에 미달하며 업종 하위 18%에 위치합니다. 보조 지표이지만 자본 효율이 낮아 매출 성장이 수익성 개선으로 전환되지 못하는 구조적 취약점을 시사할 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"pe_ratio\",\n      \"one_liner\": \"PER가 65배로 업종 하위 5% 수준의 고평가 구간에 있습니다. 보조 지표로서 절대 밸류에이션 부담이 매우 높아 성장 둔화 시 조정 리스크가 상당한 것으로 읽힙니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG가 3.2로 프리셋 기준 1.5를 2배 이상 초과하며 업종 하위 8%에 위치합니다. GARP의 핵심 Core 지표인 '성장 대비 밸류에이션 효율'이 구조적으로 미흡한 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "eps_growth_yoy",
+            "one_liner": "EPS 성장률이 4%로 프리셋 기준 10%에 미달하며 업종 하위 20%권에 머물러 있습니다. GARP 관점에서 요구하는 수익성 성장 모멘텀이 약한 것으로 판단됩니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률은 12%로 프리셋 기준 8%를 통과하며 업종 중위권(상위 45%)에 위치합니다. Core 지표 중 유일하게 양호한 신호로, 톱라인 성장 기반은 확보된 것으로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "roic",
+            "one_liner": "ROIC가 6%로 프리셋 기준 10%에 미달하며 업종 하위 18%에 위치합니다. 보조 지표이지만 자본 효율이 낮아 매출 성장이 수익성 개선으로 전환되지 못하는 구조적 취약점을 시사할 수 있습니다."
+          },
+          {
+            "metric_id": "pe_ratio",
+            "one_liner": "PER가 65배로 업종 하위 5% 수준의 고평가 구간에 있습니다. 보조 지표로서 절대 밸류에이션 부담이 매우 높아 성장 둔화 시 조정 리스크가 상당한 것으로 읽힙니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 11019,
+        "input_tokens": 4148,
+        "output_tokens": 658,
+        "cost_usd": 0.022314,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 5,
+        "naturalness_manual": 3,
+        "insight_manual": 3
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_baseline_garp_large",
+      "fixture_id": "e3_baseline_garp_large",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 1.85로 GARP의 Core 기준값 1.5를 소폭 상회하며 업종 중앙값 근처에 위치합니다. 성장 대비 밸류에이션이 다소 높은 편으로 읽힐 수 있어, 개별 종목별 검토를 통해 가치와 성장의 균형을 확인할 필요가 있습니다.\"\n    },\n    {\n      \"metric_id\": \"eps_growth_yoy\",\n      \"one_liner\": \"EPS 성장률이 13%로 임계값 10%를 상회하고 업종 상위 38% 구간에 위치합니다. GARP의 Core 지표인 '실질적 이익 성장'을 견조히 충족하는 구성으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 11%로 임계값 8%를 통과하고 업종 상위 42% 수준을 유지합니다. 이익 성장과 함께 상위 라인의 성장도 뒷받침하는 구조로, GARP 프리셋의 신뢰도를 높이는 요소로 작용합니다.\"\n    },\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"ROIC가 14%로 임계값 10%를 통과하고 업종 상위 35% 구간에 위치합니다. 보조 지표로서 자본 효율성이 양호한 수준으로, 성장의 질을 뒷받침하는 증거로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"roe\",\n      \"one_liner\": \"ROE가 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 주주자본 수익성이 견조하여 경영 효율성을 긍정적으로 시사합니다.\"\n    },\n    {\n      \"metric_id\": \"pe_ratio\",\n      \"one_liner\": \"PER이 28.0으로 업종 중앙값보다 낮은 수준(하위 60%)에 위치합니다. GARP의 성장성 대비 상대적으로 합리적인 밸류에이션 수준으로 읽힐 수 있어, PEG 상승분을 부분적으로 상쇄하는 요소입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_consistency_3y\",\n      \"one_liner\": \"3년 매출 성장 일관성이 0.72로 업종 중앙값 근처(상위 45%)를 유지합니다. 성장이 완만한 편이지만, 일관성 측면에서는 중간 수준의 안정성을 보유한 것으로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 1.85로 GARP의 Core 기준값 1.5를 소폭 상회하며 업종 중앙값 근처에 위치합니다. 성장 대비 밸류에이션이 다소 높은 편으로 읽힐 수 있어, 개별 종목별 검토를 통해 가치와 성장의 균형을 확인할 필요가 있습니다."
+          },
+          {
+            "metric_id": "eps_growth_yoy",
+            "one_liner": "EPS 성장률이 13%로 임계값 10%를 상회하고 업종 상위 38% 구간에 위치합니다. GARP의 Core 지표인 '실질적 이익 성장'을 견조히 충족하는 구성으로 읽힙니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 11%로 임계값 8%를 통과하고 업종 상위 42% 수준을 유지합니다. 이익 성장과 함께 상위 라인의 성장도 뒷받침하는 구조로, GARP 프리셋의 신뢰도를 높이는 요소로 작용합니다."
+          },
+          {
+            "metric_id": "roic",
+            "one_liner": "ROIC가 14%로 임계값 10%를 통과하고 업종 상위 35% 구간에 위치합니다. 보조 지표로서 자본 효율성이 양호한 수준으로, 성장의 질을 뒷받침하는 증거로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "roe",
+            "one_liner": "ROE가 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 주주자본 수익성이 견조하여 경영 효율성을 긍정적으로 시사합니다."
+          },
+          {
+            "metric_id": "pe_ratio",
+            "one_liner": "PER이 28.0으로 업종 중앙값보다 낮은 수준(하위 60%)에 위치합니다. GARP의 성장성 대비 상대적으로 합리적인 밸류에이션 수준으로 읽힐 수 있어, PEG 상승분을 부분적으로 상쇄하는 요소입니다."
+          },
+          {
+            "metric_id": "revenue_growth_consistency_3y",
+            "one_liner": "3년 매출 성장 일관성이 0.72로 업종 중앙값 근처(상위 45%)를 유지합니다. 성장이 완만한 편이지만, 일관성 측면에서는 중간 수준의 안정성을 보유한 것으로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 7383,
+        "input_tokens": 4359,
+        "output_tokens": 941,
+        "cost_usd": 0.0072512,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 7,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_baseline_garp_large",
+      "fixture_id": "e3_baseline_garp_large",
+      "fixture_group": "garp_baseline",
+      "preset_id": "garp",
+      "preset_category": "growth",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 1.85로 GARP 프리셋의 Core 기준 1.5를 상회하며 업종 중위권(45백분위)입니다. 성장 대비 밸류에이션이 다소 높은 편으로, 개별 종목별 성장 가시성 점검이 필요할 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"eps_growth_yoy\",\n      \"one_liner\": \"EPS 성장률이 평균 13%로 프리셋 임계값(10%)을 통과하며 업종 상위 38% 구간에 위치합니다. GARP의 Core 지표인 '수익 성장'을 견조히 충족하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 평균 11%로 프리셋 기준(8%)을 상회하며 업종 상위 42% 구간입니다. Core 성장 지표로서 양호한 톱라인 확장세를 보이고 있습니다.\"\n    },\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"ROIC 평균 14%로 업종 상위 35% 구간이며 보조 기준(10%)을 통과합니다. 보조 지표이지만 성장이 자본 효율을 동반하고 있음을 뒷받침하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"roe\",\n      \"one_liner\": \"ROE 평균이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표로서 주주 자본 수익성이 양호한 수준임을 확인할 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"pe_ratio\",\n      \"one_liner\": \"PER 평균이 28배로 업종 중위권(40백분위)입니다. 보조 지표이나 PEG와 함께 고려 시 밸류에이션 부담이 부분적으로 존재하는 것으로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_consistency_3y\",\n      \"one_liner\": \"3개년 매출 성장 일관성이 0.72로 업종 중위권(55백분위)입니다. 보조 지표이지만 일부 종목에서 성장 변동성이 존재할 가능성이 있는 것으로 읽힙니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 1.85로 GARP 프리셋의 Core 기준 1.5를 상회하며 업종 중위권(45백분위)입니다. 성장 대비 밸류에이션이 다소 높은 편으로, 개별 종목별 성장 가시성 점검이 필요할 수 있습니다."
+          },
+          {
+            "metric_id": "eps_growth_yoy",
+            "one_liner": "EPS 성장률이 평균 13%로 프리셋 임계값(10%)을 통과하며 업종 상위 38% 구간에 위치합니다. GARP의 Core 지표인 '수익 성장'을 견조히 충족하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 평균 11%로 프리셋 기준(8%)을 상회하며 업종 상위 42% 구간입니다. Core 성장 지표로서 양호한 톱라인 확장세를 보이고 있습니다."
+          },
+          {
+            "metric_id": "roic",
+            "one_liner": "ROIC 평균 14%로 업종 상위 35% 구간이며 보조 기준(10%)을 통과합니다. 보조 지표이지만 성장이 자본 효율을 동반하고 있음을 뒷받침하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "roe",
+            "one_liner": "ROE 평균이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표로서 주주 자본 수익성이 양호한 수준임을 확인할 수 있습니다."
+          },
+          {
+            "metric_id": "pe_ratio",
+            "one_liner": "PER 평균이 28배로 업종 중위권(40백분위)입니다. 보조 지표이나 PEG와 함께 고려 시 밸류에이션 부담이 부분적으로 존재하는 것으로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_consistency_3y",
+            "one_liner": "3개년 매출 성장 일관성이 0.72로 업종 중위권(55백분위)입니다. 보조 지표이지만 일부 종목에서 성장 변동성이 존재할 가능성이 있는 것으로 읽힙니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 13242,
+        "input_tokens": 4359,
+        "output_tokens": 832,
+        "cost_usd": 0.025557,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 7,
+        "naturalness_manual": 3,
+        "insight_manual": 3
+      },
+      "request_summary": {
+        "preset_id": "garp",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_buffett",
+      "fixture_id": "e3_focused_buffett",
+      "fixture_group": "preset_focused",
+      "preset_id": "buffett_quality_value",
+      "preset_category": "value",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 수익성'을 견조히 충족하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 2.8으로 프리셋 기준 1.5를 크게 상회하여 업종 하위 15% 수준입니다. Core 지표인 만큼 성장성 대비 밸류에이션이 프리셋 철학에 부합하지 않는 양상으로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표이지만 PEG 비율의 약세를 고려할 때, 성장이 시장 기대치를 충분히 정당화하지 못하는 것으로 해석될 여지가 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 수익성'을 견조히 충족하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 2.8으로 프리셋 기준 1.5를 크게 상회하여 업종 하위 15% 수준입니다. Core 지표인 만큼 성장성 대비 밸류에이션이 프리셋 철학에 부합하지 않는 양상으로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표이지만 PEG 비율의 약세를 고려할 때, 성장이 시장 기대치를 충분히 정당화하지 못하는 것으로 해석될 여지가 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 3649,
+        "input_tokens": 3946,
+        "output_tokens": 426,
+        "cost_usd": 0.0048608,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 3,
+        "insight_manual": 3
+      },
+      "request_summary": {
+        "preset_id": "buffett_quality_value",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_buffett",
+      "fixture_id": "e3_focused_buffett",
+      "fixture_group": "preset_focused",
+      "preset_id": "buffett_quality_value",
+      "preset_category": "value",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"ROIC 평균이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 수익'을 견조히 충족하는 구성으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 구간입니다. Core 지표로서 '합리적 가격 대비 성장' 조건을 충족하지 못하는 것으로 읽힐 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 버핏 스타일의 안정적 성장 기대치를 뒷받침하는 수준으로 읽힙니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "ROIC 평균이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 수익'을 견조히 충족하는 구성으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 구간입니다. Core 지표로서 '합리적 가격 대비 성장' 조건을 충족하지 못하는 것으로 읽힐 수 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 버핏 스타일의 안정적 성장 기대치를 뒷받침하는 수준으로 읽힙니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 8873,
+        "input_tokens": 3946,
+        "output_tokens": 386,
+        "cost_usd": 0.017627999999999998,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 3,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "buffett_quality_value",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_dividend_growth",
+      "fixture_id": "e3_focused_dividend_growth",
+      "fixture_group": "preset_focused",
+      "preset_id": "dividend_growth",
+      "preset_category": "income",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Dividend Growth의 Core 지표로서 배당 지속성의 토대가 되는 수익 창출력이 견조한 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. Dividend Growth의 Core 지표인 '합리적 가치 대비 성장' 측면에서는 현 밸류에이션이 높게 평가되는 상황으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 중위 수준(70 percentile)을 상회합니다. 보조 지표로서 배당 원천이 되는 성장 모멘텀이 적절히 유지되고 있는 것으로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Dividend Growth의 Core 지표로서 배당 지속성의 토대가 되는 수익 창출력이 견조한 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. Dividend Growth의 Core 지표인 '합리적 가치 대비 성장' 측면에서는 현 밸류에이션이 높게 평가되는 상황으로 보입니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 중위 수준(70 percentile)을 상회합니다. 보조 지표로서 배당 원천이 되는 성장 모멘텀이 적절히 유지되고 있는 것으로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 3785,
+        "input_tokens": 3941,
+        "output_tokens": 408,
+        "cost_usd": 0.0047848000000000005,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 2,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "dividend_growth",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_dividend_growth",
+      "fixture_id": "e3_focused_dividend_growth",
+      "fixture_group": "preset_focused",
+      "preset_id": "dividend_growth",
+      "preset_category": "income",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Dividend Growth의 Core 지표로서 배당 지속 가능성을 뒷받침하는 자본 효율성을 충족하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율 평균이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 구간에 위치합니다. 성장 대비 밸류에이션이 높은 편으로, 배당 성장 여력 확보 측면에서 주목이 필요한 것으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 있습니다. 보조 지표이지만 배당 증가를 지탱할 수익 기반 확장이 양호한 것으로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Dividend Growth의 Core 지표로서 배당 지속 가능성을 뒷받침하는 자본 효율성을 충족하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율 평균이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 구간에 위치합니다. 성장 대비 밸류에이션이 높은 편으로, 배당 성장 여력 확보 측면에서 주목이 필요한 것으로 보입니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 있습니다. 보조 지표이지만 배당 증가를 지탱할 수익 기반 확장이 양호한 것으로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 6885,
+        "input_tokens": 3941,
+        "output_tokens": 401,
+        "cost_usd": 0.017838,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 5,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "dividend_growth",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_quality_factor",
+      "fixture_id": "e3_focused_quality_factor",
+      "fixture_group": "preset_focused",
+      "preset_id": "quality_factor",
+      "preset_category": "factor",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Quality Factor의 Core 지표인 자본 효율성을 견조히 충족하는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하여 Core 지표 기준 미통과 상태입니다. 포트폴리오 내 일부 고성장 종목이 평가 배수를 높이고 있는 것으로 보이며, 개별 종목 검토를 통해 성장성 대비 밸류에이션 균형을 재평가할 여지가 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 ROIC의 견조함을 보조하는 신호로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Quality Factor의 Core 지표인 자본 효율성을 견조히 충족하는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하여 Core 지표 기준 미통과 상태입니다. 포트폴리오 내 일부 고성장 종목이 평가 배수를 높이고 있는 것으로 보이며, 개별 종목 검토를 통해 성장성 대비 밸류에이션 균형을 재평가할 여지가 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 ROIC의 견조함을 보조하는 신호로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 3696,
+        "input_tokens": 3940,
+        "output_tokens": 410,
+        "cost_usd": 0.004792,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "quality_factor",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_quality_factor",
+      "fixture_id": "e3_focused_quality_factor",
+      "fixture_group": "preset_focused",
+      "preset_id": "quality_factor",
+      "preset_category": "factor",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Quality Factor의 Core 지표로서 자본 효율성 측면에서 견조한 구성으로 평가될 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율이 2.8로 프리셋 기준 1.5를 상회하며 업종 하위 15% 구간에 위치합니다. Core 지표로서 성장 대비 밸류에이션 부담이 있는 것으로 읽히지만, 개별 종목별 분포 확인이 필요할 수 있습니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 양호한 성장 모멘텀을 보이는 것으로 읽힙니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Quality Factor의 Core 지표로서 자본 효율성 측면에서 견조한 구성으로 평가될 수 있습니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율이 2.8로 프리셋 기준 1.5를 상회하며 업종 하위 15% 구간에 위치합니다. Core 지표로서 성장 대비 밸류에이션 부담이 있는 것으로 읽히지만, 개별 종목별 분포 확인이 필요할 수 있습니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 양호한 성장 모멘텀을 보이는 것으로 읽힙니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 5928,
+        "input_tokens": 3940,
+        "output_tokens": 377,
+        "cost_usd": 0.017475,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "quality_factor",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_contrarian",
+      "fixture_id": "e3_focused_contrarian",
+      "fixture_group": "preset_focused",
+      "preset_id": "contrarian",
+      "preset_category": "special",
+      "model_label": "haiku",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률 평균이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Contrarian 전략의 Core 지표인 '숨겨진 가치'를 판단하는 기초로서 양호한 자본 효율성을 보여주는 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"포트폴리오 평균 PEG가 2.8으로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. Contrarian이 추구하는 '저평가된 성장성' 패턴과는 거리가 있어 개별 종목 검토를 통한 이상치 분리가 필요한 것으로 보입니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 Contrarian 전략이 요구하는 저평가 + 기초 펀더멘탈 견조함의 조건을 부분적으로 지지하는 것으로 읽힐 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률 평균이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Contrarian 전략의 Core 지표인 '숨겨진 가치'를 판단하는 기초로서 양호한 자본 효율성을 보여주는 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "포트폴리오 평균 PEG가 2.8으로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15% 수준입니다. Contrarian이 추구하는 '저평가된 성장성' 패턴과는 거리가 있어 개별 종목 검토를 통한 이상치 분리가 필요한 것으로 보입니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치하며 양호한 수준입니다. 보조 지표로서 Contrarian 전략이 요구하는 저평가 + 기초 펀더멘탈 견조함의 조건을 부분적으로 지지하는 것으로 읽힐 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-haiku-4-5",
+        "latency_ms": 3916,
+        "input_tokens": 3940,
+        "output_tokens": 458,
+        "cost_usd": 0.004984000000000001,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "contrarian",
+        "holdings_count": 0
+      }
+    },
+    {
+      "fixture": "e3_focused_contrarian",
+      "fixture_id": "e3_focused_contrarian",
+      "fixture_group": "preset_focused",
+      "preset_id": "contrarian",
+      "preset_category": "special",
+      "model_label": "sonnet",
+      "raw_content": "```json\n{\n  \"comments\": [\n    {\n      \"metric_id\": \"roic\",\n      \"one_liner\": \"투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Contrarian 관점에서 저평가된 자산 중 견고한 수익성을 갖춘 종목을 포착했을 가능성을 시사합니다.\"\n    },\n    {\n      \"metric_id\": \"peg_ratio\",\n      \"one_liner\": \"PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15%에 해당합니다. Core 지표로서 성장 대비 밸류에이션이 높은 편이나, 일부 종목의 극단값이 평균을 끌어올렸을 수 있어 개별 점검이 필요한 것으로 읽힙니다.\"\n    },\n    {\n      \"metric_id\": \"revenue_growth_yoy\",\n      \"one_liner\": \"매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 역발상 투자 대상 중에서도 성장 모멘텀을 일부 확보하고 있는 것으로 해석될 수 있습니다.\"\n    }\n  ]\n}\n```",
+      "parsed": {
+        "comments": [
+          {
+            "metric_id": "roic",
+            "one_liner": "투하자본수익률이 18%로 업종 상위 18% 구간에 위치하며 프리셋 임계값(15%)을 통과합니다. Contrarian 관점에서 저평가된 자산 중 견고한 수익성을 갖춘 종목을 포착했을 가능성을 시사합니다."
+          },
+          {
+            "metric_id": "peg_ratio",
+            "one_liner": "PEG 비율이 2.8로 프리셋 기준 1.5를 크게 상회하며 업종 하위 15%에 해당합니다. Core 지표로서 성장 대비 밸류에이션이 높은 편이나, 일부 종목의 극단값이 평균을 끌어올렸을 수 있어 개별 점검이 필요한 것으로 읽힙니다."
+          },
+          {
+            "metric_id": "revenue_growth_yoy",
+            "one_liner": "매출 성장률이 18%로 업종 상위 30% 구간에 위치합니다. 보조 지표이지만 역발상 투자 대상 중에서도 성장 모멘텀을 일부 확보하고 있는 것으로 해석될 수 있습니다."
+          }
+        ]
+      },
+      "metadata": {
+        "provider": "anthropic",
+        "model": "claude-sonnet-4-5",
+        "latency_ms": 7374,
+        "input_tokens": 3940,
+        "output_tokens": 426,
+        "cost_usd": 0.01821,
+        "fallback_from": null
+      },
+      "judgments": {
+        "schema_pass": true,
+        "schema_error": null,
+        "completeness_auto": true,
+        "comment_count": 3,
+        "naturalness_manual": 4,
+        "insight_manual": 4
+      },
+      "request_summary": {
+        "preset_id": "contrarian",
+        "holdings_count": 0
+      }
+    }
+  ],
+  "summary": {
+    "total_calls": 14,
+    "total_cost_usd": 0.1742,
+    "fallback_count": 0,
+    "schema_pass_count": 14,
+    "completeness_auto_count": 14,
+    "latency_max_ms": 13242,
+    "latency_p90_ms": 11019
+  },
+  "evaluation_guide": {
+    "naturalness": {
+      "5": "한국어 자연스러움 우수, 지표 코멘트 톤 매끄러움",
+      "4": "자연스러우나 일부 어색 표현",
+      "3": "이해 가능하나 약간 기계적",
+      "2": "어색 표현 다수",
+      "1": "이해 어려움 / 비문법적"
+    },
+    "insight": {
+      "5": "level_tag(top/strong/avg/weak/laggard)를 비자명한 통찰로 연결, 비교 맥락 포함",
+      "4": "기본 평가 + 일부 통찰",
+      "3": "수치/태그 표면 반복만",
+      "2": "단순 나열에 가까움",
+      "1": "지표 해석 부재"
+    },
+    "completeness_auto": "schema 통과 + comments ≥ 1 시 자동 True (E3 본질, 자료 #3 mirror)"
+  },
+  "manual_eval_required": [
+    "results[].judgments.naturalness_manual (1~5)",
+    "results[].judgments.insight_manual (1~5)"
+  ],
+  "cost_guard_status_at_end": {
+    "slice_id": "slice5",
+    "call_count": 14,
+    "max_calls": 50,
+    "remaining": 36,
+    "total_cost_usd": 0.1742,
+    "started_at": "2026-05-07T23:42:26.289219+00:00",
+    "records_count": 14
+  },
+  "manual_eval_completed_at": "2026-05-08",
+  "manual_eval_source": "user_input",
+  "manual_eval_summary": {
+    "user_provided": true,
+    "scored_entries": 14,
+    "lex_filter_required": "schema_pass + naturalness ≥ 3 + insight ≥ 3 + completeness_auto"
+  }
+}
