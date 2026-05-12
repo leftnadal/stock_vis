@@ -23,7 +23,7 @@ from serverless.exceptions import (
     SyncFailed,
     ThesisGenerationFailed,
 )
-from serverless.models import MarketMover, ScreenerAlert, AlertHistory
+from serverless.models import AlertHistory, InvestmentThesis, MarketMover, ScreenerAlert
 from serverless.serializers import (
     MarketMoverSerializer,
     MarketMoverListSerializer,
@@ -1695,13 +1695,7 @@ def generate_thesis(request):
 
     # 유효성 검사
     if not stocks:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NO_STOCKS',
-                'message': '종목 리스트가 비어있습니다.'
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({'stocks': ['종목 리스트가 비어있습니다.']})
 
     # 사용자 정보 (인증된 경우)
     user = request.user if request.user.is_authenticated else None
@@ -1713,9 +1707,7 @@ def generate_thesis(request):
 
     try:
         # ThesisBuilder 사용
-        logger.info(f"ThesisBuilder 초기화 시작...")
         builder = ThesisBuilder(language='ko')
-        logger.info(f"ThesisBuilder 초기화 완료, build_thesis 호출...")
 
         thesis = builder.build_thesis(
             stocks=stocks,
@@ -1725,25 +1717,19 @@ def generate_thesis(request):
             preset_ids=preset_ids
         )
 
-        # 직렬화
+        # 직렬화 — 평탄 응답
         serializer = InvestmentThesisSerializer(thesis, context={'request': request})
 
         logger.info(f"✅ 투자 테제 생성 완료: ID={thesis.id}, 제목='{thesis.title}'")
-
-        return Response({
-            'success': True,
-            'data': serializer.data
-        })
+        return Response(serializer.data)
 
     except Exception as e:
         import traceback
         error_traceback = traceback.format_exc()
         logger.error(f"❌ 투자 테제 생성 실패: {type(e).__name__}: {e}")
         logger.error(f"Traceback:\n{error_traceback}")
-        print(f"[THESIS ERROR] {type(e).__name__}: {e}")  # 콘솔 출력
-        print(f"[THESIS ERROR] Traceback:\n{error_traceback}")
 
-        # 폴백 테제 생성 시도
+        # 폴백 테제 생성 시도 — 성공 시 평탄 응답 + warning 키
         try:
             fallback_thesis = create_fallback_thesis(
                 stocks=stocks,
@@ -1752,25 +1738,15 @@ def generate_thesis(request):
                 preset_ids=preset_ids
             )
             serializer = InvestmentThesisSerializer(fallback_thesis, context={'request': request})
-
             logger.warning(f"⚠️ 폴백 테제 생성 완료: ID={fallback_thesis.id}")
-
             return Response({
-                'success': True,
-                'data': serializer.data,
-                'warning': f'LLM 생성 실패로 기본 테제가 생성되었습니다. (에러: {type(e).__name__}: {str(e)[:100]})'
+                **serializer.data,
+                'warning': f'LLM 생성 실패로 기본 테제가 생성되었습니다. (에러: {type(e).__name__}: {str(e)[:100]})',
             })
 
         except Exception as fallback_error:
             logger.exception(f"❌ 폴백 테제 생성 실패: {fallback_error}")
-
-            return Response({
-                'success': False,
-                'error': {
-                    'code': 'THESIS_GENERATION_FAILED',
-                    'message': str(e)
-                }
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise ThesisGenerationFailed(str(e))
 
 
 @api_view(['GET'])
@@ -1796,27 +1772,15 @@ def get_thesis(request, thesis_id):
 
     try:
         thesis = InvestmentThesis.objects.get(id=thesis_id)
-
-        # 조회수 증가
-        thesis.view_count += 1
-        thesis.save(update_fields=['view_count'])
-
-        # 직렬화
-        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
-
-        return Response({
-            'success': True,
-            'data': serializer.data
-        })
-
     except InvestmentThesis.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NOT_FOUND',
-                'message': f'투자 테제를 찾을 수 없습니다: ID={thesis_id}'
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f'투자 테제를 찾을 수 없습니다: ID={thesis_id}')
+
+    # 조회수 증가
+    thesis.view_count += 1
+    thesis.save(update_fields=['view_count'])
+
+    serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+    return Response(serializer.data)
 
 
 @extend_schema(operation_id='serverless_thesis_list')
@@ -1845,13 +1809,8 @@ def list_theses(request):
 
     # 인증 확인
     if not request.user.is_authenticated:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'AUTHENTICATION_REQUIRED',
-                'message': '로그인이 필요합니다.'
-            }
-        }, status=status.HTTP_401_UNAUTHORIZED)
+        from rest_framework.exceptions import NotAuthenticated
+        raise NotAuthenticated('로그인이 필요합니다.')
 
     # 쿼리 파라미터
     limit = int(request.GET.get('limit', 10))
@@ -1862,15 +1821,10 @@ def list_theses(request):
         user=request.user
     ).order_by('-created_at')[:limit]
 
-    # 직렬화
     serializer = InvestmentThesisListSerializer(theses, many=True)
-
     return Response({
-        'success': True,
-        'data': {
-            'count': len(serializer.data),
-            'theses': serializer.data
-        }
+        'count': len(serializer.data),
+        'theses': serializer.data,
     })
 
 
@@ -1896,38 +1850,20 @@ def get_shared_thesis(request, share_code):
 
     try:
         thesis = InvestmentThesis.objects.get(share_code=share_code.upper())
-
-        # 비공개 테제는 소유자만 조회 가능
-        if not thesis.is_public:
-            if not request.user.is_authenticated or thesis.user != request.user:
-                return Response({
-                    'success': False,
-                    'error': {
-                        'code': 'FORBIDDEN',
-                        'message': '비공개 테제입니다.'
-                    }
-                }, status=status.HTTP_403_FORBIDDEN)
-
-        # 조회수 증가
-        thesis.view_count += 1
-        thesis.save(update_fields=['view_count'])
-
-        # 직렬화
-        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
-
-        return Response({
-            'success': True,
-            'data': serializer.data
-        })
-
     except InvestmentThesis.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NOT_FOUND',
-                'message': f'공유 테제를 찾을 수 없습니다: {share_code}'
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f'공유 테제를 찾을 수 없습니다: {share_code}')
+
+    # 비공개 테제는 소유자만 조회 가능
+    if not thesis.is_public:
+        if not request.user.is_authenticated or thesis.user != request.user:
+            raise PermissionDenied('비공개 테제입니다.')
+
+    # 조회수 증가
+    thesis.view_count += 1
+    thesis.save(update_fields=['view_count'])
+
+    serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+    return Response(serializer.data)
 
 
 # ========================================
@@ -2030,17 +1966,14 @@ def etf_collection_status(request):
         })
 
     return Response({
-        'success': True,
-        'data': {
-            'etfs': etfs,
-            'summary': {
-                'total': len(etfs),
-                'synced': synced,
-                'pending': pending,
-                'sector_count': sector_count,
-                'theme_count': theme_count,
-            }
-        }
+        'etfs': etfs,
+        'summary': {
+            'total': len(etfs),
+            'synced': synced,
+            'pending': pending,
+            'sector_count': sector_count,
+            'theme_count': theme_count,
+        },
     })
 
 
@@ -2139,15 +2072,12 @@ def trigger_etf_holdings_sync(request):
             failed_count += 1
 
     return Response({
-        'success': True,
-        'data': {
-            'results': results,
-            'summary': {
-                'total': len(results),
-                'success': success_count,
-                'failed': failed_count,
-            }
-        }
+        'results': results,
+        'summary': {
+            'total': len(results),
+            'success': success_count,
+            'failed': failed_count,
+        },
     })
 
 
@@ -2238,15 +2168,12 @@ def resolve_etf_csv_url(request):
             failed_count += 1
 
     return Response({
-        'success': True,
-        'data': {
-            'results': results,
-            'summary': {
-                'total': len(results),
-                'resolved': resolved_count,
-                'failed': failed_count,
-            }
-        }
+        'results': results,
+        'summary': {
+            'total': len(results),
+            'resolved': resolved_count,
+            'failed': failed_count,
+        },
     })
 
 
@@ -2295,38 +2222,29 @@ def etf_holdings_api(request, etf_symbol: str):
     try:
         profile = ETFProfile.objects.get(symbol=etf_symbol)
     except ETFProfile.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'ETF_NOT_FOUND',
-                'message': f'ETF not found: {etf_symbol}'
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f'ETF not found: {etf_symbol}')
 
     holdings = ETFHolding.objects.filter(etf=profile).order_by('rank')[:limit]
 
     return Response({
-        'success': True,
-        'data': {
-            'etf': {
-                'symbol': profile.symbol,
-                'name': profile.name,
-                'tier': profile.tier,
-                'theme_id': profile.theme_id,
-                'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
-            },
-            'holdings': [
-                {
-                    'rank': h.rank,
-                    'symbol': h.stock_symbol,
-                    'weight': float(h.weight_percent),
-                    'shares': h.shares,
-                    'market_value': float(h.market_value) if h.market_value else None,
-                }
-                for h in holdings
-            ],
-            'total_count': ETFHolding.objects.filter(etf=profile).count(),
-        }
+        'etf': {
+            'symbol': profile.symbol,
+            'name': profile.name,
+            'tier': profile.tier,
+            'theme_id': profile.theme_id,
+            'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
+        },
+        'holdings': [
+            {
+                'rank': h.rank,
+                'symbol': h.stock_symbol,
+                'weight': float(h.weight_percent),
+                'shares': h.shares,
+                'market_value': float(h.market_value) if h.market_value else None,
+            }
+            for h in holdings
+        ],
+        'total_count': ETFHolding.objects.filter(etf=profile).count(),
     })
 
 
@@ -2361,12 +2279,7 @@ def theme_list_api(request):
     service = get_theme_matching_service()
     themes = service.get_all_themes()
 
-    return Response({
-        'success': True,
-        'data': {
-            'themes': themes
-        }
-    })
+    return Response({'themes': themes})
 
 
 @api_view(['GET'])
@@ -2413,26 +2326,17 @@ def theme_stocks_api(request, theme_id: str):
     theme_info = service.get_theme_info(theme_id)
 
     if not theme_info:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'THEME_NOT_FOUND',
-                'message': f'Theme not found: {theme_id}'
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f'Theme not found: {theme_id}')
 
     stocks = service.get_theme_stocks(theme_id, limit=limit, min_confidence=min_confidence)
 
     return Response({
-        'success': True,
-        'data': {
-            'theme': {
-                'id': theme_info['id'],
-                'name': theme_info['name'],
-                'icon': theme_info['icon'],
-            },
-            'stocks': stocks
-        }
+        'theme': {
+            'id': theme_info['id'],
+            'name': theme_info['name'],
+            'icon': theme_info['icon'],
+        },
+        'stocks': stocks,
     })
 
 
@@ -2471,11 +2375,8 @@ def stock_themes_api(request, symbol: str):
     themes = service.get_stock_themes(symbol)
 
     return Response({
-        'success': True,
-        'data': {
-            'symbol': symbol,
-            'themes': themes
-        }
+        'symbol': symbol,
+        'themes': themes,
     })
 
 
@@ -2517,11 +2418,8 @@ def etf_peers_api(request, symbol: str):
     peers = service.get_etf_peers(symbol, limit=limit)
 
     return Response({
-        'success': True,
-        'data': {
-            'symbol': symbol,
-            'peers': peers
-        }
+        'symbol': symbol,
+        'peers': peers,
     })
 
 
@@ -2549,10 +2447,7 @@ def refresh_theme_matches_api(request):
     service = get_theme_matching_service()
     result = service.refresh_all_matches()
 
-    return Response({
-        'success': True,
-        'data': result
-    })
+    return Response(result)
 
 
 # ========================================

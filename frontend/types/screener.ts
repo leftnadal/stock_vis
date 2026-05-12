@@ -584,18 +584,15 @@ export interface GenerateThesisPayload {
   user_notes?: string;
 }
 
-export interface ThesisResponse {
-  success: boolean;
-  data: InvestmentThesis;
-  warning?: string;  // LLM 실패 시 폴백 테제 경고
-}
+// PR-D 2026-05-12: envelope 평탄화 — InvestmentThesis 직접 + warning 선택 키.
+// generate_thesis는 LLM 실패 시 폴백 테제 + warning 메시지를 본문에 포함.
+export type ThesisResponse = InvestmentThesis & {
+  warning?: string;
+};
 
 export interface MyThesesResponse {
-  success: boolean;
-  data: {
-    count: number;
-    theses: InvestmentThesis[];
-  };
+  count: number;
+  theses: InvestmentThesis[];
 }
 
 
