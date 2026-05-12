@@ -35,15 +35,12 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor - 응답 데이터 추출 및 에러 처리
+// Response interceptor - 에러 핸들링만 (envelope 폐기: PR-A 2026-05-12)
+// 백엔드 응답이 이미 평탄(serializer.data 또는 dict 직접) → unwrap 불필요.
+// 에러 응답 표준: {detail, code?, errors?, status_code}.
+// 상세: docs/features/api_envelope/policy.md
 api.interceptors.response.use(
-  (response) => {
-    // Backend가 { success: true, data: ... } 형식으로 응답하는 경우 data 추출
-    if (response.data && response.data.success === true && response.data.data !== undefined) {
-      response.data = response.data.data
-    }
-    return response
-  },
+  (response) => response,
   (error) => {
     console.error('Response error:', error)
 
@@ -68,8 +65,7 @@ api.interceptors.response.use(
 export const basketService = {
   async getList(): Promise<Basket[]> {
     const response = await api.get('/rag/baskets/')
-    // Response interceptor already extracts data from wrapped response
-    // Handle both array and paginated response
+    // 백엔드 평탄 응답: 배열 또는 페이지네이션 객체. 둘 다 처리.
     const data = response.data
     return Array.isArray(data) ? data : (data.results ?? [])
   },
