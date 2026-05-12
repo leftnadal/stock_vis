@@ -2499,30 +2499,21 @@ def extract_relations_from_news_api(request):
         task = batch_extract_relations_from_news.delay(hours=hours, limit=limit)
 
         return Response({
-            'success': True,
-            'data': {
-                'task_id': task.id,
-                'mode': 'batch',
-                'hours': hours,
-                'limit': limit
-            }
+            'task_id': task.id,
+            'mode': 'batch',
+            'hours': hours,
+            'limit': limit,
         })
     else:
         news_id = data.get('news_id')
         if not news_id:
-            return Response({
-                'success': False,
-                'error': 'news_id is required'
-            }, status=400)
+            raise ValidationError({'news_id': ['news_id is required']})
 
         task = extract_relations_from_news.delay(news_id=news_id)
 
         return Response({
-            'success': True,
-            'data': {
-                'task_id': task.id,
-                'news_id': news_id
-            }
+            'task_id': task.id,
+            'news_id': news_id,
         })
 
 
@@ -2609,12 +2600,9 @@ def get_llm_relations_api(request, symbol):
         })
 
     return Response({
-        'success': True,
-        'data': {
-            'symbol': symbol,
-            'relations': data,
-            'count': len(data)
-        }
+        'symbol': symbol,
+        'relations': data,
+        'count': len(data),
     })
 
 
@@ -2644,11 +2632,8 @@ def sync_llm_relations_api(request):
     task = sync_llm_relations_to_graph.delay(days=days)
 
     return Response({
-        'success': True,
-        'data': {
-            'task_id': task.id,
-            'days': days
-        }
+        'task_id': task.id,
+        'days': days,
     })
 
 
@@ -2717,15 +2702,12 @@ def llm_relations_stats_api(request):
     expired = LLMExtractedRelation.objects.filter(expires_at__lt=now).count()
 
     return Response({
-        'success': True,
-        'data': {
-            'total': total,
-            'by_type': by_type,
-            'by_confidence': by_confidence,
-            'synced': synced,
-            'pending_sync': pending_sync,
-            'expired': expired
-        }
+        'total': total,
+        'by_type': by_type,
+        'by_confidence': by_confidence,
+        'synced': synced,
+        'pending_sync': pending_sync,
+        'expired': expired,
     })
 
 
@@ -2769,7 +2751,7 @@ def institutional_holdings_api(request, symbol):
     symbol = symbol.upper()
     limit = min(int(request.GET.get('limit', 20)), 50)
 
-    cache_key = f'institutional_holdings:{symbol}:{limit}'
+    cache_key = f'institutional_holdings:env2:{symbol}:{limit}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -2779,12 +2761,9 @@ def institutional_holdings_api(request, symbol):
         holders = service.get_stock_institutional_holders(symbol)[:limit]
 
         response_data = {
-            'success': True,
-            'data': {
-                'symbol': symbol,
-                'holders': holders,
-                'total_institutions': len(holders),
-            }
+            'symbol': symbol,
+            'holders': holders,
+            'total_institutions': len(holders),
         }
 
         cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -2792,10 +2771,7 @@ def institutional_holdings_api(request, symbol):
 
     except Exception as e:
         logger.exception(f"Institutional holdings 조회 실패: {symbol} - {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'INSTITUTIONAL_ERROR', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise InstitutionalError(str(e))
 
 
 @api_view(['GET'])
@@ -2828,7 +2804,7 @@ def institutional_peers_api(request, symbol):
     symbol = symbol.upper()
     limit = min(int(request.GET.get('limit', 20)), 50)
 
-    cache_key = f'institutional_peers:{symbol}:{limit}'
+    cache_key = f'institutional_peers:env2:{symbol}:{limit}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -2838,12 +2814,9 @@ def institutional_peers_api(request, symbol):
         peers = service.get_same_fund_peers(symbol, limit=limit)
 
         response_data = {
-            'success': True,
-            'data': {
-                'symbol': symbol,
-                'peers': peers,
-                'total_peers': len(peers),
-            }
+            'symbol': symbol,
+            'peers': peers,
+            'total_peers': len(peers),
         }
 
         cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -2851,10 +2824,7 @@ def institutional_peers_api(request, symbol):
 
     except Exception as e:
         logger.exception(f"Institutional peers 조회 실패: {symbol} - {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'INSTITUTIONAL_PEERS_ERROR', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise InstitutionalPeersError(str(e))
 
 
 @api_view(['POST'])
@@ -2885,19 +2855,13 @@ def institutional_sync_api(request):
         task = sync_institutional_holdings.delay()
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Institutional holdings sync started',
-                'task_id': task.id,
-            }
+            'message': 'Institutional holdings sync started',
+            'task_id': task.id,
         })
 
     except Exception as e:
         logger.exception(f"Institutional sync 트리거 실패: {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'SYNC_FAILED', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise SyncFailed(str(e))
 
 
 # ========================================
@@ -2927,7 +2891,7 @@ def get_regulatory_relations_api(request, symbol):
 
     symbol = symbol.upper()
 
-    cache_key = f'regulatory_relations:{symbol}'
+    cache_key = f'regulatory_relations:env2:{symbol}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -2950,12 +2914,9 @@ def get_regulatory_relations_api(request, symbol):
         ]
 
         response_data = {
-            'success': True,
-            'data': {
-                'symbol': symbol,
-                'relations': relations_data,
-                'count': len(relations_data),
-            }
+            'symbol': symbol,
+            'relations': relations_data,
+            'count': len(relations_data),
         }
 
         cache.set(cache_key, response_data, 3600)
@@ -2963,10 +2924,7 @@ def get_regulatory_relations_api(request, symbol):
 
     except Exception as e:
         logger.exception(f"Regulatory relations 조회 실패: {symbol} - {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'REGULATORY_ERROR', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise RegulatoryError(str(e))
 
 
 @api_view(['GET'])
@@ -2993,7 +2951,7 @@ def get_patent_relations_api(request, symbol):
 
     symbol = symbol.upper()
 
-    cache_key = f'patent_relations:{symbol}'
+    cache_key = f'patent_relations:env2:{symbol}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -3022,13 +2980,10 @@ def get_patent_relations_api(request, symbol):
         disputes_data = [serialize_rel(r) for r in disputes]
 
         response_data = {
-            'success': True,
-            'data': {
-                'symbol': symbol,
-                'citations': citations_data,
-                'disputes': disputes_data,
-                'total': len(citations_data) + len(disputes_data),
-            }
+            'symbol': symbol,
+            'citations': citations_data,
+            'disputes': disputes_data,
+            'total': len(citations_data) + len(disputes_data),
         }
 
         cache.set(cache_key, response_data, 3600)
@@ -3036,7 +2991,4 @@ def get_patent_relations_api(request, symbol):
 
     except Exception as e:
         logger.exception(f"Patent relations 조회 실패: {symbol} - {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'PATENT_ERROR', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise PatentError(str(e))

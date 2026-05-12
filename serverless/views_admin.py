@@ -398,13 +398,10 @@ class AdminActionView(APIView):
         logger.info(f"Admin action dispatched: {action_type} by {request.user} → task_id={result.id}")
 
         return Response({
-            'success': True,
-            'data': {
-                'task_id': result.id,
-                'action': action_type,
-                'label': meta['label'],
-                'message': f'{meta["label"]} 태스크가 시작되었습니다.',
-            },
+            'task_id': result.id,
+            'action': action_type,
+            'label': meta['label'],
+            'message': f'{meta["label"]} 태스크가 시작되었습니다.',
         })
 
 
