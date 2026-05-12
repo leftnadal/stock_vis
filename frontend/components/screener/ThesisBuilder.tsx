@@ -36,23 +36,21 @@ export default function ThesisBuilder({
     setWarning(null);
 
     try {
+      // PR-D envelope 평탄화: 응답이 InvestmentThesis 직접 (+ warning 선택 키).
+      // 실패 시 ApiError 형식으로 throw → axios catch로 진입.
       const response = await screenerService.generateThesis(
         stocks,
         filters,
         userNotes || undefined
       );
 
-      if (response.success) {
-        setThesis(response.data);
-        onThesisGenerated?.(response.data);
+      const { warning, ...thesisData } = response;
+      setThesis(thesisData);
+      onThesisGenerated?.(thesisData);
 
-        // 폴백 테제인 경우 경고 표시
-        if (response.warning) {
-          console.warn('Thesis warning:', response.warning);
-          setWarning(response.warning);
-        }
-      } else {
-        setError('투자 테제 생성에 실패했습니다. 다시 시도해주세요.');
+      if (warning) {
+        console.warn('Thesis warning:', warning);
+        setWarning(warning);
       }
     } catch (err: unknown) {
       console.error('Thesis generation error:', err);

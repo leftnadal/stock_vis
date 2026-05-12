@@ -26,7 +26,7 @@
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
-| **audit P0 #14 envelope 단일화 (PR-C 진행 중)** | @backend + @frontend | PR-0/A/B 머지 완료. PR-C 작성 완료 (serverless screener 14 함수 + screenerService 타입/호출 평탄화) | PR-D(thesis+etf+theme) 대기 | 2026-05-12 |
+| **audit P0 #14 envelope 단일화 (PR-D 진행 중)** | @backend + @frontend | PR-0/A/B/C 머지 완료. PR-D 작성 완료 (thesis 4 + etf 4 + theme 5 = 13 함수 + ThesisBuilder.tsx 호출자 + types/screener.ts 평탄화 + InvestmentThesis 모델 import 누락 fix) | PR-E(llm_relations + institutional + regulatory/patent + views_admin) 대기 | 2026-05-12 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | Part 1 (Step 0~5) 완료, 회귀 160 passed | Part 2 지시서 작성 + 실 LLM 호출 환경 확인 | 2026-05-07 |
 
 ---
@@ -101,8 +101,8 @@
   - [x] **PR-0 (2026-05-12, PR #15 머지)**: `config/exception_handler.py` + `config/serializers.py:ErrorSerializer` + `rag_analysis/exceptions.py`(4) + `serverless/exceptions.py`(8) + `REST_FRAMEWORK.EXCEPTION_HANDLER` 등록 + 계약 테스트 18건 PASS + `contracts/shared-types.ts:ApiError` 추가 + `test_trending_invalid_timeframe` 회귀 픽스 1건. 외부 의미 동등(기존 `raise NotFound` 41건은 `detail` 동일, `code`/`status_code` 키만 추가). 📎 `docs/features/api_envelope/policy.md`
   - [x] **PR-A (2026-05-12, PR #16 머지)**: `rag_analysis/views.py` 36건 helper 호출 → `raise` 패턴 + 평탄 응답. helper 2개 정의(28 LOC) 제거. 신규 도메인 예외 4종 추가(`BasketFull`, `DuplicateItem`, `CapacityExceeded` 400 + `CacheUnavailable` 503). `frontend/services/ragService.ts` interceptor 제거(unwrap 폐기). 전체 회귀 1869 PASS / 51 skipped / 0 failed.
   - [x] **PR-B (2026-05-12, PR #17 머지)**: `serverless/views.py` 35-886 라인 5개 소도메인 15 함수 변환 (movers + keywords + health + breadth + heatmap). 5개 캐시 키 envelope v2 마이그레이션 (`env2:` prefix). 회귀 1869 PASS.
-  - [/] **PR-C (2026-05-12, PR 작성 중)**: `serverless/views.py` screener 도메인 14 함수 변환 (presets/execute/filters/advanced/alerts/sharing/trending). `frontend/services/screenerService.ts` alerts·sharing·createPreset 응답 타입 평탄화 + `app/screener/page.tsx` sharePreset 호출 패턴 갱신. `screener_filters` 캐시 키 env2 마이그레이션. 회귀 1869 PASS.
-  - [ ] PR-D 대기: thesis + etf + theme (~41건)
+  - [x] **PR-C (2026-05-12, PR #18 머지)**: `serverless/views.py` screener 도메인 14 함수 변환 (presets/execute/filters/advanced/alerts/sharing/trending). `frontend/services/screenerService.ts` alerts·sharing·createPreset 응답 타입 평탄화 + `app/screener/page.tsx` sharePreset 호출 패턴 갱신. `screener_filters` 캐시 키 env2 마이그레이션. 회귀 1869 PASS.
+  - [/] **PR-D (2026-05-12, PR 작성 중)**: `serverless/views.py` thesis 4 + etf 4 + theme 5 = 13 함수 변환. ThesisBuilder.tsx 호출자(`response.success`/`.data`/`.warning` 분기) 평탄으로 갱신 + `types/screener.ts` `ThesisResponse`/`MyThesesResponse` 평탄 타입. `InvestmentThesis` 모델 import 누락 fix (운영 버그). 회귀 1869 PASS.
   - [ ] PR-E 대기: llm_relations + institutional + regulatory/patent + views_admin 1건
 - [ ] Neo4j 28개 잔여 메서드 점진 CB 확장 (`_run_with_cb` 헬퍼 활용, P2 priority)
 - [ ] Phase 5 후속 P1 — Thesis ValidityScore 주1회 Celery, 역제안(Contrarian Nudge), LLM 프롬프트 인젝션 sanitization, cleanup_seed_snapshots Beat 등록, indicator id 39 `DX-Y.NYB`→`DXY`
