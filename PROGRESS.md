@@ -26,7 +26,7 @@
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
-| **audit P0 #14 envelope 단일화 (PR-0 진행 중)** | @backend | PR-0 작성 완료 (exception_handler + APIException 12종 + ErrorSerializer + 계약 테스트 18건 + 1건 회귀 픽스), PR 작성 대기 | PR-A(rag_analysis 36건)는 PR-0 머지 후 착수 | 2026-05-12 |
+| **audit P0 #14 envelope 단일화 (PR-A 진행 중)** | @backend + @frontend | PR-0 머지(#15), PR-A 작성 완료 (rag_analysis/views.py 36건 변환 + helper 정의 제거 + ragService interceptor 제거 + 신규 도메인 예외 4종) | PR-B~F(serverless/views.py 117건) 대기 | 2026-05-12 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | Part 1 (Step 0~5) 완료, 회귀 160 passed | Part 2 지시서 작성 + 실 LLM 호출 환경 확인 | 2026-05-07 |
 
 ---
@@ -98,10 +98,10 @@
 - [x] ~~PR-Mobile44pt 9건~~ — **PR-#13 머지 (2026-05-12)**
 - [x] ~~PR-Pagination P0 3건~~ — **PR-#14 머지 (2026-05-12)** (validation 상태코드 + StockList/News 페이지네이션)
 - [/] **Phase 5 핵심 잔여: P1 응답 envelope 단일화** — 분할 진행 중
-  - **PR-0 (선결, 진행 중 2026-05-12)**: `config/exception_handler.py` + `config/serializers.py:ErrorSerializer` + `rag_analysis/exceptions.py`(4) + `serverless/exceptions.py`(8) + `REST_FRAMEWORK.EXCEPTION_HANDLER` 등록 + 계약 테스트 18건 PASS + `contracts/shared-types.ts:ApiError` 추가 + `test_trending_invalid_timeframe` 회귀 픽스 1건. 외부 의미 동등(기존 `raise NotFound` 41건은 `detail` 동일, `code`/`status_code` 키만 추가). 📎 `docs/features/api_envelope/policy.md`
-  - PR-A 대기: `rag_analysis/views.py` 36건 + `ragService.ts` interceptor 제거
-  - PR-B~F 대기: `serverless/views.py` 117건 도메인별 분할 + `screenerService.ts` 동시 수정
-  - PR-G 대기: `serverless/views_admin.py` 1건 + 잔여 정리
+  - [x] **PR-0 (2026-05-12, PR #15 머지)**: `config/exception_handler.py` + `config/serializers.py:ErrorSerializer` + `rag_analysis/exceptions.py`(4) + `serverless/exceptions.py`(8) + `REST_FRAMEWORK.EXCEPTION_HANDLER` 등록 + 계약 테스트 18건 PASS + `contracts/shared-types.ts:ApiError` 추가 + `test_trending_invalid_timeframe` 회귀 픽스 1건. 외부 의미 동등(기존 `raise NotFound` 41건은 `detail` 동일, `code`/`status_code` 키만 추가). 📎 `docs/features/api_envelope/policy.md`
+  - [/] **PR-A (2026-05-12, PR 작성 중)**: `rag_analysis/views.py` 36건 helper 호출 → `raise` 패턴 + 평탄 응답. helper 2개 정의(28 LOC) 제거. 신규 도메인 예외 4종 추가(`BasketFull`, `DuplicateItem`, `CapacityExceeded` 400 + `CacheUnavailable` 503). `frontend/services/ragService.ts` interceptor 제거(unwrap 폐기). 전체 회귀 1869 PASS / 51 skipped / 0 failed.
+  - [ ] PR-B~F 대기: `serverless/views.py` 117건 도메인별 분할 + `screenerService.ts` 동시 수정
+  - [ ] PR-G 대기: `serverless/views_admin.py` 1건 + 잔여 정리
 - [ ] Neo4j 28개 잔여 메서드 점진 CB 확장 (`_run_with_cb` 헬퍼 활용, P2 priority)
 - [ ] Phase 5 후속 P1 — Thesis ValidityScore 주1회 Celery, 역제안(Contrarian Nudge), LLM 프롬프트 인젝션 sanitization, cleanup_seed_snapshots Beat 등록, indicator id 39 `DX-Y.NYB`→`DXY`
 - [ ] Thesis Control FE-PR-3 (대화형 빌더) 착수 (TC-3)

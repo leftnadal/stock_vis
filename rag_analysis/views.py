@@ -1,8 +1,5 @@
 import logging
 import json
-import uuid
-import asyncio
-from datetime import datetime
 from typing import Generator
 
 from django.shortcuts import get_object_or_404
@@ -14,11 +11,21 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.renderers import BaseRenderer
 
 from drf_spectacular.utils import extend_schema
 
+from .exceptions import (
+    BasketFull,
+    CacheError,
+    CacheUnavailable,
+    CapacityExceeded,
+    CostError,
+    DuplicateItem,
+    HistoryError,
+    StatsError,
+)
 from .models import DataBasket, BasketItem, AnalysisSession, AnalysisMessage
 from .serializers import (
     DataBasketSerializer,
@@ -28,37 +35,6 @@ from .serializers import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-# ============ Helper Functions ============
-
-def create_success_response(data, meta=None):
-    """성공 응답 생성"""
-    response = {
-        "success": True,
-        "data": data,
-        "meta": meta or {
-            "request_id": str(uuid.uuid4()),
-            "timestamp": datetime.now().isoformat()
-        }
-    }
-    return response
-
-
-def create_error_response(code, message, meta=None):
-    """에러 응답 생성"""
-    response = {
-        "success": False,
-        "error": {
-            "code": code,
-            "message": message
-        },
-        "meta": meta or {
-            "request_id": str(uuid.uuid4()),
-            "timestamp": datetime.now().isoformat()
-        }
-    }
-    return response
 
 
 # ============ DataBasket Views ============
@@ -75,20 +51,16 @@ class DataBasketListCreateView(APIView):
         """사용자의 DataBasket 목록 조회"""
         baskets = DataBasket.objects.filter(user=request.user).prefetch_related('items')
         serializer = DataBasketSerializer(baskets, many=True)
-        return Response(create_success_response(serializer.data))
+        return Response(serializer.data)
 
     def post(self, request):
         """새로운 DataBasket 생성"""
         serializer = DataBasketSerializer(data=request.data)
-        if serializer.is_valid():
-            basket = serializer.save(user=request.user)
-            return Response(
-                create_success_response(DataBasketSerializer(basket).data),
-                status=status.HTTP_201_CREATED
-            )
+        serializer.is_valid(raise_exception=True)
+        basket = serializer.save(user=request.user)
         return Response(
-            create_error_response("INVALID_INPUT", str(serializer.errors)),
-            status=status.HTTP_400_BAD_REQUEST
+            DataBasketSerializer(basket).data,
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -111,19 +83,15 @@ class DataBasketDetailView(APIView):
         """DataBasket 상세 조회"""
         basket = self.get_object(pk, request.user)
         serializer = DataBasketSerializer(basket)
-        return Response(create_success_response(serializer.data))
+        return Response(serializer.data)
 
     def patch(self, request, pk):
         """DataBasket 수정"""
         basket = self.get_object(pk, request.user)
         serializer = DataBasketSerializer(basket, data=request.data, partial=True)
-        if serializer.is_valid():
-            basket = serializer.save()
-            return Response(create_success_response(DataBasketSerializer(basket).data))
-        return Response(
-            create_error_response("INVALID_INPUT", str(serializer.errors)),
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        serializer.is_valid(raise_exception=True)
+        basket = serializer.save()
+        return Response(DataBasketSerializer(basket).data)
 
     def delete(self, request, pk):
         """DataBasket 삭제"""
@@ -149,38 +117,24 @@ class DataBasketAddItemView(APIView):
 
             # 아이템 개수 제한 확인
             if not basket.can_add_item():
-                return Response(
-                    create_error_response(
-                        "BASKET_FULL",
-                        f"바구니에는 최대 {DataBasket.MAX_ITEMS}개의 아이템만 담을 수 있습니다."
-                    ),
-                    status=status.HTTP_400_BAD_REQUEST
+                raise BasketFull(
+                    f"바구니에는 최대 {DataBasket.MAX_ITEMS}개의 아이템만 담을 수 있습니다."
                 )
 
             # 아이템 생성
             serializer = BasketItemSerializer(data=request.data)
-            if serializer.is_valid():
-                try:
-                    item = serializer.save(basket=basket)
-                    return Response(
-                        create_success_response(BasketItemSerializer(item).data),
-                        status=status.HTTP_201_CREATED
-                    )
-                except Exception as e:
-                    # unique_together 제약 위반 (중복 아이템)
-                    if "unique" in str(e).lower():
-                        return Response(
-                            create_error_response(
-                                "DUPLICATE_ITEM",
-                                "해당 아이템이 이미 바구니에 담겨 있습니다."
-                            ),
-                            status=status.HTTP_400_BAD_REQUEST
-                        )
-                    raise
+            serializer.is_valid(raise_exception=True)
+            try:
+                item = serializer.save(basket=basket)
+            except Exception as e:
+                # unique_together 제약 위반 (중복 아이템)
+                if "unique" in str(e).lower():
+                    raise DuplicateItem("해당 아이템이 이미 바구니에 담겨 있습니다.")
+                raise
 
             return Response(
-                create_error_response("INVALID_INPUT", str(serializer.errors)),
-                status=status.HTTP_400_BAD_REQUEST
+                BasketItemSerializer(item).data,
+                status=status.HTTP_201_CREATED,
             )
 
 
@@ -224,12 +178,10 @@ class DataBasketClearView(APIView):
         # 모든 아이템 삭제
         deleted_count = basket.items.all().delete()[0]
 
-        return Response(
-            create_success_response({
-                "message": f"{deleted_count}개의 아이템이 삭제되었습니다.",
-                "deleted_count": deleted_count
-            })
-        )
+        return Response({
+            "message": f"{deleted_count}개의 아이템이 삭제되었습니다.",
+            "deleted_count": deleted_count,
+        })
 
 
 class DataBasketAddStockDataView(APIView):
@@ -261,28 +213,18 @@ class DataBasketAddStockDataView(APIView):
             data_types = request.data.get('data_types', [])
 
             if not symbol:
-                return Response(
-                    create_error_response("INVALID_INPUT", "종목 심볼을 입력해주세요."),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                raise ValidationError({"symbol": ["종목 심볼을 입력해주세요."]})
 
             if not data_types or not isinstance(data_types, list):
-                return Response(
-                    create_error_response("INVALID_INPUT", "데이터 타입을 선택해주세요."),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+                raise ValidationError({"data_types": ["데이터 타입을 선택해주세요."]})
 
             # 총 필요 용량 계산
             total_units = sum(DATA_UNITS.get(dt, DEFAULT_DATA_UNITS) for dt in data_types)
 
             # 용량 체크
             if not basket.can_add_units(total_units):
-                return Response(
-                    create_error_response(
-                        "CAPACITY_EXCEEDED",
-                        f"바구니 용량이 부족합니다. 필요: {total_units}u, 남은 용량: {basket.remaining_units}u"
-                    ),
-                    status=status.HTTP_400_BAD_REQUEST
+                raise CapacityExceeded(
+                    f"바구니 용량이 부족합니다. 필요: {total_units}u, 남은 용량: {basket.remaining_units}u"
                 )
 
             # 주식 정보 조회 (stocks 앱에서)
@@ -339,14 +281,14 @@ class DataBasketAddStockDataView(APIView):
                     created_items.append(item)
 
             return Response(
-                create_success_response({
+                {
                     "message": f"{symbol} 데이터가 바구니에 추가되었습니다.",
                     "items": BasketItemSerializer(created_items, many=True).data,
                     "total_units_added": total_units,
                     "basket_current_units": basket.current_units,
-                    "basket_remaining_units": basket.remaining_units
-                }),
-                status=status.HTTP_201_CREATED
+                    "basket_remaining_units": basket.remaining_units,
+                },
+                status=status.HTTP_201_CREATED,
             )
 
     def _get_stock_name(self, symbol: str) -> str:
@@ -436,31 +378,22 @@ class AnalysisSessionListCreateView(APIView):
         """사용자의 AnalysisSession 목록 조회"""
         sessions = AnalysisSession.objects.filter(user=request.user).prefetch_related('messages')
         serializer = AnalysisSessionSerializer(sessions, many=True)
-        return Response(create_success_response(serializer.data))
+        return Response(serializer.data)
 
     def post(self, request):
         """새로운 AnalysisSession 생성"""
         serializer = AnalysisSessionSerializer(data=request.data)
-        if serializer.is_valid():
-            # basket_id 검증 (해당 사용자의 basket인지 확인)
-            basket = serializer.validated_data.get('basket')
-            if basket and basket.user != request.user:
-                return Response(
-                    create_error_response(
-                        "INVALID_INPUT",
-                        "해당 DataBasket에 접근할 수 없습니다."
-                    ),
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        serializer.is_valid(raise_exception=True)
 
-            session = serializer.save(user=request.user)
-            return Response(
-                create_success_response(AnalysisSessionSerializer(session).data),
-                status=status.HTTP_201_CREATED
-            )
+        # basket_id 검증 (해당 사용자의 basket인지 확인)
+        basket = serializer.validated_data.get('basket')
+        if basket and basket.user != request.user:
+            raise PermissionDenied("해당 DataBasket에 접근할 수 없습니다.")
+
+        session = serializer.save(user=request.user)
         return Response(
-            create_error_response("INVALID_INPUT", str(serializer.errors)),
-            status=status.HTTP_400_BAD_REQUEST
+            AnalysisSessionSerializer(session).data,
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -482,7 +415,7 @@ class AnalysisSessionDetailView(APIView):
         """AnalysisSession 상세 조회"""
         session = self.get_object(pk, request.user)
         serializer = AnalysisSessionSerializer(session)
-        return Response(create_success_response(serializer.data))
+        return Response(serializer.data)
 
     def delete(self, request, pk):
         """AnalysisSession 삭제"""
@@ -506,7 +439,7 @@ class SessionMessagesView(APIView):
 
         messages = session.messages.all().order_by('created_at')
         serializer = AnalysisMessageSerializer(messages, many=True)
-        return Response(create_success_response(serializer.data))
+        return Response(serializer.data)
 
 
 class EventStreamRenderer(BaseRenderer):
@@ -547,18 +480,12 @@ class ChatStreamView(APIView):
                 pk=pk, user=request.user
             )
         except AnalysisSession.DoesNotExist:
-            return Response(
-                create_error_response("SESSION_NOT_FOUND", "세션을 찾을 수 없습니다."),
-                status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("세션을 찾을 수 없습니다.")
 
         # 메시지 검증
         message = request.data.get('message', '').strip()
         if not message:
-            return Response(
-                create_error_response("INVALID_INPUT", "질문을 입력해주세요."),
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"message": ["질문을 입력해주세요."]})
 
         # 파이프라인 버전 선택
         pipeline_version = request.query_params.get('pipeline', 'lite').lower()
@@ -659,23 +586,16 @@ class UsageStatsView(APIView):
             else:
                 # 관리자만 전체 통계 조회 가능
                 if not request.user.is_staff:
-                    return Response(
-                        create_error_response(
-                            "PERMISSION_DENIED",
-                            "전체 통계 조회 권한이 없습니다."
-                        ),
-                        status=status.HTTP_403_FORBIDDEN
-                    )
+                    raise PermissionDenied("전체 통계 조회 권한이 없습니다.")
                 stats = UsageLog.get_usage_stats(None, hours)
 
-            return Response(create_success_response(stats))
+            return Response(stats)
 
+        except (PermissionDenied, NotFound, ValidationError):
+            raise
         except Exception as e:
             logger.error(f"Failed to get usage stats: {e}")
-            return Response(
-                create_error_response("STATS_ERROR", str(e)),
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            raise StatsError(str(e))
 
 
 class CostSummaryView(APIView):
@@ -705,7 +625,7 @@ class CostSummaryView(APIView):
             from .services.cost_tracker import get_cost_tracker
             tracker = get_cost_tracker()
 
-            return Response(create_success_response({
+            return Response({
                 'daily': {
                     'cost_usd': daily_cost,
                     'limit_usd': tracker.daily_limit,
@@ -724,14 +644,11 @@ class CostSummaryView(APIView):
                     'hit_rate_24h': cache_hit_rate,
                     'hit_rate_percent': cache_hit_rate * 100
                 }
-            }))
+            })
 
         except Exception as e:
             logger.error(f"Failed to get cost summary: {e}")
-            return Response(
-                create_error_response("COST_ERROR", str(e)),
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            raise CostError(str(e))
 
 
 class CacheStatsView(APIView):
@@ -744,25 +661,15 @@ class CacheStatsView(APIView):
         """캐시 통계 조회"""
         try:
             from .services.semantic_cache_setup import get_cache_stats
-
-            stats = get_cache_stats()
-
-            return Response(create_success_response(stats))
-
         except ImportError:
-            return Response(
-                create_error_response(
-                    "CACHE_UNAVAILABLE",
-                    "시맨틱 캐시 서비스를 사용할 수 없습니다."
-                ),
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+            raise CacheUnavailable("시맨틱 캐시 서비스를 사용할 수 없습니다.")
+
+        try:
+            stats = get_cache_stats()
+            return Response(stats)
         except Exception as e:
             logger.error(f"Failed to get cache stats: {e}")
-            return Response(
-                create_error_response("CACHE_ERROR", str(e)),
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            raise CacheError(str(e))
 
 
 class UsageHistoryView(APIView):
@@ -817,7 +724,7 @@ class UsageHistoryView(APIView):
                     'created_at': log.created_at.isoformat()
                 })
 
-            return Response(create_success_response({
+            return Response({
                 'results': data,
                 'pagination': {
                     'current_page': page,
@@ -827,14 +734,11 @@ class UsageHistoryView(APIView):
                     'has_next': page_obj.has_next(),
                     'has_previous': page_obj.has_previous()
                 }
-            }))
+            })
 
         except Exception as e:
             logger.error(f"Failed to get usage history: {e}")
-            return Response(
-                create_error_response("HISTORY_ERROR", str(e)),
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            raise HistoryError(str(e))
 
 
 class ModelPricingView(APIView):
@@ -860,9 +764,9 @@ class ModelPricingView(APIView):
                 'output_per_1m_tokens': pricing['output'],
             })
 
-        return Response(create_success_response({
+        return Response({
             'pricing': pricing_list,
             'currency': 'USD',
             'unit': 'per 1M tokens',
             'last_updated': '2025-01'
-        }))
+        })
