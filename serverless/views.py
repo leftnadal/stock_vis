@@ -7,11 +7,22 @@ import logging
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework import status
 from django.core.cache import cache
 from django.utils import timezone
 from django.db import models
 
+from serverless.exceptions import (
+    GenerationFailed,
+    InstitutionalError,
+    InstitutionalPeersError,
+    PatentError,
+    RegulatoryError,
+    ScreenerError,
+    SyncFailed,
+    ThesisGenerationFailed,
+)
 from serverless.models import MarketMover, ScreenerAlert, AlertHistory
 from serverless.serializers import (
     MarketMoverSerializer,
@@ -70,16 +81,12 @@ def market_movers_api(request):
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'INVALID_TYPE',
-                'message': f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({
+            'type': [f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"]
+        })
 
-    # 캐시 확인 (키워드 포함)
-    cache_key = f'movers_with_keywords:{date_str}:{mover_type}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'movers_with_keywords:env2:{date_str}:{mover_type}'
     cached = cache.get(cache_key)
     if cached:
         logger.debug(f"캐시 HIT: {cache_key}")
@@ -89,15 +96,12 @@ def market_movers_api(request):
     processor = MarketMoversProcessor()
     movers = processor.get_movers_with_keywords(date_str, mover_type)
 
-    # 응답 데이터
+    # 평탄 응답 데이터
     response_data = {
-        'success': True,
-        'data': {
-            'date': date_str,
-            'type': mover_type,
-            'count': len(movers),
-            'movers': movers
-        }
+        'date': date_str,
+        'type': mover_type,
+        'count': len(movers),
+        'movers': movers,
     }
 
     # 캐시 저장 (5분)
@@ -127,8 +131,8 @@ def market_mover_detail(request, symbol):
     symbol = symbol.upper()
     date_str = request.GET.get('date', timezone.localdate().isoformat())
 
-    # 캐시 확인
-    cache_key = f'mover_detail:{symbol}:{date_str}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'mover_detail:env2:{symbol}:{date_str}'
     cached = cache.get(cache_key)
     if cached:
         logger.debug(f"캐시 HIT: {cache_key}")
@@ -141,22 +145,11 @@ def market_mover_detail(request, symbol):
             symbol=symbol
         )
     except MarketMover.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NOT_FOUND',
-                'message': f"Market mover not found: {symbol} on {date_str}"
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Market mover not found: {symbol} on {date_str}")
 
     # 직렬화
     serializer = MarketMoverSerializer(mover)
-
-    # 응답 데이터
-    response_data = {
-        'success': True,
-        'data': serializer.data
-    }
+    response_data = serializer.data
 
     # 캐시 저장 (5분)
     cache.set(cache_key, response_data, 300)
@@ -193,23 +186,14 @@ def trigger_sync(request):
         logger.info(f"✅ 수동 동기화 시작: task_id={task.id}, date={date_str or 'today'}")
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Sync task started',
-                'task_id': task.id,
-                'date': date_str or timezone.localdate().isoformat()
-            }
+            'message': 'Sync task started',
+            'task_id': task.id,
+            'date': date_str or timezone.localdate().isoformat(),
         })
 
     except Exception as e:
         logger.exception(f"❌ 동기화 트리거 실패: {e}")
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'SYNC_FAILED',
-                'message': str(e)
-            }
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise SyncFailed(str(e))
 
 
 @api_view(['POST'])
@@ -241,35 +225,24 @@ def sync_now(request):
         sync = MarketMoversSync()
         results = sync.sync_daily_movers(target_date=date_str)
 
-        # 캐시 무효화 (market_movers_api와 동일한 키 패턴 사용)
+        # 캐시 무효화 (envelope v2 + legacy 모두)
         today = date_str or timezone.localdate().isoformat()
         for mover_type in ['gainers', 'losers', 'actives']:
-            # 키워드 포함 캐시 (market_movers_api에서 사용)
-            cache_key = f'movers_with_keywords:{today}:{mover_type}'
-            cache.delete(cache_key)
-            # 기존 캐시 키도 삭제 (하위 호환)
-            cache.delete(f'movers:{today}:{mover_type}')
+            cache.delete(f'movers_with_keywords:env2:{today}:{mover_type}')
+            cache.delete(f'movers_with_keywords:{today}:{mover_type}')  # legacy
+            cache.delete(f'movers:{today}:{mover_type}')  # legacy
 
         logger.info(f"✅ 즉시 동기화 완료: date={today}, results={results}")
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Sync completed',
-                'date': today,
-                'results': results
-            }
+            'message': 'Sync completed',
+            'date': today,
+            'results': results,
         })
 
     except Exception as e:
         logger.exception(f"❌ 즉시 동기화 실패: {e}")
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'SYNC_FAILED',
-                'message': str(e)
-            }
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise SyncFailed(str(e))
 
 
 @api_view(['GET'])
@@ -315,12 +288,9 @@ def get_keywords(request, symbol):
         keywords = []
 
     return Response({
-        'success': True,
-        'data': {
-            'symbol': symbol,
-            'date': date_str,
-            'keywords': keywords
-        }
+        'symbol': symbol,
+        'date': date_str,
+        'keywords': keywords,
     })
 
 
@@ -372,11 +342,8 @@ def get_batch_keywords(request):
     result = {symbol: keywords_map.get(symbol, []) for symbol in symbols}
 
     return Response({
-        'success': True,
-        'data': {
-            'date': date_str,
-            'keywords': result
-        }
+        'date': date_str,
+        'keywords': result,
     })
 
 
@@ -410,13 +377,9 @@ def trigger_keyword_generation(request):
 
     # 유효성 검사
     if mover_type not in ['gainers', 'losers', 'actives']:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'INVALID_TYPE',
-                'message': f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({
+            'type': [f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"]
+        })
 
     try:
         # Celery 파이프라인 시작
@@ -425,24 +388,15 @@ def trigger_keyword_generation(request):
         logger.info(f"✅ AI 키워드 생성 시작: task_id={result.id}, type={mover_type}, date={date_str}")
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Keyword generation started',
-                'task_id': result.id,
-                'mover_type': mover_type,
-                'date': date_str
-            }
+            'message': 'Keyword generation started',
+            'task_id': result.id,
+            'mover_type': mover_type,
+            'date': date_str,
         })
 
     except Exception as e:
         logger.exception(f"❌ 키워드 생성 트리거 실패: {e}")
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'GENERATION_FAILED',
-                'message': str(e)
-            }
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise GenerationFailed(str(e))
 
 
 @api_view(['POST'])
@@ -476,22 +430,12 @@ def generate_screener_keywords(request):
     stocks = request.data.get('stocks', [])
 
     if not stocks:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NO_STOCKS',
-                'message': 'No stocks provided'
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({'stocks': ['No stocks provided']})
 
     if len(stocks) > 100:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'TOO_MANY_STOCKS',
-                'message': f'Maximum 100 stocks allowed, got {len(stocks)}'
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({
+            'stocks': [f'Maximum 100 stocks allowed, got {len(stocks)}']
+        })
 
     try:
         # Celery 태스크 시작
@@ -500,23 +444,14 @@ def generate_screener_keywords(request):
         logger.info(f"✅ 스크리너 키워드 생성 시작: task_id={result.id}, stocks={len(stocks)}")
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Screener keyword generation started',
-                'task_id': result.id,
-                'stock_count': len(stocks)
-            }
+            'message': 'Screener keyword generation started',
+            'task_id': result.id,
+            'stock_count': len(stocks),
         })
 
     except Exception as e:
         logger.exception(f"❌ 스크리너 키워드 생성 트리거 실패: {e}")
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'GENERATION_FAILED',
-                'message': str(e)
-            }
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise GenerationFailed(str(e))
 
 
 @api_view(['GET'])
@@ -542,13 +477,10 @@ def health_check(request):
     movers_count = MarketMover.objects.filter(date=today).count()
 
     return Response({
-        'success': True,
-        'data': {
-            'status': 'healthy',
-            'date': today.isoformat(),
-            'movers_count': movers_count,
-            'expected_count': 60  # gainers 20 + losers 20 + actives 20
-        }
+        'status': 'healthy',
+        'date': today.isoformat(),
+        'movers_count': movers_count,
+        'expected_count': 60,  # gainers 20 + losers 20 + actives 20
     })
 
 
@@ -594,18 +526,14 @@ def market_breadth_api(request):
         try:
             target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
-            return Response({
-                'success': False,
-                'error': {
-                    'code': 'INVALID_DATE',
-                    'message': f"Invalid date format: {date_str}. Use YYYY-MM-DD."
-                }
-            }, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({
+                'date': [f"Invalid date format: {date_str}. Use YYYY-MM-DD."]
+            })
     else:
         target_date = timezone.localdate()
 
-    # 캐시 확인
-    cache_key = f'market_breadth_api:{target_date}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'market_breadth_api:env2:{target_date}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -620,13 +548,7 @@ def market_breadth_api(request):
         is_fallback = True
 
     if not breadth:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'NOT_FOUND',
-                'message': f"Market breadth data not found"
-            }
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound("Market breadth data not found")
 
     serializer = MarketBreadthSerializer(breadth)
 
@@ -659,18 +581,15 @@ def market_breadth_api(request):
     }
 
     response_data = {
-        'success': True,
-        'data': {
-            **serializer.data,
-            'indices': indices,
-            'methodology': methodology,
-        }
+        **serializer.data,
+        'indices': indices,
+        'methodology': methodology,
     }
 
     # 폴백 데이터임을 표시
     if is_fallback:
-        response_data['data']['is_fallback'] = True
-        response_data['data']['fallback_message'] = f"오늘({target_date}) 데이터 없음. {breadth.date} 데이터 표시 중"
+        response_data['is_fallback'] = True
+        response_data['fallback_message'] = f"오늘({target_date}) 데이터 없음. {breadth.date} 데이터 표시 중"
 
     cache.set(cache_key, response_data, 300)  # 5분 캐시
     return Response(response_data)
@@ -755,8 +674,8 @@ def market_breadth_history(request):
     days = int(request.GET.get('days', 30))
     days = min(days, 90)  # 최대 90일
 
-    # 캐시 확인
-    cache_key = f'market_breadth_history:{days}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'market_breadth_history:env2:{days}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -767,12 +686,9 @@ def market_breadth_history(request):
     serializer = MarketBreadthHistorySerializer(breadths, many=True)
 
     response_data = {
-        'success': True,
-        'data': {
-            'count': len(serializer.data),
-            'days': days,
-            'history': serializer.data
-        }
+        'count': len(serializer.data),
+        'days': days,
+        'history': serializer.data,
     }
 
     cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -795,19 +711,13 @@ def trigger_breadth_sync(request):
         task = calculate_daily_market_breadth.delay(target_date=date_str)
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Market breadth sync started',
-                'task_id': task.id,
-                'date': date_str or timezone.localdate().isoformat()
-            }
+            'message': 'Market breadth sync started',
+            'task_id': task.id,
+            'date': date_str or timezone.localdate().isoformat(),
         })
     except Exception as e:
         logger.exception(f"Market breadth sync failed: {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'SYNC_FAILED', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise SyncFailed(str(e))
 
 
 # ========================================
@@ -851,15 +761,12 @@ def sector_heatmap_api(request):
         try:
             target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
-            return Response({
-                'success': False,
-                'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
-            }, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({'date': [f"Invalid date: {date_str}"]})
     else:
         target_date = timezone.localdate()
 
-    # 캐시 확인
-    cache_key = f'sector_heatmap_api:{target_date}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'sector_heatmap_api:env2:{target_date}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -879,12 +786,9 @@ def sector_heatmap_api(request):
 
     if not sectors.exists():
         return Response({
-            'success': True,
-            'data': {
-                'date': target_date.isoformat(),
-                'sectors': [],
-                'message': 'No sector data available'
-            }
+            'date': target_date.isoformat(),
+            'sectors': [],
+            'message': 'No sector data available',
         })
 
     serializer = SectorPerformanceSerializer(sectors, many=True)
@@ -896,24 +800,21 @@ def sector_heatmap_api(request):
     avg_return = sum(float(s.return_pct) for s in sectors_list) / len(sectors_list)
 
     response_data = {
-        'success': True,
-        'data': {
-            'date': actual_date.isoformat(),
-            'sectors': serializer.data,
-            'summary': {
-                'sectors_up': len(gains),
-                'sectors_down': len(losses),
-                'avg_return_pct': round(avg_return, 2),
-                'best_sector': sectors_list[0].sector if sectors_list else None,
-                'worst_sector': sectors_list[-1].sector if sectors_list else None,
-            }
-        }
+        'date': actual_date.isoformat(),
+        'sectors': serializer.data,
+        'summary': {
+            'sectors_up': len(gains),
+            'sectors_down': len(losses),
+            'avg_return_pct': round(avg_return, 2),
+            'best_sector': sectors_list[0].sector if sectors_list else None,
+            'worst_sector': sectors_list[-1].sector if sectors_list else None,
+        },
     }
 
     # 폴백 데이터임을 표시
     if is_fallback:
-        response_data['data']['is_fallback'] = True
-        response_data['data']['fallback_message'] = f"오늘({target_date}) 데이터 없음. {actual_date} 데이터 표시 중"
+        response_data['is_fallback'] = True
+        response_data['fallback_message'] = f"오늘({target_date}) 데이터 없음. {actual_date} 데이터 표시 중"
 
     cache.set(cache_key, response_data, 300)  # 5분 캐시
     return Response(response_data)
@@ -950,20 +851,14 @@ def sector_stocks_api(request, sector):
         try:
             target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         except ValueError:
-            return Response({
-                'success': False,
-                'error': {'code': 'INVALID_DATE', 'message': f"Invalid date: {date_str}"}
-            }, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError({'date': [f"Invalid date: {date_str}"]})
     else:
         target_date = timezone.localdate()
 
     service = SectorHeatmapService()
     result = service.get_top_movers_by_sector(sector, limit=limit, target_date=target_date)
 
-    return Response({
-        'success': True,
-        'data': result
-    })
+    return Response(result)
 
 
 @api_view(['POST'])
@@ -982,19 +877,13 @@ def trigger_heatmap_sync(request):
         task = calculate_daily_sector_heatmap.delay(target_date=date_str)
 
         return Response({
-            'success': True,
-            'data': {
-                'message': 'Sector heatmap sync started',
-                'task_id': task.id,
-                'date': date_str or timezone.localdate().isoformat()
-            }
+            'message': 'Sector heatmap sync started',
+            'task_id': task.id,
+            'date': date_str or timezone.localdate().isoformat(),
         })
     except Exception as e:
         logger.exception(f"Sector heatmap sync failed: {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'SYNC_FAILED', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise SyncFailed(str(e))
 
 
 # ========================================
