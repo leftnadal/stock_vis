@@ -930,11 +930,8 @@ def screener_presets_api(request):
         serializer = ScreenerPresetListSerializer(queryset, many=True)
 
         return Response({
-            'success': True,
-            'data': {
-                'count': len(serializer.data),
-                'presets': serializer.data
-            }
+            'count': len(serializer.data),
+            'presets': serializer.data,
         })
 
     elif request.method == 'POST':
@@ -942,24 +939,12 @@ def screener_presets_api(request):
             data=request.data,
             context={'request': request}
         )
-
-        if serializer.is_valid():
-            preset = serializer.save()
-            return Response({
-                'success': True,
-                'data': {
-                    'id': preset.id,
-                    'message': 'Preset created successfully'
-                }
-            }, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                'success': False,
-                'error': {
-                    'code': 'VALIDATION_ERROR',
-                    'message': serializer.errors
-                }
-            }, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        preset = serializer.save()
+        return Response(
+            {'id': preset.id, 'message': 'Preset created successfully'},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @api_view(['GET', 'PATCH', 'DELETE'])
@@ -978,10 +963,7 @@ def screener_preset_detail(request, preset_id):
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
     except ScreenerPreset.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Preset not found: {preset_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Preset not found: {preset_id}")
 
     if request.method == 'GET':
         # 사용 횟수 증가
@@ -990,53 +972,30 @@ def screener_preset_detail(request, preset_id):
         preset.save(update_fields=['use_count', 'last_used_at'])
 
         serializer = ScreenerPresetSerializer(preset, context={'request': request})
-        return Response({
-            'success': True,
-            'data': serializer.data
-        })
+        return Response(serializer.data)
 
     elif request.method == 'PATCH':
         # 소유자만 수정 가능
         if preset.user and preset.user != request.user:
-            return Response({
-                'success': False,
-                'error': {'code': 'FORBIDDEN', 'message': 'You can only edit your own presets'}
-            }, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("You can only edit your own presets")
 
         serializer = ScreenerPresetSerializer(
             preset, data=request.data, partial=True, context={'request': request}
         )
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                'success': True,
-                'data': serializer.data
-            })
-        else:
-            return Response({
-                'success': False,
-                'error': {'code': 'VALIDATION_ERROR', 'message': serializer.errors}
-            }, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     elif request.method == 'DELETE':
         # 소유자만 삭제 가능 (시스템 프리셋은 삭제 불가)
         if preset.category in ['system', 'beginner', 'intermediate']:
-            return Response({
-                'success': False,
-                'error': {'code': 'FORBIDDEN', 'message': 'Cannot delete system presets'}
-            }, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("Cannot delete system presets")
 
         if preset.user and preset.user != request.user:
-            return Response({
-                'success': False,
-                'error': {'code': 'FORBIDDEN', 'message': 'You can only delete your own presets'}
-            }, status=status.HTTP_403_FORBIDDEN)
+            raise PermissionDenied("You can only delete your own presets")
 
         preset.delete()
-        return Response({
-            'success': True,
-            'data': {'message': 'Preset deleted successfully'}
-        })
+        return Response({'message': 'Preset deleted successfully'})
 
 
 @api_view(['POST'])
@@ -1057,10 +1016,7 @@ def execute_preset(request, preset_id):
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
     except ScreenerPreset.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Preset not found: {preset_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Preset not found: {preset_id}")
 
     page = int(request.data.get('page', 1))
     page_size = int(request.data.get('page_size', 50))
@@ -1083,12 +1039,9 @@ def execute_preset(request, preset_id):
     preset.save(update_fields=['use_count', 'last_used_at'])
 
     return Response({
-        'success': True,
-        'data': {
-            'preset_id': preset_id,
-            'preset_name': preset.name,
-            **results
-        }
+        'preset_id': preset_id,
+        'preset_name': preset.name,
+        **results,
     })
 
 
@@ -1119,8 +1072,8 @@ def screener_filters_api(request):
 
     category = request.GET.get('category')
 
-    # 캐시 확인
-    cache_key = f'screener_filters:{category or "all"}'
+    # 캐시 확인 (envelope v2: 평탄 응답)
+    cache_key = f'screener_filters:env2:{category or "all"}'
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -1150,12 +1103,9 @@ def screener_filters_api(request):
     ]
 
     response_data = {
-        'success': True,
-        'data': {
-            'categories': categories,
-            'filters': filters_by_category,
-            'total_count': queryset.count()
-        }
+        'categories': categories,
+        'filters': filters_by_category,
+        'total_count': queryset.count(),
     }
 
     cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -1214,13 +1164,7 @@ def advanced_screener_api(request):
     # 필터 유효성 검증
     validation = engine.validate_filters(filters_dict)
     if not validation['valid']:
-        return Response({
-            'success': False,
-            'error': {
-                'code': 'INVALID_FILTERS',
-                'message': validation['errors']
-            }
-        }, status=status.HTTP_400_BAD_REQUEST)
+        raise ValidationError({'filters': validation['errors']})
 
     # 필터 적용
     try:
@@ -1243,20 +1187,14 @@ def advanced_screener_api(request):
             previous_url = f"{base_url}?page={results['current_page'] - 1}"
 
         return Response({
-            'success': True,
-            'data': {
-                **results,
-                'next': next_url,
-                'previous': previous_url,
-            }
+            **results,
+            'next': next_url,
+            'previous': previous_url,
         })
 
     except Exception as e:
         logger.exception(f"Screener error: {e}")
-        return Response({
-            'success': False,
-            'error': {'code': 'SCREENER_ERROR', 'message': str(e)}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        raise ScreenerError(str(e))
 
 
 # ========================================
@@ -1294,39 +1232,25 @@ def screener_alerts_api(request):
         serializer = ScreenerAlertSerializer(alerts, many=True)
 
         return Response({
-            'success': True,
-            'data': {
-                'count': len(serializer.data),
-                'alerts': serializer.data
-            }
+            'count': len(serializer.data),
+            'alerts': serializer.data,
         })
 
     elif request.method == 'POST':
         if not request.user.is_authenticated:
-            return Response({
-                'success': False,
-                'error': {'code': 'UNAUTHORIZED', 'message': 'Login required'}
-            }, status=status.HTTP_401_UNAUTHORIZED)
+            from rest_framework.exceptions import NotAuthenticated
+            raise NotAuthenticated("Login required")
 
         serializer = ScreenerAlertCreateSerializer(
             data=request.data,
             context={'request': request}
         )
-
-        if serializer.is_valid():
-            alert = serializer.save()
-            return Response({
-                'success': True,
-                'data': {
-                    'id': alert.id,
-                    'message': 'Alert created successfully'
-                }
-            }, status=status.HTTP_201_CREATED)
-        else:
-            return Response({
-                'success': False,
-                'error': {'code': 'VALIDATION_ERROR', 'message': serializer.errors}
-            }, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        alert = serializer.save()
+        return Response(
+            {'id': alert.id, 'message': 'Alert created successfully'},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @api_view(['GET', 'PATCH', 'DELETE'])
@@ -1342,47 +1266,27 @@ def screener_alert_detail(request, alert_id):
     try:
         alert = ScreenerAlert.objects.get(id=alert_id)
     except ScreenerAlert.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Alert not found: {alert_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Alert not found: {alert_id}")
 
     # 소유자 체크
     if request.user.is_authenticated and alert.user != request.user:
-        return Response({
-            'success': False,
-            'error': {'code': 'FORBIDDEN', 'message': 'Access denied'}
-        }, status=status.HTTP_403_FORBIDDEN)
+        raise PermissionDenied("Access denied")
 
     if request.method == 'GET':
         serializer = ScreenerAlertSerializer(alert, context={'request': request})
-        return Response({
-            'success': True,
-            'data': serializer.data
-        })
+        return Response(serializer.data)
 
     elif request.method == 'PATCH':
         serializer = ScreenerAlertSerializer(
             alert, data=request.data, partial=True, context={'request': request}
         )
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                'success': True,
-                'data': serializer.data
-            })
-        else:
-            return Response({
-                'success': False,
-                'error': {'code': 'VALIDATION_ERROR', 'message': serializer.errors}
-            }, status=status.HTTP_400_BAD_REQUEST)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
     elif request.method == 'DELETE':
         alert.delete()
-        return Response({
-            'success': True,
-            'data': {'message': 'Alert deleted successfully'}
-        })
+        return Response({'message': 'Alert deleted successfully'})
 
 
 @api_view(['POST'])
@@ -1396,27 +1300,18 @@ def toggle_alert(request, alert_id):
     try:
         alert = ScreenerAlert.objects.get(id=alert_id)
     except ScreenerAlert.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Alert not found: {alert_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Alert not found: {alert_id}")
 
     if request.user.is_authenticated and alert.user != request.user:
-        return Response({
-            'success': False,
-            'error': {'code': 'FORBIDDEN', 'message': 'Access denied'}
-        }, status=status.HTTP_403_FORBIDDEN)
+        raise PermissionDenied("Access denied")
 
     alert.is_active = not alert.is_active
     alert.save(update_fields=['is_active', 'updated_at'])
 
     return Response({
-        'success': True,
-        'data': {
-            'id': alert.id,
-            'is_active': alert.is_active,
-            'message': f"Alert {'activated' if alert.is_active else 'deactivated'}"
-        }
+        'id': alert.id,
+        'is_active': alert.is_active,
+        'message': f"Alert {'activated' if alert.is_active else 'deactivated'}",
     })
 
 
@@ -1433,10 +1328,7 @@ def alert_history_api(request):
         - unread_only: 읽지 않은 알림만 (기본값: false)
     """
     if not request.user.is_authenticated:
-        return Response({
-            'success': True,
-            'data': {'count': 0, 'history': [], 'unread_count': 0}
-        })
+        return Response({'count': 0, 'history': [], 'unread_count': 0})
 
     limit = int(request.GET.get('limit', 20))
     limit = min(limit, 100)
@@ -1460,12 +1352,9 @@ def alert_history_api(request):
     serializer = AlertHistoryListSerializer(history, many=True)
 
     return Response({
-        'success': True,
-        'data': {
-            'count': len(serializer.data),
-            'history': serializer.data,
-            'unread_count': unread_count
-        }
+        'count': len(serializer.data),
+        'history': serializer.data,
+        'unread_count': unread_count,
     })
 
 
@@ -1480,24 +1369,15 @@ def mark_alert_read(request, history_id):
     try:
         history = AlertHistory.objects.select_related('alert').get(id=history_id)
     except AlertHistory.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"History not found: {history_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"History not found: {history_id}")
 
     if request.user.is_authenticated and history.alert.user != request.user:
-        return Response({
-            'success': False,
-            'error': {'code': 'FORBIDDEN', 'message': 'Access denied'}
-        }, status=status.HTTP_403_FORBIDDEN)
+        raise PermissionDenied("Access denied")
 
     history.read_at = timezone.now()
     history.save(update_fields=['read_at'])
 
-    return Response({
-        'success': True,
-        'data': {'message': 'Marked as read'}
-    })
+    return Response({'message': 'Marked as read'})
 
 
 @api_view(['POST'])
@@ -1511,25 +1391,16 @@ def dismiss_alert(request, history_id):
     try:
         history = AlertHistory.objects.select_related('alert').get(id=history_id)
     except AlertHistory.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"History not found: {history_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"History not found: {history_id}")
 
     if request.user.is_authenticated and history.alert.user != request.user:
-        return Response({
-            'success': False,
-            'error': {'code': 'FORBIDDEN', 'message': 'Access denied'}
-        }, status=status.HTTP_403_FORBIDDEN)
+        raise PermissionDenied("Access denied")
 
     history.dismissed = True
     history.read_at = history.read_at or timezone.now()
     history.save(update_fields=['dismissed', 'read_at'])
 
-    return Response({
-        'success': True,
-        'data': {'message': 'Alert dismissed'}
-    })
+    return Response({'message': 'Alert dismissed'})
 
 
 # ========================================
@@ -1559,17 +1430,11 @@ def share_preset(request, preset_id):
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
     except ScreenerPreset.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Preset not found: {preset_id}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Preset not found: {preset_id}")
 
     # 소유자만 공유 가능
     if request.user.is_authenticated and preset.user and preset.user != request.user:
-        return Response({
-            'success': False,
-            'error': {'code': 'FORBIDDEN', 'message': 'You can only share your own presets'}
-        }, status=status.HTTP_403_FORBIDDEN)
+        raise PermissionDenied("You can only share your own presets")
 
     # 이미 공유 코드가 있으면 재사용
     if preset.share_code:
@@ -1594,11 +1459,8 @@ def share_preset(request, preset_id):
     logger.info(f"✅ 프리셋 공유: preset_id={preset_id}, share_code={share_code}")
 
     return Response({
-        'success': True,
-        'data': {
-            'share_code': share_code,
-            'share_url': share_url
-        }
+        'share_code': share_code,
+        'share_url': share_url,
     })
 
 
@@ -1630,10 +1492,7 @@ def get_shared_preset(request, share_code):
     try:
         preset = ScreenerPreset.objects.get(share_code=share_code, is_public=True)
     except ScreenerPreset.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Shared preset not found: {share_code}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Shared preset not found: {share_code}")
 
     # 조회수 증가 (트랜잭션 없이 안전하게)
     ScreenerPreset.objects.filter(id=preset.id).update(
@@ -1643,10 +1502,7 @@ def get_shared_preset(request, share_code):
 
     serializer = ScreenerPresetSerializer(preset, context={'request': request})
 
-    return Response({
-        'success': True,
-        'data': serializer.data
-    })
+    return Response(serializer.data)
 
 
 @api_view(['POST'])
@@ -1672,18 +1528,13 @@ def import_preset(request, share_code):
     from serverless.models import ScreenerPreset
 
     if not request.user.is_authenticated:
-        return Response({
-            'success': False,
-            'error': {'code': 'UNAUTHORIZED', 'message': 'Login required to import presets'}
-        }, status=status.HTTP_401_UNAUTHORIZED)
+        from rest_framework.exceptions import NotAuthenticated
+        raise NotAuthenticated("Login required to import presets")
 
     try:
         original_preset = ScreenerPreset.objects.get(share_code=share_code, is_public=True)
     except ScreenerPreset.DoesNotExist:
-        return Response({
-            'success': False,
-            'error': {'code': 'NOT_FOUND', 'message': f"Shared preset not found: {share_code}"}
-        }, status=status.HTTP_404_NOT_FOUND)
+        raise NotFound(f"Shared preset not found: {share_code}")
 
     # 복사본 이름 설정
     new_name = request.data.get('name')
@@ -1706,13 +1557,10 @@ def import_preset(request, share_code):
 
     logger.info(f"✅ 프리셋 복사: user={request.user.email}, original={original_preset.id}, new={new_preset.id}")
 
-    return Response({
-        'success': True,
-        'data': {
-            'id': new_preset.id,
-            'message': 'Preset imported successfully'
-        }
-    }, status=status.HTTP_201_CREATED)
+    return Response(
+        {'id': new_preset.id, 'message': 'Preset imported successfully'},
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @api_view(['GET'])
@@ -1773,12 +1621,9 @@ def trending_presets(request):
     serializer = ScreenerPresetListSerializer(presets, many=True)
 
     return Response({
-        'success': True,
-        'data': {
-            'count': len(serializer.data),
-            'days': days,
-            'presets': serializer.data
-        }
+        'count': len(serializer.data),
+        'days': days,
+        'presets': serializer.data,
     })
 
 
