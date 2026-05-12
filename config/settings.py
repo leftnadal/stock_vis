@@ -361,6 +361,9 @@ REST_FRAMEWORK = {
         'market_pulse_llm': '5/min',
     },
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    # audit P0 #14 (2026-05-12): 응답 에러 envelope 표준화
+    # {detail, code?, errors?, status_code}. 상세: docs/features/api_envelope/policy.md
+    'EXCEPTION_HANDLER': 'config.exception_handler.custom_exception_handler',
 }
 
 # drf-spectacular 설정 (Market Pulse v2 OpenAPI 자동 생성)
