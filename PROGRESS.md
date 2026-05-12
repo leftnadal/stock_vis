@@ -26,7 +26,6 @@
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
-| **audit P0 #14 envelope 단일화 (PR-E 진행 중, 최종)** | @backend + @frontend | PR-0/A/B/C/D 머지 완료. PR-E 작성 완료 (llm_relations 4 + institutional 3 + regulatory/patent 2 + views_admin 1 = 10 함수 변환 + admin 회귀 테스트 3건 픽스). audit P0 #14 envelope 마이그레이션 완료 | (envelope 작업 완료) | 2026-05-12 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | Part 1 (Step 0~5) 완료, 회귀 160 passed | Part 2 지시서 작성 + 실 LLM 호출 환경 확인 | 2026-05-07 |
 
 ---
@@ -103,7 +102,9 @@
   - [x] **PR-B (2026-05-12, PR #17 머지)**: `serverless/views.py` 35-886 라인 5개 소도메인 15 함수 변환 (movers + keywords + health + breadth + heatmap). 5개 캐시 키 envelope v2 마이그레이션 (`env2:` prefix). 회귀 1869 PASS.
   - [x] **PR-C (2026-05-12, PR #18 머지)**: `serverless/views.py` screener 도메인 14 함수 변환 (presets/execute/filters/advanced/alerts/sharing/trending). `frontend/services/screenerService.ts` alerts·sharing·createPreset 응답 타입 평탄화 + `app/screener/page.tsx` sharePreset 호출 패턴 갱신. `screener_filters` 캐시 키 env2 마이그레이션. 회귀 1869 PASS.
   - [x] **PR-D (2026-05-12, PR #19 머지)**: `serverless/views.py` thesis 4 + etf 4 + theme 5 = 13 함수 변환. ThesisBuilder.tsx 호출자(`response.success`/`.data`/`.warning` 분기) 평탄으로 갱신 + `types/screener.ts` `ThesisResponse`/`MyThesesResponse` 평탄 타입. `InvestmentThesis` 모델 import 누락 fix (운영 버그). 회귀 1869 PASS.
-  - [/] **PR-E (2026-05-12, PR 작성 중, 최종)**: `serverless/views.py` llm_relations 4 + institutional 3 + regulatory/patent 2 = 9 함수 + `serverless/views_admin.py` 1 함수 = 총 10 함수 변환. 4개 캐시 키 env2 마이그레이션 (institutional_holdings, institutional_peers, regulatory_relations, patent_relations). admin 회귀 테스트 3건 (`data['success']` 분기 제거) 픽스. **audit P0 #14 envelope 마이그레이션 완료** (PR-0~E 총 154+건 변환).
+  - [x] **PR-E (2026-05-12, PR #20 머지)**: `serverless/views.py` llm_relations 4 + institutional 3 + regulatory/patent 2 = 9 함수 + `serverless/views_admin.py` 1 함수 = 총 10 함수 변환. 4개 캐시 키 env2 마이그레이션 (institutional_holdings, institutional_peers, regulatory_relations, patent_relations). admin 회귀 테스트 3건 (`data['success']` 분기 제거) 픽스.
+  - [x] **PR-F docstring 정리 (2026-05-12, PR 작성 중)**: `serverless/views.py` docstring 안의 옛 wrap 응답 예시 43건 (`"success": true, "data": {...}`) 자동 제거. 코드 동작 무관 — 신규 view 작성 시 옛 패턴 복붙 위험 차단 + drf-spectacular 스키마 정합성. 회귀 1869 PASS.
+  - **🎉 audit P0 #14 envelope 마이그레이션 완료** (PR-0~F 총 7 PR, BE 154+건 + FE 11+개 + 캐시 11+개 + 도메인 예외 16종 + 잠복 버그 1건 fix)
 - [ ] Neo4j 28개 잔여 메서드 점진 CB 확장 (`_run_with_cb` 헬퍼 활용, P2 priority)
 - [ ] Phase 5 후속 P1 — Thesis ValidityScore 주1회 Celery, 역제안(Contrarian Nudge), LLM 프롬프트 인젝션 sanitization, cleanup_seed_snapshots Beat 등록, indicator id 39 `DX-Y.NYB`→`DXY`
 - [ ] Thesis Control FE-PR-3 (대화형 빌더) 착수 (TC-3)

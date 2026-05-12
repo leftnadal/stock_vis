@@ -56,8 +56,6 @@ def market_movers_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "date": "2025-01-06",
                 "type": "gainers",
                 "count": 20,
@@ -124,7 +122,6 @@ def market_mover_detail(request, symbol):
 
     Response:
         {
-            "success": true,
             "data": {...}
         }
     """
@@ -170,8 +167,6 @@ def trigger_sync(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "message": "Sync task started",
                 "task_id": "..."
             }
@@ -209,8 +204,6 @@ def sync_now(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "message": "Sync completed",
                 "results": {"gainers": 20, "losers": 20, "actives": 20}
             }
@@ -259,8 +252,6 @@ def get_keywords(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "AAPL",
                 "date": "2026-01-24",
                 "keywords": [
@@ -309,8 +300,6 @@ def get_batch_keywords(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "date": "2026-01-24",
                 "keywords": {
                     "AAPL": [...],
@@ -361,8 +350,6 @@ def trigger_keyword_generation(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "message": "Keyword generation started",
                 "task_id": "...",
                 "mover_type": "gainers",
@@ -417,8 +404,6 @@ def generate_screener_keywords(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "message": "Screener keyword generation started",
                 "task_id": "...",
                 "stock_count": 50
@@ -465,8 +450,6 @@ def health_check(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "status": "healthy",
                 "movers_count": 60
             }
@@ -502,8 +485,6 @@ def market_breadth_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "date": "2026-01-27",
                 "advancing_count": 1500,
                 "declining_count": 1000,
@@ -659,8 +640,6 @@ def market_breadth_history(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "count": 30,
                 "history": [...]
             }
@@ -735,8 +714,6 @@ def sector_heatmap_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "date": "2026-01-27",
                 "sectors": [
                     {
@@ -831,8 +808,6 @@ def sector_stocks_api(request, sector):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "sector": "Technology",
                 "sector_ko": "기술",
                 "top_gainers": [...],
@@ -1060,8 +1035,6 @@ def screener_filters_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "categories": [...],
                 "filters": {...}
             }
@@ -1138,8 +1111,6 @@ def advanced_screener_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "results": [...],
                 "count": 234,
                 "total_pages": 5,
@@ -1214,8 +1185,6 @@ def screener_alerts_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "count": 5,
                 "alerts": [...]
             }
@@ -1417,8 +1386,6 @@ def share_preset(request, preset_id):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "share_code": "abc12345",
                 "share_url": "https://stock-vis.com/screener/presets/shared/abc12345"
             }
@@ -1475,8 +1442,6 @@ def get_shared_preset(request, share_code):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "id": 123,
                 "name": "고배당 우량주",
                 "description": "...",
@@ -1518,8 +1483,6 @@ def import_preset(request, share_code):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "id": 456,
                 "message": "Preset imported successfully"
             }
@@ -1577,8 +1540,6 @@ def trending_presets(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "count": 10,
                 "presets": [
                     {
@@ -1670,8 +1631,6 @@ def generate_thesis(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "id": 1,
                 "title": "저평가 고수익 기술주",
                 "summary": "...",
@@ -1760,8 +1719,6 @@ def get_thesis(request, thesis_id):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "id": 1,
                 "title": "...",
                 ...
@@ -1798,8 +1755,6 @@ def list_theses(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "count": 5,
                 "theses": [...]
             }
@@ -1838,8 +1793,6 @@ def get_shared_thesis(request, share_code):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "id": 1,
                 "title": "...",
                 ...
@@ -1893,8 +1846,6 @@ def etf_collection_status(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "etfs": [
                     {
                         "symbol": "XLK",
@@ -1993,8 +1944,6 @@ def trigger_etf_holdings_sync(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "results": [
                     {
                         "etf": "XLK",
@@ -2099,8 +2048,6 @@ def resolve_etf_csv_url(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "results": [
                     {
                         "etf": "XLK",
@@ -2191,8 +2138,6 @@ def etf_holdings_api(request, etf_symbol: str):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "etf": {
                     "symbol": "SOXX",
                     "name": "iShares Semiconductor ETF",
@@ -2259,8 +2204,6 @@ def theme_list_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "themes": [
                     {
                         "id": "semiconductor",
@@ -2297,8 +2240,6 @@ def theme_stocks_api(request, theme_id: str):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "theme": {
                     "id": "semiconductor",
                     "name": "반도체",
@@ -2351,8 +2292,6 @@ def stock_themes_api(request, symbol: str):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "NVDA",
                 "themes": [
                     {
@@ -2394,8 +2333,6 @@ def etf_peers_api(request, symbol: str):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "NVDA",
                 "peers": [
                     {
@@ -2434,8 +2371,6 @@ def refresh_theme_matches_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "created": 100,
                 "updated": 50,
                 "total": 150
@@ -2466,8 +2401,6 @@ def extract_relations_from_news_api(request):
 
     Response (single):
         {
-            "success": true,
-            "data": {
                 "task_id": "celery-task-id",
                 "news_id": "uuid-string"
             }
@@ -2475,8 +2408,6 @@ def extract_relations_from_news_api(request):
 
     Response (batch):
         {
-            "success": true,
-            "data": {
                 "task_id": "celery-task-id",
                 "mode": "batch",
                 "hours": 24,
@@ -2533,8 +2464,6 @@ def get_llm_relations_api(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "MSFT",
                 "relations": [
                     {
@@ -2618,8 +2547,6 @@ def sync_llm_relations_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "task_id": "celery-task-id",
                 "days": 7
             }
@@ -2648,8 +2575,6 @@ def llm_relations_stats_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "total": 150,
                 "by_type": {
                     "ACQUIRED": 30,
@@ -2729,8 +2654,6 @@ def institutional_holdings_api(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "AAPL",
                 "holders": [
                     {
@@ -2785,8 +2708,6 @@ def institutional_peers_api(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "AAPL",
                 "peers": [
                     {
@@ -2842,8 +2763,6 @@ def institutional_sync_api(request):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "message": "Sync started",
                 "task_id": "abc-123"
             }
@@ -2879,8 +2798,6 @@ def get_regulatory_relations_api(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "AAPL",
                 "relations": [...],
                 "count": 5
@@ -2938,8 +2855,6 @@ def get_patent_relations_api(request, symbol):
 
     Response:
         {
-            "success": true,
-            "data": {
                 "symbol": "AAPL",
                 "citations": [...],
                 "disputes": [...],
