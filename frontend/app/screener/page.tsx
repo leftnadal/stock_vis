@@ -234,8 +234,8 @@ function ScreenerContent() {
   // Phase 2: 프리셋 공유 핸들러
   const handleSharePreset = useCallback(async (presetId: number) => {
     try {
-      const response = await screenerService.sharePreset(presetId);
-      return response.data;
+      // PR-C envelope 평탄화: sharePreset이 {share_code, share_url} 직접 반환
+      return await screenerService.sharePreset(presetId);
     } catch (error) {
       console.error('프리셋 공유 실패:', error);
       throw error;

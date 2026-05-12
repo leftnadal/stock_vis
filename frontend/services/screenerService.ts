@@ -77,9 +77,9 @@ export const screenerService = {
    * Screener Preset 생성
    * @param payload - 프리셋 생성 데이터
    */
-  async createPreset(payload: CreatePresetPayload): Promise<ScreenerPreset> {
+  async createPreset(payload: CreatePresetPayload): Promise<{ id: number; message: string }> {
     const response = await api.post('/serverless/presets', payload);
-    return response.data.data;
+    return response.data;
   },
 
   /**
@@ -113,13 +113,13 @@ export const screenerService = {
   // Alert System APIs (Phase 1)
   // ========================================
 
+  // PR-C 2026-05-12: envelope 평탄화 — 백엔드가 {success, data} wrap 폐기.
+  // 응답 타입은 평탄(예: {count, alerts})로 갱신.
+
   /**
    * Get user's screener alerts
    */
-  async getAlerts(): Promise<{
-    success: boolean;
-    data: { count: number; alerts: any[] };
-  }> {
+  async getAlerts(): Promise<{ count: number; alerts: any[] }> {
     const response = await api.get('/serverless/alerts');
     return response.data;
   },
@@ -138,7 +138,7 @@ export const screenerService = {
     cooldown_hours?: number;
     notify_in_app?: boolean;
     notify_email?: boolean;
-  }): Promise<{ success: boolean; data: { id: number } }> {
+  }): Promise<{ id: number; message: string }> {
     const response = await api.post('/serverless/alerts', payload);
     return response.data;
   },
@@ -157,7 +157,7 @@ export const screenerService = {
     cooldown_hours: number;
     notify_in_app: boolean;
     notify_email: boolean;
-  }>): Promise<{ success: boolean; data: any }> {
+  }>): Promise<any> {
     const response = await api.patch(`/serverless/alerts/${alertId}`, payload);
     return response.data;
   },
@@ -166,7 +166,7 @@ export const screenerService = {
    * Delete an alert
    * @param alertId - Alert ID
    */
-  async deleteAlert(alertId: number): Promise<{ success: boolean }> {
+  async deleteAlert(alertId: number): Promise<{ message: string }> {
     const response = await api.delete(`/serverless/alerts/${alertId}`);
     return response.data;
   },
@@ -176,8 +176,9 @@ export const screenerService = {
    * @param alertId - Alert ID
    */
   async toggleAlert(alertId: number): Promise<{
-    success: boolean;
-    data: { id: number; is_active: boolean };
+    id: number;
+    is_active: boolean;
+    message: string;
   }> {
     const response = await api.post(`/serverless/alerts/${alertId}/toggle`);
     return response.data;
@@ -191,10 +192,7 @@ export const screenerService = {
   async getAlertHistory(
     limit: number = 20,
     unreadOnly: boolean = false
-  ): Promise<{
-    success: boolean;
-    data: { count: number; history: any[]; unread_count: number };
-  }> {
+  ): Promise<{ count: number; history: any[]; unread_count: number }> {
     const response = await api.get('/serverless/alerts/history', {
       params: { limit, unread_only: unreadOnly },
     });
@@ -205,7 +203,7 @@ export const screenerService = {
    * Mark alert history as read
    * @param historyId - Alert history ID
    */
-  async markAlertRead(historyId: number): Promise<{ success: boolean }> {
+  async markAlertRead(historyId: number): Promise<{ message: string }> {
     const response = await api.post(`/serverless/alerts/history/${historyId}/read`);
     return response.data;
   },
@@ -214,7 +212,7 @@ export const screenerService = {
    * Dismiss alert history
    * @param historyId - Alert history ID
    */
-  async dismissAlert(historyId: number): Promise<{ success: boolean }> {
+  async dismissAlert(historyId: number): Promise<{ message: string }> {
     const response = await api.post(`/serverless/alerts/history/${historyId}/dismiss`);
     return response.data;
   },
@@ -227,10 +225,7 @@ export const screenerService = {
    * Share a preset
    * @param presetId - Preset ID to share
    */
-  async sharePreset(presetId: number): Promise<{
-    success: boolean;
-    data: { share_code: string; share_url: string; expires_at: string };
-  }> {
+  async sharePreset(presetId: number): Promise<{ share_code: string; share_url: string }> {
     const response = await api.post(`/serverless/presets/${presetId}/share`);
     return response.data;
   },
@@ -240,18 +235,14 @@ export const screenerService = {
    * @param shareCode - Share code from URL
    */
   async getSharedPreset(shareCode: string): Promise<{
-    success: boolean;
-    data: {
-      id: number;
-      name: string;
-      description_ko: string;
-      category: string;
-      filters_json: ScreenerFilters;
-      created_by_username: string;
-      created_at: string;
-      share_code: string;
-      expires_at: string;
-    };
+    id: number;
+    name: string;
+    description_ko: string;
+    category: string;
+    filters_json: ScreenerFilters;
+    created_by_username: string;
+    created_at: string;
+    share_code: string;
   }> {
     const response = await api.get(`/serverless/presets/shared/${shareCode}`);
     return response.data;
@@ -263,8 +254,8 @@ export const screenerService = {
    * @param newName - Optional custom name for the imported preset
    */
   async importPreset(shareCode: string, newName?: string): Promise<{
-    success: boolean;
-    data: ScreenerPreset;
+    id: number;
+    message: string;
   }> {
     const response = await api.post(`/serverless/presets/import/${shareCode}`, {
       custom_name: newName,
