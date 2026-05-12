@@ -143,11 +143,11 @@ class TestAdminActionView:
 
         assert response.status_code == http_status.HTTP_200_OK
         data = response.json()
-        assert data['success'] is True
-        assert data['data']['task_id'] == 'test-task-id-12345'
-        assert data['data']['action'] == 'sync_eod_prices'
-        assert data['data']['label'] == 'EOD 가격 동기화'
-        assert '태스크가 시작되었습니다' in data['data']['message']
+        # PR-E envelope 평탄화: data 평탄 (task_id/action/label/message 직접)
+        assert data['task_id'] == 'test-task-id-12345'
+        assert data['action'] == 'sync_eod_prices'
+        assert data['label'] == 'EOD 가격 동기화'
+        assert '태스크가 시작되었습니다' in data['message']
 
         # send_task 호출 확인
         mock_app.send_task.assert_called_once_with(
@@ -210,8 +210,8 @@ class TestAdminActionView:
 
         assert response.status_code == http_status.HTTP_200_OK
         data = response.json()
-        assert data['success'] is True
-        assert data['data']['task_id'] == 'test-bulk-task-id'
+        # PR-E envelope 평탄화: task_id 평탄
+        assert data['task_id'] == 'test-bulk-task-id'
 
         # send_task 호출 확인
         mock_app.send_task.assert_called_once_with(
@@ -251,7 +251,8 @@ class TestAdminActionView:
 
         assert response.status_code == http_status.HTTP_200_OK
         data = response.json()
-        assert data['success'] is True
+        # PR-E envelope 평탄화: task_id 평탄
+        assert data['task_id'] == 'test-task-with-params'
 
         # send_task에 symbol 파라미터 전달 확인
         mock_app.send_task.assert_called_once_with(
