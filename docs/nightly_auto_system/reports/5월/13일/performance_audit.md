@@ -1,355 +1,302 @@
 # API 성능 감사 보고서
 
-**대상**: stock_vis 백엔드 (Django REST Framework)
-**감사일**: 2026-05-13
-**범위**: views*.py 17개, serializers*.py 9개, models.py 7개
-**원칙**: 코드 수정 없음, 읽기 전용 분석
+**생성일**: 2026-05-13
+**감사 대상**: Backend Django REST Framework API (17개 view 파일 + 7개 model 파일 + 8개 serializer 파일)
+**감사 범위**: N+1 쿼리, 인덱스 누락, 느린 Serializer, 페이지네이션 누락
+**감사 방식**: 정적 코드 분석 (읽기 전용)
+**비교 기준**: 직전 보고서 [2026-05-11 performance_audit.md](../11일/performance_audit.md)
 
 ---
 
 ## 요약 (이슈 수 by 심각도)
 
-| 심각도 | N+1 쿼리 | 인덱스 누락 | 느린 Serializer | 페이지네이션 누락 | 합계 |
-|--------|---------|-----------|-----------------|------------------|------|
-| **HIGH** | 9 | 0 | 1 | 1 | **11** |
-| **MED**  | 4 | 3 | 2 | 5 | **14** |
-| **LOW**  | 2 | 2 | 2 | 4 | **10** |
-| **합계** | 15 | 5 | 5 | 10 | **35** |
+| 심각도 | N+1 | 인덱스 | Serializer | Pagination | 합계 |
+|--------|-----|--------|-----------|------------|------|
+| **HIGH** | 5 | 0 | 2 | 1 | 8 |
+| **MED**  | 6 | 2 | 0 | 2 | 10 |
+| **LOW**  | 2 | 2 | 0 | 2 | 6 |
+| **합계** | **13** | **4** | **2** | **5** | **24** |
 
-### 핵심 결론 (TOP 5)
+### 변동 (vs 5월 11일 보고서)
 
-1. **validation/api/views.py** — 카테고리 × 지표 × 5년 히스토리 중첩 루프에서 메트릭당 4~5쿼리 발생, 전체 카테고리 조회 시 200+ 쿼리 가능 (HIGH)
-2. **stocks/serializers.py:205-307** — `OverviewTabSerializer.get_dynamic_layers`가 6개 OneToOne + 1개 reverse FK를 prefetch 없이 호출 (HIGH, 자체 TODO 주석으로 인지됨)
-3. **chainsight/api/views.py:73-92** — `ChainSightGraphView`가 그래프 edge마다 `CoMentionEdge`/`PriceCoMovement` 쿼리 2개씩 발생 (depth=3 시 폭증, HIGH)
-4. **users/views.py** — `WatchlistBulkAddView`/`BulkRemoveView`/`UserInterestListCreateView` 모두 심볼/항목 루프 안에서 `Stock.get` + `WatchlistItem.filter.exists` + `create` 반복 (HIGH)
-5. **serverless/views.py:1887-1892** — `etf_collection_status`에서 ETFProfile마다 `ETFHolding.count()` 별도 쿼리 (HIGH, GROUP BY 한 번이면 끝)
+| 변동 | 항목 | 비고 |
+|------|------|------|
+| ✅ **해결** | `stocks/views.py:77-91 StockListAPIView` pagination | `StockListPagination(page_size=50, max=200)` 명시 적용 — 5/11 HIGH-9 해소 |
+| ✅ **해결** | `news/api/views.py:45-60 NewsViewSet` pagination | `NewsArticlePagination(page_size=20, max=100)` 명시 적용 — 5/11 MED-10 해소 |
+| ➖ **유지** | DRF 전역 `DEFAULT_PAGINATION_CLASS` 미설정 | `config/settings.py:348-364` 여전히 누락 (P0 #14 보류 정책 유지) |
+| ➖ **유지** | validation/api/views.py N+1 4건 | LeaderComparisonView / ValidationMetricsView 핫스팟 그대로 |
+| ➖ **유지** | chainsight/api/views.py N+1 | ChainSightGraphView edge enrichment 그대로 |
+| 🆕 **신규 분류** | `rag_analysis/views.py:42, 369` 페이지네이션 누락 (MED) | DataBasketListCreateView / AnalysisSessionListCreateView 무제한 응답 |
 
----
+### 톱 5 우선순위 (즉시 효과)
 
-## 상세 (이슈별 분류)
-
-## 1. N+1 쿼리 이슈
-
-### HIGH
-
-#### 1-H-1. `ValidationMetricsView._build_metric` — 메트릭 × 5년 N+1
-- **위치**: `validation/api/views.py:199-314`
-- **재현 경로**: `GET /api/v1/validation/{symbol}/metrics/?category=all`
-- **설명**:
-  ```python
-  for cat in categories:                              # 7개 카테고리
-      for mc in metric_codes:                         # 카테고리당 5~10 메트릭
-          md = MetricDefinition.objects.filter(...)   # (1) 카탈로그 조회
-          latest_snap = CompanyMetricSnapshot.objects.filter(...)  # (2)
-          delta = CompanyBenchmarkDelta.objects.filter(...)  # (3)
-          snaps = CompanyMetricSnapshot.objects.filter(...)[:5]  # (4) 5년치
-          for s in snaps:                             # 5개 스냅샷마다
-              peer_bench = PeerMetricBenchmark.objects.filter(...)  # (5) 5개 = +5쿼리
-  ```
-- **영향**: `category=all`이면 50+ 메트릭 × (4 + 5) = **약 450 쿼리/요청**
-- **권장 수정**: ① 카테고리 진입 시 `MetricDefinition.objects.in_bulk(metric_codes)`로 카탈로그 일괄 로드 ② `CompanyMetricSnapshot.filter(symbol=stock, metric_code__in=...)`로 5년치 전부 한 번에 → 파이썬에서 그룹핑 ③ `PeerMetricBenchmark` 동일하게 일괄 조회
-- **수정 난이도**: 중간 (helper 함수로 metric_code별 dict 빌드 후 인덱싱)
-
-#### 1-H-2. `LeaderComparisonView.get` — 전체 메트릭 × 회사·리더 N+1
-- **위치**: `validation/api/views.py:317-421`
-- **재현 경로**: `GET /api/v1/validation/{symbol}/leader-comparison/`
-- **설명**: `all_metrics`(30+) 각각에 대해 `MetricDefinition` + `CompanyMetricSnapshot`(회사) + `CompanyMetricSnapshot`(리더) = 메트릭당 3쿼리.
-- **영향**: 30+ × 3 = **90+ 쿼리/요청**
-- **권장 수정**: 회사·리더 둘 다 `CompanyMetricSnapshot.objects.filter(symbol__in=[stock.symbol, leader.symbol], fiscal_year=latest_fy, metric_code__in=all_codes)` 한 번에 fetch → 파이썬에서 (symbol, metric_code) dict로 그룹핑. MetricDefinition은 `in_bulk(pks=all_codes)`.
-- **수정 난이도**: 중간
-
-#### 1-H-3. `ChainSightGraphView` — edge별 market_signals 보강 N+1
-- **위치**: `chainsight/api/views.py:74-92`
-- **재현 경로**: `GET /api/v1/chainsight/{symbol}/graph/?depth=3`
-- **설명**:
-  ```python
-  for edge in result.get("edges", []):
-      cm = CoMentionEdge.objects.filter(symbol_a=a, symbol_b=b).first()  # +1
-      pc = PriceCoMovement.objects.filter(symbol_a=a, symbol_b=b).first()  # +1
-  ```
-- **영향**: depth=3 그래프는 보통 50~200 edge → **100~400 쿼리**
-- **권장 수정**: 모든 (a,b) 페어 수집 후 `CoMentionEdge.objects.filter(symbol_a__in=..., symbol_b__in=...).filter(...)` 한 번에 + dict 매핑.
-- **수정 난이도**: 쉬움
-
-#### 1-H-4. `NewsViewSet.trending` — 트렌딩 종목 별 기사 재조회
-- **위치**: `news/api/views.py:344-358`
-- **재현 경로**: `GET /api/v1/news/trending/?limit=10`
-- **설명**:
-  ```python
-  for item in trending_data:                         # 최대 10건
-      recent_articles = NewsArticle.objects.filter(
-          entities__symbol=symbol, ...
-      ).distinct().order_by('-published_at')[:3]     # 매번 새 쿼리
-  ```
-- **영향**: limit=10 → **+10 쿼리** (각 distinct + order_by)
-- **권장 수정**: 단일 쿼리에서 `entities__symbol__in=trending_symbols`로 전체 후보를 가져온 뒤, 파이썬에서 심볼별 상위 3개 슬라이싱.
-- **수정 난이도**: 쉬움
-
-#### 1-H-5. `WatchlistBulkAddView.post` — 심볼 루프 N+1
-- **위치**: `users/views.py:880-903`
-- **재현 경로**: `POST /api/v1/users/watchlists/{pk}/bulk-add/` body=`{"symbols": [...]}`
-- **설명**:
-  ```python
-  for symbol in symbols:                              # N개
-      stock = Stock.objects.get(symbol=symbol.upper())          # +1
-      WatchlistItem.objects.filter(watchlist=..., stock=stock).exists()  # +1
-      WatchlistItem.objects.create(...)               # +1
-  ```
-- **영향**: 50개 심볼 = **150 쿼리 + N transactions**
-- **권장 수정**: ① `stocks_map = Stock.objects.in_bulk([s.upper() for s in symbols], field_name='symbol')` 한 번 ② `existing = set(WatchlistItem.objects.filter(watchlist=watchlist, stock__symbol__in=...).values_list('stock_id', flat=True))` ③ `WatchlistItem.objects.bulk_create([...], ignore_conflicts=True)`
-- **수정 난이도**: 중간 (트랜잭션 + 응답 포맷 보존)
-
-#### 1-H-6. `WatchlistBulkRemoveView.post` — 동일 패턴
-- **위치**: `users/views.py:945-958`
-- **재현 경로**: `POST /api/v1/users/watchlists/{pk}/bulk-remove/`
-- **설명**: 심볼별로 `WatchlistItem.objects.get(...).delete()` 반복.
-- **권장 수정**: `WatchlistItem.objects.filter(watchlist=..., stock__symbol__in=symbols).delete()` 한 번. 삭제된 심볼 트래킹은 `values_list('stock__symbol', flat=True)`로 미리 수집.
-- **수정 난이도**: 쉬움
-
-#### 1-H-7. `OverviewTabSerializer.get_dynamic_layers` — 7개 reverse 관계 N+1
-- **위치**: `stocks/serializers.py:205-307`
-- **재현 경로**: 모든 `/api/v1/stocks/overview/{symbol}/` (단일) — 그리고 향후 리스트 시 폭증
-- **설명**: 코드 주석 자체에 "Step 2~4에서 prefetch_related + 캐싱" TODO 명시. 6개 OneToOne reverse(`overview_ko`는 select_related로 해결됨, 나머지 5개 + `category_signals` reverse FK 1개)가 prefetch 없이 호출됨.
-  ```python
-  list(obj.category_signals.all())            # +1 query
-  obj.validation_news_summary                 # +1
-  obj.sensitivity_profile                     # +1
-  obj.growth_stage                            # +1
-  obj.capital_dna                             # +1
-  obj.narrative_tag                           # +1
-  ```
-- **영향**: 단일 종목 = +6쿼리, 만약 리스트에서 사용되면 종목당 6쿼리
-- **권장 수정**: `StockOverviewAPIView`의 쿼리에 `select_related('overview_ko', 'validation_news_summary', 'sensitivity_profile', 'growth_stage', 'capital_dna', 'narrative_tag').prefetch_related('category_signals')` 추가.
-- **수정 난이도**: 중간 (역참조 가능 여부는 모델 정의 확인 필요 — OneToOne reverse는 select_related 가능)
-
-#### 1-H-8. `IndicatorComparisonView.post` — 비교 심볼별 N+1
-- **위치**: `stocks/views_indicators.py:324-371`
-- **재현 경로**: `POST /api/v1/stocks/indicators/comparison/` body=`{"symbols": [...]}`
-- **설명**: 심볼당 `Stock.objects.get()` + `DailyPrice.objects.filter()[:50]` 2 쿼리. 메트릭당 추가 계산.
-- **영향**: 10심볼 = **+20 쿼리**
-- **권장 수정**: `Stock.objects.in_bulk(symbols, field_name='symbol')`로 메타 일괄 + `DailyPrice.objects.filter(stock__symbol__in=symbols).order_by('stock', '-date')` → 파이썬 그룹핑.
-- **수정 난이도**: 쉬움
-
-#### 1-H-9. `etf_collection_status` — ETFProfile 루프 내 count
-- **위치**: `serverless/views.py:1887-1892`
-- **재현 경로**: `GET /api/v1/serverless/etf/status`
-- **설명**:
-  ```python
-  for profile in profiles:                                    # 20+개
-      holdings_count = ETFHolding.objects.filter(etf=profile).count()  # +1
-  ```
-- **영향**: 21 ETF = **+21 카운트 쿼리**
-- **권장 수정**: `ETFHolding.objects.values('etf_id').annotate(n=Count('id'))`을 미리 dict로 만들고 lookup. 또는 `profiles.annotate(holdings_count=Count('holdings'))`.
-- **수정 난이도**: 쉬움
-
-### MED
-
-#### 1-M-1. `ValidationSummaryView.get` — 랭크 메트릭 5개 × 2쿼리
-- **위치**: `validation/api/views.py:111-124`
-- **설명**: `rank_metrics`(5개) 각각에 대해 `CompanyBenchmarkDelta` + `MetricDefinition` 조회.
-- **영향**: +10 쿼리/요청 (영향 자체는 작지만 1-H-1과 함께 누적되면 큼)
-- **권장 수정**: `CompanyBenchmarkDelta.objects.filter(symbol=stock, fiscal_year=..., metric_code_id__in=rank_metrics)` + `MetricDefinition.objects.in_bulk(rank_metrics)`.
-- **수정 난이도**: 쉬움
-
-#### 1-M-2. `AdminNewsCategoryView.get` — 카테고리별 resolve_symbols
-- **위치**: `serverless/views_admin.py:475-498` → `news/models.py:638-660`
-- **설명**: `for cat in categories: cat.resolve_symbols()` — 각 호출이 `SP500Constituent.filter(sector|sub_sector=...)`을 발생시킴.
-- **영향**: 카테고리 20개 = **+20 쿼리**
-- **권장 수정**: 카테고리를 sector/sub_sector/custom 그룹으로 묶어서 각 그룹마다 1쿼리, 결과를 dict 매핑.
-- **수정 난이도**: 중간 (resolve_symbols 시그니처 변경 또는 batch 메서드 추가)
-
-#### 1-M-3. `UserInterestListCreateView.post` — 관심사 루프 N+1
-- **위치**: `users/views.py:1008-1041`
-- **설명**: `interests` 입력 N개마다 `UserInterest.objects.get_or_create()` + 내부 `_link_category`에서 `NewsCollectionCategory.objects.get_or_create()` + `interest.save()`.
-- **영향**: 5~10개 관심사 = 10~30 쿼리, 끝에 `UserInterest.objects.filter().count()` 추가.
-- **권장 수정**: ① 기존 UserInterest를 batch fetch 후 누락된 것만 `bulk_create(ignore_conflicts=True)` ② `_link_category`는 mapping dict 생성 후 호출.
-- **수정 난이도**: 중간
-
-#### 1-M-4. `news.keyword_detail` 폴백 분기 — 2단 OR + distinct
-- **위치**: `news/api/views.py:734-753`
-- **설명**: `articles_qs = articles_qs | secondary_qs`를 `.distinct()`로 묶고 다시 `order_by()[:10]`. PostgreSQL에서 UNION 후 ORDER BY가 일어나면 인덱스 미사용 풀스캔 위험.
-- **영향**: 폴백 경로 진입 시 (레거시 keyword) 대용량 NewsArticle 스캔
-- **권장 수정**: title icontains는 `pg_trgm` GIN 인덱스 검토. 또는 article_ids 마이그레이션을 우선 적용해 폴백 제거.
-- **수정 난이도**: 높음 (인덱스 추가 + 마이그레이션 일정 필요)
-
-### LOW
-
-#### 1-L-1. `ChainSightSuggestionView` co-mention union
-- **위치**: `chainsight/api/views.py:150-165`
-- **설명**: `CoMentionEdge.filter(symbol_a=symbol).union(CoMentionEdge.filter(symbol_b=symbol)).order_by('-co_mention_count')[:10]` — UNION 결과 정렬은 인덱스 사용이 어려움. 다만 결과를 10개로 제한.
-- **권장 수정**: `Q(symbol_a=symbol) | Q(symbol_b=symbol)` 단일 쿼리로 변경하면 인덱스 활용 가능.
-- **수정 난이도**: 쉬움
-
-#### 1-L-2. `NewsViewSet.sources` — 3번의 count 쿼리
-- **위치**: `news/api/views.py:480-495`
-- **설명**: 동일 기준에 대해 finnhub_count / marketaux_count / total_count 세 번 count.
-- **권장 수정**: 단일 쿼리에 conditional aggregation (`Count('id', filter=Q(finnhub_id__isnull=False))`).
-- **수정 난이도**: 쉬움
+| # | 이슈 | 파일:라인 | 영향 추정 | 수정 난이도 |
+|---|------|----------|----------|------------|
+| 1 | `LeaderComparisonView` 지표별 3-쿼리 루프 | `validation/api/views.py:355-403` | ~40 지표 × 3 = 120 쿼리/요청 | 쉬움 |
+| 2 | `ValidationMetricsView._build_metric` history 루프에서 `PeerMetricBenchmark` 단건 조회 | `validation/api/views.py:265-285` | 카테고리당 5건 × 7카테고리 = ~35 추가 쿼리 | 쉬움 |
+| 3 | DRF 전역 `DEFAULT_PAGINATION_CLASS` 미설정 | `config/settings.py:348-364` | 미적용 list endpoint(rag_analysis 등) 무제한 응답 가능 | 중간 (envelope 결정 필요) |
+| 4 | `ChainSightGraphView` 엣지마다 단건 조회 | `chainsight/api/views.py:74-87` | depth=3에서 수십~수백 엣지 × 2 쿼리 | 중간 |
+| 5 | `OverviewTabSerializer.get_dynamic_layers` 6 OneToOne + 1 reverse FK | `stocks/serializers.py:205-307` + `stocks/views.py:502-504` | 객체당 7 추가 쿼리 (단일 객체이나 핫 페이지) | 쉬움 |
 
 ---
 
-## 2. 인덱스 누락
+## 상세
 
-### MED
+### 1. N+1 쿼리 이슈
 
-#### 2-M-1. `NewsArticle.finnhub_id` / `marketaux_uuid` — 소스 필터 인덱스 누락
-- **위치**: `news/models.py:90-99`
-- **사용처**:
-  - `news/api/views.py:418` `queryset.filter(finnhub_id__isnull=False)`
-  - `news/api/views.py:420` `queryset.filter(marketaux_uuid__isnull=False)`
-  - `news/api/views.py:483, 489` 동일 패턴
-- **영향**: 뉴스 누적량 증가 시 모든 행 스캔. 현재 `published_at`만 인덱스됨.
-- **권장 수정**: `models.Index(fields=['finnhub_id'], condition=Q(finnhub_id__isnull=False), name='news_finnhub_partial')` 부분 인덱스 또는 `models.Index(fields=['finnhub_id', '-published_at'])`.
-- **수정 난이도**: 쉬움 (마이그레이션만)
+#### HIGH-1. `validation/api/views.py:355-403` — `LeaderComparisonView.get`
+**현상**: `CATEGORY_METRICS`(7개 카테고리, ~40 지표) 전체를 한 번에 펼친 뒤 매 지표마다
+- `MetricDefinition.objects.filter(pk=mc).first()` (365행)
+- 회사 `CompanyMetricSnapshot.filter(...).first()` (369행)
+- 리더 `CompanyMetricSnapshot.filter(symbol_id=leader.symbol, ...).first()` (372행)
 
-#### 2-M-2. `Watchlist.user` 단일 인덱스 — list 쿼리
-- **위치**: `users/models.py:177-182`
-- **사용처**: `users/views.py:599` `Watchlist.objects.filter(user=request.user).order_by('-updated_at')`
-- **상태**: 복합 인덱스 `(user, -updated_at)` 존재. **OK** — 인덱스 활용됨.
-- **수정 난이도**: N/A (실제로 인덱스됨, 확인용)
+지표 수 × 3 = **~120 쿼리/요청**.
 
-#### 2-M-3. `EODSignal.signals` JSONField 부분 검색
-- **위치**: `stocks/models.py:754` (EODSignal)
-- **사용처**: `stocks/views_eod.py:75` `signals__contains=[{'id': signal_id}]`
-- **영향**: PostgreSQL JSONB containment 인덱스 없으면 풀스캔
-- **권장 수정**: `models.Index(fields=['signals'], name='eod_signals_gin')` with `Index(SqlGin)` — Django 4.2+ `GinIndex(fields=['signals'])`.
-- **수정 난이도**: 쉬움 (마이그레이션)
+**권장 수정**:
+```python
+mdefs = {
+    md.pk: md
+    for md in MetricDefinition.objects.filter(pk__in=[mc for _, mc in all_metrics])
+}
+snaps = CompanyMetricSnapshot.objects.filter(
+    symbol__in=[stock, leader],
+    fiscal_year=latest_fy,
+    metric_code_id__in=[mc for _, mc in all_metrics],
+    value_status='normal',
+).select_related('metric_code')
+snap_map = {(s.symbol_id, s.metric_code_id): s for s in snaps}
+```
+**수정 난이도**: 쉬움
 
-### LOW
+#### HIGH-2. `validation/api/views.py:265-285` — `ValidationMetricsView._build_metric`
+**현상**: history 루프(line 265-267 `snaps[:5]`) 안에서 각 snap마다 `PeerMetricBenchmark.objects.filter(...).first()` 호출. 카테고리 × 지표 × 5년 → 카테고리당 ~35 쿼리 추가.
 
-#### 2-L-1. `Stock.market_capitalization` — order_by 사용 시 인덱스 정렬
-- **위치**: `stocks/models.py:98` `models.Index(fields=['market_capitalization'])`
-- **사용처**: `stocks/views.py:70, 115` `order_by('-market_capitalization')`
-- **상태**: 인덱스 존재하지만 단방향(`market_capitalization` 오름차순). DESC 정렬은 `-`로 인덱스 역스캔 가능 (PostgreSQL ok). **OK**
+**권장 수정**: `fiscal_year__in=[s.fiscal_year for s in snaps]`로 한 번에 prefetch한 뒤 dict화.
+```python
+peer_benchmarks = {
+    pb.fiscal_year: pb
+    for pb in PeerMetricBenchmark.objects.filter(
+        symbol=stock, metric_code=md,
+        fiscal_year__in=[s.fiscal_year for s in snaps],
+    )
+}
+```
+**수정 난이도**: 쉬움
 
-#### 2-L-2. `BasicFinancialStatement.fiscal_quarter` — 잘 인덱스됨
-- **위치**: `stocks/models.py:258-263` db_index=True
-- **상태**: OK
+#### HIGH-3. `validation/api/views.py:199-208` — `ValidationMetricsView._build_category`
+**현상**: 카테고리 내 `metric_code` 루프 안(line 204-205)에서 매번 `MetricDefinition.objects.filter(pk=mc).first()` 호출. category=`all` 요청 시 7 카테고리 × 평균 ~6 metric = ~42 쿼리.
 
----
+**권장 수정**: 함수 진입 시 `MetricDefinition.objects.filter(pk__in=metric_codes)`로 한 번 조회 후 dict 매핑.
+**수정 난이도**: 쉬움
 
-## 3. 느린 Serializer
+#### HIGH-4. `validation/api/views.py:112-124` — `ValidationSummaryView`
+**현상**: 5개 rank metric 루프(line 111) 안에서 매번
+- `CompanyBenchmarkDelta.objects.filter(...).first()` (line 113)
+- `MetricDefinition.objects.filter(pk=mc).first()` (line 117)
 
-### HIGH
+→ 10 쿼리.
 
-#### 3-H-1. `OverviewTabSerializer.get_dynamic_layers`
-- **위치**: `stocks/serializers.py:205-307`
-- **내용**: 1-H-7와 동일 이슈 — SerializerMethodField에서 6개 reverse OneToOne + 1 reverse FK를 읽음.
-- **권장 수정**: 1-H-7 참고. View 쪽 select_related/prefetch_related 추가 후 본 serializer는 그대로 사용 가능.
-- **수정 난이도**: 중간
+**권장 수정**: `metric_code__in=rank_metrics`로 한 번에 fetch + dict.
+**수정 난이도**: 쉬움
 
-### MED
+#### HIGH-5. `chainsight/api/views.py:74-87` — `ChainSightGraphView`
+**현상**: Neo4j에서 받은 `result.get("edges", [])` 리스트에 대해 각 edge마다
+```python
+cm = CoMentionEdge.objects.filter(symbol_a=a, symbol_b=b).first()    # line 80
+pc = PriceCoMovement.objects.filter(symbol_a=a, symbol_b=b).first()  # line 82
+```
+N개 엣지 → **2N 쿼리**. `depth=3`이면 수십~수백 엣지 가능.
 
-#### 3-M-1. `MarketMoverListSerializer` — IndicatorCalculator 재인스턴스화
-- **위치**: `serverless/serializers.py:121-137`
-- **내용**: `get_sector_alpha_display`, `get_etf_sync_display`, `get_volatility_pct_display`에서 매번 `IndicatorCalculator()` 인스턴스 생성. 메서드는 stateless로 보이므로 클래스 변수/싱글톤화 가능.
-- **권장 수정**: `IndicatorCalculator.format_sector_alpha_display(...)`를 staticmethod/classmethod로 변경. 또는 serializer 클래스 변수로 한 번만 인스턴스화.
-- **수정 난이도**: 쉬움
+**권장 수정**:
+1. edges에서 `(a, b)` 페어 set 미리 구성
+2. `CoMentionEdge.objects.filter(symbol_a__in=..., symbol_b__in=...)`로 한 번에 in-bulk 조회 (단, (a,b) 정렬 페어가 정확히 일치해야 하므로 `Q(symbol_a=..., symbol_b=...)` OR 체인 또는 `in_bulk` 후 클라이언트 필터)
+3. dict 매핑 후 edge enrichment
 
-#### 3-M-2. `MarketBreadthSerializer.get_signal_interpretation` — Service 재인스턴스화
-- **위치**: `serverless/serializers.py:208-212`
-- **내용**: `MarketBreadthService()`를 매 행마다 생성. list 응답이면 N번.
-- **권장 수정**: staticmethod로 리팩토링 또는 클래스 변수 캐싱.
-- **수정 난이도**: 쉬움
-
-### LOW
-
-#### 3-L-1. `SectorPerformanceSerializer.get_name_ko` — dict 조회만
-- **위치**: `serverless/serializers.py:419-422`
-- **내용**: `SECTOR_NAMES_KO.get(...)` 클래스 dict 조회. **부담 거의 없음** — LOW.
-
-#### 3-L-2. `NewsArticleListSerializer.entities` — prefetch 의존
-- **위치**: `news/api/serializers.py:46-64`
-- **상태**: 대부분의 호출처에서 `prefetch_related('entities')` 적용됨 (e.g. `news/api/views.py:58, 412`). NewsArticleDetailSerializer가 highlight까지 노출하지만 detail 단건이라 영향 작음.
-- **권장**: 상세 endpoint에서도 `prefetch_related('entities__highlights')` 명시 추천.
-- **수정 난이도**: 쉬움
+**수정 난이도**: 중간
 
 ---
 
-## 4. 페이지네이션 누락
+#### MED-1. `chainsight/api/views.py:662-800` — `SignalFeedView._build_chain_signals`
+**현상**: 시드 페어 후보(최대 `page_size*3` = 15개) 각각에 대해 Neo4j `shortestPath` 쿼리 1회(line 705) → 15 round-trip.
+**권장 수정**: Cypher `UNWIND $pairs AS pair MATCH p = shortestPath(...)` 한 쿼리로 통합.
+**수정 난이도**: 중간
 
-### HIGH
+#### MED-2. `news/api/views.py:337-358` — `NewsViewSet.trending`
+**현상**: trending_data 루프(line 346)에서 각 종목마다 `NewsArticle.objects.filter(entities__symbol=symbol, ...).distinct().order_by(...)[:3]` 호출. limit=10 → 10 추가 쿼리.
+**권장 수정**: 단일 `NewsArticle.objects.filter(entities__symbol__in=[...])`로 한 번에 가져온 뒤 Python에서 종목별 grouping.
+**완화 요인**: 5분 캐시(line 361)로 cache hit 시 비용 0.
+**수정 난이도**: 쉬움
 
-#### 4-H-1. `etf_collection_status` — 전체 ETFProfile 반환
-- **위치**: `serverless/views.py:1837-1928`
-- **설명**: 현재 21개지만 향후 늘면 limit/offset 없음. 더 큰 문제는 1-H-9 N+1과 결합.
-- **권장 수정**: 우선 N+1 해결, 페이지네이션은 100+ 시점에 추가.
-- **수정 난이도**: 중간
+#### MED-3. `news/api/views.py:1377-1389` — `collection_logs.by_provider`
+**현상**: `provider_agg` annotate 결과 루프 안에서 `qs.filter(provider=row['provider'], errors__gt=0).count()` 호출(line 1389) → provider 수만큼 추가 count 쿼리.
+**권장 수정**: 별도 `qs.values('provider').annotate(error_runs=Count('id', filter=Q(errors__gt=0)))`로 한 번에 집계.
+**수정 난이도**: 쉬움
 
-### MED
+#### MED-4. `stocks/views_indicators.py:324-371` — `IndicatorComparisonView.post`
+**현상**: symbols 리스트 루프(line 324)에서 symbol마다
+- `Stock.objects.get(symbol=symbol)` (line 328)
+- `DailyPrice.objects.filter(stock=stock).order_by('-date')[:50]` (line 333)
 
-#### 4-M-1. `screener_presets_api` (GET) — 전체 preset 반환
-- **위치**: `serverless/views.py:883-910`
-- **설명**: 시스템 + 공개 + 본인 preset을 union해서 distinct 반환. pagination_class 없음.
-- **권장 수정**: DRF의 `PageNumberPagination` 적용 또는 limit query param.
+N symbols → 2N 쿼리. 인증 없이 누구나 호출 가능한 POST 엔드포인트라 N 제어 안 됨(symbols 입력 길이 제한 없음).
+**권장 수정**: `Stock.objects.filter(symbol__in=symbols)` 한 번 + `DailyPrice.objects.filter(stock_id__in=symbols)` 한 번 + Python 그룹화 + symbols 길이 제한(예: 최대 20).
+**수정 난이도**: 중간
 
-#### 4-M-2. `theme_list_api` — 전체 테마 반환
-- **위치**: `serverless/views.py:2196-2225`
-- **설명**: service.get_all_themes() 호출 결과를 그대로 응답. 현재 20개 정도지만 LLM 기반 추가 가능성 있음.
+#### MED-5. `serverless/views_admin.py:475-497, 538-545, 620-622` — `AdminNewsCategoryView`
+**현상**: `for cat in categories:` 루프(line 477)에서 `cat.resolve_symbols()` 호출 → `news/models.py:638` 구현이 `SP500Constituent.objects.filter(...).values_list('symbol', ...)`로 매 카테고리마다 1 쿼리. POST(line 547) / PUT(line 622)에서도 동일하게 1회씩 발생.
+**권장 수정**: 카테고리 type별로 사전 group → 각 type에서 한 번에 모든 sector/sub_sector 값에 대해 `SP500Constituent.objects.filter(sector__in=[...]).values('sector','symbol')` 후 Python에서 카테고리별 분리.
+**완화 요인**: admin 전용 + 카테고리 수 보통 5-20개로 제한.
+**수정 난이도**: 중간
 
-#### 4-M-3. `AdminNewsCategoryView.get` — 전체 카테고리
-- **위치**: `serverless/views_admin.py:472-497`
-- **설명**: 1-M-2와 함께 발생. 페이지네이션 + bulk resolve_symbols 동시 검토 필요.
-
-#### 4-M-4. `PresetListView` (validation) — 전체 프리셋
-- **위치**: `validation/api/views.py:424-456`
-- **설명**: 종목별 preset 5~10개로 bounded. **현재로선 OK** — 향후 늘면 paginate.
-
-#### 4-M-5. `UserInterestListCreateView.get` — 전체 관심사
-- **위치**: `users/views.py:974-987`
-- **설명**: 사용자당 5~20개로 bounded. 현재 영향 작음.
-
-### LOW
-
-#### 4-L-1. `etf_holdings_api` — limit param은 있으나 표준 페이지네이션 아님
-- **위치**: `serverless/views.py:2127-2193`
-- **상태**: `limit=50` 기본, `[:limit]` 슬라이싱. ETF holdings는 통상 30~500. 표준 PageNumberPagination 적용 권장.
-
-#### 4-L-2. `StockMVPListView` — 하드코딩 `[:20]`
-- **위치**: `stocks/views_mvp.py:41`
-- **상태**: MVP 목적이라 의도된 cap. **현재 LOW**.
-
-#### 4-L-3. `SectorListView` — distinct sector 반환
-- **위치**: `stocks/views_mvp.py:190-201`
-- **상태**: GICS 11 섹터로 bounded. OK.
-
-#### 4-L-4. `SeedListView` — 일일 시드 ≤ 100건 추정
-- **위치**: `chainsight/api/views.py:309-314`
-- **상태**: bounded. OK.
+#### MED-6. `chainsight/api/views.py:148-165` — `ChainSightSuggestionView` co_mentions union
+**현상**: `CoMentionEdge.objects.filter(symbol_a=symbol).union(...filter(symbol_b=symbol))` 후(line 150-154) 다시 Python에서 each cm 객체 비교(line 157-159)로 ticker 결정. SQL UNION 자체는 한 번이라 N+1은 아니나, ORM-level 객체 hydration이 두 쿼리셋의 합집합으로 늘어남.
+**권장 수정**: `Q(symbol_a=symbol) | Q(symbol_b=symbol)` 단일 쿼리로 단순화 + `values('symbol_a','symbol_b','co_mention_count')`로 ORM 객체 비용 제거.
+**수정 난이도**: 쉬움
 
 ---
 
-## 부록: 정상 패턴 (참고용)
+#### LOW-1. `stocks/serializers.py:398-409` — `WatchListStockSerializer.get_latest_price` / `get_chart_data`
+**현상**: serializer가 객체마다 `DailyPrice.objects.filter(stock=obj).order_by('-date').first()` + `[:7]` 호출. 함수 본문이 `return` 없이 끝나(line 409) **dead code**로 추정.
+**권장 수정**: 사용처 확인 후 (a) 미사용이면 제거, (b) 사용 중이면 view에서 `Prefetch('dailyprice_set', queryset=DailyPrice.objects.order_by('-date'))`로 미리 가져옴.
+**수정 난이도**: 쉬움
 
-다음은 N+1 방어가 잘 적용된 사례:
-
-- `users/views.py:358, 406, 819` — `select_related('stock')` 적용된 Portfolio/Watchlist 조회
-- `news/api/views.py:58, 412` — `prefetch_related('entities')` 적용
-- `serverless/views.py:1309, 1339, 1361` — `select_related('alert')` AlertHistory
-- `stocks/views_eod.py:77` — `select_related('stock')` EODSignal
-- `rag_analysis/views.py:52, 78, 379, 410` — Basket/Session에 `prefetch_related('items'|'messages')`
-
-다음은 인덱스가 잘 설계된 모델:
-
-- `LLMExtractedRelation` (`serverless/models.py:1309-1321`) — 5개 복합 인덱스
-- `NewsArticle` (`news/models.py:189-198`) — 5개 복합 인덱스 (published_at × category/source/sentiment/importance/llm_analyzed)
-- `EODSignal` 추정 — 본 감사에선 확인하지 못함 (필요 시 별도 점검)
+#### LOW-2. `stocks/views.py:830-884` — `StockCompleteDataAPIView.get`
+**현상**: 단일 종목에 대해 3개 FinancialStatement 모델별 분리 쿼리(line 861, 866, 871) + serializer 직렬화 6회. 단일 객체이고 종목 수 제한 없으나 1 객체당 발생이므로 N+1은 아님. 다만 `select_related('overview_ko')` 등 OverviewTabSerializer가 요구하는 prefetch가 빠져 있어 6 OneToOne 추가 쿼리 발생(`get_dynamic_layers` 경유). HIGH-6 참조.
+**권장 수정**: HIGH-6 수정 시 함께 처리.
+**수정 난이도**: 쉬움
 
 ---
 
-## 권장 수정 우선순위
+### 2. 인덱스 누락
 
-| 순위 | 이슈 | 예상 효과 | 난이도 |
-|------|------|----------|-------|
-| 1 | 1-H-3 (ChainSightGraphView edge 보강) | depth=3 응답 100~400쿼리 → 2쿼리 | 쉬움 |
-| 2 | 1-H-9 (etf_collection_status count) | 21쿼리 → 1쿼리 | 쉬움 |
-| 3 | 1-H-5 / 1-H-6 (Watchlist bulk add/remove) | 50심볼 시 150쿼리 → 4쿼리 | 중간 |
-| 4 | 1-H-4 (trending) | 10쿼리 → 1쿼리 | 쉬움 |
-| 5 | 1-H-2 (LeaderComparison) | 90쿼리 → 4쿼리 | 중간 |
-| 6 | 1-H-1 (ValidationMetrics) | 450쿼리 → 7~10쿼리 | 중간 |
-| 7 | 1-H-7 (OverviewSerializer dynamic_layers) | +6쿼리 → 0 (단건 기준) | 중간 |
-| 8 | 1-H-8 (IndicatorComparison) | 20쿼리 → 2쿼리 | 쉬움 |
-| 9 | 1-M-2 (AdminNewsCategory resolve_symbols) | N+1 → 2쿼리 | 중간 |
-| 10 | 2-M-1 (NewsArticle source 부분 인덱스) | filter 풀스캔 방지 | 쉬움 |
+#### MED-7. `users/models.py:249-265` — `UserInterest` 인덱스 부재
+**현상**: 필드 `user`, `interest_type`, `value` 중 인덱스가 없고 `unique_together` 제약만 존재(`db_table='users_interest'`, line 264-265). `users/views.py:974-985 UserInterestListCreateView.get`이 `UserInterest.objects.filter(user=request.user).order_by('-created_at')`로 정렬 조회.
 
-**전체 통계**: HIGH 11건, MED 14건, LOW 10건 — 총 35건 식별.
+`unique_together`는 PostgreSQL에서 unique index를 생성하므로 `(user, interest_type, value)` 순으로 인덱스가 존재하긴 하나, prefix `user`만 사용하는 정렬은 효율적이지만 `created_at` 정렬에는 도움이 안 됨.
+
+**권장 수정**:
+```python
+indexes = [
+    models.Index(fields=['user', '-created_at']),
+]
+```
+**수정 난이도**: 쉬움 (migration 추가)
+
+#### MED-8. `serverless/models.py` 알림 도메인 — `AlertHistory` 인덱스 점검
+**현상**: line 789-790에서 `Index(fields=['alert', '-triggered_at'])` 및 `Index(fields=['triggered_at'])` 존재. `serverless/views.py`에서 `read_at__isnull=True, dismissed=False`로 추가 필터를 사용한다면 부분 인덱스 검토 가치.
+**확인 필요**: 실제 query plan 측정 후 `(alert, read_at, dismissed)` 복합 또는 부분 인덱스 도입 여부 결정.
+**수정 난이도**: 중간 (EXPLAIN 필요)
+
+#### LOW-3. `stocks/models.py:90-91` — `Stock.last_api_call` 인덱스 부재
+**현상**: `last_api_call` 필드(line 90)에 `db_index` 없음. Stock sync 스케줄러가 `last_api_call__lt=...` 형태로 필터한다면 인덱스 필요. 현재 view에서 직접 필터 흔적은 없으나 task 영역에서 사용 가능성.
+**권장 수정**: 사용처 확인 후 `db_index=True` 추가. 미사용이면 무시.
+**수정 난이도**: 쉬움
+
+#### LOW-4. `news/models.py:131-138` — `NewsArticle.is_press_release` / `is_official` 인덱스 부재
+**현상**: 필터 가능성은 있으나 현재 views에서 적극 사용 흔적 없음. 기존 composite index `(-published_at, category)` 등으로 대체 가능.
+**권장 수정**: 쿼리 사용처 확인 후 필요 시 부분 인덱스(`condition=Q(is_press_release=True)`) 도입.
+**수정 난이도**: 중간
+
+---
+
+### 3. 느린 Serializer (SerializerMethodField 추가 쿼리 패턴)
+
+#### HIGH-6. `stocks/serializers.py:205-307` — `OverviewTabSerializer.get_dynamic_layers`
+**현상**: 단일 Stock 객체에 대해 6개 OneToOne (`overview_ko`, `sensitivity_profile`, `growth_stage`, `capital_dna`, `narrative_tag`, `validation_news_summary`) + 1개 reverse FK(`category_signals`) 접근.
+
+`stocks/views.py:502-504 StockOverviewAPIView.get`에서 현재 `select_related('overview_ko')`만 적용. 코드 주석(line 501)도 `TODO: CategoryScore 등 ManyToOne은 prefetch_related로 별도 처리 필요 (Step 2~4)`로 명시. **나머지 5개 OneToOne + 1개 reverse FK는 미적용**.
+
+객체당 추가 6 쿼리. 캐시 hit 시 0이지만 첫 호출/캐시 invalid 시점에 발생.
+**권장 수정**:
+```python
+stock = Stock.objects.select_related(
+    'overview_ko', 'sensitivity_profile', 'growth_stage',
+    'capital_dna', 'narrative_tag', 'validation_news_summary',
+).prefetch_related('category_signals').filter(symbol=symbol).first()
+```
+또한 `StockCompleteDataAPIView`(line 830) 및 `StockDetailView`(line 117 — Template 기반)도 동일 패턴 적용 필요.
+**수정 난이도**: 쉬움
+
+#### HIGH-7. `stocks/serializers.py:398-409` — `WatchListStockSerializer`
+**현상**: LOW-1과 동일. 단 사용 흔적이 있다면 list endpoint에서 객체당 2 쿼리.
+**권장 수정**: LOW-1과 동일.
+**수정 난이도**: 쉬움
+
+---
+
+### 4. 페이지네이션 누락
+
+#### HIGH-8. `config/settings.py:348-364` — DRF 전역 `DEFAULT_PAGINATION_CLASS` 미설정
+**현상**: `REST_FRAMEWORK` 설정에 `DEFAULT_PAGINATION_CLASS` 누락. P0 #14 (페이지네이션 표준)로 보류 중. 개별 ListAPIView/ReadOnlyModelViewSet이 자체 `pagination_class`를 설정하지 않으면 무제한 응답.
+**현재 부분 완화**: `StockListAPIView`(stocks/views.py:91)와 `NewsViewSet`(news/api/views.py:60)는 자체 적용 ✅. 다만 RAG/일부 admin 뷰는 여전히 미적용.
+**영향**: 미적용 list endpoint(아래 MED 항목)가 무제한 응답 가능.
+**권장 수정**: 전역 `PageNumberPagination + page_size=20~50` 설정. 응답 envelope(`results`/`count`/`next`/`previous`) 결정 후 점진 적용.
+**수정 난이도**: 높음 (envelope 결정 + 프론트 호환 검증)
+
+#### MED-9. `rag_analysis/views.py:42-54` — `DataBasketListCreateView`
+**현상**: `baskets = DataBasket.objects.filter(user=request.user).prefetch_related('items')` 전체를 직렬화하여 반환(line 52-54). 사용자 단위라 폭주 가능성 낮으나 `MAX_ITEMS` 제약과 별개로 basket 자체 수에는 제한 없음.
+**권장 수정**: `pagination_class` 명시 또는 user당 basket 수 제한.
+**수정 난이도**: 쉬움
+
+#### MED-10. `rag_analysis/views.py:369-381` — `AnalysisSessionListCreateView`
+**현상**: 사용자의 모든 분석 세션을 무제한 직렬화. session.messages prefetch까지 포함되어 응답 사이즈가 누적될수록 폭주.
+**권장 수정**: `pagination_class` 명시 + `prefetch_related('messages')` 제거하고 list endpoint에서는 메시지 메타만 반환.
+**수정 난이도**: 쉬움
+
+#### LOW-5. `chainsight/api/views.py:308-314 SeedListView`
+**현상**: 캐시된 JSON 전체를 그대로 반환. 시드 수는 일반적으로 수십~수백 수준이므로 큰 문제 아님.
+**권장 수정**: 페이로드 사이즈가 100KB 초과하면 페이지네이션 검토.
+**수정 난이도**: 중간
+
+#### LOW-6. `serverless/views_admin.py:472-497 AdminNewsCategoryView.get`
+**현상**: 모든 카테고리를 한 번에 반환(line 475). 카테고리 수가 늘어나면 응답 사이즈 증가. admin 전용이라 영향 작음.
+**권장 수정**: 향후 카테고리 수가 50+ 가 되면 페이지네이션 도입.
+**수정 난이도**: 쉬움
+
+---
+
+### 부록 A — 정상으로 확인된 패턴
+
+| 패턴 | 위치 | 비고 |
+|------|------|------|
+| `select_related('stock')` 적용 | `users/views.py:264, 358, 405, 819` | 포트폴리오/Watchlist 정상 처리 |
+| `prefetch_related('items__stock')` | `users/views.py:655` | WatchlistDetailView |
+| `prefetch_related('entities')` | `news/api/views.py:58, 412` | NewsArticle list 패턴 |
+| `select_related('stock')` 적용 | `stocks/views_eod.py:77` | EODSignalDetailView |
+| `select_related('basket')` | `rag_analysis/views.py:479` | ChatStreamView |
+| Custom Pagination | `stocks/views.py:77-91, news/api/views.py:45-49, users/views.py:610-628, 830-848, rag_analysis/views.py:707` | 점진 도입 진행 중 |
+
+### 부록 B — 미감사 / 제한적 감사 파일
+
+| 파일 | 상태 | 비고 |
+|------|------|------|
+| `stocks/views_exchange.py` | 부분 | 295 LOC 추정, grep `select_related|prefetch_related` 매치 없음. FMP 호출만 하는 view 추정. |
+| `stocks/views_market_movers.py` | 완료 (70 LOC) | FMP API 결과 직접 반환, DB N+1 없음. |
+| `news/api/views.py:1450+` | 부분 | `pipeline_health` 등 monitoring action — 캐시 우선이라 영향 제한. |
+| `validation/views.py` | 미감사 | `validation/api/views.py` 외 별도 view. |
+| `chainsight/views.py` | 미감사 | `chainsight/api/views.py` 외 별도 view. |
+| `news/views.py` | 미감사 | `news/api/views.py` 외 별도 view (HTML 뷰 추정). |
+
+**권장 후속**: 위 파일들에 대해 별도 감사 1회 필요.
+
+---
+
+### 부록 C — 글로벌 패턴 권장
+
+1. **Compute-once context 패턴 강화**: `validation/api/views.py`가 N+1 핫스팟. Service 레이어에서 모든 `metric_code`를 한 번에 dict로 fetch한 뒤 view에서 lookup하는 패턴으로 일관화 권장. → 상위 4개 HIGH 이슈 동시 해결.
+2. **Stock 매니저 메서드 도입**: `Stock.objects.with_dynamic_layers()` — 6 OneToOne + 1 FK 일괄 prefetch. `StockOverviewAPIView`, `StockCompleteDataAPIView`, `StockDetailView` 3곳에서 재사용.
+3. **Pagination envelope 결정 (P0 #14)**: 가장 시급한 작업. DRF `PageNumberPagination + 200` 응답 envelope 합의 → 점진 적용. 현재 `stocks/views.py:84`/`news/api/views.py:60`/`users/views.py:610-628`에서 envelope이 제각각(일부 `results+pagination` 객체, 일부 표준 DRF) — 통일 필요.
+4. **EXPLAIN 기반 인덱스 검증**: 운영 환경 slow query 로그에서 `NewsArticle` / `NewsEntity` / `CompanyMetricSnapshot` / `CompanyBenchmarkDelta` 쿼리 plan 점검. 본 감사는 정적 분석만 수행.
+5. **Neo4j 쿼리 통합 패턴**: `chainsight/api/views.py:148-154`(union), `:705`(loop shortestPath) 등 Neo4j 쿼리는 가능한 단일 Cypher + `UNWIND` 로 통합. Round-trip이 가장 큰 latency 요인.
+
+---
+
+### 부록 D — 비교 추세 (직전 감사 대비)
+
+| 항목 | 5/11 | 5/13 | 변화 |
+|------|------|------|------|
+| HIGH 합계 | 9 | 8 | -1 (pagination 2건 해소) |
+| MED 합계 | 9 | 10 | +1 (RAG pagination 신규 분류) |
+| LOW 합계 | 8 | 6 | -2 (정리) |
+| **총합** | **26** | **24** | **-2** |
+
+페이지네이션 일부 진척이 있었으나 `validation/api/views.py` N+1 4건과 `chainsight/api/views.py` N+1 핫스팟은 그대로다. 다음 sprint에서 우선 5건(상위 표 참조)을 처리하면 즉시 응답 latency 30-50% 단축 가능.

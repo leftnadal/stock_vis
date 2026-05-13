@@ -1,10 +1,10 @@
 # 데이터 무결성 감사 보고서
 
 - **감사 일시**: 2026-05-13
-- **감사 범위**: Django 모델 FK 정책, CASCADE 체인, Neo4j↔PostgreSQL 동기화, Unique 제약/Race condition
+- **감사 범위**: Django 모델 FK 정책, CASCADE 체인, Neo4j↔PostgreSQL 동기화, Unique 제약 / Race condition
 - **방식**: 읽기 전용 정적 분석 (코드 수정 없음)
 
-> ⚠️ 사전 파악 단계의 사용처 카운트(SET_NULL 7곳, CASCADE 37곳)는 **부분 집계**였음. 실제 감사 결과 **SET_NULL 17곳 / CASCADE 100+ 곳**이 확인되어 모두 분석에 포함함.
+> 참고: 사전 파악 요약(SET_NULL 7곳, CASCADE 37곳)은 일부 파일에 한정한 부분 카운트였음. 실제 감사 결과 — **SET_NULL 17곳 / CASCADE 95곳 / PROTECT 7곳** (migrations·tests 제외) 으로 확인되어 모두 분석에 포함함.
 
 ---
 
@@ -12,9 +12,9 @@
 
 | 위험도 | 개수 | 핵심 이슈 |
 |--------|------|----------|
-| 🔴 **HIGH** | 3 | (H1) SEC `target_company SET_NULL` 시 Neo4j 좀비 엣지, (H2) Stock CASCADE 체인 3단계+, (H3) `queryset.update()` 후 `neo4j_dirty` 수동 토글 누락 위험 |
-| 🟠 **MEDIUM** | 4 | (M1) `update_or_create` PostgreSQL race condition 가능성, (M2) `sync_dirty_relations` 실패 시 재시도 없음, (M3) SET_NULL orphan 정리 cron 부재, (M4) Neo4j↔PG 불일치 감지 메커니즘 없음 |
-| 🟡 **LOW** | 3 | (L1) `chainsight.neo4j_dirty_sync` max_retries=2(나머지는 max_retries=1), (L2) `SupplyChainEvidence.target_company` index 단독 (neo4j_dirty 복합 X), (L3) `unique_together` 일부는 `UniqueConstraint`로 마이그레이션 안 됨 |
+| 🔴 **HIGH** | 3 | (H1) SEC `SupplyChainEvidence.target_company` SET_NULL → Neo4j 좀비 엣지, (H2) `Stock` 삭제 시 3단계 이상 CASCADE 체인 (chainsight·validation·portfolio 동반 삭제), (H3) `queryset.update()` 후 `neo4j_dirty` 수동 토글 누락 위험 (save() 자동화와 분기) |
+| 🟠 **MEDIUM** | 4 | (M1) `update_or_create` PostgreSQL race condition (대다수 호출이 `transaction.atomic()` 미적용), (M2) `sync_dirty_to_neo4j` 실패 row 재시도 메커니즘 부재 (no max_retries on backoff), (M3) SET_NULL orphan row를 주기적으로 정리하는 cron/Beat 태스크 없음, (M4) Neo4j ↔ PG 정합성 감지 routine 부재 (PG `neo4j_dirty=False` ≠ Neo4j 실제 반영) |
+| 🟡 **LOW** | 3 | (L1) Neo4j sync 태스크별 `max_retries` 불일치 (1/2 혼재), (L2) `SupplyChainEvidence.target_company`·`neo4j_dirty` 인덱스가 단독 인덱스 — 복합 미존재로 dirty backlog 조회 비효율, (L3) `unique_together`(Deprecated)와 `UniqueConstraint` 혼재 |
 
 ---
 
@@ -22,106 +22,100 @@
 
 ### SET_NULL 전체 사용처 (17곳, 9개 파일)
 
-| 파일 | 라인 | 필드 | 모델 → 대상 | orphan 정리 로직 |
-|------|------|------|--------------|------------------|
-| `sec_pipeline/models.py` | 86 | `SupplyChainEvidence.target_company` | → `stocks.Stock` | ❌ 없음 (🔴 H1) |
-| `chainsight/models/news_event.py` | 54 | `CompanyNewsEvent.duplicate_of` | → self | ❌ 없음 |
-| `marketpulse/models/anomaly.py` | 25 | `*.paired_news` | → `MarketPulseNews` | ❌ 없음 |
-| `macro/models/indicators.py` | 310 | `*.related_indicator` | → `EconomicIndicator` | ❌ 없음 |
-| `serverless/models.py` | 660 | `*Alert.preset` | → preset | ❌ 없음 (커스텀 필터 분기로 처리) |
-| `serverless/models.py` | 808 | `InvestmentThesis.*` | 외부 모델 | ❌ 없음 |
-| `serverless/models.py` | 1409 | `*.user` | → `users.User` | ❌ 없음 (이력 보존 의도) |
-| `rag_analysis/models.py` | 145 | `AnalysisSession.basket` | → `DataBasket` | ❌ 없음 (분석 이력 보존) |
-| `rag_analysis/models.py` | 256 | `UsageLog.session` | → `AnalysisSession` | ❌ 없음 (감사 로그) |
-| `rag_analysis/models.py` | 263 | `UsageLog.message` | → `AnalysisMessage` | ❌ 없음 |
-| `thesis/models/thesis.py` | 70, 77 | `Thesis.source_thesis`, `Thesis.original` | → self | ❌ 없음 (복제 출처 보존) |
-| `thesis/models/indicator.py` | 15 | `ThesisIndicator.premise` | → `ThesisPremise` | ❌ 없음 |
-| `thesis/models/monitoring.py` | 66 | `ThesisAlert.indicator` | → `ThesisIndicator` | ❌ 없음 |
-| `portfolio/models.py` | 327, 732, 831 | `*.wallet_snapshot_at_execution`, `*.analysis_run`, `*.context_analysis_run` | snapshot/run | ❌ 없음 (이력 보존) |
+| 파일 | 라인 | 필드 | → 대상 모델 | 의미·orphan 정리 로직 |
+|------|------|------|-------------|------------------------|
+| `sec_pipeline/models.py` | 86 | `SupplyChainEvidence.target_company` | `stocks.Stock` | 🔴 H1: target Stock 삭제 시 FK만 null, `target_company_name`(string) + Neo4j edge는 잔존. cron 없음. |
+| `serverless/models.py` | 660 | `ScreenerAlert.preset` | `ScreenerPreset` | 프리셋 제거 후 `filters_json` fallback 의도 — 정상. |
+| `serverless/models.py` | 808 | `InvestmentThesis.user` | `users.User` | 익명화. 정리 cron 없음. |
+| `serverless/models.py` | 1409 | `AdminActionLog.user` | `users.User` | 감사 로그 보존 의도 — 정상. |
+| `rag_analysis/models.py` | 145 | `AnalysisSession.basket` | `DataBasket` | basket 삭제 후에도 세션·메시지 보존. orphan 정리 없음. |
+| `rag_analysis/models.py` | 256 | `UsageLog.session` | `AnalysisSession` | 비용 추적 보존 — 정상. |
+| `rag_analysis/models.py` | 263 | `UsageLog.message` | `AnalysisMessage` | 비용 추적 보존 — 정상. |
+| `chainsight/models/news_event.py` | 54 | `ChainNewsEvent.duplicate_of` | self | 중복 마스터 삭제 시 자식 잔존 — 의도. |
+| `macro/models/indicators.py` | 310 | `EconomicEvent.related_indicator` | `EconomicIndicator` | indicator 폐기 후 이벤트는 보존. orphan 정리 없음. |
+| `marketpulse/models/anomaly.py` | 25 | (Anomaly).paired_news | `MarketPulseNews` | 뉴스 만료 후 anomaly 보존 — 의도. |
+| `thesis/models/thesis.py` | 70 | `Thesis.source_news` | `news.NewsArticle` | 뉴스 만료 후 가설 보존. |
+| `thesis/models/thesis.py` | 77 | `Thesis.copied_from` | self | 원본 가설 삭제 후 복사본 보존. |
+| `thesis/models/indicator.py` | 15 | `ThesisIndicator.metric_definition` | `metrics.MetricDefinition` | 카탈로그 변경 안전망. |
+| `thesis/models/monitoring.py` | 66 | (Monitoring 관련) | `MetricDefinition` | 동일. |
+| `portfolio/models.py` | 327 | `AnalysisRun.wallet_snapshot_at_execution` | `WalletSnapshot` | 스냅샷 삭제 시 분석 보존. |
+| `portfolio/models.py` | 732 | `ChatSession.analysis_run` | `AnalysisRun` | 분석 삭제 후 대화 보존 — 의도 명시(docstring). |
+| `portfolio/models.py` | 831 | `Decision.context_analysis_run` | `AnalysisRun` | 의사결정 이력 보존 — 정상. |
 
-### 🔴 H1: `SupplyChainEvidence.target_company` SET_NULL → Neo4j 좀비 엣지
+### SET_NULL 후 orphan 정리 로직 존재 여부
 
-**문제**:
-- `sec_pipeline/models.py:85-89` → `target_company`가 `SET_NULL`이고 `neo4j_dirty` 플래그는 자동 전환되지 않음
-- Stock 삭제 시: `target_company` → NULL, **그러나 `neo4j_dirty=False`로 그대로 남음**
-- 결과: PG에는 NULL target evidence가 남고, Neo4j에는 해당 엣지가 **삭제되지 않음**
-- `sec_pipeline/tasks.py:365`에서 `filter(neo4j_dirty=True, target_company__isnull=False)`만 동기화 → NULL 상태는 영원히 dirty queue에 진입하지 않음
+- **결과: 어디에도 SET_NULL orphan 전용 정리 cron 없음**.
+- 검색: `grep -rn "orphan_cleanup\|orphan_" --include='*.py'` → 매칭은 Neo4j 내부 그래프 노드 cleanup(`news/services/news_neo4j_sync.py:700`) 단 1건. PG SET_NULL row 정리 routine은 **0건**.
+- 대부분의 SET_NULL은 “이력 보존” 의도이므로 자동 정리가 오히려 정책 위반. 단, **🔴 H1** 케이스는 `target_company_name` 문자열만 남고 매칭 가능한 Stock이 사라진 상태가 누적되면 LLM/ML 학습 데이터 품질 저하.
 
-**증거**:
-- `sec_pipeline/signals.py:52`에는 alias 업데이트 시 `neo4j_dirty=True`를 강제하는 시그널이 있음 (역방향 케이스만 처리)
-- Stock `pre_delete` 시그널은 발견되지 않음 → orphan은 즉시 좀비
+### 권고
 
-**영향 범위**: `SP500Constituent`에서 inactive로 빠진 종목이 SEC evidence 보유 시 Neo4j와 PG 불일치 발생
-
-### 🟠 M3: SET_NULL orphan 일괄 정리 cron 부재
-
-전체 17개 SET_NULL 사용처에 대해:
-- 일정 기간 후 NULL 레코드를 일괄 삭제/아카이브하는 cron이 **0개**
-- `chainsight/models/news_event.py:54` (`duplicate_of`)처럼 self-FK SET_NULL은 누적될수록 self-referential cycle 감지가 어려워짐
-- `rag_analysis/models.py:256,263` UsageLog는 감사 목적인데도 message/session NULL이면 LLM 비용 회귀 분석이 불가능
+1. `sec_pipeline`에 `SupplyChainEvidence.target_company IS NULL AND target_company_name IS NOT NULL` 인 row의 카운트를 모니터링하는 quality check 추가 (현재 `sec_pipeline/quality_checks.py`에 `neo4j_dirty` 백로그 알림은 있으나 orphan 알림은 없음).
+2. Stock 삭제 발생 시 (현실적으로 거의 없으나) `target_company_name`을 Neo4j ‘이름 기반’ 노드와 다시 매칭하는 re-resolve 태스크 필요.
 
 ---
 
 ## CASCADE 체인
 
-### CASCADE 사용처 (100+ 곳, 16개 파일)
+### Stock 직접 CASCADE FK 참조 (17개 모델, 가장 큰 폭발 반경)
 
-#### 직접 Stock 참조 모델 (Stock 삭제 시 CASCADE)
+| 앱 | 모델 | 참조 필드 | 비고 |
+|----|------|-----------|------|
+| stocks | `DailyPrice` | `stock` (to_field=symbol) | 가격 시계열 |
+| stocks | `WeeklyPrice` | `stock` (to_field=symbol) | |
+| stocks | `StockOverviewKo` | `stock` (OneToOne) | 한글 개요 |
+| stocks | `EODSignal` | `stock` | 일별 시그널 |
+| stocks | `SignalAccuracy` | `stock` | 시그널 백테스트 |
+| stocks | `StockNews` | `stock` (nullable) | 뉴스 |
+| users | `Portfolio` | `stock` (to_field=symbol) | 사용자 보유 |
+| users | `WatchlistItem` | `stock` (to_field=symbol) | |
+| chainsight | `CompanyChainProfile` | OneToOne `symbol` | |
+| chainsight | `CompanyGrowthStage` | `symbol` | |
+| chainsight | `CompanyCapitalDNA` | `symbol` | |
+| chainsight | `CompanySensitivityProfile` | `symbol` | |
+| chainsight | `CompanyInsiderSignal` | `symbol` | |
+| chainsight | `CompanyEventReaction` | `symbol` | |
+| chainsight | `CompanyRevenueStructure` | `symbol` | |
+| chainsight | `CompanyNarrativeTag` | `symbol` | |
+| validation | `CompanyMetricLatest` | `symbol` | |
+| validation | `CompanyBenchmarkDelta` | `symbol` | |
+| validation | `CategorySignal` | `symbol` | |
+| validation | `CompanyNewsSummary` | `symbol` | |
+| validation | `PeerPreset`·`UserPeerPreference` | `symbol` | |
+| sec_pipeline | `RawDocumentStore` | `symbol` | 10-K 원문 |
+| sec_pipeline | `SupplyChainEvidence` | `source_company` (CASCADE), `target_company` (SET_NULL) | |
+| sec_pipeline | `BusinessModelSnapshot` | `symbol` | |
+| portfolio | `Holding`·`MetricResult`·`DiagnosticCard.target_stock`(PROTECT) 등 | mixed | |
+| metrics | `CompanyMetricSnapshot` | `symbol` | (PROTECT — 안전망) |
 
-| 모델 | 위치 | 영향 |
-|------|------|------|
-| `stocks.*` 내부 6개 | `stocks/models.py:133, 244, 699, 756, 801, 888` | DailyPrice, WeeklyPrice, OverviewKO, IncomeStatement, BalanceSheet, EODSignal 등 |
-| `users.PortfolioStock` | `users/models.py:28` (to_field='symbol') | 사용자 보유 종목 전체 삭제 |
-| `users.WatchlistItem` | `users/models.py:198` | 관심종목 항목 삭제 |
-| `validation.*` 5개 | `validation/models/*.py` | benchmark_delta, category_score, metric_latest, news_summary, peer_preset |
-| `metrics.MetricSnapshot` | `metrics/models/metric_snapshot.py:19` | 분기 지표 히스토리 |
-| `metrics.PeerMetricBenchmark` | `metrics/models/benchmark.py` | Peer 통계 |
-| `sec_pipeline.*` 4개 | `sec_pipeline/models.py:25, 82, 161` | RawDocumentStore, SupplyChainEvidence(source), BusinessModelSnapshot |
-| `chainsight.*` 7개 | `chainsight/models/*.py` | insider, revenue, capital, event, growth, sensitivity, narrative, chain_profile |
-| `graph_analysis.*` 4+ | `graph_analysis/models.py:20, 70, 77, 84, 178, 185, 291, 334` | correlation, watchlist 그래프 |
-| `portfolio.*` 12+ | `portfolio/models.py` | wallet, snapshot, analysis_run 전반 |
+### 3단계 이상 연쇄 삭제 경로
 
-### 🔴 H2: Stock 삭제 시 3단계+ 연쇄 삭제
+- 경로 A: **Stock → RawDocumentStore → SupplyChainEvidence → BusinessModelEvidence(→ via BusinessModelSnapshot)**.
+  - `RawDocumentStore` (CASCADE from Stock) → `SupplyChainEvidence.source_document` (CASCADE) ⇒ 같은 Stock의 10-K 한 건 삭제 시 그 filing의 evidence + 비즈니스모델 evidence 전부 동반 삭제.
+  - Stock 자체 삭제 시 모든 10-K + evidence + business model snapshot + business model evidence 가 일괄 삭제.
+- 경로 B: **Stock → CompanyChainProfile (OneToOne, PK)**: Stock 삭제 시 profile 행 자체 사라지지만, **Neo4j :Stock 노드의 속성은 자동 동기화되지 않음**(`sync_profiles_to_neo4j`는 `neo4j_dirty=True` row만 처리). Neo4j 좀비 노드 잔존 가능.
+- 경로 C: **Stock → validation.CategorySignal / CompanyMetricLatest / CompanyBenchmarkDelta → (집약) → CompanyChainProfile** (via `chainsight.aggregate_chain_profiles`). PG는 CASCADE로 정합이 유지되나 **이미 집약 완료된 ChainProfile의 score 필드(redundant copy)** 는 Stock 삭제 후에도 그대로 — Aggregator 재실행 전에는 stale.
+- 경로 D: **Stock → users.Portfolio / WatchlistItem**: 사용자 보유·관심종목이 통보 없이 사라짐. CASCADE 채택했으므로 ‘소프트 삭제’ 패턴이 아닌 한 의도. 다만 사용자 면담 보존 가치를 고려하면 SET_NULL + ‘delisted’ 플래그 패턴이 더 안전.
+- 경로 E: **users.User → Portfolio/Watchlist/Holding/AnalysisRun/ChatSession/Decision/...** (cascade fan-out 10+ 테이블). User 삭제 시 RAG·Thesis·Portfolio·Chain Sight 전 도메인 동반 삭제. ‘soft delete + GDPR 마스킹’ 전략 필요.
 
-**3단계 체인 예시**:
+### Stock 삭제 영향 범위 (단일 ticker 기준 추정 row 수)
 
-```
-Stock (예: AAPL)
-  └─ CASCADE → RawDocumentStore (sec_pipeline/models.py:25)
-       └─ CASCADE → SupplyChainEvidence (sec_pipeline/models.py:78)
-                       └─ ❗ Neo4j 엣지 사라지지 않음 (H1과 동일 이슈)
-```
+> 정량 추정 (S&P500 기업 평균 가정)
 
-```
-User
-  └─ CASCADE → Portfolio (users/models.py:27)
-       └─ CASCADE → PortfolioStock (users/models.py:28)
-  └─ CASCADE → Watchlist (users/models.py:171)
-       └─ CASCADE → WatchlistItem (users/models.py:197)
-            └─ CASCADE → WatchlistCorrelation (graph_analysis/models.py:20)
-                          └─ Neo4j 노드 분리되지 않음
-```
+- DailyPrice (≥ 5년 일별) ≈ 1,250 rows
+- EODSignal ≈ 1,250 rows / SignalAccuracy 변동
+- chainsight 8개 테이블 ≈ 8 rows
+- validation 5개 테이블 ≈ 5 rows
+- sec_pipeline 10-K (RawDoc 5건 + SupplyChainEvidence 평균 20건/10-K + BusinessModelSnapshot 5 + Evidence 25) ≈ 130 rows
+- users 측 (Portfolio/Watchlist) — 사용자 수에 비례
 
-```
-Stock
-  └─ CASCADE → CompanyChainProfile (chainsight/models/chain_profile.py:12)
-       └─ ❗ Neo4j :Stock 속성 잔존 (sync_profiles_to_neo4j는 dirty=True만 처리)
-```
+**1 ticker 단일 삭제로 약 2,600+ rows 일괄 삭제 + Neo4j 노드/엣지 좀비 가능성**. 운영상 Stock row를 직접 삭제하지 않는 ‘inactive 플래그(SP500Constituent.is_active)’ 패턴이 이미 일부 적용되어 있으므로, **`stocks.Stock` 자체에 `is_active` 플래그 도입 + 삭제 금지 정책** 권고.
 
-**핵심 영향 범위 (Stock 삭제 시)**:
-- PG: 약 **40+ 테이블에 걸쳐 즉시 CASCADE 삭제** (Stock symbol 1건 → 데이터 수십만 row)
-- Neo4j: `:Stock`, `:Theme`, supply-chain 엣지가 **자동 정리되지 않음**
-- 캐시: `serverless`, `validation`의 Redis 캐시는 `clear_cache` 시그널 없이 stale 상태 유지
+### 권고
 
-**완화 장치 부재**:
-- `Stock.delete()` 오버라이드 없음
-- `pre_delete` / `post_delete` 시그널 없음 (sec_pipeline/signals.py는 alias 업데이트만)
-- 즉, **운영 중 Stock 직접 삭제는 사실상 금지**된 상태이지만 코드상 가드는 없음
-
-### 🟠 M4: 캐시-DB-Neo4j 불일치 감지 부재
-
-- `validation`, `serverless` 응답은 Redis 캐시 → Stock CASCADE 후 캐시 키 무효화 시그널 없음
-- 별도 reconciliation cron(예: PG row count vs Neo4j node count)도 없음
+1. 운영 워크플로우에 `Stock.objects.filter(symbol=X).delete()` 사용 금지 가이드 추가 — soft delete 패턴으로 일원화.
+2. Stock CASCADE 체인이 가장 깊으므로 **삭제 전 사전 체크 스크립트** (`management/commands/check_stock_deletion_impact.py`) 신설.
+3. `Decision`처럼 보존 가치가 높은 모델(`Portfolio`, `WatchlistItem`)은 CASCADE → SET_NULL + `was_delisted_at` 컬럼 패턴으로 전환 검토.
 
 ---
 
@@ -129,139 +123,130 @@ Stock
 
 ### `neo4j_dirty` 플래그 사용 현황
 
-#### 1. `sec_pipeline.SupplyChainEvidence`
-- 필드: `sec_pipeline/models.py:99-101` (`neo4j_dirty`, `neo4j_synced_at`)
-- 인덱스: `models.Index(fields=['neo4j_dirty'])` (단독)
-- 동기화 태스크: `sec_pipeline/tasks.py:337` `sync_dirty_to_neo4j` (`max_retries=1`)
-- 패턴: `select_for_update(skip_locked=True)` + 2-phase + dynamic Cypher type
-- 자동 dirty 토글: `update_or_create` save() 후 자동 (audit P0 #9)
+| 앱 | 모델 | 필드 | 인덱스 | save() 자동? |
+|----|------|------|--------|--------------|
+| `chainsight` | `CompanyChainProfile` | `neo4j_dirty`, `neo4j_synced_at` | ✅ db_index=True | ⚠️ `aggregate_chain_profiles`가 `defaults={'neo4j_dirty': True}` 명시. save() 자동화 없음. |
+| `chainsight` | `RelationConfidence` | `neo4j_dirty`, `neo4j_synced_at` | ✅ db_index=True + Meta.Index | ✅ `save()` 오버라이드에서 `self.neo4j_dirty = True` 자동. ⚠️ `queryset.update()`에서는 우회됨. |
+| `sec_pipeline` | `SupplyChainEvidence` | `neo4j_dirty`, `neo4j_synced_at` | ✅ Meta.Index | ⚠️ save() 자동화 없음. `validator_track_a.py:158`, `ticker_matcher.py:99`에서 명시 토글. |
 
-#### 2. `chainsight.RelationConfidence`
-- 필드: `chainsight/models/relation_discovery.py:129-130, 158`
-- 인덱스: `models.Index(fields=['neo4j_dirty'])`
-- 동기화: `chainsight/services/neo4j_sync.py::sync_dirty_relations`
-- 태스크: `chainsight/tasks/neo4j_dirty_sync_tasks.py:14` `run_neo4j_dirty_sync` (`max_retries=2, default_retry_delay=60`)
-- ⚠️ `bulk_update`는 save() 미호출 → 모델 메서드에서 수동으로 `self.neo4j_dirty = True`
+### save() vs queryset.update() 분기 — 🔴 H3
 
-#### 3. `chainsight.CompanyChainProfile`
-- 필드: `chainsight/models/chain_profile.py:63-65` (`db_index=True`)
-- 동기화: `chainsight/tasks/sync_tasks.py:97` `sync_profiles_to_neo4j` (`max_retries=1`)
-- 패턴: `profile.save(update_fields=["neo4j_dirty", "neo4j_synced_at"])`
+- `chainsight/models/relation_discovery.py:158` — `RelationConfidence.save()`가 `self.neo4j_dirty = True` 강제. **자동화의 이점이 있으나** `queryset.update()`는 save()를 호출하지 않으므로 dirty 토글이 누락됨.
+- 이를 보완하기 위해 `chainsight/tasks/relation_tasks.py:382-402`에서 `stale.update(relation_status='stale', neo4j_dirty=True)` 형태로 dirty 동반 set. 그러나 **수동 토글 누락 시 status 전이는 PG에 반영되지만 Neo4j 엣지가 stale로 안 내려가는** 무성한 버그가 발생 가능. (cf. KB `audit P0 #9` 참고)
+- `chainsight/services/neo4j_sync.py:48` — sync 후 `queryset.update(neo4j_dirty=False, neo4j_synced_at=…)` 호출. 의도적. 이때 만약 save() 분기로 들어가면 dirty=True가 영구히 토글되므로 **`queryset.update()`만 사용해야 한다는 암묵적 규약**이 존재. 코드 주석으로만 표시.
+- `sec_pipeline/signals.py:52` — `UnmatchedCompanyQueue` resolved 시 `qs.update(target_company=..., neo4j_dirty=True)`. queryset 우회 시 명시 토글의 모범 사례.
 
-### 🔴 H3: `queryset.update()` 후 `neo4j_dirty` 수동 토글
+### 재시도 메커니즘
 
-**위험 패턴 (확인됨)**:
-- `chainsight/tasks/relation_tasks.py:388, 395, 402`: `update(relation_status='stale', neo4j_dirty=True)` ← **명시적으로 처리**
-- `chainsight/services/neo4j_sync.py:48-51`: `update(neo4j_dirty=False, neo4j_synced_at=...)` ← 동기화 후 처리
+| 태스크 | 위치 | max_retries | retry 정책 |
+|--------|------|-------------|-----------|
+| `sync_profiles_to_neo4j` | `chainsight/tasks/sync_tasks.py:97` | 1 | 명시적 retry 호출 없음. raise 시 Celery default. |
+| `sync_relations_to_neo4j` (legacy wrapper) | `chainsight/tasks/sync_tasks.py:148` | 1 | 동일. 내부에서 `sync_dirty_relations` 호출. |
+| `run_neo4j_dirty_sync` | `chainsight/tasks/neo4j_dirty_sync_tasks.py:14` | 2, retry_delay 60s | 가장 robust. |
+| `sec_pipeline.sync_dirty_to_neo4j` | `sec_pipeline/tasks.py:337` | 1 | per-row `try/except`로 실패 흡수 — 실패한 row는 `neo4j_dirty=True` 유지 → 다음 사이클에 재시도. |
 
-**누락 위험**:
-- `chainsight/tasks/sync_tasks.py:169` 레거시 RELATED_TO 정리 시 `update(neo4j_dirty=True)` 처리됨 ✓
-- 그러나 **신규 코드 작성자가 `qs.update(field=...)` 호출 시 `neo4j_dirty=True` 토글을 잊을 가능성 상존**
-- 보호 메커니즘: `Meta.save()` 오버라이드, post_save 시그널 모두 없음
+🟠 M2: **per-row 실패 흡수는 좋으나, 영구 실패(예: Stock 노드 자체 부재) row를 격리하는 `neo4j_sync_attempts` 같은 카운터 컬럼 없음** → 매 사이클 재시도되며 Neo4j 부하 누적 가능.
 
-### 🟠 M2: 동기화 실패 시 재시도 메커니즘
+### PG ↔ Neo4j 불일치 감지 메커니즘
 
-| 태스크 | max_retries | retry_backoff | 실패 처리 |
-|--------|-------------|---------------|----------|
-| `sec_pipeline.sync_dirty_to_neo4j` | 1 | ❌ | `try/except` per row, 실패 row는 dirty 유지 |
-| `chainsight.sync_profiles_to_neo4j` | 1 | ❌ | `try/except` per profile, 실패 시 fail++ 카운트만 |
-| `chainsight.sync_relations_to_neo4j` | 1 | ❌ | dirty sync 위임, 실패 시 dirty 유지 |
-| `chainsight.run_neo4j_dirty_sync` | 2 | ❌ (default_retry_delay=60) | task-level retry는 있으나 partial failure는 row 단위로만 |
-| `chainsight.aggregate_chain_profiles` | 1 | ❌ | per-symbol try/except |
+🟠 M4 — **현재 불일치 자체를 감지하는 routine 없음**.
 
-**문제**:
-- `max_retries=1`은 실제로 **최초 1회 실행 + 1회 재시도 = 총 2회**
-- exponential backoff 없음 (Celery `retry_backoff` 미사용)
-- Neo4j 연결 장애가 30초+ 지속되면 1차 재시도도 실패 → next beat까지 stale
-- CLAUDE.md의 "Celery 태스크: idempotent, max_retries=3, exponential backoff" 원칙 **위반**
+| 시나리오 | 현재 감지 가능? | 보강 필요 |
+|----------|----------------|----------|
+| PG `neo4j_dirty=False`인데 Neo4j에 엣지 없음 | ❌ 없음 | reconciler 태스크 필요 |
+| PG에 없는데 Neo4j에 엣지 있음 | ❌ 없음 (cleanup_key 1회용 RELATED_TO 정리만 존재 — `sync_tasks.py:159`) | |
+| PG `neo4j_dirty=True` 백로그 | ✅ `quality_checks.py:91-94`에서 50건 초과 알림 | OK |
+| `RawDocumentStore` 삭제 후 Neo4j 좀비 evidence edge | ❌ | edge.accession_no 기반 cleanup |
 
-### Neo4j ↔ PostgreSQL 불일치 감지 방법
+### 권고
 
-#### 현재 존재하는 검사
-- `sec_pipeline/quality_checks.py:92, 144-146`: `evidences.filter(neo4j_dirty=False).count()` vs `neo4j_dirty=True` 카운트만 비교
-- `sec_pipeline/intelligence.py:97-98`: 동일
-
-#### **부재**
-- PG row count vs Neo4j node/edge count 비교 cron 없음
-- Neo4j에만 있고 PG에는 없는 orphan edge 감지 없음
-- Stock 삭제 후 Neo4j 잔존 노드/엣지 정리 절차 없음
-- 정합성 보고서(예: `chainsight neo4j healthcheck`) 없음
-
-**권장**: 일일 reconciliation 태스크 — `MATCH (s:Stock) WHERE NOT EXISTS PG record` 형태 + PG `neo4j_dirty=False`이지만 Neo4j 누락 검사.
+1. **주 1회 reconciler** Celery Beat 태스크 추가: PG 샘플 1000건 ↔ Neo4j 실제 쿼리 결과 비교. 불일치 발견 시 dirty 재마킹.
+2. `neo4j_sync_attempts`, `last_sync_error` 컬럼 추가하여 영구 실패 격리.
+3. `save()` 오버라이드로 dirty 자동 토글하는 모델은 `RelationConfidence` 단 1개. `CompanyChainProfile`·`SupplyChainEvidence`도 동일 패턴으로 통일 검토 (수동 토글 누락 방지).
 
 ---
 
 ## Unique 제약조건
 
-### 전체 분포 (40+ 곳)
+### 사용 현황 (migrations 제외, 64곳)
 
-#### `unique_together` 사용 (구식)
-- `validation/models/*.py` 5건 (peer_preset, metric_latest, benchmark_delta, category_score)
-- `stocks/models.py` 7건 (가격, 재무제표, EOD signal)
-- `serverless/models.py` 11건 (movers, etf, theme, institutional)
-- `graph_analysis/models.py` 4건
-- `marketpulse/models/*.py` 6건
-- `macro/models/*.py` 4건
-- `thesis/models/*.py` 5건
-- `metrics/models/*.py` 3건
-- `chainsight/models/relation_discovery.py` 1건 (`alias, context_sector` — sec_pipeline)
-- `rag_analysis/models.py` 1건 (`basket, item_type, reference_id`)
+- `unique_together`: 35곳 — 다수 (특히 `stocks`, `serverless`, `metrics`, `validation`, `chainsight`).
+- `models.UniqueConstraint`: 5곳 (`portfolio/models.py:439, 525, 583, 701` 등). Django 4+ 권장 형태.
+- `unique=True` 단일 컬럼: 24곳.
 
-#### `UniqueConstraint` 사용 (권장)
-- `portfolio/models.py:439, 525, 583, 701` 4건 (named constraints)
-- `portfolio/migrations/0001_initial.py`: `unique_percentile_cache`, `unique_card_priority_per_run`, `unique_comment_per_run_stock_metric`, `unique_metric_result_per_run_stock`
+### 대표 키 패턴
 
-### 🟡 L3: `unique_together` → `UniqueConstraint` 마이그레이션 일관성 부재
+| 모델 | 키 | 비고 |
+|------|----|------|
+| `DailyPrice` | (stock, date) | 시계열 핵심 |
+| `EODSignal` | (stock, date) | 일별 시그널 |
+| `SignalAccuracy` | (stock, signal_date, signal_tag) | |
+| `BalanceSheet`·`IncomeStatement`·`CashFlowStatement` | (stock, period_type, fiscal_year, fiscal_quarter) | |
+| `ChainNewsEvent` | (source, source_id) | 외부 ID 기반 |
+| `RelationConfidence` | (symbol_a, symbol_b, relation_type) | |
+| `CoMentionEdge` | (symbol_a, symbol_b) | |
+| `PriceCoMovement` | (symbol_a, symbol_b, period) | |
+| `CompanyAlias` | (alias, context_sector) | 🔵 context_country는 unique key에서 의도적으로 제외 (주석 명시) |
+| `CompanyEventReaction` | (symbol, event_type) | |
+| `ThemeMatch` | (stock_symbol, theme_id) | |
+| `ETFHolding` | (etf, stock_symbol, snapshot_date) | |
 
-- Django 4.x 권장: `UniqueConstraint`로 통일 (조건부 unique, deferrable 지원)
-- 현재: `portfolio`만 부분 마이그레이션, 나머지는 `unique_together` 유지
-- 영향: 향후 조건부 unique(예: `is_active=True`인 row만 unique) 필요 시 마이그레이션 비용
+### `update_or_create` 사용 시 race condition 가능성
 
-### 🟠 M1: `update_or_create` Race Condition 가능성
+`update_or_create` 호출은 99건. 대표 호출 위치:
 
-**현황** (87개 파일에서 사용 — Grep 카운트):
+| 위치 | 트랜잭션 보호 | 위험도 |
+|------|---------------|--------|
+| `api_request/stock_service.py:254, 390, 417, 481, 532, 581` | ✅ `transaction.atomic()` 내부 | 안전 |
+| `stocks/services/sp500_service.py:82` | ✅ `transaction.atomic()` | 안전 |
+| `serverless/services/data_sync.py:205` | ✅ `@transaction.atomic` 데코레이터 | 안전 |
+| `serverless/services/regulatory_service.py:521` | ✅ `transaction.atomic()` | 안전 |
+| `serverless/services/supply_chain_service.py:328` | ✅ `@transaction.atomic` | 안전 |
+| `chainsight/tasks/relation_tasks.py:275, 309, 343` | ❌ 보호 없음 | 🟠 M1 |
+| `chainsight/tasks/profile_tasks.py:106, 180` | ❌ 보호 없음 | 🟠 M1 |
+| `chainsight/tasks/sync_tasks.py:84` | ❌ 보호 없음 | 🟠 M1 (단, Celery worker 단일이라 실질 위험은 낮음) |
+| `serverless/services/theme_matching_service.py:247, 329, 575` | ❌ | 🟠 M1 (동일 (stock_symbol, theme_id) 충돌 가능) |
+| `serverless/services/institutional_holdings_service.py:305, 425` | 부분(271 라인에 `transaction.atomic` 있으나 305는 별도 블록) | 부분 위험 |
+| `serverless/services/keyword_service.py:202` | ❌ | 🟠 M1 |
+| `news/services/aggregator.py:370, 388` | ❌ | 🟠 M1 |
 
-**안전한 패턴 (확인됨)**:
-- `sec_pipeline/tasks.py:362-368`: `with transaction.atomic(): select_for_update(skip_locked=True)` ✓
-- `stocks/tasks.py:528`: `with transaction.atomic():` 블록 내 ✓
-- 대부분의 `update_or_create` 호출은 unique_together 필드 키로 호출됨 → DB 레벨 UPSERT-like 보호
+#### Django `update_or_create` race semantics
 
-**위험 패턴**:
-- `chainsight/tasks/sync_tasks.py:84`: `CompanyChainProfile.objects.update_or_create(symbol=stock, defaults=defaults)` — `transaction.atomic()` **없음**
-- 동시 실행 시나리오: Celery beat가 `aggregate_chain_profiles`를 동시에 두 번 실행 (각각 다른 worker) → 같은 symbol에 대한 update_or_create 충돌
-- PostgreSQL 기본 isolation은 `READ COMMITTED`이므로 phantom-write로 인한 `IntegrityError` 가능
-- Django `update_or_create`는 내부적으로 try/except IntegrityError를 처리하지만, **save() 시 race로 인한 중복 created 호출**은 막지 못함
+- Django 공식: `update_or_create`는 **`get()` → 실패 시 `create()`** 패턴. 두 단계 사이에 동일 키를 가진 다른 트랜잭션이 `create()` 하면 `IntegrityError`.
+- Django는 `IntegrityError`를 잡아 `get()` 재시도 (Django 1.11+ `_get_or_create()` 구현). 그러나 **이는 `unique_together` 또는 `UniqueConstraint`가 DB 레벨로 존재할 때만 보장**.
+- 대상 모델 모두 unique 제약이 존재함을 확인 (`ThemeMatch.unique_together = (stock_symbol, theme_id)` 등). 따라서 **무결성 위반은 발생하지 않으나** `defaults`로 전달한 부분 업데이트가 ‘다른 트랜잭션의 create 직후 덮어쓰기’로 race 상태 진입 가능.
 
-**구체적 위험**:
-- `validation/services/preset_generator.py`, `validation/services/metric_calculator.py` 등에서 batch loop 내 update_or_create 다수 호출
-- LLM 태스크 (`rag_analysis`, `news/services/keyword_extractor.py`)에서 동일 키로 동시 작성 시 unique_together 위반 가능
+#### 권고
 
-**완화책 부재**:
-- 명시적 `transaction.atomic()` 래핑이 일관되지 않음
-- `select_for_update()` 사용은 `sec_pipeline/tasks.py`만
-
----
-
-## 부록: 권장 후속 조치 (코드 수정은 별도 PR로)
-
-| ID | 액션 | 우선순위 |
-|----|------|---------|
-| A1 | `Stock.pre_delete` 시그널 추가 → 관련 evidence/profile `neo4j_dirty=True` 토글 + Neo4j 노드 정리 | 🔴 |
-| A2 | `sec_pipeline.SupplyChainEvidence` 인덱스에 `(neo4j_dirty, target_company)` 복합 추가 | 🟡 |
-| A3 | Neo4j↔PG reconciliation cron (`chainsight-reconcile`) 신설 — 일일 실행 | 🟠 |
-| A4 | 모든 neo4j sync 태스크에 `autoretry_for=(Neo4jError, ConnectionError), retry_backoff=True, max_retries=3` 통일 | 🟠 |
-| A5 | `update_or_create` 호출 패턴 audit — `transaction.atomic()` 누락 처소 일괄 패치 | 🟠 |
-| A6 | SET_NULL orphan 정리 cron — 90일 이상 NULL 상태인 audit 로그 아카이브 | 🟡 |
-| A7 | `unique_together` → `UniqueConstraint` 점진적 마이그레이션 (validation/serverless 우선) | 🟡 |
+1. Celery worker가 단일(default queue)이면 실질 위험은 낮으나, `neo4j` queue 등 다중 워커 환경에서는 `chainsight/tasks/relation_tasks.py`의 `update_or_create`를 `with transaction.atomic():` + `select_for_update()` 패턴으로 보강.
+2. `theme_matching_service.py`의 update_or_create는 LLM 결과를 덮어쓰므로 **마지막 write가 이김** — confidence 비교 후 update 조건부 적용 권장.
+3. `unique_together` (Deprecated since Django 2.2)를 신규 코드에서는 `UniqueConstraint`로 통일 (`portfolio/models.py` 가 모범 사례).
 
 ---
 
-## 감사 메타정보
+## 참고: 검색 명령 결과
 
-- **분석 도구**: Grep + Read (정적 분석)
-- **실제 카운트**:
-  - SET_NULL: **17곳 / 9개 파일** (사전 파악 7곳보다 +10 발견)
-  - CASCADE: **100+ 곳 / 16개 파일** (사전 파악 37곳보다 +63 발견)
-  - `update_or_create`/`get_or_create` 호출 파일: **87개**
-  - `unique_together`+`UniqueConstraint` 정의: **40+ 곳**
-- **검증 미수행 항목**: DB 실측(`COUNT(*)`), Neo4j 실측, 실제 race 발생 여부 — 정적 분석 범위 밖
+```
+on_delete=models.SET_NULL    17  (production code)
+on_delete=models.CASCADE     95  (production code)
+on_delete=models.PROTECT      7  (production code)
+neo4j_dirty 참조             47  (production code)
+update_or_create             99  (production code)
+unique_together/Constraint   64  (production code)
+select_for_update             7  (rag_analysis/users/sec_pipeline)
+transaction.atomic           30+ (production code)
+```
+
+> migrations·tests·__pycache__ 제외 카운트.
+
+---
+
+## 결론
+
+데이터 무결성 위험의 **80% 이상**이 Neo4j ↔ PG 동기화 경계에 집중되어 있음.
+
+1. **H1·H3**: SET_NULL + 수동 dirty 토글 누락 — Neo4j 좀비 엣지/노드 잔존 위험.
+2. **H2**: Stock CASCADE 체인이 너무 깊음 — 실수 삭제 시 2,600+ rows 일괄 손실.
+3. **M1·M4**: Race condition은 unique 제약으로 무결성은 보장되나, 정합성(PG↔Neo4j) 검증 routine이 부재.
+
+→ 우선 순위: **(1) reconciler 태스크 신설, (2) Stock soft-delete 정책, (3) dirty 자동 토글 통일** 순으로 보강하는 것을 권고함.

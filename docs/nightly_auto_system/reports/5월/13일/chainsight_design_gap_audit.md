@@ -8,8 +8,8 @@
 
 ## 요약 (구현률)
 
-| Phase | 설계 항목 | 완전(A) | 부분(B) | 미구현(C) | 폐기/대체(D) | 구현률 |
-|-------|----------|---------|---------|-----------|--------------|--------|
+| Phase / 설계군 | 설계 항목 | 완전(A) | 부분(B) | 미구현(C) | 폐기/대체(D) | 구현률 |
+|----------------|-----------|---------|---------|-----------|--------------|--------|
 | Phase 0 (인프라) | cs_00~03 (4) | 4 | 0 | 0 | 0 | **100%** |
 | Phase 1 (데이터) | cs_11~13 (3) | 3 | 0 | 0 | 0 | **100%** |
 | Phase 2 (프로파일/관계) | cs_21~25 + 21b/21c (7) | 7 | 0 | 0 | 0 | **100%** |
@@ -17,13 +17,17 @@
 | Phase 4 (API) | cs_41~43 (3) | 3 | 0 | 0 | 0 | **100%** |
 | Phase 5 (FE) | cs_51~54 + v2 (5) | 0 | 0 | 0 | **5 (Redesign V1으로 대체)** | **대체 100%** |
 | Redesign V1 (마켓뷰) | PR-1~7 (7) | 7 | 0 | 0 | 0 | **100%** |
+| seed_node v2.1 Phase 2 | Heat Score (모델 + 태스크 + 정렬 전이) | 0 | **1** | 0 | 0 | **부분** |
+| seed_node v2.1 Phase 3 | D-1/D-2/D-3 propagation | 0 | 0 | **3** | 0 | **0%** |
+| cs_5_v2 §8 보조 API | `{symbol}/profile/` | 0 | 0 | **1** | 0 | **0%** |
 | 추가 (Watchlist) | SavedPath/PathAction | 1 | 0 | 0 | 0 | **100%** |
 
-**전체 구현률: 약 93%** (32/34 설계 단위 완료, 1건 미구현 = GDS, 5건은 v1 → Redesign V1로 의도적 대체)
+**전체 구현률: 약 86%** (32/37 설계 단위 완료, 미구현 5건 = GDS · D-1 · D-2 · D-3 · profile API, 부분 1건 = Heat Score, 5건은 v1 → Redesign V1로 의도적 대체)
 
 ### 핵심 결론
 - **Redesign V1**은 기존 `cs_*` 시리즈를 **폐기하지 않는다**. 백엔드(cs_00~43)는 그대로 사용 + 확장(neo4j_dirty 등). 프론트엔드 v1 명세(cs_51~54)만 마켓뷰 5컴포넌트 구조로 **재설계**됨.
-- **단일 미구현 항목**은 `cs_33_gds_algorithms.md` (PageRank / Louvain / Betweenness Centrality). 노드 속성 일부(`stock_community` index)만 schema에 예약되어 있고 실제 GDS 호출 태스크는 존재하지 않음.
+- **명시적 미구현 항목 5건**: ① `cs_33_gds_algorithms.md` (PageRank / Louvain / Betweenness), ② seed_node v2.1 Phase 3 D-1 (text_conditional_prob), ③ D-2 (lagged correlation + propagation_weight), ④ D-3 (가중치 학습), ⑤ `cs_5_frontend_design_v2.md §8`의 `GET /chainsight/{symbol}/profile/` API.
+- **부분 구현 1건**: seed_node v2.1 §3 Heat Score — `calculate_heat_scores` 태스크가 등록되어 4/6 컴포넌트가 작동하나 `SeedHeatScore` PG 모델은 미생성, 섹터 정렬 전이도 `seed_count DESC`에 머무름.
 - Frontend `[symbol]` Deep Dive는 cs_51~54 의도(GraphCanvas/AIGuidePanel/NodeDetailPanel/MiniView)를 그대로 충족하며, `/chainsight` 메인 마켓뷰는 Redesign V1 5-패널(SectorBar/MarketGraphCanvas/ExplorationTrail/RelationCardPanel/ChainStoryFeed)로 추가됨.
 
 ---
@@ -133,9 +137,69 @@
 
 **판단**: Redesign V1이 마켓뷰 경험에서 GDS 없이도 시드/시그널 기반 탐색을 우선시했기 때문에 우선순위가 낮아진 것으로 보임. 명시적 폐기 결정 문서는 발견되지 않음 → 현 시점에는 **보류된 미구현**으로 분류.
 
+> 보강 노트(2026-04-03 task_done/CS-3-3): 과거 PageRank/Louvain/Betweenness Top-5 결과가 보고되어 있으나, 이는 Neo4j Browser에서 1회성으로 실행된 결과로 추정되며 Celery 태스크/주기 실행 코드는 부재. 노드 속성으로 영속화된 흔적도 현 코드에서 사용되지 않음.
+
 ---
 
-### 2. 미테스트 항목 (브라우저 검증)
+### 2. seed_node v2.1 §3 Heat Score (Phase 2) — **B 부분 구현**
+
+**설계 요구사항** (chainsight_seed_node_design.md §3):
+- 6개 정규화 컴포넌트: `price_anomaly`, `volume_surge`, `relation_change_count`, `comention_surge`, `news_event_count`, `gds_centrality_delta`
+- 가중치 W = {0.25, 0.20, 0.20, 0.15, 0.10, 0.10}
+- `SeedHeatScore(stock, date, heat_score, components JSONB, seed_rank)` PG 모델
+- 섹터 정렬 기준 전이: Phase 1 `seed_count DESC` → Phase 2+ `heat_total DESC`
+- Beat: `chainsight-heat-score-daily` 매일 11:30
+
+**구현 현황**:
+- `chainsight/tasks/seed_tasks.py:96` — `calculate_heat_scores` Celery 태스크 존재
+- `config/celery.py:742` — Beat 등록 ✓
+- 컴포넌트: 4/6 구현 (`price`, `volume`, `relation_change`, `news_activation`) — 가중치 {0.25, 0.25, 0.25, 0.25}로 균등 (설계와 상이)
+- 누락 컴포넌트: `comention_surge`(설계의 4번째), `gds_centrality_delta`(cs_33 미구현에 종속)
+- 결과 저장: Neo4j `:Stock` 노드 속성(`heat_score`, `price_signal`, `volume_signal`, `relation_change_signal`, `news_activation`)에만 기록
+- **`SeedHeatScore` PG 모델은 미생성** (grep 0건). `chainsight/models/__init__.py`에 export 없음
+- 섹터 정렬 전이 미수행: `seed_selection.build_sector_summary()`는 여전히 `seed_count DESC` 정렬 (`heat_total` 필드는 0.0 placeholder로만 채워짐)
+- `sector_summary[i].heat_total`은 설계상 시드 종목의 heat_score 합산이어야 하나, 현 코드는 항상 `0.0` 반환 (Neo4j heat_score를 읽지 않음)
+
+**영향**:
+- 마켓뷰 ① 섹터 바의 정렬은 설계 의도(시장 열기 기반)와 다르게 단순 카운트 기반
+- "어느 섹터가 가장 뜨거운가" 판정이 Phase 1 수준에 정체
+
+---
+
+### 3. seed_node v2.1 §4 Phase 3 (D-1/D-2/D-3) — **C 미구현**
+
+**설계 요구사항**:
+- **D-1**: 뉴스 → Gemini Embedding + ChromaDB → `text_conditional_prob(A, B)` (frequency × semantic_similarity, 90일 rolling, 비대칭)
+- **D-2**: `lagged_correlation` + `volume_response` + `propagation_weight(A→B) = 0.40·norm_text + 0.35·norm_price + 0.25·norm_volume` (텍스트 게이트 0.05)
+- **D-3**: 사후 검증 → 가중치 학습
+
+**구현 현황**:
+- grep `text_conditional_prob|propagation_weight|lagged_correlation|ChromaDB|gemini.*embedding` → chainsight/ 0건
+- Beat 스케줄 `chainsight-text-conditional`, `chainsight-lagged-correlation`, `chainsight-propagation-weight` 미등록
+- ChromaDB 인덱스/스토어 부재
+
+**판단**: 설계서 자체가 "Phase 3 D-1 → 60 거래일 → D-2 → 검증 → D-3"의 장기 일정으로 명시 (의존성 §7). 현재 Phase 2(Heat Score) 미완에 막혀 있음.
+
+---
+
+### 4. cs_5_frontend_design_v2 §8 `GET /chainsight/{symbol}/profile/` — **C 미구현**
+
+**설계 요구사항**:
+```
+GET /api/v1/chainsight/{symbol}/profile/
+→ { growth_stage, capital_dna, sensitivity, insider, business_model }
+→ NodeDetailPanel 프로파일 요약 섹션 데이터
+```
+
+**구현 현황**:
+- `chainsight/api/urls.py` 에 `<str:symbol>/profile/` 경로 없음 (현재 등록: `seeds/`, `sector/<sector>/graph/`, `signals/`, `trace/`, `<symbol>/neighbors/`, `<symbol>/graph/`, `<symbol>/suggestions/`, `watchlist/` router)
+- `NodeDetailPanel.tsx`의 우측 패널 "프로파일 요약" 영역(GrowthStage/CapitalDNA/Sensitivity/Insider) 데이터 소스 없음 → 빈 자리이거나 다른 엔드포인트 우회 사용 의심 (별도 검증 필요)
+
+**참고**: PG에는 `CompanyChainProfile`/`CompanyGrowthStage`/`CompanyCapitalDNA`/`CompanySensitivityProfile`/`CompanyInsiderSignal` 데이터가 모두 적재되어 있음 → 백엔드 작업은 단순 직렬화 + 단일 엔드포인트 추가만 필요.
+
+---
+
+### 5. 미테스트 항목 (브라우저 검증)
 
 `task_done/chain_sight_redesign_V1/browser_test_report.md`에 명시된 미테스트(미구현 아님):
 - 섹터 재탭 → reset
@@ -148,7 +212,7 @@
 
 ---
 
-### 3. QA 검증서 비차단 개선 사항
+### 6. QA 검증서 비차단 개선 사항
 
 `task_done/chain_sight_redesign_V1/qa_evaluator_review_01.md` 91% 통과 시 지적된 3건:
 1. `chainsightService.ts`의 `fetch()`를 `authAxios`로 통일 (audit P0 #26 패턴)
@@ -194,9 +258,9 @@
 
 `00_summary.md`에 향후 작업으로 명시된 항목 — **갭 아닌 의식적 후속**:
 1. 전환 애니메이션 (300ms ease-out, bounce)
-2. Heat Score (Phase 2) — 6개 정규화 항목(가격/거래량/관계 변화/co-mention/뉴스/GDS 중심도)
+2. Heat Score (Phase 2) — 위 §2에서 분리하여 "부분 구현"으로 재분류
 3. LLM 기반 chain title/summary 생성
-4. relation_summary / why_now / insight_summary 필드 확장
+4. relation_summary / why_now / insight_summary 필드 확장 (현 `neighbors` 응답에는 1차 템플릿용 필드만 존재)
 5. 모바일 card-first UI (현재 `MobileCardList.tsx`만 존재, 풀 모바일 UX는 미완)
 6. **GDS** (Heat Score 의존성) — cs_33 미구현과 연결
 
@@ -209,7 +273,12 @@
 | `neo4j_dirty` 통일 (audit P0 #9) | migrations/0008_unify_neo4j_flags.py 존재 |
 | CUSTOMER_OF 파생 | api/views.py L91 (graph), L532-533 (neighbors) 둘 다 구현 |
 | Celery Beat drift 인지 | config/celery.py L121-133 주석에 DatabaseScheduler 규약 명시 |
-| GDS 미구현 | grep `pageRank|louvain|betweenness|gds\.` → 0건 |
+| GDS 미구현 | grep `pageRank\|louvain\|betweenness\|gds\.` → 0건 |
+| Heat Score 태스크 | seed_tasks.py:96 `calculate_heat_scores` + celery.py:742 Beat 등록 |
+| Heat Score 컴포넌트 | 코드 4종 vs 설계 6종 (comention_surge, gds_centrality_delta 누락) |
+| `SeedHeatScore` PG 모델 | grep `class SeedHeatScore` → 0건, `models/__init__.py` export 없음 |
+| Phase 3 D-1~3 | grep `text_conditional_prob\|propagation_weight\|lagged_correlation` → 0건 |
+| `{symbol}/profile/` API | api/urls.py에 `profile/` 경로 부재 |
 | Watchlist 전체 | models/saved_path.py + views/watchlist_views.py + 3개 services + 2개 frontend 페이지 + PathCard.tsx |
 | 마켓뷰 5컴포넌트 | components/chainsight/ 19개 컴포넌트 전수 확인 |
 
@@ -217,10 +286,13 @@
 
 ## 권장 후속 액션
 
-1. **GDS 구현 결정 명확화**: cs_33을 정식 폐기할지, M3 후속으로 일정에 다시 올릴지 결정. Heat Score Phase 2 의존성 때문에 결정 지연 시 마켓뷰 신뢰도 신호 약화.
-2. **cs_5_frontend_design_v2의 "노드 비교 모드"**: 명시적 폐기 or `docs/chain_sight/plan/remaining_work_plan.md`에 후속 등록 필요.
-3. **QA 비차단 개선 3건** (chainsightService.ts authAxios 통일 등) 별도 PR로 정리.
-4. **redesign_v1_260409/ 4개 문서**를 `cs_*` 시리즈와 cross-link하는 README/index 추가 권장 — 신규 인원이 v1 cs_* → Redesign V1 진화를 추적할 수 있도록.
+1. **GDS 구현 결정 명확화** (★★★): cs_33을 정식 폐기할지, M3 후속으로 일정에 다시 올릴지 결정. Heat Score Phase 2의 `gds_centrality_delta` 컴포넌트가 GDS에 의존하므로 결정 지연 시 마켓뷰 섹터 정렬 전이가 영구 차단됨.
+2. **Heat Score 마무리** (★★): `SeedHeatScore` PG 모델 추가 + `calculate_heat_scores`가 PG에도 기록하도록 보강 + `build_sector_summary()`의 `heat_total` 실제 계산 + 섹터 정렬 `heat_total DESC` 전이. 4-of-6 컴포넌트 → 5-of-6 (comention_surge 추가)는 GDS 없이도 즉시 가능.
+3. **`{symbol}/profile/` API 추가** (★★): NodeDetailPanel 프로파일 요약 빈 자리를 채우거나, 해당 영역의 의도된 동작을 명시적으로 폐기. PG 데이터는 이미 적재되어 있으므로 단일 직렬화 뷰만 필요.
+4. **Phase 3 (D-1~D-3) 일정 명확화**: Heat Score 마무리 후 D-1 착수 여부 결정. 60 거래일 의존성 때문에 일정 락업.
+5. **cs_5_frontend_design_v2의 "노드 비교 모드"**: 명시적 폐기 or `docs/chain_sight/plan/remaining_work_plan.md`에 후속 등록 필요.
+6. **QA 비차단 개선 3건** (chainsightService.ts authAxios 통일 등) 별도 PR로 정리.
+7. **redesign_v1_260409/ 4개 문서**를 `cs_*` 시리즈와 cross-link하는 README/index 추가 권장 — 신규 인원이 v1 cs_* → Redesign V1 진화를 추적할 수 있도록.
 
 ---
 
