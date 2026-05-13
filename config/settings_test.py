@@ -17,6 +17,9 @@ import os
 os.environ.setdefault('DJANGO_DEBUG', 'True')
 os.environ.setdefault('SECRET_KEY', 'test-secret-key-not-for-production-use-only')
 os.environ.setdefault('NEO4J_PASSWORD', 'test-neo4j-password')
+# 운영 Neo4j(`bolt://localhost:7687`) 인증 실패 WARN 노이즈 방지.
+# 닫힌 포트로 강제하여 테스트가 운영 인스턴스에 도달조차 못하게 한다.
+os.environ.setdefault('NEO4J_URI', 'bolt://127.0.0.1:1')
 
 from .settings import *  # noqa: F401,F403,E402
 
