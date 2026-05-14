@@ -218,3 +218,49 @@ def test_token_budgets_e4_tier1_2_3_registered():
     t2 = get_token_budget("e4_conversation_tier2")
     t3 = get_token_budget("e4_conversation_tier3")
     assert t1 < t2 < t3
+
+
+# ===== Part 4 §1: DIMENSION_LOOKUP dispatch =====
+
+
+def test_e4_conversation_dimension_lookup_dispatch():
+    """DIMENSION_LOOKUP[e4_conversation] entry → _main_unified() 자동 dispatch ready.
+
+    Part 4 §1 — e3_portfolio mirror + tier_aware 확장.
+    """
+    from scripts.validation.score_step8 import DIMENSION_LOOKUP
+
+    assert "e4_conversation" in DIMENSION_LOOKUP
+    entry = DIMENSION_LOOKUP["e4_conversation"]
+
+    # 9 필드 (e3_portfolio 8 + tier_aware)
+    expected_keys = {
+        "dim1", "dim2", "model_label_field", "result_structure",
+        "default_raw", "default_scored", "weight", "additional_lex_check",
+        "tier_aware",
+    }
+    assert set(entry.keys()) == expected_keys
+
+    # e3_portfolio 패턴 mirror (path + tier_aware 추가만 다름)
+    e3p = DIMENSION_LOOKUP["e3_portfolio"]
+    assert entry["dim1"] == e3p["dim1"]
+    assert entry["dim2"] == e3p["dim2"]
+    assert entry["model_label_field"] == e3p["model_label_field"]
+    assert entry["result_structure"] == e3p["result_structure"]
+    assert entry["weight"] == e3p["weight"]
+    assert entry["additional_lex_check"] == e3p["additional_lex_check"]
+
+    # path는 slice6 → slice7 / e3_portfolio → e4_conversation
+    assert entry["default_raw"] == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json"
+    assert entry["default_scored"] == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_scored.json"
+
+    # tier_aware 신규 (Slice 7)
+    assert entry["tier_aware"] is True
+
+
+def test_dimension_lookup_other_entries_unaffected():
+    """e4_conversation 추가가 기존 entry IDENTICAL hash KPI 보호."""
+    from scripts.validation.score_step8 import DIMENSION_LOOKUP
+
+    expected_entrypoints = {"e1", "e2", "e3", "e3_portfolio", "e4_conversation", "e5", "e6"}
+    assert set(DIMENSION_LOOKUP.keys()) == expected_entrypoints

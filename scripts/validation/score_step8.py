@@ -90,6 +90,17 @@ DIMENSION_LOOKUP = {
         "weight": 0.5,
         "additional_lex_check": "completeness_auto",  # E3 mirror
     },
+    "e4_conversation": {  # Slice 7 Part 4 §1 — e3_portfolio mirror + tier_aware
+        "dim1": {"key": "naturalness", "manual_field": "naturalness_manual"},
+        "dim2": {"key": "insight", "manual_field": "insight_manual"},
+        "model_label_field": "model_label",
+        "result_structure": "nested",
+        "default_raw": "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json",
+        "default_scored": "docs/portfolio/coach/slice7/step8_2way_e4_conversation_scored.json",
+        "weight": 0.5,
+        "additional_lex_check": "completeness_auto",  # E3 mirror
+        "tier_aware": True,  # Slice 7 신규 — score_final.py에서 Tier별 보조 분석에 참조
+    },
 }
 
 
