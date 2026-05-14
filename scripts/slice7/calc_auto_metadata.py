@@ -106,13 +106,18 @@ def main() -> int:
         preset_match = count_preset_keywords(answer, r.get("preset_id", ""))
         z = round((len(answer) - avg_len) / std_len, 2) if std_len else 0
 
+        # provider는 raw에서 직접 (slice7 matrix 머지 결과 신뢰)
+        if slice_name == "slice7":
+            provider = raw.get("provider")
+        else:
+            provider = raw.get("model_label") or r.get("provider")
         metadatas.append({
             "idx": r.get("idx"),
             "source_slice": slice_name,
             "scenario_id": r.get("scenario_id"),
             "preset_id": r.get("preset_id"),
             "tier": r.get("tier"),
-            "provider": r.get("provider"),
+            "provider": provider,
             "metric_citation_accuracy": citation_accuracy,
             "preset_intent_keyword_count": preset_match,
             "answer_length": len(answer),

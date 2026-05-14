@@ -76,15 +76,34 @@ def extract_answer(entry: dict, source_slice: str) -> str:
 
 
 def load_raw(path: Path) -> list[dict]:
-    """slice5/6 (data['results']) 또는 slice7 (data['entries']) 호환 로드."""
+    """slice5/6 (data['results']) 또는 slice7 (data['entries']) 호환 로드.
+
+    slice7 step8 dump는 provider 필드가 'anthropic'으로 평탄화되어 있으므로
+    같은 디렉토리의 step7_matrix_raw.json(haiku/sonnet 명시)에서 provider를
+    자동 머지한다 — 매트릭스와 dump는 동일 인덱스 순서가 보장됨.
+    """
     if not path.exists():
         return []
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, list):
-        return data
-    if isinstance(data, dict):
-        return data.get("entries") or data.get("results") or []
-    return []
+        entries = data
+    elif isinstance(data, dict):
+        entries = data.get("entries") or data.get("results") or []
+    else:
+        entries = []
+
+    # slice7 step8 dump → matrix raw provider 머지
+    if "step8_2way_e4_conversation_raw" in str(path):
+        matrix_path = path.parent / "step7_matrix_raw.json"
+        if matrix_path.exists():
+            matrix_data = json.loads(matrix_path.read_text(encoding="utf-8"))
+            matrix_entries = matrix_data if isinstance(matrix_data, list) else matrix_data.get("entries", [])
+            for i, e in enumerate(entries):
+                if i < len(matrix_entries):
+                    m_provider = matrix_entries[i].get("provider")
+                    if m_provider and m_provider != e.get("provider"):
+                        e["provider"] = m_provider
+    return entries
 
 
 def referenced_metrics(entry: dict, source_slice: str) -> list[str]:

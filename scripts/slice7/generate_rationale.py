@@ -117,7 +117,6 @@ def main() -> int:
         return 0
 
     CostGuard.get_instance().reset_slice("slice7_part4_rationale", max_calls=80)
-    client = LLMClient()
     sonnet_kwargs = resolve_provider_kwargs("sonnet")
 
     rationales: list[dict] = []
@@ -125,6 +124,9 @@ def main() -> int:
     for i, entry in enumerate(all_entries, 1):
         slice_name = entry["__source_slice"]
         prompt = build_rationale_prompt(entry, slice_name)
+        # 인스턴스별 budget(50)이 settings에 묶여있어 52건 호출 시 12번째부터 위험.
+        # 매 호출 새 인스턴스로 카운터 reset (CostGuard 글로벌 80 cap이 실제 가드).
+        client = LLMClient()
         try:
             response = client.complete(prompt=prompt, max_tokens=600, **sonnet_kwargs)
         except Exception as exc:

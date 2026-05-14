@@ -141,3 +141,34 @@ def test_score_stage1_guards_missing_filled(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(mod, "FILLED_PATH", tmp_path / "missing.md")
     rc = mod.main()
     assert rc == 1
+
+
+# ===== §9/§10 의존 가드 =====
+
+
+def test_prepare_stage2_form_guards_missing_verdict(tmp_path, monkeypatch, capsys):
+    from scripts.slice7 import prepare_stage2_form as mod
+
+    monkeypatch.setattr(mod, "STAGE1_VERDICT", tmp_path / "missing.json")
+    rc = mod.main()
+    assert rc == 1
+
+
+def test_score_final_guards_missing_stage1(tmp_path, monkeypatch, capsys):
+    from scripts.slice7 import score_final as mod
+
+    monkeypatch.setattr(mod, "STAGE1_PATH", tmp_path / "missing.json")
+    rc = mod.main()
+    assert rc == 1
+
+
+def test_score_final_normalize_provider():
+    from scripts.slice7.score_final import normalize_provider
+
+    assert normalize_provider("anthropic_haiku") == "haiku"
+    assert normalize_provider("haiku") == "haiku"
+    assert normalize_provider("claude-haiku-4-5") == "haiku"
+    assert normalize_provider("anthropic_sonnet") == "sonnet"
+    assert normalize_provider("claude-sonnet-4-5") == "sonnet"
+    assert normalize_provider(None) == "unknown"
+    assert normalize_provider("") == "unknown"

@@ -1,0 +1,422 @@
+{
+  "haiku_stage1": [
+    {
+      "eval_id": 1,
+      "source_slice": "slice7",
+      "idx": 14,
+      "provider": "haiku",
+      "preset_id": "V4_buffett_quality_value",
+      "tier": 1
+    },
+    {
+      "eval_id": 2,
+      "source_slice": "slice6",
+      "idx": 2,
+      "provider": "haiku",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 3,
+      "source_slice": "slice7",
+      "idx": 22,
+      "provider": "haiku",
+      "preset_id": "V1_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 4,
+      "source_slice": "slice7",
+      "idx": 0,
+      "provider": "haiku",
+      "preset_id": "V1_garp",
+      "tier": 1
+    },
+    {
+      "eval_id": 5,
+      "source_slice": "slice5",
+      "idx": 4,
+      "provider": "haiku",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 6,
+      "source_slice": "slice7",
+      "idx": 4,
+      "provider": "haiku",
+      "preset_id": "V1_garp",
+      "tier": 3
+    },
+    {
+      "eval_id": 7,
+      "source_slice": "slice5",
+      "idx": 10,
+      "provider": "haiku",
+      "preset_id": "quality_factor",
+      "tier": null
+    },
+    {
+      "eval_id": 8,
+      "source_slice": "slice7",
+      "idx": 2,
+      "provider": "haiku",
+      "preset_id": "V1_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 9,
+      "source_slice": "slice7",
+      "idx": 12,
+      "provider": "haiku",
+      "preset_id": "V3_quality_factor",
+      "tier": 2
+    },
+    {
+      "eval_id": 10,
+      "source_slice": "slice5",
+      "idx": 0,
+      "provider": "haiku",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 11,
+      "source_slice": "slice7",
+      "idx": 20,
+      "provider": "haiku",
+      "preset_id": "V5_dividend_growth",
+      "tier": 3
+    },
+    {
+      "eval_id": 12,
+      "source_slice": "slice6",
+      "idx": 4,
+      "provider": "haiku",
+      "preset_id": "quality_factor",
+      "tier": null
+    },
+    {
+      "eval_id": 13,
+      "source_slice": "slice7",
+      "idx": 18,
+      "provider": "haiku",
+      "preset_id": "V5_dividend_growth",
+      "tier": 1
+    },
+    {
+      "eval_id": 14,
+      "source_slice": "slice7",
+      "idx": 26,
+      "provider": "haiku",
+      "preset_id": "V3_quality_factor",
+      "tier": 1
+    },
+    {
+      "eval_id": 15,
+      "source_slice": "slice7",
+      "idx": 24,
+      "provider": "haiku",
+      "preset_id": "V2_garp",
+      "tier": 3
+    },
+    {
+      "eval_id": 16,
+      "source_slice": "slice7",
+      "idx": 6,
+      "provider": "haiku",
+      "preset_id": "V2_garp",
+      "tier": 1
+    },
+    {
+      "eval_id": 17,
+      "source_slice": "slice6",
+      "idx": 6,
+      "provider": "haiku",
+      "preset_id": "buffett_quality_value",
+      "tier": null
+    },
+    {
+      "eval_id": 18,
+      "source_slice": "slice6",
+      "idx": 8,
+      "provider": "haiku",
+      "preset_id": "dividend_growth",
+      "tier": null
+    },
+    {
+      "eval_id": 19,
+      "source_slice": "slice5",
+      "idx": 12,
+      "provider": "haiku",
+      "preset_id": "contrarian",
+      "tier": null
+    },
+    {
+      "eval_id": 20,
+      "source_slice": "slice7",
+      "idx": 8,
+      "provider": "haiku",
+      "preset_id": "V2_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 21,
+      "source_slice": "slice5",
+      "idx": 2,
+      "provider": "haiku",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 22,
+      "source_slice": "slice7",
+      "idx": 10,
+      "provider": "haiku",
+      "preset_id": "V3_quality_factor",
+      "tier": 1
+    },
+    {
+      "eval_id": 23,
+      "source_slice": "slice5",
+      "idx": 6,
+      "provider": "haiku",
+      "preset_id": "buffett_quality_value",
+      "tier": null
+    },
+    {
+      "eval_id": 24,
+      "source_slice": "slice5",
+      "idx": 8,
+      "provider": "haiku",
+      "preset_id": "dividend_growth",
+      "tier": null
+    },
+    {
+      "eval_id": 25,
+      "source_slice": "slice6",
+      "idx": 0,
+      "provider": "haiku",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 26,
+      "source_slice": "slice7",
+      "idx": 16,
+      "provider": "haiku",
+      "preset_id": "V4_buffett_quality_value",
+      "tier": 2
+    }
+  ],
+  "sonnet_stage2": [
+    {
+      "eval_id": 1,
+      "source_slice": "slice5",
+      "idx": 9,
+      "provider": "sonnet",
+      "preset_id": "dividend_growth",
+      "tier": null
+    },
+    {
+      "eval_id": 2,
+      "source_slice": "slice6",
+      "idx": 9,
+      "provider": "sonnet",
+      "preset_id": "dividend_growth",
+      "tier": null
+    },
+    {
+      "eval_id": 3,
+      "source_slice": "slice7",
+      "idx": 1,
+      "provider": "sonnet",
+      "preset_id": "V1_garp",
+      "tier": 1
+    },
+    {
+      "eval_id": 4,
+      "source_slice": "slice5",
+      "idx": 3,
+      "provider": "sonnet",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 5,
+      "source_slice": "slice6",
+      "idx": 7,
+      "provider": "sonnet",
+      "preset_id": "buffett_quality_value",
+      "tier": null
+    },
+    {
+      "eval_id": 6,
+      "source_slice": "slice7",
+      "idx": 15,
+      "provider": "sonnet",
+      "preset_id": "V4_buffett_quality_value",
+      "tier": 1
+    },
+    {
+      "eval_id": 7,
+      "source_slice": "slice6",
+      "idx": 5,
+      "provider": "sonnet",
+      "preset_id": "quality_factor",
+      "tier": null
+    },
+    {
+      "eval_id": 8,
+      "source_slice": "slice5",
+      "idx": 11,
+      "provider": "sonnet",
+      "preset_id": "quality_factor",
+      "tier": null
+    },
+    {
+      "eval_id": 9,
+      "source_slice": "slice7",
+      "idx": 9,
+      "provider": "sonnet",
+      "preset_id": "V2_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 10,
+      "source_slice": "slice7",
+      "idx": 5,
+      "provider": "sonnet",
+      "preset_id": "V1_garp",
+      "tier": 3
+    },
+    {
+      "eval_id": 11,
+      "source_slice": "slice7",
+      "idx": 7,
+      "provider": "sonnet",
+      "preset_id": "V2_garp",
+      "tier": 1
+    },
+    {
+      "eval_id": 12,
+      "source_slice": "slice7",
+      "idx": 19,
+      "provider": "sonnet",
+      "preset_id": "V5_dividend_growth",
+      "tier": 1
+    },
+    {
+      "eval_id": 13,
+      "source_slice": "slice7",
+      "idx": 11,
+      "provider": "sonnet",
+      "preset_id": "V3_quality_factor",
+      "tier": 1
+    },
+    {
+      "eval_id": 14,
+      "source_slice": "slice7",
+      "idx": 27,
+      "provider": "sonnet",
+      "preset_id": "V3_quality_factor",
+      "tier": 1
+    },
+    {
+      "eval_id": 15,
+      "source_slice": "slice7",
+      "idx": 21,
+      "provider": "sonnet",
+      "preset_id": "V5_dividend_growth",
+      "tier": 3
+    },
+    {
+      "eval_id": 16,
+      "source_slice": "slice5",
+      "idx": 13,
+      "provider": "sonnet",
+      "preset_id": "contrarian",
+      "tier": null
+    },
+    {
+      "eval_id": 17,
+      "source_slice": "slice7",
+      "idx": 17,
+      "provider": "sonnet",
+      "preset_id": "V4_buffett_quality_value",
+      "tier": 2
+    },
+    {
+      "eval_id": 18,
+      "source_slice": "slice7",
+      "idx": 25,
+      "provider": "sonnet",
+      "preset_id": "V2_garp",
+      "tier": 3
+    },
+    {
+      "eval_id": 19,
+      "source_slice": "slice7",
+      "idx": 3,
+      "provider": "sonnet",
+      "preset_id": "V1_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 20,
+      "source_slice": "slice7",
+      "idx": 13,
+      "provider": "sonnet",
+      "preset_id": "V3_quality_factor",
+      "tier": 2
+    },
+    {
+      "eval_id": 21,
+      "source_slice": "slice5",
+      "idx": 5,
+      "provider": "sonnet",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 22,
+      "source_slice": "slice6",
+      "idx": 1,
+      "provider": "sonnet",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 23,
+      "source_slice": "slice6",
+      "idx": 3,
+      "provider": "sonnet",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 24,
+      "source_slice": "slice7",
+      "idx": 23,
+      "provider": "sonnet",
+      "preset_id": "V1_garp",
+      "tier": 2
+    },
+    {
+      "eval_id": 25,
+      "source_slice": "slice5",
+      "idx": 1,
+      "provider": "sonnet",
+      "preset_id": "garp",
+      "tier": null
+    },
+    {
+      "eval_id": 26,
+      "source_slice": "slice5",
+      "idx": 7,
+      "provider": "sonnet",
+      "preset_id": "buffett_quality_value",
+      "tier": null
+    }
+  ]
+}
