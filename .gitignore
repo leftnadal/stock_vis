@@ -181,6 +181,7 @@ cython_debug/
 .pypirc
 
 # claude example
+.claude/scheduled_tasks.lock
 
 # OAG KB
 shared_kb/__pycache__/

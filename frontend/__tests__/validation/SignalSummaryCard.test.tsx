@@ -48,13 +48,13 @@ describe('SignalSummaryCard', () => {
       />,
     );
 
-    // gray 카테고리(밸류에이션) 컨테이너에 hover
-    const grayContainer = screen.getByText('밸류에이션').closest('div')!;
-    fireEvent.mouseEnter(grayContainer);
+    // gray 카테고리(밸류에이션) 버튼에 hover — hover 핸들러는 button 요소에 부착됨
+    const grayBtn = screen.getByRole('button', { name: /밸류에이션/ });
+    fireEvent.mouseEnter(grayBtn);
 
     expect(screen.getByText('데이터 부족으로 평가 불가')).toBeInTheDocument();
 
-    fireEvent.mouseLeave(grayContainer);
+    fireEvent.mouseLeave(grayBtn);
     expect(screen.queryByText('데이터 부족으로 평가 불가')).not.toBeInTheDocument();
   });
 
@@ -67,9 +67,9 @@ describe('SignalSummaryCard', () => {
       />,
     );
 
-    // green 카테고리(수익성) 컨테이너에 hover
-    const greenContainer = screen.getByText('수익성').closest('div')!;
-    fireEvent.mouseEnter(greenContainer);
+    // green 카테고리(수익성) 버튼에 hover
+    const greenBtn = screen.getByRole('button', { name: '수익성' });
+    fireEvent.mouseEnter(greenBtn);
 
     // gray 사유 텍스트는 표시되지 않아야 함
     expect(screen.queryByText('데이터 부족으로 평가 불가')).not.toBeInTheDocument();
