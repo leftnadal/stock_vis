@@ -70,14 +70,12 @@ def parse_section(text: str, section_header: str, next_section_header: str | Non
 
 
 def load_costs() -> dict:
+    from scripts.slice7._common import entry_cost, load_raw
+
     costs: dict = {}
     for slice_name, path in RAW_PATHS.items():
-        if not path.exists():
-            continue
-        data = json.loads(path.read_text(encoding="utf-8"))
-        entries = data.get("entries") or data.get("results") or []
-        for i, e in enumerate(entries):
-            costs[(slice_name, i)] = e.get("cost_usd", 0)
+        for i, e in enumerate(load_raw(path)):
+            costs[(slice_name, i)] = entry_cost(e)
     return costs
 
 

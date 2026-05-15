@@ -59,15 +59,13 @@ def parse_filled(text: str) -> dict[int, dict]:
 
 
 def load_costs() -> dict:
-    """(source_slice, idx) → cost_usd."""
+    """(source_slice, idx) → cost_usd. slice5/6은 metadata.cost_usd 위치."""
+    from scripts.slice7._common import entry_cost, load_raw
+
     costs: dict = {}
     for slice_name, path in RAW_PATHS.items():
-        if not path.exists():
-            continue
-        data = json.loads(path.read_text(encoding="utf-8"))
-        entries = data["entries"] if isinstance(data, dict) else data
-        for i, e in enumerate(entries):
-            costs[(slice_name, i)] = e.get("cost_usd", 0)
+        for i, e in enumerate(load_raw(path)):
+            costs[(slice_name, i)] = entry_cost(e)
     return costs
 
 

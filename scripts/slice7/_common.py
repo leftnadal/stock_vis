@@ -134,6 +134,19 @@ def referenced_metrics(entry: dict, source_slice: str) -> list[str]:
     return []
 
 
+def entry_cost(entry: dict) -> float:
+    """slice5/6은 metadata.cost_usd, slice7은 top-level cost_usd."""
+    top = entry.get("cost_usd")
+    if isinstance(top, (int, float)) and top > 0:
+        return float(top)
+    md = entry.get("metadata")
+    if isinstance(md, dict):
+        c = md.get("cost_usd")
+        if isinstance(c, (int, float)):
+            return float(c)
+    return 0.0
+
+
 def portfolio_metrics_keys(entry: dict) -> set[str]:
     """raw entry에 portfolio_metrics dict이 있다면 키만 추출."""
     pm = entry.get("portfolio_metrics")

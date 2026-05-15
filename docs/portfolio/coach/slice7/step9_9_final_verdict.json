@@ -1,0 +1,65 @@
+{
+  "stage2_executed": true,
+  "winners_by_slice": {
+    "slice7": {
+      "winner": "haiku",
+      "haiku_efficiency": 1192.02,
+      "sonnet_efficiency": 320.67,
+      "efficiency_gap_pct": 271.73
+    },
+    "slice6": {
+      "winner": "haiku",
+      "haiku_efficiency": 755.93,
+      "sonnet_efficiency": 207.13,
+      "efficiency_gap_pct": 264.95
+    },
+    "slice5": {
+      "winner": "haiku",
+      "haiku_efficiency": 608.48,
+      "sonnet_efficiency": 183.28,
+      "efficiency_gap_pct": 231.99
+    }
+  },
+  "winner_changes": {
+    "slice5": {
+      "old": "haiku",
+      "new": "haiku",
+      "changed": false
+    },
+    "slice6": {
+      "old": "haiku",
+      "new": "haiku",
+      "changed": false
+    }
+  },
+  "hypothesis_status": "6_of_6_pending_slice1_3_4_verification",
+  "slice134_recheck_proceed": false,
+  "tier_analysis_slice7": {
+    "tier_1": {
+      "haiku_n": 6,
+      "haiku_avg_label": 3.6667,
+      "sonnet_n": 6,
+      "sonnet_avg_label": 4.25,
+      "n_total": 12,
+      "weak_signal_warning": false
+    },
+    "tier_2": {
+      "haiku_n": 5,
+      "haiku_avg_label": 4.0,
+      "sonnet_n": 4,
+      "sonnet_avg_label": 4.0,
+      "n_total": 9,
+      "weak_signal_warning": false
+    },
+    "tier_3": {
+      "haiku_n": 3,
+      "haiku_avg_label": 3.5,
+      "sonnet_n": 3,
+      "sonnet_avg_label": 4.0,
+      "n_total": 6,
+      "weak_signal_warning": false
+    }
+  },
+  "rubric_c6_distribution_pass": false,
+  "rubric_26_close_action": "keep_open"
+}
