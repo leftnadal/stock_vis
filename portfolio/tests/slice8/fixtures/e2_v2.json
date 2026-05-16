@@ -1,0 +1,53 @@
+{
+  "scenario_id": "e2_v2",
+  "preset_id": "GARP",
+  "entry": "e2",
+  "metrics": [
+    {
+      "metric_id": "peg_ratio",
+      "metric_display_name": "주가성장비율",
+      "tier": "core",
+      "value": "1.25",
+      "percentile": "0.45",
+      "percentile_scope": "industry",
+      "level_tag": "moderate",
+      "threshold_applied": "1.5",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "1.25",
+        "window_1q": "1.30",
+        "window_4q": "1.45",
+        "window_12q": "1.80"
+      }
+    },
+    {
+      "metric_id": "earnings_growth",
+      "metric_display_name": "이익성장률",
+      "tier": "core",
+      "value": "0.18",
+      "percentile": "0.70",
+      "percentile_scope": "industry",
+      "level_tag": "good",
+      "threshold_applied": "0.10",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "0.18",
+        "window_1q": null,
+        "window_4q": "0.22",
+        "window_12q": null
+      }
+    },
+    {
+      "metric_id": "roe",
+      "metric_display_name": "자기자본이익률",
+      "tier": "supporting",
+      "value": "0.22",
+      "percentile": "0.78",
+      "percentile_scope": "industry",
+      "level_tag": "excellent",
+      "threshold_applied": "0.15",
+      "passed_threshold": true,
+      "time_series": null
+    }
+  ]
+}

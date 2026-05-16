@@ -1,0 +1,92 @@
+{
+  "scenario_id": "e3_concentrated_v2",
+  "preset_id": "concentrated_value",
+  "entry": "e3",
+  "metrics": [
+    {
+      "metric_id": "roic",
+      "metric_display_name": "투하자본수익률",
+      "tier": "core",
+      "value": "0.283",
+      "percentile": "0.88",
+      "percentile_scope": "industry",
+      "level_tag": "excellent",
+      "threshold_applied": "0.15",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "0.283",
+        "window_1q": "0.275",
+        "window_4q": "0.250",
+        "window_12q": "0.180"
+      }
+    },
+    {
+      "metric_id": "pe_ratio",
+      "metric_display_name": "주가수익비율",
+      "tier": "core",
+      "value": "28.5",
+      "percentile": "0.35",
+      "percentile_scope": "industry",
+      "level_tag": "moderate",
+      "threshold_applied": "30.0",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "28.5",
+        "window_1q": "26.8",
+        "window_4q": "22.1",
+        "window_12q": "18.5"
+      }
+    },
+    {
+      "metric_id": "debt_to_equity",
+      "metric_display_name": "부채비율",
+      "tier": "supporting",
+      "value": "0.45",
+      "percentile": "0.65",
+      "percentile_scope": "industry",
+      "level_tag": "good",
+      "threshold_applied": "1.0",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "0.45",
+        "window_1q": "0.48",
+        "window_4q": "0.52",
+        "window_12q": "0.60"
+      }
+    },
+    {
+      "metric_id": "free_cash_flow_yield",
+      "metric_display_name": "잉여현금흐름수익률",
+      "tier": "core",
+      "value": "0.055",
+      "percentile": "0.72",
+      "percentile_scope": "industry",
+      "level_tag": "good",
+      "threshold_applied": "0.04",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "0.055",
+        "window_1q": "0.052",
+        "window_4q": "0.045",
+        "window_12q": null
+      }
+    },
+    {
+      "metric_id": "revenue_growth",
+      "metric_display_name": "매출성장률",
+      "tier": "supporting",
+      "value": "0.12",
+      "percentile": "0.55",
+      "percentile_scope": "industry",
+      "level_tag": "moderate",
+      "threshold_applied": "0.10",
+      "passed_threshold": true,
+      "time_series": {
+        "current": "0.12",
+        "window_1q": "0.11",
+        "window_4q": "0.15",
+        "window_12q": "0.18"
+      }
+    }
+  ]
+}
