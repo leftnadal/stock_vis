@@ -85,7 +85,7 @@ def test_e3_portfolio_service_mock_flow(fixture_id, model_label):
     parsed_json = json.loads(result["raw_response"])
     assert "holistic_assessment" in parsed_json
 
-    # Step 3: parse PASS (E3PortfolioCommentary 6 필드)
+    # Step 3: parse PASS (E3PortfolioCommentary 6 필드 + Slice 8 #28 action_items)
     parsed = result["parsed"]
     assert set(parsed.keys()) == {
         "holistic_assessment",
@@ -94,7 +94,10 @@ def test_e3_portfolio_service_mock_flow(fixture_id, model_label):
         "risk_concentration_comment",
         "preset_alignment",
         "confidence",
+        "action_items",  # Slice 8 Part 2 #28 추가 슬롯 (default [])
     }
+    # Slice 8 #28: action_items backward-compat — fixture에 미존재 시 빈 리스트
+    assert parsed["action_items"] == []
 
     # Step 4: validate — preset_alignment fixture expected_alignment 정합
     expected_alignment = fixture["expected_alignment"]

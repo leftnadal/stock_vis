@@ -14,6 +14,8 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from portfolio.schemas.commentary_output import ActionItem
+
 
 # ============================================================
 # Conversation Turn
@@ -94,6 +96,10 @@ class E4ConversationOutput(BaseModel):
         description="후속 질문 추천 (Tier 2/3 활용)",
     )
     confidence: Literal["high", "medium", "low"] = "medium"
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
+    )
 
     @model_validator(mode="after")
     def validate_referenced_metrics_format(self) -> "E4ConversationOutput":

@@ -10,6 +10,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from .commentary_output import ActionItem
 from .diagnostic import DiagnosticCard
 
 
@@ -147,6 +148,10 @@ class E3PortfolioCommentary(BaseModel):
         le=5,
         description="LLM 평가 자신도 1~5.",
     )
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
+    )
 
 
 # ============================================================
@@ -219,6 +224,10 @@ class E6ComparisonResponse(BaseModel):
         max_length=300,
         description="마무리 해설 (사용자 결정 보조 문구).",
     )
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
+    )
 
 
 # ============================================================
@@ -241,6 +250,10 @@ class ConversationResponse(BaseModel):
     adjustment_parse_hint: str = Field(
         "",
         description="E5로 넘길 힌트 (조정 의도 요약).",
+    )
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
     )
 
 

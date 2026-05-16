@@ -14,6 +14,8 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from portfolio.schemas.commentary_output import ActionItem
+
 
 class LLMResponse(BaseModel):
     text: str
@@ -24,6 +26,10 @@ class LLMResponse(BaseModel):
     output_tokens: int
     cost_usd: float
     fallback_from: Optional[Literal["gemini", "anthropic"]] = None
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
+    )
 
     def metadata_dict(self) -> dict:
         """text를 제외한 메타데이터 dict (provider/model/latency/tokens/cost/fallback)."""
@@ -117,6 +123,10 @@ class E5Response(BaseModel):
     no_actionable_intent: bool = Field(
         False,
         description="자연어 명령이 조정 의도가 아닌 경우(질문/잡담) True.",
+    )
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
     )
 
     @model_validator(mode="after")
@@ -226,6 +236,10 @@ class E2Response(BaseModel):
 
     card: E2DiagnosticCard
     preset_id: str = Field(..., description="입력 preset 식별 (garp, buffett 등)")
+    action_items: list[ActionItem] = Field(
+        default_factory=list,
+        description="Slice 8 Part 2 #28: LLM이 제안한 실행 가능 액션 항목 (없으면 빈 리스트).",
+    )
 
 
 # ============================================================
