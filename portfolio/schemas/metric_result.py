@@ -3,6 +3,9 @@ MetricResult (Pydantic) — LLM에 전달할 지표 결과.
 Django 모델 portfolio.models.MetricResult 와는 별개의 DTO.
 
 설계 근거: coach-llm-design-v1.md §4-5
+
+Slice 8 Part 1 Step 1 #27 추가: Optional[TimeSeriesContext] 시계열 필드
+(기존 fixture는 None default로 backward-compat 유지).
 """
 
 from __future__ import annotations
@@ -11,6 +14,8 @@ from decimal import Decimal
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
+
+from portfolio.schemas.commentary_input import TimeSeriesContext
 
 
 class MetricTier(StrEnum):
@@ -57,6 +62,13 @@ class MetricResult(BaseModel):
     passed_threshold: bool | None = Field(
         None,
         description="임계값 통과 여부. 임계값 개념이 없는 지표는 None.",
+    )
+    time_series: TimeSeriesContext | None = Field(
+        None,
+        description=(
+            "Slice 8 #27: 4분기·12분기 시계열 컨텍스트. "
+            "FMP 미가용 또는 시계열 부재 시 None (backward-compat)."
+        ),
     )
 
     # Example:
