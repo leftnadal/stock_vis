@@ -1,0 +1,22 @@
+{
+  "holistic_assessment": "포트폴리오는 집중 가치 전략에 부합하는 5종목 구성이나, IT 섹터 비중 60%로 편중되어 단일 섹터 충격에 노출되어 있습니다. ROIC와 FCF 수익률은 양호하나 분산 측면에서 개선 여지가 큽니다.",
+  "diversification_comment": "5종목 집중도는 의도된 전략이나 섹터 다양성이 부족합니다.",
+  "sector_balance_comment": "IT 60%, 산업재 20%, 헬스케어 20%로 IT 비중이 과도합니다.",
+  "risk_concentration_comment": "IT 사이클 하락 시 portfolio 전체 동조 낙폭 위험 — 단일 섹터 충격이 leverage로 증폭됩니다.",
+  "preset_alignment": "partial",
+  "confidence": 4,
+  "action_items": [
+    {
+      "title": "IT 섹터 비중 60% → 35%로 축소",
+      "description": "IT 비중 60%로 편중 — 분기별 5%씩 4분기 걸쳐 단계적 축소. 매도 종목은 P/E 가장 높은 종목 우선.",
+      "priority": "high",
+      "category": "rebalance"
+    },
+    {
+      "title": "방어 섹터 신규 편입 (헬스케어 또는 필수소비재)",
+      "description": "IT 축소분을 변동성 낮은 헬스케어·필수소비재로 분산. 목표 sector_hhi 0.35 + portfolio_beta 1.00 근처.",
+      "priority": "medium",
+      "category": "research"
+    }
+  ]
+}

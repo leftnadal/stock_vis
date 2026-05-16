@@ -1,0 +1,8 @@
+{
+  "holistic_assessment": "포트폴리오는 분산이 양호하며 GARP 전략에 부합합니다. 6개 섹터에 걸쳐 균등 배분되어 있어 단일 섹터 충격 노출이 제한적입니다.",
+  "diversification_comment": "10종목 6섹터 균등 배분으로 분산도 우수합니다.",
+  "sector_balance_comment": "IT 25%, 금융 20%, 산업재 15%, 기타 40%로 균형이 잡혀있습니다.",
+  "risk_concentration_comment": "포트폴리오 베타 0.95로 시장 평균 수준의 변동성, 집중 리스크 낮습니다.",
+  "preset_alignment": "aligned",
+  "confidence": 5
+}
