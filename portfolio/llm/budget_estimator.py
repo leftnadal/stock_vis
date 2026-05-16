@@ -360,3 +360,194 @@ def verify_extrapolation(
         "within_safety_margin": within_safety_margin,
         "recommendation": recommendation,
     }
+
+
+# ============================================================
+# Slice 8 Step 0-2 — 섹션 합산 estimator (#β2 재설계)
+# ============================================================
+#
+# 기존 chars/3 휴리스틱: Slice 5 e3 +290.6%, Slice 7 e4 conversation -97% bias.
+# 원인: prompt 구조(system + few-shot + input + history) 반영 안 함.
+#
+# 새 모델 (지시서 §Step 0-2):
+#     estimate_input_tokens(entry, fixture) =
+#         _estimate_input_section(fixture)        # holdings + time_series + history
+#       + _estimate_metric_section(fixture)       # portfolio_metrics 직렬화
+#       + _estimate_instruction_section(entry)    # 진입점별 system + few-shot baseline
+#       + ENTRY_OVERHEAD[entry]                   # 진입점별 회귀 보정 (실측 fit)
+#
+# fit 데이터: 9건 (S1 e1, S2 e5, S3 e2, S4 e6, S5 e3, S6 e3_portfolio,
+#               S7 e4 tier1/tier2/tier3).
+# 자세한 fit 절차 + delta 표: docs/portfolio/coach/slice8/budget_estimator_v2.md.
+
+ENTRY_INSTRUCTION_BASELINE: dict[str, int] = {
+    "e1": 200,
+    "e2": 500,
+    "e3": 1_200,
+    "e3_portfolio": 1_800,
+    "e4_conversation": 2_700,
+    "e5": 300,
+    "e6": 700,
+}
+"""진입점별 system + few-shot baseline (hardcoded — prompt template 변경 시 수정)."""
+
+ENTRY_OVERHEAD: dict[str, int] = {
+    "e1": 3_485,
+    "e2": 111,
+    "e3": 3_054,
+    "e3_portfolio": 2_080,
+    "e4_conversation_tier1": 1_020,
+    "e4_conversation_tier2": 2_053,
+    "e4_conversation_tier3": 4_220,
+    "e5": 441,
+    "e6": 40,
+}
+"""진입점별 보정 상수 — 9건 fit data에서 OLS-style 잔차로 산출.
+
+산출: ENTRY_OVERHEAD[e] = P90_actual[e] - (_input + _metric + _instruction)
+fit_data 소스: ENTRY_POINT_META.actual_input_p90 (e1/e5/e2/e6/e3/e3_portfolio)
+              + e4_conversation_tier{1,2,3} expected P90 = registered_budget / 1.5.
+"""
+
+
+def _estimate_input_section(fixture: dict) -> int:
+    """Input section: holdings + time_series_metrics + conversation_history.
+
+    Args:
+        fixture: dict with optional keys:
+            - holdings: list[dict] (각 ~35 tokens)
+            - time_series_metrics: list[str] or list[dict] (각 ~30 tokens)
+            - conversation_history: list[dict] (각 ~200 tokens)
+    """
+    holdings = fixture.get("holdings", []) or []
+    ts_metrics = fixture.get("time_series_metrics", []) or []
+    history = fixture.get("conversation_history", []) or []
+    return len(holdings) * 35 + len(ts_metrics) * 30 + len(history) * 200
+
+
+def _estimate_metric_section(fixture: dict) -> int:
+    """Metric section: portfolio_metrics dict 직렬화 추정.
+
+    Args:
+        fixture: dict with optional key:
+            - portfolio_metrics: dict (각 metric ~15 tokens)
+    """
+    metrics = fixture.get("portfolio_metrics", {}) or {}
+    return len(metrics) * 15
+
+
+def _estimate_instruction_section(entry: str) -> int:
+    """Instruction section: 진입점별 system + few-shot baseline.
+
+    e4_conversation_tier{1,2,3}는 모두 e4_conversation의 baseline을 공유.
+    """
+    if entry.startswith("e4_conversation"):
+        base_entry = "e4_conversation"
+    else:
+        base_entry = entry
+    return ENTRY_INSTRUCTION_BASELINE.get(base_entry, 1_000)
+
+
+def estimate_input_tokens_v2(entry: str, fixture: dict) -> int:
+    """Slice 8 Step 0-2 — 섹션 합산 input 토큰 추정 (#β2 재설계).
+
+    기존 chars/3 휴리스틱 (Slice 5~7에서 +290.6% ~ -97% bias) 해소.
+    fit data: 9건 실측 P90. 자세한 산출: budget_estimator_v2.md §2.
+
+    Args:
+        entry: 진입점 키 (e1/e2/e3/e3_portfolio/e4_conversation_tier{1,2,3}/e5/e6).
+        fixture: 진입점별 실측 fixture (holdings, portfolio_metrics, conversation_history 등).
+
+    Returns:
+        input 토큰 추정값 (system + few-shot + user input + history 합산).
+
+    Examples:
+        >>> estimate_input_tokens_v2("e3", {"portfolio_metrics": {f"m{i}": 0 for i in range(7)}})
+        4359
+        >>> estimate_input_tokens_v2("e4_conversation_tier1", {
+        ...     "holdings": [{} for _ in range(5)],
+        ...     "portfolio_metrics": {f"m{i}": 0 for i in range(7)},
+        ... })
+        4000
+    """
+    input_section = _estimate_input_section(fixture)
+    metric_section = _estimate_metric_section(fixture)
+    instruction_section = _estimate_instruction_section(entry)
+    overhead = ENTRY_OVERHEAD.get(entry, 1_000)
+    return input_section + metric_section + instruction_section + overhead
+
+
+# Slice 8 Step 0-2 fit 데이터 — 9건 실측 P90 (S1~S7).
+# (entry, actual_P90, fixture_minimal) 튜플 형식.
+# fixture_minimal은 _estimate_input_section/_estimate_metric_section이 읽는 필드만 포함.
+SECTION_ESTIMATOR_FIT_DATA: list[tuple[str, int, dict]] = [
+    ("e1", 3_700, {"portfolio_metrics": {"m1": 0}}),
+    ("e5", 756, {"portfolio_metrics": {"m1": 0}}),
+    ("e2", 686, {"portfolio_metrics": {f"m{i}": 0 for i in range(5)}}),
+    ("e6", 845, {"portfolio_metrics": {f"m{i}": 0 for i in range(7)}}),
+    ("e3", 4_359, {"portfolio_metrics": {f"m{i}": 0 for i in range(7)}}),
+    ("e3_portfolio", 4_030, {"portfolio_metrics": {f"m{i}": 0 for i in range(10)}}),
+    (
+        "e4_conversation_tier1",
+        4_000,
+        {
+            "holdings": [{} for _ in range(5)],
+            "portfolio_metrics": {f"m{i}": 0 for i in range(7)},
+            "conversation_history": [],
+        },
+    ),
+    (
+        "e4_conversation_tier2",
+        5_333,
+        {
+            "holdings": [{} for _ in range(5)],
+            "portfolio_metrics": {f"m{i}": 0 for i in range(7)},
+            "conversation_history": [{} for _ in range(1)],
+        },
+    ),
+    (
+        "e4_conversation_tier3",
+        8_000,
+        {
+            "holdings": [{} for _ in range(5)],
+            "portfolio_metrics": {f"m{i}": 0 for i in range(7)},
+            "conversation_history": [{} for _ in range(4)],
+        },
+    ),
+]
+
+
+def backtest_section_estimator(
+    fit_data: list[tuple[str, int, dict]] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """5+ 슬라이스 실측 P90 vs 섹션 합산 estimator 추정 비교 (Slice 8 #β2 KPI).
+
+    KPI: max |delta| ≤ 30%.
+
+    Args:
+        fit_data: (entry, actual_P90, fixture_minimal) 튜플 list. None이면 default.
+
+    Returns:
+        {entry: {actual, estimated, delta_pct, within_30pct}}
+    """
+    if fit_data is None:
+        fit_data = SECTION_ESTIMATOR_FIT_DATA
+
+    results: dict[str, dict[str, Any]] = {}
+    for entry, actual, fixture in fit_data:
+        estimated = estimate_input_tokens_v2(entry, fixture)
+        delta_pct = (estimated - actual) / actual * 100
+        results[entry] = {
+            "actual": actual,
+            "estimated": estimated,
+            "delta_pct": round(delta_pct, 2),
+            "within_30pct": abs(delta_pct) <= 30.0,
+        }
+    return results
+
+
+def max_delta_pct(results: dict[str, dict[str, Any]] | None = None) -> float:
+    """backtest 결과의 max |delta| (%). KPI 게이트용."""
+    if results is None:
+        results = backtest_section_estimator()
+    return max(abs(r["delta_pct"]) for r in results.values())
