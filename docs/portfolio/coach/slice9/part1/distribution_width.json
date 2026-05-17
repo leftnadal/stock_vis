@@ -1,0 +1,15 @@
+{
+  "auto_scores_distribution": {
+    "3": 1,
+    "4": 12,
+    "5": 13
+  },
+  "rationale_scores_distribution": {
+    "3": 1,
+    "4": 8,
+    "5": 17
+  },
+  "auto_width": 2,
+  "rationale_width": 2,
+  "kpi11_pass": false
+}

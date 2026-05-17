@@ -1,0 +1,88 @@
+[
+  {
+    "batch_id": 1,
+    "case_ids": [
+      "S01_haiku",
+      "S01_sonnet",
+      "S02_haiku",
+      "S02_sonnet",
+      "S03_haiku"
+    ],
+    "completed_count": 5,
+    "batch_cost_usd": 0.060336,
+    "slice_cost_after_batch": 0.060336,
+    "cap_warning_triggered": false,
+    "aborted": false
+  },
+  {
+    "batch_id": 2,
+    "case_ids": [
+      "S03_sonnet",
+      "S04_haiku",
+      "S04_sonnet",
+      "S05_haiku",
+      "S05_sonnet"
+    ],
+    "completed_count": 5,
+    "batch_cost_usd": 0.058632000000000004,
+    "slice_cost_after_batch": 0.118968,
+    "cap_warning_triggered": false,
+    "aborted": false
+  },
+  {
+    "batch_id": 3,
+    "case_ids": [
+      "S06_haiku",
+      "S06_sonnet",
+      "S07_haiku",
+      "S07_sonnet",
+      "S08_haiku"
+    ],
+    "completed_count": 5,
+    "batch_cost_usd": 0.06375299999999999,
+    "slice_cost_after_batch": 0.182721,
+    "cap_warning_triggered": false,
+    "aborted": false
+  },
+  {
+    "batch_id": 4,
+    "case_ids": [
+      "S08_sonnet",
+      "S09_haiku",
+      "S09_sonnet",
+      "S10_haiku",
+      "S10_sonnet"
+    ],
+    "completed_count": 5,
+    "batch_cost_usd": 0.06735299999999997,
+    "slice_cost_after_batch": 0.25007399999999996,
+    "cap_warning_triggered": false,
+    "aborted": false
+  },
+  {
+    "batch_id": 5,
+    "case_ids": [
+      "S11_haiku",
+      "S11_sonnet",
+      "S12_haiku",
+      "S12_sonnet",
+      "S14_haiku"
+    ],
+    "completed_count": 5,
+    "batch_cost_usd": 0.06704699999999997,
+    "slice_cost_after_batch": 0.31712099999999993,
+    "cap_warning_triggered": false,
+    "aborted": false
+  },
+  {
+    "batch_id": 6,
+    "case_ids": [
+      "S14_sonnet"
+    ],
+    "completed_count": 1,
+    "batch_cost_usd": 0.012048000000000003,
+    "slice_cost_after_batch": 0.32916899999999993,
+    "cap_warning_triggered": false,
+    "aborted": false
+  }
+]

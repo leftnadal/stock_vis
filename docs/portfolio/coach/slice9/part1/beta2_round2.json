@@ -1,0 +1,195 @@
+{
+  "measurements": [
+    {
+      "case_id": "S01_haiku",
+      "estimated": 494,
+      "actual": 1250,
+      "delta": 0.6048,
+      "sign": "under"
+    },
+    {
+      "case_id": "S01_sonnet",
+      "estimated": 497,
+      "actual": 1230,
+      "delta": 0.5959349593495935,
+      "sign": "under"
+    },
+    {
+      "case_id": "S02_haiku",
+      "estimated": 648,
+      "actual": 1598,
+      "delta": 0.5944931163954944,
+      "sign": "under"
+    },
+    {
+      "case_id": "S02_sonnet",
+      "estimated": 483,
+      "actual": 1180,
+      "delta": 0.5906779661016949,
+      "sign": "under"
+    },
+    {
+      "case_id": "S03_haiku",
+      "estimated": 500,
+      "actual": 1184,
+      "delta": 0.5777027027027027,
+      "sign": "under"
+    },
+    {
+      "case_id": "S03_sonnet",
+      "estimated": 478,
+      "actual": 1110,
+      "delta": 0.5693693693693693,
+      "sign": "under"
+    },
+    {
+      "case_id": "S04_haiku",
+      "estimated": 528,
+      "actual": 1335,
+      "delta": 0.604494382022472,
+      "sign": "under"
+    },
+    {
+      "case_id": "S04_sonnet",
+      "estimated": 494,
+      "actual": 1238,
+      "delta": 0.6009693053311793,
+      "sign": "under"
+    },
+    {
+      "case_id": "S05_haiku",
+      "estimated": 497,
+      "actual": 1198,
+      "delta": 0.5851419031719532,
+      "sign": "under"
+    },
+    {
+      "case_id": "S05_sonnet",
+      "estimated": 484,
+      "actual": 1163,
+      "delta": 0.5838349097162511,
+      "sign": "under"
+    },
+    {
+      "case_id": "S06_haiku",
+      "estimated": 560,
+      "actual": 1289,
+      "delta": 0.5655546935608999,
+      "sign": "under"
+    },
+    {
+      "case_id": "S06_sonnet",
+      "estimated": 617,
+      "actual": 1495,
+      "delta": 0.5872909698996656,
+      "sign": "under"
+    },
+    {
+      "case_id": "S07_haiku",
+      "estimated": 653,
+      "actual": 1528,
+      "delta": 0.5726439790575916,
+      "sign": "under"
+    },
+    {
+      "case_id": "S07_sonnet",
+      "estimated": 673,
+      "actual": 1516,
+      "delta": 0.5560686015831134,
+      "sign": "under"
+    },
+    {
+      "case_id": "S08_haiku",
+      "estimated": 554,
+      "actual": 1343,
+      "delta": 0.5874906924795235,
+      "sign": "under"
+    },
+    {
+      "case_id": "S08_sonnet",
+      "estimated": 710,
+      "actual": 1782,
+      "delta": 0.6015712682379349,
+      "sign": "under"
+    },
+    {
+      "case_id": "S09_haiku",
+      "estimated": 646,
+      "actual": 1487,
+      "delta": 0.5655682582380632,
+      "sign": "under"
+    },
+    {
+      "case_id": "S09_sonnet",
+      "estimated": 638,
+      "actual": 1494,
+      "delta": 0.5729585006693441,
+      "sign": "under"
+    },
+    {
+      "case_id": "S10_haiku",
+      "estimated": 651,
+      "actual": 1616,
+      "delta": 0.5971534653465347,
+      "sign": "under"
+    },
+    {
+      "case_id": "S10_sonnet",
+      "estimated": 624,
+      "actual": 1552,
+      "delta": 0.5979381443298969,
+      "sign": "under"
+    },
+    {
+      "case_id": "S11_haiku",
+      "estimated": 708,
+      "actual": 1793,
+      "delta": 0.6051310652537646,
+      "sign": "under"
+    },
+    {
+      "case_id": "S11_sonnet",
+      "estimated": 651,
+      "actual": 1662,
+      "delta": 0.6083032490974729,
+      "sign": "under"
+    },
+    {
+      "case_id": "S12_haiku",
+      "estimated": 561,
+      "actual": 1394,
+      "delta": 0.5975609756097561,
+      "sign": "under"
+    },
+    {
+      "case_id": "S12_sonnet",
+      "estimated": 589,
+      "actual": 1485,
+      "delta": 0.6033670033670033,
+      "sign": "under"
+    },
+    {
+      "case_id": "S14_haiku",
+      "estimated": 659,
+      "actual": 1630,
+      "delta": 0.5957055214723926,
+      "sign": "under"
+    },
+    {
+      "case_id": "S14_sonnet",
+      "estimated": 513,
+      "actual": 1286,
+      "delta": 0.6010886469673405,
+      "sign": "under"
+    }
+  ],
+  "summary": {
+    "n": 26,
+    "max_delta": 0.6083032490974729,
+    "p90_delta": 0.6048,
+    "median_delta": 0.5950993189339435,
+    "mean_delta": 0.5893389865127311,
+    "under_ratio": 1.0
+  },
+  "verdict": "re-design"
+}

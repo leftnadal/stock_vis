@@ -1,0 +1,54 @@
+{
+  "1_regression": {
+    "value": "476 → 486 (+10)",
+    "pass": true
+  },
+  "2_identical_hash": {
+    "value": "7/7 PASS",
+    "pass": true
+  },
+  "3_per_call_cost": {
+    "value": "violations=0/26",
+    "pass": true
+  },
+  "4_cumulative_cost": {
+    "value": "$2.3775 (threshold $3.0)",
+    "pass": true
+  },
+  "5_slice_cap": {
+    "value": "$0.3292 / $1.0 (32.9%)",
+    "pass": true
+  },
+  "6_llm_calls": {
+    "value": "26/100",
+    "pass": true
+  },
+  "7_4판정_ratio": {
+    "value": "26/26",
+    "pass": true
+  },
+  "8_winner_hypothesis": {
+    "value": "Part 4 manual eval 후 확정 (잠정 Haiku 6/6)",
+    "pass": null
+  },
+  "9a_cost_regression": {
+    "value": "classification=mixed, predicted=9, actual=10, dev=11.1%",
+    "pass": true
+  },
+  "9b_no_cost_regression": {
+    "value": "Part 1은 cost 분류, N/A",
+    "pass": null
+  },
+  "10_trio_diagnosis_effect": {
+    "value": "0/26 (0.0%)",
+    "pass": true
+  },
+  "11_distribution_width": {
+    "value": "width=2",
+    "pass": false
+  },
+  "12_beta2_estimator": {
+    "value": "max delta 60.83% (n=26)",
+    "pass": false
+  }
+}
