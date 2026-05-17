@@ -1,0 +1,26 @@
+{
+  "1_regression": {
+    "value": "486 → 496 (+10, predicted +10, dev 0.0%, classification=no-cost, rule=9b (no-cost ±50%))",
+    "pass": true
+  },
+  "2_identical_hash": {
+    "value": "7/7 PASS",
+    "pass": true
+  },
+  "3_cumulative_cost_unchanged": {
+    "value": "$2.3775 유지 (Part 2 LLM 호출 0)",
+    "pass": true
+  },
+  "4_llm_calls_zero": {
+    "value": "0",
+    "pass": true
+  },
+  "5_dump_integrity": {
+    "value": "전체 판정: ✓ ALL PASS (9/9)",
+    "pass": true
+  },
+  "6_html_manual_verification": {
+    "value": "사용자 수동 검증 필요 (브라우저에서 eval_page.html 열기)",
+    "pass": null
+  }
+}
