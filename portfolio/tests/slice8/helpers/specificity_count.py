@@ -71,3 +71,22 @@ def count_patterns(text: str) -> int:
 def is_specificity_lacking(text: str) -> bool:
     """구체성 부족 판정 (score ≤ 2)."""
     return count_patterns(text) <= 2
+
+
+def detail_patterns(text: str) -> dict[str, bool]:
+    """P1~P5 각각의 발동 여부 반환 (Slice 9 #44 — rationale prompt에 인용).
+
+    Args:
+        text: E4 답변 commentary 본문.
+
+    Returns:
+        {"P1_metric_mention": bool, "P2_threshold": bool, "P3_action_verb": bool,
+         "P4_quantitative": bool, "P5_time_period": bool}
+    """
+    return {
+        "P1_metric_mention": has_p1(text),
+        "P2_threshold": has_p2(text),
+        "P3_action_verb": has_p3(text),
+        "P4_quantitative": has_p4(text),
+        "P5_time_period": has_p5(text),
+    }
