@@ -1,0 +1,64 @@
+{
+  "case": "S14",
+  "fixture_file": "S14_V2_tier3_hallucination.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.024168,
+  "input_tokens": 2606,
+  "output_tokens": 1090,
+  "latency_ms": 19535,
+  "answer_length": 551,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오는 집중도가 매우 높아(HHI 0.65, 상위3종목 80%) 샤프비율 개선 여지가 큽니다. 일반적으로 단일종목 한도 20% 이하, 섹터 HHI 0.25 이하로 리밸런싱 시 변동성이 25~35% 감소하며, 이 경우 샤프비율은 현재 대비 0.3~0.5pt 개선될 수 있습니다. 구체적으로 Tech 섹터를 80%에서 50%로 축소하고(현재 섹터HHI 0.80 → 목표 0.30), 최대 보유 종목을 40%에서 20%로 낮추면, 포트폴리오 베타가 1.85에서 1.2~1.3 수준으로 하락하고 평균 상관계수 0.75가 0.45~0.55로 개선됩니다. 이를 통해 동일 수익률 대비 변동성이 줄어 샤프비율이 개선되는 것입니다. 다음 분기까지 Tech 비중 30%p 축소, Consumer Discretionary 15%p 확대, 방어 섹터(필수소비재/헬스케어) 15%p 신규 편입을 실행하시면 3~6개월 내 샤프비율 0.4pt 개선을 기대할 수 있습니다. 다만 시장 상승기에는 베타 하락으로 절대수익률이 다소 낮아질 수 있으니, 위험조정수익률 개선이 목표임을 명확히 하시기 바랍니다.\",\n  \"referenced_metrics\": [\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"portfolio_beta\",\n    \"max_position_weight\",\n    \"avg_correlation\"\n  ],\n  \"follow_up_suggestions\": [\n    \"리밸런싱 후 예상 수익률은 어떻게 변할까요?\",\n    \"방어 섹터 중 어떤 종목을 추가하면 좋을까요?\",\n    \"분기별로 나눠서 리밸런싱하는 게 나을까요?\"\n  ],\n  \"confidence\": \"medium\",\n  \"action_items\": [\n    {\n      \"title\": \"Tech 섹터 30%p 축소 (80% → 50%)\",\n      \"description\": \"섹터HHI 0.80을 0.30 수준으로 낮춰 변동성 25~35% 감소 목표, 다음 분기까지 단계적 실행\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"최대 보유 종목 20%p 축소 (40% → 20%)\",\n      \"description\": \"단일종목 한도 20% 준수로 베타 1.85 → 1.2~1.3 감소, 즉시 착수\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"방어 섹터 15%p 신규 편입\",\n      \"description\": \"필수소비재/헬스케어 추가로 평균 상관계수 0.75 → 0.45~0.55 개선, 3개월 내\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"title\": \"Consumer Discretionary 15%p 확대 (20% → 35%)\",\n      \"description\": \"섹터 다각화로 샤프비율 0.4pt 개선 기여, 분기 내 완료\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오는 집중도가 매우 높아(HHI 0.65, 상위3종목 80%) 샤프비율 개선 여지가 큽니다. 일반적으로 단일종목 한도 20% 이하, 섹터 HHI 0.25 이하로 리밸런싱 시 변동성이 25~35% 감소하며, 이 경우 샤프비율은 현재 대비 0.3~0.5pt 개선될 수 있습니다. 구체적으로 Tech 섹터를 80%에서 50%로 축소하고(현재 섹터HHI 0.80 → 목표 0.30), 최대 보유 종목을 40%에서 20%로 낮추면, 포트폴리오 베타가 1.85에서 1.2~1.3 수준으로 하락하고 평균 상관계수 0.75가 0.45~0.55로 개선됩니다. 이를 통해 동일 수익률 대비 변동성이 줄어 샤프비율이 개선되는 것입니다. 다음 분기까지 Tech 비중 30%p 축소, Consumer Discretionary 15%p 확대, 방어 섹터(필수소비재/헬스케어) 15%p 신규 편입을 실행하시면 3~6개월 내 샤프비율 0.4pt 개선을 기대할 수 있습니다. 다만 시장 상승기에는 베타 하락으로 절대수익률이 다소 낮아질 수 있으니, 위험조정수익률 개선이 목표임을 명확히 하시기 바랍니다.",
+    "referenced_metrics": [
+      "hhi_concentration",
+      "sector_hhi",
+      "top3_weight",
+      "portfolio_beta",
+      "max_position_weight",
+      "avg_correlation"
+    ],
+    "follow_up_suggestions": [
+      "리밸런싱 후 예상 수익률은 어떻게 변할까요?",
+      "방어 섹터 중 어떤 종목을 추가하면 좋을까요?",
+      "분기별로 나눠서 리밸런싱하는 게 나을까요?"
+    ],
+    "confidence": "medium",
+    "action_items": [
+      {
+        "title": "Tech 섹터 30%p 축소 (80% → 50%)",
+        "description": "섹터HHI 0.80을 0.30 수준으로 낮춰 변동성 25~35% 감소 목표, 다음 분기까지 단계적 실행",
+        "priority": "high"
+      },
+      {
+        "title": "최대 보유 종목 20%p 축소 (40% → 20%)",
+        "description": "단일종목 한도 20% 준수로 베타 1.85 → 1.2~1.3 감소, 즉시 착수",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 15%p 신규 편입",
+        "description": "필수소비재/헬스케어 추가로 평균 상관계수 0.75 → 0.45~0.55 개선, 3개월 내",
+        "priority": "medium"
+      },
+      {
+        "title": "Consumer Discretionary 15%p 확대 (20% → 35%)",
+        "description": "섹터 다각화로 샤프비율 0.4pt 개선 기여, 분기 내 완료",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 2,
+    "total_cost_usd": 0.0327888
+  }
+}

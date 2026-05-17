@@ -1,0 +1,64 @@
+{
+  "case": "S01",
+  "fixture_file": "S01_V1_tier1.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.024234000000000002,
+  "input_tokens": 2513,
+  "output_tokens": 1113,
+  "latency_ms": 20731,
+  "answer_length": 505,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오 집중도가 상당히 높은 수준입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 일반적 권장 범위인 40~50%를 10%p 이상 초과하고 있습니다. HHI 집중도 지수가 0.35로 분산 기준인 0.20을 크게 상회하며, 최대 단일 종목 비중이 25%로 권장 한도 15~20%를 5%p 초과합니다. 섹터별로는 Tech 50%가 특히 과도한데, S&P500 Tech 비중 약 28% 대비 1.8배 수준입니다. 보유 종목 수가 5개로 최소 분산 기준 8~10개에 미달하여 개별 종목 리스크 노출이 큽니다. 포트폴리오 베타 1.05는 시장 평균 대비 5% 높은 변동성을 의미하며, 집중도가 높을수록 베타 변동 리스크가 증폭됩니다. 다음 분기까지 Tech 비중을 35~40%로 10~15%p 축소하고, Healthcare와 Financials를 각각 5%p씩 확대하며, 2~3개 종목(예: 산업재, 필수소비재 섹터 우량주)을 추가 편입해 보유 종목 수를 8개 이상으로 늘리시길 권장합니다.\",\n  \"referenced_metrics\": [\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"holding_count\",\n    \"portfolio_beta\",\n    \"max_position_weight\"\n  ],\n  \"follow_up_suggestions\": [\n    \"Tech 섹터 비중 축소 시 어떤 종목부터 줄이는 게 좋을까요?\",\n    \"추가 편입할 산업재/필수소비재 섹터 추천 종목이 있나요?\",\n    \"현재 집중도에서 예상되는 최대 손실 규모는 어느 정도인가요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"Tech 비중 10~15%p 축소 (50% → 35~40%)\",\n      \"description\": \"S&P500 Tech 비중 28% 대비 1.8배 과다. AAPL 비중 일부 축소 우선 검토. 다음 분기까지 단계적 조정\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"보유 종목 수 8개 이상 확대\",\n      \"description\": \"현재 5개는 최소 분산 기준 8~10개 미달. 산업재, 필수소비재 섹터 우량주 2~3개 추가 편입으로 HHI 0.25 이하 목표\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Healthcare/Financials 각 5%p 확대\",\n      \"description\": \"현재 각 25%에서 30%로 상향. 섹터 HHI 0.40 → 0.30 이하 목표. 분기 내 리밸런싱 시점에 실행\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"title\": \"최대 단일 종목 비중 20% 이하 조정\",\n      \"description\": \"현재 25% 종목(추정 AAPL) 5%p 축소. 단일 종목 리스크 노출 완화. 2주 내 우선 실행\",\n      \"priority\": \"high\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오 집중도가 상당히 높은 수준입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 일반적 권장 범위인 40~50%를 10%p 이상 초과하고 있습니다. HHI 집중도 지수가 0.35로 분산 기준인 0.20을 크게 상회하며, 최대 단일 종목 비중이 25%로 권장 한도 15~20%를 5%p 초과합니다. 섹터별로는 Tech 50%가 특히 과도한데, S&P500 Tech 비중 약 28% 대비 1.8배 수준입니다. 보유 종목 수가 5개로 최소 분산 기준 8~10개에 미달하여 개별 종목 리스크 노출이 큽니다. 포트폴리오 베타 1.05는 시장 평균 대비 5% 높은 변동성을 의미하며, 집중도가 높을수록 베타 변동 리스크가 증폭됩니다. 다음 분기까지 Tech 비중을 35~40%로 10~15%p 축소하고, Healthcare와 Financials를 각각 5%p씩 확대하며, 2~3개 종목(예: 산업재, 필수소비재 섹터 우량주)을 추가 편입해 보유 종목 수를 8개 이상으로 늘리시길 권장합니다.",
+    "referenced_metrics": [
+      "hhi_concentration",
+      "sector_hhi",
+      "top3_weight",
+      "holding_count",
+      "portfolio_beta",
+      "max_position_weight"
+    ],
+    "follow_up_suggestions": [
+      "Tech 섹터 비중 축소 시 어떤 종목부터 줄이는 게 좋을까요?",
+      "추가 편입할 산업재/필수소비재 섹터 추천 종목이 있나요?",
+      "현재 집중도에서 예상되는 최대 손실 규모는 어느 정도인가요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "Tech 비중 10~15%p 축소 (50% → 35~40%)",
+        "description": "S&P500 Tech 비중 28% 대비 1.8배 과다. AAPL 비중 일부 축소 우선 검토. 다음 분기까지 단계적 조정",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 8개 이상 확대",
+        "description": "현재 5개는 최소 분산 기준 8~10개 미달. 산업재, 필수소비재 섹터 우량주 2~3개 추가 편입으로 HHI 0.25 이하 목표",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare/Financials 각 5%p 확대",
+        "description": "현재 각 25%에서 30%로 상향. 섹터 HHI 0.40 → 0.30 이하 목표. 분기 내 리밸런싱 시점에 실행",
+        "priority": "medium"
+      },
+      {
+        "title": "최대 단일 종목 비중 20% 이하 조정",
+        "description": "현재 25% 종목(추정 AAPL) 5%p 축소. 단일 종목 리스크 노출 완화. 2주 내 우선 실행",
+        "priority": "high"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 2,
+    "total_cost_usd": 0.031340400000000004
+  }
+}

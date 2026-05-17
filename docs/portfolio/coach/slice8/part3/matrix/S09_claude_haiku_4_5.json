@@ -1,0 +1,68 @@
+{
+  "case": "S09",
+  "fixture_file": "S09_V4_tier2.json",
+  "model": "claude-haiku-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.0085928,
+  "input_tokens": 2631,
+  "output_tokens": 1622,
+  "latency_ms": 14153,
+  "answer_length": 953,
+  "patterns_score": 5,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오가 Financials 100% 집중(sector_hhi 1.0)되어 있고, 상위 3종목 비중이 70%로 과도합니다. Warren Buffett의 가치투자 원칙을 적용하면, PE 11, ROIC 16%, FCF yield 7.5%는 우수하나 섹터 단일화 리스크를 해결해야 합니다.\\n\\n추천 분산 전략: 다음 분기 내 Financials 비중을 70%로 축소하고, 다음 3개 섹터에서 가치주를 단계적으로 편입하세요.\\n\\n1) **Consumer Staples(필수소비재, 20% 목표)**: Procter & Gamble(PG, 현재 PE 26~28)는 Buffett 포트폴리오 핵심 종목으로, ROIC 15% 이상, FCF yield 5% 이상, 배당성장률 10년 평균 8% 이상을 충족합니다. 또는 Nestlé(NSRGY, PE 21~23, ROIC 13%) 검토.\\n\\n2) **Industrials(산업재, 15% 목표)**: Berkshire Hathaway의 철도/운송 투자 철학에 따라 Union Pacific(UNP, PE 18~20, ROIC 14%), 또는 Caterpillar(CAT, PE 16~18, ROIC 12~13%) 검토. 경기순환 특성으로 Financials와 역상관(correlation <0.6) 기대.\\n\\n3) **Healthcare(헬스케어, 10% 목표)**: Johnson & Johnson(JNJ, PE 24~26, ROIC 15% 이상)은 방어적 특성과 배당 안정성(50년 연속 배당증가)으로 Buffett 기준 충족. 또는 Merck(MRK, PE 14~16, ROIC 12%) 저평가 옵션.\\n\\n최근 3개월 기준 이들 섹터의 상관계수가 0.4~0.6으로 현재 0.8 평균 상관계수를 0.65 이하로 낮출 수 있으며, HHI 집중도도 0.5에서 0.28~0.32로 개선됩니다. 단계적으로 월 1회, 3개월에 걸쳐 분할 매수하여 평균 매수가를 확보하세요.\",\n  \"referenced_metrics\": [\"sector_hhi\", \"top3_weight\", \"avg_correlation\", \"hhi_concentration\", \"portfolio_beta\"],\n  \"follow_up_suggestions\": [\"Procter & Gamble과 Johnson & Johnson 중 어느 것을 우선 편입할까요?\", \"현재 JPM 30% 비중을 언제 어느 수준까지 축소해야 하나요?\", \"Industrials 편입 시 경기 둔화에 대한 타이밍 전략은?\"],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"Financials 비중 70%로 축소\",\n      \"description\": \"현재 100% → 70% (30%p 축소). sector_hhi 1.0을 0.55 이상으로 개선. JPM 30%에서 22%로, BAC/WFC 비중도 동일 비율 축소. 다음 분기(3개월) 내 실행\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Consumer Staples 20% 편입 (P&G 또는 Nestlé)\",\n      \"description\": \"P&G(PE 26~28, ROIC 15%+, FCF yield 5%+, 배당성장 8%)를 1차 선택으로, Nestlé(PE 21~23, ROIC 13%) 을 대체 옵션으로. 월 6.7% 분할 매수(3개월), 반도체/기술주 변동성 헤징 효과\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Industrials 15% 편입 (UNP 또는 CAT)\",\n      \"description\": \"Union Pacific(PE 18~20, ROIC 14%) 또는 Caterpillar(PE 16~18, ROIC 12~13%). Financials와의 상관계수 0.4~0.6으로 포트폴리오 다각화. 월 5% 분할 매수, 경기 지표 모니터링\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Healthcare 10% 편입 (JNJ 또는 Merck)\",\n      \"description\": \"Johnson & Johnson(PE 24~26, ROIC 15%+, 50년 배당성장) 또는 Merck(PE 14~16, ROIC 12%, 저평가). 월 3.3% 분할 매수. 방어주 특성으로 포트폴리오 베타 1.1 → 1.0 이하 목표\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"title\": \"포트폴리오 상관계수 모니터링\",\n      \"description\": \"현재 avg_correlation 0.8 → 목표 0.65 이하. 최근 1개월 rolling correlation 추적, 분기별 재계산. JPM/BAC/WFC 간 상관계수(현재 0.85~0.90) 초과 시 한 종목 축소 검토\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오가 Financials 100% 집중(sector_hhi 1.0)되어 있고, 상위 3종목 비중이 70%로 과도합니다. Warren Buffett의 가치투자 원칙을 적용하면, PE 11, ROIC 16%, FCF yield 7.5%는 우수하나 섹터 단일화 리스크를 해결해야 합니다.\n\n추천 분산 전략: 다음 분기 내 Financials 비중을 70%로 축소하고, 다음 3개 섹터에서 가치주를 단계적으로 편입하세요.\n\n1) **Consumer Staples(필수소비재, 20% 목표)**: Procter & Gamble(PG, 현재 PE 26~28)는 Buffett 포트폴리오 핵심 종목으로, ROIC 15% 이상, FCF yield 5% 이상, 배당성장률 10년 평균 8% 이상을 충족합니다. 또는 Nestlé(NSRGY, PE 21~23, ROIC 13%) 검토.\n\n2) **Industrials(산업재, 15% 목표)**: Berkshire Hathaway의 철도/운송 투자 철학에 따라 Union Pacific(UNP, PE 18~20, ROIC 14%), 또는 Caterpillar(CAT, PE 16~18, ROIC 12~13%) 검토. 경기순환 특성으로 Financials와 역상관(correlation <0.6) 기대.\n\n3) **Healthcare(헬스케어, 10% 목표)**: Johnson & Johnson(JNJ, PE 24~26, ROIC 15% 이상)은 방어적 특성과 배당 안정성(50년 연속 배당증가)으로 Buffett 기준 충족. 또는 Merck(MRK, PE 14~16, ROIC 12%) 저평가 옵션.\n\n최근 3개월 기준 이들 섹터의 상관계수가 0.4~0.6으로 현재 0.8 평균 상관계수를 0.65 이하로 낮출 수 있으며, HHI 집중도도 0.5에서 0.28~0.32로 개선됩니다. 단계적으로 월 1회, 3개월에 걸쳐 분할 매수하여 평균 매수가를 확보하세요.",
+    "referenced_metrics": [
+      "sector_hhi",
+      "top3_weight",
+      "avg_correlation",
+      "hhi_concentration",
+      "portfolio_beta"
+    ],
+    "follow_up_suggestions": [
+      "Procter & Gamble과 Johnson & Johnson 중 어느 것을 우선 편입할까요?",
+      "현재 JPM 30% 비중을 언제 어느 수준까지 축소해야 하나요?",
+      "Industrials 편입 시 경기 둔화에 대한 타이밍 전략은?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "Financials 비중 70%로 축소",
+        "description": "현재 100% → 70% (30%p 축소). sector_hhi 1.0을 0.55 이상으로 개선. JPM 30%에서 22%로, BAC/WFC 비중도 동일 비율 축소. 다음 분기(3개월) 내 실행",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 20% 편입 (P&G 또는 Nestlé)",
+        "description": "P&G(PE 26~28, ROIC 15%+, FCF yield 5%+, 배당성장 8%)를 1차 선택으로, Nestlé(PE 21~23, ROIC 13%) 을 대체 옵션으로. 월 6.7% 분할 매수(3개월), 반도체/기술주 변동성 헤징 효과",
+        "priority": "high"
+      },
+      {
+        "title": "Industrials 15% 편입 (UNP 또는 CAT)",
+        "description": "Union Pacific(PE 18~20, ROIC 14%) 또는 Caterpillar(PE 16~18, ROIC 12~13%). Financials와의 상관계수 0.4~0.6으로 포트폴리오 다각화. 월 5% 분할 매수, 경기 지표 모니터링",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare 10% 편입 (JNJ 또는 Merck)",
+        "description": "Johnson & Johnson(PE 24~26, ROIC 15%+, 50년 배당성장) 또는 Merck(PE 14~16, ROIC 12%, 저평가). 월 3.3% 분할 매수. 방어주 특성으로 포트폴리오 베타 1.1 → 1.0 이하 목표",
+        "priority": "medium"
+      },
+      {
+        "title": "포트폴리오 상관계수 모니터링",
+        "description": "현재 avg_correlation 0.8 → 목표 0.65 이하. 최근 1개월 rolling correlation 추적, 분기별 재계산. JPM/BAC/WFC 간 상관계수(현재 0.85~0.90) 초과 시 한 종목 축소 검토",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 7,
+    "total_cost_usd": 0.1233672
+  }
+}

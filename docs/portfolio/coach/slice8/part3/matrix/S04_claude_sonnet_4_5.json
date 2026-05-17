@@ -1,0 +1,64 @@
+{
+  "case": "S04",
+  "fixture_file": "S04_V2_tier1.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.024087,
+  "input_tokens": 2504,
+  "output_tokens": 1105,
+  "latency_ms": 18024,
+  "answer_length": 496,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오는 매우 위험한 구조입니다. 첫째, 상위 3종목 비중이 80%로 극단적으로 집중되어 있으며, 특히 TSLA 단일 비중이 40%로 일반 권장 한도 20%의 2배를 초과합니다. 둘째, 섹터 집중도(HHI 0.80)가 위험 수준이며 Tech 섹터가 80%로 KOSPI IT 평균 32% 대비 2.5배 과다 편중되어 있습니다. 셋째, 포트폴리오 베타가 1.85로 시장 대비 85% 더 높은 변동성에 노출되어 있으며, 보유 종목 간 평균 상관계수 0.75는 분산 효과가 거의 없음을 의미합니다. 마지막으로 총 보유 종목 수가 5개로 최소 권장 10~15개 대비 절반 미만입니다. TSLA 비중을 즉시 20%p 축소(40%→20%)하고, Tech 섹터를 다음 분기까지 30%p 축소(80%→50%)하며, 헬스케어·산업재·필수소비재 등 방어 섹터 3~5개 종목을 추가 편입해 총 보유 종목을 10개 이상으로 확대하시는 것이 시급합니다. 베타를 1.2 이하로 낮추는 것을 목표로 하세요.\",\n  \"referenced_metrics\": [\n    \"top3_weight\",\n    \"max_position_weight\",\n    \"sector_hhi\",\n    \"portfolio_beta\",\n    \"avg_correlation\",\n    \"holding_count\"\n  ],\n  \"follow_up_suggestions\": [\n    \"TSLA를 어떤 종목으로 대체하면 좋을까요?\",\n    \"Tech 섹터 축소 시 추천 방어 섹터와 종목은?\",\n    \"포트폴리오 베타를 1.2 이하로 낮추려면 어떻게 해야 하나요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"TSLA 비중 20%p 즉시 축소 (40%→20%)\",\n      \"description\": \"단일 종목 한도 20% 기준 2배 초과, 최대 포지션 비중 0.40이 극단적 집중 리스크 유발\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Tech 섹터 30%p 축소 (80%→50%)\",\n      \"description\": \"섹터 HHI 0.80으로 위험 수준, KOSPI IT 평균 32% 대비 2.5배 과다, 다음 분기까지 단계적 축소\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"방어 섹터 3~5종목 추가 편입\",\n      \"description\": \"헬스케어·산업재·필수소비재 등으로 총 보유 종목 10개 이상 확대, 상관계수 0.75 낮추고 분산 효과 확보\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"포트폴리오 베타 1.2 이하로 조정\",\n      \"description\": \"현재 베타 1.85(시장 대비 85% 고변동)를 방어주·채권 ETF 편입으로 1.2 이하로 낮춤, 다음 리밸런싱 시점\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오는 매우 위험한 구조입니다. 첫째, 상위 3종목 비중이 80%로 극단적으로 집중되어 있으며, 특히 TSLA 단일 비중이 40%로 일반 권장 한도 20%의 2배를 초과합니다. 둘째, 섹터 집중도(HHI 0.80)가 위험 수준이며 Tech 섹터가 80%로 KOSPI IT 평균 32% 대비 2.5배 과다 편중되어 있습니다. 셋째, 포트폴리오 베타가 1.85로 시장 대비 85% 더 높은 변동성에 노출되어 있으며, 보유 종목 간 평균 상관계수 0.75는 분산 효과가 거의 없음을 의미합니다. 마지막으로 총 보유 종목 수가 5개로 최소 권장 10~15개 대비 절반 미만입니다. TSLA 비중을 즉시 20%p 축소(40%→20%)하고, Tech 섹터를 다음 분기까지 30%p 축소(80%→50%)하며, 헬스케어·산업재·필수소비재 등 방어 섹터 3~5개 종목을 추가 편입해 총 보유 종목을 10개 이상으로 확대하시는 것이 시급합니다. 베타를 1.2 이하로 낮추는 것을 목표로 하세요.",
+    "referenced_metrics": [
+      "top3_weight",
+      "max_position_weight",
+      "sector_hhi",
+      "portfolio_beta",
+      "avg_correlation",
+      "holding_count"
+    ],
+    "follow_up_suggestions": [
+      "TSLA를 어떤 종목으로 대체하면 좋을까요?",
+      "Tech 섹터 축소 시 추천 방어 섹터와 종목은?",
+      "포트폴리오 베타를 1.2 이하로 낮추려면 어떻게 해야 하나요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "TSLA 비중 20%p 즉시 축소 (40%→20%)",
+        "description": "단일 종목 한도 20% 기준 2배 초과, 최대 포지션 비중 0.40이 극단적 집중 리스크 유발",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 30%p 축소 (80%→50%)",
+        "description": "섹터 HHI 0.80으로 위험 수준, KOSPI IT 평균 32% 대비 2.5배 과다, 다음 분기까지 단계적 축소",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 3~5종목 추가 편입",
+        "description": "헬스케어·산업재·필수소비재 등으로 총 보유 종목 10개 이상 확대, 상관계수 0.75 낮추고 분산 효과 확보",
+        "priority": "high"
+      },
+      {
+        "title": "포트폴리오 베타 1.2 이하로 조정",
+        "description": "현재 베타 1.85(시장 대비 85% 고변동)를 방어주·채권 ETF 편입으로 1.2 이하로 낮춤, 다음 리밸런싱 시점",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 8,
+    "total_cost_usd": 0.120594
+  }
+}

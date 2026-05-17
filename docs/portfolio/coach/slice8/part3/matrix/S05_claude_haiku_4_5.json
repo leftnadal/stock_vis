@@ -1,0 +1,63 @@
+{
+  "case": "S05",
+  "fixture_file": "S05_V2_tier2.json",
+  "model": "claude-haiku-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.006448799999999999,
+  "input_tokens": 2591,
+  "output_tokens": 1094,
+  "latency_ms": 10031,
+  "answer_length": 504,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오에서 가장 먼저 줄여야 할 것은 Tesla(TSLA) 40% 비중입니다. GARP 전략의 단일 종목 한도는 일반적으로 20~25%인데, TSLA가 40%로 2배 가까이 초과되어 있습니다. 이로 인해 HHI(허핀달 지수) 0.65는 극도로 높은 집중도(안전 범위 0.2~0.3)를 의미하며, portfolio_beta 1.85는 시장 변동성의 1.85배를 추적하게 됩니다. 최근 3개월 테슬라 변동성이 32% 수준으로 높아, 이 한 종목이 포트폴리오 전체 변동성을 심화시키고 있습니다. TSLA를 다음 2주 내 40%에서 20%로 축소(20%p 감소)하고, 감소분 중 10%는 Palantir와 Shopify 중 낮은 비중인 종목 강화에, 나머지 10%는 Consumer Discretionary 섹터 또는 방어주(필수소비재) 편입으로 sector_hhi 0.80을 0.55 이하로 낮추길 권장합니다. 이를 통해 portfolio_beta를 3개월 내 1.3 이하로 감소시킬 수 있습니다.\",\n  \"referenced_metrics\": [\n    \"max_position_weight\",\n    \"portfolio_beta\",\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\"\n  ],\n  \"follow_up_suggestions\": [\n    \"TSLA 축소 후 남은 15%를 어떤 섹터/종목으로 채울지 구체적 추천받기\",\n    \"현재 보유 5종목 외 분산 추가에 필요한 종목 스크리닝 기준(PE, PEG, ROIC) 확인\",\n    \"3개월 후 리밸런싱 타이밍과 목표 포트폴리오 구성(예: beta 1.2, HHI 0.3) 재설정\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"Tesla(TSLA) 20%p 축소 (40% → 20%)\",\n      \"description\": \"단일 종목 한도 20~25% 초과 (현재 40%). HHI 0.65 극도 집중, portfolio_beta 1.85 주원인. 향후 2주 내 단계적 매도 추천.\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Palantir/Shopify 중 낮은 비중 종목 10%p 강화\",\n      \"description\": \"TSLA 감소분 일부(10%p)를 IT 섹터 내 분산으로 배치. 단일 종목 리스크 경감.\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Consumer/방어주 섹터 10%p 추가 편입\",\n      \"description\": \"sector_hhi 0.80 → 0.55 목표. Tech 80% → 70%, Consumer Discretionary 20% → 30% 조정. 3개월 내 완료.\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"portfolio_beta 1.3 이하 목표 설정 및 모니터링\",\n      \"description\": \"현재 1.85에서 TSLA 축소 + 섹터 분산으로 3개월 내 1.3 달성 추적.\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오에서 가장 먼저 줄여야 할 것은 Tesla(TSLA) 40% 비중입니다. GARP 전략의 단일 종목 한도는 일반적으로 20~25%인데, TSLA가 40%로 2배 가까이 초과되어 있습니다. 이로 인해 HHI(허핀달 지수) 0.65는 극도로 높은 집중도(안전 범위 0.2~0.3)를 의미하며, portfolio_beta 1.85는 시장 변동성의 1.85배를 추적하게 됩니다. 최근 3개월 테슬라 변동성이 32% 수준으로 높아, 이 한 종목이 포트폴리오 전체 변동성을 심화시키고 있습니다. TSLA를 다음 2주 내 40%에서 20%로 축소(20%p 감소)하고, 감소분 중 10%는 Palantir와 Shopify 중 낮은 비중인 종목 강화에, 나머지 10%는 Consumer Discretionary 섹터 또는 방어주(필수소비재) 편입으로 sector_hhi 0.80을 0.55 이하로 낮추길 권장합니다. 이를 통해 portfolio_beta를 3개월 내 1.3 이하로 감소시킬 수 있습니다.",
+    "referenced_metrics": [
+      "max_position_weight",
+      "portfolio_beta",
+      "hhi_concentration",
+      "sector_hhi",
+      "top3_weight"
+    ],
+    "follow_up_suggestions": [
+      "TSLA 축소 후 남은 15%를 어떤 섹터/종목으로 채울지 구체적 추천받기",
+      "현재 보유 5종목 외 분산 추가에 필요한 종목 스크리닝 기준(PE, PEG, ROIC) 확인",
+      "3개월 후 리밸런싱 타이밍과 목표 포트폴리오 구성(예: beta 1.2, HHI 0.3) 재설정"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "Tesla(TSLA) 20%p 축소 (40% → 20%)",
+        "description": "단일 종목 한도 20~25% 초과 (현재 40%). HHI 0.65 극도 집중, portfolio_beta 1.85 주원인. 향후 2주 내 단계적 매도 추천.",
+        "priority": "high"
+      },
+      {
+        "title": "Palantir/Shopify 중 낮은 비중 종목 10%p 강화",
+        "description": "TSLA 감소분 일부(10%p)를 IT 섹터 내 분산으로 배치. 단일 종목 리스크 경감.",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer/방어주 섹터 10%p 추가 편입",
+        "description": "sector_hhi 0.80 → 0.55 목표. Tech 80% → 70%, Consumer Discretionary 20% → 30% 조정. 3개월 내 완료.",
+        "priority": "high"
+      },
+      {
+        "title": "portfolio_beta 1.3 이하 목표 설정 및 모니터링",
+        "description": "현재 1.85에서 TSLA 축소 + 섹터 분산으로 3개월 내 1.3 달성 추적.",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 9,
+    "total_cost_usd": 0.1270428
+  }
+}

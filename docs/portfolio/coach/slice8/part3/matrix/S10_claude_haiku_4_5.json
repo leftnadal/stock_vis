@@ -1,0 +1,63 @@
+{
+  "case": "S10",
+  "fixture_file": "S10_V5_tier1.json",
+  "model": "claude-haiku-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.0083552,
+  "input_tokens": 2534,
+  "output_tokens": 1582,
+  "latency_ms": 13309,
+  "answer_length": 967,
+  "patterns_score": 5,
+  "raw_text": "```json\n{\n  \"answer\": \"포트폴리오는 배당 성장 전략의 핵심 요건을 대부분 충족하고 있습니다. 현재 Yield 3.8%와 25년 연속 배당 증가(dividend aristocrat) 기준은 매우 견고합니다. 다만 3가지 구조적 우려가 있습니다.\\n\\n첫째, 섹터 집중도(sector_hhi 0.78)가 매우 높습니다. Consumer Staples 78%는 배당주 특성상 자연스럽지만, 경기 둔화 시 섹터 전체 동조성이 높아져 최근 3개월 금리 인상 사이클에서 방어주 쏠림이 심할 수 있습니다. 표준 포트폴리오 섹터 HHI는 0.35~0.45 범위이므로 현재 0.78은 1.7배 과다입니다.\\n\\n둘째, 상위 3개 종목 비중(top3_weight 0.58)이 58%로 단일 종목 집중 위험이 있습니다. KO/PG/PEP 3개 종목에 자산의 절반 이상이 쏠려 있어, 특정 종목의 배당 삭감(예: 담배주 MO의 규제 리스크) 시 포트폴리오 전체 수익률에 미치는 영향이 큽니다.\\n\\n셋째, 7개 종목 보유로 분산도 제한적입니다. 배당 성장 전략은 일반적으로 10~15개 종목 이상을 권장하여 개별 종목 리스크를 낮추고 배당 재투자 효과를 극대화합니다. 현재 holding_count 7.0은 분산 부족입니다.\\n\\n긍정 평가: Portfolio_beta 0.75로 시장 대비 변동성이 25% 낮아 방어적이며, avg_correlation 0.55는 적절한 다각화 수준입니다. MMM(산업재)과 JNJ(헬스케어) 편입으로 Consumer Staples 쏠림을 부분 완화한 것은 좋은 구성입니다.\\n\\n권장사항: 향후 3개월 내 Healthcare 비중을 22%에서 30~35%로 확대하고(JNJ, UNH, CVS 등 추가), Consumer Staples 비중을 78%에서 55~60%로 축소하며, 홀딩 종목을 현 7개에서 12개 이상으로 늘려 섹터 HHI를 0.45 이하로 낮추는 것을 권장합니다. 이를 통해 배당 안정성은 유지하면서 포트폴리오 탄력성을 개선할 수 있습니다.\",\n  \"referenced_metrics\": [\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"holding_count\",\n    \"portfolio_beta\",\n    \"avg_correlation\"\n  ],\n  \"follow_up_suggestions\": [\n    \"Healthcare 섹터 확대 시 JNJ 외 UNH, CVS 등 어떤 종목을 우선 선택해야 하나요?\",\n    \"MO(담배주) 배당 삭감 리스크를 어떻게 평가하고 비중 조정해야 하나요?\",\n    \"현재 포트폴리오의 예상 연간 배당 수익률(forward yield)은 얼마나 되나요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"Healthcare 섹터 확대 (22% → 30~35%)\",\n      \"description\": \"Consumer Staples 과다 쏠림 완화. JNJ 외 UNH, CVS 등 배당 성장주 추가. Sector HHI 0.78 → 0.50 이하 목표. 3개월 내 단계적 편입\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Consumer Staples 비중 축소 (78% → 55~60%)\",\n      \"description\": \"경기 둔화 시 섹터 동조성 리스크 완화. Sector HHI 기준 1.7배 과다 현황 시정. KO/PG/PEP 기존 보유 유지하되 신규 자금은 Healthcare로 배분\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"홀딩 종목 확대 (7개 → 12개 이상)\",\n      \"description\": \"분산 부족 개선. 배당 aristocrat 기준(25년 연속 증가) 범위 내에서 SCHD, DGRO 같은 배당 ETF 또는 추가 개별주(Utilities, Pharma) 편입. 3개월 내\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"MO(담배주) 규제 리스크 모니터링\",\n      \"description\": \"배당 삭감 가능성이 있는 담배주. 비중 및 배당 정책 분기별 리뷰. 필요 시 대체 종목으로 교체 검토\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "포트폴리오는 배당 성장 전략의 핵심 요건을 대부분 충족하고 있습니다. 현재 Yield 3.8%와 25년 연속 배당 증가(dividend aristocrat) 기준은 매우 견고합니다. 다만 3가지 구조적 우려가 있습니다.\n\n첫째, 섹터 집중도(sector_hhi 0.78)가 매우 높습니다. Consumer Staples 78%는 배당주 특성상 자연스럽지만, 경기 둔화 시 섹터 전체 동조성이 높아져 최근 3개월 금리 인상 사이클에서 방어주 쏠림이 심할 수 있습니다. 표준 포트폴리오 섹터 HHI는 0.35~0.45 범위이므로 현재 0.78은 1.7배 과다입니다.\n\n둘째, 상위 3개 종목 비중(top3_weight 0.58)이 58%로 단일 종목 집중 위험이 있습니다. KO/PG/PEP 3개 종목에 자산의 절반 이상이 쏠려 있어, 특정 종목의 배당 삭감(예: 담배주 MO의 규제 리스크) 시 포트폴리오 전체 수익률에 미치는 영향이 큽니다.\n\n셋째, 7개 종목 보유로 분산도 제한적입니다. 배당 성장 전략은 일반적으로 10~15개 종목 이상을 권장하여 개별 종목 리스크를 낮추고 배당 재투자 효과를 극대화합니다. 현재 holding_count 7.0은 분산 부족입니다.\n\n긍정 평가: Portfolio_beta 0.75로 시장 대비 변동성이 25% 낮아 방어적이며, avg_correlation 0.55는 적절한 다각화 수준입니다. MMM(산업재)과 JNJ(헬스케어) 편입으로 Consumer Staples 쏠림을 부분 완화한 것은 좋은 구성입니다.\n\n권장사항: 향후 3개월 내 Healthcare 비중을 22%에서 30~35%로 확대하고(JNJ, UNH, CVS 등 추가), Consumer Staples 비중을 78%에서 55~60%로 축소하며, 홀딩 종목을 현 7개에서 12개 이상으로 늘려 섹터 HHI를 0.45 이하로 낮추는 것을 권장합니다. 이를 통해 배당 안정성은 유지하면서 포트폴리오 탄력성을 개선할 수 있습니다.",
+    "referenced_metrics": [
+      "sector_hhi",
+      "top3_weight",
+      "holding_count",
+      "portfolio_beta",
+      "avg_correlation"
+    ],
+    "follow_up_suggestions": [
+      "Healthcare 섹터 확대 시 JNJ 외 UNH, CVS 등 어떤 종목을 우선 선택해야 하나요?",
+      "MO(담배주) 배당 삭감 리스크를 어떻게 평가하고 비중 조정해야 하나요?",
+      "현재 포트폴리오의 예상 연간 배당 수익률(forward yield)은 얼마나 되나요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "Healthcare 섹터 확대 (22% → 30~35%)",
+        "description": "Consumer Staples 과다 쏠림 완화. JNJ 외 UNH, CVS 등 배당 성장주 추가. Sector HHI 0.78 → 0.50 이하 목표. 3개월 내 단계적 편입",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 비중 축소 (78% → 55~60%)",
+        "description": "경기 둔화 시 섹터 동조성 리스크 완화. Sector HHI 기준 1.7배 과다 현황 시정. KO/PG/PEP 기존 보유 유지하되 신규 자금은 Healthcare로 배분",
+        "priority": "high"
+      },
+      {
+        "title": "홀딩 종목 확대 (7개 → 12개 이상)",
+        "description": "분산 부족 개선. 배당 aristocrat 기준(25년 연속 증가) 범위 내에서 SCHD, DGRO 같은 배당 ETF 또는 추가 개별주(Utilities, Pharma) 편입. 3개월 내",
+        "priority": "high"
+      },
+      {
+        "title": "MO(담배주) 규제 리스크 모니터링",
+        "description": "배당 삭감 가능성이 있는 담배주. 비중 및 배당 정책 분기별 리뷰. 필요 시 대체 종목으로 교체 검토",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 9,
+    "total_cost_usd": 0.16003040000000002
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "case": "S03",
+  "fixture_file": "S03_V1_tier3.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.020319,
+  "input_tokens": 2708,
+  "output_tokens": 813,
+  "latency_ms": 15520,
+  "answer_length": 446,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 AAPL 비중이 25%(max_position_weight 0.25)로 단일 종목 한도 상한선에 위치하며, Tech 섹터가 전체 포트폴리오의 50%를 차지해 sector_hhi 0.40으로 집중도가 높습니다. GARP 전략 기준 단일 섹터 권장 한도 35% 대비 15%p 초과된 상태입니다. AAPL는 우량주이나 Tech 섹터 과다 노출로 인한 변동성 리스크(portfolio_beta 1.05)를 고려하면 축소가 필요합니다. AAPL 비중을 다음 분기까지 5~7%p 축소(25% → 18~20%)하고, 방어 섹터인 Consumer Staples 또는 Utilities를 10~12% 신규 편입해 sector_hhi를 0.35 이하로 낮추시는 것을 권장합니다. 5개 종목 체제에서 6~7개로 holding_count를 늘리면 hhi_concentration도 0.30 이하로 개선될 것입니다.\",\n  \"referenced_metrics\": [\n    \"max_position_weight\",\n    \"sector_hhi\",\n    \"portfolio_beta\",\n    \"hhi_concentration\",\n    \"holding_count\"\n  ],\n  \"follow_up_suggestions\": [\n    \"방어 섹터 종목 추천해줄 수 있나요?\",\n    \"AAPL 축소 타이밍은 언제가 좋을까요?\",\n    \"포트폴리오를 7개 종목으로 늘리면 리스크가 얼마나 줄어들까요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"AAPL 비중 5~7%p 축소\",\n      \"description\": \"현재 25%에서 18~20%로 조정. Tech 섹터 50% 과다(권장 35%) 완화 목적. 다음 분기까지 단계적 실행\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"방어 섹터 10~12% 신규 편입\",\n      \"description\": \"Consumer Staples 또는 Utilities 추가로 sector_hhi 0.40 → 0.35 이하 목표. 다음 분기\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"종목 수 6~7개로 확대\",\n      \"description\": \"현재 5개에서 증가시켜 hhi_concentration 0.35 → 0.30 이하 달성. 분산 효과 극대화\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 AAPL 비중이 25%(max_position_weight 0.25)로 단일 종목 한도 상한선에 위치하며, Tech 섹터가 전체 포트폴리오의 50%를 차지해 sector_hhi 0.40으로 집중도가 높습니다. GARP 전략 기준 단일 섹터 권장 한도 35% 대비 15%p 초과된 상태입니다. AAPL는 우량주이나 Tech 섹터 과다 노출로 인한 변동성 리스크(portfolio_beta 1.05)를 고려하면 축소가 필요합니다. AAPL 비중을 다음 분기까지 5~7%p 축소(25% → 18~20%)하고, 방어 섹터인 Consumer Staples 또는 Utilities를 10~12% 신규 편입해 sector_hhi를 0.35 이하로 낮추시는 것을 권장합니다. 5개 종목 체제에서 6~7개로 holding_count를 늘리면 hhi_concentration도 0.30 이하로 개선될 것입니다.",
+    "referenced_metrics": [
+      "max_position_weight",
+      "sector_hhi",
+      "portfolio_beta",
+      "hhi_concentration",
+      "holding_count"
+    ],
+    "follow_up_suggestions": [
+      "방어 섹터 종목 추천해줄 수 있나요?",
+      "AAPL 축소 타이밍은 언제가 좋을까요?",
+      "포트폴리오를 7개 종목으로 늘리면 리스크가 얼마나 줄어들까요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "AAPL 비중 5~7%p 축소",
+        "description": "현재 25%에서 18~20%로 조정. Tech 섹터 50% 과다(권장 35%) 완화 목적. 다음 분기까지 단계적 실행",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 10~12% 신규 편입",
+        "description": "Consumer Staples 또는 Utilities 추가로 sector_hhi 0.40 → 0.35 이하 목표. 다음 분기",
+        "priority": "high"
+      },
+      {
+        "title": "종목 수 6~7개로 확대",
+        "description": "현재 5개에서 증가시켜 hhi_concentration 0.35 → 0.30 이하 달성. 분산 효과 극대화",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 6,
+    "total_cost_usd": 0.08916380000000002
+  }
+}

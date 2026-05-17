@@ -1,0 +1,58 @@
+{
+  "case": "S02",
+  "fixture_file": "S02_V1_tier2.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.02205,
+  "input_tokens": 2605,
+  "output_tokens": 949,
+  "latency_ms": 16759,
+  "answer_length": 462,
+  "patterns_score": 5,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 HHI 집중도 0.35는 중간 수준이나, 섹터 HHI 0.40은 Tech 50% 단일 집중으로 다소 높은 편입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 전체 5종목 중 과반을 차지하며, 최대 단일 종목 비중이 25%입니다. GARP 전략 기준 목표 HHI 0.25 이하를 위해서는 보유 종목 수를 5개에서 8~10개로 확대하고, Tech 섹터 비중을 50%에서 35% 이하로 축소해야 합니다. 구체적으로 AAPL 비중을 10%p 축소(25%→15%)하고, 현재 미보유 섹터인 산업재(Industrials)나 필수소비재(Consumer Staples)에서 ROIC 15% 이상, PEG 1.5 이하 종목 3개를 각 8~10% 비중으로 다음 분기까지 단계적 편입하시는 것을 권장합니다. 이를 통해 섹터 HHI를 0.40에서 0.28 수준으로, 전체 HHI를 0.35에서 0.23 수준으로 낮출 수 있습니다.\",\n  \"referenced_metrics\": [\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"max_position_weight\",\n    \"holding_count\"\n  ],\n  \"follow_up_suggestions\": [\n    \"산업재나 필수소비재 섹터에서 추천 종목이 있나요?\",\n    \"현재 Tech 50% 비중 중 어떤 종목부터 축소하는 게 좋을까요?\",\n    \"종목 수를 8~10개로 늘릴 때 각 종목 적정 비중은 얼마인가요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"AAPL 비중 10%p 축소 (25%→15%)\",\n      \"description\": \"Tech 섹터 50% 과다 집중 완화 및 단일 종목 한도 20% 이하 유지 목적. 섹터 HHI 0.40→0.32 목표.\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"산업재/필수소비재 3종목 편입\",\n      \"description\": \"ROIC 15%↑ & PEG 1.5↓ 조건 충족 종목 각 8~10% 비중으로 다음 분기까지 단계적 매수. 섹터 분산 강화 목적.\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"보유 종목 수 8~10개 확대\",\n      \"description\": \"현재 5개에서 8~10개로 확대하여 HHI 0.35→0.23 목표. 분기별 2~3종목씩 추가 편입 검토.\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 HHI 집중도 0.35는 중간 수준이나, 섹터 HHI 0.40은 Tech 50% 단일 집중으로 다소 높은 편입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 전체 5종목 중 과반을 차지하며, 최대 단일 종목 비중이 25%입니다. GARP 전략 기준 목표 HHI 0.25 이하를 위해서는 보유 종목 수를 5개에서 8~10개로 확대하고, Tech 섹터 비중을 50%에서 35% 이하로 축소해야 합니다. 구체적으로 AAPL 비중을 10%p 축소(25%→15%)하고, 현재 미보유 섹터인 산업재(Industrials)나 필수소비재(Consumer Staples)에서 ROIC 15% 이상, PEG 1.5 이하 종목 3개를 각 8~10% 비중으로 다음 분기까지 단계적 편입하시는 것을 권장합니다. 이를 통해 섹터 HHI를 0.40에서 0.28 수준으로, 전체 HHI를 0.35에서 0.23 수준으로 낮출 수 있습니다.",
+    "referenced_metrics": [
+      "hhi_concentration",
+      "sector_hhi",
+      "top3_weight",
+      "max_position_weight",
+      "holding_count"
+    ],
+    "follow_up_suggestions": [
+      "산업재나 필수소비재 섹터에서 추천 종목이 있나요?",
+      "현재 Tech 50% 비중 중 어떤 종목부터 축소하는 게 좋을까요?",
+      "종목 수를 8~10개로 늘릴 때 각 종목 적정 비중은 얼마인가요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "AAPL 비중 10%p 축소 (25%→15%)",
+        "description": "Tech 섹터 50% 과다 집중 완화 및 단일 종목 한도 20% 이하 유지 목적. 섹터 HHI 0.40→0.32 목표.",
+        "priority": "high"
+      },
+      {
+        "title": "산업재/필수소비재 3종목 편입",
+        "description": "ROIC 15%↑ & PEG 1.5↓ 조건 충족 종목 각 8~10% 비중으로 다음 분기까지 단계적 매수. 섹터 분산 강화 목적.",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 8~10개 확대",
+        "description": "현재 5개에서 8~10개로 확대하여 HHI 0.35→0.23 목표. 분기별 2~3종목씩 추가 편입 검토.",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 4,
+    "total_cost_usd": 0.062070400000000005
+  }
+}

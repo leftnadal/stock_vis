@@ -1,0 +1,59 @@
+{
+  "case": "S05",
+  "fixture_file": "S05_V2_tier2.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.021858,
+  "input_tokens": 2591,
+  "output_tokens": 939,
+  "latency_ms": 16390,
+  "answer_length": 465,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"TSLA 비중 40%를 가장 먼저 축소해야 합니다. 현재 단일 종목 한도 20%를 20%p 초과하여 포트폴리오 집중도 리스크(HHI 0.65, 고위험 구간 0.25 이상)의 핵심 원인입니다. TSLA는 변동성이 크고 portfolio_beta 1.85(시장 대비 85% 과민 반응)를 끌어올리는 주범으로, 단일 종목 비중을 다음 2주 내 20%로 축소(20%p 감축)하면 HHI를 0.45 수준으로 낮출 수 있습니다. 축소한 자금으로 avg_correlation 0.75를 낮추기 위해 상관관계 낮은 섹터(헬스케어, 필수소비재) 편입 또는 채권 ETF 10% 추가를 병행하세요. PLTR과 SHOP도 Tech 섹터 80%(sector_HHI 0.80, 과도 집중)에 포함되므로, TSLA 축소 후 다음 분기에는 Tech 비중을 60% 이하로 낮추고 Consumer Discretionary 외 섹터 2~3개 추가 분산이 필요합니다.\",\n  \"referenced_metrics\": [\n    \"max_position_weight\",\n    \"hhi_concentration\",\n    \"portfolio_beta\",\n    \"sector_hhi\",\n    \"avg_correlation\",\n    \"top3_weight\"\n  ],\n  \"follow_up_suggestions\": [\n    \"TSLA 20%p 축소 후 어느 종목으로 대체하면 좋을까요?\",\n    \"Tech 섹터 비중을 60%로 낮추려면 어떤 섹터를 추가해야 하나요?\",\n    \"portfolio_beta를 1.2 이하로 낮추려면 추가로 어떤 조치가 필요한가요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"TSLA 20%p 즉시 축소 (40% → 20%)\",\n      \"description\": \"단일 종목 한도 20%를 20%p 초과. HHI 0.65 → 0.45 감소 효과. 다음 2주 내 분할 매도로 실행\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"저상관 섹터/채권 ETF 10% 편입\",\n      \"description\": \"avg_correlation 0.75 완화 목적. 헬스케어/필수소비재 또는 채권 ETF로 분산. TSLA 축소 자금 활용\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Tech 섹터 60% 이하 조정 (다음 분기)\",\n      \"description\": \"sector_HHI 0.80 완화. PLTR/SHOP 중 1개 5~10%p 축소 후 산업재/헬스케어 등 2~3개 섹터 추가\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "TSLA 비중 40%를 가장 먼저 축소해야 합니다. 현재 단일 종목 한도 20%를 20%p 초과하여 포트폴리오 집중도 리스크(HHI 0.65, 고위험 구간 0.25 이상)의 핵심 원인입니다. TSLA는 변동성이 크고 portfolio_beta 1.85(시장 대비 85% 과민 반응)를 끌어올리는 주범으로, 단일 종목 비중을 다음 2주 내 20%로 축소(20%p 감축)하면 HHI를 0.45 수준으로 낮출 수 있습니다. 축소한 자금으로 avg_correlation 0.75를 낮추기 위해 상관관계 낮은 섹터(헬스케어, 필수소비재) 편입 또는 채권 ETF 10% 추가를 병행하세요. PLTR과 SHOP도 Tech 섹터 80%(sector_HHI 0.80, 과도 집중)에 포함되므로, TSLA 축소 후 다음 분기에는 Tech 비중을 60% 이하로 낮추고 Consumer Discretionary 외 섹터 2~3개 추가 분산이 필요합니다.",
+    "referenced_metrics": [
+      "max_position_weight",
+      "hhi_concentration",
+      "portfolio_beta",
+      "sector_hhi",
+      "avg_correlation",
+      "top3_weight"
+    ],
+    "follow_up_suggestions": [
+      "TSLA 20%p 축소 후 어느 종목으로 대체하면 좋을까요?",
+      "Tech 섹터 비중을 60%로 낮추려면 어떤 섹터를 추가해야 하나요?",
+      "portfolio_beta를 1.2 이하로 낮추려면 추가로 어떤 조치가 필요한가요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "TSLA 20%p 즉시 축소 (40% → 20%)",
+        "description": "단일 종목 한도 20%를 20%p 초과. HHI 0.65 → 0.45 감소 효과. 다음 2주 내 분할 매도로 실행",
+        "priority": "high"
+      },
+      {
+        "title": "저상관 섹터/채권 ETF 10% 편입",
+        "description": "avg_correlation 0.75 완화 목적. 헬스케어/필수소비재 또는 채권 ETF로 분산. TSLA 축소 자금 활용",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 60% 이하 조정 (다음 분기)",
+        "description": "sector_HHI 0.80 완화. PLTR/SHOP 중 1개 5~10%p 축소 후 산업재/헬스케어 등 2~3개 섹터 추가",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 10,
+    "total_cost_usd": 0.1489008
+  }
+}

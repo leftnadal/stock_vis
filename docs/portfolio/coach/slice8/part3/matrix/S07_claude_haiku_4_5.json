@@ -1,0 +1,63 @@
+{
+  "case": "S07",
+  "fixture_file": "S07_V3_tier2.json",
+  "model": "claude-haiku-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.007896,
+  "input_tokens": 2620,
+  "output_tokens": 1450,
+  "latency_ms": 11977,
+  "answer_length": 975,
+  "patterns_score": 5,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오가 Tech 52%, Healthcare 48%로 2개 섹터에 집중(sector_hhi 0.55)된 상태에서, Quality Factor 전략 확대를 위해서는 다음 3개 섹터 편입을 권장합니다.\\n\\n첫째, **금융(Financials)** 섹터입니다. 현재 V/MA(Fintech/결제)는 보유 중이나, 전통 금융기관(은행/보험)에서도 ROIC 12~15% 이상, PE 10~13 수준의 고품질 기업들(예: JPMorgan Chase, Berkshire Hathaway)이 다수 있습니다. 금융 비중 10~15% 편입 시 sector_hhi를 현재 0.55에서 0.42 수준으로 낮출 수 있습니다.\\n\\n둘째, **산업재(Industrials)** 섹터입니다. ROIC 10% 이상, PEG 1.5 이하인 우량 기업들(예: Caterpillar, Honeywell)의 경기순환 특성이 Tech/Healthcare와의 상관관계(현재 평균 0.45)를 더욱 약화시킬 수 있으며, 포트폴리오 베타 0.95를 안정적으로 유지하면서 분산 효과를 높입니다. 목표 비중은 8~12%입니다.\\n\\n셋째, **필수소비재(Consumer Staples)** 섹터입니다. PE 18~22, ROIC 8~10% 수준의 방어주들(예: Procter & Gamble, Coca-Cola)이 시장 변동성 시 포트폴리오 변동성 완화 역할을 합니다. 최근 3개월 금리 상승 환경을 고려하면 필수소비재 5~8% 편입이 현금 대체 효과를 제공합니다.\\n\\n**실행 권장사항**: 현재 holding_count 10개에서 12~15개로 확대하면서, Tech 52% → 38%, Healthcare 48% → 35%, 금융 신규 12%, 산업재 신규 10%, 필수소비재 신규 5%로 조정하면 sector_hhi가 0.55에서 0.38~0.40으로 개선되고, 평균 상관계수도 0.45에서 0.35 수준으로 낮아져 포트폴리오 안정성이 향상됩니다. 분기 내 단계적 편입을 권장합니다.\",\n  \"referenced_metrics\": [\n    \"sector_hhi\",\n    \"portfolio_beta\",\n    \"avg_correlation\",\n    \"holding_count\",\n    \"top3_weight\"\n  ],\n  \"follow_up_suggestions\": [\n    \"금융/산업재/필수소비재 섹터별 구체적 종목 추천 (ROIC/PE 기준)\",\n    \"새로운 섹터 비중 조정 후 예상 sector_hhi/상관계수 변화\",\n    \"분기별 리밸런싱 스케줄 및 매수 순서\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"금융(Financials) 섹터 12% 신규 편입\",\n      \"description\": \"ROIC 12~15%, PE 10~13 기준 우량 금융주 선정. JPMorgan Chase 또는 Berkshire Hathaway 등으로 sector_hhi 0.55 → 0.48 개선. 분기 내 3회 분할 매수\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"산업재(Industrials) 섹터 10% 신규 편입\",\n      \"description\": \"ROIC 10% 이상, PEG 1.5 이하 종목 (Caterpillar, Honeywell). Tech/Healthcare와 낮은 상관관계로 분산 효과 극대화. avg_correlation 0.45 → 0.35 목표\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"필수소비재(Consumer Staples) 5% 신규 편입\",\n      \"description\": \"PE 18~22, ROIC 8~10% 방어주 (P&G, Coca-Cola). 금리 상승 환경에서 변동성 완화 역할. 현금 비중 축소 대신 편입\",\n      \"priority\": \"medium\"\n    },\n    {\n      \"title\": \"Tech 비중 52% → 38%로 10%p 축소\",\n      \"description\": \"sector_hhi 과다 집중 완화 목표. GOOG/AAPL 중 PEG 낮은 종목 우선 유지, 신규 섹터 편입 재원으로 활용\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오가 Tech 52%, Healthcare 48%로 2개 섹터에 집중(sector_hhi 0.55)된 상태에서, Quality Factor 전략 확대를 위해서는 다음 3개 섹터 편입을 권장합니다.\n\n첫째, **금융(Financials)** 섹터입니다. 현재 V/MA(Fintech/결제)는 보유 중이나, 전통 금융기관(은행/보험)에서도 ROIC 12~15% 이상, PE 10~13 수준의 고품질 기업들(예: JPMorgan Chase, Berkshire Hathaway)이 다수 있습니다. 금융 비중 10~15% 편입 시 sector_hhi를 현재 0.55에서 0.42 수준으로 낮출 수 있습니다.\n\n둘째, **산업재(Industrials)** 섹터입니다. ROIC 10% 이상, PEG 1.5 이하인 우량 기업들(예: Caterpillar, Honeywell)의 경기순환 특성이 Tech/Healthcare와의 상관관계(현재 평균 0.45)를 더욱 약화시킬 수 있으며, 포트폴리오 베타 0.95를 안정적으로 유지하면서 분산 효과를 높입니다. 목표 비중은 8~12%입니다.\n\n셋째, **필수소비재(Consumer Staples)** 섹터입니다. PE 18~22, ROIC 8~10% 수준의 방어주들(예: Procter & Gamble, Coca-Cola)이 시장 변동성 시 포트폴리오 변동성 완화 역할을 합니다. 최근 3개월 금리 상승 환경을 고려하면 필수소비재 5~8% 편입이 현금 대체 효과를 제공합니다.\n\n**실행 권장사항**: 현재 holding_count 10개에서 12~15개로 확대하면서, Tech 52% → 38%, Healthcare 48% → 35%, 금융 신규 12%, 산업재 신규 10%, 필수소비재 신규 5%로 조정하면 sector_hhi가 0.55에서 0.38~0.40으로 개선되고, 평균 상관계수도 0.45에서 0.35 수준으로 낮아져 포트폴리오 안정성이 향상됩니다. 분기 내 단계적 편입을 권장합니다.",
+    "referenced_metrics": [
+      "sector_hhi",
+      "portfolio_beta",
+      "avg_correlation",
+      "holding_count",
+      "top3_weight"
+    ],
+    "follow_up_suggestions": [
+      "금융/산업재/필수소비재 섹터별 구체적 종목 추천 (ROIC/PE 기준)",
+      "새로운 섹터 비중 조정 후 예상 sector_hhi/상관계수 변화",
+      "분기별 리밸런싱 스케줄 및 매수 순서"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "금융(Financials) 섹터 12% 신규 편입",
+        "description": "ROIC 12~15%, PE 10~13 기준 우량 금융주 선정. JPMorgan Chase 또는 Berkshire Hathaway 등으로 sector_hhi 0.55 → 0.48 개선. 분기 내 3회 분할 매수",
+        "priority": "high"
+      },
+      {
+        "title": "산업재(Industrials) 섹터 10% 신규 편입",
+        "description": "ROIC 10% 이상, PEG 1.5 이하 종목 (Caterpillar, Honeywell). Tech/Healthcare와 낮은 상관관계로 분산 효과 극대화. avg_correlation 0.45 → 0.35 목표",
+        "priority": "high"
+      },
+      {
+        "title": "필수소비재(Consumer Staples) 5% 신규 편입",
+        "description": "PE 18~22, ROIC 8~10% 방어주 (P&G, Coca-Cola). 금리 상승 환경에서 변동성 완화 역할. 현금 비중 축소 대신 편입",
+        "priority": "medium"
+      },
+      {
+        "title": "Tech 비중 52% → 38%로 10%p 축소",
+        "description": "sector_hhi 과다 집중 완화 목표. GOOG/AAPL 중 PEG 낮은 종목 우선 유지, 신규 섹터 편입 재원으로 활용",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 3,
+    "total_cost_usd": 0.0425276
+  }
+}

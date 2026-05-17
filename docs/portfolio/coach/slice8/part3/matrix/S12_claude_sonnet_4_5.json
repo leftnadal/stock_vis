@@ -1,0 +1,60 @@
+{
+  "case": "S12",
+  "fixture_file": "S12_V1_tier2_overflow.json",
+  "model": "claude-sonnet-4-5",
+  "provider": "anthropic",
+  "cost_usd": 0.025772999999999997,
+  "input_tokens": 2591,
+  "output_tokens": 1200,
+  "latency_ms": 20233,
+  "answer_length": 779,
+  "patterns_score": 4,
+  "raw_text": "```json\n{\n  \"answer\": \"현재 포트폴리오는 5개 종목으로 구성되어 있으며, 상위 3종목 비중이 60%로 집중도가 상당히 높은 상태입니다. HHI 집중도 지표가 0.35로 0.20 이하 권장 기준을 크게 초과하고 있어 특정 종목 리스크 노출이 큽니다.\\n\\n섹터 분포를 보면 Tech 섹터가 50%로 과반을 차지하고 있습니다. KOSPI의 IT 섹터 평균 비중이 약 32%인 점을 고려하면 1.56배 집중된 상태입니다. 섹터 HHI도 0.40으로 0.25 이하 권장 기준 대비 높아, 특정 업종 리스크에 과도하게 노출되어 있습니다. 최대 단일 종목 비중이 25%로 일반적 권장 한도인 20%를 5%p 초과하고 있습니다.\\n\\n포트폴리오 베타는 1.05로 시장 대비 5% 더 높은 변동성을 보이며, 보유 종목 간 평균 상관계수가 0.35로 분산 효과가 제한적입니다. GARP 전략(V1_garp preset)을 고려할 때 성장성과 가치의 균형이 중요한데, 현재 구조는 Tech 섹터 집중으로 성장주 편향이 강합니다.\\n\\n다음 분기까지 다음 조치를 권장합니다: (1) 최대 비중 종목을 20% 이하로 5%p 축소하여 단일 종목 리스크를 완화하고, (2) Tech 섹터 비중을 40% 수준으로 10%p 축소하여 섹터 HHI를 0.30 이하로 낮추며, (3) 축소한 비중으로 Industrial 또는 Consumer Staples 등 방어적 섹터를 신규 편입하여 보유 종목 수를 7~8개로 확대해 HHI 집중도를 0.25 이하로 개선하는 것이 필요합니다. 이를 통해 GARP 전략의 균형을 회복하고 변동성 대응력을 강화할 수 있습니다.\",\n  \"referenced_metrics\": [\n    \"hhi_concentration\",\n    \"sector_hhi\",\n    \"top3_weight\",\n    \"holding_count\",\n    \"portfolio_beta\",\n    \"max_position_weight\",\n    \"avg_correlation\"\n  ],\n  \"follow_up_suggestions\": [\n    \"Tech 섹터 내에서 어떤 종목을 축소하면 좋을까요?\",\n    \"방어적 섹터로 어떤 종목을 추천하시나요?\",\n    \"포트폴리오 리밸런싱 시 매매 타이밍은 어떻게 잡아야 하나요?\"\n  ],\n  \"confidence\": \"high\",\n  \"action_items\": [\n    {\n      \"title\": \"최대 비중 종목 5%p 축소 (25% → 20%)\",\n      \"description\": \"단일 종목 한도 20% 기준 초과, 집중 리스크 완화 목적\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"Tech 섹터 10%p 축소 (50% → 40%)\",\n      \"description\": \"섹터 HHI 0.40을 0.30 이하로 낮춰 업종 리스크 분산\",\n      \"priority\": \"high\"\n    },\n    {\n      \"title\": \"방어적 섹터 신규 편입 (보유 종목 5개 → 7~8개)\",\n      \"description\": \"Industrial/Consumer Staples 추가로 HHI 0.25 이하 목표, 다음 분기까지\",\n      \"priority\": \"medium\"\n    }\n  ]\n}\n```",
+  "parsed": {
+    "answer": "현재 포트폴리오는 5개 종목으로 구성되어 있으며, 상위 3종목 비중이 60%로 집중도가 상당히 높은 상태입니다. HHI 집중도 지표가 0.35로 0.20 이하 권장 기준을 크게 초과하고 있어 특정 종목 리스크 노출이 큽니다.\n\n섹터 분포를 보면 Tech 섹터가 50%로 과반을 차지하고 있습니다. KOSPI의 IT 섹터 평균 비중이 약 32%인 점을 고려하면 1.56배 집중된 상태입니다. 섹터 HHI도 0.40으로 0.25 이하 권장 기준 대비 높아, 특정 업종 리스크에 과도하게 노출되어 있습니다. 최대 단일 종목 비중이 25%로 일반적 권장 한도인 20%를 5%p 초과하고 있습니다.\n\n포트폴리오 베타는 1.05로 시장 대비 5% 더 높은 변동성을 보이며, 보유 종목 간 평균 상관계수가 0.35로 분산 효과가 제한적입니다. GARP 전략(V1_garp preset)을 고려할 때 성장성과 가치의 균형이 중요한데, 현재 구조는 Tech 섹터 집중으로 성장주 편향이 강합니다.\n\n다음 분기까지 다음 조치를 권장합니다: (1) 최대 비중 종목을 20% 이하로 5%p 축소하여 단일 종목 리스크를 완화하고, (2) Tech 섹터 비중을 40% 수준으로 10%p 축소하여 섹터 HHI를 0.30 이하로 낮추며, (3) 축소한 비중으로 Industrial 또는 Consumer Staples 등 방어적 섹터를 신규 편입하여 보유 종목 수를 7~8개로 확대해 HHI 집중도를 0.25 이하로 개선하는 것이 필요합니다. 이를 통해 GARP 전략의 균형을 회복하고 변동성 대응력을 강화할 수 있습니다.",
+    "referenced_metrics": [
+      "hhi_concentration",
+      "sector_hhi",
+      "top3_weight",
+      "holding_count",
+      "portfolio_beta",
+      "max_position_weight",
+      "avg_correlation"
+    ],
+    "follow_up_suggestions": [
+      "Tech 섹터 내에서 어떤 종목을 축소하면 좋을까요?",
+      "방어적 섹터로 어떤 종목을 추천하시나요?",
+      "포트폴리오 리밸런싱 시 매매 타이밍은 어떻게 잡아야 하나요?"
+    ],
+    "confidence": "high",
+    "action_items": [
+      {
+        "title": "최대 비중 종목 5%p 축소 (25% → 20%)",
+        "description": "단일 종목 한도 20% 기준 초과, 집중 리스크 완화 목적",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 10%p 축소 (50% → 40%)",
+        "description": "섹터 HHI 0.40을 0.30 이하로 낮춰 업종 리스크 분산",
+        "priority": "high"
+      },
+      {
+        "title": "방어적 섹터 신규 편입 (보유 종목 5개 → 7~8개)",
+        "description": "Industrial/Consumer Staples 추가로 HHI 0.25 이하 목표, 다음 분기까지",
+        "priority": "medium"
+      }
+    ]
+  },
+  "kpi_4판정": {
+    "cost_pass": true,
+    "length_pass": true,
+    "actions_pass": true,
+    "parse_pass": true
+  },
+  "score_pass": true,
+  "all_pass": true,
+  "cumulative_after": {
+    "call_count": 14,
+    "total_cost_usd": 0.2650568
+  }
+}
