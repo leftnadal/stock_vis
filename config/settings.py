@@ -517,7 +517,8 @@ CHANNEL_LAYERS = {
 # 콘솔 백엔드 기본, 프로덕션에서 SMTP로 교체
 EMAIL_BACKEND = os.getenv(
     'EMAIL_BACKEND',
-    'django.core.mail.backends.console.EmailBackend'
+    # EMAIL_HOST_USER가 설정되어 있으면 SMTP, 아니면 console
+    'django.core.mail.backends.smtp.EmailBackend' if os.getenv('EMAIL_HOST_USER') else 'django.core.mail.backends.console.EmailBackend'
 )
 EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
 EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
@@ -525,6 +526,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
+REPORT_RECIPIENT_EMAIL = os.getenv('REPORT_RECIPIENT_EMAIL', '')
 
 # ============================================================
 # Celery Error Monitoring

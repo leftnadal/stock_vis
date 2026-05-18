@@ -9,14 +9,14 @@ VENV_DIR="/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_
 
 cd "$PROJECT_DIR"
 
-# .env 안전 로드 (주석, 공백 줄 무시)
+# .env 로드 — bash source 사용 (따옴표/공백 처리 정확)
+# 사유: 기존 `export "$line"` 패턴은 KEY="value" 형식에서 따옴표를 값에 포함시키는 버그.
 if [ -f .env ]; then
-    while IFS= read -r line; do
-        # 빈 줄, 주석, 공백만 있는 줄 무시
-        [[ -z "$line" || "$line" =~ ^[[:space:]]*# || "$line" =~ ^[[:space:]]*$ ]] && continue
-        export "$line"
-    done < .env
-    echo "[$(date)] .env loaded successfully"
+    set -a
+    # shellcheck disable=SC1091
+    . ./.env
+    set +a
+    echo "[$(date)] .env loaded successfully (source mode)"
 else
     echo "[$(date)] WARNING: .env file not found at $PROJECT_DIR/.env"
 fi

@@ -1,0 +1,277 @@
+{% load report_filters %}<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock-Vis Daily Report</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background:#f5f5f7; color:#1d1d1f; margin:0; padding:0; }
+  .container { max-width: 720px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 22px; margin: 8px 0 4px; }
+  h2 { font-size: 17px; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid #e0e0e5; }
+  h3 { font-size: 14px; margin: 14px 0 6px; color:#555; }
+  .meta { color:#666; font-size: 12px; margin-bottom: 14px; }
+  .card { background:#fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+  table { width:100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align:left; padding: 6px 10px; border-bottom: 1px solid #eee; }
+  th { background:#fafafa; color:#444; font-weight:600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .delta-up { color:#0a7d2c; }
+  .delta-down { color:#c92a2a; }
+  .delta-zero { color:#888; }
+  .sev-red { background: #ffe9e9; padding: 2px 6px; border-radius: 4px; }
+  .sev-yel { background: #fff4d0; padding: 2px 6px; border-radius: 4px; }
+  .sev-grn { background: #e3f5e1; padding: 2px 6px; border-radius: 4px; }
+  .sugg { padding: 10px 12px; border-left: 3px solid #ddd; margin: 8px 0; background: #fafafa; border-radius: 4px; }
+  .sugg.red { border-color: #c92a2a; }
+  .sugg.yel { border-color: #e8b500; }
+  .sugg.grn { border-color: #2da141; }
+  .sugg-cat { font-weight: 600; font-size: 13px; }
+  .sugg-issue { margin: 4px 0; font-size: 13px; }
+  .sugg-action { color: #1057bd; font-size: 12px; }
+  .sugg-samples { color: #666; font-size: 11px; font-family: ui-monospace, monospace; margin-top: 4px; }
+  .small { font-size: 11px; color: #888; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .summary-cell { background: #fff; padding: 10px 12px; border-radius: 8px; }
+  .summary-cell .label { font-size: 11px; color: #666; }
+  .summary-cell .value { font-size: 18px; font-weight: 600; color: #1d1d1f; }
+  .footer { color:#888; font-size: 11px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <h1>📊 Stock-Vis Daily Report</h1>
+  <div class="meta">{{ payload.date }} {% if payload.previous_date %} · 어제 ({{ payload.previous_date }}) 대비 변화{% else %} · 첫 발송 (baseline){% endif %}</div>
+
+  <!-- ── Summary Cards ─────────────────────────────── -->
+  <div class="summary-grid">
+    <div class="summary-cell">
+      <div class="label">총 노드</div>
+      <div class="value">{{ payload.graph.total_nodes }}</div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">총 관계</div>
+      <div class="value">{{ payload.graph.total_relations }}</div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">24h 신규 뉴스</div>
+      <div class="value">{{ payload.news.today_new }}</div>
+    </div>
+    <div class="summary-cell">
+      <div class="label">LLM 분석률</div>
+      <div class="value">{{ payload.news.today_llm_analyzed_pct }}%</div>
+    </div>
+  </div>
+
+  <!-- ── 1. Graph: Node/Relation 변화 ───────────────── -->
+  <h2>🧬 그래프 상태</h2>
+
+  <div class="card">
+    <h3>노드 (라벨별)</h3>
+    <table>
+      <tr><th>라벨</th><th class="num">개수</th><th class="num">어제 대비</th></tr>
+      {% for label, cnt in payload.graph.labels.items %}
+      <tr>
+        <td>{{ label }}</td>
+        <td class="num">{{ cnt }}</td>
+        <td class="num">{{ payload.deltas.labels|get_item:label }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>관계 (타입별)</h3>
+    <table>
+      <tr><th>타입</th><th class="num">개수</th><th class="num">어제 대비</th></tr>
+      {% for rt, cnt in payload.graph.relations.items %}
+      <tr>
+        <td>{{ rt }}</td>
+        <td class="num">{{ cnt }}</td>
+        <td class="num">{{ payload.deltas.relations|get_item:rt }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>노드 퀄리티</h3>
+    <table>
+      <tr><th>지표</th><th class="num">값</th></tr>
+      <tr><td>외로운 Stock 노드 (관계 0)</td><td class="num">{{ payload.graph.lonely_stocks }}</td></tr>
+      <tr><td>종목당 평균 관계 수</td><td class="num">{{ payload.graph.avg_relations_per_stock }}</td></tr>
+      <tr><td>truth_score 분포 (high/mid/low)</td>
+          <td class="num">{{ payload.graph.truth_score_dist|get_item:'high(70+)' }} / {{ payload.graph.truth_score_dist|get_item:'mid(40-69)' }} / {{ payload.graph.truth_score_dist|get_item:'low(<40)' }}</td></tr>
+    </table>
+    <h3>Stock 속성 채움률</h3>
+    <table>
+      <tr><th>속성</th><th class="num">채움률</th></tr>
+      {% for attr, pct in payload.graph.stock_attr_completeness_pct.items %}
+      <tr><td>{{ attr }}</td><td class="num">{{ pct }}%</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <!-- ── 2. Coverage Gaps ──────────────────────────── -->
+  <h2>🔍 커버리지 갭 (새로 찾을 수 있는 노드)</h2>
+  <div class="card">
+    <table>
+      <tr><th>항목</th><th class="num">미반영</th></tr>
+      <tr><td>Stock (PG에 있는데 Neo4j에 없음)</td><td class="num">{{ payload.gaps.missing_stocks_count }}</td></tr>
+      <tr><td>Industry (PG distinct vs Neo4j Industry)</td><td class="num">{{ payload.gaps.missing_industries_count }}</td></tr>
+      <tr><td>Sector</td><td class="num">{{ payload.gaps.missing_sectors_count }}</td></tr>
+      <tr><td>ChainProfile 미생성 종목</td><td class="num">{{ payload.gaps.missing_profiles_count }}</td></tr>
+      <tr><td>SEC UnmatchedCompanyQueue pending (alias 후보)</td><td class="num">{{ payload.gaps.unmatched_companies_pending }}</td></tr>
+    </table>
+
+    {% if payload.gaps.missing_industries_sample %}
+    <h3>미반영 Industry 샘플</h3>
+    <div class="sugg-samples">{{ payload.gaps.missing_industries_sample|join:", " }}</div>
+    {% endif %}
+
+    {% if payload.gaps.unmatched_top_candidates %}
+    <h3>Unmatched 회사 상위 (출현 빈도순)</h3>
+    <table>
+      <tr><th>회사명</th><th class="num">occurrence</th><th>top fuzzy</th></tr>
+      {% for c in payload.gaps.unmatched_top_candidates %}
+      <tr>
+        <td>{{ c.raw_name }}</td>
+        <td class="num">{{ c.occurrence }}</td>
+        <td><span class="small">{% if c.top_fuzzy %}{{ c.top_fuzzy.ticker }} ({{ c.top_fuzzy.score }}){% else %}-{% endif %}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <!-- ── 3. News ──────────────────────────────────── -->
+  <h2>📰 뉴스 일일 리포트</h2>
+
+  <div class="card">
+    <h3>양</h3>
+    <table>
+      <tr><th>지표</th><th class="num">값</th></tr>
+      <tr><td>전체 누적 NewsArticle</td><td class="num">{{ payload.news.total_articles }}</td></tr>
+      <tr><td>오늘 신규 (24h)</td><td class="num">{{ payload.news.today_new }}</td></tr>
+      <tr><td>LLM 분석 완료</td><td class="num">{{ payload.news.today_llm_analyzed }}</td></tr>
+      <tr><td>LLM 분석 대기</td><td class="num">{{ payload.news.today_llm_pending }}</td></tr>
+      <tr><td>LLM 분석률</td><td class="num">{{ payload.news.today_llm_analyzed_pct }}%</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>퀄리티 — importance / sentiment (24h)</h3>
+    <table>
+      <tr><th>importance</th><th class="num">건수</th></tr>
+      {% for k, v in payload.news.importance_dist_24h.items %}
+      <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+    <table style="margin-top:8px;">
+      <tr><th>sentiment</th><th class="num">건수</th></tr>
+      {% for k, v in payload.news.sentiment_24h.items %}
+      <tr><td>{{ k }}</td><td class="num">{{ v }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>섹터 커버리지 (24h)</h3>
+    <table>
+      <tr><th>섹터</th><th class="num">24h 뉴스</th></tr>
+      {% for sec, cnt in payload.news.sector_distribution_24h.items %}
+      <tr><td>{{ sec }}</td><td class="num">{{ cnt }}</td></tr>
+      {% endfor %}
+    </table>
+    <p class="small" style="margin-top:8px;">
+      종목 커버: <strong>{{ payload.news.stocks_covered_count }}</strong> / 미커버: <strong>{{ payload.news.stocks_no_news_count }}</strong>
+    </p>
+  </div>
+
+  <!-- ── 4. Improvement Suggestions ────────────────── -->
+  <h2>💡 개선 방향</h2>
+  {% for s in payload.suggestions %}
+  <div class="sugg {% if '🔴' in s.severity %}red{% elif '🟡' in s.severity %}yel{% else %}grn{% endif %}">
+    <div class="sugg-cat">{{ s.severity }} {{ s.category }}</div>
+    <div class="sugg-issue">{{ s.issue }}</div>
+    <div class="sugg-action">→ {{ s.action }}</div>
+    {% if s.samples %}<div class="sugg-samples">samples: {{ s.samples|join:", " }}</div>{% endif %}
+  </div>
+  {% endfor %}
+
+  <!-- ── 야간 자동화 요약 ──────────────────────────── -->
+  <h2>🌙 야간 자동화 보고서</h2>
+  {% if payload.nightly.available %}
+  <div class="card">
+    <table>
+      <tr><th>지표</th><th class="num">값</th></tr>
+      <tr><td>마지막 실행 종료</td><td class="num">{{ payload.nightly.last_run_ended_at }}</td></tr>
+      <tr><td>실행 브랜치</td><td class="num">{{ payload.nightly.branch }}</td></tr>
+      <tr><td>생성 보고서 수</td><td class="num">{{ payload.nightly.report_count }}</td></tr>
+      <tr><td>총 줄 수</td><td class="num">{{ payload.nightly.total_lines }}</td></tr>
+      {% if payload.nightly.report_dir %}
+      <tr><td>보고서 디렉토리</td><td class="num"><span class="small">{{ payload.nightly.report_dir }}</span></td></tr>
+      {% endif %}
+    </table>
+
+    <h3 style="margin-top:14px;">📄 보고서 목록</h3>
+    <table>
+      <tr><th>이름</th><th class="num">줄 수</th><th>제목/미리보기</th></tr>
+      {% for r in payload.nightly.reports %}
+      <tr>
+        <td><span class="small">{{ r.name }}</span></td>
+        <td class="num">{{ r.lines }}</td>
+        <td><span class="small">{{ r.preview }}</span></td>
+      </tr>
+      {% endfor %}
+    </table>
+
+    {% if payload.nightly.errors %}
+    <h3 style="margin-top:14px;">⚠️ 실행 중 에러/실패</h3>
+    {% for err in payload.nightly.errors %}
+    <div class="sugg-samples">{{ err }}</div>
+    {% endfor %}
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="card">
+    <p>야간 자동화 로그를 찾을 수 없습니다. (~/stock-vis-nightly/logs/launchd.log 확인)</p>
+  </div>
+  {% endif %}
+
+  <!-- ── LLM 사용량/비용 ──────────────────────────── -->
+  <h2>🤖 LLM 사용량 + 비용 (Gemini paid tier)</h2>
+  <div class="card">
+    <table>
+      <tr><th>지표</th><th class="num">값</th></tr>
+      <tr><td>24h 호출 수 (SEC + News)</td><td class="num">{{ payload.llm.total_calls_24h }} (SEC {{ payload.llm.sec_llm_calls_24h }} / News {{ payload.llm.news_llm_calls_24h }})</td></tr>
+      <tr><td>예상 input tokens</td><td class="num">{{ payload.llm.est_input_tokens_24h }}</td></tr>
+      <tr><td>예상 output tokens</td><td class="num">{{ payload.llm.est_output_tokens_24h }}</td></tr>
+      <tr><td>24h 추정 비용 (USD)</td><td class="num"><strong>${{ payload.llm.est_cost_usd_24h }}</strong></td></tr>
+      <tr><td>월간 추정 비용 (USD)</td><td class="num"><strong>${{ payload.llm.est_monthly_cost_usd }}</strong></td></tr>
+    </table>
+    <p class="small" style="margin-top: 6px;">{{ payload.llm.note }} · {{ payload.llm.model }}</p>
+  </div>
+
+  <!-- ── 6. System Health ──────────────────────────── -->
+  <h2>⚙️ 시스템 헬스</h2>
+  <div class="card">
+    <table>
+      <tr><td>Celery 워커</td><td class="num">{% if payload.health.celery_worker_alive %}✅ {{ payload.health.celery_worker_count }}개{% else %}❌ DOWN{% endif %}</td></tr>
+      <tr><td>Celery Beat</td><td class="num">{% if payload.health.celery_beat_alive %}✅{% else %}❌ DOWN{% endif %}</td></tr>
+      <tr><td>Neo4j</td><td class="num">{% if payload.health.neo4j_alive %}✅{% else %}❌ DOWN{% endif %}</td></tr>
+      <tr><td>SEC 24h 처리 filing</td><td class="num">{{ payload.health.sec_24h_processed_filings }}</td></tr>
+      <tr><td>SEC 전체 filing 누적</td><td class="num">{{ payload.health.sec_total_filings }}</td></tr>
+      <tr><td>SupplyChainEvidence 누적</td><td class="num">{{ payload.health.sec_total_evidence }}</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    Stock-Vis · Generated by metrics/services/daily_report.py · {{ payload.date }}<br>
+    프론트엔드 그래프: <a href="http://localhost:3000/chainsight">http://localhost:3000/chainsight</a>
+  </div>
+
+</div>
+</body>
+</html>
