@@ -45,3 +45,15 @@ def test_commentary_input_schema_changes_are_mixed():
         "tests/coach/test_commentary_input.py",
     ]
     assert classify_regression(paths) == "mixed"
+
+
+def test_commentary_output_schema_changes_are_mixed():
+    """Part 2: portfolio/schemas/commentary_output.py + tests/coach/ → mixed.
+
+    Part 1과 동일 패턴 — cost (schemas/) + data-prep (tests/coach/) 혼합 → mixed.
+    """
+    paths = [
+        "portfolio/schemas/commentary_output.py",
+        "tests/coach/test_commentary_output.py",
+    ]
+    assert classify_regression(paths) == "mixed"
