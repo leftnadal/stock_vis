@@ -56,3 +56,19 @@ class TestRegressionClassifier:
             "docs/portfolio/coach/slice8/specificity_patterns.md",
         ]
         assert classify_regression(paths) == "mixed"
+
+    def test_data_prep_only_is_data_prep(self) -> None:
+        """Slice 10 mini-slice: scripts/coach/ + tests/coach/ 단독 → data-prep."""
+        paths = [
+            "scripts/coach/dump_all_llm_calls.py",
+            "tests/coach/test_dump_llm_calls.py",
+        ]
+        assert classify_regression(paths) == "data-prep"
+
+    def test_measure_dir_is_mixed(self) -> None:
+        """Slice 10: portfolio/measure/는 cost 카테고리 → mixed."""
+        paths = [
+            "portfolio/measure/estimator_v3.py",
+            "tests/coach/test_estimator_v3.py",
+        ]
+        assert classify_regression(paths) == "mixed"
