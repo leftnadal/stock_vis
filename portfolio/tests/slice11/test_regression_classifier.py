@@ -57,3 +57,17 @@ def test_commentary_output_schema_changes_are_mixed():
         "tests/coach/test_commentary_output.py",
     ]
     assert classify_regression(paths) == "mixed"
+
+
+def test_prompt_builder_and_coach_service_are_mixed():
+    """Part 3: portfolio/services/coach/ + tests/coach/ → mixed.
+
+    portfolio/services/는 cost 카테고리. coach 하위 신규 모듈도 cost.
+    builder + service 테스트(data-prep) 혼합 → mixed.
+    """
+    paths = [
+        "portfolio/services/coach/prompt_builder.py",
+        "portfolio/services/coach/e1_service.py",
+        "tests/coach/test_prompt_builder.py",
+    ]
+    assert classify_regression(paths) == "mixed"
