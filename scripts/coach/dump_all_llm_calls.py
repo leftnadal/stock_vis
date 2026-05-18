@@ -48,6 +48,9 @@ def normalize_entry(
         source_file: 원본 파일 경로 (REPO_ROOT 기준 상대).
         extra: 추가 필드 (예: scenario_id, label) — 평탄 위로 머지.
     """
+    # output_chars 추출 (Slice 11 §1 output estimator fitting용)
+    output_chars = _extract_output_chars(entry)
+
     if "input_tokens" in entry:
         norm = {k: v for k, v in entry.items() if not _is_nonscalar_payload(k)}
     else:
@@ -58,10 +61,37 @@ def normalize_entry(
         }
     norm["slice"] = slice_n
     norm["source_file"] = source_file
+    if output_chars is not None:
+        norm["output_chars"] = output_chars
     if extra:
         for k, v in extra.items():
             norm.setdefault(k, v)
     return norm
+
+
+# 응답 텍스트 후보 키 (Slice별 형식 차이)
+_OUTPUT_TEXT_KEYS = ("raw_text", "raw_content", "commentary", "rationale_text", "insight")
+
+
+def _extract_output_chars(entry: dict) -> int | None:
+    """원본 entry에서 응답 텍스트 길이(char count) 추출.
+
+    slice 별 응답 필드 이름 상이 → 후보 키 순회.
+    metadata nested일 경우 entry root + metadata 양쪽 확인.
+    """
+    if not isinstance(entry, dict):
+        return None
+    for k in _OUTPUT_TEXT_KEYS:
+        v = entry.get(k)
+        if isinstance(v, str):
+            return len(v)
+    meta = entry.get("metadata")
+    if isinstance(meta, dict):
+        for k in _OUTPUT_TEXT_KEYS:
+            v = meta.get(k)
+            if isinstance(v, str):
+                return len(v)
+    return None
 
 
 # 비-스칼라 페이로드 키는 dump에서 제외 (JSONL 크기 + noise 방지)
@@ -120,14 +150,17 @@ class SliceSource:
 def _load_flat_metadata_single(
     data: dict | list, slice_n: int, path: Path
 ) -> list[dict]:
-    """Smoke output: 단일 dict + metadata에 input_tokens 위치."""
+    """Smoke output: 단일 dict + metadata에 input_tokens 위치.
+
+    응답 텍스트(raw_text/raw_content)는 top-level에 있으므로 data 전체를 전달.
+    normalize_entry는 input_tokens 키 위치로 flat/nested 분기.
+    """
     if not isinstance(data, dict):
         return []
     md = data.get("metadata", {}) or {}
     if "input_tokens" not in md:
         return []
-    src = _rel(path)
-    return [normalize_entry(md, slice_n, src)]
+    return [normalize_entry(data, slice_n, _rel(path))]
 
 
 def _load_flat_root_single(

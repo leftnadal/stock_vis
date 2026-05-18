@@ -161,38 +161,66 @@ def estimate_input_tokens(
         return _estimate_input_tokens_v2_fallback(messages, system)
 
 
-# 한국어 ~2 char/token, 영어 ~4 char/token. v2 carry-over 사용.
-_OUTPUT_CHARS_PER_TOKEN = 2.5
+# ============================================================
+# Output estimator (Slice 11 #51 본격 구현)
+# ============================================================
+#
+# 진입점별 char ratio fitting — 데이터 출처: all_llm_calls.jsonl (200 entries,
+# 8 진입점 그룹). 각 진입점의 (output_tokens / output_chars) 평균값을 ratio로 사용.
+#
+# Backtest 결과 (scripts/coach/backtest_output_estimator.py 참조):
+# - global mean_delta = 5.11% / P90_delta = 11.20% / max_delta = 33.12% (1 outlier).
+# - Fallback §1 적용: KPI 임계 P90 ≤ 15% 완화 + #51 keep_open (multivariate 미래 작업).
+
+# 진입점별 char/token ratio (mean fit). 정의: ratio = output_tokens / output_chars.
+ENTRY_POINT_OUTPUT_RATIOS: dict[str, float] = {
+    "e1": 0.8835,           # Slice 1 one-line diagnosis (헤드라인+요약)
+    "e2": 0.8599,           # Slice 3 diagnostic card (4요소)
+    "e3": 0.7307,           # Slice 5 metric comments
+    "e3_portfolio": 0.6764, # Slice 6 portfolio commentary
+    "e4_conversation": 0.7233,  # Slice 7+8 conversation
+    "e5": 0.5006,           # Slice 2 adjustments (JSON heavy)
+    "e6": 0.7881,           # Slice 4 comparison
+    "rationale": 0.9778,    # Slice 9 rationale (한국어 long-form)
+}
+
+# Fallback global ratio (200 entries 전체 평균) — 진입점 미식별/미등록 시 사용.
+GLOBAL_OUTPUT_RATIO: float = 0.7584
 
 
 def estimate_output_tokens(
-    expected_chars: int | None = None,
+    expected_output_chars: int | None = None,
+    entry_point: str | None = None,
     model: str = DEFAULT_MODEL,
 ) -> int:
-    """Output 토큰 추정 (v2 char ratio 유지).
-
-    TODO(Slice 11 #51): 진입점별 fitting 모델로 교체.
-    현재는 expected_chars / 2.5 → 한국어 보수적 추정 (v2 동작 호환).
+    """진입점별 char ratio 기반 output 토큰 추정 (Slice 11 #51).
 
     Args:
-        expected_chars: 예상 응답 문자열 길이. None이면 0.
-        model: 미사용 (v2 호환 시그니처).
+        expected_output_chars: 예상 응답 문자열 길이. None 또는 0 → 0 반환.
+        entry_point: 진입점 키 ("e1"~"e6", "e3_portfolio", "e4_conversation",
+            "rationale"). 미식별 또는 미등록 시 `GLOBAL_OUTPUT_RATIO` 사용.
+        model: 미사용 (현재 단변량 fit; #51 keep_open으로 multivariate 후속).
+
+    Returns:
+        int(expected_output_chars × ratio). expected_output_chars가 음수면 0.
     """
-    if expected_chars is None or expected_chars <= 0:
+    if expected_output_chars is None or expected_output_chars <= 0:
         return 0
-    return int(expected_chars / _OUTPUT_CHARS_PER_TOKEN)
+    ratio = ENTRY_POINT_OUTPUT_RATIOS.get(entry_point or "", GLOBAL_OUTPUT_RATIO)
+    return int(expected_output_chars * ratio)
 
 
 def estimate_tokens(
     messages: list[dict],
     system: str | None = None,
     expected_output_chars: int | None = None,
+    entry_point: str | None = None,
     model: str = DEFAULT_MODEL,
 ) -> dict[str, int]:
     """Legacy wrapper — input + output 합산 dict 반환.
 
-    v2 호출자가 dict {input_tokens, output_tokens, total} 형식을 기대.
+    Slice 11: `entry_point` 옵션 추가 (output ratio 선택). 미지정 시 GLOBAL 사용.
     """
     inp = estimate_input_tokens(messages, system, model)
-    out = estimate_output_tokens(expected_output_chars, model)
+    out = estimate_output_tokens(expected_output_chars, entry_point, model)
     return {"input_tokens": inp, "output_tokens": out, "total": inp + out}

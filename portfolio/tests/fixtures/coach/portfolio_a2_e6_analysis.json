@@ -1,0 +1,57 @@
+{
+  "fixture_id": "portfolio_a2_e6_analysis",
+  "linked_portfolio": "portfolio_a2",
+  "scenario_label": "A2 통합 시연 — Income preset 비교 해설 mock",
+  "user_intent": "VZ 줄이고 SCHD 추가해서 분산 개선해줘",
+  "adjustments": [
+    {
+      "ticker": "VZ",
+      "action": "decrease",
+      "delta_weight": -0.10,
+      "target_weight": 0.10,
+      "reason_quote": "VZ 줄이고"
+    },
+    {
+      "ticker": "SCHD",
+      "action": "add",
+      "delta_weight": null,
+      "target_weight": 0.10,
+      "reason_quote": "SCHD 추가해서 분산 개선해줘"
+    }
+  ],
+  "e6_response_mock": {
+    "headline": "통신주 집중 완화 + Dividend Aristocrats ETF 추가로 분산 개선",
+    "before_summary": "VYM 25% + KO/JNJ/VZ/PEP 디펜시브 4종(각 15~20%) 구조. 통신주 단일 종목 VZ 20% 비중이 섹터 편중 위험. 평균 배당수익률 3.45%, beta-weighted 0.62로 저변동성 income 포트.",
+    "after_summary": "VZ 비중 20%→10%로 축소 + SCHD(Dividend Aristocrats ETF) 10% 신규 진입. ETF 비중 25%→35%로 증가, 통신주 비중 20%→10%로 축소. 분산도 개선, 평균 배당수익률 ~3.50%로 유사 유지 예상.",
+    "key_changes": [
+      {
+        "aspect": "diversification",
+        "description": "통신주 단일 종목 비중 20%→10% 축소 + Dividend Aristocrats ETF 진입으로 종목·섹터 분산 개선"
+      },
+      {
+        "aspect": "risk",
+        "description": "ETF 비중 25%→35%로 증가, 단일 종목 위험 완화 + 배당 지속성 보강"
+      },
+      {
+        "aspect": "expected_return",
+        "description": "SCHD 배당수익률 ~3.5% 수준으로 VZ 6%대 대비 낮으나 배당 성장률은 더 우수, 5년 후 income 누적은 유사 예상"
+      }
+    ],
+    "risk_assessment": "통신주 집중 위험 (섹터 비중 20%) 완화. ETF 35%로 단일 종목 추적 오류 영향 감소. Beta 0.62→0.60 수준으로 미세 저하 예상. 단기 배당수익률 변화는 거의 없으나 장기 안정성 향상.",
+    "closing_remarks": "Income preset 의도 부합 — 배당 안정성 강화 + 분산 개선. VZ 축소분(10%)을 SCHD 100% 흡수하는 단순 구조로 실행 용이.",
+    "action_items": [
+      {
+        "title": "VZ 매도 + SCHD 매수",
+        "description": "VZ 10%p 매도 후 SCHD 10% 매수 — 단일 거래일 실행 가능, 통신주 집중 완화",
+        "priority": "medium",
+        "category": "rebalance"
+      }
+    ]
+  },
+  "_mock_provenance": {
+    "source": "manual_authored",
+    "phase": "Slice 11 Step 0 §3",
+    "notes": "D-4 a 채택: E6 분석엔진 실제 호출 안 함. Phase 2 #12 진입 시 manual 보정 인정.",
+    "schema_version": "E6ComparisonResponse v1.0 (action_items 포함, Slice 8 Part 2 #28)"
+  }
+}

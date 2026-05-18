@@ -1,0 +1,59 @@
+{
+  "fixture_id": "portfolio_a2",
+  "fixture_group": "a2_integrated_demo",
+  "description": "Slice 11 A2 통합 시연용 신규 portfolio — 1 ETF + 4 dividend stocks (income preset, GARP/focused 차별)",
+  "preset_id": "income",
+  "preset_category": "value",
+  "user_profile": {
+    "risk_tolerance": "moderate",
+    "investment_horizon_years": 10,
+    "primary_goal": "dividend_income"
+  },
+  "holdings": [
+    {
+      "ticker": "VYM",
+      "asset_class": "etf",
+      "name": "Vanguard High Dividend Yield ETF",
+      "weight": 0.25,
+      "sector": "diversified_dividend"
+    },
+    {
+      "ticker": "KO",
+      "asset_class": "stock",
+      "name": "Coca-Cola Co",
+      "weight": 0.20,
+      "sector": "consumer_staples"
+    },
+    {
+      "ticker": "JNJ",
+      "asset_class": "stock",
+      "name": "Johnson & Johnson",
+      "weight": 0.20,
+      "sector": "healthcare"
+    },
+    {
+      "ticker": "VZ",
+      "asset_class": "stock",
+      "name": "Verizon Communications",
+      "weight": 0.20,
+      "sector": "communication_services"
+    },
+    {
+      "ticker": "PEP",
+      "asset_class": "stock",
+      "name": "PepsiCo Inc",
+      "weight": 0.15,
+      "sector": "consumer_staples"
+    }
+  ],
+  "portfolio_metrics": {
+    "dividend_yield_pct": 3.45,
+    "beta_weighted": 0.62,
+    "sector_concentration_top1": 0.35,
+    "expense_ratio_weighted": 0.04
+  },
+  "analysis_summary": {
+    "one_line_diagnosis": "Income preset: 고배당 ETF + 디펜시브 4종으로 안정 현금흐름, 저베타 0.62",
+    "preset_id": "income"
+  }
+}

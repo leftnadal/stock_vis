@@ -77,23 +77,69 @@ def test_api_failure_falls_back_to_v2(caplog):
     assert any("fallback to v2" in r.message for r in caplog.records)
 
 
-def test_estimate_output_tokens_v2_compat():
-    """expected_chars / 2.5 → 한국어 보수적 추정. None/0 → 0."""
+def test_estimate_output_tokens_global_fallback():
+    """None/0 → 0. 진입점 미지정 → GLOBAL_OUTPUT_RATIO 적용."""
     assert e3.estimate_output_tokens(None) == 0
     assert e3.estimate_output_tokens(0) == 0
-    # 250 chars → 100 tokens
-    assert e3.estimate_output_tokens(250) == 100
+    # 250 chars × 0.7584 = 189.6 → 189
+    assert e3.estimate_output_tokens(250) == int(250 * e3.GLOBAL_OUTPUT_RATIO)
+
+
+def test_estimate_output_tokens_per_entry_point():
+    """진입점별 char ratio 적용 — e1~e6 + e3_portfolio/e4_conversation/rationale."""
+    for ep, expected_ratio in e3.ENTRY_POINT_OUTPUT_RATIOS.items():
+        result = e3.estimate_output_tokens(1000, entry_point=ep)
+        assert result == int(1000 * expected_ratio), (
+            f"{ep}: got {result}, expected {int(1000 * expected_ratio)}"
+        )
+
+
+def test_estimate_output_tokens_unknown_ep_falls_back_to_global():
+    """미등록 진입점 → GLOBAL_OUTPUT_RATIO fallback."""
+    assert e3.estimate_output_tokens(500, entry_point="unknown") == int(
+        500 * e3.GLOBAL_OUTPUT_RATIO
+    )
+    assert e3.estimate_output_tokens(500, entry_point="e99") == int(
+        500 * e3.GLOBAL_OUTPUT_RATIO
+    )
+
+
+def test_estimate_output_tokens_six_entry_points_registered():
+    """KPI 2: e1~e6 6개 진입점 ratio 등록 확인."""
+    for ep in ("e1", "e2", "e3", "e4_conversation", "e5", "e6"):
+        assert ep in e3.ENTRY_POINT_OUTPUT_RATIOS, f"{ep} 누락"
 
 
 def test_legacy_estimate_tokens_wrapper():
-    """backward-compat: dict {input_tokens, output_tokens, total} 반환."""
+    """backward-compat: dict {input_tokens, output_tokens, total} 반환.
+
+    Slice 11: entry_point 옵션 추가 — 미지정 시 GLOBAL_OUTPUT_RATIO.
+    """
     e3.set_client(_make_mock_client(input_tokens=80))
+    # entry_point 미지정 → GLOBAL ratio
     result = e3.estimate_tokens(
         [{"role": "user", "content": "x"}],
         system=None,
         expected_output_chars=125,
     )
-    assert result == {"input_tokens": 80, "output_tokens": 50, "total": 130}
+    expected_out = int(125 * e3.GLOBAL_OUTPUT_RATIO)
+    assert result == {
+        "input_tokens": 80,
+        "output_tokens": expected_out,
+        "total": 80 + expected_out,
+    }
+
+
+def test_legacy_estimate_tokens_with_entry_point():
+    """entry_point 지정 → 진입점별 ratio 적용."""
+    e3.set_client(_make_mock_client(input_tokens=100))
+    result = e3.estimate_tokens(
+        [{"role": "user", "content": "x"}],
+        system=None,
+        expected_output_chars=500,
+        entry_point="e6",
+    )
+    assert result["output_tokens"] == int(500 * e3.ENTRY_POINT_OUTPUT_RATIOS["e6"])
 
 
 def test_reset_cache_clears_state():

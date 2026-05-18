@@ -19,8 +19,8 @@ Slice 8 Part 1 #33 (이중 카운터):
     start_instance(): instance 카운터만 reset (slice 카운터 보존).
 
 Slice 9 Step 0 #43 (비용 임계 + 슬라이스 cap):
-    threshold: 누적 광의 비용 임계 ($3.00, env COST_THRESHOLD_USD).
-    warning: 누적 80% 사전 경고 ($2.40, env COST_WARNING_USD).
+    threshold: 누적 광의 비용 임계 (default $4.00, env COST_THRESHOLD_USD).
+    warning: 누적 80% 사전 경고 (default $3.20, env COST_WARNING_USD).
     cap_per_slice: 슬라이스 단독 cap ($1.00, env COST_CAP_PER_SLICE_USD).
     cap_warning: cap 80% 사전 경고 ($0.80, env COST_CAP_WARNING_USD).
     cumulative_usd: 전체 누적 (reset_slice/reset_for_slice 시도 보존).
@@ -28,6 +28,11 @@ Slice 9 Step 0 #43 (비용 임계 + 슬라이스 cap):
     record_cost(cost): cumulative+slice 합산 + cap/threshold check.
     check_warnings(): 경고 리스트 반환.
     CostCapExceeded / CostThresholdExceeded 신규 예외.
+
+Slice 11 Step 0 (D-3 임계 상향):
+    threshold $3.00 → $4.00 (비용 패턴 $1 → $1.5 → $2 → $3 → $4 일관).
+    warning   $2.40 → $3.20 (= 80%).
+    재상향 트리거 $3.40 (CostGuard 자체 변경 없음; COST_POLICY.md 정책 변수).
 """
 
 from __future__ import annotations
@@ -70,11 +75,12 @@ class CostGuard:
     started_at: Optional[str] = None
 
     # Slice 9 #43 신규: 비용 차원 임계 + cap (env 기반 default)
+    # Slice 11 D-3: $3.00 → $4.00, $2.40 → $3.20 (80%) 상향.
     threshold: float = field(
-        default_factory=lambda: float(os.getenv("COST_THRESHOLD_USD", "3.00"))
+        default_factory=lambda: float(os.getenv("COST_THRESHOLD_USD", "4.00"))
     )
     warning: float = field(
-        default_factory=lambda: float(os.getenv("COST_WARNING_USD", "2.40"))
+        default_factory=lambda: float(os.getenv("COST_WARNING_USD", "3.20"))
     )
     cap_per_slice: float = field(
         default_factory=lambda: float(os.getenv("COST_CAP_PER_SLICE_USD", "1.00"))

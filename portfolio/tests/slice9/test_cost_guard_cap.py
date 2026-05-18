@@ -67,37 +67,48 @@ class TestSliceCapGuard:
 
 
 class TestThresholdGuard:
-    """누적 임계 $3.00 검증."""
+    """누적 임계 $4.00 검증 (Slice 11 D-3: $3.00 → $4.00)."""
 
     def setup_method(self) -> None:
         self.guard = CostGuard()
         self.guard.cumulative_usd = 0.0
         self.guard.slice_usd = 0.0
 
-    def test_threshold_default_3_dollar(self) -> None:
-        """threshold 기본값은 $3.00."""
-        assert self.guard.threshold == 3.00
+    def test_threshold_default_4_dollar(self) -> None:
+        """threshold 기본값은 $4.00 (Slice 11 D-3 상향)."""
+        assert self.guard.threshold == 4.00
 
-    def test_warning_default_2_40(self) -> None:
-        """warning 기본값은 threshold의 80% = $2.40."""
-        assert self.guard.warning == 2.40
+    def test_warning_default_3_20(self) -> None:
+        """warning 기본값은 threshold의 80% = $3.20."""
+        assert self.guard.warning == 3.20
 
     def test_record_exceeds_threshold_raises(self) -> None:
-        """누적 임계 초과 시 CostThresholdExceeded 발생."""
-        self.guard.cumulative_usd = 2.95
+        """누적 임계 $4.00 초과 시 CostThresholdExceeded 발생."""
+        self.guard.cumulative_usd = 3.95
         self.guard.slice_usd = 0.0  # cap 안 건드림
         with pytest.raises(CostThresholdExceeded):
-            self.guard.record_cost(0.10)  # 2.95 + 0.10 = 3.05 > 3.00
+            self.guard.record_cost(0.10)  # 3.95 + 0.10 = 4.05 > 4.00
 
 
 class TestSlice8Baseline:
-    """Slice 8 종결 baseline 검증."""
+    """Slice 8/9 종결 baseline 검증."""
 
     def test_slice8_cumulative_under_new_threshold(self) -> None:
-        """Slice 8 종결 누적 $2.048은 신 임계 $3.00 미달 → 추가 호출 가능."""
+        """Slice 8 종결 누적 $2.048은 신 임계 $4.00 미달 → 추가 호출 가능."""
         guard = CostGuard()
         guard.cumulative_usd = 2.048
         guard.slice_usd = 0.0
         # 추가 호출 가능 (cap·threshold 모두 안전)
         guard.record_cost(0.10)
         assert guard.cumulative_usd == pytest.approx(2.148)
+
+    def test_slice11_warning_at_3_20(self) -> None:
+        """누적 $3.20 도달 시 warning 발동 (Slice 11 D-3 신 임계 80%)."""
+        guard = CostGuard()
+        guard.cumulative_usd = 3.10
+        guard.slice_usd = 0.0
+        guard.record_cost(0.15)  # 3.25 > 3.20 warning
+        warnings = guard.check_warnings()
+        # warning 기준 초과 — 경고 메시지 포함
+        # warning은 "⚠ 누적 임계 80% 도달: $X (threshold $Y)" 형식
+        assert any("임계 80%" in w or "warning" in w.lower() for w in warnings), warnings
