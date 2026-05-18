@@ -1,0 +1,120 @@
+{
+  "completion": {
+    "naturalness_done": 26,
+    "insight_done": 26,
+    "total_cases": 26
+  },
+  "overall": {
+    "naturalness": {
+      "n": 26,
+      "distribution": {
+        "3": 2,
+        "4": 13,
+        "5": 11
+      },
+      "min": 3,
+      "max": 5,
+      "width": 2,
+      "mean": 4.3462,
+      "five_count": 11,
+      "five_ratio": 0.4231
+    },
+    "insight": {
+      "n": 26,
+      "distribution": {
+        "3": 6,
+        "4": 12,
+        "5": 8
+      },
+      "min": 3,
+      "max": 5,
+      "width": 2,
+      "mean": 4.0769,
+      "five_count": 8,
+      "five_ratio": 0.3077
+    },
+    "comments_count": 0,
+    "comments_ratio": 0.0
+  },
+  "per_model": {
+    "haiku": {
+      "n": 13,
+      "naturalness_mean": 4.3077,
+      "insight_mean": 3.9231,
+      "combined_mean": 4.1154
+    },
+    "sonnet": {
+      "n": 13,
+      "naturalness_mean": 4.3846,
+      "insight_mean": 4.2308,
+      "combined_mean": 4.3077
+    },
+    "gap": {
+      "naturalness": 0.0769,
+      "insight": 0.3077,
+      "combined": 0.1923
+    }
+  },
+  "issue_49_distribution_width": {
+    "sonnet_self_eval": {
+      "n": 26,
+      "distribution": {
+        "3": 1,
+        "4": 8,
+        "5": 17
+      },
+      "min": 3,
+      "max": 5,
+      "width": 2,
+      "mean": 4.6154,
+      "five_count": 17,
+      "five_ratio": 0.6538
+    },
+    "manual_naturalness": {
+      "n": 26,
+      "distribution": {
+        "3": 2,
+        "4": 13,
+        "5": 11
+      },
+      "min": 3,
+      "max": 5,
+      "width": 2,
+      "mean": 4.3462,
+      "five_count": 11,
+      "five_ratio": 0.4231
+    },
+    "manual_insight": {
+      "n": 26,
+      "distribution": {
+        "3": 6,
+        "4": 12,
+        "5": 8
+      },
+      "min": 3,
+      "max": 5,
+      "width": 2,
+      "mean": 4.0769,
+      "five_count": 8,
+      "five_ratio": 0.3077
+    },
+    "interpretation": "Sonnet self-eval과 manual eval 모두 width=2 (3/4/5)로 동일 → 답변 품질이 실제로 균질함 (trio 진단 효과). 5단계 척도의 변별 한계 인정.",
+    "verdict": "close"
+  },
+  "rubric_kpi_self_check": {
+    "naturalness_width_ge_3": false,
+    "insight_width_ge_3": false,
+    "naturalness_five_ratio_in_5_to_20": false,
+    "insight_five_ratio_in_5_to_20": false,
+    "one_used_naturalness": false,
+    "one_used_insight": false,
+    "note_ratio_ge_30": false
+  },
+  "winner_verdict": {
+    "absolute_score": "Sonnet",
+    "absolute_gap_combined": 0.1923,
+    "efficiency_winner_slice8_baseline": "Haiku (gap +335%)",
+    "decision": "6/7 분기 — 글쓰기 가설 정착 부분 인정, Sonnet 절대 점수 우위 별도 기록",
+    "rationale": "Slice 8 Part 3 efficiency 기준 8슬라이스 연속 Haiku winner. Slice 9 manual eval에서 절대 점수는 Sonnet +0.39 우위 (insight +0.31 의미 있는 차이). Production 메인은 Haiku 유지, 평가자 역할에 Sonnet 분기 결정."
+  }
+}

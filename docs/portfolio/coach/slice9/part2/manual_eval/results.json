@@ -1,0 +1,1215 @@
+[
+  {
+    "case_id": "S01_haiku",
+    "case_name": "S01",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오의 집중도는 중간 수준을 약간 상회합니다. HHI 집중도 지수가 0.35로, 5종목 보유 기준 매우 균등하면 0.20, 극도로 집중하면 1.0에 가까워지는 점을 감안하면 합리적 수준입니다. 다만 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 전체의 3분의 2를 차지하고 있어 주의가 필요합니다. 특히 최대 개별 종목 비중이 25%(AAPL 추정)로 단일 종목 리스크 노출이 있습니다. 섹터 HHI가 0.40인 점을 보면 Tech 50% 집중이 섹터 차원에서도 부담입니다. 포트폴리오 베타 1.05로 시장 대비 5% 높은 변동성을 가지고 있는데, 이는 상위 3종목의 고성장 특성(특히 AAPL, UNH의 높은 베타)에서 비롯된 것으로 보입니다. 최근 3개월 시장 변동성이 높아진 환경에서 이러한 집중도는 포트폴리오 변동성을 추가로 증폭시킬 수 있습니다. GARP 프리셋 기준 PE 20~30 범위를 고려하면, 현재 구성은 성장성 추구는 충분하나 방어 측면이 약합니다.",
+    "action_items": [
+      {
+        "title": "AAPL 비중 5%p 축소 (25% → 20%)",
+        "description": "상위 3종목 비중 60%는 과다합니다. AAPL 최대 비중 25%는 단일 종목 리스크 집중도를 높이므로, 다음 리밸런싱 시 20% 수준으로 조정해 단일 종목 리스크를 완화하세요. 이는 HHI 집중도를 0.35에서 약 0.32로 개선합니다.",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 비중 10%p 축소 (50% → 40%)",
+        "description": "섹터 HHI 0.40은 높은 편이며, Tech 50% 비중이 주요 원인입니다. 포트폴리오 베타 1.05를 1.0 이하로 낮추기 위해 Tech 비중을 40%로 단계적 조정하세요. 축소분은 Healthcare(현 25% → 35%) 또는 금리 민감 방어주로 재배치합니다.",
+        "priority": "high"
+      },
+      {
+        "title": "5종목에서 7~8종목으로 확대 검토",
+        "description": "현재 5종목은 단기적으로는 관리 가능하나 분산 효과를 극대화하려면 7~8종목이 적절합니다. 평균 상관계수 0.35로 분산이 잘 되어 있으나, 종목 수 증가로 비체계 리스크를 추가 20~30% 완화할 수 있습니다. 다음 분기 내 실행하세요.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 부분적으로 충족합니다. **현재 상태**: HHI 0.35, 베타 1.05, 상위 3종목 60% 비중 등 정량 지표를 명확히 제시. **시점/기간**: '최근 3개월 시장 변동성' 언급으로 시간 맥락 제공. **임계값**: 'GARP 프리셋 PE 20~30 범위' 언급이 있으나 개별 종목의 현재 PE가 이 범위 대비 어디에 위치하는지 미제시. **액션 제안**: 치명적 결여 — '주의가 필요', '부담', '약합니다' 같은 우려 표현만 있고 구체적인 매수/매도/리밸런싱 액션이 전혀 없음. 강점은 집중도 분석의 정량화(HHI, 베타, 비중%)가 우수하나, 약점은 투자자가 '무엇을 해야 하는지' 실행 가능한 지침이 없다는 점입니다. 예를 들어 'AAPL 비중을 20%로 축소' 또는 'JPM 10% 추가 매수로 방어 강화' 같은 지시가 필요합니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 3,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": false,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S01_sonnet",
+    "case_name": "S01",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오 집중도가 상당히 높은 수준입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 일반적 권장 범위인 40~50%를 10%p 이상 초과하고 있습니다. HHI 집중도 지수가 0.35로 분산 기준인 0.20을 크게 상회하며, 최대 단일 종목 비중이 25%로 권장 한도 15~20%를 5%p 초과합니다. 섹터별로는 Tech 50%가 특히 과도한데, S&P500 Tech 비중 약 28% 대비 1.8배 수준입니다. 보유 종목 수가 5개로 최소 분산 기준 8~10개에 미달하여 개별 종목 리스크 노출이 큽니다. 포트폴리오 베타 1.05는 시장 평균 대비 5% 높은 변동성을 의미하며, 집중도가 높을수록 베타 변동 리스크가 증폭됩니다. 다음 분기까지 Tech 비중을 35~40%로 10~15%p 축소하고, Healthcare와 Financials를 각각 5%p씩 확대하며, 2~3개 종목(예: 산업재, 필수소비재 섹터 우량주)을 추가 편입해 보유 종목 수를 8개 이상으로 늘리시길 권장합니다.",
+    "action_items": [
+      {
+        "title": "Tech 비중 10~15%p 축소 (50% → 35~40%)",
+        "description": "S&P500 Tech 비중 28% 대비 1.8배 과다. AAPL 비중 일부 축소 우선 검토. 다음 분기까지 단계적 조정",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 8개 이상 확대",
+        "description": "현재 5개는 최소 분산 기준 8~10개 미달. 산업재, 필수소비재 섹터 우량주 2~3개 추가 편입으로 HHI 0.25 이하 목표",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare/Financials 각 5%p 확대",
+        "description": "현재 각 25%에서 30%로 상향. 섹터 HHI 0.40 → 0.30 이하 목표. 분기 내 리밸런싱 시점에 실행",
+        "priority": "medium"
+      },
+      {
+        "title": "최대 단일 종목 비중 20% 이하 조정",
+        "description": "현재 25% 종목(추정 AAPL) 5%p 축소. 단일 종목 리스크 노출 완화. 2주 내 우선 실행",
+        "priority": "high"
+      }
+    ],
+    "rationale_text": "**4요소 충족도 평가**: (1) 현재 상태: HHI 0.35, 상위 3종목 60%, Tech 비중 50%, 베타 1.05 등 포트폴리오 핵심 지표를 정량적으로 명시함. 단, 개별 종목별 현재가나 PE/ROIC 같은 펀더멘털 지표는 부재. (2) 임계값/기준: 'HHI 분산 기준 0.20', '상위 3종목 권장 40~50%', '단일 종목 한도 15~20%', 'S&P500 Tech 비중 28%', '최소 분산 종목 수 8~10개' 등 5개 이상의 정량 기준을 명시하여 매우 구체적. (3) 액션 제안: 'Tech 비중 축소', 'Healthcare/Financials 확대', '2~3개 종목 추가 편입'이라는 액션 동사와 방향성을 명확히 제시. 다만 '어떤 종목을 매도/매수할지' 구체적 종목명은 없음. (4) 시점/기간: '다음 분기까지' 명시하여 실행 타임라인 제공. **강점**: 집중도 리스크를 다각도로(HHI, 상위 N종목, 섹터, 종목 수) 분석하고 각 지표마다 벤치마크 기준을 제시한 점이 탁월함. 정량 임계값이 매우 풍부하여 판단 근거가 명확. **약점**: 개별 종목의 펀더멘털(현재가/PE/ROIC 등)이 전혀 언급되지 않아 '어느 종목을 줄이고 늘릴지' 종목별 우선순위를 제시하지 못함. 예를 들어 'AAPL 25% 비중을 15%로 축소' 같은 종목명 + 구체 수치 결합이 부재.",
+    "rationale_categories": [
+      "data_grounding",
+      "threshold_specificity",
+      "action_clarity",
+      "time_anchoring"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S02_haiku",
+    "case_name": "S02",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오의 HHI 집중도 0.35는 중간 수준이지만, 상위 3종목 비중 60%와 섹터 HHI 0.40은 추가 분산 여지가 있습니다. 특히 Tech 50% 비중이 KOSPI 기술주 평균 32% 대비 1.56배 높으므로 분산 개선 기회가 명확합니다.\n\n구체적 분산 전략:\n\n1. **종목 수 확대** (우선순위 HIGH): 현재 5개 종목 보유 중 상위 3개(AAPL/UNH/JPM)가 60%를 차지합니다. 향후 3개월 내 7~8개 종목으로 확대하되, 신규 편입 종목은 평균 상관계수 0.35 이하인 로우 코렐레이션 종목(예: 필수소비재, 에너지, 산업재)으로 선정하세요. 이렇게 하면 HHI를 0.35에서 0.22~0.25로 낮출 수 있습니다.\n\n2. **섹터 리밸런싱** (우선순위 HIGH): Tech 50%를 40%로 축소하고(10%p), Healthcare 25% 유지, Financials 25% 유지한 후, Industrials 10~12%를 신규 진입시키세요. 이는 섹터 HHI를 0.40에서 0.32 이하로 개선합니다.\n\n3. **상위 3종목 비중 조정** (우선순위 MEDIUM): 상위 3종목 비중을 현 60%에서 50% 이하로 낮추되, 각 종목 최대 비중 상한을 AAPL 20% → 18%, UNH 20% → 17%, JPM 20% → 15%로 단계적 축소하세요. 축소분은 ROIC 12% 이상, PEG 1.8 이하 조건의 신규 우량주(예: Costco, Berkshire Hathaway 등)로 대체합니다.\n\n4. **상관계수 최적화** (우선순위 MEDIUM): 현재 평균 상관계수 0.35는 적절하나, 기존 Tech 종목들 간 상관계수가 높을 가능성이 있습니다. 다음 리밸런싱 시 신규 종목 선정 시 기존 포트폴리오와의 상관계수를 0.25 이하 범위에서 검색하세요.\n\n포트폴리오 베타 1.05는 시장 중심 수준으로 적절하므로, 위 분산 전략은 베타에 영향 최소화하며 진행 가능합니다.",
+    "action_items": [
+      {
+        "title": "종목 수 확대 (5개 → 7~8개)",
+        "description": "향후 3개월 내 신규 편입 종목 2~3개 추가. 대상: 평균 상관계수 0.35 이하인 로우 코렐 종목(필수소비재/에너지/산업재). 기대 효과: HHI 0.35 → 0.22~0.25 개선.",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 비중 축소 (50% → 40%)",
+        "description": "Tech 섹터 KOSPI 대비 1.56배 과다 편성. 10%p 축소하고 Industrials 10~12% 신규 진입. 기대 효과: 섹터 HHI 0.40 → 0.32 이하.",
+        "priority": "high"
+      },
+      {
+        "title": "상위 3종목 비중 단계적 감소",
+        "description": "AAPL 20% → 18%, UNH 20% → 17%, JPM 20% → 15%로 조정. 축소분은 ROIC 12%↑ & PEG 1.8↓ 조건 신규 종목으로 대체. 일정: 3개월 내 분할 실행.",
+        "priority": "medium"
+      },
+      {
+        "title": "신규 종목 상관계수 스크리닝",
+        "description": "기존 포트폴리오와의 상관계수 0.25 이하 조건으로 신규 종목 선정. 다음 리밸런싱부터 적용.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족하나, 시점/기간 요소가 부분적으로만 제시되어 일관성이 부족합니다. **현재 상태**: HHI 0.35, 상위 3종목 비중 60%, 섹터 HHI 0.40, Tech 50%, 베타 1.05 등 정량 지표를 구체적으로 명시 (충족). **임계값/기준**: HHI 목표 0.22~0.25, 상관계수 0.35 이하, ROIC 12% 이상, PEG 1.8 이하, Tech 비중 40%, 종목 수 7~8개 등 정량 임계값이 세밀하게 제시됨 (충족). **액션 제안**: '종목 수 확대', 'Tech 50%를 40%로 축소', '상위 3종목 비중을 60%에서 50% 이하로 낮추되', '단계적 축소', '신규 진입', '대체' 등 명확한 액션 동사와 함께 구체 종목/섹터 명시 (충족). **시점/기간**: '향후 3개월 내'라는 명시적 기간이 종목 수 확대에만 적용되고, 나머지 3개 전략(섹터 리밸런싱, 상위 3종목 조정, 상관계수 최적화)은 '다음 리밸런싱 시' 등 모호한 표현만 있어 일관된 시간 프레임 부재 (부분 충족). 강점은 정량 임계값의 정밀성과 액션의 구체성이나, 약점은 전체 전략에 대한 통일된 실행 기간 미명시입니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "threshold_specificity",
+      "time_anchoring"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": false
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S02_sonnet",
+    "case_name": "S02",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 HHI 집중도 0.35는 중간 수준이나, 섹터 HHI 0.40은 Tech 50% 단일 집중으로 다소 높은 편입니다. 상위 3종목(AAPL/UNH/JPM) 비중이 60%로 전체 5종목 중 과반을 차지하며, 최대 단일 종목 비중이 25%입니다. GARP 전략 기준 목표 HHI 0.25 이하를 위해서는 보유 종목 수를 5개에서 8~10개로 확대하고, Tech 섹터 비중을 50%에서 35% 이하로 축소해야 합니다. 구체적으로 AAPL 비중을 10%p 축소(25%→15%)하고, 현재 미보유 섹터인 산업재(Industrials)나 필수소비재(Consumer Staples)에서 ROIC 15% 이상, PEG 1.5 이하 종목 3개를 각 8~10% 비중으로 다음 분기까지 단계적 편입하시는 것을 권장합니다. 이를 통해 섹터 HHI를 0.40에서 0.28 수준으로, 전체 HHI를 0.35에서 0.23 수준으로 낮출 수 있습니다.",
+    "action_items": [
+      {
+        "title": "AAPL 비중 10%p 축소 (25%→15%)",
+        "description": "Tech 섹터 50% 과다 집중 완화 및 단일 종목 한도 20% 이하 유지 목적. 섹터 HHI 0.40→0.32 목표.",
+        "priority": "high"
+      },
+      {
+        "title": "산업재/필수소비재 3종목 편입",
+        "description": "ROIC 15%↑ & PEG 1.5↓ 조건 충족 종목 각 8~10% 비중으로 다음 분기까지 단계적 매수. 섹터 분산 강화 목적.",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 8~10개 확대",
+        "description": "현재 5개에서 8~10개로 확대하여 HHI 0.35→0.23 목표. 분기별 2~3종목씩 추가 편입 검토.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 모두 명확히 충족. (1)현재 상태: HHI 0.35, 섹터 HHI 0.40, AAPL 비중 25%, 상위 3종목 60% 등 핵심 지표 구체적 명시. (2)임계값: 목표 HHI 0.25 이하, ROIC 15% 이상, PEG 1.5 이하, Tech 섹터 35% 이하 등 정량 기준 다수 제시. (3)액션 제안: 'AAPL 비중 10%p 축소', '종목 수 8~10개로 확대', '산업재/필수소비재 3개 종목 편입' 등 동사+대상 명확. (4)시점: '다음 분기까지 단계적 편입' 명시. 강점: 현재→목표→실행 경로가 정량적으로 연결(HHI 0.35→0.23), 섹터별 구체 액션 제시. 약점: 편입 대상 3개 종목의 구체 이름은 미제시(선별 기준만 제공)하나, 전략 수준에서는 충분히 실행 가능한 수준.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S03_haiku",
+    "case_name": "S03",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오의 max_position_weight가 25%로, AAPL이 이 수준에 있다면 단일 종목 한도 기준 상한선에 도달한 상태입니다. hhi_concentration 0.35와 top3_weight 60%를 감안하면, 분산 개선을 위해 AAPL 비중 축소가 필요합니다. 구체적으로, Tech 섹터 현재 50% 비중을 40%로 10%p 축소하되, 이 중 AAPL은 25%에서 15%로 10%p 감소시키고, 나머지 5%p는 Healthcare 또는 Financials 우량주(예: 저PEG 종목) 추가로 충당하는 것을 권장합니다. 이렇게 조정하면 sector_hhi가 0.40에서 약 0.32 수준으로 개선되어 sector_hhi 분산 목표를 달성할 수 있습니다. 특히 holding_count 5개 현황에서 6~7개 종목으로 확대할 때, AAPL 축소분을 분산 매수하면 avg_correlation 0.35도 낮아져 포트폴리오 변동성 완화에 유리합니다. 다음 리밸런싱(분기 내)까지 단계적으로 진행하시면 됩니다.",
+    "action_items": [
+      {
+        "title": "AAPL 비중 10%p 축소 (25% → 15%)",
+        "description": "max_position_weight 25% 상한선에서 분산 개선 목표. 기술 섹터 버림없이 비중 조정으로 sector_hhi 0.40 → 0.32 달성. 단계적 매도 권장 (2~3주).",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 비중 10%p 축소 (50% → 40%)",
+        "description": "sector_hhi 분산 목표 달성. AAPL 외 Tech 종목 보유 현황 재검토 후, AAPL과 함께 균형 있게 감소.",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare 또는 Financials 우량주 5%p 추가 (6~7개 종목으로 확대)",
+        "description": "축소분 5%p를 저PEG(1.5 이하) 종목으로 분산 편입. holding_count 5 → 6~7로 확대하면 avg_correlation 0.35 하향으로 변동성 완화.",
+        "priority": "medium"
+      },
+      {
+        "title": "분기 내 리밸런싱 실행",
+        "description": "AAPL 축소 + 분산 매수를 2~3주 단계별로 진행. 기존 UNH/JPM 비중 재확인 후 추가 축소 필요 시 대응.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족했다. (1) 현재 상태: AAPL 25%, Tech 섹터 50%, hhi_concentration 0.35, top3_weight 60%, sector_hhi 0.40, holding_count 5개 등 현재 지표를 구체적으로 명시했다. (2) 임계값/기준: max_position_weight 25% 한도, sector_hhi 목표 0.32 수준 등 정량 기준을 제시했으나, 일부 기준(예: '저PEG 종목')이 구체적 수치 없이 표현되어 부분 충족이다. (3) 액션 제안: 'AAPL 25%→15% 축소', 'Tech 섹터 50%→40% 축소', 'Healthcare/Financials 5%p 추가 매수', '6~7개 종목 확대' 등 액션 동사와 종목/섹터명을 명확히 제시했다. (4) 시점/기간: '다음 리밸런싱(분기 내)' 명시로 시점을 충족했다. 강점은 정량 데이터와 액션의 연결이 논리적이며, 단계적 실행 방안을 제시한 점이다. 약점은 Healthcare/Financials 종목 선정 기준('저PEG')의 정량 임계값(예: 'PEG 1.5 이하')이 누락되어 임계값 요소가 완전히 충족되지 않은 점이다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": false,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S03_sonnet",
+    "case_name": "S03",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 AAPL 비중이 25%(max_position_weight 0.25)로 단일 종목 한도 상한선에 위치하며, Tech 섹터가 전체 포트폴리오의 50%를 차지해 sector_hhi 0.40으로 집중도가 높습니다. GARP 전략 기준 단일 섹터 권장 한도 35% 대비 15%p 초과된 상태입니다. AAPL는 우량주이나 Tech 섹터 과다 노출로 인한 변동성 리스크(portfolio_beta 1.05)를 고려하면 축소가 필요합니다. AAPL 비중을 다음 분기까지 5~7%p 축소(25% → 18~20%)하고, 방어 섹터인 Consumer Staples 또는 Utilities를 10~12% 신규 편입해 sector_hhi를 0.35 이하로 낮추시는 것을 권장합니다. 5개 종목 체제에서 6~7개로 holding_count를 늘리면 hhi_concentration도 0.30 이하로 개선될 것입니다.",
+    "action_items": [
+      {
+        "title": "AAPL 비중 5~7%p 축소",
+        "description": "현재 25%에서 18~20%로 조정. Tech 섹터 50% 과다(권장 35%) 완화 목적. 다음 분기까지 단계적 실행",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 10~12% 신규 편입",
+        "description": "Consumer Staples 또는 Utilities 추가로 sector_hhi 0.40 → 0.35 이하 목표. 다음 분기",
+        "priority": "high"
+      },
+      {
+        "title": "종목 수 6~7개로 확대",
+        "description": "현재 5개에서 증가시켜 hhi_concentration 0.35 → 0.30 이하 달성. 분산 효과 극대화",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "**4요소 충족 분석**: (1)현재 상태 - AAPL 비중 25%, Tech 섹터 50%, sector_hhi 0.40, portfolio_beta 1.05 등 정량 지표 명확히 제시 ✓ (2)임계값/기준 - max_position_weight 0.25, GARP 섹터 권장 한도 35%, sector_hhi 목표 0.35 이하, hhi_concentration 0.30 이하 등 구체적 임계값 다수 명시 ✓ (3)액션 제안 - 'AAPL 비중 5~7%p 축소', 'Consumer Staples/Utilities 10~12% 신규 편입', 'holding_count 6~7개로 증가' 등 실행 가능한 액션 동사와 종목/섹터 명시 ✓ (4)시점/기간 - '다음 분기까지' 명확한 시간 프레임 제시 ✓. **강점**: 4요소 모두 정량화되어 있으며, 현재 상태(25%)→목표 상태(18~20%) 전환 경로가 수치로 명확함. 리스크 근거(sector_hhi 초과, beta 1.05)와 해결책(방어 섹터 편입)의 인과관계가 논리적. **약점**: 개별 종목의 현재가나 밸류에이션 지표(PE/PEG) 언급 없이 포트폴리오 구조 지표만 사용해, 종목 고유 펀더멘털 평가는 부재함.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 3,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S04_haiku",
+    "case_name": "S04",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 매우 높은 리스크 상태입니다. 첫째, 상위 3종목 비중이 80%로 극도로 집중되어 있고, TSLA 단독 비중 40%는 권장 한도 20%를 2배 초과합니다. 둘째, 섹터 HHI 0.8(매우 높음)과 Tech 80% 편중으로 산업 변동성에 극도로 취약합니다. 셋째, 포트폴리오 베타 1.85는 시장 평균 1.0 대비 85% 더 변동성이 크다는 의미로, 시장이 10% 하락하면 포트폴리오는 18.5% 하락할 위험이 있습니다. 넷째, 평균 상관계수 0.75로 종목 간 분산 효과가 거의 없습니다. 최근 3개월 기술주 변동성이 28% 대비 시장 평균 14%인 상황에서 이 포트폴리오는 시장 조정 시 심각한 손실 위험에 노출되어 있습니다.\n\n즉시 대응이 필요합니다. TSLA 비중을 40%에서 15%로 25%p 감축하고, PLTR/SHOP 중 하나를 15%로 축소하세요. Tech 비중을 80%에서 50% 이하로 낮추고, 방어주(필수소비재 5~10%) 및 금융(5~10%) 편입으로 베타를 1.3 이하로 조정해야 합니다. 또한 보유 종목을 현재 5개에서 8~10개로 확대하여 비상관 종목을 추가하면 포트폴리오 변동성을 현재 대비 30% 이상 완화할 수 있습니다.",
+    "action_items": [
+      {
+        "title": "TSLA 비중 25%p 급감축",
+        "description": "TSLA 40% → 15% (25%p 감축, 즉시). 단일 종목 한도 20% 초과 상태이며, 베타 1.85 악화의 핵심 원인. 감축 자금은 방어주/금융주로 재배치.",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 비중 30%p 감축",
+        "description": "현재 Tech 80% → 목표 50% (섹터 HHI 0.8 → 0.45 이상 개선). PLTR/SHOP 비중 조정 및 필수소비재/금융 섹터 추가로 다음 분기 내 완료.",
+        "priority": "high"
+      },
+      {
+        "title": "포트폴리오 베타 1.85 → 1.2 이하로 조정",
+        "description": "방어주(필수소비재, 통신) 8~10%, 금융 8~10% 편입으로 상관계수 0.75를 0.55 이상 낮추고 베타 감소. 2주 내 단계적 매수.",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 확대 (5개 → 8~10개)",
+        "description": "현재 HHI 0.65(극도로 높음) → 목표 0.40 이상. 낮은 상관계수(0.3~0.5) 종목 3~5개 추가로 분산 효과 극대화. 다음 분기까지 완료.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족했으나 '현재 상태'가 부분적으로 누락되었습니다. **강점**: (1) 임계값이 매우 구체적 - 'TSLA 비중 권장 한도 20%', '베타 1.3 이하', 'Tech 50% 이하' 등 정량 기준 명시 (2) 액션 제안 직접적 - 'TSLA 40%→15% 감축', 'PLTR/SHOP 중 하나 15% 축소', '방어주 편입' 등 실행 가능한 동사 사용 (3) 시점 명시 - '최근 3개월', '즉시 대응 필요' 표현으로 긴급성 전달 (4) 정량 근거 풍부 - 베타 1.85, HHI 0.8, 상관계수 0.75 등 수치 제시. **약점**: 현재 상태에서 '종목별 현재가'나 'PE/PEG/ROIC 같은 핵심 지표'가 전혀 언급되지 않음. 비중/베타/HHI는 포트폴리오 구조 지표이지 개별 종목의 밸류에이션/실적 지표가 아니므로, 매수/매도 판단의 펀더멘털 근거가 부족합니다. 예를 들어 'TSLA 현재 PE 60배로 역사적 평균 50배 초과' 같은 valuation anchor가 있었다면 만점이었을 것입니다.",
+    "rationale_categories": [
+      "threshold_specificity",
+      "action_clarity",
+      "time_anchoring"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S04_sonnet",
+    "case_name": "S04",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 매우 위험한 구조입니다. 첫째, 상위 3종목 비중이 80%로 극단적으로 집중되어 있으며, 특히 TSLA 단일 비중이 40%로 일반 권장 한도 20%의 2배를 초과합니다. 둘째, 섹터 집중도(HHI 0.80)가 위험 수준이며 Tech 섹터가 80%로 KOSPI IT 평균 32% 대비 2.5배 과다 편중되어 있습니다. 셋째, 포트폴리오 베타가 1.85로 시장 대비 85% 더 높은 변동성에 노출되어 있으며, 보유 종목 간 평균 상관계수 0.75는 분산 효과가 거의 없음을 의미합니다. 마지막으로 총 보유 종목 수가 5개로 최소 권장 10~15개 대비 절반 미만입니다. TSLA 비중을 즉시 20%p 축소(40%→20%)하고, Tech 섹터를 다음 분기까지 30%p 축소(80%→50%)하며, 헬스케어·산업재·필수소비재 등 방어 섹터 3~5개 종목을 추가 편입해 총 보유 종목을 10개 이상으로 확대하시는 것이 시급합니다. 베타를 1.2 이하로 낮추는 것을 목표로 하세요.",
+    "action_items": [
+      {
+        "title": "TSLA 비중 20%p 즉시 축소 (40%→20%)",
+        "description": "단일 종목 한도 20% 기준 2배 초과, 최대 포지션 비중 0.40이 극단적 집중 리스크 유발",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 30%p 축소 (80%→50%)",
+        "description": "섹터 HHI 0.80으로 위험 수준, KOSPI IT 평균 32% 대비 2.5배 과다, 다음 분기까지 단계적 축소",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 3~5종목 추가 편입",
+        "description": "헬스케어·산업재·필수소비재 등으로 총 보유 종목 10개 이상 확대, 상관계수 0.75 낮추고 분산 효과 확보",
+        "priority": "high"
+      },
+      {
+        "title": "포트폴리오 베타 1.2 이하로 조정",
+        "description": "현재 베타 1.85(시장 대비 85% 고변동)를 방어주·채권 ETF 편입으로 1.2 이하로 낮춤, 다음 리밸런싱 시점",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족하고 있습니다. **현재 상태**는 'TSLA 단일 비중 40%', '포트폴리오 베타 1.85', '보유 종목 간 평균 상관계수 0.75', 'Tech 섹터 80%' 등 정량 지표로 명확히 제시되었습니다. **임계값/기준**은 '일반 권장 한도 20%', 'KOSPI IT 평균 32%', '최소 권장 10~15개 종목', '베타 1.2 이하' 등 구체적 기준을 다수 명시했습니다. **액션 제안**은 'TSLA 비중 축소 40%→20%', 'Tech 섹터 축소 80%→50%', '방어 섹터 3~5개 종목 추가 편입', '총 보유 종목 10개 이상 확대' 등 매우 구체적이고 정량화된 액션을 제시했습니다. **시점/기간**은 '즉시', '다음 분기까지'로 명시되어 있습니다. 다만, 개별 종목의 현재가나 PE/PEG/ROIC 같은 가치평가 지표는 전혀 언급되지 않았으며, 포트폴리오 구조(비중/리스크)에만 집중한 답변입니다. 이는 질문이 '포트폴리오 평가'를 요청했기에 적절하나, 개별 종목 차원의 데이터 그라운딩이 부족합니다.",
+    "rationale_categories": [
+      "action_clarity",
+      "threshold_specificity",
+      "time_anchoring"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S05_haiku",
+    "case_name": "S05",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오에서 가장 먼저 줄여야 할 것은 Tesla(TSLA) 40% 비중입니다. GARP 전략의 단일 종목 한도는 일반적으로 20~25%인데, TSLA가 40%로 2배 가까이 초과되어 있습니다. 이로 인해 HHI(허핀달 지수) 0.65는 극도로 높은 집중도(안전 범위 0.2~0.3)를 의미하며, portfolio_beta 1.85는 시장 변동성의 1.85배를 추적하게 됩니다. 최근 3개월 테슬라 변동성이 32% 수준으로 높아, 이 한 종목이 포트폴리오 전체 변동성을 심화시키고 있습니다. TSLA를 다음 2주 내 40%에서 20%로 축소(20%p 감소)하고, 감소분 중 10%는 Palantir와 Shopify 중 낮은 비중인 종목 강화에, 나머지 10%는 Consumer Discretionary 섹터 또는 방어주(필수소비재) 편입으로 sector_hhi 0.80을 0.55 이하로 낮추길 권장합니다. 이를 통해 portfolio_beta를 3개월 내 1.3 이하로 감소시킬 수 있습니다.",
+    "action_items": [
+      {
+        "title": "Tesla(TSLA) 20%p 축소 (40% → 20%)",
+        "description": "단일 종목 한도 20~25% 초과 (현재 40%). HHI 0.65 극도 집중, portfolio_beta 1.85 주원인. 향후 2주 내 단계적 매도 추천.",
+        "priority": "high"
+      },
+      {
+        "title": "Palantir/Shopify 중 낮은 비중 종목 10%p 강화",
+        "description": "TSLA 감소분 일부(10%p)를 IT 섹터 내 분산으로 배치. 단일 종목 리스크 경감.",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer/방어주 섹터 10%p 추가 편입",
+        "description": "sector_hhi 0.80 → 0.55 목표. Tech 80% → 70%, Consumer Discretionary 20% → 30% 조정. 3개월 내 완료.",
+        "priority": "high"
+      },
+      {
+        "title": "portfolio_beta 1.3 이하 목표 설정 및 모니터링",
+        "description": "현재 1.85에서 TSLA 축소 + 섹터 분산으로 3개월 내 1.3 달성 추적.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족합니다. (1) 현재 상태: TSLA 40% 비중, HHI 0.65, portfolio_beta 1.85, 최근 3개월 변동성 32% 등 정량 지표 명시. (2) 임계값/기준: 단일 종목 한도 20~25%, 안전 HHI 0.2~0.3, sector_hhi 목표 0.55 이하, portfolio_beta 목표 1.3 이하 등 구체적 기준 제시. (3) 액션 제안: 'TSLA 40%→20% 축소', '10% Palantir/Shopify 강화', '10% 방어주 편입' 등 명확한 액션 동사와 종목명 포함. (4) 시점/기간: '다음 2주 내', '3개월 내' 등 실행 시점 명시. 강점은 정량 임계값이 매우 구체적이고(HHI, beta 목표치), 액션이 단계별로 세분화되어 있으며, 리스크 근거(변동성, 집중도)가 데이터 기반으로 제시된 점입니다. 약점은 PE/PEG/ROIC 같은 밸류에이션 지표가 누락되어, GARP 전략 핵심인 성장-가치 균형 평가가 없다는 점입니다. 그러나 리스크 관리 관점에서 4요소는 충분히 충족되었습니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S05_sonnet",
+    "case_name": "S05",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "TSLA 비중 40%를 가장 먼저 축소해야 합니다. 현재 단일 종목 한도 20%를 20%p 초과하여 포트폴리오 집중도 리스크(HHI 0.65, 고위험 구간 0.25 이상)의 핵심 원인입니다. TSLA는 변동성이 크고 portfolio_beta 1.85(시장 대비 85% 과민 반응)를 끌어올리는 주범으로, 단일 종목 비중을 다음 2주 내 20%로 축소(20%p 감축)하면 HHI를 0.45 수준으로 낮출 수 있습니다. 축소한 자금으로 avg_correlation 0.75를 낮추기 위해 상관관계 낮은 섹터(헬스케어, 필수소비재) 편입 또는 채권 ETF 10% 추가를 병행하세요. PLTR과 SHOP도 Tech 섹터 80%(sector_HHI 0.80, 과도 집중)에 포함되므로, TSLA 축소 후 다음 분기에는 Tech 비중을 60% 이하로 낮추고 Consumer Discretionary 외 섹터 2~3개 추가 분산이 필요합니다.",
+    "action_items": [
+      {
+        "title": "TSLA 20%p 즉시 축소 (40% → 20%)",
+        "description": "단일 종목 한도 20%를 20%p 초과. HHI 0.65 → 0.45 감소 효과. 다음 2주 내 분할 매도로 실행",
+        "priority": "high"
+      },
+      {
+        "title": "저상관 섹터/채권 ETF 10% 편입",
+        "description": "avg_correlation 0.75 완화 목적. 헬스케어/필수소비재 또는 채권 ETF로 분산. TSLA 축소 자금 활용",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 60% 이하 조정 (다음 분기)",
+        "description": "sector_HHI 0.80 완화. PLTR/SHOP 중 1개 5~10%p 축소 후 산업재/헬스케어 등 2~3개 섹터 추가",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 평가: (1) 현재 상태 - TSLA 비중 40%, HHI 0.65, portfolio_beta 1.85, avg_correlation 0.75, Tech 섹터 80% 등 핵심 지표를 정량적으로 명시하여 충족. (2) 임계값/기준 - 단일 종목 한도 20%, HHI 고위험 구간 0.25 이상, Tech 비중 목표 60% 이하 등 정량 기준 명확히 제시하여 충족. (3) 액션 제안 - 'TSLA 비중 축소', '채권 ETF 추가', '섹터 2~3개 추가 분산' 등 구체적 액션 동사와 종목/자산군 명시하여 충족. (4) 시점/기간 - '다음 2주 내', '다음 분기' 등 실행 타임라인 명확히 제시하여 충족. 강점: 4요소 모두 충족하며 특히 정량 임계값(20%p 감축, HHI 0.45 수준)과 단계적 액션 플랜(2주 내 TSLA 축소 → 다음 분기 섹터 분산)이 매우 구체적. 약점: 개별 종목(TSLA, PLTR, SHOP)의 현재가나 밸류에이션 지표(PE/PEG) 부재로 매도 타이밍 판단 근거가 포트폴리오 구조에만 집중되어 있음.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S06_haiku",
+    "case_name": "S06",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "귀사의 V3_quality_factor 포트폴리오는 Quality Factor 전략에 대체로 부합하나, 섹터 집중도 개선이 필요합니다. 현재 sector_hhi 0.55는 균형잡힌 멀티섹터 포트폴리오의 목표값 0.35~0.45를 0.10~0.20 초과하고 있습니다. Tech 52% + Healthcare 48%로 이 2개 섹터이 100%를 차지해 섹터 분산이 부족한 상태입니다. 반면 portfolio_beta 0.95, hhi_concentration 0.30, max_position_weight 0.15는 양호합니다. 특히 보유 10개 종목 모두 세계 최고 수준 기업(MSFT PE ~25, AAPL PE ~28, JNJ PE ~18, UNH ROIC 32% 등)으로 Quality Factor의 핵심인 높은 수익성, 안정성, 저변동성을 충족합니다. 다만 Quality 전략이 섹터 중립성을 추구한다면, 현재의 극도로 집중된 2-섹터 구조는 스타일 드리프트 위험입니다. 금리 환경 변화 시 Tech와 Healthcare가 동시에 부정적 영향을 받을 수 있기 때문입니다. 다음 리밸런싱(분기 내)에서 Consumer Staples, Financials, Industrials 등 저PE, 고배당, 우수 ROIC 종목을 최소 2~3개 섹터에서 총 15~20% 비중으로 편입해 sector_hhi를 0.40 이하로 낮추는 것을 권장합니다.",
+    "action_items": [
+      {
+        "title": "섹터 분산 강화: Tech+Healthcare 비중 조정",
+        "description": "sector_hhi 0.55 → 0.40 목표. 현재 2-섹터 100% 구조를 3개 이상 섹터로 확대. Consumer Staples, Financials, Industrials 중 Quality 기준(PE 15~25, ROIC 10% 이상, 배당률 2% 이상) 충족 종목 15~20% 편입. 기간: 다음 분기 내 단계적 리밸런싱.",
+        "priority": "high"
+      },
+      {
+        "title": "Quality 기준 유지 검증",
+        "description": "신규 편입 종목은 MSFT, AAPL, JNJ 수준의 Quality 지표(ROIC 15% 이상, Debt/Equity 0.5 이하, 안정적 배당) 충족 확인. 기존 10개 종목의 Quality Score 재평가(월 1회).",
+        "priority": "medium"
+      },
+      {
+        "title": "스타일 드리프트 모니터링",
+        "description": "sector_hhi, avg_correlation(현 0.45) 월별 추적. correlation 0.50 초과 시 포트폴리오 동시성 위험 경고. Tech 금리 민감도와 Healthcare 경기 방어성의 분산 효과 정량화.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소를 모두 명확히 충족합니다. (1) 현재 상태: sector_hhi 0.55, Tech 52%, Healthcare 48%, portfolio_beta 0.95, MSFT PE 25, AAPL PE 28, JNJ PE 18, UNH ROIC 32% 등 핵심 지표를 구체적으로 명시. (2) 임계값/기준: 목표 sector_hhi 0.35~0.45, 현재값이 0.10~0.20 초과, 리밸런싱 후 목표 0.40 이하 등 정량 기준 명확. (3) 액션 제안: '다음 리밸런싱에서 Consumer Staples, Financials, Industrials 종목을 15~20% 비중으로 편입', 'sector_hhi를 0.40 이하로 낮추는 것을 권장' 등 명확한 액션 동사와 구체적 종목군 제시. (4) 시점/기간: '분기 내', '다음 리밸런싱' 등 시점 명시. 강점: 섹터 집중도 문제를 정량화하고(0.55 vs 목표 0.35~0.45), 구체적 개선안(2~3개 섹터 추가, 15~20% 비중)과 리스크 근거(금리 환경 변화 시 동시 타격)를 제시. 약점: 편입 대상 섹터는 언급했으나 개별 종목명이 없어 즉시 실행 가능성이 다소 낮음.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S06_sonnet",
+    "case_name": "S06",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 Quality Factor 전략에 전반적으로 부합하나 섹터 집중도 개선이 필요합니다.\n\n**현재 상태**: Tech 섹터 52%, Healthcare 48%로 양분되어 있으며, 섹터 HHI 0.55로 집중도가 높습니다. 보유 10종목의 포트폴리오 베타는 0.95로 시장 대비 안정적이고, 상위 3종목 비중 40%는 적절한 수준입니다. MSFT, AAPL, JNJ, UNH 등은 모두 높은 ROIC와 안정적 현금흐름을 보유한 우량주로 Quality Factor 핵심 기준에 부합합니다.\n\n**임계값 기준**: Quality Factor 전략의 섹터 HHI 권장치는 0.35 이하이나, 현재 0.55로 0.20p 초과 상태입니다. 일반적으로 단일 섹터 비중은 30~40% 이하가 적절하나 Tech 52%는 12~22%p 과다합니다. 종목 집중도 HHI 0.30과 상위3 비중 40%는 Quality 전략 기준(HHI 0.25~0.35, 상위3 35~45%) 내에서 양호합니다.\n\n**액션 제안**: \n1) Tech 섹터 비중을 다음 분기까지 10%p 축소(52%→42%)하고, 2) Consumer Staples(P&G, KO) 또는 Industrials(HON, UNP) 섹터에서 ROIC 15% 이상 우량주 2종목을 추가 편입하여 섹터 HHI를 0.40 이하로 낮추세요. 3) 현재 V/MA 금융결제 듀오는 상관성이 높으므로 둘 중 하나를 축소하고 다른 섹터로 대체하는 것을 검토하세요.\n\n**시점**: 최근 4분기 Tech 섹터 변동성이 Healthcare 대비 1.5배 높았으며, 2024년 1분기 금리 환경 변화 시 섹터 집중 리스크가 확대될 수 있습니다. 다음 리밸런싱(분기말)까지 단계적으로 조정하시는 것을 권장합니다.",
+    "action_items": [
+      {
+        "title": "Tech 섹터 10%p 축소 (52%→42%)",
+        "description": "섹터 HHI 0.55가 권장 0.35 대비 0.20p 초과. Tech 52%는 단일 섹터 상한 40% 대비 12%p 과다. 다음 분기까지 MSFT/AAPL/GOOG 중 비중 높은 종목에서 단계적 축소",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples/Industrials 우량주 2종목 편입",
+        "description": "섹터 HHI 0.40 이하 목표. ROIC 15% 이상 종목(예: P&G, KO, HON, UNP) 중 선택하여 총 10~15% 비중 확보. 다음 분기 내 완료",
+        "priority": "high"
+      },
+      {
+        "title": "V 또는 MA 중 1종목 축소 및 대체",
+        "description": "금융결제 듀오는 상관성 0.7+ 추정. 둘 중 PEG 또는 밸류에이션 부담 큰 종목 5%p 축소 후 타 섹터 분산. 다음 리밸런싱 시점",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 모두 명확하게 충족한 우수 답변입니다. **현재 상태**: 섹터 HHI 0.55, 포트폴리오 베타 0.95, 상위3종목 비중 40% 등 정량 지표를 구체적으로 제시했습니다. **임계값**: 섹터 HHI 권장 0.35 이하, 단일 섹터 비중 30~40%, 종목 집중도 HHI 0.25~0.35 등 명확한 기준치를 명시하고 현재값과의 차이(0.20p 초과)를 정량화했습니다. **액션 제안**: 'Tech 섹터 10%p 축소', 'Consumer Staples/Industrials에서 ROIC 15% 이상 우량주 2종목 추가 편입', 'V/MA 중 하나 축소' 등 실행 가능한 액션 동사와 종목/섹터를 직접 지정했습니다. **시점**: '최근 4분기', '2024년 1분기', '다음 리밸런싱(분기말)' 등 과거 기간과 향후 시점을 모두 명시했습니다. 강점은 각 요소가 논리적으로 연결되어 있고(섹터 집중→리스크→분산 필요), 정량 임계값 대비 현재 상태의 차이를 명확히 보여준 점입니다. 약간의 개선점은 V/MA 축소 제안 시 둘 중 어느 것을 우선 검토할지 추가 기준(예: 밸류에이션 비교)이 있었다면 더 완벽했을 것입니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S07_haiku",
+    "case_name": "S07",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오가 Tech 52%, Healthcare 48%로 2개 섹터에 집중(sector_hhi 0.55)된 상태에서, Quality Factor 전략 확대를 위해서는 다음 3개 섹터 편입을 권장합니다.\n\n첫째, **금융(Financials)** 섹터입니다. 현재 V/MA(Fintech/결제)는 보유 중이나, 전통 금융기관(은행/보험)에서도 ROIC 12~15% 이상, PE 10~13 수준의 고품질 기업들(예: JPMorgan Chase, Berkshire Hathaway)이 다수 있습니다. 금융 비중 10~15% 편입 시 sector_hhi를 현재 0.55에서 0.42 수준으로 낮출 수 있습니다.\n\n둘째, **산업재(Industrials)** 섹터입니다. ROIC 10% 이상, PEG 1.5 이하인 우량 기업들(예: Caterpillar, Honeywell)의 경기순환 특성이 Tech/Healthcare와의 상관관계(현재 평균 0.45)를 더욱 약화시킬 수 있으며, 포트폴리오 베타 0.95를 안정적으로 유지하면서 분산 효과를 높입니다. 목표 비중은 8~12%입니다.\n\n셋째, **필수소비재(Consumer Staples)** 섹터입니다. PE 18~22, ROIC 8~10% 수준의 방어주들(예: Procter & Gamble, Coca-Cola)이 시장 변동성 시 포트폴리오 변동성 완화 역할을 합니다. 최근 3개월 금리 상승 환경을 고려하면 필수소비재 5~8% 편입이 현금 대체 효과를 제공합니다.\n\n**실행 권장사항**: 현재 holding_count 10개에서 12~15개로 확대하면서, Tech 52% → 38%, Healthcare 48% → 35%, 금융 신규 12%, 산업재 신규 10%, 필수소비재 신규 5%로 조정하면 sector_hhi가 0.55에서 0.38~0.40으로 개선되고, 평균 상관계수도 0.45에서 0.35 수준으로 낮아져 포트폴리오 안정성이 향상됩니다. 분기 내 단계적 편입을 권장합니다.",
+    "action_items": [
+      {
+        "title": "금융(Financials) 섹터 12% 신규 편입",
+        "description": "ROIC 12~15%, PE 10~13 기준 우량 금융주 선정. JPMorgan Chase 또는 Berkshire Hathaway 등으로 sector_hhi 0.55 → 0.48 개선. 분기 내 3회 분할 매수",
+        "priority": "high"
+      },
+      {
+        "title": "산업재(Industrials) 섹터 10% 신규 편입",
+        "description": "ROIC 10% 이상, PEG 1.5 이하 종목 (Caterpillar, Honeywell). Tech/Healthcare와 낮은 상관관계로 분산 효과 극대화. avg_correlation 0.45 → 0.35 목표",
+        "priority": "high"
+      },
+      {
+        "title": "필수소비재(Consumer Staples) 5% 신규 편입",
+        "description": "PE 18~22, ROIC 8~10% 방어주 (P&G, Coca-Cola). 금리 상승 환경에서 변동성 완화 역할. 현금 비중 축소 대신 편입",
+        "priority": "medium"
+      },
+      {
+        "title": "Tech 비중 52% → 38%로 10%p 축소",
+        "description": "sector_hhi 과다 집중 완화 목표. GOOG/AAPL 중 PEG 낮은 종목 우선 유지, 신규 섹터 편입 재원으로 활용",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 평가: (1) 현재 상태 - sector_hhi 0.55, 평균 상관계수 0.45, 포트폴리오 베타 0.95 등 핵심 지표를 구체적으로 제시했으며, 금융/산업재/필수소비재 섹터의 ROIC/PE/PEG 범위까지 명시하여 data grounding이 우수함. (2) 임계값/기준 - JPMorgan의 'ROIC 12~15%, PE 10~13', 산업재의 'ROIC 10% 이상, PEG 1.5 이하', 필수소비재의 'PE 18~22, ROIC 8~10%' 등 섹터별로 정량적 임계값을 일관되게 제시하여 threshold_specificity 충족. (3) 액션 제안 - '금융 10~15% 편입', '산업재 8~12% 편입', '필수소비재 5~8% 편입', 'holding_count 10개→12~15개 확대', 'Tech 52%→38% 조정' 등 구체적 비중 조정 수치와 함께 섹터별 액션을 명확히 제시하여 action_clarity 우수. (4) 시점/기간 - '최근 3개월 금리 상승 환경', '분기 내 단계적 편입' 명시로 time_anchoring 충족. 강점: sector_hhi 0.55→0.38~0.40, 상관계수 0.45→0.35 등 변화 전후 수치를 비교하여 개선 효과를 정량화함. 약점: 구체적인 종목명(JPMorgan, Caterpillar 등)은 예시로만 제시되고 실제 매수 종목 우선순위나 매수 시점 조건이 부족함.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S07_sonnet",
+    "case_name": "S07",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 Tech 52%, Healthcare 48%로 2개 섹터에 집중(sector_hhi 0.55)된 상태입니다. Quality Factor 전략을 유지하면서 섹터 분산을 강화하려면 다음 3개 섹터를 검토하세요.\n\n1. **Consumer Staples (필수소비재)**: Procter & Gamble(PG, ROIC 28%, PE 24), Costco(COST, ROIC 18%, PE 42) 등이 안정적 현금흐름과 높은 ROIC을 보유하고 있습니다. 최근 4분기 평균 ROIC 20% 이상으로 quality 기준을 충족하며, 경기방어 특성으로 포트폴리오 베타 0.95를 0.85 수준으로 낮출 수 있습니다.\n\n2. **Industrials (산업재)**: Honeywell(HON, ROIC 16%, PE 28), Danaher(DHR, ROIC 12%, PE 35) 등이 제조 효율성과 안정적 수익성을 보입니다. DHR은 이미 보유 중인 TMO와 유사한 과학장비 분야로 시너지가 있으나, HON처럼 automation/aerospace 등 다른 하위섹터로 분산하면 avg_correlation 0.45를 0.35 이하로 낮출 수 있습니다.\n\n3. **Financials (금융)**: JPMorgan Chase(JPM, ROIC 14%, PE 11), Visa/Mastercard는 이미 보유 중이나 비중이 낮다면 확대 검토가 가능합니다. JPM의 경우 최근 연간 ROE 17%로 자본효율이 우수하며, PE 11은 S&P 500 평균 19 대비 저평가입니다.\n\n**구체적 액션**: 다음 분기 리밸런싱 시 Tech 비중을 52%→42%로 10%p 축소하고, Consumer Staples 10%p(PG 5% + COST 5%), Industrials 5%p(HON), Financials 5%p(JPM) 편입으로 섹터를 4→6개로 확대하여 sector_hhi를 0.55→0.30 이하로 낮추시길 권장합니다. 이를 통해 단일 섹터 변동성 노출을 줄이면서 quality factor(ROIC 15%↑, PE 30↓) 기준은 유지할 수 있습니다.",
+    "action_items": [
+      {
+        "title": "Tech 섹터 10%p 축소 (52%→42%)",
+        "description": "sector_hhi 0.55 완화 목적. MSFT/AAPL/GOOG 중 PE 대비 PEG가 높은 종목부터 단계적 축소. 다음 분기 리밸런싱 시점.",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 10%p 편입",
+        "description": "PG(ROIC 28%, PE 24) 5% + COST(ROIC 18%, PE 42) 5%. 경기방어 특성으로 베타 0.95→0.85 목표. 분기 내 분할 매수.",
+        "priority": "high"
+      },
+      {
+        "title": "Industrials 5%p 편입 (HON)",
+        "description": "ROIC 16%, PE 28로 quality 기준 충족. TMO와 상관관계 낮춰 avg_correlation 0.45→0.35 목표. 분기 내.",
+        "priority": "medium"
+      },
+      {
+        "title": "Financials 5%p 편입 (JPM)",
+        "description": "ROE 17%, PE 11로 저평가. V/MA 비중 낮다면 JPM 추가로 금융 섹터 강화. 분기 내.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 모두 명확히 충족: (1) **현재 상태**는 섹터 비중(Tech 52%, Healthcare 48%), sector_hhi 0.55, 베타 0.95, avg_correlation 0.45와 함께 개별 종목별 핵심 지표(PG ROIC 28% PE 24, COST ROIC 18% PE 42, JPM ROE 17% PE 11 등)를 구체적으로 제시. (2) **임계값/기준**은 'ROIC 15%↑, PE 30↓' quality factor 기준, 'ROIC 20% 이상', 'avg_correlation 0.35 이하', 'sector_hhi 0.30 이하' 등 정량 임계값 다수 명시. (3) **액션 제안**은 'Tech 비중 52%→42% 축소', 'PG 5% + COST 5% 편입', 'HON 5% 편입', 'JPM 5% 편입', '섹터 4→6개 확대' 등 구체적 동사+종목+비중으로 실행 가능. (4) **시점/기간**은 '다음 분기 리밸런싱 시', '최근 4분기 평균', '최근 연간' 등 명확한 시간 단위 포함. 강점: 정량 지표와 임계값이 매우 구체적이고, 리밸런싱 전후 수치 변화(0.55→0.30)를 명시하여 실행 가능성이 높음. 약점: 없음 - 모든 요소가 충족되고 quality factor 전략과 섹터 분산 강화 논리가 일관됨.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S08_haiku",
+    "case_name": "S08",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 Buffett 가치투자 관점에서 펀더멘털은 우수하나 구조적 리스크가 상당합니다. Financials 섹터 순수 집중(sector_hhi 1.0000)과 상위 3종목 비중 70%는 Buffett의 분산 원칙에 위배됩니다. PE 11, ROIC 16%, FCF yield 7.5%는 모두 우수 수준이며, 최근 12개월 금융섹터 실적 성장률이 8~12% 범위라면 밸류에이션은 합리적입니다. 그러나 JPM 단독 30% 비중은 Buffett 포트폴리오 최대 단일 종목 한도 20~25%를 초과하며, 포트폴리오 베타 1.1과 평균 상관관계 0.8은 금융섹터 사이클 리스크(금리 변동, 경기 둔화)에 과도하게 노출된 상태입니다. Buffett의 핵심 원칙인 '안전마진(margin of safety)'을 고려하면, 현재 구조는 섹터 다각화 부족으로 인한 시스템 리스크가 크습니다. 다음 분기 내 JPM 비중을 25% 이하로 축소하고, Financials 비중을 전체 포트폴리오의 40~50%로 낮춘 후 헬스케어(현 0% → 15%), 소비재(현 0% → 15%), 산업재(현 0% → 10%) 등으로 섹터 분산을 강화할 것을 강력히 권장합니다. 이를 통해 sector_hhi를 0.35 이하, top3_weight를 50% 이하로 개선하고 portfolio_beta를 0.95 수준으로 낮출 수 있습니다.",
+    "action_items": [
+      {
+        "title": "JPM 비중 5%p 축소 (30% → 25%)",
+        "description": "Buffett 단일 종목 최대 비중 원칙(20~25%) 준수. 최근 12개월 금융주 변동성 18%로 시장 평균 12% 대비 높으므로 집중 노출 경감 필요",
+        "priority": "high"
+      },
+      {
+        "title": "Financials 섹터 비중 10%p 축소 (100% → 90%, 단계적 40~50% 목표)",
+        "description": "sector_hhi 1.0은 포트폴리오 다각화 완전 실패. 금리 인상기 금융섹터 순이익 압박 리스크 존재(평가 금리 민감도 0.8~1.2). 분기별 5%p씩 축소하여 3분기 내 40~50% 달성",
+        "priority": "high"
+      },
+      {
+        "title": "헬스케어 섹터 진입 (0% → 목표 15%)",
+        "description": "인구 고령화 추세에 따른 장기 성장성. Buffett의 최근 포트폴리오(Apple, 의약품 관련)와 부합. ROIC 15% 이상, PE 18 이하 종목 대상. 2분기 내 5%p, 3분기 내 추가 10%p 편입",
+        "priority": "high"
+      },
+      {
+        "title": "소비재 섹터 확대 (0% → 목표 15%)",
+        "description": "필수소비재(음식료, 생활용품)는 경기 방어성 우수. Buffett의 코카콜라 투자 사례 참고. ROIC 12% 이상, FCF yield 5% 이상, 배당 안정성 3년 이상 조건",
+        "priority": "medium"
+      },
+      {
+        "title": "포트폴리오 베타 감소 관리 (1.1 → 0.95 목표)",
+        "description": "avg_correlation 0.8은 금융섹터 단일 드라이버에 과도 의존. 섹터 분산으로 상관관계를 0.65 이하로 낮추면 베타 자동 개선. 분기별 모니터링",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 모두 명확하게 충족된 우수 답변입니다. **현재 상태**: PE 11, ROIC 16%, FCF yield 7.5%, sector_hhi 1.0000, top3_weight 70%, portfolio_beta 1.1 등 핵심 지표를 구체적 수치로 제시. **임계값/기준**: 'JPM 단일 종목 한도 20~25%', 'sector_hhi 0.35 이하', 'top3_weight 50% 이하', 'portfolio_beta 0.95 수준' 등 정량 기준 다수 명시. **액션 제안**: 'JPM 비중을 25% 이하로 축소', 'Financials 비중을 40~50%로 낮춘 후 헬스케어(15%), 소비재(15%), 산업재(10%) 분산' 등 구체적 액션 + 종목/섹터 명시. **시점/기간**: '다음 분기 내', '최근 12개월 금융섹터 실적 성장률' 등 기간 명확. Buffett 투자 철학과 연결하여 안전마진 관점에서 리스크를 정량화하고, 목표 지표까지 제시한 점이 강점입니다. 약점은 헬스케어/소비재/산업재 내 구체적 종목명이 없다는 점이나, 섹터 리밸런싱 방향성은 충분히 명확합니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S08_sonnet",
+    "case_name": "S08",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 Buffett 가치투자 원칙 중 '뛰어난 기업'(ROIC 16%, FCF yield 7.5%)과 '합리적 가격'(PE 11) 기준은 충족하지만, 집중도와 분산화 측면에서 심각한 리스크가 있습니다.\n\n**현재 상태**: 금융 섹터 100% 집중(sector_hhi 1.0), 상위 3종목 비중 70%(JPM 30%, BAC, WFC), 포트폴리오 베타 1.1, 종목 간 상관계수 0.8로 사실상 단일 베팅 구조입니다. PE 11과 ROIC 16%는 Buffett 기준으로 매력적이나, 섹터 HHI 1.0은 '단일 산업 올인' 상태를 의미합니다.\n\n**임계값 위반**: Buffett은 '이해할 수 있는 사업'을 강조하지만 동시에 '적절한 분산'도 주장했습니다. 금융 섹터 단일 집중은 2008 금융위기 사례처럼 시스템 리스크에 전체 포트폴리오가 노출됩니다. sector_hhi 0.3 이하(3개 이상 섹터 균형)가 권장 기준인데 현재 1.0은 3.3배 초과입니다. 또한 종목 간 상관계수 0.8은 분산 효과가 거의 없음을 뜻합니다(0.5 이하 권장).\n\n**Buffett 원칙 적합성**: (1) 경제적 해자 - 금융주들의 규제 진입장벽과 브랜드는 양호 (2) 경영진 능력 - JPM의 Jamie Dimon 등 검증된 경영진 (3) 합리적 가격 - PE 11, FCF yield 7.5%는 S&P 500 평균 PE 20 대비 45% 할인 (4) 장기 보유 - 현재 구조로는 섹터 쇼크 시 장기 보유 불가능.\n\n**액션 제안**: 다음 분기까지 금융 섹터 비중을 70%로 30%p 축소하고, Buffett이 선호하는 '소비자 독점 기업'(코카콜라, Apple류) 15%, '산업재 우량주'(철도, 에너지 인프라) 15%를 편입하세요. JPM 비중은 20%로 10%p 축소(현 30% → 20%)하되 매도는 지양하고, 신규 섹터 매수 재원으로 활용하세요. sector_hhi를 0.5 이하로(3개 섹터 균형), 상관계수를 0.6 이하로 낮추는 것이 목표입니다.\n\n**Buffett 명언 적용**: '달걀을 한 바구니에 담되, 그 바구니를 잘 지켜라'는 20~30개 종목 분산이 아닌 5~10개 집중을 의미하지, 단일 섹터 100%를 뜻하지 않습니다. 현재 holding_count 5개는 적절하나 섹터는 최소 3개로 나눠야 합니다.",
+    "action_items": [
+      {
+        "title": "금융 섹터 30%p 축소 (100% → 70%)",
+        "description": "sector_hhi 1.0은 단일 섹터 올인 상태로 2008 금융위기 사례처럼 시스템 리스크 노출. 권장 기준 0.3 대비 3.3배 초과. 다음 분기까지 단계적 축소.",
+        "priority": "high"
+      },
+      {
+        "title": "JPM 비중 10%p 축소 (30% → 20%)",
+        "description": "max_position_weight 30%는 단일 종목 한도 과다. Buffett도 단일 종목 25% 이상은 지양. PE 11로 펀더멘털 양호하므로 매도 아닌 비중 조정.",
+        "priority": "high"
+      },
+      {
+        "title": "소비자 독점 기업 15% 편입",
+        "description": "Buffett 핵심 전략. 코카콜라/Apple류 브랜드 기업으로 ROIC 20% 이상, PE 20 이하 종목 선별. 금융 섹터 축소 재원 활용.",
+        "priority": "medium"
+      },
+      {
+        "title": "산업재 우량주 15% 편입",
+        "description": "철도(BNSF류), 에너지 인프라 등 Buffett 장기 보유 섹터. 금융과 상관계수 0.4 이하 종목 선별해 avg_correlation 0.8 → 0.6 목표.",
+        "priority": "medium"
+      },
+      {
+        "title": "sector_hhi 0.5 이하 목표 설정",
+        "description": "3개 섹터 균형 배분 시 sector_hhi 0.33~0.5 달성 가능. 분기별 리밸런싱으로 1.0 → 0.5 단계적 개선.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 모두 명확히 충족한 우수 답변. **현재 상태**: 섹터 HHI 1.0, 상위 3종목 70%, PE 11, ROIC 16%, FCF yield 7.5%, 베타 1.1, 상관계수 0.8 등 정량 지표를 종합적으로 제시. **임계값**: 'sector_hhi 0.3 이하', '상관계수 0.5 이하', 'PE 20 대비 45% 할인', '목표 sector_hhi 0.5 이하' 등 구체적 기준을 명시하고 현재값과 비교. **액션 제안**: '다음 분기까지 금융 섹터 70%로 30%p 축소', 'JPM 30%→20% 축소', '소비자독점 15% 편입', '산업재 15% 편입' 등 종목별 비중 변경을 수치와 함께 직접 제시. **시점**: '다음 분기까지'로 명확한 시간 프레임 제공. 강점은 Buffett 원칙과 연계한 섹터 분산 논리 전개 및 2008 금융위기 사례 인용으로 리스크 설명이 구체적. 약점은 '소비자 독점 기업', '산업재 우량주'에 대한 종목명 예시가 없어 실행 가능성이 다소 떨어질 수 있으나, 전체적으로 4요소 기준을 모두 충족하며 정량 임계값과 액션이 명확함.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S09_haiku",
+    "case_name": "S09",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오가 Financials 100% 집중(sector_hhi 1.0)되어 있고, 상위 3종목 비중이 70%로 과도합니다. Warren Buffett의 가치투자 원칙을 적용하면, PE 11, ROIC 16%, FCF yield 7.5%는 우수하나 섹터 단일화 리스크를 해결해야 합니다.\n\n추천 분산 전략: 다음 분기 내 Financials 비중을 70%로 축소하고, 다음 3개 섹터에서 가치주를 단계적으로 편입하세요.\n\n1) **Consumer Staples(필수소비재, 20% 목표)**: Procter & Gamble(PG, 현재 PE 26~28)는 Buffett 포트폴리오 핵심 종목으로, ROIC 15% 이상, FCF yield 5% 이상, 배당성장률 10년 평균 8% 이상을 충족합니다. 또는 Nestlé(NSRGY, PE 21~23, ROIC 13%) 검토.\n\n2) **Industrials(산업재, 15% 목표)**: Berkshire Hathaway의 철도/운송 투자 철학에 따라 Union Pacific(UNP, PE 18~20, ROIC 14%), 또는 Caterpillar(CAT, PE 16~18, ROIC 12~13%) 검토. 경기순환 특성으로 Financials와 역상관(correlation <0.6) 기대.\n\n3) **Healthcare(헬스케어, 10% 목표)**: Johnson & Johnson(JNJ, PE 24~26, ROIC 15% 이상)은 방어적 특성과 배당 안정성(50년 연속 배당증가)으로 Buffett 기준 충족. 또는 Merck(MRK, PE 14~16, ROIC 12%) 저평가 옵션.\n\n최근 3개월 기준 이들 섹터의 상관계수가 0.4~0.6으로 현재 0.8 평균 상관계수를 0.65 이하로 낮출 수 있으며, HHI 집중도도 0.5에서 0.28~0.32로 개선됩니다. 단계적으로 월 1회, 3개월에 걸쳐 분할 매수하여 평균 매수가를 확보하세요.",
+    "action_items": [
+      {
+        "title": "Financials 비중 70%로 축소",
+        "description": "현재 100% → 70% (30%p 축소). sector_hhi 1.0을 0.55 이상으로 개선. JPM 30%에서 22%로, BAC/WFC 비중도 동일 비율 축소. 다음 분기(3개월) 내 실행",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 20% 편입 (P&G 또는 Nestlé)",
+        "description": "P&G(PE 26~28, ROIC 15%+, FCF yield 5%+, 배당성장 8%)를 1차 선택으로, Nestlé(PE 21~23, ROIC 13%) 을 대체 옵션으로. 월 6.7% 분할 매수(3개월), 반도체/기술주 변동성 헤징 효과",
+        "priority": "high"
+      },
+      {
+        "title": "Industrials 15% 편입 (UNP 또는 CAT)",
+        "description": "Union Pacific(PE 18~20, ROIC 14%) 또는 Caterpillar(PE 16~18, ROIC 12~13%). Financials와의 상관계수 0.4~0.6으로 포트폴리오 다각화. 월 5% 분할 매수, 경기 지표 모니터링",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare 10% 편입 (JNJ 또는 Merck)",
+        "description": "Johnson & Johnson(PE 24~26, ROIC 15%+, 50년 배당성장) 또는 Merck(PE 14~16, ROIC 12%, 저평가). 월 3.3% 분할 매수. 방어주 특성으로 포트폴리오 베타 1.1 → 1.0 이하 목표",
+        "priority": "medium"
+      },
+      {
+        "title": "포트폴리오 상관계수 모니터링",
+        "description": "현재 avg_correlation 0.8 → 목표 0.65 이하. 최근 1개월 rolling correlation 추적, 분기별 재계산. JPM/BAC/WFC 간 상관계수(현재 0.85~0.90) 초과 시 한 종목 축소 검토",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 충족도 평가: (1) 현재 상태 - 포트폴리오 PE 11, ROIC 16%, FCF yield 7.5% 명시, 추천 종목별 현재 PE 범위(PG: PE 26~28, UNP: PE 18~20 등) 구체적 제시 (충족). (2) 임계값/기준 - \"ROIC 15% 이상\", \"FCF yield 5% 이상\", \"상관계수 0.65 이하\", \"HHI 0.28~0.32\" 등 정량 기준 다수 명시 (충족). (3) 액션 제안 - \"Financials 비중 70%로 축소\", \"단계적 편입\", \"월 1회 분할 매수\" 등 구체적 동사와 종목명(PG, UNP, JNJ 등) 직접 제시 (충족). (4) 시점/기간 - \"다음 분기 내\", \"최근 3개월 기준\", \"3개월에 걸쳐\" 명확한 시간 앵커 제공 (충족). 강점: Warren Buffett 투자 철학 맥락 제공, 섹터별 추천 종목 3개씩 대안 포함, 상관계수/HHI 개선 효과 정량화. 약점: 현재 보유 Financials 종목의 개별 PE/ROIC 미제시(집계 지표만 제공), 매도 우선순위나 구체적 리밸런싱 비율(예: 종목 A 5%→3%) 부재.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S09_sonnet",
+    "case_name": "S09",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 Financials 섹터 비중이 100%(sector_hhi 1.00)로 단일 섹터 집중 한계인 40%를 60%p 초과한 상태입니다. 보유 종목 JPM PE 11, ROIC 16%는 Buffett 가치 기준(PE 15 이하, ROIC 15% 이상)을 충족하나, 금융 규제 리스크와 금리 사이클 의존도가 높아 섹터 분산이 필수적입니다.\n\n추가 검토 섹터와 종목 후보는 다음과 같습니다:\n\n1. **Consumer Staples(필수소비재)**: Coca-Cola(KO) PE 24, ROIC 30%, 배당수익률 3.1% 또는 Procter & Gamble(PG) PE 26, ROIC 28%. 경기 방어력과 안정적 현금흐름으로 Buffett 장기 보유 선호 섹터입니다. 다음 분기까지 10~15% 비중 편입을 권장합니다.\n\n2. **Industrials(산업재)**: Union Pacific(UNP) PE 22, ROIC 18%, FCF yield 4.8%. 철도 독과점과 가격 결정력이 있어 경제적 해자(economic moat) 기준을 충족합니다. 8~12% 비중으로 최근 3개월 내 단계적 매수가 적절합니다.\n\n3. **Energy(에너지)**: Chevron(CVX) PE 10, ROIC 12%, 배당수익률 3.5%. Buffett가 2022년부터 확대한 섹터로 원유 가격 80달러 이상 유지 시 FCF 창출력이 견고합니다. 7~10% 비중으로 편입 검토하세요.\n\n구체적 리밸런싱 방안: Financials 비중을 100%에서 60~65%로 축소(JPM 30% → 20%, BAC/WFC 각 5%p 축소)하고, 상기 3개 섹터에 각 10~15%씩 배분해 sector_hhi를 0.40 이하로 낮추시는 것을 다음 분기까지 진행하시기 바랍니다. 모든 추천 종목은 PE 26 이하, ROIC 12% 이상으로 Buffett 질적 가치 기준을 충족합니다.",
+    "action_items": [
+      {
+        "title": "Financials 35~40%p 축소 (100% → 60~65%)",
+        "description": "JPM 10%p 축소(30% → 20%), BAC/WFC 각 5%p 축소. sector_hhi 1.00 단일 섹터 집중 해소 목적. 다음 분기까지 완료.",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 10~15% 편입",
+        "description": "KO(PE 24, ROIC 30%) 또는 PG(PE 26, ROIC 28%) 매수. 경기 방어 + 안정 현금흐름. 다음 분기 내 단계적 매수.",
+        "priority": "high"
+      },
+      {
+        "title": "Industrials 8~12% 편입",
+        "description": "UNP(PE 22, ROIC 18%) 매수. 철도 해자 보유, FCF yield 4.8%. 최근 3개월 내 분할 매수.",
+        "priority": "medium"
+      },
+      {
+        "title": "Energy 7~10% 편입 검토",
+        "description": "CVX(PE 10, ROIC 12%) 매수. Buffett 2022년 이후 확대 섹터, 유가 80달러 이상 시 FCF 견고. 분기 내 편입 검토.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "**4요소 충족 여부**: (1)현재 상태 - JPM PE 11/ROIC 16%, sector_hhi 1.00 등 정량 지표 명확 제시 ✓ (2)임계값/기준 - Buffett 가치 기준 'PE 15 이하, ROIC 15% 이상', 섹터 집중 한계 40%, PE 26 이하 등 다층 임계값 명시 ✓ (3)액션 제안 - 'Financials 비중 100%→60~65% 축소', 'JPM 30%→20% 축소', '3개 섹터 각 10~15%씩 배분' 등 구체적 매도/매수 액션 직접 제시 ✓ (4)시점/기간 - '다음 분기까지', '최근 3개월 내 단계적 매수' 등 실행 타임라인 명확 제시 ✓ **강점**: 섹터별 3개 후보 종목(KO/PG, UNP, CVX) 각각에 PE/ROIC/배당수익률/FCF yield 등 복수 지표 제공, sector_hhi 0.40 목표치와 현재 1.00 간 격차(0.60) 정량화, 원유 80달러 등 외부 조건 명시로 실행 가능성 극대화. **약점**: BAC/WFC 언급 시 현재 보유 비중 미제공(각 5%p 축소만 명시), Consumer Staples 종목 PE 24~26으로 Buffett 기준(PE 15 이하) 초과했으나 예외 근거(ROIC 28~30%) 약하게 제시.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S10_haiku",
+    "case_name": "S10",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "포트폴리오는 배당 성장 전략의 핵심 요건을 대부분 충족하고 있습니다. 현재 Yield 3.8%와 25년 연속 배당 증가(dividend aristocrat) 기준은 매우 견고합니다. 다만 3가지 구조적 우려가 있습니다.\n\n첫째, 섹터 집중도(sector_hhi 0.78)가 매우 높습니다. Consumer Staples 78%는 배당주 특성상 자연스럽지만, 경기 둔화 시 섹터 전체 동조성이 높아져 최근 3개월 금리 인상 사이클에서 방어주 쏠림이 심할 수 있습니다. 표준 포트폴리오 섹터 HHI는 0.35~0.45 범위이므로 현재 0.78은 1.7배 과다입니다.\n\n둘째, 상위 3개 종목 비중(top3_weight 0.58)이 58%로 단일 종목 집중 위험이 있습니다. KO/PG/PEP 3개 종목에 자산의 절반 이상이 쏠려 있어, 특정 종목의 배당 삭감(예: 담배주 MO의 규제 리스크) 시 포트폴리오 전체 수익률에 미치는 영향이 큽니다.\n\n셋째, 7개 종목 보유로 분산도 제한적입니다. 배당 성장 전략은 일반적으로 10~15개 종목 이상을 권장하여 개별 종목 리스크를 낮추고 배당 재투자 효과를 극대화합니다. 현재 holding_count 7.0은 분산 부족입니다.\n\n긍정 평가: Portfolio_beta 0.75로 시장 대비 변동성이 25% 낮아 방어적이며, avg_correlation 0.55는 적절한 다각화 수준입니다. MMM(산업재)과 JNJ(헬스케어) 편입으로 Consumer Staples 쏠림을 부분 완화한 것은 좋은 구성입니다.\n\n권장사항: 향후 3개월 내 Healthcare 비중을 22%에서 30~35%로 확대하고(JNJ, UNH, CVS 등 추가), Consumer Staples 비중을 78%에서 55~60%로 축소하며, 홀딩 종목을 현 7개에서 12개 이상으로 늘려 섹터 HHI를 0.45 이하로 낮추는 것을 권장합니다. 이를 통해 배당 안정성은 유지하면서 포트폴리오 탄력성을 개선할 수 있습니다.",
+    "action_items": [
+      {
+        "title": "Healthcare 섹터 확대 (22% → 30~35%)",
+        "description": "Consumer Staples 과다 쏠림 완화. JNJ 외 UNH, CVS 등 배당 성장주 추가. Sector HHI 0.78 → 0.50 이하 목표. 3개월 내 단계적 편입",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Staples 비중 축소 (78% → 55~60%)",
+        "description": "경기 둔화 시 섹터 동조성 리스크 완화. Sector HHI 기준 1.7배 과다 현황 시정. KO/PG/PEP 기존 보유 유지하되 신규 자금은 Healthcare로 배분",
+        "priority": "high"
+      },
+      {
+        "title": "홀딩 종목 확대 (7개 → 12개 이상)",
+        "description": "분산 부족 개선. 배당 aristocrat 기준(25년 연속 증가) 범위 내에서 SCHD, DGRO 같은 배당 ETF 또는 추가 개별주(Utilities, Pharma) 편입. 3개월 내",
+        "priority": "high"
+      },
+      {
+        "title": "MO(담배주) 규제 리스크 모니터링",
+        "description": "배당 삭감 가능성이 있는 담배주. 비중 및 배당 정책 분기별 리뷰. 필요 시 대체 종목으로 교체 검토",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "이 답변은 4요소를 모두 명확하게 충족하며 정량적 기준과 액션이 구체적으로 제시되었습니다. **현재 상태**: Yield 3.8%, 섹터 HHI 0.78, top3_weight 0.58, portfolio_beta 0.75 등 핵심 지표를 다수 명시했습니다. **임계값/기준**: '표준 포트폴리오 섹터 HHI 0.35~0.45', '10~15개 종목 이상 권장', 'HHI 0.45 이하' 등 정량적 임계값이 반복적으로 제시되었습니다. **액션 제안**: 'Healthcare 비중을 22%에서 30~35%로 확대', 'Consumer Staples 비중을 78%에서 55~60%로 축소', '홀딩 종목을 7개에서 12개 이상으로 늘려' 등 구체적 액션 동사와 종목/섹터가 명확합니다. **시점/기간**: '향후 3개월 내', '최근 3개월 금리 인상 사이클' 등 시간 기준이 명시되었습니다. 강점은 현재 수치와 목표 수치를 모두 제시하여 갭을 명확히 했고(예: HHI 0.78→0.45), 다층적 근거(섹터 집중도, 종목 집중도, 홀딩 수)를 체계적으로 전개한 점입니다. 약점은 JNJ 외 추가 종목 제안(UNH, CVS)에 대한 현재가나 밸류에이션 지표가 없어 실행 가능성이 다소 떨어지는 점이나, 전반적으로 액션 명확성과 데이터 근거가 매우 우수합니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S10_sonnet",
+    "case_name": "S10",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 배당 성장 전략에 매우 잘 부합하지만, 섹터 집중도 리스크가 있습니다.\n\n**현재 상태**: 포트폴리오 평균 배당수익률 3.8%, 25년 연속 배당 증가 기록을 보유한 7개 우량주로 구성되어 있습니다. 보유 종목 중 KO(코카콜라), PG(P&G), JNJ(존슨앤존슨) 등은 모두 배당귀족주(Dividend Aristocrats)로 장기 배당 성장 실적이 검증되었습니다. 포트폴리오 베타 0.75로 시장 대비 25% 낮은 변동성을 보이며, 방어적 특성이 우수합니다.\n\n**임계값 기준**: 하지만 섹터 HHI 0.78은 집중도 경계 수준 0.25를 3배 이상 초과합니다. Consumer Staples 78% 비중은 단일 섹터 권장 한도 40%를 거의 2배 초과하는 수준입니다. 상위 3종목 비중 58%도 권장 범위 50% 이하를 8%p 초과합니다.\n\n**리스크 요인**: 필수소비재 섹터는 경기방어적이지만, 최근 3년간 금리 상승기에 고배당주 전반이 약세를 보였습니다. 섹터 내 종목 간 평균 상관계수 0.55는 분산 효과가 제한적임을 의미하며, 섹터 전체가 동반 하락할 위험이 있습니다.\n\n**액션 제안**: 배당 성장 전략 유지하되, 다음 분기까지 Consumer Staples 비중을 10-15%p 축소(78% → 63-68%)하고, Healthcare를 32-37%로 확대하세요. 추가로 Technology 섹터 내 배당 성장주(예: MSFT, AVGO) 또는 Industrial 섹터 배당주(예: MMM 비중 확대)를 10-15% 편입해 섹터 HHI를 0.50 이하로 낮추는 것을 권장합니다.\n\n**시점**: 현재 7종목 중 상위 3종목(추정 KO/PG/PEP) 비중 조정을 다음 리밸런싱 시점(분기말)에 실시하되, 배당락일을 고려해 단계적으로 진행하세요.",
+    "action_items": [
+      {
+        "title": "Consumer Staples 10-15%p 축소",
+        "description": "현 78% → 목표 63-68%. 섹터 HHI 0.78이 경계 기준 0.25의 3배 초과. 상위 종목(KO/PG/PEP 중) 비중 단계적 축소. 다음 분기말까지 실행.",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare 섹터 10-15%p 확대",
+        "description": "현 22% → 목표 32-37%. 배당 성장 + 방어적 특성 유지. JNJ 비중 확대 또는 ABBV/UNH 등 배당 성장주 추가 검토. 분기 내 실행.",
+        "priority": "high"
+      },
+      {
+        "title": "Technology/Industrial 배당주 10-15% 신규 편입",
+        "description": "섹터 HHI 0.50 이하 목표. MSFT, AVGO(Tech) 또는 MMM 확대(Industrial) 검토. 평균 상관계수 0.55 낮추기 위한 분산 강화. 다음 2분기 내.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "이 답변은 4요소를 모두 명확하게 충족합니다. **현재 상태**는 포트폴리오 평균 배당수익률 3.8%, 베타 0.75, 섹터 HHI 0.78, Consumer Staples 78% 비중 등 정량 지표를 구체적으로 제시했습니다. **임계값/기준**은 '섹터 HHI 경계 수준 0.25', '단일 섹터 권장 한도 40%', '상위 3종목 비중 권장 범위 50% 이하', '목표 섹터 HHI 0.50 이하' 등 명확한 정량 임계값을 다수 명시했습니다. **액션 제안**은 'Consumer Staples 비중을 10-15%p 축소(78%→63-68%)', 'Healthcare를 32-37%로 확대', 'Technology/Industrial 섹터 배당주 10-15% 편입' 등 구체적인 매수/매도/조정 액션과 종목명(MSFT, AVGO, MMM)을 직접 제시했습니다. **시점/기간**은 '다음 분기까지', '다음 리밸런싱 시점(분기말)', '배당락일 고려 단계적 진행' 등 명확한 시간 기준을 명시했습니다. 강점: 섹터 집중도 리스크를 HHI 수치로 정량화하고, 목표 비중 범위를 구간으로 제시해 실행 가능성이 높습니다. 약점: 'Healthcare 32-37% 확대' 시 구체적인 종목명이 없어 일부 실행 디테일이 부족하지만, 전체적으로 4요소 충족도가 매우 높습니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S11_haiku",
+    "case_name": "S11",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 배당 성장 전략에 적합하지만, 다음 5년 내 3가지 시나리오에서 전략이 흔들릴 수 있습니다.\n\n**첫째, 금리 급등 시나리오입니다.** 현재 포트폴리오 yield 3.8%는 10년물 미국채 4.2% 대비 경쟁력이 없습니다. 만약 5년 후 금리가 현 수준 유지 또는 상승한다면, 배당주의 상대적 매력이 하락해 주가 하향 압력이 발생합니다. 특히 beta 0.75 방어주들(KO, PG, PEP)은 금리 상승 시 PER 다중 축소로 자본 손실이 누적될 수 있습니다. 금리가 5% 이상 상승 시나리오에선 포트폴리오 총수익률이 연 2~3%p 하락할 가능성이 높습니다.\n\n**둘째, 소비 패턴 구조 변화입니다.** Staples 비중 78%는 의도적이지만, 최근 5년간 건강식/저설탕 음료 시장 성장(연 8~10%)이 KO, PEP의 전통 음료 매출을 잠식하고 있습니다. 만약 향후 5년간 이 추세가 가속화되면 배당 성장률 7.2%가 하락할 수 있습니다. 특히 MO(담배)는 규제 강화와 금연 확산으로 배당 유지가 어려워질 위험이 있습니다.\n\n**셋째, 섹터 내 집중도 위험입니다.** 현재 Consumer Staples 78%, HCI sector_hhi 0.78은 MSCI 권장 다각화 기준(0.5 이하)을 크게 초과합니다. 예를 들어 식품업계 M&A 부진, 원자재 가격 급등, 또는 특정 규제(예: 설탕세, 플라스틱 규제)가 동시에 발생하면 포트폴리오 7개 종목 중 4~5개가 동시에 부정적 영향을 받을 수 있습니다. 최근 3년간 Staples 섹터 평균 PER이 22에서 18로 축소된 것은 성숙 시장 특성을 반영합니다.\n\n**권장 선제 대응:** 5년 후 포트폴리오 안정성 확보를 위해 다음을 검토하세요.\n1) 금리 시나리오별(3%, 5%, 5.5%) 포트폴리오 민감도 분석을 분기별로 수행\n2) Healthcare 비중을 현 22%에서 30~35%로 확대하여 섹터 다각화도 개선 (sector_hhi 0.78 → 0.60 목표)\n3) 배당 성장률이 5% 미만으로 하락하는 종목(MO, CL) 비중을 축소하고 신규 고성장 배당주(예: MSCI Healthcare dividend leaders) 편입\n4) 현금 배당금의 20~25%를 장기 성장주(예: healthcare tech)에 재투자하여 포트폴리오 수익률 다원화",
+    "action_items": [
+      {
+        "title": "Healthcare 비중 8%p 확대 (22% → 30%)",
+        "description": "sector_hhi 0.78 → 0.62 개선, Staples 과도 집중도 완화. JNJ는 유지하고 Eli Lilly, Merck 등 성장성 높은 healthcare dividend leaders 추가 편입. 향후 12개월 내 실행.",
+        "priority": "high"
+      },
+      {
+        "title": "금리 민감도 분석 수립 (분기별)",
+        "description": "금리 3%, 5%, 5.5% 시나리오별 포트폴리오 PER 축소율, 주가 하방 리스크 정량화. 금리 5% 돌파 시 defensive tilt 축소 트리거 설정.",
+        "priority": "high"
+      },
+      {
+        "title": "MO, CL 비중 검토 (향후 12개월)",
+        "description": "5년 배당 CAGR이 현 7.2%에서 4% 미만으로 하락 추세 시 비중 축소. 현재 합산 비중 약 15%의 절반 이상을 신규 healthcare dividend growth 종목으로 전환.",
+        "priority": "medium"
+      },
+      {
+        "title": "배당금 20~25% 성장주 재투자 정책 수립",
+        "description": "현 yield 3.8%의 배당 안정성을 유지하되, 배당금의 1/4을 PEG 1.5 이하 healthcare/tech 성장주 매수에 할당하여 포트폴리오 장기 총수익률 7~8% 목표 달성.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 충족도 평가: (1) 현재 상태 - portfolio yield 3.8%, 10년물 미국채 4.2%, beta 0.75, 섹터 비중 78%, sector_hhi 0.78, 최근 3년 PER 22→18 축소 등 정량 지표를 다각도로 제시하여 충족. (2) 임계값/기준 - '금리 5% 이상', '배당 성장률 5% 미만', 'MSCI 권장 다각화 기준 0.5 이하', 'Healthcare 비중 30~35%', 'sector_hhi 0.60 목표' 등 구체적 수치 기준 명시하여 충족. (3) 액션 제안 - '분기별 민감도 분석 수행', 'Healthcare 비중 확대', 'MO/CL 비중 축소', '신규 배당주 편입', '현금 배당금 20~25% 재투자' 등 명확한 액션 동사 + 종목명/섹터명 제시하여 충족. (4) 시점/기간 - '5년 후', '향후 5년간', '최근 5년간', '최근 3년간', '분기별' 등 시간 기준 반복 명시하여 충족. 강점: 미래 시나리오 3가지(금리 급등, 소비 패턴 변화, 섹터 집중)를 체계적으로 분석하고, 각 시나리오별 정량 임계값과 구체 액션을 연결. 약점: 현재 보유 종목의 개별 현재가나 PE/ROIC 같은 종목 단위 핵심 지표는 직접 언급 없음(섹터/포트폴리오 수준 지표 중심).",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 5,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S11_sonnet",
+    "case_name": "S11",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 섹터 HHI 0.78로 Consumer Staples 78% 집중도가 매우 높아, 다음 3가지 시나리오에서 5년 후 전략이 흔들릴 수 있습니다.\n\n1. **디플레이션 장기화 시나리오**: 소비재 기업의 가격 결정력이 약화됩니다. 현재 보유 종목 평균 배당 수익률 3.8%는 양호하나, 디플레이션 환경(예: 소비자물가 연평균 -1% 이상 2년 지속)에서는 매출 성장이 정체되고 5년 배당 성장률 7.2%가 3% 미만으로 하락할 수 있습니다. 이 경우 총수익률이 시장 수익률을 5년 누적 15%p 이상 하회할 위험이 있습니다.\n\n2. **소비 트렌드 급변 시나리오**: MZ세대 중심 소비 패턴 변화(건강 지향, 친환경, 디지털 우선)로 전통 브랜드(KO, PEP, CL) 시장 점유율이 침식될 수 있습니다. 현재 holding_count 7개 중 5개가 60년 이상 레거시 브랜드로, 최근 3년 젊은 소비자 층(18~34세) 매출 비중이 연평균 2%p씩 감소 추세입니다. 향후 5년간 이 추세가 가속화되면 ROE가 현재 대비 20% 이상 하락하고 배당 성장 지속 가능성이 약화됩니다.\n\n3. **금리 급등 시나리오**: 연준 기준금리가 6% 이상 장기간 유지되면 배당주 매력도가 급락합니다. 포트폴리오 beta 0.75로 방어적이나, 무위험 수익률이 배당 수익률 3.8%를 크게 상회하면 자금 이탈이 발생합니다. 2022~2023년 금리 인상기에 배당주 지수가 S&P500 대비 12%p 하회한 사례를 고려할 때, 5년 내 유사 환경 재현 시 누적 수익률 격차가 20%p 이상 벌어질 수 있습니다.\n\n**대응 전략**: ① Healthcare 비중을 현재 22%에서 35%로 확대해 섹터 HHI를 0.65 이하로 낮추고, ② 디지털 전환 우수 종목(예: PG의 e-commerce 비중 15% 이상) 비중 확대, ③ 금리 5% 이상 시 현금 비중 10~15% 확보를 다음 분기부터 단계적으로 실행하시길 권장합니다.",
+    "action_items": [
+      {
+        "title": "Healthcare 비중 13%p 확대 (22% → 35%)",
+        "description": "섹터 HHI 0.78 → 0.65 목표. 소비재 집중 리스크 완화. 다음 2분기 내 단계적 리밸런싱",
+        "priority": "high"
+      },
+      {
+        "title": "디지털 전환 우수 종목 비중 상향",
+        "description": "PG 등 e-commerce 비중 15% 이상 종목 확대. 소비 트렌드 변화 대응. 분기별 모니터링",
+        "priority": "medium"
+      },
+      {
+        "title": "금리 시나리오별 현금 비중 룰 수립",
+        "description": "기준금리 5% 이상 시 현금 10~15% 확보 기준 사전 정의. 다음 달까지 의사결정 룰 문서화",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "4요소 충족도: (1) 현재 상태 - 섹터 HHI 0.78, Consumer Staples 78% 집중, 평균 배당수익률 3.8%, 5년 배당성장률 7.2%, beta 0.75, holding_count 7개 등 정량 지표 풍부하게 명시. (2) 임계값/기준 - 디플레이션 '연평균 -1% 이상 2년 지속', 금리 '6% 이상', ROE '20% 이상 하락', 수익률 격차 '15%p/20%p 하회' 등 다수의 정량 임계값 제시. (3) 액션 제안 - 'Healthcare 비중 35%로 확대', '섹터 HHI 0.65 이하로 낮추고', '현금 비중 10~15% 확보' 등 구체적 액션 동사와 목표치 명시. (4) 시점/기간 - '5년 후', '다음 분기부터', '최근 3년', '향후 5년간' 등 시간 범위 명확. 강점: 3가지 시나리오별로 정량 임계값과 예상 결과를 체계적으로 연결하고, 과거 실증 데이터(2022~2023년 사례 12%p 하회) 인용으로 신뢰도 강화. 약점: 종목별(KO, PEP, CL 등) 현재가나 PE/PEG 같은 개별 밸류에이션 지표 부재로, 매도/보유 판단을 위한 종목 레벨 임계값은 제시되지 않음.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 5,
+    "auto_specificity_detail": {
+      "P1_metric_mention": true,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 5,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S12_haiku",
+    "case_name": "S12",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "포트폴리오 집중도 분석 결과, 현재 상태는 중도 수준의 리스크 노출 상태입니다. HHI 집중도 0.35(30% 이상 주의 수준), 상위 3개 종목 비중 60%, 섹터 HHI 0.40으로 평가됩니다. 특히 Tech 섹터 50% 비중은 KOSPI 평균 32% 대비 1.56배 과다하며, 5개 종목만 보유한 상황에서 단일 최대 비중 25%는 분산 효과를 제한합니다.\n\n포트폴리오 베타 1.05는 시장 평균 대비 5% 높은 변동성을 의미하므로, 현재 환경에서 허용 범위 내이나 개선 여지가 있습니다. 평균 상관계수 0.35는 다행히 양호한 분산 수준입니다. 다만 Tech-Healthcare-Financials 3개 섹터 구성에서 Tech의 일방적 우위가 리스크입니다.\n\n액션으로는 다음을 권장합니다: (1) Tech 비중을 향후 2개월 내 40%로 축소(현 50% → 40%, 10%p 감소)하여 섹터 균형을 개선하고, (2) Healthcare 또는 Financials 중 하나를 25%에서 30%로 확대하거나 새로운 섹터(산업재, 필수소비재 등) 10~15% 편입을 검토하세요. (3) 보유 종목을 5개에서 7~8개로 증가시켜 HHI를 0.25 이하로 낮추되, 각 종목 최대 비중을 20% 이하로 관리하는 것이 바람직합니다. 이를 통해 포트폴리오 베타를 1.0 이하로 낮출 수 있으며, 향후 시장 변동성 확대 시 방어 능력을 강화할 수 있습니다.",
+    "action_items": [
+      {
+        "title": "Tech 섹터 비중 10%p 축소 (50% → 40%)",
+        "description": "Tech 섹터이 KOSPI 1.56배 과다 비중. 섹터 HHI 0.40은 과다 집중도 수준. 2개월 내 단계적 축소로 베타 1.05를 1.0 이하로 개선. 기술주 변동성(24%대) 노출 감소.",
+        "priority": "high"
+      },
+      {
+        "title": "Healthcare 또는 Financials 비중 5%p 확대, 또는 신규 섹터 10~15% 편입",
+        "description": "현재 Healthcare 25%, Financials 25%의 균형 유지 또는 산업재·필수소비재 등 신규 섹터 추가로 포트폴리오 분산도 개선. HHI를 0.35에서 0.25 이하로 낮추는 목표. 다음 분기 내 실행.",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 증가 (5개 → 7~8개)",
+        "description": "현재 5개 종목은 분산 효과 부족. 7~8개로 확대 시 HHI 0.25 이하 달성 가능. 각 종목 최대 비중을 20% 이하로 관리하여 단일 종목 리스크 노출 감소.",
+        "priority": "medium"
+      },
+      {
+        "title": "포트폴리오 베타 1.0 이하 목표 설정",
+        "description": "현재 베타 1.05는 시장 변동성의 5% 초과 노출. 상기 액션 3가지 실행 시 시장 동조도를 시장 수준으로 정규화 가능. 향후 변동성 확대 시 방어력 강화.",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소 중 3개를 명확히 충족합니다. **현재 상태**는 HHI 0.35, 상위 3종목 60%, Tech 섹터 50%, 베타 1.05 등 정량 지표로 구체적으로 제시되었습니다. **임계값/기준**은 'HHI 0.25 이하', 'Tech 40%로 축소', '종목당 최대 20%', '베타 1.0 이하' 등 명확한 정량 기준이 다수 포함되었습니다. **액션 제안**은 '(1) Tech 비중 축소 50%→40%', '(2) Healthcare/Financials 확대 25%→30%', '(3) 종목 수 증가 5→7~8개' 등 구체적 동사와 수치로 제시되었습니다. **시점/기간**은 '향후 2개월 내'로 일부 명시되었으나, 다른 액션들의 실행 시점이 불명확합니다. 강점은 집중도 지표(HHI, 상위N 비중)와 임계값을 체계적으로 제시한 점, 3단계 액션을 순차적으로 구조화한 점입니다. 약점은 개별 종목명이 전혀 언급되지 않아 '어느 종목을 매도/매수할지' 실행 가능성이 떨어지며, 액션 (2)(3)의 시점이 모호하고, 분기/연간 같은 재무 데이터 시간 기준이 없다는 점입니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "threshold_specificity",
+      "action_clarity"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 3,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": false
+    },
+    "manual_naturalness": 3,
+    "manual_insight": 3,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S12_sonnet",
+    "case_name": "S12",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 5개 종목으로 구성되어 있으며, 상위 3종목 비중이 60%로 집중도가 상당히 높은 상태입니다. HHI 집중도 지표가 0.35로 0.20 이하 권장 기준을 크게 초과하고 있어 특정 종목 리스크 노출이 큽니다.\n\n섹터 분포를 보면 Tech 섹터가 50%로 과반을 차지하고 있습니다. KOSPI의 IT 섹터 평균 비중이 약 32%인 점을 고려하면 1.56배 집중된 상태입니다. 섹터 HHI도 0.40으로 0.25 이하 권장 기준 대비 높아, 특정 업종 리스크에 과도하게 노출되어 있습니다. 최대 단일 종목 비중이 25%로 일반적 권장 한도인 20%를 5%p 초과하고 있습니다.\n\n포트폴리오 베타는 1.05로 시장 대비 5% 더 높은 변동성을 보이며, 보유 종목 간 평균 상관계수가 0.35로 분산 효과가 제한적입니다. GARP 전략(V1_garp preset)을 고려할 때 성장성과 가치의 균형이 중요한데, 현재 구조는 Tech 섹터 집중으로 성장주 편향이 강합니다.\n\n다음 분기까지 다음 조치를 권장합니다: (1) 최대 비중 종목을 20% 이하로 5%p 축소하여 단일 종목 리스크를 완화하고, (2) Tech 섹터 비중을 40% 수준으로 10%p 축소하여 섹터 HHI를 0.30 이하로 낮추며, (3) 축소한 비중으로 Industrial 또는 Consumer Staples 등 방어적 섹터를 신규 편입하여 보유 종목 수를 7~8개로 확대해 HHI 집중도를 0.25 이하로 개선하는 것이 필요합니다. 이를 통해 GARP 전략의 균형을 회복하고 변동성 대응력을 강화할 수 있습니다.",
+    "action_items": [
+      {
+        "title": "최대 비중 종목 5%p 축소 (25% → 20%)",
+        "description": "단일 종목 한도 20% 기준 초과, 집중 리스크 완화 목적",
+        "priority": "high"
+      },
+      {
+        "title": "Tech 섹터 10%p 축소 (50% → 40%)",
+        "description": "섹터 HHI 0.40을 0.30 이하로 낮춰 업종 리스크 분산",
+        "priority": "high"
+      },
+      {
+        "title": "방어적 섹터 신규 편입 (보유 종목 5개 → 7~8개)",
+        "description": "Industrial/Consumer Staples 추가로 HHI 0.25 이하 목표, 다음 분기까지",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "이 답변은 4요소 중 3개를 명확히 충족하고 있습니다. **임계값/기준**: HHI 0.20 이하, 섹터 HHI 0.25 이하, 최대 종목 비중 20% 등 정량 기준을 구체적으로 제시했습니다. **액션 제안**: '최대 비중 종목 5%p 축소', 'Tech 섹터 10%p 축소', '방어적 섹터 신규 편입'으로 액션 동사와 대상을 명확히 기술했습니다. **시점/기간**: '다음 분기까지'로 실행 시점을 명시했습니다. 그러나 **현재 상태** 요소에서 치명적 약점이 있습니다. 포트폴리오 구성 종목의 구체적인 종목명, 현재가, 또는 핵심 지표(PE/PEG/ROIC)가 전혀 언급되지 않았습니다. HHI, 베타, 상관계수 등 포트폴리오 레벨 지표만 제시되어 개별 종목 상태 파악이 불가능합니다. GARP 전략을 언급하면서도 각 종목의 PEG나 ROIC 같은 GARP 핵심 지표가 누락되어 전략 적합성 판단 근거가 부족합니다. 집중도와 액션 제안은 우수하나 종목 레벨 데이터 부재로 실행 가능성이 제한됩니다.",
+    "rationale_categories": [
+      "threshold_specificity",
+      "action_clarity",
+      "time_anchoring"
+    ],
+    "rationale_score": 4,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S14_haiku",
+    "case_name": "S14",
+    "original_model": "claude-haiku-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오의 Sharpe Ratio 개선 가능성을 평가하기 위해 먼저 현재 상태를 분석하겠습니다. 포트폴리오 베타 1.85는 시장 평균 1.0 대비 85% 더 변동성이 높으며, 상위 3종목 비중 80%, HHI 집중도 0.65(매우 높음)는 체계적 위험을 과다 노출시키고 있습니다. 이전 답변에서 권장한 TSLA 비중 축소와 Tech 80% → 60% 수준으로 감소, Consumer Discretionary 20% → 30%, 신규 방어주(필수소비재, 통신) 15% 편입 시나리오를 가정하면 다음과 같이 개선됩니다.\n\n**현재 상태**: 포트폴리오 베타 1.85, HHI 0.65, 상관관계 0.75(높음)\n\n**임계값/기준**: Sharpe Ratio 개선은 베타 감소(1.85 → 1.2~1.3)와 섹터 분산도 개선(sector_HHI 0.80 → 0.50~0.55)에 의존합니다. 일반적으로 베타 0.65 감소 시 변동성이 약 12~15% 하락하고, 보유 종목 수를 5개에서 8~10개로 확대하면 포트폴리오 상관관계가 0.75에서 0.60~0.65 수준으로 개선됩니다.\n\n**구체적 개선 추정**: 현재 연간 수익률을 X%로 가정하고, 무위험 수익률을 3.5%(현 예금금리)로 설정 시, 변동성이 현재 약 28~32% 수준에서 18~22% 수준으로 감소하면 Sharpe Ratio는 약 0.15~0.20 수준에서 0.35~0.45 수준으로 개선될 가능성이 높습니다(약 100~150% 개선).\n\n**액션 제안**: \n1) TSLA 등 Tech 고집중도 종목 비중 5~10%p 축소(다음 2주 내)\n2) Consumer Discretionary 및 필수소비재 비중 각 10%p 확대(분기 내)\n3) 보유 종목 수를 5개에서 8~10개로 확대하여 섹터 HHI 0.80 → 0.55 이하 목표(1개월 내)\n4) 포트폴리오 베타를 1.85에서 1.2~1.3 범위로 낮춘 후 재평가(분기 말)\n\n이러한 리밸런싱 완료 후 2~3개월 추적 후 재측정하는 것을 권장합니다.",
+    "action_items": [
+      {
+        "title": "TSLA 등 고집중도 Tech 종목 5~10%p 축소",
+        "description": "현재 최대 비중 40%인 종목(추정 TSLA)을 30~35%로 축소. 포트폴리오 베타 1.85 감소의 핵심. 다음 2주 내 분할 매도 권장(1회 5%p)",
+        "priority": "high"
+      },
+      {
+        "title": "Consumer Discretionary & 필수소비재 각 10%p 확대",
+        "description": "섹터 HHI 0.80 → 0.55 이하 목표. 상관관계 0.75 → 0.62 수준으로 개선. 분기 내 단계적 편입",
+        "priority": "high"
+      },
+      {
+        "title": "보유 종목 수 5개 → 8~10개 확대",
+        "description": "현재 5종목으로 분산 부족. 동일 섹터 내 비관련 종목 또는 타 섹터 우량주 3~5개 추가. 포트폴리오 집중도(HHI) 완화",
+        "priority": "high"
+      },
+      {
+        "title": "포트폴리오 베타 1.85 → 1.2~1.3 목표 설정",
+        "description": "위 3개 액션 완료 후 베타 재계산. Sharpe Ratio 개선 추정치 0.15~0.20 → 0.35~0.45(약 100~150% 개선). 분기 말 점검",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "**4요소 충족도 평가**: (1) 현재 상태 — 포트폴리오 베타 1.85, HHI 0.65, 상위 3종목 비중 80%, 상관관계 0.75 등 정량 지표를 명확히 제시함. 단, 개별 종목 현재가는 누락. (2) 임계값/기준 — 베타 목표 1.2~1.3, sector_HHI 목표 0.50~0.55, 변동성 목표 18~22%, Sharpe Ratio 목표 0.35~0.45 등 여러 정량 임계값을 구체적으로 명시함. (3) 액션 제안 — TSLA 비중 5~10%p 축소, Consumer Discretionary 10%p 확대, 보유 종목 수 8~10개 확대 등 액션 동사와 대상이 명확함. (4) 시점/기간 — '다음 2주 내', '분기 내', '1개월 내', '분기 말', '2~3개월 추적 후 재측정' 등 시간 기준을 구체적으로 제시함. **강점**: 정량 기준(베타, HHI, 상관계수, Sharpe Ratio)이 매우 명확하고, 액션별 시점이 단계적으로 구체화됨. 리밸런싱 시나리오의 개선 추정치(100~150%)까지 제시하여 실행 가능성이 높음. **약점**: 개별 종목 현재가나 PE/PEG/ROIC 등 펀더멘털 지표가 누락되어 '현재 상태' 요소가 포트폴리오 레벨에만 국한됨. 종목별 세부 지표 추가 시 완전성이 더 높아질 수 있음.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  },
+  {
+    "case_id": "S14_sonnet",
+    "case_name": "S14",
+    "original_model": "claude-sonnet-4-5",
+    "question": "포트폴리오 평가",
+    "commentary": "현재 포트폴리오는 집중도가 매우 높아(HHI 0.65, 상위3종목 80%) 샤프비율 개선 여지가 큽니다. 일반적으로 단일종목 한도 20% 이하, 섹터 HHI 0.25 이하로 리밸런싱 시 변동성이 25~35% 감소하며, 이 경우 샤프비율은 현재 대비 0.3~0.5pt 개선될 수 있습니다. 구체적으로 Tech 섹터를 80%에서 50%로 축소하고(현재 섹터HHI 0.80 → 목표 0.30), 최대 보유 종목을 40%에서 20%로 낮추면, 포트폴리오 베타가 1.85에서 1.2~1.3 수준으로 하락하고 평균 상관계수 0.75가 0.45~0.55로 개선됩니다. 이를 통해 동일 수익률 대비 변동성이 줄어 샤프비율이 개선되는 것입니다. 다음 분기까지 Tech 비중 30%p 축소, Consumer Discretionary 15%p 확대, 방어 섹터(필수소비재/헬스케어) 15%p 신규 편입을 실행하시면 3~6개월 내 샤프비율 0.4pt 개선을 기대할 수 있습니다. 다만 시장 상승기에는 베타 하락으로 절대수익률이 다소 낮아질 수 있으니, 위험조정수익률 개선이 목표임을 명확히 하시기 바랍니다.",
+    "action_items": [
+      {
+        "title": "Tech 섹터 30%p 축소 (80% → 50%)",
+        "description": "섹터HHI 0.80을 0.30 수준으로 낮춰 변동성 25~35% 감소 목표, 다음 분기까지 단계적 실행",
+        "priority": "high"
+      },
+      {
+        "title": "최대 보유 종목 20%p 축소 (40% → 20%)",
+        "description": "단일종목 한도 20% 준수로 베타 1.85 → 1.2~1.3 감소, 즉시 착수",
+        "priority": "high"
+      },
+      {
+        "title": "방어 섹터 15%p 신규 편입",
+        "description": "필수소비재/헬스케어 추가로 평균 상관계수 0.75 → 0.45~0.55 개선, 3개월 내",
+        "priority": "medium"
+      },
+      {
+        "title": "Consumer Discretionary 15%p 확대 (20% → 35%)",
+        "description": "섹터 다각화로 샤프비율 0.4pt 개선 기여, 분기 내 완료",
+        "priority": "medium"
+      }
+    ],
+    "rationale_text": "답변은 4요소를 모두 명확히 충족합니다. **현재 상태**: HHI 0.65, 상위3종목 80%, Tech 섹터 80%, 포트폴리오 베타 1.85, 평균 상관계수 0.75 등 현재 지표를 구체적으로 제시. **임계값/기준**: 단일종목 한도 20%, 섹터 HHI 0.25 이하, Tech 섹터 50%, 목표 베타 1.2~1.3, 평균 상관계수 0.45~0.55 등 정량적 임계값 다수 명시. **액션 제안**: Tech 비중 30%p 축소, Consumer Discretionary 15%p 확대, 방어 섹터 15%p 신규 편입 등 구체적 리밸런싱 액션 제시. **시점/기간**: '다음 분기까지', '3~6개월 내' 명확한 실행 시점 명시. 강점은 정량 지표와 임계값을 체계적으로 제시하고, 개선 기대치(샤프비율 0.3~0.5pt 상승, 변동성 25~35% 감소)까지 수치화한 점입니다. 약점은 개별 종목명이 아닌 섹터 수준 제안이지만, 포트폴리오 전체 평가 맥락에서는 적절합니다. 트레이드오프(시장 상승기 절대수익률 하락 가능성)까지 언급하여 실무적 완결성이 높습니다.",
+    "rationale_categories": [
+      "data_grounding",
+      "action_clarity",
+      "time_anchoring",
+      "threshold_specificity"
+    ],
+    "rationale_score": 5,
+    "auto_specificity_score": 4,
+    "auto_specificity_detail": {
+      "P1_metric_mention": false,
+      "P2_threshold": true,
+      "P3_action_verb": true,
+      "P4_quantitative": true,
+      "P5_time_period": true
+    },
+    "manual_naturalness": 4,
+    "manual_insight": 4,
+    "manual_comment": ""
+  }
+]
