@@ -2,6 +2,9 @@
   "fixture_id": "portfolio_a2",
   "fixture_group": "a2_integrated_demo",
   "description": "Slice 11 A2 통합 시연용 신규 portfolio — 1 ETF + 4 dividend stocks (income preset, GARP/focused 차별)",
+  "portfolio_id": "a2_income_001",
+  "fetched_at": "2026-05-18T00:00:00+00:00",
+  "preset": "income",
   "preset_id": "income",
   "preset_category": "value",
   "user_profile": {
@@ -55,5 +58,55 @@
   "analysis_summary": {
     "one_line_diagnosis": "Income preset: 고배당 ETF + 디펜시브 4종으로 안정 현금흐름, 저베타 0.62",
     "preset_id": "income"
+  },
+  "inputs": {
+    "e1": {
+      "garp_metrics": {
+        "VYM": {"per": 18.5, "peg": 1.5, "roe": 0.12, "yield": 0.029},
+        "KO": {"per": 24.2, "peg": 2.8, "roe": 0.41, "yield": 0.031},
+        "JNJ": {"per": 14.5, "peg": 2.1, "roe": 0.26, "yield": 0.030},
+        "VZ": {"per": 8.7, "peg": 3.4, "roe": 0.22, "yield": 0.067},
+        "PEP": {"per": 21.8, "peg": 2.5, "roe": 0.45, "yield": 0.028}
+      }
+    },
+    "e2": {
+      "portfolio_return_1y": 8.2,
+      "sector_allocation": {
+        "diversified_dividend": 0.25,
+        "consumer_staples": 0.35,
+        "healthcare": 0.20,
+        "communication_services": 0.20
+      }
+    },
+    "e3": {
+      "concentration_metrics": {
+        "hhi": 0.2125,
+        "top3_weight": 0.65,
+        "sector_top_weight": 0.35,
+        "single_name_max": 0.25
+      }
+    },
+    "e4": {
+      "user_question": "이 포트폴리오의 배당 안정성은 어떻게 평가되나요?",
+      "conversation_history": []
+    },
+    "e5": {
+      "extraction_targets": ["dividend_yield", "sector_diversification", "beta", "expense_ratio"],
+      "time_series_context": {
+        "current": "3.45",
+        "window_1q": "3.40",
+        "window_4q": "3.30",
+        "window_12q": "3.15"
+      }
+    },
+    "e6": {
+      "analysis_results": {
+        "VYM": {"score": 8.5, "signals": ["stable_yield", "low_expense"], "notes": "ETF baseline"},
+        "KO": {"score": 8.0, "signals": ["dividend_aristocrat"], "notes": "60+ years dividend"},
+        "JNJ": {"score": 8.2, "signals": ["dividend_king"], "notes": "60+ years dividend"},
+        "VZ": {"score": 6.8, "signals": ["high_yield", "telecom_pressure"], "notes": "yield trap risk"},
+        "PEP": {"score": 8.4, "signals": ["dividend_aristocrat", "stable_growth"], "notes": "50+ years"}
+      }
+    }
   }
 }

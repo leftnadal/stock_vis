@@ -30,3 +30,18 @@ def test_messages_persistence_changes_are_mixed():
         "tests/coach/test_messages_persistence.py",
     ]
     assert classify_regression(paths) == "mixed"
+
+
+def test_commentary_input_schema_changes_are_mixed():
+    """Part 1: portfolio/schemas/ + fixtures/coach/ + tests/coach/ → mixed.
+
+    schema 카테고리는 기존 cost (portfolio/schemas/) 룰 재사용. data-prep 테스트와
+    혼합 시 mixed로 보수적 분류.
+    """
+    paths = [
+        "portfolio/schemas/commentary_input.py",
+        "portfolio/tests/fixtures/coach/portfolio_a2.json",
+        "portfolio/tests/fixtures/coach/loaders.py",
+        "tests/coach/test_commentary_input.py",
+    ]
+    assert classify_regression(paths) == "mixed"
