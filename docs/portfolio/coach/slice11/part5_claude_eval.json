@@ -1,0 +1,75 @@
+{
+  "evaluator": "claude-opus-4-7",
+  "evaluated_at": "2026-05-19",
+  "rubric_version": "manual_eval_rubric.md (D1-D 3축 하이브리드)",
+  "purpose": "사후 비교용 보조 지표 (병진 blind 평가 완료 후 Phase B에서 inter-rater 분석)",
+  "note": "병진 평가 완료까지 비공개. anchor bias 회피.",
+  "scores": {
+    "1":  {"entry": "e4", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 4, "actionability": "N/A", "note": "배당귀족 + 방어섹터 + ETF 분산 + 트레이드오프 + 금리 민감도 균형 양호"},
+    "2":  {"entry": "e6", "model": "haiku",  "repeat": 1, "naturalness": 3, "insight": 4, "actionability": "N/A", "note": "VZ 6.8을 '70점대'로 표현 혼동 (0~10 척도와 100점 만점 혼용)"},
+    "3":  {"entry": "e1", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 5, "actionability": "OK",  "note": "PEG 80% 미달 + 트레이드오프 명시 + 종목별 정량 + 재배분 비중 명시 (4/4)"},
+    "4":  {"entry": "e6", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 4, "actionability": "N/A", "note": "구체적 score 인용 + 약점 명시, 다소 데이터 나열적"},
+    "5":  {"entry": "e2", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 3, "actionability": "N/A", "note": "데이터 나열 + 일부 의미 부여 (완충 역할, 트레이드오프)"},
+    "6":  {"entry": "e5", "model": "sonnet", "repeat": 1, "naturalness": 5, "insight": 5, "actionability": "OK",  "note": "분기당 +2.5bp 평균 계산 + 가속도 식별 + 베타 추정 + expense ratio 가중평균 (3/4)"},
+    "7":  {"entry": "e6", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 4, "actionability": "N/A", "note": "VZ 약점 분석 양호, View #2와 유사 패턴"},
+    "8":  {"entry": "e6", "model": "sonnet", "repeat": 1, "naturalness": 5, "insight": 4, "actionability": "N/A", "note": "구체 score + 약점 식별 + 섹터 단일 종목 집중"},
+    "9":  {"entry": "e3", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 4, "actionability": "NG",  "note": "정량 수치 목표 명시 없음 ('재평가' '검토' 다수, 2.5/4)"},
+    "10": {"entry": "e5", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 4, "actionability": "OK",  "note": "borderline 3/4 — KO+PEP+VYM 인용 OK, 측정 가능성 약하나 정합"},
+    "11": {"entry": "e2", "model": "haiku",  "repeat": 1, "naturalness": 4, "insight": 3, "actionability": "N/A", "note": "데이터 나열 위주, ETF 수익률 비교 의미 부여 1건"},
+    "12": {"entry": "e1", "model": "haiku",  "repeat": 2, "naturalness": 4, "insight": 5, "actionability": "OK",  "note": "종목별 정량 분석 + 재배분 비중 명시 4건 (4/4)"},
+    "13": {"entry": "e4", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 4, "actionability": "N/A", "note": "배당 안정성 질문에 정확 답변, 배당귀족주 이력 인용"},
+    "14": {"entry": "e1", "model": "sonnet", "repeat": 1, "naturalness": 4, "insight": 5, "actionability": "OK",  "note": "PEG 분석 + VZ 20→10% 명시 + 정량 측정 (4/4)"},
+    "15": {"entry": "e4", "model": "sonnet", "repeat": 1, "naturalness": 5, "insight": 4, "actionability": "N/A", "note": "배당귀족주 + 섹터 + ETF + VZ 통신 경쟁"},
+    "16": {"entry": "e3", "model": "haiku",  "repeat": 1, "naturalness": 5, "insight": 5, "actionability": "OK",  "note": "schema FAIL이지만 content 풍부 — HHI + ETF 간접 편중 + 정량 명시 (4/4). 다만 JSON 뒤 텍스트 trailing이 schema FAIL 원인."},
+    "17": {"entry": "e5", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 4, "actionability": "NG",  "note": "DRIP/모니터링 추상적, 측정 가능성 약 (2.5/4)"},
+    "18": {"entry": "e5", "model": "haiku",  "repeat": 1, "naturalness": 4, "insight": 4, "actionability": "NG",  "note": "priority 'high'인데 'monitor' category — 우선순위/category 부정합 (2.5/4)"},
+    "19": {"entry": "e2", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 4, "actionability": "N/A", "note": "기술주 0%, 금융 0% 부재 섹터 식별 — 통찰 좋음"},
+    "20": {"entry": "e2", "model": "sonnet", "repeat": 1, "naturalness": 4, "insight": 4, "actionability": "N/A", "note": "'인컬' 오타 추정 1~2회 (인컴 → 인컬)"},
+    "21": {"entry": "e3", "model": "sonnet", "repeat": 1, "naturalness": 5, "insight": 4, "actionability": "OK",  "note": "PEP 5% 축소 정량 명시 + 음료/스낵 중복 통찰 (3/4)"},
+    "22": {"entry": "e1", "model": "haiku",  "repeat": 1, "naturalness": 4, "insight": 4, "actionability": "OK",  "note": "KO 20→15% 명시 + VZ '유리이용률' 모호 표현 미세, '유리' 한국어 오타 추정 (3/4)"},
+    "23": {"entry": "e4", "model": "haiku",  "repeat": 1, "naturalness": 4, "insight": 4, "actionability": "N/A", "note": "VZ 금리 민감도 + 5종목 집중도 통찰"},
+    "24": {"entry": "e3", "model": "sonnet", "repeat": 2, "naturalness": 5, "insight": 4, "actionability": "OK",  "note": "5~10% 비중 조정 명시 + 음료/스낵 상관관계 (3/4)"}
+  },
+  "distribution_summary": {
+    "naturalness": {
+      "5": 10,
+      "4": 13,
+      "3": 1,
+      "2": 0,
+      "1": 0,
+      "spread": 3,
+      "mean": 4.375
+    },
+    "insight": {
+      "5": 5,
+      "4": 17,
+      "3": 2,
+      "2": 0,
+      "1": 0,
+      "spread": 3,
+      "mean": 4.125
+    },
+    "actionability_eval_only": {
+      "n_eval": 12,
+      "OK": 9,
+      "NG": 3,
+      "n_na": 12
+    }
+  },
+  "per_model_breakdown": {
+    "haiku": {
+      "n": 12,
+      "naturalness_mean": 4.0,
+      "insight_mean": 4.17,
+      "actionability_ok_rate": "5/6 (e1#1·e1#2·e3#1·e3#2·e5#2 OK / e5#1 NG)"
+    },
+    "sonnet": {
+      "n": 12,
+      "naturalness_mean": 4.75,
+      "insight_mean": 4.42,
+      "actionability_ok_rate": "5/6 (e1#1·e1#2·e3#1·e3#2·e5#1 OK / e5#2 NG)"
+    },
+    "claude_predicted_winner": "sonnet (naturalness +0.75, insight +0.25, actionability 동률 5/6)",
+    "efficiency_note": "haiku는 cost 3.2× / latency 1.85× 우위 — 품질 차이가 efficiency 절감을 정당화하는지가 Part 5 결정 포인트"
+  }
+}

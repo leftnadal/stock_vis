@@ -1,0 +1,170 @@
+{
+  "1": {
+    "entry": "e4",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 15,
+    "schema_fitting_pass": true
+  },
+  "2": {
+    "entry": "e6",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 5,
+    "schema_fitting_pass": true
+  },
+  "3": {
+    "entry": "e1",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 18,
+    "schema_fitting_pass": true
+  },
+  "4": {
+    "entry": "e6",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 23,
+    "schema_fitting_pass": true
+  },
+  "5": {
+    "entry": "e2",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 13,
+    "schema_fitting_pass": true
+  },
+  "6": {
+    "entry": "e5",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 10,
+    "schema_fitting_pass": true
+  },
+  "7": {
+    "entry": "e6",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 17,
+    "schema_fitting_pass": true
+  },
+  "8": {
+    "entry": "e6",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 11,
+    "schema_fitting_pass": true
+  },
+  "9": {
+    "entry": "e3",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 14,
+    "schema_fitting_pass": true
+  },
+  "10": {
+    "entry": "e5",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 16,
+    "schema_fitting_pass": true
+  },
+  "11": {
+    "entry": "e2",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 1,
+    "schema_fitting_pass": true
+  },
+  "12": {
+    "entry": "e1",
+    "model": "claude-haiku-4-5",
+    "repeat": 2,
+    "original_index": 12,
+    "schema_fitting_pass": true
+  },
+  "13": {
+    "entry": "e4",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 21,
+    "schema_fitting_pass": true
+  },
+  "14": {
+    "entry": "e1",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 6,
+    "schema_fitting_pass": true
+  },
+  "15": {
+    "entry": "e4",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 9,
+    "schema_fitting_pass": true
+  },
+  "16": {
+    "entry": "e3",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 2,
+    "schema_fitting_pass": false
+  },
+  "17": {
+    "entry": "e5",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 22,
+    "schema_fitting_pass": true
+  },
+  "18": {
+    "entry": "e5",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 4,
+    "schema_fitting_pass": true
+  },
+  "19": {
+    "entry": "e2",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 19,
+    "schema_fitting_pass": true
+  },
+  "20": {
+    "entry": "e2",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 7,
+    "schema_fitting_pass": true
+  },
+  "21": {
+    "entry": "e3",
+    "model": "claude-sonnet-4-5",
+    "repeat": 1,
+    "original_index": 8,
+    "schema_fitting_pass": true
+  },
+  "22": {
+    "entry": "e1",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 0,
+    "schema_fitting_pass": true
+  },
+  "23": {
+    "entry": "e4",
+    "model": "claude-haiku-4-5",
+    "repeat": 1,
+    "original_index": 3,
+    "schema_fitting_pass": true
+  },
+  "24": {
+    "entry": "e3",
+    "model": "claude-sonnet-4-5",
+    "repeat": 2,
+    "original_index": 20,
+    "schema_fitting_pass": true
+  }
+}
