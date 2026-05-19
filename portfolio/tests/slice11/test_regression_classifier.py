@@ -71,3 +71,25 @@ def test_prompt_builder_and_coach_service_are_mixed():
         "tests/coach/test_prompt_builder.py",
     ]
     assert classify_regression(paths) == "mixed"
+
+
+def test_part4_e2_to_e6_services_matrix_are_mixed():
+    """Part 4: E2~E6 builder/service + matrix script + 단위 테스트 + 문서 → mixed.
+
+    Part 3과 같은 패턴 — coach/ (cost) + tests/coach/ (data-prep) + docs (no-cost) +
+    scripts/slice11_part4_matrix.py (분류 외) 혼합 → mixed.
+    """
+    paths = [
+        "portfolio/services/coach/prompt_builder.py",
+        "portfolio/services/coach/e2_service.py",
+        "portfolio/services/coach/e3_service.py",
+        "portfolio/services/coach/e4_service.py",
+        "portfolio/services/coach/e5_service.py",
+        "portfolio/services/coach/e6_service.py",
+        "tests/coach/test_prompt_builder.py",
+        "tests/coach/test_coach_services.py",
+        "docs/portfolio/coach/slice11/part4_matrix.json",
+        "docs/portfolio/coach/slice11/part4_matrix_dump.md",
+        "scripts/slice11_part4_matrix.py",
+    ]
+    assert classify_regression(paths) == "mixed"

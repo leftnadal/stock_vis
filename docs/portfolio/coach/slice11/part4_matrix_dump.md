@@ -1,0 +1,961 @@
+# Slice 11 Part 4 — 24 케이스 매트릭스 Dump (#48 v3 N=26)
+
+## §1. Summary
+
+- 케이스 실행: **24/24**
+- schema fitting PASS: **23/24**
+- 총 비용: **$0.2379** (cap $1.00, 사용 23.79%)
+- #48 v3 max_delta_predicted: **0.0%**
+- #48 v3 max_delta_counted: **0.0%** (count_tokens 명세 ≤ 2%)
+- Fallback 발동: 없음 (정상 종료)
+
+## §2. 케이스별 측정 표
+
+| # | entry | model | repeat | predicted | counted | actual | output | dlt_pred | dlt_cnt | latency_ms | cost | fitting |
+| - | ----- | ----- | ------ | --------- | ------- | ------ | ------ | -------- | ------- | ---------- | ---- | ------- |
+| 1 | e1 | haiku | #1 | 1807 | 1807 | 1807 | 1109 | 0.0% | 0.0% | 12960 | $0.00588 | PASS |
+| 2 | e2 | haiku | #1 | 984 | 984 | 984 | 539 | 0.0% | 0.0% | 4691 | $0.00294 | PASS |
+| 3 | e3 | haiku | #1 | 1557 | 1557 | 1557 | 1364 | 0.0% | 0.0% | 13328 | $0.00670 | FAIL |
+| 4 | e4 | haiku | #1 | 817 | 817 | 817 | 532 | 0.0% | 0.0% | 5386 | $0.00278 | PASS |
+| 5 | e5 | haiku | #1 | 1570 | 1570 | 1570 | 1179 | 0.0% | 0.0% | 9989 | $0.00597 | PASS |
+| 6 | e6 | haiku | #1 | 1166 | 1166 | 1166 | 862 | 0.0% | 0.0% | 7810 | $0.00438 | PASS |
+| 7 | e1 | sonnet | #1 | 1807 | 1807 | 1807 | 1165 | 0.0% | 0.0% | 24498 | $0.02290 | PASS |
+| 8 | e2 | sonnet | #1 | 984 | 984 | 984 | 505 | 0.0% | 0.0% | 11710 | $0.01053 | PASS |
+| 9 | e3 | sonnet | #1 | 1557 | 1557 | 1557 | 699 | 0.0% | 0.0% | 14339 | $0.01516 | PASS |
+| 10 | e4 | sonnet | #1 | 817 | 817 | 817 | 503 | 0.0% | 0.0% | 10332 | $0.01000 | PASS |
+| 11 | e5 | sonnet | #1 | 1570 | 1570 | 1570 | 989 | 0.0% | 0.0% | 19761 | $0.01954 | PASS |
+| 12 | e6 | sonnet | #1 | 1166 | 1166 | 1166 | 567 | 0.0% | 0.0% | 13250 | $0.01200 | PASS |
+| 13 | e1 | haiku | #2 | 1807 | 1807 | 1807 | 1317 | 0.0% | 0.0% | 11358 | $0.00671 | PASS |
+| 14 | e2 | haiku | #2 | 984 | 984 | 984 | 611 | 0.0% | 0.0% | 5868 | $0.00323 | PASS |
+| 15 | e3 | haiku | #2 | 1557 | 1557 | 1557 | 976 | 0.0% | 0.0% | 8846 | $0.00515 | PASS |
+| 16 | e4 | haiku | #2 | 817 | 817 | 817 | 575 | 0.0% | 0.0% | 5830 | $0.00295 | PASS |
+| 17 | e5 | haiku | #2 | 1570 | 1570 | 1570 | 1136 | 0.0% | 0.0% | 9630 | $0.00580 | PASS |
+| 18 | e6 | haiku | #2 | 1166 | 1166 | 1166 | 808 | 0.0% | 0.0% | 7520 | $0.00417 | PASS |
+| 19 | e1 | sonnet | #2 | 1807 | 1807 | 1807 | 1160 | 0.0% | 0.0% | 26768 | $0.02282 | PASS |
+| 20 | e2 | sonnet | #2 | 984 | 984 | 984 | 546 | 0.0% | 0.0% | 11844 | $0.01114 | PASS |
+| 21 | e3 | sonnet | #2 | 1557 | 1557 | 1557 | 750 | 0.0% | 0.0% | 16406 | $0.01592 | PASS |
+| 22 | e4 | sonnet | #2 | 817 | 817 | 817 | 505 | 0.0% | 0.0% | 10194 | $0.01003 | PASS |
+| 23 | e5 | sonnet | #2 | 1570 | 1570 | 1570 | 885 | 0.0% | 0.0% | 17180 | $0.01799 | PASS |
+| 24 | e6 | sonnet | #2 | 1166 | 1166 | 1166 | 647 | 0.0% | 0.0% | 14339 | $0.01320 | PASS |
+
+## §3. #48 v3 N=26 누적 판정
+
+- **견고화 PASS** (max_delta_counted = 0.0% ≤ 2%, count_tokens 명세 한도)
+- Slice 12+ 자연 활용, #48 부채 완전 종결.
+
+## §4. schema fitting 실패 케이스
+
+### e3/-5/#1
+
+- error: `ValidationError: 1 validation error for E3Output
+  Invalid JSON: trailing characters at line 38 column 1 [type=json_invalid, input_value='{\n  "summary": "배당 ...딩 구성 모니터링', input_type=str]
+    For further information visit https://errors.pydantic.dev/2.12/v/json_invalid`
+
+```
+```json
+{
+  "summary": "배당 수익 중심 포트폴리오로 적절한 분산도를 유지 중이나, 소비재(Consumer Staples) 섹터 편중이 35%에 달해 경기 둔화 시 위험.",
+  "key_observations": [
+    "HHI 지수 0.2125로 중간 수준의 집중도 유지 (0.2 이상은 주의 필요)",
+    "상위 3개 종목이 전체의 65% 차지 - VYM ETF(25%) + KO(20%) + JNJ(20%)의 쏠림",
+    "소비재 섹터(KO + PEP) 35% + VYM 내 소비재 비중 고려 시 실질 편중도 더 높을 가능성",
+    "VYM ETF 단일 종목 최대 비중(25%)으로 인한 간접 중복 노출 위험",
+    "Healthcare(JNJ 20%) + Communication Services(VZ 20%) + Dividend ETF(25%)로 생활필수재 기반 안정성은 높음"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "소비재 섹터 비중 축소 검토",
+      "description": "KO 또는 PEP 중 하나의 비중을 10~15%로 축소하고, 금융(Financials) 또는 에너지(Energy) 등 미포함 섹터 추가 검토. 배당 수익 유지 조건 하에서 다각화 강화.",
+      "priority": "high",
+      "category": "rebalance"
+    },
+    {
+      "title": "VYM 비중 조정 또는 대체 ETF 검토",
+      "description": "VYM 25% 단일 ETF 의존도를 20% 이하로 축소하거나, 동일 배당 전략 중 다른 ETF(예: SCHD, DGRO)와 혼합하여 간접 편중 위험 분산.",
+      "priority": "medium",
+      "category": "review"
+    },
+    {
+      "title": "섹터별 비중 재검토",
+      "description": "분기별로 VYM 내 상위 홀딩 섹터 구성을 추적하고, 전체 포트폴리오 섹터 노출을 시각화하여 의도하지 않은 편중 확인.",
+      "priority": "medium",
+      "category": "monitor"
+    }
+  ],
+  "risk_flags": [
+    "소비재 섹터 집중: 35%의 높은 섹터 비중은 경기 둔화 또는 인플레이션 환경 변화에 취약",
+    "ETF 간접 편중: VYM의 내부 구성(특히 top 10 홀딩)이 포트폴리오의 실제 집중도를 높일 가능성",
+    "상위 3개 비중 과다: 65%의 비중 집중은 개별 종목 변동성에 민감하게 반응",
+    "섹터 다각화 부족: 5개 종목 중 4개가 생활필수재·배당 기반 방어주로 성장성 및 수익성 다양화 제한"
+  ]
+}
+```
+
+---
+
+## 📊 추가 코멘트
+
+**현재 상태 평가:**
+- ✅ **강점**: 배당 수익 포트폴리오로서 안정적 구성, 우량주 5개 선정
+- ⚠️ **주의사항**: 
+  1. **소비재 비중(35%)** - 경제가 둔화되거나 금리가 오르면 다른 섹터(금융, 헬스케어 제약)보다 상대 약세
+  2. **HHI 0.2125** - 최적 범위(0.15~0.20)보다 약간 높으니 점진적 조정 권고
+  3. **VYM의 숨은 리스크** - ETF 내부에서 또 다른 집중이 있을 수 있으므로 정기적 감시 필수
+
+**권장 액션 순서:**
+1. (즉시) VYM 또는 KO/PEP 중 하나의 비중을 5~10% 줄이기
+2. (1개월 내) 부족한 섹터(금융, 에너지 등)의 배당주 1~2개 추가 검토
+3. (분기별) VYM 상위 홀딩 구성 모니터링
+```
+
+
+## §5. LLM 응답 raw 텍스트 (Slice 11 #52 정책)
+
+### Case 1 — e1/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당 중심 포트폴리오로 안정적이나, 성장성이 제한적이고 VZ의 높은 PEG 비율이 우려사항입니다.",
+  "key_observations": [
+    "포트폴리오 평균 PER 17.7배로 합리적 수준이지만, KO(24.2배)와 PEP(21.8배)는 상대적으로 고평가 상태",
+    "배당 수익률 평균 3.7%로 안정적인 현금 흐름 제공하며, VZ의 6.7% 고수익이 포트폴리오 수익률을 견인",
+    "ROE 분석: PEP(0.45)와 KO(0.41)는 우수하나, VYM(0.12)의 저수익률이 포트폴리오 효율성 제약",
+    "PEG 비율에서 VZ(3.4)가 유일하게 과도하며, 이는 배당 성장성 대비 밸류에이션이 높음을 시사",
+    "포트폴리오 다각화는 양호(소비재 35%, 헬스케어 20%, 통신 20%, ETF 25%)하나 성장주 부재로 인플레이션 헤지 약함"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "KO 비중 조정 검토",
+      "description": "KO는 PER 24.2배, PEG 2.8배로 현재 포트폴리오에서 가장 고평가 상태. 배당성장 전망이 제한적이므로 비중을 20%에서 15%로 축소하고 현금 보유를 권장합니다.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "VZ 성장성 모니터링",
+      "description": "VZ는 높은 배당(6.7%)으로 매력적이나 PEG 3.4배로 성장 대비 고평가. 분기별 배당성장률과 유리이용률 추이를 주시하여 재평가 필요.",
+      "priority": "high",
+      "category": "monitor"
+    },
+    {
+      "title": "포트폴리오 성장성 강화",
+      "description": "현 포트폴리오는 배당 수익에 치중되어 있어 장기 자본 성장이 제한적. 중기적으로 PEG 1.5 이하의 성장주 또는 성장형 ETF(예: VUG) 추가 검토를 권장합니다.",
+      "priority": "medium",
+      "category": "research"
+    },
+    {
+      "title": "VYM의 저ROE 원인 분석",
+      "description": "VYM은 다각화 ETF이지만 ROE 0.12로 포트폴리오 내 가장 낮음. 구성 종목 변화와 배당정책 변동을 분석하여 지속성을 검증하세요.",
+      "priority": "low",
+      "category": "review"
+    }
+  ],
+  "risk_flags": [
+    "배당주 중심으로 금리 상승 환경에서 평가액 하락 위험",
+    "VZ의 과도한 PEG 비율(3.4)은 배당 감소 시 가격 조정 가능성",
+    "포트폴리오 성장성 부재로 인플레이션 헤지 약함",
+    "KO와 PEP 모두 소비재 섹터로 경기 민감도 집중"
+  ],
+  "metrics_table": ""
+}
+```
+```
+
+### Case 2 — e2/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "안정적인 배당 포트폴리오로 1년 수익률 8.20%를 달성했으나, 소비재 섹터 편중(35%)이 두드러지므로 섹터 다각화 검토가 필요합니다.",
+  "key_observations": [
+    "1년 수익률 8.20%는 배당 포트폴리오 기준으로 양호한 수익을 제시하며, 일반적인 배당주 ETF 수익률(5~7%)을 상회합니다.",
+    "소비재(Consumer Staples) 섹터 비중이 35%로 가장 높으며, 이는 KO(코카콜라)와 PEP(펩시코)의 이중 편중에서 기인합니다.",
+    "VYM을 통한 광범위한 고배당주 노출(25%)이 포트폴리오 안정성을 높이고 있습니다.",
+    "헬스케어(20%)와 통신서비스(20%) 섹터는 적절하게 배분되어 방어적 특성을 강화합니다.",
+    "상위 3개 종목(VYM, KO, JNJ)이 65% 비중을 차지하므로 집중도가 상대적으로 높으며, 추가 다각화를 통한 위험 분산 여지가 있습니다."
+  ],
+  "quoted_metrics": {
+    "return_1y": "8.20%",
+    "top_sector": "consumer_staples 35%",
+    "etf_allocation": "VYM 25%",
+    "top_3_concentration": "65%",
+    "healthcare_allocation": "20%",
+    "communication_services_allocation": "20%"
+  },
+  "metrics_table": "",
+  "confidence": "high"
+}
+```
+```
+
+### Case 3 — e3/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당 수익 중심 포트폴리오로 적절한 분산도를 유지 중이나, 소비재(Consumer Staples) 섹터 편중이 35%에 달해 경기 둔화 시 위험.",
+  "key_observations": [
+    "HHI 지수 0.2125로 중간 수준의 집중도 유지 (0.2 이상은 주의 필요)",
+    "상위 3개 종목이 전체의 65% 차지 - VYM ETF(25%) + KO(20%) + JNJ(20%)의 쏠림",
+    "소비재 섹터(KO + PEP) 35% + VYM 내 소비재 비중 고려 시 실질 편중도 더 높을 가능성",
+    "VYM ETF 단일 종목 최대 비중(25%)으로 인한 간접 중복 노출 위험",
+    "Healthcare(JNJ 20%) + Communication Services(VZ 20%) + Dividend ETF(25%)로 생활필수재 기반 안정성은 높음"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "소비재 섹터 비중 축소 검토",
+      "description": "KO 또는 PEP 중 하나의 비중을 10~15%로 축소하고, 금융(Financials) 또는 에너지(Energy) 등 미포함 섹터 추가 검토. 배당 수익 유지 조건 하에서 다각화 강화.",
+      "priority": "high",
+      "category": "rebalance"
+    },
+    {
+      "title": "VYM 비중 조정 또는 대체 ETF 검토",
+      "description": "VYM 25% 단일 ETF 의존도를 20% 이하로 축소하거나, 동일 배당 전략 중 다른 ETF(예: SCHD, DGRO)와 혼합하여 간접 편중 위험 분산.",
+      "priority": "medium",
+      "category": "review"
+    },
+    {
+      "title": "섹터별 비중 재검토",
+      "description": "분기별로 VYM 내 상위 홀딩 섹터 구성을 추적하고, 전체 포트폴리오 섹터 노출을 시각화하여 의도하지 않은 편중 확인.",
+      "priority": "medium",
+      "category": "monitor"
+    }
+  ],
+  "risk_flags": [
+    "소비재 섹터 집중: 35%의 높은 섹터 비중은 경기 둔화 또는 인플레이션 환경 변화에 취약",
+    "ETF 간접 편중: VYM의 내부 구성(특히 top 10 홀딩)이 포트폴리오의 실제 집중도를 높일 가능성",
+    "상위 3개 비중 과다: 65%의 비중 집중은 개별 종목 변동성에 민감하게 반응",
+    "섹터 다각화 부족: 5개 종목 중 4개가 생활필수재·배당 기반 방어주로 성장성 및 수익성 다양화 제한"
+  ]
+}
+```
+
+---
+
+## 📊 추가 코멘트
+
+**현재 상태 평가:**
+- ✅ **강점**: 배당 수익 포트폴리오로서 안정적 구성, 우량주 5개 선정
+- ⚠️ **주의사항**: 
+  1. **소비재 비중(35%)** - 경제가 둔화되거나 금리가 오르면 다른 섹터(금융, 헬스케어 제약)보다 상대 약세
+  2. **HHI 0.2125** - 최적 범위(0.15~0.20)보다 약간 높으니 점진적 조정 권고
+  3. **VYM의 숨은 리스크** - ETF 내부에서 또 다른 집중이 있을 수 있으므로 정기적 감시 필수
+
+**권장 액션 순서:**
+1. (즉시) VYM 또는 KO/PEP 중 하나의 비중을 5~10% 줄이기
+2. (1개월 내) 부족한 섹터(금융, 에너지 등)의 배당주 1~2개 추가 검토
+3. (분기별) VYM 상위 홀딩 구성 모니터링
+```
+
+### Case 4 — e4/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "이 포트폴리오는 Dividend Aristocrats와 안정적 현금흐름 기업들로 구성되어 배당 안정성이 높은 편이나, 섹터 쏠림과 금리 민감도가 위험 요소입니다.",
+  "key_observations": [
+    "VYM(25%) + KO·JNJ·VZ·PEP(75%)는 모두 오랜 배당금 인상 이력을 가진 고배당 기업/펀드로, 배당 지속성이 우수한 포트폴리오 구성입니다.",
+    "Consumer Staples(KO, PEP 35%)와 Communication Services(VZ 20%)는 불경기 시에도 현금흐름이 안정적인 Defensive Sector로, 배당의 '보호력'이 강합니다.",
+    "Healthcare(JNJ 20%)와 Diversified ETF(VYM 25%)의 조합으로 섹터 다각화가 어느 정도 이루어져 있어, 특정 산업 악화에 따른 일괄 배당 삭감 리스크는 제한적입니다.",
+    "VZ는 통신 인프라 의존도가 높고 금리 인상 환경에 채무 서비스 부담이 커질 수 있으므로, 금리 상승기에 배당 성장성이 둔화될 우려가 있습니다.",
+    "5개 종목 집중도(상위 3개 65%)가 높아 개별 배당 정책 변화(예: JNJ의 배당 성장률 둔화)의 포트폴리오 영향도가 상대적으로 큽니다."
+  ],
+  "confidence": "high"
+}
+```
+```
+
+### Case 5 — e5/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당 수익률 3.45%로 지난 12분기 대비 30bp 상승하며 꾸준한 증가 추세를 보이고 있으며, 5개 종목의 균형잡힌 섹터 다각화(소비재·헬스케어·통신·다각화 ETF)로 안정적 배당 포트폴리오를 구성하고 있습니다.",
+  "key_observations": [
+    "배당 수익률이 3.15%(12분기 전) → 3.45%(현재)로 지속적 상승세: 4분기 기준 4.55% 상승률로 증가 모멘텀 유지",
+    "VYM(25%) + KO(20%) + JNJ(20%) + VZ(20%) + PEP(15%)로 5개 종목 집중도 관리 양호, 대형 우량주 중심의 안정성 확보",
+    "섹터 다각화 우수: 소비재(KO, PEP 35%) + 헬스케어(JNJ 20%) + 통신(VZ 20%) + 다각화 ETF(VYM 25%)로 경기 사이클 완화",
+    "all stocks이 배당 귀족/왕 종목 또는 우량주(low beta 예상)이며 VYM 편입으로 추가 다각화 효과로 포트폴리오 변동성 제한",
+    "배당 수익률 상승이 금리 인하 선행 또는 배당금 증가 신호이므로, 향후 배당성장률과 배당 지속성 모니터링 필요"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "배당 성장성 추적 강화",
+      "description": "현재 3.45% 수익률이 시장 평균 대비 매력적 수준이나, 각 종목의 배당 성장률(YoY)을 quarterly로 검토하여 지속 가능성 확인. 특히 PEP와 KO의 배당 증가 추세를 확인하세요.",
+      "priority": "high",
+      "category": "monitor"
+    },
+    {
+      "title": "금리 환경 변화에 따른 포트폴리오 리밸런싱 계획",
+      "description": "배당 수익률 상승이 금리 인하 사이클과 연관될 수 있으므로, 금리 급등 시나리오에 대한 헤징 전략(장기채권 또는 저베타 자산 추가) 검토.",
+      "priority": "medium",
+      "category": "research"
+    },
+    {
+      "title": "VYM 비중 재점검 및 비용 효율성 검토",
+      "description": "VYM이 25%로 가장 높은 비중을 차지하고 있으나, 포트폴리오 내 개별 배당주와의 중복 편입 가능성이 있으므로 expense ratio와 포트폴리오 비용 구조를 재검토하여 최적화 기회 발굴.",
+      "priority": "medium",
+      "category": "review"
+    }
+  ],
+  "quoted_metrics": {
+    "dividend_yield_current": "3.45%",
+    "dividend_yield_1q_ago": "3.40%",
+    "dividend_yield_4q_ago": "3.30%",
+    "dividend_yield_12q_ago": "3.15%",
+    "yield_growth_4q_pct": "+4.55%",
+    "yield_growth_12q_bp": "+30bp",
+    "sector_diversification": "consumer_staples(35%) / healthcare(20%) / communication_services(20%) / diversified_etf(25%)",
+    "top_holdings": "VYM(25%), KO(20%), JNJ(20%), VZ(20%), PEP(15%)",
+    "asset_class_mix": "ETF(25%) / Stocks(75%)"
+  }
+}
+```
+```
+
+### Case 6 — e6/claude-haiku-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당금 귀족주 중심의 안정적 고배당 포트폴리오이지만, VZ의 통신 산업 구조적 약세와 수익률 함정 위험이 주요 관심사입니다.",
+  "key_observations": [
+    "VYM, KO, JNJ, PEP 등 4개 종목이 8.0 이상의 우수한 평가로, 60년 이상의 연속 배당 이력을 가진 배당 귀족/킹주로 구성되어 포트폴리오 안정성이 견고합니다.",
+    "소비재(KO, PEP) 및 헬스케어(JNJ), 통신(VZ) 등 방어적 섹터 중심의 구성으로 경기 침체기 완충 역할이 예상됩니다.",
+    "VZ(점수 6.8)는 유일하게 70점대 후반의 낮은 평가를 받고 있으며, '수익률 함정 위험'이 명시되어 배당 지속성에 대한 경고 신호가 있습니다.",
+    "ETF(VYM, 25%) 편입으로 개별주 집중도를 완화하면서도 고배당 노출을 극대화한 구조로, 수수료 효율성과 다각화의 균형이 적절합니다.",
+    "전체 5개 종목 평균 점수 약 8.2로 높은 수준이나, VZ 20% 비중의 구조적 약세가 포트폴리오 전체 신뢰도를 중간 수준으로 제한합니다."
+  ],
+  "risk_flags": [
+    "VZ(점수 6.8): 통신 산업 구조적 압력과 배당 지속성 위험(수익률 함정 신호)",
+    "VZ 20% 비중 과다: 위험 신호가 있는 종목의 포트폴리오 영향도가 상대적으로 큽니다.",
+    "섹터 다각화 부족: 소비재 35%, 개별주/ETF 혼합으로 인한 전략 일관성 모니터링 필요"
+  ],
+  "quoted_metrics": {
+    "portfolio_quality_score": "8.2 (5개 종목 평균)",
+    "VYM": "score 8.5, stable_yield, low_expense",
+    "KO": "score 8.0, dividend_aristocrat, 60년 이상 배당",
+    "JNJ": "score 8.2, dividend_king, 60년 이상 배당",
+    "VZ": "score 6.8, high_yield, telecom_pressure, yield_trap_risk",
+    "PEP": "score 8.4, dividend_aristocrat, stable_growth, 50년 이상 배당"
+  },
+  "confidence": "medium"
+}
+```
+```
+
+### Case 7 — e1/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당 수익 중심 포트폴리오로 GARP 관점에서는 성장성 부족, VZ는 저평가되었으나 성장성 의문, 전반적으로 안정적 배당 전략에는 적합하나 GARP 기준으로는 개선 필요",
+  "key_observations": [
+    "VZ(8.7배)를 제외한 모든 종목이 PEG 1.5 이상으로 GARP 기준(PEG<1.5) 미달, 특히 KO(2.8), VZ(3.4)는 성장 대비 고평가 영역",
+    "배당수익률은 우수: VZ 6.7%, KO 3.1%, JNJ 3.0%로 인컴 투자 목적에는 부합하나 성장성은 제한적",
+    "PEP(ROE 45%)와 KO(ROE 41%)는 높은 자본효율성을 보유하나 높은 PEG로 인해 GARP 매력도 저하",
+    "VZ는 PER 8.7배로 가장 저평가되었으나 PEG 3.4배는 낮은 성장률 시사, 통신 섹터 특성상 성숙 단계",
+    "JNJ는 PER 14.5배, PEG 2.1배로 포트폴리오 내 가장 균형잡힌 밸류에이션, 방어적 헬스케어 섹터 장점"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "성장성 보완 종목 일부 편입 검토",
+      "description": "현재 포트폴리오는 배당 중심으로 구성되어 GARP 기준 성장성 부족. PEG<1.5인 헬스케어/테크 우량주를 10-15% 편입하여 성장-가치 균형 개선 권장. VYM 비중 일부 축소 고려.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "VZ 비중 축소 및 재배치",
+      "description": "VZ는 PEG 3.4배로 성장성 대비 과대평가. 높은 배당(6.7%)에도 불구하고 통신 섹터 성장 한계 고려시 비중 20%→10%로 축소, 차액은 JNJ 확대 또는 성장주 추가 검토.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "분기별 PEG 재평가 모니터링",
+      "description": "KO, PEP의 PEG가 2.5 이상으로 고평가 구간. 분기 실적 발표 후 성장률 변화 추적하여 PEG 1.8 이하 진입시 비중 확대, 3.0 초과시 일부 차익실현 전략 수립.",
+      "priority": "low",
+      "category": "monitor"
+    }
+  ],
+  "risk_flags": [
+    "포트폴리오 평균 PEG 2.46으로 GARP 기준(1.0~1.5) 대비 65% 이상 높음, 성장 모멘텀 둔화시 밸류에이션 리스크 존재",
+    "소비재(KO, PEP) 35% 집중으로 인플레이션 및 소비심리 악화에 취약, 섹터 다변화 부족",
+    "VZ의 낮은 PEG(3.4)는 구조적 성장 한계 반영 가능성, 5G 투자 부담 및 경쟁 심화 리스크 상존"
+  ],
+  "metrics_table": ""
+}
+```
+```
+
+### Case 8 — e2/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "1년 수익률 8.2%로 안정적 배당 성장을 달성한 소비재·헬스케어 중심의 방어적 인컬 포트폴리오입니다.",
+  "key_observations": [
+    "소비재 섹터(KO, PEP) 35% 집중으로 경기방어 특성이 강하며, 인플레이션 환경에서도 가격 전가력이 우수합니다.",
+    "VYM 25% 배치로 분산 배당 수익을 확보하면서 개별 종목 리스크를 완화하고 있습니다.",
+    "헬스케어(JNJ) 20% + 통신(VZ) 20% 조합은 경기 둔화 시 안정적 현금흐름을 제공하는 방어 포지션입니다.",
+    "8.2% 수익률은 인컬 프리셋 기대치(배당수익 4~6% + 자본이득)에 부합하며, 높은 변동성 없이 꾸준한 성과를 보였습니다.",
+    "기술주 및 성장주 노출이 전무하여 상승장 대비 수익률은 제한적이나, 하락장 보호 효과가 탁월한 구조입니다."
+  ],
+  "confidence": "high",
+  "quoted_metrics": {
+    "return_1y": "8.2%",
+    "top_sector": "consumer_staples 35%",
+    "defensive_allocation": "healthcare 20% + communication_services 20%",
+    "etf_core": "VYM 25%"
+  },
+  "metrics_table": ""
+}
+```
+```
+
+### Case 9 — e3/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "적절한 분산 수준 유지 중, Consumer Staples 섹터 35% 집중에 주의 필요",
+  "key_observations": [
+    "HHI 0.2125로 5종목 기준 양호한 분산 수준 (0.20=균등, 1.0=집중)",
+    "Top3 비중 65%는 income 전략 특성상 적정 범위 내 (VYM+KO+JNJ)",
+    "Consumer Staples 섹터 35% 집중(KO 20% + PEP 15%)이 가장 큰 집중 리스크",
+    "개별 종목 최대 비중 25%(VYM)로 단일 종목 위험은 제한적",
+    "4개 방어주(VYM/KO/JNJ/VZ)로 배당 안정성 확보, 경기 민감도 낮음"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "Consumer Staples 섹터 비중 5~10% 축소 검토",
+      "description": "KO 20% + PEP 15% = 35%로 섹터 과집중. 두 종목 모두 유사 비즈니스 모델(음료/스낵). PEP 5% 축소 후 다른 섹터(금융/유틸리티) 배당주 추가하여 섹터 다각화 강화 권장.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "Healthcare/Communication 섹터 추가 분산 검토",
+      "description": "JNJ, VZ 각 20%로 적정하나, 단일 종목 의존도 높음. 각 섹터 내 2~3개 종목 분산(예: ABBV, T 등) 또는 섹터 ETF 병행으로 개별 종목 리스크 완화 가능.",
+      "priority": "low",
+      "category": "review"
+    }
+  ],
+  "risk_flags": [
+    "Consumer Staples 섹터 35% 집중 (KO+PEP 음료/식품 산업 중복)",
+    "Top3 비중 65%로 소수 종목 의존도 높음 (VYM/KO/JNJ)"
+  ]
+}
+```
+```
+
+### Case 10 — e4/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "이 포트폴리오는 배당귀족주와 고배당 ETF로 구성되어 매우 안정적인 배당 구조를 갖추고 있으며, 경기 방어적 섹터 중심으로 배당 지속성이 높습니다.",
+  "key_observations": [
+    "JNJ, KO, PEP는 모두 배당귀족(Dividend Aristocrat) 기업으로 25년 이상 연속 배당을 증액해온 검증된 배당 이력을 보유하고 있습니다.",
+    "Consumer Staples(생필품) 섹터가 35%를 차지해 경기 침체기에도 안정적인 현금흐름과 배당 지급 능력을 유지할 수 있는 구조입니다.",
+    "VYM ETF(25%)는 400개 이상의 고배당 종목에 분산 투자하여 개별 기업 배당 삭감 리스크를 완화하는 안전장치 역할을 합니다.",
+    "Healthcare와 Communication Services 섹터(각 20%)는 필수 서비스 특성상 배당 지속성이 높으나, VZ의 경우 최근 통신업계 경쟁 심화로 배당성장률은 제한적일 수 있습니다.",
+    "전체적으로 경기 방어적(defensive) 성격이 강한 종목들로 구성되어 시장 변동성이 큰 시기에도 배당 안정성은 높게 유지될 것으로 판단됩니다."
+  ],
+  "confidence": "high"
+}
+```
+```
+
+### Case 11 — e5/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당수익률 3.45%로 12분기 대비 +30bp 상승, 안정적인 상승 추세 속 우량 배당주 포트폴리오 유지 중",
+  "key_observations": [
+    "배당수익률이 3.15%(12분기 전) → 3.45%(현재)로 꾸준히 상승, 분기당 평균 2.5bp씩 증가하는 안정적 추세",
+    "VYM(25%) + 4개 우량 배당주로 구성된 전형적인 income 포트폴리오, 섹터는 consumer staples(35%), healthcare(20%), communication(20%)로 분산",
+    "최근 4분기 가속(+4.55%) 확인: 개별 종목의 배당 인상 사이클과 ETF 내 배당 성장주 비중 증가 효과 복합 작용 추정",
+    "KO, JNJ, VZ, PEP 모두 dividend aristocrat 또는 장기 배당 성장 이력 보유, 경기방어적 특성으로 베타 1.0 미만 예상",
+    "VYM의 expense ratio 0.06% 수준으로 비용 효율적, 나머지 개별주는 수수료 無로 전체 포트폴리오 비용 부담 최소화"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "배당 재투자 전략 점검",
+      "description": "배당수익률 상승 추세(12분기 +30bp)를 활용해 DRIP(배당재투자제도) 설정 여부 확인. 복리 효과로 장기 수익 극대화 가능.",
+      "priority": "medium",
+      "category": "review"
+    },
+    {
+      "title": "통신 섹터 집중도 모니터링",
+      "description": "VZ 단일 종목이 communication 섹터 20% 차지. 5G 투자 부담 및 경쟁 심화 시 배당 안정성 영향 가능성 있어 분기별 실적 추적 권장.",
+      "priority": "medium",
+      "category": "monitor"
+    }
+  ],
+  "quoted_metrics": {
+    "dividend_yield": "3.45% (현재), 12분기 대비 +30bp 상승 (+9.5%)",
+    "dividend_yield_trend": "3.15%(12q) → 3.30%(4q) → 3.40%(1q) → 3.45%(현재), 분기당 평균 +2.5bp",
+    "sector_diversification": "5개 섹터 - Consumer Staples 35% (KO 20% + PEP 15%), Healthcare 20% (JNJ), Communication 20% (VZ), Diversified Dividend ETF 25% (VYM)",
+    "beta": "포트폴리오 추정 베타 0.70~0.80 (경기방어주 중심, VYM 0.77, KO 0.60, JNJ 0.68, VZ 0.50, PEP 0.65 가정)",
+    "expense_ratio": "가중평균 0.015% (VYM 0.06% × 25% = 0.015%, 개별주 4종목 75%는 수수료 無)"
+  }
+}
+```
+```
+
+### Case 12 — e6/claude-sonnet-4-5/#1
+
+```json
+```json
+{
+  "summary": "배당 귀족주 중심의 안정적인 인컴 포트폴리오이나, VZ의 yield trap 리스크가 유일한 우려 요인",
+  "key_observations": [
+    "KO, JNJ, PEP 등 배당 귀족/킹 종목이 55% 비중으로 포트폴리오의 안정성 확보",
+    "VYM ETF(25%)가 분산 효과 제공하며 낮은 운용비용으로 효율적 기반 구축",
+    "전체 평균 스코어 7.98로 우량한 수준이나, VZ(6.8점)가 평균을 하락시키는 요인",
+    "소비재(KO, PEP 35%) + 헬스케어(JNJ 20%) 조합으로 경기 방어적 성격 강화",
+    "VZ의 통신업 압박과 높은 배당수익률이 지속가능성 의문을 제기하여 모니터링 필요"
+  ],
+  "confidence": "high",
+  "risk_flags": [
+    "VZ: 스코어 6.8점으로 포트폴리오 내 최저, yield trap 리스크 존재 (20% 비중)",
+    "통신 섹터(VZ) 단일 종목 집중으로 산업별 분산 부족"
+  ],
+  "quoted_metrics": {
+    "VYM": "score 8.5, stable_yield + low_expense",
+    "KO": "score 8.0, 60+ years dividend aristocrat",
+    "JNJ": "score 8.2, dividend king 60+ years",
+    "VZ": "score 6.8, high_yield but telecom_pressure (yield trap risk)",
+    "PEP": "score 8.4, dividend aristocrat 50+ years + stable_growth",
+    "portfolio_avg_score": "7.98"
+  }
+}
+```
+```
+
+### Case 13 — e1/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당금 중심의 안정적 포트폴리오이나, GARP 관점에서 성장성이 제한적이며 밸류에이션 편차가 큰 상태입니다.",
+  "key_observations": [
+    "포트폴리오 평균 PER 17.5로 적절하나, KO(24.2), PEP(21.8)는 과도하게 높은 반면 VZ(8.7)는 극히 저평가된 상태",
+    "PEG 지표가 전반적으로 높음(평균 2.46): 성장성 대비 밸류에이션이 비싼 편이며, 특히 VZ(3.4)와 KO(2.8)는 주의 필요",
+    "ROE 편차 심함(12%~45%): PEP(45%), KO(41%)는 우수하나 VYM(12%)은 낮아, 자본효율성 측면에서 포트폴리오 불균형",
+    "배당 수익률 평균 3.7%로 양호하나, VZ(6.7%)에 과도하게 의존 → 금리 상승 시 리스크 증가",
+    "소비재(KO, PEP) 2개 종목 35% 비중으로 경기 민감도 낮으나, 성장성 부족으로 GARP 전략과 불일치"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "KO 포지션 축소 및 재균형",
+      "description": "KO의 PER 24.2, PEG 2.8은 과도한 밸류에이션. 배당만으로는 성장성 부족을 보상하기 어려움. 비중을 20%→12%로 축소하고 우량 성장주(healthcare 또는 tech dividend) 추가 고려.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "VZ 포지션 규모 재검토",
+      "description": "VZ의 6.7% 고배당은 매력적이나, PEG 3.4는 매우 높고 ROE 22%는 낮은 수준. 금리 인상 환경에서 배당주 조정 리스크 있음. 비중을 20%→15%로 축소하여 리스크 분산.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "PEP와 JNJ의 상대적 가중치 조정",
+      "description": "PEP(ROE 45%, PEG 2.5)와 JNJ(ROE 26%, PEG 2.1)를 비교할 때, JNJ의 성장성 대비 밸류에이션이 더 합리적. JNJ 비중을 20%→23%로 증가, PEP를 15%→12%로 축소.",
+      "priority": "low",
+      "category": "rebalance"
+    },
+    {
+      "title": "VYM 비중 내 섹터 구성 점검",
+      "description": "VYM의 ROE 12%는 포트폴리오 평균 이하. 구성 종목의 배당 성장률과 PEG를 재점검하여, 필요시 섹터별 배당 ETF(예: 헬스케어 배당 또는 테크 배당) 혼합 고려.",
+      "priority": "low",
+      "category": "research"
+    }
+  ],
+  "risk_flags": [
+    "성장성 부족: 평균 PEG 2.46 → GARP 기준 성장성 대비 밸류에이션이 높음",
+    "VZ 고배당 의존: 금리 인상 환경에서 배당주 조정 리스크 커짐",
+    "KO 과도한 밸류에이션: PER 24.2, PEG 2.8은 방어적 포트폴리오로는 적절하나, 성장성 전망 약함",
+    "소비재 집중도: KO + PEP 35% → 경기 둔화 시 배당 감소 위험",
+    "ROE 편차: 12%~45% 범위로 넓어, 자본효율성 기준 포트폴리오 일관성 낮음"
+  ],
+  "metrics_table": ""
+}
+```
+```
+
+### Case 14 — e2/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당 중심 포트폴리오가 1년간 8.20% 수익률을 기록했으며, 생활필수품 섹터 35% 편중으로 안정성을 추구하는 인컴 전략을 유지 중입니다.",
+  "key_observations": [
+    "생활필수품(Consumer Staples) 섹터가 35%로 최대 비중을 차지하고 있으며, KO와 PEP 두 대형 배당주가 포트폴리오의 35%를 구성해 섹터 편중 위험이 존재합니다.",
+    "VYM(배당수익률 ETF) 25% + 배당주 4개로 구성되어 배당 수익 창출에 최적화된 포트폴리오이지만, 성장성이 제한적일 수 있습니다.",
+    "1년 수익률 8.20%는 일반적인 배당 포트폴리오 기대수익률(5~6%)을 상회하며, 시장 상승장의 혜택을 받은 것으로 판단됩니다.",
+    "통신서비스(VZ 20%), 헬스케어(JNJ 20%), 다각화 배당(VYM 25%) 등 방어적 섹터가 60%를 차지해 경기변동에 대한 완충 역할을 수행 중입니다.",
+    "5개 종목만 보유한 집중 포트폴리오로서, 개별 종목 비중이 15~25%로 높아 단일 기업 리스크 관리가 필요합니다."
+  ],
+  "quoted_metrics": {
+    "portfolio_return_1y": "8.20%",
+    "top_sector": "consumer_staples 35%",
+    "etf_allocation": "25%",
+    "defensive_sectors_total": "60%",
+    "holding_count": 5,
+    "largest_position": "VYM 25%"
+  },
+  "metrics_table": "",
+  "confidence": "high"
+}
+```
+```
+
+### Case 15 — e3/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "적절하게 분산된 배당 포트폴리오로 집중도 위험은 낮으나, 소비재 섹터 편중(35%)과 개별 종목 최대 비중(25%)에 주의 필요.",
+  "key_observations": [
+    "HHI 0.2125는 매우 양호한 수준으로, 5개 종목 간 비중 분산이 효과적입니다.",
+    "상위 3개 종목(VYM, KO, JNJ)이 65%를 차지하고 있어 중위험 집중도를 보입니다.",
+    "소비재 섹터(KO, PEP)가 전체 35%로 최고 비중을 차지하며, 경기 둔화 시 동시 부진 위험이 있습니다.",
+    "VYM(25%)은 다각화된 배당 ETF로 단일 종목 최대 비중을 차지하지만, 이미 분산된 구성이므로 위험도는 중간 수준입니다.",
+    "KO, JNJ, VZ의 우량 배당주 집중은 안정성을 높이나, 장기 성장성 측면에서 기술/성장주 다각화 검토 필요합니다."
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "소비재 섹터 비중 재평가",
+      "description": "KO(20%) + PEP(15%) = 35%로 단일 섹터 편중. 경기 민감도 낮은 우량주지만, 신흥시장 노출/원화 환율 위험 고려 시 헬스케어 또는 통신 섹터 확대를 검토하세요.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "포트폴리오 장기 성장성 강화",
+      "description": "현재 배당주 중심으로 안정성은 높으나 성장성 부족. 향후 5년 투자 목표에 따라 헬스케어 성장주(예: UNH, ABBV) 또는 기술 배당주(예: MSFT) 추가 검토를 권장합니다.",
+      "priority": "low",
+      "category": "research"
+    },
+    {
+      "title": "분기별 섹터별 집중도 모니터링",
+      "description": "소비재 및 통신 섹터의 배당 정책 변화, 금리 상승 영향을 매분기 검토하여 상대 비중 조정 기준을 설정하세요.",
+      "priority": "medium",
+      "category": "monitor"
+    }
+  ],
+  "risk_flags": [
+    "소비재 섹터 편중(35%): 경기 둔화 또는 인플레이션 가속 시 동시 부진 위험",
+    "금리 상승 환경에서 배당주 평가 압박: VYM, KO, JNJ 모두 금리 민감도 높음",
+    "개별 종목 최대 비중 25%(VYM): ETF 내부 구성 변화에 따른 간접 위험"
+  ]
+}
+```
+```
+
+### Case 16 — e4/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "이 포트폴리오는 배당 안정성 측면에서 매우 강력한 구조를 갖추고 있으며, 5개 종목 모두 배당 지속 역사와 소비재·통신·헬스케어 등 경기 방어 섹터로 구성되어 있습니다.",
+  "key_observations": [
+    "배당 귀족(Dividend Aristocrats) 및 준귀족 기업 집중: KO, JNJ, VZ, PEP는 모두 20년 이상 연속 배당 인상 기록을 보유한 업체들로, 경제 위기 시에도 배당 축소 가능성이 매우 낮습니다.",
+    "경기 방어 섹터 편중(약 85%): 소비재 필수품(KO, PEP), 의약품(JNJ), 통신(VZ)은 경기 사이클에 덜 민감하여 침체기에도 안정적인 배당 유지 가능성이 높습니다.",
+    "VYM을 통한 추가 분산: 고배당 수익 ETF(VYM, 25% 비중)가 포함되어 개별 종목 리스크 완화 및 배당 다양화 효과를 제공합니다.",
+    "배당 수익률 vs 성장성 트레이드오프: 현 구조는 배당 안정성에 최적화되었으나, 장기 자본 성장성은 상대적으로 제한될 수 있습니다.",
+    "금리 환경 민감도: 현재 고금리 환경에서는 배당 매력도가 높으나, 향후 금리 급락 시 배당주의 상대적 매력도 약화 가능성을 모니터링 필요합니다."
+  ],
+  "confidence": "high"
+}
+```
+```
+
+### Case 17 — e5/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당 수익률 3.45%로 12분기 대비 30bp 상승 추세를 보이며, 우량 배당주 중심의 균형잡힌 포트폴리오입니다.",
+  "key_observations": [
+    "배당 수익률이 지속적 상승 추세: 3.15%(12분기 전) → 3.45%(현재), 총 30bp 상승으로 배당 매력도 개선",
+    "최근 4분기 상승률 4.55%로 가속화 추세: 1분기 전 3.40%에서 현재 3.45%로 모멘텀 유지",
+    "VYM(25%)을 포함한 고배당 ETF와 KO, PEP 같은 소비재 우량주로 안정적 현금흐름 구성",
+    "섹터 집중도: 소비재(consumer_staples) 35%, 헬스케어(JNJ) 20%, 통신(VZ) 20%, 다각화(VYM) 25%로 적절한 분산",
+    "저 변동성(저베타) 방어주 위주로 구성되어 경제 둔화 시 포트폴리오 방어력 강화"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "배당 수익률 상승 추세 모멘텀 유지",
+      "description": "현재 3.45% 수익률이 12분기 대비 +30bp 상승한 강한 추세입니다. 금리 인상 주기 종료 신호로 보이며, 추가 고배당 기회가 있거나 현재 구성을 유지하며 배당금 재투자(DRIP) 검토를 권장합니다.",
+      "priority": "medium",
+      "category": "monitor"
+    },
+    {
+      "title": "소비재 섹터 비중(35%) 재검토",
+      "description": "KO + PEP 합계 35%로 소비재 편중이 있습니다. 경제 둔화 시 방어 가능하나, 추가 분산을 위해 VYM 내 섹터 구성을 확인하고 필요시 에너지/금융 등 고배당 섹터 추가 검토.",
+      "priority": "low",
+      "category": "review"
+    },
+    {
+      "title": "매분기 배당 실적 트래킹",
+      "description": "배당 수익률 상승이 회사 실적 개선 기반인지, 아니면 주가 조정에 따른 수익률 개선인지 구분하여 추적하세요. 특히 KO, PEP, VZ의 분기별 배당금 증액 추이 모니터링이 필수입니다.",
+      "priority": "medium",
+      "category": "monitor"
+    }
+  ],
+  "quoted_metrics": {
+    "dividend_yield_current": "3.45%",
+    "dividend_yield_1q_ago": "3.40%",
+    "dividend_yield_4q_ago": "3.30%",
+    "dividend_yield_12q_ago": "3.15%",
+    "delta_4q_pct": "+4.55%",
+    "delta_12q_bp": "+30bp",
+    "sector_diversification": {
+      "consumer_staples": "35% (KO 20% + PEP 15%)",
+      "healthcare": "20% (JNJ)",
+      "communication_services": "20% (VZ)",
+      "diversified_dividend_etf": "25% (VYM)"
+    },
+    "portfolio_class_mix": "ETF 25% + 개별주 75% (우량주 중심)",
+    "risk_profile": "저베타, 방어주 위주 (경기방어형 배당 포트폴리오)"
+  }
+}
+```
+```
+
+### Case 18 — e6/claude-haiku-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당 귀족 종목 중심의 안정적 소득 포트폴리오이나, VZ의 통신산업 구조적 압박과 수익률 함정 위험이 모니터링 대상입니다.",
+  "key_observations": [
+    "VYM, KO, JNJ, PEP 4개 종목이 8.0 이상의 높은 스코어로 포트폴리오 80% 구성 - 우수한 배당 안정성 확보",
+    "KO, JNJ, PEP 등 60년 이상 연속 배당 지급 이력의 '배당 킹/귀족' 종목 65% 비중 - 장기 소득 신뢰도 높음",
+    "VYM의 낮은 운용비(저비용 ETF) + 다각화 효과로 포트폴리오 기초 안정성 제공",
+    "소비재·헬스케어·통신 3개 섹터 분산으로 경기변동 대응력 적절",
+    "VZ 스코어 6.8(포트폴리오 최저)과 '수익률 함정' 신호로 20% 비중 재검토 필요 - 통신산업 구조적 하락 추세 반영"
+  ],
+  "risk_flags": [
+    "VZ: 스코어 6.8 + 통신산업 수익 압박 + 높은 배당수익률의 수익률 함정(yield trap) 위험 - 20% 비중에서 위험 노출도 상대적으로 높음",
+    "포트폴리오 전체 스코어 평균 8.0 이상이나 VZ의 구조적 약점이 종합 리스크 상향 조정 필요"
+  ],
+  "quoted_metrics": {
+    "portfolio_average_score": 8.18,
+    "VYM": "스코어 8.5, 안정적 수익 + 저운용비",
+    "KO": "스코어 8.0, 배당귀족(60년 이상)",
+    "JNJ": "스코어 8.2, 배당킹(60년 이상)",
+    "PEP": "스코어 8.4, 배당귀족(50년 이상) + 안정 성장",
+    "VZ": "스코어 6.8, 높은 수익률 vs 통신산업 압박 + 수익률 함정 위험",
+    "dividend_aristocrat_weightage": "65%",
+    "sector_diversification": "소비재 35% / 헬스케어 20% / 통신 20% / 다각화 25%"
+  },
+  "confidence": "high"
+}
+```
+```
+
+### Case 19 — e1/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당 중심 포트폴리오로 GARP 관점에서는 부적합. VZ를 제외한 대부분 종목이 고PEG(2.1~3.4)로 성장 대비 고평가 상태이나, 안정적 배당 수익률(2.8~6.7%)과 우량 ROE(12~45%)를 보유한 보수적 인컴 전략.",
+  "key_observations": [
+    "PEG 2.0+ 종목이 80%(4/5): KO 2.8, JNJ 2.1, VZ 3.4, PEP 2.5로 GARP 기준(PEG<1.5) 미달. 성장 대비 밸류에이션 프리미엄 과도",
+    "VZ 최고 배당률 6.7%와 최저 PER 8.7: 가치주 특성 강하나 PEG 3.4로 성장성 부재. 통신 산업 성숙기 반영",
+    "KO·PEP ROE 40%+ 우수: 자본 효율성 탁월하나 PER 24.2/21.8로 이미 프리미엄 반영. 추가 상승 여력 제한적",
+    "섹터 집중: Consumer Staples 35%(KO+PEP) 편중. 방어적이나 성장 포트폴리오 다각화 부족",
+    "VYM ETF 25% 최대 비중: PEG 1.5로 상대적 양호하나 다각화 ETF로 개별 종목 GARP 분석 한계"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "GARP 전략 재정의 또는 프리셋 전환 검토",
+      "description": "현 포트폴리오는 'income' 프리셋에 최적화(평균 배당률 3.7%). GARP 목표 시 PEG<1.5 성장주(기술/헬스케어) 30%+ 편입 필요. 또는 배당 중심 유지 시 GARP 평가 중단 권장.",
+      "priority": "high",
+      "category": "review"
+    },
+    {
+      "title": "VZ 비중 10%p 축소 고려",
+      "description": "PEG 3.4(최악)·성장률 정체로 GARP 부적합. 배당 6.7% 매력적이나 주가 상승 여력 제한. 매각 자금으로 PEG<2.0 헬스케어 성장주(예: UNH, TMO) 분산 투자.",
+      "priority": "medium",
+      "category": "rebalance"
+    },
+    {
+      "title": "Consumer Staples 집중도 35%→25% 완화",
+      "description": "KO+PEP 동일 섹터로 상관관계 높음(0.7+). PEP 5%p 축소 후 산업재/금융 등 경기순환 섹터 추가로 포트폴리오 베타 다각화.",
+      "priority": "medium",
+      "category": "rebalance"
+    }
+  ],
+  "risk_flags": [
+    "GARP 기준 전면 미달: 5종목 중 4종목 PEG>2.0으로 성장 대비 과대평가. 금리 상승 시 멀티플 축소 위험",
+    "성장성 부재: 평균 PEG 2.46으로 저성장·고배당 전략. 시장 상승장에서 언더퍼폼 가능성",
+    "섹터 편중 리스크: Consumer Staples 35% 집중으로 식음료 산업 규제·소비 트렌드 변화에 취약"
+  ],
+  "metrics_table": ""
+}
+```
+```
+
+### Case 20 — e2/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "1년 수익률 8.20%로 안정적 배당 성장주 중심의 포트폴리오, 필수소비재 섹터 35% 집중 및 4대 방어적 섹터로 분산 구성",
+  "key_observations": [
+    "필수소비재(KO, PEP) 35% 집중으로 경기방어적 특성이 강하며, 인플레이션 전가 능력이 우수한 구조입니다",
+    "VYM ETF 25% + 개별 배당주 75% 조합으로 배당 수익과 개별 종목 성장성을 동시에 추구하는 전략입니다",
+    "헬스케어(JNJ 20%), 통신(VZ 20%) 추가 편입으로 4개 방어 섹터에 고르게 분산되어 변동성 완화 효과가 있습니다",
+    "1년 수익률 8.20%는 인컴 포트폴리오로서 배당수익률 3~4% + 주가상승 4~5% 수준의 합리적 성과로 판단됩니다",
+    "기술주 0%, 금융 0% 등 성장/금리민감 섹터 부재로 금리 하락기 상승여력 제한 가능성이 있으나 안정성은 높습니다"
+  ],
+  "confidence": "high",
+  "quoted_metrics": {
+    "portfolio_return_1y": "8.20%",
+    "top_sector": "consumer_staples",
+    "top_sector_weight": "35%",
+    "etf_weight": "25%",
+    "stock_weight": "75%",
+    "num_holdings": "5",
+    "defensive_sectors_total": "100%"
+  },
+  "metrics_table": ""
+}
+```
+```
+
+### Case 21 — e3/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "양호한 분산 수준이나 소비재 섹터 편중(35%) 주의 필요, 경기 민감도 관리 권장",
+  "key_observations": [
+    "HHI 0.2125로 적정 분산 달성 (0.15~0.25 권장 범위 내), 과도한 집중 위험 낮음",
+    "소비재(Consumer Staples) 섹터가 35% 비중으로 최대 노출, KO·PEP 양사 합산 시 단일 섹터 집중도 높음",
+    "VYM ETF 25% 보유로 개별 종목 위험 완화, 배당 수익 안정성 확보",
+    "Top3 종목(VYM·JNJ·KO/VZ) 65% 비중은 소형 포트폴리오 특성상 적절하나 추가 분산 여력 존재",
+    "헬스케어(JNJ)·통신(VZ) 섹터가 각 20%로 방어적 배당주 구성, 경기 방어력 양호"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "소비재 섹터 비중 모니터링",
+      "description": "KO+PEP 합산 35%가 단일 섹터 최대 노출. 소비재 업황 악화 시 포트폴리오 전체 타격 가능. 분기별 실적 점검 및 필요 시 5~10% 비중 조정 검토.",
+      "priority": "medium",
+      "category": "monitor"
+    },
+    {
+      "title": "섹터 다각화 기회 검토",
+      "description": "유틸리티(공익), 산업재, 금융 등 배당 안정 섹터 추가로 3~4섹터 추가 편입 검토. 현재 4개 주요 섹터에서 6~7개로 확대 시 변동성 완화 가능.",
+      "priority": "low",
+      "category": "research"
+    }
+  ],
+  "risk_flags": [
+    "소비재 섹터 35% 집중: 인플레이션·소비 침체 시 KO·PEP 동반 하락 위험",
+    "개별 종목 4개 중 2개(KO·PEP)가 동일 섹터: 상관관계 높아 분산 효과 제한적"
+  ]
+}
+```
+```
+
+### Case 22 — e4/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "5개 종목 모두 10년 이상 배당 증액 이력을 보유한 우량 배당주로 구성되어 있어, 배당 안정성은 매우 높은 수준입니다.",
+  "key_observations": [
+    "VYM ETF는 약 400개 이상의 고배당 우량기업에 분산 투자하여 개별 종목 리스크를 완화하며, 안정적인 배당 흐름을 제공합니다.",
+    "KO(코카콜라)는 60년 이상, JNJ(존슨앤존슨)는 60년 이상 연속 배당 증액을 달성한 '배당 귀족주(Dividend Aristocrat)'로 배당 지속성이 검증되었습니다.",
+    "VZ(버라이존)는 통신 인프라 기반의 안정적인 현금흐름을 보유하고 있으며, 배당수익률이 상대적으로 높아 인컴 포트폴리오의 현금흐름 기여도가 큽니다.",
+    "PEP(펩시코) 역시 50년 이상 배당 증액 기록을 보유한 필수소비재 기업으로, 경기 변동성에 강한 방어적 특성을 지닙니다.",
+    "전체 포트폴리오가 필수소비재(35%), 헬스케어(20%), 통신(20%)으로 구성되어 경기 침체 시에도 배당 지급 능력이 유지될 가능성이 높습니다."
+  ],
+  "confidence": "high"
+}
+```
+```
+
+### Case 23 — e5/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당수익률 3.45%로 12개 분기 대비 30bp 상승하며 안정적 우상향 추세 유지. 우량 배당주 중심 포트폴리오로 섹터 분산 및 방어적 특성 양호.",
+  "key_observations": [
+    "배당수익률이 12개 분기(3.15%) 대비 30bp, 4개 분기(3.30%) 대비 15bp 상승하며 지속적인 개선 추세",
+    "VYM(25%) 중심의 배당 ETF와 KO, JNJ, VZ, PEP 등 배당귀족주로 구성되어 배당 안정성 우수",
+    "섹터 분산: Consumer Staples 35%(KO+PEP), Healthcare 20%(JNJ), Communication 20%(VZ), ETF 25%로 방어적 배분",
+    "전체 포트폴리오 베타 추정 0.75~0.85 수준으로 시장 대비 변동성 낮은 보수적 구성",
+    "VYM 익스펜스 레이쇼 0.06%로 매우 낮으며, 개별 주식은 수수료 없어 비용 효율성 탁월"
+  ],
+  "confidence": "high",
+  "action_items": [
+    {
+      "title": "배당 재투자 전략 점검",
+      "description": "배당수익률이 지속 상승 중이므로 분기별 배당금 재투자 계획 수립. DRIP(배당재투자계획) 활성화 검토로 복리 효과 극대화.",
+      "priority": "medium",
+      "category": "review"
+    },
+    {
+      "title": "Consumer Staples 비중 모니터링",
+      "description": "KO+PEP 합산 35%로 단일 섹터 집중도 높음. 경기 방어적이나 성장성 제한 가능성. 분기별 실적 모니터링 필요.",
+      "priority": "low",
+      "category": "monitor"
+    }
+  ],
+  "quoted_metrics": {
+    "dividend_yield": "3.45% (현재), 12분기 대비 +30bp (+9.5%), 4분기 대비 +15bp (+4.55%)",
+    "sector_diversification": "5개 섹터 분산 - Consumer Staples 35%, Healthcare 20%, Communication Services 20%, Diversified Dividend ETF 25%",
+    "beta": "포트폴리오 추정 베타 0.75~0.85 (VYM 0.80, KO 0.60, JNJ 0.70, VZ 0.50, PEP 0.65 가중평균)",
+    "expense_ratio": "VYM 0.06% (매우 낮음), 개별 주식 4종목 0% (거래 수수료만 발생), 포트폴리오 가중평균 0.015%"
+  }
+}
+```
+```
+
+### Case 24 — e6/claude-sonnet-4-5/#2
+
+```json
+```json
+{
+  "summary": "배당 귀족주 중심의 안정적 구성이나, VZ의 yield trap 리스크와 통신 섹터 압력이 유일한 약점",
+  "key_observations": [
+    "포트폴리오의 80%가 배당 귀족주(KO, JNJ, PEP) 또는 우량 배당 ETF(VYM)로 구성되어 장기 배당 안정성 확보",
+    "JNJ(배당킹, 60년+), PEP(배당귀족, 50년+), KO(배당귀족, 60년+) 모두 8.0+ 고득점으로 핵심 포지션 건전",
+    "VZ만 6.8점으로 상대적 저평가, high_yield와 telecom_pressure 신호가 동시 발생하여 yield trap 가능성 시사",
+    "Consumer Staples 35% + Healthcare 20% 집중으로 경기방어 성격 강하나, 성장성은 제한적",
+    "VYM(25%) ETF 기반으로 분산 효과 확보, 전체 평균 스코어 7.98로 income 프리셋 목표에 부합"
+  ],
+  "confidence": "high",
+  "risk_flags": [
+    "VZ: 스코어 6.8로 포트폴리오 내 최저, yield trap risk와 telecom_pressure 신호 동시 발생",
+    "통신 섹터(20%) 단일 종목(VZ) 집중으로 섹터 리스크 분산 부족"
+  ],
+  "quoted_metrics": {
+    "VZ": "score 6.8, signals: high_yield + telecom_pressure, yield trap risk",
+    "portfolio_avg_score": "7.98 (5종목 가중평균)",
+    "top_performers": "PEP 8.4, VYM 8.5, JNJ 8.2",
+    "dividend_aristocrats_weight": "55% (KO 20% + PEP 15% + JNJ 20%)",
+    "defensive_sectors_weight": "75% (Consumer Staples 35% + Healthcare 20% + VYM 25% diversified)"
+  }
+}
+```
+```
+
