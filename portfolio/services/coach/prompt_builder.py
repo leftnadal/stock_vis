@@ -181,8 +181,33 @@ class E2PromptBuilder(PromptBuilderBase):
 # ============================================================
 
 
+_E3_ACTION_RULES = (
+    "### action_items 작성 규칙 (필수 준수, Slice 12 Step 0 #59)\n"
+    "1. 구체성 필수 — description에 다음 중 하나 이상 포함:\n"
+    "   - 종목 ticker (예: \"VYM 비중 조정\")\n"
+    "   - 정량 지표 (예: \"HHI 0.2125 → 0.18 목표\")\n"
+    "   - 비율/수치 (예: \"소비재 35% → 25% 축소\")\n"
+    "2. 측정 가능성 필수 — description에 다음 중 하나 이상 포함:\n"
+    "   - 목표 수치 (예: \"Top3 비중 65% → 50%\")\n"
+    "   - 기한/시기 (예: \"분기 리밸런싱 시\", \"현재 분기 내\")\n"
+    "3. 금지 패턴 (단독 사용 금지, 구체 수치 함께면 OK):\n"
+    "   - \"모니터링 필요\" 단독\n"
+    "   - \"검토하세요\" 단독\n"
+    "   - \"주시하세요\" 단독\n"
+    "   - 종목/지표 인용 없는 일반론 (예: \"장기적 관점에서 다각화\")\n"
+    "4. priority 정합성:\n"
+    "   - high: 즉각 행동 (예: \"1주 내 비중 조정\")\n"
+    "   - medium: 분기 단위 검토 (예: \"다음 리밸런싱 시\")\n"
+    "   - low: 장기 모니터링 (단, 구체적 지표 + 임계 명시 필수)\n"
+)
+
+
 class E3PromptBuilder(PromptBuilderBase):
-    """E3 집중도 분석 commentary prompt. concentration_metrics (hhi/top3 등) 활용."""
+    """E3 집중도 분석 commentary prompt. concentration_metrics (hhi/top3 등) 활용.
+
+    Slice 12 Step 0 #59: action_items measurability 규칙 4종 명시.
+    Slice 11 Part 5 E3 NG ratio 50% → 운영 기준 < 30% 목표.
+    """
 
     entry_point: ClassVar[str] = "e3"
     input_schema: ClassVar[type[CommentaryInputE3]] = CommentaryInputE3
@@ -208,7 +233,8 @@ class E3PromptBuilder(PromptBuilderBase):
             f"- key_observations: 핵심 관찰 사항 (최대 5개)\n"
             f"- action_items: 실행 가능 액션 (재조정/검토 위주, 없으면 빈 배열)\n"
             f"- risk_flags: 위험 신호 (집중 위험, 섹터 편중 등; 없으면 빈 배열)\n"
-            f"- confidence: high/medium/low 중 하나\n"
+            f"- confidence: high/medium/low 중 하나\n\n"
+            f"{_E3_ACTION_RULES}"
         )
 
 

@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 11 종결 기준)
+# Portfolio Coach 부채 대장 (Slice 12 Step 0 종결 기준)
 
-**최종 갱신**: 2026-05-19 (Slice 11 Part 5 Phase B)
+**최종 갱신**: 2026-05-20 (Slice 12 Step 0 multi-debt mini-slice)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -16,39 +16,13 @@
 - **목표**: Part 4 24 케이스 output_tokens 데이터 누적 활용 → multivariate fit 또는 GAM
 - **데이터 가용성**: haiku 평균 917 tokens, sonnet 743 tokens, 진입점 × 모델 × 반복 데이터 풀
 
-### #41: schema fitting trailing characters (keep_open 1 part)
+### #59 (open / E5 잔여): action_items measurability — E5 진입점 (PS 0.5)
 
 - **history**:
-  - Slice 11 Part 2: 본격 close (4 조건 통과)
-  - Slice 11 Part 3: close 유지 (smoke 2/2 fitting PASS)
-  - Slice 11 Part 4: keep_open 1 part (24 케이스 매트릭스 1/24 FAIL — e3/haiku/#1)
-  - Slice 11 Part 5: **keep_open 유지** (V16 패턴 분석 완료, #58과 결합)
-- **재현 빈도**: 4.17% (1/24)
-- **패턴**: LLM 응답이 valid JSON 뒤에 `---\n\n## 추가 코멘트\n...` 형식 마크다운 덧붙임
-- **처리 방향**: parse_json_response 보강 (#58)으로 흡수 가능
-
-### #58: parse_json_response trailing characters tolerance (신규, PS 1.0)
-
-- **발견**: Slice 11 Part 4 (e3/haiku/#1) + Part 5 V16 분석에서 강화
-- **재현 빈도**: 4.17% (1/24)
-- **패턴**: LLM 응답이 valid JSON 뒤에 markdown 텍스트 덧붙임
-- **현재 처리**: ValidationError (json_invalid: trailing characters)
-- **목표**: 첫 valid JSON 블록만 추출하여 fitting 통과 (tolerance 도입)
-- **Slice 12 Step 0 2순위**: 검토 → 적용
-- **테스트 케이스 후보**: trailing markdown / trailing JSON / trailing 빈 객체 3 패턴
-- **작업 추정**: ~30~45분 (regex 보강 + 단위 테스트 3~5건)
-
-### #59: action_items measurability prompt 강화 (신규, PS 1.5)
-
-- **발견**: Slice 11 Part 5 D1-D actionability 평가
-- **발생률**: E3 50% NG (2/4), E5 25% NG (1/4), E1 0% NG, **종합 25% NG**
-- **패턴**: action_items의 description이 "재평가/검토/모니터링" 등 추상적 표현
-- **목표**: prompt에 "수치 목표 또는 기한 명시 강제" 룰 도입 (E3 진입점 우선)
-- **Slice 12 Step 0 3순위**: prompt 보강 (E3 우선, E5 차순)
-- **NG 임계 기준**:
-  - NG ratio < 10%: 양호
-  - 10~30%: 보강 후보
-  - **> 30%: 즉시 보강** (E3 해당)
+  - Slice 11 Part 5 발견: E3 50%, E5 25%, E1 0% NG
+  - Slice 12 Step 0b: **E3 close** (prompt 보강 후 NG 0%)
+  - **잔여**: E5 25% NG (1/4) — Slice 13+ 검토
+- **처리 방향**: E5 micro-matrix 측정 후 prompt 보강 (#59 패턴 재사용 가능)
 
 ### #57: KPI 임계 보정 (close, Slice 11 Part 5 D5-A 적용)
 
@@ -57,7 +31,38 @@
 
 ---
 
-## §2. 이번 슬라이스 (Slice 11) CLOSE 부채
+## §2. 이번 슬라이스 (Slice 12 Step 0) CLOSE 부채
+
+### #58: parse_json_response trailing characters tolerance (close, Slice 12 Step 0a)
+
+- **history**:
+  - Slice 11 Part 5: 신규 등록 (PS 1.0)
+  - Slice 12 Step 0a: **close**
+- **구현**: `portfolio/llm/parsers.py` Tier 3 raw_decode tolerance
+  - Tier 1 ValidationError(json_invalid: trailing) 식별 → raw_decode 우회
+  - backward-compat 100% (Tier 1/2 동작 무변경)
+- **단위 테스트**: 6/6 PASS (trailing 3 패턴 + backward-compat 2 + invalid 1)
+- **Slice 11 E3/haiku/#1 재현**: PASS
+
+### #41: schema fitting trailing characters (close, Slice 12 Step 0a #58 dependency 해소)
+
+- **history**:
+  - Slice 11 Part 2: 본격 close → Part 3 유지 → Part 4/5 keep_open 1 part (V16 패턴)
+  - Slice 12 Step 0a: **자연 close** (#58 보강으로 schema fitting 100% 회복)
+
+### #59 (E3 본격 close): action_items measurability E3 (close, Slice 12 Step 0b)
+
+- **history**:
+  - Slice 11 Part 5: 신규 등록 (PS 1.5, E3 우선)
+  - Slice 12 Step 0b: **E3 close** (4 케이스 micro-matrix NG 0%)
+- **구현**: `E3PromptBuilder._E3_ACTION_RULES` 4종 규칙 명시
+  - 구체성 필수 / 측정 가능성 필수 / 금지 패턴 / priority 정합성
+- **단위 테스트**: 3/3 PASS
+- **Micro-matrix**: 4/4 fitting PASS, NG 0% (baseline 50%)
+- **비용**: $0.0554 (slice cap 5.54%)
+- **잔여**: E5 25% NG는 Slice 13+ 후보로 §1에 등록
+
+## §3. (이전) Slice 11 CLOSE 부채
 
 ### #48: token estimator v3 정착 (close, Slice 11 Part 4 N=26 견고화)
 
@@ -82,28 +87,29 @@
 
 ---
 
-## §3. 부채 변화 요약 (Slice 11 전체)
+## §4. 부채 변화 요약 (Slice 12 Step 0 multi-debt mini-slice)
 
-| 변화      | 건수 | 부채 ID          |
-| --------- | ---- | ---------------- |
-| close     | 3    | #48, #52, #57    |
-| 신규 등록 | 2    | #58 (PS 1.0), #59 (PS 1.5) |
-| 유지      | 2    | #51, #41 (keep_open 1 part) |
-| **net**   | **−1** (close 3 − 신규 2) |
+| 변화      | 건수 | 부채 ID                                          |
+| --------- | ---- | ------------------------------------------------ |
+| close     | 3    | #58, #41 (dep), #59 E3                           |
+| 신규 등록 | 0    | -                                                |
+| 잔여      | 2    | #51 (PS 1.5), #59 E5 (PS 0.5)                    |
+| **net**   | **−3** (close 3 − 신규 0)                        |
+
+> **multi-debt mini-slice 첫 사례**: Slice 10 single-debt mini + Slice 11 multi-debt 융합 패턴 정착.
 
 ---
 
-## §4. Slice 12 진입점 사전 등록
+## §5. Slice 13+ 진입점 사전 등록
 
 | 후보                                    | PS  | 우선순위           | 근거                                                 |
 | --------------------------------------- | --- | ------------------ | ---------------------------------------------------- |
-| #51 output_token multivariate estimator | 1.5 | **Step 0 1순위**   | Part 4 24 케이스 데이터 누적 → multivariate 가능    |
-| #58 parse trailing tolerance            | 1.0 | **Step 0 2순위**   | 4.17% FAIL 즉시 해소, #41 자연 close                |
-| #59 action measurability (E3 우선)      | 1.5 | **Step 0 3순위**   | E3 50% NG 즉시 보강                                  |
+| #51 output_token multivariate estimator | 1.5 | **Step 0 1순위**   | Slice 11 Part 4 + Slice 12 Step 0b 데이터 누적     |
+| #59 E5 action measurability             | 0.5 | Step 0 2순위 (저 PS) | E5 25% NG, E3 패턴 재사용 가능                     |
 
 ---
 
-## §5. 부채 #26 분포 폭 (Slice 9~10 keep_open → Slice 11 close 확정)
+## §6. 부채 #26 분포 폭 (Slice 9~10 keep_open → Slice 11 close 확정)
 
 - Slice 9 nat 폭 2 (self-eval bias 신호)
 - Slice 11 Part 5: 병진 nat 폭 **3**, ins 폭 **3** (D2-A blind + rubric 가이드 효과)
