@@ -1,0 +1,63 @@
+{
+  "d3a_formula": "final_score = 0.50 * efficiency + 0.25 * nat_mean + 0.25 * ins_mean",
+  "efficiency_baseline": {
+    "cost": 0.005,
+    "latency_ms": 10000
+  },
+  "matrix_measurements": {
+    "haiku": {
+      "cost_avg_usd": 0.004723,
+      "latency_avg_ms": 8601.333333333334,
+      "efficiency_score": 5.0
+    },
+    "sonnet": {
+      "cost_avg_usd": 0.01510175,
+      "latency_avg_ms": 15885.083333333334,
+      "efficiency_score": 2.4015221577563066
+    }
+  },
+  "evaluator_results": {
+    "byungjin__haiku": {
+      "n": 12,
+      "nat_mean": 3.5833333333333335,
+      "ins_mean": 3.75,
+      "actn_ok": 5,
+      "actn_total": 6,
+      "efficiency": 5.0,
+      "final_score": 4.333333333333334
+    },
+    "byungjin__sonnet": {
+      "n": 12,
+      "nat_mean": 3.0833333333333335,
+      "ins_mean": 3.4166666666666665,
+      "actn_ok": 4,
+      "actn_total": 6,
+      "efficiency": 2.4015221577563066,
+      "final_score": 2.8257610788781533
+    },
+    "claude__haiku": {
+      "n": 12,
+      "nat_mean": 4,
+      "ins_mean": 4,
+      "actn_ok": 4,
+      "actn_total": 6,
+      "efficiency": 5.0,
+      "final_score": 4.5
+    },
+    "claude__sonnet": {
+      "n": 12,
+      "nat_mean": 4.833333333333333,
+      "ins_mean": 4.25,
+      "actn_ok": 5,
+      "actn_total": 6,
+      "efficiency": 2.4015221577563066,
+      "final_score": 3.471594412211487
+    }
+  },
+  "winners": {
+    "byungjin": "haiku",
+    "claude": "haiku",
+    "agreement": true,
+    "ground_truth": "haiku"
+  }
+}

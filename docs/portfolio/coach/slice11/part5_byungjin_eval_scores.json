@@ -1,0 +1,175 @@
+{
+  "evaluator": "byungjin",
+  "rubric_version": "D1-D",
+  "seed": 42,
+  "cases": [
+    {
+      "case_num": 1,
+      "naturalness": 3,
+      "insight": 4,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 2,
+      "naturalness": 4,
+      "insight": 3,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 3,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 4,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 5,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 6,
+      "naturalness": 2,
+      "insight": 4,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 7,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 8,
+      "naturalness": 2,
+      "insight": 2,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 9,
+      "naturalness": 4,
+      "insight": 3,
+      "actionability": "NG",
+      "note": ""
+    },
+    {
+      "case_num": 10,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 11,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 12,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 13,
+      "naturalness": 4,
+      "insight": 5,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 14,
+      "naturalness": 3,
+      "insight": 2,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 15,
+      "naturalness": 3,
+      "insight": 5,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 16,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "OK",
+      "note": "추가 코멘트 좋다."
+    },
+    {
+      "case_num": 17,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "NG",
+      "note": ""
+    },
+    {
+      "case_num": 18,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 19,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 20,
+      "naturalness": 4,
+      "insight": 4,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 21,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 22,
+      "naturalness": 5,
+      "insight": 5,
+      "actionability": "OK",
+      "note": ""
+    },
+    {
+      "case_num": 23,
+      "naturalness": 2,
+      "insight": 5,
+      "actionability": "N/A",
+      "note": ""
+    },
+    {
+      "case_num": 24,
+      "naturalness": 3,
+      "insight": 3,
+      "actionability": "NG",
+      "note": ""
+    }
+  ]
+}
