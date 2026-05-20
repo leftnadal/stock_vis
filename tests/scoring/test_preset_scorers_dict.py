@@ -1,14 +1,14 @@
-"""Slice 12 Part 1 Step 5 — PRESET_SCORERS dict + 5 adapter 검증.
+"""Slice 12 Part 1+2 — PRESET_SCORERS dict + 5 adapter 통합 검증.
 
 Slice 11 Part 1 COMMENTARY_INPUT_CLASSES dict 패턴 미러.
 
-테스트 항목:
-1. 5 카테고리 모두 등록 (value/growth/income/factor/special)
+테스트 항목 (Part 2 풀 구현 반영):
+1. 5 카테고리 모두 등록
 2. 각 adapter ScoringEngineBase 상속 (parametrize × 5)
 3. get_scorer가 인스턴스 반환 + category 일치 (parametrize × 5)
 4. 잘못된 category → KeyError
-5. 각 adapter score() NotImplementedError raise (Part 1 스켈레톤) (parametrize × 5)
-6. 각 adapter required_metrics() NotImplementedError raise (parametrize × 5)
+5. 각 adapter score() 빈 metrics dict → dict 반환 + `_category_score` 포함 (parametrize × 5)
+6. 각 adapter required_metrics() 1개 이상 반환 (parametrize × 5)
 """
 
 from __future__ import annotations
@@ -48,16 +48,21 @@ def test_invalid_category_raises_key_error():
 
 
 @pytest.mark.parametrize("category", CATEGORIES)
-def test_skeleton_score_raises_notimplemented(category):
-    """Part 1 스켈레톤: score 호출 시 NotImplementedError (Part 2에서 풀 구현)."""
+def test_score_returns_dict_with_category_score(category):
+    """Part 2 풀: 빈 metrics 입력 시 dict 반환 + `_category_score` key 포함."""
     scorer = get_scorer(category)
-    with pytest.raises(NotImplementedError):
-        scorer.score(None)
+    out = scorer.score({})
+    assert isinstance(out, dict)
+    assert "_category_score" in out
+    # 빈 metrics에서는 모든 preset score가 0 또는 gate 처리됨
+    assert 0.0 <= out["_category_score"] <= 100.0
 
 
 @pytest.mark.parametrize("category", CATEGORIES)
-def test_skeleton_required_metrics_raises_notimplemented(category):
-    """Part 1 스켈레톤: required_metrics 호출 시 NotImplementedError."""
+def test_required_metrics_nonempty(category):
+    """Part 2 풀: required_metrics는 1개 이상의 지표 키 반환."""
     scorer = get_scorer(category)
-    with pytest.raises(NotImplementedError):
-        scorer.required_metrics()
+    metrics = scorer.required_metrics()
+    assert isinstance(metrics, list)
+    assert len(metrics) >= 1
+    assert all(isinstance(m, str) and m for m in metrics)
