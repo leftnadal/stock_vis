@@ -5,7 +5,6 @@ LLM을 활용하여 Market Movers 종목의 키워드를 자동 생성합니다.
 Semantic Cache를 활용하여 비용을 절감하고, 배치 처리로 효율성을 높입니다.
 """
 
-import asyncio
 import logging
 from typing import List, Dict, Any, Optional
 from datetime import date, timedelta
@@ -221,40 +220,20 @@ class KeywordGeneratorService:
             'industry': mover.industry,
         }
 
-    async def _call_llm(self, user_prompt: str) -> str:
-        """
-        LLM API 호출
-
-        Args:
-            user_prompt: 사용자 프롬프트
-
-        Returns:
-            str: LLM 응답 텍스트
-
-        Raises:
-            Exception: API 호출 실패
-        """
+    def _build_llm_config(self) -> types.GenerateContentConfig:
         system_prompt = self.prompt_builder.get_system_prompt()
-
-        config = types.GenerateContentConfig(
+        return types.GenerateContentConfig(
             system_instruction=system_prompt,
             max_output_tokens=self.MAX_TOKENS,
             temperature=self.TEMPERATURE,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
-        # 비동기 호출
-        response = await self.client.aio.models.generate_content(
-            model=self.MODEL,
-            contents=user_prompt,
-            config=config,
-        )
-
-        # 응답 텍스트 추출
+    @staticmethod
+    def _extract_text(response) -> str:
         if hasattr(response, 'text') and response.text:
             return response.text
 
-        # candidates에서 추출
         if hasattr(response, 'candidates') and response.candidates:
             candidate = response.candidates[0]
             if hasattr(candidate, 'content') and candidate.content:
@@ -262,6 +241,70 @@ class KeywordGeneratorService:
                     return candidate.content.parts[0].text
 
         raise ValueError("No text found in LLM response")
+
+    async def _call_llm(self, user_prompt: str) -> str:
+        """비동기 LLM 호출 (async 컨텍스트 전용 — Celery에서는 _call_llm_sync 사용)."""
+        response = await self.client.aio.models.generate_content(
+            model=self.MODEL,
+            contents=user_prompt,
+            config=self._build_llm_config(),
+        )
+        return self._extract_text(response)
+
+    def _call_llm_sync(self, user_prompt: str) -> str:
+        """동기 LLM 호출 (Celery 태스크 전용 — common-bugs #8 준수)."""
+        response = self.client.models.generate_content(
+            model=self.MODEL,
+            contents=user_prompt,
+            config=self._build_llm_config(),
+        )
+        return self._extract_text(response)
+
+    def generate_keywords_for_movers_sync(
+        self,
+        mover_date: date,
+        mover_type: str,
+        max_stocks: int = 20,
+    ) -> List[Dict[str, Any]]:
+        """동기 버전 generate_keywords_for_movers (Celery용).
+
+        common-bugs #8: Celery 워커는 fork + Obj-C/asyncio 충돌로 SIGSEGV 위험.
+        asyncio.run/run_until_complete 우회하여 동기 API만 사용.
+        """
+        movers = MarketMover.objects.filter(
+            date=mover_date,
+            mover_type=mover_type,
+        ).order_by('rank')[:max_stocks]
+
+        if not movers:
+            logger.warning(f"No movers found for {mover_date} {mover_type}")
+            return []
+
+        stocks = [self._prepare_stock_data(mover) for mover in movers]
+        user_prompt = self.prompt_builder.build_batch_prompt(
+            stocks=stocks,
+            max_stocks=max_stocks,
+        )
+
+        token_estimate = self.prompt_builder.estimate_tokens(num_stocks=len(stocks))
+        logger.info(
+            f"Generating keywords for {len(stocks)} stocks (sync). "
+            f"Estimated tokens: {token_estimate['total_tokens']}"
+        )
+
+        try:
+            response_text = self._call_llm_sync(user_prompt)
+            results = self.parser.parse_batch_response(
+                response_text,
+                language=self.language,
+            )
+            logger.info(
+                f"Successfully generated keywords for {len(results)}/{len(stocks)} stocks"
+            )
+            return results
+        except Exception as e:
+            logger.exception(f"Failed to generate keywords: {e}")
+            return []
 
     def estimate_batch_cost(
         self,
@@ -356,8 +399,12 @@ def generate_keywords_sync(
     language: str = "ko",
     max_stocks: int = 20
 ) -> List[Dict[str, Any]]:
-    """
-    동기 키워드 생성 함수 (Celery 태스크용)
+    """동기 키워드 생성 함수 (Celery 태스크 전용).
+
+    common-bugs #8 / security audit P0 #1 (2026-05-19):
+    이전 구현은 asyncio.get_event_loop().run_until_complete()를 사용했으나,
+    Celery 워커(fork + macOS Obj-C)에서 SIGSEGV/좀비 워커 발생 위험이 있었음.
+    이제 동기 API만 사용하는 generate_keywords_for_movers_sync() 호출.
 
     Args:
         mover_date: Market Movers 날짜
@@ -369,19 +416,8 @@ def generate_keywords_sync(
         list: [{'symbol', 'keywords', 'summary'}, ...]
     """
     service = KeywordGeneratorService(language=language)
-
-    # asyncio 이벤트 루프 실행
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-    results = loop.run_until_complete(
-        service.generate_keywords_for_movers(
-            mover_date=mover_date,
-            mover_type=mover_type,
-            max_stocks=max_stocks
-        )
+    return service.generate_keywords_for_movers_sync(
+        mover_date=mover_date,
+        mover_type=mover_type,
+        max_stocks=max_stocks,
     )
-
-    return results
