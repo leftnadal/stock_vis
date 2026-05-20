@@ -1,8 +1,8 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle
+from rest_framework.throttling import UserRateThrottle
 from django.db import transaction
 
 from chainsight.graph.exceptions import GraphConnectionError, GraphQueryError
@@ -23,22 +23,19 @@ from chainsight.services.expand_service import find_expansion_candidates
 from chainsight.services.recheck_service import run_recheck
 
 
-class WatchlistAnonThrottle(AnonRateThrottle):
+class WatchlistUserThrottle(UserRateThrottle):
     rate = '30/minute'
 
 
 class WatchlistViewSet(viewsets.ModelViewSet):
-    permission_classes = [AllowAny]
-    throttle_classes = [WatchlistAnonThrottle]
+    # security audit P0 #2 (2026-05-19): AllowAny + user__isnull=True 풀이 IDOR 노출.
+    # IsAuthenticated 강제하여 request.user 기준 격리.
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [WatchlistUserThrottle]
     http_method_names = ['get', 'post', 'delete', 'head', 'options']
 
     def get_queryset(self):
-        qs = SavedPath.objects.all()
-        user = self.request.user if self.request.user.is_authenticated else None
-        if user:
-            qs = qs.filter(user=user)
-        else:
-            qs = qs.filter(user__isnull=True)
+        qs = SavedPath.objects.filter(user=self.request.user)
         status_param = self.request.query_params.get('status')
         if status_param:
             statuses = [s.strip() for s in status_param.split(',')]
@@ -67,11 +64,9 @@ class WatchlistViewSet(viewsets.ModelViewSet):
         why_now = build_initial_why_now(path_nodes, edge_snapshot)
         summary_path = generate_summary_path(path_nodes)
 
-        user = request.user if request.user.is_authenticated else None
-
         with transaction.atomic():
             saved_path = SavedPath.objects.create(
-                user=user,
+                user=request.user,
                 path_nodes=path_nodes,
                 summary_path=summary_path,
                 path_signature=path_signature,
