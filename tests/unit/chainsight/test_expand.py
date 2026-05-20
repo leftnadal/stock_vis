@@ -1,4 +1,7 @@
+import uuid
+
 import pytest
+from django.contrib.auth import get_user_model
 from unittest.mock import patch, MagicMock
 from rest_framework.test import APIClient
 
@@ -6,9 +9,22 @@ from chainsight.services.expand_service import find_expansion_candidates, _compu
 from chainsight.models import SavedPath, PathAction
 
 
+User = get_user_model()
+
+
 @pytest.fixture
-def client():
-    return APIClient()
+def user(db):
+    # security audit P0 #2 (2026-05-19): WatchlistViewSet IsAuthenticated 강제.
+    return User.objects.create_user(
+        username=f'exp_{uuid.uuid4().hex[:8]}', password='test1234'
+    )
+
+
+@pytest.fixture
+def client(user):
+    api = APIClient()
+    api.force_authenticate(user=user)
+    return api
 
 
 def test_expansion_score_truth_weight():
@@ -51,8 +67,8 @@ def test_find_candidates_mock(mock_get_repo):
 
 @pytest.mark.django_db
 @patch('chainsight.views.watchlist_views.find_expansion_candidates')
-def test_expand_api_success(mock_find, client):
-    path = SavedPath.objects.create(path_nodes=['NVDA', 'TSM', 'ASML'])
+def test_expand_api_success(mock_find, client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['NVDA', 'TSM', 'ASML'])
     mock_find.return_value = {
         'source_ticker': 'ASML',
         'candidates': [{'ticker': 'AMAT', 'name': 'AMAT', 'sector': 'Tech'}],
@@ -67,8 +83,8 @@ def test_expand_api_success(mock_find, client):
 
 
 @pytest.mark.django_db
-def test_expand_invalid_target(client):
-    path = SavedPath.objects.create(path_nodes=['NVDA', 'TSM'])
+def test_expand_invalid_target(client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['NVDA', 'TSM'])
     r = client.post(
         f'/api/v1/chainsight/watchlist/{path.id}/expand/',
         {'target_ticker': 'UNKNOWN'}, format='json',
@@ -77,7 +93,7 @@ def test_expand_invalid_target(client):
 
 
 @pytest.mark.django_db
-def test_expand_archived_rejected(client):
-    path = SavedPath.objects.create(path_nodes=['A', 'B'], status='archived')
+def test_expand_archived_rejected(client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['A', 'B'], status='archived')
     r = client.post(f'/api/v1/chainsight/watchlist/{path.id}/expand/')
     assert r.status_code == 400

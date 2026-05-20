@@ -1,4 +1,7 @@
+import uuid
+
 import pytest
+from django.contrib.auth import get_user_model
 from unittest.mock import patch, MagicMock
 from rest_framework.test import APIClient
 
@@ -6,9 +9,22 @@ from chainsight.services.alternatives_service import find_alternatives
 from chainsight.models import SavedPath, PathAction
 
 
+User = get_user_model()
+
+
 @pytest.fixture
-def client():
-    return APIClient()
+def user(db):
+    # security audit P0 #2 (2026-05-19): WatchlistViewSet IsAuthenticated 강제.
+    return User.objects.create_user(
+        username=f'alt_{uuid.uuid4().hex[:8]}', password='test1234'
+    )
+
+
+@pytest.fixture
+def client(user):
+    api = APIClient()
+    api.force_authenticate(user=user)
+    return api
 
 
 @pytest.mark.django_db
@@ -61,8 +77,8 @@ def test_find_alternatives_target_not_in_path():
 
 @pytest.mark.django_db
 @patch('chainsight.views.watchlist_views.find_alternatives')
-def test_alternatives_api_success(mock_find, client):
-    path = SavedPath.objects.create(path_nodes=['NVDA', 'TSM', 'AMAT', 'LRCX'])
+def test_alternatives_api_success(mock_find, client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['NVDA', 'TSM', 'AMAT', 'LRCX'])
     mock_find.return_value = {
         'target_ticker': 'AMAT',
         'neighbor_constraints': {
@@ -85,15 +101,15 @@ def test_alternatives_api_success(mock_find, client):
 
 
 @pytest.mark.django_db
-def test_alternatives_missing_target(client):
-    path = SavedPath.objects.create(path_nodes=['A', 'B'])
+def test_alternatives_missing_target(client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['A', 'B'])
     r = client.post(f'/api/v1/chainsight/watchlist/{path.id}/alternatives/', {}, format='json')
     assert r.status_code == 400
 
 
 @pytest.mark.django_db
-def test_alternatives_target_not_in_path(client):
-    path = SavedPath.objects.create(path_nodes=['A', 'B'])
+def test_alternatives_target_not_in_path(client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['A', 'B'])
     r = client.post(
         f'/api/v1/chainsight/watchlist/{path.id}/alternatives/',
         {'target_ticker': 'XYZ'}, format='json',

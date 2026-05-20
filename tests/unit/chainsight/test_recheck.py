@@ -1,5 +1,8 @@
+import uuid
+
 import pytest
 from datetime import timedelta
+from django.contrib.auth import get_user_model
 from unittest.mock import patch
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -14,9 +17,22 @@ from chainsight.services.recheck_service import (
 )
 
 
+User = get_user_model()
+
+
 @pytest.fixture
-def client():
-    return APIClient()
+def user(db):
+    # security audit P0 #2 (2026-05-19): WatchlistViewSet IsAuthenticated 강제.
+    return User.objects.create_user(
+        username=f'rch_{uuid.uuid4().hex[:8]}', password='test1234'
+    )
+
+
+@pytest.fixture
+def client(user):
+    api = APIClient()
+    api.force_authenticate(user=user)
+    return api
 
 
 # --- _classify_edge_change ---
@@ -180,17 +196,18 @@ def test_no_transition_if_too_soon(mock_fetch):
 
 
 @pytest.mark.django_db
-def test_recheck_api_archived_rejected(client):
-    path = SavedPath.objects.create(path_nodes=['A', 'B'], status='archived')
+def test_recheck_api_archived_rejected(client, user):
+    path = SavedPath.objects.create(user=user, path_nodes=['A', 'B'], status='archived')
     r = client.post(f'/api/v1/chainsight/watchlist/{path.id}/recheck/')
     assert r.status_code == 400
 
 
 @pytest.mark.django_db
 @patch('chainsight.services.recheck_service._fetch_current_snapshot')
-def test_recheck_api_full_response(mock_fetch, client):
+def test_recheck_api_full_response(mock_fetch, client, user):
     mock_fetch.return_value = [{'from': 'A', 'to': 'B', 'type': 'PEER_OF', 'truth_score': 85, 'status': 'confirmed'}]
     path = SavedPath.objects.create(
+        user=user,
         path_nodes=['A', 'B'],
         edge_snapshot=[{'from': 'A', 'to': 'B', 'type': 'PEER_OF', 'truth_score': 60, 'status': 'probable'}],
     )
