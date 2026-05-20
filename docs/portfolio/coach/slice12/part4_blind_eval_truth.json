@@ -1,0 +1,80 @@
+{
+  "truth": [
+    {
+      "fixture": "factor_edge",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    },
+    {
+      "fixture": "factor_gate",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "factor_normal",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "growth_edge",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "growth_gate",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    },
+    {
+      "fixture": "growth_normal",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    },
+    {
+      "fixture": "income_edge",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    },
+    {
+      "fixture": "income_gate",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "income_normal",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "special_edge",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "special_gate",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "special_normal",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    },
+    {
+      "fixture": "value_edge",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "value_gate",
+      "model_a": "haiku",
+      "model_b": "sonnet"
+    },
+    {
+      "fixture": "value_normal",
+      "model_a": "sonnet",
+      "model_b": "haiku"
+    }
+  ],
+  "seed": 42
+}

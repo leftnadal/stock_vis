@@ -1,0 +1,292 @@
+{
+  "rows": [
+    {
+      "fixture": "factor_edge",
+      "case_type": "edge",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 4,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "factor_gate",
+      "case_type": "gate",
+      "is_gate_case": true,
+      "haiku": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "factor_normal",
+      "case_type": "normal",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 4,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "growth_edge",
+      "case_type": "edge",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "growth_gate",
+      "case_type": "gate",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "growth_normal",
+      "case_type": "normal",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 4,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "income_edge",
+      "case_type": "edge",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 5
+      }
+    },
+    {
+      "fixture": "income_gate",
+      "case_type": "gate",
+      "is_gate_case": true,
+      "haiku": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "income_normal",
+      "case_type": "normal",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "special_edge",
+      "case_type": "edge",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 2
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "special_gate",
+      "case_type": "gate",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 2
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "special_normal",
+      "case_type": "normal",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "value_edge",
+      "case_type": "edge",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 4,
+        "ins": 4,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "value_gate",
+      "case_type": "gate",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 3,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    },
+    {
+      "fixture": "value_normal",
+      "case_type": "normal",
+      "is_gate_case": false,
+      "haiku": {
+        "nat": 4,
+        "ins": 5,
+        "gc": 1
+      },
+      "sonnet": {
+        "nat": 3,
+        "ins": 3,
+        "gc": 1
+      }
+    }
+  ],
+  "haiku_means": {
+    "nat": 3.6,
+    "ins": 3.533333333333333,
+    "gc_all": 1.1333333333333333,
+    "gc_gate_only": 1
+  },
+  "sonnet_means": {
+    "nat": 3.2,
+    "ins": 3.2666666666666666,
+    "gc_all": 1.2666666666666666,
+    "gc_gate_only": 1
+  },
+  "delta": {
+    "nat": 0.3999999999999999,
+    "ins": 0.2666666666666666,
+    "gc_all": -0.1333333333333333
+  },
+  "case_wins": {
+    "haiku_nat_wins": 8,
+    "sonnet_nat_wins": 2,
+    "nat_tie": 5,
+    "haiku_ins_wins": 6,
+    "sonnet_ins_wins": 3,
+    "ins_tie": 6,
+    "haiku_combined_wins": 7,
+    "sonnet_combined_wins": 2,
+    "combined_tie": 6,
+    "total_cases": 15
+  },
+  "cost": {
+    "haiku_total": 0.099083,
+    "sonnet_total": 0.320712,
+    "ratio_sonnet_to_haiku": 3.24
+  },
+  "latency": {
+    "haiku_avg_ms": 11381.0,
+    "sonnet_avg_ms": 20176.0,
+    "ratio_sonnet_to_haiku": 1.77
+  },
+  "efficiency": {
+    "haiku_quality_per_dollar": 72.0,
+    "sonnet_quality_per_dollar": 20.2,
+    "gap_pct": 257.0
+  },
+  "writing_hypothesis": {
+    "slice_winner": "haiku",
+    "cumulative_status": "8/8 정착 (평균 우위)",
+    "haiku_combined_wins": 7,
+    "threshold": "haiku_combined_wins >= 8 OR haiku_nat_wins >= 9"
+  },
+  "debt_60_gate_aware_prompt": {
+    "decision_all_30": "active",
+    "decision_gate_only_2": "active",
+    "haiku_gc_mean_all": 1.13,
+    "haiku_gc_mean_gate_only": 1,
+    "threshold": "haiku_gc_mean <= 3.0 → active"
+  },
+  "debt_26_distribution_width": {
+    "status": "RE_REGRESSION",
+    "nat_width": 1,
+    "ins_width": 2,
+    "threshold": "nat/ins width >= 3 → close 유지"
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "slice": "slice12_part4",
+  "n_cases_evaluated": 15,
+  "evaluations": [
+    {
+      "fixture": "factor_edge",
+      "ins_a": 4,
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 3,
+      "nat_b": 4,
+      "ins_b": 3
+    },
+    {
+      "fixture": "factor_gate",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_a": 4,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "factor_normal",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_b": 4,
+      "ins_a": 3,
+      "nat_b": 3
+    },
+    {
+      "fixture": "growth_edge",
+      "gc_a": 1,
+      "gc_b": 1,
+      "ins_a": 4,
+      "nat_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "growth_gate",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_b": 4,
+      "ins_b": 4,
+      "nat_a": 3,
+      "ins_a": 3
+    },
+    {
+      "fixture": "growth_normal",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "income_edge",
+      "gc_a": 5,
+      "gc_b": 1,
+      "nat_a": 3,
+      "ins_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "income_gate",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_a": 4,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "income_normal",
+      "gc_a": 1,
+      "gc_b": 1,
+      "ins_b": 4,
+      "nat_b": 4,
+      "nat_a": 3,
+      "ins_a": 3
+    },
+    {
+      "fixture": "special_edge",
+      "gc_a": 2,
+      "gc_b": 1,
+      "nat_a": 3,
+      "ins_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "special_gate",
+      "gc_a": 2,
+      "gc_b": 1,
+      "nat_a": 3,
+      "ins_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "special_normal",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_b": 4,
+      "ins_b": 4,
+      "nat_a": 3,
+      "ins_a": 3
+    },
+    {
+      "fixture": "value_edge",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_a": 4,
+      "nat_b": 4,
+      "ins_b": 4
+    },
+    {
+      "fixture": "value_gate",
+      "gc_a": 1,
+      "gc_b": 1,
+      "nat_a": 4,
+      "ins_a": 3,
+      "nat_b": 3,
+      "ins_b": 3
+    },
+    {
+      "fixture": "value_normal",
+      "gc_a": 1,
+      "gc_b": 1,
+      "ins_b": 5,
+      "nat_b": 4,
+      "nat_a": 3,
+      "ins_a": 3
+    }
+  ]
+}

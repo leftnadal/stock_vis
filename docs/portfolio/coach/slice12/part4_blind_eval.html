@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Slice 12 Part 4 — Blind A/B Eval</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-2: #fbbf24;
+      --gate: #f97316;
+      --done: #22c55e;
+      --pending: #475569;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 24px;
+      line-height: 1.5;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding: 16px;
+      background: var(--card);
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+    h1 { margin: 0; font-size: 20px; }
+    .progress { font-size: 14px; color: var(--muted); }
+    .progress strong { color: var(--accent); }
+    .controls { display: flex; gap: 8px; }
+    button {
+      background: var(--accent);
+      color: #0f172a;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    button:hover { background: #0ea5e9; }
+    button.secondary { background: #475569; color: var(--text); }
+    button.secondary:hover { background: #334155; }
+    .case {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      border: 1px solid #334155;
+    }
+    .case.done { border-color: var(--done); }
+    .case.gate { border-color: var(--gate); }
+    .case-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #334155;
+    }
+    .case-title { font-size: 18px; font-weight: 600; }
+    .case-meta { font-size: 13px; color: var(--muted); }
+    .gate-badge {
+      background: var(--gate);
+      color: #0f172a;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-left: 8px;
+    }
+    .commentary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .commentary {
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      white-space: pre-wrap;
+      font-family: -apple-system, "Apple SD Gothic Neo", monospace;
+      font-size: 14px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .commentary-label {
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+    .commentary-b .commentary-label { color: var(--accent-2); }
+    .sliders {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      background: #0f172a;
+      border-radius: 8px;
+    }
+    .slider-group { display: flex; flex-direction: column; gap: 6px; }
+    .slider-label {
+      font-size: 13px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+    }
+    .slider-label strong { color: var(--text); }
+    input[type="range"] { width: 100%; }
+    .gate-row {
+      grid-column: 1 / -1;
+      padding-top: 8px;
+      border-top: 1px dashed #475569;
+    }
+    .gate-row .slider-label { color: var(--gate); }
+    .case:not(.gate) .gate-row { display: none; }
+    .nav {
+      position: sticky;
+      bottom: 0;
+      background: var(--card);
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      gap: 8px;
+      margin-top: 24px;
+    }
+    .saved-indicator {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .saved-indicator.saved { color: var(--done); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Slice 12 Part 4 — Blind A/B Eval</h1>
+      <div class="progress">
+        진행: <strong id="progress-done">0</strong> / 15 case
+        <span class="saved-indicator" id="saved">(저장됨)</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="export-btn">📥 Export JSON</button>
+      <button class="secondary" id="reset-btn">🔄 Reset</button>
+    </div>
+  </header>
+
+  <div id="cases-root"></div>
+
+  <div id="instruction" class="case" style="border-color: var(--accent);">
+    <h2 style="margin-top: 0;">평가 가이드</h2>
+    <p><strong>naturalness (1~5)</strong>: 한국어 자연스러움</p>
+    <ul style="color: var(--muted);">
+      <li>5: 매우 자연스러움 / 4: 1~2개 어색 / 3: 의미 통하나 어색</li>
+      <li>2: 어색 다수 / 1: 의미 파악 어려움</li>
+    </ul>
+    <p><strong>insight (1~5)</strong>: 구체적 통찰</p>
+    <ul style="color: var(--muted);">
+      <li>5: 수치+해석+다음 액션 / 4: 1개 누락 / 3: 일반론+구체 혼재</li>
+      <li>2: 일반론 위주 / 1: boilerplate</li>
+    </ul>
+    <p><strong>gate_clarity (1~5, gate case만)</strong>: gate 발동 명료성</p>
+    <ul style="color: var(--muted);">
+      <li>5: 임계값+실제값 모두 명시 / 4: 한쪽만 / 3: 미통과만 언급</li>
+      <li>2: 점수 0만 언급 / 1: gate 사실 누락</li>
+    </ul>
+    <p style="color: var(--muted); font-size: 13px;">
+      자동 저장 (localStorage). 새로고침해도 보존. 완료 후 "Export JSON" 다운로드 →
+      <code>docs/portfolio/coach/slice12/part4_blind_eval_output.json</code> 저장.
+    </p>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'slice12_part4_blind_eval';
+    let cases = [];
+    let evaluations = {};
+
+    async function load() {
+      const resp = await fetch('part4_blind_eval_input.json');
+      const data = await resp.json();
+      cases = data.cases;
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { evaluations = JSON.parse(saved); } catch (e) { evaluations = {}; }
+      }
+      render();
+    }
+
+    function render() {
+      const root = document.getElementById('cases-root');
+      root.innerHTML = '';
+      cases.forEach((c, idx) => {
+        const evalData = evaluations[c.fixture] || {};
+        const isDone = isCaseDone(c, evalData);
+        const div = document.createElement('div');
+        div.className = `case ${c.is_gate_case ? 'gate' : ''} ${isDone ? 'done' : ''}`;
+        div.id = `case-${c.fixture}`;
+        div.innerHTML = `
+          <div class="case-header">
+            <div>
+              <div class="case-title">
+                ${idx + 1}. ${c.fixture}
+                ${c.is_gate_case ? '<span class="gate-badge">GATE</span>' : ''}
+              </div>
+              <div class="case-meta">
+                category: ${c.category} · preset: ${c.preset_id} · type: ${c.case_type}
+              </div>
+            </div>
+            <div class="case-meta" id="status-${c.fixture}">
+              ${isDone ? '✅ 완료' : '⏳ 평가 중'}
+            </div>
+          </div>
+          <div class="commentary-grid">
+            <div class="commentary-a">
+              <div class="commentary-label">Commentary A</div>
+              <div class="commentary">${escapeHtml(c.commentary_a)}</div>
+            </div>
+            <div class="commentary-b">
+              <div class="commentary-label">Commentary B</div>
+              <div class="commentary">${escapeHtml(c.commentary_b)}</div>
+            </div>
+          </div>
+          <div class="sliders">
+            ${sliderHtml(c.fixture, 'nat_a', 'A · naturalness', evalData.nat_a)}
+            ${sliderHtml(c.fixture, 'nat_b', 'B · naturalness', evalData.nat_b)}
+            ${sliderHtml(c.fixture, 'ins_a', 'A · insight', evalData.ins_a)}
+            ${sliderHtml(c.fixture, 'ins_b', 'B · insight', evalData.ins_b)}
+            <div class="gate-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              ${sliderHtml(c.fixture, 'gc_a', 'A · gate_clarity (gate case)', evalData.gc_a)}
+              ${sliderHtml(c.fixture, 'gc_b', 'B · gate_clarity (gate case)', evalData.gc_b)}
+            </div>
+          </div>
+        `;
+        root.appendChild(div);
+      });
+      updateProgress();
+      attachListeners();
+    }
+
+    function sliderHtml(fixture, key, label, value) {
+      const v = value !== undefined ? value : 3;
+      return `
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>${label}</span>
+            <strong id="val-${fixture}-${key}">${value !== undefined ? v : '—'}</strong>
+          </div>
+          <input type="range" min="1" max="5" step="1" value="${v}"
+            data-fixture="${fixture}" data-key="${key}"
+            ${value === undefined ? 'data-pristine="1"' : ''}>
+        </div>
+      `;
+    }
+
+    function attachListeners() {
+      document.querySelectorAll('input[type="range"]').forEach(input => {
+        input.addEventListener('input', e => {
+          const fixture = e.target.dataset.fixture;
+          const key = e.target.dataset.key;
+          const v = parseInt(e.target.value, 10);
+          e.target.removeAttribute('data-pristine');
+          document.getElementById(`val-${fixture}-${key}`).textContent = v;
+          if (!evaluations[fixture]) evaluations[fixture] = { fixture };
+          evaluations[fixture][key] = v;
+          save();
+          updateProgress();
+          const c = cases.find(x => x.fixture === fixture);
+          const status = document.getElementById(`status-${fixture}`);
+          const card = document.getElementById(`case-${fixture}`);
+          if (isCaseDone(c, evaluations[fixture])) {
+            status.textContent = '✅ 완료';
+            card.classList.add('done');
+          } else {
+            status.textContent = '⏳ 평가 중';
+            card.classList.remove('done');
+          }
+        });
+      });
+    }
+
+    function isCaseDone(c, evalData) {
+      const required = ['nat_a', 'nat_b', 'ins_a', 'ins_b'];
+      if (c.is_gate_case) required.push('gc_a', 'gc_b');
+      return required.every(k => evalData[k] !== undefined);
+    }
+
+    function updateProgress() {
+      const done = cases.filter(c => isCaseDone(c, evaluations[c.fixture] || {})).length;
+      document.getElementById('progress-done').textContent = done;
+    }
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(evaluations));
+      const indicator = document.getElementById('saved');
+      indicator.classList.add('saved');
+      indicator.textContent = '(저장됨)';
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    document.getElementById('export-btn').addEventListener('click', () => {
+      const evaluationsList = Object.values(evaluations);
+      const output = {
+        slice: 'slice12_part4',
+        n_cases_evaluated: evaluationsList.filter(e => {
+          const c = cases.find(x => x.fixture === e.fixture);
+          return c && isCaseDone(c, e);
+        }).length,
+        evaluations: evaluationsList,
+      };
+      const blob = new Blob([JSON.stringify(output, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'part4_blind_eval_output.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      if (confirm('모든 평가 데이터를 초기화합니다.')) {
+        localStorage.removeItem(STORAGE_KEY);
+        evaluations = {};
+        render();
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>
