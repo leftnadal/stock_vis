@@ -1,11 +1,13 @@
-"""Slice 12 Part 1 — preset scoring registry.
+"""Slice 12 Part 1+3 — preset scoring registry + 호출자 통합 helpers.
 
 Slice 11 Part 1 `COMMENTARY_INPUT_CLASSES` 패턴 미러 — 5 카테고리 dict 매핑.
+Part 3: `resolve_category` + `format_scores_for_prompt` + 12 preset_id mapping 추가.
 """
 
 from __future__ import annotations
 
 from portfolio.services.scoring.base import ScoringEngineBase
+from portfolio.services.scoring.preset_spec import PresetSpec
 from portfolio.services.scoring.presets.factor import FactorScoringEngine
 from portfolio.services.scoring.presets.growth import GrowthScoringEngine
 from portfolio.services.scoring.presets.income import IncomeScoringEngine
@@ -22,25 +24,90 @@ PRESET_SCORERS: dict[str, type[ScoringEngineBase]] = {
 }
 
 
+# Slice 12 Part 3 — 12 preset_id → 5 카테고리 매핑.
+# presets.py PRESETS dict의 category 값 기반. 새 preset 추가 시 본 dict 갱신 필수.
+# (#61 후보: 자동화 — Slice 13+ PS 0.5)
+PRESET_ID_TO_CATEGORY: dict[str, str] = {
+    # value
+    "buffett_quality_value": "value",
+    "piotroski_f_score": "value",
+    # growth
+    "garp": "growth",
+    "quality_growth": "growth",
+    # income
+    "dividend_growth": "income",
+    "shareholder_yield": "income",
+    # factor
+    "quality_factor": "factor",
+    "low_volatility": "factor",
+    "price_momentum": "factor",
+    "multi_factor": "factor",
+    # special
+    "contrarian": "special",
+    "concentrated_portfolio": "special",
+}
+
+
 def get_scorer(category: str) -> ScoringEngineBase:
     """카테고리명으로 scorer 인스턴스 반환.
 
     Args:
-        category: "value" / "growth" / "income" / "factor" / "special"
-                  (presets.py 카테고리, Slice 11 PresetType은 adapter에서 매핑).
-
-    Returns:
-        ScoringEngineBase 하위 인스턴스 (frozen Pydantic).
+        category: "value" / "growth" / "income" / "factor" / "special".
 
     Raises:
-        KeyError: category가 PRESET_SCORERS에 없을 때.
+        KeyError: 미등록 category.
     """
-    cls = PRESET_SCORERS[category]
-    return cls()
+    if category not in PRESET_SCORERS:
+        raise KeyError(f"Unknown category: {category!r}")
+    return PRESET_SCORERS[category]()
+
+
+def resolve_category(preset_id: str) -> str:
+    """12 preset_id → 5 카테고리 매핑.
+
+    Args:
+        preset_id: 12 preset 중 하나 (예: "buffett_quality_value").
+
+    Returns:
+        카테고리명 ("value" 등).
+
+    Raises:
+        KeyError: 미등록 preset_id.
+    """
+    if preset_id not in PRESET_ID_TO_CATEGORY:
+        raise KeyError(f"Unknown preset_id: {preset_id!r}")
+    return PRESET_ID_TO_CATEGORY[preset_id]
+
+
+def format_scores_for_prompt(scores: dict[str, float]) -> str:
+    """Score dict → LLM prompt 친화 문자열.
+
+    Gate 발동(0점)은 명시적 표시. `_category_score`는 마지막 별도 줄.
+
+    Args:
+        scores: ScoringEngine.score() 반환 dict.
+
+    Returns:
+        markdown bullet 형식의 multi-line string.
+    """
+    lines: list[str] = []
+    for key, value in scores.items():
+        if key.startswith("_"):
+            continue
+        if value == 0.0:
+            lines.append(f"- {key}: 0.0 (gate 미통과)")
+        else:
+            lines.append(f"- {key}: {value:.2f}")
+    if "_category_score" in scores:
+        lines.append("")
+        lines.append(f"카테고리 평균: {scores['_category_score']:.2f}")
+    return "\n".join(lines)
 
 
 __all__ = [
     "PRESET_SCORERS",
+    "PRESET_ID_TO_CATEGORY",
+    "PresetSpec",
     "ScoringEngineBase",
     "ValueScoringEngine",
     "GrowthScoringEngine",
@@ -48,4 +115,6 @@ __all__ = [
     "FactorScoringEngine",
     "SpecialScoringEngine",
     "get_scorer",
+    "resolve_category",
+    "format_scores_for_prompt",
 ]

@@ -1,0 +1,19 @@
+{
+  "category": "income",
+  "case_type": "gate",
+  "preset_id": "dividend_growth",
+  "symbol": "TEST_INC_G",
+  "metrics": {
+    "dividend_yield": 0.01,
+    "dividend_growth_rate_5y": 0.9,
+    "dividend_growth_consistency_5y": 0.9,
+    "shareholder_yield": 0.01,
+    "net_buyback_yield": 0.05,
+    "net_debt_reduction_rate": 0.05
+  },
+  "expected_gate_triggered": true,
+  "expected_category_score_range": [
+    0,
+    0
+  ]
+}

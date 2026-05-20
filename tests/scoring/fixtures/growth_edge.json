@@ -1,0 +1,12 @@
+{
+  "category": "growth",
+  "case_type": "edge",
+  "preset_id": "quality_growth",
+  "symbol": "TEST_GR_E",
+  "metrics": {},
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    0,
+    5
+  ]
+}

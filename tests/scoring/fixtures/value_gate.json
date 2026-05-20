@@ -1,0 +1,18 @@
+{
+  "category": "value",
+  "case_type": "gate",
+  "preset_id": "buffett_quality_value",
+  "symbol": "TEST_VAL_G",
+  "metrics": {
+    "roic": 0.2,
+    "roe": 0.15,
+    "roic_consistency_5y": 0.3,
+    "earnings_consistency_5y": 0.25,
+    "f_score_total": 0.3
+  },
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    10,
+    35
+  ]
+}

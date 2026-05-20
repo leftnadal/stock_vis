@@ -1,0 +1,19 @@
+{
+  "category": "income",
+  "case_type": "normal",
+  "preset_id": "dividend_growth",
+  "symbol": "TEST_INC_N",
+  "metrics": {
+    "dividend_yield": 0.05,
+    "dividend_growth_rate_5y": 0.7,
+    "dividend_growth_consistency_5y": 0.8,
+    "shareholder_yield": 0.06,
+    "net_buyback_yield": 0.03,
+    "net_debt_reduction_rate": 0.02
+  },
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    25,
+    65
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "category": "special",
+  "case_type": "gate",
+  "preset_id": "concentrated_portfolio",
+  "symbol": "TEST_SP_G",
+  "metrics": {
+    "pe_ratio": 0.3,
+    "pb_ratio": 0.3,
+    "pct_from_52w_high": 0.7,
+    "f_score_total": 0.7,
+    "hhi_concentration": 0.8,
+    "sector_hhi": 0.7,
+    "top3_weight": 0.7,
+    "holding_count": 0.2,
+    "portfolio_beta": 0.6,
+    "max_position_weight": 0.7,
+    "avg_correlation": 0.6
+  },
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    40,
+    75
+  ]
+}

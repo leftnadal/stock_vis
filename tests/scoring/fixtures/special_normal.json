@@ -1,0 +1,24 @@
+{
+  "category": "special",
+  "case_type": "normal",
+  "preset_id": "concentrated_portfolio",
+  "symbol": "TEST_SP_N",
+  "metrics": {
+    "pe_ratio": 0.5,
+    "pb_ratio": 0.5,
+    "pct_from_52w_high": 0.4,
+    "f_score_total": 0.6,
+    "hhi_concentration": 0.5,
+    "sector_hhi": 0.5,
+    "top3_weight": 0.5,
+    "holding_count": 0.5,
+    "portfolio_beta": 0.5,
+    "max_position_weight": 0.5,
+    "avg_correlation": 0.5
+  },
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    35,
+    70
+  ]
+}

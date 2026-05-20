@@ -1,0 +1,12 @@
+{
+  "category": "income",
+  "case_type": "edge",
+  "preset_id": "dividend_growth",
+  "symbol": "TEST_INC_E",
+  "metrics": {},
+  "expected_gate_triggered": true,
+  "expected_category_score_range": [
+    0,
+    0
+  ]
+}

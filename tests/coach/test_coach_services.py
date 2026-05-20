@@ -55,7 +55,11 @@ def test_run_e6_coach_importable():
 
 
 def test_six_coach_services_signature_consistency():
-    """E1~E6 모두 (input_data, provider, client, max_tokens) 시그니처."""
+    """E1~E6 모두 (input_data, provider, client, max_tokens) 시그니처 — 핵심 4개.
+
+    Slice 12 Part 3에서 e3_service에 keyword-only `preset_id`, `metrics` 추가됨 (#59 E3 통합).
+    핵심 positional 4개는 모든 service 일관 유지, e3는 추가 keyword-only만 허용.
+    """
     services = [
         run_e1_coach,
         run_e2_coach,
@@ -64,12 +68,20 @@ def test_six_coach_services_signature_consistency():
         run_e5_coach,
         run_e6_coach,
     ]
-    expected = ["input_data", "provider", "client", "max_tokens"]
+    core_params = ["input_data", "provider", "client", "max_tokens"]
     for fn in services:
         sig = inspect.signature(fn)
         actual = list(sig.parameters.keys())
-        assert actual == expected, f"{fn.__name__} signature: {actual} != {expected}"
-        # default 값 검증 (provider='haiku', client=None, max_tokens=2000)
+        # 첫 4개는 모든 service에서 동일
+        assert actual[:4] == core_params, (
+            f"{fn.__name__} core signature: {actual[:4]} != {core_params}"
+        )
+        # default 값 검증
         assert sig.parameters["provider"].default == "haiku"
         assert sig.parameters["client"].default is None
         assert sig.parameters["max_tokens"].default == 2000
+        # 추가 파라미터가 있다면 keyword-only이어야 함 (Slice 12 Part 3 e3 패턴)
+        for name in actual[4:]:
+            assert sig.parameters[name].kind == inspect.Parameter.KEYWORD_ONLY, (
+                f"{fn.__name__}.{name} must be keyword-only"
+            )

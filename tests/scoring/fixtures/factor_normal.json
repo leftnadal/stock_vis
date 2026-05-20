@@ -1,0 +1,31 @@
+{
+  "category": "factor",
+  "case_type": "normal",
+  "preset_id": "low_volatility",
+  "symbol": "TEST_FAC_N",
+  "metrics": {
+    "roic": 0.5,
+    "roe": 0.5,
+    "gross_margin": 0.6,
+    "roe_stability_5y": 0.6,
+    "volatility_1y": 0.4,
+    "beta": 0.9,
+    "downside_deviation": 0.4,
+    "max_drawdown_1y": 0.5,
+    "portfolio_volatility": 0.4,
+    "return_12m": 0.5,
+    "return_6m": 0.5,
+    "return_3m": 0.5,
+    "relative_strength": 0.5,
+    "composite_value": 0.5,
+    "composite_quality": 0.5,
+    "composite_growth": 0.5,
+    "composite_momentum": 0.5,
+    "composite_low_vol": 0.5
+  },
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    30,
+    70
+  ]
+}

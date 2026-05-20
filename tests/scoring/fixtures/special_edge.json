@@ -1,0 +1,12 @@
+{
+  "category": "special",
+  "case_type": "edge",
+  "preset_id": "contrarian",
+  "symbol": "TEST_SP_E",
+  "metrics": {},
+  "expected_gate_triggered": false,
+  "expected_category_score_range": [
+    0,
+    5
+  ]
+}
