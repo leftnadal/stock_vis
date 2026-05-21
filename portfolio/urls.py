@@ -19,9 +19,6 @@ urlpatterns = [
         views.coach_e6_comparison,
         name="coach_e6_comparison",
     ),
-    path(
-        "coach/e3/metric-comment/",
-        views.coach_e3_metric_comment,
-        name="coach_e3_metric_comment",
-    ),
+    # Slice 13 #65: coach/e3/metric-comment/ 및 view 제거. 단일화된 E3 진입점은
+    # /api/v1/coach/e3/ (portfolio/api/urls.py).
 ]
