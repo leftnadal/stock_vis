@@ -2,13 +2,15 @@
 Portfolio Coach Django views.
 
 진입점:
-  - GET  /api/coach/e1/garp/?provider=haiku            (Slice 1)
   - POST /api/coach/e5/adjustment/?provider=haiku      (Slice 2)
   - POST /api/coach/e2/diagnostic-card/?provider=haiku (Slice 3)
   - POST /api/coach/e6/comparison/?provider=haiku      (Slice 4)
   - POST /api/coach/e3/metric-comment/?provider=haiku  (Slice 5)
 
 순수 Django view + JsonResponse (DRF 미사용).
+
+Slice 13 #65 pilot (2026-05-21): E1 진입점 (`coach_e1_garp`, `/api/coach/e1/garp/`)
+제거. 단일화된 E1 진입점은 `/api/v1/coach/e1/` (`portfolio/api/views.py::coach_e1`).
 """
 
 from __future__ import annotations
@@ -22,7 +24,6 @@ from pydantic import ValidationError
 
 from portfolio.llm import LLMBudgetExceededError, LLMError
 from portfolio.schemas.llm import E2Request, E3Request, E5Request, E6Request
-from portfolio.services.e1_garp import run_e1_garp
 from portfolio.services.e2_diagnostic_card import run_e2
 from portfolio.services.e3_metric_comment import run_e3
 from portfolio.services.e5_adjustment_parser import run_e5
@@ -32,31 +33,6 @@ from portfolio.services.e6_comparison import run_e6
 # Slice 1 Decision: default provider = haiku (winner).
 # "gemini"는 호환성 위해 허용하나 free tier에서 RateLimit 즉시 폴백 발생 가능.
 _VALID_PROVIDERS = ("gemini", "anthropic", "sonnet", "haiku")
-
-
-@require_GET
-def coach_e1_garp(request: HttpRequest) -> JsonResponse:
-    """
-    GET /api/coach/e1/garp/?provider=haiku
-
-    E1 한 줄 진단을 GARP 프리셋 + Mock fixture 기반으로 실행.
-    provider 옵션: haiku (기본) | sonnet | anthropic (= sonnet) | gemini.
-    """
-    provider = request.GET.get("provider", "haiku")
-    if provider not in _VALID_PROVIDERS:
-        return JsonResponse(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
-            status=400,
-        )
-
-    try:
-        result = run_e1_garp(provider=provider)
-    except LLMBudgetExceededError as exc:
-        return JsonResponse({"error": str(exc)}, status=503)
-    except LLMError as exc:
-        return JsonResponse({"error": str(exc)}, status=500)
-
-    return JsonResponse(result, status=200)
 
 
 @csrf_exempt
