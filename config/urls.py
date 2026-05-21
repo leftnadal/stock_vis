@@ -52,7 +52,8 @@ urlpatterns = [
     path('api/', include('portfolio.urls')),
 
     # Portfolio Coach DRF API (Slice 13 Part 1+) — 별도 endpoint
-    path('api/', include('portfolio.api.urls', namespace='portfolio_api')),
+    # Slice 13 Part 1.5: v1 버전 세그먼트 도입 (비가역 계약 + 미래 호환성).
+    path('api/v1/', include('portfolio.api.urls', namespace='portfolio_api')),
 
     # Market Pulse v2 (PR-I/J)
     path('api/v2/market-pulse/', include('marketpulse.api.urls')),
