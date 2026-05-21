@@ -222,3 +222,56 @@ except BudgetExceededError as e:
 - **PER_INSTANCE=50**: 야간 자동화/매 instance가 폭주해도 50회에서 차단
 - **PER_SLICE=100**: 여러 instance 합산해도 100회 한도 (rationale 52건 + smoke 등 흡수)
 - `BudgetExceededError(scope="instance" or "slice")` raise 시 호출자가 적절히 대응 가능
+
+---
+
+## §6. Cost Ledger (Slice 14 #63 신설)
+
+### 목적
+
+CostGuard의 `records: list[CallRecord]`는 **인메모리**이며 `reset_slice` 시 휘발한다.
+closing 보고서의 누적 비용은 보고서 기재값 의존 — 미검증 상태. ledger는 LLM 호출
+1건당 비용을 파일에 append해 **검증 가능한 누적 비용**을 만든다.
+
+### 원칙
+
+- **기록 전용 (append-only)**. 호출 허용/거부 판정에 **일절 관여하지 않는다**.
+- 비용 한도 초과 시 호출을 실제로 막는 작업은 **#64 (blocking guard, 별도 슬라이스)**.
+- ledger append 실패는 LLM 호출 흐름을 깨지 않는다 (logger.warning, 예외 전파 없음).
+- CostGuard 공개 인터페이스·차단 로직·`reset_for_slice` 동작 무수정.
+
+### 파일 경로 / 포맷
+
+- 기본 경로: `docs/portfolio/coach/cost_ledger.jsonl` (REPO_ROOT 기준).
+- 오버라이드: 환경변수 `COST_LEDGER_PATH` (테스트용).
+- 포맷: JSONL. 1행 = LLM 호출 1건.
+
+### 행 컬럼
+
+| 컬럼            | 출처                                  |
+|-----------------|---------------------------------------|
+| timestamp       | append 시점 UTC ISO8601               |
+| slice           | `CostGuard.slice_id`                  |
+| entry_point     | caller 식별자 ("e1"~"e6"). 현 미전달, 후속 부채로 분리 |
+| provider        | `LLMResponse.provider`                |
+| model           | `LLMResponse.model`                   |
+| input_tokens    | `LLMResponse.input_tokens`            |
+| output_tokens   | `LLMResponse.output_tokens`           |
+| cost_usd        | `LLMResponse.cost_usd`                |
+| fallback_from   | `LLMResponse.fallback_from` (없으면 null) |
+
+### 통합 지점
+
+- `portfolio/llm/client.py` `LLMClient.complete()` 내 `guard.record_response(...)` 직후
+  `portfolio.llm.cost_ledger.append_call(...)` 호출 1줄.
+- 이중 방어: client.py 측 try/except + `append_call` 내부 try/except.
+
+### 활용
+
+- `portfolio.llm.cost_ledger.read_records(slice_id=...)` — ledger 행 조회.
+- `portfolio.llm.cost_ledger.sum_cost_usd(slice_id=...)` — 누적 합 (옵션: 슬라이스 필터).
+
+### 관련 부채
+
+- **#63 (본 작업)**: cost ledger 신설 (기록 전용).
+- **#64 (이번 슬라이스 범위 아님)**: blocking guard — ledger 또는 사전 추정 기반 호출 차단.

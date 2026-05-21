@@ -168,6 +168,24 @@ class LLMClient:
 
         # 4. 글로벌 CostGuard 비용/모델 기록 (카운트는 step 1에서 이미 처리, 중복 방지)
         guard.record_response(cost_usd=response.cost_usd, model=response.model)
+
+        # 5. cost ledger append (Slice 14 #63, append-only, 차단 동작 영향 없음).
+        #    이중 방어: append_call 내부에서 흡수하지만, import/patch 실패 등 모든
+        #    예외를 여기서도 한 번 더 차단 — ledger는 보조 장치, 본 흐름 보호 최우선.
+        try:
+            from portfolio.llm.cost_ledger import append_call as _ledger_append
+            _ledger_append(
+                slice_id=guard.slice_id,
+                entry_point=None,  # caller 단에서 명시 가능 — 후속 부채로 분리.
+                provider=response.provider,
+                model=response.model,
+                input_tokens=response.input_tokens,
+                output_tokens=response.output_tokens,
+                cost_usd=response.cost_usd,
+                fallback_from=response.fallback_from,
+            )
+        except Exception:  # noqa: BLE001 — 보조 장치, 본 흐름 보호 최우선.
+            pass
         return response
 
     # ------------------------------------------------------------
