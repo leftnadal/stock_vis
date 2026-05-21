@@ -3,14 +3,15 @@ Portfolio Coach Django views.
 
 진입점:
   - POST /api/coach/e5/adjustment/?provider=haiku      (Slice 2)
-  - POST /api/coach/e2/diagnostic-card/?provider=haiku (Slice 3)
   - POST /api/coach/e6/comparison/?provider=haiku      (Slice 4)
   - POST /api/coach/e3/metric-comment/?provider=haiku  (Slice 5)
 
 순수 Django view + JsonResponse (DRF 미사용).
 
-Slice 13 #65 pilot (2026-05-21): E1 진입점 (`coach_e1_garp`, `/api/coach/e1/garp/`)
-제거. 단일화된 E1 진입점은 `/api/v1/coach/e1/` (`portfolio/api/views.py::coach_e1`).
+Slice 13 #65 (2026-05-21): legacy view 단계적 제거.
+- pilot: E1 (`coach_e1_garp`, `/api/coach/e1/garp/`) 제거.
+- 이후: E2 (`coach_e2_diagnostic_card`, `/api/coach/e2/diagnostic-card/`) 제거.
+  단일화된 진입점은 `/api/v1/coach/eN/` (`portfolio/api/views.py`).
 """
 
 from __future__ import annotations
@@ -23,8 +24,7 @@ from django.views.decorators.http import require_GET, require_POST
 from pydantic import ValidationError
 
 from portfolio.llm import LLMBudgetExceededError, LLMError
-from portfolio.schemas.llm import E2Request, E3Request, E5Request, E6Request
-from portfolio.services.e2_diagnostic_card import run_e2
+from portfolio.schemas.llm import E3Request, E5Request, E6Request
 from portfolio.services.e3_metric_comment import run_e3
 from portfolio.services.e5_adjustment_parser import run_e5
 from portfolio.services.e6_comparison import run_e6
@@ -89,67 +89,6 @@ def coach_e5_adjustment(request: HttpRequest) -> JsonResponse:
         )
     except ValidationError as exc:
         # LLM 응답 schema 미일치
-        return JsonResponse(
-            {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
-            status=500,
-        )
-
-    return JsonResponse(result, status=200, json_dumps_params={"ensure_ascii": False})
-
-
-@csrf_exempt
-@require_POST
-def coach_e2_diagnostic_card(request: HttpRequest) -> JsonResponse:
-    """
-    POST /api/coach/e2/diagnostic-card/?provider=haiku
-
-    body (JSON): {"analysis_context": {...}, "session_id": "..."}
-    provider 옵션: haiku (기본 — D2.B 글쓰기) | sonnet | anthropic | gemini.
-
-    응답:
-      200 — {"response": E2Response, "metadata": LLMResponse.metadata_dict()}
-      400 — invalid body or invalid provider
-      429 — budget exceeded
-      500 — LLM 호출 실패
-    """
-    provider = request.GET.get("provider", "haiku")
-    if provider not in _VALID_PROVIDERS:
-        return JsonResponse(
-            {
-                "error": "invalid_provider",
-                "detail": f"{provider!r} not in {list(_VALID_PROVIDERS)}",
-            },
-            status=400,
-        )
-
-    try:
-        body = json.loads(request.body)
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        return JsonResponse(
-            {"error": "invalid_request", "detail": f"json parse error: {exc}"},
-            status=400,
-        )
-
-    try:
-        e2_request = E2Request.model_validate(body)
-    except ValidationError as exc:
-        return JsonResponse(
-            {"error": "invalid_request", "detail": str(exc)[:500]},
-            status=400,
-        )
-
-    try:
-        result = run_e2(e2_request, provider=provider)
-    except LLMBudgetExceededError as exc:
-        return JsonResponse(
-            {"error": "budget_exceeded", "detail": str(exc)}, status=429
-        )
-    except LLMError as exc:
-        return JsonResponse(
-            {"error": "llm_invocation_failed", "detail": str(exc)[:300]},
-            status=500,
-        )
-    except ValidationError as exc:
         return JsonResponse(
             {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
             status=500,
