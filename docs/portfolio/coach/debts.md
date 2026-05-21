@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 13 Step 0b 진행 중)
+# Portfolio Coach 부채 대장 (Slice 13 Part 1 진행 중)
 
-**최종 갱신**: 2026-05-21 (Slice 13 Step 0b — estimator→CostGuard non-blocking integration)
+**최종 갱신**: 2026-05-21 (Slice 13 Part 1 — E1 DRF endpoint + contract test)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -46,6 +46,20 @@
   - CostGuard.reset_for_slice() 시 ledger flush + slice 합계 출력
   - #62와 인프라 묶음 처리
 
+### #65: 기존 순수 Django view 최종 처리 (Slice 13 후반 Part, PS 1.5)
+
+- **신규 등록**: Slice 13 Part 1 (2026-05-21)
+- **history**:
+  - Slice 13 Part 1: E1 DRF endpoint (`/api/coach/e1/`) 추가, 기존 `coach/e1/garp/` 무수정 유지
+  - E1만 마이그레이션 완료, E2~E6는 후속 Part에서 동일 패턴 확장
+- **선행 조건**:
+  - E1~E6 6개 endpoint 전체 DRF 마이그레이션 완료
+- **작업 범위 (선행 완료 후)**:
+  - 기존 순수 view (`portfolio/views.py`, `portfolio/urls.py`) **유지 / 제거 / wrapper화** 결정
+  - 클라이언트 호출 경로 분석 (frontend, 자동화 스크립트)
+  - wrapper화 선택 시: 순수 view → DRF endpoint 호출로 위임 (이중 라우팅 제거)
+- **참조**: `portfolio/api/` (신규 DRF 패키지), `portfolio/views.py` (legacy)
+
 ### #64: 사전 추정 기반 blocking 차단 모드 (Slice 14+, PS 1.0)
 
 - **신규 등록**: Slice 13 Step 0b (2026-05-21)
@@ -77,7 +91,7 @@
 
 ---
 
-## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b)
+## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1)
 
 ### #62: estimator → CostGuard integration (close, Slice 13 Step 0b)
 
@@ -147,25 +161,32 @@
 
 ---
 
-## §4. 부채 변화 요약 (Slice 12 Step 0 multi-debt mini-slice)
+## §4. 부채 변화 요약 (Slice 13 Step 0a + 0b)
 
-| 변화      | 건수 | 부채 ID                                          |
-| --------- | ---- | ------------------------------------------------ |
-| close     | 3    | #58, #41 (dep), #59 E3                           |
-| 신규 등록 | 0    | -                                                |
-| 잔여      | 2    | #51 (PS 1.5), #59 E5 (PS 0.5)                    |
-| **net**   | **−3** (close 3 − 신규 0)                        |
+| 변화      | 건수 | 부채 ID                                                  |
+| --------- | ---- | -------------------------------------------------------- |
+| close     | 2    | #51 (fit 부분 close, Step 0a) / #62 (Step 0b)            |
+| 신규 등록 | 4    | #61 (Slice 14), #63 (Slice 14+), #64 (Slice 14+), 추가 §1 등록 |
+| 잔여      | 1    | #59 E5 (PS 0.5)                                          |
+| **net**   | **+2** (close 2 − 신규 4)                                |
 
-> **multi-debt mini-slice 첫 사례**: Slice 10 single-debt mini + Slice 11 multi-debt 융합 패턴 정착.
+### 추적
+
+- **Step 0a 신규**: #61 (3단 게이트 calibration, PS 2.5), #62 (estimator→CostGuard integration, PS 1.5), #63 (cost ledger 영속화, PS 1.5)
+- **Step 0b 변동**: #62 → close (non-blocking 모드), #64 신규 (blocking 차단 모드 분리, PS 1.0)
+- **#51**: Slice 11 Part 1 본격 → Slice 13 Step 0a에서 multivariate fit 정확도 개선 (fit 부분 close), integration은 #62로 분리됨
 
 ---
 
-## §5. Slice 13+ 진입점 사전 등록
+## §5. Slice 14+ 진입점 사전 등록
 
-| 후보                                    | PS  | 우선순위           | 근거                                                 |
-| --------------------------------------- | --- | ------------------ | ---------------------------------------------------- |
-| #51 output_token multivariate estimator | 1.5 | **Step 0 1순위**   | Slice 11 Part 4 + Slice 12 Step 0b 데이터 누적     |
-| #59 E5 action measurability             | 0.5 | Step 0 2순위 (저 PS) | E5 25% NG, E3 패턴 재사용 가능                     |
+| 후보                                    | PS  | 우선순위        | 근거                                                                 |
+| --------------------------------------- | --- | --------------- | -------------------------------------------------------------------- |
+| #61 3단 게이트 경계값 calibration       | 2.5 | **Step 0 1순위** | 12 preset placeholder → 실측 분포 기반 fail/warn_below + manual eval |
+| #59 E5 action measurability             | 0.5 | Step 0 2순위    | E5 25% NG, E3 패턴 재사용 가능                                       |
+| #63 누적 비용 ledger 영속화             | 1.5 | Part 후보       | JSONL/SQLite ledger + slice flush                                    |
+| #64 사전 추정 blocking 차단 모드        | 1.0 | Part 후보       | #61 calibration 완료 후 안전 (현재 estimator delta 24.58%)           |
+| **#65 기존 순수 view 최종 처리 (E1~E6 마이그레이션 완료 후)** | **1.5** | **Slice 13 후반 Part** | E1~E6 DRF endpoint 전환 완료 시점에 유지/제거/wrapper화 결정 |
 
 ---
 

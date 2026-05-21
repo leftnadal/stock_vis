@@ -48,8 +48,11 @@ urlpatterns = [
     # Provider Admin API
     path('api/v1/', include('api_request.urls')),
 
-    # Portfolio Coach (slice 1: E1+GARP)
+    # Portfolio Coach (slice 1: E1+GARP) — 순수 Django view
     path('api/', include('portfolio.urls')),
+
+    # Portfolio Coach DRF API (Slice 13 Part 1+) — 별도 endpoint
+    path('api/', include('portfolio.api.urls', namespace='portfolio_api')),
 
     # Market Pulse v2 (PR-I/J)
     path('api/v2/market-pulse/', include('marketpulse.api.urls')),
