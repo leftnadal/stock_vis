@@ -19,5 +19,7 @@ urlpatterns = [
     path("coach/e1/", views.coach_e1, name="coach_e1"),
     path("coach/e2/", views.coach_e2, name="coach_e2"),
     path("coach/e3/", views.coach_e3, name="coach_e3"),
-    # Part 4~: coach/e4/, coach/e5/, coach/e6/ 추가 예정
+    path("coach/e5/", views.coach_e5, name="coach_e5"),
+    path("coach/e6/", views.coach_e6, name="coach_e6"),
+    # Part 5~: coach/e4/ (대화 Q&A 진입점) 추가 예정
 ]

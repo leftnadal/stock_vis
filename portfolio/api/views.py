@@ -27,11 +27,17 @@ from portfolio.api.serializers import (
     E2ResponseSerializer,
     E3RequestSerializer,
     E3ResponseSerializer,
+    E5RequestSerializer,
+    E5ResponseSerializer,
+    E6RequestSerializer,
+    E6ResponseSerializer,
 )
 from portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
 from portfolio.services.coach.e1_service import run_e1_coach
 from portfolio.services.coach.e2_service import run_e2_coach
 from portfolio.services.coach.e3_service import run_e3_coach
+from portfolio.services.coach.e5_service import run_e5_coach
+from portfolio.services.coach.e6_service import run_e6_coach
 
 logger = logging.getLogger(__name__)
 
@@ -185,4 +191,98 @@ def coach_e3(request: Request) -> Response:
         )
 
     resp_serializer = E3ResponseSerializer(result)
+    return Response(resp_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
+def coach_e5(request: Request) -> Response:
+    """POST /api/v1/coach/e5/
+
+    Body: `CommentaryInputE5` schema 필드 (portfolio_id, fetched_at, preset,
+    holdings, extraction_targets, time_series_context?).
+    Query: provider=haiku (기본) | sonnet | anthropic.
+
+    Slice 13 Part 4 신규 — E3 view 동형. preset_id/metrics kwarg 미전달.
+    """
+    provider = request.query_params.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return Response(
+            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    req_serializer = E5RequestSerializer(data=request.data)
+    req_serializer.is_valid(raise_exception=True)
+    input_data = req_serializer.validated_data  # CommentaryInputE5 instance
+
+    try:
+        result = run_e5_coach(input_data, provider=provider)
+    except LLMBudgetExceededError as exc:
+        logger.warning("E5 endpoint LLM budget exceeded: %s", exc)
+        return Response(
+            {"error": "LLM budget exceeded", "scope": exc.scope},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    except LLMError as exc:
+        logger.exception("E5 endpoint LLM error")
+        return Response(
+            {"error": "LLM call failed", "type": type(exc).__name__},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        logger.exception("E5 endpoint unexpected error")
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    resp_serializer = E5ResponseSerializer(result)
+    return Response(resp_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
+def coach_e6(request: Request) -> Response:
+    """POST /api/v1/coach/e6/
+
+    Body: `CommentaryInputE6` schema 필드 (portfolio_id, fetched_at, preset,
+    holdings, analysis_results).
+    Query: provider=haiku (기본) | sonnet | anthropic.
+
+    Slice 13 Part 4 신규 — E3 view 동형. preset_id/metrics kwarg 미전달.
+    """
+    provider = request.query_params.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return Response(
+            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    req_serializer = E6RequestSerializer(data=request.data)
+    req_serializer.is_valid(raise_exception=True)
+    input_data = req_serializer.validated_data  # CommentaryInputE6 instance
+
+    try:
+        result = run_e6_coach(input_data, provider=provider)
+    except LLMBudgetExceededError as exc:
+        logger.warning("E6 endpoint LLM budget exceeded: %s", exc)
+        return Response(
+            {"error": "LLM budget exceeded", "scope": exc.scope},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    except LLMError as exc:
+        logger.exception("E6 endpoint LLM error")
+        return Response(
+            {"error": "LLM call failed", "type": type(exc).__name__},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        logger.exception("E6 endpoint unexpected error")
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    resp_serializer = E6ResponseSerializer(result)
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
