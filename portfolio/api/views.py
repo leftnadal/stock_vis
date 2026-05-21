@@ -25,10 +25,13 @@ from portfolio.api.serializers import (
     E1ResponseSerializer,
     E2RequestSerializer,
     E2ResponseSerializer,
+    E3RequestSerializer,
+    E3ResponseSerializer,
 )
 from portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
 from portfolio.services.coach.e1_service import run_e1_coach
 from portfolio.services.coach.e2_service import run_e2_coach
+from portfolio.services.coach.e3_service import run_e3_coach
 
 logger = logging.getLogger(__name__)
 
@@ -131,4 +134,55 @@ def coach_e2(request: Request) -> Response:
         )
 
     resp_serializer = E2ResponseSerializer(result)
+    return Response(resp_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # E1·E2 패턴 복제 (audit P0 #5)
+def coach_e3(request: Request) -> Response:
+    """POST /api/v1/coach/e3/
+
+    Body: `CommentaryInputE3` schema 필드 (portfolio_id, fetched_at, preset,
+    holdings, concentration_metrics).
+    Query: provider=haiku (기본) | sonnet | anthropic.
+
+    응답: `{output: E3Output, llm_metadata: {...}}`
+    Slice 13 Part 3 신규 — E2 view 동형.
+
+    ★ preset_id / metrics kwarg는 본 endpoint에서 노출하지 않는다 (#66 분리).
+      → run_e3_coach 호출 시 기본값(None) 사용 — 기존 동작 유지.
+    """
+    provider = request.query_params.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return Response(
+            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    req_serializer = E3RequestSerializer(data=request.data)
+    req_serializer.is_valid(raise_exception=True)
+    input_data = req_serializer.validated_data  # CommentaryInputE3 instance
+
+    try:
+        result = run_e3_coach(input_data, provider=provider)
+    except LLMBudgetExceededError as exc:
+        logger.warning("E3 endpoint LLM budget exceeded: %s", exc)
+        return Response(
+            {"error": "LLM budget exceeded", "scope": exc.scope},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    except LLMError as exc:
+        logger.exception("E3 endpoint LLM error")
+        return Response(
+            {"error": "LLM call failed", "type": type(exc).__name__},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        logger.exception("E3 endpoint unexpected error")
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    resp_serializer = E3ResponseSerializer(result)
     return Response(resp_serializer.data, status=status.HTTP_200_OK)

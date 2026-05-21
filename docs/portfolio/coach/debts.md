@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 13 Part 1 진행 중)
+# Portfolio Coach 부채 대장 (Slice 13 Part 3 진행 중)
 
-**최종 갱신**: 2026-05-21 (Slice 13 Part 1 — E1 DRF endpoint + contract test)
+**최종 갱신**: 2026-05-21 (Slice 13 Part 3 — E3 DRF endpoint + #66 신규)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -45,6 +45,25 @@
   - LLM 호출당 1행: timestamp, model, input/output_tokens, cost_usd, slice, source_file
   - CostGuard.reset_for_slice() 시 ledger flush + slice 합계 출력
   - #62와 인프라 묶음 처리
+
+### #66: E3 endpoint preset 점수 기능 API 노출 (분석엔진 #12 Phase 2 후, PS 2.0)
+
+- **신규 등록**: Slice 13 Part 3 (2026-05-21)
+- **요지**: `run_e3_coach`의 `preset_id` + `metrics` kwarg를 E3 endpoint 요청 표면에
+  **optional 필드로 노출** → ScoringEngine 점수 기반 진단(가중합/gate_tier) 제공
+- **현재 상태 (Part 3 v2)**: kwarg는 endpoint에 미노출 — `run_e3_coach` 기본값(None) 사용
+- **선행조건**: **분석엔진 #12 (Phase 2)** 완성
+  - 7종 정규화 지표 중 3종 (`sector_hhi`, `portfolio_beta`, `avg_correlation`)이
+    외부 데이터(수익률 시계열·섹터 라벨)에 의존 → 분석엔진 없이는 서버·클라이언트
+    모두 산출 불가. ScoringEngine은 7종 완비를 전제.
+- **작업 범위 (분석엔진 #12 후)**:
+  - E3 endpoint에 `preset_id: Optional[str]` + `metrics: Optional[dict]` ADDITIVE 추가
+  - `metrics`는 클라이언트가 보내거나 서버가 분석엔진 호출로 계산 (옵션 결정 필요)
+  - ScoringEngine.score() 결과(scores, gate_tier)를 응답에 포함
+- **breaking change 여부**: ADDITIVE → 기존 E3 클라이언트 무손상
+- **PS**: 2.0 (Phase 2 블록)
+- **참조**: `portfolio/services/coach/e3_service.py:34` (kwarg 시그니처),
+  `portfolio/services/scoring/PRESET_ID_TO_CATEGORY` (12 preset 진실 소스)
 
 ### #65: 기존 순수 Django view 최종 처리 (Slice 13 후반 Part, PS 1.5)
 
@@ -187,6 +206,7 @@
 | #63 누적 비용 ledger 영속화             | 1.5 | Part 후보       | JSONL/SQLite ledger + slice flush                                    |
 | #64 사전 추정 blocking 차단 모드        | 1.0 | Part 후보       | #61 calibration 완료 후 안전 (현재 estimator delta 24.58%)           |
 | **#65 기존 순수 view 최종 처리 (E1~E6 마이그레이션 완료 후)** | **1.5** | **Slice 13 후반 Part** | E1~E6 DRF endpoint 전환 완료 시점에 유지/제거/wrapper화 결정 |
+| **#66 E3 endpoint preset 점수 API 노출** | **2.0** | **분석엔진 #12 Phase 2 후** | preset_id+metrics optional 필드 ADDITIVE 추가. 분석엔진 선행 필요 |
 
 ---
 

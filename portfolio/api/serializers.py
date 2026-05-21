@@ -15,8 +15,12 @@ from typing import Any
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from portfolio.schemas.commentary_input import CommentaryInputE1, CommentaryInputE2
-from portfolio.schemas.commentary_output import E1Output, E2Output
+from portfolio.schemas.commentary_input import (
+    CommentaryInputE1,
+    CommentaryInputE2,
+    CommentaryInputE3,
+)
+from portfolio.schemas.commentary_output import E1Output, E2Output, E3Output
 
 
 class E1RequestSerializer(serializers.Serializer):
@@ -124,6 +128,59 @@ class E2ResponseSerializer(serializers.Serializer):
             )
         try:
             validated = E2Output(**instance["output"])
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(
+                {"output_schema_drift": _pydantic_errors_to_dict(exc)}
+            )
+
+        result = {
+            "output": validated.model_dump(mode="json"),
+            "llm_metadata": instance.get("llm_metadata", {}),
+        }
+        for opt_key in ("gate_tier", "preset_id", "scores"):
+            if opt_key in instance:
+                result[opt_key] = instance[opt_key]
+        return result
+
+
+class E3RequestSerializer(serializers.Serializer):
+    """E3 coach 요청 어댑터 (E2 패턴 복제).
+
+    Slice 13 Part 3 신규. 검증 책임은 `CommentaryInputE3`에 위임.
+
+    ★ preset_id / metrics 필드는 두지 않는다 (Part 3 v2 §6 원칙).
+      preset 점수 기능 API 노출은 #66로 분리 (분석엔진 #12 Phase 2 의존).
+    """
+
+    def to_internal_value(self, data: Any) -> CommentaryInputE3:
+        if not isinstance(data, dict):
+            raise serializers.ValidationError(
+                {"detail": "Request body must be a JSON object."}
+            )
+        try:
+            return CommentaryInputE3(**data)
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(_pydantic_errors_to_dict(exc))
+
+    def to_representation(self, instance: CommentaryInputE3) -> dict:
+        return instance.model_dump(mode="json")
+
+
+class E3ResponseSerializer(serializers.Serializer):
+    """E3 coach 응답 어댑터 (E2 패턴 복제).
+
+    `run_e3_coach()` 반환 dict 형식:
+        {"output": E3Output.model_dump() dict, "llm_metadata": {...}}
+    응답 스키마 계약: `output`은 반드시 E3Output 형식 — contract test 회귀 보호.
+    """
+
+    def to_representation(self, instance: dict) -> dict:
+        if not isinstance(instance, dict) or "output" not in instance:
+            raise serializers.ValidationError(
+                "run_e3_coach 응답에 'output' 키가 없습니다 (계약 위반)."
+            )
+        try:
+            validated = E3Output(**instance["output"])
         except PydanticValidationError as exc:
             raise serializers.ValidationError(
                 {"output_schema_drift": _pydantic_errors_to_dict(exc)}
