@@ -49,6 +49,13 @@ from portfolio.llm.exceptions import LLMBudgetExceededError
 logger = logging.getLogger(__name__)
 
 
+# Slice 13 Step 0b #62: 사전 추정용 SAFETY BUFFER.
+# estimator_v3 max delta 24.58% (Slice 13 Step 0a 백테스트) 보수적 흡수.
+# 1.25 = 25% buffer. estimator P-level delta 기반 — #61 calibration + #51
+# 추가 개선 시 재조정 대상.
+PRE_CALL_SAFETY_BUFFER: float = 1.25
+
+
 @dataclass
 class CallRecord:
     """단일 LLM 호출 기록."""
@@ -265,6 +272,100 @@ class CostGuard:
                 f"⚠ 누적 임계 80% 도달: ${self.cumulative_usd:.4f} (threshold ${self.threshold})"
             )
         return warnings
+
+    # ──────────────────────────────────────────────────────────────────
+    # Slice 13 Step 0b #62: estimator → CostGuard 사전 추정 (ADDITIVE, non-blocking)
+    # ──────────────────────────────────────────────────────────────────
+
+    def estimate_call_cost(
+        self,
+        input_text: str,
+        expected_output_chars: int,
+        entry_point: str,
+        model: str,
+    ) -> float:
+        """LLM 호출 직전 예상 비용 추정 (USD).
+
+        estimator_v3 (input: count_tokens API, output: multivariate OLS)로
+        예상 토큰 수를 산출하고 Anthropic 단가 매핑으로 USD 환산.
+
+        ★ 본 메서드는 buffer를 적용하지 않은 원시 추정값을 반환.
+          buffer 적용은 `check_pre_call_budget()`에서 처리.
+        ★ 기존 cumulative_usd/slice_usd/record_*에 영향 없음 (ADDITIVE).
+
+        Args:
+            input_text: 호출 시 messages user content (system 제외).
+            expected_output_chars: 예상 응답 길이 (문자 수).
+            entry_point: estimator entry_point 키 ("e1"~"e6" 등).
+            model: 모델 ID — 토크나이저 + 단가 lookup.
+
+        Returns:
+            예상 비용 (USD). buffer 미적용.
+        """
+        # 지연 import — Django settings 모듈 로드 회피 (cost_guard.py import 시점에는 미필요).
+        from portfolio.llm.client import _ANTHROPIC_PRICING
+        from portfolio.measure.estimator_v3 import (
+            estimate_input_tokens,
+            estimate_output_tokens,
+        )
+
+        messages = [{"role": "user", "content": input_text}]
+        input_tokens = estimate_input_tokens(messages, system=None, model=model)
+        output_tokens = estimate_output_tokens(
+            expected_output_chars, entry_point=entry_point, model=model
+        )
+
+        # 미등록 모델 → sonnet 단가 fallback (client.py:296~297 동일 정책).
+        from portfolio.llm.client import (
+            ANTHROPIC_SONNET_INPUT_USD_PER_1M,
+            ANTHROPIC_SONNET_OUTPUT_USD_PER_1M,
+        )
+        in_rate, out_rate = _ANTHROPIC_PRICING.get(
+            model, (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M)
+        )
+        return input_tokens / 1_000_000 * in_rate + output_tokens / 1_000_000 * out_rate
+
+    def check_pre_call_budget(self, estimated_cost_usd: float) -> dict:
+        """사전 추정 비용에 SAFETY BUFFER 적용 + 예산 초과 시 WARNING 로그 (non-blocking).
+
+        ★ 본 메서드는 호출을 차단하지 않는다 (Slice 13 Step 0b 설계 원칙 §3).
+          buffer 적용 후 cumulative + slice 예산을 초과해도 WARNING만 남기고 진행.
+        ★ blocking 모드는 #64로 별도 분리 (estimator delta 24.58% → #61 calibration 선행).
+
+        Args:
+            estimated_cost_usd: `estimate_call_cost()` 반환값 (buffer 미적용).
+
+        Returns:
+            {
+                "raw_estimate_usd": float,
+                "buffered_estimate_usd": float,  # raw × PRE_CALL_SAFETY_BUFFER
+                "would_exceed_slice_cap": bool,
+                "would_exceed_threshold": bool,
+            }
+        """
+        buffered = estimated_cost_usd * PRE_CALL_SAFETY_BUFFER
+        would_cap = (self.slice_usd + buffered) > self.cap_per_slice
+        would_threshold = (self.cumulative_usd + buffered) > self.threshold
+
+        if would_cap:
+            logger.warning(
+                "pre-call estimate would exceed slice cap (non-blocking): "
+                "slice_usd=$%.4f + buffered=$%.4f > cap=$%.2f",
+                self.slice_usd, buffered, self.cap_per_slice,
+            )
+        if would_threshold:
+            logger.warning(
+                "pre-call estimate would exceed cumulative threshold (non-blocking): "
+                "cumulative=$%.4f + buffered=$%.4f > threshold=$%.2f",
+                self.cumulative_usd, buffered, self.threshold,
+            )
+
+        return {
+            "raw_estimate_usd": estimated_cost_usd,
+            "buffered_estimate_usd": buffered,
+            "would_exceed_slice_cap": would_cap,
+            "would_exceed_threshold": would_threshold,
+        }
 
     # ──────────────────────────────────────────────────────────────────
 

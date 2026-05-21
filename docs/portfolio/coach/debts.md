@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 13 Step 0a 진행 중)
+# Portfolio Coach 부채 대장 (Slice 13 Step 0b 진행 중)
 
-**최종 갱신**: 2026-05-21 (Slice 13 Step 0a — multivariate fit + 3단 게이트 ADDITIVE)
+**최종 갱신**: 2026-05-21 (Slice 13 Step 0b — estimator→CostGuard non-blocking integration)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -28,20 +28,11 @@
   - 12 preset별 fail_below / warn_below 경계값 실측 분포 기반 calibration
   - 옵션 B threshold (기존 단일 `gate`)와 통합 가능성 검토 → 2-tier vs 3-tier 데이터 검증
   - LLM commentary에 gate_tier 주입 시 품질 변화 측정 (manual eval)
+  - **estimator 정밀화와 함께 `PRE_CALL_SAFETY_BUFFER` 계수 재조정 대상**
+    (현재 1.25 = max delta 24.58% 흡수, #51 추가 개선 시 buffer 축소 가능)
 - **참조**: `portfolio/services/scoring/preset_spec.py` (gate_tiers schema),
-  `portfolio/services/scoring/base.py::_evaluate_gate_tier`
-
-### #62: estimator → CostGuard integration (Slice 13 Step 0b, PS 1.5)
-
-- **신규 등록**: Slice 13 Step 0a (2026-05-21)
-- **history**:
-  - Slice 11 #51로 estimator 구현, Slice 13 Step 0a에서 multivariate fit 정확도 개선
-  - 그러나 estimate_output_tokens 호출 경로가 **production CostGuard에 미연결** (backtest 스크립트만 사용)
-- **작업 범위**:
-  - `portfolio/llm/cost_guard.py`에 estimate_output_tokens 호출 추가
-  - LLM 호출 전 사전 비용 추정 / 사후 실측 비교 로깅
-  - estimator delta 모니터링 (실측 drift 시 재fit 트리거)
-- **참조**: `portfolio/llm/cost_guard.py:99` (cumulative_usd 필드만 존재, 저장소 없음)
+  `portfolio/services/scoring/base.py::_evaluate_gate_tier`,
+  `portfolio/llm/cost_guard.py::PRE_CALL_SAFETY_BUFFER`
 
 ### #63: 누적 비용 ledger 영속화 (Slice 14+, PS 1.5)
 
@@ -54,6 +45,22 @@
   - LLM 호출당 1행: timestamp, model, input/output_tokens, cost_usd, slice, source_file
   - CostGuard.reset_for_slice() 시 ledger flush + slice 합계 출력
   - #62와 인프라 묶음 처리
+
+### #64: 사전 추정 기반 blocking 차단 모드 (Slice 14+, PS 1.0)
+
+- **신규 등록**: Slice 13 Step 0b (2026-05-21)
+- **history**:
+  - Slice 13 Step 0b #62: estimator→CostGuard non-blocking 경고 모드 도입 (WARNING 로그만)
+  - blocking 차단 (예산 초과 추정 시 raise)은 **분리 부채로 이연**
+- **이연 사유**:
+  - estimator max delta **24.58%** (Slice 13 Step 0a 백테스트) — 차단 켜면 정상 호출 오탐 차단 위험
+  - #61 (gate calibration) + #51 (estimator 추가 개선) 진행 후 buffer 축소 가능 시점에 검토
+- **작업 범위**:
+  - `check_pre_call_budget()` 결과 기반 raise (`CostCapExceeded` / `CostThresholdExceeded`)
+  - opt-in 설정 (env `PRE_CALL_BLOCKING=true` 등) — 기본 off
+  - 실측 delta 모니터링 후 blocking 안전 임계 도출
+- **단서**: "estimator delta 24.58% → #61 calibration 후 차단 안전"
+- **참조**: `portfolio/llm/cost_guard.py::check_pre_call_budget`
 
 ### #59 (open / E5 잔여): action_items measurability — E5 진입점 (PS 0.5)
 
@@ -70,7 +77,21 @@
 
 ---
 
-## §2. 이번 슬라이스 (Slice 12 Step 0) CLOSE 부채
+## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b)
+
+### #62: estimator → CostGuard integration (close, Slice 13 Step 0b)
+
+- **history**:
+  - Slice 13 Step 0a: 신규 등록 (PS 1.5)
+  - Slice 13 Step 0b: **close** — non-blocking 경고 모드로 도입 완료
+- **구현**:
+  - `portfolio/llm/cost_guard.py::estimate_call_cost()` 신규 메서드
+    (estimator_v3 input/output 추정 → Anthropic 단가 환산)
+  - `PRE_CALL_SAFETY_BUFFER = 1.25` 상수 (estimator max delta 24.58% 흡수)
+  - `check_pre_call_budget()` — 예산 초과 추정 시 WARNING 로그만 (non-blocking)
+- **단위 테스트**: 12/12 PASS (비용 산정 4 + buffer + non-blocking 3 + 기존 동작 불변 3)
+- **IDENTICAL 보호**: 31/31 PASS (non-blocking으로 LLM 호출 경로 영향 없음)
+- **이연**: blocking 차단 모드는 #64로 분리 (estimator delta 24.58% → #61 calibration 후 안전)
 
 ### #58: parse_json_response trailing characters tolerance (close, Slice 12 Step 0a)
 
