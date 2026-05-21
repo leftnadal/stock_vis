@@ -19,6 +19,7 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE1,
     CommentaryInputE2,
     CommentaryInputE3,
+    CommentaryInputE4,
     CommentaryInputE5,
     CommentaryInputE6,
 )
@@ -26,6 +27,7 @@ from portfolio.schemas.commentary_output import (
     E1Output,
     E2Output,
     E3Output,
+    E4Output,
     E5Output,
     E6Output,
 )
@@ -290,6 +292,60 @@ class E6ResponseSerializer(serializers.Serializer):
             "output": validated.model_dump(mode="json"),
             "llm_metadata": instance.get("llm_metadata", {}),
         }
+        for opt_key in ("gate_tier", "preset_id", "scores"):
+            if opt_key in instance:
+                result[opt_key] = instance[opt_key]
+        return result
+
+
+class E4RequestSerializer(serializers.Serializer):
+    """E4 coach 요청 어댑터 (E5/E6 패턴 복제 — 마지막 진입점).
+
+    Slice 13 Part 5 신규. 검증 책임은 `CommentaryInputE4`에 위임.
+    ★ run_e4_coach는 preset_id/metrics kwarg를 받지 않음 → endpoint도 미노출.
+    """
+
+    def to_internal_value(self, data: Any) -> CommentaryInputE4:
+        if not isinstance(data, dict):
+            raise serializers.ValidationError(
+                {"detail": "Request body must be a JSON object."}
+            )
+        try:
+            return CommentaryInputE4(**data)
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(_pydantic_errors_to_dict(exc))
+
+    def to_representation(self, instance: CommentaryInputE4) -> dict:
+        return instance.model_dump(mode="json")
+
+
+class E4ResponseSerializer(serializers.Serializer):
+    """E4 coach 응답 어댑터 (E5/E6 패턴 복제).
+
+    `run_e4_coach()` 반환 dict 형식:
+        {"output": E4Output.model_dump() dict, "llm_metadata": {...}}
+
+    ★ E4Output은 base만 사용 (action_items/risk_flags 등 특화 필드 없음) —
+      schema 자체가 이미 base 필드만 검증.
+    """
+
+    def to_representation(self, instance: dict) -> dict:
+        if not isinstance(instance, dict) or "output" not in instance:
+            raise serializers.ValidationError(
+                "run_e4_coach 응답에 'output' 키가 없습니다 (계약 위반)."
+            )
+        try:
+            validated = E4Output(**instance["output"])
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(
+                {"output_schema_drift": _pydantic_errors_to_dict(exc)}
+            )
+
+        result = {
+            "output": validated.model_dump(mode="json"),
+            "llm_metadata": instance.get("llm_metadata", {}),
+        }
+        # E4는 preset_id/metrics 무관 — 옵셔널 키는 일반화된 형태로만 보존
         for opt_key in ("gate_tier", "preset_id", "scores"):
             if opt_key in instance:
                 result[opt_key] = instance[opt_key]

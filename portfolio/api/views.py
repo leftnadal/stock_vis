@@ -27,6 +27,8 @@ from portfolio.api.serializers import (
     E2ResponseSerializer,
     E3RequestSerializer,
     E3ResponseSerializer,
+    E4RequestSerializer,
+    E4ResponseSerializer,
     E5RequestSerializer,
     E5ResponseSerializer,
     E6RequestSerializer,
@@ -36,6 +38,7 @@ from portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
 from portfolio.services.coach.e1_service import run_e1_coach
 from portfolio.services.coach.e2_service import run_e2_coach
 from portfolio.services.coach.e3_service import run_e3_coach
+from portfolio.services.coach.e4_service import run_e4_coach
 from portfolio.services.coach.e5_service import run_e5_coach
 from portfolio.services.coach.e6_service import run_e6_coach
 
@@ -285,4 +288,52 @@ def coach_e6(request: Request) -> Response:
         )
 
     resp_serializer = E6ResponseSerializer(result)
+    return Response(resp_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # E1~E3·E5·E6 패턴 복제 (audit P0 #5)
+def coach_e4(request: Request) -> Response:
+    """POST /api/v1/coach/e4/
+
+    Body: `CommentaryInputE4` schema 필드 (portfolio_id, fetched_at, preset,
+    holdings, user_question, conversation_history).
+    Query: provider=haiku (기본) | sonnet | anthropic.
+
+    Slice 13 Part 5 신규 — 마지막 진입점, 다른 endpoint 동형.
+    ★ run_e4_coach는 preset_id/metrics kwarg를 받지 않음 → 전달하지 않는다.
+    """
+    provider = request.query_params.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return Response(
+            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    req_serializer = E4RequestSerializer(data=request.data)
+    req_serializer.is_valid(raise_exception=True)
+    input_data = req_serializer.validated_data  # CommentaryInputE4 instance
+
+    try:
+        result = run_e4_coach(input_data, provider=provider)
+    except LLMBudgetExceededError as exc:
+        logger.warning("E4 endpoint LLM budget exceeded: %s", exc)
+        return Response(
+            {"error": "LLM budget exceeded", "scope": exc.scope},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    except LLMError as exc:
+        logger.exception("E4 endpoint LLM error")
+        return Response(
+            {"error": "LLM call failed", "type": type(exc).__name__},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        logger.exception("E4 endpoint unexpected error")
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    resp_serializer = E4ResponseSerializer(result)
     return Response(resp_serializer.data, status=status.HTTP_200_OK)

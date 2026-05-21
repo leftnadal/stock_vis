@@ -19,7 +19,8 @@ urlpatterns = [
     path("coach/e1/", views.coach_e1, name="coach_e1"),
     path("coach/e2/", views.coach_e2, name="coach_e2"),
     path("coach/e3/", views.coach_e3, name="coach_e3"),
+    path("coach/e4/", views.coach_e4, name="coach_e4"),
     path("coach/e5/", views.coach_e5, name="coach_e5"),
     path("coach/e6/", views.coach_e6, name="coach_e6"),
-    # Part 5~: coach/e4/ (대화 Q&A 진입점) 추가 예정
+    # E1~E6 6개 endpoint 완료 (Slice 13 Part 5 종결).
 ]

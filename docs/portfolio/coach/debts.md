@@ -65,19 +65,21 @@
 - **참조**: `portfolio/services/coach/e3_service.py:34` (kwarg 시그니처),
   `portfolio/services/scoring/PRESET_ID_TO_CATEGORY` (12 preset 진실 소스)
 
-### #65: 기존 순수 Django view 최종 처리 (Slice 13 후반 Part, PS 1.5)
+### #65: 기존 순수 Django view 최종 처리 (Slice 13 종결 후 진입 가능, PS 1.5)
 
 - **신규 등록**: Slice 13 Part 1 (2026-05-21)
 - **history**:
   - Slice 13 Part 1: E1 DRF endpoint (`/api/coach/e1/`) 추가, 기존 `coach/e1/garp/` 무수정 유지
-  - E1만 마이그레이션 완료, E2~E6는 후속 Part에서 동일 패턴 확장
-- **선행 조건**:
-  - E1~E6 6개 endpoint 전체 DRF 마이그레이션 완료
-- **작업 범위 (선행 완료 후)**:
-  - 기존 순수 view (`portfolio/views.py`, `portfolio/urls.py`) **유지 / 제거 / wrapper화** 결정
+  - Part 2~4: E2/E3/E5/E6 동일 패턴 확장 완료
+  - **Part 5: E4 endpoint 완료 → E1~E6 6개 모두 DRF 마이그레이션 완료**. 선행조건 충족.
+- **★ E4 special case**: legacy view 자체가 **부재** (Slice 1~6에서 미도입) →
+  E4는 마이그레이션 대상 아님. 유지/제거/wrapper화 결정 시 E1·E2·E3·E5·E6 5건만 다룬다.
+- **작업 범위 (Slice 13 종결 후 또는 Slice 14+)**:
+  - 기존 순수 view 5건 (`coach_e1_garp` / `coach_e2_diagnostic_card` / `coach_e3_metric_comment` /
+    `coach_e5_adjustment` / `coach_e6_comparison`) **유지 / 제거 / wrapper화** 결정
   - 클라이언트 호출 경로 분석 (frontend, 자동화 스크립트)
   - wrapper화 선택 시: 순수 view → DRF endpoint 호출로 위임 (이중 라우팅 제거)
-- **참조**: `portfolio/api/` (신규 DRF 패키지), `portfolio/views.py` (legacy)
+- **참조**: `portfolio/api/` (신규 DRF 패키지), `portfolio/views.py` (legacy 5건)
 
 ### #64: 사전 추정 기반 blocking 차단 모드 (Slice 14+, PS 1.0)
 
