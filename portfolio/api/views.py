@@ -20,9 +20,15 @@ from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from portfolio.api.serializers import E1RequestSerializer, E1ResponseSerializer
+from portfolio.api.serializers import (
+    E1RequestSerializer,
+    E1ResponseSerializer,
+    E2RequestSerializer,
+    E2ResponseSerializer,
+)
 from portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
 from portfolio.services.coach.e1_service import run_e1_coach
+from portfolio.services.coach.e2_service import run_e2_coach
 
 logger = logging.getLogger(__name__)
 
@@ -77,4 +83,52 @@ def coach_e1(request: Request) -> Response:
         )
 
     resp_serializer = E1ResponseSerializer(result)
+    return Response(resp_serializer.data, status=status.HTTP_200_OK)
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])  # E1 패턴 복제 (audit P0 #5)
+def coach_e2(request: Request) -> Response:
+    """POST /api/v1/coach/e2/
+
+    Body: `CommentaryInputE2` schema 필드 (portfolio_id, fetched_at, preset,
+    holdings, portfolio_return_1y, sector_allocation).
+    Query: provider=haiku (기본) | sonnet | anthropic.
+
+    응답: `{output: E2Output, llm_metadata: {...}}`
+    Slice 13 Part 2 신규 — E1 view 동형.
+    """
+    provider = request.query_params.get("provider", "haiku")
+    if provider not in _VALID_PROVIDERS:
+        return Response(
+            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    req_serializer = E2RequestSerializer(data=request.data)
+    req_serializer.is_valid(raise_exception=True)
+    input_data = req_serializer.validated_data  # CommentaryInputE2 instance
+
+    try:
+        result = run_e2_coach(input_data, provider=provider)
+    except LLMBudgetExceededError as exc:
+        logger.warning("E2 endpoint LLM budget exceeded: %s", exc)
+        return Response(
+            {"error": "LLM budget exceeded", "scope": exc.scope},
+            status=status.HTTP_429_TOO_MANY_REQUESTS,
+        )
+    except LLMError as exc:
+        logger.exception("E2 endpoint LLM error")
+        return Response(
+            {"error": "LLM call failed", "type": type(exc).__name__},
+            status=status.HTTP_502_BAD_GATEWAY,
+        )
+    except Exception:
+        logger.exception("E2 endpoint unexpected error")
+        return Response(
+            {"error": "Internal server error"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    resp_serializer = E2ResponseSerializer(result)
     return Response(resp_serializer.data, status=status.HTTP_200_OK)

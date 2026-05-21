@@ -17,5 +17,6 @@ app_name = "portfolio_api"
 
 urlpatterns = [
     path("coach/e1/", views.coach_e1, name="coach_e1"),
-    # Part 2~: coach/e2/, coach/e3/, coach/e4/, coach/e5/, coach/e6/ 추가 예정
+    path("coach/e2/", views.coach_e2, name="coach_e2"),
+    # Part 3~: coach/e3/, coach/e4/, coach/e5/, coach/e6/ 추가 예정
 ]

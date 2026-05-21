@@ -15,8 +15,8 @@ from typing import Any
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from portfolio.schemas.commentary_input import CommentaryInputE1
-from portfolio.schemas.commentary_output import E1Output
+from portfolio.schemas.commentary_input import CommentaryInputE1, CommentaryInputE2
+from portfolio.schemas.commentary_output import E1Output, E2Output
 
 
 class E1RequestSerializer(serializers.Serializer):
@@ -82,6 +82,57 @@ class E1ResponseSerializer(serializers.Serializer):
             "llm_metadata": instance.get("llm_metadata", {}),
         }
         # Step 0a #60 옵셔널 필드 — 존재 시만 응답 포함
+        for opt_key in ("gate_tier", "preset_id", "scores"):
+            if opt_key in instance:
+                result[opt_key] = instance[opt_key]
+        return result
+
+
+class E2RequestSerializer(serializers.Serializer):
+    """E2 coach 요청 어댑터 (E1 패턴 복제).
+
+    검증 책임은 Pydantic `CommentaryInputE2`에 위임. Slice 13 Part 2 신규.
+    """
+
+    def to_internal_value(self, data: Any) -> CommentaryInputE2:
+        if not isinstance(data, dict):
+            raise serializers.ValidationError(
+                {"detail": "Request body must be a JSON object."}
+            )
+        try:
+            return CommentaryInputE2(**data)
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(_pydantic_errors_to_dict(exc))
+
+    def to_representation(self, instance: CommentaryInputE2) -> dict:
+        return instance.model_dump(mode="json")
+
+
+class E2ResponseSerializer(serializers.Serializer):
+    """E2 coach 응답 어댑터 (E1 패턴 복제).
+
+    `run_e2_coach()` 반환 dict 형식:
+        {"output": E2Output.model_dump() dict, "llm_metadata": {...}}
+
+    응답 스키마 계약: `output`은 반드시 E2Output 형식 — contract test 회귀 보호.
+    """
+
+    def to_representation(self, instance: dict) -> dict:
+        if not isinstance(instance, dict) or "output" not in instance:
+            raise serializers.ValidationError(
+                "run_e2_coach 응답에 'output' 키가 없습니다 (계약 위반)."
+            )
+        try:
+            validated = E2Output(**instance["output"])
+        except PydanticValidationError as exc:
+            raise serializers.ValidationError(
+                {"output_schema_drift": _pydantic_errors_to_dict(exc)}
+            )
+
+        result = {
+            "output": validated.model_dump(mode="json"),
+            "llm_metadata": instance.get("llm_metadata", {}),
+        }
         for opt_key in ("gate_tier", "preset_id", "scores"):
             if opt_key in instance:
                 result[opt_key] = instance[opt_key]
