@@ -78,30 +78,46 @@ def test_api_failure_falls_back_to_v2(caplog):
 
 
 def test_estimate_output_tokens_global_fallback():
-    """None/0 → 0. 진입점 미지정 → GLOBAL_OUTPUT_RATIO 적용."""
+    """None/0 → 0. 진입점 미지정 → GLOBAL_OUTPUT_FIT OLS 적용 (Slice 13 신모델).
+
+    구모델은 int(250 × 0.7584) = 189이었으나, 신모델 OLS는
+    int(a + b × chars). 계수가 다르므로 정확한 동등은 아니지만 reasonable 범위 확인.
+    """
     assert e3.estimate_output_tokens(None) == 0
     assert e3.estimate_output_tokens(0) == 0
-    # 250 chars × 0.7584 = 189.6 → 189
-    assert e3.estimate_output_tokens(250) == int(250 * e3.GLOBAL_OUTPUT_RATIO)
+    a, b = e3.GLOBAL_OUTPUT_FIT
+    expected = int(a + b * 250)
+    assert e3.estimate_output_tokens(250) == expected
 
 
 def test_estimate_output_tokens_per_entry_point():
-    """진입점별 char ratio 적용 — e1~e6 + e3_portfolio/e4_conversation/rationale."""
-    for ep, expected_ratio in e3.ENTRY_POINT_OUTPUT_RATIOS.items():
-        result = e3.estimate_output_tokens(1000, entry_point=ep)
-        assert result == int(1000 * expected_ratio), (
-            f"{ep}: got {result}, expected {int(1000 * expected_ratio)}"
+    """진입점별 OLS fit 적용 — 8 EP × (a + b × chars) (Slice 13 신모델).
+
+    구모델 단변량 ratio → 신모델 다변량 OLS로 교체됨. 진입점별 fit이 있으면
+    그 계수가 사용되어야 한다.
+    """
+    chars = 1000
+    for ep, (a, b) in e3.ENTRY_POINT_OUTPUT_FITS.items():
+        result = e3.estimate_output_tokens(chars, entry_point=ep)
+        # (EP, model) 셀이 등록되어 있으면 그게 우선 (default model이 etxending)
+        ep_model_fit = e3.ENTRY_POINT_MODEL_OUTPUT_FITS.get(
+            (ep, e3._model_short(e3.DEFAULT_MODEL))
+        )
+        if ep_model_fit is not None:
+            expected = max(0, int(ep_model_fit[0] + ep_model_fit[1] * chars))
+        else:
+            expected = max(0, int(a + b * chars))
+        assert result == expected, (
+            f"{ep}: got {result}, expected {expected}"
         )
 
 
 def test_estimate_output_tokens_unknown_ep_falls_back_to_global():
-    """미등록 진입점 → GLOBAL_OUTPUT_RATIO fallback."""
-    assert e3.estimate_output_tokens(500, entry_point="unknown") == int(
-        500 * e3.GLOBAL_OUTPUT_RATIO
-    )
-    assert e3.estimate_output_tokens(500, entry_point="e99") == int(
-        500 * e3.GLOBAL_OUTPUT_RATIO
-    )
+    """미등록 진입점 → GLOBAL_OUTPUT_FIT fallback (Slice 13 신모델)."""
+    a, b = e3.GLOBAL_OUTPUT_FIT
+    expected = max(0, int(a + b * 500))
+    assert e3.estimate_output_tokens(500, entry_point="unknown") == expected
+    assert e3.estimate_output_tokens(500, entry_point="e99") == expected
 
 
 def test_estimate_output_tokens_six_entry_points_registered():
@@ -113,16 +129,15 @@ def test_estimate_output_tokens_six_entry_points_registered():
 def test_legacy_estimate_tokens_wrapper():
     """backward-compat: dict {input_tokens, output_tokens, total} 반환.
 
-    Slice 11: entry_point 옵션 추가 — 미지정 시 GLOBAL_OUTPUT_RATIO.
+    Slice 13: 신모델 OLS — entry_point 미지정 시 GLOBAL_OUTPUT_FIT.
     """
     e3.set_client(_make_mock_client(input_tokens=80))
-    # entry_point 미지정 → GLOBAL ratio
     result = e3.estimate_tokens(
         [{"role": "user", "content": "x"}],
         system=None,
         expected_output_chars=125,
     )
-    expected_out = int(125 * e3.GLOBAL_OUTPUT_RATIO)
+    expected_out = e3.estimate_output_tokens(125)
     assert result == {
         "input_tokens": 80,
         "output_tokens": expected_out,
@@ -131,7 +146,7 @@ def test_legacy_estimate_tokens_wrapper():
 
 
 def test_legacy_estimate_tokens_with_entry_point():
-    """entry_point 지정 → 진입점별 ratio 적용."""
+    """entry_point 지정 → 진입점별 OLS fit 적용 (Slice 13 신모델)."""
     e3.set_client(_make_mock_client(input_tokens=100))
     result = e3.estimate_tokens(
         [{"role": "user", "content": "x"}],
@@ -139,7 +154,7 @@ def test_legacy_estimate_tokens_with_entry_point():
         expected_output_chars=500,
         entry_point="e6",
     )
-    assert result["output_tokens"] == int(500 * e3.ENTRY_POINT_OUTPUT_RATIOS["e6"])
+    assert result["output_tokens"] == e3.estimate_output_tokens(500, entry_point="e6")
 
 
 def test_reset_cache_clears_state():

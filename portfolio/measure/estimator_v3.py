@@ -162,30 +162,83 @@ def estimate_input_tokens(
 
 
 # ============================================================
-# Output estimator (Slice 11 #51 본격 구현)
+# Output estimator (Slice 13 Step 0a #51 — multivariate OLS fit)
 # ============================================================
 #
-# 진입점별 char ratio fitting — 데이터 출처: all_llm_calls.jsonl (200 entries,
-# 8 진입점 그룹). 각 진입점의 (output_tokens / output_chars) 평균값을 ratio로 사용.
+# 모델 진화:
+# - Slice 11 (구모델, 단변량): tokens = chars × ratio. mean=5.11% P90=11.20% max=33.12%.
+# - Slice 13 (신모델, 다변량 OLS): tokens = a + b × chars.
+#   - (entry_point, model) 셀 N≥5 → 셀별 fit.
+#   - (entry_point) fallback → EP-only fit.
+#   - 미식별 → GLOBAL_OUTPUT_FIT.
+#   백테스트 결과 (scripts/coach/backtest_output_estimator.py):
+#     mean=4.40% P90=9.52% max=24.58% (e4_conversation 33.12 → 16.94 개선).
 #
-# Backtest 결과 (scripts/coach/backtest_output_estimator.py 참조):
-# - global mean_delta = 5.11% / P90_delta = 11.20% / max_delta = 33.12% (1 outlier).
-# - Fallback §1 적용: KPI 임계 P90 ≤ 15% 완화 + #51 keep_open (multivariate 미래 작업).
+# 데이터 출처: docs/portfolio/coach/all_llm_calls.jsonl (200 entries, 8 진입점).
+# 시그니처 유지: estimate_output_tokens(chars, entry_point, model). 내부만 교체.
 
-# 진입점별 char/token ratio (mean fit). 정의: ratio = output_tokens / output_chars.
+# 구모델 baseline (Slice 11) — 회귀 추적용 보존, 신모델로 대체됨.
+# ratio = output_tokens / output_chars (단변량 mean fit).
 ENTRY_POINT_OUTPUT_RATIOS: dict[str, float] = {
-    "e1": 0.8835,           # Slice 1 one-line diagnosis (헤드라인+요약)
-    "e2": 0.8599,           # Slice 3 diagnostic card (4요소)
-    "e3": 0.7307,           # Slice 5 metric comments
-    "e3_portfolio": 0.6764, # Slice 6 portfolio commentary
-    "e4_conversation": 0.7233,  # Slice 7+8 conversation
-    "e5": 0.5006,           # Slice 2 adjustments (JSON heavy)
-    "e6": 0.7881,           # Slice 4 comparison
-    "rationale": 0.9778,    # Slice 9 rationale (한국어 long-form)
+    "e1": 0.8835,
+    "e2": 0.8599,
+    "e3": 0.7307,
+    "e3_portfolio": 0.6764,
+    "e4_conversation": 0.7233,
+    "e5": 0.5006,
+    "e6": 0.7881,
+    "rationale": 0.9778,
+}
+GLOBAL_OUTPUT_RATIO: float = 0.7584  # 구모델 fallback (보존).
+
+
+# Slice 13 신모델 (다변량 OLS): tokens = a + b × chars.
+# all_llm_calls.jsonl N=200으로 fit. 재fit 트리거: 데이터셋 행 추가 시 backtest 재실행.
+ENTRY_POINT_OUTPUT_FITS: dict[str, tuple[float, float]] = {
+    "e1": (-20.2608, 0.971655),         # N=10
+    "e2": (-32.9435, 0.905711),         # N=15
+    "e3": (-14.1024, 0.753001),         # N=15
+    "e3_portfolio": (283.1472, 0.177887),  # N=21
+    "e4_conversation": (86.1065, 0.645782),  # N=83
+    "e5": (8.9867, 0.468976),           # N=15
+    "e6": (-39.4334, 0.819425),         # N=15
+    "rationale": (171.0966, 0.676134),  # N=26
 }
 
-# Fallback global ratio (200 entries 전체 평균) — 진입점 미식별/미등록 시 사용.
-GLOBAL_OUTPUT_RATIO: float = 0.7584
+# (EP, model) 셀별 fit — N ≥ 5인 셀만 보유. 미존재 셀은 ENTRY_POINT_OUTPUT_FITS fallback.
+ENTRY_POINT_MODEL_OUTPUT_FITS: dict[tuple[str, str], tuple[float, float]] = {
+    ("e1", "claude-sonnet-4-5"): (-14.896, 0.947012),  # N=7
+    ("e2", "claude-haiku-4-5"): (-72.5954, 0.954621),  # N=8
+    ("e2", "claude-sonnet-4-5"): (-17.5885, 0.889633),  # N=7
+    ("e3", "claude-haiku-4-5"): (-23.0666, 0.771894),  # N=8
+    ("e3", "claude-sonnet-4-5"): (-0.1735, 0.724798),  # N=7
+    ("e3_portfolio", "claude-haiku-4-5"): (314.2537, 0.119976),  # N=11
+    ("e3_portfolio", "claude-sonnet-4-5"): (161.1528, 0.396841),  # N=10
+    ("e4_conversation", "claude-haiku-4-5"): (15.5766, 0.698344),  # N=42
+    ("e4_conversation", "claude-sonnet-4-5"): (167.552, 0.582211),  # N=41
+    ("e5", "claude-haiku-4-5"): (14.1478, 0.474434),  # N=8
+    ("e5", "claude-sonnet-4-5"): (10.1184, 0.43951),  # N=7
+    ("e6", "claude-haiku-4-5"): (-95.855, 0.869372),  # N=8
+    ("e6", "claude-sonnet-4-5"): (-26.98, 0.803866),  # N=7
+    ("rationale", "claude-sonnet-4-5"): (171.0966, 0.676134),  # N=26
+}
+
+# 신모델 global fallback (전체 200 entries OLS).
+GLOBAL_OUTPUT_FIT: tuple[float, float] = (65.9457, 0.673089)
+
+
+def _model_short(model: str) -> str:
+    """모델 ID에서 prefix 변형(haiku/sonnet 4-5)을 정규화.
+
+    "claude-haiku-4-5" / "claude-haiku-4-5-20251001" → "claude-haiku-4-5"
+    "claude-sonnet-4-5" → "claude-sonnet-4-5"
+    Slice 13 fit 테이블 키와 매칭용.
+    """
+    parts = model.split("-")
+    # claude-{name}-{major}-{minor}... → 앞 4 토큰만 사용
+    if len(parts) >= 4:
+        return "-".join(parts[:4])
+    return model
 
 
 def estimate_output_tokens(
@@ -193,21 +246,31 @@ def estimate_output_tokens(
     entry_point: str | None = None,
     model: str = DEFAULT_MODEL,
 ) -> int:
-    """진입점별 char ratio 기반 output 토큰 추정 (Slice 11 #51).
+    """다변량 OLS 기반 output 토큰 추정 (Slice 13 Step 0a #51).
+
+    공식: tokens = a + b × expected_output_chars.
+    계수 lookup 우선순위:
+      1. (entry_point, normalized_model) → ENTRY_POINT_MODEL_OUTPUT_FITS
+      2. entry_point → ENTRY_POINT_OUTPUT_FITS
+      3. GLOBAL_OUTPUT_FIT
 
     Args:
-        expected_output_chars: 예상 응답 문자열 길이. None 또는 0 → 0 반환.
+        expected_output_chars: 예상 응답 문자열 길이. None 또는 ≤ 0 → 0 반환.
         entry_point: 진입점 키 ("e1"~"e6", "e3_portfolio", "e4_conversation",
-            "rationale"). 미식별 또는 미등록 시 `GLOBAL_OUTPUT_RATIO` 사용.
-        model: 미사용 (현재 단변량 fit; #51 keep_open으로 multivariate 후속).
+            "rationale"). 미식별 시 GLOBAL fallback.
+        model: 모델 ID. 정규화 후 (EP, model) 셀 lookup. 미매칭 시 EP-only fallback.
 
     Returns:
-        int(expected_output_chars × ratio). expected_output_chars가 음수면 0.
+        int(a + b × chars). 음수는 0으로 clip (안전).
     """
     if expected_output_chars is None or expected_output_chars <= 0:
         return 0
-    ratio = ENTRY_POINT_OUTPUT_RATIOS.get(entry_point or "", GLOBAL_OUTPUT_RATIO)
-    return int(expected_output_chars * ratio)
+    ep = entry_point or ""
+    fit = ENTRY_POINT_MODEL_OUTPUT_FITS.get((ep, _model_short(model)))
+    if fit is None:
+        fit = ENTRY_POINT_OUTPUT_FITS.get(ep, GLOBAL_OUTPUT_FIT)
+    a, b = fit
+    return max(0, int(a + b * expected_output_chars))
 
 
 def estimate_tokens(

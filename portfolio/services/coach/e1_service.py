@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 
 from portfolio.llm import LLMClient
 from portfolio.llm.parsers import parse_json_response
@@ -22,6 +22,11 @@ from portfolio.schemas.commentary_input import CommentaryInputE1
 from portfolio.schemas.commentary_output import E1Output
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 from portfolio.services.coach.prompt_builder import E1PromptBuilder
+from portfolio.services.scoring import (
+    ScoringEngineBase,
+    format_gate_tier_for_prompt,
+    get_preset_spec,
+)
 
 
 def run_e1_coach(
@@ -29,6 +34,9 @@ def run_e1_coach(
     provider: ProviderLabel = "haiku",
     client: LLMClient | None = None,
     max_tokens: int = 2000,
+    *,
+    preset_id: Optional[str] = None,
+    metrics: Optional[dict[str, float]] = None,
 ) -> dict[str, Any]:
     """E1 A2 통합 commentary 종단 실행.
 
@@ -59,6 +67,15 @@ def run_e1_coach(
     system_prompt = messages[0]["content"]
     user_prompt = messages[1]["content"]
 
+    # Slice 13 Step 0a #60: gate-tier ADDITIVE 주입 (둘 다 None이면 skip — IDENTICAL 보장).
+    gate_tier: str | None = None
+    if preset_id is not None and metrics is not None:
+        spec = get_preset_spec(preset_id)
+        gate_tier = ScoringEngineBase._evaluate_gate_tier(metrics, spec.gate_tiers)
+        user_prompt = (
+            f"{user_prompt}\n\n{format_gate_tier_for_prompt(preset_id, gate_tier)}"
+        )
+
     # 2. LLM 호출 — LLMClient는 system을 별도 인자로 받음
     if client is None:
         client = LLMClient()
@@ -72,7 +89,11 @@ def run_e1_coach(
     # 3. 응답 → E1Output validate (#41 재오픈 트리거 지점)
     output = parse_json_response(E1Output, llm_response.text)
 
-    return {
+    result: dict[str, Any] = {
         "output": output.model_dump(),
         "llm_metadata": llm_response.metadata_dict(),
     }
+    if gate_tier is not None:
+        result["gate_tier"] = gate_tier
+        result["preset_id"] = preset_id
+    return result

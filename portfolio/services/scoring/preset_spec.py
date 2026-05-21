@@ -36,6 +36,12 @@ class PresetSpec(BaseModel):
     category: CategoryLiteral
     weights: dict[str, float] = Field(..., min_length=1)
     gate: Optional[dict[str, float | str]] = None
+    # Slice 13 Step 0a #60: 3단 게이트 (ADDITIVE). 점수 경로 무손상 — pass/warn/fail
+    # 결과는 commentary prompt context로만 흐른다. 기존 gate / _apply_gate / score=0
+    # 로직과 완전 분리. None이면 평가 결과 항상 "pass".
+    # 구조: {"metric": <name>, "fail_below": <float>, "warn_below": <float>, "_op": "gte"}
+    # PLACEHOLDER: 경계값은 Slice 14 #61 calibration 대상.
+    gate_tiers: Optional[dict[str, float | str]] = None
     description: str = ""
 
     @model_validator(mode="after")
@@ -67,6 +73,52 @@ class PresetSpec(BaseModel):
         if not metric_keys:
             raise ValueError(
                 f"gate must have at least one metric threshold "
+                f"for preset {self.preset_id!r}"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_gate_tiers(self) -> "PresetSpec":
+        """Slice 13 Step 0a #60: gate_tiers 구조 검증 (ADDITIVE).
+
+        gate_tiers=None → skip. 정의 시:
+        - "metric" 키 필수 (str)
+        - "fail_below", "warn_below" 모두 float (warn_below > fail_below)
+        - "_op"은 옵션, 기본 "gte" (gte일 때 fail_below < warn_below).
+        """
+        if self.gate_tiers is None:
+            return self
+        metric = self.gate_tiers.get("metric")
+        if not isinstance(metric, str) or not metric:
+            raise ValueError(
+                f"gate_tiers.metric must be non-empty str "
+                f"for preset {self.preset_id!r}"
+            )
+        fail_below = self.gate_tiers.get("fail_below")
+        warn_below = self.gate_tiers.get("warn_below")
+        if not isinstance(fail_below, (int, float)) or not isinstance(
+            warn_below, (int, float)
+        ):
+            raise ValueError(
+                f"gate_tiers.fail_below and warn_below must be numeric "
+                f"for preset {self.preset_id!r}"
+            )
+        op = self.gate_tiers.get("_op", "gte")
+        if op not in ("gte", "lte", "gt", "lt"):
+            raise ValueError(
+                f"gate_tiers._op must be one of (gte,lte,gt,lt), got {op!r} "
+                f"for preset {self.preset_id!r}"
+            )
+        # gte/gt: 값이 클수록 통과 → fail_below < warn_below 강제
+        # lte/lt: 값이 작을수록 통과 → fail_below > warn_below 강제
+        if op in ("gte", "gt") and fail_below >= warn_below:
+            raise ValueError(
+                f"gate_tiers: fail_below must be < warn_below for _op={op!r} "
+                f"for preset {self.preset_id!r}"
+            )
+        if op in ("lte", "lt") and fail_below <= warn_below:
+            raise ValueError(
+                f"gate_tiers: fail_below must be > warn_below for _op={op!r} "
                 f"for preset {self.preset_id!r}"
             )
         return self

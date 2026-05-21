@@ -7,30 +7,30 @@
 
 | 지표 | 값 (%) |
 | --- | --- |
-| global_mean_delta | 5.11 |
-| global_p90_delta | 11.2 |
-| global_max_delta | 33.12 |
+| global_mean_delta | 4.4 |
+| global_p90_delta | 9.52 |
+| global_max_delta | 24.58 |
 
 ## 2. 진입점별 통계
 
 | EP | N | ratio | mean | median | P90 | max |
 | --- | --- | --- | --- | --- | --- | --- |
-| e1 | 10 | 0.8835 | 1.23 | 1.03 | 2.36 | 2.6 |
-| e2 | 15 | 0.8599 | 1.57 | 1.2 | 2.33 | 5.86 |
-| e3 | 15 | 0.7307 | 2.13 | 2.13 | 3.45 | 4.38 |
-| e3_portfolio | 21 | 0.6764 | 8.16 | 7.26 | 17.01 | 17.43 |
-| e4_conversation | 83 | 0.7233 | 5.81 | 5.1 | 10.8 | 33.12 |
-| e5 | 15 | 0.5006 | 10.87 | 9.92 | 16.67 | 25.78 |
-| e6 | 15 | 0.7881 | 1.33 | 1.53 | 2.25 | 2.48 |
-| rationale | 26 | 0.9778 | 4.52 | 4.0 | 8.18 | 12.44 |
+| e1 | 10 | 0.8835 | 1.18 | 1.04 | 2.08 | 2.36 |
+| e2 | 15 | 0.8599 | 1.56 | 1.08 | 2.79 | 5.0 |
+| e3 | 15 | 0.7307 | 1.73 | 1.32 | 2.93 | 4.41 |
+| e3_portfolio | 21 | 0.6764 | 6.43 | 6.17 | 9.11 | 16.72 |
+| e4_conversation | 83 | 0.7233 | 5.37 | 4.37 | 10.13 | 16.94 |
+| e5 | 15 | 0.5006 | 9.42 | 6.83 | 22.41 | 24.58 |
+| e6 | 15 | 0.7881 | 1.13 | 1.08 | 1.93 | 2.43 |
+| rationale | 26 | 0.9778 | 3.08 | 2.4 | 5.95 | 8.99 |
 
 ## 3. KPI 판정
 
 | KPI | 임계 | 측정 | 판정 |
 | --- | --- | --- | --- |
-| max_delta ≤ 10% (strict) | ≤ 10% | 33.12% | FAIL |
-| P90_delta ≤ 15% (Fallback) | ≤ 15% | 11.2% | PASS |
-| 진입점별 max_delta ≤ 10% | 4 / 8 EP PASS | — | INFO |
+| max_delta ≤ 10% (strict) | ≤ 10% | 24.58% | FAIL |
+| P90_delta ≤ 15% (Fallback) | ≤ 15% | 9.52% | PASS |
+| 진입점별 max_delta ≤ 10% | 5 / 8 EP PASS | — | INFO |
 
 ## 4. 결론 + Fallback 처리
 
@@ -55,11 +55,11 @@
 
 | EP | source_file (꼬리) | actual | est | delta% |
 | --- | --- | --- | --- | --- |
-| e1 | …rtfolio/coach/slice1/step8_3way_raw.json | 192 | 197 | 2.6 |
-| e2 | …olio/coach/slice3/step8_2way_e2_raw.json | 580 | 614 | 5.86 |
-| e3 | …olio/coach/slice5/step8_2way_e3_raw.json | 753 | 720 | 4.38 |
-| e3_portfolio | …folio/coach/slice6/step7_matrix_raw.json | 373 | 438 | 17.43 |
-| e4_conversation | …/part3/matrix/S10_claude_sonnet_4_5.json | 1706 | 2271 | 33.12 |
-| e5 | …olio/coach/slice2/step8_2way_e5_raw.json | 128 | 95 | 25.78 |
-| e6 | …olio/coach/slice4/step8_2way_e6_raw.json | 967 | 943 | 2.48 |
-| rationale | …oach/slice9/part1/rationale_records.json | 442 | 387 | 12.44 |
+| e1 | …rtfolio/coach/slice1/step8_3way_raw.json | 212 | 207 | 2.36 |
+| e2 | …olio/coach/slice3/step8_2way_e2_raw.json | 580 | 609 | 5.0 |
+| e3 | …olio/coach/slice5/step8_2way_e3_raw.json | 408 | 426 | 4.41 |
+| e3_portfolio | …folio/coach/slice6/step7_matrix_raw.json | 335 | 391 | 16.72 |
+| e4_conversation | …/part3/matrix/S10_claude_sonnet_4_5.json | 1706 | 1995 | 16.94 |
+| e5 | …olio/coach/slice2/step8_2way_e5_raw.json | 118 | 89 | 24.58 |
+| e6 | …/coach/slice4/step6_smoke_e6_output.json | 947 | 970 | 2.43 |
+| rationale | …oach/slice9/part1/rationale_records.json | 690 | 628 | 8.99 |

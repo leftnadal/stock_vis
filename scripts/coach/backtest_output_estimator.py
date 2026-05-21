@@ -24,10 +24,23 @@ from collections import defaultdict
 from pathlib import Path
 
 from portfolio.measure.estimator_v3 import (
+    ENTRY_POINT_OUTPUT_FITS,
     ENTRY_POINT_OUTPUT_RATIOS,
+    GLOBAL_OUTPUT_FIT,
     GLOBAL_OUTPUT_RATIO,
     estimate_output_tokens,
 )
+
+
+def _legacy_estimate(chars: int, entry_point: str) -> int:
+    """Slice 11 구모델 (단변량 ratio) — 신·구 비교용 보존.
+
+    공식: tokens = chars × ratio. 신모델 OLS 도입 전 baseline.
+    """
+    if chars <= 0:
+        return 0
+    ratio = ENTRY_POINT_OUTPUT_RATIOS.get(entry_point, GLOBAL_OUTPUT_RATIO)
+    return int(chars * ratio)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 JSONL_PATH = REPO_ROOT / "docs" / "portfolio" / "coach" / "all_llm_calls.jsonl"
@@ -63,8 +76,14 @@ def load_entries(path: Path = JSONL_PATH) -> list[dict]:
         return [json.loads(l) for l in fp if l.strip()]
 
 
-def evaluate(entries: list[dict]) -> dict:
-    """진입점별 + 전체 delta% 계산."""
+def evaluate(entries: list[dict], use_legacy: bool = False) -> dict:
+    """진입점별 + 전체 delta% 계산.
+
+    Args:
+        entries: jsonl 행 list.
+        use_legacy: True → Slice 11 구모델 (chars × ratio) 사용.
+                    False → Slice 13 신모델 (estimate_output_tokens 호출, 다변량 OLS).
+    """
     by_ep: dict[str, list[dict]] = defaultdict(list)
     skipped = 0
     for e in entries:
@@ -74,7 +93,11 @@ def evaluate(entries: list[dict]) -> dict:
         ep = detect_entry_point(e.get("source_file", ""))
         actual = int(e["output_tokens"])
         chars = int(e["output_chars"])
-        est = estimate_output_tokens(chars, entry_point=ep)
+        model = e.get("model", "claude-haiku-4-5")
+        if use_legacy:
+            est = _legacy_estimate(chars, ep)
+        else:
+            est = estimate_output_tokens(chars, entry_point=ep, model=model)
         delta = abs(est - actual) / actual * 100
         by_ep[ep].append(
             {
@@ -213,28 +236,46 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     entries = load_entries(args.input)
-    result = evaluate(entries)
-    s = result["summary"]
 
-    print("=" * 60)
-    print("Slice 11 §1 — Output Estimator Backtest (#51)")
-    print("=" * 60)
-    print(f"N = {s['n_total']} (skipped={s['n_skipped']})")
-    print(f"진입점 매핑: {sorted(result['per_ep'])}")
-    print(f"global mean_delta = {s['global_mean_delta']} %")
-    print(f"global P90_delta  = {s['global_p90_delta']} %")
-    print(f"global max_delta  = {s['global_max_delta']} %")
+    # Slice 13 Step 0a: 신·구 두 모델 모두 평가 후 비교.
+    legacy = evaluate(entries, use_legacy=True)
+    new = evaluate(entries, use_legacy=False)
+
+    print("=" * 70)
+    print("Slice 13 Step 0a — Output Estimator Backtest (#51 multivariate)")
+    print("=" * 70)
+    s_old = legacy["summary"]
+    s_new = new["summary"]
+    print(f"N = {s_new['n_total']} (skipped={s_new['n_skipped']})")
+    print(f"진입점 매핑: {sorted(new['per_ep'])}")
     print()
-    for ep in sorted(result["per_ep"]):
-        p = result["per_ep"][ep]
+    print(f"{'Metric':<22}{'OLD (Slice11)':>16}{'NEW (Slice13)':>16}{'Δ':>10}")
+    print("-" * 64)
+    for key, label in [
+        ("global_mean_delta", "global mean_delta %"),
+        ("global_p90_delta", "global P90_delta %"),
+        ("global_max_delta", "global max_delta %"),
+    ]:
+        old_v = s_old[key]
+        new_v = s_new[key]
+        diff = new_v - old_v
+        print(f"{label:<22}{old_v:>16.2f}{new_v:>16.2f}{diff:>+10.2f}")
+    print()
+    print("진입점별 max_delta 비교:")
+    print(f"  {'EP':<18}{'N':>4}{'OLD max%':>12}{'NEW max%':>12}{'Δ':>10}")
+    for ep in sorted(new["per_ep"]):
+        po = legacy["per_ep"].get(ep, {})
+        pn = new["per_ep"][ep]
+        old_max = po.get("max_delta", 0)
+        new_max = pn["max_delta"]
         print(
-            f"  [{ep:<18}] n={p['n']:>3} ratio={p['ratio']:.4f} "
-            f"mean={p['mean_delta']:>5.2f}% p90={p['p90_delta']:>5.2f}% "
-            f"max={p['max_delta']:>5.2f}%"
+            f"  {ep:<18}{pn['n']:>4}{old_max:>12.2f}{new_max:>12.2f}"
+            f"{new_max - old_max:>+10.2f}"
         )
 
+    # 보고서는 신모델 기준으로 작성 (기존 형식 유지).
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(render_report(result), encoding="utf-8")
+    args.report.write_text(render_report(new), encoding="utf-8")
     print(f"\nreport: {args.report}")
     return 0
 

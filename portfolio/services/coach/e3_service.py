@@ -22,7 +22,10 @@ from portfolio.schemas.commentary_output import E3Output
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 from portfolio.services.coach.prompt_builder import E3PromptBuilder
 from portfolio.services.scoring import (
+    ScoringEngineBase,
+    format_gate_tier_for_prompt,
     format_scores_for_prompt,
+    get_preset_spec,
     get_scorer,
     resolve_category,
 )
@@ -56,6 +59,7 @@ def run_e3_coach(
 
     # Slice 12 Part 3: preset score 주입 (후방 호환 — 둘 다 None이면 skip)
     scores: dict[str, float] | None = None
+    gate_tier: str | None = None
     if preset_id is not None and metrics is not None:
         category = resolve_category(preset_id)
         scorer = get_scorer(category)
@@ -63,6 +67,12 @@ def run_e3_coach(
         scores_block = format_scores_for_prompt(scores)
         user_prompt = (
             f"{user_prompt}\n\n## Preset Scores ({preset_id})\n{scores_block}"
+        )
+        # Slice 13 Step 0a #60: gate-tier ADDITIVE 추가 (점수 경로 무손상)
+        spec = get_preset_spec(preset_id)
+        gate_tier = ScoringEngineBase._evaluate_gate_tier(metrics, spec.gate_tiers)
+        user_prompt = (
+            f"{user_prompt}\n\n{format_gate_tier_for_prompt(preset_id, gate_tier)}"
         )
 
     if client is None:
@@ -83,4 +93,6 @@ def run_e3_coach(
     if scores is not None:
         result["scores"] = scores
         result["preset_id"] = preset_id
+    if gate_tier is not None:
+        result["gate_tier"] = gate_tier
     return result

@@ -100,6 +100,62 @@ class ScoringEngineBase(ABC, BaseModel):
         return True
 
     @staticmethod
+    def _evaluate_gate_tier(
+        metrics: dict[str, float],
+        gate_tiers: Optional[dict[str, float | str]],
+    ) -> str:
+        """Slice 13 Step 0a #60: 3단 게이트 평가 (ADDITIVE).
+
+        ★ 점수 경로와 완전 분리. 결과는 commentary prompt context로만 사용.
+        ★ 기존 `_apply_gate` 및 `score=0.0` 로직과 충돌 없음.
+
+        gate_tiers=None → 항상 "pass" (기존 12 preset 동작 불변 보증).
+        지표 부재 → "fail" (보수적, _apply_gate 동일 정책).
+
+        Args:
+            metrics: 측정값 dict.
+            gate_tiers: {
+                "metric": <name>,
+                "fail_below": <float>,
+                "warn_below": <float>,
+                "_op": "gte|lte|gt|lt"  # 옵션, 기본 "gte"
+            } 또는 None.
+
+        Returns:
+            "pass" | "warn" | "fail" — 점수에 영향 없음, prompt context 전용.
+        """
+        if gate_tiers is None:
+            return "pass"
+        metric_name = gate_tiers.get("metric")
+        if not isinstance(metric_name, str):
+            return "fail"
+        value = metrics.get(metric_name)
+        if value is None:
+            return "fail"
+        fail_below = gate_tiers.get("fail_below")
+        warn_below = gate_tiers.get("warn_below")
+        if not isinstance(fail_below, (int, float)) or not isinstance(
+            warn_below, (int, float)
+        ):
+            return "fail"
+        op = gate_tiers.get("_op", "gte")
+        # gte/gt: 값이 클수록 좋음 (예: dividend_yield)
+        if op in ("gte", "gt"):
+            if value < fail_below:
+                return "fail"
+            if value < warn_below:
+                return "warn"
+            return "pass"
+        # lte/lt: 값이 작을수록 좋음 (예: debt_ratio)
+        if op in ("lte", "lt"):
+            if value > fail_below:
+                return "fail"
+            if value > warn_below:
+                return "warn"
+            return "pass"
+        return "fail"
+
+    @staticmethod
     def _weighted_sum(
         metrics: dict[str, float],
         weights: dict[str, float],

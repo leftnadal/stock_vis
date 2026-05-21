@@ -1,20 +1,59 @@
-# Portfolio Coach 부채 대장 (Slice 12 Step 0 종결 기준)
+# Portfolio Coach 부채 대장 (Slice 13 Step 0a 진행 중)
 
-**최종 갱신**: 2026-05-20 (Slice 12 Step 0 multi-debt mini-slice)
+**최종 갱신**: 2026-05-21 (Slice 13 Step 0a — multivariate fit + 3단 게이트 ADDITIVE)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
 
 ## §1. 현재 OPEN 부채
 
-### #51: output_token estimator multivariate / GAM (PS 1.5)
+### #51: output_token estimator multivariate (Slice 13 Step 0a fit close, integration #62로 분리)
 
 - **history**:
-  - Slice 11 Part 1: 본격 구현 (8 진입점 char ratio 단변량 fit)
-  - 진입점 기준 max_delta 33.12%, P90 11.20%, mean 5.11%
-- **현재 상태**: open, **Slice 12 Step 0 1순위 후보**
-- **목표**: Part 4 24 케이스 output_tokens 데이터 누적 활용 → multivariate fit 또는 GAM
-- **데이터 가용성**: haiku 평균 917 tokens, sonnet 743 tokens, 진입점 × 모델 × 반복 데이터 풀
+  - Slice 11 Part 1: 본격 구현 (8 진입점 char ratio 단변량 fit) — max 33.12%, P90 11.20%, mean 5.11%
+  - **Slice 13 Step 0a: multivariate OLS fit 도입** (`tokens = a + b × chars`, (EP, model) lookup)
+    - 백테스트 결과: mean 5.11→4.40, P90 11.20→9.52, **max 33.12→24.58** (−8.54)
+    - e4_conversation max 대폭 개선 (−16.18)
+    - rationale max −3.45
+- **현재 상태**: **fit 부분 close** (정확도 개선 검증 완료) — integration은 #62로 분리
+- **남은 작업**: CostGuard에 estimate_output_tokens 호출 경로 연결 — Slice 13 Step 0b에서 처리 (#62)
+
+### #61: 3단 게이트 경계값 calibration (Slice 14, PS 2.5)
+
+- **신규 등록**: Slice 13 Step 0a (2026-05-21)
+- **history**:
+  - Slice 13 Step 0a #60: ADDITIVE 3단 게이트 (`gate_tiers` 필드 + `_evaluate_gate_tier`) 도입
+  - 현재 12 preset 모두 `gate_tiers=None` (PLACEHOLDER 상태) — 평가 항상 "pass" (점수 경로 무손상)
+- **작업 범위**:
+  - 12 preset별 fail_below / warn_below 경계값 실측 분포 기반 calibration
+  - 옵션 B threshold (기존 단일 `gate`)와 통합 가능성 검토 → 2-tier vs 3-tier 데이터 검증
+  - LLM commentary에 gate_tier 주입 시 품질 변화 측정 (manual eval)
+- **참조**: `portfolio/services/scoring/preset_spec.py` (gate_tiers schema),
+  `portfolio/services/scoring/base.py::_evaluate_gate_tier`
+
+### #62: estimator → CostGuard integration (Slice 13 Step 0b, PS 1.5)
+
+- **신규 등록**: Slice 13 Step 0a (2026-05-21)
+- **history**:
+  - Slice 11 #51로 estimator 구현, Slice 13 Step 0a에서 multivariate fit 정확도 개선
+  - 그러나 estimate_output_tokens 호출 경로가 **production CostGuard에 미연결** (backtest 스크립트만 사용)
+- **작업 범위**:
+  - `portfolio/llm/cost_guard.py`에 estimate_output_tokens 호출 추가
+  - LLM 호출 전 사전 비용 추정 / 사후 실측 비교 로깅
+  - estimator delta 모니터링 (실측 drift 시 재fit 트리거)
+- **참조**: `portfolio/llm/cost_guard.py:99` (cumulative_usd 필드만 존재, 저장소 없음)
+
+### #63: 누적 비용 ledger 영속화 (Slice 14+, PS 1.5)
+
+- **신규 등록**: Slice 13 Step 0a (2026-05-21)
+- **history**:
+  - Slice 8+에서 슬라이스 누적 비용 추적은 closing 보고서에 수기 기재 ($3.1196 등)
+  - **ledger 파일 자체가 미존재** — slice 간 연속 누적값 검증 불가
+- **작업 범위**:
+  - JSONL 또는 SQLite ledger 파일 (예: `docs/portfolio/coach/cost_ledger.jsonl`)
+  - LLM 호출당 1행: timestamp, model, input/output_tokens, cost_usd, slice, source_file
+  - CostGuard.reset_for_slice() 시 ledger flush + slice 합계 출력
+  - #62와 인프라 묶음 처리
 
 ### #59 (open / E5 잔여): action_items measurability — E5 진입점 (PS 0.5)
 

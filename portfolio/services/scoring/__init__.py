@@ -8,11 +8,14 @@ from __future__ import annotations
 
 from portfolio.services.scoring.base import ScoringEngineBase
 from portfolio.services.scoring.preset_spec import PresetSpec
-from portfolio.services.scoring.presets.factor import FactorScoringEngine
-from portfolio.services.scoring.presets.growth import GrowthScoringEngine
-from portfolio.services.scoring.presets.income import IncomeScoringEngine
-from portfolio.services.scoring.presets.special import SpecialScoringEngine
-from portfolio.services.scoring.presets.value import ValueScoringEngine
+from portfolio.services.scoring.presets.factor import FACTOR_SPECS, FactorScoringEngine
+from portfolio.services.scoring.presets.growth import GROWTH_SPECS, GrowthScoringEngine
+from portfolio.services.scoring.presets.income import INCOME_SPECS, IncomeScoringEngine
+from portfolio.services.scoring.presets.special import (
+    SPECIAL_SPECS,
+    SpecialScoringEngine,
+)
+from portfolio.services.scoring.presets.value import VALUE_SPECS, ValueScoringEngine
 
 
 PRESET_SCORERS: dict[str, type[ScoringEngineBase]] = {
@@ -60,6 +63,33 @@ def get_scorer(category: str) -> ScoringEngineBase:
     if category not in PRESET_SCORERS:
         raise KeyError(f"Unknown category: {category!r}")
     return PRESET_SCORERS[category]()
+
+
+# Slice 13 Step 0a #60 — preset_id → PresetSpec lookup (gate_tiers 접근용).
+_ALL_PRESET_SPECS: dict[str, PresetSpec] = {
+    spec.preset_id: spec
+    for specs in (
+        VALUE_SPECS,
+        GROWTH_SPECS,
+        INCOME_SPECS,
+        FACTOR_SPECS,
+        SPECIAL_SPECS,
+    )
+    for spec in specs
+}
+
+
+def get_preset_spec(preset_id: str) -> PresetSpec:
+    """preset_id → PresetSpec 인스턴스 반환 (Slice 13 Step 0a #60).
+
+    gate_tiers 접근이 주 용도. ADDITIVE 점수 경로 무손상.
+
+    Raises:
+        KeyError: 미등록 preset_id.
+    """
+    if preset_id not in _ALL_PRESET_SPECS:
+        raise KeyError(f"Unknown preset_id: {preset_id!r}")
+    return _ALL_PRESET_SPECS[preset_id]
 
 
 def resolve_category(preset_id: str) -> str:
@@ -116,5 +146,15 @@ __all__ = [
     "SpecialScoringEngine",
     "get_scorer",
     "resolve_category",
+    "get_preset_spec",
     "format_scores_for_prompt",
+    "format_gate_tier_for_prompt",
 ]
+
+
+def format_gate_tier_for_prompt(preset_id: str, tier: str) -> str:
+    """Slice 13 Step 0a #60: gate tier 결과를 prompt 1줄로 포맷.
+
+    ADDITIVE — prompt context 전용. 점수 영향 없음.
+    """
+    return f"## Gate Tier ({preset_id}): {tier}"
