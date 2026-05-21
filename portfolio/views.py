@@ -1,94 +1,16 @@
 """
-Portfolio Coach Django views.
+Portfolio Coach Django views (deprecated module).
 
-진입점:
-  - POST /api/coach/e6/comparison/?provider=haiku      (Slice 4)
+Slice 13 #65 (2026-05-21~22): legacy view 전수 제거 완료.
+- pilot: E1 (`coach_e1_garp`) 제거
+- E2 (`coach_e2_diagnostic_card`) 제거
+- E3 (`coach_e3_metric_comment`) 제거
+- E5 (`coach_e5_adjustment`) 제거
+- E6 (`coach_e6_comparison`) 제거
 
-순수 Django view + JsonResponse (DRF 미사용).
-
-Slice 13 #65 (2026-05-21~22): legacy view 단계적 제거.
-- pilot: E1 (`coach_e1_garp`) 제거.
-- E2 (`coach_e2_diagnostic_card`) 제거.
-- E3 (`coach_e3_metric_comment`) 제거.
-- E5 (`coach_e5_adjustment`) 제거.
-  단일화된 진입점은 `/api/v1/coach/eN/` (`portfolio/api/views.py`).
+모든 진입점이 `/api/v1/coach/eN/` (`portfolio/api/views.py`)로 단일화됨.
+본 모듈은 portfolio.urls에서 더 이상 import되지 않으나, 외부 import 호환성 보존을
+위해 비어 있는 상태로 유지한다. 향후 정리 시점에 모듈 자체 제거 검토 (#65 후속).
 """
 
 from __future__ import annotations
-
-import json
-
-from django.http import HttpRequest, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
-from pydantic import ValidationError
-
-from portfolio.llm import LLMBudgetExceededError, LLMError
-from portfolio.schemas.llm import E6Request
-from portfolio.services.e6_comparison import run_e6
-
-
-# Slice 1 Decision: default provider = haiku (winner).
-# "gemini"는 호환성 위해 허용하나 free tier에서 RateLimit 즉시 폴백 발생 가능.
-_VALID_PROVIDERS = ("gemini", "anthropic", "sonnet", "haiku")
-
-
-@csrf_exempt
-@require_POST
-def coach_e6_comparison(request: HttpRequest) -> JsonResponse:
-    """
-    POST /api/coach/e6/comparison/?provider=haiku
-
-    body (JSON): {"analysis_context": {...}, "adjustments": [...], "user_intent": "..."}
-    provider 옵션: haiku (기본 — D2.B 글쓰기) | sonnet | anthropic | gemini.
-
-    응답:
-      200 — {"response": E6ComparisonResponse, "metadata": LLMResponse.metadata_dict()}
-      400 — invalid body or invalid provider
-      429 — budget exceeded
-      500 — LLM 호출 실패 / 응답 schema 불일치
-    """
-    provider = request.GET.get("provider", "haiku")
-    if provider not in _VALID_PROVIDERS:
-        return JsonResponse(
-            {
-                "error": "invalid_provider",
-                "detail": f"{provider!r} not in {list(_VALID_PROVIDERS)}",
-            },
-            status=400,
-        )
-
-    try:
-        body = json.loads(request.body)
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
-        return JsonResponse(
-            {"error": "invalid_request", "detail": f"json parse error: {exc}"},
-            status=400,
-        )
-
-    try:
-        e6_request = E6Request.model_validate(body)
-    except ValidationError as exc:
-        return JsonResponse(
-            {"error": "invalid_request", "detail": str(exc)[:500]},
-            status=400,
-        )
-
-    try:
-        result = run_e6(e6_request, provider=provider)
-    except LLMBudgetExceededError as exc:
-        return JsonResponse(
-            {"error": "budget_exceeded", "detail": str(exc)}, status=429
-        )
-    except LLMError as exc:
-        return JsonResponse(
-            {"error": "llm_invocation_failed", "detail": str(exc)[:300]},
-            status=500,
-        )
-    except ValidationError as exc:
-        return JsonResponse(
-            {"error": "llm_response_schema_mismatch", "detail": str(exc)[:500]},
-            status=500,
-        )
-
-    return JsonResponse(result, status=200, json_dumps_params={"ensure_ascii": False})
