@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 13 Part 3 진행 중)
+# Portfolio Coach 부채 대장 (Slice 13 + #65 종결)
 
-**최종 갱신**: 2026-05-21 (Slice 13 Part 3 — E3 DRF endpoint + #66 신규)
+**최종 갱신**: 2026-05-22 (#65 closing — legacy view 처리 마감, #67 신규)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -65,21 +65,58 @@
 - **참조**: `portfolio/services/coach/e3_service.py:34` (kwarg 시그니처),
   `portfolio/services/scoring/PRESET_ID_TO_CATEGORY` (12 preset 진실 소스)
 
-### #65: 기존 순수 Django view 최종 처리 (Slice 13 종결 후 진입 가능, PS 1.5)
+### #67: legacy 전용 의존 코드 후속 정리 (Slice 14+, PS 1.0)
 
-- **신규 등록**: Slice 13 Part 1 (2026-05-21)
-- **history**:
-  - Slice 13 Part 1: E1 DRF endpoint (`/api/coach/e1/`) 추가, 기존 `coach/e1/garp/` 무수정 유지
-  - Part 2~4: E2/E3/E5/E6 동일 패턴 확장 완료
-  - **Part 5: E4 endpoint 완료 → E1~E6 6개 모두 DRF 마이그레이션 완료**. 선행조건 충족.
-- **★ E4 special case**: legacy view 자체가 **부재** (Slice 1~6에서 미도입) →
-  E4는 마이그레이션 대상 아님. 유지/제거/wrapper화 결정 시 E1·E2·E3·E5·E6 5건만 다룬다.
-- **작업 범위 (Slice 13 종결 후 또는 Slice 14+)**:
-  - 기존 순수 view 5건 (`coach_e1_garp` / `coach_e2_diagnostic_card` / `coach_e3_metric_comment` /
-    `coach_e5_adjustment` / `coach_e6_comparison`) **유지 / 제거 / wrapper화** 결정
-  - 클라이언트 호출 경로 분석 (frontend, 자동화 스크립트)
-  - wrapper화 선택 시: 순수 view → DRF endpoint 호출로 위임 (이중 라우팅 제거)
-- **참조**: `portfolio/api/` (신규 DRF 패키지), `portfolio/views.py` (legacy 5건)
+- **신규 등록**: #65 closing (2026-05-22)
+- **성격**: 비위험·개선성 부채. 보존된 코드는 검증 스크립트가 실제로 쓰는
+  live code이므로 dead code가 아니며, 방치해도 깨지지 않음.
+- **배경**: #65에서 legacy view 5건 제거 시, 그 view들이 쓰던 옛 보조 코드는
+  `scripts/validation/` 및 `test_e*_service.py`, `schemas/__init__.py:__all__`에
+  아직 쓰여 보존됨. 본 부채는 그 보존 코드의 정리 검토.
+- **제안 방향**:
+  1. `scripts/validation/`을 archived/legacy로 분류 (슬라이스 1~6 검증용 — 운영 무관)
+  2. archive 후 legacy 의존 코드 일괄 제거 검토
+  3. `services/__init__.py:__all__` 정리
+
+#### 누적 보존 목록 (E5/E6 회신 첨부 — 재조사 비용 절감)
+
+**Service 함수 (5건, services/__init__.py __all__ 또는 test_*_service.py 의존)**:
+| 함수 | 파일 | 보존 사유 |
+|------|------|----------|
+| `run_e1_garp` | `services/e1_garp.py` | `services/__init__.py:__all__` 노출 |
+| `run_e2` | `services/e2_diagnostic_card.py` | `test_e2_service.py` 직접 import |
+| `run_e3` | `services/e3_metric_comment.py` | `test_e3_service.py` 직접 import |
+| `run_e5` | `services/e5_adjustment_parser.py` | `__all__` + `test_e5_service.py` |
+| `run_e6` | `services/e6_comparison.py` | `test_e6_service.py` 직접 import |
+
+**Prompt builders (5건, 주로 scripts/validation/)**:
+| 함수 | 사용처 |
+|------|--------|
+| `build_e1_prompt` | `scripts/validation/` 5건 + `test_scenario_e2e.py` |
+| `build_e2_prompt` | `scripts/validation/` 3건 + `test_e2_service.py` |
+| `build_e3_prompt` | `scripts/validation/` 3건 |
+| `build_e5_prompt` | `scripts/validation/` 3건 + `test_e5_service.py` |
+| `build_e6_prompt` | `scripts/validation/` 3건 + `test_scenario_e2e.py` |
+
+**Parsers (3건)**:
+| 함수 | 사용처 |
+|------|--------|
+| `parse_e2_response` | `scripts/validation/` 2건 + `test_e2_service.py` |
+| `parse_e3_response` | `scripts/validation/` 2건 |
+| `parse_e6_response` | `scripts/validation/` 2건 |
+
+**Schemas**:
+| 스키마 | 사용처 |
+|--------|--------|
+| `OneLineDiagnosis` (E1) | `scripts/validation/` 5건 + `parsers.py` docstring |
+| `E2Request`, `E2Response`, `E2DiagnosticCard` | `scripts/validation/` 3건 + `test_e2_*` 다수 + `schemas/__init__.py:__all__` |
+| `E3Request` | `scripts/validation/` 3건 |
+| `E5Request`, `E5Response` | `scripts/validation/` 3건 + `test_e5_service.py` |
+| `E6Request` | `scripts/validation/` 3건 |
+
+**공통 패턴**: `scripts/validation/`(슬라이스 1~6 검증 스크립트 — 역사 보존)이 가장 큰
+보존 사유. 차선은 `test_e*_service.py`(service 단위 테스트). `schemas/__init__.py:__all__`
+노출은 외부 import 가능성 신호.
 
 ### #64: 사전 추정 기반 blocking 차단 모드 (Slice 14+, PS 1.0)
 
@@ -112,7 +149,19 @@
 
 ---
 
-## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1)
+## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1 + #65)
+
+### #65: 기존 순수 Django view 최종 처리 (close, #65 mini-slice 2026-05-21~22)
+
+- **history**:
+  - Slice 13 Part 1: 신규 등록 (legacy 5건 + E4 부재 special case)
+  - Slice 13 종결 후 #65 mini-slice로 처리 시작
+  - 당초 wrapper 추천 → E1 pilot에서 재평가 → **제거**로 전환
+- **처리 결과**: E1~E3·E5·E6 legacy view 전수 제거 (경로 A 일관 = 호출처 0건 dead code)
+- **commit**: E1 `4eba9fb` / E2 `fc39d23` / E3 `3e3ad6b` / E5 `2bde79e` / E6 `1983a99` / doc `4c2fcc9`
+- **검증**: 회귀 767→730 (−37 = 5+7+9+7+9 정확) / IDENTICAL 31/31 / 6 API 60/60 PASS / $0
+- **결과**: 6 진입점 모두 `/api/v1/coach/eN/` 단일화 (이중 입구 소멸)
+- **잔여**: legacy 전용 의존 코드(scripts/validation/, test_e*_service.py 사용중) → **#67로 분리 등록**
 
 ### #62: estimator → CostGuard integration (close, Slice 13 Step 0b)
 
@@ -182,20 +231,23 @@
 
 ---
 
-## §4. 부채 변화 요약 (Slice 13 Step 0a + 0b)
+## §4. 부채 변화 요약 (Slice 13 Step 0a + 0b + Part 1~5 + #65)
 
 | 변화      | 건수 | 부채 ID                                                  |
 | --------- | ---- | -------------------------------------------------------- |
-| close     | 2    | #51 (fit 부분 close, Step 0a) / #62 (Step 0b)            |
-| 신규 등록 | 4    | #61 (Slice 14), #63 (Slice 14+), #64 (Slice 14+), 추가 §1 등록 |
+| close     | 3    | #51 (fit, Step 0a) / #62 (Step 0b) / **#65 (closing)**   |
+| 신규 등록 | 6    | #61, #63, #64 (Step 0a/0b) / #65 (Part 1) → close / #66 (Part 3) / **#67 (closing)** |
 | 잔여      | 1    | #59 E5 (PS 0.5)                                          |
-| **net**   | **+2** (close 2 − 신규 4)                                |
+| **net**   | **+3** (close 3 − 신규 6)                                |
 
 ### 추적
 
 - **Step 0a 신규**: #61 (3단 게이트 calibration, PS 2.5), #62 (estimator→CostGuard integration, PS 1.5), #63 (cost ledger 영속화, PS 1.5)
 - **Step 0b 변동**: #62 → close (non-blocking 모드), #64 신규 (blocking 차단 모드 분리, PS 1.0)
-- **#51**: Slice 11 Part 1 본격 → Slice 13 Step 0a에서 multivariate fit 정확도 개선 (fit 부분 close), integration은 #62로 분리됨
+- **Part 1 신규**: #65 (legacy view 최종 처리, PS 1.5) — 등록 시점 wrapper/유지 우선 권고
+- **Part 3 신규**: #66 (E3 preset 점수 API, PS 2.0, 분석엔진 #12 Phase 2 의존)
+- **#65 closing**: legacy view 5건 제거(경로 A) → close. **#67 신규** (legacy 보조 코드 정리, PS 1.0)
+- **#51**: Slice 11 Part 1 본격 → Step 0a에서 multivariate fit 정확도 개선 (fit 부분 close), integration은 #62로 분리됨
 
 ---
 
@@ -207,8 +259,8 @@
 | #59 E5 action measurability             | 0.5 | Step 0 2순위    | E5 25% NG, E3 패턴 재사용 가능                                       |
 | #63 누적 비용 ledger 영속화             | 1.5 | Part 후보       | JSONL/SQLite ledger + slice flush                                    |
 | #64 사전 추정 blocking 차단 모드        | 1.0 | Part 후보       | #61 calibration 완료 후 안전 (현재 estimator delta 24.58%)           |
-| **#65 기존 순수 view 최종 처리 (E1~E6 마이그레이션 완료 후)** | **1.5** | **Slice 13 후반 Part** | E1~E6 DRF endpoint 전환 완료 시점에 유지/제거/wrapper화 결정 |
 | **#66 E3 endpoint preset 점수 API 노출** | **2.0** | **분석엔진 #12 Phase 2 후** | preset_id+metrics optional 필드 ADDITIVE 추가. 분석엔진 선행 필요 |
+| **#67 legacy 전용 의존 코드 후속 정리** | **1.0** | Part 후보 (비위험) | scripts/validation/ archive 우선 → 보조 코드 일괄 제거 검토. 누적 보존 목록 §1 첨부 |
 
 ---
 

@@ -60,3 +60,44 @@ contract test가 EN Output 계약 위반 시 FAIL → drift 안전망.
 1. #65 — legacy view 5건 최종 처리. frontend 연동 미정이므로
    wrapper / 유지 우선 검토, '제거'는 후순위.
 2. Slice 14 Step 0 — #61 게이트 calibration 1순위.
+
+---
+
+# #65 추가 — legacy view 처리 마감 (2026-05-21~22)
+
+## 처리 방식: 제거 (당초 wrapper 추천 → E1 pilot 후 재평가)
+
+당초 "wrapper / 유지 우선, 제거 후순위" 권고였으나 **E1 pilot에서 재평가**:
+- legacy view = mock 데모 endpoint (GET, 고정 fixture)
+- new API = 프로덕션 API (POST, 사용자 데이터)
+- 입력·prompt builder·output schema가 본질적으로 다름 → 단순 wrapper 불가
+- 호출처 전수 조사 결과 5건 모두 production 호출 0건 (dead code) → **안전 제거** 선택
+
+## 결과
+
+- E1~E3·E5·E6 legacy view 전수 제거 (경로 A = 호출처 0건)
+- E4는 legacy view 부재 (special case)
+- 6 진입점 모두 `/api/v1/coach/eN/` 단일화 → **이중 입구 소멸**
+
+## 커밋
+
+```
+4eba9fb #65 pilot — E1 legacy view 제거
+fc39d23 #65 — E2 legacy view 제거
+3e3ad6b #65 — E3 legacy view 제거
+2bde79e #65 — E5 legacy view 제거
+1983a99 #65 — E6 legacy view 제거 (전수 처리 완료)
+4c2fcc9 #65 — 작업 지시서 docs
+```
+
+## 핵심 수치
+
+- 회귀: 767 → **730 (−37 = 5+7+9+7+9, legacy view 테스트 삭제 정확)**
+- IDENTICAL: 31/31 유지
+- 6 API contract test: 60/60 PASS (영향 없음)
+- 비용: $0 (LLM 무접촉)
+
+## 부채 변동
+
+- **#65 close** (legacy view 5건 처리 완료)
+- **#67 신규** (PS 1.0): legacy 전용 의존 코드 후속 정리 (`scripts/validation/` archive 우선 → 보조 코드 일괄 제거 검토). 비위험·개선성 부채.
