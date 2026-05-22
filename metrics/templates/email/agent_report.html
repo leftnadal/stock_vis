@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Stock-Vis Agent Report — {{ payload.domain_label }}</title>
+<style>
+  body { font-family: -apple-system, "SF Pro Text", Helvetica, Arial, sans-serif; color:#1f2937; max-width:680px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; border-bottom:2px solid #2563eb; padding-bottom:6px; margin-bottom:14px; }
+  h2 { font-size:15px; color:#374151; margin-top:22px; margin-bottom:8px; border-left:3px solid #2563eb; padding-left:8px; }
+  .tldr { background:#eff6ff; border:1px solid #bfdbfe; border-radius:6px; padding:10px 14px; margin:8px 0 18px; }
+  .tldr ul { margin:0; padding-left:20px; }
+  .tldr li { margin:4px 0; font-size:14px; }
+  .card { border:1px solid #e5e7eb; border-radius:6px; padding:10px 14px; margin:8px 0; background:#fafafa; }
+  .card .title { font-weight:600; color:#1f2937; margin-bottom:4px; font-size:14px; }
+  .card .summary { color:#6b7280; font-size:13px; margin-bottom:6px; }
+  .hits { font-family:"SF Mono",monospace; font-size:12px; color:#dc2626; background:#fef2f2; padding:6px 8px; border-radius:4px; margin-top:6px; white-space:pre-wrap; }
+  .meta { color:#9ca3af; font-size:11px; margin-top:4px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; margin:6px 0; }
+  th, td { padding:6px 8px; text-align:left; border-bottom:1px solid #e5e7eb; }
+  th { background:#f3f4f6; font-weight:600; }
+  .trend { font-family:"SF Mono",monospace; font-size:12px; color:#374151; }
+  .footer { color:#9ca3af; font-size:11px; margin-top:24px; padding-top:8px; border-top:1px solid #e5e7eb; }
+</style>
+</head>
+<body>
+
+<h1>{{ payload.domain_label }} — {{ payload.date }}</h1>
+
+<div class="tldr">
+  <strong>TL;DR</strong>
+  <ul>
+    {% for line in payload.tldr %}<li>{{ line }}</li>{% endfor %}
+  </ul>
+</div>
+
+{% if payload.domain == "data" %}
+  <h2>Neo4j 그래프</h2>
+  <table>
+    <tr><th>구분</th><th>현재</th><th>7일 추이</th></tr>
+    <tr><td>노드</td><td>{{ payload.graph.total_nodes }}</td><td class="trend">{{ payload.trends.nodes_7d }}</td></tr>
+    <tr><td>관계</td><td>{{ payload.graph.total_relations }}</td><td class="trend">{{ payload.trends.relations_7d }}</td></tr>
+  </table>
+  <table>
+    <tr><th>라벨</th><th>개수</th></tr>
+    {% for label, cnt in payload.graph.labels.items %}<tr><td>{{ label }}</td><td>{{ cnt }}</td></tr>{% endfor %}
+  </table>
+
+  <h2>뉴스 24h</h2>
+  <table>
+    <tr><th>구분</th><th>값</th></tr>
+    <tr><td>오늘 신규</td><td>{{ payload.news.today_new }}</td></tr>
+    <tr><td>LLM 분석률</td><td>{{ payload.news.today_llm_analyzed_pct }}%</td></tr>
+    <tr><td>7일 추이</td><td class="trend">{{ payload.trends.news_24h_7d }}</td></tr>
+  </table>
+
+  <h2>커버리지 갭</h2>
+  <table>
+    {% for k, v in payload.gaps.items %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+  </table>
+
+  <h2>LLM 사용량</h2>
+  <table>
+    <tr><td>24h calls</td><td>{{ payload.llm_usage.total_calls_24h }}</td></tr>
+    <tr><td>24h 비용</td><td>${{ payload.llm_usage.est_cost_usd_24h }}</td></tr>
+    <tr><td>월간 추정</td><td>${{ payload.llm_usage.est_monthly_cost_usd }}</td></tr>
+  </table>
+
+{% elif payload.domain == "backend" %}
+  <h2>시스템 헬스</h2>
+  <table>
+    {% for k, v in payload.health.items %}<tr><td>{{ k }}</td><td>{{ v }}</td></tr>{% endfor %}
+  </table>
+
+  <h2>LLM 비용</h2>
+  <table>
+    <tr><td>24h calls</td><td>{{ payload.llm_usage.total_calls_24h }}</td></tr>
+    <tr><td>24h 비용</td><td>${{ payload.llm_usage.est_cost_usd_24h }}</td></tr>
+    <tr><td>월간 추정</td><td>${{ payload.llm_usage.est_monthly_cost_usd }}</td></tr>
+  </table>
+
+  <h2>백엔드 Audit ({{ payload.audits|length }}건)</h2>
+  {% for audit in payload.audits %}
+    <div class="card">
+      <div class="title">{{ audit.title|default:audit.name }}</div>
+      {% if audit.summary_line %}<div class="summary">{{ audit.summary_line }}</div>{% endif %}
+      {% if audit.severity_hits %}
+        <div class="hits">{% for hit in audit.severity_hits %}{{ hit }}
+{% endfor %}</div>
+      {% endif %}
+      <div class="meta">{{ audit.path|default:"보고서 없음" }} ({{ audit.lines }}줄)</div>
+    </div>
+  {% endfor %}
+
+{% else %}
+  <h2>{{ payload.domain_label }} Audit ({{ payload.audits|length }}건)</h2>
+  {% for audit in payload.audits %}
+    <div class="card">
+      <div class="title">{{ audit.title|default:audit.name }}</div>
+      {% if audit.summary_line %}<div class="summary">{{ audit.summary_line }}</div>{% endif %}
+      {% if audit.severity_hits %}
+        <div class="hits">{% for hit in audit.severity_hits %}{{ hit }}
+{% endfor %}</div>
+      {% endif %}
+      {% if audit.section_headings %}
+        <div class="meta">섹션: {{ audit.section_headings|join:" · " }}</div>
+      {% endif %}
+      <div class="meta">{{ audit.path|default:"보고서 없음" }} ({{ audit.lines }}줄)</div>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<div class="footer">
+  Stock-Vis Agent Daily Report · {{ payload.date }} · 생성: metrics/services/agent_reports.py<br>
+  상세 보고서: docs/nightly_auto_system/reports/&lt;월&gt;/&lt;일&gt;/
+</div>
+
+</body>
+</html>
