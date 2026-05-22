@@ -1,0 +1,837 @@
+[
+  {
+    "case_id": 1,
+    "preset_id": "buffett_quality_value",
+    "category": "value",
+    "risk_metric": "roic",
+    "risk_value": "-0.08",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic",
+          "one_liner": "투하자본수익률이 -8%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(15%)을 크게 하회합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 효율성'을 충족하지 못하는 상황으로, 포트폴리오 전체의 자본 배분 효율에 구조적 약점이 있는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "roe",
+          "one_liner": "ROE가 12%로 업종 중위수 수준이며 임계값(15%)을 소폭 하회합니다. 다만 ROIC의 심각한 약세와 함께 고려할 때, 자기자본 대비 수익성도 프리셋 기준을 충족하지 못하는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.55로 업종 중위수 수준이며 임계값을 통과합니다. 다만 ROIC 절댓값 자체가 음수인 상황에서 일관성 지표만으로는 포트폴리오의 자본 효율 약점을 상쇄하지 못하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "earnings_consistency_5y",
+          "one_liner": "이익 일관성이 0.50으로 업종 중위수 수준이며 임계값을 통과합니다. 그러나 근본적인 자본 수익률 부진이 개선되지 않는 한, 일관성만으로는 Buffett Quality Value의 기본 철학을 충족하는 신호로 보기 어려운 것으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5655,
+      "input_tokens": 4055,
+      "output_tokens": 617,
+      "cost_usd": 0.005712,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 1,
+    "preset_id": "buffett_quality_value",
+    "category": "value",
+    "risk_metric": "roic",
+    "risk_value": "-0.08",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic",
+          "one_liner": "투하자본수익률이 -8%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(15%)을 크게 미달합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 효율성'을 충족하지 못하는 것으로, 포트폴리오 전반의 자본 배분 능력에 대한 중대한 우려로 읽힙니다."
+        },
+        {
+          "metric_id": "roe",
+          "one_liner": "ROE가 12%로 업종 중위 수준이지만 프리셋 기준 15%를 근소하게 미달합니다. Core 지표로서는 경계선 구간에 있으며, ROIC의 약세와 함께 고려할 때 수익성 기초의 견고함이 제한적인 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.55로 업종 중위 수준이며 프리셋 임계값(0.5)을 통과합니다. 다만 절대 ROIC가 음수인 상황에서의 일관성이므로, 지속적 저수익을 의미하는 것으로 해석되는 점에 유의할 필요가 있습니다."
+        },
+        {
+          "metric_id": "earnings_consistency_5y",
+          "one_liner": "이익 일관성이 0.5으로 업종 중위 수준이며 프리셋 임계값을 통과합니다. 다만 절대 수익 수준의 약세와 함께 고려할 때, 일관성만으로는 Buffett Quality Value가 추구하는 '고품질 사업'의 특성을 충분히 보여주지 못하는 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5784,
+      "input_tokens": 4055,
+      "output_tokens": 620,
+      "cost_usd": 0.005724,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 1,
+    "preset_id": "buffett_quality_value",
+    "category": "value",
+    "risk_metric": "roic",
+    "risk_value": "-0.08",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic",
+          "one_liner": "투하자본수익률이 -8%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(15%)을 크게 하회합니다. Buffett Quality Value의 Core 지표인 '지속적 자본 수익'을 충족하지 못하는 것으로 보이며, 포트폴리오 구조상 자본 효율성에 대한 근본적인 재검토가 필요한 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "roe",
+          "one_liner": "ROE 평균이 12%로 업종 중위 수준이나 프리셋 임계값(15%)을 소폭 미달합니다. 단, 임계값과의 격차가 크지 않아 보조적으로는 수용 가능한 범위로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.55로 프리셋 기준(0.5)을 충족하며 업종 중위 수준입니다. 다만 ROIC 절댓값이 심각하게 낮은 상황에서 일관성 지표의 통과가 의미를 갖기 위해서는 실제 수익 구조의 개선이 선행되어야 하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "earnings_consistency_5y",
+          "one_liner": "이익 일관성이 0.5로 프리셋 기준을 정확히 충족하며 업종 중위 수준입니다. 수익의 변동성은 관리되고 있으나, 절댓값 수준의 개선 없이는 포트폴리오의 질적 강화로 이어지기 어려운 것으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5747,
+      "input_tokens": 4055,
+      "output_tokens": 620,
+      "cost_usd": 0.005724,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 2,
+    "preset_id": "piotroski_f_score",
+    "category": "value",
+    "risk_metric": "f_score_total",
+    "risk_value": "1",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "포트폴리오의 평균 F-Score가 1.0으로 업종 하위 2% 구간에 위치하며 프리셋 임계값(7.0)을 크게 미달합니다. Piotroski F-Score의 Core 지표인 '재무 건전성'을 충족하지 못하고 있어 포트폴리오 전반의 재무 품질에 대한 검토가 필요한 상황으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 2047,
+      "input_tokens": 3744,
+      "output_tokens": 191,
+      "cost_usd": 0.0037592,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 2,
+    "preset_id": "piotroski_f_score",
+    "category": "value",
+    "risk_metric": "f_score_total",
+    "risk_value": "1",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "포트폴리오 평균 F-Score가 1.0으로 업종 하위 2% 구간에 위치하며 프리셋 임계값(7.0)을 크게 하회합니다. Piotroski F-Score의 Core 지표인 '재무 건전성'이 심각하게 약화된 상태로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 1742,
+      "input_tokens": 3744,
+      "output_tokens": 157,
+      "cost_usd": 0.0036232,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 2,
+    "preset_id": "piotroski_f_score",
+    "category": "value",
+    "risk_metric": "f_score_total",
+    "risk_value": "1",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "포트폴리오의 Piotroski F-Score 평균이 1.0으로 업종 하위 2% 수준이며, Core 지표인 임계값 7.0을 크게 하회합니다. Piotroski F-Score 프리셋의 기본 취지인 '재무 건전성'이 현저히 충족되지 않는 상태로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 2146,
+      "input_tokens": 3744,
+      "output_tokens": 168,
+      "cost_usd": 0.0036672,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 3,
+    "preset_id": "garp",
+    "category": "growth",
+    "risk_metric": "eps_growth_yoy",
+    "risk_value": "-0.35",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "EPS 성장률이 -35%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(10%)을 크게 미달합니다. GARP의 Core 지표인 '실질적 이익 성장'이 심각하게 부재한 상태로, 포트폴리오 전반의 성장성이 프리셋 기준과 배치되는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "peg_ratio",
+          "one_liner": "PEG 비율이 1.5로 프리셋 임계값을 정확히 통과하며 업종 중위 수준입니다. 다만 EPS 성장이 음수인 상황에서 PEG 계산의 유효성이 제한적일 수 있으므로, 실질적으로는 보조 지표로서의 신뢰도가 감소한 것으로 해석될 수 있습니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률이 10%로 프리셋 임계값을 정확히 통과하며 업종 중위 수준입니다. 다만 매출 성장에도 불구하고 EPS가 악화된 상황은 이익률 악화를 시사하므로, GARP 관점에서 수익성 품질에 대한 추가 검토가 필요한 것으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4608,
+      "input_tokens": 3952,
+      "output_tokens": 502,
+      "cost_usd": 0.0051696,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 3,
+    "preset_id": "garp",
+    "category": "growth",
+    "risk_metric": "eps_growth_yoy",
+    "risk_value": "-0.35",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "EPS 성장률이 -35%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(10%)을 크게 하회합니다. GARP의 Core 지표인 '일관된 수익 성장'이 심각하게 훼손된 상태로, 포트폴리오 전반의 성장성 기초가 약화된 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "peg_ratio",
+          "one_liner": "PEG 비율이 1.5로 프리셋 임계값과 정확히 일치하며 업종 중앙값 수준입니다. 가치 대비 성장성 지표는 임계값을 통과하나, EPS 성장 부진이 동반된 상황에서는 밸류에이션 매력도가 제한적인 것으로 해석될 수 있습니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률이 10%로 프리셋 임계값과 일치하며 업종 중앙값 수준입니다. 다만 EPS 성장이 음수인 상황에서 매출 성장만 유지되는 것은 영업효율성 악화를 시사하며, GARP 관점에서 주목할 필요가 있는 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5121,
+      "input_tokens": 3952,
+      "output_tokens": 476,
+      "cost_usd": 0.0050656,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 3,
+    "preset_id": "garp",
+    "category": "growth",
+    "risk_metric": "eps_growth_yoy",
+    "risk_value": "-0.35",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "포트폴리오 평균 EPS 성장률이 -35%로 업종 하위 2% 수준이며 프리셋 임계값(10%)을 크게 하회합니다. GARP의 Core 지표인 '수익 성장'이 구조적으로 약화되어 있는 상태로, 프리셋 취지와 상충하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "peg_ratio",
+          "one_liner": "포트폴리오 평균 PEG가 1.5로 프리셋 임계값을 정확히 충족하며 업종 중위 수준입니다. 다만 EPS 성장 부진으로 인해 밸류에이션 합리성이 제한적일 수 있어, 가격 대비 미래 성장 잠재력 평가에 주의가 필요한 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률 평균이 10%로 프리셋 임계값과 일치하며 업종 중위 수준입니다. 다만 매출 성장이 EPS 성장으로 전환되지 못한 점을 고려하면, 수익성 효율이 악화되었을 가능성을 시사합니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4294,
+      "input_tokens": 3952,
+      "output_tokens": 468,
+      "cost_usd": 0.0050336,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 4,
+    "preset_id": "quality_growth",
+    "category": "growth",
+    "risk_metric": "roic_consistency_5y",
+    "risk_value": "0.10",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.1으로 업종 하위 2% 구간에 위치하며 프리셋 임계값(0.5)을 크게 미달합니다. Quality Growth의 Core 지표인 '지속적 수익성'을 충족하지 못하는 것으로 읽히며, 포트폴리오 내 자본 수익률의 변동성이 상당한 수준임을 시사합니다."
+        },
+        {
+          "metric_id": "roic",
+          "one_liner": "ROIC 평균이 16%로 업종 중앙값 수준(50분위)을 유지하며 프리셋 임계값(15%)을 근소하게 통과합니다. 현재 수익성 자체는 양호하나, ROIC 일관성 부족과 함께 고려할 때 향후 지속 가능성에 대한 주목이 필요한 것으로 보입니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률이 10%로 업종 중앙값 수준(50분위)이며 프리셋 임계값(10%)을 정확히 충족합니다. Growth 프리셋 관점에서는 최소 기준을 만족하나, 추가적 성장 동력에 대한 개별 종목별 검토가 보충 지표와 함께 이루어질 필요가 있습니다."
+        },
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "EPS 성장률이 12%로 업종 중앙값 수준(50분위)이며 프리셋 임계값(10%)을 통과합니다. 매출 성장(10%)을 상회하는 것으로 보아 부분적인 실적 개선이 동반되고 있는 것으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5535,
+      "input_tokens": 4060,
+      "output_tokens": 630,
+      "cost_usd": 0.0057680000000000006,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 4,
+    "preset_id": "quality_growth",
+    "category": "growth",
+    "risk_metric": "roic_consistency_5y",
+    "risk_value": "0.10",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.1으로 업종 하위 2% 구간에 위치하며 프리셋 임계값(0.5)을 크게 하회합니다. Quality Growth의 Core 지표인 '지속적 수익 창출 능력'이 약화된 것으로 읽히며, 포트폴리오 내 수익성 변동성이 상당함을 시사합니다."
+        },
+        {
+          "metric_id": "roic",
+          "one_liner": "현재 ROIC 평균이 16%로 업종 중위권(50분위)에 위치하며 임계값(15%)을 통과합니다. 다만 일관성 저하와의 괴리를 고려하면, 최근 성과는 양호하나 장기 지속성 측면에서는 주의 깊은 관찰이 필요한 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률이 10%로 업종 중위권이며 임계값(10%)을 정확히 통과합니다. Quality Growth 관점에서는 무난한 수준이지만, 포트폴리오 내 성장 편차가 존재하는지 개별 종목 검토를 통해 확인할 가치가 있습니다."
+        },
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "EPS 성장률이 12%로 업종 중위권이며 임계값(10%)을 상회합니다. 매출 성장(10%)을 초과하는 수익 성장이 관찰되어 프리셋의 '품질 있는 성장' 특성을 일부 반영하는 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5461,
+      "input_tokens": 4060,
+      "output_tokens": 598,
+      "cost_usd": 0.005640000000000001,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 4,
+    "preset_id": "quality_growth",
+    "category": "growth",
+    "risk_metric": "roic_consistency_5y",
+    "risk_value": "0.10",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "roic_consistency_5y",
+          "one_liner": "ROIC 일관성이 0.1으로 업종 하위 2% 구간에 위치하며 프리셋 임계값(0.5)을 크게 하회합니다. Quality Growth의 Core 지표인 '지속적 자본 수익성'이 약화되어 있으며, 포트폴리오 내 일관성 편차가 상당한 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "roic",
+          "one_liner": "현재 ROIC 평균이 16%로 업종 중위 수준이며 프리셋 임계값(15%)을 간신히 통과합니다. 단기 수익성은 무난하나, 위 일관성 지표의 약세와 함께 고려하면 수익성의 지속가능성에 주의가 필요한 것으로 보입니다."
+        },
+        {
+          "metric_id": "revenue_growth_yoy",
+          "one_liner": "매출 성장률이 10%로 업종 중위 수준이며 프리셋 임계값(10%)을 정확히 충족합니다. Quality Growth 관점에서 기대되는 성장 속도를 만족하나, 개별 종목 간 편차를 확인할 필요가 있습니다."
+        },
+        {
+          "metric_id": "eps_growth_yoy",
+          "one_liner": "EPS 성장률이 12%로 업종 중위 수준이며 프리셋 임계값(10%)을 통과합니다. 매출 성장을 EPS가 상회하는 구조로, 수익성 개선이 병행되고 있는 것으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5632,
+      "input_tokens": 4060,
+      "output_tokens": 569,
+      "cost_usd": 0.005524,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 5,
+    "preset_id": "dividend_growth",
+    "category": "income",
+    "risk_metric": "dividend_yield",
+    "risk_value": "0.001",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "dividend_yield",
+          "one_liner": "포트폴리오 평균 배당수익률이 0.1%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(2%)을 크게 미달합니다. Dividend Growth의 Core 지표인 '현금 수익성'이 심각하게 부족한 것으로 읽혀, 이 포트폴리오가 배당 성장 전략의 기초 조건을 충족하지 못하는 상태입니다."
+        },
+        {
+          "metric_id": "dividend_growth_rate_5y",
+          "one_liner": "배당 성장률 5년이 5%로 업종 중위 수준을 유지하며 프리셋 임계값(5%)을 통과합니다. Core 지표인 '배당 성장의 동력'이 기대 기준에 부합하는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "dividend_growth_consistency_5y",
+          "one_liner": "배당 일관성 5년이 0.6으로 업종 중위 수준이며 프리셋 임계값(0.5)을 통과합니다. 배당 커트 위험이 상대적으로 낮은 구성으로 읽힐 수 있으나, 일부 종목에서는 일관성이 더 취약할 가능성이 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5456,
+      "input_tokens": 3951,
+      "output_tokens": 466,
+      "cost_usd": 0.0050248,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 5,
+    "preset_id": "dividend_growth",
+    "category": "income",
+    "risk_metric": "dividend_yield",
+    "risk_value": "0.001",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "dividend_yield",
+          "one_liner": "배당수익률이 0.1%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(2%)을 크게 미달합니다. Dividend Growth의 Core 지표인 '즉각적 배당 수익'을 충족하지 못하는 것으로, 포트폴리오 구성이 프리셋의 핵심 취지와 상당한 괴리가 있음을 시사합니다."
+        },
+        {
+          "metric_id": "dividend_growth_rate_5y",
+          "one_liner": "배당 성장률이 5년 기준 5%로 업종 중위(50%)에 위치하며 프리셋 기준을 정확히 통과합니다. Core 지표로서 배당의 '장기 증가 추세'는 적절히 갖춰져 있는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "dividend_growth_consistency_5y",
+          "one_liner": "배당 일관성이 60%로 업종 중위 수준이며 프리셋 임계값(50%)을 통과합니다. 다만 중위 수준의 일관성은 경기 변동에 따른 배당 조정 가능성이 있음을 내포하므로, 소득 안정성 관점에서는 추가 주의가 필요할 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4811,
+      "input_tokens": 3951,
+      "output_tokens": 464,
+      "cost_usd": 0.0050168,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 5,
+    "preset_id": "dividend_growth",
+    "category": "income",
+    "risk_metric": "dividend_yield",
+    "risk_value": "0.001",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "dividend_yield",
+          "one_liner": "배당수익률이 0.1%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(2%)을 크게 미달합니다. Dividend Growth의 Core 지표인 '현금 흐름 창출'이 약한 것으로 읽혀, 포트폴리오 구성이 배당 소득 창출이라는 프리셋 목표와 괴리를 보이고 있습니다."
+        },
+        {
+          "metric_id": "dividend_growth_rate_5y",
+          "one_liner": "5년 배당 성장률이 5%로 업종 중위값 수준이며 프리셋 기준값(5%)과 정확히 일치합니다. Core 지표로서 배당 확대 추세는 충족하고 있으나, 상대적으로 낮은 수익률과 함께 고려할 때 성장 속도만으로는 소득 전략의 부족함을 보완하기 어려울 수 있습니다."
+        },
+        {
+          "metric_id": "dividend_growth_consistency_5y",
+          "one_liner": "배당 일관성이 60%로 업종 중위값 수준이며 프리셋 기준값(50%)을 통과합니다. Core 지표로서 배당 안정성은 중간 이상으로 평가되나, 60% 이하의 일관성은 경기 변동 시 배당 유지에 일부 리스크가 존재할 수 있음을 시사합니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4710,
+      "input_tokens": 3951,
+      "output_tokens": 506,
+      "cost_usd": 0.0051848,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 6,
+    "preset_id": "shareholder_yield",
+    "category": "income",
+    "risk_metric": "shareholder_yield",
+    "risk_value": "-0.05",
+    "rep": 1,
+    "error": "3 validation errors for MetricComments\ncomments.1.metric_display_name\n  Extra inputs are not permitted [type=extra_forbidden, input_value='배당수익률', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden\ncomments.2.metric_display_name\n  Extra inputs are not permitted [type=extra_forbidden, input_value='자사주매입 수익률', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden\ncomments.3.metric_display_name\n  Extra inputs are not permitted [type=extra_forbidden, input_value='부채감소율', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.12/v/extra_forbidden"
+  },
+  {
+    "case_id": 6,
+    "preset_id": "shareholder_yield",
+    "category": "income",
+    "risk_metric": "shareholder_yield",
+    "risk_value": "-0.05",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "shareholder_yield",
+          "one_liner": "순주주환원율이 -5%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(2%)을 크게 미달합니다. Shareholder Yield의 Core 지표로서 주주 환원이 부정적인 수준이므로, 개별 종목별 분해를 통해 배당, 자사주매입, 부채감소 중 어느 항목이 전체를 끌어내리는지 확인할 필요가 있습니다."
+        },
+        {
+          "metric_id": "dividend_yield",
+          "one_liner": "배당수익률 평균이 2.5%로 업종 중위 수준이며 프리셋 임계값(2%)을 통과합니다. Core 지표로서 배당 부분만은 기준을 만족하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "net_buyback_yield",
+          "one_liner": "자사주매입 수익률이 1%로 업종 중위 수준이며 임계값(1%)을 충족합니다. 다만 양수이지만 낮은 수준이어서 순주주환원율 부정치를 상쇄하기에는 역할이 제한적인 것으로 보입니다."
+        },
+        {
+          "metric_id": "net_debt_reduction_rate",
+          "one_liner": "부채감소율이 2%로 업종 중위 수준이며 임계값(2%)을 만족합니다. Core 지표로서 안정성 측면의 신호는 긍정적이나, 전체 순주주환원율 적자를 메우기에는 부족한 상태로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4968,
+      "input_tokens": 4053,
+      "output_tokens": 560,
+      "cost_usd": 0.0054824,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 6,
+    "preset_id": "shareholder_yield",
+    "category": "income",
+    "risk_metric": "shareholder_yield",
+    "risk_value": "-0.05",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "shareholder_yield",
+          "one_liner": "순주주환원율이 -5%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(2%)을 크게 하회합니다. Shareholder Yield의 Core 지표인 '주주 자본 반환'이 구조적으로 약화되어 있는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "dividend_yield",
+          "one_liner": "배당수익률이 2.5%로 업종 중위 수준이며 임계값(2%)을 통과합니다. 다만 순주주환원율의 부진이 배당만으로는 보충되지 못하고 있는 점이 주목할 만합니다."
+        },
+        {
+          "metric_id": "net_buyback_yield",
+          "one_liner": "자사주매입 수익률이 1%로 업종 중위 수준이며 임계값(1%)을 충족합니다. 다만 배당 대비 자사주매입 규모가 제한적으로 보여, 전체 주주환원 전략에서의 기여도가 제한된 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "net_debt_reduction_rate",
+          "one_liner": "부채감소율이 2%로 업종 중위 수준이며 임계값(2%)을 충족합니다. 다만 주주 현금 환원 기여도가 미미하여 전체 순주주환원율 부진의 주요 원인이 아닌 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 4838,
+      "input_tokens": 4053,
+      "output_tokens": 524,
+      "cost_usd": 0.0053384,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 7,
+    "preset_id": "low_volatility",
+    "category": "factor",
+    "risk_metric": "beta",
+    "risk_value": "1.8",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "beta",
+          "one_liner": "포트폴리오 평균 베타가 1.8로 업종 하위 2% 구간에 위치하며 프리셋 임계값(1.2)을 크게 상회합니다. Low Volatility의 Core 지표인 '시장 민감도 억제'를 충족하지 못하고 있으며, 1~2개 고베타 종목이 평균을 크게 끌어올린 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "volatility_1y",
+          "one_liner": "1년 변동성이 18%로 업종 중위 수준이며 프리셋 임계값(20%)을 통과합니다. 포트폴리오 전체적으로는 저변동성 목표와 부합하는 양호한 수준으로 읽힙니다."
+        },
+        {
+          "metric_id": "downside_deviation",
+          "one_liner": "하방 편차가 0.12로 업종 중위 수준이며 프리셋 임계값(0.15)을 통과합니다. 손실 방향으로의 변동성이 제어되고 있는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "max_drawdown_1y",
+          "one_liner": "최대 낙폭이 -15%로 업종 중위 수준이며 프리셋 임계값(-20%)을 통과합니다. 극단적 하락 국면에서도 상대적으로 제어된 수준의 손실을 기록한 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "portfolio_volatility",
+          "one_liner": "포트폴리오 변동성이 0.17로 업종 중위 수준이며 프리셋 임계값(0.2)을 통과합니다. 다각화 효과가 작동하여 개별 종목 변동성 대비 포트폴리오 수준이 양호하게 유지되고 있는 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5527,
+      "input_tokens": 4165,
+      "output_tokens": 675,
+      "cost_usd": 0.006032000000000001,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 7,
+    "preset_id": "low_volatility",
+    "category": "factor",
+    "risk_metric": "beta",
+    "risk_value": "1.8",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "beta",
+          "one_liner": "포트폴리오 평균 베타가 1.8로 업종 하위 2% 수준이며 프리셋 임계값(1.2)을 크게 초과합니다. Low Volatility의 Core 지표로서 시장 민감도가 매우 높아 프리셋 철학과 구조적으로 맞지 않는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "volatility_1y",
+          "one_liner": "1년 변동성이 18%로 업종 중위권 수준이며 프리셋 임계값(20%)을 통과합니다. Core 지표 중에서는 비교적 안정적인 구성으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "downside_deviation",
+          "one_liner": "하방 편차가 0.12로 업종 중위권이며 임계값(0.15)을 통과합니다. 하락장에서의 위험관리 측면에서는 Low Volatility 기준을 충족하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "max_drawdown_1y",
+          "one_liner": "최대 낙폭이 -15%로 업종 중위권이며 임계값(-20%)을 통과합니다. 극단적 손실 회피 관점에서는 프리셋 요건을 만족하는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "portfolio_volatility",
+          "one_liner": "포트폴리오 변동성이 17%로 업종 중위권이며 임계값(20%)을 통과합니다. 다만 베타 수치의 높음을 감안하면 개별 종목 간 상관관계나 가중치 구성이 전반 변동성을 부분적으로 완화하는 역할을 하는 것으로 읽힙니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5286,
+      "input_tokens": 4165,
+      "output_tokens": 635,
+      "cost_usd": 0.0058720000000000005,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 7,
+    "preset_id": "low_volatility",
+    "category": "factor",
+    "risk_metric": "beta",
+    "risk_value": "1.8",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "beta",
+          "one_liner": "포트폴리오 베타가 1.8로 업종 하위 2% 구간에 위치하며 프리셋 임계값(1.2)을 크게 초과합니다. Low Volatility의 Core 지표인 '시장 민감도 억제'라는 목표와 구조적으로 배치되는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "volatility_1y",
+          "one_liner": "1년 변동성이 18%로 업종 중위 수준이며 프리셋 기준(20%)을 만족합니다. 다만 베타의 높은 수치를 감안하면 시장 상승장에서의 수익률과 하락장에서의 방어력 간 트레이드오프가 존재하는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "downside_deviation",
+          "one_liner": "하방 편차가 0.12로 업종 중위 수준이며 프리셋 기준(0.15)을 통과합니다. Low Volatility 관점에서 하락 국면에서의 손실 크기가 제어되고 있음을 시사합니다."
+        },
+        {
+          "metric_id": "max_drawdown_1y",
+          "one_liner": "최대 낙폭이 -15%로 업종 중위 수준이며 프리셋 임계값(-20%)을 만족합니다. 지난 1년간 단기 손실 폭이 프리셋의 허용 범위 내에서 관리되고 있는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "portfolio_volatility",
+          "one_liner": "포트폴리오 전체 변동성이 0.17로 업종 중위 수준이며 프리셋 기준(0.2)을 만족합니다. 다만 높은 베타와의 불일치는 개별 종목 간 상관성이나 가중치 구성이 변동성을 부분적으로 상쇄하고 있음을 시사할 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5874,
+      "input_tokens": 4165,
+      "output_tokens": 688,
+      "cost_usd": 0.006084000000000001,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 8,
+    "preset_id": "contrarian",
+    "category": "special",
+    "risk_metric": "pct_from_52w_high",
+    "risk_value": "0.0",
+    "rep": 1,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "pct_from_52w_high",
+          "one_liner": "포트폴리오 평균이 52주 신고가 대비 0%로 업종 하위 2% 구간에 위치하며, Contrarian 프리셋의 Core 임계값(-20%)을 통과하지 못합니다. 이는 포트폴리오가 심각한 낙폭 국면에 있음을 의미하며, Contrarian 전략의 핵심인 '저평가 구간 포착'의 강력한 신호로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "pe_ratio",
+          "one_liner": "포트폴리오 평균 PER이 10.0으로 업종 중앙값 수준이며 프리셋 임계값(15.0)을 충분히 통과합니다. Contrarian 관점에서 상대적 저평가 구간에 위치하는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "pb_ratio",
+          "one_liner": "포트폴리오 평균 PBR이 1.2로 업종 중앙값 수준이며 프리셋 임계값(1.5)을 통과합니다. 장부가 대비 적정 수준의 가치평가를 유지하는 구성으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "Piotroski F-Score 평균이 6.0으로 업종 중앙값 수준이며 프리셋 기준(5.0)을 통과합니다. 재무 건전성이 중위권 정도로, Contrarian 전략 내에서 '저평가된 종목 중 기본 체질이 최소한 평균 이상'임을 시사하는 수준으로 읽힐 수 있습니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5422,
+      "input_tokens": 4050,
+      "output_tokens": 615,
+      "cost_usd": 0.0057,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 8,
+    "preset_id": "contrarian",
+    "category": "special",
+    "risk_metric": "pct_from_52w_high",
+    "risk_value": "0.0",
+    "rep": 2,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "pct_from_52w_high",
+          "one_liner": "포트폴리오 평균이 52주 신고가 대비 0%로 업종 최하위 2% 구간에 있으며, Contrarian 프리셋의 임계값(-20%)을 충족하지 못합니다. Core 지표인 '가격 낙폭'을 기준으로는 현재 반등 국면에 있는 것으로 읽힐 수 있어, 추가 낙폭을 기대하는 프리셋 철학과는 거리가 있는 상태입니다."
+        },
+        {
+          "metric_id": "pe_ratio",
+          "one_liner": "PER 평균이 10.0으로 업종 중위 수준이며 임계값(15.0)을 통과합니다. Contrarian 관점의 '저평가' 신호로는 온건한 수준으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "pb_ratio",
+          "one_liner": "PBR 평균이 1.2로 업종 중위 수준이며 임계값(1.5)을 통과합니다. 장부가 대비 온건한 가격대로, Contrarian의 저평가 기준을 부분적으로 만족하는 것으로 읽힙니다."
+        },
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "Piotroski F-Score 평균이 6.0으로 업종 중위이며 임계값(5.0)을 통과합니다. Core 지표로서 재무 건전성이 중간 수준을 유지하고 있으나, 고점수 종목의 부족으로 인한 질적 강도는 제한적인 것으로 보입니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5322,
+      "input_tokens": 4050,
+      "output_tokens": 575,
+      "cost_usd": 0.00554,
+      "fallback_from": null,
+      "action_items": []
+    }
+  },
+  {
+    "case_id": 8,
+    "preset_id": "contrarian",
+    "category": "special",
+    "risk_metric": "pct_from_52w_high",
+    "risk_value": "0.0",
+    "rep": 3,
+    "response": {
+      "comments": [
+        {
+          "metric_id": "pct_from_52w_high",
+          "one_liner": "포트폴리오 평균이 52주 신고가 대비 0%로 업종 하위 2% 구간에 위치하며 프리셋 임계값(-20%)을 통과하지 못합니다. Contrarian의 Core 지표인 '가격 부진'을 극도로 충족하지만, 이는 시장의 광범위한 약세를 반영한 것으로 보여 개별 종목의 펀더멘털 강도와는 별개로 해석할 필요가 있습니다."
+        },
+        {
+          "metric_id": "pe_ratio",
+          "one_liner": "PER 평균이 10.0으로 업종 중위 수준이며 프리셋 임계값(15.0)을 통과합니다. Contrarian 관점에서 저평가 신호로 읽힐 수 있는 적절한 밸류에이션입니다."
+        },
+        {
+          "metric_id": "pb_ratio",
+          "one_liner": "PBR 평균이 1.2로 업종 중위 수준이며 프리셋 기준(1.5)을 통과합니다. 자산 대비 시장가격이 온건하게 형성되어 있는 것으로 읽힐 수 있습니다."
+        },
+        {
+          "metric_id": "f_score_total",
+          "one_liner": "Piotroski F-Score 평균이 6.0으로 업종 중위이며 프리셋 임계값(5.0)을 통과합니다. 재무 건전성이 중간 수준 이상 유지되고 있어 Contrarian의 '펀더멘털 확인' 조건을 기본적으로 만족하는 것으로 해석됩니다."
+        }
+      ]
+    },
+    "metadata": {
+      "provider": "anthropic",
+      "model": "claude-haiku-4-5",
+      "latency_ms": 5317,
+      "input_tokens": 4050,
+      "output_tokens": 581,
+      "cost_usd": 0.0055639999999999995,
+      "fallback_from": null,
+      "action_items": []
+    }
+  }
+]
