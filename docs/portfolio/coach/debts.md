@@ -18,22 +18,6 @@
 - **현재 상태**: **fit 부분 close** (정확도 개선 검증 완료) — integration은 #62로 분리
 - **남은 작업**: CostGuard에 estimate_output_tokens 호출 경로 연결 — Slice 13 Step 0b에서 처리 (#62)
 
-### #61: 3단 게이트 경계값 calibration (Slice 14, PS 2.5)
-
-- **신규 등록**: Slice 13 Step 0a (2026-05-21)
-- **history**:
-  - Slice 13 Step 0a #60: ADDITIVE 3단 게이트 (`gate_tiers` 필드 + `_evaluate_gate_tier`) 도입
-  - 현재 12 preset 모두 `gate_tiers=None` (PLACEHOLDER 상태) — 평가 항상 "pass" (점수 경로 무손상)
-- **작업 범위**:
-  - 12 preset별 fail_below / warn_below 경계값 실측 분포 기반 calibration
-  - 옵션 B threshold (기존 단일 `gate`)와 통합 가능성 검토 → 2-tier vs 3-tier 데이터 검증
-  - LLM commentary에 gate_tier 주입 시 품질 변화 측정 (manual eval)
-  - **estimator 정밀화와 함께 `PRE_CALL_SAFETY_BUFFER` 계수 재조정 대상**
-    (현재 1.25 = max delta 24.58% 흡수, #51 추가 개선 시 buffer 축소 가능)
-- **참조**: `portfolio/services/scoring/preset_spec.py` (gate_tiers schema),
-  `portfolio/services/scoring/base.py::_evaluate_gate_tier`,
-  `portfolio/llm/cost_guard.py::PRE_CALL_SAFETY_BUFFER`
-
 ### #63: 누적 비용 ledger 영속화 (Slice 14+, PS 1.5)
 
 - **신규 등록**: Slice 13 Step 0a (2026-05-21)
@@ -142,6 +126,35 @@
   - **잔여**: E5 25% NG (1/4) — Slice 13+ 검토
 - **처리 방향**: E5 micro-matrix 측정 후 prompt 보강 (#59 패턴 재사용 가능)
 
+### #68: cost ledger entry_point 컬럼 null (Slice 14 closing 등록, PS 1.0)
+
+- **신규 등록**: Slice 14 closing (2026-05-23)
+- **history**:
+  - Slice 14 Step 0 #63: cost ledger 신설 시점에 `client.py:170` 자리에서
+    `append_call(entry_point=None, ...)`로 호출 — caller(e1~e6)가 entry_point를
+    전달하지 않음 (당초 결정 B-2였으나 Part 1 미진입으로 부채로 재귀속)
+  - Step 0.5 probe 24 호출 모두 ledger `entry_point` 컬럼 = null
+- **작업 범위**:
+  - `LLMClient.complete()` 시그니처에 `entry_point: Optional[str] = None` 추가 (옵션)
+  - e1~e6 service 6곳에서 `client.complete(..., entry_point="e1")` 처럼 명시 전달
+  - 또는 caller 측에서 `append_call` 직접 호출하는 대안 검토
+- **breaking change 여부**: 옵션 인자 — 기존 호출 무손상
+- **PS**: 1.0 (비위험, caller 6곳 + 시그니처 1줄)
+
+### #69: E3 LLM schema 위반 응답 처리 확인 (Slice 14 closing 등록, PS 1.0)
+
+- **신규 등록**: Slice 14 closing (2026-05-23)
+- **history**:
+  - Slice 14 Step 0.5 probe 24 호출 중 1건(case 6 rep 1, `shareholder_yield`) 실패
+  - LLM이 `MetricComment` schema(`extra="forbid"`)에 정의되지 않은
+    `metric_display_name` 필드를 추가해 응답 → `parse_json_response`가 거부
+  - 23/24 = 96% 성공률. 단일 실패라 종결 시 보수적 0(미포착) 처리만 했음
+- **조사 범위**:
+  - production `run_e3`가 schema 위반 응답에 재시도/폴백/낙폭 보호 갖는지 확인
+  - 동일 패턴의 실패율을 e1~e6 trio 매트릭스에서 사후 측정
+  - 필요 시 retry 1회 또는 schema 완화(extra="ignore")의 트레이드오프 검토
+- **PS**: 1.0 (조사성 — 운영 잠재 영향 분석 후 조치 결정)
+
 ### #57: KPI 임계 보정 (close, Slice 11 Part 5 D5-A 적용)
 
 - Slice 11 Part 5에서 **close**. KPI spec 갱신 완료 (`kpi_matrix.md`).
@@ -149,7 +162,27 @@
 
 ---
 
-## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1 + #65)
+## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1 + #65 + Slice 14)
+
+### #61: 3단 게이트 경계값 calibration (close, Slice 14 Step 0.5 — calibration 보류 확정)
+
+- **신규 등록**: Slice 13 Step 0a (2026-05-21, PS 2.5, Slice 14 Step 0 1순위)
+- **history**:
+  - Slice 13 Step 0a #60: ADDITIVE 3단 게이트 (`gate_tiers` 필드 + `_evaluate_gate_tier`) 도입
+  - 12 preset 모두 `gate_tiers=None` (PLACEHOLDER 상태) — 평가 항상 "pass" (점수 경로 무손상)
+  - Slice 14 Step 0.5 (2026-05-22): 게이트 가치 probe 실행 (24 LLM 호출, $0.1273)
+- **resolution**: Slice 14 Step 0.5 게이트 가치 probe로 **보류 결정**. calibration을
+  수행하지 않고 종결 — LLM이 명백한 위험을 자가 포착함(키워드 83.3% / 의미 ~100%)
+  이 데이터로 확인돼 게이트가 불필요. `gate_tiers` 휴면 코드는 **"의도된 대기 폴백"**
+  으로 보존 (제거 안 함). LLM이 경계선 위험을 놓치는 정황이 production에서 나오면
+  12 preset에 `gate_tiers={metric, fail_below, warn_below, _op}`만 채워서 즉시
+  재가동 가능.
+- **참조**:
+  - `docs/portfolio/coach/slice14/gate_probe_cases.md` (사전 등록 케이스 8건)
+  - `docs/portfolio/coach/slice14/gate_probe_eval.md` (24 응답 + 판정 + 잠정 결론)
+  - `docs/portfolio/coach/slice14/gate_probe_outputs.json` (24 응답 원문)
+  - `portfolio/services/scoring/preset_spec.py:44` (gate_tiers 휴면 필드, 보존)
+  - `portfolio/services/scoring/base.py::_evaluate_gate_tier` (휴면 함수, 보존)
 
 ### #65: 기존 순수 Django view 최종 처리 (close, #65 mini-slice 2026-05-21~22)
 
@@ -231,36 +264,52 @@
 
 ---
 
-## §4. 부채 변화 요약 (Slice 13 Step 0a + 0b + Part 1~5 + #65)
+## §4. 부채 변화 요약 (Slice 13 Step 0a + 0b + Part 1~5 + #65 + Slice 14)
+
+### Slice 13 변동
 
 | 변화      | 건수 | 부채 ID                                                  |
 | --------- | ---- | -------------------------------------------------------- |
 | close     | 3    | #51 (fit, Step 0a) / #62 (Step 0b) / **#65 (closing)**   |
 | 신규 등록 | 6    | #61, #63, #64 (Step 0a/0b) / #65 (Part 1) → close / #66 (Part 3) / **#67 (closing)** |
-| 잔여      | 1    | #59 E5 (PS 0.5)                                          |
-| **net**   | **+3** (close 3 − 신규 6)                                |
+
+### Slice 14 변동
+
+| 변화      | 건수 | 부채 ID                                                  |
+| --------- | ---- | -------------------------------------------------------- |
+| close     | 1    | **#61** (Step 0.5 게이트 가치 probe → calibration 보류 확정) |
+| 신규 등록 | 2    | **#68** (cost ledger entry_point null), **#69** (E3 schema 위반 응답 조사) |
+| **net**   | **+1** (close 1 − 신규 2)                                |
 
 ### 추적
 
-- **Step 0a 신규**: #61 (3단 게이트 calibration, PS 2.5), #62 (estimator→CostGuard integration, PS 1.5), #63 (cost ledger 영속화, PS 1.5)
-- **Step 0b 변동**: #62 → close (non-blocking 모드), #64 신규 (blocking 차단 모드 분리, PS 1.0)
-- **Part 1 신규**: #65 (legacy view 최종 처리, PS 1.5) — 등록 시점 wrapper/유지 우선 권고
-- **Part 3 신규**: #66 (E3 preset 점수 API, PS 2.0, 분석엔진 #12 Phase 2 의존)
+- **Slice 13 Step 0a 신규**: #61 (3단 게이트 calibration, PS 2.5), #62 (estimator→CostGuard integration, PS 1.5), #63 (cost ledger 영속화, PS 1.5)
+- **Slice 13 Step 0b 변동**: #62 → close (non-blocking 모드), #64 신규 (blocking 차단 모드 분리, PS 1.0)
+- **Slice 13 Part 1 신규**: #65 (legacy view 최종 처리, PS 1.5) — 등록 시점 wrapper/유지 우선 권고
+- **Slice 13 Part 3 신규**: #66 (E3 preset 점수 API, PS 2.0, 분석엔진 #12 Phase 2 의존)
 - **#65 closing**: legacy view 5건 제거(경로 A) → close. **#67 신규** (legacy 보조 코드 정리, PS 1.0)
 - **#51**: Slice 11 Part 1 본격 → Step 0a에서 multivariate fit 정확도 개선 (fit 부분 close), integration은 #62로 분리됨
+- **Slice 14 Step 0**: #63 신설 작업 완료(부채로는 §1 유지 — production 코드로 살아있음). 사실 확인에서 12 preset gate_tiers 전부 None / FMP 분포 capability(`benchmark_calculator`) 존재 확인.
+- **Slice 14 Step 0.5**: 게이트 가치 probe → **#61 close** (보류 결정). gate_tiers 휴면 코드는 "의도된 대기 폴백"으로 보존 (제거 안 함). 부채로 재등록 안 함 — 사전등록 결정 규칙 그대로.
+- **Slice 14 closing**: **#68** (cost ledger entry_point null) + **#69** (E3 schema 위반 응답 조사) 신규 등록.
 
 ---
 
-## §5. Slice 14+ 진입점 사전 등록
+## §5. Slice 15+ 진입점 사전 등록 (Slice 14 closing 갱신)
 
-| 후보                                    | PS  | 우선순위        | 근거                                                                 |
-| --------------------------------------- | --- | --------------- | -------------------------------------------------------------------- |
-| #61 3단 게이트 경계값 calibration       | 2.5 | **Step 0 1순위** | 12 preset placeholder → 실측 분포 기반 fail/warn_below + manual eval |
-| #59 E5 action measurability             | 0.5 | Step 0 2순위    | E5 25% NG, E3 패턴 재사용 가능                                       |
-| #63 누적 비용 ledger 영속화             | 1.5 | Part 후보       | JSONL/SQLite ledger + slice flush                                    |
-| #64 사전 추정 blocking 차단 모드        | 1.0 | Part 후보       | #61 calibration 완료 후 안전 (현재 estimator delta 24.58%)           |
+**다음 진입 = Slice 15 진입점 결정 사이클**. Slice 14에서 #61 close됨에 따라 1순위
+교체. 부채 큐 우선순위 재평가 필요 — Step 0 진입 시점에 PS·차단성·선행 의존성을
+기준으로 재정렬.
+
+| 후보                                    | PS  | 우선순위 (잠정)  | 근거                                                                 |
+| --------------------------------------- | --- | ---------------- | -------------------------------------------------------------------- |
 | **#66 E3 endpoint preset 점수 API 노출** | **2.0** | **분석엔진 #12 Phase 2 후** | preset_id+metrics optional 필드 ADDITIVE 추가. 분석엔진 선행 필요 |
-| **#67 legacy 전용 의존 코드 후속 정리** | **1.0** | Part 후보 (비위험) | scripts/validation/ archive 우선 → 보조 코드 일괄 제거 검토. 누적 보존 목록 §1 첨부 |
+| #64 사전 추정 blocking 차단 모드        | 1.0 | Step 0 후보      | #61 close됨 — buffer 축소 가능 시점에 검토. 현재 estimator delta 24.58%. |
+| #67 legacy 전용 의존 코드 후속 정리     | 1.0 | Part 후보 (비위험) | scripts/validation/ archive 우선 → 보조 코드 일괄 제거 검토. 누적 보존 목록 §1 첨부 |
+| #68 cost ledger entry_point null        | 1.0 | Part 후보 (비위험) | caller(e1~e6) 6곳에 인자 1줄씩. ledger entry_point 컬럼 의미 회복.    |
+| #69 E3 schema 위반 응답 조사            | 1.0 | Step 0 후보 (조사성) | probe 24/24 중 1건 실패. production retry/fallback 정책 확인.       |
+| #63 누적 비용 ledger 영속화             | 1.5 | (Slice 14 신설 완료) | 부채는 §1에 남지만 production 코드로 살아있음. flush/admin UI 등 후속 작업이 새 부채로 가능. |
+| #59 E5 action measurability             | 0.5 | Part 후보        | E5 25% NG, E3 패턴 재사용 가능                                       |
 
 ---
 
