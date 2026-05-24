@@ -1,7 +1,13 @@
 ═══════════════════════════════════════════════════════════════
-[C-1 / closing] 프론트엔드 긴급 보안 hotfix mini-slice
+[security/slices/c1_frontend_hotfix.md] C-1 — 프론트엔드 긴급 보안 hotfix
 next 16.0.0 RCE(CVSS 10) 등 보안 의존성 비파괴 업그레이드
 ═══════════════════════════════════════════════════════════════
+
+> **마스터 인덱스**: [`../SECURITY_LEDGER.md`](../SECURITY_LEDGER.md) (C-1 행)
+> **원본 스캔**: [`../advisories/2026-05_dependency-audit.md`](../advisories/2026-05_dependency-audit.md) (§1)
+
+이 문서는 `c1_closing.md`에서 `slices/c1_frontend_hotfix.md`로 git mv·재구성됨
+(C-1 후속 docs 슬라이스 2026-05-24).
 
 ## 분기
 
@@ -18,8 +24,8 @@ next 16.0.0 RCE(CVSS 10) 등 보안 의존성 비파괴 업그레이드
 |------|------------|
 | `frontend/package.json` | 5 패키지 보안 버전 상향 |
 | `frontend/package-lock.json` | 5 패키지 + transitive 일괄 갱신 |
-| `frontend/tsconfig.json` | next 16.x 자동 마이그레이션 (`moduleResolution: node → bundler` + 배열 멀티라인). 원복 시도해도 build/install 때 next가 재작성. 받아들임. |
-| `frontend/app/chainsight/page.tsx` | **(A) 결정 — 범위 확장**. 베이스라인 next 16.0.0에서 이미 `useSearchParams() should be wrapped in a suspense boundary` prerender 실패 → C-1 비파괴 검증 게이트 2 before/after 비교 불가. 차단 해소 1건만 Suspense wrap. 코치 화면 무관. |
+| `frontend/tsconfig.json` | **next 16.x 자동 마이그레이션** — `moduleResolution: "node" → "bundler"` (Next 15+ 공식 권장값) + 배열 멀티라인 포매팅. `git checkout 00dc18d -- frontend/tsconfig.json` 원복 시도 후에도 `npm run build`/`npm install`이 즉시 동일하게 재작성 → 받아들임. lint 룰셋과 무관 (`moduleResolution`은 eslint 동작에 영향 X). |
+| `frontend/app/chainsight/page.tsx` | **(A) 결정 — 범위 확장**. 베이스라인 next 16.0.0에서 이미 `useSearchParams() should be wrapped in a suspense boundary` prerender 실패 → C-1 비파괴 검증 게이트 2 before/after 비교 불가. 차단 해소 1건만 Suspense wrap. 코치 화면 무관. (§Part A 검증 참조) |
 
 `git diff --stat 00dc18d -- frontend/`:
 ```
@@ -29,6 +35,34 @@ frontend/package.json            |  10 +-
 frontend/tsconfig.json           |  16 +-
 4 files changed, 328 insertions(+), 232 deletions(-)
 ```
+
+---
+
+## Part A 검증 — 커밋 `7482fdc` 의 성격
+
+C-1 후속 docs 슬라이스(2026-05-24)에서 read-only 사실 확인 수행.
+
+### A-1. 커밋 자체
+
+- `git show 7482fdc --stat`: `frontend/app/chainsight/page.tsx` **1 파일만 변경** (+18 / -2).
+- diff 핵심:
+  - `import { Suspense, useEffect } from 'react';` — `Suspense` 추가 import.
+  - 기존 `export default function ChainSightPage()` → `function ChainSightPageInner()` 로 rename (외부 노출 제거).
+  - 새 default export = `<Suspense fallback={<spinner div>}><ChainSightPageInner /></Suspense>`.
+  - fallback = 기존 `isLoading` 분기와 동일한 `animate-spin` div (UX 동일).
+
+### A-2. 변경 사유 — base 시점 사실
+
+`git show 00dc18d:frontend/app/chainsight/page.tsx`에서 확인:
+- `import { useSearchParams } from 'next/navigation';` — 사용 중.
+- `const params = useSearchParams();` 가 **default export 함수 본문에서 직접 호출** (외부 Suspense 경계 없음).
+- `usePathname`, `useRouter` 등은 부재 (`useSearchParams` 1건만 Suspense 경계 요구).
+
+### A-3. 결론
+
+**7482fdc = Next 16 빌드 에러 해소 ✅**
+
+근거 한 줄: base의 `useSearchParams()`가 외부 Suspense 경계 없이 default export 본문에서 직접 호출되었고, Next 16 prerender가 이를 정확히 차단(`useSearchParams() should be wrapped in a suspense boundary at page "/chainsight"`)했으며, 7482fdc는 그 경계만 정확히 1개 추가 (`ChainSightPageInner` 추출 + 외부 `<Suspense>` wrap, fallback은 기존 spinner 재사용으로 UX 무변경) — 무관한 변경 없음.
 
 ---
 
@@ -130,10 +164,10 @@ frontend/tsconfig.json           |  16 +-
 
 ## 다음 (메모, 본 closing 범위 밖)
 
-- C-2 / C-3 (백엔드 보안) — 별도 슬라이스.
+- C-2 / C-3 (백엔드 보안) — 별도 슬라이스 (`SECURITY_LEDGER.md` §1).
 - `images.remotePatterns` hostname:'**' 처리 결정 사이클 — 별도 보류 대상.
-- 잔여 postcss transitive — next 패치 릴리스 자연 해소 모니터링.
+- 잔여 postcss transitive — next 패치 릴리스 자연 해소 모니터링 (`SECURITY_LEDGER.md` §2 **SEC-#1**).
 - `viewport`/`themeColor` 메타 export 위치 마이그레이션 — 별도 부채 등록 후보.
-- 전체 lint 181 errors (any/unused) — pre-existing, 별도 부채 등록 후보.
+- 전체 lint 181 errors (any/unused) — pre-existing, 별도 부채 등록 후보 (`SECURITY_LEDGER.md` §2 **SEC-#2**).
 
 Slice 15(프론트 코치 화면) 진입 시 하드 선행조건(next RCE 차단)은 본 C-1로 **충족**.
