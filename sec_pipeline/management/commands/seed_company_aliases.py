@@ -88,22 +88,26 @@ class Command(BaseCommand):
             stock_created += 1
             self.stdout.write(f'  Created Stock: {symbol} ({name})')
 
-        # 2. CompanyAlias 시드
+        # 2. CompanyAlias 시드 — sector 한정 + 범용(context_sector='') 둘 다 등록
+        # 2026-05-26: queue 항목의 source_sectors가 alias seed sector와 다를 때도
+        # 매칭되도록 범용(context_sector='')을 함께 등록. 예: 'Google'은 Technology로
+        # 등록되지만, queue에서 Communication Services로 등장 시 범용에 fallback.
         alias_created = 0
         for alias, ticker, sector in ALIAS_SEEDS:
             if not Stock.objects.filter(symbol=ticker).exists():
                 self.stdout.write(f'  Stock {ticker} not found, skipping alias "{alias}"')
                 continue
-            obj, created = CompanyAlias.objects.get_or_create(
-                alias=alias,
-                context_sector=sector,
-                defaults={
-                    'ticker': ticker,
-                    'source': 'seed',
-                },
-            ) if not dry_run else (None, True)
-            if created:
-                alias_created += 1
+            for ctx in (sector, ''):
+                obj, created = CompanyAlias.objects.get_or_create(
+                    alias=alias,
+                    context_sector=ctx,
+                    defaults={
+                        'ticker': ticker,
+                        'source': 'seed',
+                    },
+                ) if not dry_run else (None, True)
+                if created:
+                    alias_created += 1
 
         # 3. 외국 기업 CompanyAlias (Stock 생성된 것만)
         for symbol, name, sector, industry, exchange in FOREIGN_STOCKS:

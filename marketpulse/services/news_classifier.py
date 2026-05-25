@@ -83,13 +83,17 @@ class ClassificationResult:
     matched_keywords: list[str]
 
 
+# 2026-05-26 C 옵션: 시간당 max 5배 상향 (분석률 1.9% → ~10% 목표).
+# 사용자 1순위 정책: Chain Sight / Market Pulse / Dashboard 가용 데이터 풍부도 최우선.
+# 비용 영향: Gemini 2.5 Flash 기준 월 ~$0.16 → 월 ~$0.80. 분류 통과량이 실질 상한.
+# 함부로 원본(1,2)/(0,2)/(0,1)로 되돌리지 말 것.
 DEFAULT_QUOTA: dict[str, tuple[int, int]] = {
-    MarketPulseNews.Category.MACRO: (1, 2),
-    MarketPulseNews.Category.SMART_MONEY: (1, 2),
-    MarketPulseNews.Category.MAG7: (0, 2),
-    MarketPulseNews.Category.SECTOR: (0, 2),
-    MarketPulseNews.Category.GEOPOLITICS: (0, 1),
-    MarketPulseNews.Category.INDEX: (0, 1),
+    MarketPulseNews.Category.MACRO: (1, 10),
+    MarketPulseNews.Category.SMART_MONEY: (1, 10),
+    MarketPulseNews.Category.MAG7: (0, 10),
+    MarketPulseNews.Category.SECTOR: (0, 10),
+    MarketPulseNews.Category.GEOPOLITICS: (0, 5),
+    MarketPulseNews.Category.INDEX: (0, 5),
 }
 
 
