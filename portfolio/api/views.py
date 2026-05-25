@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import logging
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
@@ -48,6 +49,11 @@ logger = logging.getLogger(__name__)
 _VALID_PROVIDERS = ("haiku", "sonnet", "anthropic")
 
 
+@extend_schema(
+    request=E1RequestSerializer,
+    responses={200: E1ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # 기존 순수 view 동작 미러 (audit P0 #5: 명시적 AllowAny)
 def coach_e1(request: Request) -> Response:
@@ -98,6 +104,11 @@ def coach_e1(request: Request) -> Response:
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=E2RequestSerializer,
+    responses={200: E2ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # E1 패턴 복제 (audit P0 #5)
 def coach_e2(request: Request) -> Response:
@@ -146,6 +157,11 @@ def coach_e2(request: Request) -> Response:
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=E3RequestSerializer,
+    responses={200: E3ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # E1·E2 패턴 복제 (audit P0 #5)
 def coach_e3(request: Request) -> Response:
@@ -197,6 +213,11 @@ def coach_e3(request: Request) -> Response:
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=E5RequestSerializer,
+    responses={200: E5ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
 def coach_e5(request: Request) -> Response:
@@ -244,6 +265,11 @@ def coach_e5(request: Request) -> Response:
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=E6RequestSerializer,
+    responses={200: E6ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
 def coach_e6(request: Request) -> Response:
@@ -291,6 +317,11 @@ def coach_e6(request: Request) -> Response:
     return Response(resp_serializer.data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    request=E4RequestSerializer,
+    responses={200: E4ResponseSerializer},
+    tags=["coach"],
+)
 @api_view(["POST"])
 @permission_classes([AllowAny])  # E1~E3·E5·E6 패턴 복제 (audit P0 #5)
 def coach_e4(request: Request) -> Response:
