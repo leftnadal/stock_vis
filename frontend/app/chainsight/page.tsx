@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { Suspense, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useSeedData } from '@/hooks/useMarketView';
@@ -11,7 +11,7 @@ import ExplorationTrail from '@/components/chainsight/ExplorationTrail';
 import RelationCardPanel from '@/components/chainsight/RelationCardPanel';
 import ChainStoryFeed from '@/components/chainsight/ChainStoryFeed';
 
-export default function ChainSightPage() {
+function ChainSightPageInner() {
   const params = useSearchParams();
   const focusSymbol = params.get('focus');
 
@@ -78,5 +78,21 @@ export default function ChainSightPage() {
       {/* ⑥ 체인 스토리 피드 */}
       <ChainStoryFeed />
     </div>
+  );
+}
+
+export default function ChainSightPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex items-center justify-center h-[200px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+          </div>
+        </div>
+      }
+    >
+      <ChainSightPageInner />
+    </Suspense>
   );
 }
