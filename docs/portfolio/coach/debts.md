@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 13 + #65 종결)
+# Portfolio Coach 부채 대장 (Slice 15 종결)
 
-**최종 갱신**: 2026-05-22 (#65 closing — legacy view 처리 마감, #67 신규)
+**최종 갱신**: 2026-05-26 (Slice 15 closing — #70/#71/#72 신규)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -160,6 +160,59 @@
 - Slice 11 Part 5에서 **close**. KPI spec 갱신 완료 (`kpi_matrix.md`).
 - 슬라이스 유형별 회귀 +Δ 임계 (매트릭스 슬라이스 +10~15, manual eval +2~5).
 
+### #70: coach E1~E6 view `permission_classes([AllowAny])` 공개 (Slice 15 closing 등록, PS 2.0)
+
+- **신규 등록**: Slice 15 closing (2026-05-26)
+- **history**:
+  - Slice 13 Part 1~5에서 6 view 모두 audit P0 #5에 따라 명시적 `[AllowAny]` 채택
+    (기존 순수 view 동작 미러). 본 결정의 단기 목적은 frontend 통합 차단 회피였음
+  - Slice 15 P3-C 실 round-trip에서 JWT 없이 그대로 호출되어 LLM 1콜 발생 — AllowAny의
+    영향이 실증됨 ($0.0053248). 인증되지 않은 클라이언트가 LLM 비용을 끌어다 쓸 위험
+- **작업 범위**:
+  - 6 view 모두 `permission_classes([IsAuthenticated])` 전환 + 단위 테스트 보강
+  - 또는 throttle/rate limit 도입 (LLM 비용 보호 차원 별도 보장)
+  - frontend는 이미 `authAxios`로 JWT 자동 첨부 → 전환 시 영향 0
+- **breaking change 여부**: ADDITIVE/제한 강화 — 인증 클라이언트만 영향 없음, 비인증 호출은 401
+- **PS**: 2.0 (공개/배포 전 반드시 해소. 현재 dev only)
+- **참조**: `portfolio/api/views.py:52,102,151,202,249,296` (6 view), `audits/2026-05_p0_security.md`
+
+### #71: 외부 자동화의 slice15 history 오염 (Slice 15 closing 등록, 환경 이슈)
+
+- **신규 등록**: Slice 15 closing (2026-05-26)
+- **사건**:
+  - Slice 15 Part 2 도중 working tree가 `iron-trading-api` 브랜치로 전환됨
+    (vitest.setup.ts·apps.py가 "원래" 상태로 보임) → slice15 HEAD 무사 확인 후 즉시 복귀
+  - Slice 15 Part 3 P3-A 직후 외부 자동화가:
+    1. slice15에 iron-trading commit (`82aa9b4`)을 직접 추가 → history 오염
+    2. iron-trading-api 브랜치 checkout + cherry-pick (`8c21a52`) 후 slice15 복귀
+    3. `git reset --hard HEAD~1`로 P3-A commit (`75904c7`) 제거
+  - 복구: `git reflog`에서 `75904c7` 발견 → `git reset --hard 75904c7`로 복원
+  - 부작용: slice15 history에 `82aa9b4` (iron-trading commit) 잔존 — slice15 정체성과 무관한 작업이 섞임
+- **성격**: 환경/자동화 이슈 (코드 부채 아님). 메모리 `[[project_nightly_automation]]` 패턴 사례 갱신
+- **권장 조치**:
+  - 슬라이스 작업 직후 항상 `git log --oneline` + 의도하지 않은 commit 점검
+  - `git reflog`로 외부 자동화 작업 history 추적
+  - Slice 16 진입 전 `82aa9b4` 처리 결정 필요 (slice15 base에 그대로 두기 / revert / rebase로 제거)
+- **PS**: 환경 이슈 — 코드 부채로 카운트 안 함. closing 회고 부록
+
+### #72: Step 0 스키마 파이프라인 KPI가 "실 응답 shape 일치"를 누락 (Slice 15 closing 교훈)
+
+- **신규 등록**: Slice 15 closing (2026-05-26)
+- **history**:
+  - Slice 15 Step 0 KPI K5는 "drf-spectacular가 coach 6 endpoint req/res 노출"만 검증
+  - K7은 "TS strict 컴파일 PASS"만 검증
+  - 둘 다 "**실 응답이 생성 타입과 실제로 일치하는지**"는 검증 안 함
+  - Part 1 P1-0에서 response serializer → output 모델 직접 매핑이 실제 wrapper와 불일치하는 게 사후 발견됨
+  - Part 3 P3-C로 실 round-trip 1회 추가해 부분 해소 (E1만 검증, E2~E6은 미검증)
+- **교훈**:
+  - 자동화된 스키마 파이프라인은 "compile passes" ≠ "API contract matches"
+  - 향후 스키마/contract 작업의 KPI에 "1회 실 round-trip + 봉투 정합 단언"을 표준 항목으로 포함
+- **작업 범위 (Slice 16+)**:
+  - E2~E6의 P3-C 동등 검증 (각 ~$0.005-0.02, 총 ~$0.03-0.10)
+  - 또는 CI에 mock backend round-trip 자동화 (vitest 통합 시나리오 강화)
+- **breaking change 여부**: 무관 — 검증 보강 작업
+- **PS**: 1.0 (Slice 16 E2~E6 복제 시 동시 처리 권장)
+
 ---
 
 ## §2. 최근 슬라이스 CLOSE 부채 (Slice 12 Step 0 + Slice 13 Step 0a/0b/Part 1 + #65 + Slice 14)
@@ -292,14 +345,26 @@
 - **Slice 14 Step 0**: #63 신설 작업 완료(부채로는 §1 유지 — production 코드로 살아있음). 사실 확인에서 12 preset gate_tiers 전부 None / FMP 분포 capability(`benchmark_calculator`) 존재 확인.
 - **Slice 14 Step 0.5**: 게이트 가치 probe → **#61 close** (보류 결정). gate_tiers 휴면 코드는 "의도된 대기 폴백"으로 보존 (제거 안 함). 부채로 재등록 안 함 — 사전등록 결정 규칙 그대로.
 - **Slice 14 closing**: **#68** (cost ledger entry_point null) + **#69** (E3 schema 위반 응답 조사) 신규 등록.
+- **Slice 15 closing (2026-05-26)**: **#70** (AllowAny 공개, PS 2.0) + **#71** (외부 자동화 history 오염, 환경) + **#72** (스키마 KPI 교훈, PS 1.0) 신규 등록. close 0건.
 
 ---
 
-## §5. Slice 15+ 진입점 사전 등록 (Slice 14 closing 갱신)
+## §5. Slice 16+ 진입점 사전 등록 (Slice 15 closing 갱신)
 
-**다음 진입 = Slice 15 진입점 결정 사이클**. Slice 14에서 #61 close됨에 따라 1순위
-교체. 부채 큐 우선순위 재평가 필요 — Step 0 진입 시점에 PS·차단성·선행 의존성을
-기준으로 재정렬.
+**다음 진입 = Slice 16** (E2~E6 화면을 Slice 15 E1 패턴으로 복제). Slice 15에서 신규
+3건(#70/#71/#72) 등록·close 0. 부채 큐 1순위는 #70 (AllowAny 공개 — 배포/공개 차단성)
+이지만 Slice 16은 E2~E6 복제로 먼저 정의됨.
+
+### Slice 15 → Slice 16 진입 우선순위 (Slice 15 closing 갱신)
+
+| 후보 | PS | 우선순위 (잠정) | 근거 |
+|------|----|-----------------|------|
+| **Slice 16 본작업: E2~E6 화면 복제** | — | **본작업** | Slice 15 E1 파일럿 구조 검증 완료. Slice 16 책임 |
+| **#70 AllowAny → IsAuthenticated 전환** | **2.0** | **Slice 16 동시 처리 권장** | 6 view 동시 전환이 자연스러움 (Slice 16이 E2~E6도 만지는 김에). 공개/배포 차단성 |
+| **#72 P3-C E2~E6 동등 검증** | **1.0** | **Slice 16 동시 처리 권장** | E2~E6 화면 완성 직후 1회씩 실 round-trip — 봉투 wrapper 정합 차원에서 자연스러움 |
+| #66 E3 endpoint preset 점수 API | 2.0 | 분석엔진 #12 Phase 2 후 | (변동 없음) |
+
+### 기존 진입점 후보 (Slice 17+, 변동 없음)
 
 | 후보                                    | PS  | 우선순위 (잠정)  | 근거                                                                 |
 | --------------------------------------- | --- | ---------------- | -------------------------------------------------------------------- |
