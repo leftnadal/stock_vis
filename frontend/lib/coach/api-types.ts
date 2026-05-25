@@ -6022,60 +6022,76 @@ export interface components {
                 };
             };
         };
-        /**
-         * E1Output
-         * @description E1 GARP 스코어링 output.
-         */
+        /** @description E1Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE1Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E1Output
+             * @description E1 GARP 스코어링 output.
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
-            /** Action Items */
-            action_items?: {
+            output: {
                 /**
-                 * Title
-                 * @description 액션 제목 (간결, 1줄)
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
                  */
-                title: string;
+                summary: string;
                 /**
-                 * Description
-                 * @description 액션 상세 설명 (근거 + 실행 방법)
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
                  */
-                description: string;
+                key_observations?: string[];
                 /**
-                 * Priority
-                 * @description 우선순위 (high=즉시, medium=단기, low=장기)
-                 * @default medium
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
                  * @enum {string}
                  */
-                priority: "high" | "medium" | "low";
+                confidence: "high" | "medium" | "low";
+                /** Action Items */
+                action_items?: {
+                    /**
+                     * Title
+                     * @description 액션 제목 (간결, 1줄)
+                     */
+                    title: string;
+                    /**
+                     * Description
+                     * @description 액션 상세 설명 (근거 + 실행 방법)
+                     */
+                    description: string;
+                    /**
+                     * Priority
+                     * @description 우선순위 (high=즉시, medium=단기, low=장기)
+                     * @default medium
+                     * @enum {string}
+                     */
+                    priority: "high" | "medium" | "low";
+                    /**
+                     * Category
+                     * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
+                     * @default null
+                     */
+                    category: ("rebalance" | "review" | "monitor" | "research") | null;
+                }[];
+                /** Risk Flags */
+                risk_flags?: string[];
                 /**
-                 * Category
-                 * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                 * @default null
+                 * Metrics Table
+                 * @description (deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.
+                 * @default
                  */
-                category: ("rebalance" | "review" | "monitor" | "research") | null;
-            }[];
-            /** Risk Flags */
-            risk_flags?: string[];
-            /**
-             * Metrics Table
-             * @description (deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.
-             * @default
-             */
-            metrics_table: string;
+                metrics_table: string;
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
+                [key: string]: unknown;
+            };
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * CommentaryInputE2
@@ -6151,36 +6167,52 @@ export interface components {
                 [key: string]: number;
             };
         };
-        /**
-         * E2Output
-         * @description E2 포트폴리오 종합 진단 output.
-         */
+        /** @description E2Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE2Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E2Output
+             * @description E2 포트폴리오 종합 진단 output.
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
-            /** Quoted Metrics */
-            quoted_metrics?: {
+            output: {
+                /**
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
+                 */
+                summary: string;
+                /**
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
+                 */
+                key_observations?: string[];
+                /**
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
+                 * @enum {string}
+                 */
+                confidence: "high" | "medium" | "low";
+                /** Quoted Metrics */
+                quoted_metrics?: {
+                    [key: string]: unknown;
+                };
+                /**
+                 * Metrics Table
+                 * @description (deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.
+                 * @default
+                 */
+                metrics_table: string;
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
                 [key: string]: unknown;
             };
-            /**
-             * Metrics Table
-             * @description (deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.
-             * @default
-             */
-            metrics_table: string;
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * CommentaryInputE3
@@ -6251,54 +6283,70 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /**
-         * E3Output
-         * @description E3 집중도 분석 output.
-         */
+        /** @description E3Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE3Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E3Output
+             * @description E3 집중도 분석 output.
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
-            /** Action Items */
-            action_items?: {
+            output: {
                 /**
-                 * Title
-                 * @description 액션 제목 (간결, 1줄)
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
                  */
-                title: string;
+                summary: string;
                 /**
-                 * Description
-                 * @description 액션 상세 설명 (근거 + 실행 방법)
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
                  */
-                description: string;
+                key_observations?: string[];
                 /**
-                 * Priority
-                 * @description 우선순위 (high=즉시, medium=단기, low=장기)
-                 * @default medium
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
                  * @enum {string}
                  */
-                priority: "high" | "medium" | "low";
-                /**
-                 * Category
-                 * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                 * @default null
-                 */
-                category: ("rebalance" | "review" | "monitor" | "research") | null;
-            }[];
-            /** Risk Flags */
-            risk_flags?: string[];
+                confidence: "high" | "medium" | "low";
+                /** Action Items */
+                action_items?: {
+                    /**
+                     * Title
+                     * @description 액션 제목 (간결, 1줄)
+                     */
+                    title: string;
+                    /**
+                     * Description
+                     * @description 액션 상세 설명 (근거 + 실행 방법)
+                     */
+                    description: string;
+                    /**
+                     * Priority
+                     * @description 우선순위 (high=즉시, medium=단기, low=장기)
+                     * @default medium
+                     * @enum {string}
+                     */
+                    priority: "high" | "medium" | "low";
+                    /**
+                     * Category
+                     * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
+                     * @default null
+                     */
+                    category: ("rebalance" | "review" | "monitor" | "research") | null;
+                }[];
+                /** Risk Flags */
+                risk_flags?: string[];
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
+                [key: string]: unknown;
+            };
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * CommentaryInputE4
@@ -6376,26 +6424,42 @@ export interface components {
                 [key: string]: unknown;
             }[];
         };
-        /**
-         * E4Output
-         * @description E4 대화 Q&A output — base만 사용 (action_items/risk_flags 불필요).
-         */
+        /** @description E4Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE4Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E4Output
+             * @description E4 대화 Q&A output — base만 사용 (action_items/risk_flags 불필요).
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
+            output: {
+                /**
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
+                 */
+                summary: string;
+                /**
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
+                 */
+                key_observations?: string[];
+                /**
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
+                 * @enum {string}
+                 */
+                confidence: "high" | "medium" | "low";
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
+                [key: string]: unknown;
+            };
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * CommentaryInputE5
@@ -6495,54 +6559,70 @@ export interface components {
                 window_12q: number | string | null;
             } | null;
         };
-        /**
-         * E5Output
-         * @description E5 추출 진입점 output.
-         */
+        /** @description E5Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE5Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E5Output
+             * @description E5 추출 진입점 output.
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
-            /** Action Items */
-            action_items?: {
+            output: {
                 /**
-                 * Title
-                 * @description 액션 제목 (간결, 1줄)
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
                  */
-                title: string;
+                summary: string;
                 /**
-                 * Description
-                 * @description 액션 상세 설명 (근거 + 실행 방법)
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
                  */
-                description: string;
+                key_observations?: string[];
                 /**
-                 * Priority
-                 * @description 우선순위 (high=즉시, medium=단기, low=장기)
-                 * @default medium
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
                  * @enum {string}
                  */
-                priority: "high" | "medium" | "low";
-                /**
-                 * Category
-                 * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                 * @default null
-                 */
-                category: ("rebalance" | "review" | "monitor" | "research") | null;
-            }[];
-            /** Quoted Metrics */
-            quoted_metrics?: {
+                confidence: "high" | "medium" | "low";
+                /** Action Items */
+                action_items?: {
+                    /**
+                     * Title
+                     * @description 액션 제목 (간결, 1줄)
+                     */
+                    title: string;
+                    /**
+                     * Description
+                     * @description 액션 상세 설명 (근거 + 실행 방법)
+                     */
+                    description: string;
+                    /**
+                     * Priority
+                     * @description 우선순위 (high=즉시, medium=단기, low=장기)
+                     * @default medium
+                     * @enum {string}
+                     */
+                    priority: "high" | "medium" | "low";
+                    /**
+                     * Category
+                     * @description 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
+                     * @default null
+                     */
+                    category: ("rebalance" | "review" | "monitor" | "research") | null;
+                }[];
+                /** Quoted Metrics */
+                quoted_metrics?: {
+                    [key: string]: unknown;
+                };
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
+                [key: string]: unknown;
+            };
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
                 [key: string]: unknown;
             };
         };
@@ -6617,30 +6697,46 @@ export interface components {
                 };
             };
         };
-        /**
-         * E6Output
-         * @description E6 분석엔진 output.
-         */
+        /** @description E6Output wrapper — E*ResponseSerializer.to_representation 출력 형태. */
         CoachE6Response: {
             /**
-             * Summary
-             * @description 진입점별 commentary 한 줄 요약.
+             * E6Output
+             * @description E6 분석엔진 output.
              */
-            summary: string;
-            /**
-             * Key Observations
-             * @description 핵심 관찰 사항 list (자유 길이).
-             */
-            key_observations?: string[];
-            /**
-             * Confidence
-             * @description 결과 자신도 (high/medium/low).
-             */
-            confidence: components["schemas"]["ConfidenceEnum"];
-            /** Risk Flags */
-            risk_flags?: string[];
-            /** Quoted Metrics */
-            quoted_metrics?: {
+            output: {
+                /**
+                 * Summary
+                 * @description 진입점별 commentary 한 줄 요약.
+                 */
+                summary: string;
+                /**
+                 * Key Observations
+                 * @description 핵심 관찰 사항 list (자유 길이).
+                 */
+                key_observations?: string[];
+                /**
+                 * Confidence
+                 * @description 결과 자신도 (high/medium/low).
+                 * @enum {string}
+                 */
+                confidence: "high" | "medium" | "low";
+                /** Risk Flags */
+                risk_flags?: string[];
+                /** Quoted Metrics */
+                quoted_metrics?: {
+                    [key: string]: unknown;
+                };
+            };
+            /** @description LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로 다를 수 있어 free-form object. */
+            llm_metadata: {
+                [key: string]: unknown;
+            };
+            /** @description 옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함). */
+            gate_tier?: string;
+            /** @description 옵셔널 — 적용된 preset 식별자. */
+            preset_id?: string;
+            /** @description 옵셔널 — preset별 점수 dict. */
+            scores?: {
                 [key: string]: unknown;
             };
         };
@@ -6649,8 +6745,6 @@ export interface components {
             /** Format: double */
             weight: number;
         };
-        /** @enum {string} */
-        ConfidenceEnum: "high" | "medium" | "low";
         /**
          * @description * `warming_up` - Warming Up
          *     * `active` - Active

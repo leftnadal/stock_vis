@@ -3,11 +3,15 @@
 배경:
 - `portfolio/api/serializers.py`의 coach serializer 12개(E1~E6 req/res)는 검증/직렬화 위임 어댑터.
   DRF `fields`가 비어있어 spectacular의 기본 추론으로는 OpenAPI 스키마가 텅 빈다.
-- 실제 스키마는 Pydantic 모델 (`portfolio/schemas/commentary_input.py`, `commentary_output.py`)에 있음.
+- 실제 request 스키마는 Pydantic 모델 (`commentary_input.py`)에 있음.
+- 실제 response 스키마는 `E*ResponseSerializer.to_representation`이 만드는
+  **wrapper** 형태: `{output: E*Output, llm_metadata: {...}, gate_tier?, preset_id?, scores?}`.
+  E*Output 자체가 아니다 — Step 0 초기 버전의 매핑 실수를 P1-0에서 교정.
 
 해결:
-- 각 serializer에 1:1 OpenApiSerializerExtension을 붙여 `map_serializer`가 Pydantic
-  `model_json_schema()` 결과를 반환하도록 한다.
+- Request 6 serializer → `CommentaryInputE*.model_json_schema()` 그대로 매핑.
+- Response 6 serializer → `_wrap_response_envelope(E*Output)`이 만든 wrapper schema 매핑
+  (output 필드 안에 inline-resolved Pydantic 스키마, 옵셔널 필드 포함).
 - Pydantic 스키마는 `$defs` 키로 nested 모델을 분리·참조하는데, 이를 그대로 두면
   spectacular의 component registry에 등록되지 않아 `$ref`가 깨진다. 따라서
   `_inline_pydantic_refs()`로 `$defs`를 본 스키마에 inline 한다 (audit: 코치 모델
@@ -78,11 +82,59 @@ def _pydantic_to_openapi(model: type) -> dict[str, Any]:
     return _inline_pydantic_refs(raw)
 
 
-def _make_extension(serializer_path: str, pydantic_model: type, name: str) -> type:
-    """OpenApiSerializerExtension subclass를 동적 생성.
+def _wrap_response_envelope(output_model: type) -> dict[str, Any]:
+    """E*ResponseSerializer.to_representation 출력 형태를 그대로 반영한 wrapper schema.
 
-    target_class는 import 경로 문자열이라 lazy resolution이 가능하다.
+    실제 응답 구조 (`portfolio/api/serializers.py:64~352`):
+        {
+            "output": E*Output dict,            # 필수
+            "llm_metadata": {...},               # 필수 (없으면 빈 dict)
+            "gate_tier"?: str,                   # 옵셔널 (Step 0a #60 kwarg 전달 시)
+            "preset_id"?: str,                   # 옵셔널
+            "scores"?: dict,                     # 옵셔널
+        }
     """
+
+    return {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "output": _pydantic_to_openapi(output_model),
+            "llm_metadata": {
+                "type": "object",
+                "additionalProperties": True,
+                "description": (
+                    "LLM 호출 메타데이터 (provider/model/usage/cost 등). "
+                    "키 구조는 provider별로 다를 수 있어 free-form object."
+                ),
+            },
+            "gate_tier": {
+                "type": "string",
+                "description": (
+                    "옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg "
+                    "전달 시에만 포함)."
+                ),
+            },
+            "preset_id": {
+                "type": "string",
+                "description": "옵셔널 — 적용된 preset 식별자.",
+            },
+            "scores": {
+                "type": "object",
+                "additionalProperties": True,
+                "description": "옵셔널 — preset별 점수 dict.",
+            },
+        },
+        "required": ["output", "llm_metadata"],
+        "description": (
+            f"{output_model.__name__} wrapper — E*ResponseSerializer."
+            "to_representation 출력 형태."
+        ),
+    }
+
+
+def _make_request_extension(serializer_path: str, pydantic_model: type, name: str) -> type:
+    """Request serializer용 확장 — Pydantic input 모델을 그대로 매핑."""
 
     class _Ext(OpenApiSerializerExtension):
         target_class = serializer_path
@@ -98,23 +150,47 @@ def _make_extension(serializer_path: str, pydantic_model: type, name: str) -> ty
     return _Ext
 
 
-# ── 12 coach serializer × Pydantic 모델 매핑 ──
-_MAPPINGS: list[tuple[str, type, str]] = [
+def _make_response_extension(serializer_path: str, output_model: type, name: str) -> type:
+    """Response serializer용 확장 — wrapper envelope schema 매핑."""
+
+    class _Ext(OpenApiSerializerExtension):
+        target_class = serializer_path
+
+        def get_name(self) -> str:  # type: ignore[override]
+            return name
+
+        def map_serializer(self, auto_schema, direction) -> dict[str, Any]:  # type: ignore[override]
+            return _wrap_response_envelope(output_model)
+
+    _Ext.__name__ = f"_{name}Extension"
+    _Ext.__qualname__ = _Ext.__name__
+    return _Ext
+
+
+# ── 6 request × Pydantic input 모델 매핑 ──
+_REQUEST_MAPPINGS: list[tuple[str, type, str]] = [
     ("portfolio.api.serializers.E1RequestSerializer", CommentaryInputE1, "CoachE1Request"),
-    ("portfolio.api.serializers.E1ResponseSerializer", E1Output, "CoachE1Response"),
     ("portfolio.api.serializers.E2RequestSerializer", CommentaryInputE2, "CoachE2Request"),
-    ("portfolio.api.serializers.E2ResponseSerializer", E2Output, "CoachE2Response"),
     ("portfolio.api.serializers.E3RequestSerializer", CommentaryInputE3, "CoachE3Request"),
-    ("portfolio.api.serializers.E3ResponseSerializer", E3Output, "CoachE3Response"),
     ("portfolio.api.serializers.E4RequestSerializer", CommentaryInputE4, "CoachE4Request"),
-    ("portfolio.api.serializers.E4ResponseSerializer", E4Output, "CoachE4Response"),
     ("portfolio.api.serializers.E5RequestSerializer", CommentaryInputE5, "CoachE5Request"),
-    ("portfolio.api.serializers.E5ResponseSerializer", E5Output, "CoachE5Response"),
     ("portfolio.api.serializers.E6RequestSerializer", CommentaryInputE6, "CoachE6Request"),
+]
+
+# ── 6 response × Pydantic output 모델 (wrapper로 감쌈) ──
+_RESPONSE_MAPPINGS: list[tuple[str, type, str]] = [
+    ("portfolio.api.serializers.E1ResponseSerializer", E1Output, "CoachE1Response"),
+    ("portfolio.api.serializers.E2ResponseSerializer", E2Output, "CoachE2Response"),
+    ("portfolio.api.serializers.E3ResponseSerializer", E3Output, "CoachE3Response"),
+    ("portfolio.api.serializers.E4ResponseSerializer", E4Output, "CoachE4Response"),
+    ("portfolio.api.serializers.E5ResponseSerializer", E5Output, "CoachE5Response"),
     ("portfolio.api.serializers.E6ResponseSerializer", E6Output, "CoachE6Response"),
 ]
 
 # 12 확장 클래스를 모듈 레벨에 노출 (자동 등록 트리거).
-_EXTENSIONS = [_make_extension(*m) for m in _MAPPINGS]
+_EXTENSIONS = [
+    *(_make_request_extension(*m) for m in _REQUEST_MAPPINGS),
+    *(_make_response_extension(*m) for m in _RESPONSE_MAPPINGS),
+]
 for _ext_cls in _EXTENSIONS:
     globals()[_ext_cls.__name__] = _ext_cls

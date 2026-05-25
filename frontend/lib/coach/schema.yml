@@ -6920,95 +6920,122 @@ components:
       title: CommentaryInputE1
       type: object
     CoachE1Response:
-      additionalProperties: false
-      description: E1 GARP 스코어링 output.
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-        action_items:
-          items:
-            description: |-
-              LLM commentary의 실행 가능 액션 항목.
-
-              모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
-              빈 리스트 허용 (backward-compat).
-
-              Examples:
-                  >>> ActionItem(
-                  ...     title="현금 비중 5% 축소",
-                  ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
-                  ...     priority="high",
-                  ... )
-            properties:
-              title:
-                description: 액션 제목 (간결, 1줄)
-                maxLength: 80
-                minLength: 1
-                title: Title
-                type: string
-              description:
-                description: 액션 상세 설명 (근거 + 실행 방법)
-                maxLength: 300
-                minLength: 10
-                title: Description
-                type: string
-              priority:
-                default: medium
-                description: 우선순위 (high=즉시, medium=단기, low=장기)
-                enum:
-                - high
-                - medium
-                - low
-                title: Priority
-                type: string
-              category:
-                anyOf:
-                - enum:
-                  - rebalance
-                  - review
-                  - monitor
-                  - research
-                  type: string
-                - type: 'null'
-                default: null
-                description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                title: Category
-            required:
-            - title
-            - description
-            title: ActionItem
-            type: object
-          title: Action Items
-          type: array
-        risk_flags:
-          items:
-            type: string
-          title: Risk Flags
-          type: array
-        metrics_table:
-          default: ''
-          description: '(deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.'
-          title: Metrics Table
-          type: string
-      required:
-      - summary
-      - confidence
-      title: E1Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E1 GARP 스코어링 output.
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+            action_items:
+              items:
+                description: |-
+                  LLM commentary의 실행 가능 액션 항목.
+
+                  모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
+                  빈 리스트 허용 (backward-compat).
+
+                  Examples:
+                      >>> ActionItem(
+                      ...     title="현금 비중 5% 축소",
+                      ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
+                      ...     priority="high",
+                      ... )
+                properties:
+                  title:
+                    description: 액션 제목 (간결, 1줄)
+                    maxLength: 80
+                    minLength: 1
+                    title: Title
+                    type: string
+                  description:
+                    description: 액션 상세 설명 (근거 + 실행 방법)
+                    maxLength: 300
+                    minLength: 10
+                    title: Description
+                    type: string
+                  priority:
+                    default: medium
+                    description: 우선순위 (high=즉시, medium=단기, low=장기)
+                    enum:
+                    - high
+                    - medium
+                    - low
+                    title: Priority
+                    type: string
+                  category:
+                    anyOf:
+                    - enum:
+                      - rebalance
+                      - review
+                      - monitor
+                      - research
+                      type: string
+                    - type: 'null'
+                    default: null
+                    description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시,
+                      research=조사
+                    title: Category
+                required:
+                - title
+                - description
+                title: ActionItem
+                type: object
+              title: Action Items
+              type: array
+            risk_flags:
+              items:
+                type: string
+              title: Risk Flags
+              type: array
+            metrics_table:
+              default: ''
+              description: '(deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.'
+              title: Metrics Table
+              type: string
+          required:
+          - summary
+          - confidence
+          title: E1Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E1Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     CoachE2RequestRequest:
       additionalProperties: false
       description: E2 포트폴리오 종합 진단 input.
@@ -7108,39 +7135,65 @@ components:
       title: CommentaryInputE2
       type: object
     CoachE2Response:
-      additionalProperties: false
-      description: E2 포트폴리오 종합 진단 output.
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-        quoted_metrics:
-          additionalProperties: true
-          title: Quoted Metrics
-          type: object
-        metrics_table:
-          default: ''
-          description: '(deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.'
-          title: Metrics Table
-          type: string
-      required:
-      - summary
-      - confidence
-      title: E2Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E2 포트폴리오 종합 진단 output.
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+            quoted_metrics:
+              additionalProperties: true
+              title: Quoted Metrics
+              type: object
+            metrics_table:
+              default: ''
+              description: '(deprecated #21, Slice 13+ 제거 예정) 마크다운 metrics 표.'
+              title: Metrics Table
+              type: string
+          required:
+          - summary
+          - confidence
+          title: E2Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E2Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     CoachE3RequestRequest:
       additionalProperties: false
       description: E3 집중도 분석 input.
@@ -7234,90 +7287,117 @@ components:
       title: CommentaryInputE3
       type: object
     CoachE3Response:
-      additionalProperties: false
-      description: E3 집중도 분석 output.
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-        action_items:
-          items:
-            description: |-
-              LLM commentary의 실행 가능 액션 항목.
-
-              모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
-              빈 리스트 허용 (backward-compat).
-
-              Examples:
-                  >>> ActionItem(
-                  ...     title="현금 비중 5% 축소",
-                  ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
-                  ...     priority="high",
-                  ... )
-            properties:
-              title:
-                description: 액션 제목 (간결, 1줄)
-                maxLength: 80
-                minLength: 1
-                title: Title
-                type: string
-              description:
-                description: 액션 상세 설명 (근거 + 실행 방법)
-                maxLength: 300
-                minLength: 10
-                title: Description
-                type: string
-              priority:
-                default: medium
-                description: 우선순위 (high=즉시, medium=단기, low=장기)
-                enum:
-                - high
-                - medium
-                - low
-                title: Priority
-                type: string
-              category:
-                anyOf:
-                - enum:
-                  - rebalance
-                  - review
-                  - monitor
-                  - research
-                  type: string
-                - type: 'null'
-                default: null
-                description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                title: Category
-            required:
-            - title
-            - description
-            title: ActionItem
-            type: object
-          title: Action Items
-          type: array
-        risk_flags:
-          items:
-            type: string
-          title: Risk Flags
-          type: array
-      required:
-      - summary
-      - confidence
-      title: E3Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E3 집중도 분석 output.
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+            action_items:
+              items:
+                description: |-
+                  LLM commentary의 실행 가능 액션 항목.
+
+                  모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
+                  빈 리스트 허용 (backward-compat).
+
+                  Examples:
+                      >>> ActionItem(
+                      ...     title="현금 비중 5% 축소",
+                      ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
+                      ...     priority="high",
+                      ... )
+                properties:
+                  title:
+                    description: 액션 제목 (간결, 1줄)
+                    maxLength: 80
+                    minLength: 1
+                    title: Title
+                    type: string
+                  description:
+                    description: 액션 상세 설명 (근거 + 실행 방법)
+                    maxLength: 300
+                    minLength: 10
+                    title: Description
+                    type: string
+                  priority:
+                    default: medium
+                    description: 우선순위 (high=즉시, medium=단기, low=장기)
+                    enum:
+                    - high
+                    - medium
+                    - low
+                    title: Priority
+                    type: string
+                  category:
+                    anyOf:
+                    - enum:
+                      - rebalance
+                      - review
+                      - monitor
+                      - research
+                      type: string
+                    - type: 'null'
+                    default: null
+                    description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시,
+                      research=조사
+                    title: Category
+                required:
+                - title
+                - description
+                title: ActionItem
+                type: object
+              title: Action Items
+              type: array
+            risk_flags:
+              items:
+                type: string
+              title: Risk Flags
+              type: array
+          required:
+          - summary
+          - confidence
+          title: E3Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E3Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     CoachE4RequestRequest:
       additionalProperties: false
       description: |-
@@ -7422,30 +7502,56 @@ components:
       title: CommentaryInputE4
       type: object
     CoachE4Response:
-      additionalProperties: false
-      description: E4 대화 Q&A output — base만 사용 (action_items/risk_flags 불필요).
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-      required:
-      - summary
-      - confidence
-      title: E4Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E4 대화 Q&A output — base만 사용 (action_items/risk_flags 불필요).
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+          required:
+          - summary
+          - confidence
+          title: E4Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E4Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     CoachE5RequestRequest:
       additionalProperties: false
       description: |-
@@ -7604,89 +7710,116 @@ components:
       title: CommentaryInputE5
       type: object
     CoachE5Response:
-      additionalProperties: false
-      description: E5 추출 진입점 output.
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-        action_items:
-          items:
-            description: |-
-              LLM commentary의 실행 가능 액션 항목.
-
-              모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
-              빈 리스트 허용 (backward-compat).
-
-              Examples:
-                  >>> ActionItem(
-                  ...     title="현금 비중 5% 축소",
-                  ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
-                  ...     priority="high",
-                  ... )
-            properties:
-              title:
-                description: 액션 제목 (간결, 1줄)
-                maxLength: 80
-                minLength: 1
-                title: Title
-                type: string
-              description:
-                description: 액션 상세 설명 (근거 + 실행 방법)
-                maxLength: 300
-                minLength: 10
-                title: Description
-                type: string
-              priority:
-                default: medium
-                description: 우선순위 (high=즉시, medium=단기, low=장기)
-                enum:
-                - high
-                - medium
-                - low
-                title: Priority
-                type: string
-              category:
-                anyOf:
-                - enum:
-                  - rebalance
-                  - review
-                  - monitor
-                  - research
-                  type: string
-                - type: 'null'
-                default: null
-                description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시, research=조사
-                title: Category
-            required:
-            - title
-            - description
-            title: ActionItem
-            type: object
-          title: Action Items
-          type: array
-        quoted_metrics:
-          additionalProperties: true
-          title: Quoted Metrics
-          type: object
-      required:
-      - summary
-      - confidence
-      title: E5Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E5 추출 진입점 output.
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+            action_items:
+              items:
+                description: |-
+                  LLM commentary의 실행 가능 액션 항목.
+
+                  모든 진입점(E1~E6, E3_portfolio)의 output schema에 강제 슬롯으로 포함.
+                  빈 리스트 허용 (backward-compat).
+
+                  Examples:
+                      >>> ActionItem(
+                      ...     title="현금 비중 5% 축소",
+                      ...     description="포트폴리오 현금 비중이 25%로 과도. 우량 종목 추가 매수 검토.",
+                      ...     priority="high",
+                      ... )
+                properties:
+                  title:
+                    description: 액션 제목 (간결, 1줄)
+                    maxLength: 80
+                    minLength: 1
+                    title: Title
+                    type: string
+                  description:
+                    description: 액션 상세 설명 (근거 + 실행 방법)
+                    maxLength: 300
+                    minLength: 10
+                    title: Description
+                    type: string
+                  priority:
+                    default: medium
+                    description: 우선순위 (high=즉시, medium=단기, low=장기)
+                    enum:
+                    - high
+                    - medium
+                    - low
+                    title: Priority
+                    type: string
+                  category:
+                    anyOf:
+                    - enum:
+                      - rebalance
+                      - review
+                      - monitor
+                      - research
+                      type: string
+                    - type: 'null'
+                    default: null
+                    description: 카테고리 (선택). rebalance=재조정, review=검토, monitor=감시,
+                      research=조사
+                    title: Category
+                required:
+                - title
+                - description
+                title: ActionItem
+                type: object
+              title: Action Items
+              type: array
+            quoted_metrics:
+              additionalProperties: true
+              title: Quoted Metrics
+              type: object
+          required:
+          - summary
+          - confidence
+          title: E5Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E5Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     CoachE6RequestRequest:
       additionalProperties: false
       description: E6 분석엔진 input — 종목별 분석 결과를 종합.
@@ -7782,39 +7915,65 @@ components:
       title: CommentaryInputE6
       type: object
     CoachE6Response:
-      additionalProperties: false
-      description: E6 분석엔진 output.
-      properties:
-        summary:
-          description: 진입점별 commentary 한 줄 요약.
-          minLength: 1
-          title: Summary
-          type: string
-        key_observations:
-          description: 핵심 관찰 사항 list (자유 길이).
-          items:
-            type: string
-          title: Key Observations
-          type: array
-        confidence:
-          allOf:
-          - $ref: '#/components/schemas/ConfidenceEnum'
-          description: 결과 자신도 (high/medium/low).
-          title: Confidence
-        risk_flags:
-          items:
-            type: string
-          title: Risk Flags
-          type: array
-        quoted_metrics:
-          additionalProperties: true
-          title: Quoted Metrics
-          type: object
-      required:
-      - summary
-      - confidence
-      title: E6Output
       type: object
+      additionalProperties: false
+      properties:
+        output:
+          additionalProperties: false
+          description: E6 분석엔진 output.
+          properties:
+            summary:
+              description: 진입점별 commentary 한 줄 요약.
+              minLength: 1
+              title: Summary
+              type: string
+            key_observations:
+              description: 핵심 관찰 사항 list (자유 길이).
+              items:
+                type: string
+              title: Key Observations
+              type: array
+            confidence:
+              description: 결과 자신도 (high/medium/low).
+              enum:
+              - high
+              - medium
+              - low
+              title: Confidence
+              type: string
+            risk_flags:
+              items:
+                type: string
+              title: Risk Flags
+              type: array
+            quoted_metrics:
+              additionalProperties: true
+              title: Quoted Metrics
+              type: object
+          required:
+          - summary
+          - confidence
+          title: E6Output
+          type: object
+        llm_metadata:
+          type: object
+          additionalProperties: true
+          description: LLM 호출 메타데이터 (provider/model/usage/cost 등). 키 구조는 provider별로
+            다를 수 있어 free-form object.
+        gate_tier:
+          type: string
+          description: '옵셔널 — Step 0a #60 게이트 등급 (preset_id/metrics kwarg 전달 시에만 포함).'
+        preset_id:
+          type: string
+          description: 옵셔널 — 적용된 preset 식별자.
+        scores:
+          type: object
+          additionalProperties: true
+          description: 옵셔널 — preset별 점수 dict.
+      required:
+      - output
+      - llm_metadata
+      description: E6Output wrapper — E*ResponseSerializer.to_representation 출력 형태.
     ConcentrationHolding:
       type: object
       properties:
@@ -7826,12 +7985,6 @@ components:
       required:
       - symbol
       - weight
-    ConfidenceEnum:
-      enum:
-      - high
-      - medium
-      - low
-      type: string
     CurrentStateEnum:
       enum:
       - warming_up
