@@ -22,11 +22,7 @@ from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
 E6_ENDPOINT = "/api/v1/coach/e6/"
 
 
-@pytest.fixture
-def api_client():
-    return APIClient()
-
-
+# Slice 16 Step 0-B #70: api_client fixture는 conftest.py로 이전 — IsAuthenticated 통과.
 @pytest.fixture
 def e6_request_body() -> dict:
     """portfolio_a2 fixture에서 E6 요청 body 추출."""

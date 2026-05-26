@@ -17,7 +17,7 @@ import logging
 from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -55,7 +55,7 @@ _VALID_PROVIDERS = ("haiku", "sonnet", "anthropic")
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # 기존 순수 view 동작 미러 (audit P0 #5: 명시적 AllowAny)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: AllowAny → IsAuthenticated 전환
 def coach_e1(request: Request) -> Response:
     """POST /api/coach/e1/
 
@@ -110,7 +110,7 @@ def coach_e1(request: Request) -> Response:
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # E1 패턴 복제 (audit P0 #5)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: 6 view 통일
 def coach_e2(request: Request) -> Response:
     """POST /api/v1/coach/e2/
 
@@ -163,7 +163,7 @@ def coach_e2(request: Request) -> Response:
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # E1·E2 패턴 복제 (audit P0 #5)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: 6 view 통일
 def coach_e3(request: Request) -> Response:
     """POST /api/v1/coach/e3/
 
@@ -219,7 +219,7 @@ def coach_e3(request: Request) -> Response:
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: 6 view 통일
 def coach_e5(request: Request) -> Response:
     """POST /api/v1/coach/e5/
 
@@ -271,7 +271,7 @@ def coach_e5(request: Request) -> Response:
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # E1~E3 패턴 복제 (audit P0 #5)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: 6 view 통일
 def coach_e6(request: Request) -> Response:
     """POST /api/v1/coach/e6/
 
@@ -323,7 +323,7 @@ def coach_e6(request: Request) -> Response:
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([AllowAny])  # E1~E3·E5·E6 패턴 복제 (audit P0 #5)
+@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: 6 view 통일
 def coach_e4(request: Request) -> Response:
     """POST /api/v1/coach/e4/
 
