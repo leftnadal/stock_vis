@@ -33,6 +33,15 @@ export type E4Response = Schemas['CoachE4Response']
 export type E5Request = Schemas['CoachE5RequestRequest']
 export type E5Response = Schemas['CoachE5Response']
 
+/**
+ * E5의 time_series_context는 codegen이 별도 component로 분리하지 않고 inline.
+ * `_inline_pydantic_refs`(Pydantic↔spectacular bridge) 효과. 화면·테스트에서 nested
+ * 객체를 직접 참조하려면 inline 경로(`E5Request['time_series_context']`)를 매번
+ * 적기 부담스러우므로 NonNullable helper로 정리.
+ * Slice 16 Part 4 사전 실측 결과 (2026-05-26).
+ */
+export type E5TimeSeriesContext = NonNullable<E5Request['time_series_context']>
+
 // ── E6 ──
 export type E6Request = Schemas['CoachE6RequestRequest']
 export type E6Response = Schemas['CoachE6Response']

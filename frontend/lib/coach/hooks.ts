@@ -12,7 +12,7 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-import { postE1Coach, postE2Coach, postE3Coach, postE6Coach } from './api'
+import { postE1Coach, postE2Coach, postE3Coach, postE5Coach, postE6Coach } from './api'
 import type {
   E1Request,
   E1Response,
@@ -20,6 +20,8 @@ import type {
   E2Response,
   E3Request,
   E3Response,
+  E5Request,
+  E5Response,
   E6Request,
   E6Response,
 } from './types'
@@ -54,6 +56,15 @@ export function useE2Coach(): UseMutationResult<E2Response, AxiosError, E2Reques
 export function useE3Coach(): UseMutationResult<E3Response, AxiosError, E3Request> {
   return useMutation<E3Response, AxiosError, E3Request>({
     mutationFn: postE3Coach,
+  })
+}
+
+/**
+ * E5 추출 진입점 mutation 훅. E3 패턴 복제 (Slice 16 Part 4).
+ */
+export function useE5Coach(): UseMutationResult<E5Response, AxiosError, E5Request> {
+  return useMutation<E5Response, AxiosError, E5Request>({
+    mutationFn: postE5Coach,
   })
 }
 

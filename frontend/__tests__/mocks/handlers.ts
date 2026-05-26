@@ -11,13 +11,26 @@
 
 import { http, HttpResponse } from 'msw'
 
-import { COACH_E1_PATH, COACH_E2_PATH, COACH_E3_PATH, COACH_E6_PATH } from '@/lib/coach/api'
-import type { E1Response, E2Response, E3Response, E6Response } from '@/lib/coach/types'
+import {
+  COACH_E1_PATH,
+  COACH_E2_PATH,
+  COACH_E3_PATH,
+  COACH_E5_PATH,
+  COACH_E6_PATH,
+} from '@/lib/coach/api'
+import type {
+  E1Response,
+  E2Response,
+  E3Response,
+  E5Response,
+  E6Response,
+} from '@/lib/coach/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
 const E2_URL = `${API_URL}${COACH_E2_PATH}`
 const E3_URL = `${API_URL}${COACH_E3_PATH}`
+const E5_URL = `${API_URL}${COACH_E5_PATH}`
 const E6_URL = `${API_URL}${COACH_E6_PATH}`
 
 /**
@@ -295,7 +308,84 @@ export function mockE3ServerError() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// E5 — 추출 + 시계열 컨텍스트 (Slice 16 Part 4)
+//
+// ⚠️ mock 충실성 게이트: 200 응답은 codegen `E5Response` 봉투 형태에 부합.
+//    E5Output 필드 = summary / key_observations? / confidence / action_items?
+//    / quoted_metrics? (risk_flags 없음, metrics_table 없음).
+// ─────────────────────────────────────────────────────────────
+
+export const defaultE5Response: E5Response = {
+  output: {
+    summary: '배당수익률 3.45% (12분기 +30bp), 시계열 흐름 우상향.',
+    confidence: 'high',
+    key_observations: [
+      '배당수익률 12분기 누적 +30bp — 안정적 증가 추세',
+      '4분기 변화율 +4.5% — 단기 모멘텀 양호',
+      '섹터 다각화 부재 — Tech 100%',
+    ],
+    action_items: [
+      {
+        title: '배당 성장 지속성 점검',
+        description: '12분기 + 추세이나 최근 1분기 증가폭 둔화 모니터링.',
+        priority: 'medium',
+        category: 'monitor',
+      },
+    ],
+    quoted_metrics: {
+      dividend_yield: '3.45% (12분기 +30bp)',
+      sector_diversification: 'low (Tech 100%)',
+      beta: '1.12',
+      expense_ratio: '0.18%',
+    },
+  },
+  llm_metadata: {
+    provider: 'haiku',
+    model: 'claude-haiku-4-5-20251001',
+    input_tokens: 1050,
+    output_tokens: 480,
+    cost_usd: 0.0024,
+  },
+}
+
+export function mockE5Success(custom?: Partial<E5Response>) {
+  const body: E5Response = {
+    ...defaultE5Response,
+    ...custom,
+    output: { ...defaultE5Response.output, ...(custom?.output ?? {}) },
+    llm_metadata: { ...defaultE5Response.llm_metadata, ...(custom?.llm_metadata ?? {}) },
+  }
+  return http.post(E5_URL, () => HttpResponse.json(body, { status: 200 }))
+}
+
+export function mockE5ValidationError() {
+  return http.post(E5_URL, () =>
+    HttpResponse.json(
+      {
+        status_code: 400,
+        detail: 'Validation failed.',
+        code: 'invalid',
+        errors: { extraction_targets: ['Field required'] },
+      },
+      { status: 400 },
+    ),
+  )
+}
+
+export function mockE5ServerError() {
+  return http.post(E5_URL, () =>
+    HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
+  )
+}
+
 /**
  * 기본 핸들러 — 서버 listen 시점에 등록. 테스트에서 `server.use(...)`로 override.
  */
-export const handlers = [mockE1Success(), mockE2Success(), mockE3Success(), mockE6Success()]
+export const handlers = [
+  mockE1Success(),
+  mockE2Success(),
+  mockE3Success(),
+  mockE5Success(),
+  mockE6Success(),
+]

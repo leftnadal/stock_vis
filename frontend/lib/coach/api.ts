@@ -13,6 +13,8 @@ import type {
   E2Response,
   E3Request,
   E3Response,
+  E5Request,
+  E5Response,
   E6Request,
   E6Response,
 } from './types'
@@ -51,6 +53,16 @@ export async function postE2Coach(req: E2Request): Promise<E2Response> {
  */
 export async function postE3Coach(req: E3Request): Promise<E3Response> {
   const { data } = await authAxios.post<E3Response>(COACH_E3_PATH, req)
+  return data
+}
+
+/**
+ * E5 추출 진입점 (extraction_targets + time_series_context) 호출 — Slice 16 Part 4.
+ * E3 패턴 복제. time_series_context는 codegen union(`number | string | null`) —
+ * UI는 string 직렬화 권장(fixture 패턴).
+ */
+export async function postE5Coach(req: E5Request): Promise<E5Response> {
+  const { data } = await authAxios.post<E5Response>(COACH_E5_PATH, req)
   return data
 }
 
