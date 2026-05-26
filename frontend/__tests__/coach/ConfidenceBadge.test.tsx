@@ -37,4 +37,23 @@ describe('ConfidenceBadge', () => {
       expect(badge.className).toContain(cls)
     }
   })
+
+  it('size=md (default) — 카드형 사이즈 (px-3 py-1 text-xs)', () => {
+    render(<ConfidenceBadge confidence="medium" />)
+    const badge = screen.getByTestId('confidence-badge')
+    for (const cls of ['px-3', 'py-1', 'text-xs']) {
+      expect(badge.className).toContain(cls)
+    }
+  })
+
+  it('size=sm — 말풍선용 작은 사이즈 (px-2 py-0.5 text-[11px])', () => {
+    render(<ConfidenceBadge confidence="medium" size="sm" />)
+    const badge = screen.getByTestId('confidence-badge')
+    for (const cls of ['px-2', 'py-0.5', 'text-[11px]']) {
+      expect(badge.className).toContain(cls)
+    }
+    // md 클래스가 섞이지 않음
+    expect(badge.className).not.toContain('px-3')
+    expect(badge.className).not.toContain('text-xs')
+  })
 })

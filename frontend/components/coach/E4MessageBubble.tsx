@@ -9,13 +9,15 @@
  * - assistant 말풍선: 좌측 정렬, summary(메인 답변) + observations 불릿(있을 때만)
  *   + confidence 배지(있을 때만). action_items / risk_flags / quoted_metrics는
  *   E4Output 스키마에 없으므로 본 컴포넌트도 받지 않는다.
+ *
+ * Slice 17 Part 1: confidence 배지를 <ConfidenceBadge size="sm" />로 치환.
+ * 말풍선 wrapper / 정렬 div / summary / observations 렌더는 모두 보존 (시각
+ * 회귀 0). 안 B 경계 규칙대로 BaseCard는 import하지 않는다.
  */
 
 'use client'
 
-import { CheckCircle2 } from 'lucide-react'
-
-import { CONFIDENCE_STYLE } from '@/lib/coach/styles'
+import ConfidenceBadge from './ConfidenceBadge'
 import type { CommentaryConfidence } from '@/lib/coach/types'
 
 interface E4MessageBubbleProps {
@@ -33,7 +35,6 @@ export default function E4MessageBubble({
 }: E4MessageBubbleProps) {
   const isUser = role === 'user'
   const obsList = observations ?? []
-  const confidenceMeta = confidence ? CONFIDENCE_STYLE[confidence] : null
 
   return (
     <div
@@ -47,14 +48,9 @@ export default function E4MessageBubble({
             : 'border border-slate-200 bg-white text-slate-900'
         }`}
       >
-        {!isUser && confidenceMeta && (
+        {!isUser && confidence && (
           <div className="mb-2 flex items-center justify-end">
-            <span
-              className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium ${confidenceMeta.cls}`}
-            >
-              <CheckCircle2 className="h-3 w-3" />
-              신뢰도 {confidenceMeta.label}
-            </span>
+            <ConfidenceBadge confidence={confidence} size="sm" />
           </div>
         )}
         <p className={`whitespace-pre-wrap text-sm ${isUser ? 'text-white' : 'text-slate-900'}`}>
