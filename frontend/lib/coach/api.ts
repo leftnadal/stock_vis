@@ -6,7 +6,7 @@
  */
 
 import { authAxios } from '@/lib/api/authAxios'
-import type { E1Request, E1Response } from './types'
+import type { E1Request, E1Response, E2Request, E2Response } from './types'
 
 // ── Endpoint 경로 상수 (Part 2+ 재사용) ──
 export const COACH_E1_PATH = '/coach/e1/'
@@ -24,5 +24,15 @@ export const COACH_E6_PATH = '/coach/e6/'
  */
 export async function postE1Coach(req: E1Request): Promise<E1Response> {
   const { data } = await authAxios.post<E1Response>(COACH_E1_PATH, req)
+  return data
+}
+
+/**
+ * E2 포트폴리오 종합 진단 호출.
+ *
+ * Slice 16 Part 1 — E1 패턴 복제. response는 봉투 `{output, llm_metadata, ...}`.
+ */
+export async function postE2Coach(req: E2Request): Promise<E2Response> {
+  const { data } = await authAxios.post<E2Response>(COACH_E2_PATH, req)
   return data
 }

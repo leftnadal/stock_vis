@@ -12,8 +12,8 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-import { postE1Coach } from './api'
-import type { E1Request, E1Response } from './types'
+import { postE1Coach, postE2Coach } from './api'
+import type { E1Request, E1Response, E2Request, E2Response } from './types'
 
 /**
  * E1 GARP 진단 mutation 훅.
@@ -27,5 +27,14 @@ import type { E1Request, E1Response } from './types'
 export function useE1Coach(): UseMutationResult<E1Response, AxiosError, E1Request> {
   return useMutation<E1Response, AxiosError, E1Request>({
     mutationFn: postE1Coach,
+  })
+}
+
+/**
+ * E2 포트폴리오 종합 진단 mutation 훅. E1 패턴 복제 (Slice 16 Part 1).
+ */
+export function useE2Coach(): UseMutationResult<E2Response, AxiosError, E2Request> {
+  return useMutation<E2Response, AxiosError, E2Request>({
+    mutationFn: postE2Coach,
   })
 }

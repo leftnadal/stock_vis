@@ -11,11 +11,12 @@
 
 import { http, HttpResponse } from 'msw'
 
-import { COACH_E1_PATH } from '@/lib/coach/api'
-import type { E1Response } from '@/lib/coach/types'
+import { COACH_E1_PATH, COACH_E2_PATH } from '@/lib/coach/api'
+import type { E1Response, E2Response } from '@/lib/coach/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
+const E2_URL = `${API_URL}${COACH_E2_PATH}`
 
 /**
  * 표준 happy-path E1 응답 — 실제 백엔드가 반환하는 봉투 형태를 그대로 모방.
@@ -90,7 +91,71 @@ export function mockE1ServerError() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// E2 — 포트폴리오 종합 진단 (Slice 16 Part 1)
+//
+// ⚠️ mock 충실성 게이트: 200 응답은 codegen `E2Response` 봉투 형태에 부합해야
+//    한다. E2 output은 E1과 달리 quoted_metrics(optional)를 포함, action_items/
+//    risk_flags는 없음 — 백엔드 E2Output schema 그대로.
+// ─────────────────────────────────────────────────────────────
+
+export const defaultE2Response: E2Response = {
+  output: {
+    summary: '포트폴리오 종합 진단: Tech 비중 65%, 1년 수익률 +12.5% 양호.',
+    confidence: 'medium',
+    key_observations: [
+      '섹터 집중도 — Tech 65% / Healthcare 20% / 기타 15%',
+      '1년 수익률 12.5%는 벤치마크 S&P 500 (~10%) 대비 우수',
+      '대형주 비중 80% — 변동성 흡수 양호',
+    ],
+    quoted_metrics: {
+      portfolio_return_1y: 12.5,
+      tech_weight: 0.65,
+      healthcare_weight: 0.2,
+      large_cap_ratio: 0.8,
+    },
+    metrics_table: '',
+  },
+  llm_metadata: {
+    provider: 'haiku',
+    model: 'claude-haiku-4-5-20251001',
+    input_tokens: 1100,
+    output_tokens: 420,
+    cost_usd: 0.0019,
+  },
+}
+
+export function mockE2Success(custom?: Partial<E2Response>) {
+  const body: E2Response = {
+    ...defaultE2Response,
+    ...custom,
+    output: { ...defaultE2Response.output, ...(custom?.output ?? {}) },
+    llm_metadata: { ...defaultE2Response.llm_metadata, ...(custom?.llm_metadata ?? {}) },
+  }
+  return http.post(E2_URL, () => HttpResponse.json(body, { status: 200 }))
+}
+
+export function mockE2ValidationError() {
+  return http.post(E2_URL, () =>
+    HttpResponse.json(
+      {
+        status_code: 400,
+        detail: 'Validation failed.',
+        code: 'invalid',
+        errors: { portfolio_id: ['Field required'] },
+      },
+      { status: 400 },
+    ),
+  )
+}
+
+export function mockE2ServerError() {
+  return http.post(E2_URL, () =>
+    HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
+  )
+}
+
 /**
  * 기본 핸들러 — 서버 listen 시점에 등록. 테스트에서 `server.use(...)`로 override.
  */
-export const handlers = [mockE1Success()]
+export const handlers = [mockE1Success(), mockE2Success()]
