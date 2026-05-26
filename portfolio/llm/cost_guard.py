@@ -73,7 +73,12 @@ class CostGuard:
     Slice 9 Step 0 #43: 누적 임계 + 슬라이스 cap (비용 차원).
     """
 
-    slice_id: str = "default"
+    # Slice 16 Step 0-A #68: 첫 호출 시 환경변수에서 의미값 채택 (기본 "runtime").
+    # 운영·dev 모두에서 reset_slice() 명시 호출이 없어도 ledger의 slice 컬럼이
+    # "default"로 떨어지는 부정합 차단. 슬라이스 작업 중에는 reset_slice()로 override.
+    slice_id: str = field(
+        default_factory=lambda: os.getenv("COACH_RUNTIME_SLICE_ID", "runtime")
+    )
     max_calls: int = 100  # backward-compat: slice 한도 (= PER_SLICE_LIMIT default)
     call_count: int = 0  # slice 카운터 (alias로 _per_slice_count 의미)
     instance_call_count: int = 0  # instance 카운터 (Slice 8 #33 신규)

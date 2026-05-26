@@ -83,6 +83,7 @@ def run_e1_coach(
         prompt=user_prompt,
         system=system_prompt,
         max_tokens=max_tokens,
+        entry_point="e1",
         **PROVIDER_KWARGS[provider],
     )
 

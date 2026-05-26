@@ -81,6 +81,7 @@ def run_e3_coach(
         prompt=user_prompt,
         system=system_prompt,
         max_tokens=max_tokens,
+        entry_point="e3",
         **PROVIDER_KWARGS[provider],
     )
 

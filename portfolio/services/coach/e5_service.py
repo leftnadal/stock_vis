@@ -60,6 +60,7 @@ def run_e5_coach(
         prompt=user_prompt,
         system=system_prompt,
         max_tokens=max_tokens,
+        entry_point="e5",
         **PROVIDER_KWARGS[provider],
     )
 

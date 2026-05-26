@@ -38,6 +38,7 @@ def run_e4_coach(
         prompt=user_prompt,
         system=system_prompt,
         max_tokens=max_tokens,
+        entry_point="e4",
         **PROVIDER_KWARGS[provider],
     )
 

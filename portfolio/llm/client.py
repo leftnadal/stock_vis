@@ -121,6 +121,7 @@ class LLMClient:
         max_tokens: int = 2000,
         model: str | None = None,
         system: str | None = None,
+        entry_point: str | None = None,
     ) -> LLMResponse:
         """
         LLM 호출. 폴백·가드 포함.
@@ -134,6 +135,9 @@ class LLMClient:
             system: (Slice 7 Part 4 #19) Anthropic system 인자로 별도 전달.
                 None이면 기존 동작 (prompt 단일 문자열 그대로). Gemini는
                 현재 system을 별도로 받지 않으므로 prompt 앞에 prepend.
+            entry_point: (Slice 16 Step 0-A #68) 호출 진입점 식별자 ("e1"~"e6" 등).
+                cost_ledger의 entry_point 컬럼에 그대로 기록. None이면 종전과 동일
+                ledger 행에 null 기록 (backward-compat).
 
         Returns:
             LLMResponse (text + 메타데이터).
@@ -176,7 +180,7 @@ class LLMClient:
             from portfolio.llm.cost_ledger import append_call as _ledger_append
             _ledger_append(
                 slice_id=guard.slice_id,
-                entry_point=None,  # caller 단에서 명시 가능 — 후속 부채로 분리.
+                entry_point=entry_point,  # Slice 16 #68: caller가 명시한 진입점 그대로 기록.
                 provider=response.provider,
                 model=response.model,
                 input_tokens=response.input_tokens,

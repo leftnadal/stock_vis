@@ -30,6 +30,11 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 # LLMClient 인스턴스별 호출 가드. 임계 도달 시 LLMBudgetExceededError raise.
 LLM_BUDGET_MAX_CALLS = int(os.getenv('LLM_BUDGET_MAX_CALLS', '50'))
 
+# Slice 16 Step 0-A #68: CostGuard 기본 slice_id (reset_slice() 미호출 시 채택).
+# 운영 view 경유 LLM 호출의 ledger `slice` 컬럼이 "default"로 떨어지는 부정합 차단.
+# 슬라이스 작업 중에는 reset_slice("sliceN")으로 명시 override.
+COACH_RUNTIME_SLICE_ID = os.getenv('COACH_RUNTIME_SLICE_ID', 'runtime')
+
 # Neo4j 설정은 아래 통합 블록(line ~117)에서 일원화 정의
 
 # ============================================================
