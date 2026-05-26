@@ -73,6 +73,11 @@ export interface CommentaryCardData {
   risk_flags?: string[]
   /** E2 quoted_metrics — 종합 진단이 인용한 핵심 지표 (free-form key→value). */
   quoted_metrics?: Record<string, unknown>
-  /** deprecated (#21, Slice 13+ 제거 예정). 컴포넌트는 미렌더. */
-  metrics_table: string
+  /**
+   * deprecated (#21, Slice 13+ 제거 예정). 컴포넌트는 미렌더.
+   *
+   * Slice 16 Part 2 §3 게이트: E3/E4/E5/E6 Output은 metrics_table 필드 자체가
+   * 없음 (E1/E2만 default ""). optional로 완화 — 6 EP 모두 prop 전달 호환.
+   */
+  metrics_table?: string
 }
