@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 16 Step 0 종결)
+# Portfolio Coach 부채 대장 (Slice 16 종결)
 
-**최종 갱신**: 2026-05-26 (Slice 16 Step 0 — #68/#70 close, net −2)
+**최종 갱신**: 2026-05-26 (Slice 16 종결 — #72 close, 6 EP 전건 완성)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -198,7 +198,7 @@
   - Slice 16 진입 전 `82aa9b4` 처리 결정 필요 (slice15 base에 그대로 두기 / revert / rebase로 제거)
 - **PS**: 환경 이슈 — 코드 부채로 카운트 안 함. closing 회고 부록
 
-### #72: Step 0 스키마 파이프라인 KPI가 "실 응답 shape 일치"를 누락 (Slice 15 closing 교훈)
+### #72: Step 0 스키마 파이프라인 KPI가 "실 응답 shape 일치"를 누락 (close, Slice 16 종결)
 
 - **신규 등록**: Slice 15 closing (2026-05-26)
 - **history**:
@@ -210,11 +210,13 @@
 - **교훈**:
   - 자동화된 스키마 파이프라인은 "compile passes" ≠ "API contract matches"
   - 향후 스키마/contract 작업의 KPI에 "1회 실 round-trip + 봉투 정합 단언"을 표준 항목으로 포함
-- **작업 범위 (Slice 16+)**:
-  - E2~E6의 P3-C 동등 검증 (각 ~$0.005-0.02, 총 ~$0.03-0.10)
-  - 또는 CI에 mock backend round-trip 자동화 (vitest 통합 시나리오 강화)
-- **breaking change 여부**: 무관 — 검증 보강 작업
-- **PS**: 1.0 (Slice 16 E2~E6 복제 시 동시 처리 권장)
+- **close 처리 (Slice 16, 2026-05-26)**:
+  - Slice 16 각 Part의 PN-C 단계로 6 EP 전건 실 round-trip 정합 검증 완료
+  - E2 (Part 1) / E6 (Part 2) / E3 (Part 3) / E5 (Part 4) / E4 ×2 (Part 5) — 총 6 ledger entry
+  - 봉투 `{output, llm_metadata}` 정합 확인, codegen `CoachE*Response` shape 일치 확인
+  - 별도: TimeSeriesContext (E5) + 멀티턴 맥락 (E4) 운영 첫 실증
+  - 누적 비용 $0.0254128 (cap $1.00 대비 2.54% — 예상 $0.03-0.10 범위 하단 안착)
+- **PS**: close (Slice 16 종결)
 
 ---
 
@@ -350,6 +352,7 @@
 - **Slice 14 closing**: **#68** (cost ledger entry_point null) + **#69** (E3 schema 위반 응답 조사) 신규 등록.
 - **Slice 15 closing (2026-05-26)**: **#70** (AllowAny 공개, PS 2.0) + **#71** (외부 자동화 history 오염, 환경) + **#72** (스키마 KPI 교훈, PS 1.0) 신규 등록. close 0건.
 - **Slice 16 Step 0 (2026-05-26)**: **#68 close** (Step 0-A, ledger entry_point + slice_id 정합, `f23d748`) + **#70 close** (Step 0-B, AllowAny → IsAuthenticated 6 view 전환, `8c4df40`). 신규 0건. **net −2**.
+- **Slice 16 종결 (2026-05-26)**: **#72 close** (Part 1~5 PN-C 단계로 6 EP 전건 실 round-trip 정합 검증 완료). 신규 0건. **net −1**. 6 코치 화면(E1~E6) 전건 완성. 누적 비용 $0.0254128 (cap 2.54%). #71(외부 자동화) 무재발 1슬라이스 — 강제 close는 1슬라이스 추가 모니터링 후 결정.
 
 ---
 
