@@ -15,6 +15,7 @@
 
 import { CheckCircle2 } from 'lucide-react'
 
+import { CONFIDENCE_STYLE } from '@/lib/coach/styles'
 import type { CommentaryConfidence } from '@/lib/coach/types'
 
 interface E4MessageBubbleProps {
@@ -22,12 +23,6 @@ interface E4MessageBubbleProps {
   content: string
   observations?: string[]
   confidence?: CommentaryConfidence
-}
-
-const CONFIDENCE_STYLE: Record<CommentaryConfidence, { label: string; cls: string }> = {
-  high: { label: '높음', cls: 'bg-green-100 text-green-800 border-green-300' },
-  medium: { label: '보통', cls: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-  low: { label: '낮음', cls: 'bg-red-100 text-red-800 border-red-300' },
 }
 
 export default function E4MessageBubble({
