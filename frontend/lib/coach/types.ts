@@ -36,3 +36,43 @@ export type E5Response = Schemas['CoachE5Response']
 // ── E6 ──
 export type E6Request = Schemas['CoachE6RequestRequest']
 export type E6Response = Schemas['CoachE6Response']
+
+// ─────────────────────────────────────────────────────────────
+// CommentaryCardData — 6 진입점(E1~E6) output의 공통 표시 모델.
+//
+// 배경: Slice 16 Part 1 §3 게이트 — 사용자 안 A 채택 (2026-05-26).
+//   Slice 15는 CommentaryCard prop이 `E1Response['output']`로 lock돼 E2~E6
+//   output을 직접 받지 못함. 6 진입점 output 필드의 합집합으로 일반화 →
+//   한 컴포넌트가 모두 수용 + 진입점별 차이는 optional + graceful 미렌더로 분기.
+//
+// 필드 출처:
+//   summary / confidence / key_observations / metrics_table — 6 진입점 공통
+//   action_items / risk_flags — E1, E3, E5 등
+//   quoted_metrics — E2 (포트폴리오 종합 진단의 지표 인용)
+// 향후 새 EP 필드는 본 합집합에 optional 추가 (graceful 미렌더 유지).
+//
+// 후속 검토: Slice 16 Part 5 후 C 리팩터링 재검토 (BaseCard + EP별 Section 분리).
+// ─────────────────────────────────────────────────────────────
+
+export type CommentaryConfidence = 'high' | 'medium' | 'low'
+export type CommentaryActionPriority = 'high' | 'medium' | 'low'
+export type CommentaryActionCategory = 'rebalance' | 'review' | 'monitor' | 'research'
+
+export interface CommentaryActionItem {
+  title: string
+  description: string
+  priority: CommentaryActionPriority
+  category: CommentaryActionCategory | null
+}
+
+export interface CommentaryCardData {
+  summary: string
+  confidence: CommentaryConfidence
+  key_observations?: string[]
+  action_items?: CommentaryActionItem[]
+  risk_flags?: string[]
+  /** E2 quoted_metrics — 종합 진단이 인용한 핵심 지표 (free-form key→value). */
+  quoted_metrics?: Record<string, unknown>
+  /** deprecated (#21, Slice 13+ 제거 예정). 컴포넌트는 미렌더. */
+  metrics_table: string
+}

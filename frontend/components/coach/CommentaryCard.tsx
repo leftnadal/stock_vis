@@ -1,41 +1,55 @@
 /**
- * CommentaryCard — 코치 진단 결과(`E*Output`) 표시 컴포넌트.
+ * CommentaryCard — 코치 진단 결과 공통 표시 컴포넌트.
  *
- * 6 진입점(E1~E6)이 공통으로 재사용하는 본보기 컴포넌트.
+ * 6 진입점(E1~E6)이 공통으로 재사용. Slice 16 Part 1 §3에서 prop 타입을
+ * `CommentaryCardData` 공통 base로 일반화 (E1/E2/...의 output 필드 합집합).
  * - 데이터 페칭 안 함 (순수 표시) — 부모가 data를 prop으로 전달.
  * - 로딩·에러·빈 상태는 부모 페이지 책임 (이 컴포넌트는 data가 있을 때만 렌더).
+ * - 진입점별로 비어있는 섹션(빈 배열·undefined·빈 dict)은 graceful 미렌더.
+ *
+ * 후속: Slice 16 Part 5 후 C 리팩터링 재검토 (BaseCard + EP별 Section 분리).
  */
 
 'use client'
 
-import { AlertTriangle, CheckCircle2, ListChecks, Target } from 'lucide-react'
+import { AlertTriangle, BarChart3, CheckCircle2, ListChecks, Target } from 'lucide-react'
 
-import type { E1Response } from '@/lib/coach/types'
-
-type Output = E1Response['output']
-type ActionItem = NonNullable<Output['action_items']>[number]
+import type {
+  CommentaryActionItem,
+  CommentaryActionPriority,
+  CommentaryCardData,
+  CommentaryConfidence,
+} from '@/lib/coach/types'
 
 interface CommentaryCardProps {
-  output: Output
+  output: CommentaryCardData
 }
 
-const CONFIDENCE_STYLE: Record<Output['confidence'], { label: string; cls: string }> = {
+const CONFIDENCE_STYLE: Record<CommentaryConfidence, { label: string; cls: string }> = {
   high: { label: '높음', cls: 'bg-green-100 text-green-800 border-green-300' },
   medium: { label: '보통', cls: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
   low: { label: '낮음', cls: 'bg-red-100 text-red-800 border-red-300' },
 }
 
-const PRIORITY_STYLE: Record<ActionItem['priority'], { label: string; cls: string }> = {
+const PRIORITY_STYLE: Record<CommentaryActionPriority, { label: string; cls: string }> = {
   high: { label: '즉시', cls: 'bg-red-50 text-red-700 border-red-200' },
   medium: { label: '단기', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
   low: { label: '장기', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
 }
 
+function formatQuotedMetricValue(value: unknown): string {
+  if (value === null || value === undefined) return '-'
+  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2)
+  if (typeof value === 'string' || typeof value === 'boolean') return String(value)
+  return JSON.stringify(value)
+}
+
 export default function CommentaryCard({ output }: CommentaryCardProps) {
   const confidence = CONFIDENCE_STYLE[output.confidence]
   const observations = output.key_observations ?? []
-  const actionItems = output.action_items ?? []
+  const actionItems: CommentaryActionItem[] = output.action_items ?? []
   const riskFlags = output.risk_flags ?? []
+  const quotedMetricsEntries = Object.entries(output.quoted_metrics ?? {})
 
   return (
     <article
@@ -99,6 +113,24 @@ export default function CommentaryCard({ output }: CommentaryCardProps) {
               )
             })}
           </ul>
+        </section>
+      )}
+
+      {/* ── 인용 지표 (E2 등) ── */}
+      {quotedMetricsEntries.length > 0 && (
+        <section className="mb-5">
+          <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <BarChart3 className="h-4 w-4 text-indigo-500" />
+            인용 지표
+          </h3>
+          <dl className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+            {quotedMetricsEntries.map(([key, value]) => (
+              <div key={key} className="flex justify-between gap-3 text-sm">
+                <dt className="font-medium text-slate-700">{key}</dt>
+                <dd className="text-slate-900">{formatQuotedMetricValue(value)}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
       )}
 
