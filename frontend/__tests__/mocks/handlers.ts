@@ -11,12 +11,13 @@
 
 import { http, HttpResponse } from 'msw'
 
-import { COACH_E1_PATH, COACH_E2_PATH } from '@/lib/coach/api'
-import type { E1Response, E2Response } from '@/lib/coach/types'
+import { COACH_E1_PATH, COACH_E2_PATH, COACH_E6_PATH } from '@/lib/coach/api'
+import type { E1Response, E2Response, E6Response } from '@/lib/coach/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
 const E2_URL = `${API_URL}${COACH_E2_PATH}`
+const E6_URL = `${API_URL}${COACH_E6_PATH}`
 
 /**
  * 표준 happy-path E1 응답 — 실제 백엔드가 반환하는 봉투 형태를 그대로 모방.
@@ -155,7 +156,70 @@ export function mockE2ServerError() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// E6 — 분석엔진 (비교 분석) (Slice 16 Part 2)
+//
+// ⚠️ mock 충실성 게이트: 200 응답은 codegen `E6Response` 봉투 형태에 부합.
+//    E6 output 필드 = summary / key_observations? / confidence / risk_flags?
+//    / quoted_metrics? (E1과 달리 action_items 없음, E2와 달리 risk_flags 있음).
+// ─────────────────────────────────────────────────────────────
+
+export const defaultE6Response: E6Response = {
+  output: {
+    summary: 'AAPL 매수 우위 / MSFT 보유 / NVDA 차익실현 신호.',
+    confidence: 'medium',
+    key_observations: [
+      'AAPL: PEG 1.3, 모멘텀 양호 — score 0.78',
+      'MSFT: 안정적 캐시플로우 — score 0.65',
+      'NVDA: 단기 과열 신호 — score 0.42',
+    ],
+    risk_flags: ['NVDA 변동성 ↑ — 단기 익절 고려'],
+    quoted_metrics: {
+      avg_score: 0.62,
+      bull_signals: 2,
+      bear_signals: 1,
+    },
+  },
+  llm_metadata: {
+    provider: 'haiku',
+    model: 'claude-haiku-4-5-20251001',
+    input_tokens: 950,
+    output_tokens: 380,
+    cost_usd: 0.0018,
+  },
+}
+
+export function mockE6Success(custom?: Partial<E6Response>) {
+  const body: E6Response = {
+    ...defaultE6Response,
+    ...custom,
+    output: { ...defaultE6Response.output, ...(custom?.output ?? {}) },
+    llm_metadata: { ...defaultE6Response.llm_metadata, ...(custom?.llm_metadata ?? {}) },
+  }
+  return http.post(E6_URL, () => HttpResponse.json(body, { status: 200 }))
+}
+
+export function mockE6ValidationError() {
+  return http.post(E6_URL, () =>
+    HttpResponse.json(
+      {
+        status_code: 400,
+        detail: 'Validation failed.',
+        code: 'invalid',
+        errors: { portfolio_id: ['Field required'] },
+      },
+      { status: 400 },
+    ),
+  )
+}
+
+export function mockE6ServerError() {
+  return http.post(E6_URL, () =>
+    HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
+  )
+}
+
 /**
  * 기본 핸들러 — 서버 listen 시점에 등록. 테스트에서 `server.use(...)`로 override.
  */
-export const handlers = [mockE1Success(), mockE2Success()]
+export const handlers = [mockE1Success(), mockE2Success(), mockE6Success()]

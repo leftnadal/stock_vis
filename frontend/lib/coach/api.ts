@@ -6,7 +6,14 @@
  */
 
 import { authAxios } from '@/lib/api/authAxios'
-import type { E1Request, E1Response, E2Request, E2Response } from './types'
+import type {
+  E1Request,
+  E1Response,
+  E2Request,
+  E2Response,
+  E6Request,
+  E6Response,
+} from './types'
 
 // ── Endpoint 경로 상수 (Part 2+ 재사용) ──
 export const COACH_E1_PATH = '/coach/e1/'
@@ -34,5 +41,13 @@ export async function postE1Coach(req: E1Request): Promise<E1Response> {
  */
 export async function postE2Coach(req: E2Request): Promise<E2Response> {
   const { data } = await authAxios.post<E2Response>(COACH_E2_PATH, req)
+  return data
+}
+
+/**
+ * E6 분석엔진 (비교 분석) 호출 — Slice 16 Part 2. E1/E2 패턴 복제.
+ */
+export async function postE6Coach(req: E6Request): Promise<E6Response> {
+  const { data } = await authAxios.post<E6Response>(COACH_E6_PATH, req)
   return data
 }
