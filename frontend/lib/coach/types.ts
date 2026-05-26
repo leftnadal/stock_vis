@@ -29,6 +29,25 @@ export type E3Response = Schemas['CoachE3Response']
 export type E4Request = Schemas['CoachE4RequestRequest']
 export type E4Response = Schemas['CoachE4Response']
 
+/**
+ * E4 conversation turn — P5-A 신규 정립 계약 (2026-05-26).
+ *
+ * 백엔드 CommentaryInputE4.conversation_history는 `list[dict[str, Any]]`로
+ * 프론트가 형태를 정의한다. 표준은 `{role, content}` 2필드만 사용.
+ *
+ * - user turn content = 사용자 입력 질문 원문
+ * - assistant turn content = E4Response.output.summary (요약만, key_observations 제외)
+ *   → prompt 토큰 절약 + content 단일 문자열 단순성
+ *
+ * 인덱스 시그니처는 codegen `conversation_history: { [key: string]: unknown }[]`
+ * 호환을 위한 구조 permission — 실제 turn은 role/content만 사용한다.
+ */
+export type E4Turn = {
+  role: 'user' | 'assistant'
+  content: string
+  [key: string]: unknown
+}
+
 // ── E5 ──
 export type E5Request = Schemas['CoachE5RequestRequest']
 export type E5Response = Schemas['CoachE5Response']

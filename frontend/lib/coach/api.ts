@@ -13,6 +13,8 @@ import type {
   E2Response,
   E3Request,
   E3Response,
+  E4Request,
+  E4Response,
   E5Request,
   E5Response,
   E6Request,
@@ -53,6 +55,18 @@ export async function postE2Coach(req: E2Request): Promise<E2Response> {
  */
 export async function postE3Coach(req: E3Request): Promise<E3Response> {
   const { data } = await authAxios.post<E3Response>(COACH_E3_PATH, req)
+  return data
+}
+
+/**
+ * E4 대화 Q&A 호출 — Slice 16 Part 5. 마지막 진입점.
+ * 다른 EP와 달리 대화형 — `conversation_history`(이전 turns)를 누적 전달하고
+ * `user_question`에는 신규 질문만 담는다. 응답 봉투 형태는 동형
+ * `{output, llm_metadata}`. assistant turn append 시 content는 summary만 사용
+ * (`E4Turn` 계약, types.ts 주석 참조).
+ */
+export async function postE4Coach(req: E4Request): Promise<E4Response> {
+  const { data } = await authAxios.post<E4Response>(COACH_E4_PATH, req)
   return data
 }
 

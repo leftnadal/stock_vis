@@ -15,6 +15,7 @@ import {
   COACH_E1_PATH,
   COACH_E2_PATH,
   COACH_E3_PATH,
+  COACH_E4_PATH,
   COACH_E5_PATH,
   COACH_E6_PATH,
 } from '@/lib/coach/api'
@@ -22,6 +23,7 @@ import type {
   E1Response,
   E2Response,
   E3Response,
+  E4Response,
   E5Response,
   E6Response,
 } from '@/lib/coach/types'
@@ -30,6 +32,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
 const E2_URL = `${API_URL}${COACH_E2_PATH}`
 const E3_URL = `${API_URL}${COACH_E3_PATH}`
+const E4_URL = `${API_URL}${COACH_E4_PATH}`
 const E5_URL = `${API_URL}${COACH_E5_PATH}`
 const E6_URL = `${API_URL}${COACH_E6_PATH}`
 
@@ -379,6 +382,65 @@ export function mockE5ServerError() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// E4 — 대화 Q&A (Slice 16 Part 5, 마지막 진입점)
+//
+// ⚠️ mock 충실성 게이트: 200 응답은 codegen `E4Response` 봉투 형태에 부합.
+//    E4Output 필드 = summary / key_observations? / confidence 만 (base 그대로,
+//    action_items / risk_flags / quoted_metrics / metrics_table 모두 부재).
+//    화면에서 assistant turn content = output.summary 1:1 매핑 (E4Turn 계약).
+// ─────────────────────────────────────────────────────────────
+
+export const defaultE4Response: E4Response = {
+  output: {
+    summary:
+      'HHI 0.40 기준 집중도는 중간 수준입니다. Tech 비중 65%가 결정 요인이며 분산 여지가 있습니다.',
+    confidence: 'medium',
+    key_observations: [
+      'HHI 0.40 — 통상 0.25 이상은 집중도 주의 구간',
+      'Tech 65% — 단일 섹터 충격 노출도 높음',
+      'Top3 종목 80% — 분산 효과 제한적',
+    ],
+  },
+  llm_metadata: {
+    provider: 'haiku',
+    model: 'claude-haiku-4-5-20251001',
+    input_tokens: 880,
+    output_tokens: 320,
+    cost_usd: 0.0014,
+  },
+}
+
+export function mockE4Success(custom?: Partial<E4Response>) {
+  const body: E4Response = {
+    ...defaultE4Response,
+    ...custom,
+    output: { ...defaultE4Response.output, ...(custom?.output ?? {}) },
+    llm_metadata: { ...defaultE4Response.llm_metadata, ...(custom?.llm_metadata ?? {}) },
+  }
+  return http.post(E4_URL, () => HttpResponse.json(body, { status: 200 }))
+}
+
+export function mockE4ValidationError() {
+  return http.post(E4_URL, () =>
+    HttpResponse.json(
+      {
+        status_code: 400,
+        detail: 'Validation failed.',
+        code: 'invalid',
+        errors: { user_question: ['Field required'] },
+      },
+      { status: 400 },
+    ),
+  )
+}
+
+export function mockE4ServerError() {
+  return http.post(E4_URL, () =>
+    HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
+  )
+}
+
 /**
  * 기본 핸들러 — 서버 listen 시점에 등록. 테스트에서 `server.use(...)`로 override.
  */
@@ -386,6 +448,7 @@ export const handlers = [
   mockE1Success(),
   mockE2Success(),
   mockE3Success(),
+  mockE4Success(),
   mockE5Success(),
   mockE6Success(),
 ]

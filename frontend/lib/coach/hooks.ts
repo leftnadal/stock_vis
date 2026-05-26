@@ -12,7 +12,14 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-import { postE1Coach, postE2Coach, postE3Coach, postE5Coach, postE6Coach } from './api'
+import {
+  postE1Coach,
+  postE2Coach,
+  postE3Coach,
+  postE4Coach,
+  postE5Coach,
+  postE6Coach,
+} from './api'
 import type {
   E1Request,
   E1Response,
@@ -20,6 +27,8 @@ import type {
   E2Response,
   E3Request,
   E3Response,
+  E4Request,
+  E4Response,
   E5Request,
   E5Response,
   E6Request,
@@ -56,6 +65,21 @@ export function useE2Coach(): UseMutationResult<E2Response, AxiosError, E2Reques
 export function useE3Coach(): UseMutationResult<E3Response, AxiosError, E3Request> {
   return useMutation<E3Response, AxiosError, E3Request>({
     mutationFn: postE3Coach,
+  })
+}
+
+/**
+ * E4 대화 Q&A mutation 훅. 마지막 진입점 (Slice 16 Part 5).
+ *
+ * 화면은 자체 useState로 turns를 누적 관리한다 — 본 훅은 단발 호출만 수행하고,
+ * 매 호출은 신규 user_question + 누적된 conversation_history를 함께 전달.
+ * 다른 EP와 달리 동일한 portfolio에 대해 연속 호출이 자연스러우므로 isSuccess
+ * 상태 자체보다 `mutateAsync`의 반환값(또는 `onSuccess`)으로 turn append하는 패턴
+ * 권장.
+ */
+export function useE4Coach(): UseMutationResult<E4Response, AxiosError, E4Request> {
+  return useMutation<E4Response, AxiosError, E4Request>({
+    mutationFn: postE4Coach,
   })
 }
 
