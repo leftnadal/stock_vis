@@ -11,6 +11,8 @@ import type {
   E1Response,
   E2Request,
   E2Response,
+  E3Request,
+  E3Response,
   E6Request,
   E6Response,
 } from './types'
@@ -41,6 +43,14 @@ export async function postE1Coach(req: E1Request): Promise<E1Response> {
  */
 export async function postE2Coach(req: E2Request): Promise<E2Response> {
   const { data } = await authAxios.post<E2Response>(COACH_E2_PATH, req)
+  return data
+}
+
+/**
+ * E3 집중도 분석 호출 — Slice 16 Part 3. E2/E6 패턴 복제.
+ */
+export async function postE3Coach(req: E3Request): Promise<E3Response> {
+  const { data } = await authAxios.post<E3Response>(COACH_E3_PATH, req)
   return data
 }
 

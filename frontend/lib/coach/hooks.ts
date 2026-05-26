@@ -12,12 +12,14 @@
 import { useMutation, type UseMutationResult } from '@tanstack/react-query'
 import type { AxiosError } from 'axios'
 
-import { postE1Coach, postE2Coach, postE6Coach } from './api'
+import { postE1Coach, postE2Coach, postE3Coach, postE6Coach } from './api'
 import type {
   E1Request,
   E1Response,
   E2Request,
   E2Response,
+  E3Request,
+  E3Response,
   E6Request,
   E6Response,
 } from './types'
@@ -43,6 +45,15 @@ export function useE1Coach(): UseMutationResult<E1Response, AxiosError, E1Reques
 export function useE2Coach(): UseMutationResult<E2Response, AxiosError, E2Request> {
   return useMutation<E2Response, AxiosError, E2Request>({
     mutationFn: postE2Coach,
+  })
+}
+
+/**
+ * E3 집중도 분석 mutation 훅. E2/E6 패턴 복제 (Slice 16 Part 3).
+ */
+export function useE3Coach(): UseMutationResult<E3Response, AxiosError, E3Request> {
+  return useMutation<E3Response, AxiosError, E3Request>({
+    mutationFn: postE3Coach,
   })
 }
 

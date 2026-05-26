@@ -11,12 +11,13 @@
 
 import { http, HttpResponse } from 'msw'
 
-import { COACH_E1_PATH, COACH_E2_PATH, COACH_E6_PATH } from '@/lib/coach/api'
-import type { E1Response, E2Response, E6Response } from '@/lib/coach/types'
+import { COACH_E1_PATH, COACH_E2_PATH, COACH_E3_PATH, COACH_E6_PATH } from '@/lib/coach/api'
+import type { E1Response, E2Response, E3Response, E6Response } from '@/lib/coach/types'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
 const E2_URL = `${API_URL}${COACH_E2_PATH}`
+const E3_URL = `${API_URL}${COACH_E3_PATH}`
 const E6_URL = `${API_URL}${COACH_E6_PATH}`
 
 /**
@@ -219,7 +220,82 @@ export function mockE6ServerError() {
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// E3 — 집중도 분석 (Slice 16 Part 3)
+//
+// ⚠️ mock 충실성 게이트: 200 응답은 codegen `E3Response` 봉투 형태에 부합.
+//    E3 output 필드 = summary / key_observations? / confidence / action_items?
+//    / risk_flags? (metrics_table, quoted_metrics 없음 — base 완화 활용).
+// ─────────────────────────────────────────────────────────────
+
+export const defaultE3Response: E3Response = {
+  output: {
+    summary: 'AAPL 단일 종목 60% 집중 — 분산 부족 위험.',
+    confidence: 'high',
+    key_observations: [
+      'HHI 0.52 — 통상 0.25 이상은 고집중도',
+      'Top3 비중 100% (3종목만 보유)',
+      'Tech 섹터 100% — 산업 단일화',
+    ],
+    action_items: [
+      {
+        title: 'AAPL 비중 축소',
+        description: '60%에서 35~40%로 점진적 리밸런싱. 매각 차익은 분산 종목 매수.',
+        priority: 'high',
+        category: 'rebalance',
+      },
+      {
+        title: '비-Tech 섹터 편입',
+        description: 'Healthcare, Financial, Consumer Staples 등 최소 2개 섹터 추가.',
+        priority: 'medium',
+        category: 'rebalance',
+      },
+    ],
+    risk_flags: [
+      '단일 종목 집중도 60% — 개별 종목 충격 시 포트폴리오 30%+ 손실 위험',
+      'Tech 섹터 단일화 — 금리 변동·규제 위험에 동시 노출',
+    ],
+  },
+  llm_metadata: {
+    provider: 'haiku',
+    model: 'claude-haiku-4-5-20251001',
+    input_tokens: 900,
+    output_tokens: 410,
+    cost_usd: 0.0021,
+  },
+}
+
+export function mockE3Success(custom?: Partial<E3Response>) {
+  const body: E3Response = {
+    ...defaultE3Response,
+    ...custom,
+    output: { ...defaultE3Response.output, ...(custom?.output ?? {}) },
+    llm_metadata: { ...defaultE3Response.llm_metadata, ...(custom?.llm_metadata ?? {}) },
+  }
+  return http.post(E3_URL, () => HttpResponse.json(body, { status: 200 }))
+}
+
+export function mockE3ValidationError() {
+  return http.post(E3_URL, () =>
+    HttpResponse.json(
+      {
+        status_code: 400,
+        detail: 'Validation failed.',
+        code: 'invalid',
+        errors: { portfolio_id: ['Field required'] },
+      },
+      { status: 400 },
+    ),
+  )
+}
+
+export function mockE3ServerError() {
+  return http.post(E3_URL, () =>
+    HttpResponse.json({ error: 'Internal server error' }, { status: 500 }),
+  )
+}
+
 /**
  * 기본 핸들러 — 서버 listen 시점에 등록. 테스트에서 `server.use(...)`로 override.
  */
-export const handlers = [mockE1Success(), mockE2Success(), mockE6Success()]
+export const handlers = [mockE1Success(), mockE2Success(), mockE3Success(), mockE6Success()]
