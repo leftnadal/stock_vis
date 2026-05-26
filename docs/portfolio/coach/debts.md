@@ -1,6 +1,6 @@
-# Portfolio Coach 부채 대장 (Slice 15 종결)
+# Portfolio Coach 부채 대장 (Slice 16 Step 0 종결)
 
-**최종 갱신**: 2026-05-26 (Slice 15 closing — #70/#71/#72 신규)
+**최종 갱신**: 2026-05-26 (Slice 16 Step 0 — #68/#70 close, net −2)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
@@ -126,20 +126,21 @@
   - **잔여**: E5 25% NG (1/4) — Slice 13+ 검토
 - **처리 방향**: E5 micro-matrix 측정 후 prompt 보강 (#59 패턴 재사용 가능)
 
-### #68: cost ledger entry_point 컬럼 null (Slice 14 closing 등록, PS 1.0)
+### #68: cost ledger entry_point 컬럼 null + slice_id="default" (close, Slice 16 Step 0-A)
 
-- **신규 등록**: Slice 14 closing (2026-05-23)
+- **신규 등록**: Slice 14 closing (2026-05-23, PS 1.0, entry_point만)
+- **확장**: Slice 15 P3-C 실 호출에서 slice_id 부정합도 같은 흐름에서 발견 → 두 부정합 동시 처리로 묶음 (Slice 16 사전 결정)
 - **history**:
-  - Slice 14 Step 0 #63: cost ledger 신설 시점에 `client.py:170` 자리에서
-    `append_call(entry_point=None, ...)`로 호출 — caller(e1~e6)가 entry_point를
-    전달하지 않음 (당초 결정 B-2였으나 Part 1 미진입으로 부채로 재귀속)
-  - Step 0.5 probe 24 호출 모두 ledger `entry_point` 컬럼 = null
-- **작업 범위**:
-  - `LLMClient.complete()` 시그니처에 `entry_point: Optional[str] = None` 추가 (옵션)
-  - e1~e6 service 6곳에서 `client.complete(..., entry_point="e1")` 처럼 명시 전달
-  - 또는 caller 측에서 `append_call` 직접 호출하는 대안 검토
-- **breaking change 여부**: 옵션 인자 — 기존 호출 무손상
-- **PS**: 1.0 (비위험, caller 6곳 + 시그니처 1줄)
+  - Slice 14 Step 0 #63: cost ledger 신설, caller 미명시
+  - Slice 15 P3-C(2026-05-25): ledger 행 `slice="default", entry_point=null` 실증
+  - Slice 16 Step 0-A(2026-05-26): 두 부정합 동시 해소
+- **resolution (Slice 16 Step 0-A)**:
+  - `CostGuard.slice_id` 기본값을 `os.getenv("COACH_RUNTIME_SLICE_ID", "runtime")`로 변경 (settings.py + cost_guard.py)
+  - `LLMClient.complete(..., entry_point: str | None = None)` 옵션 인자 추가
+  - e1~e6 service 6곳에서 `entry_point="eN"` 명시 전달
+  - 신규 테스트 11건 (`test_s16_step0_ledger_integration.py`)로 정합 단언 회귀 가드
+  - 회귀: pytest 742→753 (+11), IDENTICAL 31/31 무변동
+- **commit**: `f23d748` — `fix(s16): close #68 ledger entry_point + slice_id 정합 (Step 0-A)`
 
 ### #69: E3 LLM schema 위반 응답 처리 확인 (Slice 14 closing 등록, PS 1.0)
 
@@ -160,21 +161,23 @@
 - Slice 11 Part 5에서 **close**. KPI spec 갱신 완료 (`kpi_matrix.md`).
 - 슬라이스 유형별 회귀 +Δ 임계 (매트릭스 슬라이스 +10~15, manual eval +2~5).
 
-### #70: coach E1~E6 view `permission_classes([AllowAny])` 공개 (Slice 15 closing 등록, PS 2.0)
+### #70: coach E1~E6 view AllowAny → IsAuthenticated (close, Slice 16 Step 0-B)
 
-- **신규 등록**: Slice 15 closing (2026-05-26)
+- **신규 등록**: Slice 15 closing (2026-05-26, PS 2.0)
 - **history**:
-  - Slice 13 Part 1~5에서 6 view 모두 audit P0 #5에 따라 명시적 `[AllowAny]` 채택
-    (기존 순수 view 동작 미러). 본 결정의 단기 목적은 frontend 통합 차단 회피였음
-  - Slice 15 P3-C 실 round-trip에서 JWT 없이 그대로 호출되어 LLM 1콜 발생 — AllowAny의
-    영향이 실증됨 ($0.0053248). 인증되지 않은 클라이언트가 LLM 비용을 끌어다 쓸 위험
-- **작업 범위**:
-  - 6 view 모두 `permission_classes([IsAuthenticated])` 전환 + 단위 테스트 보강
-  - 또는 throttle/rate limit 도입 (LLM 비용 보호 차원 별도 보장)
-  - frontend는 이미 `authAxios`로 JWT 자동 첨부 → 전환 시 영향 0
-- **breaking change 여부**: ADDITIVE/제한 강화 — 인증 클라이언트만 영향 없음, 비인증 호출은 401
-- **PS**: 2.0 (공개/배포 전 반드시 해소. 현재 dev only)
-- **참조**: `portfolio/api/views.py:52,102,151,202,249,296` (6 view), `audits/2026-05_p0_security.md`
+  - Slice 13 Part 1~5에서 6 view 모두 audit P0 #5에 따라 명시적 `[AllowAny]`
+  - Slice 15 P3-C(2026-05-25): JWT 없이 호출 + LLM 1콜 $0.0053248 발생 실증
+  - Slice 16 Step 0-B(2026-05-26): 6 view 동시 전환
+- **resolution (Slice 16 Step 0-B)**:
+  - `from rest_framework.permissions import AllowAny` → `IsAuthenticated`
+  - 6 view 모두 `@permission_classes([IsAuthenticated])` 전환
+  - `portfolio/tests/api/conftest.py` 신설 — `api_client` fixture를 force_authenticate된
+    APIClient로 통합. User는 in-memory instance (`User(pk=1)`) — DB 저장 불요.
+  - 6 endpoint test의 로컬 `api_client` fixture 제거 (conftest 위임)
+  - `test_s16_auth_wall.py` 신설 — 6 endpoint parametrize 401 단언
+  - frontend 무영향 (`authAxios`가 JWT 자동 첨부), MSW 테스트 무관 (vitest 74/74)
+  - 회귀: pytest 753→759 (+6), IDENTICAL 31/31 무변동
+- **commit**: `8c4df40` — `fix(s16): close #70 coach view AllowAny → IsAuthenticated (Step 0-B)`
 
 ### #71: 외부 자동화의 slice15 history 오염 (Slice 15 closing 등록, 환경 이슈)
 
@@ -346,32 +349,31 @@
 - **Slice 14 Step 0.5**: 게이트 가치 probe → **#61 close** (보류 결정). gate_tiers 휴면 코드는 "의도된 대기 폴백"으로 보존 (제거 안 함). 부채로 재등록 안 함 — 사전등록 결정 규칙 그대로.
 - **Slice 14 closing**: **#68** (cost ledger entry_point null) + **#69** (E3 schema 위반 응답 조사) 신규 등록.
 - **Slice 15 closing (2026-05-26)**: **#70** (AllowAny 공개, PS 2.0) + **#71** (외부 자동화 history 오염, 환경) + **#72** (스키마 KPI 교훈, PS 1.0) 신규 등록. close 0건.
+- **Slice 16 Step 0 (2026-05-26)**: **#68 close** (Step 0-A, ledger entry_point + slice_id 정합, `f23d748`) + **#70 close** (Step 0-B, AllowAny → IsAuthenticated 6 view 전환, `8c4df40`). 신규 0건. **net −2**.
 
 ---
 
-## §5. Slice 16+ 진입점 사전 등록 (Slice 15 closing 갱신)
+## §5. Slice 16 본작업 + Slice 17+ 진입점 사전 등록 (Slice 16 Step 0 갱신)
 
-**다음 진입 = Slice 16** (E2~E6 화면을 Slice 15 E1 패턴으로 복제). Slice 15에서 신규
-3건(#70/#71/#72) 등록·close 0. 부채 큐 1순위는 #70 (AllowAny 공개 — 배포/공개 차단성)
-이지만 Slice 16은 E2~E6 복제로 먼저 정의됨.
+**Slice 16 Step 0 종결 (2026-05-26)**: 사전 정리로 **#68 + #70 동시 close** (net −2).
+본작업은 E2~E6 화면 복제로 진입.
 
-### Slice 15 → Slice 16 진입 우선순위 (Slice 15 closing 갱신)
+### Slice 16 본작업 + 남은 동시 처리
 
 | 후보 | PS | 우선순위 (잠정) | 근거 |
 |------|----|-----------------|------|
-| **Slice 16 본작업: E2~E6 화면 복제** | — | **본작업** | Slice 15 E1 파일럿 구조 검증 완료. Slice 16 책임 |
-| **#70 AllowAny → IsAuthenticated 전환** | **2.0** | **Slice 16 동시 처리 권장** | 6 view 동시 전환이 자연스러움 (Slice 16이 E2~E6도 만지는 김에). 공개/배포 차단성 |
-| **#72 P3-C E2~E6 동등 검증** | **1.0** | **Slice 16 동시 처리 권장** | E2~E6 화면 완성 직후 1회씩 실 round-trip — 봉투 wrapper 정합 차원에서 자연스러움 |
-| #66 E3 endpoint preset 점수 API | 2.0 | 분석엔진 #12 Phase 2 후 | (변동 없음) |
+| **Slice 16 본작업: E2~E6 화면 복제 (Part 1~5)** | — | **본작업** | Slice 15 E1 파일럿 구조 그대로 복제. Slice 16 책임 |
+| **#72 P3-C E2~E6 동등 검증** | **1.0** | **각 Part 동시 처리** | EP별 1회 실 round-trip — 봉투 wrapper 정합 단언. 5콜 × ~$0.005-0.02 |
+| #66 E3 endpoint preset 점수 API | 2.0 | 분석엔진 #12 Phase 2 후 | (변동 없음, Slice 17+) |
+| #71 외부 자동화 history 오염 | (환경) | (상시 모니터링) | backup 브랜치 + `git log` 점검 패턴으로 운영 |
 
-### 기존 진입점 후보 (Slice 17+, 변동 없음)
+### 기존 진입점 후보 (Slice 17+, Slice 16 Step 0 갱신 — #68/#70 close 반영)
 
 | 후보                                    | PS  | 우선순위 (잠정)  | 근거                                                                 |
 | --------------------------------------- | --- | ---------------- | -------------------------------------------------------------------- |
 | **#66 E3 endpoint preset 점수 API 노출** | **2.0** | **분석엔진 #12 Phase 2 후** | preset_id+metrics optional 필드 ADDITIVE 추가. 분석엔진 선행 필요 |
 | #64 사전 추정 blocking 차단 모드        | 1.0 | Step 0 후보      | #61 close됨 — buffer 축소 가능 시점에 검토. 현재 estimator delta 24.58%. |
 | #67 legacy 전용 의존 코드 후속 정리     | 1.0 | Part 후보 (비위험) | scripts/validation/ archive 우선 → 보조 코드 일괄 제거 검토. 누적 보존 목록 §1 첨부 |
-| #68 cost ledger entry_point null        | 1.0 | Part 후보 (비위험) | caller(e1~e6) 6곳에 인자 1줄씩. ledger entry_point 컬럼 의미 회복.    |
 | #69 E3 schema 위반 응답 조사            | 1.0 | Step 0 후보 (조사성) | probe 24/24 중 1건 실패. production retry/fallback 정책 확인.       |
 | #63 누적 비용 ledger 영속화             | 1.5 | (Slice 14 신설 완료) | 부채는 §1에 남지만 production 코드로 살아있음. flush/admin UI 등 후속 작업이 새 부채로 가능. |
 | #59 E5 action measurability             | 0.5 | Part 후보        | E5 25% NG, E3 패턴 재사용 가능                                       |
