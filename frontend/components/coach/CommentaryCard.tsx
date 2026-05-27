@@ -4,7 +4,8 @@
  * 6 진입점(E1~E6) 중 카드형 5건(E1·E2·E3·E5·E6)이 공통으로 재사용.
  * Slice 16 Part 1 §3에서 prop 타입을 `CommentaryCardData` 공통 base로 일반화.
  * Slice 17 Step 0에서 BaseCard / SectionHeader / CardSection / ConfidenceBadge로
- * 골격을 분해 — props 시그니처 무변경(행위 보존 추출).
+ * 골격을 분해. Part 2에서 quoted_metrics 블록을 QuotedMetricsSection으로 추출.
+ * props 시그니처 무변경(행위 보존 추출 누적).
  *
  * - 데이터 페칭 안 함 (순수 표시) — 부모가 data를 prop으로 전달.
  * - 로딩·에러·빈 상태는 부모 페이지 책임 (이 컴포넌트는 data가 있을 때만 렌더).
@@ -18,10 +19,11 @@
 
 'use client'
 
-import { AlertTriangle, BarChart3, ListChecks, Target } from 'lucide-react'
+import { AlertTriangle, ListChecks, Target } from 'lucide-react'
 
 import BaseCard from './BaseCard'
 import CardSection from './CardSection'
+import QuotedMetricsSection from './QuotedMetricsSection'
 import SectionHeader from './SectionHeader'
 import type {
   CommentaryActionItem,
@@ -39,18 +41,12 @@ const PRIORITY_STYLE: Record<CommentaryActionPriority, { label: string; cls: str
   low: { label: '장기', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
 }
 
-function formatQuotedMetricValue(value: unknown): string {
-  if (value === null || value === undefined) return '-'
-  if (typeof value === 'number') return Number.isInteger(value) ? String(value) : value.toFixed(2)
-  if (typeof value === 'string' || typeof value === 'boolean') return String(value)
-  return JSON.stringify(value)
-}
-
 export default function CommentaryCard({ output }: CommentaryCardProps) {
   const observations = output.key_observations ?? []
   const actionItems: CommentaryActionItem[] = output.action_items ?? []
   const riskFlags = output.risk_flags ?? []
-  const quotedMetricsEntries = Object.entries(output.quoted_metrics ?? {})
+  const quotedMetrics = output.quoted_metrics ?? {}
+  const hasQuotedMetrics = Object.keys(quotedMetrics).length > 0
 
   return (
     <BaseCard summary={output.summary} confidence={output.confidence}>
@@ -90,20 +86,9 @@ export default function CommentaryCard({ output }: CommentaryCardProps) {
         </ul>
       </CardSection>
 
-      {/* ── 인용 지표 (E2 등) ── */}
-      <CardSection visible={quotedMetricsEntries.length > 0} className="mb-5">
-        <SectionHeader
-          icon={<BarChart3 className="h-4 w-4 text-indigo-500" />}
-          title="인용 지표"
-        />
-        <dl className="grid grid-cols-1 gap-1 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
-          {quotedMetricsEntries.map(([key, value]) => (
-            <div key={key} className="flex justify-between gap-3 text-sm">
-              <dt className="font-medium text-slate-700">{key}</dt>
-              <dd className="text-slate-900">{formatQuotedMetricValue(value)}</dd>
-            </div>
-          ))}
-        </dl>
+      {/* ── 인용 지표 (E2·E5·E6, Slice 17 Part 2 추출) ── */}
+      <CardSection visible={hasQuotedMetrics} className="mb-5">
+        <QuotedMetricsSection quotedMetrics={quotedMetrics} />
       </CardSection>
 
       {/* ── 리스크 플래그 ── */}
