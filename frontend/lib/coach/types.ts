@@ -74,12 +74,20 @@ export type E6Response = Schemas['CoachE6Response']
 //   한 컴포넌트가 모두 수용 + 진입점별 차이는 optional + graceful 미렌더로 분기.
 //
 // 필드 출처:
-//   summary / confidence / key_observations / metrics_table — 6 진입점 공통
-//   action_items / risk_flags — E1, E3, E5 등
-//   quoted_metrics — E2 (포트폴리오 종합 진단의 지표 인용)
+//   summary / confidence — 6 진입점 공통 (required)
+//   key_observations — 6 진입점 공통 (optional, base 필드)
+//   action_items — E1, E3, E5
+//   risk_flags — E1, E3, E6
+//   quoted_metrics — E2, E5, E6 (지표 인용)
 // 향후 새 EP 필드는 본 합집합에 optional 추가 (graceful 미렌더 유지).
 //
-// 후속 검토: Slice 16 Part 5 후 C 리팩터링 재검토 (BaseCard + EP별 Section 분리).
+// Slice 17 분할 완료: BaseCard + Key/Action/Quoted/RiskFlags Section. CommentaryCard
+// 는 순수 조립부. ⚠ 안 B 경계 규칙 — 외형 wrapper(BaseCard / 말풍선)는 비공유.
+//
+// Slice 17 Closing C-A: deprecated metrics_table 필드 프론트 제거 (#21 부분 close).
+// 백엔드 스키마는 잔여 — codegen `CoachE1Response.output.metrics_table` required
+// 그대로. structural typing으로 mutation.data.output → CommentaryCardData 전달 시
+// extra prop 허용되어 호환 유지.
 // ─────────────────────────────────────────────────────────────
 
 export type CommentaryConfidence = 'high' | 'medium' | 'low'
@@ -99,13 +107,6 @@ export interface CommentaryCardData {
   key_observations?: string[]
   action_items?: CommentaryActionItem[]
   risk_flags?: string[]
-  /** E2 quoted_metrics — 종합 진단이 인용한 핵심 지표 (free-form key→value). */
+  /** E2·E5·E6 quoted_metrics — 종합 진단이 인용한 핵심 지표 (free-form key→value). */
   quoted_metrics?: Record<string, unknown>
-  /**
-   * deprecated (#21, Slice 13+ 제거 예정). 컴포넌트는 미렌더.
-   *
-   * Slice 16 Part 2 §3 게이트: E3/E4/E5/E6 Output은 metrics_table 필드 자체가
-   * 없음 (E1/E2만 default ""). optional로 완화 — 6 EP 모두 prop 전달 호환.
-   */
-  metrics_table?: string
 }
