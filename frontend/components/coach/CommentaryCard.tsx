@@ -19,12 +19,13 @@
 
 'use client'
 
-import { AlertTriangle, Target } from 'lucide-react'
+import { Target } from 'lucide-react'
 
 import ActionItemsSection from './ActionItemsSection'
 import BaseCard from './BaseCard'
 import CardSection from './CardSection'
 import QuotedMetricsSection from './QuotedMetricsSection'
+import RiskFlagsSection from './RiskFlagsSection'
 import SectionHeader from './SectionHeader'
 import type { CommentaryCardData } from '@/lib/coach/types'
 
@@ -61,17 +62,9 @@ export default function CommentaryCard({ output }: CommentaryCardProps) {
         <QuotedMetricsSection quotedMetrics={quotedMetrics} />
       </CardSection>
 
-      {/* ── 리스크 플래그 ── */}
+      {/* ── 리스크 플래그 (E1·E3·E6, Slice 17 Part 3 추출) ── */}
       <CardSection visible={riskFlags.length > 0}>
-        <SectionHeader
-          icon={<AlertTriangle className="h-4 w-4 text-amber-500" />}
-          title="리스크"
-        />
-        <ul className="list-inside list-disc space-y-1 text-sm text-amber-800">
-          {riskFlags.map((flag, idx) => (
-            <li key={idx}>{flag}</li>
-          ))}
-        </ul>
+        <RiskFlagsSection riskFlags={riskFlags} />
       </CardSection>
     </BaseCard>
   )
