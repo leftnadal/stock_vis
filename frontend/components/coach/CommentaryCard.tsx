@@ -19,31 +19,22 @@
 
 'use client'
 
-import { AlertTriangle, ListChecks, Target } from 'lucide-react'
+import { AlertTriangle, Target } from 'lucide-react'
 
+import ActionItemsSection from './ActionItemsSection'
 import BaseCard from './BaseCard'
 import CardSection from './CardSection'
 import QuotedMetricsSection from './QuotedMetricsSection'
 import SectionHeader from './SectionHeader'
-import type {
-  CommentaryActionItem,
-  CommentaryActionPriority,
-  CommentaryCardData,
-} from '@/lib/coach/types'
+import type { CommentaryCardData } from '@/lib/coach/types'
 
 interface CommentaryCardProps {
   output: CommentaryCardData
 }
 
-const PRIORITY_STYLE: Record<CommentaryActionPriority, { label: string; cls: string }> = {
-  high: { label: '즉시', cls: 'bg-red-50 text-red-700 border-red-200' },
-  medium: { label: '단기', cls: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
-  low: { label: '장기', cls: 'bg-blue-50 text-blue-700 border-blue-200' },
-}
-
 export default function CommentaryCard({ output }: CommentaryCardProps) {
   const observations = output.key_observations ?? []
-  const actionItems: CommentaryActionItem[] = output.action_items ?? []
+  const actionItems = output.action_items ?? []
   const riskFlags = output.risk_flags ?? []
   const quotedMetrics = output.quoted_metrics ?? {}
   const hasQuotedMetrics = Object.keys(quotedMetrics).length > 0
@@ -60,30 +51,9 @@ export default function CommentaryCard({ output }: CommentaryCardProps) {
         </ul>
       </CardSection>
 
-      {/* ── 액션 아이템 ── */}
+      {/* ── 추천 액션 (E1·E3·E5, Slice 17 Part 3 추출) ── */}
       <CardSection visible={actionItems.length > 0} className="mb-5">
-        <SectionHeader
-          icon={<ListChecks className="h-4 w-4 text-emerald-500" />}
-          title="추천 액션"
-        />
-        <ul className="space-y-2">
-          {actionItems.map((item, idx) => {
-            const priority = PRIORITY_STYLE[item.priority]
-            return (
-              <li key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                  <span
-                    className={`shrink-0 rounded border px-2 py-0.5 text-[11px] font-medium ${priority.cls}`}
-                  >
-                    {priority.label}
-                  </span>
-                </div>
-                <p className="text-sm text-slate-600">{item.description}</p>
-              </li>
-            )
-          })}
-        </ul>
+        <ActionItemsSection actionItems={actionItems} />
       </CardSection>
 
       {/* ── 인용 지표 (E2·E5·E6, Slice 17 Part 2 추출) ── */}
