@@ -1,11 +1,46 @@
-# Portfolio Coach 부채 대장 (Slice 16 종결)
+# Portfolio Coach 부채 대장 (Slice 17 종결)
 
-**최종 갱신**: 2026-05-26 (Slice 16 종결 — #72 close, 6 EP 전건 완성)
+**최종 갱신**: 2026-05-27 (Slice 17 종결 — #21 부분 close + #71 조건부 close, #21-b·#73 신규)
 **관리 원칙**: 매 슬라이스 종결 시 갱신. close/keep_open/신규 변동 명시.
 
 ---
 
 ## §1. 현재 OPEN 부채
+
+### #21-b: metrics_table 백엔드 스키마 잔여 (Slice 17 Closing C-A에서 분리 등록)
+
+- **신규 등록**: Slice 17 Closing C-A (2026-05-27)
+- **history**:
+  - 본 #21은 Slice 13+ 제거 예정으로 표기됐던 deprecated 마크다운 metrics 표 필드
+  - CommentaryCardData(프론트 합집합 타입)에서는 Slice 16 Part 2 §3 게이트로 optional 완화
+  - **Slice 17 Closing C-A**: CommentaryCardData.metrics_table 필드 제거 (프론트 안 B)
+    - 컴포넌트/페이지 사용처 0건, 호출처(5 화면) 무수정, structural compat 유지
+- **잔여**: 백엔드 `portfolio/schemas/commentary_output.py:E1Output`, `E2Output`의
+  `metrics_table: str = Field(default="")` 필드 (codegen `CoachE1Response.output.metrics_table`
+  required로 노출 중)
+- **작업 범위 (Slice 18+ 백엔드 트랙)**:
+  - E1Output / E2Output 정의에서 metrics_table 제거
+  - PromptBuilder가 metrics_table을 생성하지 않는지 확인 (E1·E2 builder grep)
+  - codegen 재생성 → mock 데이터(`__tests__/mocks/handlers.ts`)에서 `metrics_table: ''` 제거
+  - IDENTICAL 31/31 재확인 (prompt hash가 metrics_table에 의존하지 않는지)
+- **breaking change**: codegen `CoachE*Response` shape 변경 → 운영 fronend 영향 0 (이미 미사용)
+- **PS**: 1.0 (Slice 18+ 백엔드 작업 후보, 우선순위 중)
+
+### #73: pre-commit hook 화이트리스트 슬라이스마다 수동 추가 (Slice 17 Closing 신규)
+
+- **신규 등록**: Slice 17 Step 0 진입 시점 사건 → Closing 정리 (2026-05-27)
+- **사건**:
+  - `.git/hooks/pre-commit` ALLOWED_BRANCHES 배열에 슬라이스명 hard-coded
+  - 신규 슬라이스 진입 시(slice17) 화이트리스트에 추가 필요 → 첫 commit 차단됨
+  - 사용자 명시 승인 후 1줄 수정 (`slice16` → `slice16 slice17`)
+- **성격**: 편의 부채 (데이터 손실 리스크 아님). #71과 별개 — #71은 환경 자동화로 인한
+  history 오염 / #73은 의도된 안전장치의 슬라이스별 수동 갱신 필요성
+- **작업 범위**:
+  - 안 A: regex 패턴(`slice\d+`) 허용 → 1회 갱신으로 전 슬라이스 흡수
+  - 안 B: pre-commit 첫 진입 시 자동 추가 helper 스크립트
+  - 안 C: 현재 패턴 유지 + 슬라이스 진입 체크리스트에 명시 (운영 비용 최소)
+- **breaking change**: 없음 (hook은 로컬, git 외 추적)
+- **PS**: 0.5 (운영 편의, 우선순위 낮음)
 
 ### #51: output_token estimator multivariate (Slice 13 Step 0a fit close, integration #62로 분리)
 
@@ -179,7 +214,7 @@
   - 회귀: pytest 753→759 (+6), IDENTICAL 31/31 무변동
 - **commit**: `8c4df40` — `fix(s16): close #70 coach view AllowAny → IsAuthenticated (Step 0-B)`
 
-### #71: 외부 자동화의 slice15 history 오염 (Slice 15 closing 등록, 환경 이슈)
+### #71: 외부 자동화의 slice15 history 오염 (조건부 close, Slice 17 종결)
 
 - **신규 등록**: Slice 15 closing (2026-05-26)
 - **사건**:
@@ -192,11 +227,13 @@
   - 복구: `git reflog`에서 `75904c7` 발견 → `git reset --hard 75904c7`로 복원
   - 부작용: slice15 history에 `82aa9b4` (iron-trading commit) 잔존 — slice15 정체성과 무관한 작업이 섞임
 - **성격**: 환경/자동화 이슈 (코드 부채 아님). 메모리 `[[project_nightly_automation]]` 패턴 사례 갱신
-- **권장 조치**:
-  - 슬라이스 작업 직후 항상 `git log --oneline` + 의도하지 않은 commit 점검
-  - `git reflog`로 외부 자동화 작업 history 추적
-  - Slice 16 진입 전 `82aa9b4` 처리 결정 필요 (slice15 base에 그대로 두기 / revert / rebase로 제거)
-- **PS**: 환경 이슈 — 코드 부채로 카운트 안 함. closing 회고 부록
+- **resolution (Slice 17 종결, 2026-05-27, 조건부 close)**:
+  - **회피책 해소**: `iron-trading` 폴더가 `/Desktop`에서 분리(branch만 잔존) → 자동화 트리거 차단
+  - **무재발 확인**: Slice 16 전 구간(20 commit) + Slice 17 전 구간(12 commit) 무재발.
+    Slice 16 closing 정의 조건("1슬라이스 추가 모니터링") 충족
+  - **외부 자동화 단일 분리 commit 1건** (Slice 16 → Slice 17 진입 시점 `61cbb7f` "docs: 코드베이스 감사 보고서") — slice17은 a621b50에서 직접 분기해 격리, 코드 영향 0
+  - ⚠ **근본 해결 아님** — 외부 자동화 환경 변경(예: iron-trading 폴더 복원 / 자동화 도구 갱신) 시 재점검 필요. 해소 인지하되 monitoring stance는 유지
+- **PS**: close (조건부)
 
 ### #72: Step 0 스키마 파이프라인 KPI가 "실 응답 shape 일치"를 누락 (close, Slice 16 종결)
 
@@ -353,6 +390,7 @@
 - **Slice 15 closing (2026-05-26)**: **#70** (AllowAny 공개, PS 2.0) + **#71** (외부 자동화 history 오염, 환경) + **#72** (스키마 KPI 교훈, PS 1.0) 신규 등록. close 0건.
 - **Slice 16 Step 0 (2026-05-26)**: **#68 close** (Step 0-A, ledger entry_point + slice_id 정합, `f23d748`) + **#70 close** (Step 0-B, AllowAny → IsAuthenticated 6 view 전환, `8c4df40`). 신규 0건. **net −2**.
 - **Slice 16 종결 (2026-05-26)**: **#72 close** (Part 1~5 PN-C 단계로 6 EP 전건 실 round-trip 정합 검증 완료). 신규 0건. **net −1**. 6 코치 화면(E1~E6) 전건 완성. 누적 비용 $0.0254128 (cap 2.54%). #71(외부 자동화) 무재발 1슬라이스 — 강제 close는 1슬라이스 추가 모니터링 후 결정.
+- **Slice 17 종결 (2026-05-27)**: **#71 조건부 close** (Slice 16+17 무재발 + iron-trading 폴더 분리 회피책으로 해소, 근본 해결 아님 — 환경 변경 시 재점검) + **#21 부분 close** (Closing C-A: CommentaryCardData.metrics_table 프론트 제거, 백엔드 잔여는 #21-b로 분리) + **#21-b 신규** (백엔드 스키마 잔여, PS 1.0) + **#73 신규** (pre-commit hook 화이트리스트 수동 추가, PS 0.5). CommentaryCard 분할 완성(9 컴포넌트 + 47 테스트), 누적 비용 $0, 회귀 0(vitest 25/115→34/162). **net 변동: −2(#71 + #21 close) + +2(#21-b + #73 신규) = 0**, 단 #21이 부분 close라 PS 가중치 감소.
 
 ---
 
