@@ -19,6 +19,29 @@ from stocks.models import Stock
 logger = logging.getLogger(__name__)
 
 
+# 2026-05-26 C 옵션: UnmatchedQueue 블록리스트.
+# 사용자 1순위 정책: Chain Sight / Market Pulse / Dashboard 데이터 풍부도 최우선.
+# Stock DB에 영영 등재될 수 없는 항목(비상장/직군명/일반명사)을 매칭 시도 전에 차단.
+# 차단으로 노이즈 제거 → 진짜 매칭 가능한 후보에 집중. 함부로 제거하지 말 것.
+BLOCKED_NAMES = frozenset(name.lower() for name in [
+    # ── 비상장 / Pre-IPO ──────────────────────────────
+    'Stripe', 'KPMG LLP', 'KPMG', 'Deloitte', 'EY', 'PwC', 'PricewaterhouseCoopers',
+    'McKinsey', 'McKinsey & Company', 'Bain', 'BCG', 'Boston Consulting Group',
+    'DriveTime', 'OpenAI', 'Anthropic', 'SpaceX', 'Bytedance', 'TikTok',
+    # ── 직군명 / 산업군 일반명사 ──────────────────────
+    'hospitals', 'hospital', 'pharmacies', 'pharmacy',
+    'producers', 'producer', 'manufacturers', 'manufacturer',
+    'retailers', 'retailer', 'banks', 'bank', 'insurers', 'insurer',
+    'distributors', 'distributor', 'suppliers', 'supplier',
+    'utilities', 'utility', 'consumers', 'consumer',
+    # ── 비영리 / 인프라 운영기관 ──────────────────────
+    'MISO', 'PJM', 'ERCOT', 'CAISO',  # 전력망 ISO/RTO
+    'NATO', 'WHO', 'IMF', 'OECD', 'WTO',
+    # ── 일반 키워드 (회사명 아님) ─────────────────────
+    'Government', 'Federal Government', 'Treasury', 'Congress',
+])
+
+
 class TickerMatcher:
     """LLM 추출 회사명 → Ticker 매칭."""
 
@@ -46,12 +69,16 @@ class TickerMatcher:
         회사명 → (ticker | None, method).
 
         Returns:
-            (ticker, method) — method: 'alias', 'exact', 'fuzzy', None
+            (ticker, method) — method: 'alias', 'exact', 'fuzzy', 'blocked', None
         """
         if not company_name or len(company_name) < 2:
             return None, None
 
         name = company_name.strip()
+
+        # 0순위: 블록리스트 — 비상장/직군명/일반명사는 매칭 시도 없이 즉시 차단
+        if name.lower() in BLOCKED_NAMES:
+            return None, 'blocked'
 
         # 1순위: CompanyAlias
         ticker = self._match_alias(name, context_sector)
