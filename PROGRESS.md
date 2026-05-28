@@ -107,6 +107,11 @@
 ## 다음 세션에서 할 일
 
 ### 정합성 / Slice 18 진입 결정 (2026-05-28 추가)
+- [x] **워크플로우 정리 1단계 — 충돌 해소 + 전역 진입점 2건** (2026-05-28 완료, slice17 brunch)
+  - PROJECT_LAYOUT.md L74 step8 산출물 명명 충돌 해소 — `score_step8.py` DIMENSION_LOOKUP을 1차 소스로 명시, e1 예외(`step8_3way`) + group_analysis 보조 산출물 명시
+  - `docs/harness/SESSION_STARTUP_CHECKLIST.md` 신규 — 매 세션 첫 3단계(health_check → PROGRESS L1-50 → KB 검색) 단일 진입점, CLAUDE.md 1차 소스 명시
+  - `docs/harness/EXTERNAL_AUTOMATION_DEFENSE_GUIDE.md` 신규 — 외부 자동화 충돌 방어 통합 지도(시간대·다층 방어·Layer 1~4·#71/#73), 모든 섹션이 1차 소스 링크
+  - 이중 진실의 소스 방지 약속: 두 신규 문서 모두 "포인터 + 요약"만, 1차 소스 내용 복제 금지 약속 헤더 포함
 - [ ] **2026-06-10경 health_check 야간 누적 결과 분석 → 알림 임계 결정 (단계 2 진입)**
   - 매일 23:00 nightly_v3.sh Phase 5에서 `docs/nightly_auto_system/YYYYMM/DD/health_check.json` 1~2주 누적 후 분석
   - 결정 입력값: 7 검증 항목별 status 분포 / false positive 빈도 / 외부 자동화 commit 감지 정확도
@@ -114,6 +119,13 @@
   - 참조: `DECISIONS.md` "문서·git 정합성 관리 원칙" Layer 1~4, `sub_claude_md/common-bugs.md` #30
 - [ ] **Slice 18 진입점 결정** — 후보 7건 PS 가중합 (응답 지연 UX / #21-b 백엔드 / Pick<> 타입 / zustand / codegen 직접 / 신규 EP / hook 자동 갱신)
 - [ ] **slice17 → origin/main 머지 전략** — 옵션 A(direct + 1 conflict resolve) / B(cherry-pick 시간순) / C(GitHub PR) 중 선택
+
+### 워크플로우 정리 보류 큐 (2026-05-28, 1단계에서 분리)
+- [ ] **UNIFIED_WORKFLOW_GUIDE.md** (트랙 전용 통합 문서) — monorepo 결정 후로 보류
+- [ ] **부채/KPI/회귀/cost 통합 문서 3건** — 원본 1차 소스로 작동 중, 긴급 아님 (필요 시 통합 진입점만 추가)
+- [ ] **멀티에이전트 온보딩** — 1인 개발 현재 우선순위 낮음
+- [ ] **분기점 가중합 아카이브** — Slice 종결 시점별 분기점 결정 근거 아카이브 별도 판단 필요
+- [ ] **health_check.py 검증 항목 추가** — 신규 통합 문서가 1차 소스보다 오래되면 경고. 단계 2에서 false positive 빈도 확인 후 판단
 
 ### audit P0 후속 큐 (2026-04-26 야간 자동화 기준, 15건 중 12건 완료)
 - [x] **#5 Permission 강화** — `DEFAULT_PERMISSION_CLASSES`: IsAuthenticatedOrReadOnly → **IsAuthenticated** (GET 무차별 노출 차단). users/PublicUser·LogIn에 명시 [AllowAny] 추가. news ML 모니터링 액션 4종(`ml_status`/`ml_shadow_report`/`ml_weekly_report`/`ml_lightgbm_readiness`)에 [IsAdminUser] 추가. 영향 받는 테스트 44건 force_authenticate/force_login 패턴으로 일괄 수정 (5 파일 fixture override + watchlist `auth_user` fixture). 회귀 2182 PASS / 51 skipped / 0 fail (2026-04-29).

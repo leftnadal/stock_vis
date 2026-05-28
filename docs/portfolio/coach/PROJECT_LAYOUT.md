@@ -66,11 +66,19 @@
 
 ## 슬라이스 종결 산출물 표준
 
+> **1차 소스**: `scripts/validation/score_step8.py` `DIMENSION_LOOKUP[entrypoint].default_raw/default_scored`.
+> 본 문서와 불일치 시 코드가 우선. 새 entrypoint 추가 시 코드 갱신 후 본 문서 동기화.
+
 각 슬라이스 종결 시 `docs/portfolio/coach/slice{N}/` 하위:
 - `slice{N}_final_report.md` — 종결 보고
 - `step6_smoke_result.{json,md}` — smoke test 결과
 - `step7_matrix_raw.json` + `step7_matrix_metrics.json` + `step7_matrix_report.md` — real LLM matrix
 - `step7_5_kpi_report.md` — KPI 자동 검증
-- `step8_2way_{entrypoint}_raw.json` + `step8_2way_{entrypoint}_scored.json` — Part 4 입력
+- `step8_{비교차수}_{entrypoint}_raw.json` + `step8_{비교차수}_{entrypoint}_scored.json` — Part 4 입력
+  - **e1 (Slice 1)**: `step8_3way_raw.json` + `step8_3way_scored.json` (3-way 비교, 예외)
+  - **e2/e3/e3_portfolio/e4_conversation/e5/e6 (Slice 2~7)**: `step8_2way_{entrypoint}_raw.json` + `step8_2way_{entrypoint}_scored.json`
+  - 선택 추가: `step8_2way_{entrypoint}_group_analysis.json` (e2/e3/e6에서 사용 중)
 - `step9_*_eval_*.{md,json}` — manual eval 산출물
 - `step9_3_report.md` + `step9_3_scored.json` — winner 판정
+
+> Slice 8 이후는 mini-slice 패턴(`MINI_SLICE_PATTERN.md`) 도입으로 step8/9 산출물이 생략될 수 있다. 슬라이스 진입 시 entrypoint별로 적용 여부 결정.
