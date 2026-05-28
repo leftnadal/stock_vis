@@ -18,16 +18,17 @@
 
 > ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실. **현재 `origin/main = 2fc95fe`**.
 
-### 활성 브랜치 현황 (2026-05-28 brunch 일괄 정리 후)
+### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
 | 브랜치 | HEAD | 비고 |
 |--------|------|------|
-| `main` / `origin/main` | `b27d019` (2026-05-28) | slice17 머지 정착 + PROGRESS 갱신 commit |
-| `feature/watchlist-and-docs` (origin) | 보존 | 구브랜치, 상태 미확인 — 추후 검토 |
-| `iron-trading-api` | `9ca8b47` | 109 commits 선행, 미머지 |
+| `main` / `origin/main` | `6b3e6c8` (2026-05-28) | slice17 머지 + PROGRESS·DECISIONS·SR 종료 정착 |
+| `iron-trading-api` | `9ca8b47` | 1 commit 선행 (Codex 핸드오프 문서), 활성 트랙 — 별도 결정 대기 |
+| `test/sec-pipeline-tests` | `e12c71a` (5/18) | sec_pipeline 미흡수 단위 테스트 1건 — main 흡수 검증 보류 |
+| `test/sec-pipeline-tests-20260519` | `ac588d3` (5/19) | sec_pipeline 미흡수 단위 테스트 1건 (별도 파일) — main 흡수 검증 보류 |
 
 > **종결 brunch 표기 원칙**: main 정착 + `slice*-done` 태그 생성 후에는 본 표에서 제거. 종결 이력의 진실 소스는 `slice*-done` 태그.
-> 2026-05-28 일괄 정리: slice10~17 로컬 brunch 7건 삭제 (백업 8건 별도 삭제), 모두 `slice*-done` 태그로 보존됨. 임시 백업 태그 `slice17-pre-merge` = `bd67bbf`는 gc 전 복구 핸들로 유지.
+> 2026-05-28 누적 정리: slice10~17 로컬 brunch 7건 + 백업 brunch 8건 + 자동화 잔재 로컬 12건 + 원격 2건 = 총 29건 삭제. `feature/watchlist-and-docs`는 로컬·원격 모두 부재 확정으로 표기 제거 (메모리 stale). 임시 백업 태그 `slice17-pre-merge` = `bd67bbf`는 gc 전 복구 핸들로 유지.
 
 ### 작업 단위
 
@@ -171,4 +172,4 @@
 - [ ] QA follow-up: chainsightService.ts fetch() → authAxios 통일
 - [ ] QA follow-up: RelationCardPanel 에러 UI 추가
 - [ ] 정기 시크릿 스캔 스크립트 도입 검토 (KB 큐 cdc4d19e 참고)
-- [ ] feature/watchlist-and-docs 브랜치 상태 검토 (보존 vs 삭제)
+- [x] ~~feature/watchlist-and-docs 브랜치 상태 검토~~ (2026-05-28 완료, 로컬·원격 모두 부재 확정 — 표기 제거)
