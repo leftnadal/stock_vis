@@ -16,17 +16,18 @@
 
 ## 현재 활성 작업
 
-> ⚠ **2026-05-11 main 정착 표기는 부분 stale**: 2026-05-11 시점(`origin/main = be2d6c7`) 정착은 사실이나, 그 이후 2 commits 추가(`c12e743` 5/21 celery watchdog + `3e76bc8` 5/26 data-pipeline)로 **현재 `origin/main = 3e76bc8`**. 동시에 slice8~17 전 구간(143 commits)이 origin/main 미반영 상태로 진행됨.
+> ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실. **현재 `origin/main = 2fc95fe`**.
 
-### 활성 브랜치 현황 (2026-05-28 실측 갱신)
+### 활성 브랜치 현황 (2026-05-28 push 후 갱신)
 
 | 브랜치 | HEAD | 비고 |
 |--------|------|------|
-| `slice17` | `beec905` | 현재 작업 brunch. Slice 14~17 종결 + 외부 자동화 audit commit 1건 포함 |
-| `origin/main` | `3e76bc8` (2026-05-26) | data-pipeline C 옵션 (5/11 `be2d6c7` 이후 2 commits 진행) |
+| `origin/main` | `2fc95fe` (2026-05-28) | slice17 머지 + MACRO quota 테스트 동기화 |
+| `slice17` | `2fc95fe` | main과 동일 (머지 후 작업 brunch) |
+| `slice17-pre-merge` (tag) | `bd67bbf` | 머지 직전 백업 (롤백 시 사용) |
 | ~~`feature/chainsight-graph-v2` (local worktree)~~ | **부재** | 2026-05-28 점검에서 worktree·brunch 모두 없음 확인 (PR-#8 `be2d6c7`로 main 통합 후 정리됨, PROGRESS 표기 stale) |
 | `feature/watchlist-and-docs` (origin) | 보존 | 구브랜치, 상태 미확인 — 추후 검토 |
-| slice8 ~ slice16 | 각각 | 모두 main 미머지 (Slice 17 closing까지의 작업 라인) |
+| slice8 ~ slice16 | 각각 | slice17 머지로 흡수됨 (slice16만 +1 commit 잔존, 정리 대상) |
 | `iron-trading-api` | `9ca8b47` | 109 commits 선행, 미머지 |
 
 ### 작업 단위
@@ -34,7 +35,7 @@
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
 | **Slice 18 진입점 미정** | TBD | 결정 필요 — 후보 7건 (PS 가중합) | brunch 정리 vs Slice 18 진입 vs monorepo 재배치 우선순위 결정 | 2026-05-28 |
-| **slice17 → origin/main 머지 전략 결정** | orchestrator | 충돌 1건 식별 (`scripts/celery-watchdog.sh`) | 머지 옵션 A/B/C 선택 + watchdog 양쪽 통합 | 2026-05-28 |
+| ~~**slice17 → origin/main 머지**~~ | orchestrator | **완료 (2026-05-28)** — 옵션 A direct merge, `3e76bc8..2fc95fe` push, 148 commits, 회귀 0, origin/main 잠복 회귀 1건 함께 fix | — | 2026-05-28 |
 | **PROGRESS·TASKQUEUE·메모리 정합성 보정** | orchestrator | 정합성 점검 결과 박는 중 (본 문서 + DECISIONS + scripts/health_check + common-bugs) | (없음 — 본 작업으로 처리) | 2026-05-28 |
 | **야간 health_check 단계 2 진입 (알림 임계 결정)** | orchestrator | 단계 1 통합 완료 (2026-05-28). 매일 23:00 nightly_v3.sh Phase 5에서 누적 기록 시작 | 2026-06-10경 1~2주 관찰 데이터 분석 후 warning/error 임계 + 채널(이메일/Slack) 결정 | 2026-06-10 예정 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | ~~Part 1 완료~~ | **superseded — Slice 17까지 Portfolio Coach 완성** | 2026-05-07 (stale) |
@@ -118,7 +119,11 @@
   - 결정 산출: warning 임계 / error 임계 / 알림 채널(이메일·Slack) / Layer 3 진입 시점 (pre-commit hook 통합)
   - 참조: `DECISIONS.md` "문서·git 정합성 관리 원칙" Layer 1~4, `sub_claude_md/common-bugs.md` #30
 - [ ] **Slice 18 진입점 결정** — 후보 7건 PS 가중합 (응답 지연 UX / #21-b 백엔드 / Pick<> 타입 / zustand / codegen 직접 / 신규 EP / hook 자동 갱신)
-- [ ] **slice17 → origin/main 머지 전략** — 옵션 A(direct + 1 conflict resolve) / B(cherry-pick 시간순) / C(GitHub PR) 중 선택
+- [x] **slice17 → origin/main 머지** (2026-05-28 완료, 옵션 A direct merge, `3e76bc8..2fc95fe`)
+  - 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택 — slice17 기능 0 손실
+  - origin/main 잠복 회귀 1건 함께 fix (commit `2fc95fe`): MACRO quota cap 2→10 정책 변경에 테스트 미동기화였던 것
+  - 148 commits push, pytest 3172/52 / vitest 34/162 / tsc 0 회귀 없음 확인
+  - 백업 태그 `slice17-pre-merge` = `bd67bbf` 보존
 
 ### 워크플로우 정리 보류 큐 (2026-05-28, 1단계에서 분리)
 - [ ] **UNIFIED_WORKFLOW_GUIDE.md** (트랙 전용 통합 문서) — monorepo 결정 후로 보류
