@@ -358,3 +358,30 @@ interface ExplorationState {
 | 4 (장기) | Phase 2 진입 시 | PROGRESS 자동 추출 영역을 `make progress` 명령으로 완전 자동화. 수동 영역만 사람 입력 | 매뉴얼 부담 0, 자동 영역과 수동 영역 완전 분리 |
 
 **📎 참조**: `scripts/health_check.py`, `sub_claude_md/common-bugs.md` #30, `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션
+
+---
+
+## monorepo 재배치 (실행 결정 2026-05-28)
+
+> 청사진: `docs/monorepo_migration/blueprint_v1.md` (실행 확정 = 지금)
+
+### ① import 경로 방식 = 안 B(dotted-path) 확정 (2026-05-28)
+
+**결정**: 폴더 구조를 import 경로에 반영. `services.stocks`, `packages.shared.users` 등 dotted-path 패턴. **app_label은 유지** (DB·migration 영향 0).
+
+**근거**:
+- 8 멀티에이전트가 코드를 대량으로 읽는 환경 — 경로의 **명시성·규칙 일관성**이 일회성 변경 비용(~80-120 파일) 압도
+- 가중합 비교: **안 B 4.23** vs 안 C(혼합) 3.35 vs 안 A(평면 유지) 2.90
+- 폴더 위치만 보고 어느 계층(packages/services/apps)인지 즉시 식별 가능 → 신규 작업 진입 비용 최소화
+
+**실행 방식**:
+- 3단계(폴더 이동 + import 경로 일괄 갱신)에서 **그룹별 점진** 진행
+- 의존 역순: `packages/shared/` → `services/` → `apps/` (역방향 dependency 발생 방지)
+- 단계마다 pytest 회귀 검증 (전건 통과 확인 후 다음 그룹)
+- 마이그레이션 dependencies 형식(`('stocks', '0001_initial')`)은 app_label 기준이라 변경 불필요
+
+**연쇄 제약**:
+- 분류 경계(②)가 곧 경로에 박힘 → 다음 ② 결정에서 packages/services/apps 경계를 신중 확정해야 함
+- `graph_analysis` 흡수 결정 / `marketpulse` 위치(shared vs services vs apps) / `chainsight` v1+v2 통합 여부가 ② 핵심 갈림길
+
+**📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §2(분류 초안) + §5(깨질 참조)
