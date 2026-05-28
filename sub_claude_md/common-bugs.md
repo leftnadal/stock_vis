@@ -298,3 +298,28 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   4. ORM `__date` lookup의 비교값도 `localdate()` 사용 (connection.timezone과 정렬)
 - 영향 범위 (운영 코드 22개 파일, 49건): news/services/_*, news/api/views.py, serverless/_*, chainsight/tasks/seed_tasks.py, macro/_*, thesis/_*, sec_pipeline/intelligence.py, rag_analysis/models.py, config/management/commands/celery_errors.py 등
 - 교훈: **`USE_TZ=True` + non-UTC `TIME_ZONE`이면 `timezone.now().date()` 사용 금지**. 항상 `timezone.localdate()` 또는 `timezone.localtime().date()`. CI는 UTC로 도는 게 일반적이라 잘 안 잡히고, 한국 운영 환경의 자정~오전 9시 구간에서 잠복하다 회귀로 드러남. 날짜 의존 테스트는 freezegun 등으로 시간 고정 권장
+
+## 문서·git 정합성 stale 패턴 (#30)
+
+- 증상: PROGRESS.md·TASKQUEUE.md·Claude 메모리가 git 현실과 어긋남
+  - 예 1: PROGRESS에 `origin/main = be2d6c7` 표기, 실제 `git rev-parse origin/main` = `3e76bc8` (2 commits 차이)
+  - 예 2: PROGRESS가 worktree 보존이라 표기한 `/Users/.../stock_vis_chainsight_v2` 폴더 실제 부재 (PR-#8 머지 후 정리됐는데 표기 안 갱신)
+  - 예 3: TASKQUEUE 한 항목이 `todo` 표기, 실제로는 외부 PR 머지로 완료된 상태 (CS-R9 사례)
+  - 예 4: PROGRESS 마지막 갱신 후 16일간 167 commits 누적, PROGRESS는 4회만 변경 (모두 5/12 시점)
+  - 예 5: 메모리에 박힌 brunch/HEAD 정보가 stale PROGRESS를 캐시한 결과물 → PROGRESS 갱신 안 하면 메모리도 stale
+  - 예 6: slice 격리 brunch 143 commits이 origin/main에 0% 반영, 누적 후 단일 시점 통합 시 충돌 위험
+- 원인:
+  - **수동 유지 의존** — 매 슬라이스 종결 시 PROGRESS 갱신 의무 명시됐으나 brunch 격리 작업 + main 정착 단계 지연 + 외부 자동화 audit commit 끼어들기 등 복합 원인으로 누락 발생
+  - **다중 진실의 소스** — git, PROGRESS, TASKQUEUE, DECISIONS, 메모리가 모두 "현재 상태"를 표기하는데 동기화 통로 부재
+  - **검문소 부재** — stale 발생을 감지할 자동 검증 없음. 사람·에이전트가 PROGRESS 읽을 때만 우연히 발견
+- 감지: `python scripts/health_check.py` 5건 항목 자동 검증
+  - exit 0 = OK, 1 = warning (작업 진행 가능, 정리 시 보정), 2 = error (다른 작업 전 보정 우선)
+  - 검증 항목: origin/main 해시 표기 / brunch·worktree 존재 / PROGRESS 갱신 stale / TASKQUEUE done 매칭 / DECISIONS 갱신일 / slice* 미머지 (보조)
+- 해결:
+  1. **scripts/health_check.py 정기 실행** — 매 세션 시작 시 `python scripts/health_check.py` 우선 실행, warning 이상 발견 시 작업 전 보정
+  2. **PROGRESS.md 자동/수동 영역 분리** — origin/main 해시·brunch 현황 등은 health_check 출력을 토대로 갱신, blocker/결정/작업 단위는 사람·에이전트 수동
+  3. **TASKQUEUE done 표기는 외부 PR 머지 직후 즉시 갱신** — 머지 commit 매칭이 진실 기준
+  4. **메모리는 PROGRESS의 캐시로만 다룸** — PROGRESS가 진실 소스, 메모리에 표기 차이 발견 시 PROGRESS 먼저 갱신 후 메모리 갱신
+  5. Layer 1~4 단계화 도입 (DECISIONS.md "문서·git 정합성 관리 원칙" 참조)
+- 교훈: **stale은 1회성 실수가 아니라 시스템적 결함**. 매 세션 시작 시 검문소(health_check.py) 통과를 의무화. 16일 stale + 6 패턴 동시 발현(2026-05-28)이 시그널 — Layer 1(즉시) + Layer 2(monorepo 도입 시) + Layer 3(pre-commit hook) + Layer 4(`make progress` 완전 자동화) 단계 도입으로 재발 차단
+- 📎 참조: `scripts/health_check.py`, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션

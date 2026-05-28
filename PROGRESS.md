@@ -1,6 +1,10 @@
 # PROGRESS.md — 하네스 상태 영속화 로그
 
 > 이 파일은 모든 에이전트가 세션 시작 시 반드시 읽고, 세션 종료 시 반드시 업데이트한다.
+>
+> **마지막 정합성 점검 일자**: **2026-05-28** (이전 갱신 2026-05-12 — 16일 stale 발견)
+> **검증 도구**: `python scripts/health_check.py` (Slice 17 closing 후속 도입)
+> **관련 결정**: DECISIONS.md "문서·git 정합성 관리 원칙" (2026-05-28)
 
 ## Harness Engineering 전환 완료
 
@@ -12,21 +16,46 @@
 
 ## 현재 활성 작업
 
-> **✅ main 정착 완료 (2026-05-11)**: `origin/main = be2d6c7`. 활성 4개 브랜치 (portfolio / market_pulse_v2 / feature/chainsight-graph-v2 / data_structure_remodeling_V1) 모두 main 통합 머지 완료. origin/main만 단일 정착, 모든 stale 브랜치 정리됨.
+> ⚠ **2026-05-11 main 정착 표기는 부분 stale**: 2026-05-11 시점(`origin/main = be2d6c7`) 정착은 사실이나, 그 이후 2 commits 추가(`c12e743` 5/21 celery watchdog + `3e76bc8` 5/26 data-pipeline)로 **현재 `origin/main = 3e76bc8`**. 동시에 slice8~17 전 구간(143 commits)이 origin/main 미반영 상태로 진행됨.
 
-### 활성 브랜치 현황 (2026-05-11 기준)
+### 활성 브랜치 현황 (2026-05-28 실측 갱신)
 
-| 브랜치 | 상태 | 비고 |
+| 브랜치 | HEAD | 비고 |
 |--------|------|------|
-| `main` | be2d6c7 (HEAD) | 단일 통합 라인 정착 |
+| `slice17` | `beec905` | 현재 작업 brunch. Slice 14~17 종결 + 외부 자동화 audit commit 1건 포함 |
+| `origin/main` | `3e76bc8` (2026-05-26) | data-pipeline C 옵션 (5/11 `be2d6c7` 이후 2 commits 진행) |
+| ~~`feature/chainsight-graph-v2` (local worktree)~~ | **부재** | 2026-05-28 점검에서 worktree·brunch 모두 없음 확인 (PR-#8 `be2d6c7`로 main 통합 후 정리됨, PROGRESS 표기 stale) |
 | `feature/watchlist-and-docs` (origin) | 보존 | 구브랜치, 상태 미확인 — 추후 검토 |
-| `feature/chainsight-graph-v2` (local worktree) | `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2` | 별도 worktree에 체크아웃, 안전 보존 |
+| slice8 ~ slice16 | 각각 | 모두 main 미머지 (Slice 17 closing까지의 작업 라인) |
+| `iron-trading-api` | `9ca8b47` | 109 commits 선행, 미머지 |
 
 ### 작업 단위
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
-| Portfolio Slice 4 Part 2 (E6) | @backend | Part 1 (Step 0~5) 완료, 회귀 160 passed | Part 2 지시서 작성 + 실 LLM 호출 환경 확인 | 2026-05-07 |
+| **Slice 18 진입점 미정** | TBD | 결정 필요 — 후보 7건 (PS 가중합) | brunch 정리 vs Slice 18 진입 vs monorepo 재배치 우선순위 결정 | 2026-05-28 |
+| **slice17 → origin/main 머지 전략 결정** | orchestrator | 충돌 1건 식별 (`scripts/celery-watchdog.sh`) | 머지 옵션 A/B/C 선택 + watchdog 양쪽 통합 | 2026-05-28 |
+| **PROGRESS·TASKQUEUE·메모리 정합성 보정** | orchestrator | 정합성 점검 결과 박는 중 (본 문서 + DECISIONS + scripts/health_check + common-bugs) | (없음 — 본 작업으로 처리) | 2026-05-28 |
+| Portfolio Slice 4 Part 2 (E6) | @backend | ~~Part 1 완료~~ | **superseded — Slice 17까지 Portfolio Coach 완성** | 2026-05-07 (stale) |
+
+---
+
+## 정합성 문제 발견 (2026-05-28)
+
+본 시점 종합 점검에서 드러난 문서·git 불일치 5건. 단발 실수가 아닌 **시스템적 결함** 패턴 — DECISIONS.md "문서·git 정합성 관리 원칙"으로 영구 처리.
+
+| # | 문제 | 증상 | 원인 |
+|---|------|------|------|
+| 1 | **PROGRESS.md 16일 stale** | 마지막 갱신 2026-05-12 (`3f7dab8`) 이후 16일간 167 commits 누적, PROGRESS 4회만 변경 (모두 5/12 시점) | 매 슬라이스 종결 시 갱신 의무화됐으나 brunch 격리 작업 중 main 정착 보고만 갱신 — Slice 14~17 종결 보고 누락 |
+| 2 | **`origin/main = be2d6c7` 표기 오류** | PROGRESS L15/L21/L43에 5/11 정착 시점 해시 그대로. 실제 `origin/main = 3e76bc8` (5/26) — 2 commits 차이 | 정착 직후 시점 표기를 그 이후 git 변동에 동기화 안 함. 자동 추출 가능 영역인데 수동 유지에 의존 |
+| 3 | **`feature/chainsight-graph-v2` worktree 부재** | PROGRESS L23이 `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2`에 worktree 보존이라 표기. 실제로는 폴더·brunch 모두 부재 (PR-#8 `be2d6c7`로 main 통합 후 정리됨) | PROGRESS 표기와 git/파일시스템 현실 사이 검증 통로 부재 |
+| 4 | **TASKQUEUE CS-R9 상태 충돌** | TASKQUEUE.md에 CS-R9(chainsight v2 머지) 상태 `todo`. 실제로는 `be2d6c7` PR #8 머지로 완료 | 머지 작업이 외부(GitHub PR)에서 발생할 때 TASKQUEUE 상태 갱신 자동 트리거 없음 |
+| 5 | **slice17 brunch 143 commits 0% 반영** | Slice 14 c-bundle 머지부터 Slice 17 closing + audit 보고서까지 전체가 origin/main 미반영. 단 1 충돌(`scripts/celery-watchdog.sh`) 외에는 깔끔히 흡수 가능 | "slice별 격리 작업 → 종결 후 main 통합" 흐름이 슬라이스 누적되면서 main 정착 단계가 지연됨 |
+
+### 진단 결과
+- **메모리(Claude memory)** 역시 PROGRESS의 stale 표기를 캐시한 상태 → 메모리는 진실의 소스가 아니라 PROGRESS의 캐시로 다뤄야 함
+- **scripts/health_check.py** 도입 (본 작업) — 매 세션 시작 시 5건 항목 자동 검증
+- **DECISIONS.md 신규 결정** — "문서·git 정합성 관리 원칙" Layer 1~4 단계화
 
 ---
 
@@ -34,6 +63,10 @@
 
 | Feature | Agent | Completed | Notes |
 |---------|-------|-----------|-------|
+| **Slice 17 종결 — CommentaryCard 분할 (BaseCard + 4 EP Section)** | @frontend | 2026-05-27 | tag `slice17-done` = `slice17-closing-done` = `16d2a43`. Step 0 + Part 1~4 + Closing(C-A/B/C/D) 12 commits, $0. CommentaryCard 154줄 비대 → 순수 조립부 (인라인 0건). 신규 컴포넌트 9건 (BaseCard / ConfidenceBadge / SectionHeader / CardSection + 4 Section + KeyObservations) + styles.ts CONFIDENCE_STYLE 단일 소스. 신규 테스트 47건. 회귀 vitest 25/115 → **34/162** (행위 보존, 기존 115 무손실), tsc exit 0 전 구간, HALT 0. 안 B 경계 규칙 영구 명문(`docs/portfolio/coach/component_boundaries.md`). 부채 #71 조건부 close + #21 부분 close + #21-b·#73 신규. **closing 후 외부 자동화 audit commit `beec905` 1건 추가** (#71 close 노트의 "환경 변경 시 재점검" 조건 발현). 📎 `docs/portfolio/coach/slice17/closing_done.md` |
+| **Slice 16 종결 — 6 코치 화면(E1~E6) 전건 완성** | @frontend | 2026-05-26 | tag `slice16-done` = `a621b50`. Step 0 + Part 1~5 20 commits, 누적 $0.0254128 (cap 2.54%). E2~E6 5 화면 신규 + E4 대화 Q&A(말풍선) + E4MessageBubble + cost_ledger 6 runtime entry. §3 게이트 패턴 정착 (A 일반화 + B 완화 + C 자동 호환 3 EP). E5 TimeSeriesContext 운영 첫 실증 + E4 멀티턴 맥락 운영 첫 실증 ⭐. 회귀 vitest 15/74 → 25/115 (+10/+41), pytest 3172/52 (회귀 0), IDENTICAL 31/31. 부채 net −3 (#68 / #70 / #72 자체 + EP×5 close). 📎 `docs/portfolio/coach/slice16/closing.md` |
+| **Slice 15 종결 — E1 코치 화면 파일럿** | @frontend | 2026-05-26 | tag `slice15-done` = `cf37855`. Step 0 codegen 파이프라인 + Part 1 데이터레이어/MSW + Part 2 화면 + Part 3 통합 테스트 hardening + closing. authAxios 단일 소스 + Pydantic↔spectacular bridge. 회귀 vitest 0 → 15/74, pytest 759/1. 부채 #70/#71/#72 신규 등록. 📎 `docs/portfolio/coach/slice15/closing.md` |
+| **Slice 14 종결 — Security C-bundle 통합 머지** | orchestrator | 2026-05-21 | tag `slice14-done` = `053bd11` (closing). C-1 frontend 의존성 + C-2 backend 의존성 + C-3 Django 5.2 LTS 3 트랙 통합 머지 (`3b81052`). 회귀 740/1. #61 (3단 게이트 calibration) probe 결과 보류 결정 — gate_tiers 휴면 코드 보존. pip-audit 46→21, npm critical 1→0. 📎 `docs/portfolio/coach/slice14/closing.md` |
 | **audit P0 신규 #5 — Pagination + 응답 상태코드 3건 (envelope 분리)** | @backend | 2026-05-12 | PR-#14 머지. (1) `validation/api/views.py:65, 82, 348` HTTP 200 에러 응답 수정 — `not_in_universe` 200→**422 Unprocessable Entity**, `no_data` 200→**404 Not Found** (FE 실패 분기를 HTTP 상태로 식별). (2) `stocks/views.py` `StockListAPIView`에 `StockListPagination(PageNumberPagination)` 적용 (page_size=50, max=200) — S&P 6000+ 종목 일괄 반환 차단(DoS 표면 축소). (3) `news/api/views.py` `NewsViewSet`에 `NewsArticlePagination` 적용 (page_size=20, max=100) — 누적 시 응답 폭주 차단. **portfolio/marketpulse 영향 없음**: 전역 `DEFAULT_PAGINATION_CLASS` 미설정, ViewSet 단위로만 적용해 v2 API 보호. 회귀 564 PASS. **별도 PR로 이월**: P1 응답 envelope 단일화 (실측 BE 154건+FE 동시 작업, 회귀 위험 매우 큼). |
 | **audit P0 신규 #4 — Mobile 44pt 터치 타겟 + hover-only 접근성 9건** | @frontend | 2026-05-12 | PR-#13 머지. Apple HIG 44×44pt / WCAG 2.5.5 미달 9건 처리. 크기 조정 7건(`min-h-[44px]` 적용): PeerContextBar 프리셋 탭, AdminTabNav 6탭, stocks L1 탭, MobileCardList 3 CTA, ScreenerTable 바구니 버튼, screener Pagination 페이지 번호, StockPriceChart 라인/영역/캔들 버튼. 접근성 보완 2건(div→button + onTouchStart + aria-label): SignalSummaryCard(gray 신호 사유 hover-only → 터치 접근 가능), QuarterlySparkline(text-[8px]→text-[11px] + 터치 활성). portfolio·marketpulse 도메인 영향 없음. frontend TS 0 에러. |
 | **audit P0 신규 #3 — CircuitBreaker async Gemini 2건 + Neo4j 1건 (7/7 완료)** | @backend | 2026-05-12 | PR-#12 머지. audit P0 #6 권고 7건 전부 완료. (1) `marketpulse/utils/circuit_breaker.py` `CircuitBreaker.acall(func, *args, **kwargs)` 신규 — `tenacity.AsyncRetrying` 사용, sync `call()`과 동일한 상태 머신. (2) `rag_analysis/services/context_compressor.py` `gemini_compress` — `ContextCompressor._compress_single` + `QuestionAwareCompressor._compress_single` 두 클래스에 `await cb.acall(...)` 적용. (3) `rag_analysis/services/llm_service.py` `gemini_rag` — `generate_stream`의 stream 가져오는 호출에 CB(retry_attempts=1로 외부 retry와 중복 방지). (4) `serverless/services/neo4j_chain_sight_service.py` `neo4j_chain_sight` — `is_available()`에 CB 상태 체크 추가(silent failure 위장 차단, 30개 메서드 자동 차단), `_run_with_cb()` 헬퍼 추가, `create_stock_node`+`get_related_stocks` 두 핵심 메서드에 명시 CB 적용(다른 28 메서드는 향후 점진 확장). 회귀 45 PASS / 7 skipped / 0 fail. `acall()` smoke 검증: 성공→OK, 2회 실패→OPEN, 3회째 CircuitBreakerError. |
