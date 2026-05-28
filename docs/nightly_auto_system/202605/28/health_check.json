@@ -1,0 +1,77 @@
+[
+  {
+    "name": "origin/main 해시",
+    "status": 0,
+    "status_label": "✅ OK",
+    "detail": "PROGRESS 표기 일치 (3e76bc8)",
+    "evidence": []
+  },
+  {
+    "name": "brunch / worktree 존재",
+    "status": 0,
+    "status_label": "✅ OK",
+    "detail": "활성 brunch · worktree 표기 전건 존재 확인",
+    "evidence": []
+  },
+  {
+    "name": "PROGRESS 갱신 stale",
+    "status": 0,
+    "status_label": "✅ OK",
+    "detail": "PROGRESS.md 마지막 갱신 (2026-05-28) 이후 1 commits",
+    "evidence": [
+      "임계치: warn≥50, error≥200"
+    ]
+  },
+  {
+    "name": "TASKQUEUE done 매칭",
+    "status": 0,
+    "status_label": "✅ OK",
+    "detail": "TASKQUEUE done/verified 표기 8건 (휴리스틱 검증 — Layer 3 강화 예정)",
+    "evidence": [
+      "감지된 ID 예시: [('CS-R1', 'done'), ('CS-R2', 'done'), ('CS-R3', 'done'), ('CS-R4', 'done'), ('CS-R5', 'done')]"
+    ]
+  },
+  {
+    "name": "DECISIONS 갱신일",
+    "status": 0,
+    "status_label": "✅ OK",
+    "detail": "DECISIONS.md 마지막 갱신 2026-05-28 (0일 전)",
+    "evidence": []
+  },
+  {
+    "name": "slice* 미머지 brunch",
+    "status": 1,
+    "status_label": "⚠  WARN",
+    "detail": "slice* brunch 15/15건 origin/main 미반영 (정보성)",
+    "evidence": [
+      "slice10 (+29)",
+      "slice11 (+41)",
+      "slice12 (+54)",
+      "slice13 (+71)",
+      "slice14 (+96)",
+      "slice15 (+110)",
+      "slice15-backup-cf37855 (+110)",
+      "slice16 (+131)",
+      "slice16-backup-cf37855 (+110)",
+      "slice16-backup-part1 (+117)",
+      "slice16-backup-part2 (+121)",
+      "slice16-backup-part3 (+124)",
+      "slice16-backup-part4 (+127)",
+      "slice16-backup-step0 (+113)",
+      "slice17 (+144)"
+    ]
+  },
+  {
+    "name": "외부 자동화 commit",
+    "status": 2,
+    "status_label": "❌ ERROR",
+    "detail": "외부 자동화 의심 commit 11건 (#71 close 조건 monitoring)",
+    "evidence": [
+      "beec905 | leftnadal | docs: 코드베이스 감사 보고서 생성",
+      "7e5ae31 | leftnadal | docs: 코드베이스 감사 보고서 생성",
+      "00dc18d | leftnadal | docs: 코드베이스 감사 보고서 생성",
+      "a90d423 | leftnadal | docs: 코드베이스 감사 보고서 생성",
+      "00c937b | leftnadal | docs: 코드베이스 감사 보고서 생성"
+    ]
+  }
+]

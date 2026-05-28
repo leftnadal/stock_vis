@@ -36,6 +36,7 @@
 | **Slice 18 진입점 미정** | TBD | 결정 필요 — 후보 7건 (PS 가중합) | brunch 정리 vs Slice 18 진입 vs monorepo 재배치 우선순위 결정 | 2026-05-28 |
 | **slice17 → origin/main 머지 전략 결정** | orchestrator | 충돌 1건 식별 (`scripts/celery-watchdog.sh`) | 머지 옵션 A/B/C 선택 + watchdog 양쪽 통합 | 2026-05-28 |
 | **PROGRESS·TASKQUEUE·메모리 정합성 보정** | orchestrator | 정합성 점검 결과 박는 중 (본 문서 + DECISIONS + scripts/health_check + common-bugs) | (없음 — 본 작업으로 처리) | 2026-05-28 |
+| **야간 health_check 단계 2 진입 (알림 임계 결정)** | orchestrator | 단계 1 통합 완료 (2026-05-28). 매일 23:00 nightly_v3.sh Phase 5에서 누적 기록 시작 | 2026-06-10경 1~2주 관찰 데이터 분석 후 warning/error 임계 + 채널(이메일/Slack) 결정 | 2026-06-10 예정 |
 | Portfolio Slice 4 Part 2 (E6) | @backend | ~~Part 1 완료~~ | **superseded — Slice 17까지 Portfolio Coach 완성** | 2026-05-07 (stale) |
 
 ---
@@ -104,6 +105,15 @@
 ---
 
 ## 다음 세션에서 할 일
+
+### 정합성 / Slice 18 진입 결정 (2026-05-28 추가)
+- [ ] **2026-06-10경 health_check 야간 누적 결과 분석 → 알림 임계 결정 (단계 2 진입)**
+  - 매일 23:00 nightly_v3.sh Phase 5에서 `docs/nightly_auto_system/YYYYMM/DD/health_check.json` 1~2주 누적 후 분석
+  - 결정 입력값: 7 검증 항목별 status 분포 / false positive 빈도 / 외부 자동화 commit 감지 정확도
+  - 결정 산출: warning 임계 / error 임계 / 알림 채널(이메일·Slack) / Layer 3 진입 시점 (pre-commit hook 통합)
+  - 참조: `DECISIONS.md` "문서·git 정합성 관리 원칙" Layer 1~4, `sub_claude_md/common-bugs.md` #30
+- [ ] **Slice 18 진입점 결정** — 후보 7건 PS 가중합 (응답 지연 UX / #21-b 백엔드 / Pick<> 타입 / zustand / codegen 직접 / 신규 EP / hook 자동 갱신)
+- [ ] **slice17 → origin/main 머지 전략** — 옵션 A(direct + 1 conflict resolve) / B(cherry-pick 시간순) / C(GitHub PR) 중 선택
 
 ### audit P0 후속 큐 (2026-04-26 야간 자동화 기준, 15건 중 12건 완료)
 - [x] **#5 Permission 강화** — `DEFAULT_PERMISSION_CLASSES`: IsAuthenticatedOrReadOnly → **IsAuthenticated** (GET 무차별 노출 차단). users/PublicUser·LogIn에 명시 [AllowAny] 추가. news ML 모니터링 액션 4종(`ml_status`/`ml_shadow_report`/`ml_weekly_report`/`ml_lightgbm_readiness`)에 [IsAdminUser] 추가. 영향 받는 테스트 44건 force_authenticate/force_login 패턴으로 일괄 수정 (5 파일 fixture override + watchlist `auth_user` fixture). 회귀 2182 PASS / 51 skipped / 0 fail (2026-04-29).

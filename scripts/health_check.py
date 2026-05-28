@@ -11,8 +11,14 @@
     4. TASKQUEUE의 `done` 표시 행 중 매칭 git 머지 commit이 없는 것 (느슨한 휴리스틱)
     5. DECISIONS.md 마지막 갱신일 (60일 초과 시 warning — 활동성 신호)
     6. (보조) slice* brunch가 origin/main에 미반영 수 (정보성)
+    7. 외부 자동화 무관여 commit 감지 (#71 close 조건 monitoring, audit/nightly 패턴)
 
 출력: 콘솔 표 + exit code (0=OK, 1=warning, 2=error)
+
+야간 누적 기록 (단계 1, 2026-05-28~):
+    --json 모드로 야간 자동화(`docs/infra/nightly_v3.sh` 종료 전)가 매일 실행.
+    출력: `docs/nightly_auto_system/YYYYMM/DD/health_check.json`.
+    알림은 단계 2(2026-06-중)에서 1~2주 관찰 데이터 위에서 임계 결정 후 도입.
 
 실행:
     python scripts/health_check.py
@@ -293,6 +299,89 @@ def check_decisions_freshness() -> CheckResult:
     )
 
 
+# ── 검증 7: 외부 자동화 무관여 변경 감지 ────────────────────────────────────
+
+
+# #71 close 조건("환경 변경 시 재점검")의 자동 감지. 사용자/에이전트 작업이 아닌
+# 외부 자동화(audit, nightly tier3, 자동 brunch 생성 등)가 활성 brunch에 추가한
+# commit을 검출한다. message 패턴 + author 패턴 양쪽으로 잡는다.
+EXTERNAL_AUTOMATION_MESSAGE_PATTERNS = [
+    r"docs:\s*코드베이스 감사 보고서",
+    r"audit:",
+    r"nightly:",
+    r"\[nightly\]",
+    r"\[auto\]",
+    r"chore\(nightly\)",
+]
+# 자동화로 의심되는 author 패턴 (정규 commit author와 구별되는 식별자).
+# 사용자 환경의 실제 author 패턴이 알려지면 여기서 확장.
+EXTERNAL_AUTOMATION_AUTHOR_PATTERNS = [
+    r"nightly@",
+    r"automation@",
+    r"github-actions\[bot\]",
+]
+
+
+def check_external_automation_commits() -> CheckResult:
+    """현재 brunch에서 마지막 사용자 작업 이후 외부 자동화 commit 검출.
+
+    범위: origin/main..HEAD (현재 brunch에만 있고 origin/main에 없는 commit).
+    이유: 이미 origin/main에 머지된 audit commit은 의도된 통합 결과로 간주.
+    """
+    # 현재 brunch가 origin/main을 ancestor로 갖는지 확인
+    merge_base = _git(["merge-base", "HEAD", "origin/main"])
+    if not merge_base:
+        return CheckResult(
+            name="외부 자동화 commit",
+            status=WARN,
+            detail="origin/main merge-base 추적 실패 (remote 미설정?)",
+        )
+
+    # origin/main..HEAD 범위에서 message + author 추출
+    log_lines = _git(
+        [
+            "log",
+            "origin/main..HEAD",
+            "--format=%h\t%an\t%s",
+        ]
+    ).splitlines()
+
+    if not log_lines:
+        return CheckResult(
+            name="외부 자동화 commit",
+            status=OK,
+            detail="origin/main..HEAD 범위 commit 없음",
+        )
+
+    message_re = re.compile("|".join(EXTERNAL_AUTOMATION_MESSAGE_PATTERNS), re.IGNORECASE)
+    author_re = re.compile("|".join(EXTERNAL_AUTOMATION_AUTHOR_PATTERNS), re.IGNORECASE)
+
+    suspicious = []
+    for line in log_lines:
+        parts = line.split("\t", 2)
+        if len(parts) < 3:
+            continue
+        sha, author, msg = parts
+        if message_re.search(msg) or author_re.search(author):
+            suspicious.append(f"{sha} | {author} | {msg[:70]}")
+
+    if not suspicious:
+        return CheckResult(
+            name="외부 자동화 commit",
+            status=OK,
+            detail=f"origin/main..HEAD {len(log_lines)} commits — 외부 자동화 의심 0건",
+        )
+
+    # 1건만 있으면 WARN (#71 close 조건의 monitoring), 3건 이상이면 ERROR (재점검 필수)
+    status = ERROR if len(suspicious) >= 3 else WARN
+    return CheckResult(
+        name="외부 자동화 commit",
+        status=status,
+        detail=f"외부 자동화 의심 commit {len(suspicious)}건 (#71 close 조건 monitoring)",
+        evidence=suspicious[:5],
+    )
+
+
 # ── 보조 검증 6: slice* brunch 중 origin/main 미반영 수 ─────────────────────
 
 
@@ -331,6 +420,7 @@ CHECKS = [
     check_taskqueue_done_matching,
     check_decisions_freshness,
     check_slice_branches_unmerged,
+    check_external_automation_commits,
 ]
 
 

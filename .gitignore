@@ -218,3 +218,6 @@ frontend/stocks.log
 # OpenSSH 비밀키가 잘못된 위치에 생성된 경우 (~/.ssh/로 이동 권장)
 /dlswnl545*
 /heaven545*
+
+# health_check stderr 로그 (단계 1, 2026-05-28~) — 빈 파일은 노이즈. JSON만 commit.
+docs/nightly_auto_system/**/health_check.stderr.log

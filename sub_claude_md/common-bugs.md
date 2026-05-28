@@ -322,4 +322,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   4. **메모리는 PROGRESS의 캐시로만 다룸** — PROGRESS가 진실 소스, 메모리에 표기 차이 발견 시 PROGRESS 먼저 갱신 후 메모리 갱신
   5. Layer 1~4 단계화 도입 (DECISIONS.md "문서·git 정합성 관리 원칙" 참조)
 - 교훈: **stale은 1회성 실수가 아니라 시스템적 결함**. 매 세션 시작 시 검문소(health_check.py) 통과를 의무화. 16일 stale + 6 패턴 동시 발현(2026-05-28)이 시그널 — Layer 1(즉시) + Layer 2(monorepo 도입 시) + Layer 3(pre-commit hook) + Layer 4(`make progress` 완전 자동화) 단계 도입으로 재발 차단
-- 📎 참조: `scripts/health_check.py`, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션
+- 야간 자동화 통합 메모 (2026-05-28~, 단계 1):
+  - `scripts/run_health_check_nightly.sh` wrapper가 매일 23:00 nightly_v3.sh Phase 5에서 호출되어 `docs/nightly_auto_system/YYYYMM/DD/health_check.json`에 정합성 누적 기록 저장
+  - 검증 7 항목: origin/main 해시 / brunch·worktree 존재 / PROGRESS stale / TASKQUEUE 매칭 / DECISIONS 신선도 / slice* 미머지 / **외부 자동화 commit 감지 (#71 close monitoring)**
+  - **사용자에게 자동 알림 없음** — 다음 세션 시작 시 또는 주기적으로 직접 health_check.json 확인 필요. `find docs/nightly_auto_system -name health_check.json -mtime -7 | xargs jq '.[] | select(.status >= 1)'` 패턴으로 최근 7일 warning/error 일괄 점검 가능
+  - 알림 임계는 **단계 2 (2026-06-중 예정)에서 1~2주 관찰 데이터 위에서 결정** — false positive 분포 + 실제 stale 빈도를 보고 warning vs error 라인을 잡는다. 이메일/Slack 알림 채널도 그 시점에 정함
+  - wrapper는 항상 exit 0 — nightly 전체가 fail로 잡히지 않게. 실제 health_check exit code는 JSON 본문 status 필드로 보존
+- 📎 참조: `scripts/health_check.py`, `scripts/run_health_check_nightly.sh`, `docs/infra/nightly_v3.sh` Phase 5, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션

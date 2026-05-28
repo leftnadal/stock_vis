@@ -743,6 +743,28 @@ fi
 
 
 # ================================================================
+#  Phase 5: 문서·git 정합성 점검 (단계 1, 2026-05-28~)
+#
+#  scripts/run_health_check_nightly.sh가 health_check.py를 JSON 모드로 실행하고
+#  결과를 $REPORT_DIR/health_check.json에 저장. 단계 1에서는 누적 기록만, 알림 없음.
+#  알림은 단계 2(2026-06-중)에서 1~2주 관찰 데이터 위에서 임계 결정 후 도입.
+#  exit code는 cron이 무시하도록 wrapper가 항상 0 반환.
+#
+#  관련: DECISIONS.md "문서·git 정합성 관리 원칙" Layer 1
+#  관련: sub_claude_md/common-bugs.md #30
+# ================================================================
+echo ""
+echo "──[ Phase 5 ]──────────────────────────────────────────────────"
+echo "🩺 문서·git 정합성 점검 (health_check.json)..."
+if [ -x "$PROJECT_DIR/scripts/run_health_check_nightly.sh" ]; then
+    PROJECT_DIR="$PROJECT_DIR" "$PROJECT_DIR/scripts/run_health_check_nightly.sh" \
+        2>&1 | tee -a "$LOG_DIR/health_check_$DATE.log"
+else
+    echo "   ⏭️ scripts/run_health_check_nightly.sh 없음 — 건너뜀"
+fi
+
+
+# ================================================================
 #  완료 + 정리
 # ================================================================
 echo ""
