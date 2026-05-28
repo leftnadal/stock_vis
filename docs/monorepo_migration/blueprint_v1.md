@@ -48,9 +48,10 @@
 
 ---
 
-## ② 분류 초안 — apps / services / packages 잠정 배치
+## ② 분류 경계 확정 (2026-05-28, DECISIONS ② 정착)
 
-> 1차 가설. STEP 2 의존 카운트 기준. 실 import 패턴은 코드별 정성 분석 필요 (재배치 실행 직전 재검증 권장).
+> 1차 가설(v1 작성 시)을 사용 패턴 실측 + 형님 결정으로 정정. **실행 기준 확정판**.
+> 정정 사항: chainsight ← graph_analysis 흡수 **취소** / marketpulse 위치 = apps/dashboard (utils 1파일 분리 후) / macro **해체·분산**.
 
 ### packages/shared/ — 공유 인프라·도메인 모델
 
@@ -60,7 +61,8 @@
 | `users` | 인증·Watchlist 표준 |
 | `api_request` | 외부 API 클라이언트 (7 apps 공통) |
 | `metrics` | 공유 지표 메타데이터 — `validation`이 12회 import (사실상 dep 트리 안 깊음, packages 적합) |
-| `macro` | FRED 데이터 — `marketpulse` 5회 + `stocks` 2회 + `thesis` 1회 사용. 공유 데이터 소스 |
+| **`macro` 공유자산** (해체 후 분배) | `MarketIndex` · `MarketIndexPrice` 모델 (stocks EOD 파이프라인이 사용) + `fred_client` · `fmp_client` (thesis도 사용). 사용처 0인 잉여 3 model은 삭제 후보 |
+| **`marketpulse/utils/circuit_breaker.py`** (파일 분리) | 외부 7건 재사용(stocks·serverless·rag_analysis·thesis) — 도메인 무관 인프라 |
 
 ### services/ — 백엔드 도메인 서비스
 
@@ -71,21 +73,34 @@
 | `rag_analysis` | LLM 분석 백엔드 |
 | `validation` | 1차 검증 엔진 |
 | `sec_pipeline` | SEC EDGAR 파이프라인 (Supply Chain + Business Model) |
-| `chainsight` | Chain Sight v2 — `graph_analysis` 흡수 후보 (graph_analysis 0 import) |
+| `chainsight` | Chain Sight v2 백엔드 |
+| **`graph_analysis` 독립 유지** | `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시. chainsight 흡수 거부 — 가격 상관(DailyPrice) vs 사업/뉴스 관계로 도메인 다름 |
 
-### apps/ — 사용자 진입점 도메인
+### apps/ — 사용자 진입점 4축
 
 | 앱 | 근거 |
 |----|------|
-| `apps/dashboard` (← `marketpulse`) | 거시 대시보드 — DECISIONS의 "Dashboard(매크로)" |
-| `apps/chainsight` (← `chainsight` + `graph_analysis`) | 발견/검증/가설 진입점 — DECISIONS의 "Chain Sight" |
-| `apps/portfolio` (← `portfolio` + `thesis`) | 보유 관리 + 코치 — DECISIONS의 "Portfolio". thesis는 `scope` 필드로 macro/stock/holding 분기 (설계 §2-2) |
+| `apps/dashboard` (← `marketpulse` 본체 + `macro` v1 진입점·전용자산) | 거시 대시보드. **v1+v2 통합**. macro의 views/urls/tasks(v1 API 10개 + Celery 5개) + `EconomicIndicator`·`IndicatorValue`(marketpulse 전용 model)도 흡수 |
+| `apps/chainsight` (← `chainsight` 진입점) | 발견/검증/가설 UI. `graph_analysis` 흡수 안 함 (services로 분리) |
+| `apps/portfolio` (← `portfolio` + `thesis`) | 보유 관리 + 코치. thesis는 `scope` 필드로 macro/stock/holding 분기 (설계 §2-2) — 통합 |
 | `apps/iron_trading` (← `iron_trading`) | 외부 봇 read-only — 독립 트랙 |
 | `apps/web` (← `frontend/`) | Next.js 16 SPA (단일 패키지) |
 
-### 잠정 폐기 / deprecated 후보
+### 해체(소멸)
 
-- `graph_analysis` — 모델만 존재, API 미구현, **0 apps import**. `chainsight` 흡수 후 폐기 검토
+- **`macro` 앱**: 자산을 packages/shared + apps/dashboard로 분산. 앱 자체 소멸. v1 진입점·전용자산은 dashboard 흡수, 공유 model + 외부 API 클라이언트는 packages
+
+### 삭제 후보 (사용처 0, 마이그레이션 영향 확인 후)
+
+- `macro.EconomicEvent`
+- `macro.SectorIndicatorRelation`
+- `macro.IndicatorCorrelation`
+
+### 3단계 실행 이관 미해결 (실 코드 정독 후 판정)
+
+1. `macro/services/macro_service.py` 위치 (packages vs services) — marketpulse v2 비즈니스 로직 분리도 코드 정독 후
+2. macro v1 API 10개 deprecate 범위 — frontend 실사용 grep 후
+3. 삭제 후보 3 model 실 제거 — `makemigrations --check` 후
 
 ---
 

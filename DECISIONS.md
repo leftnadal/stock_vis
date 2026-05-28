@@ -385,3 +385,46 @@ interface ExplorationState {
 - `graph_analysis` 흡수 결정 / `marketpulse` 위치(shared vs services vs apps) / `chainsight` v1+v2 통합 여부가 ② 핵심 갈림길
 
 **📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §2(분류 초안) + §5(깨질 참조)
+
+### ② 분류 경계 확정 (2026-05-28)
+
+**결정**: app_label 유지 전제로 16 앱 + 1 frontend의 위치를 다음과 같이 확정.
+
+**packages/shared/**:
+- `stocks` · `users` · `api_request` · `metrics`
+- `macro` **공유자산** — `MarketIndex` · `MarketIndexPrice` 모델 + `fred_client` · `fmp_client`
+- `marketpulse/utils/circuit_breaker.py` **파일 단위 분리** (도메인 무관 재사용 인프라, 외부 7건 사용)
+
+**services/**:
+- `news` · `serverless` · `rag_analysis` · `validation` · `sec_pipeline`
+- `chainsight` (백엔드 v2)
+- `graph_analysis` **독립 유지** — `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시. chainsight 흡수 거부
+
+**apps/** (사용자 진입점 4축):
+- `dashboard` — `marketpulse` 본체 + `macro` v1 진입점(views/urls/tasks) + macro v1 전용자산(`EconomicIndicator`, `IndicatorValue`). **v1+v2 통합**
+- `portfolio` — `portfolio` + `thesis` (scope 분기 `macro/stock/holding` 통합)
+- `chainsight` (진입점) — 종목 중심 그래프 탐색 UI
+- `iron_trading` — 외부 봇 read-only API
+- `web` — `frontend/` (Next.js 단일 패키지)
+
+**해체(소멸)**:
+- `macro` 앱 — 자산을 `packages/shared` + `apps/dashboard`로 분산. 앱 자체 소멸
+
+**삭제 후보** (사용처 0, 마이그레이션 영향 확인 후):
+- `macro.EconomicEvent`
+- `macro.SectorIndicatorRelation`
+- `macro.IndicatorCorrelation`
+
+**근거**:
+- 사용 패턴 실측 (cf. blueprint v1 §2 갱신):
+  - marketpulse → macro: 4 model만 (서비스 로직 0). EconomicIndicator/IndicatorValue는 marketpulse 전용, MarketIndex/MarketIndexPrice는 stocks도 사용
+  - marketpulse → 외부 노출: utils/circuit_breaker 1파일이 외부 7건 사용을 독점
+  - graph_analysis: 0 import + chainsight roadmap이 분리 명시
+  - macro = v1 본체 (10 API + 5 Celery + 3 서비스) — 마지막 수정 2026-05-11, 활성. dashboard로 진입점 통합 시 의미 있음
+
+**3단계 실행으로 이관된 미해결 (실 코드 정독 후 판정)**:
+1. `macro/services/macro_service.py` 위치 (packages vs services) — marketpulse v2 비즈니스 로직과의 분리도 코드 정독 후 판정
+2. macro v1 API 10개 deprecate 범위 — frontend 실사용 grep으로 v1 의존 라우트 식별 후 결정
+3. 삭제 후보 3모델 — `python manage.py makemigrations --check` + 마이그레이션 영향 확인 후 제거
+
+**📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §② (정정 반영), `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 (graph_analysis 분리)
