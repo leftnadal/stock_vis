@@ -55,10 +55,11 @@ class TestApplyQuota:
             for i, c in enumerate(cats)
         ]
 
-    def test_caps_macro_at_two(self):
-        items = self._build([MarketPulseNews.Category.MACRO] * 5)
+    def test_caps_macro_at_ten(self):
+        # 2026-05-26 C 옵션: MACRO hourly cap 2 → 10 (commit 3e76bc8). 분석률 5배 상향 정책.
+        items = self._build([MarketPulseNews.Category.MACRO] * 12)
         out = news_classifier.apply_quota(items)
-        assert len(out) == 2
+        assert len(out) == 10
 
     def test_six_categories_all_pass(self):
         items = self._build([
