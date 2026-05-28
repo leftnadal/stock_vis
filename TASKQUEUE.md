@@ -32,23 +32,13 @@
 
 ---
 
-## 서비스 리모델링
-
-| ID | Task | Agent | Depends On | Status | Output Artifact |
-|----|------|-------|------------|--------|-----------------|
-| SR-1 | 데이터 구조 개편 설계 확정 | orchestrator | - | in_progress | `data_structure_remodeling_V1` 브랜치 |
-| SR-2 | 백엔드 모델/API 리팩토링 | @backend | SR-1 | todo | - |
-| SR-3 | 프론트엔드 라우팅/페이지 재구성 | @frontend | SR-2 | todo | - |
-| SR-4 | 통합 테스트 | @qa | SR-2, SR-3 | todo | - |
-
----
-
 ## 보류 (On Hold)
 
 | ID | Task | Agent | Reason | Resume Condition |
 |----|------|-------|--------|-----------------|
 | MM-L | Market Movers AWS Lambda 전환 | @infra | 비용 최적화 우선순위 낮음 | 트래픽 증가 시 |
 | GA-1 | Graph Analysis REST API + Frontend | @backend + @frontend | 모델/서비스만 완료 | Chain Sight 안정화 후 |
+| SR (트랙) | 서비스 리모델링 — Dashboard / Chain Sight / Portfolio 3탭 전환 (옛 SR-1~4) | orchestrator + @backend + @frontend + @qa | 미시작 계획서. 44일 정체(2026-04-14~). 브랜치 `data_structure_remodeling_V1` 부재. 재개 시 현 시스템(Slice 14~17) 기준 재설계 필요 | 사용자 명시 재개 신호 + 현 코드 기준 설계 재검증. 설계 사고는 `docs/stock_vis_service_remodeling/` 보존 |
 
 ---
 

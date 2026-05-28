@@ -260,13 +260,20 @@ interface ExplorationState {
 
 ---
 
-## 서비스 리모델링 (진행 중)
+## 서비스 리모델링 (보류 — 2026-05-28)
 
-### 3단계 플로우 전환
+### 3단계 플로우 전환 (계획서, 미시작)
 - **이전**: Dashboard → Chain Sight → Node Monitoring → 1차 검증 → Thesis Control → Portfolio (6단계)
-- **변경**: Dashboard(매크로) → Chain Sight(발견/검증/가설) → Portfolio(보유) (3단계)
+- **변경 계획**: Dashboard(매크로) → Chain Sight(발견/검증/가설) → Portfolio(보유) (3단계)
 - **Why**: 사용자 여정 단순화. Chain Sight가 발견+검증+가설을 통합.
-- 📎 상세: `docs/stock_vis_service_remodeling/stock_vis_service_remodeling_plan_v1(260404).md`
+- 📎 설계 보존: `docs/stock_vis_service_remodeling/stock_vis_service_remodeling_plan_v1(260404).md`
+
+### 보류 사유 (2026-05-28)
+- 2026-04-04 계획서 작성 후 **실작업 0건** (브랜치 `data_structure_remodeling_V1` 부재, 5/11 main 정착 시 origin 삭제, 로컬도 부재)
+- 44일 정체 (4/14 마지막 reflog → 5/28)
+- 그동안 Slice 14~17이 main에서 진행되어 현 코드가 계획서 시점 대비 크게 변동
+- 재개 시 현 시스템 기준 **재설계 필수**. 본 결정의 "변경 계획"은 사고의 출발점일 뿐 곧바로 실행 지침 아님
+- TASKQUEUE "보류 (On Hold)" 섹션에 `SR (트랙)`으로 단일 행 이동 (옛 SR-1~4 통합)
 
 ---
 
