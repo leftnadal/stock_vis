@@ -18,17 +18,16 @@
 
 > ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실. **현재 `origin/main = 2fc95fe`**.
 
-### 활성 브랜치 현황 (2026-05-28 push 후 갱신)
+### 활성 브랜치 현황 (2026-05-28 brunch 일괄 정리 후)
 
 | 브랜치 | HEAD | 비고 |
 |--------|------|------|
-| `origin/main` | `2fc95fe` (2026-05-28) | slice17 머지 + MACRO quota 테스트 동기화 |
-| `slice17` | `2fc95fe` | main과 동일 (머지 후 작업 brunch) |
-| `slice17-pre-merge` (tag) | `bd67bbf` | 머지 직전 백업 (롤백 시 사용) |
-| ~~`feature/chainsight-graph-v2` (local worktree)~~ | **부재** | 2026-05-28 점검에서 worktree·brunch 모두 없음 확인 (PR-#8 `be2d6c7`로 main 통합 후 정리됨, PROGRESS 표기 stale) |
+| `main` / `origin/main` | `b27d019` (2026-05-28) | slice17 머지 정착 + PROGRESS 갱신 commit |
 | `feature/watchlist-and-docs` (origin) | 보존 | 구브랜치, 상태 미확인 — 추후 검토 |
-| slice8 ~ slice16 | 각각 | slice17 머지로 흡수됨 (slice16만 +1 commit 잔존, 정리 대상) |
 | `iron-trading-api` | `9ca8b47` | 109 commits 선행, 미머지 |
+
+> **종결 brunch 표기 원칙**: main 정착 + `slice*-done` 태그 생성 후에는 본 표에서 제거. 종결 이력의 진실 소스는 `slice*-done` 태그.
+> 2026-05-28 일괄 정리: slice10~17 로컬 brunch 7건 삭제 (백업 8건 별도 삭제), 모두 `slice*-done` 태그로 보존됨. 임시 백업 태그 `slice17-pre-merge` = `bd67bbf`는 gc 전 복구 핸들로 유지.
 
 ### 작업 단위
 
