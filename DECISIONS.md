@@ -386,45 +386,56 @@ interface ExplorationState {
 
 **📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §2(분류 초안) + §5(깨질 참조)
 
-### ② 분류 경계 확정 (2026-05-28)
+### ② 분류 경계 확정 — 세션 충돌 경계 기준 (2026-05-28 재정의)
 
-**결정**: app_label 유지 전제로 16 앱 + 1 frontend의 위치를 다음과 같이 확정.
+**근본 목적**: monorepo = **세션 간 git 충돌 방지** (병진 확정). 세션 3종 = 메인 / 서브 / 봇 연계. 폴더는 **세션 소유권이 겹치지 않게 분리**.
 
-**packages/shared/**:
+**apps/** (메인 세션, 각 단독 트랙):
+- `dashboard` — 거시 통합 뷰
+- `market_pulse` — Market Pulse 본체 (marketpulse v2 + macro v1 진입점 통합). **dashboard와 분리** — 둘 다 거시지만 별개 메인 트랙(베이스만 공유)
+- `chain_sight` — 발견/검증/가설 진입점
+- `portfolio` — 보유 관리 + 코치 (+ `thesis` `scope` 분기 통합)
+
+**integrations/** (봇 연계 세션):
+- `iron_trading` — read-only provider, contract 기반 비공유 연계
+  - ⚠ **apps/services 아님**. 가중합: **integrations 5.0** vs apps 3.20 vs services 2.35
+
+**packages/shared/** (공유 인프라·데이터):
 - `stocks` · `users` · `api_request` · `metrics`
 - `macro` **공유자산** — `MarketIndex` · `MarketIndexPrice` 모델 + `fred_client` · `fmp_client`
-- `marketpulse/utils/circuit_breaker.py` **파일 단위 분리** (도메인 무관 재사용 인프라, 외부 7건 사용)
+- `marketpulse/utils/circuit_breaker.py` (파일 단위 분리, 외부 7건 사용)
 
-**services/**:
+**packages/web/** 또는 루트 유지 — Next.js UI 공유 레이어:
+- `frontend/` (단일 SPA). **apps/web 폐기** — 독립 트랙 아님, 공유 UI 레이어로 위치 변경
+
+**services/** (백엔드 도메인 서비스):
 - `news` · `serverless` · `rag_analysis` · `validation` · `sec_pipeline`
 - `chainsight` (백엔드 v2)
-- `graph_analysis` **독립 유지** — `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시. chainsight 흡수 거부
+- `graph_analysis` 독립 유지 — `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시
 
-**apps/** (사용자 진입점 4축):
-- `dashboard` — `marketpulse` 본체 + `macro` v1 진입점(views/urls/tasks) + macro v1 전용자산(`EconomicIndicator`, `IndicatorValue`). **v1+v2 통합**
-- `portfolio` — `portfolio` + `thesis` (scope 분기 `macro/stock/holding` 통합)
-- `chainsight` (진입점) — 종목 중심 그래프 탐색 UI
-- `iron_trading` — 외부 봇 read-only API
-- `web` — `frontend/` (Next.js 단일 패키지)
+**메타 레이어** (서브 세션, 루트 유지):
+- `docs/` · `scripts/` · `PROGRESS.md` · `DECISIONS.md` · `TASKQUEUE.md` · `CLAUDE.md` · `sub_claude_md/` · `contracts/` · `shared_kb/` · `.claude/` · `HARNESS_FITNESS.md` · `WORKSPACE_ROOT.md`
 
 **해체(소멸)**:
-- `macro` 앱 — 자산을 `packages/shared` + `apps/dashboard`로 분산. 앱 자체 소멸
+- `macro` 앱 — 자산을 `packages/shared` + `apps/market_pulse`로 분산. 앱 자체 소멸. v1 진입점은 market_pulse 흡수
 
 **삭제 후보** (사용처 0, 마이그레이션 영향 확인 후):
 - `macro.EconomicEvent`
 - `macro.SectorIndicatorRelation`
 - `macro.IndicatorCorrelation`
 
-**근거**:
-- 사용 패턴 실측 (cf. blueprint v1 §2 갱신):
-  - marketpulse → macro: 4 model만 (서비스 로직 0). EconomicIndicator/IndicatorValue는 marketpulse 전용, MarketIndex/MarketIndexPrice는 stocks도 사용
-  - marketpulse → 외부 노출: utils/circuit_breaker 1파일이 외부 7건 사용을 독점
-  - graph_analysis: 0 import + chainsight roadmap이 분리 명시
-  - macro = v1 본체 (10 API + 5 Celery + 3 서비스) — 마지막 수정 2026-05-11, 활성. dashboard로 진입점 통합 시 의미 있음
+### 정정 이력 — 이전 ②의 오류 3건 교정 (2026-05-28)
 
-**3단계 실행으로 이관된 미해결 (실 코드 정독 후 판정)**:
-1. `macro/services/macro_service.py` 위치 (packages vs services) — marketpulse v2 비즈니스 로직과의 분리도 코드 정독 후 판정
-2. macro v1 API 10개 deprecate 범위 — frontend 실사용 grep으로 v1 의존 라우트 식별 후 결정
-3. 삭제 후보 3모델 — `python manage.py makemigrations --check` + 마이그레이션 영향 확인 후 제거
+1. **marketpulse를 dashboard에 통합** → **취소**. market_pulse는 별개 메인 트랙(독립 apps)으로 분리. 사유: 둘 다 거시지만 세션 소유권이 다른 별도 메인 트랙
+2. **apps/web (frontend 독립 트랙)** → **취소**. frontend는 모든 apps의 공유 UI 레이어이므로 `packages/web/` 또는 루트 유지가 정합. apps에 두면 세션 충돌 트리거
+3. **iron_trading = apps/services 후보** → **integrations/ 격리 확정**. 봇 연계는 read-only contract 기반이라 메인 세션·도메인 서비스와 성격이 다름
 
-**📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §② (정정 반영), `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 (graph_analysis 분리)
+### 3단계 실행으로 이관된 미해결
+
+1. `macro/services/macro_service.py` 위치 (packages vs services) — marketpulse v2 분리 코드 정독 후 판정
+2. macro v1 API 10개 deprecate 범위 — frontend 실사용 grep 후 판정
+3. 삭제 후보 3 model 실 제거 — `makemigrations --check` 후
+4. `frontend/` 최종 위치 — `packages/web/` vs 루트 유지 (세션 충돌 분석 + import 비용 측정 후 결정)
+5. `iron_trading`이 읽는 앱 인터페이스 계약 — `integrations/`로 격리하려면 contract 명시 필요
+
+**📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §② (재정의 동기화)

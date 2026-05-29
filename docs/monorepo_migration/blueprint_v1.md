@@ -48,10 +48,31 @@
 
 ---
 
-## ② 분류 경계 확정 (2026-05-28, DECISIONS ② 정착)
+## ② 분류 경계 확정 — 세션 충돌 경계 기준 (2026-05-28 재정의)
 
-> 1차 가설(v1 작성 시)을 사용 패턴 실측 + 형님 결정으로 정정. **실행 기준 확정판**.
-> 정정 사항: chainsight ← graph_analysis 흡수 **취소** / marketpulse 위치 = apps/dashboard (utils 1파일 분리 후) / macro **해체·분산**.
+> **근본 목적**: monorepo = 세션 간 git 충돌 방지. 세션 3종 = 메인 / 서브 / 봇 연계.
+> 폴더는 **세션 소유권이 겹치지 않게 분리**. DECISIONS ② 정착판.
+
+### 정정 이력 — 이전 ②의 오류 3건 교정
+
+1. **marketpulse를 dashboard에 통합** → **취소**. `market_pulse` 독립 apps 트랙 (둘 다 거시지만 별개 메인 트랙)
+2. **apps/web (frontend 독립 트랙)** → **취소**. 공유 UI 레이어 (`packages/web/` 또는 루트 유지)
+3. **iron_trading = apps 후보** → **integrations/ 격리 확정** (봇 연계 세션, read-only contract)
+
+### apps/ — 메인 세션 (각 단독 트랙)
+
+| 앱 | 근거 |
+|----|------|
+| `apps/dashboard` | 거시 통합 뷰 — 단독 메인 트랙 |
+| `apps/market_pulse` (← `marketpulse` v2 본체 + `macro` v1 진입점·전용자산) | Market Pulse 본체. `dashboard`와 분리 — 둘 다 거시지만 별개 메인 트랙(베이스만 공유). v1+v2 통합 (macro views/urls/tasks + `EconomicIndicator`·`IndicatorValue` 흡수) |
+| `apps/chain_sight` (← `chainsight` 진입점) | 발견/검증/가설 UI. `graph_analysis` 흡수 안 함 (services 독립) |
+| `apps/portfolio` (← `portfolio` + `thesis` scope 통합) | 보유 관리 + 코치. thesis `scope` 분기 `macro/stock/holding` 흡수 |
+
+### integrations/ — 봇 연계 세션
+
+| 앱 | 근거 |
+|----|------|
+| `integrations/iron_trading` | read-only provider, contract 기반 비공유 연계. **apps/services 아님**. 가중합 **integrations 5.0** vs apps 3.20 vs services 2.35 |
 
 ### packages/shared/ — 공유 인프라·도메인 모델
 
@@ -60,35 +81,37 @@
 | `stocks` | 14 apps 사용. 종목 모델은 모든 도메인의 베이스 |
 | `users` | 인증·Watchlist 표준 |
 | `api_request` | 외부 API 클라이언트 (7 apps 공통) |
-| `metrics` | 공유 지표 메타데이터 — `validation`이 12회 import (사실상 dep 트리 안 깊음, packages 적합) |
-| **`macro` 공유자산** (해체 후 분배) | `MarketIndex` · `MarketIndexPrice` 모델 (stocks EOD 파이프라인이 사용) + `fred_client` · `fmp_client` (thesis도 사용). 사용처 0인 잉여 3 model은 삭제 후보 |
+| `metrics` | 공유 지표 메타데이터 — `validation`이 12회 import |
+| **`macro` 공유자산** (해체 후 분배) | `MarketIndex` · `MarketIndexPrice` 모델 (stocks EOD 파이프라인 사용) + `fred_client` · `fmp_client` (thesis도 사용) |
 | **`marketpulse/utils/circuit_breaker.py`** (파일 분리) | 외부 7건 재사용(stocks·serverless·rag_analysis·thesis) — 도메인 무관 인프라 |
+
+### packages/web/ 또는 루트 유지 — UI 공유 레이어
+
+| 앱 | 근거 |
+|----|------|
+| `frontend/` (Next.js 16 SPA) | 모든 apps의 공유 UI 레이어. apps/web에 두면 세션 충돌 트리거 — 공유 위치(packages/web 또는 루트)가 정합. 최종 위치는 3단계에서 세션 충돌 분석 후 결정 |
 
 ### services/ — 백엔드 도메인 서비스
 
 | 앱 | 근거 |
 |----|------|
-| `news` | 6 apps 사용하지만 자체 ML·Celery 파이프라인 보유, 도메인 본체 |
-| `serverless` | Market Movers·Screener·Chain Sight v1·키워드 — 다중 도메인 진입점 |
+| `news` | 6 apps 사용하지만 자체 ML·Celery 파이프라인, 도메인 본체 |
+| `serverless` | Market Movers·Screener·Chain Sight v1·키워드 |
 | `rag_analysis` | LLM 분석 백엔드 |
 | `validation` | 1차 검증 엔진 |
-| `sec_pipeline` | SEC EDGAR 파이프라인 (Supply Chain + Business Model) |
-| `chainsight` | Chain Sight v2 백엔드 |
-| **`graph_analysis` 독립 유지** | `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시. chainsight 흡수 거부 — 가격 상관(DailyPrice) vs 사업/뉴스 관계로 도메인 다름 |
+| `sec_pipeline` | SEC EDGAR 파이프라인 |
+| `chainsight` (BE) | Chain Sight v2 백엔드 |
+| **`graph_analysis` 독립 유지** | `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시 |
 
-### apps/ — 사용자 진입점 4축
+### 메타 레이어 — 서브 세션 (루트 유지)
 
-| 앱 | 근거 |
-|----|------|
-| `apps/dashboard` (← `marketpulse` 본체 + `macro` v1 진입점·전용자산) | 거시 대시보드. **v1+v2 통합**. macro의 views/urls/tasks(v1 API 10개 + Celery 5개) + `EconomicIndicator`·`IndicatorValue`(marketpulse 전용 model)도 흡수 |
-| `apps/chainsight` (← `chainsight` 진입점) | 발견/검증/가설 UI. `graph_analysis` 흡수 안 함 (services로 분리) |
-| `apps/portfolio` (← `portfolio` + `thesis`) | 보유 관리 + 코치. thesis는 `scope` 필드로 macro/stock/holding 분기 (설계 §2-2) — 통합 |
-| `apps/iron_trading` (← `iron_trading`) | 외부 봇 read-only — 독립 트랙 |
-| `apps/web` (← `frontend/`) | Next.js 16 SPA (단일 패키지) |
+| 자산 | 근거 |
+|------|------|
+| `docs/` · `scripts/` · `PROGRESS.md` · `DECISIONS.md` · `TASKQUEUE.md` · `CLAUDE.md` · `sub_claude_md/` · `contracts/` · `shared_kb/` · `.claude/` · `HARNESS_FITNESS.md` · `WORKSPACE_ROOT.md` | 모든 세션이 참조하는 메타 자산. 위치 변경 시 광범위 갱신 비용 — 루트 유지로 세션 충돌 회피 |
 
 ### 해체(소멸)
 
-- **`macro` 앱**: 자산을 packages/shared + apps/dashboard로 분산. 앱 자체 소멸. v1 진입점·전용자산은 dashboard 흡수, 공유 model + 외부 API 클라이언트는 packages
+- **`macro` 앱**: 자산을 `packages/shared` + `apps/market_pulse`로 분산. 앱 자체 소멸. v1 진입점·전용자산은 `market_pulse`로 흡수
 
 ### 삭제 후보 (사용처 0, 마이그레이션 영향 확인 후)
 
@@ -101,6 +124,8 @@
 1. `macro/services/macro_service.py` 위치 (packages vs services) — marketpulse v2 비즈니스 로직 분리도 코드 정독 후
 2. macro v1 API 10개 deprecate 범위 — frontend 실사용 grep 후
 3. 삭제 후보 3 model 실 제거 — `makemigrations --check` 후
+4. `frontend/` 최종 위치 — `packages/web/` vs 루트 유지 (세션 충돌 분석 + import 비용 측정 후)
+5. `iron_trading`이 읽는 앱 인터페이스 계약 — `integrations/` 격리하려면 contract 명시 필요
 
 ---
 
