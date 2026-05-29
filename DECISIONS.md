@@ -398,7 +398,7 @@ interface ExplorationState {
 
 **integrations/** (봇 연계 세션):
 - `iron_trading` — read-only provider, contract 기반 비공유 연계
-  - ⚠ **apps/services 아님**. 가중합: **integrations 5.0** vs apps 3.20 vs services 2.35
+  - ⚠ **apps/services 아님**. 가중합: **C(integrations) 5.0** > A(apps) 3.20 > B(services) 2.35
 
 **packages/shared/** (공유 인프라·데이터):
 - `stocks` · `users` · `api_request` · `metrics`
@@ -411,7 +411,7 @@ interface ExplorationState {
 **services/** (백엔드 도메인 서비스):
 - `news` · `serverless` · `rag_analysis` · `validation` · `sec_pipeline`
 - `chainsight` (백엔드 v2)
-- `graph_analysis` 독립 유지 — `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시
+- **`services/_dormant/graph_analysis`** — 0 import · API 미구현 · 활성 세션 없음. 가격 상관 도메인이라 `chainsight`(사업/뉴스 관계)와 별개. 미래 어느 메인 트랙이 활용 시점에 흡수 위치 재결정. 세션 충돌 위험 0(휴면 코드). 근거: `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시
 
 **메타 레이어** (서브 세션, 루트 유지):
 - `docs/` · `scripts/` · `PROGRESS.md` · `DECISIONS.md` · `TASKQUEUE.md` · `CLAUDE.md` · `sub_claude_md/` · `contracts/` · `shared_kb/` · `.claude/` · `HARNESS_FITNESS.md` · `WORKSPACE_ROOT.md`

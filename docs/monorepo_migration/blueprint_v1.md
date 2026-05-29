@@ -72,7 +72,7 @@
 
 | 앱 | 근거 |
 |----|------|
-| `integrations/iron_trading` | read-only provider, contract 기반 비공유 연계. **apps/services 아님**. 가중합 **integrations 5.0** vs apps 3.20 vs services 2.35 |
+| `integrations/iron_trading` | read-only provider, contract 기반 비공유 연계. **apps/services 아님**. 가중합 **C(integrations) 5.0** > A(apps) 3.20 > B(services) 2.35 |
 
 ### packages/shared/ — 공유 인프라·도메인 모델
 
@@ -101,7 +101,7 @@
 | `validation` | 1차 검증 엔진 |
 | `sec_pipeline` | SEC EDGAR 파이프라인 |
 | `chainsight` (BE) | Chain Sight v2 백엔드 |
-| **`graph_analysis` 독립 유지** | `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시 |
+| **`services/_dormant/graph_analysis`** | 0 import · API 미구현 · 활성 세션 없음. 가격 상관 도메인이라 chainsight(사업/뉴스 관계)와 별개. 미래 어느 메인 트랙이 활용 시점에 흡수 위치 재결정. 세션 충돌 위험 0(휴면 코드). 근거: `docs/chain_sight/update_v2/ROADMAP_v1.4.md` L931 "독립 유지. 겹치지 않음." 명시 |
 
 ### 메타 레이어 — 서브 세션 (루트 유지)
 
