@@ -235,15 +235,20 @@
 
 ---
 
-## 7. 다음 결정 후보 (실행 결정 시점 입력)
+## 7. 결정 정착 현황 + 실행 입력
 
-본 청사진을 실행 결정 입력으로 사용할 때:
+본 청사진은 다음 결정들이 박혀 실행 입력으로 사용됨:
 
-1. **분류 결정**: ② 분류 초안의 packages/services/apps 경계가 적절한가? `graph_analysis` 흡수 / `marketpulse` 위치 (shared vs services vs apps) 가 핵심 갈림길
-2. **하네스 자산 위치**: ④의 "루트 유지 우선" 원칙을 유지할지 vs `packages/shared/docs/`로 통합할지
-3. **이름 변경 범위**: `'stocks'` → `'services.stocks'` 식의 dotted-path 갱신 비용을 감수할지 vs `services/` 디렉토리 안의 평면 `stocks/` (Django app_label은 유지)
-4. **실행 트리거**: **해소 — 트리거 폐기, 지금 실행 확정**. SR-1 트리거 폐기(2026-05-28) + Slice 18 사용자 보류로 충돌원 0. 본 청사진 마감 직후 재배치 실행 단계 진입
-5. **잔존 brunch 정리 선행**: ⑥의 자동화 잔재 14건을 monorepo 재배치 직전에 일괄 정리할지
+1. ✅ **분류 결정**: ② 재정의로 packages/services/apps/integrations + 메타 레이어 확정 (2026-05-28). graph_analysis는 `services/_dormant/` 휴면, marketpulse는 `apps/market_pulse` 독립 메인 트랙
+2. ✅ **하네스 자산 위치**: ② 메타 레이어 — 루트 유지 확정 (모든 세션 참조 자산, 광범위 갱신 비용 회피)
+3. ✅ **이름 변경 방식**: ① **dotted-path 안 B** 확정 (`services.stocks` 등, 가중합 B 4.23 > C 3.35 > A 2.90). app_label 유지
+4. ✅ **실행 트리거**: 트리거 폐기, 지금 실행 확정 (SR-1 폐기 + Slice 18 보류로 충돌원 0)
+5. ✅ **잔존 brunch 정리 선행**: 2026-05-28 자동화 잔재 14건 + 백업 8건 + slice* 7건 = 29건 정리 완료
+6. ✅ **빌드 도구**: ③ **Turborepo·Nx 보류 확정** (CI 부재 + frontend 단일 패키지 + 단일 Django → 도구 가치 0). 재검토 트리거 3건(CI 도입 / frontend 분할 / 빌드 시간 저해) 명시
+
+### 3단계 실행 진입 시 작성 대상
+
+- `docs/monorepo_migration/execution_plan_v1.md` — 이동 순서 · 단계별 KPI · 백업 태그 · 검증 절차
 
 ---
 

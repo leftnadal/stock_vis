@@ -439,3 +439,25 @@ interface ExplorationState {
 5. `iron_trading`이 읽는 앱 인터페이스 계약 — `integrations/`로 격리하려면 contract 명시 필요
 
 **📎 참조**: `docs/monorepo_migration/blueprint_v1.md` §② (재정의 동기화)
+
+### ③ 빌드 도구 및 실행 KPI (2026-05-28)
+
+**[결정]** Turborepo · Nx 등 monorepo 빌드 도구는 **현재 보류**.
+
+**근거**:
+- CI 부재 (`.github/workflows` 없음) → 빌드 캐싱 가치 0
+- frontend 단일 패키지 (`workspaces` 부재) → 워크스페이스 분할 불필요
+- 백엔드 단일 Django + Celery → 태스크 그래프 불필요
+- 의존 그래프는 INSTALLED_APPS + dotted-path가 이미 표현
+- → 도구 도입은 비용(설정·학습·yaml)만 추가
+
+**[재검토 트리거]** 아래 중 하나라도 발생 시 ③ 재결정:
+- (a) CI 도입 (`.github/workflows` 생성)
+- (b) frontend가 다중 패키지로 분할
+- (c) 빌드 시간이 솔로 개발 흐름을 저해할 정도로 증가
+
+**[KPI · 이동 순서 · 롤백 지점]** ③ 결정 사안 아님 — 점진 실행 계획에서 정의:
+- **이동 순서**: 의존 역순 (`packages/shared` → `services` → `apps` → `integrations`) 자동 도출
+- **검증 KPI**: pytest 회귀 ~770 유지 + 단계별 IDENTICAL hash + ImportError 0
+- **롤백**: 각 그룹 진입 전 백업 태그 (`monorepo-pre-{packages,services,apps,integrations}`)
+- **상세**: `docs/monorepo_migration/execution_plan_v1.md` (다음 세션 작성)
