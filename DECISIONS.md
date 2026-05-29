@@ -460,4 +460,15 @@ interface ExplorationState {
 - **이동 순서**: 의존 역순 (`packages/shared` → `services` → `apps` → `integrations`) 자동 도출
 - **검증 KPI**: pytest 회귀 ~770 유지 + 단계별 IDENTICAL hash + ImportError 0
 - **롤백**: 각 그룹 진입 전 백업 태그 (`monorepo-pre-{packages,services,apps,integrations}`)
-- **상세**: `docs/monorepo_migration/execution_plan_v1.md` (다음 세션 작성)
+- **상세**: `docs/monorepo_migration/execution_plan_v1.md` (작성 완료, 2026-05-29)
+
+### execution_plan_v1.md 1차 소스 결정 (2026-05-29)
+
+**결정**: `docs/monorepo_migration/execution_plan_v1.md` = **1차 소스**.
+
+**근거**:
+- `blueprint_v1.md`와 동일 디렉토리 (`docs/monorepo_migration/`) — 일관성 유지
+- 결정 ①②③ 박은 DECISIONS commit 3건(`4f01cb7`/`118f899`→`7e42193`/`9b48d37`)이 이미 본 경로 참조
+- 사용자 원본(`docs/monorepo_project/execution_plan_v1.md`)과 diff 결과 의미 추가분 0 확인 (본 사본이 superset — §5 이관 매핑 5건 박음 + §8 위치 확정). 사용자 원본 삭제로 정합화
+
+**📎 참조**: 통합 진입점 + 본 결정의 1차 소스 패턴은 직전 박은 결정 1~5(문서·git 정합성 관리 원칙)와 일관
