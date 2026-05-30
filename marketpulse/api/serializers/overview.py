@@ -1,4 +1,5 @@
 """Market Pulse v2 — Overview API serializers (PR-I)."""
+
 from __future__ import annotations
 
 from rest_framework import serializers
@@ -93,7 +94,9 @@ class FlowCardSerializer(serializers.Serializer):
     top5_weight = serializers.FloatField()
     top10_weight = serializers.FloatField()
     hhi = serializers.FloatField()
-    top_holdings = serializers.ListField(child=ConcentrationHoldingSerializer(), allow_empty=True)
+    top_holdings = serializers.ListField(
+        child=ConcentrationHoldingSerializer(), allow_empty=True
+    )
 
 
 class BriefCardSerializer(serializers.Serializer):

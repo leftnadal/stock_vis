@@ -8,210 +8,500 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('macro', '0004_seed_marketpulse_v2_indices'),
+        ("macro", "0004_seed_marketpulse_v2_indices"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='BreadthSnapshot',
+            name="BreadthSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True)),
-                ('snapshot_time', models.DateTimeField(db_index=True)),
-                ('universe', models.CharField(choices=[('SPY', 'S&P 500 (SPY)'), ('QQQ', 'NASDAQ 100 (QQQ)'), ('DIA', 'Dow Jones (DIA)')], default='SPY', max_length=10)),
-                ('advance_count', models.PositiveIntegerField(default=0)),
-                ('decline_count', models.PositiveIntegerField(default=0)),
-                ('unchanged_count', models.PositiveIntegerField(default=0)),
-                ('total_count', models.PositiveIntegerField(default=0)),
-                ('new_high_52w', models.PositiveIntegerField(default=0)),
-                ('new_low_52w', models.PositiveIntegerField(default=0)),
-                ('ad_line', models.IntegerField(default=0)),
-                ('ad_line_change', models.IntegerField(default=0)),
-                ('is_finalized', models.BooleanField(db_index=True, default=False)),
-                ('finalized_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True)),
+                ("snapshot_time", models.DateTimeField(db_index=True)),
+                (
+                    "universe",
+                    models.CharField(
+                        choices=[
+                            ("SPY", "S&P 500 (SPY)"),
+                            ("QQQ", "NASDAQ 100 (QQQ)"),
+                            ("DIA", "Dow Jones (DIA)"),
+                        ],
+                        default="SPY",
+                        max_length=10,
+                    ),
+                ),
+                ("advance_count", models.PositiveIntegerField(default=0)),
+                ("decline_count", models.PositiveIntegerField(default=0)),
+                ("unchanged_count", models.PositiveIntegerField(default=0)),
+                ("total_count", models.PositiveIntegerField(default=0)),
+                ("new_high_52w", models.PositiveIntegerField(default=0)),
+                ("new_low_52w", models.PositiveIntegerField(default=0)),
+                ("ad_line", models.IntegerField(default=0)),
+                ("ad_line_change", models.IntegerField(default=0)),
+                ("is_finalized", models.BooleanField(db_index=True, default=False)),
+                ("finalized_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Breadth Snapshot',
-                'verbose_name_plural': 'Breadth Snapshots',
-                'db_table': 'mp_breadth_snapshot',
-                'ordering': ['-date', 'universe'],
-                'unique_together': {('date', 'universe')},
+                "verbose_name": "Breadth Snapshot",
+                "verbose_name_plural": "Breadth Snapshots",
+                "db_table": "mp_breadth_snapshot",
+                "ordering": ["-date", "universe"],
+                "unique_together": {("date", "universe")},
             },
         ),
         migrations.CreateModel(
-            name='BriefingLog',
+            name="BriefingLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True)),
-                ('model_version', models.CharField(default='gemini-2.5-flash', max_length=50)),
-                ('status', models.CharField(choices=[('OK', 'OK'), ('INSUFFICIENT_DATA', 'Insufficient Data'), ('REFUSED', 'LLM Refused'), ('FAILED', 'Failed')], default='OK', max_length=20)),
-                ('headline', models.CharField(blank=True, default='', max_length=300)),
-                ('content', models.TextField(blank=True, default='')),
-                ('inputs_summary', models.JSONField(blank=True, default=dict)),
-                ('prompt_tokens', models.PositiveIntegerField(default=0)),
-                ('completion_tokens', models.PositiveIntegerField(default=0)),
-                ('latency_ms', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True)),
+                (
+                    "model_version",
+                    models.CharField(default="gemini-2.5-flash", max_length=50),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("OK", "OK"),
+                            ("INSUFFICIENT_DATA", "Insufficient Data"),
+                            ("REFUSED", "LLM Refused"),
+                            ("FAILED", "Failed"),
+                        ],
+                        default="OK",
+                        max_length=20,
+                    ),
+                ),
+                ("headline", models.CharField(blank=True, default="", max_length=300)),
+                ("content", models.TextField(blank=True, default="")),
+                ("inputs_summary", models.JSONField(blank=True, default=dict)),
+                ("prompt_tokens", models.PositiveIntegerField(default=0)),
+                ("completion_tokens", models.PositiveIntegerField(default=0)),
+                ("latency_ms", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Briefing Log',
-                'verbose_name_plural': 'Briefing Logs',
-                'db_table': 'mp_briefing_log',
-                'ordering': ['-date'],
-                'unique_together': {('date', 'model_version')},
+                "verbose_name": "Briefing Log",
+                "verbose_name_plural": "Briefing Logs",
+                "db_table": "mp_briefing_log",
+                "ordering": ["-date"],
+                "unique_together": {("date", "model_version")},
             },
         ),
         migrations.CreateModel(
-            name='ConcentrationSnapshot',
+            name="ConcentrationSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True)),
-                ('snapshot_time', models.DateTimeField(db_index=True)),
-                ('universe', models.CharField(default='SPY', max_length=10)),
-                ('top5_weight', models.DecimalField(decimal_places=4, default=Decimal('0'), max_digits=6)),
-                ('top10_weight', models.DecimalField(decimal_places=4, default=Decimal('0'), max_digits=6)),
-                ('hhi', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=8)),
-                ('top_holdings', models.JSONField(blank=True, default=list)),
-                ('is_finalized', models.BooleanField(db_index=True, default=False)),
-                ('finalized_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True)),
+                ("snapshot_time", models.DateTimeField(db_index=True)),
+                ("universe", models.CharField(default="SPY", max_length=10)),
+                (
+                    "top5_weight",
+                    models.DecimalField(
+                        decimal_places=4, default=Decimal("0"), max_digits=6
+                    ),
+                ),
+                (
+                    "top10_weight",
+                    models.DecimalField(
+                        decimal_places=4, default=Decimal("0"), max_digits=6
+                    ),
+                ),
+                (
+                    "hhi",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=8
+                    ),
+                ),
+                ("top_holdings", models.JSONField(blank=True, default=list)),
+                ("is_finalized", models.BooleanField(db_index=True, default=False)),
+                ("finalized_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Concentration Snapshot',
-                'verbose_name_plural': 'Concentration Snapshots',
-                'db_table': 'mp_concentration_snapshot',
-                'ordering': ['-date'],
-                'unique_together': {('date', 'universe')},
+                "verbose_name": "Concentration Snapshot",
+                "verbose_name_plural": "Concentration Snapshots",
+                "db_table": "mp_concentration_snapshot",
+                "ordering": ["-date"],
+                "unique_together": {("date", "universe")},
             },
         ),
         migrations.CreateModel(
-            name='MarketPulseNews',
+            name="MarketPulseNews",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category', models.CharField(choices=[('MACRO', 'Macro'), ('GEOPOLITICS', 'Geopolitics'), ('SECTOR', 'Sector'), ('INDEX', 'Index'), ('MAG7', 'Magnificent 7'), ('SMART_MONEY', 'Smart Money')], db_index=True, max_length=20)),
-                ('source', models.CharField(choices=[('FMP_GENERAL', 'FMP General News'), ('FMP_STOCK', 'FMP Stock News'), ('MARKETAUX', 'Marketaux')], db_index=True, max_length=20)),
-                ('title', models.CharField(max_length=500)),
-                ('summary', models.TextField(blank=True, default='')),
-                ('url', models.URLField(max_length=1024)),
-                ('url_hash', models.CharField(help_text='URL의 SHA256 해시 (중복 제거)', max_length=64, unique=True)),
-                ('image_url', models.URLField(blank=True, default='', max_length=1024)),
-                ('publisher', models.CharField(blank=True, default='', max_length=200)),
-                ('matched_symbols', models.JSONField(blank=True, default=list)),
-                ('matched_keywords', models.JSONField(blank=True, default=list)),
-                ('is_exposed', models.BooleanField(db_index=True, default=False)),
-                ('first_exposed_at', models.DateTimeField(blank=True, null=True)),
-                ('published_at', models.DateTimeField(db_index=True)),
-                ('fetched_at', models.DateTimeField(auto_now_add=True, db_index=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("MACRO", "Macro"),
+                            ("GEOPOLITICS", "Geopolitics"),
+                            ("SECTOR", "Sector"),
+                            ("INDEX", "Index"),
+                            ("MAG7", "Magnificent 7"),
+                            ("SMART_MONEY", "Smart Money"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "source",
+                    models.CharField(
+                        choices=[
+                            ("FMP_GENERAL", "FMP General News"),
+                            ("FMP_STOCK", "FMP Stock News"),
+                            ("MARKETAUX", "Marketaux"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                ("title", models.CharField(max_length=500)),
+                ("summary", models.TextField(blank=True, default="")),
+                ("url", models.URLField(max_length=1024)),
+                (
+                    "url_hash",
+                    models.CharField(
+                        help_text="URL의 SHA256 해시 (중복 제거)",
+                        max_length=64,
+                        unique=True,
+                    ),
+                ),
+                ("image_url", models.URLField(blank=True, default="", max_length=1024)),
+                ("publisher", models.CharField(blank=True, default="", max_length=200)),
+                ("matched_symbols", models.JSONField(blank=True, default=list)),
+                ("matched_keywords", models.JSONField(blank=True, default=list)),
+                ("is_exposed", models.BooleanField(db_index=True, default=False)),
+                ("first_exposed_at", models.DateTimeField(blank=True, null=True)),
+                ("published_at", models.DateTimeField(db_index=True)),
+                ("fetched_at", models.DateTimeField(auto_now_add=True, db_index=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'verbose_name': 'Market Pulse News',
-                'verbose_name_plural': 'Market Pulse News',
-                'db_table': 'mp_news',
-                'ordering': ['-published_at'],
-                'indexes': [models.Index(fields=['published_at', 'is_exposed'], name='mp_news_ttl_idx'), models.Index(fields=['category', '-published_at'], name='mp_news_cat_pub_idx')],
+                "verbose_name": "Market Pulse News",
+                "verbose_name_plural": "Market Pulse News",
+                "db_table": "mp_news",
+                "ordering": ["-published_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["published_at", "is_exposed"], name="mp_news_ttl_idx"
+                    ),
+                    models.Index(
+                        fields=["category", "-published_at"], name="mp_news_cat_pub_idx"
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='RegimeSnapshot',
+            name="RegimeSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True)),
-                ('snapshot_time', models.DateTimeField(db_index=True)),
-                ('regime', models.CharField(choices=[('BULL_EXPANSION', '강세 확장'), ('LATE_BULL', '상승 후반 경계'), ('TRANSITION', '전환'), ('BEAR_CONTRACTION', '약세 수축'), ('CRISIS', '위기')], db_index=True, max_length=20)),
-                ('status', models.CharField(choices=[('OK', 'OK'), ('INSUFFICIENT_DATA', 'Insufficient Data'), ('STALE', 'Stale'), ('FAILED', 'Failed')], default='OK', max_length=20)),
-                ('inputs', models.JSONField(default=dict)),
-                ('coverage', models.FloatField(default=0.0)),
-                ('fired_rules', models.JSONField(default=list)),
-                ('previous_regime', models.CharField(blank=True, choices=[('BULL_EXPANSION', '강세 확장'), ('LATE_BULL', '상승 후반 경계'), ('TRANSITION', '전환'), ('BEAR_CONTRACTION', '약세 수축'), ('CRISIS', '위기')], default='', max_length=20)),
-                ('hysteresis_streak', models.PositiveSmallIntegerField(default=0)),
-                ('headline', models.CharField(blank=True, default='', max_length=300)),
-                ('summary', models.TextField(blank=True, default='')),
-                ('is_finalized', models.BooleanField(db_index=True, default=False)),
-                ('finalized_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True)),
+                ("snapshot_time", models.DateTimeField(db_index=True)),
+                (
+                    "regime",
+                    models.CharField(
+                        choices=[
+                            ("BULL_EXPANSION", "강세 확장"),
+                            ("LATE_BULL", "상승 후반 경계"),
+                            ("TRANSITION", "전환"),
+                            ("BEAR_CONTRACTION", "약세 수축"),
+                            ("CRISIS", "위기"),
+                        ],
+                        db_index=True,
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("OK", "OK"),
+                            ("INSUFFICIENT_DATA", "Insufficient Data"),
+                            ("STALE", "Stale"),
+                            ("FAILED", "Failed"),
+                        ],
+                        default="OK",
+                        max_length=20,
+                    ),
+                ),
+                ("inputs", models.JSONField(default=dict)),
+                ("coverage", models.FloatField(default=0.0)),
+                ("fired_rules", models.JSONField(default=list)),
+                (
+                    "previous_regime",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("BULL_EXPANSION", "강세 확장"),
+                            ("LATE_BULL", "상승 후반 경계"),
+                            ("TRANSITION", "전환"),
+                            ("BEAR_CONTRACTION", "약세 수축"),
+                            ("CRISIS", "위기"),
+                        ],
+                        default="",
+                        max_length=20,
+                    ),
+                ),
+                ("hysteresis_streak", models.PositiveSmallIntegerField(default=0)),
+                ("headline", models.CharField(blank=True, default="", max_length=300)),
+                ("summary", models.TextField(blank=True, default="")),
+                ("is_finalized", models.BooleanField(db_index=True, default=False)),
+                ("finalized_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'verbose_name': 'Regime Snapshot',
-                'verbose_name_plural': 'Regime Snapshots',
-                'db_table': 'mp_regime_snapshot',
-                'ordering': ['-snapshot_time'],
-                'indexes': [models.Index(fields=['date', 'is_finalized'], name='mp_regime_date_fin_idx')],
-                'unique_together': {('date',)},
+                "verbose_name": "Regime Snapshot",
+                "verbose_name_plural": "Regime Snapshots",
+                "db_table": "mp_regime_snapshot",
+                "ordering": ["-snapshot_time"],
+                "indexes": [
+                    models.Index(
+                        fields=["date", "is_finalized"], name="mp_regime_date_fin_idx"
+                    )
+                ],
+                "unique_together": {("date",)},
             },
         ),
         migrations.CreateModel(
-            name='AnomalySignalLog',
+            name="AnomalySignalLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('rule_id', models.CharField(choices=[('R02', 'Concentration Extreme'), ('R04', 'VIX Spike'), ('R09', 'Sector Extreme Z-score'), ('R12', 'Dispersion Spike')], db_index=True, max_length=10)),
-                ('triggered_at', models.DateTimeField(db_index=True)),
-                ('inputs', models.JSONField(default=dict)),
-                ('threshold', models.JSONField(default=dict)),
-                ('mode', models.CharField(choices=[('ANOMALY', 'Anomaly'), ('HYBRID', 'Hybrid'), ('CALM', 'Calm')], default='CALM', max_length=10)),
-                ('headline', models.CharField(blank=True, default='', max_length=300)),
-                ('body', models.TextField(blank=True, default='')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('paired_news', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='paired_anomaly_signals', to='marketpulse.marketpulsenews')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "rule_id",
+                    models.CharField(
+                        choices=[
+                            ("R02", "Concentration Extreme"),
+                            ("R04", "VIX Spike"),
+                            ("R09", "Sector Extreme Z-score"),
+                            ("R12", "Dispersion Spike"),
+                        ],
+                        db_index=True,
+                        max_length=10,
+                    ),
+                ),
+                ("triggered_at", models.DateTimeField(db_index=True)),
+                ("inputs", models.JSONField(default=dict)),
+                ("threshold", models.JSONField(default=dict)),
+                (
+                    "mode",
+                    models.CharField(
+                        choices=[
+                            ("ANOMALY", "Anomaly"),
+                            ("HYBRID", "Hybrid"),
+                            ("CALM", "Calm"),
+                        ],
+                        default="CALM",
+                        max_length=10,
+                    ),
+                ),
+                ("headline", models.CharField(blank=True, default="", max_length=300)),
+                ("body", models.TextField(blank=True, default="")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "paired_news",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        related_name="paired_anomaly_signals",
+                        to="marketpulse.marketpulsenews",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Anomaly Signal Log',
-                'verbose_name_plural': 'Anomaly Signal Logs',
-                'db_table': 'mp_anomaly_signal_log',
-                'ordering': ['-triggered_at'],
-                'indexes': [models.Index(fields=['rule_id', '-triggered_at'], name='mp_anom_rule_trig_idx'), models.Index(fields=['mode', '-triggered_at'], name='mp_anom_mode_trig_idx')],
+                "verbose_name": "Anomaly Signal Log",
+                "verbose_name_plural": "Anomaly Signal Logs",
+                "db_table": "mp_anomaly_signal_log",
+                "ordering": ["-triggered_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["rule_id", "-triggered_at"],
+                        name="mp_anom_rule_trig_idx",
+                    ),
+                    models.Index(
+                        fields=["mode", "-triggered_at"], name="mp_anom_mode_trig_idx"
+                    ),
+                ],
             },
         ),
         migrations.CreateModel(
-            name='NewsViewLog',
+            name="NewsViewLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('viewed_date', models.DateField(db_index=True)),
-                ('viewed_at', models.DateTimeField(auto_now_add=True)),
-                ('news', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='view_logs', to='marketpulse.marketpulsenews')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='mp_news_views', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("viewed_date", models.DateField(db_index=True)),
+                ("viewed_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "news",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="view_logs",
+                        to="marketpulse.marketpulsenews",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="mp_news_views",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'News View Log',
-                'verbose_name_plural': 'News View Logs',
-                'db_table': 'mp_news_view_log',
-                'ordering': ['-viewed_at'],
-                'indexes': [models.Index(fields=['user', 'viewed_date'], name='mp_nvl_user_date_idx')],
-                'unique_together': {('user', 'news', 'viewed_date')},
+                "verbose_name": "News View Log",
+                "verbose_name_plural": "News View Logs",
+                "db_table": "mp_news_view_log",
+                "ordering": ["-viewed_at"],
+                "indexes": [
+                    models.Index(
+                        fields=["user", "viewed_date"], name="mp_nvl_user_date_idx"
+                    )
+                ],
+                "unique_together": {("user", "news", "viewed_date")},
             },
         ),
         migrations.CreateModel(
-            name='SectorFlowSnapshot',
+            name="SectorFlowSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('date', models.DateField(db_index=True)),
-                ('snapshot_time', models.DateTimeField(db_index=True)),
-                ('rel_strength', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('momentum_1d', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('momentum_5d', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('momentum_20d', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('flow_proxy', models.DecimalField(decimal_places=2, default=Decimal('0'), max_digits=18)),
-                ('cross_dispersion', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('rotation_index', models.DecimalField(decimal_places=6, default=Decimal('0'), max_digits=10)),
-                ('rank_in_universe', models.PositiveSmallIntegerField(default=0)),
-                ('is_finalized', models.BooleanField(db_index=True, default=False)),
-                ('finalized_at', models.DateTimeField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('market_index', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='mp_sector_flows', to='macro.marketindex')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("date", models.DateField(db_index=True)),
+                ("snapshot_time", models.DateTimeField(db_index=True)),
+                (
+                    "rel_strength",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                (
+                    "momentum_1d",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                (
+                    "momentum_5d",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                (
+                    "momentum_20d",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                (
+                    "flow_proxy",
+                    models.DecimalField(
+                        decimal_places=2, default=Decimal("0"), max_digits=18
+                    ),
+                ),
+                (
+                    "cross_dispersion",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                (
+                    "rotation_index",
+                    models.DecimalField(
+                        decimal_places=6, default=Decimal("0"), max_digits=10
+                    ),
+                ),
+                ("rank_in_universe", models.PositiveSmallIntegerField(default=0)),
+                ("is_finalized", models.BooleanField(db_index=True, default=False)),
+                ("finalized_at", models.DateTimeField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "market_index",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="mp_sector_flows",
+                        to="macro.marketindex",
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Sector Flow Snapshot',
-                'verbose_name_plural': 'Sector Flow Snapshots',
-                'db_table': 'mp_sector_flow_snapshot',
-                'ordering': ['-date', 'rank_in_universe'],
-                'indexes': [models.Index(fields=['date', 'is_finalized'], name='mp_sf_date_fin_idx')],
-                'unique_together': {('date', 'market_index')},
+                "verbose_name": "Sector Flow Snapshot",
+                "verbose_name_plural": "Sector Flow Snapshots",
+                "db_table": "mp_sector_flow_snapshot",
+                "ordering": ["-date", "rank_in_universe"],
+                "indexes": [
+                    models.Index(
+                        fields=["date", "is_finalized"], name="mp_sf_date_fin_idx"
+                    )
+                ],
+                "unique_together": {("date", "market_index")},
             },
         ),
     ]

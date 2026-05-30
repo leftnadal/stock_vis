@@ -1,4 +1,5 @@
 """Market Pulse v2 — Circuit Breaker (PR-B)."""
+
 from __future__ import annotations
 
 import logging
@@ -19,22 +20,22 @@ logger = logging.getLogger(__name__)
 
 
 class CircuitState:
-    CLOSED = 'CLOSED'
-    OPEN = 'OPEN'
-    HALF_OPEN = 'HALF_OPEN'
+    CLOSED = "CLOSED"
+    OPEN = "OPEN"
+    HALF_OPEN = "HALF_OPEN"
 
 
 class CircuitBreakerError(Exception):
     def __init__(self, name: str, opened_at: float) -> None:
-        super().__init__(f'circuit_breaker[{name}] OPEN (opened_at={opened_at})')
+        super().__init__(f"circuit_breaker[{name}] OPEN (opened_at={opened_at})")
         self.name = name
         self.opened_at = opened_at
 
 
 class CircuitBreaker:
-    STATE_KEY = 'cb:state:{name}'
-    FAIL_COUNT_KEY = 'cb:fail_count:{name}'
-    OPENED_AT_KEY = 'cb:opened_at:{name}'
+    STATE_KEY = "cb:state:{name}"
+    FAIL_COUNT_KEY = "cb:fail_count:{name}"
+    OPENED_AT_KEY = "cb:opened_at:{name}"
 
     def __init__(
         self,
@@ -50,9 +51,14 @@ class CircuitBreaker:
         self.retry_attempts = retry_attempts
         self.retry_exceptions = retry_exceptions
 
-    def _state_key(self) -> str: return self.STATE_KEY.format(name=self.name)
-    def _fail_count_key(self) -> str: return self.FAIL_COUNT_KEY.format(name=self.name)
-    def _opened_at_key(self) -> str: return self.OPENED_AT_KEY.format(name=self.name)
+    def _state_key(self) -> str:
+        return self.STATE_KEY.format(name=self.name)
+
+    def _fail_count_key(self) -> str:
+        return self.FAIL_COUNT_KEY.format(name=self.name)
+
+    def _opened_at_key(self) -> str:
+        return self.OPENED_AT_KEY.format(name=self.name)
 
     def get_state(self) -> str:
         state = cache.get(self._state_key(), CircuitState.CLOSED)
@@ -67,7 +73,7 @@ class CircuitBreaker:
         cache.set(self._state_key(), CircuitState.OPEN, timeout=None)
         cache.set(self._opened_at_key(), time.time(), timeout=None)
         cache.set(self._fail_count_key(), 0, timeout=None)
-        logger.warning('circuit_breaker[%s] → OPEN', self.name)
+        logger.warning("circuit_breaker[%s] → OPEN", self.name)
 
     def _set_closed(self) -> None:
         cache.set(self._state_key(), CircuitState.CLOSED, timeout=None)

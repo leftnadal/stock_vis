@@ -5,6 +5,7 @@
     matched_symbols ↔ tickers/sectors (ETF symbol 포함)
     matched_keywords ↔ topics
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel, Field
@@ -17,16 +18,20 @@ class NewsEntities(BaseModel):
     함께 검증하기 위한 wrapper.
     """
 
-    tickers: list[str] = Field(default_factory=list, description='주식 ticker 심볼')
-    sectors: list[str] = Field(default_factory=list, description='섹터 ETF 심볼 (XLF, XLK 등)')
-    topics: list[str] = Field(default_factory=list, description='주제 키워드 (Fed, CPI, FOMC 등)')
+    tickers: list[str] = Field(default_factory=list, description="주식 ticker 심볼")
+    sectors: list[str] = Field(
+        default_factory=list, description="섹터 ETF 심볼 (XLF, XLK 등)"
+    )
+    topics: list[str] = Field(
+        default_factory=list, description="주제 키워드 (Fed, CPI, FOMC 등)"
+    )
 
     model_config = {
-        'json_schema_extra': {
-            'example': {
-                'tickers': ['AAPL', 'MSFT'],
-                'sectors': ['XLK'],
-                'topics': ['Fed', 'CPI'],
+        "json_schema_extra": {
+            "example": {
+                "tickers": ["AAPL", "MSFT"],
+                "sectors": ["XLK"],
+                "topics": ["Fed", "CPI"],
             }
         }
     }

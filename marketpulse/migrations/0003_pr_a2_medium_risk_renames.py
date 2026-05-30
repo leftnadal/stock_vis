@@ -15,25 +15,24 @@ from django.db import migrations
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('marketpulse', '0002_pr_a2_field_extension'),
+        ("marketpulse", "0002_pr_a2_field_extension"),
     ]
 
     operations = [
         migrations.RenameField(
-            model_name='marketpulsenews',
-            old_name='is_exposed',
-            new_name='shown_on_layer0',
+            model_name="marketpulsenews",
+            old_name="is_exposed",
+            new_name="shown_on_layer0",
         ),
         migrations.RenameField(
-            model_name='marketpulsenews',
-            old_name='first_exposed_at',
-            new_name='shown_at',
+            model_name="marketpulsenews",
+            old_name="first_exposed_at",
+            new_name="shown_at",
         ),
         migrations.RenameField(
-            model_name='briefinglog',
-            old_name='inputs_summary',
-            new_name='prompt_inputs',
+            model_name="briefinglog",
+            old_name="inputs_summary",
+            new_name="prompt_inputs",
         ),
     ]

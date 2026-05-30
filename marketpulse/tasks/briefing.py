@@ -1,4 +1,5 @@
 """Market Pulse v2 — Briefing Celery task (PR-E)."""
+
 from __future__ import annotations
 
 import logging
@@ -18,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.briefing.mp_generate_brief_daily',
+    name="marketpulse.tasks.briefing.mp_generate_brief_daily",
     max_retries=3,
     default_retry_delay=300,
     soft_time_limit=180,
@@ -33,11 +34,14 @@ def mp_generate_brief_daily(self, **kwargs: Any) -> dict[str, Any]:
             date=today,
             model_version=client_mod.DEFAULT_MODEL,
             defaults={
-                'status': BriefingLog.Status.INSUFFICIENT_DATA,
-                'headline': '데이터 수집 부족 — 브리핑 생성 보류',
-                'body': '오늘 자 Regime / Breadth 스냅샷이 부족하여 브리핑을 생성하지 않았습니다. ' + DISCLAIMER,
-                'prompt_inputs': ctx.as_dict(),
-                'prompt_tokens': 0, 'completion_tokens': 0, 'latency_ms': 0,
+                "status": BriefingLog.Status.INSUFFICIENT_DATA,
+                "headline": "데이터 수집 부족 — 브리핑 생성 보류",
+                "body": "오늘 자 Regime / Breadth 스냅샷이 부족하여 브리핑을 생성하지 않았습니다. "
+                + DISCLAIMER,
+                "prompt_inputs": ctx.as_dict(),
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "latency_ms": 0,
             },
         )
         return _summary(log)
@@ -45,7 +49,7 @@ def mp_generate_brief_daily(self, **kwargs: Any) -> dict[str, Any]:
     try:
         raw = client_mod.generate(ctx)
     except Exception as exc:
-        countdown = 300 * (2 ** self.request.retries)
+        countdown = 300 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
     safety = safety_mod.validate(raw.text)
@@ -53,13 +57,13 @@ def mp_generate_brief_daily(self, **kwargs: Any) -> dict[str, Any]:
         date=today,
         model_version=client_mod.DEFAULT_MODEL,
         defaults={
-            'status': safety.status,
-            'headline': safety.headline,
-            'body': safety.content,
-            'prompt_inputs': ctx.as_dict(),
-            'prompt_tokens': raw.prompt_tokens,
-            'completion_tokens': raw.completion_tokens,
-            'latency_ms': raw.latency_ms,
+            "status": safety.status,
+            "headline": safety.headline,
+            "body": safety.content,
+            "prompt_inputs": ctx.as_dict(),
+            "prompt_tokens": raw.prompt_tokens,
+            "completion_tokens": raw.completion_tokens,
+            "latency_ms": raw.latency_ms,
         },
     )
     return _summary(log)
@@ -67,12 +71,12 @@ def mp_generate_brief_daily(self, **kwargs: Any) -> dict[str, Any]:
 
 def _summary(log: BriefingLog) -> dict[str, Any]:
     return {
-        'date': log.date.isoformat(),
-        'model_version': log.model_version,
-        'status': log.status,
-        'headline': log.headline,
-        'content_preview': log.body[:200],
-        'prompt_tokens': log.prompt_tokens,
-        'completion_tokens': log.completion_tokens,
-        'latency_ms': log.latency_ms,
+        "date": log.date.isoformat(),
+        "model_version": log.model_version,
+        "status": log.status,
+        "headline": log.headline,
+        "content_preview": log.body[:200],
+        "prompt_tokens": log.prompt_tokens,
+        "completion_tokens": log.completion_tokens,
+        "latency_ms": log.latency_ms,
     }

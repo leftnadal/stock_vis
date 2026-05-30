@@ -1,4 +1,5 @@
 """Market Pulse v2 — Concentration Calculator (PR-H)."""
+
 from __future__ import annotations
 
 import logging
@@ -30,24 +31,29 @@ def _round(value: Decimal, places: int) -> Decimal:
 
 def compute_metrics(holdings: Iterable[HoldingRow]) -> ConcentrationMetrics:
     sorted_h = sorted(holdings, key=lambda h: h.weight, reverse=True)
-    total = sum((h.weight for h in sorted_h), Decimal('0'))
-    if total > Decimal('1.005'):
+    total = sum((h.weight for h in sorted_h), Decimal("0"))
+    if total > Decimal("1.005"):
         sorted_h = [
-            HoldingRow(symbol=h.symbol, name=h.name, weight=h.weight / total,
-                       shares=h.shares, rank=h.rank)
+            HoldingRow(
+                symbol=h.symbol,
+                name=h.name,
+                weight=h.weight / total,
+                shares=h.shares,
+                rank=h.rank,
+            )
             for h in sorted_h
         ]
-    top5 = sum((h.weight for h in sorted_h[:5]), Decimal('0'))
-    top10 = sum((h.weight for h in sorted_h[:10]), Decimal('0'))
-    if top10 > Decimal('1.0'):
-        top10 = Decimal('1.0')
+    top5 = sum((h.weight for h in sorted_h[:5]), Decimal("0"))
+    top10 = sum((h.weight for h in sorted_h[:10]), Decimal("0"))
+    if top10 > Decimal("1.0"):
+        top10 = Decimal("1.0")
     if top5 > top10:
         top5 = top10
-    hhi = sum((h.weight * h.weight for h in sorted_h), Decimal('0'))
-    if hhi > Decimal('1.0'):
-        hhi = Decimal('1.0')
+    hhi = sum((h.weight * h.weight for h in sorted_h), Decimal("0"))
+    if hhi > Decimal("1.0"):
+        hhi = Decimal("1.0")
     top_holdings = [
-        {'symbol': h.symbol, 'weight': float(_round(h.weight, 6))}
+        {"symbol": h.symbol, "weight": float(_round(h.weight, 6))}
         for h in sorted_h[:10]
     ]
     return ConcentrationMetrics(
@@ -61,7 +67,7 @@ def compute_metrics(holdings: Iterable[HoldingRow]) -> ConcentrationMetrics:
 def upsert_snapshot(
     metrics: ConcentrationMetrics,
     *,
-    universe: str = 'SPY',
+    universe: str = "SPY",
     target_date: date_cls | None = None,
     snapshot_time=None,
 ) -> ConcentrationSnapshot:
@@ -71,22 +77,22 @@ def upsert_snapshot(
         date=target_date,
         universe=universe,
         defaults={
-            'snapshot_time': snapshot_time,
-            'top5_weight': metrics.top5_weight,
-            'top10_weight': metrics.top10_weight,
-            'hhi': metrics.hhi,
-            'top_holdings': metrics.top_holdings,
-            'is_finalized': False,
-            'finalized_at': None,
+            "snapshot_time": snapshot_time,
+            "top5_weight": metrics.top5_weight,
+            "top10_weight": metrics.top10_weight,
+            "hhi": metrics.hhi,
+            "top_holdings": metrics.top_holdings,
+            "is_finalized": False,
+            "finalized_at": None,
         },
     )
-    obj.full_clean(exclude=['snapshot_time', 'finalized_at'])
+    obj.full_clean(exclude=["snapshot_time", "finalized_at"])
     return obj
 
 
-def calculate_for_etf(etf_symbol: str = 'SPY') -> ConcentrationSnapshot:
+def calculate_for_etf(etf_symbol: str = "SPY") -> ConcentrationSnapshot:
     holdings = fetch_holdings(etf_symbol)
     if not holdings:
-        raise RuntimeError(f'fetch_holdings returned empty list for {etf_symbol}')
+        raise RuntimeError(f"fetch_holdings returned empty list for {etf_symbol}")
     metrics = compute_metrics(holdings)
     return upsert_snapshot(metrics, universe=etf_symbol.upper())

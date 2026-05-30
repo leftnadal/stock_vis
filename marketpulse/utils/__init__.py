@@ -5,4 +5,4 @@ from .circuit_breaker import (
     get_circuit,
 )
 
-__all__ = ['CircuitBreaker', 'CircuitBreakerError', 'CircuitState', 'get_circuit']
+__all__ = ["CircuitBreaker", "CircuitBreakerError", "CircuitState", "get_circuit"]

@@ -1,4 +1,5 @@
 """Market Pulse v2 — Anomaly Celery task (PR-D)."""
+
 from __future__ import annotations
 
 import logging
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.anomaly.mp_detect_anomaly_5min',
+    name="marketpulse.tasks.anomaly.mp_detect_anomaly_5min",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=120,
@@ -39,43 +40,43 @@ def mp_detect_anomaly_5min(self, **kwargs: Any) -> dict[str, Any]:
                 rule_id=f.rule_id,
                 triggered_at=triggered_at,
                 inputs={
-                    'top10_weight': ctx.top10_weight,
-                    'vix_change_pct': ctx.vix_change_pct,
-                    'max_abs_sector_z': ctx.max_abs_sector_z,
-                    'cross_dispersion': ctx.cross_dispersion,
-                    'sector_extreme_symbol': ctx.sector_extreme_symbol,
-                    'sector_extreme_z': ctx.sector_extreme_z,
-                    'sources': ctx.sources,
-                    'fetched_at': ctx.fetched_at,
-                    'rule_actual': f.actual,
+                    "top10_weight": ctx.top10_weight,
+                    "vix_change_pct": ctx.vix_change_pct,
+                    "max_abs_sector_z": ctx.max_abs_sector_z,
+                    "cross_dispersion": ctx.cross_dispersion,
+                    "sector_extreme_symbol": ctx.sector_extreme_symbol,
+                    "sector_extreme_z": ctx.sector_extreme_z,
+                    "sources": ctx.sources,
+                    "fetched_at": ctx.fetched_at,
+                    "rule_actual": f.actual,
                 },
                 threshold=f.threshold,
                 paired_news=paired_news,
                 mode=mode,
-                headline=f'{f.name} 발동',
+                headline=f"{f.name} 발동",
                 body=slots.overview,
             )
             log_pks.append(log.pk)
     except Exception as exc:
-        countdown = 60 * (2 ** self.request.retries)
+        countdown = 60 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
     return {
-        'mode': mode,
-        'fired_rules': [{'id': f.rule_id, 'actual': f.actual} for f in fired],
-        'slots': {
-            'overview': slots.overview,
-            'sector_highlight': slots.sector_highlight,
-            'portfolio_action': slots.portfolio_action,
+        "mode": mode,
+        "fired_rules": [{"id": f.rule_id, "actual": f.actual} for f in fired],
+        "slots": {
+            "overview": slots.overview,
+            "sector_highlight": slots.sector_highlight,
+            "portfolio_action": slots.portfolio_action,
         },
-        'paired_news_id': paired_news.pk if paired_news else None,
-        'log_pks': log_pks,
-        'context': {
-            'top10_weight': ctx.top10_weight,
-            'vix_change_pct': ctx.vix_change_pct,
-            'cross_dispersion': ctx.cross_dispersion,
-            'max_abs_sector_z': ctx.max_abs_sector_z,
-            'sector_extreme_symbol': ctx.sector_extreme_symbol,
+        "paired_news_id": paired_news.pk if paired_news else None,
+        "log_pks": log_pks,
+        "context": {
+            "top10_weight": ctx.top10_weight,
+            "vix_change_pct": ctx.vix_change_pct,
+            "cross_dispersion": ctx.cross_dispersion,
+            "max_abs_sector_z": ctx.max_abs_sector_z,
+            "sector_extreme_symbol": ctx.sector_extreme_symbol,
         },
-        'sources': ctx.sources,
+        "sources": ctx.sources,
     }

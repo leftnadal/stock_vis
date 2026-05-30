@@ -1,4 +1,5 @@
 """Market Pulse v2 — News Refresh endpoint (PR-J)."""
+
 from __future__ import annotations
 
 import random
@@ -28,8 +29,8 @@ CATEGORY_QUOTA = {
 
 
 @extend_schema(
-    summary='뉴스 6건 랜덤 픽 (24h user unique)',
-    tags=['Market Pulse v2'],
+    summary="뉴스 6건 랜덤 픽 (24h user unique)",
+    tags=["Market Pulse v2"],
     request=None,
     responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT},
 )
@@ -44,15 +45,15 @@ class NewsRefreshView(APIView):
         viewed_date = django_timezone.localdate()
 
         seen_ids = set(
-            NewsViewLog.objects.filter(user=user, viewed_date=viewed_date)
-            .values_list('news_id', flat=True)
+            NewsViewLog.objects.filter(user=user, viewed_date=viewed_date).values_list(
+                "news_id", flat=True
+            )
         )
 
         pool = list(
-            MarketPulseNews.objects
-            .filter(published_at__gte=cutoff)
+            MarketPulseNews.objects.filter(published_at__gte=cutoff)
             .exclude(pk__in=seen_ids)
-            .order_by('-published_at')
+            .order_by("-published_at")
         )
 
         picked: list[MarketPulseNews] = []
@@ -77,25 +78,33 @@ class NewsRefreshView(APIView):
 
         with transaction.atomic():
             for n in picked:
-                NewsViewLog.objects.get_or_create(user=user, news=n, viewed_date=viewed_date)
+                NewsViewLog.objects.get_or_create(
+                    user=user, news=n, viewed_date=viewed_date
+                )
                 n.mark_exposed()
 
         items = [
             {
-                'id': n.pk, 'category': n.category, 'title': n.title,
-                'summary': n.summary, 'url': n.url, 'publisher': n.publisher,
-                'image_url': n.image_url,
-                'published_at': n.published_at.isoformat(),
-                'tickers': (n.entities or {}).get('tickers', []),
+                "id": n.pk,
+                "category": n.category,
+                "title": n.title,
+                "summary": n.summary,
+                "url": n.url,
+                "publisher": n.publisher,
+                "image_url": n.image_url,
+                "published_at": n.published_at.isoformat(),
+                "tickers": (n.entities or {}).get("tickers", []),
             }
             for n in picked
         ]
-        return Response({
-            '_meta': {
-                'generated_at': now.isoformat(),
-                'count': len(items),
-                'pool_size': len(pool),
-                'seen_count': len(seen_ids),
-            },
-            'items': items,
-        })
+        return Response(
+            {
+                "_meta": {
+                    "generated_at": now.isoformat(),
+                    "count": len(items),
+                    "pool_size": len(pool),
+                    "seen_count": len(seen_ids),
+                },
+                "items": items,
+            }
+        )

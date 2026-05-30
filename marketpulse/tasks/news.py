@@ -1,4 +1,5 @@
 """Market Pulse v2 — News fetch task (PR-B)."""
+
 from __future__ import annotations
 
 import logging
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.news.mp_fetch_news_hourly',
+    name="marketpulse.tasks.news.mp_fetch_news_hourly",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=180,
@@ -26,11 +27,11 @@ def mp_fetch_news_hourly(self, **kwargs: Any) -> dict[str, Any]:
     try:
         agg = news_aggregator.fetch_all(**kwargs)
     except Exception as exc:
-        countdown = 60 * (2 ** self.request.retries)
+        countdown = 60 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
-    items = agg['items']
-    sources_stats = agg['stats']
+    items = agg["items"]
+    sources_stats = agg["stats"]
 
     classified = []
     skipped = 0
@@ -55,19 +56,19 @@ def mp_fetch_news_hourly(self, **kwargs: Any) -> dict[str, Any]:
             obj, created = MarketPulseNews.objects.update_or_create(
                 url_hash=url_hash,
                 defaults={
-                    'category': result.category,
-                    'source': item.source,
-                    'title': item.title[:500],
-                    'summary': item.summary,
-                    'url': item.url[:1024],
-                    'image_url': (item.image_url or '')[:1024],
-                    'publisher': (item.publisher or '')[:200],
-                    'entities': {
-                        'tickers': result.matched_symbols,
-                        'sectors': [],
-                        'topics': result.matched_keywords,
+                    "category": result.category,
+                    "source": item.source,
+                    "title": item.title[:500],
+                    "summary": item.summary,
+                    "url": item.url[:1024],
+                    "image_url": (item.image_url or "")[:1024],
+                    "publisher": (item.publisher or "")[:200],
+                    "entities": {
+                        "tickers": result.matched_symbols,
+                        "sectors": [],
+                        "topics": result.matched_keywords,
                     },
-                    'published_at': item.published_at,
+                    "published_at": item.published_at,
                 },
             )
             if created:
@@ -77,13 +78,13 @@ def mp_fetch_news_hourly(self, **kwargs: Any) -> dict[str, Any]:
             by_cat[result.category] = by_cat.get(result.category, 0) + 1
 
     return {
-        'fetched_total': len(items),
-        'classified': len(classified),
-        'after_quota': len(after_quota),
-        'created': created_n,
-        'updated': updated_n,
-        'skipped_unclassified': skipped,
-        'by_category': by_cat,
-        'sources': sources_stats,
-        'ran_at': django_timezone.now().isoformat(),
+        "fetched_total": len(items),
+        "classified": len(classified),
+        "after_quota": len(after_quota),
+        "created": created_n,
+        "updated": updated_n,
+        "skipped_unclassified": skipped,
+        "by_category": by_cat,
+        "sources": sources_stats,
+        "ran_at": django_timezone.now().isoformat(),
     }

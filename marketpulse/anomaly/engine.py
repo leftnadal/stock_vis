@@ -1,4 +1,5 @@
 """Market Pulse v2 — Anomaly Engine (PR-D)."""
+
 from __future__ import annotations
 
 import logging
@@ -24,12 +25,15 @@ from marketpulse.models.snapshot import (
 
 logger = logging.getLogger(__name__)
 
-RULES_PATH = Path(__file__).parent / 'rules.yaml'
+RULES_PATH = Path(__file__).parent / "rules.yaml"
 
 OPERATORS = {
-    '>': operator.gt, '>=': operator.ge,
-    '<': operator.lt, '<=': operator.le,
-    '==': operator.eq, '!=': operator.ne,
+    ">": operator.gt,
+    ">=": operator.ge,
+    "<": operator.lt,
+    "<=": operator.le,
+    "==": operator.eq,
+    "!=": operator.ne,
 }
 
 
@@ -62,34 +66,38 @@ class AnomalyContext:
     cross_dispersion: float | None = None
     sector_extreme_symbol: str | None = None
     sector_extreme_z: float | None = None
-    fetched_at: str = ''
+    fetched_at: str = ""
     sources: dict[str, str] = field(default_factory=dict)
 
 
 def _vix_change_pct() -> float | None:
-    ind = EconomicIndicator.objects.filter(code='VIXCLS').first()
+    ind = EconomicIndicator.objects.filter(code="VIXCLS").first()
     if ind is None:
         return None
     today = django_timezone.localdate()
     rows = list(
-        IndicatorValue.objects
-        .filter(indicator=ind, date__gte=today - timedelta(days=14))
-        .order_by('-date')
-        .values_list('date', 'value')[:2]
+        IndicatorValue.objects.filter(
+            indicator=ind, date__gte=today - timedelta(days=14)
+        )
+        .order_by("-date")
+        .values_list("date", "value")[:2]
     )
     if len(rows) < 2:
         return None
     today_v, prev_v = rows[0][1], rows[1][1]
     if prev_v == 0:
         return None
-    return float((today_v - prev_v) / prev_v * Decimal('100'))
+    return float((today_v - prev_v) / prev_v * Decimal("100"))
 
 
-def _max_abs_sector_z(target_date: date_cls | None = None) -> tuple[float | None, str | None, float | None]:
+def _max_abs_sector_z(
+    target_date: date_cls | None = None,
+) -> tuple[float | None, str | None, float | None]:
     target_date = target_date or django_timezone.localdate()
     rows = list(
-        SectorFlowSnapshot.objects.filter(date=target_date)
-        .values_list('market_index_id', 'rel_strength')
+        SectorFlowSnapshot.objects.filter(date=target_date).values_list(
+            "market_index_id", "rel_strength"
+        )
     )
     if len(rows) < 3:
         return None, None, None
@@ -112,36 +120,38 @@ def build_context(target_date: date_cls | None = None) -> AnomalyContext:
 
     conc = (
         ConcentrationSnapshot.objects.filter(date__lte=target_date)
-        .order_by('-date').first()
+        .order_by("-date")
+        .first()
     )
     if conc is not None:
         ctx.top10_weight = float(conc.top10_weight)
-        sources['top10_weight'] = 'OK'
+        sources["top10_weight"] = "OK"
     else:
-        sources['top10_weight'] = 'MISSING'
+        sources["top10_weight"] = "MISSING"
 
     v = _vix_change_pct()
     ctx.vix_change_pct = v
-    sources['vix_change_pct'] = 'OK' if v is not None else 'MISSING'
+    sources["vix_change_pct"] = "OK" if v is not None else "MISSING"
 
     sf = (
         SectorFlowSnapshot.objects.filter(date__lte=target_date)
-        .order_by('-date').first()
+        .order_by("-date")
+        .first()
     )
     if sf is not None:
         ctx.cross_dispersion = float(sf.cross_dispersion)
-        sources['cross_dispersion'] = 'OK'
+        sources["cross_dispersion"] = "OK"
         max_abs_z, sym, signed_z = _max_abs_sector_z(sf.date)
         if max_abs_z is not None:
             ctx.max_abs_sector_z = max_abs_z
             ctx.sector_extreme_symbol = sym
             ctx.sector_extreme_z = signed_z
-            sources['max_abs_sector_z'] = 'OK'
+            sources["max_abs_sector_z"] = "OK"
         else:
-            sources['max_abs_sector_z'] = 'MISSING'
+            sources["max_abs_sector_z"] = "MISSING"
     else:
-        sources['cross_dispersion'] = 'MISSING'
-        sources['max_abs_sector_z'] = 'MISSING'
+        sources["cross_dispersion"] = "MISSING"
+        sources["max_abs_sector_z"] = "MISSING"
 
     ctx.sources = sources
     ctx.fetched_at = django_timezone.now().isoformat()
@@ -156,13 +166,15 @@ class FiredRule:
     actual: float
 
 
-def evaluate(ctx: AnomalyContext, *, rules: dict[str, Any] | None = None) -> list[FiredRule]:
+def evaluate(
+    ctx: AnomalyContext, *, rules: dict[str, Any] | None = None
+) -> list[FiredRule]:
     rules = rules or load_rules()
     fired: list[FiredRule] = []
-    for rule in rules.get('rules', []):
-        op_str = rule.get('op', '>=')
-        against = rule.get('against')
-        threshold_map = rule.get('threshold', {})
+    for rule in rules.get("rules", []):
+        op_str = rule.get("op", ">=")
+        against = rule.get("against")
+        threshold_map = rule.get("threshold", {})
         if not against or against not in threshold_map:
             continue
         threshold_val = threshold_map[against]
@@ -170,12 +182,14 @@ def evaluate(ctx: AnomalyContext, *, rules: dict[str, Any] | None = None) -> lis
         if actual is None:
             continue
         if OPERATORS[op_str](actual, threshold_val):
-            fired.append(FiredRule(
-                rule_id=rule['id'],
-                name=rule['name'],
-                threshold=dict(threshold_map),
-                actual=float(actual),
-            ))
+            fired.append(
+                FiredRule(
+                    rule_id=rule["id"],
+                    name=rule["name"],
+                    threshold=dict(threshold_map),
+                    actual=float(actual),
+                )
+            )
     return fired
 
 

@@ -2,6 +2,7 @@
 
 JSONField 검증 + 후속 PR(B/C/D/E)의 service 레이어에서 import 사용.
 """
+
 from .anomaly import R02Evidence, R04Evidence, R09Evidence, R12Evidence
 from .briefing import BriefingSection
 from .news import NewsEntities
@@ -13,14 +14,14 @@ from .regime import (
 )
 
 __all__ = [
-    'BriefingSection',
-    'IndicatorValue',
-    'IndicatorsSnapshot',
-    'MatchedCondition',
-    'NewsEntities',
-    'PendingTransition',
-    'R02Evidence',
-    'R04Evidence',
-    'R09Evidence',
-    'R12Evidence',
+    "BriefingSection",
+    "IndicatorValue",
+    "IndicatorsSnapshot",
+    "MatchedCondition",
+    "NewsEntities",
+    "PendingTransition",
+    "R02Evidence",
+    "R04Evidence",
+    "R09Evidence",
+    "R12Evidence",
 ]

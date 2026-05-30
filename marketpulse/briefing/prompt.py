@@ -1,4 +1,5 @@
 """Market Pulse v2 — Briefing Prompt Template (PR-E)."""
+
 from __future__ import annotations
 
 import json
@@ -6,8 +7,8 @@ from dataclasses import dataclass
 from datetime import date as date_cls
 
 DISCLAIMER = (
-    '본 브리핑은 시장 데이터 요약이며 투자 권유가 아닙니다. '
-    '투자 결정은 본인 책임 하에 이루어져야 합니다.'
+    "본 브리핑은 시장 데이터 요약이며 투자 권유가 아닙니다. "
+    "투자 결정은 본인 책임 하에 이루어져야 합니다."
 )
 
 
@@ -29,49 +30,62 @@ SYSTEM_PROMPT = """당신은 시장 거시 흐름 요약 작성자입니다.
    {{"headline": "<1줄 헤드라인 80자 이하>", "content": "<200~500자 본문>"}}
 
 추가 텍스트, 마크다운 코드블록, ```json ``` 표기 금지.
-""".replace('{disclaimer}', DISCLAIMER)
+""".replace("{disclaimer}", DISCLAIMER)
 
 
 FEW_SHOTS = [
     {
-        'context': {'date': '2026-04-27', 'regime': 'BULL_EXPANSION',
-                    'breadth': {'advance': 320, 'decline': 180},
-                    'top10_weight': 0.32, 'vix': 14.5},
-        'response': {
-            'headline': '강세 확장 흐름, 광범위 상승 우위',
-            'content': (
-                '시장은 상승 종목이 320개로 하락 320개를 압도, 광범위한 매수세가 확인됩니다. '
-                'SPY top10 비중 32%로 집중도는 평균 수준이며, VIX 14.5는 낮은 변동성을 시사합니다. '
-                '후반부 경계 신호는 아직 약하나, 집중도 상승 추이는 계속 모니터링이 필요합니다. '
+        "context": {
+            "date": "2026-04-27",
+            "regime": "BULL_EXPANSION",
+            "breadth": {"advance": 320, "decline": 180},
+            "top10_weight": 0.32,
+            "vix": 14.5,
+        },
+        "response": {
+            "headline": "강세 확장 흐름, 광범위 상승 우위",
+            "content": (
+                "시장은 상승 종목이 320개로 하락 320개를 압도, 광범위한 매수세가 확인됩니다. "
+                "SPY top10 비중 32%로 집중도는 평균 수준이며, VIX 14.5는 낮은 변동성을 시사합니다. "
+                "후반부 경계 신호는 아직 약하나, 집중도 상승 추이는 계속 모니터링이 필요합니다. "
                 + DISCLAIMER
             ),
         },
     },
     {
-        'context': {'date': '2026-04-27', 'regime': 'TRANSITION',
-                    'breadth': {'advance': 240, 'decline': 260},
-                    'top10_weight': 0.40, 'vix': 22.5, 'fired_rules': ['nfci_>0']},
-        'response': {
-            'headline': '전환 국면, 신용 압력 약하게 부각',
-            'content': (
-                '시장 폭이 균형에 가깝고 NFCI 양전환으로 전환 국면이 진행되고 있습니다. '
-                'VIX 22.5는 평균 위 변동성, top10 비중 40%는 집중도 유의 수준입니다. '
-                '단기 방향성은 분기점에 있어 해석이 양방향 모두 가능합니다. '
-                '리스크 관리 지표를 함께 살펴보세요. ' + DISCLAIMER
+        "context": {
+            "date": "2026-04-27",
+            "regime": "TRANSITION",
+            "breadth": {"advance": 240, "decline": 260},
+            "top10_weight": 0.40,
+            "vix": 22.5,
+            "fired_rules": ["nfci_>0"],
+        },
+        "response": {
+            "headline": "전환 국면, 신용 압력 약하게 부각",
+            "content": (
+                "시장 폭이 균형에 가깝고 NFCI 양전환으로 전환 국면이 진행되고 있습니다. "
+                "VIX 22.5는 평균 위 변동성, top10 비중 40%는 집중도 유의 수준입니다. "
+                "단기 방향성은 분기점에 있어 해석이 양방향 모두 가능합니다. "
+                "리스크 관리 지표를 함께 살펴보세요. " + DISCLAIMER
             ),
         },
     },
     {
-        'context': {'date': '2026-04-27', 'regime': 'CRISIS',
-                    'breadth': {'advance': 50, 'decline': 450},
-                    'vix': 45, 'hy_oas_pct': 8.5,
-                    'fired_rules': ['vix_>=_40', 'hy_oas_pct_>=_8.0']},
-        'response': {
-            'headline': '위기 국면, 변동성과 신용 동시 압박',
-            'content': (
-                'VIX 45와 HY OAS 850bp가 동시 임계 돌파, 위기 신호가 확인됩니다. '
-                '시장 폭은 매도 우위(50:450)로 광범위 약세, 안정성을 우선시할 시점입니다. '
-                '단기 변동성 확대 가능성을 염두에 두고, 포지션 점검과 리스크 관리에 집중하시기 바랍니다. '
+        "context": {
+            "date": "2026-04-27",
+            "regime": "CRISIS",
+            "breadth": {"advance": 50, "decline": 450},
+            "vix": 45,
+            "hy_oas_pct": 8.5,
+            "fired_rules": ["vix_>=_40", "hy_oas_pct_>=_8.0"],
+        },
+        "response": {
+            "headline": "위기 국면, 변동성과 신용 동시 압박",
+            "content": (
+                "VIX 45와 HY OAS 850bp가 동시 임계 돌파, 위기 신호가 확인됩니다. "
+                "시장 폭은 매도 우위(50:450)로 광범위 약세, 안정성을 우선시할 시점입니다. "
+                "단기 변동성 확대 가능성을 염두에 두고, 포지션 점검과 리스크 관리에 집중하시기 바랍니다. "
                 + DISCLAIMER
             ),
         },
@@ -96,24 +110,24 @@ class BriefingContext:
 
     def as_dict(self) -> dict:
         return {
-            'date': self.date,
-            'regime': self.regime,
-            'regime_status': self.regime_status,
-            'breadth': {
-                'advance': self.breadth_advance,
-                'decline': self.breadth_decline,
-                'unchanged': self.breadth_unchanged,
+            "date": self.date,
+            "regime": self.regime,
+            "regime_status": self.regime_status,
+            "breadth": {
+                "advance": self.breadth_advance,
+                "decline": self.breadth_decline,
+                "unchanged": self.breadth_unchanged,
             },
-            'sector': {'leader': self.sector_leader, 'laggard': self.sector_laggard},
-            'concentration': {'top10_weight': self.top10_weight, 'hhi': self.hhi},
-            'anomaly': {'mode': self.anomaly_mode, 'fired_rules': self.fired_rules},
+            "sector": {"leader": self.sector_leader, "laggard": self.sector_laggard},
+            "concentration": {"top10_weight": self.top10_weight, "hhi": self.hhi},
+            "anomaly": {"mode": self.anomaly_mode, "fired_rules": self.fired_rules},
         }
 
 
 def render_user_prompt(ctx: BriefingContext) -> str:
-    payload = {'today': ctx.date, 'inputs': ctx.as_dict()}
+    payload = {"today": ctx.date, "inputs": ctx.as_dict()}
     return (
-        '오늘의 시장 컨텍스트입니다. JSON 형식으로 한 줄 헤드라인 + 본문 200~500자를 작성하세요.\n\n'
+        "오늘의 시장 컨텍스트입니다. JSON 형식으로 한 줄 헤드라인 + 본문 200~500자를 작성하세요.\n\n"
         + json.dumps(payload, ensure_ascii=False, indent=2)
     )
 
@@ -121,8 +135,12 @@ def render_user_prompt(ctx: BriefingContext) -> str:
 def few_shot_messages() -> list[dict]:
     out = []
     for ex in FEW_SHOTS:
-        out.append({'role': 'user', 'parts': [json.dumps(ex['context'], ensure_ascii=False)]})
-        out.append({'role': 'model', 'parts': [json.dumps(ex['response'], ensure_ascii=False)]})
+        out.append(
+            {"role": "user", "parts": [json.dumps(ex["context"], ensure_ascii=False)]}
+        )
+        out.append(
+            {"role": "model", "parts": [json.dumps(ex["response"], ensure_ascii=False)]}
+        )
     return out
 
 
@@ -137,19 +155,18 @@ def build_context_from_snapshots(today: date_cls) -> BriefingContext:
     )
 
     regime = RegimeSnapshot.objects.filter(date=today).first()
-    breadth = BreadthSnapshot.objects.filter(date=today, universe='SPY').first()
-    conc = ConcentrationSnapshot.objects.filter(date=today, universe='SPY').first()
+    breadth = BreadthSnapshot.objects.filter(date=today, universe="SPY").first()
+    conc = ConcentrationSnapshot.objects.filter(date=today, universe="SPY").first()
 
     sector_rows = list(
-        SectorFlowSnapshot.objects.filter(date=today).order_by('rank_in_universe')
+        SectorFlowSnapshot.objects.filter(date=today).order_by("rank_in_universe")
     )
     leader = sector_rows[0].market_index_id if sector_rows else None
     laggard = sector_rows[-1].market_index_id if sector_rows else None
 
     anomaly = (
-        AnomalySignalLog.objects
-        .filter(triggered_at__date=today)
-        .order_by('-triggered_at')
+        AnomalySignalLog.objects.filter(triggered_at__date=today)
+        .order_by("-triggered_at")
         .first()
     )
 
@@ -158,9 +175,11 @@ def build_context_from_snapshots(today: date_cls) -> BriefingContext:
     if anomaly is not None:
         anomaly_mode = anomaly.mode
         fired_rules = list(
-            AnomalySignalLog.objects
-            .filter(mode=anomaly_mode, triggered_at=anomaly.triggered_at)
-            .values_list('rule_id', flat=True).distinct()
+            AnomalySignalLog.objects.filter(
+                mode=anomaly_mode, triggered_at=anomaly.triggered_at
+            )
+            .values_list("rule_id", flat=True)
+            .distinct()
         )
 
     return BriefingContext(

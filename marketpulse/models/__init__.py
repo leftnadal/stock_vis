@@ -1,4 +1,5 @@
 """Market Pulse v2 models."""
+
 from .anomaly import AnomalySignalLog
 from .briefing import BriefingLog
 from .news import MarketPulseNews, NewsViewLog
@@ -10,12 +11,12 @@ from .snapshot import (
 )
 
 __all__ = [
-    'AnomalySignalLog',
-    'BriefingLog',
-    'BreadthSnapshot',
-    'ConcentrationSnapshot',
-    'MarketPulseNews',
-    'NewsViewLog',
-    'RegimeSnapshot',
-    'SectorFlowSnapshot',
+    "AnomalySignalLog",
+    "BriefingLog",
+    "BreadthSnapshot",
+    "ConcentrationSnapshot",
+    "MarketPulseNews",
+    "NewsViewLog",
+    "RegimeSnapshot",
+    "SectorFlowSnapshot",
 ]

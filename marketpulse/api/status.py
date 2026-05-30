@@ -1,4 +1,5 @@
 """Market Pulse v2 — API Status Enum (PR-I)."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -7,11 +8,11 @@ from django.utils import timezone as django_timezone
 
 
 class APIStatus:
-    OK = 'OK'
-    INSUFFICIENT_DATA = 'INSUFFICIENT_DATA'
-    STALE = 'STALE'
-    FAILED = 'FAILED'
-    MARKET_CLOSED = 'MARKET_CLOSED'
+    OK = "OK"
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    STALE = "STALE"
+    FAILED = "FAILED"
+    MARKET_CLOSED = "MARKET_CLOSED"
 
 
 STALE_THRESHOLD_MINUTES = 30
@@ -30,11 +31,13 @@ def is_market_open(now=None) -> bool:
     return True
 
 
-def derive_status(*,
-                  has_required_snapshots: bool,
-                  any_indicator_stale: bool = False,
-                  has_failure: bool = False,
-                  ignore_market_hours: bool = False) -> str:
+def derive_status(
+    *,
+    has_required_snapshots: bool,
+    any_indicator_stale: bool = False,
+    has_failure: bool = False,
+    ignore_market_hours: bool = False,
+) -> str:
     if has_failure:
         return APIStatus.FAILED
     if any_indicator_stale:

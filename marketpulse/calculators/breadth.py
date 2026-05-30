@@ -1,4 +1,5 @@
 """Market Pulse v2 — Breadth Calculator (PR-F)."""
+
 from __future__ import annotations
 
 import logging
@@ -34,37 +35,40 @@ WINDOW_DAYS = 252
 
 def _resolve_universe_symbols(universe: str) -> list[str]:
     universe = universe.upper()
-    if universe == 'SPY':
+    if universe == "SPY":
         return list(
-            SP500Constituent.objects.filter(is_active=True).values_list('symbol', flat=True)
+            SP500Constituent.objects.filter(is_active=True).values_list(
+                "symbol", flat=True
+            )
         )
     return []
 
 
-def _latest_two_closes(symbols: Iterable[str], target_date: date_cls) -> dict[str, tuple[Decimal, Decimal | None]]:
+def _latest_two_closes(
+    symbols: Iterable[str], target_date: date_cls
+) -> dict[str, tuple[Decimal, Decimal | None]]:
     symbols_list = list(symbols)
     if not symbols_list:
         return {}
 
-    today_qs = (
-        DailyPrice.objects
-        .filter(stock_id__in=symbols_list, date=target_date)
-        .values_list('stock_id', 'close_price')
-    )
+    today_qs = DailyPrice.objects.filter(
+        stock_id__in=symbols_list, date=target_date
+    ).values_list("stock_id", "close_price")
     today_map: dict[str, Decimal] = {sym: close for sym, close in today_qs}
 
     prev_qs = (
-        DailyPrice.objects
-        .filter(stock_id__in=list(today_map.keys()), date__lt=target_date)
-        .values('stock_id')
-        .annotate(prev_date=Max('date'))
+        DailyPrice.objects.filter(
+            stock_id__in=list(today_map.keys()), date__lt=target_date
+        )
+        .values("stock_id")
+        .annotate(prev_date=Max("date"))
     )
-    prev_dates = {row['stock_id']: row['prev_date'] for row in prev_qs}
+    prev_dates = {row["stock_id"]: row["prev_date"] for row in prev_qs}
 
     if prev_dates:
         prev_close_qs = DailyPrice.objects.filter(
             Q(*[Q(stock_id=s, date=d) for s, d in prev_dates.items()], _connector=Q.OR),
-        ).values_list('stock_id', 'close_price')
+        ).values_list("stock_id", "close_price")
         prev_map = {sym: close for sym, close in prev_close_qs}
     else:
         prev_map = {}
@@ -73,24 +77,27 @@ def _latest_two_closes(symbols: Iterable[str], target_date: date_cls) -> dict[st
 
 
 def _compute_52w_extrema(
-    symbols: Iterable[str], target_date: date_cls, window: int = WINDOW_DAYS,
+    symbols: Iterable[str],
+    target_date: date_cls,
+    window: int = WINDOW_DAYS,
 ) -> dict[str, tuple[Decimal | None, Decimal | None]]:
     symbols_list = list(symbols)
     if not symbols_list:
         return {}
     window_start = target_date - timedelta(days=window)
     qs = (
-        DailyPrice.objects
-        .filter(stock_id__in=symbols_list, date__gte=window_start, date__lt=target_date)
-        .values('stock_id')
-        .annotate(max_c=Max('close_price'), min_c=Min('close_price'))
+        DailyPrice.objects.filter(
+            stock_id__in=symbols_list, date__gte=window_start, date__lt=target_date
+        )
+        .values("stock_id")
+        .annotate(max_c=Max("close_price"), min_c=Min("close_price"))
     )
-    return {row['stock_id']: (row['max_c'], row['min_c']) for row in qs}
+    return {row["stock_id"]: (row["max_c"], row["min_c"]) for row in qs}
 
 
 def compute_breadth(
     *,
-    universe: str = 'SPY',
+    universe: str = "SPY",
     target_date: date_cls | None = None,
     previous_ad_line: int | None = None,
 ) -> BreadthMetrics:
@@ -120,9 +127,8 @@ def compute_breadth(
 
     if previous_ad_line is None:
         prev_snapshot = (
-            BreadthSnapshot.objects
-            .filter(universe=universe, date__lt=target_date)
-            .order_by('-date')
+            BreadthSnapshot.objects.filter(universe=universe, date__lt=target_date)
+            .order_by("-date")
             .first()
         )
         previous_ad_line = prev_snapshot.ad_line if prev_snapshot else 0
@@ -145,7 +151,7 @@ def compute_breadth(
 def upsert_snapshot(
     metrics: BreadthMetrics,
     *,
-    universe: str = 'SPY',
+    universe: str = "SPY",
     target_date: date_cls | None = None,
     snapshot_time=None,
 ) -> BreadthSnapshot:
@@ -155,22 +161,24 @@ def upsert_snapshot(
         date=target_date,
         universe=universe,
         defaults={
-            'snapshot_time': snapshot_time,
-            'advance_count': metrics.advance_count,
-            'decline_count': metrics.decline_count,
-            'unchanged_count': metrics.unchanged_count,
-            'total_count': metrics.total_count,
-            'new_high_52w': metrics.new_high_52w,
-            'new_low_52w': metrics.new_low_52w,
-            'ad_line': metrics.ad_line,
-            'ad_line_change': metrics.ad_line_change,
-            'is_finalized': False,
-            'finalized_at': None,
+            "snapshot_time": snapshot_time,
+            "advance_count": metrics.advance_count,
+            "decline_count": metrics.decline_count,
+            "unchanged_count": metrics.unchanged_count,
+            "total_count": metrics.total_count,
+            "new_high_52w": metrics.new_high_52w,
+            "new_low_52w": metrics.new_low_52w,
+            "ad_line": metrics.ad_line,
+            "ad_line_change": metrics.ad_line_change,
+            "is_finalized": False,
+            "finalized_at": None,
         },
     )
     return obj
 
 
-def calculate(universe: str = 'SPY', target_date: date_cls | None = None) -> BreadthSnapshot:
+def calculate(
+    universe: str = "SPY", target_date: date_cls | None = None
+) -> BreadthSnapshot:
     metrics = compute_breadth(universe=universe, target_date=target_date)
     return upsert_snapshot(metrics, universe=universe, target_date=target_date)

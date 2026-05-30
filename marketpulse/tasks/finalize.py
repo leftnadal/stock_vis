@@ -1,4 +1,5 @@
 """Market Pulse v2 — Finalize + Purge tasks (PR-O)."""
+
 from __future__ import annotations
 
 import logging
@@ -28,7 +29,7 @@ def _finalize_queryset(model, **filters) -> int:
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.finalize.mp_finalize_daily',
+    name="marketpulse.tasks.finalize.mp_finalize_daily",
     max_retries=3,
     default_retry_delay=120,
     soft_time_limit=120,
@@ -43,51 +44,56 @@ def mp_finalize_daily(self, **kwargs: Any) -> dict[str, int]:
         conc_n = _finalize_queryset(ConcentrationSnapshot, date__lte=today)
         cache_keys.invalidate_all()
     except Exception as exc:
-        countdown = 120 * (2 ** self.request.retries)
+        countdown = 120 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
     return {
-        'regime_finalized': regime_n,
-        'breadth_finalized': breadth_n,
-        'sector_finalized': sector_n,
-        'concentration_finalized': conc_n,
-        'cache_invalidated': True,
+        "regime_finalized": regime_n,
+        "breadth_finalized": breadth_n,
+        "sector_finalized": sector_n,
+        "concentration_finalized": conc_n,
+        "cache_invalidated": True,
     }
 
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.finalize.mp_purge_news_daily',
+    name="marketpulse.tasks.finalize.mp_purge_news_daily",
     max_retries=3,
     default_retry_delay=120,
     soft_time_limit=120,
     time_limit=180,
 )
-def mp_purge_news_daily(self, *, retention_days: int = 90, **kwargs: Any) -> dict[str, int]:
+def mp_purge_news_daily(
+    self, *, retention_days: int = 90, **kwargs: Any
+) -> dict[str, int]:
     cutoff = django_timezone.now() - timedelta(days=retention_days)
     try:
         deleted, _ = MarketPulseNews.objects.filter(
-            shown_on_layer0=False, published_at__lt=cutoff,
+            shown_on_layer0=False,
+            published_at__lt=cutoff,
         ).delete()
     except Exception as exc:
-        countdown = 120 * (2 ** self.request.retries)
+        countdown = 120 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
-    return {'deleted': deleted, 'retention_days': retention_days}
+    return {"deleted": deleted, "retention_days": retention_days}
 
 
 @shared_task(
     bind=True,
-    name='marketpulse.tasks.finalize.mp_purge_news_view_log_daily',
+    name="marketpulse.tasks.finalize.mp_purge_news_view_log_daily",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=60,
     time_limit=120,
 )
-def mp_purge_news_view_log_daily(self, *, retention_hours: int = 48, **kwargs: Any) -> dict[str, int]:
+def mp_purge_news_view_log_daily(
+    self, *, retention_hours: int = 48, **kwargs: Any
+) -> dict[str, int]:
     cutoff = django_timezone.now() - timedelta(hours=retention_hours)
     try:
         deleted, _ = NewsViewLog.objects.filter(viewed_at__lt=cutoff).delete()
     except Exception as exc:
-        countdown = 60 * (2 ** self.request.retries)
+        countdown = 60 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
-    return {'deleted': deleted, 'retention_hours': retention_hours}
+    return {"deleted": deleted, "retention_hours": retention_hours}

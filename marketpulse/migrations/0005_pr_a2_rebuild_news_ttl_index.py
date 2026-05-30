@@ -12,9 +12,8 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('marketpulse', '0004_pr_a2_high_risk_restructure'),
+        ("marketpulse", "0004_pr_a2_high_risk_restructure"),
     ]
 
     operations = [
@@ -22,14 +21,14 @@ class Migration(migrations.Migration):
             database_operations=[],
             state_operations=[
                 migrations.RemoveIndex(
-                    model_name='marketpulsenews',
-                    name='mp_news_ttl_idx',
+                    model_name="marketpulsenews",
+                    name="mp_news_ttl_idx",
                 ),
                 migrations.AddIndex(
-                    model_name='marketpulsenews',
+                    model_name="marketpulsenews",
                     index=models.Index(
-                        fields=['published_at', 'shown_on_layer0'],
-                        name='mp_news_ttl_idx',
+                        fields=["published_at", "shown_on_layer0"],
+                        name="mp_news_ttl_idx",
                     ),
                 ),
             ],
