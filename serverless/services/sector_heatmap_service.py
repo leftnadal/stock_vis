@@ -7,15 +7,14 @@
 """
 import logging
 from datetime import date
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Dict, Optional, List
+from decimal import ROUND_HALF_UP, Decimal
+from typing import Dict, List, Optional
 
 from django.core.cache import cache
 from django.db import transaction
 
-from serverless.models import SectorPerformance, SectorETFMapping
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-
+from serverless.models import SectorETFMapping, SectorPerformance
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

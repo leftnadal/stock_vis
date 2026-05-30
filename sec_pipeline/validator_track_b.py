@@ -65,8 +65,9 @@ def save_business_model_snapshot(validated: dict, document, symbol: str):
     """
     검증된 결과를 BusinessModelSnapshot + BusinessModelEvidence로 저장.
     """
-    from .models import BusinessModelSnapshot, BusinessModelEvidence
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
+
+    from .models import BusinessModelEvidence, BusinessModelSnapshot
 
     stock = Stock.objects.filter(symbol=symbol.upper()).first()
     if not stock:

@@ -10,7 +10,7 @@ import logging
 
 from django.conf import settings
 
-from .prompts import SUPPLY_CHAIN_EXTRACTION_PROMPT, BUSINESS_MODEL_EXTRACTION_PROMPT
+from .prompts import BUSINESS_MODEL_EXTRACTION_PROMPT, SUPPLY_CHAIN_EXTRACTION_PROMPT
 
 logger = logging.getLogger(__name__)
 

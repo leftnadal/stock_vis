@@ -27,7 +27,6 @@ except ImportError:
 
 from serverless.models import ETFProfile
 
-
 logger = logging.getLogger(__name__)
 
 

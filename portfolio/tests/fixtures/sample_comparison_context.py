@@ -25,7 +25,6 @@ from portfolio.tests.fixtures.sample_adjustment_context import (
     get_e5_fixture_remove,
 )
 
-
 # fixture 그룹 메타 (Step 8 회고 그룹 비교용)
 FIXTURE_GROUPS: dict[str, list[str]] = {
     "e5_baseline": [

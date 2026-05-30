@@ -21,7 +21,6 @@ from portfolio.schemas.llm import E5Request, E5Response
 # Slice 3 Step 2 — _llm_kwargs.py 공유 모듈 흡수 (백로그 #3).
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noqa: F401
 
-
 # ============================================================
 # 프롬프트
 # ============================================================
@@ -99,7 +98,6 @@ def _pct(weight: Any) -> str:
 from portfolio.services._prompt_helpers import (
     format_analysis_summary as _format_analysis_summary,  # noqa: F401
 )
-
 
 # ============================================================
 # entry function

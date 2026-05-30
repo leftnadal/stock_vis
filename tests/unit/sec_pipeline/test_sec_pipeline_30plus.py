@@ -16,7 +16,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.utils import timezone
 
-
 # =============================================================================
 # Collector — 보강 케이스
 # =============================================================================
@@ -291,9 +290,11 @@ class TestTickerMatcherMatchWithQueue:
     """match_with_queue 실패 경로: 큐 적재 + occurrence_count 증가."""
 
     def test_unmatched_creates_queue_entry(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         stock = Stock.objects.create(
@@ -325,9 +326,11 @@ class TestTickerMatcherMatchWithQueue:
         ).exists()
 
     def test_second_occurrence_increments_count(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         stock = Stock.objects.create(
@@ -377,7 +380,7 @@ class TestDashboardStatsStructure:
         assert stats['matching']['queue_total'] == 0
 
     def test_collection_counts_by_status(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
         from sec_pipeline.quality_checks import get_dashboard_stats
 
@@ -409,7 +412,7 @@ class TestQualityChecksAlerts:
         assert alerts == []
 
     def test_neo4j_dirty_backlog_alert(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         from sec_pipeline.quality_checks import run_post_batch_quality_checks
 
@@ -493,9 +496,11 @@ class TestBusinessModelEvidenceCascade:
     """BusinessModelEvidence는 snapshot 삭제 시 함께 삭제."""
 
     def test_cascade_delete(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, BusinessModelSnapshot, BusinessModelEvidence,
+            BusinessModelEvidence,
+            BusinessModelSnapshot,
+            RawDocumentStore,
         )
 
         stock = Stock.objects.create(symbol='CSC', stock_name='Cascade Co')

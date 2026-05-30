@@ -32,7 +32,6 @@ from portfolio.schemas.llm import E5Request, E5Response
 from portfolio.services.e5_adjustment_parser import build_e5_prompt
 from portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
 
-
 PROVIDERS = [
     {"label": "haiku", "provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},
     {"label": "sonnet", "provider": "anthropic", "model": ANTHROPIC_SONNET_MODEL},

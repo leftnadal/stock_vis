@@ -2,37 +2,36 @@ import logging
 import threading
 
 from django.contrib.auth import authenticate, login, logout
+from django.core.paginator import EmptyPage, Paginator
 from django.db import transaction
-from django.db.models import Sum, F
+from django.db.models import F, Sum
 from django.utils.translation import gettext_lazy as _
-from django.core.paginator import Paginator, EmptyPage
-
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from rest_framework.exceptions import ParseError, NotFound, ValidationError
-from rest_framework.throttling import UserRateThrottle
-
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.exceptions import NotFound, ParseError, ValidationError
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
+from rest_framework.views import APIView
 
-from .serializers import (
-    UserSerializer,
-    PrivateUserSerializer,
-    PortfolioSerializer,
-    PortfolioDetailSerializer,
-    PortfolioCreateUpdateSerializer,
-    PortfolioSummarySerializer,
-    WatchlistSerializer,
-    WatchlistDetailSerializer,
-    WatchlistCreateUpdateSerializer,
-    WatchlistItemSerializer,
-    WatchlistItemCreateSerializer,
-    WatchlistItemUpdateSerializer,
-)
-from stocks.models import Stock
-from .models import User, Portfolio, Watchlist, WatchlistItem, UserInterest
+from packages.shared.stocks.models import Stock
+
 from .cache_utils import WatchlistCache, watchlist_cached_api
+from .models import Portfolio, User, UserInterest, Watchlist, WatchlistItem
+from .serializers import (
+    PortfolioCreateUpdateSerializer,
+    PortfolioDetailSerializer,
+    PortfolioSerializer,
+    PortfolioSummarySerializer,
+    PrivateUserSerializer,
+    UserSerializer,
+    WatchlistCreateUpdateSerializer,
+    WatchlistDetailSerializer,
+    WatchlistItemCreateSerializer,
+    WatchlistItemSerializer,
+    WatchlistItemUpdateSerializer,
+    WatchlistSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -196,7 +195,7 @@ class UserFavorites(APIView):
     def get(self, request):
         user = request.user
         favorite_stocks = user.favorite_stock.all()
-        from stocks.serializers import StockSerializer
+        from packages.shared.stocks.serializers import StockSerializer
 
         serializer = StockSerializer(favorite_stocks, many=True)
         return Response(serializer.data)
@@ -223,7 +222,7 @@ class AddFavorite(APIView):
 
         user.favorite_stock.add(stock)
 
-        from stocks.serializers import StockSerializer
+        from packages.shared.stocks.serializers import StockSerializer
 
         return Response(
             {
@@ -285,7 +284,7 @@ class PortfolioListCreateView(APIView):
             symbol = portfolio.stock.symbol
 
             # 백그라운드에서 데이터 수집 시작
-            from users.utils import fetch_stock_data_background
+            from packages.shared.users.utils import fetch_stock_data_background
 
             def background_fetch():
                 try:
@@ -519,7 +518,7 @@ class RefreshPortfolioDataView(APIView):
 
     def post(self, request):
         """포트폴리오의 모든 주식 데이터를 갱신"""
-        from users.utils import update_portfolio_stock_data
+        from packages.shared.users.utils import update_portfolio_stock_data
 
         try:
             results = update_portfolio_stock_data(request.user.id)
@@ -547,7 +546,7 @@ class RefreshStockDataView(APIView):
 
     def post(self, request, symbol):
         """특정 주식 데이터를 갱신"""
-        from users.utils import fetch_stock_data_sync
+        from packages.shared.users.utils import fetch_stock_data_sync
 
         # 사용자가 해당 주식을 보유하고 있는지 확인
         portfolio = Portfolio.objects.filter(
@@ -600,7 +599,7 @@ class StockDataStatusView(APIView):
 
     def get(self, request, symbol):
         """주식 데이터 상태 조회"""
-        from users.utils import get_stock_data_status
+        from packages.shared.users.utils import get_stock_data_status
 
         status_data = get_stock_data_status(symbol)
         return Response(status_data)

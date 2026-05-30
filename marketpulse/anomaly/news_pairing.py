@@ -8,7 +8,6 @@ from django.utils import timezone as django_timezone
 from marketpulse.anomaly.engine import AnomalyContext, FiredRule
 from marketpulse.models.news import MarketPulseNews
 
-
 PAIRING_PREFERENCE = {
     'R02': [MarketPulseNews.Category.MAG7, MarketPulseNews.Category.SMART_MONEY],
     'R04': [MarketPulseNews.Category.MACRO, MarketPulseNews.Category.GEOPOLITICS],

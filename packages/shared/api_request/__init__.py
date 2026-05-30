@@ -14,7 +14,7 @@ API Request Package
 - rate_limiter: Rate Limiting
 
 권장 사용법:
-    from api_request.stock_service import get_stock_service, StockService
+    from packages.shared.api_request.stock_service import get_stock_service, StockService
 
     service = get_stock_service()
     quote = service.get_quote('AAPL')

@@ -11,6 +11,7 @@ def get_graph_repository():
     global _repository
     if _repository is None:
         from django.conf import settings
+
         from .repository import Neo4jGraphRepository
         _repository = Neo4jGraphRepository(
             uri=settings.NEO4J_URI,

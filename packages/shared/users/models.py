@@ -1,8 +1,10 @@
-from django.db import models
-from django.contrib.auth.models import AbstractUser
-from stocks.models import Stock
-from django.core.validators import MinValueValidator
 from decimal import Decimal
+
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import MinValueValidator
+from django.db import models
+
+from packages.shared.stocks.models import Stock
 
 # Create your models here.
 

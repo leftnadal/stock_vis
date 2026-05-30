@@ -13,7 +13,6 @@ from __future__ import annotations
 from portfolio.schemas.e4_conversation import E4ConversationInput
 from portfolio.services._prompt_helpers import format_metrics_to_str
 
-
 SYSTEM_PROMPT = """당신은 한국 개인 투자자를 위한 포트폴리오 코치입니다.
 사용자의 포트폴리오 지표와 종목 구성을 바탕으로, 사용자의 질문에
 간결하고 통찰력 있게 답변하세요.

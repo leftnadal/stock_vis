@@ -25,7 +25,6 @@ from django.test import override_settings
 
 from config.asgi import application
 
-
 _INMEMORY_LAYERS = {
     "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"},
 }

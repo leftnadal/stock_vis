@@ -1,11 +1,17 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from .views import (
-    ChainSightGraphView, ChainSightSuggestionView, ChainSightTraceView,
-    SeedListView, SectorGraphView, NeighborGraphView, SignalFeedView,
-)
 from chainsight.views.watchlist_views import WatchlistViewSet
+
+from .views import (
+    ChainSightGraphView,
+    ChainSightSuggestionView,
+    ChainSightTraceView,
+    NeighborGraphView,
+    SectorGraphView,
+    SeedListView,
+    SignalFeedView,
+)
 
 router = DefaultRouter()
 router.register(r'watchlist', WatchlistViewSet, basename='watchlist')

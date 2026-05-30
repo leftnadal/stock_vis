@@ -18,7 +18,6 @@ from __future__ import annotations
 import json
 from typing import Any
 
-
 # 변수 슬롯 7종 (지시서 §2.4)
 PROMPT_VARIABLE_SLOTS: tuple[str, ...] = (
     "preset_id",

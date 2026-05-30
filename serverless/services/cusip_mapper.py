@@ -24,7 +24,8 @@ Usage:
     ])
 """
 import logging
-from typing import Optional, Dict, List, Union
+from typing import Dict, List, Optional, Union
+
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)

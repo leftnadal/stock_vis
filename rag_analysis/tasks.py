@@ -7,6 +7,7 @@ Critical:
 """
 
 import logging
+
 from celery import shared_task
 
 logger = logging.getLogger(__name__)
@@ -176,6 +177,7 @@ def batch_sync_stocks_to_neo4j(stock_data_list: list):
         - 100개 단위로 청킹하여 메모리 관리
     """
     import gc
+
     from .services.neo4j_service import get_neo4j_service
 
     neo4j_service = get_neo4j_service()
@@ -282,8 +284,8 @@ def health_check_neo4j():
         - Celery Beat로 주기적 실행 (예: 5분마다)
         - 임시 드라이버를 생성/폐기하여 fork 환경에서 SIGSEGV 방지
     """
-    from neo4j import GraphDatabase
     from django.conf import settings
+    from neo4j import GraphDatabase
 
     try:
         driver = GraphDatabase.driver(

@@ -35,7 +35,11 @@ import django  # noqa: E402
 django.setup()
 
 from portfolio.llm.client import LLMClient  # noqa: E402
-from portfolio.llm.cost_guard import CostCapExceeded, CostGuard, CostThresholdExceeded  # noqa: E402
+from portfolio.llm.cost_guard import (  # noqa: E402
+    CostCapExceeded,
+    CostGuard,
+    CostThresholdExceeded,
+)
 from portfolio.llm.token_budgets import estimate_input_tokens  # noqa: E402
 from portfolio.prompts.rationale.builder import build_rationale_prompt  # noqa: E402
 from portfolio.schemas.rationale import RationaleBatch, RationaleRecord  # noqa: E402
@@ -48,7 +52,6 @@ from portfolio.tests.slice8.helpers.specificity_count import (  # noqa: E402
     count_patterns,
     detail_patterns,
 )
-
 
 OUTPUT_DIR = REPO_ROOT / "docs/portfolio/coach/slice9/part1"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)

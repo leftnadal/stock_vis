@@ -30,13 +30,13 @@ Usage:
     # SEC 10-K 처리
     relations = extractor.extract_from_10k(filing_text, symbol)
 """
-import logging
 import json
+import logging
 import re
 import time
-from typing import List, Dict, Any, Optional, Tuple
-from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
 from django.core.cache import cache
@@ -46,12 +46,11 @@ from google.genai import types
 
 from serverless.models import LLMExtractedRelation
 from serverless.services.relation_pre_filter import (
-    RelationPreFilter,
     PreFilterResult,
+    RelationPreFilter,
     get_pre_filter,
 )
 from serverless.services.symbol_matcher import SymbolMatcher, get_symbol_matcher
-
 
 logger = logging.getLogger(__name__)
 

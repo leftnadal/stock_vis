@@ -27,7 +27,6 @@ from portfolio.schemas import (
     WalletBackgroundContext,
 )
 
-
 _NOW = datetime(2026, 4, 24, 10, 0, tzinfo=timezone.utc)
 
 

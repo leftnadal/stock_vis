@@ -5,11 +5,11 @@ Gemini LLM 호출은 전부 mock. 실제 API 호출 절대 금지.
 """
 
 import json
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from sec_pipeline.extractor import GeminiExtractor
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 from dotenv import load_dotenv
 
 # .env 파일 로드
@@ -178,8 +179,8 @@ if not DEBUG:
 # Application definition
 
 CUSTOM_APPS = [
-    "stocks.apps.StocksConfig",
-    "users.apps.UsersConfig",
+    "packages.shared.stocks.apps.StocksConfig",  # PR2 이동
+    "packages.shared.users.apps.UsersConfig",  # PR2 이동
 ]
 
 INSTALLED_APPS = [
@@ -190,15 +191,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'stocks',
-    'users',
+    'packages.shared.stocks',  # PR2 이동 (A-min)
+    'packages.shared.users',  # PR2 이동 (A-min)
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'rag_analysis',  # RAG 기반 AI 분석
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
-    'metrics',  # 공유 지표 메타데이터 + 배치 실행 이력
+    'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
@@ -466,7 +467,7 @@ LOGGING = {
         },
     },
     'loggers': {
-        'stocks': {
+        'packages.shared.stocks': {  # PR2 이동: 'stocks' → 'packages.shared.stocks' (dotted-path 정합)
             'handlers': ['file'],
             'level': 'INFO',
             'propagate': True,

@@ -15,7 +15,6 @@ from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
-
 # (name, domain, hour, minute) — 모두 KST
 AGENT_SCHEDULES = [
     ("agent-report-data-6am-kst", "data", 6, 0),

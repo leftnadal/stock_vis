@@ -9,12 +9,13 @@ FMP Quote API를 사용하여 종목 데이터에 실시간 시세 정보를 추
 
 향후 AWS Lambda로 전환 시 재사용 가능하도록 설계되었습니다.
 """
-import httpx
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional
+
+import httpx
 from django.conf import settings
 from django.core.cache import cache
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

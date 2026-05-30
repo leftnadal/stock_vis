@@ -14,7 +14,7 @@ from typing import Iterable
 
 from django.db.models import Q
 
-from stocks.models import (
+from packages.shared.stocks.models import (
     DailyPrice,
     EODDashboardSnapshot,
     EODSignal,
@@ -28,7 +28,6 @@ from .signals import (
     assign_relative_strength_rank,
     compute_candidate_signals,
 )
-
 
 SCHEMA_VERSION = "1.0"
 PROVIDER = "stock_vis"

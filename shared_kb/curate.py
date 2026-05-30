@@ -17,11 +17,11 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from shared_kb.ontology_kb import OntologyKB
     from shared_kb.queue import CurationQueue
-    from shared_kb.schema import KnowledgeItem, ConfidenceLevel
+    from shared_kb.schema import ConfidenceLevel, KnowledgeItem
 else:
     from .ontology_kb import OntologyKB
     from .queue import CurationQueue
-    from .schema import KnowledgeItem, ConfidenceLevel
+    from .schema import ConfidenceLevel, KnowledgeItem
 
 
 def curate_interactive(kb: OntologyKB, queue: CurationQueue):

@@ -17,7 +17,6 @@ from portfolio.services.coach.e2_service import run_e2_coach
 from portfolio.services.coach.e5_service import run_e5_coach
 from portfolio.services.coach.e6_service import run_e6_coach
 
-
 SERVICES = [
     ("e1", run_e1_coach),
     ("e2", run_e2_coach),

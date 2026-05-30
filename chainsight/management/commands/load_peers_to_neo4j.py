@@ -1,6 +1,7 @@
 """Peer 관계 수집 + 로드. python manage.py load_peers_to_neo4j"""
 
 from django.core.management.base import BaseCommand
+
 from chainsight.graph import get_graph_repository
 from chainsight.services import collect_all_peers, load_peers_to_neo4j
 

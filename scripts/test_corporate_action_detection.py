@@ -4,9 +4,10 @@ Corporate Action 감지 시스템 통합 테스트
 실제 yfinance 데이터를 사용하여 Corporate Action 감지를 테스트합니다.
 """
 import os
-import django
 import sys
 from datetime import date
+
+import django
 
 # Django 설정
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

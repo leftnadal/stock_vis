@@ -7,8 +7,8 @@ Usage:
     python manage.py send_daily_report --to email@example.com  # 수신자 override
 """
 
-from datetime import date
 import logging
+from datetime import date
 
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
@@ -16,7 +16,7 @@ from django.core.management.base import BaseCommand
 from django.template.loader import render_to_string
 from django.utils import timezone
 
-from metrics.services.daily_report import build_report_payload
+from packages.shared.metrics.services.daily_report import build_report_payload
 
 logger = logging.getLogger(__name__)
 

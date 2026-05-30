@@ -7,15 +7,16 @@ PR-8 chainsight 프로파일/뉴스 모델 테스트
 - ChainNewsEvent: FK, unique_together(source+source_id), self FK, ArrayField
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.db import IntegrityError
 from django.utils import timezone
 
 from chainsight.models import (
-    CompanyRevenueStructure,
-    CompanyChainProfile,
     ChainNewsEvent,
+    CompanyChainProfile,
+    CompanyRevenueStructure,
 )
 
 

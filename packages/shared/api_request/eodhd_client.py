@@ -13,13 +13,15 @@ Main use case for Stock-Vis:
 - Graph ontology data collection (5,000 stocks daily)
 """
 
-import requests
-import logging
 import csv
 import gzip
 import io
-from datetime import datetime, date, timedelta
-from typing import Dict, Any, Optional, List
+import logging
+from datetime import date, datetime, timedelta
+from typing import Any, Dict, List, Optional
+
+import requests
+
 from config.settings import os
 
 logger = logging.getLogger(__name__)

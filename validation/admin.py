@@ -1,7 +1,10 @@
 from django.contrib import admin
+
 from .models import (
-    CompanyMetricLatest, CompanyBenchmarkDelta,
-    CategorySignal, ValidationNewsSummary,
+    CategorySignal,
+    CompanyBenchmarkDelta,
+    CompanyMetricLatest,
+    ValidationNewsSummary,
 )
 
 

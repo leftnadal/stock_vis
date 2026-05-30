@@ -1,9 +1,9 @@
-from django.db import models
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import models
 from django.utils import timezone
 
-from .constants import MAX_BASKET_UNITS, DEFAULT_DATA_UNITS
+from .constants import DEFAULT_DATA_UNITS, MAX_BASKET_UNITS
 
 User = get_user_model()
 
@@ -345,8 +345,9 @@ class UsageLog(models.Model):
     @classmethod
     def get_user_daily_cost(cls, user, date=None) -> float:
         """사용자의 일일 비용 조회"""
-        from django.db.models import Sum
         from datetime import date as date_type
+
+        from django.db.models import Sum
 
         if date is None:
             date = timezone.localdate()
@@ -401,8 +402,9 @@ class UsageLog(models.Model):
     @classmethod
     def get_usage_stats(cls, user=None, hours: int = 24) -> dict:
         """사용량 통계 조회"""
-        from django.db.models import Sum, Avg, Count
         from datetime import timedelta
+
+        from django.db.models import Avg, Count, Sum
 
         since = timezone.now() - timedelta(hours=hours)
         queryset = cls.objects.filter(created_at__gte=since)

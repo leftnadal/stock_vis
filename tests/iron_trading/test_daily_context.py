@@ -11,7 +11,6 @@ import pytest
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-
 TRADING_DATE = date(2026, 5, 22)
 ENDPOINT = "/api/v1/iron-trading/daily-context"
 
@@ -22,7 +21,7 @@ ENDPOINT = "/api/v1/iron-trading/daily-context"
 
 
 def _seed_us_stock(symbol: str, sector: str = "Technology", price: str = "100.00") -> "Stock":
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
 
     return Stock.objects.create(
         symbol=symbol,
@@ -36,7 +35,7 @@ def _seed_us_stock(symbol: str, sector: str = "Technology", price: str = "100.00
 
 
 def _seed_krw_stock(symbol: str = "005930.KS") -> "Stock":
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
 
     return Stock.objects.create(
         symbol=symbol,
@@ -50,7 +49,7 @@ def _seed_krw_stock(symbol: str = "005930.KS") -> "Stock":
 
 def _seed_prices(stock, end_date: date, days: int = 65, base: float = 100.0):
     """가장 최근 종가가 가장 높도록 단조 상승 OHLCV를 생성."""
-    from stocks.models import DailyPrice
+    from packages.shared.stocks.models import DailyPrice
 
     rows = []
     d = end_date - timedelta(days=days - 1)
@@ -72,7 +71,7 @@ def _seed_prices(stock, end_date: date, days: int = 65, base: float = 100.0):
 
 
 def _seed_eod_signal(stock, signal_date: date, composite: float, count: int = 3) -> "EODSignal":
-    from stocks.models import EODSignal
+    from packages.shared.stocks.models import EODSignal
 
     return EODSignal.objects.create(
         stock=stock,
@@ -154,7 +153,7 @@ class TestNotFound:
 @pytest.mark.django_db
 class TestSnapshotBuilding:
     def test_pipeline_running_returns_503(self, api_client):
-        from stocks.models import PipelineLog
+        from packages.shared.stocks.models import PipelineLog
 
         PipelineLog.objects.create(
             date=TRADING_DATE,

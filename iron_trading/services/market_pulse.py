@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from datetime import date
 
-
 # stock_vis 내부 RegimeSnapshot.regime → iron_trading 계약의 regime_hint
 _REGIME_HINT_MAP = {
     "BULL_EXPANSION": "trend_following",

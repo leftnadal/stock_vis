@@ -1,7 +1,8 @@
 """Tests for marketpulse.regime.classifier."""
 from __future__ import annotations
 
-from datetime import date as date_cls, timedelta
+from datetime import date as date_cls
+from datetime import timedelta
 
 import pytest
 

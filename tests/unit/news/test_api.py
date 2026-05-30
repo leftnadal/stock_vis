@@ -4,13 +4,13 @@ News API Unit Tests
 NewsViewSet API 엔드포인트 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch
 from datetime import datetime, timedelta
 from decimal import Decimal
+from unittest.mock import Mock, patch
 
-from django.urls import reverse
+import pytest
 from django.core.cache import cache
+from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -24,6 +24,7 @@ class TestNewsViewSet:
     def api_client(self, db):
         """REST API 클라이언트 (audit P0 #5: 인증된 사용자로 force_authenticate)."""
         import uuid
+
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.create_user(
@@ -384,6 +385,7 @@ class TestNewsAPIEdgeCases:
     def api_client(self, db):
         """REST API 클라이언트 (audit P0 #5: 인증된 사용자로 force_authenticate)."""
         import uuid
+
         from django.contrib.auth import get_user_model
         User = get_user_model()
         user = User.objects.create_user(

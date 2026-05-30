@@ -1,9 +1,15 @@
+import logging
 import os
 import platform
-import logging
+
 from celery import Celery
 from celery.schedules import crontab
-from celery.signals import task_failure, task_retry, worker_process_init, worker_shutdown
+from celery.signals import (
+    task_failure,
+    task_retry,
+    worker_process_init,
+    worker_shutdown,
+)
 
 # macOS fork 안전성:
 # 1. Objective-C 런타임 fork safety 체크 비활성화 (SIGSEGV 방지)
@@ -139,33 +145,33 @@ app.conf.beat_schedule = {
 
     # 실시간 주가 업데이트 (시장 개장 시간, 5분마다) — FMP Provider
     'update-realtime-prices': {
-        'task': 'stocks.tasks.update_realtime_with_provider',
+        'task': 'packages.shared.stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(minute='*/5', hour='9-16', day_of_week='1-5'),
     },
 
     # 일일 종가 업데이트 (시장 마감 후) — FMP Provider
     'update-daily-prices': {
-        'task': 'stocks.tasks.update_realtime_with_provider',
+        'task': 'packages.shared.stocks.tasks.update_realtime_with_provider',
         'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
     },
 
     # 주간 데이터 집계 — DailyPrice → WeeklyPrice (API 호출 없음, 토요일 01:00)
     'aggregate-weekly-prices': {
-        'task': 'stocks.tasks.aggregate_weekly_prices',
+        'task': 'packages.shared.stocks.tasks.aggregate_weekly_prices',
         'schedule': crontab(hour=1, minute=0, day_of_week=6),
         'options': {'expires': 3600}
     },
 
     # S&P 500 재무제표 순환 배치 (FMP, 101개/일, 5일에 전체 1회전, 평일 20:00)
     'sync-sp500-financials': {
-        'task': 'stocks.tasks.sync_sp500_financials',
+        'task': 'packages.shared.stocks.tasks.sync_sp500_financials',
         'schedule': crontab(hour=20, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
 
     # 포트폴리오 가치 계산 (시장 개장 시간, 10분마다)
     'calculate-portfolio-values': {
-        'task': 'users.tasks.calculate_portfolio_values',
+        'task': 'packages.shared.users.tasks.calculate_portfolio_values',
         'schedule': crontab(minute='*/10', hour='9-16', day_of_week='1-5'),
     },
 
@@ -547,14 +553,14 @@ app.conf.beat_schedule = {
 
     # S&P 500 구성 종목 동기화 (매월 1일 02:00 ET)
     'sync-sp500-constituents': {
-        'task': 'stocks.tasks.sync_sp500_constituents',
+        'task': 'packages.shared.stocks.tasks.sync_sp500_constituents',
         'schedule': crontab(hour=2, minute=0, day_of_month=1),
         'options': {'expires': 86400}  # 24시간 후 만료
     },
 
     # S&P 500 EOD 가격 동기화 (매일 18:00 ET, Mon-Fri, 장 마감 + 2시간)
     'sync-sp500-eod-prices': {
-        'task': 'stocks.tasks.sync_sp500_eod_prices',
+        'task': 'packages.shared.stocks.tasks.sync_sp500_eod_prices',
         'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
@@ -625,21 +631,21 @@ app.conf.beat_schedule = {
 
     # EOD 시그널 파이프라인 (매일 18:30 ET, 장 마감 + 2.5시간, EOD 가격 동기화 이후)
     'run-eod-pipeline': {
-        'task': 'stocks.tasks.run_eod_pipeline',
+        'task': 'packages.shared.stocks.tasks.run_eod_pipeline',
         'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
 
     # 시그널 정확도 소급 계산 (매일 19:00 ET, 파이프라인 이후)
     'backfill-signal-accuracy': {
-        'task': 'stocks.tasks.backfill_signal_accuracy',
+        'task': 'packages.shared.stocks.tasks.backfill_signal_accuracy',
         'schedule': crontab(hour=19, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
 
     # S&P 500 한글 기업 개요 갱신 (매월 1일 03:00 EST)
     'refresh-korean-overviews-monthly': {
-        'task': 'stocks.tasks.bulk_generate_korean_overviews',
+        'task': 'packages.shared.stocks.tasks.bulk_generate_korean_overviews',
         'schedule': crontab(hour=3, minute=0, day_of_month=1),
         'options': {'expires': 86400}
     },

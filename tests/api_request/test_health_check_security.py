@@ -4,8 +4,9 @@ HealthCheckView 보안 테스트 (audit P0)
 헬스체크 응답에 raw exception 메시지 노출 차단 검증.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
 

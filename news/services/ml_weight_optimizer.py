@@ -277,7 +277,10 @@ class MLWeightOptimizer:
         """
         from sklearn.linear_model import LogisticRegression
         from sklearn.metrics import (
-            f1_score, precision_score, recall_score, accuracy_score,
+            accuracy_score,
+            f1_score,
+            precision_score,
+            recall_score,
         )
 
         splits = self.time_series_split(len(X))
@@ -978,7 +981,10 @@ class MLWeightOptimizer:
             return {'error': 'lightgbm not installed'}
 
         from sklearn.metrics import (
-            f1_score, precision_score, recall_score, accuracy_score,
+            accuracy_score,
+            f1_score,
+            precision_score,
+            recall_score,
         )
 
         feature_names = (

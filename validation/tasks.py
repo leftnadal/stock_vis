@@ -13,7 +13,8 @@ Orchestrator: run_weekly_validation_batch — 전체 파이프라인 chain
 
 import logging
 import time
-from celery import shared_task, chain
+
+from celery import chain, shared_task
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,9 @@ def calculate_relative_metrics(self, prev_result=None, symbols=None):
 def calculate_category_signals(self, prev_result=None, symbols=None):
     """Task 4: 카테고리별 신호등 계산 (green/yellow/red/gray)."""
     try:
-        from validation.services.category_signal_calculator import CategorySignalCalculator
+        from validation.services.category_signal_calculator import (
+            CategorySignalCalculator,
+        )
         calc = CategorySignalCalculator()
         result = calc.calculate_for_symbols(symbols)
         logger.info(f"Task 4: {result['total']} total, {result['success']} success, {result['errors']} errors")
@@ -93,7 +96,7 @@ def calculate_category_signals(self, prev_result=None, symbols=None):
 def update_peer_list_caches(self, prev_result=None):
     """Task 5: peer_list_cache confidence 재검증 (Task 3에서 이미 갱신, 여기서는 확인만)."""
     try:
-        from metrics.models import PeerListCache
+        from packages.shared.metrics.models import PeerListCache
         total = PeerListCache.objects.count()
         logger.info(f"Task 5: peer_list_cache {total}건 확인 완료")
         return {'total': total}
@@ -106,15 +109,15 @@ def update_peer_list_caches(self, prev_result=None):
 def log_batch_run(self, prev_result=None, universe='sp500', start_time=None):
     """Task 6: BatchJobRun에 실행 결과 기록."""
     try:
-        from metrics.models import BatchJobRun
-        from stocks.models import SP500Constituent
+        from packages.shared.metrics.models import BatchJobRun
+        from packages.shared.stocks.models import SP500Constituent
 
         total_symbols = SP500Constituent.objects.filter(is_active=True).count()
         elapsed = None
         if start_time:
             elapsed = time.time() - start_time
 
-        from metrics.models import CompanyMetricSnapshot
+        from packages.shared.metrics.models import CompanyMetricSnapshot
         from validation.models import CategorySignal
         snapshot_count = CompanyMetricSnapshot.objects.count()
         signal_count = CategorySignal.objects.count()

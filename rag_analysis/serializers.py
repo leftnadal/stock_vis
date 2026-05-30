@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import DataBasket, BasketItem, AnalysisSession, AnalysisMessage
+
+from .models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 
 class BasketItemSerializer(serializers.ModelSerializer):

@@ -7,7 +7,10 @@ from django.utils import timezone
 
 from thesis.models import ThesisSnapshot
 from thesis.services.arrow_calculator import score_to_degree
-from thesis.services.indicator_scorer import score_indicator_from_model, check_extreme_volatility
+from thesis.services.indicator_scorer import (
+    check_extreme_volatility,
+    score_indicator_from_model,
+)
 from thesis.services.premise_aggregator import aggregate_premise, aggregate_thesis
 from thesis.services.thesis_state_machine import determine_state
 

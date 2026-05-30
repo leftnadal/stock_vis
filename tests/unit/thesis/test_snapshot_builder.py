@@ -4,12 +4,18 @@ Snapshot Builder 테스트
 thesis/services/snapshot_builder.py의 build_snapshot() 함수를 검증합니다.
 """
 
-import pytest
 from datetime import date, timedelta
 
+import pytest
 from django.utils import timezone
 
-from thesis.models import Thesis, ThesisPremise, ThesisIndicator, IndicatorReading, ThesisSnapshot
+from thesis.models import (
+    IndicatorReading,
+    Thesis,
+    ThesisIndicator,
+    ThesisPremise,
+    ThesisSnapshot,
+)
 from thesis.services.snapshot_builder import build_snapshot
 
 

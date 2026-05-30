@@ -12,8 +12,13 @@ import requests
 from celery import shared_task
 from django.conf import settings
 
-from stocks.models import Stock, SP500Constituent, BalanceSheet, IncomeStatement
 from chainsight.models import CompanySensitivityProfile
+from packages.shared.stocks.models import (
+    BalanceSheet,
+    IncomeStatement,
+    SP500Constituent,
+    Stock,
+)
 
 logger = logging.getLogger(__name__)
 

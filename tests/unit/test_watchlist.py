@@ -4,11 +4,12 @@ Watchlist Tests
 사용자 관심종목 리스트 기능 테스트
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
 User = get_user_model()
 
@@ -48,7 +49,7 @@ def other_user():
 @pytest.mark.django_db
 def watchlist(authenticated_user):
     """기본 Watchlist"""
-    from users.models import Watchlist
+    from packages.shared.users.models import Watchlist
 
     return Watchlist.objects.create(
         user=authenticated_user,
@@ -61,8 +62,8 @@ def watchlist(authenticated_user):
 @pytest.mark.django_db
 def watchlist_with_items(watchlist, stock):
     """종목이 포함된 Watchlist"""
-    from users.models import WatchlistItem
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
+    from packages.shared.users.models import WatchlistItem
 
     # 추가 종목 생성
     stock2 = Stock.objects.create(
@@ -106,7 +107,7 @@ class TestWatchlistModel:
         When: Watchlist 생성
         Then: 정상 생성됨
         """
-        from users.models import Watchlist
+        from packages.shared.users.models import Watchlist
 
         watchlist = Watchlist.objects.create(
             user=authenticated_user,
@@ -126,8 +127,9 @@ class TestWatchlistModel:
         When: 두 번째 리스트 생성
         Then: IntegrityError 발생
         """
-        from users.models import Watchlist
         from django.db import IntegrityError
+
+        from packages.shared.users.models import Watchlist
 
         Watchlist.objects.create(
             user=authenticated_user,
@@ -156,7 +158,7 @@ class TestWatchlistModel:
         When: Watchlist 삭제
         Then: WatchlistItem도 함께 삭제됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         watchlist_id = watchlist_with_items.id
         item_count_before = WatchlistItem.objects.filter(
@@ -182,7 +184,7 @@ class TestWatchlistItemModel:
         When: WatchlistItem 생성
         Then: 정상 생성됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         item = WatchlistItem.objects.create(
             watchlist=watchlist,
@@ -203,8 +205,9 @@ class TestWatchlistItemModel:
         When: 같은 종목 다시 추가 시도
         Then: IntegrityError 발생
         """
-        from users.models import WatchlistItem
         from django.db import IntegrityError
+
+        from packages.shared.users.models import WatchlistItem
 
         WatchlistItem.objects.create(
             watchlist=watchlist,
@@ -224,7 +227,7 @@ class TestWatchlistItemModel:
         When: distance_from_entry 조회
         Then: 정확한 거리 계산됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         item = WatchlistItem.objects.create(
             watchlist=watchlist,
@@ -245,8 +248,8 @@ class TestWatchlistItemModel:
         When: is_below_target 조회
         Then: 정확한 진입 가능 여부 반환
         """
-        from users.models import WatchlistItem
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
+        from packages.shared.users.models import WatchlistItem
 
         # 현재가가 높은 종목
         stock_high = Stock.objects.create(
@@ -295,7 +298,7 @@ class TestWatchlistItemModel:
         When: 조회
         Then: position_order 순으로 정렬됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         items = WatchlistItem.objects.filter(watchlist=watchlist_with_items)
 
@@ -342,7 +345,7 @@ class TestWatchlistAPI:
         When: POST /api/v1/users/watchlist/
         Then: Watchlist 생성됨
         """
-        from users.models import Watchlist
+        from packages.shared.users.models import Watchlist
 
         api_client.force_authenticate(user=authenticated_user)
 
@@ -420,7 +423,7 @@ class TestWatchlistAPI:
         When: DELETE /api/v1/users/watchlist/{pk}/
         Then: Watchlist 삭제됨
         """
-        from users.models import Watchlist
+        from packages.shared.users.models import Watchlist
 
         api_client.force_authenticate(user=authenticated_user)
 
@@ -436,7 +439,7 @@ class TestWatchlistAPI:
         When: GET /api/v1/users/watchlist/{pk}/
         Then: 404 Not Found (권한 없음)
         """
-        from users.models import Watchlist
+        from packages.shared.users.models import Watchlist
 
         other_watchlist = Watchlist.objects.create(
             user=other_user,
@@ -460,7 +463,7 @@ class TestWatchlistItemAPI:
         When: POST /api/v1/users/watchlist/{pk}/add-stock/
         Then: 종목이 리스트에 추가됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         api_client.force_authenticate(user=authenticated_user)
 
@@ -502,7 +505,7 @@ class TestWatchlistItemAPI:
         When: DELETE /api/v1/users/watchlist/{pk}/stocks/{symbol}/remove/
         Then: 종목이 리스트에서 제거됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         api_client.force_authenticate(user=authenticated_user)
 
@@ -523,7 +526,7 @@ class TestWatchlistItemAPI:
         When: PATCH /api/v1/users/watchlist/{pk}/stocks/{symbol}/
         Then: 종목 설정이 수정됨
         """
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
 
         api_client.force_authenticate(user=authenticated_user)
 

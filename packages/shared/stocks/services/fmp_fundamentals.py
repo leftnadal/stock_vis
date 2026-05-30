@@ -10,11 +10,12 @@ Financial Modeling Prep API를 사용하여 기업의 핵심 재무 데이터를
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
 
+import logging
+from typing import Optional
+
 import httpx
 from django.conf import settings
 from django.core.cache import cache
-from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 

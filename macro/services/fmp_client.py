@@ -8,7 +8,7 @@ FMP (Financial Modeling Prep) API Client
 import logging
 import time
 from datetime import date
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from django.conf import settings

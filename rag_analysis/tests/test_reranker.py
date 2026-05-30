@@ -4,14 +4,15 @@ Reranker 테스트
 CrossEncoderReranker와 RerankerWithThreshold의 기능을 검증합니다.
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
+
 import numpy as np
+import pytest
 
 from rag_analysis.services.reranker import (
     CrossEncoderReranker,
     RerankerWithThreshold,
-    get_reranker
+    get_reranker,
 )
 
 

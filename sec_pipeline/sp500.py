@@ -2,7 +2,7 @@
 SEC-PR-4: S&P 500 심볼 목록 유틸리티.
 """
 
-from stocks.models import SP500Constituent
+from packages.shared.stocks.models import SP500Constituent
 
 
 def get_sp500_symbols() -> list:

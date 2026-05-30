@@ -8,15 +8,15 @@ quality_checks.py 추가 엣지 케이스 테스트.
 - run_post_batch_quality_checks: 매칭 큐에 100건 (경계값) — 알림 없음
 """
 
-import pytest
 from datetime import date, timedelta
 
+import pytest
 from django.utils import timezone
 
 
 @pytest.fixture
 def stock(db):
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
 
 

@@ -4,14 +4,15 @@ Entity Extractor 테스트
 EntityExtractor와 EntityNormalizer의 기능을 검증합니다.
 """
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from anthropic.types import Message, Usage, TextBlock
+
+import pytest
+from anthropic.types import Message, TextBlock, Usage
 
 from rag_analysis.services.entity_extractor import (
     EntityExtractor,
     EntityNormalizer,
-    ExtractedEntities
+    ExtractedEntities,
 )
 
 

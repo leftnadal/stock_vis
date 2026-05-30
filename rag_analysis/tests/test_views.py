@@ -8,19 +8,15 @@ Tests for:
 - Error response format validation
 - Permission checks
 """
-from django.test import TestCase
-from django.contrib.auth import get_user_model
-from django.urls import reverse
-from rest_framework.test import APIClient
-from rest_framework import status
 import json
 
-from rag_analysis.models import (
-    DataBasket,
-    BasketItem,
-    AnalysisSession,
-    AnalysisMessage
-)
+from django.contrib.auth import get_user_model
+from django.test import TestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 User = get_user_model()
 

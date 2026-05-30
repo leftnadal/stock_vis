@@ -8,11 +8,14 @@ Critical:
 """
 
 import logging
+
 from django.core.cache import cache
-from django.db.models.signals import post_save, post_delete
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
-from stocks.models import Stock
-from .tasks import sync_stock_to_neo4j, delete_stock_from_neo4j, invalidate_graph_cache
+
+from packages.shared.stocks.models import Stock
+
+from .tasks import delete_stock_from_neo4j, invalidate_graph_cache, sync_stock_to_neo4j
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +82,7 @@ def stock_deleted_handler(sender, instance, **kwargs):
 
 
 # Optional: DailyPrice 업데이트 시 캐시 무효화
-# from stocks.models import DailyPrice
+# from packages.shared.stocks.models import DailyPrice
 #
 # @receiver(post_save, sender=DailyPrice)
 # def daily_price_saved_handler(sender, instance, created, **kwargs):

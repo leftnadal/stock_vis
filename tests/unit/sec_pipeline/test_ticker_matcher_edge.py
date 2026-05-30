@@ -10,8 +10,9 @@ TickerMatcher 추가 엣지 케이스 테스트.
 DB 접근 필요 — @pytest.mark.django_db.
 """
 
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from sec_pipeline.ticker_matcher import TickerMatcher
 
@@ -123,7 +124,7 @@ class TestMatchAliasPriority:
 class TestEnsureLoadedNullName:
     def test_skips_stock_without_name(self, matcher):
         """stock_name 이 빈 문자열인 Stock 은 _stock_map 에 추가되지 않는다."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='ZZZ', stock_name='')
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
 
@@ -146,7 +147,7 @@ class TestGetFuzzyCandidatesEdge:
 
     def test_score_normalized_0_to_1(self, matcher):
         """모든 후보의 score 는 0~1 범위."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         result = matcher._get_fuzzy_candidates('Apple', top_k=5)
         for c in result:

@@ -1,7 +1,6 @@
 """Seed 20 MarketIndex rows + sector_group for Market Pulse v2 (PR-A1)."""
 from django.db import migrations
 
-
 INDICES = [
     # BENCHMARK 4
     ('SPY', 'S&P 500 ETF', 'us_equity', 'BENCHMARK'),

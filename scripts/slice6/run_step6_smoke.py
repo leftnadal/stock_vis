@@ -26,16 +26,15 @@ reset_for_slice("slice6", max_calls=50)
 
 from portfolio.llm import LLMClient
 from portfolio.llm.cost_guard import CostGuard
+from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS
 from portfolio.services.e3_portfolio_service import (
     parse_e3_portfolio_response,
 )
-from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
 from portfolio.tests.fixtures.sample_e3_portfolio_context import (
     PRESET_INTENT_MAP,
     get_v1_concentrated_balanced,
 )
-
 
 # Slice 6 Part 3 §1.3 + §1.4
 THRESHOLDS = {

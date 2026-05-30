@@ -1,6 +1,7 @@
 """Sector/Industry 노드 + BELONGS_TO 관계 로드. python manage.py load_sectors_to_neo4j"""
 
 from django.core.management.base import BaseCommand
+
 from chainsight.graph import get_graph_repository
 from chainsight.services import load_sectors_to_neo4j
 

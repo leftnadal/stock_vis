@@ -4,7 +4,8 @@ from __future__ import annotations
 import logging
 import statistics
 from dataclasses import dataclass
-from datetime import date as date_cls, timedelta
+from datetime import date as date_cls
+from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from typing import Iterable
 

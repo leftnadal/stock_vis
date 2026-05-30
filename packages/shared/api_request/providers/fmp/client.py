@@ -8,11 +8,12 @@ Rate limiting과 에러 핸들링을 포함합니다.
 FMP API 문서: https://site.financialmodelingprep.com/developer/docs
 """
 
-import requests
 import logging
 import time
-from datetime import datetime, date
-from typing import Dict, Any, Optional, List, Union
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional, Union
+
+import requests
 
 logger = logging.getLogger(__name__)
 

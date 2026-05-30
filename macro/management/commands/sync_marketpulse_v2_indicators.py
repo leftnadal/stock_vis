@@ -18,8 +18,8 @@ PR-A1 시드된 series:
 from __future__ import annotations
 
 import logging
-from decimal import Decimal, InvalidOperation
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from typing import Iterable
 
 from django.core.management.base import BaseCommand
@@ -52,8 +52,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        from macro.services.fred_client import FREDClient
         from macro.models.indicators import EconomicIndicator, IndicatorValue
+        from macro.services.fred_client import FREDClient
 
         series_codes: Iterable[str] = options['series'] or V2_SERIES_DEFAULT
         limit = options['limit']

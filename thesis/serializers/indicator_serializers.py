@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from thesis.models import ThesisIndicator, IndicatorReading
+from thesis.models import IndicatorReading, ThesisIndicator
 
 # data_params 허용 키 (API 파라미터 조작 방지)
 ALLOWED_DATA_PARAM_KEYS = {

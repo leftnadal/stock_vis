@@ -5,17 +5,18 @@ Users 앱 추가 View 테스트
 세션 기반 인증 + Favorites + 포트폴리오 부가 뷰 + UserInterest 보강 테스트
 """
 
-import pytest
 from decimal import Decimal
 from unittest.mock import patch
+
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
 
-from users.models import (
+from packages.shared.stocks.models import Stock
+from packages.shared.users.models import (
     Portfolio,
     UserInterest,
 )
-from stocks.models import Stock
 
 User = get_user_model()
 
@@ -416,7 +417,7 @@ class TestStockDataStatusView:
         """
         api_client.force_authenticate(user=authenticated_user)
 
-        with patch('users.utils.get_stock_data_status') as mocked:
+        with patch('packages.shared.users.utils.get_stock_data_status') as mocked:
             mocked.return_value = {'symbol': 'AAPL', 'status': 'ready', 'progress': 100}
             response = api_client.get('/api/v1/users/portfolio/symbol/AAPL/status/')
 
@@ -460,7 +461,7 @@ class TestRefreshStockDataView:
         """
         api_client.force_authenticate(user=authenticated_user)
 
-        with patch('users.utils.fetch_stock_data_sync') as mocked:
+        with patch('packages.shared.users.utils.fetch_stock_data_sync') as mocked:
             mocked.return_value = {'success': True, 'data': {'price': 150.0}, 'errors': []}
             response = api_client.post('/api/v1/users/portfolio/symbol/AAPL/refresh/')
 
@@ -558,7 +559,7 @@ class TestUserInterestList:
         }
 
         with patch(
-            'users.views.UserInterestListCreateView._link_category',
+            'packages.shared.users.views.UserInterestListCreateView._link_category',
             return_value=None,
         ):
             response = api_client.post(

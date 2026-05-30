@@ -14,7 +14,6 @@ from portfolio.schemas.e4_conversation import (
     E4ConversationTurn,
 )
 
-
 # ===== Turn =====
 
 

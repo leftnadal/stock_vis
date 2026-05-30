@@ -36,7 +36,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
-
 # ============================================================
 # 1. Wallet — 자산 지갑 (실제 보유 집합)
 # ============================================================
@@ -458,7 +457,9 @@ class MetricResult(models.Model):
                 pass
 
         # metric_id 유효성 검증 (코드 상수와 대조)
-        from portfolio.metrics.definitions.metrics import METRICS  # lazy import to avoid circular
+        from portfolio.metrics.definitions.metrics import (
+            METRICS,  # lazy import to avoid circular
+        )
         if self.metric_id not in METRICS:
             raise ValidationError(
                 f"Unknown metric_id: '{self.metric_id}'. "

@@ -6,15 +6,15 @@ Semantic Cache 통합으로 유사 질문 재사용 지원
 복잡도 기반 비용 최적화 통합 (Phase 3 Week 3)
 """
 
-import time
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional, List
-from datetime import datetime, date
+import time
+from datetime import date, datetime
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from asgiref.sync import sync_to_async
 from django.db import close_old_connections
 
-from ..models import AnalysisSession, AnalysisMessage
+from ..models import AnalysisMessage, AnalysisSession
 from .context import DateAwareContextFormatter
 from .llm_service import LLMServiceLite, ResponseParser
 
@@ -835,9 +835,9 @@ class AnalysisPipelineFinal:
             if self.enable_cost_optimization:
                 try:
                     from .token_budget_manager import (
-                        TokenBudgetManager,
                         ContentBlock,
-                        ContentPriority
+                        ContentPriority,
+                        TokenBudgetManager,
                     )
 
                     self._token_budget_manager = TokenBudgetManager(complexity)

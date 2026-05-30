@@ -2,7 +2,6 @@ from django.urls import path
 
 from .views import DailyContextView
 
-
 app_name = "iron_trading"
 
 urlpatterns = [

@@ -12,9 +12,9 @@ from typing import Dict, Optional
 
 from django.db import transaction
 
-from stocks.models import Stock, DailyPrice, SP500Constituent
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

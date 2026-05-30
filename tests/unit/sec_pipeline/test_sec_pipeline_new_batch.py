@@ -12,7 +12,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.utils import timezone
 
-
 # ---------------------------------------------------------------------------
 # collector.py
 # ---------------------------------------------------------------------------
@@ -323,7 +322,7 @@ class TestTickerMatcherMatch:
         assert matcher.match('A') == (None, None)
 
     def test_match_exact_stock_name(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         matcher = TickerMatcher()
@@ -332,7 +331,7 @@ class TestTickerMatcherMatch:
         assert method == 'exact'
 
     def test_match_exact_case_insensitive(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='MSFT', stock_name='Microsoft Corporation')
         matcher = TickerMatcher()
@@ -340,7 +339,7 @@ class TestTickerMatcherMatch:
         assert ticker == 'MSFT'
 
     def test_match_alias_takes_priority(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import CompanyAlias
         from sec_pipeline.ticker_matcher import TickerMatcher
 
@@ -368,7 +367,7 @@ class TestTickerMatcherMatch:
         assert ticker == 'DAL'
 
     def test_match_fuzzy_matches_close_enough(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='NVDA', stock_name='NVIDIA Corporation')
         matcher = TickerMatcher()
@@ -429,7 +428,7 @@ class TestModelStrAndDefaults:
         assert 'AAPL' in s and 'sec_fetch' in s and 'success' in s
 
     def test_supply_chain_evidence_str(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -446,7 +445,7 @@ class TestModelStrAndDefaults:
         assert 'TSMC' in s and 'SUPPLIES_TO' in s
 
     def test_supply_chain_evidence_defaults(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         stock = Stock.objects.create(symbol='NVDA', stock_name='NVIDIA')
         doc = RawDocumentStore.objects.create(
@@ -467,8 +466,8 @@ class TestModelStrAndDefaults:
         assert ev.prompt_version == 'v1'
 
     def test_business_model_snapshot_str_and_defaults(self):
-        from stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, BusinessModelSnapshot
+        from packages.shared.stocks.models import Stock
+        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
         stock = Stock.objects.create(symbol='SHOP', stock_name='Shopify')
         doc = RawDocumentStore.objects.create(
             symbol=stock, accession_no='acc-y-001',
@@ -514,7 +513,7 @@ class TestQualityChecksFresh:
         assert stats['matching']['queue_total'] == 0
 
     def test_high_collection_failure_rate_triggers_alert(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
         from sec_pipeline.quality_checks import run_post_batch_quality_checks
 
@@ -544,7 +543,7 @@ class TestQualityChecksFresh:
         assert any('미매칭 큐 적체' in a for a in alerts)
 
     def test_low_match_rate_triggers_alert(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         from sec_pipeline.quality_checks import run_post_batch_quality_checks
 
@@ -566,7 +565,7 @@ class TestQualityChecksFresh:
         assert any('매칭률' in a for a in alerts)
 
     def test_low_confidence_triggers_alert(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         from sec_pipeline.quality_checks import run_post_batch_quality_checks
 
@@ -590,9 +589,11 @@ class TestQualityChecksFresh:
         assert any('confidence' in a for a in alerts)
 
     def test_dashboard_stats_populated_counts(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, BusinessModelSnapshot,
+            BusinessModelSnapshot,
+            RawDocumentStore,
+            SupplyChainEvidence,
             UnmatchedCompanyQueue,
         )
         from sec_pipeline.quality_checks import get_dashboard_stats

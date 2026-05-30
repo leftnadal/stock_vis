@@ -7,10 +7,10 @@ Phase 2: Sector Alpha, ETF Sync Rate, Volatility Percentile
 ⭐ 중요: AWS Lambda로 전환 시 이 클래스를 그대로 재사용합니다.
 Django 의존성 없이 순수 Python으로 작성되었습니다.
 """
-from decimal import Decimal, ROUND_HALF_UP
-from typing import List, Optional
-import statistics
 import bisect
+import statistics
+from decimal import ROUND_HALF_UP, Decimal
+from typing import List, Optional
 
 
 class IndicatorCalculator:

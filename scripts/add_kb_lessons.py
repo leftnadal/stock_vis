@@ -7,11 +7,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared_kb.add import main as add_main
-from shared_kb.schema import KnowledgeType, ConfidenceLevel
 import uuid
+
+from shared_kb.add import main as add_main
 from shared_kb.ontology_kb import OntologyKB
-from shared_kb.schema import KnowledgeItem
+from shared_kb.schema import ConfidenceLevel, KnowledgeItem, KnowledgeType
 
 # KB 연결
 kb = OntologyKB()

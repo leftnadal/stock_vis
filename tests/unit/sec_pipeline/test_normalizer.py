@@ -7,12 +7,11 @@ normalize_section_all, filter_paragraphs, _clean_text 검증.
 import pytest
 
 from sec_pipeline.normalizer import (
-    normalize_section_all,
-    filter_paragraphs,
-    _clean_text,
     SUPPLY_CHAIN_KEYWORDS,
+    _clean_text,
+    filter_paragraphs,
+    normalize_section_all,
 )
-
 
 # ---------------------------------------------------------------------------
 # Tests: normalize_section_all

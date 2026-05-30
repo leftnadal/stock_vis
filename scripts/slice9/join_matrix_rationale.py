@@ -26,7 +26,6 @@ from portfolio.tests.helpers.matrix_loader import (  # noqa: E402
     load_matrix_cases,
 )
 
-
 MATRIX_PART = REPO_ROOT / "docs/portfolio/coach/slice9/part1"
 OUTPUT_PATH = MATRIX_PART / "matrix_rationale_joined.json"
 

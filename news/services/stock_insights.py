@@ -128,7 +128,7 @@ class NewsBasedStockInsights:
         symbol_data = self._collect_symbol_data(target_date, keywords, min_mentions)
 
         # 섹터 정보 일괄 조회 (N+1 방지)
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         all_symbols = list(symbol_data.keys())
         sector_map: Dict[str, Optional[str]] = {}
         if all_symbols:
@@ -431,7 +431,7 @@ class NewsBasedStockInsights:
             # 회사명 조회
             company_name = None
             try:
-                from stocks.models import Stock
+                from packages.shared.stocks.models import Stock
                 stock = Stock.objects.filter(symbol=symbol).first()
                 if stock:
                     company_name = stock.stock_name or symbol
@@ -530,10 +530,11 @@ class NewsBasedStockInsights:
         unique_headlines = list(dict.fromkeys(headlines_to_translate))[:20]
 
         try:
+            import json
+
             from django.conf import settings as django_settings
             from google import genai
             from google.genai import types
-            import json
 
             api_key = getattr(django_settings, 'GOOGLE_AI_API_KEY', None) or getattr(django_settings, 'GEMINI_API_KEY', None)
             if not api_key:
@@ -588,7 +589,7 @@ class NewsBasedStockInsights:
         Stock 모델에서 가격 위치, 이동평균, 밸류에이션 정보를 조회합니다.
         """
         try:
-            from stocks.models import Stock
+            from packages.shared.stocks.models import Stock
 
             stock = Stock.objects.filter(symbol=symbol.upper()).first()
             if not stock:

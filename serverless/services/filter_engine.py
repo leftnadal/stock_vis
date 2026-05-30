@@ -5,13 +5,12 @@
 """
 import logging
 from decimal import Decimal
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from django.core.cache import cache
 
 from serverless.models import ScreenerFilter
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

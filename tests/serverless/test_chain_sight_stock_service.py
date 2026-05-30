@@ -3,11 +3,11 @@ Chain Sight Stock 서비스 테스트
 
 개별 종목 페이지의 Chain Sight 기능을 검증합니다.
 """
-import pytest
-from decimal import Decimal
-from unittest.mock import Mock, patch, MagicMock
 from datetime import date, timedelta
+from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
 from django.utils import timezone
 
 
@@ -369,8 +369,9 @@ class TestStockRelationshipModel:
 
     def test_unique_constraint(self):
         """중복 관계 방지"""
-        from serverless.models import StockRelationship
         from django.db import IntegrityError
+
+        from serverless.models import StockRelationship
 
         StockRelationship.objects.create(
             source_symbol='NVDA',

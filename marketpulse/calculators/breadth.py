@@ -3,7 +3,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import date as date_cls, timedelta
+from datetime import date as date_cls
+from datetime import timedelta
 from decimal import Decimal
 from typing import Iterable
 
@@ -11,7 +12,7 @@ from django.db.models import Max, Min, Q
 from django.utils import timezone as django_timezone
 
 from marketpulse.models.snapshot import BreadthSnapshot
-from stocks.models import DailyPrice, SP500Constituent
+from packages.shared.stocks.models import DailyPrice, SP500Constituent
 
 logger = logging.getLogger(__name__)
 

@@ -20,8 +20,8 @@ from graph_analysis.models import (
     PriceCache,
 )
 
-from stocks.models import DailyPrice, Stock
-from users.models import Watchlist
+from packages.shared.stocks.models import DailyPrice, Stock
+from packages.shared.users.models import Watchlist
 
 logger = logging.getLogger(__name__)
 

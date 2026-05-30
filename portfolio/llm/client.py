@@ -29,7 +29,6 @@ from portfolio.llm.exceptions import (
 )
 from portfolio.schemas.llm import LLMResponse
 
-
 # Provider 단가 (USD per 1M tokens) — 2026-04 기준, 본인이 향후 수동 갱신
 GEMINI_FLASH_INPUT_USD_PER_1M = 0.075
 GEMINI_FLASH_OUTPUT_USD_PER_1M = 0.30

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import re
 
-
 # P1: 종목별 현재가/지표 언급
 _P1_KEYWORDS = ("현재가", "주가", "PE", "PEG", "ROIC", "P/E", "시가")
 

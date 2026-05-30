@@ -5,8 +5,10 @@ Critical: 모든 메서드는 Neo4j가 없어도 fallback 데이터를 반환해
 """
 
 import logging
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
+
 from neo4j import Session
+
 from .neo4j_driver import get_neo4j_driver
 
 logger = logging.getLogger(__name__)

@@ -9,11 +9,11 @@ Complexity Levels:
     - COMPLEX: 심층 분석, 비교 분석 → 고성능 모델
 """
 
-import re
 import logging
-from enum import Enum
-from typing import Dict, Any, List, Optional
+import re
 from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 

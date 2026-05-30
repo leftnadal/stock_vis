@@ -25,7 +25,6 @@ import pytest
 from django.test import RequestFactory
 from django.utils import timezone
 
-
 # ════════════════════════════════════════
 # Fixtures
 # ════════════════════════════════════════
@@ -90,6 +89,7 @@ def request_factory():
 def admin_user(db):
     """audit P0 #5: ML 모니터링 액션은 IsAdminUser 권한이 필요."""
     import uuid
+
     from django.contrib.auth import get_user_model
     User = get_user_model()
     return User.objects.create_superuser(

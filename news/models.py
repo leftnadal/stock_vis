@@ -11,8 +11,9 @@ DailyNewsKeyword: LLM 기반 일별 뉴스 키워드 (Phase 2)
 import hashlib
 import uuid
 from decimal import Decimal
+
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.translation import gettext_lazy as _
 
 
@@ -637,7 +638,7 @@ class NewsCollectionCategory(models.Model):
 
     def resolve_symbols(self) -> list[str]:
         """카테고리 타입에 따라 심볼 리스트 해석"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         if self.category_type == 'sector':
             return list(

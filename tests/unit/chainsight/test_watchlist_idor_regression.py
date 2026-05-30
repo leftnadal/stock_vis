@@ -11,7 +11,6 @@ from rest_framework.test import APIClient
 
 from chainsight.models import SavedPath
 
-
 User = get_user_model()
 
 

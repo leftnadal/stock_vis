@@ -11,13 +11,14 @@ quality_checks.py 추가 단위 테스트.
 DB 접근 필요 — @pytest.mark.django_db.
 """
 
-import pytest
 from datetime import date
+
+import pytest
 
 
 @pytest.fixture
 def stock(db):
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
 
 

@@ -12,23 +12,23 @@ FMP API를 사용하여 StockDataProvider 인터페이스를 구현합니다.
 
 import logging
 import os
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from ..base import (
-    StockDataProvider,
+    NormalizedBalanceSheet,
+    NormalizedCashFlow,
+    NormalizedCompanyProfile,
+    NormalizedIncomeStatement,
+    NormalizedPriceData,
+    NormalizedQuote,
+    NormalizedSearchResult,
+    OutputSize,
+    PeriodType,
     ProviderResponse,
     RateLimitError,
-    PeriodType,
-    OutputSize,
-    NormalizedQuote,
-    NormalizedCompanyProfile,
-    NormalizedPriceData,
-    NormalizedBalanceSheet,
-    NormalizedIncomeStatement,
-    NormalizedCashFlow,
-    NormalizedSearchResult,
+    StockDataProvider,
 )
-from .client import FMPClient, FMPRateLimitError, FMPClientError, FMPPremiumError
+from .client import FMPClient, FMPClientError, FMPPremiumError, FMPRateLimitError
 from .processor import FMPProcessor
 
 logger = logging.getLogger(__name__)

@@ -12,8 +12,11 @@ import logging
 
 from django.core.cache import cache
 
-from metrics.models import CompanyMetricSnapshot, MetricDefinition
-from validation.services.category_signal_calculator import CATEGORY_METRICS, CATEGORY_DISPLAY
+from packages.shared.metrics.models import CompanyMetricSnapshot, MetricDefinition
+from validation.services.category_signal_calculator import (
+    CATEGORY_DISPLAY,
+    CATEGORY_METRICS,
+)
 
 logger = logging.getLogger(__name__)
 

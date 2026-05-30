@@ -8,7 +8,7 @@ import json
 import logging
 from datetime import timedelta
 
-from django.db.models import Count, Avg
+from django.db.models import Avg, Count
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
@@ -65,8 +65,11 @@ class PipelineDataCollector:
 
     def collect(self, hours_back: int = 24) -> dict:
         from .models import (
-            RawDocumentStore, SupplyChainEvidence, BusinessModelSnapshot,
-            FilingProcessLog, UnmatchedCompanyQueue,
+            BusinessModelSnapshot,
+            FilingProcessLog,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         since = timezone.now() - timedelta(hours=hours_back)
@@ -148,9 +151,9 @@ class PipelineIntelligenceReporter:
         prompt = PIPELINE_INTELLIGENCE_PROMPT.format(**data)
 
         try:
+            from django.conf import settings
             from google import genai
             from google.genai import types
-            from django.conf import settings
 
             client = genai.Client(api_key=settings.GEMINI_API_KEY)
             config = types.GenerateContentConfig(

@@ -1,7 +1,8 @@
 """Smoke tests for marketpulse.api.views (PR-I/J)."""
 from __future__ import annotations
 
-from datetime import date as date_cls, timedelta
+from datetime import date as date_cls
+from datetime import timedelta
 from decimal import Decimal
 
 import pytest
@@ -19,7 +20,6 @@ from marketpulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
-
 
 User = get_user_model()
 

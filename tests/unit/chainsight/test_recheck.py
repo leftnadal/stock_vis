@@ -1,21 +1,20 @@
 import uuid
+from datetime import timedelta
+from unittest.mock import patch
 
 import pytest
-from datetime import timedelta
 from django.contrib.auth import get_user_model
-from unittest.mock import patch
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from chainsight.models import SavedPath, PathAction
+from chainsight.models import PathAction, SavedPath
 from chainsight.services.recheck_service import (
-    run_recheck,
-    _classify_edge_change,
-    _build_headline,
-    _decide_suggestion,
     RecheckResult,
+    _build_headline,
+    _classify_edge_change,
+    _decide_suggestion,
+    run_recheck,
 )
-
 
 User = get_user_model()
 

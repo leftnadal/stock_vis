@@ -9,7 +9,6 @@ import pytest
 
 from scripts.slice9.prepare_eval_cases import build_cases
 
-
 SAMPLE_JOINED = [
     {
         "case_id": "S01_haiku",

@@ -2,11 +2,13 @@
 Users 앱 테스트 공통 fixtures
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
-from stocks.models import Stock
+
+from packages.shared.stocks.models import Stock
 
 User = get_user_model()
 
@@ -77,7 +79,7 @@ def stock_msft():
 @pytest.mark.django_db
 def portfolio(authenticated_user, stock_aapl):
     """기본 Portfolio fixture"""
-    from users.models import Portfolio
+    from packages.shared.users.models import Portfolio
 
     return Portfolio.objects.create(
         user=authenticated_user,

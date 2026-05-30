@@ -5,7 +5,6 @@
 # A-Ⅲ 3분리 정신: SCHEMA(0005)와 DATA(0006) 분리, 부분 reverse 가능.
 from django.db import migrations
 
-
 # ============================================================
 # HARDCODED MAPPING (Decision B-Ⅰ — 변경은 새 migration 작성)
 # ============================================================

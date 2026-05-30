@@ -31,7 +31,6 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-
 THRESHOLDS = {
     "intent_match_min": 3,
     "no_extra_changes_min": 3,

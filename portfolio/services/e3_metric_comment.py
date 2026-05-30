@@ -22,7 +22,6 @@ from portfolio.schemas.llm import E3Request
 from portfolio.schemas.llm_outputs import MetricComments
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 
-
 # ============================================================
 # 프롬프트 wrapper — (system, user) tuple → single prompt
 # ============================================================

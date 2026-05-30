@@ -5,11 +5,12 @@ Market Movers 키워드 데이터 수집기 테스트 스크립트
 Usage:
     python scripts/test_keyword_collector.py
 """
+import logging
 import os
 import sys
-import django
-import logging
 from datetime import date
+
+import django
 
 # Django 설정
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,7 +18,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
 from serverless.services.keyword_data_collector import KeywordDataCollector
-
 
 # 로깅 설정
 logging.basicConfig(

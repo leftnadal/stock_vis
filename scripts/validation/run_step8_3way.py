@@ -33,7 +33,6 @@ from portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_tech,
 )
 
-
 # Provider 라벨 → (LLMClient.complete 인자: provider, model)
 # §1.1: LLMResponse.provider Literal["gemini","anthropic"] 변경 금지.
 # 따라서 sonnet/haiku는 anthropic + model 조합으로 구분.

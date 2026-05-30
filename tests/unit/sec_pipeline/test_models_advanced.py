@@ -10,16 +10,19 @@ sec_pipeline 모델 추가 단위 테스트.
 - BusinessModelSnapshot get_latest_by/ordering
 """
 
-import pytest
 from datetime import date
+
+import pytest
 
 
 @pytest.mark.django_db
 class TestBusinessModelEvidence:
     def test_create_and_str(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, BusinessModelSnapshot, BusinessModelEvidence,
+            BusinessModelEvidence,
+            BusinessModelSnapshot,
+            RawDocumentStore,
         )
 
         stock = Stock.objects.create(symbol='AMZN', stock_name='Amazon')
@@ -94,7 +97,7 @@ class TestPipelineIntelligenceReport:
 @pytest.mark.django_db
 class TestRawDocumentStoreOrdering:
     def test_ordering_by_filing_date_desc(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
@@ -164,8 +167,8 @@ class TestUnmatchedCompanyQueueExtra:
 class TestBusinessModelSnapshotMeta:
     def test_get_latest_by_as_of_date(self):
         """get_latest_by = 'as_of_date' (created_at 아님)."""
-        from stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, BusinessModelSnapshot
+        from packages.shared.stocks.models import Stock
+        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='NFLX', stock_name='Netflix')
         doc = RawDocumentStore.objects.create(

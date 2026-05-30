@@ -257,6 +257,7 @@ class StockKeyword(models.Model):
         """expires_at 자동 설정"""
         if not self.expires_at:
             from datetime import timedelta
+
             from django.utils import timezone
             self.expires_at = timezone.now() + timedelta(days=7)
         super().save(*args, **kwargs)
@@ -736,8 +737,9 @@ class ScreenerAlert(models.Model):
         if not self.last_triggered_at:
             return True
 
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         cooldown_end = self.last_triggered_at + timedelta(hours=self.cooldown_hours)
         return timezone.now() >= cooldown_end
@@ -991,6 +993,7 @@ class CategoryCache(models.Model):
         """expires_at 자동 설정"""
         if not self.expires_at:
             from datetime import timedelta
+
             from django.utils import timezone
             self.expires_at = timezone.now() + timedelta(hours=24)
         super().save(*args, **kwargs)
@@ -1327,6 +1330,7 @@ class LLMExtractedRelation(models.Model):
         """expires_at 자동 설정 (30일 TTL)"""
         if not self.expires_at:
             from datetime import timedelta
+
             from django.utils import timezone
             self.expires_at = timezone.now() + timedelta(days=30)
         super().save(*args, **kwargs)

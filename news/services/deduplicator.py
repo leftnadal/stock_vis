@@ -6,8 +6,8 @@ URL 정규화 및 해시 기반 중복 제거
 
 import hashlib
 import logging
-from typing import List, Set
 from difflib import SequenceMatcher
+from typing import List, Set
 
 from ..providers.base import RawNewsArticle
 

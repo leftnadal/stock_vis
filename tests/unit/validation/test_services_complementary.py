@@ -19,17 +19,23 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent, IndustryClassification
+from packages.shared.stocks.models import (
+    IndustryClassification,
+    SP500Constituent,
+    Stock,
+)
 from validation.models import PeerPreset
 from validation.services import (
     benchmark_calculator as bc_mod,
+)
+from validation.services import (
     preset_generator as pg_mod,
 )
 from validation.services.benchmark_calculator import (
+    SIZE_BUCKETS,
     BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,
-    SIZE_BUCKETS,
 )
 from validation.services.interpretation import (
     determine_trend,
@@ -45,7 +51,6 @@ from validation.services.metric_calculator import (
 )
 from validation.services.preset_generator import PresetGenerator
 from validation.services.relative_metrics import RelativeMetricCalculator
-
 
 # ---------------------------------------------------------------------------
 # Helpers

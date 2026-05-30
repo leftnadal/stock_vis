@@ -9,16 +9,15 @@ NewsClassifier 단위 테스트
 - select_for_analysis() - 당일 누적 퍼센타일 선별
 """
 
-import pytest
 from datetime import datetime, timedelta
 from decimal import Decimal
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
+import pytest
 from django.utils import timezone
 
 from news.models import NewsArticle, NewsEntity
 from news.services.news_classifier import (
-    NewsClassifier,
     AMBIGUOUS_TICKERS,
     CASHTAG_PATTERN,
     DEFAULT_WEIGHTS,
@@ -26,8 +25,8 @@ from news.services.news_classifier import (
     SOURCE_CREDIBILITY,
     STOCK_CONTEXT_WORDS,
     TOP_PERCENTILE,
+    NewsClassifier,
 )
-
 
 # ─────────────────────────────────────────────────────────────
 # Helpers

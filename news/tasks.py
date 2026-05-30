@@ -246,8 +246,9 @@ def aggregate_daily_sentiment(self, target_date=None):
         dict: {'date': str, 'symbols_aggregated': N, 'created': N, 'updated': N}
     """
     try:
+        from django.db.models import Avg, Count, Max, Min
+
         from news.models import NewsEntity, SentimentHistory
-        from django.db.models import Avg, Count, Min, Max
 
         # 날짜 결정: 기본값은 전일 (전날 수집된 뉴스 집계)
         if target_date:
@@ -721,8 +722,8 @@ def generate_shadow_report(self, days=7):
         dict: {model_version, comparison}
     """
     try:
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
         from news.models import MLModelHistory
+        from news.services.ml_weight_optimizer import MLWeightOptimizer
 
         # 최신 shadow 또는 deployed 모델 조회
         latest = MLModelHistory.objects.filter(
@@ -956,7 +957,8 @@ def collect_sp500_news_fmp_orchestrator():
     chord로 6개 배치를 병렬 실행합니다.
     """
     from celery import chord
-    from stocks.models import SP500Constituent
+
+    from packages.shared.stocks.models import SP500Constituent
 
     sp500 = list(
         SP500Constituent.objects.filter(is_active=True)
@@ -1007,7 +1009,7 @@ def collect_press_releases_fmp(self, max_symbols=50):
     """
     from news.services.aggregator import NewsAggregatorService
     from news.services.circuit_breaker import CircuitBreaker
-    from stocks.models import SP500Constituent
+    from packages.shared.stocks.models import SP500Constituent
 
     breaker = CircuitBreaker('fmp')
     if breaker.is_open():
@@ -1115,9 +1117,16 @@ def check_pipeline_alerts(self):
     Returns:
         dict: {alerts_created: int, checks_run: int}
     """
-    from news.models import AlertLog, NewsCollectionLog, MLModelHistory, DailyNewsKeyword, NewsArticle
-    from django.db.models import Sum
     import pytz
+    from django.db.models import Sum
+
+    from news.models import (
+        AlertLog,
+        DailyNewsKeyword,
+        MLModelHistory,
+        NewsArticle,
+        NewsCollectionLog,
+    )
 
     KST = pytz.timezone('Asia/Seoul')
     now = timezone.now()
@@ -1392,8 +1401,9 @@ def _get_tier1_symbols(max_symbols=25):
     # Watchlist 인기 종목 (남은 슬롯 채움)
     if len(symbols) < max_symbols:
         try:
-            from users.models import WatchlistItem
             from django.db.models import Count
+
+            from packages.shared.users.models import WatchlistItem
 
             popular = list(
                 WatchlistItem.objects.values('symbol')

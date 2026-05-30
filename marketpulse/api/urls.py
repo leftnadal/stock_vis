@@ -9,7 +9,6 @@ from marketpulse.api.views.i18n import I18nView
 from marketpulse.api.views.news_refresh import NewsRefreshView
 from marketpulse.api.views.overview import OverviewView
 
-
 app_name = 'marketpulse_api_v2'
 
 

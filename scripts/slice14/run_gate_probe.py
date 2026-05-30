@@ -41,7 +41,6 @@ from portfolio.schemas import (  # noqa: E402
 from portfolio.schemas.llm import E3Request  # noqa: E402
 from portfolio.services.e3_metric_comment import run_e3  # noqa: E402
 
-
 _NOW = datetime(2026, 5, 22, 10, 0, tzinfo=timezone.utc)
 
 

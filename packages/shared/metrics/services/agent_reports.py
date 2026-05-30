@@ -18,13 +18,13 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from metrics.services.daily_report import (
+from packages.shared.metrics.services.daily_report import (
+    _load_previous_snapshot,
     collect_coverage_gaps,
     collect_graph_metrics,
     collect_llm_usage,
     collect_news_metrics,
     collect_system_health,
-    _load_previous_snapshot,
 )
 
 logger = logging.getLogger(__name__)

@@ -78,7 +78,9 @@ class TestSectorGroupDataMapping:
     def test_t7_forward_idempotent(self):
         """T7: 0006 forward(apps, schema_editor) 재호출 시 매핑 불변 (idempotent)."""
         import importlib
+
         from django.apps import apps as django_apps
+
         from macro.models.indicators import MarketIndex
 
         before = sorted(MarketIndex.objects.values_list('symbol', 'sector_group'))

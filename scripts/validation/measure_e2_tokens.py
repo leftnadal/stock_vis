@@ -27,7 +27,6 @@ from portfolio.tests.fixtures.sample_diagnostic_context import (
     FIXTURE_GROUPS,
 )
 
-
 INITIAL_BUDGET = 5000  # E1과 동일 가정 (글쓰기 작업)
 
 OUTPUT_PATH = Path("docs/portfolio/coach/slice3/step7_e2_token_measurement.json")

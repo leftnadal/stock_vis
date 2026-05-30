@@ -21,7 +21,6 @@ from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
 from portfolio.schemas.llm_outputs import E3PortfolioCommentary
 from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 
-
 # ============================================================
 # Mock fixture loader (Step B 정적 검증용)
 # ============================================================

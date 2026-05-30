@@ -1,33 +1,46 @@
 """LLM 빌더 (Phase A-MVP + Hardening) 단위 테스트."""
 
 import uuid
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from thesis.services.builder_state import (
-    BuilderMode, BuilderPhase, FallbackReason,
-    ChatMessage, PremiseData, IndicatorRecommendation,
-    CollectedData, ConversationState,
-    VALID_THESIS_TYPES, MONITORING_PRESETS,
+from thesis.feature_flags import FEATURE_FLAGS, get_feature_flags
+from thesis.services.builder_events import (
+    EVENT_BUILDER_STARTED,
+    EVENT_CONFIRM_CLICKED,
+    EVENT_FALLBACK_TRIGGERED,
+    EVENT_LLM_PARSE_FAILED,
+    EVENT_PRESET_SELECTED,
+    EVENT_PROPOSAL_GENERATED,
+    EVENT_THESIS_CREATED,
+    log_event,
 )
-from thesis.services.prompt_builder import (
-    build_base_instruction, build_type_guide_block,
-    build_indicator_block, build_system_prompt,
-    get_indicator_by_id, INDICATOR_CATALOG,
+from thesis.services.builder_state import (
+    MONITORING_PRESETS,
+    VALID_THESIS_TYPES,
+    BuilderMode,
+    BuilderPhase,
+    ChatMessage,
+    CollectedData,
+    ConversationState,
+    FallbackReason,
+    IndicatorRecommendation,
+    PremiseData,
 )
 from thesis.services.llm_postprocess import (
-    normalize_llm_output, validate_llm_output, merge_to_collected,
+    merge_to_collected,
+    normalize_llm_output,
+    validate_llm_output,
 )
-from thesis.services.builder_events import (
-    log_event,
-    EVENT_BUILDER_STARTED, EVENT_PROPOSAL_GENERATED,
-    EVENT_LLM_PARSE_FAILED, EVENT_FALLBACK_TRIGGERED,
-    EVENT_PRESET_SELECTED, EVENT_CONFIRM_CLICKED,
-    EVENT_THESIS_CREATED,
+from thesis.services.prompt_builder import (
+    INDICATOR_CATALOG,
+    build_base_instruction,
+    build_indicator_block,
+    build_system_prompt,
+    build_type_guide_block,
+    get_indicator_by_id,
 )
-from thesis.feature_flags import FEATURE_FLAGS, get_feature_flags
-
 
 # ──────────────────────────────────────────────
 # builder_state.py 테스트
@@ -529,7 +542,10 @@ class TestConversationViews:
         assert result is None
 
     def test_sanitize_llm_state_truncates_long_history(self):
-        from thesis.views.conversation_views import _sanitize_llm_state, MAX_HISTORY_LENGTH
+        from thesis.views.conversation_views import (
+            MAX_HISTORY_LENGTH,
+            _sanitize_llm_state,
+        )
         state = {
             'conv_id': 'x', 'entry_source': 'free_input', 'mode': 'llm',
             'phase': 'proposal', 'turn_count': 0, 'collected': {},

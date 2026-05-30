@@ -8,8 +8,8 @@ SEC-PR-14: 배치 후 품질 체크.
 import logging
 from datetime import timedelta
 
-from django.utils import timezone
 from django.db.models import Avg
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,11 @@ def run_post_batch_quality_checks(hours_back: int = 24) -> list:
         list[str] — 경고 메시지 (비어있으면 양호)
     """
     from .models import (
-        RawDocumentStore, SupplyChainEvidence, BusinessModelSnapshot,
-        FilingProcessLog, UnmatchedCompanyQueue,
+        BusinessModelSnapshot,
+        FilingProcessLog,
+        RawDocumentStore,
+        SupplyChainEvidence,
+        UnmatchedCompanyQueue,
     )
 
     since = timezone.now() - timedelta(hours=hours_back)
@@ -121,7 +124,9 @@ def get_dashboard_stats() -> dict:
     Admin 대시보드용 누적 통계.
     """
     from .models import (
-        RawDocumentStore, SupplyChainEvidence, BusinessModelSnapshot,
+        BusinessModelSnapshot,
+        RawDocumentStore,
+        SupplyChainEvidence,
         UnmatchedCompanyQueue,
     )
 

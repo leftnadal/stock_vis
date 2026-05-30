@@ -1,7 +1,7 @@
 from .base import BaseNewsProvider, RawNewsArticle
 from .finnhub import FinnhubNewsProvider
-from .marketaux import MarketauxNewsProvider
 from .fmp import FMPNewsProvider
+from .marketaux import MarketauxNewsProvider
 
 __all__ = [
     'BaseNewsProvider',

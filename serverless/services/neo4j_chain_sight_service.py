@@ -46,20 +46,19 @@ Usage:
     graph = service.get_n_depth_graph('NVDA', depth=2)
 """
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.core.cache import cache
 
-from rag_analysis.services.neo4j_driver import get_neo4j_driver
 from marketpulse.utils.circuit_breaker import (
-    get_circuit,
     CircuitBreakerError,
     CircuitState,
+    get_circuit,
 )
-
+from rag_analysis.services.neo4j_driver import get_neo4j_driver
 
 logger = logging.getLogger(__name__)
 
@@ -1113,7 +1112,7 @@ class Neo4jChainSightService:
         Returns:
             {'etfs': 21, 'holdings': 1500, 'themes': 21}
         """
-        from serverless.models import ETFProfile, ETFHolding, ThemeMatch
+        from serverless.models import ETFHolding, ETFProfile, ThemeMatch
         from serverless.services.theme_matching_service import THEME_KEYWORDS
 
         if not self.is_available():

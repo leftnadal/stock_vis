@@ -3,10 +3,11 @@ OAG KB Queue Rules
 자동 큐 저장 규칙 - 에이전트가 지식을 발견할 때 자동으로 큐에 추가
 """
 
-from typing import List, Optional, Dict, Any, Callable
 from dataclasses import dataclass
-from .schema import KnowledgeType, KnowledgeItem
+from typing import Any, Callable, Dict, List, Optional
+
 from .queue import CurationQueue
+from .schema import KnowledgeItem, KnowledgeType
 
 
 @dataclass

@@ -10,11 +10,11 @@ FREDClient 단위 테스트
 """
 
 import logging
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from macro.services.fred_client import FREDClient
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

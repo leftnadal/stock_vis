@@ -32,7 +32,9 @@ from portfolio.llm.client import LLMClient  # noqa: E402
 from portfolio.llm.cost_guard import CostGuard  # noqa: E402
 from portfolio.prompts.e4.builder import build_e4_prompt_v2  # noqa: E402
 from portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
-from portfolio.tests.slice8.helpers.specificity_count import count_patterns  # noqa: E402
+from portfolio.tests.slice8.helpers.specificity_count import (
+    count_patterns,  # noqa: E402
+)
 
 FIXTURE_PATH = ROOT / "portfolio/tests/fixtures/e4_conversation/S01_V1_tier1.json"
 OUTPUT_PATH = ROOT / "docs/portfolio/coach/slice8/part3/step6_smoke_result.json"

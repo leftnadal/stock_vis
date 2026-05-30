@@ -18,7 +18,6 @@ from portfolio.tests.fixtures.sample_metric_comment_context import (
     get_focused_fixtures,
 )
 
-
 _VALID_LEVEL_TAGS = {"excellent", "good", "moderate", "weak", "critical"}
 
 

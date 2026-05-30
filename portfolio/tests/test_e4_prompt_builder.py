@@ -14,7 +14,6 @@ from portfolio.prompts.e4.builder import (
 )
 from portfolio.schemas.e4_conversation import E4ConversationInput
 
-
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "e4_conversation"
 
 

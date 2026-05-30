@@ -46,7 +46,6 @@ from portfolio.services._llm_kwargs import PROVIDER_KWARGS  # 환경 차이 #7
 from portfolio.services.e3_metric_comment import build_e3_prompt, parse_e3_response
 from portfolio.tests.fixtures.sample_metric_comment_context import ALL_FIXTURES
 
-
 THRESHOLDS = {
     "cost_usd_max": 0.020,
     "latency_ms_max": 16000,  # Q2: Slice 4 #9 e6 한정 → e3 동일 적용

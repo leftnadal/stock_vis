@@ -27,7 +27,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-
 # Slice 2 Step 9 일반화 — entrypoint별 메타데이터 단일 출처.
 # 새 entrypoint 추가 시 (예: e2 진단 카드) 여기 한 곳만 갱신.
 DIMENSION_LOOKUP = {

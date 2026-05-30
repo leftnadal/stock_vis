@@ -5,7 +5,7 @@ Neo4j 관련 import는 lazy로 처리하여 Celery fork pool worker에서
 C 확장이 로드되지 않도록 합니다 (SIGSEGV 방지).
 """
 
-from .cache import get_cache_service, BasicCacheService
+from .cache import BasicCacheService, get_cache_service
 
 # Neo4j imports — lazy via __getattr__ (fork pool SIGSEGV 방지)
 # neo4j C 확장을 전이적으로 import하는 모듈도 모두 포함
@@ -47,19 +47,15 @@ def __getattr__(name):
 # Search services (sentence-transformers, rank-bm25 필요)
 # graphrag_scorer는 neo4j를 전이 import하므로 위 _LAZY_IMPORTS로 이동
 try:
-    from .vector_search import VectorSearchService, get_vector_search_service
     from .bm25_search import BM25SearchService, get_bm25_search_service
     from .hybrid_search import (
         HybridSearchService,
-        get_hybrid_search_service,
+        MetadataFilterBuilder,
         SearchWeights,
-        MetadataFilterBuilder
+        get_hybrid_search_service,
     )
-    from .reranker import (
-        CrossEncoderReranker,
-        RerankerWithThreshold,
-        get_reranker
-    )
+    from .reranker import CrossEncoderReranker, RerankerWithThreshold, get_reranker
+    from .vector_search import VectorSearchService, get_vector_search_service
     _search_available = True
 except ImportError:
     _search_available = False
@@ -67,10 +63,14 @@ except ImportError:
 # Optional imports (LLM 서비스는 anthropic 패키지 필요)
 try:
     from .context import DateAwareContextFormatter
-    from .llm_service import LLMServiceLite, ResponseParser
-    from .pipeline import AnalysisPipelineLite, AnalysisPipelineFinal
+    from .context_compressor import (
+        ContextCompressor,
+        QuestionAwareCompressor,
+        get_context_compressor,
+    )
     from .entity_extractor import EntityExtractor, EntityNormalizer, ExtractedEntities
-    from .context_compressor import ContextCompressor, QuestionAwareCompressor, get_context_compressor
+    from .llm_service import LLMServiceLite, ResponseParser
+    from .pipeline import AnalysisPipelineFinal, AnalysisPipelineLite
     from .pipeline_v2 import AnalysisPipelineV2, PipelineV2EventType
     _llm_available = True
 except ImportError:
@@ -146,23 +146,20 @@ if _cost_tracker_available:
 
 # Cost Optimization (Phase 3 Week 3)
 try:
+    from .adaptive_llm_service import AdaptiveLLMService, get_adaptive_llm_service
     from .complexity_classifier import (
         ComplexityClassifier,
-        QuestionComplexity,
         QuestionAnalyzer,
-        get_complexity_classifier
-    )
-    from .adaptive_llm_service import (
-        AdaptiveLLMService,
-        get_adaptive_llm_service
+        QuestionComplexity,
+        get_complexity_classifier,
     )
     from .token_budget_manager import (
-        TokenBudgetManager,
-        DynamicBudgetManager,
         ContentBlock,
         ContentPriority,
+        DynamicBudgetManager,
+        TokenBudgetManager,
+        get_dynamic_budget_manager,
         get_token_budget_manager,
-        get_dynamic_budget_manager
     )
     _cost_optimization_available = True
 except ImportError:

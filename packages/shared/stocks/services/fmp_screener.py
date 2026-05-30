@@ -8,12 +8,13 @@ Financial Modeling Prep API를 사용하여 조건별 종목 검색을 수행합
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
 
-import httpx
+import logging
 import time
+from typing import Optional
+
+import httpx
 from django.conf import settings
 from django.core.cache import cache
-from typing import Optional
-import logging
 
 from serverless.services.quote_enricher import QuoteEnricher
 

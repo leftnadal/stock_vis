@@ -6,11 +6,12 @@ GET /api/v1/stocks/eod/signal/<signal_id>/
 GET /api/v1/stocks/eod/pipeline/status/
 """
 
-import pytest
 from datetime import date, timedelta
 from decimal import Decimal
-from django.utils import timezone
+
+import pytest
 from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 pytestmark = pytest.mark.unit
@@ -24,6 +25,7 @@ pytestmark = pytest.mark.unit
 def client(db):
     """audit P0 #5: 인증된 사용자로 force_authenticate."""
     import uuid
+
     from django.contrib.auth import get_user_model
     User = get_user_model()
     user = User.objects.create_user(
@@ -43,7 +45,7 @@ def target_date():
 @pytest.fixture
 def dashboard_snapshot(db, target_date):
     """EODDashboardSnapshot DB 레코드"""
-    from stocks.models import EODDashboardSnapshot
+    from packages.shared.stocks.models import EODDashboardSnapshot
 
     json_data = {
         'date': str(target_date),
@@ -105,7 +107,7 @@ def dashboard_snapshot(db, target_date):
 @pytest.fixture
 def eod_signal_v1(db, target_date):
     """V1 시그널을 가진 EODSignal 레코드 (AAPL)"""
-    from stocks.models import Stock, EODSignal
+    from packages.shared.stocks.models import EODSignal, Stock
 
     stock = Stock.objects.create(
         symbol='AAPL',
@@ -139,7 +141,7 @@ def eod_signal_v1(db, target_date):
 @pytest.fixture
 def pipeline_logs(db, target_date):
     """최근 3일치 PipelineLog 레코드"""
-    from stocks.models import PipelineLog
+    from packages.shared.stocks.models import PipelineLog
 
     logs = []
     for i in range(3):
@@ -341,7 +343,7 @@ class TestEODSignalDetailAPI:
         """
         EODSignal 60개 생성 → API 응답은 최대 50개만 반환.
         """
-        from stocks.models import Stock, EODSignal
+        from packages.shared.stocks.models import EODSignal, Stock
 
         stocks_created = []
         for i in range(60):
@@ -451,7 +453,7 @@ class TestEODPipelineStatusAPI:
         """
         10개의 로그가 있어도 최대 7개만 반환.
         """
-        from stocks.models import PipelineLog
+        from packages.shared.stocks.models import PipelineLog
 
         for i in range(10):
             d = target_date - timedelta(days=i)
@@ -489,7 +491,7 @@ class TestEODPipelineStatusAPI:
         """
         status=failed인 로그의 error_message가 응답에 포함됨.
         """
-        from stocks.models import PipelineLog
+        from packages.shared.stocks.models import PipelineLog
 
         PipelineLog.objects.create(
             date=target_date,
@@ -522,7 +524,8 @@ class TestEODDashboardSnapshotModel:
         동일 날짜에 스냅샷 2개 생성 시 IntegrityError 발생.
         """
         from django.db import IntegrityError
-        from stocks.models import EODDashboardSnapshot
+
+        from packages.shared.stocks.models import EODDashboardSnapshot
 
         with pytest.raises(IntegrityError):
             EODDashboardSnapshot.objects.create(
@@ -556,7 +559,8 @@ class TestEODSignalModel:
         (stock, date) unique_together 제약 검증.
         """
         from django.db import IntegrityError
-        from stocks.models import EODSignal
+
+        from packages.shared.stocks.models import EODSignal
 
         with pytest.raises(IntegrityError):
             EODSignal.objects.create(

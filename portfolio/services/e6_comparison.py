@@ -23,7 +23,6 @@ from portfolio.services._prompt_helpers import (
     format_holdings_summary,
 )
 
-
 # ============================================================
 # 어댑터 helpers
 # ============================================================

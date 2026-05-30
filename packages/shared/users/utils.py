@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def get_stock_service():
     """StockService 인스턴스를 반환합니다."""
-    from api_request.stock_service import get_stock_service as _get
+    from packages.shared.api_request.stock_service import get_stock_service as _get
 
     return _get()
 
@@ -32,13 +32,13 @@ def ensure_complete_stock_data(symbol: str) -> dict:
     Returns:
         결과 정보가 담긴 딕셔너리
     """
-    from stocks.models import (
-        Stock,
-        DailyPrice,
-        WeeklyPrice,
+    from packages.shared.stocks.models import (
         BalanceSheet,
-        IncomeStatement,
         CashFlowStatement,
+        DailyPrice,
+        IncomeStatement,
+        Stock,
+        WeeklyPrice,
     )
 
     symbol = symbol.upper()
@@ -232,7 +232,7 @@ def update_portfolio_stock_data(user_id: int) -> dict:
     Returns:
         업데이트 결과 딕셔너리
     """
-    from users.models import Portfolio
+    from packages.shared.users.models import Portfolio
 
     results = {"total": 0, "success": 0, "failed": 0, "stocks": []}
 
@@ -279,13 +279,13 @@ def fetch_stock_data_background(symbol: str) -> None:
 
     django.setup()
 
-    from stocks.models import (
-        Stock,
-        DailyPrice,
-        WeeklyPrice,
+    from packages.shared.stocks.models import (
         BalanceSheet,
-        IncomeStatement,
         CashFlowStatement,
+        DailyPrice,
+        IncomeStatement,
+        Stock,
+        WeeklyPrice,
     )
 
     symbol = symbol.upper()
@@ -353,13 +353,13 @@ def get_stock_data_status(symbol: str) -> dict:
     Returns:
         데이터 상태 딕셔너리
     """
-    from stocks.models import (
-        Stock,
-        DailyPrice,
-        WeeklyPrice,
+    from packages.shared.stocks.models import (
         BalanceSheet,
-        IncomeStatement,
         CashFlowStatement,
+        DailyPrice,
+        IncomeStatement,
+        Stock,
+        WeeklyPrice,
     )
 
     symbol = symbol.upper()

@@ -18,7 +18,6 @@ from typing import TypeVar
 
 from pydantic import BaseModel, ValidationError
 
-
 _FENCE_OPEN = re.compile(r"^\s*```(?:json|JSON)?\s*\n?", flags=re.MULTILINE)
 _FENCE_CLOSE = re.compile(r"\n?\s*```\s*$")
 

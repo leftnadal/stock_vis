@@ -10,7 +10,7 @@ FMP API를 통한 뉴스 수집 Provider.
 import logging
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .base import BaseNewsProvider, RawNewsArticle
 

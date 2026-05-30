@@ -5,7 +5,7 @@ Stock Service - Provider 추상화를 활용한 통합 서비스
 Provider Factory를 통해 FMP를 호출한다. Fallback 체인은 향후 다른 provider 추가 시 확장.
 
 Usage:
-    from api_request.stock_service import StockService
+    from packages.shared.api_request.stock_service import StockService
 
     service = StockService()
     quote = service.get_quote('AAPL')  # ProviderResponse 반환
@@ -13,38 +13,38 @@ Usage:
 """
 
 import logging
-from typing import Dict, Any, List, Optional, Union
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional, Union
 
+from django.conf import settings
 from django.db import transaction
 from django.db.utils import IntegrityError
-from django.conf import settings
 
-from stocks.models import (
-    Stock,
+from packages.shared.stocks.models import (
     BalanceSheet,
-    IncomeStatement,
     CashFlowStatement,
     DailyPrice,
+    IncomeStatement,
+    Stock,
     WeeklyPrice,
 )
 
 from .providers.base import (
-    ProviderResponse,
-    NormalizedQuote,
-    NormalizedCompanyProfile,
-    NormalizedPriceData,
     NormalizedBalanceSheet,
-    NormalizedIncomeStatement,
     NormalizedCashFlow,
+    NormalizedCompanyProfile,
+    NormalizedIncomeStatement,
+    NormalizedPriceData,
+    NormalizedQuote,
     NormalizedSearchResult,
-    PeriodType,
     OutputSize,
+    PeriodType,
+    ProviderResponse,
 )
 from .providers.factory import (
-    ProviderFactory,
     EndpointType,
+    ProviderFactory,
     call_with_fallback,
 )
 
@@ -823,7 +823,7 @@ def get_stock_service() -> StockService:
     StockService 싱글톤 인스턴스 반환
 
     Usage:
-        from api_request.stock_service import get_stock_service
+        from packages.shared.api_request.stock_service import get_stock_service
 
         service = get_stock_service()
         quote = service.get_quote('AAPL')

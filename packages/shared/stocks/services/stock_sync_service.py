@@ -17,7 +17,7 @@ from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
-from ..models import Stock, DailyPrice
+from ..models import DailyPrice, Stock
 from .fmp_exchange_quotes import FMPExchangeQuotesService
 
 logger = logging.getLogger(__name__)

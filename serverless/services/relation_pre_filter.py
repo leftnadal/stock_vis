@@ -28,10 +28,10 @@ Usage:
     hints = pre_filter.get_relation_hints("Apple partners with Goldman Sachs")
     # ['PARTNER_OF']
 """
-import re
 import logging
-from typing import List, Dict, Any, Optional, Set, Tuple
+import re
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger(__name__)
 

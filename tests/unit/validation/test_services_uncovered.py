@@ -21,28 +21,27 @@ validation/services 미커버 영역 단위 테스트
 
 from decimal import Decimal
 from types import SimpleNamespace
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import (
+from packages.shared.metrics.models import (
     CompanyMetricSnapshot,
+    IndustryMetricBenchmark,
     MetricDefinition,
     PeerListCache,
     PeerMetricBenchmark,
-    IndustryMetricBenchmark,
 )
-from validation.models import PeerPreset, CompanyBenchmarkDelta, CompanyMetricLatest
-from validation.services.preset_generator import PresetGenerator
+from packages.shared.stocks.models import SP500Constituent, Stock
+from validation.models import CompanyBenchmarkDelta, CompanyMetricLatest, PeerPreset
 from validation.services.benchmark_calculator import BenchmarkCalculator
-from validation.services.metric_calculator import MetricCalculator
-from validation.services.relative_metrics import RelativeMetricCalculator
 from validation.services.interpretation import (
-    generate_summary_text,
     generate_metric_interpretation,
+    generate_summary_text,
 )
-
+from validation.services.metric_calculator import MetricCalculator
+from validation.services.preset_generator import PresetGenerator
+from validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -257,7 +256,7 @@ class TestGenerateLifecycle:
 class TestGenerateThematicWithDNA:
     def test_creates_preset_when_dna_matches(self):
         """본인 + 다른 종목 5개 이상이 같은 stage+capital_type → 프리셋 생성."""
-        from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA
+        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         stock = _make_stock("DNA_OK", sector="Technology", industry="Cloud")
         CompanyGrowthStage.objects.create(symbol_id="DNA_OK", stage='accelerating')
@@ -303,7 +302,7 @@ class TestGenerateThematicWithDNA:
 
     def test_insufficient_dna_peers_returns_zero(self):
         """같은 DNA peer < 5 → 0."""
-        from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA
+        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         stock = _make_stock("DNA_LP", sector="Technology", industry="Niche")
         CompanyGrowthStage.objects.create(symbol_id="DNA_LP", stage='turnaround')

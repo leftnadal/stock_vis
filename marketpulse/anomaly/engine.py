@@ -6,13 +6,13 @@ import operator
 import os
 import statistics
 from dataclasses import dataclass, field
-from datetime import date as date_cls, timedelta
+from datetime import date as date_cls
+from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
 import yaml
-
 from django.utils import timezone as django_timezone
 
 from macro.models.indicators import EconomicIndicator, IndicatorValue

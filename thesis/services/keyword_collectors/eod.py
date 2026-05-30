@@ -6,8 +6,8 @@
 import logging
 from datetime import date, timedelta
 
-from thesis.services.keyword_cache import ContextKeyword, save_keywords
 from thesis.services.builder_events import log_event
+from thesis.services.keyword_cache import ContextKeyword, save_keywords
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def extract_eod_keywords(target: str) -> list[ContextKeyword]:
     EODSignal에서 target 종목의 최근 시그널을 키워드로 변환.
     target은 종목명 또는 symbol.
     """
-    from stocks.models import EODSignal
+    from packages.shared.stocks.models import EODSignal
 
     # target → symbol 변환
     symbol = _resolve_symbol(target)
@@ -79,7 +79,7 @@ def extract_eod_keywords(target: str) -> list[ContextKeyword]:
 
 def _resolve_symbol(target: str) -> str | None:
     """종목명/symbol → symbol 변환."""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     stock = Stock.objects.filter(symbol__iexact=target).first()
     if stock:
         return stock.symbol

@@ -8,8 +8,8 @@ from typing import Any, Awaitable, Callable
 from django.core.cache import cache
 from tenacity import (
     AsyncRetrying,
-    Retrying,
     RetryError,
+    Retrying,
     retry_if_exception_type,
     stop_after_attempt,
     wait_exponential,

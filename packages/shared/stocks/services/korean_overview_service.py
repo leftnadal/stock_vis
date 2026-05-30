@@ -13,7 +13,7 @@ from django.utils import timezone
 from google import genai
 from google.genai import types
 
-from stocks.models import Stock, StockOverviewKo, SP500Constituent
+from packages.shared.stocks.models import SP500Constituent, Stock, StockOverviewKo
 
 logger = logging.getLogger(__name__)
 

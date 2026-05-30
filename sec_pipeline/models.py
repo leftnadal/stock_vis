@@ -7,7 +7,6 @@ Track B: Business Model 분류
 
 from django.db import models
 
-
 # ──────────────────────────────────────────────
 # 1. RawDocumentStore — SEC filing 원문 저장
 # ──────────────────────────────────────────────

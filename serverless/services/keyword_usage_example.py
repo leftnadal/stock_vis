@@ -6,14 +6,13 @@ V2 (Enhanced) vs V1 (Basic) 비교 및 통합 가이드
 
 import asyncio
 from datetime import date
-from typing import List, Dict, Any
-
-# V2 (Enhanced) - 풍부한 컨텍스트
-from .keyword_generator_v2 import EnhancedKeywordGenerator, generate_keywords_sync_v2
+from typing import Any, Dict, List
 
 # V1 (Basic) - 기존 단순 버전
 from .keyword_generator import KeywordGeneratorService, generate_keywords_sync
 
+# V2 (Enhanced) - 풍부한 컨텍스트
+from .keyword_generator_v2 import EnhancedKeywordGenerator, generate_keywords_sync_v2
 
 # ============================================================
 # 사용 예시 1: V2 (Enhanced) - Overview + 뉴스 활용

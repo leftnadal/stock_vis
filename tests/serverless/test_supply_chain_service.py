@@ -3,17 +3,18 @@ Supply Chain Service Tests
 
 Unit tests for supply chain synchronization service.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
+from serverless.services.supply_chain_parser import SupplyChainRelation
 from serverless.services.supply_chain_service import (
     SupplyChainService,
+    get_supply_chain_for_symbol,
     sync_supply_chain_for_symbol,
-    get_supply_chain_for_symbol
 )
-from serverless.services.supply_chain_parser import SupplyChainRelation
 
 
 @pytest.fixture

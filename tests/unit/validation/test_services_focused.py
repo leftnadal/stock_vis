@@ -18,28 +18,36 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent, IndustryClassification
-from metrics.models import (
-    CompanyMetricSnapshot, MetricDefinition, IndustryMetricBenchmark,
+from packages.shared.metrics.models import (
+    CompanyMetricSnapshot,
+    IndustryMetricBenchmark,
+    MetricDefinition,
+)
+from packages.shared.stocks.models import (
+    IndustryClassification,
+    SP500Constituent,
+    Stock,
 )
 from validation.models import PeerPreset
 from validation.services.benchmark_calculator import (
+    BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,
-    BenchmarkCalculator,
 )
-from validation.services.preset_generator import PresetGenerator
-from validation.services.metric_calculator import (
-    _safe, _safe_nonzero, _div, MetricCalculator,
-)
-from validation.services.relative_metrics import RelativeMetricCalculator
 from validation.services.interpretation import (
-    generate_summary_text,
-    generate_metric_interpretation,
     determine_trend,
     generate_leader_summary,
+    generate_metric_interpretation,
+    generate_summary_text,
 )
-
+from validation.services.metric_calculator import (
+    MetricCalculator,
+    _div,
+    _safe,
+    _safe_nonzero,
+)
+from validation.services.preset_generator import PresetGenerator
+from validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Shared helpers

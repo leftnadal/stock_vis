@@ -15,16 +15,16 @@ KB 참고: FMP Rate Limiting, ThreadPoolExecutor 병렬 처리
 
 import logging
 import time
-import msgpack
-from typing import Dict, Any, List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
-from django.core.cache import cache
+import msgpack
 from django.conf import settings
+from django.core.cache import cache
 
-from api_request.providers.fmp.client import FMPClient
+from packages.shared.api_request.providers.fmp.client import FMPClient
 
 # News Providers (선택적)
 try:

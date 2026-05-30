@@ -6,13 +6,13 @@ Context Compressor - Gemini Flash 기반 문서 압축
 
 import asyncio
 import logging
-from typing import List, Tuple, Dict, Any, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+from django.conf import settings
 from google import genai
 from google.genai import types
-from django.conf import settings
 
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 
 logger = logging.getLogger(__name__)
 

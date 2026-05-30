@@ -10,14 +10,15 @@ sec_pipeline 모델 추가 엣지 케이스 테스트.
 - BusinessModelEvidence 기본 confidence
 """
 
-import pytest
 from datetime import date
+
+import pytest
 
 
 @pytest.mark.django_db
 class TestSupplyChainEvidenceDefaults:
     def test_default_confidence_and_grade(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -110,7 +111,7 @@ class TestCompanyAliasContextCountry:
 class TestRawDocumentCascade:
     def test_cascade_deletes_supply_chain_evidence(self):
         """RawDocumentStore 삭제 시 관련 SupplyChainEvidence 도 삭제."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='CSC', stock_name='Cascade Co')
@@ -132,9 +133,11 @@ class TestRawDocumentCascade:
 @pytest.mark.django_db
 class TestBusinessModelEvidenceDefaults:
     def test_default_confidence_zero(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, BusinessModelSnapshot, BusinessModelEvidence,
+            BusinessModelEvidence,
+            BusinessModelSnapshot,
+            RawDocumentStore,
         )
 
         stock = Stock.objects.create(symbol='BME', stock_name='BME Co')

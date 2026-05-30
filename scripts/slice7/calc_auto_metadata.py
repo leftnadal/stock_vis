@@ -25,7 +25,6 @@ from scripts.slice7._common import (
     referenced_metrics,
 )
 
-
 ROOT = Path(__file__).resolve().parents[2]
 INPUT_PATH = ROOT / "docs/portfolio/coach/slice7/step9_1_rationales.json"
 RAW_PATHS = {

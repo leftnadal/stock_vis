@@ -14,19 +14,19 @@ ranking → ranking_complete → compressing → compression_complete →
 analyzing → streaming → complete
 """
 
-import time
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional, List
+import time
+from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from asgiref.sync import sync_to_async
 from django.db import close_old_connections
 
-from ..models import AnalysisSession, AnalysisMessage
-from .entity_extractor import EntityExtractor, EntityNormalizer
-from .hybrid_search import HybridSearchService, SearchWeights, MetadataFilterBuilder
-from .reranker import CrossEncoderReranker
+from ..models import AnalysisMessage, AnalysisSession
 from .context_compressor import QuestionAwareCompressor
+from .entity_extractor import EntityExtractor, EntityNormalizer
+from .hybrid_search import HybridSearchService, MetadataFilterBuilder, SearchWeights
 from .llm_service import LLMServiceLite, ResponseParser
+from .reranker import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
 

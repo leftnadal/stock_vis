@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared_kb.ontology_kb import OntologyKB
-from shared_kb.schema import KnowledgeItem, KnowledgeType, ConfidenceLevel
+from shared_kb.schema import ConfidenceLevel, KnowledgeItem, KnowledgeType
 
 kb = OntologyKB()
 

@@ -11,19 +11,22 @@ BenchmarkCalculator 단위 테스트
 """
 
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import CompanyMetricSnapshot, MetricDefinition, PeerListCache
+from packages.shared.metrics.models import (
+    CompanyMetricSnapshot,
+    MetricDefinition,
+    PeerListCache,
+)
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.models import CompanyBenchmarkDelta
 from validation.services.benchmark_calculator import (
+    BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,
-    BenchmarkCalculator,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

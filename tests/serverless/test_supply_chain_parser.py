@@ -3,13 +3,14 @@ Supply Chain Parser Tests
 
 Unit tests for 10-K text parsing and relationship extraction.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from serverless.services.supply_chain_parser import (
     SupplyChainParser,
-    SupplyChainRelation
+    SupplyChainRelation,
 )
 
 

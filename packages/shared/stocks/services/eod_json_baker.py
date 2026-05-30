@@ -17,12 +17,12 @@ from pathlib import Path
 from django.conf import settings
 from django.utils import timezone as dj_timezone
 
-from stocks.models import DailyPrice, EODDashboardSnapshot, PipelineLog
+from packages.shared.stocks.models import DailyPrice, EODDashboardSnapshot, PipelineLog
 
 logger = logging.getLogger(__name__)
 
 # 카테고리 메타데이터 (tagger와 동일)
-from stocks.services.eod_signal_tagger import (
+from packages.shared.stocks.services.eod_signal_tagger import (
     ALL_SIGNAL_IDS,
     CATEGORY_COLORS,
     EDUCATION_TIPS,
@@ -260,7 +260,7 @@ class EODJSONBaker:
         if not hasattr(self, "_company_name_cache"):
             self._company_name_cache = {}
         if symbol and symbol not in self._company_name_cache:
-            from stocks.models import Stock
+            from packages.shared.stocks.models import Stock
 
             stock = (
                 Stock.objects.filter(symbol=symbol)

@@ -5,13 +5,13 @@ Gemini 2.5 Flash를 사용하여 질문에서 종목명, 지표, 개념, 시간 
 """
 
 import json
-import re
 import logging
-from typing import TypedDict, Optional
+import re
+from typing import Optional, TypedDict
 
+from django.conf import settings
 from google import genai
 from google.genai import types
-from django.conf import settings
 
 logger = logging.getLogger(__name__)
 

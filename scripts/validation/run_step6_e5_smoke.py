@@ -34,7 +34,6 @@ from portfolio.schemas.llm import E5Request, E5Response
 from portfolio.services.e5_adjustment_parser import build_e5_prompt
 from portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
 
-
 THRESHOLDS = {
     "cost_usd_max": 0.020,
     "latency_ms_max": 5000,

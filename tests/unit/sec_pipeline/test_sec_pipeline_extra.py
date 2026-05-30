@@ -14,10 +14,10 @@ sec_pipeline 추가 단위 테스트 — 기존 19개 파일에서 누락된 시
 HTTP 요청과 Gemini 호출은 전부 mock.
 """
 
-import sys
 import json
+import sys
 from datetime import date, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.utils import timezone
@@ -25,17 +25,16 @@ from django.utils import timezone
 from sec_pipeline.collector import SECFilingCollector
 from sec_pipeline.extractor import GeminiExtractor
 from sec_pipeline.normalizer import (
-    normalize_section_all,
-    filter_paragraphs,
     _clean_text,
+    filter_paragraphs,
+    normalize_section_all,
 )
 from sec_pipeline.ticker_matcher import TickerMatcher
 from sec_pipeline.validators import (
-    validate_extracted_sections,
-    _check_item_order,
     MAX_SECTION_LENGTH,
+    _check_item_order,
+    validate_extracted_sections,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -318,9 +317,11 @@ class TestCleanTextExtraCases:
 class TestMatchWithQueueExtra:
     def test_source_symbol_without_stock_uses_empty_sector(self, matcher):
         """source_symbol 에 해당하는 Stock 이 없으면 context_sector='' 로 매칭."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         # source Stock 없음 — match() 가 호출될 때 context_sector='' 가 전달
@@ -349,7 +350,7 @@ class TestMatchWithQueueExtra:
 
     def test_match_succeeds_but_target_stock_missing(self, matcher):
         """match() 가 ticker 반환했지만 Stock 테이블에 없으면 evidence 업데이트 스킵."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         source_stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -394,7 +395,7 @@ class TestMatchAliasExplicitEmptySector:
 class TestGetFuzzyCandidatesSortedDesc:
     def test_candidates_sorted_by_score_desc(self, matcher):
         """후보는 score 내림차순으로 반환."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         Stock.objects.create(symbol='APP2', stock_name='Apple Computer')
         candidates = matcher._get_fuzzy_candidates('Apple Inc', top_k=5)
@@ -411,7 +412,7 @@ class TestGetFuzzyCandidatesSortedDesc:
 class TestRawDocumentStoreWarnings:
     def test_warnings_jsonfield_persists_list(self):
         """warnings JSONField 에 리스트가 영속화."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -454,9 +455,11 @@ class TestFilingProcessLogDuration:
 class TestBusinessModelEvidenceFieldChoices:
     def test_all_5_field_names_valid(self):
         """BusinessModelEvidence.field_name 의 5개 choice 모두 유효."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, BusinessModelSnapshot, BusinessModelEvidence,
+            BusinessModelEvidence,
+            BusinessModelSnapshot,
+            RawDocumentStore,
         )
 
         stock = Stock.objects.create(symbol='X', stock_name='X Co')
@@ -529,7 +532,7 @@ class TestPipelineReportCrossInsights:
 class TestSupplyChainEvidenceHighGrade:
     def test_confidence_grade_high_persists(self):
         """confidence_grade='high' 정상 저장."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='HG', stock_name='HG Co')
@@ -554,7 +557,7 @@ class TestSupplyChainEvidenceHighGrade:
 
 @pytest.fixture
 def stock(db):
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
 
 

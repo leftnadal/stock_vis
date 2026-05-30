@@ -7,6 +7,7 @@ TestNewsCollectionCategory:
 """
 
 import pytest
+
 from news.models import NewsCollectionCategory
 
 
@@ -17,7 +18,7 @@ class TestNewsCollectionCategory:
     @pytest.fixture(autouse=True)
     def setup_sp500_constituents(self):
         """SP500Constituent 테스트 데이터 생성"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         # Technology 섹터 종목 3개
         SP500Constituent.objects.create(

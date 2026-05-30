@@ -31,7 +31,6 @@ from portfolio.prompts.e1.e1_builder import build_e1_prompt
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
 
-
 # Slice 1 실측 기반 임계 ($0.001은 비현실적, Gemini Flash 1회 평균 $0.015).
 THRESHOLDS = {
     "cost_usd_max": 0.020,

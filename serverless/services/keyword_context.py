@@ -4,9 +4,9 @@ Market Movers 키워드 생성 컨텍스트 빌더
 토큰 최적화 및 컨텍스트 구성 전략
 """
 
-from typing import Dict, Any, List, Optional
 from datetime import date
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
 from ..models import MarketMover
 

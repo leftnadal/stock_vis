@@ -12,12 +12,11 @@ normalizer.py 추가 엣지 케이스 테스트.
 import pytest
 
 from sec_pipeline.normalizer import (
-    normalize_section_all,
-    filter_paragraphs,
-    _clean_text,
     SUPPLY_CHAIN_KEYWORDS,
+    _clean_text,
+    filter_paragraphs,
+    normalize_section_all,
 )
-
 
 # ---------------------------------------------------------------------------
 # Tests: filter_paragraphs — 인자 처리

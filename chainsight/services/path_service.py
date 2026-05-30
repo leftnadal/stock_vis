@@ -4,7 +4,7 @@ from typing import Dict, List
 from django.utils import timezone
 
 from chainsight.graph import get_graph_repository
-from stocks.models import Stock
+from packages.shared.stocks.models import Stock
 
 RELATION_LABEL = {
     'SUPPLIES_TO': '공급망 중심',

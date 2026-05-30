@@ -19,7 +19,6 @@ import pytest
 
 from portfolio.measure.estimator_v3 import estimate_input_tokens
 
-
 KPI_9C_THRESHOLD_PCT = 2.0
 
 

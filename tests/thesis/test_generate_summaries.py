@@ -10,7 +10,6 @@ from django.contrib.auth import get_user_model
 from thesis.models import Thesis, ThesisSnapshot
 from thesis.tasks.summary import generate_thesis_summaries
 
-
 User = get_user_model()
 
 

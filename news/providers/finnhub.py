@@ -6,12 +6,13 @@ Finnhub 뉴스 API Provider
 - Market News: 일반, forex, crypto, merger
 """
 
-import requests
 import logging
 import time
 from datetime import datetime, timezone
-from typing import Dict, Any, List
 from decimal import Decimal
+from typing import Any, Dict, List
+
+import requests
 
 from .base import BaseNewsProvider, RawNewsArticle
 

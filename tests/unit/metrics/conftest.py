@@ -2,10 +2,12 @@
 metrics 앱 테스트 공통 fixtures
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.core.management import call_command
-from stocks.models import Stock
+
+from packages.shared.stocks.models import Stock
 
 
 @pytest.fixture(autouse=True)

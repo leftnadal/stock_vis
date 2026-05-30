@@ -16,9 +16,10 @@ TestAdminNewsSectorOptionsView:
 """
 
 import pytest
-from rest_framework.test import APIClient
-from rest_framework import status
 from django.contrib.auth import get_user_model
+from rest_framework import status
+from rest_framework.test import APIClient
+
 from news.models import NewsCollectionCategory
 
 User = get_user_model()
@@ -38,7 +39,7 @@ class TestAdminNewsCategoryView:
     @pytest.fixture(autouse=True)
     def setup_sp500_constituents(self):
         """SP500Constituent 테스트 데이터 생성"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',
@@ -323,7 +324,7 @@ class TestAdminNewsCategoryDetailView:
     @pytest.fixture(autouse=True)
     def setup_sp500_constituents(self):
         """SP500Constituent 테스트 데이터 생성"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',
@@ -504,7 +505,7 @@ class TestAdminNewsSectorOptionsView:
     @pytest.fixture(autouse=True)
     def setup_sp500_constituents(self):
         """SP500Constituent 테스트 데이터 생성"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',
@@ -565,7 +566,7 @@ class TestAdminNewsSectorOptionsView:
         """Given: SP500Constituent 없음
         When: GET /sector-options/
         Then: 빈 배열 반환"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
         SP500Constituent.objects.all().delete()
 
         response = self.client.get(self.url)

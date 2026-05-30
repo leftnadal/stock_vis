@@ -15,7 +15,6 @@ from rest_framework.views import APIView
 from marketpulse.models.news import MarketPulseNews, NewsViewLog
 from marketpulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
 
-
 REFRESH_LIMIT = 6
 
 CATEGORY_QUOTA = {

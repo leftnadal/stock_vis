@@ -21,7 +21,6 @@ import re
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 FILLED_PATH = ROOT / "docs/portfolio/coach/slice7/step9_5_eval_filled_v7.md"
 KEY_PATH = ROOT / "docs/portfolio/coach/slice7/step9_4_eval_key_v7.json"

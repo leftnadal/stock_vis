@@ -91,7 +91,7 @@ class TestFetchFmpValueIntegration:
         ind = self._indicator(
             data_params={'metric': 'earningsYieldTTM', 'inverse': True}
         )
-        with patch('api_request.providers.fmp.client.FMPClient') as MockClient:
+        with patch('packages.shared.api_request.providers.fmp.client.FMPClient') as MockClient:
             instance = MockClient.return_value
             instance._make_request.return_value = [{'earningsYieldTTM': 0.04}]
             value, _ = _fetch_fmp_value(ind)
@@ -102,7 +102,7 @@ class TestFetchFmpValueIntegration:
         ind = self._indicator(
             data_params={'metric': 'returnOnEquityTTM', 'scale_multiplier': 100}
         )
-        with patch('api_request.providers.fmp.client.FMPClient') as MockClient:
+        with patch('packages.shared.api_request.providers.fmp.client.FMPClient') as MockClient:
             instance = MockClient.return_value
             instance._make_request.return_value = [{'returnOnEquityTTM': 0.18}]
             value, _ = _fetch_fmp_value(ind)
@@ -117,7 +117,7 @@ class TestFetchFmpValueIntegration:
                 'scale_multiplier': 100,
             },
         )
-        with patch('api_request.providers.fmp.client.FMPClient') as MockClient:
+        with patch('packages.shared.api_request.providers.fmp.client.FMPClient') as MockClient:
             instance = MockClient.return_value
             instance._make_request.return_value = [{'growthRevenue': 0.12}]
             value, _ = _fetch_fmp_value(ind)

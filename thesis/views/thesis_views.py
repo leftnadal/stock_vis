@@ -4,18 +4,25 @@ import logging
 
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import viewsets, status
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from thesis.models import (
-    Thesis, ThesisPremise, ThesisIndicator,
-    HypothesisEvent, ValidityRecord, InvestorDNA,
+    HypothesisEvent,
+    InvestorDNA,
+    Thesis,
+    ThesisIndicator,
+    ThesisPremise,
+    ValidityRecord,
 )
 from thesis.serializers import (
-    ThesisListSerializer, ThesisDetailSerializer, ThesisCreateSerializer,
-    ThesisPremiseSerializer, ThesisIndicatorSerializer,
+    ThesisCreateSerializer,
+    ThesisDetailSerializer,
+    ThesisIndicatorSerializer,
+    ThesisListSerializer,
+    ThesisPremiseSerializer,
 )
 from thesis.services.indicator_matcher import match_indicators_for_premise
 

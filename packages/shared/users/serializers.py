@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from .models import User, Portfolio, Watchlist, WatchlistItem
-from stocks.models import Stock
+
+from packages.shared.stocks.models import Stock
+
+from .models import Portfolio, User, Watchlist, WatchlistItem
 
 
 class StockListingField(serializers.RelatedField):
@@ -208,7 +210,7 @@ class PortfolioCreateUpdateSerializer(serializers.ModelSerializer):
             return stock
         except Stock.DoesNotExist:
             # Stock이 없으면 Alpha Vantage API로 유효성 검증 후 생성
-            from stocks.views_search import validate_and_create_stock
+            from packages.shared.stocks.views_search import validate_and_create_stock
 
             stock = validate_and_create_stock(symbol)
             if stock:
@@ -416,7 +418,7 @@ class WatchlistItemCreateSerializer(serializers.Serializer):
             return stock
         except Stock.DoesNotExist:
             # Stock이 없으면 Alpha Vantage API로 유효성 검증 후 생성
-            from stocks.views_search import validate_and_create_stock
+            from packages.shared.stocks.views_search import validate_and_create_stock
 
             stock = validate_and_create_stock(symbol)
             if stock:

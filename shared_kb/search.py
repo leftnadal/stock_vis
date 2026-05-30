@@ -11,17 +11,17 @@ OAG KB Search CLI
 
 import argparse
 import sys
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 # 직접 실행 시 패키지 경로 추가
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from shared_kb.ontology_kb import OntologyKB
-    from shared_kb.schema import KnowledgeType, ConfidenceLevel
+    from shared_kb.schema import ConfidenceLevel, KnowledgeType
 else:
     from .ontology_kb import OntologyKB
-    from .schema import KnowledgeType, ConfidenceLevel
+    from .schema import ConfidenceLevel, KnowledgeType
 
 
 def main():

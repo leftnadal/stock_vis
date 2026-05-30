@@ -17,7 +17,6 @@ from portfolio.services.scoring.presets.special import (
 )
 from portfolio.services.scoring.presets.value import VALUE_SPECS, ValueScoringEngine
 
-
 PRESET_SCORERS: dict[str, type[ScoringEngineBase]] = {
     "value": ValueScoringEngine,
     "growth": GrowthScoringEngine,

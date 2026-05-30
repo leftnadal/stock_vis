@@ -4,17 +4,17 @@ LLMServiceLite - Gemini 2.5 Flash 기반 경량 LLM 서비스
 스트리밍 응답, 재시도 로직, 에러 핸들링을 포함한 Gemini API 래퍼입니다.
 """
 
-import re
 import asyncio
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
+import re
 from datetime import date
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
+from django.conf import settings
 from google import genai
 from google.genai import types
-from django.conf import settings
 
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 
 logger = logging.getLogger(__name__)
 

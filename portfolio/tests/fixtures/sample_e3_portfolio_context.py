@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
 # ============================================================
 # preset 메타 (Slice 5 hybrid 7 mirror)
 # ============================================================

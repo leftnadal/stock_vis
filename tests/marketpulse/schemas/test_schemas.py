@@ -4,7 +4,6 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-
 # ───────── News ─────────
 
 class TestNewsEntities:
@@ -109,9 +108,16 @@ class TestBriefingSection:
 class TestSchemasReexport:
     def test_all_imports_from_package(self):
         from marketpulse.schemas import (
-            BriefingSection, IndicatorValue, IndicatorsSnapshot, MatchedCondition,
-            NewsEntities, PendingTransition,
-            R02Evidence, R04Evidence, R09Evidence, R12Evidence,
+            BriefingSection,
+            IndicatorsSnapshot,
+            IndicatorValue,
+            MatchedCondition,
+            NewsEntities,
+            PendingTransition,
+            R02Evidence,
+            R04Evidence,
+            R09Evidence,
+            R12Evidence,
         )
         # 모두 import 가능
         assert all([

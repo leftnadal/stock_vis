@@ -292,8 +292,13 @@ class IndicatorReadingsView(APIView):
 
 def _fetch_fmp_history(indicator, days: int) -> list:
     """FMP get_historical_price로 히스토리 조회. DB readings 부족 시 fallback."""
-    from api_request.providers.fmp.client import FMPClient, FMPClientError, FMPPremiumError
     from django.conf import settings
+
+    from packages.shared.api_request.providers.fmp.client import (
+        FMPClient,
+        FMPClientError,
+        FMPPremiumError,
+    )
 
     params = indicator.data_params or {}
     symbol = params.get('symbol')

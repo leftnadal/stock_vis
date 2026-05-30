@@ -157,9 +157,11 @@ class MarketFeedService:
             logger.debug(f"SectorPerformance not available: {e}")
 
         try:
-            from serverless.models import MarketMover
-            from django.utils import timezone as tz
             from datetime import timedelta
+
+            from django.utils import timezone as tz
+
+            from serverless.models import MarketMover
             recent_date = tz.localdate() - timedelta(days=3)
             movers = MarketMover.objects.filter(
                 date__gte=recent_date,

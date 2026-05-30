@@ -11,11 +11,11 @@ score_indicator()는 순수 함수로, DB 접근 없이 readings/dates 리스트
   - extreme volatility 플래그 (|z_raw| >= 5.0)
 """
 
-import pytest
 from datetime import date, timedelta
 
-from thesis.services.indicator_scorer import score_indicator
+import pytest
 
+from thesis.services.indicator_scorer import score_indicator
 
 # ---------------------------------------------------------------------------
 # Helpers

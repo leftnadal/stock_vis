@@ -8,11 +8,13 @@ TestCollectCategoryNews:
 - 수집 후 통계 업데이트
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 from django.utils import timezone
-from news.tasks import collect_category_news
+
 from news.models import NewsCollectionCategory
+from news.tasks import collect_category_news
 
 
 @pytest.mark.django_db
@@ -22,7 +24,7 @@ class TestCollectCategoryNews:
     @pytest.fixture(autouse=True)
     def setup_sp500_constituents(self):
         """SP500Constituent 테스트 데이터 생성"""
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',

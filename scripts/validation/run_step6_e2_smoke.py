@@ -35,7 +35,6 @@ from portfolio.schemas.llm import E2Request
 from portfolio.services.e2_diagnostic_card import build_e2_prompt, parse_e2_response
 from portfolio.tests.fixtures.sample_diagnostic_context import ALL_FIXTURES
 
-
 THRESHOLDS = {"cost_usd_max": 0.020, "latency_ms_max": 5000}
 
 OUTPUT_PATH = Path("docs/portfolio/coach/slice3/step6_smoke_e2_output.json")

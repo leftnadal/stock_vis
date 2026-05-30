@@ -12,13 +12,13 @@ Features:
 """
 
 import logging
-from decimal import Decimal
-from typing import Optional, Dict, Any
 from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import Any, Dict, Optional
 
+from asgiref.sync import sync_to_async
 from django.conf import settings
 from django.utils import timezone
-from asgiref.sync import sync_to_async
 
 logger = logging.getLogger(__name__)
 
@@ -299,10 +299,10 @@ class CostTracker:
         """Prometheus 메트릭 기록"""
         try:
             from ..metrics import (
-                record_token_usage,
+                record_cache_operation,
                 record_cost,
                 record_cost_saved,
-                record_cache_operation
+                record_token_usage,
             )
 
             # 토큰 사용량
@@ -373,8 +373,9 @@ class CostTracker:
     @sync_to_async
     def _get_daily_cost(self, user_id: int) -> float:
         """일일 사용 비용 조회"""
-        from ..models import UsageLog
         from django.contrib.auth import get_user_model
+
+        from ..models import UsageLog
 
         User = get_user_model()
         try:
@@ -386,8 +387,9 @@ class CostTracker:
     @sync_to_async
     def _get_monthly_cost(self, user_id: int) -> float:
         """월간 사용 비용 조회"""
-        from ..models import UsageLog
         from django.contrib.auth import get_user_model
+
+        from ..models import UsageLog
 
         User = get_user_model()
         try:
@@ -420,8 +422,9 @@ class CostTracker:
         hours: int
     ) -> Dict[str, Any]:
         """사용량 통계 조회 (sync)"""
-        from ..models import UsageLog
         from django.contrib.auth import get_user_model
+
+        from ..models import UsageLog
 
         User = get_user_model()
 

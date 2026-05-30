@@ -7,7 +7,7 @@ LLM을 활용하여 Market Movers 종목에 대한 키워드를 자동 생성합
 """
 
 from datetime import date
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 class KeywordPromptBuilder:

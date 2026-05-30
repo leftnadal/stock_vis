@@ -32,7 +32,6 @@ from portfolio.tests.fixtures.sample_diagnostic_context import (
     FIXTURE_GROUPS,
 )
 
-
 PROVIDERS = [
     {"label": "haiku", "provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},
     {"label": "sonnet", "provider": "anthropic", "model": ANTHROPIC_SONNET_MODEL},

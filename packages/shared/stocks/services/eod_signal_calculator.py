@@ -11,15 +11,15 @@ S&P 500 전체 종목에 대해 벡터 연산으로 14개 시그널을 계산합
 - avg_volume_20d == 0 → vol_ratio 스킵 (NaN 처리)
 """
 
-import time
 import functools
 import logging
+import time
 from datetime import date, timedelta
 
 import numpy as np
 import pandas as pd
 
-from stocks.models import DailyPrice, SP500Constituent, Stock
+from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)
 
@@ -181,7 +181,9 @@ class EODSignalCalculator:
         Returns:
             'normal' | 'elevated' | 'high_vol'
         """
-        from stocks.services.eod_regime_calculator import DynamicRegimeCalculator
+        from packages.shared.stocks.services.eod_regime_calculator import (
+            DynamicRegimeCalculator,
+        )
 
         calculator = DynamicRegimeCalculator()
         return calculator.get_regime(target_date)

@@ -7,8 +7,8 @@ SEC-PR-2: 섹션 추출 사후 검증
 3. 비정상 길이 플래그 — WARN만, 제거 안 함
 """
 
-import re
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 

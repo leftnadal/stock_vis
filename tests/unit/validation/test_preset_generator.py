@@ -13,14 +13,17 @@ PresetGenerator 단위 테스트
 """
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent, IndustryClassification
+from packages.shared.stocks.models import (
+    IndustryClassification,
+    SP500Constituent,
+    Stock,
+)
 from validation.models import PeerPreset
 from validation.services.preset_generator import PresetGenerator
-
 
 # ---------------------------------------------------------------------------
 # Helpers

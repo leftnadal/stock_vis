@@ -6,11 +6,16 @@ Phase 3: quality_top, lifecycle
 """
 
 import logging
+
 import numpy as np
-from stocks.models import Stock, SP500Constituent
-from metrics.models import CompanyMetricSnapshot
+
+from packages.shared.metrics.models import CompanyMetricSnapshot
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.models import PeerPreset
-from validation.services.benchmark_calculator import assign_size_bucket, get_adjacent_buckets
+from validation.services.benchmark_calculator import (
+    assign_size_bucket,
+    get_adjacent_buckets,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +231,7 @@ class PresetGenerator:
             return 0
 
         # 특수 산업: ROIC → ROE
-        from stocks.models import IndustryClassification
+        from packages.shared.stocks.models import IndustryClassification
         is_special = False
         if stock.industry:
             ic = IndustryClassification.objects.filter(industry__iexact=stock.industry).first()
@@ -381,7 +386,7 @@ class PresetGenerator:
         GrowthStage × CapitalDNA 조합으로 섹터 횡단 테마 클러스터링.
         같은 (stage, capital_type) 조합 = 비슷한 비즈니스 DNA.
         """
-        from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA
+        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         # 내 프로파일 조회
         my_gs = CompanyGrowthStage.objects.filter(symbol_id=stock.symbol).first()
@@ -470,7 +475,7 @@ class PresetGenerator:
             score -= 0.1
 
         # 특수 산업 패널티
-        from stocks.models import IndustryClassification
+        from packages.shared.stocks.models import IndustryClassification
         if stock.industry:
             ic = IndustryClassification.objects.filter(industry__iexact=stock.industry).first()
             if ic and ic.handling_mode == 'special':

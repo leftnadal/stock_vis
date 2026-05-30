@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from users.models import UserInterest
+from packages.shared.users.models import UserInterest
 
 User = get_user_model()
 

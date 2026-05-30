@@ -14,7 +14,7 @@ from typing import Optional
 
 from rapidfuzz import fuzz
 
-from stocks.models import Stock
+from packages.shared.stocks.models import Stock
 
 logger = logging.getLogger(__name__)
 

@@ -25,9 +25,7 @@ django.setup()
 from portfolio.llm.client import LLMClient  # noqa: E402
 from portfolio.llm.cost_guard import CostGuard  # noqa: E402
 from portfolio.services._llm_kwargs import resolve_provider_kwargs  # noqa: E402
-
 from scripts.slice7._common import _strip_fence, extract_answer, load_raw  # noqa: E402
-
 
 ROOT = Path(__file__).resolve().parents[2]
 INPUT_PATHS = {

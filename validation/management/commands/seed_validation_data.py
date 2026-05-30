@@ -6,9 +6,9 @@
 """
 
 from django.core.management.base import BaseCommand
-from metrics.models import MetricDefinition
-from stocks.models import IndustryClassification, SP500Constituent
 
+from packages.shared.metrics.models import MetricDefinition
+from packages.shared.stocks.models import IndustryClassification, SP500Constituent
 
 # ── 34개 지표 시드 (설계서 섹션 4 기준) ──
 METRIC_UPDATES = {
@@ -103,7 +103,7 @@ class Command(BaseCommand):
             .values_list('sub_sector', flat=True)
         )
         # Stock 모델에서도 industry 수집
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         stock_industries = set(
             Stock.objects.exclude(industry__isnull=True)
             .exclude(industry='')

@@ -15,15 +15,14 @@ Usage:
     for rel in relations:
         print(f"{rel.source_symbol} -> {rel.target_name} ({rel.relation_type})")
 """
-import re
 import logging
+import re
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Tuple
 from decimal import Decimal
+from typing import Dict, List, Optional, Tuple
 
 from django.db.models import Q
 from django.db.models.functions import Lower
-
 
 logger = logging.getLogger(__name__)
 
@@ -471,7 +470,7 @@ class SupplyChainParser:
             return self._company_name_cache[cache_key]
 
         try:
-            from stocks.models import Stock
+            from packages.shared.stocks.models import Stock
 
             # 회사명에서 suffix 제거
             search_name = company_name

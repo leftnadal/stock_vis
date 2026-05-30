@@ -3,21 +3,22 @@
 """
 import logging
 import threading
+
 from django.core.cache import cache
 from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .services import MacroEconomicService
 from .serializers import (
-    FearGreedResponseSerializer,
-    InterestRatesResponseSerializer,
-    InflationResponseSerializer,
-    GlobalMarketsResponseSerializer,
     EconomicCalendarResponseSerializer,
+    FearGreedResponseSerializer,
+    GlobalMarketsResponseSerializer,
+    InflationResponseSerializer,
+    InterestRatesResponseSerializer,
     MarketPulseResponseSerializer,
 )
+from .services import MacroEconomicService
 
 logger = logging.getLogger(__name__)
 

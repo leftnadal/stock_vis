@@ -1,7 +1,6 @@
 """Seed 11 EconomicIndicator series for Market Pulse v2 (PR-A1)."""
 from django.db import migrations
 
-
 SERIES = [
     ('NFCI', 'Chicago Fed National Financial Conditions Index', 'sentiment', 'fred', 'weekly'),
     ('NFCICREDIT', 'NFCI Credit Subindex', 'sentiment', 'fred', 'weekly'),

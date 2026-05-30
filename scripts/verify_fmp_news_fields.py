@@ -6,14 +6,16 @@ FMP News API 응답 필드 검증 - 구현 전 실행
 
 FMP stable API의 뉴스 엔드포인트 응답 필드명을 확인합니다.
 """
+import json
 import os
 import sys
-import json
+
 import requests
 
 # Django 설정 로드 (env에서 API 키 가져오기)
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from dotenv import load_dotenv
+
 load_dotenv()
 
 FMP_API_KEY = os.environ.get('FMP_API_KEY')

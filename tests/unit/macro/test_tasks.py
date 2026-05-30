@@ -5,8 +5,9 @@ Macro Celery Tasks 단위 테스트
   - update_economic_indicators: exponential backoff 적용
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestUpdateEconomicIndicatorsRetry:

@@ -1,13 +1,12 @@
 import uuid
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.contrib.auth import get_user_model
-from unittest.mock import patch, MagicMock
 from rest_framework.test import APIClient
 
+from chainsight.models import PathAction, SavedPath
 from chainsight.services.alternatives_service import find_alternatives
-from chainsight.models import SavedPath, PathAction
-
 
 User = get_user_model()
 

@@ -18,13 +18,17 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import IndustryClassification, SP500Constituent, Stock
-from metrics.models import (
+from packages.shared.metrics.models import (
     CompanyMetricSnapshot,
     IndustryMetricBenchmark,
     MetricDefinition,
     PeerListCache,
     PeerMetricBenchmark,
+)
+from packages.shared.stocks.models import (
+    IndustryClassification,
+    SP500Constituent,
+    Stock,
 )
 from validation.models import (
     CompanyBenchmarkDelta,
@@ -50,7 +54,6 @@ from validation.services.metric_calculator import (
 )
 from validation.services.preset_generator import PresetGenerator
 from validation.services.relative_metrics import RelativeMetricCalculator
-
 
 # ---------------------------------------------------------------------------
 # Helpers

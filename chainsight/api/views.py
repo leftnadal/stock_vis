@@ -6,23 +6,22 @@ Market view: GET /chainsight/seeds/, sector/{sector}/graph/, {symbol}/neighbors/
 """
 
 import json
-import time
 import logging
+import time
 from datetime import date, datetime, timedelta
 
 from django.core.cache import cache
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from stocks.models import Stock
 from chainsight.graph import get_graph_repository
 from chainsight.graph.exceptions import GraphConnectionError
 from chainsight.models import CoMentionEdge, PriceCoMovement
 from chainsight.utils import get_market_date
+from packages.shared.stocks.models import Stock
 
 REASON_LABELS = {
     'price_top5': '수익률 상위 이상치',

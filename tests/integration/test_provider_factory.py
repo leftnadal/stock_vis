@@ -4,9 +4,10 @@ Provider Factory Integration Tests
 Provider 선택, Fallback, 캐싱 메커니즘 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 
 class TestProviderFactoryBasic:
@@ -18,8 +19,11 @@ class TestProviderFactoryBasic:
         When: get_provider() 호출
         Then: StockDataProvider 인스턴스 반환
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType
-        from api_request.providers.base import StockDataProvider
+        from packages.shared.api_request.providers.base import StockDataProvider
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+        )
 
         provider = ProviderFactory.get_provider(EndpointType.QUOTE)
 
@@ -32,7 +36,10 @@ class TestProviderFactoryBasic:
         When: 같은 타입으로 여러 번 호출
         Then: 동일 인스턴스 반환 (캐싱)
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+        )
 
         # 캐시 초기화
         ProviderFactory.clear_cache()
@@ -48,7 +55,10 @@ class TestProviderFactoryBasic:
         When: clear_cache() 호출
         Then: 새 인스턴스 생성
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+        )
 
         provider1 = ProviderFactory.get_provider(EndpointType.QUOTE)
         ProviderFactory.clear_cache()
@@ -66,7 +76,10 @@ class TestProviderFactoryEnvConfig:
         When: Provider 요청
         Then: FMP Provider 반환 (기본 Provider가 FMP로 변경됨)
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+        )
 
         ProviderFactory.clear_cache()
 
@@ -80,7 +93,10 @@ class TestProviderFactoryEnvConfig:
         When: Quote Provider 요청
         Then: FMP Provider 반환
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+        )
 
         monkeypatch.setenv("STOCK_PROVIDER_QUOTE", "fmp")
         monkeypatch.setenv("FMP_API_KEY", "test_key")
@@ -100,21 +116,28 @@ class TestProviderFactoryFallback:
         When: FMP의 fallback 조회
         Then: 빈 리스트 (fallback 체인 없음)
         """
-        from api_request.providers.factory import ProviderFactory, ProviderType
+        from packages.shared.api_request.providers.factory import (
+            ProviderFactory,
+            ProviderType,
+        )
 
         ProviderFactory.clear_cache()
         fallbacks = ProviderFactory.get_fallback_providers(ProviderType.FMP)
         assert fallbacks == []
 
-    @patch('api_request.providers.fmp.FMPProvider.get_quote')
+    @patch('packages.shared.api_request.providers.fmp.FMPProvider.get_quote')
     def test_primary_failure_returns_all_failed(self, mock_fmp_quote):
         """
         Given: FMP 실패 + fallback 없음
         When: call_with_fallback() 호출
         Then: ALL_PROVIDERS_FAILED 에러 반환
         """
-        from api_request.providers.factory import call_with_fallback, EndpointType, ProviderFactory
-        from api_request.providers.base import ProviderResponse
+        from packages.shared.api_request.providers.base import ProviderResponse
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+            call_with_fallback,
+        )
 
         ProviderFactory.clear_cache()
         mock_fmp_quote.return_value = ProviderResponse.error_response(
@@ -126,15 +149,22 @@ class TestProviderFactoryFallback:
         assert result.success is False
         assert result.error_code == "ALL_PROVIDERS_FAILED"
 
-    @patch('api_request.providers.fmp.FMPProvider.get_quote')
+    @patch('packages.shared.api_request.providers.fmp.FMPProvider.get_quote')
     def test_primary_success_no_fallback(self, mock_fmp_quote):
         """
         Given: Primary Provider (FMP) 성공
         When: call_with_fallback() 호출
         Then: Primary 결과 반환, Fallback 호출 안함
         """
-        from api_request.providers.factory import call_with_fallback, EndpointType, ProviderFactory
-        from api_request.providers.base import ProviderResponse, NormalizedQuote
+        from packages.shared.api_request.providers.base import (
+            NormalizedQuote,
+            ProviderResponse,
+        )
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+            call_with_fallback,
+        )
 
         ProviderFactory.clear_cache()
 
@@ -162,7 +192,10 @@ class TestConvenienceFunction:
         When: get_provider() 호출
         Then: 올바른 Provider 반환 (기본값: FMP)
         """
-        from api_request.providers.factory import get_provider, ProviderFactory
+        from packages.shared.api_request.providers.factory import (
+            ProviderFactory,
+            get_provider,
+        )
 
         ProviderFactory.clear_cache()
 
@@ -177,7 +210,10 @@ class TestConvenienceFunction:
         When: get_provider() 호출
         Then: 기본값(QUOTE) Provider 반환
         """
-        from api_request.providers.factory import get_provider, ProviderFactory
+        from packages.shared.api_request.providers.factory import (
+            ProviderFactory,
+            get_provider,
+        )
 
         ProviderFactory.clear_cache()
 
@@ -191,7 +227,10 @@ class TestConvenienceFunction:
         When: get_provider() 호출
         Then: 강제 지정된 Provider 반환
         """
-        from api_request.providers.factory import get_provider, ProviderFactory
+        from packages.shared.api_request.providers.factory import (
+            ProviderFactory,
+            get_provider,
+        )
 
         monkeypatch.setenv("FMP_API_KEY", "test_key")
         ProviderFactory.clear_cache()
@@ -210,7 +249,7 @@ class TestProviderFactoryAllProviders:
         When: get_all_providers() 호출
         Then: 빈 딕셔너리 반환
         """
-        from api_request.providers.factory import ProviderFactory
+        from packages.shared.api_request.providers.factory import ProviderFactory
 
         ProviderFactory.clear_cache()
 
@@ -224,7 +263,11 @@ class TestProviderFactoryAllProviders:
         When: get_all_providers() 호출
         Then: 캐시된 Provider 딕셔너리 반환 (기본값: FMP)
         """
-        from api_request.providers.factory import ProviderFactory, EndpointType, ProviderType
+        from packages.shared.api_request.providers.factory import (
+            EndpointType,
+            ProviderFactory,
+            ProviderType,
+        )
 
         ProviderFactory.clear_cache()
 
@@ -244,7 +287,7 @@ class TestEndpointTypes:
         When: ENV_KEYS 확인
         Then: 모든 타입에 환경 변수 키 존재
         """
-        from api_request.providers.factory import EndpointType, ENV_KEYS
+        from packages.shared.api_request.providers.factory import ENV_KEYS, EndpointType
 
         for endpoint in EndpointType:
             assert endpoint in ENV_KEYS, f"Missing ENV_KEY for {endpoint}"
@@ -255,7 +298,10 @@ class TestEndpointTypes:
         When: DEFAULT_PROVIDERS 확인
         Then: 모든 타입에 기본 Provider 존재
         """
-        from api_request.providers.factory import EndpointType, DEFAULT_PROVIDERS
+        from packages.shared.api_request.providers.factory import (
+            DEFAULT_PROVIDERS,
+            EndpointType,
+        )
 
         for endpoint in EndpointType:
             assert endpoint in DEFAULT_PROVIDERS, f"Missing default for {endpoint}"

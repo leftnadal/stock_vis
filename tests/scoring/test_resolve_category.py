@@ -10,7 +10,6 @@ from portfolio.services.scoring import (
     resolve_category,
 )
 
-
 # ============================================================
 # resolve_category — 12 preset_id 매핑
 # ============================================================

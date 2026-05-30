@@ -3,7 +3,15 @@
 """
 
 from django.contrib import admin
-from .models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory, MLModelHistory, AlertLog
+
+from .models import (
+    AlertLog,
+    EntityHighlight,
+    MLModelHistory,
+    NewsArticle,
+    NewsEntity,
+    SentimentHistory,
+)
 
 
 class NewsEntityInline(admin.TabularInline):

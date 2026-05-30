@@ -1,6 +1,11 @@
-from .thesis_views import ThesisViewSet, ThesisPremiseViewSet, ThesisIndicatorViewSet
-from .conversation_views import ConversationStartView, ConversationRespondView
-from .monitoring_views import DashboardView, AlertListView, AlertReadView, IndicatorReadingsView
+from .conversation_views import ConversationRespondView, ConversationStartView
+from .monitoring_views import (
+    AlertListView,
+    AlertReadView,
+    DashboardView,
+    IndicatorReadingsView,
+)
+from .thesis_views import ThesisIndicatorViewSet, ThesisPremiseViewSet, ThesisViewSet
 
 __all__ = [
     "ThesisViewSet",

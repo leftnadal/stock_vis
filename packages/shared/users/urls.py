@@ -1,6 +1,7 @@
 from django.urls import path
-from . import views, jwt_views
 from rest_framework_simplejwt.views import TokenRefreshView
+
+from . import jwt_views, views
 
 app_name = "users"
 

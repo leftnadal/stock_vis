@@ -1,8 +1,8 @@
 from .path_watchlist import (
-    SavedPathListSerializer,
-    SavedPathDetailSerializer,
-    SavedPathCreateSerializer,
     PathActionSerializer,
+    SavedPathCreateSerializer,
+    SavedPathDetailSerializer,
+    SavedPathListSerializer,
 )
 
 __all__ = [

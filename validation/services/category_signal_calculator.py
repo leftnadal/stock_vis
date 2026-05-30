@@ -9,8 +9,12 @@ Task 4: Category Signal 계산
 import logging
 from decimal import Decimal
 
-from stocks.models import Stock, SP500Constituent, IndustryClassification
-from validation.models import CompanyBenchmarkDelta, CategorySignal
+from packages.shared.stocks.models import (
+    IndustryClassification,
+    SP500Constituent,
+    Stock,
+)
+from validation.models import CategorySignal, CompanyBenchmarkDelta
 
 logger = logging.getLogger(__name__)
 
@@ -146,7 +150,7 @@ class CategorySignalCalculator:
         )
 
         # value_status='normal'인 snapshot과 매칭
-        from metrics.models import CompanyMetricSnapshot
+        from packages.shared.metrics.models import CompanyMetricSnapshot
         normal_metrics = set(
             CompanyMetricSnapshot.objects.filter(
                 symbol=stock,

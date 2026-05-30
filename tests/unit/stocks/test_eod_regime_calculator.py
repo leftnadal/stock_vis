@@ -4,13 +4,16 @@ DynamicRegimeCalculator 단위 테스트
 Z-score 기반 VIX 레짐 판별 + 상대값 하한선(rolling_mean 배수) + Redis 캐싱 검증.
 """
 
-import pytest
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from stocks.services.eod_regime_calculator import (
-    DynamicRegimeCalculator, RELATIVE_FLOOR, ABSOLUTE_FALLBACK,
+import pytest
+
+from packages.shared.stocks.services.eod_regime_calculator import (
+    ABSOLUTE_FALLBACK,
+    RELATIVE_FLOOR,
+    DynamicRegimeCalculator,
 )
 
 
@@ -21,7 +24,7 @@ class TestDynamicRegimeCalculatorZScore:
         return DynamicRegimeCalculator(lookback_days=lookback, min_data_points=min_points)
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_zscore_high_vol(self, mock_cache):
         """Z-score >= 2.0 → 'high_vol'."""
         mock_cache.get.return_value = None
@@ -47,7 +50,7 @@ class TestDynamicRegimeCalculatorZScore:
         assert result == 'high_vol'
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_zscore_elevated(self, mock_cache):
         """Z-score >= 1.0 and < 2.0 → 'elevated'."""
         mock_cache.get.return_value = None
@@ -74,7 +77,7 @@ class TestDynamicRegimeCalculatorZScore:
         # z 정확도보다 분기 통과를 검증
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_zscore_normal(self, mock_cache):
         """Z-score < 1.0 → 'normal'."""
         mock_cache.get.return_value = None
@@ -101,7 +104,7 @@ class TestDynamicRegimeCalculatorRelativeFloor:
     """상대값 하한선(rolling_mean 배수) 테스트."""
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_mean_ratio_2_5x_high_vol(self, mock_cache):
         """current >= rolling_mean * 2.5 → 'high_vol' (Z-score 무관)."""
         mock_cache.get.return_value = None
@@ -123,7 +126,7 @@ class TestDynamicRegimeCalculatorRelativeFloor:
         assert result == 'high_vol'
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_mean_ratio_1_5x_with_z_elevated(self, mock_cache):
         """current >= rolling_mean * 1.5 AND z >= 0.5 → 'elevated'."""
         mock_cache.get.return_value = None
@@ -146,7 +149,7 @@ class TestDynamicRegimeCalculatorRelativeFloor:
         assert result in ('elevated', 'high_vol')
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_high_z_triggers_high_vol(self, mock_cache):
         """mean_ratio < 2.5이지만 z >= 2.0 → 'high_vol'."""
         mock_cache.get.return_value = None
@@ -169,7 +172,7 @@ class TestDynamicRegimeCalculatorRelativeFloor:
         assert result == 'high_vol'
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_stable_vix_normal(self, mock_cache):
         """VIX가 26에서 안정 → std ≈ 0 → fallback → elevated (26 >= 25)."""
         mock_cache.get.return_value = None
@@ -195,7 +198,7 @@ class TestDynamicRegimeCalculatorFallback:
     """데이터 부족 및 에러 케이스 테스트."""
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_no_vix_index(self, mock_cache):
         """VIX 인덱스 없음 → 'normal'."""
         mock_cache.get.return_value = None
@@ -208,7 +211,7 @@ class TestDynamicRegimeCalculatorFallback:
         assert result == 'normal'
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_insufficient_data_fallback(self, mock_cache):
         """데이터 < min_data_points → 절대값 fallback."""
         mock_cache.get.return_value = None
@@ -230,7 +233,7 @@ class TestDynamicRegimeCalculatorFallback:
         assert result == 'normal'  # VIX 15 < 25
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_insufficient_data_high_vix_fallback(self, mock_cache):
         """데이터 부족 + VIX 36 → 'high_vol' fallback."""
         mock_cache.get.return_value = None
@@ -255,7 +258,7 @@ class TestDynamicRegimeCalculatorCaching:
     """Redis 캐싱 테스트."""
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_cache_hit(self, mock_cache):
         """캐시 hit → DB 쿼리 없이 바로 반환."""
         mock_cache.get.return_value = 'elevated'
@@ -268,7 +271,7 @@ class TestDynamicRegimeCalculatorCaching:
         # _calculate_regime이 호출되지 않았으므로 cache.set도 호출되지 않음
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_cache_miss_sets_cache(self, mock_cache):
         """캐시 miss → 계산 후 cache.set 호출."""
         mock_cache.get.return_value = None
@@ -289,7 +292,7 @@ class TestDynamicRegimeCalculatorLookbackSlicing:
     """lookback 슬라이싱 정확성 테스트."""
 
     @pytest.mark.django_db
-    @patch('stocks.services.eod_regime_calculator.cache')
+    @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_63_datapoints_uses_last_60(self, mock_cache):
         """63일 데이터 → 마지막 60개만 사용."""
         mock_cache.get.return_value = None

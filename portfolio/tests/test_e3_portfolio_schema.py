@@ -32,7 +32,6 @@ from portfolio.tests.fixtures.sample_e3_portfolio_context import (
     get_v5_concentrated_dividend,
 )
 
-
 # ============================================================
 # 회귀 +4 (지시서 §2.7) + parametrize 5 = 실효 +9
 # ============================================================

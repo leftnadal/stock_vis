@@ -6,8 +6,8 @@ Overview + 뉴스를 결합하여 풍부한 컨텍스트를 구성합니다.
 """
 
 import logging
-from typing import Dict, Any, List, Optional
 from datetime import date, timedelta
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -270,7 +270,7 @@ class ContextEnricher:
             Overview 데이터 또는 None
         """
         try:
-            from stocks.models import Stock
+            from packages.shared.stocks.models import Stock
 
             stock = Stock.objects.filter(symbol=symbol.upper()).first()
             if not stock:
@@ -304,8 +304,9 @@ class ContextEnricher:
             뉴스 리스트 또는 None
         """
         try:
-            from news.models import NewsArticle
             from django.utils import timezone
+
+            from news.models import NewsArticle
 
             cutoff_date = timezone.now() - timedelta(days=days)
 

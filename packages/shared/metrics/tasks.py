@@ -29,7 +29,7 @@ def send_daily_report_task(self):
     from django.template.loader import render_to_string
     from django.utils import timezone
 
-    from metrics.services.daily_report import build_report_payload
+    from packages.shared.metrics.services.daily_report import build_report_payload
 
     today = timezone.localtime().date()
     logger.info(f"send_daily_report_task: building for {today}")
@@ -106,7 +106,7 @@ def send_agent_report_task(self, domain: str):
     from django.template.loader import render_to_string
     from django.utils import timezone
 
-    from metrics.services.agent_reports import BUILDERS
+    from packages.shared.metrics.services.agent_reports import BUILDERS
 
     if domain not in BUILDERS:
         logger.error(f"send_agent_report_task: unknown domain={domain}")

@@ -10,6 +10,7 @@ EOD Pipeline 상태 조회 + 즉시 실행 Management Command
 
 import json
 from datetime import date, timedelta
+
 from django.core.management.base import BaseCommand, CommandError
 
 
@@ -33,7 +34,7 @@ class Command(BaseCommand):
             self._show_status(options["days"])
 
     def _run_pipeline(self, target_date_str):
-        from stocks.services.eod_pipeline import EODPipeline
+        from packages.shared.stocks.services.eod_pipeline import EODPipeline
 
         target = None
         if target_date_str:
@@ -68,7 +69,7 @@ class Command(BaseCommand):
             )
 
     def _show_status(self, days):
-        from stocks.models import PipelineLog
+        from packages.shared.stocks.models import PipelineLog
 
         logs = PipelineLog.objects.order_by("-date")[:days]
 
@@ -109,7 +110,7 @@ class Command(BaseCommand):
                 )
 
     def _show_quality(self, days):
-        from stocks.models import PipelineLog
+        from packages.shared.stocks.models import PipelineLog
 
         logs = (
             PipelineLog.objects.filter(ingest_quality__isnull=False)

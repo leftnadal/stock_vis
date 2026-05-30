@@ -5,17 +5,17 @@ FMP API로부터 Gainers/Losers/Actives를 가져와서
 지표를 계산하고 PostgreSQL에 저장합니다.
 """
 import logging
-from typing import Dict, List, Optional
 from decimal import Decimal
+from typing import Dict, List, Optional
+
 from django.db import transaction
 from django.utils import timezone
 
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from serverless.models import MarketMover
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-from serverless.services.indicators import IndicatorCalculator
 from serverless.services.corporate_action_service import CorporateActionService
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
-
+from serverless.services.fmp_client import FMPAPIError, FMPClient
+from serverless.services.indicators import IndicatorCalculator
 
 logger = logging.getLogger(__name__)
 

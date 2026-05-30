@@ -3,15 +3,16 @@ Theme Matching Service 테스트
 
 ThemeMatchingService의 유닛 테스트입니다.
 """
-import pytest
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
 
-from serverless.models import ETFProfile, ETFHolding, ThemeMatch, StockRelationship
+import pytest
+
+from serverless.models import ETFHolding, ETFProfile, StockRelationship, ThemeMatch
 from serverless.services.theme_matching_service import (
-    ThemeMatchingService,
     THEME_KEYWORDS,
     THEME_TO_ETF,
+    ThemeMatchingService,
     get_theme_matching_service,
 )
 

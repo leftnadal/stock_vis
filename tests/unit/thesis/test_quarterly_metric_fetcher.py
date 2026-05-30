@@ -23,7 +23,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from stocks.models import BalanceSheet, CashFlowStatement, IncomeStatement, Stock
+from packages.shared.stocks.models import (
+    BalanceSheet,
+    CashFlowStatement,
+    IncomeStatement,
+    Stock,
+)
 from thesis.services.quarterly_metric_fetcher import (
     COMPARISON_TYPE_MAP,
     UNSUPPORTED_QUARTERLY,
@@ -31,7 +36,6 @@ from thesis.services.quarterly_metric_fetcher import (
     _get_prev_quarter,
     fetch_quarterly_metric,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -221,8 +225,8 @@ class TestFallbackToAnnual:
 
     def test_fallback_returns_value_when_record_exists(self):
         """CompanyMetricLatest 레코드가 있으면 연간값 반환."""
+        from packages.shared.metrics.models import MetricDefinition
         from validation.models import CompanyMetricLatest
-        from metrics.models import MetricDefinition
 
         stock = _make_stock("FBANN")
 

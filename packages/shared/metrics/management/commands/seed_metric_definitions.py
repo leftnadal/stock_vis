@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
-from metrics.models import MetricDefinition
 
+from packages.shared.metrics.models import MetricDefinition
 
 METRIC_SEEDS = [
     # ── profitability (5개) ──

@@ -2,13 +2,15 @@ from unittest.mock import patch
 
 import pytest
 from rest_framework.test import APIClient
-from chainsight.models import SavedPath, PathAction
+
+from chainsight.models import PathAction, SavedPath
 
 
 @pytest.fixture
 def auth_user(db):
     """audit P0 #5: 테스트용 인증 사용자 (SavedPath 생성 시 user 지정에 사용)."""
     import uuid
+
     from django.contrib.auth import get_user_model
     User = get_user_model()
     return User.objects.create_user(

@@ -1,23 +1,24 @@
 from django.urls import path
+
 from .views import (
-    # DataBasket Views
-    DataBasketListCreateView,
-    DataBasketDetailView,
-    DataBasketAddItemView,
-    DataBasketAddStockDataView,
-    DataBasketRemoveItemView,
-    DataBasketClearView,
+    AnalysisSessionDetailView,
     # AnalysisSession Views
     AnalysisSessionListCreateView,
-    AnalysisSessionDetailView,
-    SessionMessagesView,
+    CacheStatsView,
     ChatStreamView,
+    CostSummaryView,
+    DataBasketAddItemView,
+    DataBasketAddStockDataView,
+    DataBasketClearView,
+    DataBasketDetailView,
+    # DataBasket Views
+    DataBasketListCreateView,
+    DataBasketRemoveItemView,
+    ModelPricingView,
+    SessionMessagesView,
+    UsageHistoryView,
     # Monitoring Views
     UsageStatsView,
-    CostSummaryView,
-    CacheStatsView,
-    UsageHistoryView,
-    ModelPricingView,
 )
 
 app_name = 'rag_analysis'

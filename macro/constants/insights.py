@@ -3,8 +3,7 @@ Investment-Advisor 설계: 거시경제 인사이트 규칙
 
 시장 상황별 메시지, 색상, 아이콘 등 프론트엔드 UX에 필요한 모든 상수 정의
 """
-from typing import Dict, Any, List
-
+from typing import Any, Dict, List
 
 # ============================================================================
 # 1. Fear & Greed Index (공포/탐욕 지수)

@@ -1,10 +1,16 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from thesis.views import (
-    ThesisViewSet, ThesisPremiseViewSet, ThesisIndicatorViewSet,
-    ConversationStartView, ConversationRespondView,
-    DashboardView, AlertListView, AlertReadView, IndicatorReadingsView,
+    AlertListView,
+    AlertReadView,
+    ConversationRespondView,
+    ConversationStartView,
+    DashboardView,
+    IndicatorReadingsView,
+    ThesisIndicatorViewSet,
+    ThesisPremiseViewSet,
+    ThesisViewSet,
 )
 from thesis.views.conversation_views import NewsIssuesView, SuggestThesesView
 

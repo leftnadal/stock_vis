@@ -4,21 +4,22 @@ Users Serializer 유효성 검증 테스트
 시리얼라이저 필드 검증, 유효성 검사, 계산된 필드 테스트
 """
 
-import pytest
 from decimal import Decimal
 from unittest.mock import MagicMock
+
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory
 
-from users.serializers import (
-    UserSerializer,
-    PrivateUserSerializer,
-    PortfolioSerializer,
+from packages.shared.users.models import Portfolio
+from packages.shared.users.serializers import (
     PortfolioCreateUpdateSerializer,
+    PortfolioSerializer,
+    PrivateUserSerializer,
+    UserSerializer,
     WatchlistCreateUpdateSerializer,
     WatchlistItemCreateSerializer,
 )
-from users.models import Portfolio
 
 User = get_user_model()
 

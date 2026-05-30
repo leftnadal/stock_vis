@@ -3,8 +3,9 @@ Circuit Breaker 테스트
 
 Redis 기반 Circuit Breaker의 열림/닫힘 시나리오를 검증합니다.
 """
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from news.services.circuit_breaker import CircuitBreaker
 

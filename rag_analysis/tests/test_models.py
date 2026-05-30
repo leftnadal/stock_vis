@@ -8,19 +8,15 @@ Tests for:
 - AnalysisSession creation and exploration tracking
 - AnalysisMessage creation and token tracking
 """
-from django.test import TestCase
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
+from django.test import TestCase
 from django.utils import timezone
-from datetime import datetime
 
-from rag_analysis.models import (
-    DataBasket,
-    BasketItem,
-    AnalysisSession,
-    AnalysisMessage
-)
+from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 User = get_user_model()
 

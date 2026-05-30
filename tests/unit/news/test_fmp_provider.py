@@ -3,14 +3,14 @@ FMP News Provider 테스트
 
 FMPNewsProvider의 뉴스 파싱, 날짜 필터링, 에러 처리를 검증합니다.
 """
-import pytest
 from datetime import datetime
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
-from news.providers.fmp import FMPNewsProvider
-from news.providers.base import RawNewsArticle
+import pytest
 
+from news.providers.base import RawNewsArticle
+from news.providers.fmp import FMPNewsProvider
 
 # ===== Fixtures =====
 

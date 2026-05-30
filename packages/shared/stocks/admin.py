@@ -1,11 +1,12 @@
 from django.contrib import admin
+
 from .models import (
-    Stock,
-    DailyPrice,
-    WeeklyPrice,
     BalanceSheet,
-    IncomeStatement,
     CashFlowStatement,
+    DailyPrice,
+    IncomeStatement,
+    Stock,
+    WeeklyPrice,
 )
 
 

@@ -23,7 +23,7 @@ def get_or_collect_filing(symbol: str) -> Optional[dict]:
         dict — 기존 데이터 있으면 즉시 반환
         None — 수집 트리거됨 (비동기)
     """
-    from .models import RawDocumentStore, FilingProcessLog
+    from .models import FilingProcessLog, RawDocumentStore
 
     symbol = symbol.upper()
     one_year_ago = timezone.now() - timedelta(days=365)

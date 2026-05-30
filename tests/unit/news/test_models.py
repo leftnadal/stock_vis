@@ -4,12 +4,13 @@ News Models Unit Tests
 NewsArticle, NewsEntity, EntityHighlight, SentimentHistory 모델 테스트
 """
 
-import pytest
 import hashlib
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 
-from news.models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory
+import pytest
+
+from news.models import EntityHighlight, NewsArticle, NewsEntity, SentimentHistory
 
 
 class TestNewsArticleModel:

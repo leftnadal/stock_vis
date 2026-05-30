@@ -6,12 +6,13 @@ Marketaux 뉴스 API Provider
 - 필터링 기능 강력
 """
 
-import requests
 import logging
 import time
 from datetime import datetime
-from typing import Dict, Any, List
 from decimal import Decimal
+from typing import Any, Dict, List
+
+import requests
 
 from .base import BaseNewsProvider, RawNewsArticle
 

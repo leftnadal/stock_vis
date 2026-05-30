@@ -1,10 +1,12 @@
 """
 Corporate Action Service 테스트
 """
-import pytest
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
+
 from serverless.services.corporate_action_service import CorporateActionService
 
 

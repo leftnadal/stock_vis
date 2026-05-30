@@ -5,13 +5,13 @@ EODSignalCalculator 단위 테스트 (Step 12-1)
 외부 DB 의존은 mock으로 격리.
 """
 
-import pytest
-import numpy as np
-import pandas as pd
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import numpy as np
+import pandas as pd
+import pytest
 
 # ───────────────────────────────────────────────
 # 헬퍼: 단순 2-row DataFrame 생성
@@ -1047,7 +1047,7 @@ class TestVixRegime:
         """
         target = date(2026, 2, 25)
         with patch(
-            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+            'packages.shared.stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
         ) as MockCalc:
             MockCalc.return_value.get_regime.return_value = 'high_vol'
             regime = calculator._get_vix_regime(target)
@@ -1062,7 +1062,7 @@ class TestVixRegime:
         """
         target = date(2026, 2, 25)
         with patch(
-            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+            'packages.shared.stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
         ) as MockCalc:
             MockCalc.return_value.get_regime.return_value = 'normal'
             regime = calculator._get_vix_regime(target)
@@ -1077,7 +1077,7 @@ class TestVixRegime:
         """
         target = date(2026, 2, 25)
         with patch(
-            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+            'packages.shared.stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
         ) as MockCalc:
             MockCalc.return_value.get_regime.return_value = 'elevated'
             regime = calculator._get_vix_regime(target)
@@ -1092,7 +1092,7 @@ class TestVixRegime:
         """
         target = date(2026, 2, 25)
         with patch(
-            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+            'packages.shared.stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
         ) as MockCalc:
             # DynamicRegimeCalculator 자체가 에러를 잡아 'normal' 반환
             MockCalc.return_value.get_regime.return_value = 'normal'
@@ -1108,7 +1108,7 @@ class TestVixRegime:
         """
         target = date(2026, 2, 25)
         with patch(
-            'stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
+            'packages.shared.stocks.services.eod_regime_calculator.DynamicRegimeCalculator'
         ) as MockCalc:
             MockCalc.return_value.get_regime.return_value = 'normal'
             regime = calculator._get_vix_regime(target)

@@ -7,16 +7,16 @@ PR-6 chainsight 앱 모델 테스트
 - CompanyCapitalDNA: capital_type, trend choices
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.db import IntegrityError
 
 from chainsight.models import (
-    CompanySensitivityProfile,
-    CompanyGrowthStage,
     CompanyCapitalDNA,
+    CompanyGrowthStage,
+    CompanySensitivityProfile,
 )
-
 
 # ===== CompanySensitivityProfile =====
 

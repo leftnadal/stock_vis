@@ -25,13 +25,13 @@ Usage:
 """
 import logging
 import re
-from typing import Dict, List, Optional, Tuple
 from difflib import SequenceMatcher
+from typing import Dict, List, Optional, Tuple
 
 from django.core.cache import cache
 from django.db.models import Q
 
-from stocks.models import Stock
+from packages.shared.stocks.models import Stock
 
 logger = logging.getLogger(__name__)
 

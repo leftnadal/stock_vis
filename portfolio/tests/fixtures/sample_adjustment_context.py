@@ -24,7 +24,6 @@ from portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_tech,
 )
 
-
 # COMMANDS는 모든 fixture가 참조하는 단일 진실 출처(SSoT).
 COMMANDS: dict[str, str] = {
     "clear_decrease":     "TSLA 비중 좀 줄여줘. 너무 많은 것 같아.",

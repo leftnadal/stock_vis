@@ -28,8 +28,7 @@ from typing import Dict, List, Optional, Tuple
 import httpx
 from django.utils import timezone
 
-from serverless.models import ETFProfile, ETFHolding
-
+from serverless.models import ETFHolding, ETFProfile
 
 # 브라우저 헤더 (Cloudflare 우회용)
 BROWSER_HEADERS = {

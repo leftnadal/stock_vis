@@ -37,7 +37,9 @@ from portfolio.prompts.e4.builder import (  # noqa: E402
     build_v2_system_prompt,
 )
 from portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
-from portfolio.tests.slice8.helpers.specificity_count import count_patterns  # noqa: E402
+from portfolio.tests.slice8.helpers.specificity_count import (
+    count_patterns,  # noqa: E402
+)
 
 FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
 OUTPUT_DIR = ROOT / "docs/portfolio/coach/slice8/part3/matrix"

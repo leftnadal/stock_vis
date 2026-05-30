@@ -10,7 +10,6 @@ from portfolio.prompts.rationale.builder import (
     build_rationale_prompt,
 )
 
-
 SPECIFICITY_DETAIL_FIXTURE = {
     "P1_metric_mention": True,
     "P2_threshold": True,

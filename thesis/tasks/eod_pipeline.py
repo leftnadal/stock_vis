@@ -84,8 +84,10 @@ def _fetch_fmp_value(indicator):
     audit P0 #11: data_params에 endpoint/inverse/scale_multiplier 메타가 있으면
     /stable/key-metrics-ttm 또는 /stable/financial-growth로 분기 + 후처리 적용.
     """
-    from api_request.providers.fmp.client import (
-        FMPClient, FMPClientError, FMPPremiumError,
+    from packages.shared.api_request.providers.fmp.client import (
+        FMPClient,
+        FMPClientError,
+        FMPPremiumError,
     )
 
     params = indicator.data_params or {}
@@ -276,8 +278,8 @@ def update_indicator_readings(self):
     active 가설의 활성 지표에 대해 외부 API에서 데이터 fetch + validation.
     멱등성: (indicator, asof) 기준 upsert (수학 모델 12.3).
     """
-    from thesis.models import Thesis, IndicatorReading
-    from thesis.services.data_validator import validate_reading, VALIDATION_ACTIONS
+    from thesis.models import IndicatorReading, Thesis
+    from thesis.services.data_validator import VALIDATION_ACTIONS, validate_reading
 
     active_theses = Thesis.objects.filter(status='active')
     total, success = 0, 0
@@ -378,11 +380,13 @@ def calculate_scores(self):
     active 가설의 지표별 score 계산 + DB 업데이트.
     """
     from thesis.models import Thesis
-    from thesis.services.indicator_scorer import score_indicator_from_model
     from thesis.services.arrow_calculator import (
-        score_to_degree, degree_to_color, degree_to_label,
+        degree_to_color,
+        degree_to_label,
+        score_to_degree,
     )
-    from thesis.services.premise_aggregator import aggregate_thesis, aggregate_premise
+    from thesis.services.indicator_scorer import score_indicator_from_model
+    from thesis.services.premise_aggregator import aggregate_premise, aggregate_thesis
 
     active_theses = Thesis.objects.filter(status='active')
     ind_count, prem_count, extreme_count, override_count = 0, 0, 0, 0
@@ -475,8 +479,8 @@ def create_snapshots_and_alerts(self):
     active 가설에 대해 스냅샷 생성 + 상태 판정 + 알림 생성.
     """
     from thesis.models import Thesis
-    from thesis.services.snapshot_builder import build_snapshot
     from thesis.services.alert_engine import check_and_create_alerts
+    from thesis.services.snapshot_builder import build_snapshot
 
     start_time = time.time()
     active_theses = Thesis.objects.filter(status='active')

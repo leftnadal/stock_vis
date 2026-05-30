@@ -5,6 +5,7 @@ Redis 기반 Circuit Breaker — per provider
 """
 
 import logging
+
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)

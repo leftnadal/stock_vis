@@ -17,7 +17,6 @@ from portfolio.services.scoring.presets.income import INCOME_SPECS
 from portfolio.services.scoring.presets.special import SPECIAL_SPECS
 from portfolio.services.scoring.presets.value import VALUE_SPECS
 
-
 SPEC_LISTS = {
     "value": VALUE_SPECS,
     "growth": GROWTH_SPECS,

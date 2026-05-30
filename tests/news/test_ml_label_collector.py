@@ -14,26 +14,24 @@ MLLabelCollector 서비스 단위 테스트
 """
 
 import uuid
-
-import pytest
 from datetime import date, timedelta
 from decimal import Decimal
-from unittest.mock import patch, MagicMock, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
+import pytest
 from django.utils import timezone
 
 from news.models import NewsArticle, NewsEntity
-from stocks.models import Stock, DailyPrice
 from news.services.ml_label_collector import (
+    ALL_NYSE_HOLIDAYS,
+    DEFAULT_THRESHOLD,
+    SECTOR_THRESHOLDS,
     MLLabelCollector,
+    is_pre_holiday,
     is_trading_day,
     next_trading_day,
-    is_pre_holiday,
-    ALL_NYSE_HOLIDAYS,
-    SECTOR_THRESHOLDS,
-    DEFAULT_THRESHOLD,
 )
-
+from packages.shared.stocks.models import DailyPrice, Stock
 
 # ===== 헬퍼 팩토리 함수 =====
 

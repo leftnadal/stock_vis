@@ -13,16 +13,20 @@ Usage:
 import logging
 import re
 import time
-from typing import List, Dict, Optional, Set
 from datetime import timedelta
 from itertools import combinations
+from typing import Dict, List, Optional, Set
 
-from django.utils import timezone
 from django.db import IntegrityError
+from django.utils import timezone
 
-from serverless.services.uspto_client import USPTOClient, USPTOError, COMPANY_ASSIGNEE_MAP
-from serverless.models import StockRelationship
 from news.models import NewsEntity
+from serverless.models import StockRelationship
+from serverless.services.uspto_client import (
+    COMPANY_ASSIGNEE_MAP,
+    USPTOClient,
+    USPTOError,
+)
 
 logger = logging.getLogger(__name__)
 

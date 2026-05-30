@@ -4,12 +4,12 @@ EOD Dashboard 테스트 공통 fixtures
 stocks/eod_signal_calculator, eod_pipeline, eod_ingest, eod_api 테스트에서 공유.
 """
 
-import pytest
-import numpy as np
-import pandas as pd
 from datetime import date, timedelta
 from decimal import Decimal
 
+import numpy as np
+import pandas as pd
+import pytest
 
 # ───────────────────────────────────────────────
 # DataFrame fixtures
@@ -66,14 +66,16 @@ def sample_price_df(target_date):
 @pytest.fixture
 def calculator():
     """EODSignalCalculator 인스턴스"""
-    from stocks.services.eod_signal_calculator import EODSignalCalculator
+    from packages.shared.stocks.services.eod_signal_calculator import (
+        EODSignalCalculator,
+    )
     return EODSignalCalculator()
 
 
 @pytest.fixture
 def tagger():
     """EODSignalTagger 인스턴스"""
-    from stocks.services.eod_signal_tagger import EODSignalTagger
+    from packages.shared.stocks.services.eod_signal_tagger import EODSignalTagger
     return EODSignalTagger()
 
 
@@ -84,7 +86,7 @@ def tagger():
 @pytest.fixture
 def stock_aapl(db):
     """AAPL Stock 모델"""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(
         symbol='AAPL',
         stock_name='Apple Inc.',
@@ -98,7 +100,7 @@ def stock_aapl(db):
 @pytest.fixture
 def stock_nvda(db):
     """NVDA Stock 모델"""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(
         symbol='NVDA',
         stock_name='NVIDIA Corporation',
@@ -112,7 +114,7 @@ def stock_nvda(db):
 @pytest.fixture
 def stock_spy(db):
     """SPY Stock 모델"""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(
         symbol='SPY',
         stock_name='SPDR S&P 500 ETF Trust',
@@ -125,7 +127,7 @@ def stock_spy(db):
 @pytest.fixture
 def sp500_constituents(db, stock_aapl, stock_nvda, stock_spy):
     """활성 S&P500 구성 종목 3개"""
-    from stocks.models import SP500Constituent
+    from packages.shared.stocks.models import SP500Constituent
     constituents = []
     for stock in [stock_aapl, stock_nvda, stock_spy]:
         constituents.append(
@@ -146,7 +148,7 @@ def daily_prices_60d(db, stock_aapl, stock_nvda, stock_spy, target_date):
 
     AAPL/NVDA는 꾸준히 상승, SPY는 target_date 기준 일반 흐름.
     """
-    from stocks.models import DailyPrice
+    from packages.shared.stocks.models import DailyPrice
 
     stock_map = {
         'AAPL': (stock_aapl, 180.0),
@@ -180,7 +182,8 @@ def daily_prices_60d(db, stock_aapl, stock_nvda, stock_spy, target_date):
 def pipeline_log_success(db, target_date):
     """status=success PipelineLog"""
     from django.utils import timezone
-    from stocks.models import PipelineLog
+
+    from packages.shared.stocks.models import PipelineLog
 
     return PipelineLog.objects.create(
         date=target_date,
@@ -209,7 +212,8 @@ def pipeline_log_success(db, target_date):
 def snapshot(db, target_date):
     """EODDashboardSnapshot"""
     from django.utils import timezone
-    from stocks.models import EODDashboardSnapshot
+
+    from packages.shared.stocks.models import EODDashboardSnapshot
 
     return EODDashboardSnapshot.objects.create(
         date=target_date,

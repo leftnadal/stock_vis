@@ -7,9 +7,11 @@ FRED Rate Limiter 설정 테스트
   - get_rate_limiter('fred') 정상 반환
 """
 
-from api_request.rate_limiter import (
-    RATE_LIMITS, REQUEST_DELAYS, LimitType,
-    get_rate_limiter
+from packages.shared.api_request.rate_limiter import (
+    RATE_LIMITS,
+    REQUEST_DELAYS,
+    LimitType,
+    get_rate_limiter,
 )
 
 

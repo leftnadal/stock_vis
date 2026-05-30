@@ -6,8 +6,9 @@ Critical: Neo4j가 꺼져 있어도 Django가 죽지 않도록 lazy initializati
 
 import logging
 from typing import Optional
-from neo4j import GraphDatabase, Driver
+
 from django.conf import settings
+from neo4j import Driver, GraphDatabase
 
 logger = logging.getLogger(__name__)
 

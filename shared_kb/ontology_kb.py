@@ -5,9 +5,9 @@ Neo4j 기반 지식 그래프 관리 클래스
 
 import os
 import uuid
-from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # .env 파일 로딩 (프로젝트 루트에서)
 try:
@@ -21,10 +21,10 @@ except ImportError:
 from neo4j import GraphDatabase
 
 from .schema import (
-    KnowledgeType,
     ConfidenceLevel,
-    KnowledgeStatus,
     KnowledgeItem,
+    KnowledgeStatus,
+    KnowledgeType,
     SearchResult,
 )
 

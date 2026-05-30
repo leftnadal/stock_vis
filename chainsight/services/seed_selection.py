@@ -10,11 +10,11 @@ import logging
 from datetime import date, timedelta
 
 from django.core.cache import cache
-from django.db.models import Avg, StdDev, F, Subquery, OuterRef, DecimalField
+from django.db.models import Avg, DecimalField, F, OuterRef, StdDev, Subquery
 from django.db.models.functions import Cast
 
-from stocks.models import Stock, DailyPrice
-from chainsight.models import RelationConfidence, CoMentionEdge
+from chainsight.models import CoMentionEdge, RelationConfidence
+from packages.shared.stocks.models import DailyPrice, Stock
 
 logger = logging.getLogger(__name__)
 

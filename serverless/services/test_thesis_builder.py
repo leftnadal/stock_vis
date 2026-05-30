@@ -7,6 +7,7 @@ USAGE:
 
 import os
 import sys
+
 import django
 
 # Django 설정
@@ -14,8 +15,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
 from serverless.models import InvestmentThesis
+from serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
 
 
 def test_thesis_builder():

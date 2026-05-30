@@ -457,7 +457,10 @@ def build_system_prompt(state, flags):
             target = state.get('collected', {}).get('target')
 
         if target:
-            from thesis.services.keyword_hint import collect_context_keywords, build_keyword_hint_block
+            from thesis.services.keyword_hint import (
+                build_keyword_hint_block,
+                collect_context_keywords,
+            )
             keywords = collect_context_keywords(target, flags)
             hint_block = build_keyword_hint_block(keywords)
             if hint_block:

@@ -16,17 +16,16 @@ References:
 - 10-K Item 1A contains business risks including customer concentration disclosure
 """
 
-import requests
 import logging
-import time
 import re
-from datetime import datetime, date
-from typing import Dict, Any, Optional, List
+import time
 from dataclasses import dataclass
+from datetime import date, datetime
+from typing import Any, Dict, List, Optional
+
+import requests
 from bs4 import BeautifulSoup
-
 from django.conf import settings
-
 
 logger = logging.getLogger(__name__)
 

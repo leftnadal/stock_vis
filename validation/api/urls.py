@@ -1,7 +1,12 @@
 from django.urls import path
+
 from .views import (
-    ValidationSummaryView, ValidationMetricsView, LeaderComparisonView,
-    PresetListView, PeerPreferenceView, LLMPeerFilterView,
+    LeaderComparisonView,
+    LLMPeerFilterView,
+    PeerPreferenceView,
+    PresetListView,
+    ValidationMetricsView,
+    ValidationSummaryView,
 )
 
 urlpatterns = [

@@ -30,7 +30,6 @@ init_django()
 from portfolio.llm.parsers import parse_json_response
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 
-
 TARGET_PATH = Path("docs/portfolio/coach/slice1/step6_smoke_output.json")
 
 NEW_THRESHOLDS = {

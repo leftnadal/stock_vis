@@ -4,15 +4,16 @@ sec_pipeline 모델 단위 테스트.
 모델 생성, __str__, Meta 설정 검증.
 """
 
-import pytest
 from datetime import date
 from unittest.mock import MagicMock
+
+import pytest
 
 
 @pytest.mark.django_db
 class TestRawDocumentStore:
     def test_create_and_str(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -28,7 +29,7 @@ class TestRawDocumentStore:
         assert '2023' in str(doc)
 
     def test_default_values(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='MSFT', stock_name='Microsoft')
@@ -48,7 +49,7 @@ class TestRawDocumentStore:
 @pytest.mark.django_db
 class TestSupplyChainEvidence:
     def test_create_and_str(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -72,7 +73,7 @@ class TestSupplyChainEvidence:
         assert evidence.neo4j_dirty is True
 
     def test_nullable_target(self):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='GOOG', stock_name='Google')
@@ -97,8 +98,8 @@ class TestSupplyChainEvidence:
 @pytest.mark.django_db
 class TestBusinessModelSnapshot:
     def test_create_and_str(self):
-        from stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, BusinessModelSnapshot
+        from packages.shared.stocks.models import Stock
+        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='NVDA', stock_name='NVIDIA')
         doc = RawDocumentStore.objects.create(
@@ -120,8 +121,8 @@ class TestBusinessModelSnapshot:
         assert bm.confidence_grade == 'low'
 
     def test_default_unknown(self):
-        from stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, BusinessModelSnapshot
+        from packages.shared.stocks.models import Stock
+        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='AMD', stock_name='AMD')
         doc = RawDocumentStore.objects.create(
@@ -157,8 +158,9 @@ class TestCompanyAlias:
         assert 'Technology' in str(alias)
 
     def test_unique_together(self):
-        from sec_pipeline.models import CompanyAlias
         from django.db import IntegrityError
+
+        from sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Samsung', ticker='SSNLF', context_sector='',

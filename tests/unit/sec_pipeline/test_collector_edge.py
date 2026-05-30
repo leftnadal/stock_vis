@@ -12,9 +12,9 @@ SECFilingCollector 추가 엣지 케이스 테스트.
 HTTP 요청은 전부 mock. 실제 SEC EDGAR 호출 절대 금지.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 import requests as req
 
 from sec_pipeline.collector import SECFilingCollector

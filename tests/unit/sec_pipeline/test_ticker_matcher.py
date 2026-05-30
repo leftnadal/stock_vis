@@ -4,11 +4,11 @@ TickerMatcher 단위 테스트.
 DB 접근은 @pytest.mark.django_db. rapidfuzz는 실제 사용 (순수 함수).
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from sec_pipeline.ticker_matcher import TickerMatcher
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

@@ -1,10 +1,11 @@
 from django.contrib import admin
+
 from .models import (
-    MetricDefinition,
     BatchJobRun,
     CompanyMetricSnapshot,
-    PeerListCache,
     IndustryMetricBenchmark,
+    MetricDefinition,
+    PeerListCache,
     PeerMetricBenchmark,
 )
 

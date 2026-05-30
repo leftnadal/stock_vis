@@ -7,11 +7,10 @@ DB 접근 필요 — @pytest.mark.django_db.
 Note: quality_checks.py는 local import를 사용하므로 실제 DB 레코드로 테스트.
 """
 
-import pytest
 from datetime import date, timedelta
 
+import pytest
 from django.utils import timezone
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -19,7 +18,7 @@ from django.utils import timezone
 
 @pytest.fixture
 def stock(db):
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
 
 

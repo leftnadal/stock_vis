@@ -4,9 +4,10 @@ FMP Processor Unit Tests
 FMP API 응답 데이터를 Django 모델 호환 형식으로 변환하는 로직 테스트
 """
 
-import pytest
 from datetime import date
 from decimal import Decimal
+
+import pytest
 
 
 class TestFMPProcessorQuote:

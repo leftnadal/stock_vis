@@ -4,10 +4,11 @@ Market Movers 키워드 데이터 수집기 유닛 테스트
 pytest 실행:
     pytest tests/serverless/test_keyword_data_collector.py -v
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import date
+from unittest.mock import MagicMock, Mock, patch
+
 import msgpack
+import pytest
 
 from serverless.services.keyword_data_collector import KeywordDataCollector
 

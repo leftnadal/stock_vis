@@ -11,15 +11,15 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 
-from stocks.models import Stock, DailyPrice
-from chainsight.models import RelationConfidence, CoMentionEdge
-from chainsight.utils import get_market_date
+from chainsight.models import CoMentionEdge, RelationConfidence
 from chainsight.services.seed_selection import (
-    select_seeds,
-    resolve_seed_type,
     build_sector_summary,
     cache_seed_result,
+    resolve_seed_type,
+    select_seeds,
 )
+from chainsight.utils import get_market_date
+from packages.shared.stocks.models import DailyPrice, Stock
 
 logger = logging.getLogger(__name__)
 

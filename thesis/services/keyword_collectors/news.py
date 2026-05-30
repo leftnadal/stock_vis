@@ -9,8 +9,8 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from thesis.services.keyword_cache import ContextKeyword, save_keywords
 from thesis.services.builder_events import log_event
+from thesis.services.keyword_cache import ContextKeyword, save_keywords
 
 logger = logging.getLogger(__name__)
 

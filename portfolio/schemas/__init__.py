@@ -12,6 +12,15 @@ from .analysis_context import (
 )
 from .diagnostic import DiagnosticCard, Severity, StructuralOrSingle
 from .holding import HoldingSummary
+from .llm import (
+    AdjustmentItem,
+    E2DiagnosticCard,
+    E2Request,
+    E2Response,
+    E5Request,
+    E5Response,
+    LLMResponse,
+)
 from .llm_outputs import (
     AdjustmentComparison,
     AdjustmentIntent,
@@ -30,15 +39,6 @@ from .return_breakdown import (
     ReturnBreakdown,
     ReturnBreakdownWithTime,
     ScopeType,
-)
-from .llm import (
-    AdjustmentItem,
-    E2DiagnosticCard,
-    E2Request,
-    E2Response,
-    E5Request,
-    E5Response,
-    LLMResponse,
 )
 from .user_profile import UserProfile
 

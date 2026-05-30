@@ -20,7 +20,6 @@ import re
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 STAGE1_PATH = ROOT / "docs/portfolio/coach/slice7/step9_6_stage1_verdict.json"
 FILLED_PATH = ROOT / "docs/portfolio/coach/slice7/step9_5_eval_filled_v7.md"

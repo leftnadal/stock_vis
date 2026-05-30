@@ -11,16 +11,16 @@ Features:
 """
 
 import logging
-from typing import AsyncGenerator, Dict, Any, Optional
-from datetime import datetime
 import time
+from datetime import datetime
+from typing import Any, AsyncGenerator, Dict, Optional
 
 from django.conf import settings
 
 from .complexity_classifier import (
     ComplexityClassifier,
     QuestionComplexity,
-    get_complexity_classifier
+    get_complexity_classifier,
 )
 from .cost_tracker import get_cost_tracker
 

@@ -6,16 +6,19 @@ Market Movers 키워드 생성 서비스 V2
 
 import asyncio
 import logging
-from typing import List, Dict, Any, Optional
 from datetime import date, timedelta
+from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from google import genai
 from google.genai import types
 
-from .keyword_prompts_v2 import EnhancedKeywordPromptBuilder, EnhancedKeywordResponseParser
-from .keyword_context_builder import KeywordContextBuilder, ContextEnricher
 from ..models import MarketMover
+from .keyword_context_builder import ContextEnricher, KeywordContextBuilder
+from .keyword_prompts_v2 import (
+    EnhancedKeywordPromptBuilder,
+    EnhancedKeywordResponseParser,
+)
 
 logger = logging.getLogger(__name__)
 

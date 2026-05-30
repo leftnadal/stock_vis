@@ -9,10 +9,12 @@ Tests for:
 - Django signals
 """
 
+from unittest.mock import MagicMock, Mock, patch
+
 import pytest
-from unittest.mock import Mock, patch, MagicMock
 from django.test import TestCase
-from stocks.models import Stock
+
+from packages.shared.stocks.models import Stock
 
 
 class Neo4jDriverTests(TestCase):
@@ -23,7 +25,10 @@ class Neo4jDriverTests(TestCase):
     @patch('rag_analysis.services.neo4j_driver.GraphDatabase')
     def test_lazy_connection_success(self, mock_gdb):
         """첫 호출 시 연결 시도"""
-        from rag_analysis.services.neo4j_driver import get_neo4j_driver, reset_connection
+        from rag_analysis.services.neo4j_driver import (
+            get_neo4j_driver,
+            reset_connection,
+        )
 
         # Reset state
         reset_connection()
@@ -46,7 +51,10 @@ class Neo4jDriverTests(TestCase):
     @patch('rag_analysis.services.neo4j_driver.GraphDatabase')
     def test_connection_failure_returns_none(self, mock_gdb):
         """연결 실패 시 None 반환 (앱은 계속 실행)"""
-        from rag_analysis.services.neo4j_driver import get_neo4j_driver, reset_connection
+        from rag_analysis.services.neo4j_driver import (
+            get_neo4j_driver,
+            reset_connection,
+        )
 
         # Reset state
         reset_connection()
@@ -236,7 +244,7 @@ class IntegrationTests(TestCase):
 
     def test_app_starts_without_neo4j(self):
         """Neo4j 없이 앱 시작 가능"""
-        from rag_analysis.services import get_neo4j_service, get_cache_service
+        from rag_analysis.services import get_cache_service, get_neo4j_service
 
         # Services should be importable
         neo4j_service = get_neo4j_service()
@@ -248,11 +256,11 @@ class IntegrationTests(TestCase):
     def test_tasks_are_registered(self):
         """Celery 태스크 등록 확인"""
         from rag_analysis.tasks import (
-            sync_stock_to_neo4j,
+            batch_sync_stocks_to_neo4j,
             delete_stock_from_neo4j,
             health_check_neo4j,
-            batch_sync_stocks_to_neo4j,
-            invalidate_graph_cache
+            invalidate_graph_cache,
+            sync_stock_to_neo4j,
         )
 
         # All tasks should have names

@@ -14,7 +14,8 @@ from decimal import Decimal
 
 import pytest
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, models as dj_models
+from django.db import IntegrityError
+from django.db import models as dj_models
 from django.db.models import ProtectedError
 from django.utils import timezone
 
@@ -208,7 +209,9 @@ class TestSnapshotConsistency:
 
     def _models(self):
         from marketpulse.models.snapshot import (
-            BreadthSnapshot, ConcentrationSnapshot, SectorFlowSnapshot,
+            BreadthSnapshot,
+            ConcentrationSnapshot,
+            SectorFlowSnapshot,
         )
         return [BreadthSnapshot, SectorFlowSnapshot, ConcentrationSnapshot]
 
@@ -225,7 +228,9 @@ class TestSnapshotConsistency:
     def test_str_defined_t10(self, tech_index):
         """T10: 3개 모델 __str__ 정상 호출."""
         from marketpulse.models.snapshot import (
-            BreadthSnapshot, ConcentrationSnapshot, SectorFlowSnapshot,
+            BreadthSnapshot,
+            ConcentrationSnapshot,
+            SectorFlowSnapshot,
         )
         now = timezone.now()
         d = dt_date(2026, 5, 11)

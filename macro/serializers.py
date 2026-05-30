@@ -2,12 +2,13 @@
 거시경제 데이터 Serializers
 """
 from rest_framework import serializers
+
 from .models import (
+    EconomicEvent,
     EconomicIndicator,
     IndicatorValue,
     MarketIndex,
     MarketIndexPrice,
-    EconomicEvent,
 )
 
 

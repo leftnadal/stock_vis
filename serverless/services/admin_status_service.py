@@ -6,10 +6,11 @@ Admin Dashboard Status Service
 """
 import logging
 from datetime import date, timedelta
-from django.utils import timezone
-from django.db import connection
-from django.db.models import Count, Max, Avg
+
 from django.core.cache import cache
+from django.db import connection
+from django.db.models import Avg, Count, Max
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ def last_trading_day(before: date = None) -> date:
     미국 장 마감(ET 16:00 ≈ UTC 21:00) 이전이면
     오늘 데이터가 아직 확정되지 않았으므로 전 거래일을 반환한다.
     """
-    from datetime import datetime, timezone as dt_tz
+    from datetime import datetime
+    from datetime import timezone as dt_tz
 
     now_utc = datetime.now(dt_tz.utc)
     # UTC 기준 날짜 사용 (로컬 시간대와 UTC 날짜 불일치 방지)
@@ -68,11 +70,13 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_overview_summary() -> dict:
-        from stocks.models import Stock, DailyPrice, SP500Constituent
+        from news.models import DailyNewsKeyword, NewsArticle
+        from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
         from serverless.models import (
-            MarketMover, StockKeyword, MarketBreadth,
+            MarketBreadth,
+            MarketMover,
+            StockKeyword,
         )
-        from news.models import NewsArticle, DailyNewsKeyword
 
         last_td = last_trading_day()
         now = timezone.now()
@@ -133,12 +137,16 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def detect_issues() -> list:
-        from stocks.models import DailyPrice, SP500Constituent
-        from serverless.models import (
-            MarketMover, StockKeyword, MarketBreadth,
-            SectorPerformance, ETFProfile, LLMExtractedRelation,
-        )
         from news.models import DailyNewsKeyword
+        from packages.shared.stocks.models import DailyPrice, SP500Constituent
+        from serverless.models import (
+            ETFProfile,
+            LLMExtractedRelation,
+            MarketBreadth,
+            MarketMover,
+            SectorPerformance,
+            StockKeyword,
+        )
 
         issues = []
         last_td = last_trading_day()
@@ -309,10 +317,14 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_stocks_status() -> dict:
-        from stocks.models import (
-            Stock, DailyPrice, WeeklyPrice,
-            BalanceSheet, IncomeStatement, CashFlowStatement,
+        from packages.shared.stocks.models import (
+            BalanceSheet,
+            CashFlowStatement,
+            DailyPrice,
+            IncomeStatement,
             SP500Constituent,
+            Stock,
+            WeeklyPrice,
         )
 
         last_td = last_trading_day()
@@ -432,8 +444,10 @@ class AdminStatusService:
     @staticmethod
     def get_screener_status() -> dict:
         from serverless.models import (
-            MarketBreadth, SectorPerformance,
-            ScreenerAlert, AlertHistory,
+            AlertHistory,
+            MarketBreadth,
+            ScreenerAlert,
+            SectorPerformance,
         )
 
         last_td = last_trading_day()
@@ -534,9 +548,11 @@ class AdminStatusService:
     @staticmethod
     def get_news_status() -> dict:
         from news.models import (
-            NewsArticle, DailyNewsKeyword,
-            SentimentHistory, NewsEntity,
+            DailyNewsKeyword,
+            NewsArticle,
             NewsCollectionCategory,
+            NewsEntity,
+            SentimentHistory,
         )
 
         now = timezone.now()
@@ -745,8 +761,8 @@ def _get_task_summary_24h(last_24h) -> list:
 def _get_latest_task_runs() -> list:
     """각 태스크의 최근 실행 현황을 반환한다."""
     try:
+        from django.db.models import OuterRef, Subquery
         from django_celery_results.models import TaskResult
-        from django.db.models import Subquery, OuterRef
 
         # 태스크별 가장 최근 실행 ID
         latest_ids = (
@@ -811,7 +827,7 @@ def _get_recent_failures(last_24h) -> list:
 
 def _get_rate_limits() -> dict:
     try:
-        from api_request.rate_limiter import get_all_rate_limit_status
+        from packages.shared.api_request.rate_limiter import get_all_rate_limit_status
         return get_all_rate_limit_status()
     except Exception as e:
         logger.warning(f"Rate limits error: {e}")
@@ -820,7 +836,7 @@ def _get_rate_limits() -> dict:
 
 def _get_cache_stats() -> dict:
     try:
-        from api_request.cache.decorators import CacheStats
+        from packages.shared.api_request.cache.decorators import CacheStats
         return CacheStats.get_stats()
     except Exception as e:
         logger.warning(f"Cache stats error: {e}")

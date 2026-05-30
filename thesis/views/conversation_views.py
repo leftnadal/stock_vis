@@ -10,16 +10,19 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from thesis.feature_flags import get_feature_flags
 from thesis.serializers import (
-    ConversationStartSerializer, ConversationResponseSerializer,
+    ConversationResponseSerializer,
+    ConversationStartSerializer,
     SuggestionRequestSerializer,
 )
 from thesis.services.thesis_builder import (
-    start_conversation, process_response,
-    start_llm_conversation, process_llm_turn,
     generate_suggestions,
+    process_llm_turn,
+    process_response,
+    start_conversation,
+    start_llm_conversation,
 )
-from thesis.feature_flags import get_feature_flags
 
 logger = logging.getLogger(__name__)
 
@@ -334,7 +337,10 @@ class SuggestThesesView(APIView):
 
         # feature flag 비활성 → 기존 /start/ 흐름으로 fallback
         if not flags.get('NEWS_SUGGESTIONS_ENABLED'):
-            from thesis.services.builder_events import log_event, EVENT_SUGGESTION_FALLBACK_USED
+            from thesis.services.builder_events import (
+                EVENT_SUGGESTION_FALLBACK_USED,
+                log_event,
+            )
             log_event(EVENT_SUGGESTION_FALLBACK_USED, {
                 'reason': 'feature_flag_disabled',
             })
@@ -350,7 +356,10 @@ class SuggestThesesView(APIView):
 
         if result is None:
             # Gemini 실패 → fallback
-            from thesis.services.builder_events import log_event, EVENT_SUGGESTION_FALLBACK_USED
+            from thesis.services.builder_events import (
+                EVENT_SUGGESTION_FALLBACK_USED,
+                log_event,
+            )
             log_event(EVENT_SUGGESTION_FALLBACK_USED, {
                 'reason': 'gemini_failed',
                 'source_news_id': str(source_news_id),

@@ -6,13 +6,13 @@ Finnhub + Marketaux Provider를 통합하여 뉴스 수집 및 저장
 
 import logging
 from datetime import datetime, timedelta
-from typing import List, Dict, Any, Optional
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
-from django.db import transaction
 from django.conf import settings
+from django.db import transaction
 
-from ..models import NewsArticle, NewsEntity, EntityHighlight
+from ..models import EntityHighlight, NewsArticle, NewsEntity
 from ..providers import FinnhubNewsProvider, MarketauxNewsProvider, RawNewsArticle
 from .deduplicator import NewsDeduplicator
 
@@ -40,7 +40,8 @@ class NewsAggregatorService:
         self.fmp = None
         if getattr(settings, 'FMP_API_KEY', None):
             try:
-                from api_request.providers.fmp.client import FMPClient
+                from packages.shared.api_request.providers.fmp.client import FMPClient
+
                 from ..providers.fmp import FMPNewsProvider
                 fmp_client = FMPClient(api_key=settings.FMP_API_KEY)
                 self.fmp = FMPNewsProvider(fmp_client)

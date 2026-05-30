@@ -1,20 +1,18 @@
-import logging
 import json
+import logging
 from typing import Generator
 
-from django.shortcuts import get_object_or_404
 from django.db import transaction
 from django.http import StreamingHttpResponse
+from django.shortcuts import get_object_or_404
 from django.utils.translation import gettext_lazy as _
-
-from rest_framework import status
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
-from rest_framework.renderers import BaseRenderer
-
 from drf_spectacular.utils import extend_schema
+from rest_framework import status
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.renderers import BaseRenderer
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .exceptions import (
     BasketFull,
@@ -26,12 +24,12 @@ from .exceptions import (
     HistoryError,
     StatsError,
 )
-from .models import DataBasket, BasketItem, AnalysisSession, AnalysisMessage
+from .models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 from .serializers import (
-    DataBasketSerializer,
-    BasketItemSerializer,
-    AnalysisSessionSerializer,
     AnalysisMessageSerializer,
+    AnalysisSessionSerializer,
+    BasketItemSerializer,
+    DataBasketSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -198,8 +196,9 @@ class DataBasketAddStockDataView(APIView):
 
     def post(self, request, pk):
         """주식 데이터를 선택한 타입에 따라 바구니에 추가"""
-        from .constants import DATA_UNITS, DEFAULT_DATA_UNITS
         from datetime import date
+
+        from .constants import DATA_UNITS, DEFAULT_DATA_UNITS
 
         with transaction.atomic():
             # DataBasket 확인 및 락 획득
@@ -294,7 +293,7 @@ class DataBasketAddStockDataView(APIView):
     def _get_stock_name(self, symbol: str) -> str:
         """주식 이름 조회"""
         try:
-            from stocks.models import Stock
+            from packages.shared.stocks.models import Stock
             stock = Stock.objects.filter(symbol=symbol).first()
             return stock.stock_name if stock and stock.stock_name else symbol
         except Exception:
@@ -306,7 +305,7 @@ class DataBasketAddStockDataView(APIView):
 
         try:
             if data_type == 'overview':
-                from stocks.models import Stock
+                from packages.shared.stocks.models import Stock
                 stock = Stock.objects.filter(symbol=symbol).first()
                 if stock:
                     snapshot.update({
@@ -318,7 +317,7 @@ class DataBasketAddStockDataView(APIView):
                     })
 
             elif data_type == 'price':
-                from stocks.models import DailyPrice
+                from packages.shared.stocks.models import DailyPrice
                 latest = DailyPrice.objects.filter(stock__symbol=symbol).order_by('-date').first()
                 if latest:
                     snapshot.update({
@@ -331,7 +330,7 @@ class DataBasketAddStockDataView(APIView):
                     })
 
             elif data_type in ('financial_summary', 'financial_full'):
-                from stocks.models import IncomeStatement, BalanceSheet
+                from packages.shared.stocks.models import BalanceSheet, IncomeStatement
                 income = IncomeStatement.objects.filter(
                     stock__symbol=symbol, period_type='annual'
                 ).order_by('-fiscal_year').first()
@@ -451,8 +450,8 @@ class EventStreamRenderer(BaseRenderer):
         return data
 
 
-from django.http import StreamingHttpResponse as DjangoStreamingHttpResponse
 from asgiref.sync import async_to_sync
+from django.http import StreamingHttpResponse as DjangoStreamingHttpResponse
 
 
 class ChatStreamView(APIView):
@@ -607,8 +606,9 @@ class CostSummaryView(APIView):
     def get(self, request):
         """비용 요약 조회"""
         try:
-            from .models import UsageLog
             from django.utils import timezone
+
+            from .models import UsageLog
 
             now = timezone.now()
 
@@ -686,6 +686,7 @@ class UsageHistoryView(APIView):
     def get(self, request):
         """사용량 히스토리 조회"""
         from datetime import timedelta
+
         from django.core.paginator import Paginator
 
         try:

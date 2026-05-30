@@ -27,7 +27,9 @@ import django  # noqa: E402
 
 django.setup()
 
-from portfolio.tests.helpers.regression_classifier import classify_regression  # noqa: E402
+from portfolio.tests.helpers.regression_classifier import (
+    classify_regression,  # noqa: E402
+)
 
 BASELINE = 486  # Part 1 종결값
 CUMULATIVE_BEFORE = 2.3775

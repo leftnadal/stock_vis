@@ -5,21 +5,22 @@ Market Movers 키워드 생성 시스템 - 사용 예시
 """
 
 import asyncio
-from datetime import date, timedelta
-from typing import List, Dict, Any
 
 # Django 초기화 (스탠드얼론 스크립트용)
 import os
+from datetime import date, timedelta
+from typing import Any, Dict, List
+
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from serverless.models import MarketMover, StockKeyword
-from serverless.services.keyword_generator import KeywordGeneratorService
-from serverless.services.keyword_context import KeywordContextBuilder
 from django.utils import timezone
 
+from serverless.models import MarketMover, StockKeyword
+from serverless.services.keyword_context import KeywordContextBuilder
+from serverless.services.keyword_generator import KeywordGeneratorService
 
 # ========================================
 # 예시 1: 배치 키워드 생성

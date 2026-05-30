@@ -29,7 +29,6 @@ from portfolio.tests.fixtures.sample_comparison_context import (
     FIXTURE_GROUPS,
 )
 
-
 INITIAL_BUDGET = 1500  # E2와 동일 가정 (글쓰기, 1차 추정 1,000~1,500 범위)
 PRIOR_ESTIMATE = 1000  # Part 1 §2.4 chars/3 휴리스틱 추정값
 

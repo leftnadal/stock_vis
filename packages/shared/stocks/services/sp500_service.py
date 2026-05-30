@@ -10,9 +10,9 @@ from typing import Dict, List
 
 from django.db import transaction
 
-from stocks.models import SP500Constituent
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from packages.shared.stocks.models import SP500Constituent
 from serverless.services.fmp_client import FMPClient
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
 
 logger = logging.getLogger(__name__)
 

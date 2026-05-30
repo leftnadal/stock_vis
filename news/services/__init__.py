@@ -1,19 +1,20 @@
 from .aggregator import NewsAggregatorService
+from .circuit_breaker import CircuitBreaker
 from .deduplicator import NewsDeduplicator
-from .keyword_extractor import NewsKeywordExtractor
-from .stock_recommender import NewsBasedStockRecommender
-from .stock_insights import NewsBasedStockInsights
-from .market_feed import MarketFeedService
 from .interest_options import InterestOptionsService
-from .personalized_feed import PersonalizedFeedService
-from .news_classifier import NewsClassifier
-from .news_deep_analyzer import NewsDeepAnalyzer
+from .keyword_extractor import NewsKeywordExtractor
+from .market_feed import MarketFeedService
 from .ml_label_collector import MLLabelCollector
+from .ml_production_manager import MLProductionManager
+
 # NewsNeo4jSyncService — lazy import (neo4j C 확장 fork SIGSEGV 방지)
 from .ml_weight_optimizer import MLWeightOptimizer
-from .ml_production_manager import MLProductionManager
-from .circuit_breaker import CircuitBreaker
+from .news_classifier import NewsClassifier
+from .news_deep_analyzer import NewsDeepAnalyzer
+from .personalized_feed import PersonalizedFeedService
 from .sentiment_normalizer import SentimentNormalizer
+from .stock_insights import NewsBasedStockInsights
+from .stock_recommender import NewsBasedStockRecommender
 
 # Neo4j 전이 import를 lazy로 처리 (Celery fork pool SIGSEGV 방지)
 _LAZY_NEO4J_IMPORTS = {

@@ -7,21 +7,17 @@ End-to-end integration tests for:
 - SSE streaming response
 - Error handling across the pipeline
 """
-from django.test import TestCase, TransactionTestCase
-from django.contrib.auth import get_user_model
-from django.urls import reverse
-from rest_framework.test import APIClient
-from rest_framework import status
-from unittest.mock import patch, AsyncMock, MagicMock
-import json
 import asyncio
+import json
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from rag_analysis.models import (
-    DataBasket,
-    BasketItem,
-    AnalysisSession,
-    AnalysisMessage
-)
+from django.contrib.auth import get_user_model
+from django.test import TestCase, TransactionTestCase
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIClient
+
+from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 from rag_analysis.services.pipeline import AnalysisPipelineLite
 
 User = get_user_model()
@@ -807,9 +803,9 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
     def test_final_pipeline_token_budget_allocation(self):
         """Final Pipeline 토큰 예산 할당 테스트"""
         from rag_analysis.services.token_budget_manager import (
-            TokenBudgetManager,
             ContentBlock,
-            ContentPriority
+            ContentPriority,
+            TokenBudgetManager,
         )
 
         # 단순 복잡도 예산

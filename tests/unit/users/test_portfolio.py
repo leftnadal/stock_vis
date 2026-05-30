@@ -4,13 +4,14 @@ Portfolio CRUD 테스트
 포트폴리오 생성, 조회, 수정, 삭제, 요약, 권한 테스트
 """
 
-import pytest
 from decimal import Decimal
 from unittest.mock import patch
+
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
 
-from users.models import Portfolio
+from packages.shared.users.models import Portfolio
 
 User = get_user_model()
 
@@ -87,7 +88,7 @@ class TestPortfolioCreate:
     """포트폴리오 생성 테스트"""
 
     @pytest.mark.django_db
-    @patch('users.utils.fetch_stock_data_background')
+    @patch('packages.shared.users.utils.fetch_stock_data_background')
     def test_create_portfolio_success(self, mock_fetch, api_client, authenticated_user, stock_aapl):
         """
         Given: 유효한 포트폴리오 생성 데이터 (이미 존재하는 Stock)
@@ -113,7 +114,7 @@ class TestPortfolioCreate:
         ).exists()
 
     @pytest.mark.django_db
-    @patch('users.utils.fetch_stock_data_background')
+    @patch('packages.shared.users.utils.fetch_stock_data_background')
     def test_create_portfolio_duplicate_stock(self, mock_fetch, api_client, authenticated_user, portfolio):
         """
         Given: 이미 포트폴리오에 있는 종목

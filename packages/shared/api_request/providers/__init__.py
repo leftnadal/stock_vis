@@ -6,14 +6,14 @@ Stock Data Provider Package
 추상화하여 일관된 인터페이스를 제공합니다.
 
 Usage:
-    from api_request.providers import get_provider
+    from packages.shared.api_request.providers import get_provider
 
     provider = get_provider('quote')  # Feature flag에 따라 적절한 provider 반환
     quote = provider.get_quote('AAPL')
 """
 
-from .base import StockDataProvider, ProviderResponse
-from .factory import get_provider, ProviderType
+from .base import ProviderResponse, StockDataProvider
+from .factory import ProviderType, get_provider
 
 __all__ = [
     "StockDataProvider",

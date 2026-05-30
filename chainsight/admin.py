@@ -1,9 +1,17 @@
 from django.contrib import admin
+
 from .models import (
-    CompanySensitivityProfile, CompanyGrowthStage, CompanyCapitalDNA,
-    CompanyInsiderSignal, CompanyNarrativeTag, CompanyEventReaction,
-    CompanyRevenueStructure, CompanyChainProfile, ChainNewsEvent,
-    SavedPath, PathAction,
+    ChainNewsEvent,
+    CompanyCapitalDNA,
+    CompanyChainProfile,
+    CompanyEventReaction,
+    CompanyGrowthStage,
+    CompanyInsiderSignal,
+    CompanyNarrativeTag,
+    CompanyRevenueStructure,
+    CompanySensitivityProfile,
+    PathAction,
+    SavedPath,
 )
 
 

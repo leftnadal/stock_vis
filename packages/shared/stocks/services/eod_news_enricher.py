@@ -10,7 +10,7 @@ from datetime import date, timedelta
 
 from django.utils import timezone
 
-from stocks.models import StockNews, Stock
+from packages.shared.stocks.models import Stock, StockNews
 
 logger = logging.getLogger(__name__)
 

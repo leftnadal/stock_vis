@@ -4,19 +4,20 @@ Serverless App Serializers
 Market Movers, Market Breadth, Screener Presets, Sector Heatmap
 """
 from rest_framework import serializers
+
 from serverless.models import (
+    AlertHistory,
+    CorporateAction,
+    InvestmentThesis,
+    MarketBreadth,
     MarketMover,
+    ScreenerAlert,
+    ScreenerFilter,
+    ScreenerPreset,
     SectorETFMapping,
+    SectorPerformance,
     StockSectorInfo,
     VolatilityBaseline,
-    CorporateAction,
-    MarketBreadth,
-    ScreenerPreset,
-    ScreenerFilter,
-    SectorPerformance,
-    ScreenerAlert,
-    AlertHistory,
-    InvestmentThesis,
 )
 
 
@@ -543,8 +544,9 @@ class ScreenerAlertSerializer(serializers.ModelSerializer):
         if not obj.last_triggered_at:
             return 0
 
-        from django.utils import timezone
         from datetime import timedelta
+
+        from django.utils import timezone
 
         cooldown_end = obj.last_triggered_at + timedelta(hours=obj.cooldown_hours)
         remaining = cooldown_end - timezone.now()

@@ -98,7 +98,7 @@ class InterestOptionsService:
     def _get_sector_options(self) -> list:
         """SP500Constituent의 distinct sector 조회"""
         try:
-            from stocks.models import SP500Constituent
+            from packages.shared.stocks.models import SP500Constituent
             sectors = (
                 SP500Constituent.objects
                 .filter(is_active=True)

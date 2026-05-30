@@ -25,7 +25,6 @@ from serverless.models import (
     ThemeMatch,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -673,7 +672,6 @@ class ThemeMatchingService:
 
 # Django ORM에서 Sum 사용을 위한 import 추가
 from django.db.models import Sum
-
 
 # 싱글톤 인스턴스
 _theme_service_instance: Optional[ThemeMatchingService] = None

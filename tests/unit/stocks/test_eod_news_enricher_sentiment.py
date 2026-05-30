@@ -4,9 +4,11 @@ EODNewsEnricher sentiment-시그널 방향 보정 단위 테스트.
 시간적 인과성 기반 confidence 보정 로직을 검증합니다.
 """
 
-import pytest
 from unittest.mock import MagicMock
-from stocks.services.eod_news_enricher import EODNewsEnricher
+
+import pytest
+
+from packages.shared.stocks.services.eod_news_enricher import EODNewsEnricher
 
 
 class TestAdjustConfidence:

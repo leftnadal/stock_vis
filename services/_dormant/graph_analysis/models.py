@@ -6,8 +6,8 @@ Stores correlation matrices and graph relationships for stock price analysis
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
-from stocks.models import Stock
-from users.models import Watchlist
+from packages.shared.stocks.models import Stock
+from packages.shared.users.models import Watchlist
 
 
 class CorrelationMatrix(models.Model):

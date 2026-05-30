@@ -1,9 +1,10 @@
 """Stock 노드 벌크 로드. python manage.py load_stocks_to_neo4j"""
 
 from django.core.management.base import BaseCommand
-from stocks.models import Stock
+
 from chainsight.graph import get_graph_repository
-from chainsight.services import load_stocks_to_neo4j, get_stock_data_for_neo4j
+from chainsight.services import get_stock_data_for_neo4j, load_stocks_to_neo4j
+from packages.shared.stocks.models import Stock
 
 
 class Command(BaseCommand):

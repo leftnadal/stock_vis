@@ -18,11 +18,11 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from shared_kb.ontology_kb import OntologyKB
     from shared_kb.queue import CurationQueue
-    from shared_kb.schema import KnowledgeType, ConfidenceLevel, KnowledgeItem
+    from shared_kb.schema import ConfidenceLevel, KnowledgeItem, KnowledgeType
 else:
     from .ontology_kb import OntologyKB
     from .queue import CurationQueue
-    from .schema import KnowledgeType, ConfidenceLevel, KnowledgeItem
+    from .schema import ConfidenceLevel, KnowledgeItem, KnowledgeType
 
 
 def interactive_add(kb: OntologyKB = None, queue: CurationQueue = None, to_queue: bool = False):

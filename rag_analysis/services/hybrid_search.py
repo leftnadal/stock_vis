@@ -4,12 +4,12 @@ Hybrid Search Service
 Vector + BM25 + Graph 검색을 결합한 하이브리드 검색 서비스
 """
 
-from typing import List, Dict, Any, Optional, Tuple
 import logging
 from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Tuple
 
-from .vector_search import VectorSearchService, get_vector_search_service
 from .bm25_search import BM25SearchService, get_bm25_search_service
+from .vector_search import VectorSearchService, get_vector_search_service
 
 logger = logging.getLogger(__name__)
 

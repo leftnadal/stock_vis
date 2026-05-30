@@ -1,13 +1,13 @@
 from .indicators import (
+    EconomicEvent,
     EconomicIndicator,
     IndicatorValue,
     MarketIndex,
     MarketIndexPrice,
-    EconomicEvent,
 )
 from .relationships import (
-    SectorIndicatorRelation,
     IndicatorCorrelation,
+    SectorIndicatorRelation,
 )
 
 __all__ = [

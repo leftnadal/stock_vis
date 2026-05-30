@@ -1,7 +1,7 @@
-from .metric_definition import MetricDefinition
 from .batch_job import BatchJobRun
+from .benchmark import IndustryMetricBenchmark, PeerListCache, PeerMetricBenchmark
+from .metric_definition import MetricDefinition
 from .metric_snapshot import CompanyMetricSnapshot
-from .benchmark import PeerListCache, IndustryMetricBenchmark, PeerMetricBenchmark
 
 __all__ = [
     "MetricDefinition",

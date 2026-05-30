@@ -14,7 +14,6 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ============================================================
 # Slice 8 Part 2 (#28) — ActionItem (변경 없음, 호출자 4건 호환)
 # ============================================================

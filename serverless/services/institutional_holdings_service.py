@@ -28,10 +28,10 @@ Usage:
     peers = service.get_same_fund_peers('AAPL', limit=20)
 """
 import logging
-from typing import List, Dict, Any, Optional
+from collections import defaultdict
 from datetime import date, datetime
 from decimal import Decimal
-from collections import defaultdict
+from typing import Any, Dict, List, Optional
 
 from django.db import transaction
 from django.db.models import Count, Q
@@ -122,7 +122,7 @@ class InstitutionalHoldingsService:
     def __init__(self):
         """Initialize service with SEC client and CUSIP mapper"""
         try:
-            from api_request.sec_edgar_client import SECEdgarClient
+            from packages.shared.api_request.sec_edgar_client import SECEdgarClient
             self.sec_client = SECEdgarClient()
         except ImportError:
             logger.warning("SECEdgarClient not available, 13F sync will fail")

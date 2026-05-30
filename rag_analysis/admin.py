@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import DataBasket, BasketItem, AnalysisSession, AnalysisMessage
+
+from .models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 
 @admin.register(DataBasket)

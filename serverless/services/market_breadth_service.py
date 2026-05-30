@@ -7,15 +7,14 @@ Market Breadth 계산 서비스 (Lambda 전환 대상)
 """
 import logging
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Dict, Optional, List, Tuple
+from decimal import ROUND_HALF_UP, Decimal
+from typing import Dict, List, Optional, Tuple
 
 from django.core.cache import cache
 from django.db import transaction
 
 from serverless.models import MarketBreadth
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

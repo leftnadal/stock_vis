@@ -4,15 +4,16 @@
 버그: 모든 종목에 동일한 뉴스가 표시되는 문제 재발 방지
 """
 
-import pytest
-from decimal import Decimal
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import Mock, patch
 
+import pytest
+
+from news.models import NewsArticle, NewsEntity
 from news.providers.finnhub import FinnhubNewsProvider
 from news.providers.marketaux import MarketauxNewsProvider
 from news.services.aggregator import NewsAggregatorService
-from news.models import NewsArticle, NewsEntity
 
 
 class TestFinnhubEntityMapping:
@@ -249,8 +250,9 @@ class TestNewsAPIViews:
 
         # AAPL 뉴스 조회 (audit P0 #5: 인증된 client)
         import uuid
-        from django.test import Client
+
         from django.contrib.auth import get_user_model
+        from django.test import Client
         User = get_user_model()
         user = User.objects.create_user(
             username=f'test_{uuid.uuid4().hex[:8]}',

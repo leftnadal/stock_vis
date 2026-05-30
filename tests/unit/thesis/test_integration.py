@@ -5,24 +5,23 @@ Tests the complete lifecycle:
   가설 생성 -> 스코어링 -> 스냅샷 -> 마감 -> ValidityRecord + InvestorDNA
 """
 
-import pytest
 from datetime import date, timedelta
 
+import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from thesis.models import (
-    Thesis,
-    ThesisPremise,
-    ThesisIndicator,
     IndicatorReading,
+    Thesis,
+    ThesisIndicator,
+    ThesisPremise,
     ThesisSnapshot,
 )
+from thesis.models.learning import HypothesisEvent, InvestorDNA, ValidityRecord
 from thesis.models.monitoring import ThesisAlert
-from thesis.models.learning import HypothesisEvent, ValidityRecord, InvestorDNA
-from thesis.services.snapshot_builder import build_snapshot
 from thesis.services.indicator_scorer import score_indicator_from_model
-
+from thesis.services.snapshot_builder import build_snapshot
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -144,7 +143,10 @@ class TestThesisFullCycle:
         assert response.status_code == 400
 
     def test_eod_pipeline_tasks_run_without_error(self, user):
-        from thesis.tasks.eod_pipeline import calculate_scores, create_snapshots_and_alerts
+        from thesis.tasks.eod_pipeline import (
+            calculate_scores,
+            create_snapshots_and_alerts,
+        )
 
         # Create active thesis with premise and indicator readings
         thesis = _create_thesis(user)

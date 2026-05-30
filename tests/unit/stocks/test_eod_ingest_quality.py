@@ -8,11 +8,12 @@ volume/dollar_volume 필터링 로직을 검증합니다.
 독립 함수/클래스와 파이프라인 모두 커버합니다.
 """
 
-import pytest
-import numpy as np
-import pandas as pd
 from datetime import date, timedelta
 from decimal import Decimal
+
+import numpy as np
+import pandas as pd
+import pytest
 
 pytestmark = pytest.mark.unit
 
@@ -69,7 +70,7 @@ def _run_quality_check(df, prev_day_count=None):
     없으면 인라인으로 동일 로직을 실행.
     """
     try:
-        from stocks.services.eod_pipeline import EODPipeline
+        from packages.shared.stocks.services.eod_pipeline import EODPipeline
         pipeline = EODPipeline.__new__(EODPipeline)
         if hasattr(pipeline, '_check_ingest_quality'):
             return pipeline._check_ingest_quality(df, prev_day_count=prev_day_count)
@@ -77,7 +78,7 @@ def _run_quality_check(df, prev_day_count=None):
         pass
 
     try:
-        from stocks.services.ingest_quality import IngestQualityChecker
+        from packages.shared.stocks.services.ingest_quality import IngestQualityChecker
         checker = IngestQualityChecker()
         return checker.check(df, prev_day_count=prev_day_count)
     except ImportError:
@@ -124,7 +125,7 @@ def _run_quality_check(df, prev_day_count=None):
 def _apply_volume_filter(df, min_volume=100_000, min_dollar_volume=500_000):
     """볼륨/달러볼륨 필터 적용 헬퍼 (파이프라인 로직 재현)."""
     try:
-        from stocks.services.eod_pipeline import EODPipeline
+        from packages.shared.stocks.services.eod_pipeline import EODPipeline
         pipeline = EODPipeline.__new__(EODPipeline)
         if hasattr(pipeline, '_filter_low_liquidity'):
             return pipeline._filter_low_liquidity(df)
@@ -355,7 +356,8 @@ class TestPipelineLogQualityStorage:
         Then: ingest_quality JSON 필드에 저장됨
         """
         from django.utils import timezone
-        from stocks.models import PipelineLog
+
+        from packages.shared.stocks.models import PipelineLog
 
         quality = {
             'total_received': 498,
@@ -385,7 +387,8 @@ class TestPipelineLogQualityStorage:
         degrade_mode=True 상태가 DB에 올바르게 저장됨.
         """
         from django.utils import timezone
-        from stocks.models import PipelineLog
+
+        from packages.shared.stocks.models import PipelineLog
 
         quality = {
             'total_received': 420,

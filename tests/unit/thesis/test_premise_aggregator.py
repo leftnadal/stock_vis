@@ -9,13 +9,12 @@ PremiseAggregator 단위 테스트 (수학 모델 v2.3.2, Section 4)
 
 import pytest
 
-from thesis.models import Thesis, ThesisPremise, ThesisIndicator
+from thesis.models import Thesis, ThesisIndicator, ThesisPremise
 from thesis.services.premise_aggregator import (
+    WEAKEST_LINK_THRESHOLD,
     aggregate_premise,
     aggregate_thesis,
-    WEAKEST_LINK_THRESHOLD,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

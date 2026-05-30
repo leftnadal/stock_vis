@@ -5,8 +5,8 @@
 
 import logging
 
-from thesis.services.keyword_cache import ContextKeyword, save_keywords
 from thesis.services.builder_events import log_event
+from thesis.services.keyword_cache import ContextKeyword, save_keywords
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def extract_chain_keywords(target: str) -> list[ContextKeyword]:
 
 def _resolve_symbol(target: str) -> str | None:
     """종목명 → symbol 변환."""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     stock = Stock.objects.filter(symbol__iexact=target).first()
     if stock:
         return stock.symbol

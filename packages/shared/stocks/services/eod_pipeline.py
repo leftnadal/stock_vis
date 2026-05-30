@@ -24,7 +24,7 @@ import pandas as pd
 from django.db import transaction
 from django.utils import timezone as dj_timezone
 
-from stocks.models import (
+from packages.shared.stocks.models import (
     DailyPrice,
     EODSignal,
     PipelineLog,
@@ -32,10 +32,10 @@ from stocks.models import (
     SP500Constituent,
     Stock,
 )
-from stocks.services.eod_json_baker import EODJSONBaker
-from stocks.services.eod_news_enricher import EODNewsEnricher
-from stocks.services.eod_signal_calculator import EODSignalCalculator
-from stocks.services.eod_signal_tagger import EODSignalTagger
+from packages.shared.stocks.services.eod_json_baker import EODJSONBaker
+from packages.shared.stocks.services.eod_news_enricher import EODNewsEnricher
+from packages.shared.stocks.services.eod_signal_calculator import EODSignalCalculator
+from packages.shared.stocks.services.eod_signal_tagger import EODSignalTagger
 
 logger = logging.getLogger(__name__)
 

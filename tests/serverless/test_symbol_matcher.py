@@ -3,8 +3,10 @@ SymbolMatcher Tests (Phase 5)
 
 회사명 → 티커 심볼 매칭 서비스 테스트
 """
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from serverless.services.symbol_matcher import (
     SymbolMatcher,
     get_symbol_matcher,
@@ -179,7 +181,7 @@ class TestSymbolMatcher:
 
     def test_get_match_confidence_no_db(self, matcher):
         """DB에 없는 종목의 신뢰도"""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         with patch.object(Stock.objects, 'get') as mock_get:
             mock_get.side_effect = Stock.DoesNotExist()
             confidence = matcher.get_match_confidence("Unknown", "XXX")

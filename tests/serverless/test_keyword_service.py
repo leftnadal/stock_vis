@@ -1,13 +1,14 @@
 """
 Market Movers 키워드 생성 서비스 테스트
 """
-import pytest
-from unittest.mock import Mock, patch, AsyncMock
 from decimal import Decimal
+from unittest.mock import AsyncMock, Mock, patch
+
+import pytest
 from django.utils import timezone
 
+from serverless.models import MarketMover, StockKeyword
 from serverless.services.keyword_service import KeywordGenerationService
-from serverless.models import StockKeyword, MarketMover
 
 
 @pytest.mark.django_db

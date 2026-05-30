@@ -19,7 +19,6 @@ from pathlib import Path
 
 from scripts.slice7._common import extract_answer, load_raw
 
-
 ROOT = Path(__file__).resolve().parents[2]
 RATIONALES_PATH = ROOT / "docs/portfolio/coach/slice7/step9_1_rationales.json"
 METADATA_PATH = ROOT / "docs/portfolio/coach/slice7/step9_2_auto_metadata.json"

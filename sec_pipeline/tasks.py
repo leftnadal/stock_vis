@@ -111,7 +111,7 @@ def collect_and_extract(self, symbol: str):
                          max_retries=1, countdown=5)
 
     # ── Step 4: RawDocumentStore 저장 ──
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     stock = Stock.objects.filter(symbol=symbol).first()
     if not stock:
         _log_stage(symbol, 'section_extract', 'failed', f'Stock {symbol} not in DB')
@@ -152,11 +152,15 @@ def extract_from_document(self, doc_id: int, symbol: str):
 
     Track A 실패해도 Track B 시도 (Phase 2에서 구현).
     """
-    from .models import RawDocumentStore
-    from .normalizer import normalize_section_all, filter_paragraphs
+    from packages.shared.stocks.models import Stock
+
     from .extractor import GeminiExtractor
-    from .validator_track_a import validate_supply_chain_result, save_supply_chain_evidences
-    from stocks.models import Stock
+    from .models import RawDocumentStore
+    from .normalizer import filter_paragraphs, normalize_section_all
+    from .validator_track_a import (
+        save_supply_chain_evidences,
+        validate_supply_chain_result,
+    )
 
     symbol = symbol.upper()
 
@@ -238,7 +242,10 @@ def extract_from_document(self, doc_id: int, symbol: str):
     start = time.time()
     try:
         from .keywords_track_b import filter_paragraphs_track_b
-        from .validator_track_b import validate_business_model_result, save_business_model_snapshot
+        from .validator_track_b import (
+            save_business_model_snapshot,
+            validate_business_model_result,
+        )
 
         # Track B는 Item 1 위주
         item1_text = sections.get('item_1', '')
@@ -283,6 +290,7 @@ def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
     from chainsight.models import RelationConfidence
     from chainsight.utils import normalize_pair
+
     from .models import SupplyChainEvidence as SCE
 
     matched = SCE.objects.filter(target_company__isnull=False)
@@ -350,6 +358,7 @@ def sync_dirty_to_neo4j(self):
     ⚠️ Phase 1에서 이 함수가 Neo4j SOLE WRITER.
     """
     from django.db import transaction
+
     from .models import SupplyChainEvidence
 
     BATCH_SIZE = 500
@@ -513,8 +522,8 @@ def run_batch_and_report(self, symbols: list = None):
     symbols가 None이면 S&P 500 전체.
     chord 대신 순차 실행 (1인 개발 단순성).
     """
-    from .sp500 import get_sp500_symbols
     from .quality_checks import run_post_batch_quality_checks
+    from .sp500 import get_sp500_symbols
 
     if symbols is None:
         symbols = get_sp500_symbols()

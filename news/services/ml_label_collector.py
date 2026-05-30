@@ -15,7 +15,8 @@ from typing import Optional
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from stocks.models import DailyPrice, Stock
+from packages.shared.stocks.models import DailyPrice, Stock
+
 from ..models import NewsArticle
 
 logger = logging.getLogger(__name__)

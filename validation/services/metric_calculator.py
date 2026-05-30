@@ -12,8 +12,8 @@ from typing import Optional
 
 from django.utils import timezone
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import CompanyMetricSnapshot
+from packages.shared.metrics.models import CompanyMetricSnapshot
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.models import CompanyMetricLatest
 from validation.services.financial_fetcher import FinancialFetcher
 

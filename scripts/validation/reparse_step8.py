@@ -28,7 +28,6 @@ init_django()
 from portfolio.llm.parsers import parse_json_response
 from portfolio.schemas.llm_outputs import OneLineDiagnosis
 
-
 RAW_PATH = Path("docs/portfolio/coach/slice1/step8_3way_raw.json")
 
 

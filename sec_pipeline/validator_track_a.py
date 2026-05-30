@@ -136,8 +136,9 @@ def save_supply_chain_evidences(validated: list, document, source_symbol: str):
         document: RawDocumentStore 인스턴스
         source_symbol: 원본 기업 심볼
     """
+    from packages.shared.stocks.models import Stock
+
     from .models import SupplyChainEvidence
-    from stocks.models import Stock
 
     source_stock = Stock.objects.filter(symbol=source_symbol.upper()).first()
     if not source_stock:

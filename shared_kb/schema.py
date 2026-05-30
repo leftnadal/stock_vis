@@ -3,10 +3,10 @@ OAG KB Schema Definitions
 Enum, dataclass 정의 - 지식 베이스의 핵심 데이터 구조
 """
 
-from enum import Enum
 from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any
 from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class KnowledgeType(Enum):

@@ -7,12 +7,12 @@ Federal Reserve Economic Data API
 """
 import logging
 import time
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 from django.conf import settings
 
-from api_request.rate_limiter import get_rate_limiter
+from packages.shared.api_request.rate_limiter import get_rate_limiter
 
 logger = logging.getLogger(__name__)
 

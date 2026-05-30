@@ -8,13 +8,12 @@ Chain Sight DNA 서비스
 3. AI 추천 (LLM 기반 관계 설명) - Optional
 """
 import logging
-from typing import List, Dict, Any, Optional
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
 from django.core.cache import cache
 
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

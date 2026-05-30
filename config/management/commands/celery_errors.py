@@ -159,8 +159,8 @@ class Command(BaseCommand):
         self.stdout.write('')
 
     def _show_stats(self, days, task_filter):
-        from django_celery_results.models import TaskResult
         from django.db.models import Count
+        from django_celery_results.models import TaskResult
 
         since = timezone.now() - timedelta(days=days)
         qs = TaskResult.objects.filter(date_done__gte=since)

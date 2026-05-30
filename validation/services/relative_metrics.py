@@ -10,8 +10,11 @@ from decimal import Decimal
 
 from django.utils import timezone
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import CompanyMetricSnapshot, IndustryMetricBenchmark
+from packages.shared.metrics.models import (
+    CompanyMetricSnapshot,
+    IndustryMetricBenchmark,
+)
+from packages.shared.stocks.models import SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)
 

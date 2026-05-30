@@ -20,7 +20,6 @@ from rest_framework.test import APIClient
 
 from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
 
-
 E5_ENDPOINT = "/api/v1/coach/e5/"
 
 

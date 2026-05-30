@@ -4,14 +4,15 @@ News Services Unit Tests
 NewsDeduplicator, NewsAggregatorService 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
-from news.services.deduplicator import NewsDeduplicator
-from news.services.aggregator import NewsAggregatorService
+import pytest
+
 from news.providers.base import RawNewsArticle
+from news.services.aggregator import NewsAggregatorService
+from news.services.deduplicator import NewsDeduplicator
 
 
 class TestNewsDeduplicator:
@@ -448,7 +449,7 @@ class TestNewsAggregatorService:
 
         service._save_entities(news_article_aapl, entities_data)
 
-        from news.models import NewsEntity, EntityHighlight
+        from news.models import EntityHighlight, NewsEntity
         entity = NewsEntity.objects.get(news=news_article_aapl, symbol='AAPL')
         assert EntityHighlight.objects.filter(news_entity=entity).exists()
 

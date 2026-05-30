@@ -4,14 +4,22 @@ Serverless App URLs
 Market Movers, Market Breadth, Screener Presets, Sector Heatmap, Alerts, Admin Dashboard
 """
 from django.urls import path
+
 from serverless import views
 from serverless.views_admin import (
-    AdminOverviewView, AdminStocksView, AdminScreenerView,
-    AdminMarketPulseView, AdminNewsView, AdminSystemView, AdminTaskLogsView,
-    AdminActionView, AdminTaskStatusView,
-    AdminNewsCategoryView, AdminNewsCategoryDetailView, AdminNewsSectorOptionsView,
+    AdminActionView,
+    AdminMarketPulseView,
+    AdminNewsCategoryDetailView,
+    AdminNewsCategoryView,
+    AdminNewsSectorOptionsView,
+    AdminNewsView,
+    AdminOverviewView,
+    AdminScreenerView,
+    AdminStocksView,
+    AdminSystemView,
+    AdminTaskLogsView,
+    AdminTaskStatusView,
 )
-
 
 app_name = 'serverless'
 

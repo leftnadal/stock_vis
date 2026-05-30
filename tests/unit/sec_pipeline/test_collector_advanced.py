@@ -11,8 +11,9 @@ HTTP 요청은 전부 mock. 실제 SEC EDGAR 호출 절대 금지.
 """
 
 import sys
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from sec_pipeline.collector import SECFilingCollector
 

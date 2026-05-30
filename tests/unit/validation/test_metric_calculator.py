@@ -15,15 +15,17 @@ MetricCalculator 단위 테스트
 """
 
 from decimal import Decimal
-from unittest.mock import MagicMock, patch, PropertyMock
 from types import SimpleNamespace
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
 from validation.services.metric_calculator import (
-    _safe, _safe_nonzero, _div, MetricCalculator,
+    MetricCalculator,
+    _div,
+    _safe,
+    _safe_nonzero,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

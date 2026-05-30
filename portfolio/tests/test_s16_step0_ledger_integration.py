@@ -23,7 +23,6 @@ from portfolio.llm.cost_guard import CostGuard
 from portfolio.llm.cost_ledger import read_records
 from portfolio.schemas.llm import LLMResponse
 
-
 # ─────────────────────────────────────────────────────────────
 # (1) CostGuard 기본 slice_id 정합
 # ─────────────────────────────────────────────────────────────

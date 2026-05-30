@@ -3,7 +3,8 @@
 """
 
 from rest_framework import serializers
-from ..models import NewsArticle, NewsEntity, EntityHighlight, SentimentHistory
+
+from ..models import EntityHighlight, NewsArticle, NewsEntity, SentimentHistory
 
 
 class EntityHighlightSerializer(serializers.ModelSerializer):

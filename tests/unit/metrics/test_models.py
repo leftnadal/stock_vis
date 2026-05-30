@@ -10,21 +10,21 @@ PR-1~3 metrics 앱 모델 테스트
 - PeerMetricBenchmark: unique_together, benchmark_confidence
 """
 
-import pytest
-from decimal import Decimal
 from datetime import datetime
-from django.utils import timezone
-from django.db import IntegrityError
+from decimal import Decimal
 
-from metrics.models import (
-    MetricDefinition,
+import pytest
+from django.db import IntegrityError
+from django.utils import timezone
+
+from packages.shared.metrics.models import (
     BatchJobRun,
     CompanyMetricSnapshot,
-    PeerListCache,
     IndustryMetricBenchmark,
+    MetricDefinition,
+    PeerListCache,
     PeerMetricBenchmark,
 )
-
 
 # ===== PR-1: MetricDefinition =====
 

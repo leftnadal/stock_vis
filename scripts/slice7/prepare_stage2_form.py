@@ -17,7 +17,6 @@ import json
 import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 STAGE1_VERDICT = ROOT / "docs/portfolio/coach/slice7/step9_6_stage1_verdict.json"
 EVAL_FORM = ROOT / "docs/portfolio/coach/slice7/step9_4_eval_form_v7.md"

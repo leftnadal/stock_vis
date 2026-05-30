@@ -11,17 +11,16 @@ Market Feed Service + API 테스트
 - GET /api/v1/news/interest-options/
 """
 
-import pytest
 from datetime import timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from news.models import DailyNewsKeyword, NewsArticle, NewsEntity
+from news.services.interest_options import PREDEFINED_THEMES, InterestOptionsService
 from news.services.market_feed import MarketFeedService
-from news.services.interest_options import InterestOptionsService, PREDEFINED_THEMES
-
 
 # ===== MarketFeedService 단위 테스트 =====
 
@@ -725,7 +724,7 @@ class TestInterestOptionsService:
         When: get_options() 호출
         Then: sectors에 섹터 정보 포함
         """
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',
@@ -756,8 +755,9 @@ class TestInterestOptionsService:
         When: get_options() 호출
         Then: 섹터 항목에 interest_type='sector', value, display_name, sample_symbols 포함
         """
-        from stocks.models import SP500Constituent
         from django.core.cache import cache
+
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='MSFT',
@@ -1037,7 +1037,7 @@ class TestInterestOptionsAPI:
         When: GET /api/v1/news/interest-options/
         Then: 해당 섹터가 sectors에 포함됨
         """
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         SP500Constituent.objects.create(
             symbol='AAPL',

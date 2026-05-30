@@ -7,11 +7,11 @@ httpx를 사용하여 동기 HTTP 요청을 수행합니다.
 KB 참고: FMP API Market Movers 구현 패턴
 """
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 import httpx
 from django.conf import settings
 from django.core.cache import cache
-
 
 logger = logging.getLogger(__name__)
 

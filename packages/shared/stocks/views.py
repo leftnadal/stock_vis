@@ -1,49 +1,48 @@
 import logging
 from datetime import datetime, timedelta
 
-from django.shortcuts import get_object_or_404
-from django.db.models import Q
-from django.views.generic import TemplateView, DetailView
-from django.http import Http404
 from django.core.cache import cache
+from django.db.models import Q
+from django.http import Http404
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
+from django.views.generic import DetailView, TemplateView
 from rest_framework import generics, status
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.throttling import UserRateThrottle
 from rest_framework.exceptions import NotFound
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework.throttling import UserRateThrottle
+from rest_framework.views import APIView
 
+from .exceptions import (
+    DataSyncError,
+    ExternalAPIError,
+    InvalidParameterError,
+    RateLimitError,
+    StockNotFoundError,
+)
 from .models import (
-    Stock,
-    DailyPrice,
-    WeeklyPrice,
     BalanceSheet,
-    IncomeStatement,
     CashFlowStatement,
+    DailyPrice,
+    IncomeStatement,
+    Stock,
+    WeeklyPrice,
 )
 from .serializers import (
-    StockListSerializer,
+    BalanceSheetTabSerializer,
+    CashFlowTabSerializer,
+    ChartDataSerializer,
+    IncomeStatementTabSerializer,
+    OverviewTabSerializer,
     StockHeaderSerializer,
+    StockListSerializer,
     StockSearchSerializer,
     WeeklyChartDataSerializer,
-    ChartDataSerializer,
-    OverviewTabSerializer,
-    BalanceSheetTabSerializer,
-    IncomeStatementTabSerializer,
-    CashFlowTabSerializer,
 )
-from .exceptions import (
-    StockNotFoundError,
-    ExternalAPIError,
-    RateLimitError,
-    DataSyncError,
-    InvalidParameterError,
-)
-from .services.stock_sync_service import StockSyncService, SyncResult
 from .services.rate_limiter import check_rate_limit, record_api_call
+from .services.stock_sync_service import StockSyncService, SyncResult
 
 logger = logging.getLogger(__name__)
 

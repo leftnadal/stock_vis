@@ -35,7 +35,6 @@ from portfolio.tests.fixtures.sample_e3_portfolio_context import (
     PRESET_INTENT_MAP,
 )
 
-
 # ============================================================
 # V1~V5 × haiku/sonnet parametrize 10건 (지시서 §2.6)
 # ============================================================

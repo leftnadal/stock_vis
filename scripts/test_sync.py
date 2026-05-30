@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Market Movers 동기화 테스트 스크립트"""
 import os
+
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')

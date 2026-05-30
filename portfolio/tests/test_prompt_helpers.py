@@ -14,7 +14,6 @@ from portfolio.services._prompt_helpers import (
     format_metrics_to_str,
 )
 
-
 # ============================================================
 # format_metrics_to_str — 일반화 (Slice 5 Part 2 Step 9 #11)
 # ============================================================

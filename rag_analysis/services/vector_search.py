@@ -4,10 +4,11 @@ Vector Search Service
 sentence-transformers를 사용한 벡터 유사도 검색 서비스
 """
 
-from sentence_transformers import SentenceTransformer
-import numpy as np
-from typing import List, Tuple, Optional
 import logging
+from typing import List, Optional, Tuple
+
+import numpy as np
+from sentence_transformers import SentenceTransformer
 
 logger = logging.getLogger(__name__)
 

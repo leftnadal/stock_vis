@@ -7,16 +7,15 @@ import json
 import logging
 import re
 import time
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-
 from google import genai
 from google.genai import types
 
 from serverless.models import StockRelationship
-
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +174,7 @@ JSON 배열만 반환하세요 (설명 없음):
 
         우선순위 정렬을 위해 CASE WHEN을 사용합니다.
         """
-        from django.db.models import Case, When, IntegerField
+        from django.db.models import Case, IntegerField, When
 
         # PRIORITY 리스트를 CASE WHEN으로 변환
         whens = [

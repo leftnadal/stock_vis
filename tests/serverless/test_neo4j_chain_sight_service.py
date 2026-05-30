@@ -4,9 +4,10 @@ Tests for Neo4jChainSightService
 Neo4j Chain Sight 온톨로지 서비스 테스트.
 Neo4j 연결이 없어도 fallback 로직이 동작하는지 확인.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
 

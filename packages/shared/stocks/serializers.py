@@ -1,11 +1,12 @@
 from rest_framework import serializers
+
 from .models import (
-    Stock,
-    DailyPrice,
-    WeeklyPrice,
     BalanceSheet,
-    IncomeStatement,
     CashFlowStatement,
+    DailyPrice,
+    IncomeStatement,
+    Stock,
+    WeeklyPrice,
 )
 
 

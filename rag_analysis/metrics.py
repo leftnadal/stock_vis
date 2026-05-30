@@ -12,16 +12,16 @@ Metrics:
 """
 
 import logging
+from contextlib import contextmanager
 from functools import wraps
 from time import time
-from typing import Optional, Callable
-from contextlib import contextmanager
+from typing import Callable, Optional
 
 logger = logging.getLogger(__name__)
 
 # Prometheus 클라이언트가 설치된 경우에만 메트릭 생성
 try:
-    from prometheus_client import Counter, Histogram, Gauge, Summary
+    from prometheus_client import Counter, Gauge, Histogram, Summary
 
     # =============================================================
     # Analysis Request Metrics

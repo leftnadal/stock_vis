@@ -20,13 +20,13 @@ Usage:
 
 from django.core.management.base import BaseCommand, CommandError
 
-from rag_analysis.services.semantic_cache_setup import (
-    setup_semantic_cache_index,
-    cleanup_expired_cache,
-    get_cache_stats,
-    drop_semantic_cache_index
-)
 from rag_analysis.services.cache_warmer import CacheWarmer
+from rag_analysis.services.semantic_cache_setup import (
+    cleanup_expired_cache,
+    drop_semantic_cache_index,
+    get_cache_stats,
+    setup_semantic_cache_index,
+)
 
 
 class Command(BaseCommand):

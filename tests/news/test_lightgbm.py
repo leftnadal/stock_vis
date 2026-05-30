@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 from django.utils import timezone
 
-
 # ════════════════════════════════════════
 # Fixtures
 # ════════════════════════════════════════

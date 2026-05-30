@@ -22,7 +22,7 @@ def _get_or_create_user(username: str = "test-user"):
 
 def create_tech_wallet(username: str = "test-user") -> Wallet:
     """Tech 5종목 보유 Wallet 생성 (Stock FK는 미리 존재해야 함)."""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
 
     user = _get_or_create_user(username)
     wallet, _ = Wallet.objects.get_or_create(user=user, defaults={"name": "Test Wallet"})

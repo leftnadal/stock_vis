@@ -4,12 +4,13 @@ DateAwareContextFormatter 단위 테스트
 DataBasket/BasketItem을 Mock으로 대체하여 DB 의존성 없이 테스트합니다.
 """
 
-import pytest
 from datetime import date
 from unittest.mock import MagicMock, PropertyMock, patch
 
-from rag_analysis.services.context import DateAwareContextFormatter
+import pytest
+
 from rag_analysis.models import BasketItem
+from rag_analysis.services.context import DateAwareContextFormatter
 
 
 def _make_mock_basket(name='Test Basket', description='', items=None):

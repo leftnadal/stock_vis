@@ -5,7 +5,6 @@ Sonnet에게 E4 답변의 4요소 충족 여부를 평가시키는 system + user
 
 from __future__ import annotations
 
-
 RATIONALE_SYSTEM_PROMPT = """당신은 한국 개인 투자자용 포트폴리오 코치의 답변 품질을 평가하는 평가자입니다.
 
 ## 평가 대상

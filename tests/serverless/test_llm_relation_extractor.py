@@ -3,14 +3,15 @@ LLMRelationExtractor Tests (Phase 5)
 
 LLM 기반 관계 추출 서비스 테스트
 """
-import pytest
-from unittest.mock import patch, MagicMock, Mock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from serverless.services.llm_relation_extractor import (
-    LLMRelationExtractor,
     ExtractedRelation,
     ExtractionResult,
+    LLMRelationExtractor,
 )
 
 

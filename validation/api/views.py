@@ -9,26 +9,33 @@
 6. DELETE /api/v1/validation/{symbol}/peer-preference/
 """
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import (
-    MetricDefinition, CompanyMetricSnapshot,
-    PeerListCache, PeerMetricBenchmark,
+from packages.shared.metrics.models import (
+    CompanyMetricSnapshot,
+    MetricDefinition,
+    PeerListCache,
+    PeerMetricBenchmark,
 )
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.models import (
-    CompanyBenchmarkDelta, CategorySignal,
-    PeerPreset, UserPeerPreference,
-)
-from validation.services.interpretation import (
-    generate_summary_text, generate_metric_interpretation,
-    determine_trend, generate_leader_summary,
+    CategorySignal,
+    CompanyBenchmarkDelta,
+    PeerPreset,
+    UserPeerPreference,
 )
 from validation.services.category_signal_calculator import (
-    CATEGORY_METRICS, CATEGORY_DISPLAY,
+    CATEGORY_DISPLAY,
+    CATEGORY_METRICS,
+)
+from validation.services.interpretation import (
+    determine_trend,
+    generate_leader_summary,
+    generate_metric_interpretation,
+    generate_summary_text,
 )
 
 # 카테고리 설명
@@ -70,7 +77,9 @@ class ValidationSummaryView(APIView):
         if request.user.is_authenticated:
             pref = UserPeerPreference.objects.filter(user=request.user, symbol_id=symbol).first()
             if pref and pref.mode == 'custom' and pref.custom_peers:
-                from validation.services.custom_benchmark_engine import CustomBenchmarkEngine
+                from validation.services.custom_benchmark_engine import (
+                    CustomBenchmarkEngine,
+                )
                 engine = CustomBenchmarkEngine()
                 result = engine.compute_summary(symbol, pref.custom_peers, user_id=request.user.id)
                 result['company_name'] = stock.stock_name or symbol
@@ -532,7 +541,8 @@ class LLMPeerFilterView(APIView):
 
         # Step 1: 자연어 → 구조화 필터
         from validation.services.llm_peer_filter import (
-            parse_filter_with_llm, execute_peer_filter,
+            execute_peer_filter,
+            parse_filter_with_llm,
         )
 
         parsed = parse_filter_with_llm(

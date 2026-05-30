@@ -3,14 +3,15 @@ SEC EDGAR Client Tests
 
 Unit tests for the SEC EDGAR API client.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import date
+from unittest.mock import MagicMock, Mock, patch
 
-from api_request.sec_edgar_client import (
+import pytest
+
+from packages.shared.api_request.sec_edgar_client import (
+    Filing10K,
     SECEdgarClient,
     SECEdgarError,
-    Filing10K
 )
 
 
@@ -33,7 +34,7 @@ class TestSECEdgarClient:
     # CIK Lookup Tests
     # ========================================
 
-    @patch('api_request.sec_edgar_client.requests.Session.get')
+    @patch('packages.shared.api_request.sec_edgar_client.requests.Session.get')
     def test_get_cik_success(self, mock_get, client):
         """CIK 조회 성공 테스트"""
         mock_response = Mock()
@@ -49,7 +50,7 @@ class TestSECEdgarClient:
         assert cik == '0000320193'
         assert cik in client._cik_cache.values()
 
-    @patch('api_request.sec_edgar_client.requests.Session.get')
+    @patch('packages.shared.api_request.sec_edgar_client.requests.Session.get')
     def test_get_cik_not_found(self, mock_get, client):
         """CIK 조회 실패 - 종목 없음"""
         mock_response = Mock()
@@ -217,7 +218,7 @@ class TestSECEdgarClient:
     # Error Handling Tests
     # ========================================
 
-    @patch('api_request.sec_edgar_client.requests.Session.get')
+    @patch('packages.shared.api_request.sec_edgar_client.requests.Session.get')
     def test_error_404(self, mock_get, client):
         """404 에러 처리 테스트"""
         mock_response = Mock()
@@ -230,7 +231,7 @@ class TestSECEdgarClient:
 
         assert 'not found' in str(exc_info.value).lower()
 
-    @patch('api_request.sec_edgar_client.requests.Session.get')
+    @patch('packages.shared.api_request.sec_edgar_client.requests.Session.get')
     def test_error_timeout(self, mock_get, client):
         """타임아웃 에러 처리 테스트"""
         import requests

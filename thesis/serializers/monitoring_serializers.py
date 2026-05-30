@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from thesis.models import ThesisSnapshot, ThesisAlert
+from thesis.models import ThesisAlert, ThesisSnapshot
 
 
 class ThesisSnapshotSerializer(serializers.ModelSerializer):

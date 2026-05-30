@@ -13,12 +13,11 @@ from types import SimpleNamespace
 import pytest
 
 from validation.services.interpretation import (
-    generate_summary_text,
-    generate_metric_interpretation,
     determine_trend,
     generate_leader_summary,
+    generate_metric_interpretation,
+    generate_summary_text,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

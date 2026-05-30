@@ -5,10 +5,10 @@
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
 
 @dataclass

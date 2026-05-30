@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
 
-from serverless.models import ETFProfile, ETFHolding
+from serverless.models import ETFHolding, ETFProfile
 from serverless.services.etf_csv_downloader import ETFCSVDownloader
 
 
@@ -118,8 +118,9 @@ class Command(BaseCommand):
         ETFHolding.objects.bulk_create(holding_objects)
 
         # 프로필 업데이트
-        from django.utils import timezone
         import hashlib
+
+        from django.utils import timezone
         profile.last_updated = timezone.now()
         profile.last_row_count = len(holdings)
         profile.last_hash = hashlib.sha256(content).hexdigest()

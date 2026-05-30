@@ -3,11 +3,12 @@
 사용자 입력은 신뢰 경계 태그(<user_note_untrusted>, <user_question>)로 감싸고,
 닫는 태그는 escape하여 사용자가 가짜 경계로 prompt를 빠져나가지 못하게 한다.
 """
-import pytest
 from unittest.mock import patch
 
-from serverless.services.thesis_builder import ThesisBuilder
+import pytest
+
 from rag_analysis.services.llm_service import LLMServiceLite
+from serverless.services.thesis_builder import ThesisBuilder
 
 
 @pytest.fixture

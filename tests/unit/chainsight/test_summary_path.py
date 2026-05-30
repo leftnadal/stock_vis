@@ -1,11 +1,13 @@
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
+
 from chainsight.services.path_service import (
-    generate_summary_path,
-    compute_landmark_scores,
-    _normalize_rank,
     _compute_bridge_scores,
     _compute_sector_uniqueness,
+    _normalize_rank,
+    compute_landmark_scores,
+    generate_summary_path,
 )
 
 

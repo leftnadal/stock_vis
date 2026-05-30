@@ -103,12 +103,14 @@ def execute_peer_filter(symbol: str, parsed_filter: dict,
     Returns:
         {'peers': [...], 'count': int, 'filters_applied': [...]}
     """
-    from stocks.models import Stock, SP500Constituent
     from chainsight.models import (
-        CompanyGrowthStage, CompanyCapitalDNA,
-        CompanySensitivityProfile, CompanyInsiderSignal,
+        CompanyCapitalDNA,
+        CompanyGrowthStage,
+        CompanyInsiderSignal,
+        CompanySensitivityProfile,
     )
-    from metrics.models.metric_snapshot import CompanyMetricSnapshot
+    from packages.shared.metrics.models.metric_snapshot import CompanyMetricSnapshot
+    from packages.shared.stocks.models import SP500Constituent, Stock
 
     symbol = symbol.upper()
 

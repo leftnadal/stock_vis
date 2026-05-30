@@ -4,16 +4,15 @@ Market Movers 키워드 생성 서비스
 import json
 import logging
 import time
-from typing import List, Dict, Optional
-from django.utils import timezone
-from django.conf import settings
 from datetime import timedelta
+from typing import Dict, List, Optional
 
+from django.conf import settings
+from django.utils import timezone
 from google import genai
 from google.genai import types
 
-from serverless.models import StockKeyword, MarketMover
-
+from serverless.models import MarketMover, StockKeyword
 
 logger = logging.getLogger(__name__)
 

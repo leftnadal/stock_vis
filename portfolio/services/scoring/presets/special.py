@@ -15,7 +15,6 @@ from typing import Any, ClassVar
 from portfolio.services.scoring.base import ScoringEngineBase
 from portfolio.services.scoring.preset_spec import PresetSpec
 
-
 SPECIAL_SPECS: list[PresetSpec] = [
     PresetSpec(
         preset_id="contrarian",

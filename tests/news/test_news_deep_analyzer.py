@@ -13,16 +13,16 @@ NewsDeepAnalyzer 단위 테스트
 - NewsDeepAnalyzer.analyze_batch() - 배치 분석 흐름 전체
 """
 
-import pytest
-from datetime import datetime, timezone as dt_timezone
-from unittest.mock import patch, MagicMock, call
+from datetime import datetime
+from datetime import timezone as dt_timezone
+from unittest.mock import MagicMock, call, patch
 
+import pytest
 from django.conf import settings
 from django.utils import timezone
 
 from news.models import NewsArticle
-from stocks.models import Stock
-
+from packages.shared.stocks.models import Stock
 
 # ===== Helper: analyzer fixture =====
 

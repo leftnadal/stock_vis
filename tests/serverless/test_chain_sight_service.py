@@ -3,8 +3,10 @@ Chain Sight DNA 서비스 테스트
 
 연관 종목 발견 시스템의 로직을 검증합니다.
 """
-import pytest
 from decimal import Decimal
+
+import pytest
+
 from serverless.services.chain_sight_service import ChainSightService
 
 

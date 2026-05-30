@@ -14,7 +14,6 @@ from portfolio.schemas.e4_conversation import (
     E4ConversationOutput,
 )
 
-
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "e4_conversation"
 ALL_FIXTURES = sorted(FIXTURE_DIR.glob("S*.json"))
 

@@ -1,9 +1,10 @@
+import json
+from decimal import Decimal
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
-from django.db.models import Sum, F
+from django.db.models import F, Sum
 from django.utils import timezone
-from decimal import Decimal
-import json
 
 logger = get_task_logger(__name__)
 
@@ -13,8 +14,10 @@ def calculate_portfolio_values():
     """포트폴리오 가치 계산 및 히스토리 저장"""
     try:
         from django.contrib.auth import get_user_model
+
+        from packages.shared.stocks.models import Stock
+
         from .models import Portfolio
-        from stocks.models import Stock
 
         User = get_user_model()
 
@@ -152,9 +155,11 @@ def cleanup_old_portfolio_history():
 def calculate_portfolio_performance(user_id, period="1d"):
     """포트폴리오 성과 계산"""
     try:
-        from django.contrib.auth import get_user_model
-        from .models import Portfolio
         from datetime import timedelta
+
+        from django.contrib.auth import get_user_model
+
+        from .models import Portfolio
 
         User = get_user_model()
         user = User.objects.get(id=user_id)

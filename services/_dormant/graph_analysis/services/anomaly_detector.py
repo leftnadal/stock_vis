@@ -16,7 +16,7 @@ from graph_analysis.models import (
     GraphMetadata,
 )
 
-from users.models import Watchlist
+from packages.shared.users.models import Watchlist
 
 logger = logging.getLogger(__name__)
 

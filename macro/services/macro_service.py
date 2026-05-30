@@ -4,17 +4,17 @@
 FRED + FMP 데이터를 통합하여 Market Pulse 대시보드용 데이터 제공
 """
 import logging
-from datetime import datetime, date, timedelta
-from typing import Dict, Any
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from typing import Any, Dict
 
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
 
-from .fred_client import FREDClient
+from ..constants import calculate_fear_greed_index, get_insight_message
 from .fmp_client import FMPClient
-from ..constants import get_insight_message, calculate_fear_greed_index
+from .fred_client import FREDClient
 
 logger = logging.getLogger(__name__)
 
@@ -569,7 +569,7 @@ class MacroEconomicService:
         Returns:
             카테고리별 데이터 존재 여부
         """
-        from ..models import EconomicIndicator, MarketIndex, EconomicEvent
+        from ..models import EconomicEvent, EconomicIndicator, MarketIndex
 
         return {
             'has_indicators': EconomicIndicator.objects.exists(),
@@ -580,8 +580,9 @@ class MacroEconomicService:
 
     def _has_recent_data(self) -> bool:
         """최근 데이터가 있는지 확인 (24시간 이내)"""
-        from ..models import IndicatorValue
         from django.utils import timezone
+
+        from ..models import IndicatorValue
 
         cutoff = timezone.now() - timedelta(hours=24)
         return IndicatorValue.objects.filter(created_at__gte=cutoff).exists()

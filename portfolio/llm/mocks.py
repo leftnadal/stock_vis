@@ -27,7 +27,6 @@ from portfolio.llm.exceptions import (
 )
 from portfolio.schemas.llm import LLMResponse
 
-
 # OneLineDiagnosis 스키마(headline 10~60자, summary 30~500자)를 통과하는 결정론적 Mock 응답.
 _MOCK_DIAGNOSIS = {
     "headline": "GARP 적합도 양호, 밸류에이션 부담 일부",

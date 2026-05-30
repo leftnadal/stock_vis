@@ -5,11 +5,15 @@ SEC-PR-8: Django Admin — 모든 SEC Pipeline 모델 + 미매칭 큐 관리.
 from django.contrib import admin
 
 from .models import (
-    RawDocumentStore, SupplyChainEvidence, BusinessModelSnapshot,
-    BusinessModelEvidence, FilingProcessLog, CompanyAlias,
-    UnmatchedCompanyQueue, PipelineIntelligenceReport,
+    BusinessModelEvidence,
+    BusinessModelSnapshot,
+    CompanyAlias,
+    FilingProcessLog,
+    PipelineIntelligenceReport,
+    RawDocumentStore,
+    SupplyChainEvidence,
+    UnmatchedCompanyQueue,
 )
-
 
 # ── RawDocumentStore ──
 

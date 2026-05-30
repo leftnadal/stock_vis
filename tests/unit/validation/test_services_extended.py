@@ -21,10 +21,9 @@ from unittest.mock import patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.services.metric_calculator import MetricCalculator
 from validation.services.preset_generator import PresetGenerator
-
 
 # ---------------------------------------------------------------------------
 # Helpers (공용)

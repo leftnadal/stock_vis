@@ -10,8 +10,9 @@ TickerMatcher 추가 단위 테스트.
 DB 접근 필요 — @pytest.mark.django_db.
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from sec_pipeline.ticker_matcher import TickerMatcher
 
@@ -70,7 +71,7 @@ class TestMatchAlias:
 @pytest.mark.django_db
 class TestEnsureLoaded:
     def test_loads_stocks_into_map(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         Stock.objects.create(symbol='MSFT', stock_name='Microsoft Corporation')
 
@@ -81,7 +82,7 @@ class TestEnsureLoaded:
         assert matcher._stock_map['apple inc.'] == 'AAPL'
 
     def test_loads_only_once(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         matcher._ensure_loaded()
         # 두 번째 호출은 캐시 사용
@@ -98,7 +99,7 @@ class TestEnsureLoaded:
 @pytest.mark.django_db
 class TestGetFuzzyCandidates:
     def test_returns_top_candidates(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         Stock.objects.create(symbol='MSFT', stock_name='Microsoft')
 
@@ -115,14 +116,14 @@ class TestGetFuzzyCandidates:
             assert 0 <= c['score'] <= 1
 
     def test_filters_below_score_50(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         Stock.objects.create(symbol='ZZZZ', stock_name='Completely Different Name')
         candidates = matcher._get_fuzzy_candidates('Apple', top_k=5)
         # score>=50 필터로 ZZZZ는 제외되어야 함
         assert all(c['ticker'] != 'ZZZZ' for c in candidates)
 
     def test_top_k_limit(self, matcher):
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         for i in range(10):
             Stock.objects.create(symbol=f'TST{i}', stock_name=f'Apple {i}')
         candidates = matcher._get_fuzzy_candidates('Apple', top_k=3)
@@ -138,7 +139,8 @@ class TestMatchWithQueue:
     def test_success_updates_evidence(self, matcher):
         """매칭 성공 시 evidence.target_company 업데이트 + neo4j_dirty=True."""
         from datetime import date
-        from stocks.models import Stock
+
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         source = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.', sector='Technology')
@@ -167,9 +169,12 @@ class TestMatchWithQueue:
 
     def test_failure_creates_queue_entry(self, matcher):
         from datetime import date
-        from stocks.models import Stock
+
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         source = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.', sector='Technology')
@@ -196,9 +201,12 @@ class TestMatchWithQueue:
 
     def test_duplicate_unmatched_increments_count(self, matcher):
         from datetime import date
-        from stocks.models import Stock
+
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         source = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.', sector='Technology')

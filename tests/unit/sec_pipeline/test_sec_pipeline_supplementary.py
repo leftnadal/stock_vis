@@ -10,12 +10,11 @@ HTTP 요청 및 LLM 호출은 전부 mock — 실제 SEC EDGAR / Gemini 호출 �
 """
 
 import json
-import pytest
 from datetime import date, timedelta
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
+import pytest
 from django.utils import timezone
-
 
 # ===========================================================================
 # Helpers
@@ -222,15 +221,18 @@ class TestExceptions:
         assert issubclass(FilingCollectionError, Exception)
 
     def test_fmp_api_error_inherits_base(self):
-        from sec_pipeline.exceptions import FMPApiError, FilingCollectionError
+        from sec_pipeline.exceptions import FilingCollectionError, FMPApiError
         assert issubclass(FMPApiError, FilingCollectionError)
 
     def test_sec_fetch_error_inherits_base(self):
-        from sec_pipeline.exceptions import SECFetchError, FilingCollectionError
+        from sec_pipeline.exceptions import FilingCollectionError, SECFetchError
         assert issubclass(SECFetchError, FilingCollectionError)
 
     def test_section_extraction_error_inherits_base(self):
-        from sec_pipeline.exceptions import SectionExtractionError, FilingCollectionError
+        from sec_pipeline.exceptions import (
+            FilingCollectionError,
+            SectionExtractionError,
+        )
         assert issubclass(SectionExtractionError, FilingCollectionError)
 
     def test_llm_extraction_error_raisable_with_message(self):
@@ -415,9 +417,11 @@ class TestTickerMatcherSupplementary:
     @pytest.mark.django_db
     def test_match_with_queue_creates_pending_entry_when_unmatched(self, matcher):
         """매칭 실패 시 UnmatchedCompanyQueue에 pending 적재."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import (
-            RawDocumentStore, SupplyChainEvidence, UnmatchedCompanyQueue,
+            RawDocumentStore,
+            SupplyChainEvidence,
+            UnmatchedCompanyQueue,
         )
 
         source = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.', sector='Technology')
@@ -476,8 +480,9 @@ class TestModelsSupplementary:
 
     def test_company_alias_with_country_does_not_violate_unique(self):
         """unique_together=(alias, context_sector) 이므로 country는 다르고 sector 같으면 충돌."""
-        from sec_pipeline.models import CompanyAlias
         from django.db import IntegrityError, transaction
+
+        from sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Acme', ticker='ACM1',
@@ -493,7 +498,7 @@ class TestModelsSupplementary:
 
     def test_supply_chain_evidence_cascade_on_document_delete(self):
         """RawDocumentStore 삭제 시 SupplyChainEvidence도 cascade."""
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
         from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
@@ -519,7 +524,7 @@ class TestModelsSupplementary:
 
 @pytest.fixture
 def qc_stock(db):
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
     return Stock.objects.create(symbol='QC1', stock_name='QC One')
 
 
@@ -658,7 +663,10 @@ class TestValidatorsSupplementary:
 
     def test_section_within_expected_range_no_length_warning(self):
         """EXPECTED_MIN_LENGTH 이상 길이는 warn 없음."""
-        from sec_pipeline.validators import validate_extracted_sections, EXPECTED_MIN_LENGTH
+        from sec_pipeline.validators import (
+            EXPECTED_MIN_LENGTH,
+            validate_extracted_sections,
+        )
 
         long_text = (
             'Item 1. Description of Business. '

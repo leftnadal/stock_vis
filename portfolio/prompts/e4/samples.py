@@ -10,7 +10,6 @@ source 마킹:
 
 from __future__ import annotations
 
-
 DEFAULT_FEW_SHOT_SAMPLES: list[dict] = [
     {
         "title": "포트폴리오 전반 리스크 평가",

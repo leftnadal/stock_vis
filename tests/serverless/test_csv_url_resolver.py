@@ -3,17 +3,18 @@ CSV URL Resolver 테스트
 
 CSVURLResolver 서비스의 유닛 테스트입니다.
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
+from serverless.models import ETFProfile
 from serverless.services.csv_url_resolver import (
+    FUND_MANAGER_CONFIG,
     CSVURLResolver,
     CSVURLResolverError,
-    FUND_MANAGER_CONFIG,
     get_csv_url_resolver,
 )
-from serverless.models import ETFProfile
 
 
 @pytest.fixture

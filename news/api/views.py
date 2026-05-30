@@ -4,31 +4,37 @@
 
 import logging
 from datetime import timedelta
-
-import pytz
-from django.utils import timezone
 from decimal import Decimal
 
-from django.db.models import Count, Avg, Q, Sum, FloatField
-from django.db.models.functions import TruncDate
+import pytz
 from django.core.cache import cache
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
-from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser
-from rest_framework.pagination import PageNumberPagination
-
+from django.db.models import Avg, Count, FloatField, Q, Sum
+from django.db.models.functions import TruncDate
+from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
+from rest_framework.response import Response
 
-from ..models import NewsArticle, NewsEntity, SentimentHistory, DailyNewsKeyword, NewsCollectionLog, MLModelHistory, AlertLog
+from ..models import (
+    AlertLog,
+    DailyNewsKeyword,
+    MLModelHistory,
+    NewsArticle,
+    NewsCollectionLog,
+    NewsEntity,
+    SentimentHistory,
+)
 from ..services import NewsAggregatorService
 from .serializers import (
-    NewsArticleListSerializer,
     NewsArticleDetailSerializer,
+    NewsArticleListSerializer,
     SentimentHistorySerializer,
     SentimentSummarySerializer,
-    TrendingStockSerializer
+    TrendingStockSerializer,
 )
 
 KST = pytz.timezone('Asia/Seoul')
@@ -625,6 +631,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             {"status": "started", "task_id": "..."}
         """
         from datetime import datetime
+
         from news.tasks import extract_daily_news_keywords
 
         # 요청 파라미터
@@ -871,6 +878,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             }
         """
         from datetime import datetime
+
         from news.services import NewsBasedStockInsights
 
         # 날짜 파라미터 파싱
@@ -1285,6 +1293,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             }
         """
         from datetime import datetime
+
         from news.services import NewsBasedStockRecommender
 
         # 날짜 파라미터 파싱

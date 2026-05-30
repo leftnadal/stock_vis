@@ -4,9 +4,10 @@ RelationPreFilter Tests (Phase 5)
 사전 필터링 서비스 테스트
 """
 import pytest
+
 from serverless.services.relation_pre_filter import (
-    RelationPreFilter,
     PreFilterResult,
+    RelationPreFilter,
     get_pre_filter,
 )
 

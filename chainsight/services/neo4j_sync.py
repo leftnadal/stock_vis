@@ -6,10 +6,11 @@ confirmed/probable → 엣지 upsert, hidden/weak/stale → 엣지 삭제.
 """
 
 import logging
+
 from django.utils import timezone
 
-from chainsight.models import RelationConfidence
 from chainsight.graph import get_graph_repository
+from chainsight.models import RelationConfidence
 from chainsight.utils import normalize_pair
 
 logger = logging.getLogger(__name__)

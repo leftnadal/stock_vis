@@ -90,7 +90,11 @@ def main() -> int:
 
     # KPI 4: CostGuard 신규 인터페이스
     try:
-        from portfolio.llm.cost_guard import CostCapExceeded, CostGuard, CostThresholdExceeded  # noqa: F401
+        from portfolio.llm.cost_guard import (  # noqa: F401
+            CostCapExceeded,
+            CostGuard,
+            CostThresholdExceeded,
+        )
 
         g = CostGuard()
         has_cap = g.cap_per_slice == 1.00

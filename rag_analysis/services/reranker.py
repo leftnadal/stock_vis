@@ -4,9 +4,10 @@ Cross-Encoder Reranker
 검색 결과를 Cross-Encoder로 재순위화하여 가장 관련성 높은 Top-K를 선별합니다.
 """
 
-from sentence_transformers import CrossEncoder
-from typing import List, Tuple, Optional
 import logging
+from typing import List, Optional, Tuple
+
+from sentence_transformers import CrossEncoder
 
 logger = logging.getLogger(__name__)
 

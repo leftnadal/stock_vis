@@ -1,6 +1,7 @@
 # macOS fork safety — 가능한 가장 이른 시점에 설정
 import os
 import platform
+
 if platform.system() == 'Darwin':
     os.environ.setdefault('OBJC_DISABLE_INITIALIZE_FORK_SAFETY', 'YES')
 

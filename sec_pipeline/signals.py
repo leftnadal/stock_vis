@@ -24,8 +24,9 @@ def on_unmatched_resolved(sender, instance, **kwargs):
     if instance.status != 'matched' or not instance.resolved_ticker:
         return
 
-    from stocks.models import Stock
-    from .models import SupplyChainEvidence, CompanyAlias
+    from packages.shared.stocks.models import Stock
+
+    from .models import CompanyAlias, SupplyChainEvidence
 
     resolved_ticker = instance.resolved_ticker.upper()
     target_stock = Stock.objects.filter(symbol=resolved_ticker).first()

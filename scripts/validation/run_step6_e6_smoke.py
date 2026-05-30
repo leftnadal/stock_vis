@@ -41,7 +41,6 @@ from portfolio.schemas.llm import E6Request
 from portfolio.services.e6_comparison import build_e6_prompt, parse_e6_response
 from portfolio.tests.fixtures.sample_comparison_context import ALL_FIXTURES
 
-
 THRESHOLDS = {
     "cost_usd_max": 0.020,
     "latency_ms_max": 16000,  # Slice 4 #9 — E6 한정 (E2 7,471ms + 안전 마진)

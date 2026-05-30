@@ -9,7 +9,6 @@ import json
 import re
 from pathlib import Path
 
-
 SLICE5_FIELDS = ["one_liner", "comment", "answer"]
 SLICE6_FIELDS = [
     "holistic_assessment",

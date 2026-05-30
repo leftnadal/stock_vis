@@ -11,7 +11,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from stocks.models import Stock
+from packages.shared.stocks.models import Stock
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ class SymbolSearchView(APIView):
             return Response(cached_result)
 
         try:
-            from api_request.stock_service import get_stock_service
+            from packages.shared.api_request.stock_service import get_stock_service
 
             service = get_stock_service()
             response = service.search_symbols(keywords)
@@ -107,7 +107,7 @@ class SymbolValidateView(APIView):
             return Response(cached_result)
 
         try:
-            from api_request.stock_service import get_stock_service
+            from packages.shared.api_request.stock_service import get_stock_service
 
             service = get_stock_service()
             response = service.get_quote(symbol)
@@ -202,7 +202,7 @@ def validate_and_create_stock(symbol: str) -> Optional[Stock]:
         pass
 
     try:
-        from api_request.stock_service import get_stock_service
+        from packages.shared.api_request.stock_service import get_stock_service
 
         service = get_stock_service()
 

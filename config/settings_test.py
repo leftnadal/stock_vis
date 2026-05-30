@@ -23,7 +23,6 @@ os.environ.setdefault('NEO4J_URI', 'bolt://127.0.0.1:1')
 
 from .settings import *  # noqa: F401,F403,E402
 
-
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',

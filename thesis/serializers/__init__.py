@@ -1,21 +1,21 @@
-from .thesis_serializers import (
-    ThesisListSerializer,
-    ThesisDetailSerializer,
-    ThesisCreateSerializer,
-    ThesisPremiseSerializer,
+from .conversation_serializers import (
+    ConversationResponseSerializer,
+    ConversationStartSerializer,
+    SuggestionRequestSerializer,
 )
 from .indicator_serializers import (
-    ThesisIndicatorSerializer,
     IndicatorReadingSerializer,
+    ThesisIndicatorSerializer,
 )
 from .monitoring_serializers import (
-    ThesisSnapshotSerializer,
     ThesisAlertSerializer,
+    ThesisSnapshotSerializer,
 )
-from .conversation_serializers import (
-    ConversationStartSerializer,
-    ConversationResponseSerializer,
-    SuggestionRequestSerializer,
+from .thesis_serializers import (
+    ThesisCreateSerializer,
+    ThesisDetailSerializer,
+    ThesisListSerializer,
+    ThesisPremiseSerializer,
 )
 
 __all__ = [

@@ -1,10 +1,12 @@
+import os
+import time
+
 from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.core.cache import cache
 from django.db import transaction
-from .models import Stock, DailyPrice, WeeklyPrice
-import time
-import os
+
+from .models import DailyPrice, Stock, WeeklyPrice
 
 logger = get_task_logger(__name__)
 
@@ -26,9 +28,11 @@ def aggregate_weekly_prices(target_week_end=None):
     Args:
         target_week_end: 대상 주 금요일 날짜 (YYYY-MM-DD 문자열, 기본: 직전 금요일)
     """
-    from datetime import date, timedelta
     from collections import defaultdict
-    from django.db.models import Max, Min, Sum, Avg
+    from datetime import date, timedelta
+
+    from django.db.models import Avg, Max, Min, Sum
+
     from .models import SP500Constituent
 
     try:
@@ -144,8 +148,10 @@ def sync_sp500_financials(batch_size=101):
         batch_size: 1일 처리 종목 수 (기본: 101, 5일에 ~503개 커버)
     """
     from datetime import datetime
+
     from django.db.models import Max
-    from .models import SP500Constituent, BalanceSheet
+
+    from .models import BalanceSheet, SP500Constituent
 
     try:
         all_symbols = list(
@@ -214,10 +220,10 @@ def bulk_sync_sp500_financials():
     countdown으로 2초 간격 분산 → FMP 분당 300 제한 내 안전하게 처리.
 
     수동 호출:
-        from stocks.tasks import bulk_sync_sp500_financials
+        from packages.shared.stocks.tasks import bulk_sync_sp500_financials
         bulk_sync_sp500_financials.delay()
     """
-    from .models import SP500Constituent, BalanceSheet
+    from .models import BalanceSheet, SP500Constituent
 
     try:
         sp500_symbols = [
@@ -300,7 +306,7 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
         결과 문자열
     """
     try:
-        from api_request.stock_service import get_stock_service
+        from packages.shared.api_request.stock_service import get_stock_service
 
         service = get_stock_service()
         symbol = symbol.upper().strip()
@@ -368,10 +374,10 @@ def update_realtime_with_provider(symbols=None):
         결과 문자열
     """
     try:
-        from api_request.stock_service import get_stock_service
+        from packages.shared.api_request.stock_service import get_stock_service
 
         if not symbols:
-            from users.models import Portfolio
+            from packages.shared.users.models import Portfolio
 
             symbols = list(
                 Portfolio.objects.values_list("stock__symbol", flat=True).distinct()[
@@ -432,7 +438,7 @@ def sync_sp500_constituents(self):
     없어진 종목은 is_active=False로 변경.
     """
     try:
-        from stocks.services.sp500_service import SP500Service
+        from packages.shared.stocks.services.sp500_service import SP500Service
 
         service = SP500Service()
         result = service.sync_constituents()
@@ -454,8 +460,9 @@ def sync_sp500_eod_prices(self, target_date=None):
         target_date: 대상 날짜 (YYYY-MM-DD 문자열, 기본: 오늘)
     """
     try:
-        from stocks.services.sp500_eod_service import SP500EODService
         from datetime import date as date_type
+
+        from packages.shared.stocks.services.sp500_eod_service import SP500EODService
 
         target = None
         if target_date:
@@ -484,7 +491,7 @@ def update_sp500_change_percent():
     FMP API 호출 없음 — 이미 동기화된 DailyPrice 데이터 활용.
     sync_sp500_eod_prices() 직후 실행.
     """
-    from stocks.models import DailyPrice, Stock
+    from packages.shared.stocks.models import DailyPrice, Stock
 
     latest_dates = list(
         DailyPrice.objects.order_by("-date")
@@ -552,7 +559,7 @@ def update_financials_with_provider(symbol):
         결과 문자열
     """
     try:
-        from api_request.stock_service import get_stock_service
+        from packages.shared.api_request.stock_service import get_stock_service
 
         service = get_stock_service()
         symbol = symbol.upper().strip()
@@ -584,8 +591,9 @@ def run_eod_pipeline(self, target_date=None):
         target_date: 대상 날짜 (YYYY-MM-DD 문자열, 기본: 직전 거래일)
     """
     try:
-        from stocks.services.eod_pipeline import EODPipeline
         from datetime import date as date_type
+
+        from packages.shared.stocks.services.eod_pipeline import EODPipeline
 
         target = None
         if target_date:
@@ -619,9 +627,11 @@ def backfill_signal_accuracy(lookback_days=10):
     Args:
         lookback_days: 소급 대상 일수 (기본: 10일)
     """
-    from datetime import date as date_type, timedelta
-    from stocks.models import EODSignal, SignalAccuracy, DailyPrice
+    from datetime import date as date_type
+    from datetime import timedelta
     from decimal import Decimal
+
+    from packages.shared.stocks.models import DailyPrice, EODSignal, SignalAccuracy
 
     target_dates = []
     today = date_type.today()
@@ -754,7 +764,9 @@ def generate_korean_overview(self, symbol: str, force: bool = False):
         generate_korean_overview.delay('AAPL')
     """
     try:
-        from stocks.services.korean_overview_service import KoreanOverviewService
+        from packages.shared.stocks.services.korean_overview_service import (
+            KoreanOverviewService,
+        )
 
         service = KoreanOverviewService()
         overview = service.generate_for_stock(symbol, force=force)
@@ -786,7 +798,9 @@ def bulk_generate_korean_overviews(self, batch_size: int = 50, force: bool = Fal
         bulk_generate_korean_overviews.delay(force=True)  # 전체 재생성
     """
     try:
-        from stocks.services.korean_overview_service import KoreanOverviewService
+        from packages.shared.stocks.services.korean_overview_service import (
+            KoreanOverviewService,
+        )
 
         service = KoreanOverviewService()
         result = service.batch_generate(force=force)

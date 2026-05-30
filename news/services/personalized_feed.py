@@ -86,14 +86,14 @@ class PersonalizedFeedService:
         }
 
     def _get_portfolio_symbols(self, user) -> list:
-        from users.models import Portfolio
+        from packages.shared.users.models import Portfolio
         return list(
             Portfolio.objects.filter(user=user)
             .values_list('stock__symbol', flat=True)
         )
 
     def _get_watchlist_symbols(self, user) -> list:
-        from users.models import WatchlistItem
+        from packages.shared.users.models import WatchlistItem
         return list(
             WatchlistItem.objects.filter(watchlist__user=user)
             .values_list('stock__symbol', flat=True)
@@ -101,8 +101,8 @@ class PersonalizedFeedService:
         )
 
     def _get_interest_symbols(self, user) -> list:
-        from users.models import UserInterest
         from news.models import NewsCollectionCategory
+        from packages.shared.users.models import UserInterest
 
         symbols = []
         interests = UserInterest.objects.filter(user=user)

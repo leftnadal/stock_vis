@@ -40,7 +40,6 @@ from portfolio.tests.fixtures.sample_metric_comment_context import (
     FIXTURE_GROUPS,
 )
 
-
 INITIAL_BUDGET = 1500  # Q3, Part 1 §4.2.4 1차 추정 (E2와 동일 가정 — 글쓰기 + multi metric)
 PRIOR_ESTIMATE = 1000  # Part 1 chars/3 휴리스틱 baseline (E6 mirror)
 

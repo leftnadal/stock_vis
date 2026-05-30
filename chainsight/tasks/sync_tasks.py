@@ -3,10 +3,11 @@ CS-2-5: CompanyChainProfile 집약 + Phase 3 동기화 태스크.
 """
 
 import logging
+
 from celery import shared_task
 from django.utils import timezone
 
-from stocks.models import Stock, SP500Constituent
+from packages.shared.stocks.models import SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)
 
@@ -17,8 +18,11 @@ def aggregate_chain_profiles(self):
     CS-2-5: 개별 프로파일 → ChainProfile 집약. Celery Beat: 주 1회 (일요일 05:00).
     """
     from chainsight.models import (
-        CompanyChainProfile, CompanyGrowthStage, CompanyCapitalDNA,
-        CompanySensitivityProfile, CompanyNarrativeTag,
+        CompanyCapitalDNA,
+        CompanyChainProfile,
+        CompanyGrowthStage,
+        CompanyNarrativeTag,
+        CompanySensitivityProfile,
     )
 
     sp500 = set(SP500Constituent.objects.filter(is_active=True).values_list('symbol', flat=True))
@@ -97,8 +101,8 @@ def aggregate_chain_profiles(self):
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def sync_profiles_to_neo4j(self):
     """CS-3-1: ChainProfile → Neo4j :Stock 속성 Delta Sync."""
-    from chainsight.models import CompanyChainProfile
     from chainsight.graph import get_graph_repository
+    from chainsight.models import CompanyChainProfile
 
     repo = get_graph_repository()
     pending = CompanyChainProfile.objects.filter(neo4j_dirty=True)
@@ -152,6 +156,7 @@ def sync_relations_to_neo4j(self):
     동적 타입 지원하는 dirty sync로 위임. 레거시 RELATED_TO 엣지 1회 정리.
     """
     from django.core.cache import cache
+
     from chainsight.models import RelationConfidence
     from chainsight.services.neo4j_sync import sync_dirty_relations
 

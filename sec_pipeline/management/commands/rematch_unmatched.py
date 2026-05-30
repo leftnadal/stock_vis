@@ -11,6 +11,7 @@ Usage:
 """
 
 import logging
+
 from django.core.management.base import BaseCommand
 
 from sec_pipeline.models import SupplyChainEvidence, UnmatchedCompanyQueue

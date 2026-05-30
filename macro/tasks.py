@@ -68,10 +68,12 @@ def update_market_indices(self):
 
     실행 주기: 시장 운영 시간 중 5분마다
     """
-    from .services import MacroEconomicService
-    from .models import MarketIndex, MarketIndexPrice
-    from django.utils import timezone
     from decimal import Decimal
+
+    from django.utils import timezone
+
+    from .models import MarketIndex, MarketIndexPrice
+    from .services import MacroEconomicService
 
     try:
         service = MacroEconomicService()
@@ -137,10 +139,11 @@ def update_economic_calendar(self):
 
     실행 주기: 매일 새벽 1회
     """
-    from .services import MacroEconomicService
-    from .models import EconomicEvent
-    from datetime import date, timedelta
     import hashlib
+    from datetime import date, timedelta
+
+    from .models import EconomicEvent
+    from .services import MacroEconomicService
 
     try:
         service = MacroEconomicService()
@@ -233,8 +236,9 @@ def cleanup_old_data():
 
     실행 주기: 매주 일요일
     """
-    from .models import IndicatorValue, MarketIndexPrice, EconomicEvent
     from datetime import date, timedelta
+
+    from .models import EconomicEvent, IndicatorValue, MarketIndexPrice
 
     try:
         # 1년 이상 된 일간 데이터 삭제 (최근 데이터만 유지)

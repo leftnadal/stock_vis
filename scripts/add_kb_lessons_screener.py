@@ -3,13 +3,13 @@
 프리셋-필터 동기화 및 AI 테제 빌더 구현 교훈을 KB에 추가하는 스크립트
 """
 import sys
-from pathlib import Path
 import uuid
+from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
 from shared_kb.ontology_kb import OntologyKB
-from shared_kb.schema import KnowledgeItem, KnowledgeType, ConfidenceLevel
+from shared_kb.schema import ConfidenceLevel, KnowledgeItem, KnowledgeType
 
 # KB 연결
 kb = OntologyKB()

@@ -4,12 +4,13 @@ pytest 공통 fixtures
 모든 테스트에서 사용 가능한 fixture 정의
 """
 
-import pytest
-import os
 import json
-from pathlib import Path
-from decimal import Decimal
+import os
 from datetime import date, timedelta
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -77,7 +78,7 @@ def admin_user():
 @pytest.mark.django_db
 def stock():
     """기본 Stock 인스턴스"""
-    from stocks.models import Stock
+    from packages.shared.stocks.models import Stock
 
     return Stock.objects.create(
         symbol='AAPL',
@@ -95,7 +96,7 @@ def stock():
 @pytest.mark.django_db
 def stock_with_prices(stock):
     """가격 데이터 포함 Stock"""
-    from stocks.models import DailyPrice
+    from packages.shared.stocks.models import DailyPrice
 
     # 100일치 일별 가격 생성
     base_date = date(2025, 12, 7)

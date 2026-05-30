@@ -11,12 +11,13 @@ users/views.py 의 Watchlist 관련 엔드포인트 단위 테스트
 - WatchlistBulkAddView / WatchlistBulkRemoveView
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.contrib.auth import get_user_model
 from rest_framework import status
 
-from users.models import Watchlist, WatchlistItem
+from packages.shared.users.models import Watchlist, WatchlistItem
 
 User = get_user_model()
 

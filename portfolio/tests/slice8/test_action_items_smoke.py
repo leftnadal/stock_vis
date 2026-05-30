@@ -11,7 +11,6 @@ from pathlib import Path
 
 from portfolio.schemas.llm_outputs import E3PortfolioCommentary
 
-
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 

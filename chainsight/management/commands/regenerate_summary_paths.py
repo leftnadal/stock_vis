@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+
 from chainsight.models import SavedPath
 from chainsight.services.path_service import generate_summary_path
 

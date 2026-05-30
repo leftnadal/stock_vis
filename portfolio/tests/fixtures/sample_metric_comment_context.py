@@ -29,7 +29,6 @@ from portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_tech,
 )
 
-
 # fixture 그룹 메타 (Step 8 회고 그룹 비교용)
 FIXTURE_GROUPS: dict[str, list[str]] = {
     "garp_baseline": [

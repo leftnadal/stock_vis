@@ -9,7 +9,7 @@ thesis/services/alert_engine.py의 주요 함수를 검증합니다:
 import pytest
 
 from thesis.models import Thesis, ThesisAlert
-from thesis.services.alert_engine import create_alert_if_needed, check_and_create_alerts
+from thesis.services.alert_engine import check_and_create_alerts, create_alert_if_needed
 
 
 def make_thesis(user, **kwargs):

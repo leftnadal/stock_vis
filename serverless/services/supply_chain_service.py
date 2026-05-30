@@ -17,18 +17,20 @@ Usage:
 """
 import logging
 import time
-from typing import List, Dict, Any, Optional
-from datetime import datetime, date
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Optional
 
+from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone
-from django.core.cache import cache
 
-from api_request.sec_edgar_client import SECEdgarClient, SECEdgarError
-from serverless.services.supply_chain_parser import SupplyChainParser, SupplyChainRelation
+from packages.shared.api_request.sec_edgar_client import SECEdgarClient, SECEdgarError
 from serverless.models import StockRelationship
-
+from serverless.services.supply_chain_parser import (
+    SupplyChainParser,
+    SupplyChainRelation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +374,9 @@ class SupplyChainService:
             동기화된 관계 수
         """
         try:
-            from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+            from serverless.services.neo4j_chain_sight_service import (
+                Neo4jChainSightService,
+            )
             neo4j_service = Neo4jChainSightService()
 
             if not neo4j_service.is_available():

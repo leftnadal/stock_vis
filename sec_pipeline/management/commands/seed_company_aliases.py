@@ -7,10 +7,11 @@ Usage:
 """
 
 import logging
+
 from django.core.management.base import BaseCommand
 
+from packages.shared.stocks.models import Stock
 from sec_pipeline.models import CompanyAlias
-from stocks.models import Stock
 
 logger = logging.getLogger(__name__)
 

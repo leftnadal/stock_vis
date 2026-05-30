@@ -7,13 +7,12 @@ validate_extracted_sections, _check_item_order 검증.
 import pytest
 
 from sec_pipeline.validators import (
-    validate_extracted_sections,
-    _check_item_order,
-    MIN_SECTION_LENGTH,
-    MAX_SECTION_LENGTH,
     EXPECTED_MIN_LENGTH,
+    MAX_SECTION_LENGTH,
+    MIN_SECTION_LENGTH,
+    _check_item_order,
+    validate_extracted_sections,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -4,9 +4,9 @@ Thesis State Machine 테스트
 thesis/services/thesis_state_machine.py의 determine_state() 함수를 검증합니다.
 """
 
-import pytest
 from datetime import timedelta
 
+import pytest
 from django.utils import timezone
 
 from thesis.models import Thesis

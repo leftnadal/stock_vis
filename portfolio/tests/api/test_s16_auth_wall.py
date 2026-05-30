@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import pytest
 
-
 _COACH_ENDPOINTS = [
     "/api/v1/coach/e1/",
     "/api/v1/coach/e2/",

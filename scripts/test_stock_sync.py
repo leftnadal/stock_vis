@@ -8,6 +8,7 @@ Usage:
 
 import os
 import sys
+
 import django
 
 # Django 설정 초기화
@@ -15,10 +16,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.local')
 django.setup()
 
-from stocks.services.stock_sync_service import StockSyncService
-from stocks.services.rate_limiter import check_rate_limit
-from stocks.models import Stock, DailyPrice
 from django.utils import timezone
+
+from packages.shared.stocks.models import DailyPrice, Stock
+from packages.shared.stocks.services.rate_limiter import check_rate_limit
+from packages.shared.stocks.services.stock_sync_service import StockSyncService
 
 
 def print_section(title: str):

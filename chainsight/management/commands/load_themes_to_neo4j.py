@@ -13,7 +13,6 @@ from django.core.management.base import BaseCommand
 
 from chainsight.graph import get_graph_repository
 
-
 # ETF → Theme 매핑 (ETF 심볼 → 테마 이름 + 설명)
 ETF_THEME_MAP = {
     # Theme ETFs (Tier 2)
@@ -51,8 +50,8 @@ class Command(BaseCommand):
                             help='Theme ETFs만 (Sector ETFs 제외)')
 
     def handle(self, *args, **options):
-        from serverless.models import ETFProfile, ETFHolding
-        from stocks.models import Stock
+        from packages.shared.stocks.models import Stock
+        from serverless.models import ETFHolding, ETFProfile
 
         dry_run = options['dry_run']
         theme_only = options['theme_only']

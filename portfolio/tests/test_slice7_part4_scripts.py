@@ -16,7 +16,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SLICE7_DIR = ROOT / "docs/portfolio/coach/slice7"
 

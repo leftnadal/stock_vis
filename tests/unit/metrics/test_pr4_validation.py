@@ -9,20 +9,20 @@ PR-4~5 validation 앱 모델 테스트
 - ValidationNewsSummary: OneToOne, risk flags
 """
 
-import pytest
 from decimal import Decimal
+
+import pytest
 from django.db import IntegrityError
 from django.utils import timezone
 
-from stocks.models import SP500Constituent
+from packages.shared.metrics.models import MetricDefinition
+from packages.shared.stocks.models import SP500Constituent
 from validation.models import (
-    CompanyMetricLatest,
-    CompanyBenchmarkDelta,
     CategorySignal,
+    CompanyBenchmarkDelta,
+    CompanyMetricLatest,
     ValidationNewsSummary,
 )
-from metrics.models import MetricDefinition
-
 
 # ===== PR-4: SP500Constituent 필드 추가 =====
 

@@ -1,7 +1,7 @@
 """Stage 0: Data Validation Layer (수학 모델 v2.3.2, Section 2)"""
 
-import math
 import logging
+import math
 
 from django.utils import timezone
 

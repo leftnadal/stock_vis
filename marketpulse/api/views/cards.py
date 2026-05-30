@@ -26,7 +26,6 @@ from marketpulse.throttles import (
     MarketPulseUserThrottle,
 )
 
-
 VALID_CARDS = {'regime', 'breadth', 'sector', 'flow', 'brief'}
 
 

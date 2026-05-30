@@ -6,14 +6,13 @@ validate_reading() 검증 순서:
 """
 
 import math
-import pytest
 from datetime import timedelta
 
+import pytest
 from django.utils import timezone
 
-from thesis.models import Thesis, ThesisPremise, ThesisIndicator, IndicatorReading
+from thesis.models import IndicatorReading, Thesis, ThesisIndicator, ThesisPremise
 from thesis.services.data_validator import validate_reading
-
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -74,7 +74,7 @@ class DynamicRegimeCalculator:
     def _calculate_regime(self, target_date: date) -> str:
         """Z-score + 상대값 하한선 기반 레짐 계산."""
         try:
-            from macro.models import MarketIndexPrice, MarketIndex
+            from macro.models import MarketIndex, MarketIndexPrice
 
             vix_index = MarketIndex.objects.filter(
                 symbol__in=["VIX", "^VIX", "VIXX"],

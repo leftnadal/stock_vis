@@ -7,9 +7,10 @@ Enhanced Screener Service Tests
 - 클라이언트 필터 추출
 - 필터 매칭 로직
 """
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from serverless.services.enhanced_screener_service import EnhancedScreenerService
 

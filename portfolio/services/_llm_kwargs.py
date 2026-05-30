@@ -15,7 +15,6 @@ from portfolio.llm.client import (
     ANTHROPIC_SONNET_MODEL,
 )
 
-
 ProviderLabel = Literal["gemini", "anthropic", "sonnet", "haiku"]
 
 

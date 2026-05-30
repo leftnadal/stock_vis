@@ -11,12 +11,13 @@ from unittest.mock import patch
 
 import pytest
 
-from stocks.models import Stock, SP500Constituent
-from metrics.models import (
-    CompanyMetricSnapshot, MetricDefinition, IndustryMetricBenchmark,
+from packages.shared.metrics.models import (
+    CompanyMetricSnapshot,
+    IndustryMetricBenchmark,
+    MetricDefinition,
 )
+from packages.shared.stocks.models import SP500Constituent, Stock
 from validation.services.relative_metrics import RelativeMetricCalculator
-
 
 # ---------------------------------------------------------------------------
 # Helpers

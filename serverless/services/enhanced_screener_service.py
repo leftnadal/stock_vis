@@ -12,13 +12,12 @@ Usage:
     )
 """
 import logging
-from typing import Dict, List, Any, Optional, Set
 from decimal import Decimal
+from typing import Any, Dict, List, Optional, Set
 
 from django.core.cache import cache
 
-from serverless.services.fmp_client import FMPClient, FMPAPIError
-
+from serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

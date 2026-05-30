@@ -27,7 +27,6 @@ import json
 import sys
 from pathlib import Path
 
-
 CONDITIONAL_KEYWORDS = ("예상", "전망", "추정", "보입니다", "있습니다", "것으로")
 
 

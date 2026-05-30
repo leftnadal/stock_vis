@@ -2,14 +2,15 @@
 거시경제 데이터 Admin
 """
 from django.contrib import admin
+
 from .models import (
+    EconomicEvent,
     EconomicIndicator,
+    IndicatorCorrelation,
     IndicatorValue,
     MarketIndex,
     MarketIndexPrice,
-    EconomicEvent,
     SectorIndicatorRelation,
-    IndicatorCorrelation,
 )
 
 

@@ -14,17 +14,17 @@ Usage:
     result = service.scan_regulatory_news(hours=168)
     # {"categories_found": 3, "relationships_created": 15, "groups": [...]}
 """
+import json
 import logging
 import re
-import json
 import time
-from typing import List, Dict, Optional, Set, Tuple
 from datetime import timedelta
 from decimal import Decimal
+from typing import Dict, List, Optional, Set, Tuple
 
-from django.utils import timezone
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
@@ -242,7 +242,10 @@ class RegulatoryService:
             return []
 
         try:
-            from api_request.sec_edgar_client import SECEdgarClient, SECEdgarError
+            from packages.shared.api_request.sec_edgar_client import (
+                SECEdgarClient,
+                SECEdgarError,
+            )
         except ImportError:
             logger.warning("SEC EDGAR client not available")
             return []

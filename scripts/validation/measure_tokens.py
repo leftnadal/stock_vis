@@ -26,7 +26,6 @@ from portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_tech,
 )
 
-
 # Slice 1 실측 갱신 (2026-04-29):
 #   garp_tech 3698 / garp_misfit 3844 / garp_large 3848 tokens.
 #   E1 input_builder가 PV5 원칙으로 간소 입력 (holdings 미포함) → 종목 수 효과 미미.

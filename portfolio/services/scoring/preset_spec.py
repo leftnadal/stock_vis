@@ -14,7 +14,6 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-
 CategoryLiteral = Literal["value", "growth", "income", "factor", "special"]
 GateOp = Literal["gte", "lte", "gt", "lt"]
 

@@ -3,12 +3,11 @@
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
-from django.db.models import Max, Count
+from django.db.models import Count, Max
 from django.utils import timezone
 
 from thesis.models import KeywordCache
 from thesis.services.keyword_cache import SOURCE_TTL
-
 
 # source별 경고 기준
 ALERT_THRESHOLDS = {

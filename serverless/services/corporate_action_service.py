@@ -6,8 +6,8 @@ yfinance의 splits, dividends 데이터를 활용합니다.
 """
 import logging
 from datetime import date, timedelta
-from typing import Dict, Optional
 from decimal import Decimal
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 

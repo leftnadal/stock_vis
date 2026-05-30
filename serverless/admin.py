@@ -2,13 +2,14 @@
 Serverless App Admin
 """
 from django.contrib import admin
+
 from serverless.models import (
+    CorporateAction,
     MarketMover,
     SectorETFMapping,
+    StockKeyword,
     StockSectorInfo,
     VolatilityBaseline,
-    StockKeyword,
-    CorporateAction,
 )
 
 

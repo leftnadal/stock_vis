@@ -39,9 +39,9 @@ def _delta(actual: int, est: int) -> float:
 def _run_case(model: str) -> dict:
     """단일 모델 케이스 실행 + 측정."""
     from portfolio.measure.estimator_v3 import estimate_input_tokens, reset_cache
+    from portfolio.schemas.commentary_output import E1Output
     from portfolio.services.coach.prompt_builder import E1PromptBuilder
     from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
-    from portfolio.schemas.commentary_output import E1Output
 
     reset_cache()  # 케이스별 격리
 

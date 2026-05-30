@@ -7,15 +7,16 @@ PR-7 chainsight 신호 모델 테스트
 - CompanyEventReaction: FK, unique_together(symbol+event_type)
 """
 
-import pytest
-from decimal import Decimal
 from datetime import date
+from decimal import Decimal
+
+import pytest
 from django.db import IntegrityError
 
 from chainsight.models import (
+    CompanyEventReaction,
     CompanyInsiderSignal,
     CompanyNarrativeTag,
-    CompanyEventReaction,
 )
 
 

@@ -1,8 +1,9 @@
 import json
-from channels.generic.websocket import AsyncWebsocketConsumer
-from channels.db import database_sync_to_async
-from django.core.cache import cache
 import logging
+
+from channels.db import database_sync_to_async
+from channels.generic.websocket import AsyncWebsocketConsumer
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -177,8 +178,9 @@ class PortfolioConsumer(AsyncWebsocketConsumer):
     def get_portfolio_data(self):
         """사용자 포트폴리오 데이터 조회"""
         try:
-            from users.models import Portfolio
             from decimal import Decimal
+
+            from packages.shared.users.models import Portfolio
 
             portfolios = Portfolio.objects.filter(user=self.user).select_related(
                 "stock"

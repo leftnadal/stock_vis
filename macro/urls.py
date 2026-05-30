@@ -2,17 +2,18 @@
 거시경제 데이터 API URL 라우팅
 """
 from django.urls import path
+
 from .views import (
-    MarketPulseView,
-    FearGreedIndexView,
-    InterestRatesView,
-    InflationDashboardView,
-    GlobalMarketsView,
-    EconomicCalendarView,
-    VIXView,
-    SectorPerformanceView,
     DataSyncView,
+    EconomicCalendarView,
+    FearGreedIndexView,
+    GlobalMarketsView,
+    InflationDashboardView,
+    InterestRatesView,
+    MarketPulseView,
+    SectorPerformanceView,
     SyncStatusView,
+    VIXView,
 )
 
 app_name = 'macro'

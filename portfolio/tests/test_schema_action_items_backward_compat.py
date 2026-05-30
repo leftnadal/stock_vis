@@ -11,7 +11,6 @@ from portfolio.schemas.llm_outputs import (
     E6ComparisonResponse,
 )
 
-
 SCHEMA_TARGETS = [
     LLMResponse,
     E5Response,

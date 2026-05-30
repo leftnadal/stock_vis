@@ -7,22 +7,33 @@ import uuid
 
 from django.conf import settings
 
-from thesis.models import Thesis, ThesisPremise, ThesisIndicator, HypothesisEvent
-from thesis.services.indicator_matcher import match_indicators_for_premise, match_indicators_for_llm
-from thesis.services.builder_state import (
-    ConversationState, ChatMessage, CollectedData, SuggestionData,
-    PremiseData, IndicatorRecommendation,
-    BuilderPhase, FallbackReason,
-    MONITORING_PRESETS,
-)
-from thesis.services.builder_events import (
-    log_event, EVENT_BUILDER_STARTED,
-    EVENT_SUGGESTION_REQUEST_STARTED, EVENT_SUGGESTION_REQUEST_SUCCEEDED,
-    EVENT_SUGGESTION_REQUEST_FAILED,
-    EVENT_SUGGESTION_SELECTED, EVENT_SUGGESTION_TO_PRESET,
-)
+from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from thesis.feature_flags import get_feature_flags
-from marketpulse.utils.circuit_breaker import get_circuit, CircuitBreakerError
+from thesis.models import HypothesisEvent, Thesis, ThesisIndicator, ThesisPremise
+from thesis.services.builder_events import (
+    EVENT_BUILDER_STARTED,
+    EVENT_SUGGESTION_REQUEST_FAILED,
+    EVENT_SUGGESTION_REQUEST_STARTED,
+    EVENT_SUGGESTION_REQUEST_SUCCEEDED,
+    EVENT_SUGGESTION_SELECTED,
+    EVENT_SUGGESTION_TO_PRESET,
+    log_event,
+)
+from thesis.services.builder_state import (
+    MONITORING_PRESETS,
+    BuilderPhase,
+    ChatMessage,
+    CollectedData,
+    ConversationState,
+    FallbackReason,
+    IndicatorRecommendation,
+    PremiseData,
+    SuggestionData,
+)
+from thesis.services.indicator_matcher import (
+    match_indicators_for_llm,
+    match_indicators_for_premise,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -889,11 +900,16 @@ def process_llm_turn(raw_state, user_input, user=None):
 
 def _handle_proposal(state, user_input):
     """One-shot proposal: Gemini 호출 → normalize → validate → merge → match."""
-    from thesis.services.prompt_builder import build_system_prompt, call_gemini
-    from thesis.services.llm_postprocess import normalize_llm_output, validate_llm_output, merge_to_collected
     from thesis.services.builder_events import (
-        EVENT_PROPOSAL_GENERATED, EVENT_LLM_PARSE_FAILED,
+        EVENT_LLM_PARSE_FAILED,
+        EVENT_PROPOSAL_GENERATED,
     )
+    from thesis.services.llm_postprocess import (
+        merge_to_collected,
+        normalize_llm_output,
+        validate_llm_output,
+    )
+    from thesis.services.prompt_builder import build_system_prompt, call_gemini
 
     flags = get_feature_flags()
 
@@ -1057,7 +1073,10 @@ def _handle_preset(state, user_input):
 
 def _handle_confirm(state, user):
     """등록 확인 → validate → DB 저장."""
-    from thesis.services.builder_events import EVENT_CONFIRM_CLICKED, EVENT_THESIS_CREATED
+    from thesis.services.builder_events import (
+        EVENT_CONFIRM_CLICKED,
+        EVENT_THESIS_CREATED,
+    )
 
     log_event(EVENT_CONFIRM_CLICKED, {'conv_id': state.conv_id})
 
@@ -1400,7 +1419,10 @@ def _handle_proceed_intent(state, detail, user):
 
 def _handle_question(state, user_input):
     """질문 → Gemini가 가설 카드 + 뉴스 + 대화 이력 맥락에서 답변."""
-    from thesis.services.prompt_builder import build_question_answer_prompt, call_gemini_light
+    from thesis.services.prompt_builder import (
+        build_question_answer_prompt,
+        call_gemini_light,
+    )
 
     recent_history = state.history[-8:] if len(state.history) > 8 else list(state.history)
 
@@ -1425,10 +1447,11 @@ def _handle_question(state, user_input):
 
 def _handle_modify_premise(state, user_input):
     """전제 추가/삭제 → Gemini가 delta JSON 생성 → collected/suggestions에 적용."""
-    from thesis.services.prompt_builder import (
-        call_gemini_light, get_indicator_by_id,
-    )
     from thesis.services.indicator_matcher import match_indicators_for_llm
+    from thesis.services.prompt_builder import (
+        call_gemini_light,
+        get_indicator_by_id,
+    )
 
     # suggestions phase에서는 suggestion 카드의 전제 목록을 수정 대상으로 사용
     has_suggestions = bool(state.collected.suggestions)
@@ -1592,7 +1615,9 @@ def _handle_modify_premise(state, user_input):
 def _handle_modify_indicator(state, user_input):
     """지표 추가/삭제/교체 → Gemini가 delta JSON 생성 → collected에 적용."""
     from thesis.services.prompt_builder import (
-        build_modify_indicator_prompt, call_gemini_light, get_indicator_by_id,
+        build_modify_indicator_prompt,
+        call_gemini_light,
+        get_indicator_by_id,
     )
 
     recent_history = state.history[-6:] if len(state.history) > 6 else list(state.history)
@@ -1759,11 +1784,17 @@ def generate_suggestions(source_news_id, keyword='', summary='', sentiment='neut
         dict: 통합 응답 shape (conversation_state, suggestions, phase, entry_mode)
     """
     import hashlib
+
     from django.core.cache import cache
-    from thesis.services.prompt_builder import (
-        build_suggestion_prompt, call_gemini_suggestions,
+
+    from thesis.services.llm_postprocess import (
+        normalize_llm_output,
+        validate_llm_output,
     )
-    from thesis.services.llm_postprocess import normalize_llm_output, validate_llm_output
+    from thesis.services.prompt_builder import (
+        build_suggestion_prompt,
+        call_gemini_suggestions,
+    )
 
     conv_id = str(uuid.uuid4())
 
@@ -1886,8 +1917,9 @@ def _handle_suggestion_select(state, user_input, user):
       Step 2: 전제 인덱스 리스트 → 선택된 전제로 지표 매칭 → PRESET
     """
     import re as _re
-    from thesis.services.llm_postprocess import merge_to_collected
+
     from thesis.services.indicator_matcher import match_indicators_for_llm
+    from thesis.services.llm_postprocess import merge_to_collected
 
     # ── Step 1: 카드 선택 → 전제 multi-select ──
     if isinstance(user_input, str):

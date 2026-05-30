@@ -14,11 +14,10 @@ NewsNeo4jSyncService의 모든 기능을 테스트합니다:
 import uuid
 from datetime import datetime, timedelta
 from decimal import Decimal
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 from django.utils import timezone
-
 
 # ========================================
 # Fixtures
@@ -27,8 +26,8 @@ from django.utils import timezone
 @pytest.fixture
 def client(db):
     """audit P0 #5: 인증된 Django test client (force_login)."""
-    from django.test import Client
     from django.contrib.auth import get_user_model
+    from django.test import Client
     User = get_user_model()
     user = User.objects.create_user(
         username=f'test_{uuid.uuid4().hex[:8]}',

@@ -10,7 +10,8 @@ Financial Statements Fallback Service
 
 import logging
 import math
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
+
 from django.core.cache import cache
 
 logger = logging.getLogger(__name__)

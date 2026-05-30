@@ -1,13 +1,13 @@
 """LLM Postprocessor: normalize → validate → merge (Phase A-Hardening)"""
 
-import re
 import logging
+import re
 
 from thesis.services.builder_state import (
+    VALID_THESIS_TYPES,
     CollectedData,
     IndicatorRecommendation,
     PremiseData,
-    VALID_THESIS_TYPES,
 )
 
 logger = logging.getLogger(__name__)

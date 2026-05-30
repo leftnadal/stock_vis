@@ -5,7 +5,9 @@ Semantic Cache Setup - Neo4j 벡터 인덱스 설정
 """
 
 import logging
+
 from django.conf import settings
+
 from .neo4j_driver import get_neo4j_driver
 
 logger = logging.getLogger(__name__)

@@ -13,7 +13,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from .commentary_output import ActionItem
 from .diagnostic import DiagnosticCard
 
-
 # ============================================================
 # E1: 한 줄 진단
 # ============================================================

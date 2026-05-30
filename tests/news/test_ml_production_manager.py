@@ -21,7 +21,6 @@ import pytest
 from django.test import RequestFactory
 from django.utils import timezone
 
-
 # ════════════════════════════════════════
 # Fixtures
 # ════════════════════════════════════════
@@ -673,6 +672,7 @@ class TestCeleryTasks:
     @patch('news.services.ml_production_manager.MLProductionManager.check_auto_deploy')
     def test_check_auto_deploy_task_retry_on_error(self, mock_check):
         from celery.exceptions import Retry
+
         from news.tasks import check_auto_deploy
 
         mock_check.side_effect = Exception('Service error')
@@ -684,6 +684,7 @@ class TestCeleryTasks:
     @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
     def test_generate_weekly_report_task_retry_on_error(self, mock_report):
         from celery.exceptions import Retry
+
         from news.tasks import generate_weekly_ml_report
 
         mock_report.side_effect = Exception('DB error')

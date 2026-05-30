@@ -4,10 +4,17 @@ CS-2-1: Tier A 프로파일 계산 — GrowthStage + CapitalDNA (+ SensitivityPr
 
 import logging
 from decimal import Decimal
+
 from celery import shared_task
 
-from stocks.models import Stock, SP500Constituent, IncomeStatement, BalanceSheet, CashFlowStatement
-from chainsight.models import CompanyGrowthStage, CompanyCapitalDNA
+from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
+from packages.shared.stocks.models import (
+    BalanceSheet,
+    CashFlowStatement,
+    IncomeStatement,
+    SP500Constituent,
+    Stock,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -202,8 +209,8 @@ def calculate_capital_dna(self):
 @shared_task(bind=True, max_retries=1, soft_time_limit=7200, time_limit=7260)
 def calculate_all_profiles(self):
     """Tier A 통합 task. Celery Beat 주 1회."""
-    from .sensitivity_tasks import calculate_sensitivity_profiles
     from .insider_tasks import calculate_insider_signals
+    from .sensitivity_tasks import calculate_sensitivity_profiles
 
     results = {}
     results["growth_stage"] = calculate_growth_stages()

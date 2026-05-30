@@ -3,18 +3,18 @@ Admin Dashboard API Views
 
 관리자 전용 대시보드 엔드포인트 (IsAdminUser 권한).
 """
+import logging
 import re
 import time
-import logging
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
-from rest_framework import status
 
 from django.core.cache import cache
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from serverless.services.admin_status_service import AdminStatusService
 from serverless.models import AdminActionLog
+from serverless.services.admin_status_service import AdminStatusService
 
 logger = logging.getLogger(__name__)
 
@@ -498,7 +498,7 @@ class AdminNewsCategoryView(APIView):
 
     def post(self, request):
         from news.models import NewsCollectionCategory
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         name = request.data.get('name', '').strip()
         category_type = request.data.get('category_type', '')
@@ -576,7 +576,7 @@ class AdminNewsCategoryDetailView(APIView):
 
     def put(self, request, category_id):
         from news.models import NewsCollectionCategory
-        from stocks.models import SP500Constituent
+        from packages.shared.stocks.models import SP500Constituent
 
         try:
             cat = NewsCollectionCategory.objects.get(id=category_id)
@@ -661,8 +661,9 @@ class AdminNewsSectorOptionsView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        from stocks.models import SP500Constituent
         from django.db.models import Count
+
+        from packages.shared.stocks.models import SP500Constituent
 
         sectors = list(
             SP500Constituent.objects.filter(is_active=True)

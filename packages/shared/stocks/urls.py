@@ -1,13 +1,16 @@
 from django.urls import path
-from . import views
-from . import views_mvp  # MVP용 뷰 추가
-from . import views_indicators  # 기술적 지표 뷰 추가
-from . import views_search  # 종목 검색 뷰 추가
-from . import views_market_movers  # Market Movers 뷰 추가
-from . import views_fundamentals  # Fundamentals 뷰 추가
-from . import views_screener  # Stock Screener 뷰 추가
-from . import views_exchange  # Exchange Quotes 뷰 추가
-from . import views_eod  # EOD Dashboard 뷰 추가
+
+from . import (
+    views,
+    views_eod,  # EOD Dashboard 뷰 추가
+    views_exchange,  # Exchange Quotes 뷰 추가
+    views_fundamentals,  # Fundamentals 뷰 추가
+    views_indicators,  # 기술적 지표 뷰 추가
+    views_market_movers,  # Market Movers 뷰 추가
+    views_mvp,  # MVP용 뷰 추가
+    views_screener,  # Stock Screener 뷰 추가
+    views_search,  # 종목 검색 뷰 추가
+)
 
 app_name = "stocks"
 

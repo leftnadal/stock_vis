@@ -4,14 +4,15 @@ News Providers Unit Tests
 FinnhubNewsProvider, MarketauxNewsProvider 테스트
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timedelta
 from decimal import Decimal
+from unittest.mock import MagicMock, Mock, patch
 
+import pytest
+
+from news.providers.base import RawNewsArticle
 from news.providers.finnhub import FinnhubNewsProvider
 from news.providers.marketaux import MarketauxNewsProvider
-from news.providers.base import RawNewsArticle
 
 
 class TestFinnhubNewsProvider:

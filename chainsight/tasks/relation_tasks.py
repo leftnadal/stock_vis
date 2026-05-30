@@ -21,10 +21,11 @@ def extract_co_mentions(self, days_back: int = 90):
     CS-2-2: NewsEntity에서 동시출현 쌍 추출 → CoMentionEdge 적재.
     Celery Beat: 매일 06:30.
     """
-    from news.models import NewsEntity
-    from chainsight.models import CoMentionEdge, ChainNewsEvent
-    from chainsight.utils import normalize_pair
     from django.db.models import Count
+
+    from chainsight.models import ChainNewsEvent, CoMentionEdge
+    from chainsight.utils import normalize_pair
+    from news.models import NewsEntity
 
     cutoff = timezone.now() - timedelta(days=days_back)
 
@@ -119,11 +120,13 @@ def calculate_price_co_movement(self, period_days: int = 90):
     CS-2-3: 주가 동조 계산. PEER_OF 관계가 있는 쌍에 대해 90일 correlation.
     Celery Beat: 주 1회 (일요일 03:00).
     """
-    import numpy as np
     from decimal import Decimal
-    from stocks.models import DailyPrice
-    from chainsight.models import PriceCoMovement
+
+    import numpy as np
+
     from chainsight.graph import get_graph_repository
+    from chainsight.models import PriceCoMovement
+    from packages.shared.stocks.models import DailyPrice
 
     repo = get_graph_repository()
 
@@ -197,8 +200,8 @@ def update_relation_confidence(self):
     """
     CS-2-4: RelationConfidence 종합 판정. Celery Beat: 주 1회 (일요일 04:00).
     """
-    from chainsight.models import CoMentionEdge, PriceCoMovement, RelationConfidence
     from chainsight.graph import get_graph_repository
+    from chainsight.models import CoMentionEdge, PriceCoMovement, RelationConfidence
     from chainsight.utils import normalize_pair
 
     repo = get_graph_repository()

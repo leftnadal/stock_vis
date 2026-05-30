@@ -9,17 +9,20 @@
 4. trending_presets - 인기 프리셋 목록
 """
 import os
+
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from django.test import Client
-from serverless.models import ScreenerPreset
-from users.models import User
-from django.utils import timezone
-from django.conf import settings
 import json
+
+from django.conf import settings
+from django.test import Client
+from django.utils import timezone
+
+from packages.shared.users.models import User
+from serverless.models import ScreenerPreset
 
 # ALLOWED_HOSTS 임시 설정
 settings.ALLOWED_HOSTS = ['*']

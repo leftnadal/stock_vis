@@ -8,7 +8,12 @@ MetricCalculator를 통해 지표값을 계산한 뒤
 import logging
 from typing import Optional
 
-from stocks.models import IncomeStatement, BalanceSheet, CashFlowStatement, Stock
+from packages.shared.stocks.models import (
+    BalanceSheet,
+    CashFlowStatement,
+    IncomeStatement,
+    Stock,
+)
 from validation.models import CompanyMetricLatest
 from validation.services.metric_calculator import MetricCalculator, _safe, _safe_nonzero
 

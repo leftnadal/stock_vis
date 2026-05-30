@@ -4,12 +4,12 @@ News App Test Fixtures
 뉴스 기능 테스트를 위한 공통 fixtures
 """
 
-import pytest
 from datetime import datetime, timedelta
 from decimal import Decimal
 
-from news.providers.base import RawNewsArticle
+import pytest
 
+from news.providers.base import RawNewsArticle
 
 # ===== Fixture: Sample Finnhub Response =====
 
@@ -336,8 +336,9 @@ def duplicate_news_articles():
 @pytest.mark.django_db
 def news_article_aapl():
     """DB에 저장된 Apple 뉴스"""
-    from news.models import NewsArticle
     from django.utils import timezone
+
+    from news.models import NewsArticle
 
     return NewsArticle.objects.create(
         url='https://example.com/apple-earnings-2024',
@@ -379,8 +380,9 @@ def news_entity_aapl(news_article_aapl):
 @pytest.mark.django_db
 def sentiment_history_aapl():
     """DB에 저장된 Apple SentimentHistory"""
-    from news.models import SentimentHistory
     from django.utils import timezone
+
+    from news.models import SentimentHistory
 
     return SentimentHistory.objects.create(
         symbol='AAPL',

@@ -4,10 +4,11 @@ BM25 Search Service
 rank_bm25를 사용한 키워드 기반 검색 서비스
 """
 
-from rank_bm25 import BM25Okapi
-from typing import List, Tuple, Optional
-import re
 import logging
+import re
+from typing import List, Optional, Tuple
+
+from rank_bm25 import BM25Okapi
 
 logger = logging.getLogger(__name__)
 

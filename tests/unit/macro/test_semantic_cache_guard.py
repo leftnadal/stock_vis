@@ -6,8 +6,9 @@ Semantic Cache AnalysisCache 라벨 가드 테스트
   - AnalysisCache 라벨 존재 시 정상 MATCH 쿼리 실행
 """
 
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 
 class TestAnalysisCacheLabelGuard:

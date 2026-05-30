@@ -19,11 +19,12 @@ Usage:
     patents = client.get_patents_by_assignee('NVIDIA Corporation', years=5)
     citations = client.get_patent_citations('US11234567')
 """
-import requests
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
+
+import requests
 
 logger = logging.getLogger(__name__)
 

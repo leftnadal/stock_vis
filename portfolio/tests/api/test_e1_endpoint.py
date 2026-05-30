@@ -20,7 +20,6 @@ from rest_framework.test import APIClient
 from portfolio.schemas.llm import LLMResponse
 from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
 
-
 # Slice 13 Part 1.5: v1 버전 세그먼트 도입. 향후 경로 변경 시 본 상수만 갱신.
 E1_ENDPOINT = "/api/v1/coach/e1/"
 

@@ -25,7 +25,9 @@ import django  # noqa: E402
 
 django.setup()
 
-from portfolio.tests.helpers.regression_classifier import classify_regression  # noqa: E402
+from portfolio.tests.helpers.regression_classifier import (
+    classify_regression,  # noqa: E402
+)
 
 PART1_DIR = REPO_ROOT / "docs/portfolio/coach/slice9/part1"
 BASELINE_REGRESSION = 476  # Step 0 종결값

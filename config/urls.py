@@ -15,7 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import include, path
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularRedocView,
@@ -23,7 +23,6 @@ from drf_spectacular.views import (
 )
 
 from . import views
-
 
 urlpatterns = [
     # Root and health check
@@ -34,8 +33,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # API endpoints
-    path('api/v1/users/', include("users.urls")),
-    path('api/v1/stocks/', include("stocks.urls")),
+    path('api/v1/users/', include("packages.shared.users.urls")),
+    path('api/v1/stocks/', include("packages.shared.stocks.urls")),
     path('api/v1/news/', include("news.api.urls")),
     path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
     path('api/v1/rag/', include("rag_analysis.urls")),  # RAG 분석
@@ -47,7 +46,7 @@ urlpatterns = [
     path('api/v1/iron-trading/', include("iron_trading.urls")),  # iron_trading 외부 봇 read-only
 
     # Provider Admin API
-    path('api/v1/', include('api_request.urls')),
+    path('api/v1/', include('packages.shared.api_request.urls')),
 
     # Portfolio Coach (slice 1: E1+GARP) — 순수 Django view
     path('api/', include('portfolio.urls')),
