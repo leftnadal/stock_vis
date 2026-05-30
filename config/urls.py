@@ -56,7 +56,7 @@ urlpatterns = [
     path('api/v1/', include('portfolio.api.urls', namespace='portfolio_api')),
 
     # Market Pulse v2 (PR-I/J)
-    path('api/v2/market-pulse/', include('marketpulse.api.urls')),
+    path('api/v2/market-pulse/', include('apps.market_pulse.api.urls')),  # PR4 이동
 
     # OpenAPI / Swagger / ReDoc (drf-spectacular, Market Pulse v2)
     path('api/v2/schema/', SpectacularAPIView.as_view(), name='schema-v2'),

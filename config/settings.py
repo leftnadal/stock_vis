@@ -204,7 +204,7 @@ INSTALLED_APPS = [
     'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'portfolio.apps.PortfolioConfig',  # Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
-    'marketpulse.apps.MarketpulseConfig',  # Market Pulse v2 (Phase 1)
+    'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
