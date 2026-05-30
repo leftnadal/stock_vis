@@ -221,3 +221,5 @@ frontend/stocks.log
 
 # health_check stderr 로그 (단계 1, 2026-05-28~) — 빈 파일은 노이즈. JSON만 commit.
 docs/nightly_auto_system/**/health_check.stderr.log
+# 루트 node_modules (frontend 외 또는 vitest 워크스페이스 산출물)
+node_modules/
