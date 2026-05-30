@@ -639,3 +639,52 @@ pat_dynamic = re.compile(
 - iron_trading은 integrations/ 트랙. 외부 API 격리라 import 영향 작을 가능성 (~10건 이하 예상)
 - iron_trading 자체가 Django 앱이므로 INSTALLED_APPS / AppConfig 답습 적용
 - contracts/ 의존 명시 확인 (PR2와 달리 외부 봇 API contract 명시 필요)
+
+### monorepo PR3 — integrations/iron_trading (옵션 B 네임스페이스) 이동 (2026-05-30)
+
+**결과**: `iron_trading` → `integrations/iron_trading` 이동 완료 (history 보존, R100). 격리 트랙 자명 입증 — 변환 대상 2건만.
+
+**판정 (STEP 0 fact-check)**:
+- INSTALLED_APPS 등록 O (line 208)
+- URL 라우팅 O (config/urls.py:46)
+- 외부 Python import 호출 0건
+- → **ACTIVE** (외부 봇 read-only API로 동작 중). target = `integrations/iron_trading/` (dormant 아님)
+
+**옵션 B 채택 — integrations/ 네임스페이스 규약 (잠정 v0.1)**:
+- `integrations/__init__.py` + `README.md` + `_shared/__init__.py` (의도된 빈 패키지)
+- `_shared/`: 2+ integration 공유 유틸 자리. 현재 단일 integration이라 빈 패키지
+- `_dormant/`: 현재 부재. 휴면 발생 시 추가
+- **2번째 integration 진입 시 재검토** (현재 iron_trading 단일 → 검증 사례 부족)
+- 상세 규약: `integrations/README.md`
+
+**commit SHA (PR3 5 commits, branch `monorepo/pr3-integrations`)**:
+- `4d7cc7f` — pre-step: ruff format baseline cleanup (iron_trading 4 파일)
+- `5bc0cf2` — integrations namespace scaffold (__init__/README/_shared)
+- `7171f83` — mv iron_trading → integrations/iron_trading (R100)
+- `6cf961a` — 호출처 갱신 (config/urls.py + config/settings.py + apps.py label)
+- `{commit 5}` — DECISIONS + PROGRESS 정착
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**답습 자산 활용 (PR2 부록 A 보강 8건)**:
+- Python static import regex: **0건** (자기참조 + 외부 호출 모두 부재)
+- 동적 import sweep: **0건** (mock.patch/send_task/importlib 부재)
+- Django 패치 7종 중 3종 적용: INSTALLED_APPS / urls.py include / AppConfig.name+label
+- .gitignore 사전 점검: 충돌 0
+- ruff format pre-step: 4 파일 분리 commit
+
+**검증 결과**:
+- Django check: System check identified no issues
+- makemigrations --dry-run: No changes detected
+- import smoke (Django setup 후): iron_trading OK
+- pytest 풀 회귀: **3172 passed, 52 skipped** (PR2 baseline 완전 일치, 회귀 0건)
+- ruff 델타: main 1013 = PR3 1013 (델타 0)
+- health_check: 6✅/0⚠/1❌ (baseline 평행, ⚠ 격상 없음 — 빈 `_shared/` docstring 의도 명시로 false-positive 회피)
+
+**신규 학습 (PR4~PR8 답습 후보)**:
+1. **격리 트랙 자명 입증**: integrations 분류 자체가 외부 호출 0건 보장. PR3 변환 2건은 가중합 C 5.0 분류의 검증
+2. **빈 패키지 docstring 의도 명시 패턴**: `_shared/__init__.py`처럼 의도된 빈 패키지는 docstring으로 health_check false-positive 방지
+3. **2단계 mv 분리**: namespace scaffold commit과 mv commit 분리 — 후속 integration 추가 시 scaffold 1회 + 각 mv N회 답습
+4. **STEP 0 fact-check 단순화**: INSTALLED_APPS 등록 + URL 라우팅 = active. 추가 동적 import 검사로 보강
+
+**다음 PR**: PR4 (apps/dashboard/) — packages.shared 의존, IDENTICAL 31/31 풀 적용 시작점
