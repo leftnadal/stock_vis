@@ -472,3 +472,78 @@ interface ExplorationState {
 - 사용자 원본(`docs/monorepo_project/execution_plan_v1.md`)과 diff 결과 의미 추가분 0 확인 (본 사본이 superset — §5 이관 매핑 5건 박음 + §8 위치 확정). 사용자 원본 삭제로 정합화
 
 **📎 참조**: 통합 진입점 + 본 결정의 1차 소스 패턴은 직전 박은 결정 1~5(문서·git 정합성 관리 원칙)와 일관
+
+### monorepo PR1 — services/_dormant/graph_analysis 이동 (2026-05-30)
+
+**결과**: `graph_analysis/` → `services/_dormant/graph_analysis/` 이동 완료 (history 보존, 11 파일 R100)
+
+**commit SHA (PR1 4 commits, branch `monorepo/pr1-dormant`)**:
+- `61c92ad` — services/ + services/_dormant/ 패키지 초기화 (__init__.py 2개)
+- `845a810` — git mv 11 파일 R100
+- `ebca8f5` — import 경로 갱신 (ast-grep 자기참조 2건 + ruff import 정렬 5 fix)
+- `91d5055` — Django INSTALLED_APPS + AppConfig 호출처 갱신 (settings.py + apps.py label 명시)
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**학습 곡선 4가지 정착**:
+
+1. **ast-grep 패턴 3종** 정착 → 부록 A 박음 (PR2~PR8 답습용). 휴면이라 외부 호출 0건이었으나 자기참조 2건 발견 — "0건 확신 금지" 원칙 검증
+2. **git tag 롤백 절차** 정착 (`monorepo-pre-pr1` 박음, 미사용 — Step 4 dry-run + commit 1 hook 통과로 충분 검증)
+3. **DECISIONS 형식** 정착 (본 entry가 PR2~PR8 템플릿)
+4. **health_check baseline** 정착 (PR1 진입 시 6✅/0⚠/1❌, ❌는 자기참조성 PROGRESS hash 미반영. 신규 결함 0)
+
+**검증 결과**:
+
+- §4.1 import smoke: `python -c "import services._dormant.graph_analysis"` → OK
+- §4.2 pytest: `pytest -k "dormant or graph_analysis"` → 3224 collected / 0 selected (휴면 모듈 테스트 부재 정상)
+- §4.3 ruff check 델타: main baseline 1009 errors = PR1 1009 errors (델타 0, 휴면 lint 부채는 PR1 scope 외)
+- Django setup: OK (INSTALLED_APPS + AppConfig.label='graph_analysis' 호환)
+
+**PR1 scope 외 분리 보류**:
+- `ruff format` 7파일 광범위 재포맷 (+675/-392) — 휴면 모듈 광범위 포맷팅은 별도 commit/PR 가치, PR1 scope 외
+
+**다음 PR**: PR2 (packages/) — packages/shared + packages/web 이동
+
+### 부록 A — ast-grep 패턴 (PR2~PR8 답습 템플릿)
+
+트랙 이동 시 import 경로 변경 패턴 3종 (`{OLD}` `{NEW}` 치환만 하면 PR2 적용 가능):
+
+```yaml
+pattern_from_submodule:
+  pattern: "from {OLD}.$X import $$$Y"
+  rewrite: "from {NEW}.$X import $$$Y"
+  lang: python
+
+pattern_import_module:
+  pattern: "import {OLD}"
+  rewrite: "import {NEW} as {OLD}"  # alias로 호환성 유지
+  lang: python
+
+pattern_from_direct:
+  pattern: "from {OLD} import $$$X"
+  rewrite: "from {NEW} import $$$X"
+  lang: python
+```
+
+**적용 순서**: dry-run → 보고 → 사용자 승인 → -U 적용 → `ruff check --select I --fix`
+
+**PR1 미커버 패턴 (PR2~PR8 추가 점검 필수)**:
+- Django `INSTALLED_APPS` 내 문자열 — `grep -rn "{OLD}" config/` 별도 실행
+- `AppConfig.name` — 모듈 dotted-path와 일치해야 함 (`apps.py` 검토)
+- `AppConfig.label` — 기존 DB 테이블명 보존을 위해 명시 권장 (휴면 트랙 답습)
+
+### 부채 #73 close — pre-commit hook monorepo/* 패턴 추가 (2026-05-30)
+
+**결과**: `.git/hooks/pre-commit` 화이트리스트에 `monorepo/*` 패턴 통과 로직 추가 (라인 19~23, 5줄)
+
+**사유**:
+- monorepo 8 PR 답습 효율 (1회 수정 → 7회 회수)
+- 가드 견고성 보존 (prefix 한정, main 직커밋·외부 자동화 차단 유지)
+- 부채 #73 (slice17 등록) 본 작업의 사이드 산출물로 close
+
+**검증**:
+- test branch (`monorepo/test-hook-verify`) commit 성공 확인
+- diff = 추가 5줄만 (`if [[ "$CURRENT_BRANCH" == monorepo/* ]] && BRANCH_OK=true; fi`), 기존 로직 변경 0
+- PR1 commit 1~4 모두 hook 통과 (`✅ pre-commit 검증 통과 (branch=monorepo/pr1-dormant)`)
+
+**관련**: blueprint_v1.md §7 결정 ②, execution_plan_v1.md §1, PR1 §1.0 사이드 산출물

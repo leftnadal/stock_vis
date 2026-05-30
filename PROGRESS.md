@@ -173,3 +173,4 @@
 - [ ] QA follow-up: RelationCardPanel 에러 UI 추가
 - [ ] 정기 시크릿 스캔 스크립트 도입 검토 (KB 큐 cdc4d19e 참고)
 - [x] ~~feature/watchlist-and-docs 브랜치 상태 검토~~ (2026-05-28 완료, 로컬·원격 모두 부재 확정 — 표기 제거)
+- [x] **monorepo PR1 종결 (2026-05-30)**: `services/_dormant/graph_analysis/` 이동 완료. branch `monorepo/pr1-dormant` 4 commits (`61c92ad`/`845a810`/`ebca8f5`/`91d5055`). 학습 곡선 4가지 정착(ast-grep 패턴 3종 부록 A + git tag 롤백 절차 + DECISIONS 형식 + health_check baseline). 사이드 산출물로 부채 #73 close (pre-commit hook `monorepo/*` 패턴). pytest 0 selected(휴면 정상) + ruff 델타 0. 다음: PR2 (packages/) 지시서 작성
