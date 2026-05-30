@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.services import news_classifier
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.services import news_classifier
 
 
 class TestClassify:

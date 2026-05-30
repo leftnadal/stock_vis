@@ -8,13 +8,13 @@ from dataclasses import dataclass
 
 from django.conf import settings
 
-from marketpulse.briefing.prompt import (
+from apps.market_pulse.briefing.prompt import (
     SYSTEM_PROMPT,
     BriefingContext,
     few_shot_messages,
     render_user_prompt,
 )
-from marketpulse.utils.circuit_breaker import get_circuit
+from apps.market_pulse.utils.circuit_breaker import get_circuit
 
 logger = logging.getLogger(__name__)
 

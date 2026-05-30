@@ -10,7 +10,7 @@ from typing import Dict, List
 
 from django.db import transaction
 
-from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from packages.shared.stocks.models import SP500Constituent
 from serverless.services.fmp_client import FMPClient
 

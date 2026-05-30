@@ -9,8 +9,8 @@ import pandas as pd
 import pytest
 from django.utils import timezone
 
+from apps.market_pulse.tasks.sync_indicators import mp_sync_yahoo_indicators_daily
 from macro.models.indicators import EconomicIndicator, IndicatorValue
-from marketpulse.tasks.sync_indicators import mp_sync_yahoo_indicators_daily
 
 
 def _seed_indicators():

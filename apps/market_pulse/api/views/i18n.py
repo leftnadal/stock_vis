@@ -9,9 +9,9 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketpulse.api import cache as cache_keys
-from marketpulse.i18n import labels as labels_mod
-from marketpulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
+from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.i18n import labels as labels_mod
+from apps.market_pulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
 
 
 @extend_schema(

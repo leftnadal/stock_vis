@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 SCHEDULES: list[dict[str, Any]] = [
     {
         "name": "mp_fetch_news_hourly",
-        "task": "marketpulse.tasks.news.mp_fetch_news_hourly",
+        "task": "apps.market_pulse.tasks.news.mp_fetch_news_hourly",
         "crontab": {
             "minute": "5",
             "hour": "*",
@@ -28,7 +28,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_calc_breadth_5min",
-        "task": "marketpulse.tasks.breadth.mp_calc_breadth_5min",
+        "task": "apps.market_pulse.tasks.breadth.mp_calc_breadth_5min",
         "crontab": {
             "minute": "*/5",
             "hour": "9-16",
@@ -41,7 +41,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_calc_concentration_daily",
-        "task": "marketpulse.tasks.concentration.mp_calc_concentration_daily",
+        "task": "apps.market_pulse.tasks.concentration.mp_calc_concentration_daily",
         "crontab": {
             "minute": "15",
             "hour": "17",
@@ -54,7 +54,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_calc_sector_5min",
-        "task": "marketpulse.tasks.sector_flow.mp_calc_sector_5min",
+        "task": "apps.market_pulse.tasks.sector_flow.mp_calc_sector_5min",
         "crontab": {
             "minute": "*/5",
             "hour": "9-16",
@@ -67,7 +67,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_detect_anomaly_5min",
-        "task": "marketpulse.tasks.anomaly.mp_detect_anomaly_5min",
+        "task": "apps.market_pulse.tasks.anomaly.mp_detect_anomaly_5min",
         "crontab": {
             "minute": "*/5",
             "hour": "9-16",
@@ -80,7 +80,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_generate_brief_daily",
-        "task": "marketpulse.tasks.briefing.mp_generate_brief_daily",
+        "task": "apps.market_pulse.tasks.briefing.mp_generate_brief_daily",
         "crontab": {
             "minute": "15",
             "hour": "17",
@@ -93,7 +93,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_finalize_daily",
-        "task": "marketpulse.tasks.finalize.mp_finalize_daily",
+        "task": "apps.market_pulse.tasks.finalize.mp_finalize_daily",
         "crontab": {
             "minute": "30",
             "hour": "16",
@@ -106,7 +106,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_purge_news_daily",
-        "task": "marketpulse.tasks.finalize.mp_purge_news_daily",
+        "task": "apps.market_pulse.tasks.finalize.mp_purge_news_daily",
         "crontab": {
             "minute": "0",
             "hour": "14",
@@ -119,7 +119,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_purge_news_view_log_daily",
-        "task": "marketpulse.tasks.finalize.mp_purge_news_view_log_daily",
+        "task": "apps.market_pulse.tasks.finalize.mp_purge_news_view_log_daily",
         "crontab": {
             "minute": "5",
             "hour": "14",
@@ -132,7 +132,7 @@ SCHEDULES: list[dict[str, Any]] = [
     },
     {
         "name": "mp_calc_regime_15min",
-        "task": "marketpulse.tasks.regime.mp_calc_regime_15min",
+        "task": "apps.market_pulse.tasks.regime.mp_calc_regime_15min",
         "crontab": {
             "minute": "*/15",
             "hour": "*",
@@ -147,7 +147,7 @@ SCHEDULES: list[dict[str, Any]] = [
         # NY 17:35 = KST 06:35 (DST). mp_calc_concentration_daily(17:15) 직후, brief(17:15는 동일 분리, 다른 시각)
         # 다음 사이클 mp_calc_regime_15min에서 최신 VIX3M/MOVE 즉시 반영.
         "name": "mp_sync_yahoo_indicators_daily",
-        "task": "marketpulse.tasks.sync_indicators.mp_sync_yahoo_indicators_daily",
+        "task": "apps.market_pulse.tasks.sync_indicators.mp_sync_yahoo_indicators_daily",
         "crontab": {
             "minute": "35",
             "hour": "17",

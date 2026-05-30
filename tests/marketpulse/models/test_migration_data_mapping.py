@@ -18,7 +18,7 @@ class TestNewsEntitiesDataMapping:
     """MarketPulseNews entities 구조 저장/조회 일관성 검증."""
 
     def _make_news(self, url_hash: str, **overrides):
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         defaults = {
             'category': MarketPulseNews.Category.MACRO,
             'source': MarketPulseNews.Source.FMP_GENERAL,
@@ -64,7 +64,7 @@ class TestNewsEntitiesDataMapping:
 
     def test_news_task_write_pattern(self):
         """tasks/news.py에서 update_or_create 시 entities 구조 맞게 생성."""
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         tickers = ['TSLA']
         topics = ['rate decision', 'fomc']
         obj, created = MarketPulseNews.objects.update_or_create(
@@ -84,7 +84,7 @@ class TestNewsEntitiesDataMapping:
 
     def test_forward_migration_logic_inline(self):
         """RunPython forward 로직을 인라인으로 검증 (실제 마이그레이션 후 상태와 동일)."""
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         n = self._make_news('map-06', entities={})
         # 현재 모델에는 matched_symbols가 없음 — entities 구조만 검증
         n.entities = {'tickers': ['GOOG'], 'sectors': [], 'topics': ['china tension']}
@@ -100,7 +100,7 @@ class TestBriefingBodyDataMapping:
 
     def test_body_stores_long_text(self):
         """body에 500자 이상 텍스트 저장 가능."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         long_body = '시장 강세 흐름이 지속되고 있습니다. ' * 30
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
@@ -113,7 +113,7 @@ class TestBriefingBodyDataMapping:
 
     def test_body_sections_list_of_dicts(self):
         """body_sections에 섹션 목록 저장."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         sections = [
             {'title': '거시 환경', 'content': '금리 동결 기대'},
             {'title': '시장 폭', 'content': '상승 종목 우위'},
@@ -129,7 +129,7 @@ class TestBriefingBodyDataMapping:
 
     def test_body_sections_empty_default(self):
         """body_sections default는 빈 리스트."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-dm3',
@@ -138,7 +138,7 @@ class TestBriefingBodyDataMapping:
 
     def test_prompt_inputs_context_dict(self):
         """prompt_inputs에 BriefingContext.as_dict() 형태 저장."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         ctx = {
             'date': '2026-04-30',
             'regime': 'BULL_EXPANSION',
@@ -158,7 +158,7 @@ class TestBriefingBodyDataMapping:
 
     def test_briefing_task_write_pattern(self):
         """tasks/briefing.py update_or_create 패턴으로 body/prompt_inputs 저장."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         log, created = BriefingLog.objects.update_or_create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-dm5',

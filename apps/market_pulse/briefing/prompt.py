@@ -145,10 +145,10 @@ def few_shot_messages() -> list[dict]:
 
 
 def build_context_from_snapshots(today: date_cls) -> BriefingContext:
-    from marketpulse.models.anomaly import AnomalySignalLog
-    from marketpulse.models.briefing import BriefingLog  # noqa
-    from marketpulse.models.regime import RegimeSnapshot
-    from marketpulse.models.snapshot import (
+    from apps.market_pulse.models.anomaly import AnomalySignalLog
+    from apps.market_pulse.models.briefing import BriefingLog  # noqa
+    from apps.market_pulse.models.regime import RegimeSnapshot
+    from apps.market_pulse.models.snapshot import (
         BreadthSnapshot,
         ConcentrationSnapshot,
         SectorFlowSnapshot,

@@ -9,10 +9,10 @@ from typing import Any
 from celery import shared_task
 from django.utils import timezone as django_timezone
 
-from marketpulse.api import cache as cache_keys
-from marketpulse.models.news import MarketPulseNews, NewsViewLog
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.models.news import MarketPulseNews, NewsViewLog
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,
@@ -29,7 +29,7 @@ def _finalize_queryset(model, **filters) -> int:
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.finalize.mp_finalize_daily",
+    name="apps.market_pulse.tasks.finalize.mp_finalize_daily",
     max_retries=3,
     default_retry_delay=120,
     soft_time_limit=120,
@@ -58,7 +58,7 @@ def mp_finalize_daily(self, **kwargs: Any) -> dict[str, int]:
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.finalize.mp_purge_news_daily",
+    name="apps.market_pulse.tasks.finalize.mp_purge_news_daily",
     max_retries=3,
     default_retry_delay=120,
     soft_time_limit=120,
@@ -81,7 +81,7 @@ def mp_purge_news_daily(
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.finalize.mp_purge_news_view_log_daily",
+    name="apps.market_pulse.tasks.finalize.mp_purge_news_view_log_daily",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=60,

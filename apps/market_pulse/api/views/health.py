@@ -13,11 +13,11 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketpulse.api import cache as cache_keys
-from marketpulse.models.briefing import BriefingLog
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.models.briefing import BriefingLog
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,

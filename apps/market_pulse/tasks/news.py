@@ -9,15 +9,15 @@ from celery import shared_task
 from django.db import transaction
 from django.utils import timezone as django_timezone
 
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.services import news_aggregator, news_classifier
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.services import news_aggregator, news_classifier
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.news.mp_fetch_news_hourly",
+    name="apps.market_pulse.tasks.news.mp_fetch_news_hourly",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=180,

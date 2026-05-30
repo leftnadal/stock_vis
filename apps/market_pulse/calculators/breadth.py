@@ -12,7 +12,7 @@ from typing import Iterable
 from django.db.models import Max, Min, Q
 from django.utils import timezone as django_timezone
 
-from marketpulse.models.snapshot import BreadthSnapshot
+from apps.market_pulse.models.snapshot import BreadthSnapshot
 from packages.shared.stocks.models import DailyPrice, SP500Constituent
 
 logger = logging.getLogger(__name__)

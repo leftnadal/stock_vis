@@ -14,7 +14,7 @@ from django.conf import settings
 from google import genai
 from google.genai import types
 
-from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 
 logger = logging.getLogger(__name__)
 

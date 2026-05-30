@@ -6,8 +6,8 @@ from datetime import timedelta
 
 from django.utils import timezone as django_timezone
 
-from marketpulse.anomaly.engine import AnomalyContext, FiredRule
-from marketpulse.models.news import MarketPulseNews
+from apps.market_pulse.anomaly.engine import AnomalyContext, FiredRule
+from apps.market_pulse.models.news import MarketPulseNews
 
 PAIRING_PREFERENCE = {
     "R02": [MarketPulseNews.Category.MAG7, MarketPulseNews.Category.SMART_MONEY],

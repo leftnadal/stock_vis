@@ -11,8 +11,8 @@ from typing import Any
 
 import yaml
 
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.regime.inputs import RegimeInputs
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.regime.inputs import RegimeInputs
 
 logger = logging.getLogger(__name__)
 

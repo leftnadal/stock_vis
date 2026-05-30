@@ -11,15 +11,15 @@ from django.core.cache import cache
 from django.urls import reverse
 from rest_framework.test import APIClient
 
-from macro.models.indicators import MarketIndex, MarketIndexPrice
-from marketpulse.models.briefing import BriefingLog
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.models.briefing import BriefingLog
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from macro.models.indicators import MarketIndex, MarketIndexPrice
 
 User = get_user_model()
 

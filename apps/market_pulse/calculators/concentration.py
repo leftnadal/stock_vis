@@ -10,8 +10,8 @@ from typing import Iterable
 
 from django.utils import timezone as django_timezone
 
-from marketpulse.fetchers.fmp_weights import HoldingRow, fetch_holdings
-from marketpulse.models.snapshot import ConcentrationSnapshot
+from apps.market_pulse.fetchers.fmp_weights import HoldingRow, fetch_holdings
+from apps.market_pulse.models.snapshot import ConcentrationSnapshot
 
 logger = logging.getLogger(__name__)
 

@@ -13,20 +13,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from macro.models.indicators import MarketIndex, MarketIndexPrice
-from marketpulse.api import cache as cache_keys
-from marketpulse.api import status as api_status
-from marketpulse.api.serializers.overview import OverviewResponseSerializer
-from marketpulse.models.anomaly import AnomalySignalLog
-from marketpulse.models.briefing import BriefingLog
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.api import status as api_status
+from apps.market_pulse.api.serializers.overview import OverviewResponseSerializer
+from apps.market_pulse.models.anomaly import AnomalySignalLog
+from apps.market_pulse.models.briefing import BriefingLog
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
-from marketpulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
+from apps.market_pulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
+from macro.models.indicators import MarketIndex, MarketIndexPrice
 
 logger = logging.getLogger(__name__)
 

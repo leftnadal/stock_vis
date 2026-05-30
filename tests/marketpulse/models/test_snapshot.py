@@ -36,7 +36,7 @@ class TestBreadthSnapshot:
     """§5.1 T1~T3 — BreadthSnapshot 제약."""
 
     def _make(self, **overrides):
-        from marketpulse.models.snapshot import BreadthSnapshot
+        from apps.market_pulse.models.snapshot import BreadthSnapshot
         defaults = {
             'date': dt_date(2026, 5, 11),
             'snapshot_time': timezone.now(),
@@ -46,7 +46,7 @@ class TestBreadthSnapshot:
 
     def test_universe_choices_t1(self):
         """T1: universe SPY/QQQ/DIA 3개 + default=SPY."""
-        from marketpulse.models.snapshot import BreadthSnapshot
+        from apps.market_pulse.models.snapshot import BreadthSnapshot
         choices = dict(BreadthSnapshot.Universe.choices)
         assert set(choices.keys()) == {'SPY', 'QQQ', 'DIA'}
         field = BreadthSnapshot._meta.get_field('universe')
@@ -75,7 +75,7 @@ class TestSectorFlowSnapshot:
     """§5.1 T4~T6 — SectorFlowSnapshot 제약."""
 
     def _make(self, market_index, **overrides):
-        from marketpulse.models.snapshot import SectorFlowSnapshot
+        from apps.market_pulse.models.snapshot import SectorFlowSnapshot
         defaults = {
             'date': dt_date(2026, 5, 11),
             'snapshot_time': timezone.now(),
@@ -98,8 +98,8 @@ class TestSectorFlowSnapshot:
 
     def test_long_format_11_etfs_t6(self, db):
         """T6: 11 GICS 섹터 ETF 같은 date에 11 row INSERT (long-format)."""
+        from apps.market_pulse.models.snapshot import SectorFlowSnapshot
         from macro.models.indicators import MarketIndex
-        from marketpulse.models.snapshot import SectorFlowSnapshot
         sectors = [
             ('XLF_A3T', MarketIndex.SectorGroup.FINANCIALS),
             ('XLK_A3T2', MarketIndex.SectorGroup.TECH),
@@ -128,7 +128,7 @@ class TestConcentrationSnapshot:
     """§5.1 T7~T8 + clean() validator."""
 
     def _make(self, **overrides):
-        from marketpulse.models.snapshot import ConcentrationSnapshot
+        from apps.market_pulse.models.snapshot import ConcentrationSnapshot
         defaults = {
             'date': dt_date(2026, 5, 11),
             'snapshot_time': timezone.now(),
@@ -160,7 +160,7 @@ class TestConcentrationSnapshot:
 
     def test_clean_top5_le_top10(self):
         """clean(): top5_weight > top10_weight ValidationError."""
-        from marketpulse.models.snapshot import ConcentrationSnapshot
+        from apps.market_pulse.models.snapshot import ConcentrationSnapshot
         c = ConcentrationSnapshot(
             date=dt_date(2026, 5, 11), snapshot_time=timezone.now(),
             top5_weight=Decimal('0.5'), top10_weight=Decimal('0.3'),
@@ -171,7 +171,7 @@ class TestConcentrationSnapshot:
 
     def test_clean_top10_le_one(self):
         """clean(): top10_weight > 1.0 ValidationError."""
-        from marketpulse.models.snapshot import ConcentrationSnapshot
+        from apps.market_pulse.models.snapshot import ConcentrationSnapshot
         c = ConcentrationSnapshot(
             date=dt_date(2026, 5, 11), snapshot_time=timezone.now(),
             top5_weight=Decimal('0.5'), top10_weight=Decimal('1.5'),
@@ -182,7 +182,7 @@ class TestConcentrationSnapshot:
 
     def test_clean_hhi_in_unit_range(self):
         """clean(): hhi ∉ [0, 1.0] ValidationError."""
-        from marketpulse.models.snapshot import ConcentrationSnapshot
+        from apps.market_pulse.models.snapshot import ConcentrationSnapshot
         c = ConcentrationSnapshot(
             date=dt_date(2026, 5, 11), snapshot_time=timezone.now(),
             top5_weight=Decimal('0.3'), top10_weight=Decimal('0.5'),
@@ -194,7 +194,7 @@ class TestConcentrationSnapshot:
 
     def test_clean_valid_passes(self):
         """clean(): 정상 값은 통과."""
-        from marketpulse.models.snapshot import ConcentrationSnapshot
+        from apps.market_pulse.models.snapshot import ConcentrationSnapshot
         c = ConcentrationSnapshot(
             date=dt_date(2026, 5, 11), snapshot_time=timezone.now(),
             top5_weight=Decimal('0.2'), top10_weight=Decimal('0.35'),
@@ -208,7 +208,7 @@ class TestSnapshotConsistency:
     """§5.1 T9~T11 — 3개 모델 공통 일관성."""
 
     def _models(self):
-        from marketpulse.models.snapshot import (
+        from apps.market_pulse.models.snapshot import (
             BreadthSnapshot,
             ConcentrationSnapshot,
             SectorFlowSnapshot,
@@ -227,7 +227,7 @@ class TestSnapshotConsistency:
 
     def test_str_defined_t10(self, tech_index):
         """T10: 3개 모델 __str__ 정상 호출."""
-        from marketpulse.models.snapshot import (
+        from apps.market_pulse.models.snapshot import (
             BreadthSnapshot,
             ConcentrationSnapshot,
             SectorFlowSnapshot,
@@ -255,8 +255,8 @@ class TestIntegrationA3:
 
     def test_regime_and_breadth_same_date_t19(self):
         """T19: 같은 date에 RegimeSnapshot + BreadthSnapshot 공존."""
-        from marketpulse.models.regime import RegimeSnapshot
-        from marketpulse.models.snapshot import BreadthSnapshot
+        from apps.market_pulse.models.regime import RegimeSnapshot
+        from apps.market_pulse.models.snapshot import BreadthSnapshot
         d = dt_date(2026, 5, 11)
         now = timezone.now()
         RegimeSnapshot.objects.create(

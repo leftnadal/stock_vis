@@ -485,7 +485,7 @@ def build_daily_context(params: QueryParams) -> dict:
 
     # market_pulse
     try:
-        from marketpulse.models.regime import RegimeSnapshot
+        from apps.market_pulse.models.regime import RegimeSnapshot
 
         regime = (
             RegimeSnapshot.objects.filter(date__lte=trading_date)

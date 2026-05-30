@@ -16,12 +16,12 @@ from typing import Any
 import yaml
 from django.utils import timezone as django_timezone
 
-from macro.models.indicators import EconomicIndicator, IndicatorValue
-from marketpulse.models.anomaly import AnomalySignalLog
-from marketpulse.models.snapshot import (
+from apps.market_pulse.models.anomaly import AnomalySignalLog
+from apps.market_pulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from macro.models.indicators import EconomicIndicator, IndicatorValue
 
 logger = logging.getLogger(__name__)
 

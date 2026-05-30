@@ -7,14 +7,14 @@ from typing import Any
 
 from celery import shared_task
 
-from marketpulse.calculators import sector_flow as sector_calc
+from apps.market_pulse.calculators import sector_flow as sector_calc
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.sector_flow.mp_calc_sector_5min",
+    name="apps.market_pulse.tasks.sector_flow.mp_calc_sector_5min",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=180,

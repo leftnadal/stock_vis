@@ -5,8 +5,8 @@ from decimal import Decimal
 
 import pytest
 
-from marketpulse.calculators import concentration as conc
-from marketpulse.fetchers.fmp_weights import HoldingRow
+from apps.market_pulse.calculators import concentration as conc
+from apps.market_pulse.fetchers.fmp_weights import HoldingRow
 
 
 def _h(symbol, weight, rank=0):

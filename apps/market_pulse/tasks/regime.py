@@ -8,17 +8,17 @@ from typing import Any
 from celery import shared_task
 from django.utils import timezone as django_timezone
 
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.regime import classifier as classifier_mod
-from marketpulse.regime import coverage as coverage_mod
-from marketpulse.regime import inputs as inputs_mod
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.regime import classifier as classifier_mod
+from apps.market_pulse.regime import coverage as coverage_mod
+from apps.market_pulse.regime import inputs as inputs_mod
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.regime.mp_calc_regime_15min",
+    name="apps.market_pulse.tasks.regime.mp_calc_regime_15min",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=120,

@@ -8,18 +8,18 @@ from typing import Any
 from celery import shared_task
 from django.utils import timezone as django_timezone
 
-from marketpulse.briefing import client as client_mod
-from marketpulse.briefing import prompt as prompt_mod
-from marketpulse.briefing import safety as safety_mod
-from marketpulse.briefing.prompt import DISCLAIMER
-from marketpulse.models.briefing import BriefingLog
+from apps.market_pulse.briefing import client as client_mod
+from apps.market_pulse.briefing import prompt as prompt_mod
+from apps.market_pulse.briefing import safety as safety_mod
+from apps.market_pulse.briefing.prompt import DISCLAIMER
+from apps.market_pulse.models.briefing import BriefingLog
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.briefing.mp_generate_brief_daily",
+    name="apps.market_pulse.tasks.briefing.mp_generate_brief_daily",
     max_retries=3,
     default_retry_delay=300,
     soft_time_limit=180,

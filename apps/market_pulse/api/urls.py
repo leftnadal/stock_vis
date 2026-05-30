@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from django.urls import path
 
-from marketpulse.api.views.cards import CardDetailView
-from marketpulse.api.views.health import HealthView
-from marketpulse.api.views.i18n import I18nView
-from marketpulse.api.views.news_refresh import NewsRefreshView
-from marketpulse.api.views.overview import OverviewView
+from apps.market_pulse.api.views.cards import CardDetailView
+from apps.market_pulse.api.views.health import HealthView
+from apps.market_pulse.api.views.i18n import I18nView
+from apps.market_pulse.api.views.news_refresh import NewsRefreshView
+from apps.market_pulse.api.views.overview import OverviewView
 
 app_name = "marketpulse_api_v2"
 

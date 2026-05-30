@@ -2,11 +2,11 @@
 
 from django.contrib import admin
 
-from marketpulse.models.anomaly import AnomalySignalLog
-from marketpulse.models.briefing import BriefingLog
-from marketpulse.models.news import MarketPulseNews, NewsViewLog
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.models.anomaly import AnomalySignalLog
+from apps.market_pulse.models.briefing import BriefingLog
+from apps.market_pulse.models.news import MarketPulseNews, NewsViewLog
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,

@@ -6,9 +6,9 @@ from datetime import timedelta
 
 import pytest
 
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.regime import classifier as cls
-from marketpulse.regime.inputs import RegimeInputs
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.regime import classifier as cls
+from apps.market_pulse.regime.inputs import RegimeInputs
 
 
 def _bull():

@@ -17,7 +17,7 @@ class TestMarketPulseNewsFieldExtension:
     """MarketPulseNews 저위험 + 중위험 + 고위험 필드 변경 검증."""
 
     def _make_news(self, **overrides):
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         defaults = {
             'category': MarketPulseNews.Category.MACRO,
             'source': MarketPulseNews.Source.FMP_GENERAL,
@@ -43,7 +43,7 @@ class TestMarketPulseNewsFieldExtension:
         assert n.sentiment_score == -0.7
 
     def test_expires_at_indexed_for_purge(self):
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         field = MarketPulseNews._meta.get_field('expires_at')
         assert field.db_index is True
         assert field.null is True
@@ -115,7 +115,7 @@ class TestMarketPulseNewsFieldExtension:
 
     def test_entities_field_present_no_old_fields(self):
         """matched_symbols/matched_keywords 필드 존재하지 않음."""
-        from marketpulse.models import MarketPulseNews
+        from apps.market_pulse.models import MarketPulseNews
         field_names = [f.name for f in MarketPulseNews._meta.get_fields()]
         assert 'entities' in field_names
         assert 'matched_symbols' not in field_names
@@ -127,7 +127,7 @@ class TestBriefingLogFieldExtension:
     """BriefingLog 저위험 + 중위험 + 고위험 필드 변경 검증."""
 
     def test_cost_usd_nullable(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash',
@@ -136,7 +136,7 @@ class TestBriefingLogFieldExtension:
         assert b.error_message == ''
 
     def test_cost_usd_decimal_precision(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-v2',
@@ -145,7 +145,7 @@ class TestBriefingLogFieldExtension:
         assert b.cost_usd == Decimal('0.0123')
 
     def test_error_message_for_failed_status(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-v3',
@@ -158,7 +158,7 @@ class TestBriefingLogFieldExtension:
     # ─── 중위험: inputs_summary → prompt_inputs ──────────────────────────
 
     def test_prompt_inputs_default_empty_dict(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-pi',
@@ -166,7 +166,7 @@ class TestBriefingLogFieldExtension:
         assert b.prompt_inputs == {}
 
     def test_prompt_inputs_stores_context(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         ctx = {'regime': 'BULL_EXPANSION', 'breadth': {'advance': 300}}
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
@@ -178,7 +178,7 @@ class TestBriefingLogFieldExtension:
     # ─── 고위험: body/body_sections 검증 ────────────────────────────────
 
     def test_body_default_empty_string(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
             model_version='gemini-2.5-flash-bd',
@@ -187,7 +187,7 @@ class TestBriefingLogFieldExtension:
         assert b.body_sections == []
 
     def test_body_stores_full_text(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         text = '시장 강세 흐름이 지속되고 있습니다.' * 10
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
@@ -197,7 +197,7 @@ class TestBriefingLogFieldExtension:
         assert b.body == text
 
     def test_body_sections_stores_list(self):
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         sections = [{'title': '요약', 'content': '강세'}, {'title': '리스크', 'content': '변동성'}]
         b = BriefingLog.objects.create(
             date=date(2026, 4, 30),
@@ -209,7 +209,7 @@ class TestBriefingLogFieldExtension:
 
     def test_old_content_field_absent(self):
         """content 필드 존재하지 않음."""
-        from marketpulse.models import BriefingLog
+        from apps.market_pulse.models import BriefingLog
         field_names = [f.name for f in BriefingLog._meta.get_fields()]
         assert 'body' in field_names
         assert 'body_sections' in field_names

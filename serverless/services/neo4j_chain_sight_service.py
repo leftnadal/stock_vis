@@ -53,7 +53,7 @@ from typing import Any, Dict, List, Optional
 from django.conf import settings
 from django.core.cache import cache
 
-from marketpulse.utils.circuit_breaker import (
+from apps.market_pulse.utils.circuit_breaker import (
     CircuitBreakerError,
     CircuitState,
     get_circuit,

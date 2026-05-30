@@ -13,8 +13,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketpulse.models.news import MarketPulseNews, NewsViewLog
-from marketpulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
+from apps.market_pulse.models.news import MarketPulseNews, NewsViewLog
+from apps.market_pulse.throttles import MarketPulseHourThrottle, MarketPulseUserThrottle
 
 REFRESH_LIMIT = 6
 

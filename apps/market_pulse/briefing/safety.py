@@ -7,8 +7,8 @@ import logging
 import re
 from dataclasses import dataclass
 
-from marketpulse.briefing.prompt import DISCLAIMER
-from marketpulse.models.briefing import BriefingLog
+from apps.market_pulse.briefing.prompt import DISCLAIMER
+from apps.market_pulse.models.briefing import BriefingLog
 
 logger = logging.getLogger(__name__)
 

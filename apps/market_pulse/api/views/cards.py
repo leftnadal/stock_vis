@@ -13,15 +13,15 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from marketpulse.api import cache as cache_keys
-from marketpulse.models.briefing import BriefingLog
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.models.snapshot import (
+from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.models.briefing import BriefingLog
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.models.snapshot import (
     BreadthSnapshot,
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
-from marketpulse.throttles import (
+from apps.market_pulse.throttles import (
     MarketPulseHourThrottle,
     MarketPulseLLMThrottle,
     MarketPulseUserThrottle,

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from marketpulse.models.regime import RegimeSnapshot
-from marketpulse.regime.classifier import load_rules
-from marketpulse.regime.inputs import RegimeInputs
+from apps.market_pulse.models.regime import RegimeSnapshot
+from apps.market_pulse.regime.classifier import load_rules
+from apps.market_pulse.regime.inputs import RegimeInputs
 
 
 @dataclass(frozen=True)

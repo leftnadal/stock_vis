@@ -34,7 +34,7 @@ SERIES_MAP = {
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.sync_indicators.mp_sync_yahoo_indicators_daily",
+    name="apps.market_pulse.tasks.sync_indicators.mp_sync_yahoo_indicators_daily",
     max_retries=3,
     default_retry_delay=300,
     soft_time_limit=180,

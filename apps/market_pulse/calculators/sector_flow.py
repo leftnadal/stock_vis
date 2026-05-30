@@ -12,8 +12,8 @@ from typing import Iterable
 
 from django.utils import timezone as django_timezone
 
+from apps.market_pulse.models.snapshot import SectorFlowSnapshot
 from macro.models.indicators import MarketIndex, MarketIndexPrice
-from marketpulse.models.snapshot import SectorFlowSnapshot
 
 logger = logging.getLogger(__name__)
 

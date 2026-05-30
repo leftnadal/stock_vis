@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from marketpulse.anomaly.engine import AnomalyContext, FiredRule
-from marketpulse.models.anomaly import AnomalySignalLog
+from apps.market_pulse.anomaly.engine import AnomalyContext, FiredRule
+from apps.market_pulse.models.anomaly import AnomalySignalLog
 
 
 @dataclass(frozen=True)

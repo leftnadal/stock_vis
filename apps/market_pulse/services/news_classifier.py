@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass
 from typing import Iterable
 
-from marketpulse.models.news import MarketPulseNews
+from apps.market_pulse.models.news import MarketPulseNews
 
 logger = logging.getLogger(__name__)
 

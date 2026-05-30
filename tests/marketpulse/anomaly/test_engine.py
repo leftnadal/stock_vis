@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from marketpulse.anomaly import engine as eng
-from marketpulse.models.anomaly import AnomalySignalLog
+from apps.market_pulse.anomaly import engine as eng
+from apps.market_pulse.models.anomaly import AnomalySignalLog
 
 
 def _ctx(**overrides):

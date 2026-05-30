@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 from django.db import transaction
 from django.utils import timezone
 
-from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from serverless.models import MarketMover
 from serverless.services.corporate_action_service import CorporateActionService
 from serverless.services.fmp_client import FMPAPIError, FMPClient

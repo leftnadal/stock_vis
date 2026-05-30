@@ -7,14 +7,14 @@ from typing import Any
 
 from celery import shared_task
 
-from marketpulse.calculators import concentration as concentration_calc
+from apps.market_pulse.calculators import concentration as concentration_calc
 
 logger = logging.getLogger(__name__)
 
 
 @shared_task(
     bind=True,
-    name="marketpulse.tasks.concentration.mp_calc_concentration_daily",
+    name="apps.market_pulse.tasks.concentration.mp_calc_concentration_daily",
     max_retries=3,
     default_retry_delay=60,
     soft_time_limit=120,

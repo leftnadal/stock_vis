@@ -7,7 +7,7 @@ import uuid
 
 from django.conf import settings
 
-from marketpulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
+from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from thesis.feature_flags import get_feature_flags
 from thesis.models import HypothesisEvent, Thesis, ThesisIndicator, ThesisPremise
 from thesis.services.builder_events import (

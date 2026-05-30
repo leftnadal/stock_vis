@@ -11,8 +11,8 @@ from typing import Any
 from django.conf import settings
 from django.utils import timezone as django_timezone
 
-from marketpulse.models.news import MarketPulseNews
-from marketpulse.utils.circuit_breaker import (
+from apps.market_pulse.models.news import MarketPulseNews
+from apps.market_pulse.utils.circuit_breaker import (
     CircuitBreakerError,
     get_circuit,
 )
