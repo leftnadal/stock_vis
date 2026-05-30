@@ -4,24 +4,23 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('metrics', '0005_metricdefinition_not_applicable_reason_and_more'),
-        ('stocks', '0008_industryclassification'),
+        ("metrics", "0005_metricdefinition_not_applicable_reason_and_more"),
+        ("stocks", "0008_industryclassification"),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='peermetricbenchmark',
+            name="peermetricbenchmark",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='peermetricbenchmark',
-            name='preset_key',
-            field=models.CharField(db_index=True, default='default', max_length=30),
+            model_name="peermetricbenchmark",
+            name="preset_key",
+            field=models.CharField(db_index=True, default="default", max_length=30),
         ),
         migrations.AlterUniqueTogether(
-            name='peermetricbenchmark',
-            unique_together={('symbol', 'fiscal_year', 'metric_code', 'preset_key')},
+            name="peermetricbenchmark",
+            unique_together={("symbol", "fiscal_year", "metric_code", "preset_key")},
         ),
     ]

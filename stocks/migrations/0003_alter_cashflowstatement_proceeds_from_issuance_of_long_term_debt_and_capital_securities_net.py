@@ -4,15 +4,20 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0002_add_last_api_call'),
+        ("stocks", "0002_add_last_api_call"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='cashflowstatement',
-            name='proceeds_from_issuance_of_long_term_debt_and_capital_securities_net',
-            field=models.DecimalField(blank=True, db_column='proceeds_lt_debt_capital_securities_net', decimal_places=2, max_digits=20, null=True),
+            model_name="cashflowstatement",
+            name="proceeds_from_issuance_of_long_term_debt_and_capital_securities_net",
+            field=models.DecimalField(
+                blank=True,
+                db_column="proceeds_lt_debt_capital_securities_net",
+                decimal_places=2,
+                max_digits=20,
+                null=True,
+            ),
         ),
     ]

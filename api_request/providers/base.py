@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 class ProviderError(Exception):
     """Provider 관련 기본 예외"""
+
     pass
 
 
 class RateLimitError(ProviderError):
     """API Rate Limit 초과 예외"""
+
     def __init__(self, provider: str, retry_after: Optional[int] = None):
         self.provider = provider
         self.retry_after = retry_after
@@ -35,6 +37,7 @@ class RateLimitError(ProviderError):
 
 class DataNotFoundError(ProviderError):
     """데이터를 찾을 수 없는 경우 예외"""
+
     def __init__(self, symbol: str, data_type: str):
         self.symbol = symbol
         self.data_type = data_type
@@ -43,6 +46,7 @@ class DataNotFoundError(ProviderError):
 
 class ProviderUnavailableError(ProviderError):
     """Provider 서비스 불가 예외"""
+
     def __init__(self, provider: str, reason: str = ""):
         self.provider = provider
         self.reason = reason
@@ -54,24 +58,27 @@ class ProviderUnavailableError(ProviderError):
 
 class PeriodType(Enum):
     """재무제표 기간 타입"""
+
     ANNUAL = "annual"
     QUARTERLY = "quarterly"
 
 
 class OutputSize(Enum):
     """가격 데이터 출력 크기"""
+
     COMPACT = "compact"  # 최근 100개
     FULL = "full"  # 전체 데이터
 
 
 @dataclass
-class ProviderResponse(Generic[TypeVar('T')]):
+class ProviderResponse(Generic[TypeVar("T")]):
     """
     Provider 응답 래퍼
 
     모든 provider 메서드는 이 형식으로 응답을 반환합니다.
     성공/실패 여부, 데이터, 메타정보를 포함합니다.
     """
+
     success: bool
     data: Optional[Any] = None
     error: Optional[str] = None
@@ -82,27 +89,24 @@ class ProviderResponse(Generic[TypeVar('T')]):
     meta: Dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def success_response(cls, data: Any, provider: str, cached: bool = False,
-                         meta: Optional[Dict[str, Any]] = None) -> 'ProviderResponse':
+    def success_response(
+        cls,
+        data: Any,
+        provider: str,
+        cached: bool = False,
+        meta: Optional[Dict[str, Any]] = None,
+    ) -> "ProviderResponse":
         """성공 응답 생성"""
         return cls(
-            success=True,
-            data=data,
-            provider=provider,
-            cached=cached,
-            meta=meta or {}
+            success=True, data=data, provider=provider, cached=cached, meta=meta or {}
         )
 
     @classmethod
-    def error_response(cls, error: str, provider: str,
-                       error_code: Optional[str] = None) -> 'ProviderResponse':
+    def error_response(
+        cls, error: str, provider: str, error_code: Optional[str] = None
+    ) -> "ProviderResponse":
         """에러 응답 생성"""
-        return cls(
-            success=False,
-            error=error,
-            error_code=error_code,
-            provider=provider
-        )
+        return cls(success=False, error=error, error_code=error_code, provider=provider)
 
 
 # ============================================================
@@ -110,9 +114,11 @@ class ProviderResponse(Generic[TypeVar('T')]):
 # Provider별로 다른 필드명을 통일된 형식으로 변환
 # ============================================================
 
+
 @dataclass
 class NormalizedQuote:
     """정규화된 실시간 시세 데이터"""
+
     symbol: str
     price: Decimal
     open: Optional[Decimal] = None
@@ -129,6 +135,7 @@ class NormalizedQuote:
 @dataclass
 class NormalizedCompanyProfile:
     """정규화된 회사 프로필 데이터"""
+
     symbol: str
     name: str
     description: Optional[str] = None
@@ -156,6 +163,7 @@ class NormalizedCompanyProfile:
 @dataclass
 class NormalizedPriceData:
     """정규화된 가격 데이터 (일별/주별)"""
+
     date: date
     open: Decimal
     high: Decimal
@@ -170,6 +178,7 @@ class NormalizedPriceData:
 @dataclass
 class NormalizedFinancialStatement:
     """정규화된 재무제표 기본 구조"""
+
     symbol: str
     fiscal_date_ending: date
     reported_currency: str
@@ -181,6 +190,7 @@ class NormalizedFinancialStatement:
 @dataclass
 class NormalizedBalanceSheet(NormalizedFinancialStatement):
     """정규화된 대차대조표"""
+
     # 자산
     total_assets: Optional[Decimal] = None
     current_assets: Optional[Decimal] = None
@@ -210,6 +220,7 @@ class NormalizedBalanceSheet(NormalizedFinancialStatement):
 @dataclass
 class NormalizedIncomeStatement(NormalizedFinancialStatement):
     """정규화된 손익계산서"""
+
     total_revenue: Optional[Decimal] = None
     cost_of_revenue: Optional[Decimal] = None
     gross_profit: Optional[Decimal] = None
@@ -229,6 +240,7 @@ class NormalizedIncomeStatement(NormalizedFinancialStatement):
 @dataclass
 class NormalizedCashFlow(NormalizedFinancialStatement):
     """정규화된 현금흐름표"""
+
     # 영업활동
     operating_cash_flow: Optional[Decimal] = None
     net_income: Optional[Decimal] = None
@@ -255,6 +267,7 @@ class NormalizedCashFlow(NormalizedFinancialStatement):
 @dataclass
 class NormalizedSearchResult:
     """정규화된 종목 검색 결과"""
+
     symbol: str
     name: str
     type: Optional[str] = None  # Equity, ETF, etc.
@@ -266,6 +279,7 @@ class NormalizedSearchResult:
 # ============================================================
 # Abstract Base Class
 # ============================================================
+
 
 class StockDataProvider(ABC):
     """
@@ -319,7 +333,9 @@ class StockDataProvider(ABC):
         pass
 
     @abstractmethod
-    def get_company_profile(self, symbol: str) -> ProviderResponse[NormalizedCompanyProfile]:
+    def get_company_profile(
+        self, symbol: str
+    ) -> ProviderResponse[NormalizedCompanyProfile]:
         """
         회사 프로필 조회
 
@@ -333,9 +349,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def get_daily_prices(
-        self,
-        symbol: str,
-        output_size: OutputSize = OutputSize.COMPACT
+        self, symbol: str, output_size: OutputSize = OutputSize.COMPACT
     ) -> ProviderResponse[List[NormalizedPriceData]]:
         """
         일별 가격 데이터 조회
@@ -351,8 +365,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def get_weekly_prices(
-        self,
-        symbol: str
+        self, symbol: str
     ) -> ProviderResponse[List[NormalizedPriceData]]:
         """
         주별 가격 데이터 조회
@@ -367,9 +380,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def get_balance_sheet(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedBalanceSheet]]:
         """
         대차대조표 조회
@@ -385,9 +396,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def get_income_statement(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedIncomeStatement]]:
         """
         손익계산서 조회
@@ -403,9 +412,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def get_cash_flow(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedCashFlow]]:
         """
         현금흐름표 조회
@@ -421,8 +428,7 @@ class StockDataProvider(ABC):
 
     @abstractmethod
     def search_symbols(
-        self,
-        keywords: str
+        self, keywords: str
     ) -> ProviderResponse[List[NormalizedSearchResult]]:
         """
         종목 검색
@@ -449,14 +455,11 @@ class StockDataProvider(ABC):
         return ProviderResponse.error_response(
             error="Sector performance not supported by this provider",
             provider=self.PROVIDER_NAME,
-            error_code="NOT_SUPPORTED"
+            error_code="NOT_SUPPORTED",
         )
 
     def get_technical_indicators(
-        self,
-        symbol: str,
-        indicator: str,
-        **kwargs
+        self, symbol: str, indicator: str, **kwargs
     ) -> ProviderResponse[Dict[str, Any]]:
         """
         기술적 지표 조회 (선택적 구현)
@@ -472,7 +475,7 @@ class StockDataProvider(ABC):
         return ProviderResponse.error_response(
             error=f"Technical indicator {indicator} not supported by this provider",
             provider=self.PROVIDER_NAME,
-            error_code="NOT_SUPPORTED"
+            error_code="NOT_SUPPORTED",
         )
 
     # ============================================================
@@ -499,7 +502,7 @@ class StockDataProvider(ABC):
             "provider": self.PROVIDER_NAME,
             "calls_per_minute": self.RATE_LIMIT_CALLS,
             "daily_limit": self.RATE_LIMIT_DAILY,
-            "request_delay": self.REQUEST_DELAY
+            "request_delay": self.REQUEST_DELAY,
         }
 
     def __repr__(self) -> str:

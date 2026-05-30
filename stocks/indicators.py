@@ -34,7 +34,7 @@ class TechnicalIndicators:
             if i < period - 1:
                 sma.append(None)
             else:
-                avg = sum(prices[i - period + 1:i + 1]) / period
+                avg = sum(prices[i - period + 1 : i + 1]) / period
                 sma.append(round(avg, 2))
 
         return sma
@@ -86,7 +86,7 @@ class TechnicalIndicators:
         # 가격 변화 계산
         price_changes = []
         for i in range(1, len(prices)):
-            price_changes.append(prices[i] - prices[i-1])
+            price_changes.append(prices[i] - prices[i - 1])
 
         # 상승과 하락 분리
         gains = [change if change > 0 else 0 for change in price_changes]
@@ -114,10 +114,12 @@ class TechnicalIndicators:
         return rsi
 
     @staticmethod
-    def calculate_macd(prices: List[float],
-                      fast_period: int = 12,
-                      slow_period: int = 26,
-                      signal_period: int = 9) -> Dict[str, List[Optional[float]]]:
+    def calculate_macd(
+        prices: List[float],
+        fast_period: int = 12,
+        slow_period: int = 26,
+        signal_period: int = 9,
+    ) -> Dict[str, List[Optional[float]]]:
         """
         MACD (Moving Average Convergence Divergence) 계산
 
@@ -132,9 +134,9 @@ class TechnicalIndicators:
         """
         if len(prices) < slow_period:
             return {
-                'macd': [None] * len(prices),
-                'signal': [None] * len(prices),
-                'histogram': [None] * len(prices)
+                "macd": [None] * len(prices),
+                "signal": [None] * len(prices),
+                "histogram": [None] * len(prices),
             }
 
         # EMA 계산
@@ -177,16 +179,12 @@ class TechnicalIndicators:
             else:
                 histogram.append(None)
 
-        return {
-            'macd': macd_line,
-            'signal': signal_line,
-            'histogram': histogram
-        }
+        return {"macd": macd_line, "signal": signal_line, "histogram": histogram}
 
     @staticmethod
-    def calculate_bollinger_bands(prices: List[float],
-                                 period: int = 20,
-                                 std_dev: float = 2) -> Dict[str, List[Optional[float]]]:
+    def calculate_bollinger_bands(
+        prices: List[float], period: int = 20, std_dev: float = 2
+    ) -> Dict[str, List[Optional[float]]]:
         """
         볼린저 밴드 (Bollinger Bands) 계산
 
@@ -200,11 +198,11 @@ class TechnicalIndicators:
         """
         if len(prices) < period:
             return {
-                'upper': [None] * len(prices),
-                'middle': [None] * len(prices),
-                'lower': [None] * len(prices),
-                'bandwidth': [None] * len(prices),
-                'percent_b': [None] * len(prices)
+                "upper": [None] * len(prices),
+                "middle": [None] * len(prices),
+                "lower": [None] * len(prices),
+                "bandwidth": [None] * len(prices),
+                "percent_b": [None] * len(prices),
             }
 
         # 중간 밴드 (SMA) 계산
@@ -223,7 +221,7 @@ class TechnicalIndicators:
                 percent_b.append(None)
             else:
                 # 표준편차 계산
-                window_prices = prices[i - period + 1:i + 1]
+                window_prices = prices[i - period + 1 : i + 1]
                 std = np.std(window_prices)
 
                 # 밴드 계산
@@ -248,20 +246,22 @@ class TechnicalIndicators:
                     percent_b.append(None)
 
         return {
-            'upper': upper_band,
-            'middle': middle_band,
-            'lower': lower_band,
-            'bandwidth': bandwidth,
-            'percent_b': percent_b
+            "upper": upper_band,
+            "middle": middle_band,
+            "lower": lower_band,
+            "bandwidth": bandwidth,
+            "percent_b": percent_b,
         }
 
     @staticmethod
-    def calculate_stochastic(high_prices: List[float],
-                           low_prices: List[float],
-                           close_prices: List[float],
-                           period: int = 14,
-                           smooth_k: int = 3,
-                           smooth_d: int = 3) -> Dict[str, List[Optional[float]]]:
+    def calculate_stochastic(
+        high_prices: List[float],
+        low_prices: List[float],
+        close_prices: List[float],
+        period: int = 14,
+        smooth_k: int = 3,
+        smooth_d: int = 3,
+    ) -> Dict[str, List[Optional[float]]]:
         """
         스토캐스틱 오실레이터 (Stochastic Oscillator) 계산
 
@@ -278,8 +278,8 @@ class TechnicalIndicators:
         """
         if len(close_prices) < period:
             return {
-                'percent_k': [None] * len(close_prices),
-                'percent_d': [None] * len(close_prices)
+                "percent_k": [None] * len(close_prices),
+                "percent_d": [None] * len(close_prices),
             }
 
         raw_k = []
@@ -289,8 +289,8 @@ class TechnicalIndicators:
                 raw_k.append(None)
             else:
                 # 기간 내 최고가와 최저가
-                highest = max(high_prices[i - period + 1:i + 1])
-                lowest = min(low_prices[i - period + 1:i + 1])
+                highest = max(high_prices[i - period + 1 : i + 1])
+                lowest = min(low_prices[i - period + 1 : i + 1])
 
                 if highest != lowest:
                     k = ((close_prices[i] - lowest) / (highest - lowest)) * 100
@@ -300,15 +300,11 @@ class TechnicalIndicators:
 
         # %K 평활화 (SMA)
         percent_k = TechnicalIndicators.calculate_sma(
-            [k for k in raw_k if k is not None],
-            smooth_k
+            [k for k in raw_k if k is not None], smooth_k
         )
 
         # %D 계산 (%K의 SMA)
-        percent_d = TechnicalIndicators.calculate_sma(
-            percent_k,
-            smooth_d
-        )
+        percent_d = TechnicalIndicators.calculate_sma(percent_k, smooth_d)
 
         # 전체 길이에 맞게 조정
         final_k = []
@@ -333,16 +329,15 @@ class TechnicalIndicators:
                 else:
                     final_d.append(None)
 
-        return {
-            'percent_k': final_k,
-            'percent_d': final_d
-        }
+        return {"percent_k": final_k, "percent_d": final_d}
 
     @staticmethod
-    def calculate_atr(high_prices: List[float],
-                     low_prices: List[float],
-                     close_prices: List[float],
-                     period: int = 14) -> List[Optional[float]]:
+    def calculate_atr(
+        high_prices: List[float],
+        low_prices: List[float],
+        close_prices: List[float],
+        period: int = 14,
+    ) -> List[Optional[float]]:
         """
         평균 진폭 지표 (Average True Range) 계산
 
@@ -363,8 +358,8 @@ class TechnicalIndicators:
         for i in range(1, len(close_prices)):
             # True Range 계산
             high_low = high_prices[i] - low_prices[i]
-            high_close = abs(high_prices[i] - close_prices[i-1])
-            low_close = abs(low_prices[i] - close_prices[i-1])
+            high_close = abs(high_prices[i] - close_prices[i - 1])
+            low_close = abs(low_prices[i] - close_prices[i - 1])
 
             true_range = max(high_low, high_close, low_close)
             true_ranges.append(true_range)
@@ -405,10 +400,10 @@ class TechnicalIndicators:
         obv = [volumes[0]]
 
         for i in range(1, len(close_prices)):
-            if close_prices[i] > close_prices[i-1]:
+            if close_prices[i] > close_prices[i - 1]:
                 # 가격 상승: OBV에 거래량 추가
                 obv.append(obv[-1] + volumes[i])
-            elif close_prices[i] < close_prices[i-1]:
+            elif close_prices[i] < close_prices[i - 1]:
                 # 가격 하락: OBV에서 거래량 차감
                 obv.append(obv[-1] - volumes[i])
             else:
@@ -418,9 +413,9 @@ class TechnicalIndicators:
         return obv
 
     @staticmethod
-    def identify_support_resistance(prices: List[float],
-                                   window: int = 20,
-                                   num_levels: int = 5) -> Dict[str, List[float]]:
+    def identify_support_resistance(
+        prices: List[float], window: int = 20, num_levels: int = 5
+    ) -> Dict[str, List[float]]:
         """
         지지선과 저항선 식별
 
@@ -433,14 +428,14 @@ class TechnicalIndicators:
             지지선과 저항선 레벨
         """
         if len(prices) < window * 2:
-            return {'support': [], 'resistance': []}
+            return {"support": [], "resistance": []}
 
         # 로컬 최대값과 최소값 찾기
         highs = []
         lows = []
 
         for i in range(window, len(prices) - window):
-            window_slice = prices[i - window:i + window + 1]
+            window_slice = prices[i - window : i + window + 1]
 
             if prices[i] == max(window_slice):
                 highs.append(prices[i])
@@ -465,7 +460,10 @@ class TechnicalIndicators:
             clustered = [sum(cluster) / len(cluster) for cluster in clusters]
 
             # 빈도순으로 정렬
-            clustered.sort(key=lambda x: sum(1 for l in levels if abs(l - x) / x < threshold), reverse=True)
+            clustered.sort(
+                key=lambda x: sum(1 for l in levels if abs(l - x) / x < threshold),
+                reverse=True,
+            )
 
             return clustered[:num_levels]
 
@@ -473,8 +471,8 @@ class TechnicalIndicators:
         resistance_levels = cluster_levels(highs)
 
         return {
-            'support': sorted(support_levels),
-            'resistance': sorted(resistance_levels, reverse=True)
+            "support": sorted(support_levels),
+            "resistance": sorted(resistance_levels, reverse=True),
         }
 
     @staticmethod
@@ -489,22 +487,22 @@ class TechnicalIndicators:
             모든 기술적 지표를 포함한 딕셔너리
         """
         # Decimal 타입을 float으로 변환
-        close_prices = [float(x) for x in stock_data['close'].tolist()]
-        high_prices = [float(x) for x in stock_data['high'].tolist()]
-        low_prices = [float(x) for x in stock_data['low'].tolist()]
-        volumes = [float(x) for x in stock_data['volume'].tolist()]
+        close_prices = [float(x) for x in stock_data["close"].tolist()]
+        high_prices = [float(x) for x in stock_data["high"].tolist()]
+        low_prices = [float(x) for x in stock_data["low"].tolist()]
+        volumes = [float(x) for x in stock_data["volume"].tolist()]
 
         indicators = {}
 
         # 이동평균
-        indicators['sma_20'] = TechnicalIndicators.calculate_sma(close_prices, 20)
-        indicators['sma_50'] = TechnicalIndicators.calculate_sma(close_prices, 50)
-        indicators['sma_200'] = TechnicalIndicators.calculate_sma(close_prices, 200)
-        indicators['ema_12'] = TechnicalIndicators.calculate_ema(close_prices, 12)
-        indicators['ema_26'] = TechnicalIndicators.calculate_ema(close_prices, 26)
+        indicators["sma_20"] = TechnicalIndicators.calculate_sma(close_prices, 20)
+        indicators["sma_50"] = TechnicalIndicators.calculate_sma(close_prices, 50)
+        indicators["sma_200"] = TechnicalIndicators.calculate_sma(close_prices, 200)
+        indicators["ema_12"] = TechnicalIndicators.calculate_ema(close_prices, 12)
+        indicators["ema_26"] = TechnicalIndicators.calculate_ema(close_prices, 26)
 
         # RSI
-        indicators['rsi'] = TechnicalIndicators.calculate_rsi(close_prices)
+        indicators["rsi"] = TechnicalIndicators.calculate_rsi(close_prices)
 
         # MACD
         macd_result = TechnicalIndicators.calculate_macd(close_prices)
@@ -512,31 +510,33 @@ class TechnicalIndicators:
 
         # 볼린저 밴드
         bb_result = TechnicalIndicators.calculate_bollinger_bands(close_prices)
-        indicators['bb_upper'] = bb_result['upper']
-        indicators['bb_middle'] = bb_result['middle']
-        indicators['bb_lower'] = bb_result['lower']
-        indicators['bb_bandwidth'] = bb_result['bandwidth']
-        indicators['bb_percent_b'] = bb_result['percent_b']
+        indicators["bb_upper"] = bb_result["upper"]
+        indicators["bb_middle"] = bb_result["middle"]
+        indicators["bb_lower"] = bb_result["lower"]
+        indicators["bb_bandwidth"] = bb_result["bandwidth"]
+        indicators["bb_percent_b"] = bb_result["percent_b"]
 
         # 스토캐스틱
         stoch_result = TechnicalIndicators.calculate_stochastic(
             high_prices, low_prices, close_prices
         )
-        indicators['stoch_k'] = stoch_result['percent_k']
-        indicators['stoch_d'] = stoch_result['percent_d']
+        indicators["stoch_k"] = stoch_result["percent_k"]
+        indicators["stoch_d"] = stoch_result["percent_d"]
 
         # ATR
-        indicators['atr'] = TechnicalIndicators.calculate_atr(
+        indicators["atr"] = TechnicalIndicators.calculate_atr(
             high_prices, low_prices, close_prices
         )
 
         # OBV
-        indicators['obv'] = TechnicalIndicators.calculate_obv(volumes, close_prices)
+        indicators["obv"] = TechnicalIndicators.calculate_obv(volumes, close_prices)
 
         # 지지/저항선
-        support_resistance = TechnicalIndicators.identify_support_resistance(close_prices)
-        indicators['support_levels'] = support_resistance['support']
-        indicators['resistance_levels'] = support_resistance['resistance']
+        support_resistance = TechnicalIndicators.identify_support_resistance(
+            close_prices
+        )
+        indicators["support_levels"] = support_resistance["support"]
+        indicators["resistance_levels"] = support_resistance["resistance"]
 
         return indicators
 
@@ -556,17 +556,19 @@ class IndicatorSignals:
             'buy' (과매도), 'sell' (과매수), 'neutral' (중립)
         """
         if rsi is None:
-            return 'neutral'
+            return "neutral"
 
         if rsi < 30:
-            return 'buy'  # 과매도
+            return "buy"  # 과매도
         elif rsi > 70:
-            return 'sell'  # 과매수
+            return "sell"  # 과매수
         else:
-            return 'neutral'
+            return "neutral"
 
     @staticmethod
-    def get_macd_signal(macd: float, signal: float, prev_macd: float, prev_signal: float) -> str:
+    def get_macd_signal(
+        macd: float, signal: float, prev_macd: float, prev_signal: float
+    ) -> str:
         """
         MACD 기반 매매 신호
 
@@ -580,19 +582,21 @@ class IndicatorSignals:
             'buy' (골든크로스), 'sell' (데드크로스), 'neutral' (중립)
         """
         if None in [macd, signal, prev_macd, prev_signal]:
-            return 'neutral'
+            return "neutral"
 
         # 골든 크로스: MACD가 Signal을 상향 돌파
         if prev_macd <= prev_signal and macd > signal:
-            return 'buy'
+            return "buy"
         # 데드 크로스: MACD가 Signal을 하향 돌파
         elif prev_macd >= prev_signal and macd < signal:
-            return 'sell'
+            return "sell"
         else:
-            return 'neutral'
+            return "neutral"
 
     @staticmethod
-    def get_bollinger_signal(price: float, upper: float, lower: float, middle: float) -> str:
+    def get_bollinger_signal(
+        price: float, upper: float, lower: float, middle: float
+    ) -> str:
         """
         볼린저 밴드 기반 매매 신호
 
@@ -606,14 +610,14 @@ class IndicatorSignals:
             'buy' (하단 터치), 'sell' (상단 터치), 'neutral' (중립)
         """
         if None in [price, upper, lower, middle]:
-            return 'neutral'
+            return "neutral"
 
         if price <= lower:
-            return 'buy'  # 하단 밴드 터치
+            return "buy"  # 하단 밴드 터치
         elif price >= upper:
-            return 'sell'  # 상단 밴드 터치
+            return "sell"  # 상단 밴드 터치
         else:
-            return 'neutral'
+            return "neutral"
 
     @staticmethod
     def get_stochastic_signal(k: float, d: float) -> str:
@@ -628,14 +632,14 @@ class IndicatorSignals:
             'buy' (과매도), 'sell' (과매수), 'neutral' (중립)
         """
         if None in [k, d]:
-            return 'neutral'
+            return "neutral"
 
         if k < 20 and d < 20:
-            return 'buy'  # 과매도
+            return "buy"  # 과매도
         elif k > 80 and d > 80:
-            return 'sell'  # 과매수
+            return "sell"  # 과매수
         else:
-            return 'neutral'
+            return "neutral"
 
     @staticmethod
     def get_composite_signal(indicators: Dict) -> Dict[str, any]:
@@ -651,49 +655,51 @@ class IndicatorSignals:
         signals = {}
 
         # RSI 신호
-        if 'rsi' in indicators and indicators['rsi']:
-            signals['rsi'] = IndicatorSignals.get_rsi_signal(indicators['rsi'][-1])
+        if "rsi" in indicators and indicators["rsi"]:
+            signals["rsi"] = IndicatorSignals.get_rsi_signal(indicators["rsi"][-1])
 
         # MACD 신호
-        if all(k in indicators for k in ['macd', 'signal']) and len(indicators['macd']) >= 2:
-            signals['macd'] = IndicatorSignals.get_macd_signal(
-                indicators['macd'][-1],
-                indicators['signal'][-1],
-                indicators['macd'][-2],
-                indicators['signal'][-2]
+        if (
+            all(k in indicators for k in ["macd", "signal"])
+            and len(indicators["macd"]) >= 2
+        ):
+            signals["macd"] = IndicatorSignals.get_macd_signal(
+                indicators["macd"][-1],
+                indicators["signal"][-1],
+                indicators["macd"][-2],
+                indicators["signal"][-2],
             )
 
         # 볼린저 밴드 신호
-        if all(k in indicators for k in ['price', 'bb_upper', 'bb_lower', 'bb_middle']):
-            signals['bollinger'] = IndicatorSignals.get_bollinger_signal(
-                indicators['price'],
-                indicators['bb_upper'][-1],
-                indicators['bb_lower'][-1],
-                indicators['bb_middle'][-1]
+        if all(k in indicators for k in ["price", "bb_upper", "bb_lower", "bb_middle"]):
+            signals["bollinger"] = IndicatorSignals.get_bollinger_signal(
+                indicators["price"],
+                indicators["bb_upper"][-1],
+                indicators["bb_lower"][-1],
+                indicators["bb_middle"][-1],
             )
 
         # 스토캐스틱 신호
-        if all(k in indicators for k in ['stoch_k', 'stoch_d']):
-            signals['stochastic'] = IndicatorSignals.get_stochastic_signal(
-                indicators['stoch_k'][-1],
-                indicators['stoch_d'][-1]
+        if all(k in indicators for k in ["stoch_k", "stoch_d"]):
+            signals["stochastic"] = IndicatorSignals.get_stochastic_signal(
+                indicators["stoch_k"][-1], indicators["stoch_d"][-1]
             )
 
         # 종합 신호 계산
-        buy_count = sum(1 for s in signals.values() if s == 'buy')
-        sell_count = sum(1 for s in signals.values() if s == 'sell')
+        buy_count = sum(1 for s in signals.values() if s == "buy")
+        sell_count = sum(1 for s in signals.values() if s == "sell")
 
         if buy_count > sell_count and buy_count >= 2:
-            composite = 'strong_buy' if buy_count >= 3 else 'buy'
+            composite = "strong_buy" if buy_count >= 3 else "buy"
         elif sell_count > buy_count and sell_count >= 2:
-            composite = 'strong_sell' if sell_count >= 3 else 'sell'
+            composite = "strong_sell" if sell_count >= 3 else "sell"
         else:
-            composite = 'neutral'
+            composite = "neutral"
 
         return {
-            'composite_signal': composite,
-            'individual_signals': signals,
-            'buy_count': buy_count,
-            'sell_count': sell_count,
-            'timestamp': datetime.now().isoformat()
+            "composite_signal": composite,
+            "individual_signals": signals,
+            "buy_count": buy_count,
+            "sell_count": sell_count,
+            "timestamp": datetime.now().isoformat(),
         }

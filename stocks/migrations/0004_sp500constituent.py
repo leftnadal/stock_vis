@@ -4,31 +4,52 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0003_alter_cashflowstatement_proceeds_from_issuance_of_long_term_debt_and_capital_securities_net'),
+        (
+            "stocks",
+            "0003_alter_cashflowstatement_proceeds_from_issuance_of_long_term_debt_and_capital_securities_net",
+        ),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SP500Constituent',
+            name="SP500Constituent",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('symbol', models.CharField(db_index=True, max_length=10, unique=True)),
-                ('company_name', models.CharField(max_length=255)),
-                ('sector', models.CharField(db_index=True, max_length=100)),
-                ('sub_sector', models.CharField(blank=True, default='', max_length=100)),
-                ('head_quarter', models.CharField(blank=True, default='', max_length=200)),
-                ('date_added', models.DateField(blank=True, null=True)),
-                ('cik', models.CharField(blank=True, default='', max_length=20)),
-                ('founded', models.CharField(blank=True, default='', max_length=20)),
-                ('is_active', models.BooleanField(db_index=True, default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("symbol", models.CharField(db_index=True, max_length=10, unique=True)),
+                ("company_name", models.CharField(max_length=255)),
+                ("sector", models.CharField(db_index=True, max_length=100)),
+                (
+                    "sub_sector",
+                    models.CharField(blank=True, default="", max_length=100),
+                ),
+                (
+                    "head_quarter",
+                    models.CharField(blank=True, default="", max_length=200),
+                ),
+                ("date_added", models.DateField(blank=True, null=True)),
+                ("cik", models.CharField(blank=True, default="", max_length=20)),
+                ("founded", models.CharField(blank=True, default="", max_length=20)),
+                ("is_active", models.BooleanField(db_index=True, default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'stocks_sp500_constituent',
-                'indexes': [models.Index(fields=['is_active', 'symbol'], name='stocks_sp50_is_acti_ea64cb_idx')],
+                "db_table": "stocks_sp500_constituent",
+                "indexes": [
+                    models.Index(
+                        fields=["is_active", "symbol"],
+                        name="stocks_sp50_is_acti_ea64cb_idx",
+                    )
+                ],
             },
         ),
     ]

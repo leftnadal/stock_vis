@@ -9,6 +9,7 @@ Financial Modeling Prep API를 사용하여 기업의 핵심 재무 데이터를
 
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
+
 import httpx
 from django.conf import settings
 from django.core.cache import cache
@@ -29,7 +30,9 @@ class FMPFundamentalsService:
         if not self.api_key:
             logger.warning("FMP_API_KEY가 설정되지 않았습니다.")
 
-    def get_key_metrics(self, symbol: str, period: str = 'annual', limit: int = 5) -> list[dict]:
+    def get_key_metrics(
+        self, symbol: str, period: str = "annual", limit: int = 5
+    ) -> list[dict]:
         """
         핵심 재무 지표 조회
 
@@ -63,15 +66,17 @@ class FMPFundamentalsService:
                         "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
-                        "limit": limit
-                    }
+                        "limit": limit,
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
 
             # 데이터 검증
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: /stable/key-metrics?symbol={symbol}")
+                logger.error(
+                    f"FMP API 응답 형식 오류: /stable/key-metrics?symbol={symbol}"
+                )
                 return []
 
             # 캐시 저장
@@ -81,7 +86,9 @@ class FMPFundamentalsService:
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (key-metrics/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (key-metrics/{symbol}): {e.response.status_code}"
+            )
             return []
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (key-metrics/{symbol})")
@@ -90,7 +97,9 @@ class FMPFundamentalsService:
             logger.error(f"FMP API 오류 (key-metrics/{symbol}): {e}")
             return []
 
-    def get_ratios(self, symbol: str, period: str = 'annual', limit: int = 5) -> list[dict]:
+    def get_ratios(
+        self, symbol: str, period: str = "annual", limit: int = 5
+    ) -> list[dict]:
         """
         재무 비율 조회
 
@@ -124,8 +133,8 @@ class FMPFundamentalsService:
                         "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
-                        "limit": limit
-                    }
+                        "limit": limit,
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -142,7 +151,9 @@ class FMPFundamentalsService:
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (ratios/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (ratios/{symbol}): {e.response.status_code}"
+            )
             return []
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (ratios/{symbol})")
@@ -179,7 +190,7 @@ class FMPFundamentalsService:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
                     f"{self.BASE_URL}/stable/discounted-cash-flow",
-                    params={"symbol": symbol, "apikey": self.api_key}
+                    params={"symbol": symbol, "apikey": self.api_key},
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -188,7 +199,9 @@ class FMPFundamentalsService:
             if isinstance(data, list) and len(data) > 0:
                 data = data[0]
             elif not isinstance(data, dict):
-                logger.error(f"FMP API 응답 형식 오류: /stable/discounted-cash-flow?symbol={symbol}")
+                logger.error(
+                    f"FMP API 응답 형식 오류: /stable/discounted-cash-flow?symbol={symbol}"
+                )
                 return None
 
             # 캐시 저장
@@ -235,7 +248,7 @@ class FMPFundamentalsService:
             with httpx.Client(timeout=10.0) as client:
                 response = client.get(
                     f"{self.BASE_URL}/stable/rating",
-                    params={"symbol": symbol, "apikey": self.api_key}
+                    params={"symbol": symbol, "apikey": self.api_key},
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -254,7 +267,9 @@ class FMPFundamentalsService:
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (rating/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (rating/{symbol}): {e.response.status_code}"
+            )
             return None
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (rating/{symbol})")
@@ -263,7 +278,9 @@ class FMPFundamentalsService:
             logger.error(f"FMP API 오류 (rating/{symbol}): {e}")
             return None
 
-    def get_balance_sheet(self, symbol: str, period: str = 'annual', limit: int = 5) -> list[dict]:
+    def get_balance_sheet(
+        self, symbol: str, period: str = "annual", limit: int = 5
+    ) -> list[dict]:
         """
         대차대조표 조회
 
@@ -295,23 +312,29 @@ class FMPFundamentalsService:
                         "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
-                        "limit": limit
-                    }
+                        "limit": limit,
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: /stable/balance-sheet-statement?symbol={symbol}")
+                logger.error(
+                    f"FMP API 응답 형식 오류: /stable/balance-sheet-statement?symbol={symbol}"
+                )
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)
-            logger.info(f"FMP API 호출 성공: balance-sheet-statement/{symbol}, {len(data)}개 기간")
+            logger.info(
+                f"FMP API 호출 성공: balance-sheet-statement/{symbol}, {len(data)}개 기간"
+            )
 
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (balance-sheet-statement/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (balance-sheet-statement/{symbol}): {e.response.status_code}"
+            )
             return []
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (balance-sheet-statement/{symbol})")
@@ -320,7 +343,9 @@ class FMPFundamentalsService:
             logger.error(f"FMP API 오류 (balance-sheet-statement/{symbol}): {e}")
             return []
 
-    def get_income_statement(self, symbol: str, period: str = 'annual', limit: int = 5) -> list[dict]:
+    def get_income_statement(
+        self, symbol: str, period: str = "annual", limit: int = 5
+    ) -> list[dict]:
         """
         손익계산서 조회
 
@@ -352,23 +377,29 @@ class FMPFundamentalsService:
                         "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
-                        "limit": limit
-                    }
+                        "limit": limit,
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: /stable/income-statement?symbol={symbol}")
+                logger.error(
+                    f"FMP API 응답 형식 오류: /stable/income-statement?symbol={symbol}"
+                )
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)
-            logger.info(f"FMP API 호출 성공: income-statement/{symbol}, {len(data)}개 기간")
+            logger.info(
+                f"FMP API 호출 성공: income-statement/{symbol}, {len(data)}개 기간"
+            )
 
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (income-statement/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (income-statement/{symbol}): {e.response.status_code}"
+            )
             return []
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (income-statement/{symbol})")
@@ -377,7 +408,9 @@ class FMPFundamentalsService:
             logger.error(f"FMP API 오류 (income-statement/{symbol}): {e}")
             return []
 
-    def get_cash_flow_statement(self, symbol: str, period: str = 'annual', limit: int = 5) -> list[dict]:
+    def get_cash_flow_statement(
+        self, symbol: str, period: str = "annual", limit: int = 5
+    ) -> list[dict]:
         """
         현금흐름표 조회
 
@@ -409,23 +442,29 @@ class FMPFundamentalsService:
                         "symbol": symbol,
                         "apikey": self.api_key,
                         "period": period,
-                        "limit": limit
-                    }
+                        "limit": limit,
+                    },
                 )
                 response.raise_for_status()
                 data = response.json()
 
             if not isinstance(data, list):
-                logger.error(f"FMP API 응답 형식 오류: /stable/cash-flow-statement?symbol={symbol}")
+                logger.error(
+                    f"FMP API 응답 형식 오류: /stable/cash-flow-statement?symbol={symbol}"
+                )
                 return []
 
             cache.set(cache_key, data, self.CACHE_TTL)
-            logger.info(f"FMP API 호출 성공: cash-flow-statement/{symbol}, {len(data)}개 기간")
+            logger.info(
+                f"FMP API 호출 성공: cash-flow-statement/{symbol}, {len(data)}개 기간"
+            )
 
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (cash-flow-statement/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (cash-flow-statement/{symbol}): {e.response.status_code}"
+            )
             return []
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (cash-flow-statement/{symbol})")
@@ -434,7 +473,7 @@ class FMPFundamentalsService:
             logger.error(f"FMP API 오류 (cash-flow-statement/{symbol}): {e}")
             return []
 
-    def get_all_fundamentals(self, symbol: str, period: str = 'annual') -> dict:
+    def get_all_fundamentals(self, symbol: str, period: str = "annual") -> dict:
         """
         전체 펀더멘털 데이터 조회 (한 번에)
 

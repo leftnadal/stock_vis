@@ -6,26 +6,46 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('users', '0006_watchlist_watchlistitem_and_more'),
+        ("users", "0006_watchlist_watchlistitem_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='UserInterest',
+            name="UserInterest",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('interest_type', models.CharField(choices=[('sector', 'Sector'), ('theme', 'Theme')], max_length=20)),
-                ('value', models.CharField(max_length=100)),
-                ('display_name', models.CharField(max_length=100)),
-                ('auto_category_id', models.IntegerField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='interests', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "interest_type",
+                    models.CharField(
+                        choices=[("sector", "Sector"), ("theme", "Theme")],
+                        max_length=20,
+                    ),
+                ),
+                ("value", models.CharField(max_length=100)),
+                ("display_name", models.CharField(max_length=100)),
+                ("auto_category_id", models.IntegerField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="interests",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'users_interest',
-                'unique_together': {('user', 'interest_type', 'value')},
+                "db_table": "users_interest",
+                "unique_together": {("user", "interest_type", "value")},
             },
         ),
     ]

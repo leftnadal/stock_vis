@@ -27,9 +27,8 @@ def get_business_model(symbol: str, for_api: bool = False) -> Optional[dict]:
     from sec_pipeline.models import BusinessModelSnapshot
 
     snapshot = (
-        BusinessModelSnapshot.objects
-        .filter(symbol_id=symbol.upper())
-        .order_by('-as_of_date')
+        BusinessModelSnapshot.objects.filter(symbol_id=symbol.upper())
+        .order_by("-as_of_date")
         .first()
     )
 
@@ -37,26 +36,25 @@ def get_business_model(symbol: str, for_api: bool = False) -> Optional[dict]:
         return None
 
     result = {
-        'symbol': symbol.upper(),
-        'as_of_date': str(snapshot.as_of_date),
-        'direct_customer_contact': snapshot.direct_customer_contact,
-        'contract_model': snapshot.contract_model,
-        'recurring_revenue_signal': snapshot.recurring_revenue_signal,
-        'channel_dependency': snapshot.channel_dependency,
-        'customer_concentration': snapshot.customer_concentration,
-        'confidence_grade': snapshot.confidence_grade,
-        'prompt_version': snapshot.prompt_version,
+        "symbol": symbol.upper(),
+        "as_of_date": str(snapshot.as_of_date),
+        "direct_customer_contact": snapshot.direct_customer_contact,
+        "contract_model": snapshot.contract_model,
+        "recurring_revenue_signal": snapshot.recurring_revenue_signal,
+        "channel_dependency": snapshot.channel_dependency,
+        "customer_concentration": snapshot.customer_concentration,
+        "confidence_grade": snapshot.confidence_grade,
+        "prompt_version": snapshot.prompt_version,
     }
 
     if not for_api:
         # 내부용: 숫자 포함
-        result['overall_confidence'] = float(snapshot.overall_confidence)
+        result["overall_confidence"] = float(snapshot.overall_confidence)
 
     return result
 
 
-def get_business_model_evidence(symbol: str,
-                                field_name: str = None) -> list:
+def get_business_model_evidence(symbol: str, field_name: str = None) -> list:
     """
     Business Model 근거 문장 조회.
 
@@ -70,9 +68,8 @@ def get_business_model_evidence(symbol: str,
     from sec_pipeline.models import BusinessModelSnapshot, BusinessModelEvidence
 
     snapshot = (
-        BusinessModelSnapshot.objects
-        .filter(symbol_id=symbol.upper())
-        .order_by('-as_of_date')
+        BusinessModelSnapshot.objects.filter(symbol_id=symbol.upper())
+        .order_by("-as_of_date")
         .first()
     )
 
@@ -85,9 +82,9 @@ def get_business_model_evidence(symbol: str,
 
     return [
         {
-            'field_name': ev.field_name,
-            'evidence_text': ev.evidence_text,
-            'confidence': float(ev.confidence),
+            "field_name": ev.field_name,
+            "evidence_text": ev.evidence_text,
+            "confidence": float(ev.confidence),
         }
         for ev in qs
     ]
@@ -104,12 +101,12 @@ def is_recurring_business(symbol: str) -> Optional[bool]:
     if not bm:
         return None
 
-    contract = bm.get('contract_model', 'unknown')
-    recurring = bm.get('recurring_revenue_signal', 'unknown')
+    contract = bm.get("contract_model", "unknown")
+    recurring = bm.get("recurring_revenue_signal", "unknown")
 
-    if contract == 'subscription' or recurring == 'high':
+    if contract == "subscription" or recurring == "high":
         return True
-    elif contract == 'one_time' and recurring == 'low':
+    elif contract == "one_time" and recurring == "low":
         return False
 
     return None

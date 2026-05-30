@@ -19,24 +19,19 @@ logger = logging.getLogger(__name__)
 
 # 캐시 TTL 설정 (초)
 CACHE_TTL = {
-    "quote": 300,          # 5분 - 실시간 시세
-    "profile": 86400,      # 24시간 - 회사 프로필
+    "quote": 300,  # 5분 - 실시간 시세
+    "profile": 86400,  # 24시간 - 회사 프로필
     "daily_prices": 3600,  # 1시간 - 일별 가격
-    "weekly_prices": 3600, # 1시간 - 주별 가격
-    "balance_sheet": 604800,     # 7일 - 대차대조표
+    "weekly_prices": 3600,  # 1시간 - 주별 가격
+    "balance_sheet": 604800,  # 7일 - 대차대조표
     "income_statement": 604800,  # 7일 - 손익계산서
-    "cash_flow": 604800,         # 7일 - 현금흐름표
-    "search": 1800,        # 30분 - 검색 결과
-    "sector": 3600,        # 1시간 - 섹터 성과
+    "cash_flow": 604800,  # 7일 - 현금흐름표
+    "search": 1800,  # 30분 - 검색 결과
+    "sector": 3600,  # 1시간 - 섹터 성과
 }
 
 
-def generate_cache_key(
-    provider: str,
-    method: str,
-    *args,
-    **kwargs
-) -> str:
+def generate_cache_key(provider: str, method: str, *args, **kwargs) -> str:
     """
     캐시 키 생성
 
@@ -53,13 +48,13 @@ def generate_cache_key(
     key_parts = [provider, method]
 
     for arg in args:
-        if hasattr(arg, 'value'):  # Enum 처리
+        if hasattr(arg, "value"):  # Enum 처리
             key_parts.append(str(arg.value))
         else:
             key_parts.append(str(arg))
 
     for k, v in sorted(kwargs.items()):
-        if hasattr(v, 'value'):
+        if hasattr(v, "value"):
             key_parts.append(f"{k}={v.value}")
         else:
             key_parts.append(f"{k}={v}")
@@ -71,10 +66,7 @@ def generate_cache_key(
     return f"stock_provider:{provider}:{method}:{key_hash}"
 
 
-def cached_provider_call(
-    cache_type: str,
-    timeout: Optional[int] = None
-) -> Callable:
+def cached_provider_call(cache_type: str, timeout: Optional[int] = None) -> Callable:
     """
     Provider 메서드 캐싱 데코레이터
 
@@ -87,16 +79,14 @@ def cached_provider_call(
         def get_quote(self, symbol: str) -> ProviderResponse:
             ...
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(self, *args, **kwargs) -> Any:
             # 캐시 키 생성
-            provider_name = getattr(self, 'PROVIDER_NAME', 'unknown')
+            provider_name = getattr(self, "PROVIDER_NAME", "unknown")
             cache_key = generate_cache_key(
-                provider_name,
-                func.__name__,
-                *args,
-                **kwargs
+                provider_name, func.__name__, *args, **kwargs
             )
 
             # 캐시 조회
@@ -105,7 +95,7 @@ def cached_provider_call(
                 logger.debug(f"Cache hit: {cache_key}")
 
                 # ProviderResponse인 경우 cached 플래그 설정
-                if hasattr(cached_result, 'cached'):
+                if hasattr(cached_result, "cached"):
                     cached_result.cached = True
 
                 return cached_result
@@ -115,7 +105,7 @@ def cached_provider_call(
             result = func(self, *args, **kwargs)
 
             # 성공 응답만 캐시
-            if hasattr(result, 'success') and result.success:
+            if hasattr(result, "success") and result.success:
                 ttl = timeout or CACHE_TTL.get(cache_type, 3600)
                 cache.set(cache_key, result, ttl)
                 logger.debug(f"Cached: {cache_key} (TTL: {ttl}s)")
@@ -123,15 +113,11 @@ def cached_provider_call(
             return result
 
         return wrapper
+
     return decorator
 
 
-def invalidate_cache(
-    provider: str,
-    method: str,
-    *args,
-    **kwargs
-) -> bool:
+def invalidate_cache(provider: str, method: str, *args, **kwargs) -> bool:
     """
     특정 캐시 무효화
 
@@ -168,6 +154,7 @@ def invalidate_provider_cache(provider: str) -> int:
     # Redis 사용 시 아래 코드 활성화
     try:
         from django_redis import get_redis_connection
+
         redis_conn = get_redis_connection("default")
         pattern = f"stock_provider:{provider}:*"
         keys = redis_conn.keys(pattern)
@@ -195,6 +182,7 @@ def invalidate_symbol_cache(symbol: str) -> int:
     """
     try:
         from django_redis import get_redis_connection
+
         redis_conn = get_redis_connection("default")
         pattern = f"stock_provider:*:*:{symbol.upper()}*"
         keys = redis_conn.keys(pattern)
@@ -235,7 +223,7 @@ class CacheStats:
             "misses": cls._misses,
             "total": total,
             "hit_rate_percent": round(hit_rate, 2),
-            "since": cls._last_reset.isoformat()
+            "since": cls._last_reset.isoformat(),
         }
 
     @classmethod

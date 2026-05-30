@@ -8,4 +8,4 @@ FMP API를 사용하여 StockDataProvider 인터페이스를 구현합니다.
 
 from .provider import FMPProvider
 
-__all__ = ['FMPProvider']
+__all__ = ["FMPProvider"]

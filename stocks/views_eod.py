@@ -26,13 +26,15 @@ class EODDashboardView(APIView):
     """
 
     def get(self, request):
-        target_date_str = request.query_params.get('date')
+        target_date_str = request.query_params.get("date")
         if target_date_str:
             try:
                 target_date = date.fromisoformat(target_date_str)
             except ValueError:
                 return Response(
-                    {'error': f'Invalid date format: {target_date_str}. Use YYYY-MM-DD.'},
+                    {
+                        "error": f"Invalid date format: {target_date_str}. Use YYYY-MM-DD."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
@@ -41,7 +43,7 @@ class EODDashboardView(APIView):
         snapshot = EODDashboardSnapshot.objects.filter(date=target_date).first()
         if not snapshot:
             return Response(
-                {'error': f'No snapshot for date: {target_date}'},
+                {"error": f"No snapshot for date: {target_date}"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -57,13 +59,15 @@ class EODSignalDetailView(APIView):
     """
 
     def get(self, request, signal_id: str):
-        target_date_str = request.query_params.get('date')
+        target_date_str = request.query_params.get("date")
         if target_date_str:
             try:
                 target_date = date.fromisoformat(target_date_str)
             except ValueError:
                 return Response(
-                    {'error': f'Invalid date format: {target_date_str}. Use YYYY-MM-DD.'},
+                    {
+                        "error": f"Invalid date format: {target_date_str}. Use YYYY-MM-DD."
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
@@ -72,39 +76,41 @@ class EODSignalDetailView(APIView):
         signals = (
             EODSignal.objects.filter(
                 date=target_date,
-                signals__contains=[{'id': signal_id}],
+                signals__contains=[{"id": signal_id}],
             )
-            .select_related('stock')
-            .order_by('-composite_score')[:50]
+            .select_related("stock")
+            .order_by("-composite_score")[:50]
         )
 
         data = [
             {
-                'symbol': s.stock_id,
-                'company_name': s.stock.stock_name or '',
-                'signals': s.signals,
-                'tag_details': s.tag_details,
-                'close_price': float(s.close_price),
-                'change_percent': s.change_percent,
-                'volume': s.volume,
-                'sector': s.sector,
-                'industry': s.industry,
-                'market_cap': s.market_cap,
-                'composite_score': s.composite_score,
-                'signal_count': s.signal_count,
-                'bullish_count': s.bullish_count,
-                'bearish_count': s.bearish_count,
-                'news_context': s.news_context,
+                "symbol": s.stock_id,
+                "company_name": s.stock.stock_name or "",
+                "signals": s.signals,
+                "tag_details": s.tag_details,
+                "close_price": float(s.close_price),
+                "change_percent": s.change_percent,
+                "volume": s.volume,
+                "sector": s.sector,
+                "industry": s.industry,
+                "market_cap": s.market_cap,
+                "composite_score": s.composite_score,
+                "signal_count": s.signal_count,
+                "bullish_count": s.bullish_count,
+                "bearish_count": s.bearish_count,
+                "news_context": s.news_context,
             }
             for s in signals
         ]
 
-        return Response({
-            'signal_id': signal_id,
-            'date': str(target_date),
-            'count': len(data),
-            'stocks': data,
-        })
+        return Response(
+            {
+                "signal_id": signal_id,
+                "date": str(target_date),
+                "count": len(data),
+                "stocks": data,
+            }
+        )
 
 
 class EODPipelineStatusView(APIView):
@@ -116,21 +122,23 @@ class EODPipelineStatusView(APIView):
     """
 
     def get(self, request):
-        logs = PipelineLog.objects.order_by('-date')[:7]
+        logs = PipelineLog.objects.order_by("-date")[:7]
 
         data = [
             {
-                'date': str(log.date),
-                'run_id': str(log.run_id),
-                'status': log.status,
-                'stages': log.stages,
-                'ingest_quality': log.ingest_quality,
-                'total_duration_seconds': log.total_duration_seconds,
-                'error_message': log.error_message,
-                'started_at': log.started_at.isoformat() if log.started_at else None,
-                'completed_at': log.completed_at.isoformat() if log.completed_at else None,
+                "date": str(log.date),
+                "run_id": str(log.run_id),
+                "status": log.status,
+                "stages": log.stages,
+                "ingest_quality": log.ingest_quality,
+                "total_duration_seconds": log.total_duration_seconds,
+                "error_message": log.error_message,
+                "started_at": log.started_at.isoformat() if log.started_at else None,
+                "completed_at": log.completed_at.isoformat()
+                if log.completed_at
+                else None,
             }
             for log in logs
         ]
 
-        return Response({'logs': data})
+        return Response({"logs": data})

@@ -4,15 +4,18 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0001_initial'),
+        ("stocks", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='stock',
-            name='last_api_call',
-            field=models.DateTimeField(blank=True, help_text='Last time Alpha Vantage API was called for this stock', null=True),
+            model_name="stock",
+            name="last_api_call",
+            field=models.DateTimeField(
+                blank=True,
+                help_text="Last time Alpha Vantage API was called for this stock",
+                null=True,
+            ),
         ),
     ]

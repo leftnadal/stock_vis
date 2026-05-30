@@ -7,6 +7,7 @@ Financial Modeling Prep API를 사용하여 조건별 종목 검색을 수행합
 
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
+
 import httpx
 import time
 from django.conf import settings
@@ -49,7 +50,7 @@ class FMPScreenerService:
         sector: Optional[str] = None,
         industry: Optional[str] = None,
         exchange: Optional[str] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> list[dict]:
         """
         조건별 종목 검색
@@ -148,9 +149,7 @@ class FMPScreenerService:
         return data if data is not None else []
 
     def _make_api_request_with_retry(
-        self,
-        params: dict,
-        cache_key: str
+        self, params: dict, cache_key: str
     ) -> Optional[list]:
         """
         Exponential Backoff을 적용한 API 요청
@@ -161,13 +160,16 @@ class FMPScreenerService:
             try:
                 with httpx.Client(timeout=15.0) as client:
                     response = client.get(
-                        f"{self.BASE_URL}/company-screener",
-                        params=params
+                        f"{self.BASE_URL}/company-screener", params=params
                     )
 
                     # 429 Rate Limit 처리
                     if response.status_code == 429:
-                        retry_after = int(response.headers.get('Retry-After', self.RETRY_BASE_DELAY * (2 ** attempt)))
+                        retry_after = int(
+                            response.headers.get(
+                                "Retry-After", self.RETRY_BASE_DELAY * (2**attempt)
+                            )
+                        )
                         logger.warning(
                             f"FMP Rate Limit 도달 (429), {retry_after}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES})"
                         )
@@ -199,23 +201,29 @@ class FMPScreenerService:
                 return data
 
             except httpx.HTTPStatusError as e:
-                logger.error(f"FMP API HTTP 오류 (company-screener): {e.response.status_code}")
+                logger.error(
+                    f"FMP API HTTP 오류 (company-screener): {e.response.status_code}"
+                )
 
                 # 5xx 서버 에러는 재시도
                 if e.response.status_code >= 500 and attempt < self.MAX_RETRIES - 1:
-                    delay = self.RETRY_BASE_DELAY * (2 ** attempt)
-                    logger.warning(f"서버 에러, {delay}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES})")
+                    delay = self.RETRY_BASE_DELAY * (2**attempt)
+                    logger.warning(
+                        f"서버 에러, {delay}초 후 재시도 ({attempt + 1}/{self.MAX_RETRIES})"
+                    )
                     time.sleep(delay)
                     continue
 
                 return None
 
             except httpx.TimeoutException:
-                logger.error(f"FMP API 타임아웃 (company-screener), 시도 {attempt + 1}/{self.MAX_RETRIES}")
+                logger.error(
+                    f"FMP API 타임아웃 (company-screener), 시도 {attempt + 1}/{self.MAX_RETRIES}"
+                )
 
                 # 타임아웃도 재시도
                 if attempt < self.MAX_RETRIES - 1:
-                    delay = self.RETRY_BASE_DELAY * (2 ** attempt)
+                    delay = self.RETRY_BASE_DELAY * (2**attempt)
                     time.sleep(delay)
                     continue
 
@@ -240,10 +248,12 @@ class FMPScreenerService:
         return self.screen_stocks(
             market_cap_more_than=10_000_000_000,  # $10B+
             is_actively_trading=True,
-            limit=limit
+            limit=limit,
         )
 
-    def get_high_dividend_stocks(self, min_dividend: float = 3.0, limit: int = 50) -> list[dict]:
+    def get_high_dividend_stocks(
+        self, min_dividend: float = 3.0, limit: int = 50
+    ) -> list[dict]:
         """
         고배당주 검색
 
@@ -255,9 +265,7 @@ class FMPScreenerService:
             고배당주 리스트
         """
         return self.screen_stocks(
-            dividend_more_than=min_dividend,
-            is_actively_trading=True,
-            limit=limit
+            dividend_more_than=min_dividend, is_actively_trading=True, limit=limit
         )
 
     def get_sector_stocks(self, sector: str, limit: int = 100) -> list[dict]:
@@ -271,11 +279,7 @@ class FMPScreenerService:
         Returns:
             해당 섹터 종목 리스트
         """
-        return self.screen_stocks(
-            sector=sector,
-            is_actively_trading=True,
-            limit=limit
-        )
+        return self.screen_stocks(sector=sector, is_actively_trading=True, limit=limit)
 
     def get_low_beta_stocks(self, max_beta: float = 0.8, limit: int = 50) -> list[dict]:
         """
@@ -289,9 +293,7 @@ class FMPScreenerService:
             저변동성 종목 리스트
         """
         return self.screen_stocks(
-            beta_lower_than=max_beta,
-            is_actively_trading=True,
-            limit=limit
+            beta_lower_than=max_beta, is_actively_trading=True, limit=limit
         )
 
     def get_exchange_stocks(self, exchange: str, limit: int = 100) -> list[dict]:
@@ -306,9 +308,7 @@ class FMPScreenerService:
             해당 거래소 종목 리스트
         """
         return self.screen_stocks(
-            exchange=exchange.upper(),
-            is_actively_trading=True,
-            limit=limit
+            exchange=exchange.upper(), is_actively_trading=True, limit=limit
         )
 
     def enrich_with_quotes(self, stocks: list[dict]) -> list[dict]:

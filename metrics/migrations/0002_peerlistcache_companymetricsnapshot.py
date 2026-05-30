@@ -6,48 +6,122 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('metrics', '0001_initial'),
-        ('stocks', '0006_stockoverviewko'),
+        ("metrics", "0001_initial"),
+        ("stocks", "0006_stockoverviewko"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='PeerListCache',
+            name="PeerListCache",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='peer_cache', serialize=False, to='stocks.stock')),
-                ('peer_symbols', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=10), blank=True, default=list, help_text='["MSFT", "GOOGL", "META"]', size=None)),
-                ('peer_count', models.IntegerField(default=0)),
-                ('use_industry_fallback', models.BooleanField(default=False)),
-                ('fallback_reason', models.CharField(blank=True, max_length=200)),
-                ('source', models.CharField(default='fmp_peers', max_length=20)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="peer_cache",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                (
+                    "peer_symbols",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.CharField(max_length=10),
+                        blank=True,
+                        default=list,
+                        help_text='["MSFT", "GOOGL", "META"]',
+                        size=None,
+                    ),
+                ),
+                ("peer_count", models.IntegerField(default=0)),
+                ("use_industry_fallback", models.BooleanField(default=False)),
+                ("fallback_reason", models.CharField(blank=True, max_length=200)),
+                ("source", models.CharField(default="fmp_peers", max_length=20)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'db_table': 'metrics_peer_list_cache',
+                "db_table": "metrics_peer_list_cache",
             },
         ),
         migrations.CreateModel(
-            name='CompanyMetricSnapshot',
+            name="CompanyMetricSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('fiscal_year', models.IntegerField(db_index=True)),
-                ('metric_value', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('is_fallback_used', models.BooleanField(default=False)),
-                ('fallback_reason', models.CharField(blank=True, max_length=200)),
-                ('quality_flag', models.CharField(choices=[('ok', 'OK'), ('insufficient_data', 'Insufficient Data'), ('null_denominator', 'Null Denominator'), ('stale', 'Stale Data'), ('fallback', 'Fallback Used')], default='ok', max_length=20)),
-                ('source_detail', models.JSONField(default=dict, help_text='{"apis": [...], "fields": [...], "formula_version": 1}')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('computed_at', models.DateTimeField(auto_now=True)),
-                ('metric_code', models.ForeignKey(db_column='metric_code', on_delete=django.db.models.deletion.CASCADE, related_name='snapshots', to='metrics.metricdefinition')),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.PROTECT, related_name='metric_snapshots', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("fiscal_year", models.IntegerField(db_index=True)),
+                (
+                    "metric_value",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                ("is_fallback_used", models.BooleanField(default=False)),
+                ("fallback_reason", models.CharField(blank=True, max_length=200)),
+                (
+                    "quality_flag",
+                    models.CharField(
+                        choices=[
+                            ("ok", "OK"),
+                            ("insufficient_data", "Insufficient Data"),
+                            ("null_denominator", "Null Denominator"),
+                            ("stale", "Stale Data"),
+                            ("fallback", "Fallback Used"),
+                        ],
+                        default="ok",
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "source_detail",
+                    models.JSONField(
+                        default=dict,
+                        help_text='{"apis": [...], "fields": [...], "formula_version": 1}',
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("computed_at", models.DateTimeField(auto_now=True)),
+                (
+                    "metric_code",
+                    models.ForeignKey(
+                        db_column="metric_code",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="snapshots",
+                        to="metrics.metricdefinition",
+                    ),
+                ),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="metric_snapshots",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'metrics_company_metric_snapshot',
-                'indexes': [models.Index(fields=['symbol', 'metric_code'], name='metrics_com_symbol_11f50b_idx'), models.Index(fields=['symbol', 'fiscal_year'], name='metrics_com_symbol_4c62e6_idx')],
-                'unique_together': {('symbol', 'fiscal_year', 'metric_code')},
+                "db_table": "metrics_company_metric_snapshot",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol", "metric_code"],
+                        name="metrics_com_symbol_11f50b_idx",
+                    ),
+                    models.Index(
+                        fields=["symbol", "fiscal_year"],
+                        name="metrics_com_symbol_4c62e6_idx",
+                    ),
+                ],
+                "unique_together": {("symbol", "fiscal_year", "metric_code")},
             },
         ),
     ]

@@ -71,11 +71,15 @@ class Command(BaseCommand):
             )
             status = "CREATED" if created else "UPDATED"
             self.stdout.write(
-                self.style.SUCCESS(f"{status} {name} → {hour:02d}:{minute:02d} KST domain={domain}")
+                self.style.SUCCESS(
+                    f"{status} {name} → {hour:02d}:{minute:02d} KST domain={domain}"
+                )
             )
             registered.append(name)
 
         self.stdout.write("")
         self.stdout.write(
-            self.style.SUCCESS(f"총 {len(registered)}개 schedule {'DRY-RUN' if dry_run else '등록 완료'}.")
+            self.style.SUCCESS(
+                f"총 {len(registered)}개 schedule {'DRY-RUN' if dry_run else '등록 완료'}."
+            )
         )

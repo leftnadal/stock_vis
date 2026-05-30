@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SyncResult:
     """동기화 결과를 담는 데이터 클래스"""
+
     success: bool
     source: str  # 'db', 'fmp'
     synced_at: Optional[datetime] = None
@@ -38,9 +39,9 @@ class StockSyncService:
 
     # 동기화 간격 설정 (데이터 타입별)
     SYNC_INTERVALS = {
-        'overview': timedelta(hours=6),      # 기본 정보: 6시간
-        'price': timedelta(hours=1),          # 가격 정보: 1시간
-        'financial': timedelta(days=7),       # 재무제표: 7일
+        "overview": timedelta(hours=6),  # 기본 정보: 6시간
+        "price": timedelta(hours=1),  # 가격 정보: 1시간
+        "financial": timedelta(days=7),  # 재무제표: 7일
     }
 
     # 캐시 키 패턴
@@ -95,17 +96,17 @@ class StockSyncService:
 
         last_sync = cache.get(cache_key)
         if last_sync is None:
-            return 'expired'
+            return "expired"
 
         interval = self.SYNC_INTERVALS.get(data_type, timedelta(hours=6))
         elapsed = timezone.now() - last_sync
 
         if elapsed < interval:
-            return 'fresh'
+            return "fresh"
         elif elapsed < interval * 2:
-            return 'stale'
+            return "stale"
         else:
-            return 'expired'
+            return "expired"
 
     def get_sync_meta(self, symbol: str, data_type: str, source: str) -> dict:
         """
@@ -124,10 +125,10 @@ class StockSyncService:
         last_sync = cache.get(cache_key)
 
         return {
-            'source': source,
-            'synced_at': last_sync.isoformat() if last_sync else None,
-            'freshness': self.get_freshness(symbol, data_type),
-            'can_sync': True,
+            "source": source,
+            "synced_at": last_sync.isoformat() if last_sync else None,
+            "freshness": self.get_freshness(symbol, data_type),
+            "can_sync": True,
         }
 
     @transaction.atomic
@@ -145,15 +146,15 @@ class StockSyncService:
         symbol = symbol.upper()
 
         # 동기화 필요 여부 확인
-        if not force and not self.should_sync(symbol, 'overview'):
+        if not force and not self.should_sync(symbol, "overview"):
             # 이미 최신 데이터
             stock = Stock.objects.filter(symbol=symbol).first()
             if stock:
                 return SyncResult(
                     success=True,
-                    source='db',
+                    source="db",
                     synced_at=stock.last_updated,
-                    data={'symbol': symbol, 'status': 'already_fresh'}
+                    data={"symbol": symbol, "status": "already_fresh"},
                 )
 
         # FMP API 호출
@@ -162,40 +163,37 @@ class StockSyncService:
         if not quote_data:
             return SyncResult(
                 success=False,
-                source='fmp',
-                error=f"FMP API에서 {symbol} 데이터를 가져올 수 없습니다."
+                source="fmp",
+                error=f"FMP API에서 {symbol} 데이터를 가져올 수 없습니다.",
             )
 
         try:
             # Stock 모델 업데이트 또는 생성
             stock, created = Stock.objects.update_or_create(
-                symbol=symbol,
-                defaults=self._map_fmp_to_stock(quote_data)
+                symbol=symbol, defaults=self._map_fmp_to_stock(quote_data)
             )
 
             # 동기화 완료 표시
-            self._mark_synced(symbol, 'overview')
+            self._mark_synced(symbol, "overview")
 
-            logger.info(f"Stock overview synced: {symbol} ({'created' if created else 'updated'})")
+            logger.info(
+                f"Stock overview synced: {symbol} ({'created' if created else 'updated'})"
+            )
 
             return SyncResult(
                 success=True,
-                source='fmp',
+                source="fmp",
                 synced_at=timezone.now(),
                 data={
-                    'symbol': symbol,
-                    'action': 'created' if created else 'updated',
-                    'stock_name': stock.stock_name,
-                }
+                    "symbol": symbol,
+                    "action": "created" if created else "updated",
+                    "stock_name": stock.stock_name,
+                },
             )
 
         except Exception as e:
             logger.error(f"Failed to sync overview for {symbol}: {e}")
-            return SyncResult(
-                success=False,
-                source='fmp',
-                error=str(e)
-            )
+            return SyncResult(success=False, source="fmp", error=str(e))
 
     def _map_fmp_to_stock(self, fmp_data: dict) -> dict:
         """
@@ -207,6 +205,7 @@ class StockSyncService:
         Returns:
             Stock 모델 필드 딕셔너리
         """
+
         def safe_decimal(value, default=0):
             """안전하게 Decimal 변환"""
             try:
@@ -226,41 +225,50 @@ class StockSyncService:
                 return default
 
         # FMP Stable API 필드명 매핑
-        change_pct = fmp_data.get('changePercentage') or fmp_data.get('changesPercentage', 0)
+        change_pct = fmp_data.get("changePercentage") or fmp_data.get(
+            "changesPercentage", 0
+        )
 
         return {
-            'stock_name': fmp_data.get('name', fmp_data.get('symbol', '')),
-            'exchange': fmp_data.get('exchange', ''),
-
+            "stock_name": fmp_data.get("name", fmp_data.get("symbol", "")),
+            "exchange": fmp_data.get("exchange", ""),
             # 실시간 가격 정보
-            'real_time_price': safe_decimal(fmp_data.get('price')),
-            'open_price': safe_decimal(fmp_data.get('open')),
-            'high_price': safe_decimal(fmp_data.get('dayHigh')),
-            'low_price': safe_decimal(fmp_data.get('dayLow')),
-            'previous_close': safe_decimal(fmp_data.get('previousClose')),
-            'change': safe_decimal(fmp_data.get('change')),
-            'change_percent': f"{change_pct:+.2f}%" if change_pct else "0.00%",
-            'volume': safe_int(fmp_data.get('volume')),
-
+            "real_time_price": safe_decimal(fmp_data.get("price")),
+            "open_price": safe_decimal(fmp_data.get("open")),
+            "high_price": safe_decimal(fmp_data.get("dayHigh")),
+            "low_price": safe_decimal(fmp_data.get("dayLow")),
+            "previous_close": safe_decimal(fmp_data.get("previousClose")),
+            "change": safe_decimal(fmp_data.get("change")),
+            "change_percent": f"{change_pct:+.2f}%" if change_pct else "0.00%",
+            "volume": safe_int(fmp_data.get("volume")),
             # 재무 지표
-            'market_capitalization': safe_decimal(fmp_data.get('marketCap')),
-            'pe_ratio': safe_decimal(fmp_data.get('pe')) if fmp_data.get('pe') else None,
-            'eps': safe_decimal(fmp_data.get('eps')) if fmp_data.get('eps') else None,
-
+            "market_capitalization": safe_decimal(fmp_data.get("marketCap")),
+            "pe_ratio": safe_decimal(fmp_data.get("pe"))
+            if fmp_data.get("pe")
+            else None,
+            "eps": safe_decimal(fmp_data.get("eps")) if fmp_data.get("eps") else None,
             # 52주 범위
-            'week_52_high': safe_decimal(fmp_data.get('yearHigh')) if fmp_data.get('yearHigh') else None,
-            'week_52_low': safe_decimal(fmp_data.get('yearLow')) if fmp_data.get('yearLow') else None,
-
+            "week_52_high": safe_decimal(fmp_data.get("yearHigh"))
+            if fmp_data.get("yearHigh")
+            else None,
+            "week_52_low": safe_decimal(fmp_data.get("yearLow"))
+            if fmp_data.get("yearLow")
+            else None,
             # 평균 거래량
-            'day_50_moving_average': safe_decimal(fmp_data.get('priceAvg50')) if fmp_data.get('priceAvg50') else None,
-            'day_200_moving_average': safe_decimal(fmp_data.get('priceAvg200')) if fmp_data.get('priceAvg200') else None,
-
+            "day_50_moving_average": safe_decimal(fmp_data.get("priceAvg50"))
+            if fmp_data.get("priceAvg50")
+            else None,
+            "day_200_moving_average": safe_decimal(fmp_data.get("priceAvg200"))
+            if fmp_data.get("priceAvg200")
+            else None,
             # 메타 정보
-            'last_api_call': timezone.now(),
+            "last_api_call": timezone.now(),
         }
 
     @transaction.atomic
-    def sync_prices(self, symbol: str, days: int = 30, force: bool = False) -> SyncResult:
+    def sync_prices(
+        self, symbol: str, days: int = 30, force: bool = False
+    ) -> SyncResult:
         """
         가격 데이터 동기화 (FMP Historical -> DailyPrice).
 
@@ -278,11 +286,11 @@ class StockSyncService:
         symbol = symbol.upper()
 
         # 동기화 필요 여부 확인
-        if not force and not self.should_sync(symbol, 'price'):
+        if not force and not self.should_sync(symbol, "price"):
             return SyncResult(
                 success=True,
-                source='db',
-                data={'symbol': symbol, 'status': 'already_fresh'}
+                source="db",
+                data={"symbol": symbol, "status": "already_fresh"},
             )
 
         # Stock 객체 확인 또는 생성
@@ -293,8 +301,8 @@ class StockSyncService:
             if not overview_result.success:
                 return SyncResult(
                     success=False,
-                    source='fmp',
-                    error=f"Stock 정보를 먼저 동기화해야 합니다: {overview_result.error}"
+                    source="fmp",
+                    error=f"Stock 정보를 먼저 동기화해야 합니다: {overview_result.error}",
                 )
             stock = Stock.objects.get(symbol=symbol)
 
@@ -302,16 +310,14 @@ class StockSyncService:
         api_key = settings.FMP_API_KEY
         if not api_key:
             return SyncResult(
-                success=False,
-                source='fmp',
-                error="FMP API 키가 설정되지 않았습니다."
+                success=False, source="fmp", error="FMP API 키가 설정되지 않았습니다."
             )
 
         try:
             with httpx.Client(timeout=15.0) as client:
                 response = client.get(
                     "https://financialmodelingprep.com/stable/historical-price-eod/full",
-                    params={"symbol": symbol, "apikey": api_key}
+                    params={"symbol": symbol, "apikey": api_key},
                 )
                 response.raise_for_status()
                 fmp_data = response.json()
@@ -319,8 +325,8 @@ class StockSyncService:
             if not isinstance(fmp_data, list) or len(fmp_data) == 0:
                 return SyncResult(
                     success=False,
-                    source='fmp',
-                    error=f"{symbol}의 히스토리 데이터를 찾을 수 없습니다."
+                    source="fmp",
+                    error=f"{symbol}의 히스토리 데이터를 찾을 수 없습니다.",
                 )
 
             # 지정된 일수만큼 필터링
@@ -329,7 +335,7 @@ class StockSyncService:
             saved_count = 0
             for item in fmp_data:
                 try:
-                    item_date = datetime.strptime(item['date'], '%Y-%m-%d').date()
+                    item_date = datetime.strptime(item["date"], "%Y-%m-%d").date()
                     if item_date < cutoff_date:
                         continue
 
@@ -338,55 +344,51 @@ class StockSyncService:
                         stock=stock,
                         date=item_date,
                         defaults={
-                            'open_price': Decimal(str(item.get('open', 0))),
-                            'high_price': Decimal(str(item.get('high', 0))),
-                            'low_price': Decimal(str(item.get('low', 0))),
-                            'close_price': Decimal(str(item.get('close', 0))),
-                            'volume': int(item.get('volume', 0)),
-                        }
+                            "open_price": Decimal(str(item.get("open", 0))),
+                            "high_price": Decimal(str(item.get("high", 0))),
+                            "low_price": Decimal(str(item.get("low", 0))),
+                            "close_price": Decimal(str(item.get("close", 0))),
+                            "volume": int(item.get("volume", 0)),
+                        },
                     )
                     saved_count += 1
                 except (ValueError, KeyError) as e:
-                    logger.warning(f"Failed to save price for {symbol} on {item.get('date')}: {e}")
+                    logger.warning(
+                        f"Failed to save price for {symbol} on {item.get('date')}: {e}"
+                    )
                     continue
 
             # 동기화 완료 표시
-            self._mark_synced(symbol, 'price')
+            self._mark_synced(symbol, "price")
 
             logger.info(f"Price data synced for {symbol}: {saved_count} records")
 
             return SyncResult(
                 success=True,
-                source='fmp',
+                source="fmp",
                 synced_at=timezone.now(),
                 data={
-                    'symbol': symbol,
-                    'records_saved': saved_count,
-                    'days': days,
-                }
+                    "symbol": symbol,
+                    "records_saved": saved_count,
+                    "days": days,
+                },
             )
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP Historical API HTTP error for {symbol}: {e.response.status_code}")
+            logger.error(
+                f"FMP Historical API HTTP error for {symbol}: {e.response.status_code}"
+            )
             return SyncResult(
                 success=False,
-                source='fmp',
-                error=f"FMP API 오류: {e.response.status_code}"
+                source="fmp",
+                error=f"FMP API 오류: {e.response.status_code}",
             )
         except httpx.TimeoutException:
             logger.error(f"FMP Historical API timeout for {symbol}")
-            return SyncResult(
-                success=False,
-                source='fmp',
-                error="FMP API 타임아웃"
-            )
+            return SyncResult(success=False, source="fmp", error="FMP API 타임아웃")
         except Exception as e:
             logger.error(f"Failed to sync prices for {symbol}: {e}")
-            return SyncResult(
-                success=False,
-                source='fmp',
-                error=str(e)
-            )
+            return SyncResult(success=False, source="fmp", error=str(e))
 
     def sync_all(self, symbol: str, force: bool = False) -> dict:
         """
@@ -402,8 +404,8 @@ class StockSyncService:
         symbol = symbol.upper()
 
         results = {
-            'overview': self.sync_overview(symbol, force),
-            'price': self.sync_prices(symbol, force=force),
+            "overview": self.sync_overview(symbol, force),
+            "price": self.sync_prices(symbol, force=force),
         }
 
         # 전체 상태 결정
@@ -411,15 +413,17 @@ class StockSyncService:
         partial_success = any(r.success for r in results.values())
 
         return {
-            'symbol': symbol,
-            'status': 'success' if all_success else ('partial' if partial_success else 'failed'),
-            'synced': {
+            "symbol": symbol,
+            "status": "success"
+            if all_success
+            else ("partial" if partial_success else "failed"),
+            "synced": {
                 key: {
-                    'success': result.success,
-                    'source': result.source,
-                    'error': result.error,
+                    "success": result.success,
+                    "source": result.source,
+                    "error": result.error,
                 }
                 for key, result in results.items()
             },
-            'next_sync_available': (timezone.now() + timedelta(minutes=5)).isoformat(),
+            "next_sync_available": (timezone.now() + timedelta(minutes=5)).isoformat(),
         }

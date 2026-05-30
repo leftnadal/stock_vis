@@ -6,24 +6,25 @@ class MetricDefinition(models.Model):
     지표 메타데이터 사전.
     모든 CompanyMetricSnapshot의 metric_code가 이 테이블을 FK 참조.
     """
+
     CATEGORY_CHOICES = [
-        ('profitability', 'Profitability'),
-        ('growth', 'Growth'),
-        ('financial_structure', 'Financial Structure'),
-        ('cash_flow_quality', 'Cash Flow Quality'),
-        ('operational_efficiency', 'Operational Efficiency'),
-        ('dilution_shareholder', 'Dilution & Shareholder'),
-        ('valuation', 'Valuation'),
+        ("profitability", "Profitability"),
+        ("growth", "Growth"),
+        ("financial_structure", "Financial Structure"),
+        ("cash_flow_quality", "Cash Flow Quality"),
+        ("operational_efficiency", "Operational Efficiency"),
+        ("dilution_shareholder", "Dilution & Shareholder"),
+        ("valuation", "Valuation"),
     ]
 
     UNIT_CHOICES = [
-        ('ratio', 'Ratio'),
-        ('multiple', 'Multiple (배)'),
-        ('days', 'Days'),
-        ('pct', 'Percentage'),
-        ('percent_point', 'Percentage Point (%p)'),
-        ('years', 'Years'),
-        ('flag', 'Boolean Flag'),
+        ("ratio", "Ratio"),
+        ("multiple", "Multiple (배)"),
+        ("days", "Days"),
+        ("pct", "Percentage"),
+        ("percent_point", "Percentage Point (%p)"),
+        ("years", "Years"),
+        ("flag", "Boolean Flag"),
     ]
 
     metric_code = models.CharField(max_length=50, primary_key=True)
@@ -42,17 +43,22 @@ class MetricDefinition(models.Model):
     fallback_formula = models.TextField(blank=True)
 
     # 신호등 임계값
-    green_threshold = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
-    red_threshold = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
+    green_threshold = models.DecimalField(
+        max_digits=20, decimal_places=6, null=True, blank=True
+    )
+    red_threshold = models.DecimalField(
+        max_digits=20, decimal_places=6, null=True, blank=True
+    )
     threshold_direction = models.CharField(
-        max_length=10, default='above',
-        choices=[('above', 'Above'), ('below', 'Below')]
+        max_length=10, default="above", choices=[("above", "Above"), ("below", "Below")]
     )
 
     # value_status 판정용
     not_applicable_reason = models.CharField(
-        max_length=100, blank=True, default='',
-        help_text="이 지표가 특정 기업에 적용 불가할 때 사유. e.g. '흑자 기업', '서비스 기업 (재고 없음)'"
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="이 지표가 특정 기업에 적용 불가할 때 사유. e.g. '흑자 기업', '서비스 기업 (재고 없음)'",
     )
 
     # 관리
@@ -63,8 +69,8 @@ class MetricDefinition(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'metrics_metric_definition'
-        ordering = ['category', 'sort_order']
+        db_table = "metrics_metric_definition"
+        ordering = ["category", "sort_order"]
 
     def __str__(self):
         return f"{self.metric_code}: {self.display_name}"

@@ -8,6 +8,7 @@ Financial Modeling Prep API를 사용하여 실시간 시세 정보를 조회합
 
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
+
 import httpx
 from django.conf import settings
 from django.core.cache import cache
@@ -29,7 +30,7 @@ class FMPExchangeQuotesService:
             logger.warning("FMP_API_KEY가 설정되지 않았습니다.")
 
     # 지수 ETF 심볼 (FMP Starter Plan은 ^인덱스 미지원 → ETF로 대체)
-    INDEX_ETF_SYMBOLS = ['SPY', 'DIA', 'QQQ', 'IWM']
+    INDEX_ETF_SYMBOLS = ["SPY", "DIA", "QQQ", "IWM"]
 
     def get_index_quotes(self) -> list[dict]:
         """
@@ -94,7 +95,7 @@ class FMPExchangeQuotesService:
                 # Stable API 사용 (쿼리 파라미터로 symbol 전달)
                 response = client.get(
                     f"{self.BASE_URL}/quote",
-                    params={"symbol": symbol, "apikey": self.api_key}
+                    params={"symbol": symbol, "apikey": self.api_key},
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -113,7 +114,9 @@ class FMPExchangeQuotesService:
             return data
 
         except httpx.HTTPStatusError as e:
-            logger.error(f"FMP API HTTP 오류 (quote/{symbol}): {e.response.status_code}")
+            logger.error(
+                f"FMP API HTTP 오류 (quote/{symbol}): {e.response.status_code}"
+            )
             return None
         except httpx.TimeoutException:
             logger.error(f"FMP API 타임아웃 (quote/{symbol})")
@@ -157,7 +160,7 @@ class FMPExchangeQuotesService:
                 # Stable API 사용 (쿼리 파라미터로 symbol 전달)
                 response = client.get(
                     f"{self.BASE_URL}/quote",
-                    params={"symbol": symbols_str, "apikey": self.api_key}
+                    params={"symbol": symbols_str, "apikey": self.api_key},
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -198,11 +201,7 @@ class FMPExchangeQuotesService:
 
         # 주요 지수 ETF 필터링
         result = {}
-        symbol_map = {
-            "SPY": "sp500",
-            "QQQ": "nasdaq",
-            "DIA": "dow_jones"
-        }
+        symbol_map = {"SPY": "sp500", "QQQ": "nasdaq", "DIA": "dow_jones"}
 
         for index in indices:
             symbol = index.get("symbol")
@@ -227,7 +226,7 @@ class FMPExchangeQuotesService:
             "XLP",  # Consumer Staples
             "XLY",  # Consumer Discretionary
             "XLU",  # Utilities
-            "XLRE", # Real Estate
+            "XLRE",  # Real Estate
             "XLB",  # Materials
             "XLC",  # Communication Services
         ]

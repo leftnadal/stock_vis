@@ -60,7 +60,9 @@ class FMPProcessor:
                 volume=FMPProcessor._safe_int(data.get("volume")),
                 previous_close=FMPProcessor._safe_decimal(data.get("previousClose")),
                 change=FMPProcessor._safe_decimal(data.get("change")),
-                change_percent=FMPProcessor._safe_decimal(data.get("changesPercentage")),
+                change_percent=FMPProcessor._safe_decimal(
+                    data.get("changesPercentage")
+                ),
                 latest_trading_day=FMPProcessor._safe_date(data.get("timestamp")),
                 timestamp=datetime.now(),
             )
@@ -69,7 +71,9 @@ class FMPProcessor:
             return None
 
     @staticmethod
-    def process_company_profile(data: Dict[str, Any]) -> Optional[NormalizedCompanyProfile]:
+    def process_company_profile(
+        data: Dict[str, Any],
+    ) -> Optional[NormalizedCompanyProfile]:
         """
         FMP 회사 프로필을 정규화
 
@@ -121,7 +125,9 @@ class FMPProcessor:
                 shares_outstanding=None,  # FMP profile에 shares_outstanding 미제공
                 website=data.get("website"),
                 ceo=data.get("ceo"),
-                full_time_employees=FMPProcessor._safe_int(data.get("fullTimeEmployees")),
+                full_time_employees=FMPProcessor._safe_int(
+                    data.get("fullTimeEmployees")
+                ),
                 ipo_date=FMPProcessor._safe_date(data.get("ipoDate")),
             )
         except Exception as e:
@@ -130,8 +136,7 @@ class FMPProcessor:
 
     @staticmethod
     def process_historical_prices(
-        symbol: str,
-        data: List[Dict[str, Any]]
+        symbol: str, data: List[Dict[str, Any]]
     ) -> List[NormalizedPriceData]:
         """
         FMP 과거 가격 데이터를 정규화
@@ -185,9 +190,7 @@ class FMPProcessor:
 
     @staticmethod
     def process_balance_sheet(
-        symbol: str,
-        data: List[Dict[str, Any]],
-        period_type: PeriodType
+        symbol: str, data: List[Dict[str, Any]], period_type: PeriodType
     ) -> List[NormalizedBalanceSheet]:
         """
         FMP 대차대조표를 정규화
@@ -210,10 +213,11 @@ class FMPProcessor:
                     reported_currency=item.get("reportedCurrency", "USD"),
                     period_type=period_type,
                     fiscal_year=FMPProcessor._extract_year(item.get("calendarYear")),
-
                     # 자산
                     total_assets=FMPProcessor._safe_decimal(item.get("totalAssets")),
-                    current_assets=FMPProcessor._safe_decimal(item.get("totalCurrentAssets")),
+                    current_assets=FMPProcessor._safe_decimal(
+                        item.get("totalCurrentAssets")
+                    ),
                     cash_and_equivalents=FMPProcessor._safe_decimal(
                         item.get("cashAndCashEquivalents")
                     ),
@@ -234,7 +238,6 @@ class FMPProcessor:
                     intangible_assets=FMPProcessor._safe_decimal(
                         item.get("intangibleAssets")
                     ),
-
                     # 부채
                     total_liabilities=FMPProcessor._safe_decimal(
                         item.get("totalLiabilities")
@@ -248,10 +251,7 @@ class FMPProcessor:
                     short_term_debt=FMPProcessor._safe_decimal(
                         item.get("shortTermDebt")
                     ),
-                    long_term_debt=FMPProcessor._safe_decimal(
-                        item.get("longTermDebt")
-                    ),
-
+                    long_term_debt=FMPProcessor._safe_decimal(item.get("longTermDebt")),
                     # 자본
                     total_shareholder_equity=FMPProcessor._safe_decimal(
                         item.get("totalStockholdersEquity")
@@ -259,9 +259,7 @@ class FMPProcessor:
                     retained_earnings=FMPProcessor._safe_decimal(
                         item.get("retainedEarnings")
                     ),
-                    common_stock=FMPProcessor._safe_decimal(
-                        item.get("commonStock")
-                    ),
+                    common_stock=FMPProcessor._safe_decimal(item.get("commonStock")),
                     treasury_stock=FMPProcessor._safe_decimal(
                         item.get("treasuryStock")
                     ),
@@ -276,9 +274,7 @@ class FMPProcessor:
 
     @staticmethod
     def process_income_statement(
-        symbol: str,
-        data: List[Dict[str, Any]],
-        period_type: PeriodType
+        symbol: str, data: List[Dict[str, Any]], period_type: PeriodType
     ) -> List[NormalizedIncomeStatement]:
         """
         FMP 손익계산서를 정규화
@@ -299,9 +295,10 @@ class FMPProcessor:
                     reported_currency=item.get("reportedCurrency", "USD"),
                     period_type=period_type,
                     fiscal_year=FMPProcessor._extract_year(item.get("calendarYear")),
-
                     total_revenue=FMPProcessor._safe_decimal(item.get("revenue")),
-                    cost_of_revenue=FMPProcessor._safe_decimal(item.get("costOfRevenue")),
+                    cost_of_revenue=FMPProcessor._safe_decimal(
+                        item.get("costOfRevenue")
+                    ),
                     gross_profit=FMPProcessor._safe_decimal(item.get("grossProfit")),
                     operating_expenses=FMPProcessor._safe_decimal(
                         item.get("operatingExpenses")
@@ -339,9 +336,7 @@ class FMPProcessor:
 
     @staticmethod
     def process_cash_flow(
-        symbol: str,
-        data: List[Dict[str, Any]],
-        period_type: PeriodType
+        symbol: str, data: List[Dict[str, Any]], period_type: PeriodType
     ) -> List[NormalizedCashFlow]:
         """
         FMP 현금흐름표를 정규화
@@ -362,7 +357,6 @@ class FMPProcessor:
                     reported_currency=item.get("reportedCurrency", "USD"),
                     period_type=period_type,
                     fiscal_year=FMPProcessor._extract_year(item.get("calendarYear")),
-
                     # 영업활동
                     operating_cash_flow=FMPProcessor._safe_decimal(
                         item.get("operatingCashFlow")
@@ -377,7 +371,6 @@ class FMPProcessor:
                     changes_in_inventory=FMPProcessor._safe_decimal(
                         item.get("changeInInventory")
                     ),
-
                     # 투자활동
                     investing_cash_flow=FMPProcessor._safe_decimal(
                         item.get("netCashUsedForInvestingActivites")
@@ -388,7 +381,6 @@ class FMPProcessor:
                     investments=FMPProcessor._safe_decimal(
                         item.get("investmentsInPropertyPlantAndEquipment")
                     ),
-
                     # 재무활동
                     financing_cash_flow=FMPProcessor._safe_decimal(
                         item.get("netCashUsedProvidedByFinancingActivities")
@@ -402,14 +394,11 @@ class FMPProcessor:
                     debt_repayment=FMPProcessor._safe_decimal(
                         item.get("debtRepayment")
                     ),
-
                     # 순 현금 변동
                     net_change_in_cash=FMPProcessor._safe_decimal(
                         item.get("netChangeInCash")
                     ),
-                    free_cash_flow=FMPProcessor._safe_decimal(
-                        item.get("freeCashFlow")
-                    ),
+                    free_cash_flow=FMPProcessor._safe_decimal(item.get("freeCashFlow")),
                 )
                 cash_flows.append(normalized)
 
@@ -420,7 +409,9 @@ class FMPProcessor:
         return cash_flows
 
     @staticmethod
-    def process_search_results(data: List[Dict[str, Any]]) -> List[NormalizedSearchResult]:
+    def process_search_results(
+        data: List[Dict[str, Any]],
+    ) -> List[NormalizedSearchResult]:
         """
         FMP 검색 결과를 정규화
 

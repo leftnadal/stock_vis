@@ -52,7 +52,9 @@ DOMAIN_REPORT_MAP: Dict[str, List[str]] = {
     ],
 }
 
-REPORTS_BASE = Path("/Users/byeongjinjeong/Desktop/stock_vis/docs/nightly_auto_system/reports")
+REPORTS_BASE = Path(
+    "/Users/byeongjinjeong/Desktop/stock_vis/docs/nightly_auto_system/reports"
+)
 
 
 def _find_report_path(name: str, target_date: date) -> Optional[Path]:
@@ -85,7 +87,13 @@ def extract_audit_insights(path: Path, max_items: int = 5) -> Dict[str, Any]:
         text = path.read_text(encoding="utf-8", errors="replace")
     except Exception as e:
         logger.warning(f"extract_audit_insights({path}): {e}")
-        return {"title": path.stem, "summary_line": "", "severity_hits": [], "section_headings": [], "lines": 0}
+        return {
+            "title": path.stem,
+            "summary_line": "",
+            "severity_hits": [],
+            "section_headings": [],
+            "lines": 0,
+        }
 
     lines = text.splitlines()
     result = {
@@ -113,7 +121,11 @@ def extract_audit_insights(path: Path, max_items: int = 5) -> Dict[str, Any]:
             result["section_headings"].append(h.group(2).strip())
 
         # 총평/첫 문단 (제목 직후 첫 의미 있는 문장)
-        if not result["summary_line"] and result["title"] and not stripped.startswith("#"):
+        if (
+            not result["summary_line"]
+            and result["title"]
+            and not stripped.startswith("#")
+        ):
             if "총평" in stripped or "요약" in stripped or stripped.startswith("**"):
                 result["summary_line"] = stripped[:200]
             elif len(stripped) > 30 and not stripped.startswith("|"):
@@ -125,7 +137,11 @@ def extract_audit_insights(path: Path, max_items: int = 5) -> Dict[str, Any]:
         elif in_table and not stripped.startswith("|"):
             in_table = False
 
-        if not in_table and _SEVERITY_RE.search(stripped) and len(result["severity_hits"]) < max_items:
+        if (
+            not in_table
+            and _SEVERITY_RE.search(stripped)
+            and len(result["severity_hits"]) < max_items
+        ):
             if stripped.startswith("|") or stripped.startswith("```"):
                 continue
             # 라인 길이 제한
@@ -139,7 +155,9 @@ def _seven_day_trend(today: date, key_path: List[str]) -> List[Optional[int]]:
     trend: List[Optional[int]] = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
-        snap = _load_previous_snapshot(d + timedelta(days=1))  # _load_previous_snapshot은 'today-1' 데이터 반환
+        snap = _load_previous_snapshot(
+            d + timedelta(days=1)
+        )  # _load_previous_snapshot은 'today-1' 데이터 반환
         if snap:
             obj: Any = snap
             for k in key_path:
@@ -194,9 +212,13 @@ def _build_tldr_data(graph, news, gaps, trend_nodes, trend_news) -> List[str]:
     if len(valid_nodes) >= 2:
         delta = valid_nodes[-1] - valid_nodes[0]
         emoji = "📈" if delta > 0 else ("📉" if delta < 0 else "➡️")
-        tldr.append(f"{emoji} Neo4j 노드 7일: {valid_nodes[0]:,} → {valid_nodes[-1]:,} ({delta:+,})")
+        tldr.append(
+            f"{emoji} Neo4j 노드 7일: {valid_nodes[0]:,} → {valid_nodes[-1]:,} ({delta:+,})"
+        )
     else:
-        tldr.append(f"Neo4j 노드: {graph['total_nodes']:,} / 관계: {graph['total_relations']:,}")
+        tldr.append(
+            f"Neo4j 노드: {graph['total_nodes']:,} / 관계: {graph['total_relations']:,}"
+        )
 
     tldr.append(
         f"📰 24h 뉴스: {news['today_new']}건 (LLM 분석률 {news['today_llm_analyzed_pct']}%)"
@@ -305,24 +327,28 @@ def _collect_domain_audits(domain: str, today: date) -> List[Dict[str, Any]]:
     for name in DOMAIN_REPORT_MAP.get(domain, []):
         path = _find_report_path(name, today)
         if path is None:
-            results.append({
-                "name": name,
-                "available": False,
-                "path": None,
-                "title": name,
-                "summary_line": "(보고서 없음 — nightly 미실행 또는 다른 날짜)",
-                "severity_hits": [],
-                "section_headings": [],
-                "lines": 0,
-            })
+            results.append(
+                {
+                    "name": name,
+                    "available": False,
+                    "path": None,
+                    "title": name,
+                    "summary_line": "(보고서 없음 — nightly 미실행 또는 다른 날짜)",
+                    "severity_hits": [],
+                    "section_headings": [],
+                    "lines": 0,
+                }
+            )
             continue
         insights = extract_audit_insights(path)
-        results.append({
-            "name": name,
-            "available": True,
-            "path": str(path).replace(str(Path.home()), "~"),
-            **insights,
-        })
+        results.append(
+            {
+                "name": name,
+                "available": True,
+                "path": str(path).replace(str(Path.home()), "~"),
+                **insights,
+            }
+        )
     return results
 
 

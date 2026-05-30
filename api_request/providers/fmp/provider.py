@@ -66,7 +66,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No quote data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             normalized = self._processor.process_quote(symbol, raw_data)
@@ -75,12 +75,11 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"Failed to process quote data for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="PROCESSING_ERROR"
+                    error_code="PROCESSING_ERROR",
                 )
 
             return ProviderResponse.success_response(
-                data=normalized,
-                provider=self.PROVIDER_NAME
+                data=normalized, provider=self.PROVIDER_NAME
             )
 
         except FMPRateLimitError:
@@ -88,12 +87,12 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP get_quote error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
-    def get_company_profile(self, symbol: str) -> ProviderResponse[NormalizedCompanyProfile]:
+    def get_company_profile(
+        self, symbol: str
+    ) -> ProviderResponse[NormalizedCompanyProfile]:
         """회사 프로필 조회"""
         try:
             symbol = symbol.upper()
@@ -103,7 +102,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No company profile found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             normalized = self._processor.process_company_profile(raw_data)
@@ -112,12 +111,11 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"Failed to process company profile for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="PROCESSING_ERROR"
+                    error_code="PROCESSING_ERROR",
                 )
 
             return ProviderResponse.success_response(
-                data=normalized,
-                provider=self.PROVIDER_NAME
+                data=normalized, provider=self.PROVIDER_NAME
             )
 
         except FMPRateLimitError:
@@ -125,15 +123,11 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP get_company_profile error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_daily_prices(
-        self,
-        symbol: str,
-        output_size: OutputSize = OutputSize.COMPACT
+        self, symbol: str, output_size: OutputSize = OutputSize.COMPACT
     ) -> ProviderResponse[List[NormalizedPriceData]]:
         """일별 가격 데이터 조회"""
         try:
@@ -144,26 +138,22 @@ class FMPProvider(StockDataProvider):
             from_date = None
             if output_size == OutputSize.COMPACT:
                 from datetime import datetime, timedelta
+
                 from_date = (datetime.now() - timedelta(days=150)).strftime("%Y-%m-%d")
 
-            raw_data = self._client.get_historical_price(
-                symbol,
-                from_date=from_date
-            )
+            raw_data = self._client.get_historical_price(symbol, from_date=from_date)
 
             if not raw_data:
                 return ProviderResponse.error_response(
                     error=f"No daily price data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             prices = self._processor.process_historical_prices(symbol, raw_data)
 
             return ProviderResponse.success_response(
-                data=prices,
-                provider=self.PROVIDER_NAME,
-                meta={"count": len(prices)}
+                data=prices, provider=self.PROVIDER_NAME, meta={"count": len(prices)}
             )
 
         except FMPRateLimitError:
@@ -171,12 +161,12 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP get_daily_prices error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
-    def get_weekly_prices(self, symbol: str) -> ProviderResponse[List[NormalizedPriceData]]:
+    def get_weekly_prices(
+        self, symbol: str
+    ) -> ProviderResponse[List[NormalizedPriceData]]:
         """
         주별 가격 데이터 조회
 
@@ -192,7 +182,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No price data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             # 일별 데이터를 주별로 집계
@@ -202,7 +192,7 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.success_response(
                 data=weekly_prices,
                 provider=self.PROVIDER_NAME,
-                meta={"count": len(weekly_prices)}
+                meta={"count": len(weekly_prices)},
             )
 
         except FMPRateLimitError:
@@ -210,15 +200,11 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP get_weekly_prices error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_balance_sheet(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedBalanceSheet]]:
         """대차대조표 조회"""
         try:
@@ -231,7 +217,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No balance sheet data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             balance_sheets = self._processor.process_balance_sheet(
@@ -241,7 +227,7 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.success_response(
                 data=balance_sheets,
                 provider=self.PROVIDER_NAME,
-                meta={"count": len(balance_sheets), "period": period.value}
+                meta={"count": len(balance_sheets), "period": period.value},
             )
 
         except FMPPremiumError:
@@ -249,22 +235,18 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.error_response(
                 error=f"Premium-only symbol: {symbol}",
                 provider=self.PROVIDER_NAME,
-                error_code="PREMIUM_ONLY"
+                error_code="PREMIUM_ONLY",
             )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
             logger.error(f"FMP get_balance_sheet error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_income_statement(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedIncomeStatement]]:
         """손익계산서 조회"""
         try:
@@ -277,7 +259,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No income statement data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             statements = self._processor.process_income_statement(
@@ -287,7 +269,7 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.success_response(
                 data=statements,
                 provider=self.PROVIDER_NAME,
-                meta={"count": len(statements), "period": period.value}
+                meta={"count": len(statements), "period": period.value},
             )
 
         except FMPPremiumError:
@@ -295,22 +277,18 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.error_response(
                 error=f"Premium-only symbol: {symbol}",
                 provider=self.PROVIDER_NAME,
-                error_code="PREMIUM_ONLY"
+                error_code="PREMIUM_ONLY",
             )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
             logger.error(f"FMP get_income_statement error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_cash_flow(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedCashFlow]]:
         """현금흐름표 조회"""
         try:
@@ -323,17 +301,15 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error=f"No cash flow data found for {symbol}",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
-            cash_flows = self._processor.process_cash_flow(
-                symbol, raw_data, period
-            )
+            cash_flows = self._processor.process_cash_flow(symbol, raw_data, period)
 
             return ProviderResponse.success_response(
                 data=cash_flows,
                 provider=self.PROVIDER_NAME,
-                meta={"count": len(cash_flows), "period": period.value}
+                meta={"count": len(cash_flows), "period": period.value},
             )
 
         except FMPPremiumError:
@@ -341,19 +317,19 @@ class FMPProvider(StockDataProvider):
             return ProviderResponse.error_response(
                 error=f"Premium-only symbol: {symbol}",
                 provider=self.PROVIDER_NAME,
-                error_code="PREMIUM_ONLY"
+                error_code="PREMIUM_ONLY",
             )
         except FMPRateLimitError:
             raise RateLimitError(self.PROVIDER_NAME)
         except Exception as e:
             logger.error(f"FMP get_cash_flow error for {symbol}: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
-    def search_symbols(self, keywords: str) -> ProviderResponse[List[NormalizedSearchResult]]:
+    def search_symbols(
+        self, keywords: str
+    ) -> ProviderResponse[List[NormalizedSearchResult]]:
         """종목 검색"""
         try:
             # 심볼 검색과 이름 검색 모두 시도
@@ -373,9 +349,7 @@ class FMPProvider(StockDataProvider):
             results = self._processor.process_search_results(all_results)
 
             return ProviderResponse.success_response(
-                data=results,
-                provider=self.PROVIDER_NAME,
-                meta={"count": len(results)}
+                data=results, provider=self.PROVIDER_NAME, meta={"count": len(results)}
             )
 
         except FMPRateLimitError:
@@ -383,9 +357,7 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP search_symbols error for '{keywords}': {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_sector_performance(self) -> ProviderResponse[Dict[str, Any]]:
@@ -397,7 +369,7 @@ class FMPProvider(StockDataProvider):
                 return ProviderResponse.error_response(
                     error="No sector performance data found",
                     provider=self.PROVIDER_NAME,
-                    error_code="DATA_NOT_FOUND"
+                    error_code="DATA_NOT_FOUND",
                 )
 
             # 섹터별로 정리
@@ -409,8 +381,7 @@ class FMPProvider(StockDataProvider):
                 }
 
             return ProviderResponse.success_response(
-                data=sector_data,
-                provider=self.PROVIDER_NAME
+                data=sector_data, provider=self.PROVIDER_NAME
             )
 
         except FMPRateLimitError:
@@ -418,9 +389,7 @@ class FMPProvider(StockDataProvider):
         except Exception as e:
             logger.error(f"FMP get_sector_performance error: {e}")
             return ProviderResponse.error_response(
-                error=str(e),
-                provider=self.PROVIDER_NAME,
-                error_code="API_ERROR"
+                error=str(e), provider=self.PROVIDER_NAME, error_code="API_ERROR"
             )
 
     def get_rate_limit_status(self) -> Dict[str, Any]:
@@ -434,8 +403,7 @@ class FMPProvider(StockDataProvider):
     # ============================================================
 
     def _aggregate_to_weekly(
-        self,
-        daily_prices: List[NormalizedPriceData]
+        self, daily_prices: List[NormalizedPriceData]
     ) -> List[NormalizedPriceData]:
         """
         일별 데이터를 주별로 집계
@@ -465,7 +433,7 @@ class FMPProvider(StockDataProvider):
 
             weekly = NormalizedPriceData(
                 date=prices_sorted[-1].date,  # 주의 마지막 거래일
-                open=prices_sorted[0].open,   # 주의 첫 거래일 시가
+                open=prices_sorted[0].open,  # 주의 첫 거래일 시가
                 high=max(p.high for p in prices if p.high),
                 low=min(p.low for p in prices if p.low),
                 close=prices_sorted[-1].close,  # 주의 마지막 거래일 종가

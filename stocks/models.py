@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 # Create your models here.
 
+
 class Stock(models.Model):
     """
     주식에 대한 기본정보를 보여주는 모델
@@ -12,8 +13,8 @@ class Stock(models.Model):
     ## 선택
     # 통화 선택
     CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('KRW', 'KRW'),
+        ("USD", "USD"),
+        ("KRW", "KRW"),
     )
 
     # === 기본 정보 (OVERVIEW에서 가져옴) ===
@@ -41,27 +42,61 @@ class Stock(models.Model):
     change_percent = models.CharField(max_length=20, blank=True, null=True)
 
     # === 재무 비율 정보 (OVERVIEW에서 가져옴) ===
-    market_capitalization = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    market_capitalization = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     ebitda = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    pe_ratio = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    peg_ratio = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    book_value = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    dividend_per_share = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    dividend_yield = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
+    pe_ratio = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    peg_ratio = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    book_value = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    dividend_per_share = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    dividend_yield = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
     eps = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    revenue_per_share_ttm = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
-    profit_margin = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    operating_margin_ttm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    return_on_assets_ttm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    return_on_equity_ttm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    revenue_ttm = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    gross_profit_ttm = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    diluted_eps_ttm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    quarterly_earnings_growth_yoy = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    quarterly_revenue_growth_yoy = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
+    revenue_per_share_ttm = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
+    profit_margin = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    operating_margin_ttm = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    return_on_assets_ttm = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    return_on_equity_ttm = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    revenue_ttm = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+    gross_profit_ttm = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+    diluted_eps_ttm = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    quarterly_earnings_growth_yoy = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    quarterly_revenue_growth_yoy = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
 
     # === 분석가 의견 ===
-    analyst_target_price = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
+    analyst_target_price = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
     analyst_rating_strong_buy = models.IntegerField(blank=True, null=True)
     analyst_rating_buy = models.IntegerField(blank=True, null=True)
     analyst_rating_hold = models.IntegerField(blank=True, null=True)
@@ -69,36 +104,61 @@ class Stock(models.Model):
     analyst_rating_strong_sell = models.IntegerField(blank=True, null=True)
 
     # === 기술적 지표 ===
-    trailing_pe = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    forward_pe = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    price_to_sales_ratio_ttm = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    price_to_book_ratio = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    ev_to_revenue = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    ev_to_ebitda = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
+    trailing_pe = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    forward_pe = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    price_to_sales_ratio_ttm = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    price_to_book_ratio = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    ev_to_revenue = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
+    ev_to_ebitda = models.DecimalField(
+        max_digits=10, decimal_places=4, blank=True, null=True
+    )
     beta = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    week_52_high = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
-    week_52_low = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
-    day_50_moving_average = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
-    day_200_moving_average = models.DecimalField(max_digits=15, decimal_places=4, blank=True, null=True)
-    shares_outstanding = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    week_52_high = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
+    week_52_low = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
+    day_50_moving_average = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
+    day_200_moving_average = models.DecimalField(
+        max_digits=15, decimal_places=4, blank=True, null=True
+    )
+    shares_outstanding = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     dividend_date = models.DateField(blank=True, null=True)
     ex_dividend_date = models.DateField(blank=True, null=True)
-    
+
     # === 메타 정보 ===
     last_updated = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    last_api_call = models.DateTimeField(blank=True, null=True,
-                                         help_text="Last time Alpha Vantage API was called for this stock")
+    last_api_call = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Last time Alpha Vantage API was called for this stock",
+    )
 
     class Meta:
-        db_table = 'stocks_stock'
+        db_table = "stocks_stock"
         indexes = [
-            models.Index(fields=['sector']),
-            models.Index(fields=['industry']),
-            models.Index(fields=['market_capitalization']),
-            models.Index(fields=['last_updated']),
-            models.Index(fields=['symbol', 'sector']),  # 복합 인덱스
-            models.Index(fields=['real_time_price']),   # 가격 기준 조회용
+            models.Index(fields=["sector"]),
+            models.Index(fields=["industry"]),
+            models.Index(fields=["market_capitalization"]),
+            models.Index(fields=["last_updated"]),
+            models.Index(fields=["symbol", "sector"]),  # 복합 인덱스
+            models.Index(fields=["real_time_price"]),  # 가격 기준 조회용
         ]
 
     def __str__(self):
@@ -108,29 +168,30 @@ class Stock(models.Model):
     def change_percent_numeric(self):
         """퍼센트 문자열을 숫자로 변환"""
         if self.change_percent:
-            return float(self.change_percent.rstrip('%'))
+            return float(self.change_percent.rstrip("%"))
         return 0.0
 
     @property
     def is_profitable(self):
         """수익성 여부 확인"""
         return self.change >= 0
-    
+
+
 # === 가격 데이터 기본 클래스 ===
 class BasePriceData(models.Model):
     """
     모든 가격 데이터가 공유하는 기본 필드들
     Abstract 모델로 실제 테이블은 생성되지 않음
     """
-    
+
     # 통화 선택
     CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('KRW', 'KRW'),
+        ("USD", "USD"),
+        ("KRW", "KRW"),
     )
 
     # 주식 (ForeignKey로 관계 설정)
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, to_field='symbol')
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE, to_field="symbol")
     # 통화
     currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default="USD")
     # 날짜
@@ -151,8 +212,8 @@ class BasePriceData(models.Model):
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['stock', 'date']),
-            models.Index(fields=['date']),
+            models.Index(fields=["stock", "date"]),
+            models.Index(fields=["date"]),
         ]
 
     def __str__(self):
@@ -181,15 +242,15 @@ class DailyPrice(BasePriceData):
     """
 
     class Meta:
-        db_table = 'stocks_daily_price'
-        unique_together = ('stock', 'date')
+        db_table = "stocks_daily_price"
+        unique_together = ("stock", "date")
         indexes = [
-            models.Index(fields=['stock', 'date']),
-            models.Index(fields=['date', 'volume']),  # 거래량 기준 조회용
-            models.Index(fields=['stock', '-date']),  # 최신 데이터 조회용
+            models.Index(fields=["stock", "date"]),
+            models.Index(fields=["date", "volume"]),  # 거래량 기준 조회용
+            models.Index(fields=["stock", "-date"]),  # 최신 데이터 조회용
         ]
-        verbose_name = 'Daily Price'
-        verbose_name_plural = 'Daily Prices'
+        verbose_name = "Daily Price"
+        verbose_name_plural = "Daily Prices"
 
     def __str__(self):
         return f"{self.stock.symbol} Daily - {self.date}: ${self.close_price}"
@@ -201,26 +262,27 @@ class WeeklyPrice(BasePriceData):
     주간 주가 데이터 (TIME_SERIES_WEEKLY)
     주 단위 집계 데이터, 매주 금요일 기준
     """
-    
+
     # 해당 주의 첫 거래일
     week_start_date = models.DateField(db_index=True)
-    # 해당 주의 마지막 거래일  
+    # 해당 주의 마지막 거래일
     week_end_date = models.DateField(db_index=True)
     # 주간 평균 거래량
     average_volume = models.BigIntegerField(null=True, blank=True)
 
     class Meta:
-        db_table = 'stocks_weekly_price'
-        unique_together = ('stock', 'date')  # date는 주말 날짜 (금요일)
+        db_table = "stocks_weekly_price"
+        unique_together = ("stock", "date")  # date는 주말 날짜 (금요일)
         indexes = [
-            models.Index(fields=['stock', 'date']),
-            models.Index(fields=['stock', '-date']),
+            models.Index(fields=["stock", "date"]),
+            models.Index(fields=["stock", "-date"]),
         ]
-        verbose_name = 'Weekly Price'
-        verbose_name_plural = 'Weekly Prices'
+        verbose_name = "Weekly Price"
+        verbose_name_plural = "Weekly Prices"
 
     def __str__(self):
         return f"{self.stock.symbol} Weekly - {self.date}: ${self.close_price}"
+
 
 class BasicFinancialStatement(models.Model):
     """
@@ -230,18 +292,18 @@ class BasicFinancialStatement(models.Model):
     ## 선택
     # 기간 선택
     PERIOD_CHOICES = (
-        ('annual', 'Annual'),
-        ('quarterly', 'Quarterly'),
+        ("annual", "Annual"),
+        ("quarterly", "Quarterly"),
     )
     # 통화 선택
     CURRENCY_CHOICES = (
-        ('USD', 'USD'),
-        ('KRW', 'KRW'),
+        ("USD", "USD"),
+        ("KRW", "KRW"),
     )
 
     ## 기본정보
     # 주식 (ForeignKey로 관계 설정)
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, to_field='symbol')
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE, to_field="symbol")
     # 공시일/발표일
     reported_date = models.DateField(db_index=True)
     # 업데이트 날짜
@@ -256,116 +318,190 @@ class BasicFinancialStatement(models.Model):
     fiscal_year = models.IntegerField(db_index=True)
     # 회계분기 (분기별 데이터의 경우)
     fiscal_quarter = models.IntegerField(
-        blank=True, 
-        null=True, 
+        blank=True,
+        null=True,
         db_index=True,
-        validators=[MinValueValidator(1), MaxValueValidator(4)]
+        validators=[MinValueValidator(1), MaxValueValidator(4)],
     )
 
     class Meta:
         abstract = True
         indexes = [
-            models.Index(fields=['stock', 'period_type', 'fiscal_year']),
-            models.Index(fields=['reported_date']),
+            models.Index(fields=["stock", "period_type", "fiscal_year"]),
+            models.Index(fields=["reported_date"]),
         ]
 
-    
+
 class BalanceSheet(BasicFinancialStatement):
     """
     재무제표 중 대차대조표 (연간, 분기)
     """
-    
+
     ## 대차대조표 항목
     # 총 자산
-    total_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 유동자산 총계
-    total_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_current_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 현금 및 현금성 자산
-    cash_and_cash_equivalents_at_carrying_value = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cash_and_cash_equivalents_at_carrying_value = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 현금 및 단기투자
-    cash_and_short_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cash_and_short_term_investments = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 재고자산
-    inventory = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    inventory = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 유동매출채권
-    current_net_receivables = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    # 비유동자산 총계 
-    total_non_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    current_net_receivables = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+    # 비유동자산 총계
+    total_non_current_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 유형자산
-    property_plant_equipment = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    property_plant_equipment = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 유형자산 감가상각누계액
-    accumulated_depreciation_amortization_ppe = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    accumulated_depreciation_amortization_ppe = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 무형자산
-    intangible_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    intangible_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업권 제외 무형자산
-    intangible_assets_excluding_goodwill = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    intangible_assets_excluding_goodwill = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업권
-    goodwill = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    # 투자자산 
-    investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    goodwill = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+    # 투자자산
+    investments = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 장기투자자산
-    long_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    long_term_investments = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 단기투자자산
-    short_term_investments = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    short_term_investments = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 기타유동자산
-    other_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    other_current_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 기타 비유동 자산
-    other_non_current_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    
+    other_non_current_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+
     # 부채 관련
     # 총 부채
-    total_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 총 유동부채
-    total_current_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_current_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 매입채무 총액
-    current_accounts_payable = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    current_accounts_payable = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 선수수익(선수금)
-    deferred_revenue = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    deferred_revenue = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 유동부채
-    current_debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    current_debt = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 단기차입금
-    short_term_debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    short_term_debt = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 비유동부채
-    total_non_current_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_non_current_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자본리스부채
-    capital_lease_obligations = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    capital_lease_obligations = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 장기 차입금
-    long_term_debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    long_term_debt = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 1년 내 상환해야할 장기차입금
-    current_longterm_debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    current_longterm_debt = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 1년 이후 상환 장기차입금
-    longterm_debt_noncurrent = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    longterm_debt_noncurrent = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 총차입금
-    short_longterm_debt_total = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    short_longterm_debt_total = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 기타 유동부채
-    other_current_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    other_current_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 기타 비유동부채
-    other_non_current_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
-    
+    other_non_current_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
+
     # 자본 관련
     # 자기자본
-    total_shareholder_equity = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_shareholder_equity = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자사주
-    treasury_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    treasury_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 이익잉여금
-    retained_earnings = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    retained_earnings = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 보통주 자본금
-    common_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    common_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 발행주식 수
-    common_stock_shares_outstanding = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    common_stock_shares_outstanding = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'stocks_balance_sheet'
-        unique_together = ('stock', 'period_type', 'fiscal_year', 'fiscal_quarter')
+        db_table = "stocks_balance_sheet"
+        unique_together = ("stock", "period_type", "fiscal_year", "fiscal_quarter")
         indexes = [
-            models.Index(fields=['stock', 'fiscal_year']),
-            models.Index(fields=['period_type', 'fiscal_year']),
+            models.Index(fields=["stock", "fiscal_year"]),
+            models.Index(fields=["period_type", "fiscal_year"]),
         ]
 
     def __str__(self):
         quarter_str = f"Q{self.fiscal_quarter}" if self.fiscal_quarter else ""
-        return f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        return (
+            f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        )
 
-    
+
 class IncomeStatement(BasicFinancialStatement):
     """
     재무제표 중 손익계산서
@@ -374,65 +510,111 @@ class IncomeStatement(BasicFinancialStatement):
 
     ## 손익계산서 항목
     # 총매출
-    total_revenue = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    total_revenue = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 매출 총이익
-    gross_profit = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    gross_profit = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 매출 원가
-    cost_of_revenue = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cost_of_revenue = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 판매된 상품 및 서비스의 원가
-    cost_of_goods_and_services_sold = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cost_of_goods_and_services_sold = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업 이익
-    operating_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    operating_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 판매비 및 관리비
-    selling_general_and_administrative = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    selling_general_and_administrative = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 연구개발비
-    research_and_development = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    research_and_development = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업 비용
-    operating_expenses = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    operating_expenses = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 투자수익(순)
-    investment_income_net = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    investment_income_net = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 순이자수익
-    net_interest_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    net_interest_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 이자수익
-    interest_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    interest_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 이자비용
-    interest_expense = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    interest_expense = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 비이자수익
-    non_interest_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    non_interest_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 기타 영업외 수익
-    other_non_operating_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    other_non_operating_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 감가상각비
-    depreciation = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    depreciation = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 감가상각 및 상각비
-    depreciation_and_amortization = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    depreciation_and_amortization = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 세전이익
-    income_before_tax = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    income_before_tax = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 법인세비용
-    income_tax_expense = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    income_tax_expense = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 이자 및 부채비용
-    interest_and_debt_expense = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    interest_and_debt_expense = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 계속사업순이익
-    net_income_from_continuing_operations = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    net_income_from_continuing_operations = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 포괄순이익(세후)
-    comprehensive_income_net_of_tax = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    comprehensive_income_net_of_tax = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # EBIT
     ebit = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # EBITDA
     ebitda = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
     # 당기 순이익
-    net_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    net_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'stocks_income_statement'
-        unique_together = ('stock', 'period_type', 'fiscal_year', 'fiscal_quarter')
+        db_table = "stocks_income_statement"
+        unique_together = ("stock", "period_type", "fiscal_year", "fiscal_quarter")
         indexes = [
-            models.Index(fields=['stock', 'fiscal_year']),
-            models.Index(fields=['period_type', 'fiscal_year']),
+            models.Index(fields=["stock", "fiscal_year"]),
+            models.Index(fields=["period_type", "fiscal_year"]),
         ]
 
     def __str__(self):
         quarter_str = f"Q{self.fiscal_quarter}" if self.fiscal_quarter else ""
-        return f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        return (
+            f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        )
 
     @property
     def gross_profit_margin(self):
@@ -461,77 +643,136 @@ class CashFlowStatement(BasicFinancialStatement):
     재무제표 중 현금흐름표
     Alpha Vantage CASH_FLOW API 데이터 저장
     """
-    
+
     ## 현금흐름표 항목
     # 영업활동으로 인한 현금흐름
-    operating_cashflow = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    operating_cashflow = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업활동 관련 지불액
-    payments_for_operating_activities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    payments_for_operating_activities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업활동 관련 수익금
-    proceeds_from_operating_activities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_operating_activities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업부채 변동액
-    change_in_operating_liabilities = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_operating_liabilities = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 영업자산 변동액
-    change_in_operating_assets = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_operating_assets = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 감가상각, 소모 및 상각비
-    depreciation_depletion_and_amortization = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    depreciation_depletion_and_amortization = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자본적 지출
-    capital_expenditures = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    capital_expenditures = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 매출채권 변동액
-    change_in_receivables = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_receivables = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 재고자산 변동액
-    change_in_inventory = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_inventory = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 손익
-    profit_loss = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    profit_loss = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 투자활동으로 인한 현금흐름
-    cashflow_from_investment = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cashflow_from_investment = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 재무활동으로 인한 현금흐름
-    cashflow_from_financing = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    cashflow_from_financing = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 단기 부채 상환 관련 수익금
-    proceeds_from_repayments_of_short_term_debt = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_repayments_of_short_term_debt = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 보통주 자사주 매입 관련 지불액
-    payments_for_repurchase_of_common_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    payments_for_repurchase_of_common_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자본 재매입 관련 지불액
-    payments_for_repurchase_of_equity = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    payments_for_repurchase_of_equity = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 우선주 재매입 관련 지불액
-    payments_for_repurchase_of_preferred_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    payments_for_repurchase_of_preferred_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 배당금 지급액
-    dividend_payout = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    dividend_payout = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 보통주 배당금 지급액
-    dividend_payout_common_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    dividend_payout_common_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 우선주 배당금 지급액
-    dividend_payout_preferred_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    dividend_payout_preferred_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 보통주 발행 수익금
-    proceeds_from_issuance_of_common_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_issuance_of_common_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 장기 부채 및 자본증권 발행 수익금 (순액)
-    proceeds_from_issuance_of_long_term_debt_and_capital_securities_net = models.DecimalField(
-        max_digits=20, decimal_places=2, blank=True, null=True,
-        db_column='proceeds_lt_debt_capital_securities_net'
+    proceeds_from_issuance_of_long_term_debt_and_capital_securities_net = (
+        models.DecimalField(
+            max_digits=20,
+            decimal_places=2,
+            blank=True,
+            null=True,
+            db_column="proceeds_lt_debt_capital_securities_net",
+        )
     )
     # 우선주 발행 수익금
-    proceeds_from_issuance_of_preferred_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_issuance_of_preferred_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자본 재매입을 통한 수익금
-    proceeds_from_repurchase_of_equity = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_repurchase_of_equity = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 자사주 매각 수익금
-    proceeds_from_sale_of_treasury_stock = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    proceeds_from_sale_of_treasury_stock = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 현금 및 현금성 자산 변동액
-    change_in_cash_and_cash_equivalents = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_cash_and_cash_equivalents = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 환율 변동으로 인한 현금흐름 변동액
-    change_in_exchange_rate = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    change_in_exchange_rate = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
     # 순이익
-    net_income = models.DecimalField(max_digits=20, decimal_places=2, blank=True, null=True)
+    net_income = models.DecimalField(
+        max_digits=20, decimal_places=2, blank=True, null=True
+    )
 
     class Meta:
-        db_table = 'stocks_cash_flow_statement'
-        unique_together = ('stock', 'period_type', 'fiscal_year', 'fiscal_quarter')
+        db_table = "stocks_cash_flow_statement"
+        unique_together = ("stock", "period_type", "fiscal_year", "fiscal_quarter")
         indexes = [
-            models.Index(fields=['stock', 'fiscal_year']),
-            models.Index(fields=['period_type', 'fiscal_year']),
+            models.Index(fields=["stock", "fiscal_year"]),
+            models.Index(fields=["period_type", "fiscal_year"]),
         ]
 
     def __str__(self):
         quarter_str = f"Q{self.fiscal_quarter}" if self.fiscal_quarter else ""
-        return f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        return (
+            f"[{self.stock.symbol}] {self.period_type} {self.fiscal_year}{quarter_str}"
+        )
 
     @property
     def free_cash_flow(self):
@@ -554,12 +795,12 @@ class PriceDataManager:
     가격 데이터 조회를 위한 통합 매니저
     여러 테이블에서 데이터를 조회하는 헬퍼 클래스
     """
-    
+
     @staticmethod
     def get_price_data(symbol, data_type, start_date=None, end_date=None, limit=None):
         """
         통합 가격 데이터 조회
-        
+
         Args:
             symbol: 주식 심볼
             data_type: 'daily', 'weekly'
@@ -567,60 +808,59 @@ class PriceDataManager:
             end_date: 종료 날짜
             limit: 조회 제한 수
         """
-        
+
         model_mapping = {
-            'daily': DailyPrice,
-            'weekly': WeeklyPrice,
+            "daily": DailyPrice,
+            "weekly": WeeklyPrice,
         }
-        
+
         if data_type not in model_mapping:
             raise ValueError(f"Invalid data_type: {data_type}")
-        
+
         model_class = model_mapping[data_type]
         queryset = model_class.objects.filter(stock__symbol=symbol)
-        
+
         if start_date:
             queryset = queryset.filter(date__gte=start_date)
         if end_date:
             queryset = queryset.filter(date__lte=end_date)
-            
-        queryset = queryset.order_by('-date')
-        
+
+        queryset = queryset.order_by("-date")
+
         if limit:
             queryset = queryset[:limit]
-            
+
         return queryset
-    
+
     @staticmethod
-    def get_latest_price(symbol, data_type='daily'):
+    def get_latest_price(symbol, data_type="daily"):
         """최신 가격 데이터 조회"""
         try:
             return PriceDataManager.get_price_data(symbol, data_type, limit=1).first()
         except:
             return None
-    
+
     @staticmethod
-    def get_price_range(symbol, days=30, data_type='daily'):
+    def get_price_range(symbol, days=30, data_type="daily"):
         """특정 기간의 가격 데이터 조회"""
         from datetime import date, timedelta
+
         end_date = date.today()
         start_date = end_date - timedelta(days=days)
-        
-        return PriceDataManager.get_price_data(
-            symbol, data_type, start_date, end_date
-        )
+
+        return PriceDataManager.get_price_data(symbol, data_type, start_date, end_date)
 
     @staticmethod
     def get_model_class(data_type):
         """데이터 타입에 해당하는 모델 클래스 반환"""
         model_mapping = {
-            'daily': DailyPrice,
-            'weekly': WeeklyPrice,
+            "daily": DailyPrice,
+            "weekly": WeeklyPrice,
         }
-        
+
         if data_type not in model_mapping:
             raise ValueError(f"Invalid data_type: {data_type}")
-        
+
         return model_mapping[data_type]
 
 
@@ -631,6 +871,7 @@ class PriceDataView(models.Model):
     모든 가격 데이터를 하나의 뷰로 조회할 때 사용
     읽기 전용 뷰로 실제 테이블은 아님
     """
+
     stock_symbol = models.CharField(max_length=20)
     data_type = models.CharField(max_length=10)
     date = models.DateField()
@@ -642,7 +883,8 @@ class PriceDataView(models.Model):
 
     class Meta:
         managed = False  # Django가 이 테이블을 관리하지 않음 (DB 뷰)
-        db_table = 'price_data_view'
+        db_table = "price_data_view"
+
 
 class SP500Constituent(models.Model):
     """
@@ -651,38 +893,41 @@ class SP500Constituent(models.Model):
     FMP API에서 가져온 S&P 500 인덱스 구성 종목 정보.
     월 1회 동기화하여 최신 상태 유지.
     """
+
     symbol = models.CharField(max_length=10, unique=True, db_index=True)
     company_name = models.CharField(max_length=255)
     sector = models.CharField(max_length=100, db_index=True)
-    sub_sector = models.CharField(max_length=100, blank=True, default='')
-    head_quarter = models.CharField(max_length=200, blank=True, default='')
+    sub_sector = models.CharField(max_length=100, blank=True, default="")
+    head_quarter = models.CharField(max_length=200, blank=True, default="")
     date_added = models.DateField(blank=True, null=True)
-    cik = models.CharField(max_length=20, blank=True, default='')
-    founded = models.CharField(max_length=20, blank=True, default='')
+    cik = models.CharField(max_length=20, blank=True, default="")
+    founded = models.CharField(max_length=20, blank=True, default="")
     is_active = models.BooleanField(default=True, db_index=True)
     is_core_universe = models.BooleanField(
-        default=True, db_index=True,
-        help_text="핵심 커버리지 여부"
+        default=True, db_index=True, help_text="핵심 커버리지 여부"
     )
     universe_source = models.CharField(
-        max_length=50, default='sp500',
+        max_length=50,
+        default="sp500",
         choices=[
-            ('sp500', 'S&P 500 Index'),
-            ('manual', 'Manual Addition'),
-            ('screener', 'Screener Result'),
-        ]
+            ("sp500", "S&P 500 Index"),
+            ("manual", "Manual Addition"),
+            ("screener", "Screener Result"),
+        ],
     )
     industry = models.CharField(
-        max_length=100, blank=True, default='',
-        help_text="세부 산업 (FMP Profile industry)"
+        max_length=100,
+        blank=True,
+        default="",
+        help_text="세부 산업 (FMP Profile industry)",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'stocks_sp500_constituent'
+        db_table = "stocks_sp500_constituent"
         indexes = [
-            models.Index(fields=['is_active', 'symbol']),
+            models.Index(fields=["is_active", "symbol"]),
         ]
 
     def __str__(self):
@@ -696,16 +941,25 @@ class StockOverviewKo(models.Model):
     Gemini를 사용하여 기업 개요를 한국어로 생성.
     주 1회 또는 월 1회 갱신.
     """
-    stock = models.OneToOneField('Stock', on_delete=models.CASCADE, related_name='overview_ko', primary_key=True)
+
+    stock = models.OneToOneField(
+        "Stock", on_delete=models.CASCADE, related_name="overview_ko", primary_key=True
+    )
 
     # 한글 개요 내용
     summary = models.TextField(help_text="한글 기업 개요 요약 (2-3문단)")
-    business_model = models.TextField(blank=True, default='', help_text="사업 모델 설명")
-    competitive_edge = models.TextField(blank=True, default='', help_text="경쟁 우위 및 해자")
-    risk_factors = models.TextField(blank=True, default='', help_text="주요 리스크 요인")
+    business_model = models.TextField(
+        blank=True, default="", help_text="사업 모델 설명"
+    )
+    competitive_edge = models.TextField(
+        blank=True, default="", help_text="경쟁 우위 및 해자"
+    )
+    risk_factors = models.TextField(
+        blank=True, default="", help_text="주요 리스크 요인"
+    )
 
     # 메타데이터
-    llm_model = models.CharField(max_length=50, default='gemini-2.5-flash')
+    llm_model = models.CharField(max_length=50, default="gemini-2.5-flash")
     generated_at = models.DateTimeField()
     generation_time_ms = models.PositiveIntegerField(null=True, blank=True)
 
@@ -713,7 +967,7 @@ class StockOverviewKo(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'stocks_overview_ko'
+        db_table = "stocks_overview_ko"
 
     def __str__(self):
         return f"{self.stock_id} 한글 개요"
@@ -724,25 +978,29 @@ class IndustryClassification(models.Model):
     산업별 분류 및 특수 처리 모드.
     금융/보험/REIT/유틸리티 등 특수 산업은 일부 카테고리 해석 제한.
     """
+
     industry = models.CharField(max_length=100, unique=True)
-    sector = models.CharField(max_length=100, blank=True, default='')
+    sector = models.CharField(max_length=100, blank=True, default="")
     handling_mode = models.CharField(
-        max_length=10, default='standard',
+        max_length=10,
+        default="standard",
         choices=[
-            ('standard', '일반'),
-            ('special', '특수 산업'),
+            ("standard", "일반"),
+            ("special", "특수 산업"),
         ],
-        help_text="special: 금융/보험/REIT/유틸리티 등. 일부 카테고리 해석 제한 표시."
+        help_text="special: 금융/보험/REIT/유틸리티 등. 일부 카테고리 해석 제한 표시.",
     )
     special_note = models.CharField(
-        max_length=200, blank=True, default='',
-        help_text="special일 때 UI 고지문. e.g. '금융업 특성상 일반 해석과 다를 수 있습니다'"
+        max_length=200,
+        blank=True,
+        default="",
+        help_text="special일 때 UI 고지문. e.g. '금융업 특성상 일반 해석과 다를 수 있습니다'",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'stocks_industry_classification'
+        db_table = "stocks_industry_classification"
 
     def __str__(self):
         return f"{self.industry} ({self.handling_mode})"
@@ -753,12 +1011,15 @@ import uuid
 
 class EODSignal(models.Model):
     """일별 종목 시그널 (EOD Dashboard 핵심 테이블)"""
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE)
+
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE)
     date = models.DateField(db_index=True)
 
     # 시그널 데이터 (JSONB)
-    signals = models.JSONField(default=list)       # [{"id":"V1","category":"volume",...}]
-    tag_details = models.JSONField(default=dict)   # {"primary":"V1","sub_tags":["P1","MA1"]}
+    signals = models.JSONField(default=list)  # [{"id":"V1","category":"volume",...}]
+    tag_details = models.JSONField(
+        default=dict
+    )  # {"primary":"V1","sub_tags":["P1","MA1"]}
 
     # 집계
     signal_count = models.IntegerField(default=0)
@@ -776,20 +1037,20 @@ class EODSignal(models.Model):
     dollar_volume = models.DecimalField(max_digits=20, decimal_places=2, default=0)
 
     # 섹터 캐시 (relation 시그널 계산용)
-    sector = models.CharField(max_length=100, blank=True, default='')
-    industry = models.CharField(max_length=100, blank=True, default='')
+    sector = models.CharField(max_length=100, blank=True, default="")
+    industry = models.CharField(max_length=100, blank=True, default="")
     market_cap = models.BigIntegerField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'stocks_eod_signal'
-        unique_together = ('stock', 'date')
+        db_table = "stocks_eod_signal"
+        unique_together = ("stock", "date")
         indexes = [
-            models.Index(fields=['date', '-composite_score']),
-            models.Index(fields=['date', '-signal_count']),
-            models.Index(fields=['stock', '-date']),
-            models.Index(fields=['date', 'sector']),
+            models.Index(fields=["date", "-composite_score"]),
+            models.Index(fields=["date", "-signal_count"]),
+            models.Index(fields=["stock", "-date"]),
+            models.Index(fields=["date", "sector"]),
         ]
 
     def __str__(self):
@@ -798,7 +1059,8 @@ class EODSignal(models.Model):
 
 class SignalAccuracy(models.Model):
     """시그널 정확도 추적"""
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE)
+
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE)
     signal_date = models.DateField()
     signal_tag = models.CharField(max_length=10)
     signal_value = models.FloatField()
@@ -821,10 +1083,10 @@ class SignalAccuracy(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'stocks_signal_accuracy'
-        unique_together = ('stock', 'signal_date', 'signal_tag')
+        db_table = "stocks_signal_accuracy"
+        unique_together = ("stock", "signal_date", "signal_tag")
         indexes = [
-            models.Index(fields=['signal_date', 'signal_tag']),
+            models.Index(fields=["signal_date", "signal_tag"]),
         ]
 
     def __str__(self):
@@ -833,6 +1095,7 @@ class SignalAccuracy(models.Model):
 
 class EODDashboardSnapshot(models.Model):
     """Baked JSON 스냅샷"""
+
     date = models.DateField(unique=True)
     json_data = models.JSONField()
     total_signals = models.IntegerField(default=0)
@@ -843,7 +1106,7 @@ class EODDashboardSnapshot(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'stocks_eod_dashboard_snapshot'
+        db_table = "stocks_eod_dashboard_snapshot"
 
     def __str__(self):
         return f"Snapshot {self.date} ({self.total_signals} signals)"
@@ -851,11 +1114,12 @@ class EODDashboardSnapshot(models.Model):
 
 class PipelineLog(models.Model):
     """파이프라인 실행 로그"""
+
     STATUS_CHOICES = [
-        ('running', 'Running'),
-        ('success', 'Success'),
-        ('partial', 'Partial'),
-        ('failed', 'Failed'),
+        ("running", "Running"),
+        ("success", "Success"),
+        ("partial", "Partial"),
+        ("failed", "Failed"),
     ]
 
     date = models.DateField(db_index=True)
@@ -869,15 +1133,15 @@ class PipelineLog(models.Model):
     ingest_quality = models.JSONField(default=dict)
 
     total_duration_seconds = models.FloatField(default=0.0)
-    error_message = models.TextField(blank=True, default='')
+    error_message = models.TextField(blank=True, default="")
 
     started_at = models.DateTimeField()
     completed_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'stocks_pipeline_log'
-        indexes = [models.Index(fields=['-date', 'status'])]
+        db_table = "stocks_pipeline_log"
+        indexes = [models.Index(fields=["-date", "status"])]
 
     def __str__(self):
         return f"Pipeline {self.date} [{self.status}] ({self.run_id})"
@@ -885,28 +1149,29 @@ class PipelineLog(models.Model):
 
 class StockNews(models.Model):
     """뉴스 기사 저장. News Enricher가 계층적 매칭에 사용."""
-    stock = models.ForeignKey('Stock', on_delete=models.CASCADE, null=True, blank=True)
-    symbol = models.CharField(max_length=10, db_index=True, blank=True, default='')
+
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE, null=True, blank=True)
+    symbol = models.CharField(max_length=10, db_index=True, blank=True, default="")
     headline = models.TextField()
-    summary = models.TextField(blank=True, default='')
-    source = models.CharField(max_length=100, blank=True, default='')
-    url = models.URLField(max_length=500, blank=True, default='')
+    summary = models.TextField(blank=True, default="")
+    source = models.CharField(max_length=100, blank=True, default="")
+    url = models.URLField(max_length=500, blank=True, default="")
     published_at = models.DateTimeField(db_index=True)
 
     # 매칭용 메타데이터
-    sector = models.CharField(max_length=100, blank=True, default='')
-    industry = models.CharField(max_length=100, blank=True, default='')
-    sentiment = models.CharField(max_length=20, blank=True, default='')
+    sector = models.CharField(max_length=100, blank=True, default="")
+    industry = models.CharField(max_length=100, blank=True, default="")
+    sentiment = models.CharField(max_length=20, blank=True, default="")
 
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'stocks_stock_news'
+        db_table = "stocks_stock_news"
         indexes = [
-            models.Index(fields=['symbol', '-published_at']),
-            models.Index(fields=['sector', '-published_at']),
-            models.Index(fields=['industry', '-published_at']),
-            models.Index(fields=['-published_at']),
+            models.Index(fields=["symbol", "-published_at"]),
+            models.Index(fields=["sector", "-published_at"]),
+            models.Index(fields=["industry", "-published_at"]),
+            models.Index(fields=["-published_at"]),
         ]
 
     def __str__(self):

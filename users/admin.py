@@ -4,12 +4,11 @@ from .models import User
 
 # Register your models here.
 
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = (
-        (None, {
-            'fields': ('user_name', 'password', 'nick_name', 'favorite_stock')
-        }),
+        (None, {"fields": ("user_name", "password", "nick_name", "favorite_stock")}),
         (
             "Permissions",
             {

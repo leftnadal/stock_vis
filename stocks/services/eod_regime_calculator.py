@@ -27,14 +27,14 @@ logger = logging.getLogger(__name__)
 
 # 상대값 하한선: rolling_mean 대비 배수 기준
 RELATIVE_FLOOR = {
-    'high_vol': 2.5,    # VIX가 평균의 2.5배 이상 → 무조건 high_vol
-    'elevated': 1.5,    # VIX가 평균의 1.5배 이상 + z >= 0.5 → elevated
+    "high_vol": 2.5,  # VIX가 평균의 2.5배 이상 → 무조건 high_vol
+    "elevated": 1.5,  # VIX가 평균의 1.5배 이상 + z >= 0.5 → elevated
 }
 
 # 데이터 부족 시 절대값 fallback
 ABSOLUTE_FALLBACK = {
-    'elevated': Decimal('25'),
-    'high_vol': Decimal('35'),
+    "elevated": Decimal("25"),
+    "high_vol": Decimal("35"),
 }
 
 
@@ -47,7 +47,7 @@ class DynamicRegimeCalculator:
         min_data_points: 최소 데이터 포인트 (default: 20)
     """
 
-    CACHE_KEY_PREFIX = 'vix_regime'
+    CACHE_KEY_PREFIX = "vix_regime"
     CACHE_TTL = 3600  # 1시간
 
     def __init__(self, lookback_days: int = 60, min_data_points: int = 20):
@@ -77,13 +77,15 @@ class DynamicRegimeCalculator:
             from macro.models import MarketIndexPrice, MarketIndex
 
             vix_index = MarketIndex.objects.filter(
-                symbol__in=['VIX', '^VIX', 'VIXX'],
-                category='volatility',
+                symbol__in=["VIX", "^VIX", "VIXX"],
+                category="volatility",
             ).first()
 
             if not vix_index:
-                logger.warning("[DynamicRegimeCalculator] VIX 인덱스 없음, 'normal' 반환")
-                return 'normal'
+                logger.warning(
+                    "[DynamicRegimeCalculator] VIX 인덱스 없음, 'normal' 반환"
+                )
+                return "normal"
 
             # lookback_days 거래일 ≈ 캘린더 기준 약 1.5배
             calendar_lookback = int(self.lookback_days * 1.5)
@@ -95,8 +97,8 @@ class DynamicRegimeCalculator:
                     date__gt=cutoff_date,
                     date__lte=target_date,
                 )
-                .order_by('date')
-                .values_list('close', flat=True)
+                .order_by("date")
+                .values_list("close", flat=True)
             )
 
             if len(prices) < self.min_data_points:
@@ -109,7 +111,7 @@ class DynamicRegimeCalculator:
 
             # 정확히 lookback_days 개수만 슬라이싱
             all_values = np.array([float(p) for p in prices])
-            window = all_values[-self.lookback_days:]
+            window = all_values[-self.lookback_days :]
             current = window[-1]
             rolling_mean = window.mean()
             rolling_std = window.std(ddof=1)  # 표본 표준편차
@@ -123,16 +125,16 @@ class DynamicRegimeCalculator:
             # 상대값 하한선: rolling_mean 대비 배수 기반
             mean_ratio = current / rolling_mean if rolling_mean > 0 else 1.0
 
-            if mean_ratio >= RELATIVE_FLOOR['high_vol']:
-                regime = 'high_vol'
+            if mean_ratio >= RELATIVE_FLOOR["high_vol"]:
+                regime = "high_vol"
             elif z_score >= 2.0:
-                regime = 'high_vol'
-            elif mean_ratio >= RELATIVE_FLOOR['elevated'] and z_score >= 0.5:
-                regime = 'elevated'
+                regime = "high_vol"
+            elif mean_ratio >= RELATIVE_FLOOR["elevated"] and z_score >= 0.5:
+                regime = "elevated"
             elif z_score >= 1.0:
-                regime = 'elevated'
+                regime = "elevated"
             else:
-                regime = 'normal'
+                regime = "normal"
 
             logger.info(
                 f"[DynamicRegimeCalculator] VIX={current:.1f}, "
@@ -143,15 +145,15 @@ class DynamicRegimeCalculator:
 
         except Exception as e:
             logger.warning(f"[DynamicRegimeCalculator] 오류 ({e}), 'normal' 반환")
-            return 'normal'
+            return "normal"
 
     def _absolute_fallback(self, price) -> str:
         """데이터 부족 시 절대값 기반 fallback (rolling_mean 계산 불가 시)."""
         if price is None:
-            return 'normal'
+            return "normal"
         price = Decimal(str(price))
-        if price >= ABSOLUTE_FALLBACK['high_vol']:
-            return 'high_vol'
-        if price >= ABSOLUTE_FALLBACK['elevated']:
-            return 'elevated'
-        return 'normal'
+        if price >= ABSOLUTE_FALLBACK["high_vol"]:
+            return "high_vol"
+        if price >= ABSOLUTE_FALLBACK["elevated"]:
+            return "elevated"
+        return "normal"

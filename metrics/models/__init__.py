@@ -4,6 +4,10 @@ from .metric_snapshot import CompanyMetricSnapshot
 from .benchmark import PeerListCache, IndustryMetricBenchmark, PeerMetricBenchmark
 
 __all__ = [
-    'MetricDefinition', 'BatchJobRun', 'CompanyMetricSnapshot',
-    'PeerListCache', 'IndustryMetricBenchmark', 'PeerMetricBenchmark',
+    "MetricDefinition",
+    "BatchJobRun",
+    "CompanyMetricSnapshot",
+    "PeerListCache",
+    "IndustryMetricBenchmark",
+    "PeerMetricBenchmark",
 ]

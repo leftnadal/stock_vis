@@ -31,10 +31,14 @@ logger = logging.getLogger(__name__)
 
 
 @extend_schema(
-    tags=['admin'],
-    summary='Provider 상태 조회',
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
-                                     description='providers/feature_flags/fallback_enabled')},
+    tags=["admin"],
+    summary="Provider 상태 조회",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="providers/feature_flags/fallback_enabled",
+        )
+    },
 )
 class ProviderStatusView(APIView):
     """
@@ -42,6 +46,7 @@ class ProviderStatusView(APIView):
 
     GET /api/v1/admin/providers/status/
     """
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -65,25 +70,25 @@ class ProviderStatusView(APIView):
                         "rate_limit": provider.get_rate_limit_status(),
                     }
                 except Exception as e:
-                    status_data["providers"][endpoint.value] = {
-                        "error": str(e)
-                    }
+                    status_data["providers"][endpoint.value] = {"error": str(e)}
 
             return Response(status_data)
 
         except Exception as e:
             logger.error(f"Provider status error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 @extend_schema(
-    tags=['admin'],
-    summary='Rate Limit 상태 조회 / 리셋',
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
-                                     description='Rate Limit 카운터')},
+    tags=["admin"],
+    summary="Rate Limit 상태 조회 / 리셋",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT, description="Rate Limit 카운터"
+        )
+    },
     request=OpenApiTypes.OBJECT,
 )
 class RateLimitStatusView(APIView):
@@ -92,6 +97,7 @@ class RateLimitStatusView(APIView):
 
     GET /api/v1/admin/providers/rate-limits/
     """
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -101,8 +107,7 @@ class RateLimitStatusView(APIView):
         except Exception as e:
             logger.error(f"Rate limit status error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     def post(self, request):
@@ -110,30 +115,33 @@ class RateLimitStatusView(APIView):
         provider = request.data.get("provider")
         if not provider:
             return Response(
-                {"error": "provider is required"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "provider is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
             limiter = get_rate_limiter(provider)
             limiter.reset()
-            return Response({
-                "message": f"Rate limit reset for {provider}",
-                "status": limiter.get_status()
-            })
+            return Response(
+                {
+                    "message": f"Rate limit reset for {provider}",
+                    "status": limiter.get_status(),
+                }
+            )
         except Exception as e:
             logger.error(f"Rate limit reset error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 @extend_schema(
-    tags=['admin'],
-    summary='Provider 캐시 관리',
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
-                                     description='캐시 통계 / 무효화 결과')},
+    tags=["admin"],
+    summary="Provider 캐시 관리",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT, description="캐시 통계 / 무효화 결과"
+        )
+    },
 )
 class CacheManagementView(APIView):
     """
@@ -142,6 +150,7 @@ class CacheManagementView(APIView):
     GET /api/v1/admin/providers/cache/
     DELETE /api/v1/admin/providers/cache/
     """
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -151,8 +160,7 @@ class CacheManagementView(APIView):
         except Exception as e:
             logger.error(f"Cache stats error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     def delete(self, request):
@@ -174,25 +182,24 @@ class CacheManagementView(APIView):
                 CacheStats.reset()
                 message = "Cache stats reset"
 
-            return Response({
-                "message": message,
-                "deleted_count": deleted_count
-            })
+            return Response({"message": message, "deleted_count": deleted_count})
 
         except Exception as e:
             logger.error(f"Cache invalidation error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 @extend_schema(
-    tags=['admin'],
-    summary='Provider 연결 테스트',
+    tags=["admin"],
+    summary="Provider 연결 테스트",
     request=OpenApiTypes.OBJECT,
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
-                                     description='Provider quote 테스트 결과')},
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT, description="Provider quote 테스트 결과"
+        )
+    },
 )
 class ProviderTestView(APIView):
     """
@@ -200,6 +207,7 @@ class ProviderTestView(APIView):
 
     POST /api/v1/admin/providers/test/
     """
+
     permission_classes = [IsAdminUser]
 
     def post(self, request):
@@ -215,36 +223,43 @@ class ProviderTestView(APIView):
             # 간단한 시세 조회 테스트
             response = provider.get_quote(symbol)
 
-            return Response({
-                "provider": provider_name,
-                "symbol": symbol,
-                "success": response.success,
-                "cached": response.cached,
-                "data": {
-                    "price": str(response.data.price) if response.data else None,
-                    "change": str(response.data.change) if response.data else None,
-                } if response.success else None,
-                "error": response.error if not response.success else None,
-            })
+            return Response(
+                {
+                    "provider": provider_name,
+                    "symbol": symbol,
+                    "success": response.success,
+                    "cached": response.cached,
+                    "data": {
+                        "price": str(response.data.price) if response.data else None,
+                        "change": str(response.data.change) if response.data else None,
+                    }
+                    if response.success
+                    else None,
+                    "error": response.error if not response.success else None,
+                }
+            )
 
         except ValueError as e:
             return Response(
                 {"error": f"Invalid provider: {provider_name}"},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
             logger.error(f"Provider test error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 @extend_schema(
-    tags=['admin'],
-    summary='Provider 설정 조회',
-    responses={200: OpenApiResponse(response=OpenApiTypes.OBJECT,
-                                     description='feature_flags/cache_ttl/rate_limits/fallback_enabled')},
+    tags=["admin"],
+    summary="Provider 설정 조회",
+    responses={
+        200: OpenApiResponse(
+            response=OpenApiTypes.OBJECT,
+            description="feature_flags/cache_ttl/rate_limits/fallback_enabled",
+        )
+    },
 )
 class ProviderConfigView(APIView):
     """
@@ -252,6 +267,7 @@ class ProviderConfigView(APIView):
 
     GET /api/v1/admin/providers/config/
     """
+
     permission_classes = [IsAdminUser]
 
     def get(self, request):
@@ -259,18 +275,19 @@ class ProviderConfigView(APIView):
         try:
             from django.conf import settings
 
-            return Response({
-                "feature_flags": settings.STOCK_PROVIDERS,
-                "cache_ttl": settings.PROVIDER_CACHE_TTL,
-                "rate_limits": settings.PROVIDER_RATE_LIMITS,
-                "fallback_enabled": settings.PROVIDER_FALLBACK_ENABLED,
-            })
+            return Response(
+                {
+                    "feature_flags": settings.STOCK_PROVIDERS,
+                    "cache_ttl": settings.PROVIDER_CACHE_TTL,
+                    "rate_limits": settings.PROVIDER_RATE_LIMITS,
+                    "fallback_enabled": settings.PROVIDER_FALLBACK_ENABLED,
+                }
+            )
 
         except Exception as e:
             logger.error(f"Provider config error: {e}")
             return Response(
-                {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -280,6 +297,7 @@ class HealthCheckView(APIView):
 
     GET /api/v1/health/
     """
+
     permission_classes = []  # 인증 불필요
 
     def get(self, request):
@@ -291,7 +309,7 @@ class HealthCheckView(APIView):
         health_status = {
             "status": "healthy",
             "timestamp": timezone.now().isoformat(),
-            "components": {}
+            "components": {},
         }
 
         # Database 체크
@@ -300,13 +318,13 @@ class HealthCheckView(APIView):
                 cursor.execute("SELECT 1")
             health_status["components"]["database"] = {
                 "status": "healthy",
-                "type": "postgresql"
+                "type": "postgresql",
             }
         except Exception:
             logger.exception("Health check: database probe failed")
             health_status["components"]["database"] = {
                 "status": "unhealthy",
-                "type": "postgresql"
+                "type": "postgresql",
             }
             health_status["status"] = "degraded"
 
@@ -316,7 +334,7 @@ class HealthCheckView(APIView):
             if cache.get("health_check") == "ok":
                 health_status["components"]["cache"] = {
                     "status": "healthy",
-                    "type": "redis"
+                    "type": "redis",
                 }
             else:
                 raise RuntimeError("Cache read/write mismatch")
@@ -324,7 +342,7 @@ class HealthCheckView(APIView):
             logger.exception("Health check: cache probe failed")
             health_status["components"]["cache"] = {
                 "status": "unhealthy",
-                "type": "redis"
+                "type": "redis",
             }
             health_status["status"] = "degraded"
 
@@ -333,13 +351,11 @@ class HealthCheckView(APIView):
             provider = ProviderFactory.get_provider(EndpointType.QUOTE)
             health_status["components"]["provider"] = {
                 "status": "healthy",
-                "active": provider.PROVIDER_NAME
+                "active": provider.PROVIDER_NAME,
             }
         except Exception:
             logger.exception("Health check: provider probe failed")
-            health_status["components"]["provider"] = {
-                "status": "unhealthy"
-            }
+            health_status["components"]["provider"] = {"status": "unhealthy"}
 
         return Response(health_status)
 

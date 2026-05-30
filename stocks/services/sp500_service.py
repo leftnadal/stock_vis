@@ -3,6 +3,7 @@ S&P 500 구성 종목 동기화 서비스
 
 FMP API에서 S&P 500 구성 종목을 가져와 DB에 저장/갱신합니다.
 """
+
 import logging
 from datetime import datetime
 from typing import Dict, List
@@ -35,25 +36,32 @@ class SP500Service:
         """
         logger.info("S&P 500 구성 종목 동기화 시작")
 
-        cb = get_circuit('fmp_sp500_constituents', failure_threshold=3, recovery_seconds=300)
+        cb = get_circuit(
+            "fmp_sp500_constituents", failure_threshold=3, recovery_seconds=300
+        )
         try:
             raw_constituents = cb.call(self.fmp_client.get_sp500_constituents)
         except CircuitBreakerError as exc:
             logger.error(f"FMP CB open — S&P 500 동기화 스킵: {exc}")
-            return {'created': 0, 'updated': 0, 'deactivated': 0, 'total': 0}
+            return {"created": 0, "updated": 0, "deactivated": 0, "total": 0}
 
         if not raw_constituents:
             logger.error("FMP에서 S&P 500 구성 종목을 가져오지 못했습니다")
-            return {'created': 0, 'updated': 0, 'deactivated': 0, 'total': 0}
+            return {"created": 0, "updated": 0, "deactivated": 0, "total": 0}
 
-        stats = {'created': 0, 'updated': 0, 'deactivated': 0, 'total': len(raw_constituents)}
+        stats = {
+            "created": 0,
+            "updated": 0,
+            "deactivated": 0,
+            "total": len(raw_constituents),
+        }
 
         # FMP에서 가져온 심볼 목록
         fetched_symbols = set()
 
         with transaction.atomic():
             for item in raw_constituents:
-                symbol = item.get('symbol', '').upper().strip()
+                symbol = item.get("symbol", "").upper().strip()
                 if not symbol:
                     continue
 
@@ -61,22 +69,22 @@ class SP500Service:
 
                 # dateFirstAdded 파싱
                 date_added = None
-                date_str = item.get('dateFirstAdded', '')
+                date_str = item.get("dateFirstAdded", "")
                 if date_str:
                     try:
-                        date_added = datetime.strptime(date_str, '%Y-%m-%d').date()
+                        date_added = datetime.strptime(date_str, "%Y-%m-%d").date()
                     except (ValueError, TypeError):
                         pass
 
                 defaults = {
-                    'company_name': item.get('name', '')[:255],
-                    'sector': item.get('sector', '')[:100],
-                    'sub_sector': item.get('subSector', '')[:100],
-                    'head_quarter': item.get('headQuarter', '')[:200],
-                    'date_added': date_added,
-                    'cik': item.get('cik', '')[:20],
-                    'founded': item.get('founded', '')[:20],
-                    'is_active': True,
+                    "company_name": item.get("name", "")[:255],
+                    "sector": item.get("sector", "")[:100],
+                    "sub_sector": item.get("subSector", "")[:100],
+                    "head_quarter": item.get("headQuarter", "")[:200],
+                    "date_added": date_added,
+                    "cik": item.get("cik", "")[:20],
+                    "founded": item.get("founded", "")[:20],
+                    "is_active": True,
                 }
 
                 obj, created = SP500Constituent.objects.update_or_create(
@@ -85,18 +93,18 @@ class SP500Service:
                 )
 
                 if created:
-                    stats['created'] += 1
+                    stats["created"] += 1
                 else:
-                    stats['updated'] += 1
+                    stats["updated"] += 1
 
             # 없어진 종목 비활성화
-            deactivated = SP500Constituent.objects.filter(
-                is_active=True
-            ).exclude(
-                symbol__in=fetched_symbols
-            ).update(is_active=False)
+            deactivated = (
+                SP500Constituent.objects.filter(is_active=True)
+                .exclude(symbol__in=fetched_symbols)
+                .update(is_active=False)
+            )
 
-            stats['deactivated'] = deactivated
+            stats["deactivated"] = deactivated
 
         logger.info(
             f"S&P 500 동기화 완료: "
@@ -110,8 +118,8 @@ class SP500Service:
         """활성 S&P 500 심볼 리스트 반환"""
         return list(
             SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
-            .order_by('symbol')
+            .values_list("symbol", flat=True)
+            .order_by("symbol")
         )
 
     @staticmethod

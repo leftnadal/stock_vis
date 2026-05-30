@@ -4,6 +4,7 @@ FMP API Market Movers Service
 Financial Modeling Prep API를 사용하여 시장 주도 종목(상승/하락/거래량 TOP)을 조회합니다.
 캐싱을 통해 API 호출을 최소화하고 성능을 최적화합니다.
 """
+
 import httpx
 from django.conf import settings
 from django.core.cache import cache
@@ -21,9 +22,9 @@ class FMPMarketMoversService:
 
     # 새 Stable API 엔드포인트 매핑
     ENDPOINT_MAP = {
-        'gainers': 'biggest-gainers',
-        'losers': 'biggest-losers',
-        'actives': 'most-actives',
+        "gainers": "biggest-gainers",
+        "losers": "biggest-losers",
+        "actives": "most-actives",
     }
 
     def __init__(self):
@@ -32,9 +33,7 @@ class FMPMarketMoversService:
             logger.warning("FMP_API_KEY가 설정되지 않았습니다.")
 
     def get_market_movers(
-        self,
-        mover_type: Literal['gainers', 'losers', 'actives'],
-        limit: int = 10
+        self, mover_type: Literal["gainers", "losers", "actives"], limit: int = 10
     ) -> list[dict]:
         """
         시장 주도 종목 조회 (동기)
@@ -65,8 +64,7 @@ class FMPMarketMoversService:
             with httpx.Client(timeout=10.0) as client:
                 # FMP Stable API 엔드포인트 사용
                 response = client.get(
-                    f"{self.BASE_URL}/{endpoint}",
-                    params={"apikey": self.api_key}
+                    f"{self.BASE_URL}/{endpoint}", params={"apikey": self.api_key}
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -110,8 +108,8 @@ class FMPMarketMoversService:
         from datetime import datetime
 
         return {
-            "gainers": self.get_market_movers('gainers', limit),
-            "losers": self.get_market_movers('losers', limit),
-            "actives": self.get_market_movers('actives', limit),
+            "gainers": self.get_market_movers("gainers", limit),
+            "losers": self.get_market_movers("losers", limit),
+            "actives": self.get_market_movers("actives", limit),
             "cached_at": datetime.now().isoformat(),
         }

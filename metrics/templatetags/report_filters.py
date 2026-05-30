@@ -1,4 +1,5 @@
 """Django template filters for daily_report.html."""
+
 from django import template
 
 register = template.Library()

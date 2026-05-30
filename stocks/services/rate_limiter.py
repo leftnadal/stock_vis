@@ -21,13 +21,13 @@ class APIRateLimiter:
 
     # API별 Rate Limit 설정 (FMP Starter Plan: audit P0 #7)
     LIMITS = {
-        'fmp': {
-            'per_minute': 300,
-            'per_day': 10000,
+        "fmp": {
+            "per_minute": 300,
+            "per_day": 10000,
         },
-        'yfinance': {
-            'per_minute': 60,  # yfinance는 제한이 느슨함
-            'per_day': 10000,
+        "yfinance": {
+            "per_minute": 60,  # yfinance는 제한이 느슨함
+            "per_day": 10000,
         },
     }
 
@@ -42,20 +42,22 @@ class APIRateLimiter:
         """
         self.api_name = api_name.lower()
         if self.api_name not in self.LIMITS:
-            raise ValueError(f"Unknown API: {api_name}. Supported: {list(self.LIMITS.keys())}")
+            raise ValueError(
+                f"Unknown API: {api_name}. Supported: {list(self.LIMITS.keys())}"
+            )
 
         self.limits = self.LIMITS[self.api_name]
 
     def _get_minute_key(self) -> str:
         """현재 분 단위 키 생성"""
         now = timezone.now()
-        minute = now.strftime('%Y%m%d%H%M')
+        minute = now.strftime("%Y%m%d%H%M")
         return self.MINUTE_KEY.format(api=self.api_name, minute=minute)
 
     def _get_day_key(self) -> str:
         """현재 일 단위 키 생성"""
         now = timezone.now()
-        date = now.strftime('%Y%m%d')
+        date = now.strftime("%Y%m%d")
         return self.DAY_KEY.format(api=self.api_name, date=date)
 
     def can_call(self) -> Tuple[bool, Optional[str]]:
@@ -70,12 +72,12 @@ class APIRateLimiter:
 
         # 분당 제한 확인
         minute_count = cache.get(minute_key, 0)
-        if minute_count >= self.limits['per_minute']:
+        if minute_count >= self.limits["per_minute"]:
             return False, f"분당 제한 초과 ({minute_count}/{self.limits['per_minute']})"
 
         # 일일 제한 확인
         day_count = cache.get(day_key, 0)
-        if day_count >= self.limits['per_day']:
+        if day_count >= self.limits["per_day"]:
             return False, f"일일 제한 초과 ({day_count}/{self.limits['per_day']})"
 
         return True, None
@@ -99,7 +101,9 @@ class APIRateLimiter:
             day_count = cache.get(day_key, 0)
             cache.set(day_key, day_count + 1, 86400)
 
-            logger.debug(f"Rate limit recorded for {self.api_name}: minute={minute_count + 1}, day={day_count + 1}")
+            logger.debug(
+                f"Rate limit recorded for {self.api_name}: minute={minute_count + 1}, day={day_count + 1}"
+            )
             return True
 
         except Exception as e:
@@ -126,18 +130,18 @@ class APIRateLimiter:
         can_call, _ = self.can_call()
 
         return {
-            'api': self.api_name,
-            'minute': {
-                'used': minute_count,
-                'limit': self.limits['per_minute'],
-                'remaining': max(0, self.limits['per_minute'] - minute_count),
+            "api": self.api_name,
+            "minute": {
+                "used": minute_count,
+                "limit": self.limits["per_minute"],
+                "remaining": max(0, self.limits["per_minute"] - minute_count),
             },
-            'day': {
-                'used': day_count,
-                'limit': self.limits['per_day'],
-                'remaining': max(0, self.limits['per_day'] - day_count),
+            "day": {
+                "used": day_count,
+                "limit": self.limits["per_day"],
+                "remaining": max(0, self.limits["per_day"] - day_count),
             },
-            'can_call': can_call,
+            "can_call": can_call,
         }
 
     def get_reset_time(self) -> dict:
@@ -156,11 +160,13 @@ class APIRateLimiter:
         minute_reset = (now + timedelta(minutes=1)).replace(second=0, microsecond=0)
 
         # 다음 날 (UTC 기준)
-        day_reset = (now + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_reset = (now + timedelta(days=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
 
         return {
-            'minute_reset': minute_reset.isoformat(),
-            'day_reset': day_reset.isoformat(),
+            "minute_reset": minute_reset.isoformat(),
+            "day_reset": day_reset.isoformat(),
         }
 
     def wait_for_available(self, max_wait: int = 60) -> bool:
@@ -230,10 +236,10 @@ def check_rate_limit(api_name: str) -> Tuple[bool, dict]:
         limiter = APIRateLimiter(api_name)
         can_call, reason = limiter.can_call()
         usage = limiter.get_usage()
-        usage['reason'] = reason
+        usage["reason"] = reason
         return can_call, usage
     except ValueError as e:
-        return False, {'error': str(e)}
+        return False, {"error": str(e)}
 
 
 def record_api_call(api_name: str) -> bool:

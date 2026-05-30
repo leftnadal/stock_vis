@@ -16,8 +16,8 @@ from .base import StockDataProvider, ProviderResponse
 from .factory import get_provider, ProviderType
 
 __all__ = [
-    'StockDataProvider',
-    'ProviderResponse',
-    'get_provider',
-    'ProviderType',
+    "StockDataProvider",
+    "ProviderResponse",
+    "get_provider",
+    "ProviderType",
 ]

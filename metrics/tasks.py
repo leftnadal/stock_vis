@@ -45,14 +45,16 @@ def send_daily_report_task(self):
 
         text_body = (
             f"Stock-Vis Daily Report — {today}\n"
-            f"{'='*50}\n\n"
+            f"{'=' * 50}\n\n"
             f"노드: {payload['graph']['total_nodes']}, 관계: {payload['graph']['total_relations']}\n"
             f"24h 뉴스: {payload['news']['today_new']} (LLM 분석률 {payload['news']['today_llm_analyzed_pct']}%)\n\n"
             f"개선방향: 🔴 {red} / 🟡 {yel} / 🟢 {grn}\n\n"
             f"HTML 본문에서 전체 내용 확인.\n"
         )
 
-        recipient = getattr(settings, "REPORT_RECIPIENT_EMAIL", "") or settings.EMAIL_HOST_USER
+        recipient = (
+            getattr(settings, "REPORT_RECIPIENT_EMAIL", "") or settings.EMAIL_HOST_USER
+        )
         if not recipient:
             logger.error("REPORT_RECIPIENT_EMAIL 미설정")
             return {"status": "skipped", "reason": "no_recipient"}
@@ -126,7 +128,9 @@ def send_agent_report_task(self, domain: str):
             f"HTML 본문에서 전체 audit 내용 확인.\n"
         )
 
-        recipient = getattr(settings, "REPORT_RECIPIENT_EMAIL", "") or settings.EMAIL_HOST_USER
+        recipient = (
+            getattr(settings, "REPORT_RECIPIENT_EMAIL", "") or settings.EMAIL_HOST_USER
+        )
         if not recipient:
             logger.error("REPORT_RECIPIENT_EMAIL 미설정")
             return {"status": "skipped", "reason": "no_recipient"}

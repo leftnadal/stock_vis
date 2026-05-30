@@ -12,6 +12,7 @@ Main use case for Stock-Vis:
 - Daily bulk download of US stock prices for correlation analysis
 - Graph ontology data collection (5,000 stocks daily)
 """
+
 import requests
 import logging
 import csv
@@ -30,10 +31,11 @@ class EODHDClient:
 
     Main use case: Bulk EOD price data for graph correlation analysis
     """
+
     BASE_URL = "https://eodhistoricaldata.com/api"
 
     # US 거래소 코드
-    US_EXCHANGES = ['US', 'NASDAQ', 'NYSE', 'AMEX']
+    US_EXCHANGES = ["US", "NASDAQ", "NYSE", "AMEX"]
 
     def __init__(self, api_key: Optional[str] = None):
         """
@@ -42,18 +44,17 @@ class EODHDClient:
         Args:
             api_key: EODHD API key (defaults to environment variable)
         """
-        self.api_key = api_key or os.getenv('EODHD_API_KEY')
+        self.api_key = api_key or os.getenv("EODHD_API_KEY")
 
         if not self.api_key:
-            raise ValueError("EODHD API Key not found. Set EODHD_API_KEY environment variable.")
+            raise ValueError(
+                "EODHD API Key not found. Set EODHD_API_KEY environment variable."
+            )
 
         logger.info("EODHD client initialized")
 
     def _make_request(
-        self,
-        endpoint: str,
-        params: Optional[Dict[str, str]] = None,
-        fmt: str = 'json'
+        self, endpoint: str, params: Optional[Dict[str, str]] = None, fmt: str = "json"
     ) -> Any:
         """
         Make HTTP request to EODHD API
@@ -70,8 +71,8 @@ class EODHDClient:
             params = {}
 
         # Add API key and format
-        params['api_token'] = self.api_key
-        params['fmt'] = fmt
+        params["api_token"] = self.api_key
+        params["fmt"] = fmt
 
         url = f"{self.BASE_URL}{endpoint}"
 
@@ -85,12 +86,12 @@ class EODHDClient:
                 response.raise_for_status()
 
             # Return parsed response
-            if fmt == 'json':
+            if fmt == "json":
                 data = response.json()
 
                 # Check for API error in response
-                if isinstance(data, dict) and data.get('error'):
-                    error_msg = data.get('error', 'Unknown error')
+                if isinstance(data, dict) and data.get("error"):
+                    error_msg = data.get("error", "Unknown error")
                     logger.error(f"EODHD API error: {error_msg}")
                     raise ValueError(f"EODHD API error: {error_msg}")
 
@@ -111,7 +112,7 @@ class EODHDClient:
         symbol: str,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
-        period: str = 'd'
+        period: str = "d",
     ) -> List[Dict[str, Any]]:
         """
         Get End-of-Day price data for a single symbol
@@ -125,21 +126,21 @@ class EODHDClient:
         Returns:
             List of price records
         """
-        if not symbol.endswith(('.US', '.NASDAQ', '.NYSE', '.AMEX')):
+        if not symbol.endswith((".US", ".NASDAQ", ".NYSE", ".AMEX")):
             symbol = f"{symbol}.US"
 
-        params = {'period': period}
+        params = {"period": period}
 
         if from_date:
-            params['from'] = from_date.strftime('%Y-%m-%d')
+            params["from"] = from_date.strftime("%Y-%m-%d")
 
         if to_date:
-            params['to'] = to_date.strftime('%Y-%m-%d')
+            params["to"] = to_date.strftime("%Y-%m-%d")
 
         endpoint = f"/eod/{symbol}"
 
         try:
-            data = self._make_request(endpoint, params, fmt='json')
+            data = self._make_request(endpoint, params, fmt="json")
 
             if not isinstance(data, list):
                 logger.warning(f"Unexpected response format for {symbol}")
@@ -153,9 +154,9 @@ class EODHDClient:
 
     def get_bulk_eod_data(
         self,
-        exchange: str = 'US',
+        exchange: str = "US",
         date: Optional[date] = None,
-        symbols: Optional[List[str]] = None
+        symbols: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get bulk EOD data for entire exchange (primary method for graph analysis)
@@ -187,22 +188,22 @@ class EODHDClient:
         """
         if exchange not in self.US_EXCHANGES:
             logger.warning(f"Unknown exchange: {exchange}. Using 'US' instead.")
-            exchange = 'US'
+            exchange = "US"
 
         params = {}
 
         if date:
-            params['date'] = date.strftime('%Y-%m-%d')
+            params["date"] = date.strftime("%Y-%m-%d")
 
         if symbols:
             # Filter specific symbols (comma-separated)
-            params['symbols'] = ','.join(symbols)
+            params["symbols"] = ",".join(symbols)
 
         endpoint = f"/eod-bulk-last-day/{exchange}"
 
         try:
             # Get CSV data
-            csv_text = self._make_request(endpoint, params, fmt='csv')
+            csv_text = self._make_request(endpoint, params, fmt="csv")
 
             # Parse CSV
             results = []
@@ -210,16 +211,20 @@ class EODHDClient:
 
             for row in csv_reader:
                 try:
-                    results.append({
-                        'symbol': row['Code'],
-                        'date': row['Date'],
-                        'open': float(row['Open']) if row['Open'] else None,
-                        'high': float(row['High']) if row['High'] else None,
-                        'low': float(row['Low']) if row['Low'] else None,
-                        'close': float(row['Close']) if row['Close'] else None,
-                        'adjusted_close': float(row['Adjusted_close']) if row['Adjusted_close'] else None,
-                        'volume': int(float(row['Volume'])) if row['Volume'] else 0,
-                    })
+                    results.append(
+                        {
+                            "symbol": row["Code"],
+                            "date": row["Date"],
+                            "open": float(row["Open"]) if row["Open"] else None,
+                            "high": float(row["High"]) if row["High"] else None,
+                            "low": float(row["Low"]) if row["Low"] else None,
+                            "close": float(row["Close"]) if row["Close"] else None,
+                            "adjusted_close": float(row["Adjusted_close"])
+                            if row["Adjusted_close"]
+                            else None,
+                            "volume": int(float(row["Volume"])) if row["Volume"] else 0,
+                        }
+                    )
                 except (ValueError, KeyError) as e:
                     # Skip malformed rows
                     logger.debug(f"Skipping row for {row.get('Code', 'unknown')}: {e}")
@@ -233,9 +238,7 @@ class EODHDClient:
             return []
 
     def get_fundamentals(
-        self,
-        symbol: str,
-        filter_keys: Optional[List[str]] = None
+        self, symbol: str, filter_keys: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Get fundamental data for a symbol
@@ -248,18 +251,18 @@ class EODHDClient:
         Returns:
             Fundamental data dictionary
         """
-        if not symbol.endswith(('.US', '.NASDAQ', '.NYSE', '.AMEX')):
+        if not symbol.endswith((".US", ".NASDAQ", ".NYSE", ".AMEX")):
             symbol = f"{symbol}.US"
 
         params = {}
 
         if filter_keys:
-            params['filter'] = '::'.join(filter_keys)
+            params["filter"] = "::".join(filter_keys)
 
         endpoint = f"/fundamentals/{symbol}"
 
         try:
-            data = self._make_request(endpoint, params, fmt='json')
+            data = self._make_request(endpoint, params, fmt="json")
             return data
 
         except Exception as e:
@@ -267,10 +270,7 @@ class EODHDClient:
             return {}
 
     def search_symbols(
-        self,
-        query: str,
-        exchange: str = 'US',
-        limit: int = 10
+        self, query: str, exchange: str = "US", limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
         Search for stock symbols
@@ -287,14 +287,16 @@ class EODHDClient:
 
         try:
             # Note: EODHD search is limited, consider using Alpha Vantage for search
-            logger.warning("EODHD search is limited. Consider Alpha Vantage SYMBOL_SEARCH.")
+            logger.warning(
+                "EODHD search is limited. Consider Alpha Vantage SYMBOL_SEARCH."
+            )
             return []
 
         except Exception as e:
             logger.error(f"Failed to search symbols: {e}")
             return []
 
-    def get_exchange_symbols(self, exchange: str = 'US') -> List[Dict[str, Any]]:
+    def get_exchange_symbols(self, exchange: str = "US") -> List[Dict[str, Any]]:
         """
         Get all available symbols for an exchange
 
@@ -315,10 +317,10 @@ class EODHDClient:
             ]
         """
         endpoint = f"/exchange-symbol-list/{exchange}"
-        params = {'fmt': 'json'}
+        params = {"fmt": "json"}
 
         try:
-            data = self._make_request(endpoint, params, fmt='json')
+            data = self._make_request(endpoint, params, fmt="json")
 
             if isinstance(data, list):
                 logger.info(f"Fetched {len(data)} symbols for {exchange}")

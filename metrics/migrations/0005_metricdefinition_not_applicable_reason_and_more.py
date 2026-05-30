@@ -4,20 +4,35 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('metrics', '0004_companymetricsnapshot_exclusion_reason_and_more'),
+        ("metrics", "0004_companymetricsnapshot_exclusion_reason_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='metricdefinition',
-            name='not_applicable_reason',
-            field=models.CharField(blank=True, default='', help_text="이 지표가 특정 기업에 적용 불가할 때 사유. e.g. '흑자 기업', '서비스 기업 (재고 없음)'", max_length=100),
+            model_name="metricdefinition",
+            name="not_applicable_reason",
+            field=models.CharField(
+                blank=True,
+                default="",
+                help_text="이 지표가 특정 기업에 적용 불가할 때 사유. e.g. '흑자 기업', '서비스 기업 (재고 없음)'",
+                max_length=100,
+            ),
         ),
         migrations.AlterField(
-            model_name='metricdefinition',
-            name='unit',
-            field=models.CharField(choices=[('ratio', 'Ratio'), ('multiple', 'Multiple (배)'), ('days', 'Days'), ('pct', 'Percentage'), ('percent_point', 'Percentage Point (%p)'), ('years', 'Years'), ('flag', 'Boolean Flag')], max_length=20),
+            model_name="metricdefinition",
+            name="unit",
+            field=models.CharField(
+                choices=[
+                    ("ratio", "Ratio"),
+                    ("multiple", "Multiple (배)"),
+                    ("days", "Days"),
+                    ("pct", "Percentage"),
+                    ("percent_point", "Percentage Point (%p)"),
+                    ("years", "Years"),
+                    ("flag", "Boolean Flag"),
+                ],
+                max_length=20,
+            ),
         ),
     ]

@@ -4,25 +4,48 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0007_sp500constituent_industry_and_more'),
+        ("stocks", "0007_sp500constituent_industry_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='IndustryClassification',
+            name="IndustryClassification",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('industry', models.CharField(max_length=100, unique=True)),
-                ('sector', models.CharField(blank=True, default='', max_length=100)),
-                ('handling_mode', models.CharField(choices=[('standard', '일반'), ('special', '특수 산업')], default='standard', help_text='special: 금융/보험/REIT/유틸리티 등. 일부 카테고리 해석 제한 표시.', max_length=10)),
-                ('special_note', models.CharField(blank=True, default='', help_text="special일 때 UI 고지문. e.g. '금융업 특성상 일반 해석과 다를 수 있습니다'", max_length=200)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("industry", models.CharField(max_length=100, unique=True)),
+                ("sector", models.CharField(blank=True, default="", max_length=100)),
+                (
+                    "handling_mode",
+                    models.CharField(
+                        choices=[("standard", "일반"), ("special", "특수 산업")],
+                        default="standard",
+                        help_text="special: 금융/보험/REIT/유틸리티 등. 일부 카테고리 해석 제한 표시.",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "special_note",
+                    models.CharField(
+                        blank=True,
+                        default="",
+                        help_text="special일 때 UI 고지문. e.g. '금융업 특성상 일반 해석과 다를 수 있습니다'",
+                        max_length=200,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'stocks_industry_classification',
+                "db_table": "stocks_industry_classification",
             },
         ),
     ]

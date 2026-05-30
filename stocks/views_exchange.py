@@ -6,6 +6,7 @@ FMP API를 통한 실시간 시세 정보 제공
 - Stock Quote: 개별 종목 시세
 - Batch Quotes: 여러 종목 일괄 조회
 """
+
 import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -19,7 +20,7 @@ from .serializers_exchange import (
     IndexQuoteSerializer,
     MajorIndicesSerializer,
     SectorPerformanceSerializer,
-    BatchQuotesResponseSerializer
+    BatchQuotesResponseSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,6 +45,7 @@ class IndexQuotesView(APIView):
             }
         ]
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -55,7 +57,7 @@ class IndexQuotesView(APIView):
         if not data:
             return Response(
                 {"error": "지수 시세 데이터를 가져올 수 없습니다."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         # Serializer로 데이터 포맷팅
@@ -65,14 +67,13 @@ class IndexQuotesView(APIView):
             f"Index Quotes API 호출 성공 (user: {request.user.username}, count: {len(data)})"
         )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-            "meta": {
-                "count": len(serializer.data),
-                "timestamp": timezone.now()
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "meta": {"count": len(serializer.data), "timestamp": timezone.now()},
             }
-        })
+        )
 
 
 class StockQuoteView(APIView):
@@ -93,6 +94,7 @@ class StockQuoteView(APIView):
             ...
         }
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, symbol):
@@ -104,7 +106,7 @@ class StockQuoteView(APIView):
         if not data:
             return Response(
                 {"error": f"종목 {symbol}의 시세 데이터를 찾을 수 없습니다."},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
         # Serializer로 데이터 포맷팅
@@ -114,14 +116,13 @@ class StockQuoteView(APIView):
             f"Stock Quote API 호출 성공 (user: {request.user.username}, symbol: {symbol})"
         )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-            "meta": {
-                "symbol": symbol.upper(),
-                "timestamp": timezone.now()
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "meta": {"symbol": symbol.upper(), "timestamp": timezone.now()},
             }
-        })
+        )
 
 
 class BatchQuotesView(APIView):
@@ -142,29 +143,30 @@ class BatchQuotesView(APIView):
             "timestamp": "2025-12-17T10:30:00"
         }
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         """여러 종목 일괄 시세 조회"""
         # Request Body 검증
-        symbols = request.data.get('symbols', [])
+        symbols = request.data.get("symbols", [])
 
         if not isinstance(symbols, list):
             return Response(
                 {"error": "symbols는 배열이어야 합니다."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not symbols:
             return Response(
                 {"error": "최소 1개 이상의 심볼이 필요합니다."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         if len(symbols) > 100:
             return Response(
                 {"error": "최대 100개까지만 조회 가능합니다."},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         # FMP Service 호출
@@ -174,14 +176,14 @@ class BatchQuotesView(APIView):
         if not data:
             return Response(
                 {"error": "시세 데이터를 가져올 수 없습니다."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         # 응답 데이터 구성
         response_data = {
             "quotes": data,
             "total_count": len(data),
-            "timestamp": timezone.now()
+            "timestamp": timezone.now(),
         }
 
         # Serializer로 데이터 포맷팅
@@ -191,14 +193,13 @@ class BatchQuotesView(APIView):
             f"Batch Quotes API 호출 성공 (user: {request.user.username}, symbols: {len(symbols)}, results: {len(data)})"
         )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-            "meta": {
-                "requested_count": len(symbols),
-                "returned_count": len(data)
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "meta": {"requested_count": len(symbols), "returned_count": len(data)},
             }
-        })
+        )
 
 
 class MajorIndicesView(APIView):
@@ -214,6 +215,7 @@ class MajorIndicesView(APIView):
             "dow_jones": {...}
         }
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -225,23 +227,21 @@ class MajorIndicesView(APIView):
         if not data:
             return Response(
                 {"error": "주요 지수 데이터를 가져올 수 없습니다."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         # Serializer로 데이터 포맷팅
         serializer = MajorIndicesSerializer(data)
 
-        logger.info(
-            f"Major Indices API 호출 성공 (user: {request.user.username})"
-        )
+        logger.info(f"Major Indices API 호출 성공 (user: {request.user.username})")
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-            "meta": {
-                "timestamp": timezone.now()
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "meta": {"timestamp": timezone.now()},
             }
-        })
+        )
 
 
 class SectorPerformanceView(APIView):
@@ -263,6 +263,7 @@ class SectorPerformanceView(APIView):
             }
         ]
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -274,7 +275,7 @@ class SectorPerformanceView(APIView):
         if not data:
             return Response(
                 {"error": "섹터 성과 데이터를 가져올 수 없습니다."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
         # Serializer로 데이터 포맷팅
@@ -285,11 +286,10 @@ class SectorPerformanceView(APIView):
             f"Sector Performance API 호출 성공 (user: {request.user.username}, count: {len(data)})"
         )
 
-        return Response({
-            "success": True,
-            "data": serializer.data,
-            "meta": {
-                "count": len(data),
-                "timestamp": timezone.now()
+        return Response(
+            {
+                "success": True,
+                "data": serializer.data,
+                "meta": {"count": len(data), "timestamp": timezone.now()},
             }
-        })
+        )

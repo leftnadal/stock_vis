@@ -4,6 +4,7 @@ Market Movers Serializers
 FMP API Market Movers 데이터를 위한 Serializer
 상승/하락/거래량 TOP 종목 데이터 직렬화
 """
+
 from rest_framework import serializers
 
 
@@ -19,11 +20,12 @@ class MarketMoverSerializer(serializers.Serializer):
     - changesPercentage: 변동률 (%)
     - exchange: 거래소 (NASDAQ, NYSE 등)
     """
+
     symbol = serializers.CharField()
     name = serializers.CharField()
     price = serializers.FloatField()
     change = serializers.FloatField()
-    changes_percentage = serializers.FloatField(source='changesPercentage')
+    changes_percentage = serializers.FloatField(source="changesPercentage")
     exchange = serializers.CharField(required=False, allow_null=True)
 
     # 추가 계산 필드
@@ -37,7 +39,7 @@ class MarketMoverSerializer(serializers.Serializer):
         Returns:
             'up' (상승) 또는 'down' (하락)
         """
-        return 'up' if obj.get('change', 0) >= 0 else 'down'
+        return "up" if obj.get("change", 0) >= 0 else "down"
 
     def get_formatted_change(self, obj) -> str:
         """
@@ -46,8 +48,8 @@ class MarketMoverSerializer(serializers.Serializer):
         Returns:
             예: '+5.23%', '-2.15%'
         """
-        pct = obj.get('changesPercentage', 0)
-        sign = '+' if pct >= 0 else ''
+        pct = obj.get("changesPercentage", 0)
+        sign = "+" if pct >= 0 else ""
         return f"{sign}{pct:.2f}%"
 
 
@@ -62,6 +64,7 @@ class MarketMoversResponseSerializer(serializers.Serializer):
     - cached_at: 캐시 생성 시간
     - last_updated: API 응답 생성 시간
     """
+
     gainers = MarketMoverSerializer(many=True)
     losers = MarketMoverSerializer(many=True)
     actives = MarketMoverSerializer(many=True)

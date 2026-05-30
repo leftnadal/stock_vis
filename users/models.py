@@ -6,15 +6,31 @@ from decimal import Decimal
 
 # Create your models here.
 
+
 class User(AbstractUser):
     """
     커스텀 유저 모델
     user_name, nick_name, favorite_stock 포함하고 있음.
     """
 
-    user_name= models.CharField(max_length=20, default="", blank=True, null=True,)
-    nick_name= models.CharField(max_length=20, default="", blank=True, null=True,)
-    favorite_stock=models.ManyToManyField(Stock, max_length=100, default="", blank=True,)
+    user_name = models.CharField(
+        max_length=20,
+        default="",
+        blank=True,
+        null=True,
+    )
+    nick_name = models.CharField(
+        max_length=20,
+        default="",
+        blank=True,
+        null=True,
+    )
+    favorite_stock = models.ManyToManyField(
+        Stock,
+        max_length=100,
+        default="",
+        blank=True,
+    )
 
     def __str__(self):
         return self.username
@@ -24,21 +40,22 @@ class Portfolio(models.Model):
     """
     사용자의 포트폴리오 - 보유 주식 정보
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='portfolios')
-    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, to_field='symbol')
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="portfolios")
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, to_field="symbol")
 
     # 보유 정보
     quantity = models.DecimalField(
         max_digits=15,
         decimal_places=4,
-        validators=[MinValueValidator(Decimal('0.0001'))],
-        help_text="보유 수량"
+        validators=[MinValueValidator(Decimal("0.0001"))],
+        help_text="보유 수량",
     )
     average_price = models.DecimalField(
         max_digits=15,
         decimal_places=4,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        help_text="평균 매수가"
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="평균 매수가",
     )
 
     # 목표 가격 설정
@@ -47,16 +64,16 @@ class Portfolio(models.Model):
         decimal_places=4,
         blank=True,
         null=True,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        help_text="목표 매도가"
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="목표 매도가",
     )
     stop_loss_price = models.DecimalField(
         max_digits=15,
         decimal_places=4,
         blank=True,
         null=True,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        help_text="손절가 (하한가)"
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="손절가 (하한가)",
     )
 
     # 메모
@@ -67,11 +84,11 @@ class Portfolio(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'users_portfolio'
-        unique_together = ('user', 'stock')
+        db_table = "users_portfolio"
+        unique_together = ("user", "stock")
         indexes = [
-            models.Index(fields=['user', 'stock']),
-            models.Index(fields=['user', '-updated_at']),
+            models.Index(fields=["user", "stock"]),
+            models.Index(fields=["user", "-updated_at"]),
         ]
 
     def __str__(self):
@@ -168,17 +185,20 @@ class Watchlist(models.Model):
     """
     사용자의 관심종목 리스트
     """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watchlists')
-    name = models.CharField(max_length=100, help_text="관심종목 리스트 이름 (예: 진입준비, 기술주)")
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="watchlists")
+    name = models.CharField(
+        max_length=100, help_text="관심종목 리스트 이름 (예: 진입준비, 기술주)"
+    )
     description = models.TextField(blank=True, help_text="리스트 설명")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'users_watchlist'
-        unique_together = ('user', 'name')
+        db_table = "users_watchlist"
+        unique_together = ("user", "name")
         indexes = [
-            models.Index(fields=['user', '-updated_at']),
+            models.Index(fields=["user", "-updated_at"]),
         ]
 
     def __str__(self):
@@ -194,8 +214,11 @@ class WatchlistItem(models.Model):
     """
     Watchlist에 포함된 개별 종목
     """
-    watchlist = models.ForeignKey(Watchlist, on_delete=models.CASCADE, related_name='items')
-    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, to_field='symbol')
+
+    watchlist = models.ForeignKey(
+        Watchlist, on_delete=models.CASCADE, related_name="items"
+    )
+    stock = models.ForeignKey(Stock, on_delete=models.CASCADE, to_field="symbol")
 
     # 사용자 설정
     target_entry_price = models.DecimalField(
@@ -203,8 +226,8 @@ class WatchlistItem(models.Model):
         decimal_places=4,
         blank=True,
         null=True,
-        validators=[MinValueValidator(Decimal('0.01'))],
-        help_text="목표 진입가"
+        validators=[MinValueValidator(Decimal("0.01"))],
+        help_text="목표 진입가",
     )
     notes = models.TextField(blank=True, help_text="메모")
 
@@ -213,13 +236,13 @@ class WatchlistItem(models.Model):
     position_order = models.IntegerField(default=0, help_text="리스트 내 표시 순서")
 
     class Meta:
-        db_table = 'users_watchlist_item'
-        unique_together = ('watchlist', 'stock')
+        db_table = "users_watchlist_item"
+        unique_together = ("watchlist", "stock")
         indexes = [
-            models.Index(fields=['watchlist', 'position_order']),
-            models.Index(fields=['watchlist', '-added_at']),
+            models.Index(fields=["watchlist", "position_order"]),
+            models.Index(fields=["watchlist", "-added_at"]),
         ]
-        ordering = ['position_order', '-added_at']
+        ordering = ["position_order", "-added_at"]
 
     def __str__(self):
         return f"{self.watchlist.name} - {self.stock.symbol}"
@@ -248,12 +271,13 @@ class WatchlistItem(models.Model):
 
 class UserInterest(models.Model):
     """사용자 관심 테마 (뉴스 개인화용)"""
+
     INTEREST_TYPE_CHOICES = [
-        ('sector', 'Sector'),
-        ('theme', 'Theme'),
+        ("sector", "Sector"),
+        ("theme", "Theme"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interests')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="interests")
     interest_type = models.CharField(max_length=20, choices=INTEREST_TYPE_CHOICES)
     value = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100)
@@ -261,8 +285,8 @@ class UserInterest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'users_interest'
-        unique_together = ('user', 'interest_type', 'value')
+        db_table = "users_interest"
+        unique_together = ("user", "interest_type", "value")
 
     def __str__(self):
         return f"{self.user.username} - {self.display_name} ({self.interest_type})"

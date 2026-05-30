@@ -29,6 +29,6 @@ except ImportError:
     get_stock_service = None
 
 __all__ = [
-    'StockService',
-    'get_stock_service',
+    "StockService",
+    "get_stock_service",
 ]

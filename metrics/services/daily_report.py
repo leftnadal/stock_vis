@@ -62,8 +62,10 @@ def _delta(curr: int, prev: Optional[int]) -> str:
 # Graph metrics (Neo4j)
 # ────────────────────────────────────────────────────────────
 
+
 def _neo4j_session():
     from neo4j import GraphDatabase
+
     drv = GraphDatabase.driver(
         settings.NEO4J_URI,
         auth=(settings.NEO4J_USERNAME, settings.NEO4J_PASSWORD),
@@ -78,23 +80,26 @@ def collect_graph_metrics() -> Dict[str, Any]:
         with drv.session() as s:
             # 라벨별
             labels = {}
-            for r in s.run(
-                "MATCH (n) RETURN labels(n)[0] AS label, count(*) AS cnt"
-            ):
+            for r in s.run("MATCH (n) RETURN labels(n)[0] AS label, count(*) AS cnt"):
                 labels[r["label"]] = r["cnt"]
 
             # 관계 타입별
             rels = {}
-            for r in s.run(
-                "MATCH ()-[r]->() RETURN type(r) AS type, count(*) AS cnt"
-            ):
+            for r in s.run("MATCH ()-[r]->() RETURN type(r) AS type, count(*) AS cnt"):
                 rels[r["type"]] = r["cnt"]
 
             # Stock 속성 완전성
             attr_completeness = {}
-            for prop in ["sector", "industry", "market_cap", "growth_stage",
-                         "capital_type", "business_model_type", "overall_grade",
-                         "theme_tags"]:
+            for prop in [
+                "sector",
+                "industry",
+                "market_cap",
+                "growth_stage",
+                "capital_type",
+                "business_model_type",
+                "overall_grade",
+                "theme_tags",
+            ]:
                 rec = s.run(
                     f"MATCH (n:Stock) "
                     f"RETURN count(n) AS total, "
@@ -147,6 +152,7 @@ def collect_graph_metrics() -> Dict[str, Any]:
 # News metrics (PostgreSQL)
 # ────────────────────────────────────────────────────────────
 
+
 def collect_news_metrics(today: date) -> Dict[str, Any]:
     """뉴스 일일 통계 + 커버리지."""
     from news.models import NewsArticle, NewsEntity
@@ -175,12 +181,14 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
 
     # 24h 내 entity 의 symbol 리스트 (NewsEntity.symbol 은 CharField)
     entity_symbols = list(
-        NewsEntity.objects.filter(news__created_at__gte=cutoff_24h)
-        .values_list("symbol", flat=True)
+        NewsEntity.objects.filter(news__created_at__gte=cutoff_24h).values_list(
+            "symbol", flat=True
+        )
     )
     symbol_to_sector = dict(
-        Stock.objects.filter(symbol__in=set(entity_symbols))
-        .values_list("symbol", "sector")
+        Stock.objects.filter(symbol__in=set(entity_symbols)).values_list(
+            "symbol", "sector"
+        )
     )
 
     # 섹터별 24h 뉴스 분포 (수동 집계)
@@ -202,7 +210,9 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
     )
     imp_dist = {
         "high(0.7+)": imp_qs.filter(importance_score__gte=0.7).count(),
-        "mid(0.4-0.7)": imp_qs.filter(importance_score__gte=0.4, importance_score__lt=0.7).count(),
+        "mid(0.4-0.7)": imp_qs.filter(
+            importance_score__gte=0.4, importance_score__lt=0.7
+        ).count(),
         "low(<0.4)": imp_qs.filter(importance_score__lt=0.4).count(),
     }
 
@@ -225,6 +235,7 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
 # ────────────────────────────────────────────────────────────
 # Coverage gaps & New node candidates
 # ────────────────────────────────────────────────────────────
+
 
 def collect_coverage_gaps() -> Dict[str, Any]:
     """현재 그래프 외에 새로 추가할 수 있는 노드 후보."""
@@ -250,13 +261,17 @@ def collect_coverage_gaps() -> Dict[str, Any]:
     pg_stock_symbols = set(Stock.objects.values_list("symbol", flat=True))
     pg_industries = set(
         i.upper()
-        for i in Stock.objects.exclude(industry__isnull=True).exclude(industry="")
-        .values_list("industry", flat=True).distinct()
+        for i in Stock.objects.exclude(industry__isnull=True)
+        .exclude(industry="")
+        .values_list("industry", flat=True)
+        .distinct()
     )
     pg_sectors = set(
         sec.upper()
-        for sec in Stock.objects.exclude(sector__isnull=True).exclude(sector="")
-        .values_list("sector", flat=True).distinct()
+        for sec in Stock.objects.exclude(sector__isnull=True)
+        .exclude(sector="")
+        .values_list("sector", flat=True)
+        .distinct()
     )
 
     # 미반영 Stock
@@ -308,6 +323,7 @@ def collect_coverage_gaps() -> Dict[str, Any]:
 # System health
 # ────────────────────────────────────────────────────────────
 
+
 def collect_nightly_summary() -> Dict[str, Any]:
     """야간 자동화 시스템(com.stockvis.nightly) 최근 실행 요약.
 
@@ -317,7 +333,9 @@ def collect_nightly_summary() -> Dict[str, Any]:
       - docs/nightly_auto_system/reports/{월}/{일}/*.md (생성된 보고서)
     """
     nightly_dir = Path.home() / "stock-vis-nightly"
-    reports_dir = Path("/Users/byeongjinjeong/Desktop/stock_vis/docs/nightly_auto_system/reports")
+    reports_dir = Path(
+        "/Users/byeongjinjeong/Desktop/stock_vis/docs/nightly_auto_system/reports"
+    )
 
     result: Dict[str, Any] = {
         "available": False,
@@ -353,14 +371,17 @@ def collect_nightly_summary() -> Dict[str, Any]:
             if "✅ 완료" in line:
                 # 시간과 경로, 줄 수 파싱
                 import re
+
                 m = re.match(r"\[(\d+:\d+:\d+)\]\s+✅ 완료 — (\S+)\s+\((\d+)줄\)", line)
                 if m:
-                    report_files.append({
-                        "time": m.group(1),
-                        "path": m.group(2),
-                        "lines": int(m.group(3)),
-                        "name": Path(m.group(2)).stem,
-                    })
+                    report_files.append(
+                        {
+                            "time": m.group(1),
+                            "path": m.group(2),
+                            "lines": int(m.group(3)),
+                            "name": Path(m.group(2)).stem,
+                        }
+                    )
                     end_match = m.group(1)
             if "현재 브랜치:" in line:
                 branch = line.split("현재 브랜치:")[-1].strip()
@@ -388,10 +409,16 @@ def collect_nightly_summary() -> Dict[str, Any]:
                     rp = Path(r["path"])
                     if rp.exists():
                         try:
-                            first_lines = rp.read_text(encoding="utf-8", errors="replace").splitlines()[:8]
+                            first_lines = rp.read_text(
+                                encoding="utf-8", errors="replace"
+                            ).splitlines()[:8]
                             # 첫 # 또는 ## 라인 찾기
                             preview = next(
-                                (ln.lstrip("# ").strip() for ln in first_lines if ln.startswith("#")),
+                                (
+                                    ln.lstrip("# ").strip()
+                                    for ln in first_lines
+                                    if ln.startswith("#")
+                                ),
                                 first_lines[0][:80] if first_lines else "",
                             )
                             r["preview"] = preview[:120]
@@ -432,12 +459,19 @@ def collect_llm_usage() -> Dict[str, Any]:
     sec_output_tokens = sec_calls * 1000
 
     # News LLM 호출 (오늘 llm_analyzed=True된 기사)
-    news_calls = NewsArticle.objects.filter(
-        llm_analyzed_at__gte=cutoff,
-        llm_analyzed=True,
-    ).count() if hasattr(NewsArticle, 'llm_analyzed_at') else (
-        NewsArticle.objects.filter(updated_at__gte=cutoff, llm_analyzed=True).count()
-        if hasattr(NewsArticle, 'updated_at') else 0
+    news_calls = (
+        NewsArticle.objects.filter(
+            llm_analyzed_at__gte=cutoff,
+            llm_analyzed=True,
+        ).count()
+        if hasattr(NewsArticle, "llm_analyzed_at")
+        else (
+            NewsArticle.objects.filter(
+                updated_at__gte=cutoff, llm_analyzed=True
+            ).count()
+            if hasattr(NewsArticle, "updated_at")
+            else 0
+        )
     )
     news_input_tokens = news_calls * 2000
     news_output_tokens = news_calls * 500
@@ -472,16 +506,24 @@ def collect_llm_usage() -> Dict[str, Any]:
 def collect_system_health() -> Dict[str, Any]:
     """Celery + Neo4j + SEC 파이프라인 헬스."""
     import subprocess
-    from sec_pipeline.models import FilingProcessLog, RawDocumentStore, SupplyChainEvidence
+    from sec_pipeline.models import (
+        FilingProcessLog,
+        RawDocumentStore,
+        SupplyChainEvidence,
+    )
 
     # Celery 워커 살아있는지
     try:
         out = subprocess.run(
             ["pgrep", "-f", "celery -A config worker"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         celery_worker_alive = bool(out.stdout.strip())
-        celery_worker_pids = out.stdout.strip().split("\n") if celery_worker_alive else []
+        celery_worker_pids = (
+            out.stdout.strip().split("\n") if celery_worker_alive else []
+        )
     except Exception:
         celery_worker_alive = False
         celery_worker_pids = []
@@ -489,7 +531,9 @@ def collect_system_health() -> Dict[str, Any]:
     try:
         out = subprocess.run(
             ["pgrep", "-f", "celery -A config beat"],
-            capture_output=True, text=True, timeout=5,
+            capture_output=True,
+            text=True,
+            timeout=5,
         )
         celery_beat_alive = bool(out.stdout.strip())
     except Exception:
@@ -507,9 +551,14 @@ def collect_system_health() -> Dict[str, Any]:
 
     # SEC 파이프라인 최근 24h 처리량
     cutoff_24h = timezone.now() - timedelta(hours=24)
-    sec_24h_processed = FilingProcessLog.objects.filter(
-        started_at__gte=cutoff_24h, stage="track_a_extract", status="success"
-    ).values("symbol").distinct().count()
+    sec_24h_processed = (
+        FilingProcessLog.objects.filter(
+            started_at__gte=cutoff_24h, stage="track_a_extract", status="success"
+        )
+        .values("symbol")
+        .distinct()
+        .count()
+    )
     sec_total_filings = RawDocumentStore.objects.count()
     sec_total_evidence = SupplyChainEvidence.objects.count()
 
@@ -528,35 +577,44 @@ def collect_system_health() -> Dict[str, Any]:
 # Improvement suggestions (8 카테고리)
 # ────────────────────────────────────────────────────────────
 
-def collect_suggestions(graph: Dict, news: Dict, gaps: Dict, health: Dict) -> List[Dict]:
+
+def collect_suggestions(
+    graph: Dict, news: Dict, gaps: Dict, health: Dict
+) -> List[Dict]:
     """8 카테고리 개선 제안. 각각 severity (🟢/🟡/🔴) + actionable text."""
     suggestions = []
 
     # 1. Coverage Gap
     if gaps["missing_stocks_count"] > 0:
-        suggestions.append({
-            "category": "1. 커버리지 갭",
-            "severity": "🟡",
-            "issue": f"PostgreSQL Stock 중 Neo4j 미반영 {gaps['missing_stocks_count']}건",
-            "action": "seed_neo4j_graph 재실행 또는 sync_profiles_to_neo4j 트리거",
-            "samples": gaps["missing_stocks_sample"][:5],
-        })
+        suggestions.append(
+            {
+                "category": "1. 커버리지 갭",
+                "severity": "🟡",
+                "issue": f"PostgreSQL Stock 중 Neo4j 미반영 {gaps['missing_stocks_count']}건",
+                "action": "seed_neo4j_graph 재실행 또는 sync_profiles_to_neo4j 트리거",
+                "samples": gaps["missing_stocks_sample"][:5],
+            }
+        )
     if gaps["missing_industries_count"] > 0:
-        suggestions.append({
-            "category": "1. 커버리지 갭",
-            "severity": "🟡",
-            "issue": f"Industry 노드 미반영 {gaps['missing_industries_count']}건",
-            "action": "BELONGS_TO_INDUSTRY Cypher 일괄 재생성 필요",
-            "samples": gaps["missing_industries_sample"][:5],
-        })
+        suggestions.append(
+            {
+                "category": "1. 커버리지 갭",
+                "severity": "🟡",
+                "issue": f"Industry 노드 미반영 {gaps['missing_industries_count']}건",
+                "action": "BELONGS_TO_INDUSTRY Cypher 일괄 재생성 필요",
+                "samples": gaps["missing_industries_sample"][:5],
+            }
+        )
     if gaps["missing_sectors_count"] == 0 and gaps["missing_industries_count"] == 0:
-        suggestions.append({
-            "category": "1. 커버리지 갭",
-            "severity": "🟢",
-            "issue": "Stock/Sector/Industry 커버리지 정상",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "1. 커버리지 갭",
+                "severity": "🟢",
+                "issue": "Stock/Sector/Industry 커버리지 정상",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 2. Relation Quality
     ts = graph.get("truth_score_dist", {})
@@ -565,101 +623,122 @@ def collect_suggestions(graph: Dict, news: Dict, gaps: Dict, health: Dict) -> Li
     total_ts = sum(ts.values()) or 1
     low_pct = round(low * 100 / total_ts, 1)
     if low_pct > 30:
-        suggestions.append({
-            "category": "2. 관계 퀄리티",
-            "severity": "🟡",
-            "issue": f"truth_score < 40 관계가 {low_pct}% — stale 또는 weak 관계 다수",
-            "action": "chainsight check_stale_and_decay 트리거",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "2. 관계 퀄리티",
+                "severity": "🟡",
+                "issue": f"truth_score < 40 관계가 {low_pct}% — stale 또는 weak 관계 다수",
+                "action": "chainsight check_stale_and_decay 트리거",
+                "samples": [],
+            }
+        )
     else:
-        suggestions.append({
-            "category": "2. 관계 퀄리티",
-            "severity": "🟢",
-            "issue": f"truth_score 분포 양호 (high {high}, mid {ts.get('mid(40-69)',0)}, low {low})",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "2. 관계 퀄리티",
+                "severity": "🟢",
+                "issue": f"truth_score 분포 양호 (high {high}, mid {ts.get('mid(40-69)', 0)}, low {low})",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 3. Relation Balance
     rels = graph.get("relations", {})
     peer = rels.get("PEER_OF", 0)
     supplies = rels.get("SUPPLIES_TO", 0)
     if peer > 0 and supplies < peer * 0.05:
-        suggestions.append({
-            "category": "3. 관계 균형",
-            "severity": "🟡",
-            "issue": f"SUPPLIES_TO {supplies}개 vs PEER_OF {peer}개 — 공급망 관계 부족",
-            "action": "SEC 10-K backfill 진행도 확인, UnmatchedCompanyQueue 추가 alias 매핑",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "3. 관계 균형",
+                "severity": "🟡",
+                "issue": f"SUPPLIES_TO {supplies}개 vs PEER_OF {peer}개 — 공급망 관계 부족",
+                "action": "SEC 10-K backfill 진행도 확인, UnmatchedCompanyQueue 추가 alias 매핑",
+                "samples": [],
+            }
+        )
 
     # 4. Attribute Completeness
     attrs = graph.get("stock_attr_completeness_pct", {})
     weak_attrs = [(k, v) for k, v in attrs.items() if v < 70]
     if weak_attrs:
-        suggestions.append({
-            "category": "4. 노드 속성 완전성",
-            "severity": "🟡",
-            "issue": f"Stock 속성 채움률 70% 미만: " + ", ".join(f"{k}={v}%" for k, v in weak_attrs[:5]),
-            "action": "calculate_all_profiles 트리거 또는 누락 속성 backfill",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "4. 노드 속성 완전성",
+                "severity": "🟡",
+                "issue": f"Stock 속성 채움률 70% 미만: "
+                + ", ".join(f"{k}={v}%" for k, v in weak_attrs[:5]),
+                "action": "calculate_all_profiles 트리거 또는 누락 속성 backfill",
+                "samples": [],
+            }
+        )
     else:
-        suggestions.append({
-            "category": "4. 노드 속성 완전성",
-            "severity": "🟢",
-            "issue": "주요 속성 모두 70% 이상 채움",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "4. 노드 속성 완전성",
+                "severity": "🟢",
+                "issue": "주요 속성 모두 70% 이상 채움",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 5. Freshness
     if health["sec_24h_processed_filings"] == 0 and gaps["missing_stocks_count"] == 0:
-        suggestions.append({
-            "category": "5. 데이터 신선도",
-            "severity": "🟢",
-            "issue": "SEC 신규 filing 처리 없음 (정상 — 분기 공시 외 없음)",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "5. 데이터 신선도",
+                "severity": "🟢",
+                "issue": "SEC 신규 filing 처리 없음 (정상 — 분기 공시 외 없음)",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 6. LLM Quality
     if news["today_new"] > 0 and news["today_llm_analyzed_pct"] < 80:
-        suggestions.append({
-            "category": "6. LLM 추출 품질",
-            "severity": "🟡",
-            "issue": f"오늘 신규 뉴스 LLM 분석률 {news['today_llm_analyzed_pct']}% (pending {news['today_llm_pending']}건)",
-            "action": "Gemini paid tier quota 확인, retry batch 트리거",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "6. LLM 추출 품질",
+                "severity": "🟡",
+                "issue": f"오늘 신규 뉴스 LLM 분석률 {news['today_llm_analyzed_pct']}% (pending {news['today_llm_pending']}건)",
+                "action": "Gemini paid tier quota 확인, retry batch 트리거",
+                "samples": [],
+            }
+        )
     elif news["today_new"] > 0:
-        suggestions.append({
-            "category": "6. LLM 추출 품질",
-            "severity": "🟢",
-            "issue": f"LLM 분석률 {news['today_llm_analyzed_pct']}% (오늘 {news['today_new']}건)",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "6. LLM 추출 품질",
+                "severity": "🟢",
+                "issue": f"LLM 분석률 {news['today_llm_analyzed_pct']}% (오늘 {news['today_new']}건)",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 7. Graph Structure
     lonely = graph.get("lonely_stocks", 0)
     if lonely > 0:
-        suggestions.append({
-            "category": "7. 구조 분석",
-            "severity": "🟡",
-            "issue": f"고립 Stock 노드 {lonely}개 (관계 0)",
-            "action": "calculate_price_co_movement + update_relation_confidence 트리거로 관계 보강",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "7. 구조 분석",
+                "severity": "🟡",
+                "issue": f"고립 Stock 노드 {lonely}개 (관계 0)",
+                "action": "calculate_price_co_movement + update_relation_confidence 트리거로 관계 보강",
+                "samples": [],
+            }
+        )
     else:
-        suggestions.append({
-            "category": "7. 구조 분석",
-            "severity": "🟢",
-            "issue": f"모든 Stock 노드가 1+ 관계 보유 (avg {graph.get('avg_relations_per_stock', 0)}개)",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "7. 구조 분석",
+                "severity": "🟢",
+                "issue": f"모든 Stock 노드가 1+ 관계 보유 (avg {graph.get('avg_relations_per_stock', 0)}개)",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     # 8. News Coverage
     no_news = news.get("stocks_no_news_count", 0)
@@ -668,38 +747,51 @@ def collect_suggestions(graph: Dict, news: Dict, gaps: Dict, health: Dict) -> Li
     if total_stocks > 0:
         coverage_pct = round(covered * 100 / total_stocks, 1)
         if coverage_pct < 30:
-            sev, act = "🟡", "Finnhub/MarketAux 종목별 수집 확장 또는 sector 단위 뉴스 broadcast"
+            sev, act = (
+                "🟡",
+                "Finnhub/MarketAux 종목별 수집 확장 또는 sector 단위 뉴스 broadcast",
+            )
         else:
             sev, act = "🟢", "유지"
-        suggestions.append({
-            "category": "8. 뉴스 커버리지",
-            "severity": sev,
-            "issue": f"24h 뉴스 커버 종목 {covered}/{total_stocks} = {coverage_pct}%",
-            "action": act,
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "8. 뉴스 커버리지",
+                "severity": sev,
+                "issue": f"24h 뉴스 커버 종목 {covered}/{total_stocks} = {coverage_pct}%",
+                "action": act,
+                "samples": [],
+            }
+        )
 
     # 9. System Health
-    if not health["celery_worker_alive"] or not health["celery_beat_alive"] or not health["neo4j_alive"]:
-        suggestions.append({
-            "category": "9. 시스템 헬스",
-            "severity": "🔴",
-            "issue": (
-                f"worker={'OK' if health['celery_worker_alive'] else 'DOWN'}, "
-                f"beat={'OK' if health['celery_beat_alive'] else 'DOWN'}, "
-                f"neo4j={'OK' if health['neo4j_alive'] else 'DOWN'}"
-            ),
-            "action": "즉시 launchctl kickstart 또는 docker restart 필요",
-            "samples": [],
-        })
+    if (
+        not health["celery_worker_alive"]
+        or not health["celery_beat_alive"]
+        or not health["neo4j_alive"]
+    ):
+        suggestions.append(
+            {
+                "category": "9. 시스템 헬스",
+                "severity": "🔴",
+                "issue": (
+                    f"worker={'OK' if health['celery_worker_alive'] else 'DOWN'}, "
+                    f"beat={'OK' if health['celery_beat_alive'] else 'DOWN'}, "
+                    f"neo4j={'OK' if health['neo4j_alive'] else 'DOWN'}"
+                ),
+                "action": "즉시 launchctl kickstart 또는 docker restart 필요",
+                "samples": [],
+            }
+        )
     else:
-        suggestions.append({
-            "category": "9. 시스템 헬스",
-            "severity": "🟢",
-            "issue": f"worker {health['celery_worker_count']}개, beat OK, neo4j OK",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "9. 시스템 헬스",
+                "severity": "🟢",
+                "issue": f"worker {health['celery_worker_count']}개, beat OK, neo4j OK",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     return suggestions
 
@@ -707,6 +799,7 @@ def collect_suggestions(graph: Dict, news: Dict, gaps: Dict, health: Dict) -> Li
 # ────────────────────────────────────────────────────────────
 # Main entry — 리포트 데이터 빌드
 # ────────────────────────────────────────────────────────────
+
 
 def build_report_payload(today: date) -> Dict[str, Any]:
     """리포트 전체 페이로드 생성."""
@@ -722,21 +815,25 @@ def build_report_payload(today: date) -> Dict[str, Any]:
 
     # LLM 비용 경고 추가
     if llm["est_monthly_cost_usd"] > 50:
-        suggestions.append({
-            "category": "10. LLM 비용",
-            "severity": "🟡",
-            "issue": f"24h LLM 비용 ${llm['est_cost_usd_24h']} → 월간 추정 ${llm['est_monthly_cost_usd']}",
-            "action": "Gemini console에서 실제 quota/billing 확인. backfill 빈도 조정 검토.",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "10. LLM 비용",
+                "severity": "🟡",
+                "issue": f"24h LLM 비용 ${llm['est_cost_usd_24h']} → 월간 추정 ${llm['est_monthly_cost_usd']}",
+                "action": "Gemini console에서 실제 quota/billing 확인. backfill 빈도 조정 검토.",
+                "samples": [],
+            }
+        )
     else:
-        suggestions.append({
-            "category": "10. LLM 비용",
-            "severity": "🟢",
-            "issue": f"24h: ${llm['est_cost_usd_24h']} ({llm['total_calls_24h']} calls), 월 추정 ${llm['est_monthly_cost_usd']}",
-            "action": "유지",
-            "samples": [],
-        })
+        suggestions.append(
+            {
+                "category": "10. LLM 비용",
+                "severity": "🟢",
+                "issue": f"24h: ${llm['est_cost_usd_24h']} ({llm['total_calls_24h']} calls), 월 추정 ${llm['est_monthly_cost_usd']}",
+                "action": "유지",
+                "samples": [],
+            }
+        )
 
     prev_snapshot = _load_previous_snapshot(today)
     prev_graph = prev_snapshot.get("graph", {}) if prev_snapshot else {}
@@ -746,7 +843,9 @@ def build_report_payload(today: date) -> Dict[str, Any]:
     deltas = {
         "labels": {},
         "relations": {},
-        "total_articles": _delta(news["total_articles"], prev_news.get("total_articles")),
+        "total_articles": _delta(
+            news["total_articles"], prev_news.get("total_articles")
+        ),
     }
     for label, cnt in graph["labels"].items():
         deltas["labels"][label] = _delta(cnt, prev_graph.get("labels", {}).get(label))

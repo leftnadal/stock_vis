@@ -3,6 +3,7 @@ S&P 500 EOD(End of Day) 가격 동기화 서비스
 
 매일 장 마감 후 S&P 500 전종목의 종가를 DailyPrice에 저장합니다.
 """
+
 import logging
 import time
 from datetime import date, timedelta
@@ -49,6 +50,7 @@ class SP500EODService:
         """
         if target_date is None:
             from serverless.services.admin_status_service import last_trading_day
+
             target_date = last_trading_day()
 
         logger.info(f"S&P 500 EOD 동기화 시작: {target_date}")
@@ -56,50 +58,55 @@ class SP500EODService:
         # 1. 활성 심볼 목록
         active_symbols = list(
             SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
-            .order_by('symbol')
+            .values_list("symbol", flat=True)
+            .order_by("symbol")
         )
 
         if not active_symbols:
-            logger.warning("활성 S&P 500 종목이 없습니다. 먼저 sync_constituents를 실행하세요.")
+            logger.warning(
+                "활성 S&P 500 종목이 없습니다. 먼저 sync_constituents를 실행하세요."
+            )
             return {
-                'target_date': str(target_date),
-                'total_symbols': 0,
-                'synced': 0,
-                'skipped': 0,
-                'errors': 0,
-                'stocks_created': 0,
-                'error_symbols': [],
+                "target_date": str(target_date),
+                "total_symbols": 0,
+                "synced": 0,
+                "skipped": 0,
+                "errors": 0,
+                "stocks_created": 0,
+                "error_symbols": [],
             }
 
         # 2. 이미 저장된 종목 확인 (idempotent)
         existing = set(
-            DailyPrice.objects.filter(date=target_date)
-            .values_list('stock__symbol', flat=True)
+            DailyPrice.objects.filter(date=target_date).values_list(
+                "stock__symbol", flat=True
+            )
         )
 
         stats = {
-            'target_date': str(target_date),
-            'total_symbols': len(active_symbols),
-            'synced': 0,
-            'skipped': 0,
-            'errors': 0,
-            'stocks_created': 0,
-            'error_symbols': [],
+            "target_date": str(target_date),
+            "total_symbols": len(active_symbols),
+            "synced": 0,
+            "skipped": 0,
+            "errors": 0,
+            "stocks_created": 0,
+            "error_symbols": [],
         }
 
         for idx, symbol in enumerate(active_symbols, 1):
             # 이미 있으면 skip
             if symbol in existing:
-                stats['skipped'] += 1
+                stats["skipped"] += 1
                 continue
 
             try:
                 self._sync_single_symbol(symbol, target_date, stats)
             except Exception as e:
-                stats['errors'] += 1
-                stats['error_symbols'].append(symbol)
-                logger.error(f"[{idx}/{len(active_symbols)}] {symbol} EOD 동기화 실패: {e}")
+                stats["errors"] += 1
+                stats["error_symbols"].append(symbol)
+                logger.error(
+                    f"[{idx}/{len(active_symbols)}] {symbol} EOD 동기화 실패: {e}"
+                )
 
             # 배치 로깅
             if idx % BATCH_LOG_SIZE == 0:
@@ -123,46 +130,48 @@ class SP500EODService:
         # Stock 레코드 확인/생성
         stock = self._ensure_stock_exists(symbol, stats)
         if not stock:
-            stats['errors'] += 1
-            stats['error_symbols'].append(symbol)
+            stats["errors"] += 1
+            stats["error_symbols"].append(symbol)
             return
 
         # FMP에서 최근 5일 데이터 가져오기 (CB로 누적 실패 차단)
-        cb = get_circuit('fmp_sp500_eod', failure_threshold=10, recovery_seconds=120)
+        cb = get_circuit("fmp_sp500_eod", failure_threshold=10, recovery_seconds=120)
         try:
             historical = cb.call(self.fmp_client.get_historical_ohlcv, symbol, days=5)
         except CircuitBreakerError as e:
             logger.warning(f"⚠️ CB open (fmp_sp500_eod) — skip {symbol}: {e}")
-            stats['errors'] += 1
-            stats['error_symbols'].append(symbol)
+            stats["errors"] += 1
+            stats["error_symbols"].append(symbol)
             return
         except FMPAPIError as e:
             raise Exception(f"FMP API error for {symbol}: {e}")
 
         if not historical:
             logger.warning(f"{symbol}: FMP에서 가격 데이터 없음")
-            stats['errors'] += 1
-            stats['error_symbols'].append(symbol)
+            stats["errors"] += 1
+            stats["error_symbols"].append(symbol)
             return
 
         # target_date에 매칭되는 데이터 찾기
         target_str = str(target_date)
         price_data = None
         for entry in historical:
-            if entry.get('date') == target_str:
+            if entry.get("date") == target_str:
                 price_data = entry
                 break
 
         # 정확한 날짜가 없으면 가장 최근 데이터 사용 (주말/공휴일 대비)
         if not price_data and historical:
             price_data = historical[0]
-            logger.debug(f"{symbol}: {target_date} 데이터 없음, 최근 데이터({price_data.get('date')}) 사용")
+            logger.debug(
+                f"{symbol}: {target_date} 데이터 없음, 최근 데이터({price_data.get('date')}) 사용"
+            )
 
         if not price_data:
             return
 
         # DailyPrice 저장
-        actual_date = price_data.get('date', target_str)
+        actual_date = price_data.get("date", target_str)
         try:
             actual_date_obj = date.fromisoformat(actual_date)
         except (ValueError, TypeError):
@@ -173,14 +182,14 @@ class SP500EODService:
                 stock=stock,
                 date=actual_date_obj,
                 defaults={
-                    'open_price': self._to_decimal(price_data.get('open', 0)),
-                    'high_price': self._to_decimal(price_data.get('high', 0)),
-                    'low_price': self._to_decimal(price_data.get('low', 0)),
-                    'close_price': self._to_decimal(price_data.get('close', 0)),
-                    'volume': int(price_data.get('volume', 0)),
+                    "open_price": self._to_decimal(price_data.get("open", 0)),
+                    "high_price": self._to_decimal(price_data.get("high", 0)),
+                    "low_price": self._to_decimal(price_data.get("low", 0)),
+                    "close_price": self._to_decimal(price_data.get("close", 0)),
+                    "volume": int(price_data.get("volume", 0)),
                 },
             )
-        stats['synced'] += 1
+        stats["synced"] += 1
 
     def _ensure_stock_exists(self, symbol: str, stats: Dict) -> Optional[Stock]:
         """Stock 레코드가 없으면 FMP 프로필로 자동 생성"""
@@ -199,14 +208,24 @@ class SP500EODService:
         try:
             stock = Stock.objects.create(
                 symbol=symbol.upper(),
-                stock_name=profile.get('companyName', symbol)[:200],
-                sector=profile.get('sector', '')[:100] if profile.get('sector') else None,
-                industry=profile.get('industry', '')[:100] if profile.get('industry') else None,
-                exchange=profile.get('exchangeShortName', '')[:50] if profile.get('exchangeShortName') else None,
-                description=profile.get('description', '')[:5000] if profile.get('description') else None,
-                market_capitalization=self._to_decimal(profile.get('mktCap')) if profile.get('mktCap') else None,
+                stock_name=profile.get("companyName", symbol)[:200],
+                sector=profile.get("sector", "")[:100]
+                if profile.get("sector")
+                else None,
+                industry=profile.get("industry", "")[:100]
+                if profile.get("industry")
+                else None,
+                exchange=profile.get("exchangeShortName", "")[:50]
+                if profile.get("exchangeShortName")
+                else None,
+                description=profile.get("description", "")[:5000]
+                if profile.get("description")
+                else None,
+                market_capitalization=self._to_decimal(profile.get("mktCap"))
+                if profile.get("mktCap")
+                else None,
             )
-            stats['stocks_created'] += 1
+            stats["stocks_created"] += 1
             logger.info(f"{symbol}: Stock 레코드 자동 생성")
             time.sleep(REQUEST_DELAY)  # 프로필 API 호출 후 대기
             return stock
@@ -218,8 +237,8 @@ class SP500EODService:
     def _to_decimal(value) -> Decimal:
         """안전한 Decimal 변환"""
         if value is None:
-            return Decimal('0')
+            return Decimal("0")
         try:
             return Decimal(str(value))
         except (InvalidOperation, ValueError, TypeError):
-            return Decimal('0')
+            return Decimal("0")

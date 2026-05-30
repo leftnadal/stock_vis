@@ -21,7 +21,14 @@ from django.db import transaction
 from django.db.utils import IntegrityError
 from django.conf import settings
 
-from stocks.models import Stock, BalanceSheet, IncomeStatement, CashFlowStatement, DailyPrice, WeeklyPrice
+from stocks.models import (
+    Stock,
+    BalanceSheet,
+    IncomeStatement,
+    CashFlowStatement,
+    DailyPrice,
+    WeeklyPrice,
+)
 
 from .providers.base import (
     ProviderResponse,
@@ -66,9 +73,11 @@ class StockService:
             ProviderResponse[NormalizedQuote]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.QUOTE, 'get_quote', symbol)
+        return call_with_fallback(EndpointType.QUOTE, "get_quote", symbol)
 
-    def get_company_profile(self, symbol: str) -> ProviderResponse[NormalizedCompanyProfile]:
+    def get_company_profile(
+        self, symbol: str
+    ) -> ProviderResponse[NormalizedCompanyProfile]:
         """
         회사 프로필 조회 (Provider 직접 호출)
 
@@ -79,12 +88,10 @@ class StockService:
             ProviderResponse[NormalizedCompanyProfile]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.PROFILE, 'get_company_profile', symbol)
+        return call_with_fallback(EndpointType.PROFILE, "get_company_profile", symbol)
 
     def get_daily_prices(
-        self,
-        symbol: str,
-        output_size: OutputSize = OutputSize.COMPACT
+        self, symbol: str, output_size: OutputSize = OutputSize.COMPACT
     ) -> ProviderResponse[List[NormalizedPriceData]]:
         """
         일별 가격 데이터 조회 (Provider 직접 호출)
@@ -97,9 +104,13 @@ class StockService:
             ProviderResponse[List[NormalizedPriceData]]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.DAILY_PRICES, 'get_daily_prices', symbol, output_size)
+        return call_with_fallback(
+            EndpointType.DAILY_PRICES, "get_daily_prices", symbol, output_size
+        )
 
-    def get_weekly_prices(self, symbol: str) -> ProviderResponse[List[NormalizedPriceData]]:
+    def get_weekly_prices(
+        self, symbol: str
+    ) -> ProviderResponse[List[NormalizedPriceData]]:
         """
         주별 가격 데이터 조회 (Provider 직접 호출)
 
@@ -110,12 +121,12 @@ class StockService:
             ProviderResponse[List[NormalizedPriceData]]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.WEEKLY_PRICES, 'get_weekly_prices', symbol)
+        return call_with_fallback(
+            EndpointType.WEEKLY_PRICES, "get_weekly_prices", symbol
+        )
 
     def get_balance_sheet(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedBalanceSheet]]:
         """
         대차대조표 조회 (Provider 직접 호출)
@@ -128,12 +139,12 @@ class StockService:
             ProviderResponse[List[NormalizedBalanceSheet]]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.BALANCE_SHEET, 'get_balance_sheet', symbol, period)
+        return call_with_fallback(
+            EndpointType.BALANCE_SHEET, "get_balance_sheet", symbol, period
+        )
 
     def get_income_statement(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedIncomeStatement]]:
         """
         손익계산서 조회 (Provider 직접 호출)
@@ -146,12 +157,12 @@ class StockService:
             ProviderResponse[List[NormalizedIncomeStatement]]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.INCOME_STATEMENT, 'get_income_statement', symbol, period)
+        return call_with_fallback(
+            EndpointType.INCOME_STATEMENT, "get_income_statement", symbol, period
+        )
 
     def get_cash_flow(
-        self,
-        symbol: str,
-        period: PeriodType = PeriodType.ANNUAL
+        self, symbol: str, period: PeriodType = PeriodType.ANNUAL
     ) -> ProviderResponse[List[NormalizedCashFlow]]:
         """
         현금흐름표 조회 (Provider 직접 호출)
@@ -164,9 +175,13 @@ class StockService:
             ProviderResponse[List[NormalizedCashFlow]]
         """
         symbol = symbol.upper().strip()
-        return call_with_fallback(EndpointType.CASH_FLOW, 'get_cash_flow', symbol, period)
+        return call_with_fallback(
+            EndpointType.CASH_FLOW, "get_cash_flow", symbol, period
+        )
 
-    def search_symbols(self, keywords: str) -> ProviderResponse[List[NormalizedSearchResult]]:
+    def search_symbols(
+        self, keywords: str
+    ) -> ProviderResponse[List[NormalizedSearchResult]]:
         """
         종목 검색 (Provider 직접 호출)
 
@@ -176,7 +191,7 @@ class StockService:
         Returns:
             ProviderResponse[List[NormalizedSearchResult]]
         """
-        return call_with_fallback(EndpointType.SEARCH, 'search_symbols', keywords)
+        return call_with_fallback(EndpointType.SEARCH, "search_symbols", keywords)
 
     # ============================================================
     # DB 저장 메서드
@@ -202,11 +217,17 @@ class StockService:
                 # 기존 데이터가 있으면 반환
                 try:
                     stock = Stock.objects.get(symbol=symbol)
-                    logger.warning(f"Could not fetch profile for {symbol}, using existing data")
+                    logger.warning(
+                        f"Could not fetch profile for {symbol}, using existing data"
+                    )
                     return stock
                 except Stock.DoesNotExist:
-                    logger.error(f"Could not fetch profile for {symbol} and stock does not exist")
-                    raise ValueError(f"Could not fetch stock data for {symbol}: {profile_response.error}")
+                    logger.error(
+                        f"Could not fetch profile for {symbol} and stock does not exist"
+                    )
+                    raise ValueError(
+                        f"Could not fetch stock data for {symbol}: {profile_response.error}"
+                    )
 
             profile = profile_response.data
 
@@ -219,14 +240,16 @@ class StockService:
                 if quote_response.success:
                     quote = quote_response.data
                     quote_data = {
-                        'real_time_price': quote.price,
-                        'previous_close': quote.previous_close,
-                        'open_price': quote.open,
-                        'high_price': quote.high,
-                        'low_price': quote.low,
-                        'volume': quote.volume,
-                        'change': quote.change,
-                        'change_percent': f"{quote.change_percent:.2f}%" if quote.change_percent else None,
+                        "real_time_price": quote.price,
+                        "previous_close": quote.previous_close,
+                        "open_price": quote.open,
+                        "high_price": quote.high,
+                        "low_price": quote.low,
+                        "volume": quote.volume,
+                        "change": quote.change,
+                        "change_percent": f"{quote.change_percent:.2f}%"
+                        if quote.change_percent
+                        else None,
                     }
             except Exception as e:
                 logger.warning(f"Error fetching quote for {symbol}: {e}")
@@ -234,17 +257,17 @@ class StockService:
             # 3. DB 저장
             with transaction.atomic():
                 stock_data = {
-                    'stock_name': profile.name,
-                    'sector': profile.sector,
-                    'industry': profile.industry,
-                    'market_capitalization': profile.market_cap,
-                    'pe_ratio': profile.pe_ratio,
-                    'eps': profile.eps,
-                    'beta': profile.beta,
-                    'dividend_yield': profile.dividend_yield,
-                    'exchange': profile.exchange,
-                    'asset_type': 'Common Stock',
-                    'description': profile.description,
+                    "stock_name": profile.name,
+                    "sector": profile.sector,
+                    "industry": profile.industry,
+                    "market_capitalization": profile.market_cap,
+                    "pe_ratio": profile.pe_ratio,
+                    "eps": profile.eps,
+                    "beta": profile.beta,
+                    "dividend_yield": profile.dividend_yield,
+                    "exchange": profile.exchange,
+                    "asset_type": "Common Stock",
+                    "description": profile.description,
                     **quote_data,
                 }
 
@@ -252,8 +275,7 @@ class StockService:
                 stock_data = {k: v for k, v in stock_data.items() if v is not None}
 
                 stock, created = Stock.objects.update_or_create(
-                    symbol=symbol,
-                    defaults=stock_data
+                    symbol=symbol, defaults=stock_data
                 )
 
                 if created:
@@ -267,7 +289,9 @@ class StockService:
             logger.error(f"Error updating stock data for {symbol}: {e}")
             raise
 
-    def update_historical_prices(self, stock: Union[Stock, str], days: int = 100) -> Dict[str, int]:
+    def update_historical_prices(
+        self, stock: Union[Stock, str], days: int = 100
+    ) -> Dict[str, int]:
         """
         가격 데이터(일간, 주간)를 DB에 업데이트
         Args:
@@ -292,8 +316,8 @@ class StockService:
         logger.info(f"Updating historical prices for {symbol}")
 
         results = {
-            'daily_prices': 0,
-            'weekly_prices': 0,
+            "daily_prices": 0,
+            "weekly_prices": 0,
         }
 
         try:
@@ -302,15 +326,23 @@ class StockService:
             daily_response = self.get_daily_prices(symbol, output_size)
 
             if daily_response.success and daily_response.data:
-                results['daily_prices'] = self._save_daily_prices(stock_obj, daily_response.data)
-                logger.info(f"Updated {results['daily_prices']} daily records for {symbol}")
+                results["daily_prices"] = self._save_daily_prices(
+                    stock_obj, daily_response.data
+                )
+                logger.info(
+                    f"Updated {results['daily_prices']} daily records for {symbol}"
+                )
 
             # 2. 주별 데이터
             weekly_response = self.get_weekly_prices(symbol)
 
             if weekly_response.success and weekly_response.data:
-                results['weekly_prices'] = self._save_weekly_prices(stock_obj, weekly_response.data)
-                logger.info(f"Updated {results['weekly_prices']} weekly records for {symbol}")
+                results["weekly_prices"] = self._save_weekly_prices(
+                    stock_obj, weekly_response.data
+                )
+                logger.info(
+                    f"Updated {results['weekly_prices']} weekly records for {symbol}"
+                )
 
         except Exception as e:
             logger.error(f"Error updating historical prices for {symbol}: {e}")
@@ -342,9 +374,9 @@ class StockService:
         logger.info(f"Updating financial statements for {symbol}")
 
         results = {
-            'balance_sheets': 0,
-            'income_statements': 0,
-            'cash_flows': 0,
+            "balance_sheets": 0,
+            "income_statements": 0,
+            "cash_flows": 0,
         }
 
         try:
@@ -353,20 +385,26 @@ class StockService:
                 # 1. 대차대조표
                 balance_response = self.get_balance_sheet(symbol, period)
                 if balance_response.success and balance_response.data:
-                    count = self._save_balance_sheets(stock_obj, balance_response.data, period)
-                    results['balance_sheets'] += count
+                    count = self._save_balance_sheets(
+                        stock_obj, balance_response.data, period
+                    )
+                    results["balance_sheets"] += count
 
                 # 2. 손익계산서
                 income_response = self.get_income_statement(symbol, period)
                 if income_response.success and income_response.data:
-                    count = self._save_income_statements(stock_obj, income_response.data, period)
-                    results['income_statements'] += count
+                    count = self._save_income_statements(
+                        stock_obj, income_response.data, period
+                    )
+                    results["income_statements"] += count
 
                 # 3. 현금흐름표
                 cash_flow_response = self.get_cash_flow(symbol, period)
                 if cash_flow_response.success and cash_flow_response.data:
-                    count = self._save_cash_flows(stock_obj, cash_flow_response.data, period)
-                    results['cash_flows'] += count
+                    count = self._save_cash_flows(
+                        stock_obj, cash_flow_response.data, period
+                    )
+                    results["cash_flows"] += count
 
             logger.info(f"Updated financial statements for {symbol}: {results}")
 
@@ -380,7 +418,9 @@ class StockService:
     # Private 저장 헬퍼 메서드
     # ============================================================
 
-    def _save_daily_prices(self, stock: Stock, prices: List[NormalizedPriceData]) -> int:
+    def _save_daily_prices(
+        self, stock: Stock, prices: List[NormalizedPriceData]
+    ) -> int:
         """일별 가격 데이터를 DB에 저장"""
         saved_count = 0
 
@@ -391,23 +431,27 @@ class StockService:
                         stock=stock,
                         date=price.date,
                         defaults={
-                            'open_price': price.open,
-                            'high_price': price.high,
-                            'low_price': price.low,
-                            'close_price': price.close,
-                            'volume': price.volume,
-                        }
+                            "open_price": price.open,
+                            "high_price": price.high,
+                            "low_price": price.low,
+                            "close_price": price.close,
+                            "volume": price.volume,
+                        },
                     )
                     if created:
                         saved_count += 1
                 except IntegrityError as e:
-                    logger.warning(f"Duplicate daily price for {stock.symbol} on {price.date}: {e}")
+                    logger.warning(
+                        f"Duplicate daily price for {stock.symbol} on {price.date}: {e}"
+                    )
                 except Exception as e:
                     logger.error(f"Error saving daily price for {stock.symbol}: {e}")
 
         return saved_count
 
-    def _save_weekly_prices(self, stock: Stock, prices: List[NormalizedPriceData]) -> int:
+    def _save_weekly_prices(
+        self, stock: Stock, prices: List[NormalizedPriceData]
+    ) -> int:
         """주별 가격 데이터를 DB에 저장"""
         saved_count = 0
 
@@ -418,61 +462,64 @@ class StockService:
                         stock=stock,
                         date=price.date,
                         defaults={
-                            'open_price': price.open,
-                            'high_price': price.high,
-                            'low_price': price.low,
-                            'close_price': price.close,
-                            'volume': price.volume,
-                        }
+                            "open_price": price.open,
+                            "high_price": price.high,
+                            "low_price": price.low,
+                            "close_price": price.close,
+                            "volume": price.volume,
+                        },
                     )
                     if created:
                         saved_count += 1
                 except IntegrityError as e:
-                    logger.warning(f"Duplicate weekly price for {stock.symbol} on {price.date}: {e}")
+                    logger.warning(
+                        f"Duplicate weekly price for {stock.symbol} on {price.date}: {e}"
+                    )
                 except Exception as e:
                     logger.error(f"Error saving weekly price for {stock.symbol}: {e}")
 
         return saved_count
 
     def _save_balance_sheets(
-        self,
-        stock: Stock,
-        sheets: List[NormalizedBalanceSheet],
-        period: PeriodType
+        self, stock: Stock, sheets: List[NormalizedBalanceSheet], period: PeriodType
     ) -> int:
         """대차대조표 데이터를 DB에 저장"""
         saved_count = 0
-        period_type = 'annual' if period == PeriodType.ANNUAL else 'quarterly'
+        period_type = "annual" if period == PeriodType.ANNUAL else "quarterly"
 
         with transaction.atomic():
             for sheet in sheets:
                 try:
                     fiscal_date = sheet.fiscal_date_ending
                     fiscal_year = fiscal_date.year
-                    fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
+                    fiscal_quarter = (
+                        ((fiscal_date.month - 1) // 3) + 1
+                        if period_type == "quarterly"
+                        else None
+                    )
 
                     defaults = {
-                        'reported_date': fiscal_date,
-                        'currency': sheet.reported_currency,
-                        'total_assets': sheet.total_assets,
-                        'total_current_assets': sheet.current_assets,
-                        'cash_and_cash_equivalents_at_carrying_value': sheet.cash_and_equivalents,
-                        'short_term_investments': sheet.short_term_investments,
-                        'inventory': sheet.inventory,
-                        'current_net_receivables': sheet.accounts_receivable,
-                        'total_non_current_assets': sheet.non_current_assets,
-                        'property_plant_equipment': sheet.property_plant_equipment,
-                        'goodwill': sheet.goodwill,
-                        'intangible_assets': sheet.intangible_assets,
-                        'total_liabilities': sheet.total_liabilities,
-                        'total_current_liabilities': sheet.current_liabilities,
-                        'current_accounts_payable': sheet.accounts_payable,
-                        'short_term_debt': sheet.short_term_debt,
-                        'long_term_debt': sheet.long_term_debt,
-                        'total_shareholder_equity': sheet.total_shareholder_equity,
-                        'retained_earnings': sheet.retained_earnings,
-                        'common_stock': sheet.common_stock,
-                        'treasury_stock': sheet.treasury_stock,
+                        "reported_date": fiscal_date,
+                        "currency": sheet.reported_currency,
+                        "total_assets": sheet.total_assets,
+                        "total_current_assets": sheet.current_assets,
+                        "cash_and_cash_equivalents_at_carrying_value": sheet.cash_and_equivalents,
+                        "short_term_investments": sheet.short_term_investments,
+                        "inventory": sheet.inventory,
+                        "current_net_receivables": sheet.accounts_receivable,
+                        "total_non_current_assets": sheet.non_current_assets,
+                        "property_plant_equipment": sheet.property_plant_equipment,
+                        "goodwill": sheet.goodwill,
+                        "intangible_assets": sheet.intangible_assets,
+                        "total_liabilities": sheet.total_liabilities,
+                        "total_current_liabilities": sheet.current_liabilities,
+                        "current_accounts_payable": sheet.accounts_payable,
+                        "short_term_debt": sheet.short_term_debt,
+                        "long_term_debt": sheet.long_term_debt,
+                        "total_shareholder_equity": sheet.total_shareholder_equity,
+                        "retained_earnings": sheet.retained_earnings,
+                        "common_stock": sheet.common_stock,
+                        "treasury_stock": sheet.treasury_stock,
                     }
 
                     # None 값 필터링
@@ -483,7 +530,7 @@ class StockService:
                         period_type=period_type,
                         fiscal_year=fiscal_year,
                         fiscal_quarter=fiscal_quarter,
-                        defaults=defaults
+                        defaults=defaults,
                     )
                     if created:
                         saved_count += 1
@@ -498,32 +545,36 @@ class StockService:
         self,
         stock: Stock,
         statements: List[NormalizedIncomeStatement],
-        period: PeriodType
+        period: PeriodType,
     ) -> int:
         """손익계산서 데이터를 DB에 저장"""
         saved_count = 0
-        period_type = 'annual' if period == PeriodType.ANNUAL else 'quarterly'
+        period_type = "annual" if period == PeriodType.ANNUAL else "quarterly"
 
         with transaction.atomic():
             for stmt in statements:
                 try:
                     fiscal_date = stmt.fiscal_date_ending
                     fiscal_year = fiscal_date.year
-                    fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
+                    fiscal_quarter = (
+                        ((fiscal_date.month - 1) // 3) + 1
+                        if period_type == "quarterly"
+                        else None
+                    )
 
                     defaults = {
-                        'reported_date': fiscal_date,
-                        'currency': stmt.reported_currency,
-                        'total_revenue': stmt.total_revenue,
-                        'cost_of_revenue': stmt.cost_of_revenue,
-                        'gross_profit': stmt.gross_profit,
-                        'operating_expenses': stmt.operating_expenses,
-                        'operating_income': stmt.operating_income,
-                        'interest_expense': stmt.interest_expense,
-                        'income_before_tax': stmt.income_before_tax,
-                        'income_tax_expense': stmt.income_tax_expense,
-                        'net_income': stmt.net_income,
-                        'ebitda': stmt.ebitda,
+                        "reported_date": fiscal_date,
+                        "currency": stmt.reported_currency,
+                        "total_revenue": stmt.total_revenue,
+                        "cost_of_revenue": stmt.cost_of_revenue,
+                        "gross_profit": stmt.gross_profit,
+                        "operating_expenses": stmt.operating_expenses,
+                        "operating_income": stmt.operating_income,
+                        "interest_expense": stmt.interest_expense,
+                        "income_before_tax": stmt.income_before_tax,
+                        "income_tax_expense": stmt.income_tax_expense,
+                        "net_income": stmt.net_income,
+                        "ebitda": stmt.ebitda,
                     }
 
                     # None 값 필터링
@@ -534,45 +585,50 @@ class StockService:
                         period_type=period_type,
                         fiscal_year=fiscal_year,
                         fiscal_quarter=fiscal_quarter,
-                        defaults=defaults
+                        defaults=defaults,
                     )
                     if created:
                         saved_count += 1
                 except IntegrityError as e:
-                    logger.warning(f"Duplicate income statement for {stock.symbol}: {e}")
+                    logger.warning(
+                        f"Duplicate income statement for {stock.symbol}: {e}"
+                    )
                 except Exception as e:
-                    logger.error(f"Error saving income statement for {stock.symbol}: {e}")
+                    logger.error(
+                        f"Error saving income statement for {stock.symbol}: {e}"
+                    )
 
         return saved_count
 
     def _save_cash_flows(
-        self,
-        stock: Stock,
-        flows: List[NormalizedCashFlow],
-        period: PeriodType
+        self, stock: Stock, flows: List[NormalizedCashFlow], period: PeriodType
     ) -> int:
         """현금흐름표 데이터를 DB에 저장"""
         saved_count = 0
-        period_type = 'annual' if period == PeriodType.ANNUAL else 'quarterly'
+        period_type = "annual" if period == PeriodType.ANNUAL else "quarterly"
 
         with transaction.atomic():
             for flow in flows:
                 try:
                     fiscal_date = flow.fiscal_date_ending
                     fiscal_year = fiscal_date.year
-                    fiscal_quarter = ((fiscal_date.month - 1) // 3) + 1 if period_type == 'quarterly' else None
+                    fiscal_quarter = (
+                        ((fiscal_date.month - 1) // 3) + 1
+                        if period_type == "quarterly"
+                        else None
+                    )
 
                     defaults = {
-                        'reported_date': fiscal_date,
-                        'currency': flow.reported_currency,
-                        'operating_cashflow': flow.operating_cash_flow,
-                        'net_income': flow.net_income,
-                        'depreciation_depletion_and_amortization': flow.depreciation,
-                        'cashflow_from_investment': flow.investing_cash_flow,
-                        'capital_expenditures': flow.capital_expenditures,
-                        'cashflow_from_financing': flow.financing_cash_flow,
-                        'dividend_payout': flow.dividends_paid,
-                        'change_in_cash_and_cash_equivalents': flow.net_change_in_cash,
+                        "reported_date": fiscal_date,
+                        "currency": flow.reported_currency,
+                        "operating_cashflow": flow.operating_cash_flow,
+                        "net_income": flow.net_income,
+                        "depreciation_depletion_and_amortization": flow.depreciation,
+                        "cashflow_from_investment": flow.investing_cash_flow,
+                        "capital_expenditures": flow.capital_expenditures,
+                        "cashflow_from_financing": flow.financing_cash_flow,
+                        "dividend_payout": flow.dividends_paid,
+                        "change_in_cash_and_cash_equivalents": flow.net_change_in_cash,
                     }
 
                     # None 값 필터링
@@ -583,7 +639,7 @@ class StockService:
                         period_type=period_type,
                         fiscal_year=fiscal_year,
                         fiscal_quarter=fiscal_quarter,
-                        defaults=defaults
+                        defaults=defaults,
                     )
                     if created:
                         saved_count += 1
@@ -614,8 +670,7 @@ class StockService:
 
         try:
             stock, created = Stock.objects.get_or_create(
-                symbol=symbol,
-                defaults={'stock_name': symbol}
+                symbol=symbol, defaults={"stock_name": symbol}
             )
 
             # 오늘 이미 업데이트했는지 확인
@@ -625,10 +680,10 @@ class StockService:
             if not force and stock.last_api_call and stock.last_api_call >= today_start:
                 logger.info(f"Already fetched {symbol} today at {stock.last_api_call}")
                 return {
-                    'status': 'cached',
-                    'symbol': symbol,
-                    'price': float(stock.real_time_price or 0),
-                    'message': f'Already fetched today at {stock.last_api_call}'
+                    "status": "cached",
+                    "symbol": symbol,
+                    "price": float(stock.real_time_price or 0),
+                    "message": f"Already fetched today at {stock.last_api_call}",
                 }
 
             # 일별 가격 데이터 조회
@@ -636,18 +691,18 @@ class StockService:
 
             if not daily_response.success or not daily_response.data:
                 return {
-                    'status': 'error',
-                    'symbol': symbol,
-                    'message': daily_response.error or 'No daily data available'
+                    "status": "error",
+                    "symbol": symbol,
+                    "message": daily_response.error or "No daily data available",
                 }
 
             # 최신 가격 추출
             prices = sorted(daily_response.data, key=lambda x: x.date, reverse=True)
             if not prices:
                 return {
-                    'status': 'error',
-                    'symbol': symbol,
-                    'message': 'No price data available'
+                    "status": "error",
+                    "symbol": symbol,
+                    "message": "No price data available",
                 }
 
             latest = prices[0]
@@ -655,7 +710,11 @@ class StockService:
             # 변동 계산
             if len(prices) > 1:
                 prev = prices[1]
-                change = float(latest.close - prev.close) if latest.close and prev.close else 0
+                change = (
+                    float(latest.close - prev.close)
+                    if latest.close and prev.close
+                    else 0
+                )
                 change_percent = (change / float(prev.close) * 100) if prev.close else 0
             else:
                 change = 0
@@ -679,36 +738,34 @@ class StockService:
                     stock=stock,
                     date=latest.date,
                     defaults={
-                        'open_price': latest.open,
-                        'high_price': latest.high,
-                        'low_price': latest.low,
-                        'close_price': latest.close,
-                        'volume': latest.volume,
-                    }
+                        "open_price": latest.open,
+                        "high_price": latest.high,
+                        "low_price": latest.low,
+                        "close_price": latest.close,
+                        "volume": latest.volume,
+                    },
                 )
             except Exception as e:
                 logger.warning(f"Could not save DailyPrice for {symbol}: {e}")
 
-            logger.info(f"Updated {symbol} with close price ${latest.close} from {latest.date}")
+            logger.info(
+                f"Updated {symbol} with close price ${latest.close} from {latest.date}"
+            )
 
             return {
-                'status': 'updated',
-                'symbol': symbol,
-                'date': str(latest.date),
-                'price': float(latest.close) if latest.close else 0,
-                'change': change,
-                'change_percent': change_percent,
-                'volume': latest.volume,
-                'message': f'Updated with close price from {latest.date}'
+                "status": "updated",
+                "symbol": symbol,
+                "date": str(latest.date),
+                "price": float(latest.close) if latest.close else 0,
+                "change": change,
+                "change_percent": change_percent,
+                "volume": latest.volume,
+                "message": f"Updated with close price from {latest.date}",
             }
 
         except Exception as e:
             logger.error(f"Error updating previous close for {symbol}: {e}")
-            return {
-                'status': 'error',
-                'symbol': symbol,
-                'message': str(e)
-            }
+            return {"status": "error", "symbol": symbol, "message": str(e)}
 
     def get_stock_summary(self, symbol: str) -> Dict[str, Any]:
         """
@@ -724,39 +781,42 @@ class StockService:
             cash_flow_count = CashFlowStatement.objects.filter(stock=stock).count()
 
             return {
-                'symbol': stock.symbol,
-                'name': stock.stock_name,
-                'sector': stock.sector,
-                'current_price': float(stock.real_time_price or 0),
-                'market_cap': float(stock.market_capitalization or 0),
-                'data_counts': {
-                    'daily_prices': daily_count,
-                    'weekly_prices': weekly_count,
-                    'balance_sheets': balance_count,
-                    'income_statements': income_count,
-                    'cash_flows': cash_flow_count,
+                "symbol": stock.symbol,
+                "name": stock.stock_name,
+                "sector": stock.sector,
+                "current_price": float(stock.real_time_price or 0),
+                "market_cap": float(stock.market_capitalization or 0),
+                "data_counts": {
+                    "daily_prices": daily_count,
+                    "weekly_prices": weekly_count,
+                    "balance_sheets": balance_count,
+                    "income_statements": income_count,
+                    "cash_flows": cash_flow_count,
                 },
-                'last_updated': stock.last_updated.isoformat() if stock.last_updated else None,
+                "last_updated": stock.last_updated.isoformat()
+                if stock.last_updated
+                else None,
             }
 
         except Stock.DoesNotExist:
-            return {'error': f'Stock {symbol} not found'}
+            return {"error": f"Stock {symbol} not found"}
         except Exception as e:
-            return {'error': str(e)}
+            return {"error": str(e)}
 
     def get_provider_info(self) -> Dict[str, Any]:
         """
         현재 Provider 설정 정보 조회
         """
         return {
-            'providers': getattr(settings, 'STOCK_PROVIDERS', {}),
-            'fallback_enabled': getattr(settings, 'PROVIDER_FALLBACK_ENABLED', True),
-            'cache_ttl': getattr(settings, 'PROVIDER_CACHE_TTL', {}),
+            "providers": getattr(settings, "STOCK_PROVIDERS", {}),
+            "fallback_enabled": getattr(settings, "PROVIDER_FALLBACK_ENABLED", True),
+            "cache_ttl": getattr(settings, "PROVIDER_CACHE_TTL", {}),
         }
 
 
 # 편의를 위한 싱글톤 인스턴스
 _stock_service_instance = None
+
 
 def get_stock_service() -> StockService:
     """

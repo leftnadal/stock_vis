@@ -26,9 +26,8 @@ class KoreanOverviewService:
     RPM_DELAY = 4  # Gemini Free: 15 RPM
 
     def __init__(self):
-        api_key = (
-            getattr(settings, 'GOOGLE_AI_API_KEY', None)
-            or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
         )
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
@@ -79,14 +78,14 @@ class KoreanOverviewService:
             overview_ko, created = StockOverviewKo.objects.update_or_create(
                 stock=stock,
                 defaults={
-                    'summary': result.get('summary', ''),
-                    'business_model': result.get('business_model', ''),
-                    'competitive_edge': result.get('competitive_edge', ''),
-                    'risk_factors': result.get('risk_factors', ''),
-                    'llm_model': self.MODEL,
-                    'generated_at': timezone.now(),
-                    'generation_time_ms': elapsed_ms,
-                }
+                    "summary": result.get("summary", ""),
+                    "business_model": result.get("business_model", ""),
+                    "competitive_edge": result.get("competitive_edge", ""),
+                    "risk_factors": result.get("risk_factors", ""),
+                    "llm_model": self.MODEL,
+                    "generated_at": timezone.now(),
+                    "generation_time_ms": elapsed_ms,
+                },
             )
 
             action = "생성" if created else "갱신"
@@ -108,15 +107,17 @@ class KoreanOverviewService:
         if symbols is None:
             # S&P 500 중 한글 개요 미생성 종목
             sp500_symbols = list(
-                SP500Constituent.objects.filter(is_active=True)
-                .values_list('symbol', flat=True)
+                SP500Constituent.objects.filter(is_active=True).values_list(
+                    "symbol", flat=True
+                )
             )
             if force:
                 symbols = sp500_symbols
             else:
                 existing = set(
-                    StockOverviewKo.objects.filter(stock_id__in=sp500_symbols)
-                    .values_list('stock_id', flat=True)
+                    StockOverviewKo.objects.filter(
+                        stock_id__in=sp500_symbols
+                    ).values_list("stock_id", flat=True)
                 )
                 symbols = [s for s in sp500_symbols if s not in existing]
 
@@ -131,7 +132,7 @@ class KoreanOverviewService:
                 self.generate_for_stock(symbol, force=force)
                 success += 1
             except Exception as e:
-                logger.error(f"[{i+1}/{total}] Failed {symbol}: {e}")
+                logger.error(f"[{i + 1}/{total}] Failed {symbol}: {e}")
                 errors += 1
 
             # Rate limiting
@@ -139,12 +140,14 @@ class KoreanOverviewService:
                 time.sleep(self.RPM_DELAY)
 
             if (i + 1) % 10 == 0:
-                logger.info(f"Progress: {i+1}/{total} (success={success}, errors={errors})")
+                logger.info(
+                    f"Progress: {i + 1}/{total} (success={success}, errors={errors})"
+                )
 
         result = {
-            'total': total,
-            'success': success,
-            'errors': errors,
+            "total": total,
+            "success": success,
+            "errors": errors,
         }
         logger.info(f"Batch Korean overview completed: {result}")
         return result
@@ -156,23 +159,23 @@ class KoreanOverviewService:
         if stock.market_capitalization:
             cap = float(stock.market_capitalization)
             if cap >= 1e12:
-                financials.append(f"시가총액: ${cap/1e12:.1f}T")
+                financials.append(f"시가총액: ${cap / 1e12:.1f}T")
             elif cap >= 1e9:
-                financials.append(f"시가총액: ${cap/1e9:.1f}B")
+                financials.append(f"시가총액: ${cap / 1e9:.1f}B")
         if stock.pe_ratio:
             financials.append(f"PER: {float(stock.pe_ratio):.1f}")
         if stock.eps:
             financials.append(f"EPS: ${float(stock.eps):.2f}")
         if stock.dividend_yield:
-            financials.append(f"배당수익률: {float(stock.dividend_yield)*100:.2f}%")
+            financials.append(f"배당수익률: {float(stock.dividend_yield) * 100:.2f}%")
         if stock.profit_margin:
-            financials.append(f"순이익률: {float(stock.profit_margin)*100:.1f}%")
+            financials.append(f"순이익률: {float(stock.profit_margin) * 100:.1f}%")
         if stock.return_on_equity_ttm:
-            financials.append(f"ROE: {float(stock.return_on_equity_ttm)*100:.1f}%")
+            financials.append(f"ROE: {float(stock.return_on_equity_ttm) * 100:.1f}%")
         if stock.revenue_ttm:
             rev = float(stock.revenue_ttm)
             if rev >= 1e9:
-                financials.append(f"연매출: ${rev/1e9:.1f}B")
+                financials.append(f"연매출: ${rev / 1e9:.1f}B")
         if stock.beta:
             financials.append(f"Beta: {float(stock.beta):.2f}")
 
@@ -186,9 +189,9 @@ class KoreanOverviewService:
 ## 기업 정보
 - 심볼: {stock.symbol}
 - 기업명: {stock.stock_name or stock.symbol}
-- 섹터: {stock.sector or '미분류'}
-- 산업: {stock.industry or '미분류'}
-- 거래소: {stock.exchange or ''}
+- 섹터: {stock.sector or "미분류"}
+- 산업: {stock.industry or "미분류"}
+- 거래소: {stock.exchange or ""}
 - 재무: {financials_str}
 - 영문 설명: {description_str}
 

@@ -25,15 +25,28 @@ class Command(BaseCommand):
     help = "Stock-Vis 일일 리포트 생성 + 이메일 발송"
 
     def add_arguments(self, parser):
-        parser.add_argument("--dry-run", action="store_true", help="발송하지 않고 HTML/요약만 출력")
-        parser.add_argument("--to", type=str, default=None, help="수신자 override (기본: REPORT_RECIPIENT_EMAIL)")
-        parser.add_argument("--date", type=str, default=None, help="리포트 기준 날짜 (YYYY-MM-DD, 기본: 오늘 KST)")
+        parser.add_argument(
+            "--dry-run", action="store_true", help="발송하지 않고 HTML/요약만 출력"
+        )
+        parser.add_argument(
+            "--to",
+            type=str,
+            default=None,
+            help="수신자 override (기본: REPORT_RECIPIENT_EMAIL)",
+        )
+        parser.add_argument(
+            "--date",
+            type=str,
+            default=None,
+            help="리포트 기준 날짜 (YYYY-MM-DD, 기본: 오늘 KST)",
+        )
 
     def handle(self, *args, **options):
         # KST 기준 today
         now_local = timezone.localtime()
         if options["date"]:
             from datetime import datetime as dt
+
             today = dt.strptime(options["date"], "%Y-%m-%d").date()
         else:
             today = now_local.date()
@@ -41,11 +54,17 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE(f"📊 Daily report 생성: {today}"))
         payload = build_report_payload(today)
 
-        self.stdout.write(f"  ─ Graph: nodes={payload['graph']['total_nodes']}, rels={payload['graph']['total_relations']}")
-        self.stdout.write(f"  ─ News: today_new={payload['news']['today_new']}, llm_pct={payload['news']['today_llm_analyzed_pct']}%")
+        self.stdout.write(
+            f"  ─ Graph: nodes={payload['graph']['total_nodes']}, rels={payload['graph']['total_relations']}"
+        )
+        self.stdout.write(
+            f"  ─ News: today_new={payload['news']['today_new']}, llm_pct={payload['news']['today_llm_analyzed_pct']}%"
+        )
         self.stdout.write(f"  ─ Suggestions: {len(payload['suggestions'])}건")
-        self.stdout.write(f"  ─ Health: worker={'OK' if payload['health']['celery_worker_alive'] else 'DOWN'}, "
-                          f"neo4j={'OK' if payload['health']['neo4j_alive'] else 'DOWN'}")
+        self.stdout.write(
+            f"  ─ Health: worker={'OK' if payload['health']['celery_worker_alive'] else 'DOWN'}, "
+            f"neo4j={'OK' if payload['health']['neo4j_alive'] else 'DOWN'}"
+        )
 
         # HTML 렌더링
         html_body = render_to_string("email/daily_report.html", {"payload": payload})
@@ -57,16 +76,22 @@ class Command(BaseCommand):
 
         text_body = (
             f"Stock-Vis Daily Report — {today}\n"
-            f"{'='*50}\n\n"
+            f"{'=' * 50}\n\n"
             f"노드: {payload['graph']['total_nodes']}, 관계: {payload['graph']['total_relations']}\n"
             f"24h 뉴스 신규: {payload['news']['today_new']} (LLM 분석률 {payload['news']['today_llm_analyzed_pct']}%)\n\n"
             f"개선방향: 🔴 {red_count} / 🟡 {yel_count} / 🟢 {grn_count}\n\n"
             f"전체 내용은 HTML 본문 참조 (Gmail/Apple Mail에서 자동 렌더링).\n"
         )
 
-        recipient = options["to"] or getattr(settings, "REPORT_RECIPIENT_EMAIL", None) or settings.EMAIL_HOST_USER
+        recipient = (
+            options["to"]
+            or getattr(settings, "REPORT_RECIPIENT_EMAIL", None)
+            or settings.EMAIL_HOST_USER
+        )
         if not recipient:
-            self.stderr.write(self.style.ERROR("수신자 미설정 (REPORT_RECIPIENT_EMAIL or --to)"))
+            self.stderr.write(
+                self.style.ERROR("수신자 미설정 (REPORT_RECIPIENT_EMAIL or --to)")
+            )
             return
 
         subject = f"[Stock-Vis] {today} 일일 리포트 — 노드 {payload['graph']['total_nodes']:,} / 24h 뉴스 {payload['news']['today_new']}"

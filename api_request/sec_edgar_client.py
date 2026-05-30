@@ -15,6 +15,7 @@ References:
 - API Docs: https://www.sec.gov/search-filings/edgar-application-programming-interfaces
 - 10-K Item 1A contains business risks including customer concentration disclosure
 """
+
 import requests
 import logging
 import time
@@ -32,12 +33,14 @@ logger = logging.getLogger(__name__)
 
 class SECEdgarError(Exception):
     """SEC EDGAR API Error"""
+
     pass
 
 
 @dataclass
 class Filing10K:
     """10-K Filing metadata"""
+
     accession_number: str
     filing_date: date
     report_date: date
@@ -50,6 +53,7 @@ class Filing10K:
 @dataclass
 class Filing13F:
     """13-F Filing metadata"""
+
     accession_number: str
     filing_date: date
     report_date: date
@@ -62,6 +66,7 @@ class Filing13F:
 @dataclass
 class Filing8K:
     """8-K Filing metadata"""
+
     accession_number: str
     filing_date: date
     items_reported: List[str]
@@ -105,10 +110,12 @@ class SECEdgarClient:
         """Initialize SEC EDGAR client"""
         self._last_request_time = 0
         self._session = requests.Session()
-        self._session.headers.update({
-            'User-Agent': self.USER_AGENT,
-            'Accept': 'application/json',
-        })
+        self._session.headers.update(
+            {
+                "User-Agent": self.USER_AGENT,
+                "Accept": "application/json",
+            }
+        )
 
         # CIK cache (ticker -> CIK)
         self._cik_cache: Dict[str, str] = {}
@@ -128,7 +135,7 @@ class SECEdgarClient:
         url: str,
         params: Optional[Dict[str, str]] = None,
         headers: Optional[Dict[str, str]] = None,
-        timeout: int = 30
+        timeout: int = 30,
     ) -> requests.Response:
         """
         Make HTTP request with rate limiting
@@ -151,10 +158,7 @@ class SECEdgarClient:
             logger.debug(f"SEC EDGAR request: {url}")
 
             response = self._session.get(
-                url,
-                params=params,
-                headers=headers,
-                timeout=timeout
+                url, params=params, headers=headers, timeout=timeout
             )
 
             if response.status_code == 404:
@@ -208,8 +212,8 @@ class SECEdgarClient:
 
             # Search for ticker
             for key, company in data.items():
-                if company.get('ticker', '').upper() == ticker:
-                    cik = str(company.get('cik_str', '')).zfill(10)
+                if company.get("ticker", "").upper() == ticker:
+                    cik = str(company.get("cik_str", "")).zfill(10)
                     self._cik_cache[ticker] = cik
                     logger.info(f"Found CIK for {ticker}: {cik}")
                     return cik
@@ -262,34 +266,36 @@ class SECEdgarClient:
         try:
             company_data = self.get_company_info(cik)
 
-            company_name = company_data.get('name', 'Unknown')
-            filings_data = company_data.get('filings', {}).get('recent', {})
+            company_name = company_data.get("name", "Unknown")
+            filings_data = company_data.get("filings", {}).get("recent", {})
 
             # Extract filing arrays
-            forms = filings_data.get('form', [])
-            accession_numbers = filings_data.get('accessionNumber', [])
-            filing_dates = filings_data.get('filingDate', [])
-            report_dates = filings_data.get('reportDate', [])
-            primary_documents = filings_data.get('primaryDocument', [])
+            forms = filings_data.get("form", [])
+            accession_numbers = filings_data.get("accessionNumber", [])
+            filing_dates = filings_data.get("filingDate", [])
+            report_dates = filings_data.get("reportDate", [])
+            primary_documents = filings_data.get("primaryDocument", [])
 
             filings = []
 
             for i, form in enumerate(forms):
                 # Look for 10-K and 10-K/A (amended)
-                if form in ('10-K', '10-K/A'):
+                if form in ("10-K", "10-K/A"):
                     try:
                         filing = Filing10K(
-                            accession_number=accession_numbers[i].replace('-', ''),
+                            accession_number=accession_numbers[i].replace("-", ""),
                             filing_date=datetime.strptime(
-                                filing_dates[i], '%Y-%m-%d'
+                                filing_dates[i], "%Y-%m-%d"
                             ).date(),
                             report_date=datetime.strptime(
-                                report_dates[i], '%Y-%m-%d'
-                            ).date() if report_dates[i] else None,
+                                report_dates[i], "%Y-%m-%d"
+                            ).date()
+                            if report_dates[i]
+                            else None,
                             primary_document=primary_documents[i],
                             cik=cik,
                             company_name=company_name,
-                            form_type=form
+                            form_type=form,
                         )
                         filings.append(filing)
 
@@ -336,15 +342,15 @@ class SECEdgarClient:
             response = self._make_request(url, timeout=120)
 
             # Convert HTML to text
-            if filing.primary_document.endswith('.htm') or \
-               filing.primary_document.endswith('.html'):
+            if filing.primary_document.endswith(
+                ".htm"
+            ) or filing.primary_document.endswith(".html"):
                 text = self._html_to_text(response.text)
             else:
                 text = response.text
 
             logger.info(
-                f"Downloaded 10-K for {filing.company_name}: "
-                f"{len(text)} characters"
+                f"Downloaded 10-K for {filing.company_name}: {len(text)} characters"
             )
 
             return text
@@ -366,27 +372,27 @@ class SECEdgarClient:
             Plain text with preserved structure
         """
         try:
-            soup = BeautifulSoup(html, 'html.parser')
+            soup = BeautifulSoup(html, "html.parser")
 
             # Remove script and style elements
-            for element in soup(['script', 'style', 'meta', 'link']):
+            for element in soup(["script", "style", "meta", "link"]):
                 element.decompose()
 
             # Get text
-            text = soup.get_text(separator='\n', strip=True)
+            text = soup.get_text(separator="\n", strip=True)
 
             # Clean up multiple newlines
-            text = re.sub(r'\n{3,}', '\n\n', text)
+            text = re.sub(r"\n{3,}", "\n\n", text)
 
             # Clean up multiple spaces
-            text = re.sub(r' {2,}', ' ', text)
+            text = re.sub(r" {2,}", " ", text)
 
             return text
 
         except Exception as e:
             logger.warning(f"HTML parsing failed, returning raw text: {e}")
             # Fallback: strip HTML tags with regex
-            text = re.sub(r'<[^>]+>', '', html)
+            text = re.sub(r"<[^>]+>", "", html)
             return text
 
     def get_10k_for_symbol(self, symbol: str, limit: int = 1) -> List[Filing10K]:
@@ -442,15 +448,15 @@ class SECEdgarClient:
         # More flexible patterns to handle various 10-K formats
         patterns = [
             # Pattern 1: "Item 1A. Risk Factors" ... "Item 1B"
-            r'Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*1B)',
+            r"Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*1B)",
             # Pattern 2: "Item 1A. Risk Factors" ... "Item 1C"
-            r'Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*1C)',
+            r"Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*1C)",
             # Pattern 3: "Item 1A. Risk Factors" ... "Item 2"
-            r'Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*2)',
+            r"Item\s*1A\.?\s+Risk\s*Factors(.*?)(?=Item\s*2)",
             # Pattern 4: "RISK FACTORS" section
-            r'(?:^|\n)\s*RISK\s*FACTORS\s*\n(.*?)(?=\n\s*(?:ITEM|UNRESOLVED|PROPERTIES))',
+            r"(?:^|\n)\s*RISK\s*FACTORS\s*\n(.*?)(?=\n\s*(?:ITEM|UNRESOLVED|PROPERTIES))",
             # Pattern 5: Just "Risk Factors" heading
-            r'Risk\s*Factors\s*\n(.*?)(?=Unresolved\s*Staff|Cybersecurity|Properties)',
+            r"Risk\s*Factors\s*\n(.*?)(?=Unresolved\s*Staff|Cybersecurity|Properties)",
         ]
 
         for i, pattern in enumerate(patterns):
@@ -458,7 +464,9 @@ class SECEdgarClient:
             if match:
                 item_1a = match.group(1).strip()
                 if len(item_1a) > 1000:  # Ensure we got meaningful content
-                    logger.info(f"Extracted Item 1A using pattern {i+1}: {len(item_1a)} characters")
+                    logger.info(
+                        f"Extracted Item 1A using pattern {i + 1}: {len(item_1a)} characters"
+                    )
                     return item_1a
 
         # Fallback: return first 100,000 characters (likely contains Item 1A)
@@ -481,7 +489,7 @@ class SECEdgarClient:
             Relevant section text
         """
         patterns = [
-            r'(?:customer\s*concentration|concentration\s*of\s*credit\s*risk|major\s*customer|significant\s*customer)',
+            r"(?:customer\s*concentration|concentration\s*of\s*credit\s*risk|major\s*customer|significant\s*customer)",
         ]
 
         sections = []
@@ -494,7 +502,7 @@ class SECEdgarClient:
                 section = text[start:end]
                 sections.append(section)
 
-        return '\n\n---\n\n'.join(sections) if sections else text[:50000]
+        return "\n\n---\n\n".join(sections) if sections else text[:50000]
 
     def get_13f_filings(self, cik: str, limit: int = 4) -> List[Filing13F]:
         """
@@ -505,28 +513,34 @@ class SECEdgarClient:
         cik = cik.zfill(10)
         try:
             company_data = self.get_company_info(cik)
-            institution_name = company_data.get('name', 'Unknown')
-            filings_data = company_data.get('filings', {}).get('recent', {})
+            institution_name = company_data.get("name", "Unknown")
+            filings_data = company_data.get("filings", {}).get("recent", {})
 
-            forms = filings_data.get('form', [])
-            accession_numbers = filings_data.get('accessionNumber', [])
-            filing_dates_raw = filings_data.get('filingDate', [])
-            report_dates_raw = filings_data.get('reportDate', [])
-            primary_documents = filings_data.get('primaryDocument', [])
+            forms = filings_data.get("form", [])
+            accession_numbers = filings_data.get("accessionNumber", [])
+            filing_dates_raw = filings_data.get("filingDate", [])
+            report_dates_raw = filings_data.get("reportDate", [])
+            primary_documents = filings_data.get("primaryDocument", [])
 
             filings = []
             for i, form in enumerate(forms):
-                if form in ('13-F', '13-F-HR', '13-F-HR/A'):
+                if form in ("13-F", "13-F-HR", "13-F-HR/A"):
                     try:
                         # 13F info table is typically in a separate XML document
                         # The primary document is the cover page, we need the info table
                         filing = Filing13F(
-                            accession_number=accession_numbers[i].replace('-', ''),
-                            filing_date=datetime.strptime(filing_dates_raw[i], '%Y-%m-%d').date(),
-                            report_date=datetime.strptime(report_dates_raw[i], '%Y-%m-%d').date() if report_dates_raw[i] else None,
+                            accession_number=accession_numbers[i].replace("-", ""),
+                            filing_date=datetime.strptime(
+                                filing_dates_raw[i], "%Y-%m-%d"
+                            ).date(),
+                            report_date=datetime.strptime(
+                                report_dates_raw[i], "%Y-%m-%d"
+                            ).date()
+                            if report_dates_raw[i]
+                            else None,
                             info_table_document=primary_documents[i],
                             cik=cik,
-                            institution_name=institution_name
+                            institution_name=institution_name,
                         )
                         filings.append(filing)
                         if len(filings) >= limit:
@@ -560,10 +574,12 @@ class SECEdgarClient:
             info_table_url = None
 
             # Try to find XML info table from the index page
-            soup = BeautifulSoup(response.text, 'html.parser')
-            for link in soup.find_all('a'):
-                href = link.get('href', '').lower()
-                if ('infotable' in href or 'information' in href or 'holdings' in href) and href.endswith('.xml'):
+            soup = BeautifulSoup(response.text, "html.parser")
+            for link in soup.find_all("a"):
+                href = link.get("href", "").lower()
+                if (
+                    "infotable" in href or "information" in href or "holdings" in href
+                ) and href.endswith(".xml"):
                     info_table_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/{link.get('href')}"
                     break
 
@@ -585,28 +601,43 @@ class SECEdgarClient:
     def _parse_13f_xml(self, xml_content: str) -> List[Dict]:
         """Parse 13-F info table XML"""
         try:
-            soup = BeautifulSoup(xml_content, 'html.parser')
+            soup = BeautifulSoup(xml_content, "html.parser")
             holdings = []
 
             # 13F XML uses <infoTable> elements
-            for entry in soup.find_all(['infotable', 'ns1:infotable', 'informationtable']):
+            for entry in soup.find_all(
+                ["infotable", "ns1:infotable", "informationtable"]
+            ):
                 try:
                     # Extract fields - handle various XML formats
-                    cusip = self._get_xml_text(entry, ['cusip', 'ns1:cusip'])
-                    name = self._get_xml_text(entry, ['nameofissuer', 'ns1:nameofissuer', 'issuer'])
-                    value = self._get_xml_text(entry, ['value', 'ns1:value'])
-                    shares_tag = entry.find(['shrsorprnamt', 'ns1:shrsorprnamt', 'sharesOrPrincipalAmount'])
-                    shares = '0'
+                    cusip = self._get_xml_text(entry, ["cusip", "ns1:cusip"])
+                    name = self._get_xml_text(
+                        entry, ["nameofissuer", "ns1:nameofissuer", "issuer"]
+                    )
+                    value = self._get_xml_text(entry, ["value", "ns1:value"])
+                    shares_tag = entry.find(
+                        ["shrsorprnamt", "ns1:shrsorprnamt", "sharesOrPrincipalAmount"]
+                    )
+                    shares = "0"
                     if shares_tag:
-                        shares = self._get_xml_text(shares_tag, ['sshprnamt', 'ns1:sshprnamt']) or '0'
+                        shares = (
+                            self._get_xml_text(
+                                shares_tag, ["sshprnamt", "ns1:sshprnamt"]
+                            )
+                            or "0"
+                        )
 
                     if cusip:
-                        holdings.append({
-                            'cusip': cusip.strip(),
-                            'name': (name or '').strip(),
-                            'shares': int(re.sub(r'[^\d]', '', shares or '0') or '0'),
-                            'value': int(re.sub(r'[^\d]', '', value or '0') or '0'),
-                        })
+                        holdings.append(
+                            {
+                                "cusip": cusip.strip(),
+                                "name": (name or "").strip(),
+                                "shares": int(
+                                    re.sub(r"[^\d]", "", shares or "0") or "0"
+                                ),
+                                "value": int(re.sub(r"[^\d]", "", value or "0") or "0"),
+                            }
+                        )
                 except Exception as e:
                     logger.debug(f"Error parsing 13F entry: {e}")
                     continue
@@ -633,28 +664,34 @@ class SECEdgarClient:
         cik = cik.zfill(10)
         try:
             company_data = self.get_company_info(cik)
-            company_name = company_data.get('name', 'Unknown')
-            filings_data = company_data.get('filings', {}).get('recent', {})
+            company_name = company_data.get("name", "Unknown")
+            filings_data = company_data.get("filings", {}).get("recent", {})
 
-            forms = filings_data.get('form', [])
-            accession_numbers = filings_data.get('accessionNumber', [])
-            filing_dates_raw = filings_data.get('filingDate', [])
-            items_raw = filings_data.get('items', [])
+            forms = filings_data.get("form", [])
+            accession_numbers = filings_data.get("accessionNumber", [])
+            filing_dates_raw = filings_data.get("filingDate", [])
+            items_raw = filings_data.get("items", [])
 
             filings = []
             for i, form in enumerate(forms):
-                if form in ('8-K', '8-K/A'):
+                if form in ("8-K", "8-K/A"):
                     try:
                         items = []
                         if i < len(items_raw) and items_raw[i]:
-                            items = [item.strip() for item in items_raw[i].split(',') if item.strip()]
+                            items = [
+                                item.strip()
+                                for item in items_raw[i].split(",")
+                                if item.strip()
+                            ]
 
                         filing = Filing8K(
-                            accession_number=accession_numbers[i].replace('-', ''),
-                            filing_date=datetime.strptime(filing_dates_raw[i], '%Y-%m-%d').date(),
+                            accession_number=accession_numbers[i].replace("-", ""),
+                            filing_date=datetime.strptime(
+                                filing_dates_raw[i], "%Y-%m-%d"
+                            ).date(),
                             items_reported=items,
                             cik=cik,
-                            company_name=company_name
+                            company_name=company_name,
                         )
                         filings.append(filing)
                         if len(filings) >= limit:
@@ -678,18 +715,20 @@ class SECEdgarClient:
             url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/"
 
             response = self._make_request(url)
-            soup = BeautifulSoup(response.text, 'html.parser')
+            soup = BeautifulSoup(response.text, "html.parser")
 
             # Find primary document (usually .htm)
             doc_url = None
-            for link in soup.find_all('a'):
-                href = link.get('href', '')
-                if href.endswith(('.htm', '.html')) and 'R' not in href:
+            for link in soup.find_all("a"):
+                href = link.get("href", "")
+                if href.endswith((".htm", ".html")) and "R" not in href:
                     doc_url = f"{self.ARCHIVES_URL}/{filing.cik}/{filing.accession_number}/{href}"
                     break
 
             if not doc_url:
-                raise SECEdgarError(f"Could not find 8-K document for {filing.accession_number}")
+                raise SECEdgarError(
+                    f"Could not find 8-K document for {filing.accession_number}"
+                )
 
             response = self._make_request(doc_url, timeout=60)
             return self._html_to_text(response.text)

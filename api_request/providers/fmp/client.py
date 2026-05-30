@@ -19,21 +19,25 @@ logger = logging.getLogger(__name__)
 
 class FMPClientError(Exception):
     """FMP Client 에러 기본 클래스"""
+
     pass
 
 
 class FMPRateLimitError(FMPClientError):
     """Rate Limit 초과 에러"""
+
     pass
 
 
 class FMPAuthError(FMPClientError):
     """인증 에러"""
+
     pass
 
 
 class FMPPremiumError(FMPClientError):
     """프리미엄 전용 심볼/엔드포인트 에러 (402)"""
+
     pass
 
 
@@ -55,7 +59,7 @@ class FMPClient:
         self,
         api_key: str,
         request_delay: float = 0.2,  # FMP Starter Plan
-        max_retries: int = 3
+        max_retries: int = 3,
     ):
         """
         Args:
@@ -78,9 +82,7 @@ class FMPClient:
         return f"{self.BASE_URL}{endpoint}"
 
     def _make_request(
-        self,
-        endpoint: str,
-        params: Optional[Dict[str, Any]] = None
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
     ) -> Any:
         """
         FMP API 요청 실행
@@ -126,13 +128,17 @@ class FMPClient:
                 if response.status_code == 401:
                     raise FMPAuthError("Invalid API key")
                 elif response.status_code == 402:
-                    raise FMPPremiumError(f"Premium-only symbol/endpoint (402): {endpoint}")
+                    raise FMPPremiumError(
+                        f"Premium-only symbol/endpoint (402): {endpoint}"
+                    )
                 elif response.status_code == 403:
                     raise FMPAuthError("API access forbidden")
                 elif response.status_code == 429:
                     raise FMPRateLimitError("Rate limit exceeded")
                 elif response.status_code != 200:
-                    logger.error(f"FMP HTTP error {response.status_code}: {response.text}")
+                    logger.error(
+                        f"FMP HTTP error {response.status_code}: {response.text}"
+                    )
                     response.raise_for_status()
 
                 data = response.json()
@@ -152,10 +158,14 @@ class FMPClient:
                 last_error = e
                 if attempt < self.max_retries - 1:
                     wait_time = (attempt + 1) * 2  # Exponential backoff
-                    logger.warning(f"FMP request failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}")
+                    logger.warning(
+                        f"FMP request failed (attempt {attempt + 1}), retrying in {wait_time}s: {e}"
+                    )
                     time.sleep(wait_time)
                 else:
-                    logger.error(f"FMP request failed after {self.max_retries} attempts: {e}")
+                    logger.error(
+                        f"FMP request failed after {self.max_retries} attempts: {e}"
+                    )
                     raise
 
         raise last_error
@@ -196,7 +206,7 @@ class FMPClient:
         self,
         symbol: str,
         from_date: Optional[str] = None,
-        to_date: Optional[str] = None
+        to_date: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         과거 일별 가격 데이터 조회
@@ -245,7 +255,9 @@ class FMPClient:
             return data[0]
         return {}
 
-    def get_key_metrics(self, symbol: str, period: str = "annual") -> List[Dict[str, Any]]:
+    def get_key_metrics(
+        self, symbol: str, period: str = "annual"
+    ) -> List[Dict[str, Any]]:
         """
         핵심 재무 지표 조회
 
@@ -284,10 +296,7 @@ class FMPClient:
     # ============================================================
 
     def get_income_statement(
-        self,
-        symbol: str,
-        period: str = "annual",
-        limit: int = 10
+        self, symbol: str, period: str = "annual", limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
         손익계산서 조회
@@ -307,10 +316,7 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     def get_balance_sheet(
-        self,
-        symbol: str,
-        period: str = "annual",
-        limit: int = 10
+        self, symbol: str, period: str = "annual", limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
         대차대조표 조회
@@ -330,10 +336,7 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     def get_cash_flow(
-        self,
-        symbol: str,
-        period: str = "annual",
-        limit: int = 10
+        self, symbol: str, period: str = "annual", limit: int = 10
     ) -> List[Dict[str, Any]]:
         """
         현금흐름표 조회
@@ -481,8 +484,11 @@ class FMPClient:
             "daily_calls": self.daily_calls,
             "daily_limit": self.daily_limit,
             "remaining": self.daily_limit - self.daily_calls,
-            "last_request_time": datetime.fromtimestamp(self.last_request_time).isoformat()
-            if self.last_request_time else None
+            "last_request_time": datetime.fromtimestamp(
+                self.last_request_time
+            ).isoformat()
+            if self.last_request_time
+            else None,
         }
 
     def reset_daily_counter(self) -> None:

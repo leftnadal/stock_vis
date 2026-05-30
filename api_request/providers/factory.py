@@ -19,11 +19,13 @@ logger = logging.getLogger(__name__)
 
 class ProviderType(Enum):
     """Provider 타입 열거형"""
+
     FMP = "fmp"
 
 
 class EndpointType(Enum):
     """엔드포인트 타입 (Feature Flag 키)"""
+
     QUOTE = "quote"
     PROFILE = "profile"
     DAILY_PRICES = "daily_prices"
@@ -81,9 +83,7 @@ class ProviderFactory:
 
     @classmethod
     def get_provider(
-        cls,
-        endpoint: EndpointType,
-        force_provider: Optional[ProviderType] = None
+        cls, endpoint: EndpointType, force_provider: Optional[ProviderType] = None
     ) -> StockDataProvider:
         """
         엔드포인트에 맞는 Provider 반환
@@ -150,6 +150,7 @@ class ProviderFactory:
         """
         if provider_type == ProviderType.FMP:
             from .fmp import FMPProvider
+
             api_key = os.getenv("FMP_API_KEY", "")
             return FMPProvider(api_key=api_key)
 
@@ -157,7 +158,9 @@ class ProviderFactory:
             raise ValueError(f"Unknown provider type: {provider_type}")
 
     @classmethod
-    def get_fallback_providers(cls, provider_type: ProviderType) -> List[StockDataProvider]:
+    def get_fallback_providers(
+        cls, provider_type: ProviderType
+    ) -> List[StockDataProvider]:
         """
         Fallback Provider 리스트 반환
 
@@ -182,8 +185,7 @@ class ProviderFactory:
 
 
 def get_provider(
-    endpoint: str,
-    force_provider: Optional[str] = None
+    endpoint: str, force_provider: Optional[str] = None
 ) -> StockDataProvider:
     """
     편의 함수: 문자열로 Provider 가져오기
@@ -216,10 +218,7 @@ def get_provider(
 
 
 def call_with_fallback(
-    endpoint: EndpointType,
-    method_name: str,
-    *args,
-    **kwargs
+    endpoint: EndpointType, method_name: str, *args, **kwargs
 ) -> ProviderResponse:
     """
     Fallback 메커니즘을 적용한 Provider 호출
@@ -268,15 +267,13 @@ def call_with_fallback(
 
         except Exception as e:
             last_error = str(e)
-            logger.error(
-                f"{provider.PROVIDER_NAME} exception for {method_name}: {e}"
-            )
+            logger.error(f"{provider.PROVIDER_NAME} exception for {method_name}: {e}")
 
     # 모든 provider 실패
     return ProviderResponse.error_response(
         error=f"All providers failed: {last_error}",
         provider="factory",
-        error_code="ALL_PROVIDERS_FAILED"
+        error_code="ALL_PROVIDERS_FAILED",
     )
 
 
@@ -288,5 +285,7 @@ def print_current_config() -> None:
         provider_type = ProviderFactory._get_provider_type_for_endpoint(endpoint)
         env_key = ENV_KEYS.get(endpoint, "N/A")
         env_value = os.getenv(env_key, "(not set)")
-        print(f"  {endpoint.value:20s} -> {provider_type.value:15s} [{env_key}={env_value}]")
+        print(
+            f"  {endpoint.value:20s} -> {provider_type.value:15s} [{env_key}={env_value}]"
+        )
     print("=====================================\n")

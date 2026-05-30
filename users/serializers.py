@@ -2,37 +2,50 @@ from rest_framework import serializers
 from .models import User, Portfolio, Watchlist, WatchlistItem
 from stocks.models import Stock
 
+
 class StockListingField(serializers.RelatedField):
     def to_representation(self, value):
-        return {
-            'id': value.id,
-            'stock_name': value.stock_name,
-            'symbol': value.symbol
-        }
+        return {"id": value.id, "stock_name": value.stock_name, "symbol": value.symbol}
+
 
 class UserSerializer(serializers.ModelSerializer):
     """일반 사용자용 시리얼라이저 (제한된 정보만 포함)"""
+
     favorite_stock = StockListingField(many=True, read_only=True)
-    
+
     class Meta:
         model = User
-        fields = ['id', 'user_name', 'nick_name', 'favorite_stock']
+        fields = ["id", "user_name", "nick_name", "favorite_stock"]
+
 
 class PrivateUserSerializer(serializers.ModelSerializer):
     """소유자/관리자용 시리얼라이저 (개인 정보 포함)"""
+
     favorite_stock = StockListingField(many=True, read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'user_name', 'email', 'nick_name', 'favorite_stock', 'is_superuser', 'is_staff', 'date_joined']
-        read_only_fields = ['is_superuser', 'is_staff', 'date_joined']
+        fields = [
+            "id",
+            "user_name",
+            "email",
+            "nick_name",
+            "favorite_stock",
+            "is_superuser",
+            "is_staff",
+            "date_joined",
+        ]
+        read_only_fields = ["is_superuser", "is_staff", "date_joined"]
 
 
 class PortfolioSerializer(serializers.ModelSerializer):
     """포트폴리오 조회용 시리얼라이저"""
-    stock_symbol = serializers.CharField(source='stock.symbol', read_only=True)
-    stock_name = serializers.CharField(source='stock.stock_name', read_only=True)
-    current_price = serializers.DecimalField(source='stock.real_time_price', max_digits=15, decimal_places=4, read_only=True)
+
+    stock_symbol = serializers.CharField(source="stock.symbol", read_only=True)
+    stock_name = serializers.CharField(source="stock.stock_name", read_only=True)
+    current_price = serializers.DecimalField(
+        source="stock.real_time_price", max_digits=15, decimal_places=4, read_only=True
+    )
 
     # 계산된 필드들
     total_value = serializers.ReadOnlyField()
@@ -44,41 +57,48 @@ class PortfolioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Portfolio
         fields = [
-            'id',
-            'stock_symbol',
-            'stock_name',
-            'quantity',
-            'average_price',
-            'current_price',
-            'total_value',
-            'total_cost',
-            'profit_loss',
-            'profit_loss_percentage',
-            'is_profitable',
-            'notes',
-            'created_at',
-            'updated_at'
+            "id",
+            "stock_symbol",
+            "stock_name",
+            "quantity",
+            "average_price",
+            "current_price",
+            "total_value",
+            "total_cost",
+            "profit_loss",
+            "profit_loss_percentage",
+            "is_profitable",
+            "notes",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ["created_at", "updated_at"]
 
 
 class PortfolioDetailSerializer(serializers.ModelSerializer):
     """포트폴리오 상세 테이블 뷰용 시리얼라이저"""
+
     # 기본 정보
-    stock_symbol = serializers.CharField(source='stock.symbol', read_only=True)
-    stock_name = serializers.CharField(source='stock.stock_name', read_only=True)
-    sector = serializers.CharField(source='stock.sector', read_only=True)
-    industry = serializers.CharField(source='stock.industry', read_only=True)
+    stock_symbol = serializers.CharField(source="stock.symbol", read_only=True)
+    stock_name = serializers.CharField(source="stock.stock_name", read_only=True)
+    sector = serializers.CharField(source="stock.sector", read_only=True)
+    industry = serializers.CharField(source="stock.industry", read_only=True)
 
     # 가격 정보
-    current_price = serializers.DecimalField(source='stock.real_time_price', max_digits=15, decimal_places=4, read_only=True)
+    current_price = serializers.DecimalField(
+        source="stock.real_time_price", max_digits=15, decimal_places=4, read_only=True
+    )
     previous_close = serializers.ReadOnlyField()
 
     # 일일 변동
     daily_change = serializers.ReadOnlyField()
     daily_change_percentage = serializers.ReadOnlyField()
-    stock_change = serializers.DecimalField(source='stock.change', max_digits=15, decimal_places=4, read_only=True)
-    stock_change_percent = serializers.CharField(source='stock.change_percent', read_only=True)
+    stock_change = serializers.DecimalField(
+        source="stock.change", max_digits=15, decimal_places=4, read_only=True
+    )
+    stock_change_percent = serializers.CharField(
+        source="stock.change_percent", read_only=True
+    )
 
     # 보유 정보
     total_value = serializers.ReadOnlyField()
@@ -95,15 +115,23 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
     portfolio_weight = serializers.SerializerMethodField()
 
     # 추가 지표
-    pe_ratio = serializers.DecimalField(source='stock.pe_ratio', max_digits=10, decimal_places=4, read_only=True)
-    dividend_yield = serializers.DecimalField(source='stock.dividend_yield', max_digits=10, decimal_places=4, read_only=True)
-    week_52_high = serializers.DecimalField(source='stock.week_52_high', max_digits=15, decimal_places=4, read_only=True)
-    week_52_low = serializers.DecimalField(source='stock.week_52_low', max_digits=15, decimal_places=4, read_only=True)
+    pe_ratio = serializers.DecimalField(
+        source="stock.pe_ratio", max_digits=10, decimal_places=4, read_only=True
+    )
+    dividend_yield = serializers.DecimalField(
+        source="stock.dividend_yield", max_digits=10, decimal_places=4, read_only=True
+    )
+    week_52_high = serializers.DecimalField(
+        source="stock.week_52_high", max_digits=15, decimal_places=4, read_only=True
+    )
+    week_52_low = serializers.DecimalField(
+        source="stock.week_52_low", max_digits=15, decimal_places=4, read_only=True
+    )
 
     def get_portfolio_weight(self, obj):
         """포트폴리오 내 비중 계산"""
         # context에서 전체 포트폴리오 가치를 가져와서 계산
-        total_portfolio_value = self.context.get('total_portfolio_value', 0)
+        total_portfolio_value = self.context.get("total_portfolio_value", 0)
         if total_portfolio_value > 0:
             return (obj.total_value / total_portfolio_value) * 100
         return 0
@@ -111,56 +139,64 @@ class PortfolioDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Portfolio
         fields = [
-            'id',
+            "id",
             # 기본 정보
-            'stock_symbol',
-            'stock_name',
-            'sector',
-            'industry',
+            "stock_symbol",
+            "stock_name",
+            "sector",
+            "industry",
             # 보유 정보
-            'quantity',
-            'average_price',
+            "quantity",
+            "average_price",
             # 현재 가격 정보
-            'current_price',
-            'previous_close',
-            'stock_change',
-            'stock_change_percent',
+            "current_price",
+            "previous_close",
+            "stock_change",
+            "stock_change_percent",
             # 일일 변동 (보유수량 기준)
-            'daily_change',
-            'daily_change_percentage',
+            "daily_change",
+            "daily_change_percentage",
             # 수익률 정보
-            'total_value',
-            'total_cost',
-            'profit_loss',
-            'profit_loss_percentage',
+            "total_value",
+            "total_cost",
+            "profit_loss",
+            "profit_loss_percentage",
             # 목표/손절 정보
-            'target_price',
-            'stop_loss_price',
-            'target_achievement_rate',
-            'distance_from_target',
-            'distance_from_stop_loss',
+            "target_price",
+            "stop_loss_price",
+            "target_achievement_rate",
+            "distance_from_target",
+            "distance_from_stop_loss",
             # 포트폴리오 비중
-            'portfolio_weight',
+            "portfolio_weight",
             # 추가 지표
-            'pe_ratio',
-            'dividend_yield',
-            'week_52_high',
-            'week_52_low',
+            "pe_ratio",
+            "dividend_yield",
+            "week_52_high",
+            "week_52_low",
             # 메타 정보
-            'notes',
-            'created_at',
-            'updated_at'
+            "notes",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ["created_at", "updated_at"]
 
 
 class PortfolioCreateUpdateSerializer(serializers.ModelSerializer):
     """포트폴리오 생성/수정용 시리얼라이저"""
+
     stock = serializers.CharField(max_length=20)  # 심볼을 입력받음
 
     class Meta:
         model = Portfolio
-        fields = ['stock', 'quantity', 'average_price', 'target_price', 'stop_loss_price', 'notes']
+        fields = [
+            "stock",
+            "quantity",
+            "average_price",
+            "target_price",
+            "stop_loss_price",
+            "notes",
+        ]
 
     def validate_stock(self, value):
         """주식 심볼 유효성 검사 및 생성"""
@@ -178,7 +214,9 @@ class PortfolioCreateUpdateSerializer(serializers.ModelSerializer):
             if stock:
                 return stock
             else:
-                raise serializers.ValidationError(f"주식 심볼 '{value}'는 유효하지 않습니다.")
+                raise serializers.ValidationError(
+                    f"주식 심볼 '{value}'는 유효하지 않습니다."
+                )
 
     def validate_quantity(self, value):
         """수량 유효성 검사"""
@@ -194,8 +232,8 @@ class PortfolioCreateUpdateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """포트폴리오 항목 생성"""
-        user = self.context['request'].user
-        stock = validated_data['stock']
+        user = self.context["request"].user
+        stock = validated_data["stock"]
 
         # 이미 해당 종목이 포트폴리오에 있는지 확인
         if Portfolio.objects.filter(user=user, stock=stock).exists():
@@ -207,47 +245,74 @@ class PortfolioCreateUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """포트폴리오 항목 수정"""
-        instance.quantity = validated_data.get('quantity', instance.quantity)
-        instance.average_price = validated_data.get('average_price', instance.average_price)
-        instance.target_price = validated_data.get('target_price', instance.target_price)
-        instance.stop_loss_price = validated_data.get('stop_loss_price', instance.stop_loss_price)
-        instance.notes = validated_data.get('notes', instance.notes)
+        instance.quantity = validated_data.get("quantity", instance.quantity)
+        instance.average_price = validated_data.get(
+            "average_price", instance.average_price
+        )
+        instance.target_price = validated_data.get(
+            "target_price", instance.target_price
+        )
+        instance.stop_loss_price = validated_data.get(
+            "stop_loss_price", instance.stop_loss_price
+        )
+        instance.notes = validated_data.get("notes", instance.notes)
         instance.save()
         return instance
 
 
 class PortfolioSummarySerializer(serializers.Serializer):
     """포트폴리오 요약 정보 시리얼라이저"""
+
     total_stocks = serializers.IntegerField()
     total_value = serializers.DecimalField(max_digits=20, decimal_places=2)
     total_cost = serializers.DecimalField(max_digits=20, decimal_places=2)
     total_profit_loss = serializers.DecimalField(max_digits=20, decimal_places=2)
-    total_profit_loss_percentage = serializers.DecimalField(max_digits=10, decimal_places=2)
+    total_profit_loss_percentage = serializers.DecimalField(
+        max_digits=10, decimal_places=2
+    )
     is_profitable = serializers.BooleanField()
 
 
 # ============ Watchlist Serializers ============
 
+
 class WatchlistSerializer(serializers.ModelSerializer):
     """Watchlist 목록 조회용 시리얼라이저"""
+
     stock_count = serializers.ReadOnlyField()
 
     class Meta:
         model = Watchlist
-        fields = ['id', 'name', 'description', 'stock_count', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at']
+        fields = [
+            "id",
+            "name",
+            "description",
+            "stock_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
 
 
 class WatchlistItemSerializer(serializers.ModelSerializer):
     """WatchlistItem 조회용 시리얼라이저 (실시간 가격 포함)"""
-    stock_symbol = serializers.CharField(source='stock.symbol', read_only=True)
-    stock_name = serializers.CharField(source='stock.stock_name', read_only=True)
-    current_price = serializers.DecimalField(source='stock.real_time_price', max_digits=15, decimal_places=4, read_only=True)
+
+    stock_symbol = serializers.CharField(source="stock.symbol", read_only=True)
+    stock_name = serializers.CharField(source="stock.stock_name", read_only=True)
+    current_price = serializers.DecimalField(
+        source="stock.real_time_price", max_digits=15, decimal_places=4, read_only=True
+    )
 
     # 가격 변동 정보
-    change = serializers.DecimalField(source='stock.change', max_digits=15, decimal_places=4, read_only=True)
-    change_percent = serializers.CharField(source='stock.change_percent', read_only=True)
-    previous_close = serializers.DecimalField(source='stock.previous_close', max_digits=15, decimal_places=4, read_only=True)
+    change = serializers.DecimalField(
+        source="stock.change", max_digits=15, decimal_places=4, read_only=True
+    )
+    change_percent = serializers.CharField(
+        source="stock.change_percent", read_only=True
+    )
+    previous_close = serializers.DecimalField(
+        source="stock.previous_close", max_digits=15, decimal_places=4, read_only=True
+    )
 
     # 계산된 필드
     distance_from_entry = serializers.ReadOnlyField()
@@ -256,32 +321,41 @@ class WatchlistItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = WatchlistItem
         fields = [
-            'id',
-            'stock_symbol',
-            'stock_name',
-            'current_price',
-            'change',
-            'change_percent',
-            'previous_close',
-            'target_entry_price',
-            'distance_from_entry',
-            'is_below_target',
-            'notes',
-            'position_order',
-            'added_at'
+            "id",
+            "stock_symbol",
+            "stock_name",
+            "current_price",
+            "change",
+            "change_percent",
+            "previous_close",
+            "target_entry_price",
+            "distance_from_entry",
+            "is_below_target",
+            "notes",
+            "position_order",
+            "added_at",
         ]
-        read_only_fields = ['added_at']
+        read_only_fields = ["added_at"]
 
 
 class WatchlistDetailSerializer(serializers.ModelSerializer):
     """Watchlist 상세 조회용 시리얼라이저 (종목 리스트 포함)"""
+
     items = WatchlistItemSerializer(many=True, read_only=True)
     stock_count = serializers.ReadOnlyField()
 
     class Meta:
         model = Watchlist
-        fields = ['id', 'name', 'description', 'stock_count', 'items', 'created_at', 'updated_at']
-        read_only_fields = ['created_at', 'updated_at']
+        fields = [
+            "id",
+            "name",
+            "description",
+            "stock_count",
+            "items",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_at", "updated_at"]
 
 
 class WatchlistCreateUpdateSerializer(serializers.ModelSerializer):
@@ -289,7 +363,7 @@ class WatchlistCreateUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Watchlist
-        fields = ['name', 'description']
+        fields = ["name", "description"]
 
     def validate_name(self, value):
         """이름 유효성 검사"""
@@ -299,10 +373,10 @@ class WatchlistCreateUpdateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Watchlist 생성"""
-        user = self.context['request'].user
+        user = self.context["request"].user
 
         # 이미 같은 이름의 리스트가 있는지 확인
-        if Watchlist.objects.filter(user=user, name=validated_data['name']).exists():
+        if Watchlist.objects.filter(user=user, name=validated_data["name"]).exists():
             raise serializers.ValidationError(
                 f"'{validated_data['name']}' 이름의 리스트가 이미 있습니다."
             )
@@ -311,24 +385,27 @@ class WatchlistCreateUpdateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Watchlist 수정"""
-        instance.name = validated_data.get('name', instance.name)
-        instance.description = validated_data.get('description', instance.description)
+        instance.name = validated_data.get("name", instance.name)
+        instance.description = validated_data.get("description", instance.description)
         instance.save()
         return instance
 
 
 class WatchlistItemCreateSerializer(serializers.Serializer):
     """WatchlistItem 추가용 시리얼라이저"""
+
     stock = serializers.CharField(max_length=20, help_text="주식 심볼")
     target_entry_price = serializers.DecimalField(
         max_digits=15,
         decimal_places=4,
         required=False,
         allow_null=True,
-        help_text="목표 진입가"
+        help_text="목표 진입가",
     )
     notes = serializers.CharField(required=False, allow_blank=True, help_text="메모")
-    position_order = serializers.IntegerField(default=0, required=False, help_text="표시 순서")
+    position_order = serializers.IntegerField(
+        default=0, required=False, help_text="표시 순서"
+    )
 
     def validate_stock(self, value):
         """주식 심볼 유효성 검사"""
@@ -345,7 +422,9 @@ class WatchlistItemCreateSerializer(serializers.Serializer):
             if stock:
                 return stock
             else:
-                raise serializers.ValidationError(f"주식 심볼 '{value}'는 유효하지 않습니다.")
+                raise serializers.ValidationError(
+                    f"주식 심볼 '{value}'는 유효하지 않습니다."
+                )
 
     def validate_target_entry_price(self, value):
         """목표 진입가 유효성 검사"""
@@ -359,7 +438,7 @@ class WatchlistItemUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = WatchlistItem
-        fields = ['target_entry_price', 'notes', 'position_order']
+        fields = ["target_entry_price", "notes", "position_order"]
 
     def validate_target_entry_price(self, value):
         """목표 진입가 유효성 검사"""

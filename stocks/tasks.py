@@ -8,10 +8,12 @@ import os
 
 logger = get_task_logger(__name__)
 
+
 def chunks(lst, n):
     """리스트를 n개씩 묶어서 반환하는 헬퍼 함수"""
     for i in range(0, len(lst), n):
-        yield lst[i:i + n]
+        yield lst[i : i + n]
+
 
 @shared_task
 def aggregate_weekly_prices(target_week_end=None):
@@ -48,19 +50,25 @@ def aggregate_weekly_prices(target_week_end=None):
 
         # S&P 500 활성 종목 기준
         sp500_symbols = list(
-            SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
+            SP500Constituent.objects.filter(is_active=True).values_list(
+                "symbol", flat=True
+            )
         )
 
         if not sp500_symbols:
-            return {'week_end': str(week_end), 'symbols_aggregated': 0, 'created': 0, 'updated': 0}
+            return {
+                "week_end": str(week_end),
+                "symbols_aggregated": 0,
+                "created": 0,
+                "updated": 0,
+            }
 
         # 해당 주간의 모든 DailyPrice 조회
         daily_prices = DailyPrice.objects.filter(
             stock__symbol__in=sp500_symbols,
             date__gte=week_start,
             date__lte=week_end,
-        ).select_related('stock')
+        ).select_related("stock")
 
         # 종목별 그룹화
         symbol_prices = defaultdict(list)
@@ -80,14 +88,15 @@ def aggregate_weekly_prices(target_week_end=None):
             last_day = prices_sorted[-1]
 
             defaults = {
-                'open_price': first_day.open_price,
-                'high_price': max(p.high_price for p in prices_sorted),
-                'low_price': min(p.low_price for p in prices_sorted),
-                'close_price': last_day.close_price,
-                'volume': sum(p.volume for p in prices_sorted),
-                'week_start_date': first_day.date,
-                'week_end_date': last_day.date,
-                'average_volume': sum(p.volume for p in prices_sorted) // len(prices_sorted),
+                "open_price": first_day.open_price,
+                "high_price": max(p.high_price for p in prices_sorted),
+                "low_price": min(p.low_price for p in prices_sorted),
+                "close_price": last_day.close_price,
+                "volume": sum(p.volume for p in prices_sorted),
+                "week_start_date": first_day.date,
+                "week_end_date": last_day.date,
+                "average_volume": sum(p.volume for p in prices_sorted)
+                // len(prices_sorted),
             }
 
             try:
@@ -108,10 +117,10 @@ def aggregate_weekly_prices(target_week_end=None):
                 updated += 1
 
         result = {
-            'week_end': str(week_end),
-            'symbols_aggregated': created + updated,
-            'created': created,
-            'updated': updated,
+            "week_end": str(week_end),
+            "symbols_aggregated": created + updated,
+            "created": created,
+            "updated": updated,
         }
         logger.info(f"Weekly aggregation complete: {result}")
         return result
@@ -119,6 +128,7 @@ def aggregate_weekly_prices(target_week_end=None):
     except Exception as e:
         logger.error(f"Weekly aggregation failed: {e}")
         return f"Error: {e}"
+
 
 @shared_task
 def sync_sp500_financials(batch_size=101):
@@ -139,27 +149,27 @@ def sync_sp500_financials(batch_size=101):
 
     try:
         all_symbols = list(
-            SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
+            SP500Constituent.objects.filter(is_active=True).values_list(
+                "symbol", flat=True
+            )
         )
 
         # FMP Starter Plan에서 지원하지 않는 심볼 제외 (BRK.B, BF.B 등)
-        skipped = [s for s in all_symbols if '.' in s]
-        sp500_symbols = [s for s in all_symbols if '.' not in s]
+        skipped = [s for s in all_symbols if "." in s]
+        sp500_symbols = [s for s in all_symbols if "." not in s]
         if skipped:
             logger.info(f"Skipped FMP premium-only symbols: {skipped}")
 
         if not sp500_symbols:
-            return {'scheduled': 0, 'total_sp500': 0, 'oldest_update': None}
+            return {"scheduled": 0, "total_sp500": 0, "oldest_update": None}
 
         # 각 심볼의 마지막 재무제표 업데이트 시각 조회
         last_updates = (
-            BalanceSheet.objects
-            .filter(stock__symbol__in=sp500_symbols)
-            .values('stock__symbol')
-            .annotate(last_update=Max('created_at'))
+            BalanceSheet.objects.filter(stock__symbol__in=sp500_symbols)
+            .values("stock__symbol")
+            .annotate(last_update=Max("created_at"))
         )
-        update_map = {row['stock__symbol']: row['last_update'] for row in last_updates}
+        update_map = {row["stock__symbol"]: row["last_update"] for row in last_updates}
 
         # 재무제표 없는 종목 우선, 그 다음 오래된 순
         never_updated = [s for s in sp500_symbols if s not in update_map]
@@ -182,10 +192,10 @@ def sync_sp500_financials(batch_size=101):
         oldest_update = str(update_map[has_data[0]]) if has_data else None
 
         result = {
-            'scheduled': len(batch),
-            'total_sp500': len(sp500_symbols),
-            'never_updated': len(never_updated),
-            'oldest_update': oldest_update,
+            "scheduled": len(batch),
+            "total_sp500": len(sp500_symbols),
+            "never_updated": len(never_updated),
+            "oldest_update": oldest_update,
         }
         logger.info(f"S&P 500 financials sync scheduled: {result}")
         return result
@@ -211,16 +221,17 @@ def bulk_sync_sp500_financials():
 
     try:
         sp500_symbols = [
-            s for s in SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
-            if '.' not in s  # FMP Starter Plan 미지원 심볼 제외
+            s
+            for s in SP500Constituent.objects.filter(is_active=True).values_list(
+                "symbol", flat=True
+            )
+            if "." not in s  # FMP Starter Plan 미지원 심볼 제외
         ]
 
         # 재무제표가 있는 종목 집합
         has_financials = set(
-            BalanceSheet.objects
-            .filter(stock__symbol__in=sp500_symbols)
-            .values_list('stock__symbol', flat=True)
+            BalanceSheet.objects.filter(stock__symbol__in=sp500_symbols)
+            .values_list("stock__symbol", flat=True)
             .distinct()
         )
 
@@ -233,10 +244,10 @@ def bulk_sync_sp500_financials():
             )
 
         result = {
-            'total_sp500': len(sp500_symbols),
-            'already_have_data': len(has_financials),
-            'total_missing': len(missing),
-            'scheduled': len(missing),
+            "total_sp500": len(sp500_symbols),
+            "already_have_data": len(has_financials),
+            "total_missing": len(missing),
+            "scheduled": len(missing),
         }
         logger.info(f"Bulk S&P 500 financials sync scheduled: {result}")
         return result
@@ -244,6 +255,7 @@ def bulk_sync_sp500_financials():
     except Exception as e:
         logger.error(f"Bulk S&P 500 financials sync failed: {e}")
         return f"Error: {e}"
+
 
 # 테스트 태스크
 @shared_task
@@ -253,21 +265,24 @@ def add_numbers(x, y):
     logger.info(f"Add task: {x} + {y} = {result}")
     return result
 
+
 @shared_task
 def test_redis_connection():
     """Redis 연결 테스트"""
     try:
-        cache.set('test_key', 'test_value', 10)
-        value = cache.get('test_key')
+        cache.set("test_key", "test_value", 10)
+        value = cache.get("test_key")
         logger.info(f"Redis test: stored and retrieved '{value}'")
         return f"Redis working: {value}"
     except Exception as e:
         logger.error(f"Redis connection failed: {e}")
         return f"Redis error: {e}"
 
+
 # ============================================================
 # StockService 기반 태스크 (Provider 추상화 사용)
 # ============================================================
+
 
 @shared_task(bind=True, max_retries=3)
 def update_stock_with_provider(self, symbol, use_fallback=True):
@@ -291,17 +306,17 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
         symbol = symbol.upper().strip()
 
         results = {
-            'symbol': symbol,
-            'stock_data': False,
-            'prices': False,
-            'financials': False,
+            "symbol": symbol,
+            "stock_data": False,
+            "prices": False,
+            "financials": False,
         }
 
         # 1. 주식 기본 정보 업데이트
         try:
             logger.info(f"[Provider] Updating stock data for {symbol}")
             stock = service.update_stock_data(symbol)
-            results['stock_data'] = True
+            results["stock_data"] = True
             logger.info(f"[Provider] Stock data updated for {symbol}")
             time.sleep(1)  # FMP rate limiting (0.2초면 충분하지만 안전 마진)
         except Exception as e:
@@ -311,7 +326,7 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
         try:
             logger.info(f"[Provider] Updating prices for {symbol}")
             price_result = service.update_historical_prices(symbol, days=730)
-            results['prices'] = True
+            results["prices"] = True
             logger.info(f"[Provider] Prices updated for {symbol}: {price_result}")
             time.sleep(1)
         except Exception as e:
@@ -321,15 +336,17 @@ def update_stock_with_provider(self, symbol, use_fallback=True):
         try:
             logger.info(f"[Provider] Updating financial statements for {symbol}")
             financial_result = service.update_financial_statements(symbol)
-            results['financials'] = True
-            logger.info(f"[Provider] Financials updated for {symbol}: {financial_result}")
+            results["financials"] = True
+            logger.info(
+                f"[Provider] Financials updated for {symbol}: {financial_result}"
+            )
         except Exception as e:
             logger.error(f"[Provider] Failed to update financials for {symbol}: {e}")
 
         # 캐시 무효화
-        cache.delete(f'stock_quote_{symbol}')
-        cache.delete(f'overview_{symbol}')
-        cache.delete(f'chart_{symbol}_daily_1d')
+        cache.delete(f"stock_quote_{symbol}")
+        cache.delete(f"overview_{symbol}")
+        cache.delete(f"chart_{symbol}_daily_1d")
 
         success_count = sum(1 for v in results.values() if v is True)
         return f"[Provider] Success: {success_count}/3 for {symbol}"
@@ -355,34 +372,43 @@ def update_realtime_with_provider(symbols=None):
 
         if not symbols:
             from users.models import Portfolio
-            symbols = list(Portfolio.objects.values_list('stock__symbol', flat=True).distinct()[:10])
+
+            symbols = list(
+                Portfolio.objects.values_list("stock__symbol", flat=True).distinct()[
+                    :10
+                ]
+            )
 
         if not symbols:
             return "[Provider] No symbols to update"
 
         service = get_stock_service()
 
-        stats = {'updated': 0, 'cached': 0, 'errors': 0}
+        stats = {"updated": 0, "cached": 0, "errors": 0}
 
         for symbol in symbols:
             try:
                 result = service.update_previous_close(symbol, force=False)
 
-                if result['status'] == 'cached':
-                    stats['cached'] += 1
+                if result["status"] == "cached":
+                    stats["cached"] += 1
                     logger.info(f"[Provider] Cached: {symbol}")
-                elif result['status'] == 'updated':
-                    stats['updated'] += 1
-                    logger.info(f"[Provider] Updated: {symbol} @ ${result.get('price', 0):.2f}")
-                    cache.delete(f'stock_quote_{symbol}')
-                    if stats['updated'] < len(symbols):
+                elif result["status"] == "updated":
+                    stats["updated"] += 1
+                    logger.info(
+                        f"[Provider] Updated: {symbol} @ ${result.get('price', 0):.2f}"
+                    )
+                    cache.delete(f"stock_quote_{symbol}")
+                    if stats["updated"] < len(symbols):
                         time.sleep(1)
                 else:
-                    stats['errors'] += 1
-                    logger.error(f"[Provider] Error: {symbol} - {result.get('message')}")
+                    stats["errors"] += 1
+                    logger.error(
+                        f"[Provider] Error: {symbol} - {result.get('message')}"
+                    )
 
             except Exception as e:
-                stats['errors'] += 1
+                stats["errors"] += 1
                 logger.error(f"[Provider] Exception for {symbol}: {e}")
 
         return f"[Provider] Updated: {stats['updated']}, Cached: {stats['cached']}, Errors: {stats['errors']}"
@@ -395,6 +421,7 @@ def update_realtime_with_provider(symbols=None):
 # ============================================================
 # S&P 500 동기화 태스크
 # ============================================================
+
 
 @shared_task(bind=True, max_retries=3)
 def sync_sp500_constituents(self):
@@ -445,7 +472,12 @@ def sync_sp500_eod_prices(self, target_date=None):
         raise self.retry(exc=e, countdown=300 * (self.request.retries + 1))
 
 
-@shared_task(name='update-sp500-change-percent', max_retries=2, soft_time_limit=120, time_limit=150)
+@shared_task(
+    name="update-sp500-change-percent",
+    max_retries=2,
+    soft_time_limit=120,
+    time_limit=150,
+)
 def update_sp500_change_percent():
     """
     DailyPrice 최신 2일에서 Stock.change_percent를 일괄 계산.
@@ -455,27 +487,27 @@ def update_sp500_change_percent():
     from stocks.models import DailyPrice, Stock
 
     latest_dates = list(
-        DailyPrice.objects
-        .order_by('-date')
-        .values_list('date', flat=True)
+        DailyPrice.objects.order_by("-date")
+        .values_list("date", flat=True)
         .distinct()[:2]
     )
     if len(latest_dates) < 2:
-        logger.warning('update_sp500_change_percent: 최신 2일 데이터 부족')
+        logger.warning("update_sp500_change_percent: 최신 2일 데이터 부족")
         return 0
 
     today, prev = latest_dates[0], latest_dates[1]
 
     # 전일 종가 map (bulk query 1회)
     prev_map = dict(
-        DailyPrice.objects.filter(date=prev)
-        .values_list('stock_id', 'close_price')
+        DailyPrice.objects.filter(date=prev).values_list("stock_id", "close_price")
     )
 
     # 오늘 종가 + 거래량 (bulk query 1회, list()로 메모리에 로드)
-    today_data = list(DailyPrice.objects.filter(date=today).values_list(
-        'stock_id', 'close_price', 'volume'
-    ))
+    today_data = list(
+        DailyPrice.objects.filter(date=today).values_list(
+            "stock_id", "close_price", "volume"
+        )
+    )
 
     # stock_id → Stock 인스턴스 bulk 조회 (1 query)
     stock_ids = [row[0] for row in today_data]
@@ -498,15 +530,17 @@ def update_sp500_change_percent():
     if stocks_to_update:
         Stock.objects.bulk_update(
             stocks_to_update,
-            ['change_percent', 'real_time_price', 'volume'],
+            ["change_percent", "real_time_price", "volume"],
             batch_size=100,
         )
 
-    logger.info(f'update_sp500_change_percent: {len(stocks_to_update)} stocks updated (date={today})')
+    logger.info(
+        f"update_sp500_change_percent: {len(stocks_to_update)} stocks updated (date={today})"
+    )
     return len(stocks_to_update)
 
 
-@shared_task(rate_limit='6/m')
+@shared_task(rate_limit="6/m")
 def update_financials_with_provider(symbol):
     """
     Provider를 사용한 재무제표 업데이트
@@ -539,6 +573,7 @@ def update_financials_with_provider(symbol):
 # EOD Dashboard Pipeline 태스크
 # ============================================================
 
+
 @shared_task(bind=True, max_retries=2, soft_time_limit=600, time_limit=660)
 def run_eod_pipeline(self, target_date=None):
     """
@@ -559,12 +594,14 @@ def run_eod_pipeline(self, target_date=None):
         pipeline = EODPipeline()
         log = pipeline.run(target_date=target)
 
-        logger.info(f"EOD Pipeline 완료: {log.date} [{log.status}] {log.total_duration_seconds:.1f}s")
+        logger.info(
+            f"EOD Pipeline 완료: {log.date} [{log.status}] {log.total_duration_seconds:.1f}s"
+        )
         return {
-            'date': str(log.date),
-            'status': log.status,
-            'duration': log.total_duration_seconds,
-            'run_id': str(log.run_id),
+            "date": str(log.date),
+            "status": log.status,
+            "duration": log.total_duration_seconds,
+            "run_id": str(log.run_id),
         }
 
     except Exception as e:
@@ -597,12 +634,12 @@ def backfill_signal_accuracy(lookback_days=10):
     total_updated = 0
 
     for signal_date in target_dates:
-        signals = EODSignal.objects.filter(date=signal_date).select_related('stock')
+        signals = EODSignal.objects.filter(date=signal_date).select_related("stock")
 
         for signal in signals:
             for sig in signal.signals:
-                sig_id = sig.get('id', '')
-                sig_value = sig.get('value', 0)
+                sig_id = sig.get("id", "")
+                sig_value = sig.get("value", 0)
 
                 # 이미 완전히 채워진 레코드는 스킵
                 existing = SignalAccuracy.objects.filter(
@@ -616,15 +653,30 @@ def backfill_signal_accuracy(lookback_days=10):
 
                 # 수익률 계산
                 returns = {}
-                for days, field in [(1, 'return_1d'), (5, 'return_5d'), (20, 'return_20d')]:
+                for days, field in [
+                    (1, "return_1d"),
+                    (5, "return_5d"),
+                    (20, "return_20d"),
+                ]:
                     future_date = signal_date + timedelta(days=days)
-                    future_price = DailyPrice.objects.filter(
-                        stock=signal.stock,
-                        date__gte=future_date,
-                    ).order_by('date').first()
+                    future_price = (
+                        DailyPrice.objects.filter(
+                            stock=signal.stock,
+                            date__gte=future_date,
+                        )
+                        .order_by("date")
+                        .first()
+                    )
 
                     if future_price and signal.close_price:
-                        ret = (float(future_price.close_price) - float(signal.close_price)) / float(signal.close_price) * 100
+                        ret = (
+                            (
+                                float(future_price.close_price)
+                                - float(signal.close_price)
+                            )
+                            / float(signal.close_price)
+                            * 100
+                        )
                         returns[field] = round(ret, 2)
 
                 if not returns:
@@ -632,18 +684,35 @@ def backfill_signal_accuracy(lookback_days=10):
 
                 # SPY 수익률 (excess 계산용)
                 spy_returns = {}
-                for days, field in [(1, 'excess_1d'), (5, 'excess_5d'), (20, 'excess_20d')]:
+                for days, field in [
+                    (1, "excess_1d"),
+                    (5, "excess_5d"),
+                    (20, "excess_20d"),
+                ]:
                     future_date = signal_date + timedelta(days=days)
                     spy_price_at_signal = DailyPrice.objects.filter(
-                        stock_id='SPY', date=signal_date
+                        stock_id="SPY", date=signal_date
                     ).first()
-                    spy_price_future = DailyPrice.objects.filter(
-                        stock_id='SPY', date__gte=future_date
-                    ).order_by('date').first()
+                    spy_price_future = (
+                        DailyPrice.objects.filter(stock_id="SPY", date__gte=future_date)
+                        .order_by("date")
+                        .first()
+                    )
 
-                    ret_field = f'return_{days}d'
-                    if spy_price_at_signal and spy_price_future and ret_field in returns:
-                        spy_ret = (float(spy_price_future.close_price) - float(spy_price_at_signal.close_price)) / float(spy_price_at_signal.close_price) * 100
+                    ret_field = f"return_{days}d"
+                    if (
+                        spy_price_at_signal
+                        and spy_price_future
+                        and ret_field in returns
+                    ):
+                        spy_ret = (
+                            (
+                                float(spy_price_future.close_price)
+                                - float(spy_price_at_signal.close_price)
+                            )
+                            / float(spy_price_at_signal.close_price)
+                            * 100
+                        )
                         spy_returns[field] = round(returns[ret_field] - spy_ret, 2)
 
                 SignalAccuracy.objects.update_or_create(
@@ -651,23 +720,24 @@ def backfill_signal_accuracy(lookback_days=10):
                     signal_date=signal_date,
                     signal_tag=sig_id,
                     defaults={
-                        'signal_value': float(sig_value) if sig_value else 0,
-                        'close_at_signal': signal.close_price,
-                        'market_cap': signal.market_cap,
-                        'sector': signal.sector,
+                        "signal_value": float(sig_value) if sig_value else 0,
+                        "close_at_signal": signal.close_price,
+                        "market_cap": signal.market_cap,
+                        "sector": signal.sector,
                         **returns,
                         **spy_returns,
-                    }
+                    },
                 )
                 total_updated += 1
 
     logger.info(f"Signal accuracy backfill 완료: {total_updated} records updated")
-    return {'updated': total_updated, 'dates_checked': len(target_dates)}
+    return {"updated": total_updated, "dates_checked": len(target_dates)}
 
 
 # ============================================================
 # 한글 기업 개요 생성 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -690,9 +760,9 @@ def generate_korean_overview(self, symbol: str, force: bool = False):
         overview = service.generate_for_stock(symbol, force=force)
 
         return {
-            'symbol': symbol,
-            'status': 'success',
-            'generated_at': str(overview.generated_at),
+            "symbol": symbol,
+            "status": "success",
+            "generated_at": str(overview.generated_at),
         }
     except Exception as exc:
         logger.exception(f"generate_korean_overview failed for {symbol}: {exc}")
@@ -702,7 +772,7 @@ def generate_korean_overview(self, symbol: str, force: bool = False):
 @shared_task(
     bind=True,
     max_retries=1,
-    soft_time_limit=7200,   # 2시간
+    soft_time_limit=7200,  # 2시간
     time_limit=7260,
 )
 def bulk_generate_korean_overviews(self, batch_size: int = 50, force: bool = False):

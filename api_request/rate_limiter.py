@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class RateLimitExceeded(Exception):
     """Rate Limit 초과 예외"""
+
     def __init__(self, provider: str, limit_type: str, retry_after: int = 0):
         self.provider = provider
         self.limit_type = limit_type
@@ -32,6 +33,7 @@ class RateLimitExceeded(Exception):
 
 class LimitType(Enum):
     """Rate Limit 타입"""
+
     PER_MINUTE = "per_minute"
     PER_HOUR = "per_hour"
     PER_DAY = "per_day"
@@ -42,8 +44,8 @@ class LimitType(Enum):
 # 무료 티어로 다운그레이드할 경우 수동으로 10/min, 250/day로 되돌릴 것
 RATE_LIMITS = {
     "fmp": {
-        LimitType.PER_MINUTE: 240,   # Starter 300/min × 0.8 안전 마진
-        LimitType.PER_DAY: 8000,     # Starter 10000/day × 0.8 안전 마진
+        LimitType.PER_MINUTE: 240,  # Starter 300/min × 0.8 안전 마진
+        LimitType.PER_DAY: 8000,  # Starter 10000/day × 0.8 안전 마진
     },
     "fred": {
         LimitType.PER_MINUTE: 100,  # 120/min 중 100 (안전 마진)
@@ -199,7 +201,7 @@ class RateLimiter:
         status = {
             "provider": self.provider,
             "request_delay": self.request_delay,
-            "limits": {}
+            "limits": {},
         }
 
         for limit_type, limit in self.limits.items():
@@ -209,7 +211,7 @@ class RateLimiter:
                 "current": current,
                 "limit": limit,
                 "remaining": max(0, limit - current),
-                "reset_in": self._get_retry_after(limit_type)
+                "reset_in": self._get_retry_after(limit_type),
             }
 
         return status
@@ -241,13 +243,16 @@ def rate_limited(provider: str):
         def get_quote(self, symbol: str):
             ...
     """
+
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
             limiter = RateLimiter(provider)
             limiter.acquire()  # Rate limit 체크 및 대기
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
