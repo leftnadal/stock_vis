@@ -43,7 +43,7 @@ urlpatterns = [
     path('api/v1/validation/', include("validation.api.urls")),  # 1차 검증
     path('api/v1/chainsight/', include("chainsight.api.urls")),  # Chain Sight 그래프 탐색
     path('api/v1/sec-pipeline/', include("sec_pipeline.urls")),  # SEC Pipeline 대시보드
-    path('api/v1/iron-trading/', include("iron_trading.urls")),  # iron_trading 외부 봇 read-only
+    path('api/v1/iron-trading/', include("integrations.iron_trading.urls")),  # iron_trading 외부 봇 read-only (PR3 이동)
 
     # Provider Admin API
     path('api/v1/', include('packages.shared.api_request.urls')),

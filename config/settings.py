@@ -205,7 +205,7 @@ INSTALLED_APPS = [
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'portfolio.apps.PortfolioConfig',  # Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'marketpulse.apps.MarketpulseConfig',  # Market Pulse v2 (Phase 1)
-    'iron_trading.apps.IronTradingConfig',  # iron_trading 외부 봇 read-only API
+    'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
