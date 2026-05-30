@@ -2,12 +2,13 @@
 Graph Analysis Admin Interface
 """
 from django.contrib import admin
+
 from .models import (
-    CorrelationMatrix,
-    CorrelationEdge,
     CorrelationAnomaly,
-    PriceCache,
+    CorrelationEdge,
+    CorrelationMatrix,
     GraphMetadata,
+    PriceCache,
 )
 
 

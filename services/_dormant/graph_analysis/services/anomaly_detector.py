@@ -5,18 +5,18 @@ Detects anomalies in correlation changes and creates alerts
 """
 import logging
 from datetime import date, timedelta
-from typing import List, Optional
 from decimal import Decimal
+from typing import List, Optional
 
 from django.db import transaction
 from django.utils import timezone
-
-from users.models import Watchlist
 from graph_analysis.models import (
-    CorrelationEdge,
     CorrelationAnomaly,
+    CorrelationEdge,
     GraphMetadata,
 )
+
+from users.models import Watchlist
 
 logger = logging.getLogger(__name__)
 

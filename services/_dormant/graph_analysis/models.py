@@ -3,10 +3,11 @@ Graph Analysis Models
 
 Stores correlation matrices and graph relationships for stock price analysis
 """
-from django.db import models
 from django.contrib.postgres.fields import ArrayField
-from users.models import Watchlist
+from django.db import models
+
 from stocks.models import Stock
+from users.models import Watchlist
 
 
 class CorrelationMatrix(models.Model):
