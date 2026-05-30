@@ -194,7 +194,7 @@ INSTALLED_APPS = [
     'users',
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
-    'graph_analysis',  # 그래프 온톨로지 분석 (Phase 1)
+    'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'rag_analysis',  # RAG 기반 AI 분석
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
