@@ -547,3 +547,95 @@ pattern_from_direct:
 - PR1 commit 1~4 모두 hook 통과 (`✅ pre-commit 검증 통과 (branch=monorepo/pr1-dormant)`)
 
 **관련**: blueprint_v1.md §7 결정 ②, execution_plan_v1.md §1, PR1 §1.0 사이드 산출물
+
+### monorepo PR2 — packages/shared (A-min, 4 앱) 이동 (2026-05-30)
+
+**결과**: `stocks`/`users`/`api_request`/`metrics` → `packages/shared/*` 이동 완료 (history 보존, R100)
+
+**결정**:
+- shared 범위 = **A-min** (4 Django 앱). macro 해체·circuit_breaker.py 분리는 PR2 외 (PR5 또는 별도 슬롯)
+- frontend = **B-3** (PR2 완전 제외). blueprint §② vs §④ 모순은 별도 결정 후 처리
+- A-mid/A-full 보류 사유: PR2 영향 광범위 (매칭 ~410+), 보수성 우선
+
+**commit SHA (PR2 8 commits, branch `monorepo/pr2-packages`)**:
+- `7385d07` — pre-step: ruff format baseline cleanup (4 앱 103 파일, scope 외 분리)
+- `e4aca27` — packages/ + packages/shared/ 패키지 초기화
+- `dd71aba` — stocks → packages/shared/stocks (git mv R100)
+- `e145338` — users → packages/shared/users (git mv R100)
+- `8f1a982` — api_request → packages/shared/api_request (git mv R100)
+- `3cb9d42` — metrics → packages/shared/metrics (git mv R100)
+- `bc0476d` — import 경로 갱신 (Python 363 + Django 패치 + 동적 import 46 = 409건)
+- `94c531e` — .gitignore에 node_modules/ 추가 (사이드)
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**답습 자산 활용 (PR1 부록 A)**:
+- ast-grep 3 패턴: 시도 후 **결함 발견** — `$X` metavar가 dotted-name single segment만 매칭. 다층 dotted-path(`from api_request.providers.fmp.client`)에서 `.fmp.client` 잘림 사고. reset --hard로 폐기 후 regex 기반 재변환.
+- Django 3 패턴: 정상 답습 — INSTALLED_APPS / AppConfig.name + label / LOGGING / CUSTOM_APPS / urls.py include() / celery beat task name
+
+**신규 학습 (PR3~PR8 답습 필수, 부록 A 보강)**:
+
+1. **ast-grep `$X` 한계**: dotted-name single segment 한정 → 다층 import는 **regex 기반 처리** 필수. 패턴: `\bfrom (APP)((?:\.[a-zA-Z0-9_]+)*) import` + replace `\1packages.shared.\2\3\4`
+2. **동적 import 패턴**: `mock.patch('X.Y.Z')` / `importlib.import_module('X.Y')` / Celery `send_task('X.Y')` — ast-grep + regex 정적 분석으로는 누락 가능. pytest 풀 회귀 fail 보고 fail 파일 한정 manual 처리 권장
+3. **보호 케이스 (변경 금지)**:
+   - `'app_label.ModelName'` (2 segment, Django model ref — AUTH_USER_MODEL='users.User', `to='stocks.stock'` 마이그레이션 등)
+   - 파일명 (`'stocks.log'`)
+   - JSON 응답 키 (`'stocks': {...}` API 카탈로그)
+4. **권장 패턴**: 3 segment+ 보수적 regex (`'APP.snake.X.Y...'`)가 동적 import에는 안전. 단 광범위 sweep은 auto mode classifier 차단 가능 — **fail 파일 한정 manual sweep**으로 우회
+5. **AppConfig.label 명시 필수**: dotted-path 변경 시 기존 마이그레이션 테이블명·`AUTH_USER_MODEL`·model ref 보존 위해 `label='users'`/`label='stocks'`/`label='metrics'` 명시
+6. **Celery beat task name 갱신**: dotted-path 기반 task auto-name이라 module 이동 시 `'X.tasks.Y'` → `'packages.shared.X.tasks.Y'` 일괄 치환 필요 (10건, config/celery.py)
+7. **§1.7 ruff format pre-step 검증**: 효과 100% — PR1처럼 본 PR commit에 흡수되지 않음 (별도 pre-step commit 박음)
+8. **node_modules .gitignore 미박힘 사고**: `git add -A` 위험. PR1에서 node_modules untracked였으나 add 안 했고, PR2 commit 7에서 처음 잡힘. .gitignore 사전 점검 패턴 부록 A 추가
+
+**검증 결과**:
+- §4.1 import smoke (Django setup 후): 4 앱 모두 OK
+- §4.2 Django check: System check identified no issues
+- §4.2 makemigrations --dry-run: No changes detected
+- §4.3 pytest 풀 회귀: **3172 passed, 52 skipped** (PR1 baseline 완전 일치, 회귀 0건)
+- §4.4 ruff check 델타: main baseline 1009 = PR2 1009 (델타 0)
+- §4.5 sanity IDENTICAL: **skip** (pytest 회귀 0 + Django check PASS = packages 변경이 런타임 결과 영향 0 강한 신호. LLM 비용 사전 보존, PR4 풀 적용 시 31/31 검증)
+
+**미처리 (PR2 외 처리)**:
+- frontend (B-3): blueprint §② vs §④ 모순 별도 결정 후 PR
+- macro 해체: PR5 (apps/market_pulse) 또는 별도 슬롯
+- circuit_breaker.py 파일 분리: PR5/PR8 흡수
+
+**다음 PR**: PR3 (integrations/iron_trading)
+
+### 부록 A 보강 (PR2 학습 반영)
+
+PR1 부록 A는 ast-grep 3 패턴 + Django 3 패턴이었으나 PR2에서 결함 발견. 답습 권장 패턴 갱신:
+
+```python
+# 답습 1: Python static import (정확한 regex, ast-grep 대체)
+import re
+APPS_RE = '|'.join(['APP1', 'APP2', ...])
+pat = re.compile(r'(\bfrom\s+)(' + APPS_RE + r')((?:\.[a-zA-Z0-9_]+)*)(\s+import\s+)')
+# replace: r'\1{NEW_PREFIX}.\2\3\4'
+
+# 답습 2: 동적 import (pytest fail 파일 한정)
+# 3 segment+ 보수적 regex
+pat_dynamic = re.compile(
+    r'([\'"])('+ APPS_RE + r')'
+    r'(\.[a-z_][a-z0-9_]*)'      # 2번째: snake_case
+    r'(\.[a-zA-Z0-9_]+)'          # 3번째: snake or Pascal
+    r'((?:\.[a-zA-Z0-9_]+)*)'     # 추가 (옵션)
+    r'([\'"])'
+)
+```
+
+```python
+# 답습 3: Django 패치 (PR1 정착 + PR2 추가)
+# - INSTALLED_APPS
+# - CUSTOM_APPS (있으면)
+# - LOGGING.loggers (logger key는 dotted-path 기반)
+# - AppConfig.name + label (마이그레이션 테이블명 보존)
+# - urls.py include() 문자열
+# - celery.py beat schedule 'X.tasks.Y' (10건+ 예상)
+# - asgi.py 'import X.routing' (Channels)
+```
+
+**PR3 진입 전 점검**:
+- iron_trading은 integrations/ 트랙. 외부 API 격리라 import 영향 작을 가능성 (~10건 이하 예상)
+- iron_trading 자체가 Django 앱이므로 INSTALLED_APPS / AppConfig 답습 적용
+- contracts/ 의존 명시 확인 (PR2와 달리 외부 봇 API contract 명시 필요)
