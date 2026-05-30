@@ -4,6 +4,7 @@
 입력은 (date, open, high, low, close, volume) 정렬된 list (오래된→최근).
 모든 출력은 string으로 직렬화 (Decimal/float precision drift 방지).
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -61,7 +62,7 @@ def _volume_ratio(rows: Sequence[OHLCVRow], window: int = 20) -> Decimal | None:
     if len(rows) < window + 1:
         return None
     recent = rows[-1].volume
-    historical = [r.volume for r in rows[-(window + 1):-1]]
+    historical = [r.volume for r in rows[-(window + 1) : -1]]
     avg = fmean(historical)
     if avg == 0:
         return None
@@ -76,7 +77,7 @@ def _breakout_score(rows: Sequence[OHLCVRow], window: int = 20) -> Decimal | Non
     if len(rows) < window + 1:
         return None
     last = rows[-1].close
-    prior_high = max(r.high for r in rows[-(window + 1):-1])
+    prior_high = max(r.high for r in rows[-(window + 1) : -1])
     if prior_high == 0:
         return None
     raw = (last - prior_high) / prior_high
@@ -146,6 +147,7 @@ def assign_relative_strength_rank(candidates: list[dict]) -> None:
 
     momentum_20d 없는 경우 가장 낮은 순위.
     """
+
     def _key(c):
         v = c["signals"].get("momentum_20d")
         return Decimal(v) if v is not None else Decimal("-9999")

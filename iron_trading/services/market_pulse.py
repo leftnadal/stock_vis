@@ -1,4 +1,5 @@
 """RegimeSnapshot → iron_trading 계약의 market_pulse JSON 매핑."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -74,8 +75,10 @@ def build_market_pulse(snapshot, trading_date: date) -> dict:
 
     regime_key = snapshot.regime
     regime_hint = _REGIME_HINT_MAP.get(regime_key, "unknown")
-    summary = snapshot.summary or snapshot.headline or (
-        f"{trading_date.isoformat()} 시장 레짐: {snapshot.get_regime_display()}"
+    summary = (
+        snapshot.summary
+        or snapshot.headline
+        or (f"{trading_date.isoformat()} 시장 레짐: {snapshot.get_regime_display()}")
     )
 
     return {

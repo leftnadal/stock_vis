@@ -3,6 +3,7 @@
 read-only 원칙: 어떤 모델도 수정하지 않는다.
 은닉 원칙: stock_vis 내부 ORM 객체를 그대로 반환하지 않고 dict로 매핑한다.
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -66,9 +67,13 @@ class QueryParams:
     limit: int
 
 
-def parse_query(date_raw: str | None, universe_raw: str | None, limit_raw: str | None) -> QueryParams:
+def parse_query(
+    date_raw: str | None, universe_raw: str | None, limit_raw: str | None
+) -> QueryParams:
     if not date_raw:
-        raise BadRequest("missing_date", "date query parameter is required (YYYY-MM-DD).")
+        raise BadRequest(
+            "missing_date", "date query parameter is required (YYYY-MM-DD)."
+        )
     try:
         trading_date = date.fromisoformat(date_raw)
     except ValueError:
@@ -89,7 +94,9 @@ def parse_query(date_raw: str | None, universe_raw: str | None, limit_raw: str |
         try:
             limit = int(limit_raw)
         except ValueError:
-            raise BadRequest("invalid_limit", f"limit must be an integer, got {limit_raw!r}.")
+            raise BadRequest(
+                "invalid_limit", f"limit must be an integer, got {limit_raw!r}."
+            )
         if limit <= 0 or limit > MAX_LIMIT:
             raise BadRequest(
                 "invalid_limit",
@@ -100,9 +107,14 @@ def parse_query(date_raw: str | None, universe_raw: str | None, limit_raw: str |
 
 
 def _check_pipeline_state(trading_date: date) -> None:
-    running = PipelineLog.objects.filter(
-        date=trading_date, status="running",
-    ).order_by("-started_at").first()
+    running = (
+        PipelineLog.objects.filter(
+            date=trading_date,
+            status="running",
+        )
+        .order_by("-started_at")
+        .first()
+    )
     if running is not None:
         raise SnapshotBuilding(
             f"{trading_date.isoformat()} daily context snapshot is still building.",
@@ -137,10 +149,14 @@ def _select_candidate_symbols(trading_date: date, limit: int) -> list[str]:
     return list(price_rows)
 
 
-def _load_ohlcv_map(symbols: list[str], trading_date: date) -> dict[str, list[OHLCVRow]]:
+def _load_ohlcv_map(
+    symbols: list[str], trading_date: date
+) -> dict[str, list[OHLCVRow]]:
     if not symbols:
         return {}
-    start = trading_date - timedelta(days=OHLCV_LOOKBACK_DAYS * 2)  # buffer for weekends/holidays
+    start = trading_date - timedelta(
+        days=OHLCV_LOOKBACK_DAYS * 2
+    )  # buffer for weekends/holidays
     qs = (
         DailyPrice.objects.filter(
             stock_id__in=symbols,
@@ -148,7 +164,15 @@ def _load_ohlcv_map(symbols: list[str], trading_date: date) -> dict[str, list[OH
             date__gte=start,
         )
         .order_by("stock_id", "date")
-        .values("stock_id", "date", "open_price", "high_price", "low_price", "close_price", "volume")
+        .values(
+            "stock_id",
+            "date",
+            "open_price",
+            "high_price",
+            "low_price",
+            "close_price",
+            "volume",
+        )
     )
     by_symbol: dict[str, list[OHLCVRow]] = {sym: [] for sym in symbols}
     for row in qs:
@@ -169,7 +193,9 @@ def _load_ohlcv_map(symbols: list[str], trading_date: date) -> dict[str, list[OH
     return by_symbol
 
 
-def _load_eod_signal_map(symbols: list[str], trading_date: date) -> dict[str, EODSignal]:
+def _load_eod_signal_map(
+    symbols: list[str], trading_date: date
+) -> dict[str, EODSignal]:
     if not symbols:
         return {}
     qs = EODSignal.objects.filter(stock_id__in=symbols, date=trading_date)
@@ -192,7 +218,9 @@ def _load_narrative_tags(symbols: list[str]) -> dict[str, list[str]]:
         return {}
     try:
         rows = CompanyNarrativeTag.objects.filter(symbol_id__in=symbols).values(
-            "symbol_id", "theme_tags", "primary_narrative",
+            "symbol_id",
+            "theme_tags",
+            "primary_narrative",
         )
     except Exception:
         return {}
@@ -224,9 +252,7 @@ def _scale_composite(score: float | None) -> str:
 
 def _build_thesis(signal_count: int, bullish: int, bearish: int, sector: str) -> str:
     if signal_count == 0:
-        return (
-            f"{sector or '해당 섹터'} 후보. 활성 시그널이 없어 가격/거래량 지표 위주 평가."
-        )
+        return f"{sector or '해당 섹터'} 후보. 활성 시그널이 없어 가격/거래량 지표 위주 평가."
     if bullish >= bearish:
         return (
             f"{sector or '해당 섹터'}: 상승 시그널 {bullish}개 / 하락 시그널 {bearish}개. "
@@ -238,7 +264,9 @@ def _build_thesis(signal_count: int, bullish: int, bearish: int, sector: str) ->
     )
 
 
-def _risk_flags(stock: Stock | None, signal_row: EODSignal | None, trading_date: date) -> list[str]:
+def _risk_flags(
+    stock: Stock | None, signal_row: EODSignal | None, trading_date: date
+) -> list[str]:
     flags: list[str] = []
     if stock is not None:
         # 최근 분기 발표 후 약 90일이 지나면 다음 발표가 가까운 것으로 가정
@@ -248,9 +276,14 @@ def _risk_flags(stock: Stock | None, signal_row: EODSignal | None, trading_date:
                 flags.append("earnings_within_14d")
 
     if signal_row is not None:
-        if signal_row.bearish_count > signal_row.bullish_count and signal_row.signal_count > 0:
+        if (
+            signal_row.bearish_count > signal_row.bullish_count
+            and signal_row.signal_count > 0
+        ):
             flags.append("bearish_signal_majority")
-        if signal_row.dollar_volume is not None and signal_row.dollar_volume < Decimal("1000000"):
+        if signal_row.dollar_volume is not None and signal_row.dollar_volume < Decimal(
+            "1000000"
+        ):
             flags.append("low_liquidity")
     return flags
 
@@ -276,7 +309,11 @@ def _build_candidate(
     signal_count = signal_row.signal_count if signal_row else 0
     bullish = signal_row.bullish_count if signal_row else 0
     bearish = signal_row.bearish_count if signal_row else 0
-    sector = (signal_row.sector if signal_row and signal_row.sector else (stock.sector if stock else "")) or ""
+    sector = (
+        signal_row.sector
+        if signal_row and signal_row.sector
+        else (stock.sector if stock else "")
+    ) or ""
 
     sigs = compute_candidate_signals(rows)
     risk_flags = _risk_flags(stock, signal_row, trading_date)
@@ -340,19 +377,22 @@ def _build_chain_sight(symbols: list[str], tags_map: dict[str, list[str]]) -> di
     ]
     return {
         "summary": (
-            f"상위 테마: " + ", ".join(t["name"] for t in themes)
-            if themes else ""
+            f"상위 테마: " + ", ".join(t["name"] for t in themes) if themes else ""
         ),
         "themes": themes,
     }
 
 
-def _build_freshness(trading_date: date, dashboard_snapshot: EODDashboardSnapshot | None) -> dict:
+def _build_freshness(
+    trading_date: date, dashboard_snapshot: EODDashboardSnapshot | None
+) -> dict:
     warnings: list[str] = []
     if dashboard_snapshot is None:
         # baked snapshot이 아직 없어도 raw EODSignal 기반으로 응답 가능 — partial로 표시
         as_of = datetime.combine(trading_date, datetime.min.time()).replace(
-            hour=20, minute=5, tzinfo=timezone(timedelta(hours=-4)),
+            hour=20,
+            minute=5,
+            tzinfo=timezone(timedelta(hours=-4)),
         )
         warnings.append("eod_dashboard_baked_snapshot_unavailable")
         status = "partial"
@@ -360,7 +400,11 @@ def _build_freshness(trading_date: date, dashboard_snapshot: EODDashboardSnapsho
         as_of = dashboard_snapshot.generated_at
         status = "fresh"
         # 신선도 — generated_at이 오래되면 stale
-        age_min = (datetime.now(timezone.utc) - as_of).total_seconds() / 60.0 if as_of.tzinfo else None
+        age_min = (
+            (datetime.now(timezone.utc) - as_of).total_seconds() / 60.0
+            if as_of.tzinfo
+            else None
+        )
         if age_min is not None and age_min > SNAPSHOT_MAX_AGE_MINUTES:
             status = "stale"
             warnings.append("snapshot_older_than_24h")
@@ -373,7 +417,12 @@ def _build_freshness(trading_date: date, dashboard_snapshot: EODDashboardSnapsho
     }
 
 
-def _snapshot_id(trading_date: date, universe: str, candidate_count: int, dashboard: EODDashboardSnapshot | None) -> str:
+def _snapshot_id(
+    trading_date: date,
+    universe: str,
+    candidate_count: int,
+    dashboard: EODDashboardSnapshot | None,
+) -> str:
     """결정적 id. 같은 (date, universe, candidate_set, baked-version)이면 같은 id."""
     parts = [
         PROVIDER,
@@ -437,6 +486,7 @@ def build_daily_context(params: QueryParams) -> dict:
     # market_pulse
     try:
         from marketpulse.models.regime import RegimeSnapshot
+
         regime = (
             RegimeSnapshot.objects.filter(date__lte=trading_date)
             .order_by("-date")
@@ -460,11 +510,12 @@ def build_daily_context(params: QueryParams) -> dict:
             "(US OHLCV missing for selected universe).",
         )
 
-    snapshot_id = _snapshot_id(trading_date, params.universe, len(candidates), dashboard)
+    snapshot_id = _snapshot_id(
+        trading_date, params.universe, len(candidates), dashboard
+    )
 
     captured_at = (
-        dashboard.generated_at if dashboard is not None
-        else datetime.now(timezone.utc)
+        dashboard.generated_at if dashboard is not None else datetime.now(timezone.utc)
     )
 
     return {
