@@ -31,7 +31,7 @@ class BasicCacheService:
     TTL_LLM_RESPONSE = 21600  # 6시간 - LLM 응답은 비용이 높으므로 길게 캐싱
     TTL_CONTEXT = 1800  # 30분 - 분석 컨텍스트
 
-    PREFIX = 'rag'
+    PREFIX = "rag"
 
     @staticmethod
     def _make_key(prefix: str, *args) -> str:
@@ -54,7 +54,7 @@ class BasicCacheService:
                 parts.append(arg_hash)
             else:
                 parts.append(str(arg).upper())
-        return ':'.join(parts)
+        return ":".join(parts)
 
     @staticmethod
     def _serialize(data: Any) -> str:
@@ -101,7 +101,7 @@ class BasicCacheService:
                 '_meta': {...}
             }
         """
-        key = self._make_key('graph', symbol)
+        key = self._make_key("graph", symbol)
         try:
             data = cache.get(key)
             if data:
@@ -124,7 +124,7 @@ class BasicCacheService:
         Returns:
             성공 여부
         """
-        key = self._make_key('graph', symbol)
+        key = self._make_key("graph", symbol)
         try:
             cache.set(key, self._serialize(data), self.TTL_GRAPH_QUERY)
             logger.debug(f"Cache SET: {key} (TTL={self.TTL_GRAPH_QUERY}s)")
@@ -146,7 +146,7 @@ class BasicCacheService:
         Note:
             - Stock 모델 업데이트 시 호출
         """
-        key = self._make_key('graph', symbol)
+        key = self._make_key("graph", symbol)
         try:
             cache.delete(key)
             logger.info(f"Cache INVALIDATE: {key}")
@@ -159,7 +159,7 @@ class BasicCacheService:
     # LLM Response Cache
     # ============================================================
 
-    def get_llm_response(self, prompt: str, model: str = 'default') -> Optional[str]:
+    def get_llm_response(self, prompt: str, model: str = "default") -> Optional[str]:
         """
         LLM 응답 조회
 
@@ -170,7 +170,7 @@ class BasicCacheService:
         Returns:
             캐시된 LLM 응답 또는 None
         """
-        key = self._make_key('llm', model, {'prompt': prompt})
+        key = self._make_key("llm", model, {"prompt": prompt})
         try:
             data = cache.get(key)
             if data:
@@ -186,8 +186,8 @@ class BasicCacheService:
         self,
         prompt: str,
         response: str,
-        model: str = 'default',
-        ttl: Optional[int] = None
+        model: str = "default",
+        ttl: Optional[int] = None,
     ) -> bool:
         """
         LLM 응답 저장
@@ -201,7 +201,7 @@ class BasicCacheService:
         Returns:
             성공 여부
         """
-        key = self._make_key('llm', model, {'prompt': prompt})
+        key = self._make_key("llm", model, {"prompt": prompt})
         ttl = ttl or self.TTL_LLM_RESPONSE
         try:
             cache.set(key, response, ttl)
@@ -231,7 +231,7 @@ class BasicCacheService:
                 'indicators': {...}
             }
         """
-        key = self._make_key('context', symbol)
+        key = self._make_key("context", symbol)
         try:
             data = cache.get(key)
             if data:
@@ -244,10 +244,7 @@ class BasicCacheService:
             return None
 
     def set_analysis_context(
-        self,
-        symbol: str,
-        context: Dict[str, Any],
-        ttl: Optional[int] = None
+        self, symbol: str, context: Dict[str, Any], ttl: Optional[int] = None
     ) -> bool:
         """
         분석 컨텍스트 저장
@@ -260,7 +257,7 @@ class BasicCacheService:
         Returns:
             성공 여부
         """
-        key = self._make_key('context', symbol)
+        key = self._make_key("context", symbol)
         ttl = ttl or self.TTL_CONTEXT
         try:
             cache.set(key, self._serialize(context), ttl)
@@ -284,10 +281,7 @@ class BasicCacheService:
             - 주가 업데이트 시 호출
             - graph, context 캐시 모두 삭제
         """
-        keys = [
-            self._make_key('graph', symbol),
-            self._make_key('context', symbol)
-        ]
+        keys = [self._make_key("graph", symbol), self._make_key("context", symbol)]
 
         success = True
         for key in keys:
@@ -341,11 +335,11 @@ class BasicCacheService:
         # 구현은 Redis backend 의존적이므로 선택사항
         # 현재는 placeholder만 제공
         return {
-            'graph_keys': None,
-            'llm_keys': None,
-            'context_keys': None,
-            'total_memory': 'N/A',
-            '_note': 'Stats require Redis backend with pattern scan support'
+            "graph_keys": None,
+            "llm_keys": None,
+            "context_keys": None,
+            "total_memory": "N/A",
+            "_note": "Stats require Redis backend with pattern scan support",
         }
 
 

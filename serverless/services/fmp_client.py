@@ -6,6 +6,7 @@ httpx를 사용하여 동기 HTTP 요청을 수행합니다.
 
 KB 참고: FMP API Market Movers 구현 패턴
 """
+
 import logging
 from typing import Dict, List, Optional
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class FMPAPIError(Exception):
     """FMP API 에러"""
+
     pass
 
 
@@ -34,6 +36,7 @@ class FMPClient:
         - 모든 엔드포인트는 /stable/* 사용
         - Rate Limit: 300 calls/분, 10,000 calls/일
     """
+
     BASE_URL = "https://financialmodelingprep.com"  # /stable/* 엔드포인트 전용
 
     def __init__(self, api_key: Optional[str] = None):
@@ -45,7 +48,7 @@ class FMPClient:
 
     def __del__(self):
         """리소스 정리"""
-        if hasattr(self, 'client'):
+        if hasattr(self, "client"):
             self.client.close()
 
     def _make_request(self, endpoint: str, params: Optional[Dict] = None) -> Dict:
@@ -64,7 +67,7 @@ class FMPClient:
         """
         url = f"{self.BASE_URL}{endpoint}"
 
-        request_params = {'apikey': self.api_key}
+        request_params = {"apikey": self.api_key}
         if params:
             request_params.update(params)
 
@@ -76,7 +79,7 @@ class FMPClient:
             data = response.json()
 
             # FMP API는 에러 시에도 200을 반환하고 {"Error Message": "..."} 형태로 응답
-            if isinstance(data, dict) and 'Error Message' in data:
+            if isinstance(data, dict) and "Error Message" in data:
                 raise FMPAPIError(f"FMP API Error: {data['Error Message']}")
 
             return data
@@ -108,13 +111,13 @@ class FMPClient:
                 ...
             ]
         """
-        cache_key = 'fmp:market_gainers'
+        cache_key = "fmp:market_gainers"
         cached = cache.get(cache_key)
         if cached:
             logger.debug("FMP 캐시 HIT: market_gainers")
             return cached
 
-        data = self._make_request('/stable/biggest-gainers')
+        data = self._make_request("/stable/biggest-gainers")
         cache.set(cache_key, data, 300)  # 5분 캐시
         return data
 
@@ -125,13 +128,13 @@ class FMPClient:
         Returns:
             상승 TOP과 동일한 구조
         """
-        cache_key = 'fmp:market_losers'
+        cache_key = "fmp:market_losers"
         cached = cache.get(cache_key)
         if cached:
             logger.debug("FMP 캐시 HIT: market_losers")
             return cached
 
-        data = self._make_request('/stable/biggest-losers')
+        data = self._make_request("/stable/biggest-losers")
         cache.set(cache_key, data, 300)  # 5분 캐시
         return data
 
@@ -142,13 +145,13 @@ class FMPClient:
         Returns:
             상승 TOP과 동일한 구조
         """
-        cache_key = 'fmp:market_actives'
+        cache_key = "fmp:market_actives"
         cached = cache.get(cache_key)
         if cached:
             logger.debug("FMP 캐시 HIT: market_actives")
             return cached
 
-        data = self._make_request('/stable/most-actives')
+        data = self._make_request("/stable/most-actives")
         cache.set(cache_key, data, 300)  # 5분 캐시
         return data
 
@@ -171,16 +174,13 @@ class FMPClient:
                 ...
             }
         """
-        cache_key = f'fmp:quote:{symbol.upper()}'
+        cache_key = f"fmp:quote:{symbol.upper()}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: quote:{symbol}")
             return cached
 
-        data = self._make_request(
-            '/stable/quote',
-            params={'symbol': symbol.upper()}
-        )
+        data = self._make_request("/stable/quote", params={"symbol": symbol.upper()})
 
         # /stable/quote는 리스트로 반환
         if not data or len(data) == 0:
@@ -211,15 +211,14 @@ class FMPClient:
                 ...
             ]
         """
-        cache_key = f'fmp:historical:{symbol.upper()}:{days}'
+        cache_key = f"fmp:historical:{symbol.upper()}:{days}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: historical:{symbol}:{days}")
             return cached
 
         data = self._make_request(
-            '/stable/historical-price-eod/full',
-            params={'symbol': symbol.upper()}
+            "/stable/historical-price-eod/full", params={"symbol": symbol.upper()}
         )
 
         # /stable/historical-price-eod/full은 리스트로 직접 반환
@@ -247,16 +246,13 @@ class FMPClient:
                 ...
             }
         """
-        cache_key = f'fmp:profile:{symbol.upper()}'
+        cache_key = f"fmp:profile:{symbol.upper()}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: profile:{symbol}")
             return cached
 
-        data = self._make_request(
-            '/stable/profile',
-            params={'symbol': symbol.upper()}
-        )
+        data = self._make_request("/stable/profile", params={"symbol": symbol.upper()})
 
         # /stable/profile은 리스트로 반환
         if not data or len(data) == 0:
@@ -276,15 +272,14 @@ class FMPClient:
         Returns:
             피어 종목 리스트 (예: [{"symbol": "MSFT", "companyName": "...", ...}])
         """
-        cache_key = f'fmp:peers:{symbol.upper()}'
+        cache_key = f"fmp:peers:{symbol.upper()}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: peers:{symbol}")
             return cached
 
         data = self._make_request(
-            '/stable/stock-peers',
-            params={'symbol': symbol.upper()}
+            "/stable/stock-peers", params={"symbol": symbol.upper()}
         )
 
         if not isinstance(data, list):
@@ -305,20 +300,20 @@ class FMPClient:
         Returns:
             종목 리스트
         """
-        cache_key = f'fmp:sector_stocks:{sector}:{limit}'
+        cache_key = f"fmp:sector_stocks:{sector}:{limit}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: sector_stocks:{sector}")
             return cached
 
         data = self._make_request(
-            '/stable/company-screener',
+            "/stable/company-screener",
             params={
-                'sector': sector,
-                'limit': limit,
-                'isEtf': 'false',
-                'isFund': 'false',
-            }
+                "sector": sector,
+                "limit": limit,
+                "isEtf": "false",
+                "isFund": "false",
+            },
         )
 
         if not isinstance(data, list):
@@ -352,13 +347,13 @@ class FMPClient:
         import csv
         from io import StringIO
 
-        cache_key = 'fmp:sp500_constituents'
+        cache_key = "fmp:sp500_constituents"
         cached = cache.get(cache_key)
         if cached:
             logger.debug("SP500 cache HIT: sp500_constituents")
             return cached
 
-        url = 'https://datahub.io/core/s-and-p-500-companies/r/constituents.csv'
+        url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
         try:
             response = self.client.get(url, timeout=30.0, follow_redirects=True)
             response.raise_for_status()
@@ -369,16 +364,18 @@ class FMPClient:
         reader = csv.DictReader(StringIO(response.text))
         data = []
         for row in reader:
-            data.append({
-                'symbol': row.get('Symbol', '').strip(),
-                'name': row.get('Security', ''),
-                'sector': row.get('GICS Sector', ''),
-                'subSector': row.get('GICS Sub-Industry', ''),
-                'headQuarter': row.get('Headquarters Location', ''),
-                'dateFirstAdded': row.get('Date added', ''),
-                'cik': row.get('CIK', ''),
-                'founded': row.get('Founded', ''),
-            })
+            data.append(
+                {
+                    "symbol": row.get("Symbol", "").strip(),
+                    "name": row.get("Security", ""),
+                    "sector": row.get("GICS Sector", ""),
+                    "subSector": row.get("GICS Sub-Industry", ""),
+                    "headQuarter": row.get("Headquarters Location", ""),
+                    "dateFirstAdded": row.get("Date added", ""),
+                    "cik": row.get("CIK", ""),
+                    "founded": row.get("Founded", ""),
+                }
+            )
 
         if not data:
             raise FMPAPIError("SP500 CSV is empty")
@@ -398,20 +395,20 @@ class FMPClient:
         Returns:
             종목 리스트
         """
-        cache_key = f'fmp:industry_stocks:{industry}:{limit}'
+        cache_key = f"fmp:industry_stocks:{industry}:{limit}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"FMP 캐시 HIT: industry_stocks:{industry}")
             return cached
 
         data = self._make_request(
-            '/stable/company-screener',
+            "/stable/company-screener",
             params={
-                'industry': industry,
-                'limit': limit,
-                'isEtf': 'false',
-                'isFund': 'false',
-            }
+                "industry": industry,
+                "limit": limit,
+                "isEtf": "false",
+                "isFund": "false",
+            },
         )
 
         if not isinstance(data, list):

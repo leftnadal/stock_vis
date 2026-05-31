@@ -10,6 +10,7 @@ Usage:
     service = PatentNetworkService()
     result = service.build_patent_network(symbols=['AAPL', 'MSFT', 'GOOGL', 'QCOM'])
 """
+
 import logging
 import re
 import time
@@ -33,10 +34,18 @@ logger = logging.getLogger(__name__)
 
 # 특허 분쟁 키워드
 PATENT_DISPUTE_KEYWORDS = [
-    'patent infringement', 'patent lawsuit', 'patent litigation',
-    'patent dispute', 'patent troll', 'patent settlement',
-    'ITC ruling', 'royalty payment', 'licensing agreement',
-    'patent injunction', 'patent violation', 'intellectual property lawsuit',
+    "patent infringement",
+    "patent lawsuit",
+    "patent litigation",
+    "patent dispute",
+    "patent troll",
+    "patent settlement",
+    "ITC ruling",
+    "royalty payment",
+    "licensing agreement",
+    "patent injunction",
+    "patent violation",
+    "intellectual property lawsuit",
 ]
 
 
@@ -45,11 +54,31 @@ class PatentNetworkService:
 
     # 분석 대상 주요 기업 (특허 활동이 활발한 기업)
     DEFAULT_SYMBOLS = [
-        'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META',
-        'NVDA', 'AMD', 'INTC', 'QCOM', 'AVGO',
-        'TSLA', 'IBM', 'ORCL', 'CRM', 'CSCO',
-        'ADBE', 'TXN', 'MU', 'LRCX', 'AMAT',
-        'KLAC', 'SNPS', 'CDNS', 'ARM', 'TSM',
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "META",
+        "NVDA",
+        "AMD",
+        "INTC",
+        "QCOM",
+        "AVGO",
+        "TSLA",
+        "IBM",
+        "ORCL",
+        "CRM",
+        "CSCO",
+        "ADBE",
+        "TXN",
+        "MU",
+        "LRCX",
+        "AMAT",
+        "KLAC",
+        "SNPS",
+        "CDNS",
+        "ARM",
+        "TSM",
     ]
 
     def __init__(self):
@@ -90,11 +119,11 @@ class PatentNetworkService:
         logger.info(f"Starting patent network build for {len(symbols)} symbols")
 
         result = {
-            'symbols_processed': 0,
-            'citation_links': 0,
-            'dispute_links': 0,
-            'total_relationships': 0,
-            'errors': 0
+            "symbols_processed": 0,
+            "citation_links": 0,
+            "dispute_links": 0,
+            "total_relationships": 0,
+            "errors": 0,
         }
 
         try:
@@ -107,81 +136,102 @@ class PatentNetworkService:
                     patents = client.get_patents_for_symbol(symbol, years=5)
                     if patents:
                         # Extract patent numbers
-                        patent_numbers = [p.get('patent_number') for p in patents if p.get('patent_number')]
+                        patent_numbers = [
+                            p.get("patent_number")
+                            for p in patents
+                            if p.get("patent_number")
+                        ]
                         patents_by_symbol[symbol] = patent_numbers
                         logger.info(f"Found {len(patent_numbers)} patents for {symbol}")
                     else:
                         logger.warning(f"No patents found for {symbol}")
 
-                    result['symbols_processed'] += 1
+                    result["symbols_processed"] += 1
 
                     # Rate limiting: USPTO API typically allows ~10 req/sec
                     time.sleep(0.15)
 
                 except USPTOError as e:
                     logger.error(f"USPTO error for {symbol}: {e}")
-                    result['errors'] += 1
+                    result["errors"] += 1
                 except Exception as e:
                     logger.error(f"Unexpected error processing {symbol}: {e}")
-                    result['errors'] += 1
+                    result["errors"] += 1
 
             # Step 2: Find citation links between symbol pairs
             all_citation_links = []
 
             for source_symbol, target_symbol in combinations(symbols, 2):
                 # Only check if both have patents
-                if source_symbol not in patents_by_symbol or target_symbol not in patents_by_symbol:
+                if (
+                    source_symbol not in patents_by_symbol
+                    or target_symbol not in patents_by_symbol
+                ):
                     continue
 
                 try:
                     # Check both directions (A cites B, B cites A)
                     target_patents = {target_symbol: patents_by_symbol[target_symbol]}
-                    links_forward = self.find_citation_links(source_symbol, target_patents)
+                    links_forward = self.find_citation_links(
+                        source_symbol, target_patents
+                    )
 
-                    target_patents_reverse = {source_symbol: patents_by_symbol[source_symbol]}
-                    links_backward = self.find_citation_links(target_symbol, target_patents_reverse)
+                    target_patents_reverse = {
+                        source_symbol: patents_by_symbol[source_symbol]
+                    }
+                    links_backward = self.find_citation_links(
+                        target_symbol, target_patents_reverse
+                    )
 
                     all_citation_links.extend(links_forward)
                     all_citation_links.extend(links_backward)
 
                     if links_forward or links_backward:
-                        logger.info(f"Found {len(links_forward)} citations {source_symbol}→{target_symbol}, "
-                                    f"{len(links_backward)} citations {target_symbol}→{source_symbol}")
+                        logger.info(
+                            f"Found {len(links_forward)} citations {source_symbol}→{target_symbol}, "
+                            f"{len(links_backward)} citations {target_symbol}→{source_symbol}"
+                        )
 
                     # Rate limiting
                     time.sleep(0.2)
 
                 except USPTOError as e:
-                    logger.error(f"Citation search error {source_symbol}-{target_symbol}: {e}")
-                    result['errors'] += 1
+                    logger.error(
+                        f"Citation search error {source_symbol}-{target_symbol}: {e}"
+                    )
+                    result["errors"] += 1
                 except Exception as e:
                     logger.error(f"Unexpected error in citation search: {e}")
-                    result['errors'] += 1
+                    result["errors"] += 1
 
             # Step 3: Create citation relationships
             citation_count = self._create_citation_relationships(all_citation_links)
-            result['citation_links'] = citation_count
+            result["citation_links"] = citation_count
 
             # Step 4: Scan news for patent disputes
             try:
                 disputes = self.scan_patent_disputes(hours=168)  # 1 week
                 dispute_count = self._create_dispute_relationships(disputes)
-                result['dispute_links'] = dispute_count
+                result["dispute_links"] = dispute_count
             except Exception as e:
                 logger.error(f"Patent dispute scan error: {e}")
-                result['errors'] += 1
+                result["errors"] += 1
 
-            result['total_relationships'] = result['citation_links'] + result['dispute_links']
+            result["total_relationships"] = (
+                result["citation_links"] + result["dispute_links"]
+            )
 
             logger.info(f"Patent network build complete: {result}")
 
         except Exception as e:
             logger.error(f"Fatal error in build_patent_network: {e}", exc_info=True)
-            result['errors'] += 1
+            result["errors"] += 1
 
         return result
 
-    def find_citation_links(self, source_symbol: str, target_patents: Dict[str, List]) -> List[Dict]:
+    def find_citation_links(
+        self, source_symbol: str, target_patents: Dict[str, List]
+    ) -> List[Dict]:
         """Find patent citations between source and target companies
 
         Args:
@@ -233,15 +283,16 @@ class PatentNetworkService:
 
         try:
             news_articles = NewsEntity.objects.filter(
-                query,
-                published_at__gte=cutoff
-            ).order_by('-published_at')[:200]  # Limit to prevent overload
+                query, published_at__gte=cutoff
+            ).order_by("-published_at")[:200]  # Limit to prevent overload
 
             logger.info(f"Found {news_articles.count()} patent-related news articles")
 
             for article in news_articles:
                 # Extract symbols from article
-                symbols = self._extract_patent_dispute_symbols(article.headline, article.content or '')
+                symbols = self._extract_patent_dispute_symbols(
+                    article.headline, article.content or ""
+                )
 
                 # Need at least 2 companies for a dispute
                 if len(symbols) < 2:
@@ -249,13 +300,17 @@ class PatentNetworkService:
 
                 # Create dispute entries for all symbol pairs
                 for source, target in combinations(symbols, 2):
-                    disputes.append({
-                        'source': source,
-                        'target': target,
-                        'headline': article.headline,
-                        'date': article.published_at.isoformat(),
-                        'evidence': self._extract_dispute_evidence(article.headline, article.content or '')
-                    })
+                    disputes.append(
+                        {
+                            "source": source,
+                            "target": target,
+                            "headline": article.headline,
+                            "date": article.published_at.isoformat(),
+                            "evidence": self._extract_dispute_evidence(
+                                article.headline, article.content or ""
+                            ),
+                        }
+                    )
 
             logger.info(f"Extracted {len(disputes)} patent dispute relationships")
 
@@ -264,7 +319,9 @@ class PatentNetworkService:
 
         return disputes
 
-    def _extract_patent_dispute_symbols(self, headline: str, content: str = '') -> List[str]:
+    def _extract_patent_dispute_symbols(
+        self, headline: str, content: str = ""
+    ) -> List[str]:
         """Extract company symbols from patent dispute news
 
         Strategy:
@@ -272,7 +329,7 @@ class PatentNetworkService:
         2. Extract symbols that match
         3. Return unique list
         """
-        text = (headline + ' ' + content).upper()
+        text = (headline + " " + content).upper()
         found_symbols = set()
 
         # Iterate through all known companies
@@ -290,13 +347,13 @@ class PatentNetworkService:
 
     def _extract_dispute_evidence(self, headline: str, content: str) -> str:
         """Extract key evidence/context from dispute article"""
-        text = headline + ' ' + (content[:500] if content else '')
+        text = headline + " " + (content[:500] if content else "")
 
         # Find first matching keyword
         for keyword in PATENT_DISPUTE_KEYWORDS:
             if keyword.lower() in text.lower():
                 # Extract sentence containing keyword
-                sentences = re.split(r'[.!?]', text)
+                sentences = re.split(r"[.!?]", text)
                 for sentence in sentences:
                     if keyword.lower() in sentence.lower():
                         return sentence.strip()[:200]
@@ -318,10 +375,10 @@ class PatentNetworkService:
         for link in links:
             try:
                 # Extract data
-                source = link.get('source', '').upper()
-                target = link.get('target', '').upper()
-                source_patent = link.get('source_patent', '')
-                cited_patent = link.get('cited_patent', '')
+                source = link.get("source", "").upper()
+                target = link.get("target", "").upper()
+                source_patent = link.get("source_patent", "")
+                cited_patent = link.get("cited_patent", "")
 
                 if not (source and target and source_patent and cited_patent):
                     logger.warning(f"Incomplete citation link: {link}")
@@ -331,21 +388,23 @@ class PatentNetworkService:
                 obj, is_created = StockRelationship.objects.update_or_create(
                     source_symbol=source,
                     target_symbol=target,
-                    relationship_type='PATENT_CITED',
+                    relationship_type="PATENT_CITED",
                     defaults={
-                        'source_provider': 'uspto',
-                        'context': {
-                            'source_patent': source_patent,
-                            'cited_patent': cited_patent,
-                            'citation_count': link.get('citation_count', 1),
+                        "source_provider": "uspto",
+                        "context": {
+                            "source_patent": source_patent,
+                            "cited_patent": cited_patent,
+                            "citation_count": link.get("citation_count", 1),
                         },
-                        'strength': 0.85,  # High confidence for USPTO data
-                    }
+                        "strength": 0.85,  # High confidence for USPTO data
+                    },
                 )
 
                 if is_created:
                     created += 1
-                    logger.debug(f"Created PATENT_CITED: {source} → {target} ({source_patent} → {cited_patent})")
+                    logger.debug(
+                        f"Created PATENT_CITED: {source} → {target} ({source_patent} → {cited_patent})"
+                    )
 
             except IntegrityError as e:
                 logger.warning(f"Duplicate citation relationship: {link}")
@@ -368,11 +427,11 @@ class PatentNetworkService:
 
         for dispute in disputes:
             try:
-                source = dispute.get('source', '').upper()
-                target = dispute.get('target', '').upper()
-                headline = dispute.get('headline', '')
-                evidence = dispute.get('evidence', '')
-                date_str = dispute.get('date', '')
+                source = dispute.get("source", "").upper()
+                target = dispute.get("target", "").upper()
+                headline = dispute.get("headline", "")
+                evidence = dispute.get("evidence", "")
+                date_str = dispute.get("date", "")
 
                 if not (source and target and headline):
                     logger.warning(f"Incomplete dispute data: {dispute}")
@@ -383,16 +442,16 @@ class PatentNetworkService:
                     obj, is_created = StockRelationship.objects.update_or_create(
                         source_symbol=src,
                         target_symbol=tgt,
-                        relationship_type='PATENT_DISPUTE',
+                        relationship_type="PATENT_DISPUTE",
                         defaults={
-                            'source_provider': 'uspto',
-                            'context': {
-                                'headline': headline,
-                                'evidence': evidence,
-                                'date': date_str,
+                            "source_provider": "uspto",
+                            "context": {
+                                "headline": headline,
+                                "evidence": evidence,
+                                "date": date_str,
                             },
-                            'strength': 0.70,  # Medium confidence (news-based)
-                        }
+                            "strength": 0.70,  # Medium confidence (news-based)
+                        },
                     )
 
                     if is_created:

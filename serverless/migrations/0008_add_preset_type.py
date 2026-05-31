@@ -12,18 +12,18 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ('serverless', '0007_add_view_count_to_preset'),
+        ("serverless", "0007_add_view_count_to_preset"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='screenerpreset',
-            name='preset_type',
+            model_name="screenerpreset",
+            name="preset_type",
             field=models.CharField(
-                choices=[('instant', 'Instant'), ('enhanced', 'Enhanced')],
-                default='instant',
-                help_text='instant: FMP 직접 지원, enhanced: 추가 API 필요 (PE/ROE/EPS 등)',
-                max_length=20
+                choices=[("instant", "Instant"), ("enhanced", "Enhanced")],
+                default="instant",
+                help_text="instant: FMP 직접 지원, enhanced: 추가 API 필요 (PE/ROE/EPS 등)",
+                max_length=20,
             ),
         ),
     ]

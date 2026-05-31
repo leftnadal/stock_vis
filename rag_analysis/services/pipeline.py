@@ -44,7 +44,7 @@ class AnalysisPipelineLite:
         self,
         session: AnalysisSession,
         enable_cache: bool = True,
-        enable_cost_optimization: bool = True
+        enable_cost_optimization: bool = True,
     ):
         """
         Args:
@@ -55,7 +55,9 @@ class AnalysisPipelineLite:
         self.session = session
         self.llm = LLMServiceLite()
         self.enable_cache = enable_cache and ENABLE_SEMANTIC_CACHE
-        self.enable_cost_optimization = enable_cost_optimization and ENABLE_COST_OPTIMIZATION
+        self.enable_cost_optimization = (
+            enable_cost_optimization and ENABLE_COST_OPTIMIZATION
+        )
 
         # Neo4j는 lazy import (선택적 의존성)
         self._neo4j = None
@@ -69,6 +71,7 @@ class AnalysisPipelineLite:
         if self._neo4j is None:
             try:
                 from .neo4j_service import Neo4jServiceLite
+
                 self._neo4j = Neo4jServiceLite()
             except Exception as e:
                 logger.warning(f"Neo4j service unavailable: {e}")
@@ -81,6 +84,7 @@ class AnalysisPipelineLite:
         if self._semantic_cache is None and self.enable_cache:
             try:
                 from .semantic_cache import get_semantic_cache
+
                 self._semantic_cache = get_semantic_cache()
             except Exception as e:
                 logger.warning(f"Semantic cache unavailable: {e}")
@@ -93,6 +97,7 @@ class AnalysisPipelineLite:
         if self._complexity_classifier is None and self.enable_cost_optimization:
             try:
                 from .complexity_classifier import get_complexity_classifier
+
                 self._complexity_classifier = get_complexity_classifier()
             except Exception as e:
                 logger.warning(f"Complexity classifier unavailable: {e}")
@@ -105,6 +110,7 @@ class AnalysisPipelineLite:
         if self._cost_tracker is None:
             try:
                 from .cost_tracker import get_cost_tracker
+
                 self._cost_tracker = get_cost_tracker()
             except Exception as e:
                 logger.warning(f"Cost tracker unavailable: {e}")
@@ -112,9 +118,7 @@ class AnalysisPipelineLite:
         return self._cost_tracker
 
     async def analyze(
-        self,
-        question: str,
-        max_retries: Optional[int] = None
+        self, question: str, max_retries: Optional[int] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         분석 실행 (스트리밍)
@@ -144,8 +148,8 @@ class AnalysisPipelineLite:
             # Phase 0: 시맨틱 캐시 확인
             if self.enable_cache and self.semantic_cache:
                 yield {
-                    'phase': 'cache_check',
-                    'message': '유사한 분석 결과를 확인하고 있습니다...'
+                    "phase": "cache_check",
+                    "message": "유사한 분석 결과를 확인하고 있습니다...",
                 }
 
                 # 바구니에서 엔티티(종목) 추출
@@ -155,7 +159,9 @@ class AnalysisPipelineLite:
                 cache_result = await self.semantic_cache.find_similar(
                     question=question,
                     entities=entities,
-                    user_id=self.session.user_id if hasattr(self.session, 'user_id') else None
+                    user_id=self.session.user_id
+                    if hasattr(self.session, "user_id")
+                    else None,
                 )
 
                 if cache_result:
@@ -168,16 +174,16 @@ class AnalysisPipelineLite:
                         content=question,
                         suggestions=[],
                         input_tokens=0,
-                        output_tokens=0
+                        output_tokens=0,
                     )
 
                     # 캐시된 응답 저장 (캐시 히트 표시)
                     await self._save_message(
                         role=AnalysisMessage.Role.ASSISTANT,
-                        content=cache_result['response'],
-                        suggestions=cache_result.get('suggestions', []),
+                        content=cache_result["response"],
+                        suggestions=cache_result.get("suggestions", []),
                         input_tokens=0,
-                        output_tokens=0
+                        output_tokens=0,
                     )
 
                     logger.info(
@@ -190,44 +196,52 @@ class AnalysisPipelineLite:
                     if self.cost_tracker:
                         try:
                             await self.cost_tracker.log_usage(
-                                user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                                session_id=self.session.id if hasattr(self.session, 'id') else None,
-                                model='gemini-2.5-flash',
+                                user_id=self.session.user_id
+                                if hasattr(self.session, "user_id")
+                                else None,
+                                session_id=self.session.id
+                                if hasattr(self.session, "id")
+                                else None,
+                                model="gemini-2.5-flash",
                                 input_tokens=0,
                                 output_tokens=0,
                                 cached=True,
-                                latency_ms=elapsed_ms
+                                latency_ms=elapsed_ms,
                             )
                         except Exception as e:
                             logger.warning(f"Failed to log cache hit: {e}")
 
                     yield {
-                        'phase': 'cache_hit',
-                        'data': {
-                            'content': cache_result['response'],
-                            'suggestions': cache_result.get('suggestions', []),
-                            'basket_actions': [],
-                            'usage': {
-                                'input_tokens': 0,
-                                'output_tokens': 0,
-                                'cached': True,
-                                'cost_usd': 0.0
+                        "phase": "cache_hit",
+                        "data": {
+                            "content": cache_result["response"],
+                            "suggestions": cache_result.get("suggestions", []),
+                            "basket_actions": [],
+                            "usage": {
+                                "input_tokens": 0,
+                                "output_tokens": 0,
+                                "cached": True,
+                                "cost_usd": 0.0,
                             },
-                            'cache_info': {
-                                'cache_id': cache_result.get('cache_id'),
-                                'similarity_score': cache_result.get('similarity_score'),
-                                'entity_match_score': cache_result.get('entity_match_score'),
-                                'hit_count': cache_result.get('hit_count')
+                            "cache_info": {
+                                "cache_id": cache_result.get("cache_id"),
+                                "similarity_score": cache_result.get(
+                                    "similarity_score"
+                                ),
+                                "entity_match_score": cache_result.get(
+                                    "entity_match_score"
+                                ),
+                                "hit_count": cache_result.get("hit_count"),
                             },
-                            'latency_ms': elapsed_ms
-                        }
+                            "latency_ms": elapsed_ms,
+                        },
                     }
                     return
 
             # Phase 1: 데이터 준비
             yield {
-                'phase': 'preparing',
-                'message': '데이터 바구니를 준비하고 있습니다...'
+                "phase": "preparing",
+                "message": "데이터 바구니를 준비하고 있습니다...",
             }
 
             # Basket 조회 (sync → async 래핑)
@@ -245,13 +259,13 @@ class AnalysisPipelineLite:
 
             items_count = basket.items_count if basket else 0
             yield {
-                'phase': 'context_ready',
-                'message': f'분석 데이터 준비 완료 (아이템 {items_count}개)',
-                'context_length': len(context)
+                "phase": "context_ready",
+                "message": f"분석 데이터 준비 완료 (아이템 {items_count}개)",
+                "context_length": len(context),
             }
 
             # Phase 3: 복잡도 분류 및 LLM 분석 시작
-            complexity = 'moderate'  # 기본값
+            complexity = "moderate"  # 기본값
             complexity_score = 0.5
 
             if self.enable_cost_optimization and self.complexity_classifier:
@@ -259,10 +273,10 @@ class AnalysisPipelineLite:
                     config = self.complexity_classifier.classify_and_configure(
                         question=question,
                         entities_count=len(entities),
-                        context_tokens=len(context.split())
+                        context_tokens=len(context.split()),
                     )
-                    complexity = config['complexity'].value
-                    complexity_score = config['complexity_score']
+                    complexity = config["complexity"].value
+                    complexity_score = config["complexity_score"]
 
                     logger.info(
                         f"Complexity classified: {complexity} "
@@ -272,10 +286,10 @@ class AnalysisPipelineLite:
                     logger.warning(f"Complexity classification failed: {e}")
 
             yield {
-                'phase': 'analyzing',
-                'message': 'AI 분석을 시작합니다...',
-                'complexity': complexity,
-                'complexity_score': round(complexity_score, 2)
+                "phase": "analyzing",
+                "message": "AI 분석을 시작합니다...",
+                "complexity": complexity,
+                "complexity_score": round(complexity_score, 2),
             }
 
             # 사용자 메시지 저장
@@ -284,7 +298,7 @@ class AnalysisPipelineLite:
                 content=question,
                 suggestions=[],
                 input_tokens=0,
-                output_tokens=0
+                output_tokens=0,
             )
 
             # Phase 4: LLM 스트리밍 (복잡도 기반 설정 적용)
@@ -292,31 +306,25 @@ class AnalysisPipelineLite:
                 context=context,
                 question=question,
                 max_retries=max_retries,
-                complexity=complexity
+                complexity=complexity,
             ):
-                if event['type'] == 'delta':
+                if event["type"] == "delta":
                     # 텍스트 청크 전달
-                    chunk = event['content']
+                    chunk = event["content"]
                     full_response += chunk
 
-                    yield {
-                        'phase': 'streaming',
-                        'chunk': chunk
-                    }
+                    yield {"phase": "streaming", "chunk": chunk}
 
-                elif event['type'] == 'final':
+                elif event["type"] == "final":
                     # 토큰 사용량 저장
-                    input_tokens = event['input_tokens']
-                    output_tokens = event['output_tokens']
+                    input_tokens = event["input_tokens"]
+                    output_tokens = event["output_tokens"]
 
-                elif event['type'] == 'error':
+                elif event["type"] == "error":
                     # LLM 에러
                     yield {
-                        'phase': 'error',
-                        'error': {
-                            'code': 'LLM_ERROR',
-                            'message': event['message']
-                        }
+                        "phase": "error",
+                        "error": {"code": "LLM_ERROR", "message": event["message"]},
                     }
 
                     # 에러 메시지도 저장
@@ -325,13 +333,17 @@ class AnalysisPipelineLite:
                         content=f"[에러] {event['message']}",
                         suggestions=[],
                         input_tokens=0,
-                        output_tokens=0
+                        output_tokens=0,
                     )
                     return
 
             # Phase 5: 응답 파싱
-            cleaned_content, suggestions = ResponseParser.parse_suggestions(full_response)
-            cleaned_content, basket_actions = ResponseParser.parse_basket_actions(cleaned_content)
+            cleaned_content, suggestions = ResponseParser.parse_suggestions(
+                full_response
+            )
+            cleaned_content, basket_actions = ResponseParser.parse_basket_actions(
+                cleaned_content
+            )
 
             # Assistant 메시지 저장
             await self._save_message(
@@ -339,7 +351,7 @@ class AnalysisPipelineLite:
                 content=cleaned_content,
                 suggestions=suggestions,
                 input_tokens=input_tokens,
-                output_tokens=output_tokens
+                output_tokens=output_tokens,
             )
 
             # 탐험 경로 업데이트 (suggestions 기반)
@@ -356,11 +368,15 @@ class AnalysisPipelineLite:
                         response=cleaned_content,
                         suggestions=suggestions,
                         usage={
-                            'input_tokens': input_tokens,
-                            'output_tokens': output_tokens
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
                         },
-                        user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                        session_id=self.session.id if hasattr(self.session, 'id') else None
+                        user_id=self.session.user_id
+                        if hasattr(self.session, "user_id")
+                        else None,
+                        session_id=self.session.id
+                        if hasattr(self.session, "id")
+                        else None,
                     )
                     if cache_id:
                         logger.info(f"Response cached: {cache_id}")
@@ -375,17 +391,21 @@ class AnalysisPipelineLite:
             if self.cost_tracker:
                 try:
                     await self.cost_tracker.log_usage(
-                        user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                        session_id=self.session.id if hasattr(self.session, 'id') else None,
-                        model='gemini-2.5-flash',
+                        user_id=self.session.user_id
+                        if hasattr(self.session, "user_id")
+                        else None,
+                        session_id=self.session.id
+                        if hasattr(self.session, "id")
+                        else None,
+                        model="gemini-2.5-flash",
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                         cached=False,
                         latency_ms=elapsed_ms,
-                        complexity=complexity
+                        complexity=complexity,
                     )
                     cost_usd = self.cost_tracker.calculate_cost(
-                        'gemini-2.5-flash', input_tokens, output_tokens
+                        "gemini-2.5-flash", input_tokens, output_tokens
                     )
                     logger.info(
                         f"Usage logged: {input_tokens}+{output_tokens} tokens, "
@@ -395,22 +415,22 @@ class AnalysisPipelineLite:
                     logger.warning(f"Failed to log usage: {e}")
 
             yield {
-                'phase': 'complete',
-                'data': {
-                    'content': cleaned_content,
-                    'suggestions': suggestions,
-                    'basket_actions': basket_actions,
-                    'usage': {
-                        'input_tokens': input_tokens,
-                        'output_tokens': output_tokens,
-                        'cached': False,
-                        'cost_usd': cost_usd
+                "phase": "complete",
+                "data": {
+                    "content": cleaned_content,
+                    "suggestions": suggestions,
+                    "basket_actions": basket_actions,
+                    "usage": {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "cached": False,
+                        "cost_usd": cost_usd,
                     },
-                    'complexity': complexity,
-                    'complexity_score': round(complexity_score, 2),
-                    'cache_id': cache_id,
-                    'latency_ms': elapsed_ms
-                }
+                    "complexity": complexity,
+                    "complexity_score": round(complexity_score, 2),
+                    "cache_id": cache_id,
+                    "latency_ms": elapsed_ms,
+                },
             }
 
         except Exception as e:
@@ -418,11 +438,11 @@ class AnalysisPipelineLite:
             logger.exception(f"Pipeline error: {e}")
 
             yield {
-                'phase': 'error',
-                'error': {
-                    'code': 'PIPELINE_ERROR',
-                    'message': f'분석 중 오류가 발생했습니다: {str(e)}'
-                }
+                "phase": "error",
+                "error": {
+                    "code": "PIPELINE_ERROR",
+                    "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+                },
             }
 
         finally:
@@ -438,7 +458,7 @@ class AnalysisPipelineLite:
         Returns:
             str: 빈 바구니 상황을 설명하는 컨텍스트
         """
-        today = date.today().strftime('%Y년 %m월 %d일')
+        today = date.today().strftime("%Y년 %m월 %d일")
         return f"""=== 분석 데이터 바구니 ===
 분석 기준일: {today}
 총 아이템 수: 0개
@@ -459,7 +479,10 @@ class AnalysisPipelineLite:
 
         # prefetch_related로 아이템 한 번에 로드
         from ..models import DataBasket
-        return DataBasket.objects.prefetch_related('items').get(pk=self.session.basket.pk)
+
+        return DataBasket.objects.prefetch_related("items").get(
+            pk=self.session.basket.pk
+        )
 
     async def _extract_basket_entities(self) -> List[str]:
         """
@@ -476,15 +499,15 @@ class AnalysisPipelineLite:
                 items = await sync_to_async(list)(basket.items.all())
                 for item in items:
                     # stock 타입 아이템에서 심볼 추출
-                    if item.item_type == 'stock' and item.reference_id:
+                    if item.item_type == "stock" and item.reference_id:
                         entities.append(item.reference_id.upper())
                     # overview 타입 (기업 정보)
-                    elif item.item_type == 'overview' and item.reference_id:
+                    elif item.item_type == "overview" and item.reference_id:
                         entities.append(item.reference_id.upper())
                     # 데이터 스냅샷에서 심볼 추출 시도
                     elif item.data_snapshot and isinstance(item.data_snapshot, dict):
-                        if 'symbol' in item.data_snapshot:
-                            entities.append(item.data_snapshot['symbol'].upper())
+                        if "symbol" in item.data_snapshot:
+                            entities.append(item.data_snapshot["symbol"].upper())
 
         except Exception as e:
             logger.warning(f"Failed to extract basket entities: {e}")
@@ -505,7 +528,7 @@ class AnalysisPipelineLite:
         content: str,
         suggestions: list,
         input_tokens: int,
-        output_tokens: int
+        output_tokens: int,
     ):
         """메시지 저장 (sync → async)"""
         close_old_connections()
@@ -516,7 +539,7 @@ class AnalysisPipelineLite:
             content=content,
             suggestions=suggestions,
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
         )
 
     @sync_to_async
@@ -526,15 +549,13 @@ class AnalysisPipelineLite:
 
         for suggestion in suggestions:
             self.session.add_exploration(
-                entity_type='stock',
-                entity_id=suggestion['symbol'],
-                reason=suggestion['reason']
+                entity_type="stock",
+                entity_id=suggestion["symbol"],
+                reason=suggestion["reason"],
             )
 
     async def get_enhanced_context(
-        self,
-        symbol: str,
-        include_graph: bool = True
+        self, symbol: str, include_graph: bool = True
     ) -> Dict[str, Any]:
         """
         Neo4j 그래프 데이터로 컨텍스트 확장
@@ -555,9 +576,7 @@ class AnalysisPipelineLite:
             return {}
 
         try:
-            return await sync_to_async(
-                self.neo4j.get_stock_relationships
-            )(symbol)
+            return await sync_to_async(self.neo4j.get_stock_relationships)(symbol)
 
         except Exception as e:
             logger.warning(f"Failed to get graph context for {symbol}: {e}")
@@ -566,23 +585,25 @@ class AnalysisPipelineLite:
 
 class PipelineEventType:
     """파이프라인 이벤트 타입 상수"""
-    CACHE_CHECK = 'cache_check'
-    CACHE_HIT = 'cache_hit'
-    PREPARING = 'preparing'
-    CONTEXT_READY = 'context_ready'
-    ANALYZING = 'analyzing'
-    STREAMING = 'streaming'
-    COMPLETE = 'complete'
-    ERROR = 'error'
+
+    CACHE_CHECK = "cache_check"
+    CACHE_HIT = "cache_hit"
+    PREPARING = "preparing"
+    CONTEXT_READY = "context_ready"
+    ANALYZING = "analyzing"
+    STREAMING = "streaming"
+    COMPLETE = "complete"
+    ERROR = "error"
 
 
 class PipelineErrorCode:
     """파이프라인 에러 코드 상수"""
-    BASKET_NOT_FOUND = 'BASKET_NOT_FOUND'
-    LLM_ERROR = 'LLM_ERROR'
-    GRAPH_ERROR = 'GRAPH_ERROR'
-    PIPELINE_ERROR = 'PIPELINE_ERROR'
-    CACHE_ERROR = 'CACHE_ERROR'
+
+    BASKET_NOT_FOUND = "BASKET_NOT_FOUND"
+    LLM_ERROR = "LLM_ERROR"
+    GRAPH_ERROR = "GRAPH_ERROR"
+    PIPELINE_ERROR = "PIPELINE_ERROR"
+    CACHE_ERROR = "CACHE_ERROR"
 
 
 class AnalysisPipelineFinal:
@@ -602,7 +623,7 @@ class AnalysisPipelineFinal:
         session: AnalysisSession,
         enable_cache: bool = True,
         enable_cost_optimization: bool = True,
-        provider: str = 'gemini'
+        provider: str = "gemini",
     ):
         """
         Args:
@@ -613,7 +634,9 @@ class AnalysisPipelineFinal:
         """
         self.session = session
         self.enable_cache = enable_cache and ENABLE_SEMANTIC_CACHE
-        self.enable_cost_optimization = enable_cost_optimization and ENABLE_COST_OPTIMIZATION
+        self.enable_cost_optimization = (
+            enable_cost_optimization and ENABLE_COST_OPTIMIZATION
+        )
         self.provider = provider
 
         # 지연 로딩 컴포넌트
@@ -637,6 +660,7 @@ class AnalysisPipelineFinal:
         if self._semantic_cache is None and self.enable_cache:
             try:
                 from .semantic_cache import get_semantic_cache
+
                 self._semantic_cache = get_semantic_cache()
             except Exception as e:
                 logger.warning(f"Semantic cache unavailable: {e}")
@@ -648,6 +672,7 @@ class AnalysisPipelineFinal:
         if self._complexity_classifier is None:
             try:
                 from .complexity_classifier import get_complexity_classifier
+
                 self._complexity_classifier = get_complexity_classifier(self.provider)
             except Exception as e:
                 logger.warning(f"Complexity classifier unavailable: {e}")
@@ -665,9 +690,10 @@ class AnalysisPipelineFinal:
         if self._adaptive_llm is None:
             try:
                 from .adaptive_llm_service import get_adaptive_llm_service
+
                 self._adaptive_llm = get_adaptive_llm_service(
                     provider=self.provider,
-                    enable_cost_tracking=self.enable_cost_optimization
+                    enable_cost_tracking=self.enable_cost_optimization,
                 )
             except Exception as e:
                 logger.warning(f"Adaptive LLM unavailable: {e}")
@@ -679,6 +705,7 @@ class AnalysisPipelineFinal:
         if self._cost_tracker is None and self.enable_cost_optimization:
             try:
                 from .cost_tracker import get_cost_tracker
+
                 self._cost_tracker = get_cost_tracker()
             except Exception as e:
                 logger.warning(f"Cost tracker unavailable: {e}")
@@ -709,16 +736,16 @@ class AnalysisPipelineFinal:
         input_tokens = 0
         output_tokens = 0
         entities: List[str] = []
-        complexity = 'moderate'
+        complexity = "moderate"
         complexity_score = 0.5
-        model_used = 'gemini-2.5-flash'
+        model_used = "gemini-2.5-flash"
 
         try:
             # ========== Stage 0: 시맨틱 캐시 확인 ==========
             if self.enable_cache and self.semantic_cache:
                 yield {
-                    'phase': 'cache_check',
-                    'message': '유사한 분석 결과를 확인하고 있습니다...'
+                    "phase": "cache_check",
+                    "message": "유사한 분석 결과를 확인하고 있습니다...",
                 }
 
                 entities = await self._extract_basket_entities()
@@ -726,7 +753,9 @@ class AnalysisPipelineFinal:
                 cache_result = await self.semantic_cache.find_similar(
                     question=question,
                     entities=entities,
-                    user_id=self.session.user_id if hasattr(self.session, 'user_id') else None
+                    user_id=self.session.user_id
+                    if hasattr(self.session, "user_id")
+                    else None,
                 )
 
                 if cache_result:
@@ -737,28 +766,32 @@ class AnalysisPipelineFinal:
                         content=question,
                         suggestions=[],
                         input_tokens=0,
-                        output_tokens=0
+                        output_tokens=0,
                     )
 
                     await self._save_message(
                         role=AnalysisMessage.Role.ASSISTANT,
-                        content=cache_result['response'],
-                        suggestions=cache_result.get('suggestions', []),
+                        content=cache_result["response"],
+                        suggestions=cache_result.get("suggestions", []),
                         input_tokens=0,
-                        output_tokens=0
+                        output_tokens=0,
                     )
 
                     # 캐시 히트 비용 추적
                     if self.cost_tracker:
                         try:
                             await self.cost_tracker.log_usage(
-                                user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                                session_id=self.session.id if hasattr(self.session, 'id') else None,
+                                user_id=self.session.user_id
+                                if hasattr(self.session, "user_id")
+                                else None,
+                                session_id=self.session.id
+                                if hasattr(self.session, "id")
+                                else None,
                                 model=model_used,
                                 input_tokens=0,
                                 output_tokens=0,
                                 cached=True,
-                                latency_ms=elapsed_ms
+                                latency_ms=elapsed_ms,
                             )
                         except Exception as e:
                             logger.warning(f"Failed to log cache hit: {e}")
@@ -769,33 +802,34 @@ class AnalysisPipelineFinal:
                     )
 
                     yield {
-                        'phase': 'cache_hit',
-                        'data': {
-                            'content': cache_result['response'],
-                            'suggestions': cache_result.get('suggestions', []),
-                            'basket_actions': [],
-                            'usage': {
-                                'input_tokens': 0,
-                                'output_tokens': 0,
-                                'cached': True,
-                                'cost_usd': 0.0
+                        "phase": "cache_hit",
+                        "data": {
+                            "content": cache_result["response"],
+                            "suggestions": cache_result.get("suggestions", []),
+                            "basket_actions": [],
+                            "usage": {
+                                "input_tokens": 0,
+                                "output_tokens": 0,
+                                "cached": True,
+                                "cost_usd": 0.0,
                             },
-                            'cache_info': {
-                                'cache_id': cache_result.get('cache_id'),
-                                'similarity_score': cache_result.get('similarity_score'),
-                                'entity_match_score': cache_result.get('entity_match_score'),
-                                'hit_count': cache_result.get('hit_count')
+                            "cache_info": {
+                                "cache_id": cache_result.get("cache_id"),
+                                "similarity_score": cache_result.get(
+                                    "similarity_score"
+                                ),
+                                "entity_match_score": cache_result.get(
+                                    "entity_match_score"
+                                ),
+                                "hit_count": cache_result.get("hit_count"),
                             },
-                            'latency_ms': elapsed_ms
-                        }
+                            "latency_ms": elapsed_ms,
+                        },
                     }
                     return
 
             # ========== Stage 1: 복잡도 분류 ==========
-            yield {
-                'phase': 'preparing',
-                'message': '데이터 준비 및 복잡도 분석 중...'
-            }
+            yield {"phase": "preparing", "message": "데이터 준비 및 복잡도 분석 중..."}
 
             basket = await self._get_basket()
             if not entities:
@@ -815,11 +849,11 @@ class AnalysisPipelineFinal:
                     config = self.complexity_classifier.classify_and_configure(
                         question=question,
                         entities_count=len(entities),
-                        context_tokens=context_tokens
+                        context_tokens=context_tokens,
                     )
-                    complexity = config['complexity'].value
-                    complexity_score = config['complexity_score']
-                    model_used = config['model']
+                    complexity = config["complexity"].value
+                    complexity_score = config["complexity_score"]
+                    model_used = config["model"]
 
                     logger.info(
                         f"[Stage 1] Complexity: {complexity} "
@@ -844,12 +878,16 @@ class AnalysisPipelineFinal:
                     budget = self._token_budget_manager.budget
 
                     # 컨텍스트가 예산을 초과하면 압축
-                    if context_tokens > budget['context']:
-                        content_blocks = self._create_content_blocks(basket, full_context)
-                        selected_blocks, allocation_info = self._token_budget_manager.allocate(
-                            content_blocks
+                    if context_tokens > budget["context"]:
+                        content_blocks = self._create_content_blocks(
+                            basket, full_context
                         )
-                        optimized_context = self._token_budget_manager.build_context(selected_blocks)
+                        selected_blocks, allocation_info = (
+                            self._token_budget_manager.allocate(content_blocks)
+                        )
+                        optimized_context = self._token_budget_manager.build_context(
+                            selected_blocks
+                        )
 
                         logger.info(
                             f"[Stage 2] Token budget: {allocation_info.get('used', 0)}/"
@@ -857,26 +895,28 @@ class AnalysisPipelineFinal:
                             f"{allocation_info.get('selected_count', 0)} blocks selected"
                         )
                     else:
-                        logger.info(f"[Stage 2] Context within budget: {context_tokens} tokens")
+                        logger.info(
+                            f"[Stage 2] Context within budget: {context_tokens} tokens"
+                        )
 
                 except Exception as e:
                     logger.warning(f"Token budget optimization failed: {e}")
 
             items_count = basket.items_count if basket else 0
             yield {
-                'phase': 'context_ready',
-                'message': f'분석 데이터 준비 완료 (아이템 {items_count}개)',
-                'context_length': len(optimized_context),
-                'allocation': allocation_info
+                "phase": "context_ready",
+                "message": f"분석 데이터 준비 완료 (아이템 {items_count}개)",
+                "context_length": len(optimized_context),
+                "allocation": allocation_info,
             }
 
             # ========== Stage 3: 적응형 LLM 분석 ==========
             yield {
-                'phase': 'analyzing',
-                'message': 'AI 분석을 시작합니다...',
-                'complexity': complexity,
-                'complexity_score': round(complexity_score, 2),
-                'model': model_used
+                "phase": "analyzing",
+                "message": "AI 분석을 시작합니다...",
+                "complexity": complexity,
+                "complexity_score": round(complexity_score, 2),
+                "model": model_used,
             }
 
             await self._save_message(
@@ -884,7 +924,7 @@ class AnalysisPipelineFinal:
                 content=question,
                 suggestions=[],
                 input_tokens=0,
-                output_tokens=0
+                output_tokens=0,
             )
 
             # 적응형 LLM 또는 기본 LLM 사용
@@ -893,73 +933,65 @@ class AnalysisPipelineFinal:
                     context=optimized_context,
                     question=question,
                     entities_count=len(entities),
-                    user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                    session_id=self.session.id if hasattr(self.session, 'id') else None
+                    user_id=self.session.user_id
+                    if hasattr(self.session, "user_id")
+                    else None,
+                    session_id=self.session.id if hasattr(self.session, "id") else None,
                 ):
-                    if event['type'] == 'config':
+                    if event["type"] == "config":
                         # 모델 설정 업데이트
-                        model_used = event['data'].get('model', model_used)
+                        model_used = event["data"].get("model", model_used)
                         logger.info(f"[Stage 3] LLM config: {event['data']}")
 
-                    elif event['type'] == 'delta':
-                        chunk = event['content']
+                    elif event["type"] == "delta":
+                        chunk = event["content"]
                         full_response += chunk
-                        yield {
-                            'phase': 'streaming',
-                            'chunk': chunk
-                        }
+                        yield {"phase": "streaming", "chunk": chunk}
 
-                    elif event['type'] == 'final':
-                        input_tokens = event.get('input_tokens', 0)
-                        output_tokens = event.get('output_tokens', 0)
+                    elif event["type"] == "final":
+                        input_tokens = event.get("input_tokens", 0)
+                        output_tokens = event.get("output_tokens", 0)
 
-                    elif event['type'] == 'error':
+                    elif event["type"] == "error":
                         yield {
-                            'phase': 'error',
-                            'error': {
-                                'code': 'LLM_ERROR',
-                                'message': event['message']
-                            }
+                            "phase": "error",
+                            "error": {"code": "LLM_ERROR", "message": event["message"]},
                         }
                         return
             else:
                 # 폴백: 기본 LLM 서비스 사용
                 llm = LLMServiceLite()
                 async for event in llm.generate_stream(
-                    context=optimized_context,
-                    question=question,
-                    complexity=complexity
+                    context=optimized_context, question=question, complexity=complexity
                 ):
-                    if event['type'] == 'delta':
-                        chunk = event['content']
+                    if event["type"] == "delta":
+                        chunk = event["content"]
                         full_response += chunk
+                        yield {"phase": "streaming", "chunk": chunk}
+                    elif event["type"] == "final":
+                        input_tokens = event["input_tokens"]
+                        output_tokens = event["output_tokens"]
+                    elif event["type"] == "error":
                         yield {
-                            'phase': 'streaming',
-                            'chunk': chunk
-                        }
-                    elif event['type'] == 'final':
-                        input_tokens = event['input_tokens']
-                        output_tokens = event['output_tokens']
-                    elif event['type'] == 'error':
-                        yield {
-                            'phase': 'error',
-                            'error': {
-                                'code': 'LLM_ERROR',
-                                'message': event['message']
-                            }
+                            "phase": "error",
+                            "error": {"code": "LLM_ERROR", "message": event["message"]},
                         }
                         return
 
             # ========== Stage 4: 캐시 저장 및 비용 추적 ==========
-            cleaned_content, suggestions = ResponseParser.parse_suggestions(full_response)
-            cleaned_content, basket_actions = ResponseParser.parse_basket_actions(cleaned_content)
+            cleaned_content, suggestions = ResponseParser.parse_suggestions(
+                full_response
+            )
+            cleaned_content, basket_actions = ResponseParser.parse_basket_actions(
+                cleaned_content
+            )
 
             await self._save_message(
                 role=AnalysisMessage.Role.ASSISTANT,
                 content=cleaned_content,
                 suggestions=suggestions,
                 input_tokens=input_tokens,
-                output_tokens=output_tokens
+                output_tokens=output_tokens,
             )
 
             if suggestions:
@@ -975,11 +1007,15 @@ class AnalysisPipelineFinal:
                         response=cleaned_content,
                         suggestions=suggestions,
                         usage={
-                            'input_tokens': input_tokens,
-                            'output_tokens': output_tokens
+                            "input_tokens": input_tokens,
+                            "output_tokens": output_tokens,
                         },
-                        user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                        session_id=self.session.id if hasattr(self.session, 'id') else None
+                        user_id=self.session.user_id
+                        if hasattr(self.session, "user_id")
+                        else None,
+                        session_id=self.session.id
+                        if hasattr(self.session, "id")
+                        else None,
                     )
                     logger.info(f"[Stage 4] Response cached: {cache_id}")
                 except Exception as e:
@@ -992,14 +1028,18 @@ class AnalysisPipelineFinal:
             if self.cost_tracker:
                 try:
                     await self.cost_tracker.log_usage(
-                        user_id=self.session.user_id if hasattr(self.session, 'user_id') else None,
-                        session_id=self.session.id if hasattr(self.session, 'id') else None,
+                        user_id=self.session.user_id
+                        if hasattr(self.session, "user_id")
+                        else None,
+                        session_id=self.session.id
+                        if hasattr(self.session, "id")
+                        else None,
                         model=model_used,
                         input_tokens=input_tokens,
                         output_tokens=output_tokens,
                         cached=False,
                         latency_ms=elapsed_ms,
-                        complexity=complexity
+                        complexity=complexity,
                     )
                     cost_usd = self.cost_tracker.calculate_cost(
                         model_used, input_tokens, output_tokens
@@ -1012,33 +1052,33 @@ class AnalysisPipelineFinal:
                     logger.warning(f"Failed to log usage: {e}")
 
             yield {
-                'phase': 'complete',
-                'data': {
-                    'content': cleaned_content,
-                    'suggestions': suggestions,
-                    'basket_actions': basket_actions,
-                    'usage': {
-                        'input_tokens': input_tokens,
-                        'output_tokens': output_tokens,
-                        'cached': False,
-                        'cost_usd': cost_usd
+                "phase": "complete",
+                "data": {
+                    "content": cleaned_content,
+                    "suggestions": suggestions,
+                    "basket_actions": basket_actions,
+                    "usage": {
+                        "input_tokens": input_tokens,
+                        "output_tokens": output_tokens,
+                        "cached": False,
+                        "cost_usd": cost_usd,
                     },
-                    'complexity': complexity,
-                    'complexity_score': round(complexity_score, 2),
-                    'model': model_used,
-                    'cache_id': cache_id,
-                    'latency_ms': elapsed_ms
-                }
+                    "complexity": complexity,
+                    "complexity_score": round(complexity_score, 2),
+                    "model": model_used,
+                    "cache_id": cache_id,
+                    "latency_ms": elapsed_ms,
+                },
             }
 
         except Exception as e:
             logger.exception(f"Pipeline error: {e}")
             yield {
-                'phase': 'error',
-                'error': {
-                    'code': 'PIPELINE_ERROR',
-                    'message': f'분석 중 오류가 발생했습니다: {str(e)}'
-                }
+                "phase": "error",
+                "error": {
+                    "code": "PIPELINE_ERROR",
+                    "message": f"분석 중 오류가 발생했습니다: {str(e)}",
+                },
             }
 
         finally:
@@ -1048,7 +1088,7 @@ class AnalysisPipelineFinal:
 
     def _get_empty_basket_context(self) -> str:
         """빈 바구니 컨텍스트 생성"""
-        today = date.today().strftime('%Y년 %m월 %d일')
+        today = date.today().strftime("%Y년 %m월 %d일")
         return f"""=== 분석 데이터 바구니 ===
 분석 기준일: {today}
 총 아이템 수: 0개
@@ -1068,7 +1108,10 @@ class AnalysisPipelineFinal:
             return None
 
         from ..models import DataBasket
-        return DataBasket.objects.prefetch_related('items').get(pk=self.session.basket.pk)
+
+        return DataBasket.objects.prefetch_related("items").get(
+            pk=self.session.basket.pk
+        )
 
     async def _extract_basket_entities(self) -> List[str]:
         """바구니에서 종목 엔티티 추출"""
@@ -1079,13 +1122,13 @@ class AnalysisPipelineFinal:
             if basket:
                 items = await sync_to_async(list)(basket.items.all())
                 for item in items:
-                    if item.item_type == 'stock' and item.reference_id:
+                    if item.item_type == "stock" and item.reference_id:
                         entities.append(item.reference_id.upper())
-                    elif item.item_type == 'overview' and item.reference_id:
+                    elif item.item_type == "overview" and item.reference_id:
                         entities.append(item.reference_id.upper())
                     elif item.data_snapshot and isinstance(item.data_snapshot, dict):
-                        if 'symbol' in item.data_snapshot:
-                            entities.append(item.data_snapshot['symbol'].upper())
+                        if "symbol" in item.data_snapshot:
+                            entities.append(item.data_snapshot["symbol"].upper())
 
         except Exception as e:
             logger.warning(f"Failed to extract basket entities: {e}")
@@ -1110,12 +1153,14 @@ class AnalysisPipelineFinal:
 
         try:
             # 기본 컨텍스트를 하나의 블록으로
-            blocks.append(ContentBlock(
-                content=full_context,
-                priority=ContentPriority.MEDIUM,
-                token_count=len(full_context.split()),
-                source='basket_context'
-            ))
+            blocks.append(
+                ContentBlock(
+                    content=full_context,
+                    priority=ContentPriority.MEDIUM,
+                    token_count=len(full_context.split()),
+                    source="basket_context",
+                )
+            )
 
         except Exception as e:
             logger.warning(f"Failed to create content blocks: {e}")
@@ -1129,7 +1174,7 @@ class AnalysisPipelineFinal:
         content: str,
         suggestions: list,
         input_tokens: int,
-        output_tokens: int
+        output_tokens: int,
     ):
         """메시지 저장 (sync → async)"""
         close_old_connections()
@@ -1140,7 +1185,7 @@ class AnalysisPipelineFinal:
             content=content,
             suggestions=suggestions,
             input_tokens=input_tokens,
-            output_tokens=output_tokens
+            output_tokens=output_tokens,
         )
 
     @sync_to_async
@@ -1150,7 +1195,7 @@ class AnalysisPipelineFinal:
 
         for suggestion in suggestions:
             self.session.add_exploration(
-                entity_type='stock',
-                entity_id=suggestion['symbol'],
-                reason=suggestion['reason']
+                entity_type="stock",
+                entity_id=suggestion["symbol"],
+                reason=suggestion["reason"],
             )

@@ -67,9 +67,9 @@ class CircuitBreaker:
     def get_status(self) -> dict:
         """현재 상태 조회"""
         return {
-            'provider': self.provider_name,
-            'is_open': self.is_open(),
-            'failures': cache.get(self.failures_key, 0),
-            'threshold': self.threshold,
-            'timeout': self.timeout,
+            "provider": self.provider_name,
+            "is_open": self.is_open(),
+            "failures": cache.get(self.failures_key, 0),
+            "threshold": self.threshold,
+            "timeout": self.timeout,
         }

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 class ExtractedEntities(TypedDict):
     """추출된 엔티티 타입"""
+
     stocks: list[str]
     metrics: list[str]
     concepts: list[str]
@@ -53,7 +54,9 @@ JSON:"""
 
     def __init__(self):
         """Gemini API 클라이언트 초기화"""
-        api_key = getattr(settings, 'GEMINI_API_KEY', None) or getattr(settings, 'GOOGLE_AI_API_KEY', None)
+        api_key = getattr(settings, "GEMINI_API_KEY", None) or getattr(
+            settings, "GOOGLE_AI_API_KEY", None
+        )
 
         if not api_key:
             logger.warning(
@@ -101,7 +104,7 @@ JSON:"""
                 stocks=entities.get("stocks", []),
                 metrics=entities.get("metrics", []),
                 concepts=entities.get("concepts", []),
-                timeframe=entities.get("timeframe")
+                timeframe=entities.get("timeframe"),
             )
 
         except json.JSONDecodeError as e:
@@ -144,27 +147,34 @@ JSON:"""
             ExtractedEntities: 추출된 엔티티
         """
         # 대문자 종목코드 패턴 (2-5글자)
-        stock_pattern = r'\b[A-Z]{2,5}\b'
+        stock_pattern = r"\b[A-Z]{2,5}\b"
         stocks = re.findall(stock_pattern, question)
 
         # 한글 종목명 (미리 정의된 목록)
         korean_stocks = [
-            '삼성전자', '삼성SDI', 'SK하이닉스', 'LG에너지솔루션',
-            '현대차', 'NAVER', '네이버', '카카오', 'TSMC'
+            "삼성전자",
+            "삼성SDI",
+            "SK하이닉스",
+            "LG에너지솔루션",
+            "현대차",
+            "NAVER",
+            "네이버",
+            "카카오",
+            "TSMC",
         ]
         found_korean = [s for s in korean_stocks if s in question]
 
         # 재무 지표 키워드
         metrics = []
         metric_keywords = {
-            '매출': '매출',
-            '영업이익': '영업이익',
-            '순이익': '순이익',
-            '실적': '실적',
-            'PER': 'PER',
-            'PBR': 'PBR',
-            'ROE': 'ROE',
-            'EPS': 'EPS',
+            "매출": "매출",
+            "영업이익": "영업이익",
+            "순이익": "순이익",
+            "실적": "실적",
+            "PER": "PER",
+            "PBR": "PBR",
+            "ROE": "ROE",
+            "EPS": "EPS",
         }
         for keyword, metric in metric_keywords.items():
             if keyword in question:
@@ -174,7 +184,7 @@ JSON:"""
             stocks=list(set(stocks + found_korean)),
             metrics=list(set(metrics)),
             concepts=[],
-            timeframe=None
+            timeframe=None,
         )
 
 
@@ -187,33 +197,33 @@ class EntityNormalizer:
 
     # 한글 종목명 → 심볼 매핑
     STOCK_MAPPING = {
-        '삼성전자': '005930.KS',
-        '삼성SDI': '006400.KS',
-        'SK하이닉스': '000660.KS',
-        'LG에너지솔루션': '373220.KS',
-        '현대차': '005380.KS',
-        'NAVER': '035420.KS',
-        '네이버': '035420.KS',
-        '카카오': '035720.KS',
-        'TSMC': 'TSM',
-        '애플': 'AAPL',
-        '엔비디아': 'NVDA',
-        '마이크로소프트': 'MSFT',
-        '구글': 'GOOGL',
-        '아마존': 'AMZN',
-        '테슬라': 'TSLA',
+        "삼성전자": "005930.KS",
+        "삼성SDI": "006400.KS",
+        "SK하이닉스": "000660.KS",
+        "LG에너지솔루션": "373220.KS",
+        "현대차": "005380.KS",
+        "NAVER": "035420.KS",
+        "네이버": "035420.KS",
+        "카카오": "035720.KS",
+        "TSMC": "TSM",
+        "애플": "AAPL",
+        "엔비디아": "NVDA",
+        "마이크로소프트": "MSFT",
+        "구글": "GOOGL",
+        "아마존": "AMZN",
+        "테슬라": "TSLA",
     }
 
     # 지표 키워드 → 표준 필드명 매핑
     METRIC_MAPPING = {
-        '실적': ['revenue', 'earnings'],
-        '매출': ['revenue'],
-        '영업이익': ['operating_income'],
-        '순이익': ['net_income'],
-        'PER': ['pe_ratio'],
-        'PBR': ['pb_ratio'],
-        'ROE': ['return_on_equity'],
-        'EPS': ['earnings_per_share'],
+        "실적": ["revenue", "earnings"],
+        "매출": ["revenue"],
+        "영업이익": ["operating_income"],
+        "순이익": ["net_income"],
+        "PER": ["pe_ratio"],
+        "PBR": ["pb_ratio"],
+        "ROE": ["return_on_equity"],
+        "EPS": ["earnings_per_share"],
     }
 
     def normalize_stocks(self, stocks: list[str]) -> list[str]:
@@ -254,6 +264,6 @@ class EntityNormalizer:
                 normalized.extend(self.METRIC_MAPPING[metric])
             else:
                 # 없으면 소문자 + 언더스코어 변환
-                normalized.append(metric.lower().replace(' ', '_'))
+                normalized.append(metric.lower().replace(" ", "_"))
 
         return list(set(normalized))

@@ -5,6 +5,7 @@
 - 일일 감성 분석 집계
 - 뉴스 키워드 추출 (Phase 2)
 """
+
 import logging
 import time
 from datetime import datetime, timedelta
@@ -44,7 +45,7 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
     try:
         # 날짜 변환
         if target_date:
-            date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
+            date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             date_obj = timezone.localdate()
 
@@ -53,17 +54,16 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
         # 키워드 추출 서비스 호출
         from news.services import NewsKeywordExtractor
 
-        extractor = NewsKeywordExtractor(language='ko')
+        extractor = NewsKeywordExtractor(language="ko")
         keyword_obj = extractor.extract_daily_keywords(
-            target_date=date_obj,
-            force=force
+            target_date=date_obj, force=force
         )
 
         result = {
-            'date': str(keyword_obj.date),
-            'status': keyword_obj.status,
-            'keyword_count': keyword_obj.keyword_count,
-            'total_news_count': keyword_obj.total_news_count,
+            "date": str(keyword_obj.date),
+            "status": keyword_obj.status,
+            "keyword_count": keyword_obj.keyword_count,
+            "total_news_count": keyword_obj.total_news_count,
         }
 
         logger.info(f"Completed news keyword extraction: {result}")
@@ -93,6 +93,7 @@ def manual_extract_keywords(date_str: str = None):
 # 뉴스 수집 태스크
 # ============================================================
 
+
 @shared_task(
     bind=True,
     max_retries=2,
@@ -115,7 +116,7 @@ def collect_daily_news(self, symbols=None, days=1):
         dict: {'symbols_processed': N, 'total_saved': N, 'total_updated': N, 'errors': N}
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     _symbols_tried = 0
     try:
         from news.services.aggregator import NewsAggregatorService
@@ -138,8 +139,8 @@ def collect_daily_news(self, symbols=None, days=1):
                     days=days,
                     use_marketaux=True,  # Basic plan (2,500/day)
                 )
-                total_saved += result.get('saved', 0)
-                total_updated += result.get('updated', 0)
+                total_saved += result.get("saved", 0)
+                total_updated += result.get("updated", 0)
             except Exception as e:
                 logger.error(f"collect_daily_news: {symbol} failed: {e}")
                 errors += 1
@@ -150,33 +151,38 @@ def collect_daily_news(self, symbols=None, days=1):
         # 시장 전반 뉴스도 수집
         try:
             market_result = aggregator.fetch_and_save_market_news(
-                category='general',
+                category="general",
                 use_marketaux=True,  # Basic plan (2,500/day)
             )
-            total_saved += market_result.get('saved', 0)
-            total_updated += market_result.get('updated', 0)
+            total_saved += market_result.get("saved", 0)
+            total_updated += market_result.get("updated", 0)
         except Exception as e:
             logger.error(f"collect_daily_news: market news failed: {e}")
             errors += 1
 
         result = {
-            'symbols_processed': len(symbols),
-            'total_saved': total_saved,
-            'total_updated': total_updated,
-            'errors': errors,
+            "symbols_processed": len(symbols),
+            "total_saved": total_saved,
+            "total_updated": total_updated,
+            "errors": errors,
         }
         logger.info(f"collect_daily_news completed: {result}")
-        _result = {'saved': total_saved, 'skipped': total_updated, 'errors': errors}
+        _result = {"saved": total_saved, "skipped": total_updated, "errors": errors}
         _symbols_tried = len(symbols)
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         logger.exception(f"collect_daily_news failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('collect_daily_news', 'finnhub_marketaux', _symbols_tried,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "collect_daily_news",
+            "finnhub_marketaux",
+            _symbols_tried,
+            _result,
+            duration=time.time() - _start,
+        )
 
 
 @shared_task(
@@ -186,7 +192,7 @@ def collect_daily_news(self, symbols=None, days=1):
     soft_time_limit=300,  # 5분 소프트 타임아웃
     time_limit=360,  # 6분 하드 타임아웃
 )
-def collect_market_news(self, category='general'):
+def collect_market_news(self, category="general"):
     """
     시장 전반 뉴스 수집 (Finnhub + Marketaux)
 
@@ -199,7 +205,7 @@ def collect_market_news(self, category='general'):
         dict: 수집 결과
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
         from news.services.aggregator import NewsAggregatorService
 
@@ -209,21 +215,31 @@ def collect_market_news(self, category='general'):
             use_marketaux=True,  # Basic plan (2,500/day)
         )
         logger.info(f"collect_market_news completed: {result}")
-        _result = {'saved': result.get('saved', 0), 'skipped': result.get('updated', 0), 'errors': result.get('errors', 0)}
+        _result = {
+            "saved": result.get("saved", 0),
+            "skipped": result.get("updated", 0),
+            "errors": result.get("errors", 0),
+        }
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         logger.exception(f"collect_market_news failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('collect_market_news', 'finnhub_marketaux', 0,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "collect_market_news",
+            "finnhub_marketaux",
+            0,
+            _result,
+            duration=time.time() - _start,
+        )
 
 
 # ============================================================
 # 감성 분석 집계 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -252,7 +268,7 @@ def aggregate_daily_sentiment(self, target_date=None):
 
         # 날짜 결정: 기본값은 전일 (전날 수집된 뉴스 집계)
         if target_date:
-            date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
+            date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             date_obj = (timezone.now() - timedelta(days=1)).date()
 
@@ -264,12 +280,12 @@ def aggregate_daily_sentiment(self, target_date=None):
                 news__published_at__date=date_obj,
                 sentiment_score__isnull=False,
             )
-            .values('symbol')
+            .values("symbol")
             .annotate(
-                avg_score=Avg('sentiment_score'),
-                count=Count('id'),
-                min_score=Min('sentiment_score'),
-                max_score=Max('sentiment_score'),
+                avg_score=Avg("sentiment_score"),
+                count=Count("id"),
+                min_score=Min("sentiment_score"),
+                max_score=Max("sentiment_score"),
             )
             .filter(count__gte=1)
         )
@@ -278,9 +294,9 @@ def aggregate_daily_sentiment(self, target_date=None):
         updated_count = 0
 
         for stat in entity_stats:
-            symbol = stat['symbol']
-            avg_score = stat['avg_score']
-            count = stat['count']
+            symbol = stat["symbol"]
+            avg_score = stat["avg_score"]
+            count = stat["count"]
 
             # 긍정/부정/중립 분류
             positive = NewsEntity.objects.filter(
@@ -299,11 +315,11 @@ def aggregate_daily_sentiment(self, target_date=None):
                 symbol=symbol,
                 date=date_obj,
                 defaults={
-                    'avg_sentiment': avg_score,
-                    'news_count': count,
-                    'positive_count': positive,
-                    'negative_count': negative,
-                    'neutral_count': neutral,
+                    "avg_sentiment": avg_score,
+                    "news_count": count,
+                    "positive_count": positive,
+                    "negative_count": negative,
+                    "neutral_count": neutral,
                 },
             )
             if was_created:
@@ -312,10 +328,10 @@ def aggregate_daily_sentiment(self, target_date=None):
                 updated_count += 1
 
         result = {
-            'date': str(date_obj),
-            'symbols_aggregated': created_count + updated_count,
-            'created': created_count,
-            'updated': updated_count,
+            "date": str(date_obj),
+            "symbols_aggregated": created_count + updated_count,
+            "created": created_count,
+            "updated": updated_count,
         }
         logger.info(f"aggregate_daily_sentiment completed: {result}")
         return result
@@ -344,7 +360,7 @@ def collect_category_news(self, category_id=None, priority_filter=None):
         dict: {categories_processed, total_symbols, total_saved, total_updated, errors, per_category}
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     _symbols_tried = 0
     try:
         from news.models import NewsCollectionCategory
@@ -365,8 +381,16 @@ def collect_category_news(self, category_id=None, priority_filter=None):
             categories = NewsCollectionCategory.objects.filter(is_active=True)
 
         if not categories.exists():
-            logger.info(f"collect_category_news: no categories found (id={category_id}, priority={priority_filter})")
-            return {'categories_processed': 0, 'total_symbols': 0, 'total_saved': 0, 'total_updated': 0, 'errors': 0}
+            logger.info(
+                f"collect_category_news: no categories found (id={category_id}, priority={priority_filter})"
+            )
+            return {
+                "categories_processed": 0,
+                "total_symbols": 0,
+                "total_saved": 0,
+                "total_updated": 0,
+                "errors": 0,
+            }
 
         # 카테고리별 심볼 해석 + 전체 dedup
         category_symbol_map = {}
@@ -377,7 +401,9 @@ def collect_category_news(self, category_id=None, priority_filter=None):
             all_symbols.update(symbols)
 
         unique_symbols = sorted(all_symbols)
-        logger.info(f"collect_category_news: {categories.count()} categories, {len(unique_symbols)} unique symbols")
+        logger.info(
+            f"collect_category_news: {categories.count()} categories, {len(unique_symbols)} unique symbols"
+        )
 
         # 심볼별 1회만 수집
         symbol_results = {}
@@ -392,14 +418,14 @@ def collect_category_news(self, category_id=None, priority_filter=None):
                     days=1,
                     use_marketaux=True,  # Basic plan (2,500/day)
                 )
-                saved = result.get('saved', 0)
-                updated = result.get('updated', 0)
-                symbol_results[symbol] = {'saved': saved, 'updated': updated}
+                saved = result.get("saved", 0)
+                updated = result.get("updated", 0)
+                symbol_results[symbol] = {"saved": saved, "updated": updated}
                 total_saved += saved
                 total_updated += updated
             except Exception as e:
                 logger.error(f"collect_category_news: {symbol} failed: {e}")
-                symbol_results[symbol] = {'saved': 0, 'updated': 0, 'error': str(e)}
+                symbol_results[symbol] = {"saved": 0, "updated": 0, "error": str(e)}
                 errors += 1
 
             time.sleep(2)  # Finnhub 60/min 준수
@@ -409,56 +435,68 @@ def collect_category_news(self, category_id=None, priority_filter=None):
         for cat in categories:
             cat_symbols = category_symbol_map.get(cat.id, [])
             cat_saved = sum(
-                symbol_results.get(s, {}).get('saved', 0) for s in cat_symbols
+                symbol_results.get(s, {}).get("saved", 0) for s in cat_symbols
             )
             cat.last_collected_at = timezone.now()
             cat.last_article_count = cat_saved
             cat.last_symbol_count = len(cat_symbols)
             cat.total_collections += 1
-            cat.last_error = ''
-            cat.save(update_fields=[
-                'last_collected_at', 'last_article_count',
-                'last_symbol_count', 'total_collections', 'last_error',
-            ])
+            cat.last_error = ""
+            cat.save(
+                update_fields=[
+                    "last_collected_at",
+                    "last_article_count",
+                    "last_symbol_count",
+                    "total_collections",
+                    "last_error",
+                ]
+            )
             per_category[cat.name] = {
-                'symbols': len(cat_symbols),
-                'saved': cat_saved,
+                "symbols": len(cat_symbols),
+                "saved": cat_saved,
             }
 
         result = {
-            'categories_processed': categories.count(),
-            'total_symbols': len(unique_symbols),
-            'total_saved': total_saved,
-            'total_updated': total_updated,
-            'errors': errors,
-            'per_category': per_category,
+            "categories_processed": categories.count(),
+            "total_symbols": len(unique_symbols),
+            "total_saved": total_saved,
+            "total_updated": total_updated,
+            "errors": errors,
+            "per_category": per_category,
         }
         logger.info(f"collect_category_news completed: {result}")
-        _result = {'saved': total_saved, 'skipped': total_updated, 'errors': errors}
+        _result = {"saved": total_saved, "skipped": total_updated, "errors": errors}
         _symbols_tried = len(unique_symbols)
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         # 에러 시 카테고리에 기록
         if category_id:
             try:
                 from news.models import NewsCollectionCategory
+
                 cat = NewsCollectionCategory.objects.get(id=category_id)
                 cat.last_error = str(exc)[:500]
-                cat.save(update_fields=['last_error'])
+                cat.save(update_fields=["last_error"])
             except Exception:
                 pass
         logger.exception(f"collect_category_news failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('collect_category_news', 'finnhub_marketaux', _symbols_tried,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "collect_category_news",
+            "finnhub_marketaux",
+            _symbols_tried,
+            _result,
+            duration=time.time() - _start,
+        )
 
 
 # ============================================================
 # News Intelligence Pipeline v3 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -482,7 +520,7 @@ def classify_news_batch(self, article_ids=None, hours=4):
         dict: {classified: int, skipped: int, errors: int}
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
         from news.services.news_classifier import NewsClassifier
 
@@ -490,16 +528,21 @@ def classify_news_batch(self, article_ids=None, hours=4):
         result = classifier.classify_batch(article_ids=article_ids, hours=hours)
 
         logger.info(f"classify_news_batch completed: {result}")
-        _result = {'saved': result.get('classified', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
+        _result = {
+            "saved": result.get("classified", 0),
+            "skipped": result.get("skipped", 0),
+            "errors": result.get("errors", 0),
+        }
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         logger.exception(f"classify_news_batch failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('classify_news_batch', 'internal', 0,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "classify_news_batch", "internal", 0, _result, duration=time.time() - _start
+        )
 
 
 @shared_task(
@@ -525,7 +568,7 @@ def analyze_news_deep(self, max_articles=50):
         dict: {analyzed: int, errors: int, skipped: int}
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
         from news.services.news_deep_analyzer import NewsDeepAnalyzer
 
@@ -533,16 +576,21 @@ def analyze_news_deep(self, max_articles=50):
         result = analyzer.analyze_batch(max_articles=max_articles)
 
         logger.info(f"analyze_news_deep completed: {result}")
-        _result = {'saved': result.get('analyzed', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
+        _result = {
+            "saved": result.get("analyzed", 0),
+            "skipped": result.get("skipped", 0),
+            "errors": result.get("errors", 0),
+        }
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         logger.exception(f"analyze_news_deep failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('analyze_news_deep', 'gemini', 0,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "analyze_news_deep", "gemini", 0, _result, duration=time.time() - _start
+        )
 
 
 @shared_task(
@@ -600,27 +648,32 @@ def sync_news_to_neo4j(self, max_articles=100):
         dict: {synced: int, skipped: int, errors: int, total_nodes: int, total_rels: int}
     """
     _start = time.time()
-    _result = {'saved': 0, 'skipped': 0, 'errors': 0}
+    _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
         from news.services.news_neo4j_sync import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         if not sync_service.is_available():
             logger.warning("sync_news_to_neo4j: Neo4j not available, skipping")
-            return {'synced': 0, 'skipped': 0, 'errors': 0, 'neo4j_unavailable': True}
+            return {"synced": 0, "skipped": 0, "errors": 0, "neo4j_unavailable": True}
 
         result = sync_service.sync_batch(max_articles=max_articles)
         logger.info(f"sync_news_to_neo4j completed: {result}")
-        _result = {'saved': result.get('synced', 0), 'skipped': result.get('skipped', 0), 'errors': result.get('errors', 0)}
+        _result = {
+            "saved": result.get("synced", 0),
+            "skipped": result.get("skipped", 0),
+            "errors": result.get("errors", 0),
+        }
         return result
 
     except Exception as exc:
-        _result['errors'] = _result.get('errors', 0) + 1
+        _result["errors"] = _result.get("errors", 0) + 1
         logger.exception(f"sync_news_to_neo4j failed: {exc}")
         raise self.retry(exc=exc)
     finally:
-        _log_collection('sync_news_to_neo4j', 'neo4j', 0,
-                        _result, duration=time.time() - _start)
+        _log_collection(
+            "sync_news_to_neo4j", "neo4j", 0, _result, duration=time.time() - _start
+        )
 
 
 @shared_task(
@@ -647,8 +700,14 @@ def cleanup_expired_news_relationships(self):
 
         sync_service = NewsNeo4jSyncService()
         if not sync_service.is_available():
-            logger.warning("cleanup_expired_news_relationships: Neo4j not available, skipping")
-            return {'deleted_relationships': 0, 'deleted_nodes': 0, 'neo4j_unavailable': True}
+            logger.warning(
+                "cleanup_expired_news_relationships: Neo4j not available, skipping"
+            )
+            return {
+                "deleted_relationships": 0,
+                "deleted_nodes": 0,
+                "neo4j_unavailable": True,
+            }
 
         result = sync_service.cleanup_expired_relationships()
         logger.info(f"cleanup_expired_news_relationships completed: {result}")
@@ -662,6 +721,7 @@ def cleanup_expired_news_relationships(self):
 # ============================================================
 # News Intelligence Pipeline v3 - Phase 4: ML 학습 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -726,14 +786,18 @@ def generate_shadow_report(self, days=7):
         from news.services.ml_weight_optimizer import MLWeightOptimizer
 
         # 최신 shadow 또는 deployed 모델 조회
-        latest = MLModelHistory.objects.filter(
-            deployment_status__in=['shadow', 'deployed'],
-            smoothed_weights__isnull=False,
-        ).order_by('-trained_at').first()
+        latest = (
+            MLModelHistory.objects.filter(
+                deployment_status__in=["shadow", "deployed"],
+                smoothed_weights__isnull=False,
+            )
+            .order_by("-trained_at")
+            .first()
+        )
 
         if not latest:
             logger.info("generate_shadow_report: No shadow/deployed model found")
-            return {'status': 'no_model'}
+            return {"status": "no_model"}
 
         optimizer = MLWeightOptimizer()
         comparison = optimizer.generate_shadow_comparison(
@@ -743,11 +807,11 @@ def generate_shadow_report(self, days=7):
 
         # 비교 결과를 모델에 업데이트
         latest.shadow_comparison = comparison
-        latest.save(update_fields=['shadow_comparison'])
+        latest.save(update_fields=["shadow_comparison"])
 
         result = {
-            'model_version': latest.model_version,
-            'comparison': comparison,
+            "model_version": latest.model_version,
+            "comparison": comparison,
         }
         logger.info(f"generate_shadow_report completed: {result}")
         return result
@@ -760,6 +824,7 @@ def generate_shadow_report(self, days=7):
 # ============================================================
 # News Intelligence Pipeline v3 - Phase 5: ML Production 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -786,7 +851,9 @@ def check_auto_deploy(self):
         manager = MLProductionManager()
         result = manager.check_auto_deploy()
 
-        logger.info(f"check_auto_deploy: {result.get('action')} - {result.get('reason')}")
+        logger.info(
+            f"check_auto_deploy: {result.get('action')} - {result.get('reason')}"
+        )
         return result
 
     except Exception as exc:
@@ -848,10 +915,8 @@ def monitor_ml_performance(self):
         manager = MLProductionManager()
         result = manager.detect_consecutive_decline(weeks=3)
 
-        if result.get('consecutive_decline'):
-            logger.warning(
-                f"ML PERFORMANCE ALERT: {result.get('alert_message')}"
-            )
+        if result.get("consecutive_decline"):
+            logger.warning(f"ML PERFORMANCE ALERT: {result.get('alert_message')}")
 
         logger.info(f"monitor_ml_performance: {result.get('action_taken', 'none')}")
         return result
@@ -864,6 +929,7 @@ def monitor_ml_performance(self):
 # ============================================================
 # News Intelligence Pipeline v3 - Phase 6: LightGBM 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -902,9 +968,10 @@ def train_lightgbm_model(self):
 # FMP 대량 뉴스 수집 태스크 (Phase 1)
 # ============================================================
 
+
 @shared_task(
     bind=True,
-    rate_limit='100/m',
+    rate_limit="100/m",
     max_retries=2,
     soft_time_limit=600,
     time_limit=660,
@@ -924,28 +991,30 @@ def collect_sp500_news_fmp_batch(self, symbols: list):
     from news.services.aggregator import NewsAggregatorService
     from news.services.circuit_breaker import CircuitBreaker
 
-    breaker = CircuitBreaker('fmp')
+    breaker = CircuitBreaker("fmp")
     if breaker.is_open():
         logger.warning("FMP Circuit OPEN, skipping batch")
-        return {'skipped': True, 'reason': 'circuit_open'}
+        return {"skipped": True, "reason": "circuit_open"}
 
     aggregator = NewsAggregatorService()
-    results = {'saved': 0, 'updated': 0, 'errors': 0, 'symbols': len(symbols)}
+    results = {"saved": 0, "updated": 0, "errors": 0, "symbols": len(symbols)}
     start_time = time.time()
 
     for symbol in symbols:
         try:
             result = aggregator.fetch_and_save_company_news_fmp(symbol)
-            results['saved'] += result.get('saved', 0)
-            results['updated'] += result.get('updated', 0)
+            results["saved"] += result.get("saved", 0)
+            results["updated"] += result.get("updated", 0)
             breaker.record_success()
         except Exception as e:
             logger.error(f"FMP news {symbol}: {e}")
-            results['errors'] += 1
+            results["errors"] += 1
             breaker.record_failure()
 
     duration = time.time() - start_time
-    _log_collection('collect_sp500_news_fmp_batch', 'fmp', len(symbols), results, duration)
+    _log_collection(
+        "collect_sp500_news_fmp_batch", "fmp", len(symbols), results, duration
+    )
     return results
 
 
@@ -962,31 +1031,33 @@ def collect_sp500_news_fmp_orchestrator():
 
     sp500 = list(
         SP500Constituent.objects.filter(is_active=True)
-        .order_by('symbol')
-        .values_list('symbol', flat=True)
+        .order_by("symbol")
+        .values_list("symbol", flat=True)
     )
 
     if not sp500:
         logger.warning("collect_sp500_news_fmp_orchestrator: no SP500 constituents")
-        return {'error': 'no_sp500_data'}
+        return {"error": "no_sp500_data"}
 
     batch_size = 84  # 503 / 6 ≈ 84
-    batches = [sp500[i:i + batch_size] for i in range(0, len(sp500), batch_size)]
+    batches = [sp500[i : i + batch_size] for i in range(0, len(sp500), batch_size)]
 
-    logger.info(f"collect_sp500_news_fmp_orchestrator: {len(sp500)} symbols in {len(batches)} batches")
+    logger.info(
+        f"collect_sp500_news_fmp_orchestrator: {len(sp500)} symbols in {len(batches)} batches"
+    )
 
-    chord(
-        collect_sp500_news_fmp_batch.s(batch) for batch in batches
-    )(collect_sp500_news_fmp_done.si())
+    chord(collect_sp500_news_fmp_batch.s(batch) for batch in batches)(
+        collect_sp500_news_fmp_done.si()
+    )
 
-    return {'dispatched': len(batches), 'total_symbols': len(sp500)}
+    return {"dispatched": len(batches), "total_symbols": len(sp500)}
 
 
 @shared_task
 def collect_sp500_news_fmp_done():
     """chord 완료 콜백"""
     logger.info("collect_sp500_news_fmp: all batches completed")
-    return {'status': 'all_batches_done'}
+    return {"status": "all_batches_done"}
 
 
 @shared_task(
@@ -1011,35 +1082,37 @@ def collect_press_releases_fmp(self, max_symbols=50):
     from news.services.circuit_breaker import CircuitBreaker
     from packages.shared.stocks.models import SP500Constituent
 
-    breaker = CircuitBreaker('fmp')
+    breaker = CircuitBreaker("fmp")
     if breaker.is_open():
         logger.warning("FMP Circuit OPEN, skipping press releases")
-        return {'skipped': True, 'reason': 'circuit_open'}
+        return {"skipped": True, "reason": "circuit_open"}
 
     # 시가총액 상위 종목
     symbols = list(
         SP500Constituent.objects.filter(is_active=True)
-        .order_by('-market_cap')
-        .values_list('symbol', flat=True)[:max_symbols]
+        .order_by("-market_cap")
+        .values_list("symbol", flat=True)[:max_symbols]
     )
 
     aggregator = NewsAggregatorService()
-    results = {'saved': 0, 'updated': 0, 'errors': 0}
+    results = {"saved": 0, "updated": 0, "errors": 0}
     start_time = time.time()
 
     for symbol in symbols:
         try:
             result = aggregator.fetch_and_save_press_releases(symbol)
-            results['saved'] += result.get('saved', 0)
-            results['updated'] += result.get('updated', 0)
+            results["saved"] += result.get("saved", 0)
+            results["updated"] += result.get("updated", 0)
             breaker.record_success()
         except Exception as e:
             logger.error(f"FMP press release {symbol}: {e}")
-            results['errors'] += 1
+            results["errors"] += 1
             breaker.record_failure()
 
     duration = time.time() - start_time
-    _log_collection('collect_press_releases_fmp', 'fmp', len(symbols), results, duration)
+    _log_collection(
+        "collect_press_releases_fmp", "fmp", len(symbols), results, duration
+    )
     logger.info(f"collect_press_releases_fmp completed: {results}")
     return results
 
@@ -1055,10 +1128,10 @@ def collect_general_news_fmp(self):
     from news.services.aggregator import NewsAggregatorService
     from news.services.circuit_breaker import CircuitBreaker
 
-    breaker = CircuitBreaker('fmp')
+    breaker = CircuitBreaker("fmp")
     if breaker.is_open():
         logger.warning("FMP Circuit OPEN, skipping general news")
-        return {'skipped': True, 'reason': 'circuit_open'}
+        return {"skipped": True, "reason": "circuit_open"}
 
     start_time = time.time()
     aggregator = NewsAggregatorService()
@@ -1069,10 +1142,10 @@ def collect_general_news_fmp(self):
     except Exception as e:
         logger.error(f"FMP general news failed: {e}")
         breaker.record_failure()
-        result = {'saved': 0, 'error': str(e)}
+        result = {"saved": 0, "error": str(e)}
 
     duration = time.time() - start_time
-    _log_collection('collect_general_news_fmp', 'fmp', 0, result, duration)
+    _log_collection("collect_general_news_fmp", "fmp", 0, result, duration)
     logger.info(f"collect_general_news_fmp completed: {result}")
     return result
 
@@ -1080,6 +1153,7 @@ def collect_general_news_fmp(self):
 # ============================================================
 # 데이터 보존 태스크 (Phase 4)
 # ============================================================
+
 
 @shared_task
 def archive_old_articles():
@@ -1093,12 +1167,13 @@ def archive_old_articles():
     ).update(is_archived=True)
 
     logger.info(f"Archived {count} old articles")
-    return {'archived': count}
+    return {"archived": count}
 
 
 # ============================================================
 # Phase C: 파이프라인 알림 체크 태스크
 # ============================================================
+
 
 @shared_task(bind=True, max_retries=1, default_retry_delay=60)
 def check_pipeline_alerts(self):
@@ -1128,7 +1203,7 @@ def check_pipeline_alerts(self):
         NewsCollectionLog,
     )
 
-    KST = pytz.timezone('Asia/Seoul')
+    KST = pytz.timezone("Asia/Seoul")
     now = timezone.now()
     alerts_created = 0
 
@@ -1139,8 +1214,8 @@ def check_pipeline_alerts(self):
             trigger_type=trigger_type,
             is_resolved=False,
         )
-        if context and 'task_name' in context:
-            existing = existing.filter(context__task_name=context['task_name'])
+        if context and "task_name" in context:
+            existing = existing.filter(context__task_name=context["task_name"])
         if not existing.exists():
             AlertLog.objects.create(
                 trigger_type=trigger_type,
@@ -1149,30 +1224,31 @@ def check_pipeline_alerts(self):
                 context=context,
             )
             alerts_created += 1
-            logger.warning(f"check_pipeline_alerts: [{severity}] {trigger_type} — {message}")
+            logger.warning(
+                f"check_pipeline_alerts: [{severity}] {trigger_type} — {message}"
+            )
 
     # ── 1. 태스크 연속 실패 (HIGH) ──────────────────────────────
     task_names = list(
-        NewsCollectionLog.objects.values_list('task_name', flat=True).distinct()
+        NewsCollectionLog.objects.values_list("task_name", flat=True).distinct()
     )
     for task_name in task_names:
         recent_logs = list(
-            NewsCollectionLog.objects.filter(task_name=task_name)
-            .order_by('-executed_at')[:3]
+            NewsCollectionLog.objects.filter(task_name=task_name).order_by(
+                "-executed_at"
+            )[:3]
         )
         if len(recent_logs) == 3 and all(log.errors > 0 for log in recent_logs):
             _create_alert_if_new(
                 trigger_type=AlertLog.TriggerType.CONSECUTIVE_TASK_FAILURE,
                 severity=AlertLog.Severity.HIGH,
                 message=f"{task_name} 태스크가 3회 연속 실패했습니다.",
-                context={'task_name': task_name, 'error_count': 3},
+                context={"task_name": task_name, "error_count": 3},
             )
 
     # ── 2. ML F1 급락 (HIGH) ──────────────────────────────────────
     try:
-        recent_models = list(
-            MLModelHistory.objects.order_by('-trained_at')[:2]
-        )
+        recent_models = list(MLModelHistory.objects.order_by("-trained_at")[:2])
         if len(recent_models) == 2:
             latest, previous = recent_models[0], recent_models[1]
             f1_diff = latest.f1_score - previous.f1_score
@@ -1186,11 +1262,11 @@ def check_pipeline_alerts(self):
                         f"(변화: {f1_diff:.3f})"
                     ),
                     context={
-                        'previous_version': previous.model_version,
-                        'previous_f1': previous.f1_score,
-                        'latest_version': latest.model_version,
-                        'latest_f1': latest.f1_score,
-                        'f1_change': round(f1_diff, 4),
+                        "previous_version": previous.model_version,
+                        "previous_f1": previous.f1_score,
+                        "latest_version": latest.model_version,
+                        "latest_f1": latest.f1_score,
+                        "f1_change": round(f1_diff, 4),
                     },
                 )
     except Exception as e:
@@ -1200,7 +1276,7 @@ def check_pipeline_alerts(self):
     try:
         cutoff_24h = now - timedelta(hours=24)
         failed_keywords = DailyNewsKeyword.objects.filter(
-            status='failed',
+            status="failed",
             created_at__gte=cutoff_24h,
         ).exists()
         if failed_keywords:
@@ -1208,7 +1284,7 @@ def check_pipeline_alerts(self):
                 trigger_type=AlertLog.TriggerType.KEYWORD_EXTRACTION_FAILURE,
                 severity=AlertLog.Severity.MEDIUM,
                 message="최근 24시간 내 키워드 추출 실패가 발생했습니다.",
-                context={'window_hours': 24},
+                context={"window_hours": 24},
             )
     except Exception as e:
         logger.error(f"check_pipeline_alerts: 키워드 추출 체크 실패 — {e}")
@@ -1217,14 +1293,14 @@ def check_pipeline_alerts(self):
     try:
         cutoff_24h = now - timedelta(hours=24)
         llm_logs = NewsCollectionLog.objects.filter(
-            task_name='analyze_news_deep',
+            task_name="analyze_news_deep",
             executed_at__gte=cutoff_24h,
         ).aggregate(
-            total_new=Sum('articles_new'),
-            total_errors=Sum('errors'),
+            total_new=Sum("articles_new"),
+            total_errors=Sum("errors"),
         )
-        total_new = llm_logs['total_new'] or 0
-        total_errors = llm_logs['total_errors'] or 0
+        total_new = llm_logs["total_new"] or 0
+        total_errors = llm_logs["total_errors"] or 0
         denominator = total_new + total_errors
         if denominator > 0:
             error_rate = total_errors / denominator
@@ -1237,10 +1313,10 @@ def check_pipeline_alerts(self):
                         f"(성공: {total_new}, 에러: {total_errors})"
                     ),
                     context={
-                        'error_rate': round(error_rate, 4),
-                        'total_new': total_new,
-                        'total_errors': total_errors,
-                        'window_hours': 24,
+                        "error_rate": round(error_rate, 4),
+                        "total_new": total_new,
+                        "total_errors": total_errors,
+                        "window_hours": 24,
                     },
                 )
     except Exception as e:
@@ -1248,9 +1324,11 @@ def check_pipeline_alerts(self):
 
     # ── 5. Neo4j 연결 실패 (HIGH) ─────────────────────────────────
     try:
-        neo4j_log = NewsCollectionLog.objects.filter(
-            task_name='sync_news_to_neo4j'
-        ).order_by('-executed_at').first()
+        neo4j_log = (
+            NewsCollectionLog.objects.filter(task_name="sync_news_to_neo4j")
+            .order_by("-executed_at")
+            .first()
+        )
 
         if neo4j_log and neo4j_log.errors > 0:
             _create_alert_if_new(
@@ -1262,9 +1340,9 @@ def check_pipeline_alerts(self):
                     f"에러 수: {neo4j_log.errors}"
                 ),
                 context={
-                    'task_name': 'sync_news_to_neo4j',
-                    'errors': neo4j_log.errors,
-                    'executed_at': neo4j_log.executed_at.isoformat(),
+                    "task_name": "sync_news_to_neo4j",
+                    "errors": neo4j_log.errors,
+                    "executed_at": neo4j_log.executed_at.isoformat(),
                 },
             )
     except Exception as e:
@@ -1274,9 +1352,12 @@ def check_pipeline_alerts(self):
     try:
         # 최근 5 평일의 일별 수집량 계산 (KST 기준)
         collection_task_names = [
-            'collect_daily_news', 'collect_market_news', 'collect_category_news',
-            'collect_sp500_news_fmp_batch', 'collect_press_releases_fmp',
-            'collect_general_news_fmp',
+            "collect_daily_news",
+            "collect_market_news",
+            "collect_category_news",
+            "collect_sp500_news_fmp_batch",
+            "collect_press_releases_fmp",
+            "collect_general_news_fmp",
         ]
 
         # 오늘 KST 자정 계산
@@ -1285,44 +1366,47 @@ def check_pipeline_alerts(self):
 
         # 최근 10일(평일 5일 확보용) 데이터 집계
         lookback_days = 10
-        cutoff_lookback = (kst_today_midnight - timedelta(days=lookback_days)).astimezone(pytz.utc)
+        cutoff_lookback = (
+            kst_today_midnight - timedelta(days=lookback_days)
+        ).astimezone(pytz.utc)
 
         daily_aggregated = {}
         lookback_qs = (
-            NewsCollectionLog.objects
-            .filter(
+            NewsCollectionLog.objects.filter(
                 task_name__in=collection_task_names,
                 executed_at__gte=cutoff_lookback,
             )
-            .values('executed_at')
-            .annotate(articles_sum=Sum('articles_new'))
+            .values("executed_at")
+            .annotate(articles_sum=Sum("articles_new"))
         )
         for row in lookback_qs:
             # KST 날짜로 변환
-            kst_date = row['executed_at'].astimezone(KST).date()
+            kst_date = row["executed_at"].astimezone(KST).date()
             # 평일만 (weekday 0=월 ~ 4=금)
             if kst_date.weekday() < 5:
-                daily_aggregated[kst_date] = daily_aggregated.get(kst_date, 0) + (row['articles_sum'] or 0)
+                daily_aggregated[kst_date] = daily_aggregated.get(kst_date, 0) + (
+                    row["articles_sum"] or 0
+                )
 
         # 오늘 제외, 최근 평일 5일
         today_date = now_kst.date()
         past_weekdays = sorted(
-            [d for d in daily_aggregated.keys() if d < today_date],
-            reverse=True
+            [d for d in daily_aggregated.keys() if d < today_date], reverse=True
         )[:5]
 
         if len(past_weekdays) >= 3:
-            avg_collection = sum(daily_aggregated[d] for d in past_weekdays) / len(past_weekdays)
+            avg_collection = sum(daily_aggregated[d] for d in past_weekdays) / len(
+                past_weekdays
+            )
 
             # 오늘 수집량
             today_start_utc = kst_today_midnight.astimezone(pytz.utc)
             today_collected = (
-                NewsCollectionLog.objects
-                .filter(
+                NewsCollectionLog.objects.filter(
                     task_name__in=collection_task_names,
                     executed_at__gte=today_start_utc,
-                )
-                .aggregate(total=Sum('articles_new'))['total'] or 0
+                ).aggregate(total=Sum("articles_new"))["total"]
+                or 0
             )
 
             if avg_collection > 0 and today_collected < avg_collection * 0.5:
@@ -1334,10 +1418,10 @@ def check_pipeline_alerts(self):
                         f"최근 평일 평균({avg_collection:.0f}건)의 50% 미만입니다."
                     ),
                     context={
-                        'today_collected': today_collected,
-                        'avg_collection': round(avg_collection, 1),
-                        'past_weekdays_used': len(past_weekdays),
-                        'today_date': str(today_date),
+                        "today_collected": today_collected,
+                        "avg_collection": round(avg_collection, 1),
+                        "past_weekdays_used": len(past_weekdays),
+                        "today_date": str(today_date),
                     },
                 )
     except Exception as e:
@@ -1356,14 +1440,14 @@ def check_pipeline_alerts(self):
                     f"미분류 뉴스가 {unclassified_count}건 누적되었습니다. "
                     f"(임계값: 500건)"
                 ),
-                context={'unclassified_count': unclassified_count},
+                context={"unclassified_count": unclassified_count},
             )
     except Exception as e:
         logger.error(f"check_pipeline_alerts: 미분류 뉴스 체크 실패 — {e}")
 
     result = {
-        'alerts_created': alerts_created,
-        'checks_run': 7,
+        "alerts_created": alerts_created,
+        "checks_run": 7,
     }
     logger.info(f"check_pipeline_alerts completed: {result}")
     return result
@@ -1373,17 +1457,19 @@ def check_pipeline_alerts(self):
 # 헬퍼 함수
 # ============================================================
 
+
 def _log_collection(task_name, provider, symbols_tried, results, duration=0):
     """뉴스 수집 로그 기록"""
     try:
         from news.models import NewsCollectionLog
+
         NewsCollectionLog.objects.create(
             task_name=task_name,
             provider=provider,
             symbols_tried=symbols_tried,
-            articles_new=results.get('saved', 0),
-            articles_dup=results.get('skipped', results.get('updated', 0)),
-            errors=results.get('errors', 0),
+            articles_new=results.get("saved", 0),
+            articles_dup=results.get("skipped", results.get("updated", 0)),
+            errors=results.get("errors", 0),
             duration_sec=duration,
         )
     except Exception as e:
@@ -1406,10 +1492,10 @@ def _get_tier1_symbols(max_symbols=25):
             from packages.shared.users.models import WatchlistItem
 
             popular = list(
-                WatchlistItem.objects.values('symbol')
-                .annotate(count=Count('id'))
-                .order_by('-count')
-                .values_list('symbol', flat=True)[:max_symbols - len(symbols)]
+                WatchlistItem.objects.values("symbol")
+                .annotate(count=Count("id"))
+                .order_by("-count")
+                .values_list("symbol", flat=True)[: max_symbols - len(symbols)]
             )
             symbols.update(popular)
         except Exception:
@@ -1423,16 +1509,16 @@ def _get_mover_symbols(max_symbols=30):
     try:
         from serverless.models import MarketMover
 
-        latest_date = MarketMover.objects.order_by('-date').values_list(
-            'date', flat=True
-        ).first()
+        latest_date = (
+            MarketMover.objects.order_by("-date").values_list("date", flat=True).first()
+        )
         if not latest_date:
             logger.warning("_get_mover_symbols: no MarketMover data")
             return []
 
         symbols = list(
             MarketMover.objects.filter(date=latest_date)
-            .values_list('symbol', flat=True)
+            .values_list("symbol", flat=True)
             .distinct()[:max_symbols]
         )
         logger.info(f"_get_mover_symbols: {len(symbols)} symbols from {latest_date}")

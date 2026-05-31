@@ -24,17 +24,23 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", action="store_true")
-        parser.add_argument("--limit", type=int, default=0, help="최대 처리 건수 (0=전체)")
+        parser.add_argument(
+            "--limit", type=int, default=0, help="최대 처리 건수 (0=전체)"
+        )
 
     def handle(self, *args, **opts):
         dry_run = opts["dry_run"]
         limit = opts["limit"] or 0
 
-        qs = UnmatchedCompanyQueue.objects.filter(status="pending").order_by("-occurrence_count")
+        qs = UnmatchedCompanyQueue.objects.filter(status="pending").order_by(
+            "-occurrence_count"
+        )
         total_pending = qs.count()
         if limit > 0:
             qs = qs[:limit]
-        self.stdout.write(f"pending 큐 항목 {total_pending}건 중 {qs.count() if limit else total_pending}건 처리")
+        self.stdout.write(
+            f"pending 큐 항목 {total_pending}건 중 {qs.count() if limit else total_pending}건 처리"
+        )
 
         matcher = TickerMatcher()
         stats = {
@@ -52,11 +58,15 @@ class Command(BaseCommand):
                 if not dry_run:
                     entry.status = "not_public"
                     entry.save(update_fields=["status", "updated_at"])
-                self.stdout.write(f"  [BLOCK] {raw} → not_public (occ={entry.occurrence_count})")
+                self.stdout.write(
+                    f"  [BLOCK] {raw} → not_public (occ={entry.occurrence_count})"
+                )
                 continue
 
             # 2) 재매칭 시도 (alias + exact + fuzzy)
-            sector_hint = (entry.source_sectors or [""])[0] if entry.source_sectors else ""
+            sector_hint = (
+                (entry.source_sectors or [""])[0] if entry.source_sectors else ""
+            )
             ticker, method = matcher.match(raw, sector_hint)
 
             if ticker:
@@ -64,7 +74,9 @@ class Command(BaseCommand):
                 if not dry_run:
                     entry.status = "matched"
                     entry.resolved_ticker = ticker
-                    entry.save(update_fields=["status", "resolved_ticker", "updated_at"])
+                    entry.save(
+                        update_fields=["status", "resolved_ticker", "updated_at"]
+                    )
                 self.stdout.write(
                     self.style.SUCCESS(
                         f"  [MATCH] {raw} → {ticker} ({method}, occ={entry.occurrence_count})"
@@ -74,9 +86,11 @@ class Command(BaseCommand):
                 stats["still_unmatched"] += 1
 
         self.stdout.write("")
-        self.stdout.write(self.style.SUCCESS(
-            f"완료 — blocked={stats['blocked']} matched={stats['matched']} "
-            f"still_unmatched={stats['still_unmatched']}"
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"완료 — blocked={stats['blocked']} matched={stats['matched']} "
+                f"still_unmatched={stats['still_unmatched']}"
+            )
+        )
         if dry_run:
             self.stdout.write(self.style.WARNING("DRY-RUN: DB 변경 없음"))

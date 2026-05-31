@@ -16,22 +16,23 @@ class RawNewsArticle:
     """
     Provider로부터 받은 원본 뉴스 데이터 구조
     """
+
     url: str
     title: str
     summary: str
     source: str
     published_at: datetime
     image_url: Optional[str] = None
-    language: str = 'en'
-    category: str = 'general'
+    language: str = "en"
+    category: str = "general"
 
     # Provider 고유 ID
     provider_id: Optional[str] = None
-    provider_name: str = ''
+    provider_name: str = ""
 
     # 감성 분석 (Marketaux 제공)
     sentiment_score: Optional[Decimal] = None
-    sentiment_source: str = 'none'
+    sentiment_source: str = "none"
 
     # 연관 엔티티 (종목)
     entities: List[Dict[str, Any]] = None
@@ -53,10 +54,7 @@ class BaseNewsProvider(ABC):
 
     @abstractmethod
     def fetch_company_news(
-        self,
-        symbol: str,
-        from_date: datetime,
-        to_date: datetime
+        self, symbol: str, from_date: datetime, to_date: datetime
     ) -> List[RawNewsArticle]:
         """
         종목별 뉴스 가져오기
@@ -73,9 +71,7 @@ class BaseNewsProvider(ABC):
 
     @abstractmethod
     def fetch_market_news(
-        self,
-        category: str = 'general',
-        limit: int = 50
+        self, category: str = "general", limit: int = 50
     ) -> List[RawNewsArticle]:
         """
         일반 시장 뉴스 가져오기
@@ -123,14 +119,14 @@ class BaseNewsProvider(ABC):
         normalized = url.strip().lower()
 
         # 쿼리 파라미터 제거 (utm_source 등)
-        if '?' in normalized:
-            base_url = normalized.split('?')[0]
+        if "?" in normalized:
+            base_url = normalized.split("?")[0]
             # 중요한 쿼리 파라미터만 유지 (id, article 등)
             # 현재는 단순하게 전체 제거
             normalized = base_url
 
         # 마지막 슬래시 제거
-        if normalized.endswith('/'):
+        if normalized.endswith("/"):
             normalized = normalized[:-1]
 
         return normalized

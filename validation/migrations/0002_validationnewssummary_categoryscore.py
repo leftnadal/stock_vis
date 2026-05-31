@@ -5,56 +5,152 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0007_sp500constituent_industry_and_more'),
-        ('validation', '0001_initial'),
+        ("stocks", "0007_sp500constituent_industry_and_more"),
+        ("validation", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='ValidationNewsSummary',
+            name="ValidationNewsSummary",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='validation_news_summary', serialize=False, to='stocks.stock')),
-                ('event_count_30d', models.IntegerField(default=0)),
-                ('event_count_90d', models.IntegerField(default=0)),
-                ('avg_sentiment_30d', models.DecimalField(blank=True, decimal_places=3, max_digits=4, null=True)),
-                ('sentiment_trend', models.CharField(blank=True, choices=[('improving', 'Improving'), ('stable', 'Stable'), ('deteriorating', 'Deteriorating')], max_length=20)),
-                ('dominant_event_type', models.CharField(blank=True, max_length=50)),
-                ('high_importance_count', models.IntegerField(default=0)),
-                ('has_regulatory_risk', models.BooleanField(default=False)),
-                ('has_exec_change', models.BooleanField(default=False)),
-                ('has_guidance_cut', models.BooleanField(default=False)),
-                ('recent_highlights', models.JSONField(default=list, help_text='[{"title": "...", "sentiment": 0.7, "event_type": "earnings", "date": "..."}, ...]')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="validation_news_summary",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                ("event_count_30d", models.IntegerField(default=0)),
+                ("event_count_90d", models.IntegerField(default=0)),
+                (
+                    "avg_sentiment_30d",
+                    models.DecimalField(
+                        blank=True, decimal_places=3, max_digits=4, null=True
+                    ),
+                ),
+                (
+                    "sentiment_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("improving", "Improving"),
+                            ("stable", "Stable"),
+                            ("deteriorating", "Deteriorating"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("dominant_event_type", models.CharField(blank=True, max_length=50)),
+                ("high_importance_count", models.IntegerField(default=0)),
+                ("has_regulatory_risk", models.BooleanField(default=False)),
+                ("has_exec_change", models.BooleanField(default=False)),
+                ("has_guidance_cut", models.BooleanField(default=False)),
+                (
+                    "recent_highlights",
+                    models.JSONField(
+                        default=list,
+                        help_text='[{"title": "...", "sentiment": 0.7, "event_type": "earnings", "date": "..."}, ...]',
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'validation_news_summary',
+                "db_table": "validation_news_summary",
             },
         ),
         migrations.CreateModel(
-            name='CategoryScore',
+            name="CategoryScore",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category', models.CharField(choices=[('profitability', 'Profitability'), ('growth', 'Growth'), ('financial_structure', 'Financial Structure'), ('cash_flow_quality', 'Cash Flow Quality'), ('operational_efficiency', 'Operational Efficiency'), ('dilution_shareholder', 'Dilution & Shareholder'), ('valuation', 'Valuation')], max_length=30)),
-                ('signal', models.CharField(blank=True, choices=[('green', 'Green'), ('yellow', 'Yellow'), ('red', 'Red')], max_length=10)),
-                ('signal_reason', models.CharField(blank=True, max_length=200)),
-                ('score', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('grade', models.CharField(blank=True, max_length=5)),
-                ('rank_in_industry', models.IntegerField(blank=True, null=True)),
-                ('total_in_industry', models.IntegerField(blank=True, null=True)),
-                ('contributing_metrics', models.JSONField(default=list, help_text='[{"metric": "roe", "value": 0.25, "signal": "green"}, ...]')),
-                ('score_1y_ago', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('score_change', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, related_name='category_scores', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("profitability", "Profitability"),
+                            ("growth", "Growth"),
+                            ("financial_structure", "Financial Structure"),
+                            ("cash_flow_quality", "Cash Flow Quality"),
+                            ("operational_efficiency", "Operational Efficiency"),
+                            ("dilution_shareholder", "Dilution & Shareholder"),
+                            ("valuation", "Valuation"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("green", "Green"),
+                            ("yellow", "Yellow"),
+                            ("red", "Red"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("signal_reason", models.CharField(blank=True, max_length=200)),
+                (
+                    "score",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                ("grade", models.CharField(blank=True, max_length=5)),
+                ("rank_in_industry", models.IntegerField(blank=True, null=True)),
+                ("total_in_industry", models.IntegerField(blank=True, null=True)),
+                (
+                    "contributing_metrics",
+                    models.JSONField(
+                        default=list,
+                        help_text='[{"metric": "roe", "value": 0.25, "signal": "green"}, ...]',
+                    ),
+                ),
+                (
+                    "score_1y_ago",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "score_change",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="category_scores",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_category_score',
-                'indexes': [models.Index(fields=['symbol'], name='validation__symbol_edca94_idx')],
-                'unique_together': {('symbol', 'category')},
+                "db_table": "validation_category_score",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol"], name="validation__symbol_edca94_idx"
+                    )
+                ],
+                "unique_together": {("symbol", "category")},
             },
         ),
     ]

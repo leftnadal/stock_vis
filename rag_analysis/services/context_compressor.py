@@ -42,7 +42,9 @@ class ContextCompressor:
 
     def __init__(self):
         """Gemini API 클라이언트 초기화"""
-        api_key = getattr(settings, 'GEMINI_API_KEY', None) or getattr(settings, 'GOOGLE_AI_API_KEY', None)
+        api_key = getattr(settings, "GEMINI_API_KEY", None) or getattr(
+            settings, "GOOGLE_AI_API_KEY", None
+        )
 
         if not api_key:
             logger.warning(
@@ -53,9 +55,7 @@ class ContextCompressor:
             self.client = genai.Client(api_key=api_key)
 
     async def compress(
-        self,
-        documents: List[Tuple[dict, float, dict]],
-        question: str
+        self, documents: List[Tuple[dict, float, dict]], question: str
     ) -> List[dict]:
         """
         문서 리스트 압축
@@ -90,11 +90,8 @@ class ContextCompressor:
         compressed_results = []
 
         for i in range(0, len(documents), self.MAX_CONCURRENT):
-            batch = documents[i:i + self.MAX_CONCURRENT]
-            tasks = [
-                self._compress_single(doc, question)
-                for doc, _, _ in batch
-            ]
+            batch = documents[i : i + self.MAX_CONCURRENT]
+            tasks = [self._compress_single(doc, question) for doc, _, _ in batch]
 
             # gather + return_exceptions로 에러 발생해도 계속 진행
             batch_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -102,7 +99,7 @@ class ContextCompressor:
             # 에러 처리
             for idx, result in enumerate(batch_results):
                 if isinstance(result, Exception):
-                    logger.warning(f"Compression failed for doc {i+idx}: {result}")
+                    logger.warning(f"Compression failed for doc {i + idx}: {result}")
                     # 폴백 사용
                     doc = batch[idx][0]
                     compressed_results.append(self._fallback_compress(doc))
@@ -133,7 +130,9 @@ class ContextCompressor:
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
-            cb = get_circuit('gemini_compress', failure_threshold=5, recovery_seconds=60)
+            cb = get_circuit(
+                "gemini_compress", failure_threshold=5, recovery_seconds=60
+            )
             response = await cb.acall(
                 self.client.aio.models.generate_content,
                 model=self.MODEL,
@@ -145,12 +144,12 @@ class ContextCompressor:
             compressed_tokens = self._estimate_tokens(compressed_text)
 
             return {
-                'original_id': doc.get('id', self._generate_doc_id(doc)),
-                'title': doc.get('title', ''),
-                'compressed': compressed_text,
-                'original_tokens': original_tokens,
-                'compressed_tokens': compressed_tokens,
-                'compression_ratio': compressed_tokens / max(original_tokens, 1)
+                "original_id": doc.get("id", self._generate_doc_id(doc)),
+                "title": doc.get("title", ""),
+                "compressed": compressed_text,
+                "original_tokens": original_tokens,
+                "compressed_tokens": compressed_tokens,
+                "compression_ratio": compressed_tokens / max(original_tokens, 1),
             }
 
         except CircuitBreakerError as cb_exc:
@@ -170,8 +169,8 @@ class ContextCompressor:
         Returns:
             추출된 텍스트 (최대 1000자)
         """
-        title = doc.get('title', '')
-        content = doc.get('content', doc.get('text', ''))
+        title = doc.get("title", "")
+        content = doc.get("content", doc.get("text", ""))
 
         combined = f"{title}\n{content}" if title else content
         return combined[:1000]  # 1000자 제한
@@ -191,19 +190,19 @@ class ContextCompressor:
 
         # 100 단어로 truncate
         words = text.split()[:100]
-        compressed = ' '.join(words)
+        compressed = " ".join(words)
         if len(words) == 100:
-            compressed += '...'
+            compressed += "..."
 
         compressed_tokens = self._estimate_tokens(compressed)
 
         return {
-            'original_id': doc.get('id', self._generate_doc_id(doc)),
-            'title': doc.get('title', ''),
-            'compressed': compressed,
-            'original_tokens': original_tokens,
-            'compressed_tokens': compressed_tokens,
-            'compression_ratio': compressed_tokens / max(original_tokens, 1)
+            "original_id": doc.get("id", self._generate_doc_id(doc)),
+            "title": doc.get("title", ""),
+            "compressed": compressed,
+            "original_tokens": original_tokens,
+            "compressed_tokens": compressed_tokens,
+            "compression_ratio": compressed_tokens / max(original_tokens, 1),
         }
 
     def _estimate_tokens(self, text: str) -> int:
@@ -233,15 +232,15 @@ class ContextCompressor:
         """
         # symbol + date + type 조합
         parts = []
-        if 'symbol' in doc:
-            parts.append(doc['symbol'].upper())
-        if 'date' in doc or 'created_at' in doc:
-            parts.append(doc.get('date', doc.get('created_at', '')))
-        if 'type' in doc:
-            parts.append(doc['type'])
+        if "symbol" in doc:
+            parts.append(doc["symbol"].upper())
+        if "date" in doc or "created_at" in doc:
+            parts.append(doc.get("date", doc.get("created_at", "")))
+        if "type" in doc:
+            parts.append(doc["type"])
 
         if parts:
-            return '_'.join(parts)
+            return "_".join(parts)
 
         # Fallback: 해시
         return str(hash(str(doc)))
@@ -285,13 +284,14 @@ class QuestionAwareCompressor(ContextCompressor):
                 thinking_config=types.ThinkingConfig(thinking_budget=0),
             )
 
-            cb = get_circuit('gemini_compress', failure_threshold=5, recovery_seconds=60)
+            cb = get_circuit(
+                "gemini_compress", failure_threshold=5, recovery_seconds=60
+            )
             response = await cb.acall(
                 self.client.aio.models.generate_content,
                 model=self.MODEL,
                 contents=self.COMPRESSION_PROMPT.format(
-                    question=question,
-                    document=original_text
+                    question=question, document=original_text
                 ),
                 config=config,
             )
@@ -300,12 +300,12 @@ class QuestionAwareCompressor(ContextCompressor):
             compressed_tokens = self._estimate_tokens(compressed_text)
 
             return {
-                'original_id': doc.get('id', self._generate_doc_id(doc)),
-                'title': doc.get('title', ''),
-                'compressed': compressed_text,
-                'original_tokens': original_tokens,
-                'compressed_tokens': compressed_tokens,
-                'compression_ratio': compressed_tokens / max(original_tokens, 1)
+                "original_id": doc.get("id", self._generate_doc_id(doc)),
+                "title": doc.get("title", ""),
+                "compressed": compressed_text,
+                "original_tokens": original_tokens,
+                "compressed_tokens": compressed_tokens,
+                "compression_ratio": compressed_tokens / max(original_tokens, 1),
             }
 
         except CircuitBreakerError as cb_exc:

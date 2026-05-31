@@ -22,7 +22,7 @@ class Neo4jDriverTests(TestCase):
     Neo4j Driver Tests
     """
 
-    @patch('rag_analysis.services.neo4j_driver.GraphDatabase')
+    @patch("rag_analysis.services.neo4j_driver.GraphDatabase")
     def test_lazy_connection_success(self, mock_gdb):
         """첫 호출 시 연결 시도"""
         from rag_analysis.services.neo4j_driver import (
@@ -48,7 +48,7 @@ class Neo4jDriverTests(TestCase):
         self.assertEqual(driver, driver2)
         mock_gdb.driver.assert_called_once()  # Still only called once
 
-    @patch('rag_analysis.services.neo4j_driver.GraphDatabase')
+    @patch("rag_analysis.services.neo4j_driver.GraphDatabase")
     def test_connection_failure_returns_none(self, mock_gdb):
         """연결 실패 시 None 반환 (앱은 계속 실행)"""
         from rag_analysis.services.neo4j_driver import (
@@ -81,16 +81,16 @@ class Neo4jServiceTests(TestCase):
         service.driver = None
 
         # Should return empty relationships with fallback status
-        result = service.get_stock_relationships('AAPL')
+        result = service.get_stock_relationships("AAPL")
 
-        self.assertEqual(result['symbol'], 'AAPL')
-        self.assertEqual(result['supply_chain'], [])
-        self.assertEqual(result['competitors'], [])
-        self.assertEqual(result['sector_peers'], [])
-        self.assertEqual(result['_meta']['source'], 'fallback')
-        self.assertIsNotNone(result['_meta']['_error'])
+        self.assertEqual(result["symbol"], "AAPL")
+        self.assertEqual(result["supply_chain"], [])
+        self.assertEqual(result["competitors"], [])
+        self.assertEqual(result["sector_peers"], [])
+        self.assertEqual(result["_meta"]["source"], "fallback")
+        self.assertIsNotNone(result["_meta"]["_error"])
 
-    @patch('rag_analysis.services.neo4j_service.get_neo4j_driver')
+    @patch("rag_analysis.services.neo4j_service.get_neo4j_driver")
     def test_health_check_unavailable(self, mock_get_driver):
         """Neo4j 연결 불가 시 health check"""
         from rag_analysis.services.neo4j_service import Neo4jServiceLite
@@ -100,9 +100,9 @@ class Neo4jServiceTests(TestCase):
         service = Neo4jServiceLite()
         health = service.health_check()
 
-        self.assertEqual(health['status'], 'unavailable')
-        self.assertFalse(health['connected'])
-        self.assertIsNone(health['node_count'])
+        self.assertEqual(health["status"], "unavailable")
+        self.assertFalse(health["connected"])
+        self.assertIsNone(health["node_count"])
 
 
 class CacheServiceTests(TestCase):
@@ -112,6 +112,7 @@ class CacheServiceTests(TestCase):
 
     def setUp(self):
         from django.core.cache import cache
+
         cache.clear()
 
     def test_graph_context_cache(self):
@@ -121,26 +122,26 @@ class CacheServiceTests(TestCase):
         cache_service = get_cache_service()
 
         test_data = {
-            'symbol': 'AAPL',
-            'supply_chain': [{'symbol': 'NVDA', 'strength': 0.8}],
-            'competitors': []
+            "symbol": "AAPL",
+            "supply_chain": [{"symbol": "NVDA", "strength": 0.8}],
+            "competitors": [],
         }
 
         # Set
-        success = cache_service.set_graph_context('AAPL', test_data)
+        success = cache_service.set_graph_context("AAPL", test_data)
         self.assertTrue(success)
 
         # Get
-        cached = cache_service.get_graph_context('AAPL')
+        cached = cache_service.get_graph_context("AAPL")
         self.assertIsNotNone(cached)
-        self.assertEqual(cached['symbol'], 'AAPL')
+        self.assertEqual(cached["symbol"], "AAPL")
 
         # Invalidate
-        success = cache_service.invalidate_graph('AAPL')
+        success = cache_service.invalidate_graph("AAPL")
         self.assertTrue(success)
 
         # Should be empty now
-        cached = cache_service.get_graph_context('AAPL')
+        cached = cache_service.get_graph_context("AAPL")
         self.assertIsNone(cached)
 
     def test_llm_response_cache(self):
@@ -166,7 +167,7 @@ class CeleryTaskTests(TestCase):
     Celery Task Tests
     """
 
-    @patch('rag_analysis.services.neo4j_service.get_neo4j_service')
+    @patch("rag_analysis.services.neo4j_service.get_neo4j_service")
     def test_sync_task_when_neo4j_unavailable(self, mock_get_service):
         """Neo4j 연결 불가 시 태스크는 'skipped' 반환"""
         from rag_analysis.tasks import sync_stock_to_neo4j
@@ -177,13 +178,13 @@ class CeleryTaskTests(TestCase):
         mock_get_service.return_value = mock_service
 
         # Execute task
-        result = sync_stock_to_neo4j('AAPL', 'Apple Inc.', 'Technology')
+        result = sync_stock_to_neo4j("AAPL", "Apple Inc.", "Technology")
 
-        self.assertEqual(result['status'], 'skipped')
-        self.assertEqual(result['symbol'], 'AAPL')
-        self.assertFalse(result['neo4j_available'])
+        self.assertEqual(result["status"], "skipped")
+        self.assertEqual(result["symbol"], "AAPL")
+        self.assertFalse(result["neo4j_available"])
 
-    @patch('rag_analysis.services.neo4j_service.get_neo4j_service')
+    @patch("rag_analysis.services.neo4j_service.get_neo4j_service")
     def test_delete_task_success(self, mock_get_service):
         """Neo4j 삭제 태스크 성공"""
         from rag_analysis.tasks import delete_stock_from_neo4j
@@ -195,11 +196,11 @@ class CeleryTaskTests(TestCase):
         mock_get_service.return_value = mock_service
 
         # Execute task
-        result = delete_stock_from_neo4j('AAPL')
+        result = delete_stock_from_neo4j("AAPL")
 
-        self.assertEqual(result['status'], 'success')
-        self.assertTrue(result['neo4j_available'])
-        mock_service.delete_stock_node.assert_called_once_with('AAPL')
+        self.assertEqual(result["status"], "success")
+        self.assertTrue(result["neo4j_available"])
+        mock_service.delete_stock_node.assert_called_once_with("AAPL")
 
 
 class SignalTests(TestCase):
@@ -207,28 +208,26 @@ class SignalTests(TestCase):
     Django Signal Tests
     """
 
-    @patch('rag_analysis.signals._should_dispatch', return_value=True)
-    @patch('rag_analysis.signals.sync_stock_to_neo4j')
-    @patch('rag_analysis.signals.invalidate_graph_cache')
+    @patch("rag_analysis.signals._should_dispatch", return_value=True)
+    @patch("rag_analysis.signals.sync_stock_to_neo4j")
+    @patch("rag_analysis.signals.invalidate_graph_cache")
     def test_stock_saved_triggers_sync(self, mock_invalidate, mock_sync, mock_debounce):
         """Stock 저장 시 Neo4j 동기화 태스크 큐잉"""
         # Create stock
         stock = Stock.objects.create(
-            symbol='TEST',
-            stock_name='Test Inc.',
-            sector='Technology'
+            symbol="TEST", stock_name="Test Inc.", sector="Technology"
         )
 
         # Signal should trigger async tasks
         mock_sync.delay.assert_called_once()
-        mock_invalidate.delay.assert_called_once_with('TEST')
+        mock_invalidate.delay.assert_called_once_with("TEST")
 
-    @patch('rag_analysis.signals.delete_stock_from_neo4j')
-    @patch('rag_analysis.signals.invalidate_graph_cache')
+    @patch("rag_analysis.signals.delete_stock_from_neo4j")
+    @patch("rag_analysis.signals.invalidate_graph_cache")
     def test_stock_deleted_triggers_neo4j_delete(self, mock_invalidate, mock_delete):
         """Stock 삭제 시 Neo4j 삭제 태스크 큐잉"""
         # Create and delete stock
-        stock = Stock.objects.create(symbol='TEST', stock_name='Test Inc.')
+        stock = Stock.objects.create(symbol="TEST", stock_name="Test Inc.")
         stock_symbol = stock.symbol
         stock.delete()
 
@@ -264,8 +263,19 @@ class IntegrationTests(TestCase):
         )
 
         # All tasks should have names
-        self.assertEqual(sync_stock_to_neo4j.name, 'rag_analysis.tasks.sync_stock_to_neo4j')
-        self.assertEqual(delete_stock_from_neo4j.name, 'rag_analysis.tasks.delete_stock_from_neo4j')
-        self.assertEqual(health_check_neo4j.name, 'rag_analysis.tasks.health_check_neo4j')
-        self.assertEqual(batch_sync_stocks_to_neo4j.name, 'rag_analysis.tasks.batch_sync_stocks_to_neo4j')
-        self.assertEqual(invalidate_graph_cache.name, 'rag_analysis.tasks.invalidate_graph_cache')
+        self.assertEqual(
+            sync_stock_to_neo4j.name, "rag_analysis.tasks.sync_stock_to_neo4j"
+        )
+        self.assertEqual(
+            delete_stock_from_neo4j.name, "rag_analysis.tasks.delete_stock_from_neo4j"
+        )
+        self.assertEqual(
+            health_check_neo4j.name, "rag_analysis.tasks.health_check_neo4j"
+        )
+        self.assertEqual(
+            batch_sync_stocks_to_neo4j.name,
+            "rag_analysis.tasks.batch_sync_stocks_to_neo4j",
+        )
+        self.assertEqual(
+            invalidate_graph_cache.name, "rag_analysis.tasks.invalidate_graph_cache"
+        )

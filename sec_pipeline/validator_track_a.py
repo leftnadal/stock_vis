@@ -15,33 +15,69 @@ from .prompts import PROMPT_VERSION
 logger = logging.getLogger(__name__)
 
 ALLOWED_RELATIONSHIP_TYPES = {
-    'SUPPLIES_TO', 'CUSTOMER_OF', 'PARTNER_WITH',
-    'DEPENDS_ON', 'COMPETES_WITH',
+    "SUPPLIES_TO",
+    "CUSTOMER_OF",
+    "PARTNER_WITH",
+    "DEPENDS_ON",
+    "COMPETES_WITH",
 }
 
 # LLM이 회사명 대신 추출하는 제네릭 용어 — 관계로 저장하지 않음
 GENERIC_COMPANY_TERMS = {
-    'third parties', 'third-party', 'suppliers', 'customers',
-    'hyperscalers', 'oems', 'distributors', 'vendors', 'partners',
-    'competitors', 'resellers', 'developers', 'retailers',
-    'manufacturers', 'service providers', 'contract manufacturers',
-    'system integrators', 'business partners', 'cable companies',
-    'other partners', 'other resellers', 'other manufacturers',
-    'external experts', 'web agencies', 'money market funds',
-    'authorized replicators', 'hosting service providers',
-    'independent software vendors', 'licensing solution partners',
-    'identity vendors', 'security solution vendors',
-    'value-added resellers', 'retail outlets',
-    'mobile communications companies', 'incumbent telephone companies',
-    'device manufacturers', 'chip manufacturers',
-    'pharmaceutical manufacturers',
+    "third parties",
+    "third-party",
+    "suppliers",
+    "customers",
+    "hyperscalers",
+    "oems",
+    "distributors",
+    "vendors",
+    "partners",
+    "competitors",
+    "resellers",
+    "developers",
+    "retailers",
+    "manufacturers",
+    "service providers",
+    "contract manufacturers",
+    "system integrators",
+    "business partners",
+    "cable companies",
+    "other partners",
+    "other resellers",
+    "other manufacturers",
+    "external experts",
+    "web agencies",
+    "money market funds",
+    "authorized replicators",
+    "hosting service providers",
+    "independent software vendors",
+    "licensing solution partners",
+    "identity vendors",
+    "security solution vendors",
+    "value-added resellers",
+    "retail outlets",
+    "mobile communications companies",
+    "incumbent telephone companies",
+    "device manufacturers",
+    "chip manufacturers",
+    "pharmaceutical manufacturers",
 }
 
 # 제네릭 접미사 — "independent ~ distributors", "Windows OEMs" 등 패턴 매칭
 _GENERIC_SUFFIXES = (
-    'oems', 'vendors', 'partners', 'distributors', 'resellers',
-    'manufacturers', 'providers', 'carriers', 'companies', 'retailers',
-    'integrators', 'advisors',
+    "oems",
+    "vendors",
+    "partners",
+    "distributors",
+    "resellers",
+    "manufacturers",
+    "providers",
+    "carriers",
+    "companies",
+    "retailers",
+    "integrators",
+    "advisors",
 )
 
 
@@ -53,7 +89,7 @@ def _is_generic_term(name: str) -> bool:
     for suffix in _GENERIC_SUFFIXES:
         if lower.endswith(suffix):
             return True
-    if lower.startswith('third-party') or lower.startswith('third parties'):
+    if lower.startswith("third-party") or lower.startswith("third parties"):
         return True
     return False
 
@@ -72,11 +108,11 @@ def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
     validated = []
     source_upper = source_symbol.upper()
 
-    for rel in result.get('relationships', []):
-        target_name = (rel.get('target_company_name') or '').strip()
-        confidence = float(rel.get('confidence', 0))
-        rel_type = (rel.get('relationship_type') or '').upper()
-        evidence = (rel.get('evidence_text') or '').strip()
+    for rel in result.get("relationships", []):
+        target_name = (rel.get("target_company_name") or "").strip()
+        confidence = float(rel.get("confidence", 0))
+        rel_type = (rel.get("relationship_type") or "").upper()
+        evidence = (rel.get("evidence_text") or "").strip()
 
         # 자기 참조 제거
         if target_name.upper() == source_upper:
@@ -96,20 +132,22 @@ def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
 
         # relationship_type 허용 목록 외 → DEPENDS_ON 폴백
         if rel_type not in ALLOWED_RELATIONSHIP_TYPES:
-            rel_type = 'DEPENDS_ON'
+            rel_type = "DEPENDS_ON"
 
         # evidence 길이 제한 (300자)
         if len(evidence) > 300:
-            evidence = evidence[:297] + '...'
+            evidence = evidence[:297] + "..."
 
-        validated.append({
-            'target_company_name': target_name,
-            'relationship_type': rel_type,
-            'evidence_text': evidence,
-            'system_confidence': confidence,
-            'confidence_grade': calculate_confidence_grade(confidence),
-            'direction': rel.get('direction', 'inbound'),
-        })
+        validated.append(
+            {
+                "target_company_name": target_name,
+                "relationship_type": rel_type,
+                "evidence_text": evidence,
+                "system_confidence": confidence,
+                "confidence_grade": calculate_confidence_grade(confidence),
+                "direction": rel.get("direction", "inbound"),
+            }
+        )
 
     logger.info(
         f"{source_symbol}: {len(result.get('relationships', []))} raw → "
@@ -121,10 +159,10 @@ def validate_supply_chain_result(result: dict, source_symbol: str) -> list:
 def calculate_confidence_grade(confidence: float) -> str:
     """confidence 숫자 → grade 변환 (API 노출용)."""
     if confidence >= 0.8:
-        return 'high'
+        return "high"
     elif confidence >= 0.6:
-        return 'medium'
-    return 'low'
+        return "medium"
+    return "low"
 
 
 def save_supply_chain_evidences(validated: list, document, source_symbol: str):
@@ -147,18 +185,20 @@ def save_supply_chain_evidences(validated: list, document, source_symbol: str):
 
     evidences = []
     for rel in validated:
-        evidences.append(SupplyChainEvidence(
-            source_document=document,
-            source_company=source_stock,
-            target_company=None,  # Phase 1.5 TickerMatcher에서 매칭
-            target_company_name=rel['target_company_name'],
-            relationship_type=rel['relationship_type'],
-            evidence_text=rel['evidence_text'],
-            system_confidence=rel['system_confidence'],
-            confidence_grade=rel['confidence_grade'],
-            neo4j_dirty=True,
-            prompt_version=PROMPT_VERSION,
-        ))
+        evidences.append(
+            SupplyChainEvidence(
+                source_document=document,
+                source_company=source_stock,
+                target_company=None,  # Phase 1.5 TickerMatcher에서 매칭
+                target_company_name=rel["target_company_name"],
+                relationship_type=rel["relationship_type"],
+                evidence_text=rel["evidence_text"],
+                system_confidence=rel["system_confidence"],
+                confidence_grade=rel["confidence_grade"],
+                neo4j_dirty=True,
+                prompt_version=PROMPT_VERSION,
+            )
+        )
 
     created = SupplyChainEvidence.objects.bulk_create(evidences)
     logger.info(f"{source_symbol}: saved {len(created)} supply chain evidences")

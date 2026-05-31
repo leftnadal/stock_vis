@@ -46,7 +46,7 @@ class KeywordContextBuilder:
         sector: Optional[str] = None,
         industry: Optional[str] = None,
         overview: Optional[Dict[str, Any]] = None,
-        news: Optional[List[Dict[str, Any]]] = None
+        news: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         단일 종목 컨텍스트 구성
@@ -74,23 +74,23 @@ class KeywordContextBuilder:
             }
         """
         context = {
-            'basic': {
-                'symbol': symbol,
-                'company_name': company_name,
-                'mover_type': mover_type,
-                'sector': sector,
-                'industry': industry,
-                'price_data': price_data,
+            "basic": {
+                "symbol": symbol,
+                "company_name": company_name,
+                "mover_type": mover_type,
+                "sector": sector,
+                "industry": industry,
+                "price_data": price_data,
             },
-            'overview': self._process_overview(overview) if overview else None,
-            'news': self._process_news(news) if news else None,
-            'indicators': indicators,
-            'has_overview': bool(overview),
-            'has_news': bool(news and len(news) > 0),
+            "overview": self._process_overview(overview) if overview else None,
+            "news": self._process_news(news) if news else None,
+            "indicators": indicators,
+            "has_overview": bool(overview),
+            "has_news": bool(news and len(news) > 0),
         }
 
         # 토큰 추정
-        context['estimated_tokens'] = self._estimate_tokens(context)
+        context["estimated_tokens"] = self._estimate_tokens(context)
 
         return context
 
@@ -107,22 +107,22 @@ class KeywordContextBuilder:
         processed = {}
 
         # Description (200자 제한)
-        description = overview.get('description', '')
+        description = overview.get("description", "")
         if description:
             if len(description) > self.MAX_DESCRIPTION_LENGTH:
-                description = description[:self.MAX_DESCRIPTION_LENGTH] + '...'
-            processed['description'] = description
+                description = description[: self.MAX_DESCRIPTION_LENGTH] + "..."
+            processed["description"] = description
 
         # 핵심 재무 지표만 선택
         key_metrics = [
-            'market_cap',
-            'pe_ratio',
-            '52_week_high',
-            '52_week_low',
-            'dividend_yield',
-            'beta',
-            'revenue_ttm',
-            'profit_margin',
+            "market_cap",
+            "pe_ratio",
+            "52_week_high",
+            "52_week_low",
+            "dividend_yield",
+            "beta",
+            "revenue_ttm",
+            "profit_margin",
         ]
 
         for metric in key_metrics:
@@ -143,14 +143,16 @@ class KeywordContextBuilder:
         """
         processed = []
 
-        for item in news[:self.MAX_NEWS_COUNT]:
+        for item in news[: self.MAX_NEWS_COUNT]:
             # 제목, 출처, sentiment만 포함
-            processed.append({
-                'title': item.get('title', ''),
-                'source': item.get('source', ''),
-                'sentiment': item.get('sentiment', 'neutral'),
-                'published_at': item.get('published_at', ''),
-            })
+            processed.append(
+                {
+                    "title": item.get("title", ""),
+                    "source": item.get("source", ""),
+                    "sentiment": item.get("sentiment", "neutral"),
+                    "published_at": item.get("published_at", ""),
+                }
+            )
 
         return processed if processed else None
 
@@ -167,23 +169,23 @@ class KeywordContextBuilder:
         total_chars = 0
 
         # Basic
-        basic = context.get('basic', {})
-        total_chars += len(str(basic.get('company_name', '')))
-        total_chars += len(str(basic.get('sector', '')))
-        total_chars += len(str(basic.get('industry', '')))
+        basic = context.get("basic", {})
+        total_chars += len(str(basic.get("company_name", "")))
+        total_chars += len(str(basic.get("sector", "")))
+        total_chars += len(str(basic.get("industry", "")))
         total_chars += 100  # price_data 대략
 
         # Overview
-        if context.get('overview'):
-            overview = context['overview']
-            total_chars += len(overview.get('description', ''))
+        if context.get("overview"):
+            overview = context["overview"]
+            total_chars += len(overview.get("description", ""))
             total_chars += 150  # 기타 지표들
 
         # News
-        if context.get('news'):
-            for item in context['news']:
-                total_chars += len(item.get('title', ''))
-                total_chars += len(item.get('source', ''))
+        if context.get("news"):
+            for item in context["news"]:
+                total_chars += len(item.get("title", ""))
+                total_chars += len(item.get("source", ""))
 
         # Indicators
         total_chars += 200  # 5개 지표
@@ -194,9 +196,7 @@ class KeywordContextBuilder:
         return estimated_tokens
 
     def build_batch_contexts(
-        self,
-        stocks: List[Dict[str, Any]],
-        max_tokens: int = 4000
+        self, stocks: List[Dict[str, Any]], max_tokens: int = 4000
     ) -> List[Dict[str, Any]]:
         """
         배치 처리용 컨텍스트 구성 (토큰 제한)
@@ -215,7 +215,7 @@ class KeywordContextBuilder:
             context = self.build_stock_context(**stock)
 
             # 토큰 제한 체크
-            if total_tokens + context['estimated_tokens'] > max_tokens:
+            if total_tokens + context["estimated_tokens"] > max_tokens:
                 logger.warning(
                     f"Token limit reached: {total_tokens} + {context['estimated_tokens']} > {max_tokens}. "
                     f"Stopping at {len(batch_contexts)} stocks."
@@ -223,7 +223,7 @@ class KeywordContextBuilder:
                 break
 
             batch_contexts.append(context)
-            total_tokens += context['estimated_tokens']
+            total_tokens += context["estimated_tokens"]
 
         logger.info(
             f"Batch contexts built: {len(batch_contexts)} stocks, "
@@ -243,9 +243,9 @@ class KeywordContextBuilder:
             기본 키워드 리스트
         """
         fallback_map = {
-            'gainers': ["급등", "거래량 증가", "상승 모멘텀"],
-            'losers': ["급락", "매도 압력", "하락 조정"],
-            'actives': ["거래량 급증", "변동성 확대", "투자자 관심"],
+            "gainers": ["급등", "거래량 증가", "상승 모멘텀"],
+            "losers": ["급락", "매도 압력", "하락 조정"],
+            "actives": ["거래량 급증", "변동성 확대", "투자자 관심"],
         }
 
         return fallback_map.get(mover_type, ["변동성"])
@@ -277,13 +277,17 @@ class ContextEnricher:
                 return None
 
             return {
-                'description': stock.description or '',
-                'market_cap': str(stock.market_cap) if stock.market_cap else None,
-                'pe_ratio': float(stock.pe_ratio) if stock.pe_ratio else None,
-                '52_week_high': float(stock.week_52_high) if stock.week_52_high else None,
-                '52_week_low': float(stock.week_52_low) if stock.week_52_low else None,
-                'dividend_yield': float(stock.dividend_yield) if stock.dividend_yield else None,
-                'beta': float(stock.beta) if stock.beta else None,
+                "description": stock.description or "",
+                "market_cap": str(stock.market_cap) if stock.market_cap else None,
+                "pe_ratio": float(stock.pe_ratio) if stock.pe_ratio else None,
+                "52_week_high": float(stock.week_52_high)
+                if stock.week_52_high
+                else None,
+                "52_week_low": float(stock.week_52_low) if stock.week_52_low else None,
+                "dividend_yield": float(stock.dividend_yield)
+                if stock.dividend_yield
+                else None,
+                "beta": float(stock.beta) if stock.beta else None,
             }
 
         except Exception as e:
@@ -291,7 +295,9 @@ class ContextEnricher:
             return None
 
     @staticmethod
-    def fetch_news(symbol: str, days: int = 7, limit: int = 3) -> Optional[List[Dict[str, Any]]]:
+    def fetch_news(
+        symbol: str, days: int = 7, limit: int = 3
+    ) -> Optional[List[Dict[str, Any]]]:
         """
         종목 뉴스 조회 (news 앱 연동)
 
@@ -311,21 +317,22 @@ class ContextEnricher:
             cutoff_date = timezone.now() - timedelta(days=days)
 
             articles = NewsArticle.objects.filter(
-                symbols__icontains=symbol.upper(),
-                published_at__gte=cutoff_date
-            ).order_by('-published_at')[:limit]
+                symbols__icontains=symbol.upper(), published_at__gte=cutoff_date
+            ).order_by("-published_at")[:limit]
 
             if not articles:
                 return None
 
             news_list = []
             for article in articles:
-                news_list.append({
-                    'title': article.title,
-                    'source': article.source,
-                    'published_at': article.published_at.isoformat(),
-                    'sentiment': article.sentiment or 'neutral',
-                })
+                news_list.append(
+                    {
+                        "title": article.title,
+                        "source": article.source,
+                        "published_at": article.published_at.isoformat(),
+                        "sentiment": article.sentiment or "neutral",
+                    }
+                )
 
             return news_list if news_list else None
 
@@ -334,11 +341,7 @@ class ContextEnricher:
             return None
 
     @classmethod
-    def enrich_stock_data(
-        cls,
-        symbol: str,
-        **kwargs
-    ) -> Dict[str, Any]:
+    def enrich_stock_data(cls, symbol: str, **kwargs) -> Dict[str, Any]:
         """
         종목 데이터 보강 (Overview + 뉴스 추가)
 
@@ -350,14 +353,14 @@ class ContextEnricher:
             보강된 종목 데이터
         """
         enriched = dict(kwargs)
-        enriched['symbol'] = symbol
+        enriched["symbol"] = symbol
 
         # Overview 추가
-        if 'overview' not in enriched:
-            enriched['overview'] = cls.fetch_overview(symbol)
+        if "overview" not in enriched:
+            enriched["overview"] = cls.fetch_overview(symbol)
 
         # 뉴스 추가
-        if 'news' not in enriched:
-            enriched['news'] = cls.fetch_news(symbol)
+        if "news" not in enriched:
+            enriched["news"] = cls.fetch_news(symbol)
 
         return enriched

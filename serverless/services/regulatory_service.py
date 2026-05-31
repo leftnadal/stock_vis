@@ -14,6 +14,7 @@ Usage:
     result = service.scan_regulatory_news(hours=168)
     # {"categories_found": 3, "relationships_created": 15, "groups": [...]}
 """
+
 import json
 import logging
 import re
@@ -31,45 +32,103 @@ logger = logging.getLogger(__name__)
 
 # 규제 카테고리 정의
 REGULATORY_CATEGORIES = {
-    'antitrust': {
-        'name': '반독점',
-        'keywords': ['antitrust', 'monopoly', 'FTC', 'DOJ antitrust', 'anti-competitive',
-                     'merger blocked', 'antitrust lawsuit', 'market dominance'],
+    "antitrust": {
+        "name": "반독점",
+        "keywords": [
+            "antitrust",
+            "monopoly",
+            "FTC",
+            "DOJ antitrust",
+            "anti-competitive",
+            "merger blocked",
+            "antitrust lawsuit",
+            "market dominance",
+        ],
     },
-    'fda': {
-        'name': 'FDA',
-        'keywords': ['FDA approval', 'clinical trial', 'Phase III', 'FDA rejection',
-                     'drug approval', 'NDA filing', 'FDA warning', 'biosimilar'],
+    "fda": {
+        "name": "FDA",
+        "keywords": [
+            "FDA approval",
+            "clinical trial",
+            "Phase III",
+            "FDA rejection",
+            "drug approval",
+            "NDA filing",
+            "FDA warning",
+            "biosimilar",
+        ],
     },
-    'china_tariff': {
-        'name': '중국 제재',
-        'keywords': ['China tariff', 'export control', 'entity list', 'China ban',
-                     'trade war', 'CHIPS Act', 'semiconductor export', 'Huawei'],
+    "china_tariff": {
+        "name": "중국 제재",
+        "keywords": [
+            "China tariff",
+            "export control",
+            "entity list",
+            "China ban",
+            "trade war",
+            "CHIPS Act",
+            "semiconductor export",
+            "Huawei",
+        ],
     },
-    'data_privacy': {
-        'name': '데이터 프라이버시',
-        'keywords': ['GDPR', 'data breach', 'CCPA', 'privacy violation',
-                     'data protection', 'privacy fine', 'consent decree'],
+    "data_privacy": {
+        "name": "데이터 프라이버시",
+        "keywords": [
+            "GDPR",
+            "data breach",
+            "CCPA",
+            "privacy violation",
+            "data protection",
+            "privacy fine",
+            "consent decree",
+        ],
     },
-    'financial_regulation': {
-        'name': '금융 규제',
-        'keywords': ['Basel', 'stress test', 'Dodd-Frank', 'SEC investigation',
-                     'bank regulation', 'capital requirement', 'FDIC'],
+    "financial_regulation": {
+        "name": "금융 규제",
+        "keywords": [
+            "Basel",
+            "stress test",
+            "Dodd-Frank",
+            "SEC investigation",
+            "bank regulation",
+            "capital requirement",
+            "FDIC",
+        ],
     },
-    'environmental': {
-        'name': '환경 규제',
-        'keywords': ['EPA', 'emissions', 'carbon tax', 'climate regulation',
-                     'environmental fine', 'pollution', 'ESG mandate'],
+    "environmental": {
+        "name": "환경 규제",
+        "keywords": [
+            "EPA",
+            "emissions",
+            "carbon tax",
+            "climate regulation",
+            "environmental fine",
+            "pollution",
+            "ESG mandate",
+        ],
     },
-    'crypto_regulation': {
-        'name': '암호화폐 규제',
-        'keywords': ['SEC crypto', 'Bitcoin ETF', 'stablecoin regulation',
-                     'crypto exchange', 'digital asset', 'CFTC'],
+    "crypto_regulation": {
+        "name": "암호화폐 규제",
+        "keywords": [
+            "SEC crypto",
+            "Bitcoin ETF",
+            "stablecoin regulation",
+            "crypto exchange",
+            "digital asset",
+            "CFTC",
+        ],
     },
-    'ai_regulation': {
-        'name': 'AI 규제',
-        'keywords': ['AI regulation', 'AI safety', 'EU AI Act', 'AI governance',
-                     'algorithmic bias', 'AI ethics', 'deepfake regulation'],
+    "ai_regulation": {
+        "name": "AI 규제",
+        "keywords": [
+            "AI regulation",
+            "AI safety",
+            "EU AI Act",
+            "AI governance",
+            "algorithmic bias",
+            "AI ethics",
+            "deepfake regulation",
+        ],
     },
 }
 
@@ -85,7 +144,10 @@ class RegulatoryService:
         if self._gemini_client is None:
             try:
                 from google import genai
-                api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+
+                api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+                    settings, "GEMINI_API_KEY", None
+                )
                 if api_key:
                     self._gemini_client = genai.Client(api_key=api_key)
                     logger.info("Gemini client initialized for regulatory service")
@@ -130,11 +192,15 @@ class RegulatoryService:
             from news.models import NewsArticle
 
             cutoff = timezone.now() - timedelta(hours=hours)
-            articles = NewsArticle.objects.filter(
-                published_at__gte=cutoff
-            ).prefetch_related('entities').order_by('-published_at')
+            articles = (
+                NewsArticle.objects.filter(published_at__gte=cutoff)
+                .prefetch_related("entities")
+                .order_by("-published_at")
+            )
 
-            logger.info(f"Scanning {articles.count()} news articles for regulatory keywords")
+            logger.info(
+                f"Scanning {articles.count()} news articles for regulatory keywords"
+            )
 
             # 카테고리별 종목 그룹
             category_groups: Dict[str, Set[str]] = {}
@@ -144,7 +210,9 @@ class RegulatoryService:
                 text = f"{article.title} {article.summary or ''}"
 
                 # 규제 카테고리 매칭
-                matched_categories = self._match_news_to_categories(article.title, article.summary)
+                matched_categories = self._match_news_to_categories(
+                    article.title, article.summary
+                )
 
                 if not matched_categories:
                     continue
@@ -183,27 +251,29 @@ class RegulatoryService:
                 count = self.create_regulatory_relationships(
                     category=category,
                     symbols=symbols_list,
-                    evidence='; '.join(evidence)
+                    evidence="; ".join(evidence),
                 )
 
                 total_relationships += count
 
-                groups.append({
-                    'category': category,
-                    'category_name': REGULATORY_CATEGORIES[category]['name'],
-                    'symbols': symbols_list,
-                    'count': len(symbols_list),
-                    'evidence': evidence,
-                })
+                groups.append(
+                    {
+                        "category": category,
+                        "category_name": REGULATORY_CATEGORIES[category]["name"],
+                        "symbols": symbols_list,
+                        "count": len(symbols_list),
+                        "evidence": evidence,
+                    }
+                )
 
                 logger.info(
                     f"Regulatory group found: {category} with {len(symbols_list)} symbols"
                 )
 
             result = {
-                'categories_found': len(groups),
-                'relationships_created': total_relationships,
-                'groups': groups,
+                "categories_found": len(groups),
+                "relationships_created": total_relationships,
+                "groups": groups,
             }
 
             logger.info(f"Regulatory scan complete: {result}")
@@ -212,10 +282,10 @@ class RegulatoryService:
         except Exception as e:
             logger.error(f"Error scanning regulatory news: {e}", exc_info=True)
             return {
-                'categories_found': 0,
-                'relationships_created': 0,
-                'groups': [],
-                'error': str(e),
+                "categories_found": 0,
+                "relationships_created": 0,
+                "groups": [],
+                "error": str(e),
             }
 
     def scan_8k_filings(self, symbols: List[str] = None) -> List[Dict]:
@@ -277,12 +347,14 @@ class RegulatoryService:
                         # Extract evidence (surrounding context)
                         evidence = self._extract_evidence(text, category)
 
-                        results.append({
-                            'symbol': symbol,
-                            'category': category,
-                            'evidence': evidence[:500],
-                            'filing_date': filing.get('filing_date', ''),
-                        })
+                        results.append(
+                            {
+                                "symbol": symbol,
+                                "category": category,
+                                "evidence": evidence[:500],
+                                "filing_date": filing.get("filing_date", ""),
+                            }
+                        )
 
                         logger.info(f"8-K regulatory match: {symbol} - {category}")
 
@@ -299,22 +371,24 @@ class RegulatoryService:
         """Get recent 8-K filings metadata"""
         try:
             company_data = client.get_company_info(cik)
-            filings_data = company_data.get('filings', {}).get('recent', {})
+            filings_data = company_data.get("filings", {}).get("recent", {})
 
-            forms = filings_data.get('form', [])
-            accession_numbers = filings_data.get('accessionNumber', [])
-            filing_dates = filings_data.get('filingDate', [])
-            primary_documents = filings_data.get('primaryDocument', [])
+            forms = filings_data.get("form", [])
+            accession_numbers = filings_data.get("accessionNumber", [])
+            filing_dates = filings_data.get("filingDate", [])
+            primary_documents = filings_data.get("primaryDocument", [])
 
             filings = []
             for i, form in enumerate(forms):
-                if form in ('8-K', '8-K/A') and len(filings) < limit:
-                    filings.append({
-                        'accession_number': accession_numbers[i].replace('-', ''),
-                        'filing_date': filing_dates[i],
-                        'primary_document': primary_documents[i],
-                        'cik': cik,
-                    })
+                if form in ("8-K", "8-K/A") and len(filings) < limit:
+                    filings.append(
+                        {
+                            "accession_number": accession_numbers[i].replace("-", ""),
+                            "filing_date": filing_dates[i],
+                            "primary_document": primary_documents[i],
+                            "cik": cik,
+                        }
+                    )
 
             return filings
 
@@ -333,16 +407,16 @@ class RegulatoryService:
             response = client._make_request(url, timeout=60)
 
             # Convert HTML to text
-            if filing['primary_document'].endswith(('.htm', '.html')):
+            if filing["primary_document"].endswith((".htm", ".html")):
                 text = client._html_to_text(response.text)
             else:
                 text = response.text
 
             # Extract Item 8.01 if possible
             item_8_match = re.search(
-                r'Item\s*8\.01\s*[:\.\-]?\s*(.{500,10000}?)(?=Item\s*9|SIGNATURES|$)',
+                r"Item\s*8\.01\s*[:\.\-]?\s*(.{500,10000}?)(?=Item\s*9|SIGNATURES|$)",
                 text,
-                re.IGNORECASE | re.DOTALL
+                re.IGNORECASE | re.DOTALL,
             )
 
             if item_8_match:
@@ -357,15 +431,11 @@ class RegulatoryService:
 
     def _extract_evidence(self, text: str, category: str) -> str:
         """Extract evidence text for a category match"""
-        keywords = REGULATORY_CATEGORIES[category]['keywords']
+        keywords = REGULATORY_CATEGORIES[category]["keywords"]
 
         # Find first keyword match
         for keyword in keywords:
-            match = re.search(
-                re.escape(keyword),
-                text,
-                re.IGNORECASE
-            )
+            match = re.search(re.escape(keyword), text, re.IGNORECASE)
             if match:
                 # Extract 250 chars before and after
                 start = max(0, match.start() - 250)
@@ -399,10 +469,12 @@ class RegulatoryService:
             return []
 
         # Build prompt
-        text_snippets = "\n\n".join([
-            f"Symbol: {item['symbol']}\nText: {item['text'][:500]}"
-            for item in texts[:10]  # Limit to 10 for token budget
-        ])
+        text_snippets = "\n\n".join(
+            [
+                f"Symbol: {item['symbol']}\nText: {item['text'][:500]}"
+                for item in texts[:10]  # Limit to 10 for token budget
+            ]
+        )
 
         prompt = f"""You are a financial analyst specializing in regulatory risk analysis.
 
@@ -440,19 +512,19 @@ Rules:
         try:
             # Use sync API (Bug #8)
             response = client.models.generate_content(
-                model='gemini-2.0-flash-exp',
+                model="gemini-2.0-flash-exp",
                 contents=prompt,
                 config={
-                    'temperature': 0.3,
-                    'max_output_tokens': 2000,
-                }
+                    "temperature": 0.3,
+                    "max_output_tokens": 2000,
+                },
             )
 
             # Parse JSON response
             text = response.text.strip()
 
             # Extract JSON array
-            json_match = re.search(r'\[.*\]', text, re.DOTALL)
+            json_match = re.search(r"\[.*\]", text, re.DOTALL)
             if not json_match:
                 logger.warning("No JSON found in LLM response")
                 return []
@@ -471,10 +543,7 @@ Rules:
             time.sleep(4)
 
     def create_regulatory_relationships(
-        self,
-        category: str,
-        symbols: List[str],
-        evidence: str = ''
+        self, category: str, symbols: List[str], evidence: str = ""
     ) -> int:
         """
         N개 종목 → N*(N-1)/2 SAME_REGULATION 관계 생성
@@ -524,24 +593,24 @@ Rules:
                         obj, created = StockRelationship.objects.update_or_create(
                             source_symbol=s1,
                             target_symbol=s2,
-                            relationship_type='SAME_REGULATION',
+                            relationship_type="SAME_REGULATION",
                             defaults={
-                                'strength': Decimal('0.70'),
-                                'source_provider': 'regulatory_llm',
-                                'context': {
-                                    'category': category,
-                                    'category_name': REGULATORY_CATEGORIES[category]['name'],
-                                    'evidence': evidence[:500],
-                                    'discovered_at': timezone.now().isoformat(),
-                                }
-                            }
+                                "strength": Decimal("0.70"),
+                                "source_provider": "regulatory_llm",
+                                "context": {
+                                    "category": category,
+                                    "category_name": REGULATORY_CATEGORIES[category][
+                                        "name"
+                                    ],
+                                    "evidence": evidence[:500],
+                                    "discovered_at": timezone.now().isoformat(),
+                                },
+                            },
                         )
 
                         if created:
                             created_count += 1
-                            logger.debug(
-                                f"SAME_REGULATION: {s1} <-> {s2} ({category})"
-                            )
+                            logger.debug(f"SAME_REGULATION: {s1} <-> {s2} ({category})")
 
             logger.info(
                 f"Created {created_count} SAME_REGULATION relationships for {category}"
@@ -552,11 +621,7 @@ Rules:
             logger.error(f"Error creating regulatory relationships: {e}", exc_info=True)
             return 0
 
-    def _match_news_to_categories(
-        self,
-        headline: str,
-        content: str = ''
-    ) -> List[str]:
+    def _match_news_to_categories(self, headline: str, content: str = "") -> List[str]:
         """
         뉴스 텍스트와 규제 카테고리 매칭
 
@@ -571,7 +636,7 @@ Rules:
         matched = []
 
         for category, config in REGULATORY_CATEGORIES.items():
-            keywords = config['keywords']
+            keywords = config["keywords"]
 
             for keyword in keywords:
                 if keyword.lower() in text:
@@ -593,7 +658,7 @@ Rules:
         symbols = []
 
         # NewsEntity에서 추출
-        for entity in news.entities.filter(entity_type='equity'):
+        for entity in news.entities.filter(entity_type="equity"):
             symbols.append(entity.symbol.upper())
 
         return list(set(symbols))  # 중복 제거

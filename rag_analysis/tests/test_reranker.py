@@ -22,7 +22,7 @@ class TestCrossEncoderReranker:
     @pytest.fixture
     def mock_cross_encoder(self):
         """Mock Cross-Encoder 모델"""
-        with patch('rag_analysis.services.reranker.CrossEncoder') as mock:
+        with patch("rag_analysis.services.reranker.CrossEncoder") as mock:
             mock_model = MagicMock()
             mock.return_value = mock_model
             yield mock_model
@@ -40,19 +40,31 @@ class TestCrossEncoderReranker:
         """샘플 문서 데이터"""
         return [
             (
-                {'title': 'AAPL Q4 실적', 'content': 'Apple 4분기 실적 발표...', 'symbol': 'AAPL'},
+                {
+                    "title": "AAPL Q4 실적",
+                    "content": "Apple 4분기 실적 발표...",
+                    "symbol": "AAPL",
+                },
                 0.85,
-                {'vector': 0.8, 'bm25': 0.9}
+                {"vector": 0.8, "bm25": 0.9},
             ),
             (
-                {'title': 'MSFT 클라우드', 'content': 'Microsoft Azure 성장...', 'symbol': 'MSFT'},
+                {
+                    "title": "MSFT 클라우드",
+                    "content": "Microsoft Azure 성장...",
+                    "symbol": "MSFT",
+                },
                 0.75,
-                {'vector': 0.7, 'bm25': 0.8}
+                {"vector": 0.7, "bm25": 0.8},
             ),
             (
-                {'title': 'NVDA GPU', 'content': 'NVIDIA AI 칩 수요...', 'symbol': 'NVDA'},
+                {
+                    "title": "NVDA GPU",
+                    "content": "NVIDIA AI 칩 수요...",
+                    "symbol": "NVDA",
+                },
                 0.65,
-                {'vector': 0.6, 'bm25': 0.7}
+                {"vector": 0.6, "bm25": 0.7},
             ),
         ]
 
@@ -84,12 +96,14 @@ class TestCrossEncoderReranker:
 
         # 검증
         assert len(result) == 2
-        assert result[0][0]['symbol'] == 'NVDA'  # 가장 높은 점수
+        assert result[0][0]["symbol"] == "NVDA"  # 가장 높은 점수
         assert result[0][1] == 0.9
-        assert result[1][0]['symbol'] == 'AAPL'  # 두 번째 점수
+        assert result[1][0]["symbol"] == "AAPL"  # 두 번째 점수
         assert result[1][1] == 0.6
 
-    def test_rerank_with_breakdown_update(self, reranker, sample_documents, mock_cross_encoder):
+    def test_rerank_with_breakdown_update(
+        self, reranker, sample_documents, mock_cross_encoder
+    ):
         """breakdown에 rerank 점수 추가 검증"""
         mock_scores = np.array([0.8, 0.7, 0.6])
         reranker.model.predict = MagicMock(return_value=mock_scores)
@@ -99,12 +113,12 @@ class TestCrossEncoderReranker:
 
         # breakdown에 rerank 점수 포함 확인
         # 정렬 후 순서: 0번(0.8) > 1번(0.7) > 2번(0.6)
-        assert 'rerank' in result[0][2]
-        assert 'original_score' in result[0][2]
-        assert 'vector' in result[0][2]  # 기존 breakdown 유지
-        assert 'bm25' in result[0][2]
+        assert "rerank" in result[0][2]
+        assert "original_score" in result[0][2]
+        assert "vector" in result[0][2]  # 기존 breakdown 유지
+        assert "bm25" in result[0][2]
         # 첫 번째 문서는 원래 0.85 점수였고, rerank 후 0.8 점수
-        assert result[0][2]['rerank'] == 0.8
+        assert result[0][2]["rerank"] == 0.8
 
     def test_rerank_empty_documents(self, reranker):
         """빈 문서 리스트 처리"""
@@ -114,13 +128,15 @@ class TestCrossEncoderReranker:
     def test_rerank_less_than_topk(self, reranker, mock_cross_encoder):
         """문서 수가 top_k보다 적을 때"""
         docs = [
-            ({'title': 'Doc1', 'content': 'Content1'}, 0.8, {}),
+            ({"title": "Doc1", "content": "Content1"}, 0.8, {}),
         ]
 
         result = reranker.rerank("질문", docs, top_k=3)
         assert result == docs  # 그대로 반환
 
-    def test_rerank_prediction_error(self, reranker, sample_documents, mock_cross_encoder):
+    def test_rerank_prediction_error(
+        self, reranker, sample_documents, mock_cross_encoder
+    ):
         """Cross-Encoder 예측 에러 처리"""
         reranker.model.predict = MagicMock(side_effect=Exception("Model error"))
 
@@ -133,26 +149,26 @@ class TestCrossEncoderReranker:
     def test_get_document_text(self, reranker):
         """문서 텍스트 추출 로직"""
         # 제목 + 본문
-        doc1 = {'title': 'Title', 'content': 'Content' * 100}
+        doc1 = {"title": "Title", "content": "Content" * 100}
         text1 = reranker._get_document_text(doc1)
-        assert 'Title' in text1
-        assert 'Content' in text1
+        assert "Title" in text1
+        assert "Content" in text1
         assert len(text1) <= reranker.MAX_TEXT_LENGTH
 
         # 제목만
-        doc2 = {'title': 'Only Title'}
+        doc2 = {"title": "Only Title"}
         text2 = reranker._get_document_text(doc2)
-        assert text2 == 'Only Title'
+        assert text2 == "Only Title"
 
         # 본문만 (여러 필드 우선순위)
-        doc3 = {'text': 'Text field', 'description': 'Description field'}
+        doc3 = {"text": "Text field", "description": "Description field"}
         text3 = reranker._get_document_text(doc3)
-        assert text3 == 'Text field'  # text가 우선순위
+        assert text3 == "Text field"  # text가 우선순위
 
         # 빈 문서
         doc4 = {}
         text4 = reranker._get_document_text(doc4)
-        assert text4 == ''
+        assert text4 == ""
 
 
 class TestRerankerWithThreshold:
@@ -173,13 +189,15 @@ class TestRerankerWithThreshold:
     def sample_reranked_docs(self):
         """재순위화된 샘플 문서"""
         return [
-            ({'symbol': 'AAPL'}, 0.9, {'rerank': 0.9}),
-            ({'symbol': 'MSFT'}, 0.6, {'rerank': 0.6}),
-            ({'symbol': 'NVDA'}, 0.4, {'rerank': 0.4}),  # 임계값 미달
-            ({'symbol': 'TSLA'}, 0.3, {'rerank': 0.3}),  # 임계값 미달
+            ({"symbol": "AAPL"}, 0.9, {"rerank": 0.9}),
+            ({"symbol": "MSFT"}, 0.6, {"rerank": 0.6}),
+            ({"symbol": "NVDA"}, 0.4, {"rerank": 0.4}),  # 임계값 미달
+            ({"symbol": "TSLA"}, 0.3, {"rerank": 0.3}),  # 임계값 미달
         ]
 
-    def test_threshold_filtering(self, threshold_reranker, mock_base_reranker, sample_reranked_docs):
+    def test_threshold_filtering(
+        self, threshold_reranker, mock_base_reranker, sample_reranked_docs
+    ):
         """임계값 필터링 동작"""
         mock_base_reranker.rerank.return_value = sample_reranked_docs
 
@@ -187,10 +205,12 @@ class TestRerankerWithThreshold:
 
         # 0.5 이상만 선택
         assert len(result) == 2
-        assert result[0][0]['symbol'] == 'AAPL'
-        assert result[1][0]['symbol'] == 'MSFT'
+        assert result[0][0]["symbol"] == "AAPL"
+        assert result[1][0]["symbol"] == "MSFT"
 
-    def test_min_docs_guarantee(self, threshold_reranker, mock_base_reranker, sample_reranked_docs):
+    def test_min_docs_guarantee(
+        self, threshold_reranker, mock_base_reranker, sample_reranked_docs
+    ):
         """최소 문서 수 보장"""
         mock_base_reranker.rerank.return_value = sample_reranked_docs
 
@@ -200,7 +220,9 @@ class TestRerankerWithThreshold:
         # 임계값 미달이어도 상위 3개 반환
         assert len(result) == 3
 
-    def test_top_k_selection(self, threshold_reranker, mock_base_reranker, sample_reranked_docs):
+    def test_top_k_selection(
+        self, threshold_reranker, mock_base_reranker, sample_reranked_docs
+    ):
         """Top-K 선택"""
         mock_base_reranker.rerank.return_value = sample_reranked_docs
 
@@ -208,7 +230,7 @@ class TestRerankerWithThreshold:
 
         # 필터링 후 상위 1개만
         assert len(result) == 1
-        assert result[0][0]['symbol'] == 'AAPL'
+        assert result[0][0]["symbol"] == "AAPL"
 
     def test_threshold_clamping(self):
         """임계값 범위 제한"""
@@ -232,7 +254,7 @@ class TestGetReranker:
         CrossEncoderReranker._instance = None
         CrossEncoderReranker._model = None
 
-    @patch('rag_analysis.services.reranker.CrossEncoder')
+    @patch("rag_analysis.services.reranker.CrossEncoder")
     def test_get_basic_reranker(self, mock_cross_encoder):
         """기본 reranker 생성"""
         reranker = get_reranker(with_threshold=False)
@@ -240,7 +262,7 @@ class TestGetReranker:
         assert isinstance(reranker, CrossEncoderReranker)
         assert not isinstance(reranker, RerankerWithThreshold)
 
-    @patch('rag_analysis.services.reranker.CrossEncoder')
+    @patch("rag_analysis.services.reranker.CrossEncoder")
     def test_get_threshold_reranker(self, mock_cross_encoder):
         """임계값 reranker 생성"""
         reranker = get_reranker(with_threshold=True, threshold=0.6)

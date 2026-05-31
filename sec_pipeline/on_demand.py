@@ -30,38 +30,40 @@ def get_or_collect_filing(symbol: str) -> Optional[dict]:
 
     # 1년 이내 문서 확인
     existing = (
-        RawDocumentStore.objects
-        .filter(symbol_id=symbol, filing_date__gte=one_year_ago.date())
-        .order_by('-filing_date')
+        RawDocumentStore.objects.filter(
+            symbol_id=symbol, filing_date__gte=one_year_ago.date()
+        )
+        .order_by("-filing_date")
         .first()
     )
 
     if existing:
         return {
-            'symbol': symbol,
-            'status': 'available',
-            'filing_date': str(existing.filing_date),
-            'fiscal_year': existing.fiscal_year,
-            'doc_status': existing.status,
+            "symbol": symbol,
+            "status": "available",
+            "filing_date": str(existing.filing_date),
+            "fiscal_year": existing.fiscal_year,
+            "doc_status": existing.status,
         }
 
     # 중복 방지: 1시간 이내 수집 로그 확인
     one_hour_ago = timezone.now() - timedelta(hours=1)
     recent_log = FilingProcessLog.objects.filter(
         symbol=symbol,
-        stage='fmp_metadata',
+        stage="fmp_metadata",
         started_at__gte=one_hour_ago,
     ).exists()
 
     if recent_log:
         return {
-            'symbol': symbol,
-            'status': 'collecting',
-            'message': 'Collection already in progress',
+            "symbol": symbol,
+            "status": "collecting",
+            "message": "Collection already in progress",
         }
 
     # 비동기 수집 트리거
     from .tasks import collect_and_extract
+
     collect_and_extract.delay(symbol)
 
     logger.info(f"On-demand collection triggered for {symbol}")

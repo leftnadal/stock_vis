@@ -20,12 +20,12 @@ logger = logging.getLogger(__name__)
 
 
 class RelativeMetricCalculator:
-
     def calculate_for_symbols(self, symbols: list[str] = None) -> dict:
         if symbols is None:
             symbols = list(
-                SP500Constituent.objects.filter(is_active=True)
-                .values_list('symbol', flat=True)
+                SP500Constituent.objects.filter(is_active=True).values_list(
+                    "symbol", flat=True
+                )
             )
 
         total = len(symbols)
@@ -44,9 +44,9 @@ class RelativeMetricCalculator:
                 logger.error(f"relative_metrics failed {symbol}: {e}")
 
             if (i + 1) % 100 == 0:
-                logger.info(f"Relative progress: {i+1}/{total}")
+                logger.info(f"Relative progress: {i + 1}/{total}")
 
-        return {'total': total, 'success': success, 'skip': skip}
+        return {"total": total, "success": success, "skip": skip}
 
     def _calc_rev_growth_vs_industry(self, symbol: str) -> bool:
         stock = Stock.objects.filter(symbol=symbol).first()
@@ -56,8 +56,8 @@ class RelativeMetricCalculator:
         # 자사 revenue_growth_yoy snapshot 조회
         company_snaps = CompanyMetricSnapshot.objects.filter(
             symbol_id=symbol,
-            metric_code_id='revenue_growth_yoy',
-            value_status='normal',
+            metric_code_id="revenue_growth_yoy",
+            value_status="normal",
             metric_value__isnull=False,
         )
         if not company_snaps.exists():
@@ -69,7 +69,7 @@ class RelativeMetricCalculator:
             ind_bench = IndustryMetricBenchmark.objects.filter(
                 industry=stock.industry,
                 fiscal_year=snap.fiscal_year,
-                metric_code_id='revenue_growth_yoy',
+                metric_code_id="revenue_growth_yoy",
             ).first()
 
             if not ind_bench or ind_bench.median_value is None:
@@ -83,17 +83,17 @@ class RelativeMetricCalculator:
             CompanyMetricSnapshot.objects.update_or_create(
                 symbol=stock,
                 fiscal_year=snap.fiscal_year,
-                metric_code_id='rev_growth_vs_industry',
+                metric_code_id="rev_growth_vs_industry",
                 defaults={
-                    'metric_value': Decimal(str(round(relative, 6))),
-                    'value_status': 'normal',
-                    'exclusion_reason': '',
-                    'source_detail': {
-                        'company_growth': company_val,
-                        'industry_median': industry_median,
-                        'calculated_at': timezone.now().isoformat(),
+                    "metric_value": Decimal(str(round(relative, 6))),
+                    "value_status": "normal",
+                    "exclusion_reason": "",
+                    "source_detail": {
+                        "company_growth": company_val,
+                        "industry_median": industry_median,
+                        "calculated_at": timezone.now().isoformat(),
                     },
-                }
+                },
             )
             updated = True
 

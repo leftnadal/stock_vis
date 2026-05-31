@@ -30,6 +30,7 @@ Usage:
     # SEC 10-K 처리
     relations = extractor.extract_from_10k(filing_text, symbol)
 """
+
 import json
 import logging
 import re
@@ -58,6 +59,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ExtractedRelation:
     """추출된 관계 데이터"""
+
     source_company: str
     target_company: str
     relation_type: str
@@ -69,6 +71,7 @@ class ExtractedRelation:
 @dataclass
 class ExtractionResult:
     """추출 결과"""
+
     relations: List[ExtractedRelation]
     source_id: str
     source_type: str
@@ -97,7 +100,11 @@ class LLMRelationExtractor:
     CACHE_TTL = 3600  # 1시간 (동일 뉴스 재처리 방지)
 
     VALID_RELATION_TYPES = {
-        'ACQUIRED', 'INVESTED_IN', 'PARTNER_OF', 'SPIN_OFF', 'SUED_BY'
+        "ACQUIRED",
+        "INVESTED_IN",
+        "PARTNER_OF",
+        "SPIN_OFF",
+        "SUED_BY",
     }
 
     SYSTEM_PROMPT = """You are a financial news analyst specializing in extracting corporate relationships from news articles and SEC filings.
@@ -143,8 +150,9 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
 
     def __init__(self):
         # Gemini API 클라이언트 초기화
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or \
-                  getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
@@ -161,9 +169,9 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
         self,
         text: str,
         source_id: str,
-        source_type: str = 'news',
+        source_type: str = "news",
         source_url: Optional[str] = None,
-        skip_prefilter: bool = False
+        skip_prefilter: bool = False,
     ) -> ExtractionResult:
         """
         텍스트에서 관계 추출
@@ -196,7 +204,7 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
                     relations=[],
                     source_id=source_id,
                     source_type=source_type,
-                    extraction_time_ms=int((time.time() - start_time) * 1000)
+                    extraction_time_ms=int((time.time() - start_time) * 1000),
                 )
                 cache.set(cache_key, result, self.CACHE_TTL)
                 return result
@@ -210,9 +218,9 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
                 relations=relations,
                 source_id=source_id,
                 source_type=source_type,
-                prompt_tokens=llm_result.get('prompt_tokens', 0),
-                completion_tokens=llm_result.get('completion_tokens', 0),
-                extraction_time_ms=int((time.time() - start_time) * 1000)
+                prompt_tokens=llm_result.get("prompt_tokens", 0),
+                completion_tokens=llm_result.get("completion_tokens", 0),
+                extraction_time_ms=int((time.time() - start_time) * 1000),
             )
 
             # 결과 캐싱
@@ -232,14 +240,14 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
                 source_id=source_id,
                 source_type=source_type,
                 extraction_time_ms=int((time.time() - start_time) * 1000),
-                error=str(e)
+                error=str(e),
             )
 
     def extract_and_save(
         self,
         text: str,
         source_id: str,
-        source_type: str = 'news',
+        source_type: str = "news",
         source_url: Optional[str] = None,
     ) -> List[LLMExtractedRelation]:
         """
@@ -258,7 +266,7 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
             text=text,
             source_id=source_id,
             source_type=source_type,
-            source_url=source_url
+            source_url=source_url,
         )
 
         if result.error or not result.relations:
@@ -286,18 +294,18 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
                     relation_type=rel.relation_type,
                     source_id=source_id,
                     defaults={
-                        'source_type': source_type,
-                        'source_url': source_url,
-                        'evidence': rel.evidence[:500],  # 최대 500자
-                        'context': rel.context,
-                        'confidence': self._score_to_level(rel.confidence_score),
-                        'llm_confidence_score': rel.confidence_score,
-                        'llm_model': self.MODEL,
-                        'prompt_tokens': result.prompt_tokens,
-                        'completion_tokens': result.completion_tokens,
-                        'extraction_time_ms': result.extraction_time_ms,
-                        'expires_at': timezone.now() + timedelta(days=30),
-                    }
+                        "source_type": source_type,
+                        "source_url": source_url,
+                        "evidence": rel.evidence[:500],  # 최대 500자
+                        "context": rel.context,
+                        "confidence": self._score_to_level(rel.confidence_score),
+                        "llm_confidence_score": rel.confidence_score,
+                        "llm_model": self.MODEL,
+                        "prompt_tokens": result.prompt_tokens,
+                        "completion_tokens": result.completion_tokens,
+                        "extraction_time_ms": result.extraction_time_ms,
+                        "expires_at": timezone.now() + timedelta(days=30),
+                    },
                 )
 
                 if created:
@@ -316,9 +324,9 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
     def extract_batch(
         self,
         documents: List[Dict[str, Any]],
-        text_field: str = 'content',
-        id_field: str = 'id',
-        source_type: str = 'news'
+        text_field: str = "content",
+        id_field: str = "id",
+        source_type: str = "news",
     ) -> Dict[str, ExtractionResult]:
         """
         배치 문서 처리
@@ -336,27 +344,24 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
 
         # 사전 필터링
         candidates = self.pre_filter.filter_batch(
-            documents,
-            text_field=text_field,
-            min_confidence=0.3
+            documents, text_field=text_field, min_confidence=0.3
         )
 
         logger.info(
-            f"Batch processing: {len(candidates)}/{len(documents)} "
-            f"passed pre-filter"
+            f"Batch processing: {len(candidates)}/{len(documents)} passed pre-filter"
         )
 
         for doc, pre_result in candidates:
-            source_id = str(doc.get(id_field, ''))
-            text = doc.get(text_field, '')
-            source_url = doc.get('url') or doc.get('source_url')
+            source_id = str(doc.get(id_field, ""))
+            text = doc.get(text_field, "")
+            source_url = doc.get("url") or doc.get("source_url")
 
             result = self.extract_from_text(
                 text=text,
                 source_id=source_id,
                 source_type=source_type,
                 source_url=source_url,
-                skip_prefilter=True  # 이미 필터링됨
+                skip_prefilter=True,  # 이미 필터링됨
             )
 
             results[source_id] = result
@@ -388,7 +393,7 @@ Return only valid JSON with the extracted relations."""
                         parts=[
                             types.Part(text=self.SYSTEM_PROMPT),
                             types.Part(text=user_prompt),
-                        ]
+                        ],
                     )
                 ],
                 config=types.GenerateContentConfig(
@@ -396,58 +401,67 @@ Return only valid JSON with the extracted relations."""
                     max_output_tokens=self.MAX_OUTPUT_TOKENS,
                     response_mime_type="application/json",
                     thinking_config=types.ThinkingConfig(thinking_budget=0),
-                )
+                ),
             )
 
             # 토큰 사용량 추출
-            usage = getattr(response, 'usage_metadata', None)
-            prompt_tokens = getattr(usage, 'prompt_token_count', 0) if usage else 0
-            completion_tokens = getattr(usage, 'candidates_token_count', 0) if usage else 0
+            usage = getattr(response, "usage_metadata", None)
+            prompt_tokens = getattr(usage, "prompt_token_count", 0) if usage else 0
+            completion_tokens = (
+                getattr(usage, "candidates_token_count", 0) if usage else 0
+            )
 
             return {
-                'text': response.text,
-                'prompt_tokens': prompt_tokens,
-                'completion_tokens': completion_tokens,
+                "text": response.text,
+                "prompt_tokens": prompt_tokens,
+                "completion_tokens": completion_tokens,
             }
 
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
             raise
 
-    def _parse_llm_response(self, llm_result: Dict[str, Any]) -> List[ExtractedRelation]:
+    def _parse_llm_response(
+        self, llm_result: Dict[str, Any]
+    ) -> List[ExtractedRelation]:
         """LLM 응답 파싱"""
         relations = []
 
         try:
-            text = llm_result.get('text', '')
+            text = llm_result.get("text", "")
 
             # JSON 파싱
             data = json.loads(text)
-            raw_relations = data.get('relations', [])
+            raw_relations = data.get("relations", [])
 
             for r in raw_relations:
                 # 필수 필드 검증
-                if not all(k in r for k in ['source_company', 'target_company', 'relation_type']):
+                if not all(
+                    k in r
+                    for k in ["source_company", "target_company", "relation_type"]
+                ):
                     continue
 
                 # 관계 타입 검증
-                relation_type = r['relation_type'].upper()
+                relation_type = r["relation_type"].upper()
                 if relation_type not in self.VALID_RELATION_TYPES:
                     continue
 
-                relations.append(ExtractedRelation(
-                    source_company=r['source_company'],
-                    target_company=r['target_company'],
-                    relation_type=relation_type,
-                    confidence_score=float(r.get('confidence', 0.5)),
-                    evidence=r.get('evidence', ''),
-                    context=r.get('context', {}),
-                ))
+                relations.append(
+                    ExtractedRelation(
+                        source_company=r["source_company"],
+                        target_company=r["target_company"],
+                        relation_type=relation_type,
+                        confidence_score=float(r.get("confidence", 0.5)),
+                        evidence=r.get("evidence", ""),
+                        context=r.get("context", {}),
+                    )
+                )
 
         except json.JSONDecodeError as e:
             logger.warning(f"JSON parse failed: {e}")
             # 정규식으로 복구 시도
-            relations = self._recover_from_partial_json(llm_result.get('text', ''))
+            relations = self._recover_from_partial_json(llm_result.get("text", ""))
 
         return relations
 
@@ -462,14 +476,16 @@ Return only valid JSON with the extracted relations."""
             source, target, rel_type = match.groups()
 
             if rel_type.upper() in self.VALID_RELATION_TYPES:
-                relations.append(ExtractedRelation(
-                    source_company=source,
-                    target_company=target,
-                    relation_type=rel_type.upper(),
-                    confidence_score=0.5,  # 복구된 데이터는 중간 신뢰도
-                    evidence="[Recovered from partial response]",
-                    context={},
-                ))
+                relations.append(
+                    ExtractedRelation(
+                        source_company=source,
+                        target_company=target,
+                        relation_type=rel_type.upper(),
+                        confidence_score=0.5,  # 복구된 데이터는 중간 신뢰도
+                        evidence="[Recovered from partial response]",
+                        context={},
+                    )
+                )
 
         if relations:
             logger.info(f"Recovered {len(relations)} relations from partial JSON")
@@ -479,11 +495,11 @@ Return only valid JSON with the extracted relations."""
     def _score_to_level(self, score: float) -> str:
         """신뢰도 점수 → 레벨 변환"""
         if score >= 0.8:
-            return 'high'
+            return "high"
         elif score >= 0.6:
-            return 'medium'
+            return "medium"
         else:
-            return 'low'
+            return "low"
 
 
 # 싱글톤 인스턴스

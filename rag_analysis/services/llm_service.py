@@ -38,9 +38,9 @@ class LLMServiceLite:
 
     # 복잡도별 기본 설정
     COMPLEXITY_CONFIGS = {
-        'simple': {'max_tokens': 800, 'temperature': 0.5},
-        'moderate': {'max_tokens': 1500, 'temperature': 0.7},
-        'complex': {'max_tokens': 2500, 'temperature': 0.7},
+        "simple": {"max_tokens": 800, "temperature": 0.5},
+        "moderate": {"max_tokens": 1500, "temperature": 0.7},
+        "complex": {"max_tokens": 2500, "temperature": 0.7},
     }
 
     # 면책 조항 (필수)
@@ -53,7 +53,9 @@ class LLMServiceLite:
 
     def __init__(self):
         """Gemini API 클라이언트 초기화"""
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
 
         if not api_key:
             raise ValueError(
@@ -72,7 +74,7 @@ class LLMServiceLite:
         - 면책 조항 포함
         - <suggestions> 태그로 추천 종목 제안
         """
-        today = date.today().strftime('%Y년 %m월 %d일')
+        today = date.today().strftime("%Y년 %m월 %d일")
 
         return f"""당신은 전문 투자 분석 AI입니다.
 
@@ -132,7 +134,7 @@ class LLMServiceLite:
         context: str,
         question: str,
         max_retries: Optional[int] = None,
-        complexity: Optional[str] = None
+        complexity: Optional[str] = None,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         스트리밍 응답 생성
@@ -153,11 +155,10 @@ class LLMServiceLite:
 
         # 복잡도 기반 설정 적용
         complexity_config = self.COMPLEXITY_CONFIGS.get(
-            complexity or 'moderate',
-            self.COMPLEXITY_CONFIGS['moderate']
+            complexity or "moderate", self.COMPLEXITY_CONFIGS["moderate"]
         )
-        max_tokens = complexity_config['max_tokens']
-        temperature = complexity_config['temperature']
+        max_tokens = complexity_config["max_tokens"]
+        temperature = complexity_config["temperature"]
 
         logger.info(
             f"LLM config: complexity={complexity}, "
@@ -177,11 +178,11 @@ class LLMServiceLite:
                 # 사용자 메시지 구성
                 # security audit P0 #3 (2026-05-19): context/question 모두 데이터로 취급.
                 # 닫는 태그 escape로 신뢰 경계 위조 차단.
-                safe_context = (context or '').replace(
-                    '</context_data>', '</context_data_escaped>'
+                safe_context = (context or "").replace(
+                    "</context_data>", "</context_data_escaped>"
                 )
-                safe_question = (question or '').replace(
-                    '</user_question>', '</user_question_escaped>'
+                safe_question = (question or "").replace(
+                    "</user_question>", "</user_question_escaped>"
                 )
                 user_content = (
                     "다음 <context_data> 블록은 검색된 참고 자료이고, "
@@ -196,7 +197,7 @@ class LLMServiceLite:
                 total_output_tokens = 0
 
                 cb = get_circuit(
-                    'gemini_rag',
+                    "gemini_rag",
                     failure_threshold=5,
                     recovery_seconds=60,
                     retry_attempts=1,  # 외부 for retry 로직과 중복 방지
@@ -211,23 +212,24 @@ class LLMServiceLite:
                 async for chunk in stream:
                     # 텍스트 청크 스트리밍
                     if chunk.text:
-                        yield {
-                            'type': 'delta',
-                            'content': chunk.text
-                        }
+                        yield {"type": "delta", "content": chunk.text}
 
                     # 토큰 사용량 추적 (마지막 청크에서 제공)
-                    if hasattr(chunk, 'usage_metadata') and chunk.usage_metadata:
-                        if hasattr(chunk.usage_metadata, 'prompt_token_count'):
-                            total_input_tokens = chunk.usage_metadata.prompt_token_count or 0
-                        if hasattr(chunk.usage_metadata, 'candidates_token_count'):
-                            total_output_tokens = chunk.usage_metadata.candidates_token_count or 0
+                    if hasattr(chunk, "usage_metadata") and chunk.usage_metadata:
+                        if hasattr(chunk.usage_metadata, "prompt_token_count"):
+                            total_input_tokens = (
+                                chunk.usage_metadata.prompt_token_count or 0
+                            )
+                        if hasattr(chunk.usage_metadata, "candidates_token_count"):
+                            total_output_tokens = (
+                                chunk.usage_metadata.candidates_token_count or 0
+                            )
 
                 # 최종 메시지 (토큰 사용량 포함)
                 yield {
-                    'type': 'final',
-                    'input_tokens': total_input_tokens,
-                    'output_tokens': total_output_tokens
+                    "type": "final",
+                    "input_tokens": total_input_tokens,
+                    "output_tokens": total_output_tokens,
                 }
 
                 # 성공 시 루프 종료
@@ -237,8 +239,8 @@ class LLMServiceLite:
                 # CB OPEN → 즉시 사용자 알림 + 재시도 중단
                 logger.warning(f"Gemini RAG CB open: {cb_exc}")
                 yield {
-                    'type': 'error',
-                    'message': 'LLM 서비스가 일시적으로 차단되었습니다. 잠시 후 다시 시도해주세요.'
+                    "type": "error",
+                    "message": "LLM 서비스가 일시적으로 차단되었습니다. 잠시 후 다시 시도해주세요.",
                 }
                 return
 
@@ -246,9 +248,11 @@ class LLMServiceLite:
                 error_str = str(e).lower()
 
                 # Rate limit 에러 체크
-                if 'rate' in error_str or 'quota' in error_str or '429' in error_str:
+                if "rate" in error_str or "quota" in error_str or "429" in error_str:
                     if attempt < retries - 1:
-                        delay = self.RETRY_DELAYS[min(attempt, len(self.RETRY_DELAYS) - 1)]
+                        delay = self.RETRY_DELAYS[
+                            min(attempt, len(self.RETRY_DELAYS) - 1)
+                        ]
                         logger.warning(
                             f"Rate limit exceeded. Retrying in {delay}s... "
                             f"(Attempt {attempt + 1}/{retries})"
@@ -258,16 +262,16 @@ class LLMServiceLite:
                     else:
                         logger.error(f"Rate limit exceeded after {retries} retries")
                         yield {
-                            'type': 'error',
-                            'message': 'API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.'
+                            "type": "error",
+                            "message": "API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.",
                         }
                         return
 
                 # 기타 에러
                 logger.exception(f"Gemini API error: {e}")
                 yield {
-                    'type': 'error',
-                    'message': f'LLM API 오류가 발생했습니다: {str(e)}'
+                    "type": "error",
+                    "message": f"LLM API 오류가 발생했습니다: {str(e)}",
                 }
                 return
 
@@ -281,8 +285,7 @@ class ResponseParser:
 
     # <suggestions> 태그 패턴
     SUGGESTIONS_PATTERN = re.compile(
-        r'<suggestions>\s*(\[.*?\])\s*</suggestions>',
-        re.DOTALL
+        r"<suggestions>\s*(\[.*?\])\s*</suggestions>", re.DOTALL
     )
 
     @staticmethod
@@ -307,11 +310,14 @@ class ResponseParser:
         # JSON 파싱 시도
         try:
             import json
+
             suggestions_json = match.group(1)
             suggestions = json.loads(suggestions_json)
 
             # 태그 제거
-            cleaned_content = ResponseParser.SUGGESTIONS_PATTERN.sub('', content).strip()
+            cleaned_content = ResponseParser.SUGGESTIONS_PATTERN.sub(
+                "", content
+            ).strip()
 
             # 유효성 검증
             if not isinstance(suggestions, list):
@@ -321,11 +327,10 @@ class ResponseParser:
             # 각 항목 검증
             valid_suggestions = []
             for item in suggestions:
-                if isinstance(item, dict) and 'symbol' in item and 'reason' in item:
-                    valid_suggestions.append({
-                        'symbol': item['symbol'].upper(),
-                        'reason': item['reason']
-                    })
+                if isinstance(item, dict) and "symbol" in item and "reason" in item:
+                    valid_suggestions.append(
+                        {"symbol": item["symbol"].upper(), "reason": item["reason"]}
+                    )
                 else:
                     logger.warning(f"Invalid suggestion item: {item}")
 
@@ -359,7 +364,7 @@ class ResponseParser:
         """
         import json
 
-        pattern = r'<basket-action>\s*(.*?)\s*</basket-action>'
+        pattern = r"<basket-action>\s*(.*?)\s*</basket-action>"
         actions = []
 
         for match in re.finditer(pattern, content, re.DOTALL):
@@ -367,9 +372,12 @@ class ResponseParser:
                 action = json.loads(match.group(1))
 
                 # 필수 필드 검증
-                if all(key in action for key in ['symbol', 'name', 'recommended', 'available']):
+                if all(
+                    key in action
+                    for key in ["symbol", "name", "recommended", "available"]
+                ):
                     # symbol 대문자 변환
-                    action['symbol'] = action['symbol'].upper()
+                    action["symbol"] = action["symbol"].upper()
                     actions.append(action)
                 else:
                     logger.warning(f"Invalid basket-action format: {action}")
@@ -378,7 +386,7 @@ class ResponseParser:
                 logger.warning(f"Failed to parse basket-action JSON: {e}")
 
         # 태그 제거
-        cleaned = re.sub(pattern, '', content, flags=re.DOTALL).strip()
+        cleaned = re.sub(pattern, "", content, flags=re.DOTALL).strip()
 
         return cleaned, actions
 
@@ -396,10 +404,10 @@ class ResponseParser:
         if not isinstance(suggestion, dict):
             return False
 
-        if 'symbol' not in suggestion or 'reason' not in suggestion:
+        if "symbol" not in suggestion or "reason" not in suggestion:
             return False
 
-        if not suggestion['symbol'] or not suggestion['reason']:
+        if not suggestion["symbol"] or not suggestion["reason"]:
             return False
 
         return True

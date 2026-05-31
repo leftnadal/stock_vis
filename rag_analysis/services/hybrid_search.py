@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SearchWeights:
     """검색 점수 가중치"""
+
     vector: float = 0.4
     bm25: float = 0.3
     graph: float = 0.3
@@ -44,21 +45,26 @@ class MetadataFilterBuilder:
     def __init__(self):
         self._filters = []
 
-    def add_symbol(self, symbol: str) -> 'MetadataFilterBuilder':
+    def add_symbol(self, symbol: str) -> "MetadataFilterBuilder":
         """특정 심볼로 필터링"""
-        self._filters.append(lambda doc: doc.get('symbol', '').upper() == symbol.upper())
+        self._filters.append(
+            lambda doc: doc.get("symbol", "").upper() == symbol.upper()
+        )
         return self
 
-    def add_symbols(self, symbols: List[str]) -> 'MetadataFilterBuilder':
+    def add_symbols(self, symbols: List[str]) -> "MetadataFilterBuilder":
         """여러 심볼로 필터링"""
         symbols_upper = [s.upper() for s in symbols]
-        self._filters.append(lambda doc: doc.get('symbol', '').upper() in symbols_upper)
+        self._filters.append(lambda doc: doc.get("symbol", "").upper() in symbols_upper)
         return self
 
-    def add_date_range(self, start_date: Optional[str] = None, end_date: Optional[str] = None) -> 'MetadataFilterBuilder':
+    def add_date_range(
+        self, start_date: Optional[str] = None, end_date: Optional[str] = None
+    ) -> "MetadataFilterBuilder":
         """날짜 범위로 필터링 (ISO 형식: YYYY-MM-DD)"""
+
         def date_filter(doc):
-            doc_date = doc.get('date', doc.get('created_at', ''))
+            doc_date = doc.get("date", doc.get("created_at", ""))
             if not doc_date:
                 return False
             if start_date and doc_date < start_date:
@@ -70,12 +76,12 @@ class MetadataFilterBuilder:
         self._filters.append(date_filter)
         return self
 
-    def add_document_type(self, doc_type: str) -> 'MetadataFilterBuilder':
+    def add_document_type(self, doc_type: str) -> "MetadataFilterBuilder":
         """문서 타입으로 필터링 (e.g., 'financial', 'news', 'analysis')"""
-        self._filters.append(lambda doc: doc.get('type', '') == doc_type)
+        self._filters.append(lambda doc: doc.get("type", "") == doc_type)
         return self
 
-    def add_custom(self, filter_func) -> 'MetadataFilterBuilder':
+    def add_custom(self, filter_func) -> "MetadataFilterBuilder":
         """커스텀 필터 함수 추가"""
         self._filters.append(filter_func)
         return self
@@ -110,7 +116,7 @@ class HybridSearchService:
         vector_service: Optional[VectorSearchService] = None,
         bm25_service: Optional[BM25SearchService] = None,
         neo4j_service=None,
-        weights: Optional[SearchWeights] = None
+        weights: Optional[SearchWeights] = None,
     ):
         """
         Args:
@@ -125,6 +131,7 @@ class HybridSearchService:
             self.neo4j_service = neo4j_service
         else:
             from .neo4j_service import get_neo4j_service
+
             self.neo4j_service = get_neo4j_service()
         self.weights = weights or SearchWeights()
 
@@ -135,7 +142,7 @@ class HybridSearchService:
         top_k: int = 10,
         symbol: Optional[str] = None,
         metadata_filter: Optional[MetadataFilterBuilder] = None,
-        use_graph: bool = True
+        use_graph: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         하이브리드 검색 수행
@@ -183,20 +190,16 @@ class HybridSearchService:
 
         # 5. 점수 통합
         integrated_results = self._integrate_scores(
-            vector_results,
-            bm25_results,
-            graph_boost,
-            top_k=top_k
+            vector_results, bm25_results, graph_boost, top_k=top_k
         )
 
-        logger.info(f"Hybrid search completed: {len(integrated_results)} results for '{query[:50]}...'")
+        logger.info(
+            f"Hybrid search completed: {len(integrated_results)} results for '{query[:50]}...'"
+        )
         return integrated_results
 
     def _vector_search(
-        self,
-        query: str,
-        documents: List[dict],
-        top_k: int
+        self, query: str, documents: List[dict], top_k: int
     ) -> Dict[str, float]:
         """
         벡터 검색 수행
@@ -217,10 +220,7 @@ class HybridSearchService:
             return {}
 
     def _bm25_search(
-        self,
-        query: str,
-        documents: List[dict],
-        top_k: int
+        self, query: str, documents: List[dict], top_k: int
     ) -> Dict[str, float]:
         """
         BM25 검색 수행
@@ -240,11 +240,7 @@ class HybridSearchService:
             logger.error(f"BM25 search error: {str(e)}", exc_info=True)
             return {}
 
-    def _graph_search(
-        self,
-        symbol: str,
-        documents: List[dict]
-    ) -> Dict[str, float]:
+    def _graph_search(self, symbol: str, documents: List[dict]) -> Dict[str, float]:
         """
         그래프 관계 기반 부스팅
 
@@ -259,29 +255,31 @@ class HybridSearchService:
             # Neo4j에서 관계 정보 조회
             relationships = self.neo4j_service.get_stock_relationships(symbol)
 
-            if relationships['_meta']['source'] == 'fallback':
+            if relationships["_meta"]["source"] == "fallback":
                 logger.debug(f"Graph search unavailable for {symbol}")
                 return {}
 
             # 관련 종목 심볼 추출
             related_symbols = set()
-            for supply in relationships.get('supply_chain', []):
-                related_symbols.add(supply['symbol'])
-            for comp in relationships.get('competitors', []):
-                related_symbols.add(comp['symbol'])
-            for peer in relationships.get('sector_peers', []):
-                related_symbols.add(peer['symbol'])
+            for supply in relationships.get("supply_chain", []):
+                related_symbols.add(supply["symbol"])
+            for comp in relationships.get("competitors", []):
+                related_symbols.add(comp["symbol"])
+            for peer in relationships.get("sector_peers", []):
+                related_symbols.add(peer["symbol"])
 
             # 문서와 매칭하여 부스트 점수 부여
             boost_scores = {}
             for doc in documents:
-                doc_symbol = doc.get('symbol', '').upper()
+                doc_symbol = doc.get("symbol", "").upper()
                 if doc_symbol in related_symbols:
                     doc_id = self._get_doc_id(doc)
                     # 관계 강도에 따라 부스트 (0.5 ~ 1.0)
                     boost_scores[doc_id] = 0.8
 
-            logger.debug(f"Graph search: {len(boost_scores)} boosted documents for {symbol}")
+            logger.debug(
+                f"Graph search: {len(boost_scores)} boosted documents for {symbol}"
+            )
             return boost_scores
 
         except Exception as e:
@@ -293,7 +291,7 @@ class HybridSearchService:
         vector_scores: Dict[str, float],
         bm25_scores: Dict[str, float],
         graph_boost: Dict[str, float],
-        top_k: int
+        top_k: int,
     ) -> List[Dict[str, Any]]:
         """
         점수 통합 및 정규화
@@ -308,7 +306,11 @@ class HybridSearchService:
             정렬된 결과 리스트
         """
         # 모든 문서 ID 수집
-        all_doc_ids = set(vector_scores.keys()) | set(bm25_scores.keys()) | set(graph_boost.keys())
+        all_doc_ids = (
+            set(vector_scores.keys())
+            | set(bm25_scores.keys())
+            | set(graph_boost.keys())
+        )
 
         if not all_doc_ids:
             return []
@@ -326,23 +328,21 @@ class HybridSearchService:
             g_score = graph_norm.get(doc_id, 0.0)
 
             final_score = (
-                self.weights.vector * v_score +
-                self.weights.bm25 * b_score +
-                self.weights.graph * g_score
+                self.weights.vector * v_score
+                + self.weights.bm25 * b_score
+                + self.weights.graph * g_score
             )
 
-            integrated_scores.append({
-                'doc_id': doc_id,
-                'score': final_score,
-                'scores': {
-                    'vector': v_score,
-                    'bm25': b_score,
-                    'graph': g_score
+            integrated_scores.append(
+                {
+                    "doc_id": doc_id,
+                    "score": final_score,
+                    "scores": {"vector": v_score, "bm25": b_score, "graph": g_score},
                 }
-            })
+            )
 
         # 점수 기준 정렬
-        integrated_scores.sort(key=lambda x: x['score'], reverse=True)
+        integrated_scores.sort(key=lambda x: x["score"], reverse=True)
 
         # Top-K 선택
         return integrated_scores[:top_k]
@@ -386,26 +386,26 @@ class HybridSearchService:
             문서 ID (예: 'AAPL_2024-01-15_balance_sheet')
         """
         # 우선순위: id > symbol+date+type > hash
-        if 'id' in doc:
-            return str(doc['id'])
+        if "id" in doc:
+            return str(doc["id"])
 
         parts = []
-        if 'symbol' in doc:
-            parts.append(doc['symbol'].upper())
-        if 'date' in doc or 'created_at' in doc:
-            parts.append(doc.get('date', doc.get('created_at', '')))
-        if 'type' in doc:
-            parts.append(doc['type'])
+        if "symbol" in doc:
+            parts.append(doc["symbol"].upper())
+        if "date" in doc or "created_at" in doc:
+            parts.append(doc.get("date", doc.get("created_at", "")))
+        if "type" in doc:
+            parts.append(doc["type"])
 
         if parts:
-            return '_'.join(parts)
+            return "_".join(parts)
 
         # Fallback: 문서 해시
         return str(hash(str(doc)))
 
 
 def get_hybrid_search_service(
-    weights: Optional[SearchWeights] = None
+    weights: Optional[SearchWeights] = None,
 ) -> HybridSearchService:
     """
     HybridSearchService 인스턴스 생성

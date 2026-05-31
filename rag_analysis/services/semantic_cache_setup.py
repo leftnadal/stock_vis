@@ -101,7 +101,7 @@ def cleanup_expired_cache() -> int:
             """)
 
             record = result.single()
-            deleted_count = record['deleted_count'] if record else 0
+            deleted_count = record["deleted_count"] if record else 0
 
             if deleted_count > 0:
                 logger.info(f"Cleaned up {deleted_count} expired cache entries")
@@ -130,10 +130,10 @@ def get_cache_stats() -> dict:
 
     if driver is None:
         return {
-            'status': 'unavailable',
-            'total_entries': 0,
-            'active_entries': 0,
-            'expired_entries': 0
+            "status": "unavailable",
+            "total_entries": 0,
+            "active_entries": 0,
+            "expired_entries": 0,
         }
 
     try:
@@ -145,13 +145,13 @@ def get_cache_stats() -> dict:
                 "RETURN count(label) AS cnt"
             )
             label_record = label_result.single()
-            if not label_record or label_record['cnt'] == 0:
+            if not label_record or label_record["cnt"] == 0:
                 return {
-                    'status': 'not_initialized',
-                    'total_entries': 0,
-                    'active_entries': 0,
-                    'expired_entries': 0,
-                    'avg_hit_count': 0
+                    "status": "not_initialized",
+                    "total_entries": 0,
+                    "active_entries": 0,
+                    "expired_entries": 0,
+                    "avg_hit_count": 0,
                 }
 
             result = session.run("""
@@ -168,27 +168,24 @@ def get_cache_stats() -> dict:
 
             if record:
                 return {
-                    'status': 'available',
-                    'total_entries': record['total'] or 0,
-                    'active_entries': record['active'] or 0,
-                    'expired_entries': record['expired'] or 0,
-                    'avg_hit_count': record['avg_hits'] or 0
+                    "status": "available",
+                    "total_entries": record["total"] or 0,
+                    "active_entries": record["active"] or 0,
+                    "expired_entries": record["expired"] or 0,
+                    "avg_hit_count": record["avg_hits"] or 0,
                 }
 
             return {
-                'status': 'available',
-                'total_entries': 0,
-                'active_entries': 0,
-                'expired_entries': 0,
-                'avg_hit_count': 0
+                "status": "available",
+                "total_entries": 0,
+                "active_entries": 0,
+                "expired_entries": 0,
+                "avg_hit_count": 0,
             }
 
     except Exception as e:
         logger.error(f"Failed to get cache stats: {e}")
-        return {
-            'status': 'error',
-            'error': str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 def drop_semantic_cache_index() -> bool:

@@ -4,6 +4,7 @@ Market Movers 데이터 동기화 서비스
 FMP API로부터 Gainers/Losers/Actives를 가져와서
 지표를 계산하고 PostgreSQL에 저장합니다.
 """
+
 import logging
 from decimal import Decimal
 from typing import Dict, List, Optional
@@ -22,17 +23,17 @@ logger = logging.getLogger(__name__)
 
 # 섹터-ETF 매핑 (Phase 2)
 SECTOR_ETF_MAP = {
-    'Technology': 'XLK',
-    'Financial Services': 'XLF',
-    'Healthcare': 'XLV',
-    'Consumer Cyclical': 'XLY',
-    'Industrials': 'XLI',
-    'Energy': 'XLE',
-    'Utilities': 'XLU',
-    'Consumer Defensive': 'XLP',
-    'Real Estate': 'XLRE',
-    'Basic Materials': 'XLB',
-    'Communication Services': 'XLC',
+    "Technology": "XLK",
+    "Financial Services": "XLF",
+    "Healthcare": "XLV",
+    "Consumer Cyclical": "XLY",
+    "Industrials": "XLI",
+    "Energy": "XLE",
+    "Utilities": "XLU",
+    "Consumer Defensive": "XLP",
+    "Real Estate": "XLRE",
+    "Basic Materials": "XLB",
+    "Communication Services": "XLC",
 }
 
 
@@ -68,26 +69,26 @@ class MarketMoversSync:
         target_date = target_date or timezone.localdate()
         logger.info(f"🔄 Market Movers 동기화 시작: {target_date}")
 
-        results = {'gainers': 0, 'losers': 0, 'actives': 0, 'errors': 0}
+        results = {"gainers": 0, "losers": 0, "actives": 0, "errors": 0}
 
         # 1. FMP API에서 3가지 타입 데이터 가져오기 (CB로 부분 실패 허용)
-        cb = get_circuit('fmp_market_movers', failure_threshold=5, recovery_seconds=120)
+        cb = get_circuit("fmp_market_movers", failure_threshold=5, recovery_seconds=120)
         movers_data: Dict[str, list] = {}
         for mover_type, fetch_fn in (
-            ('gainers', self.fmp.get_market_gainers),
-            ('losers', self.fmp.get_market_losers),
-            ('actives', self.fmp.get_market_actives),
+            ("gainers", self.fmp.get_market_gainers),
+            ("losers", self.fmp.get_market_losers),
+            ("actives", self.fmp.get_market_actives),
         ):
             try:
                 movers_data[mover_type] = cb.call(fetch_fn)
             except CircuitBreakerError as exc:
                 logger.warning(f"⚠️ CB open ({mover_type}): {exc}")
                 movers_data[mover_type] = []
-                results['errors'] += 1
+                results["errors"] += 1
             except FMPAPIError as exc:
                 logger.error(f"❌ FMP {mover_type} 실패: {exc}")
                 movers_data[mover_type] = []
-                results['errors'] += 1
+                results["errors"] += 1
 
         # 2. 각 타입별로 종목 처리
         for mover_type, items in movers_data.items():
@@ -101,7 +102,7 @@ class MarketMoversSync:
                     logger.error(
                         f"  ⚠️ 종목 처리 실패: {item.get('symbol', 'UNKNOWN')} - {e}"
                     )
-                    results['errors'] += 1
+                    results["errors"] += 1
 
         logger.info(
             f"✅ Market Movers 동기화 완료: "
@@ -113,13 +114,7 @@ class MarketMoversSync:
 
         return results
 
-    def _process_item(
-        self,
-        date,
-        mover_type: str,
-        rank: int,
-        item: Dict
-    ) -> None:
+    def _process_item(self, date, mover_type: str, rank: int, item: Dict) -> None:
         """
         개별 종목 처리
 
@@ -129,7 +124,7 @@ class MarketMoversSync:
             rank: 순위 (1-20)
             item: FMP API 응답 데이터
         """
-        symbol = item.get('symbol', '').upper()
+        symbol = item.get("symbol", "").upper()
         if not symbol:
             logger.warning(f"  ⚠️ 심볼 없음: {item}")
             return
@@ -151,8 +146,8 @@ class MarketMoversSync:
         # 3. 기업 프로필 (섹터/산업) 가져오기
         try:
             profile = self.fmp.get_company_profile(symbol)
-            sector = profile.get('sector')
-            industry = profile.get('industry')
+            sector = profile.get("sector")
+            industry = profile.get("industry")
         except FMPAPIError as e:
             logger.warning(f"  ⚠️ {symbol} 프로필 조회 실패: {e}")
             profile = {}
@@ -160,16 +155,18 @@ class MarketMoversSync:
             industry = None
 
         # 4. Phase 1 지표 계산
-        rvol = self._calculate_rvol(quote.get('volume', 0), historical)
+        rvol = self._calculate_rvol(quote.get("volume", 0), historical)
         trend_strength = self._calculate_trend_strength(item, quote)
 
         # 5. Phase 2 지표 계산 (profile 재사용)
-        sector_alpha = self._calculate_sector_alpha_with_profile(symbol, item, quote, profile)
+        sector_alpha = self._calculate_sector_alpha_with_profile(
+            symbol, item, quote, profile
+        )
         etf_sync = self._calculate_etf_sync_with_profile(symbol, historical, profile)
         volatility_pct = self._calculate_volatility_pct(historical)
 
         # 6. Corporate Action 감지 (±50% 이상 변동 시)
-        change_percent = float(item.get('changesPercentage', 0))
+        change_percent = float(item.get("changesPercentage", 0))
         corporate_action_detected = None
         has_corporate_action = False
         corporate_action_type = None
@@ -177,13 +174,15 @@ class MarketMoversSync:
 
         if self.action_service.should_check(change_percent):
             try:
-                corporate_action_detected = self.action_service.check_actions(symbol, date)
+                corporate_action_detected = self.action_service.check_actions(
+                    symbol, date
+                )
                 if corporate_action_detected:
                     # DB에 저장
                     self.action_service.save_action(symbol, corporate_action_detected)
                     has_corporate_action = True
-                    corporate_action_type = corporate_action_detected['action_type']
-                    corporate_action_display = corporate_action_detected['display_text']
+                    corporate_action_type = corporate_action_detected["action_type"]
+                    corporate_action_display = corporate_action_detected["display_text"]
                     logger.info(
                         f"  📢 {symbol} Corporate Action 감지: {corporate_action_display}"
                     )
@@ -192,13 +191,11 @@ class MarketMoversSync:
 
         # 7. 데이터 품질 정보
         data_quality = {
-            'has_20d_volume': len(historical) >= 20,
-            'has_ohlc': all([
-                quote.get('open'),
-                quote.get('dayHigh'),
-                quote.get('dayLow')
-            ]),
-            'historical_days': len(historical),
+            "has_20d_volume": len(historical) >= 20,
+            "has_ohlc": all(
+                [quote.get("open"), quote.get("dayHigh"), quote.get("dayLow")]
+            ),
+            "historical_days": len(historical),
         }
 
         # 8. DB 저장
@@ -207,32 +204,32 @@ class MarketMoversSync:
             mover_type=mover_type,
             symbol=symbol,
             defaults={
-                'rank': rank,
-                'company_name': item.get('name', symbol),
-                'price': Decimal(str(item.get('price', 0))),
-                'change_percent': Decimal(str(item.get('changesPercentage', 0))),
-                'volume': quote.get('volume', 0),
+                "rank": rank,
+                "company_name": item.get("name", symbol),
+                "price": Decimal(str(item.get("price", 0))),
+                "change_percent": Decimal(str(item.get("changesPercentage", 0))),
+                "volume": quote.get("volume", 0),
                 # 섹터/산업 정보
-                'sector': sector,
-                'industry': industry,
-                'open_price': self._to_decimal(quote.get('open')),
-                'high': self._to_decimal(quote.get('dayHigh')),
-                'low': self._to_decimal(quote.get('dayLow')),
+                "sector": sector,
+                "industry": industry,
+                "open_price": self._to_decimal(quote.get("open")),
+                "high": self._to_decimal(quote.get("dayHigh")),
+                "low": self._to_decimal(quote.get("dayLow")),
                 # Phase 1 지표
-                'rvol': rvol,
-                'rvol_display': self.calc.format_rvol_display(rvol),
-                'trend_strength': trend_strength,
-                'trend_display': self.calc.format_trend_display(trend_strength),
+                "rvol": rvol,
+                "rvol_display": self.calc.format_rvol_display(rvol),
+                "trend_strength": trend_strength,
+                "trend_display": self.calc.format_trend_display(trend_strength),
                 # Phase 2 지표
-                'sector_alpha': sector_alpha,
-                'etf_sync_rate': etf_sync,
-                'volatility_pct': volatility_pct,
+                "sector_alpha": sector_alpha,
+                "etf_sync_rate": etf_sync,
+                "volatility_pct": volatility_pct,
                 # Corporate Action 정보
-                'has_corporate_action': has_corporate_action,
-                'corporate_action_type': corporate_action_type,
-                'corporate_action_display': corporate_action_display,
-                'data_quality': data_quality,
-            }
+                "has_corporate_action": has_corporate_action,
+                "corporate_action_type": corporate_action_type,
+                "corporate_action_display": corporate_action_display,
+                "data_quality": data_quality,
+            },
         )
 
         logger.debug(
@@ -241,9 +238,7 @@ class MarketMoversSync:
         )
 
     def _calculate_rvol(
-        self,
-        current_volume: int,
-        historical: List[Dict]
+        self, current_volume: int, historical: List[Dict]
     ) -> Optional[Decimal]:
         """
         RVOL 계산 헬퍼
@@ -258,14 +253,10 @@ class MarketMoversSync:
         if not historical or len(historical) < 10:
             return None
 
-        volumes = [d.get('volume', 0) for d in historical if d.get('volume')]
+        volumes = [d.get("volume", 0) for d in historical if d.get("volume")]
         return self.calc.calculate_rvol(current_volume, volumes)
 
-    def _calculate_trend_strength(
-        self,
-        item: Dict,
-        quote: Dict
-    ) -> Optional[Decimal]:
+    def _calculate_trend_strength(self, item: Dict, quote: Dict) -> Optional[Decimal]:
         """
         추세 강도 계산 헬퍼
 
@@ -277,19 +268,16 @@ class MarketMoversSync:
             추세 강도 또는 None
         """
         # OHLC 데이터 확인
-        open_price = quote.get('open') or item.get('price')
-        high = quote.get('dayHigh') or item.get('price')
-        low = quote.get('dayLow') or item.get('price')
-        close = item.get('price')
+        open_price = quote.get("open") or item.get("price")
+        high = quote.get("dayHigh") or item.get("price")
+        low = quote.get("dayLow") or item.get("price")
+        close = item.get("price")
 
         if not all([open_price, high, low, close]):
             return None
 
         return self.calc.calculate_trend_strength(
-            float(open_price),
-            float(high),
-            float(low),
-            float(close)
+            float(open_price), float(high), float(low), float(close)
         )
 
     @staticmethod
@@ -307,11 +295,7 @@ class MarketMoversSync:
     # ========================================
 
     def _calculate_sector_alpha_with_profile(
-        self,
-        symbol: str,
-        item: Dict,
-        quote: Dict,
-        profile: Dict
+        self, symbol: str, item: Dict, quote: Dict, profile: Dict
     ) -> Optional[Decimal]:
         """
         섹터 알파 계산 헬퍼 (profile 재사용)
@@ -326,7 +310,7 @@ class MarketMoversSync:
             섹터 알파 또는 None
         """
         try:
-            sector = profile.get('sector')
+            sector = profile.get("sector")
 
             if not sector or sector not in SECTOR_ETF_MAP:
                 logger.debug(f"  ⚠️ {symbol}: 섹터 정보 없음 또는 미매핑 ({sector})")
@@ -337,8 +321,8 @@ class MarketMoversSync:
 
             # 섹터 ETF 당일 수익률 계산
             etf_quote = self.fmp.get_quote(etf_symbol)
-            etf_prev_close = etf_quote.get('previousClose')
-            etf_price = etf_quote.get('price')
+            etf_prev_close = etf_quote.get("previousClose")
+            etf_price = etf_quote.get("price")
 
             if not etf_prev_close or not etf_price:
                 logger.debug(f"  ⚠️ {symbol}: ETF {etf_symbol} 가격 데이터 없음")
@@ -347,7 +331,7 @@ class MarketMoversSync:
             etf_return = ((etf_price - etf_prev_close) / etf_prev_close) * 100
 
             # 종목 당일 수익률 (이미 item.changesPercentage에 있음)
-            stock_return = float(item.get('changesPercentage', 0))
+            stock_return = float(item.get("changesPercentage", 0))
 
             # 알파 계산
             return self.calc.calculate_sector_alpha(stock_return, etf_return)
@@ -357,10 +341,7 @@ class MarketMoversSync:
             return None
 
     def _calculate_etf_sync_with_profile(
-        self,
-        symbol: str,
-        historical: List[Dict],
-        profile: Dict
+        self, symbol: str, historical: List[Dict], profile: Dict
     ) -> Optional[Decimal]:
         """
         ETF 동행률 계산 헬퍼 (profile 재사용)
@@ -377,7 +358,7 @@ class MarketMoversSync:
             return None
 
         try:
-            sector = profile.get('sector')
+            sector = profile.get("sector")
 
             if not sector or sector not in SECTOR_ETF_MAP:
                 return None
@@ -386,15 +367,17 @@ class MarketMoversSync:
             etf_symbol = SECTOR_ETF_MAP[sector]
 
             # ETF 히스토리 조회 (같은 기간)
-            etf_historical = self.fmp.get_historical_ohlcv(etf_symbol, days=len(historical))
+            etf_historical = self.fmp.get_historical_ohlcv(
+                etf_symbol, days=len(historical)
+            )
 
             if not etf_historical or len(etf_historical) < 10:
                 logger.debug(f"  ⚠️ {symbol}: ETF {etf_symbol} 히스토리 부족")
                 return None
 
             # 종가 리스트 추출
-            stock_prices = [float(d['close']) for d in historical if d.get('close')]
-            etf_prices = [float(d['close']) for d in etf_historical if d.get('close')]
+            stock_prices = [float(d["close"]) for d in historical if d.get("close")]
+            etf_prices = [float(d["close"]) for d in etf_historical if d.get("close")]
 
             # 동행률 계산
             return self.calc.calculate_etf_sync_rate(stock_prices, etf_prices)
@@ -403,10 +386,7 @@ class MarketMoversSync:
             logger.debug(f"  ⚠️ {symbol} ETF 동행률 계산 실패: {e}")
             return None
 
-    def _calculate_volatility_pct(
-        self,
-        historical: List[Dict]
-    ) -> Optional[int]:
+    def _calculate_volatility_pct(self, historical: List[Dict]) -> Optional[int]:
         """
         변동성 백분위 계산 헬퍼
 
@@ -423,9 +403,9 @@ class MarketMoversSync:
             # 1. 각 일자별 변동성 계산 (일중 변동폭 %)
             volatilities = []
             for day in historical:
-                high = day.get('high')
-                low = day.get('low')
-                close = day.get('close')
+                high = day.get("high")
+                low = day.get("low")
+                close = day.get("close")
 
                 if high and low and close and close > 0:
                     # 일중 변동폭 % = (고가 - 저가) / 종가 * 100
@@ -443,8 +423,7 @@ class MarketMoversSync:
 
             # 3. 백분위 계산 (전체 히스토리 대비)
             return self.calc.calculate_volatility_percentile(
-                current_volatility,
-                volatilities
+                current_volatility, volatilities
             )
 
         except Exception as e:

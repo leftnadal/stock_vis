@@ -22,18 +22,18 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = '미매칭 SupplyChainEvidence 재매칭 (제네릭 제거 + TickerMatcher 재실행)'
+    help = "미매칭 SupplyChainEvidence 재매칭 (제네릭 제거 + TickerMatcher 재실행)"
 
     def add_arguments(self, parser):
-        parser.add_argument('--dry-run', action='store_true')
+        parser.add_argument("--dry-run", action="store_true")
 
     def handle(self, *args, **options):
-        dry_run = options['dry_run']
-        prefix = '[DRY RUN] ' if dry_run else ''
+        dry_run = options["dry_run"]
+        prefix = "[DRY RUN] " if dry_run else ""
 
         unmatched = SupplyChainEvidence.objects.filter(target_company__isnull=True)
         total = unmatched.count()
-        self.stdout.write(f'{prefix}미매칭 evidence: {total}개')
+        self.stdout.write(f"{prefix}미매칭 evidence: {total}개")
 
         # 1. 제네릭 용어 evidence 삭제
         generic_qs = [e for e in unmatched if _is_generic_term(e.target_company_name)]
@@ -43,31 +43,37 @@ class Command(BaseCommand):
             SupplyChainEvidence.objects.filter(pk__in=generic_pks).delete()
             # UnmatchedCompanyQueue에서도 정리
             generic_names = set(e.target_company_name for e in generic_qs)
-            UnmatchedCompanyQueue.objects.filter(raw_company_name__in=generic_names).update(
-                status='not_company'
-            )
-        self.stdout.write(f'{prefix}제네릭 용어 삭제: {generic_count}개')
+            UnmatchedCompanyQueue.objects.filter(
+                raw_company_name__in=generic_names
+            ).update(status="not_company")
+        self.stdout.write(f"{prefix}제네릭 용어 삭제: {generic_count}개")
 
         # 2. 나머지 미매칭에 TickerMatcher 재실행
         remaining = SupplyChainEvidence.objects.filter(target_company__isnull=True)
         remaining_count = remaining.count()
-        self.stdout.write(f'{prefix}재매칭 대상: {remaining_count}개')
+        self.stdout.write(f"{prefix}재매칭 대상: {remaining_count}개")
 
         if dry_run:
             # dry-run: 매칭 시뮬레이션
             matcher = TickerMatcher()
             would_match = 0
             for ev in remaining:
-                ticker, method = matcher.match(ev.target_company_name,
-                                               ev.source_company.sector if ev.source_company else '')
+                ticker, method = matcher.match(
+                    ev.target_company_name,
+                    ev.source_company.sector if ev.source_company else "",
+                )
                 if ticker:
                     would_match += 1
-                    self.stdout.write(f'  WOULD MATCH: "{ev.target_company_name}" → {ticker} ({method})')
+                    self.stdout.write(
+                        f'  WOULD MATCH: "{ev.target_company_name}" → {ticker} ({method})'
+                    )
                 else:
                     self.stdout.write(f'  STILL UNMATCHED: "{ev.target_company_name}"')
-            self.stdout.write(self.style.SUCCESS(
-                f'{prefix}매칭 예상: {would_match}/{remaining_count}'
-            ))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"{prefix}매칭 예상: {would_match}/{remaining_count}"
+                )
+            )
             return
 
         # 실제 매칭
@@ -81,10 +87,14 @@ class Command(BaseCommand):
             )
             if ticker:
                 matched += 1
-                self.stdout.write(f'  MATCHED: "{ev.target_company_name}" → {ticker} ({method})')
+                self.stdout.write(
+                    f'  MATCHED: "{ev.target_company_name}" → {ticker} ({method})'
+                )
 
-        self.stdout.write(self.style.SUCCESS(
-            f'완료: 제네릭 제거 {generic_count}개, '
-            f'재매칭 {matched}/{remaining_count}개, '
-            f'총 처리 {generic_count + matched}/{total}개'
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"완료: 제네릭 제거 {generic_count}개, "
+                f"재매칭 {matched}/{remaining_count}개, "
+                f"총 처리 {generic_count + matched}/{total}개"
+            )
+        )

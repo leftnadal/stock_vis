@@ -3,6 +3,7 @@
 
 StockRelationship 레코드에 AI 생성 키워드를 추가합니다.
 """
+
 import json
 import logging
 import re
@@ -36,17 +37,17 @@ class RelationshipKeywordEnricher:
 
     # 관계 타입 우선순위 (중요도 순)
     PRIORITY = [
-        'PEER_OF',          # 경쟁사 (가장 중요)
-        'CO_MENTIONED',     # 뉴스 동시언급
-        'SUPPLIED_BY',      # 공급망
-        'CUSTOMER_OF',      # 고객사
-        'ACQUIRED',         # 인수
-        'INVESTED_IN',      # 투자
-        'PARTNER_OF',       # 파트너십
-        'SPIN_OFF',         # 분사
-        'SUED_BY',          # 소송
-        'SAME_INDUSTRY',    # 동일 산업
-        'HAS_THEME',        # 테마 공유
+        "PEER_OF",  # 경쟁사 (가장 중요)
+        "CO_MENTIONED",  # 뉴스 동시언급
+        "SUPPLIED_BY",  # 공급망
+        "CUSTOMER_OF",  # 고객사
+        "ACQUIRED",  # 인수
+        "INVESTED_IN",  # 투자
+        "PARTNER_OF",  # 파트너십
+        "SPIN_OFF",  # 분사
+        "SUED_BY",  # 소송
+        "SAME_INDUSTRY",  # 동일 산업
+        "HAS_THEME",  # 테마 공유
     ]
 
     # Gemini 15 RPM Rate Limit
@@ -84,9 +85,13 @@ JSON 배열만 반환하세요 (설명 없음):
 
     def __init__(self):
         """Gemini API 클라이언트 초기화 (동기 호출용)"""
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
-            raise ValueError("GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+            raise ValueError(
+                "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
+            )
         self.client = genai.Client(api_key=api_key)
 
     def enrich_batch(self, limit: int = 100) -> Dict:
@@ -107,14 +112,14 @@ JSON 배열만 반환하세요 (설명 없음):
         logger.info(f"🔄 관계 키워드 배치 생성 시작 (limit={limit})")
         start_time = time.time()
 
-        results = {'enriched': 0, 'skipped': 0, 'failed': 0}
+        results = {"enriched": 0, "skipped": 0, "failed": 0}
 
         # 1. 키워드 없는 관계 조회 (우선순위 정렬)
         relationships = self._get_relationships_without_keywords(limit)
 
         if not relationships:
             logger.info("✅ 키워드 생성이 필요한 관계가 없습니다.")
-            return {**results, 'duration_ms': int((time.time() - start_time) * 1000)}
+            return {**results, "duration_ms": int((time.time() - start_time) * 1000)}
 
         logger.info(f"📊 처리 대상: {len(relationships)}개 관계")
 
@@ -123,15 +128,15 @@ JSON 배열만 반환하세요 (설명 없음):
             try:
                 # 이미 키워드가 있으면 스킵
                 if self._has_keywords(rel):
-                    logger.debug(f"  ⏭️ {rel.source_symbol}-{rel.target_symbol}: 이미 키워드 존재")
-                    results['skipped'] += 1
+                    logger.debug(
+                        f"  ⏭️ {rel.source_symbol}-{rel.target_symbol}: 이미 키워드 존재"
+                    )
+                    results["skipped"] += 1
                     continue
 
                 # 키워드 생성
                 keywords = self._generate_keywords(
-                    rel.source_symbol,
-                    rel.target_symbol,
-                    rel.relationship_type
+                    rel.source_symbol, rel.target_symbol, rel.relationship_type
                 )
 
                 if keywords:
@@ -141,13 +146,12 @@ JSON 배열만 반환하세요 (설명 없음):
                         f"  ✅ {rel.source_symbol}-{rel.target_symbol} "
                         f"({rel.get_relationship_type_display()}): {keywords}"
                     )
-                    results['enriched'] += 1
+                    results["enriched"] += 1
                 else:
                     logger.warning(
-                        f"  ⚠️ {rel.source_symbol}-{rel.target_symbol}: "
-                        f"키워드 생성 실패"
+                        f"  ⚠️ {rel.source_symbol}-{rel.target_symbol}: 키워드 생성 실패"
                     )
-                    results['failed'] += 1
+                    results["failed"] += 1
 
                 # Rate limit 준수
                 time.sleep(self.CALL_DELAY)
@@ -156,7 +160,7 @@ JSON 배열만 반환하세요 (설명 없음):
                 logger.exception(
                     f"  ❌ {rel.source_symbol}-{rel.target_symbol} 처리 중 에러: {e}"
                 )
-                results['failed'] += 1
+                results["failed"] += 1
                 continue
 
         duration_ms = int((time.time() - start_time) * 1000)
@@ -166,9 +170,11 @@ JSON 배열만 반환하세요 (설명 없음):
             f"skipped={results['skipped']}, duration={duration_ms}ms"
         )
 
-        return {**results, 'duration_ms': duration_ms}
+        return {**results, "duration_ms": duration_ms}
 
-    def _get_relationships_without_keywords(self, limit: int) -> List[StockRelationship]:
+    def _get_relationships_without_keywords(
+        self, limit: int
+    ) -> List[StockRelationship]:
         """
         키워드 없는 관계를 우선순위 순으로 조회
 
@@ -184,31 +190,24 @@ JSON 배열만 반환하세요 (설명 없음):
 
         return list(
             StockRelationship.objects.annotate(
-                priority_order=Case(
-                    *whens,
-                    default=999,
-                    output_field=IntegerField()
-                )
+                priority_order=Case(*whens, default=999, output_field=IntegerField())
             )
             .filter(
                 # context가 null이거나, keywords 키가 없거나, keywords가 빈 리스트
                 # Django JSONField 쿼리: __isnull 또는 전체 조회 후 필터
             )
-            .order_by('priority_order', 'source_symbol')[:limit]
+            .order_by("priority_order", "source_symbol")[:limit]
         )
 
     def _has_keywords(self, rel: StockRelationship) -> bool:
         """관계에 이미 키워드가 있는지 확인"""
         if not rel.context:
             return False
-        keywords = rel.context.get('keywords')
+        keywords = rel.context.get("keywords")
         return bool(keywords and isinstance(keywords, list) and len(keywords) > 0)
 
     def _generate_keywords(
-        self,
-        source_symbol: str,
-        target_symbol: str,
-        rel_type: str
+        self, source_symbol: str, target_symbol: str, rel_type: str
     ) -> List[str]:
         """
         단일 관계 키워드 생성 (3개)
@@ -231,7 +230,7 @@ JSON 배열만 반환하세요 (설명 없음):
                 contents=[
                     types.Content(
                         role="user",
-                        parts=[types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")]
+                        parts=[types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")],
                     )
                 ],
                 config=types.GenerateContentConfig(
@@ -240,11 +239,11 @@ JSON 배열만 반환하세요 (설명 없음):
                     thinking_config=types.ThinkingConfig(
                         thinking_budget=0,
                     ),
-                )
+                ),
             )
 
             # 3. 응답 추출
-            full_text = response.text if hasattr(response, 'text') else ""
+            full_text = response.text if hasattr(response, "text") else ""
 
             # 4. 파싱
             keywords = self._parse_keywords(full_text)
@@ -252,16 +251,11 @@ JSON 배열만 반환하세요 (설명 없음):
             return keywords
 
         except Exception as e:
-            logger.error(
-                f"키워드 생성 실패 ({source_symbol}-{target_symbol}): {e}"
-            )
+            logger.error(f"키워드 생성 실패 ({source_symbol}-{target_symbol}): {e}")
             return []
 
     def _build_prompt(
-        self,
-        source_symbol: str,
-        target_symbol: str,
-        rel_type: str
+        self, source_symbol: str, target_symbol: str, rel_type: str
     ) -> str:
         """
         프롬프트 생성
@@ -297,7 +291,7 @@ JSON:"""
         try:
             # 1. JSON 배열 추출 (코드 블록 제거)
             clean_text = text.strip()
-            clean_text = clean_text.replace('```json', '').replace('```', '').strip()
+            clean_text = clean_text.replace("```json", "").replace("```", "").strip()
 
             # 2. JSON 파싱 시도
             try:
@@ -321,9 +315,7 @@ JSON:"""
 
             if matches and len(matches) >= 1:
                 keywords = [
-                    m.strip()
-                    for m in matches
-                    if m.strip() and len(m.strip()) <= 30
+                    m.strip() for m in matches if m.strip() and len(m.strip()) <= 30
                 ]
                 if keywords:
                     logger.info(f"정규식 파싱 성공: {keywords[:5]}")
@@ -348,15 +340,12 @@ JSON:"""
         if not rel.context:
             rel.context = {}
 
-        rel.context['keywords'] = keywords
-        rel.context['keywords_generated_at'] = timezone.now().isoformat()
-        rel.save(update_fields=['context', 'last_verified_at'])
+        rel.context["keywords"] = keywords
+        rel.context["keywords_generated_at"] = timezone.now().isoformat()
+        rel.save(update_fields=["context", "last_verified_at"])
 
     def enrich_single(
-        self,
-        source_symbol: str,
-        target_symbol: str,
-        rel_type: str
+        self, source_symbol: str, target_symbol: str, rel_type: str
     ) -> Optional[List[str]]:
         """
         단일 관계 키워드 생성 (API/테스트용)
@@ -373,7 +362,7 @@ JSON:"""
             rel = StockRelationship.objects.get(
                 source_symbol=source_symbol.upper(),
                 target_symbol=target_symbol.upper(),
-                relationship_type=rel_type
+                relationship_type=rel_type,
             )
 
             keywords = self._generate_keywords(source_symbol, target_symbol, rel_type)
@@ -385,9 +374,7 @@ JSON:"""
                 )
                 return keywords
             else:
-                logger.warning(
-                    f"⚠️ 키워드 생성 실패: {source_symbol}-{target_symbol}"
-                )
+                logger.warning(f"⚠️ 키워드 생성 실패: {source_symbol}-{target_symbol}")
                 return None
 
         except StockRelationship.DoesNotExist:

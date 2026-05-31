@@ -4,6 +4,7 @@ Corporate Action 감지 및 관리 서비스
 가격 변동 ±50% 이상 시 주식분할, 역분할, 배당 등을 자동 감지합니다.
 yfinance의 splits, dividends 데이터를 활용합니다.
 """
+
 import logging
 from datetime import date, timedelta
 from decimal import Decimal
@@ -31,10 +32,13 @@ class CorporateActionService:
         """초기화"""
         try:
             import yfinance as yf
+
             self.yf = yf
             self._available = True
         except ImportError:
-            logger.warning("yfinance not installed. Corporate Action detection disabled.")
+            logger.warning(
+                "yfinance not installed. Corporate Action detection disabled."
+            )
             self._available = False
             self.yf = None
 
@@ -50,11 +54,7 @@ class CorporateActionService:
         """
         return abs(change_percent) >= self.CHANGE_THRESHOLD
 
-    def check_actions(
-        self,
-        symbol: str,
-        target_date: date
-    ) -> Optional[Dict]:
+    def check_actions(self, symbol: str, target_date: date) -> Optional[Dict]:
         """
         Corporate Action 감지
 
@@ -84,7 +84,9 @@ class CorporateActionService:
                 return split_action
 
             # 2. 배당 체크
-            dividend_action = self._check_dividends(ticker.dividends, target_date, ticker)
+            dividend_action = self._check_dividends(
+                ticker.dividends, target_date, ticker
+            )
             if dividend_action:
                 return dividend_action
 
@@ -125,22 +127,22 @@ class CorporateActionService:
 
                     if ratio_float > 1:
                         # 정분할
-                        action_type = 'split'
+                        action_type = "split"
                         display_text = f"1:{int(ratio_float)} 분할"
                     elif ratio_float < 1:
                         # 역분할
-                        action_type = 'reverse_split'
+                        action_type = "reverse_split"
                         reverse_ratio = int(1 / ratio_float)
                         display_text = f"{reverse_ratio}:1 역분할"
                     else:
                         continue
 
                     return {
-                        'date': split_date_obj,
-                        'action_type': action_type,
-                        'ratio': Decimal(str(ratio_float)),
-                        'dividend_amount': None,
-                        'display_text': display_text,
+                        "date": split_date_obj,
+                        "action_type": action_type,
+                        "ratio": Decimal(str(ratio_float)),
+                        "dividend_amount": None,
+                        "display_text": display_text,
                     }
 
             return None
@@ -149,12 +151,7 @@ class CorporateActionService:
             logger.warning(f"Splits 체크 실패: {e}")
             return None
 
-    def _check_dividends(
-        self,
-        dividends,
-        target_date: date,
-        ticker
-    ) -> Optional[Dict]:
+    def _check_dividends(self, dividends, target_date: date, ticker) -> Optional[Dict]:
         """
         특별배당 체크
 
@@ -190,11 +187,11 @@ class CorporateActionService:
                         # 5% 이상일 때만 특별배당으로 간주
                         if dividend_yield >= 5.0:
                             return {
-                                'date': div_date_obj,
-                                'action_type': 'dividend',
-                                'ratio': None,
-                                'dividend_amount': Decimal(str(amount)),
-                                'display_text': f"특별배당 ${amount:.2f} ({dividend_yield:.1f}%)",
+                                "date": div_date_obj,
+                                "action_type": "dividend",
+                                "ratio": None,
+                                "dividend_amount": Decimal(str(amount)),
+                                "display_text": f"특별배당 ${amount:.2f} ({dividend_yield:.1f}%)",
                             }
                     except Exception as e:
                         logger.debug(f"배당 수익률 계산 실패: {e}")
@@ -221,17 +218,19 @@ class CorporateActionService:
 
         action, created = CorporateAction.objects.update_or_create(
             symbol=symbol.upper(),
-            date=action_data['date'],
-            action_type=action_data['action_type'],
+            date=action_data["date"],
+            action_type=action_data["action_type"],
             defaults={
-                'ratio': action_data.get('ratio'),
-                'dividend_amount': action_data.get('dividend_amount'),
-                'display_text': action_data['display_text'],
-                'source': 'yfinance',
-            }
+                "ratio": action_data.get("ratio"),
+                "dividend_amount": action_data.get("dividend_amount"),
+                "display_text": action_data["display_text"],
+                "source": "yfinance",
+            },
         )
 
         if created:
-            logger.info(f"✅ Corporate Action 저장: {symbol} {action_data['display_text']}")
+            logger.info(
+                f"✅ Corporate Action 저장: {symbol} {action_data['display_text']}"
+            )
 
         return action

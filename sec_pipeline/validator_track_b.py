@@ -10,11 +10,11 @@ logger = logging.getLogger(__name__)
 
 # 필드별 허용 값
 FIELD_ALLOWED_VALUES = {
-    'direct_customer_contact': {'direct', 'indirect', 'hybrid', 'unknown'},
-    'contract_model': {'subscription', 'one_time', 'hybrid', 'unknown'},
-    'recurring_revenue_signal': {'high', 'medium', 'low', 'unknown'},
-    'channel_dependency': {'high_dependency', 'moderate', 'low_dependency', 'unknown'},
-    'customer_concentration': {'concentrated', 'diversified', 'unknown'},
+    "direct_customer_contact": {"direct", "indirect", "hybrid", "unknown"},
+    "contract_model": {"subscription", "one_time", "hybrid", "unknown"},
+    "recurring_revenue_signal": {"high", "medium", "low", "unknown"},
+    "channel_dependency": {"high_dependency", "moderate", "low_dependency", "unknown"},
+    "customer_concentration": {"concentrated", "diversified", "unknown"},
 }
 
 BM_FIELDS = list(FIELD_ALLOWED_VALUES.keys())
@@ -32,21 +32,25 @@ def validate_business_model_result(result: dict) -> dict:
     for field in BM_FIELDS:
         field_data = result.get(field, {})
         if not isinstance(field_data, dict):
-            validated[field] = {'value': 'unknown', 'evidence_text': '', 'confidence': 0.0}
+            validated[field] = {
+                "value": "unknown",
+                "evidence_text": "",
+                "confidence": 0.0,
+            }
             continue
 
-        value = field_data.get('value', 'unknown')
-        evidence = (field_data.get('evidence_text') or '')[:200]
-        confidence = float(field_data.get('confidence', 0))
+        value = field_data.get("value", "unknown")
+        evidence = (field_data.get("evidence_text") or "")[:200]
+        confidence = float(field_data.get("confidence", 0))
 
         # 허용 값 검증
         if value not in FIELD_ALLOWED_VALUES[field]:
-            value = 'unknown'
+            value = "unknown"
 
         validated[field] = {
-            'value': value,
-            'evidence_text': evidence,
-            'confidence': min(max(confidence, 0.0), 1.0),
+            "value": value,
+            "evidence_text": evidence,
+            "confidence": min(max(confidence, 0.0), 1.0),
         }
 
     return validated
@@ -55,10 +59,10 @@ def validate_business_model_result(result: dict) -> dict:
 def calculate_confidence_grade(overall_confidence: float) -> str:
     """overall_confidence → grade."""
     if overall_confidence >= 0.8:
-        return 'high'
+        return "high"
     elif overall_confidence >= 0.6:
-        return 'medium'
-    return 'low'
+        return "medium"
+    return "low"
 
 
 def save_business_model_snapshot(validated: dict, document, symbol: str):
@@ -75,23 +79,23 @@ def save_business_model_snapshot(validated: dict, document, symbol: str):
         return None
 
     # overall_confidence: 5개 confidence 평균
-    confidences = [validated[f]['confidence'] for f in BM_FIELDS]
+    confidences = [validated[f]["confidence"] for f in BM_FIELDS]
     overall = sum(confidences) / len(confidences) if confidences else 0
 
     snapshot, created = BusinessModelSnapshot.objects.update_or_create(
         symbol=stock,
         source_document=document,
         defaults={
-            'as_of_date': document.filing_date,
-            'direct_customer_contact': validated['direct_customer_contact']['value'],
-            'contract_model': validated['contract_model']['value'],
-            'recurring_revenue_signal': validated['recurring_revenue_signal']['value'],
-            'channel_dependency': validated['channel_dependency']['value'],
-            'customer_concentration': validated['customer_concentration']['value'],
-            'overall_confidence': overall,
-            'confidence_grade': calculate_confidence_grade(overall),
-            'prompt_version': PROMPT_VERSION_TRACK_B,
-        }
+            "as_of_date": document.filing_date,
+            "direct_customer_contact": validated["direct_customer_contact"]["value"],
+            "contract_model": validated["contract_model"]["value"],
+            "recurring_revenue_signal": validated["recurring_revenue_signal"]["value"],
+            "channel_dependency": validated["channel_dependency"]["value"],
+            "customer_concentration": validated["customer_concentration"]["value"],
+            "overall_confidence": overall,
+            "confidence_grade": calculate_confidence_grade(overall),
+            "prompt_version": PROMPT_VERSION_TRACK_B,
+        },
     )
 
     # Evidence 저장
@@ -99,13 +103,15 @@ def save_business_model_snapshot(validated: dict, document, symbol: str):
         evidences = []
         for field in BM_FIELDS:
             field_data = validated[field]
-            if field_data['evidence_text']:
-                evidences.append(BusinessModelEvidence(
-                    snapshot=snapshot,
-                    field_name=field,
-                    evidence_text=field_data['evidence_text'],
-                    confidence=field_data['confidence'],
-                ))
+            if field_data["evidence_text"]:
+                evidences.append(
+                    BusinessModelEvidence(
+                        snapshot=snapshot,
+                        field_name=field,
+                        evidence_text=field_data["evidence_text"],
+                        confidence=field_data["confidence"],
+                    )
+                )
         if evidences:
             BusinessModelEvidence.objects.bulk_create(evidences)
 

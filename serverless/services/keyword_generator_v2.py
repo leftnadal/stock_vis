@@ -59,7 +59,9 @@ class EnhancedKeywordGenerator:
         self.parser = EnhancedKeywordResponseParser()
 
         # Gemini API 클라이언트 초기화
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
@@ -67,10 +69,7 @@ class EnhancedKeywordGenerator:
         self.client = genai.Client(api_key=api_key)
 
     async def generate_keywords_for_movers(
-        self,
-        mover_date: date,
-        mover_type: str,
-        max_stocks: int = 20
+        self, mover_date: date, mover_type: str, max_stocks: int = 20
     ) -> List[Dict[str, Any]]:
         """
         특정 날짜/타입의 Market Movers에 대해 키워드 생성
@@ -95,14 +94,11 @@ class EnhancedKeywordGenerator:
         """
         # MarketMover 조회
         movers = MarketMover.objects.filter(
-            date=mover_date,
-            mover_type=mover_type
-        ).order_by('rank')[:max_stocks]
+            date=mover_date, mover_type=mover_type
+        ).order_by("rank")[:max_stocks]
 
         if not movers:
-            logger.warning(
-                f"No movers found for {mover_date} {mover_type}"
-            )
+            logger.warning(f"No movers found for {mover_date} {mover_type}")
             return []
 
         # 컨텍스트 구성
@@ -113,8 +109,7 @@ class EnhancedKeywordGenerator:
 
         # 배치 컨텍스트 구성 (토큰 제한)
         batch_contexts = self.context_builder.build_batch_contexts(
-            stock_contexts,
-            max_tokens=self.MAX_BATCH_TOKENS
+            stock_contexts, max_tokens=self.MAX_BATCH_TOKENS
         )
 
         if not batch_contexts:
@@ -144,8 +139,7 @@ class EnhancedKeywordGenerator:
             return []
 
     async def generate_keywords_single(
-        self,
-        mover: MarketMover
+        self, mover: MarketMover
     ) -> Optional[Dict[str, Any]]:
         """
         단일 종목 키워드 생성
@@ -179,9 +173,7 @@ class EnhancedKeywordGenerator:
                     f"Successfully generated {len(result['keywords'])} keywords for {context_data['symbol']}"
                 )
             else:
-                logger.warning(
-                    f"Failed to parse keywords for {context_data['symbol']}"
-                )
+                logger.warning(f"Failed to parse keywords for {context_data['symbol']}")
 
             return result
 
@@ -202,30 +194,38 @@ class EnhancedKeywordGenerator:
             KeywordContextBuilder.build_stock_context에 전달할 데이터
         """
         price_data = {
-            'price': float(mover.price) if mover.price else None,
-            'change_percent': float(mover.change_percent) if mover.change_percent else None,
-            'volume': int(mover.volume) if mover.volume else None,
-            'open': float(mover.open_price) if mover.open_price else None,
-            'high': float(mover.high) if mover.high else None,
-            'low': float(mover.low) if mover.low else None,
+            "price": float(mover.price) if mover.price else None,
+            "change_percent": float(mover.change_percent)
+            if mover.change_percent
+            else None,
+            "volume": int(mover.volume) if mover.volume else None,
+            "open": float(mover.open_price) if mover.open_price else None,
+            "high": float(mover.high) if mover.high else None,
+            "low": float(mover.low) if mover.low else None,
         }
 
         indicators = {
-            'rvol': float(mover.rvol) if mover.rvol else None,
-            'trend_strength': float(mover.trend_strength) if mover.trend_strength else None,
-            'sector_alpha': float(mover.sector_alpha) if mover.sector_alpha else None,
-            'etf_sync_rate': float(mover.etf_sync_rate) if mover.etf_sync_rate else None,
-            'volatility_pct': int(mover.volatility_pct) if mover.volatility_pct else None,
+            "rvol": float(mover.rvol) if mover.rvol else None,
+            "trend_strength": float(mover.trend_strength)
+            if mover.trend_strength
+            else None,
+            "sector_alpha": float(mover.sector_alpha) if mover.sector_alpha else None,
+            "etf_sync_rate": float(mover.etf_sync_rate)
+            if mover.etf_sync_rate
+            else None,
+            "volatility_pct": int(mover.volatility_pct)
+            if mover.volatility_pct
+            else None,
         }
 
         context_data = {
-            'symbol': mover.symbol,
-            'company_name': mover.company_name,
-            'mover_type': mover.mover_type,
-            'price_data': price_data,
-            'indicators': indicators,
-            'sector': mover.sector,
-            'industry': mover.industry,
+            "symbol": mover.symbol,
+            "company_name": mover.company_name,
+            "mover_type": mover.mover_type,
+            "price_data": price_data,
+            "indicators": indicators,
+            "sector": mover.sector,
+            "industry": mover.industry,
         }
 
         # Overview/뉴스 보강 (옵션)
@@ -234,19 +234,17 @@ class EnhancedKeywordGenerator:
             news = ContextEnricher.fetch_news(mover.symbol, days=7, limit=3)
 
             if overview:
-                context_data['overview'] = overview
+                context_data["overview"] = overview
                 logger.debug(f"{mover.symbol}: Overview enriched")
 
             if news:
-                context_data['news'] = news
+                context_data["news"] = news
                 logger.debug(f"{mover.symbol}: News enriched ({len(news)} articles)")
 
         return context_data
 
     async def _call_llm_batch(
-        self,
-        contexts: List[Dict[str, Any]],
-        mover_type: str
+        self, contexts: List[Dict[str, Any]], mover_type: str
     ) -> str:
         """
         LLM API 배치 호출
@@ -278,11 +276,7 @@ class EnhancedKeywordGenerator:
         # 응답 텍스트 추출
         return self._extract_response_text(response)
 
-    async def _call_llm_single(
-        self,
-        context: Dict[str, Any],
-        mover_type: str
-    ) -> str:
+    async def _call_llm_single(self, context: Dict[str, Any], mover_type: str) -> str:
         """
         LLM API 단일 호출
 
@@ -323,22 +317,19 @@ class EnhancedKeywordGenerator:
             응답 텍스트
         """
         # 응답 텍스트 추출
-        if hasattr(response, 'text') and response.text:
+        if hasattr(response, "text") and response.text:
             return response.text
 
         # candidates에서 추출
-        if hasattr(response, 'candidates') and response.candidates:
+        if hasattr(response, "candidates") and response.candidates:
             candidate = response.candidates[0]
-            if hasattr(candidate, 'content') and candidate.content:
-                if hasattr(candidate.content, 'parts') and candidate.content.parts:
+            if hasattr(candidate, "content") and candidate.content:
+                if hasattr(candidate.content, "parts") and candidate.content.parts:
                     return candidate.content.parts[0].text
 
         raise ValueError("No text found in LLM response")
 
-    def estimate_batch_cost(
-        self,
-        num_stocks: int
-    ) -> Dict[str, Any]:
+    def estimate_batch_cost(self, num_stocks: int) -> Dict[str, Any]:
         """
         배치 처리 비용 추정
 
@@ -373,12 +364,12 @@ class EnhancedKeywordGenerator:
         total_cost = input_cost + output_cost
 
         return {
-            'input_tokens': input_tokens,
-            'output_tokens': output_tokens,
-            'total_tokens': total_tokens,
-            'input_cost_usd': round(input_cost, 6),
-            'output_cost_usd': round(output_cost, 6),
-            'total_cost_usd': round(total_cost, 6),
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "total_tokens": total_tokens,
+            "input_cost_usd": round(input_cost, 6),
+            "output_cost_usd": round(output_cost, 6),
+            "total_cost_usd": round(total_cost, 6),
         }
 
 
@@ -388,7 +379,7 @@ def generate_keywords_sync_v2(
     mover_type: str,
     language: str = "ko",
     max_stocks: int = 20,
-    enable_enrichment: bool = True
+    enable_enrichment: bool = True,
 ) -> List[Dict[str, Any]]:
     """
     동기 키워드 생성 함수 (Celery 태스크용)
@@ -404,8 +395,7 @@ def generate_keywords_sync_v2(
         [{'symbol', 'keywords', 'summary'}, ...]
     """
     generator = EnhancedKeywordGenerator(
-        language=language,
-        enable_enrichment=enable_enrichment
+        language=language, enable_enrichment=enable_enrichment
     )
 
     # asyncio 이벤트 루프 실행
@@ -416,9 +406,7 @@ def generate_keywords_sync_v2(
 
     results = loop.run_until_complete(
         generator.generate_keywords_for_movers(
-            mover_date=mover_date,
-            mover_type=mover_type,
-            max_stocks=max_stocks
+            mover_date=mover_date, mover_type=mover_type, max_stocks=max_stocks
         )
     )
 

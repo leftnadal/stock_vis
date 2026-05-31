@@ -8,8 +8,8 @@ from rest_framework.routers import DefaultRouter
 from .views import NewsViewSet
 
 router = DefaultRouter()
-router.register(r'', NewsViewSet, basename='news')
+router.register(r"", NewsViewSet, basename="news")
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("", include(router.urls)),
 ]

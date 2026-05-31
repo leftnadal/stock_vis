@@ -7,6 +7,7 @@ Phase 2: Sector Alpha, ETF Sync Rate, Volatility Percentile
 ⭐ 중요: AWS Lambda로 전환 시 이 클래스를 그대로 재사용합니다.
 Django 의존성 없이 순수 Python으로 작성되었습니다.
 """
+
 import bisect
 import statistics
 from decimal import ROUND_HALF_UP, Decimal
@@ -22,9 +23,7 @@ class IndicatorCalculator:
 
     @staticmethod
     def calculate_rvol(
-        current_volume: int,
-        historical_volumes: List[int],
-        min_periods: int = 10
+        current_volume: int, historical_volumes: List[int], min_periods: int = 10
     ) -> Optional[Decimal]:
         """
         RVOL (Relative Volume) 계산
@@ -59,19 +58,16 @@ class IndicatorCalculator:
 
         # 0 나누기 방지
         if avg_volume == 0:
-            return Decimal('1.0')
+            return Decimal("1.0")
 
         rvol = current_volume / avg_volume
 
         # 소수점 2자리로 반올림
-        return Decimal(str(rvol)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal(str(rvol)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @staticmethod
     def calculate_trend_strength(
-        open_price: float,
-        high: float,
-        low: float,
-        close: float
+        open_price: float, high: float, low: float, close: float
     ) -> Optional[Decimal]:
         """
         장중 추세 강도 계산
@@ -103,7 +99,7 @@ class IndicatorCalculator:
             Decimal('0.00')
         """
         if high == low:  # 0 나누기 방지
-            return Decimal('0.00')
+            return Decimal("0.00")
 
         strength = (close - open_price) / (high - low)
 
@@ -111,7 +107,7 @@ class IndicatorCalculator:
         strength = max(-1.0, min(1.0, strength))
 
         # 소수점 2자리로 반올림
-        return Decimal(str(strength)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal(str(strength)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @staticmethod
     def format_rvol_display(rvol: Optional[Decimal]) -> str:
@@ -132,10 +128,10 @@ class IndicatorCalculator:
             'N/A'
         """
         if rvol is None:
-            return 'N/A'
+            return "N/A"
 
         # 소수점 1자리로 표시
-        return f'{float(rvol):.1f}x'
+        return f"{float(rvol):.1f}x"
 
     @staticmethod
     def format_trend_display(strength: Optional[Decimal]) -> str:
@@ -158,14 +154,14 @@ class IndicatorCalculator:
             'N/A'
         """
         if strength is None:
-            return 'N/A'
+            return "N/A"
 
         strength_float = float(strength)
 
         if strength_float >= 0:
-            return f'▲{strength_float:.2f}'
+            return f"▲{strength_float:.2f}"
         else:
-            return f'▼{strength_float:.2f}'
+            return f"▼{strength_float:.2f}"
 
     # ========================================
     # Phase 2 지표 (나중에 구현)
@@ -173,8 +169,7 @@ class IndicatorCalculator:
 
     @staticmethod
     def calculate_sector_alpha(
-        stock_return: float,
-        sector_return: float
+        stock_return: float, sector_return: float
     ) -> Optional[Decimal]:
         """
         섹터 대비 초과수익 계산
@@ -203,13 +198,11 @@ class IndicatorCalculator:
         alpha = stock_return - sector_return
 
         # 소수점 2자리로 반올림
-        return Decimal(str(alpha)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return Decimal(str(alpha)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
     @staticmethod
     def calculate_etf_sync_rate(
-        stock_prices: List[float],
-        etf_prices: List[float],
-        min_periods: int = 10
+        stock_prices: List[float], etf_prices: List[float], min_periods: int = 10
     ) -> Optional[Decimal]:
         """
         ETF 동행률 계산
@@ -258,7 +251,9 @@ class IndicatorCalculator:
             sync_rate = max(0.0, min(1.0, sync_rate))
 
             # 소수점 2자리로 반올림
-            return Decimal(str(sync_rate)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+            return Decimal(str(sync_rate)).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
 
         except (statistics.StatisticsError, ValueError):
             # 표준편차가 0이거나 계산 불가능한 경우
@@ -268,7 +263,7 @@ class IndicatorCalculator:
     def calculate_volatility_percentile(
         current_volatility: float,
         historical_volatilities: List[float],
-        min_periods: int = 20
+        min_periods: int = 20,
     ) -> Optional[int]:
         """
         변동성 백분위 계산
@@ -337,14 +332,14 @@ class IndicatorCalculator:
             '-1.3%'
         """
         if alpha is None:
-            return 'N/A'
+            return "N/A"
 
         alpha_float = float(alpha)
 
         if alpha_float >= 0:
-            return f'+{alpha_float:.1f}%'
+            return f"+{alpha_float:.1f}%"
         else:
-            return f'{alpha_float:.1f}%'
+            return f"{alpha_float:.1f}%"
 
     @staticmethod
     def format_etf_sync_display(sync_rate: Optional[Decimal]) -> str:
@@ -365,9 +360,9 @@ class IndicatorCalculator:
             'N/A'
         """
         if sync_rate is None:
-            return 'N/A'
+            return "N/A"
 
-        return f'{float(sync_rate):.2f}'
+        return f"{float(sync_rate):.2f}"
 
     @staticmethod
     def format_volatility_percentile_display(percentile: Optional[int]) -> str:
@@ -388,6 +383,6 @@ class IndicatorCalculator:
             'N/A'
         """
         if percentile is None:
-            return 'N/A'
+            return "N/A"
 
-        return f'{percentile}'
+        return f"{percentile}"

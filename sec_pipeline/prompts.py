@@ -5,8 +5,8 @@ Track A — Supply Chain 추출 (Phase 1)
 Track B — Business Model 분류 (Phase 2)
 """
 
-PROMPT_VERSION = 'v1'
-PROMPT_VERSION_TRACK_B = 'v1'
+PROMPT_VERSION = "v1"
+PROMPT_VERSION_TRACK_B = "v1"
 
 SUPPLY_CHAIN_EXTRACTION_PROMPT = """You are a financial analyst extracting supply chain relationships from SEC 10-K filings.
 

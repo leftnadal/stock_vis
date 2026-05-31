@@ -9,6 +9,7 @@ Tier B+ (medium-high): 다중 근거 승격 → 강화된 추정
 
 비용: $0 (추가 API 호출 없음)
 """
+
 import logging
 import re
 from collections import defaultdict
@@ -31,168 +32,232 @@ logger = logging.getLogger(__name__)
 # 테마별 키워드 정의
 THEME_KEYWORDS = {
     # 섹터 테마 (Tier 1)
-    'technology': {
-        'keywords': ['technology', 'software', 'hardware', 'IT', 'tech', 'digital'],
-        'name': '기술',
-        'icon': '💻',
+    "technology": {
+        "keywords": ["technology", "software", "hardware", "IT", "tech", "digital"],
+        "name": "기술",
+        "icon": "💻",
     },
-    'healthcare': {
-        'keywords': ['healthcare', 'pharma', 'biotech', 'medical', 'drug', 'hospital'],
-        'name': '헬스케어',
-        'icon': '🏥',
+    "healthcare": {
+        "keywords": ["healthcare", "pharma", "biotech", "medical", "drug", "hospital"],
+        "name": "헬스케어",
+        "icon": "🏥",
     },
-    'financials': {
-        'keywords': ['bank', 'financial', 'insurance', 'investment', 'capital'],
-        'name': '금융',
-        'icon': '🏦',
+    "financials": {
+        "keywords": ["bank", "financial", "insurance", "investment", "capital"],
+        "name": "금융",
+        "icon": "🏦",
     },
-    'energy': {
-        'keywords': ['oil', 'gas', 'energy', 'petroleum', 'drilling'],
-        'name': '에너지',
-        'icon': '⛽',
+    "energy": {
+        "keywords": ["oil", "gas", "energy", "petroleum", "drilling"],
+        "name": "에너지",
+        "icon": "⛽",
     },
-    'industrials': {
-        'keywords': ['industrial', 'manufacturing', 'aerospace', 'defense', 'machinery'],
-        'name': '산업재',
-        'icon': '🏭',
+    "industrials": {
+        "keywords": [
+            "industrial",
+            "manufacturing",
+            "aerospace",
+            "defense",
+            "machinery",
+        ],
+        "name": "산업재",
+        "icon": "🏭",
     },
-    'communication': {
-        'keywords': ['telecom', 'media', 'entertainment', 'streaming', 'communication'],
-        'name': '통신',
-        'icon': '📡',
+    "communication": {
+        "keywords": ["telecom", "media", "entertainment", "streaming", "communication"],
+        "name": "통신",
+        "icon": "📡",
     },
-    'consumer_discretionary': {
-        'keywords': ['retail', 'consumer', 'luxury', 'apparel', 'restaurant', 'hotel'],
-        'name': '경기소비재',
-        'icon': '🛍️',
+    "consumer_discretionary": {
+        "keywords": ["retail", "consumer", "luxury", "apparel", "restaurant", "hotel"],
+        "name": "경기소비재",
+        "icon": "🛍️",
     },
-    'consumer_staples': {
-        'keywords': ['food', 'beverage', 'household', 'personal', 'grocery'],
-        'name': '필수소비재',
-        'icon': '🛒',
+    "consumer_staples": {
+        "keywords": ["food", "beverage", "household", "personal", "grocery"],
+        "name": "필수소비재",
+        "icon": "🛒",
     },
-    'utilities': {
-        'keywords': ['utility', 'electric', 'water', 'gas utility', 'power'],
-        'name': '유틸리티',
-        'icon': '💡',
+    "utilities": {
+        "keywords": ["utility", "electric", "water", "gas utility", "power"],
+        "name": "유틸리티",
+        "icon": "💡",
     },
-    'real_estate': {
-        'keywords': ['real estate', 'REIT', 'property', 'mortgage'],
-        'name': '부동산',
-        'icon': '🏢',
+    "real_estate": {
+        "keywords": ["real estate", "REIT", "property", "mortgage"],
+        "name": "부동산",
+        "icon": "🏢",
     },
-    'materials': {
-        'keywords': ['materials', 'chemical', 'mining', 'steel', 'metals'],
-        'name': '소재',
-        'icon': '⚗️',
+    "materials": {
+        "keywords": ["materials", "chemical", "mining", "steel", "metals"],
+        "name": "소재",
+        "icon": "⚗️",
     },
-
     # 니치 테마 (Tier 2)
-    'semiconductor': {
-        'keywords': [
-            'semiconductor', 'chip', 'wafer', 'fab', 'foundry',
-            'GPU', 'CPU', 'memory', 'NAND', 'DRAM', 'silicon'
+    "semiconductor": {
+        "keywords": [
+            "semiconductor",
+            "chip",
+            "wafer",
+            "fab",
+            "foundry",
+            "GPU",
+            "CPU",
+            "memory",
+            "NAND",
+            "DRAM",
+            "silicon",
         ],
-        'name': '반도체',
-        'icon': '🔌',
+        "name": "반도체",
+        "icon": "🔌",
     },
-    'innovation': {
-        'keywords': [
-            'innovation', 'disruptive', 'autonomous', 'AI', 'machine learning',
-            'blockchain', 'fintech', 'genomics'
+    "innovation": {
+        "keywords": [
+            "innovation",
+            "disruptive",
+            "autonomous",
+            "AI",
+            "machine learning",
+            "blockchain",
+            "fintech",
+            "genomics",
         ],
-        'name': '혁신 기술',
-        'icon': '🚀',
+        "name": "혁신 기술",
+        "icon": "🚀",
     },
-    'genomics': {
-        'keywords': [
-            'genomics', 'gene', 'DNA', 'CRISPR', 'cell therapy',
-            'biotech', 'precision medicine', 'molecular'
+    "genomics": {
+        "keywords": [
+            "genomics",
+            "gene",
+            "DNA",
+            "CRISPR",
+            "cell therapy",
+            "biotech",
+            "precision medicine",
+            "molecular",
         ],
-        'name': '유전체학',
-        'icon': '🧬',
+        "name": "유전체학",
+        "icon": "🧬",
     },
-    'robotics_ai': {
-        'keywords': [
-            'robot', 'robotics', 'automation', 'AI', 'artificial intelligence',
-            'machine learning', 'deep learning', 'neural'
+    "robotics_ai": {
+        "keywords": [
+            "robot",
+            "robotics",
+            "automation",
+            "AI",
+            "artificial intelligence",
+            "machine learning",
+            "deep learning",
+            "neural",
         ],
-        'name': '로봇/AI',
-        'icon': '🤖',
+        "name": "로봇/AI",
+        "icon": "🤖",
     },
-    'solar': {
-        'keywords': [
-            'solar', 'photovoltaic', 'renewable', 'clean energy',
-            'inverter', 'panel'
+    "solar": {
+        "keywords": [
+            "solar",
+            "photovoltaic",
+            "renewable",
+            "clean energy",
+            "inverter",
+            "panel",
         ],
-        'name': '태양광',
-        'icon': '☀️',
+        "name": "태양광",
+        "icon": "☀️",
     },
-    'cybersecurity': {
-        'keywords': [
-            'cybersecurity', 'security', 'firewall', 'encryption',
-            'identity', 'authentication', 'zero trust'
+    "cybersecurity": {
+        "keywords": [
+            "cybersecurity",
+            "security",
+            "firewall",
+            "encryption",
+            "identity",
+            "authentication",
+            "zero trust",
         ],
-        'name': '사이버보안',
-        'icon': '🔐',
+        "name": "사이버보안",
+        "icon": "🔐",
     },
-    'lithium_battery': {
-        'keywords': [
-            'lithium', 'battery', 'EV', 'electric vehicle', 'charging',
-            'cathode', 'anode', 'solid state'
+    "lithium_battery": {
+        "keywords": [
+            "lithium",
+            "battery",
+            "EV",
+            "electric vehicle",
+            "charging",
+            "cathode",
+            "anode",
+            "solid state",
         ],
-        'name': '리튬/배터리',
-        'icon': '🔋',
+        "name": "리튬/배터리",
+        "icon": "🔋",
     },
-    'clean_energy': {
-        'keywords': [
-            'clean energy', 'renewable', 'wind', 'solar', 'hydro',
-            'green', 'sustainable', 'carbon neutral'
+    "clean_energy": {
+        "keywords": [
+            "clean energy",
+            "renewable",
+            "wind",
+            "solar",
+            "hydro",
+            "green",
+            "sustainable",
+            "carbon neutral",
         ],
-        'name': '클린에너지',
-        'icon': '🌱',
+        "name": "클린에너지",
+        "icon": "🌱",
     },
-    'china_internet': {
-        'keywords': [
-            'china', 'chinese', 'alibaba', 'tencent', 'baidu',
-            'jd', 'pinduoduo', 'meituan'
+    "china_internet": {
+        "keywords": [
+            "china",
+            "chinese",
+            "alibaba",
+            "tencent",
+            "baidu",
+            "jd",
+            "pinduoduo",
+            "meituan",
         ],
-        'name': '중국 인터넷',
-        'icon': '🇨🇳',
+        "name": "중국 인터넷",
+        "icon": "🇨🇳",
     },
-    'igaming': {
-        'keywords': [
-            'gaming', 'casino', 'betting', 'gambling', 'sports betting',
-            'igaming', 'fantasy sports'
+    "igaming": {
+        "keywords": [
+            "gaming",
+            "casino",
+            "betting",
+            "gambling",
+            "sports betting",
+            "igaming",
+            "fantasy sports",
         ],
-        'name': '온라인 게이밍',
-        'icon': '🎰',
+        "name": "온라인 게이밍",
+        "icon": "🎰",
     },
 }
 
 # 테마 ID → 대표 ETF 매핑
 THEME_TO_ETF = {
-    'technology': 'XLK',
-    'healthcare': 'XLV',
-    'financials': 'XLF',
-    'energy': 'XLE',
-    'industrials': 'XLI',
-    'communication': 'XLC',
-    'consumer_discretionary': 'XLY',
-    'consumer_staples': 'XLP',
-    'utilities': 'XLU',
-    'real_estate': 'XLRE',
-    'materials': 'XLB',
-    'semiconductor': 'SOXX',
-    'innovation': 'ARKK',
-    'genomics': 'ARKG',
-    'robotics_ai': 'BOTZ',
-    'solar': 'TAN',
-    'cybersecurity': 'HACK',
-    'lithium_battery': 'LIT',
-    'clean_energy': 'ICLN',
-    'china_internet': 'KWEB',
-    'igaming': 'BETZ',
+    "technology": "XLK",
+    "healthcare": "XLV",
+    "financials": "XLF",
+    "energy": "XLE",
+    "industrials": "XLI",
+    "communication": "XLC",
+    "consumer_discretionary": "XLY",
+    "consumer_staples": "XLP",
+    "utilities": "XLU",
+    "real_estate": "XLRE",
+    "materials": "XLB",
+    "semiconductor": "SOXX",
+    "innovation": "ARKK",
+    "genomics": "ARKG",
+    "robotics_ai": "BOTZ",
+    "solar": "TAN",
+    "cybersecurity": "HACK",
+    "lithium_battery": "LIT",
+    "clean_energy": "ICLN",
+    "china_internet": "KWEB",
+    "igaming": "BETZ",
 }
 
 
@@ -234,9 +299,11 @@ class ThemeMatchingService:
         matches = []
 
         # 해당 종목을 보유한 모든 ETF 조회
-        holdings = ETFHolding.objects.filter(
-            stock_symbol=symbol
-        ).select_related('etf').order_by('etf__tier', '-weight_percent')
+        holdings = (
+            ETFHolding.objects.filter(stock_symbol=symbol)
+            .select_related("etf")
+            .order_by("etf__tier", "-weight_percent")
+        )
 
         for holding in holdings:
             etf = holding.etf
@@ -247,15 +314,15 @@ class ThemeMatchingService:
                 stock_symbol=symbol,
                 theme_id=theme_id,
                 defaults={
-                    'confidence': 'high',
-                    'source': 'etf_holding',
-                    'etf_symbol': etf.symbol,
-                    'weight_in_etf': holding.weight_percent,
-                    'evidence': [
+                    "confidence": "high",
+                    "source": "etf_holding",
+                    "etf_symbol": etf.symbol,
+                    "weight_in_etf": holding.weight_percent,
+                    "evidence": [
                         f"{etf.symbol} ({etf.name}) #{holding.rank}위",
-                        f"비중 {holding.weight_percent}%"
+                        f"비중 {holding.weight_percent}%",
                     ],
-                }
+                },
             )
             matches.append(match)
 
@@ -299,14 +366,13 @@ class ThemeMatchingService:
         if industry:
             text_parts.append(industry)
 
-        combined_text = ' '.join(text_parts).lower()
+        combined_text = " ".join(text_parts).lower()
 
         # 이미 Tier A로 매칭된 테마 확인
         existing_tier_a = set(
             ThemeMatch.objects.filter(
-                stock_symbol=symbol,
-                confidence='high'
-            ).values_list('theme_id', flat=True)
+                stock_symbol=symbol, confidence="high"
+            ).values_list("theme_id", flat=True)
         )
 
         # 각 테마별 키워드 매칭
@@ -315,7 +381,7 @@ class ThemeMatchingService:
                 continue  # Tier A가 있으면 스킵
 
             matched_keywords = []
-            for keyword in theme_config['keywords']:
+            for keyword in theme_config["keywords"]:
                 if keyword.lower() in combined_text:
                     matched_keywords.append(keyword)
 
@@ -329,10 +395,10 @@ class ThemeMatchingService:
                     stock_symbol=symbol,
                     theme_id=theme_id,
                     defaults={
-                        'confidence': confidence,
-                        'source': 'keyword',
-                        'evidence': evidence,
-                    }
+                        "confidence": confidence,
+                        "source": "keyword",
+                        "evidence": evidence,
+                    },
                 )
                 matches.append(match)
 
@@ -340,10 +406,7 @@ class ThemeMatchingService:
         return matches
 
     def _check_promotion(
-        self,
-        symbol: str,
-        theme_id: str,
-        matched_keywords: List[str]
+        self, symbol: str, theme_id: str, matched_keywords: List[str]
     ) -> str:
         """
         Tier B → medium-high 승격 체크
@@ -364,39 +427,37 @@ class ThemeMatchingService:
         etf_symbol = THEME_TO_ETF.get(theme_id)
         if etf_symbol:
             co_mentions = StockRelationship.objects.filter(
-                Q(source_symbol=symbol, target_symbol=etf_symbol) |
-                Q(source_symbol=etf_symbol, target_symbol=symbol),
-                relationship_type='CO_MENTIONED'
+                Q(source_symbol=symbol, target_symbol=etf_symbol)
+                | Q(source_symbol=etf_symbol, target_symbol=symbol),
+                relationship_type="CO_MENTIONED",
             ).count()
 
             if co_mentions >= 2:
-                logger.debug(f"{symbol}: ETF {etf_symbol}와 {co_mentions}회 동시언급 → 승격")
-                return 'medium-high'
+                logger.debug(
+                    f"{symbol}: ETF {etf_symbol}와 {co_mentions}회 동시언급 → 승격"
+                )
+                return "medium-high"
 
         # 조건 2: 같은 테마 종목들과 PEER_OF 관계
         theme_stocks = ThemeMatch.objects.filter(
-            theme_id=theme_id,
-            confidence='high'
-        ).values_list('stock_symbol', flat=True)[:50]
+            theme_id=theme_id, confidence="high"
+        ).values_list("stock_symbol", flat=True)[:50]
 
         if theme_stocks:
             peer_count = StockRelationship.objects.filter(
                 source_symbol=symbol,
                 target_symbol__in=list(theme_stocks),
-                relationship_type='PEER_OF'
+                relationship_type="PEER_OF",
             ).count()
 
             if peer_count >= 3:
                 logger.debug(f"{symbol}: 같은 테마 {peer_count}개 종목과 PEER → 승격")
-                return 'medium-high'
+                return "medium-high"
 
-        return 'medium'
+        return "medium"
 
     def get_theme_stocks(
-        self,
-        theme_id: str,
-        limit: int = 20,
-        min_confidence: str = 'medium'
+        self, theme_id: str, limit: int = 20, min_confidence: str = "medium"
     ) -> List[Dict]:
         """
         테마별 종목 조회
@@ -419,7 +480,7 @@ class ThemeMatchingService:
                 ...
             ]
         """
-        confidence_order = {'high': 0, 'medium-high': 1, 'medium': 2}
+        confidence_order = {"high": 0, "medium-high": 1, "medium": 2}
 
         # 최소 confidence 이상인 종목만 필터
         confidence_filter = []
@@ -428,18 +489,17 @@ class ThemeMatchingService:
                 confidence_filter.append(conf)
 
         matches = ThemeMatch.objects.filter(
-            theme_id=theme_id,
-            confidence__in=confidence_filter
-        ).order_by('confidence', '-weight_in_etf')[:limit]
+            theme_id=theme_id, confidence__in=confidence_filter
+        ).order_by("confidence", "-weight_in_etf")[:limit]
 
         return [
             {
-                'symbol': m.stock_symbol,
-                'confidence': m.confidence,
-                'source': m.source,
-                'etf_symbol': m.etf_symbol,
-                'weight_in_etf': float(m.weight_in_etf) if m.weight_in_etf else None,
-                'evidence': m.evidence,
+                "symbol": m.stock_symbol,
+                "confidence": m.confidence,
+                "source": m.source,
+                "etf_symbol": m.etf_symbol,
+                "weight_in_etf": float(m.weight_in_etf) if m.weight_in_etf else None,
+                "evidence": m.evidence,
             }
             for m in matches
         ]
@@ -463,22 +523,24 @@ class ThemeMatchingService:
                 ...
             ]
         """
-        matches = ThemeMatch.objects.filter(
-            stock_symbol=symbol.upper()
-        ).order_by('confidence')
+        matches = ThemeMatch.objects.filter(stock_symbol=symbol.upper()).order_by(
+            "confidence"
+        )
 
         result = []
         for m in matches:
             theme_config = THEME_KEYWORDS.get(m.theme_id, {})
-            result.append({
-                'theme_id': m.theme_id,
-                'name': theme_config.get('name', m.theme_id),
-                'icon': theme_config.get('icon', '📊'),
-                'confidence': m.confidence,
-                'source': m.source,
-                'etf_symbol': m.etf_symbol,
-                'evidence': m.evidence,
-            })
+            result.append(
+                {
+                    "theme_id": m.theme_id,
+                    "name": theme_config.get("name", m.theme_id),
+                    "icon": theme_config.get("icon", "📊"),
+                    "confidence": m.confidence,
+                    "source": m.source,
+                    "etf_symbol": m.etf_symbol,
+                    "evidence": m.evidence,
+                }
+            )
 
         return result
 
@@ -506,12 +568,12 @@ class ThemeMatchingService:
         stock_count = ThemeMatch.objects.filter(theme_id=theme_id).count()
 
         return {
-            'id': theme_id,
-            'name': config['name'],
-            'icon': config['icon'],
-            'keywords': config['keywords'],
-            'etf_symbol': THEME_TO_ETF.get(theme_id),
-            'stock_count': stock_count,
+            "id": theme_id,
+            "name": config["name"],
+            "icon": config["icon"],
+            "keywords": config["keywords"],
+            "etf_symbol": THEME_TO_ETF.get(theme_id),
+            "stock_count": stock_count,
         }
 
     def get_all_themes(self) -> List[Dict]:
@@ -522,23 +584,27 @@ class ThemeMatchingService:
             테마 정보 리스트 (종목 수 내림차순)
         """
         # 테마별 종목 수 집계
-        theme_counts = ThemeMatch.objects.values('theme_id').annotate(
-            count=Count('stock_symbol')
-        ).order_by('-count')
+        theme_counts = (
+            ThemeMatch.objects.values("theme_id")
+            .annotate(count=Count("stock_symbol"))
+            .order_by("-count")
+        )
 
-        count_map = {t['theme_id']: t['count'] for t in theme_counts}
+        count_map = {t["theme_id"]: t["count"] for t in theme_counts}
 
         themes = []
         for theme_id, config in THEME_KEYWORDS.items():
-            themes.append({
-                'id': theme_id,
-                'name': config['name'],
-                'icon': config['icon'],
-                'etf_symbol': THEME_TO_ETF.get(theme_id),
-                'stock_count': count_map.get(theme_id, 0),
-            })
+            themes.append(
+                {
+                    "id": theme_id,
+                    "name": config["name"],
+                    "icon": config["icon"],
+                    "etf_symbol": THEME_TO_ETF.get(theme_id),
+                    "stock_count": count_map.get(theme_id, 0),
+                }
+            )
 
-        return sorted(themes, key=lambda x: x['stock_count'], reverse=True)
+        return sorted(themes, key=lambda x: x["stock_count"], reverse=True)
 
     def refresh_all_matches(self) -> Dict[str, int]:
         """
@@ -550,8 +616,8 @@ class ThemeMatchingService:
             {'created': 100, 'updated': 50, 'total': 150}
         """
         # 오늘 또는 가장 최근 snapshot
-        latest_holdings = ETFHolding.objects.select_related('etf').order_by(
-            'etf', '-snapshot_date', 'rank'
+        latest_holdings = ETFHolding.objects.select_related("etf").order_by(
+            "etf", "-snapshot_date", "rank"
         )
 
         # ETF별 최신 holdings만 사용
@@ -566,8 +632,7 @@ class ThemeMatchingService:
 
             # 해당 ETF의 모든 holdings 처리
             etf_holdings = ETFHolding.objects.filter(
-                etf=holding.etf,
-                snapshot_date=holding.snapshot_date
+                etf=holding.etf, snapshot_date=holding.snapshot_date
             )
 
             for h in etf_holdings:
@@ -575,14 +640,14 @@ class ThemeMatchingService:
                     stock_symbol=h.stock_symbol,
                     theme_id=holding.etf.theme_id,
                     defaults={
-                        'confidence': 'high',
-                        'source': 'etf_holding',
-                        'etf_symbol': holding.etf.symbol,
-                        'weight_in_etf': h.weight_percent,
-                        'evidence': [
+                        "confidence": "high",
+                        "source": "etf_holding",
+                        "etf_symbol": holding.etf.symbol,
+                        "weight_in_etf": h.weight_percent,
+                        "evidence": [
                             f"{holding.etf.symbol} #{h.rank}위 ({h.weight_percent}%)"
                         ],
-                    }
+                    },
                 )
                 if created:
                     created_count += 1
@@ -592,19 +657,17 @@ class ThemeMatchingService:
             processed_etfs.add(etf_symbol)
 
         total = created_count + updated_count
-        logger.info(f"ThemeMatch 갱신 완료: 생성 {created_count}, 업데이트 {updated_count}, 총 {total}")
+        logger.info(
+            f"ThemeMatch 갱신 완료: 생성 {created_count}, 업데이트 {updated_count}, 총 {total}"
+        )
 
         return {
-            'created': created_count,
-            'updated': updated_count,
-            'total': total,
+            "created": created_count,
+            "updated": updated_count,
+            "total": total,
         }
 
-    def get_etf_peers(
-        self,
-        symbol: str,
-        limit: int = 10
-    ) -> List[Dict]:
+    def get_etf_peers(self, symbol: str, limit: int = 10) -> List[Dict]:
         """
         ETF 동반 종목 조회
 
@@ -629,43 +692,48 @@ class ThemeMatchingService:
 
         # 해당 종목을 보유한 ETF 목록
         my_etfs = set(
-            ETFHolding.objects.filter(
-                stock_symbol=symbol
-            ).values_list('etf__symbol', flat=True)
+            ETFHolding.objects.filter(stock_symbol=symbol).values_list(
+                "etf__symbol", flat=True
+            )
         )
 
         if not my_etfs:
             return []
 
         # 같은 ETF에 있는 다른 종목들 집계
-        peer_holdings = ETFHolding.objects.filter(
-            etf__symbol__in=my_etfs
-        ).exclude(
-            stock_symbol=symbol
-        ).values('stock_symbol').annotate(
-            etf_count=Count('etf__symbol', distinct=True),
-            total_weight=Sum('weight_percent')
-        ).order_by('-etf_count', '-total_weight')[:limit * 2]
+        peer_holdings = (
+            ETFHolding.objects.filter(etf__symbol__in=my_etfs)
+            .exclude(stock_symbol=symbol)
+            .values("stock_symbol")
+            .annotate(
+                etf_count=Count("etf__symbol", distinct=True),
+                total_weight=Sum("weight_percent"),
+            )
+            .order_by("-etf_count", "-total_weight")[: limit * 2]
+        )
 
         # 상세 정보 조합
         results = []
         for peer in peer_holdings[:limit]:
-            peer_symbol = peer['stock_symbol']
+            peer_symbol = peer["stock_symbol"]
 
             # 공통 ETF 목록
             common_etfs = list(
                 ETFHolding.objects.filter(
-                    stock_symbol=peer_symbol,
-                    etf__symbol__in=my_etfs
-                ).values_list('etf__symbol', flat=True)
+                    stock_symbol=peer_symbol, etf__symbol__in=my_etfs
+                ).values_list("etf__symbol", flat=True)
             )
 
-            results.append({
-                'symbol': peer_symbol,
-                'etfs_in_common': common_etfs,
-                'total_weight': float(peer['total_weight']) if peer['total_weight'] else 0,
-                'reason': f"{', '.join(common_etfs[:3])} 공통 보유",
-            })
+            results.append(
+                {
+                    "symbol": peer_symbol,
+                    "etfs_in_common": common_etfs,
+                    "total_weight": float(peer["total_weight"])
+                    if peer["total_weight"]
+                    else 0,
+                    "reason": f"{', '.join(common_etfs[:3])} 공통 보유",
+                }
+            )
 
         return results
 

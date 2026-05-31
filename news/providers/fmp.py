@@ -67,12 +67,14 @@ class FMPNewsProvider(BaseNewsProvider):
                 logger.warning(f"FMP parse error: {e}")
                 continue
 
-        logger.info(f"FMP stock-news {symbol}: {len(articles)} articles (from {len(raw)} raw)")
+        logger.info(
+            f"FMP stock-news {symbol}: {len(articles)} articles (from {len(raw)} raw)"
+        )
         return articles
 
     def fetch_market_news(
         self,
-        category: str = 'general',
+        category: str = "general",
         limit: int = 50,
     ) -> List[RawNewsArticle]:
         """
@@ -154,42 +156,44 @@ class FMPNewsProvider(BaseNewsProvider):
         - image → image_url
         - symbol → entities
         """
-        url = item.get('url')
-        title = item.get('title')
+        url = item.get("url")
+        title = item.get("title")
         if not url or not title:
             return None
 
-        published_at = self._parse_date(item.get('publishedDate', ''))
+        published_at = self._parse_date(item.get("publishedDate", ""))
         if not published_at:
             return None
 
         # 심볼 결정: 기사에 symbol 필드가 있으면 사용, 없으면 파라미터 사용
-        article_symbol = item.get('symbol', '') or (symbol or '')
+        article_symbol = item.get("symbol", "") or (symbol or "")
         article_symbol = article_symbol.upper()
 
         entities = []
         if article_symbol:
-            entities.append({
-                'symbol': article_symbol,
-                'entity_name': article_symbol,
-                'entity_type': 'equity',
-                'source': 'fmp',
-                'match_score': Decimal('1.00000'),
-            })
+            entities.append(
+                {
+                    "symbol": article_symbol,
+                    "entity_name": article_symbol,
+                    "entity_type": "equity",
+                    "source": "fmp",
+                    "match_score": Decimal("1.00000"),
+                }
+            )
 
         return RawNewsArticle(
             url=url,
             title=title,
-            summary=item.get('text', '')[:2000],  # 요약 길이 제한
-            source=item.get('site', 'FMP'),
+            summary=item.get("text", "")[:2000],  # 요약 길이 제한
+            source=item.get("site", "FMP"),
             published_at=published_at,
-            image_url=item.get('image', ''),
-            language='en',
-            category='company' if article_symbol else 'general',
+            image_url=item.get("image", ""),
+            language="en",
+            category="company" if article_symbol else "general",
             provider_id=str(url),  # FMP는 별도 ID 없음, URL 사용
-            provider_name='fmp',
-            sentiment_score=self._safe_decimal(item.get('sentiment')),
-            sentiment_source='fmp' if item.get('sentiment') is not None else 'none',
+            provider_name="fmp",
+            sentiment_score=self._safe_decimal(item.get("sentiment")),
+            sentiment_source="fmp" if item.get("sentiment") is not None else "none",
             entities=entities,
             is_press_release=False,
         )
@@ -198,36 +202,38 @@ class FMPNewsProvider(BaseNewsProvider):
         self, item: Dict[str, Any], symbol: str
     ) -> Optional[RawNewsArticle]:
         """보도자료를 RawNewsArticle로 변환"""
-        url = item.get('url')
-        title = item.get('title')
+        url = item.get("url")
+        title = item.get("title")
         if not url or not title:
             return None
 
-        published_at = self._parse_date(item.get('date', ''))
+        published_at = self._parse_date(item.get("date", ""))
         if not published_at:
             return None
 
-        entities = [{
-            'symbol': symbol.upper(),
-            'entity_name': symbol.upper(),
-            'entity_type': 'equity',
-            'source': 'fmp',
-            'match_score': Decimal('1.00000'),
-        }]
+        entities = [
+            {
+                "symbol": symbol.upper(),
+                "entity_name": symbol.upper(),
+                "entity_type": "equity",
+                "source": "fmp",
+                "match_score": Decimal("1.00000"),
+            }
+        ]
 
         return RawNewsArticle(
             url=url,
             title=title,
-            summary=item.get('text', '')[:2000],
-            source='Press Release',
+            summary=item.get("text", "")[:2000],
+            source="Press Release",
             published_at=published_at,
-            image_url='',
-            language='en',
-            category='press_release',
+            image_url="",
+            language="en",
+            category="press_release",
             provider_id=str(url),
-            provider_name='fmp',
+            provider_name="fmp",
             sentiment_score=None,
-            sentiment_source='none',
+            sentiment_source="none",
             entities=entities,
             is_press_release=True,
         )
@@ -238,10 +244,10 @@ class FMPNewsProvider(BaseNewsProvider):
         if not date_str:
             return None
         formats = [
-            '%Y-%m-%d %H:%M:%S',
-            '%Y-%m-%dT%H:%M:%S',
-            '%Y-%m-%dT%H:%M:%S.%f',
-            '%Y-%m-%d',
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S.%f",
+            "%Y-%m-%d",
         ]
         for fmt in formats:
             try:
@@ -258,7 +264,7 @@ class FMPNewsProvider(BaseNewsProvider):
             return None
         try:
             d = Decimal(str(value))
-            return max(Decimal('-1.000'), min(Decimal('1.000'), d))
+            return max(Decimal("-1.000"), min(Decimal("1.000"), d))
         except (InvalidOperation, ValueError):
             return None
 
@@ -266,4 +272,4 @@ class FMPNewsProvider(BaseNewsProvider):
         return "news_rate_limit:fmp"
 
     def get_rate_limit(self) -> Dict[str, int]:
-        return {'calls': 300, 'period': 60}
+        return {"calls": 300, "period": 60}

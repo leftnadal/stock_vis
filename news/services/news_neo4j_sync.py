@@ -45,10 +45,10 @@ class NewsNeo4jSyncService:
     """
 
     RELATIONSHIP_TTL = {
-        'DIRECTLY_IMPACTS': 30,
-        'INDIRECTLY_IMPACTS': 21,
-        'CREATES_OPPORTUNITY': 14,
-        'AFFECTS_SECTOR': 21,
+        "DIRECTLY_IMPACTS": 30,
+        "INDIRECTLY_IMPACTS": 21,
+        "CREATES_OPPORTUNITY": 14,
+        "AFFECTS_SECTOR": 21,
     }
 
     # 관계 강화: 같은 방향 뉴스 N건 이상이면 confidence 상향
@@ -158,7 +158,7 @@ class NewsNeo4jSyncService:
                     direction=direction,
                     confidence=min(confidence, 1.0),
                     reason=reason[:500],
-                    ttl_days=self.RELATIONSHIP_TTL['DIRECTLY_IMPACTS'],
+                    ttl_days=self.RELATIONSHIP_TTL["DIRECTLY_IMPACTS"],
                 )
                 return result.single() is not None
 
@@ -203,7 +203,7 @@ class NewsNeo4jSyncService:
                     confidence=min(confidence, 1.0),
                     reason=reason[:500],
                     chain_logic=chain_logic[:1000],
-                    ttl_days=self.RELATIONSHIP_TTL['INDIRECTLY_IMPACTS'],
+                    ttl_days=self.RELATIONSHIP_TTL["INDIRECTLY_IMPACTS"],
                 )
                 return result.single() is not None
 
@@ -245,7 +245,7 @@ class NewsNeo4jSyncService:
                     thesis=thesis[:500],
                     timeframe=timeframe[:50],
                     confidence=min(confidence, 1.0),
-                    ttl_days=self.RELATIONSHIP_TTL['CREATES_OPPORTUNITY'],
+                    ttl_days=self.RELATIONSHIP_TTL["CREATES_OPPORTUNITY"],
                 )
                 return result.single() is not None
 
@@ -284,7 +284,7 @@ class NewsNeo4jSyncService:
                     sector=sector,
                     direction=direction,
                     reason=reason[:500],
-                    ttl_days=self.RELATIONSHIP_TTL['AFFECTS_SECTOR'],
+                    ttl_days=self.RELATIONSHIP_TTL["AFFECTS_SECTOR"],
                 )
                 return result.single() is not None
 
@@ -320,7 +320,7 @@ class NewsNeo4jSyncService:
             dict: {'propagated': int, 'sector': str}
         """
         if not self.is_available():
-            return {'propagated': 0, 'sector': sector}
+            return {"propagated": 0, "sector": sector}
 
         propagated_confidence = round(confidence * 0.4, 4)
         chain_logic = f"Sector ripple: {sector} 섹터 영향 확산"
@@ -357,10 +357,10 @@ class NewsNeo4jSyncService:
                     reason=reason,
                     chain_logic=chain_logic,
                     max_limit=self.MAX_RELATIONSHIPS_PER_NODE,
-                    ttl_days=self.RELATIONSHIP_TTL['INDIRECTLY_IMPACTS'],
+                    ttl_days=self.RELATIONSHIP_TTL["INDIRECTLY_IMPACTS"],
                 )
                 record = result.single()
-                propagated = record['propagated'] if record else 0
+                propagated = record["propagated"] if record else 0
 
                 # BELONGS_TO 관계로 찾지 못한 경우 Stock.sector 속성으로 폴백
                 if propagated == 0:
@@ -393,10 +393,10 @@ class NewsNeo4jSyncService:
                         reason=reason,
                         chain_logic=chain_logic,
                         max_limit=self.MAX_RELATIONSHIPS_PER_NODE,
-                        ttl_days=self.RELATIONSHIP_TTL['INDIRECTLY_IMPACTS'],
+                        ttl_days=self.RELATIONSHIP_TTL["INDIRECTLY_IMPACTS"],
                     )
                     record = result.single()
-                    propagated = record['propagated'] if record else 0
+                    propagated = record["propagated"] if record else 0
 
                 if propagated > 0:
                     logger.info(
@@ -404,11 +404,11 @@ class NewsNeo4jSyncService:
                         f"(article_id={article_id}, confidence={propagated_confidence})"
                     )
 
-                return {'propagated': propagated, 'sector': sector}
+                return {"propagated": propagated, "sector": sector}
 
         except Exception as e:
             logger.error(f"Sector ripple 확산 실패 {article_id}->{sector}: {e}")
-            return {'propagated': 0, 'sector': sector}
+            return {"propagated": 0, "sector": sector}
 
     # ========================================
     # Sync Operations
@@ -425,18 +425,18 @@ class NewsNeo4jSyncService:
             dict: {nodes_created: int, relationships_created: int, errors: int}
         """
         if not self.is_available():
-            return {'nodes_created': 0, 'relationships_created': 0, 'errors': 0}
+            return {"nodes_created": 0, "relationships_created": 0, "errors": 0}
 
         analysis = article.llm_analysis
         if not analysis:
-            return {'nodes_created': 0, 'relationships_created': 0, 'errors': 0}
+            return {"nodes_created": 0, "relationships_created": 0, "errors": 0}
 
         nodes = 0
         rels = 0
         errors = 0
 
         # 1. NewsEvent 노드 생성
-        tier = analysis.get('tier', 'A')
+        tier = analysis.get("tier", "A")
         success = self.create_news_event_node(
             article_id=str(article.id),
             title=article.title,
@@ -449,19 +449,23 @@ class NewsNeo4jSyncService:
             nodes += 1
         else:
             errors += 1
-            return {'nodes_created': nodes, 'relationships_created': rels, 'errors': errors}
+            return {
+                "nodes_created": nodes,
+                "relationships_created": rels,
+                "errors": errors,
+            }
 
         # 2. Direct impacts
-        for impact in analysis.get('direct_impacts', []):
-            symbol = impact.get('symbol', '')
+        for impact in analysis.get("direct_impacts", []):
+            symbol = impact.get("symbol", "")
             if not symbol:
                 continue
             ok = self.create_direct_impact(
                 article_id=str(article.id),
                 symbol=symbol,
-                direction=impact.get('direction', 'neutral'),
-                confidence=impact.get('confidence', 0.5),
-                reason=impact.get('reason', ''),
+                direction=impact.get("direction", "neutral"),
+                confidence=impact.get("confidence", 0.5),
+                reason=impact.get("reason", ""),
             )
             if ok:
                 rels += 1
@@ -469,17 +473,17 @@ class NewsNeo4jSyncService:
                 errors += 1
 
         # 3. Indirect impacts
-        for impact in analysis.get('indirect_impacts', []):
-            symbol = impact.get('symbol', '')
+        for impact in analysis.get("indirect_impacts", []):
+            symbol = impact.get("symbol", "")
             if not symbol:
                 continue
             ok = self.create_indirect_impact(
                 article_id=str(article.id),
                 symbol=symbol,
-                direction=impact.get('direction', 'neutral'),
-                confidence=impact.get('confidence', 0.3),
-                reason=impact.get('reason', ''),
-                chain_logic=impact.get('chain_logic', ''),
+                direction=impact.get("direction", "neutral"),
+                confidence=impact.get("confidence", 0.3),
+                reason=impact.get("reason", ""),
+                chain_logic=impact.get("chain_logic", ""),
             )
             if ok:
                 rels += 1
@@ -487,16 +491,16 @@ class NewsNeo4jSyncService:
                 errors += 1
 
         # 4. Opportunities
-        for opp in analysis.get('opportunities', []):
-            symbol = opp.get('symbol', '')
+        for opp in analysis.get("opportunities", []):
+            symbol = opp.get("symbol", "")
             if not symbol:
                 continue
             ok = self.create_opportunity(
                 article_id=str(article.id),
                 symbol=symbol,
-                thesis=opp.get('thesis', ''),
-                timeframe=opp.get('timeframe', ''),
-                confidence=opp.get('confidence', 0.3),
+                thesis=opp.get("thesis", ""),
+                timeframe=opp.get("timeframe", ""),
+                confidence=opp.get("confidence", 0.3),
             )
             if ok:
                 rels += 1
@@ -504,15 +508,15 @@ class NewsNeo4jSyncService:
                 errors += 1
 
         # 5. Sector ripple
-        for ripple in analysis.get('sector_ripple', []):
-            sector = ripple.get('sector', '')
+        for ripple in analysis.get("sector_ripple", []):
+            sector = ripple.get("sector", "")
             if not sector:
                 continue
             ok = self.create_sector_ripple(
                 article_id=str(article.id),
                 sector=sector,
-                direction=ripple.get('direction', 'neutral'),
-                reason=ripple.get('reason', ''),
+                direction=ripple.get("direction", "neutral"),
+                reason=ripple.get("reason", ""),
             )
             if ok:
                 rels += 1
@@ -521,17 +525,17 @@ class NewsNeo4jSyncService:
                 propagate_result = self.propagate_sector_ripple(
                     article_id=str(article.id),
                     sector=sector,
-                    direction=ripple.get('direction', 'neutral'),
-                    confidence=ripple.get('confidence', 0.5),
+                    direction=ripple.get("direction", "neutral"),
+                    confidence=ripple.get("confidence", 0.5),
                 )
-                rels += propagate_result['propagated']
+                rels += propagate_result["propagated"]
             else:
                 errors += 1
 
         return {
-            'nodes_created': nodes,
-            'relationships_created': rels,
-            'errors': errors,
+            "nodes_created": nodes,
+            "relationships_created": rels,
+            "errors": errors,
         }
 
     def sync_batch(self, max_articles: int = 100) -> dict:
@@ -548,8 +552,11 @@ class NewsNeo4jSyncService:
 
         if not self.is_available():
             return {
-                'synced': 0, 'skipped': 0, 'errors': 0,
-                'total_nodes': 0, 'total_rels': 0,
+                "synced": 0,
+                "skipped": 0,
+                "errors": 0,
+                "total_nodes": 0,
+                "total_rels": 0,
             }
 
         # LLM 분석 완료된 기사 (최근 30일) 조회
@@ -558,7 +565,7 @@ class NewsNeo4jSyncService:
             llm_analyzed=True,
             llm_analysis__isnull=False,
             published_at__gte=cutoff,
-        ).order_by('-importance_score')[:max_articles]
+        ).order_by("-importance_score")[:max_articles]
 
         # 이미 Neo4j에 존재하는 article_id 확인
         existing_ids = self._get_existing_event_ids()
@@ -579,22 +586,22 @@ class NewsNeo4jSyncService:
 
             try:
                 result = self.sync_article(article)
-                if result['errors'] == 0:
+                if result["errors"] == 0:
                     synced += 1
                 else:
-                    errors += result['errors']
-                total_nodes += result['nodes_created']
-                total_rels += result['relationships_created']
+                    errors += result["errors"]
+                total_nodes += result["nodes_created"]
+                total_rels += result["relationships_created"]
             except Exception as e:
                 logger.error(f"sync_batch: article {article.id} failed: {e}")
                 errors += 1
 
         return {
-            'synced': synced,
-            'skipped': skipped,
-            'errors': errors,
-            'total_nodes': total_nodes,
-            'total_rels': total_rels,
+            "synced": synced,
+            "skipped": skipped,
+            "errors": errors,
+            "total_nodes": total_nodes,
+            "total_rels": total_rels,
         }
 
     def _get_existing_event_ids(self) -> set:
@@ -604,10 +611,8 @@ class NewsNeo4jSyncService:
 
         try:
             with self.driver.session() as session:
-                result = session.run(
-                    "MATCH (ne:NewsEvent) RETURN ne.article_id AS aid"
-                )
-                return {record['aid'] for record in result}
+                result = session.run("MATCH (ne:NewsEvent) RETURN ne.article_id AS aid")
+                return {record["aid"] for record in result}
         except Exception as e:
             logger.error(f"기존 NewsEvent ID 조회 실패: {e}")
             return set()
@@ -628,7 +633,7 @@ class NewsNeo4jSyncService:
             dict: {reinforced: int}
         """
         if not self.is_available():
-            return {'reinforced': 0}
+            return {"reinforced": 0}
 
         try:
             with self.driver.session() as session:
@@ -655,12 +660,12 @@ class NewsNeo4jSyncService:
                     boost=self.REINFORCEMENT_BOOST,
                 )
                 record = result.single()
-                count = record['reinforced_count'] if record else 0
-                return {'reinforced': count}
+                count = record["reinforced_count"] if record else 0
+                return {"reinforced": count}
 
         except Exception as e:
             logger.error(f"관계 강화 실패 {symbol}: {e}")
-            return {'reinforced': 0}
+            return {"reinforced": 0}
 
     # ========================================
     # Cleanup Operations
@@ -674,7 +679,7 @@ class NewsNeo4jSyncService:
             dict: {deleted_relationships: int, deleted_nodes: int}
         """
         if not self.is_available():
-            return {'deleted_relationships': 0, 'deleted_nodes': 0}
+            return {"deleted_relationships": 0, "deleted_nodes": 0}
 
         deleted_rels = 0
         deleted_nodes = 0
@@ -691,10 +696,12 @@ class NewsNeo4jSyncService:
                     """
                     result = session.run(query)
                     record = result.single()
-                    count = record['deleted'] if record else 0
+                    count = record["deleted"] if record else 0
                     deleted_rels += count
                     if count > 0:
-                        logger.info(f"Cleaned up {count} expired {rel_type} relationships")
+                        logger.info(
+                            f"Cleaned up {count} expired {rel_type} relationships"
+                        )
 
                 # 관계가 하나도 없는 고립 NewsEvent 노드 삭제
                 orphan_query = """
@@ -705,7 +712,7 @@ class NewsNeo4jSyncService:
                 """
                 result = session.run(orphan_query)
                 record = result.single()
-                deleted_nodes = record['deleted'] if record else 0
+                deleted_nodes = record["deleted"] if record else 0
 
                 if deleted_nodes > 0:
                     logger.info(f"Cleaned up {deleted_nodes} orphaned NewsEvent nodes")
@@ -714,8 +721,8 @@ class NewsNeo4jSyncService:
             logger.error(f"만료 관계 정리 실패: {e}")
 
         return {
-            'deleted_relationships': deleted_rels,
-            'deleted_nodes': deleted_nodes,
+            "deleted_relationships": deleted_rels,
+            "deleted_nodes": deleted_nodes,
         }
 
     # ========================================
@@ -723,7 +730,10 @@ class NewsNeo4jSyncService:
     # ========================================
 
     def get_news_events_for_symbol(
-        self, symbol: str, days: int = 7, limit: int = 20,
+        self,
+        symbol: str,
+        days: int = 7,
+        limit: int = 20,
     ) -> list:
         """
         특정 종목 관련 뉴스 이벤트 조회
@@ -739,7 +749,7 @@ class NewsNeo4jSyncService:
         if not self.is_available():
             return []
 
-        cache_key = f'news_events:{symbol}:{days}:{limit}'
+        cache_key = f"news_events:{symbol}:{days}:{limit}"
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -777,26 +787,26 @@ class NewsNeo4jSyncService:
                 events = []
                 for record in result:
                     event = {
-                        'article_id': record['article_id'],
-                        'title': record['title'],
-                        'source': record['source'],
-                        'importance_score': record['importance_score'],
-                        'tier': record['tier'],
-                        'published_at': str(record['published_at']),
-                        'relationship_type': record['relationship_type'],
-                        'direction': record['direction'],
-                        'confidence': record['confidence'],
-                        'reinforced': record.get('reinforced', False),
+                        "article_id": record["article_id"],
+                        "title": record["title"],
+                        "source": record["source"],
+                        "importance_score": record["importance_score"],
+                        "tier": record["tier"],
+                        "published_at": str(record["published_at"]),
+                        "relationship_type": record["relationship_type"],
+                        "direction": record["direction"],
+                        "confidence": record["confidence"],
+                        "reinforced": record.get("reinforced", False),
                     }
                     # 관계 타입별 추가 필드
-                    if record['relationship_type'] == 'INDIRECTLY_IMPACTS':
-                        event['chain_logic'] = record.get('chain_logic', '')
-                    elif record['relationship_type'] == 'CREATES_OPPORTUNITY':
-                        event['thesis'] = record.get('thesis', '')
-                        event['timeframe'] = record.get('timeframe', '')
+                    if record["relationship_type"] == "INDIRECTLY_IMPACTS":
+                        event["chain_logic"] = record.get("chain_logic", "")
+                    elif record["relationship_type"] == "CREATES_OPPORTUNITY":
+                        event["thesis"] = record.get("thesis", "")
+                        event["timeframe"] = record.get("timeframe", "")
 
-                    if record.get('reason'):
-                        event['reason'] = record['reason']
+                    if record.get("reason"):
+                        event["reason"] = record["reason"]
 
                     events.append(event)
 
@@ -815,9 +825,9 @@ class NewsNeo4jSyncService:
             dict: {nodes: [...], edges: [...], stats: {...}}
         """
         if not self.is_available():
-            return {'nodes': [], 'edges': [], 'stats': {}}
+            return {"nodes": [], "edges": [], "stats": {}}
 
-        cache_key = f'news_impact_map:{days}:{limit}'
+        cache_key = f"news_impact_map:{days}:{limit}"
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -859,50 +869,58 @@ class NewsNeo4jSyncService:
                 edges = []
 
                 for record in result:
-                    event_id = record['event_id']
-                    target_id = record['target_id']
-                    target_type = record['target_type']
+                    event_id = record["event_id"]
+                    target_id = record["target_id"]
+                    target_type = record["target_type"]
 
                     # NewsEvent 노드
                     if event_id not in nodes:
                         nodes[event_id] = {
-                            'id': event_id,
-                            'label': record['event_title'][:60],
-                            'type': 'NewsEvent',
-                            'importance_score': record['event_score'],
-                            'tier': record['tier'],
+                            "id": event_id,
+                            "label": record["event_title"][:60],
+                            "type": "NewsEvent",
+                            "importance_score": record["event_score"],
+                            "tier": record["tier"],
                         }
 
                     # 타겟 노드 (Stock/Sector)
                     target_key = f"{target_type}:{target_id}"
                     if target_key not in nodes:
                         nodes[target_key] = {
-                            'id': target_id,
-                            'label': record['target_name'] or target_id,
-                            'type': target_type,
+                            "id": target_id,
+                            "label": record["target_name"] or target_id,
+                            "type": target_type,
                         }
 
                     # 엣지
-                    edges.append({
-                        'source': event_id,
-                        'target': target_id,
-                        'type': record['rel_type'],
-                        'direction': record['direction'],
-                        'confidence': record['confidence'],
-                    })
+                    edges.append(
+                        {
+                            "source": event_id,
+                            "target": target_id,
+                            "type": record["rel_type"],
+                            "direction": record["direction"],
+                            "confidence": record["confidence"],
+                        }
+                    )
 
                 # 통계
                 stats = {
-                    'total_events': len([n for n in nodes.values() if n['type'] == 'NewsEvent']),
-                    'total_stocks': len([n for n in nodes.values() if n['type'] == 'Stock']),
-                    'total_sectors': len([n for n in nodes.values() if n['type'] == 'Sector']),
-                    'total_relationships': len(edges),
+                    "total_events": len(
+                        [n for n in nodes.values() if n["type"] == "NewsEvent"]
+                    ),
+                    "total_stocks": len(
+                        [n for n in nodes.values() if n["type"] == "Stock"]
+                    ),
+                    "total_sectors": len(
+                        [n for n in nodes.values() if n["type"] == "Sector"]
+                    ),
+                    "total_relationships": len(edges),
                 }
 
                 map_data = {
-                    'nodes': list(nodes.values()),
-                    'edges': edges,
-                    'stats': stats,
+                    "nodes": list(nodes.values()),
+                    "edges": edges,
+                    "stats": stats,
                 }
 
                 cache.set(cache_key, map_data, self.CACHE_TTL)
@@ -910,7 +928,7 @@ class NewsNeo4jSyncService:
 
         except Exception as e:
             logger.error(f"영향도 맵 조회 실패: {e}")
-            return {'nodes': [], 'edges': [], 'stats': {}}
+            return {"nodes": [], "edges": [], "stats": {}}
 
     def get_symbol_impact_summary(self, symbol: str, days: int = 7) -> dict:
         """
@@ -926,7 +944,7 @@ class NewsNeo4jSyncService:
         if not self.is_available():
             return self._empty_impact_summary(symbol)
 
-        cache_key = f'news_impact_summary:{symbol}:{days}'
+        cache_key = f"news_impact_summary:{symbol}:{days}"
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -949,15 +967,17 @@ class NewsNeo4jSyncService:
                 record = result.single()
 
                 summary = {
-                    'symbol': symbol.upper(),
-                    'days': days,
-                    'total_events': record['total_events'] if record else 0,
-                    'bullish_count': record['bullish'] if record else 0,
-                    'bearish_count': record['bearish'] if record else 0,
-                    'avg_confidence': round(record['avg_confidence'], 3) if record and record['avg_confidence'] else 0.0,
-                    'direct_count': record['direct'] if record else 0,
-                    'indirect_count': record['indirect'] if record else 0,
-                    'opportunity_count': record['opportunity'] if record else 0,
+                    "symbol": symbol.upper(),
+                    "days": days,
+                    "total_events": record["total_events"] if record else 0,
+                    "bullish_count": record["bullish"] if record else 0,
+                    "bearish_count": record["bearish"] if record else 0,
+                    "avg_confidence": round(record["avg_confidence"], 3)
+                    if record and record["avg_confidence"]
+                    else 0.0,
+                    "direct_count": record["direct"] if record else 0,
+                    "indirect_count": record["indirect"] if record else 0,
+                    "opportunity_count": record["opportunity"] if record else 0,
                 }
 
                 cache.set(cache_key, summary, self.CACHE_TTL)
@@ -969,13 +989,13 @@ class NewsNeo4jSyncService:
 
     def _empty_impact_summary(self, symbol: str) -> dict:
         return {
-            'symbol': symbol.upper(),
-            'days': 0,
-            'total_events': 0,
-            'bullish_count': 0,
-            'bearish_count': 0,
-            'avg_confidence': 0.0,
-            'direct_count': 0,
-            'indirect_count': 0,
-            'opportunity_count': 0,
+            "symbol": symbol.upper(),
+            "days": 0,
+            "total_events": 0,
+            "bullish_count": 0,
+            "bearish_count": 0,
+            "avg_confidence": 0.0,
+            "direct_count": 0,
+            "indirect_count": 0,
+            "opportunity_count": 0,
         }

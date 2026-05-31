@@ -7,6 +7,7 @@ Chain Sight DNA 서비스
 2. 펀더멘탈 유사 (PER, ROE, 시가총액 유사)
 3. AI 추천 (LLM 기반 관계 설명) - Optional
 """
+
 import logging
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
@@ -52,7 +53,7 @@ class ChainSightService:
         filtered_symbols: List[str],
         filters_applied: Dict[str, Any],
         limit: int = 10,
-        use_ai: bool = False
+        use_ai: bool = False,
     ) -> Dict[str, Any]:
         """
         필터링된 종목들의 연관 종목 찾기
@@ -93,6 +94,7 @@ class ChainSightService:
             }
         """
         import time
+
         start_time = time.time()
 
         logger.info(f"Chain Sight DNA 분석 시작: {len(filtered_symbols)}개 종목")
@@ -115,18 +117,18 @@ class ChainSightService:
         sector_peers = self._analyze_sector_peers(
             original_stocks=original_stocks,
             filters_applied=filters_applied,
-            limit=min(limit, self.MAX_CHAINS_PER_CATEGORY)
+            limit=min(limit, self.MAX_CHAINS_PER_CATEGORY),
         )
 
         # 섹터 피어 심볼 수집 (중복 제거용)
-        sector_peer_symbols = set(peer['symbol'] for peer in sector_peers)
+        sector_peer_symbols = set(peer["symbol"] for peer in sector_peers)
 
         # 2. 펀더멘탈 유사 종목 찾기 (섹터 피어와 중복 제거)
         fundamental_similar = self._find_fundamentally_similar(
             original_stocks=original_stocks,
             filters_applied=filters_applied,
             limit=min(limit, self.MAX_CHAINS_PER_CATEGORY),
-            exclude_symbols=sector_peer_symbols
+            exclude_symbols=sector_peer_symbols,
         )
 
         # 3. AI 인사이트 (옵션)
@@ -135,7 +137,7 @@ class ChainSightService:
             ai_insights = self._generate_ai_insights(
                 original_stocks=original_stocks,
                 sector_peers=sector_peers,
-                fundamental_similar=fundamental_similar
+                fundamental_similar=fundamental_similar,
             )
 
         # 결과 조합
@@ -150,8 +152,8 @@ class ChainSightService:
                 "original_count": len(filtered_symbols),
                 "filters": filters_applied,
                 "computation_time_ms": computation_time,
-                "use_ai": use_ai
-            }
+                "use_ai": use_ai,
+            },
         }
 
         # 캐시 저장
@@ -218,17 +220,17 @@ class ChainSightService:
             ETF이면 True
         """
         # FMP API에서 isEtf 필드 확인
-        if stock.get('isEtf') is True:
+        if stock.get("isEtf") is True:
             return True
 
         # isFund 필드도 확인
-        if stock.get('isFund') is True:
+        if stock.get("isFund") is True:
             return True
 
         # 심볼 패턴으로 ETF 추정 (보조 수단)
-        symbol = stock.get('symbol', '')
-        etf_indicators = ['ETF', 'FUND', 'TRUST']
-        company_name = stock.get('companyName', stock.get('name', '')).upper()
+        symbol = stock.get("symbol", "")
+        etf_indicators = ["ETF", "FUND", "TRUST"]
+        company_name = stock.get("companyName", stock.get("name", "")).upper()
 
         for indicator in etf_indicators:
             if indicator in company_name:
@@ -237,10 +239,7 @@ class ChainSightService:
         return False
 
     def _analyze_sector_peers(
-        self,
-        original_stocks: List[Dict],
-        filters_applied: Dict,
-        limit: int
+        self, original_stocks: List[Dict], filters_applied: Dict, limit: int
     ) -> List[Dict[str, Any]]:
         """
         섹터 피어 분석
@@ -267,14 +266,16 @@ class ChainSightService:
             return []
 
         # 원본 종목들의 섹터 추출
-        sectors = set(stock.get('sector') for stock in original_stocks if stock.get('sector'))
+        sectors = set(
+            stock.get("sector") for stock in original_stocks if stock.get("sector")
+        )
 
         if not sectors:
             logger.warning("섹터 정보 없음")
             return []
 
         # 원본 종목 심볼 (제외용)
-        original_symbols = set(stock.get('symbol') for stock in original_stocks)
+        original_symbols = set(stock.get("symbol") for stock in original_stocks)
 
         # 각 섹터별로 종목 조회
         peers = []
@@ -287,7 +288,7 @@ class ChainSightService:
 
                 for stock in sector_stocks:
                     # 원본 종목 제외
-                    if stock.get('symbol') in original_symbols:
+                    if stock.get("symbol") in original_symbols:
                         continue
 
                     # ETF 제외
@@ -297,26 +298,28 @@ class ChainSightService:
                     # 유사도 계산 (펀더멘탈 기반)
                     similarity = self._calculate_peer_similarity(stock, original_stocks)
 
-                    peers.append({
-                        "symbol": stock.get('symbol'),
-                        "company_name": stock.get('companyName', stock.get('name')),
-                        "reason": f"동일 {sector} 섹터 유사 기업",
-                        "similarity": round(similarity, 2),
-                        "metrics": {
-                            "sector": stock.get('sector'),
-                            "industry": stock.get('industry'),
-                            "pe": stock.get('pe'),
-                            "roe": stock.get('roe'),
-                            "market_cap": stock.get('marketCap')
+                    peers.append(
+                        {
+                            "symbol": stock.get("symbol"),
+                            "company_name": stock.get("companyName", stock.get("name")),
+                            "reason": f"동일 {sector} 섹터 유사 기업",
+                            "similarity": round(similarity, 2),
+                            "metrics": {
+                                "sector": stock.get("sector"),
+                                "industry": stock.get("industry"),
+                                "pe": stock.get("pe"),
+                                "roe": stock.get("roe"),
+                                "market_cap": stock.get("marketCap"),
+                            },
                         }
-                    })
+                    )
 
             except FMPAPIError as e:
                 logger.warning(f"섹터 피어 조회 실패 {sector}: {e}")
                 continue
 
         # 유사도 높은 순으로 정렬 후 limit 적용
-        peers = sorted(peers, key=lambda x: x['similarity'], reverse=True)
+        peers = sorted(peers, key=lambda x: x["similarity"], reverse=True)
 
         return peers[:limit]
 
@@ -325,7 +328,7 @@ class ChainSightService:
         original_stocks: List[Dict],
         filters_applied: Dict,
         limit: int,
-        exclude_symbols: Optional[set] = None
+        exclude_symbols: Optional[set] = None,
     ) -> List[Dict[str, Any]]:
         """
         펀더멘탈 유사 종목 찾기
@@ -360,27 +363,29 @@ class ChainSightService:
             return []
 
         # 원본 종목 심볼 (제외용)
-        original_symbols = set(stock.get('symbol') for stock in original_stocks)
+        original_symbols = set(stock.get("symbol") for stock in original_stocks)
 
         # 섹터 피어 심볼도 제외
         if exclude_symbols:
             original_symbols = original_symbols | exclude_symbols
 
         # 원본 종목들의 섹터 추출 (다른 섹터에서 검색하기 위해)
-        original_sectors = set(stock.get('sector') for stock in original_stocks if stock.get('sector'))
+        original_sectors = set(
+            stock.get("sector") for stock in original_stocks if stock.get("sector")
+        )
 
         # 유사 종목 조회 (다른 섹터에서 유사 펀더멘탈 찾기)
         similar_stocks = self._fetch_similar_stocks(
             avg_metrics,
             filters_applied,
-            exclude_sectors=original_sectors  # 섹터 피어와 다른 섹터에서 검색
+            exclude_sectors=original_sectors,  # 섹터 피어와 다른 섹터에서 검색
         )
 
         results = []
 
         for stock in similar_stocks:
             # 원본 종목 제외
-            if stock.get('symbol') in original_symbols:
+            if stock.get("symbol") in original_symbols:
                 continue
 
             # ETF 제외
@@ -394,22 +399,24 @@ class ChainSightService:
             if similarity < 0.3:
                 continue
 
-            results.append({
-                "symbol": stock.get('symbol'),
-                "company_name": stock.get('companyName', stock.get('name')),
-                "reason": f"유사 PER/ROE/시가총액 프로필 (유사도 {int(similarity * 100)}%)",
-                "similarity": round(similarity, 2),
-                "metrics": {
-                    "sector": stock.get('sector'),
-                    "pe": stock.get('pe'),
-                    "roe": stock.get('roe'),
-                    "market_cap": stock.get('marketCap'),
-                    "profit_margin": stock.get('grossProfitMargin')
+            results.append(
+                {
+                    "symbol": stock.get("symbol"),
+                    "company_name": stock.get("companyName", stock.get("name")),
+                    "reason": f"유사 PER/ROE/시가총액 프로필 (유사도 {int(similarity * 100)}%)",
+                    "similarity": round(similarity, 2),
+                    "metrics": {
+                        "sector": stock.get("sector"),
+                        "pe": stock.get("pe"),
+                        "roe": stock.get("roe"),
+                        "market_cap": stock.get("marketCap"),
+                        "profit_margin": stock.get("grossProfitMargin"),
+                    },
                 }
-            })
+            )
 
         # 유사도 높은 순으로 정렬 후 limit 적용
-        results = sorted(results, key=lambda x: x['similarity'], reverse=True)
+        results = sorted(results, key=lambda x: x["similarity"], reverse=True)
 
         return results[:limit]
 
@@ -417,7 +424,7 @@ class ChainSightService:
         self,
         original_stocks: List[Dict],
         sector_peers: List[Dict],
-        fundamental_similar: List[Dict]
+        fundamental_similar: List[Dict],
     ) -> Optional[str]:
         """
         AI 인사이트 생성 (LLM 기반)
@@ -432,9 +439,21 @@ class ChainSightService:
             # TODO: Gemini LLM 호출 (serverless.services.keyword_generator_v2 참고)
             # 현재는 기본 메시지 반환
 
-            sectors = set(stock.get('sector') for stock in original_stocks if stock.get('sector'))
-            avg_pe = sum(stock.get('pe', 0) for stock in original_stocks) / len(original_stocks) if original_stocks else 0
-            avg_roe = sum(stock.get('roe', 0) for stock in original_stocks) / len(original_stocks) if original_stocks else 0
+            sectors = set(
+                stock.get("sector") for stock in original_stocks if stock.get("sector")
+            )
+            avg_pe = (
+                sum(stock.get("pe", 0) for stock in original_stocks)
+                / len(original_stocks)
+                if original_stocks
+                else 0
+            )
+            avg_roe = (
+                sum(stock.get("roe", 0) for stock in original_stocks)
+                / len(original_stocks)
+                if original_stocks
+                else 0
+            )
 
             insights = (
                 f"이 종목 그룹은 주로 {', '.join(sectors)} 섹터에 속하며, "
@@ -449,11 +468,7 @@ class ChainSightService:
             logger.warning(f"AI 인사이트 생성 실패: {e}")
             return None
 
-    def _fetch_sector_stocks(
-        self,
-        sector: str,
-        filters_applied: Dict
-    ) -> List[Dict]:
+    def _fetch_sector_stocks(self, sector: str, filters_applied: Dict) -> List[Dict]:
         """
         특정 섹터의 종목 조회
 
@@ -467,19 +482,19 @@ class ChainSightService:
         try:
             # FMP API: /stable/company-screener
             params = {
-                'sector': sector,
-                'limit': 50,  # 섹터당 최대 50개
-                'isEtf': 'false',  # ETF 제외
-                'isFund': 'false',  # 펀드 제외
+                "sector": sector,
+                "limit": 50,  # 섹터당 최대 50개
+                "isEtf": "false",  # ETF 제외
+                "isFund": "false",  # 펀드 제외
             }
 
             # 필터 조건 추가
-            if 'market_cap_min' in filters_applied:
-                params['marketCapMoreThan'] = filters_applied['market_cap_min']
-            if 'market_cap_max' in filters_applied:
-                params['marketCapLowerThan'] = filters_applied['market_cap_max']
+            if "market_cap_min" in filters_applied:
+                params["marketCapMoreThan"] = filters_applied["market_cap_min"]
+            if "market_cap_max" in filters_applied:
+                params["marketCapLowerThan"] = filters_applied["market_cap_max"]
 
-            endpoint = '/stable/company-screener'
+            endpoint = "/stable/company-screener"
             data = self.fmp_client._make_request(endpoint, params)
 
             return data if isinstance(data, list) else []
@@ -492,7 +507,7 @@ class ChainSightService:
         self,
         avg_metrics: Dict[str, float],
         filters_applied: Dict,
-        exclude_sectors: Optional[set] = None
+        exclude_sectors: Optional[set] = None,
     ) -> List[Dict]:
         """
         평균 메트릭과 유사한 종목 조회
@@ -510,44 +525,45 @@ class ChainSightService:
         # 여러 시가총액 범위로 검색하여 다양한 종목 확보
         market_cap_ranges = []
 
-        if avg_metrics.get('market_cap'):
-            base_mc = avg_metrics['market_cap']
+        if avg_metrics.get("market_cap"):
+            base_mc = avg_metrics["market_cap"]
             # 범위 1: 평균 ±50%
-            market_cap_ranges.append({
-                'min': int(base_mc * 0.5),
-                'max': int(base_mc * 1.5)
-            })
+            market_cap_ranges.append(
+                {"min": int(base_mc * 0.5), "max": int(base_mc * 1.5)}
+            )
             # 범위 2: 평균보다 작은 종목 (50% ~ 100%)
-            market_cap_ranges.append({
-                'min': int(base_mc * 0.3),
-                'max': int(base_mc * 0.7)
-            })
+            market_cap_ranges.append(
+                {"min": int(base_mc * 0.3), "max": int(base_mc * 0.7)}
+            )
         else:
             # 기본 범위: 대형주 (100B ~ 500B)
-            market_cap_ranges.append({
-                'min': 10_000_000_000,  # 10B
-                'max': 500_000_000_000  # 500B
-            })
+            market_cap_ranges.append(
+                {
+                    "min": 10_000_000_000,  # 10B
+                    "max": 500_000_000_000,  # 500B
+                }
+            )
 
         for mc_range in market_cap_ranges:
             try:
                 params = {
-                    'limit': 50,
-                    'isEtf': 'false',
-                    'isFund': 'false',
-                    'marketCapMoreThan': mc_range['min'],
-                    'marketCapLowerThan': mc_range['max'],
+                    "limit": 50,
+                    "isEtf": "false",
+                    "isFund": "false",
+                    "marketCapMoreThan": mc_range["min"],
+                    "marketCapLowerThan": mc_range["max"],
                 }
 
-                endpoint = '/stable/company-screener'
+                endpoint = "/stable/company-screener"
                 data = self.fmp_client._make_request(endpoint, params)
 
                 if isinstance(data, list):
                     # 제외할 섹터 필터링 (다른 섹터에서 유사 펀더멘탈 찾기)
                     if exclude_sectors:
                         data = [
-                            stock for stock in data
-                            if stock.get('sector') not in exclude_sectors
+                            stock
+                            for stock in data
+                            if stock.get("sector") not in exclude_sectors
                         ]
                     all_results.extend(data)
 
@@ -559,7 +575,7 @@ class ChainSightService:
         seen_symbols = set()
         unique_results = []
         for stock in all_results:
-            symbol = stock.get('symbol')
+            symbol = stock.get("symbol")
             if symbol and symbol not in seen_symbols:
                 seen_symbols.add(symbol)
                 unique_results.append(stock)
@@ -581,22 +597,17 @@ class ChainSightService:
         if not stocks:
             return {}
 
-        metrics = {
-            'market_cap': [],
-            'pe': [],
-            'roe': [],
-            'profit_margin': []
-        }
+        metrics = {"market_cap": [], "pe": [], "roe": [], "profit_margin": []}
 
         for stock in stocks:
-            if stock.get('marketCap'):
-                metrics['market_cap'].append(float(stock['marketCap']))
-            if stock.get('pe'):
-                metrics['pe'].append(float(stock['pe']))
-            if stock.get('roe'):
-                metrics['roe'].append(float(stock['roe']))
-            if stock.get('grossProfitMargin'):
-                metrics['profit_margin'].append(float(stock['grossProfitMargin']))
+            if stock.get("marketCap"):
+                metrics["market_cap"].append(float(stock["marketCap"]))
+            if stock.get("pe"):
+                metrics["pe"].append(float(stock["pe"]))
+            if stock.get("roe"):
+                metrics["roe"].append(float(stock["roe"]))
+            if stock.get("grossProfitMargin"):
+                metrics["profit_margin"].append(float(stock["grossProfitMargin"]))
 
         # 평균 계산
         avg = {}
@@ -607,9 +618,7 @@ class ChainSightService:
         return avg
 
     def _calculate_peer_similarity(
-        self,
-        stock: Dict,
-        original_stocks: List[Dict]
+        self, stock: Dict, original_stocks: List[Dict]
     ) -> float:
         """
         섹터 피어 유사도 계산
@@ -630,9 +639,7 @@ class ChainSightService:
         return self._calculate_fundamental_similarity(stock, avg_metrics)
 
     def _calculate_fundamental_similarity(
-        self,
-        stock: Dict,
-        avg_metrics: Dict[str, float]
+        self, stock: Dict, avg_metrics: Dict[str, float]
     ) -> float:
         """
         펀더멘탈 유사도 계산
@@ -649,26 +656,34 @@ class ChainSightService:
         similarities = []
 
         # PER 유사도
-        if avg_metrics.get('pe') and stock.get('pe'):
-            pe_diff = abs(float(stock['pe']) - avg_metrics['pe']) / avg_metrics['pe']
+        if avg_metrics.get("pe") and stock.get("pe"):
+            pe_diff = abs(float(stock["pe"]) - avg_metrics["pe"]) / avg_metrics["pe"]
             pe_sim = max(0, 1 - pe_diff)
             similarities.append(pe_sim)
 
         # ROE 유사도
-        if avg_metrics.get('roe') and stock.get('roe'):
-            roe_diff = abs(float(stock['roe']) - avg_metrics['roe']) / avg_metrics['roe']
+        if avg_metrics.get("roe") and stock.get("roe"):
+            roe_diff = (
+                abs(float(stock["roe"]) - avg_metrics["roe"]) / avg_metrics["roe"]
+            )
             roe_sim = max(0, 1 - roe_diff)
             similarities.append(roe_sim)
 
         # 시가총액 유사도
-        if avg_metrics.get('market_cap') and stock.get('marketCap'):
-            mc_diff = abs(float(stock['marketCap']) - avg_metrics['market_cap']) / avg_metrics['market_cap']
+        if avg_metrics.get("market_cap") and stock.get("marketCap"):
+            mc_diff = (
+                abs(float(stock["marketCap"]) - avg_metrics["market_cap"])
+                / avg_metrics["market_cap"]
+            )
             mc_sim = max(0, 1 - mc_diff)
             similarities.append(mc_sim)
 
         # 이익률 유사도
-        if avg_metrics.get('profit_margin') and stock.get('grossProfitMargin'):
-            pm_diff = abs(float(stock['grossProfitMargin']) - avg_metrics['profit_margin']) / avg_metrics['profit_margin']
+        if avg_metrics.get("profit_margin") and stock.get("grossProfitMargin"):
+            pm_diff = (
+                abs(float(stock["grossProfitMargin"]) - avg_metrics["profit_margin"])
+                / avg_metrics["profit_margin"]
+            )
             pm_sim = max(0, 1 - pm_diff)
             similarities.append(pm_sim)
 
@@ -678,20 +693,14 @@ class ChainSightService:
 
         return 0.5  # 기본값
 
-    def _get_cache_key(
-        self,
-        symbols: List[str],
-        filters: Dict
-    ) -> str:
+    def _get_cache_key(self, symbols: List[str], filters: Dict) -> str:
         """캐시 키 생성"""
-        symbols_str = ','.join(sorted(symbols))
+        symbols_str = ",".join(sorted(symbols))
         filters_str = str(sorted(filters.items()))
-        return f'chain_sight:{hash(symbols_str + filters_str)}'
+        return f"chain_sight:{hash(symbols_str + filters_str)}"
 
     def _empty_result(
-        self,
-        filtered_symbols: List[str],
-        filters_applied: Dict
+        self, filtered_symbols: List[str], filters_applied: Dict
     ) -> Dict[str, Any]:
         """빈 결과 반환"""
         return {
@@ -704,6 +713,6 @@ class ChainSightService:
                 "filters": filters_applied,
                 "computation_time_ms": 0,
                 "use_ai": False,
-                "error": "Failed to fetch stock metrics"
-            }
+                "error": "Failed to fetch stock metrics",
+            },
         }

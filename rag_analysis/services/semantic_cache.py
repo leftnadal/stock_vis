@@ -50,7 +50,9 @@ class SemanticCacheService:
         """임베딩 인코더 (지연 로딩)"""
         if SemanticCacheService._encoder is None:
             try:
-                SemanticCacheService._encoder = SentenceTransformer(self.EMBEDDING_MODEL)
+                SemanticCacheService._encoder = SentenceTransformer(
+                    self.EMBEDDING_MODEL
+                )
                 logger.info(f"Loaded embedding model: {self.EMBEDDING_MODEL}")
             except Exception as e:
                 logger.error(f"Failed to load embedding model: {e}")
@@ -78,10 +80,7 @@ class SemanticCacheService:
             return None
 
     async def find_similar(
-        self,
-        question: str,
-        entities: List[str],
-        user_id: Optional[int] = None
+        self, question: str, entities: List[str], user_id: Optional[int] = None
     ) -> Optional[Dict[str, Any]]:
         """
         유사한 과거 분석 검색
@@ -120,7 +119,8 @@ class SemanticCacheService:
         try:
             with driver.session(database=settings.NEO4J_DATABASE) as session:
                 # 벡터 유사도 검색 + 엔티티 매칭
-                result = session.run("""
+                result = session.run(
+                    """
                     CALL db.index.vector.queryNodes(
                         'analysis_question_embedding', 10, $embedding
                     ) YIELD node as cache, score
@@ -159,14 +159,16 @@ class SemanticCacheService:
                         similarity_score,
                         entity_score,
                         final_score
-                """, {
-                    'embedding': embedding,
-                    'threshold': self.SIMILARITY_THRESHOLD,
-                    'entities': entities or [],
-                    'semantic_weight': self.SEMANTIC_WEIGHT,
-                    'entity_weight': self.ENTITY_WEIGHT,
-                    'final_threshold': self.FINAL_THRESHOLD
-                })
+                """,
+                    {
+                        "embedding": embedding,
+                        "threshold": self.SIMILARITY_THRESHOLD,
+                        "entities": entities or [],
+                        "semantic_weight": self.SEMANTIC_WEIGHT,
+                        "entity_weight": self.ENTITY_WEIGHT,
+                        "final_threshold": self.FINAL_THRESHOLD,
+                    },
+                )
 
                 record = result.single()
 
@@ -177,7 +179,7 @@ class SemanticCacheService:
                     )
 
                     # suggestions JSON 파싱
-                    suggestions_raw = record['suggestions']
+                    suggestions_raw = record["suggestions"]
                     if isinstance(suggestions_raw, str):
                         try:
                             suggestions = json.loads(suggestions_raw)
@@ -187,16 +189,16 @@ class SemanticCacheService:
                         suggestions = suggestions_raw or []
 
                     return {
-                        'cache_hit': True,
-                        'cache_id': record['cache_id'],
-                        'original_question': record['original_question'],
-                        'response': record['response'],
-                        'suggestions': suggestions,
-                        'similarity_score': record['similarity_score'],
-                        'entity_match_score': record['entity_score'],
-                        'final_score': record['final_score'],
-                        'created_at': str(record['created_at']),
-                        'hit_count': record['hit_count']
+                        "cache_hit": True,
+                        "cache_id": record["cache_id"],
+                        "original_question": record["original_question"],
+                        "response": record["response"],
+                        "suggestions": suggestions,
+                        "similarity_score": record["similarity_score"],
+                        "entity_match_score": record["entity_score"],
+                        "final_score": record["final_score"],
+                        "created_at": str(record["created_at"]),
+                        "hit_count": record["hit_count"],
                     }
 
                 logger.debug("Cache MISS: no similar question found")
@@ -214,7 +216,7 @@ class SemanticCacheService:
         suggestions: List[Dict[str, str]],
         usage: Dict[str, int],
         user_id: Optional[int] = None,
-        session_id: Optional[int] = None
+        session_id: Optional[int] = None,
     ) -> Optional[str]:
         """
         분석 결과 캐시 저장
@@ -251,7 +253,8 @@ class SemanticCacheService:
                 # suggestions를 JSON 문자열로 변환 (Neo4j는 Map 타입 프로퍼티 미지원)
                 suggestions_json = json.dumps(suggestions, ensure_ascii=False)
 
-                session.run("""
+                session.run(
+                    """
                     CREATE (c:AnalysisCache {
                         cache_id: $cache_id,
                         question: $question,
@@ -272,19 +275,21 @@ class SemanticCacheService:
                     UNWIND $entities as symbol
                     MERGE (s:Stock {symbol: symbol})
                     MERGE (c)-[:ANALYZED]->(s)
-                """, {
-                    'cache_id': cache_id,
-                    'question': question,
-                    'embedding': embedding,
-                    'response': response,
-                    'suggestions': suggestions_json,  # JSON 문자열로 저장
-                    'input_tokens': usage.get('input_tokens', 0),
-                    'output_tokens': usage.get('output_tokens', 0),
-                    'user_id': user_id,
-                    'session_id': session_id,
-                    'entities': entities or [],
-                    'expires_at': expires_at.isoformat()
-                })
+                """,
+                    {
+                        "cache_id": cache_id,
+                        "question": question,
+                        "embedding": embedding,
+                        "response": response,
+                        "suggestions": suggestions_json,  # JSON 문자열로 저장
+                        "input_tokens": usage.get("input_tokens", 0),
+                        "output_tokens": usage.get("output_tokens", 0),
+                        "user_id": user_id,
+                        "session_id": session_id,
+                        "entities": entities or [],
+                        "expires_at": expires_at.isoformat(),
+                    },
+                )
 
                 logger.info(f"Cache stored: {cache_id} (expires: {expires_at.date()})")
                 return cache_id
@@ -294,9 +299,7 @@ class SemanticCacheService:
             return None
 
     async def invalidate(
-        self,
-        cache_id: Optional[str] = None,
-        symbol: Optional[str] = None
+        self, cache_id: Optional[str] = None, symbol: Optional[str] = None
     ) -> int:
         """
         캐시 무효화
@@ -316,19 +319,25 @@ class SemanticCacheService:
             with driver.session(database=settings.NEO4J_DATABASE) as session:
                 if cache_id:
                     # 특정 캐시 삭제
-                    result = session.run("""
+                    result = session.run(
+                        """
                         MATCH (c:AnalysisCache {cache_id: $cache_id})
                         DETACH DELETE c
                         RETURN count(*) as deleted
-                    """, {'cache_id': cache_id})
+                    """,
+                        {"cache_id": cache_id},
+                    )
 
                 elif symbol:
                     # 특정 종목 관련 캐시 삭제
-                    result = session.run("""
+                    result = session.run(
+                        """
                         MATCH (c:AnalysisCache)-[:ANALYZED]->(s:Stock {symbol: $symbol})
                         DETACH DELETE c
                         RETURN count(*) as deleted
-                    """, {'symbol': symbol.upper()})
+                    """,
+                        {"symbol": symbol.upper()},
+                    )
 
                 else:
                     # 전체 무효화 (주의!)
@@ -339,7 +348,7 @@ class SemanticCacheService:
                     """)
 
                 record = result.single()
-                deleted = record['deleted'] if record else 0
+                deleted = record["deleted"] if record else 0
 
                 if deleted > 0:
                     logger.info(f"Invalidated {deleted} cache entries")
@@ -367,38 +376,41 @@ class SemanticCacheService:
         """
         driver = get_neo4j_driver()
         if driver is None:
-            return {'status': 'unavailable'}
+            return {"status": "unavailable"}
 
         try:
             with driver.session(database=settings.NEO4J_DATABASE) as session:
-                result = session.run("""
+                result = session.run(
+                    """
                     MATCH (c:AnalysisCache)
                     WHERE c.last_hit_at > datetime() - duration('PT' + $hours + 'H')
                     WITH sum(c.hit_count) as total_hits, count(c) as cache_entries
                     RETURN total_hits, cache_entries
-                """, {'hours': str(hours)})
+                """,
+                    {"hours": str(hours)},
+                )
 
                 record = result.single()
 
                 if record:
                     return {
-                        'status': 'available',
-                        'period_hours': hours,
-                        'cache_entries_hit': record['cache_entries'] or 0,
-                        'total_hits': record['total_hits'] or 0,
-                        'note': 'Hit rate requires request logging integration'
+                        "status": "available",
+                        "period_hours": hours,
+                        "cache_entries_hit": record["cache_entries"] or 0,
+                        "total_hits": record["total_hits"] or 0,
+                        "note": "Hit rate requires request logging integration",
                     }
 
                 return {
-                    'status': 'available',
-                    'period_hours': hours,
-                    'cache_entries_hit': 0,
-                    'total_hits': 0
+                    "status": "available",
+                    "period_hours": hours,
+                    "cache_entries_hit": 0,
+                    "total_hits": 0,
                 }
 
         except Exception as e:
             logger.error(f"Failed to get hit rate: {e}")
-            return {'status': 'error', 'error': str(e)}
+            return {"status": "error", "error": str(e)}
 
 
 # 싱글톤 인스턴스

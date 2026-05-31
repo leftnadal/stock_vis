@@ -37,111 +37,129 @@ def collect_and_extract(self, symbol: str):
     collector = SECFilingCollector()
 
     # ── Step 1: 메타데이터 ──
-    _log_stage(symbol, 'fmp_metadata', 'started')
+    _log_stage(symbol, "fmp_metadata", "started")
     start = time.time()
     try:
         metadata = collector.get_filing_metadata(symbol)
         if not metadata:
-            _log_stage(symbol, 'fmp_metadata', 'failed', 'No metadata found')
-            return {'symbol': symbol, 'status': 'no_metadata'}
-        _log_stage(symbol, 'fmp_metadata', 'success',
-                   f"accession={metadata['accession_no']}", time.time() - start)
+            _log_stage(symbol, "fmp_metadata", "failed", "No metadata found")
+            return {"symbol": symbol, "status": "no_metadata"}
+        _log_stage(
+            symbol,
+            "fmp_metadata",
+            "success",
+            f"accession={metadata['accession_no']}",
+            time.time() - start,
+        )
     except Exception as exc:
-        _log_stage(symbol, 'fmp_metadata', 'retrying', str(exc))
-        raise self.retry(exc=exc, countdown=60 * (2 ** self.request.retries))
+        _log_stage(symbol, "fmp_metadata", "retrying", str(exc))
+        raise self.retry(exc=exc, countdown=60 * (2**self.request.retries))
 
     # ── Step 2: SEC HTML ──
-    _log_stage(symbol, 'sec_fetch', 'started')
+    _log_stage(symbol, "sec_fetch", "started")
     start = time.time()
     try:
-        html = collector.fetch_filing_html(metadata['final_link'])
+        html = collector.fetch_filing_html(metadata["final_link"])
         if not html:
             raise SECFetchError("Empty HTML response")
-        _log_stage(symbol, 'sec_fetch', 'success',
-                   f"{len(html)} bytes", time.time() - start)
+        _log_stage(
+            symbol, "sec_fetch", "success", f"{len(html)} bytes", time.time() - start
+        )
     except Exception as exc:
-        _log_stage(symbol, 'sec_fetch', 'retrying', str(exc))
-        raise self.retry(exc=exc, max_retries=5,
-                         countdown=10 * (2 ** self.request.retries))
+        _log_stage(symbol, "sec_fetch", "retrying", str(exc))
+        raise self.retry(
+            exc=exc, max_retries=5, countdown=10 * (2**self.request.retries)
+        )
 
     # ── Step 3: 섹션 추출+검증 ──
-    _log_stage(symbol, 'section_extract', 'started')
+    _log_stage(symbol, "section_extract", "started")
     start = time.time()
     try:
         sections = collector.extract_sections(html)
         from .validators import validate_extracted_sections
+
         full_text = collector._html_to_text(html)
         validated, warnings = validate_extracted_sections(sections, full_text)
 
-        has_fail = any(w.startswith('FAIL:') for w in warnings)
+        has_fail = any(w.startswith("FAIL:") for w in warnings)
         if has_fail:
             # fallback 시도
             fallback = collector.extract_sections_fallback(symbol)
-            extraction_method = 'regex'
+            extraction_method = "regex"
             if fallback:
                 fb_val, fb_warn = validate_extracted_sections(fallback, full_text)
-                if not any(w.startswith('FAIL:') for w in fb_warn):
+                if not any(w.startswith("FAIL:") for w in fb_warn):
                     validated, warnings = fb_val, fb_warn
-                    extraction_method = 'edgartools_fallback'
+                    extraction_method = "edgartools_fallback"
             else:
-                extraction_method = 'regex'
+                extraction_method = "regex"
 
-            if any(w.startswith('FAIL:') for w in warnings):
-                _log_stage(symbol, 'section_extract', 'failed',
-                           '; '.join(warnings), time.time() - start)
+            if any(w.startswith("FAIL:") for w in warnings):
+                _log_stage(
+                    symbol,
+                    "section_extract",
+                    "failed",
+                    "; ".join(warnings),
+                    time.time() - start,
+                )
         else:
-            extraction_method = 'regex'
+            extraction_method = "regex"
 
-        non_empty = sum(1 for k in ['item_1', 'item_1a', 'item_7']
-                        if validated.get(k))
+        non_empty = sum(1 for k in ["item_1", "item_1a", "item_7"] if validated.get(k))
         if non_empty == 0:
-            status = 'failed'
+            status = "failed"
         elif non_empty < 3 or has_fail:
-            status = 'partial'
+            status = "partial"
         else:
-            status = 'success'
+            status = "success"
 
-        _log_stage(symbol, 'section_extract', 'success' if status != 'failed' else 'failed',
-                   f"sections={non_empty}/3, method={extraction_method}",
-                   time.time() - start)
+        _log_stage(
+            symbol,
+            "section_extract",
+            "success" if status != "failed" else "failed",
+            f"sections={non_empty}/3, method={extraction_method}",
+            time.time() - start,
+        )
 
     except Exception as exc:
-        _log_stage(symbol, 'section_extract', 'failed', str(exc))
-        raise self.retry(exc=SectionExtractionError(str(exc)),
-                         max_retries=1, countdown=5)
+        _log_stage(symbol, "section_extract", "failed", str(exc))
+        raise self.retry(
+            exc=SectionExtractionError(str(exc)), max_retries=1, countdown=5
+        )
 
     # ── Step 4: RawDocumentStore 저장 ──
     from packages.shared.stocks.models import Stock
+
     stock = Stock.objects.filter(symbol=symbol).first()
     if not stock:
-        _log_stage(symbol, 'section_extract', 'failed', f'Stock {symbol} not in DB')
-        return {'symbol': symbol, 'status': 'stock_not_found'}
+        _log_stage(symbol, "section_extract", "failed", f"Stock {symbol} not in DB")
+        return {"symbol": symbol, "status": "stock_not_found"}
 
     doc, created = RawDocumentStore.objects.update_or_create(
-        accession_no=metadata['accession_no'],
+        accession_no=metadata["accession_no"],
         defaults={
-            'symbol': stock,
-            'filing_date': metadata['filing_date'],
-            'fiscal_year': metadata['fiscal_year'],
-            'final_link': metadata['final_link'],
-            'item_1_text': validated.get('item_1', ''),
-            'item_1a_text': validated.get('item_1a', ''),
-            'item_7_text': validated.get('item_7', ''),
-            'status': status,
-            'extraction_method': extraction_method,
-            'warnings': warnings,
-        }
+            "symbol": stock,
+            "filing_date": metadata["filing_date"],
+            "fiscal_year": metadata["fiscal_year"],
+            "final_link": metadata["final_link"],
+            "item_1_text": validated.get("item_1", ""),
+            "item_1a_text": validated.get("item_1a", ""),
+            "item_7_text": validated.get("item_7", ""),
+            "status": status,
+            "extraction_method": extraction_method,
+            "warnings": warnings,
+        },
     )
 
     # ── Step 5: 추출 트리거 ──
-    if status != 'failed':
+    if status != "failed":
         extract_from_document.delay(doc.id, symbol)
 
     return {
-        'symbol': symbol,
-        'doc_id': doc.id,
-        'status': status,
-        'created': created,
+        "symbol": symbol,
+        "doc_id": doc.id,
+        "status": status,
+        "created": created,
     }
 
 
@@ -168,20 +186,20 @@ def extract_from_document(self, doc_id: int, symbol: str):
         doc = RawDocumentStore.objects.get(id=doc_id)
     except RawDocumentStore.DoesNotExist:
         logger.error(f"Document {doc_id} not found")
-        return {'symbol': symbol, 'error': 'doc_not_found'}
+        return {"symbol": symbol, "error": "doc_not_found"}
 
     sections = {
-        'item_1': doc.item_1_text,
-        'item_1a': doc.item_1a_text,
-        'item_7': doc.item_7_text,
+        "item_1": doc.item_1_text,
+        "item_1a": doc.item_1a_text,
+        "item_7": doc.item_7_text,
     }
 
-    result = {'symbol': symbol, 'doc_id': doc_id}
+    result = {"symbol": symbol, "doc_id": doc_id}
     stock = None
     extractor = None
 
     # ── Track A: Supply Chain ──
-    _log_stage(symbol, 'track_a_extract', 'started')
+    _log_stage(symbol, "track_a_extract", "started")
     start = time.time()
     try:
         combined = normalize_section_all(sections)
@@ -202,9 +220,10 @@ def extract_from_document(self, doc_id: int, symbol: str):
                 # Phase 1.5: 티커 매칭
                 matched_count = 0
                 if created:
-                    _log_stage(symbol, 'ticker_match', 'started')
+                    _log_stage(symbol, "ticker_match", "started")
                     try:
                         from .ticker_matcher import TickerMatcher
+
                         matcher = TickerMatcher()
                         for evidence in created:
                             ticker, method = matcher.match_with_queue(
@@ -212,33 +231,46 @@ def extract_from_document(self, doc_id: int, symbol: str):
                             )
                             if ticker:
                                 matched_count += 1
-                        _log_stage(symbol, 'ticker_match', 'success',
-                                   f"matched={matched_count}/{len(created)}")
+                        _log_stage(
+                            symbol,
+                            "ticker_match",
+                            "success",
+                            f"matched={matched_count}/{len(created)}",
+                        )
                     except Exception as match_err:
-                        _log_stage(symbol, 'ticker_match', 'failed', str(match_err))
+                        _log_stage(symbol, "ticker_match", "failed", str(match_err))
 
-            result['track_a'] = {
-                'raw': len(raw.get('relationships', [])),
-                'validated': len(validated),
-                'matched': matched_count if validated else 0,
+            result["track_a"] = {
+                "raw": len(raw.get("relationships", [])),
+                "validated": len(validated),
+                "matched": matched_count if validated else 0,
             }
-            _log_stage(symbol, 'track_a_extract', 'success',
-                       f"raw={len(raw.get('relationships', []))}, "
-                       f"validated={len(validated)}, matched={matched_count if validated else 0}",
-                       time.time() - start)
+            _log_stage(
+                symbol,
+                "track_a_extract",
+                "success",
+                f"raw={len(raw.get('relationships', []))}, "
+                f"validated={len(validated)}, matched={matched_count if validated else 0}",
+                time.time() - start,
+            )
         else:
-            result['track_a'] = {'raw': 0, 'validated': 0, 'note': 'no_paragraphs'}
-            _log_stage(symbol, 'track_a_extract', 'skipped',
-                       'No relevant paragraphs', time.time() - start)
+            result["track_a"] = {"raw": 0, "validated": 0, "note": "no_paragraphs"}
+            _log_stage(
+                symbol,
+                "track_a_extract",
+                "skipped",
+                "No relevant paragraphs",
+                time.time() - start,
+            )
 
     except Exception as exc:
         logger.error(f"{symbol} Track A failed: {exc}")
-        _log_stage(symbol, 'track_a_extract', 'failed', str(exc), time.time() - start)
-        result['track_a'] = {'error': str(exc)}
+        _log_stage(symbol, "track_a_extract", "failed", str(exc), time.time() - start)
+        result["track_a"] = {"error": str(exc)}
         # Track A 실패해도 Track B 시도
 
     # ── Track B: Business Model ──
-    _log_stage(symbol, 'track_b_extract', 'started')
+    _log_stage(symbol, "track_b_extract", "started")
     start = time.time()
     try:
         from .keywords_track_b import filter_paragraphs_track_b
@@ -248,9 +280,10 @@ def extract_from_document(self, doc_id: int, symbol: str):
         )
 
         # Track B는 Item 1 위주
-        item1_text = sections.get('item_1', '')
+        item1_text = sections.get("item_1", "")
         if item1_text:
             from .normalizer import _clean_text
+
             cleaned = _clean_text(item1_text)
             bm_paragraphs = filter_paragraphs_track_b(cleaned, max_paragraphs=15)
 
@@ -261,31 +294,48 @@ def extract_from_document(self, doc_id: int, symbol: str):
 
                 if not extractor:
                     extractor = GeminiExtractor()
-                raw_bm = extractor.extract_business_model(symbol, company_name, bm_paragraphs)
+                raw_bm = extractor.extract_business_model(
+                    symbol, company_name, bm_paragraphs
+                )
                 validated_bm = validate_business_model_result(raw_bm)
                 save_business_model_snapshot(validated_bm, doc, symbol)
 
-                result['track_b'] = {f: validated_bm[f]['value'] for f in validated_bm}
-                _log_stage(symbol, 'track_b_extract', 'success',
-                           str(result['track_b']), time.time() - start)
+                result["track_b"] = {f: validated_bm[f]["value"] for f in validated_bm}
+                _log_stage(
+                    symbol,
+                    "track_b_extract",
+                    "success",
+                    str(result["track_b"]),
+                    time.time() - start,
+                )
             else:
-                result['track_b'] = {'status': 'no_paragraphs'}
-                _log_stage(symbol, 'track_b_extract', 'skipped',
-                           'No relevant paragraphs', time.time() - start)
+                result["track_b"] = {"status": "no_paragraphs"}
+                _log_stage(
+                    symbol,
+                    "track_b_extract",
+                    "skipped",
+                    "No relevant paragraphs",
+                    time.time() - start,
+                )
         else:
-            result['track_b'] = {'status': 'no_item1'}
-            _log_stage(symbol, 'track_b_extract', 'skipped',
-                       'No Item 1 text', time.time() - start)
+            result["track_b"] = {"status": "no_item1"}
+            _log_stage(
+                symbol,
+                "track_b_extract",
+                "skipped",
+                "No Item 1 text",
+                time.time() - start,
+            )
 
     except Exception as exc:
         logger.error(f"{symbol} Track B failed: {exc}")
-        _log_stage(symbol, 'track_b_extract', 'failed', str(exc), time.time() - start)
-        result['track_b'] = {'error': str(exc)}
+        _log_stage(symbol, "track_b_extract", "failed", str(exc), time.time() - start)
+        result["track_b"] = {"error": str(exc)}
 
     return result
 
 
-@shared_task(name='sec-seed-relations-to-chainsight', max_retries=1)
+@shared_task(name="sec-seed-relations-to-chainsight", max_retries=1)
 def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
     from apps.chain_sight.models import RelationConfidence
@@ -295,50 +345,52 @@ def seed_relations_to_chainsight():
 
     matched = SCE.objects.filter(target_company__isnull=False)
     if not matched.exists():
-        logger.info('seed_relations_to_chainsight: no matched evidence')
-        return {'created': 0, 'updated': 0}
+        logger.info("seed_relations_to_chainsight: no matched evidence")
+        return {"created": 0, "updated": 0}
 
     created, updated = 0, 0
     for ev in matched:
         rel_type = ev.relationship_type
 
         # CUSTOMER_OF → SUPPLIES_TO로 정규화 (방향 반전)
-        if rel_type == 'CUSTOMER_OF':
+        if rel_type == "CUSTOMER_OF":
             sym_a, sym_b = ev.target_company_id, ev.source_company_id
-            rel_type = 'SUPPLIES_TO'
-            direction = 'a→b'
-        elif rel_type == 'COMPETES_WITH':
+            rel_type = "SUPPLIES_TO"
+            direction = "a→b"
+        elif rel_type == "COMPETES_WITH":
             sym_a, sym_b = normalize_pair(ev.source_company_id, ev.target_company_id)
-            direction = 'both'
-        elif rel_type in ('SUPPLIES_TO', 'DEPENDS_ON', 'PARTNER_WITH'):
+            direction = "both"
+        elif rel_type in ("SUPPLIES_TO", "DEPENDS_ON", "PARTNER_WITH"):
             sym_a, sym_b = ev.source_company_id, ev.target_company_id
-            direction = 'a→b'
+            direction = "a→b"
         else:
             continue
 
-        score_map = {'high': 85, 'medium': 60, 'low': 35}
+        score_map = {"high": 85, "medium": 60, "low": 35}
         score = score_map.get(ev.confidence_grade, 60)
 
         obj, is_new = RelationConfidence.objects.update_or_create(
-            symbol_a=sym_a, symbol_b=sym_b, relation_type=rel_type,
+            symbol_a=sym_a,
+            symbol_b=sym_b,
+            relation_type=rel_type,
             defaults={
-                'relation_category': 'truth',
-                'canonical_direction': direction,
-                'relation_status': 'confirmed' if score >= 85 else 'probable',
-                'truth_score': score,
-                'evidence_tier_best': 1,
-                'has_supply_chain_source': True,
-                'relation_basis_summary': f'SEC 10-K: {ev.evidence_text[:100]}',
+                "relation_category": "truth",
+                "canonical_direction": direction,
+                "relation_status": "confirmed" if score >= 85 else "probable",
+                "truth_score": score,
+                "evidence_tier_best": 1,
+                "has_supply_chain_source": True,
+                "relation_basis_summary": f"SEC 10-K: {ev.evidence_text[:100]}",
                 # audit P0 #9: synced_to_neo4j 제거. update_or_create의 save()가 neo4j_dirty=True 자동.
-            }
+            },
         )
         if is_new:
             created += 1
         else:
             updated += 1
 
-    result = {'created': created, 'updated': updated}
-    logger.info(f'seed_relations_to_chainsight: {result}')
+    result = {"created": created, "updated": updated}
+    logger.info(f"seed_relations_to_chainsight: {result}")
     return result
 
 
@@ -363,36 +415,45 @@ def sync_dirty_to_neo4j(self):
 
     BATCH_SIZE = 500
     KNOWN_TYPES = [
-        'SUPPLIES_TO', 'CUSTOMER_OF', 'PARTNER_WITH',
-        'DEPENDS_ON', 'COMPETES_WITH', 'RELATED_TO',
+        "SUPPLIES_TO",
+        "CUSTOMER_OF",
+        "PARTNER_WITH",
+        "DEPENDS_ON",
+        "COMPETES_WITH",
+        "RELATED_TO",
     ]
 
     # ── Phase A: PG lock + dict 복사 ──
     with transaction.atomic():
         dirty_qs = (
-            SupplyChainEvidence.objects
-            .filter(neo4j_dirty=True, target_company__isnull=False)
-            .select_related('source_company', 'target_company', 'source_document')
+            SupplyChainEvidence.objects.filter(
+                neo4j_dirty=True, target_company__isnull=False
+            )
+            .select_related("source_company", "target_company", "source_document")
             .select_for_update(skip_locked=True)[:BATCH_SIZE]
         )
 
         rows = []
         for ev in dirty_qs:
-            rows.append({
-                'id': ev.id,
-                'source_ticker': ev.source_company_id,
-                'target_ticker': ev.target_company_id,
-                'rel_type': ev.relationship_type,
-                'confidence_grade': ev.confidence_grade,
-                'evidence_text': ev.evidence_text[:200],
-                'prompt_version': ev.prompt_version,
-                'source': 'sec_10k',
-                'accession_no': ev.source_document.accession_no if ev.source_document else '',
-            })
+            rows.append(
+                {
+                    "id": ev.id,
+                    "source_ticker": ev.source_company_id,
+                    "target_ticker": ev.target_company_id,
+                    "rel_type": ev.relationship_type,
+                    "confidence_grade": ev.confidence_grade,
+                    "evidence_text": ev.evidence_text[:200],
+                    "prompt_version": ev.prompt_version,
+                    "source": "sec_10k",
+                    "accession_no": ev.source_document.accession_no
+                    if ev.source_document
+                    else "",
+                }
+            )
 
     if not rows:
         logger.info("sync_dirty_to_neo4j: no dirty rows")
-        return {'synced': 0}
+        return {"synced": 0}
 
     # ── Phase B: Neo4j 동기화 ──
     from apps.chain_sight.graph import get_graph_repository
@@ -402,9 +463,9 @@ def sync_dirty_to_neo4j(self):
         synced_ids = []
 
         for row in rows:
-            source = row['source_ticker']
-            target = row['target_ticker']
-            rel_type = row['rel_type']
+            source = row["source_ticker"]
+            target = row["target_ticker"]
+            rel_type = row["rel_type"]
 
             # DELETE 기존 SEC-origin edge (known_types 전체)
             for kt in KNOWN_TYPES:
@@ -414,9 +475,13 @@ def sync_dirty_to_neo4j(self):
                 DELETE r
                 """
                 try:
-                    repo.run_query(delete_query, {
-                        'source': source, 'target': target,
-                    })
+                    repo.run_query(
+                        delete_query,
+                        {
+                            "source": source,
+                            "target": target,
+                        },
+                    )
                 except Exception:
                     pass  # edge가 없으면 무시
 
@@ -434,17 +499,22 @@ def sync_dirty_to_neo4j(self):
             }}]->(b)
             """
             try:
-                repo.run_query(create_query, {
-                    'source': source,
-                    'target': target,
-                    'grade': row['confidence_grade'],
-                    'evidence': row['evidence_text'],
-                    'prompt_version': row['prompt_version'],
-                    'accession_no': row['accession_no'],
-                })
-                synced_ids.append(row['id'])
+                repo.run_query(
+                    create_query,
+                    {
+                        "source": source,
+                        "target": target,
+                        "grade": row["confidence_grade"],
+                        "evidence": row["evidence_text"],
+                        "prompt_version": row["prompt_version"],
+                        "accession_no": row["accession_no"],
+                    },
+                )
+                synced_ids.append(row["id"])
             except Exception as e:
-                logger.warning(f"Neo4j sync failed: {source}→{target} ({rel_type}): {e}")
+                logger.warning(
+                    f"Neo4j sync failed: {source}→{target} ({rel_type}): {e}"
+                )
 
         # ── Phase C: PG 업데이트 ──
         if synced_ids:
@@ -454,7 +524,7 @@ def sync_dirty_to_neo4j(self):
             )
 
         logger.info(f"sync_dirty_to_neo4j: {len(synced_ids)}/{len(rows)} synced")
-        return {'synced': len(synced_ids), 'total': len(rows)}
+        return {"synced": len(synced_ids), "total": len(rows)}
 
     except Exception as e:
         logger.error(f"sync_dirty_to_neo4j error: {e}")
@@ -464,10 +534,10 @@ def sync_dirty_to_neo4j(self):
 def _to_grade(confidence: float) -> str:
     """confidence → grade (sync에서 사용)."""
     if confidence >= 0.8:
-        return 'high'
+        return "high"
     elif confidence >= 0.6:
-        return 'medium'
-    return 'low'
+        return "medium"
+    return "low"
 
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=600, time_limit=660)
@@ -491,7 +561,7 @@ def check_new_filings(self):
             if not metadata:
                 continue
 
-            accession = metadata['accession_no']
+            accession = metadata["accession_no"]
             exists = RawDocumentStore.objects.filter(accession_no=accession).exists()
             if not exists:
                 collect_and_extract.delay(symbol)
@@ -503,13 +573,14 @@ def check_new_filings(self):
             continue
 
     logger.info(f"check_new_filings: {new_count} new filings triggered")
-    return {'new_filings': new_count, 'checked': len(symbols)}
+    return {"new_filings": new_count, "checked": len(symbols)}
 
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=120, time_limit=180)
 def generate_intelligence_report(self, hours_back: int = 24):
     """SEC-PR-17: Intelligence 리포트 생성 task."""
     from .intelligence import PipelineIntelligenceReporter
+
     reporter = PipelineIntelligenceReporter()
     return reporter.generate_report(hours_back=hours_back)
 
@@ -533,11 +604,11 @@ def run_batch_and_report(self, symbols: list = None):
     for symbol in symbols:
         try:
             r = collect_and_extract(symbol)
-            if r.get('doc_id') and r.get('status') != 'failed':
-                extract_from_document(r['doc_id'], symbol)
-            results.append({'symbol': symbol, 'status': r.get('status', 'unknown')})
+            if r.get("doc_id") and r.get("status") != "failed":
+                extract_from_document(r["doc_id"], symbol)
+            results.append({"symbol": symbol, "status": r.get("status", "unknown")})
         except Exception as e:
-            results.append({'symbol': symbol, 'status': 'error', 'error': str(e)})
+            results.append({"symbol": symbol, "status": "error", "error": str(e)})
             logger.error(f"Batch {symbol}: {e}")
 
     # Phase 2: 후처리
@@ -547,20 +618,20 @@ def run_batch_and_report(self, symbols: list = None):
     # Phase 3: Intelligence 리포트
     report_result = generate_intelligence_report(hours_back=24)
 
-    success = sum(1 for r in results if r['status'] == 'success')
-    failed = sum(1 for r in results if r['status'] in ('failed', 'error'))
+    success = sum(1 for r in results if r["status"] == "success")
+    failed = sum(1 for r in results if r["status"] in ("failed", "error"))
 
     logger.info(
         f"run_batch_and_report: {success} success, {failed} failed, "
         f"{len(alerts)} alerts, report={report_result}"
     )
     return {
-        'total': len(symbols),
-        'success': success,
-        'failed': failed,
-        'sync': sync_result,
-        'alerts': alerts,
-        'report': report_result,
+        "total": len(symbols),
+        "success": success,
+        "failed": failed,
+        "sync": sync_result,
+        "alerts": alerts,
+        "report": report_result,
     }
 
 
@@ -575,14 +646,16 @@ def run_batch_and_report(self, symbols: list = None):
 # },
 
 
-def _log_stage(symbol: str, stage: str, status: str,
-               detail: str = '', duration: float = None):
+def _log_stage(
+    symbol: str, stage: str, status: str, detail: str = "", duration: float = None
+):
     """FilingProcessLog 기록."""
     from .models import FilingProcessLog
+
     FilingProcessLog.objects.create(
         symbol=symbol,
         stage=stage,
         status=status,
-        detail=detail[:1000] if detail else '',
+        detail=detail[:1000] if detail else "",
         duration_seconds=round(duration, 2) if duration else None,
     )

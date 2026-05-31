@@ -22,13 +22,13 @@ class TestEntityExtractor:
     @pytest.fixture
     def mock_anthropic_client(self):
         """Mock Anthropic 클라이언트"""
-        with patch('rag_analysis.services.entity_extractor.AsyncAnthropic') as mock:
+        with patch("rag_analysis.services.entity_extractor.AsyncAnthropic") as mock:
             yield mock
 
     @pytest.fixture
     def extractor(self, mock_anthropic_client):
         """EntityExtractor 인스턴스"""
-        with patch('django.conf.settings.ANTHROPIC_API_KEY', 'test-key'):
+        with patch("django.conf.settings.ANTHROPIC_API_KEY", "test-key"):
             return EntityExtractor()
 
     @pytest.mark.asyncio
@@ -37,12 +37,12 @@ class TestEntityExtractor:
         # Mock 응답 설정
         mock_response = MagicMock(spec=Message)
         mock_content = MagicMock(spec=TextBlock)
-        mock_content.text = '''{
+        mock_content.text = """{
             "stocks": ["AAPL", "TSLA"],
             "metrics": ["PER", "매출"],
             "concepts": ["성장주"],
             "timeframe": "2024년"
-        }'''
+        }"""
         mock_response.content = [mock_content]
 
         extractor.client.messages.create = AsyncMock(return_value=mock_response)
@@ -51,10 +51,10 @@ class TestEntityExtractor:
         result = await extractor.extract("AAPL과 TSLA의 PER과 매출을 비교해줘")
 
         # 검증
-        assert result['stocks'] == ["AAPL", "TSLA"]
-        assert result['metrics'] == ["PER", "매출"]
-        assert result['concepts'] == ["성장주"]
-        assert result['timeframe'] == "2024년"
+        assert result["stocks"] == ["AAPL", "TSLA"]
+        assert result["metrics"] == ["PER", "매출"]
+        assert result["concepts"] == ["성장주"]
+        assert result["timeframe"] == "2024년"
 
     @pytest.mark.asyncio
     async def test_extract_with_markdown_code_block(self, extractor):
@@ -62,14 +62,14 @@ class TestEntityExtractor:
         # Mock 응답 설정
         mock_response = MagicMock(spec=Message)
         mock_content = MagicMock(spec=TextBlock)
-        mock_content.text = '''```json
+        mock_content.text = """```json
 {
     "stocks": ["NVDA"],
     "metrics": ["실적"],
     "concepts": [],
     "timeframe": null
 }
-```'''
+```"""
         mock_response.content = [mock_content]
 
         extractor.client.messages.create = AsyncMock(return_value=mock_response)
@@ -78,10 +78,10 @@ class TestEntityExtractor:
         result = await extractor.extract("NVDA 실적 어때?")
 
         # 검증
-        assert result['stocks'] == ["NVDA"]
-        assert result['metrics'] == ["실적"]
-        assert result['concepts'] == []
-        assert result['timeframe'] is None
+        assert result["stocks"] == ["NVDA"]
+        assert result["metrics"] == ["실적"]
+        assert result["concepts"] == []
+        assert result["timeframe"] is None
 
     @pytest.mark.asyncio
     async def test_extract_with_json_parse_error_fallback(self, extractor):
@@ -89,7 +89,7 @@ class TestEntityExtractor:
         # Mock 응답 설정 (잘못된 JSON)
         mock_response = MagicMock(spec=Message)
         mock_content = MagicMock(spec=TextBlock)
-        mock_content.text = 'Invalid JSON'
+        mock_content.text = "Invalid JSON"
         mock_response.content = [mock_content]
 
         extractor.client.messages.create = AsyncMock(return_value=mock_response)
@@ -98,8 +98,8 @@ class TestEntityExtractor:
         result = await extractor.extract("Compare AAPL and TSLA")
 
         # 검증 - 폴백이 대문자 패턴을 찾음
-        assert "AAPL" in result['stocks']
-        assert "TSLA" in result['stocks']
+        assert "AAPL" in result["stocks"]
+        assert "TSLA" in result["stocks"]
 
     @pytest.mark.asyncio
     async def test_extract_fallback_korean_stocks(self, extractor):
@@ -111,8 +111,8 @@ class TestEntityExtractor:
         result = await extractor.extract("삼성전자와 SK하이닉스 비교")
 
         # 검증
-        assert "삼성전자" in result['stocks']
-        assert "SK하이닉스" in result['stocks']
+        assert "삼성전자" in result["stocks"]
+        assert "SK하이닉스" in result["stocks"]
 
     @pytest.mark.asyncio
     async def test_extract_fallback_uppercase_symbols(self, extractor):
@@ -124,8 +124,8 @@ class TestEntityExtractor:
         result = await extractor.extract("AAPL and MSFT comparison")
 
         # 검증
-        assert "AAPL" in result['stocks']
-        assert "MSFT" in result['stocks']
+        assert "AAPL" in result["stocks"]
+        assert "MSFT" in result["stocks"]
 
     @pytest.mark.asyncio
     async def test_extract_fallback_metrics(self, extractor):
@@ -137,14 +137,14 @@ class TestEntityExtractor:
         result = await extractor.extract("매출과 영업이익 분석")
 
         # 검증
-        assert "매출" in result['metrics']
-        assert "영업이익" in result['metrics']
+        assert "매출" in result["metrics"]
+        assert "영업이익" in result["metrics"]
 
     def test_clean_json_response_with_code_block(self, extractor):
         """JSON 정리: 코드 블록 제거"""
-        content = '''```json
+        content = """```json
 {"stocks": ["AAPL"]}
-```'''
+```"""
 
         cleaned = extractor._clean_json_response(content)
 
@@ -247,7 +247,7 @@ class TestEntityExtractorIntegration:
     @pytest.fixture
     def extractor(self):
         """EntityExtractor (폴백 모드)"""
-        with patch('django.conf.settings.ANTHROPIC_API_KEY', None):
+        with patch("django.conf.settings.ANTHROPIC_API_KEY", None):
             return EntityExtractor()
 
     @pytest.fixture
@@ -263,8 +263,8 @@ class TestEntityExtractorIntegration:
         entities = await extractor.extract(question)
 
         # 2. 정규화
-        normalized_stocks = normalizer.normalize_stocks(entities['stocks'])
-        normalized_metrics = normalizer.normalize_metrics(entities['metrics'])
+        normalized_stocks = normalizer.normalize_stocks(entities["stocks"])
+        normalized_metrics = normalizer.normalize_metrics(entities["metrics"])
 
         # 3. 검증 - 폴백 모드에서는 대문자 패턴만 추출
         assert "AAPL" in normalized_stocks

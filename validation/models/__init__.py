@@ -5,7 +5,10 @@ from .news_summary import ValidationNewsSummary
 from .peer_preset import PeerPreset, UserPeerPreference
 
 __all__ = [
-    'CompanyMetricLatest', 'CompanyBenchmarkDelta',
-    'CategorySignal', 'ValidationNewsSummary',
-    'PeerPreset', 'UserPeerPreference',
+    "CompanyMetricLatest",
+    "CompanyBenchmarkDelta",
+    "CategorySignal",
+    "ValidationNewsSummary",
+    "PeerPreset",
+    "UserPeerPreference",
 ]

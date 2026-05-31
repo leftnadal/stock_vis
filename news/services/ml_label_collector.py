@@ -24,13 +24,13 @@ logger = logging.getLogger(__name__)
 
 # 2026년 NYSE 휴일 (확장 가능)
 NYSE_HOLIDAYS_2026 = {
-    date(2026, 1, 1),    # New Year's Day
-    date(2026, 1, 19),   # MLK Jr. Day
-    date(2026, 2, 16),   # Presidents' Day
-    date(2026, 4, 3),    # Good Friday
-    date(2026, 5, 25),   # Memorial Day
-    date(2026, 7, 3),    # Independence Day (observed)
-    date(2026, 9, 7),    # Labor Day
+    date(2026, 1, 1),  # New Year's Day
+    date(2026, 1, 19),  # MLK Jr. Day
+    date(2026, 2, 16),  # Presidents' Day
+    date(2026, 4, 3),  # Good Friday
+    date(2026, 5, 25),  # Memorial Day
+    date(2026, 7, 3),  # Independence Day (observed)
+    date(2026, 9, 7),  # Labor Day
     date(2026, 11, 26),  # Thanksgiving
     date(2026, 12, 25),  # Christmas
 }
@@ -52,17 +52,17 @@ ALL_NYSE_HOLIDAYS = NYSE_HOLIDAYS_2025 | NYSE_HOLIDAYS_2026
 
 # 섹터별 중요 뉴스 판정 threshold (% 변동폭)
 SECTOR_THRESHOLDS = {
-    'Technology': 2.5,
-    'Communication Services': 2.0,
-    'Consumer Discretionary': 2.0,
-    'Healthcare': 2.0,
-    'Financials': 1.5,
-    'Industrials': 1.5,
-    'Consumer Staples': 1.0,
-    'Energy': 2.5,
-    'Materials': 2.0,
-    'Real Estate': 1.5,
-    'Utilities': 1.0,
+    "Technology": 2.5,
+    "Communication Services": 2.0,
+    "Consumer Discretionary": 2.0,
+    "Healthcare": 2.0,
+    "Financials": 1.5,
+    "Industrials": 1.5,
+    "Consumer Staples": 1.0,
+    "Energy": 2.5,
+    "Materials": 2.0,
+    "Real Estate": 1.5,
+    "Utilities": 1.0,
 }
 DEFAULT_THRESHOLD = 2.0
 
@@ -115,13 +115,19 @@ class MLLabelCollector:
         cutoff = timezone.now() - timedelta(days=lookback_days)
 
         # ml_label_24h IS NULL이고, 관련 ticker가 있는 뉴스
-        articles = NewsArticle.objects.filter(
-            published_at__gte=cutoff,
-            ml_label_24h__isnull=True,
-        ).filter(
-            # Company News (source_tickers from NewsEntity) 또는 rule_tickers가 있는 것
-            Q(entities__isnull=False) | Q(rule_tickers__isnull=False)
-        ).distinct().select_related().prefetch_related('entities')
+        articles = (
+            NewsArticle.objects.filter(
+                published_at__gte=cutoff,
+                ml_label_24h__isnull=True,
+            )
+            .filter(
+                # Company News (source_tickers from NewsEntity) 또는 rule_tickers가 있는 것
+                Q(entities__isnull=False) | Q(rule_tickers__isnull=False)
+            )
+            .distinct()
+            .select_related()
+            .prefetch_related("entities")
+        )
 
         processed = 0
         labeled = 0
@@ -141,10 +147,10 @@ class MLLabelCollector:
                 errors += 1
 
         result = {
-            'processed': processed,
-            'labeled': labeled,
-            'skipped': skipped,
-            'errors': errors,
+            "processed": processed,
+            "labeled": labeled,
+            "skipped": skipped,
+            "errors": errors,
         }
         logger.info(f"MLLabelCollector complete: {result}")
         return result
@@ -197,10 +203,14 @@ class MLLabelCollector:
         article.ml_label_important = is_important
         article.ml_label_confidence = round(confidence, 4)
         article.ml_label_updated_at = timezone.now()
-        article.save(update_fields=[
-            'ml_label_24h', 'ml_label_important',
-            'ml_label_confidence', 'ml_label_updated_at',
-        ])
+        article.save(
+            update_fields=[
+                "ml_label_24h",
+                "ml_label_important",
+                "ml_label_confidence",
+                "ml_label_updated_at",
+            ]
+        )
 
         return True
 
@@ -209,9 +219,7 @@ class MLLabelCollector:
         tickers = []
 
         # 1. NewsEntity에서 ticker (Finnhub Company News의 경우 정확)
-        entity_symbols = list(
-            article.entities.values_list('symbol', flat=True)
-        )
+        entity_symbols = list(article.entities.values_list("symbol", flat=True))
         if entity_symbols:
             tickers.extend(entity_symbols)
 
@@ -262,7 +270,7 @@ class MLLabelCollector:
                 return stock.sector
         except Exception:
             pass
-        return ''
+        return ""
 
     def _calculate_confidence(self, article: NewsArticle, pub_date: date) -> float:
         """
@@ -282,12 +290,17 @@ class MLLabelCollector:
         primary_ticker = tickers[0]
 
         # 같은 날 같은 종목의 뉴스 수
-        same_day_count = NewsArticle.objects.filter(
-            published_at__date=pub_date,
-        ).filter(
-            Q(entities__symbol=primary_ticker) |
-            Q(rule_tickers__contains=[primary_ticker])
-        ).distinct().count()
+        same_day_count = (
+            NewsArticle.objects.filter(
+                published_at__date=pub_date,
+            )
+            .filter(
+                Q(entities__symbol=primary_ticker)
+                | Q(rule_tickers__contains=[primary_ticker])
+            )
+            .distinct()
+            .count()
+        )
 
         # 기본 confidence
         if same_day_count <= 1:

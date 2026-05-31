@@ -5,6 +5,7 @@ Market Breadth 계산 서비스 (Lambda 전환 대상)
 
 데이터 소스: FMP API (gainers/losers, market performance)
 """
+
 import logging
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
@@ -38,17 +39,19 @@ class MarketBreadthService:
 
     # 시그널 판단 기준
     SIGNAL_THRESHOLDS = {
-        'strong_bullish': 2.0,  # A/D ratio >= 2.0
-        'bullish': 1.5,         # A/D ratio >= 1.5
-        'neutral': 0.67,        # A/D ratio >= 0.67
-        'bearish': 0.5,         # A/D ratio >= 0.5
+        "strong_bullish": 2.0,  # A/D ratio >= 2.0
+        "bullish": 1.5,  # A/D ratio >= 1.5
+        "neutral": 0.67,  # A/D ratio >= 0.67
+        "bearish": 0.5,  # A/D ratio >= 0.5
         # 'strong_bearish': below 0.5
     }
 
     def __init__(self):
         self.fmp_client = FMPClient()
 
-    def calculate_daily_breadth(self, target_date: Optional[date] = None) -> Optional[MarketBreadth]:
+    def calculate_daily_breadth(
+        self, target_date: Optional[date] = None
+    ) -> Optional[MarketBreadth]:
         """
         일일 Market Breadth 계산
 
@@ -73,8 +76,12 @@ class MarketBreadthService:
             actives = self.fmp_client.get_market_actives()
 
             # 상승/하락 종목 수 및 거래량 계산
-            advancing, declining, unchanged = self._count_advance_decline(gainers, losers, actives)
-            up_volume, down_volume = self._calculate_volume_flow(gainers, losers, actives)
+            advancing, declining, unchanged = self._count_advance_decline(
+                gainers, losers, actives
+            )
+            up_volume, down_volume = self._calculate_volume_flow(
+                gainers, losers, actives
+            )
 
             # A/D 비율 계산
             ad_ratio = self._calculate_ad_ratio(advancing, declining)
@@ -83,12 +90,16 @@ class MarketBreadthService:
             new_highs, new_lows = self._estimate_new_highs_lows(gainers, losers)
 
             # 시그널 판단
-            signal = self._determine_signal(ad_ratio, new_highs, new_lows, up_volume, down_volume)
+            signal = self._determine_signal(
+                ad_ratio, new_highs, new_lows, up_volume, down_volume
+            )
 
             # 이전 A/D Line 가져오기
-            prev_breadth = MarketBreadth.objects.filter(
-                date__lt=target_date
-            ).order_by('-date').first()
+            prev_breadth = (
+                MarketBreadth.objects.filter(date__lt=target_date)
+                .order_by("-date")
+                .first()
+            )
 
             prev_ad_line = prev_breadth.advance_decline_line if prev_breadth else 0
             ad_line = prev_ad_line + (advancing - declining)
@@ -97,13 +108,13 @@ class MarketBreadthService:
             nh_nl_ratio = None
             if new_lows > 0:
                 nh_nl_ratio = Decimal(str(new_highs / new_lows)).quantize(
-                    Decimal('0.001'), rounding=ROUND_HALF_UP
+                    Decimal("0.001"), rounding=ROUND_HALF_UP
                 )
 
             volume_ratio = None
             if down_volume > 0:
                 volume_ratio = Decimal(str(up_volume / down_volume)).quantize(
-                    Decimal('0.001'), rounding=ROUND_HALF_UP
+                    Decimal("0.001"), rounding=ROUND_HALF_UP
                 )
 
             # DB 저장 (update_or_create)
@@ -111,24 +122,26 @@ class MarketBreadthService:
                 breadth, created = MarketBreadth.objects.update_or_create(
                     date=target_date,
                     defaults={
-                        'advancing_count': advancing,
-                        'declining_count': declining,
-                        'unchanged_count': unchanged,
-                        'new_highs': new_highs,
-                        'new_lows': new_lows,
-                        'up_volume': up_volume,
-                        'down_volume': down_volume,
-                        'advance_decline_ratio': ad_ratio,
-                        'advance_decline_line': ad_line,
-                        'breadth_signal': signal,
-                        'new_high_low_ratio': nh_nl_ratio,
-                        'volume_ratio': volume_ratio,
-                        'data_source': 'fmp',
-                    }
+                        "advancing_count": advancing,
+                        "declining_count": declining,
+                        "unchanged_count": unchanged,
+                        "new_highs": new_highs,
+                        "new_lows": new_lows,
+                        "up_volume": up_volume,
+                        "down_volume": down_volume,
+                        "advance_decline_ratio": ad_ratio,
+                        "advance_decline_line": ad_line,
+                        "breadth_signal": signal,
+                        "new_high_low_ratio": nh_nl_ratio,
+                        "volume_ratio": volume_ratio,
+                        "data_source": "fmp",
+                    },
                 )
 
             action = "생성" if created else "업데이트"
-            logger.info(f"Market Breadth {action}: {target_date} - {signal} (A/D: {ad_ratio})")
+            logger.info(
+                f"Market Breadth {action}: {target_date} - {signal} (A/D: {ad_ratio})"
+            )
 
             # 캐시 무효화
             self._invalidate_cache(target_date)
@@ -155,7 +168,7 @@ class MarketBreadthService:
         if target_date is None:
             target_date = date.today()
 
-        cache_key = f'market_breadth:{target_date}'
+        cache_key = f"market_breadth:{target_date}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"Market Breadth 캐시 HIT: {target_date}")
@@ -180,16 +193,14 @@ class MarketBreadthService:
         Returns:
             Market Breadth 리스트 (최근순)
         """
-        cache_key = f'market_breadth_history:{days}'
+        cache_key = f"market_breadth_history:{days}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug(f"Market Breadth 히스토리 캐시 HIT: {days}일")
             return cached
 
         start_date = date.today() - timedelta(days=days)
-        breadths = MarketBreadth.objects.filter(
-            date__gte=start_date
-        ).order_by('-date')
+        breadths = MarketBreadth.objects.filter(date__gte=start_date).order_by("-date")
 
         result = [self._serialize_breadth(b) for b in breadths]
         cache.set(cache_key, result, self.CACHE_TTL_HISTORY)
@@ -209,7 +220,7 @@ class MarketBreadthService:
             try:
                 breadth = MarketBreadth.objects.get(date=date.today())
             except MarketBreadth.DoesNotExist:
-                return 'neutral'
+                return "neutral"
 
         return breadth.breadth_signal
 
@@ -224,48 +235,45 @@ class MarketBreadthService:
             해석 딕셔너리 (title, description, color, emoji)
         """
         interpretations = {
-            'strong_bullish': {
-                'title': '강한 상승세',
-                'description': '시장이 전반적으로 매우 강한 상승세입니다. 상승 종목이 하락 종목보다 2배 이상 많습니다.',
-                'color': '#22c55e',  # green-500
-                'emoji': '🚀',
+            "strong_bullish": {
+                "title": "강한 상승세",
+                "description": "시장이 전반적으로 매우 강한 상승세입니다. 상승 종목이 하락 종목보다 2배 이상 많습니다.",
+                "color": "#22c55e",  # green-500
+                "emoji": "🚀",
             },
-            'bullish': {
-                'title': '상승세',
-                'description': '시장이 상승세입니다. 상승 종목이 하락 종목보다 50% 이상 많습니다.',
-                'color': '#84cc16',  # lime-500
-                'emoji': '📈',
+            "bullish": {
+                "title": "상승세",
+                "description": "시장이 상승세입니다. 상승 종목이 하락 종목보다 50% 이상 많습니다.",
+                "color": "#84cc16",  # lime-500
+                "emoji": "📈",
             },
-            'neutral': {
-                'title': '중립',
-                'description': '시장이 방향성 없이 횡보 중입니다. 상승과 하락 종목이 비슷합니다.',
-                'color': '#eab308',  # yellow-500
-                'emoji': '➡️',
+            "neutral": {
+                "title": "중립",
+                "description": "시장이 방향성 없이 횡보 중입니다. 상승과 하락 종목이 비슷합니다.",
+                "color": "#eab308",  # yellow-500
+                "emoji": "➡️",
             },
-            'bearish': {
-                'title': '하락세',
-                'description': '시장이 하락세입니다. 하락 종목이 상승 종목보다 많습니다.',
-                'color': '#f97316',  # orange-500
-                'emoji': '📉',
+            "bearish": {
+                "title": "하락세",
+                "description": "시장이 하락세입니다. 하락 종목이 상승 종목보다 많습니다.",
+                "color": "#f97316",  # orange-500
+                "emoji": "📉",
             },
-            'strong_bearish': {
-                'title': '강한 하락세',
-                'description': '시장이 전반적으로 매우 약합니다. 하락 종목이 상승 종목보다 2배 이상 많습니다.',
-                'color': '#ef4444',  # red-500
-                'emoji': '💥',
+            "strong_bearish": {
+                "title": "강한 하락세",
+                "description": "시장이 전반적으로 매우 약합니다. 하락 종목이 상승 종목보다 2배 이상 많습니다.",
+                "color": "#ef4444",  # red-500
+                "emoji": "💥",
             },
         }
-        return interpretations.get(signal, interpretations['neutral'])
+        return interpretations.get(signal, interpretations["neutral"])
 
     # ========================================
     # Private Methods
     # ========================================
 
     def _count_advance_decline(
-        self,
-        gainers: List[Dict],
-        losers: List[Dict],
-        actives: List[Dict]
+        self, gainers: List[Dict], losers: List[Dict], actives: List[Dict]
     ) -> Tuple[int, int, int]:
         """
         상승/하락/보합 종목 수 계산
@@ -279,7 +287,7 @@ class MarketBreadthService:
         unchanged_count = 0
 
         for stock in actives:
-            change = stock.get('changesPercentage') or stock.get('changePercentage', 0)
+            change = stock.get("changesPercentage") or stock.get("changePercentage", 0)
             if change is None:
                 change = 0
 
@@ -319,10 +327,7 @@ class MarketBreadthService:
         return advancing, declining, unchanged
 
     def _calculate_volume_flow(
-        self,
-        gainers: List[Dict],
-        losers: List[Dict],
-        actives: List[Dict] = None
+        self, gainers: List[Dict], losers: List[Dict], actives: List[Dict] = None
     ) -> Tuple[int, int]:
         """
         상승/하락 종목 거래량 흐름 계산
@@ -338,8 +343,10 @@ class MarketBreadthService:
         # 1. actives에서 실제 volume 데이터 시도
         if actives:
             for stock in actives:
-                volume = stock.get('volume', 0) or 0
-                change = stock.get('changesPercentage') or stock.get('changePercentage', 0)
+                volume = stock.get("volume", 0) or 0
+                change = stock.get("changesPercentage") or stock.get(
+                    "changePercentage", 0
+                )
                 if change is None:
                     change = 0
 
@@ -351,19 +358,27 @@ class MarketBreadthService:
 
         # 2. volume 데이터가 없으면 gainers/losers 시도
         if up_volume == 0 and down_volume == 0:
-            up_volume = sum(stock.get('volume', 0) or 0 for stock in gainers)
-            down_volume = sum(stock.get('volume', 0) or 0 for stock in losers)
+            up_volume = sum(stock.get("volume", 0) or 0 for stock in gainers)
+            down_volume = sum(stock.get("volume", 0) or 0 for stock in losers)
 
         # 3. 여전히 0인 경우, 변동률 가중치로 추정
         if up_volume == 0 and down_volume == 0:
             # Gainers의 변동률 합산 (변동률 = 거래량 프록시)
             up_weight = sum(
-                abs(stock.get('changesPercentage') or stock.get('changePercentage', 0) or 0)
+                abs(
+                    stock.get("changesPercentage")
+                    or stock.get("changePercentage", 0)
+                    or 0
+                )
                 for stock in gainers
             )
             # Losers의 변동률 합산
             down_weight = sum(
-                abs(stock.get('changesPercentage') or stock.get('changePercentage', 0) or 0)
+                abs(
+                    stock.get("changesPercentage")
+                    or stock.get("changePercentage", 0)
+                    or 0
+                )
                 for stock in losers
             )
 
@@ -388,15 +403,13 @@ class MarketBreadthService:
     def _calculate_ad_ratio(self, advancing: int, declining: int) -> Decimal:
         """A/D 비율 계산"""
         if declining == 0:
-            return Decimal('10.0')  # 최대값 제한
+            return Decimal("10.0")  # 최대값 제한
 
         ratio = advancing / declining
-        return Decimal(str(ratio)).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
+        return Decimal(str(ratio)).quantize(Decimal("0.001"), rounding=ROUND_HALF_UP)
 
     def _estimate_new_highs_lows(
-        self,
-        gainers: List[Dict],
-        losers: List[Dict]
+        self, gainers: List[Dict], losers: List[Dict]
     ) -> Tuple[int, int]:
         """
         52주 신고가/신저가 추정
@@ -405,16 +418,10 @@ class MarketBreadthService:
               상승/하락 폭으로 추정합니다.
         """
         # 상승률 10% 이상 = 신고가 후보
-        new_highs = sum(
-            1 for s in gainers
-            if s.get('changesPercentage', 0) >= 10.0
-        )
+        new_highs = sum(1 for s in gainers if s.get("changesPercentage", 0) >= 10.0)
 
         # 하락률 10% 이상 = 신저가 후보
-        new_lows = sum(
-            1 for s in losers
-            if abs(s.get('changesPercentage', 0)) >= 10.0
-        )
+        new_lows = sum(1 for s in losers if abs(s.get("changesPercentage", 0)) >= 10.0)
 
         return new_highs * 5, new_lows * 5  # 추정치 확장
 
@@ -424,38 +431,38 @@ class MarketBreadthService:
         new_highs: int,
         new_lows: int,
         up_volume: int,
-        down_volume: int
+        down_volume: int,
     ) -> str:
         """시장 신호 판단"""
         ratio = float(ad_ratio)
 
         # 기본 A/D 비율 기반 판단
-        if ratio >= self.SIGNAL_THRESHOLDS['strong_bullish']:
-            base_signal = 'strong_bullish'
-        elif ratio >= self.SIGNAL_THRESHOLDS['bullish']:
-            base_signal = 'bullish'
-        elif ratio >= self.SIGNAL_THRESHOLDS['neutral']:
-            base_signal = 'neutral'
-        elif ratio >= self.SIGNAL_THRESHOLDS['bearish']:
-            base_signal = 'bearish'
+        if ratio >= self.SIGNAL_THRESHOLDS["strong_bullish"]:
+            base_signal = "strong_bullish"
+        elif ratio >= self.SIGNAL_THRESHOLDS["bullish"]:
+            base_signal = "bullish"
+        elif ratio >= self.SIGNAL_THRESHOLDS["neutral"]:
+            base_signal = "neutral"
+        elif ratio >= self.SIGNAL_THRESHOLDS["bearish"]:
+            base_signal = "bearish"
         else:
-            base_signal = 'strong_bearish'
+            base_signal = "strong_bearish"
 
         # 거래량 비율로 조정
         if down_volume > 0:
             volume_ratio = up_volume / down_volume
-            if volume_ratio > 2.0 and base_signal == 'bullish':
-                return 'strong_bullish'
-            if volume_ratio < 0.5 and base_signal == 'bearish':
-                return 'strong_bearish'
+            if volume_ratio > 2.0 and base_signal == "bullish":
+                return "strong_bullish"
+            if volume_ratio < 0.5 and base_signal == "bearish":
+                return "strong_bearish"
 
         # 신고가/신저가 비율로 조정
         if new_lows > 0:
             nh_nl_ratio = new_highs / new_lows
-            if nh_nl_ratio > 3.0 and base_signal == 'neutral':
-                return 'bullish'
-            if nh_nl_ratio < 0.33 and base_signal == 'neutral':
-                return 'bearish'
+            if nh_nl_ratio > 3.0 and base_signal == "neutral":
+                return "bullish"
+            if nh_nl_ratio < 0.33 and base_signal == "neutral":
+                return "bearish"
 
         return base_signal
 
@@ -464,25 +471,29 @@ class MarketBreadthService:
         interpretation = self.get_signal_interpretation(breadth.breadth_signal)
 
         return {
-            'date': breadth.date.isoformat(),
-            'advancing_count': breadth.advancing_count,
-            'declining_count': breadth.declining_count,
-            'unchanged_count': breadth.unchanged_count,
-            'advance_decline_ratio': float(breadth.advance_decline_ratio),
-            'advance_decline_line': breadth.advance_decline_line,
-            'new_highs': breadth.new_highs,
-            'new_lows': breadth.new_lows,
-            'up_volume': breadth.up_volume,
-            'down_volume': breadth.down_volume,
-            'breadth_signal': breadth.breadth_signal,
-            'signal_interpretation': interpretation,
-            'new_high_low_ratio': float(breadth.new_high_low_ratio) if breadth.new_high_low_ratio else None,
-            'volume_ratio': float(breadth.volume_ratio) if breadth.volume_ratio else None,
+            "date": breadth.date.isoformat(),
+            "advancing_count": breadth.advancing_count,
+            "declining_count": breadth.declining_count,
+            "unchanged_count": breadth.unchanged_count,
+            "advance_decline_ratio": float(breadth.advance_decline_ratio),
+            "advance_decline_line": breadth.advance_decline_line,
+            "new_highs": breadth.new_highs,
+            "new_lows": breadth.new_lows,
+            "up_volume": breadth.up_volume,
+            "down_volume": breadth.down_volume,
+            "breadth_signal": breadth.breadth_signal,
+            "signal_interpretation": interpretation,
+            "new_high_low_ratio": float(breadth.new_high_low_ratio)
+            if breadth.new_high_low_ratio
+            else None,
+            "volume_ratio": float(breadth.volume_ratio)
+            if breadth.volume_ratio
+            else None,
         }
 
     def _invalidate_cache(self, target_date: date):
         """관련 캐시 무효화"""
-        cache.delete(f'market_breadth:{target_date}')
+        cache.delete(f"market_breadth:{target_date}")
         # 히스토리 캐시도 무효화
         for days in [7, 14, 30, 60, 90]:
-            cache.delete(f'market_breadth_history:{days}')
+            cache.delete(f"market_breadth_history:{days}")

@@ -3,6 +3,7 @@ Market Movers Celery 태스크
 
 매일 오전 7:30에 자동으로 Market Movers 데이터를 동기화합니다.
 """
+
 import logging
 
 from celery import shared_task
@@ -41,11 +42,14 @@ def sync_daily_market_movers(self, target_date=None):
         # 날짜 변환
         if target_date:
             from datetime import datetime
-            target_date = datetime.strptime(target_date, '%Y-%m-%d').date()
+
+            target_date = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             target_date = timezone.localdate()
 
-        logger.info(f"🚀 Celery Task 시작: sync_daily_market_movers (date={target_date})")
+        logger.info(
+            f"🚀 Celery Task 시작: sync_daily_market_movers (date={target_date})"
+        )
 
         # 동기화 실행
         sync = MarketMoversSync()
@@ -84,13 +88,14 @@ def manual_sync_market_movers(date_str: str = None):
 # Market Movers 키워드 생성 태스크
 # ============================================================
 
+
 @shared_task(
     bind=True,
     max_retries=2,
     soft_time_limit=300,  # 5분 소프트 타임아웃
     time_limit=360,  # 6분 하드 타임아웃
 )
-def collect_keyword_data(self, movers_date: str, mover_type: str = 'gainers'):
+def collect_keyword_data(self, movers_date: str, mover_type: str = "gainers"):
     """
     키워드 생성용 데이터 수집 (병렬)
 
@@ -116,55 +121,60 @@ def collect_keyword_data(self, movers_date: str, mover_type: str = 'gainers'):
 
     try:
         # 날짜 변환
-        target_date = datetime.strptime(movers_date, '%Y-%m-%d').date()
+        target_date = datetime.strptime(movers_date, "%Y-%m-%d").date()
 
-        logger.info("keyword_data_collection_task", extra={
-            "status": "started",
-            "date": movers_date,
-            "mover_type": mover_type,
-        })
+        logger.info(
+            "keyword_data_collection_task",
+            extra={
+                "status": "started",
+                "date": movers_date,
+                "mover_type": mover_type,
+            },
+        )
 
         # MarketMover에서 종목 리스트 조회
         movers = MarketMover.objects.filter(
-            date=target_date,
-            mover_type=mover_type
-        ).order_by('rank')[:20]  # TOP 20
+            date=target_date, mover_type=mover_type
+        ).order_by("rank")[:20]  # TOP 20
 
         symbols = [m.symbol for m in movers]
 
         if not symbols:
             logger.warning(f"No movers found for {movers_date} ({mover_type})")
             return {
-                'date': movers_date,
-                'mover_type': mover_type,
-                'successful': [],
-                'failed': [],
-                'cache_hits': 0,
-                'api_calls': 0,
-                'duration_ms': 0,
+                "date": movers_date,
+                "mover_type": mover_type,
+                "successful": [],
+                "failed": [],
+                "cache_hits": 0,
+                "api_calls": 0,
+                "duration_ms": 0,
             }
 
         # 데이터 수집 (병렬)
         collector = KeywordDataCollector()
         result = collector.collect_batch(symbols, target_date)
 
-        logger.info("keyword_data_collection_task", extra={
-            "status": "completed",
-            "successful": len(result['successful']),
-            "failed": len(result['failed']),
-            "cache_hits": result['cache_hits'],
-            "api_calls": result['api_calls'],
-            "duration_ms": result['duration_ms'],
-        })
+        logger.info(
+            "keyword_data_collection_task",
+            extra={
+                "status": "completed",
+                "successful": len(result["successful"]),
+                "failed": len(result["failed"]),
+                "cache_hits": result["cache_hits"],
+                "api_calls": result["api_calls"],
+                "duration_ms": result["duration_ms"],
+            },
+        )
 
         return {
-            'date': movers_date,
-            'mover_type': mover_type,
-            'successful': result['successful'],
-            'failed': result['failed'],
-            'cache_hits': result['cache_hits'],
-            'api_calls': result['api_calls'],
-            'duration_ms': result['duration_ms'],
+            "date": movers_date,
+            "mover_type": mover_type,
+            "successful": result["successful"],
+            "failed": result["failed"],
+            "cache_hits": result["cache_hits"],
+            "api_calls": result["api_calls"],
+            "duration_ms": result["duration_ms"],
         }
 
     except Exception as exc:
@@ -202,50 +212,54 @@ def generate_keywords_batch(self, collection_result: dict):
     from serverless.services.keyword_service import KeywordGenerationService
 
     try:
-        date_str = collection_result['date']
-        mover_type = collection_result.get('mover_type', 'gainers')
-        successful_symbols = collection_result['successful']
+        date_str = collection_result["date"]
+        mover_type = collection_result.get("mover_type", "gainers")
+        successful_symbols = collection_result["successful"]
 
         if not successful_symbols:
             logger.warning("No successful symbols to generate keywords")
             return {
-                'date': date_str,
-                'keywords': {},
-                'llm_tokens': {'input': 0, 'output': 0, 'cost_usd': 0.0}
+                "date": date_str,
+                "keywords": {},
+                "llm_tokens": {"input": 0, "output": 0, "cost_usd": 0.0},
             }
 
-        logger.info("keyword_generation_task", extra={
-            "status": "started",
-            "date": date_str,
-            "num_stocks": len(successful_symbols),
-        })
+        logger.info(
+            "keyword_generation_task",
+            extra={
+                "status": "started",
+                "date": date_str,
+                "num_stocks": len(successful_symbols),
+            },
+        )
 
         # 날짜 변환
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
 
         # LLM 키워드 생성 (배치)
         # Note: 현재는 기본 정보만 사용, 향후 contexts 활용 예정
         service = KeywordGenerationService()
         keywords_result = service.batch_generate(
-            date=target_date,
-            mover_type=mover_type,
-            limit=len(successful_symbols)
+            date=target_date, mover_type=mover_type, limit=len(successful_symbols)
         )
 
         # batch_generate는 {'success', 'failed', 'skipped'} 반환하고 직접 DB 저장
-        logger.info("keyword_generation_task", extra={
-            "status": "completed",
-            "success": keywords_result['success'],
-            "failed": keywords_result['failed'],
-            "skipped": keywords_result['skipped'],
-        })
+        logger.info(
+            "keyword_generation_task",
+            extra={
+                "status": "completed",
+                "success": keywords_result["success"],
+                "failed": keywords_result["failed"],
+                "skipped": keywords_result["skipped"],
+            },
+        )
 
         return {
-            'date': date_str,
-            'mover_type': mover_type,
-            'success': keywords_result['success'],
-            'failed': keywords_result['failed'],
-            'skipped': keywords_result['skipped'],
+            "date": date_str,
+            "mover_type": mover_type,
+            "success": keywords_result["success"],
+            "failed": keywords_result["failed"],
+            "skipped": keywords_result["skipped"],
         }
 
     except Exception as exc:
@@ -277,40 +291,46 @@ def save_keywords(generation_result: dict):
     from serverless.services.keyword_data_collector import KeywordDataCollector
 
     try:
-        date_str = generation_result['date']
-        mover_type = generation_result.get('mover_type', 'gainers')
+        date_str = generation_result["date"]
+        mover_type = generation_result.get("mover_type", "gainers")
 
-        logger.info("keyword_save_task", extra={
-            "status": "started",
-            "date": date_str,
-            "mover_type": mover_type,
-        })
+        logger.info(
+            "keyword_save_task",
+            extra={
+                "status": "started",
+                "date": date_str,
+                "mover_type": mover_type,
+            },
+        )
 
         # Redis 캐시 삭제 (생성 완료된 종목)
         from datetime import datetime
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+
+        target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
 
         completed_symbols = StockKeyword.objects.filter(
-            date=target_date,
-            status='completed'
-        ).values_list('symbol', flat=True)
+            date=target_date, status="completed"
+        ).values_list("symbol", flat=True)
 
         collector = KeywordDataCollector()
         for symbol in completed_symbols:
             collector.delete_cached_context(date_str, symbol)
 
-        logger.info("keyword_save_task", extra={
-            "status": "completed",
-            "cache_cleared": len(completed_symbols),
-        })
+        logger.info(
+            "keyword_save_task",
+            extra={
+                "status": "completed",
+                "cache_cleared": len(completed_symbols),
+            },
+        )
 
         return {
-            'date': date_str,
-            'mover_type': mover_type,
-            'success': generation_result.get('success', 0),
-            'failed': generation_result.get('failed', 0),
-            'skipped': generation_result.get('skipped', 0),
-            'cache_cleared': len(completed_symbols),
+            "date": date_str,
+            "mover_type": mover_type,
+            "success": generation_result.get("success", 0),
+            "failed": generation_result.get("failed", 0),
+            "skipped": generation_result.get("skipped", 0),
+            "cache_cleared": len(completed_symbols),
         }
 
     except Exception as exc:
@@ -356,28 +376,26 @@ def generate_screener_keywords_task(self, stocks: list):
         service = KeywordGenerationService()
         today = timezone.localdate()
 
-        results = {'success': 0, 'failed': 0, 'results': {}}
+        results = {"success": 0, "failed": 0, "results": {}}
 
         for stock in stocks:
-            symbol = stock.get('symbol', '').upper()
-            company_name = stock.get('company_name', symbol)
-            sector = stock.get('sector')
-            industry = stock.get('industry')
-            change_percent = stock.get('change_percent', 0)
+            symbol = stock.get("symbol", "").upper()
+            company_name = stock.get("company_name", symbol)
+            sector = stock.get("sector")
+            industry = stock.get("industry")
+            change_percent = stock.get("change_percent", 0)
 
             if not symbol:
                 continue
 
             # 이미 생성된 키워드 확인
             existing = StockKeyword.objects.filter(
-                symbol=symbol,
-                date=today,
-                status='completed'
+                symbol=symbol, date=today, status="completed"
             ).first()
 
             if existing:
-                results['results'][symbol] = existing.keywords
-                results['success'] += 1
+                results["results"][symbol] = existing.keywords
+                results["success"] += 1
                 logger.debug(f"  ⏭️ {symbol}: 이미 생성됨 (캐시 사용)")
                 continue
 
@@ -386,10 +404,10 @@ def generate_screener_keywords_task(self, stocks: list):
                 symbol=symbol,
                 company_name=company_name,
                 date=today,
-                mover_type='screener',  # 스크리너 전용 타입
+                mover_type="screener",  # 스크리너 전용 타입
                 change_percent=float(change_percent) if change_percent else 0,
                 sector=sector,
-                industry=industry
+                industry=industry,
             )
 
             # DB 저장
@@ -397,28 +415,30 @@ def generate_screener_keywords_task(self, stocks: list):
                 symbol=symbol,
                 date=today,
                 defaults={
-                    'company_name': company_name,
-                    'keywords': result['keywords'],
-                    'status': result['status'],
-                    'error_message': result['error_message'],
-                    'llm_model': 'gemini-2.5-flash',
-                    'generation_time_ms': result['metadata'].get('generation_time_ms'),
-                    'prompt_tokens': result['metadata'].get('prompt_tokens'),
-                    'completion_tokens': result['metadata'].get('completion_tokens'),
-                    'expires_at': timezone.now() + timedelta(days=7),
-                }
+                    "company_name": company_name,
+                    "keywords": result["keywords"],
+                    "status": result["status"],
+                    "error_message": result["error_message"],
+                    "llm_model": "gemini-2.5-flash",
+                    "generation_time_ms": result["metadata"].get("generation_time_ms"),
+                    "prompt_tokens": result["metadata"].get("prompt_tokens"),
+                    "completion_tokens": result["metadata"].get("completion_tokens"),
+                    "expires_at": timezone.now() + timedelta(days=7),
+                },
             )
 
-            if result['status'] == 'completed':
+            if result["status"] == "completed":
                 logger.info(f"  ✅ {symbol}: {result['keywords']}")
-                results['results'][symbol] = result['keywords']
-                results['success'] += 1
+                results["results"][symbol] = result["keywords"]
+                results["success"] += 1
             else:
                 logger.warning(f"  ⚠️ {symbol}: {result['error_message']}")
-                results['results'][symbol] = result['keywords']  # fallback 키워드
-                results['failed'] += 1
+                results["results"][symbol] = result["keywords"]  # fallback 키워드
+                results["failed"] += 1
 
-        logger.info(f"✅ 스크리너 키워드 생성 완료: success={results['success']}, failed={results['failed']}")
+        logger.info(
+            f"✅ 스크리너 키워드 생성 완료: success={results['success']}, failed={results['failed']}"
+        )
 
         return results
 
@@ -428,7 +448,7 @@ def generate_screener_keywords_task(self, stocks: list):
 
 
 @shared_task
-def keyword_generation_pipeline(movers_date: str = None, mover_type: str = 'gainers'):
+def keyword_generation_pipeline(movers_date: str = None, mover_type: str = "gainers"):
     """
     키워드 생성 파이프라인 (체이닝)
 
@@ -443,7 +463,7 @@ def keyword_generation_pipeline(movers_date: str = None, mover_type: str = 'gain
     from celery import chain
 
     if not movers_date:
-        movers_date = timezone.localtime().strftime('%Y-%m-%d')
+        movers_date = timezone.localtime().strftime("%Y-%m-%d")
 
     logger.info(f"🚀 키워드 생성 파이프라인 시작: {movers_date} ({mover_type})")
 
@@ -460,6 +480,7 @@ def keyword_generation_pipeline(movers_date: str = None, mover_type: str = 'gain
 # ============================================================
 # Market Breadth (시장 건강도) 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -493,7 +514,7 @@ def calculate_daily_market_breadth(self, target_date: str = None):
 
     try:
         if target_date:
-            date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
+            date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             date_obj = timezone.localdate()
 
@@ -504,17 +525,17 @@ def calculate_daily_market_breadth(self, target_date: str = None):
 
         if breadth:
             result = {
-                'date': breadth.date.isoformat(),
-                'signal': breadth.breadth_signal,
-                'advance_decline_ratio': float(breadth.advance_decline_ratio),
-                'advancing_count': breadth.advancing_count,
-                'declining_count': breadth.declining_count,
+                "date": breadth.date.isoformat(),
+                "signal": breadth.breadth_signal,
+                "advance_decline_ratio": float(breadth.advance_decline_ratio),
+                "advancing_count": breadth.advancing_count,
+                "declining_count": breadth.declining_count,
             }
             logger.info(f"✅ Market Breadth 계산 완료: {result['signal']}")
             return result
         else:
             logger.warning("Market Breadth 계산 결과 없음")
-            return {'date': date_obj.isoformat(), 'error': 'No data'}
+            return {"date": date_obj.isoformat(), "error": "No data"}
 
     except FMPAPIError as exc:
         logger.error(f"❌ FMP API 에러: {exc}")
@@ -527,6 +548,7 @@ def calculate_daily_market_breadth(self, target_date: str = None):
 # ============================================================
 # Sector Heatmap (섹터 히트맵) 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -561,7 +583,7 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
 
     try:
         if target_date:
-            date_obj = datetime.strptime(target_date, '%Y-%m-%d').date()
+            date_obj = datetime.strptime(target_date, "%Y-%m-%d").date()
         else:
             date_obj = timezone.localdate()
 
@@ -572,18 +594,22 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
 
         if sectors:
             # 성과순 정렬
-            sorted_sectors = sorted(sectors, key=lambda x: float(x['return_pct']), reverse=True)
+            sorted_sectors = sorted(
+                sectors, key=lambda x: float(x["return_pct"]), reverse=True
+            )
             result = {
-                'date': date_obj.isoformat(),
-                'sectors_calculated': len(sectors),
-                'best_sector': sorted_sectors[0]['sector'] if sorted_sectors else None,
-                'worst_sector': sorted_sectors[-1]['sector'] if sorted_sectors else None,
+                "date": date_obj.isoformat(),
+                "sectors_calculated": len(sectors),
+                "best_sector": sorted_sectors[0]["sector"] if sorted_sectors else None,
+                "worst_sector": sorted_sectors[-1]["sector"]
+                if sorted_sectors
+                else None,
             }
             logger.info(f"✅ 섹터 히트맵 계산 완료: {len(sectors)}개 섹터")
             return result
         else:
             logger.warning("섹터 히트맵 계산 결과 없음")
-            return {'date': date_obj.isoformat(), 'error': 'No data'}
+            return {"date": date_obj.isoformat(), "error": "No data"}
 
     except FMPAPIError as exc:
         logger.error(f"❌ FMP API 에러: {exc}")
@@ -596,6 +622,7 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
 # ============================================================
 # Screener Alert Check 태스크 (Phase 1)
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -632,26 +659,26 @@ def check_screener_alerts(self):
         logger.info("🔔 스크리너 알림 체크 시작")
 
         # 활성 알림 조회 (쿨다운 체크)
-        active_alerts = ScreenerAlert.objects.filter(
-            is_active=True
-        ).select_related('preset', 'user')
+        active_alerts = ScreenerAlert.objects.filter(is_active=True).select_related(
+            "preset", "user"
+        )
 
         result = {
-            'checked': 0,
-            'triggered': 0,
-            'skipped_cooldown': 0,
-            'errors': 0,
+            "checked": 0,
+            "triggered": 0,
+            "skipped_cooldown": 0,
+            "errors": 0,
         }
 
         engine = FilterEngine()
 
         for alert in active_alerts:
-            result['checked'] += 1
+            result["checked"] += 1
 
             try:
                 # 쿨다운 체크
                 if not alert.can_trigger():
-                    result['skipped_cooldown'] += 1
+                    result["skipped_cooldown"] += 1
                     logger.debug(f"  ⏭️ {alert.name}: 쿨다운 중")
                     continue
 
@@ -663,17 +690,17 @@ def check_screener_alerts(self):
                     filters_dict=filters,
                     limit=20,  # 최대 20개만 조회
                     offset=0,
-                    sort_by='marketCap',
-                    sort_order='desc'
+                    sort_by="marketCap",
+                    sort_order="desc",
                 )
 
-                matched_count = filter_result.get('count', 0)
-                matched_stocks = filter_result.get('results', [])[:10]
+                matched_count = filter_result.get("count", 0)
+                matched_stocks = filter_result.get("results", [])[:10]
 
                 # 조건 충족 체크
                 should_trigger = False
 
-                if alert.alert_type == 'filter_match':
+                if alert.alert_type == "filter_match":
                     target_count = alert.target_count or 1
                     should_trigger = matched_count >= target_count
 
@@ -687,22 +714,24 @@ def check_screener_alerts(self):
                     AlertHistory.objects.create(
                         alert=alert,
                         matched_count=matched_count,
-                        matched_symbols=[s.get('symbol') for s in matched_stocks],
+                        matched_symbols=[s.get("symbol") for s in matched_stocks],
                         snapshot={
-                            'filters': filters,
-                            'alert_type': alert.alert_type,
-                            'target_count': alert.target_count,
+                            "filters": filters,
+                            "alert_type": alert.alert_type,
+                            "target_count": alert.target_count,
                         },
-                        status='sent',
+                        status="sent",
                     )
 
                     # 알림 상태 업데이트
                     alert.last_triggered_at = timezone.now()
                     alert.trigger_count += 1
-                    alert.save(update_fields=['last_triggered_at', 'trigger_count'])
+                    alert.save(update_fields=["last_triggered_at", "trigger_count"])
 
-                    result['triggered'] += 1
-                    logger.info(f"  ✅ {alert.name}: 알림 발송 (매칭 {matched_count}개)")
+                    result["triggered"] += 1
+                    logger.info(
+                        f"  ✅ {alert.name}: 알림 발송 (매칭 {matched_count}개)"
+                    )
 
                     # TODO: 실제 알림 발송
                     # - notify_in_app: WebSocket 메시지
@@ -710,7 +739,7 @@ def check_screener_alerts(self):
                     # - notify_push: PWA 푸시 알림
 
             except Exception as e:
-                result['errors'] += 1
+                result["errors"] += 1
                 logger.exception(f"  ❌ {alert.name}: 에러 - {e}")
 
                 # 에러 이력 기록
@@ -718,8 +747,8 @@ def check_screener_alerts(self):
                     alert=alert,
                     matched_count=0,
                     matched_symbols=[],
-                    snapshot={'error': str(e)},
-                    status='failed',
+                    snapshot={"error": str(e)},
+                    status="failed",
                     error_message=str(e),
                 )
 
@@ -734,6 +763,7 @@ def check_screener_alerts(self):
 # ============================================================
 # Chain Sight Stock (개별 종목 관계 동기화) 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -775,10 +805,7 @@ def sync_stock_relationships(self, symbol: str):
         total = sum(results.values())
         logger.info(f"✅ Chain Sight 관계 동기화 완료: {symbol} -> {total}개 관계")
 
-        return {
-            'symbol': symbol,
-            **results
-        }
+        return {"symbol": symbol, **results}
 
     except Exception as exc:
         logger.exception(f"❌ Chain Sight 관계 동기화 실패: {exc}")
@@ -828,17 +855,17 @@ def batch_sync_stock_relationships(self, symbols: list = None):
             cutoff = timezone.localdate() - timedelta(days=7)
             symbols = list(
                 MarketMover.objects.filter(date__gte=cutoff)
-                .values_list('symbol', flat=True)
+                .values_list("symbol", flat=True)
                 .distinct()
             )
 
         if not symbols:
             logger.warning("동기화할 종목 없음")
             return {
-                'total_symbols': 0,
-                'success': 0,
-                'failed': 0,
-                'total_relationships': 0
+                "total_symbols": 0,
+                "success": 0,
+                "failed": 0,
+                "total_relationships": 0,
             }
 
         logger.info(f"  대상 종목: {len(symbols)}개")
@@ -860,10 +887,10 @@ def batch_sync_stock_relationships(self, symbols: list = None):
                 logger.warning(f"  ❌ {symbol}: {e}")
 
         result = {
-            'total_symbols': len(symbols),
-            'success': success,
-            'failed': failed,
-            'total_relationships': total_relationships
+            "total_symbols": len(symbols),
+            "success": success,
+            "failed": failed,
+            "total_relationships": total_relationships,
         }
 
         logger.info(f"✅ Chain Sight 배치 동기화 완료: {result}")
@@ -894,7 +921,7 @@ def cleanup_expired_category_cache():
         ).delete()
 
         logger.info(f"✅ 카테고리 캐시 정리 완료: {deleted_count}개 삭제")
-        return {'deleted': deleted_count}
+        return {"deleted": deleted_count}
 
     except Exception as exc:
         logger.exception(f"❌ 카테고리 캐시 정리 실패: {exc}")
@@ -904,6 +931,7 @@ def cleanup_expired_category_cache():
 # ============================================================
 # ETF Holdings 자동 수집 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -942,31 +970,37 @@ def sync_etf_holdings(self, send_failure_email: bool = True):
         logger.info("📊 ETF Holdings 자동 수집 시작")
 
         # 모든 해시 클리어 (변경 감지를 위해)
-        ETFProfile.objects.all().update(last_hash='')
+        ETFProfile.objects.all().update(last_hash="")
 
         downloader = ETFCSVDownloader(auto_resolve_url=True, max_retries=2)
 
         success_list = []
         failed_list = []
 
-        for profile in ETFProfile.objects.filter(is_active=True).order_by('tier', 'symbol'):
+        for profile in ETFProfile.objects.filter(is_active=True).order_by(
+            "tier", "symbol"
+        ):
             try:
                 holdings = downloader.download_holdings(profile.symbol)
-                success_list.append({
-                    'symbol': profile.symbol,
-                    'name': profile.name,
-                    'tier': profile.tier,
-                    'count': len(holdings)
-                })
+                success_list.append(
+                    {
+                        "symbol": profile.symbol,
+                        "name": profile.name,
+                        "tier": profile.tier,
+                        "count": len(holdings),
+                    }
+                )
                 logger.info(f"  ✅ {profile.symbol}: {len(holdings)}개")
             except Exception as e:
                 error_msg = str(e)[:100]
-                failed_list.append({
-                    'symbol': profile.symbol,
-                    'name': profile.name,
-                    'tier': profile.tier,
-                    'error': error_msg
-                })
+                failed_list.append(
+                    {
+                        "symbol": profile.symbol,
+                        "name": profile.name,
+                        "tier": profile.tier,
+                        "error": error_msg,
+                    }
+                )
                 logger.warning(f"  ❌ {profile.symbol}: {error_msg}")
 
         # 테마 매칭 갱신
@@ -981,15 +1015,17 @@ def sync_etf_holdings(self, send_failure_email: bool = True):
         total_holdings = ETFHolding.objects.count()
 
         result = {
-            'total': len(success_list) + len(failed_list),
-            'success': len(success_list),
-            'failed': len(failed_list),
-            'total_holdings': total_holdings,
-            'success_etfs': [s['symbol'] for s in success_list],
-            'failed_etfs': [f['symbol'] for f in failed_list],
+            "total": len(success_list) + len(failed_list),
+            "success": len(success_list),
+            "failed": len(failed_list),
+            "total_holdings": total_holdings,
+            "success_etfs": [s["symbol"] for s in success_list],
+            "failed_etfs": [f["symbol"] for f in failed_list],
         }
 
-        logger.info(f"✅ ETF Holdings 수집 완료: 성공 {result['success']} / 실패 {result['failed']}")
+        logger.info(
+            f"✅ ETF Holdings 수집 완료: 성공 {result['success']} / 실패 {result['failed']}"
+        )
 
         # 실패 알림 이메일 발송
         if send_failure_email and failed_list:
@@ -1015,7 +1051,7 @@ def send_etf_sync_failure_email(failed_list: list, success_list: list):
     from django.core.mail import send_mail
 
     try:
-        recipients = ['goid545@naver.com', 'jinie545@gmail.com']
+        recipients = ["goid545@naver.com", "jinie545@gmail.com"]
 
         # 이메일 본문 생성
         subject = f"[Stock-Vis] ETF Holdings 수집 실패 알림 ({len(failed_list)}개)"
@@ -1038,21 +1074,23 @@ def send_etf_sync_failure_email(failed_list: list, success_list: list):
             body_lines.append(f"  - 에러: {f['error']}")
             body_lines.append("")
 
-        body_lines.extend([
-            "=" * 50,
-            "수동 수집 방법",
-            "=" * 50,
-            "",
-            "1. 운용사 웹사이트에서 Holdings CSV 다운로드",
-            "2. 서버에서 다음 명령 실행:",
-            "",
-            "   python manage.py import_etf_csv {SYMBOL} /path/to/holdings.csv",
-            "",
-            "운용사 다운로드 페이지:",
-            "• ARK: https://ark-funds.com/funds/arkk/ (Download Holdings)",
-            "• Invesco: https://www.invesco.com/us/financial-products/etfs/",
-            "",
-        ])
+        body_lines.extend(
+            [
+                "=" * 50,
+                "수동 수집 방법",
+                "=" * 50,
+                "",
+                "1. 운용사 웹사이트에서 Holdings CSV 다운로드",
+                "2. 서버에서 다음 명령 실행:",
+                "",
+                "   python manage.py import_etf_csv {SYMBOL} /path/to/holdings.csv",
+                "",
+                "운용사 다운로드 페이지:",
+                "• ARK: https://ark-funds.com/funds/arkk/ (Download Holdings)",
+                "• Invesco: https://www.invesco.com/us/financial-products/etfs/",
+                "",
+            ]
+        )
 
         body = "\n".join(body_lines)
 
@@ -1066,17 +1104,18 @@ def send_etf_sync_failure_email(failed_list: list, success_list: list):
         )
 
         logger.info(f"✉️ ETF 수집 실패 알림 이메일 발송 완료: {recipients}")
-        return {'sent_to': recipients, 'failed_count': len(failed_list)}
+        return {"sent_to": recipients, "failed_count": len(failed_list)}
 
     except Exception as e:
         logger.exception(f"❌ 이메일 발송 실패: {e}")
         # 이메일 실패해도 태스크는 성공으로 처리
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 # ============================================================
 # Supply Chain (Phase 4) 태스크
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -1122,11 +1161,11 @@ def sync_supply_chain_single(self, symbol: str):
         )
 
         return {
-            'symbol': symbol,
-            'status': result.get('status', 'unknown'),
-            'customer_count': result.get('customer_count', 0),
-            'supplier_count': result.get('supplier_count', 0),
-            'processing_time_ms': result.get('processing_time_ms', 0)
+            "symbol": symbol,
+            "status": result.get("status", "unknown"),
+            "customer_count": result.get("customer_count", 0),
+            "supplier_count": result.get("supplier_count", 0),
+            "processing_time_ms": result.get("processing_time_ms", 0),
         }
 
     except Exception as exc:
@@ -1174,20 +1213,19 @@ def sync_supply_chain_batch(self, symbols: list = None):
         if not symbols:
             # 시가총액 상위 100개 종목
             symbols = list(
-                Stock.objects.filter(
-                    market_capitalization__isnull=False
-                ).order_by('-market_capitalization')
-                .values_list('symbol', flat=True)[:100]
+                Stock.objects.filter(market_capitalization__isnull=False)
+                .order_by("-market_capitalization")
+                .values_list("symbol", flat=True)[:100]
             )
 
         if not symbols:
             logger.warning("동기화할 종목 없음")
             return {
-                'total': 0,
-                'success': 0,
-                'failed': 0,
-                'total_customers': 0,
-                'total_suppliers': 0
+                "total": 0,
+                "success": 0,
+                "failed": 0,
+                "total_customers": 0,
+                "total_suppliers": 0,
             }
 
         logger.info(f"  대상 종목: {len(symbols)}개")
@@ -1197,23 +1235,23 @@ def sync_supply_chain_batch(self, symbols: list = None):
 
         # 통계 계산
         total_customers = sum(
-            r.get('customer_count', 0)
-            for r in batch_result.get('results', {}).values()
+            r.get("customer_count", 0)
+            for r in batch_result.get("results", {}).values()
             if isinstance(r, dict)
         )
         total_suppliers = sum(
-            r.get('supplier_count', 0)
-            for r in batch_result.get('results', {}).values()
+            r.get("supplier_count", 0)
+            for r in batch_result.get("results", {}).values()
             if isinstance(r, dict)
         )
 
         result = {
-            'total': batch_result.get('total', 0),
-            'success': batch_result.get('success', 0),
-            'failed': batch_result.get('failed', 0),
-            'total_customers': total_customers,
-            'total_suppliers': total_suppliers,
-            'failed_symbols': batch_result.get('failed_symbols', [])
+            "total": batch_result.get("total", 0),
+            "success": batch_result.get("success", 0),
+            "failed": batch_result.get("failed", 0),
+            "total_customers": total_customers,
+            "total_suppliers": total_suppliers,
+            "failed_symbols": batch_result.get("failed_symbols", []),
         }
 
         logger.info(f"✅ 공급망 배치 동기화 완료: {result}")
@@ -1227,6 +1265,7 @@ def sync_supply_chain_batch(self, symbols: list = None):
 # ============================================================
 # Chain Sight Phase 5: LLM Relation Extraction
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -1262,7 +1301,7 @@ def extract_relations_from_news(self, news_id: str):
             news = NewsEntity.objects.get(id=news_id)
         except NewsEntity.DoesNotExist:
             logger.warning(f"뉴스를 찾을 수 없음: {news_id}")
-            return {'news_id': news_id, 'relations_count': 0, 'error': 'Not found'}
+            return {"news_id": news_id, "relations_count": 0, "error": "Not found"}
 
         # 관계 추출 및 저장
         extractor = get_relation_extractor()
@@ -1271,22 +1310,22 @@ def extract_relations_from_news(self, news_id: str):
         relations = extractor.extract_and_save(
             text=text,
             source_id=str(news.id),
-            source_type='news',
-            source_url=news.source_url
+            source_type="news",
+            source_url=news.source_url,
         )
 
         result = {
-            'news_id': news_id,
-            'relations_count': len(relations),
-            'relations': [
+            "news_id": news_id,
+            "relations_count": len(relations),
+            "relations": [
                 {
-                    'source': r.source_symbol,
-                    'target': r.target_symbol,
-                    'type': r.relation_type,
-                    'confidence': r.confidence
+                    "source": r.source_symbol,
+                    "target": r.target_symbol,
+                    "type": r.relation_type,
+                    "confidence": r.confidence,
                 }
                 for r in relations
-            ]
+            ],
         }
 
         logger.info(f"✅ 뉴스 관계 추출 완료: {len(relations)}개 관계")
@@ -1302,11 +1341,7 @@ def extract_relations_from_news(self, news_id: str):
     max_retries=2,
     default_retry_delay=60 * 10,  # 10분 후 재시도
 )
-def batch_extract_relations_from_news(
-    self,
-    hours: int = 24,
-    limit: int = 100
-):
+def batch_extract_relations_from_news(self, hours: int = 24, limit: int = 100):
     """
     최근 뉴스 배치 관계 추출
 
@@ -1336,9 +1371,9 @@ def batch_extract_relations_from_news(
 
         # 최근 N시간 내 뉴스 조회
         cutoff = timezone.now() - timedelta(hours=hours)
-        news_list = NewsEntity.objects.filter(
-            published_at__gte=cutoff
-        ).order_by('-published_at')[:limit]
+        news_list = NewsEntity.objects.filter(published_at__gte=cutoff).order_by(
+            "-published_at"
+        )[:limit]
 
         extractor = get_relation_extractor()
         processed = 0
@@ -1347,13 +1382,17 @@ def batch_extract_relations_from_news(
 
         for news in news_list:
             try:
-                text = f"{news.headline}\n\n{news.content}" if news.content else news.headline
+                text = (
+                    f"{news.headline}\n\n{news.content}"
+                    if news.content
+                    else news.headline
+                )
 
                 relations = extractor.extract_and_save(
                     text=text,
                     source_id=str(news.id),
-                    source_type='news',
-                    source_url=news.source_url
+                    source_type="news",
+                    source_url=news.source_url,
                 )
 
                 processed += 1
@@ -1368,9 +1407,9 @@ def batch_extract_relations_from_news(
                 continue
 
         result = {
-            'processed': processed,
-            'relations_extracted': total_relations,
-            'errors': errors
+            "processed": processed,
+            "relations_extracted": total_relations,
+            "errors": errors,
         }
 
         logger.info(f"✅ 뉴스 배치 관계 추출 완료: {result}")
@@ -1416,9 +1455,7 @@ def sync_llm_relations_to_graph(self, days: int = 7):
 
         # 동기화 안 된 관계 조회 (confidence=high만)
         relations = LLMExtractedRelation.objects.filter(
-            is_synced_to_graph=False,
-            extracted_at__gte=cutoff,
-            confidence='high'
+            is_synced_to_graph=False, extracted_at__gte=cutoff, confidence="high"
         )
 
         neo4j = Neo4jChainSightService()
@@ -1429,22 +1466,22 @@ def sync_llm_relations_to_graph(self, days: int = 7):
         for rel in relations:
             try:
                 # PostgreSQL StockRelationship에 저장
-                source_provider = 'llm_news' if rel.source_type == 'news' else 'llm_sec'
+                source_provider = "llm_news" if rel.source_type == "news" else "llm_sec"
 
                 StockRelationship.objects.update_or_create(
                     source_symbol=rel.source_symbol,
                     target_symbol=rel.target_symbol,
                     relationship_type=rel.relation_type,
                     defaults={
-                        'strength': float(rel.llm_confidence_score or 0.8),
-                        'source_provider': source_provider,
-                        'context': {
-                            'evidence': rel.evidence[:200],
-                            'llm_model': rel.llm_model,
-                            'extracted_at': rel.extracted_at.isoformat(),
-                            **rel.context
-                        }
-                    }
+                        "strength": float(rel.llm_confidence_score or 0.8),
+                        "source_provider": source_provider,
+                        "context": {
+                            "evidence": rel.evidence[:200],
+                            "llm_model": rel.llm_model,
+                            "extracted_at": rel.extracted_at.isoformat(),
+                            **rel.context,
+                        },
+                    },
                 )
 
                 # Neo4j에도 동기화 (가능한 경우)
@@ -1454,12 +1491,12 @@ def sync_llm_relations_to_graph(self, days: int = 7):
                         target_symbol=rel.target_symbol,
                         relationship_type=rel.relation_type,
                         strength=float(rel.llm_confidence_score or 0.8),
-                        source_provider=source_provider
+                        source_provider=source_provider,
                     )
 
                 # 동기화 완료 표시
                 rel.is_synced_to_graph = True
-                rel.save(update_fields=['is_synced_to_graph'])
+                rel.save(update_fields=["is_synced_to_graph"])
 
                 synced += 1
 
@@ -1467,11 +1504,7 @@ def sync_llm_relations_to_graph(self, days: int = 7):
                 logger.warning(f"관계 동기화 실패: {rel.id} - {e}")
                 errors += 1
 
-        result = {
-            'synced': synced,
-            'skipped': skipped,
-            'errors': errors
-        }
+        result = {"synced": synced, "skipped": skipped, "errors": errors}
 
         logger.info(f"✅ LLM 관계 동기화 완료: {result}")
         return result
@@ -1504,16 +1537,17 @@ def cleanup_expired_llm_relations():
         expired.delete()
 
         logger.info(f"✅ 만료된 LLM 관계 {count}개 삭제")
-        return {'deleted': count}
+        return {"deleted": count}
 
     except Exception as e:
         logger.exception(f"❌ LLM 관계 정리 실패: {e}")
-        return {'deleted': 0, 'error': str(e)}
+        return {"deleted": 0, "error": str(e)}
 
 
 # ============================================================
 # Chain Sight Phase 6: News Relation Matcher
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -1556,6 +1590,7 @@ def extract_news_relations(self, hours=24):
 # ============================================================
 # Chain Sight Phase 6D: Relationship Keyword Enrichment
 # ============================================================
+
 
 @shared_task(
     bind=True,
@@ -1602,6 +1637,7 @@ def enrich_relationship_keywords(self, limit=100):
 # Chain Sight Phase 7: Institutional Holdings (SEC 13F)
 # ============================================================
 
+
 @shared_task(
     bind=True,
     max_retries=1,
@@ -1634,8 +1670,10 @@ def sync_institutional_holdings(self):
         # 분기별 실행 체크 (2/5/8/11월만)
         current_month = datetime.now().month
         if current_month not in (2, 5, 8, 11):
-            logger.info(f"Phase 7 기관 보유 동기화 스킵: 현재 {current_month}월 (2/5/8/11월만 실행)")
-            return {'skipped': True, 'reason': f'Not a quarter month ({current_month})'}
+            logger.info(
+                f"Phase 7 기관 보유 동기화 스킵: 현재 {current_month}월 (2/5/8/11월만 실행)"
+            )
+            return {"skipped": True, "reason": f"Not a quarter month ({current_month})"}
 
         logger.info("Phase 7 기관 보유 현황 동기화 시작")
 
@@ -1649,10 +1687,7 @@ def sync_institutional_holdings(self):
         relationships_created = service.generate_held_by_same_fund()
         logger.info(f"  관계 생성: {relationships_created}개")
 
-        result = {
-            **sync_result,
-            'relationships_created': relationships_created
-        }
+        result = {**sync_result, "relationships_created": relationships_created}
 
         logger.info(f"Phase 7 기관 보유 동기화 완료: {result}")
         return result
@@ -1665,6 +1700,7 @@ def sync_institutional_holdings(self):
 # ============================================================
 # Chain Sight Phase 8: Regulatory + Patent Network
 # ============================================================
+
 
 @shared_task(
     bind=True,

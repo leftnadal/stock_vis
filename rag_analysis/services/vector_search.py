@@ -71,7 +71,7 @@ class VectorSearchService:
         query: str,
         documents: List[dict],
         top_k: int = 20,
-        score_threshold: Optional[float] = None
+        score_threshold: Optional[float] = None,
     ) -> List[Tuple[dict, float]]:
         """
         벡터 유사도 검색
@@ -100,7 +100,7 @@ class VectorSearchService:
             # 문서 텍스트 추출
             doc_texts = []
             for d in documents:
-                text = d.get('content', d.get('text', ''))
+                text = d.get("content", d.get("text", ""))
                 if not text:
                     logger.debug(f"Empty text in document: {d.get('id', 'unknown')}")
                 doc_texts.append(text)
@@ -111,7 +111,8 @@ class VectorSearchService:
             # 코사인 유사도 계산
             # similarity = dot(A, B) / (norm(A) * norm(B))
             similarities = np.dot(doc_embeddings, query_embedding) / (
-                np.linalg.norm(doc_embeddings, axis=1) * np.linalg.norm(query_embedding) + 1e-9
+                np.linalg.norm(doc_embeddings, axis=1) * np.linalg.norm(query_embedding)
+                + 1e-9
             )
 
             # score_threshold 필터링
@@ -126,9 +127,13 @@ class VectorSearchService:
             else:
                 top_indices = np.argsort(similarities)[::-1]
 
-            results = [(documents[idx], float(similarities[idx])) for idx in top_indices]
+            results = [
+                (documents[idx], float(similarities[idx])) for idx in top_indices
+            ]
 
-            logger.info(f"Vector search completed: {len(results)} results for query '{query[:50]}...'")
+            logger.info(
+                f"Vector search completed: {len(results)} results for query '{query[:50]}...'"
+            )
             return results
 
         except Exception as e:

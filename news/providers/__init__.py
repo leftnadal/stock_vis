@@ -4,9 +4,9 @@ from .fmp import FMPNewsProvider
 from .marketaux import MarketauxNewsProvider
 
 __all__ = [
-    'BaseNewsProvider',
-    'RawNewsArticle',
-    'FinnhubNewsProvider',
-    'MarketauxNewsProvider',
-    'FMPNewsProvider',
+    "BaseNewsProvider",
+    "RawNewsArticle",
+    "FinnhubNewsProvider",
+    "MarketauxNewsProvider",
+    "FMPNewsProvider",
 ]

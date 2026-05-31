@@ -27,13 +27,13 @@ logger = logging.getLogger(__name__)
 
 # SEC EDGAR User-Agent (필수)
 SEC_HEADERS = {
-    'User-Agent': 'Stock-Vis stockvis@example.com',
-    'Accept-Encoding': 'gzip, deflate',
+    "User-Agent": "Stock-Vis stockvis@example.com",
+    "Accept-Encoding": "gzip, deflate",
 }
 
-SEC_SUBMISSIONS_URL = 'https://data.sec.gov/submissions'
-SEC_ARCHIVES_URL = 'https://www.sec.gov/Archives/edgar/data'
-SEC_TICKERS_URL = 'https://www.sec.gov/files/company_tickers.json'
+SEC_SUBMISSIONS_URL = "https://data.sec.gov/submissions"
+SEC_ARCHIVES_URL = "https://www.sec.gov/Archives/edgar/data"
+SEC_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 
 
 class SECFilingCollector:
@@ -44,28 +44,28 @@ class SECFilingCollector:
 
     # 섹션 헤딩 패턴 — 금융 변형 포함
     SECTION_PATTERNS = {
-        'item_1': [
-            r'(?:Item|ITEM)\s*1[\.\s:\-—]+',
-            r'(?:Item|ITEM)\s*1\b(?!\d|A)',
-            r'(?:Description\s+of\s+Business)',
-            r'(?:General\s+Development\s+of\s+Business)',
-            r'(?:Business\s+Overview)',
+        "item_1": [
+            r"(?:Item|ITEM)\s*1[\.\s:\-—]+",
+            r"(?:Item|ITEM)\s*1\b(?!\d|A)",
+            r"(?:Description\s+of\s+Business)",
+            r"(?:General\s+Development\s+of\s+Business)",
+            r"(?:Business\s+Overview)",
         ],
-        'item_1a': [
-            r'(?:Item|ITEM)\s*1A[\.\s:\-—]+',
-            r'(?:Item|ITEM)\s*1A\b',
-            r'(?:Risk\s+Factors)',
+        "item_1a": [
+            r"(?:Item|ITEM)\s*1A[\.\s:\-—]+",
+            r"(?:Item|ITEM)\s*1A\b",
+            r"(?:Risk\s+Factors)",
         ],
-        'item_7': [
-            r'(?:Item|ITEM)\s*7[\.\s:\-—]+',
-            r'(?:Item|ITEM)\s*7\b(?!\d|A)',
+        "item_7": [
+            r"(?:Item|ITEM)\s*7[\.\s:\-—]+",
+            r"(?:Item|ITEM)\s*7\b(?!\d|A)",
             r"(?:Management['']?s?\s+Discussion\s+and\s+Analysis)",
-            r'(?:MD\s*&\s*A)',
+            r"(?:MD\s*&\s*A)",
         ],
-        'item_8': [
-            r'(?:Item|ITEM)\s*8[\.\s:\-—]+',
-            r'(?:Item|ITEM)\s*8\b',
-            r'(?:Financial\s+Statements\s+and\s+Supplementary)',
+        "item_8": [
+            r"(?:Item|ITEM)\s*8[\.\s:\-—]+",
+            r"(?:Item|ITEM)\s*8\b",
+            r"(?:Financial\s+Statements\s+and\s+Supplementary)",
         ],
     }
 
@@ -90,16 +90,16 @@ class SECFilingCollector:
             logger.error(f"SEC submissions API error for {symbol}: {e}")
             raise
 
-        filings_data = data.get('filings', {}).get('recent', {})
-        forms = filings_data.get('form', [])
-        accession_numbers = filings_data.get('accessionNumber', [])
-        filing_dates = filings_data.get('filingDate', [])
-        primary_documents = filings_data.get('primaryDocument', [])
+        filings_data = data.get("filings", {}).get("recent", {})
+        forms = filings_data.get("form", [])
+        accession_numbers = filings_data.get("accessionNumber", [])
+        filing_dates = filings_data.get("filingDate", [])
+        primary_documents = filings_data.get("primaryDocument", [])
 
         for i, form in enumerate(forms):
-            if form in ('10-K', '10-K/A'):
+            if form in ("10-K", "10-K/A"):
                 accession_no = accession_numbers[i]
-                accession_clean = accession_no.replace('-', '')
+                accession_clean = accession_no.replace("-", "")
                 filing_date = filing_dates[i]
                 primary_doc = primary_documents[i]
 
@@ -112,11 +112,11 @@ class SECFilingCollector:
                 fiscal_year = self._fiscal_year_from_date(filing_date)
 
                 return {
-                    'symbol': symbol,
-                    'accession_no': accession_no,
-                    'filing_date': filing_date,
-                    'fiscal_year': fiscal_year,
-                    'final_link': final_link,
+                    "symbol": symbol,
+                    "accession_no": accession_no,
+                    "filing_date": filing_date,
+                    "fiscal_year": fiscal_year,
+                    "final_link": final_link,
                 }
 
         logger.warning(f"No 10-K filing found for {symbol}")
@@ -134,8 +134,8 @@ class SECFilingCollector:
             data = resp.json()
 
             for entry in data.values():
-                if entry.get('ticker', '').upper() == symbol:
-                    cik = str(entry['cik_str']).zfill(10)
+                if entry.get("ticker", "").upper() == symbol:
+                    cik = str(entry["cik_str"]).zfill(10)
                     self._cik_cache[symbol] = cik
                     return cik
         except Exception as e:
@@ -172,7 +172,7 @@ class SECFilingCollector:
         text = self._remove_toc(text)
 
         sections = {}
-        section_keys = ['item_1', 'item_1a', 'item_7']
+        section_keys = ["item_1", "item_1a", "item_7"]
 
         # Step 2: 각 섹션별 후보 수집
         for key in section_keys:
@@ -182,7 +182,7 @@ class SECFilingCollector:
                 best = max(candidates, key=len)
                 sections[key] = best.strip()
             else:
-                sections[key] = ''
+                sections[key] = ""
 
         return sections
 
@@ -192,19 +192,19 @@ class SECFilingCollector:
             import edgartools as edgar
 
             company = edgar.Company(symbol)
-            filing = company.get_filings(form='10-K').latest(1)
+            filing = company.get_filings(form="10-K").latest(1)
             if not filing:
                 return None
 
             doc = filing.document
             sections = {}
 
-            for key, item_no in [('item_1', '1'), ('item_1a', '1A'), ('item_7', '7')]:
+            for key, item_no in [("item_1", "1"), ("item_1a", "1A"), ("item_7", "7")]:
                 try:
-                    section = doc[f'Item {item_no}']
-                    sections[key] = str(section) if section else ''
+                    section = doc[f"Item {item_no}"]
+                    sections[key] = str(section) if section else ""
                 except (KeyError, AttributeError):
-                    sections[key] = ''
+                    sections[key] = ""
 
             return sections
         except ImportError:
@@ -236,23 +236,23 @@ class SECFilingCollector:
         # Step 1: SEC EDGAR 메타데이터
         metadata = self.get_filing_metadata(symbol)
         if not metadata:
-            return self._fail_result(symbol, 'No filing metadata from SEC EDGAR')
+            return self._fail_result(symbol, "No filing metadata from SEC EDGAR")
 
         # Step 2: SEC HTML 다운로드
-        html = self.fetch_filing_html(metadata['final_link'])
+        html = self.fetch_filing_html(metadata["final_link"])
         if not html:
-            return self._fail_result(symbol, 'Failed to fetch SEC HTML', metadata)
+            return self._fail_result(symbol, "Failed to fetch SEC HTML", metadata)
 
         # Step 3: 섹션 추출
         sections = self.extract_sections(html)
-        extraction_method = 'regex'
+        extraction_method = "regex"
 
         # Step 4: 사후 검증
         full_text = self._html_to_text(html)
         validated_sections, warnings = validate_extracted_sections(sections, full_text)
 
         # 검증 실패 (FAIL: prefix) → fallback 시도
-        has_fail = any(w.startswith('FAIL:') for w in warnings)
+        has_fail = any(w.startswith("FAIL:") for w in warnings)
         if has_fail:
             logger.info(f"{symbol}: validation failed, trying fallback")
             fallback_sections = self.extract_sections_fallback(symbol)
@@ -261,61 +261,62 @@ class SECFilingCollector:
                 fb_validated, fb_warnings = validate_extracted_sections(
                     fallback_sections, full_text
                 )
-                fb_has_fail = any(w.startswith('FAIL:') for w in fb_warnings)
+                fb_has_fail = any(w.startswith("FAIL:") for w in fb_warnings)
                 if not fb_has_fail:
                     validated_sections = fb_validated
                     warnings = fb_warnings
-                    extraction_method = 'edgartools_fallback'
+                    extraction_method = "edgartools_fallback"
                     logger.info(f"{symbol}: fallback succeeded")
                 else:
                     logger.warning(f"{symbol}: fallback also failed validation")
 
         # 상태 결정
-        non_empty = sum(1 for k in ['item_1', 'item_1a', 'item_7']
-                        if validated_sections.get(k))
+        non_empty = sum(
+            1 for k in ["item_1", "item_1a", "item_7"] if validated_sections.get(k)
+        )
         if non_empty == 0:
-            status = 'failed'
-        elif non_empty < 3 or any(w.startswith('FAIL:') for w in warnings):
-            status = 'partial'
+            status = "failed"
+        elif non_empty < 3 or any(w.startswith("FAIL:") for w in warnings):
+            status = "partial"
         else:
-            status = 'success'
+            status = "success"
 
         return {
-            'symbol': symbol,
-            'accession_no': metadata['accession_no'],
-            'filing_date': metadata['filing_date'],
-            'fiscal_year': metadata['fiscal_year'],
-            'final_link': metadata['final_link'],
-            'sections': validated_sections,
-            'status': status,
-            'extraction_method': extraction_method,
-            'warnings': warnings,
+            "symbol": symbol,
+            "accession_no": metadata["accession_no"],
+            "filing_date": metadata["filing_date"],
+            "fiscal_year": metadata["fiscal_year"],
+            "final_link": metadata["final_link"],
+            "sections": validated_sections,
+            "status": status,
+            "extraction_method": extraction_method,
+            "warnings": warnings,
         }
 
     # ── Private helpers ──
 
     def _html_to_text(self, html: str) -> str:
         """HTML → plain text 변환."""
-        soup = BeautifulSoup(html, 'lxml')
+        soup = BeautifulSoup(html, "lxml")
 
         # script, style 태그 제거
-        for tag in soup(['script', 'style']):
+        for tag in soup(["script", "style"]):
             tag.decompose()
 
-        text = soup.get_text(separator='\n')
+        text = soup.get_text(separator="\n")
         # 연속 공백/빈줄 정리
-        text = re.sub(r'\n{3,}', '\n\n', text)
-        text = re.sub(r'[ \t]+', ' ', text)
+        text = re.sub(r"\n{3,}", "\n\n", text)
+        text = re.sub(r"[ \t]+", " ", text)
         return text.strip()
 
     def _remove_toc(self, text: str) -> str:
         """Table of Contents 섹션 제거."""
         toc_patterns = [
-            r'(?i)TABLE\s+OF\s+CONTENTS.*?(?=Item\s*1[\.\s])',
-            r'(?i)INDEX.*?(?=Item\s*1[\.\s])',
+            r"(?i)TABLE\s+OF\s+CONTENTS.*?(?=Item\s*1[\.\s])",
+            r"(?i)INDEX.*?(?=Item\s*1[\.\s])",
         ]
         for pat in toc_patterns:
-            text = re.sub(pat, '', text, flags=re.DOTALL, count=1)
+            text = re.sub(pat, "", text, flags=re.DOTALL, count=1)
         return text
 
     def _find_section_candidates(self, text: str, section_key: str) -> list:
@@ -324,9 +325,9 @@ class SECFilingCollector:
 
         # 다음 섹션 시작점을 종료 마커로 사용
         next_section_map = {
-            'item_1': 'item_1a',
-            'item_1a': 'item_7',
-            'item_7': 'item_8',
+            "item_1": "item_1a",
+            "item_1a": "item_7",
+            "item_7": "item_8",
         }
         next_key = next_section_map.get(section_key)
         end_patterns = self.SECTION_PATTERNS.get(next_key, []) if next_key else []
@@ -352,7 +353,7 @@ class SECFilingCollector:
     def _fiscal_year_from_date(self, filing_date: str) -> int:
         """filing_date(YYYY-MM-DD)에서 fiscal year 추출."""
         try:
-            dt = datetime.strptime(filing_date, '%Y-%m-%d')
+            dt = datetime.strptime(filing_date, "%Y-%m-%d")
             # 10-K는 보통 전년도 실적 → 1~3월 filing이면 전년
             return dt.year - 1 if dt.month <= 3 else dt.year
         except (ValueError, TypeError):
@@ -361,13 +362,13 @@ class SECFilingCollector:
     def _fail_result(self, symbol: str, reason: str, metadata: dict = None) -> dict:
         """실패 결과 생성."""
         return {
-            'symbol': symbol,
-            'accession_no': metadata.get('accession_no', '') if metadata else '',
-            'filing_date': metadata.get('filing_date', '') if metadata else '',
-            'fiscal_year': metadata.get('fiscal_year', 0) if metadata else 0,
-            'final_link': metadata.get('final_link', '') if metadata else '',
-            'sections': {'item_1': '', 'item_1a': '', 'item_7': ''},
-            'status': 'failed',
-            'extraction_method': 'regex',
-            'warnings': [f'FAIL: {reason}'],
+            "symbol": symbol,
+            "accession_no": metadata.get("accession_no", "") if metadata else "",
+            "filing_date": metadata.get("filing_date", "") if metadata else "",
+            "fiscal_year": metadata.get("fiscal_year", 0) if metadata else 0,
+            "final_link": metadata.get("final_link", "") if metadata else "",
+            "sections": {"item_1": "", "item_1a": "", "item_7": ""},
+            "status": "failed",
+            "extraction_method": "regex",
+            "warnings": [f"FAIL: {reason}"],
         }

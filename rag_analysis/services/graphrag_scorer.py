@@ -18,9 +18,10 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ScoringWeights:
     """스코어링 가중치"""
-    rerank: float = 0.5      # Cross-Encoder 점수
-    graph_rel: float = 0.3   # Graph 관계 점수
-    recency: float = 0.2     # 최신성 점수
+
+    rerank: float = 0.5  # Cross-Encoder 점수
+    graph_rel: float = 0.3  # Graph 관계 점수
+    recency: float = 0.2  # 최신성 점수
 
     def __post_init__(self):
         """가중치 합이 1.0인지 검증"""
@@ -56,7 +57,7 @@ class GraphRAGScorer:
         self,
         reranker: Optional[CrossEncoderReranker] = None,
         neo4j_service: Optional[Neo4jServiceLite] = None,
-        weights: Optional[ScoringWeights] = None
+        weights: Optional[ScoringWeights] = None,
     ):
         """
         Args:
@@ -75,7 +76,7 @@ class GraphRAGScorer:
         symbol: Optional[str] = None,
         top_k: int = 3,
         use_graph: bool = True,
-        use_recency: bool = True
+        use_recency: bool = True,
     ) -> List[Tuple[dict, float, dict]]:
         """
         문서 통합 스코어링 및 재순위화
@@ -117,10 +118,7 @@ class GraphRAGScorer:
 
         # 4. 점수 통합
         final_results = self._integrate_scores(
-            reranked,
-            graph_scores,
-            recency_scores,
-            top_k=top_k
+            reranked, graph_scores, recency_scores, top_k=top_k
         )
 
         logger.info(
@@ -131,9 +129,7 @@ class GraphRAGScorer:
         return final_results
 
     def _calculate_graph_scores(
-        self,
-        symbol: str,
-        documents: List[Tuple[dict, float, dict]]
+        self, symbol: str, documents: List[Tuple[dict, float, dict]]
     ) -> Dict[str, float]:
         """
         Graph 관계 기반 점수 계산
@@ -156,7 +152,7 @@ class GraphRAGScorer:
             # Neo4j에서 관계 정보 조회
             relationships = self.neo4j_service.get_stock_relationships(symbol)
 
-            if relationships['_meta']['source'] == 'fallback':
+            if relationships["_meta"]["source"] == "fallback":
                 logger.debug(f"Graph scoring unavailable for {symbol}")
                 return {}
 
@@ -164,27 +160,27 @@ class GraphRAGScorer:
             related_scores = {}
 
             # Supply chain 관계
-            for supply in relationships.get('supply_chain', []):
-                related_symbol = supply['symbol'].upper()
-                strength = supply.get('strength', 0.5)
+            for supply in relationships.get("supply_chain", []):
+                related_symbol = supply["symbol"].upper()
+                strength = supply.get("strength", 0.5)
                 related_scores[related_symbol] = strength
 
             # Competitor 관계
-            for comp in relationships.get('competitors', []):
-                comp_symbol = comp['symbol'].upper()
-                overlap = comp.get('overlap_score', 0.7)
+            for comp in relationships.get("competitors", []):
+                comp_symbol = comp["symbol"].upper()
+                overlap = comp.get("overlap_score", 0.7)
                 related_scores[comp_symbol] = overlap * 0.8  # 경쟁사는 약간 낮은 가중치
 
             # Sector peer 관계
-            for peer in relationships.get('sector_peers', []):
-                peer_symbol = peer['symbol'].upper()
+            for peer in relationships.get("sector_peers", []):
+                peer_symbol = peer["symbol"].upper()
                 if peer_symbol not in related_scores:  # 중복 방지
                     related_scores[peer_symbol] = 0.6
 
             # 문서별 Graph 점수 계산
             graph_scores = {}
             for idx, (doc, _, _) in enumerate(documents):
-                doc_symbol = doc.get('symbol', '').upper()
+                doc_symbol = doc.get("symbol", "").upper()
 
                 if doc_symbol == symbol.upper():
                     # 동일 심볼: 최고 점수
@@ -204,8 +200,7 @@ class GraphRAGScorer:
             return {}
 
     def _calculate_recency_scores(
-        self,
-        documents: List[Tuple[dict, float, dict]]
+        self, documents: List[Tuple[dict, float, dict]]
     ) -> Dict[str, float]:
         """
         최신성 점수 계산
@@ -231,11 +226,11 @@ class GraphRAGScorer:
         for idx, (doc, _, _) in enumerate(documents):
             # 날짜 추출 (여러 필드 시도)
             date_str = (
-                doc.get('date') or
-                doc.get('created_at') or
-                doc.get('updated_at') or
-                doc.get('fiscal_date_ending') or
-                None
+                doc.get("date")
+                or doc.get("created_at")
+                or doc.get("updated_at")
+                or doc.get("fiscal_date_ending")
+                or None
             )
 
             if not date_str:
@@ -245,7 +240,7 @@ class GraphRAGScorer:
 
             try:
                 # 날짜 파싱 (ISO 형식 가정: YYYY-MM-DD)
-                doc_date = datetime.fromisoformat(date_str.split('T')[0])
+                doc_date = datetime.fromisoformat(date_str.split("T")[0])
                 days_diff = (now - doc_date).days
 
                 # 최신성 점수 계산
@@ -276,7 +271,7 @@ class GraphRAGScorer:
         reranked: List[Tuple[dict, float, dict]],
         graph_scores: Dict[str, float],
         recency_scores: Dict[str, float],
-        top_k: int
+        top_k: int,
     ) -> List[Tuple[dict, float, dict]]:
         """
         점수 통합 및 최종 순위 결정
@@ -310,24 +305,26 @@ class GraphRAGScorer:
 
             # 4. 가중 합산
             final_score = (
-                self.weights.rerank * norm_rerank +
-                self.weights.graph_rel * graph_score +
-                self.weights.recency * recency_score
+                self.weights.rerank * norm_rerank
+                + self.weights.graph_rel * graph_score
+                + self.weights.recency * recency_score
             )
 
             # 5. Breakdown 업데이트
             breakdown_copy = breakdown.copy()
-            breakdown_copy.update({
-                'rerank_normalized': norm_rerank,
-                'graph_relation': graph_score,
-                'recency': recency_score,
-                'final_score': final_score,
-                'weights': {
-                    'rerank': self.weights.rerank,
-                    'graph_rel': self.weights.graph_rel,
-                    'recency': self.weights.recency
+            breakdown_copy.update(
+                {
+                    "rerank_normalized": norm_rerank,
+                    "graph_relation": graph_score,
+                    "recency": recency_score,
+                    "final_score": final_score,
+                    "weights": {
+                        "rerank": self.weights.rerank,
+                        "graph_rel": self.weights.graph_rel,
+                        "recency": self.weights.recency,
+                    },
                 }
-            })
+            )
 
             final_results.append((doc, final_score, breakdown_copy))
 
@@ -337,9 +334,7 @@ class GraphRAGScorer:
         return final_results[:top_k]
 
 
-def get_graphrag_scorer(
-    weights: Optional[ScoringWeights] = None
-) -> GraphRAGScorer:
+def get_graphrag_scorer(weights: Optional[ScoringWeights] = None) -> GraphRAGScorer:
     """
     GraphRAGScorer 인스턴스 생성 헬퍼
 

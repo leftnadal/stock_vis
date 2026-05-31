@@ -18,10 +18,10 @@ from django.dispatch import receiver
 logger = logging.getLogger(__name__)
 
 
-@receiver(post_save, sender='sec_pipeline.UnmatchedCompanyQueue')
+@receiver(post_save, sender="sec_pipeline.UnmatchedCompanyQueue")
 def on_unmatched_resolved(sender, instance, **kwargs):
     """UnmatchedCompanyQueue가 matched로 변경되면 evidence 업데이트."""
-    if instance.status != 'matched' or not instance.resolved_ticker:
+    if instance.status != "matched" or not instance.resolved_ticker:
         return
 
     from packages.shared.stocks.models import Stock
@@ -35,7 +35,7 @@ def on_unmatched_resolved(sender, instance, **kwargs):
     raw_name = instance.raw_company_name
 
     # 같은 이름의 evidence 업데이트 — 같은 sector 내로 제한
-    source_sectors = instance.source_sectors or ['']
+    source_sectors = instance.source_sectors or [""]
     updated = 0
 
     for sector in source_sectors:
@@ -63,10 +63,12 @@ def on_unmatched_resolved(sender, instance, **kwargs):
     for sector in source_sectors:
         CompanyAlias.objects.get_or_create(
             alias=raw_name,
-            context_sector=sector or '',
+            context_sector=sector or "",
             defaults={
-                'ticker': resolved_ticker,
-                'source': 'admin_resolved',
-            }
+                "ticker": resolved_ticker,
+                "source": "admin_resolved",
+            },
         )
-        logger.info(f"CompanyAlias: {raw_name} → {resolved_ticker} [sector={sector or 'global'}]")
+        logger.info(
+            f"CompanyAlias: {raw_name} → {resolved_ticker} [sector={sector or 'global'}]"
+        )

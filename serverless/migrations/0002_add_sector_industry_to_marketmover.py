@@ -4,20 +4,19 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('serverless', '0001_initial'),
+        ("serverless", "0001_initial"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='marketmover',
-            name='industry',
+            model_name="marketmover",
+            name="industry",
             field=models.CharField(blank=True, max_length=100, null=True),
         ),
         migrations.AddField(
-            model_name='marketmover',
-            name='sector',
+            model_name="marketmover",
+            name="sector",
             field=models.CharField(blank=True, db_index=True, max_length=50, null=True),
         ),
     ]

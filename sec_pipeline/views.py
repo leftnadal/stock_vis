@@ -19,11 +19,11 @@ def sec_pipeline_dashboard(request):
     alerts = run_post_batch_quality_checks(hours_back=24)
 
     context = {
-        'title': 'SEC Pipeline Dashboard',
-        'stats': stats,
-        'alerts': alerts,
+        "title": "SEC Pipeline Dashboard",
+        "stats": stats,
+        "alerts": alerts,
     }
-    return render(request, 'admin/sec_pipeline/dashboard.html', context)
+    return render(request, "admin/sec_pipeline/dashboard.html", context)
 
 
 class FilingDataView(APIView):
@@ -31,6 +31,7 @@ class FilingDataView(APIView):
 
     audit P0 #6: IsAdminUser — 외부 SEC fetch 트리거가 비용을 발생시키므로 admin 한정.
     """
+
     permission_classes = [IsAdminUser]
 
     def get(self, request, symbol):
@@ -40,12 +41,15 @@ class FilingDataView(APIView):
 
         if result is None:
             return Response(
-                {'symbol': symbol.upper(), 'status': 'collecting',
-                 'message': 'Collection triggered. Check back shortly.'},
+                {
+                    "symbol": symbol.upper(),
+                    "status": "collecting",
+                    "message": "Collection triggered. Check back shortly.",
+                },
                 status=202,
             )
 
-        if result.get('status') == 'available':
+        if result.get("status") == "available":
             return Response(result, status=200)
 
         return Response(result, status=200)

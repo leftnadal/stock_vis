@@ -38,7 +38,7 @@ class BM25SearchService:
         # [가-힣]+: 한글 연속
         # [a-zA-Z]+: 영문 연속
         # [0-9]+: 숫자 연속
-        tokens = re.findall(r'[가-힣]+|[a-zA-Z]+|[0-9]+', text.lower())
+        tokens = re.findall(r"[가-힣]+|[a-zA-Z]+|[0-9]+", text.lower())
         return tokens
 
     def build_index(self, documents: List[dict]) -> None:
@@ -60,8 +60,8 @@ class BM25SearchService:
 
             for doc in documents:
                 # 제목과 내용을 결합하여 토큰화
-                text = doc.get('content', doc.get('text', ''))
-                title = doc.get('title', '')
+                text = doc.get("content", doc.get("text", ""))
+                title = doc.get("title", "")
                 combined = f"{title} {text}"
                 tokens = self._tokenize(combined)
                 tokenized_docs.append(tokens)
@@ -80,7 +80,7 @@ class BM25SearchService:
         query: str,
         documents: Optional[List[dict]] = None,
         top_k: int = 10,
-        score_threshold: Optional[float] = None
+        score_threshold: Optional[float] = None,
     ) -> List[Tuple[dict, float]]:
         """
         BM25 검색 수행
@@ -119,7 +119,9 @@ class BM25SearchService:
 
             # score_threshold 필터링
             if score_threshold is not None:
-                valid_indices = [i for i in range(len(scores)) if scores[i] >= score_threshold]
+                valid_indices = [
+                    i for i in range(len(scores)) if scores[i] >= score_threshold
+                ]
             else:
                 # 점수가 0보다 큰 문서만 필터링
                 valid_indices = [i for i in range(len(scores)) if scores[i] > 0]
@@ -130,17 +132,16 @@ class BM25SearchService:
 
             # 점수 기준 정렬
             sorted_indices = sorted(
-                valid_indices,
-                key=lambda i: scores[i],
-                reverse=True
+                valid_indices, key=lambda i: scores[i], reverse=True
             )[:top_k]
 
             results = [
-                (self._documents[idx], float(scores[idx]))
-                for idx in sorted_indices
+                (self._documents[idx], float(scores[idx])) for idx in sorted_indices
             ]
 
-            logger.info(f"BM25 search completed: {len(results)} results for query '{query[:50]}...'")
+            logger.info(
+                f"BM25 search completed: {len(results)} results for query '{query[:50]}...'"
+            )
             return results
 
         except Exception as e:
@@ -161,6 +162,7 @@ class BM25SearchService:
         tokens = self._tokenize(text)
         # 빈도수 기반 정렬
         from collections import Counter
+
         token_counts = Counter(tokens)
         return [token for token, _ in token_counts.most_common(top_n)]
 

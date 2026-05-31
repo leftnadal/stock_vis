@@ -53,14 +53,14 @@ If the request is unclear, return {{"error": "Could not parse filter request"}}.
 """
 
 
-def parse_filter_with_llm(user_input: str, symbol: str, sector: str = '') -> dict:
+def parse_filter_with_llm(user_input: str, symbol: str, sector: str = "") -> dict:
     """자연어 → 구조화 필터 변환 (Gemini Flash)."""
     from google import genai
     from google.genai import types
 
-    api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    api_key = getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
-        return {'error': 'GEMINI_API_KEY not configured'}
+        return {"error": "GEMINI_API_KEY not configured"}
 
     prompt = FILTER_PARSING_PROMPT.format(
         user_input=user_input,
@@ -71,27 +71,28 @@ def parse_filter_with_llm(user_input: str, symbol: str, sector: str = '') -> dic
     try:
         client = genai.Client(api_key=api_key)
         config = types.GenerateContentConfig(
-            response_mime_type='application/json',
+            response_mime_type="application/json",
             temperature=0.1,
             thinking_config=types.ThinkingConfig(thinking_budget=0),
         )
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model="gemini-2.5-flash",
             contents=prompt,
             config=config,
         )
 
-        text = response.text if hasattr(response, 'text') and response.text else '{}'
+        text = response.text if hasattr(response, "text") and response.text else "{}"
         return json.loads(text)
 
     except Exception as e:
         logger.error(f"LLM filter parsing failed: {e}")
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
-def execute_peer_filter(symbol: str, parsed_filter: dict,
-                        base_peers: list = None) -> dict:
+def execute_peer_filter(
+    symbol: str, parsed_filter: dict, base_peers: list = None
+) -> dict:
     """
     구조화 필터를 실행하여 peer 리스트 반환.
 
@@ -114,153 +115,162 @@ def execute_peer_filter(symbol: str, parsed_filter: dict,
 
     symbol = symbol.upper()
 
-    if 'error' in parsed_filter:
-        return {'peers': [], 'count': 0, 'error': parsed_filter['error']}
+    if "error" in parsed_filter:
+        return {"peers": [], "count": 0, "error": parsed_filter["error"]}
 
     # 기본 후보 풀
     if base_peers:
         candidates = set(base_peers)
     else:
         candidates = set(
-            SP500Constituent.objects.filter(is_active=True)
-            .values_list('symbol', flat=True)
+            SP500Constituent.objects.filter(is_active=True).values_list(
+                "symbol", flat=True
+            )
         )
     candidates.discard(symbol)
 
     filters_applied = []
 
     # ── Chain Sight 프로파일 필터 ──
-    if 'growth_stage' in parsed_filter:
-        stages = parsed_filter['growth_stage']
+    if "growth_stage" in parsed_filter:
+        stages = parsed_filter["growth_stage"]
         matched = set(
-            CompanyGrowthStage.objects.filter(stage__in=stages)
-            .values_list('symbol_id', flat=True)
+            CompanyGrowthStage.objects.filter(stage__in=stages).values_list(
+                "symbol_id", flat=True
+            )
         )
         candidates &= matched
         filters_applied.append(f"GrowthStage: {stages}")
 
-    if 'capital_type' in parsed_filter:
-        types_list = parsed_filter['capital_type']
+    if "capital_type" in parsed_filter:
+        types_list = parsed_filter["capital_type"]
         matched = set(
-            CompanyCapitalDNA.objects.filter(capital_type__in=types_list)
-            .values_list('symbol_id', flat=True)
+            CompanyCapitalDNA.objects.filter(capital_type__in=types_list).values_list(
+                "symbol_id", flat=True
+            )
         )
         candidates &= matched
         filters_applied.append(f"CapitalDNA: {types_list}")
 
-    if 'rate_sensitivity' in parsed_filter:
-        levels = parsed_filter['rate_sensitivity']
+    if "rate_sensitivity" in parsed_filter:
+        levels = parsed_filter["rate_sensitivity"]
         matched = set(
-            CompanySensitivityProfile.objects.filter(rate_sensitivity__in=levels)
-            .values_list('symbol_id', flat=True)
+            CompanySensitivityProfile.objects.filter(
+                rate_sensitivity__in=levels
+            ).values_list("symbol_id", flat=True)
         )
         candidates &= matched
         filters_applied.append(f"Rate Sensitivity: {levels}")
 
-    if 'forex_sensitivity' in parsed_filter:
-        levels = parsed_filter['forex_sensitivity']
+    if "forex_sensitivity" in parsed_filter:
+        levels = parsed_filter["forex_sensitivity"]
         matched = set(
-            CompanySensitivityProfile.objects.filter(forex_sensitivity__in=levels)
-            .values_list('symbol_id', flat=True)
+            CompanySensitivityProfile.objects.filter(
+                forex_sensitivity__in=levels
+            ).values_list("symbol_id", flat=True)
         )
         candidates &= matched
         filters_applied.append(f"Forex Sensitivity: {levels}")
 
-    if 'regulation_type' in parsed_filter:
-        types_list = parsed_filter['regulation_type']
+    if "regulation_type" in parsed_filter:
+        types_list = parsed_filter["regulation_type"]
         matched = set(
-            CompanySensitivityProfile.objects.filter(regulation_type__in=types_list)
-            .values_list('symbol_id', flat=True)
+            CompanySensitivityProfile.objects.filter(
+                regulation_type__in=types_list
+            ).values_list("symbol_id", flat=True)
         )
         candidates &= matched
         filters_applied.append(f"Regulation: {types_list}")
 
-    if 'insider_signal' in parsed_filter:
-        signals = parsed_filter['insider_signal']
+    if "insider_signal" in parsed_filter:
+        signals = parsed_filter["insider_signal"]
         matched = set(
-            CompanyInsiderSignal.objects.filter(insider_signal__in=signals)
-            .values_list('symbol_id', flat=True)
+            CompanyInsiderSignal.objects.filter(insider_signal__in=signals).values_list(
+                "symbol_id", flat=True
+            )
         )
         candidates &= matched
         filters_applied.append(f"Insider Signal: {signals}")
 
     # ── 환율 민감도 (foreign_revenue_pct) ──
-    if 'foreign_revenue_pct_min' in parsed_filter:
-        threshold = parsed_filter['foreign_revenue_pct_min']
+    if "foreign_revenue_pct_min" in parsed_filter:
+        threshold = parsed_filter["foreign_revenue_pct_min"]
         matched = set(
-            CompanySensitivityProfile.objects
-            .filter(foreign_revenue_pct__gte=threshold)
-            .values_list('symbol_id', flat=True)
+            CompanySensitivityProfile.objects.filter(
+                foreign_revenue_pct__gte=threshold
+            ).values_list("symbol_id", flat=True)
         )
         candidates &= matched
         filters_applied.append(f"Foreign Revenue >= {threshold}%")
 
-    if 'foreign_revenue_pct_max' in parsed_filter:
-        threshold = parsed_filter['foreign_revenue_pct_max']
+    if "foreign_revenue_pct_max" in parsed_filter:
+        threshold = parsed_filter["foreign_revenue_pct_max"]
         matched = set(
-            CompanySensitivityProfile.objects
-            .filter(foreign_revenue_pct__lte=threshold)
-            .values_list('symbol_id', flat=True)
+            CompanySensitivityProfile.objects.filter(
+                foreign_revenue_pct__lte=threshold
+            ).values_list("symbol_id", flat=True)
         )
         candidates &= matched
         filters_applied.append(f"Foreign Revenue <= {threshold}%")
 
     # ── 섹터/산업 제외 ──
-    if 'exclude_sectors' in parsed_filter:
-        sectors = parsed_filter['exclude_sectors']
+    if "exclude_sectors" in parsed_filter:
+        sectors = parsed_filter["exclude_sectors"]
         excluded = set(
-            Stock.objects.filter(sector__in=sectors)
-            .values_list('symbol', flat=True)
+            Stock.objects.filter(sector__in=sectors).values_list("symbol", flat=True)
         )
         candidates -= excluded
         filters_applied.append(f"Exclude sectors: {sectors}")
 
-    if 'exclude_industries' in parsed_filter:
-        industries = parsed_filter['exclude_industries']
+    if "exclude_industries" in parsed_filter:
+        industries = parsed_filter["exclude_industries"]
         excluded = set(
-            Stock.objects.filter(industry__in=industries)
-            .values_list('symbol', flat=True)
+            Stock.objects.filter(industry__in=industries).values_list(
+                "symbol", flat=True
+            )
         )
         candidates -= excluded
         filters_applied.append(f"Exclude industries: {industries}")
 
     # ── 메트릭 필터 ──
-    if 'metric_filters' in parsed_filter:
+    if "metric_filters" in parsed_filter:
         latest_fy = (
             CompanyMetricSnapshot.objects.filter(symbol_id=symbol)
-            .values_list('fiscal_year', flat=True)
-            .distinct().order_by('-fiscal_year').first()
+            .values_list("fiscal_year", flat=True)
+            .distinct()
+            .order_by("-fiscal_year")
+            .first()
         )
 
-        for mf in parsed_filter['metric_filters']:
-            code = mf.get('code', '')
-            op = mf.get('op', '>=')
-            value = mf.get('value', 0)
+        for mf in parsed_filter["metric_filters"]:
+            code = mf.get("code", "")
+            op = mf.get("op", ">=")
+            value = mf.get("value", 0)
 
             qs = CompanyMetricSnapshot.objects.filter(
                 metric_code_id=code,
-                value_status='normal',
+                value_status="normal",
                 metric_value__isnull=False,
             )
             if latest_fy:
                 qs = qs.filter(fiscal_year=latest_fy)
 
-            if op == '>=':
+            if op == ">=":
                 qs = qs.filter(metric_value__gte=value)
-            elif op == '<=':
+            elif op == "<=":
                 qs = qs.filter(metric_value__lte=value)
-            elif op == '>':
+            elif op == ">":
                 qs = qs.filter(metric_value__gt=value)
-            elif op == '<':
+            elif op == "<":
                 qs = qs.filter(metric_value__lt=value)
 
-            matched = set(qs.values_list('symbol_id', flat=True))
+            matched = set(qs.values_list("symbol_id", flat=True))
             candidates &= matched
             filters_applied.append(f"{code} {op} {value}")
 
     peers = sorted(candidates)
     return {
-        'peers': peers,
-        'count': len(peers),
-        'filters_applied': filters_applied,
+        "peers": peers,
+        "count": len(peers),
+        "filters_applied": filters_applied,
     }

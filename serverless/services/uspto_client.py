@@ -19,6 +19,7 @@ Usage:
     patents = client.get_patents_by_assignee('NVIDIA Corporation', years=5)
     citations = client.get_patent_citations('US11234567')
 """
+
 import logging
 import time
 from datetime import datetime, timedelta
@@ -31,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 class USPTOError(Exception):
     """USPTO API Error"""
+
     pass
 
 
@@ -40,63 +42,63 @@ class USPTOClient:
 
     # Company name to ticker mapping (for resolving assignees)
     COMPANY_ASSIGNEE_MAP = {
-        'AAPL': ['Apple Inc.', 'Apple Computer'],
-        'MSFT': ['Microsoft Corporation', 'Microsoft Technology Licensing'],
-        'GOOGL': ['Google LLC', 'Google Inc.', 'Alphabet Inc.'],
-        'AMZN': ['Amazon Technologies', 'Amazon.com'],
-        'META': ['Meta Platforms', 'Facebook Inc.', 'Facebook Technologies'],
-        'NVDA': ['NVIDIA Corporation'],
-        'AMD': ['Advanced Micro Devices'],
-        'INTC': ['Intel Corporation'],
-        'QCOM': ['Qualcomm Incorporated', 'Qualcomm Technologies'],
-        'TSLA': ['Tesla Inc.', 'Tesla Motors'],
-        'IBM': ['International Business Machines'],
-        'ORCL': ['Oracle Corporation', 'Oracle International'],
-        'CRM': ['Salesforce Inc.', 'Salesforce.com'],
-        'CSCO': ['Cisco Technology', 'Cisco Systems'],
-        'ADBE': ['Adobe Inc.', 'Adobe Systems'],
-        'AVGO': ['Broadcom Inc.', 'Broadcom Corporation'],
-        'TXN': ['Texas Instruments'],
-        'MU': ['Micron Technology'],
-        'LRCX': ['Lam Research'],
-        'AMAT': ['Applied Materials'],
-        'KLAC': ['KLA Corporation'],
-        'SNPS': ['Synopsys'],
-        'CDNS': ['Cadence Design Systems'],
-        'ARM': ['Arm Limited', 'ARM Holdings'],
-        'TSM': ['Taiwan Semiconductor Manufacturing'],
-        'SAMSUNG': ['Samsung Electronics'],
-        'NOC': ['Northrop Grumman', 'Northrop Grumman Systems'],
-        'LMT': ['Lockheed Martin'],
-        'BA': ['The Boeing Company', 'Boeing Company'],
-        'RTX': ['Raytheon Technologies', 'United Technologies'],
-        'GD': ['General Dynamics'],
-        'PFE': ['Pfizer Inc.'],
-        'JNJ': ['Johnson & Johnson'],
-        'ABBV': ['AbbVie Inc.'],
-        'MRK': ['Merck & Co.', 'Merck Sharp & Dohme'],
-        'LLY': ['Eli Lilly and Company'],
-        'GILD': ['Gilead Sciences'],
-        'AMGN': ['Amgen Inc.'],
-        'BMY': ['Bristol-Myers Squibb'],
-        'V': ['Visa Inc.', 'Visa International'],
-        'MA': ['Mastercard Incorporated', 'Mastercard International'],
-        'JPM': ['JPMorgan Chase', 'JP Morgan'],
-        'BAC': ['Bank of America'],
-        'GS': ['Goldman Sachs'],
-        'MS': ['Morgan Stanley'],
-        'C': ['Citigroup Inc.', 'Citibank'],
-        'WFC': ['Wells Fargo'],
-        'AXP': ['American Express'],
-        'BLK': ['BlackRock Inc.'],
-        'SCHW': ['Charles Schwab', 'The Charles Schwab Corporation'],
-        'F': ['Ford Motor Company', 'Ford Global Technologies'],
-        'GM': ['General Motors', 'GM Global Technology Operations'],
-        'TM': ['Toyota Motor', 'Toyota Jidosha Kabushiki Kaisha'],
-        'HMC': ['Honda Motor'],
-        'RIVN': ['Rivian Automotive', 'Rivian IP Holdings'],
-        'LCID': ['Lucid Motors', 'Atieva Inc.'],
-        'NIO': ['NIO Inc.', 'NextEV'],
+        "AAPL": ["Apple Inc.", "Apple Computer"],
+        "MSFT": ["Microsoft Corporation", "Microsoft Technology Licensing"],
+        "GOOGL": ["Google LLC", "Google Inc.", "Alphabet Inc."],
+        "AMZN": ["Amazon Technologies", "Amazon.com"],
+        "META": ["Meta Platforms", "Facebook Inc.", "Facebook Technologies"],
+        "NVDA": ["NVIDIA Corporation"],
+        "AMD": ["Advanced Micro Devices"],
+        "INTC": ["Intel Corporation"],
+        "QCOM": ["Qualcomm Incorporated", "Qualcomm Technologies"],
+        "TSLA": ["Tesla Inc.", "Tesla Motors"],
+        "IBM": ["International Business Machines"],
+        "ORCL": ["Oracle Corporation", "Oracle International"],
+        "CRM": ["Salesforce Inc.", "Salesforce.com"],
+        "CSCO": ["Cisco Technology", "Cisco Systems"],
+        "ADBE": ["Adobe Inc.", "Adobe Systems"],
+        "AVGO": ["Broadcom Inc.", "Broadcom Corporation"],
+        "TXN": ["Texas Instruments"],
+        "MU": ["Micron Technology"],
+        "LRCX": ["Lam Research"],
+        "AMAT": ["Applied Materials"],
+        "KLAC": ["KLA Corporation"],
+        "SNPS": ["Synopsys"],
+        "CDNS": ["Cadence Design Systems"],
+        "ARM": ["Arm Limited", "ARM Holdings"],
+        "TSM": ["Taiwan Semiconductor Manufacturing"],
+        "SAMSUNG": ["Samsung Electronics"],
+        "NOC": ["Northrop Grumman", "Northrop Grumman Systems"],
+        "LMT": ["Lockheed Martin"],
+        "BA": ["The Boeing Company", "Boeing Company"],
+        "RTX": ["Raytheon Technologies", "United Technologies"],
+        "GD": ["General Dynamics"],
+        "PFE": ["Pfizer Inc."],
+        "JNJ": ["Johnson & Johnson"],
+        "ABBV": ["AbbVie Inc."],
+        "MRK": ["Merck & Co.", "Merck Sharp & Dohme"],
+        "LLY": ["Eli Lilly and Company"],
+        "GILD": ["Gilead Sciences"],
+        "AMGN": ["Amgen Inc."],
+        "BMY": ["Bristol-Myers Squibb"],
+        "V": ["Visa Inc.", "Visa International"],
+        "MA": ["Mastercard Incorporated", "Mastercard International"],
+        "JPM": ["JPMorgan Chase", "JP Morgan"],
+        "BAC": ["Bank of America"],
+        "GS": ["Goldman Sachs"],
+        "MS": ["Morgan Stanley"],
+        "C": ["Citigroup Inc.", "Citibank"],
+        "WFC": ["Wells Fargo"],
+        "AXP": ["American Express"],
+        "BLK": ["BlackRock Inc."],
+        "SCHW": ["Charles Schwab", "The Charles Schwab Corporation"],
+        "F": ["Ford Motor Company", "Ford Global Technologies"],
+        "GM": ["General Motors", "GM Global Technology Operations"],
+        "TM": ["Toyota Motor", "Toyota Jidosha Kabushiki Kaisha"],
+        "HMC": ["Honda Motor"],
+        "RIVN": ["Rivian Automotive", "Rivian IP Holdings"],
+        "LCID": ["Lucid Motors", "Atieva Inc."],
+        "NIO": ["NIO Inc.", "NextEV"],
     }
 
     # Reverse map: assignee name -> ticker
@@ -105,9 +107,11 @@ class USPTOClient:
     def __init__(self):
         self._last_request_time = 0
         self._session = requests.Session()
-        self._session.headers.update({
-            'Content-Type': 'application/json',
-        })
+        self._session.headers.update(
+            {
+                "Content-Type": "application/json",
+            }
+        )
         # Build reverse map
         for symbol, names in self.COMPANY_ASSIGNEE_MAP.items():
             for name in names:
@@ -120,7 +124,9 @@ class USPTOClient:
             time.sleep(self.RATE_LIMIT_INTERVAL - elapsed)
         self._last_request_time = time.time()
 
-    def _make_request(self, query: Dict, fields: List[str], options: Dict = None) -> Dict:
+    def _make_request(
+        self, query: Dict, fields: List[str], options: Dict = None
+    ) -> Dict:
         """Make POST request to PatentsView API
 
         Args:
@@ -144,7 +150,9 @@ class USPTOClient:
             response = self._session.post(self.BASE_URL, json=payload, timeout=30)
 
             if response.status_code != 200:
-                error_msg = f"USPTO API error {response.status_code}: {response.text[:200]}"
+                error_msg = (
+                    f"USPTO API error {response.status_code}: {response.text[:200]}"
+                )
                 logger.error(error_msg)
                 raise USPTOError(error_msg)
 
@@ -160,10 +168,7 @@ class USPTOClient:
             raise USPTOError(f"Invalid JSON response from USPTO API: {e}")
 
     def get_patents_by_assignee(
-        self,
-        company_name: str,
-        years: int = 5,
-        limit: int = 100
+        self, company_name: str, years: int = 5, limit: int = 100
     ) -> List[Dict]:
         """Get patents for a company
 
@@ -188,7 +193,7 @@ class USPTOClient:
             "_and": [
                 {"assignee_organization": company_name},
                 {"_gte": {"patent_date": start_date.isoformat()}},
-                {"_lte": {"patent_date": end_date.isoformat()}}
+                {"_lte": {"patent_date": end_date.isoformat()}},
             ]
         }
 
@@ -197,12 +202,12 @@ class USPTOClient:
             "patent_title",
             "patent_date",
             "patent_abstract",
-            "assignees"
+            "assignees",
         ]
 
         options = {
             "per_page": min(limit, 1000),  # API max is 10000, we use 1000
-            "sort": [{"patent_date": "desc"}]
+            "sort": [{"patent_date": "desc"}],
         }
 
         try:
@@ -238,12 +243,7 @@ class USPTOClient:
 
         # First get the patent with its cited patents
         query = {"patent_number": clean_number}
-        fields = [
-            "patent_number",
-            "patent_title",
-            "patent_date",
-            "cited_patents"
-        ]
+        fields = ["patent_number", "patent_title", "patent_date", "cited_patents"]
 
         try:
             response = self._make_request(query, fields)
@@ -254,7 +254,7 @@ class USPTOClient:
                 return {
                     "patent_number": patent_number,
                     "cited_patents": [],
-                    "citing_patents": []
+                    "citing_patents": [],
                 }
 
             patent = patents[0]
@@ -267,11 +267,13 @@ class USPTOClient:
                 "patent_number",
                 "patent_title",
                 "patent_date",
-                "assignees"
+                "assignees",
             ]
             citing_options = {"per_page": 100}
 
-            citing_response = self._make_request(citing_query, citing_fields, citing_options)
+            citing_response = self._make_request(
+                citing_query, citing_fields, citing_options
+            )
             citing_patents = citing_response.get("patents", [])
 
             logger.info(
@@ -282,7 +284,7 @@ class USPTOClient:
             return {
                 "patent_number": patent_number,
                 "cited_patents": cited_patents,
-                "citing_patents": citing_patents
+                "citing_patents": citing_patents,
             }
 
         except USPTOError as e:
@@ -290,14 +292,11 @@ class USPTOClient:
             return {
                 "patent_number": patent_number,
                 "cited_patents": [],
-                "citing_patents": []
+                "citing_patents": [],
             }
 
     def get_patents_for_symbol(
-        self,
-        symbol: str,
-        years: int = 5,
-        limit: int = 100
+        self, symbol: str, years: int = 5, limit: int = 100
     ) -> List[Dict]:
         """Convenience: get patents by ticker symbol
 
@@ -330,9 +329,7 @@ class USPTOClient:
         return patents
 
     def find_citation_links(
-        self,
-        source_symbol: str,
-        target_symbols: List[str]
+        self, source_symbol: str, target_symbols: List[str]
     ) -> List[Dict]:
         """Find patent citation links between companies
 
@@ -369,7 +366,9 @@ class USPTOClient:
         target_patent_map = {}  # patent_number -> symbol
 
         for target_symbol in target_symbols:
-            target_patents = self.get_patents_for_symbol(target_symbol, years=5, limit=100)
+            target_patents = self.get_patents_for_symbol(
+                target_symbol, years=5, limit=100
+            )
             for patent in target_patents:
                 patent_num = patent.get("patent_number")
                 if patent_num:
@@ -396,31 +395,37 @@ class USPTOClient:
             for cited in citations.get("cited_patents", []):
                 cited_num = cited.get("patent_number")
                 if cited_num in target_patent_numbers:
-                    links.append({
-                        "source": source_symbol,
-                        "target": target_patent_map[cited_num],
-                        "citing_patent": source_num,
-                        "cited_patent": cited_num,
-                        "direction": "forward",
-                        "citing_date": source_date,
-                        "cited_date": cited.get("patent_date")
-                    })
+                    links.append(
+                        {
+                            "source": source_symbol,
+                            "target": target_patent_map[cited_num],
+                            "citing_patent": source_num,
+                            "cited_patent": cited_num,
+                            "direction": "forward",
+                            "citing_date": source_date,
+                            "cited_date": cited.get("patent_date"),
+                        }
+                    )
 
             # Check forward citations (target cites source)
             for citing in citations.get("citing_patents", []):
                 citing_num = citing.get("patent_number")
                 if citing_num in target_patent_numbers:
-                    links.append({
-                        "source": source_symbol,
-                        "target": target_patent_map[citing_num],
-                        "citing_patent": citing_num,
-                        "cited_patent": source_num,
-                        "direction": "backward",
-                        "citing_date": citing.get("patent_date"),
-                        "cited_date": source_date
-                    })
+                    links.append(
+                        {
+                            "source": source_symbol,
+                            "target": target_patent_map[citing_num],
+                            "citing_patent": citing_num,
+                            "cited_patent": source_num,
+                            "direction": "backward",
+                            "citing_date": citing.get("patent_date"),
+                            "cited_date": source_date,
+                        }
+                    )
 
-        logger.info(f"Found {len(links)} citation links between {source_symbol} and targets")
+        logger.info(
+            f"Found {len(links)} citation links between {source_symbol} and targets"
+        )
         return links
 
     def _resolve_assignee_to_symbol(self, assignee_name: str) -> Optional[str]:

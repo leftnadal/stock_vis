@@ -7,77 +7,149 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('metrics', '0006_alter_peermetricbenchmark_unique_together_and_more'),
-        ('stocks', '0008_industryclassification'),
-        ('validation', '0003_companybenchmarkdelta_benchmark_basis_and_more'),
+        ("metrics", "0006_alter_peermetricbenchmark_unique_together_and_more"),
+        ("stocks", "0008_industryclassification"),
+        ("validation", "0003_companybenchmarkdelta_benchmark_basis_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AlterUniqueTogether(
-            name='categorysignal',
+            name="categorysignal",
             unique_together=set(),
         ),
         migrations.AlterUniqueTogether(
-            name='companybenchmarkdelta',
+            name="companybenchmarkdelta",
             unique_together=set(),
         ),
         migrations.AddField(
-            model_name='categorysignal',
-            name='preset_key',
-            field=models.CharField(db_index=True, default='default', max_length=30),
+            model_name="categorysignal",
+            name="preset_key",
+            field=models.CharField(db_index=True, default="default", max_length=30),
         ),
         migrations.AddField(
-            model_name='companybenchmarkdelta',
-            name='preset_key',
-            field=models.CharField(db_index=True, default='default', max_length=30),
+            model_name="companybenchmarkdelta",
+            name="preset_key",
+            field=models.CharField(db_index=True, default="default", max_length=30),
         ),
         migrations.AlterUniqueTogether(
-            name='categorysignal',
-            unique_together={('symbol', 'category', 'fiscal_year', 'preset_key')},
+            name="categorysignal",
+            unique_together={("symbol", "category", "fiscal_year", "preset_key")},
         ),
         migrations.AlterUniqueTogether(
-            name='companybenchmarkdelta',
-            unique_together={('symbol', 'fiscal_year', 'metric_code', 'preset_key')},
+            name="companybenchmarkdelta",
+            unique_together={("symbol", "fiscal_year", "metric_code", "preset_key")},
         ),
         migrations.CreateModel(
-            name='PeerPreset',
+            name="PeerPreset",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('preset_key', models.CharField(max_length=30)),
-                ('display_name', models.CharField(max_length=50)),
-                ('logic_summary', models.CharField(max_length=200)),
-                ('peer_symbols', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=10), default=list, size=None)),
-                ('peer_count', models.IntegerField(default=0)),
-                ('generation_method', models.CharField(choices=[('auto_industry', '업종 자동'), ('auto_sector', '섹터 자동'), ('auto_size', '규모 자동'), ('auto_quality', '품질 자동'), ('auto_lifecycle', '성장단계 자동'), ('curated', '큐레이션')], max_length=20)),
-                ('confidence_score', models.FloatField(default=1.0)),
-                ('is_default', models.BooleanField(default=False)),
-                ('is_active', models.BooleanField(default=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, related_name='peer_presets', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("preset_key", models.CharField(max_length=30)),
+                ("display_name", models.CharField(max_length=50)),
+                ("logic_summary", models.CharField(max_length=200)),
+                (
+                    "peer_symbols",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.CharField(max_length=10),
+                        default=list,
+                        size=None,
+                    ),
+                ),
+                ("peer_count", models.IntegerField(default=0)),
+                (
+                    "generation_method",
+                    models.CharField(
+                        choices=[
+                            ("auto_industry", "업종 자동"),
+                            ("auto_sector", "섹터 자동"),
+                            ("auto_size", "규모 자동"),
+                            ("auto_quality", "품질 자동"),
+                            ("auto_lifecycle", "성장단계 자동"),
+                            ("curated", "큐레이션"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("confidence_score", models.FloatField(default=1.0)),
+                ("is_default", models.BooleanField(default=False)),
+                ("is_active", models.BooleanField(default=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="peer_presets",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_peer_preset',
-                'unique_together': {('symbol', 'preset_key')},
+                "db_table": "validation_peer_preset",
+                "unique_together": {("symbol", "preset_key")},
             },
         ),
         migrations.CreateModel(
-            name='UserPeerPreference',
+            name="UserPeerPreference",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('mode', models.CharField(choices=[('preset', '프리셋'), ('custom', '커스텀')], default='preset', max_length=10)),
-                ('preset_key', models.CharField(default='default', max_length=30)),
-                ('custom_peers', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=10), blank=True, default=list, size=None)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, to='stocks.stock')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='peer_preferences', to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "mode",
+                    models.CharField(
+                        choices=[("preset", "프리셋"), ("custom", "커스텀")],
+                        default="preset",
+                        max_length=10,
+                    ),
+                ),
+                ("preset_key", models.CharField(default="default", max_length=30)),
+                (
+                    "custom_peers",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.CharField(max_length=10),
+                        blank=True,
+                        default=list,
+                        size=None,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="stocks.stock",
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="peer_preferences",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_user_peer_preference',
-                'unique_together': {('user', 'symbol')},
+                "db_table": "validation_user_peer_preference",
+                "unique_together": {("user", "symbol")},
             },
         ),
     ]

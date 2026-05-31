@@ -34,63 +34,61 @@ class CostTracker:
     # 2025년 1월 기준
     PRICING = {
         # Gemini 모델
-        'gemini-2.5-flash': {
-            'input': 0.15,      # $0.15/1M input tokens
-            'output': 0.60,     # $0.60/1M output tokens
-            'name': 'Gemini 2.5 Flash',
+        "gemini-2.5-flash": {
+            "input": 0.15,  # $0.15/1M input tokens
+            "output": 0.60,  # $0.60/1M output tokens
+            "name": "Gemini 2.5 Flash",
         },
-        'gemini-2.5-flash-thinking': {
-            'input': 0.15,
-            'output': 3.50,     # Thinking mode는 더 비쌈
-            'name': 'Gemini 2.5 Flash (Thinking)',
+        "gemini-2.5-flash-thinking": {
+            "input": 0.15,
+            "output": 3.50,  # Thinking mode는 더 비쌈
+            "name": "Gemini 2.5 Flash (Thinking)",
         },
-        'gemini-2.5-pro': {
-            'input': 1.25,
-            'output': 10.00,
-            'name': 'Gemini 2.5 Pro',
+        "gemini-2.5-pro": {
+            "input": 1.25,
+            "output": 10.00,
+            "name": "Gemini 2.5 Pro",
         },
         # Claude 모델
-        'claude-3-5-sonnet': {
-            'input': 3.00,
-            'output': 15.00,
-            'name': 'Claude 3.5 Sonnet',
+        "claude-3-5-sonnet": {
+            "input": 3.00,
+            "output": 15.00,
+            "name": "Claude 3.5 Sonnet",
         },
-        'claude-sonnet-4': {
-            'input': 3.00,
-            'output': 15.00,
-            'name': 'Claude Sonnet 4',
+        "claude-sonnet-4": {
+            "input": 3.00,
+            "output": 15.00,
+            "name": "Claude Sonnet 4",
         },
-        'claude-3-5-haiku': {
-            'input': 0.80,
-            'output': 4.00,
-            'name': 'Claude 3.5 Haiku',
+        "claude-3-5-haiku": {
+            "input": 0.80,
+            "output": 4.00,
+            "name": "Claude 3.5 Haiku",
         },
-        'claude-3-haiku': {
-            'input': 0.25,
-            'output': 1.25,
-            'name': 'Claude 3 Haiku',
+        "claude-3-haiku": {
+            "input": 0.25,
+            "output": 1.25,
+            "name": "Claude 3 Haiku",
         },
-        'claude-3-opus': {
-            'input': 15.00,
-            'output': 75.00,
-            'name': 'Claude 3 Opus',
+        "claude-3-opus": {
+            "input": 15.00,
+            "output": 75.00,
+            "name": "Claude 3 Opus",
         },
         # 기본값 (알 수 없는 모델)
-        'default': {
-            'input': 1.00,
-            'output': 5.00,
-            'name': 'Unknown Model',
-        }
+        "default": {
+            "input": 1.00,
+            "output": 5.00,
+            "name": "Unknown Model",
+        },
     }
 
     # 일일/월간 예산 제한 (USD)
-    DEFAULT_DAILY_LIMIT = 10.0    # $10/일
+    DEFAULT_DAILY_LIMIT = 10.0  # $10/일
     DEFAULT_MONTHLY_LIMIT = 100.0  # $100/월
 
     def __init__(
-        self,
-        daily_limit: Optional[float] = None,
-        monthly_limit: Optional[float] = None
+        self, daily_limit: Optional[float] = None, monthly_limit: Optional[float] = None
     ):
         """
         Args:
@@ -98,10 +96,10 @@ class CostTracker:
             monthly_limit: 월간 예산 제한 (USD)
         """
         self.daily_limit = daily_limit or getattr(
-            settings, 'RAG_DAILY_COST_LIMIT', self.DEFAULT_DAILY_LIMIT
+            settings, "RAG_DAILY_COST_LIMIT", self.DEFAULT_DAILY_LIMIT
         )
         self.monthly_limit = monthly_limit or getattr(
-            settings, 'RAG_MONTHLY_COST_LIMIT', self.DEFAULT_MONTHLY_LIMIT
+            settings, "RAG_MONTHLY_COST_LIMIT", self.DEFAULT_MONTHLY_LIMIT
         )
 
     def get_model_pricing(self, model: str) -> Dict[str, float]:
@@ -126,13 +124,10 @@ class CostTracker:
 
         # 기본값
         logger.warning(f"Unknown model pricing: {model}, using default")
-        return self.PRICING['default']
+        return self.PRICING["default"]
 
     def calculate_cost(
-        self,
-        model: str,
-        input_tokens: int,
-        output_tokens: int
+        self, model: str, input_tokens: int, output_tokens: int
     ) -> float:
         """
         비용 계산
@@ -147,16 +142,13 @@ class CostTracker:
         """
         pricing = self.get_model_pricing(model)
 
-        input_cost = (input_tokens / 1_000_000) * pricing['input']
-        output_cost = (output_tokens / 1_000_000) * pricing['output']
+        input_cost = (input_tokens / 1_000_000) * pricing["input"]
+        output_cost = (output_tokens / 1_000_000) * pricing["output"]
 
         return input_cost + output_cost
 
     def calculate_cost_saved(
-        self,
-        model: str,
-        estimated_input_tokens: int,
-        estimated_output_tokens: int
+        self, model: str, estimated_input_tokens: int, estimated_output_tokens: int
     ) -> float:
         """
         캐시 히트로 절감된 비용 계산
@@ -186,7 +178,7 @@ class CostTracker:
         latency_ms: int,
         cached: bool = False,
         cache_id: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Optional[int]:
         """
         사용량 로깅
@@ -209,8 +201,12 @@ class CostTracker:
             생성된 UsageLog ID
         """
         # 비용 계산 (캐시 히트면 0)
-        cost = 0.0 if cached else self.calculate_cost(
-            model_version or model, input_tokens, output_tokens
+        cost = (
+            0.0
+            if cached
+            else self.calculate_cost(
+                model_version or model, input_tokens, output_tokens
+            )
         )
 
         try:
@@ -226,8 +222,8 @@ class CostTracker:
                 cost_usd=cost,
                 latency_ms=latency_ms,
                 cached=cached,
-                cache_id=cache_id or '',
-                metadata=metadata or {}
+                cache_id=cache_id or "",
+                metadata=metadata or {},
             )
 
             # Prometheus 메트릭 기록
@@ -237,7 +233,7 @@ class CostTracker:
                 output_tokens=output_tokens,
                 cost=cost,
                 latency_ms=latency_ms,
-                cached=cached
+                cached=cached,
             )
 
             logger.debug(
@@ -266,7 +262,7 @@ class CostTracker:
         latency_ms: int,
         cached: bool,
         cache_id: str,
-        metadata: dict
+        metadata: dict,
     ):
         """UsageLog 생성 (sync)"""
         from ..models import UsageLog
@@ -284,7 +280,7 @@ class CostTracker:
             latency_ms=latency_ms,
             cached=cached,
             cache_id=cache_id,
-            metadata=metadata
+            metadata=metadata,
         )
 
     def _record_metrics(
@@ -294,7 +290,7 @@ class CostTracker:
         output_tokens: int,
         cost: float,
         latency_ms: int,
-        cached: bool
+        cached: bool,
     ):
         """Prometheus 메트릭 기록"""
         try:
@@ -315,18 +311,14 @@ class CostTracker:
             if cached:
                 estimated_cost = self.calculate_cost(model, input_tokens, output_tokens)
                 record_cost_saved(estimated_cost)
-                record_cache_operation('check', 'hit')
+                record_cache_operation("check", "hit")
             else:
-                record_cache_operation('check', 'miss')
+                record_cache_operation("check", "miss")
 
         except ImportError:
             pass  # 메트릭 모듈 없으면 무시
 
-    async def check_budget(
-        self,
-        user_id: int,
-        estimated_cost: float
-    ) -> Dict[str, Any]:
+    async def check_budget(self, user_id: int, estimated_cost: float) -> Dict[str, Any]:
         """
         예산 확인
 
@@ -348,24 +340,28 @@ class CostTracker:
         monthly_used = await self._get_monthly_cost(user_id)
 
         result = {
-            'allowed': True,
-            'reason': None,
-            'daily_used': daily_used,
-            'daily_limit': self.daily_limit,
-            'monthly_used': monthly_used,
-            'monthly_limit': self.monthly_limit,
+            "allowed": True,
+            "reason": None,
+            "daily_used": daily_used,
+            "daily_limit": self.daily_limit,
+            "monthly_used": monthly_used,
+            "monthly_limit": self.monthly_limit,
         }
 
         # 일일 한도 확인
         if daily_used + estimated_cost > self.daily_limit:
-            result['allowed'] = False
-            result['reason'] = f'일일 예산 초과 (${daily_used:.4f} / ${self.daily_limit:.2f})'
+            result["allowed"] = False
+            result["reason"] = (
+                f"일일 예산 초과 (${daily_used:.4f} / ${self.daily_limit:.2f})"
+            )
             return result
 
         # 월간 한도 확인
         if monthly_used + estimated_cost > self.monthly_limit:
-            result['allowed'] = False
-            result['reason'] = f'월간 예산 초과 (${monthly_used:.4f} / ${self.monthly_limit:.2f})'
+            result["allowed"] = False
+            result["reason"] = (
+                f"월간 예산 초과 (${monthly_used:.4f} / ${self.monthly_limit:.2f})"
+            )
             return result
 
         return result
@@ -399,9 +395,7 @@ class CostTracker:
             return 0.0
 
     async def get_usage_summary(
-        self,
-        user_id: Optional[int] = None,
-        hours: int = 24
+        self, user_id: Optional[int] = None, hours: int = 24
     ) -> Dict[str, Any]:
         """
         사용량 요약 조회
@@ -416,11 +410,7 @@ class CostTracker:
         return await self._get_usage_stats(user_id, hours)
 
     @sync_to_async
-    def _get_usage_stats(
-        self,
-        user_id: Optional[int],
-        hours: int
-    ) -> Dict[str, Any]:
+    def _get_usage_stats(self, user_id: Optional[int], hours: int) -> Dict[str, Any]:
         """사용량 통계 조회 (sync)"""
         from django.contrib.auth import get_user_model
 
@@ -433,16 +423,11 @@ class CostTracker:
                 user = User.objects.get(pk=user_id)
                 return UsageLog.get_usage_stats(user, hours)
             except User.DoesNotExist:
-                return {'error': 'user_not_found'}
+                return {"error": "user_not_found"}
         else:
             return UsageLog.get_usage_stats(None, hours)
 
-    def estimate_cost(
-        self,
-        model: str,
-        prompt_length: int,
-        max_tokens: int
-    ) -> float:
+    def estimate_cost(self, model: str, prompt_length: int, max_tokens: int) -> float:
         """
         예상 비용 추정
 

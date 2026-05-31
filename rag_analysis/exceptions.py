@@ -10,10 +10,12 @@
 
 상세: docs/features/api_envelope/policy.md §3.2
 """
+
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
 # ===== 5xx 도메인 예외 =====
+
 
 class CacheError(APIException):
     status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -41,6 +43,7 @@ class StatsError(APIException):
 
 # ===== 4xx 비즈니스 도메인 예외 =====
 
+
 class BasketFull(APIException):
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = "DataBasket is full."
@@ -60,6 +63,7 @@ class CapacityExceeded(APIException):
 
 
 # ===== 5xx 서비스 가용성 =====
+
 
 class CacheUnavailable(APIException):
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE

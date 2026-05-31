@@ -13,7 +13,7 @@ from typing import Any, Dict, List
 
 import django
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
 from django.utils import timezone
@@ -26,6 +26,7 @@ from serverless.services.keyword_generator import KeywordGeneratorService
 # 예시 1: 배치 키워드 생성
 # ========================================
 
+
 async def example_batch_generation():
     """
     배치 키워드 생성 예시 (20개 종목)
@@ -34,11 +35,11 @@ async def example_batch_generation():
     print("예시 1: 배치 키워드 생성 (20개 종목)")
     print("=" * 60)
 
-    service = KeywordGeneratorService(language='ko')
+    service = KeywordGeneratorService(language="ko")
 
     # 2026-01-24 Gainers TOP 20
     mover_date = date(2026, 1, 24)
-    mover_type = 'gainers'
+    mover_type = "gainers"
 
     print(f"\n생성 대상: {mover_date} {mover_type.upper()}")
 
@@ -53,9 +54,7 @@ async def example_batch_generation():
     # 키워드 생성
     print("\n키워드 생성 중...")
     results = await service.generate_keywords_for_movers(
-        mover_date=mover_date,
-        mover_type=mover_type,
-        max_stocks=20
+        mover_date=mover_date, mover_type=mover_type, max_stocks=20
     )
 
     print(f"\n✅ 생성 완료: {len(results)}개 종목")
@@ -65,8 +64,10 @@ async def example_batch_generation():
         sample = results[0]
         print(f"\n샘플 결과 ({sample['symbol']}):")
         print(f"  키워드:")
-        for kw in sample['keywords'][:3]:
-            print(f"    - {kw['text']} (카테고리: {kw['category']}, 신뢰도: {kw['confidence']:.2f})")
+        for kw in sample["keywords"][:3]:
+            print(
+                f"    - {kw['text']} (카테고리: {kw['category']}, 신뢰도: {kw['confidence']:.2f})"
+            )
         print(f"  요약: {sample['summary'][:100]}...")
 
     return results
@@ -76,6 +77,7 @@ async def example_batch_generation():
 # 예시 2: 단일 종목 키워드 생성
 # ========================================
 
+
 async def example_single_generation():
     """
     단일 종목 키워드 생성 예시
@@ -84,13 +86,12 @@ async def example_single_generation():
     print("예시 2: 단일 종목 키워드 생성")
     print("=" * 60)
 
-    service = KeywordGeneratorService(language='ko')
+    service = KeywordGeneratorService(language="ko")
 
     # MarketMover 조회
     try:
         mover = MarketMover.objects.filter(
-            date=date(2026, 1, 24),
-            mover_type='gainers'
+            date=date(2026, 1, 24), mover_type="gainers"
         ).first()
 
         if not mover:
@@ -107,7 +108,7 @@ async def example_single_generation():
         if result:
             print(f"\n✅ 생성 완료")
             print(f"  키워드 수: {len(result['keywords'])}개")
-            for kw in result['keywords']:
+            for kw in result["keywords"]:
                 print(f"    - {kw['text']} ({kw['category']})")
             print(f"  요약: {result['summary']}")
         else:
@@ -123,6 +124,7 @@ async def example_single_generation():
 # ========================================
 # 예시 3: 토큰 최적화 비교
 # ========================================
+
 
 def example_token_optimization():
     """
@@ -145,7 +147,9 @@ def example_token_optimization():
         print(f"    - 토큰: {comparison['individual']['total_tokens']:,}")
         print(f"    - 비용: ${comparison['individual']['cost_usd']:.6f}")
         print(f"  절약:")
-        print(f"    - 토큰: {comparison['savings']['tokens']:,} ({comparison['savings']['percent']:.1f}%)")
+        print(
+            f"    - 토큰: {comparison['savings']['tokens']:,} ({comparison['savings']['percent']:.1f}%)"
+        )
         print(f"    - 비용: ${comparison['savings']['cost_usd']:.6f}")
         print(f"  권장: {comparison['recommendation']}")
 
@@ -153,6 +157,7 @@ def example_token_optimization():
 # ========================================
 # 예시 4: 데이터베이스 저장
 # ========================================
+
 
 async def example_save_to_database():
     """
@@ -162,14 +167,12 @@ async def example_save_to_database():
     print("예시 4: 데이터베이스 저장")
     print("=" * 60)
 
-    service = KeywordGeneratorService(language='ko')
+    service = KeywordGeneratorService(language="ko")
 
     # 키워드 생성
     mover_date = date.today()
     results = await service.generate_keywords_for_movers(
-        mover_date=mover_date,
-        mover_type='gainers',
-        max_stocks=5
+        mover_date=mover_date, mover_type="gainers", max_stocks=5
     )
 
     print(f"\n생성된 키워드: {len(results)}개")
@@ -180,26 +183,26 @@ async def example_save_to_database():
         try:
             # MarketMover 조회 (company_name 가져오기)
             mover = MarketMover.objects.get(
-                date=mover_date,
-                mover_type='gainers',
-                symbol=result['symbol']
+                date=mover_date, mover_type="gainers", symbol=result["symbol"]
             )
 
             # StockKeyword 생성/업데이트
             keyword_obj, created = StockKeyword.objects.update_or_create(
-                symbol=result['symbol'],
+                symbol=result["symbol"],
                 date=mover_date,
                 defaults={
-                    'company_name': mover.company_name,
-                    'keywords': result['keywords'],
-                    'llm_model': 'gemini-2.5-flash',
-                    'status': 'completed',
-                    'expires_at': timezone.now() + timedelta(days=7)
-                }
+                    "company_name": mover.company_name,
+                    "keywords": result["keywords"],
+                    "llm_model": "gemini-2.5-flash",
+                    "status": "completed",
+                    "expires_at": timezone.now() + timedelta(days=7),
+                },
             )
 
             action = "생성" if created else "업데이트"
-            print(f"  ✅ {result['symbol']}: {action} ({len(result['keywords'])}개 키워드)")
+            print(
+                f"  ✅ {result['symbol']}: {action} ({len(result['keywords'])}개 키워드)"
+            )
             saved_count += 1
 
         except Exception as e:
@@ -212,6 +215,7 @@ async def example_save_to_database():
 # 예시 5: 캐시 조회
 # ========================================
 
+
 def example_cache_lookup():
     """
     StockKeyword 캐시 조회 예시
@@ -220,16 +224,14 @@ def example_cache_lookup():
     print("예시 5: 캐시 조회")
     print("=" * 60)
 
-    symbol = 'AAPL'
+    symbol = "AAPL"
     today = date.today()
 
     print(f"\n조회: {symbol} ({today})")
 
     try:
         keyword_obj = StockKeyword.objects.get(
-            symbol=symbol,
-            date=today,
-            status='completed'
+            symbol=symbol, date=today, status="completed"
         )
 
         print(f"\n✅ 캐시 히트!")
@@ -251,6 +253,7 @@ def example_cache_lookup():
 # 예시 6: 만료된 캐시 정리
 # ========================================
 
+
 def example_cache_cleanup():
     """
     만료된 StockKeyword 정리 예시
@@ -262,9 +265,7 @@ def example_cache_cleanup():
     now = timezone.now()
 
     # 만료된 키워드 조회
-    expired = StockKeyword.objects.filter(
-        expires_at__lt=now
-    )
+    expired = StockKeyword.objects.filter(expires_at__lt=now)
 
     count = expired.count()
     print(f"\n만료된 키워드: {count}개")
@@ -281,6 +282,7 @@ def example_cache_cleanup():
 # 예시 7: 일일 배치 처리 시뮬레이션
 # ========================================
 
+
 async def example_daily_batch():
     """
     일일 배치 처리 시뮬레이션 (Gainers + Losers + Actives)
@@ -289,20 +291,18 @@ async def example_daily_batch():
     print("예시 7: 일일 배치 처리 시뮬레이션")
     print("=" * 60)
 
-    service = KeywordGeneratorService(language='ko')
+    service = KeywordGeneratorService(language="ko")
     mover_date = date.today()
 
     total_cost = 0.0
     total_keywords = 0
 
-    for mover_type in ['gainers', 'losers', 'actives']:
+    for mover_type in ["gainers", "losers", "actives"]:
         print(f"\n{mover_type.upper()} 처리 중...")
 
         # 키워드 생성
         results = await service.generate_keywords_for_movers(
-            mover_date=mover_date,
-            mover_type=mover_type,
-            max_stocks=20
+            mover_date=mover_date, mover_type=mover_type, max_stocks=20
         )
 
         # 비용 추정
@@ -311,7 +311,7 @@ async def example_daily_batch():
         print(f"  - 종목 수: {len(results)}개")
         print(f"  - 비용: ${cost['total_cost_usd']:.6f}")
 
-        total_cost += cost['total_cost_usd']
+        total_cost += cost["total_cost_usd"]
         total_keywords += len(results)
 
     print(f"\n{'=' * 60}")
@@ -325,6 +325,7 @@ async def example_daily_batch():
 # ========================================
 # 메인 실행
 # ========================================
+
 
 async def main():
     """

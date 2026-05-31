@@ -27,6 +27,7 @@ Usage:
     holders = service.get_stock_institutional_holders('AAPL')
     peers = service.get_same_fund_peers('AAPL', limit=20)
 """
+
 import logging
 from collections import defaultdict
 from datetime import date, datetime
@@ -52,77 +53,71 @@ class InstitutionalHoldingsService:
     # 주요 기관투자자 CIK 목록 (50개)
     KEY_INSTITUTIONS = {
         # Mega Holders
-        '0001067983': 'Berkshire Hathaway',
-        '0001364742': 'BlackRock',
-        '0001166559': 'Vanguard Group',
-        '0001035674': 'State Street',
-
+        "0001067983": "Berkshire Hathaway",
+        "0001364742": "BlackRock",
+        "0001166559": "Vanguard Group",
+        "0001035674": "State Street",
         # Banks & Asset Managers
-        '0001061768': 'Goldman Sachs',
-        '0001067701': 'JPMorgan Chase',
-        '0001045810': 'Morgan Stanley',
-        '0001009207': 'Fidelity Management',
-        '0000913760': 'Wellington Management',
-        '0000930413': 'Geode Capital Management',
-        '0001397545': 'Northern Trust',
-        '0001336528': 'Bridgewater Associates',
-        '0001079114': 'Capital Research Global Investors',
-        '0001336601': 'T. Rowe Price',
-        '0001040273': 'AQR Capital Management',
-
+        "0001061768": "Goldman Sachs",
+        "0001067701": "JPMorgan Chase",
+        "0001045810": "Morgan Stanley",
+        "0001009207": "Fidelity Management",
+        "0000913760": "Wellington Management",
+        "0000930413": "Geode Capital Management",
+        "0001397545": "Northern Trust",
+        "0001336528": "Bridgewater Associates",
+        "0001079114": "Capital Research Global Investors",
+        "0001336601": "T. Rowe Price",
+        "0001040273": "AQR Capital Management",
         # Hedge Funds (Top Tier)
-        '0001649339': 'Citadel Advisors',
-        '0001167483': 'Two Sigma Investments',
-        '0001159159': 'DE Shaw',
-        '0001568820': 'Millennium Management',
-        '0001350694': 'ARK Investment Management',
-        '0001037389': 'Renaissance Technologies',
-        '0001535392': 'Point72',
-        '0001536637': 'Tiger Global',
-        '0001418814': 'Coatue Management',
-        '0001510710': 'Pershing Square',
-        '0001603466': 'Third Point',
-        '0001336326': 'Elliott Management',
-        '0000908743': 'Soros Fund Management',
-        '0001595082': 'Viking Global',
-        '0001067059': 'Appaloosa Management',
-
+        "0001649339": "Citadel Advisors",
+        "0001167483": "Two Sigma Investments",
+        "0001159159": "DE Shaw",
+        "0001568820": "Millennium Management",
+        "0001350694": "ARK Investment Management",
+        "0001037389": "Renaissance Technologies",
+        "0001535392": "Point72",
+        "0001536637": "Tiger Global",
+        "0001418814": "Coatue Management",
+        "0001510710": "Pershing Square",
+        "0001603466": "Third Point",
+        "0001336326": "Elliott Management",
+        "0000908743": "Soros Fund Management",
+        "0001595082": "Viking Global",
+        "0001067059": "Appaloosa Management",
         # Growth/Tech Focused
-        '0001040693': 'Baillie Gifford',
-        '0001364839': 'SoftBank',
-        '0001656456': 'Tiger Cub (Lone Pine)',
-        '0001336977': 'Greenlight Capital',
-        '0001096752': 'Maverick Capital',
-
+        "0001040693": "Baillie Gifford",
+        "0001364839": "SoftBank",
+        "0001656456": "Tiger Cub (Lone Pine)",
+        "0001336977": "Greenlight Capital",
+        "0001096752": "Maverick Capital",
         # Value Investors
-        '0001336528': 'Baupost Group',
-        '0001061768': 'ValueAct Capital',
-        '0001336489': 'Mason Capital Management',
-
+        "0001336528": "Baupost Group",
+        "0001061768": "ValueAct Capital",
+        "0001336489": "Mason Capital Management",
         # ETF Issuers
-        '0001364742': 'iShares (BlackRock)',
-        '0001166559': 'Vanguard',
-        '0000908668': 'Invesco',
-        '0001020569': 'Charles Schwab',
-
+        "0001364742": "iShares (BlackRock)",
+        "0001166559": "Vanguard",
+        "0000908668": "Invesco",
+        "0001020569": "Charles Schwab",
         # International
-        '0001364742': 'PIMCO',
-        '0001061768': 'UBS',
-        '0001364839': 'Nomura',
-        '0001336601': 'Allianz',
-
+        "0001364742": "PIMCO",
+        "0001061768": "UBS",
+        "0001364839": "Nomura",
+        "0001336601": "Allianz",
         # Specialty
-        '0001336977': 'Icahn Enterprises',
-        '0001510710': 'Ackman (Pershing Square)',
-        '0001336326': 'Paul Singer (Elliott)',
-        '0000908743': 'Soros',
-        '0001067983': 'Buffett (Berkshire)',
+        "0001336977": "Icahn Enterprises",
+        "0001510710": "Ackman (Pershing Square)",
+        "0001336326": "Paul Singer (Elliott)",
+        "0000908743": "Soros",
+        "0001067983": "Buffett (Berkshire)",
     }
 
     def __init__(self):
         """Initialize service with SEC client and CUSIP mapper"""
         try:
             from packages.shared.api_request.sec_edgar_client import SECEdgarClient
+
             self.sec_client = SECEdgarClient()
         except ImportError:
             logger.warning("SECEdgarClient not available, 13F sync will fail")
@@ -130,6 +125,7 @@ class InstitutionalHoldingsService:
 
         try:
             from serverless.services.cusip_mapper import CUSIPMapper
+
             self.cusip_mapper = CUSIPMapper()
         except ImportError:
             logger.warning("CUSIPMapper not available, CUSIP mapping will fail")
@@ -149,7 +145,12 @@ class InstitutionalHoldingsService:
         """
         if not self.sec_client:
             logger.error("SEC client not available")
-            return {'total_institutions': 0, 'success': 0, 'failed': 0, 'total_holdings': 0}
+            return {
+                "total_institutions": 0,
+                "success": 0,
+                "failed": 0,
+                "total_holdings": 0,
+            }
 
         logger.info(f"전체 기관 동기화 시작: {len(self.KEY_INSTITUTIONS)}개")
 
@@ -161,9 +162,9 @@ class InstitutionalHoldingsService:
         for cik, name in self.KEY_INSTITUTIONS.items():
             try:
                 result = self.sync_institution(cik, name)
-                if result.get('holdings_count', 0) > 0:
+                if result.get("holdings_count", 0) > 0:
                     success += 1
-                    total_holdings += result['holdings_count']
+                    total_holdings += result["holdings_count"]
                 else:
                     failed += 1
                     logger.warning(f"기관 동기화 실패 (데이터 없음): {name}")
@@ -173,10 +174,10 @@ class InstitutionalHoldingsService:
                 continue
 
         result = {
-            'total_institutions': total_institutions,
-            'success': success,
-            'failed': failed,
-            'total_holdings': total_holdings
+            "total_institutions": total_institutions,
+            "success": success,
+            "failed": failed,
+            "total_holdings": total_holdings,
         }
 
         logger.info(
@@ -212,7 +213,12 @@ class InstitutionalHoldingsService:
         """
         if not self.sec_client or not self.cusip_mapper:
             logger.error("Required services not available")
-            return {'institution': name, 'holdings_count': 0, 'mapped': 0, 'unmapped': 0}
+            return {
+                "institution": name,
+                "holdings_count": 0,
+                "mapped": 0,
+                "unmapped": 0,
+            }
 
         logger.info(f"기관 동기화 시작: {name} (CIK: {cik})")
 
@@ -222,14 +228,24 @@ class InstitutionalHoldingsService:
                 from serverless.models import InstitutionalHolding
             except ImportError:
                 logger.error("InstitutionalHolding model not available yet")
-                return {'institution': name, 'holdings_count': 0, 'mapped': 0, 'unmapped': 0}
+                return {
+                    "institution": name,
+                    "holdings_count": 0,
+                    "mapped": 0,
+                    "unmapped": 0,
+                }
 
             # Get latest 13F filing
             filings = self.sec_client.get_13f_filings(cik, limit=1)
 
             if not filings:
                 logger.warning(f"13F 파일링 없음: {name}")
-                return {'institution': name, 'holdings_count': 0, 'mapped': 0, 'unmapped': 0}
+                return {
+                    "institution": name,
+                    "holdings_count": 0,
+                    "mapped": 0,
+                    "unmapped": 0,
+                }
 
             latest_filing = filings[0]
             logger.info(
@@ -243,11 +259,11 @@ class InstitutionalHoldingsService:
             if not holdings:
                 logger.warning(f"13F 보유 종목 없음: {name}")
                 return {
-                    'institution': name,
-                    'filing_date': str(latest_filing.filing_date),
-                    'holdings_count': 0,
-                    'mapped': 0,
-                    'unmapped': 0
+                    "institution": name,
+                    "filing_date": str(latest_filing.filing_date),
+                    "holdings_count": 0,
+                    "mapped": 0,
+                    "unmapped": 0,
                 }
 
             # Get previous filing for comparison (shares_change)
@@ -255,10 +271,11 @@ class InstitutionalHoldingsService:
             try:
                 prev_filings = self.sec_client.get_13f_filings(cik, limit=2)
                 if len(prev_filings) > 1:
-                    prev_holdings_list = self.sec_client.download_13f_holdings(prev_filings[1])
+                    prev_holdings_list = self.sec_client.download_13f_holdings(
+                        prev_filings[1]
+                    )
                     previous_holdings = {
-                        h.get('cusip'): h.get('shares', 0)
-                        for h in prev_holdings_list
+                        h.get("cusip"): h.get("shares", 0) for h in prev_holdings_list
                     }
             except Exception as e:
                 logger.debug(f"이전 파일링 조회 실패 (무시): {e}")
@@ -270,7 +287,7 @@ class InstitutionalHoldingsService:
 
             with transaction.atomic():
                 for holding in holdings:
-                    cusip = holding.get('cusip')
+                    cusip = holding.get("cusip")
                     if not cusip:
                         unmapped_count += 1
                         continue
@@ -285,49 +302,55 @@ class InstitutionalHoldingsService:
                     mapped_count += 1
 
                     # Calculate shares change
-                    current_shares = holding.get('shares', 0)
+                    current_shares = holding.get("shares", 0)
                     prev_shares = previous_holdings.get(cusip, 0)
-                    shares_change = current_shares - prev_shares if prev_shares > 0 else None
+                    shares_change = (
+                        current_shares - prev_shares if prev_shares > 0 else None
+                    )
 
                     # Determine position change
                     position_change = None
                     if shares_change is not None:
                         if shares_change > 0:
-                            position_change = 'increased'
+                            position_change = "increased"
                         elif shares_change < 0:
-                            position_change = 'decreased'
+                            position_change = "decreased"
                         else:
-                            position_change = 'unchanged'
+                            position_change = "unchanged"
                     elif prev_shares == 0 and current_shares > 0:
-                        position_change = 'new'
+                        position_change = "new"
 
                     # Create or update holding
-                    holding_obj, created = InstitutionalHolding.objects.update_or_create(
-                        institution_cik=cik,
-                        stock_symbol=ticker.upper(),
-                        report_date=latest_filing.report_date,
-                        defaults={
-                            'institution_name': name,
-                            'filing_date': latest_filing.filing_date,
-                            'accession_number': latest_filing.accession_number,
-                            'shares': current_shares,
-                            'value_thousands': holding.get('value', 0),
-                            'shares_change': shares_change,
-                            'position_change': position_change,
-                        }
+                    holding_obj, created = (
+                        InstitutionalHolding.objects.update_or_create(
+                            institution_cik=cik,
+                            stock_symbol=ticker.upper(),
+                            report_date=latest_filing.report_date,
+                            defaults={
+                                "institution_name": name,
+                                "filing_date": latest_filing.filing_date,
+                                "accession_number": latest_filing.accession_number,
+                                "shares": current_shares,
+                                "value_thousands": holding.get("value", 0),
+                                "shares_change": shares_change,
+                                "position_change": position_change,
+                            },
+                        )
                     )
 
                     saved_holdings.append(holding_obj)
 
                     if created:
-                        logger.debug(f"새 보유 종목: {name} -> {ticker} ({current_shares:,} shares)")
+                        logger.debug(
+                            f"새 보유 종목: {name} -> {ticker} ({current_shares:,} shares)"
+                        )
 
             result = {
-                'institution': name,
-                'filing_date': str(latest_filing.filing_date),
-                'holdings_count': len(saved_holdings),
-                'mapped': mapped_count,
-                'unmapped': unmapped_count
+                "institution": name,
+                "filing_date": str(latest_filing.filing_date),
+                "holdings_count": len(saved_holdings),
+                "mapped": mapped_count,
+                "unmapped": unmapped_count,
             }
 
             logger.info(
@@ -367,7 +390,7 @@ class InstitutionalHoldingsService:
         logger.info(f"동일 펀드 보유 관계 생성 시작 (min: {min_shared_institutions})")
 
         # Get latest report date
-        latest_holding = InstitutionalHolding.objects.order_by('-report_date').first()
+        latest_holding = InstitutionalHolding.objects.order_by("-report_date").first()
         if not latest_holding:
             logger.warning("보유 현황 데이터 없음")
             return 0
@@ -380,14 +403,14 @@ class InstitutionalHoldingsService:
 
         holdings_qs = InstitutionalHolding.objects.filter(
             report_date=latest_report_date
-        ).values('stock_symbol', 'institution_cik', 'institution_name')
+        ).values("stock_symbol", "institution_cik", "institution_name")
 
         institution_names = {}  # CIK -> Name mapping
 
         for holding in holdings_qs:
-            symbol = holding['stock_symbol']
-            cik = holding['institution_cik']
-            name = holding['institution_name']
+            symbol = holding["stock_symbol"]
+            cik = holding["institution_cik"]
+            name = holding["institution_name"]
 
             holdings_map[symbol].add(cik)
             institution_names[cik] = name
@@ -401,7 +424,7 @@ class InstitutionalHoldingsService:
         for i, symbol_a in enumerate(symbols):
             institutions_a = holdings_map[symbol_a]
 
-            for symbol_b in symbols[i + 1:]:
+            for symbol_b in symbols[i + 1 :]:
                 institutions_b = holdings_map[symbol_b]
 
                 # Find shared institutions
@@ -425,17 +448,17 @@ class InstitutionalHoldingsService:
                     StockRelationship.objects.update_or_create(
                         source_symbol=source,
                         target_symbol=target,
-                        relationship_type='HELD_BY_SAME_FUND',
+                        relationship_type="HELD_BY_SAME_FUND",
                         defaults={
-                            'strength': strength,
-                            'source_provider': 'sec_13f',
-                            'context': {
-                                'shared_institutions': shared_institution_names,
-                                'shared_count': shared_count,
-                                'total_institutions': total_institutions,
-                                'report_date': str(latest_report_date),
-                            }
-                        }
+                            "strength": strength,
+                            "source_provider": "sec_13f",
+                            "context": {
+                                "shared_institutions": shared_institution_names,
+                                "shared_count": shared_count,
+                                "total_institutions": total_institutions,
+                                "report_date": str(latest_report_date),
+                            },
+                        },
                     )
 
                 relationship_count += 1
@@ -463,26 +486,27 @@ class InstitutionalHoldingsService:
             return []
 
         # Get latest report date for this institution
-        latest = InstitutionalHolding.objects.filter(
-            institution_cik=cik
-        ).order_by('-report_date').first()
+        latest = (
+            InstitutionalHolding.objects.filter(institution_cik=cik)
+            .order_by("-report_date")
+            .first()
+        )
 
         if not latest:
             return []
 
         holdings = InstitutionalHolding.objects.filter(
-            institution_cik=cik,
-            report_date=latest.report_date
-        ).order_by('-value_thousands')
+            institution_cik=cik, report_date=latest.report_date
+        ).order_by("-value_thousands")
 
         return [
             {
-                'symbol': h.stock_symbol,
-                'shares': h.shares,
-                'value_thousands': h.value_thousands,
-                'shares_change': h.shares_change,
-                'position_change': h.position_change,
-                'report_date': str(h.report_date),
+                "symbol": h.stock_symbol,
+                "shares": h.shares,
+                "value_thousands": h.value_thousands,
+                "shares_change": h.shares_change,
+                "position_change": h.position_change,
+                "report_date": str(h.report_date),
             }
             for h in holdings
         ]
@@ -506,28 +530,29 @@ class InstitutionalHoldingsService:
         symbol = symbol.upper()
 
         # Get latest report date
-        latest = InstitutionalHolding.objects.filter(
-            stock_symbol=symbol
-        ).order_by('-report_date').first()
+        latest = (
+            InstitutionalHolding.objects.filter(stock_symbol=symbol)
+            .order_by("-report_date")
+            .first()
+        )
 
         if not latest:
             return []
 
         holdings = InstitutionalHolding.objects.filter(
-            stock_symbol=symbol,
-            report_date=latest.report_date
-        ).order_by('-value_thousands')
+            stock_symbol=symbol, report_date=latest.report_date
+        ).order_by("-value_thousands")
 
         return [
             {
-                'institution_name': h.institution_name,
-                'institution_cik': h.institution_cik,
-                'shares': h.shares,
-                'value_thousands': h.value_thousands,
-                'shares_change': h.shares_change,
-                'position_change': h.position_change,
-                'filing_date': str(h.filing_date),
-                'report_date': str(h.report_date),
+                "institution_name": h.institution_name,
+                "institution_cik": h.institution_cik,
+                "shares": h.shares,
+                "value_thousands": h.value_thousands,
+                "shares_change": h.shares_change,
+                "position_change": h.position_change,
+                "filing_date": str(h.filing_date),
+                "report_date": str(h.report_date),
             }
             for h in holdings
         ]
@@ -548,18 +573,17 @@ class InstitutionalHoldingsService:
         symbol = symbol.upper()
 
         relationships = StockRelationship.objects.filter(
-            source_symbol=symbol,
-            relationship_type='HELD_BY_SAME_FUND'
-        ).order_by('-strength')[:limit]
+            source_symbol=symbol, relationship_type="HELD_BY_SAME_FUND"
+        ).order_by("-strength")[:limit]
 
         return [
             {
-                'symbol': rel.target_symbol,
-                'strength': float(rel.strength),
-                'shared_institutions': rel.context.get('shared_institutions', []),
-                'shared_count': rel.context.get('shared_count', 0),
-                'total_institutions': rel.context.get('total_institutions', 0),
-                'report_date': rel.context.get('report_date'),
+                "symbol": rel.target_symbol,
+                "strength": float(rel.strength),
+                "shared_institutions": rel.context.get("shared_institutions", []),
+                "shared_count": rel.context.get("shared_count", 0),
+                "total_institutions": rel.context.get("total_institutions", 0),
+                "report_date": rel.context.get("report_date"),
             }
             for rel in relationships
         ]

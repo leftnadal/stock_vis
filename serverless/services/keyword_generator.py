@@ -51,7 +51,9 @@ class KeywordGeneratorService:
         self.parser = KeywordResponseParser()
 
         # Gemini API 클라이언트 초기화
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
@@ -59,10 +61,7 @@ class KeywordGeneratorService:
         self.client = genai.Client(api_key=api_key)
 
     async def generate_keywords_for_movers(
-        self,
-        mover_date: date,
-        mover_type: str,
-        max_stocks: int = 20
+        self, mover_date: date, mover_type: str, max_stocks: int = 20
     ) -> List[Dict[str, Any]]:
         """
         특정 날짜/타입의 Market Movers에 대해 키워드 생성
@@ -77,14 +76,11 @@ class KeywordGeneratorService:
         """
         # MarketMover 조회
         movers = MarketMover.objects.filter(
-            date=mover_date,
-            mover_type=mover_type
-        ).order_by('rank')[:max_stocks]
+            date=mover_date, mover_type=mover_type
+        ).order_by("rank")[:max_stocks]
 
         if not movers:
-            logger.warning(
-                f"No movers found for {mover_date} {mover_type}"
-            )
+            logger.warning(f"No movers found for {mover_date} {mover_type}")
             return []
 
         # 배치 프롬프트 구성
@@ -95,14 +91,11 @@ class KeywordGeneratorService:
 
         # 배치 프롬프트 생성
         user_prompt = self.prompt_builder.build_batch_prompt(
-            stocks=stocks,
-            max_stocks=max_stocks
+            stocks=stocks, max_stocks=max_stocks
         )
 
         # 토큰 추정
-        token_estimate = self.prompt_builder.estimate_tokens(
-            num_stocks=len(stocks)
-        )
+        token_estimate = self.prompt_builder.estimate_tokens(num_stocks=len(stocks))
 
         logger.info(
             f"Generating keywords for {len(stocks)} stocks. "
@@ -115,8 +108,7 @@ class KeywordGeneratorService:
 
             # 응답 파싱
             results = self.parser.parse_batch_response(
-                response_text,
-                language=self.language
+                response_text, language=self.language
             )
 
             logger.info(
@@ -130,8 +122,7 @@ class KeywordGeneratorService:
             return []
 
     async def generate_keywords_single(
-        self,
-        mover: MarketMover
+        self, mover: MarketMover
     ) -> Optional[Dict[str, Any]]:
         """
         단일 종목 키워드 생성
@@ -145,25 +136,22 @@ class KeywordGeneratorService:
         stock_data = self._prepare_stock_data(mover)
 
         user_prompt = self.prompt_builder.build_single_stock_prompt(
-            symbol=stock_data['symbol'],
-            company_name=stock_data['company_name'],
-            mover_type=stock_data['mover_type'],
-            price_data=stock_data['price_data'],
-            indicators=stock_data['indicators'],
-            sector=stock_data.get('sector'),
-            industry=stock_data.get('industry')
+            symbol=stock_data["symbol"],
+            company_name=stock_data["company_name"],
+            mover_type=stock_data["mover_type"],
+            price_data=stock_data["price_data"],
+            indicators=stock_data["indicators"],
+            sector=stock_data.get("sector"),
+            industry=stock_data.get("industry"),
         )
 
-        logger.info(
-            f"Generating keywords for {stock_data['symbol']}"
-        )
+        logger.info(f"Generating keywords for {stock_data['symbol']}")
 
         try:
             response_text = await self._call_llm(user_prompt)
 
             result = self.parser.parse_single_response(
-                response_text,
-                language=self.language
+                response_text, language=self.language
             )
 
             if result:
@@ -171,9 +159,7 @@ class KeywordGeneratorService:
                     f"Successfully generated keywords for {stock_data['symbol']}"
                 )
             else:
-                logger.warning(
-                    f"Failed to parse keywords for {stock_data['symbol']}"
-                )
+                logger.warning(f"Failed to parse keywords for {stock_data['symbol']}")
 
             return result
 
@@ -194,30 +180,38 @@ class KeywordGeneratorService:
             dict: 프롬프트 빌더에 전달할 데이터
         """
         price_data = {
-            'price': float(mover.price) if mover.price else None,
-            'change_percent': float(mover.change_percent) if mover.change_percent else None,
-            'volume': int(mover.volume) if mover.volume else None,
-            'open': float(mover.open_price) if mover.open_price else None,
-            'high': float(mover.high) if mover.high else None,
-            'low': float(mover.low) if mover.low else None,
+            "price": float(mover.price) if mover.price else None,
+            "change_percent": float(mover.change_percent)
+            if mover.change_percent
+            else None,
+            "volume": int(mover.volume) if mover.volume else None,
+            "open": float(mover.open_price) if mover.open_price else None,
+            "high": float(mover.high) if mover.high else None,
+            "low": float(mover.low) if mover.low else None,
         }
 
         indicators = {
-            'rvol': float(mover.rvol) if mover.rvol else None,
-            'trend_strength': float(mover.trend_strength) if mover.trend_strength else None,
-            'sector_alpha': float(mover.sector_alpha) if mover.sector_alpha else None,
-            'etf_sync_rate': float(mover.etf_sync_rate) if mover.etf_sync_rate else None,
-            'volatility_pct': int(mover.volatility_pct) if mover.volatility_pct else None,
+            "rvol": float(mover.rvol) if mover.rvol else None,
+            "trend_strength": float(mover.trend_strength)
+            if mover.trend_strength
+            else None,
+            "sector_alpha": float(mover.sector_alpha) if mover.sector_alpha else None,
+            "etf_sync_rate": float(mover.etf_sync_rate)
+            if mover.etf_sync_rate
+            else None,
+            "volatility_pct": int(mover.volatility_pct)
+            if mover.volatility_pct
+            else None,
         }
 
         return {
-            'symbol': mover.symbol,
-            'company_name': mover.company_name,
-            'mover_type': mover.mover_type,
-            'price_data': price_data,
-            'indicators': indicators,
-            'sector': mover.sector,
-            'industry': mover.industry,
+            "symbol": mover.symbol,
+            "company_name": mover.company_name,
+            "mover_type": mover.mover_type,
+            "price_data": price_data,
+            "indicators": indicators,
+            "sector": mover.sector,
+            "industry": mover.industry,
         }
 
     def _build_llm_config(self) -> types.GenerateContentConfig:
@@ -231,13 +225,13 @@ class KeywordGeneratorService:
 
     @staticmethod
     def _extract_text(response) -> str:
-        if hasattr(response, 'text') and response.text:
+        if hasattr(response, "text") and response.text:
             return response.text
 
-        if hasattr(response, 'candidates') and response.candidates:
+        if hasattr(response, "candidates") and response.candidates:
             candidate = response.candidates[0]
-            if hasattr(candidate, 'content') and candidate.content:
-                if hasattr(candidate.content, 'parts') and candidate.content.parts:
+            if hasattr(candidate, "content") and candidate.content:
+                if hasattr(candidate.content, "parts") and candidate.content.parts:
                     return candidate.content.parts[0].text
 
         raise ValueError("No text found in LLM response")
@@ -274,7 +268,7 @@ class KeywordGeneratorService:
         movers = MarketMover.objects.filter(
             date=mover_date,
             mover_type=mover_type,
-        ).order_by('rank')[:max_stocks]
+        ).order_by("rank")[:max_stocks]
 
         if not movers:
             logger.warning(f"No movers found for {mover_date} {mover_type}")
@@ -306,10 +300,7 @@ class KeywordGeneratorService:
             logger.exception(f"Failed to generate keywords: {e}")
             return []
 
-    def estimate_batch_cost(
-        self,
-        num_stocks: int
-    ) -> Dict[str, Any]:
+    def estimate_batch_cost(self, num_stocks: int) -> Dict[str, Any]:
         """
         배치 처리 비용 추정
 
@@ -327,18 +318,20 @@ class KeywordGeneratorService:
         INPUT_COST_PER_1M = 0.30
         OUTPUT_COST_PER_1M = 1.20
 
-        input_cost = (token_estimate['input_tokens'] / 1_000_000) * INPUT_COST_PER_1M
-        output_cost = (token_estimate['estimated_output_tokens'] / 1_000_000) * OUTPUT_COST_PER_1M
+        input_cost = (token_estimate["input_tokens"] / 1_000_000) * INPUT_COST_PER_1M
+        output_cost = (
+            token_estimate["estimated_output_tokens"] / 1_000_000
+        ) * OUTPUT_COST_PER_1M
 
         total_cost = input_cost + output_cost
 
         return {
-            'input_tokens': token_estimate['input_tokens'],
-            'output_tokens': token_estimate['estimated_output_tokens'],
-            'total_tokens': token_estimate['total_tokens'],
-            'input_cost_usd': round(input_cost, 6),
-            'output_cost_usd': round(output_cost, 6),
-            'total_cost_usd': round(total_cost, 6),
+            "input_tokens": token_estimate["input_tokens"],
+            "output_tokens": token_estimate["estimated_output_tokens"],
+            "total_tokens": token_estimate["total_tokens"],
+            "input_cost_usd": round(input_cost, 6),
+            "output_cost_usd": round(output_cost, 6),
+            "total_cost_usd": round(total_cost, 6),
         }
 
 
@@ -351,9 +344,7 @@ class KeywordCacheService:
 
     @staticmethod
     def get_cached_keywords(
-        symbol: str,
-        mover_date: date,
-        language: str = "ko"
+        symbol: str, mover_date: date, language: str = "ko"
     ) -> Optional[Dict[str, Any]]:
         """
         캐시에서 키워드 조회
@@ -376,7 +367,7 @@ class KeywordCacheService:
         mover_date: date,
         keywords: List[Dict[str, Any]],
         summary: str,
-        language: str = "ko"
+        language: str = "ko",
     ):
         """
         키워드 캐싱
@@ -394,10 +385,7 @@ class KeywordCacheService:
 
 # 동기 래퍼 함수 (Celery 태스크용)
 def generate_keywords_sync(
-    mover_date: date,
-    mover_type: str,
-    language: str = "ko",
-    max_stocks: int = 20
+    mover_date: date, mover_type: str, language: str = "ko", max_stocks: int = 20
 ) -> List[Dict[str, Any]]:
     """동기 키워드 생성 함수 (Celery 태스크 전용).
 

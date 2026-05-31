@@ -47,11 +47,15 @@ class NewsDeduplicator:
         final_deduped = self._deduplicate_by_title_similarity(url_deduped)
 
         removed_count = len(articles) - len(final_deduped)
-        logger.info(f"Deduplication: {len(articles)} -> {len(final_deduped)} ({removed_count} removed)")
+        logger.info(
+            f"Deduplication: {len(articles)} -> {len(final_deduped)} ({removed_count} removed)"
+        )
 
         return final_deduped
 
-    def _deduplicate_by_url(self, articles: List[RawNewsArticle]) -> List[RawNewsArticle]:
+    def _deduplicate_by_url(
+        self, articles: List[RawNewsArticle]
+    ) -> List[RawNewsArticle]:
         """
         URL 해시 기반 중복 제거
 
@@ -76,8 +80,7 @@ class NewsDeduplicator:
         return unique_articles
 
     def _deduplicate_by_title_similarity(
-        self,
-        articles: List[RawNewsArticle]
+        self, articles: List[RawNewsArticle]
     ) -> List[RawNewsArticle]:
         """
         제목 유사도 기반 중복 제거
@@ -98,8 +101,7 @@ class NewsDeduplicator:
 
             for existing in unique_articles:
                 similarity = self._calculate_title_similarity(
-                    article.title,
-                    existing.title
+                    article.title, existing.title
                 )
 
                 if similarity >= self.title_similarity_threshold:
@@ -140,7 +142,7 @@ class NewsDeduplicator:
             float: 유사도 (0.0 ~ 1.0)
         """
         # 대소문자 무시, 공백 정규화
-        t1 = ' '.join(title1.lower().split())
-        t2 = ' '.join(title2.lower().split())
+        t1 = " ".join(title1.lower().split())
+        t2 = " ".join(title2.lower().split())
 
         return SequenceMatcher(None, t1, t2).ratio()

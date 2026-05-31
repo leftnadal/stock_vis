@@ -51,7 +51,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
             Dict[str, Any]: API 응답
         """
         # API key 추가
-        params['api_token'] = self.api_key
+        params["api_token"] = self.api_key
 
         # Rate limiting (2,500 calls/day - 10초 간격)
         current_time = time.time()
@@ -59,12 +59,14 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
         if time_since_last_request < self.request_delay:
             sleep_time = self.request_delay - time_since_last_request
-            logger.info(f"Marketaux rate limiting: Sleeping for {sleep_time:.2f} seconds")
+            logger.info(
+                f"Marketaux rate limiting: Sleeping for {sleep_time:.2f} seconds"
+            )
             time.sleep(sleep_time)
 
         # Make request
         url = f"{self.BASE_URL}{endpoint}"
-        safe_params = {k: v for k, v in params.items() if k != 'api_token'}
+        safe_params = {k: v for k, v in params.items() if k != "api_token"}
         logger.info(f"Making request to Marketaux: {url} with params: {safe_params}")
 
         response = requests.get(url, params=params)
@@ -72,24 +74,23 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
         # Check for errors
         if response.status_code != 200:
-            logger.error(f"Error {response.status_code} from Marketaux: {response.text}")
+            logger.error(
+                f"Error {response.status_code} from Marketaux: {response.text}"
+            )
             response.raise_for_status()
 
         data = response.json()
 
         # Check for API error
-        if 'error' in data:
-            error_message = data['error']
+        if "error" in data:
+            error_message = data["error"]
             logger.error(f"Marketaux API error: {error_message}")
             raise ValueError(f"Marketaux API error: {error_message}")
 
         return data
 
     def fetch_company_news(
-        self,
-        symbol: str,
-        from_date: datetime,
-        to_date: datetime
+        self, symbol: str, from_date: datetime, to_date: datetime
     ) -> List[RawNewsArticle]:
         """
         종목별 뉴스 가져오기 (엔티티 필터링)
@@ -103,19 +104,19 @@ class MarketauxNewsProvider(BaseNewsProvider):
             List[RawNewsArticle]: 뉴스 리스트 (최대 3개)
         """
         params = {
-            'symbols': symbol.upper(),
-            'filter_entities': 'true',
-            'language': 'en',
-            'published_after': from_date.strftime('%Y-%m-%dT%H:%M:%S'),
-            'published_before': to_date.strftime('%Y-%m-%dT%H:%M:%S'),
-            'limit': 20  # Basic plan: 20 articles/request
+            "symbols": symbol.upper(),
+            "filter_entities": "true",
+            "language": "en",
+            "published_after": from_date.strftime("%Y-%m-%dT%H:%M:%S"),
+            "published_before": to_date.strftime("%Y-%m-%dT%H:%M:%S"),
+            "limit": 20,  # Basic plan: 20 articles/request
         }
 
         try:
-            data = self._make_request('/news/all', params)
+            data = self._make_request("/news/all", params)
 
             # Marketaux 응답 구조: {"data": [...], "meta": {...}}
-            articles_data = data.get('data', [])
+            articles_data = data.get("data", [])
 
             articles = []
             for item in articles_data:
@@ -123,10 +124,14 @@ class MarketauxNewsProvider(BaseNewsProvider):
                     article = self._parse_article(item)
                     articles.append(article)
                 except Exception as e:
-                    logger.error(f"Failed to parse Marketaux article: {e}, item: {item}")
+                    logger.error(
+                        f"Failed to parse Marketaux article: {e}, item: {item}"
+                    )
                     continue
 
-            logger.info(f"Fetched {len(articles)} company news for {symbol} from Marketaux")
+            logger.info(
+                f"Fetched {len(articles)} company news for {symbol} from Marketaux"
+            )
             return articles
 
         except Exception as e:
@@ -134,9 +139,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
             return []
 
     def fetch_market_news(
-        self,
-        category: str = 'general',
-        limit: int = 3
+        self, category: str = "general", limit: int = 3
     ) -> List[RawNewsArticle]:
         """
         일반 시장 뉴스 가져오기
@@ -149,21 +152,21 @@ class MarketauxNewsProvider(BaseNewsProvider):
             List[RawNewsArticle]: 뉴스 리스트
         """
         params = {
-            'language': 'en',
-            'filter_entities': 'true',  # 엔티티 데이터 포함
-            'limit': min(limit, 20)  # Basic plan: 20 articles/request
+            "language": "en",
+            "filter_entities": "true",  # 엔티티 데이터 포함
+            "limit": min(limit, 20),  # Basic plan: 20 articles/request
         }
 
         # 카테고리별 필터링 (Marketaux는 industries 파라미터 사용)
         # 예: 'Technology', 'Financial', 'Energy' 등
         # 현재는 단순하게 처리
-        if category != 'general':
-            params['industries'] = category
+        if category != "general":
+            params["industries"] = category
 
         try:
-            data = self._make_request('/news/all', params)
+            data = self._make_request("/news/all", params)
 
-            articles_data = data.get('data', [])
+            articles_data = data.get("data", [])
 
             articles = []
             for item in articles_data:
@@ -171,10 +174,14 @@ class MarketauxNewsProvider(BaseNewsProvider):
                     article = self._parse_article(item, category=category)
                     articles.append(article)
                 except Exception as e:
-                    logger.error(f"Failed to parse Marketaux article: {e}, item: {item}")
+                    logger.error(
+                        f"Failed to parse Marketaux article: {e}, item: {item}"
+                    )
                     continue
 
-            logger.info(f"Fetched {len(articles)} market news for category '{category}' from Marketaux")
+            logger.info(
+                f"Fetched {len(articles)} market news for category '{category}' from Marketaux"
+            )
             return articles
 
         except Exception as e:
@@ -182,9 +189,7 @@ class MarketauxNewsProvider(BaseNewsProvider):
             return []
 
     def _parse_article(
-        self,
-        item: Dict[str, Any],
-        category: str = 'general'
+        self, item: Dict[str, Any], category: str = "general"
     ) -> RawNewsArticle:
         """
         Marketaux API 응답을 RawNewsArticle로 변환
@@ -229,60 +234,68 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
         # 엔티티 파싱
         entities = []
-        for entity_data in item.get('entities', []):
+        for entity_data in item.get("entities", []):
             entity = {
-                'symbol': entity_data.get('symbol', '').upper(),
-                'entity_name': entity_data.get('name', ''),
-                'entity_type': entity_data.get('type', 'equity'),
-                'exchange': entity_data.get('exchange', ''),
-                'country': entity_data.get('country', ''),
-                'industry': entity_data.get('industry', ''),
-                'match_score': Decimal(str(entity_data.get('match_score', 1.0))),
-                'sentiment_score': self._safe_decimal(entity_data.get('sentiment_score')),
-                'source': 'marketaux',
-                'highlights': []
+                "symbol": entity_data.get("symbol", "").upper(),
+                "entity_name": entity_data.get("name", ""),
+                "entity_type": entity_data.get("type", "equity"),
+                "exchange": entity_data.get("exchange", ""),
+                "country": entity_data.get("country", ""),
+                "industry": entity_data.get("industry", ""),
+                "match_score": Decimal(str(entity_data.get("match_score", 1.0))),
+                "sentiment_score": self._safe_decimal(
+                    entity_data.get("sentiment_score")
+                ),
+                "source": "marketaux",
+                "highlights": [],
             }
 
             # 하이라이트 파싱
-            for highlight_data in entity_data.get('highlights', []):
+            for highlight_data in entity_data.get("highlights", []):
                 highlight = {
-                    'text': highlight_data.get('highlight', ''),
-                    'sentiment': self._safe_decimal(highlight_data.get('sentiment')),
-                    'location': 'title' if highlight_data.get('highlighted_in') == 'title' else 'main_text'
+                    "text": highlight_data.get("highlight", ""),
+                    "sentiment": self._safe_decimal(highlight_data.get("sentiment")),
+                    "location": "title"
+                    if highlight_data.get("highlighted_in") == "title"
+                    else "main_text",
                 }
-                entity['highlights'].append(highlight)
+                entity["highlights"].append(highlight)
 
             entities.append(entity)
 
         # 전체 기사 감성 점수 (첫 번째 엔티티의 감성 점수 사용)
         sentiment_score = None
-        if entities and entities[0].get('sentiment_score') is not None:
-            sentiment_score = entities[0]['sentiment_score']
+        if entities and entities[0].get("sentiment_score") is not None:
+            sentiment_score = entities[0]["sentiment_score"]
 
         # 발행 일시 파싱
-        published_at_str = item.get('published_at', '')
+        published_at_str = item.get("published_at", "")
         try:
             # ISO 8601 형식: "2023-01-01T00:00:00.000000Z"
-            published_at = datetime.fromisoformat(published_at_str.replace('Z', '+00:00'))
+            published_at = datetime.fromisoformat(
+                published_at_str.replace("Z", "+00:00")
+            )
         except Exception as e:
-            logger.warning(f"Failed to parse published_at: {published_at_str}, error: {e}")
+            logger.warning(
+                f"Failed to parse published_at: {published_at_str}, error: {e}"
+            )
             published_at = datetime.now()
 
         return RawNewsArticle(
-            url=self.normalize_url(item.get('url', '')),
-            title=item.get('title', ''),
-            summary=item.get('description', ''),
-            source=item.get('source', 'Unknown'),
+            url=self.normalize_url(item.get("url", "")),
+            title=item.get("title", ""),
+            summary=item.get("description", ""),
+            source=item.get("source", "Unknown"),
             published_at=published_at,
-            image_url=item.get('image_url', ''),
-            language=item.get('language', 'en'),
+            image_url=item.get("image_url", ""),
+            language=item.get("language", "en"),
             category=category,
-            provider_id=item.get('uuid', ''),
-            provider_name='marketaux',
+            provider_id=item.get("uuid", ""),
+            provider_name="marketaux",
             sentiment_score=sentiment_score,
-            sentiment_source='marketaux' if sentiment_score is not None else 'none',
+            sentiment_source="marketaux" if sentiment_score is not None else "none",
             entities=entities,
-            is_press_release=False
+            is_press_release=False,
         )
 
     def _safe_decimal(self, value) -> Decimal:
@@ -308,4 +321,4 @@ class MarketauxNewsProvider(BaseNewsProvider):
 
     def get_rate_limit(self) -> Dict[str, int]:
         """Rate limit 정보: 2,500 calls per day (Basic plan)"""
-        return {'calls': 2500, 'period': 86400}  # 86400초 = 24시간
+        return {"calls": 2500, "period": 86400}  # 86400초 = 24시간

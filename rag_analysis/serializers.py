@@ -7,17 +7,22 @@ class BasketItemSerializer(serializers.ModelSerializer):
     """바구니 아이템 시리얼라이저"""
 
     item_type_display = serializers.CharField(
-        source="get_item_type_display",
-        read_only=True
+        source="get_item_type_display", read_only=True
     )
 
     class Meta:
         model = BasketItem
         fields = [
-            "id", "item_type", "item_type_display",
-            "reference_id", "title", "subtitle",
+            "id",
+            "item_type",
+            "item_type_display",
+            "reference_id",
+            "title",
+            "subtitle",
             "data_units",
-            "data_snapshot", "snapshot_date", "created_at"
+            "data_snapshot",
+            "snapshot_date",
+            "created_at",
         ]
         read_only_fields = ["snapshot_date", "created_at"]
 
@@ -37,10 +42,17 @@ class DataBasketSerializer(serializers.ModelSerializer):
     class Meta:
         model = DataBasket
         fields = [
-            "id", "name", "description",
-            "items", "items_count", "can_add_item",
-            "current_units", "remaining_units", "max_units",
-            "created_at", "updated_at"
+            "id",
+            "name",
+            "description",
+            "items",
+            "items_count",
+            "can_add_item",
+            "current_units",
+            "remaining_units",
+            "max_units",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = ["created_at", "updated_at"]
 
@@ -57,8 +69,13 @@ class AnalysisMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = AnalysisMessage
         fields = [
-            "id", "role", "content", "suggestions",
-            "input_tokens", "output_tokens", "created_at"
+            "id",
+            "role",
+            "content",
+            "suggestions",
+            "input_tokens",
+            "output_tokens",
+            "created_at",
         ]
         read_only_fields = ["created_at"]
 
@@ -69,16 +86,20 @@ class AnalysisSessionSerializer(serializers.ModelSerializer):
     messages = AnalysisMessageSerializer(many=True, read_only=True)
     basket = DataBasketSerializer(read_only=True)
     basket_id = serializers.PrimaryKeyRelatedField(
-        queryset=DataBasket.objects.all(),
-        source="basket",
-        write_only=True
+        queryset=DataBasket.objects.all(), source="basket", write_only=True
     )
 
     class Meta:
         model = AnalysisSession
         fields = [
-            "id", "basket", "basket_id", "status", "title",
-            "exploration_path", "messages",
-            "created_at", "updated_at"
+            "id",
+            "basket",
+            "basket_id",
+            "status",
+            "title",
+            "exploration_path",
+            "messages",
+            "created_at",
+            "updated_at",
         ]
         read_only_fields = ["status", "exploration_path", "created_at", "updated_at"]

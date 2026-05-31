@@ -41,11 +41,22 @@ class CacheWarmer:
     # 인기 종목 (워밍 우선순위 순)
     POPULAR_SYMBOLS = [
         # 미국 빅테크
-        "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META", "TSLA",
+        "AAPL",
+        "MSFT",
+        "GOOGL",
+        "AMZN",
+        "NVDA",
+        "META",
+        "TSLA",
         # 반도체
-        "TSM", "AMD", "INTC", "AVGO",
+        "TSM",
+        "AMD",
+        "INTC",
+        "AVGO",
         # 금융
-        "JPM", "BAC", "GS",
+        "JPM",
+        "BAC",
+        "GS",
         # 한국 주요 종목
         "005930.KS",  # 삼성전자
         "000660.KS",  # SK하이닉스
@@ -61,7 +72,7 @@ class CacheWarmer:
         self,
         symbols: Optional[List[str]] = None,
         templates: Optional[List[str]] = None,
-        limit: int = 50
+        limit: int = 50,
     ) -> Dict[str, Any]:
         """
         캐시 워밍 실행
@@ -104,8 +115,7 @@ class CacheWarmer:
             try:
                 # 이미 캐시에 있는지 확인
                 existing = await self.cache.find_similar(
-                    question=question,
-                    entities=[symbol]
+                    question=question, entities=[symbol]
                 )
 
                 if existing:
@@ -120,9 +130,9 @@ class CacheWarmer:
                     cache_id = await self.cache.store(
                         question=question,
                         entities=[symbol],
-                        response=result['content'],
-                        suggestions=result.get('suggestions', []),
-                        usage=result.get('usage', {})
+                        response=result["content"],
+                        suggestions=result.get("suggestions", []),
+                        usage=result.get("usage", {}),
                     )
 
                     if cache_id:
@@ -146,16 +156,14 @@ class CacheWarmer:
         )
 
         return {
-            'warmed_count': warmed,
-            'failed_count': failed,
-            'skipped_count': skipped,
-            'duration_seconds': duration
+            "warmed_count": warmed,
+            "failed_count": failed,
+            "skipped_count": skipped,
+            "duration_seconds": duration,
         }
 
     async def _generate_response(
-        self,
-        symbol: str,
-        question: str
+        self, symbol: str, question: str
     ) -> Optional[Dict[str, Any]]:
         """
         LLM 응답 생성
@@ -177,33 +185,28 @@ class CacheWarmer:
 
             # LLM 스트리밍으로 응답 수집
             full_response = ""
-            usage = {'input_tokens': 0, 'output_tokens': 0}
+            usage = {"input_tokens": 0, "output_tokens": 0}
 
             async for event in self.llm.generate_stream(
-                context=context,
-                question=question,
-                max_retries=2
+                context=context, question=question, max_retries=2
             ):
-                if event['type'] == 'delta':
-                    full_response += event['content']
-                elif event['type'] == 'final':
+                if event["type"] == "delta":
+                    full_response += event["content"]
+                elif event["type"] == "final":
                     usage = {
-                        'input_tokens': event.get('input_tokens', 0),
-                        'output_tokens': event.get('output_tokens', 0)
+                        "input_tokens": event.get("input_tokens", 0),
+                        "output_tokens": event.get("output_tokens", 0),
                     }
-                elif event['type'] == 'error':
+                elif event["type"] == "error":
                     logger.warning(f"LLM error during warming: {event['message']}")
                     return None
 
             # 응답 파싱
             from .llm_service import ResponseParser
+
             content, suggestions = ResponseParser.parse_suggestions(full_response)
 
-            return {
-                'content': content,
-                'suggestions': suggestions,
-                'usage': usage
-            }
+            return {"content": content, "suggestions": suggestions, "usage": usage}
 
         except Exception as e:
             logger.error(f"Response generation failed: {e}")
@@ -219,7 +222,7 @@ class CacheWarmer:
         Returns:
             컨텍스트 문자열
         """
-        today = datetime.now().strftime('%Y년 %m월 %d일')
+        today = datetime.now().strftime("%Y년 %m월 %d일")
 
         return f"""=== 분석 데이터 바구니 ===
 분석 기준일: {today}
@@ -234,10 +237,7 @@ class CacheWarmer:
 """
 
     async def warm_for_user(
-        self,
-        user_id: int,
-        recent_symbols: List[str],
-        limit: int = 10
+        self, user_id: int, recent_symbols: List[str], limit: int = 10
     ) -> Dict[str, Any]:
         """
         사용자 맞춤 캐시 워밍
@@ -259,15 +259,12 @@ class CacheWarmer:
         ]
 
         return await self.warm_cache(
-            symbols=recent_symbols[:limit // 2],
-            templates=basic_templates,
-            limit=limit
+            symbols=recent_symbols[: limit // 2], templates=basic_templates, limit=limit
         )
 
 
 def run_cache_warming_sync(
-    symbols: Optional[List[str]] = None,
-    limit: int = 50
+    symbols: Optional[List[str]] = None, limit: int = 50
 ) -> Dict[str, Any]:
     """
     동기 방식 캐시 워밍 (Celery 태스크용)
@@ -290,15 +287,12 @@ COMMON_QUESTION_PATTERNS = [
     r"(.+)\s*투자\s*(괜찮|좋|추천)",
     r"(.+)의?\s*전망",
     r"(.+)의?\s*재무\s*(상태|현황|분석)",
-
     # 밸류에이션
     r"(.+)의?\s*(PER|PBR|PSR|밸류에이션)",
     r"(.+)\s*(저평가|고평가)",
-
     # 비교 분석
     r"(.+)와?\s*(.+)\s*비교",
     r"(.+)의?\s*경쟁사",
-
     # 재무
     r"(.+)의?\s*(매출|영업이익|순이익|실적)",
     r"(.+)의?\s*배당",

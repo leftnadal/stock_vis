@@ -30,7 +30,9 @@ def _cache_key(user_id: int, symbol: str) -> str:
 class CustomBenchmarkEngine:
     """커스텀 peer에 대한 on-the-fly benchmark 계산"""
 
-    def compute_summary(self, symbol: str, custom_peers: list[str], user_id: int = 0) -> dict:
+    def compute_summary(
+        self, symbol: str, custom_peers: list[str], user_id: int = 0
+    ) -> dict:
         """
         커스텀 peer로 summary 계산.
         Returns: summary API 응답과 동일한 dict 구조
@@ -44,24 +46,28 @@ class CustomBenchmarkEngine:
         # 벌크 데이터 로드
         all_symbols = custom_peers + [symbol]
         metric_codes = list(
-            MetricDefinition.objects.filter(is_benchmarkable=True)
-            .values_list('metric_code', flat=True)
+            MetricDefinition.objects.filter(is_benchmarkable=True).values_list(
+                "metric_code", flat=True
+            )
         )
 
         # 최신 fiscal_year 결정
         latest_fy = (
             CompanyMetricSnapshot.objects.filter(symbol_id=symbol)
-            .values_list('fiscal_year', flat=True)
-            .distinct().order_by('-fiscal_year').first()
+            .values_list("fiscal_year", flat=True)
+            .distinct()
+            .order_by("-fiscal_year")
+            .first()
         )
         if not latest_fy:
-            return {'error': 'no_data', 'message': '지표 데이터 없음'}
+            return {"error": "no_data", "message": "지표 데이터 없음"}
 
         # 1회 벌크 쿼리: 모든 peer + 자사의 모든 연도/지표
         fiscal_years = list(
             CompanyMetricSnapshot.objects.filter(symbol_id=symbol)
-            .values_list('fiscal_year', flat=True)
-            .distinct().order_by('-fiscal_year')[:5]
+            .values_list("fiscal_year", flat=True)
+            .distinct()
+            .order_by("-fiscal_year")[:5]
         )
 
         snaps = list(
@@ -69,18 +75,18 @@ class CustomBenchmarkEngine:
                 symbol_id__in=all_symbols,
                 fiscal_year__in=fiscal_years,
                 metric_code_id__in=metric_codes,
-                value_status='normal',
+                value_status="normal",
                 metric_value__isnull=False,
-            ).values('symbol_id', 'fiscal_year', 'metric_code_id', 'metric_value')
+            ).values("symbol_id", "fiscal_year", "metric_code_id", "metric_value")
         )
 
         # dict로 그룹핑: {(fiscal_year, metric_code): {symbol: value}}
         data = {}
         for s in snaps:
-            key = (s['fiscal_year'], s['metric_code_id'])
+            key = (s["fiscal_year"], s["metric_code_id"])
             if key not in data:
                 data[key] = {}
-            data[key][s['symbol_id']] = float(s['metric_value'])
+            data[key][s["symbol_id"]] = float(s["metric_value"])
 
         # Category Signal 계산
         category_signals = []
@@ -90,7 +96,9 @@ class CustomBenchmarkEngine:
                 key = (latest_fy, mc)
                 if key not in data or symbol not in data[key]:
                     continue
-                peer_vals = [v for s, v in data[key].items() if s != symbol and s in custom_peers]
+                peer_vals = [
+                    v for s, v in data[key].items() if s != symbol and s in custom_peers
+                ]
                 if len(peer_vals) < 2:
                     continue
                 company_val = data[key][symbol]
@@ -100,32 +108,34 @@ class CustomBenchmarkEngine:
                 valid_pcts.append(pct)
 
             if not valid_pcts:
-                signal = 'gray'
-                reason = '데이터 부족'
+                signal = "gray"
+                reason = "데이터 부족"
                 score = None
             else:
                 score = sum(valid_pcts) / len(valid_pcts)
                 if score >= 65:
-                    signal = 'green'
+                    signal = "green"
                 elif score >= 35:
-                    signal = 'yellow'
+                    signal = "yellow"
                 else:
-                    signal = 'red'
+                    signal = "red"
                 green_count = sum(1 for p in valid_pcts if p >= 65)
                 reason = f"{len(valid_pcts)}개 지표 중 {green_count}개 상위 35%"
 
-            category_signals.append({
-                'category': category,
-                'display_name': CATEGORY_DISPLAY.get(category, category),
-                'signal': signal,
-                'signal_reason': reason,
-                'metric_count': len(codes),
-                'description': '',
-            })
+            category_signals.append(
+                {
+                    "category": category,
+                    "display_name": CATEGORY_DISPLAY.get(category, category),
+                    "signal": signal,
+                    "signal_reason": reason,
+                    "metric_count": len(codes),
+                    "description": "",
+                }
+            )
 
         # 한줄 요약
-        green_cats = [c for c in category_signals if c['signal'] == 'green']
-        red_cats = [c for c in category_signals if c['signal'] == 'red']
+        green_cats = [c for c in category_signals if c["signal"] == "green"]
+        red_cats = [c for c in category_signals if c["signal"] == "red"]
         if len(green_cats) >= 5:
             summary_text = "전반적으로 양호한 재무 체질."
         elif len(red_cats) >= 2:
@@ -136,24 +146,24 @@ class CustomBenchmarkEngine:
             summary_text = "대부분 지표가 중립 구간."
 
         result = {
-            'symbol': symbol,
-            'company_name': '',
-            'data_fiscal_year': latest_fy,
-            'data_freshness': None,
-            'category_signals': category_signals,
-            'summary_text': f"[커스텀 {len(custom_peers)}개 peer] {summary_text}",
-            'summary_source': 'custom',
-            'peer_info': {
-                'industry': '',
-                'peer_count': len(custom_peers),
-                'confidence': 'custom',
-                'benchmark_basis': 'custom',
-                'size_bucket': '',
-                'basis_description': f"직접 설정한 {len(custom_peers)}개 종목과 비교",
-                'top_peers': custom_peers[:10],
-                'industry_leader': None,
+            "symbol": symbol,
+            "company_name": "",
+            "data_fiscal_year": latest_fy,
+            "data_freshness": None,
+            "category_signals": category_signals,
+            "summary_text": f"[커스텀 {len(custom_peers)}개 peer] {summary_text}",
+            "summary_source": "custom",
+            "peer_info": {
+                "industry": "",
+                "peer_count": len(custom_peers),
+                "confidence": "custom",
+                "benchmark_basis": "custom",
+                "size_bucket": "",
+                "basis_description": f"직접 설정한 {len(custom_peers)}개 종목과 비교",
+                "top_peers": custom_peers[:10],
+                "industry_leader": None,
             },
-            'industry_position': {'ranks': []},
+            "industry_position": {"ranks": []},
         }
 
         # 캐시 저장

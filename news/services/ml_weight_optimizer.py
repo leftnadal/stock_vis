@@ -40,9 +40,9 @@ TIME_SERIES_SPLITS = 3
 
 # Safety Gate 임계값
 SAFETY_GATE = {
-    'tier1_f1': 0.55,
-    'tier2_precision': 0.50,
-    'tier3_degradation_max': 0.10,
+    "tier1_f1": 0.55,
+    "tier2_precision": 0.50,
+    "tier3_degradation_max": 0.10,
 }
 
 # Smoothing 계수
@@ -51,25 +51,25 @@ SMOOTHING_PREV = 0.3
 
 # Feature 이름 (Engine C beta_1~beta_5)
 FEATURE_NAMES = [
-    'source_credibility',
-    'entity_count',
-    'sentiment_magnitude',
-    'recency',
-    'keyword_relevance',
+    "source_credibility",
+    "entity_count",
+    "sentiment_magnitude",
+    "recency",
+    "keyword_relevance",
 ]
 
 # 확장 Feature 이름 (Phase 6: ⑥~⑩)
 EXTENDED_FEATURE_NAMES = [
-    'source_credibility',
-    'entity_count',
-    'sentiment_magnitude',
-    'recency',
-    'keyword_relevance',
-    'publish_hour',
-    'weekday',
-    'sector_volatility',
-    'earnings_proximity',
-    'topic_saturation',
+    "source_credibility",
+    "entity_count",
+    "sentiment_magnitude",
+    "recency",
+    "keyword_relevance",
+    "publish_hour",
+    "weekday",
+    "sector_volatility",
+    "earnings_proximity",
+    "topic_saturation",
 ]
 
 # LightGBM 전환 조건
@@ -79,14 +79,25 @@ LIGHTGBM_STAGNATION_THRESHOLD = 0.01  # 1%p
 
 # 소스 신뢰도 (Engine C와 동일)
 SOURCE_CREDIBILITY = {
-    'reuters': 1.0, 'bloomberg': 1.0, 'wsj': 0.95,
-    'wall street journal': 0.95, 'cnbc': 0.90,
-    'financial times': 0.95, 'ft': 0.95,
-    'barrons': 0.90, "barron's": 0.90, 'marketwatch': 0.85,
-    'seeking alpha': 0.75, 'motley fool': 0.70,
-    'yahoo finance': 0.80, 'benzinga': 0.75,
-    'investopedia': 0.70, 'the verge': 0.70,
-    'techcrunch': 0.70, 'associated press': 0.90, 'ap': 0.90,
+    "reuters": 1.0,
+    "bloomberg": 1.0,
+    "wsj": 0.95,
+    "wall street journal": 0.95,
+    "cnbc": 0.90,
+    "financial times": 0.95,
+    "ft": 0.95,
+    "barrons": 0.90,
+    "barron's": 0.90,
+    "marketwatch": 0.85,
+    "seeking alpha": 0.75,
+    "motley fool": 0.70,
+    "yahoo finance": 0.80,
+    "benzinga": 0.75,
+    "investopedia": 0.70,
+    "the verge": 0.70,
+    "techcrunch": 0.70,
+    "associated press": 0.90,
+    "ap": 0.90,
 }
 DEFAULT_SOURCE_SCORE = 0.5
 
@@ -113,7 +124,7 @@ class MLWeightOptimizer:
             [f1, f2, f3, f4, f5] - 각 0~1 범위
         """
         # f1: source_credibility
-        source_lower = (article.source or '').lower().strip()
+        source_lower = (article.source or "").lower().strip()
         f1 = SOURCE_CREDIBILITY.get(source_lower, DEFAULT_SOURCE_SCORE)
 
         # f2: entity_count (normalized)
@@ -178,22 +189,25 @@ class MLWeightOptimizer:
             ml_label_confidence__isnull=False,
             importance_score__isnull=False,
             published_at__gte=cutoff,
-        ).order_by('published_at')
+        ).order_by("published_at")
 
         if company_news_only:
             queryset = queryset.filter(
                 entities__isnull=False,
             ).distinct()
 
-        articles = list(queryset.select_related().prefetch_related('entities'))
+        articles = list(queryset.select_related().prefetch_related("entities"))
 
         if len(articles) < MIN_TRAINING_SAMPLES:
             return {
-                'X': None, 'y': None, 'weights': None,
-                'n_samples': len(articles),
-                'n_positive': 0, 'n_negative': 0,
-                'date_range': None,
-                'error': f'Insufficient data: {len(articles)} < {MIN_TRAINING_SAMPLES}',
+                "X": None,
+                "y": None,
+                "weights": None,
+                "n_samples": len(articles),
+                "n_positive": 0,
+                "n_negative": 0,
+                "date_range": None,
+                "error": f"Insufficient data: {len(articles)} < {MIN_TRAINING_SAMPLES}",
             }
 
         X = []
@@ -219,13 +233,13 @@ class MLWeightOptimizer:
         )
 
         return {
-            'X': X,
-            'y': y,
-            'weights': weights,
-            'n_samples': len(articles),
-            'n_positive': n_positive,
-            'n_negative': n_negative,
-            'date_range': date_range,
+            "X": X,
+            "y": y,
+            "weights": weights,
+            "n_samples": len(articles),
+            "n_positive": n_positive,
+            "n_negative": n_negative,
+            "date_range": date_range,
         }
 
     # ════════════════════════════════════════
@@ -285,7 +299,7 @@ class MLWeightOptimizer:
 
         splits = self.time_series_split(len(X))
         if not splits:
-            return {'error': 'Not enough data for time-series split'}
+            return {"error": "Not enough data for time-series split"}
 
         cv_scores = []
 
@@ -295,30 +309,30 @@ class MLWeightOptimizer:
             w_train = weights[train_idx]
 
             model = LogisticRegression(
-                class_weight='balanced',
+                class_weight="balanced",
                 max_iter=1000,
                 random_state=42,
-                solver='lbfgs',
+                solver="lbfgs",
             )
             model.fit(X_train, y_train, sample_weight=w_train)
             y_pred = model.predict(X_test)
 
             fold_metrics = {
-                'f1': float(f1_score(y_test, y_pred, zero_division=0)),
-                'precision': float(precision_score(y_test, y_pred, zero_division=0)),
-                'recall': float(recall_score(y_test, y_pred, zero_division=0)),
-                'accuracy': float(accuracy_score(y_test, y_pred)),
-                'train_size': len(train_idx),
-                'test_size': len(test_idx),
+                "f1": float(f1_score(y_test, y_pred, zero_division=0)),
+                "precision": float(precision_score(y_test, y_pred, zero_division=0)),
+                "recall": float(recall_score(y_test, y_pred, zero_division=0)),
+                "accuracy": float(accuracy_score(y_test, y_pred)),
+                "train_size": len(train_idx),
+                "test_size": len(test_idx),
             }
             cv_scores.append(fold_metrics)
 
         # Final model: 전체 데이터로 학습
         final_model = LogisticRegression(
-            class_weight='balanced',
+            class_weight="balanced",
             max_iter=1000,
             random_state=42,
-            solver='lbfgs',
+            solver="lbfgs",
         )
         final_model.fit(X, y, sample_weight=weights)
 
@@ -333,17 +347,17 @@ class MLWeightOptimizer:
 
         # CV 평균 메트릭 (float()로 numpy.float64 → native 변환)
         avg_metrics = {
-            'f1': round(float(np.mean([s['f1'] for s in cv_scores])), 4),
-            'precision': round(float(np.mean([s['precision'] for s in cv_scores])), 4),
-            'recall': round(float(np.mean([s['recall'] for s in cv_scores])), 4),
-            'accuracy': round(float(np.mean([s['accuracy'] for s in cv_scores])), 4),
+            "f1": round(float(np.mean([s["f1"] for s in cv_scores])), 4),
+            "precision": round(float(np.mean([s["precision"] for s in cv_scores])), 4),
+            "recall": round(float(np.mean([s["recall"] for s in cv_scores])), 4),
+            "accuracy": round(float(np.mean([s["accuracy"] for s in cv_scores])), 4),
         }
 
         return {
-            'coefficients': [round(c, 6) for c in coefficients],
-            'normalized_weights': normalized,
-            'cv_scores': cv_scores,
-            'final_metrics': avg_metrics,
+            "coefficients": [round(c, 6) for c in coefficients],
+            "normalized_weights": normalized,
+            "cv_scores": cv_scores,
+            "final_metrics": avg_metrics,
         }
 
     # ════════════════════════════════════════
@@ -362,57 +376,61 @@ class MLWeightOptimizer:
             {'passed': bool, 'tier1': dict, 'tier2': dict, 'tier3': dict}
         """
         # float()로 numpy 타입 → native 변환 (JSONField 직렬화 호환)
-        f1 = float(metrics.get('f1', 0))
-        precision = float(metrics.get('precision', 0))
+        f1 = float(metrics.get("f1", 0))
+        precision = float(metrics.get("precision", 0))
 
         # Tier 1: 기본 F1 임계값
         tier1 = {
-            'check': 'F1 >= 0.55',
-            'value': f1,
-            'threshold': SAFETY_GATE['tier1_f1'],
-            'passed': bool(f1 >= SAFETY_GATE['tier1_f1']),
+            "check": "F1 >= 0.55",
+            "value": f1,
+            "threshold": SAFETY_GATE["tier1_f1"],
+            "passed": bool(f1 >= SAFETY_GATE["tier1_f1"]),
         }
 
         # Tier 2: Precision 임계값 (false positive 통제)
         tier2 = {
-            'check': 'Precision >= 0.50',
-            'value': precision,
-            'threshold': SAFETY_GATE['tier2_precision'],
-            'passed': bool(precision >= SAFETY_GATE['tier2_precision']),
+            "check": "Precision >= 0.50",
+            "value": precision,
+            "threshold": SAFETY_GATE["tier2_precision"],
+            "passed": bool(precision >= SAFETY_GATE["tier2_precision"]),
         }
 
         # Tier 3: 이전 모델 대비 성능 저하 체크
-        prev_model = MLModelHistory.objects.filter(
-            safety_gate_passed=True,
-        ).order_by('-trained_at').first()
+        prev_model = (
+            MLModelHistory.objects.filter(
+                safety_gate_passed=True,
+            )
+            .order_by("-trained_at")
+            .first()
+        )
 
         if prev_model:
             prev_f1 = float(prev_model.f1_score)
             degradation = prev_f1 - f1
             tier3 = {
-                'check': f'F1 degradation <= {SAFETY_GATE["tier3_degradation_max"]}',
-                'value': round(degradation, 4),
-                'prev_f1': round(prev_f1, 4),
-                'threshold': SAFETY_GATE['tier3_degradation_max'],
-                'passed': bool(degradation <= SAFETY_GATE['tier3_degradation_max']),
+                "check": f"F1 degradation <= {SAFETY_GATE['tier3_degradation_max']}",
+                "value": round(degradation, 4),
+                "prev_f1": round(prev_f1, 4),
+                "threshold": SAFETY_GATE["tier3_degradation_max"],
+                "passed": bool(degradation <= SAFETY_GATE["tier3_degradation_max"]),
             }
         else:
             # 이전 모델 없음 → 자동 통과
             tier3 = {
-                'check': 'No previous model (auto-pass)',
-                'value': 0,
-                'prev_f1': None,
-                'threshold': SAFETY_GATE['tier3_degradation_max'],
-                'passed': True,
+                "check": "No previous model (auto-pass)",
+                "value": 0,
+                "prev_f1": None,
+                "threshold": SAFETY_GATE["tier3_degradation_max"],
+                "passed": True,
             }
 
-        all_passed = bool(tier1['passed'] and tier2['passed'] and tier3['passed'])
+        all_passed = bool(tier1["passed"] and tier2["passed"] and tier3["passed"])
 
         return {
-            'passed': all_passed,
-            'tier1': tier1,
-            'tier2': tier2,
-            'tier3': tier3,
+            "passed": all_passed,
+            "tier1": tier1,
+            "tier2": tier2,
+            "tier3": tier3,
         }
 
     # ════════════════════════════════════════
@@ -471,6 +489,7 @@ class MLWeightOptimizer:
         """
         if manual_weights is None:
             from .news_classifier import DEFAULT_WEIGHTS
+
             manual_weights = DEFAULT_WEIGHTS
 
         cutoff = timezone.now() - timedelta(days=days)
@@ -478,17 +497,17 @@ class MLWeightOptimizer:
             NewsArticle.objects.filter(
                 published_at__gte=cutoff,
                 importance_score__isnull=False,
-            ).order_by('-published_at')[:500]
+            ).order_by("-published_at")[:500]
         )
 
         if not articles:
             return {
-                'period': f'Last {days} days',
-                'total_articles': 0,
-                'manual_selected': 0,
-                'ml_selected': 0,
-                'overlap': 0,
-                'agreement_rate': 0.0,
+                "period": f"Last {days} days",
+                "total_articles": 0,
+                "manual_selected": 0,
+                "ml_selected": 0,
+                "overlap": 0,
+                "agreement_rate": 0.0,
             }
 
         # 각 가중치로 importance 재계산
@@ -508,8 +527,7 @@ class MLWeightOptimizer:
 
             # ML 가중치 점수
             ml_score = sum(
-                ml_weights.get(FEATURE_NAMES[i], 0.2) * features[i]
-                for i in range(5)
+                ml_weights.get(FEATURE_NAMES[i], 0.2) * features[i] for i in range(5)
             )
             ml_scores[article_id] = ml_score
 
@@ -519,9 +537,7 @@ class MLWeightOptimizer:
         manual_top = set(
             sorted(manual_scores, key=manual_scores.get, reverse=True)[:top_n]
         )
-        ml_top = set(
-            sorted(ml_scores, key=ml_scores.get, reverse=True)[:top_n]
-        )
+        ml_top = set(sorted(ml_scores, key=ml_scores.get, reverse=True)[:top_n])
 
         overlap = manual_top & ml_top
         only_manual = manual_top - ml_top
@@ -530,14 +546,14 @@ class MLWeightOptimizer:
         agreement = len(overlap) / max(len(manual_top), 1)
 
         return {
-            'period': f'Last {days} days',
-            'total_articles': len(articles),
-            'manual_selected': len(manual_top),
-            'ml_selected': len(ml_top),
-            'overlap': len(overlap),
-            'agreement_rate': round(agreement, 4),
-            'only_manual_count': len(only_manual),
-            'only_ml_count': len(only_ml),
+            "period": f"Last {days} days",
+            "total_articles": len(articles),
+            "manual_selected": len(manual_top),
+            "ml_selected": len(ml_top),
+            "overlap": len(overlap),
+            "agreement_rate": round(agreement, 4),
+            "only_manual_count": len(only_manual),
+            "only_ml_count": len(only_ml),
         }
 
     # ════════════════════════════════════════
@@ -566,24 +582,24 @@ class MLWeightOptimizer:
             company_news_only=False,
         )
 
-        if data.get('error') or data['X'] is None:
-            error_msg = data.get('error', 'Unknown error')
+        if data.get("error") or data["X"] is None:
+            error_msg = data.get("error", "Unknown error")
             logger.warning(f"Training aborted: {error_msg}")
 
             MLModelHistory.objects.create(
                 model_version=self._generate_version(),
-                algorithm='logistic_regression',
-                training_samples=data.get('n_samples', 0),
+                algorithm="logistic_regression",
+                training_samples=data.get("n_samples", 0),
                 feature_count=5,
                 f1_score=0.0,
-                deployment_status='failed',
+                deployment_status="failed",
                 training_config={
-                    'rolling_window_weeks': ROLLING_WINDOW_WEEKS,
-                    'company_news_only': True,
-                    'error': error_msg,
+                    "rolling_window_weeks": ROLLING_WINDOW_WEEKS,
+                    "company_news_only": True,
+                    "error": error_msg,
                 },
             )
-            return {'status': 'failed', 'reason': error_msg}
+            return {"status": "failed", "reason": error_msg}
 
         logger.info(
             f"Training data: {data['n_samples']} samples "
@@ -592,25 +608,25 @@ class MLWeightOptimizer:
         )
 
         # 2. 모델 학습
-        train_result = self.train_model(data['X'], data['y'], data['weights'])
+        train_result = self.train_model(data["X"], data["y"], data["weights"])
 
-        if train_result.get('error'):
-            error_msg = train_result['error']
+        if train_result.get("error"):
+            error_msg = train_result["error"]
             logger.warning(f"Training error: {error_msg}")
 
             MLModelHistory.objects.create(
                 model_version=self._generate_version(),
-                algorithm='logistic_regression',
-                training_samples=data['n_samples'],
+                algorithm="logistic_regression",
+                training_samples=data["n_samples"],
                 feature_count=5,
                 f1_score=0.0,
-                deployment_status='failed',
-                training_config={'error': error_msg},
+                deployment_status="failed",
+                training_config={"error": error_msg},
             )
-            return {'status': 'failed', 'reason': error_msg}
+            return {"status": "failed", "reason": error_msg}
 
-        metrics = train_result['final_metrics']
-        new_weights = train_result['normalized_weights']
+        metrics = train_result["final_metrics"]
+        new_weights = train_result["normalized_weights"]
         logger.info(f"Training metrics: {metrics}")
         logger.info(f"Learned weights: {new_weights}")
 
@@ -619,9 +635,13 @@ class MLWeightOptimizer:
         logger.info(f"Safety Gate: {'PASSED' if gate_result['passed'] else 'FAILED'}")
 
         # 4. Weight Smoothing
-        prev_model = MLModelHistory.objects.filter(
-            safety_gate_passed=True,
-        ).order_by('-trained_at').first()
+        prev_model = (
+            MLModelHistory.objects.filter(
+                safety_gate_passed=True,
+            )
+            .order_by("-trained_at")
+            .first()
+        )
 
         prev_weights = prev_model.smoothed_weights if prev_model else None
         smoothed = self.smooth_weights(new_weights, prev_weights)
@@ -629,62 +649,61 @@ class MLWeightOptimizer:
 
         # 5. Shadow Mode 비교
         shadow = self.generate_shadow_comparison(
-            ml_weights=smoothed, days=7,
+            ml_weights=smoothed,
+            days=7,
         )
 
         # 6. 배포 상태 결정
-        deployment_status = 'shadow' if gate_result['passed'] else 'failed'
+        deployment_status = "shadow" if gate_result["passed"] else "failed"
 
         # 7. MLModelHistory 저장
         version = self._generate_version()
         history = MLModelHistory.objects.create(
             model_version=version,
-            algorithm='logistic_regression',
-            training_samples=data['n_samples'],
+            algorithm="logistic_regression",
+            training_samples=data["n_samples"],
             feature_count=5,
-            f1_score=metrics['f1'],
-            precision=metrics['precision'],
-            recall=metrics['recall'],
-            accuracy=metrics['accuracy'],
+            f1_score=metrics["f1"],
+            precision=metrics["precision"],
+            recall=metrics["recall"],
+            accuracy=metrics["accuracy"],
             weights=new_weights,
             smoothed_weights=smoothed,
             feature_importance={
                 name: {
-                    'coefficient': coeff,
-                    'weight': new_weights[name],
-                    'smoothed_weight': smoothed[name],
+                    "coefficient": coeff,
+                    "weight": new_weights[name],
+                    "smoothed_weight": smoothed[name],
                 }
-                for name, coeff in zip(
-                    FEATURE_NAMES, train_result['coefficients']
-                )
+                for name, coeff in zip(FEATURE_NAMES, train_result["coefficients"])
             },
             training_config={
-                'rolling_window_weeks': ROLLING_WINDOW_WEEKS,
-                'time_series_splits': TIME_SERIES_SPLITS,
-                'company_news_only': True,
-                'n_positive': data['n_positive'],
-                'n_negative': data['n_negative'],
-                'date_range': [
-                    str(data['date_range'][0]),
-                    str(data['date_range'][1]),
+                "rolling_window_weeks": ROLLING_WINDOW_WEEKS,
+                "time_series_splits": TIME_SERIES_SPLITS,
+                "company_news_only": True,
+                "n_positive": data["n_positive"],
+                "n_negative": data["n_negative"],
+                "date_range": [
+                    str(data["date_range"][0]),
+                    str(data["date_range"][1]),
                 ],
-                'cv_scores': train_result['cv_scores'],
+                "cv_scores": train_result["cv_scores"],
             },
-            safety_gate_passed=gate_result['passed'],
+            safety_gate_passed=gate_result["passed"],
             safety_gate_details=gate_result,
             deployment_status=deployment_status,
             shadow_comparison=shadow,
         )
 
         result = {
-            'status': deployment_status,
-            'model_version': version,
-            'model_id': history.id,
-            'metrics': metrics,
-            'safety_gate': gate_result['passed'],
-            'weights': smoothed,
-            'shadow': shadow,
-            'training_samples': data['n_samples'],
+            "status": deployment_status,
+            "model_version": version,
+            "model_id": history.id,
+            "metrics": metrics,
+            "safety_gate": gate_result["passed"],
+            "weights": smoothed,
+            "shadow": shadow,
+            "training_samples": data["n_samples"],
         }
 
         logger.info(f"Training pipeline complete: {result['status']}")
@@ -710,35 +729,35 @@ class MLWeightOptimizer:
         try:
             model = MLModelHistory.objects.get(id=model_id)
         except MLModelHistory.DoesNotExist:
-            return {'status': 'error', 'reason': f'Model {model_id} not found'}
+            return {"status": "error", "reason": f"Model {model_id} not found"}
 
         if not model.safety_gate_passed:
             return {
-                'status': 'error',
-                'reason': 'Model did not pass Safety Gate',
+                "status": "error",
+                "reason": "Model did not pass Safety Gate",
             }
 
-        if model.deployment_status == 'deployed':
+        if model.deployment_status == "deployed":
             return {
-                'status': 'already_deployed',
-                'model_version': model.model_version,
+                "status": "already_deployed",
+                "model_version": model.model_version,
             }
 
         # 이전 deployed 모델 → rolled_back
         MLModelHistory.objects.filter(
-            deployment_status='deployed',
-        ).update(deployment_status='rolled_back')
+            deployment_status="deployed",
+        ).update(deployment_status="rolled_back")
 
         # 현재 모델 → deployed
-        model.deployment_status = 'deployed'
+        model.deployment_status = "deployed"
         model.deployed_at = timezone.now()
-        model.save(update_fields=['deployment_status', 'deployed_at'])
+        model.save(update_fields=["deployment_status", "deployed_at"])
 
         return {
-            'status': 'deployed',
-            'model_version': model.model_version,
-            'weights': model.smoothed_weights,
-            'deployed_at': str(model.deployed_at),
+            "status": "deployed",
+            "model_version": model.model_version,
+            "weights": model.smoothed_weights,
+            "deployed_at": str(model.deployed_at),
         }
 
     # ════════════════════════════════════════
@@ -753,16 +772,21 @@ class MLWeightOptimizer:
         Returns:
             dict: 최신 모델 정보, 배포 상태, 성능 추이
         """
-        latest = MLModelHistory.objects.order_by('-trained_at').first()
+        latest = MLModelHistory.objects.order_by("-trained_at").first()
         deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).first()
 
         # 최근 4주 성능 추이
         recent_models = list(
-            MLModelHistory.objects.order_by('-trained_at')[:4].values(
-                'model_version', 'f1_score', 'precision', 'recall',
-                'safety_gate_passed', 'deployment_status', 'trained_at',
+            MLModelHistory.objects.order_by("-trained_at")[:4].values(
+                "model_version",
+                "f1_score",
+                "precision",
+                "recall",
+                "safety_gate_passed",
+                "deployment_status",
+                "trained_at",
             )
         )
 
@@ -773,34 +797,38 @@ class MLWeightOptimizer:
         ).count()
 
         return {
-            'latest_model': {
-                'version': latest.model_version if latest else None,
-                'f1_score': latest.f1_score if latest else None,
-                'status': latest.deployment_status if latest else None,
-                'trained_at': str(latest.trained_at) if latest else None,
-                'safety_gate': latest.safety_gate_passed if latest else None,
-            } if latest else None,
-            'deployed_model': {
-                'version': deployed.model_version if deployed else None,
-                'f1_score': deployed.f1_score if deployed else None,
-                'weights': deployed.smoothed_weights if deployed else None,
-                'deployed_at': str(deployed.deployed_at) if deployed else None,
-            } if deployed else None,
-            'recent_history': [
+            "latest_model": {
+                "version": latest.model_version if latest else None,
+                "f1_score": latest.f1_score if latest else None,
+                "status": latest.deployment_status if latest else None,
+                "trained_at": str(latest.trained_at) if latest else None,
+                "safety_gate": latest.safety_gate_passed if latest else None,
+            }
+            if latest
+            else None,
+            "deployed_model": {
+                "version": deployed.model_version if deployed else None,
+                "f1_score": deployed.f1_score if deployed else None,
+                "weights": deployed.smoothed_weights if deployed else None,
+                "deployed_at": str(deployed.deployed_at) if deployed else None,
+            }
+            if deployed
+            else None,
+            "recent_history": [
                 {
-                    'version': m['model_version'],
-                    'f1': m['f1_score'],
-                    'precision': m['precision'],
-                    'recall': m['recall'],
-                    'gate_passed': m['safety_gate_passed'],
-                    'status': m['deployment_status'],
-                    'trained_at': str(m['trained_at']),
+                    "version": m["model_version"],
+                    "f1": m["f1_score"],
+                    "precision": m["precision"],
+                    "recall": m["recall"],
+                    "gate_passed": m["safety_gate_passed"],
+                    "status": m["deployment_status"],
+                    "trained_at": str(m["trained_at"]),
                 }
                 for m in recent_models
             ],
-            'labeled_data_count': labeled_count,
-            'min_required': MIN_TRAINING_SAMPLES,
-            'ready_for_training': labeled_count >= MIN_TRAINING_SAMPLES,
+            "labeled_data_count": labeled_count,
+            "min_required": MIN_TRAINING_SAMPLES,
+            "ready_for_training": labeled_count >= MIN_TRAINING_SAMPLES,
         }
 
     # ════════════════════════════════════════
@@ -831,12 +859,18 @@ class MLWeightOptimizer:
         # f8: sector_volatility (섹터 기반 변동성 proxy)
         # High-volatility 섹터에 더 높은 점수
         HIGH_VOL_SECTORS = {
-            'Technology', 'Cryptocurrency', 'Biotechnology',
-            'Energy', 'Semiconductors', 'Cannabis',
+            "Technology",
+            "Cryptocurrency",
+            "Biotechnology",
+            "Energy",
+            "Semiconductors",
+            "Cannabis",
         }
         LOW_VOL_SECTORS = {
-            'Utilities', 'Consumer Staples', 'Healthcare',
-            'Real Estate',
+            "Utilities",
+            "Consumer Staples",
+            "Healthcare",
+            "Real Estate",
         }
         sectors = article.rule_sectors or []
         if any(s in HIGH_VOL_SECTORS for s in sectors):
@@ -907,29 +941,33 @@ class MLWeightOptimizer:
             ml_label_confidence__isnull=False,
             importance_score__isnull=False,
             published_at__gte=cutoff,
-        ).order_by('published_at')
+        ).order_by("published_at")
 
         if include_general:
             # Company News (all) + General News (high confidence)
             from django.db.models import Q
+
             queryset = queryset.filter(
-                Q(entities__isnull=False) |  # Company News
-                Q(ml_label_confidence__gte=min_confidence)  # High-confidence General
+                Q(entities__isnull=False)  # Company News
+                | Q(ml_label_confidence__gte=min_confidence)  # High-confidence General
             ).distinct()
         else:
             queryset = queryset.filter(
                 entities__isnull=False,
             ).distinct()
 
-        articles = list(queryset.select_related().prefetch_related('entities'))
+        articles = list(queryset.select_related().prefetch_related("entities"))
 
         if len(articles) < MIN_TRAINING_SAMPLES:
             return {
-                'X': None, 'y': None, 'weights': None,
-                'n_samples': len(articles),
-                'n_positive': 0, 'n_negative': 0,
-                'date_range': None,
-                'error': f'Insufficient data: {len(articles)} < {MIN_TRAINING_SAMPLES}',
+                "X": None,
+                "y": None,
+                "weights": None,
+                "n_samples": len(articles),
+                "n_positive": 0,
+                "n_negative": 0,
+                "date_range": None,
+                "error": f"Insufficient data: {len(articles)} < {MIN_TRAINING_SAMPLES}",
             }
 
         X = []
@@ -947,13 +985,13 @@ class MLWeightOptimizer:
         weights = np.array(weights, dtype=np.float64)
 
         return {
-            'X': X,
-            'y': y,
-            'weights': weights,
-            'n_samples': len(articles),
-            'n_positive': int(np.sum(y == 1)),
-            'n_negative': int(np.sum(y == 0)),
-            'date_range': (
+            "X": X,
+            "y": y,
+            "weights": weights,
+            "n_samples": len(articles),
+            "n_positive": int(np.sum(y == 1)),
+            "n_negative": int(np.sum(y == 0)),
+            "date_range": (
                 articles[0].published_at.date(),
                 articles[-1].published_at.date(),
             ),
@@ -978,7 +1016,7 @@ class MLWeightOptimizer:
         try:
             import lightgbm as lgb
         except ImportError:
-            return {'error': 'lightgbm not installed'}
+            return {"error": "lightgbm not installed"}
 
         from sklearn.metrics import (
             accuracy_score,
@@ -987,14 +1025,11 @@ class MLWeightOptimizer:
             recall_score,
         )
 
-        feature_names = (
-            EXTENDED_FEATURE_NAMES if X.shape[1] == 10
-            else FEATURE_NAMES
-        )
+        feature_names = EXTENDED_FEATURE_NAMES if X.shape[1] == 10 else FEATURE_NAMES
 
         splits = self.time_series_split(len(X))
         if not splits:
-            return {'error': 'Not enough data for time-series split'}
+            return {"error": "Not enough data for time-series split"}
 
         cv_scores = []
 
@@ -1004,39 +1039,42 @@ class MLWeightOptimizer:
             w_train = weights[train_idx]
 
             train_data = lgb.Dataset(
-                X_train, label=y_train, weight=w_train,
+                X_train,
+                label=y_train,
+                weight=w_train,
                 feature_name=feature_names,
             )
 
             params = {
-                'objective': 'binary',
-                'metric': 'binary_logloss',
-                'is_unbalance': True,
-                'num_leaves': 15,
-                'learning_rate': 0.05,
-                'n_estimators': 100,
-                'max_depth': 4,
-                'min_child_samples': 20,
-                'subsample': 0.8,
-                'colsample_bytree': 0.8,
-                'random_state': 42,
-                'verbose': -1,
+                "objective": "binary",
+                "metric": "binary_logloss",
+                "is_unbalance": True,
+                "num_leaves": 15,
+                "learning_rate": 0.05,
+                "n_estimators": 100,
+                "max_depth": 4,
+                "min_child_samples": 20,
+                "subsample": 0.8,
+                "colsample_bytree": 0.8,
+                "random_state": 42,
+                "verbose": -1,
             }
 
             model = lgb.LGBMClassifier(**params)
             model.fit(
-                X_train, y_train,
+                X_train,
+                y_train,
                 sample_weight=w_train,
             )
             y_pred = model.predict(X_test)
 
             fold_metrics = {
-                'f1': float(f1_score(y_test, y_pred, zero_division=0)),
-                'precision': float(precision_score(y_test, y_pred, zero_division=0)),
-                'recall': float(recall_score(y_test, y_pred, zero_division=0)),
-                'accuracy': float(accuracy_score(y_test, y_pred)),
-                'train_size': len(train_idx),
-                'test_size': len(test_idx),
+                "f1": float(f1_score(y_test, y_pred, zero_division=0)),
+                "precision": float(precision_score(y_test, y_pred, zero_division=0)),
+                "recall": float(recall_score(y_test, y_pred, zero_division=0)),
+                "accuracy": float(accuracy_score(y_test, y_pred)),
+                "train_size": len(train_idx),
+                "test_size": len(test_idx),
             }
             cv_scores.append(fold_metrics)
 
@@ -1054,8 +1092,7 @@ class MLWeightOptimizer:
 
         # Engine C 가중치용: 상위 5개 feature만 정규화
         base_importance = {
-            k: v for k, v in feature_importance.items()
-            if k in FEATURE_NAMES
+            k: v for k, v in feature_importance.items() if k in FEATURE_NAMES
         }
         base_total = sum(base_importance.values()) or 1.0
         normalized_weights = {
@@ -1063,17 +1100,17 @@ class MLWeightOptimizer:
         }
 
         avg_metrics = {
-            'f1': round(np.mean([s['f1'] for s in cv_scores]), 4),
-            'precision': round(np.mean([s['precision'] for s in cv_scores]), 4),
-            'recall': round(np.mean([s['recall'] for s in cv_scores]), 4),
-            'accuracy': round(np.mean([s['accuracy'] for s in cv_scores]), 4),
+            "f1": round(np.mean([s["f1"] for s in cv_scores]), 4),
+            "precision": round(np.mean([s["precision"] for s in cv_scores]), 4),
+            "recall": round(np.mean([s["recall"] for s in cv_scores]), 4),
+            "accuracy": round(np.mean([s["accuracy"] for s in cv_scores]), 4),
         }
 
         return {
-            'feature_importance': feature_importance,
-            'normalized_weights': normalized_weights,
-            'cv_scores': cv_scores,
-            'final_metrics': avg_metrics,
+            "feature_importance": feature_importance,
+            "normalized_weights": normalized_weights,
+            "cv_scores": cv_scores,
+            "final_metrics": avg_metrics,
         }
 
     # ════════════════════════════════════════
@@ -1097,51 +1134,51 @@ class MLWeightOptimizer:
         """
         lr_result = self.train_model(
             X[:, :5] if X.shape[1] > 5 else X,
-            y, weights,
+            y,
+            weights,
         )
         lgbm_result = self.train_lightgbm(X, y, weights)
 
-        if lr_result.get('error'):
+        if lr_result.get("error"):
             return {
-                'error': f'LR failed: {lr_result["error"]}',
-                'lgbm_metrics': lgbm_result.get('final_metrics'),
+                "error": f"LR failed: {lr_result['error']}",
+                "lgbm_metrics": lgbm_result.get("final_metrics"),
             }
-        if lgbm_result.get('error'):
+        if lgbm_result.get("error"):
             return {
-                'lr_metrics': lr_result.get('final_metrics'),
-                'error': f'LightGBM failed: {lgbm_result["error"]}',
+                "lr_metrics": lr_result.get("final_metrics"),
+                "error": f"LightGBM failed: {lgbm_result['error']}",
             }
 
-        lr_f1 = lr_result['final_metrics']['f1']
-        lgbm_f1 = lgbm_result['final_metrics']['f1']
+        lr_f1 = lr_result["final_metrics"]["f1"]
+        lgbm_f1 = lgbm_result["final_metrics"]["f1"]
         f1_diff = lgbm_f1 - lr_f1
 
         if f1_diff > 0.02:
-            winner = 'lightgbm'
+            winner = "lightgbm"
             recommendation = (
-                f'LightGBM outperforms LR by {f1_diff:.3f} F1. '
-                'Consider deploying LightGBM.'
+                f"LightGBM outperforms LR by {f1_diff:.3f} F1. "
+                "Consider deploying LightGBM."
             )
         elif f1_diff < -0.02:
-            winner = 'logistic_regression'
+            winner = "logistic_regression"
             recommendation = (
-                f'LR outperforms LightGBM by {-f1_diff:.3f} F1. '
-                'Keep using LR.'
+                f"LR outperforms LightGBM by {-f1_diff:.3f} F1. Keep using LR."
             )
         else:
-            winner = 'tie'
+            winner = "tie"
             recommendation = (
-                f'Performance similar (diff={f1_diff:.3f}). '
-                'LR preferred for interpretability.'
+                f"Performance similar (diff={f1_diff:.3f}). "
+                "LR preferred for interpretability."
             )
 
         return {
-            'lr_metrics': lr_result['final_metrics'],
-            'lgbm_metrics': lgbm_result['final_metrics'],
-            'winner': winner,
-            'f1_diff': round(f1_diff, 4),
-            'recommendation': recommendation,
-            'lgbm_feature_importance': lgbm_result.get('feature_importance'),
+            "lr_metrics": lr_result["final_metrics"],
+            "lgbm_metrics": lgbm_result["final_metrics"],
+            "winner": winner,
+            "f1_diff": round(f1_diff, 4),
+            "recommendation": recommendation,
+            "lgbm_feature_importance": lgbm_result.get("feature_importance"),
         }
 
     # ════════════════════════════════════════
@@ -1170,9 +1207,9 @@ class MLWeightOptimizer:
         # 조건 2: 정확도 정체
         recent_models = list(
             MLModelHistory.objects.filter(
-                algorithm='logistic_regression',
+                algorithm="logistic_regression",
                 safety_gate_passed=True,
-            ).order_by('-trained_at')[:LIGHTGBM_STAGNATION_WEEKS]
+            ).order_by("-trained_at")[:LIGHTGBM_STAGNATION_WEEKS]
         )
 
         condition_stagnation = False
@@ -1189,34 +1226,32 @@ class MLWeightOptimizer:
             published_at__gte=timezone.now() - timedelta(weeks=2),
             rule_sectors__isnull=False,
         ).count()
-        sector_coverage = (
-            recent_with_sectors / recent_total if recent_total > 0 else 0
-        )
+        sector_coverage = recent_with_sectors / recent_total if recent_total > 0 else 0
         condition_features = sector_coverage >= 0.5
 
         ready = condition_data and condition_stagnation and condition_features
 
         return {
-            'ready': ready,
-            'conditions': {
-                'data_sufficient': {
-                    'met': condition_data,
-                    'current': labeled_count,
-                    'required': LIGHTGBM_MIN_SAMPLES,
+            "ready": ready,
+            "conditions": {
+                "data_sufficient": {
+                    "met": condition_data,
+                    "current": labeled_count,
+                    "required": LIGHTGBM_MIN_SAMPLES,
                 },
-                'lr_stagnation': {
-                    'met': condition_stagnation,
-                    'weeks_checked': len(recent_models),
-                    'f1_range': (
+                "lr_stagnation": {
+                    "met": condition_stagnation,
+                    "weeks_checked": len(recent_models),
+                    "f1_range": (
                         round(max(f1_scores) - min(f1_scores), 4)
                         if len(recent_models) >= LIGHTGBM_STAGNATION_WEEKS
                         else None
                     ),
                 },
-                'feature_stability': {
-                    'met': condition_features,
-                    'sector_coverage': round(sector_coverage, 4),
-                    'required': 0.5,
+                "feature_stability": {
+                    "met": condition_features,
+                    "sector_coverage": round(sector_coverage, 4),
+                    "required": 0.5,
                 },
             },
         }
@@ -1243,11 +1278,11 @@ class MLWeightOptimizer:
 
         # 1. 전환 조건 확인
         readiness = self.check_lightgbm_readiness()
-        if not readiness['ready']:
+        if not readiness["ready"]:
             logger.info(f"LightGBM not ready: {readiness['conditions']}")
             return {
-                'status': 'not_ready',
-                'readiness': readiness,
+                "status": "not_ready",
+                "readiness": readiness,
             }
 
         # 2. 확장 데이터 준비
@@ -1257,10 +1292,10 @@ class MLWeightOptimizer:
             min_confidence=0.8,
         )
 
-        if data.get('error') or data['X'] is None:
-            error_msg = data.get('error', 'Unknown error')
+        if data.get("error") or data["X"] is None:
+            error_msg = data.get("error", "Unknown error")
             logger.warning(f"LightGBM data prep failed: {error_msg}")
-            return {'status': 'failed', 'reason': error_msg}
+            return {"status": "failed", "reason": error_msg}
 
         logger.info(
             f"LightGBM data: {data['n_samples']} samples "
@@ -1269,77 +1304,83 @@ class MLWeightOptimizer:
 
         # 3. LightGBM 학습
         train_result = self.train_lightgbm(
-            data['X'], data['y'], data['weights'],
+            data["X"],
+            data["y"],
+            data["weights"],
         )
 
-        if train_result.get('error'):
-            return {'status': 'failed', 'reason': train_result['error']}
+        if train_result.get("error"):
+            return {"status": "failed", "reason": train_result["error"]}
 
-        metrics = train_result['final_metrics']
+        metrics = train_result["final_metrics"]
 
         # 4. A/B 테스트
-        ab_result = self.ab_test(data['X'], data['y'], data['weights'])
+        ab_result = self.ab_test(data["X"], data["y"], data["weights"])
 
         # 5. Safety Gate
         gate_result = self.safety_gate_check(metrics)
 
         # 6. Weight Smoothing
-        new_weights = train_result['normalized_weights']
-        prev_model = MLModelHistory.objects.filter(
-            safety_gate_passed=True,
-        ).order_by('-trained_at').first()
+        new_weights = train_result["normalized_weights"]
+        prev_model = (
+            MLModelHistory.objects.filter(
+                safety_gate_passed=True,
+            )
+            .order_by("-trained_at")
+            .first()
+        )
         prev_weights = prev_model.smoothed_weights if prev_model else None
         smoothed = self.smooth_weights(new_weights, prev_weights)
 
         # 7. 저장
-        deployment_status = 'shadow' if gate_result['passed'] else 'failed'
-        version = self._generate_version(algorithm='lgbm')
+        deployment_status = "shadow" if gate_result["passed"] else "failed"
+        version = self._generate_version(algorithm="lgbm")
 
         history = MLModelHistory.objects.create(
             model_version=version,
-            algorithm='lightgbm',
-            training_samples=data['n_samples'],
-            feature_count=data['X'].shape[1],
-            f1_score=metrics['f1'],
-            precision=metrics['precision'],
-            recall=metrics['recall'],
-            accuracy=metrics['accuracy'],
+            algorithm="lightgbm",
+            training_samples=data["n_samples"],
+            feature_count=data["X"].shape[1],
+            f1_score=metrics["f1"],
+            precision=metrics["precision"],
+            recall=metrics["recall"],
+            accuracy=metrics["accuracy"],
             weights=new_weights,
             smoothed_weights=smoothed,
-            feature_importance=train_result.get('feature_importance'),
+            feature_importance=train_result.get("feature_importance"),
             training_config={
-                'rolling_window_weeks': ROLLING_WINDOW_WEEKS,
-                'include_general': True,
-                'min_confidence': 0.8,
-                'n_positive': data['n_positive'],
-                'n_negative': data['n_negative'],
-                'cv_scores': train_result['cv_scores'],
-                'ab_test': {
-                    'winner': ab_result.get('winner'),
-                    'f1_diff': ab_result.get('f1_diff'),
-                    'lr_f1': ab_result.get('lr_metrics', {}).get('f1'),
-                    'lgbm_f1': ab_result.get('lgbm_metrics', {}).get('f1'),
+                "rolling_window_weeks": ROLLING_WINDOW_WEEKS,
+                "include_general": True,
+                "min_confidence": 0.8,
+                "n_positive": data["n_positive"],
+                "n_negative": data["n_negative"],
+                "cv_scores": train_result["cv_scores"],
+                "ab_test": {
+                    "winner": ab_result.get("winner"),
+                    "f1_diff": ab_result.get("f1_diff"),
+                    "lr_f1": ab_result.get("lr_metrics", {}).get("f1"),
+                    "lgbm_f1": ab_result.get("lgbm_metrics", {}).get("f1"),
                 },
             },
-            safety_gate_passed=gate_result['passed'],
+            safety_gate_passed=gate_result["passed"],
             safety_gate_details=gate_result,
             deployment_status=deployment_status,
         )
 
         result = {
-            'status': deployment_status,
-            'model_version': version,
-            'model_id': history.id,
-            'algorithm': 'lightgbm',
-            'metrics': metrics,
-            'safety_gate': gate_result['passed'],
-            'weights': smoothed,
-            'feature_importance': train_result.get('feature_importance'),
-            'ab_test': {
-                'winner': ab_result.get('winner'),
-                'recommendation': ab_result.get('recommendation'),
+            "status": deployment_status,
+            "model_version": version,
+            "model_id": history.id,
+            "algorithm": "lightgbm",
+            "metrics": metrics,
+            "safety_gate": gate_result["passed"],
+            "weights": smoothed,
+            "feature_importance": train_result.get("feature_importance"),
+            "ab_test": {
+                "winner": ab_result.get("winner"),
+                "recommendation": ab_result.get("recommendation"),
             },
-            'training_samples': data['n_samples'],
+            "training_samples": data["n_samples"],
         }
 
         logger.info(f"LightGBM pipeline complete: {result['status']}")
@@ -1350,11 +1391,11 @@ class MLWeightOptimizer:
     # ════════════════════════════════════════
 
     @staticmethod
-    def _generate_version(algorithm: str = 'lr') -> str:
+    def _generate_version(algorithm: str = "lr") -> str:
         """모델 버전 생성 (예: lr_v1_20260225_1, lgbm_v2_20260225_1)"""
-        today = timezone.localtime().strftime('%Y%m%d')
+        today = timezone.localtime().strftime("%Y%m%d")
         count = MLModelHistory.objects.filter(
             trained_at__date=timezone.localdate(),
         ).count()
-        prefix = 'lgbm_v2' if algorithm == 'lgbm' else 'lr_v1'
+        prefix = "lgbm_v2" if algorithm == "lgbm" else "lr_v1"
         return f"{prefix}_{today}_{count + 1}"

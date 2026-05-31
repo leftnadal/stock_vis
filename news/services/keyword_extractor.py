@@ -40,9 +40,27 @@ class NewsKeywordExtractor:
 
     # 기본 키워드 (LLM 실패 시)
     FALLBACK_KEYWORDS = [
-        {"text": "시장 동향", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["market trend"], "reason": "전반적인 시장 흐름을 확인하세요"},
-        {"text": "거래량 증가", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["volume surge"], "reason": "주요 종목의 거래량 변화를 주시하세요"},
-        {"text": "변동성 확대", "sentiment": "neutral", "related_symbols": [], "search_terms_en": ["volatility spike"], "reason": "시장 변동성이 높아 주의가 필요합니다"},
+        {
+            "text": "시장 동향",
+            "sentiment": "neutral",
+            "related_symbols": [],
+            "search_terms_en": ["market trend"],
+            "reason": "전반적인 시장 흐름을 확인하세요",
+        },
+        {
+            "text": "거래량 증가",
+            "sentiment": "neutral",
+            "related_symbols": [],
+            "search_terms_en": ["volume surge"],
+            "reason": "주요 종목의 거래량 변화를 주시하세요",
+        },
+        {
+            "text": "변동성 확대",
+            "sentiment": "neutral",
+            "related_symbols": [],
+            "search_terms_en": ["volatility spike"],
+            "reason": "시장 변동성이 높아 주의가 필요합니다",
+        },
     ]
 
     def __init__(self, language: str = "ko"):
@@ -53,7 +71,9 @@ class NewsKeywordExtractor:
         self.language = language
 
         # Gemini API 클라이언트 초기화
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
@@ -61,9 +81,7 @@ class NewsKeywordExtractor:
         self.client = genai.Client(api_key=api_key)
 
     def extract_daily_keywords(
-        self,
-        target_date: Optional[date] = None,
-        force: bool = False
+        self, target_date: Optional[date] = None, force: bool = False
     ) -> DailyNewsKeyword:
         """
         특정 날짜의 뉴스에서 키워드 추출
@@ -80,7 +98,7 @@ class NewsKeywordExtractor:
 
         # 이미 추출된 키워드가 있는지 확인
         existing = DailyNewsKeyword.objects.filter(date=target_date).first()
-        if existing and existing.status == 'completed' and not force:
+        if existing and existing.status == "completed" and not force:
             logger.info(f"Keywords already exist for {target_date}")
             return existing
 
@@ -95,8 +113,7 @@ class NewsKeywordExtractor:
 
         # 기본 쿼리 (슬라이스 전)
         base_query = NewsArticle.objects.filter(
-            published_at__gte=start_datetime,
-            published_at__lte=end_datetime
+            published_at__gte=start_datetime, published_at__lte=end_datetime
         )
 
         # 전체 건수 확인
@@ -105,21 +122,25 @@ class NewsKeywordExtractor:
             logger.warning(f"No news found for {target_date}")
             return self._create_or_update_keyword(
                 target_date,
-                status='failed',
-                error_message='No news found for this date'
+                status="failed",
+                error_message="No news found for this date",
             )
 
         # 소스별 건수 집계 (슬라이스 전에 수행)
         sources_count = {}
         finnhub_count = base_query.filter(finnhub_id__isnull=False).count()
-        marketaux_count = base_query.filter(marketaux_uuid__isnull=False).exclude(marketaux_uuid='').count()
+        marketaux_count = (
+            base_query.filter(marketaux_uuid__isnull=False)
+            .exclude(marketaux_uuid="")
+            .count()
+        )
         if finnhub_count:
-            sources_count['finnhub'] = finnhub_count
+            sources_count["finnhub"] = finnhub_count
         if marketaux_count:
-            sources_count['marketaux'] = marketaux_count
+            sources_count["marketaux"] = marketaux_count
 
         # 슬라이스하여 articles 가져오기
-        articles = base_query.order_by('-published_at')[:self.MAX_NEWS_PER_REQUEST]
+        articles = base_query.order_by("-published_at")[: self.MAX_NEWS_PER_REQUEST]
 
         # 뉴스 데이터 준비
         news_data = self._prepare_news_data(articles)
@@ -133,20 +154,20 @@ class NewsKeywordExtractor:
             # source_indices → article_ids 매핑
             prompt_limit = min(50, len(news_data))
             for kw in keywords:
-                indices = kw.pop('source_indices', [])
+                indices = kw.pop("source_indices", [])
                 article_ids = []
                 for idx in indices:
                     if 1 <= idx <= prompt_limit:
-                        article_ids.append(news_data[idx - 1]['id'])
-                kw['article_ids'] = article_ids
+                        article_ids.append(news_data[idx - 1]["id"])
+                kw["article_ids"] = article_ids
 
             return self._create_or_update_keyword(
                 target_date,
                 keywords=keywords,
                 total_news_count=articles.count(),
                 sources=sources_count,
-                status='completed',
-                generation_time_ms=generation_time_ms
+                status="completed",
+                generation_time_ms=generation_time_ms,
             )
 
         except Exception as e:
@@ -158,9 +179,9 @@ class NewsKeywordExtractor:
                 keywords=self.FALLBACK_KEYWORDS,
                 total_news_count=articles.count(),
                 sources=sources_count,
-                status='failed',
+                status="failed",
                 error_message=str(e),
-                generation_time_ms=generation_time_ms
+                generation_time_ms=generation_time_ms,
             )
 
     def _prepare_news_data(self, articles) -> List[Dict]:
@@ -168,17 +189,23 @@ class NewsKeywordExtractor:
         news_list = []
         for article in articles:
             # 관련 종목 추출
-            symbols = list(article.entities.values_list('symbol', flat=True)[:5])
+            symbols = list(article.entities.values_list("symbol", flat=True)[:5])
 
-            news_list.append({
-                'id': str(article.id),
-                'title': article.title,
-                'summary': article.summary[:300] if article.summary else '',  # 요약 길이 제한
-                'source': article.source,
-                'category': article.category,
-                'sentiment_score': float(article.sentiment_score) if article.sentiment_score else None,
-                'symbols': symbols
-            })
+            news_list.append(
+                {
+                    "id": str(article.id),
+                    "title": article.title,
+                    "summary": article.summary[:300]
+                    if article.summary
+                    else "",  # 요약 길이 제한
+                    "source": article.source,
+                    "category": article.category,
+                    "sentiment_score": float(article.sentiment_score)
+                    if article.sentiment_score
+                    else None,
+                    "symbols": symbols,
+                }
+            )
         return news_list
 
     def _call_llm(self, news_data: List[Dict], target_date: date) -> List[Dict]:
@@ -264,15 +291,17 @@ class NewsKeywordExtractor:
         # 뉴스 요약 구성
         news_summary = []
         for i, news in enumerate(news_data[:50], 1):  # 최대 50개만 포함
-            symbols_str = ', '.join(news['symbols']) if news['symbols'] else '없음'
-            sentiment_str = f"{news['sentiment_score']:.2f}" if news['sentiment_score'] else 'N/A'
+            symbols_str = ", ".join(news["symbols"]) if news["symbols"] else "없음"
+            sentiment_str = (
+                f"{news['sentiment_score']:.2f}" if news["sentiment_score"] else "N/A"
+            )
             news_summary.append(
                 f"{i}. [{news['source']}] {news['title']}\n"
                 f"   요약: {news['summary'][:100]}...\n"
                 f"   감성: {sentiment_str}, 관련종목: {symbols_str}"
             )
 
-        return f"""# {target_date.strftime('%Y년 %m월 %d일')} 뉴스 분석
+        return f"""# {target_date.strftime("%Y년 %m월 %d일")} 뉴스 분석
 
 ## 오늘의 뉴스 ({len(news_data)}건)
 
@@ -285,29 +314,39 @@ class NewsKeywordExtractor:
         """LLM 응답 파싱"""
         try:
             # JSON 배열 추출 (코드 블록 처리)
-            json_match = re.search(r'\[[\s\S]*\]', response_text)
+            json_match = re.search(r"\[[\s\S]*\]", response_text)
             if json_match:
                 json_str = json_match.group()
                 keywords = json.loads(json_str)
 
                 # 유효성 검증
                 validated = []
-                VALID_SENTIMENTS = {'positive', 'negative', 'neutral'}
+                VALID_SENTIMENTS = {"positive", "negative", "neutral"}
                 for kw in keywords:
-                    if isinstance(kw, dict) and 'text' in kw:
-                        raw_sentiment = str(kw.get('sentiment', 'neutral')).lower().strip()
+                    if isinstance(kw, dict) and "text" in kw:
+                        raw_sentiment = (
+                            str(kw.get("sentiment", "neutral")).lower().strip()
+                        )
                         # LLM이 유효하지 않은 값을 반환할 수 있으므로 정규화
                         if raw_sentiment not in VALID_SENTIMENTS:
-                            raw_sentiment = 'neutral'
-                        validated.append({
-                            'text': str(kw.get('text', ''))[:35],
-                            'sentiment': raw_sentiment,
-                            'related_symbols': kw.get('related_symbols', [])[:3],
-                            'search_terms_en': [str(t)[:50] for t in kw.get('search_terms_en', [])][:4],
-                            'source_indices': [int(i) for i in kw.get('source_indices', []) if isinstance(i, (int, float))][:5],
-                            'importance': float(kw.get('importance', 0.5)),
-                            'reason': str(kw.get('reason', ''))[:80],
-                        })
+                            raw_sentiment = "neutral"
+                        validated.append(
+                            {
+                                "text": str(kw.get("text", ""))[:35],
+                                "sentiment": raw_sentiment,
+                                "related_symbols": kw.get("related_symbols", [])[:3],
+                                "search_terms_en": [
+                                    str(t)[:50] for t in kw.get("search_terms_en", [])
+                                ][:4],
+                                "source_indices": [
+                                    int(i)
+                                    for i in kw.get("source_indices", [])
+                                    if isinstance(i, (int, float))
+                                ][:5],
+                                "importance": float(kw.get("importance", 0.5)),
+                                "reason": str(kw.get("reason", ""))[:80],
+                            }
+                        )
                 return validated[:10]
 
         except json.JSONDecodeError as e:
@@ -318,7 +357,14 @@ class NewsKeywordExtractor:
             matches = re.findall(pattern, response_text)
             if matches:
                 return [
-                    {"text": text[:35], "sentiment": "neutral", "related_symbols": [], "search_terms_en": [], "importance": 0.5, "reason": ""}
+                    {
+                        "text": text[:35],
+                        "sentiment": "neutral",
+                        "related_symbols": [],
+                        "search_terms_en": [],
+                        "importance": 0.5,
+                        "reason": "",
+                    }
                     for text in matches[:10]
                 ]
 
@@ -331,25 +377,24 @@ class NewsKeywordExtractor:
         keywords: List[Dict] = None,
         total_news_count: int = 0,
         sources: Dict = None,
-        status: str = 'pending',
-        error_message: str = '',
-        generation_time_ms: int = None
+        status: str = "pending",
+        error_message: str = "",
+        generation_time_ms: int = None,
     ) -> DailyNewsKeyword:
         """DailyNewsKeyword 생성 또는 업데이트"""
         defaults = {
-            'keywords': keywords or [],
-            'total_news_count': total_news_count,
-            'sources': sources or {},
-            'status': status,
-            'error_message': error_message,
-            'llm_model': self.MODEL,
+            "keywords": keywords or [],
+            "total_news_count": total_news_count,
+            "sources": sources or {},
+            "status": status,
+            "error_message": error_message,
+            "llm_model": self.MODEL,
         }
         if generation_time_ms is not None:
-            defaults['generation_time_ms'] = generation_time_ms
+            defaults["generation_time_ms"] = generation_time_ms
 
         keyword_obj, created = DailyNewsKeyword.objects.update_or_create(
-            date=target_date,
-            defaults=defaults
+            date=target_date, defaults=defaults
         )
 
         action = "Created" if created else "Updated"
@@ -359,6 +404,8 @@ class NewsKeywordExtractor:
 
     def get_latest_keywords(self, limit: int = 7) -> List[DailyNewsKeyword]:
         """최근 N일간의 키워드 조회"""
-        return list(DailyNewsKeyword.objects.filter(
-            status='completed'
-        ).order_by('-date')[:limit])
+        return list(
+            DailyNewsKeyword.objects.filter(status="completed").order_by("-date")[
+                :limit
+            ]
+        )

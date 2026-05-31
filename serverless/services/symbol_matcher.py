@@ -23,6 +23,7 @@ Usage:
     results = matcher.match_batch(["Apple", "Microsoft", "NVIDIA"])
     # {"Apple": "AAPL", "Microsoft": "MSFT", "NVIDIA": "NVDA"}
 """
+
 import logging
 import re
 from difflib import SequenceMatcher
@@ -47,178 +48,165 @@ class SymbolMatcher:
     4. FMP Search API (캐시됨)
     """
 
-    CACHE_PREFIX = 'symbol_match:'
+    CACHE_PREFIX = "symbol_match:"
     CACHE_TTL = 86400  # 24시간
 
     # 자주 사용되는 회사명 → 티커 하드코딩 매핑
     HARDCODED_MAPPINGS = {
         # Tech Giants
-        'apple': 'AAPL',
-        'apple inc': 'AAPL',
-        'apple inc.': 'AAPL',
-        'microsoft': 'MSFT',
-        'microsoft corp': 'MSFT',
-        'microsoft corporation': 'MSFT',
-        'google': 'GOOGL',
-        'alphabet': 'GOOGL',
-        'alphabet inc': 'GOOGL',
-        'amazon': 'AMZN',
-        'amazon.com': 'AMZN',
-        'amazon inc': 'AMZN',
-        'meta': 'META',
-        'meta platforms': 'META',
-        'facebook': 'META',
-        'nvidia': 'NVDA',
-        'nvidia corp': 'NVDA',
-        'nvidia corporation': 'NVDA',
-        'tesla': 'TSLA',
-        'tesla inc': 'TSLA',
-        'tesla motors': 'TSLA',
-
+        "apple": "AAPL",
+        "apple inc": "AAPL",
+        "apple inc.": "AAPL",
+        "microsoft": "MSFT",
+        "microsoft corp": "MSFT",
+        "microsoft corporation": "MSFT",
+        "google": "GOOGL",
+        "alphabet": "GOOGL",
+        "alphabet inc": "GOOGL",
+        "amazon": "AMZN",
+        "amazon.com": "AMZN",
+        "amazon inc": "AMZN",
+        "meta": "META",
+        "meta platforms": "META",
+        "facebook": "META",
+        "nvidia": "NVDA",
+        "nvidia corp": "NVDA",
+        "nvidia corporation": "NVDA",
+        "tesla": "TSLA",
+        "tesla inc": "TSLA",
+        "tesla motors": "TSLA",
         # Semiconductors
-        'amd': 'AMD',
-        'advanced micro devices': 'AMD',
-        'intel': 'INTC',
-        'intel corp': 'INTC',
-        'intel corporation': 'INTC',
-        'tsmc': 'TSM',
-        'taiwan semiconductor': 'TSM',
-        'taiwan semiconductor manufacturing': 'TSM',
-        'broadcom': 'AVGO',
-        'broadcom inc': 'AVGO',
-        'qualcomm': 'QCOM',
-        'qualcomm inc': 'QCOM',
-        'micron': 'MU',
-        'micron technology': 'MU',
-        'arm': 'ARM',
-        'arm holdings': 'ARM',
-
+        "amd": "AMD",
+        "advanced micro devices": "AMD",
+        "intel": "INTC",
+        "intel corp": "INTC",
+        "intel corporation": "INTC",
+        "tsmc": "TSM",
+        "taiwan semiconductor": "TSM",
+        "taiwan semiconductor manufacturing": "TSM",
+        "broadcom": "AVGO",
+        "broadcom inc": "AVGO",
+        "qualcomm": "QCOM",
+        "qualcomm inc": "QCOM",
+        "micron": "MU",
+        "micron technology": "MU",
+        "arm": "ARM",
+        "arm holdings": "ARM",
         # Software & Cloud
-        'salesforce': 'CRM',
-        'salesforce.com': 'CRM',
-        'adobe': 'ADBE',
-        'adobe inc': 'ADBE',
-        'oracle': 'ORCL',
-        'oracle corp': 'ORCL',
-        'ibm': 'IBM',
-        'cisco': 'CSCO',
-        'cisco systems': 'CSCO',
-        'servicenow': 'NOW',
-        'snowflake': 'SNOW',
-        'palantir': 'PLTR',
-        'palantir technologies': 'PLTR',
-
+        "salesforce": "CRM",
+        "salesforce.com": "CRM",
+        "adobe": "ADBE",
+        "adobe inc": "ADBE",
+        "oracle": "ORCL",
+        "oracle corp": "ORCL",
+        "ibm": "IBM",
+        "cisco": "CSCO",
+        "cisco systems": "CSCO",
+        "servicenow": "NOW",
+        "snowflake": "SNOW",
+        "palantir": "PLTR",
+        "palantir technologies": "PLTR",
         # Finance
-        'jpmorgan': 'JPM',
-        'jp morgan': 'JPM',
-        'jpmorgan chase': 'JPM',
-        'goldman sachs': 'GS',
-        'goldman': 'GS',
-        'bank of america': 'BAC',
-        'bofa': 'BAC',
-        'morgan stanley': 'MS',
-        'wells fargo': 'WFC',
-        'citigroup': 'C',
-        'citi': 'C',
-        'blackrock': 'BLK',
-        'berkshire hathaway': 'BRK.B',
-        'berkshire': 'BRK.B',
-
+        "jpmorgan": "JPM",
+        "jp morgan": "JPM",
+        "jpmorgan chase": "JPM",
+        "goldman sachs": "GS",
+        "goldman": "GS",
+        "bank of america": "BAC",
+        "bofa": "BAC",
+        "morgan stanley": "MS",
+        "wells fargo": "WFC",
+        "citigroup": "C",
+        "citi": "C",
+        "blackrock": "BLK",
+        "berkshire hathaway": "BRK.B",
+        "berkshire": "BRK.B",
         # Healthcare & Pharma
-        'johnson & johnson': 'JNJ',
-        'j&j': 'JNJ',
-        'pfizer': 'PFE',
-        'moderna': 'MRNA',
-        'eli lilly': 'LLY',
-        'lilly': 'LLY',
-        'merck': 'MRK',
-        'abbvie': 'ABBV',
-        'unitedhealth': 'UNH',
-        'unitedhealth group': 'UNH',
-
+        "johnson & johnson": "JNJ",
+        "j&j": "JNJ",
+        "pfizer": "PFE",
+        "moderna": "MRNA",
+        "eli lilly": "LLY",
+        "lilly": "LLY",
+        "merck": "MRK",
+        "abbvie": "ABBV",
+        "unitedhealth": "UNH",
+        "unitedhealth group": "UNH",
         # Consumer & Retail
-        'walmart': 'WMT',
-        'costco': 'COST',
-        'target': 'TGT',
-        'home depot': 'HD',
-        'nike': 'NKE',
-        'starbucks': 'SBUX',
-        'coca-cola': 'KO',
-        'coca cola': 'KO',
-        'coke': 'KO',
-        'pepsi': 'PEP',
-        'pepsico': 'PEP',
-        'mcdonalds': 'MCD',
-        "mcdonald's": 'MCD',
-
+        "walmart": "WMT",
+        "costco": "COST",
+        "target": "TGT",
+        "home depot": "HD",
+        "nike": "NKE",
+        "starbucks": "SBUX",
+        "coca-cola": "KO",
+        "coca cola": "KO",
+        "coke": "KO",
+        "pepsi": "PEP",
+        "pepsico": "PEP",
+        "mcdonalds": "MCD",
+        "mcdonald's": "MCD",
         # Gaming & Entertainment
-        'activision': 'ATVI',
-        'activision blizzard': 'ATVI',
-        'electronic arts': 'EA',
-        'ea': 'EA',
-        'netflix': 'NFLX',
-        'disney': 'DIS',
-        'walt disney': 'DIS',
-        'warner bros': 'WBD',
-        'warner bros discovery': 'WBD',
-        'spotify': 'SPOT',
-
+        "activision": "ATVI",
+        "activision blizzard": "ATVI",
+        "electronic arts": "EA",
+        "ea": "EA",
+        "netflix": "NFLX",
+        "disney": "DIS",
+        "walt disney": "DIS",
+        "warner bros": "WBD",
+        "warner bros discovery": "WBD",
+        "spotify": "SPOT",
         # Automotive
-        'ford': 'F',
-        'ford motor': 'F',
-        'general motors': 'GM',
-        'gm': 'GM',
-        'toyota': 'TM',
-        'honda': 'HMC',
-        'rivian': 'RIVN',
-        'lucid': 'LCID',
-        'lucid motors': 'LCID',
-
+        "ford": "F",
+        "ford motor": "F",
+        "general motors": "GM",
+        "gm": "GM",
+        "toyota": "TM",
+        "honda": "HMC",
+        "rivian": "RIVN",
+        "lucid": "LCID",
+        "lucid motors": "LCID",
         # Energy & Utilities
-        'exxon': 'XOM',
-        'exxonmobil': 'XOM',
-        'chevron': 'CVX',
-        'conocophillips': 'COP',
-        'bp': 'BP',
-        'shell': 'SHEL',
-
+        "exxon": "XOM",
+        "exxonmobil": "XOM",
+        "chevron": "CVX",
+        "conocophillips": "COP",
+        "bp": "BP",
+        "shell": "SHEL",
         # Telecom
-        'verizon': 'VZ',
-        'at&t': 'T',
-        'att': 'T',
-        't-mobile': 'TMUS',
-        'tmobile': 'TMUS',
-
+        "verizon": "VZ",
+        "at&t": "T",
+        "att": "T",
+        "t-mobile": "TMUS",
+        "tmobile": "TMUS",
         # Other notable
-        'boeing': 'BA',
-        'lockheed martin': 'LMT',
-        'raytheon': 'RTX',
-        'caterpillar': 'CAT',
-        '3m': 'MMM',
-        'ups': 'UPS',
-        'fedex': 'FDX',
-        'visa': 'V',
-        'mastercard': 'MA',
-        'paypal': 'PYPL',
-        'square': 'SQ',
-        'block': 'SQ',
-        'coinbase': 'COIN',
-        'robinhood': 'HOOD',
+        "boeing": "BA",
+        "lockheed martin": "LMT",
+        "raytheon": "RTX",
+        "caterpillar": "CAT",
+        "3m": "MMM",
+        "ups": "UPS",
+        "fedex": "FDX",
+        "visa": "V",
+        "mastercard": "MA",
+        "paypal": "PYPL",
+        "square": "SQ",
+        "block": "SQ",
+        "coinbase": "COIN",
+        "robinhood": "HOOD",
     }
 
     # 불필요한 접미사 패턴
     SUFFIX_PATTERNS = [
-        r'\s+(inc\.?|corp\.?|co\.?|ltd\.?|llc|lp|plc|sa|ag|nv)$',
-        r'\s+(incorporated|corporation|company|limited)$',
-        r'\s+(holdings?|group|enterprises?)$',
+        r"\s+(inc\.?|corp\.?|co\.?|ltd\.?|llc|lp|plc|sa|ag|nv)$",
+        r"\s+(incorporated|corporation|company|limited)$",
+        r"\s+(holdings?|group|enterprises?)$",
     ]
 
     def __init__(self):
         # 접미사 패턴 컴파일
-        self._suffix_pattern = re.compile(
-            '|'.join(self.SUFFIX_PATTERNS),
-            re.IGNORECASE
-        )
+        self._suffix_pattern = re.compile("|".join(self.SUFFIX_PATTERNS), re.IGNORECASE)
         logger.info("SymbolMatcher initialized")
 
     def match(self, company_name: str) -> Optional[str]:
@@ -241,7 +229,7 @@ class SymbolMatcher:
         cache_key = f"{self.CACHE_PREFIX}{normalized.replace(' ', '_')}"
         cached = cache.get(cache_key)
         if cached:
-            return cached if cached != '__NOT_FOUND__' else None
+            return cached if cached != "__NOT_FOUND__" else None
 
         # 2. 하드코딩 매핑
         symbol = self.HARDCODED_MAPPINGS.get(normalized)
@@ -262,7 +250,7 @@ class SymbolMatcher:
             return symbol
 
         # 매칭 실패
-        cache.set(cache_key, '__NOT_FOUND__', self.CACHE_TTL)
+        cache.set(cache_key, "__NOT_FOUND__", self.CACHE_TTL)
         logger.debug(f"Symbol not found for: {company_name}")
         return None
 
@@ -286,11 +274,7 @@ class SymbolMatcher:
 
         return results
 
-    def get_match_confidence(
-        self,
-        company_name: str,
-        symbol: str
-    ) -> float:
+    def get_match_confidence(self, company_name: str, symbol: str) -> float:
         """
         매칭 신뢰도 계산
 
@@ -303,15 +287,13 @@ class SymbolMatcher:
         """
         try:
             stock = Stock.objects.get(symbol=symbol.upper())
-            db_name = stock.stock_name or ''
+            db_name = stock.stock_name or ""
 
             # 이름 유사도 계산
             normalized_input = self._normalize_name(company_name)
             normalized_db = self._normalize_name(db_name)
 
-            return SequenceMatcher(
-                None, normalized_input, normalized_db
-            ).ratio()
+            return SequenceMatcher(None, normalized_input, normalized_db).ratio()
 
         except Stock.DoesNotExist:
             return 0.5  # DB에 없으면 중간 신뢰도
@@ -324,30 +306,25 @@ class SymbolMatcher:
         normalized = name.lower().strip()
 
         # 접미사 제거
-        normalized = self._suffix_pattern.sub('', normalized)
+        normalized = self._suffix_pattern.sub("", normalized)
 
         # 특수문자 정리
-        normalized = re.sub(r'[^\w\s&]', '', normalized)
-        normalized = re.sub(r'\s+', ' ', normalized)
+        normalized = re.sub(r"[^\w\s&]", "", normalized)
+        normalized = re.sub(r"\s+", " ", normalized)
 
         return normalized.strip()
 
-    def _match_from_db_exact(
-        self,
-        normalized: str,
-        original: str
-    ) -> Optional[str]:
+    def _match_from_db_exact(self, normalized: str, original: str) -> Optional[str]:
         """PostgreSQL 정확 매칭"""
         try:
             # 심볼로 직접 매칭 (티커가 입력된 경우)
-            if re.match(r'^[A-Z]{1,5}$', original.upper()):
+            if re.match(r"^[A-Z]{1,5}$", original.upper()):
                 if Stock.objects.filter(symbol=original.upper()).exists():
                     return original.upper()
 
             # 이름 정확 매칭 (대소문자 무시)
             stock = Stock.objects.filter(
-                Q(stock_name__iexact=original) |
-                Q(stock_name__iexact=normalized)
+                Q(stock_name__iexact=original) | Q(stock_name__iexact=normalized)
             ).first()
 
             if stock:
@@ -358,17 +335,12 @@ class SymbolMatcher:
 
         return None
 
-    def _match_from_db_partial(
-        self,
-        normalized: str,
-        original: str
-    ) -> Optional[str]:
+    def _match_from_db_partial(self, normalized: str, original: str) -> Optional[str]:
         """PostgreSQL 부분 매칭"""
         try:
             # 이름에 포함된 종목 검색
             stocks = Stock.objects.filter(
-                Q(stock_name__icontains=original) |
-                Q(stock_name__icontains=normalized)
+                Q(stock_name__icontains=original) | Q(stock_name__icontains=normalized)
             )[:10]
 
             if not stocks:
@@ -379,7 +351,7 @@ class SymbolMatcher:
             best_score = 0.0
 
             for stock in stocks:
-                stock_name_str = self._normalize_name(stock.stock_name or '')
+                stock_name_str = self._normalize_name(stock.stock_name or "")
                 score = SequenceMatcher(None, normalized, stock_name_str).ratio()
 
                 if score > best_score and score >= 0.6:

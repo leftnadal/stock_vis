@@ -55,106 +55,103 @@ class MLProductionManager:
         # 최근 4주 모델 조회 (최신순)
         recent_models = list(
             MLModelHistory.objects.filter(
-                deployment_status__in=['shadow', 'deployed'],
-            ).order_by('-trained_at')[:AUTO_DEPLOY_CONSECUTIVE_WEEKS]
+                deployment_status__in=["shadow", "deployed"],
+            ).order_by("-trained_at")[:AUTO_DEPLOY_CONSECUTIVE_WEEKS]
         )
 
         if len(recent_models) < AUTO_DEPLOY_CONSECUTIVE_WEEKS:
             return {
-                'action': 'wait',
-                'reason': f'Need {AUTO_DEPLOY_CONSECUTIVE_WEEKS} consecutive models, '
-                          f'have {len(recent_models)}',
-                'models_count': len(recent_models),
+                "action": "wait",
+                "reason": f"Need {AUTO_DEPLOY_CONSECUTIVE_WEEKS} consecutive models, "
+                f"have {len(recent_models)}",
+                "models_count": len(recent_models),
             }
 
         # 4주 연속 Safety Gate 통과 확인
         all_passed = all(m.safety_gate_passed for m in recent_models)
         if not all_passed:
             failed_versions = [
-                m.model_version for m in recent_models
-                if not m.safety_gate_passed
+                m.model_version for m in recent_models if not m.safety_gate_passed
             ]
             return {
-                'action': 'wait',
-                'reason': 'Not all recent models passed Safety Gate',
-                'failed_versions': failed_versions,
+                "action": "wait",
+                "reason": "Not all recent models passed Safety Gate",
+                "failed_versions": failed_versions,
             }
 
         # F1 최소 기준 확인
-        all_above_f1 = all(
-            m.f1_score >= AUTO_DEPLOY_MIN_F1 for m in recent_models
-        )
+        all_above_f1 = all(m.f1_score >= AUTO_DEPLOY_MIN_F1 for m in recent_models)
         if not all_above_f1:
             low_f1_versions = [
-                {'version': m.model_version, 'f1': m.f1_score}
+                {"version": m.model_version, "f1": m.f1_score}
                 for m in recent_models
                 if m.f1_score < AUTO_DEPLOY_MIN_F1
             ]
             return {
-                'action': 'wait',
-                'reason': f'Not all models meet F1 >= {AUTO_DEPLOY_MIN_F1}',
-                'low_f1_versions': low_f1_versions,
+                "action": "wait",
+                "reason": f"Not all models meet F1 >= {AUTO_DEPLOY_MIN_F1}",
+                "low_f1_versions": low_f1_versions,
             }
 
         # 최신 모델의 agreement rate 확인
         latest = recent_models[0]
         agreement_rate = 0.0
         if latest.shadow_comparison:
-            agreement_rate = latest.shadow_comparison.get('agreement_rate', 0.0)
+            agreement_rate = latest.shadow_comparison.get("agreement_rate", 0.0)
 
         if agreement_rate < AUTO_DEPLOY_MIN_AGREEMENT:
             return {
-                'action': 'wait',
-                'reason': f'Agreement rate {agreement_rate:.2f} < {AUTO_DEPLOY_MIN_AGREEMENT}',
-                'agreement_rate': agreement_rate,
+                "action": "wait",
+                "reason": f"Agreement rate {agreement_rate:.2f} < {AUTO_DEPLOY_MIN_AGREEMENT}",
+                "agreement_rate": agreement_rate,
             }
 
         # 현재 deployed 모델 확인
         current_deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).first()
 
         if current_deployed and current_deployed.id == latest.id:
             return {
-                'action': 'skip',
-                'reason': 'Latest model is already deployed',
-                'model_version': latest.model_version,
+                "action": "skip",
+                "reason": "Latest model is already deployed",
+                "model_version": latest.model_version,
             }
 
         # 배포 실행
-        if latest.deployment_status == 'shadow':
+        if latest.deployment_status == "shadow":
             deploy_result = self._deploy_model(latest)
             return {
-                'action': 'deployed',
-                'reason': f'{AUTO_DEPLOY_CONSECUTIVE_WEEKS} consecutive weeks passed, '
-                          f'agreement_rate={agreement_rate:.2f}',
-                'model_version': latest.model_version,
-                'model_id': latest.id,
-                'weights': latest.smoothed_weights,
+                "action": "deployed",
+                "reason": f"{AUTO_DEPLOY_CONSECUTIVE_WEEKS} consecutive weeks passed, "
+                f"agreement_rate={agreement_rate:.2f}",
+                "model_version": latest.model_version,
+                "model_id": latest.id,
+                "weights": latest.smoothed_weights,
                 **deploy_result,
             }
 
         return {
-            'action': 'skip',
-            'reason': f'Latest model status: {latest.deployment_status}',
-            'model_version': latest.model_version,
+            "action": "skip",
+            "reason": f"Latest model status: {latest.deployment_status}",
+            "model_version": latest.model_version,
         }
 
     def _deploy_model(self, model: MLModelHistory) -> dict:
         """모델을 deployed 상태로 전환"""
         # 이전 deployed 모델 → rolled_back
         prev_deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).exclude(id=model.id)
 
         rolled_back_count = prev_deployed.update(
-            deployment_status='rolled_back',
+            deployment_status="rolled_back",
         )
 
         # 현재 모델 → deployed
-        model.deployment_status = 'deployed'
+        model.deployment_status = "deployed"
         model.deployed_at = timezone.now()
-        model.save(update_fields=['deployment_status', 'deployed_at'])
+        model.save(update_fields=["deployment_status", "deployed_at"])
 
         logger.info(
             f"ML model deployed: {model.model_version} "
@@ -162,8 +159,8 @@ class MLProductionManager:
         )
 
         return {
-            'deployed_at': str(model.deployed_at),
-            'rolled_back_count': rolled_back_count,
+            "deployed_at": str(model.deployed_at),
+            "rolled_back_count": rolled_back_count,
         }
 
     # ════════════════════════════════════════
@@ -191,7 +188,7 @@ class MLProductionManager:
             llm_analysis__isnull=False,
             ml_label_24h__isnull=False,
             published_at__gte=cutoff,
-        ).order_by('-published_at')[:200]
+        ).order_by("-published_at")[:200]
 
         total = 0
         correct_direction = 0
@@ -204,13 +201,13 @@ class MLProductionManager:
                 continue
 
             # LLM이 예측한 방향 추출
-            direct_impacts = analysis.get('direct_impacts', [])
+            direct_impacts = analysis.get("direct_impacts", [])
             if not direct_impacts:
                 continue
 
             # 첫 번째 direct impact의 방향
             primary_impact = direct_impacts[0]
-            llm_direction = primary_impact.get('direction', 'neutral')
+            llm_direction = primary_impact.get("direction", "neutral")
 
             # 실제 주가 변동
             actual_change = article.ml_label_24h
@@ -219,46 +216,46 @@ class MLProductionManager:
             if actual_change is not None:
                 total += 1
                 actual_direction = (
-                    'bullish' if actual_change > 0.5
-                    else 'bearish' if actual_change < -0.5
-                    else 'neutral'
+                    "bullish"
+                    if actual_change > 0.5
+                    else "bearish"
+                    if actual_change < -0.5
+                    else "neutral"
                 )
                 if llm_direction == actual_direction:
                     correct_direction += 1
-                elif llm_direction == 'neutral' and abs(actual_change) <= 1.0:
+                elif llm_direction == "neutral" and abs(actual_change) <= 1.0:
                     correct_direction += 1  # neutral 예측 + 작은 변동 = 정확
 
                 # 중요도 일치 (LLM이 중요하다고 판단한 것이 실제 중요한지)
-                llm_important = primary_impact.get('confidence', 0) >= 0.7
+                llm_important = primary_impact.get("confidence", 0) >= 0.7
                 actual_important = article.ml_label_important
                 if llm_important == actual_important:
                     correct_importance += 1
 
                 if len(details) < 20:
-                    details.append({
-                        'article_id': str(article.id),
-                        'title': article.title[:80],
-                        'llm_direction': llm_direction,
-                        'actual_direction': actual_direction,
-                        'actual_change': round(actual_change, 2),
-                        'direction_match': llm_direction == actual_direction,
-                    })
+                    details.append(
+                        {
+                            "article_id": str(article.id),
+                            "title": article.title[:80],
+                            "llm_direction": llm_direction,
+                            "actual_direction": actual_direction,
+                            "actual_change": round(actual_change, 2),
+                            "direction_match": llm_direction == actual_direction,
+                        }
+                    )
 
-        direction_accuracy = (
-            round(correct_direction / total, 4) if total > 0 else 0.0
-        )
-        importance_accuracy = (
-            round(correct_importance / total, 4) if total > 0 else 0.0
-        )
+        direction_accuracy = round(correct_direction / total, 4) if total > 0 else 0.0
+        importance_accuracy = round(correct_importance / total, 4) if total > 0 else 0.0
 
         result = {
-            'period_days': days,
-            'total_measured': total,
-            'correct_direction': correct_direction,
-            'correct_importance': correct_importance,
-            'direction_accuracy': direction_accuracy,
-            'importance_accuracy': importance_accuracy,
-            'sample_details': details,
+            "period_days": days,
+            "total_measured": total,
+            "correct_direction": correct_direction,
+            "correct_importance": correct_importance,
+            "direction_accuracy": direction_accuracy,
+            "importance_accuracy": importance_accuracy,
+            "sample_details": details,
         }
 
         logger.info(
@@ -286,30 +283,37 @@ class MLProductionManager:
 
         # 모델 상태
         deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).first()
 
-        latest = MLModelHistory.objects.order_by('-trained_at').first()
+        latest = MLModelHistory.objects.order_by("-trained_at").first()
 
         # 최근 4주 성능 추이
         recent_models = list(
             MLModelHistory.objects.filter(
                 trained_at__gte=now - timedelta(weeks=4),
-            ).order_by('trained_at').values(
-                'model_version', 'f1_score', 'precision', 'recall',
-                'safety_gate_passed', 'deployment_status', 'trained_at',
+            )
+            .order_by("trained_at")
+            .values(
+                "model_version",
+                "f1_score",
+                "precision",
+                "recall",
+                "safety_gate_passed",
+                "deployment_status",
+                "trained_at",
             )
         )
 
         # F1 추이 분석
-        f1_scores = [m['f1_score'] for m in recent_models if m['f1_score']]
-        f1_trend = 'stable'
+        f1_scores = [m["f1_score"] for m in recent_models if m["f1_score"]]
+        f1_trend = "stable"
         if len(f1_scores) >= 2:
             diff = f1_scores[-1] - f1_scores[0]
             if diff > 0.02:
-                f1_trend = 'improving'
+                f1_trend = "improving"
             elif diff < -0.02:
-                f1_trend = 'declining'
+                f1_trend = "declining"
 
         # LLM 정확도 (최근 7일)
         llm_accuracy = self.measure_llm_accuracy(days=7)
@@ -335,40 +339,42 @@ class MLProductionManager:
         )
 
         report = {
-            'period': {
-                'start': str(week_ago.date()),
-                'end': str(now.date()),
+            "period": {
+                "start": str(week_ago.date()),
+                "end": str(now.date()),
             },
-            'model_status': {
-                'deployed_version': deployed.model_version if deployed else None,
-                'deployed_f1': deployed.f1_score if deployed else None,
-                'latest_version': latest.model_version if latest else None,
-                'latest_f1': latest.f1_score if latest else None,
-                'latest_status': latest.deployment_status if latest else None,
+            "model_status": {
+                "deployed_version": deployed.model_version if deployed else None,
+                "deployed_f1": deployed.f1_score if deployed else None,
+                "latest_version": latest.model_version if latest else None,
+                "latest_f1": latest.f1_score if latest else None,
+                "latest_status": latest.deployment_status if latest else None,
             },
-            'performance_trend': {
-                'trend': f1_trend,
-                'recent_f1_scores': [
-                    {'version': m['model_version'], 'f1': m['f1_score']}
+            "performance_trend": {
+                "trend": f1_trend,
+                "recent_f1_scores": [
+                    {"version": m["model_version"], "f1": m["f1_score"]}
                     for m in recent_models
                 ],
-                'gate_pass_rate': (
-                    sum(1 for m in recent_models if m['safety_gate_passed'])
-                    / len(recent_models) if recent_models else 0
+                "gate_pass_rate": (
+                    sum(1 for m in recent_models if m["safety_gate_passed"])
+                    / len(recent_models)
+                    if recent_models
+                    else 0
                 ),
             },
-            'llm_accuracy': {
-                'direction_accuracy': llm_accuracy['direction_accuracy'],
-                'importance_accuracy': llm_accuracy['importance_accuracy'],
-                'total_measured': llm_accuracy['total_measured'],
+            "llm_accuracy": {
+                "direction_accuracy": llm_accuracy["direction_accuracy"],
+                "importance_accuracy": llm_accuracy["importance_accuracy"],
+                "total_measured": llm_accuracy["total_measured"],
             },
-            'data_stats': {
-                'total_labeled': total_labeled,
-                'new_labeled_this_week': new_labeled,
-                'new_analyzed_this_week': new_analyzed,
+            "data_stats": {
+                "total_labeled": total_labeled,
+                "new_labeled_this_week": new_labeled,
+                "new_analyzed_this_week": new_analyzed,
             },
-            'recommendations': recommendations,
-            'generated_at': str(now),
+            "recommendations": recommendations,
+            "generated_at": str(now),
         }
 
         logger.info(f"Weekly ML report generated: f1_trend={f1_trend}")
@@ -384,37 +390,37 @@ class MLProductionManager:
         """성능 기반 추천 사항 생성"""
         recs = []
 
-        if f1_trend == 'declining':
+        if f1_trend == "declining":
             recs.append(
-                'F1 score declining. Consider reviewing data quality '
-                'or feature engineering.'
+                "F1 score declining. Consider reviewing data quality "
+                "or feature engineering."
             )
 
         if f1_scores and f1_scores[-1] < 0.55:
             recs.append(
-                f'Latest F1 ({f1_scores[-1]:.2f}) below threshold. '
-                'Model not ready for deployment.'
+                f"Latest F1 ({f1_scores[-1]:.2f}) below threshold. "
+                "Model not ready for deployment."
             )
 
-        if llm_accuracy['direction_accuracy'] < 0.5:
+        if llm_accuracy["direction_accuracy"] < 0.5:
             recs.append(
-                'LLM direction accuracy below 50%. '
-                'Consider prompt tuning or tier recalibration.'
+                "LLM direction accuracy below 50%. "
+                "Consider prompt tuning or tier recalibration."
             )
 
         if total_labeled < 3000:
             recs.append(
-                f'Only {total_labeled} labeled samples. '
-                'Consider waiting for more data before LightGBM transition.'
+                f"Only {total_labeled} labeled samples. "
+                "Consider waiting for more data before LightGBM transition."
             )
         elif total_labeled >= 10000:
             recs.append(
-                f'{total_labeled} labeled samples available. '
-                'Ready for LightGBM Phase 2 transition.'
+                f"{total_labeled} labeled samples available. "
+                "Ready for LightGBM Phase 2 transition."
             )
 
         if not recs:
-            recs.append('All metrics healthy. System operating normally.')
+            recs.append("All metrics healthy. System operating normally.")
 
         return recs
 
@@ -430,17 +436,17 @@ class MLProductionManager:
             dict: {status, rolled_back_version?, fallback}
         """
         deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).first()
 
         if not deployed:
             return {
-                'status': 'no_deployed_model',
-                'fallback': 'manual_weights',
+                "status": "no_deployed_model",
+                "fallback": "manual_weights",
             }
 
-        deployed.deployment_status = 'rolled_back'
-        deployed.save(update_fields=['deployment_status'])
+        deployed.deployment_status = "rolled_back"
+        deployed.save(update_fields=["deployment_status"])
 
         logger.warning(
             f"ML model rolled back: {deployed.model_version}. "
@@ -448,9 +454,9 @@ class MLProductionManager:
         )
 
         return {
-            'status': 'rolled_back',
-            'rolled_back_version': deployed.model_version,
-            'fallback': 'manual_weights',
+            "status": "rolled_back",
+            "rolled_back_version": deployed.model_version,
+            "fallback": "manual_weights",
         }
 
     # ════════════════════════════════════════
@@ -484,28 +490,28 @@ class MLProductionManager:
 
         # 최근 weeks+1개 모델 조회 (최신순)
         recent_models = list(
-            MLModelHistory.objects.order_by('-trained_at')[:weeks + 1]
+            MLModelHistory.objects.order_by("-trained_at")[: weeks + 1]
         )
 
         f1_history = [
             {
-                'version': m.model_version,
-                'f1': m.f1_score,
-                'trained_at': str(m.trained_at),
+                "version": m.model_version,
+                "f1": m.f1_score,
+                "trained_at": str(m.trained_at),
             }
             for m in recent_models
         ]
 
         # 기본 반환값
         base_result = {
-            'consecutive_decline': False,
-            'decline_weeks': 0,
-            'f1_history': f1_history,
-            'action_taken': 'none',
-            'previous_window': ROLLING_WINDOW_WEEKS,
-            'new_window': ROLLING_WINDOW_WEEKS,
-            'feature_importance': None,
-            'alert_message': None,
+            "consecutive_decline": False,
+            "decline_weeks": 0,
+            "f1_history": f1_history,
+            "action_taken": "none",
+            "previous_window": ROLLING_WINDOW_WEEKS,
+            "new_window": ROLLING_WINDOW_WEEKS,
+            "feature_importance": None,
+            "alert_message": None,
         }
 
         # 모델이 충분하지 않으면 감지 불가
@@ -522,7 +528,7 @@ class MLProductionManager:
                 break
 
         if decline_count < weeks:
-            base_result['decline_weeks'] = decline_count
+            base_result["decline_weeks"] = decline_count
             return base_result
 
         # 연속 하락 감지 — Rolling Window 축소 계산
@@ -532,7 +538,7 @@ class MLProductionManager:
         current_window = ROLLING_WINDOW_WEEKS
         if latest.training_config and isinstance(latest.training_config, dict):
             current_window = latest.training_config.get(
-                'rolling_window_weeks', ROLLING_WINDOW_WEEKS
+                "rolling_window_weeks", ROLLING_WINDOW_WEEKS
             )
 
         new_window = max(current_window - 2, 4)
@@ -554,14 +560,14 @@ class MLProductionManager:
         )
 
         return {
-            'consecutive_decline': True,
-            'decline_weeks': decline_count,
-            'f1_history': f1_history,
-            'action_taken': 'shrink_window',
-            'previous_window': current_window,
-            'new_window': new_window,
-            'feature_importance': feature_importance,
-            'alert_message': alert_message,
+            "consecutive_decline": True,
+            "decline_weeks": decline_count,
+            "f1_history": f1_history,
+            "action_taken": "shrink_window",
+            "previous_window": current_window,
+            "new_window": new_window,
+            "feature_importance": feature_importance,
+            "alert_message": alert_message,
         }
 
     # ════════════════════════════════════════
@@ -577,7 +583,7 @@ class MLProductionManager:
             dict or None: deployed 모델의 smoothed_weights
         """
         deployed = MLModelHistory.objects.filter(
-            deployment_status='deployed',
+            deployment_status="deployed",
         ).first()
 
         if deployed and deployed.smoothed_weights:

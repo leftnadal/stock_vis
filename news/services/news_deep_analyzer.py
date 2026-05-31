@@ -45,9 +45,8 @@ class NewsDeepAnalyzer:
     TIER_A_THRESHOLD = 0.70
 
     def __init__(self):
-        api_key = (
-            getattr(settings, 'GOOGLE_AI_API_KEY', None)
-            or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
         )
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
@@ -64,16 +63,15 @@ class NewsDeepAnalyzer:
         """
         today = timezone.localdate()
         from datetime import datetime
-        start_of_day = timezone.make_aware(
-            datetime.combine(today, datetime.min.time())
-        )
+
+        start_of_day = timezone.make_aware(datetime.combine(today, datetime.min.time()))
 
         # 오늘 수집된 뉴스 중 importance_score가 있고, llm_analyzed=False인 것
         articles = NewsArticle.objects.filter(
             published_at__gte=start_of_day,
             importance_score__isnull=False,
             llm_analyzed=False,
-        ).order_by('-importance_score')[:max_articles]
+        ).order_by("-importance_score")[:max_articles]
 
         analyzed = 0
         errors = 0
@@ -90,7 +88,9 @@ class NewsDeepAnalyzer:
                 if analysis:
                     article.llm_analysis = analysis
                     article.llm_analyzed = True
-                    article.save(update_fields=['llm_analysis', 'llm_analyzed', 'updated_at'])
+                    article.save(
+                        update_fields=["llm_analysis", "llm_analyzed", "updated_at"]
+                    )
                     analyzed += 1
                 else:
                     errors += 1
@@ -102,25 +102,25 @@ class NewsDeepAnalyzer:
                 logger.error(f"Deep analysis failed for {article.id}: {e}")
                 errors += 1
 
-        result = {'analyzed': analyzed, 'errors': errors, 'skipped': skipped}
+        result = {"analyzed": analyzed, "errors": errors, "skipped": skipped}
         logger.info(f"NewsDeepAnalyzer batch complete: {result}")
         return result
 
     def _determine_tier(self, score: float) -> Optional[str]:
         """importance_score 기반 분석 Tier 결정"""
         if score >= self.TIER_C_THRESHOLD:
-            return 'C'
+            return "C"
         elif score >= self.TIER_B_THRESHOLD:
-            return 'B'
+            return "B"
         elif score >= self.TIER_A_THRESHOLD:
-            return 'A'
+            return "A"
         return None
 
     def _analyze_single(self, article: NewsArticle, tier: str) -> Optional[dict]:
         """단일 뉴스 LLM 심층 분석"""
         prompt = self._build_prompt(article, tier)
         system_prompt = self._build_system_prompt(tier)
-        max_tokens = {'A': 2000, 'B': 4000, 'C': 6000}[tier]
+        max_tokens = {"A": 2000, "B": 4000, "C": 6000}[tier]
 
         try:
             response = self.client.models.generate_content(
@@ -139,8 +139,8 @@ class NewsDeepAnalyzer:
             if analysis:
                 # Ticker 유효성 검증
                 analysis = self._validate_tickers(analysis)
-                analysis['tier'] = tier
-                analysis['analyzed_at'] = timezone.now().isoformat()
+                analysis["tier"] = tier
+                analysis["analyzed_at"] = timezone.now().isoformat()
 
             return analysis
 
@@ -156,21 +156,21 @@ class NewsDeepAnalyzer:
             "All output must be valid JSON. Do not include markdown code fences.\n"
         )
 
-        if tier == 'A':
+        if tier == "A":
             return base + (
                 "Focus only on DIRECT impact. Identify affected stocks with "
                 "direction (bullish/bearish/neutral) and confidence (0-1).\n"
-                "Output: {\"direct_impacts\": [{\"symbol\": str, \"direction\": str, "
-                "\"confidence\": float, \"reason\": str}]}"
+                'Output: {"direct_impacts": [{"symbol": str, "direction": str, '
+                '"confidence": float, "reason": str}]}'
             )
-        elif tier == 'B':
+        elif tier == "B":
             return base + (
                 "Analyze both DIRECT and INDIRECT impacts. For indirect, explain "
                 "the chain_logic (how the news indirectly affects the stock).\n"
                 "Limit indirect_impacts to 3.\n"
-                "Output: {\"direct_impacts\": [...], \"indirect_impacts\": "
-                "[{\"symbol\": str, \"direction\": str, \"confidence\": float, "
-                "\"reason\": str, \"chain_logic\": str}]}"
+                'Output: {"direct_impacts": [...], "indirect_impacts": '
+                '[{"symbol": str, "direction": str, "confidence": float, '
+                '"reason": str, "chain_logic": str}]}'
             )
         else:  # tier == 'C'
             return base + (
@@ -179,11 +179,11 @@ class NewsDeepAnalyzer:
                 "2. INDIRECT impacts with chain_logic\n"
                 "3. OPPORTUNITY plays (contrarian or second-order effects)\n"
                 "4. sector_ripple: which sectors are affected and how\n"
-                "Output: {\"direct_impacts\": [...], \"indirect_impacts\": [...], "
-                "\"opportunities\": [{\"symbol\": str, \"thesis\": str, "
-                "\"timeframe\": str, \"confidence\": float}], "
-                "\"sector_ripple\": [{\"sector\": str, \"direction\": str, "
-                "\"reason\": str}]}"
+                'Output: {"direct_impacts": [...], "indirect_impacts": [...], '
+                '"opportunities": [{"symbol": str, "thesis": str, '
+                '"timeframe": str, "confidence": float}], '
+                '"sector_ripple": [{"sector": str, "direction": str, '
+                '"reason": str}]}'
             )
 
     def _build_prompt(self, article: NewsArticle, tier: str) -> str:
@@ -201,14 +201,16 @@ class NewsDeepAnalyzer:
         if article.rule_sectors:
             context_parts.append(f"Detected Sectors: {', '.join(article.rule_sectors)}")
 
-        sentiment_str = f"{article.sentiment_score}" if article.sentiment_score else 'N/A'
+        sentiment_str = (
+            f"{article.sentiment_score}" if article.sentiment_score else "N/A"
+        )
         context_parts.append(f"Sentiment Score: {sentiment_str}")
 
         prompt = "\n".join(context_parts)
 
-        if tier == 'A':
+        if tier == "A":
             prompt += "\n\nAnalyze the direct stock impacts of this news."
-        elif tier == 'B':
+        elif tier == "B":
             prompt += (
                 "\n\nAnalyze both direct and indirect stock impacts. "
                 "For indirect impacts, explain the chain of causation."
@@ -226,23 +228,23 @@ class NewsDeepAnalyzer:
         """LLM 응답 JSON 파싱"""
         try:
             # JSON 추출 (코드 블록 처리)
-            json_match = re.search(r'\{[\s\S]*\}', raw)
+            json_match = re.search(r"\{[\s\S]*\}", raw)
             if json_match:
                 data = json.loads(json_match.group())
 
                 # 필수 필드 검증
-                if 'direct_impacts' not in data:
-                    data['direct_impacts'] = []
+                if "direct_impacts" not in data:
+                    data["direct_impacts"] = []
 
                 # 각 impact 검증
-                for impact in data.get('direct_impacts', []):
-                    impact.setdefault('confidence', 0.5)
-                    impact.setdefault('direction', 'neutral')
-                    impact.setdefault('reason', '')
+                for impact in data.get("direct_impacts", []):
+                    impact.setdefault("confidence", 0.5)
+                    impact.setdefault("direction", "neutral")
+                    impact.setdefault("reason", "")
 
-                for impact in data.get('indirect_impacts', []):
-                    impact.setdefault('confidence', 0.3)
-                    impact.setdefault('chain_logic', '')
+                for impact in data.get("indirect_impacts", []):
+                    impact.setdefault("confidence", 0.3)
+                    impact.setdefault("chain_logic", "")
 
                 return data
 
@@ -255,15 +257,14 @@ class NewsDeepAnalyzer:
         """Stock DB 기준 ticker 유효성 검증, 무효 ticker 제거"""
         valid_symbols = self._get_valid_symbols()
 
-        for key in ['direct_impacts', 'indirect_impacts', 'opportunities']:
+        for key in ["direct_impacts", "indirect_impacts", "opportunities"]:
             impacts = analysis.get(key, [])
             analysis[key] = [
-                imp for imp in impacts
-                if imp.get('symbol', '').upper() in valid_symbols
+                imp for imp in impacts if imp.get("symbol", "").upper() in valid_symbols
             ]
             # symbol 대문자 정규화
             for imp in analysis[key]:
-                imp['symbol'] = imp['symbol'].upper()
+                imp["symbol"] = imp["symbol"].upper()
 
         return analysis
 
@@ -271,6 +272,6 @@ class NewsDeepAnalyzer:
         """Stock DB에서 유효 심볼 집합 반환 (배치 내 캐시)"""
         if self._valid_symbols_cache is None:
             self._valid_symbols_cache = set(
-                Stock.objects.values_list('symbol', flat=True)
+                Stock.objects.values_list("symbol", flat=True)
             )
         return self._valid_symbols_cache

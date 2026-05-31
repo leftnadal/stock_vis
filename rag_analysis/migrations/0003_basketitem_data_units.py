@@ -4,15 +4,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rag_analysis', '0002_alter_basketitem_data_snapshot'),
+        ("rag_analysis", "0002_alter_basketitem_data_snapshot"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='basketitem',
-            name='data_units',
-            field=models.PositiveIntegerField(default=5, help_text='데이터 용량 (units)'),
+            model_name="basketitem",
+            name="data_units",
+            field=models.PositiveIntegerField(
+                default=5, help_text="데이터 용량 (units)"
+            ),
         ),
     ]

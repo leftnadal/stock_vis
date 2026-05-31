@@ -15,6 +15,7 @@ Usage:
     # 공급망 조회
     supply_chain = service.get_supply_chain('TSM')
 """
+
 import logging
 import time
 from datetime import date, datetime
@@ -88,11 +89,11 @@ class SupplyChainService:
         logger.info(f"Supply chain sync started: {symbol}")
 
         # 캐시 확인
-        cache_key = f'supply_chain:{symbol}'
+        cache_key = f"supply_chain:{symbol}"
         cached = cache.get(cache_key)
         if cached:
             logger.info(f"Supply chain cache hit: {symbol}")
-            cached['cached'] = True
+            cached["cached"] = True
             return cached
 
         try:
@@ -111,8 +112,8 @@ class SupplyChainService:
                 relations = self.parser.parse_10k(text[:200000], symbol)
 
             # 3. 관계 분류
-            customers = [r for r in relations if r.relation_type == 'customer']
-            suppliers = [r for r in relations if r.relation_type == 'supplier']
+            customers = [r for r in relations if r.relation_type == "customer"]
+            suppliers = [r for r in relations if r.relation_type == "supplier"]
 
             # 4. PostgreSQL 저장
             saved_count = self._save_relationships(symbol, relations)
@@ -122,16 +123,16 @@ class SupplyChainService:
 
             # 결과 구성
             result = {
-                'symbol': symbol,
-                'status': 'success',
-                'customers': [r.to_dict() for r in customers],
-                'suppliers': [r.to_dict() for r in suppliers],
-                'customer_count': len(customers),
-                'supplier_count': len(suppliers),
-                'saved_count': saved_count,
-                'neo4j_synced': neo4j_synced,
-                'processing_time_ms': int((time.time() - start_time) * 1000),
-                'cached': False
+                "symbol": symbol,
+                "status": "success",
+                "customers": [r.to_dict() for r in customers],
+                "suppliers": [r.to_dict() for r in suppliers],
+                "customer_count": len(customers),
+                "supplier_count": len(suppliers),
+                "saved_count": saved_count,
+                "neo4j_synced": neo4j_synced,
+                "processing_time_ms": int((time.time() - start_time) * 1000),
+                "cached": False,
             }
 
             # 캐시 저장
@@ -152,11 +153,7 @@ class SupplyChainService:
             logger.exception(f"Supply chain sync failed for {symbol}: {e}")
             return self._error_result(symbol, str(e), start_time)
 
-    def sync_batch(
-        self,
-        symbols: List[str],
-        delay: float = None
-    ) -> Dict[str, Any]:
+    def sync_batch(self, symbols: List[str], delay: float = None) -> Dict[str, Any]:
         """
         배치 공급망 동기화
 
@@ -185,7 +182,7 @@ class SupplyChainService:
             try:
                 result = self.sync_supply_chain(symbol)
 
-                if result['status'] == 'success':
+                if result["status"] == "success":
                     success_count += 1
                 else:
                     failed_symbols.append(symbol)
@@ -195,21 +192,17 @@ class SupplyChainService:
             except Exception as e:
                 logger.error(f"Batch sync error for {symbol}: {e}")
                 failed_symbols.append(symbol)
-                results[symbol] = {
-                    'symbol': symbol,
-                    'status': 'error',
-                    'error': str(e)
-                }
+                results[symbol] = {"symbol": symbol, "status": "error", "error": str(e)}
 
             # Rate limit 준수
             time.sleep(delay)
 
         return {
-            'total': len(symbols),
-            'success': success_count,
-            'failed': len(failed_symbols),
-            'results': results,
-            'failed_symbols': failed_symbols
+            "total": len(symbols),
+            "success": success_count,
+            "failed": len(failed_symbols),
+            "results": results,
+            "failed_symbols": failed_symbols,
         }
 
     def get_supply_chain(self, symbol: str) -> Dict[str, Any]:
@@ -230,38 +223,38 @@ class SupplyChainService:
         symbol = symbol.upper()
 
         # 캐시 확인
-        cache_key = f'supply_chain:{symbol}'
+        cache_key = f"supply_chain:{symbol}"
         cached = cache.get(cache_key)
         if cached:
             return {
-                'symbol': symbol,
-                'suppliers': cached.get('suppliers', []),
-                'customers': cached.get('customers', []),
-                'cached': True
+                "symbol": symbol,
+                "suppliers": cached.get("suppliers", []),
+                "customers": cached.get("customers", []),
+                "cached": True,
             }
 
         # DB 조회
-        suppliers = self._get_relationships(symbol, 'SUPPLIED_BY')
-        customers = self._get_relationships(symbol, 'CUSTOMER_OF')
+        suppliers = self._get_relationships(symbol, "SUPPLIED_BY")
+        customers = self._get_relationships(symbol, "CUSTOMER_OF")
 
         return {
-            'symbol': symbol,
-            'suppliers': suppliers,
-            'customers': customers,
-            'cached': False
+            "symbol": symbol,
+            "suppliers": suppliers,
+            "customers": customers,
+            "cached": False,
         }
 
     def get_suppliers(self, symbol: str, limit: int = 20) -> List[Dict[str, Any]]:
         """종목의 공급사 목록 조회"""
-        return self._get_relationships(symbol, 'SUPPLIED_BY', limit)
+        return self._get_relationships(symbol, "SUPPLIED_BY", limit)
 
     def get_customers(self, symbol: str, limit: int = 20) -> List[Dict[str, Any]]:
         """종목의 고객사 목록 조회"""
-        return self._get_relationships(symbol, 'CUSTOMER_OF', limit)
+        return self._get_relationships(symbol, "CUSTOMER_OF", limit)
 
     def clear_cache(self, symbol: str) -> bool:
         """종목 캐시 삭제"""
-        cache_key = f'supply_chain:{symbol.upper()}'
+        cache_key = f"supply_chain:{symbol.upper()}"
         return cache.delete(cache_key)
 
     # ========================================
@@ -279,9 +272,7 @@ class SupplyChainService:
 
     @transaction.atomic
     def _save_relationships(
-        self,
-        symbol: str,
-        relations: List[SupplyChainRelation]
+        self, symbol: str, relations: List[SupplyChainRelation]
     ) -> int:
         """
         PostgreSQL에 관계 저장
@@ -298,14 +289,14 @@ class SupplyChainService:
         for rel in relations:
             try:
                 # 관계 타입 매핑
-                if rel.relation_type == 'customer':
+                if rel.relation_type == "customer":
                     # 분석 대상(source)이 판매자, target이 고객
                     # source -> CUSTOMER_OF -> target
-                    relationship_type = 'CUSTOMER_OF'
+                    relationship_type = "CUSTOMER_OF"
                 else:
                     # 분석 대상(source)이 구매자, target이 공급사
                     # source -> SUPPLIED_BY -> target
-                    relationship_type = 'SUPPLIED_BY'
+                    relationship_type = "SUPPLIED_BY"
 
                 # target_symbol이 없으면 저장하지 않음
                 # (티커 매칭 실패한 회사는 제외)
@@ -318,12 +309,12 @@ class SupplyChainService:
 
                 # 컨텍스트 구성
                 context = {
-                    'company_name': rel.target_name,
-                    'confidence': rel.confidence,
-                    'revenue_percent': rel.revenue_percent,
-                    'evidence': rel.evidence[:500] if rel.evidence else None,
-                    'source': 'SEC 10-K',
-                    'extracted_at': timezone.now().isoformat()
+                    "company_name": rel.target_name,
+                    "confidence": rel.confidence,
+                    "revenue_percent": rel.revenue_percent,
+                    "evidence": rel.evidence[:500] if rel.evidence else None,
+                    "source": "SEC 10-K",
+                    "extracted_at": timezone.now().isoformat(),
                 }
 
                 # upsert
@@ -332,11 +323,11 @@ class SupplyChainService:
                     target_symbol=rel.target_symbol,
                     relationship_type=relationship_type,
                     defaults={
-                        'strength': strength,
-                        'source_provider': 'sec_10k',
-                        'context': context,
-                        'last_verified_at': timezone.now()
-                    }
+                        "strength": strength,
+                        "source_provider": "sec_10k",
+                        "context": context,
+                        "last_verified_at": timezone.now(),
+                    },
                 )
 
                 saved_count += 1
@@ -358,11 +349,7 @@ class SupplyChainService:
 
         return saved_count
 
-    def _sync_to_neo4j(
-        self,
-        symbol: str,
-        relations: List[SupplyChainRelation]
-    ) -> int:
+    def _sync_to_neo4j(self, symbol: str, relations: List[SupplyChainRelation]) -> int:
         """
         Neo4j에 관계 동기화
 
@@ -377,6 +364,7 @@ class SupplyChainService:
             from serverless.services.neo4j_chain_sight_service import (
                 Neo4jChainSightService,
             )
+
             neo4j_service = Neo4jChainSightService()
 
             if not neo4j_service.is_available():
@@ -391,23 +379,22 @@ class SupplyChainService:
 
                 try:
                     # Neo4j 관계 타입 매핑
-                    if rel.relation_type == 'customer':
-                        neo4j_rel_type = 'CUSTOMER_OF'
+                    if rel.relation_type == "customer":
+                        neo4j_rel_type = "CUSTOMER_OF"
                     else:
-                        neo4j_rel_type = 'SUPPLIES_TO'
+                        neo4j_rel_type = "SUPPLIES_TO"
 
                     # Stock 노드 생성 (없으면)
                     neo4j_service.create_stock_node(
-                        symbol=rel.target_symbol,
-                        name=rel.target_name
+                        symbol=rel.target_symbol, name=rel.target_name
                     )
 
                     # 관계 생성
                     strength = float(self._calculate_strength(rel))
                     context = {
-                        'confidence': rel.confidence,
-                        'revenue_percent': rel.revenue_percent,
-                        'source': 'SEC 10-K'
+                        "confidence": rel.confidence,
+                        "revenue_percent": rel.revenue_percent,
+                        "source": "SEC 10-K",
                     }
 
                     success = neo4j_service.create_relationship(
@@ -415,8 +402,8 @@ class SupplyChainService:
                         target_symbol=rel.target_symbol,
                         rel_type=neo4j_rel_type,
                         weight=strength,
-                        source_provider='sec_10k',
-                        context=context
+                        source_provider="sec_10k",
+                        context=context,
                     )
 
                     if success:
@@ -445,11 +432,9 @@ class SupplyChainService:
         Returns:
             Decimal 0.0 ~ 1.0
         """
-        base_strength = {
-            'high': 0.9,
-            'medium-high': 0.7,
-            'medium': 0.5
-        }.get(rel.confidence, 0.5)
+        base_strength = {"high": 0.9, "medium-high": 0.7, "medium": 0.5}.get(
+            rel.confidence, 0.5
+        )
 
         # 매출 비중에 따른 보정
         if rel.revenue_percent:
@@ -461,56 +446,54 @@ class SupplyChainService:
         return Decimal(str(round(base_strength, 3)))
 
     def _get_relationships(
-        self,
-        symbol: str,
-        relationship_type: str,
-        limit: int = 20
+        self, symbol: str, relationship_type: str, limit: int = 20
     ) -> List[Dict[str, Any]]:
         """DB에서 관계 조회"""
         relationships = StockRelationship.objects.filter(
-            source_symbol=symbol.upper(),
-            relationship_type=relationship_type
-        ).order_by('-strength')[:limit]
+            source_symbol=symbol.upper(), relationship_type=relationship_type
+        ).order_by("-strength")[:limit]
 
         results = []
         for rel in relationships:
             context = rel.context or {}
-            results.append({
-                'symbol': rel.target_symbol,
-                'company_name': context.get('company_name', rel.target_symbol),
-                'confidence': context.get('confidence', 'medium'),
-                'revenue_percent': context.get('revenue_percent'),
-                'strength': float(rel.strength),
-                'evidence': context.get('evidence', ''),
-                'source_provider': rel.source_provider,
-                'last_verified_at': rel.last_verified_at.isoformat() if rel.last_verified_at else None
-            })
+            results.append(
+                {
+                    "symbol": rel.target_symbol,
+                    "company_name": context.get("company_name", rel.target_symbol),
+                    "confidence": context.get("confidence", "medium"),
+                    "revenue_percent": context.get("revenue_percent"),
+                    "strength": float(rel.strength),
+                    "evidence": context.get("evidence", ""),
+                    "source_provider": rel.source_provider,
+                    "last_verified_at": rel.last_verified_at.isoformat()
+                    if rel.last_verified_at
+                    else None,
+                }
+            )
 
         return results
 
     def _error_result(
-        self,
-        symbol: str,
-        error: str,
-        start_time: float
+        self, symbol: str, error: str, start_time: float
     ) -> Dict[str, Any]:
         """에러 결과 생성"""
         return {
-            'symbol': symbol,
-            'status': 'error',
-            'error': error,
-            'customers': [],
-            'suppliers': [],
-            'customer_count': 0,
-            'supplier_count': 0,
-            'processing_time_ms': int((time.time() - start_time) * 1000),
-            'cached': False
+            "symbol": symbol,
+            "status": "error",
+            "error": error,
+            "customers": [],
+            "suppliers": [],
+            "customer_count": 0,
+            "supplier_count": 0,
+            "processing_time_ms": int((time.time() - start_time) * 1000),
+            "cached": False,
         }
 
 
 # ========================================
 # Convenience Functions
 # ========================================
+
 
 def sync_supply_chain_for_symbol(symbol: str) -> Dict[str, Any]:
     """단일 종목 공급망 동기화 (편의 함수)"""

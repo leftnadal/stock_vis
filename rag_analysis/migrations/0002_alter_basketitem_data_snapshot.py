@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rag_analysis', '0001_initial'),
+        ("rag_analysis", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='basketitem',
-            name='data_snapshot',
+            model_name="basketitem",
+            name="data_snapshot",
             field=models.JSONField(blank=True, default=dict),
         ),
     ]

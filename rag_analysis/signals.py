@@ -25,7 +25,7 @@ _DEBOUNCE_TTL = 10
 
 def _should_dispatch(action: str, symbol: str) -> bool:
     """Redis 기반 debounce — 동일 (action, symbol) 조합을 TTL 내 1회만 허용"""
-    key = f'signal:debounce:{action}:{symbol}'
+    key = f"signal:debounce:{action}:{symbol}"
     try:
         # cache.add()는 키가 없을 때만 설정 (atomic check-and-set)
         return cache.add(key, 1, _DEBOUNCE_TTL)
@@ -47,12 +47,12 @@ def stock_saved_handler(sender, instance, created, **kwargs):
     try:
         symbol = instance.symbol
 
-        if _should_dispatch('sync', symbol):
+        if _should_dispatch("sync", symbol):
             sync_stock_to_neo4j.delay(
                 symbol=symbol,
                 name=instance.stock_name or symbol,
                 sector=instance.sector,
-                industry=instance.industry
+                industry=instance.industry,
             )
             invalidate_graph_cache.delay(symbol)
             action = "created" if created else "updated"

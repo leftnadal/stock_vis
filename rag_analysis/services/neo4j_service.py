@@ -36,9 +36,7 @@ class Neo4jServiceLite:
         self.driver = get_neo4j_driver()
 
     def get_stock_relationships(
-        self,
-        symbol: str,
-        max_depth: int = 1
+        self, symbol: str, max_depth: int = 1
     ) -> Dict[str, Any]:
         """
         종목의 관계 정보 조회
@@ -57,8 +55,10 @@ class Neo4jServiceLite:
             }
         """
         if self.driver is None:
-            logger.warning(f"Neo4j unavailable - returning empty relationships for {symbol}")
-            return self._empty_relationships(symbol, 'neo4j_unavailable')
+            logger.warning(
+                f"Neo4j unavailable - returning empty relationships for {symbol}"
+            )
+            return self._empty_relationships(symbol, "neo4j_unavailable")
 
         try:
             with self.driver.session() as session:
@@ -72,15 +72,15 @@ class Neo4jServiceLite:
                 sector_peers = self._get_sector_peers(session, symbol)
 
                 return {
-                    'symbol': symbol,
-                    'supply_chain': supply_chain,
-                    'competitors': competitors,
-                    'sector_peers': sector_peers,
-                    '_meta': {
-                        'source': 'neo4j',
-                        '_error': None,
-                        'max_depth': max_depth,
-                    }
+                    "symbol": symbol,
+                    "supply_chain": supply_chain,
+                    "competitors": competitors,
+                    "sector_peers": sector_peers,
+                    "_meta": {
+                        "source": "neo4j",
+                        "_error": None,
+                        "max_depth": max_depth,
+                    },
                 }
 
         except Exception as e:
@@ -117,15 +117,15 @@ class Neo4jServiceLite:
                 query,
                 symbol=symbol.upper(),
                 limit=self.MAX_RESULTS,
-                timeout=self.QUERY_TIMEOUT
+                timeout=self.QUERY_TIMEOUT,
             )
 
             return [
                 {
-                    'symbol': record['symbol'],
-                    'name': record['name'],
-                    'relationship': record['relationship'],
-                    'strength': float(record['strength'])
+                    "symbol": record["symbol"],
+                    "name": record["name"],
+                    "relationship": record["relationship"],
+                    "strength": float(record["strength"]),
                 }
                 for record in result
             ]
@@ -162,14 +162,14 @@ class Neo4jServiceLite:
                 query,
                 symbol=symbol.upper(),
                 limit=self.MAX_RESULTS,
-                timeout=self.QUERY_TIMEOUT
+                timeout=self.QUERY_TIMEOUT,
             )
 
             return [
                 {
-                    'symbol': record['symbol'],
-                    'name': record['name'],
-                    'overlap_score': float(record['overlap_score'])
+                    "symbol": record["symbol"],
+                    "name": record["name"],
+                    "overlap_score": float(record["overlap_score"]),
                 }
                 for record in result
             ]
@@ -209,15 +209,17 @@ class Neo4jServiceLite:
                 query,
                 symbol=symbol.upper(),
                 limit=self.MAX_RESULTS,
-                timeout=self.QUERY_TIMEOUT
+                timeout=self.QUERY_TIMEOUT,
             )
 
             return [
                 {
-                    'symbol': record['symbol'],
-                    'name': record['name'],
-                    'sector': record['sector'],
-                    'market_cap': int(record['market_cap']) if record['market_cap'] else None
+                    "symbol": record["symbol"],
+                    "name": record["name"],
+                    "sector": record["sector"],
+                    "market_cap": int(record["market_cap"])
+                    if record["market_cap"]
+                    else None,
                 }
                 for record in result
             ]
@@ -235,14 +237,11 @@ class Neo4jServiceLite:
             - 앱은 계속 작동하며, 단순히 그래프 기능이 비활성화됨
         """
         return {
-            'symbol': symbol,
-            'supply_chain': [],
-            'competitors': [],
-            'sector_peers': [],
-            '_meta': {
-                'source': 'fallback',
-                '_error': error
-            }
+            "symbol": symbol,
+            "supply_chain": [],
+            "competitors": [],
+            "sector_peers": [],
+            "_meta": {"source": "fallback", "_error": error},
         }
 
     def health_check(self) -> Dict[str, Any]:
@@ -260,45 +259,44 @@ class Neo4jServiceLite:
         """
         if self.driver is None:
             return {
-                'status': 'unavailable',
-                'connected': False,
-                'error': 'Driver not initialized',
-                'node_count': None,
-                'relationship_count': None
+                "status": "unavailable",
+                "connected": False,
+                "error": "Driver not initialized",
+                "node_count": None,
+                "relationship_count": None,
             }
 
         try:
             with self.driver.session() as session:
                 # 노드 개수 확인
                 node_result = session.run(
-                    "MATCH (n) RETURN count(n) AS count",
-                    timeout=self.QUERY_TIMEOUT
+                    "MATCH (n) RETURN count(n) AS count", timeout=self.QUERY_TIMEOUT
                 )
-                node_count = node_result.single()['count']
+                node_count = node_result.single()["count"]
 
                 # 관계 개수 확인
                 rel_result = session.run(
                     "MATCH ()-[r]->() RETURN count(r) AS count",
-                    timeout=self.QUERY_TIMEOUT
+                    timeout=self.QUERY_TIMEOUT,
                 )
-                rel_count = rel_result.single()['count']
+                rel_count = rel_result.single()["count"]
 
                 return {
-                    'status': 'healthy',
-                    'connected': True,
-                    'error': None,
-                    'node_count': node_count,
-                    'relationship_count': rel_count
+                    "status": "healthy",
+                    "connected": True,
+                    "error": None,
+                    "node_count": node_count,
+                    "relationship_count": rel_count,
                 }
 
         except Exception as e:
             logger.error(f"Neo4j health check failed: {e}")
             return {
-                'status': 'degraded',
-                'connected': False,
-                'error': str(e),
-                'node_count': None,
-                'relationship_count': None
+                "status": "degraded",
+                "connected": False,
+                "error": str(e),
+                "node_count": None,
+                "relationship_count": None,
             }
 
     def create_stock_node(
@@ -307,7 +305,7 @@ class Neo4jServiceLite:
         name: str,
         sector: Optional[str] = None,
         industry: Optional[str] = None,
-        market_cap: Optional[int] = None
+        market_cap: Optional[int] = None,
     ) -> bool:
         """
         Stock 노드 생성 또는 업데이트
@@ -345,7 +343,7 @@ class Neo4jServiceLite:
                     sector=sector,
                     industry=industry,
                     market_cap=market_cap,
-                    timeout=self.QUERY_TIMEOUT
+                    timeout=self.QUERY_TIMEOUT,
                 )
                 created = result.single() is not None
                 if created:
@@ -361,12 +359,7 @@ class Neo4jServiceLite:
             logger.error(f"Failed to create Stock node for {symbol}: {e}")
             return False
 
-    def _create_sector_relationship(
-        self,
-        session: Session,
-        symbol: str,
-        sector: str
-    ):
+    def _create_sector_relationship(self, session: Session, symbol: str, sector: str):
         """
         Stock -> Sector 관계 생성
         """
@@ -378,10 +371,7 @@ class Neo4jServiceLite:
 
         try:
             session.run(
-                query,
-                symbol=symbol.upper(),
-                sector=sector,
-                timeout=self.QUERY_TIMEOUT
+                query, symbol=symbol.upper(), sector=sector, timeout=self.QUERY_TIMEOUT
             )
             logger.debug(f"Created sector relationship: {symbol} -> {sector}")
         except Exception as e:
@@ -408,11 +398,7 @@ class Neo4jServiceLite:
 
         try:
             with self.driver.session() as session:
-                session.run(
-                    query,
-                    symbol=symbol.upper(),
-                    timeout=self.QUERY_TIMEOUT
-                )
+                session.run(query, symbol=symbol.upper(), timeout=self.QUERY_TIMEOUT)
                 logger.info(f"Deleted Stock node: {symbol}")
                 return True
 

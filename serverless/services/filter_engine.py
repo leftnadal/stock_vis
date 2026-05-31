@@ -3,6 +3,7 @@
 
 50개 이상의 필터를 동적으로 적용하고 FMP API와 클라이언트 사이드 필터링을 조합합니다.
 """
+
 import logging
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
@@ -33,38 +34,50 @@ class FilterEngine:
 
     # FMP API 직접 지원 필터 파라미터 매핑
     FMP_PARAM_MAP = {
-        'market_cap_min': 'marketCapMoreThan',
-        'market_cap_max': 'marketCapLowerThan',
-        'price_min': 'priceMoreThan',
-        'price_max': 'priceLowerThan',
-        'beta_min': 'betaMoreThan',
-        'beta_max': 'betaLowerThan',
-        'volume_min': 'volumeMoreThan',
-        'volume_max': 'volumeLowerThan',
-        'dividend_min': 'dividendMoreThan',
-        'dividend_max': 'dividendLowerThan',
-        'sector': 'sector',
-        'exchange': 'exchange',
-        'is_etf': 'isEtf',
-        'is_actively_trading': 'isActivelyTrading',
-        'country': 'country',
+        "market_cap_min": "marketCapMoreThan",
+        "market_cap_max": "marketCapLowerThan",
+        "price_min": "priceMoreThan",
+        "price_max": "priceLowerThan",
+        "beta_min": "betaMoreThan",
+        "beta_max": "betaLowerThan",
+        "volume_min": "volumeMoreThan",
+        "volume_max": "volumeLowerThan",
+        "dividend_min": "dividendMoreThan",
+        "dividend_max": "dividendLowerThan",
+        "sector": "sector",
+        "exchange": "exchange",
+        "is_etf": "isEtf",
+        "is_actively_trading": "isActivelyTrading",
+        "country": "country",
     }
 
     # 클라이언트 사이드 필터 (FMP API 미지원)
     CLIENT_SIDE_FILTERS = {
-        'pe_ratio_min', 'pe_ratio_max',
-        'pb_ratio_min', 'pb_ratio_max',
-        'peg_ratio_min', 'peg_ratio_max',
-        'roe_min', 'roe_max',
-        'roa_min', 'roa_max',
-        'debt_equity_min', 'debt_equity_max',
-        'current_ratio_min', 'current_ratio_max',
-        'eps_growth_min', 'eps_growth_max',
-        'revenue_growth_min', 'revenue_growth_max',
-        'profit_margin_min', 'profit_margin_max',
-        'rsi_min', 'rsi_max',
-        'ma_cross',
-        'change_percent_min', 'change_percent_max',
+        "pe_ratio_min",
+        "pe_ratio_max",
+        "pb_ratio_min",
+        "pb_ratio_max",
+        "peg_ratio_min",
+        "peg_ratio_max",
+        "roe_min",
+        "roe_max",
+        "roa_min",
+        "roa_max",
+        "debt_equity_min",
+        "debt_equity_max",
+        "current_ratio_min",
+        "current_ratio_max",
+        "eps_growth_min",
+        "eps_growth_max",
+        "revenue_growth_min",
+        "revenue_growth_max",
+        "profit_margin_min",
+        "profit_margin_max",
+        "rsi_min",
+        "rsi_max",
+        "ma_cross",
+        "change_percent_min",
+        "change_percent_max",
     }
 
     def __init__(self):
@@ -75,8 +88,8 @@ class FilterEngine:
         filters_dict: Dict[str, Any],
         limit: int = 50,
         offset: int = 0,
-        sort_by: str = 'marketCap',
-        sort_order: str = 'desc'
+        sort_by: str = "marketCap",
+        sort_order: str = "desc",
     ) -> Dict:
         """
         필터 적용
@@ -125,26 +138,26 @@ class FilterEngine:
             total_pages = (total_count + limit - 1) // limit
             current_page = (offset // limit) + 1
 
-            paginated = filtered_stocks[offset:offset + limit]
+            paginated = filtered_stocks[offset : offset + limit]
 
             return {
-                'results': paginated,
-                'count': total_count,
-                'total_pages': total_pages,
-                'current_page': current_page,
-                'page_size': limit,
-                'filters_applied': {
-                    'fmp_filters': list(fmp_params.keys()),
-                    'client_filters': list(client_filters.keys()),
+                "results": paginated,
+                "count": total_count,
+                "total_pages": total_pages,
+                "current_page": current_page,
+                "page_size": limit,
+                "filters_applied": {
+                    "fmp_filters": list(fmp_params.keys()),
+                    "client_filters": list(client_filters.keys()),
                 },
             }
 
         except FMPAPIError as e:
             logger.error(f"FMP API 오류: {e}")
             return {
-                'results': [],
-                'count': 0,
-                'error': str(e),
+                "results": [],
+                "count": 0,
+                "error": str(e),
             }
 
     def validate_filters(self, filters_dict: Dict[str, Any]) -> Dict:
@@ -175,9 +188,9 @@ class FilterEngine:
                 errors.append(f"잘못된 값: {filter_key}={filter_value}")
 
         return {
-            'valid': len(errors) == 0,
-            'errors': errors,
-            'warnings': warnings,
+            "valid": len(errors) == 0,
+            "errors": errors,
+            "warnings": warnings,
         }
 
     def get_available_filters(self) -> List[Dict]:
@@ -187,34 +200,36 @@ class FilterEngine:
         Returns:
             카테고리별 필터 리스트
         """
-        cache_key = 'screener_available_filters'
+        cache_key = "screener_available_filters"
         cached = cache.get(cache_key)
         if cached:
             return cached
 
         filters = ScreenerFilter.objects.filter(is_active=True).order_by(
-            'category', 'display_order'
+            "category", "display_order"
         )
 
         result = {}
         for f in filters:
             if f.category not in result:
                 result[f.category] = []
-            result[f.category].append({
-                'id': f.filter_id,
-                'label': f.label,
-                'label_ko': f.label_ko,
-                'operator_type': f.operator_type,
-                'unit': f.unit,
-                'min_value': float(f.min_value) if f.min_value else None,
-                'max_value': float(f.max_value) if f.max_value else None,
-                'default_min': float(f.default_min) if f.default_min else None,
-                'default_max': float(f.default_max) if f.default_max else None,
-                'options': f.options,
-                'is_premium': f.is_premium,
-                'is_popular': f.is_popular,
-                'tooltip_key': f.tooltip_key,
-            })
+            result[f.category].append(
+                {
+                    "id": f.filter_id,
+                    "label": f.label,
+                    "label_ko": f.label_ko,
+                    "operator_type": f.operator_type,
+                    "unit": f.unit,
+                    "min_value": float(f.min_value) if f.min_value else None,
+                    "max_value": float(f.max_value) if f.max_value else None,
+                    "default_min": float(f.default_min) if f.default_min else None,
+                    "default_max": float(f.default_max) if f.default_max else None,
+                    "options": f.options,
+                    "is_premium": f.is_premium,
+                    "is_popular": f.is_popular,
+                    "tooltip_key": f.tooltip_key,
+                }
+            )
 
         cache.set(cache_key, result, 3600)  # 1시간 캐시
         return result
@@ -242,7 +257,7 @@ class FilterEngine:
 
     def _fetch_from_fmp(self, fmp_params: Dict, limit: int = 1000) -> List[Dict]:
         """FMP API에서 종목 조회"""
-        cache_key = f'fmp_screener:{hash(frozenset(fmp_params.items()))}:{limit}'
+        cache_key = f"fmp_screener:{hash(frozenset(fmp_params.items()))}:{limit}"
         cached = cache.get(cache_key)
         if cached:
             logger.debug("FMP 스크리너 캐시 HIT")
@@ -251,8 +266,8 @@ class FilterEngine:
         # FMP API 호출 (기존 stocks 앱의 서비스 활용 가능)
         try:
             # FMP /stable/company-screener 엔드포인트 직접 호출
-            params = {'limit': limit, **fmp_params}
-            endpoint = '/stable/company-screener'
+            params = {"limit": limit, **fmp_params}
+            endpoint = "/stable/company-screener"
 
             response = self.fmp_client._make_request(endpoint, params)
 
@@ -264,11 +279,7 @@ class FilterEngine:
         except FMPAPIError:
             raise
 
-    def _apply_client_filters(
-        self,
-        stocks: List[Dict],
-        filters: Dict
-    ) -> List[Dict]:
+    def _apply_client_filters(self, stocks: List[Dict], filters: Dict) -> List[Dict]:
         """클라이언트 사이드 필터 적용"""
         result = []
 
@@ -288,30 +299,30 @@ class FilterEngine:
     def _matches_filter(self, stock: Dict, filter_key: str, filter_value: Any) -> bool:
         """단일 필터 조건 매칭"""
         # 필터 키에서 필드명과 연산자 추출
-        if filter_key.endswith('_min'):
+        if filter_key.endswith("_min"):
             field = filter_key[:-4]
-            operator = 'gte'
-        elif filter_key.endswith('_max'):
+            operator = "gte"
+        elif filter_key.endswith("_max"):
             field = filter_key[:-4]
-            operator = 'lte'
+            operator = "lte"
         else:
             field = filter_key
-            operator = 'eq'
+            operator = "eq"
 
         # 필드명 매핑 (snake_case → API 필드명)
         field_map = {
-            'pe_ratio': 'pe',
-            'pb_ratio': 'priceToBook',
-            'peg_ratio': 'peg',
-            'roe': 'roe',
-            'roa': 'roa',
-            'debt_equity': 'debtToEquity',
-            'current_ratio': 'currentRatio',
-            'eps_growth': 'epsGrowth',
-            'revenue_growth': 'revenueGrowth',
-            'profit_margin': 'grossProfitMargin',
-            'rsi': 'rsi',
-            'change_percent': 'changesPercentage',
+            "pe_ratio": "pe",
+            "pb_ratio": "priceToBook",
+            "peg_ratio": "peg",
+            "roe": "roe",
+            "roa": "roa",
+            "debt_equity": "debtToEquity",
+            "current_ratio": "currentRatio",
+            "eps_growth": "epsGrowth",
+            "revenue_growth": "revenueGrowth",
+            "profit_margin": "grossProfitMargin",
+            "rsi": "rsi",
+            "change_percent": "changesPercentage",
         }
 
         actual_field = field_map.get(field, field)
@@ -326,28 +337,25 @@ class FilterEngine:
         except (ValueError, TypeError):
             return True
 
-        if operator == 'gte':
+        if operator == "gte":
             return stock_value >= filter_value
-        elif operator == 'lte':
+        elif operator == "lte":
             return stock_value <= filter_value
-        elif operator == 'eq':
+        elif operator == "eq":
             return stock_value == filter_value
 
         return True
 
     def _sort_results(
-        self,
-        stocks: List[Dict],
-        sort_by: str,
-        sort_order: str
+        self, stocks: List[Dict], sort_by: str, sort_order: str
     ) -> List[Dict]:
         """결과 정렬"""
-        reverse = sort_order.lower() == 'desc'
+        reverse = sort_order.lower() == "desc"
 
         def get_sort_key(stock):
             value = stock.get(sort_by)
             if value is None:
-                return float('-inf') if reverse else float('inf')
+                return float("-inf") if reverse else float("inf")
             try:
                 return float(value)
             except (ValueError, TypeError):
@@ -358,11 +366,20 @@ class FilterEngine:
     def _is_known_filter(self, filter_key: str) -> bool:
         """알려진 필터인지 확인"""
         return (
-            filter_key in self.FMP_PARAM_MAP or
-            filter_key in self.CLIENT_SIDE_FILTERS or
-            filter_key.replace('_min', '').replace('_max', '') in {
-                'market_cap', 'price', 'volume', 'beta', 'dividend',
-                'pe_ratio', 'pb_ratio', 'roe', 'roa', 'change_percent',
+            filter_key in self.FMP_PARAM_MAP
+            or filter_key in self.CLIENT_SIDE_FILTERS
+            or filter_key.replace("_min", "").replace("_max", "")
+            in {
+                "market_cap",
+                "price",
+                "volume",
+                "beta",
+                "dividend",
+                "pe_ratio",
+                "pb_ratio",
+                "roe",
+                "roa",
+                "change_percent",
             }
         )
 
@@ -372,7 +389,7 @@ class FilterEngine:
             return True
 
         # 숫자 필터
-        if filter_key.endswith(('_min', '_max')):
+        if filter_key.endswith(("_min", "_max")):
             try:
                 float(value)
                 return True
@@ -380,13 +397,13 @@ class FilterEngine:
                 return False
 
         # 리스트 필터 (sector, exchange)
-        if filter_key in ('sector', 'exchange'):
+        if filter_key in ("sector", "exchange"):
             if isinstance(value, list):
                 return all(isinstance(v, str) for v in value)
             return isinstance(value, str)
 
         # Boolean 필터
-        if filter_key in ('is_etf', 'is_actively_trading'):
+        if filter_key in ("is_etf", "is_actively_trading"):
             return isinstance(value, bool)
 
         return True

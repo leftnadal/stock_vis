@@ -24,61 +24,105 @@ logger = logging.getLogger(__name__)
 # ── Engine A: Ticker 추출 Regex 패턴 ──
 
 # $AAPL 형태의 cashtag
-CASHTAG_PATTERN = re.compile(r'\$([A-Z]{1,5})\b')
+CASHTAG_PATTERN = re.compile(r"\$([A-Z]{1,5})\b")
 
 # (NASDAQ: AAPL) 또는 (NYSE: AAPL) 형태
-EXCHANGE_PATTERN = re.compile(
-    r'\((?:NYSE|NASDAQ|AMEX|NYSEMKT):\s*([A-Z]{1,5})\)'
-)
+EXCHANGE_PATTERN = re.compile(r"\((?:NYSE|NASDAQ|AMEX|NYSEMKT):\s*([A-Z]{1,5})\)")
 
 # 동음이의어 문맥 필터 키워드 (주변에 이 단어가 있어야 주식으로 인정)
 STOCK_CONTEXT_WORDS = {
-    'stock', 'stocks', 'share', 'shares', 'equity', 'equities',
-    'earnings', 'revenue', 'profit', 'dividend', 'market cap',
-    'ipo', 'sec', 'filing', 'analyst', 'upgrade', 'downgrade',
-    'buy', 'sell', 'hold', 'target price', 'wall street',
-    'quarter', 'q1', 'q2', 'q3', 'q4', 'fiscal', 'guidance',
-    'nasdaq', 'nyse', 's&p', 'dow',
+    "stock",
+    "stocks",
+    "share",
+    "shares",
+    "equity",
+    "equities",
+    "earnings",
+    "revenue",
+    "profit",
+    "dividend",
+    "market cap",
+    "ipo",
+    "sec",
+    "filing",
+    "analyst",
+    "upgrade",
+    "downgrade",
+    "buy",
+    "sell",
+    "hold",
+    "target price",
+    "wall street",
+    "quarter",
+    "q1",
+    "q2",
+    "q3",
+    "q4",
+    "fiscal",
+    "guidance",
+    "nasdaq",
+    "nyse",
+    "s&p",
+    "dow",
 }
 
 # 동음이의어 목록 (주식과 일반 단어가 모두 될 수 있는 ticker)
 AMBIGUOUS_TICKERS = {
-    'META', 'NOW', 'ALL', 'IT', 'ON', 'ARE', 'HAS', 'CAN',
-    'SO', 'MO', 'AN', 'GO', 'KEY', 'BIG', 'LOW', 'HIGH',
-    'TRUE', 'FAST', 'GOOD', 'BEST', 'WELL', 'REAL',
+    "META",
+    "NOW",
+    "ALL",
+    "IT",
+    "ON",
+    "ARE",
+    "HAS",
+    "CAN",
+    "SO",
+    "MO",
+    "AN",
+    "GO",
+    "KEY",
+    "BIG",
+    "LOW",
+    "HIGH",
+    "TRUE",
+    "FAST",
+    "GOOD",
+    "BEST",
+    "WELL",
+    "REAL",
 }
 
 # ── Engine C: 수동 가중치 (초기 β₁~β₅) ──
 
 DEFAULT_WEIGHTS = {
-    'source_credibility': 0.15,    # β₁: 소스 신뢰도
-    'entity_count': 0.20,          # β₂: 종목/섹터 매칭 수
-    'sentiment_magnitude': 0.20,   # β₃: 감성 강도
-    'recency': 0.25,               # β₄: 시의성
-    'keyword_relevance': 0.20,     # β₅: 키워드 관련성
+    "source_credibility": 0.15,  # β₁: 소스 신뢰도
+    "entity_count": 0.20,  # β₂: 종목/섹터 매칭 수
+    "sentiment_magnitude": 0.20,  # β₃: 감성 강도
+    "recency": 0.25,  # β₄: 시의성
+    "keyword_relevance": 0.20,  # β₅: 키워드 관련성
 }
 
 # 소스 신뢰도 점수 (0~1)
 SOURCE_CREDIBILITY = {
-    'reuters': 1.0,
-    'bloomberg': 1.0,
-    'wsj': 0.95,
-    'wall street journal': 0.95,
-    'cnbc': 0.90,
-    'financial times': 0.95,
-    'ft': 0.95,
-    'barrons': 0.90,
+    "reuters": 1.0,
+    "bloomberg": 1.0,
+    "wsj": 0.95,
+    "wall street journal": 0.95,
+    "cnbc": 0.90,
+    "financial times": 0.95,
+    "ft": 0.95,
+    "barrons": 0.90,
     "barron's": 0.90,
-    'marketwatch': 0.85,
-    'seeking alpha': 0.75,
-    'motley fool': 0.70,
-    'yahoo finance': 0.80,
-    'benzinga': 0.75,
-    'investopedia': 0.70,
-    'the verge': 0.70,
-    'techcrunch': 0.70,
-    'associated press': 0.90,
-    'ap': 0.90,
+    "marketwatch": 0.85,
+    "seeking alpha": 0.75,
+    "motley fool": 0.70,
+    "yahoo finance": 0.80,
+    "benzinga": 0.75,
+    "investopedia": 0.70,
+    "the verge": 0.70,
+    "techcrunch": 0.70,
+    "associated press": 0.90,
+    "ap": 0.90,
 }
 DEFAULT_SOURCE_SCORE = 0.5
 
@@ -109,6 +153,7 @@ class NewsClassifier:
         """배포된 ML 모델 가중치 로드, 없으면 수동 가중치 사용"""
         try:
             from .ml_production_manager import MLProductionManager
+
             deployed = MLProductionManager.get_deployed_weights()
             if deployed:
                 logger.info(f"Using deployed ML weights: {deployed}")
@@ -122,6 +167,7 @@ class NewsClassifier:
         """SymbolMatcher lazy initialization"""
         if self._symbol_matcher is None:
             from serverless.services.symbol_matcher import get_symbol_matcher
+
             self._symbol_matcher = get_symbol_matcher()
         return self._symbol_matcher
 
@@ -142,9 +188,7 @@ class NewsClassifier:
         tickers = set()
 
         # 1. 기존 NewsEntity에서 ticker
-        entity_symbols = list(
-            article.entities.values_list('symbol', flat=True)
-        )
+        entity_symbols = list(article.entities.values_list("symbol", flat=True))
         tickers.update(s.upper() for s in entity_symbols)
 
         # 2-3. 제목 + 본문에서 regex 추출
@@ -181,12 +225,12 @@ class NewsClassifier:
 
         for i, word in enumerate(words):
             # 1-word candidate
-            clean = re.sub(r'[^\w\s&\'-]', '', word).strip()
+            clean = re.sub(r"[^\w\s&\'-]", "", word).strip()
             if clean and clean[0].isupper() and len(clean) >= 3:
                 candidates.add(clean)
                 # 2-word candidate
                 if i + 1 < len(words):
-                    next_word = re.sub(r'[^\w\s&\'-]', '', words[i + 1]).strip()
+                    next_word = re.sub(r"[^\w\s&\'-]", "", words[i + 1]).strip()
                     candidates.add(f"{clean} {next_word}")
 
         for candidate in candidates:
@@ -235,7 +279,7 @@ class NewsClassifier:
         w = self.weights
 
         # β₁: 소스 신뢰도
-        source_lower = (article.source or '').lower().strip()
+        source_lower = (article.source or "").lower().strip()
         f1 = SOURCE_CREDIBILITY.get(source_lower, DEFAULT_SOURCE_SCORE)
 
         # β₂: 종목/섹터 매칭 수 (normalize: 0~1)
@@ -249,9 +293,7 @@ class NewsClassifier:
             f3 = 0.3  # 감성 정보 없으면 기본값
 
         # β₄: 시의성 (최근일수록 높음)
-        hours_ago = (
-            timezone.now() - article.published_at
-        ).total_seconds() / 3600
+        hours_ago = (timezone.now() - article.published_at).total_seconds() / 3600
         if hours_ago <= 2:
             f4 = 1.0
         elif hours_ago <= 6:
@@ -267,11 +309,11 @@ class NewsClassifier:
         f5 = min(len(sectors) / 3.0, 1.0) if sectors else 0.0
 
         score = (
-            w['source_credibility'] * f1
-            + w['entity_count'] * f2
-            + w['sentiment_magnitude'] * f3
-            + w['recency'] * f4
-            + w['keyword_relevance'] * f5
+            w["source_credibility"] * f1
+            + w["entity_count"] * f2
+            + w["sentiment_magnitude"] * f3
+            + w["recency"] * f4
+            + w["keyword_relevance"] * f5
         )
 
         return round(min(max(score, 0.0), 1.0), 4)
@@ -280,7 +322,9 @@ class NewsClassifier:
     # 통합: 분류 배치
     # ════════════════════════════════════════
 
-    def classify_batch(self, article_ids: Optional[list] = None, hours: int = 4) -> dict:
+    def classify_batch(
+        self, article_ids: Optional[list] = None, hours: int = 4
+    ) -> dict:
         """
         뉴스 배치 분류 (수집 직후 체이닝)
 
@@ -297,7 +341,7 @@ class NewsClassifier:
                 importance_score__isnull=True,
             )
         else:
-            cutoff = timezone.now() - __import__('datetime').timedelta(hours=hours)
+            cutoff = timezone.now() - __import__("datetime").timedelta(hours=hours)
             articles = NewsArticle.objects.filter(
                 published_at__gte=cutoff,
                 importance_score__isnull=True,
@@ -316,16 +360,21 @@ class NewsClassifier:
                 article.rule_tickers = tickers if tickers else None
                 article.rule_sectors = sectors if sectors else None
                 article.importance_score = score
-                article.save(update_fields=[
-                    'rule_tickers', 'rule_sectors', 'importance_score', 'updated_at',
-                ])
+                article.save(
+                    update_fields=[
+                        "rule_tickers",
+                        "rule_sectors",
+                        "importance_score",
+                        "updated_at",
+                    ]
+                )
                 classified += 1
 
             except Exception as e:
                 logger.error(f"Classification error for {article.id}: {e}")
                 errors += 1
 
-        result = {'classified': classified, 'skipped': skipped, 'errors': errors}
+        result = {"classified": classified, "skipped": skipped, "errors": errors}
         logger.info(f"NewsClassifier batch complete: {result}")
         return result
 
@@ -341,15 +390,13 @@ class NewsClassifier:
             list: 분석 대상 NewsArticle ID 리스트
         """
         today = timezone.localdate()
-        start_of_day = timezone.make_aware(
-            datetime.combine(today, datetime.min.time())
-        )
+        start_of_day = timezone.make_aware(datetime.combine(today, datetime.min.time()))
 
         # 오늘 모든 뉴스의 importance_score
         all_today = NewsArticle.objects.filter(
             published_at__gte=start_of_day,
             importance_score__isnull=False,
-        ).order_by('-importance_score')
+        ).order_by("-importance_score")
 
         total = all_today.count()
         if total == 0:
@@ -358,7 +405,7 @@ class NewsClassifier:
         # 상위 15% 임계값 계산
         top_count = max(1, int(total * TOP_PERCENTILE))
         threshold_article = list(
-            all_today.values_list('importance_score', flat=True)[:top_count]
+            all_today.values_list("importance_score", flat=True)[:top_count]
         )
         if not threshold_article:
             return []
@@ -370,15 +417,19 @@ class NewsClassifier:
             published_at__gte=start_of_day,
             importance_score__gte=threshold,
             llm_analyzed=False,
-        ).values_list('id', flat=True)
+        ).values_list("id", flat=True)
 
         selected = list(candidates)
 
         # 최소 보장: 선별된 것이 없으면 최소 1건
         if not selected and total > 0:
-            top_one = all_today.filter(
-                llm_analyzed=False,
-            ).values_list('id', flat=True).first()
+            top_one = (
+                all_today.filter(
+                    llm_analyzed=False,
+                )
+                .values_list("id", flat=True)
+                .first()
+            )
             if top_one:
                 selected = [top_one]
 

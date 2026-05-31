@@ -75,11 +75,9 @@ class KeywordDataCollector:
         """API 클라이언트 초기화"""
         # FMP (Overview)
         self.fmp_client = None
-        if hasattr(settings, 'FMP_API_KEY') and settings.FMP_API_KEY:
+        if hasattr(settings, "FMP_API_KEY") and settings.FMP_API_KEY:
             try:
-                self.fmp_client = FMPClient(
-                    api_key=settings.FMP_API_KEY
-                )
+                self.fmp_client = FMPClient(api_key=settings.FMP_API_KEY)
             except Exception as e:
                 logger.warning(f"FMP client 초기화 실패: {e}")
 
@@ -87,7 +85,7 @@ class KeywordDataCollector:
         self.news_providers = []
 
         # MarketAux (우선순위 1: 감성 분석 포함)
-        if MarketauxNewsProvider and hasattr(settings, 'MARKETAUX_API_KEY'):
+        if MarketauxNewsProvider and hasattr(settings, "MARKETAUX_API_KEY"):
             try:
                 self.news_providers.append(
                     MarketauxNewsProvider(api_key=settings.MARKETAUX_API_KEY)
@@ -97,7 +95,7 @@ class KeywordDataCollector:
                 logger.warning(f"MarketAux provider 초기화 실패: {e}")
 
         # Finnhub (우선순위 2: rate limit 여유)
-        if FinnhubNewsProvider and hasattr(settings, 'FINNHUB_API_KEY'):
+        if FinnhubNewsProvider and hasattr(settings, "FINNHUB_API_KEY"):
             try:
                 self.news_providers.append(
                     FinnhubNewsProvider(api_key=settings.FINNHUB_API_KEY)
@@ -107,13 +105,11 @@ class KeywordDataCollector:
                 logger.warning(f"Finnhub provider 초기화 실패: {e}")
 
         if not self.news_providers:
-            logger.info("뉴스 provider가 초기화되지 않았습니다. 뉴스 수집이 스킵됩니다.")
+            logger.info(
+                "뉴스 provider가 초기화되지 않았습니다. 뉴스 수집이 스킵됩니다."
+            )
 
-    def collect_batch(
-        self,
-        symbols: List[str],
-        target_date: date
-    ) -> Dict[str, Any]:
+    def collect_batch(self, symbols: List[str], target_date: date) -> Dict[str, Any]:
         """
         배치 데이터 수집 (병렬)
 
@@ -137,11 +133,14 @@ class KeywordDataCollector:
         """
         start_time = time.time()
 
-        logger.info("keyword_data_collection_batch", extra={
-            "status": "started",
-            "total_stocks": len(symbols),
-            "date": str(target_date),
-        })
+        logger.info(
+            "keyword_data_collection_batch",
+            extra={
+                "status": "started",
+                "total_stocks": len(symbols),
+                "date": str(target_date),
+            },
+        )
 
         successful = []
         failed = []
@@ -153,11 +152,7 @@ class KeywordDataCollector:
         with ThreadPoolExecutor(max_workers=self.MAX_WORKERS) as executor:
             # 모든 종목을 병렬로 처리
             future_to_symbol = {
-                executor.submit(
-                    self._collect_single,
-                    symbol,
-                    target_date
-                ): symbol
+                executor.submit(self._collect_single, symbol, target_date): symbol
                 for symbol in symbols
             }
 
@@ -168,70 +163,78 @@ class KeywordDataCollector:
                 try:
                     result = future.result(timeout=self.API_TIMEOUT)
 
-                    if result['success']:
+                    if result["success"]:
                         successful.append(symbol)
-                        contexts[symbol] = result['context']
+                        contexts[symbol] = result["context"]
 
-                        if result['from_cache']:
+                        if result["from_cache"]:
                             cache_hits += 1
                         else:
                             api_calls += 1
 
-                        logger.info("keyword_data_collection", extra={
-                            "phase": "overview",
-                            "symbol": symbol,
-                            "status": "success",
-                            "duration_ms": result['duration_ms'],
-                            "cache_hit": result['from_cache'],
-                        })
+                        logger.info(
+                            "keyword_data_collection",
+                            extra={
+                                "phase": "overview",
+                                "symbol": symbol,
+                                "status": "success",
+                                "duration_ms": result["duration_ms"],
+                                "cache_hit": result["from_cache"],
+                            },
+                        )
                     else:
-                        failed.append((symbol, result['error']))
+                        failed.append((symbol, result["error"]))
 
-                        logger.error("keyword_data_collection", extra={
-                            "phase": "overview",
-                            "symbol": symbol,
-                            "status": "failed",
-                            "error": result['error'],
-                        })
+                        logger.error(
+                            "keyword_data_collection",
+                            extra={
+                                "phase": "overview",
+                                "symbol": symbol,
+                                "status": "failed",
+                                "error": result["error"],
+                            },
+                        )
 
                 except Exception as exc:
                     failed.append((symbol, str(exc)))
 
-                    logger.error("keyword_data_collection", extra={
-                        "phase": "overview",
-                        "symbol": symbol,
-                        "status": "failed",
-                        "error": str(exc),
-                    })
+                    logger.error(
+                        "keyword_data_collection",
+                        extra={
+                            "phase": "overview",
+                            "symbol": symbol,
+                            "status": "failed",
+                            "error": str(exc),
+                        },
+                    )
 
         duration_ms = int((time.time() - start_time) * 1000)
 
         result = {
-            'successful': successful,
-            'failed': failed,
-            'total_stocks': len(symbols),
-            'cache_hits': cache_hits,
-            'api_calls': api_calls,
-            'duration_ms': duration_ms,
-            'contexts': contexts,
-        }
-
-        logger.info("keyword_data_collection_batch", extra={
-            "status": "completed",
-            "successful": len(successful),
-            "failed": len(failed),
+            "successful": successful,
+            "failed": failed,
+            "total_stocks": len(symbols),
             "cache_hits": cache_hits,
             "api_calls": api_calls,
             "duration_ms": duration_ms,
-        })
+            "contexts": contexts,
+        }
+
+        logger.info(
+            "keyword_data_collection_batch",
+            extra={
+                "status": "completed",
+                "successful": len(successful),
+                "failed": len(failed),
+                "cache_hits": cache_hits,
+                "api_calls": api_calls,
+                "duration_ms": duration_ms,
+            },
+        )
 
         return result
 
-    def _collect_single(
-        self,
-        symbol: str,
-        target_date: date
-    ) -> Dict[str, Any]:
+    def _collect_single(self, symbol: str, target_date: date) -> Dict[str, Any]:
         """
         단일 종목 데이터 수집
 
@@ -255,11 +258,11 @@ class KeywordDataCollector:
             cached_data = self.get_cached_context(str(target_date), symbol)
             if cached_data:
                 return {
-                    'success': True,
-                    'from_cache': True,
-                    'duration_ms': int((time.time() - start_time) * 1000),
-                    'error': None,
-                    'context': cached_data,
+                    "success": True,
+                    "from_cache": True,
+                    "duration_ms": int((time.time() - start_time) * 1000),
+                    "error": None,
+                    "context": cached_data,
                 }
 
             # 2. 데이터 수집
@@ -268,35 +271,35 @@ class KeywordDataCollector:
             # Overview 수집 (Rate Limiting 적용)
             overview = self._fetch_overview(symbol)
             if overview:
-                context['overview'] = overview
+                context["overview"] = overview
 
             # News 수집 (선택적)
             news = self._fetch_news(symbol)
             if news:
-                context['news'] = news
+                context["news"] = news
 
             # Indicators는 빈 dict (MarketMover 모델에서 가져옴)
-            context['indicators'] = {}
+            context["indicators"] = {}
 
             # 3. Redis 캐싱
             self.set_cached_context(str(target_date), symbol, context)
 
             return {
-                'success': True,
-                'from_cache': False,
-                'duration_ms': int((time.time() - start_time) * 1000),
-                'error': None,
-                'context': context,
+                "success": True,
+                "from_cache": False,
+                "duration_ms": int((time.time() - start_time) * 1000),
+                "error": None,
+                "context": context,
             }
 
         except Exception as exc:
             # 기타 에러
             return {
-                'success': False,
-                'from_cache': False,
-                'duration_ms': int((time.time() - start_time) * 1000),
-                'error': str(exc),
-                'context': None,
+                "success": False,
+                "from_cache": False,
+                "duration_ms": int((time.time() - start_time) * 1000),
+                "error": str(exc),
+                "context": None,
             }
 
     def _fetch_overview(self, symbol: str) -> Optional[Dict[str, Any]]:
@@ -321,49 +324,49 @@ class KeywordDataCollector:
         try:
             data = self.fmp_client.get_company_profile(symbol)
 
-            if not data or 'symbol' not in data:
+            if not data or "symbol" not in data:
                 logger.debug(f"    ⚠️ {symbol} overview 없음")
                 return None
 
             overview = {}
 
             # Description (500자 제한)
-            if data.get('description'):
-                desc = data['description'][:500]
-                if len(data['description']) > 500:
-                    desc += '...'
-                overview['description'] = desc
+            if data.get("description"):
+                desc = data["description"][:500]
+                if len(data["description"]) > 500:
+                    desc += "..."
+                overview["description"] = desc
 
             # Market Cap (mktCap → 읽기 쉬운 형식)
-            market_cap = data.get('mktCap')
+            market_cap = data.get("mktCap")
             if market_cap:
                 try:
                     cap_num = float(market_cap)
                     if cap_num >= 1e12:
-                        overview['market_cap'] = f"{cap_num / 1e12:.2f}T"
+                        overview["market_cap"] = f"{cap_num / 1e12:.2f}T"
                     elif cap_num >= 1e9:
-                        overview['market_cap'] = f"{cap_num / 1e9:.2f}B"
+                        overview["market_cap"] = f"{cap_num / 1e9:.2f}B"
                     elif cap_num >= 1e6:
-                        overview['market_cap'] = f"{cap_num / 1e6:.2f}M"
+                        overview["market_cap"] = f"{cap_num / 1e6:.2f}M"
                 except (ValueError, TypeError):
                     pass
 
             # 52 Week High/Low (range 필드 파싱: "164.08-199.62")
-            week_range = data.get('range', '')
-            if week_range and '-' in week_range:
-                parts = week_range.split('-')
+            week_range = data.get("range", "")
+            if week_range and "-" in week_range:
+                parts = week_range.split("-")
                 if len(parts) == 2:
                     try:
-                        overview['52_week_low'] = float(parts[0].strip())
-                        overview['52_week_high'] = float(parts[1].strip())
+                        overview["52_week_low"] = float(parts[0].strip())
+                        overview["52_week_high"] = float(parts[1].strip())
                     except (ValueError, TypeError):
                         pass
 
             # Dividend Yield
-            last_div = data.get('lastDiv')
+            last_div = data.get("lastDiv")
             if last_div:
                 try:
-                    overview['dividend_yield'] = float(last_div)
+                    overview["dividend_yield"] = float(last_div)
                 except (ValueError, TypeError):
                     pass
 
@@ -377,7 +380,9 @@ class KeywordDataCollector:
             logger.error(f"    ❌ {symbol} overview 수집 실패: {e}")
             return None
 
-    def _fetch_news(self, symbol: str, limit: int = 3) -> Optional[List[Dict[str, Any]]]:
+    def _fetch_news(
+        self, symbol: str, limit: int = 3
+    ) -> Optional[List[Dict[str, Any]]]:
         """
         뉴스 provider로부터 최근 뉴스 수집 (Marketaux → Finnhub 폴백)
 
@@ -419,50 +424,56 @@ class KeywordDataCollector:
 
             try:
                 # Rate Limit 체크 (Marketaux는 15분 간격 필요)
-                if hasattr(provider, 'last_request_time') and hasattr(provider, 'request_delay'):
+                if hasattr(provider, "last_request_time") and hasattr(
+                    provider, "request_delay"
+                ):
                     time_since_last = time.time() - provider.last_request_time
                     wait_time = provider.request_delay - time_since_last
 
                     # 5초 이상 대기 필요하면 스킵하고 다음 provider 시도
                     if wait_time > 5:
-                        logger.info(f"    ⏭️ {symbol} {provider_name} Rate Limit ({wait_time:.0f}초 대기 필요) - 다음 provider로")
-                        errors.append((provider_name, f"Rate Limit: {wait_time:.0f}초 대기 필요"))
+                        logger.info(
+                            f"    ⏭️ {symbol} {provider_name} Rate Limit ({wait_time:.0f}초 대기 필요) - 다음 provider로"
+                        )
+                        errors.append(
+                            (provider_name, f"Rate Limit: {wait_time:.0f}초 대기 필요")
+                        )
                         continue
 
                 # 뉴스 수집 시도
                 raw_articles = provider.fetch_company_news(
-                    symbol=symbol,
-                    from_date=from_date,
-                    to_date=to_date
+                    symbol=symbol, from_date=from_date, to_date=to_date
                 )
 
                 # RawNewsArticle → dict 변환
                 for raw in raw_articles[:limit]:
                     article = {
-                        'title': raw.title,
-                        'source': raw.source,
-                        'published_at': raw.published_at.isoformat(),
-                        'provider': provider_name.lower().replace('newsprovider', ''),
+                        "title": raw.title,
+                        "source": raw.source,
+                        "published_at": raw.published_at.isoformat(),
+                        "provider": provider_name.lower().replace("newsprovider", ""),
                     }
 
                     # 감성 분석 (MarketAux만 제공)
                     if raw.sentiment_score is not None:
                         sentiment_value = float(raw.sentiment_score)
                         if sentiment_value > 0.2:
-                            article['sentiment'] = 'positive'
+                            article["sentiment"] = "positive"
                         elif sentiment_value < -0.2:
-                            article['sentiment'] = 'negative'
+                            article["sentiment"] = "negative"
                         else:
-                            article['sentiment'] = 'neutral'
+                            article["sentiment"] = "neutral"
                     else:
-                        article['sentiment'] = 'neutral'
+                        article["sentiment"] = "neutral"
 
                     news_articles.append(article)
 
                 # 성공 시 provider 기록
                 if news_articles:
                     used_provider = provider_name
-                    logger.info(f"    ✓ {symbol} 뉴스 {len(news_articles)}개 수집 ({provider_name})")
+                    logger.info(
+                        f"    ✓ {symbol} 뉴스 {len(news_articles)}개 수집 ({provider_name})"
+                    )
                     break
 
             except Exception as e:
@@ -486,16 +497,10 @@ class KeywordDataCollector:
 
     def _empty_context(self) -> Dict[str, Any]:
         """빈 컨텍스트 반환 (fallback)"""
-        return {
-            'overview': {},
-            'news': [],
-            'indicators': {}
-        }
+        return {"overview": {}, "news": [], "indicators": {}}
 
     def get_cached_context(
-        self,
-        date_str: str,
-        symbol: str
+        self, date_str: str, symbol: str
     ) -> Optional[Dict[str, Any]]:
         """
         Redis에서 컨텍스트 조회 (압축 해제)
@@ -507,10 +512,7 @@ class KeywordDataCollector:
         Returns:
             dict or None
         """
-        cache_key = self.CACHE_KEY_TEMPLATE.format(
-            date=date_str,
-            symbol=symbol.upper()
-        )
+        cache_key = self.CACHE_KEY_TEMPLATE.format(date=date_str, symbol=symbol.upper())
 
         try:
             compressed = cache.get(cache_key)
@@ -523,10 +525,7 @@ class KeywordDataCollector:
         return None
 
     def set_cached_context(
-        self,
-        date_str: str,
-        symbol: str,
-        data: Dict[str, Any]
+        self, date_str: str, symbol: str, data: Dict[str, Any]
     ) -> bool:
         """
         Redis에 컨텍스트 저장 (압축)
@@ -539,10 +538,7 @@ class KeywordDataCollector:
         Returns:
             bool: 성공 여부
         """
-        cache_key = self.CACHE_KEY_TEMPLATE.format(
-            date=date_str,
-            symbol=symbol.upper()
-        )
+        cache_key = self.CACHE_KEY_TEMPLATE.format(date=date_str, symbol=symbol.upper())
 
         try:
             compressed = msgpack.packb(data, use_bin_type=True)
@@ -555,11 +551,7 @@ class KeywordDataCollector:
             logger.warning(f"Cache set error: {exc}")
             return False
 
-    def delete_cached_context(
-        self,
-        date_str: str,
-        symbol: str
-    ) -> bool:
+    def delete_cached_context(self, date_str: str, symbol: str) -> bool:
         """
         Redis에서 컨텍스트 삭제
 
@@ -570,10 +562,7 @@ class KeywordDataCollector:
         Returns:
             bool: 성공 여부
         """
-        cache_key = self.CACHE_KEY_TEMPLATE.format(
-            date=date_str,
-            symbol=symbol.upper()
-        )
+        cache_key = self.CACHE_KEY_TEMPLATE.format(date=date_str, symbol=symbol.upper())
 
         try:
             cache.delete(cache_key)
@@ -585,9 +574,7 @@ class KeywordDataCollector:
             return False
 
     def get_batch_contexts(
-        self,
-        date_str: str,
-        symbols: List[str]
+        self, date_str: str, symbols: List[str]
     ) -> List[Dict[str, Any]]:
         """
         배치 컨텍스트 조회 (LLM 입력용)
@@ -611,9 +598,7 @@ class KeywordDataCollector:
         return contexts
 
     def estimate_tokens(
-        self,
-        contexts: List[Dict[str, Any]],
-        include_prompt: bool = True
+        self, contexts: List[Dict[str, Any]], include_prompt: bool = True
     ) -> Dict[str, int]:
         """
         토큰 수 추정
@@ -650,18 +635,15 @@ class KeywordDataCollector:
         estimated_output = len(contexts) * 300
 
         return {
-            'context_tokens': context_tokens,
-            'prompt_tokens': prompt_tokens,
-            'total_input_tokens': total_input,
-            'estimated_output_tokens': estimated_output,
+            "context_tokens": context_tokens,
+            "prompt_tokens": prompt_tokens,
+            "total_input_tokens": total_input,
+            "estimated_output_tokens": estimated_output,
         }
 
 
 # 편의 함수
-def collect_keyword_data_sync(
-    symbols: List[str],
-    target_date: date
-) -> Dict[str, Any]:
+def collect_keyword_data_sync(symbols: List[str], target_date: date) -> Dict[str, Any]:
     """
     동기 방식 데이터 수집
 
@@ -677,8 +659,7 @@ def collect_keyword_data_sync(
 
 
 def get_keyword_contexts_batch(
-    date_str: str,
-    symbols: List[str]
+    date_str: str, symbols: List[str]
 ) -> List[Dict[str, Any]]:
     """
     배치 컨텍스트 조회
@@ -694,9 +675,7 @@ def get_keyword_contexts_batch(
     return collector.get_batch_contexts(date_str, symbols)
 
 
-def estimate_batch_tokens(
-    contexts: List[Dict[str, Any]]
-) -> Dict[str, int]:
+def estimate_batch_tokens(contexts: List[Dict[str, Any]]) -> Dict[str, int]:
     """
     배치 토큰 수 추정
 
@@ -715,7 +694,7 @@ if __name__ == "__main__":
     # 로깅 설정
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # 테스트
@@ -724,14 +703,14 @@ if __name__ == "__main__":
     collector = KeywordDataCollector()
 
     # 5개 종목 테스트
-    test_symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'META']
+    test_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "META"]
     test_date = date.today()
 
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Market Movers 키워드 데이터 수집 테스트")
     print(f"종목: {', '.join(test_symbols)}")
     print(f"날짜: {test_date}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     result = collector.collect_batch(test_symbols, test_date)
 
@@ -742,16 +721,16 @@ if __name__ == "__main__":
     print(f"  API 호출: {result['api_calls']}")
     print(f"  소요 시간: {result['duration_ms'] / 1000:.2f}초")
 
-    if result['successful']:
+    if result["successful"]:
         print(f"\n[성공 종목 샘플: {result['successful'][0]}]")
-        sample = result['contexts'][result['successful'][0]]
+        sample = result["contexts"][result["successful"][0]]
         print(f"  Overview: {bool(sample['overview'])}")
         print(f"  News: {len(sample['news'])} articles")
 
-        if sample['overview']:
+        if sample["overview"]:
             print(f"    - Market Cap: {sample['overview'].get('market_cap', 'N/A')}")
             print(f"    - PE Ratio: {sample['overview'].get('pe_ratio', 'N/A')}")
 
-        if sample['news']:
+        if sample["news"]:
             print(f"    - Latest: {sample['news'][0]['title'][:60]}...")
             print(f"    - Sentiment: {sample['news'][0]['sentiment']}")

@@ -54,10 +54,7 @@ class CrossEncoderReranker:
         self.model = CrossEncoderReranker._model
 
     def rerank(
-        self,
-        question: str,
-        documents: List[Tuple[dict, float, dict]],
-        top_k: int = 3
+        self, question: str, documents: List[Tuple[dict, float, dict]], top_k: int = 3
     ) -> List[Tuple[dict, float, dict]]:
         """
         문서 재순위화
@@ -83,7 +80,9 @@ class CrossEncoderReranker:
 
         # Top-K보다 적으면 그대로 반환
         if len(documents) <= top_k:
-            logger.debug(f"Documents ({len(documents)}) <= top_k ({top_k}), returning all")
+            logger.debug(
+                f"Documents ({len(documents)}) <= top_k ({top_k}), returning all"
+            )
             return documents
 
         # Cross-Encoder 입력 준비
@@ -106,8 +105,8 @@ class CrossEncoderReranker:
             rerank_score = float(scores[i])
             # breakdown에 rerank 점수 추가
             breakdown_copy = breakdown.copy()
-            breakdown_copy['rerank'] = rerank_score
-            breakdown_copy['original_score'] = orig_score
+            breakdown_copy["rerank"] = rerank_score
+            breakdown_copy["original_score"] = orig_score
             scored_docs.append((doc, rerank_score, breakdown_copy))
 
         # 점수 기준 내림차순 정렬
@@ -136,15 +135,15 @@ class CrossEncoderReranker:
             MAX_TEXT_LENGTH로 텍스트 길이 제한
         """
         # 제목 추출
-        title = doc.get('title', doc.get('name', ''))
+        title = doc.get("title", doc.get("name", ""))
 
         # 본문 추출 (여러 필드 우선순위)
         content = (
-            doc.get('content') or
-            doc.get('text') or
-            doc.get('description') or
-            doc.get('summary') or
-            ''
+            doc.get("content")
+            or doc.get("text")
+            or doc.get("description")
+            or doc.get("summary")
+            or ""
         )
 
         # 제목과 본문 결합
@@ -157,7 +156,7 @@ class CrossEncoderReranker:
 
         # 길이 제한
         if len(combined) > self.MAX_TEXT_LENGTH:
-            combined = combined[:self.MAX_TEXT_LENGTH]
+            combined = combined[: self.MAX_TEXT_LENGTH]
 
         return combined
 
@@ -177,11 +176,7 @@ class RerankerWithThreshold:
         >>> results = reranker.rerank("질문", documents, top_k=3, min_docs=1)
     """
 
-    def __init__(
-        self,
-        reranker: CrossEncoderReranker,
-        threshold: float = 0.5
-    ):
+    def __init__(self, reranker: CrossEncoderReranker, threshold: float = 0.5):
         """
         Args:
             reranker: Cross-Encoder 재순위화 인스턴스
@@ -199,7 +194,7 @@ class RerankerWithThreshold:
         question: str,
         documents: List[Tuple[dict, float, dict]],
         top_k: int = 3,
-        min_docs: int = 1
+        min_docs: int = 1,
     ) -> List[Tuple[dict, float, dict]]:
         """
         임계값 기반 재순위화
@@ -246,7 +241,9 @@ class RerankerWithThreshold:
         return filtered[:top_k]
 
 
-def get_reranker(with_threshold: bool = False, threshold: float = 0.5) -> CrossEncoderReranker:
+def get_reranker(
+    with_threshold: bool = False, threshold: float = 0.5
+) -> CrossEncoderReranker:
     """
     Reranker 인스턴스 생성 헬퍼
 

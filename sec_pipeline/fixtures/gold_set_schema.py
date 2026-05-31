@@ -11,7 +11,9 @@ from dataclasses import dataclass, field
 class SupplyChainRelation:
     target_ticker: str
     target_name: str
-    primary_type: str  # SUPPLIES_TO, CUSTOMER_OF, PARTNER_WITH, DEPENDS_ON, COMPETES_WITH
+    primary_type: (
+        str  # SUPPLIES_TO, CUSTOMER_OF, PARTNER_WITH, DEPENDS_ON, COMPETES_WITH
+    )
 
 
 @dataclass

@@ -50,9 +50,15 @@ def get_neo4j_driver() -> Optional[Driver]:
         _driver = GraphDatabase.driver(
             uri,
             auth=(username, password),
-            max_connection_lifetime=settings.NEO4J_CONNECTION_POOL.get('max_connection_lifetime', 3600),
-            max_connection_pool_size=settings.NEO4J_CONNECTION_POOL.get('max_connection_pool_size', 50),
-            connection_acquisition_timeout=settings.NEO4J_CONNECTION_POOL.get('connection_acquisition_timeout', 60),
+            max_connection_lifetime=settings.NEO4J_CONNECTION_POOL.get(
+                "max_connection_lifetime", 3600
+            ),
+            max_connection_pool_size=settings.NEO4J_CONNECTION_POOL.get(
+                "max_connection_pool_size", 50
+            ),
+            connection_acquisition_timeout=settings.NEO4J_CONNECTION_POOL.get(
+                "connection_acquisition_timeout", 60
+            ),
         )
 
         # 연결 확인

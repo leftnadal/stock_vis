@@ -45,6 +45,7 @@ Usage:
     # N-depth 그래프 조회
     graph = service.get_n_depth_graph('NVDA', depth=2)
 """
+
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -63,7 +64,7 @@ from rag_analysis.services.neo4j_driver import get_neo4j_driver
 logger = logging.getLogger(__name__)
 
 
-NEO4J_CB_NAME = 'neo4j_chain_sight'
+NEO4J_CB_NAME = "neo4j_chain_sight"
 NEO4J_CB_FAILURE_THRESHOLD = 5
 NEO4J_CB_RECOVERY_SECONDS = 60
 
@@ -83,25 +84,25 @@ class Neo4jChainSightService:
 
     # 관계 타입 매핑
     RELATIONSHIP_TYPES = {
-        'PEER_OF': 'PEER_OF',
-        'SAME_INDUSTRY': 'SAME_INDUSTRY',
-        'CO_MENTIONED': 'CO_MENTIONED',
-        'HAS_THEME': 'HAS_THEME',
-        'SUPPLIES_TO': 'SUPPLIES_TO',
-        'CUSTOMER_OF': 'CUSTOMER_OF',
-        'SUPPLIED_BY': 'SUPPLIED_BY',  # Phase 4: Supply Chain
+        "PEER_OF": "PEER_OF",
+        "SAME_INDUSTRY": "SAME_INDUSTRY",
+        "CO_MENTIONED": "CO_MENTIONED",
+        "HAS_THEME": "HAS_THEME",
+        "SUPPLIES_TO": "SUPPLIES_TO",
+        "CUSTOMER_OF": "CUSTOMER_OF",
+        "SUPPLIED_BY": "SUPPLIED_BY",  # Phase 4: Supply Chain
         # Phase 5: LLM Extracted Relations
-        'ACQUIRED': 'ACQUIRED',
-        'INVESTED_IN': 'INVESTED_IN',
-        'PARTNER_OF': 'PARTNER_OF',
-        'SPIN_OFF': 'SPIN_OFF',
-        'SUED_BY': 'SUED_BY',
+        "ACQUIRED": "ACQUIRED",
+        "INVESTED_IN": "INVESTED_IN",
+        "PARTNER_OF": "PARTNER_OF",
+        "SPIN_OFF": "SPIN_OFF",
+        "SUED_BY": "SUED_BY",
         # Phase 7: Institutional Holdings
-        'HELD_BY_SAME_FUND': 'HELD_BY_SAME_FUND',
+        "HELD_BY_SAME_FUND": "HELD_BY_SAME_FUND",
         # Phase 8: Regulatory + Patent
-        'SAME_REGULATION': 'SAME_REGULATION',
-        'PATENT_CITED': 'PATENT_CITED',
-        'PATENT_DISPUTE': 'PATENT_DISPUTE',
+        "SAME_REGULATION": "SAME_REGULATION",
+        "PATENT_CITED": "PATENT_CITED",
+        "PATENT_DISPUTE": "PATENT_DISPUTE",
     }
 
     def __init__(self):
@@ -151,7 +152,7 @@ class Neo4jChainSightService:
         name: str,
         sector: Optional[str] = None,
         industry: Optional[str] = None,
-        market_cap: Optional[float] = None
+        market_cap: Optional[float] = None,
     ) -> bool:
         """
         Stock 노드 생성/업데이트
@@ -186,7 +187,7 @@ class Neo4jChainSightService:
                     name=name,
                     sector=sector,
                     industry=industry,
-                    market_cap=market_cap
+                    market_cap=market_cap,
                 )
                 return result.single()
 
@@ -245,8 +246,8 @@ class Neo4jChainSightService:
         target_symbol: str,
         rel_type: str,
         weight: float = 1.0,
-        source_provider: str = 'manual',
-        context: Optional[Dict] = None
+        source_provider: str = "manual",
+        context: Optional[Dict] = None,
     ) -> bool:
         """
         두 종목 간 관계 생성
@@ -277,7 +278,7 @@ class Neo4jChainSightService:
                 cypher_rel_type = self.RELATIONSHIP_TYPES[rel_type]
 
                 # context를 JSON 문자열로 직렬화 (Neo4j는 Map을 프로퍼티로 저장 불가)
-                context_json = json.dumps(context) if context else '{}'
+                context_json = json.dumps(context) if context else "{}"
 
                 query = f"""
                 MATCH (source:Stock {{symbol: $source}})
@@ -296,7 +297,7 @@ class Neo4jChainSightService:
                     target=target_symbol.upper(),
                     weight=weight,
                     source_provider=source_provider,
-                    context_json=context_json
+                    context_json=context_json,
                 )
                 record = result.single()
                 return record is not None
@@ -350,10 +351,7 @@ class Neo4jChainSightService:
     # ========================================
 
     def get_related_stocks(
-        self,
-        symbol: str,
-        rel_type: Optional[str] = None,
-        limit: int = 20
+        self, symbol: str, rel_type: Optional[str] = None, limit: int = 20
     ) -> List[Dict[str, Any]]:
         """
         관련 종목 조회
@@ -417,23 +415,25 @@ class Neo4jChainSightService:
             stocks = []
             for record in records:
                 # context_json 파싱
-                context_json = record.get('context_json', '{}')
+                context_json = record.get("context_json", "{}")
                 try:
                     context = json.loads(context_json) if context_json else {}
                 except (json.JSONDecodeError, TypeError):
                     context = {}
 
-                stocks.append({
-                    'symbol': record['symbol'],
-                    'name': record['name'],
-                    'sector': record['sector'],
-                    'industry': record['industry'],
-                    'market_cap': record['market_cap'],
-                    'weight': record['weight'],
-                    'relationship_type': record['relationship_type'],
-                    'source': record['source'],
-                    'context': context,
-                })
+                stocks.append(
+                    {
+                        "symbol": record["symbol"],
+                        "name": record["name"],
+                        "sector": record["sector"],
+                        "industry": record["industry"],
+                        "market_cap": record["market_cap"],
+                        "weight": record["weight"],
+                        "relationship_type": record["relationship_type"],
+                        "source": record["source"],
+                        "context": context,
+                    }
+                )
 
             return stocks
 
@@ -442,10 +442,7 @@ class Neo4jChainSightService:
             return []
 
     def get_n_depth_graph(
-        self,
-        symbol: str,
-        depth: int = 2,
-        limit_per_node: int = 5
+        self, symbol: str, depth: int = 2, limit_per_node: int = 5
     ) -> Dict[str, Any]:
         """
         N-depth 그래프 조회 (시각화용)
@@ -472,7 +469,7 @@ class Neo4jChainSightService:
             return {"nodes": [], "edges": []}
 
         # 캐시 확인
-        cache_key = f'neo4j_graph:{symbol}:{depth}:{limit_per_node}'
+        cache_key = f"neo4j_graph:{symbol}:{depth}:{limit_per_node}"
         cached = cache.get(cache_key)
         if cached:
             return cached
@@ -514,50 +511,49 @@ class Neo4jChainSightService:
 
                 for record in result:
                     # 중심 노드
-                    center_sym = record['center_symbol']
+                    center_sym = record["center_symbol"]
                     if center_sym and center_sym not in nodes:
                         nodes[center_sym] = {
-                            'id': center_sym,
-                            'name': record['center_name'] or center_sym,
-                            'sector': record['center_sector'],
-                            'group': 'center'
+                            "id": center_sym,
+                            "name": record["center_name"] or center_sym,
+                            "sector": record["center_sector"],
+                            "group": "center",
                         }
 
                     # 관련 노드
-                    related_sym = record['related_symbol']
+                    related_sym = record["related_symbol"]
                     if related_sym and related_sym not in nodes:
                         nodes[related_sym] = {
-                            'id': related_sym,
-                            'name': record['related_name'] or related_sym,
-                            'sector': record['related_sector'],
-                            'group': 'related'
+                            "id": related_sym,
+                            "name": record["related_name"] or related_sym,
+                            "sector": record["related_sector"],
+                            "group": "related",
                         }
 
                     # 엣지
-                    source_sym = record['source_symbol']
-                    target_sym = record['target_symbol']
-                    rel_type = record['rel_type']
+                    source_sym = record["source_symbol"]
+                    target_sym = record["target_symbol"]
+                    rel_type = record["rel_type"]
 
                     if source_sym and target_sym and rel_type:
                         edge_key = f"{source_sym}-{target_sym}-{rel_type}"
                         # 중복 방지
                         if not any(
-                            e['source'] == source_sym and
-                            e['target'] == target_sym and
-                            e['type'] == rel_type
+                            e["source"] == source_sym
+                            and e["target"] == target_sym
+                            and e["type"] == rel_type
                             for e in edges
                         ):
-                            edges.append({
-                                'source': source_sym,
-                                'target': target_sym,
-                                'type': rel_type,
-                                'weight': record['weight'] or 0.5
-                            })
+                            edges.append(
+                                {
+                                    "source": source_sym,
+                                    "target": target_sym,
+                                    "type": rel_type,
+                                    "weight": record["weight"] or 0.5,
+                                }
+                            )
 
-                graph_data = {
-                    'nodes': list(nodes.values()),
-                    'edges': edges
-                }
+                graph_data = {"nodes": list(nodes.values()), "edges": edges}
 
                 # 캐시 저장
                 cache.set(cache_key, graph_data, self.CACHE_TTL)
@@ -586,7 +582,7 @@ class Neo4jChainSightService:
         from serverless.services.fmp_client import FMPClient
 
         if not self.is_available():
-            return {'synced': 0, 'failed': 0}
+            return {"synced": 0, "failed": 0}
 
         symbol = symbol.upper()
         synced = 0
@@ -599,17 +595,17 @@ class Neo4jChainSightService:
                 profile = fmp_client.get_company_profile(symbol)
                 self.create_stock_node(
                     symbol=symbol,
-                    name=profile.get('companyName', symbol),
-                    sector=profile.get('sector'),
-                    industry=profile.get('industry'),
-                    market_cap=profile.get('marketCap')  # mktCap → marketCap
+                    name=profile.get("companyName", symbol),
+                    sector=profile.get("sector"),
+                    industry=profile.get("industry"),
+                    market_cap=profile.get("marketCap"),  # mktCap → marketCap
                 )
 
                 # Sector/Industry 관계
-                if profile.get('sector'):
-                    self.create_sector_relationship(symbol, profile['sector'])
-                if profile.get('industry'):
-                    self.create_industry_relationship(symbol, profile['industry'])
+                if profile.get("sector"):
+                    self.create_sector_relationship(symbol, profile["sector"])
+                if profile.get("industry"):
+                    self.create_industry_relationship(symbol, profile["industry"])
             except Exception as e:
                 logger.warning(f"프로필 조회 실패 {symbol}: {e}")
 
@@ -622,16 +618,17 @@ class Neo4jChainSightService:
                     target_profile = fmp_client.get_company_profile(rel.target_symbol)
                     self.create_stock_node(
                         symbol=rel.target_symbol,
-                        name=target_profile.get('companyName', rel.target_symbol),
-                        sector=target_profile.get('sector'),
-                        industry=target_profile.get('industry'),
-                        market_cap=target_profile.get('marketCap')  # mktCap → marketCap
+                        name=target_profile.get("companyName", rel.target_symbol),
+                        sector=target_profile.get("sector"),
+                        industry=target_profile.get("industry"),
+                        market_cap=target_profile.get(
+                            "marketCap"
+                        ),  # mktCap → marketCap
                     )
                 except Exception:
                     # 프로필 없으면 심볼만으로 생성
                     self.create_stock_node(
-                        symbol=rel.target_symbol,
-                        name=rel.target_symbol
+                        symbol=rel.target_symbol, name=rel.target_symbol
                     )
 
                 # 관계 생성
@@ -641,7 +638,7 @@ class Neo4jChainSightService:
                     rel_type=rel.relationship_type,
                     weight=float(rel.strength),
                     source_provider=rel.source_provider,
-                    context=rel.context
+                    context=rel.context,
                 )
 
                 if success:
@@ -649,13 +646,15 @@ class Neo4jChainSightService:
                 else:
                     failed += 1
 
-            logger.info(f"Neo4j 동기화 완료: {symbol} -> synced={synced}, failed={failed}")
+            logger.info(
+                f"Neo4j 동기화 완료: {symbol} -> synced={synced}, failed={failed}"
+            )
 
-            return {'synced': synced, 'failed': failed}
+            return {"synced": synced, "failed": failed}
 
         except Exception as e:
             logger.error(f"PostgreSQL 동기화 실패 {symbol}: {e}")
-            return {'synced': synced, 'failed': failed}
+            return {"synced": synced, "failed": failed}
 
     def sync_all_from_postgres(self, batch_size: int = 100) -> Dict[str, int]:
         """
@@ -670,11 +669,11 @@ class Neo4jChainSightService:
         from serverless.models import StockRelationship
 
         if not self.is_available():
-            return {'total_symbols': 0, 'synced': 0, 'failed': 0}
+            return {"total_symbols": 0, "synced": 0, "failed": 0}
 
         # 유니크 심볼 목록
         symbols = StockRelationship.objects.values_list(
-            'source_symbol', flat=True
+            "source_symbol", flat=True
         ).distinct()
 
         total_synced = 0
@@ -682,13 +681,13 @@ class Neo4jChainSightService:
 
         for symbol in symbols:
             result = self.sync_from_postgres(symbol)
-            total_synced += result['synced']
-            total_failed += result['failed']
+            total_synced += result["synced"]
+            total_failed += result["failed"]
 
         return {
-            'total_symbols': len(symbols),
-            'synced': total_synced,
-            'failed': total_failed
+            "total_symbols": len(symbols),
+            "synced": total_synced,
+            "failed": total_failed,
         }
 
     # ========================================
@@ -736,30 +735,30 @@ class Neo4jChainSightService:
             with self.driver.session() as session:
                 stock_count = session.run(
                     "MATCH (s:Stock) RETURN count(s) AS count"
-                ).single()['count']
+                ).single()["count"]
 
                 sector_count = session.run(
                     "MATCH (s:Sector) RETURN count(s) AS count"
-                ).single()['count']
+                ).single()["count"]
 
                 peer_count = session.run(
                     "MATCH ()-[r:PEER_OF]->() RETURN count(r) AS count"
-                ).single()['count']
+                ).single()["count"]
 
                 industry_rel_count = session.run(
                     "MATCH ()-[r:SAME_INDUSTRY]->() RETURN count(r) AS count"
-                ).single()['count']
+                ).single()["count"]
 
                 co_mentioned_count = session.run(
                     "MATCH ()-[r:CO_MENTIONED]->() RETURN count(r) AS count"
-                ).single()['count']
+                ).single()["count"]
 
                 return {
-                    'stock_nodes': stock_count,
-                    'sector_nodes': sector_count,
-                    'peer_of_relationships': peer_count,
-                    'same_industry_relationships': industry_rel_count,
-                    'co_mentioned_relationships': co_mentioned_count,
+                    "stock_nodes": stock_count,
+                    "sector_nodes": sector_count,
+                    "peer_of_relationships": peer_count,
+                    "same_industry_relationships": industry_rel_count,
+                    "co_mentioned_relationships": co_mentioned_count,
                 }
 
         except Exception as e:
@@ -785,13 +784,7 @@ class Neo4jChainSightService:
     # ETF & Theme Operations (Phase 3)
     # ========================================
 
-    def create_etf_node(
-        self,
-        symbol: str,
-        name: str,
-        tier: str,
-        theme_id: str
-    ) -> bool:
+    def create_etf_node(self, symbol: str, name: str, tier: str, theme_id: str) -> bool:
         """
         ETF 노드 생성/업데이트
 
@@ -822,7 +815,7 @@ class Neo4jChainSightService:
                     symbol=symbol.upper(),
                     name=name,
                     tier=tier,
-                    theme_id=theme_id
+                    theme_id=theme_id,
                 )
                 record = result.single()
                 return record is not None
@@ -836,7 +829,7 @@ class Neo4jChainSightService:
         theme_id: str,
         name: str,
         icon: Optional[str] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> bool:
         """
         Theme 노드 생성/업데이트
@@ -868,7 +861,7 @@ class Neo4jChainSightService:
                     theme_id=theme_id,
                     name=name,
                     icon=icon,
-                    description=description
+                    description=description,
                 )
                 record = result.single()
                 return record is not None
@@ -878,11 +871,7 @@ class Neo4jChainSightService:
             return False
 
     def create_held_by_relationship(
-        self,
-        stock_symbol: str,
-        etf_symbol: str,
-        weight: float,
-        rank: int
+        self, stock_symbol: str, etf_symbol: str, weight: float, rank: int
     ) -> bool:
         """
         HELD_BY 관계 생성 (Stock → ETF)
@@ -915,7 +904,7 @@ class Neo4jChainSightService:
                     stock_symbol=stock_symbol.upper(),
                     etf_symbol=etf_symbol.upper(),
                     weight=weight,
-                    rank=rank
+                    rank=rank,
                 )
                 return result.single() is not None
 
@@ -929,7 +918,7 @@ class Neo4jChainSightService:
         theme_id: str,
         confidence: str,
         source: str,
-        evidence: Optional[List[str]] = None
+        evidence: Optional[List[str]] = None,
     ) -> bool:
         """
         HAS_THEME 관계 생성 (Stock → Theme)
@@ -965,7 +954,7 @@ class Neo4jChainSightService:
                     theme_id=theme_id,
                     confidence=confidence,
                     source=source,
-                    evidence=evidence or []
+                    evidence=evidence or [],
                 )
                 return result.single() is not None
 
@@ -1008,18 +997,14 @@ class Neo4jChainSightService:
                 ORDER BY size(etfs) DESC, total_weight DESC
                 LIMIT $limit
                 """
-                result = session.run(
-                    query,
-                    symbol=symbol.upper(),
-                    limit=limit
-                )
+                result = session.run(query, symbol=symbol.upper(), limit=limit)
 
                 return [
                     {
-                        'symbol': record['symbol'],
-                        'name': record['name'],
-                        'etfs_in_common': record['etfs'],
-                        'total_weight': record['total_weight'],
+                        "symbol": record["symbol"],
+                        "name": record["name"],
+                        "etfs_in_common": record["etfs"],
+                        "total_weight": record["total_weight"],
                     }
                     for record in result
                 ]
@@ -1029,10 +1014,7 @@ class Neo4jChainSightService:
             return []
 
     def get_theme_stocks(
-        self,
-        theme_id: str,
-        min_confidence: str = 'medium',
-        limit: int = 20
+        self, theme_id: str, min_confidence: str = "medium", limit: int = 20
     ) -> List[Dict[str, Any]]:
         """
         테마에 속한 종목 조회
@@ -1049,11 +1031,7 @@ class Neo4jChainSightService:
             return []
 
         # confidence 순서 정의
-        confidence_order = {
-            'high': 1,
-            'medium-high': 2,
-            'medium': 3
-        }
+        confidence_order = {"high": 1, "medium-high": 2, "medium": 3}
 
         try:
             with self.driver.session() as session:
@@ -1078,25 +1056,24 @@ class Neo4jChainSightService:
                 # 최소 confidence 이상 목록
                 min_order = confidence_order.get(min_confidence, 3)
                 confidence_list = [
-                    c for c, o in confidence_order.items()
-                    if o <= min_order
+                    c for c, o in confidence_order.items() if o <= min_order
                 ]
 
                 result = session.run(
                     query,
                     theme_id=theme_id,
                     confidence_list=confidence_list,
-                    limit=limit
+                    limit=limit,
                 )
 
                 return [
                     {
-                        'symbol': record['symbol'],
-                        'name': record['name'],
-                        'sector': record['sector'],
-                        'confidence': record['confidence'],
-                        'source': record['source'],
-                        'evidence': record['evidence'],
+                        "symbol": record["symbol"],
+                        "name": record["name"],
+                        "sector": record["sector"],
+                        "confidence": record["confidence"],
+                        "source": record["source"],
+                        "evidence": record["evidence"],
                     }
                     for record in result
                 ]
@@ -1116,7 +1093,7 @@ class Neo4jChainSightService:
         from serverless.services.theme_matching_service import THEME_KEYWORDS
 
         if not self.is_available():
-            return {'etfs': 0, 'holdings': 0, 'themes': 0}
+            return {"etfs": 0, "holdings": 0, "themes": 0}
 
         etf_count = 0
         holding_count = 0
@@ -1127,9 +1104,9 @@ class Neo4jChainSightService:
             for theme_id, config in THEME_KEYWORDS.items():
                 success = self.create_theme_node(
                     theme_id=theme_id,
-                    name=config['name'],
-                    icon=config['icon'],
-                    description=', '.join(config['keywords'][:5])
+                    name=config["name"],
+                    icon=config["icon"],
+                    description=", ".join(config["keywords"][:5]),
                 )
                 if success:
                     theme_count += 1
@@ -1140,7 +1117,7 @@ class Neo4jChainSightService:
                     symbol=profile.symbol,
                     name=profile.name,
                     tier=profile.tier,
-                    theme_id=profile.theme_id
+                    theme_id=profile.theme_id,
                 )
                 if success:
                     etf_count += 1
@@ -1150,7 +1127,7 @@ class Neo4jChainSightService:
                     # Stock 노드 생성 (존재하지 않으면)
                     self.create_stock_node(
                         symbol=holding.stock_symbol,
-                        name=holding.stock_symbol  # 이름은 나중에 업데이트
+                        name=holding.stock_symbol,  # 이름은 나중에 업데이트
                     )
 
                     # HELD_BY 관계 생성
@@ -1158,7 +1135,7 @@ class Neo4jChainSightService:
                         stock_symbol=holding.stock_symbol,
                         etf_symbol=profile.symbol,
                         weight=float(holding.weight_percent),
-                        rank=holding.rank
+                        rank=holding.rank,
                     )
                     if success:
                         holding_count += 1
@@ -1170,7 +1147,7 @@ class Neo4jChainSightService:
                     theme_id=match.theme_id,
                     confidence=match.confidence,
                     source=match.source,
-                    evidence=match.evidence
+                    evidence=match.evidence,
                 )
 
             logger.info(
@@ -1178,29 +1155,18 @@ class Neo4jChainSightService:
                 f"ETFs={etf_count}, Holdings={holding_count}, Themes={theme_count}"
             )
 
-            return {
-                'etfs': etf_count,
-                'holdings': holding_count,
-                'themes': theme_count
-            }
+            return {"etfs": etf_count, "holdings": holding_count, "themes": theme_count}
 
         except Exception as e:
             logger.error(f"ETF Holdings Neo4j 동기화 실패: {e}")
-            return {
-                'etfs': etf_count,
-                'holdings': holding_count,
-                'themes': theme_count
-            }
+            return {"etfs": etf_count, "holdings": holding_count, "themes": theme_count}
 
     # ========================================
     # Phase 7: Institutional Holdings Operations
     # ========================================
 
     def create_institution_node(
-        self,
-        cik: str,
-        name: str,
-        aum: Optional[float] = None
+        self, cik: str, name: str, aum: Optional[float] = None
     ) -> bool:
         """
         Institution 노드 생성/업데이트
@@ -1230,11 +1196,7 @@ class Neo4jChainSightService:
             return False
 
     def create_holds_relationship(
-        self,
-        institution_cik: str,
-        stock_symbol: str,
-        shares: int,
-        value_thousands: int
+        self, institution_cik: str, stock_symbol: str, shares: int, value_thousands: int
     ) -> bool:
         """Institution -> Stock HOLDS 관계 생성"""
         if not self.is_available():
@@ -1256,7 +1218,7 @@ class Neo4jChainSightService:
                     cik=institution_cik,
                     symbol=stock_symbol.upper(),
                     shares=shares,
-                    value_thousands=value_thousands
+                    value_thousands=value_thousands,
                 )
                 return result.single() is not None
 
@@ -1269,10 +1231,7 @@ class Neo4jChainSightService:
     # ========================================
 
     def create_regulation_node(
-        self,
-        category: str,
-        name: str,
-        description: Optional[str] = None
+        self, category: str, name: str, description: Optional[str] = None
     ) -> bool:
         """
         Regulation 노드 생성/업데이트
@@ -1295,10 +1254,7 @@ class Neo4jChainSightService:
                 RETURN r.category AS category
                 """
                 result = session.run(
-                    query,
-                    category=category,
-                    name=name,
-                    description=description
+                    query, category=category, name=name, description=description
                 )
                 return result.single() is not None
 
@@ -1310,7 +1266,7 @@ class Neo4jChainSightService:
         self,
         stock_symbol: str,
         regulation_category: str,
-        evidence: Optional[str] = None
+        evidence: Optional[str] = None,
     ) -> bool:
         """Stock -> Regulation AFFECTED_BY 관계 생성"""
         if not self.is_available():
@@ -1330,12 +1286,14 @@ class Neo4jChainSightService:
                     query,
                     symbol=stock_symbol.upper(),
                     category=regulation_category,
-                    evidence=evidence
+                    evidence=evidence,
                 )
                 return result.single() is not None
 
         except Exception as e:
-            logger.error(f"AFFECTED_BY 관계 생성 실패 {stock_symbol}->{regulation_category}: {e}")
+            logger.error(
+                f"AFFECTED_BY 관계 생성 실패 {stock_symbol}->{regulation_category}: {e}"
+            )
             return False
 
     def create_phase7_8_indexes(self) -> bool:

@@ -9,6 +9,7 @@ FMP Quote API를 사용하여 종목 데이터에 실시간 시세 정보를 추
 
 향후 AWS Lambda로 전환 시 재사용 가능하도록 설계되었습니다.
 """
+
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
@@ -36,7 +37,7 @@ class QuoteEnricher:
         Args:
             api_key: FMP API 키 (미지정 시 settings에서 가져옴)
         """
-        self.api_key = api_key or getattr(settings, 'FMP_API_KEY', None)
+        self.api_key = api_key or getattr(settings, "FMP_API_KEY", None)
         if not self.api_key:
             logger.warning("FMP_API_KEY가 설정되지 않았습니다.")
 
@@ -57,7 +58,7 @@ class QuoteEnricher:
             with httpx.Client(timeout=8.0) as client:
                 response = client.get(
                     f"{self.BASE_URL}/quote",
-                    params={"symbol": symbol, "apikey": self.api_key}
+                    params={"symbol": symbol, "apikey": self.api_key},
                 )
                 response.raise_for_status()
                 data = response.json()
@@ -122,7 +123,9 @@ class QuoteEnricher:
                         logger.debug(f"Quote 조회 에러: {e}")
 
         if quotes:
-            logger.info(f"FMP Quote API 조회 완료: {len(quotes)}개 종목 (캐시: {len(symbols) - len(symbols_to_fetch)}, API: {len(symbols_to_fetch)})")
+            logger.info(
+                f"FMP Quote API 조회 완료: {len(quotes)}개 종목 (캐시: {len(symbols) - len(symbols_to_fetch)}, API: {len(symbols_to_fetch)})"
+            )
 
         return quotes
 
@@ -187,9 +190,7 @@ class QuoteEnricher:
         return quotes.get(symbol)
 
     def calculate_change_percentage(
-        self,
-        current_price: float,
-        previous_price: float
+        self, current_price: float, previous_price: float
     ) -> Optional[float]:
         """
         변동률 계산 (순수 함수)

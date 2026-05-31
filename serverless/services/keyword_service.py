@@ -1,6 +1,7 @@
 """
 Market Movers 키워드 생성 서비스
 """
+
 import json
 import logging
 import time
@@ -60,17 +61,21 @@ JSON 배열만 반환하세요 (추가 설명 없음):
 
     # Fallback 키워드 (LLM 실패 시)
     FALLBACK_KEYWORDS = {
-        'gainers': ["급등", "거래량 증가", "모멘텀"],
-        'losers': ["급락", "매도 압력", "조정"],
-        'actives': ["거래량 급증", "변동성", "투자자 관심"],
-        'screener': ["분석 대상", "투자 검토", "모니터링"],
+        "gainers": ["급등", "거래량 증가", "모멘텀"],
+        "losers": ["급락", "매도 압력", "조정"],
+        "actives": ["거래량 급증", "변동성", "투자자 관심"],
+        "screener": ["분석 대상", "투자 검토", "모니터링"],
     }
 
     def __init__(self):
         """Gemini API 클라이언트 초기화 (동기 호출용)"""
-        api_key = getattr(settings, 'GOOGLE_AI_API_KEY', None) or getattr(settings, 'GEMINI_API_KEY', None)
+        api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+            settings, "GEMINI_API_KEY", None
+        )
         if not api_key:
-            raise ValueError("GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다.")
+            raise ValueError(
+                "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
+            )
         self.client = genai.Client(api_key=api_key)
 
     def generate_keyword(
@@ -82,7 +87,7 @@ JSON 배열만 반환하세요 (추가 설명 없음):
         change_percent: float,
         sector: Optional[str] = None,
         industry: Optional[str] = None,
-        max_retries: int = 2
+        max_retries: int = 2,
     ) -> Dict:
         """
         단일 종목 키워드 생성
@@ -118,18 +123,20 @@ JSON 배열만 반환하세요 (추가 설명 없음):
 
             # 3. 검증
             if not keywords or len(keywords) < 3:
-                logger.warning(f"{symbol}: 키워드 부족 ({len(keywords)}개) → Fallback 사용")
+                logger.warning(
+                    f"{symbol}: 키워드 부족 ({len(keywords)}개) → Fallback 사용"
+                )
                 keywords = self.FALLBACK_KEYWORDS.get(mover_type, ["변동성"])
-                status = 'failed'
+                status = "failed"
                 error_message = "키워드 개수 부족"
             else:
-                status = 'completed'
+                status = "completed"
                 error_message = None
 
         except Exception as e:
             logger.exception(f"{symbol} 키워드 생성 실패: {e}")
             keywords = self.FALLBACK_KEYWORDS.get(mover_type, ["변동성"])
-            status = 'failed'
+            status = "failed"
             error_message = str(e)
             metadata = {}
 
@@ -137,22 +144,17 @@ JSON 배열만 반환하세요 (추가 설명 없음):
         generation_time_ms = int((time.time() - start_time) * 1000)
 
         return {
-            'keywords': keywords,
-            'status': status,
-            'error_message': error_message,
-            'metadata': {
-                'generation_time_ms': generation_time_ms,
-                'prompt_tokens': metadata.get('input_tokens', 0),
-                'completion_tokens': metadata.get('output_tokens', 0),
-            }
+            "keywords": keywords,
+            "status": status,
+            "error_message": error_message,
+            "metadata": {
+                "generation_time_ms": generation_time_ms,
+                "prompt_tokens": metadata.get("input_tokens", 0),
+                "completion_tokens": metadata.get("output_tokens", 0),
+            },
         }
 
-    def batch_generate(
-        self,
-        date,
-        mover_type: str,
-        limit: int = 20
-    ) -> Dict[str, int]:
+    def batch_generate(self, date, mover_type: str, limit: int = 20) -> Dict[str, int]:
         """
         일괄 키워드 생성 (Celery 태스크용)
 
@@ -166,24 +168,21 @@ JSON 배열만 반환하세요 (추가 설명 없음):
         """
         logger.info(f"🔄 키워드 배치 생성 시작: {date} {mover_type} (limit={limit})")
 
-        results = {'success': 0, 'failed': 0, 'skipped': 0}
+        results = {"success": 0, "failed": 0, "skipped": 0}
 
         # 1. MarketMover 조회
-        movers = MarketMover.objects.filter(
-            date=date,
-            mover_type=mover_type
-        ).order_by('rank')[:limit]
+        movers = MarketMover.objects.filter(date=date, mover_type=mover_type).order_by(
+            "rank"
+        )[:limit]
 
         # 2. 각 종목별 키워드 생성
         for mover in movers:
             # 이미 생성된 키워드 스킵
             if StockKeyword.objects.filter(
-                symbol=mover.symbol,
-                date=date,
-                status='completed'
+                symbol=mover.symbol, date=date, status="completed"
             ).exists():
                 logger.debug(f"  ⏭️ {mover.symbol}: 이미 생성됨 (스킵)")
-                results['skipped'] += 1
+                results["skipped"] += 1
                 continue
 
             # 키워드 생성
@@ -194,7 +193,7 @@ JSON 배열만 반환하세요 (추가 설명 없음):
                 mover_type=mover_type,
                 change_percent=float(mover.change_percent),
                 sector=mover.sector,
-                industry=mover.industry
+                industry=mover.industry,
             )
 
             # DB 저장
@@ -202,25 +201,25 @@ JSON 배열만 반환하세요 (추가 설명 없음):
                 symbol=mover.symbol,
                 date=date,
                 defaults={
-                    'company_name': mover.company_name,
-                    'keywords': result['keywords'],
-                    'status': result['status'],
-                    'error_message': result['error_message'],
-                    'llm_model': 'gemini-2.5-flash',
-                    'generation_time_ms': result['metadata'].get('generation_time_ms'),
-                    'prompt_tokens': result['metadata'].get('prompt_tokens'),
-                    'completion_tokens': result['metadata'].get('completion_tokens'),
-                    'expires_at': timezone.now() + timedelta(days=7),
-                }
+                    "company_name": mover.company_name,
+                    "keywords": result["keywords"],
+                    "status": result["status"],
+                    "error_message": result["error_message"],
+                    "llm_model": "gemini-2.5-flash",
+                    "generation_time_ms": result["metadata"].get("generation_time_ms"),
+                    "prompt_tokens": result["metadata"].get("prompt_tokens"),
+                    "completion_tokens": result["metadata"].get("completion_tokens"),
+                    "expires_at": timezone.now() + timedelta(days=7),
+                },
             )
 
             # 결과 집계
-            if result['status'] == 'completed':
+            if result["status"] == "completed":
                 logger.info(f"  ✅ {mover.symbol}: {result['keywords']}")
-                results['success'] += 1
+                results["success"] += 1
             else:
                 logger.warning(f"  ⚠️ {mover.symbol}: {result['error_message']}")
-                results['failed'] += 1
+                results["failed"] += 1
 
         logger.info(
             f"✅ 키워드 배치 생성 완료: "
@@ -239,17 +238,23 @@ JSON 배열만 반환하세요 (추가 설명 없음):
         mover_type: str,
         change_percent: float,
         sector: Optional[str],
-        industry: Optional[str]
+        industry: Optional[str],
     ) -> str:
         """프롬프트 구성"""
-        direction = "급등" if mover_type == "gainers" else "급락" if mover_type == "losers" else "거래량 증가"
+        direction = (
+            "급등"
+            if mover_type == "gainers"
+            else "급락"
+            if mover_type == "losers"
+            else "거래량 증가"
+        )
 
         return f"""다음 종목의 {direction} 이유를 3개 핵심 키워드로 요약하세요.
 
 종목: {symbol} ({company_name})
 변동률: {change_percent:+.2f}%
-섹터: {sector or 'N/A'}
-산업: {industry or 'N/A'}
+섹터: {sector or "N/A"}
+산업: {industry or "N/A"}
 
 규칙:
 - 정확히 3개 키워드만 반환
@@ -280,7 +285,9 @@ JSON:"""
                     contents=[
                         types.Content(
                             role="user",
-                            parts=[types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")]
+                            parts=[
+                                types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")
+                            ],
                         )
                     ],
                     config=types.GenerateContentConfig(
@@ -289,19 +296,19 @@ JSON:"""
                         thinking_config=types.ThinkingConfig(
                             thinking_budget=0,
                         ),
-                    )
+                    ),
                 )
 
                 # 응답 텍스트 추출
-                full_text = response.text if hasattr(response, 'text') else ""
+                full_text = response.text if hasattr(response, "text") else ""
 
                 # 토큰 사용량 (있는 경우)
                 metadata = {}
-                if hasattr(response, 'usage_metadata'):
+                if hasattr(response, "usage_metadata"):
                     usage = response.usage_metadata
                     metadata = {
-                        'input_tokens': getattr(usage, 'prompt_token_count', 0),
-                        'output_tokens': getattr(usage, 'candidates_token_count', 0),
+                        "input_tokens": getattr(usage, "prompt_token_count", 0),
+                        "output_tokens": getattr(usage, "candidates_token_count", 0),
                     }
 
                 # JSON 파싱
@@ -314,14 +321,18 @@ JSON:"""
                 error_msg = str(e).lower()
 
                 # Rate limit 에러: 재시도
-                if 'rate' in error_msg or 'quota' in error_msg or '429' in error_msg:
+                if "rate" in error_msg or "quota" in error_msg or "429" in error_msg:
                     wait_time = (attempt + 1) * 2  # 2, 4, 6초
-                    logger.warning(f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}")
+                    logger.warning(
+                        f"Rate limit hit, waiting {wait_time}s before retry {attempt + 1}/{max_retries}"
+                    )
                     time.sleep(wait_time)
                     continue
 
                 # 기타 에러: 즉시 실패
-                logger.error(f"LLM 호출 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}")
+                logger.error(
+                    f"LLM 호출 실패 (시도 {attempt + 1}/{max_retries + 1}): {e}"
+                )
                 if attempt == max_retries:
                     raise Exception(f"LLM API 오류: {e}")
                 time.sleep(1)
@@ -343,7 +354,7 @@ JSON:"""
         try:
             # JSON 배열 추출 (코드 블록 제거)
             clean_text = text.strip()
-            clean_text = clean_text.replace('```json', '').replace('```', '').strip()
+            clean_text = clean_text.replace("```json", "").replace("```", "").strip()
 
             # JSON 파싱 시도
             try:
@@ -360,7 +371,9 @@ JSON:"""
 
             if matches and len(matches) >= 2:
                 # 최소 2개 이상 추출되면 성공으로 처리
-                keywords = [m.strip() for m in matches if m.strip() and len(m.strip()) <= 30]
+                keywords = [
+                    m.strip() for m in matches if m.strip() and len(m.strip()) <= 30
+                ]
                 if len(keywords) >= 2:
                     logger.info(f"잘린 JSON 복구 성공: {keywords[:5]}")
                     return keywords[:5]
@@ -381,6 +394,6 @@ JSON:"""
         """
         from django.core.cache import cache
 
-        cache_key = f'movers_with_keywords:{date}:{mover_type}'
+        cache_key = f"movers_with_keywords:{date}:{mover_type}"
         cache.delete(cache_key)
         logger.info(f"🗑️ 캐시 무효화: {cache_key}")

@@ -28,6 +28,7 @@ Usage:
     hints = pre_filter.get_relation_hints("Apple partners with Goldman Sachs")
     # ['PARTNER_OF']
 """
+
 import logging
 import re
 from dataclasses import dataclass
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PreFilterResult:
     """사전 필터링 결과"""
+
     is_candidate: bool
     relation_hints: List[str]  # 가능한 관계 타입 리스트
     company_mentions: List[str]  # 감지된 회사명 후보
@@ -59,61 +61,111 @@ class RelationPreFilter:
 
     # 관계 타입별 키워드 패턴
     RELATION_PATTERNS = {
-        'ACQUIRED': [
-            r'\b(acquir(?:e[sd]?|ing)|acquisition|bought|purchas(?:e[sd]?|ing)|tak(?:e[sn]?|ing)\s+over)\b',
-            r'\b(merg(?:e[sd]?|ing|er)|consolidat(?:e[sd]?|ing))\b',
-            r'\b(buy(?:s|ing)?|buyout)\b(?=.*\b(company|firm|business|stake)\b)',
+        "ACQUIRED": [
+            r"\b(acquir(?:e[sd]?|ing)|acquisition|bought|purchas(?:e[sd]?|ing)|tak(?:e[sn]?|ing)\s+over)\b",
+            r"\b(merg(?:e[sd]?|ing|er)|consolidat(?:e[sd]?|ing))\b",
+            r"\b(buy(?:s|ing)?|buyout)\b(?=.*\b(company|firm|business|stake)\b)",
         ],
-        'INVESTED_IN': [
-            r'\b(invest(?:s|ed|ing|ment)?|stake|funding|fund(?:s|ed|ing)?)\b',
-            r'\b(back(?:s|ed|ing)?|financ(?:e[sd]?|ing))\b(?=.*\b(startup|company|venture)\b)',
-            r'\b(rais(?:e[sd]?|ing)|secur(?:e[sd]?|ing))\b.*\$[\d.]+\s*[BMK]',
-            r'\$[\d.]+\s*[BMK].*\b(round|series|funding)\b',
+        "INVESTED_IN": [
+            r"\b(invest(?:s|ed|ing|ment)?|stake|funding|fund(?:s|ed|ing)?)\b",
+            r"\b(back(?:s|ed|ing)?|financ(?:e[sd]?|ing))\b(?=.*\b(startup|company|venture)\b)",
+            r"\b(rais(?:e[sd]?|ing)|secur(?:e[sd]?|ing))\b.*\$[\d.]+\s*[BMK]",
+            r"\$[\d.]+\s*[BMK].*\b(round|series|funding)\b",
         ],
-        'PARTNER_OF': [
-            r'\b(partner(?:s|ed|ing|ship)?|collaborat(?:e[sd]?|ing|ion))\b',
-            r'\b(alliance|joint\s+venture|JV|team(?:s|ed|ing)?\s+up)\b',
-            r'\b(deal|agreement|contract)\b.*\b(sign(?:s|ed)?|enter(?:s|ed)?)\b',
-            r'\b(expand(?:s|ed|ing)?|extend(?:s|ed|ing)?)\b.*\b(partnership|relationship)\b',
+        "PARTNER_OF": [
+            r"\b(partner(?:s|ed|ing|ship)?|collaborat(?:e[sd]?|ing|ion))\b",
+            r"\b(alliance|joint\s+venture|JV|team(?:s|ed|ing)?\s+up)\b",
+            r"\b(deal|agreement|contract)\b.*\b(sign(?:s|ed)?|enter(?:s|ed)?)\b",
+            r"\b(expand(?:s|ed|ing)?|extend(?:s|ed|ing)?)\b.*\b(partnership|relationship)\b",
         ],
-        'SPIN_OFF': [
-            r'\b(spin(?:s|ning)?\s*off|spinoff|spun\s+off)\b',
-            r'\b(separat(?:e[sd]?|ing)|divest(?:s|ed|ing|iture)?)\b',
-            r'\b(carve(?:s|d)?\s*out|split(?:s|ting)?)\b.*\b(business|unit|division)\b',
-            r'\b(IPO|initial\s+public\s+offering)\b.*\b(subsidiary|unit)\b',
+        "SPIN_OFF": [
+            r"\b(spin(?:s|ning)?\s*off|spinoff|spun\s+off)\b",
+            r"\b(separat(?:e[sd]?|ing)|divest(?:s|ed|ing|iture)?)\b",
+            r"\b(carve(?:s|d)?\s*out|split(?:s|ting)?)\b.*\b(business|unit|division)\b",
+            r"\b(IPO|initial\s+public\s+offering)\b.*\b(subsidiary|unit)\b",
         ],
-        'SUED_BY': [
-            r'\b(su(?:e[sd]?|ing)|lawsuit|litigation|legal\s+action)\b',
-            r'\b(fil(?:e[sd]?|ing))\b.*\b(suit|complaint|claim)\b',
-            r'\b(antitrust|patent\s+infringement|copyright|trademark)\b.*\b(case|suit)\b',
-            r'\b(settlement|verdict|ruling)\b.*\b(court|judge|jury)\b',
+        "SUED_BY": [
+            r"\b(su(?:e[sd]?|ing)|lawsuit|litigation|legal\s+action)\b",
+            r"\b(fil(?:e[sd]?|ing))\b.*\b(suit|complaint|claim)\b",
+            r"\b(antitrust|patent\s+infringement|copyright|trademark)\b.*\b(case|suit)\b",
+            r"\b(settlement|verdict|ruling)\b.*\b(court|judge|jury)\b",
         ],
     }
 
     # 회사명 후보 패턴 (대문자로 시작하는 2-4 단어)
     COMPANY_NAME_PATTERNS = [
         # "Apple Inc.", "Microsoft Corp", "Alphabet Inc"
-        r'\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3})\s+(?:Inc\.?|Corp\.?|Co\.?|Ltd\.?|LLC|LP|PLC)\b',
+        r"\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+){0,3})\s+(?:Inc\.?|Corp\.?|Co\.?|Ltd\.?|LLC|LP|PLC)\b",
         # "Amazon", "Google", "Meta" (단일 대문자 단어, 문맥에 따라)
-        r'\b([A-Z][a-zA-Z]{2,})\b(?=.*\b(?:said|announced|reported|disclosed)\b)',
+        r"\b([A-Z][a-zA-Z]{2,})\b(?=.*\b(?:said|announced|reported|disclosed)\b)",
         # 티커 심볼 형식 "(AAPL)", "(MSFT)"
-        r'\(([A-Z]{1,5})\)',
+        r"\(([A-Z]{1,5})\)",
         # "the tech giant", "the e-commerce company" 패턴 앞의 회사명
-        r'\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\b(?=.*\b(?:the\s+)?(?:tech\s+)?(?:giant|company|firm|corporation)\b)',
+        r"\b([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\b(?=.*\b(?:the\s+)?(?:tech\s+)?(?:giant|company|firm|corporation)\b)",
     ]
 
     # 필터링에서 제외할 일반 단어
     EXCLUDED_WORDS = {
-        'The', 'This', 'That', 'These', 'Those', 'However', 'Moreover',
-        'Furthermore', 'Additionally', 'Meanwhile', 'Nevertheless',
-        'According', 'Based', 'Following', 'During', 'After', 'Before',
-        'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-        'Today', 'Yesterday', 'Tomorrow', 'Week', 'Month', 'Year',
-        'New', 'York', 'Wall', 'Street', 'Silicon', 'Valley',
-        'CEO', 'CFO', 'COO', 'CTO', 'President', 'Chairman',
-        'Reuters', 'Bloomberg', 'CNBC', 'CNN', 'BBC', 'Forbes',
+        "The",
+        "This",
+        "That",
+        "These",
+        "Those",
+        "However",
+        "Moreover",
+        "Furthermore",
+        "Additionally",
+        "Meanwhile",
+        "Nevertheless",
+        "According",
+        "Based",
+        "Following",
+        "During",
+        "After",
+        "Before",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+        "Today",
+        "Yesterday",
+        "Tomorrow",
+        "Week",
+        "Month",
+        "Year",
+        "New",
+        "York",
+        "Wall",
+        "Street",
+        "Silicon",
+        "Valley",
+        "CEO",
+        "CFO",
+        "COO",
+        "CTO",
+        "President",
+        "Chairman",
+        "Reuters",
+        "Bloomberg",
+        "CNBC",
+        "CNN",
+        "BBC",
+        "Forbes",
     }
 
     def __init__(self):
@@ -231,8 +283,8 @@ class RelationPreFilter:
     def filter_batch(
         self,
         documents: List[Dict[str, Any]],
-        text_field: str = 'headline',
-        min_confidence: float = 0.3
+        text_field: str = "headline",
+        min_confidence: float = 0.3,
     ) -> List[Tuple[Dict[str, Any], PreFilterResult]]:
         """
         문서 배치 필터링
@@ -248,7 +300,7 @@ class RelationPreFilter:
         candidates = []
 
         for doc in documents:
-            text = doc.get(text_field, '')
+            text = doc.get(text_field, "")
             if not text:
                 continue
 
@@ -260,7 +312,7 @@ class RelationPreFilter:
         if documents:
             logger.info(
                 f"Pre-filter: {len(candidates)}/{len(documents)} candidates "
-                f"({len(candidates)/len(documents)*100:.1f}% pass rate)"
+                f"({len(candidates) / len(documents) * 100:.1f}% pass rate)"
             )
         else:
             logger.info("Pre-filter: 0 documents to filter")
@@ -283,7 +335,7 @@ class RelationPreFilter:
         self,
         relation_hints: List[str],
         company_mentions: List[str],
-        matched_patterns: List[str]
+        matched_patterns: List[str],
     ) -> float:
         """필터 신뢰도 계산"""
         score = 0.0

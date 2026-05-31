@@ -37,17 +37,19 @@ logger = logging.getLogger(__name__)
 
 # ============ DataBasket Views ============
 
+
 class DataBasketListCreateView(APIView):
     """
     GET: 사용자의 DataBasket 목록 조회
     POST: 새로운 DataBasket 생성
     """
+
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(operation_id='rag_baskets_list')
+    @extend_schema(operation_id="rag_baskets_list")
     def get(self, request):
         """사용자의 DataBasket 목록 조회"""
-        baskets = DataBasket.objects.filter(user=request.user).prefetch_related('items')
+        baskets = DataBasket.objects.filter(user=request.user).prefetch_related("items")
         serializer = DataBasketSerializer(baskets, many=True)
         return Response(serializer.data)
 
@@ -68,12 +70,13 @@ class DataBasketDetailView(APIView):
     PATCH: DataBasket 수정
     DELETE: DataBasket 삭제
     """
+
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk, user):
         """DataBasket 객체 가져오기"""
         try:
-            return DataBasket.objects.prefetch_related('items').get(pk=pk, user=user)
+            return DataBasket.objects.prefetch_related("items").get(pk=pk, user=user)
         except DataBasket.DoesNotExist:
             raise NotFound(_("DataBasket not found"))
 
@@ -102,6 +105,7 @@ class DataBasketAddItemView(APIView):
     """
     POST: DataBasket에 아이템 추가
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -109,7 +113,9 @@ class DataBasketAddItemView(APIView):
         with transaction.atomic():
             # DataBasket 확인 및 락 획득
             try:
-                basket = DataBasket.objects.select_for_update().get(pk=pk, user=request.user)
+                basket = DataBasket.objects.select_for_update().get(
+                    pk=pk, user=request.user
+                )
             except DataBasket.DoesNotExist:
                 raise NotFound(_("DataBasket not found"))
 
@@ -140,6 +146,7 @@ class DataBasketRemoveItemView(APIView):
     """
     DELETE: DataBasket에서 아이템 제거
     """
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk, item_id):
@@ -163,6 +170,7 @@ class DataBasketClearView(APIView):
     """
     DELETE: DataBasket 비우기 (모든 아이템 삭제)
     """
+
     permission_classes = [IsAuthenticated]
 
     def delete(self, request, pk):
@@ -176,10 +184,12 @@ class DataBasketClearView(APIView):
         # 모든 아이템 삭제
         deleted_count = basket.items.all().delete()[0]
 
-        return Response({
-            "message": f"{deleted_count}개의 아이템이 삭제되었습니다.",
-            "deleted_count": deleted_count,
-        })
+        return Response(
+            {
+                "message": f"{deleted_count}개의 아이템이 삭제되었습니다.",
+                "deleted_count": deleted_count,
+            }
+        )
 
 
 class DataBasketAddStockDataView(APIView):
@@ -192,6 +202,7 @@ class DataBasketAddStockDataView(APIView):
             "data_types": ["overview", "price", "financial_summary"]
         }
     """
+
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
@@ -203,13 +214,15 @@ class DataBasketAddStockDataView(APIView):
         with transaction.atomic():
             # DataBasket 확인 및 락 획득
             try:
-                basket = DataBasket.objects.select_for_update().get(pk=pk, user=request.user)
+                basket = DataBasket.objects.select_for_update().get(
+                    pk=pk, user=request.user
+                )
             except DataBasket.DoesNotExist:
                 raise NotFound(_("DataBasket not found"))
 
             # 요청 데이터 검증
-            symbol = request.data.get('symbol', '').upper().strip()
-            data_types = request.data.get('data_types', [])
+            symbol = request.data.get("symbol", "").upper().strip()
+            data_types = request.data.get("data_types", [])
 
             if not symbol:
                 raise ValidationError({"symbol": ["종목 심볼을 입력해주세요."]})
@@ -218,7 +231,9 @@ class DataBasketAddStockDataView(APIView):
                 raise ValidationError({"data_types": ["데이터 타입을 선택해주세요."]})
 
             # 총 필요 용량 계산
-            total_units = sum(DATA_UNITS.get(dt, DEFAULT_DATA_UNITS) for dt in data_types)
+            total_units = sum(
+                DATA_UNITS.get(dt, DEFAULT_DATA_UNITS) for dt in data_types
+            )
 
             # 용량 체크
             if not basket.can_add_units(total_units):
@@ -241,22 +256,20 @@ class DataBasketAddStockDataView(APIView):
 
                 # 타입별 제목 생성
                 type_labels = {
-                    'overview': '기본 정보',
-                    'price': '주가 데이터',
-                    'financial_summary': '재무제표 (요약)',
-                    'financial_full': '재무제표 (전체)',
-                    'indicator': '기술적 지표',
-                    'news': '뉴스',
-                    'macro': '거시경제',
+                    "overview": "기본 정보",
+                    "price": "주가 데이터",
+                    "financial_summary": "재무제표 (요약)",
+                    "financial_full": "재무제표 (전체)",
+                    "indicator": "기술적 지표",
+                    "news": "뉴스",
+                    "macro": "거시경제",
                 }
 
                 title = f"{symbol} {type_labels.get(data_type, data_type)}"
 
                 # 중복 체크 (같은 심볼+타입 조합)
                 existing = BasketItem.objects.filter(
-                    basket=basket,
-                    reference_id=symbol,
-                    item_type=data_type
+                    basket=basket, reference_id=symbol, item_type=data_type
                 ).first()
 
                 if existing:
@@ -275,7 +288,7 @@ class DataBasketAddStockDataView(APIView):
                         subtitle=stock_name,
                         data_snapshot=data_snapshot,
                         snapshot_date=today,
-                        data_units=units
+                        data_units=units,
                     )
                     created_items.append(item)
 
@@ -294,6 +307,7 @@ class DataBasketAddStockDataView(APIView):
         """주식 이름 조회"""
         try:
             from packages.shared.stocks.models import Stock
+
             stock = Stock.objects.filter(symbol=symbol).first()
             return stock.stock_name if stock and stock.stock_name else symbol
         except Exception:
@@ -301,81 +315,120 @@ class DataBasketAddStockDataView(APIView):
 
     def _get_data_snapshot(self, symbol: str, data_type: str) -> dict:
         """데이터 타입별 스냅샷 생성"""
-        snapshot = {'symbol': symbol, 'data_type': data_type}
+        snapshot = {"symbol": symbol, "data_type": data_type}
 
         try:
-            if data_type == 'overview':
+            if data_type == "overview":
                 from packages.shared.stocks.models import Stock
+
                 stock = Stock.objects.filter(symbol=symbol).first()
                 if stock:
-                    snapshot.update({
-                        'name': stock.stock_name or symbol,
-                        'sector': stock.sector or '',
-                        'industry': stock.industry or '',
-                        'market_cap': float(stock.market_capitalization) if stock.market_capitalization else None,
-                        'description': (stock.description or '')[:500],
-                    })
+                    snapshot.update(
+                        {
+                            "name": stock.stock_name or symbol,
+                            "sector": stock.sector or "",
+                            "industry": stock.industry or "",
+                            "market_cap": float(stock.market_capitalization)
+                            if stock.market_capitalization
+                            else None,
+                            "description": (stock.description or "")[:500],
+                        }
+                    )
 
-            elif data_type == 'price':
+            elif data_type == "price":
                 from packages.shared.stocks.models import DailyPrice
-                latest = DailyPrice.objects.filter(stock__symbol=symbol).order_by('-date').first()
-                if latest:
-                    snapshot.update({
-                        'price': float(latest.close),
-                        'open': float(latest.open),
-                        'high': float(latest.high),
-                        'low': float(latest.low),
-                        'volume': latest.volume,
-                        'date': str(latest.date),
-                    })
 
-            elif data_type in ('financial_summary', 'financial_full'):
+                latest = (
+                    DailyPrice.objects.filter(stock__symbol=symbol)
+                    .order_by("-date")
+                    .first()
+                )
+                if latest:
+                    snapshot.update(
+                        {
+                            "price": float(latest.close),
+                            "open": float(latest.open),
+                            "high": float(latest.high),
+                            "low": float(latest.low),
+                            "volume": latest.volume,
+                            "date": str(latest.date),
+                        }
+                    )
+
+            elif data_type in ("financial_summary", "financial_full"):
                 from packages.shared.stocks.models import BalanceSheet, IncomeStatement
-                income = IncomeStatement.objects.filter(
-                    stock__symbol=symbol, period_type='annual'
-                ).order_by('-fiscal_year').first()
-                balance = BalanceSheet.objects.filter(
-                    stock__symbol=symbol, period_type='annual'
-                ).order_by('-fiscal_year').first()
+
+                income = (
+                    IncomeStatement.objects.filter(
+                        stock__symbol=symbol, period_type="annual"
+                    )
+                    .order_by("-fiscal_year")
+                    .first()
+                )
+                balance = (
+                    BalanceSheet.objects.filter(
+                        stock__symbol=symbol, period_type="annual"
+                    )
+                    .order_by("-fiscal_year")
+                    .first()
+                )
 
                 if income:
-                    snapshot.update({
-                        'revenue': float(income.total_revenue) if income.total_revenue else None,
-                        'net_income': float(income.net_income) if income.net_income else None,
-                        'fiscal_year': income.fiscal_year,
-                    })
+                    snapshot.update(
+                        {
+                            "revenue": float(income.total_revenue)
+                            if income.total_revenue
+                            else None,
+                            "net_income": float(income.net_income)
+                            if income.net_income
+                            else None,
+                            "fiscal_year": income.fiscal_year,
+                        }
+                    )
                 if balance:
-                    snapshot.update({
-                        'total_assets': float(balance.total_assets) if balance.total_assets else None,
-                        'total_liabilities': float(balance.total_liabilities) if balance.total_liabilities else None,
-                    })
+                    snapshot.update(
+                        {
+                            "total_assets": float(balance.total_assets)
+                            if balance.total_assets
+                            else None,
+                            "total_liabilities": float(balance.total_liabilities)
+                            if balance.total_liabilities
+                            else None,
+                        }
+                    )
 
-            elif data_type == 'indicator':
+            elif data_type == "indicator":
                 # 기술적 지표는 별도 계산 필요 - 기본값 제공
-                snapshot.update({
-                    'note': '기술적 지표 데이터 (RSI, MACD 등)',
-                })
+                snapshot.update(
+                    {
+                        "note": "기술적 지표 데이터 (RSI, MACD 등)",
+                    }
+                )
 
         except Exception as e:
             logger.warning(f"Failed to fetch {data_type} data for {symbol}: {e}")
-            snapshot['error'] = str(e)
+            snapshot["error"] = str(e)
 
         return snapshot
 
 
 # ============ AnalysisSession Views ============
 
+
 class AnalysisSessionListCreateView(APIView):
     """
     GET: 사용자의 AnalysisSession 목록 조회
     POST: 새로운 AnalysisSession 생성
     """
+
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(operation_id='rag_sessions_list')
+    @extend_schema(operation_id="rag_sessions_list")
     def get(self, request):
         """사용자의 AnalysisSession 목록 조회"""
-        sessions = AnalysisSession.objects.filter(user=request.user).prefetch_related('messages')
+        sessions = AnalysisSession.objects.filter(user=request.user).prefetch_related(
+            "messages"
+        )
         serializer = AnalysisSessionSerializer(sessions, many=True)
         return Response(serializer.data)
 
@@ -385,7 +438,7 @@ class AnalysisSessionListCreateView(APIView):
         serializer.is_valid(raise_exception=True)
 
         # basket_id 검증 (해당 사용자의 basket인지 확인)
-        basket = serializer.validated_data.get('basket')
+        basket = serializer.validated_data.get("basket")
         if basket and basket.user != request.user:
             raise PermissionDenied("해당 DataBasket에 접근할 수 없습니다.")
 
@@ -401,12 +454,15 @@ class AnalysisSessionDetailView(APIView):
     GET: AnalysisSession 상세 조회
     DELETE: AnalysisSession 삭제
     """
+
     permission_classes = [IsAuthenticated]
 
     def get_object(self, pk, user):
         """AnalysisSession 객체 가져오기"""
         try:
-            return AnalysisSession.objects.prefetch_related('messages').get(pk=pk, user=user)
+            return AnalysisSession.objects.prefetch_related("messages").get(
+                pk=pk, user=user
+            )
         except AnalysisSession.DoesNotExist:
             raise NotFound(_("AnalysisSession not found"))
 
@@ -427,6 +483,7 @@ class SessionMessagesView(APIView):
     """
     GET: AnalysisSession의 메시지 목록 조회
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request, pk):
@@ -436,15 +493,16 @@ class SessionMessagesView(APIView):
         except AnalysisSession.DoesNotExist:
             raise NotFound(_("AnalysisSession not found"))
 
-        messages = session.messages.all().order_by('created_at')
+        messages = session.messages.all().order_by("created_at")
         serializer = AnalysisMessageSerializer(messages, many=True)
         return Response(serializer.data)
 
 
 class EventStreamRenderer(BaseRenderer):
     """SSE 스트리밍을 위한 커스텀 렌더러"""
-    media_type = 'text/event-stream'
-    format = 'txt'
+
+    media_type = "text/event-stream"
+    format = "txt"
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         return data
@@ -468,6 +526,7 @@ class ChatStreamView(APIView):
         - ASGI 환경에서 async_to_sync 사용하여 안전하게 비동기 코드 실행
         - asyncio.new_event_loop() 대신 asgiref 사용으로 이벤트 루프 충돌 방지
     """
+
     permission_classes = [IsAuthenticated]
     renderer_classes = [EventStreamRenderer]
 
@@ -475,36 +534,39 @@ class ChatStreamView(APIView):
         """SSE 스트리밍으로 LLM 응답 전송"""
         # Session 확인
         try:
-            session = AnalysisSession.objects.select_related('basket').get(
+            session = AnalysisSession.objects.select_related("basket").get(
                 pk=pk, user=request.user
             )
         except AnalysisSession.DoesNotExist:
             raise NotFound("세션을 찾을 수 없습니다.")
 
         # 메시지 검증
-        message = request.data.get('message', '').strip()
+        message = request.data.get("message", "").strip()
         if not message:
             raise ValidationError({"message": ["질문을 입력해주세요."]})
 
         # 파이프라인 버전 선택
-        pipeline_version = request.query_params.get('pipeline', 'lite').lower()
+        pipeline_version = request.query_params.get("pipeline", "lite").lower()
 
         # async_to_sync를 사용하여 비동기 파이프라인 실행
         async def run_pipeline():
             """비동기 파이프라인 실행"""
-            if pipeline_version == 'v2':
+            if pipeline_version == "v2":
                 # PipelineV2: RAG 기반
                 from .services.pipeline_v2 import AnalysisPipelineV2
+
                 pipeline = AnalysisPipelineV2(session)
                 logger.info(f"Using PipelineV2 (RAG) for session {session.id}")
-            elif pipeline_version == 'final':
+            elif pipeline_version == "final":
                 # PipelineFinal: 모든 최적화 통합 (Phase 3)
                 from .services.pipeline import AnalysisPipelineFinal
+
                 pipeline = AnalysisPipelineFinal(session)
                 logger.info(f"Using PipelineFinal (Optimized) for session {session.id}")
             else:
                 # PipelineLite: 기존 바구니 기반
                 from .services.pipeline import AnalysisPipelineLite
+
                 pipeline = AnalysisPipelineLite(session)
                 logger.info(f"Using PipelineLite (Basket) for session {session.id}")
 
@@ -514,10 +576,12 @@ class ChatStreamView(APIView):
                     events.append(event)
             except Exception as e:
                 logger.error(f"Pipeline error: {e}", exc_info=True)
-                events.append({
-                    'phase': 'error',
-                    'error': {'code': 'PIPELINE_ERROR', 'message': str(e)}
-                })
+                events.append(
+                    {
+                        "phase": "error",
+                        "error": {"code": "PIPELINE_ERROR", "message": str(e)},
+                    }
+                )
             return events
 
         # async_to_sync로 안전하게 비동기 코드 실행 (Daphne 이벤트 루프와 호환)
@@ -525,21 +589,22 @@ class ChatStreamView(APIView):
             events = async_to_sync(run_pipeline)()
         except Exception as e:
             logger.error(f"Pipeline execution error: {e}", exc_info=True)
-            events = [{
-                'phase': 'error',
-                'error': {'code': 'STREAM_ERROR', 'message': str(e)}
-            }]
+            events = [
+                {"phase": "error", "error": {"code": "STREAM_ERROR", "message": str(e)}}
+            ]
 
         # 파이프라인 성공 시 바구니 비우기 (Lite 모드만)
-        has_error = any(e.get('phase') == 'error' for e in events)
+        has_error = any(e.get("phase") == "error" for e in events)
         basket_cleared = False
-        if pipeline_version == 'lite' and not has_error and session.basket:
+        if pipeline_version == "lite" and not has_error and session.basket:
             # 바구니에 아이템이 있었을 때만 비우기
             items_count = session.basket.items.count()
             if items_count > 0:
                 session.basket.items.all().delete()
                 basket_cleared = True
-                logger.info(f"Basket {session.basket.id} cleared after successful analysis ({items_count} items)")
+                logger.info(
+                    f"Basket {session.basket.id} cleared after successful analysis ({items_count} items)"
+                )
 
         # 동기 제너레이터로 이벤트들을 SSE 형식으로 yield
         def event_generator():
@@ -551,16 +616,16 @@ class ChatStreamView(APIView):
 
         # StreamingHttpResponse 반환
         response = DjangoStreamingHttpResponse(
-            event_generator(),
-            content_type='text/event-stream'
+            event_generator(), content_type="text/event-stream"
         )
-        response['Cache-Control'] = 'no-cache'
-        response['X-Accel-Buffering'] = 'no'
-        response['Connection'] = 'keep-alive'
+        response["Cache-Control"] = "no-cache"
+        response["X-Accel-Buffering"] = "no"
+        response["Connection"] = "keep-alive"
         return response
 
 
 # ============ Monitoring Views ============
+
 
 class UsageStatsView(APIView):
     """
@@ -570,12 +635,13 @@ class UsageStatsView(APIView):
         - hours: 조회 기간 (시간, 기본값: 24)
         - user_only: 본인 데이터만 조회 (기본값: true)
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         """사용량 통계 조회"""
-        hours = int(request.query_params.get('hours', 24))
-        user_only = request.query_params.get('user_only', 'true').lower() == 'true'
+        hours = int(request.query_params.get("hours", 24))
+        user_only = request.query_params.get("user_only", "true").lower() == "true"
 
         try:
             from .models import UsageLog
@@ -601,6 +667,7 @@ class CostSummaryView(APIView):
     """
     GET: 비용 요약 조회 (일일/월간)
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -623,28 +690,35 @@ class CostSummaryView(APIView):
 
             # 예산 정보
             from .services.cost_tracker import get_cost_tracker
+
             tracker = get_cost_tracker()
 
-            return Response({
-                'daily': {
-                    'cost_usd': daily_cost,
-                    'limit_usd': tracker.daily_limit,
-                    'remaining_usd': max(0, tracker.daily_limit - daily_cost),
-                    'usage_percent': (daily_cost / tracker.daily_limit * 100) if tracker.daily_limit > 0 else 0
-                },
-                'monthly': {
-                    'cost_usd': monthly_cost,
-                    'limit_usd': tracker.monthly_limit,
-                    'remaining_usd': max(0, tracker.monthly_limit - monthly_cost),
-                    'usage_percent': (monthly_cost / tracker.monthly_limit * 100) if tracker.monthly_limit > 0 else 0,
-                    'year': now.year,
-                    'month': now.month
-                },
-                'cache': {
-                    'hit_rate_24h': cache_hit_rate,
-                    'hit_rate_percent': cache_hit_rate * 100
+            return Response(
+                {
+                    "daily": {
+                        "cost_usd": daily_cost,
+                        "limit_usd": tracker.daily_limit,
+                        "remaining_usd": max(0, tracker.daily_limit - daily_cost),
+                        "usage_percent": (daily_cost / tracker.daily_limit * 100)
+                        if tracker.daily_limit > 0
+                        else 0,
+                    },
+                    "monthly": {
+                        "cost_usd": monthly_cost,
+                        "limit_usd": tracker.monthly_limit,
+                        "remaining_usd": max(0, tracker.monthly_limit - monthly_cost),
+                        "usage_percent": (monthly_cost / tracker.monthly_limit * 100)
+                        if tracker.monthly_limit > 0
+                        else 0,
+                        "year": now.year,
+                        "month": now.month,
+                    },
+                    "cache": {
+                        "hit_rate_24h": cache_hit_rate,
+                        "hit_rate_percent": cache_hit_rate * 100,
+                    },
                 }
-            })
+            )
 
         except Exception as e:
             logger.error(f"Failed to get cost summary: {e}")
@@ -655,6 +729,7 @@ class CacheStatsView(APIView):
     """
     GET: 시맨틱 캐시 통계 조회
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -681,6 +756,7 @@ class UsageHistoryView(APIView):
         - page_size: 페이지 크기 (기본값: 20, 최대: 100)
         - hours: 조회 기간 (시간, 기본값: 168 = 7일)
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -693,16 +769,15 @@ class UsageHistoryView(APIView):
             from .models import UsageLog
 
             # 파라미터 파싱
-            page = int(request.query_params.get('page', 1))
-            page_size = min(int(request.query_params.get('page_size', 20)), 100)
-            hours = int(request.query_params.get('hours', 168))
+            page = int(request.query_params.get("page", 1))
+            page_size = min(int(request.query_params.get("page_size", 20)), 100)
+            hours = int(request.query_params.get("hours", 168))
 
             # 조회
             since = timezone.now() - timedelta(hours=hours)
             logs = UsageLog.objects.filter(
-                user=request.user,
-                created_at__gte=since
-            ).order_by('-created_at')
+                user=request.user, created_at__gte=since
+            ).order_by("-created_at")
 
             # 페이지네이션
             paginator = Paginator(logs, page_size)
@@ -711,31 +786,35 @@ class UsageHistoryView(APIView):
             # 직렬화
             data = []
             for log in page_obj:
-                data.append({
-                    'id': log.id,
-                    'model': log.model,
-                    'model_version': log.model_version,
-                    'request_type': log.request_type,
-                    'input_tokens': log.input_tokens,
-                    'output_tokens': log.output_tokens,
-                    'total_tokens': log.total_tokens,
-                    'cost_usd': float(log.cost_usd),
-                    'cached': log.cached,
-                    'latency_ms': log.latency_ms,
-                    'created_at': log.created_at.isoformat()
-                })
+                data.append(
+                    {
+                        "id": log.id,
+                        "model": log.model,
+                        "model_version": log.model_version,
+                        "request_type": log.request_type,
+                        "input_tokens": log.input_tokens,
+                        "output_tokens": log.output_tokens,
+                        "total_tokens": log.total_tokens,
+                        "cost_usd": float(log.cost_usd),
+                        "cached": log.cached,
+                        "latency_ms": log.latency_ms,
+                        "created_at": log.created_at.isoformat(),
+                    }
+                )
 
-            return Response({
-                'results': data,
-                'pagination': {
-                    'current_page': page,
-                    'page_size': page_size,
-                    'total_pages': paginator.num_pages,
-                    'total_count': paginator.count,
-                    'has_next': page_obj.has_next(),
-                    'has_previous': page_obj.has_previous()
+            return Response(
+                {
+                    "results": data,
+                    "pagination": {
+                        "current_page": page,
+                        "page_size": page_size,
+                        "total_pages": paginator.num_pages,
+                        "total_count": paginator.count,
+                        "has_next": page_obj.has_next(),
+                        "has_previous": page_obj.has_previous(),
+                    },
                 }
-            })
+            )
 
         except Exception as e:
             logger.error(f"Failed to get usage history: {e}")
@@ -746,6 +825,7 @@ class ModelPricingView(APIView):
     """
     GET: 모델별 가격 정보 조회
     """
+
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -756,18 +836,22 @@ class ModelPricingView(APIView):
 
         pricing_list = []
         for model_key, pricing in tracker.PRICING.items():
-            if model_key == 'default':
+            if model_key == "default":
                 continue
-            pricing_list.append({
-                'model': model_key,
-                'name': pricing['name'],
-                'input_per_1m_tokens': pricing['input'],
-                'output_per_1m_tokens': pricing['output'],
-            })
+            pricing_list.append(
+                {
+                    "model": model_key,
+                    "name": pricing["name"],
+                    "input_per_1m_tokens": pricing["input"],
+                    "output_per_1m_tokens": pricing["output"],
+                }
+            )
 
-        return Response({
-            'pricing': pricing_list,
-            'currency': 'USD',
-            'unit': 'per 1M tokens',
-            'last_updated': '2025-01'
-        })
+        return Response(
+            {
+                "pricing": pricing_list,
+                "currency": "USD",
+                "unit": "per 1M tokens",
+                "last_updated": "2025-01",
+            }
+        )

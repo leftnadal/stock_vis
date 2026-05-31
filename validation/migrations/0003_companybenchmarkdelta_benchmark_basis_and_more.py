@@ -5,62 +5,142 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('stocks', '0008_industryclassification'),
-        ('validation', '0002_validationnewssummary_categoryscore'),
+        ("stocks", "0008_industryclassification"),
+        ("validation", "0002_validationnewssummary_categoryscore"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='companybenchmarkdelta',
-            name='benchmark_basis',
-            field=models.CharField(choices=[('industry_size', '업종+규모'), ('industry', '업종 전체'), ('sector', '섹터 전체')], default='industry_size', max_length=20),
+            model_name="companybenchmarkdelta",
+            name="benchmark_basis",
+            field=models.CharField(
+                choices=[
+                    ("industry_size", "업종+규모"),
+                    ("industry", "업종 전체"),
+                    ("sector", "섹터 전체"),
+                ],
+                default="industry_size",
+                max_length=20,
+            ),
         ),
         migrations.AddField(
-            model_name='companybenchmarkdelta',
-            name='rank',
+            model_name="companybenchmarkdelta",
+            name="rank",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='companybenchmarkdelta',
-            name='total',
+            model_name="companybenchmarkdelta",
+            name="total",
             field=models.IntegerField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='companybenchmarkdelta',
-            name='benchmark_confidence',
-            field=models.CharField(choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low'), ('limited', 'Limited')], default='low', help_text='high: peer>=15+industry_size, medium: 8~14, low: <8, limited: <4', max_length=10),
+            model_name="companybenchmarkdelta",
+            name="benchmark_confidence",
+            field=models.CharField(
+                choices=[
+                    ("high", "High"),
+                    ("medium", "Medium"),
+                    ("low", "Low"),
+                    ("limited", "Limited"),
+                ],
+                default="low",
+                help_text="high: peer>=15+industry_size, medium: 8~14, low: <8, limited: <4",
+                max_length=10,
+            ),
         ),
         migrations.CreateModel(
-            name='CategorySignal',
+            name="CategorySignal",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('category', models.CharField(choices=[('profitability', 'Profitability'), ('growth', 'Growth'), ('financial_structure', 'Financial Structure'), ('cash_flow_quality', 'Cash Flow Quality'), ('operational_efficiency', 'Operational Efficiency'), ('dilution_shareholder', 'Dilution & Shareholder'), ('valuation', 'Valuation')], max_length=30)),
-                ('fiscal_year', models.IntegerField(default=0)),
-                ('signal', models.CharField(blank=True, choices=[('green', '양호'), ('yellow', '주의'), ('red', '경고'), ('gray', '해석 제한')], max_length=10)),
-                ('signal_reason', models.CharField(blank=True, max_length=200)),
-                ('score', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('metric_count', models.IntegerField(default=0, help_text='이 카테고리의 총 지표 수')),
-                ('valid_metric_count', models.IntegerField(default=0, help_text='score 계산에 사용된 지표 수')),
-                ('contributing_metrics', models.JSONField(default=list, help_text='[{"metric": "roe", "value": 0.25, "signal": "green"}, ...]')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, related_name='category_signals', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "category",
+                    models.CharField(
+                        choices=[
+                            ("profitability", "Profitability"),
+                            ("growth", "Growth"),
+                            ("financial_structure", "Financial Structure"),
+                            ("cash_flow_quality", "Cash Flow Quality"),
+                            ("operational_efficiency", "Operational Efficiency"),
+                            ("dilution_shareholder", "Dilution & Shareholder"),
+                            ("valuation", "Valuation"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                ("fiscal_year", models.IntegerField(default=0)),
+                (
+                    "signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("green", "양호"),
+                            ("yellow", "주의"),
+                            ("red", "경고"),
+                            ("gray", "해석 제한"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("signal_reason", models.CharField(blank=True, max_length=200)),
+                (
+                    "score",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "metric_count",
+                    models.IntegerField(
+                        default=0, help_text="이 카테고리의 총 지표 수"
+                    ),
+                ),
+                (
+                    "valid_metric_count",
+                    models.IntegerField(
+                        default=0, help_text="score 계산에 사용된 지표 수"
+                    ),
+                ),
+                (
+                    "contributing_metrics",
+                    models.JSONField(
+                        default=list,
+                        help_text='[{"metric": "roe", "value": 0.25, "signal": "green"}, ...]',
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="category_signals",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_category_signal',
+                "db_table": "validation_category_signal",
             },
         ),
         migrations.DeleteModel(
-            name='CategoryScore',
+            name="CategoryScore",
         ),
         migrations.AddIndex(
-            model_name='categorysignal',
-            index=models.Index(fields=['symbol'], name='validation__symbol_d45696_idx'),
+            model_name="categorysignal",
+            index=models.Index(fields=["symbol"], name="validation__symbol_d45696_idx"),
         ),
         migrations.AlterUniqueTogether(
-            name='categorysignal',
-            unique_together={('symbol', 'category', 'fiscal_year')},
+            name="categorysignal",
+            unique_together={("symbol", "category", "fiscal_year")},
         ),
     ]

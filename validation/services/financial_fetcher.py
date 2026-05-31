@@ -29,8 +29,9 @@ class FinancialFetcher:
         """
         if symbols is None:
             symbols = list(
-                SP500Constituent.objects.filter(is_active=True)
-                .values_list('symbol', flat=True)
+                SP500Constituent.objects.filter(is_active=True).values_list(
+                    "symbol", flat=True
+                )
             )
 
         ready = []
@@ -39,13 +40,13 @@ class FinancialFetcher:
 
         for symbol in symbols:
             inc_count = IncomeStatement.objects.filter(
-                stock_id=symbol, period_type='annual'
+                stock_id=symbol, period_type="annual"
             ).count()
             bal_count = BalanceSheet.objects.filter(
-                stock_id=symbol, period_type='annual'
+                stock_id=symbol, period_type="annual"
             ).count()
             cf_count = CashFlowStatement.objects.filter(
-                stock_id=symbol, period_type='annual'
+                stock_id=symbol, period_type="annual"
             ).count()
 
             min_count = min(inc_count, bal_count, cf_count)
@@ -57,11 +58,11 @@ class FinancialFetcher:
                 ready.append(symbol)
 
         return {
-            'total': len(symbols),
-            'ready': len(ready),
-            'missing': missing,
-            'insufficient': insufficient,
-            'ready_symbols': ready,
+            "total": len(symbols),
+            "ready": len(ready),
+            "missing": missing,
+            "insufficient": insufficient,
+            "ready_symbols": ready,
         }
 
     def get_financial_data(self, symbol: str, years: int = 5) -> dict:
@@ -74,20 +75,20 @@ class FinancialFetcher:
         incomes = {
             i.fiscal_year: i
             for i in IncomeStatement.objects.filter(
-                stock_id=symbol, period_type='annual'
-            ).order_by('-fiscal_year')[:years]
+                stock_id=symbol, period_type="annual"
+            ).order_by("-fiscal_year")[:years]
         }
         balances = {
             b.fiscal_year: b
             for b in BalanceSheet.objects.filter(
-                stock_id=symbol, period_type='annual'
-            ).order_by('-fiscal_year')[:years]
+                stock_id=symbol, period_type="annual"
+            ).order_by("-fiscal_year")[:years]
         }
         cashflows = {
             c.fiscal_year: c
             for c in CashFlowStatement.objects.filter(
-                stock_id=symbol, period_type='annual'
-            ).order_by('-fiscal_year')[:years]
+                stock_id=symbol, period_type="annual"
+            ).order_by("-fiscal_year")[:years]
         }
 
         fiscal_years = sorted(
@@ -98,9 +99,9 @@ class FinancialFetcher:
         result = {}
         for fy in fiscal_years:
             result[fy] = {
-                'income': incomes[fy],
-                'balance': balances[fy],
-                'cashflow': cashflows[fy],
+                "income": incomes[fy],
+                "balance": balances[fy],
+                "cashflow": cashflows[fy],
             }
 
         return result

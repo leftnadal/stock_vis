@@ -44,7 +44,7 @@ class DateAwareContextFormatter:
         items_count = self.basket.items.count()
 
         header = f"""=== 분석 데이터 바구니 ===
-분석 기준일: {self.today.strftime('%Y년 %m월 %d일')}
+분석 기준일: {self.today.strftime("%Y년 %m월 %d일")}
 바구니명: {self.basket.name}
 총 아이템 수: {items_count}개"""
 
@@ -85,7 +85,7 @@ class DateAwareContextFormatter:
     def _format_stock_item(self, idx: int, item: BasketItem) -> str:
         """종목 데이터 포맷팅"""
         snapshot = item.data_snapshot
-        snapshot_date_str = item.snapshot_date.strftime('%Y-%m-%d')
+        snapshot_date_str = item.snapshot_date.strftime("%Y-%m-%d")
 
         lines = [
             f"[{idx}] 종목: {item.title}",
@@ -97,37 +97,39 @@ class DateAwareContextFormatter:
             lines.append(f"부제: {item.subtitle}")
 
         # 주가 정보
-        if 'price' in snapshot:
+        if "price" in snapshot:
             lines.append(f"주가: ${snapshot['price']:.2f} (기준: {snapshot_date_str})")
 
-        if 'change_percent' in snapshot:
-            change = snapshot['change_percent']
-            sign = '+' if change > 0 else ''
+        if "change_percent" in snapshot:
+            change = snapshot["change_percent"]
+            sign = "+" if change > 0 else ""
             lines.append(f"변동: {sign}{change:.2f}%")
 
         # 시가총액
-        if 'market_cap' in snapshot:
-            market_cap = snapshot['market_cap']
+        if "market_cap" in snapshot:
+            market_cap = snapshot["market_cap"]
             lines.append(f"시가총액: ${market_cap:,.0f}")
 
         # 거래량
-        if 'volume' in snapshot:
-            volume = snapshot['volume']
+        if "volume" in snapshot:
+            volume = snapshot["volume"]
             lines.append(f"거래량: {volume:,} (기준: {snapshot_date_str})")
 
         # 기술적 지표
-        if 'rsi' in snapshot:
+        if "rsi" in snapshot:
             lines.append(f"RSI: {snapshot['rsi']:.2f} (기준: {snapshot_date_str})")
 
-        if 'ma_50' in snapshot and 'ma_200' in snapshot:
-            lines.append(f"이동평균: MA50={snapshot['ma_50']:.2f}, MA200={snapshot['ma_200']:.2f}")
+        if "ma_50" in snapshot and "ma_200" in snapshot:
+            lines.append(
+                f"이동평균: MA50={snapshot['ma_50']:.2f}, MA200={snapshot['ma_200']:.2f}"
+            )
 
         return "\n".join(lines)
 
     def _format_news_item(self, idx: int, item: BasketItem) -> str:
         """뉴스 데이터 포맷팅"""
         snapshot = item.data_snapshot
-        snapshot_date_str = item.snapshot_date.strftime('%Y-%m-%d')
+        snapshot_date_str = item.snapshot_date.strftime("%Y-%m-%d")
 
         lines = [
             f"[{idx}] 뉴스: {item.title}",
@@ -137,15 +139,15 @@ class DateAwareContextFormatter:
         if item.subtitle:
             lines.append(f"출처: {item.subtitle}")
 
-        if 'summary' in snapshot:
+        if "summary" in snapshot:
             lines.append(f"요약: {snapshot['summary']}")
 
-        if 'sentiment' in snapshot:
-            sentiment = snapshot['sentiment']
+        if "sentiment" in snapshot:
+            sentiment = snapshot["sentiment"]
             lines.append(f"감성 분석: {sentiment}")
 
-        if 'related_symbols' in snapshot:
-            symbols = ', '.join(snapshot['related_symbols'])
+        if "related_symbols" in snapshot:
+            symbols = ", ".join(snapshot["related_symbols"])
             lines.append(f"관련 종목: {symbols}")
 
         return "\n".join(lines)
@@ -153,7 +155,7 @@ class DateAwareContextFormatter:
     def _format_financial_item(self, idx: int, item: BasketItem) -> str:
         """재무제표 데이터 포맷팅"""
         snapshot = item.data_snapshot
-        snapshot_date_str = item.snapshot_date.strftime('%Y-%m-%d')
+        snapshot_date_str = item.snapshot_date.strftime("%Y-%m-%d")
 
         lines = [
             f"[{idx}] 재무제표: {item.title}",
@@ -165,30 +167,30 @@ class DateAwareContextFormatter:
             lines.append(f"기간: {item.subtitle}")
 
         # 손익계산서
-        if 'revenue' in snapshot:
+        if "revenue" in snapshot:
             lines.append(f"매출: ${snapshot['revenue']:,.0f}")
 
-        if 'net_income' in snapshot:
+        if "net_income" in snapshot:
             lines.append(f"순이익: ${snapshot['net_income']:,.0f}")
 
-        if 'eps' in snapshot:
+        if "eps" in snapshot:
             lines.append(f"EPS: ${snapshot['eps']:.2f}")
 
         # 재무상태표
-        if 'total_assets' in snapshot:
+        if "total_assets" in snapshot:
             lines.append(f"총자산: ${snapshot['total_assets']:,.0f}")
 
-        if 'total_liabilities' in snapshot:
+        if "total_liabilities" in snapshot:
             lines.append(f"총부채: ${snapshot['total_liabilities']:,.0f}")
 
-        if 'total_equity' in snapshot:
+        if "total_equity" in snapshot:
             lines.append(f"자본총계: ${snapshot['total_equity']:,.0f}")
 
         # 현금흐름
-        if 'operating_cash_flow' in snapshot:
+        if "operating_cash_flow" in snapshot:
             lines.append(f"영업현금흐름: ${snapshot['operating_cash_flow']:,.0f}")
 
-        if 'free_cash_flow' in snapshot:
+        if "free_cash_flow" in snapshot:
             lines.append(f"잉여현금흐름: ${snapshot['free_cash_flow']:,.0f}")
 
         lines.append(f"(모든 재무 수치 기준: {snapshot_date_str})")
@@ -198,7 +200,7 @@ class DateAwareContextFormatter:
     def _format_macro_item(self, idx: int, item: BasketItem) -> str:
         """거시경제 데이터 포맷팅"""
         snapshot = item.data_snapshot
-        snapshot_date_str = item.snapshot_date.strftime('%Y-%m-%d')
+        snapshot_date_str = item.snapshot_date.strftime("%Y-%m-%d")
 
         lines = [
             f"[{idx}] 거시경제 지표: {item.title}",
@@ -209,29 +211,29 @@ class DateAwareContextFormatter:
             lines.append(f"설명: {item.subtitle}")
 
         # 지표값
-        if 'value' in snapshot:
-            value = snapshot['value']
-            unit = snapshot.get('unit', '')
+        if "value" in snapshot:
+            value = snapshot["value"]
+            unit = snapshot.get("unit", "")
             lines.append(f"현재값: {value}{unit} (기준: {snapshot_date_str})")
 
-        if 'previous_value' in snapshot:
-            prev = snapshot['previous_value']
-            unit = snapshot.get('unit', '')
+        if "previous_value" in snapshot:
+            prev = snapshot["previous_value"]
+            unit = snapshot.get("unit", "")
             lines.append(f"이전값: {prev}{unit}")
 
-        if 'change' in snapshot:
-            change = snapshot['change']
+        if "change" in snapshot:
+            change = snapshot["change"]
             lines.append(f"변화: {change:+.2f}")
 
         # 추가 컨텍스트
-        if 'description' in snapshot:
+        if "description" in snapshot:
             lines.append(f"상세: {snapshot['description']}")
 
         return "\n".join(lines)
 
     def _format_generic_item(self, idx: int, item: BasketItem) -> str:
         """기본 포맷팅 (타입 미지정 또는 미래 타입)"""
-        snapshot_date_str = item.snapshot_date.strftime('%Y-%m-%d')
+        snapshot_date_str = item.snapshot_date.strftime("%Y-%m-%d")
 
         lines = [
             f"[{idx}] {item.get_item_type_display()}: {item.title}",

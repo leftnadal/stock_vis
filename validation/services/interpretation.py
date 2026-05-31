@@ -11,9 +11,9 @@ from validation.services.category_signal_calculator import CATEGORY_DISPLAY
 
 def generate_summary_text(category_signals: list) -> str:
     """종합 한줄 요약 (설계서 섹션 3.1)"""
-    green_cats = [s for s in category_signals if s.signal == 'green']
-    red_cats = [s for s in category_signals if s.signal == 'red']
-    gray_cats = [s for s in category_signals if s.signal == 'gray']
+    green_cats = [s for s in category_signals if s.signal == "green"]
+    red_cats = [s for s in category_signals if s.signal == "red"]
+    gray_cats = [s for s in category_signals if s.signal == "gray"]
 
     parts = []
 
@@ -44,16 +44,19 @@ def generate_summary_text(category_signals: list) -> str:
 
 
 def generate_metric_interpretation(
-    metric_code: str, higher_is_better: bool,
-    percentile_rank: float, trend: str,
-    value_status: str, benchmark_confidence: str,
-    not_applicable_reason: str = '',
+    metric_code: str,
+    higher_is_better: bool,
+    percentile_rank: float,
+    trend: str,
+    value_status: str,
+    benchmark_confidence: str,
+    not_applicable_reason: str = "",
 ) -> str:
     """개별 지표 해석 (설계서 섹션 3.3)"""
-    if value_status == 'not_applicable':
-        return not_applicable_reason or '해당 없음'
-    if value_status == 'missing':
-        return '데이터가 제공되지 않아 비교할 수 없습니다.'
+    if value_status == "not_applicable":
+        return not_applicable_reason or "해당 없음"
+    if value_status == "missing":
+        return "데이터가 제공되지 않아 비교할 수 없습니다."
 
     parts = []
 
@@ -68,19 +71,19 @@ def generate_metric_interpretation(
             parts.append("업종 중앙값 수준")
 
     # 추세
-    if trend == 'improving':
+    if trend == "improving":
         parts.append("최근 3년간 개선 추세")
-    elif trend == 'declining':
+    elif trend == "declining":
         parts.append("최근 3년간 하락 추세")
     elif trend:
         parts.append("최근 3년간 안정적")
 
     # benchmark 신뢰도 경고
-    if benchmark_confidence in ('low', 'limited'):
+    if benchmark_confidence in ("low", "limited"):
         parts.append("비교 표본이 적어 해석에 주의 필요")
 
     # value_status 경고
-    if value_status == 'unstable':
+    if value_status == "unstable":
         parts.append("값 변동이 크므로 추세 해석에 주의")
 
     # 방향성
@@ -93,13 +96,13 @@ def generate_metric_interpretation(
 def determine_trend(history_values: list[float]) -> str:
     """최근 3년 추세 판정"""
     if len(history_values) < 3:
-        return ''
+        return ""
     recent_3 = history_values[-3:]
     if recent_3[-1] > recent_3[0] * 1.05:
-        return 'improving'
+        return "improving"
     elif recent_3[-1] < recent_3[0] * 0.95:
-        return 'declining'
-    return 'stable'
+        return "declining"
+    return "stable"
 
 
 def generate_leader_summary(advantages: list, disadvantages: list) -> str:
@@ -111,11 +114,15 @@ def generate_leader_summary(advantages: list, disadvantages: list) -> str:
     parts = [f"{total}개 비교 지표 중 {len(advantages)}개 우위."]
 
     if advantages:
-        adv_cats = list(dict.fromkeys(a.get('category', '') for a in advantages))
-        parts.append(f"강점: {', '.join(CATEGORY_DISPLAY.get(c, c) for c in adv_cats[:3])}.")
+        adv_cats = list(dict.fromkeys(a.get("category", "") for a in advantages))
+        parts.append(
+            f"강점: {', '.join(CATEGORY_DISPLAY.get(c, c) for c in adv_cats[:3])}."
+        )
 
     if disadvantages:
-        dis_cats = list(dict.fromkeys(d.get('category', '') for d in disadvantages))
-        parts.append(f"약점: {', '.join(CATEGORY_DISPLAY.get(c, c) for c in dis_cats[:3])}.")
+        dis_cats = list(dict.fromkeys(d.get("category", "") for d in disadvantages))
+        parts.append(
+            f"약점: {', '.join(CATEGORY_DISPLAY.get(c, c) for c in dis_cats[:3])}."
+        )
 
     return " ".join(parts)

@@ -3,6 +3,7 @@ Serverless App REST API Views
 
 Market Movers, Market Breadth, Screener Presets, Sector Heatmap
 """
+
 import logging
 
 from django.core.cache import cache
@@ -43,8 +44,8 @@ from serverless.tasks import sync_daily_market_movers
 logger = logging.getLogger(__name__)
 
 
-@extend_schema(operation_id='serverless_movers_list')
-@api_view(['GET'])
+@extend_schema(operation_id="serverless_movers_list")
+@api_view(["GET"])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def market_movers_api(request):
@@ -77,17 +78,21 @@ def market_movers_api(request):
     from serverless.processors import MarketMoversProcessor
 
     # 쿼리 파라미터
-    mover_type = request.GET.get('type', 'gainers')
-    date_str = request.GET.get('date', timezone.localdate().isoformat())
+    mover_type = request.GET.get("type", "gainers")
+    date_str = request.GET.get("date", timezone.localdate().isoformat())
 
     # 유효성 검사
-    if mover_type not in ['gainers', 'losers', 'actives']:
-        raise ValidationError({
-            'type': [f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"]
-        })
+    if mover_type not in ["gainers", "losers", "actives"]:
+        raise ValidationError(
+            {
+                "type": [
+                    f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"
+                ]
+            }
+        )
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'movers_with_keywords:env2:{date_str}:{mover_type}'
+    cache_key = f"movers_with_keywords:env2:{date_str}:{mover_type}"
     cached = cache.get(cache_key)
     if cached:
         logger.debug(f"캐시 HIT: {cache_key}")
@@ -99,10 +104,10 @@ def market_movers_api(request):
 
     # 평탄 응답 데이터
     response_data = {
-        'date': date_str,
-        'type': mover_type,
-        'count': len(movers),
-        'movers': movers,
+        "date": date_str,
+        "type": mover_type,
+        "count": len(movers),
+        "movers": movers,
     }
 
     # 캐시 저장 (5분)
@@ -111,7 +116,7 @@ def market_movers_api(request):
     return Response(response_data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def market_mover_detail(request, symbol):
@@ -129,10 +134,10 @@ def market_mover_detail(request, symbol):
         }
     """
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.localdate().isoformat())
+    date_str = request.GET.get("date", timezone.localdate().isoformat())
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'mover_detail:env2:{symbol}:{date_str}'
+    cache_key = f"mover_detail:env2:{symbol}:{date_str}"
     cached = cache.get(cache_key)
     if cached:
         logger.debug(f"캐시 HIT: {cache_key}")
@@ -140,10 +145,7 @@ def market_mover_detail(request, symbol):
 
     # DB 조회
     try:
-        mover = MarketMover.objects.get(
-            date=date_str,
-            symbol=symbol
-        )
+        mover = MarketMover.objects.get(date=date_str, symbol=symbol)
     except MarketMover.DoesNotExist:
         raise NotFound(f"Market mover not found: {symbol} on {date_str}")
 
@@ -157,7 +159,7 @@ def market_mover_detail(request, symbol):
     return Response(response_data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_sync(request):
     """
@@ -175,26 +177,30 @@ def trigger_sync(request):
             }
         }
     """
-    date_str = request.data.get('date')
+    date_str = request.data.get("date")
 
     try:
         # Celery 태스크 시작
         task = sync_daily_market_movers.delay(target_date=date_str)
 
-        logger.info(f"✅ 수동 동기화 시작: task_id={task.id}, date={date_str or 'today'}")
+        logger.info(
+            f"✅ 수동 동기화 시작: task_id={task.id}, date={date_str or 'today'}"
+        )
 
-        return Response({
-            'message': 'Sync task started',
-            'task_id': task.id,
-            'date': date_str or timezone.localdate().isoformat(),
-        })
+        return Response(
+            {
+                "message": "Sync task started",
+                "task_id": task.id,
+                "date": date_str or timezone.localdate().isoformat(),
+            }
+        )
 
     except Exception as e:
         logger.exception(f"❌ 동기화 트리거 실패: {e}")
         raise SyncFailed(str(e))
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def sync_now(request):
     """
@@ -214,7 +220,7 @@ def sync_now(request):
     """
     from serverless.services.data_sync import MarketMoversSync
 
-    date_str = request.data.get('date')
+    date_str = request.data.get("date")
 
     try:
         # 동기 실행
@@ -223,25 +229,27 @@ def sync_now(request):
 
         # 캐시 무효화 (envelope v2 + legacy 모두)
         today = date_str or timezone.localdate().isoformat()
-        for mover_type in ['gainers', 'losers', 'actives']:
-            cache.delete(f'movers_with_keywords:env2:{today}:{mover_type}')
-            cache.delete(f'movers_with_keywords:{today}:{mover_type}')  # legacy
-            cache.delete(f'movers:{today}:{mover_type}')  # legacy
+        for mover_type in ["gainers", "losers", "actives"]:
+            cache.delete(f"movers_with_keywords:env2:{today}:{mover_type}")
+            cache.delete(f"movers_with_keywords:{today}:{mover_type}")  # legacy
+            cache.delete(f"movers:{today}:{mover_type}")  # legacy
 
         logger.info(f"✅ 즉시 동기화 완료: date={today}, results={results}")
 
-        return Response({
-            'message': 'Sync completed',
-            'date': today,
-            'results': results,
-        })
+        return Response(
+            {
+                "message": "Sync completed",
+                "date": today,
+                "results": results,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"❌ 즉시 동기화 실패: {e}")
         raise SyncFailed(str(e))
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def get_keywords(request, symbol):
@@ -267,28 +275,28 @@ def get_keywords(request, symbol):
     from serverless.models import StockKeyword
 
     symbol = symbol.upper()
-    date_str = request.GET.get('date', timezone.localdate().isoformat())
+    date_str = request.GET.get("date", timezone.localdate().isoformat())
 
     # DB 조회
     try:
         keyword_obj = StockKeyword.objects.get(
-            symbol=symbol,
-            date=date_str,
-            status='completed'
+            symbol=symbol, date=date_str, status="completed"
         )
         keywords = keyword_obj.keywords
     except StockKeyword.DoesNotExist:
         # 키워드가 없으면 빈 배열 반환
         keywords = []
 
-    return Response({
-        'symbol': symbol,
-        'date': date_str,
-        'keywords': keywords,
-    })
+    return Response(
+        {
+            "symbol": symbol,
+            "date": date_str,
+            "keywords": keywords,
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def get_batch_keywords(request):
@@ -314,17 +322,15 @@ def get_batch_keywords(request):
     """
     from serverless.models import StockKeyword
 
-    symbols = request.data.get('symbols', [])
-    date_str = request.data.get('date', timezone.localdate().isoformat())
+    symbols = request.data.get("symbols", [])
+    date_str = request.data.get("date", timezone.localdate().isoformat())
 
     # 심볼 대문자 변환
     symbols = [s.upper() for s in symbols]
 
     # DB 조회 (N+1 방지)
     keyword_objs = StockKeyword.objects.filter(
-        symbol__in=symbols,
-        date=date_str,
-        status='completed'
+        symbol__in=symbols, date=date_str, status="completed"
     )
 
     # 심볼별 키워드 매핑
@@ -333,13 +339,15 @@ def get_batch_keywords(request):
     # 없는 종목은 빈 배열
     result = {symbol: keywords_map.get(symbol, []) for symbol in symbols}
 
-    return Response({
-        'date': date_str,
-        'keywords': result,
-    })
+    return Response(
+        {
+            "date": date_str,
+            "keywords": result,
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_keyword_generation(request):
     """
@@ -362,34 +370,44 @@ def trigger_keyword_generation(request):
     """
     from serverless.tasks import keyword_generation_pipeline
 
-    mover_type = request.data.get('type', 'gainers')
-    date_str = request.data.get('date', timezone.localdate().isoformat())
+    mover_type = request.data.get("type", "gainers")
+    date_str = request.data.get("date", timezone.localdate().isoformat())
 
     # 유효성 검사
-    if mover_type not in ['gainers', 'losers', 'actives']:
-        raise ValidationError({
-            'type': [f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"]
-        })
+    if mover_type not in ["gainers", "losers", "actives"]:
+        raise ValidationError(
+            {
+                "type": [
+                    f"Invalid type: {mover_type}. Must be one of: gainers, losers, actives"
+                ]
+            }
+        )
 
     try:
         # Celery 파이프라인 시작
-        result = keyword_generation_pipeline.delay(movers_date=date_str, mover_type=mover_type)
+        result = keyword_generation_pipeline.delay(
+            movers_date=date_str, mover_type=mover_type
+        )
 
-        logger.info(f"✅ AI 키워드 생성 시작: task_id={result.id}, type={mover_type}, date={date_str}")
+        logger.info(
+            f"✅ AI 키워드 생성 시작: task_id={result.id}, type={mover_type}, date={date_str}"
+        )
 
-        return Response({
-            'message': 'Keyword generation started',
-            'task_id': result.id,
-            'mover_type': mover_type,
-            'date': date_str,
-        })
+        return Response(
+            {
+                "message": "Keyword generation started",
+                "task_id": result.id,
+                "mover_type": mover_type,
+                "date": date_str,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"❌ 키워드 생성 트리거 실패: {e}")
         raise GenerationFailed(str(e))
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])  # TODO: 프로덕션에서는 인증 추가
 @permission_classes([IsAdminUser])  # audit P0 #6
 def generate_screener_keywords(request):
@@ -415,34 +433,38 @@ def generate_screener_keywords(request):
     """
     from serverless.tasks import generate_screener_keywords_task
 
-    stocks = request.data.get('stocks', [])
+    stocks = request.data.get("stocks", [])
 
     if not stocks:
-        raise ValidationError({'stocks': ['No stocks provided']})
+        raise ValidationError({"stocks": ["No stocks provided"]})
 
     if len(stocks) > 100:
-        raise ValidationError({
-            'stocks': [f'Maximum 100 stocks allowed, got {len(stocks)}']
-        })
+        raise ValidationError(
+            {"stocks": [f"Maximum 100 stocks allowed, got {len(stocks)}"]}
+        )
 
     try:
         # Celery 태스크 시작
         result = generate_screener_keywords_task.delay(stocks)
 
-        logger.info(f"✅ 스크리너 키워드 생성 시작: task_id={result.id}, stocks={len(stocks)}")
+        logger.info(
+            f"✅ 스크리너 키워드 생성 시작: task_id={result.id}, stocks={len(stocks)}"
+        )
 
-        return Response({
-            'message': 'Screener keyword generation started',
-            'task_id': result.id,
-            'stock_count': len(stocks),
-        })
+        return Response(
+            {
+                "message": "Screener keyword generation started",
+                "task_id": result.id,
+                "stock_count": len(stocks),
+            }
+        )
 
     except Exception as e:
         logger.exception(f"❌ 스크리너 키워드 생성 트리거 실패: {e}")
         raise GenerationFailed(str(e))
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])  # 인증 완전 비활성화 (공개 API)
 @permission_classes([AllowAny])
 def health_check(request):
@@ -462,19 +484,22 @@ def health_check(request):
     today = timezone.localdate()
     movers_count = MarketMover.objects.filter(date=today).count()
 
-    return Response({
-        'status': 'healthy',
-        'date': today.isoformat(),
-        'movers_count': movers_count,
-        'expected_count': 60,  # gainers 20 + losers 20 + actives 20
-    })
+    return Response(
+        {
+            "status": "healthy",
+            "date": today.isoformat(),
+            "movers_count": movers_count,
+            "expected_count": 60,  # gainers 20 + losers 20 + actives 20
+        }
+    )
 
 
 # ========================================
 # Market Breadth API
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def market_breadth_api(request):
@@ -503,21 +528,22 @@ def market_breadth_api(request):
     from serverless.serializers import MarketBreadthSerializer
     from serverless.services.market_breadth_service import MarketBreadthService
 
-    date_str = request.GET.get('date')
+    date_str = request.GET.get("date")
 
     if date_str:
         from datetime import datetime
+
         try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
-            raise ValidationError({
-                'date': [f"Invalid date format: {date_str}. Use YYYY-MM-DD."]
-            })
+            raise ValidationError(
+                {"date": [f"Invalid date format: {date_str}. Use YYYY-MM-DD."]}
+            )
     else:
         target_date = timezone.localdate()
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'market_breadth_api:env2:{target_date}'
+    cache_key = f"market_breadth_api:env2:{target_date}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -528,7 +554,7 @@ def market_breadth_api(request):
 
     if not breadth:
         # 최신 데이터로 폴백
-        breadth = MarketBreadth.objects.order_by('-date').first()
+        breadth = MarketBreadth.objects.order_by("-date").first()
         is_fallback = True
 
     if not breadth:
@@ -541,39 +567,41 @@ def market_breadth_api(request):
 
     # 방법론 설명 추가
     methodology = {
-        'sample_size': 50,
-        'total_market': 5000,
-        'sample_rate': '1%',
-        'data_source': 'FMP API (Most Active Stocks)',
-        'accuracy': {
-            'direction': '높음 (시장 방향성 판단)',
-            'exact_count': '낮음 (1% 샘플링)',
-            'volume': '추정치 (실제 거래량 데이터 없음)',
+        "sample_size": 50,
+        "total_market": 5000,
+        "sample_rate": "1%",
+        "data_source": "FMP API (Most Active Stocks)",
+        "accuracy": {
+            "direction": "높음 (시장 방향성 판단)",
+            "exact_count": "낮음 (1% 샘플링)",
+            "volume": "추정치 (실제 거래량 데이터 없음)",
         },
-        'interpretation_guide': {
-            'strong_bullish': 'A/D 비율 2.0 이상 - 상승 종목이 하락 종목의 2배 이상',
-            'bullish': 'A/D 비율 1.5~2.0 - 상승 우위',
-            'neutral': 'A/D 비율 0.67~1.5 - 상승/하락 비슷',
-            'bearish': 'A/D 비율 0.5~0.67 - 하락 우위',
-            'strong_bearish': 'A/D 비율 0.5 미만 - 하락 종목이 2배 이상',
+        "interpretation_guide": {
+            "strong_bullish": "A/D 비율 2.0 이상 - 상승 종목이 하락 종목의 2배 이상",
+            "bullish": "A/D 비율 1.5~2.0 - 상승 우위",
+            "neutral": "A/D 비율 0.67~1.5 - 상승/하락 비슷",
+            "bearish": "A/D 비율 0.5~0.67 - 하락 우위",
+            "strong_bearish": "A/D 비율 0.5 미만 - 하락 종목이 2배 이상",
         },
-        'limitations': [
-            '거래량 상위 50개 종목만 샘플링 (대형주 편향)',
-            '실제 NYSE/NASDAQ A/D 데이터와 다를 수 있음',
-            '거래량은 가격 변동률로 추정한 값',
+        "limitations": [
+            "거래량 상위 50개 종목만 샘플링 (대형주 편향)",
+            "실제 NYSE/NASDAQ A/D 데이터와 다를 수 있음",
+            "거래량은 가격 변동률로 추정한 값",
         ],
     }
 
     response_data = {
         **serializer.data,
-        'indices': indices,
-        'methodology': methodology,
+        "indices": indices,
+        "methodology": methodology,
     }
 
     # 폴백 데이터임을 표시
     if is_fallback:
-        response_data['is_fallback'] = True
-        response_data['fallback_message'] = f"오늘({target_date}) 데이터 없음. {breadth.date} 데이터 표시 중"
+        response_data["is_fallback"] = True
+        response_data["fallback_message"] = (
+            f"오늘({target_date}) 데이터 없음. {breadth.date} 데이터 표시 중"
+        )
 
     cache.set(cache_key, response_data, 300)  # 5분 캐시
     return Response(response_data)
@@ -585,9 +613,9 @@ def _get_market_indices():
 
     indices = {}
     index_symbols = {
-        'sp500': ('SPY', 'S&P 500 (SPY)'),
-        'nasdaq': ('QQQ', 'NASDAQ 100 (QQQ)'),
-        'dow': ('DIA', 'Dow Jones (DIA)'),
+        "sp500": ("SPY", "S&P 500 (SPY)"),
+        "nasdaq": ("QQQ", "NASDAQ 100 (QQQ)"),
+        "dow": ("DIA", "Dow Jones (DIA)"),
     }
 
     fmp = FMPClient()
@@ -595,41 +623,41 @@ def _get_market_indices():
         try:
             quote = fmp.get_quote(symbol)
             if quote:
-                price = quote.get('price')
-                prev_close = quote.get('previousClose')
-                change = quote.get('change', 0)
-                change_pct = quote.get('changesPercentage', 0)
+                price = quote.get("price")
+                prev_close = quote.get("previousClose")
+                change = quote.get("change", 0)
+                change_pct = quote.get("changesPercentage", 0)
 
                 indices[key] = {
-                    'name': name,
-                    'symbol': symbol,
-                    'price': round(price, 2) if price else None,
-                    'change': round(change, 2) if change else None,
-                    'change_pct': round(change_pct, 2) if change_pct else None,
+                    "name": name,
+                    "symbol": symbol,
+                    "price": round(price, 2) if price else None,
+                    "change": round(change, 2) if change else None,
+                    "change_pct": round(change_pct, 2) if change_pct else None,
                 }
             else:
                 indices[key] = {
-                    'name': name,
-                    'symbol': symbol,
-                    'price': None,
-                    'change': None,
-                    'change_pct': None,
+                    "name": name,
+                    "symbol": symbol,
+                    "price": None,
+                    "change": None,
+                    "change_pct": None,
                 }
         except Exception as e:
             logger.warning(f"지수 조회 실패 {symbol}: {e}")
             indices[key] = {
-                'name': name,
-                'symbol': symbol,
-                'price': None,
-                'change': None,
-                'change_pct': None,
-                'error': str(e),
+                "name": name,
+                "symbol": symbol,
+                "price": None,
+                "change": None,
+                "change_pct": None,
+                "error": str(e),
             }
 
     return indices
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def market_breadth_history(request):
@@ -654,31 +682,31 @@ def market_breadth_history(request):
     from serverless.serializers import MarketBreadthHistorySerializer
     from serverless.services.market_breadth_service import MarketBreadthService
 
-    days = int(request.GET.get('days', 30))
+    days = int(request.GET.get("days", 30))
     days = min(days, 90)  # 최대 90일
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'market_breadth_history:env2:{days}'
+    cache_key = f"market_breadth_history:env2:{days}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
 
     start_date = timezone.localdate() - timedelta(days=days)
-    breadths = MarketBreadth.objects.filter(date__gte=start_date).order_by('-date')
+    breadths = MarketBreadth.objects.filter(date__gte=start_date).order_by("-date")
 
     serializer = MarketBreadthHistorySerializer(breadths, many=True)
 
     response_data = {
-        'count': len(serializer.data),
-        'days': days,
-        'history': serializer.data,
+        "count": len(serializer.data),
+        "days": days,
+        "history": serializer.data,
     }
 
     cache.set(cache_key, response_data, 3600)  # 1시간 캐시
     return Response(response_data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_breadth_sync(request):
     """
@@ -688,16 +716,18 @@ def trigger_breadth_sync(request):
     """
     from serverless.tasks import calculate_daily_market_breadth
 
-    date_str = request.data.get('date')
+    date_str = request.data.get("date")
 
     try:
         task = calculate_daily_market_breadth.delay(target_date=date_str)
 
-        return Response({
-            'message': 'Market breadth sync started',
-            'task_id': task.id,
-            'date': date_str or timezone.localdate().isoformat(),
-        })
+        return Response(
+            {
+                "message": "Market breadth sync started",
+                "task_id": task.id,
+                "date": date_str or timezone.localdate().isoformat(),
+            }
+        )
     except Exception as e:
         logger.exception(f"Market breadth sync failed: {e}")
         raise SyncFailed(str(e))
@@ -707,7 +737,8 @@ def trigger_breadth_sync(request):
 # Sector Heatmap API
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def sector_heatmap_api(request):
@@ -737,41 +768,45 @@ def sector_heatmap_api(request):
     from serverless.serializers import SectorPerformanceSerializer
     from serverless.services.sector_heatmap_service import SectorHeatmapService
 
-    date_str = request.GET.get('date')
+    date_str = request.GET.get("date")
 
     if date_str:
         try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
-            raise ValidationError({'date': [f"Invalid date: {date_str}"]})
+            raise ValidationError({"date": [f"Invalid date: {date_str}"]})
     else:
         target_date = timezone.localdate()
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'sector_heatmap_api:env2:{target_date}'
+    cache_key = f"sector_heatmap_api:env2:{target_date}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
 
     # 오늘 데이터 조회
-    sectors = SectorPerformance.objects.filter(date=target_date).order_by('-return_pct')
+    sectors = SectorPerformance.objects.filter(date=target_date).order_by("-return_pct")
     is_fallback = False
     actual_date = target_date
 
     if not sectors.exists():
         # 최신 데이터로 폴백
-        latest_sector = SectorPerformance.objects.order_by('-date').first()
+        latest_sector = SectorPerformance.objects.order_by("-date").first()
         if latest_sector:
             actual_date = latest_sector.date
-            sectors = SectorPerformance.objects.filter(date=actual_date).order_by('-return_pct')
+            sectors = SectorPerformance.objects.filter(date=actual_date).order_by(
+                "-return_pct"
+            )
             is_fallback = True
 
     if not sectors.exists():
-        return Response({
-            'date': target_date.isoformat(),
-            'sectors': [],
-            'message': 'No sector data available',
-        })
+        return Response(
+            {
+                "date": target_date.isoformat(),
+                "sectors": [],
+                "message": "No sector data available",
+            }
+        )
 
     serializer = SectorPerformanceSerializer(sectors, many=True)
 
@@ -782,27 +817,29 @@ def sector_heatmap_api(request):
     avg_return = sum(float(s.return_pct) for s in sectors_list) / len(sectors_list)
 
     response_data = {
-        'date': actual_date.isoformat(),
-        'sectors': serializer.data,
-        'summary': {
-            'sectors_up': len(gains),
-            'sectors_down': len(losses),
-            'avg_return_pct': round(avg_return, 2),
-            'best_sector': sectors_list[0].sector if sectors_list else None,
-            'worst_sector': sectors_list[-1].sector if sectors_list else None,
+        "date": actual_date.isoformat(),
+        "sectors": serializer.data,
+        "summary": {
+            "sectors_up": len(gains),
+            "sectors_down": len(losses),
+            "avg_return_pct": round(avg_return, 2),
+            "best_sector": sectors_list[0].sector if sectors_list else None,
+            "worst_sector": sectors_list[-1].sector if sectors_list else None,
         },
     }
 
     # 폴백 데이터임을 표시
     if is_fallback:
-        response_data['is_fallback'] = True
-        response_data['fallback_message'] = f"오늘({target_date}) 데이터 없음. {actual_date} 데이터 표시 중"
+        response_data["is_fallback"] = True
+        response_data["fallback_message"] = (
+            f"오늘({target_date}) 데이터 없음. {actual_date} 데이터 표시 중"
+        )
 
     cache.set(cache_key, response_data, 300)  # 5분 캐시
     return Response(response_data)
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def sector_stocks_api(request, sector):
@@ -822,26 +859,29 @@ def sector_stocks_api(request, sector):
     """
     from serverless.services.sector_heatmap_service import SectorHeatmapService
 
-    limit = int(request.GET.get('limit', 5))
+    limit = int(request.GET.get("limit", 5))
     limit = min(limit, 10)  # 최대 10개
 
-    date_str = request.GET.get('date')
+    date_str = request.GET.get("date")
     if date_str:
         from datetime import datetime
+
         try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         except ValueError:
-            raise ValidationError({'date': [f"Invalid date: {date_str}"]})
+            raise ValidationError({"date": [f"Invalid date: {date_str}"]})
     else:
         target_date = timezone.localdate()
 
     service = SectorHeatmapService()
-    result = service.get_top_movers_by_sector(sector, limit=limit, target_date=target_date)
+    result = service.get_top_movers_by_sector(
+        sector, limit=limit, target_date=target_date
+    )
 
     return Response(result)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def trigger_heatmap_sync(request):
     """
@@ -851,16 +891,18 @@ def trigger_heatmap_sync(request):
     """
     from serverless.tasks import calculate_daily_sector_heatmap
 
-    date_str = request.data.get('date')
+    date_str = request.data.get("date")
 
     try:
         task = calculate_daily_sector_heatmap.delay(target_date=date_str)
 
-        return Response({
-            'message': 'Sector heatmap sync started',
-            'task_id': task.id,
-            'date': date_str or timezone.localdate().isoformat(),
-        })
+        return Response(
+            {
+                "message": "Sector heatmap sync started",
+                "task_id": task.id,
+                "date": date_str or timezone.localdate().isoformat(),
+            }
+        )
     except Exception as e:
         logger.exception(f"Sector heatmap sync failed: {e}")
         raise SyncFailed(str(e))
@@ -870,9 +912,10 @@ def trigger_heatmap_sync(request):
 # Screener Preset API
 # ========================================
 
-@extend_schema(methods=['GET'], operation_id='serverless_presets_list')
-@extend_schema(methods=['POST'], operation_id='serverless_presets_create')
-@api_view(['GET', 'POST'])
+
+@extend_schema(methods=["GET"], operation_id="serverless_presets_list")
+@extend_schema(methods=["POST"], operation_id="serverless_presets_create")
+@api_view(["GET", "POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def screener_presets_api(request):
@@ -888,8 +931,8 @@ def screener_presets_api(request):
         ScreenerPresetListSerializer,
     )
 
-    if request.method == 'GET':
-        category = request.GET.get('category')
+    if request.method == "GET":
+        category = request.GET.get("category")
 
         queryset = ScreenerPreset.objects.all()
 
@@ -899,8 +942,8 @@ def screener_presets_api(request):
         else:
             # 기본: 시스템 프리셋 + 공개 프리셋
             queryset = queryset.filter(
-                models.Q(category__in=['system', 'beginner', 'intermediate']) |
-                models.Q(is_public=True)
+                models.Q(category__in=["system", "beginner", "intermediate"])
+                | models.Q(is_public=True)
             )
 
         # 사용자 본인 프리셋 추가
@@ -908,29 +951,30 @@ def screener_presets_api(request):
             user_presets = ScreenerPreset.objects.filter(user=request.user)
             queryset = queryset | user_presets
 
-        queryset = queryset.distinct().order_by('-use_count', 'name')
+        queryset = queryset.distinct().order_by("-use_count", "name")
 
         serializer = ScreenerPresetListSerializer(queryset, many=True)
 
-        return Response({
-            'count': len(serializer.data),
-            'presets': serializer.data,
-        })
+        return Response(
+            {
+                "count": len(serializer.data),
+                "presets": serializer.data,
+            }
+        )
 
-    elif request.method == 'POST':
+    elif request.method == "POST":
         serializer = ScreenerPresetCreateSerializer(
-            data=request.data,
-            context={'request': request}
+            data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         preset = serializer.save()
         return Response(
-            {'id': preset.id, 'message': 'Preset created successfully'},
+            {"id": preset.id, "message": "Preset created successfully"},
             status=status.HTTP_201_CREATED,
         )
 
 
-@api_view(['GET', 'PATCH', 'DELETE'])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([AllowAny])
 def screener_preset_detail(request, preset_id):
     """
@@ -948,40 +992,40 @@ def screener_preset_detail(request, preset_id):
     except ScreenerPreset.DoesNotExist:
         raise NotFound(f"Preset not found: {preset_id}")
 
-    if request.method == 'GET':
+    if request.method == "GET":
         # 사용 횟수 증가
         preset.use_count += 1
         preset.last_used_at = timezone.now()
-        preset.save(update_fields=['use_count', 'last_used_at'])
+        preset.save(update_fields=["use_count", "last_used_at"])
 
-        serializer = ScreenerPresetSerializer(preset, context={'request': request})
+        serializer = ScreenerPresetSerializer(preset, context={"request": request})
         return Response(serializer.data)
 
-    elif request.method == 'PATCH':
+    elif request.method == "PATCH":
         # 소유자만 수정 가능
         if preset.user and preset.user != request.user:
             raise PermissionDenied("You can only edit your own presets")
 
         serializer = ScreenerPresetSerializer(
-            preset, data=request.data, partial=True, context={'request': request}
+            preset, data=request.data, partial=True, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
-    elif request.method == 'DELETE':
+    elif request.method == "DELETE":
         # 소유자만 삭제 가능 (시스템 프리셋은 삭제 불가)
-        if preset.category in ['system', 'beginner', 'intermediate']:
+        if preset.category in ["system", "beginner", "intermediate"]:
             raise PermissionDenied("Cannot delete system presets")
 
         if preset.user and preset.user != request.user:
             raise PermissionDenied("You can only delete your own presets")
 
         preset.delete()
-        return Response({'message': 'Preset deleted successfully'})
+        return Response({"message": "Preset deleted successfully"})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([AllowAny])
 def execute_preset(request, preset_id):
     """
@@ -1001,8 +1045,8 @@ def execute_preset(request, preset_id):
     except ScreenerPreset.DoesNotExist:
         raise NotFound(f"Preset not found: {preset_id}")
 
-    page = int(request.data.get('page', 1))
-    page_size = int(request.data.get('page_size', 50))
+    page = int(request.data.get("page", 1))
+    page_size = int(request.data.get("page_size", 50))
     page_size = min(page_size, 100)  # 최대 100개
 
     offset = (page - 1) * page_size
@@ -1013,26 +1057,29 @@ def execute_preset(request, preset_id):
         limit=page_size,
         offset=offset,
         sort_by=preset.sort_by,
-        sort_order=preset.sort_order
+        sort_order=preset.sort_order,
     )
 
     # 사용 횟수 증가
     preset.use_count += 1
     preset.last_used_at = timezone.now()
-    preset.save(update_fields=['use_count', 'last_used_at'])
+    preset.save(update_fields=["use_count", "last_used_at"])
 
-    return Response({
-        'preset_id': preset_id,
-        'preset_name': preset.name,
-        **results,
-    })
+    return Response(
+        {
+            "preset_id": preset_id,
+            "preset_name": preset.name,
+            **results,
+        }
+    )
 
 
 # ========================================
 # Screener Filter Metadata API
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def screener_filters_api(request):
@@ -1051,10 +1098,10 @@ def screener_filters_api(request):
     from serverless.models import ScreenerFilter
     from serverless.serializers import ScreenerFilterSerializer
 
-    category = request.GET.get('category')
+    category = request.GET.get("category")
 
     # 캐시 확인 (envelope v2: 평탄 응답)
-    cache_key = f'screener_filters:env2:{category or "all"}'
+    cache_key = f"screener_filters:env2:{category or 'all'}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -1064,7 +1111,7 @@ def screener_filters_api(request):
     if category:
         queryset = queryset.filter(category=category)
 
-    queryset = queryset.order_by('category', 'display_order')
+    queryset = queryset.order_by("category", "display_order")
 
     # 카테고리별 그룹화
     filters_by_category = {}
@@ -1075,18 +1122,18 @@ def screener_filters_api(request):
 
     # 카테고리 목록
     categories = [
-        {'id': 'price', 'label': '가격', 'label_ko': '가격'},
-        {'id': 'volume', 'label': 'Volume', 'label_ko': '거래량'},
-        {'id': 'fundamental', 'label': 'Fundamental', 'label_ko': '펀더멘탈'},
-        {'id': 'technical', 'label': 'Technical', 'label_ko': '기술적'},
-        {'id': 'dividend', 'label': 'Dividend', 'label_ko': '배당'},
-        {'id': 'other', 'label': 'Other', 'label_ko': '기타'},
+        {"id": "price", "label": "가격", "label_ko": "가격"},
+        {"id": "volume", "label": "Volume", "label_ko": "거래량"},
+        {"id": "fundamental", "label": "Fundamental", "label_ko": "펀더멘탈"},
+        {"id": "technical", "label": "Technical", "label_ko": "기술적"},
+        {"id": "dividend", "label": "Dividend", "label_ko": "배당"},
+        {"id": "other", "label": "Other", "label_ko": "기타"},
     ]
 
     response_data = {
-        'categories': categories,
-        'filters': filters_by_category,
-        'total_count': queryset.count(),
+        "categories": categories,
+        "filters": filters_by_category,
+        "total_count": queryset.count(),
     }
 
     cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -1097,7 +1144,8 @@ def screener_filters_api(request):
 # Advanced Screener API (with pagination)
 # ========================================
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def advanced_screener_api(request):
@@ -1129,11 +1177,11 @@ def advanced_screener_api(request):
     """
     from serverless.services.filter_engine import FilterEngine
 
-    filters_dict = request.data.get('filters', {})
-    sort_by = request.data.get('sort_by', 'marketCap')
-    sort_order = request.data.get('sort_order', 'desc')
-    page = int(request.data.get('page', 1))
-    page_size = int(request.data.get('page_size', 50))
+    filters_dict = request.data.get("filters", {})
+    sort_by = request.data.get("sort_by", "marketCap")
+    sort_order = request.data.get("sort_order", "desc")
+    page = int(request.data.get("page", 1))
+    page_size = int(request.data.get("page_size", 50))
     page_size = min(page_size, 100)  # 최대 100개
 
     offset = (page - 1) * page_size
@@ -1142,8 +1190,8 @@ def advanced_screener_api(request):
 
     # 필터 유효성 검증
     validation = engine.validate_filters(filters_dict)
-    if not validation['valid']:
-        raise ValidationError({'filters': validation['errors']})
+    if not validation["valid"]:
+        raise ValidationError({"filters": validation["errors"]})
 
     # 필터 적용
     try:
@@ -1152,24 +1200,26 @@ def advanced_screener_api(request):
             limit=page_size,
             offset=offset,
             sort_by=sort_by,
-            sort_order=sort_order
+            sort_order=sort_order,
         )
 
         # 페이지네이션 URL 생성
-        base_url = request.build_absolute_uri().split('?')[0]
+        base_url = request.build_absolute_uri().split("?")[0]
         next_url = None
         previous_url = None
 
-        if results['current_page'] < results['total_pages']:
+        if results["current_page"] < results["total_pages"]:
             next_url = f"{base_url}?page={results['current_page'] + 1}"
-        if results['current_page'] > 1:
+        if results["current_page"] > 1:
             previous_url = f"{base_url}?page={results['current_page'] - 1}"
 
-        return Response({
-            **results,
-            'next': next_url,
-            'previous': previous_url,
-        })
+        return Response(
+            {
+                **results,
+                "next": next_url,
+                "previous": previous_url,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"Screener error: {e}")
@@ -1180,9 +1230,10 @@ def advanced_screener_api(request):
 # Screener Alert API (Phase 1)
 # ========================================
 
-@extend_schema(methods=['GET'], operation_id='serverless_alerts_list')
-@extend_schema(methods=['POST'], operation_id='serverless_alerts_create')
-@api_view(['GET', 'POST'])
+
+@extend_schema(methods=["GET"], operation_id="serverless_alerts_list")
+@extend_schema(methods=["POST"], operation_id="serverless_alerts_create")
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def screener_alerts_api(request):
     """
@@ -1198,39 +1249,43 @@ def screener_alerts_api(request):
             }
         }
     """
-    if request.method == 'GET':
+    if request.method == "GET":
         # 사용자 알림 목록 조회
         if request.user.is_authenticated:
-            alerts = ScreenerAlert.objects.filter(user=request.user).order_by('-created_at')
+            alerts = ScreenerAlert.objects.filter(user=request.user).order_by(
+                "-created_at"
+            )
         else:
             # 비인증 사용자는 빈 목록
             alerts = ScreenerAlert.objects.none()
 
         serializer = ScreenerAlertSerializer(alerts, many=True)
 
-        return Response({
-            'count': len(serializer.data),
-            'alerts': serializer.data,
-        })
+        return Response(
+            {
+                "count": len(serializer.data),
+                "alerts": serializer.data,
+            }
+        )
 
-    elif request.method == 'POST':
+    elif request.method == "POST":
         if not request.user.is_authenticated:
             from rest_framework.exceptions import NotAuthenticated
+
             raise NotAuthenticated("Login required")
 
         serializer = ScreenerAlertCreateSerializer(
-            data=request.data,
-            context={'request': request}
+            data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         alert = serializer.save()
         return Response(
-            {'id': alert.id, 'message': 'Alert created successfully'},
+            {"id": alert.id, "message": "Alert created successfully"},
             status=status.HTTP_201_CREATED,
         )
 
 
-@api_view(['GET', 'PATCH', 'DELETE'])
+@api_view(["GET", "PATCH", "DELETE"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def screener_alert_detail(request, alert_id):
     """
@@ -1249,24 +1304,24 @@ def screener_alert_detail(request, alert_id):
     if request.user.is_authenticated and alert.user != request.user:
         raise PermissionDenied("Access denied")
 
-    if request.method == 'GET':
-        serializer = ScreenerAlertSerializer(alert, context={'request': request})
+    if request.method == "GET":
+        serializer = ScreenerAlertSerializer(alert, context={"request": request})
         return Response(serializer.data)
 
-    elif request.method == 'PATCH':
+    elif request.method == "PATCH":
         serializer = ScreenerAlertSerializer(
-            alert, data=request.data, partial=True, context={'request': request}
+            alert, data=request.data, partial=True, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
 
-    elif request.method == 'DELETE':
+    elif request.method == "DELETE":
         alert.delete()
-        return Response({'message': 'Alert deleted successfully'})
+        return Response({"message": "Alert deleted successfully"})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def toggle_alert(request, alert_id):
     """
@@ -1283,16 +1338,18 @@ def toggle_alert(request, alert_id):
         raise PermissionDenied("Access denied")
 
     alert.is_active = not alert.is_active
-    alert.save(update_fields=['is_active', 'updated_at'])
+    alert.save(update_fields=["is_active", "updated_at"])
 
-    return Response({
-        'id': alert.id,
-        'is_active': alert.is_active,
-        'message': f"Alert {'activated' if alert.is_active else 'deactivated'}",
-    })
+    return Response(
+        {
+            "id": alert.id,
+            "is_active": alert.is_active,
+            "message": f"Alert {'activated' if alert.is_active else 'deactivated'}",
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def alert_history_api(request):
     """
@@ -1305,37 +1362,39 @@ def alert_history_api(request):
         - unread_only: 읽지 않은 알림만 (기본값: false)
     """
     if not request.user.is_authenticated:
-        return Response({'count': 0, 'history': [], 'unread_count': 0})
+        return Response({"count": 0, "history": [], "unread_count": 0})
 
-    limit = int(request.GET.get('limit', 20))
+    limit = int(request.GET.get("limit", 20))
     limit = min(limit, 100)
-    unread_only = request.GET.get('unread_only', 'false').lower() == 'true'
+    unread_only = request.GET.get("unread_only", "false").lower() == "true"
 
     # 사용자 알림 이력 조회
-    queryset = AlertHistory.objects.filter(
-        alert__user=request.user
-    ).select_related('alert').order_by('-triggered_at')
+    queryset = (
+        AlertHistory.objects.filter(alert__user=request.user)
+        .select_related("alert")
+        .order_by("-triggered_at")
+    )
 
     if unread_only:
         queryset = queryset.filter(read_at__isnull=True, dismissed=False)
 
     history = queryset[:limit]
     unread_count = AlertHistory.objects.filter(
-        alert__user=request.user,
-        read_at__isnull=True,
-        dismissed=False
+        alert__user=request.user, read_at__isnull=True, dismissed=False
     ).count()
 
     serializer = AlertHistoryListSerializer(history, many=True)
 
-    return Response({
-        'count': len(serializer.data),
-        'history': serializer.data,
-        'unread_count': unread_count,
-    })
+    return Response(
+        {
+            "count": len(serializer.data),
+            "history": serializer.data,
+            "unread_count": unread_count,
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def mark_alert_read(request, history_id):
     """
@@ -1344,7 +1403,7 @@ def mark_alert_read(request, history_id):
     POST /api/v1/serverless/alerts/history/{id}/read
     """
     try:
-        history = AlertHistory.objects.select_related('alert').get(id=history_id)
+        history = AlertHistory.objects.select_related("alert").get(id=history_id)
     except AlertHistory.DoesNotExist:
         raise NotFound(f"History not found: {history_id}")
 
@@ -1352,12 +1411,12 @@ def mark_alert_read(request, history_id):
         raise PermissionDenied("Access denied")
 
     history.read_at = timezone.now()
-    history.save(update_fields=['read_at'])
+    history.save(update_fields=["read_at"])
 
-    return Response({'message': 'Marked as read'})
+    return Response({"message": "Marked as read"})
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def dismiss_alert(request, history_id):
     """
@@ -1366,7 +1425,7 @@ def dismiss_alert(request, history_id):
     POST /api/v1/serverless/alerts/history/{id}/dismiss
     """
     try:
-        history = AlertHistory.objects.select_related('alert').get(id=history_id)
+        history = AlertHistory.objects.select_related("alert").get(id=history_id)
     except AlertHistory.DoesNotExist:
         raise NotFound(f"History not found: {history_id}")
 
@@ -1375,16 +1434,17 @@ def dismiss_alert(request, history_id):
 
     history.dismissed = True
     history.read_at = history.read_at or timezone.now()
-    history.save(update_fields=['dismissed', 'read_at'])
+    history.save(update_fields=["dismissed", "read_at"])
 
-    return Response({'message': 'Alert dismissed'})
+    return Response({"message": "Alert dismissed"})
 
 
 # ========================================
 # Preset Sharing System (Phase 2.1)
 # ========================================
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def share_preset(request, preset_id):
     """
@@ -1426,21 +1486,23 @@ def share_preset(request, preset_id):
         # 저장
         preset.is_public = True
         preset.share_code = share_code
-        preset.save(update_fields=['is_public', 'share_code', 'updated_at'])
+        preset.save(update_fields=["is_public", "share_code", "updated_at"])
 
     # 공유 URL 생성
-    base_url = request.build_absolute_uri('/').rstrip('/')
+    base_url = request.build_absolute_uri("/").rstrip("/")
     share_url = f"{base_url}/screener/presets/shared/{share_code}"
 
     logger.info(f"✅ 프리셋 공유: preset_id={preset_id}, share_code={share_code}")
 
-    return Response({
-        'share_code': share_code,
-        'share_url': share_url,
-    })
+    return Response(
+        {
+            "share_code": share_code,
+            "share_url": share_url,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def get_shared_preset(request, share_code):
@@ -1470,16 +1532,16 @@ def get_shared_preset(request, share_code):
 
     # 조회수 증가 (트랜잭션 없이 안전하게)
     ScreenerPreset.objects.filter(id=preset.id).update(
-        view_count=models.F('view_count') + 1
+        view_count=models.F("view_count") + 1
     )
     preset.refresh_from_db()
 
-    serializer = ScreenerPresetSerializer(preset, context={'request': request})
+    serializer = ScreenerPresetSerializer(preset, context={"request": request})
 
     return Response(serializer.data)
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])  # audit P0 #6
 def import_preset(request, share_code):
     """
@@ -1501,15 +1563,18 @@ def import_preset(request, share_code):
 
     if not request.user.is_authenticated:
         from rest_framework.exceptions import NotAuthenticated
+
         raise NotAuthenticated("Login required to import presets")
 
     try:
-        original_preset = ScreenerPreset.objects.get(share_code=share_code, is_public=True)
+        original_preset = ScreenerPreset.objects.get(
+            share_code=share_code, is_public=True
+        )
     except ScreenerPreset.DoesNotExist:
         raise NotFound(f"Shared preset not found: {share_code}")
 
     # 복사본 이름 설정
-    new_name = request.data.get('name')
+    new_name = request.data.get("name")
     if not new_name:
         new_name = f"Copy of {original_preset.name}"
 
@@ -1519,7 +1584,7 @@ def import_preset(request, share_code):
         name=new_name,
         description=original_preset.description,
         description_ko=original_preset.description_ko,
-        category='custom',
+        category="custom",
         icon=original_preset.icon,
         filters_json=original_preset.filters_json,
         sort_by=original_preset.sort_by,
@@ -1527,15 +1592,17 @@ def import_preset(request, share_code):
         is_public=False,  # 복사본은 비공개
     )
 
-    logger.info(f"✅ 프리셋 복사: user={request.user.email}, original={original_preset.id}, new={new_preset.id}")
+    logger.info(
+        f"✅ 프리셋 복사: user={request.user.email}, original={original_preset.id}, new={new_preset.id}"
+    )
 
     return Response(
-        {'id': new_preset.id, 'message': 'Preset imported successfully'},
+        {"id": new_preset.id, "message": "Preset imported successfully"},
         status=status.HTTP_201_CREATED,
     )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def trending_presets(request):
@@ -1568,7 +1635,7 @@ def trending_presets(request):
     from serverless.models import ScreenerPreset
     from serverless.serializers import ScreenerPresetListSerializer
 
-    days = int(request.GET.get('days', 7))
+    days = int(request.GET.get("days", 7))
     days = min(days, 30)  # 최대 30일
 
     # 최근 N일 데이터 (last_used_at 기준)
@@ -1576,26 +1643,24 @@ def trending_presets(request):
 
     # 인기 프리셋 (공개 + 사용/조회 많은 순)
     presets = ScreenerPreset.objects.filter(
-        is_public=True,
-        last_used_at__gte=cutoff_date
-    ).order_by(
-        '-view_count',
-        '-use_count'
-    )[:10]
+        is_public=True, last_used_at__gte=cutoff_date
+    ).order_by("-view_count", "-use_count")[:10]
 
     # last_used_at 필터 결과가 없으면 전체 공개 프리셋에서 TOP 10
     if not presets.exists():
-        presets = ScreenerPreset.objects.filter(
-            is_public=True
-        ).order_by('-view_count', '-use_count')[:10]
+        presets = ScreenerPreset.objects.filter(is_public=True).order_by(
+            "-view_count", "-use_count"
+        )[:10]
 
     serializer = ScreenerPresetListSerializer(presets, many=True)
 
-    return Response({
-        'count': len(serializer.data),
-        'days': days,
-        'presets': serializer.data,
-    })
+    return Response(
+        {
+            "count": len(serializer.data),
+            "days": days,
+            "presets": serializer.data,
+        }
+    )
 
 
 # ========================================
@@ -1605,7 +1670,8 @@ def trending_presets(request):
 # Investment Thesis (Phase 2.3)
 # ========================================
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @authentication_classes([])  # 인증 불필요 (만료된 토큰으로 인한 401 방지)
 @permission_classes([AllowAny])
 def generate_thesis(request):
@@ -1657,43 +1723,43 @@ def generate_thesis(request):
     from serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
 
     # 요청 데이터 파싱
-    stocks = request.data.get('stocks', [])
-    filters = request.data.get('filters', {})
-    user_notes = request.data.get('user_notes', '')
-    preset_ids = request.data.get('preset_ids', [])
+    stocks = request.data.get("stocks", [])
+    filters = request.data.get("filters", {})
+    user_notes = request.data.get("user_notes", "")
+    preset_ids = request.data.get("preset_ids", [])
 
     # 유효성 검사
     if not stocks:
-        raise ValidationError({'stocks': ['종목 리스트가 비어있습니다.']})
+        raise ValidationError({"stocks": ["종목 리스트가 비어있습니다."]})
 
     # 사용자 정보 (인증된 경우)
     user = request.user if request.user.is_authenticated else None
 
     logger.info(
-        f"투자 테제 생성 요청: {len(stocks)}개 종목, "
-        f"{len(filters)}개 필터, user={user}"
+        f"투자 테제 생성 요청: {len(stocks)}개 종목, {len(filters)}개 필터, user={user}"
     )
 
     try:
         # ThesisBuilder 사용
-        builder = ThesisBuilder(language='ko')
+        builder = ThesisBuilder(language="ko")
 
         thesis = builder.build_thesis(
             stocks=stocks,
             filters=filters,
             user=user,
             user_notes=user_notes,
-            preset_ids=preset_ids
+            preset_ids=preset_ids,
         )
 
         # 직렬화 — 평탄 응답
-        serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+        serializer = InvestmentThesisSerializer(thesis, context={"request": request})
 
         logger.info(f"✅ 투자 테제 생성 완료: ID={thesis.id}, 제목='{thesis.title}'")
         return Response(serializer.data)
 
     except Exception as e:
         import traceback
+
         error_traceback = traceback.format_exc()
         logger.error(f"❌ 투자 테제 생성 실패: {type(e).__name__}: {e}")
         logger.error(f"Traceback:\n{error_traceback}")
@@ -1701,24 +1767,25 @@ def generate_thesis(request):
         # 폴백 테제 생성 시도 — 성공 시 평탄 응답 + warning 키
         try:
             fallback_thesis = create_fallback_thesis(
-                stocks=stocks,
-                filters=filters,
-                user=user,
-                preset_ids=preset_ids
+                stocks=stocks, filters=filters, user=user, preset_ids=preset_ids
             )
-            serializer = InvestmentThesisSerializer(fallback_thesis, context={'request': request})
+            serializer = InvestmentThesisSerializer(
+                fallback_thesis, context={"request": request}
+            )
             logger.warning(f"⚠️ 폴백 테제 생성 완료: ID={fallback_thesis.id}")
-            return Response({
-                **serializer.data,
-                'warning': f'LLM 생성 실패로 기본 테제가 생성되었습니다. (에러: {type(e).__name__}: {str(e)[:100]})',
-            })
+            return Response(
+                {
+                    **serializer.data,
+                    "warning": f"LLM 생성 실패로 기본 테제가 생성되었습니다. (에러: {type(e).__name__}: {str(e)[:100]})",
+                }
+            )
 
         except Exception as fallback_error:
             logger.exception(f"❌ 폴백 테제 생성 실패: {fallback_error}")
             raise ThesisGenerationFailed(str(e))
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def get_thesis(request, thesis_id):
@@ -1740,18 +1807,18 @@ def get_thesis(request, thesis_id):
     try:
         thesis = InvestmentThesis.objects.get(id=thesis_id)
     except InvestmentThesis.DoesNotExist:
-        raise NotFound(f'투자 테제를 찾을 수 없습니다: ID={thesis_id}')
+        raise NotFound(f"투자 테제를 찾을 수 없습니다: ID={thesis_id}")
 
     # 조회수 증가
     thesis.view_count += 1
-    thesis.save(update_fields=['view_count'])
+    thesis.save(update_fields=["view_count"])
 
-    serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+    serializer = InvestmentThesisSerializer(thesis, context={"request": request})
     return Response(serializer.data)
 
 
-@extend_schema(operation_id='serverless_thesis_list')
-@api_view(['GET'])
+@extend_schema(operation_id="serverless_thesis_list")
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def list_theses(request):
@@ -1775,25 +1842,28 @@ def list_theses(request):
     # 인증 확인
     if not request.user.is_authenticated:
         from rest_framework.exceptions import NotAuthenticated
-        raise NotAuthenticated('로그인이 필요합니다.')
+
+        raise NotAuthenticated("로그인이 필요합니다.")
 
     # 쿼리 파라미터
-    limit = int(request.GET.get('limit', 10))
+    limit = int(request.GET.get("limit", 10))
     limit = min(limit, 50)  # 최대 50개
 
     # 내 테제 조회
-    theses = InvestmentThesis.objects.filter(
-        user=request.user
-    ).order_by('-created_at')[:limit]
+    theses = InvestmentThesis.objects.filter(user=request.user).order_by("-created_at")[
+        :limit
+    ]
 
     serializer = InvestmentThesisListSerializer(theses, many=True)
-    return Response({
-        'count': len(serializer.data),
-        'theses': serializer.data,
-    })
+    return Response(
+        {
+            "count": len(serializer.data),
+            "theses": serializer.data,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([AllowAny])
 def get_shared_thesis(request, share_code):
     """
@@ -1814,18 +1884,18 @@ def get_shared_thesis(request, share_code):
     try:
         thesis = InvestmentThesis.objects.get(share_code=share_code.upper())
     except InvestmentThesis.DoesNotExist:
-        raise NotFound(f'공유 테제를 찾을 수 없습니다: {share_code}')
+        raise NotFound(f"공유 테제를 찾을 수 없습니다: {share_code}")
 
     # 비공개 테제는 소유자만 조회 가능
     if not thesis.is_public:
         if not request.user.is_authenticated or thesis.user != request.user:
-            raise PermissionDenied('비공개 테제입니다.')
+            raise PermissionDenied("비공개 테제입니다.")
 
     # 조회수 증가
     thesis.view_count += 1
-    thesis.save(update_fields=['view_count'])
+    thesis.save(update_fields=["view_count"])
 
-    serializer = InvestmentThesisSerializer(thesis, context={'request': request})
+    serializer = InvestmentThesisSerializer(thesis, context={"request": request})
     return Response(serializer.data)
 
 
@@ -1842,7 +1912,8 @@ def get_shared_thesis(request, share_code):
 # Chain Sight Phase 3: ETF Holdings
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def etf_collection_status(request):
@@ -1882,9 +1953,9 @@ def etf_collection_status(request):
     """
     from serverless.models import ETFHolding, ETFProfile
 
-    tier = request.query_params.get('tier')
+    tier = request.query_params.get("tier")
 
-    profiles = ETFProfile.objects.all().order_by('tier', 'symbol')
+    profiles = ETFProfile.objects.all().order_by("tier", "symbol")
     if tier:
         profiles = profiles.filter(tier=tier)
 
@@ -1898,47 +1969,53 @@ def etf_collection_status(request):
         holdings_count = ETFHolding.objects.filter(etf=profile).count()
         is_synced = profile.last_updated is not None and holdings_count > 0
 
-        status_str = 'synced' if is_synced else 'pending'
+        status_str = "synced" if is_synced else "pending"
         if profile.last_error:
-            status_str = 'failed'
+            status_str = "failed"
 
         if is_synced:
             synced += 1
         else:
             pending += 1
 
-        if profile.tier == 'sector':
+        if profile.tier == "sector":
             sector_count += 1
         else:
             theme_count += 1
 
-        etfs.append({
-            'symbol': profile.symbol,
-            'name': profile.name,
-            'tier': profile.tier,
-            'theme_id': profile.theme_id,
-            'is_active': profile.is_active,
-            'csv_url': profile.csv_url or None,
-            'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
-            'last_row_count': profile.last_row_count,
-            'holdings_count': holdings_count,
-            'last_error': profile.last_error or None,
-            'status': status_str,
-        })
+        etfs.append(
+            {
+                "symbol": profile.symbol,
+                "name": profile.name,
+                "tier": profile.tier,
+                "theme_id": profile.theme_id,
+                "is_active": profile.is_active,
+                "csv_url": profile.csv_url or None,
+                "last_updated": profile.last_updated.isoformat()
+                if profile.last_updated
+                else None,
+                "last_row_count": profile.last_row_count,
+                "holdings_count": holdings_count,
+                "last_error": profile.last_error or None,
+                "status": status_str,
+            }
+        )
 
-    return Response({
-        'etfs': etfs,
-        'summary': {
-            'total': len(etfs),
-            'synced': synced,
-            'pending': pending,
-            'sector_count': sector_count,
-            'theme_count': theme_count,
-        },
-    })
+    return Response(
+        {
+            "etfs": etfs,
+            "summary": {
+                "total": len(etfs),
+                "synced": synced,
+                "pending": pending,
+                "sector_count": sector_count,
+                "theme_count": theme_count,
+            },
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def trigger_etf_holdings_sync(request):
@@ -1978,7 +2055,7 @@ def trigger_etf_holdings_sync(request):
         ETFCSVParseError,
     )
 
-    etf_symbol = request.data.get('etf_symbol')
+    etf_symbol = request.data.get("etf_symbol")
 
     downloader = ETFCSVDownloader()
 
@@ -2001,46 +2078,58 @@ def trigger_etf_holdings_sync(request):
     for profile in profiles:
         try:
             holdings = downloader.download_holdings(profile.symbol)
-            results.append({
-                'etf': profile.symbol,
-                'status': 'success',
-                'holdings_count': len(holdings),
-                'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "success",
+                    "holdings_count": len(holdings),
+                    "last_updated": profile.last_updated.isoformat()
+                    if profile.last_updated
+                    else None,
+                }
+            )
             success_count += 1
         except ETFCSVDownloadError as e:
-            results.append({
-                'etf': profile.symbol,
-                'status': 'download_failed',
-                'error': str(e),
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "download_failed",
+                    "error": str(e),
+                }
+            )
             failed_count += 1
         except ETFCSVParseError as e:
-            results.append({
-                'etf': profile.symbol,
-                'status': 'parse_failed',
-                'error': str(e),
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "parse_failed",
+                    "error": str(e),
+                }
+            )
             failed_count += 1
         except Exception as e:
-            results.append({
-                'etf': profile.symbol,
-                'status': 'error',
-                'error': str(e),
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "error",
+                    "error": str(e),
+                }
+            )
             failed_count += 1
 
-    return Response({
-        'results': results,
-        'summary': {
-            'total': len(results),
-            'success': success_count,
-            'failed': failed_count,
-        },
-    })
+    return Response(
+        {
+            "results": results,
+            "summary": {
+                "total": len(results),
+                "success": success_count,
+                "failed": failed_count,
+            },
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def resolve_etf_csv_url(request):
@@ -2082,7 +2171,7 @@ def resolve_etf_csv_url(request):
     from serverless.models import ETFProfile
     from serverless.services.csv_url_resolver import CSVURLResolver
 
-    etf_symbol = request.data.get('etf_symbol')
+    etf_symbol = request.data.get("etf_symbol")
 
     resolver = CSVURLResolver()
     results = []
@@ -2095,13 +2184,11 @@ def resolve_etf_csv_url(request):
     else:
         # 다운로드 실패 에러가 있는 ETF만
         profiles = ETFProfile.objects.filter(
-            is_active=True,
-            last_error__icontains='다운로드 실패'
+            is_active=True, last_error__icontains="다운로드 실패"
         )
         # 404/403 에러 포함
         profiles = profiles | ETFProfile.objects.filter(
-            is_active=True,
-            last_error__icontains='HTTP'
+            is_active=True, last_error__icontains="HTTP"
         )
 
     for profile in profiles.distinct():
@@ -2109,32 +2196,38 @@ def resolve_etf_csv_url(request):
         success, result = resolver.resolve_and_update(profile.symbol)
 
         if success:
-            results.append({
-                'etf': profile.symbol,
-                'status': 'resolved',
-                'old_url': old_url[:80] + '...' if len(old_url) > 80 else old_url,
-                'new_url': result[:80] + '...' if len(result) > 80 else result,
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "resolved",
+                    "old_url": old_url[:80] + "..." if len(old_url) > 80 else old_url,
+                    "new_url": result[:80] + "..." if len(result) > 80 else result,
+                }
+            )
             resolved_count += 1
         else:
-            results.append({
-                'etf': profile.symbol,
-                'status': 'failed',
-                'error': result,
-            })
+            results.append(
+                {
+                    "etf": profile.symbol,
+                    "status": "failed",
+                    "error": result,
+                }
+            )
             failed_count += 1
 
-    return Response({
-        'results': results,
-        'summary': {
-            'total': len(results),
-            'resolved': resolved_count,
-            'failed': failed_count,
-        },
-    })
+    return Response(
+        {
+            "results": results,
+            "summary": {
+                "total": len(results),
+                "resolved": resolved_count,
+                "failed": failed_count,
+            },
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def etf_holdings_api(request, etf_symbol: str):
@@ -2171,39 +2264,43 @@ def etf_holdings_api(request, etf_symbol: str):
     """
     from serverless.models import ETFHolding, ETFProfile
 
-    limit = int(request.query_params.get('limit', 50))
+    limit = int(request.query_params.get("limit", 50))
     etf_symbol = etf_symbol.upper()
 
     try:
         profile = ETFProfile.objects.get(symbol=etf_symbol)
     except ETFProfile.DoesNotExist:
-        raise NotFound(f'ETF not found: {etf_symbol}')
+        raise NotFound(f"ETF not found: {etf_symbol}")
 
-    holdings = ETFHolding.objects.filter(etf=profile).order_by('rank')[:limit]
+    holdings = ETFHolding.objects.filter(etf=profile).order_by("rank")[:limit]
 
-    return Response({
-        'etf': {
-            'symbol': profile.symbol,
-            'name': profile.name,
-            'tier': profile.tier,
-            'theme_id': profile.theme_id,
-            'last_updated': profile.last_updated.isoformat() if profile.last_updated else None,
-        },
-        'holdings': [
-            {
-                'rank': h.rank,
-                'symbol': h.stock_symbol,
-                'weight': float(h.weight_percent),
-                'shares': h.shares,
-                'market_value': float(h.market_value) if h.market_value else None,
-            }
-            for h in holdings
-        ],
-        'total_count': ETFHolding.objects.filter(etf=profile).count(),
-    })
+    return Response(
+        {
+            "etf": {
+                "symbol": profile.symbol,
+                "name": profile.name,
+                "tier": profile.tier,
+                "theme_id": profile.theme_id,
+                "last_updated": profile.last_updated.isoformat()
+                if profile.last_updated
+                else None,
+            },
+            "holdings": [
+                {
+                    "rank": h.rank,
+                    "symbol": h.stock_symbol,
+                    "weight": float(h.weight_percent),
+                    "shares": h.shares,
+                    "market_value": float(h.market_value) if h.market_value else None,
+                }
+                for h in holdings
+            ],
+            "total_count": ETFHolding.objects.filter(etf=profile).count(),
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def theme_list_api(request):
@@ -2232,10 +2329,10 @@ def theme_list_api(request):
     service = get_theme_matching_service()
     themes = service.get_all_themes()
 
-    return Response({'themes': themes})
+    return Response({"themes": themes})
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def theme_stocks_api(request, theme_id: str):
@@ -2270,28 +2367,32 @@ def theme_stocks_api(request, theme_id: str):
     """
     from serverless.services.theme_matching_service import get_theme_matching_service
 
-    limit = int(request.query_params.get('limit', 20))
-    min_confidence = request.query_params.get('min_confidence', 'medium')
+    limit = int(request.query_params.get("limit", 20))
+    min_confidence = request.query_params.get("min_confidence", "medium")
 
     service = get_theme_matching_service()
     theme_info = service.get_theme_info(theme_id)
 
     if not theme_info:
-        raise NotFound(f'Theme not found: {theme_id}')
+        raise NotFound(f"Theme not found: {theme_id}")
 
-    stocks = service.get_theme_stocks(theme_id, limit=limit, min_confidence=min_confidence)
+    stocks = service.get_theme_stocks(
+        theme_id, limit=limit, min_confidence=min_confidence
+    )
 
-    return Response({
-        'theme': {
-            'id': theme_info['id'],
-            'name': theme_info['name'],
-            'icon': theme_info['icon'],
-        },
-        'stocks': stocks,
-    })
+    return Response(
+        {
+            "theme": {
+                "id": theme_info["id"],
+                "name": theme_info["name"],
+                "icon": theme_info["icon"],
+            },
+            "stocks": stocks,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def stock_themes_api(request, symbol: str):
@@ -2323,13 +2424,15 @@ def stock_themes_api(request, symbol: str):
     service = get_theme_matching_service()
     themes = service.get_stock_themes(symbol)
 
-    return Response({
-        'symbol': symbol,
-        'themes': themes,
-    })
+    return Response(
+        {
+            "symbol": symbol,
+            "themes": themes,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def etf_peers_api(request, symbol: str):
@@ -2359,18 +2462,20 @@ def etf_peers_api(request, symbol: str):
     from serverless.services.theme_matching_service import get_theme_matching_service
 
     symbol = symbol.upper()
-    limit = int(request.query_params.get('limit', 10))
+    limit = int(request.query_params.get("limit", 10))
 
     service = get_theme_matching_service()
     peers = service.get_etf_peers(symbol, limit=limit)
 
-    return Response({
-        'symbol': symbol,
-        'peers': peers,
-    })
+    return Response(
+        {
+            "symbol": symbol,
+            "peers": peers,
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def refresh_theme_matches_api(request):
@@ -2399,7 +2504,8 @@ def refresh_theme_matches_api(request):
 # Chain Sight Phase 5: LLM Relation Extraction
 # ========================================
 
-@api_view(['POST'])
+
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def extract_relations_from_news_api(request):
@@ -2431,34 +2537,38 @@ def extract_relations_from_news_api(request):
     )
 
     data = request.data
-    is_batch = data.get('batch', False)
+    is_batch = data.get("batch", False)
 
     if is_batch:
-        hours = int(data.get('hours', 24))
-        limit = int(data.get('limit', 100))
+        hours = int(data.get("hours", 24))
+        limit = int(data.get("limit", 100))
 
         task = batch_extract_relations_from_news.delay(hours=hours, limit=limit)
 
-        return Response({
-            'task_id': task.id,
-            'mode': 'batch',
-            'hours': hours,
-            'limit': limit,
-        })
+        return Response(
+            {
+                "task_id": task.id,
+                "mode": "batch",
+                "hours": hours,
+                "limit": limit,
+            }
+        )
     else:
-        news_id = data.get('news_id')
+        news_id = data.get("news_id")
         if not news_id:
-            raise ValidationError({'news_id': ['news_id is required']})
+            raise ValidationError({"news_id": ["news_id is required"]})
 
         task = extract_relations_from_news.delay(news_id=news_id)
 
-        return Response({
-            'task_id': task.id,
-            'news_id': news_id,
-        })
+        return Response(
+            {
+                "task_id": task.id,
+                "news_id": news_id,
+            }
+        )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def get_llm_relations_api(request, symbol):
@@ -2499,16 +2609,17 @@ def get_llm_relations_api(request, symbol):
     from serverless.models import LLMExtractedRelation
 
     symbol = symbol.upper()
-    relation_type = request.query_params.get('relation_type')
-    confidence = request.query_params.get('confidence')
-    days = int(request.query_params.get('days', 30))
-    include_expired = request.query_params.get('include_expired', 'false').lower() == 'true'
+    relation_type = request.query_params.get("relation_type")
+    confidence = request.query_params.get("confidence")
+    days = int(request.query_params.get("days", 30))
+    include_expired = (
+        request.query_params.get("include_expired", "false").lower() == "true"
+    )
 
     # 기본 쿼리: source 또는 target이 해당 종목인 관계
     cutoff = timezone.now() - timedelta(days=days)
     relations = LLMExtractedRelation.objects.filter(
-        Q(source_symbol=symbol) | Q(target_symbol=symbol),
-        extracted_at__gte=cutoff
+        Q(source_symbol=symbol) | Q(target_symbol=symbol), extracted_at__gte=cutoff
     )
 
     # 만료되지 않은 것만
@@ -2521,33 +2632,39 @@ def get_llm_relations_api(request, symbol):
     if confidence:
         relations = relations.filter(confidence=confidence.lower())
 
-    relations = relations.order_by('-extracted_at')[:50]
+    relations = relations.order_by("-extracted_at")[:50]
 
     data = []
     for rel in relations:
-        data.append({
-            'id': rel.id,
-            'source_symbol': rel.source_symbol,
-            'target_symbol': rel.target_symbol,
-            'relation_type': rel.relation_type,
-            'confidence': rel.confidence,
-            'evidence': rel.evidence,
-            'context': rel.context,
-            'source_type': rel.source_type,
-            'llm_confidence_score': float(rel.llm_confidence_score) if rel.llm_confidence_score else None,
-            'extracted_at': rel.extracted_at.isoformat(),
-            'expires_at': rel.expires_at.isoformat(),
-            'is_synced': rel.is_synced_to_graph,
-        })
+        data.append(
+            {
+                "id": rel.id,
+                "source_symbol": rel.source_symbol,
+                "target_symbol": rel.target_symbol,
+                "relation_type": rel.relation_type,
+                "confidence": rel.confidence,
+                "evidence": rel.evidence,
+                "context": rel.context,
+                "source_type": rel.source_type,
+                "llm_confidence_score": float(rel.llm_confidence_score)
+                if rel.llm_confidence_score
+                else None,
+                "extracted_at": rel.extracted_at.isoformat(),
+                "expires_at": rel.expires_at.isoformat(),
+                "is_synced": rel.is_synced_to_graph,
+            }
+        )
 
-    return Response({
-        'symbol': symbol,
-        'relations': data,
-        'count': len(data),
-    })
+    return Response(
+        {
+            "symbol": symbol,
+            "relations": data,
+            "count": len(data),
+        }
+    )
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def sync_llm_relations_api(request):
@@ -2566,17 +2683,19 @@ def sync_llm_relations_api(request):
     """
     from serverless.tasks import sync_llm_relations_to_graph
 
-    days = int(request.data.get('days', 7))
+    days = int(request.data.get("days", 7))
 
     task = sync_llm_relations_to_graph.delay(days=days)
 
-    return Response({
-        'task_id': task.id,
-        'days': days,
-    })
+    return Response(
+        {
+            "task_id": task.id,
+            "days": days,
+        }
+    )
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def llm_relations_stats_api(request):
@@ -2617,43 +2736,43 @@ def llm_relations_stats_api(request):
 
     # 타입별
     by_type = dict(
-        LLMExtractedRelation.objects
-        .values('relation_type')
-        .annotate(count=Count('id'))
-        .values_list('relation_type', 'count')
+        LLMExtractedRelation.objects.values("relation_type")
+        .annotate(count=Count("id"))
+        .values_list("relation_type", "count")
     )
 
     # 신뢰도별
     by_confidence = dict(
-        LLMExtractedRelation.objects
-        .values('confidence')
-        .annotate(count=Count('id'))
-        .values_list('confidence', 'count')
+        LLMExtractedRelation.objects.values("confidence")
+        .annotate(count=Count("id"))
+        .values_list("confidence", "count")
     )
 
     # 동기화 상태
     synced = LLMExtractedRelation.objects.filter(is_synced_to_graph=True).count()
     pending_sync = LLMExtractedRelation.objects.filter(
-        is_synced_to_graph=False,
-        expires_at__gt=now
+        is_synced_to_graph=False, expires_at__gt=now
     ).count()
     expired = LLMExtractedRelation.objects.filter(expires_at__lt=now).count()
 
-    return Response({
-        'total': total,
-        'by_type': by_type,
-        'by_confidence': by_confidence,
-        'synced': synced,
-        'pending_sync': pending_sync,
-        'expired': expired,
-    })
+    return Response(
+        {
+            "total": total,
+            "by_type": by_type,
+            "by_confidence": by_confidence,
+            "synced": synced,
+            "pending_sync": pending_sync,
+            "expired": expired,
+        }
+    )
 
 
 # ========================================
 # Chain Sight Phase 7: Institutional Holdings (SEC 13F)
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def institutional_holdings_api(request, symbol):
@@ -2687,9 +2806,9 @@ def institutional_holdings_api(request, symbol):
     )
 
     symbol = symbol.upper()
-    limit = min(int(request.GET.get('limit', 20)), 50)
+    limit = min(int(request.GET.get("limit", 20)), 50)
 
-    cache_key = f'institutional_holdings:env2:{symbol}:{limit}'
+    cache_key = f"institutional_holdings:env2:{symbol}:{limit}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -2699,9 +2818,9 @@ def institutional_holdings_api(request, symbol):
         holders = service.get_stock_institutional_holders(symbol)[:limit]
 
         response_data = {
-            'symbol': symbol,
-            'holders': holders,
-            'total_institutions': len(holders),
+            "symbol": symbol,
+            "holders": holders,
+            "total_institutions": len(holders),
         }
 
         cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -2712,7 +2831,7 @@ def institutional_holdings_api(request, symbol):
         raise InstitutionalError(str(e))
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def institutional_peers_api(request, symbol):
@@ -2740,9 +2859,9 @@ def institutional_peers_api(request, symbol):
     )
 
     symbol = symbol.upper()
-    limit = min(int(request.GET.get('limit', 20)), 50)
+    limit = min(int(request.GET.get("limit", 20)), 50)
 
-    cache_key = f'institutional_peers:env2:{symbol}:{limit}'
+    cache_key = f"institutional_peers:env2:{symbol}:{limit}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
@@ -2752,9 +2871,9 @@ def institutional_peers_api(request, symbol):
         peers = service.get_same_fund_peers(symbol, limit=limit)
 
         response_data = {
-            'symbol': symbol,
-            'peers': peers,
-            'total_peers': len(peers),
+            "symbol": symbol,
+            "peers": peers,
+            "total_peers": len(peers),
         }
 
         cache.set(cache_key, response_data, 3600)  # 1시간 캐시
@@ -2765,7 +2884,7 @@ def institutional_peers_api(request, symbol):
         raise InstitutionalPeersError(str(e))
 
 
-@api_view(['POST'])
+@api_view(["POST"])
 @permission_classes([IsAdminUser])  # audit P0 #6
 def institutional_sync_api(request):
     """
@@ -2790,10 +2909,12 @@ def institutional_sync_api(request):
     try:
         task = sync_institutional_holdings.delay()
 
-        return Response({
-            'message': 'Institutional holdings sync started',
-            'task_id': task.id,
-        })
+        return Response(
+            {
+                "message": "Institutional holdings sync started",
+                "task_id": task.id,
+            }
+        )
 
     except Exception as e:
         logger.exception(f"Institutional sync 트리거 실패: {e}")
@@ -2804,7 +2925,8 @@ def institutional_sync_api(request):
 # Chain Sight Phase 8: Regulatory + Patent Network
 # ========================================
 
-@api_view(['GET'])
+
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def get_regulatory_relations_api(request, symbol):
@@ -2825,32 +2947,31 @@ def get_regulatory_relations_api(request, symbol):
 
     symbol = symbol.upper()
 
-    cache_key = f'regulatory_relations:env2:{symbol}'
+    cache_key = f"regulatory_relations:env2:{symbol}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
 
     try:
         relations = StockRelationship.objects.filter(
-            source_symbol=symbol,
-            relationship_type='SAME_REGULATION'
-        ).order_by('-strength')
+            source_symbol=symbol, relationship_type="SAME_REGULATION"
+        ).order_by("-strength")
 
         relations_data = [
             {
-                'target_symbol': rel.target_symbol,
-                'strength': float(rel.strength),
-                'context': rel.context,
-                'source_provider': rel.source_provider,
-                'discovered_at': rel.discovered_at.isoformat(),
+                "target_symbol": rel.target_symbol,
+                "strength": float(rel.strength),
+                "context": rel.context,
+                "source_provider": rel.source_provider,
+                "discovered_at": rel.discovered_at.isoformat(),
             }
             for rel in relations
         ]
 
         response_data = {
-            'symbol': symbol,
-            'relations': relations_data,
-            'count': len(relations_data),
+            "symbol": symbol,
+            "relations": relations_data,
+            "count": len(relations_data),
         }
 
         cache.set(cache_key, response_data, 3600)
@@ -2861,7 +2982,7 @@ def get_regulatory_relations_api(request, symbol):
         raise RegulatoryError(str(e))
 
 
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def get_patent_relations_api(request, symbol):
@@ -2883,39 +3004,37 @@ def get_patent_relations_api(request, symbol):
 
     symbol = symbol.upper()
 
-    cache_key = f'patent_relations:env2:{symbol}'
+    cache_key = f"patent_relations:env2:{symbol}"
     cached = cache.get(cache_key)
     if cached:
         return Response(cached)
 
     try:
         citations = StockRelationship.objects.filter(
-            source_symbol=symbol,
-            relationship_type='PATENT_CITED'
-        ).order_by('-strength')
+            source_symbol=symbol, relationship_type="PATENT_CITED"
+        ).order_by("-strength")
 
         disputes = StockRelationship.objects.filter(
-            source_symbol=symbol,
-            relationship_type='PATENT_DISPUTE'
-        ).order_by('-strength')
+            source_symbol=symbol, relationship_type="PATENT_DISPUTE"
+        ).order_by("-strength")
 
         def serialize_rel(rel):
             return {
-                'target_symbol': rel.target_symbol,
-                'strength': float(rel.strength),
-                'context': rel.context,
-                'source_provider': rel.source_provider,
-                'discovered_at': rel.discovered_at.isoformat(),
+                "target_symbol": rel.target_symbol,
+                "strength": float(rel.strength),
+                "context": rel.context,
+                "source_provider": rel.source_provider,
+                "discovered_at": rel.discovered_at.isoformat(),
             }
 
         citations_data = [serialize_rel(r) for r in citations]
         disputes_data = [serialize_rel(r) for r in disputes]
 
         response_data = {
-            'symbol': symbol,
-            'citations': citations_data,
-            'disputes': disputes_data,
-            'total': len(citations_data) + len(disputes_data),
+            "symbol": symbol,
+            "citations": citations_data,
+            "disputes": disputes_data,
+            "total": len(citations_data) + len(disputes_data),
         }
 
         cache.set(cache_key, response_data, 3600)

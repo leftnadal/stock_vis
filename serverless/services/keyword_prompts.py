@@ -67,11 +67,11 @@ class KeywordPromptBuilder:
 
     # 키워드 카테고리
     KEYWORD_CATEGORIES = [
-        "거래량",     # 거래량 관련 (RVOL)
-        "추세",       # 추세 방향 (Trend Strength)
-        "섹터",       # 섹터 관련 (Sector Alpha, ETF Sync)
-        "변동성",     # 변동성 (Volatility Percentile)
-        "특징",       # 종합 특징
+        "거래량",  # 거래량 관련 (RVOL)
+        "추세",  # 추세 방향 (Trend Strength)
+        "섹터",  # 섹터 관련 (Sector Alpha, ETF Sync)
+        "변동성",  # 변동성 (Volatility Percentile)
+        "특징",  # 종합 특징
     ]
 
     def __init__(self, language: str = "ko"):
@@ -88,9 +88,10 @@ class KeywordPromptBuilder:
         Returns:
             str: 시스템 프롬프트
         """
-        today = date.today().strftime('%Y년 %m월 %d일')
+        today = date.today().strftime("%Y년 %m월 %d일")
         lang_instruction = (
-            "한국어로 키워드를 생성하세요." if self.language == "ko"
+            "한국어로 키워드를 생성하세요."
+            if self.language == "ko"
             else "Generate keywords in English."
         )
 
@@ -158,7 +159,7 @@ class KeywordPromptBuilder:
         price_data: Dict[str, Any],
         indicators: Dict[str, Any],
         sector: Optional[str] = None,
-        industry: Optional[str] = None
+        industry: Optional[str] = None,
     ) -> str:
         """
         단일 종목 키워드 생성 프롬프트
@@ -176,9 +177,9 @@ class KeywordPromptBuilder:
             str: 사용자 프롬프트
         """
         mover_type_kr = {
-            'gainers': '상승 종목',
-            'losers': '하락 종목',
-            'actives': '거래량 상위 종목'
+            "gainers": "상승 종목",
+            "losers": "하락 종목",
+            "actives": "거래량 상위 종목",
         }
 
         lines = [
@@ -191,12 +192,14 @@ class KeywordPromptBuilder:
             f"- 거래량: {price_data.get('volume', 'N/A'):,}",
         ]
 
-        if price_data.get('open') and price_data.get('high') and price_data.get('low'):
-            lines.extend([
-                f"- 시가: ${price_data['open']}",
-                f"- 고가: ${price_data['high']}",
-                f"- 저가: ${price_data['low']}",
-            ])
+        if price_data.get("open") and price_data.get("high") and price_data.get("low"):
+            lines.extend(
+                [
+                    f"- 시가: ${price_data['open']}",
+                    f"- 고가: ${price_data['high']}",
+                    f"- 저가: ${price_data['low']}",
+                ]
+            )
 
         if sector or industry:
             lines.append("")
@@ -210,14 +213,14 @@ class KeywordPromptBuilder:
         lines.append("## 5개 지표")
 
         # RVOL
-        rvol = indicators.get('rvol')
+        rvol = indicators.get("rvol")
         if rvol is not None:
             lines.append(f"- RVOL (상대 거래량): {rvol:.2f}x")
         else:
             lines.append("- RVOL: 데이터 없음")
 
         # Trend Strength
-        trend = indicators.get('trend_strength')
+        trend = indicators.get("trend_strength")
         if trend is not None:
             trend_icon = "▲" if trend > 0 else "▼"
             lines.append(f"- Trend Strength (추세 강도): {trend_icon}{abs(trend):.2f}")
@@ -225,7 +228,7 @@ class KeywordPromptBuilder:
             lines.append("- Trend Strength: 데이터 없음")
 
         # Sector Alpha
-        alpha = indicators.get('sector_alpha')
+        alpha = indicators.get("sector_alpha")
         if alpha is not None:
             alpha_sign = "+" if alpha > 0 else ""
             lines.append(f"- Sector Alpha (섹터 초과수익): {alpha_sign}{alpha:.2f}%")
@@ -233,14 +236,14 @@ class KeywordPromptBuilder:
             lines.append("- Sector Alpha: 데이터 없음")
 
         # ETF Sync Rate
-        sync = indicators.get('etf_sync_rate')
+        sync = indicators.get("etf_sync_rate")
         if sync is not None:
             lines.append(f"- ETF Sync Rate (ETF 동행률): {sync:.2f}")
         else:
             lines.append("- ETF Sync Rate: 데이터 없음")
 
         # Volatility Percentile
-        vol_pct = indicators.get('volatility_pct')
+        vol_pct = indicators.get("volatility_pct")
         if vol_pct is not None:
             lines.append(f"- Volatility Percentile (변동성 백분위): {vol_pct}/100")
         else:
@@ -252,9 +255,7 @@ class KeywordPromptBuilder:
         return "\n".join(lines)
 
     def build_batch_prompt(
-        self,
-        stocks: List[Dict[str, Any]],
-        max_stocks: int = 20
+        self, stocks: List[Dict[str, Any]], max_stocks: int = 20
     ) -> str:
         """
         배치 처리용 프롬프트 (최대 20개 종목)
@@ -275,7 +276,7 @@ class KeywordPromptBuilder:
             "각 종목마다 JSON 형식으로 출력하고, 전체를 배열로 묶어주세요.",
             "",
             "---",
-            ""
+            "",
         ]
 
         for idx, stock in enumerate(stocks, 1):
@@ -283,13 +284,13 @@ class KeywordPromptBuilder:
             lines.append("")
 
             single_prompt = self.build_single_stock_prompt(
-                symbol=stock['symbol'],
-                company_name=stock['company_name'],
-                mover_type=stock['mover_type'],
-                price_data=stock['price_data'],
-                indicators=stock['indicators'],
-                sector=stock.get('sector'),
-                industry=stock.get('industry')
+                symbol=stock["symbol"],
+                company_name=stock["company_name"],
+                mover_type=stock["mover_type"],
+                price_data=stock["price_data"],
+                indicators=stock["indicators"],
+                sector=stock.get("sector"),
+                industry=stock.get("industry"),
             )
 
             lines.append(single_prompt)
@@ -317,9 +318,7 @@ class KeywordPromptBuilder:
         return "\n".join(lines)
 
     def estimate_tokens(
-        self,
-        num_stocks: int,
-        avg_chars_per_stock: int = 800
+        self, num_stocks: int, avg_chars_per_stock: int = 800
     ) -> Dict[str, int]:
         """
         토큰 사용량 추정
@@ -345,9 +344,9 @@ class KeywordPromptBuilder:
         output_tokens = num_stocks * 300
 
         return {
-            'input_tokens': input_tokens,
-            'estimated_output_tokens': output_tokens,
-            'total_tokens': input_tokens + output_tokens
+            "input_tokens": input_tokens,
+            "estimated_output_tokens": output_tokens,
+            "total_tokens": input_tokens + output_tokens,
         }
 
 
@@ -360,11 +359,13 @@ class KeywordResponseParser:
 
     VALID_CATEGORIES = {
         "ko": ["거래량", "추세", "섹터", "변동성", "특징"],
-        "en": ["Volume", "Trend", "Sector", "Volatility", "Feature"]
+        "en": ["Volume", "Trend", "Sector", "Volatility", "Feature"],
     }
 
     @staticmethod
-    def parse_single_response(response: str, language: str = "ko") -> Optional[Dict[str, Any]]:
+    def parse_single_response(
+        response: str, language: str = "ko"
+    ) -> Optional[Dict[str, Any]]:
         """
         단일 종목 응답 파싱
 
@@ -379,7 +380,7 @@ class KeywordResponseParser:
         import re
 
         # JSON 블록 추출
-        json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
+        json_match = re.search(r"```json\s*(.*?)\s*```", response, re.DOTALL)
         if json_match:
             json_str = json_match.group(1)
         else:
@@ -393,11 +394,11 @@ class KeywordResponseParser:
             if not isinstance(data, dict):
                 return None
 
-            if 'symbol' not in data or 'keywords' not in data:
+            if "symbol" not in data or "keywords" not in data:
                 return None
 
             # 키워드 검증
-            keywords = data['keywords']
+            keywords = data["keywords"]
             if not isinstance(keywords, list):
                 return None
 
@@ -408,15 +409,15 @@ class KeywordResponseParser:
                 if not isinstance(kw, dict):
                     continue
 
-                if 'text' not in kw or 'category' not in kw:
+                if "text" not in kw or "category" not in kw:
                     continue
 
                 # confidence 기본값
-                if 'confidence' not in kw:
-                    kw['confidence'] = 0.8
+                if "confidence" not in kw:
+                    kw["confidence"] = 0.8
 
                 # confidence 범위 검증
-                kw['confidence'] = max(0.0, min(1.0, kw['confidence']))
+                kw["confidence"] = max(0.0, min(1.0, kw["confidence"]))
 
                 # 카테고리 검증 (선택)
                 # if valid_categories and kw['category'] not in valid_categories:
@@ -428,9 +429,9 @@ class KeywordResponseParser:
                 return None
 
             return {
-                'symbol': data['symbol'].upper(),
-                'keywords': valid_keywords,
-                'summary': data.get('summary', '')
+                "symbol": data["symbol"].upper(),
+                "keywords": valid_keywords,
+                "summary": data.get("summary", ""),
             }
 
         except json.JSONDecodeError:
@@ -439,7 +440,9 @@ class KeywordResponseParser:
             return None
 
     @staticmethod
-    def parse_batch_response(response: str, language: str = "ko") -> List[Dict[str, Any]]:
+    def parse_batch_response(
+        response: str, language: str = "ko"
+    ) -> List[Dict[str, Any]]:
         """
         배치 응답 파싱
 
@@ -454,7 +457,7 @@ class KeywordResponseParser:
         import re
 
         # JSON 배열 블록 추출
-        json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
+        json_match = re.search(r"```json\s*(.*?)\s*```", response, re.DOTALL)
         if json_match:
             json_str = json_match.group(1)
         else:
@@ -470,8 +473,7 @@ class KeywordResponseParser:
             results = []
             for item in data:
                 parsed = KeywordResponseParser.parse_single_response(
-                    json.dumps(item),
-                    language
+                    json.dumps(item), language
                 )
                 if parsed:
                     results.append(parsed)

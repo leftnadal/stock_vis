@@ -23,12 +23,12 @@ class EnhancedKeywordPromptBuilder:
 
     # 키워드 카테고리 (6개)
     CATEGORIES = [
-        "event",       # 뉴스/이벤트 기반
-        "product",     # 제품/서비스 관련
-        "sector",      # 섹터/산업 트렌드
-        "technical",   # 기술적 신호 (지표 기반)
-        "fundamental", # 펀더멘털 (Overview 기반)
-        "risk",        # 리스크 경고
+        "event",  # 뉴스/이벤트 기반
+        "product",  # 제품/서비스 관련
+        "sector",  # 섹터/산업 트렌드
+        "technical",  # 기술적 신호 (지표 기반)
+        "fundamental",  # 펀더멘털 (Overview 기반)
+        "risk",  # 리스크 경고
     ]
 
     def __init__(self, language: str = "ko"):
@@ -48,19 +48,20 @@ class EnhancedKeywordPromptBuilder:
         Returns:
             시스템 프롬프트
         """
-        today = date.today().strftime('%Y년 %m월 %d일')
+        today = date.today().strftime("%Y년 %m월 %d일")
 
         # mover_type별 지침
         mover_instructions = {
-            'gainers': "상승 요인(뉴스, 실적, 섹터 트렌드 등)을 우선 강조하세요.",
-            'losers': "하락 요인(리스크, 악재, 섹터 약세 등)을 우선 강조하세요.",
-            'actives': "거래량 급증 이유(이벤트, 변동성, 투자자 관심)를 우선 강조하세요.",
+            "gainers": "상승 요인(뉴스, 실적, 섹터 트렌드 등)을 우선 강조하세요.",
+            "losers": "하락 요인(리스크, 악재, 섹터 약세 등)을 우선 강조하세요.",
+            "actives": "거래량 급증 이유(이벤트, 변동성, 투자자 관심)를 우선 강조하세요.",
         }
 
-        mover_instruction = mover_instructions.get(mover_type, '')
+        mover_instruction = mover_instructions.get(mover_type, "")
 
         lang_instruction = (
-            "한국어로 키워드를 생성하세요." if self.language == "ko"
+            "한국어로 키워드를 생성하세요."
+            if self.language == "ko"
             else "Generate keywords in English."
         )
 
@@ -188,10 +189,7 @@ class EnhancedKeywordPromptBuilder:
 현재 날짜: {today}
 """
 
-    def build_user_prompt(
-        self,
-        context: Dict[str, Any]
-    ) -> str:
+    def build_user_prompt(self, context: Dict[str, Any]) -> str:
         """
         사용자 프롬프트 구성 (단일 종목)
 
@@ -201,10 +199,10 @@ class EnhancedKeywordPromptBuilder:
         Returns:
             사용자 프롬프트
         """
-        basic = context['basic']
-        overview = context.get('overview')
-        news = context.get('news')
-        indicators = context['indicators']
+        basic = context["basic"]
+        overview = context.get("overview")
+        news = context.get("news")
+        indicators = context["indicators"]
 
         lines = [
             f"# {basic['symbol']} - {basic['company_name']}",
@@ -215,9 +213,9 @@ class EnhancedKeywordPromptBuilder:
             f"- 거래량: {basic['price_data'].get('volume', 'N/A'):,}",
         ]
 
-        if basic.get('sector'):
+        if basic.get("sector"):
             lines.append(f"- 섹터: {basic['sector']}")
-        if basic.get('industry'):
+        if basic.get("industry"):
             lines.append(f"- 산업: {basic['industry']}")
 
         # Overview
@@ -225,16 +223,16 @@ class EnhancedKeywordPromptBuilder:
             lines.append("")
             lines.append("## Overview")
 
-            if overview.get('description'):
+            if overview.get("description"):
                 lines.append(f"- 기업 설명: {overview['description']}")
 
-            if overview.get('market_cap'):
+            if overview.get("market_cap"):
                 lines.append(f"- 시가총액: {overview['market_cap']}")
-            if overview.get('pe_ratio'):
+            if overview.get("pe_ratio"):
                 lines.append(f"- PE Ratio: {overview['pe_ratio']}")
-            if overview.get('dividend_yield'):
+            if overview.get("dividend_yield"):
                 lines.append(f"- 배당수익률: {overview['dividend_yield']}%")
-            if overview.get('beta'):
+            if overview.get("beta"):
                 lines.append(f"- 베타: {overview['beta']}")
 
         # 뉴스
@@ -244,44 +242,46 @@ class EnhancedKeywordPromptBuilder:
 
             for idx, item in enumerate(news, 1):
                 sentiment_icon = {
-                    'positive': '🟢',
-                    'negative': '🔴',
-                    'neutral': '⚪'
-                }.get(item.get('sentiment', 'neutral'), '⚪')
+                    "positive": "🟢",
+                    "negative": "🔴",
+                    "neutral": "⚪",
+                }.get(item.get("sentiment", "neutral"), "⚪")
 
-                lines.append(f"{idx}. {sentiment_icon} {item['title']} ({item['source']})")
+                lines.append(
+                    f"{idx}. {sentiment_icon} {item['title']} ({item['source']})"
+                )
 
         # 지표
         lines.append("")
         lines.append("## 5개 지표")
 
-        rvol = indicators.get('rvol')
+        rvol = indicators.get("rvol")
         if rvol is not None:
             lines.append(f"- RVOL: {rvol:.2f}x")
         else:
             lines.append("- RVOL: N/A")
 
-        trend = indicators.get('trend_strength')
+        trend = indicators.get("trend_strength")
         if trend is not None:
             trend_icon = "▲" if trend > 0 else "▼"
             lines.append(f"- Trend Strength: {trend_icon}{abs(trend):.2f}")
         else:
             lines.append("- Trend Strength: N/A")
 
-        alpha = indicators.get('sector_alpha')
+        alpha = indicators.get("sector_alpha")
         if alpha is not None:
             alpha_sign = "+" if alpha > 0 else ""
             lines.append(f"- Sector Alpha: {alpha_sign}{alpha:.2f}%")
         else:
             lines.append("- Sector Alpha: N/A")
 
-        sync = indicators.get('etf_sync_rate')
+        sync = indicators.get("etf_sync_rate")
         if sync is not None:
             lines.append(f"- ETF Sync Rate: {sync:.2f}")
         else:
             lines.append("- ETF Sync Rate: N/A")
 
-        vol_pct = indicators.get('volatility_pct')
+        vol_pct = indicators.get("volatility_pct")
         if vol_pct is not None:
             lines.append(f"- Volatility Percentile: {vol_pct}/100")
         else:
@@ -293,9 +293,7 @@ class EnhancedKeywordPromptBuilder:
         return "\n".join(lines)
 
     def build_batch_prompt(
-        self,
-        contexts: List[Dict[str, Any]],
-        mover_type: str
+        self, contexts: List[Dict[str, Any]], mover_type: str
     ) -> str:
         """
         배치 처리용 프롬프트 (최대 20개 종목)
@@ -314,7 +312,7 @@ class EnhancedKeywordPromptBuilder:
             "각 종목마다 JSON 형식으로 출력하고, 전체를 배열로 묶어주세요.",
             "",
             "---",
-            ""
+            "",
         ]
 
         for idx, context in enumerate(contexts, 1):
@@ -336,8 +334,10 @@ class EnhancedKeywordPromptBuilder:
         lines.append('    "symbol": "AAPL",')
         lines.append('    "keywords": [')
         lines.append('      {"text": "...", "category": "event", "confidence": 0.95},')
-        lines.append('      {"text": "...", "category": "technical", "confidence": 0.90}')
-        lines.append('    ],')
+        lines.append(
+            '      {"text": "...", "category": "technical", "confidence": 0.90}'
+        )
+        lines.append("    ],")
         lines.append('    "summary": "..."')
         lines.append("  },")
         lines.append("  ...")
@@ -385,7 +385,7 @@ class EnhancedKeywordResponseParser:
         import re
 
         # JSON 블록 추출
-        json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
+        json_match = re.search(r"```json\s*(.*?)\s*```", response, re.DOTALL)
         if json_match:
             json_str = json_match.group(1)
         else:
@@ -398,11 +398,11 @@ class EnhancedKeywordResponseParser:
             if not isinstance(data, dict):
                 return None
 
-            if 'symbol' not in data or 'keywords' not in data:
+            if "symbol" not in data or "keywords" not in data:
                 return None
 
             # 키워드 검증
-            keywords = data['keywords']
+            keywords = data["keywords"]
             if not isinstance(keywords, list):
                 return None
 
@@ -411,33 +411,35 @@ class EnhancedKeywordResponseParser:
                 if not isinstance(kw, dict):
                     continue
 
-                if 'text' not in kw or 'category' not in kw:
+                if "text" not in kw or "category" not in kw:
                     continue
 
                 # confidence 기본값
-                if 'confidence' not in kw:
-                    kw['confidence'] = 0.7
+                if "confidence" not in kw:
+                    kw["confidence"] = 0.7
 
                 # confidence 범위 검증
-                kw['confidence'] = max(0.0, min(1.0, float(kw['confidence'])))
+                kw["confidence"] = max(0.0, min(1.0, float(kw["confidence"])))
 
                 # 카테고리 검증 (유효하지 않으면 'technical'로 변경)
-                if kw['category'] not in EnhancedKeywordResponseParser.VALID_CATEGORIES:
-                    kw['category'] = 'technical'
+                if kw["category"] not in EnhancedKeywordResponseParser.VALID_CATEGORIES:
+                    kw["category"] = "technical"
 
-                valid_keywords.append({
-                    'text': str(kw['text']).strip(),
-                    'category': kw['category'],
-                    'confidence': kw['confidence']
-                })
+                valid_keywords.append(
+                    {
+                        "text": str(kw["text"]).strip(),
+                        "category": kw["category"],
+                        "confidence": kw["confidence"],
+                    }
+                )
 
             if not valid_keywords:
                 return None
 
             return {
-                'symbol': data['symbol'].upper(),
-                'keywords': valid_keywords,
-                'summary': data.get('summary', '')
+                "symbol": data["symbol"].upper(),
+                "keywords": valid_keywords,
+                "summary": data.get("summary", ""),
             }
 
         except (json.JSONDecodeError, ValueError, TypeError):
@@ -457,7 +459,7 @@ class EnhancedKeywordResponseParser:
         import re
 
         # JSON 배열 블록 추출
-        json_match = re.search(r'```json\s*(.*?)\s*```', response, re.DOTALL)
+        json_match = re.search(r"```json\s*(.*?)\s*```", response, re.DOTALL)
         if json_match:
             json_str = json_match.group(1)
         else:
@@ -485,7 +487,7 @@ class EnhancedKeywordResponseParser:
 
     @staticmethod
     def get_keywords_by_category(
-        keywords: List[Dict[str, Any]]
+        keywords: List[Dict[str, Any]],
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         카테고리별 키워드 그룹화
@@ -503,7 +505,7 @@ class EnhancedKeywordResponseParser:
         grouped = {cat: [] for cat in EnhancedKeywordResponseParser.VALID_CATEGORIES}
 
         for kw in keywords:
-            category = kw.get('category', 'technical')
+            category = kw.get("category", "technical")
             if category in grouped:
                 grouped[category].append(kw)
 

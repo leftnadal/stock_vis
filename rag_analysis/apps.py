@@ -2,9 +2,9 @@ from django.apps import AppConfig
 
 
 class RagAnalysisConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'rag_analysis'
-    verbose_name = 'RAG Analysis'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "rag_analysis"
+    verbose_name = "RAG Analysis"
 
     def ready(self):
         # Signal 등록

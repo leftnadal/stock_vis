@@ -5,62 +5,206 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('metrics', '0003_industrymetricbenchmark_peermetricbenchmark'),
-        ('stocks', '0007_sp500constituent_industry_and_more'),
+        ("metrics", "0003_industrymetricbenchmark_peermetricbenchmark"),
+        ("stocks", "0007_sp500constituent_industry_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CompanyBenchmarkDelta',
+            name="CompanyBenchmarkDelta",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('fiscal_year', models.IntegerField()),
-                ('company_value', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('benchmark_type', models.CharField(choices=[('peer', 'Peer'), ('industry', 'Industry')], max_length=20)),
-                ('benchmark_median', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('benchmark_p25', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('benchmark_p75', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('benchmark_confidence', models.CharField(choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], default='low', help_text='high: peer>=8, medium: 3-7, low: <3', max_length=10)),
-                ('delta_vs_median', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('percentile_rank', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('relative_signal', models.CharField(blank=True, choices=[('above', 'Above'), ('inline', 'Inline'), ('below', 'Below')], max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
-                ('metric_code', models.ForeignKey(db_column='metric_code', on_delete=django.db.models.deletion.CASCADE, to='metrics.metricdefinition')),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("fiscal_year", models.IntegerField()),
+                (
+                    "company_value",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                (
+                    "benchmark_type",
+                    models.CharField(
+                        choices=[("peer", "Peer"), ("industry", "Industry")],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "benchmark_median",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                (
+                    "benchmark_p25",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                (
+                    "benchmark_p75",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                (
+                    "benchmark_confidence",
+                    models.CharField(
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        default="low",
+                        help_text="high: peer>=8, medium: 3-7, low: <3",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "delta_vs_median",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                (
+                    "percentile_rank",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "relative_signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("above", "Above"),
+                            ("inline", "Inline"),
+                            ("below", "Below"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "metric_code",
+                    models.ForeignKey(
+                        db_column="metric_code",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="metrics.metricdefinition",
+                    ),
+                ),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_company_benchmark_delta',
-                'indexes': [models.Index(fields=['symbol', 'fiscal_year'], name='validation__symbol_3cb116_idx')],
-                'unique_together': {('symbol', 'fiscal_year', 'metric_code')},
+                "db_table": "validation_company_benchmark_delta",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol", "fiscal_year"],
+                        name="validation__symbol_3cb116_idx",
+                    )
+                ],
+                "unique_together": {("symbol", "fiscal_year", "metric_code")},
             },
         ),
         migrations.CreateModel(
-            name='CompanyMetricLatest',
+            name="CompanyMetricLatest",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('latest_value', models.DecimalField(blank=True, decimal_places=6, max_digits=20, null=True)),
-                ('latest_fiscal_year', models.IntegerField(blank=True, null=True)),
-                ('trend_label', models.CharField(blank=True, choices=[('improving', 'Improving'), ('flat', 'Flat'), ('deteriorating', 'Deteriorating')], max_length=20)),
-                ('trend_slope', models.DecimalField(blank=True, decimal_places=6, max_digits=10, null=True)),
-                ('trend_years_used', models.IntegerField(blank=True, null=True)),
-                ('signal', models.CharField(blank=True, choices=[('green', 'Green'), ('yellow', 'Yellow'), ('red', 'Red')], max_length=10)),
-                ('signal_reason', models.CharField(blank=True, max_length=200)),
-                ('warning_flag', models.BooleanField(default=False)),
-                ('warning_message', models.CharField(blank=True, max_length=200)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('computed_at', models.DateTimeField(auto_now=True)),
-                ('metric_code', models.ForeignKey(db_column='metric_code', on_delete=django.db.models.deletion.CASCADE, to='metrics.metricdefinition')),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, related_name='metric_latest', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "latest_value",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=20, null=True
+                    ),
+                ),
+                ("latest_fiscal_year", models.IntegerField(blank=True, null=True)),
+                (
+                    "trend_label",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("improving", "Improving"),
+                            ("flat", "Flat"),
+                            ("deteriorating", "Deteriorating"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "trend_slope",
+                    models.DecimalField(
+                        blank=True, decimal_places=6, max_digits=10, null=True
+                    ),
+                ),
+                ("trend_years_used", models.IntegerField(blank=True, null=True)),
+                (
+                    "signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("green", "Green"),
+                            ("yellow", "Yellow"),
+                            ("red", "Red"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                ("signal_reason", models.CharField(blank=True, max_length=200)),
+                ("warning_flag", models.BooleanField(default=False)),
+                ("warning_message", models.CharField(blank=True, max_length=200)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("computed_at", models.DateTimeField(auto_now=True)),
+                (
+                    "metric_code",
+                    models.ForeignKey(
+                        db_column="metric_code",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to="metrics.metricdefinition",
+                    ),
+                ),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="metric_latest",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'validation_company_metric_latest',
-                'indexes': [models.Index(fields=['symbol'], name='validation__symbol_ab1bef_idx')],
-                'unique_together': {('symbol', 'metric_code')},
+                "db_table": "validation_company_metric_latest",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol"], name="validation__symbol_ab1bef_idx"
+                    )
+                ],
+                "unique_together": {("symbol", "metric_code")},
             },
         ),
     ]

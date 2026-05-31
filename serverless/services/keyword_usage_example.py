@@ -18,6 +18,7 @@ from .keyword_generator_v2 import EnhancedKeywordGenerator, generate_keywords_sy
 # 사용 예시 1: V2 (Enhanced) - Overview + 뉴스 활용
 # ============================================================
 
+
 async def example_v2_with_enrichment():
     """
     V2 Enhanced 버전 사용 예시 (Overview + 뉴스 보강)
@@ -29,22 +30,22 @@ async def example_v2_with_enrichment():
     """
     generator = EnhancedKeywordGenerator(
         language="ko",
-        enable_enrichment=True  # Overview + 뉴스 보강 활성화
+        enable_enrichment=True,  # Overview + 뉴스 보강 활성화
     )
 
     today = date.today()
 
     # Gainers 키워드 생성
     results = await generator.generate_keywords_for_movers(
-        mover_date=today,
-        mover_type='gainers',
-        max_stocks=20
+        mover_date=today, mover_type="gainers", max_stocks=20
     )
 
     for result in results:
         print(f"\n{result['symbol']} - {result['summary']}")
-        for kw in result['keywords']:
-            print(f"  [{kw['category']}] {kw['text']} (confidence: {kw['confidence']:.2f})")
+        for kw in result["keywords"]:
+            print(
+                f"  [{kw['category']}] {kw['text']} (confidence: {kw['confidence']:.2f})"
+            )
 
     # 비용 추정
     cost_estimate = generator.estimate_batch_cost(num_stocks=20)
@@ -54,6 +55,7 @@ async def example_v2_with_enrichment():
 # ============================================================
 # 사용 예시 2: V2 (Basic) - 지표만 활용
 # ============================================================
+
 
 async def example_v2_without_enrichment():
     """
@@ -66,15 +68,13 @@ async def example_v2_without_enrichment():
     """
     generator = EnhancedKeywordGenerator(
         language="ko",
-        enable_enrichment=False  # 보강 비활성화
+        enable_enrichment=False,  # 보강 비활성화
     )
 
     today = date.today()
 
     results = await generator.generate_keywords_for_movers(
-        mover_date=today,
-        mover_type='losers',
-        max_stocks=20
+        mover_date=today, mover_type="losers", max_stocks=20
     )
 
     for result in results:
@@ -84,6 +84,7 @@ async def example_v2_without_enrichment():
 # ============================================================
 # 사용 예시 3: Celery 태스크 통합
 # ============================================================
+
 
 def example_celery_task():
     """
@@ -126,6 +127,7 @@ def example_celery_task():
 # 사용 예시 4: V1 vs V2 비교
 # ============================================================
 
+
 async def example_compare_v1_v2():
     """
     V1 (Basic) vs V2 (Enhanced) 성능/품질 비교
@@ -143,7 +145,7 @@ async def example_compare_v1_v2():
     from datetime import date
 
     today = date.today()
-    symbol = 'AAPL'
+    symbol = "AAPL"
 
     # V1 결과
     v1_generator = KeywordGeneratorService()
@@ -160,7 +162,7 @@ async def example_compare_v1_v2():
         print("=== V2 (Enhanced) ===")
         print(f"Summary: {v2_result['summary']}")
         print("\nKeywords:")
-        for kw in v2_result['keywords']:
+        for kw in v2_result["keywords"]:
             print(f"  [{kw['category']}] {kw['text']} (conf: {kw['confidence']:.2f})")
 
 
@@ -266,7 +268,7 @@ def generate_all_keywords_v2(self):
 # 실행 예시
 # ============================================================
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # 비동기 예시 실행
     asyncio.run(example_v2_with_enrichment())
 

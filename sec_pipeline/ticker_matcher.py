@@ -23,23 +23,68 @@ logger = logging.getLogger(__name__)
 # 사용자 1순위 정책: Chain Sight / Market Pulse / Dashboard 데이터 풍부도 최우선.
 # Stock DB에 영영 등재될 수 없는 항목(비상장/직군명/일반명사)을 매칭 시도 전에 차단.
 # 차단으로 노이즈 제거 → 진짜 매칭 가능한 후보에 집중. 함부로 제거하지 말 것.
-BLOCKED_NAMES = frozenset(name.lower() for name in [
-    # ── 비상장 / Pre-IPO ──────────────────────────────
-    'Stripe', 'KPMG LLP', 'KPMG', 'Deloitte', 'EY', 'PwC', 'PricewaterhouseCoopers',
-    'McKinsey', 'McKinsey & Company', 'Bain', 'BCG', 'Boston Consulting Group',
-    'DriveTime', 'OpenAI', 'Anthropic', 'SpaceX', 'Bytedance', 'TikTok',
-    # ── 직군명 / 산업군 일반명사 ──────────────────────
-    'hospitals', 'hospital', 'pharmacies', 'pharmacy',
-    'producers', 'producer', 'manufacturers', 'manufacturer',
-    'retailers', 'retailer', 'banks', 'bank', 'insurers', 'insurer',
-    'distributors', 'distributor', 'suppliers', 'supplier',
-    'utilities', 'utility', 'consumers', 'consumer',
-    # ── 비영리 / 인프라 운영기관 ──────────────────────
-    'MISO', 'PJM', 'ERCOT', 'CAISO',  # 전력망 ISO/RTO
-    'NATO', 'WHO', 'IMF', 'OECD', 'WTO',
-    # ── 일반 키워드 (회사명 아님) ─────────────────────
-    'Government', 'Federal Government', 'Treasury', 'Congress',
-])
+BLOCKED_NAMES = frozenset(
+    name.lower()
+    for name in [
+        # ── 비상장 / Pre-IPO ──────────────────────────────
+        "Stripe",
+        "KPMG LLP",
+        "KPMG",
+        "Deloitte",
+        "EY",
+        "PwC",
+        "PricewaterhouseCoopers",
+        "McKinsey",
+        "McKinsey & Company",
+        "Bain",
+        "BCG",
+        "Boston Consulting Group",
+        "DriveTime",
+        "OpenAI",
+        "Anthropic",
+        "SpaceX",
+        "Bytedance",
+        "TikTok",
+        # ── 직군명 / 산업군 일반명사 ──────────────────────
+        "hospitals",
+        "hospital",
+        "pharmacies",
+        "pharmacy",
+        "producers",
+        "producer",
+        "manufacturers",
+        "manufacturer",
+        "retailers",
+        "retailer",
+        "banks",
+        "bank",
+        "insurers",
+        "insurer",
+        "distributors",
+        "distributor",
+        "suppliers",
+        "supplier",
+        "utilities",
+        "utility",
+        "consumers",
+        "consumer",
+        # ── 비영리 / 인프라 운영기관 ──────────────────────
+        "MISO",
+        "PJM",
+        "ERCOT",
+        "CAISO",  # 전력망 ISO/RTO
+        "NATO",
+        "WHO",
+        "IMF",
+        "OECD",
+        "WTO",
+        # ── 일반 키워드 (회사명 아님) ─────────────────────
+        "Government",
+        "Federal Government",
+        "Treasury",
+        "Congress",
+    ]
+)
 
 
 class TickerMatcher:
@@ -54,7 +99,7 @@ class TickerMatcher:
         """Stock 테이블 캐시 로드."""
         if self._loaded:
             return
-        stocks = Stock.objects.values_list('symbol', 'stock_name')
+        stocks = Stock.objects.values_list("symbol", "stock_name")
         for symbol, name in stocks:
             if name:
                 self._stock_map[name.lower()] = symbol
@@ -64,7 +109,7 @@ class TickerMatcher:
                     self._stock_map[cleaned] = symbol
         self._loaded = True
 
-    def match(self, company_name: str, context_sector: str = '') -> tuple:
+    def match(self, company_name: str, context_sector: str = "") -> tuple:
         """
         회사명 → (ticker | None, method).
 
@@ -78,28 +123,29 @@ class TickerMatcher:
 
         # 0순위: 블록리스트 — 비상장/직군명/일반명사는 매칭 시도 없이 즉시 차단
         if name.lower() in BLOCKED_NAMES:
-            return None, 'blocked'
+            return None, "blocked"
 
         # 1순위: CompanyAlias
         ticker = self._match_alias(name, context_sector)
         if ticker:
-            return ticker, 'alias'
+            return ticker, "alias"
 
         # 2순위: Stock.stock_name 정확 매칭
         self._ensure_loaded()
         ticker = self._match_exact(name)
         if ticker:
-            return ticker, 'exact'
+            return ticker, "exact"
 
         # 3순위: rapidfuzz ≥ 85%
         ticker, score = self._match_fuzzy(name)
         if ticker:
-            return ticker, 'fuzzy'
+            return ticker, "fuzzy"
 
         return None, None
 
-    def match_with_queue(self, company_name: str, evidence,
-                         document, source_symbol: str):
+    def match_with_queue(
+        self, company_name: str, evidence, document, source_symbol: str
+    ):
         """
         매칭 시도 + 실패 시 UnmatchedCompanyQueue 적재.
 
@@ -113,7 +159,7 @@ class TickerMatcher:
 
         # 소스 기업의 sector 가져오기
         source_stock = Stock.objects.filter(symbol=source_symbol.upper()).first()
-        context_sector = source_stock.sector if source_stock else ''
+        context_sector = source_stock.sector if source_stock else ""
 
         ticker, method = self.match(company_name, context_sector)
 
@@ -123,21 +169,19 @@ class TickerMatcher:
             if target_stock:
                 evidence.target_company = target_stock
                 evidence.neo4j_dirty = True
-                evidence.save(update_fields=['target_company', 'neo4j_dirty'])
-                logger.info(
-                    f"Matched: {company_name} → {ticker} (method={method})"
-                )
+                evidence.save(update_fields=["target_company", "neo4j_dirty"])
+                logger.info(f"Matched: {company_name} → {ticker} (method={method})")
             return ticker, method
 
         # 매칭 실패 → 큐 적재
         queue_entry, created = UnmatchedCompanyQueue.objects.get_or_create(
             raw_company_name=company_name,
             defaults={
-                'source_symbol': source_symbol.upper(),
-                'status': 'pending',
-                'source_sectors': [context_sector] if context_sector else [],
-                'fuzzy_candidates': self._get_fuzzy_candidates(company_name),
-            }
+                "source_symbol": source_symbol.upper(),
+                "status": "pending",
+                "source_sectors": [context_sector] if context_sector else [],
+                "fuzzy_candidates": self._get_fuzzy_candidates(company_name),
+            },
         )
 
         if not created:
@@ -147,7 +191,7 @@ class TickerMatcher:
                 sectors = set(queue_entry.source_sectors or [])
                 sectors.add(context_sector)
                 queue_entry.source_sectors = sorted(sectors)
-            queue_entry.save(update_fields=['occurrence_count', 'source_sectors'])
+            queue_entry.save(update_fields=["occurrence_count", "source_sectors"])
 
         logger.debug(f"Unmatched: {company_name} (source={source_symbol})")
         return None, None
@@ -170,7 +214,7 @@ class TickerMatcher:
         # 범용 (context_sector='') 조회
         alias = CompanyAlias.objects.filter(
             alias__iexact=name,
-            context_sector='',
+            context_sector="",
         ).first()
         return alias.ticker if alias else None
 
@@ -215,23 +259,28 @@ class TickerMatcher:
             score = fuzz.token_sort_ratio(name.lower(), stock_name)
             if score >= 50:
                 stock = Stock.objects.filter(symbol=symbol).first()
-                scored.append({
-                    'ticker': symbol,
-                    'name': stock.stock_name if stock else stock_name,
-                    'score': round(score / 100, 2),
-                })
+                scored.append(
+                    {
+                        "ticker": symbol,
+                        "name": stock.stock_name if stock else stock_name,
+                        "score": round(score / 100, 2),
+                    }
+                )
                 seen_symbols.add(symbol)
 
-        scored.sort(key=lambda x: x['score'], reverse=True)
+        scored.sort(key=lambda x: x["score"], reverse=True)
         return scored[:top_k]
 
     @staticmethod
     def _clean_name(name: str) -> str:
         """회사명에서 Inc., Corp., Ltd. 등 접미사 제거."""
         import re
+
         cleaned = re.sub(
-            r',?\s*(Inc\.?|Corp\.?|Corporation|Ltd\.?|Limited|Co\.?|'
-            r'Company|LLC|L\.P\.|PLC|S\.A\.?|N\.V\.?|AG|SE|Group)\.?\s*$',
-            '', name, flags=re.IGNORECASE,
+            r",?\s*(Inc\.?|Corp\.?|Corporation|Ltd\.?|Limited|Co\.?|"
+            r"Company|LLC|L\.P\.|PLC|S\.A\.?|N\.V\.?|AG|SE|Group)\.?\s*$",
+            "",
+            name,
+            flags=re.IGNORECASE,
         ).strip()
-        return cleaned.lower() if cleaned else ''
+        return cleaned.lower() if cleaned else ""

@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
     retry_backoff=True,
     retry_backoff_max=600,
 )
-def sync_stock_to_neo4j(self, symbol: str, name: str, sector: str = None, industry: str = None):
+def sync_stock_to_neo4j(
+    self, symbol: str, name: str, sector: str = None, industry: str = None
+):
     """
     종목 정보를 Neo4j에 동기화
 
@@ -43,42 +45,40 @@ def sync_stock_to_neo4j(self, symbol: str, name: str, sector: str = None, indust
         - Neo4j 연결 실패 시 'skipped' 반환 (재시도 없음)
     """
     from .services.neo4j_service import get_neo4j_service
+
     neo4j_service = get_neo4j_service()
 
     # Neo4j 연결 확인
     if neo4j_service.driver is None:
         logger.warning(f"Neo4j unavailable - skipping sync for {symbol}")
         return {
-            'status': 'skipped',
-            'symbol': symbol,
-            'neo4j_available': False,
-            'error': 'neo4j_driver_not_available'
+            "status": "skipped",
+            "symbol": symbol,
+            "neo4j_available": False,
+            "error": "neo4j_driver_not_available",
         }
 
     try:
         # Stock 노드 생성/업데이트
         success = neo4j_service.create_stock_node(
-            symbol=symbol,
-            name=name,
-            sector=sector,
-            industry=industry
+            symbol=symbol, name=name, sector=sector, industry=industry
         )
 
         if success:
             logger.info(f"Successfully synced {symbol} to Neo4j")
             return {
-                'status': 'success',
-                'symbol': symbol,
-                'neo4j_available': True,
-                'error': None
+                "status": "success",
+                "symbol": symbol,
+                "neo4j_available": True,
+                "error": None,
             }
         else:
             logger.error(f"Failed to sync {symbol} to Neo4j")
             return {
-                'status': 'failed',
-                'symbol': symbol,
-                'neo4j_available': True,
-                'error': 'create_node_failed'
+                "status": "failed",
+                "symbol": symbol,
+                "neo4j_available": True,
+                "error": "create_node_failed",
             }
 
     except Exception as e:
@@ -113,16 +113,17 @@ def delete_stock_from_neo4j(self, symbol: str):
         - Neo4j 연결 실패 시 'skipped' 반환
     """
     from .services.neo4j_service import get_neo4j_service
+
     neo4j_service = get_neo4j_service()
 
     # Neo4j 연결 확인
     if neo4j_service.driver is None:
         logger.warning(f"Neo4j unavailable - skipping delete for {symbol}")
         return {
-            'status': 'skipped',
-            'symbol': symbol,
-            'neo4j_available': False,
-            'error': 'neo4j_driver_not_available'
+            "status": "skipped",
+            "symbol": symbol,
+            "neo4j_available": False,
+            "error": "neo4j_driver_not_available",
         }
 
     try:
@@ -132,18 +133,18 @@ def delete_stock_from_neo4j(self, symbol: str):
         if success:
             logger.info(f"Successfully deleted {symbol} from Neo4j")
             return {
-                'status': 'success',
-                'symbol': symbol,
-                'neo4j_available': True,
-                'error': None
+                "status": "success",
+                "symbol": symbol,
+                "neo4j_available": True,
+                "error": None,
             }
         else:
             logger.error(f"Failed to delete {symbol} from Neo4j")
             return {
-                'status': 'failed',
-                'symbol': symbol,
-                'neo4j_available': True,
-                'error': 'delete_node_failed'
+                "status": "failed",
+                "symbol": symbol,
+                "neo4j_available": True,
+                "error": "delete_node_failed",
             }
 
     except Exception as e:
@@ -185,45 +186,45 @@ def batch_sync_stocks_to_neo4j(stock_data_list: list):
     if neo4j_service.driver is None:
         logger.warning("Neo4j unavailable - skipping batch sync")
         return {
-            'total': len(stock_data_list),
-            'success': 0,
-            'failed': 0,
-            'skipped': len(stock_data_list),
-            'results': [],
-            'error': 'neo4j_driver_not_available'
+            "total": len(stock_data_list),
+            "success": 0,
+            "failed": 0,
+            "skipped": len(stock_data_list),
+            "results": [],
+            "error": "neo4j_driver_not_available",
         }
 
     results = {
-        'total': len(stock_data_list),
-        'success': 0,
-        'failed': 0,
-        'skipped': 0,
-        'results': []
+        "total": len(stock_data_list),
+        "success": 0,
+        "failed": 0,
+        "skipped": 0,
+        "results": [],
     }
 
     # 100개 단위로 청킹
     chunk_size = 100
     for i in range(0, len(stock_data_list), chunk_size):
-        chunk = stock_data_list[i:i + chunk_size]
+        chunk = stock_data_list[i : i + chunk_size]
 
         for stock_data in chunk:
             try:
                 success = neo4j_service.create_stock_node(
-                    symbol=stock_data['symbol'],
-                    name=stock_data['name'],
-                    sector=stock_data.get('sector'),
-                    industry=stock_data.get('industry'),
-                    market_cap=stock_data.get('market_cap')
+                    symbol=stock_data["symbol"],
+                    name=stock_data["name"],
+                    sector=stock_data.get("sector"),
+                    industry=stock_data.get("industry"),
+                    market_cap=stock_data.get("market_cap"),
                 )
 
                 if success:
-                    results['success'] += 1
+                    results["success"] += 1
                 else:
-                    results['failed'] += 1
+                    results["failed"] += 1
 
             except Exception as e:
                 logger.error(f"Error syncing {stock_data['symbol']}: {e}")
-                results['failed'] += 1
+                results["failed"] += 1
 
         # 청크 처리 후 가비지 컬렉션
         gc.collect()
@@ -259,11 +260,11 @@ def invalidate_graph_cache(symbol: str):
             logger.info(f"Invalidated graph cache for {symbol}")
         else:
             logger.warning(f"Failed to invalidate graph cache for {symbol}")
-        return {'status': 'success' if success else 'failed', 'symbol': symbol}
+        return {"status": "success" if success else "failed", "symbol": symbol}
 
     except Exception as e:
         logger.error(f"Error invalidating graph cache for {symbol}: {e}")
-        return {'status': 'error', 'symbol': symbol, 'error': str(e)}
+        return {"status": "error", "symbol": symbol, "error": str(e)}
 
 
 @shared_task
@@ -298,19 +299,19 @@ def health_check_neo4j():
         try:
             driver.verify_connectivity()
             with driver.session() as session:
-                node_count = session.run(
-                    "MATCH (n) RETURN count(n) AS count"
-                ).single()['count']
+                node_count = session.run("MATCH (n) RETURN count(n) AS count").single()[
+                    "count"
+                ]
                 rel_count = session.run(
                     "MATCH ()-[r]->() RETURN count(r) AS count"
-                ).single()['count']
+                ).single()["count"]
 
             health = {
-                'status': 'healthy',
-                'connected': True,
-                'error': None,
-                'node_count': node_count,
-                'relationship_count': rel_count,
+                "status": "healthy",
+                "connected": True,
+                "error": None,
+                "node_count": node_count,
+                "relationship_count": rel_count,
             }
             logger.info(f"Neo4j health check: {health['status']}")
             return health
@@ -320,17 +321,18 @@ def health_check_neo4j():
     except Exception as e:
         logger.error(f"Neo4j health check failed: {e}")
         return {
-            'status': 'error',
-            'connected': False,
-            'error': str(e),
-            'node_count': None,
-            'relationship_count': None,
+            "status": "error",
+            "connected": False,
+            "error": str(e),
+            "node_count": None,
+            "relationship_count": None,
         }
 
 
 # ============================================================
 # Semantic Cache 태스크
 # ============================================================
+
 
 @shared_task
 def cleanup_expired_semantic_cache():
@@ -355,27 +357,19 @@ def cleanup_expired_semantic_cache():
         deleted_count = cleanup_expired_cache()
 
         logger.info(f"Semantic cache cleanup: {deleted_count} entries deleted")
-        return {
-            'status': 'success',
-            'deleted_count': deleted_count,
-            'error': None
-        }
+        return {"status": "success", "deleted_count": deleted_count, "error": None}
 
     except ImportError as e:
         logger.warning(f"Semantic cache not available: {e}")
         return {
-            'status': 'skipped',
-            'deleted_count': 0,
-            'error': 'semantic_cache_not_available'
+            "status": "skipped",
+            "deleted_count": 0,
+            "error": "semantic_cache_not_available",
         }
 
     except Exception as e:
         logger.error(f"Semantic cache cleanup failed: {e}")
-        return {
-            'status': 'error',
-            'deleted_count': 0,
-            'error': str(e)
-        }
+        return {"status": "error", "deleted_count": 0, "error": str(e)}
 
 
 @shared_task
@@ -421,32 +415,28 @@ def warm_semantic_cache(limit: int = 50):
             f"{result.get('failed_count', 0)} failed"
         )
 
-        return {
-            'status': 'success',
-            **result,
-            'error': None
-        }
+        return {"status": "success", **result, "error": None}
 
     except ImportError as e:
         logger.warning(f"Cache warmer not available: {e}")
         return {
-            'status': 'skipped',
-            'warmed_count': 0,
-            'failed_count': 0,
-            'skipped_count': 0,
-            'duration_seconds': 0,
-            'error': 'cache_warmer_not_available'
+            "status": "skipped",
+            "warmed_count": 0,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "duration_seconds": 0,
+            "error": "cache_warmer_not_available",
         }
 
     except Exception as e:
         logger.error(f"Semantic cache warming failed: {e}")
         return {
-            'status': 'error',
-            'warmed_count': 0,
-            'failed_count': 0,
-            'skipped_count': 0,
-            'duration_seconds': 0,
-            'error': str(e)
+            "status": "error",
+            "warmed_count": 0,
+            "failed_count": 0,
+            "skipped_count": 0,
+            "duration_seconds": 0,
+            "error": str(e),
         }
 
 
@@ -494,28 +484,28 @@ def invalidate_semantic_cache_for_symbol(symbol: str):
             logger.debug(f"No cache entries found for {symbol}")
 
         return {
-            'status': 'success',
-            'symbol': symbol.upper(),
-            'deleted_count': deleted_count,
-            'error': None
+            "status": "success",
+            "symbol": symbol.upper(),
+            "deleted_count": deleted_count,
+            "error": None,
         }
 
     except ImportError as e:
         logger.warning(f"Semantic cache not available: {e}")
         return {
-            'status': 'skipped',
-            'symbol': symbol.upper(),
-            'deleted_count': 0,
-            'error': 'semantic_cache_not_available'
+            "status": "skipped",
+            "symbol": symbol.upper(),
+            "deleted_count": 0,
+            "error": "semantic_cache_not_available",
         }
 
     except Exception as e:
         logger.error(f"Semantic cache invalidation failed for {symbol}: {e}")
         return {
-            'status': 'error',
-            'symbol': symbol.upper(),
-            'deleted_count': 0,
-            'error': str(e)
+            "status": "error",
+            "symbol": symbol.upper(),
+            "deleted_count": 0,
+            "error": str(e),
         }
 
 
@@ -547,14 +537,8 @@ def get_semantic_cache_stats():
 
     except ImportError as e:
         logger.warning(f"Semantic cache not available: {e}")
-        return {
-            'status': 'unavailable',
-            'error': 'semantic_cache_not_available'
-        }
+        return {"status": "unavailable", "error": "semantic_cache_not_available"}
 
     except Exception as e:
         logger.error(f"Failed to get semantic cache stats: {e}")
-        return {
-            'status': 'error',
-            'error': str(e)
-        }
+        return {"status": "error", "error": str(e)}

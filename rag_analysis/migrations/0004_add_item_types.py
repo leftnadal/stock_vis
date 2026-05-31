@@ -4,15 +4,27 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('rag_analysis', '0003_basketitem_data_units'),
+        ("rag_analysis", "0003_basketitem_data_units"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='basketitem',
-            name='item_type',
-            field=models.CharField(choices=[('stock', '종목'), ('news', '뉴스'), ('financial', '재무제표'), ('macro', '거시경제'), ('overview', '기본 정보'), ('price', '주가 데이터'), ('financial_summary', '재무제표 (요약)'), ('financial_full', '재무제표 (전체)'), ('indicator', '기술적 지표')], max_length=20),
+            model_name="basketitem",
+            name="item_type",
+            field=models.CharField(
+                choices=[
+                    ("stock", "종목"),
+                    ("news", "뉴스"),
+                    ("financial", "재무제표"),
+                    ("macro", "거시경제"),
+                    ("overview", "기본 정보"),
+                    ("price", "주가 데이터"),
+                    ("financial_summary", "재무제표 (요약)"),
+                    ("financial_full", "재무제표 (전체)"),
+                    ("indicator", "기술적 지표"),
+                ],
+                max_length=20,
+            ),
         ),
     ]
