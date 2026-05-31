@@ -201,7 +201,7 @@ INSTALLED_APPS = [
     'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
-    'chainsight',  # Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
+    'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'portfolio.apps.PortfolioConfig',  # Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
