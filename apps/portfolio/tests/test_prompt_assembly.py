@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from portfolio.tests.fixtures import sample_analysis_context, sample_user_profile
+from apps.portfolio.tests.fixtures import sample_analysis_context, sample_user_profile
 
 # ------------------------------------------------------------
 # Tier 0
@@ -15,7 +15,7 @@ from portfolio.tests.fixtures import sample_analysis_context, sample_user_profil
 
 def test_tier0_pv3_terminology_present():
     """Tier 0 system prompt에 PV3 용어 정의 블록 존재."""
-    from portfolio.prompts.tier0 import build_tier0
+    from apps.portfolio.prompts.tier0 import build_tier0
 
     prompt = build_tier0()
     assert "analysis_target_portfolio" in prompt
@@ -25,7 +25,7 @@ def test_tier0_pv3_terminology_present():
 
 def test_tier0_char_budget():
     """Tier 0 char 예산 5000~9000."""
-    from portfolio.prompts.tier0 import build_tier0
+    from apps.portfolio.prompts.tier0 import build_tier0
 
     prompt = build_tier0()
     assert 5000 <= len(prompt) <= 9000
@@ -33,7 +33,7 @@ def test_tier0_char_budget():
 
 def test_tier0_include_style_flag():
     """include_style=False이면 더 짧아야 함."""
-    from portfolio.prompts.tier0 import build_tier0
+    from apps.portfolio.prompts.tier0 import build_tier0
 
     full = build_tier0()
     no_style = build_tier0(include_style=False)
@@ -46,7 +46,7 @@ def test_tier0_include_style_flag():
 
 
 def test_e1_assembly():
-    from portfolio.prompts.e1 import build_e1_input, build_e1_prompt
+    from apps.portfolio.prompts.e1 import build_e1_input, build_e1_prompt
 
     ctx = sample_analysis_context.get_context_garp_tech()
     system, user = build_e1_prompt(ctx)
@@ -60,7 +60,7 @@ def test_e1_assembly():
 
 
 def test_e2_assembly_and_input_has_weakness_detail():
-    from portfolio.prompts.e2 import build_e2_input, build_e2_prompt
+    from apps.portfolio.prompts.e2 import build_e2_input, build_e2_prompt
 
     ctx = sample_analysis_context.get_context_garp_tech()
     system, user = build_e2_prompt(ctx)
@@ -72,7 +72,7 @@ def test_e2_assembly_and_input_has_weakness_detail():
 
 def test_e3_excludes_wallet_and_context_tier():
     """E3는 Wallet 미포함 + Context tier 미포함."""
-    from portfolio.prompts.e3 import build_e3_input, build_e3_prompt
+    from apps.portfolio.prompts.e3 import build_e3_input, build_e3_prompt
 
     ctx = sample_analysis_context.get_context_garp_tech()
     data = build_e3_input(ctx)
@@ -94,8 +94,8 @@ def test_e3_excludes_wallet_and_context_tier():
 def test_e4_assembly_all_tiers():
     from django.contrib.auth import get_user_model
 
-    from portfolio.models import ChatSession
-    from portfolio.prompts.e4 import build_e4_prompt
+    from apps.portfolio.models import ChatSession
+    from apps.portfolio.prompts.e4 import build_e4_prompt
 
     User = get_user_model()
     user = User.objects.create_user(username="e4-test")
@@ -115,8 +115,8 @@ def test_e4_assembly_all_tiers():
 def test_e4_empty_profile_omits_tier3():
     from django.contrib.auth import get_user_model
 
-    from portfolio.models import ChatSession
-    from portfolio.prompts.e4 import build_e4_prompt
+    from apps.portfolio.models import ChatSession
+    from apps.portfolio.prompts.e4 import build_e4_prompt
 
     User = get_user_model()
     user = User.objects.create_user(username="e4-empty")
@@ -134,7 +134,7 @@ def test_e4_empty_profile_omits_tier3():
 
 
 def test_e5_no_tier1_or_tier3():
-    from portfolio.prompts.e5 import build_e5_prompt
+    from apps.portfolio.prompts.e5 import build_e5_prompt
 
     system, user = build_e5_prompt("ROIC 20%로", "buffett_quality_value")
     assert "Investment style" not in system
@@ -145,7 +145,7 @@ def test_e5_no_tier1_or_tier3():
 
 
 def test_e6_assembly_with_overrides():
-    from portfolio.prompts.e6 import build_e6_input, build_e6_prompt
+    from apps.portfolio.prompts.e6 import build_e6_input, build_e6_prompt
 
     original = sample_analysis_context.get_context_garp_tech()
     adjusted = sample_analysis_context.get_context_garp_tech_with_roic_20()
@@ -173,9 +173,9 @@ def test_e6_assembly_with_overrides():
 
 def test_all_few_shot_examples_valid_json():
     """E1/E2/E3/E5/E6 예시의 input/output JSON이 모두 파싱 가능해야 함."""
-    from portfolio.prompts.e1.examples import FEW_SHOT_EXAMPLES as E1
-    from portfolio.prompts.e2.examples import FEW_SHOT_EXAMPLES as E2
-    from portfolio.prompts.e3.examples import FEW_SHOT_EXAMPLES as E3
+    from apps.portfolio.prompts.e1.examples import FEW_SHOT_EXAMPLES as E1
+    from apps.portfolio.prompts.e2.examples import FEW_SHOT_EXAMPLES as E2
+    from apps.portfolio.prompts.e3.examples import FEW_SHOT_EXAMPLES as E3
 
     for inp, out in E1 + E3:
         json.loads(inp)

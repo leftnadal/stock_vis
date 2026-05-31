@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from portfolio.schemas.llm_outputs import E6ComparisonResponse
+from apps.portfolio.schemas.llm_outputs import E6ComparisonResponse
 
 FIXTURE_DIR = Path(__file__).resolve().parents[1].parent / "portfolio" / "tests" / "fixtures" / "coach"
 PORTFOLIO_PATH = FIXTURE_DIR / "portfolio_a2.json"

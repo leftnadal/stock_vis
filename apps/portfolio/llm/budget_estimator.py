@@ -22,7 +22,7 @@ from __future__ import annotations
 import math
 from typing import Literal, Sequence
 
-from portfolio.llm.token_budgets import (
+from apps.portfolio.llm.token_budgets import (
     ENTRYPOINT_TOKEN_BUDGETS,
     estimate_input_tokens,
 )

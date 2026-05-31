@@ -9,7 +9,7 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.models import ChatSession
+from apps.portfolio.models import ChatSession
 
 
 def build_tier2_summary(session: ChatSession) -> str | None:

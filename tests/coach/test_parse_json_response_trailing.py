@@ -19,7 +19,7 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from portfolio.llm.parsers import parse_json_response
+from apps.portfolio.llm.parsers import parse_json_response
 
 
 class _Sample(BaseModel):

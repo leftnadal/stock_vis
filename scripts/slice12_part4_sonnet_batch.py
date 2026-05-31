@@ -47,8 +47,8 @@ SLICE_CAP_HARD = 0.50  # Part 4 단독 sub-cap
 
 def _run_case(fixture_name: str) -> dict:
     """단일 fixture sonnet 실행."""
-    from portfolio.services.coach.e3_service import run_e3_coach
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.services.coach.e3_service import run_e3_coach
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     data = json.loads((FIXTURE_DIR / f"{fixture_name}.json").read_text(encoding="utf-8"))
     input_data = load_portfolio_a2_input("e3")

@@ -8,8 +8,8 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.schemas import AnalysisContext
-from portfolio.schemas.analysis_context import AnalysisTargetPortfolioContext
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas.analysis_context import AnalysisTargetPortfolioContext
 
 
 def _summarize(p: AnalysisTargetPortfolioContext) -> dict:

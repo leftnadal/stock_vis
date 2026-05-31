@@ -10,8 +10,8 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.schemas import AnalysisContext
-from portfolio.schemas.metric_result import MetricResult
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas.metric_result import MetricResult
 
 
 def _find_metric_detail(

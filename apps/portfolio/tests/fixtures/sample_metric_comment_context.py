@@ -22,8 +22,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.schemas import AnalysisContext
-from portfolio.tests.fixtures.sample_analysis_context import (
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_large,
     get_context_garp_misfit,
     get_context_garp_tech,

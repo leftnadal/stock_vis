@@ -2,7 +2,7 @@
 Stock-Vis Pydantic Schemas for LLM Tier 2.5 Context.
 
 Usage:
-    from portfolio.schemas import AnalysisContext, ReturnBreakdown
+    from apps.portfolio.schemas import AnalysisContext, ReturnBreakdown
 """
 
 from .analysis_context import (

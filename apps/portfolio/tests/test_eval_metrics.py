@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from portfolio.llm.eval_metrics import distribution_width_kpi
+from apps.portfolio.llm.eval_metrics import distribution_width_kpi
 
 
 def test_empty_returns_fail():

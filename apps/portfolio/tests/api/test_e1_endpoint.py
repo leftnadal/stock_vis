@@ -17,8 +17,8 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from portfolio.schemas.llm import LLMResponse
-from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
+from apps.portfolio.schemas.llm import LLMResponse
+from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
 
 # Slice 13 Part 1.5: v1 버전 세그먼트 도입. 향후 경로 변경 시 본 상수만 갱신.
 E1_ENDPOINT = "/api/v1/coach/e1/"
@@ -101,9 +101,9 @@ def test_post_e1_response_passes_e1output_validation(
     api_client, e1_request_body, mock_llm_response_e1
 ):
     """★ contract test 핵심 — 응답 dict가 다시 E1Output(Pydantic)으로 검증 가능."""
-    from portfolio.schemas.commentary_output import E1Output
+    from apps.portfolio.schemas.commentary_output import E1Output
 
-    with patch("portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1):
+    with patch("apps.portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1):
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     # 응답 output을 E1Output으로 역검증 — 계약 보장
@@ -182,7 +182,7 @@ def test_post_e1_service_exception_returns_500_no_stacktrace(
 
 def test_post_e1_llm_budget_exceeded_returns_429(api_client, e1_request_body):
     """LLMBudgetExceededError → 429."""
-    from portfolio.llm.exceptions import LLMBudgetExceededError
+    from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
     with patch(
         "portfolio.api.views.run_e1_coach",
@@ -195,7 +195,7 @@ def test_post_e1_llm_budget_exceeded_returns_429(api_client, e1_request_body):
 
 def test_post_e1_llm_error_returns_502(api_client, e1_request_body):
     """기타 LLMError → 502."""
-    from portfolio.llm.exceptions import LLMRateLimitError
+    from apps.portfolio.llm.exceptions import LLMRateLimitError
 
     with patch(
         "portfolio.api.views.run_e1_coach",
@@ -220,7 +220,7 @@ def test_post_e1_service_returns_drifted_output_caught_by_serializer(
     """
     drifted = dict(mock_llm_response_e1)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch("portfolio.api.views.run_e1_coach", return_value=drifted):
+    with patch("apps.portfolio.api.views.run_e1_coach", return_value=drifted):
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
     # serializer to_representation은 view 응답 단계에서 raise → DRF가 500 변환
     assert response.status_code in (400, 500)

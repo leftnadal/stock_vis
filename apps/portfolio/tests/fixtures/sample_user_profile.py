@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from portfolio.schemas import UserProfile
+from apps.portfolio.schemas import UserProfile
 
 
 def get_aggressive_tech_profile() -> UserProfile:

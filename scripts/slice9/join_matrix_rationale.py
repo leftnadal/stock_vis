@@ -20,7 +20,7 @@ import django  # noqa: E402
 
 django.setup()
 
-from portfolio.tests.helpers.matrix_loader import (  # noqa: E402
+from apps.portfolio.tests.helpers.matrix_loader import (  # noqa: E402
     assign_case_ids,
     get_commentary,
     load_matrix_cases,

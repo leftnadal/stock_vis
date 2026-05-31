@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.schemas.llm import E2Request
-from portfolio.tests.fixtures.sample_diagnostic_context import (
+from apps.portfolio.schemas.llm import E2Request
+from apps.portfolio.tests.fixtures.sample_diagnostic_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
 )

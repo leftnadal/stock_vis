@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.tests.fixtures import sample_analysis_context
+from apps.portfolio.tests.fixtures import sample_analysis_context
 
 
 @pytest.mark.django_db
@@ -16,13 +16,13 @@ def test_scenario_analyze_question_adjust_compare():
     """전체 사용자 흐름: 분석 실행 → E1~E3 → E4 대화 → E5 파싱 → E6 비교."""
     from django.contrib.auth import get_user_model
 
-    from portfolio.models import ChatSession
-    from portfolio.prompts.e1 import build_e1_prompt
-    from portfolio.prompts.e2 import build_e2_prompt
-    from portfolio.prompts.e3 import build_e3_prompt
-    from portfolio.prompts.e4 import build_e4_prompt
-    from portfolio.prompts.e5 import build_e5_prompt
-    from portfolio.prompts.e6 import build_e6_prompt
+    from apps.portfolio.models import ChatSession
+    from apps.portfolio.prompts.e1 import build_e1_prompt
+    from apps.portfolio.prompts.e2 import build_e2_prompt
+    from apps.portfolio.prompts.e3 import build_e3_prompt
+    from apps.portfolio.prompts.e4 import build_e4_prompt
+    from apps.portfolio.prompts.e5 import build_e5_prompt
+    from apps.portfolio.prompts.e6 import build_e6_prompt
 
     # Context 준비
     ctx = sample_analysis_context.get_context_garp_tech()
@@ -79,8 +79,8 @@ def test_scenario_analyze_question_adjust_compare():
 
 def test_scenario_dividend_preset():
     """배당 프리셋 플로우도 동일하게 동작."""
-    from portfolio.prompts.e1 import build_e1_prompt
-    from portfolio.prompts.e3 import build_e3_prompt
+    from apps.portfolio.prompts.e1 import build_e1_prompt
+    from apps.portfolio.prompts.e3 import build_e3_prompt
 
     ctx = sample_analysis_context.get_context_dividend()
     e1_system, e1_user = build_e1_prompt(ctx)

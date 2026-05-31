@@ -13,13 +13,13 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.commentary_input import CommentaryInputE5
-from portfolio.schemas.commentary_output import E5Output
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
-from portfolio.services.coach.prompt_builder import E5PromptBuilder
-from portfolio.services.scoring import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.commentary_input import CommentaryInputE5
+from apps.portfolio.schemas.commentary_output import E5Output
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
+from apps.portfolio.services.coach.prompt_builder import E5PromptBuilder
+from apps.portfolio.services.scoring import (
     ScoringEngineBase,
     format_gate_tier_for_prompt,
     get_preset_spec,

@@ -21,10 +21,10 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
-from portfolio.schemas.llm import E6Request
-from portfolio.services.e6_comparison import build_e6_prompt
-from portfolio.tests.fixtures.sample_comparison_context import (
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
+from apps.portfolio.schemas.llm import E6Request
+from apps.portfolio.services.e6_comparison import build_e6_prompt
+from apps.portfolio.tests.fixtures.sample_comparison_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
 )

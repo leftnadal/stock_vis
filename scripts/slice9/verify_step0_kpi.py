@@ -90,7 +90,7 @@ def main() -> int:
 
     # KPI 4: CostGuard 신규 인터페이스
     try:
-        from portfolio.llm.cost_guard import (  # noqa: F401
+        from apps.portfolio.llm.cost_guard import (  # noqa: F401
             CostCapExceeded,
             CostGuard,
             CostThresholdExceeded,

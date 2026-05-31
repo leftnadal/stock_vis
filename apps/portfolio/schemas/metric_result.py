@@ -15,7 +15,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from portfolio.schemas.commentary_input import TimeSeriesContext
+from apps.portfolio.schemas.commentary_input import TimeSeriesContext
 
 
 class MetricTier(StrEnum):

@@ -14,7 +14,7 @@ import inspect
 
 import pytest
 
-from portfolio.services.coach.e3_service import run_e3_coach
+from apps.portfolio.services.coach.e3_service import run_e3_coach
 
 
 def test_run_e3_coach_signature_backward_compatible():
@@ -31,7 +31,7 @@ def test_run_e3_coach_signature_backward_compatible():
 
 def test_run_e3_coach_unknown_preset_id_raises():
     """알 수 없는 preset_id 전달 시 KeyError (resolve_category에서)."""
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     inp = load_portfolio_a2_input("e3")
     with pytest.raises(KeyError):

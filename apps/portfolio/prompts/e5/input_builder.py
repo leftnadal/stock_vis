@@ -9,9 +9,9 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.metrics.definitions.metrics import METRICS
-from portfolio.metrics.definitions.preset_metrics import PRESET_METRICS
-from portfolio.metrics.definitions.presets import PRESETS
+from apps.portfolio.metrics.definitions.metrics import METRICS
+from apps.portfolio.metrics.definitions.preset_metrics import PRESET_METRICS
+from apps.portfolio.metrics.definitions.presets import PRESETS
 
 
 def build_e5_input(user_hint: str, current_preset_id: str) -> dict:

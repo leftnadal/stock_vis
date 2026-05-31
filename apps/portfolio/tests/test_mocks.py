@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from portfolio.llm.mocks import MockLLMClient
+from apps.portfolio.llm.mocks import MockLLMClient
 
 
 def test_mock_text_strategy_e1_default():

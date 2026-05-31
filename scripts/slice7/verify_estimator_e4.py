@@ -16,7 +16,7 @@ import json
 import sys
 from pathlib import Path
 
-from portfolio.llm.token_budgets import estimate_input_tokens
+from apps.portfolio.llm.token_budgets import estimate_input_tokens
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
@@ -78,7 +78,7 @@ def main() -> int:
         )
 
     # tier별 평균 토큰 vs budget 비교 — estimator 외삽 정확도 대용
-    from portfolio.llm.token_budgets import get_token_budget
+    from apps.portfolio.llm.token_budgets import get_token_budget
 
     tier_avg = {1: [], 2: [], 3: []}
     for r in results:

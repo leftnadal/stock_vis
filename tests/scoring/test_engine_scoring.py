@@ -10,12 +10,12 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.services.scoring import get_scorer
-from portfolio.services.scoring.presets.factor import FACTOR_SPECS
-from portfolio.services.scoring.presets.growth import GROWTH_SPECS
-from portfolio.services.scoring.presets.income import INCOME_SPECS
-from portfolio.services.scoring.presets.special import SPECIAL_SPECS
-from portfolio.services.scoring.presets.value import VALUE_SPECS
+from apps.portfolio.services.scoring import get_scorer
+from apps.portfolio.services.scoring.presets.factor import FACTOR_SPECS
+from apps.portfolio.services.scoring.presets.growth import GROWTH_SPECS
+from apps.portfolio.services.scoring.presets.income import INCOME_SPECS
+from apps.portfolio.services.scoring.presets.special import SPECIAL_SPECS
+from apps.portfolio.services.scoring.presets.value import VALUE_SPECS
 
 SPEC_LISTS = {
     "value": VALUE_SPECS,

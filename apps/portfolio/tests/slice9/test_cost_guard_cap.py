@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.cost_guard import (
+from apps.portfolio.llm.cost_guard import (
     CostCapExceeded,
     CostGuard,
     CostThresholdExceeded,

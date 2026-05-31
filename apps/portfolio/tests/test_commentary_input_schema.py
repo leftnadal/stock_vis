@@ -13,8 +13,8 @@ from decimal import Decimal
 
 import pytest
 
-from portfolio.schemas.commentary_input import TimeSeriesContext
-from portfolio.schemas.metric_result import MetricResult, MetricTier
+from apps.portfolio.schemas.commentary_input import TimeSeriesContext
+from apps.portfolio.schemas.metric_result import MetricResult, MetricTier
 
 
 def test_time_series_context_optional_fields():

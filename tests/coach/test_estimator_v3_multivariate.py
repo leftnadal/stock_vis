@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.measure import estimator_v3 as e3
+from apps.portfolio.measure import estimator_v3 as e3
 
 
 def test_global_fit_constants_loaded():

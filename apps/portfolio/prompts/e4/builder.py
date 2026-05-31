@@ -10,8 +10,8 @@ system + user 합성 결과를 반환한다. build_e4_messages는 향후 #19
 
 from __future__ import annotations
 
-from portfolio.schemas.e4_conversation import E4ConversationInput
-from portfolio.services._prompt_helpers import format_metrics_to_str
+from apps.portfolio.schemas.e4_conversation import E4ConversationInput
+from apps.portfolio.services._prompt_helpers import format_metrics_to_str
 
 SYSTEM_PROMPT = """당신은 한국 개인 투자자를 위한 포트폴리오 코치입니다.
 사용자의 포트폴리오 지표와 종목 구성을 바탕으로, 사용자의 질문에
@@ -171,7 +171,7 @@ def build_v2_system_prompt(few_shot_samples: list[dict] | None = None) -> str:
         4요소 지시 + few-shot이 삽입된 system prompt.
     """
     if few_shot_samples is None:
-        from portfolio.prompts.e4.samples import DEFAULT_FEW_SHOT_SAMPLES
+        from apps.portfolio.prompts.e4.samples import DEFAULT_FEW_SHOT_SAMPLES
 
         few_shot_samples = DEFAULT_FEW_SHOT_SAMPLES
 

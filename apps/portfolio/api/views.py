@@ -21,7 +21,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from portfolio.api.serializers import (
+from apps.portfolio.api.serializers import (
     E1RequestSerializer,
     E1ResponseSerializer,
     E2RequestSerializer,
@@ -35,13 +35,13 @@ from portfolio.api.serializers import (
     E6RequestSerializer,
     E6ResponseSerializer,
 )
-from portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
-from portfolio.services.coach.e1_service import run_e1_coach
-from portfolio.services.coach.e2_service import run_e2_coach
-from portfolio.services.coach.e3_service import run_e3_coach
-from portfolio.services.coach.e4_service import run_e4_coach
-from portfolio.services.coach.e5_service import run_e5_coach
-from portfolio.services.coach.e6_service import run_e6_coach
+from apps.portfolio.llm.exceptions import LLMBudgetExceededError, LLMError
+from apps.portfolio.services.coach.e1_service import run_e1_coach
+from apps.portfolio.services.coach.e2_service import run_e2_coach
+from apps.portfolio.services.coach.e3_service import run_e3_coach
+from apps.portfolio.services.coach.e4_service import run_e4_coach
+from apps.portfolio.services.coach.e5_service import run_e5_coach
+from apps.portfolio.services.coach.e6_service import run_e6_coach
 
 logger = logging.getLogger(__name__)
 

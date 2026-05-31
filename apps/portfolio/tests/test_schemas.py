@@ -17,7 +17,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.llm import AdjustmentItem, E5Response
+from apps.portfolio.schemas.llm import AdjustmentItem, E5Response
 
 
 def test_adjustment_item_valid():
@@ -130,7 +130,7 @@ def test_e5_response_multiple_adjustments():
 # ============================================================
 # E2 (DiagnosticCard 4요소) — Slice 3
 # ============================================================
-from portfolio.schemas.llm import E2DiagnosticCard, E2Request, E2Response
+from apps.portfolio.schemas.llm import E2DiagnosticCard, E2Request, E2Response
 
 
 def test_e2_diagnostic_card_valid():

@@ -28,14 +28,14 @@ init_django()
 # 멱등 reset — step 6 누적 카운트 보존 (max=50)
 reset_for_slice("slice6", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
-from portfolio.services.e3_portfolio_service import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
+from apps.portfolio.services.e3_portfolio_service import (
     parse_e3_portfolio_response,
 )
-from portfolio.tests.fixtures.sample_e3_portfolio_context import (
+from apps.portfolio.tests.fixtures.sample_e3_portfolio_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
     PRESET_INTENT_MAP,

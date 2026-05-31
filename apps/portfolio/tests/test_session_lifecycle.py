@@ -8,8 +8,7 @@ from decimal import Decimal
 import pytest
 from django.contrib.auth import get_user_model
 
-from packages.shared.stocks.models import Stock
-from portfolio.models import (
+from apps.portfolio.models import (
     AnalysisRun,
     ChatSession,
     Decision,
@@ -18,6 +17,7 @@ from portfolio.models import (
     Wallet,
     WalletHolding,
 )
+from packages.shared.stocks.models import Stock
 
 
 @pytest.mark.django_db

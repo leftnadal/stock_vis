@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.schemas.llm import E6Request
-from portfolio.tests.fixtures.sample_comparison_context import (
+from apps.portfolio.schemas.llm import E6Request
+from apps.portfolio.tests.fixtures.sample_comparison_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
     get_all_fixtures,

@@ -27,7 +27,7 @@ try:
 except ImportError:  # pragma: no cover — dev 환경
     Anthropic = None  # type: ignore[misc,assignment]
 
-from portfolio.llm.token_budgets import estimate_input_tokens as _v2_estimate_input
+from apps.portfolio.llm.token_budgets import estimate_input_tokens as _v2_estimate_input
 
 logger = logging.getLogger(__name__)
 

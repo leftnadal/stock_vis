@@ -11,7 +11,7 @@ from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 
-from portfolio.models import Wallet, WalletHolding
+from apps.portfolio.models import Wallet, WalletHolding
 
 
 def _get_or_create_user(username: str = "test-user"):

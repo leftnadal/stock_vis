@@ -105,10 +105,10 @@ def _aggregate_case_actionability(actions: list[dict], tickers: list[str]) -> di
 
 def _run_case(model: str, repeat: int, client: anthropic.Anthropic) -> dict:
     """단일 E3 케이스 실행 + actionability 분석."""
-    from portfolio.llm.parsers import parse_json_response
-    from portfolio.schemas.commentary_output import E3Output
-    from portfolio.services.coach.prompt_builder import E3PromptBuilder
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.llm.parsers import parse_json_response
+    from apps.portfolio.schemas.commentary_output import E3Output
+    from apps.portfolio.services.coach.prompt_builder import E3PromptBuilder
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     inp = load_portfolio_a2_input("e3")
     holdings_tickers = [h.ticker for h in inp.holdings]

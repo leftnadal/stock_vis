@@ -27,7 +27,7 @@ from typing import Any
 
 from drf_spectacular.extensions import OpenApiSerializerExtension
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     CommentaryInputE1,
     CommentaryInputE2,
     CommentaryInputE3,
@@ -35,7 +35,7 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE5,
     CommentaryInputE6,
 )
-from portfolio.schemas.commentary_output import (
+from apps.portfolio.schemas.commentary_output import (
     E1Output,
     E2Output,
     E3Output,

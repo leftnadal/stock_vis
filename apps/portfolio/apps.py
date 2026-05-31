@@ -9,4 +9,4 @@ class PortfolioConfig(AppConfig):
     def ready(self) -> None:
         # drf-spectacular 확장 등록 (coach serializer ↔ Pydantic 브릿지).
         # import만으로 OpenApiSerializerExtension 12개가 자동 등록된다.
-        from portfolio.api import openapi_extensions  # noqa: F401
+        from apps.portfolio.api import openapi_extensions  # noqa: F401

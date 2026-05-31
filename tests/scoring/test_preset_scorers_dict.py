@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.services.scoring import PRESET_SCORERS, get_scorer
-from portfolio.services.scoring.base import ScoringEngineBase
+from apps.portfolio.services.scoring import PRESET_SCORERS, get_scorer
+from apps.portfolio.services.scoring.base import ScoringEngineBase
 
 CATEGORIES = ["value", "growth", "income", "factor", "special"]
 

@@ -15,11 +15,11 @@ import json
 from pathlib import Path
 from typing import Any
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
-from portfolio.schemas.llm_outputs import E3PortfolioCommentary
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
+from apps.portfolio.schemas.llm_outputs import E3PortfolioCommentary
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 
 # ============================================================
 # Mock fixture loader (Step B 정적 검증용)

@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.rationale import RationaleBatch, RationaleRecord
+from apps.portfolio.schemas.rationale import RationaleBatch, RationaleRecord
 
 
 def _minimal_record_kwargs(**overrides):

@@ -6,9 +6,9 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.prompts.tier0 import build_tier0
-from portfolio.schemas import AnalysisContext
-from portfolio.services._prompt_helpers import format_metrics_to_str
+from apps.portfolio.prompts.tier0 import build_tier0
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.services._prompt_helpers import format_metrics_to_str
 
 from .examples import FEW_SHOT_EXAMPLES
 from .input_builder import build_e3_input

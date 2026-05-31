@@ -10,9 +10,9 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from portfolio.llm.mocks import MockLLMClient, _mock_text_e3
-from portfolio.schemas.llm import E3Request
-from portfolio.schemas.llm_outputs import MetricComments
+from apps.portfolio.llm.mocks import MockLLMClient, _mock_text_e3
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.schemas.llm_outputs import MetricComments
 
 
 def test_e3_request_valid():

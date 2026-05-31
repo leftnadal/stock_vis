@@ -19,8 +19,8 @@ init_django()
 from django.conf import settings
 from google import genai
 
-from portfolio.prompts.e1.e1_builder import build_e1_prompt
-from portfolio.tests.fixtures.sample_analysis_context import (
+from apps.portfolio.prompts.e1.e1_builder import build_e1_prompt
+from apps.portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_large,
     get_context_garp_misfit,
     get_context_garp_tech,

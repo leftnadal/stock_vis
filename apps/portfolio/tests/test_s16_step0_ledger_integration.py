@@ -18,10 +18,10 @@ from unittest.mock import patch
 
 import pytest
 
-from portfolio.llm.client import LLMClient
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.llm.cost_ledger import read_records
-from portfolio.schemas.llm import LLMResponse
+from apps.portfolio.llm.client import LLMClient
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.llm.cost_ledger import read_records
+from apps.portfolio.schemas.llm import LLMResponse
 
 # ─────────────────────────────────────────────────────────────
 # (1) CostGuard 기본 slice_id 정합

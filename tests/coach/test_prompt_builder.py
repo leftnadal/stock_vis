@@ -26,7 +26,7 @@ import json
 
 import pytest
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     COMMENTARY_INPUT_CLASSES,
     CommentaryInputE1,
     CommentaryInputE2,
@@ -35,8 +35,8 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE5,
     CommentaryInputE6,
 )
-from portfolio.schemas.commentary_output import COMMENTARY_OUTPUT_CLASSES, E1Output
-from portfolio.services.coach.prompt_builder import (
+from apps.portfolio.schemas.commentary_output import COMMENTARY_OUTPUT_CLASSES, E1Output
+from apps.portfolio.services.coach.prompt_builder import (
     PROMPT_BUILDER_CLASSES,
     E1PromptBuilder,
     E2PromptBuilder,
@@ -46,7 +46,7 @@ from portfolio.services.coach.prompt_builder import (
     E6PromptBuilder,
     PromptBuilderBase,
 )
-from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
 
 @pytest.fixture(scope="module")

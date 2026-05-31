@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from portfolio.prompts.rationale.builder import (
+from apps.portfolio.prompts.rationale.builder import (
     RATIONALE_SYSTEM_PROMPT,
     build_rationale_prompt,
 )

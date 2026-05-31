@@ -8,12 +8,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.commentary_input import CommentaryInputE4
-from portfolio.schemas.commentary_output import E4Output
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
-from portfolio.services.coach.prompt_builder import E4PromptBuilder
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.commentary_input import CommentaryInputE4
+from apps.portfolio.schemas.commentary_output import E4Output
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
+from apps.portfolio.services.coach.prompt_builder import E4PromptBuilder
 
 
 def run_e4_coach(

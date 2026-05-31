@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 from typing import ClassVar
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     CommentaryInputBase,
     CommentaryInputE1,
     CommentaryInputE2,
@@ -29,7 +29,7 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE5,
     CommentaryInputE6,
 )
-from portfolio.schemas.commentary_output import (
+from apps.portfolio.schemas.commentary_output import (
     COMMENTARY_OUTPUT_CLASSES,
     CommentaryOutputBase,
     E1Output,

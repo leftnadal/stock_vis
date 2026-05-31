@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.tests.fixtures.sample_adjustment_context import (
+from apps.portfolio.tests.fixtures.sample_adjustment_context import (
     get_e5_fixture_clear_decrease,
     get_e5_fixture_clear_multi,
     get_e5_fixture_remove,

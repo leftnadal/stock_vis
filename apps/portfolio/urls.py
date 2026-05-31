@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from django.urls import path
 
-from portfolio import views  # noqa: F401 — backward-compat 모듈 노출
+from apps.portfolio import views  # noqa: F401 — backward-compat 모듈 노출
 
 app_name = "portfolio"
 

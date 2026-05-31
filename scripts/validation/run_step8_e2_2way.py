@@ -22,12 +22,15 @@ from scripts.validation._setup import init_django, reset_for_slice
 init_django()
 reset_for_slice("slice3", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.schemas.llm import E2Request
-from portfolio.services.e2_diagnostic_card import build_e2_prompt, parse_e2_response
-from portfolio.tests.fixtures.sample_diagnostic_context import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.schemas.llm import E2Request
+from apps.portfolio.services.e2_diagnostic_card import (
+    build_e2_prompt,
+    parse_e2_response,
+)
+from apps.portfolio.tests.fixtures.sample_diagnostic_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
 )

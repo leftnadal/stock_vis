@@ -24,14 +24,14 @@ from scripts.validation._setup import init_django, reset_for_slice
 init_django()
 reset_for_slice("slice6", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS
-from portfolio.services.e3_portfolio_service import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.prompts.e3_portfolio import build_e3_portfolio_prompt
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS
+from apps.portfolio.services.e3_portfolio_service import (
     parse_e3_portfolio_response,
 )
-from portfolio.tests.fixtures.sample_e3_portfolio_context import (
+from apps.portfolio.tests.fixtures.sample_e3_portfolio_context import (
     PRESET_INTENT_MAP,
     get_v1_concentrated_balanced,
 )

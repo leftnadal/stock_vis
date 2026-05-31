@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.commentary_output import ActionItem
+from apps.portfolio.schemas.commentary_output import ActionItem
 
 
 class TestActionItemSchema:

@@ -14,12 +14,15 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.llm import E5Request, E5Response
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.llm import E5Request, E5Response
 
 # Slice 3 Step 2 — _llm_kwargs.py 공유 모듈 흡수 (백로그 #3).
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noqa: F401
+from apps.portfolio.services._llm_kwargs import (  # noqa: F401
+    PROVIDER_KWARGS,
+    ProviderLabel,
+)
 
 # ============================================================
 # 프롬프트
@@ -96,7 +99,7 @@ def _pct(weight: Any) -> str:
 
 
 # Slice 3 Step 2 — _prompt_helpers.py 공유 모듈 흡수 (백로그 #4).
-from portfolio.services._prompt_helpers import (
+from apps.portfolio.services._prompt_helpers import (
     format_analysis_summary as _format_analysis_summary,  # noqa: F401
 )
 

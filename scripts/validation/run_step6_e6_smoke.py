@@ -34,12 +34,12 @@ from scripts.validation._setup import init_django, reset_for_slice
 init_django()
 reset_for_slice("slice4", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.schemas.llm import E6Request
-from portfolio.services.e6_comparison import build_e6_prompt, parse_e6_response
-from portfolio.tests.fixtures.sample_comparison_context import ALL_FIXTURES
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.schemas.llm import E6Request
+from apps.portfolio.services.e6_comparison import build_e6_prompt, parse_e6_response
+from apps.portfolio.tests.fixtures.sample_comparison_context import ALL_FIXTURES
 
 THRESHOLDS = {
     "cost_usd_max": 0.020,

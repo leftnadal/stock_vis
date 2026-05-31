@@ -10,7 +10,7 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas import AnalysisContext
 
 
 def build_e1_input(context: AnalysisContext) -> dict:

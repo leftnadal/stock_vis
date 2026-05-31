@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from portfolio.llm.client import (
+from apps.portfolio.llm.client import (
     ANTHROPIC_HAIKU_MODEL,
     ANTHROPIC_SONNET_MODEL,
 )

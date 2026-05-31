@@ -9,7 +9,7 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.schemas import UserProfile
+from apps.portfolio.schemas import UserProfile
 
 
 def build_tier3_block(profile: UserProfile | None) -> str | None:

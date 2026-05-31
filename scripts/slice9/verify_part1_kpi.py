@@ -25,7 +25,7 @@ import django  # noqa: E402
 
 django.setup()
 
-from portfolio.tests.helpers.regression_classifier import (
+from apps.portfolio.tests.helpers.regression_classifier import (
     classify_regression,  # noqa: E402
 )
 

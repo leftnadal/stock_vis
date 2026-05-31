@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.schemas.llm import E2Request, E2Response
-from portfolio.services.e2_diagnostic_card import (
+from apps.portfolio.schemas.llm import E2Request, E2Response
+from apps.portfolio.services.e2_diagnostic_card import (
     build_e2_prompt,
     parse_e2_response,
 )

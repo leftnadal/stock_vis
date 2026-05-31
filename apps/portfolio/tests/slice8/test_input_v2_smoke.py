@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from portfolio.schemas.commentary_input import TimeSeriesContext
-from portfolio.schemas.metric_result import MetricResult
+from apps.portfolio.schemas.commentary_input import TimeSeriesContext
+from apps.portfolio.schemas.metric_result import MetricResult
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
 

@@ -20,14 +20,14 @@ from anthropic import Anthropic
 from django.conf import settings
 from google import genai
 
-from portfolio.llm.exceptions import (
+from apps.portfolio.llm.exceptions import (
     LLMAuthError,
     LLMBudgetExceededError,
     LLMInvalidPromptError,
     LLMRateLimitError,
     LLMTimeoutError,
 )
-from portfolio.schemas.llm import LLMResponse
+from apps.portfolio.schemas.llm import LLMResponse
 
 # Provider 단가 (USD per 1M tokens) — 2026-04 기준, 본인이 향후 수동 갱신
 GEMINI_FLASH_INPUT_USD_PER_1M = 0.075
@@ -167,7 +167,7 @@ class LLMClient:
             raise LLMBudgetExceededError(
                 f"호출 {self._call_count}회 도달, 가드 임계 {self._budget_max}"
             )
-        from portfolio.llm.cost_guard import CostGuard
+        from apps.portfolio.llm.cost_guard import CostGuard
 
         guard = CostGuard.get_instance()
         guard.record_llm_call()  # 두 카운터 ++ + per_instance/per_slice check
@@ -194,7 +194,7 @@ class LLMClient:
         #    이중 방어: append_call 내부에서 흡수하지만, import/patch 실패 등 모든
         #    예외를 여기서도 한 번 더 차단 — ledger는 보조 장치, 본 흐름 보호 최우선.
         try:
-            from portfolio.llm.cost_ledger import append_call as _ledger_append
+            from apps.portfolio.llm.cost_ledger import append_call as _ledger_append
 
             _ledger_append(
                 slice_id=guard.slice_id,

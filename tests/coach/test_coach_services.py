@@ -16,12 +16,12 @@ import inspect
 
 import pytest
 
-from portfolio.services.coach.e1_service import run_e1_coach
-from portfolio.services.coach.e2_service import run_e2_coach
-from portfolio.services.coach.e3_service import run_e3_coach
-from portfolio.services.coach.e4_service import run_e4_coach
-from portfolio.services.coach.e5_service import run_e5_coach
-from portfolio.services.coach.e6_service import run_e6_coach
+from apps.portfolio.services.coach.e1_service import run_e1_coach
+from apps.portfolio.services.coach.e2_service import run_e2_coach
+from apps.portfolio.services.coach.e3_service import run_e3_coach
+from apps.portfolio.services.coach.e4_service import run_e4_coach
+from apps.portfolio.services.coach.e5_service import run_e5_coach
+from apps.portfolio.services.coach.e6_service import run_e6_coach
 
 
 def test_run_e1_coach_importable():

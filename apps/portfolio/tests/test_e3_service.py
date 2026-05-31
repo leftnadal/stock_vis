@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.mocks import MockLLMClient
-from portfolio.schemas.llm import E3Request
-from portfolio.schemas.llm_outputs import MetricComments
-from portfolio.services.e3_metric_comment import (
+from apps.portfolio.llm.mocks import MockLLMClient
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.schemas.llm_outputs import MetricComments
+from apps.portfolio.services.e3_metric_comment import (
     build_e3_prompt,
     parse_e3_response,
     run_e3,
 )
-from portfolio.tests.fixtures.sample_analysis_context import (
+from apps.portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_tech,
 )
 

@@ -15,8 +15,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from portfolio.llm import cost_guard as cg
-from portfolio.measure import estimator_v3 as e3
+from apps.portfolio.llm import cost_guard as cg
+from apps.portfolio.measure import estimator_v3 as e3
 
 
 @pytest.fixture(autouse=True)
@@ -194,7 +194,7 @@ def test_existing_reset_slice_still_clears():
 
 def test_existing_50_call_budget_still_blocks():
     """PER_INSTANCE_LIMIT=50 budget guard 동작 무수정 (instance_call_count 기준)."""
-    from portfolio.llm.exceptions import LLMBudgetExceededError
+    from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
     guard = cg.CostGuard.get_instance()
     # instance limit는 50이므로 51회째에서 raise

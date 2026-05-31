@@ -15,7 +15,7 @@ import os
 
 import pytest
 
-from portfolio.measure import message_dumper as md
+from apps.portfolio.measure import message_dumper as md
 
 
 @pytest.fixture

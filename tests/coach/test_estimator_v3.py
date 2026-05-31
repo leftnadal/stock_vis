@@ -17,7 +17,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from portfolio.measure import estimator_v3 as e3
+from apps.portfolio.measure import estimator_v3 as e3
 
 
 @pytest.fixture(autouse=True)

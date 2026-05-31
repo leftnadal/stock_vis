@@ -14,9 +14,9 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.llm import E5Request, E5Response
-from portfolio.services.e5_adjustment_parser import build_e5_prompt
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.llm import E5Request, E5Response
+from apps.portfolio.services.e5_adjustment_parser import build_e5_prompt
 
 
 def _sample_request(command: str) -> E5Request:

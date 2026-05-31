@@ -25,12 +25,12 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.llm import E5Request, E5Response
-from portfolio.services.e5_adjustment_parser import build_e5_prompt
-from portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.llm import E5Request, E5Response
+from apps.portfolio.services.e5_adjustment_parser import build_e5_prompt
+from apps.portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
 
 PROVIDERS = [
     {"label": "haiku", "provider": "anthropic", "model": ANTHROPIC_HAIKU_MODEL},

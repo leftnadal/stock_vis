@@ -23,7 +23,7 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-from portfolio.measure.estimator_v3 import (
+from apps.portfolio.measure.estimator_v3 import (
     ENTRY_POINT_OUTPUT_FITS,
     ENTRY_POINT_OUTPUT_RATIOS,
     GLOBAL_OUTPUT_FIT,

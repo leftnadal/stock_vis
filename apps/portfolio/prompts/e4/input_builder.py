@@ -8,7 +8,7 @@ Version: 1.1 (2026-04-24)
 
 from __future__ import annotations
 
-from portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas import AnalysisContext
 
 
 def build_e4_input_tier25(context: AnalysisContext) -> dict:

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.budget_estimator import (
+from apps.portfolio.llm.budget_estimator import (
     ENTRY_INSTRUCTION_BASELINE,
     ENTRY_OVERHEAD,
     ENTRY_POINT_META,

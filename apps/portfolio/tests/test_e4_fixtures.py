@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.e4_conversation import (
+from apps.portfolio.schemas.e4_conversation import (
     E4ConversationInput,
     E4ConversationMetadata,
     E4ConversationOutput,

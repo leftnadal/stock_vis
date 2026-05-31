@@ -14,15 +14,15 @@ from unittest.mock import patch
 
 import pytest
 
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.llm.cost_ledger import (
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.llm.cost_ledger import (
     DEFAULT_LEDGER_PATH,
     append_call,
     get_ledger_path,
     read_records,
     sum_cost_usd,
 )
-from portfolio.llm.exceptions import LLMBudgetExceededError
+from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
 
 @pytest.fixture
@@ -212,8 +212,8 @@ def test_client_complete_appends_ledger(monkeypatch, tmp_ledger):
 
     LLM provider 호출은 mock — 단가 환산 후 LLMResponse를 곧바로 반환.
     """
-    from portfolio.llm import client as client_module
-    from portfolio.schemas.llm import LLMResponse
+    from apps.portfolio.llm import client as client_module
+    from apps.portfolio.schemas.llm import LLMResponse
 
     monkeypatch.setenv("COST_LEDGER_PATH", str(tmp_ledger))
     guard = CostGuard.get_instance()
@@ -254,8 +254,8 @@ def test_client_complete_appends_ledger(monkeypatch, tmp_ledger):
 
 def test_client_complete_ledger_failure_does_not_break(monkeypatch):
     """ledger append 실패가 client.complete 흐름을 깨지 않음 — 응답 정상 반환."""
-    from portfolio.llm import client as client_module
-    from portfolio.schemas.llm import LLMResponse
+    from apps.portfolio.llm import client as client_module
+    from apps.portfolio.schemas.llm import LLMResponse
 
     guard = CostGuard.get_instance()
     guard.reset_slice("ledger_fail_test", max_calls=10)

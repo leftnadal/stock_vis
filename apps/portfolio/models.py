@@ -479,7 +479,7 @@ class MetricResult(models.Model):
                 pass
 
         # metric_id 유효성 검증 (코드 상수와 대조)
-        from portfolio.metrics.definitions.metrics import (
+        from apps.portfolio.metrics.definitions.metrics import (
             METRICS,  # lazy import to avoid circular
         )
 

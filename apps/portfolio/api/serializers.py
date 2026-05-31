@@ -15,7 +15,7 @@ from typing import Any
 from pydantic import ValidationError as PydanticValidationError
 from rest_framework import serializers
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     CommentaryInputE1,
     CommentaryInputE2,
     CommentaryInputE3,
@@ -23,7 +23,7 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE5,
     CommentaryInputE6,
 )
-from portfolio.schemas.commentary_output import (
+from apps.portfolio.schemas.commentary_output import (
     E1Output,
     E2Output,
     E3Output,

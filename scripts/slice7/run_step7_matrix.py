@@ -20,15 +20,15 @@ import django  # noqa: E402
 
 django.setup()
 
-from portfolio.llm.client import LLMClient  # noqa: E402
-from portfolio.llm.cost_guard import CostGuard  # noqa: E402
-from portfolio.llm.token_budgets import ENTRYPOINT_TOKEN_BUDGETS  # noqa: E402
-from portfolio.prompts.e4.builder import build_e4_prompt  # noqa: E402
-from portfolio.schemas.e4_conversation import (  # noqa: E402
+from apps.portfolio.llm.client import LLMClient  # noqa: E402
+from apps.portfolio.llm.cost_guard import CostGuard  # noqa: E402
+from apps.portfolio.llm.token_budgets import ENTRYPOINT_TOKEN_BUDGETS  # noqa: E402
+from apps.portfolio.prompts.e4.builder import build_e4_prompt  # noqa: E402
+from apps.portfolio.schemas.e4_conversation import (  # noqa: E402
     E4ConversationInput,
     E4ConversationOutput,
 )
-from portfolio.services._llm_kwargs import resolve_provider_kwargs  # noqa: E402
+from apps.portfolio.services._llm_kwargs import resolve_provider_kwargs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"

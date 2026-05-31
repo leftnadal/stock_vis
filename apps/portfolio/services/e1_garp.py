@@ -13,17 +13,20 @@ view에서 HTTP 코드를 분리. 비즈니스 로직만 담당:
 
 from __future__ import annotations
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.prompts.e1.e1_builder import build_e1_prompt
-from portfolio.schemas.llm import LLMResponse
-from portfolio.schemas.llm_outputs import OneLineDiagnosis
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.prompts.e1.e1_builder import build_e1_prompt
+from apps.portfolio.schemas.llm import LLMResponse
+from apps.portfolio.schemas.llm_outputs import OneLineDiagnosis
 
 # Slice 1 Decision (validation_report §5): winner = haiku.
 # Free tier 환경에서 gemini는 RateLimit 즉시 폴백 → 진입점 default는 haiku.
 # Slice 3 Step 2 — _llm_kwargs.py 공유 모듈 흡수 (백로그 #3).
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noqa: F401
-from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
+from apps.portfolio.services._llm_kwargs import (  # noqa: F401
+    PROVIDER_KWARGS,
+    ProviderLabel,
+)
+from apps.portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
 
 
 def run_e1_garp(

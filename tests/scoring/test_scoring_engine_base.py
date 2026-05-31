@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.services.scoring.base import ScoringEngineBase
+from apps.portfolio.services.scoring.base import ScoringEngineBase
 
 
 def test_abstract_cannot_instantiate():

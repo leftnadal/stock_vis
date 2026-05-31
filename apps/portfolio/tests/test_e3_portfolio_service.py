@@ -22,15 +22,15 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.schemas.llm_outputs import E3PortfolioCommentary, PresetAlignment
-from portfolio.services.e3_portfolio_service import (
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.schemas.llm_outputs import E3PortfolioCommentary, PresetAlignment
+from apps.portfolio.services.e3_portfolio_service import (
     MOCK_FIXTURE_ROOT,
     load_mock_response,
     parse_e3_portfolio_response,
     run_e3_portfolio_with_mock,
 )
-from portfolio.tests.fixtures.sample_e3_portfolio_context import (
+from apps.portfolio.tests.fixtures.sample_e3_portfolio_context import (
     ALL_FIXTURES,
     PRESET_INTENT_MAP,
 )

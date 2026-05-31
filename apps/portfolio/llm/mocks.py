@@ -21,11 +21,11 @@ from __future__ import annotations
 import json
 from typing import Callable, Literal
 
-from portfolio.llm.exceptions import (
+from apps.portfolio.llm.exceptions import (
     LLMAuthError,
     LLMBudgetExceededError,
 )
-from portfolio.schemas.llm import LLMResponse
+from apps.portfolio.schemas.llm import LLMResponse
 
 # OneLineDiagnosis 스키마(headline 10~60자, summary 30~500자)를 통과하는 결정론적 Mock 응답.
 _MOCK_DIAGNOSIS = {

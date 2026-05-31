@@ -28,11 +28,12 @@ sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from portfolio.llm.client import LLMClient  # noqa: E402
-from portfolio.llm.cost_guard import CostGuard  # noqa: E402
-from portfolio.prompts.e4.builder import build_e4_prompt_v2  # noqa: E402
-from portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
-from portfolio.tests.slice8.helpers.specificity_count import (
+from apps.apps.portfolio.prompts.e4.builder import build_e4_prompt_v2  # noqa: E402
+
+from apps.portfolio.llm.client import LLMClient  # noqa: E402
+from apps.portfolio.llm.cost_guard import CostGuard  # noqa: E402
+from apps.portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
+from apps.portfolio.tests.slice8.helpers.specificity_count import (
     count_patterns,  # noqa: E402
 )
 
@@ -56,10 +57,10 @@ def main() -> int:
 
     # 3. V2 prompt 생성
     system = __import__(
-        "portfolio.prompts.e4.builder", fromlist=["build_v2_system_prompt"]
+        "apps.portfolio.prompts.e4.builder", fromlist=["build_v2_system_prompt"]
     ).build_v2_system_prompt()
     user = __import__(
-        "portfolio.prompts.e4.builder", fromlist=["build_e4_user_prompt"]
+        "apps.portfolio.prompts.e4.builder", fromlist=["build_e4_user_prompt"]
     ).build_e4_user_prompt(inp)
 
     # 4. LLM 호출 (Haiku)

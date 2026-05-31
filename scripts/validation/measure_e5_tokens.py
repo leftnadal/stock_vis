@@ -25,10 +25,10 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
-from portfolio.schemas.llm import E5Request
-from portfolio.services.e5_adjustment_parser import build_e5_prompt
-from portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
+from apps.portfolio.schemas.llm import E5Request
+from apps.portfolio.services.e5_adjustment_parser import build_e5_prompt
+from apps.portfolio.tests.fixtures.sample_adjustment_context import ALL_FIXTURES
 
 # E5 budget 가정 (측정 후 갱신).
 # E1 baseline 5,000 (Slice 1 갱신값). E5는 추출 작업이므로 더 작을 것으로 예상.

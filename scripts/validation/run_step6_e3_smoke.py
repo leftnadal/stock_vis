@@ -39,12 +39,12 @@ from scripts.validation._setup import init_django, reset_for_slice
 init_django()
 reset_for_slice("slice5", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.schemas.llm import E3Request
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS  # 환경 차이 #7
-from portfolio.services.e3_metric_comment import build_e3_prompt, parse_e3_response
-from portfolio.tests.fixtures.sample_metric_comment_context import ALL_FIXTURES
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS  # 환경 차이 #7
+from apps.portfolio.services.e3_metric_comment import build_e3_prompt, parse_e3_response
+from apps.portfolio.tests.fixtures.sample_metric_comment_context import ALL_FIXTURES
 
 THRESHOLDS = {
     "cost_usd_max": 0.020,
@@ -85,7 +85,7 @@ def main() -> int:
     fixture = fixture_fn()
     request = E3Request(analysis_context=fixture["analysis_context"])
     # 환경 차이 #1: build_e3_prompt service wrapper가 (system, user) tuple → 단일 prompt concat
-    from portfolio.schemas import AnalysisContext
+    from apps.portfolio.schemas import AnalysisContext
 
     context = AnalysisContext.model_validate(request.analysis_context)
     prompt = build_e3_prompt(context)

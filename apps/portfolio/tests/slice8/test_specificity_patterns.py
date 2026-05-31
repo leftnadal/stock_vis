@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.tests.slice8.helpers.specificity_count import (
+from apps.portfolio.tests.slice8.helpers.specificity_count import (
     count_patterns,
     has_p1,
     has_p2,

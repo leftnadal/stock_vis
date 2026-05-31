@@ -14,9 +14,9 @@ from __future__ import annotations
 
 import json
 
-from portfolio.models import ChatSession
-from portfolio.prompts.tier0 import build_tier0
-from portfolio.schemas import AnalysisContext, UserProfile
+from apps.portfolio.models import ChatSession
+from apps.portfolio.prompts.tier0 import build_tier0
+from apps.portfolio.schemas import AnalysisContext, UserProfile
 
 from .examples import FEW_SHOT_EXAMPLES
 from .input_builder import build_e4_input_tier25

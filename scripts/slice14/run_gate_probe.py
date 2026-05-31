@@ -22,9 +22,9 @@ sys.path.insert(0, str(REPO_ROOT))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from portfolio.llm import LLMClient  # noqa: E402
-from portfolio.llm.cost_guard import CostGuard  # noqa: E402
-from portfolio.schemas import (  # noqa: E402
+from apps.portfolio.llm import LLMClient  # noqa: E402
+from apps.portfolio.llm.cost_guard import CostGuard  # noqa: E402
+from apps.portfolio.schemas import (  # noqa: E402
     AnalysisContext,
     AnalysisTargetPortfolioContext,
     CategoryBreakdown,
@@ -38,8 +38,8 @@ from portfolio.schemas import (  # noqa: E402
     StrengthWeakness,
     WalletBackgroundContext,
 )
-from portfolio.schemas.llm import E3Request  # noqa: E402
-from portfolio.services.e3_metric_comment import run_e3  # noqa: E402
+from apps.portfolio.schemas.llm import E3Request  # noqa: E402
+from apps.portfolio.services.e3_metric_comment import run_e3  # noqa: E402
 
 _NOW = datetime(2026, 5, 22, 10, 0, tzinfo=timezone.utc)
 

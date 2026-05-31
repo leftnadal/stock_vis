@@ -13,11 +13,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.llm import E2DiagnosticCard, E2Request, E2Response
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
-from portfolio.services._prompt_helpers import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.llm import E2DiagnosticCard, E2Request, E2Response
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
+from apps.portfolio.services._prompt_helpers import (
     format_analysis_summary,
     format_holdings_summary,
     format_metrics_to_str,

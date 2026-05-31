@@ -56,8 +56,8 @@ SLICE_CAP_HARD = 0.30  # Slice 12 Part 3 단독 cap
 
 def _run_case(fixture_name: str) -> dict:
     """단일 fixture 케이스 실행."""
-    from portfolio.services.coach.e3_service import run_e3_coach
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.services.coach.e3_service import run_e3_coach
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     data = json.loads((FIXTURE_DIR / f"{fixture_name}.json").read_text(encoding="utf-8"))
 

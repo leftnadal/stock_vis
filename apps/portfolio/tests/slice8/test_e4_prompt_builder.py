@@ -10,15 +10,15 @@ import re
 
 import pytest
 
-from portfolio.prompts.e4.builder import (
+from apps.portfolio.prompts.e4.builder import (
     SYSTEM_PROMPT_V2_TEMPLATE,
     build_e4_messages_v2,
     build_e4_prompt_v2,
     build_v2_system_prompt,
     get_v2_system_prompt,
 )
-from portfolio.prompts.e4.samples import DEFAULT_FEW_SHOT_SAMPLES
-from portfolio.schemas.e4_conversation import E4ConversationInput
+from apps.portfolio.prompts.e4.samples import DEFAULT_FEW_SHOT_SAMPLES
+from apps.portfolio.schemas.e4_conversation import E4ConversationInput
 
 
 @pytest.fixture

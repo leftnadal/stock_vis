@@ -2,10 +2,10 @@
 
 import pytest
 
-from portfolio.schemas.commentary_output import ActionItem
-from portfolio.schemas.e4_conversation import E4ConversationOutput
-from portfolio.schemas.llm import E2Response, E5Response, LLMResponse
-from portfolio.schemas.llm_outputs import (
+from apps.portfolio.schemas.commentary_output import ActionItem
+from apps.portfolio.schemas.e4_conversation import E4ConversationOutput
+from apps.portfolio.schemas.llm import E2Response, E5Response, LLMResponse
+from apps.portfolio.schemas.llm_outputs import (
     ConversationResponse,
     E3PortfolioCommentary,
     E6ComparisonResponse,

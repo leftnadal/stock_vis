@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-from portfolio.services._prompt_helpers import (
+from apps.portfolio.services._prompt_helpers import (
     format_metrics_table,
     format_metrics_to_str,
 )

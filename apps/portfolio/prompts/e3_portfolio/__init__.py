@@ -1,6 +1,6 @@
 """Slice 6 E3 portfolio prompt module — Part 1 minimal + Part 2 Step A reinforced."""
 
-from portfolio.prompts.e3_portfolio.builder import (
+from apps.portfolio.prompts.e3_portfolio.builder import (
     FEW_SHOT_EXAMPLES,
     MINIMAL_PROMPT_TEMPLATE,
     PROMPT_VARIABLE_SLOTS,

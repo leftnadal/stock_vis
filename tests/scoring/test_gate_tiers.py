@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.services.scoring import (
+from apps.portfolio.services.scoring import (
     PRESET_ID_TO_CATEGORY,
     PresetSpec,
     ScoringEngineBase,

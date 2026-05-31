@@ -19,7 +19,7 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
+from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_raw
 
 E4_ENDPOINT = "/api/v1/coach/e4/"
 
@@ -104,9 +104,9 @@ def test_post_e4_response_passes_e4output_validation(
     api_client, e4_request_body, mock_llm_response_e4
 ):
     """★ contract test 핵심 — 응답 dict가 다시 E4Output(Pydantic)으로 검증 가능."""
-    from portfolio.schemas.commentary_output import E4Output
+    from apps.portfolio.schemas.commentary_output import E4Output
 
-    with patch("portfolio.api.views.run_e4_coach", return_value=mock_llm_response_e4):
+    with patch("apps.portfolio.api.views.run_e4_coach", return_value=mock_llm_response_e4):
         response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     output_dict = response.json()["output"]
@@ -182,7 +182,7 @@ def test_post_e4_service_exception_returns_500_no_stacktrace(
 
 def test_post_e4_llm_budget_exceeded_returns_429(api_client, e4_request_body):
     """LLMBudgetExceededError → 429."""
-    from portfolio.llm.exceptions import LLMBudgetExceededError
+    from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
     with patch(
         "portfolio.api.views.run_e4_coach",
@@ -195,7 +195,7 @@ def test_post_e4_llm_budget_exceeded_returns_429(api_client, e4_request_body):
 
 def test_post_e4_llm_error_returns_502(api_client, e4_request_body):
     """기타 LLMError → 502."""
-    from portfolio.llm.exceptions import LLMRateLimitError
+    from apps.portfolio.llm.exceptions import LLMRateLimitError
 
     with patch(
         "portfolio.api.views.run_e4_coach",
@@ -217,6 +217,6 @@ def test_post_e4_service_returns_drifted_output_caught_by_serializer(
     """★ service 응답이 E4Output 계약을 깨면 serializer가 잡아낸다."""
     drifted = dict(mock_llm_response_e4)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch("portfolio.api.views.run_e4_coach", return_value=drifted):
+    with patch("apps.portfolio.api.views.run_e4_coach", return_value=drifted):
         response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
     assert response.status_code in (400, 500)

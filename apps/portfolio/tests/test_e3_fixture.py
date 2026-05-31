@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.schemas.llm import E3Request
-from portfolio.tests.fixtures.sample_metric_comment_context import (
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.tests.fixtures.sample_metric_comment_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
     get_all_fixtures,
@@ -99,7 +99,7 @@ def test_covered_categories_5():
 
 def test_focused_buffett_value_category():
     """buffett fixture: preset_category=value + Buffett 메타."""
-    from portfolio.tests.fixtures.sample_metric_comment_context import (
+    from apps.portfolio.tests.fixtures.sample_metric_comment_context import (
         get_e3_fixture_focused_buffett,
     )
 
@@ -110,7 +110,7 @@ def test_focused_buffett_value_category():
 
 def test_focused_dividend_growth_income_category():
     """dividend_growth fixture: preset_category=income."""
-    from portfolio.tests.fixtures.sample_metric_comment_context import (
+    from apps.portfolio.tests.fixtures.sample_metric_comment_context import (
         get_e3_fixture_focused_dividend_growth,
     )
 

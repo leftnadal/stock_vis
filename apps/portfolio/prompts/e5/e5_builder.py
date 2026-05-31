@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import json
 
-from portfolio.prompts.tier0 import build_tier0
+from apps.portfolio.prompts.tier0 import build_tier0
 
 from .examples import FEW_SHOT_EXAMPLES
 from .input_builder import build_e5_input

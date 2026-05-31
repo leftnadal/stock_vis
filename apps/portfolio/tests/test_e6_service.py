@@ -8,10 +8,10 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.mocks import MockLLMClient
-from portfolio.schemas.llm import AdjustmentItem, E6Request
-from portfolio.schemas.llm_outputs import E6ComparisonResponse
-from portfolio.services.e6_comparison import (
+from apps.portfolio.llm.mocks import MockLLMClient
+from apps.portfolio.schemas.llm import AdjustmentItem, E6Request
+from apps.portfolio.schemas.llm_outputs import E6ComparisonResponse
+from apps.portfolio.services.e6_comparison import (
     _format_adjustments_block,
     build_e6_prompt,
     parse_e6_response,

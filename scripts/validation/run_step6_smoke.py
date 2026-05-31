@@ -25,11 +25,11 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.prompts.e1.e1_builder import build_e1_prompt
-from portfolio.schemas.llm_outputs import OneLineDiagnosis
-from portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.prompts.e1.e1_builder import build_e1_prompt
+from apps.portfolio.schemas.llm_outputs import OneLineDiagnosis
+from apps.portfolio.tests.fixtures.sample_analysis_context import get_context_garp_tech
 
 # Slice 1 실측 기반 임계 ($0.001은 비현실적, Gemini Flash 1회 평균 $0.015).
 THRESHOLDS = {

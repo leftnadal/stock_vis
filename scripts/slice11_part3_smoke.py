@@ -38,10 +38,10 @@ def _delta(actual: int, est: int) -> float:
 
 def _run_case(model: str) -> dict:
     """단일 모델 케이스 실행 + 측정."""
-    from portfolio.measure.estimator_v3 import estimate_input_tokens, reset_cache
-    from portfolio.schemas.commentary_output import E1Output
-    from portfolio.services.coach.prompt_builder import E1PromptBuilder
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.measure.estimator_v3 import estimate_input_tokens, reset_cache
+    from apps.portfolio.schemas.commentary_output import E1Output
+    from apps.portfolio.services.coach.prompt_builder import E1PromptBuilder
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     reset_cache()  # 케이스별 격리
 
@@ -90,7 +90,7 @@ def _run_case(model: str) -> dict:
     fitting_error = ""
     try:
         # parse_json_response가 markdown fence 제거 처리
-        from portfolio.llm.parsers import parse_json_response
+        from apps.portfolio.llm.parsers import parse_json_response
 
         E1Output_parsed = parse_json_response(E1Output, response_text)
         fitting_pass = True

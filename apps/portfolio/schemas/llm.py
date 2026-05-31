@@ -14,7 +14,7 @@ from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from portfolio.schemas.commentary_output import ActionItem
+from apps.portfolio.schemas.commentary_output import ActionItem
 
 
 class LLMResponse(BaseModel):

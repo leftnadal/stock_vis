@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from django.urls import path
 
-from portfolio.api import views
+from apps.portfolio.api import views
 
 app_name = "portfolio_api"
 

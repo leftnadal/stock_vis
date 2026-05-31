@@ -31,11 +31,11 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
-from portfolio.schemas import AnalysisContext
-from portfolio.schemas.llm import E3Request
-from portfolio.services.e3_metric_comment import build_e3_prompt
-from portfolio.tests.fixtures.sample_metric_comment_context import (
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.services.e3_metric_comment import build_e3_prompt
+from apps.portfolio.tests.fixtures.sample_metric_comment_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
 )

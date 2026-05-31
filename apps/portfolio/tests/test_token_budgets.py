@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.token_budgets import (
+from apps.portfolio.llm.token_budgets import (
     ENTRYPOINT_TOKEN_BUDGETS,
     estimate_input_tokens,
     get_token_budget,

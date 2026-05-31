@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     COMMENTARY_INPUT_CLASSES,
     CommentaryInputBase,
 )

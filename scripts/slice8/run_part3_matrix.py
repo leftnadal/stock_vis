@@ -30,14 +30,14 @@ sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 django.setup()
 
-from portfolio.llm.client import LLMClient  # noqa: E402
-from portfolio.llm.cost_guard import CostGuard  # noqa: E402
-from portfolio.prompts.e4.builder import (  # noqa: E402
+from apps.portfolio.llm.client import LLMClient  # noqa: E402
+from apps.portfolio.llm.cost_guard import CostGuard  # noqa: E402
+from apps.portfolio.prompts.e4.builder import (  # noqa: E402
     build_e4_user_prompt,
     build_v2_system_prompt,
 )
-from portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
-from portfolio.tests.slice8.helpers.specificity_count import (
+from apps.portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
+from apps.portfolio.tests.slice8.helpers.specificity_count import (
     count_patterns,  # noqa: E402
 )
 

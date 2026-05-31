@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.llm.exceptions import BudgetExceededError, LLMBudgetExceededError
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.llm.exceptions import BudgetExceededError, LLMBudgetExceededError
 
 
 @pytest.fixture(autouse=True)

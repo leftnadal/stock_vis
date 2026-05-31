@@ -9,7 +9,7 @@ test_input_v2_smoke.py에서 처리). 본 smoke는 E3PortfolioCommentary 본체 
 import json
 from pathlib import Path
 
-from portfolio.schemas.llm_outputs import E3PortfolioCommentary
+from apps.portfolio.schemas.llm_outputs import E3PortfolioCommentary
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 

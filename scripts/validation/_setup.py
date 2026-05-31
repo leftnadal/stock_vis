@@ -23,7 +23,7 @@ def reset_for_slice(slice_id: str = "slice3", max_calls: int = 50):
         CostGuard 인스턴스
     """
     init_django()
-    from portfolio.llm.cost_guard import CostGuard
+    from apps.portfolio.llm.cost_guard import CostGuard
 
     guard = CostGuard.get_instance()
     if guard.slice_id != slice_id:

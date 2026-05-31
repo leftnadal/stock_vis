@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.commentary_input import (
+from apps.portfolio.schemas.commentary_input import (
     COMMENTARY_INPUT_CLASSES,
     CommentaryInputBase,
     CommentaryInputE1,
@@ -29,7 +29,7 @@ from portfolio.schemas.commentary_input import (
     CommentaryInputE6,
     Holding,
 )
-from portfolio.tests.fixtures.coach.loaders import (
+from apps.portfolio.tests.fixtures.coach.loaders import (
     load_portfolio_a2_all_inputs,
     load_portfolio_a2_input,
     load_portfolio_a2_raw,

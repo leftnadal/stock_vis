@@ -7,7 +7,7 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.e4_conversation import (
+from apps.portfolio.schemas.e4_conversation import (
     E4ConversationInput,
     E4ConversationMetadata,
     E4ConversationOutput,
@@ -208,7 +208,10 @@ def test_metadata_i4_hallucination_trace():
 
 
 def test_token_budgets_e4_tier1_2_3_registered():
-    from portfolio.llm.token_budgets import ENTRYPOINT_TOKEN_BUDGETS, get_token_budget
+    from apps.portfolio.llm.token_budgets import (
+        ENTRYPOINT_TOKEN_BUDGETS,
+        get_token_budget,
+    )
 
     for key in (
         "e4_conversation_tier1",

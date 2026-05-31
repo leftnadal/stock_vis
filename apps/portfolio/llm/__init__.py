@@ -1,7 +1,7 @@
 """Portfolio Coach LLM provider abstraction."""
 
-from portfolio.llm.client import LLMClient
-from portfolio.llm.exceptions import (
+from apps.portfolio.llm.client import LLMClient
+from apps.portfolio.llm.exceptions import (
     LLMAuthError,
     LLMBudgetExceededError,
     LLMError,

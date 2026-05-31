@@ -22,12 +22,12 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
-from portfolio.llm.parsers import parse_json_response
-from portfolio.prompts.e1.e1_builder import build_e1_prompt
-from portfolio.schemas.llm_outputs import OneLineDiagnosis
-from portfolio.tests.fixtures.sample_analysis_context import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.prompts.e1.e1_builder import build_e1_prompt
+from apps.portfolio.schemas.llm_outputs import OneLineDiagnosis
+from apps.portfolio.tests.fixtures.sample_analysis_context import (
     get_context_garp_large,
     get_context_garp_misfit,
     get_context_garp_tech,

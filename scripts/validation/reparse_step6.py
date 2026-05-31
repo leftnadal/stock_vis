@@ -1,7 +1,7 @@
 """
 Slice 2 Step 0.5 — Step 6 산출물 재처리 (LLM 호출 0).
 
-Slice 1에서 도입된 robust parser(`portfolio.llm.parsers.parse_json_response`)와
+Slice 1에서 도입된 robust parser(`apps.portfolio.llm.parsers.parse_json_response`)와
 갱신 임계($0.020)를 적용해 docs/portfolio/coach/slice1/step6_smoke_output.json의
 judgments를 갱신.
 
@@ -27,8 +27,8 @@ from scripts.validation._setup import init_django
 
 init_django()
 
-from portfolio.llm.parsers import parse_json_response
-from portfolio.schemas.llm_outputs import OneLineDiagnosis
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.schemas.llm_outputs import OneLineDiagnosis
 
 TARGET_PATH = Path("docs/portfolio/coach/slice1/step6_smoke_output.json")
 
@@ -99,7 +99,7 @@ def main() -> int:
         "reparsed_at": datetime.now(timezone.utc).isoformat(),
         "previous_thresholds_cost_usd_max": 0.001,
         "current_thresholds_cost_usd_max": NEW_THRESHOLDS["cost_usd_max"],
-        "parser_module": "portfolio.llm.parsers.parse_json_response",
+        "parser_module": "apps.portfolio.llm.parsers.parse_json_response",
         "naturalness_arg_provided": args.naturalness is not None,
         "note": "raw_text 보존, judgments + thresholds + parsed만 갱신.",
     }

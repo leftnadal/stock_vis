@@ -5,14 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from portfolio.prompts.e4.builder import (
+from apps.portfolio.prompts.e4.builder import (
     SYSTEM_PROMPT,
     build_e4_messages,
     build_e4_prompt,
     build_e4_user_prompt,
     get_system_prompt,
 )
-from portfolio.schemas.e4_conversation import E4ConversationInput
+from apps.portfolio.schemas.e4_conversation import E4ConversationInput
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / "e4_conversation"
 

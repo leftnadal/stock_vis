@@ -14,12 +14,12 @@ import json
 import pytest
 from pydantic import ValidationError
 
-from portfolio.prompts.e3_portfolio import (
+from apps.portfolio.prompts.e3_portfolio import (
     PROMPT_VARIABLE_SLOTS,
     build_e3_portfolio_prompt,
 )
-from portfolio.schemas.llm_outputs import E3PortfolioCommentary, PresetAlignment
-from portfolio.tests.fixtures.sample_e3_portfolio_context import (
+from apps.portfolio.schemas.llm_outputs import E3PortfolioCommentary, PresetAlignment
+from apps.portfolio.tests.fixtures.sample_e3_portfolio_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
     PRESET_INTENT_MAP,
@@ -232,7 +232,7 @@ def test_e3_portfolio_entry_point_meta_schema_match():
 
     Slice 6 Part 1 Step 0 + Step 1 정합성 검증.
     """
-    from portfolio.llm.budget_estimator import ENTRY_POINT_META
+    from apps.portfolio.llm.budget_estimator import ENTRY_POINT_META
 
     e3p = ENTRY_POINT_META["e3_portfolio"]
     # 6 필드 (str_long + str_medium × 3 + literal + int_float)

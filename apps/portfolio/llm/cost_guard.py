@@ -5,7 +5,7 @@ record_call()로 매 호출 누적.
 exceeded() 또는 LLMClient 통합으로 한도 초과 시 LLMBudgetExceededError 발생.
 
 사용 예:
-    from portfolio.llm.cost_guard import CostGuard
+    from apps.portfolio.llm.cost_guard import CostGuard
 
     guard = CostGuard.get_instance()
     guard.reset_slice("slice3", max_calls=50)
@@ -44,7 +44,7 @@ from datetime import datetime, timezone
 from threading import Lock
 from typing import ClassVar, Optional
 
-from portfolio.llm.exceptions import LLMBudgetExceededError
+from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
 logger = logging.getLogger(__name__)
 
@@ -308,8 +308,8 @@ class CostGuard:
             예상 비용 (USD). buffer 미적용.
         """
         # 지연 import — Django settings 모듈 로드 회피 (cost_guard.py import 시점에는 미필요).
-        from portfolio.llm.client import _ANTHROPIC_PRICING
-        from portfolio.measure.estimator_v3 import (
+        from apps.portfolio.llm.client import _ANTHROPIC_PRICING
+        from apps.portfolio.measure.estimator_v3 import (
             estimate_input_tokens,
             estimate_output_tokens,
         )
@@ -321,7 +321,7 @@ class CostGuard:
         )
 
         # 미등록 모델 → sonnet 단가 fallback (client.py:296~297 동일 정책).
-        from portfolio.llm.client import (
+        from apps.portfolio.llm.client import (
             ANTHROPIC_SONNET_INPUT_USD_PER_1M,
             ANTHROPIC_SONNET_OUTPUT_USD_PER_1M,
         )

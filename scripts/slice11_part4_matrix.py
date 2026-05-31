@@ -79,11 +79,11 @@ def _model_rates(model: str) -> tuple[float, float]:
 
 def _run_case(entry: str, model: str, repeat: int, client: anthropic.Anthropic) -> dict:
     """단일 (entry, model, repeat) 케이스 실행 + 측정."""
-    from portfolio.llm.parsers import parse_json_response
-    from portfolio.measure.estimator_v3 import estimate_input_tokens, reset_cache
-    from portfolio.schemas.commentary_output import COMMENTARY_OUTPUT_CLASSES
-    from portfolio.services.coach.prompt_builder import PROMPT_BUILDER_CLASSES
-    from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+    from apps.portfolio.llm.parsers import parse_json_response
+    from apps.portfolio.measure.estimator_v3 import estimate_input_tokens, reset_cache
+    from apps.portfolio.schemas.commentary_output import COMMENTARY_OUTPUT_CLASSES
+    from apps.portfolio.services.coach.prompt_builder import PROMPT_BUILDER_CLASSES
+    from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
     reset_cache()
 

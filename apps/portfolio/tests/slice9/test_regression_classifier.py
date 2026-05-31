@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from portfolio.tests.helpers.regression_classifier import classify_regression
+from apps.portfolio.tests.helpers.regression_classifier import classify_regression
 
 
 class TestRegressionClassifier:

@@ -76,7 +76,7 @@ def main() -> int:
         print(f"⚠ {KEY_PATH} 미존재 — prepare_manual_eval_v7 먼저", file=sys.stderr)
         return 1
 
-    from portfolio.llm.eval_metrics import distribution_width_kpi
+    from apps.portfolio.llm.eval_metrics import distribution_width_kpi
 
     parsed = parse_filled(FILLED_PATH.read_text(encoding="utf-8"))
     key_map = json.loads(KEY_PATH.read_text(encoding="utf-8"))

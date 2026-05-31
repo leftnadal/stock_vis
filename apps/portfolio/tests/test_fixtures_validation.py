@@ -13,7 +13,7 @@ from decimal import Decimal
 
 import pytest
 
-from portfolio.tests.fixtures.sample_analysis_context import (
+from apps.portfolio.tests.fixtures.sample_analysis_context import (
     garp_large_fit_distribution,
     get_context_dividend,
     get_context_garp_large,
@@ -78,7 +78,7 @@ def test_garp_misfit_core_metrics_indicate_misfit():
 
 def test_garp_large_preset_consistency():
     """garp_large 메트릭 ID 집합이 PRESET_METRICS['garp']의 metric_id와 일치."""
-    from portfolio.metrics.definitions.preset_metrics import PRESET_METRICS
+    from apps.portfolio.metrics.definitions.preset_metrics import PRESET_METRICS
 
     ctx = get_context_garp_large()
     p = ctx.analysis_target_portfolio

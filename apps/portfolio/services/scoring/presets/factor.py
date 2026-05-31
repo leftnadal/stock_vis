@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from typing import Any, ClassVar
 
-from portfolio.services.scoring.base import ScoringEngineBase
-from portfolio.services.scoring.preset_spec import PresetSpec
+from apps.portfolio.services.scoring.base import ScoringEngineBase
+from apps.portfolio.services.scoring.preset_spec import PresetSpec
 
 FACTOR_SPECS: list[PresetSpec] = [
     PresetSpec(

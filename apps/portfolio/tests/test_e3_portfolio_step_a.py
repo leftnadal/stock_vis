@@ -15,23 +15,23 @@ from __future__ import annotations
 
 import pytest
 
-from portfolio.llm.budget_estimator import (
+from apps.portfolio.llm.budget_estimator import (
     ENTRY_POINT_META,
     estimate_budget_for_entrypoint,
     estimate_input_tokens,
     verify_extrapolation,
 )
-from portfolio.llm.token_budgets import (
+from apps.portfolio.llm.token_budgets import (
     ENTRYPOINT_TOKEN_BUDGETS,
     get_token_budget,
 )
-from portfolio.prompts.e3_portfolio import (
+from apps.portfolio.prompts.e3_portfolio import (
     FEW_SHOT_EXAMPLES,
     REINFORCED_PROMPT_TEMPLATE,
     SYSTEM_PROMPT,
     build_e3_portfolio_prompt,
 )
-from portfolio.tests.fixtures.sample_e3_portfolio_context import (
+from apps.portfolio.tests.fixtures.sample_e3_portfolio_context import (
     ALL_FIXTURES,
     PRESET_INTENT_MAP,
 )

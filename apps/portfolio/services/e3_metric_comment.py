@@ -14,13 +14,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from portfolio.llm import LLMClient
-from portfolio.llm.parsers import parse_json_response
-from portfolio.prompts.e3.e3_builder import build_e3_prompt as _raw_build_e3_prompt
-from portfolio.schemas import AnalysisContext
-from portfolio.schemas.llm import E3Request
-from portfolio.schemas.llm_outputs import MetricComments
-from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.parsers import parse_json_response
+from apps.portfolio.prompts.e3.e3_builder import build_e3_prompt as _raw_build_e3_prompt
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.schemas.llm_outputs import MetricComments
+from apps.portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel
 
 # ============================================================
 # 프롬프트 wrapper — (system, user) tuple → single prompt

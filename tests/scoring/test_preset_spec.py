@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.services.scoring.preset_spec import PresetSpec
+from apps.portfolio.services.scoring.preset_spec import PresetSpec
 
 
 def test_valid_spec():

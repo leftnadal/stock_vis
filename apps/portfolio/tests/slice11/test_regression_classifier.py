@@ -6,7 +6,7 @@ Slice 11 신규 작업의 변경 경로가 기존 카테고리(data-prep / cost 
 
 from __future__ import annotations
 
-from portfolio.tests.helpers.regression_classifier import classify_regression
+from apps.portfolio.tests.helpers.regression_classifier import classify_regression
 
 
 def test_output_estimator_changes_are_mixed():

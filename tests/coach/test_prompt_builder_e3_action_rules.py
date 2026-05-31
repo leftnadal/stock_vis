@@ -11,8 +11,8 @@ prompt에 action_items 작성 규칙 4종 명시하여 NG 감소 목표 (< 30%).
 
 from __future__ import annotations
 
-from portfolio.services.coach.prompt_builder import E3PromptBuilder
-from portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
+from apps.portfolio.services.coach.prompt_builder import E3PromptBuilder
+from apps.portfolio.tests.fixtures.coach.loaders import load_portfolio_a2_input
 
 
 def test_e3_prompt_includes_action_rules_header():

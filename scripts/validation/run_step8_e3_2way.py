@@ -40,13 +40,13 @@ init_django()
 # 멱등 reset — Step 6에서 누적된 카운트 위에 14 calls 추가 안전 (max=50)
 reset_for_slice("slice5", max_calls=50)
 
-from portfolio.llm import LLMClient
-from portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
-from portfolio.llm.cost_guard import CostGuard
-from portfolio.schemas import AnalysisContext
-from portfolio.schemas.llm import E3Request
-from portfolio.services.e3_metric_comment import build_e3_prompt, parse_e3_response
-from portfolio.tests.fixtures.sample_metric_comment_context import (
+from apps.portfolio.llm import LLMClient
+from apps.portfolio.llm.client import ANTHROPIC_HAIKU_MODEL, ANTHROPIC_SONNET_MODEL
+from apps.portfolio.llm.cost_guard import CostGuard
+from apps.portfolio.schemas import AnalysisContext
+from apps.portfolio.schemas.llm import E3Request
+from apps.portfolio.services.e3_metric_comment import build_e3_prompt, parse_e3_response
+from apps.portfolio.tests.fixtures.sample_metric_comment_context import (
     ALL_FIXTURES,
     FIXTURE_GROUPS,
 )

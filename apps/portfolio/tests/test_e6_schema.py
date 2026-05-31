@@ -8,8 +8,8 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.llm import AdjustmentItem, E6Request
-from portfolio.schemas.llm_outputs import (
+from apps.portfolio.schemas.llm import AdjustmentItem, E6Request
+from apps.portfolio.schemas.llm_outputs import (
     E6ChangeAspect,
     E6ComparisonResponse,
     E6KeyChange,

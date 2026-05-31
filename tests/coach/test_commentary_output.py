@@ -14,7 +14,7 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from portfolio.schemas.commentary_output import (
+from apps.portfolio.schemas.commentary_output import (
     COMMENTARY_OUTPUT_CLASSES,
     ActionItem,
     CommentaryOutputBase,
@@ -112,7 +112,7 @@ def test_sub_classes_have_base_fields_inherited():
 
 def test_mapping_registers_six_classes():
     """COMMENTARY_OUTPUT_CLASSES — e1~e6 6개 등록 + Part 1 input registry와 키 일관."""
-    from portfolio.schemas.commentary_input import COMMENTARY_INPUT_CLASSES
+    from apps.portfolio.schemas.commentary_input import COMMENTARY_INPUT_CLASSES
 
     assert set(COMMENTARY_OUTPUT_CLASSES) == {"e1", "e2", "e3", "e4", "e5", "e6"}
     expected = {
