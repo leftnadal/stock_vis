@@ -751,3 +751,45 @@ pat_dynamic = re.compile(
 4. **외부 환경/날짜 회귀 분리 검증 패턴**: main 비교로 PR 무관 회귀 빠르게 분리 (`git stash + git checkout main + pytest 대상 + 복귀`)
 
 **다음 PR**: PR6 (apps/chain_sight/) — chainsight 앱 (실 코드명 확인 후 진입)
+
+### monorepo PR6 — apps/chain_sight 이관 (chainsight snake_case rename) (2026-05-31)
+
+**결과**: `chainsight/` → `apps/chain_sight/` 이동 완료 (history 보존, R100, snake_case rename + label='chainsight' 보존).
+
+**STEP 0 fact-check 결과 (PR4 학습 1 답습)**:
+- 실 코드명 `chainsight` (1 단어) ≠ plan `chain_sight` → snake_case rename 동반
+- INSTALLED_APPS L204 + URL L44 → **ACTIVE**
+- 외부 메인 코드 결합 0건 (tests/만 21건, PR3 iron_trading 수준 격리)
+- frontend 자산 3건 (services/app/components) → PR6 scope 외 (B-3 답습)
+- 보호 케이스 사전 식별: migration to= 2건 + 단축 task name 'chainsight-X' 10건 + spectacular lazy ref 1건
+
+**commit SHA (PR6 5 commits, branch `monorepo/pr6-chain-sight`)**:
+- `4d16647` — pre-step: ruff format baseline cleanup (55 파일)
+- `31782f5` — mv chainsight → apps/chain_sight (R100, snake_case rename)
+- `a60983a` — import 경로 갱신 (Python 91 + Celery 12 + mock.patch 15 = 118건)
+- `3769265` — Django INSTALLED_APPS + URL + AppConfig name='apps.chain_sight' + label='chainsight'
+- `{c5}` — DECISIONS + PROGRESS 정착
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**답습 자산 활용 (PR2/PR3/PR4 부록 A)**:
+- Python static import regex: 91건 (42 파일)
+- 동적 import sweep: 15건 (regex 14 + manual 1, fail 파일 한정 — PR4 학습 답습)
+- Celery 4-seg task name: 12건 변환
+- 단축 task name 'chainsight-X' 10건 보존 (DB PeriodicTask 매핑 보존)
+- Django 패치 3종 (INSTALLED_APPS / urls.py / AppConfig.name+label)
+- label='chainsight' 효과: migration to= 2건 + spectacular lazy ref + ContentType 자동 보존
+
+**검증 결과**:
+- Django check: System check identified no issues
+- makemigrations --dry-run: **No changes detected** (★ label 보존 효과 확인, HALT 트리거 5 회피)
+- import smoke (apps.chain_sight): OK
+- pytest 풀 회귀: **3172 passed, 52 skipped** (PR4 baseline 동일, **회귀 0건** + PR4 환경 fail 7건 해소)
+- ruff 카운트: main 1013 → PR6 **1009** (-4 개선, 회귀 0)
+- health_check: 6✅/0⚠/1❌ (baseline 평행)
+
+**미처리 (PR6 외)**:
+- frontend chainsight 자산 — B-3 답습, 별도 PR
+- URL prefix `api/v1/chainsight/` 보존 (외부 API consumer 호환성)
+
+**다음 PR**: PR7 (apps/portfolio/) — **최고 위험도** (coach 포함, 슬라이스 병행 ❌ 금지). 풀 회귀 + IDENTICAL 31/31 필수.
