@@ -49,11 +49,11 @@ urlpatterns = [
     path('api/v1/', include('packages.shared.api_request.urls')),
 
     # Portfolio Coach (slice 1: E1+GARP) — 순수 Django view
-    path('api/', include('portfolio.urls')),
+    path('api/', include('apps.portfolio.urls')),  # PR7 이동
 
     # Portfolio Coach DRF API (Slice 13 Part 1+) — 별도 endpoint
     # Slice 13 Part 1.5: v1 버전 세그먼트 도입 (비가역 계약 + 미래 호환성).
-    path('api/v1/', include('portfolio.api.urls', namespace='portfolio_api')),
+    path('api/v1/', include('apps.portfolio.api.urls', namespace='portfolio_api')),  # PR7 이동, namespace 유지
 
     # Market Pulse v2 (PR-I/J)
     path('api/v2/market-pulse/', include('apps.market_pulse.api.urls')),  # PR4 이동
