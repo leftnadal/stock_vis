@@ -688,3 +688,66 @@ pat_dynamic = re.compile(
 4. **STEP 0 fact-check 단순화**: INSTALLED_APPS 등록 + URL 라우팅 = active. 추가 동적 import 검사로 보강
 
 **다음 PR**: PR4 (apps/dashboard/) — packages.shared 의존, IDENTICAL 31/31 풀 적용 시작점
+
+### monorepo PR4 — apps/market_pulse 이관 (dashboard 보류 승계) (2026-05-31)
+
+**결과**: `marketpulse/` → `apps/market_pulse/` 이동 완료 (history 보존, R100, snake_case rename 동반).
+
+**PR4 대상 교체 결정**:
+- 원안 (execution_plan v1.0): PR4 = `apps/dashboard/`
+- fact-check (STEP 0): dashboard 실 디렉토리/Django 앱 **부재** (`docs/dashboard_plan/`만 존재)
+- → dashboard = **monorepo 트랙 외로 보류**. 트리거 = 독립 배포 또는 모듈 경계 명시 필요 시
+- → PR4 = `apps/market_pulse/` 승계 (원안 PR5). PR5 결번. 결번 표기: execution_plan v1.0 §1 갱신 박음
+- 사유: dashboard는 신규 생성 + stocks 내 자산 분리 복합 작업이라 monorepo 단순 이동 패턴 외. 별도 설계 필요.
+
+**STEP 0 fact-check 결과**:
+- 실존: `./marketpulse/` (snake_case 아님, 단일 단어)
+- INSTALLED_APPS: `marketpulse.apps.MarketpulseConfig` ✅
+- URL: `api/v2/market-pulse/` ✅
+- 외부 import 호출: 다수 (rag_analysis 2 + serverless 2 + tests/marketpulse 다수)
+- → **ACTIVE**. target = `apps/market_pulse/` (snake_case rename 동반)
+- frontend 분리: `frontend/app/market-pulse{,_v2}/` 등 다수 — **PR4 scope 외 (B-3 답습)**
+
+**commit SHA (PR4 6 commits, branch `monorepo/pr4-market-pulse`)**:
+- `b7a95a2` — pre-step: ruff format baseline cleanup (57 파일)
+- `a212593` — apps/ 네임스페이스 패키지 초기화
+- `{c3}` — mv marketpulse → apps/market_pulse (snake_case rename 동반)
+- `{c4}` — import 경로 갱신 (Python 154 + Celery task name 22 = 176건)
+- `726e0fd` — Django INSTALLED_APPS + URL + AppConfig 호출처 갱신
+- `{c6}` — DECISIONS + PROGRESS + execution_plan dashboard 보류 마킹
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**답습 자산 활용 (PR2/PR3 부록 A)**:
+- Python static import regex: 154건 (48 파일)
+- 동적 import sweep: 0건 (mock.patch/send_task/importlib 부재)
+- Celery task name (4-seg 문자열): 22건 변환
+- Django 패치 7종 중 3종 적용: INSTALLED_APPS / urls.py include / AppConfig.name+label
+- .gitignore 사전 점검: 충돌 0
+- ruff format pre-step: 57 파일 분리 commit
+
+**보호된 케이스 (label='marketpulse' 유지)**:
+- migration `to="marketpulse.marketpulsenews"` 2건
+- model lazy ref `"marketpulse.MarketPulseNews"` 1건
+- → Django app_label 기반 ref, AppConfig.label='marketpulse'로 마이그레이션 history + 모델 ref 보존
+
+**검증 결과**:
+- Django check: System check identified no issues
+- makemigrations --dry-run: No changes detected
+- import smoke (apps.market_pulse): OK
+- pytest 풀 회귀: **3165 passed, 7 fail** — 7 fail 모두 main에서 동일 fail (환경/날짜 변경 영향, PR4 무관)
+- ruff 델타: main 1013 = PR4 1013 (델타 0)
+- health_check: 5✅/1⚠/1❌ — ⚠ 격상 = PR4 무관 `5894177 docs: 코드베이스 감사 보고서 생성` 휴리스틱 misclassify (외부 자동화 의심으로 분류, 실제는 사용자 docs commit). ❌ 신규 격상 없음 → HALT 사유 아님
+
+**미처리 (PR4 외)**:
+- `apps/market_pulse/utils/circuit_breaker.py` (외부 4 호출처 — rag_analysis 2 + serverless 2). blueprint §② "packages/shared 후보". **PR5(결번)/PR8 흡수 또는 별도 분리 PR** 가능성. 본 PR4는 marketpulse 전체 이동만, 분리는 별도 결정.
+- dashboard 앱: monorepo 외 이연 (트리거 명시: 독립 배포/모듈 경계)
+- frontend market-pulse 자산: B-3 답습, 별도 PR
+
+**신규 학습 (PR6~PR8 답습 후보)**:
+1. **fact-check 답습 강제**: plan 표기 ≠ 실 코드명 (plan `market_pulse` vs 실 `marketpulse`). 폴더 rename 동반 가능성 사전 확인 필수
+2. **plan 표기 오류 → trigger 명시 보류**: 실존 부재 트랙은 monorepo 외로 이연 + trigger 명시 (dashboard 사례)
+3. **AppConfig.label로 마이그레이션 history 보존**: snake_case rename + label='oldname' 조합으로 model ref/migration to="oldname.X" 모두 보존
+4. **외부 환경/날짜 회귀 분리 검증 패턴**: main 비교로 PR 무관 회귀 빠르게 분리 (`git stash + git checkout main + pytest 대상 + 복귀`)
+
+**다음 PR**: PR6 (apps/chain_sight/) — chainsight 앱 (실 코드명 확인 후 진입)

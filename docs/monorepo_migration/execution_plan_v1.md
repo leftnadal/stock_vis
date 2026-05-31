@@ -50,8 +50,8 @@ services/
 | **PR1** | `services/_dormant/graph_analysis/` | 없음 (휴면) | 최저 | ✅ 가능 | 1 세션 |
 | **PR2** | `packages/` (shared + web) | 다른 모든 트랙이 의존 | 중상 | ⚠️ 단독 권장 | 1 세션 |
 | **PR3** | `integrations/iron_trading/` | 독립 (외부 도구) | 낮음 | ✅ 가능 | 1 세션 |
-| **PR4** | `apps/dashboard/` | packages 의존 | 중 | ⚠️ 단독 권장 | 1 세션 |
-| **PR5** | `apps/market_pulse/` | packages 의존 | 중 | ✅ 가능 | 1 세션 |
+| **PR4** | ~~`apps/dashboard/`~~ **보류 → `apps/market_pulse/` 승계** | packages 의존 | 중 | ⚠️ 단독 권장 | 1 세션 |
+| ~~**PR5**~~ | ~~`apps/market_pulse/`~~ **→ PR4로 흡수 (2026-05-31)** | — | — | — | — |
 | **PR6** | `apps/chain_sight/` | packages 의존 | 중 | ✅ 가능 | 1 세션 |
 | **PR7** | `apps/portfolio/` (coach 포함) | packages 의존 | **최고** | ❌ **금지** | 1 세션 |
 | **PR8** | 루트 메타 정리 + 이관 5건 잔여 | 모든 트랙 정착 후 | 낮음 | ✅ 가능 | 1 세션 |
@@ -59,6 +59,10 @@ services/
 **역방향 근거**: import 경로 변경 시 "참조하는 쪽"은 "참조되는 쪽"이 신경로에 정착한 뒤 옮겨야 깨짐 최소. packages → integrations → apps 순서.
 
 **PR1의 예외**: _dormant는 휴면(import 호출처 없음)이라 의존성 그래프에서 빠짐. 학습 곡선 슬롯으로 PR1 배정.
+
+**PR4 dashboard 보류 (2026-05-31)**: `apps/dashboard/` 실 디렉토리/Django 앱 부재 확인 (코드 fact-check). blueprint §② 정의는 신규 트랙. **monorepo 트랙 외로 이연**, 트리거 = 독립 배포 또는 모듈 경계 명시 필요 시. PR4는 **PR5 원안 `apps/market_pulse/`로 승계** (결번 방지, 원안 PR5는 PR4에 흡수).
+
+**PR 순번 재배치 (2026-05-31)**: PR4=market_pulse / PR5(원안 market_pulse) 결번 / PR6/PR7/PR8 그대로. dashboard 부활 시 PR9 또는 별도 슬롯.
 
 ---
 
