@@ -19,7 +19,7 @@ from pathlib import Path
 from apps.portfolio.llm.token_budgets import estimate_input_tokens
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
+FIXTURE_DIR = ROOT / "apps/portfolio/tests/fixtures/e4_conversation"
 OUT_PATH = ROOT / "docs/portfolio/coach/slice7/step5_estimator_verification.json"
 REPORT_PATH = ROOT / "docs/portfolio/coach/slice7/step5_estimator_verification.md"
 KPI_THRESHOLD_PCT = 30.0

@@ -23,7 +23,7 @@ from apps.portfolio.prompts.e4.builder import build_e4_prompt  # noqa: E402
 from apps.portfolio.schemas.e4_conversation import E4ConversationInput  # noqa: E402
 
 MATRIX_PATH = ROOT / "docs/portfolio/coach/slice7/step7_matrix_raw.json"
-FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
+FIXTURE_DIR = ROOT / "apps/portfolio/tests/fixtures/e4_conversation"
 OUT_PATH = ROOT / "docs/portfolio/coach/slice7/step7_beta2_round2.json"
 REPORT_PATH = ROOT / "docs/portfolio/coach/slice7/step7_beta2_round2.md"
 

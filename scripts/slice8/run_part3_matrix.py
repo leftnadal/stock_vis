@@ -41,7 +41,7 @@ from apps.portfolio.tests.slice8.helpers.specificity_count import (
     count_patterns,  # noqa: E402
 )
 
-FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
+FIXTURE_DIR = ROOT / "apps/portfolio/tests/fixtures/e4_conversation"
 OUTPUT_DIR = ROOT / "docs/portfolio/coach/slice8/part3/matrix"
 SUMMARY_PATH = ROOT / "docs/portfolio/coach/slice8/part3/matrix_summary.json"
 

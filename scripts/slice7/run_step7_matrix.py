@@ -31,7 +31,7 @@ from apps.portfolio.schemas.e4_conversation import (  # noqa: E402
 from apps.portfolio.services._llm_kwargs import resolve_provider_kwargs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE_DIR = ROOT / "portfolio/tests/fixtures/e4_conversation"
+FIXTURE_DIR = ROOT / "apps/portfolio/tests/fixtures/e4_conversation"
 OUT_RAW = ROOT / "docs/portfolio/coach/slice7/step7_matrix_raw.json"
 OUT_METRICS = ROOT / "docs/portfolio/coach/slice7/step7_matrix_metrics.json"
 OUT_REPORT = ROOT / "docs/portfolio/coach/slice7/step7_matrix_report.md"

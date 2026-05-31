@@ -40,8 +40,8 @@ def test_commentary_input_schema_changes_are_mixed():
     """
     paths = [
         "portfolio/schemas/commentary_input.py",
-        "portfolio/tests/fixtures/coach/portfolio_a2.json",
-        "portfolio/tests/fixtures/coach/loaders.py",
+        "apps/portfolio/tests/fixtures/coach/portfolio_a2.json",
+        "apps/portfolio/tests/fixtures/coach/loaders.py",
         "tests/coach/test_commentary_input.py",
     ]
     assert classify_regression(paths) == "mixed"

@@ -37,7 +37,7 @@ from apps.portfolio.tests.slice8.helpers.specificity_count import (
     count_patterns,  # noqa: E402
 )
 
-FIXTURE_PATH = ROOT / "portfolio/tests/fixtures/e4_conversation/S01_V1_tier1.json"
+FIXTURE_PATH = ROOT / "apps/portfolio/tests/fixtures/e4_conversation/S01_V1_tier1.json"
 OUTPUT_PATH = ROOT / "docs/portfolio/coach/slice8/part3/step6_smoke_result.json"
 
 # 임계

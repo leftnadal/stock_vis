@@ -36,7 +36,7 @@ from apps.portfolio.schemas.e4_conversation import (  # noqa: E402
 from apps.portfolio.services._llm_kwargs import resolve_provider_kwargs  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
-FIXTURE_PATH = ROOT / "portfolio/tests/fixtures/e4_conversation/S01_V1_tier1.json"
+FIXTURE_PATH = ROOT / "apps/portfolio/tests/fixtures/e4_conversation/S01_V1_tier1.json"
 OUT_PATH = ROOT / "docs/portfolio/coach/slice7/step6_smoke_result.json"
 REPORT_PATH = ROOT / "docs/portfolio/coach/slice7/step6_smoke_result.md"
 
