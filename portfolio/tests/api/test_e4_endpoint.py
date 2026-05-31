@@ -74,17 +74,19 @@ def test_post_e4_returns_200_with_valid_request(
     with patch(
         "portfolio.api.views.run_e4_coach", return_value=mock_llm_response_e4
     ) as mock_run:
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     assert response.status_code == 200, response.data
     assert mock_run.call_count == 1
     # ★ E4 특이 검증: run_e4_coach는 preset_id/metrics kwarg를 받지 않음.
     # 다른 진입점처럼 "None 미전달"을 검증하지 않는다 — 시그니처 자체에 없음.
     call_kwargs = mock_run.call_args.kwargs
-    assert "preset_id" not in call_kwargs, "E4 signature에 preset_id 미존재 — endpoint가 전달하면 안 됨"
-    assert "metrics" not in call_kwargs, "E4 signature에 metrics 미존재 — endpoint가 전달하면 안 됨"
+    assert "preset_id" not in call_kwargs, (
+        "E4 signature에 preset_id 미존재 — endpoint가 전달하면 안 됨"
+    )
+    assert "metrics" not in call_kwargs, (
+        "E4 signature에 metrics 미존재 — endpoint가 전달하면 안 됨"
+    )
 
     data = response.json()
     assert "output" in data
@@ -104,12 +106,8 @@ def test_post_e4_response_passes_e4output_validation(
     """★ contract test 핵심 — 응답 dict가 다시 E4Output(Pydantic)으로 검증 가능."""
     from portfolio.schemas.commentary_output import E4Output
 
-    with patch(
-        "portfolio.api.views.run_e4_coach", return_value=mock_llm_response_e4
-    ):
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e4_coach", return_value=mock_llm_response_e4):
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     output_dict = response.json()["output"]
     revalidated = E4Output(**output_dict)
@@ -173,9 +171,7 @@ def test_post_e4_service_exception_returns_500_no_stacktrace(
         "portfolio.api.views.run_e4_coach",
         side_effect=RuntimeError("internal database error with secret /tmp/ccc"),
     ):
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     assert response.status_code == 500
     body_str = json.dumps(response.json())
@@ -192,9 +188,7 @@ def test_post_e4_llm_budget_exceeded_returns_429(api_client, e4_request_body):
         "portfolio.api.views.run_e4_coach",
         side_effect=LLMBudgetExceededError(scope="slice", count=51, limit=50),
     ):
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     assert response.status_code == 429
 
@@ -207,9 +201,7 @@ def test_post_e4_llm_error_returns_502(api_client, e4_request_body):
         "portfolio.api.views.run_e4_coach",
         side_effect=LLMRateLimitError("upstream rate limit"),
     ):
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
 
     assert response.status_code == 502
 
@@ -225,10 +217,6 @@ def test_post_e4_service_returns_drifted_output_caught_by_serializer(
     """★ service 응답이 E4Output 계약을 깨면 serializer가 잡아낸다."""
     drifted = dict(mock_llm_response_e4)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch(
-        "portfolio.api.views.run_e4_coach", return_value=drifted
-    ):
-        response = api_client.post(
-            E4_ENDPOINT, data=e4_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e4_coach", return_value=drifted):
+        response = api_client.post(E4_ENDPOINT, data=e4_request_body, format="json")
     assert response.status_code in (400, 500)

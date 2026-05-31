@@ -111,4 +111,6 @@ class TestSlice8Baseline:
         warnings = guard.check_warnings()
         # warning 기준 초과 — 경고 메시지 포함
         # warning은 "⚠ 누적 임계 80% 도달: $X (threshold $Y)" 형식
-        assert any("임계 80%" in w or "warning" in w.lower() for w in warnings), warnings
+        assert any("임계 80%" in w or "warning" in w.lower() for w in warnings), (
+            warnings
+        )

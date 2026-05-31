@@ -55,7 +55,9 @@ _VALID_PROVIDERS = ("haiku", "sonnet", "anthropic")
     tags=["coach"],
 )
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])  # Slice 16 Step 0-B #70: AllowAny → IsAuthenticated 전환
+@permission_classes(
+    [IsAuthenticated]
+)  # Slice 16 Step 0-B #70: AllowAny → IsAuthenticated 전환
 def coach_e1(request: Request) -> Response:
     """POST /api/coach/e1/
 
@@ -71,7 +73,9 @@ def coach_e1(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -124,7 +128,9 @@ def coach_e2(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -180,7 +186,9 @@ def coach_e3(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -232,7 +240,9 @@ def coach_e5(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -284,7 +294,9 @@ def coach_e6(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -337,7 +349,9 @@ def coach_e4(request: Request) -> Response:
     provider = request.query_params.get("provider", "haiku")
     if provider not in _VALID_PROVIDERS:
         return Response(
-            {"error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."},
+            {
+                "error": f"Invalid provider: {provider!r}. Must be one of {list(_VALID_PROVIDERS)}."
+            },
             status=status.HTTP_400_BAD_REQUEST,
         )
 

@@ -34,7 +34,7 @@ FACTOR_SPECS: list[PresetSpec] = [
         category="factor",
         weights={
             "volatility_1y": 0.30,  # 정규화 시 inverse
-            "beta": 0.20,            # 정규화 시 inverse
+            "beta": 0.20,  # 정규화 시 inverse
             "downside_deviation": 0.25,
             "max_drawdown_1y": 0.15,
             "portfolio_volatility": 0.10,

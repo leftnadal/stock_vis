@@ -126,8 +126,7 @@ class WalletBackgroundContext(BaseModel):
         default_factory=list,
         max_length=5,
         description=(
-            "자연어 변화 요약 최대 5개. "
-            "예: ['Tech 비중 40% → 55%', 'ABC 신규 편입']."
+            "자연어 변화 요약 최대 5개. 예: ['Tech 비중 40% → 55%', 'ABC 신규 편입']."
         ),
     )
 

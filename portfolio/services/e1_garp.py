@@ -56,8 +56,7 @@ def run_e1_garp(
         client = LLMClient()
     if provider not in PROVIDER_KWARGS:
         raise ValueError(
-            f"Unknown provider label: {provider!r}. "
-            f"Valid: {sorted(PROVIDER_KWARGS)}"
+            f"Unknown provider label: {provider!r}. Valid: {sorted(PROVIDER_KWARGS)}"
         )
     llm_response: LLMResponse = client.complete(
         prompt=prompt, **PROVIDER_KWARGS[provider]

@@ -26,8 +26,8 @@ ENTRYPOINT_TOKEN_BUDGETS: dict[str, int] = {
     "e3": 7000,  # Slice 5 Step 7 (P90=4359 × 1.5=6538.5 → round-up 500 = 7000, AnalysisContext 전체)
     "e3_portfolio": 7000,  # Slice 6 Part 2 Step A (P100=4030 + output 483 → ×1.5 → round-up 500 = 7000)
     # Slice 7 Part 2: E4 대화 Tier별 (history 누적량으로 분기)
-    "e4_conversation_tier1": 6000,   # input ~3500 (portfolio context + question) × 1.7 안전 마진
-    "e4_conversation_tier2": 8000,   # Tier 1 + history 1~2 turns (~700 chars/turn)
+    "e4_conversation_tier1": 6000,  # input ~3500 (portfolio context + question) × 1.7 안전 마진
+    "e4_conversation_tier2": 8000,  # Tier 1 + history 1~2 turns (~700 chars/turn)
     "e4_conversation_tier3": 12000,  # Tier 1 + history 3~5 turns (max_history_turns=5)
 }
 

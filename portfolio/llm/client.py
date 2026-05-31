@@ -68,11 +68,26 @@ def _classify_gemini_error(exc: Exception) -> Exception:
     cls_name = type(exc).__name__.lower()
     msg = str(exc).lower()
 
-    if "ratelimit" in cls_name or "resourceexhausted" in cls_name or "quota" in msg or "rate limit" in msg:
+    if (
+        "ratelimit" in cls_name
+        or "resourceexhausted" in cls_name
+        or "quota" in msg
+        or "rate limit" in msg
+    ):
         return LLMRateLimitError(str(exc))
-    if "timeout" in cls_name or "deadlineexceeded" in cls_name or "timeout" in msg or "deadline" in msg:
+    if (
+        "timeout" in cls_name
+        or "deadlineexceeded" in cls_name
+        or "timeout" in msg
+        or "deadline" in msg
+    ):
         return LLMTimeoutError(str(exc))
-    if "permission" in cls_name or "unauthenticated" in cls_name or "api key" in msg or "unauthorized" in msg:
+    if (
+        "permission" in cls_name
+        or "unauthenticated" in cls_name
+        or "api key" in msg
+        or "unauthorized" in msg
+    ):
         return LLMAuthError(str(exc))
     if "invalidargument" in cls_name or "badrequest" in cls_name or "invalid" in msg:
         return LLMInvalidPromptError(str(exc))
@@ -153,12 +168,15 @@ class LLMClient:
                 f"호출 {self._call_count}회 도달, 가드 임계 {self._budget_max}"
             )
         from portfolio.llm.cost_guard import CostGuard
+
         guard = CostGuard.get_instance()
         guard.record_llm_call()  # 두 카운터 ++ + per_instance/per_slice check
 
         # 2. 1차 시도 + 1회 재시도
         try:
-            response = self._call_with_retry(provider, prompt, max_tokens, model, system)
+            response = self._call_with_retry(
+                provider, prompt, max_tokens, model, system
+            )
         except (LLMRateLimitError, LLMTimeoutError):
             # 3. 폴백 시도 (반대 provider, 모델은 폴백 측 기본값)
             fallback_provider: Literal["gemini", "anthropic"] = (
@@ -177,6 +195,7 @@ class LLMClient:
         #    예외를 여기서도 한 번 더 차단 — ledger는 보조 장치, 본 흐름 보호 최우선.
         try:
             from portfolio.llm.cost_ledger import append_call as _ledger_append
+
             _ledger_append(
                 slice_id=guard.slice_id,
                 entry_point=entry_point,  # Slice 16 #68: caller가 명시한 진입점 그대로 기록.
@@ -233,7 +252,9 @@ class LLMClient:
             return self._call_gemini(effective_prompt, max_tokens, start)
         if provider == "anthropic":
             anthropic_model = model or ANTHROPIC_MODEL
-            return self._call_anthropic(prompt, max_tokens, start, anthropic_model, system)
+            return self._call_anthropic(
+                prompt, max_tokens, start, anthropic_model, system
+            )
         raise LLMInvalidPromptError(f"Unknown provider: {provider}")
 
     def _call_gemini(
@@ -315,9 +336,12 @@ class LLMClient:
         output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
         # 모델별 단가 매핑. 미등록 모델은 Sonnet 단가 기본값.
         in_rate, out_rate = _ANTHROPIC_PRICING.get(
-            model, (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M)
+            model,
+            (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M),
         )
-        cost_usd = input_tokens / 1_000_000 * in_rate + output_tokens / 1_000_000 * out_rate
+        cost_usd = (
+            input_tokens / 1_000_000 * in_rate + output_tokens / 1_000_000 * out_rate
+        )
         latency_ms = int((time.time() - start) * 1000)
 
         return LLMResponse(

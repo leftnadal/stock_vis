@@ -25,6 +25,7 @@ from portfolio.services._llm_kwargs import PROVIDER_KWARGS, ProviderLabel  # noq
 # 프롬프트
 # ============================================================
 
+
 def build_e5_prompt(request: E5Request) -> str:
     """
     E5 프롬프트 조립.
@@ -103,6 +104,7 @@ from portfolio.services._prompt_helpers import (
 # entry function
 # ============================================================
 
+
 def run_e5(
     request: E5Request,
     *,
@@ -125,8 +127,7 @@ def run_e5(
     """
     if provider not in PROVIDER_KWARGS:
         raise ValueError(
-            f"Unknown provider label: {provider!r}. "
-            f"Valid: {sorted(PROVIDER_KWARGS)}"
+            f"Unknown provider label: {provider!r}. Valid: {sorted(PROVIDER_KWARGS)}"
         )
 
     prompt = build_e5_prompt(request)

@@ -42,8 +42,7 @@ class UserProfile(BaseModel):
         default_factory=list,
         max_length=5,
         description=(
-            "D3 Decision에서 추출한 패턴 2~5개. "
-            "예: '약세장에서 방어적 조정 선호'."
+            "D3 Decision에서 추출한 패턴 2~5개. 예: '약세장에서 방어적 조정 선호'."
         ),
     )
     risk_appetite_indicator: str = Field(
@@ -54,8 +53,7 @@ class UserProfile(BaseModel):
         default_factory=list,
         max_length=5,
         description=(
-            "주목할 민감도 포인트 2~5개. "
-            "예: 'PEG 지표에 덜 민감', '분산 투자 선호'."
+            "주목할 민감도 포인트 2~5개. 예: 'PEG 지표에 덜 민감', '분산 투자 선호'."
         ),
     )
 

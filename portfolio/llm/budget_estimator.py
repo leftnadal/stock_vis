@@ -32,14 +32,14 @@ from portfolio.llm.token_budgets import (
 # ============================================================
 
 FieldType = Literal[
-    "str_short",       # ≤50 char  →  ~25 tokens, 안전 30
-    "str_medium",      # 51~200 char  →  ~100 tokens
-    "str_long",        # 201+ char  →  ~175 tokens
-    "list_str_item",   # list[str] 항목 1개당 평균 (~35자 = ~50 tokens)
-    "literal",         # Literal/enum (action/aspect 등)
-    "int_float",       # int/float (confidence/delta_weight)
-    "bool",            # bool (no_actionable_intent)
-    "very_short",      # ticker 등 (≤10 char)
+    "str_short",  # ≤50 char  →  ~25 tokens, 안전 30
+    "str_medium",  # 51~200 char  →  ~100 tokens
+    "str_long",  # 201+ char  →  ~175 tokens
+    "list_str_item",  # list[str] 항목 1개당 평균 (~35자 = ~50 tokens)
+    "literal",  # Literal/enum (action/aspect 등)
+    "int_float",  # int/float (confidence/delta_weight)
+    "bool",  # bool (no_actionable_intent)
+    "very_short",  # ticker 등 (≤10 char)
 ]
 
 FIELD_TYPE_BASELINE_TOKENS: dict[str, int] = {
@@ -70,10 +70,14 @@ ENTRY_POINT_META: dict[str, dict] = {
         # E5Response: avg 1 adjustment + confidence + ambiguity_notes + no_actionable_intent
         # 1 adjustment = ticker(very_short) + action(literal) + delta(int_float) + target(int_float) + reason(str_long)
         "schema_fields": [
-            "very_short", "literal", "int_float", "int_float", "str_long",
-            "int_float",       # confidence
-            "str_medium",      # ambiguity_notes
-            "bool",            # no_actionable_intent
+            "very_short",
+            "literal",
+            "int_float",
+            "int_float",
+            "str_long",
+            "int_float",  # confidence
+            "str_medium",  # ambiguity_notes
+            "bool",  # no_actionable_intent
         ],
         "actual_input_p90": 756,  # Slice 2 measure_e5_tokens.py
         "registered_budget": 2_000,
@@ -83,9 +87,15 @@ ENTRY_POINT_META: dict[str, dict] = {
         # E2DiagnosticCard: summary + 3 list (strengths/weaknesses/actions, 평균 3 items each)
         "schema_fields": [
             "str_medium",
-            "list_str_item", "list_str_item", "list_str_item",  # strengths × 3
-            "list_str_item", "list_str_item", "list_str_item",  # weaknesses × 3
-            "list_str_item", "list_str_item", "list_str_item",  # actions × 3
+            "list_str_item",
+            "list_str_item",
+            "list_str_item",  # strengths × 3
+            "list_str_item",
+            "list_str_item",
+            "list_str_item",  # weaknesses × 3
+            "list_str_item",
+            "list_str_item",
+            "list_str_item",  # actions × 3
         ],
         "actual_input_p90": 686,  # Slice 3 measure_e2_tokens.py
         "registered_budget": 1_500,
@@ -95,14 +105,17 @@ ENTRY_POINT_META: dict[str, dict] = {
         # E6ComparisonResponse: headline + 2 summaries + 3 key_changes + risk + closing
         # 1 key_change = aspect(literal) + description(str_long)
         "schema_fields": [
-            "str_short",       # headline
-            "str_medium",      # before_summary
-            "str_medium",      # after_summary
-            "literal", "str_long",  # key_change × 3
-            "literal", "str_long",
-            "literal", "str_long",
-            "str_medium",      # risk_assessment
-            "str_medium",      # closing_remarks
+            "str_short",  # headline
+            "str_medium",  # before_summary
+            "str_medium",  # after_summary
+            "literal",
+            "str_long",  # key_change × 3
+            "literal",
+            "str_long",
+            "literal",
+            "str_long",
+            "str_medium",  # risk_assessment
+            "str_medium",  # closing_remarks
         ],
         "actual_input_p90": 845,  # Slice 4 measure_e6_tokens.py
         "registered_budget": 1_500,
@@ -111,10 +124,14 @@ ENTRY_POINT_META: dict[str, dict] = {
     "e3": {
         # MetricComments: avg 4 comments (metric_id + one_liner)
         "schema_fields": [
-            "very_short", "str_long",  # comment × 4 (avg)
-            "very_short", "str_long",
-            "very_short", "str_long",
-            "very_short", "str_long",
+            "very_short",
+            "str_long",  # comment × 4 (avg)
+            "very_short",
+            "str_long",
+            "very_short",
+            "str_long",
+            "very_short",
+            "str_long",
         ],
         "actual_input_p90": 4_359,  # Slice 5 measure_e3_tokens.py
         "registered_budget": 7_000,
@@ -128,12 +145,12 @@ ENTRY_POINT_META: dict[str, dict] = {
         #   holistic(str_long) + diversification(str_medium) + sector(str_medium)
         #   + risk(str_medium) + preset_alignment(literal) + confidence(int)
         "schema_fields": [
-            "str_long",        # holistic_assessment
-            "str_medium",      # diversification_comment
-            "str_medium",      # sector_balance_comment
-            "str_medium",      # risk_concentration_comment
-            "literal",         # preset_alignment
-            "int_float",       # confidence
+            "str_long",  # holistic_assessment
+            "str_medium",  # diversification_comment
+            "str_medium",  # sector_balance_comment
+            "str_medium",  # risk_concentration_comment
+            "literal",  # preset_alignment
+            "int_float",  # confidence
         ],
         # Slice 6 Part 2 Step A 실측 (reinforced builder, V1~V5 anthropic count_tokens):
         #   range 3,783~4,030 / 평균 3,862 / max(P100, 5건) 4,030
@@ -203,8 +220,7 @@ def estimate_budget_for_entrypoint(
     """
     if entrypoint not in ENTRY_POINT_META:
         raise ValueError(
-            f"Unknown entrypoint: {entrypoint!r}. "
-            f"Valid: {sorted(ENTRY_POINT_META)}"
+            f"Unknown entrypoint: {entrypoint!r}. Valid: {sorted(ENTRY_POINT_META)}"
         )
 
     meta = ENTRY_POINT_META[entrypoint]
@@ -332,7 +348,9 @@ def verify_extrapolation(
     """
     est = estimate_budget_for_entrypoint(entrypoint, sample_prompts=sample_prompts)
     estimator_input = est["input"]
-    deviation = (estimator_input - actual_avg_input_tokens) / actual_avg_input_tokens * 100
+    deviation = (
+        (estimator_input - actual_avg_input_tokens) / actual_avg_input_tokens * 100
+    )
 
     within_strict_20pct = abs(deviation) <= 20.0
     within_safety_margin = (deviation <= 0) or (deviation <= 20.0)

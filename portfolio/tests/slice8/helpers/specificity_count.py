@@ -62,9 +62,7 @@ def count_patterns(text: str) -> int:
     Returns:
         score in [0, 5]. score ≤ 2 → "구체성 부족" 판정.
     """
-    return sum(
-        [has_p1(text), has_p2(text), has_p3(text), has_p4(text), has_p5(text)]
-    )
+    return sum([has_p1(text), has_p2(text), has_p3(text), has_p4(text), has_p5(text)])
 
 
 def is_specificity_lacking(text: str) -> bool:

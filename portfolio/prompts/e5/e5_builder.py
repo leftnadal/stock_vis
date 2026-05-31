@@ -37,10 +37,7 @@ def build_e5_prompt(
             "Current preset hint: "
             + json.dumps(ex["current_preset_hint"], ensure_ascii=False)
         )
-        parts.append(
-            "Output: "
-            + json.dumps(ex["expected_output"], ensure_ascii=False)
-        )
+        parts.append("Output: " + json.dumps(ex["expected_output"], ensure_ascii=False))
 
     input_data = build_e5_input(user_hint, current_preset_id)
     parts.append("## Parse this request:")

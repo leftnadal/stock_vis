@@ -20,9 +20,9 @@ SPECIAL_SPECS: list[PresetSpec] = [
         preset_id="contrarian",
         category="special",
         weights={
-            "pe_ratio": 0.25,            # contrarian direction_override
-            "pb_ratio": 0.25,            # contrarian direction_override
-            "pct_from_52w_high": 0.30,   # 하락폭 클수록 contrarian 매수 기회
+            "pe_ratio": 0.25,  # contrarian direction_override
+            "pb_ratio": 0.25,  # contrarian direction_override
+            "pct_from_52w_high": 0.30,  # 하락폭 클수록 contrarian 매수 기회
             "f_score_total": 0.20,
         },
         gate=None,

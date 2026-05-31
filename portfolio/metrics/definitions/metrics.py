@@ -97,7 +97,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": None,
     },
-
     # ----------------------------------------------------------------
     # 성장 (2개)
     # ----------------------------------------------------------------
@@ -135,7 +134,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": None,
     },
-
     # ----------------------------------------------------------------
     # 밸류에이션 (4개)
     # ----------------------------------------------------------------
@@ -207,7 +205,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": "ebitda > 0",
     },
-
     # ----------------------------------------------------------------
     # 재무 건전성 (2개)
     # ----------------------------------------------------------------
@@ -245,7 +242,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": "pays_dividend",
     },
-
     # ----------------------------------------------------------------
     # 배당·주주환원 (4개)
     # ----------------------------------------------------------------
@@ -317,7 +313,6 @@ METRICS = {
         "excluded_sectors": ["Financial Services"],
         "display_condition": None,
     },
-
     # ----------------------------------------------------------------
     # 지속성·멀티이어 (7개) — count_based / numeric_aggregation
     # ----------------------------------------------------------------
@@ -330,7 +325,12 @@ METRICS = {
         "metric_type": "stock_level",
         "source_type": "calculated",
         "fmp_endpoint": "/income-statement?period=annual, /balance-sheet-statement?period=annual",
-        "fmp_fields": ["operatingIncome", "totalStockholdersEquity", "totalDebt", "cashAndCashEquivalents"],
+        "fmp_fields": [
+            "operatingIncome",
+            "totalStockholdersEquity",
+            "totalDebt",
+            "cashAndCashEquivalents",
+        ],
         "aggregation_type": "count_based",
         "min_years": 4,
         "comparison_group": "industry",
@@ -454,7 +454,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": "pays_dividend",
     },
-
     # ----------------------------------------------------------------
     # Piotroski (1개 — 서브 9개는 세션 C에서 별도 정의)
     # ----------------------------------------------------------------
@@ -492,7 +491,6 @@ METRICS = {
         "excluded_sectors": ["Financial Services", "Real Estate"],
         "display_condition": None,
     },
-
     # ================================================================
     # 가격·시장 지표 (Type 1: stock_level) — Metric Dictionary §5 #24~39
     # ================================================================
@@ -780,7 +778,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": None,
     },
-
     # ================================================================
     # 포트폴리오 구조 지표 (Type 2: portfolio_level) — Metric Dictionary §6
     # ================================================================
@@ -987,7 +984,6 @@ METRICS = {
         "excluded_sectors": [],
         "display_condition": None,
     },
-
     # ================================================================
     # Multi-Factor 합성 지표 (Type 3: composite) — Metric Dictionary §7
     # ================================================================
@@ -999,7 +995,11 @@ METRICS = {
         "direction": "higher_is_better",
         "metric_type": "composite",
         "source_type": "composite",
-        "composition_metrics": [("pe_ratio", 0.34), ("pb_ratio", 0.33), ("ev_to_ebitda", 0.33)],
+        "composition_metrics": [
+            ("pe_ratio", 0.34),
+            ("pb_ratio", 0.33),
+            ("ev_to_ebitda", 0.33),
+        ],
         "normalization_method": "winsorized_z_2.5_industry",
         "aggregation_method": "weighted_mean",
         "input_direction_handling": "flip_all",
@@ -1018,7 +1018,12 @@ METRICS = {
         "direction": "higher_is_better",
         "metric_type": "composite",
         "source_type": "composite",
-        "composition_metrics": [("roic", 0.35), ("gross_margin", 0.25), ("debt_to_equity", 0.20), ("roe_stability_5y", 0.20)],
+        "composition_metrics": [
+            ("roic", 0.35),
+            ("gross_margin", 0.25),
+            ("debt_to_equity", 0.20),
+            ("roe_stability_5y", 0.20),
+        ],
         "normalization_method": "winsorized_z_2.5_industry",
         "aggregation_method": "weighted_mean",
         "input_direction_handling": "flip_debt_to_equity",
@@ -1037,7 +1042,11 @@ METRICS = {
         "direction": "higher_is_better",
         "metric_type": "composite",
         "source_type": "composite",
-        "composition_metrics": [("eps_growth_yoy", 0.40), ("revenue_growth_yoy", 0.35), ("revenue_growth_consistency_3y", 0.25)],
+        "composition_metrics": [
+            ("eps_growth_yoy", 0.40),
+            ("revenue_growth_yoy", 0.35),
+            ("revenue_growth_consistency_3y", 0.25),
+        ],
         "normalization_method": "winsorized_z_2.5_industry",
         "aggregation_method": "weighted_mean",
         "input_direction_handling": "no_flip",
@@ -1056,7 +1065,11 @@ METRICS = {
         "direction": "higher_is_better",
         "metric_type": "composite",
         "source_type": "composite",
-        "composition_metrics": [("return_12m", 0.40), ("relative_strength", 0.35), ("return_6m", 0.25)],
+        "composition_metrics": [
+            ("return_12m", 0.40),
+            ("relative_strength", 0.35),
+            ("return_6m", 0.25),
+        ],
         "normalization_method": "winsorized_z_2.5_universe",
         "aggregation_method": "weighted_mean",
         "input_direction_handling": "no_flip",
@@ -1075,7 +1088,11 @@ METRICS = {
         "direction": "higher_is_better",
         "metric_type": "composite",
         "source_type": "composite",
-        "composition_metrics": [("volatility_1y", 0.40), ("downside_deviation", 0.35), ("max_drawdown_1y", 0.25)],
+        "composition_metrics": [
+            ("volatility_1y", 0.40),
+            ("downside_deviation", 0.35),
+            ("max_drawdown_1y", 0.25),
+        ],
         "normalization_method": "winsorized_z_2.5_universe",
         "aggregation_method": "weighted_mean",
         "input_direction_handling": "flip_all",

@@ -104,9 +104,7 @@ def set_client(client: Any) -> None:
 # ============================================================
 
 
-def _estimate_input_tokens_v2_fallback(
-    messages: list[dict], system: str | None
-) -> int:
+def _estimate_input_tokens_v2_fallback(messages: list[dict], system: str | None) -> int:
     """API 실패 시 v2 char/3 휴리스틱으로 fallback.
 
     messages 내 모든 string 컨텐츠 + system을 concat → estimate_input_tokens.
@@ -195,13 +193,13 @@ GLOBAL_OUTPUT_RATIO: float = 0.7584  # 구모델 fallback (보존).
 # Slice 13 신모델 (다변량 OLS): tokens = a + b × chars.
 # all_llm_calls.jsonl N=200으로 fit. 재fit 트리거: 데이터셋 행 추가 시 backtest 재실행.
 ENTRY_POINT_OUTPUT_FITS: dict[str, tuple[float, float]] = {
-    "e1": (-20.2608, 0.971655),         # N=10
-    "e2": (-32.9435, 0.905711),         # N=15
-    "e3": (-14.1024, 0.753001),         # N=15
+    "e1": (-20.2608, 0.971655),  # N=10
+    "e2": (-32.9435, 0.905711),  # N=15
+    "e3": (-14.1024, 0.753001),  # N=15
     "e3_portfolio": (283.1472, 0.177887),  # N=21
     "e4_conversation": (86.1065, 0.645782),  # N=83
-    "e5": (8.9867, 0.468976),           # N=15
-    "e6": (-39.4334, 0.819425),         # N=15
+    "e5": (8.9867, 0.468976),  # N=15
+    "e6": (-39.4334, 0.819425),  # N=15
     "rationale": (171.0966, 0.676134),  # N=26
 }
 

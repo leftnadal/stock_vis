@@ -76,9 +76,7 @@ def build_e6_prompt(request: E6Request) -> str:
     """
     ctx = request.analysis_context
     holdings = ctx.get("holdings", []) or []
-    holdings_str = (
-        format_holdings_summary(holdings) if holdings else "(보유 종목 없음)"
-    )
+    holdings_str = format_holdings_summary(holdings) if holdings else "(보유 종목 없음)"
     analysis_one_liner = format_analysis_summary(ctx, max_chars=200)
     preset_id = ctx.get("preset_id", "unknown")
     adjustments_block = _format_adjustments_block(request.adjustments)
@@ -160,8 +158,7 @@ def run_e6(
     """
     if provider not in PROVIDER_KWARGS:
         raise ValueError(
-            f"Unknown provider label: {provider!r}. "
-            f"Valid: {sorted(PROVIDER_KWARGS)}"
+            f"Unknown provider label: {provider!r}. Valid: {sorted(PROVIDER_KWARGS)}"
         )
 
     prompt = build_e6_prompt(request)

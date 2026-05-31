@@ -102,6 +102,7 @@ def test_focused_buffett_value_category():
     from portfolio.tests.fixtures.sample_metric_comment_context import (
         get_e3_fixture_focused_buffett,
     )
+
     fx = get_e3_fixture_focused_buffett()
     assert fx["preset_category"] == "value"
     assert fx["preset_id"] == "buffett_quality_value"
@@ -112,6 +113,7 @@ def test_focused_dividend_growth_income_category():
     from portfolio.tests.fixtures.sample_metric_comment_context import (
         get_e3_fixture_focused_dividend_growth,
     )
+
     fx = get_e3_fixture_focused_dividend_growth()
     assert fx["preset_category"] == "income"
     assert fx["preset_id"] == "dividend_growth"

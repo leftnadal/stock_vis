@@ -78,7 +78,9 @@ def test_fixture_preset_coverage():
     for fp in ALL_FIXTURES:
         data = json.loads(fp.read_text(encoding="utf-8"))
         prefixes.add(data["preset_id"].split("_")[0])
-    assert prefixes >= {"V1", "V2", "V3", "V4", "V5"}, f"missing preset prefixes: {prefixes}"
+    assert prefixes >= {"V1", "V2", "V3", "V4", "V5"}, (
+        f"missing preset prefixes: {prefixes}"
+    )
 
 
 def test_fixture_tier_coverage():

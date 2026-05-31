@@ -58,15 +58,13 @@ def load_mock_response(fixture_id: str, model_label: str) -> str:
     short = fixture_id.split("_")[0]
     if short not in ("v1", "v2", "v3", "v4", "v5"):
         raise ValueError(
-            f"Unknown fixture_id prefix: {short!r} (from {fixture_id!r}). "
-            "Valid: v1~v5."
+            f"Unknown fixture_id prefix: {short!r} (from {fixture_id!r}). Valid: v1~v5."
         )
 
     path = MOCK_FIXTURE_ROOT / f"{short}_{model_label}.json"
     if not path.exists():
         raise FileNotFoundError(
-            f"Mock fixture not found: {path}. "
-            f"Required: 10건 (V1~V5 × haiku/sonnet)."
+            f"Mock fixture not found: {path}. Required: 10건 (V1~V5 × haiku/sonnet)."
         )
     return path.read_text(encoding="utf-8")
 

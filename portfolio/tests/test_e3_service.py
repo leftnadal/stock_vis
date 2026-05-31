@@ -45,8 +45,7 @@ def test_build_e3_prompt_contains_metrics():
     p = ctx.analysis_target_portfolio
     # Core + Supporting metric ids 중 최소 1개 포함
     metric_ids = [
-        m.metric_id
-        for m in p.core_metric_results + p.supporting_metric_results
+        m.metric_id for m in p.core_metric_results + p.supporting_metric_results
     ]
     assert any(mid in prompt for mid in metric_ids)
 
@@ -56,7 +55,7 @@ def test_parse_e3_response_valid():
     raw = (
         '{"comments": ['
         '{"metric_id": "roic", "one_liner": "ROIC 지표가 동종 업계 대비 우수합니다."}'
-        ']}'
+        "]}"
     )
     parsed = parse_e3_response(raw)
     assert isinstance(parsed, MetricComments)
@@ -70,7 +69,7 @@ def test_parse_e3_response_with_markdown_fence():
         "```json\n"
         '{"comments": ['
         '{"metric_id": "pe_ratio", "one_liner": "PE 비율이 적정 수준에서 유지되고 있습니다."}'
-        ']}\n'
+        "]}\n"
         "```"
     )
     parsed = parse_e3_response(raw)

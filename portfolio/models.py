@@ -40,6 +40,7 @@ from django.db import models
 # 1. Wallet — 자산 지갑 (실제 보유 집합)
 # ============================================================
 
+
 class Wallet(models.Model):
     """
     사용자의 실제 보유 종목 전체를 담는 자산 지갑.
@@ -47,6 +48,7 @@ class Wallet(models.Model):
     - MVP는 사용자당 Wallet 1개 (unique constraint 없이 1:N 열어둠)
     - Phase 2에서 다중 Wallet 지원 가능
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -72,12 +74,14 @@ class Wallet(models.Model):
 # 2. WalletHolding — 보유 종목
 # ============================================================
 
+
 class WalletHolding(models.Model):
     """
     Wallet 내 실제 보유 종목.
     RV2-b 정책: sector/industry 필드는 stocks.Stock에 위치하므로
     여기서는 캐시하지 않는다. 접근은 `wallet_holding.stock.sector`.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     wallet = models.ForeignKey(
         Wallet,
@@ -92,11 +96,13 @@ class WalletHolding(models.Model):
 
     # ---- 매수 정보 ----
     shares = models.DecimalField(
-        max_digits=14, decimal_places=4,
+        max_digits=14,
+        decimal_places=4,
         help_text="보유 수량 (소수점: 분할 매수)",
     )
     avg_cost = models.DecimalField(
-        max_digits=12, decimal_places=4,
+        max_digits=12,
+        decimal_places=4,
         help_text="평균 매수 단가 (USD). Phase 2 Trade 모델 도입 시 자동 계산.",
     )
     first_bought_at = models.DateField(
@@ -111,7 +117,8 @@ class WalletHolding(models.Model):
 
     # ---- 시뮬레이션 스냅샷 ----
     buy_snapshot = models.JSONField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="매수 확정 시점의 Wallet 구성 스냅샷 (thesis 집중도, 섹터 비중 등).",
     )
 
@@ -133,6 +140,7 @@ class WalletHolding(models.Model):
 # ============================================================
 # 3. WalletSnapshot — 시점별 Wallet 스냅샷 (결정 A1)
 # ============================================================
+
 
 class WalletSnapshot(models.Model):
     """
@@ -168,7 +176,8 @@ class WalletSnapshot(models.Model):
         help_text="스냅샷 생성 트리거.",
     )
     triggered_by_ref = models.UUIDField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="트리거한 StoredAnalysis 등의 ID (선택).",
     )
     holdings_json = models.JSONField(
@@ -193,12 +202,15 @@ class WalletSnapshot(models.Model):
         ]
 
     def __str__(self):
-        return f"Snapshot {self.id!s:.8} | {self.wallet.name} | {self.created_at:%Y-%m-%d}"
+        return (
+            f"Snapshot {self.id!s:.8} | {self.wallet.name} | {self.created_at:%Y-%m-%d}"
+        )
 
 
 # ============================================================
 # 4. Portfolio — 분석 대상 슬라이스 (의미 재정의)
 # ============================================================
+
 
 class Portfolio(models.Model):
     """
@@ -223,7 +235,8 @@ class Portfolio(models.Model):
     )
     name = models.CharField(
         max_length=100,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="분석 그룹 이름. null이면 임시 그룹 (일회성).",
     )
     description = models.TextField(
@@ -270,6 +283,7 @@ class Portfolio(models.Model):
 # 5. AnalysisRun — 분석 실행 단위
 # ============================================================
 
+
 class AnalysisRun(models.Model):
     """
     분석 실행 단위.
@@ -279,6 +293,7 @@ class AnalysisRun(models.Model):
 
     class StatusBadge(models.TextChoices):
         """5단계 상태 뱃지 — 내부 용어 (UI 언어는 프론트에서 매핑)"""
+
         EXCELLENT = "excellent", "Excellent"
         GOOD = "good", "Good"
         MODERATE = "moderate", "Moderate"
@@ -324,7 +339,8 @@ class AnalysisRun(models.Model):
     wallet_snapshot_at_execution = models.ForeignKey(
         WalletSnapshot,
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="analyses_at_time",
         help_text="실행 시점 Wallet 스냅샷 (Saved로 승격 시 자동 생성).",
     )
@@ -366,6 +382,7 @@ class AnalysisRun(models.Model):
 # 6. MetricResult — 지표별 결과
 # ============================================================
 
+
 class MetricResult(models.Model):
     """
     지표별 분석 결과.
@@ -374,6 +391,7 @@ class MetricResult(models.Model):
 
     class DataStatus(models.TextChoices):
         """결측치 5가지 상태 분류"""
+
         OK = "ok", "정상"
         MISSING = "missing", "데이터 없음"
         NOT_APPLICABLE = "not_applicable", "해당 없음"
@@ -399,23 +417,27 @@ class MetricResult(models.Model):
 
     # ---- 결과 값 ----
     raw_value = models.FloatField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="원시 값 (예: ROIC 28.3%)",
     )
     percentile = models.FloatField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="산업 대비 퍼센타일 (0~100)",
     )
     level_tag = models.IntegerField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="5단계 레벨 (1=최하 ~ 5=최상)",
     )
 
     # ---- 비교군 맥락 (JSONField) ----
     comparison_meta = models.JSONField(
-        default=dict, blank=True,
+        default=dict,
+        blank=True,
         help_text=(
-            '퍼센타일 산출 맥락. 예: '
+            "퍼센타일 산출 맥락. 예: "
             '{"comparison_group": "industry", "group_code": "Technology Hardware", '
             '"sample_size": 47, "used_fallback": false, '
             '"fallback_from": null, "percentile_date": "2026-04-15"}'
@@ -460,6 +482,7 @@ class MetricResult(models.Model):
         from portfolio.metrics.definitions.metrics import (
             METRICS,  # lazy import to avoid circular
         )
+
         if self.metric_id not in METRICS:
             raise ValidationError(
                 f"Unknown metric_id: '{self.metric_id}'. "
@@ -473,11 +496,13 @@ class MetricResult(models.Model):
 # 7. DiagnosticCard — 진단 카드 (4요소)
 # ============================================================
 
+
 class DiagnosticCard(models.Model):
     """
     진단 카드 — 4요소 구조.
     AnalysisRun 당 최대 3개, priority 1~3.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     analysis_run = models.ForeignKey(
         AnalysisRun,
@@ -494,7 +519,8 @@ class DiagnosticCard(models.Model):
     target_stock = models.ForeignKey(
         "stocks.Stock",
         on_delete=models.PROTECT,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="diagnostic_cards",
         help_text="진단 대상 종목 (포트폴리오 레벨 진단이면 null)",
     )
@@ -551,11 +577,13 @@ class DiagnosticCard(models.Model):
 # 8. LLMComment — 지표별 LLM 코멘트
 # ============================================================
 
+
 class LLMComment(models.Model):
     """
     지표별 LLM 코멘트.
     AnalysisRun × metric_id × stock 단위로 생성.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     analysis_run = models.ForeignKey(
         AnalysisRun,
@@ -607,6 +635,7 @@ class LLMComment(models.Model):
 # 9. StoredAnalysis — Saved/Temp 통합 (+ RV4-b 저장시점 수익률)
 # ============================================================
 
+
 class StoredAnalysis(models.Model):
     """
     저장된 분석 — Saved(영구) + Temp(임시 FIFO) 통합.
@@ -640,11 +669,13 @@ class StoredAnalysis(models.Model):
 
     # ---- RV4-b: 저장 시점 수익률 breakdown (불변) ----
     portfolio_return_breakdown = models.JSONField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="저장 시점 Portfolio 수익률 breakdown. 불변.",
     )
     wallet_return_breakdown = models.JSONField(
-        null=True, blank=True,
+        null=True,
+        blank=True,
         help_text="저장 시점 Wallet 수익률 breakdown. 불변.",
     )
 
@@ -675,12 +706,14 @@ class StoredAnalysis(models.Model):
 # 10. PercentileCache — 퍼센타일 배치 캐시
 # ============================================================
 
+
 class PercentileCache(models.Model):
     """
     퍼센타일 배치 캐시.
     업종 × 지표 × 날짜 단위로 분포 저장.
     values는 {ticker: raw_value} dict 형태.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     metric_id = models.CharField(max_length=50)
     industry_code = models.CharField(
@@ -716,12 +749,14 @@ class PercentileCache(models.Model):
 # 11. ChatSession — Coach 대화 세션
 # ============================================================
 
+
 class ChatSession(models.Model):
     """
     Coach와의 대화 세션.
     하나의 AnalysisRun에 연결된 대화 = 하나의 ChatSession.
     AnalysisRun 삭제에는 느슨한 연결 (SET_NULL).
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -731,7 +766,8 @@ class ChatSession(models.Model):
     analysis_run = models.ForeignKey(
         AnalysisRun,
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="chat_sessions",
     )
     started_at = models.DateTimeField(auto_now_add=True)
@@ -755,6 +791,7 @@ class ChatSession(models.Model):
 # ============================================================
 # 12. Message — 대화 원본 (결정 D3 raw)
 # ============================================================
+
 
 class Message(models.Model):
     """
@@ -800,6 +837,7 @@ class Message(models.Model):
 # 13. Decision — 구조화된 의사결정 (결정 D3)
 # ============================================================
 
+
 class Decision(models.Model):
     """
     사용자의 의사결정 이벤트.
@@ -830,7 +868,8 @@ class Decision(models.Model):
     context_analysis_run = models.ForeignKey(
         AnalysisRun,
         on_delete=models.SET_NULL,
-        null=True, blank=True,
+        null=True,
+        blank=True,
         related_name="decisions",
     )
     rationale_text = models.TextField(

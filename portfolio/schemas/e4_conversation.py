@@ -109,9 +109,7 @@ class E4ConversationOutput(BaseModel):
         """
         for key in self.referenced_metrics:
             if not key or " " in key or key != key.lower():
-                raise ValueError(
-                    f"referenced_metrics key must be snake_case: '{key}'"
-                )
+                raise ValueError(f"referenced_metrics key must be snake_case: '{key}'")
         return self
 
 
@@ -126,6 +124,12 @@ class E4ConversationMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     case_flags: list[Literal["I1", "I2", "I3", "I4"]] = Field(default_factory=list)
-    history_truncated: bool = False  # I1: max_history_turns 초과로 가장 오래된 turn 제거
-    tier_downgraded_from: Optional[Literal[1, 2, 3]] = None  # I2: history 비어 Tier 다운그레이드
-    hallucinated_metrics: list[str] = Field(default_factory=list)  # I4: portfolio_metrics에 없는 key 인용
+    history_truncated: bool = (
+        False  # I1: max_history_turns 초과로 가장 오래된 turn 제거
+    )
+    tier_downgraded_from: Optional[Literal[1, 2, 3]] = (
+        None  # I2: history 비어 Tier 다운그레이드
+    )
+    hallucinated_metrics: list[str] = Field(
+        default_factory=list
+    )  # I4: portfolio_metrics에 없는 key 인용

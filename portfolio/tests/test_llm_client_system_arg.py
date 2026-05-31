@@ -30,7 +30,9 @@ def test_call_anthropic_omits_system_when_none():
     fake_response.usage = MagicMock(input_tokens=10, output_tokens=5)
 
     fake_sdk = MagicMock()
-    fake_sdk.messages.create = MagicMock(side_effect=lambda **kw: (captured.update(kw), fake_response)[1])
+    fake_sdk.messages.create = MagicMock(
+        side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
+    )
 
     with patch("portfolio.llm.client.Anthropic", return_value=fake_sdk):
         client_instance._call_anthropic(
@@ -55,7 +57,9 @@ def test_call_anthropic_passes_system_when_provided():
     fake_response.usage = MagicMock(input_tokens=10, output_tokens=5)
 
     fake_sdk = MagicMock()
-    fake_sdk.messages.create = MagicMock(side_effect=lambda **kw: (captured.update(kw), fake_response)[1])
+    fake_sdk.messages.create = MagicMock(
+        side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
+    )
 
     with patch("portfolio.llm.client.Anthropic", return_value=fake_sdk):
         client_instance._call_anthropic(
@@ -80,7 +84,9 @@ def test_call_propagates_system_through_layers():
     fake_response.usage = MagicMock(input_tokens=10, output_tokens=5)
 
     fake_sdk = MagicMock()
-    fake_sdk.messages.create = MagicMock(side_effect=lambda **kw: (captured.update(kw), fake_response)[1])
+    fake_sdk.messages.create = MagicMock(
+        side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
+    )
 
     with patch("portfolio.llm.client.Anthropic", return_value=fake_sdk):
         client_instance._call(

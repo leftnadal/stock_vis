@@ -169,7 +169,7 @@ class E2PromptBuilder(PromptBuilderBase):
             f"포트폴리오 1년 수익률과 섹터 비중을 바탕으로 종합 진단을 한국어로 작성하세요.\n"
             f"- summary: 1줄 요약 (수익률 + 핵심 특징)\n"
             f"- key_observations: 핵심 관찰 사항 (최대 5개, 섹터 편중/수익률 해석)\n"
-            f"- quoted_metrics: 인용한 지표 dict (예: {{\"top_sector\": \"consumer_staples 35%\", \"return_1y\": \"8.2%\"}})\n"
+            f'- quoted_metrics: 인용한 지표 dict (예: {{"top_sector": "consumer_staples 35%", "return_1y": "8.2%"}})\n'
             f"- metrics_table: deprecated — 빈 문자열 ''\n"
             f"- confidence: high/medium/low 중 하나\n"
         )
@@ -183,20 +183,20 @@ class E2PromptBuilder(PromptBuilderBase):
 _E3_ACTION_RULES = (
     "### action_items 작성 규칙 (필수 준수, Slice 12 Step 0 #59)\n"
     "1. 구체성 필수 — description에 다음 중 하나 이상 포함:\n"
-    "   - 종목 ticker (예: \"VYM 비중 조정\")\n"
-    "   - 정량 지표 (예: \"HHI 0.2125 → 0.18 목표\")\n"
-    "   - 비율/수치 (예: \"소비재 35% → 25% 축소\")\n"
+    '   - 종목 ticker (예: "VYM 비중 조정")\n'
+    '   - 정량 지표 (예: "HHI 0.2125 → 0.18 목표")\n'
+    '   - 비율/수치 (예: "소비재 35% → 25% 축소")\n'
     "2. 측정 가능성 필수 — description에 다음 중 하나 이상 포함:\n"
-    "   - 목표 수치 (예: \"Top3 비중 65% → 50%\")\n"
-    "   - 기한/시기 (예: \"분기 리밸런싱 시\", \"현재 분기 내\")\n"
+    '   - 목표 수치 (예: "Top3 비중 65% → 50%")\n'
+    '   - 기한/시기 (예: "분기 리밸런싱 시", "현재 분기 내")\n'
     "3. 금지 패턴 (단독 사용 금지, 구체 수치 함께면 OK):\n"
-    "   - \"모니터링 필요\" 단독\n"
-    "   - \"검토하세요\" 단독\n"
-    "   - \"주시하세요\" 단독\n"
-    "   - 종목/지표 인용 없는 일반론 (예: \"장기적 관점에서 다각화\")\n"
+    '   - "모니터링 필요" 단독\n'
+    '   - "검토하세요" 단독\n'
+    '   - "주시하세요" 단독\n'
+    '   - 종목/지표 인용 없는 일반론 (예: "장기적 관점에서 다각화")\n'
     "4. priority 정합성:\n"
-    "   - high: 즉각 행동 (예: \"1주 내 비중 조정\")\n"
-    "   - medium: 분기 단위 검토 (예: \"다음 리밸런싱 시\")\n"
+    '   - high: 즉각 행동 (예: "1주 내 비중 조정")\n'
+    '   - medium: 분기 단위 검토 (예: "다음 리밸런싱 시")\n'
     "   - low: 장기 모니터링 (단, 구체적 지표 + 임계 명시 필수)\n"
 )
 
@@ -266,7 +266,7 @@ class E4PromptBuilder(PromptBuilderBase):
             f"- fetched_at: {input_data.fetched_at.isoformat()}\n\n"
             f"## 보유 종목 ({len(input_data.holdings)}개)\n{holdings_md}\n"
             f"{history_block}\n"
-            f"## 사용자 질문\n\"{input_data.user_question}\"\n\n"
+            f'## 사용자 질문\n"{input_data.user_question}"\n\n'
             f"## 작업\n"
             f"사용자의 질문에 한국어로 답변하세요. 단순 수치 나열 금지, 의미 있는 해석 포함.\n"
             f"- summary: 답변 1줄 요약\n"
@@ -319,7 +319,7 @@ class E5PromptBuilder(PromptBuilderBase):
             f"- summary: 1줄 요약 (추출값 + 추세 핵심)\n"
             f"- key_observations: 핵심 관찰 사항 (최대 5개)\n"
             f"- action_items: 실행 가능 액션 (시계열 추세 기반; 없으면 빈 배열)\n"
-            f"- quoted_metrics: 추출한 지표 dict (예: {{\"dividend_yield\": \"3.45% (12분기 +30bp)\"}})\n"
+            f'- quoted_metrics: 추출한 지표 dict (예: {{"dividend_yield": "3.45% (12분기 +30bp)"}})\n'
             f"- confidence: high/medium/low 중 하나\n"
         )
 
@@ -354,7 +354,7 @@ class E6PromptBuilder(PromptBuilderBase):
             f"- summary: 1줄 요약 (포트폴리오 종합 평가)\n"
             f"- key_observations: 핵심 관찰 사항 (강점/약점 균형; 최대 5개)\n"
             f"- risk_flags: 위험 신호 (낮은 score 종목, yield trap 등; 없으면 빈 배열)\n"
-            f"- quoted_metrics: 인용한 지표 dict (예: {{\"VZ\": \"score 6.8, yield trap risk\"}})\n"
+            f'- quoted_metrics: 인용한 지표 dict (예: {{"VZ": "score 6.8, yield trap risk"}})\n'
             f"- confidence: high/medium/low 중 하나\n"
         )
 

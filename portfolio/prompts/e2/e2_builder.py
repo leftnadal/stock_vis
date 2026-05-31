@@ -32,8 +32,7 @@ def build_e2_prompt(
     input_data = build_e2_input(context)
     parts.append("## Now generate diagnostic cards for this portfolio:")
     parts.append(
-        "Input:\n"
-        + json.dumps(input_data, ensure_ascii=False, indent=2, default=str)
+        "Input:\n" + json.dumps(input_data, ensure_ascii=False, indent=2, default=str)
     )
     parts.append("Output:")
 

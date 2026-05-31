@@ -42,9 +42,7 @@ from portfolio.tests.fixtures.sample_e3_portfolio_context import (
 
 # (fixture_id, model_label) 10건 = V1~V5 × {haiku, sonnet}
 SERVICE_FLOW_CASES = [
-    (fid, model)
-    for fid in ALL_FIXTURES
-    for model in ("haiku", "sonnet")
+    (fid, model) for fid in ALL_FIXTURES for model in ("haiku", "sonnet")
 ]
 
 
@@ -121,38 +119,44 @@ def test_e3_portfolio_service_mock_flow(fixture_id, model_label):
 def test_e3_portfolio_service_invalid_mock_raises_validation_error():
     """Schema 위반 mock → ValidationError (parse 단계 차단)."""
     # 6 필드 중 하나 누락
-    bad_json = json.dumps({
-        "holistic_assessment": "x" * 50,
-        "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
-        "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
-        # risk_concentration_comment 누락
-        "preset_alignment": "partial",
-        "confidence": 3,
-    })
+    bad_json = json.dumps(
+        {
+            "holistic_assessment": "x" * 50,
+            "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
+            "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
+            # risk_concentration_comment 누락
+            "preset_alignment": "partial",
+            "confidence": 3,
+        }
+    )
     with pytest.raises(ValidationError):
         parse_e3_portfolio_response(bad_json)
 
     # min_length 위반
-    short_json = json.dumps({
-        "holistic_assessment": "짧음",  # 30자 미만
-        "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
-        "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
-        "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
-        "preset_alignment": "partial",
-        "confidence": 3,
-    })
+    short_json = json.dumps(
+        {
+            "holistic_assessment": "짧음",  # 30자 미만
+            "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
+            "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
+            "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
+            "preset_alignment": "partial",
+            "confidence": 3,
+        }
+    )
     with pytest.raises(ValidationError):
         parse_e3_portfolio_response(short_json)
 
     # confidence 범위 위반
-    bad_conf = json.dumps({
-        "holistic_assessment": "x" * 50,
-        "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
-        "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
-        "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
-        "preset_alignment": "partial",
-        "confidence": 6,  # 1~5 위반
-    })
+    bad_conf = json.dumps(
+        {
+            "holistic_assessment": "x" * 50,
+            "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
+            "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
+            "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
+            "preset_alignment": "partial",
+            "confidence": 6,  # 1~5 위반
+        }
+    )
     with pytest.raises(ValidationError):
         parse_e3_portfolio_response(bad_conf)
 
@@ -179,14 +183,16 @@ def test_e3_portfolio_service_preset_alignment_enum_strict():
             )
 
     # PresetAlignment Enum 3종만 허용 (Literal 강제)
-    invalid_json = json.dumps({
-        "holistic_assessment": "x" * 50,
-        "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
-        "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
-        "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
-        "preset_alignment": "unknown",  # Enum 외 값
-        "confidence": 3,
-    })
+    invalid_json = json.dumps(
+        {
+            "holistic_assessment": "x" * 50,
+            "diversification_comment": "분산 점수 0.35는 적당한 수준입니다.",
+            "sector_balance_comment": "Tech 50%는 의도된 집중입니다.",
+            "risk_concentration_comment": "리스크 0.45는 중간 수준입니다.",
+            "preset_alignment": "unknown",  # Enum 외 값
+            "confidence": 3,
+        }
+    )
     with pytest.raises(ValidationError):
         parse_e3_portfolio_response(invalid_json)
 
@@ -246,9 +252,7 @@ def test_mock_fixture_count_is_10():
     files = sorted(MOCK_FIXTURE_ROOT.glob("*.json"))
     assert len(files) == 10
     expected_names = {
-        f"v{i}_{m}.json"
-        for i in range(1, 6)
-        for m in ("haiku", "sonnet")
+        f"v{i}_{m}.json" for i in range(1, 6) for m in ("haiku", "sonnet")
     }
     assert {f.name for f in files} == expected_names
 

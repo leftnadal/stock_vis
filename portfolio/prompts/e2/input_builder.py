@@ -46,18 +46,24 @@ def build_e2_input(context: AnalysisContext) -> dict:
             "reason_hint": weakness.reason_hint,
         }
         if detail is not None:
-            entry.update({
-                "tier": detail.tier.value,
-                "avg_value": float(detail.value) if detail.value is not None else None,
-                "percentile": float(detail.percentile) if detail.percentile is not None else None,
-                "percentile_scope": detail.percentile_scope,
-                "threshold_applied": (
-                    float(detail.threshold_applied)
-                    if detail.threshold_applied is not None
-                    else None
-                ),
-                "passed_threshold": detail.passed_threshold,
-            })
+            entry.update(
+                {
+                    "tier": detail.tier.value,
+                    "avg_value": float(detail.value)
+                    if detail.value is not None
+                    else None,
+                    "percentile": float(detail.percentile)
+                    if detail.percentile is not None
+                    else None,
+                    "percentile_scope": detail.percentile_scope,
+                    "threshold_applied": (
+                        float(detail.threshold_applied)
+                        if detail.threshold_applied is not None
+                        else None
+                    ),
+                    "passed_threshold": detail.passed_threshold,
+                }
+            )
         # per_holding 은 백엔드가 배열을 채워 넣기 전까지 빈 리스트
         entry.setdefault("per_holding", [])
         weaknesses_detail.append(entry)

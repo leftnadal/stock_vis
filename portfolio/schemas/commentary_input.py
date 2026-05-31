@@ -84,14 +84,17 @@ class Holding(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    ticker: str = Field(..., min_length=1, max_length=10, description="종목 ticker (대문자).")
-    weight: float = Field(..., ge=0.0, le=1.0, description="포트폴리오 비중 (0.0 ~ 1.0).")
+    ticker: str = Field(
+        ..., min_length=1, max_length=10, description="종목 ticker (대문자)."
+    )
+    weight: float = Field(
+        ..., ge=0.0, le=1.0, description="포트폴리오 비중 (0.0 ~ 1.0)."
+    )
     sector: Optional[str] = Field(None, description="섹터 라벨 (선택).")
     asset_class: Optional[Literal["stock", "etf", "bond", "cash"]] = Field(
         None, description="자산 클래스 (선택)."
     )
-    name: Optional[str] = Field(None, description="종목 명 (선택, UI 표시용)."
-    )
+    name: Optional[str] = Field(None, description="종목 명 (선택, UI 표시용).")
 
 
 class CommentaryInputBase(BaseModel):
@@ -111,7 +114,9 @@ class CommentaryInputBase(BaseModel):
     fetched_at: datetime = Field(..., description="데이터 수집 시점 (snapshot).")
     preset: PresetType = Field(..., description="투자 스타일 preset.")
     entry_point: str = Field(..., description="진입점 식별 (e1~e6) — discriminator.")
-    holdings: list[Holding] = Field(..., min_length=1, description="포트폴리오 보유 종목.")
+    holdings: list[Holding] = Field(
+        ..., min_length=1, description="포트폴리오 보유 종목."
+    )
 
 
 class CommentaryInputE1(CommentaryInputBase):
@@ -149,7 +154,9 @@ class CommentaryInputE4(CommentaryInputBase):
     """
 
     entry_point: Literal["e4"] = "e4"
-    user_question: str = Field(..., min_length=1, max_length=2000, description="현재 사용자 질문.")
+    user_question: str = Field(
+        ..., min_length=1, max_length=2000, description="현재 사용자 질문."
+    )
     conversation_history: list[dict[str, Any]] = Field(
         default_factory=list, description="이전 대화 turn list (role/content)."
     )
@@ -162,7 +169,9 @@ class CommentaryInputE5(CommentaryInputBase):
     """
 
     entry_point: Literal["e5"] = "e5"
-    extraction_targets: list[str] = Field(..., min_length=1, description="추출 대상 키 list.")
+    extraction_targets: list[str] = Field(
+        ..., min_length=1, description="추출 대상 키 list."
+    )
     time_series_context: Optional[TimeSeriesContext] = Field(
         None, description="Slice 8 #27 시계열 컨텍스트 (선택)."
     )
@@ -173,7 +182,8 @@ class CommentaryInputE6(CommentaryInputBase):
 
     entry_point: Literal["e6"] = "e6"
     analysis_results: dict[str, dict[str, Any]] = Field(
-        ..., description="종목별 분석 결과 dict — {ticker: {score, signals, notes, ...}}."
+        ...,
+        description="종목별 분석 결과 dict — {ticker: {score, signals, notes, ...}}.",
     )
 
 

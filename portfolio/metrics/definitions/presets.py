@@ -20,7 +20,6 @@ PRESETS = {
         "description": "조지프 피오트로스키 F-Score 기반. 재무 건전성 9개 항목 체크리스트.",
         "icon": "clipboard-check",
     },
-
     # ---- Growth (2개) ----
     "garp": {
         "display_name": "GARP",
@@ -34,7 +33,6 @@ PRESETS = {
         "description": "높은 수익성과 일관된 성장을 겸비한 복리 성장 기업.",
         "icon": "zap",
     },
-
     # ---- Income (2개) ----
     "dividend_growth": {
         "display_name": "Dividend Growth",
@@ -48,7 +46,6 @@ PRESETS = {
         "description": "배당 + 자사주 매입 + 부채 감소를 합산한 총 주주환원.",
         "icon": "gift",
     },
-
     # ---- Factor (4개) ----
     "quality_factor": {
         "display_name": "Quality Factor",
@@ -74,7 +71,6 @@ PRESETS = {
         "description": "밸류·퀄리티·성장·모멘텀·저변동성 5개 팩터 합성 분석.",
         "icon": "layers",
     },
-
     # ---- Special (2개) ----
     "contrarian": {
         "display_name": "Contrarian",

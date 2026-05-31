@@ -104,7 +104,9 @@ def test_client_complete_passes_entry_point_to_ledger(isolated_ledger, monkeypat
     )
 
 
-def test_client_complete_without_entry_point_keeps_backward_compat(isolated_ledger, monkeypatch):
+def test_client_complete_without_entry_point_keeps_backward_compat(
+    isolated_ledger, monkeypatch
+):
     """`entry_point` 미전달 시 ledger entry_point=null — 기존 호출 무손상."""
     monkeypatch.setenv("COACH_RUNTIME_SLICE_ID", "slice16-test")
     CostGuard._instance = None
@@ -115,7 +117,9 @@ def test_client_complete_without_entry_point_keeps_backward_compat(isolated_ledg
 
     records = read_records(isolated_ledger)
     assert len(records) == 1
-    assert records[0]["entry_point"] is None, "기존 호출은 entry_point=null 유지 (backward-compat)"
+    assert records[0]["entry_point"] is None, (
+        "기존 호출은 entry_point=null 유지 (backward-compat)"
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -134,7 +138,9 @@ def test_client_complete_without_entry_point_keeps_backward_compat(isolated_ledg
         ("portfolio.services.coach.e6_service", "e6"),
     ],
 )
-def test_coach_service_source_contains_entry_point_literal(service_module, expected_entry):
+def test_coach_service_source_contains_entry_point_literal(
+    service_module, expected_entry
+):
     """6 service 소스에 `entry_point="eN"` literal이 존재 — 회귀 가드."""
     import importlib
     import inspect

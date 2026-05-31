@@ -65,9 +65,7 @@ def run_e3_coach(
         scorer = get_scorer(category)
         scores = scorer.score(metrics)
         scores_block = format_scores_for_prompt(scores)
-        user_prompt = (
-            f"{user_prompt}\n\n## Preset Scores ({preset_id})\n{scores_block}"
-        )
+        user_prompt = f"{user_prompt}\n\n## Preset Scores ({preset_id})\n{scores_block}"
         # Slice 13 Step 0a #60: gate-tier ADDITIVE 추가 (점수 경로 무손상)
         spec = get_preset_spec(preset_id)
         gate_tier = ScoringEngineBase._evaluate_gate_tier(metrics, spec.gate_tiers)

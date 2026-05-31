@@ -39,7 +39,6 @@ PRESET_METRICS = {
         {"metric_id": "beta", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     "piotroski_f_score": [
         # Core
         {"metric_id": "f_score_total", "tier": "core"},
@@ -52,7 +51,6 @@ PRESET_METRICS = {
         {"metric_id": "beta", "tier": "context"},
         {"metric_id": "return_12m", "tier": "context"},
     ],
-
     # ================================================================
     # GROWTH
     # ================================================================
@@ -71,7 +69,6 @@ PRESET_METRICS = {
         {"metric_id": "beta", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     "quality_growth": [
         # Core
         {"metric_id": "roic", "tier": "core"},
@@ -90,7 +87,6 @@ PRESET_METRICS = {
         {"metric_id": "debt_to_equity", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     # ================================================================
     # INCOME
     # ================================================================
@@ -109,7 +105,6 @@ PRESET_METRICS = {
         {"metric_id": "pe_ratio", "tier": "context"},
         {"metric_id": "beta", "tier": "context"},
     ],
-
     "shareholder_yield": [
         # Core
         {"metric_id": "shareholder_yield", "tier": "core"},
@@ -125,7 +120,6 @@ PRESET_METRICS = {
         {"metric_id": "pe_ratio", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     # ================================================================
     # FACTOR
     # ================================================================
@@ -145,7 +139,6 @@ PRESET_METRICS = {
         {"metric_id": "market_cap", "tier": "context"},
         {"metric_id": "beta", "tier": "context"},
     ],
-
     "low_volatility": [
         # Core
         {"metric_id": "volatility_1y", "tier": "core"},
@@ -165,7 +158,6 @@ PRESET_METRICS = {
         {"metric_id": "dividend_yield", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     "price_momentum": [
         # Core
         {"metric_id": "return_12m", "tier": "core"},
@@ -181,7 +173,6 @@ PRESET_METRICS = {
         {"metric_id": "beta", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     "multi_factor": [
         # Core — 5개 합성 지표
         {"metric_id": "composite_value", "tier": "core"},
@@ -199,7 +190,6 @@ PRESET_METRICS = {
         {"metric_id": "market_cap", "tier": "context"},
         {"metric_id": "beta", "tier": "context"},
     ],
-
     # ================================================================
     # SPECIAL
     # ================================================================
@@ -220,7 +210,6 @@ PRESET_METRICS = {
         {"metric_id": "beta", "tier": "context"},
         {"metric_id": "market_cap", "tier": "context"},
     ],
-
     "concentrated_portfolio": [
         # Core — 포트폴리오 구조 지표
         {"metric_id": "hhi_concentration", "tier": "core"},

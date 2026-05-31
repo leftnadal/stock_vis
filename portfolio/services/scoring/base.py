@@ -165,10 +165,7 @@ class ScoringEngineBase(ABC, BaseModel):
         지표 부재 시 0으로 처리 (gate가 사전 차단 가정).
         정규화는 호출자 책임 (카테고리별 자유도).
         """
-        return sum(
-            metrics.get(name, 0.0) * weight
-            for name, weight in weights.items()
-        )
+        return sum(metrics.get(name, 0.0) * weight for name, weight in weights.items())
 
     @staticmethod
     def _normalize_to_0_100(raw: float) -> float:

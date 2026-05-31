@@ -36,13 +36,17 @@ def test_full_session_lifecycle():
         defaults={"stock_name": "Microsoft", "sector": "Technology"},
     )
     h1 = WalletHolding.objects.create(
-        wallet=wallet, stock=stock_nvda,
-        shares=Decimal("10"), avg_cost=Decimal("90.00"),
+        wallet=wallet,
+        stock=stock_nvda,
+        shares=Decimal("10"),
+        avg_cost=Decimal("90.00"),
         first_bought_at=date(2025, 6, 1),
     )
     h2 = WalletHolding.objects.create(
-        wallet=wallet, stock=stock_msft,
-        shares=Decimal("8"), avg_cost=Decimal("340.00"),
+        wallet=wallet,
+        stock=stock_msft,
+        shares=Decimal("8"),
+        avg_cost=Decimal("340.00"),
         first_bought_at=date(2025, 6, 1),
     )
 
@@ -88,18 +92,22 @@ def test_portfolio_effective_holdings_after_sell():
     holding_ids = []
     for sym in ("AAA", "BBB", "CCC"):
         stock, _ = Stock.objects.get_or_create(
-            symbol=sym, defaults={"stock_name": sym, "sector": "Tech"},
+            symbol=sym,
+            defaults={"stock_name": sym, "sector": "Tech"},
         )
         stocks_added.append(stock)
         h = WalletHolding.objects.create(
-            wallet=wallet, stock=stock,
-            shares=Decimal("1"), avg_cost=Decimal("10"),
+            wallet=wallet,
+            stock=stock,
+            shares=Decimal("1"),
+            avg_cost=Decimal("10"),
             first_bought_at=date(2025, 1, 1),
         )
         holding_ids.append(str(h.id))
 
     portfolio = Portfolio.objects.create(
-        wallet=wallet, name="P",
+        wallet=wallet,
+        name="P",
         wallet_holding_ids=holding_ids,
         save_type="named",
     )

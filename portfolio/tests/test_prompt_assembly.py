@@ -149,10 +149,16 @@ def test_e6_assembly_with_overrides():
 
     original = sample_analysis_context.get_context_garp_tech()
     adjusted = sample_analysis_context.get_context_garp_tech_with_roic_20()
-    overrides = [{
-        "intent_type": "threshold_change",
-        "overrides": {"metric_id": "roic", "old_threshold": 0.15, "new_threshold": 0.20},
-    }]
+    overrides = [
+        {
+            "intent_type": "threshold_change",
+            "overrides": {
+                "metric_id": "roic",
+                "old_threshold": 0.15,
+                "new_threshold": 0.20,
+            },
+        }
+    ]
 
     system, user = build_e6_prompt(original, adjusted, overrides)
     assert "applied_overrides" in user

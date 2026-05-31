@@ -27,11 +27,17 @@ def _reset():
     """
     guard = cg.CostGuard.get_instance()
     guard.reset_slice("test_slice", max_calls=50)
-    guard.cumulative_usd = 0.0  # 테스트 격리 — Slice 9 #43 cumulative는 reset_slice가 보존
+    guard.cumulative_usd = (
+        0.0  # 테스트 격리 — Slice 9 #43 cumulative는 reset_slice가 보존
+    )
     e3.reset_cache()
-    e3.set_client(MagicMock(messages=MagicMock(
-        count_tokens=MagicMock(return_value=SimpleNamespace(input_tokens=100))
-    )))
+    e3.set_client(
+        MagicMock(
+            messages=MagicMock(
+                count_tokens=MagicMock(return_value=SimpleNamespace(input_tokens=100))
+            )
+        )
+    )
     yield
     guard.reset_slice("test_slice", max_calls=50)
     guard.cumulative_usd = 0.0
@@ -189,6 +195,7 @@ def test_existing_reset_slice_still_clears():
 def test_existing_50_call_budget_still_blocks():
     """PER_INSTANCE_LIMIT=50 budget guard 동작 무수정 (instance_call_count 기준)."""
     from portfolio.llm.exceptions import LLMBudgetExceededError
+
     guard = cg.CostGuard.get_instance()
     # instance limit는 50이므로 51회째에서 raise
     for _ in range(50):

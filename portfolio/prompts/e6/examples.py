@@ -14,45 +14,84 @@ EXAMPLE_1 = {
         "preset_name": "Buffett Quality Value",
         "original_summary": {
             "strengths": [
-                {"metric_id": "roic", "level_tag": "excellent",
-                 "reason_hint": "5종목 중 4개가 15% 상회"},
-                {"metric_id": "earnings_consistency_5y", "level_tag": "good",
-                 "reason_hint": "5종목 중 4개 안정적"},
+                {
+                    "metric_id": "roic",
+                    "level_tag": "excellent",
+                    "reason_hint": "5종목 중 4개가 15% 상회",
+                },
+                {
+                    "metric_id": "earnings_consistency_5y",
+                    "level_tag": "good",
+                    "reason_hint": "5종목 중 4개 안정적",
+                },
             ],
             "weaknesses": [
-                {"metric_id": "pe_ratio", "level_tag": "moderate",
-                 "reason_hint": "업종 대비 상단"},
-                {"metric_id": "debt_to_equity", "level_tag": "weak",
-                 "reason_hint": "1종목 0.8"},
+                {
+                    "metric_id": "pe_ratio",
+                    "level_tag": "moderate",
+                    "reason_hint": "업종 대비 상단",
+                },
+                {
+                    "metric_id": "debt_to_equity",
+                    "level_tag": "weak",
+                    "reason_hint": "1종목 0.8",
+                },
             ],
             "diagnostic_cards": [
-                {"weakness_metric_id": "pe_ratio",
-                 "severity": "medium", "structural_or_single": "structural"}
+                {
+                    "weakness_metric_id": "pe_ratio",
+                    "severity": "medium",
+                    "structural_or_single": "structural",
+                }
             ],
             "total_return": 0.11,
         },
         "adjusted_summary": {
             "strengths": [
-                {"metric_id": "roic", "level_tag": "excellent",
-                 "reason_hint": "5종목 중 3개가 20% 상회"},
-                {"metric_id": "earnings_consistency_5y", "level_tag": "good",
-                 "reason_hint": "5종목 중 4개 안정적"},
-                {"metric_id": "revenue_growth_yoy", "level_tag": "good",
-                 "reason_hint": "평가 가중 상승으로 부각"},
+                {
+                    "metric_id": "roic",
+                    "level_tag": "excellent",
+                    "reason_hint": "5종목 중 3개가 20% 상회",
+                },
+                {
+                    "metric_id": "earnings_consistency_5y",
+                    "level_tag": "good",
+                    "reason_hint": "5종목 중 4개 안정적",
+                },
+                {
+                    "metric_id": "revenue_growth_yoy",
+                    "level_tag": "good",
+                    "reason_hint": "평가 가중 상승으로 부각",
+                },
             ],
             "weaknesses": [
-                {"metric_id": "pe_ratio", "level_tag": "moderate",
-                 "reason_hint": "업종 대비 상단"},
-                {"metric_id": "debt_to_equity", "level_tag": "weak",
-                 "reason_hint": "1종목 0.8"},
-                {"metric_id": "roic", "level_tag": "weak",
-                 "reason_hint": "INTC가 20% 미달"},
+                {
+                    "metric_id": "pe_ratio",
+                    "level_tag": "moderate",
+                    "reason_hint": "업종 대비 상단",
+                },
+                {
+                    "metric_id": "debt_to_equity",
+                    "level_tag": "weak",
+                    "reason_hint": "1종목 0.8",
+                },
+                {
+                    "metric_id": "roic",
+                    "level_tag": "weak",
+                    "reason_hint": "INTC가 20% 미달",
+                },
             ],
             "diagnostic_cards": [
-                {"weakness_metric_id": "pe_ratio",
-                 "severity": "medium", "structural_or_single": "structural"},
-                {"weakness_metric_id": "roic",
-                 "severity": "medium", "structural_or_single": "single_outlier"},
+                {
+                    "weakness_metric_id": "pe_ratio",
+                    "severity": "medium",
+                    "structural_or_single": "structural",
+                },
+                {
+                    "weakness_metric_id": "roic",
+                    "severity": "medium",
+                    "structural_or_single": "single_outlier",
+                },
             ],
             "total_return": 0.11,
         },
@@ -98,31 +137,41 @@ EXAMPLE_2 = {
         "preset_name": "GARP",
         "original_summary": {
             "strengths": [
-                {"metric_id": "roic", "level_tag": "good",
-                 "reason_hint": "평균 18%"}
+                {"metric_id": "roic", "level_tag": "good", "reason_hint": "평균 18%"}
             ],
             "weaknesses": [
-                {"metric_id": "peg_ratio", "level_tag": "critical",
-                 "reason_hint": "평균 PEG 2.8, 모두 2.0 이상"}
+                {
+                    "metric_id": "peg_ratio",
+                    "level_tag": "critical",
+                    "reason_hint": "평균 PEG 2.8, 모두 2.0 이상",
+                }
             ],
             "diagnostic_cards": [
-                {"weakness_metric_id": "peg_ratio",
-                 "severity": "high", "structural_or_single": "structural"}
+                {
+                    "weakness_metric_id": "peg_ratio",
+                    "severity": "high",
+                    "structural_or_single": "structural",
+                }
             ],
             "total_return": 0.14,
         },
         "adjusted_summary": {
             "strengths": [
-                {"metric_id": "roic", "level_tag": "good",
-                 "reason_hint": "평균 18%"}
+                {"metric_id": "roic", "level_tag": "good", "reason_hint": "평균 18%"}
             ],
             "weaknesses": [
-                {"metric_id": "peg_ratio", "level_tag": "weak",
-                 "reason_hint": "NVDA 제외 평균 PEG 2.4"}
+                {
+                    "metric_id": "peg_ratio",
+                    "level_tag": "weak",
+                    "reason_hint": "NVDA 제외 평균 PEG 2.4",
+                }
             ],
             "diagnostic_cards": [
-                {"weakness_metric_id": "peg_ratio",
-                 "severity": "medium", "structural_or_single": "structural"}
+                {
+                    "weakness_metric_id": "peg_ratio",
+                    "severity": "medium",
+                    "structural_or_single": "structural",
+                }
             ],
             "total_return": 0.14,
         },

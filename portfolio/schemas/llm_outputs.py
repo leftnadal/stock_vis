@@ -17,6 +17,7 @@ from .diagnostic import DiagnosticCard
 # E1: 한 줄 진단
 # ============================================================
 
+
 class OneLineDiagnosis(BaseModel):
     """E1 출력: Portfolio 전체에 대한 한 줄 + 2~3문장 요약."""
 
@@ -46,6 +47,7 @@ class OneLineDiagnosis(BaseModel):
 # E2: 진단 카드
 # ============================================================
 
+
 class DiagnosticCards(BaseModel):
     """E2 출력: 최대 3개의 4요소 진단 카드."""
 
@@ -61,6 +63,7 @@ class DiagnosticCards(BaseModel):
 # ============================================================
 # E3: 지표별 한 줄 코멘트
 # ============================================================
+
 
 class MetricComment(BaseModel):
     """단일 지표에 대한 1~2문장 코멘트."""
@@ -233,6 +236,7 @@ class E6ComparisonResponse(BaseModel):
 # E4: 대화 Q&A
 # ============================================================
 
+
 class ConversationResponse(BaseModel):
     """E4 출력: 사용자 메시지에 대한 응답."""
 
@@ -259,6 +263,7 @@ class ConversationResponse(BaseModel):
 # ============================================================
 # E5: 의도 분류 + 조정 파싱
 # ============================================================
+
 
 class AdjustmentIntentType(StrEnum):
     """조정 의도 유형."""
@@ -320,6 +325,7 @@ class AdjustmentIntent(BaseModel):
 # ============================================================
 # E6: 조정 후 해설
 # ============================================================
+
 
 class AdjustmentComparison(BaseModel):
     """E6 출력: 원본 vs 조정 분석 비교 해설."""

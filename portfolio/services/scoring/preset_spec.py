@@ -90,8 +90,7 @@ class PresetSpec(BaseModel):
         metric = self.gate_tiers.get("metric")
         if not isinstance(metric, str) or not metric:
             raise ValueError(
-                f"gate_tiers.metric must be non-empty str "
-                f"for preset {self.preset_id!r}"
+                f"gate_tiers.metric must be non-empty str for preset {self.preset_id!r}"
             )
         fail_below = self.gate_tiers.get("fail_below")
         warn_below = self.gate_tiers.get("warn_below")

@@ -17,9 +17,7 @@ SAMPLE_JOINED = [
         "commentary": "현재 PE 15 이상으로 ...",
         "parsed": {
             "answer": "현재 PE 15 이상으로 ...",
-            "action_items": [
-                {"title": "T1", "description": "D1", "priority": "high"}
-            ],
+            "action_items": [{"title": "T1", "description": "D1", "priority": "high"}],
         },
         "matrix_patterns_score": 4,
         "rationale_text": "4요소 중 3개 충족",

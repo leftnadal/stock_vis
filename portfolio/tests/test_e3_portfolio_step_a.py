@@ -110,9 +110,9 @@ def test_e3_portfolio_few_shots_4_examples_loadable():
     assert len(FEW_SHOT_EXAMPLES) == 4
     expected_names = {
         "concentrated_balanced",  # V1 mirror
-        "concentrated_misfit",     # V2 mirror
-        "concentrated_factor",     # V3 mirror
-        "concentrated_income",     # V5 mirror
+        "concentrated_misfit",  # V2 mirror
+        "concentrated_factor",  # V3 mirror
+        "concentrated_income",  # V5 mirror
     }
     actual_names = {ex["name"] for ex in FEW_SHOT_EXAMPLES}
     assert actual_names == expected_names
@@ -193,7 +193,9 @@ def test_e3_portfolio_builder_system_prompt_included():
     )
 
     # SYSTEM_PROMPT 도입부 포함
-    assert "당신은 한국 개인 투자자를 위한 portfolio 단위 진단 전문가 LLM입니다" in prompt
+    assert (
+        "당신은 한국 개인 투자자를 위한 portfolio 단위 진단 전문가 LLM입니다" in prompt
+    )
     assert "역할 정의" in prompt
     assert "출력 Schema (E3PortfolioCommentary" in prompt
     assert "평가 기준" in prompt

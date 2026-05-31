@@ -62,7 +62,12 @@ def test_version_bundle():
     from portfolio.metrics.definitions.versions import CURRENT_VERSIONS
 
     assert CURRENT_VERSIONS["metric_version"] == "1.2"
-    for key in ("preset_version", "prompt_version", "scoring_version", "universe_version"):
+    for key in (
+        "preset_version",
+        "prompt_version",
+        "scoring_version",
+        "universe_version",
+    ):
         assert key in CURRENT_VERSIONS
 
 

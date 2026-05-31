@@ -54,9 +54,7 @@ def test_adjustment_item_delta_out_of_range():
 # I2 검증
 def test_adjustment_item_decrease_with_positive_delta_rejected():
     """decrease + 양수 delta_weight는 의미 모순 → 거절."""
-    with pytest.raises(
-        ValidationError, match="decrease action requires delta_weight"
-    ):
+    with pytest.raises(ValidationError, match="decrease action requires delta_weight"):
         AdjustmentItem(
             ticker="TSLA",
             action="decrease",

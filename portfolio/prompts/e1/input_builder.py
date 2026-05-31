@@ -43,9 +43,7 @@ def build_e1_input(context: AnalysisContext) -> dict:
                 }
                 for wk in p.weaknesses
             ],
-            "portfolio_return_total": float(
-                p.return_breakdown.current.total_return
-            ),
+            "portfolio_return_total": float(p.return_breakdown.current.total_return),
         },
         "wallet_background": {
             "total_holdings_count": w.total_holdings_count,

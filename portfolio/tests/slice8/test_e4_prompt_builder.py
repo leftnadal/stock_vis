@@ -79,7 +79,16 @@ class TestE4PromptBuilderV2:
             # P3: 액션 동사
             assert any(
                 kw in answer
-                for kw in ["매수", "매도", "보유", "축소", "확대", "편입", "제외", "유지"]
+                for kw in [
+                    "매수",
+                    "매도",
+                    "보유",
+                    "축소",
+                    "확대",
+                    "편입",
+                    "제외",
+                    "유지",
+                ]
             ), f"{sample['title']}: P3 미충족"
             # P5: 시점/기간
             assert re.search(

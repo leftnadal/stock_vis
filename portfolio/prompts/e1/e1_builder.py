@@ -39,8 +39,7 @@ def build_e1_prompt(
     input_data = build_e1_input(context)
     parts.append("## Now analyze this portfolio:")
     parts.append(
-        "Input:\n"
-        + json.dumps(input_data, ensure_ascii=False, indent=2, default=str)
+        "Input:\n" + json.dumps(input_data, ensure_ascii=False, indent=2, default=str)
     )
     parts.append("Output:")
 

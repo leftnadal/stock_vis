@@ -37,7 +37,6 @@ def resolve_provider_kwargs(label: str) -> dict:
     """
     if label not in PROVIDER_KWARGS:
         raise ValueError(
-            f"Unknown provider label: {label!r}. "
-            f"Available: {sorted(PROVIDER_KWARGS)}"
+            f"Unknown provider label: {label!r}. Available: {sorted(PROVIDER_KWARGS)}"
         )
     return PROVIDER_KWARGS[label]

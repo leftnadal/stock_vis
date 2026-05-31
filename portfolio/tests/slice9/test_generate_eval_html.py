@@ -19,9 +19,7 @@ def sample_cases() -> list[dict]:
             "original_model": "claude-haiku-4-5",
             "question": "테스트 질문",
             "commentary": "테스트 답변",
-            "action_items": [
-                {"title": "A", "description": "B", "priority": "high"}
-            ],
+            "action_items": [{"title": "A", "description": "B", "priority": "high"}],
             "rationale_text": "테스트 rationale",
             "rationale_categories": ["data_grounding"],
             "rationale_score": 4,

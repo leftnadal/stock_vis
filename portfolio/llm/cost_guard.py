@@ -325,8 +325,10 @@ class CostGuard:
             ANTHROPIC_SONNET_INPUT_USD_PER_1M,
             ANTHROPIC_SONNET_OUTPUT_USD_PER_1M,
         )
+
         in_rate, out_rate = _ANTHROPIC_PRICING.get(
-            model, (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M)
+            model,
+            (ANTHROPIC_SONNET_INPUT_USD_PER_1M, ANTHROPIC_SONNET_OUTPUT_USD_PER_1M),
         )
         return input_tokens / 1_000_000 * in_rate + output_tokens / 1_000_000 * out_rate
 
@@ -356,13 +358,17 @@ class CostGuard:
             logger.warning(
                 "pre-call estimate would exceed slice cap (non-blocking): "
                 "slice_usd=$%.4f + buffered=$%.4f > cap=$%.2f",
-                self.slice_usd, buffered, self.cap_per_slice,
+                self.slice_usd,
+                buffered,
+                self.cap_per_slice,
             )
         if would_threshold:
             logger.warning(
                 "pre-call estimate would exceed cumulative threshold (non-blocking): "
                 "cumulative=$%.4f + buffered=$%.4f > threshold=$%.2f",
-                self.cumulative_usd, buffered, self.threshold,
+                self.cumulative_usd,
+                buffered,
+                self.threshold,
             )
 
         return {
@@ -393,7 +399,9 @@ class CostGuard:
             "remaining": max(0, self.max_calls - self.call_count),
             "instance_call_count": self.instance_call_count,
             "per_instance_limit": self.PER_INSTANCE_LIMIT,
-            "instance_remaining": max(0, self.PER_INSTANCE_LIMIT - self.instance_call_count),
+            "instance_remaining": max(
+                0, self.PER_INSTANCE_LIMIT - self.instance_call_count
+            ),
             "total_cost_usd": round(self.total_cost_usd, 4),
             "started_at": self.started_at,
             "records_count": len(self.records),

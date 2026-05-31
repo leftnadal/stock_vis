@@ -42,7 +42,9 @@ class CategoryBreakdown(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: str = Field(..., description="카테고리명 (예: 'Technology', 'Semiconductors').")
+    name: str = Field(
+        ..., description="카테고리명 (예: 'Technology', 'Semiconductors')."
+    )
     weight: Decimal = Field(..., description="전체 내 카테고리 비중 (0~1).")
     return_rate: Decimal = Field(..., description="카테고리 가중 평균 수익률.")
     contribution_pp: Decimal = Field(

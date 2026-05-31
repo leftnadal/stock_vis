@@ -93,21 +93,25 @@ def test_lex_filter_with_completeness_auto():
 
     f = _build_lex_filter("completeness_auto")
     assert (
-        f({
-            "schema_pass": True,
-            "naturalness": 5,
-            "insight": 4,
-            "completeness_auto": True,
-        })
+        f(
+            {
+                "schema_pass": True,
+                "naturalness": 5,
+                "insight": 4,
+                "completeness_auto": True,
+            }
+        )
         is True
     )
     assert (
-        f({
-            "schema_pass": True,
-            "naturalness": 5,
-            "insight": 4,
-            "completeness_auto": False,
-        })
+        f(
+            {
+                "schema_pass": True,
+                "naturalness": 5,
+                "insight": 4,
+                "completeness_auto": False,
+            }
+        )
         is False
     )
 
@@ -123,7 +127,12 @@ def test_build_output_dict_e1_format():
         use_fallback=False,
         winner="haiku",
     )
-    assert set(out.keys()) == {"scored_results", "label_means", "use_fallback", "winner"}
+    assert set(out.keys()) == {
+        "scored_results",
+        "label_means",
+        "use_fallback",
+        "winner",
+    }
     assert "scored_at" not in out
     assert "thresholds" not in out
 

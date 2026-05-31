@@ -44,7 +44,9 @@ class TestActionItemsSmoke:
         dumped = obj.model_dump(mode="json")
         # round-trip 후 action_items 보존
         assert len(dumped["action_items"]) == 2
-        assert dumped["action_items"][0]["title"] == original["action_items"][0]["title"]
+        assert (
+            dumped["action_items"][0]["title"] == original["action_items"][0]["title"]
+        )
         assert dumped["action_items"][0]["priority"] == "high"
         assert dumped["action_items"][1]["category"] == "research"
 
@@ -68,5 +70,6 @@ class TestActionItemsSmoke:
             ],
         }
         import pytest
+
         with pytest.raises(ValidationError):
             E3PortfolioCommentary.model_validate(invalid_data)

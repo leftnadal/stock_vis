@@ -115,8 +115,7 @@ def run_e2(
     """
     if provider not in PROVIDER_KWARGS:
         raise ValueError(
-            f"Unknown provider label: {provider!r}. "
-            f"Valid: {sorted(PROVIDER_KWARGS)}"
+            f"Unknown provider label: {provider!r}. Valid: {sorted(PROVIDER_KWARGS)}"
         )
 
     prompt = build_e2_prompt(request)

@@ -34,7 +34,9 @@ def test_common_load_raw_slice5_results_key():
 def test_common_load_raw_slice7_entries_key():
     from scripts.slice7._common import load_raw
 
-    items = load_raw(ROOT / "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json")
+    items = load_raw(
+        ROOT / "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json"
+    )
     assert len(items) == 28
     assert "provider" in items[0]
 
@@ -59,7 +61,9 @@ def test_common_extract_answer_slice5_uses_one_liner():
 def test_common_extract_answer_slice6_uses_holistic_fields():
     from scripts.slice7._common import extract_answer, load_raw
 
-    items = load_raw(ROOT / "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json")
+    items = load_raw(
+        ROOT / "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json"
+    )
     ans = extract_answer(items[0], "slice6")
     # slice6 parsed의 5 fields 합쳐서 추출
     assert len(ans) > 50
@@ -68,7 +72,9 @@ def test_common_extract_answer_slice6_uses_holistic_fields():
 def test_common_extract_answer_slice7_strips_fence_and_uses_answer():
     from scripts.slice7._common import extract_answer, load_raw
 
-    items = load_raw(ROOT / "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json")
+    items = load_raw(
+        ROOT / "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json"
+    )
     ans = extract_answer(items[0], "slice7")
     # ```json fence 제거되고 answer 키 추출
     assert "```" not in ans

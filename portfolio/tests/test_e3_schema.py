@@ -57,7 +57,7 @@ def test_mock_text_e3_extracts_metric_ids():
         '{"metrics": ['
         '{"metric_id": "roic", "tier": "core"},'
         '{"metric_id": "pe_ratio", "tier": "supporting"}'
-        ']}'
+        "]}"
     )
     raw = _mock_text_e3(prompt)
     data = json.loads(raw)

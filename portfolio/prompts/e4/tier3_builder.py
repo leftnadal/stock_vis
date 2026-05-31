@@ -28,9 +28,7 @@ def build_tier3_block(profile: UserProfile | None) -> str | None:
         lines.append(f"- Preferred presets: {', '.join(profile.preferred_presets)}")
     lines.append(f"- Risk appetite: {profile.risk_appetite_indicator}")
     if profile.decision_patterns:
-        lines.append(
-            f"- Notable patterns: {', '.join(profile.decision_patterns[:3])}"
-        )
+        lines.append(f"- Notable patterns: {', '.join(profile.decision_patterns[:3])}")
     if profile.sensitivities:
         lines.append(f"- Sensitivities: {', '.join(profile.sensitivities[:3])}")
 

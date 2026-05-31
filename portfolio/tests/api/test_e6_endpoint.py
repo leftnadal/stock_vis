@@ -73,9 +73,7 @@ def test_post_e6_returns_200_with_valid_request(
     with patch(
         "portfolio.api.views.run_e6_coach", return_value=mock_llm_response_e6
     ) as mock_run:
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
 
     assert response.status_code == 200, response.data
     assert mock_run.call_count == 1
@@ -101,12 +99,8 @@ def test_post_e6_response_passes_e6output_validation(
     """★ contract test 핵심 — 응답 dict가 다시 E6Output(Pydantic)으로 검증 가능."""
     from portfolio.schemas.commentary_output import E6Output
 
-    with patch(
-        "portfolio.api.views.run_e6_coach", return_value=mock_llm_response_e6
-    ):
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e6_coach", return_value=mock_llm_response_e6):
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
 
     output_dict = response.json()["output"]
     revalidated = E6Output(**output_dict)
@@ -170,9 +164,7 @@ def test_post_e6_service_exception_returns_500_no_stacktrace(
         "portfolio.api.views.run_e6_coach",
         side_effect=RuntimeError("internal database error with secret /tmp/bbb"),
     ):
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
 
     assert response.status_code == 500
     body_str = json.dumps(response.json())
@@ -189,9 +181,7 @@ def test_post_e6_llm_budget_exceeded_returns_429(api_client, e6_request_body):
         "portfolio.api.views.run_e6_coach",
         side_effect=LLMBudgetExceededError(scope="slice", count=51, limit=50),
     ):
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
 
     assert response.status_code == 429
 
@@ -204,9 +194,7 @@ def test_post_e6_llm_error_returns_502(api_client, e6_request_body):
         "portfolio.api.views.run_e6_coach",
         side_effect=LLMRateLimitError("upstream rate limit"),
     ):
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
 
     assert response.status_code == 502
 
@@ -222,10 +210,6 @@ def test_post_e6_service_returns_drifted_output_caught_by_serializer(
     """★ service 응답이 E6Output 계약을 깨면 serializer가 잡아낸다."""
     drifted = dict(mock_llm_response_e6)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch(
-        "portfolio.api.views.run_e6_coach", return_value=drifted
-    ):
-        response = api_client.post(
-            E6_ENDPOINT, data=e6_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e6_coach", return_value=drifted):
+        response = api_client.post(E6_ENDPOINT, data=e6_request_body, format="json")
     assert response.status_code in (400, 500)

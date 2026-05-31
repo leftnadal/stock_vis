@@ -95,7 +95,9 @@ def test_e2_v2_backward_compat():
     assert eg.time_series.window_4q == Decimal("0.22")
     assert eg.time_series.window_12q is None
     # delta_4q_pct: (0.18 - 0.22) / |0.22| * 100 = -18.18%
-    assert eg.time_series.delta_4q_pct == (Decimal("0.18") - Decimal("0.22")) / Decimal("0.22") * Decimal("100")
+    assert eg.time_series.delta_4q_pct == (Decimal("0.18") - Decimal("0.22")) / Decimal(
+        "0.22"
+    ) * Decimal("100")
 
     # roe: time_series 자체가 null (backward-compat 완전 누락 케이스)
     roe = next(m for m in metrics if m.metric_id == "roe")

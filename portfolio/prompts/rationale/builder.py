@@ -75,11 +75,11 @@ def build_rationale_prompt(
 
 ## 자동 patterns 검출 결과 (참고)
 
-- P1 (현재가/지표 언급): {specificity_detail.get('P1_metric_mention', False)}
-- P2 (임계값 명시): {specificity_detail.get('P2_threshold', False)}
-- P3 (액션 동사): {specificity_detail.get('P3_action_verb', False)}
-- P4 (구체 수치): {specificity_detail.get('P4_quantitative', False)}
-- P5 (시점/기간): {specificity_detail.get('P5_time_period', False)}
+- P1 (현재가/지표 언급): {specificity_detail.get("P1_metric_mention", False)}
+- P2 (임계값 명시): {specificity_detail.get("P2_threshold", False)}
+- P3 (액션 동사): {specificity_detail.get("P3_action_verb", False)}
+- P4 (구체 수치): {specificity_detail.get("P4_quantitative", False)}
+- P5 (시점/기간): {specificity_detail.get("P5_time_period", False)}
 
 ## 작업
 

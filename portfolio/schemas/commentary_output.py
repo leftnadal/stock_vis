@@ -75,11 +75,15 @@ class CommentaryOutputBase(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    summary: str = Field(..., min_length=1, description="진입점별 commentary 한 줄 요약.")
+    summary: str = Field(
+        ..., min_length=1, description="진입점별 commentary 한 줄 요약."
+    )
     key_observations: list[str] = Field(
         default_factory=list, description="핵심 관찰 사항 list (자유 길이)."
     )
-    confidence: ConfidenceLevel = Field(..., description="결과 자신도 (high/medium/low).")
+    confidence: ConfidenceLevel = Field(
+        ..., description="결과 자신도 (high/medium/low)."
+    )
 
 
 class E1Output(CommentaryOutputBase):

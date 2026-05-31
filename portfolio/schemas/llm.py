@@ -133,9 +133,7 @@ class E5Response(BaseModel):
     def _check_intent_consistency(self) -> "E5Response":
         """no_actionable_intent=True인데 adjustments 비어있지 않으면 거절."""
         if self.no_actionable_intent and self.adjustments:
-            raise ValueError(
-                "no_actionable_intent=True but adjustments non-empty"
-            )
+            raise ValueError("no_actionable_intent=True but adjustments non-empty")
         return self
 
 

@@ -65,8 +65,13 @@ def test_e6_response_full_valid():
         before_summary="기술주 집중도 70%로 단일 섹터 편중. 변동성 높은 구성.",
         after_summary="기술주 55%로 완화, 디펜시브 종목 추가로 균형 개선.",
         key_changes=[
-            E6KeyChange(aspect=E6ChangeAspect.ALLOCATION, description="테슬라 비중 20% → 10% 축소"),
-            E6KeyChange(aspect="risk", description="단일 섹터 집중도 위험이 완화됩니다"),
+            E6KeyChange(
+                aspect=E6ChangeAspect.ALLOCATION,
+                description="테슬라 비중 20% → 10% 축소",
+            ),
+            E6KeyChange(
+                aspect="risk", description="단일 섹터 집중도 위험이 완화됩니다"
+            ),
         ],
         risk_assessment="포트폴리오 변동성이 약간 낮아지고 하방 리스크가 완화됩니다.",
         closing_remarks="수익률 상한선은 일부 양보될 수 있으나 안정성 향상입니다.",
@@ -80,4 +85,6 @@ def test_e6_response_full_valid():
 def test_e6_keychange_invalid_aspect():
     """aspect 가 정의된 5종 외 문자열일 때 거절."""
     with pytest.raises(ValidationError):
-        E6KeyChange(aspect="invalid_aspect_value", description="설명 충분히 길게 작성됨")
+        E6KeyChange(
+            aspect="invalid_aspect_value", description="설명 충분히 길게 작성됨"
+        )

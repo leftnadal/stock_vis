@@ -73,7 +73,9 @@ def test_e3_portfolio_schema_validates():
 
     # PresetAlignment 3종 모두 유효
     for alignment in ("aligned", "partial", "misaligned"):
-        E3PortfolioCommentary.model_validate({**valid_data, "preset_alignment": alignment})
+        E3PortfolioCommentary.model_validate(
+            {**valid_data, "preset_alignment": alignment}
+        )
 
 
 def test_e3_portfolio_6_categories_cover():
@@ -83,7 +85,12 @@ def test_e3_portfolio_6_categories_cover():
     + concentrated 차원 = 6 카테고리 cover.
     """
     categories = get_categories_covered()
-    expected = {"growth", "value", "income", "factor"}  # V2도 growth (misfit이 special-ish)
+    expected = {
+        "growth",
+        "value",
+        "income",
+        "factor",
+    }  # V2도 growth (misfit이 special-ish)
     assert expected.issubset(categories), (
         f"5 카테고리 cover 실패: {categories} (expected: {expected})"
     )
@@ -103,10 +110,13 @@ def test_e3_portfolio_6_categories_cover():
 
     # FIXTURE_GROUPS 정합성
     assert set(FIXTURE_GROUPS["concentrated_baseline"]) == {
-        "v1_concentrated_balanced", "v2_concentrated_misfit"
+        "v1_concentrated_balanced",
+        "v2_concentrated_misfit",
     }
     assert set(FIXTURE_GROUPS["concentrated_focused"]) == {
-        "v3_concentrated_large", "v4_concentrated_value", "v5_concentrated_dividend"
+        "v3_concentrated_large",
+        "v4_concentrated_value",
+        "v5_concentrated_dividend",
     }
 
 
@@ -122,8 +132,14 @@ def test_e3_portfolio_dimension_lookup_dispatch():
 
     # 8 필드 (e3 entry mirror 100%)
     expected_keys = {
-        "dim1", "dim2", "model_label_field", "result_structure",
-        "default_raw", "default_scored", "weight", "additional_lex_check",
+        "dim1",
+        "dim2",
+        "model_label_field",
+        "result_structure",
+        "default_raw",
+        "default_scored",
+        "weight",
+        "additional_lex_check",
     }
     assert set(entry.keys()) == expected_keys
 
@@ -137,8 +153,14 @@ def test_e3_portfolio_dimension_lookup_dispatch():
     assert entry["additional_lex_check"] == e3["additional_lex_check"]
 
     # path는 slice5 → slice6 / e3 → e3_portfolio
-    assert entry["default_raw"] == "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json"
-    assert entry["default_scored"] == "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_scored.json"
+    assert (
+        entry["default_raw"]
+        == "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_raw.json"
+    )
+    assert (
+        entry["default_scored"]
+        == "docs/portfolio/coach/slice6/step8_2way_e3_portfolio_scored.json"
+    )
 
 
 @pytest.mark.parametrize("fixture_name", list(ALL_FIXTURES.keys()))
@@ -155,7 +177,9 @@ def test_e3_portfolio_v1_v5_fixtures(fixture_name):
     # holdings 검증 (concentrated 정의)
     assert 5 <= len(fixture["holdings"]) <= 10
     weights_sum = sum(h["weight"] for h in fixture["holdings"])
-    assert abs(weights_sum - 1.0) < 0.01, f"{fixture_name}: weights sum {weights_sum} ≠ 1.0"
+    assert abs(weights_sum - 1.0) < 0.01, (
+        f"{fixture_name}: weights sum {weights_sum} ≠ 1.0"
+    )
 
     # 분석엔진 사전 산출값 (사전 산출, 정량 재계산 없음 — Slice 1~5 분석엔진 회피 정책 일관)
     assert 0.0 <= fixture["diversification_score"] <= 1.0
@@ -193,9 +217,13 @@ def test_prompt_variable_slots_7():
     """지시서 §2.4 변수 슬롯 7종 명시."""
     assert len(PROMPT_VARIABLE_SLOTS) == 7
     assert set(PROMPT_VARIABLE_SLOTS) == {
-        "preset_id", "preset_intent", "holdings_summary",
-        "sector_concentration", "diversification_score",
-        "risk_concentration_score", "core_metrics_summary",
+        "preset_id",
+        "preset_intent",
+        "holdings_summary",
+        "sector_concentration",
+        "diversification_score",
+        "risk_concentration_score",
+        "core_metrics_summary",
     }
 
 
@@ -209,10 +237,10 @@ def test_e3_portfolio_entry_point_meta_schema_match():
     e3p = ENTRY_POINT_META["e3_portfolio"]
     # 6 필드 (str_long + str_medium × 3 + literal + int_float)
     assert e3p["schema_fields"] == [
-        "str_long",        # holistic_assessment (300자 max → str_long)
-        "str_medium",      # diversification_comment (200자 max)
-        "str_medium",      # sector_balance_comment
-        "str_medium",      # risk_concentration_comment
-        "literal",         # preset_alignment
-        "int_float",       # confidence
+        "str_long",  # holistic_assessment (300자 max → str_long)
+        "str_medium",  # diversification_comment (200자 max)
+        "str_medium",  # sector_balance_comment
+        "str_medium",  # risk_concentration_comment
+        "literal",  # preset_alignment
+        "int_float",  # confidence
     ]

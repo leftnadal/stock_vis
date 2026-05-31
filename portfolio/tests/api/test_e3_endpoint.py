@@ -75,9 +75,7 @@ def test_post_e3_returns_200_with_valid_request(
     with patch(
         "portfolio.api.views.run_e3_coach", return_value=mock_llm_response_e3
     ) as mock_run:
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
 
     assert response.status_code == 200, response.data
     assert mock_run.call_count == 1
@@ -104,12 +102,8 @@ def test_post_e3_response_passes_e3output_validation(
     """★ contract test 핵심 — 응답 dict가 다시 E3Output(Pydantic)으로 검증 가능."""
     from portfolio.schemas.commentary_output import E3Output
 
-    with patch(
-        "portfolio.api.views.run_e3_coach", return_value=mock_llm_response_e3
-    ):
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e3_coach", return_value=mock_llm_response_e3):
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
 
     output_dict = response.json()["output"]
     revalidated = E3Output(**output_dict)
@@ -128,7 +122,9 @@ def test_post_e3_missing_required_field_returns_400(api_client, e3_request_body)
     response = api_client.post(E3_ENDPOINT, data=body, format="json")
     assert response.status_code == 400
     data = response.json()
-    assert any("concentration_metrics" in k for k in data) or "concentration_metrics" in str(data)
+    assert any(
+        "concentration_metrics" in k for k in data
+    ) or "concentration_metrics" in str(data)
 
 
 def test_post_e3_invalid_type_returns_400(api_client, e3_request_body):
@@ -173,9 +169,7 @@ def test_post_e3_service_exception_returns_500_no_stacktrace(
         "portfolio.api.views.run_e3_coach",
         side_effect=RuntimeError("internal database error with secret /tmp/qrs"),
     ):
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
 
     assert response.status_code == 500
     body_str = json.dumps(response.json())
@@ -192,9 +186,7 @@ def test_post_e3_llm_budget_exceeded_returns_429(api_client, e3_request_body):
         "portfolio.api.views.run_e3_coach",
         side_effect=LLMBudgetExceededError(scope="slice", count=51, limit=50),
     ):
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
 
     assert response.status_code == 429
 
@@ -207,9 +199,7 @@ def test_post_e3_llm_error_returns_502(api_client, e3_request_body):
         "portfolio.api.views.run_e3_coach",
         side_effect=LLMRateLimitError("upstream rate limit"),
     ):
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
 
     assert response.status_code == 502
 
@@ -225,10 +215,6 @@ def test_post_e3_service_returns_drifted_output_caught_by_serializer(
     """★ service 응답이 E3Output 계약을 깨면 serializer가 잡아낸다."""
     drifted = dict(mock_llm_response_e3)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch(
-        "portfolio.api.views.run_e3_coach", return_value=drifted
-    ):
-        response = api_client.post(
-            E3_ENDPOINT, data=e3_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e3_coach", return_value=drifted):
+        response = api_client.post(E3_ENDPOINT, data=e3_request_body, format="json")
     assert response.status_code in (400, 500)

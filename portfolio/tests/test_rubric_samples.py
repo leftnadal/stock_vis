@@ -2,7 +2,13 @@
 
 from pathlib import Path
 
-RUBRIC_PATH = Path(__file__).resolve().parents[2] / "docs" / "portfolio" / "coach" / "manual_eval_rubric.md"
+RUBRIC_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "docs"
+    / "portfolio"
+    / "coach"
+    / "manual_eval_rubric.md"
+)
 
 
 def test_rubric_has_5_samples():

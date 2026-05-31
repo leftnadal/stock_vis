@@ -79,9 +79,7 @@ def append_call(
         with open(target, "a", encoding="utf-8") as fp:
             fp.write(json.dumps(row, ensure_ascii=False) + "\n")
     except Exception as exc:  # noqa: BLE001 — 보조 장치, 본 호출 흐름 보호.
-        logger.warning(
-            "cost_ledger append 실패 (무시): path=%s err=%s", target, exc
-        )
+        logger.warning("cost_ledger append 실패 (무시): path=%s err=%s", target, exc)
 
 
 def read_records(

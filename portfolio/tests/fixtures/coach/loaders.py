@@ -74,7 +74,4 @@ def load_portfolio_a2_all_inputs(
     Returns:
         {"e1": CommentaryInputE1, "e2": CommentaryInputE2, ...}
     """
-    return {
-        ep: load_portfolio_a2_input(ep, path)
-        for ep in COMMENTARY_INPUT_CLASSES
-    }
+    return {ep: load_portfolio_a2_input(ep, path) for ep in COMMENTARY_INPUT_CLASSES}

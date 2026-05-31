@@ -133,7 +133,9 @@ def _wrap_response_envelope(output_model: type) -> dict[str, Any]:
     }
 
 
-def _make_request_extension(serializer_path: str, pydantic_model: type, name: str) -> type:
+def _make_request_extension(
+    serializer_path: str, pydantic_model: type, name: str
+) -> type:
     """Request serializer용 확장 — Pydantic input 모델을 그대로 매핑."""
 
     class _Ext(OpenApiSerializerExtension):
@@ -150,7 +152,9 @@ def _make_request_extension(serializer_path: str, pydantic_model: type, name: st
     return _Ext
 
 
-def _make_response_extension(serializer_path: str, output_model: type, name: str) -> type:
+def _make_response_extension(
+    serializer_path: str, output_model: type, name: str
+) -> type:
     """Response serializer용 확장 — wrapper envelope schema 매핑."""
 
     class _Ext(OpenApiSerializerExtension):
@@ -169,12 +173,36 @@ def _make_response_extension(serializer_path: str, output_model: type, name: str
 
 # ── 6 request × Pydantic input 모델 매핑 ──
 _REQUEST_MAPPINGS: list[tuple[str, type, str]] = [
-    ("portfolio.api.serializers.E1RequestSerializer", CommentaryInputE1, "CoachE1Request"),
-    ("portfolio.api.serializers.E2RequestSerializer", CommentaryInputE2, "CoachE2Request"),
-    ("portfolio.api.serializers.E3RequestSerializer", CommentaryInputE3, "CoachE3Request"),
-    ("portfolio.api.serializers.E4RequestSerializer", CommentaryInputE4, "CoachE4Request"),
-    ("portfolio.api.serializers.E5RequestSerializer", CommentaryInputE5, "CoachE5Request"),
-    ("portfolio.api.serializers.E6RequestSerializer", CommentaryInputE6, "CoachE6Request"),
+    (
+        "portfolio.api.serializers.E1RequestSerializer",
+        CommentaryInputE1,
+        "CoachE1Request",
+    ),
+    (
+        "portfolio.api.serializers.E2RequestSerializer",
+        CommentaryInputE2,
+        "CoachE2Request",
+    ),
+    (
+        "portfolio.api.serializers.E3RequestSerializer",
+        CommentaryInputE3,
+        "CoachE3Request",
+    ),
+    (
+        "portfolio.api.serializers.E4RequestSerializer",
+        CommentaryInputE4,
+        "CoachE4Request",
+    ),
+    (
+        "portfolio.api.serializers.E5RequestSerializer",
+        CommentaryInputE5,
+        "CoachE5Request",
+    ),
+    (
+        "portfolio.api.serializers.E6RequestSerializer",
+        CommentaryInputE6,
+        "CoachE6Request",
+    ),
 ]
 
 # ── 6 response × Pydantic output 모델 (wrapper로 감쌈) ──

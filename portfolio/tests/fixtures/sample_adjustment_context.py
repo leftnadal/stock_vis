@@ -26,13 +26,13 @@ from portfolio.tests.fixtures.sample_analysis_context import (
 
 # COMMANDS는 모든 fixture가 참조하는 단일 진실 출처(SSoT).
 COMMANDS: dict[str, str] = {
-    "clear_decrease":     "TSLA 비중 좀 줄여줘. 너무 많은 것 같아.",
-    "clear_multi":        "TSLA는 줄이고 NVDA는 좀 늘려줘.",
-    "unclear_amount":     "TSLA 좀 줄여",
+    "clear_decrease": "TSLA 비중 좀 줄여줘. 너무 많은 것 같아.",
+    "clear_multi": "TSLA는 줄이고 NVDA는 좀 늘려줘.",
+    "unclear_amount": "TSLA 좀 줄여",
     "no_intent_question": "GARP 프리셋이 뭐야?",
     "no_intent_chitchat": "포트폴리오가 좀 불안한데 어떻게 할까?",
-    "remove":             "PLTR은 빼버릴게.",
-    "large_multi":        "변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP.",
+    "remove": "PLTR은 빼버릴게.",
+    "large_multi": "변동성 큰 종목들 비중 좀 줄여줘. TSLA, PLTR, SHOP.",
 }
 
 
@@ -185,11 +185,11 @@ def get_e5_fixture_large() -> dict[str, Any]:
 
 
 ALL_FIXTURES: dict[str, Callable[[], dict[str, Any]]] = {
-    "clear_decrease":     get_e5_fixture_clear_decrease,
-    "clear_multi":        get_e5_fixture_clear_multi,
-    "unclear_amount":     get_e5_fixture_unclear_amount,
+    "clear_decrease": get_e5_fixture_clear_decrease,
+    "clear_multi": get_e5_fixture_clear_multi,
+    "unclear_amount": get_e5_fixture_unclear_amount,
     "no_intent_question": get_e5_fixture_no_intent_question,
     "no_intent_chitchat": get_e5_fixture_no_intent_chitchat,
-    "remove":             get_e5_fixture_remove,
-    "large_multi":        get_e5_fixture_large,
+    "remove": get_e5_fixture_remove,
+    "large_multi": get_e5_fixture_large,
 }

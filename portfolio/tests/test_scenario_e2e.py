@@ -60,10 +60,16 @@ def test_scenario_analyze_question_adjust_compare():
 
     # Step 5: 조정된 분석 결과 (mock) + E6 비교
     adjusted_ctx = sample_analysis_context.get_context_garp_tech_with_roic_20()
-    overrides = [{
-        "intent_type": "threshold_change",
-        "overrides": {"metric_id": "roic", "old_threshold": 0.15, "new_threshold": 0.20},
-    }]
+    overrides = [
+        {
+            "intent_type": "threshold_change",
+            "overrides": {
+                "metric_id": "roic",
+                "old_threshold": 0.15,
+                "new_threshold": 0.20,
+            },
+        }
+    ]
     e6_system, e6_user = build_e6_prompt(ctx, adjusted_ctx, overrides)
     assert "applied_overrides" in e6_user
     # 조정 결과에만 overrides_applied가 있어야 함

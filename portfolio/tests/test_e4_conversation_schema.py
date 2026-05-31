@@ -99,7 +99,9 @@ def test_input_tier2_empty_history_rejected():
 
 def test_input_tier3_with_history_ok():
     history = [
-        E4ConversationTurn(role="user", content="Q1", timestamp=datetime.now(), turn_idx=0),
+        E4ConversationTurn(
+            role="user", content="Q1", timestamp=datetime.now(), turn_idx=0
+        ),
         E4ConversationTurn(
             role="assistant",
             content="A1 답변 내용 (20자 이상 필요).",
@@ -208,7 +210,11 @@ def test_metadata_i4_hallucination_trace():
 def test_token_budgets_e4_tier1_2_3_registered():
     from portfolio.llm.token_budgets import ENTRYPOINT_TOKEN_BUDGETS, get_token_budget
 
-    for key in ("e4_conversation_tier1", "e4_conversation_tier2", "e4_conversation_tier3"):
+    for key in (
+        "e4_conversation_tier1",
+        "e4_conversation_tier2",
+        "e4_conversation_tier3",
+    ):
         assert key in ENTRYPOINT_TOKEN_BUDGETS
         assert get_token_budget(key) > 0
 
@@ -234,8 +240,14 @@ def test_e4_conversation_dimension_lookup_dispatch():
 
     # 9 필드 (e3_portfolio 8 + tier_aware)
     expected_keys = {
-        "dim1", "dim2", "model_label_field", "result_structure",
-        "default_raw", "default_scored", "weight", "additional_lex_check",
+        "dim1",
+        "dim2",
+        "model_label_field",
+        "result_structure",
+        "default_raw",
+        "default_scored",
+        "weight",
+        "additional_lex_check",
         "tier_aware",
     }
     assert set(entry.keys()) == expected_keys
@@ -250,8 +262,14 @@ def test_e4_conversation_dimension_lookup_dispatch():
     assert entry["additional_lex_check"] == e3p["additional_lex_check"]
 
     # path는 slice6 → slice7 / e3_portfolio → e4_conversation
-    assert entry["default_raw"] == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json"
-    assert entry["default_scored"] == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_scored.json"
+    assert (
+        entry["default_raw"]
+        == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_raw.json"
+    )
+    assert (
+        entry["default_scored"]
+        == "docs/portfolio/coach/slice7/step8_2way_e4_conversation_scored.json"
+    )
 
     # tier_aware 신규 (Slice 7)
     assert entry["tier_aware"] is True
@@ -261,5 +279,13 @@ def test_dimension_lookup_other_entries_unaffected():
     """e4_conversation 추가가 기존 entry IDENTICAL hash KPI 보호."""
     from scripts.validation.score_step8 import DIMENSION_LOOKUP
 
-    expected_entrypoints = {"e1", "e2", "e3", "e3_portfolio", "e4_conversation", "e5", "e6"}
+    expected_entrypoints = {
+        "e1",
+        "e2",
+        "e3",
+        "e3_portfolio",
+        "e4_conversation",
+        "e5",
+        "e6",
+    }
     assert set(DIMENSION_LOOKUP.keys()) == expected_entrypoints

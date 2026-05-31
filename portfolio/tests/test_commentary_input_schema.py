@@ -61,9 +61,7 @@ def test_time_series_context_delta_4q_pct():
     assert ts_zero.delta_4q_pct is None
 
     # 음수 base (절댓값 분모): (50 - (-100)) / |−100| * 100 = 150
-    ts_neg_base = TimeSeriesContext(
-        current=Decimal("50"), window_4q=Decimal("-100")
-    )
+    ts_neg_base = TimeSeriesContext(current=Decimal("50"), window_4q=Decimal("-100"))
     assert ts_neg_base.delta_4q_pct == Decimal("150")
 
 

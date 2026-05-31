@@ -42,7 +42,9 @@ EXAMPLE_2 = {
     "current_preset_hint": {
         "preset_id": "buffett_quality_value",
         "available_metric_ids_sample": [
-            "revenue_growth_yoy", "eps_growth_yoy", "roic",
+            "revenue_growth_yoy",
+            "eps_growth_yoy",
+            "roic",
         ],
     },
     "expected_output": {
@@ -162,5 +164,9 @@ EXAMPLE_5 = {
 
 
 FEW_SHOT_EXAMPLES: list[dict] = [
-    EXAMPLE_1, EXAMPLE_2, EXAMPLE_3, EXAMPLE_4, EXAMPLE_5,
+    EXAMPLE_1,
+    EXAMPLE_2,
+    EXAMPLE_3,
+    EXAMPLE_4,
+    EXAMPLE_5,
 ]

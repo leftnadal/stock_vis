@@ -48,18 +48,24 @@ def _portfolio_return(total_return: str = "0.14") -> ReturnBreakdownWithTime:
         ],
         top_contributors=[
             ContributionItem(
-                name="NVDA", weight=Decimal("0.30"),
-                return_rate=Decimal("0.32"), contribution_pp=Decimal("0.096"),
+                name="NVDA",
+                weight=Decimal("0.30"),
+                return_rate=Decimal("0.32"),
+                contribution_pp=Decimal("0.096"),
             ),
         ],
         bottom_contributors=[
             ContributionItem(
-                name="INTC", weight=Decimal("0.10"),
-                return_rate=Decimal("-0.05"), contribution_pp=Decimal("-0.005"),
+                name="INTC",
+                weight=Decimal("0.10"),
+                return_rate=Decimal("-0.05"),
+                contribution_pp=Decimal("-0.005"),
             ),
         ],
     )
-    return ReturnBreakdownWithTime(at_save_time=None, current=current, delta_since_save=None)
+    return ReturnBreakdownWithTime(
+        at_save_time=None, current=current, delta_since_save=None
+    )
 
 
 def _wallet_return(total_return: str = "0.08") -> ReturnBreakdownWithTime:
@@ -72,55 +78,75 @@ def _wallet_return(total_return: str = "0.08") -> ReturnBreakdownWithTime:
         total_cost_basis=Decimal("111111.00"),
         by_sector=[
             CategoryBreakdown(
-                name="Technology", weight=Decimal("0.55"),
-                return_rate=Decimal("0.12"), contribution_pp=Decimal("0.066"),
+                name="Technology",
+                weight=Decimal("0.55"),
+                return_rate=Decimal("0.12"),
+                contribution_pp=Decimal("0.066"),
             ),
             CategoryBreakdown(
-                name="Healthcare", weight=Decimal("0.20"),
-                return_rate=Decimal("0.06"), contribution_pp=Decimal("0.012"),
+                name="Healthcare",
+                weight=Decimal("0.20"),
+                return_rate=Decimal("0.06"),
+                contribution_pp=Decimal("0.012"),
             ),
         ],
         top_contributors=[],
         bottom_contributors=[],
     )
-    return ReturnBreakdownWithTime(at_save_time=None, current=current, delta_since_save=None)
+    return ReturnBreakdownWithTime(
+        at_save_time=None, current=current, delta_since_save=None
+    )
 
 
 def _holdings_tech() -> list[HoldingSummary]:
     return [
         HoldingSummary(
-            holding_id=f"h-{i}", stock_symbol=sym, stock_name=name,
-            sector="Technology", industry="Semiconductors" if sym in {"NVDA", "AMD", "INTC"} else "Software",
+            holding_id=f"h-{i}",
+            stock_symbol=sym,
+            stock_name=name,
+            sector="Technology",
+            industry="Semiconductors" if sym in {"NVDA", "AMD", "INTC"} else "Software",
             shares=Decimal("10.0"),
-            weight=Decimal(w), market_value=Decimal(mv),
+            weight=Decimal(w),
+            market_value=Decimal(mv),
             unrealized_return=Decimal(ur),
             investment_thesis=thesis,
         )
-        for i, (sym, name, w, mv, ur, thesis) in enumerate([
-            ("NVDA",  "NVIDIA",            "0.30", "15000", "0.32", "AI 인프라 수요"),
-            ("MSFT",  "Microsoft",          "0.25", "12500", "0.18", "클라우드 지속 성장"),
-            ("AAPL",  "Apple",              "0.20", "10000", "0.10", "서비스 수익 확대"),
-            ("GOOGL", "Alphabet",           "0.15", "7500",  "0.12", "광고 안정 + AI"),
-            ("INTC",  "Intel",              "0.10", "5000",  "-0.05", "턴어라운드 기대"),
-        ])
+        for i, (sym, name, w, mv, ur, thesis) in enumerate(
+            [
+                ("NVDA", "NVIDIA", "0.30", "15000", "0.32", "AI 인프라 수요"),
+                ("MSFT", "Microsoft", "0.25", "12500", "0.18", "클라우드 지속 성장"),
+                ("AAPL", "Apple", "0.20", "10000", "0.10", "서비스 수익 확대"),
+                ("GOOGL", "Alphabet", "0.15", "7500", "0.12", "광고 안정 + AI"),
+                ("INTC", "Intel", "0.10", "5000", "-0.05", "턴어라운드 기대"),
+            ]
+        )
     ]
 
 
 def _core_metrics() -> list[MetricResult]:
     return [
         MetricResult(
-            metric_id="roic", metric_display_name="투하자본수익률",
-            tier=MetricTier.CORE, value=Decimal("0.18"),
-            percentile=Decimal("0.82"), percentile_scope="industry",
+            metric_id="roic",
+            metric_display_name="투하자본수익률",
+            tier=MetricTier.CORE,
+            value=Decimal("0.18"),
+            percentile=Decimal("0.82"),
+            percentile_scope="industry",
             level_tag="good",
-            threshold_applied=Decimal("0.15"), passed_threshold=True,
+            threshold_applied=Decimal("0.15"),
+            passed_threshold=True,
         ),
         MetricResult(
-            metric_id="peg_ratio", metric_display_name="PEG 비율",
-            tier=MetricTier.CORE, value=Decimal("2.80"),
-            percentile=Decimal("0.15"), percentile_scope="industry",
+            metric_id="peg_ratio",
+            metric_display_name="PEG 비율",
+            tier=MetricTier.CORE,
+            value=Decimal("2.80"),
+            percentile=Decimal("0.15"),
+            percentile_scope="industry",
             level_tag="weak",
-            threshold_applied=Decimal("1.5"), passed_threshold=False,
+            threshold_applied=Decimal("1.5"),
+            passed_threshold=False,
         ),
     ]
 
@@ -128,11 +154,15 @@ def _core_metrics() -> list[MetricResult]:
 def _supporting_metrics() -> list[MetricResult]:
     return [
         MetricResult(
-            metric_id="revenue_growth_yoy", metric_display_name="매출 성장률(YoY)",
-            tier=MetricTier.SUPPORTING, value=Decimal("0.18"),
-            percentile=Decimal("0.70"), percentile_scope="industry",
+            metric_id="revenue_growth_yoy",
+            metric_display_name="매출 성장률(YoY)",
+            tier=MetricTier.SUPPORTING,
+            value=Decimal("0.18"),
+            percentile=Decimal("0.70"),
+            percentile_scope="industry",
             level_tag="good",
-            threshold_applied=None, passed_threshold=None,
+            threshold_applied=None,
+            passed_threshold=None,
         ),
     ]
 
@@ -140,8 +170,10 @@ def _supporting_metrics() -> list[MetricResult]:
 def _strengths() -> list[StrengthWeakness]:
     return [
         StrengthWeakness(
-            metric_id="roic", metric_display_name="투하자본수익률",
-            level_tag="good", rank_within_portfolio=1,
+            metric_id="roic",
+            metric_display_name="투하자본수익률",
+            level_tag="good",
+            rank_within_portfolio=1,
             reason_hint="5종목 중 4개가 산업 상위 25% 이내",
         ),
     ]
@@ -150,8 +182,10 @@ def _strengths() -> list[StrengthWeakness]:
 def _weaknesses() -> list[StrengthWeakness]:
     return [
         StrengthWeakness(
-            metric_id="peg_ratio", metric_display_name="PEG 비율",
-            level_tag="weak", rank_within_portfolio=1,
+            metric_id="peg_ratio",
+            metric_display_name="PEG 비율",
+            level_tag="weak",
+            rank_within_portfolio=1,
             reason_hint="평균 PEG 2.8, 프리셋 기준 1.5 상회",
         ),
     ]
@@ -214,16 +248,24 @@ def get_context_garp_tech_with_roic_20() -> AnalysisContext:
     p = base.analysis_target_portfolio
     # Core metric 조정: threshold 0.15 → 0.20
     new_core = [
-        mr.model_copy(update={"threshold_applied": Decimal("0.20"),
-                              "passed_threshold": False, "level_tag": "moderate"})
-        if mr.metric_id == "roic" else mr
+        mr.model_copy(
+            update={
+                "threshold_applied": Decimal("0.20"),
+                "passed_threshold": False,
+                "level_tag": "moderate",
+            }
+        )
+        if mr.metric_id == "roic"
+        else mr
         for mr in p.core_metric_results
     ]
     # 약점에 ROIC 추가 (INTC 단일 이상치)
     new_weak = list(p.weaknesses) + [
         StrengthWeakness(
-            metric_id="roic", metric_display_name="투하자본수익률",
-            level_tag="weak", rank_within_portfolio=2,
+            metric_id="roic",
+            metric_display_name="투하자본수익률",
+            level_tag="weak",
+            rank_within_portfolio=2,
             reason_hint="INTC가 20% 미달, 나머지 4종목은 통과",
         ),
     ]
@@ -238,16 +280,18 @@ def get_context_garp_tech_with_roic_20() -> AnalysisContext:
             structural_or_single=StructuralOrSingle.SINGLE_OUTLIER,
         ),
     ]
-    adjusted_portfolio = p.model_copy(update={
-        "core_metric_results": new_core,
-        "weaknesses": new_weak,
-        "diagnostic_cards": new_cards,
-        "overrides_applied": {
-            "metric_id": "roic",
-            "old_threshold": 0.15,
-            "new_threshold": 0.20,
-        },
-    })
+    adjusted_portfolio = p.model_copy(
+        update={
+            "core_metric_results": new_core,
+            "weaknesses": new_weak,
+            "diagnostic_cards": new_cards,
+            "overrides_applied": {
+                "metric_id": "roic",
+                "old_threshold": 0.15,
+                "new_threshold": 0.20,
+            },
+        }
+    )
     return base.model_copy(update={"analysis_target_portfolio": adjusted_portfolio})
 
 
@@ -255,20 +299,68 @@ def get_context_dividend() -> AnalysisContext:
     """Dividend Growth 포트폴리오 (배당 강점)."""
     holdings = [
         HoldingSummary(
-            holding_id=f"h-div-{i}", stock_symbol=sym, stock_name=name,
-            sector=sector, industry=industry,
-            shares=Decimal("20.0"), weight=Decimal(w), market_value=Decimal(mv),
-            unrealized_return=Decimal(ur), investment_thesis=None,
+            holding_id=f"h-div-{i}",
+            stock_symbol=sym,
+            stock_name=name,
+            sector=sector,
+            industry=industry,
+            shares=Decimal("20.0"),
+            weight=Decimal(w),
+            market_value=Decimal(mv),
+            unrealized_return=Decimal(ur),
+            investment_thesis=None,
         )
-        for i, (sym, name, sector, industry, w, mv, ur) in enumerate([
-            ("JNJ", "Johnson & Johnson", "Healthcare", "Pharma", "0.20", "8000", "0.06"),
-            ("PG",  "Procter & Gamble",  "Consumer Staples", "Household", "0.20", "8000", "0.05"),
-            ("KO",  "Coca-Cola",          "Consumer Staples", "Beverages", "0.15", "6000", "0.04"),
-            ("PEP", "PepsiCo",            "Consumer Staples", "Beverages", "0.15", "6000", "0.05"),
-            ("WMT", "Walmart",            "Consumer Staples", "Retail",    "0.15", "6000", "0.08"),
-            ("MMM", "3M",                 "Industrials",       "Conglomerate", "0.10", "4000", "0.02"),
-            ("ABBV","AbbVie",             "Healthcare",        "Pharma",    "0.05", "2000", "0.11"),
-        ])
+        for i, (sym, name, sector, industry, w, mv, ur) in enumerate(
+            [
+                (
+                    "JNJ",
+                    "Johnson & Johnson",
+                    "Healthcare",
+                    "Pharma",
+                    "0.20",
+                    "8000",
+                    "0.06",
+                ),
+                (
+                    "PG",
+                    "Procter & Gamble",
+                    "Consumer Staples",
+                    "Household",
+                    "0.20",
+                    "8000",
+                    "0.05",
+                ),
+                (
+                    "KO",
+                    "Coca-Cola",
+                    "Consumer Staples",
+                    "Beverages",
+                    "0.15",
+                    "6000",
+                    "0.04",
+                ),
+                (
+                    "PEP",
+                    "PepsiCo",
+                    "Consumer Staples",
+                    "Beverages",
+                    "0.15",
+                    "6000",
+                    "0.05",
+                ),
+                (
+                    "WMT",
+                    "Walmart",
+                    "Consumer Staples",
+                    "Retail",
+                    "0.15",
+                    "6000",
+                    "0.08",
+                ),
+                ("MMM", "3M", "Industrials", "Conglomerate", "0.10", "4000", "0.02"),
+                ("ABBV", "AbbVie", "Healthcare", "Pharma", "0.05", "2000", "0.11"),
+            ]
+        )
     ]
     portfolio = AnalysisTargetPortfolioContext(
         portfolio_id="33333333-3333-3333-3333-333333333333",
@@ -281,19 +373,25 @@ def get_context_dividend() -> AnalysisContext:
         holding_count=7,
         core_metric_results=[
             MetricResult(
-                metric_id="dividend_yield", metric_display_name="배당수익률",
-                tier=MetricTier.CORE, value=Decimal("0.034"),
-                percentile=Decimal("0.75"), percentile_scope="sector",
+                metric_id="dividend_yield",
+                metric_display_name="배당수익률",
+                tier=MetricTier.CORE,
+                value=Decimal("0.034"),
+                percentile=Decimal("0.75"),
+                percentile_scope="sector",
                 level_tag="good",
-                threshold_applied=Decimal("0.02"), passed_threshold=True,
+                threshold_applied=Decimal("0.02"),
+                passed_threshold=True,
             ),
         ],
         supporting_metric_results=[],
         context_metric_results=[],
         strengths=[
             StrengthWeakness(
-                metric_id="dividend_yield", metric_display_name="배당수익률",
-                level_tag="good", rank_within_portfolio=1,
+                metric_id="dividend_yield",
+                metric_display_name="배당수익률",
+                level_tag="good",
+                rank_within_portfolio=1,
                 reason_hint="평균 3.4%, 섹터 중앙값 2.1%",
             ),
         ],
@@ -323,24 +421,55 @@ def get_context_dividend() -> AnalysisContext:
 # GARP Misfit — 5종목, GARP 적합도 매우 낮음
 # ============================================================
 
+
 def _holdings_garp_misfit() -> list[HoldingSummary]:
     """5종목 모두 GARP 기준 미달 (PEG > 2.5, ROIC < 8% 등)."""
     return [
         HoldingSummary(
-            holding_id=f"h-misfit-{i}", stock_symbol=sym, stock_name=name,
-            sector=sector, industry=industry,
+            holding_id=f"h-misfit-{i}",
+            stock_symbol=sym,
+            stock_name=name,
+            sector=sector,
+            industry=industry,
             shares=Decimal("10.0"),
-            weight=Decimal(w), market_value=Decimal(mv),
+            weight=Decimal(w),
+            market_value=Decimal(mv),
             unrealized_return=Decimal(ur),
             investment_thesis=None,
         )
-        for i, (sym, name, sector, industry, w, mv, ur) in enumerate([
-            ("TSLA", "Tesla",     "Consumer Discretionary", "Auto",       "0.25", "10000", "-0.10"),
-            ("PLTR", "Palantir",  "Technology",             "Software",   "0.20",  "8000", "-0.05"),
-            ("SHOP", "Shopify",   "Technology",             "E-commerce", "0.20",  "8000",  "0.02"),
-            ("ABNB", "Airbnb",    "Consumer Discretionary", "Travel",     "0.20",  "8000", "-0.03"),
-            ("RBLX", "Roblox",    "Communication Services", "Gaming",     "0.15",  "6000", "-0.12"),
-        ])
+        for i, (sym, name, sector, industry, w, mv, ur) in enumerate(
+            [
+                (
+                    "TSLA",
+                    "Tesla",
+                    "Consumer Discretionary",
+                    "Auto",
+                    "0.25",
+                    "10000",
+                    "-0.10",
+                ),
+                ("PLTR", "Palantir", "Technology", "Software", "0.20", "8000", "-0.05"),
+                ("SHOP", "Shopify", "Technology", "E-commerce", "0.20", "8000", "0.02"),
+                (
+                    "ABNB",
+                    "Airbnb",
+                    "Consumer Discretionary",
+                    "Travel",
+                    "0.20",
+                    "8000",
+                    "-0.03",
+                ),
+                (
+                    "RBLX",
+                    "Roblox",
+                    "Communication Services",
+                    "Gaming",
+                    "0.15",
+                    "6000",
+                    "-0.12",
+                ),
+            ]
+        )
     ]
 
 
@@ -360,73 +489,105 @@ def get_context_garp_misfit() -> AnalysisContext:
         holding_count=5,
         core_metric_results=[
             MetricResult(
-                metric_id="peg_ratio", metric_display_name="PEG",
-                tier=MetricTier.CORE, value=Decimal("3.20"),
-                percentile=Decimal("0.08"), percentile_scope="industry",
+                metric_id="peg_ratio",
+                metric_display_name="PEG",
+                tier=MetricTier.CORE,
+                value=Decimal("3.20"),
+                percentile=Decimal("0.08"),
+                percentile_scope="industry",
                 level_tag="critical",
-                threshold_applied=Decimal("1.5"), passed_threshold=False,
+                threshold_applied=Decimal("1.5"),
+                passed_threshold=False,
             ),
             MetricResult(
-                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
-                tier=MetricTier.CORE, value=Decimal("0.04"),
-                percentile=Decimal("0.20"), percentile_scope="industry",
+                metric_id="eps_growth_yoy",
+                metric_display_name="EPS 성장률 (YoY)",
+                tier=MetricTier.CORE,
+                value=Decimal("0.04"),
+                percentile=Decimal("0.20"),
+                percentile_scope="industry",
                 level_tag="weak",
-                threshold_applied=Decimal("0.10"), passed_threshold=False,
+                threshold_applied=Decimal("0.10"),
+                passed_threshold=False,
             ),
             MetricResult(
-                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
-                tier=MetricTier.CORE, value=Decimal("0.12"),
-                percentile=Decimal("0.55"), percentile_scope="industry",
+                metric_id="revenue_growth_yoy",
+                metric_display_name="매출 성장률 (YoY)",
+                tier=MetricTier.CORE,
+                value=Decimal("0.12"),
+                percentile=Decimal("0.55"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=Decimal("0.08"), passed_threshold=True,
+                threshold_applied=Decimal("0.08"),
+                passed_threshold=True,
             ),
         ],
         supporting_metric_results=[
             MetricResult(
-                metric_id="roic", metric_display_name="ROIC",
-                tier=MetricTier.SUPPORTING, value=Decimal("0.06"),
-                percentile=Decimal("0.18"), percentile_scope="industry",
+                metric_id="roic",
+                metric_display_name="ROIC",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("0.06"),
+                percentile=Decimal("0.18"),
+                percentile_scope="industry",
                 level_tag="weak",
-                threshold_applied=Decimal("0.10"), passed_threshold=False,
+                threshold_applied=Decimal("0.10"),
+                passed_threshold=False,
             ),
             MetricResult(
-                metric_id="pe_ratio", metric_display_name="PER",
-                tier=MetricTier.SUPPORTING, value=Decimal("65.0"),
-                percentile=Decimal("0.05"), percentile_scope="industry",
+                metric_id="pe_ratio",
+                metric_display_name="PER",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("65.0"),
+                percentile=Decimal("0.05"),
+                percentile_scope="industry",
                 level_tag="critical",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
         ],
         context_metric_results=[
             MetricResult(
-                metric_id="debt_to_equity", metric_display_name="부채비율",
-                tier=MetricTier.CONTEXT, value=Decimal("0.45"),
-                percentile=Decimal("0.60"), percentile_scope="industry",
+                metric_id="debt_to_equity",
+                metric_display_name="부채비율",
+                tier=MetricTier.CONTEXT,
+                value=Decimal("0.45"),
+                percentile=Decimal("0.60"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
         ],
         strengths=[
             StrengthWeakness(
-                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
-                level_tag="moderate", rank_within_portfolio=1,
+                metric_id="revenue_growth_yoy",
+                metric_display_name="매출 성장률 (YoY)",
+                level_tag="moderate",
+                rank_within_portfolio=1,
                 reason_hint="5종목 평균 12%로 임계값 8% 통과",
             ),
         ],
         weaknesses=[
             StrengthWeakness(
-                metric_id="peg_ratio", metric_display_name="PEG",
-                level_tag="critical", rank_within_portfolio=1,
+                metric_id="peg_ratio",
+                metric_display_name="PEG",
+                level_tag="critical",
+                rank_within_portfolio=1,
                 reason_hint="평균 3.20, 5종목 모두 임계값 1.5 미달",
             ),
             StrengthWeakness(
-                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
-                level_tag="weak", rank_within_portfolio=2,
+                metric_id="eps_growth_yoy",
+                metric_display_name="EPS 성장률 (YoY)",
+                level_tag="weak",
+                rank_within_portfolio=2,
                 reason_hint="평균 4%, 임계값 10% 미달",
             ),
             StrengthWeakness(
-                metric_id="roic", metric_display_name="ROIC",
-                level_tag="weak", rank_within_portfolio=3,
+                metric_id="roic",
+                metric_display_name="ROIC",
+                level_tag="weak",
+                rank_within_portfolio=3,
                 reason_hint="평균 6%, 임계값 10% 미달",
             ),
         ],
@@ -469,23 +630,113 @@ def get_context_garp_misfit() -> AnalysisContext:
 # fit_class ∈ {"fit", "partial", "misfit"} — 분포 검증용 메타.
 _GARP_LARGE_HOLDINGS_RAW: list[tuple[str, str, str, str, str, str, str, str]] = [
     # 정합 5종목 (PEG 0.8~1.3, EPS_growth > 10%, ROIC > 13%, weight 합 0.37)
-    ("MSFT",  "Microsoft",       "Technology",             "Software",            "0.10", "5000", "0.18", "fit"),
-    ("GOOGL", "Alphabet",        "Communication Services", "Internet",            "0.08", "4000", "0.12", "fit"),
-    ("V",     "Visa",            "Financial Services",     "Credit Services",     "0.07", "3500", "0.09", "fit"),
-    ("MA",    "Mastercard",      "Financial Services",     "Credit Services",     "0.06", "3000", "0.11", "fit"),
-    ("ADBE",  "Adobe",           "Technology",             "Software",            "0.06", "3000", "0.07", "fit"),
+    ("MSFT", "Microsoft", "Technology", "Software", "0.10", "5000", "0.18", "fit"),
+    (
+        "GOOGL",
+        "Alphabet",
+        "Communication Services",
+        "Internet",
+        "0.08",
+        "4000",
+        "0.12",
+        "fit",
+    ),
+    (
+        "V",
+        "Visa",
+        "Financial Services",
+        "Credit Services",
+        "0.07",
+        "3500",
+        "0.09",
+        "fit",
+    ),
+    (
+        "MA",
+        "Mastercard",
+        "Financial Services",
+        "Credit Services",
+        "0.06",
+        "3000",
+        "0.11",
+        "fit",
+    ),
+    ("ADBE", "Adobe", "Technology", "Software", "0.06", "3000", "0.07", "fit"),
     # 부분 적합 5종목 (지표 일부 통과, weight 합 0.34)
-    ("AAPL",  "Apple",           "Technology",             "Consumer Electronics","0.08", "4000", "0.05", "partial"),
-    ("AMZN",  "Amazon",          "Consumer Discretionary", "E-commerce",          "0.07", "3500", "0.04", "partial"),
-    ("META",  "Meta",            "Communication Services", "Internet",            "0.06", "3000", "0.10", "partial"),
-    ("AVGO",  "Broadcom",        "Technology",             "Semiconductors",      "0.06", "3000", "0.15", "partial"),
-    ("NVDA",  "NVIDIA",          "Technology",             "Semiconductors",      "0.07", "3500", "0.32", "partial"),
+    (
+        "AAPL",
+        "Apple",
+        "Technology",
+        "Consumer Electronics",
+        "0.08",
+        "4000",
+        "0.05",
+        "partial",
+    ),
+    (
+        "AMZN",
+        "Amazon",
+        "Consumer Discretionary",
+        "E-commerce",
+        "0.07",
+        "3500",
+        "0.04",
+        "partial",
+    ),
+    (
+        "META",
+        "Meta",
+        "Communication Services",
+        "Internet",
+        "0.06",
+        "3000",
+        "0.10",
+        "partial",
+    ),
+    (
+        "AVGO",
+        "Broadcom",
+        "Technology",
+        "Semiconductors",
+        "0.06",
+        "3000",
+        "0.15",
+        "partial",
+    ),
+    (
+        "NVDA",
+        "NVIDIA",
+        "Technology",
+        "Semiconductors",
+        "0.07",
+        "3500",
+        "0.32",
+        "partial",
+    ),
     # 부정합 5종목 (PEG > 2.5 또는 ROIC < 8%, weight 합 0.29)
-    ("TSLA",  "Tesla",           "Consumer Discretionary", "Auto",                "0.05", "2500", "-0.10", "misfit"),
-    ("NFLX",  "Netflix",         "Communication Services", "Streaming",           "0.05", "2500",  "0.06", "misfit"),
-    ("CRM",   "Salesforce",      "Technology",             "Software",            "0.06", "3000",  "0.04", "misfit"),
-    ("PLTR",  "Palantir",        "Technology",             "Software",            "0.06", "3000", "-0.08", "misfit"),
-    ("SHOP",  "Shopify",         "Technology",             "E-commerce",          "0.07", "3500",  "0.02", "misfit"),
+    (
+        "TSLA",
+        "Tesla",
+        "Consumer Discretionary",
+        "Auto",
+        "0.05",
+        "2500",
+        "-0.10",
+        "misfit",
+    ),
+    (
+        "NFLX",
+        "Netflix",
+        "Communication Services",
+        "Streaming",
+        "0.05",
+        "2500",
+        "0.06",
+        "misfit",
+    ),
+    ("CRM", "Salesforce", "Technology", "Software", "0.06", "3000", "0.04", "misfit"),
+    ("PLTR", "Palantir", "Technology", "Software", "0.06", "3000", "-0.08", "misfit"),
+    ("SHOP", "Shopify", "Technology", "E-commerce", "0.07", "3500", "0.02", "misfit"),
 ]
 
 
@@ -500,10 +751,14 @@ def garp_large_fit_distribution() -> dict[str, int]:
 def _holdings_garp_large() -> list[HoldingSummary]:
     return [
         HoldingSummary(
-            holding_id=f"h-large-{i}", stock_symbol=sym, stock_name=name,
-            sector=sector, industry=industry,
+            holding_id=f"h-large-{i}",
+            stock_symbol=sym,
+            stock_name=name,
+            sector=sector,
+            industry=industry,
             shares=Decimal("10.0"),
-            weight=Decimal(w), market_value=Decimal(mv),
+            weight=Decimal(w),
+            market_value=Decimal(mv),
             unrealized_return=Decimal(ur),
             investment_thesis=None,
         )
@@ -534,102 +789,149 @@ def get_context_garp_large() -> AnalysisContext:
         holding_count=15,
         core_metric_results=[
             MetricResult(
-                metric_id="peg_ratio", metric_display_name="PEG",
-                tier=MetricTier.CORE, value=Decimal("1.85"),
-                percentile=Decimal("0.45"), percentile_scope="industry",
+                metric_id="peg_ratio",
+                metric_display_name="PEG",
+                tier=MetricTier.CORE,
+                value=Decimal("1.85"),
+                percentile=Decimal("0.45"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=Decimal("1.5"), passed_threshold=False,
+                threshold_applied=Decimal("1.5"),
+                passed_threshold=False,
             ),
             MetricResult(
-                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
-                tier=MetricTier.CORE, value=Decimal("0.13"),
-                percentile=Decimal("0.62"), percentile_scope="industry",
+                metric_id="eps_growth_yoy",
+                metric_display_name="EPS 성장률 (YoY)",
+                tier=MetricTier.CORE,
+                value=Decimal("0.13"),
+                percentile=Decimal("0.62"),
+                percentile_scope="industry",
                 level_tag="good",
-                threshold_applied=Decimal("0.10"), passed_threshold=True,
+                threshold_applied=Decimal("0.10"),
+                passed_threshold=True,
             ),
             MetricResult(
-                metric_id="revenue_growth_yoy", metric_display_name="매출 성장률 (YoY)",
-                tier=MetricTier.CORE, value=Decimal("0.11"),
-                percentile=Decimal("0.58"), percentile_scope="industry",
+                metric_id="revenue_growth_yoy",
+                metric_display_name="매출 성장률 (YoY)",
+                tier=MetricTier.CORE,
+                value=Decimal("0.11"),
+                percentile=Decimal("0.58"),
+                percentile_scope="industry",
                 level_tag="good",
-                threshold_applied=Decimal("0.08"), passed_threshold=True,
+                threshold_applied=Decimal("0.08"),
+                passed_threshold=True,
             ),
         ],
         supporting_metric_results=[
             MetricResult(
-                metric_id="roic", metric_display_name="ROIC",
-                tier=MetricTier.SUPPORTING, value=Decimal("0.14"),
-                percentile=Decimal("0.65"), percentile_scope="industry",
+                metric_id="roic",
+                metric_display_name="ROIC",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("0.14"),
+                percentile=Decimal("0.65"),
+                percentile_scope="industry",
                 level_tag="good",
-                threshold_applied=Decimal("0.10"), passed_threshold=True,
+                threshold_applied=Decimal("0.10"),
+                passed_threshold=True,
             ),
             MetricResult(
-                metric_id="roe", metric_display_name="ROE",
-                tier=MetricTier.SUPPORTING, value=Decimal("0.18"),
-                percentile=Decimal("0.70"), percentile_scope="industry",
+                metric_id="roe",
+                metric_display_name="ROE",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("0.18"),
+                percentile=Decimal("0.70"),
+                percentile_scope="industry",
                 level_tag="good",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
             MetricResult(
-                metric_id="pe_ratio", metric_display_name="PER",
-                tier=MetricTier.SUPPORTING, value=Decimal("28.0"),
-                percentile=Decimal("0.40"), percentile_scope="industry",
+                metric_id="pe_ratio",
+                metric_display_name="PER",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("28.0"),
+                percentile=Decimal("0.40"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
             MetricResult(
                 metric_id="revenue_growth_consistency_3y",
                 metric_display_name="매출 성장 일관성 (3년)",
-                tier=MetricTier.SUPPORTING, value=Decimal("0.72"),
-                percentile=Decimal("0.55"), percentile_scope="industry",
+                tier=MetricTier.SUPPORTING,
+                value=Decimal("0.72"),
+                percentile=Decimal("0.55"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
         ],
         context_metric_results=[
             MetricResult(
-                metric_id="debt_to_equity", metric_display_name="부채비율",
-                tier=MetricTier.CONTEXT, value=Decimal("0.55"),
-                percentile=Decimal("0.50"), percentile_scope="industry",
+                metric_id="debt_to_equity",
+                metric_display_name="부채비율",
+                tier=MetricTier.CONTEXT,
+                value=Decimal("0.55"),
+                percentile=Decimal("0.50"),
+                percentile_scope="industry",
                 level_tag="moderate",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
             MetricResult(
-                metric_id="beta", metric_display_name="베타",
-                tier=MetricTier.CONTEXT, value=Decimal("1.15"),
-                percentile=Decimal("0.55"), percentile_scope="universe",
+                metric_id="beta",
+                metric_display_name="베타",
+                tier=MetricTier.CONTEXT,
+                value=Decimal("1.15"),
+                percentile=Decimal("0.55"),
+                percentile_scope="universe",
                 level_tag="moderate",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
             MetricResult(
-                metric_id="market_cap", metric_display_name="시가총액",
-                tier=MetricTier.CONTEXT, value=Decimal("450000000000"),
-                percentile=Decimal("0.85"), percentile_scope="universe",
+                metric_id="market_cap",
+                metric_display_name="시가총액",
+                tier=MetricTier.CONTEXT,
+                value=Decimal("450000000000"),
+                percentile=Decimal("0.85"),
+                percentile_scope="universe",
                 level_tag="excellent",
-                threshold_applied=None, passed_threshold=None,
+                threshold_applied=None,
+                passed_threshold=None,
             ),
         ],
         strengths=[
             StrengthWeakness(
-                metric_id="eps_growth_yoy", metric_display_name="EPS 성장률 (YoY)",
-                level_tag="good", rank_within_portfolio=1,
+                metric_id="eps_growth_yoy",
+                metric_display_name="EPS 성장률 (YoY)",
+                level_tag="good",
+                rank_within_portfolio=1,
                 reason_hint="15종목 평균 13%, 정합 5종목이 평균을 상향",
             ),
             StrengthWeakness(
-                metric_id="roic", metric_display_name="ROIC",
-                level_tag="good", rank_within_portfolio=2,
+                metric_id="roic",
+                metric_display_name="ROIC",
+                level_tag="good",
+                rank_within_portfolio=2,
                 reason_hint="평균 14%, 정합/부분 종목 10개가 임계값 통과",
             ),
         ],
         weaknesses=[
             StrengthWeakness(
-                metric_id="peg_ratio", metric_display_name="PEG",
-                level_tag="moderate", rank_within_portfolio=1,
+                metric_id="peg_ratio",
+                metric_display_name="PEG",
+                level_tag="moderate",
+                rank_within_portfolio=1,
                 reason_hint="평균 1.85, 부정합 5종목이 평균을 끌어올림",
             ),
             StrengthWeakness(
-                metric_id="pe_ratio", metric_display_name="PER",
-                level_tag="moderate", rank_within_portfolio=2,
+                metric_id="pe_ratio",
+                metric_display_name="PER",
+                level_tag="moderate",
+                rank_within_portfolio=2,
                 reason_hint="평균 28, 일부 부정합 종목 50배 이상",
             ),
         ],

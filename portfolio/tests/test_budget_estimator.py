@@ -97,7 +97,9 @@ def test_estimate_budget_for_entrypoint_round_up_500():
 
     # sample_prompts 명시 케이스도 round-up 500
     sample = "a" * 1500  # 약 500 tokens (chars/3)
-    result = estimate_budget_for_entrypoint("e3", sample_prompts=[sample, sample, sample])
+    result = estimate_budget_for_entrypoint(
+        "e3", sample_prompts=[sample, sample, sample]
+    )
     assert result["total_with_buffer"] % 500 == 0
 
 
@@ -106,9 +108,7 @@ def test_estimate_budget_for_entrypoint_safety_factor_default():
     # 단순한 sample 1개 (input estimate 직접 통제)
     sample = "a" * 300  # estimate_input_tokens = 100
 
-    result_default = estimate_budget_for_entrypoint(
-        "e1", sample_prompts=[sample]
-    )
+    result_default = estimate_budget_for_entrypoint("e1", sample_prompts=[sample])
     # input=100, output (e1 schema_fields = str_short + str_medium = 30+100=130) = 130
     # total=230, ×1.5=345 → round-up 500 = 500
     assert result_default["input"] == 100
@@ -161,8 +161,14 @@ def test_estimate_budget_for_entrypoint_unknown_entrypoint_raises():
 def test_field_type_baseline_tokens_complete():
     """8 field type baseline 모두 등록됨."""
     expected = {
-        "str_short", "str_medium", "str_long",
-        "list_str_item", "literal", "int_float", "bool", "very_short",
+        "str_short",
+        "str_medium",
+        "str_long",
+        "list_str_item",
+        "literal",
+        "int_float",
+        "bool",
+        "very_short",
     }
     assert set(FIELD_TYPE_BASELINE_TOKENS.keys()) == expected
     assert all(v > 0 for v in FIELD_TYPE_BASELINE_TOKENS.values())
@@ -247,21 +253,36 @@ def test_estimator_monotonic_in_input_size():
 
     # holdings 증가
     h1 = estimate_input_tokens_v2("e4_conversation_tier1", {**base, "holdings": [{}]})
-    h5 = estimate_input_tokens_v2("e4_conversation_tier1", {**base, "holdings": [{} for _ in range(5)]})
-    h10 = estimate_input_tokens_v2("e4_conversation_tier1", {**base, "holdings": [{} for _ in range(10)]})
+    h5 = estimate_input_tokens_v2(
+        "e4_conversation_tier1", {**base, "holdings": [{} for _ in range(5)]}
+    )
+    h10 = estimate_input_tokens_v2(
+        "e4_conversation_tier1", {**base, "holdings": [{} for _ in range(10)]}
+    )
     assert h1 < h5 < h10
 
     # metrics 증가
     m1 = estimate_input_tokens_v2("e3", {"portfolio_metrics": {"m1": 0}})
-    m5 = estimate_input_tokens_v2("e3", {"portfolio_metrics": {f"m{i}": 0 for i in range(5)}})
-    m10 = estimate_input_tokens_v2("e3", {"portfolio_metrics": {f"m{i}": 0 for i in range(10)}})
+    m5 = estimate_input_tokens_v2(
+        "e3", {"portfolio_metrics": {f"m{i}": 0 for i in range(5)}}
+    )
+    m10 = estimate_input_tokens_v2(
+        "e3", {"portfolio_metrics": {f"m{i}": 0 for i in range(10)}}
+    )
     assert m1 < m5 < m10
 
     # history 증가
     base_e4 = {"holdings": [{} for _ in range(5)], "portfolio_metrics": {"m1": 0}}
-    hist0 = estimate_input_tokens_v2("e4_conversation_tier1", {**base_e4, "conversation_history": []})
-    hist1 = estimate_input_tokens_v2("e4_conversation_tier1", {**base_e4, "conversation_history": [{}]})
-    hist5 = estimate_input_tokens_v2("e4_conversation_tier1", {**base_e4, "conversation_history": [{} for _ in range(5)]})
+    hist0 = estimate_input_tokens_v2(
+        "e4_conversation_tier1", {**base_e4, "conversation_history": []}
+    )
+    hist1 = estimate_input_tokens_v2(
+        "e4_conversation_tier1", {**base_e4, "conversation_history": [{}]}
+    )
+    hist5 = estimate_input_tokens_v2(
+        "e4_conversation_tier1",
+        {**base_e4, "conversation_history": [{} for _ in range(5)]},
+    )
     assert hist0 < hist1 < hist5
 
     # tier overhead (history만 다르지 entry overhead도 다름) 양수

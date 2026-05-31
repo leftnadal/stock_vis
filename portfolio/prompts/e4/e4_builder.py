@@ -66,8 +66,7 @@ def build_e4_prompt(
         system_parts.append(f"### Example {i}: {ex['scenario']}")
         system_parts.append(f"User: {ex['user_message']}")
         system_parts.append(
-            "Output: "
-            + json.dumps(ex["expected_output"], ensure_ascii=False)
+            "Output: " + json.dumps(ex["expected_output"], ensure_ascii=False)
         )
 
     system = "\n\n".join(system_parts)

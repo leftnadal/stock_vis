@@ -77,9 +77,7 @@ def test_post_e1_returns_200_with_valid_request(
     with patch(
         "portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1
     ) as mock_run:
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     assert response.status_code == 200, response.data
     # service 1회만 호출됨 (mock)
@@ -105,12 +103,8 @@ def test_post_e1_response_passes_e1output_validation(
     """★ contract test 핵심 — 응답 dict가 다시 E1Output(Pydantic)으로 검증 가능."""
     from portfolio.schemas.commentary_output import E1Output
 
-    with patch(
-        "portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1
-    ):
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1):
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     # 응답 output을 E1Output으로 역검증 — 계약 보장
     output_dict = response.json()["output"]
@@ -176,9 +170,7 @@ def test_post_e1_service_exception_returns_500_no_stacktrace(
         "portfolio.api.views.run_e1_coach",
         side_effect=RuntimeError("internal database error with secret /tmp/abc"),
     ):
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     assert response.status_code == 500
     body_str = json.dumps(response.json())
@@ -196,9 +188,7 @@ def test_post_e1_llm_budget_exceeded_returns_429(api_client, e1_request_body):
         "portfolio.api.views.run_e1_coach",
         side_effect=LLMBudgetExceededError(scope="slice", count=51, limit=50),
     ):
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     assert response.status_code == 429
 
@@ -211,9 +201,7 @@ def test_post_e1_llm_error_returns_502(api_client, e1_request_body):
         "portfolio.api.views.run_e1_coach",
         side_effect=LLMRateLimitError("upstream rate limit"),
     ):
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
     assert response.status_code == 502
 
@@ -232,11 +220,7 @@ def test_post_e1_service_returns_drifted_output_caught_by_serializer(
     """
     drifted = dict(mock_llm_response_e1)
     drifted["output"] = dict(drifted["output"], confidence="unknown_value")
-    with patch(
-        "portfolio.api.views.run_e1_coach", return_value=drifted
-    ):
-        response = api_client.post(
-            E1_ENDPOINT, data=e1_request_body, format="json"
-        )
+    with patch("portfolio.api.views.run_e1_coach", return_value=drifted):
+        response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
     # serializer to_representation은 view 응답 단계에서 raise → DRF가 500 변환
     assert response.status_code in (400, 500)

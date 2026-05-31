@@ -48,8 +48,8 @@ FEW_SHOT_EXAMPLES: list[dict[str, str]] = [
         ),
         "output": (
             '{"holistic_assessment":"GARP 관점에서 Tech 5종 집중 포트폴리오로 '
-            '성장 모멘텀은 양호하나 단일 섹터 50% 집중이 시장 사이클 노출도를 '
-            '확대시키는 구조입니다. PEG 1.8과 EPS 성장 15% 조합은 합리적 가격 '
+            "성장 모멘텀은 양호하나 단일 섹터 50% 집중이 시장 사이클 노출도를 "
+            "확대시키는 구조입니다. PEG 1.8과 EPS 성장 15% 조합은 합리적 가격 "
             '성장 의도와 부합하지만 분산 측면에서 보완 여지가 있습니다.",'
             '"diversification_comment":"분산 점수 0.35는 5종목 집중도 기준 '
             '중간 수준이며 단일 섹터 의존도가 분산 효과를 제한합니다.",'
@@ -73,8 +73,8 @@ FEW_SHOT_EXAMPLES: list[dict[str, str]] = [
         ),
         "output": (
             '{"holistic_assessment":"GARP 의도와 크게 어긋난 구성입니다. '
-            'PEG 3.2 및 PE 65는 합리적 가격 기준을 크게 상회하고 EPS 성장 4%로 '
-            '성장성도 미흡합니다. Tech 80% 극단 집중과 분산 0.15는 GARP의 안정적 '
+            "PEG 3.2 및 PE 65는 합리적 가격 기준을 크게 상회하고 EPS 성장 4%로 "
+            "성장성도 미흡합니다. Tech 80% 극단 집중과 분산 0.15는 GARP의 안정적 "
             '성장 의도와 정면 충돌하는 high-beta growth-at-any-price 패턴을 보입니다.",'
             '"diversification_comment":"분산 점수 0.15는 매우 낮으며 단일 섹터 80% '
             '집중도가 분산 효과를 사실상 무력화합니다.",'
@@ -99,8 +99,8 @@ FEW_SHOT_EXAMPLES: list[dict[str, str]] = [
         ),
         "output": (
             '{"holistic_assessment":"Quality Factor 의도에 부합하는 고 ROIC + 안정 '
-            '이익 종목 10개 구성입니다. 그러나 Tech와 Healthcare 2 섹터에 100% '
-            '편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 '
+            "이익 종목 10개 구성입니다. 그러나 Tech와 Healthcare 2 섹터에 100% "
+            "편중되어 quality factor의 cross-sector 분산 의도와는 부분적으로만 "
             '일치합니다. 수익성 지표(ROIC 22%, gross margin 58%)는 매우 강합니다.",'
             '"diversification_comment":"분산 점수 0.25는 10종목 보유 기준 중간 '
             '하위이며 2 섹터 집중이 분산 효과를 제한합니다.",'
@@ -125,9 +125,9 @@ FEW_SHOT_EXAMPLES: list[dict[str, str]] = [
         ),
         "output": (
             '{"holistic_assessment":"Dividend Growth 의도와 정합하는 7종 안정 '
-            '배당주 portfolio입니다. dividend_yield 3.8% + 5년 성장률 7.2% + '
-            '25년 연속 배당 + payout 62% 조합은 배당 안정성과 성장 여력을 모두 '
-            '갖춘 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 segment '
+            "배당주 portfolio입니다. dividend_yield 3.8% + 5년 성장률 7.2% + "
+            "25년 연속 배당 + payout 62% 조합은 배당 안정성과 성장 여력을 모두 "
+            "갖춘 이상적 구성입니다. Consumer Staples 78% 편중은 방어적 segment "
             '의도와 일치합니다.",'
             '"diversification_comment":"분산 점수 0.30은 안정 배당 portfolio로서 '
             '적절한 수준이며 7종 보유로 개별 종목 위험이 분산됩니다.",'
@@ -333,7 +333,9 @@ def build_e3_portfolio_prompt(
         )
 
     # ===== reinforced 모드 (Part 2 Step A) =====
-    context_dump = json.dumps(analysis_context, ensure_ascii=False, indent=2, default=str)
+    context_dump = json.dumps(
+        analysis_context, ensure_ascii=False, indent=2, default=str
+    )
     return REINFORCED_PROMPT_TEMPLATE.format(
         system_prompt=SYSTEM_PROMPT,
         example1_name=FEW_SHOT_EXAMPLES[0]["name"],

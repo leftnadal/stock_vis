@@ -85,13 +85,15 @@ def _mock_text_e3(prompt: str) -> str:
 
     comments = []
     for mid in unique_ids[:5]:  # 최대 5개
-        comments.append({
-            "metric_id": mid,
-            "one_liner": (
-                f"{mid} 지표는 동종 업계 대비 양호한 수준으로 보입니다. "
-                "프리셋 관점에서 추가 모니터링이 권장됩니다."
-            ),
-        })
+        comments.append(
+            {
+                "metric_id": mid,
+                "one_liner": (
+                    f"{mid} 지표는 동종 업계 대비 양호한 수준으로 보입니다. "
+                    "프리셋 관점에서 추가 모니터링이 권장됩니다."
+                ),
+            }
+        )
 
     return json.dumps({"comments": comments}, ensure_ascii=False)
 
@@ -106,7 +108,7 @@ def _mock_text_e6(prompt: str) -> str:  # noqa: ARG001
         '{"aspect":"allocation","description":"테슬라 비중 20% → 10% 축소"},'
         '{"aspect":"diversification","description":"헬스케어 디펜시브 신규 진입 15%"},'
         '{"aspect":"risk","description":"단일 섹터 집중도 위험이 완화됩니다"}'
-        '],'
+        "],"
         '"risk_assessment":"포트폴리오 변동성이 다소 낮아지고 하방 리스크가 완화될 것으로 예상됩니다.",'
         '"closing_remarks":"수익률 상한선은 일부 양보될 수 있으나 장기 안정성 측면에서 합리적인 조정입니다."}'
     )
@@ -157,7 +159,8 @@ class MockLLMClient:
         prompt: str,
         provider: Literal["gemini", "anthropic"] = "gemini",
         max_tokens: int = 2000,  # noqa: ARG002
-        model: str | None = None,  # LLMClient 시그니처 호환 (Sonnet/Haiku 분기, Mock은 무시)  # noqa: ARG002
+        model: str
+        | None = None,  # LLMClient 시그니처 호환 (Sonnet/Haiku 분기, Mock은 무시)  # noqa: ARG002
     ) -> LLMResponse:
         self._call_count += 1
 
@@ -169,7 +172,9 @@ class MockLLMClient:
 
         if self.mode in ("rate_limit_first", "timeout_first") and provider == "gemini":
             # 폴백 결과만 흉내 (실제 retry는 LLMClient가 담당, Mock에서는 결과만)
-            return self._mock_response(prompt, provider="anthropic", fallback_from="gemini")
+            return self._mock_response(
+                prompt, provider="anthropic", fallback_from="gemini"
+            )
 
         # normal — 또는 anthropic 직접 호출
         return self._mock_response(prompt, provider=provider, fallback_from=None)

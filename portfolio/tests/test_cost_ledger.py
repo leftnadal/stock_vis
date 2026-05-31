@@ -73,7 +73,7 @@ def test_append_accumulates_rows(tmp_ledger):
     for i in range(3):
         append_call(
             slice_id="slice14",
-            entry_point=f"e{i+1}",
+            entry_point=f"e{i + 1}",
             provider="anthropic",
             model="claude-haiku-4-5",
             input_tokens=100 * (i + 1),
@@ -125,19 +125,34 @@ def test_sum_cost_usd_total(tmp_ledger):
 def test_sum_cost_usd_filters_by_slice(tmp_ledger):
     """슬라이스 필터 시 해당 slice 행만 합산."""
     append_call(
-        slice_id="slice13", entry_point="e1", provider="anthropic",
-        model="claude-haiku-4-5", input_tokens=10, output_tokens=10,
-        cost_usd=0.10, path=tmp_ledger,
+        slice_id="slice13",
+        entry_point="e1",
+        provider="anthropic",
+        model="claude-haiku-4-5",
+        input_tokens=10,
+        output_tokens=10,
+        cost_usd=0.10,
+        path=tmp_ledger,
     )
     append_call(
-        slice_id="slice14", entry_point="e1", provider="anthropic",
-        model="claude-haiku-4-5", input_tokens=10, output_tokens=10,
-        cost_usd=0.05, path=tmp_ledger,
+        slice_id="slice14",
+        entry_point="e1",
+        provider="anthropic",
+        model="claude-haiku-4-5",
+        input_tokens=10,
+        output_tokens=10,
+        cost_usd=0.05,
+        path=tmp_ledger,
     )
     append_call(
-        slice_id="slice14", entry_point="e2", provider="anthropic",
-        model="claude-haiku-4-5", input_tokens=10, output_tokens=10,
-        cost_usd=0.07, path=tmp_ledger,
+        slice_id="slice14",
+        entry_point="e2",
+        provider="anthropic",
+        model="claude-haiku-4-5",
+        input_tokens=10,
+        output_tokens=10,
+        cost_usd=0.07,
+        path=tmp_ledger,
     )
     assert sum_cost_usd(path=tmp_ledger, slice_id="slice14") == pytest.approx(0.12)
     assert sum_cost_usd(path=tmp_ledger, slice_id="slice13") == pytest.approx(0.10)
@@ -255,13 +270,16 @@ def test_client_complete_ledger_failure_does_not_break(monkeypatch):
         cost_usd=0.0001,
     )
 
-    with patch.object(
-        client_module.LLMClient,
-        "_call_with_retry",
-        return_value=fake_response,
-    ), patch(
-        "portfolio.llm.cost_ledger.append_call",
-        side_effect=RuntimeError("simulated ledger crash"),
+    with (
+        patch.object(
+            client_module.LLMClient,
+            "_call_with_retry",
+            return_value=fake_response,
+        ),
+        patch(
+            "portfolio.llm.cost_ledger.append_call",
+            side_effect=RuntimeError("simulated ledger crash"),
+        ),
     ):
         client = client_module.LLMClient()
         # append_call이 raise해도 client.complete는 응답 반환해야 함.

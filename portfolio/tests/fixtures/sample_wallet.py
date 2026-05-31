@@ -25,25 +25,30 @@ def create_tech_wallet(username: str = "test-user") -> Wallet:
     from packages.shared.stocks.models import Stock
 
     user = _get_or_create_user(username)
-    wallet, _ = Wallet.objects.get_or_create(user=user, defaults={"name": "Test Wallet"})
+    wallet, _ = Wallet.objects.get_or_create(
+        user=user, defaults={"name": "Test Wallet"}
+    )
 
     for sym, name, avg_cost, shares in [
-        ("NVDA",  "NVIDIA Corporation",   "90.00", "10"),
-        ("MSFT",  "Microsoft Corp",       "340.00", "8"),
-        ("AAPL",  "Apple Inc",            "180.00", "10"),
-        ("GOOGL", "Alphabet Inc",         "130.00", "12"),
-        ("INTC",  "Intel Corporation",    "48.00", "20"),
+        ("NVDA", "NVIDIA Corporation", "90.00", "10"),
+        ("MSFT", "Microsoft Corp", "340.00", "8"),
+        ("AAPL", "Apple Inc", "180.00", "10"),
+        ("GOOGL", "Alphabet Inc", "130.00", "12"),
+        ("INTC", "Intel Corporation", "48.00", "20"),
     ]:
         stock, _ = Stock.objects.get_or_create(
             symbol=sym,
             defaults={
                 "stock_name": name,
                 "sector": "Technology",
-                "industry": "Semiconductors" if sym in {"NVDA", "AMD", "INTC"} else "Software",
+                "industry": "Semiconductors"
+                if sym in {"NVDA", "AMD", "INTC"}
+                else "Software",
             },
         )
         WalletHolding.objects.get_or_create(
-            wallet=wallet, stock=stock,
+            wallet=wallet,
+            stock=stock,
             defaults={
                 "shares": Decimal(shares),
                 "avg_cost": Decimal(avg_cost),

@@ -25,13 +25,15 @@ def build_e5_input(user_hint: str, current_preset_id: str) -> dict:
     for entry in preset_metric_entries:
         metric_id = entry["metric_id"]
         metric_def = METRICS.get(metric_id, {})
-        available_metrics.append({
-            "metric_id": metric_id,
-            "metric_display_name": metric_def.get("display_name", metric_id),
-            "current_tier": entry["tier"],
-            # 현재 구조에 프리셋별 threshold 값이 없음 → null
-            "current_threshold": None,
-        })
+        available_metrics.append(
+            {
+                "metric_id": metric_id,
+                "metric_display_name": metric_def.get("display_name", metric_id),
+                "current_tier": entry["tier"],
+                # 현재 구조에 프리셋별 threshold 값이 없음 → null
+                "current_threshold": None,
+            }
+        )
 
     return {
         "user_hint": user_hint,
