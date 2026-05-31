@@ -33,15 +33,15 @@ from packages.shared.metrics.models import (
     PeerMetricBenchmark,
 )
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import CompanyBenchmarkDelta, CompanyMetricLatest, PeerPreset
-from validation.services.benchmark_calculator import BenchmarkCalculator
-from validation.services.interpretation import (
+from services.validation.models import CompanyBenchmarkDelta, CompanyMetricLatest, PeerPreset
+from services.validation.services.benchmark_calculator import BenchmarkCalculator
+from services.validation.services.interpretation import (
     generate_metric_interpretation,
     generate_summary_text,
 )
-from validation.services.metric_calculator import MetricCalculator
-from validation.services.preset_generator import PresetGenerator
-from validation.services.relative_metrics import RelativeMetricCalculator
+from services.validation.services.metric_calculator import MetricCalculator
+from services.validation.services.preset_generator import PresetGenerator
+from services.validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Helpers

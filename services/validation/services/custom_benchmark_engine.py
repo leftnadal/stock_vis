@@ -13,7 +13,7 @@ import logging
 from django.core.cache import cache
 
 from packages.shared.metrics.models import CompanyMetricSnapshot, MetricDefinition
-from validation.services.category_signal_calculator import (
+from services.validation.services.category_signal_calculator import (
     CATEGORY_DISPLAY,
     CATEGORY_METRICS,
 )

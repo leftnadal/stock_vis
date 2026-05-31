@@ -14,8 +14,8 @@ from packages.shared.stocks.models import (
     IncomeStatement,
     Stock,
 )
-from validation.models import CompanyMetricLatest
-from validation.services.metric_calculator import MetricCalculator, _safe, _safe_nonzero
+from services.validation.models import CompanyMetricLatest
+from services.validation.services.metric_calculator import MetricCalculator, _safe, _safe_nonzero
 
 logger = logging.getLogger(__name__)
 

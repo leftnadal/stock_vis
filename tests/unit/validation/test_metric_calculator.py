@@ -20,7 +20,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from validation.services.metric_calculator import (
+from services.validation.services.metric_calculator import (
     MetricCalculator,
     _div,
     _safe,

@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.extractor import GeminiExtractor
+from services.sec_pipeline.extractor import GeminiExtractor
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def _mock_genai_response(text):
 # ---------------------------------------------------------------------------
 
 class TestExtractSupplyChainCallParams:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_uses_gemini_25_flash_model(self, mock_get_client, extractor):
         """generate_content 호출 시 model='gemini-2.5-flash' 가 전달된다."""
         client = MagicMock()
@@ -48,7 +48,7 @@ class TestExtractSupplyChainCallParams:
         kwargs = client.models.generate_content.call_args.kwargs
         assert kwargs['model'] == 'gemini-2.5-flash'
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_passes_config_object(self, mock_get_client, extractor):
         """GenerateContentConfig 가 config 인자로 전달된다."""
         client = MagicMock()
@@ -73,7 +73,7 @@ class TestExtractSupplyChainCallParams:
 
 
 class TestExtractBusinessModelCallParams:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_uses_gemini_25_flash_model(self, mock_get_client, extractor):
         client = MagicMock()
         client.models.generate_content.return_value = _mock_genai_response('{}')
@@ -83,7 +83,7 @@ class TestExtractBusinessModelCallParams:
         kwargs = client.models.generate_content.call_args.kwargs
         assert kwargs['model'] == 'gemini-2.5-flash'
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_prompt_includes_paragraphs(self, mock_get_client, extractor):
         """프롬프트에 입력 paragraphs 가 모두 포함된다."""
         client = MagicMock()
@@ -112,7 +112,7 @@ class TestExtractBusinessModelCallParams:
 # ---------------------------------------------------------------------------
 
 class TestSingleParagraph:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_single_paragraph_no_separator_artifacts(self, mock_get_client, extractor):
         """단일 paragraph 입력 시 '---' 구분자가 추가로 등장하지 않는다."""
         client = MagicMock()
@@ -139,7 +139,7 @@ class TestGetClientInitialState:
 
     def test_client_cached_in_instance(self, extractor):
         """_get_client 호출 후 _client 가 설정된다."""
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = 'test-key'
             with patch('google.genai.Client') as mock_genai_client:
                 fake = MagicMock()

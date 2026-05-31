@@ -14,9 +14,9 @@ import logging
 
 from django.core.management.base import BaseCommand
 
-from sec_pipeline.models import SupplyChainEvidence, UnmatchedCompanyQueue
-from sec_pipeline.ticker_matcher import TickerMatcher
-from sec_pipeline.validator_track_a import _is_generic_term
+from services.sec_pipeline.models import SupplyChainEvidence, UnmatchedCompanyQueue
+from services.sec_pipeline.ticker_matcher import TickerMatcher
+from services.sec_pipeline.validator_track_a import _is_generic_term
 
 logger = logging.getLogger(__name__)
 

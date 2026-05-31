@@ -17,7 +17,7 @@ from packages.shared.metrics.models import (
     MetricDefinition,
 )
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.services.relative_metrics import RelativeMetricCalculator
+from services.validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Helpers

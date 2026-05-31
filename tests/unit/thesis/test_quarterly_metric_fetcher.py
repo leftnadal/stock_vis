@@ -226,7 +226,7 @@ class TestFallbackToAnnual:
     def test_fallback_returns_value_when_record_exists(self):
         """CompanyMetricLatest 레코드가 있으면 연간값 반환."""
         from packages.shared.metrics.models import MetricDefinition
-        from validation.models import CompanyMetricLatest
+        from services.validation.models import CompanyMetricLatest
 
         stock = _make_stock("FBANN")
 

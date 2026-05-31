@@ -14,8 +14,8 @@ from django.utils import timezone
 
 from packages.shared.metrics.models import CompanyMetricSnapshot
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import CompanyMetricLatest
-from validation.services.financial_fetcher import FinancialFetcher
+from services.validation.models import CompanyMetricLatest
+from services.validation.services.financial_fetcher import FinancialFetcher
 
 logger = logging.getLogger(__name__)
 

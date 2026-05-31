@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.collector import SECFilingCollector
+from services.sec_pipeline.collector import SECFilingCollector
 
 
 @pytest.fixture
@@ -145,7 +145,7 @@ class TestCollectPipeline:
         with patch.object(collector, 'get_filing_metadata', return_value=meta), \
              patch.object(collector, 'fetch_filing_html', return_value='<html>x</html>'), \
              patch.object(collector, 'extract_sections', return_value=sections), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    return_value=(sections, [])):
             result = collector.collect('AAPL')
             assert result['symbol'] == 'AAPL'
@@ -169,7 +169,7 @@ class TestCollectPipeline:
              patch.object(collector, 'fetch_filing_html', return_value='<html>x</html>'), \
              patch.object(collector, 'extract_sections', return_value=sections), \
              patch.object(collector, 'extract_sections_fallback', return_value=None), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    return_value=(validated, warnings)):
             result = collector.collect('AAPL')
             # item_1만 있으므로 partial 또는 failed

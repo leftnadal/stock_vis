@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from anthropic.types import Message, TextBlock, Usage
 
-from rag_analysis.services.entity_extractor import (
+from services.rag_analysis.services.entity_extractor import (
     EntityExtractor,
     EntityNormalizer,
     ExtractedEntities,
@@ -22,7 +22,7 @@ class TestEntityExtractor:
     @pytest.fixture
     def mock_anthropic_client(self):
         """Mock Anthropic 클라이언트"""
-        with patch("rag_analysis.services.entity_extractor.AsyncAnthropic") as mock:
+        with patch("services.rag_analysis.services.entity_extractor.AsyncAnthropic") as mock:
             yield mock
 
     @pytest.fixture

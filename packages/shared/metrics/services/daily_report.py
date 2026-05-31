@@ -241,7 +241,7 @@ def collect_coverage_gaps() -> Dict[str, Any]:
     """현재 그래프 외에 새로 추가할 수 있는 노드 후보."""
     from apps.chain_sight.models import CompanyChainProfile
     from packages.shared.stocks.models import Stock
-    from sec_pipeline.models import UnmatchedCompanyQueue
+    from services.sec_pipeline.models import UnmatchedCompanyQueue
 
     drv = _neo4j_session()
     try:
@@ -445,7 +445,7 @@ def collect_llm_usage() -> Dict[str, Any]:
       - News LLM 분석: input ~2K, output ~500 tokens/article
     """
     from news.models import NewsArticle
-    from sec_pipeline.models import FilingProcessLog
+    from services.sec_pipeline.models import FilingProcessLog
 
     cutoff = timezone.now() - timedelta(hours=24)
 
@@ -507,7 +507,7 @@ def collect_system_health() -> Dict[str, Any]:
     """Celery + Neo4j + SEC 파이프라인 헬스."""
     import subprocess
 
-    from sec_pipeline.models import (
+    from services.sec_pipeline.models import (
         FilingProcessLog,
         RawDocumentStore,
         SupplyChainEvidence,

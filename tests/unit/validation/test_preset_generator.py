@@ -22,8 +22,8 @@ from packages.shared.stocks.models import (
     SP500Constituent,
     Stock,
 )
-from validation.models import PeerPreset
-from validation.services.preset_generator import PresetGenerator
+from services.validation.models import PeerPreset
+from services.validation.services.preset_generator import PresetGenerator
 
 # ---------------------------------------------------------------------------
 # Helpers

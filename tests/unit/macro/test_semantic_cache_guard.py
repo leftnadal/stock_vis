@@ -14,10 +14,10 @@ import pytest
 class TestAnalysisCacheLabelGuard:
     """get_cache_stats()의 라벨 가드 검증"""
 
-    @patch('rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
+    @patch('services.rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
     def test_label_not_exists_returns_not_initialized(self, mock_driver_fn, caplog):
         """라벨 미존재 → status: not_initialized, WARNING 없음"""
-        from rag_analysis.services.semantic_cache_setup import get_cache_stats
+        from services.rag_analysis.services.semantic_cache_setup import get_cache_stats
 
         # Mock: db.labels() → AnalysisCache 없음 (cnt=0)
         mock_session = MagicMock()
@@ -47,10 +47,10 @@ class TestAnalysisCacheLabelGuard:
         warning_records = [r for r in caplog.records if r.levelno >= logging.WARNING]
         assert len(warning_records) == 0
 
-    @patch('rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
+    @patch('services.rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
     def test_label_exists_runs_match_query(self, mock_driver_fn):
         """라벨 존재 → MATCH 쿼리 정상 실행"""
-        from rag_analysis.services.semantic_cache_setup import get_cache_stats
+        from services.rag_analysis.services.semantic_cache_setup import get_cache_stats
 
         mock_session = MagicMock()
 
@@ -87,10 +87,10 @@ class TestAnalysisCacheLabelGuard:
         # run이 2회 호출됨 (라벨 체크 + MATCH)
         assert mock_session.run.call_count == 2
 
-    @patch('rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
+    @patch('services.rag_analysis.services.semantic_cache_setup.get_neo4j_driver')
     def test_driver_none_returns_unavailable(self, mock_driver_fn):
         """드라이버 없음 → status: unavailable"""
-        from rag_analysis.services.semantic_cache_setup import get_cache_stats
+        from services.rag_analysis.services.semantic_cache_setup import get_cache_stats
 
         mock_driver_fn.return_value = None
         result = get_cache_stats()

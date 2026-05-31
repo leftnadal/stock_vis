@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.ticker_matcher import TickerMatcher
+from services.sec_pipeline.ticker_matcher import TickerMatcher
 
 
 @pytest.fixture
@@ -32,7 +32,7 @@ def matcher():
 @pytest.mark.django_db
 class TestMatchAlias:
     def test_alias_with_sector_match(self, matcher):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='Taiwan Semi', ticker='TSM',
             context_sector='Technology', source='manual_seed',
@@ -42,7 +42,7 @@ class TestMatchAlias:
 
     def test_alias_falls_back_to_generic(self, matcher):
         """sector-specific alias 없으면 context_sector='' 항목 조회."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='Samsung', ticker='SSNLF', context_sector='',
             source='manual_seed',
@@ -52,7 +52,7 @@ class TestMatchAlias:
         assert result == 'SSNLF'
 
     def test_alias_case_insensitive(self, matcher):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='Taiwan Semi', ticker='TSM', context_sector='',
         )
@@ -141,7 +141,7 @@ class TestMatchWithQueue:
         from datetime import date
 
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         source = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.', sector='Technology')
         target = Stock.objects.create(symbol='TSM', stock_name='Taiwan Semiconductor')
@@ -171,7 +171,7 @@ class TestMatchWithQueue:
         from datetime import date
 
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
@@ -203,7 +203,7 @@ class TestMatchWithQueue:
         from datetime import date
 
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,

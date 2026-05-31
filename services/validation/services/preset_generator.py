@@ -11,8 +11,8 @@ import numpy as np
 
 from packages.shared.metrics.models import CompanyMetricSnapshot
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import PeerPreset
-from validation.services.benchmark_calculator import (
+from services.validation.models import PeerPreset
+from services.validation.services.benchmark_calculator import (
     assign_size_bucket,
     get_adjacent_buckets,
 )

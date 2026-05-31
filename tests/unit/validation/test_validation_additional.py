@@ -33,27 +33,27 @@ from packages.shared.stocks.models import (
     SP500Constituent,
     Stock,
 )
-from validation.models import PeerPreset
-from validation.services.benchmark_calculator import (
+from services.validation.models import PeerPreset
+from services.validation.services.benchmark_calculator import (
     SIZE_BUCKETS,
     BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,
 )
-from validation.services.interpretation import (
+from services.validation.services.interpretation import (
     determine_trend,
     generate_leader_summary,
     generate_metric_interpretation,
     generate_summary_text,
 )
-from validation.services.metric_calculator import (
+from services.validation.services.metric_calculator import (
     MetricCalculator,
     _div,
     _safe,
     _safe_nonzero,
 )
-from validation.services.preset_generator import PresetGenerator
-from validation.services.relative_metrics import RelativeMetricCalculator
+from services.validation.services.preset_generator import PresetGenerator
+from services.validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Factories
@@ -721,7 +721,7 @@ class TestSummaryTextExtra:
 
     def test_top2_picks_highest_scores(self):
         """green 3개 중 점수 상위 2개가 텍스트에 포함."""
-        from validation.services.category_signal_calculator import CATEGORY_DISPLAY
+        from services.validation.services.category_signal_calculator import CATEGORY_DISPLAY
         signals = [
             _make_signal('profitability', 'green', score=95),  # 최고
             _make_signal('growth', 'green', score=60),         # 중간
@@ -836,7 +836,7 @@ class TestLeaderSummaryExtra:
             {'category': 'valuation'},  # 4번째 — 약점 텍스트엔 등장 안 함
         ]
         text = generate_leader_summary(adv, [])
-        from validation.services.category_signal_calculator import CATEGORY_DISPLAY
+        from services.validation.services.category_signal_calculator import CATEGORY_DISPLAY
         # 처음 3개만 강점에 등장
         adv_section = text.split('강점:')[-1]
         assert CATEGORY_DISPLAY['profitability'] in adv_section

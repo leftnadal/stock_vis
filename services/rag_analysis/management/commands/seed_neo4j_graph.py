@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand
 from django.db import connection
 
 from packages.shared.stocks.models import Stock
-from rag_analysis.services.neo4j_driver import get_neo4j_driver
+from services.rag_analysis.services.neo4j_driver import get_neo4j_driver
 
 logger = logging.getLogger(__name__)
 

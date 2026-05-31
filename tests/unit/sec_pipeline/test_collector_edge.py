@@ -17,7 +17,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests as req
 
-from sec_pipeline.collector import SECFilingCollector
+from services.sec_pipeline.collector import SECFilingCollector
 
 
 @pytest.fixture
@@ -43,8 +43,8 @@ def _mock_response(json_data=None, text=None, status_code=200):
 # ---------------------------------------------------------------------------
 
 class TestGetFilingMetadataEdge:
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_recognizes_10k_amended_form(self, mock_sleep, mock_get, collector):
         """10-K/A (amended) 폼도 10-K 와 동일하게 처리된다."""
         collector._cik_cache['AAPL'] = '0000320193'
@@ -63,8 +63,8 @@ class TestGetFilingMetadataEdge:
         assert result['accession_no'] == 'acc-amended'
         assert 'aapl-amended.htm' in result['final_link']
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_request_exception_reraises(self, mock_sleep, mock_get, collector):
         """submissions API 요청 실패 시 RequestException 이 전파된다."""
         collector._cik_cache['AAPL'] = '0000320193'
@@ -72,8 +72,8 @@ class TestGetFilingMetadataEdge:
         with pytest.raises(req.exceptions.RequestException):
             collector.get_filing_metadata('AAPL')
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_final_link_strips_leading_zeros_from_cik(self, mock_sleep, mock_get, collector):
         """final_link 의 CIK 구간은 lstrip('0') 결과를 사용한다."""
         collector._cik_cache['AAPL'] = '0000320193'
@@ -91,8 +91,8 @@ class TestGetFilingMetadataEdge:
         assert '/320193/' in result['final_link']
         assert '/0000320193/' not in result['final_link']
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_accession_no_in_url_has_dashes_removed(self, mock_sleep, mock_get, collector):
         """final_link 의 accession 구간은 '-' 없이 사용된다."""
         collector._cik_cache['AAPL'] = '0000320193'
@@ -212,7 +212,7 @@ class TestCollectFallbackRecovery:
                           return_value=regex_sections), \
              patch.object(collector, 'extract_sections_fallback',
                           return_value=fallback_sections), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    side_effect=fake_validator):
             result = collector.collect('AAPL')
 
@@ -241,7 +241,7 @@ class TestCollectFallbackRecovery:
                           return_value=regex_sections), \
              patch.object(collector, 'extract_sections_fallback',
                           return_value={'item_1': 'x', 'item_1a': '', 'item_7': ''}), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    side_effect=fake_validator):
             result = collector.collect('AAPL')
 

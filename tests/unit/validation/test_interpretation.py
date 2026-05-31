@@ -12,7 +12,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from validation.services.interpretation import (
+from services.validation.services.interpretation import (
     determine_trend,
     generate_leader_summary,
     generate_metric_interpretation,

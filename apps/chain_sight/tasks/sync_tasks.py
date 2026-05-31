@@ -69,7 +69,7 @@ def aggregate_chain_profiles(self):
 
             # validation CategorySignal (서비스 레이어)
             try:
-                from validation.models import CategorySignal
+                from services.validation.models import CategorySignal
 
                 signals = CategorySignal.objects.filter(symbol=stock)
                 for sig in signals:

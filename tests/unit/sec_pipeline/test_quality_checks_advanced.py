@@ -24,7 +24,7 @@ def stock(db):
 
 @pytest.fixture
 def doc(stock):
-    from sec_pipeline.models import RawDocumentStore
+    from services.sec_pipeline.models import RawDocumentStore
     return RawDocumentStore.objects.create(
         symbol=stock,
         accession_no='acc-qca-001',
@@ -39,8 +39,8 @@ def doc(stock):
 class TestAdditionalAlerts:
     def test_low_confidence_alert(self, stock, doc):
         """평균 system_confidence < 0.5 → 알림."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 매칭률은 충분히 높이고 confidence만 낮춤
         for i in range(5):
@@ -58,8 +58,8 @@ class TestAdditionalAlerts:
 
     def test_low_match_rate_alert(self, stock, doc):
         """매칭률 < 30% → 알림."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 1 matched / 9 unmatched → 10% 매칭률
         SupplyChainEvidence.objects.create(
@@ -82,8 +82,8 @@ class TestAdditionalAlerts:
 
     def test_track_b_unknown_alert(self, stock, doc):
         """Track B unknown 비율 > 30% → 알림."""
-        from sec_pipeline.models import BusinessModelSnapshot
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import BusinessModelSnapshot
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 2 스냅샷 × 5 필드 = 10. 모두 unknown이면 100%
         for i in range(2):
@@ -97,8 +97,8 @@ class TestAdditionalAlerts:
 
     def test_neo4j_dirty_backlog_alert(self, stock, doc):
         """neo4j_dirty=True & matched > 50건 → 알림."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(51):
             SupplyChainEvidence.objects.create(
@@ -117,8 +117,8 @@ class TestAdditionalAlerts:
 @pytest.mark.django_db
 class TestDashboardStatsAdvanced:
     def test_bm_grade_breakdown(self, stock, doc):
-        from sec_pipeline.models import BusinessModelSnapshot
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import BusinessModelSnapshot
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         BusinessModelSnapshot.objects.create(
             symbol=stock, source_document=doc, as_of_date=date(2023, 1, 1),
@@ -139,8 +139,8 @@ class TestDashboardStatsAdvanced:
         assert result['track_b']['low_grade'] == 1
 
     def test_collection_status_breakdown(self, stock):
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         RawDocumentStore.objects.create(
             symbol=stock, accession_no='ds-1',
@@ -164,8 +164,8 @@ class TestDashboardStatsAdvanced:
         assert result['collection']['failed'] == 1
 
     def test_queue_status_breakdown(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         UnmatchedCompanyQueue.objects.create(
             raw_company_name='A', source_symbol='X', status='pending',

@@ -17,7 +17,7 @@ from typing import Optional
 from django.core.cache import cache
 from django.utils import timezone
 
-from rag_analysis.services.neo4j_driver import get_neo4j_driver
+from services.rag_analysis.services.neo4j_driver import get_neo4j_driver
 
 logger = logging.getLogger(__name__)
 

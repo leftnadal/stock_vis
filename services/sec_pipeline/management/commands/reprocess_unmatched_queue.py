@@ -15,8 +15,8 @@ from __future__ import annotations
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from sec_pipeline.models import UnmatchedCompanyQueue
-from sec_pipeline.ticker_matcher import BLOCKED_NAMES, TickerMatcher
+from services.sec_pipeline.models import UnmatchedCompanyQueue
+from services.sec_pipeline.ticker_matcher import BLOCKED_NAMES, TickerMatcher
 
 
 class Command(BaseCommand):

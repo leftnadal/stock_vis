@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rag_analysis.services.cache import BasicCacheService, get_cache_service
+from services.rag_analysis.services.cache import BasicCacheService, get_cache_service
 
 
 class TestMakeKey:
@@ -103,13 +103,13 @@ class TestGraphContext:
 
     @pytest.mark.django_db
     def test_get_error_returns_none(self):
-        with patch('rag_analysis.services.cache.cache') as mock_cache:
+        with patch('services.rag_analysis.services.cache.cache') as mock_cache:
             mock_cache.get.side_effect = ConnectionError('redis down')
             assert self.svc.get_graph_context('AAPL') is None
 
     @pytest.mark.django_db
     def test_set_error_returns_false(self):
-        with patch('rag_analysis.services.cache.cache') as mock_cache:
+        with patch('services.rag_analysis.services.cache.cache') as mock_cache:
             mock_cache.set.side_effect = ConnectionError('redis down')
             assert self.svc.set_graph_context('AAPL', {'a': 1}) is False
 
@@ -180,7 +180,7 @@ class TestSingleton:
     """get_cache_service 싱글톤"""
 
     def test_returns_same_instance(self):
-        import rag_analysis.services.cache as mod
+        import services.rag_analysis.services.cache as mod
         mod._cache_service = None  # 초기화
         svc1 = get_cache_service()
         svc2 = get_cache_service()

@@ -20,8 +20,8 @@ Usage:
 
 from django.core.management.base import BaseCommand, CommandError
 
-from rag_analysis.services.cache_warmer import CacheWarmer
-from rag_analysis.services.semantic_cache_setup import (
+from services.rag_analysis.services.cache_warmer import CacheWarmer
+from services.rag_analysis.services.semantic_cache_setup import (
     cleanup_expired_cache,
     drop_semantic_cache_index,
     get_cache_stats,

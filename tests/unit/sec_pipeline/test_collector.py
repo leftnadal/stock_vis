@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.collector import SECFilingCollector
+from services.sec_pipeline.collector import SECFilingCollector
 
 # ---------------------------------------------------------------------------
 # Helpers / Fixtures
@@ -81,30 +81,30 @@ def _mock_response(json_data=None, text=None, status_code=200):
 # ---------------------------------------------------------------------------
 
 class TestGetCik:
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_cik_found(self, mock_sleep, mock_get, collector):
         mock_get.return_value = _mock_response(json_data=SAMPLE_TICKERS_JSON)
         cik = collector._get_cik('AAPL')
         assert cik == '0000320193'
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_cik_not_found(self, mock_sleep, mock_get, collector):
         mock_get.return_value = _mock_response(json_data=SAMPLE_TICKERS_JSON)
         cik = collector._get_cik('ZZZZ')
         assert cik is None
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_cik_cached(self, mock_sleep, mock_get, collector):
         collector._cik_cache['AAPL'] = '0000320193'
         cik = collector._get_cik('AAPL')
         assert cik == '0000320193'
         mock_get.assert_not_called()
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_cik_request_error(self, mock_sleep, mock_get, collector):
         mock_get.side_effect = Exception("Network error")
         cik = collector._get_cik('AAPL')
@@ -116,8 +116,8 @@ class TestGetCik:
 # ---------------------------------------------------------------------------
 
 class TestGetFilingMetadata:
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_metadata_found(self, mock_sleep, mock_get, collector):
         collector._cik_cache['AAPL'] = '0000320193'
         mock_get.return_value = _mock_response(json_data=SAMPLE_SUBMISSIONS_JSON)
@@ -129,8 +129,8 @@ class TestGetFilingMetadata:
         assert result['filing_date'] == '2023-11-03'
         assert 'final_link' in result
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_metadata_no_10k(self, mock_sleep, mock_get, collector):
         collector._cik_cache['AAPL'] = '0000320193'
         no_10k = {
@@ -157,8 +157,8 @@ class TestGetFilingMetadata:
 # ---------------------------------------------------------------------------
 
 class TestFetchFilingHtml:
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_fetch_success(self, mock_sleep, mock_get, collector):
         mock_get.return_value = _mock_response(text='<html>test</html>')
         html = collector.fetch_filing_html('https://sec.gov/test.htm')
@@ -168,8 +168,8 @@ class TestFetchFilingHtml:
         assert collector.fetch_filing_html('') is None
         assert collector.fetch_filing_html(None) is None
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_fetch_error_raises(self, mock_sleep, mock_get, collector):
         import requests as req
         mock_get.side_effect = req.exceptions.RequestException("timeout")

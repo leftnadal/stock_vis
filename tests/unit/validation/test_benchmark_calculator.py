@@ -21,8 +21,8 @@ from packages.shared.metrics.models import (
     PeerListCache,
 )
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import CompanyBenchmarkDelta
-from validation.services.benchmark_calculator import (
+from services.validation.models import CompanyBenchmarkDelta
+from services.validation.services.benchmark_calculator import (
     BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,

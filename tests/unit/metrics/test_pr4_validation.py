@@ -17,7 +17,7 @@ from django.utils import timezone
 
 from packages.shared.metrics.models import MetricDefinition
 from packages.shared.stocks.models import SP500Constituent
-from validation.models import (
+from services.validation.models import (
     CategorySignal,
     CompanyBenchmarkDelta,
     CompanyMetricLatest,

@@ -17,7 +17,7 @@ from django.db import IntegrityError
 from django.test import TestCase
 from django.utils import timezone
 
-from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
+from services.rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 User = get_user_model()
 

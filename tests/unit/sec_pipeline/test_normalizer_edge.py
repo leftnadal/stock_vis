@@ -11,7 +11,7 @@ normalizer.py 추가 엣지 케이스 테스트.
 
 import pytest
 
-from sec_pipeline.normalizer import (
+from services.sec_pipeline.normalizer import (
     SUPPLY_CHAIN_KEYWORDS,
     _clean_text,
     filter_paragraphs,

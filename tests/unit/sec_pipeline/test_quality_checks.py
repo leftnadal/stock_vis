@@ -24,7 +24,7 @@ def stock(db):
 
 @pytest.fixture
 def doc(stock):
-    from sec_pipeline.models import RawDocumentStore
+    from services.sec_pipeline.models import RawDocumentStore
     return RawDocumentStore.objects.create(
         symbol=stock,
         accession_no='acc-qc-001',
@@ -42,13 +42,13 @@ def doc(stock):
 @pytest.mark.django_db
 class TestRunPostBatchQualityChecks:
     def test_no_data_returns_empty(self):
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
         alerts = run_post_batch_quality_checks(hours_back=24)
         assert alerts == []
 
     def test_high_failure_rate_alert(self, stock):
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 5 failed out of 6 total (83% > 20%)
         for i in range(5):
@@ -73,8 +73,8 @@ class TestRunPostBatchQualityChecks:
         assert any('실패율' in a for a in alerts)
 
     def test_queue_backlog_alert(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 101 pending entries (> 100 threshold)
         for i in range(101):
@@ -88,8 +88,8 @@ class TestRunPostBatchQualityChecks:
         assert any('적체' in a and '미매칭' in a for a in alerts)
 
     def test_section_fail_alert(self):
-        from sec_pipeline.models import FilingProcessLog
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         FilingProcessLog.objects.create(
             symbol='AAPL',
@@ -109,7 +109,7 @@ class TestRunPostBatchQualityChecks:
 @pytest.mark.django_db
 class TestGetDashboardStats:
     def test_empty_stats_structure(self):
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
         result = get_dashboard_stats()
 
         assert 'collection' in result
@@ -120,8 +120,8 @@ class TestGetDashboardStats:
         assert result['track_a']['total_evidences'] == 0
 
     def test_with_data(self, stock, doc):
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         SupplyChainEvidence.objects.create(
             source_document=doc,

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def fetch_annual_financials(self, symbols=None):
     """Task 1: 재무제표 가용성 확인."""
     try:
-        from validation.services.financial_fetcher import FinancialFetcher
+        from services.validation.services.financial_fetcher import FinancialFetcher
 
         fetcher = FinancialFetcher()
         result = fetcher.check_and_fetch(symbols)
@@ -41,7 +41,7 @@ def fetch_annual_financials(self, symbols=None):
 def calculate_derived_metrics(self, prev_result=None, symbols=None):
     """Task 2: 33개 지표 계산 + value_status 판정."""
     try:
-        from validation.services.metric_calculator import MetricCalculator
+        from services.validation.services.metric_calculator import MetricCalculator
 
         calculator = MetricCalculator()
         result = calculator.calculate_for_symbols(symbols)
@@ -58,7 +58,7 @@ def calculate_derived_metrics(self, prev_result=None, symbols=None):
 def calculate_benchmarks(self, prev_result=None, symbols=None):
     """Task 3: Peer 선정 + Benchmark 계산."""
     try:
-        from validation.services.benchmark_calculator import BenchmarkCalculator
+        from services.validation.services.benchmark_calculator import BenchmarkCalculator
 
         calc = BenchmarkCalculator()
         result = calc.calculate_for_symbols(symbols)
@@ -75,7 +75,7 @@ def calculate_benchmarks(self, prev_result=None, symbols=None):
 def calculate_relative_metrics(self, prev_result=None, symbols=None):
     """Task 3.5: rev_growth_vs_industry 계산."""
     try:
-        from validation.services.relative_metrics import RelativeMetricCalculator
+        from services.validation.services.relative_metrics import RelativeMetricCalculator
 
         calc = RelativeMetricCalculator()
         result = calc.calculate_for_symbols(symbols)
@@ -90,7 +90,7 @@ def calculate_relative_metrics(self, prev_result=None, symbols=None):
 def calculate_category_signals(self, prev_result=None, symbols=None):
     """Task 4: 카테고리별 신호등 계산 (green/yellow/red/gray)."""
     try:
-        from validation.services.category_signal_calculator import (
+        from services.validation.services.category_signal_calculator import (
             CategorySignalCalculator,
         )
 
@@ -132,7 +132,7 @@ def log_batch_run(self, prev_result=None, universe="sp500", start_time=None):
             elapsed = time.time() - start_time
 
         from packages.shared.metrics.models import CompanyMetricSnapshot
-        from validation.models import CategorySignal
+        from services.validation.models import CategorySignal
 
         snapshot_count = CompanyMetricSnapshot.objects.count()
         signal_count = CategorySignal.objects.count()

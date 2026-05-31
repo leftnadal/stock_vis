@@ -17,7 +17,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
+from services.rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
 
 User = get_user_model()
 

@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.extractor import GeminiExtractor
+from services.sec_pipeline.extractor import GeminiExtractor
 
 
 @pytest.fixture
@@ -36,7 +36,7 @@ def _mock_genai_response(text):
 class TestGetClientCaching:
     def test_client_cached_after_first_call(self, extractor):
         """동일 인스턴스에서 두 번 호출 시 client 1번만 생성."""
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = 'test-key'
             with patch('google.genai.Client') as mock_genai_client:
                 mock_genai_client.return_value = MagicMock()
@@ -47,7 +47,7 @@ class TestGetClientCaching:
                 assert mock_genai_client.call_count == 1
 
     def test_client_initialized_with_api_key(self, extractor):
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = 'real-key'
             with patch('google.genai.Client') as mock_genai_client:
                 mock_genai_client.return_value = MagicMock()
@@ -60,7 +60,7 @@ class TestGetClientCaching:
 # ---------------------------------------------------------------------------
 
 class TestExtractSupplyChainAdvanced:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_paragraphs_joined_into_prompt(self, mock_get_client, extractor):
         """다수 paragraphs는 '---' 구분자로 join되어 프롬프트에 포함."""
         client = MagicMock()
@@ -82,7 +82,7 @@ class TestExtractSupplyChainAdvanced:
         assert 'Samsung' in prompt
         assert '---' in prompt
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_non_json_exception_reraises(self, mock_get_client, extractor):
         """JSON 외 예외(예: API 오류)는 caller로 전파."""
         client = MagicMock()
@@ -98,7 +98,7 @@ class TestExtractSupplyChainAdvanced:
 # ---------------------------------------------------------------------------
 
 class TestExtractBusinessModelAdvanced:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_empty_response_text_returns_dict(self, mock_get_client, extractor):
         """response.text가 None이면 빈 dict 반환 ('{}' 파싱)."""
         response = MagicMock()
@@ -111,7 +111,7 @@ class TestExtractBusinessModelAdvanced:
         # text=None → '{}' fallback → 빈 dict
         assert result == {}
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_non_json_exception_reraises(self, mock_get_client, extractor):
         client = MagicMock()
         client.models.generate_content.side_effect = ConnectionError('timeout')
@@ -120,7 +120,7 @@ class TestExtractBusinessModelAdvanced:
         with pytest.raises(ConnectionError):
             extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_full_5_field_response_preserved(self, mock_get_client, extractor):
         """5개 필드 응답이 그대로 전달되는지 확인."""
         result_json = json.dumps({

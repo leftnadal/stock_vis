@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.ticker_matcher import TickerMatcher
+from services.sec_pipeline.ticker_matcher import TickerMatcher
 
 # ---------------------------------------------------------------------------
 # Fixtures

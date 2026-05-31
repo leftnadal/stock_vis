@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 
-from rag_analysis.services.reranker import (
+from services.rag_analysis.services.reranker import (
     CrossEncoderReranker,
     RerankerWithThreshold,
     get_reranker,
@@ -22,7 +22,7 @@ class TestCrossEncoderReranker:
     @pytest.fixture
     def mock_cross_encoder(self):
         """Mock Cross-Encoder 모델"""
-        with patch("rag_analysis.services.reranker.CrossEncoder") as mock:
+        with patch("services.rag_analysis.services.reranker.CrossEncoder") as mock:
             mock_model = MagicMock()
             mock.return_value = mock_model
             yield mock_model
@@ -254,7 +254,7 @@ class TestGetReranker:
         CrossEncoderReranker._instance = None
         CrossEncoderReranker._model = None
 
-    @patch("rag_analysis.services.reranker.CrossEncoder")
+    @patch("services.rag_analysis.services.reranker.CrossEncoder")
     def test_get_basic_reranker(self, mock_cross_encoder):
         """기본 reranker 생성"""
         reranker = get_reranker(with_threshold=False)
@@ -262,7 +262,7 @@ class TestGetReranker:
         assert isinstance(reranker, CrossEncoderReranker)
         assert not isinstance(reranker, RerankerWithThreshold)
 
-    @patch("rag_analysis.services.reranker.CrossEncoder")
+    @patch("services.rag_analysis.services.reranker.CrossEncoder")
     def test_get_threshold_reranker(self, mock_cross_encoder):
         """임계값 reranker 생성"""
         reranker = get_reranker(with_threshold=True, threshold=0.6)

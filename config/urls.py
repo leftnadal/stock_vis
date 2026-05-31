@@ -37,12 +37,12 @@ urlpatterns = [
     path('api/v1/stocks/', include("packages.shared.stocks.urls")),
     path('api/v1/news/', include("news.api.urls")),
     path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
-    path('api/v1/rag/', include("rag_analysis.urls")),  # RAG 분석
+    path('api/v1/rag/', include("services.rag_analysis.urls")),  # RAG 분석
     path('api/v1/serverless/', include("serverless.urls")),  # Market Movers (AWS 전환 대상)
     path('api/v1/thesis/', include("thesis.urls")),  # Thesis Control (가설 통제실)
-    path('api/v1/validation/', include("validation.api.urls")),  # 1차 검증
+    path('api/v1/validation/', include("services.validation.api.urls")),  # 1차 검증
     path('api/v1/chainsight/', include("apps.chain_sight.api.urls")),  # PR6 이동 — Chain Sight 그래프 탐색
-    path('api/v1/sec-pipeline/', include("sec_pipeline.urls")),  # SEC Pipeline 대시보드
+    path('api/v1/sec-pipeline/', include("services.sec_pipeline.urls")),  # SEC Pipeline 대시보드
     path('api/v1/iron-trading/', include("integrations.iron_trading.urls")),  # iron_trading 외부 봇 read-only (PR3 이동)
 
     # Provider Admin API

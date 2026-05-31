@@ -11,7 +11,7 @@ import logging
 from django.core.management.base import BaseCommand
 
 from packages.shared.stocks.models import Stock
-from sec_pipeline.models import CompanyAlias
+from services.sec_pipeline.models import CompanyAlias
 
 logger = logging.getLogger(__name__)
 

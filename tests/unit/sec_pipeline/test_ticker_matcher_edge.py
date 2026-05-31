@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-from sec_pipeline.ticker_matcher import TickerMatcher
+from services.sec_pipeline.ticker_matcher import TickerMatcher
 
 
 @pytest.fixture
@@ -92,7 +92,7 @@ class TestMatchShortName:
 class TestMatchAliasPriority:
     def test_sector_specific_wins_over_generic(self, matcher):
         """동일 alias 가 sector-specific 과 generic 둘 다 있으면 sector-specific 이 선택."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='Apex', ticker='APX_GENERIC', context_sector='',
         )
@@ -104,7 +104,7 @@ class TestMatchAliasPriority:
 
     def test_unrelated_sector_falls_back_to_generic(self, matcher):
         """sector specific 이 매칭 안 되면 generic 으로 fallback."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='Apex', ticker='APX_GENERIC', context_sector='',
         )

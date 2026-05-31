@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 
-from rag_analysis.exceptions import CacheError
+from services.rag_analysis.exceptions import CacheError
 from serverless.exceptions import GenerationFailed, SyncFailed
 
 

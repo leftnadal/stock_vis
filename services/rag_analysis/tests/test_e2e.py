@@ -18,8 +18,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
-from rag_analysis.services.pipeline import AnalysisPipelineLite
+from services.rag_analysis.models import AnalysisMessage, AnalysisSession, BasketItem, DataBasket
+from services.rag_analysis.services.pipeline import AnalysisPipelineLite
 
 User = get_user_model()
 
@@ -65,7 +65,7 @@ class AnalysisPipelineE2ETest(TransactionTestCase):
             user=self.user, basket=self.basket, title="Tech Stock Analysis"
         )
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_complete_analysis_flow_with_mock_llm(self, mock_anthropic_class):
         """전체 분석 흐름 테스트 (Mock LLM)"""
 
@@ -181,7 +181,7 @@ class AnalysisPipelineE2ETest(TransactionTestCase):
     @patch(
         "rag_analysis.services.neo4j_service.Neo4jServiceLite.get_stock_relationships"
     )
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_neo4j_graceful_degradation(self, mock_anthropic_class, mock_neo4j):
         """Neo4j 실패 시 Graceful Degradation 테스트"""
 
@@ -238,7 +238,7 @@ class AnalysisPipelineE2ETest(TransactionTestCase):
         complete_event = next(e for e in events if e["phase"] == "complete")
         self.assertIn("data", complete_event)
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_llm_api_error_handling(self, mock_anthropic_class):
         """LLM API 에러 핸들링 테스트"""
 
@@ -272,7 +272,7 @@ class AnalysisPipelineE2ETest(TransactionTestCase):
         self.assertIn("code", error_event["error"])
         self.assertIn("message", error_event["error"])
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_token_limit_enforcement(self, mock_anthropic_class):
         """토큰 제한 검증 테스트"""
 
@@ -357,7 +357,7 @@ class SSEStreamingE2ETest(TestCase):
             user=self.user, basket=self.basket, title="Test Session"
         )
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_sse_streaming_response(self, mock_anthropic_class):
         """SSE 스트리밍 응답 테스트"""
 
@@ -462,7 +462,7 @@ class MessagePersistenceTest(TestCase):
             user=self.user, basket=self.basket
         )
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_messages_saved_to_database(self, mock_anthropic_class):
         """분석 후 메시지가 DB에 저장되는지 테스트"""
 
@@ -523,7 +523,7 @@ class MessagePersistenceTest(TestCase):
         self.assertEqual(assistant_msg.input_tokens, 100)
         self.assertEqual(assistant_msg.output_tokens, 10)
 
-    @patch("rag_analysis.services.llm_service.AsyncAnthropic")
+    @patch("services.rag_analysis.services.llm_service.AsyncAnthropic")
     def test_suggestions_saved(self, mock_anthropic_class):
         """제안 종목이 DB에 저장되는지 테스트"""
 
@@ -622,14 +622,14 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
             user=self.user, basket=self.basket, title="Final Pipeline Test Session"
         )
 
-    @patch("rag_analysis.services.adaptive_llm_service.genai")
-    @patch("rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
-    @patch("rag_analysis.services.semantic_cache.SemanticCacheService.store")
+    @patch("services.rag_analysis.services.adaptive_llm_service.genai")
+    @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
+    @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.store")
     def test_final_pipeline_with_cache_miss(
         self, mock_cache_store, mock_cache_find, mock_genai
     ):
         """Final Pipeline 캐시 미스 흐름 테스트"""
-        from rag_analysis.services.pipeline import AnalysisPipelineFinal
+        from services.rag_analysis.services.pipeline import AnalysisPipelineFinal
 
         # 캐시 미스 설정
         async def mock_find_similar(*args, **kwargs):
@@ -695,10 +695,10 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
         self.assertIn("complexity_score", complete_event["data"])
         self.assertFalse(complete_event["data"]["usage"]["cached"])
 
-    @patch("rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
+    @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
     def test_final_pipeline_with_cache_hit(self, mock_cache_find):
         """Final Pipeline 캐시 히트 흐름 테스트"""
-        from rag_analysis.services.pipeline import AnalysisPipelineFinal
+        from services.rag_analysis.services.pipeline import AnalysisPipelineFinal
 
         # 캐시 히트 설정
         async def mock_find_similar(*args, **kwargs):
@@ -755,7 +755,7 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
 
     def test_final_pipeline_complexity_classification(self):
         """Final Pipeline 복잡도 분류 테스트"""
-        from rag_analysis.services.complexity_classifier import ComplexityClassifier
+        from services.rag_analysis.services.complexity_classifier import ComplexityClassifier
 
         classifier = ComplexityClassifier(provider="gemini")
 
@@ -775,7 +775,7 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
 
     def test_final_pipeline_token_budget_allocation(self):
         """Final Pipeline 토큰 예산 할당 테스트"""
-        from rag_analysis.services.token_budget_manager import (
+        from services.rag_analysis.services.token_budget_manager import (
             ContentBlock,
             ContentPriority,
             TokenBudgetManager,
@@ -813,10 +813,10 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
         self.assertGreater(len(selected), 0)
         self.assertEqual(selected[0].priority, ContentPriority.CRITICAL)
 
-    @patch("rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
+    @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
     def test_final_pipeline_graceful_degradation(self, mock_cache_find):
         """Final Pipeline 컴포넌트 실패 시 Graceful Degradation"""
-        from rag_analysis.services.pipeline import AnalysisPipelineFinal
+        from services.rag_analysis.services.pipeline import AnalysisPipelineFinal
 
         # 캐시 서비스 에러
         async def mock_find_error(*args, **kwargs):

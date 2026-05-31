@@ -19,7 +19,7 @@ import pytest
 class TestSupplyChainEvidenceDefaults:
     def test_default_confidence_and_grade(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -43,7 +43,7 @@ class TestSupplyChainEvidenceDefaults:
 @pytest.mark.django_db
 class TestFilingProcessLogOrdering:
     def test_ordering_by_started_at_desc(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
 
         old = FilingProcessLog.objects.create(
             symbol='AAPL', stage='sec_fetch', status='success',
@@ -56,7 +56,7 @@ class TestFilingProcessLogOrdering:
         assert logs[1].id == old.id
 
     def test_default_detail_empty(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
         log = FilingProcessLog.objects.create(
             symbol='AAPL', stage='neo4j_sync', status='started',
         )
@@ -67,7 +67,7 @@ class TestFilingProcessLogOrdering:
 @pytest.mark.django_db
 class TestPipelineIntelligenceReportDefaults:
     def test_default_scores_zero(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
         report = PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 11, 15),
         )
@@ -81,7 +81,7 @@ class TestPipelineIntelligenceReportDefaults:
         assert report.hours_back == 24
 
     def test_default_json_fields(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
         report = PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 11, 16),
         )
@@ -93,7 +93,7 @@ class TestPipelineIntelligenceReportDefaults:
 class TestCompanyAliasContextCountry:
     def test_country_not_in_unique_constraint(self):
         """unique_together = (alias, context_sector) — country 는 무관."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='SomeCo', ticker='SCO', context_sector='Tech',
             context_country='US',
@@ -112,7 +112,7 @@ class TestRawDocumentCascade:
     def test_cascade_deletes_supply_chain_evidence(self):
         """RawDocumentStore 삭제 시 관련 SupplyChainEvidence 도 삭제."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='CSC', stock_name='Cascade Co')
         doc = RawDocumentStore.objects.create(
@@ -134,7 +134,7 @@ class TestRawDocumentCascade:
 class TestBusinessModelEvidenceDefaults:
     def test_default_confidence_zero(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             BusinessModelEvidence,
             BusinessModelSnapshot,
             RawDocumentStore,

@@ -14,7 +14,7 @@ from packages.shared.stocks.models import (
     SP500Constituent,
     Stock,
 )
-from validation.models import CategorySignal, CompanyBenchmarkDelta
+from services.validation.models import CategorySignal, CompanyBenchmarkDelta
 
 logger = logging.getLogger(__name__)
 

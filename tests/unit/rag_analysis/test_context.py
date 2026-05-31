@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
 
-from rag_analysis.models import BasketItem
-from rag_analysis.services.context import DateAwareContextFormatter
+from services.rag_analysis.models import BasketItem
+from services.rag_analysis.services.context import DateAwareContextFormatter
 
 
 def _make_mock_basket(name='Test Basket', description='', items=None):

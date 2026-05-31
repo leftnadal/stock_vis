@@ -21,17 +21,17 @@ from packages.shared.metrics.models import (
     PeerMetricBenchmark,
 )
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import (
+from services.validation.models import (
     CategorySignal,
     CompanyBenchmarkDelta,
     PeerPreset,
     UserPeerPreference,
 )
-from validation.services.category_signal_calculator import (
+from services.validation.services.category_signal_calculator import (
     CATEGORY_DISPLAY,
     CATEGORY_METRICS,
 )
-from validation.services.interpretation import (
+from services.validation.services.interpretation import (
     determine_trend,
     generate_leader_summary,
     generate_metric_interpretation,
@@ -91,7 +91,7 @@ class ValidationSummaryView(APIView):
                 user=request.user, symbol_id=symbol
             ).first()
             if pref and pref.mode == "custom" and pref.custom_peers:
-                from validation.services.custom_benchmark_engine import (
+                from services.validation.services.custom_benchmark_engine import (
                     CustomBenchmarkEngine,
                 )
 
@@ -657,7 +657,7 @@ class LLMPeerFilterView(APIView):
                 base_peers = preset.peer_symbols
 
         # Step 1: 자연어 → 구조화 필터
-        from validation.services.llm_peer_filter import (
+        from services.validation.services.llm_peer_filter import (
             execute_peer_filter,
             parse_filter_with_llm,
         )

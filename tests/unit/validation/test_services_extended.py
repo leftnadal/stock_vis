@@ -22,8 +22,8 @@ from unittest.mock import patch
 import pytest
 
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.services.metric_calculator import MetricCalculator
-from validation.services.preset_generator import PresetGenerator
+from services.validation.services.metric_calculator import MetricCalculator
+from services.validation.services.preset_generator import PresetGenerator
 
 # ---------------------------------------------------------------------------
 # Helpers (공용)
@@ -566,7 +566,7 @@ class TestGenerateSizePeers:
         count = gen._generate_size_peers(stock, base_qs, 'mega')
         assert count == 1
 
-        from validation.models import PeerPreset
+        from services.validation.models import PeerPreset
         preset = PeerPreset.objects.get(symbol=stock, preset_key='size_peers')
         assert preset.generation_method == 'auto_size'
         assert preset.peer_count >= 3

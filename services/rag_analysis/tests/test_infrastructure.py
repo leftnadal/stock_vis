@@ -22,10 +22,10 @@ class Neo4jDriverTests(TestCase):
     Neo4j Driver Tests
     """
 
-    @patch("rag_analysis.services.neo4j_driver.GraphDatabase")
+    @patch("services.rag_analysis.services.neo4j_driver.GraphDatabase")
     def test_lazy_connection_success(self, mock_gdb):
         """첫 호출 시 연결 시도"""
-        from rag_analysis.services.neo4j_driver import (
+        from services.rag_analysis.services.neo4j_driver import (
             get_neo4j_driver,
             reset_connection,
         )
@@ -48,10 +48,10 @@ class Neo4jDriverTests(TestCase):
         self.assertEqual(driver, driver2)
         mock_gdb.driver.assert_called_once()  # Still only called once
 
-    @patch("rag_analysis.services.neo4j_driver.GraphDatabase")
+    @patch("services.rag_analysis.services.neo4j_driver.GraphDatabase")
     def test_connection_failure_returns_none(self, mock_gdb):
         """연결 실패 시 None 반환 (앱은 계속 실행)"""
-        from rag_analysis.services.neo4j_driver import (
+        from services.rag_analysis.services.neo4j_driver import (
             get_neo4j_driver,
             reset_connection,
         )
@@ -74,7 +74,7 @@ class Neo4jServiceTests(TestCase):
 
     def test_fallback_when_driver_unavailable(self):
         """Neo4j 연결 실패 시 fallback 데이터 반환"""
-        from rag_analysis.services.neo4j_service import Neo4jServiceLite
+        from services.rag_analysis.services.neo4j_service import Neo4jServiceLite
 
         # Mock driver as None
         service = Neo4jServiceLite()
@@ -90,10 +90,10 @@ class Neo4jServiceTests(TestCase):
         self.assertEqual(result["_meta"]["source"], "fallback")
         self.assertIsNotNone(result["_meta"]["_error"])
 
-    @patch("rag_analysis.services.neo4j_service.get_neo4j_driver")
+    @patch("services.rag_analysis.services.neo4j_service.get_neo4j_driver")
     def test_health_check_unavailable(self, mock_get_driver):
         """Neo4j 연결 불가 시 health check"""
-        from rag_analysis.services.neo4j_service import Neo4jServiceLite
+        from services.rag_analysis.services.neo4j_service import Neo4jServiceLite
 
         mock_get_driver.return_value = None
 
@@ -117,7 +117,7 @@ class CacheServiceTests(TestCase):
 
     def test_graph_context_cache(self):
         """그래프 컨텍스트 캐싱"""
-        from rag_analysis.services.cache import get_cache_service
+        from services.rag_analysis.services.cache import get_cache_service
 
         cache_service = get_cache_service()
 
@@ -146,7 +146,7 @@ class CacheServiceTests(TestCase):
 
     def test_llm_response_cache(self):
         """LLM 응답 캐싱"""
-        from rag_analysis.services.cache import get_cache_service
+        from services.rag_analysis.services.cache import get_cache_service
 
         cache_service = get_cache_service()
 
@@ -167,10 +167,10 @@ class CeleryTaskTests(TestCase):
     Celery Task Tests
     """
 
-    @patch("rag_analysis.services.neo4j_service.get_neo4j_service")
+    @patch("services.rag_analysis.services.neo4j_service.get_neo4j_service")
     def test_sync_task_when_neo4j_unavailable(self, mock_get_service):
         """Neo4j 연결 불가 시 태스크는 'skipped' 반환"""
-        from rag_analysis.tasks import sync_stock_to_neo4j
+        from services.rag_analysis.tasks import sync_stock_to_neo4j
 
         # Mock service with driver=None
         mock_service = Mock()
@@ -184,10 +184,10 @@ class CeleryTaskTests(TestCase):
         self.assertEqual(result["symbol"], "AAPL")
         self.assertFalse(result["neo4j_available"])
 
-    @patch("rag_analysis.services.neo4j_service.get_neo4j_service")
+    @patch("services.rag_analysis.services.neo4j_service.get_neo4j_service")
     def test_delete_task_success(self, mock_get_service):
         """Neo4j 삭제 태스크 성공"""
-        from rag_analysis.tasks import delete_stock_from_neo4j
+        from services.rag_analysis.tasks import delete_stock_from_neo4j
 
         # Mock service
         mock_service = Mock()
@@ -208,9 +208,9 @@ class SignalTests(TestCase):
     Django Signal Tests
     """
 
-    @patch("rag_analysis.signals._should_dispatch", return_value=True)
-    @patch("rag_analysis.signals.sync_stock_to_neo4j")
-    @patch("rag_analysis.signals.invalidate_graph_cache")
+    @patch("services.rag_analysis.signals._should_dispatch", return_value=True)
+    @patch("services.rag_analysis.signals.sync_stock_to_neo4j")
+    @patch("services.rag_analysis.signals.invalidate_graph_cache")
     def test_stock_saved_triggers_sync(self, mock_invalidate, mock_sync, mock_debounce):
         """Stock 저장 시 Neo4j 동기화 태스크 큐잉"""
         # Create stock
@@ -222,8 +222,8 @@ class SignalTests(TestCase):
         mock_sync.delay.assert_called_once()
         mock_invalidate.delay.assert_called_once_with("TEST")
 
-    @patch("rag_analysis.signals.delete_stock_from_neo4j")
-    @patch("rag_analysis.signals.invalidate_graph_cache")
+    @patch("services.rag_analysis.signals.delete_stock_from_neo4j")
+    @patch("services.rag_analysis.signals.invalidate_graph_cache")
     def test_stock_deleted_triggers_neo4j_delete(self, mock_invalidate, mock_delete):
         """Stock 삭제 시 Neo4j 삭제 태스크 큐잉"""
         # Create and delete stock
@@ -243,7 +243,7 @@ class IntegrationTests(TestCase):
 
     def test_app_starts_without_neo4j(self):
         """Neo4j 없이 앱 시작 가능"""
-        from rag_analysis.services import get_cache_service, get_neo4j_service
+        from services.rag_analysis.services import get_cache_service, get_neo4j_service
 
         # Services should be importable
         neo4j_service = get_neo4j_service()
@@ -254,7 +254,7 @@ class IntegrationTests(TestCase):
 
     def test_tasks_are_registered(self):
         """Celery 태스크 등록 확인"""
-        from rag_analysis.tasks import (
+        from services.rag_analysis.tasks import (
             batch_sync_stocks_to_neo4j,
             delete_stock_from_neo4j,
             health_check_neo4j,

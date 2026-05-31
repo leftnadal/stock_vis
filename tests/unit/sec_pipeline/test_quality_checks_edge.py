@@ -22,7 +22,7 @@ def stock(db):
 
 @pytest.fixture
 def doc(stock):
-    from sec_pipeline.models import RawDocumentStore
+    from services.sec_pipeline.models import RawDocumentStore
     return RawDocumentStore.objects.create(
         symbol=stock, accession_no='acc-qce-001',
         filing_date=date(2023, 11, 1), fiscal_year=2023,
@@ -34,8 +34,8 @@ def doc(stock):
 class TestThresholdEdges:
     def test_failure_rate_at_or_below_20pct_no_alert(self, stock):
         """실패율 정확히 20% 이하면 알림 없음 (> 0.20 만 트리거)."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 1 failed / 5 total = 20% (경계)
         for i in range(4):
@@ -55,8 +55,8 @@ class TestThresholdEdges:
 
     def test_queue_at_100_no_alert(self):
         """미매칭 큐가 정확히 100건이면 알림 없음 (> 100 만 트리거)."""
-        from sec_pipeline.models import UnmatchedCompanyQueue
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(100):
             UnmatchedCompanyQueue.objects.create(
@@ -68,8 +68,8 @@ class TestThresholdEdges:
 
     def test_neo4j_dirty_at_50_no_alert(self, stock, doc):
         """Neo4j dirty 가 정확히 50건이면 알림 없음."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(50):
             SupplyChainEvidence.objects.create(
@@ -87,8 +87,8 @@ class TestThresholdEdges:
 class TestHoursBackFilter:
     def test_old_data_outside_window_ignored(self, stock):
         """hours_back 보다 오래된 데이터는 알림 계산에서 제외된다."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 한 개를 24시간 전보다 더 오래 전으로 강제
         old_doc = RawDocumentStore.objects.create(
@@ -109,8 +109,8 @@ class TestHoursBackFilter:
 class TestDashboardStatsAvgConfidence:
     def test_avg_confidence_calculated(self, stock, doc):
         """track_a.avg_confidence 가 평균값으로 계산된다."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         SupplyChainEvidence.objects.create(
             source_document=doc, source_company=stock,
@@ -129,7 +129,7 @@ class TestDashboardStatsAvgConfidence:
 
     def test_avg_confidence_zero_when_no_evidence(self):
         """evidence 가 없을 때 avg_confidence 는 0."""
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
         result = get_dashboard_stats()
         assert result['track_a']['avg_confidence'] == 0
 
@@ -138,8 +138,8 @@ class TestDashboardStatsAvgConfidence:
 class TestNeo4jPendingCount:
     def test_neo4j_pending_excludes_unmatched(self, stock, doc):
         """neo4j_pending 은 target_company 가 매칭된 dirty 만 셈."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         # matched + dirty
         SupplyChainEvidence.objects.create(

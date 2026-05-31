@@ -14,7 +14,7 @@ import pytest
 class TestRawDocumentStore:
     def test_create_and_str(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -30,7 +30,7 @@ class TestRawDocumentStore:
 
     def test_default_values(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='MSFT', stock_name='Microsoft')
         doc = RawDocumentStore.objects.create(
@@ -50,7 +50,7 @@ class TestRawDocumentStore:
 class TestSupplyChainEvidence:
     def test_create_and_str(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -74,7 +74,7 @@ class TestSupplyChainEvidence:
 
     def test_nullable_target(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='GOOG', stock_name='Google')
         doc = RawDocumentStore.objects.create(
@@ -99,7 +99,7 @@ class TestSupplyChainEvidence:
 class TestBusinessModelSnapshot:
     def test_create_and_str(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
+        from services.sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='NVDA', stock_name='NVIDIA')
         doc = RawDocumentStore.objects.create(
@@ -122,7 +122,7 @@ class TestBusinessModelSnapshot:
 
     def test_default_unknown(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
+        from services.sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='AMD', stock_name='AMD')
         doc = RawDocumentStore.objects.create(
@@ -145,7 +145,7 @@ class TestBusinessModelSnapshot:
 @pytest.mark.django_db
 class TestCompanyAlias:
     def test_create_and_str(self):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         alias = CompanyAlias.objects.create(
             alias='Taiwan Semiconductor',
@@ -160,7 +160,7 @@ class TestCompanyAlias:
     def test_unique_together(self):
         from django.db import IntegrityError
 
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Samsung', ticker='SSNLF', context_sector='',
@@ -174,7 +174,7 @@ class TestCompanyAlias:
 @pytest.mark.django_db
 class TestUnmatchedCompanyQueue:
     def test_create_and_str(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
 
         entry = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Random Corp XYZ',
@@ -185,7 +185,7 @@ class TestUnmatchedCompanyQueue:
         assert entry.occurrence_count == 1
 
     def test_ordering_by_occurrence(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
 
         UnmatchedCompanyQueue.objects.create(
             raw_company_name='Low Freq', source_symbol='A', occurrence_count=1,
@@ -200,7 +200,7 @@ class TestUnmatchedCompanyQueue:
 @pytest.mark.django_db
 class TestFilingProcessLog:
     def test_create_and_str(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
 
         log = FilingProcessLog.objects.create(
             symbol='AAPL',

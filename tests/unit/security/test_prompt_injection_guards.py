@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from rag_analysis.services.llm_service import LLMServiceLite
+from services.rag_analysis.services.llm_service import LLMServiceLite
 from serverless.services.thesis_builder import ThesisBuilder
 
 

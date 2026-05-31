@@ -6,7 +6,7 @@ Rule-based 해석 텍스트 생성
 - generate_leader_summary: 업종 리더 대비 비교 요약
 """
 
-from validation.services.category_signal_calculator import CATEGORY_DISPLAY
+from services.validation.services.category_signal_calculator import CATEGORY_DISPLAY
 
 
 def generate_summary_text(category_signals: list) -> str:

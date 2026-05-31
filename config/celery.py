@@ -41,14 +41,14 @@ app.autodiscover_tasks()
 
 # Neo4j 태스크 → neo4j 큐로 격리 (--pool=solo 워커에서 처리, SIGSEGV 방지)
 app.conf.task_routes = {
-    'rag_analysis.tasks.health_check_neo4j': {'queue': 'neo4j'},
-    'rag_analysis.tasks.cleanup_expired_semantic_cache': {'queue': 'neo4j'},
-    'rag_analysis.tasks.warm_semantic_cache': {'queue': 'neo4j'},
-    'rag_analysis.tasks.get_semantic_cache_stats': {'queue': 'neo4j'},
-    'rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
-    'rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
-    'rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
-    'rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.health_check_neo4j': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.cleanup_expired_semantic_cache': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.warm_semantic_cache': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.get_semantic_cache_stats': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.sync_stock_to_neo4j': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
+    'services.rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
     'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
     'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
     'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
@@ -57,7 +57,7 @@ app.conf.task_routes = {
     'apps.chain_sight.tasks.sync_tasks.sync_relations_to_neo4j': {'queue': 'neo4j'},
     'chainsight-neo4j-dirty-sync': {'queue': 'neo4j'},
     # SEC Pipeline Neo4j 동기화
-    'sec_pipeline.tasks.sync_dirty_to_neo4j': {'queue': 'neo4j'},
+    'services.sec_pipeline.tasks.sync_dirty_to_neo4j': {'queue': 'neo4j'},
 }
 
 # ============================================================
@@ -99,8 +99,8 @@ def reset_connections_after_fork(**kwargs):
 
     # Neo4j 드라이버 해제
     try:
-        from rag_analysis.services.neo4j_driver import force_reset_after_fork
-        from rag_analysis.services.neo4j_service import reset_neo4j_service
+        from services.rag_analysis.services.neo4j_driver import force_reset_after_fork
+        from services.rag_analysis.services.neo4j_service import reset_neo4j_service
         force_reset_after_fork()
         reset_neo4j_service()
     except ImportError:
@@ -114,7 +114,7 @@ def close_neo4j_on_shutdown(**kwargs):
     atexit 대신 사용 (fork 자식에 복사되지 않음).
     """
     try:
-        from rag_analysis.services.neo4j_driver import close_neo4j_driver
+        from services.rag_analysis.services.neo4j_driver import close_neo4j_driver
         close_neo4j_driver()
     except ImportError:
         pass
@@ -215,7 +215,7 @@ app.conf.beat_schedule = {
 
     # Neo4j 헬스체크 (6시간마다, 이전 5분 → SIGSEGV 워커 소모 방지)
     'neo4j-health-check': {
-        'task': 'rag_analysis.tasks.health_check_neo4j',
+        'task': 'services.rag_analysis.tasks.health_check_neo4j',
         'schedule': crontab(minute=0, hour='*/6'),
         'options': {'queue': 'neo4j'},
     },
@@ -771,7 +771,7 @@ app.conf.beat_schedule = {
 
     # 주간 검증 배치 (매주 토요일 05:00 EST, Chain Sight 후)
     'validation-weekly-batch': {
-        'task': 'validation.tasks.run_weekly_validation_batch',
+        'task': 'services.validation.tasks.run_weekly_validation_batch',
         'schedule': crontab(hour=5, minute=0, day_of_week=6),
         'options': {'expires': 14400}
     },
@@ -782,7 +782,7 @@ app.conf.beat_schedule = {
 
     # SEC dirty evidence → Neo4j 동기화 (5분마다)
     'sec-sync-dirty-neo4j': {
-        'task': 'sec_pipeline.tasks.sync_dirty_to_neo4j',
+        'task': 'services.sec_pipeline.tasks.sync_dirty_to_neo4j',
         'schedule': crontab(minute='*/5'),
         'options': {'expires': 240}
     },
@@ -796,7 +796,7 @@ app.conf.beat_schedule = {
 
     # SEC 신규 10-K filing 감지 (매월 1일 06:00 EST)
     'sec-check-new-filings': {
-        'task': 'sec_pipeline.tasks.check_new_filings',
+        'task': 'services.sec_pipeline.tasks.check_new_filings',
         'schedule': crontab(hour=6, minute=0, day_of_month=1),
         'options': {'expires': 3600}
     },

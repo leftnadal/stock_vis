@@ -28,26 +28,26 @@ from packages.shared.stocks.models import (
     SP500Constituent,
     Stock,
 )
-from validation.models import PeerPreset
-from validation.services.benchmark_calculator import (
+from services.validation.models import PeerPreset
+from services.validation.services.benchmark_calculator import (
     BenchmarkCalculator,
     assign_size_bucket,
     get_adjacent_buckets,
 )
-from validation.services.interpretation import (
+from services.validation.services.interpretation import (
     determine_trend,
     generate_leader_summary,
     generate_metric_interpretation,
     generate_summary_text,
 )
-from validation.services.metric_calculator import (
+from services.validation.services.metric_calculator import (
     MetricCalculator,
     _div,
     _safe,
     _safe_nonzero,
 )
-from validation.services.preset_generator import PresetGenerator
-from validation.services.relative_metrics import RelativeMetricCalculator
+from services.validation.services.preset_generator import PresetGenerator
+from services.validation.services.relative_metrics import RelativeMetricCalculator
 
 # ---------------------------------------------------------------------------
 # Shared helpers

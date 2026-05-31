@@ -22,7 +22,7 @@ from packages.shared.metrics.models import (
     PeerMetricBenchmark,
 )
 from packages.shared.stocks.models import SP500Constituent, Stock
-from validation.models import CompanyBenchmarkDelta
+from services.validation.models import CompanyBenchmarkDelta
 
 logger = logging.getLogger(__name__)
 

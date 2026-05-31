@@ -22,7 +22,7 @@ from django.utils import timezone
 
 @pytest.fixture
 def collector():
-    from sec_pipeline.collector import SECFilingCollector
+    from services.sec_pipeline.collector import SECFilingCollector
     c = SECFilingCollector()
     c._cik_cache.clear()
     return c
@@ -31,8 +31,8 @@ def collector():
 class TestCollectorCikPadding:
     """_get_cik가 다양한 자릿수의 cik_str를 10자리로 zero-pad 하는지."""
 
-    @patch('sec_pipeline.collector.time.sleep')
-    @patch('sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
     def test_short_cik_padded_to_10(self, mock_get, _sleep, collector):
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
@@ -45,8 +45,8 @@ class TestCollectorCikPadding:
         assert cik == '0000012345'
         assert len(cik) == 10
 
-    @patch('sec_pipeline.collector.time.sleep')
-    @patch('sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
     def test_full_length_cik_unchanged(self, mock_get, _sleep, collector):
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
@@ -58,8 +58,8 @@ class TestCollectorCikPadding:
         cik = collector._get_cik('BIG')
         assert cik == '1234567890'
 
-    @patch('sec_pipeline.collector.time.sleep')
-    @patch('sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
     def test_ticker_case_insensitive_lookup(self, mock_get, _sleep, collector):
         resp = MagicMock()
         resp.raise_for_status = MagicMock()
@@ -93,14 +93,14 @@ class TestCollectorExtractSectionsPatterns:
     """SECTION_PATTERNS 클래스 상수 정합성."""
 
     def test_item_patterns_present(self, collector):
-        from sec_pipeline.collector import SECFilingCollector
+        from services.sec_pipeline.collector import SECFilingCollector
         assert 'item_1' in SECFilingCollector.SECTION_PATTERNS
         assert 'item_1a' in SECFilingCollector.SECTION_PATTERNS
         assert 'item_7' in SECFilingCollector.SECTION_PATTERNS
         assert 'item_8' in SECFilingCollector.SECTION_PATTERNS
 
     def test_each_section_has_multiple_alternatives(self, collector):
-        from sec_pipeline.collector import SECFilingCollector
+        from services.sec_pipeline.collector import SECFilingCollector
         for key, patterns in SECFilingCollector.SECTION_PATTERNS.items():
             assert isinstance(patterns, list)
             assert len(patterns) >= 1, f"{key} has no patterns"
@@ -110,12 +110,12 @@ class TestCollectorFetchEmptyAndNone:
     """fetch_filing_html(None/'') → None (조기 반환)."""
 
     def test_empty_link_does_not_call_requests(self, collector):
-        with patch('sec_pipeline.collector.requests.get') as mock_get:
+        with patch('services.sec_pipeline.collector.requests.get') as mock_get:
             assert collector.fetch_filing_html('') is None
             mock_get.assert_not_called()
 
     def test_none_link_does_not_call_requests(self, collector):
-        with patch('sec_pipeline.collector.requests.get') as mock_get:
+        with patch('services.sec_pipeline.collector.requests.get') as mock_get:
             assert collector.fetch_filing_html(None) is None
             mock_get.assert_not_called()
 
@@ -128,7 +128,7 @@ class TestNormalizerMaxParagraphs:
     """filter_paragraphs의 max_paragraphs 캡."""
 
     def test_max_paragraphs_caps_output(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         # 20개 문단, 각 문단마다 키워드 1개 hit
         paragraphs = [
@@ -140,7 +140,7 @@ class TestNormalizerMaxParagraphs:
         assert len(result) <= 5
 
     def test_returns_empty_when_no_keywords(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         text = ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. "
                 "Some random paragraph " * 5)
@@ -148,7 +148,7 @@ class TestNormalizerMaxParagraphs:
         assert result == []
 
     def test_orders_by_hit_count_descending(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         high_hits = ("Our supplier and customer rely on third-party "
                      "manufacturers competing for raw material") + " " + "x" * 60
@@ -159,7 +159,7 @@ class TestNormalizerMaxParagraphs:
         assert result[0] == high_hits.strip()
 
     def test_short_paragraphs_filtered_below_50_chars(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         short = "supplier here"  # < 50 chars, contains keyword
         long_p = ("Our supplier and customer rely on third-party "
@@ -174,19 +174,19 @@ class TestNormalizerCleanText:
     """_clean_text의 numeric entity, 빈 줄 다중 처리."""
 
     def test_removes_numeric_html_entities(self):
-        from sec_pipeline.normalizer import _clean_text
+        from services.sec_pipeline.normalizer import _clean_text
         result = _clean_text("Hello &#8217; World &#160; foo")
         assert '&#8217;' not in result
         assert '&#160;' not in result
 
     def test_strips_leading_trailing_whitespace(self):
-        from sec_pipeline.normalizer import _clean_text
+        from services.sec_pipeline.normalizer import _clean_text
         result = _clean_text("   \n\n  content here  \n\n   ")
         assert result.startswith('content')
         assert result.endswith('here')
 
     def test_collapses_4_or_more_newlines(self):
-        from sec_pipeline.normalizer import _clean_text
+        from services.sec_pipeline.normalizer import _clean_text
         result = _clean_text("line1\n\n\n\n\nline2")
         # 3개 이상 → 2개로 축약
         assert '\n\n\n' not in result
@@ -196,12 +196,12 @@ class TestNormalizerKeywordsConst:
     """SUPPLY_CHAIN_KEYWORDS 상수 정합성."""
 
     def test_keywords_is_nonempty_list(self):
-        from sec_pipeline.normalizer import SUPPLY_CHAIN_KEYWORDS
+        from services.sec_pipeline.normalizer import SUPPLY_CHAIN_KEYWORDS
         assert isinstance(SUPPLY_CHAIN_KEYWORDS, list)
         assert len(SUPPLY_CHAIN_KEYWORDS) > 10
 
     def test_keywords_contain_supplier_customer(self):
-        from sec_pipeline.normalizer import SUPPLY_CHAIN_KEYWORDS
+        from services.sec_pipeline.normalizer import SUPPLY_CHAIN_KEYWORDS
         assert 'supplier' in SUPPLY_CHAIN_KEYWORDS
         assert 'customer' in SUPPLY_CHAIN_KEYWORDS
 
@@ -212,7 +212,7 @@ class TestNormalizerKeywordsConst:
 
 @pytest.fixture
 def matcher():
-    from sec_pipeline.ticker_matcher import TickerMatcher
+    from services.sec_pipeline.ticker_matcher import TickerMatcher
     m = TickerMatcher()
     m._loaded = False
     m._stock_map = {}
@@ -223,23 +223,23 @@ class TestTickerMatcherCleanNameExtra:
     """_clean_name의 다양한 접미사."""
 
     def test_removes_plc(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('BP PLC') == 'bp'
 
     def test_removes_sa(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('LVMH S.A.') == 'lvmh'
 
     def test_removes_company(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('The Boeing Company') == 'the boeing'
 
     def test_removes_group(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Volkswagen Group') == 'volkswagen'
 
     def test_handles_comma_before_suffix(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Apple, Inc.') == 'apple'
 
 
@@ -248,7 +248,7 @@ class TestTickerMatcherAliasContext:
     """CompanyAlias의 context_sector 우선/범용 fallback."""
 
     def test_sector_specific_alias_wins(self, matcher):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Apple', ticker='AAPL',
@@ -263,7 +263,7 @@ class TestTickerMatcherAliasContext:
         assert method == 'alias'
 
     def test_falls_back_to_generic_alias(self, matcher):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Cisco', ticker='CSCO',
@@ -275,7 +275,7 @@ class TestTickerMatcherAliasContext:
         assert method == 'alias'
 
     def test_alias_case_insensitive(self, matcher):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='NVIDIA', ticker='NVDA',
@@ -291,7 +291,7 @@ class TestTickerMatcherMatchWithQueue:
 
     def test_unmatched_creates_queue_entry(self, matcher):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
@@ -327,7 +327,7 @@ class TestTickerMatcherMatchWithQueue:
 
     def test_second_occurrence_increments_count(self, matcher):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
@@ -370,7 +370,7 @@ class TestDashboardStatsStructure:
     """get_dashboard_stats가 4개 섹션 dict를 반환."""
 
     def test_empty_db_returns_zero_counts(self):
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
         stats = get_dashboard_stats()
 
         assert set(stats.keys()) == {'collection', 'track_a', 'track_b', 'matching'}
@@ -381,8 +381,8 @@ class TestDashboardStatsStructure:
 
     def test_collection_counts_by_status(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         stock = Stock.objects.create(symbol='DSH', stock_name='Dash Inc')
         for i, status in enumerate(['success', 'success', 'partial', 'failed']):
@@ -407,14 +407,14 @@ class TestQualityChecksAlerts:
     """run_post_batch_quality_checks 알림 임계값."""
 
     def test_no_alerts_under_thresholds(self):
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
         alerts = run_post_batch_quality_checks(hours_back=24)
         assert alerts == []
 
     def test_neo4j_dirty_backlog_alert(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         src = Stock.objects.create(symbol='SRC', stock_name='Source')
         tgt = Stock.objects.create(symbol='TGT', stock_name='Target')
@@ -442,8 +442,8 @@ class TestQualityChecksAlerts:
         assert any('Neo4j dirty' in a for a in alerts)
 
     def test_pending_queue_alert(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 101개 pending → 100건 초과 알림
         for i in range(101):
@@ -466,11 +466,11 @@ class TestModelMetaSettings:
     """모델 Meta 설정 확인 (db_table, ordering, get_latest_by, indexes)."""
 
     def test_raw_document_store_db_table(self):
-        from sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.models import RawDocumentStore
         assert RawDocumentStore._meta.db_table == 'sec_raw_document_store'
 
     def test_supply_chain_evidence_indexes(self):
-        from sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.models import SupplyChainEvidence
         index_fields = [
             tuple(idx.fields) for idx in SupplyChainEvidence._meta.indexes
         ]
@@ -478,16 +478,16 @@ class TestModelMetaSettings:
         assert any('neo4j_dirty' in fields for fields in index_fields)
 
     def test_business_model_snapshot_get_latest_by(self):
-        from sec_pipeline.models import BusinessModelSnapshot
+        from services.sec_pipeline.models import BusinessModelSnapshot
         # ordering이 -as_of_date여야 하며 get_latest_by는 as_of_date
         assert BusinessModelSnapshot._meta.get_latest_by == 'as_of_date'
 
     def test_company_alias_verbose_name_plural(self):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         assert CompanyAlias._meta.verbose_name_plural == 'Company aliases'
 
     def test_unmatched_queue_ordering_by_count_desc(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
         assert UnmatchedCompanyQueue._meta.ordering == ['-occurrence_count']
 
 
@@ -497,7 +497,7 @@ class TestBusinessModelEvidenceCascade:
 
     def test_cascade_delete(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             BusinessModelEvidence,
             BusinessModelSnapshot,
             RawDocumentStore,
@@ -534,7 +534,7 @@ class TestFilingProcessLogOrdering:
     """FilingProcessLog는 -started_at 내림차순으로 정렬."""
 
     def test_ordering_desc_by_started_at(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
 
         for stage in ['fmp_metadata', 'sec_fetch', 'section_extract']:
             FilingProcessLog.objects.create(
@@ -552,7 +552,7 @@ class TestFilingProcessLogOrdering:
 
 @pytest.fixture
 def extractor():
-    from sec_pipeline.extractor import GeminiExtractor
+    from services.sec_pipeline.extractor import GeminiExtractor
     return GeminiExtractor()
 
 
@@ -626,7 +626,7 @@ class TestExtractorClientReuse:
         # 초기 상태
         assert extractor._client is None
 
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = 'fake-key'
             # genai.Client 가져오기 — google.genai 모듈 mock
             mock_genai = MagicMock()

@@ -196,13 +196,13 @@ INSTALLED_APPS = [
     'news',
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
-    'rag_analysis',  # RAG 기반 AI 분석
+    'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
     'serverless',  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
-    'validation',  # 1차 검증 (최신값 캐시, 벤치마크 비교)
+    'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
-    'sec_pipeline',  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
+    'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'apps.portfolio.apps.PortfolioConfig',  # PR7 이동 — Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API

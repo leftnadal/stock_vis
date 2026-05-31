@@ -22,15 +22,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.utils import timezone
 
-from sec_pipeline.collector import SECFilingCollector
-from sec_pipeline.extractor import GeminiExtractor
-from sec_pipeline.normalizer import (
+from services.sec_pipeline.collector import SECFilingCollector
+from services.sec_pipeline.extractor import GeminiExtractor
+from services.sec_pipeline.normalizer import (
     _clean_text,
     filter_paragraphs,
     normalize_section_all,
 )
-from sec_pipeline.ticker_matcher import TickerMatcher
-from sec_pipeline.validators import (
+from services.sec_pipeline.ticker_matcher import TickerMatcher
+from services.sec_pipeline.validators import (
     MAX_SECTION_LENGTH,
     _check_item_order,
     validate_extracted_sections,
@@ -169,7 +169,7 @@ class TestCikCacheSharedAcrossInstances:
 
         c2 = SECFilingCollector()
         # c2 는 별도 인스턴스지만 클래스 캐시 공유
-        with patch('sec_pipeline.collector.requests.get') as mock_get:
+        with patch('services.sec_pipeline.collector.requests.get') as mock_get:
             cik = c2._get_cik('AAPL')
             assert cik == '0000320193'
             mock_get.assert_not_called()
@@ -193,7 +193,7 @@ class TestCollectPartialStatus:
         with patch.object(collector, 'get_filing_metadata', return_value=meta), \
              patch.object(collector, 'fetch_filing_html', return_value='<html/>'), \
              patch.object(collector, 'extract_sections', return_value=sections), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    return_value=(sections, [])):
             result = collector.collect('AAPL')
         # 비어있지 않은 섹션 = 2 (item_1, item_7) → partial
@@ -212,7 +212,7 @@ class TestCollectPartialStatus:
         with patch.object(collector, 'get_filing_metadata', return_value=meta), \
              patch.object(collector, 'fetch_filing_html', return_value='<html/>'), \
              patch.object(collector, 'extract_sections', return_value=sections), \
-             patch('sec_pipeline.collector.validate_extracted_sections',
+             patch('services.sec_pipeline.collector.validate_extracted_sections',
                    return_value=(sections, [])):
             result = collector.collect('aapl')  # 소문자 입력
         assert result['symbol'] == 'AAPL'
@@ -233,7 +233,7 @@ class TestSectionPatternsRegexCompile:
 # ===========================================================================
 
 class TestExtractorThinkingBudget:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_thinking_budget_is_zero(self, mock_get_client, extractor):
         """thinking_config.thinking_budget=0 으로 호출되어 빠른 응답."""
         client = MagicMock()
@@ -250,14 +250,14 @@ class TestExtractorThinkingBudget:
 class TestExtractorEmptyApiKey:
     def test_empty_string_api_key_raises(self, extractor):
         """API 키가 빈 문자열인 경우 falsy 체크에 걸려 ValueError."""
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = ''
             with pytest.raises(ValueError, match="GEMINI_API_KEY"):
                 extractor._get_client()
 
 
 class TestExtractSupplyChainEmptyRelationships:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_empty_relationships_array_preserved(self, mock_get_client, extractor):
         """LLM 이 {relationships: []} 반환하면 빈 리스트 그대로 보존."""
         client = MagicMock()
@@ -318,7 +318,7 @@ class TestMatchWithQueueExtra:
     def test_source_symbol_without_stock_uses_empty_sector(self, matcher):
         """source_symbol 에 해당하는 Stock 이 없으면 context_sector='' 로 매칭."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
@@ -351,7 +351,7 @@ class TestMatchWithQueueExtra:
     def test_match_succeeds_but_target_stock_missing(self, matcher):
         """match() 가 ticker 반환했지만 Stock 테이블에 없으면 evidence 업데이트 스킵."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         source_stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -383,7 +383,7 @@ class TestMatchWithQueueExtra:
 class TestMatchAliasExplicitEmptySector:
     def test_alias_empty_sector_param_uses_generic(self, matcher):
         """context_sector='' 명시 호출도 generic alias 매칭."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         CompanyAlias.objects.create(
             alias='OnlyGeneric', ticker='OG', context_sector='',
         )
@@ -413,7 +413,7 @@ class TestRawDocumentStoreWarnings:
     def test_warnings_jsonfield_persists_list(self):
         """warnings JSONField 에 리스트가 영속화."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -430,7 +430,7 @@ class TestRawDocumentStoreWarnings:
 class TestFilingProcessLogDuration:
     def test_duration_seconds_stores_float(self):
         """duration_seconds 필드는 float 저장 가능."""
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
         log = FilingProcessLog.objects.create(
             symbol='AAPL', stage='sec_fetch', status='success',
             duration_seconds=12.345,
@@ -440,7 +440,7 @@ class TestFilingProcessLogDuration:
 
     def test_status_retrying_and_skipped_valid(self):
         """retrying / skipped 도 STATUS_CHOICES 에 포함."""
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
         retry = FilingProcessLog.objects.create(
             symbol='AAPL', stage='sec_fetch', status='retrying',
         )
@@ -456,7 +456,7 @@ class TestBusinessModelEvidenceFieldChoices:
     def test_all_5_field_names_valid(self):
         """BusinessModelEvidence.field_name 의 5개 choice 모두 유효."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             BusinessModelEvidence,
             BusinessModelSnapshot,
             RawDocumentStore,
@@ -487,7 +487,7 @@ class TestBusinessModelEvidenceFieldChoices:
 @pytest.mark.django_db
 class TestUnmatchedQueueResolvedTicker:
     def test_resolved_ticker_writable(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
         entry = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Resolved Co', source_symbol='AAPL',
         )
@@ -500,7 +500,7 @@ class TestUnmatchedQueueResolvedTicker:
 
     def test_status_choices_extra_values(self):
         """duplicate / skipped status 도 STATUS_CHOICES 에 포함."""
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
         dup = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Dup', source_symbol='X', status='duplicate',
         )
@@ -515,7 +515,7 @@ class TestUnmatchedQueueResolvedTicker:
 class TestPipelineReportCrossInsights:
     def test_cross_insights_text_field(self):
         """cross_insights 텍스트 필드에 LLM 분석 결과 저장."""
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
         report = PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 12, 1),
             severity='warning',
@@ -533,7 +533,7 @@ class TestSupplyChainEvidenceHighGrade:
     def test_confidence_grade_high_persists(self):
         """confidence_grade='high' 정상 저장."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='HG', stock_name='HG Co')
         doc = RawDocumentStore.objects.create(
@@ -563,7 +563,7 @@ def stock(db):
 
 @pytest.fixture
 def doc(stock):
-    from sec_pipeline.models import RawDocumentStore
+    from services.sec_pipeline.models import RawDocumentStore
     return RawDocumentStore.objects.create(
         symbol=stock, accession_no='acc-qcx-001',
         filing_date=date(2023, 11, 1), fiscal_year=2023,
@@ -575,8 +575,8 @@ def doc(stock):
 class TestQualityChecksHealthy:
     def test_partial_only_no_failure_rate_alert(self, stock):
         """status='partial' 만 있을 때 실패율 알림 없음 (failed 만 카운트)."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(5):
             RawDocumentStore.objects.create(
@@ -590,8 +590,8 @@ class TestQualityChecksHealthy:
 
     def test_high_match_rate_no_alert(self, stock, doc):
         """매칭률 >= 30% 면 매칭률 알림 없음."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         # 4 matched / 4 unmatched = 50%
         for i in range(4):
@@ -616,8 +616,8 @@ class TestQualityChecksHealthy:
 class TestQualityChecksHoursBackParam:
     def test_smaller_window_excludes_older_records(self, stock):
         """hours_back=1 이면 24시간 전 데이터는 제외."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         old = RawDocumentStore.objects.create(
             symbol=stock, accession_no='acc-recent-fail',
@@ -636,8 +636,8 @@ class TestQualityChecksHoursBackParam:
 class TestDashboardStatsRounding:
     def test_avg_confidence_rounded_to_three_decimals(self, stock, doc):
         """avg_confidence 가 소수점 3자리로 반올림."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         # 평균 = 0.333333... → 반올림하면 0.333
         for v in (0.3, 0.3, 0.4):
@@ -658,7 +658,7 @@ class TestDashboardStatsRounding:
 class TestDashboardStatsEmptyQueue:
     def test_dashboard_returns_zero_when_no_queue(self):
         """UnmatchedCompanyQueue 가 비어있으면 모든 카운트 0."""
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
         result = get_dashboard_stats()
         assert result['matching']['queue_pending'] == 0
         assert result['matching']['queue_matched'] == 0

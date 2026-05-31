@@ -11,7 +11,7 @@ import os
 
 from django.core.management.base import BaseCommand
 
-from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
 
 class Command(BaseCommand):

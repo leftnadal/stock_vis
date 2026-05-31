@@ -45,7 +45,7 @@ class TestMergeRelationship:
     """merger.merge_relationship 단위 테스트."""
 
     def test_more_specific_rel_type_wins(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'DEPENDS_ON',  # specificity=1
@@ -62,7 +62,7 @@ class TestMergeRelationship:
         assert merged['rel_type'] == 'SUPPLIES_TO'
 
     def test_less_specific_rel_type_does_not_overwrite(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',  # specificity=5
@@ -78,7 +78,7 @@ class TestMergeRelationship:
         assert merged['rel_type'] == 'SUPPLIES_TO'
 
     def test_sources_deduplicated_and_sorted(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -94,7 +94,7 @@ class TestMergeRelationship:
         assert merged['sources'] == sorted(['sec_10k', 'llm_relation'])
 
     def test_confidence_bounded_at_0_99(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -110,7 +110,7 @@ class TestMergeRelationship:
         assert merged['confidence'] <= 0.99
 
     def test_confidence_boosted_upward(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -128,7 +128,7 @@ class TestMergeRelationship:
         assert merged['confidence'] <= 0.99
 
     def test_evidence_text_appended_to_facets(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -147,7 +147,7 @@ class TestMergeRelationship:
         assert 'fact B' in merged['relation_facets']
 
     def test_evidence_text_dedup_in_facets(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -165,7 +165,7 @@ class TestMergeRelationship:
         assert merged['relation_facets'].count('fact A') == 1
 
     def test_facets_capped_at_five(self):
-        from sec_pipeline.merger import merge_relationship
+        from services.sec_pipeline.merger import merge_relationship
 
         existing = {
             'rel_type': 'SUPPLIES_TO',
@@ -191,7 +191,7 @@ class TestCalculateEdgeDqs:
     """merger.calculate_edge_dqs DB 통합 테스트."""
 
     def test_no_evidence_returns_zero(self):
-        from sec_pipeline.merger import calculate_edge_dqs
+        from services.sec_pipeline.merger import calculate_edge_dqs
 
         result = calculate_edge_dqs('AAPL', 'TSM')
         assert result['source_count'] == 0
@@ -200,7 +200,7 @@ class TestCalculateEdgeDqs:
 
     def test_dqs_keys_separate_internal_and_user(self):
         """원칙 6: 내부용(_*) 키와 사용자용 키 분리."""
-        from sec_pipeline.merger import calculate_edge_dqs
+        from services.sec_pipeline.merger import calculate_edge_dqs
 
         result = calculate_edge_dqs('AAPL', 'TSM')
         internal_keys = {'_sufficiency', '_diversity', '_reliability', '_dqs_total'}
@@ -217,26 +217,26 @@ class TestExceptions:
     """sec_pipeline.exceptions 5개 예외 클래스 계층 검증."""
 
     def test_filing_collection_error_is_exception(self):
-        from sec_pipeline.exceptions import FilingCollectionError
+        from services.sec_pipeline.exceptions import FilingCollectionError
         assert issubclass(FilingCollectionError, Exception)
 
     def test_fmp_api_error_inherits_base(self):
-        from sec_pipeline.exceptions import FilingCollectionError, FMPApiError
+        from services.sec_pipeline.exceptions import FilingCollectionError, FMPApiError
         assert issubclass(FMPApiError, FilingCollectionError)
 
     def test_sec_fetch_error_inherits_base(self):
-        from sec_pipeline.exceptions import FilingCollectionError, SECFetchError
+        from services.sec_pipeline.exceptions import FilingCollectionError, SECFetchError
         assert issubclass(SECFetchError, FilingCollectionError)
 
     def test_section_extraction_error_inherits_base(self):
-        from sec_pipeline.exceptions import (
+        from services.sec_pipeline.exceptions import (
             FilingCollectionError,
             SectionExtractionError,
         )
         assert issubclass(SectionExtractionError, FilingCollectionError)
 
     def test_llm_extraction_error_raisable_with_message(self):
-        from sec_pipeline.exceptions import LLMExtractionError
+        from services.sec_pipeline.exceptions import LLMExtractionError
 
         with pytest.raises(LLMExtractionError) as exc_info:
             raise LLMExtractionError('Gemini timeout')
@@ -249,7 +249,7 @@ class TestExceptions:
 
 @pytest.fixture
 def collector():
-    from sec_pipeline.collector import SECFilingCollector
+    from services.sec_pipeline.collector import SECFilingCollector
     c = SECFilingCollector()
     c._cik_cache.clear()
     return c
@@ -269,8 +269,8 @@ class TestCollectorSupplementary:
         assert isinstance(result, str)
         assert 'plain' in result
 
-    @patch('sec_pipeline.collector.requests.get')
-    @patch('sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
     def test_metadata_iterates_filings_until_10k(self, mock_sleep, mock_get, collector):
         """10-K가 두 번째 항목에 있으면 정상적으로 찾아내야 한다."""
         collector._cik_cache['AAPL'] = '0000320193'
@@ -300,14 +300,14 @@ class TestCollectorSupplementary:
 
 @pytest.fixture
 def extractor():
-    from sec_pipeline.extractor import GeminiExtractor
+    from services.sec_pipeline.extractor import GeminiExtractor
     return GeminiExtractor()
 
 
 class TestExtractorSupplementary:
     """기존 test_extractor*.py 보강."""
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_supply_chain_generic_exception_reraises(self, mock_client, extractor):
         """JSONDecodeError 이외의 예외는 re-raise되어야 한다 (Celery retry용)."""
         client = MagicMock()
@@ -317,7 +317,7 @@ class TestExtractorSupplementary:
         with pytest.raises(RuntimeError, match='quota exceeded'):
             extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['some text'])
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_business_model_generic_exception_reraises(self, mock_client, extractor):
         """BM extractor도 동일하게 generic exception은 re-raise."""
         client = MagicMock()
@@ -327,7 +327,7 @@ class TestExtractorSupplementary:
         with pytest.raises(ConnectionError, match='network'):
             extractor.extract_business_model('AAPL', 'Apple', ['some text'])
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_supply_chain_returns_empty_when_relationships_is_empty_list(
         self, mock_client, extractor,
     ):
@@ -351,7 +351,7 @@ class TestNormalizerSupplementary:
 
     def test_filter_paragraphs_respects_max_one(self):
         """max_paragraphs=1이면 정확히 1개만 반환."""
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         text = '\n'.join([
             f"Paragraph {i}: our supplier provides raw material and components. " + "x " * 30
@@ -361,7 +361,7 @@ class TestNormalizerSupplementary:
         assert len(result) == 1
 
     def test_filter_paragraphs_case_insensitive_keyword_match(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
 
         text = (
             "Our SUPPLIER provides CRITICAL COMPONENTS and RAW MATERIAL via our DISTRIBUTOR. "
@@ -372,7 +372,7 @@ class TestNormalizerSupplementary:
         assert 'SUPPLIER' in result[0]
 
     def test_normalize_section_all_strips_per_section(self):
-        from sec_pipeline.normalizer import normalize_section_all
+        from services.sec_pipeline.normalizer import normalize_section_all
 
         sections = {
             'item_1': '   leading and trailing spaces   ',
@@ -390,7 +390,7 @@ class TestNormalizerSupplementary:
 
 @pytest.fixture
 def matcher():
-    from sec_pipeline.ticker_matcher import TickerMatcher
+    from services.sec_pipeline.ticker_matcher import TickerMatcher
     m = TickerMatcher()
     m._loaded = False
     m._stock_map = {}
@@ -401,11 +401,11 @@ class TestTickerMatcherSupplementary:
     """기존 test_ticker_matcher*.py 보강."""
 
     def test_clean_name_with_plc_suffix(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('BP PLC') == 'bp'
 
     def test_clean_name_with_ag_suffix(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Siemens AG') == 'siemens'
 
     def test_match_returns_tuple_of_two(self, matcher):
@@ -418,7 +418,7 @@ class TestTickerMatcherSupplementary:
     def test_match_with_queue_creates_pending_entry_when_unmatched(self, matcher):
         """매칭 실패 시 UnmatchedCompanyQueue에 pending 적재."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
@@ -457,7 +457,7 @@ class TestModelsSupplementary:
     """기존 test_models*.py 보강."""
 
     def test_filing_process_log_str_format(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
 
         log = FilingProcessLog.objects.create(
             symbol='AAPL', stage='sec_fetch', status='success',
@@ -468,7 +468,7 @@ class TestModelsSupplementary:
         assert 'success' in s
 
     def test_unmatched_company_queue_str_with_count(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
 
         entry = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Foundry Asia', source_symbol='AAPL',
@@ -482,7 +482,7 @@ class TestModelsSupplementary:
         """unique_together=(alias, context_sector) 이므로 country는 다르고 sector 같으면 충돌."""
         from django.db import IntegrityError, transaction
 
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Acme', ticker='ACM1',
@@ -499,7 +499,7 @@ class TestModelsSupplementary:
     def test_supply_chain_evidence_cascade_on_document_delete(self):
         """RawDocumentStore 삭제 시 SupplyChainEvidence도 cascade."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
@@ -530,7 +530,7 @@ def qc_stock(db):
 
 @pytest.fixture
 def qc_doc(qc_stock):
-    from sec_pipeline.models import RawDocumentStore
+    from services.sec_pipeline.models import RawDocumentStore
     return RawDocumentStore.objects.create(
         symbol=qc_stock, accession_no='acc-qcs-001',
         filing_date=date(2023, 11, 1), fiscal_year=2023,
@@ -544,8 +544,8 @@ class TestQualityChecksSupplementary:
 
     def test_low_failure_rate_no_alert(self, qc_stock):
         """실패율 ≤ 20%면 알림 없음."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(10):
             RawDocumentStore.objects.create(
@@ -564,8 +564,8 @@ class TestQualityChecksSupplementary:
 
     def test_old_records_outside_window_ignored(self, qc_stock):
         """hours_back 윈도우 밖의 레코드는 무시되어야 한다."""
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         old_doc = RawDocumentStore.objects.create(
             symbol=qc_stock, accession_no='acc-old-1',
@@ -583,8 +583,8 @@ class TestQualityChecksSupplementary:
 
     def test_dashboard_stats_avg_confidence_rounded(self, qc_stock, qc_doc):
         """avg_confidence는 3자리로 반올림."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         SupplyChainEvidence.objects.create(
             source_document=qc_doc, source_company=qc_stock,
@@ -599,8 +599,8 @@ class TestQualityChecksSupplementary:
 
     def test_dashboard_stats_neo4j_pending_excludes_unmatched(self, qc_stock, qc_doc):
         """neo4j_pending = dirty=True AND target IS NOT NULL — unmatched는 제외."""
-        from sec_pipeline.models import SupplyChainEvidence
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.models import SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         # matched + dirty=True → pending에 포함
         SupplyChainEvidence.objects.create(
@@ -629,7 +629,7 @@ class TestValidatorsSupplementary:
 
     def test_empty_sections_with_valid_full_text_no_warnings(self):
         """모든 섹션이 비어있으면 길이 경고도 없어야 한다 (continue)."""
-        from sec_pipeline.validators import validate_extracted_sections
+        from services.sec_pipeline.validators import validate_extracted_sections
 
         full_text = (
             "Item 1. Business overview.\n"
@@ -647,7 +647,7 @@ class TestValidatorsSupplementary:
 
     def test_missing_item_1_in_full_text_skips_order_check(self):
         """item_1 또는 item_7이 원문에 없으면 순서 검증 스킵."""
-        from sec_pipeline.validators import validate_extracted_sections
+        from services.sec_pipeline.validators import validate_extracted_sections
 
         # item_1 없음 → 순서 검증 스킵
         full_text = "Item 7. MD&A discussion." + " content" * 200
@@ -663,7 +663,7 @@ class TestValidatorsSupplementary:
 
     def test_section_within_expected_range_no_length_warning(self):
         """EXPECTED_MIN_LENGTH 이상 길이는 warn 없음."""
-        from sec_pipeline.validators import (
+        from services.sec_pipeline.validators import (
             EXPECTED_MIN_LENGTH,
             validate_extracted_sections,
         )

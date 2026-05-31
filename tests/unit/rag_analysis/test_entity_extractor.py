@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_analysis.services.entity_extractor import (
+from services.rag_analysis.services.entity_extractor import (
     EntityExtractor,
     EntityNormalizer,
     ExtractedEntities,

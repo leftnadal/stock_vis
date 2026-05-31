@@ -24,7 +24,7 @@ def get_business_model(symbol: str, for_api: bool = False) -> Optional[dict]:
     Returns:
         dict 또는 None
     """
-    from sec_pipeline.models import BusinessModelSnapshot
+    from services.sec_pipeline.models import BusinessModelSnapshot
 
     snapshot = (
         BusinessModelSnapshot.objects.filter(symbol_id=symbol.upper())
@@ -65,7 +65,7 @@ def get_business_model_evidence(symbol: str, field_name: str = None) -> list:
     Returns:
         list[dict]
     """
-    from sec_pipeline.models import BusinessModelEvidence, BusinessModelSnapshot
+    from services.sec_pipeline.models import BusinessModelEvidence, BusinessModelSnapshot
 
     snapshot = (
         BusinessModelSnapshot.objects.filter(symbol_id=symbol.upper())

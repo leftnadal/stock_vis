@@ -19,7 +19,7 @@ import pytest
 class TestBusinessModelEvidence:
     def test_create_and_str(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             BusinessModelEvidence,
             BusinessModelSnapshot,
             RawDocumentStore,
@@ -53,7 +53,7 @@ class TestBusinessModelEvidence:
 @pytest.mark.django_db
 class TestPipelineIntelligenceReport:
     def test_create_and_str(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
 
         report = PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 11, 15),
@@ -73,7 +73,7 @@ class TestPipelineIntelligenceReport:
         assert report.recommended_actions == []
 
     def test_severity_choices(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
 
         critical_report = PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 11, 16), severity='critical',
@@ -82,7 +82,7 @@ class TestPipelineIntelligenceReport:
         assert critical_report.severity == 'critical'
 
     def test_get_latest_by_report_date(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
 
         PipelineIntelligenceReport.objects.create(
             report_date=date(2023, 11, 1), severity='healthy',
@@ -98,7 +98,7 @@ class TestPipelineIntelligenceReport:
 class TestRawDocumentStoreOrdering:
     def test_ordering_by_filing_date_desc(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.models import RawDocumentStore
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
         old = RawDocumentStore.objects.create(
@@ -121,7 +121,7 @@ class TestRawDocumentStoreOrdering:
 class TestCompanyAliasMultiSector:
     def test_same_alias_different_sectors_allowed(self):
         """unique_together=(alias, context_sector) 이므로 sector만 다르면 OK."""
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         CompanyAlias.objects.create(
             alias='Apex', ticker='APX1', context_sector='Technology',
@@ -133,7 +133,7 @@ class TestCompanyAliasMultiSector:
         assert CompanyAlias.objects.filter(alias='Apex').count() == 2
 
     def test_source_default_manual_seed(self):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
 
         alias = CompanyAlias.objects.create(
             alias='Test Co', ticker='TST', context_sector='',
@@ -144,7 +144,7 @@ class TestCompanyAliasMultiSector:
 @pytest.mark.django_db
 class TestUnmatchedCompanyQueueExtra:
     def test_source_sectors_persisted_as_list(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
 
         entry = UnmatchedCompanyQueue.objects.create(
             raw_company_name='X Co', source_symbol='AAPL',
@@ -154,7 +154,7 @@ class TestUnmatchedCompanyQueueExtra:
         assert entry.source_sectors == ['Technology', 'Healthcare']
 
     def test_fuzzy_candidates_default_empty(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
 
         entry = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Y Co', source_symbol='MSFT',
@@ -168,7 +168,7 @@ class TestBusinessModelSnapshotMeta:
     def test_get_latest_by_as_of_date(self):
         """get_latest_by = 'as_of_date' (created_at 아님)."""
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
+        from services.sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
 
         stock = Stock.objects.create(symbol='NFLX', stock_name='Netflix')
         doc = RawDocumentStore.objects.create(

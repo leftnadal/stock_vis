@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from rag_analysis.services.graphrag_scorer import (
+from services.rag_analysis.services.graphrag_scorer import (
     GraphRAGScorer,
     ScoringWeights,
     get_graphrag_scorer,
@@ -281,8 +281,8 @@ class TestGraphRAGScorer:
 class TestGetGraphRAGScorer:
     """get_graphrag_scorer 헬퍼 함수 테스트"""
 
-    @patch("rag_analysis.services.graphrag_scorer.CrossEncoderReranker")
-    @patch("rag_analysis.services.graphrag_scorer.get_neo4j_service")
+    @patch("services.rag_analysis.services.graphrag_scorer.CrossEncoderReranker")
+    @patch("services.rag_analysis.services.graphrag_scorer.get_neo4j_service")
     def test_get_scorer_default(self, mock_neo4j, mock_reranker):
         """기본 scorer 생성"""
         scorer = get_graphrag_scorer()
@@ -292,8 +292,8 @@ class TestGetGraphRAGScorer:
         assert scorer.weights.graph_rel == 0.3
         assert scorer.weights.recency == 0.2
 
-    @patch("rag_analysis.services.graphrag_scorer.CrossEncoderReranker")
-    @patch("rag_analysis.services.graphrag_scorer.get_neo4j_service")
+    @patch("services.rag_analysis.services.graphrag_scorer.CrossEncoderReranker")
+    @patch("services.rag_analysis.services.graphrag_scorer.get_neo4j_service")
     def test_get_scorer_custom_weights(self, mock_neo4j, mock_reranker):
         """커스텀 가중치로 scorer 생성"""
         weights = ScoringWeights(rerank=0.6, graph_rel=0.2, recency=0.2)

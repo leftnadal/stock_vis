@@ -9,7 +9,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from rag_analysis.services.context_compressor import (
+from services.rag_analysis.services.context_compressor import (
     ContextCompressor,
     QuestionAwareCompressor,
     get_context_compressor,

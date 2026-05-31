@@ -20,7 +20,7 @@ class TestCollectorHelpers:
     """SECFilingCollector private helper methods."""
 
     def setup_method(self):
-        from sec_pipeline.collector import SECFilingCollector
+        from services.sec_pipeline.collector import SECFilingCollector
         self.collector = SECFilingCollector()
         self.collector._cik_cache.clear()
 
@@ -79,8 +79,8 @@ class TestCollectorHelpers:
         assert self.collector.fetch_filing_html('') is None
         assert self.collector.fetch_filing_html(None) is None
 
-    @patch('sec_pipeline.collector.time.sleep')
-    @patch('sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
     def test_fetch_filing_html_success(self, mock_get, mock_sleep):
         resp = MagicMock()
         resp.text = '<html>body</html>'
@@ -90,8 +90,8 @@ class TestCollectorHelpers:
         assert result == '<html>body</html>'
         mock_get.assert_called_once()
 
-    @patch('sec_pipeline.collector.time.sleep')
-    @patch('sec_pipeline.collector.requests.get')
+    @patch('services.sec_pipeline.collector.time.sleep')
+    @patch('services.sec_pipeline.collector.requests.get')
     def test_get_cik_handles_http_error_silently(self, mock_get, mock_sleep):
         import requests as requests_lib
         mock_get.side_effect = requests_lib.exceptions.RequestException("net down")
@@ -106,7 +106,7 @@ class TestGeminiExtractor:
     """GeminiExtractor — LLM 호출은 전부 mock."""
 
     def setup_method(self):
-        from sec_pipeline.extractor import GeminiExtractor
+        from services.sec_pipeline.extractor import GeminiExtractor
         self.extractor = GeminiExtractor()
 
     def test_extract_supply_chain_empty_paragraphs(self):
@@ -207,7 +207,7 @@ class TestNormalizer:
     """normalize_section_all + filter_paragraphs."""
 
     def test_normalize_section_all_concats_item_1_and_7(self):
-        from sec_pipeline.normalizer import normalize_section_all
+        from services.sec_pipeline.normalizer import normalize_section_all
         sections = {
             'item_1': 'Business overview text.',
             'item_1a': 'Risk factors text.',
@@ -220,12 +220,12 @@ class TestNormalizer:
         assert 'Risk factors' not in result
 
     def test_normalize_section_all_empty_sections(self):
-        from sec_pipeline.normalizer import normalize_section_all
+        from services.sec_pipeline.normalizer import normalize_section_all
         assert normalize_section_all({}) == ''
         assert normalize_section_all({'item_1': '', 'item_7': ''}) == ''
 
     def test_clean_text_removes_html_entities(self):
-        from sec_pipeline.normalizer import _clean_text
+        from services.sec_pipeline.normalizer import _clean_text
         text = 'Hello&nbsp;world&amp;more&#160;text'
         result = _clean_text(text)
         assert '&nbsp;' not in result
@@ -234,13 +234,13 @@ class TestNormalizer:
         assert 'Hello' in result and 'world' in result
 
     def test_clean_text_collapses_excess_blank_lines(self):
-        from sec_pipeline.normalizer import _clean_text
+        from services.sec_pipeline.normalizer import _clean_text
         text = 'A\n\n\n\n\nB'
         result = _clean_text(text)
         assert '\n\n\n' not in result
 
     def test_filter_paragraphs_picks_keyword_hit_lines(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
         text = (
             "Our key supplier relationships are critical to operations and growth strategy.\n"
             "The weather has been quite nice this year in the northern regions of the world.\n"
@@ -252,13 +252,13 @@ class TestNormalizer:
         assert not any('weather' in p for p in result)
 
     def test_filter_paragraphs_drops_short_paragraphs(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
         # 50자 미만이라 모두 제외되어야 함
         text = "supplier short\ncustomer brief\ncontract too short to keep"
         assert filter_paragraphs(text) == []
 
     def test_filter_paragraphs_respects_max(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
         lines = []
         for i in range(20):
             lines.append(
@@ -271,7 +271,7 @@ class TestNormalizer:
         assert len(result) <= 3
 
     def test_filter_paragraphs_dedups_by_prefix(self):
-        from sec_pipeline.normalizer import filter_paragraphs
+        from services.sec_pipeline.normalizer import filter_paragraphs
         # 동일한 첫 200자 → 중복 제거되어야 함
         base = "Our supplier and customer relationships in the global supply chain " * 5
         text = f"{base}\n{base}"
@@ -287,22 +287,22 @@ class TestTickerMatcherHelpers:
     """순수 함수 테스트 (DB 없이)."""
 
     def test_clean_name_removes_inc(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Apple Inc.') == 'apple'
         assert TickerMatcher._clean_name('Apple Inc') == 'apple'
 
     def test_clean_name_removes_corp(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Microsoft Corp') == 'microsoft'
         assert TickerMatcher._clean_name('Microsoft Corporation') == 'microsoft'
 
     def test_clean_name_removes_ltd_and_llc(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         assert TickerMatcher._clean_name('Foo Ltd.') == 'foo'
         assert TickerMatcher._clean_name('Bar LLC') == 'bar'
 
     def test_clean_name_returns_lowercase(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         result = TickerMatcher._clean_name('TESLA, Inc.')
         assert result == 'tesla'
 
@@ -312,18 +312,18 @@ class TestTickerMatcherMatch:
     """match() 메서드 — DB 캐시 사용."""
 
     def test_match_empty_name_returns_none(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         matcher = TickerMatcher()
         assert matcher.match('') == (None, None)
 
     def test_match_too_short_name_returns_none(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         matcher = TickerMatcher()
         assert matcher.match('A') == (None, None)
 
     def test_match_exact_stock_name(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         matcher = TickerMatcher()
         ticker, method = matcher.match('Apple Inc.')
@@ -332,7 +332,7 @@ class TestTickerMatcherMatch:
 
     def test_match_exact_case_insensitive(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='MSFT', stock_name='Microsoft Corporation')
         matcher = TickerMatcher()
         ticker, method = matcher.match('microsoft corporation')
@@ -340,8 +340,8 @@ class TestTickerMatcherMatch:
 
     def test_match_alias_takes_priority(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import CompanyAlias
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
 
         Stock.objects.create(symbol='TSMC', stock_name='Taiwan Semiconductor')
         CompanyAlias.objects.create(
@@ -353,8 +353,8 @@ class TestTickerMatcherMatch:
         assert method == 'alias'
 
     def test_match_alias_context_sector_specific(self):
-        from sec_pipeline.models import CompanyAlias
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
 
         CompanyAlias.objects.create(
             alias='Delta', ticker='DAL', context_sector='Industrials',
@@ -368,7 +368,7 @@ class TestTickerMatcherMatch:
 
     def test_match_fuzzy_matches_close_enough(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         Stock.objects.create(symbol='NVDA', stock_name='NVIDIA Corporation')
         matcher = TickerMatcher()
         ticker, method = matcher.match('NVIDIA Corp')
@@ -377,7 +377,7 @@ class TestTickerMatcherMatch:
         assert method in ('exact', 'fuzzy')
 
     def test_match_no_match_returns_none(self):
-        from sec_pipeline.ticker_matcher import TickerMatcher
+        from services.sec_pipeline.ticker_matcher import TickerMatcher
         matcher = TickerMatcher()
         ticker, method = matcher.match('Completely Unknown Company XYZ 12345')
         assert ticker is None
@@ -392,7 +392,7 @@ class TestTickerMatcherMatch:
 class TestModelStrAndDefaults:
 
     def test_company_alias_str_with_sector(self):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         alias = CompanyAlias.objects.create(
             alias='Foo', ticker='FOO', context_sector='Tech',
         )
@@ -400,14 +400,14 @@ class TestModelStrAndDefaults:
         assert 'Foo' in s and 'FOO' in s and 'Tech' in s
 
     def test_company_alias_str_without_sector(self):
-        from sec_pipeline.models import CompanyAlias
+        from services.sec_pipeline.models import CompanyAlias
         alias = CompanyAlias.objects.create(alias='Bar', ticker='BAR')
         s = str(alias)
         assert 'Bar' in s and 'BAR' in s
         assert '[' not in s
 
     def test_unmatched_queue_str_and_defaults(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
         q = UnmatchedCompanyQueue.objects.create(
             raw_company_name='Foo Bar Ltd',
             source_symbol='AAPL',
@@ -420,7 +420,7 @@ class TestModelStrAndDefaults:
         assert 'pending' in str(q)
 
     def test_filing_process_log_str(self):
-        from sec_pipeline.models import FilingProcessLog
+        from services.sec_pipeline.models import FilingProcessLog
         log = FilingProcessLog.objects.create(
             symbol='AAPL', stage='sec_fetch', status='success',
         )
@@ -429,7 +429,7 @@ class TestModelStrAndDefaults:
 
     def test_supply_chain_evidence_str(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple Inc.')
         doc = RawDocumentStore.objects.create(
             symbol=stock, accession_no='acc-x-001',
@@ -446,7 +446,7 @@ class TestModelStrAndDefaults:
 
     def test_supply_chain_evidence_defaults(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
         stock = Stock.objects.create(symbol='NVDA', stock_name='NVIDIA')
         doc = RawDocumentStore.objects.create(
             symbol=stock, accession_no='acc-x-002',
@@ -467,7 +467,7 @@ class TestModelStrAndDefaults:
 
     def test_business_model_snapshot_str_and_defaults(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
+        from services.sec_pipeline.models import BusinessModelSnapshot, RawDocumentStore
         stock = Stock.objects.create(symbol='SHOP', stock_name='Shopify')
         doc = RawDocumentStore.objects.create(
             symbol=stock, accession_no='acc-y-001',
@@ -482,7 +482,7 @@ class TestModelStrAndDefaults:
         assert 'SHOP' in str(snap)
 
     def test_pipeline_intelligence_report_str(self):
-        from sec_pipeline.models import PipelineIntelligenceReport
+        from services.sec_pipeline.models import PipelineIntelligenceReport
         rep = PipelineIntelligenceReport.objects.create(
             report_date=date(2024, 4, 1), severity='warning',
         )
@@ -499,12 +499,12 @@ class TestModelStrAndDefaults:
 class TestQualityChecksFresh:
 
     def test_empty_db_no_alerts(self):
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
         alerts = run_post_batch_quality_checks(hours_back=24)
         assert alerts == []
 
     def test_dashboard_stats_zero_state(self):
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
         stats = get_dashboard_stats()
         assert stats['collection']['total'] == 0
         assert stats['track_a']['total_evidences'] == 0
@@ -514,8 +514,8 @@ class TestQualityChecksFresh:
 
     def test_high_collection_failure_rate_triggers_alert(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
         # 5건 중 3건 failed → 60% > 20% 임계
@@ -532,8 +532,8 @@ class TestQualityChecksFresh:
         assert any('수집 실패율' in a for a in alerts)
 
     def test_unmatched_queue_overflow_triggers_alert(self):
-        from sec_pipeline.models import UnmatchedCompanyQueue
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import UnmatchedCompanyQueue
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         for i in range(101):
             UnmatchedCompanyQueue.objects.create(
@@ -544,8 +544,8 @@ class TestQualityChecksFresh:
 
     def test_low_match_rate_triggers_alert(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
         doc = RawDocumentStore.objects.create(
@@ -566,8 +566,8 @@ class TestQualityChecksFresh:
 
     def test_low_confidence_triggers_alert(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
-        from sec_pipeline.quality_checks import run_post_batch_quality_checks
+        from services.sec_pipeline.models import RawDocumentStore, SupplyChainEvidence
+        from services.sec_pipeline.quality_checks import run_post_batch_quality_checks
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
         target = Stock.objects.create(symbol='TGT', stock_name='Target Co')
@@ -590,13 +590,13 @@ class TestQualityChecksFresh:
 
     def test_dashboard_stats_populated_counts(self):
         from packages.shared.stocks.models import Stock
-        from sec_pipeline.models import (
+        from services.sec_pipeline.models import (
             BusinessModelSnapshot,
             RawDocumentStore,
             SupplyChainEvidence,
             UnmatchedCompanyQueue,
         )
-        from sec_pipeline.quality_checks import get_dashboard_stats
+        from services.sec_pipeline.quality_checks import get_dashboard_stats
 
         stock = Stock.objects.create(symbol='AAPL', stock_name='Apple')
         doc = RawDocumentStore.objects.create(

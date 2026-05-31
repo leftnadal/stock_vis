@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from sec_pipeline.extractor import GeminiExtractor
+from services.sec_pipeline.extractor import GeminiExtractor
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -31,7 +31,7 @@ def _mock_genai_response(text):
 # ---------------------------------------------------------------------------
 
 class TestExtractSupplyChain:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_successful_extraction(self, mock_client, extractor):
         result_json = json.dumps({
             'relationships': [
@@ -59,7 +59,7 @@ class TestExtractSupplyChain:
         result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', [])
         assert result == {'relationships': []}
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_json_parse_error(self, mock_client, extractor):
         client = MagicMock()
         client.models.generate_content.return_value = _mock_genai_response('not valid json{{{')
@@ -69,7 +69,7 @@ class TestExtractSupplyChain:
         assert result['relationships'] == []
         assert 'error' in result
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_missing_relationships_key(self, mock_client, extractor):
         client = MagicMock()
         client.models.generate_content.return_value = _mock_genai_response('{"data": []}')
@@ -78,7 +78,7 @@ class TestExtractSupplyChain:
         result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['text'])
         assert result == {'relationships': []}
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_empty_response_text(self, mock_client, extractor):
         response = MagicMock()
         response.text = None
@@ -95,7 +95,7 @@ class TestExtractSupplyChain:
 # ---------------------------------------------------------------------------
 
 class TestExtractBusinessModel:
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_successful_extraction(self, mock_client, extractor):
         result_json = json.dumps({
             'direct_customer_contact': {
@@ -117,7 +117,7 @@ class TestExtractBusinessModel:
         result = extractor.extract_business_model('AAPL', 'Apple Inc.', [])
         assert result == {}
 
-    @patch('sec_pipeline.extractor.GeminiExtractor._get_client')
+    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
     def test_json_error(self, mock_client, extractor):
         client = MagicMock()
         client.models.generate_content.return_value = _mock_genai_response('bad json')
@@ -133,7 +133,7 @@ class TestExtractBusinessModel:
 
 class TestGetClient:
     def test_no_api_key_raises(self, extractor):
-        with patch('sec_pipeline.extractor.settings') as mock_settings:
+        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = None
             with pytest.raises(ValueError, match="GEMINI_API_KEY"):
                 extractor._get_client()
