@@ -793,3 +793,60 @@ pat_dynamic = re.compile(
 - URL prefix `api/v1/chainsight/` 보존 (외부 API consumer 호환성)
 
 **다음 PR**: PR7 (apps/portfolio/) — **최고 위험도** (coach 포함, 슬라이스 병행 ❌ 금지). 풀 회귀 + IDENTICAL 31/31 필수.
+
+### monorepo PR7 — apps/portfolio 이관 (단일 앱 최대 규모, IDENTICAL 7/7) (2026-05-31)
+
+**결과**: `portfolio/` → `apps/portfolio/` 이동 완료 (history 보존, R100, rename 없음 위치만, label='portfolio' 명시).
+
+**STEP 0 사전 조사 결과 (READ-ONLY)**:
+- IDENTICAL = **정적 무결성 테스트** (`portfolio/tests/test_static_integrity.py` 7+ 케이스, binary 해시 아님)
+- 거짓양성 위험 = **0** (import 갱신 후 모듈 import 성공하면 자동 통과)
+- 외부 결합 = 0 (메인 코드 호출 0, tests 40 + scripts 일부)
+- coach = `portfolio/services/coach/` (E1~E6 + prompt_builder)
+- 보호 케이스: migration to= 11건 + URL namespace='portfolio_api' + URL name 'portfolio-X'
+- 슬라이스 병행 = 없음
+
+**commit SHA (PR7 6 commits, branch `monorepo/pr7-portfolio`)**:
+- `66c52bc` — pre-step: ruff format baseline cleanup (89 파일)
+- `225ff47` — mv portfolio → apps/portfolio (R100, rename 없음)
+- `0f935ce` — import 경로 갱신 (Python 545 + 동적 mock.patch 15 + scripts importlib 5 = **565건**)
+- `38c61c3` — Django INSTALLED_APPS + URL 2건 (namespace 보존) + AppConfig.name + label='portfolio' 명시
+- `8ef118a` — fixture 경로 하드코딩 갱신 (8건, 신규 패턴)
+- `{c6}` — DECISIONS + PROGRESS 정착
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**답습 자산 활용 (PR2~PR6 부록 A)**:
+- Python static import regex: **545건** (175 파일, 단일 PR 최대)
+- 동적 mock.patch: 15건
+- scripts importlib (dotted-path 문자열): 5건
+- Django 패치 4종 (INSTALLED_APPS / urls 2건 + namespace 보존 / AppConfig.name+label)
+- label='portfolio' 효과: migration to= 11건 + ContentType 자동 보존
+
+**신규 발견 — fixture 경로 하드코딩 (부록 A 추가)**:
+- `FIXTURE_DIR = Path("portfolio/tests/fixtures/...")` 형식 8건
+- ast-grep/정적 import sweep으로 잡히지 않음 — STEP 6 pytest 4 errors로 노출
+- regex 패턴: `(?<!apps/)(?<!docs/)portfolio/tests/fixtures` → `apps/portfolio/tests/fixtures`
+- PR8 답습 후보로 박음
+
+**검증 결과 (8단계)**:
+- ① Django check: System check identified no issues
+- ② ★ **IDENTICAL test_static_integrity: 7/7 PASSED** (import 갱신 후 자동 통과 — 거짓양성 0 입증)
+- ③ vitest: N/A (frontend 변경 0)
+- ④ makemigrations --dry-run: **No changes detected** (★ label 보존 효과 입증)
+- ⑤ ruff: main 1009 → PR7 1010 (+1, 회귀 0)
+- ⑥ health_check: 6✅/0⚠/1❌ baseline 평행
+- ⑦ cost_ledger: N/A (LLM 호출 0)
+- ⑧ pytest 풀 회귀: **3172 passed, 52 skipped** (PR6 baseline 완전 일치, **회귀 0건**)
+
+**신규 학습 (PR8 답습 후보)**:
+1. **IDENTICAL = 정적 무결성** (binary 해시 아님): plan 위험등급 "최고"는 메커니즘 미확인 기반이었음. 실측 결과 PR6 동급 + 규모만 큼. import 갱신 정확하면 자동 통과.
+2. **fixture 경로 하드코딩**: `Path(...) / "portfolio" / "tests" / ...` 형식. STEP 3 정적 import sweep으로 누락, STEP 6 pytest fail로 노출. regex 보호 패턴 (`(?<!apps/)(?<!docs/)`) 필수.
+3. **URL namespace 보존**: `include(..., namespace='portfolio_api')` 형식. namespace 문자열은 dotted-path 무관, 그대로 유지 (reverse() 호환성).
+4. **단일 앱 최대 규모 일괄 처리**: 565건 변환 한 commit 안에 박음. Django 패치 분리(별 commit) + fixture 경로 추가 commit으로 분할 — 의미 단위 5 commits 정합.
+
+**미처리 (PR7 외)**:
+- frontend portfolio 자산 3건 (`frontend/app/portfolio`, `components/portfolio`, `services/portfolio.ts`) — B-3 답습, 별도 PR
+- URL prefix `api/`, `api/v1/`은 그대로 (Django 외부 consumer 호환성)
+
+**다음 PR**: PR8 — 루트 메타 정리 + 이관 5건 잔여 (모든 apps/packages/integrations/services 트랙 정착 후). 루트 잔존 7 Django 앱 (rag_analysis, serverless, macro, news, thesis, sec_pipeline, validation) 분류 결정.
