@@ -8,15 +8,39 @@ import logging
 logger = logging.getLogger(__name__)
 
 CONSTRAINTS = [
-    {"name": "stock_ticker", "cypher": "CREATE CONSTRAINT stock_ticker IF NOT EXISTS FOR (s:Stock) REQUIRE s.ticker IS UNIQUE", "description": ":Stock ticker 유니크"},
-    {"name": "sector_name", "cypher": "CREATE CONSTRAINT sector_name IF NOT EXISTS FOR (s:Sector) REQUIRE s.name IS UNIQUE", "description": ":Sector name 유니크"},
-    {"name": "industry_name", "cypher": "CREATE CONSTRAINT industry_name IF NOT EXISTS FOR (i:Industry) REQUIRE i.name IS UNIQUE", "description": ":Industry name 유니크"},
-    {"name": "theme_name", "cypher": "CREATE CONSTRAINT theme_name IF NOT EXISTS FOR (t:Theme) REQUIRE t.name IS UNIQUE", "description": ":Theme name 유니크 (DC-2 이후)"},
+    {
+        "name": "stock_ticker",
+        "cypher": "CREATE CONSTRAINT stock_ticker IF NOT EXISTS FOR (s:Stock) REQUIRE s.ticker IS UNIQUE",
+        "description": ":Stock ticker 유니크",
+    },
+    {
+        "name": "sector_name",
+        "cypher": "CREATE CONSTRAINT sector_name IF NOT EXISTS FOR (s:Sector) REQUIRE s.name IS UNIQUE",
+        "description": ":Sector name 유니크",
+    },
+    {
+        "name": "industry_name",
+        "cypher": "CREATE CONSTRAINT industry_name IF NOT EXISTS FOR (i:Industry) REQUIRE i.name IS UNIQUE",
+        "description": ":Industry name 유니크",
+    },
+    {
+        "name": "theme_name",
+        "cypher": "CREATE CONSTRAINT theme_name IF NOT EXISTS FOR (t:Theme) REQUIRE t.name IS UNIQUE",
+        "description": ":Theme name 유니크 (DC-2 이후)",
+    },
 ]
 
 INDEXES = [
-    {"name": "stock_sector", "cypher": "CREATE INDEX stock_sector IF NOT EXISTS FOR (s:Stock) ON (s.sector)", "description": ":Stock 섹터별 필터링"},
-    {"name": "stock_community", "cypher": "CREATE INDEX stock_community IF NOT EXISTS FOR (s:Stock) ON (s.community_id)", "description": ":Stock GDS 커뮤니티 조회"},
+    {
+        "name": "stock_sector",
+        "cypher": "CREATE INDEX stock_sector IF NOT EXISTS FOR (s:Stock) ON (s.sector)",
+        "description": ":Stock 섹터별 필터링",
+    },
+    {
+        "name": "stock_community",
+        "cypher": "CREATE INDEX stock_community IF NOT EXISTS FOR (s:Stock) ON (s.community_id)",
+        "description": ":Stock GDS 커뮤니티 조회",
+    },
     # ⚠️ 로드맵 정의 이외의 인덱스 추가 금지. 필요 시 로드맵 먼저 수정.
 ]
 
@@ -57,6 +81,14 @@ def verify_schema(graph_repo) -> dict:
     expected_i = {idx["name"] for idx in INDEXES}
 
     return {
-        "constraints": {"expected": len(CONSTRAINTS), "found": sorted(expected_c & existing_names), "missing": sorted(expected_c - existing_names)},
-        "indexes": {"expected": len(INDEXES), "found": sorted(expected_i & existing_idx), "missing": sorted(expected_i - existing_idx)},
+        "constraints": {
+            "expected": len(CONSTRAINTS),
+            "found": sorted(expected_c & existing_names),
+            "missing": sorted(expected_c - existing_names),
+        },
+        "indexes": {
+            "expected": len(INDEXES),
+            "found": sorted(expected_i & existing_idx),
+            "missing": sorted(expected_i - existing_idx),
+        },
     }

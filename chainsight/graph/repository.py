@@ -13,10 +13,22 @@ class GraphRepository(Protocol):
     """그래프 DB 접근 인터페이스. 백엔드 교체 시 이 Protocol을 구현."""
 
     def get_node(self, ticker: str) -> Dict[str, Any] | None: ...
-    def get_neighbors(self, ticker: str, depth: int = 1, rel_types: List[str] | None = None) -> Dict: ...
-    def upsert_node(self, label: str, key_field: str, key_value: str, properties: Dict[str, Any]) -> None: ...
-    def upsert_edge(self, from_ticker: str, to_ticker: str, rel_type: str, properties: Dict[str, Any]) -> None: ...
-    def run_query(self, cypher: str, params: Dict[str, Any] | None = None) -> List[Dict[str, Any]]: ...
+    def get_neighbors(
+        self, ticker: str, depth: int = 1, rel_types: List[str] | None = None
+    ) -> Dict: ...
+    def upsert_node(
+        self, label: str, key_field: str, key_value: str, properties: Dict[str, Any]
+    ) -> None: ...
+    def upsert_edge(
+        self,
+        from_ticker: str,
+        to_ticker: str,
+        rel_type: str,
+        properties: Dict[str, Any],
+    ) -> None: ...
+    def run_query(
+        self, cypher: str, params: Dict[str, Any] | None = None
+    ) -> List[Dict[str, Any]]: ...
     def close(self) -> None: ...
 
 
@@ -39,12 +51,15 @@ class Neo4jGraphRepository:
         if self._driver is None or self._pid != current_pid:
             try:
                 from neo4j import GraphDatabase
+
                 if self._driver is not None:
                     try:
                         self._driver.close()
                     except Exception:
                         pass
-                self._driver = GraphDatabase.driver(self._uri, auth=(self._user, self._password))
+                self._driver = GraphDatabase.driver(
+                    self._uri, auth=(self._user, self._password)
+                )
                 self._pid = current_pid
                 logger.debug(f"Neo4j driver created for PID {current_pid}")
             except Exception as e:
@@ -62,7 +77,9 @@ class Neo4jGraphRepository:
         results = self.run_query(query, {"ticker": ticker})
         return results[0]["node"] if results else None
 
-    def get_neighbors(self, ticker: str, depth: int = 1, rel_types: List[str] | None = None) -> Dict[str, Any]:
+    def get_neighbors(
+        self, ticker: str, depth: int = 1, rel_types: List[str] | None = None
+    ) -> Dict[str, Any]:
         if rel_types:
             rel_filter = ":" + "|".join(rel_types)
         else:
@@ -91,13 +108,21 @@ class Neo4jGraphRepository:
             "edges": [e for e in row["edges"] if e.get("type")],
         }
 
-    def upsert_node(self, label: str, key_field: str, key_value: str, properties: Dict[str, Any]) -> None:
+    def upsert_node(
+        self, label: str, key_field: str, key_value: str, properties: Dict[str, Any]
+    ) -> None:
         props_set = ", ".join(f"n.{k} = ${k}" for k in properties)
         query = f"MERGE (n:{label} {{{key_field}: $key_value}}) SET {props_set}"
         params = {"key_value": key_value, **properties}
         self.run_query(query, params)
 
-    def upsert_edge(self, from_ticker: str, to_ticker: str, rel_type: str, properties: Dict[str, Any]) -> None:
+    def upsert_edge(
+        self,
+        from_ticker: str,
+        to_ticker: str,
+        rel_type: str,
+        properties: Dict[str, Any],
+    ) -> None:
         props_set = ", ".join(f"r.{k} = ${k}" for k in properties) if properties else ""
         set_clause = f"SET {props_set}" if props_set else ""
         query = f"""
@@ -109,7 +134,9 @@ class Neo4jGraphRepository:
         params = {"from_ticker": from_ticker, "to_ticker": to_ticker, **properties}
         self.run_query(query, params)
 
-    def bulk_upsert_nodes(self, label: str, key_field: str, nodes_data: List[Dict[str, Any]]) -> int:
+    def bulk_upsert_nodes(
+        self, label: str, key_field: str, nodes_data: List[Dict[str, Any]]
+    ) -> int:
         query = f"""
         UNWIND $batch AS row
         MERGE (n:{label} {{{key_field}: row.{key_field}}})
@@ -118,7 +145,13 @@ class Neo4jGraphRepository:
         self.run_query(query, {"batch": nodes_data})
         return len(nodes_data)
 
-    def bulk_upsert_edges(self, rel_type: str, edges_data: List[Dict[str, Any]], from_key: str = "from_ticker", to_key: str = "to_ticker") -> int:
+    def bulk_upsert_edges(
+        self,
+        rel_type: str,
+        edges_data: List[Dict[str, Any]],
+        from_key: str = "from_ticker",
+        to_key: str = "to_ticker",
+    ) -> int:
         query = f"""
         UNWIND $batch AS row
         MATCH (a:Stock {{ticker: row.{from_key}}})
@@ -128,7 +161,9 @@ class Neo4jGraphRepository:
         self.run_query(query, {"batch": edges_data})
         return len(edges_data)
 
-    def run_query(self, cypher: str, params: Dict[str, Any] | None = None) -> List[Dict[str, Any]]:
+    def run_query(
+        self, cypher: str, params: Dict[str, Any] | None = None
+    ) -> List[Dict[str, Any]]:
         try:
             with self.driver.session() as session:
                 result = session.run(cypher, params or {})
@@ -149,7 +184,9 @@ class Neo4jGraphRepository:
 
     def edge_count(self, rel_type: str | None = None) -> int:
         if rel_type:
-            result = self.run_query(f"MATCH ()-[r:{rel_type}]->() RETURN count(r) AS cnt")
+            result = self.run_query(
+                f"MATCH ()-[r:{rel_type}]->() RETURN count(r) AS cnt"
+            )
         else:
             result = self.run_query("MATCH ()-[r]->() RETURN count(r) AS cnt")
         return result[0]["cnt"] if result else 0

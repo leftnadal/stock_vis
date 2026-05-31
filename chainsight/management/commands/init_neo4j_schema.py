@@ -31,7 +31,9 @@ class Command(BaseCommand):
         repo = get_graph_repository()
 
         if not repo.health_check():
-            self.stderr.write(self.style.ERROR("Neo4j 연결 실패. 서버 상태를 확인하세요."))
+            self.stderr.write(
+                self.style.ERROR("Neo4j 연결 실패. 서버 상태를 확인하세요.")
+            )
             return
         self.stdout.write(self.style.SUCCESS("Neo4j 연결 OK"))
 
@@ -54,7 +56,9 @@ class Command(BaseCommand):
 
         self.stdout.write("스키마 적용 시작...")
         result = initialize_schema(repo)
-        self.stdout.write(f"  Constraints: {result['constraints_applied']}/{len(CONSTRAINTS)}")
+        self.stdout.write(
+            f"  Constraints: {result['constraints_applied']}/{len(CONSTRAINTS)}"
+        )
         self.stdout.write(f"  Indexes: {result['indexes_applied']}/{len(INDEXES)}")
 
         if result["errors"]:
@@ -69,7 +73,10 @@ class Command(BaseCommand):
     def _print_verification(self, repo):
         self.stdout.write("스키마 검증...")
         status = verify_schema(repo)
-        for label, data in [("Constraints", status["constraints"]), ("Indexes", status["indexes"])]:
+        for label, data in [
+            ("Constraints", status["constraints"]),
+            ("Indexes", status["indexes"]),
+        ]:
             self.stdout.write(f"  {label} ({len(data['found'])}/{data['expected']}):")
             for name in data["found"]:
                 self.stdout.write(self.style.SUCCESS(f"    {name}"))

@@ -6,8 +6,8 @@ from .path_watchlist import (
 )
 
 __all__ = [
-    'SavedPathListSerializer',
-    'SavedPathDetailSerializer',
-    'SavedPathCreateSerializer',
-    'PathActionSerializer',
+    "SavedPathListSerializer",
+    "SavedPathDetailSerializer",
+    "SavedPathCreateSerializer",
+    "PathActionSerializer",
 ]

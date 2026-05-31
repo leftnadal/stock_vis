@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
         qs = Stock.objects.all()
         if options["limit"]:
-            qs = qs[:options["limit"]]
+            qs = qs[: options["limit"]]
 
         before = repo.node_count("Stock")
         self.stdout.write(f"현재 Neo4j :Stock: {before}개, 로드 대상: {qs.count()}개")
@@ -30,9 +30,13 @@ class Command(BaseCommand):
         if options["dry_run"]:
             nodes = get_stock_data_for_neo4j(qs)
             for n in nodes[:5]:
-                self.stdout.write(f"  {n.get('ticker')} — {n.get('name')} ({n.get('sector')})")
+                self.stdout.write(
+                    f"  {n.get('ticker')} — {n.get('name')} ({n.get('sector')})"
+                )
             return
 
         result = load_stocks_to_neo4j(qs)
-        self.stdout.write(f"성공: {result['loaded']}, 실패: {result['errors']}, Neo4j 합계: {result['neo4j_total']}")
+        self.stdout.write(
+            f"성공: {result['loaded']}, 실패: {result['errors']}, Neo4j 합계: {result['neo4j_total']}"
+        )
         self.stdout.write(self.style.SUCCESS("Stock 노드 로드 완료"))

@@ -12,10 +12,10 @@ class SeedSnapshot(models.Model):
     market_date = models.DateField(
         unique=True,
         db_index=True,
-        help_text='시드 대상 시장일(NYSE 기준).',
+        help_text="시드 대상 시장일(NYSE 기준).",
     )
     payload = models.JSONField(
-        help_text='SeedListView 응답 전체 구조(date/total_seeds/sector_summary/seeds).',
+        help_text="SeedListView 응답 전체 구조(date/total_seeds/sector_summary/seeds).",
     )
     total_seeds = models.PositiveIntegerField(default=0)
     sector_count = models.PositiveIntegerField(default=0)
@@ -23,10 +23,10 @@ class SeedSnapshot(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-market_date']
+        ordering = ["-market_date"]
         indexes = [
-            models.Index(fields=['-market_date'], name='seed_snap_date_desc_idx'),
+            models.Index(fields=["-market_date"], name="seed_snap_date_desc_idx"),
         ]
 
     def __str__(self):
-        return f'SeedSnapshot({self.market_date}, seeds={self.total_seeds})'
+        return f"SeedSnapshot({self.market_date}, seeds={self.total_seeds})"

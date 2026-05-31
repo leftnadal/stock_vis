@@ -28,6 +28,7 @@ STOCK_FIELD_MAP = {
 
 # ── CS-1-1: Stock 노드 ──
 
+
 def get_stock_data_for_neo4j(queryset=None) -> List[Dict[str, Any]]:
     if queryset is None:
         queryset = Stock.objects.all()
@@ -53,7 +54,7 @@ def load_stocks_to_neo4j(queryset=None, batch_size: int = 100) -> Dict[str, Any]
     nodes = get_stock_data_for_neo4j(queryset)
     result = {"total": len(nodes), "loaded": 0, "errors": 0, "batches": 0}
     for i in range(0, len(nodes), batch_size):
-        batch = nodes[i:i + batch_size]
+        batch = nodes[i : i + batch_size]
         try:
             repo.bulk_upsert_nodes("Stock", "ticker", batch)
             result["loaded"] += len(batch)
@@ -67,9 +68,16 @@ def load_stocks_to_neo4j(queryset=None, batch_size: int = 100) -> Dict[str, Any]
 
 # ── CS-1-2: Sector/Industry 노드 + BELONGS_TO ──
 
+
 def load_sectors_to_neo4j() -> Dict[str, Any]:
     repo = get_graph_repository()
-    result = {"sectors_created": 0, "industries_created": 0, "belongs_to_sector": 0, "belongs_to_industry": 0, "errors": []}
+    result = {
+        "sectors_created": 0,
+        "industries_created": 0,
+        "belongs_to_sector": 0,
+        "belongs_to_industry": 0,
+        "errors": [],
+    }
 
     try:
         r = repo.run_query("""
@@ -116,6 +124,7 @@ def load_sectors_to_neo4j() -> Dict[str, Any]:
 
 # ── CS-1-3: Peer 관계 ──
 
+
 def fetch_finnhub_peers(symbol: str) -> List[str]:
     url = "https://finnhub.io/api/v1/stock/peers"
     params = {"symbol": symbol, "token": settings.FINNHUB_API_KEY}
@@ -136,15 +145,28 @@ def fetch_fmp_peers(symbol: str) -> List[str]:
         if r.status_code == 200:
             data = r.json()
             if data and isinstance(data, list):
-                return [d["symbol"] for d in data if d.get("symbol") and d["symbol"] != symbol]
+                return [
+                    d["symbol"]
+                    for d in data
+                    if d.get("symbol") and d["symbol"] != symbol
+                ]
     except Exception:
         pass
     return []
 
 
-def collect_all_peers(symbols: List[str], use_fmp: bool = False, finnhub_delay: float = 1.1) -> Dict[str, Any]:
+def collect_all_peers(
+    symbols: List[str], use_fmp: bool = False, finnhub_delay: float = 1.1
+) -> Dict[str, Any]:
     pairs: Dict[Tuple[str, str], Dict[str, Any]] = {}
-    stats = {"symbols_processed": 0, "finnhub_success": 0, "fmp_success": 0, "finnhub_fail": 0, "fmp_fail": 0, "total_pairs": 0}
+    stats = {
+        "symbols_processed": 0,
+        "finnhub_success": 0,
+        "fmp_success": 0,
+        "finnhub_fail": 0,
+        "fmp_fail": 0,
+        "total_pairs": 0,
+    }
 
     for i, symbol in enumerate(symbols):
         stats["symbols_processed"] += 1
@@ -178,28 +200,36 @@ def collect_all_peers(symbols: List[str], use_fmp: bool = False, finnhub_delay: 
             time.sleep(0.3)
 
         if (i + 1) % 50 == 0:
-            logger.info(f"Peer 수집: {i+1}/{len(symbols)}, pairs: {len(pairs)}")
+            logger.info(f"Peer 수집: {i + 1}/{len(symbols)}, pairs: {len(pairs)}")
 
     stats["total_pairs"] = len(pairs)
     return {"pairs": pairs, "stats": stats}
 
 
-def load_peers_to_neo4j(pairs: Dict[Tuple[str, str], Dict[str, Any]], batch_size: int = 200) -> Dict[str, Any]:
+def load_peers_to_neo4j(
+    pairs: Dict[Tuple[str, str], Dict[str, Any]], batch_size: int = 200
+) -> Dict[str, Any]:
     repo = get_graph_repository()
     result = {"loaded": 0, "errors": 0}
 
-    edges = [{"from_ticker": a, "to_ticker": b, "source": p.get("source", "")} for (a, b), p in pairs.items()]
+    edges = [
+        {"from_ticker": a, "to_ticker": b, "source": p.get("source", "")}
+        for (a, b), p in pairs.items()
+    ]
 
     for i in range(0, len(edges), batch_size):
-        batch = edges[i:i + batch_size]
+        batch = edges[i : i + batch_size]
         try:
-            repo.run_query("""
+            repo.run_query(
+                """
                 UNWIND $batch AS row
                 MATCH (a:Stock {ticker: row.from_ticker})
                 MATCH (b:Stock {ticker: row.to_ticker})
                 MERGE (a)-[r:PEER_OF]-(b)
                 SET r.source = row.source
-            """, {"batch": batch})
+            """,
+                {"batch": batch},
+            )
             result["loaded"] += len(batch)
         except Exception as e:
             result["errors"] += len(batch)

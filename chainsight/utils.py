@@ -5,7 +5,7 @@ Chain Sight 유틸리티 함수
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-NYSE_TZ = ZoneInfo('America/New_York')
+NYSE_TZ = ZoneInfo("America/New_York")
 
 
 def get_market_date() -> date:

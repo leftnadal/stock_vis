@@ -8,37 +8,36 @@ from django.db import migrations, models
 
 def migrate_neo4j_synced_to_dirty(apps, schema_editor):
     """기존 neo4j_synced=True (동기화됨) → neo4j_dirty=False (반전)."""
-    CompanyChainProfile = apps.get_model('chainsight', 'CompanyChainProfile')
+    CompanyChainProfile = apps.get_model("chainsight", "CompanyChainProfile")
     # neo4j_synced=True였던 row만 neo4j_dirty=False로 변경. 나머지는 default=True 유지.
     CompanyChainProfile.objects.filter(neo4j_synced=True).update(neo4j_dirty=False)
 
 
 def migrate_neo4j_dirty_to_synced(apps, schema_editor):
     """역방향: neo4j_dirty=False (반영됨) → neo4j_synced=True."""
-    CompanyChainProfile = apps.get_model('chainsight', 'CompanyChainProfile')
+    CompanyChainProfile = apps.get_model("chainsight", "CompanyChainProfile")
     CompanyChainProfile.objects.filter(neo4j_dirty=False).update(neo4j_synced=True)
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chainsight', '0007_seedsnapshot'),
+        ("chainsight", "0007_seedsnapshot"),
     ]
 
     operations = [
         # ── RelationConfidence: synced_to_neo4j 제거 ──
         migrations.RemoveIndex(
-            model_name='relationconfidence',
-            name='chainsight__synced__2206c6_idx',
+            model_name="relationconfidence",
+            name="chainsight__synced__2206c6_idx",
         ),
         migrations.RemoveField(
-            model_name='relationconfidence',
-            name='synced_to_neo4j',
+            model_name="relationconfidence",
+            name="synced_to_neo4j",
         ),
         # ── CompanyChainProfile: neo4j_synced → neo4j_dirty (의미 반전) ──
         migrations.AddField(
-            model_name='companychainprofile',
-            name='neo4j_dirty',
+            model_name="companychainprofile",
+            name="neo4j_dirty",
             field=models.BooleanField(db_index=True, default=True),
         ),
         migrations.RunPython(
@@ -46,7 +45,7 @@ class Migration(migrations.Migration):
             reverse_code=migrate_neo4j_dirty_to_synced,
         ),
         migrations.RemoveField(
-            model_name='companychainprofile',
-            name='neo4j_synced',
+            model_name="companychainprofile",
+            name="neo4j_synced",
         ),
     ]

@@ -4,26 +4,49 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chainsight', '0006_add_savedpath_pathaction'),
+        ("chainsight", "0006_add_savedpath_pathaction"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='SeedSnapshot',
+            name="SeedSnapshot",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('market_date', models.DateField(db_index=True, help_text='시드 대상 시장일(NYSE 기준).', unique=True)),
-                ('payload', models.JSONField(help_text='SeedListView 응답 전체 구조(date/total_seeds/sector_summary/seeds).')),
-                ('total_seeds', models.PositiveIntegerField(default=0)),
-                ('sector_count', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "market_date",
+                    models.DateField(
+                        db_index=True,
+                        help_text="시드 대상 시장일(NYSE 기준).",
+                        unique=True,
+                    ),
+                ),
+                (
+                    "payload",
+                    models.JSONField(
+                        help_text="SeedListView 응답 전체 구조(date/total_seeds/sector_summary/seeds)."
+                    ),
+                ),
+                ("total_seeds", models.PositiveIntegerField(default=0)),
+                ("sector_count", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'ordering': ['-market_date'],
-                'indexes': [models.Index(fields=['-market_date'], name='seed_snap_date_desc_idx')],
+                "ordering": ["-market_date"],
+                "indexes": [
+                    models.Index(
+                        fields=["-market_date"], name="seed_snap_date_desc_idx"
+                    )
+                ],
             },
         ),
     ]

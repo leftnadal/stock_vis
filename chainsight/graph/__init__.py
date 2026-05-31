@@ -13,6 +13,7 @@ def get_graph_repository():
         from django.conf import settings
 
         from .repository import Neo4jGraphRepository
+
         _repository = Neo4jGraphRepository(
             uri=settings.NEO4J_URI,
             user=settings.NEO4J_USERNAME,

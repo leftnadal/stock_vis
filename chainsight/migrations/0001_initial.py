@@ -5,82 +5,313 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
     dependencies = [
-        ('stocks', '0007_sp500constituent_industry_and_more'),
+        ("stocks", "0007_sp500constituent_industry_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CompanyCapitalDNA',
+            name="CompanyCapitalDNA",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='capital_dna', serialize=False, to='stocks.stock')),
-                ('rd_to_revenue', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('rd_trend', models.CharField(blank=True, choices=[('increasing', 'Increasing'), ('stable', 'Stable'), ('decreasing', 'Decreasing')], max_length=20)),
-                ('capex_to_revenue', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('capex_trend', models.CharField(blank=True, choices=[('expanding', 'Expanding'), ('stable', 'Stable'), ('harvesting', 'Harvesting')], max_length=20)),
-                ('dividend_payout', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('buyback_yield', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('total_shareholder_return_pct', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('net_cash_position', models.BigIntegerField(blank=True, null=True)),
-                ('cash_to_market_cap', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('capital_type', models.CharField(blank=True, choices=[('heavy_investor', 'Heavy Investor'), ('balanced', 'Balanced'), ('shareholder_first', 'Shareholder First'), ('cash_hoarder', 'Cash Hoarder'), ('aggressive_growth', 'Aggressive Growth'), ('unknown', 'Unknown')], max_length=30)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="capital_dna",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                (
+                    "rd_to_revenue",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "rd_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("increasing", "Increasing"),
+                            ("stable", "Stable"),
+                            ("decreasing", "Decreasing"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "capex_to_revenue",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "capex_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("expanding", "Expanding"),
+                            ("stable", "Stable"),
+                            ("harvesting", "Harvesting"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "dividend_payout",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "buyback_yield",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "total_shareholder_return_pct",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                ("net_cash_position", models.BigIntegerField(blank=True, null=True)),
+                (
+                    "cash_to_market_cap",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "capital_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("heavy_investor", "Heavy Investor"),
+                            ("balanced", "Balanced"),
+                            ("shareholder_first", "Shareholder First"),
+                            ("cash_hoarder", "Cash Hoarder"),
+                            ("aggressive_growth", "Aggressive Growth"),
+                            ("unknown", "Unknown"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_capital_dna',
+                "db_table": "chainsight_capital_dna",
             },
         ),
         migrations.CreateModel(
-            name='CompanyGrowthStage',
+            name="CompanyGrowthStage",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='growth_stage', serialize=False, to='stocks.stock')),
-                ('stage', models.CharField(choices=[('early_growth', 'Early Growth'), ('accelerating', 'Accelerating'), ('mature', 'Mature'), ('cash_cow', 'Cash Cow'), ('turnaround', 'Turnaround'), ('declining', 'Declining')], default='mature', max_length=30)),
-                ('revenue_cagr_3y', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('revenue_cagr_5y', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('revenue_acceleration', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('net_income_positive_years', models.IntegerField(default=0)),
-                ('net_income_turned_positive', models.BooleanField(default=False)),
-                ('fcf_trend', models.CharField(blank=True, choices=[('growing', 'Growing'), ('stable', 'Stable'), ('declining', 'Declining')], max_length=20)),
-                ('fcf_positive_years', models.IntegerField(default=0)),
-                ('dividend_started', models.BooleanField(default=False)),
-                ('dividend_years', models.IntegerField(default=0)),
-                ('confidence', models.CharField(choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], default='medium', max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="growth_stage",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                (
+                    "stage",
+                    models.CharField(
+                        choices=[
+                            ("early_growth", "Early Growth"),
+                            ("accelerating", "Accelerating"),
+                            ("mature", "Mature"),
+                            ("cash_cow", "Cash Cow"),
+                            ("turnaround", "Turnaround"),
+                            ("declining", "Declining"),
+                        ],
+                        default="mature",
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "revenue_cagr_3y",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "revenue_cagr_5y",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "revenue_acceleration",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                ("net_income_positive_years", models.IntegerField(default=0)),
+                ("net_income_turned_positive", models.BooleanField(default=False)),
+                (
+                    "fcf_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("growing", "Growing"),
+                            ("stable", "Stable"),
+                            ("declining", "Declining"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("fcf_positive_years", models.IntegerField(default=0)),
+                ("dividend_started", models.BooleanField(default=False)),
+                ("dividend_years", models.IntegerField(default=0)),
+                (
+                    "confidence",
+                    models.CharField(
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        default="medium",
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_growth_stage',
+                "db_table": "chainsight_growth_stage",
             },
         ),
         migrations.CreateModel(
-            name='CompanySensitivityProfile',
+            name="CompanySensitivityProfile",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='sensitivity_profile', serialize=False, to='stocks.stock')),
-                ('debt_to_equity', models.DecimalField(blank=True, decimal_places=4, max_digits=10, null=True)),
-                ('net_debt', models.BigIntegerField(blank=True, null=True)),
-                ('interest_coverage', models.DecimalField(blank=True, decimal_places=4, max_digits=10, null=True)),
-                ('debt_maturity_risk', models.CharField(blank=True, choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], max_length=10)),
-                ('rate_sensitivity', models.CharField(blank=True, choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], help_text='종합 금리 민감도 (debt_to_equity + interest_coverage + maturity 기반)', max_length=10)),
-                ('foreign_revenue_pct', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('primary_currency_exposure', models.CharField(blank=True, max_length=10)),
-                ('forex_sensitivity', models.CharField(blank=True, choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], help_text='종합 환율 민감도 (foreign_revenue_pct 기반)', max_length=10)),
-                ('beta', models.DecimalField(blank=True, decimal_places=4, max_digits=6, null=True)),
-                ('beta_sector_adj', models.DecimalField(blank=True, decimal_places=4, max_digits=6, null=True)),
-                ('commodity_sensitivity', models.CharField(blank=True, choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], help_text='종합 원자재 민감도 (revenue_structure.commodity_exposures 기반)', max_length=10)),
-                ('sector', models.CharField(blank=True, max_length=100)),
-                ('industry', models.CharField(blank=True, max_length=100)),
-                ('is_regulated_industry', models.BooleanField(default=False)),
-                ('regulation_type', models.CharField(blank=True, choices=[('fda', 'FDA/Healthcare'), ('financial', 'Financial'), ('environmental', 'Environmental'), ('telecom', 'Telecom'), ('none', 'None')], max_length=50)),
-                ('data_source', models.JSONField(default=dict)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="sensitivity_profile",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                (
+                    "debt_to_equity",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=10, null=True
+                    ),
+                ),
+                ("net_debt", models.BigIntegerField(blank=True, null=True)),
+                (
+                    "interest_coverage",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=10, null=True
+                    ),
+                ),
+                (
+                    "debt_maturity_risk",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "rate_sensitivity",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        help_text="종합 금리 민감도 (debt_to_equity + interest_coverage + maturity 기반)",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "foreign_revenue_pct",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "primary_currency_exposure",
+                    models.CharField(blank=True, max_length=10),
+                ),
+                (
+                    "forex_sensitivity",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        help_text="종합 환율 민감도 (foreign_revenue_pct 기반)",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "beta",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=6, null=True
+                    ),
+                ),
+                (
+                    "beta_sector_adj",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=6, null=True
+                    ),
+                ),
+                (
+                    "commodity_sensitivity",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        help_text="종합 원자재 민감도 (revenue_structure.commodity_exposures 기반)",
+                        max_length=10,
+                    ),
+                ),
+                ("sector", models.CharField(blank=True, max_length=100)),
+                ("industry", models.CharField(blank=True, max_length=100)),
+                ("is_regulated_industry", models.BooleanField(default=False)),
+                (
+                    "regulation_type",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("fda", "FDA/Healthcare"),
+                            ("financial", "Financial"),
+                            ("environmental", "Environmental"),
+                            ("telecom", "Telecom"),
+                            ("none", "None"),
+                        ],
+                        max_length=50,
+                    ),
+                ),
+                ("data_source", models.JSONField(default=dict)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_sensitivity_profile',
+                "db_table": "chainsight_sensitivity_profile",
             },
         ),
     ]

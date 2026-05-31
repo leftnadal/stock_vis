@@ -18,12 +18,12 @@ from packages.shared.stocks.models import SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)
 
-FINNHUB_BASE_URL = 'https://finnhub.io/api/v1'
+FINNHUB_BASE_URL = "https://finnhub.io/api/v1"
 
 # 자발적 매수/매도만 집계 (스톡옵션 행사, 세금, 선물 제외)
-BUY_CODES = {'P'}       # P = Open market Purchase
-SELL_CODES = {'S'}      # S = Open market Sale
-EXCLUDED_CODES = {'M', 'F', 'G', 'A', 'J', 'C', 'W', 'X'}
+BUY_CODES = {"P"}  # P = Open market Purchase
+SELL_CODES = {"S"}  # S = Open market Sale
+EXCLUDED_CODES = {"M", "F", "G", "A", "J", "C", "W", "X"}
 
 
 def _fetch_insider_transactions(symbol: str) -> list:
@@ -37,7 +37,7 @@ def _fetch_insider_transactions(symbol: str) -> list:
     try:
         resp = requests.get(
             f"{FINNHUB_BASE_URL}/stock/insider-transactions",
-            params={'symbol': symbol, 'token': api_key},
+            params={"symbol": symbol, "token": api_key},
             timeout=15,
         )
         if resp.status_code != 200:
@@ -45,7 +45,7 @@ def _fetch_insider_transactions(symbol: str) -> list:
             return []
 
         data = resp.json()
-        return data.get('data', [])
+        return data.get("data", [])
 
     except Exception as e:
         logger.debug(f"Finnhub insider {symbol}: {e}")
@@ -56,29 +56,30 @@ def _classify_insider_signal(buy_count: int, sell_count: int) -> str:
     """buy/sell ratio 기반 insider_signal 분류."""
     total = buy_count + sell_count
     if total < 3:
-        return 'neutral'  # 통계적 의미 없음
+        return "neutral"  # 통계적 의미 없음
 
     ratio = buy_count / total
 
     if ratio >= 0.80:
-        return 'strong_buy'
+        return "strong_buy"
     elif ratio >= 0.60:
-        return 'buy'
+        return "buy"
     elif ratio >= 0.40:
-        return 'neutral'
+        return "neutral"
     elif ratio >= 0.20:
-        return 'sell'
-    return 'strong_sell'
+        return "sell"
+    return "strong_sell"
 
 
-def _classify_smart_money(insider_signal: str, institutional_pct: float,
-                          short_interest_pct: float) -> str:
+def _classify_smart_money(
+    insider_signal: str, institutional_pct: float, short_interest_pct: float
+) -> str:
     """종합 smart money signal."""
     score = 0
 
-    if insider_signal in ('strong_buy', 'buy'):
+    if insider_signal in ("strong_buy", "buy"):
         score += 1
-    elif insider_signal in ('strong_sell', 'sell'):
+    elif insider_signal in ("strong_sell", "sell"):
         score -= 1
 
     if institutional_pct and institutional_pct > 70:
@@ -91,16 +92,18 @@ def _classify_smart_money(insider_signal: str, institutional_pct: float,
             score -= 1
 
     if score >= 2:
-        return 'bullish'
+        return "bullish"
     elif score <= -1:
-        return 'bearish'
-    return 'neutral'
+        return "bearish"
+    return "neutral"
 
 
 @shared_task(bind=True, max_retries=1, soft_time_limit=3600, time_limit=3660)
 def calculate_insider_signals(self):
     """S&P 500 전체 InsiderSignal 계산."""
-    sp500 = list(SP500Constituent.objects.filter(is_active=True).values_list('symbol', flat=True))
+    sp500 = list(
+        SP500Constituent.objects.filter(is_active=True).values_list("symbol", flat=True)
+    )
     success, fail, skip = 0, 0, 0
 
     cutoff = datetime.now() - timedelta(days=90)
@@ -117,10 +120,10 @@ def calculate_insider_signals(self):
                 CompanyInsiderSignal.objects.update_or_create(
                     symbol=stock,
                     defaults={
-                        'insider_signal': 'neutral',
-                        'smart_money_signal': 'neutral',
-                        'data_freshness': datetime.now().date(),
-                    }
+                        "insider_signal": "neutral",
+                        "smart_money_signal": "neutral",
+                        "data_freshness": datetime.now().date(),
+                    },
                 )
                 skip += 1
                 continue
@@ -131,21 +134,21 @@ def calculate_insider_signals(self):
             net_amount = 0
 
             for tx in transactions:
-                tx_date_str = tx.get('transactionDate', '')
+                tx_date_str = tx.get("transactionDate", "")
                 if not tx_date_str:
                     continue
 
                 try:
-                    tx_date = datetime.strptime(tx_date_str, '%Y-%m-%d')
+                    tx_date = datetime.strptime(tx_date_str, "%Y-%m-%d")
                 except ValueError:
                     continue
 
                 if tx_date < cutoff:
                     continue
 
-                code = tx.get('transactionCode', '')
-                change = tx.get('change', 0) or 0
-                price = tx.get('transactionPrice', 0) or 0
+                code = tx.get("transactionCode", "")
+                change = tx.get("change", 0) or 0
+                price = tx.get("transactionPrice", 0) or 0
 
                 if code in BUY_CODES:
                     buy_count += 1
@@ -162,12 +165,12 @@ def calculate_insider_signals(self):
             CompanyInsiderSignal.objects.update_or_create(
                 symbol=stock,
                 defaults={
-                    'insider_buy_count_90d': buy_count,
-                    'insider_sell_count_90d': sell_count,
-                    'insider_net_amount_90d': int(net_amount) if net_amount else None,
-                    'insider_signal': insider_signal,
-                    'smart_money_signal': smart_money,
-                    'data_freshness': datetime.now().date(),
+                    "insider_buy_count_90d": buy_count,
+                    "insider_sell_count_90d": sell_count,
+                    "insider_net_amount_90d": int(net_amount) if net_amount else None,
+                    "insider_signal": insider_signal,
+                    "smart_money_signal": smart_money,
+                    "data_freshness": datetime.now().date(),
                 },
             )
             success += 1

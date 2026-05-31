@@ -4,93 +4,198 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chainsight', '0003_companychainprofile_companyrevenuestructure_and_more'),
+        ("chainsight", "0003_companychainprofile_companyrevenuestructure_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='companychainprofile',
-            name='neo4j_synced',
+            model_name="companychainprofile",
+            name="neo4j_synced",
             field=models.BooleanField(db_index=True, default=False),
         ),
         migrations.AddField(
-            model_name='companychainprofile',
-            name='neo4j_synced_at',
+            model_name="companychainprofile",
+            name="neo4j_synced_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.CreateModel(
-            name='CoMentionEdge',
+            name="CoMentionEdge",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('symbol_a', models.CharField(db_index=True, max_length=10)),
-                ('symbol_b', models.CharField(db_index=True, max_length=10)),
-                ('co_mention_count', models.IntegerField(default=0)),
-                ('last_co_mention_date', models.DateField(blank=True, null=True)),
-                ('first_co_mention_date', models.DateField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("symbol_a", models.CharField(db_index=True, max_length=10)),
+                ("symbol_b", models.CharField(db_index=True, max_length=10)),
+                ("co_mention_count", models.IntegerField(default=0)),
+                ("last_co_mention_date", models.DateField(blank=True, null=True)),
+                ("first_co_mention_date", models.DateField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_co_mention_edge',
-                'indexes': [models.Index(fields=['symbol_a'], name='chainsight__symbol__2e286b_idx'), models.Index(fields=['symbol_b'], name='chainsight__symbol__2f07cb_idx'), models.Index(fields=['-co_mention_count'], name='chainsight__co_ment_15580b_idx')],
-                'unique_together': {('symbol_a', 'symbol_b')},
+                "db_table": "chainsight_co_mention_edge",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol_a"], name="chainsight__symbol__2e286b_idx"
+                    ),
+                    models.Index(
+                        fields=["symbol_b"], name="chainsight__symbol__2f07cb_idx"
+                    ),
+                    models.Index(
+                        fields=["-co_mention_count"],
+                        name="chainsight__co_ment_15580b_idx",
+                    ),
+                ],
+                "unique_together": {("symbol_a", "symbol_b")},
             },
         ),
         migrations.CreateModel(
-            name='PriceCoMovement',
+            name="PriceCoMovement",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('symbol_a', models.CharField(db_index=True, max_length=10)),
-                ('symbol_b', models.CharField(db_index=True, max_length=10)),
-                ('correlation', models.DecimalField(decimal_places=4, max_digits=5)),
-                ('period', models.CharField(choices=[('30d', '30일'), ('90d', '90일'), ('180d', '180일')], default='90d', max_length=10)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("symbol_a", models.CharField(db_index=True, max_length=10)),
+                ("symbol_b", models.CharField(db_index=True, max_length=10)),
+                ("correlation", models.DecimalField(decimal_places=4, max_digits=5)),
+                (
+                    "period",
+                    models.CharField(
+                        choices=[("30d", "30일"), ("90d", "90일"), ("180d", "180일")],
+                        default="90d",
+                        max_length=10,
+                    ),
+                ),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
             ],
             options={
-                'db_table': 'chainsight_price_co_movement',
-                'indexes': [models.Index(fields=['symbol_a'], name='chainsight__symbol__2b236d_idx'), models.Index(fields=['-correlation'], name='chainsight__correla_dead19_idx')],
-                'unique_together': {('symbol_a', 'symbol_b', 'period')},
+                "db_table": "chainsight_price_co_movement",
+                "indexes": [
+                    models.Index(
+                        fields=["symbol_a"], name="chainsight__symbol__2b236d_idx"
+                    ),
+                    models.Index(
+                        fields=["-correlation"], name="chainsight__correla_dead19_idx"
+                    ),
+                ],
+                "unique_together": {("symbol_a", "symbol_b", "period")},
             },
         ),
         migrations.CreateModel(
-            name='RelationConfidence',
+            name="RelationConfidence",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('symbol_a', models.CharField(db_index=True, max_length=10)),
-                ('symbol_b', models.CharField(db_index=True, max_length=10)),
-                ('relation_type', models.CharField(choices=[('PEER_OF', 'Peer'), ('SUPPLIES_TO', 'Supplies To'), ('CO_MENTIONED', 'Co-mentioned'), ('PRICE_CORRELATED', 'Price Correlated'), ('HAS_THEME', 'Has Theme'), ('COMPETES_WITH', 'Competes With'), ('HELD_BY_SAME_FUND', 'Held by Same Fund')], max_length=30)),
-                ('relation_category', models.CharField(choices=[('truth', 'Truth'), ('market', 'Market')], default='truth', max_length=10)),
-                ('canonical_direction', models.CharField(choices=[('a→b', 'A to B'), ('b→a', 'B to A'), ('both', 'Undirected')], default='both', max_length=5)),
-                ('relation_status', models.CharField(choices=[('hidden', 'Hidden'), ('weak', 'Weak'), ('probable', 'Probable'), ('confirmed', 'Confirmed'), ('stale', 'Stale')], default='hidden', max_length=12)),
-                ('truth_score', models.FloatField(default=0)),
-                ('market_score', models.FloatField(blank=True, null=True)),
-                ('investment_relevance', models.FloatField(blank=True, null=True)),
-                ('evidence_tier_best', models.IntegerField(default=3)),
-                ('evidence_count_total', models.IntegerField(default=0)),
-                ('evidence_count_independent', models.IntegerField(default=0)),
-                ('evidence_sources', models.JSONField(blank=True, default=dict)),
-                ('has_peer_source', models.BooleanField(default=False)),
-                ('has_industry_source', models.BooleanField(default=False)),
-                ('has_supply_chain_source', models.BooleanField(default=False)),
-                ('has_news_source', models.BooleanField(default=False)),
-                ('has_price_source', models.BooleanField(default=False)),
-                ('has_etf_source', models.BooleanField(default=False)),
-                ('has_llm_source', models.BooleanField(default=False)),
-                ('relation_basis_summary', models.TextField(blank=True, default='')),
-                ('first_observed_at', models.DateTimeField(auto_now_add=True)),
-                ('last_observed_at', models.DateTimeField(auto_now=True)),
-                ('last_verified_at', models.DateTimeField(blank=True, null=True)),
-                ('stale_threshold_days', models.IntegerField(default=90)),
-                ('synced_to_neo4j', models.BooleanField(default=False)),
-                ('score_version', models.CharField(default='2.1', max_length=10)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("symbol_a", models.CharField(db_index=True, max_length=10)),
+                ("symbol_b", models.CharField(db_index=True, max_length=10)),
+                (
+                    "relation_type",
+                    models.CharField(
+                        choices=[
+                            ("PEER_OF", "Peer"),
+                            ("SUPPLIES_TO", "Supplies To"),
+                            ("CO_MENTIONED", "Co-mentioned"),
+                            ("PRICE_CORRELATED", "Price Correlated"),
+                            ("HAS_THEME", "Has Theme"),
+                            ("COMPETES_WITH", "Competes With"),
+                            ("HELD_BY_SAME_FUND", "Held by Same Fund"),
+                        ],
+                        max_length=30,
+                    ),
+                ),
+                (
+                    "relation_category",
+                    models.CharField(
+                        choices=[("truth", "Truth"), ("market", "Market")],
+                        default="truth",
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "canonical_direction",
+                    models.CharField(
+                        choices=[
+                            ("a→b", "A to B"),
+                            ("b→a", "B to A"),
+                            ("both", "Undirected"),
+                        ],
+                        default="both",
+                        max_length=5,
+                    ),
+                ),
+                (
+                    "relation_status",
+                    models.CharField(
+                        choices=[
+                            ("hidden", "Hidden"),
+                            ("weak", "Weak"),
+                            ("probable", "Probable"),
+                            ("confirmed", "Confirmed"),
+                            ("stale", "Stale"),
+                        ],
+                        default="hidden",
+                        max_length=12,
+                    ),
+                ),
+                ("truth_score", models.FloatField(default=0)),
+                ("market_score", models.FloatField(blank=True, null=True)),
+                ("investment_relevance", models.FloatField(blank=True, null=True)),
+                ("evidence_tier_best", models.IntegerField(default=3)),
+                ("evidence_count_total", models.IntegerField(default=0)),
+                ("evidence_count_independent", models.IntegerField(default=0)),
+                ("evidence_sources", models.JSONField(blank=True, default=dict)),
+                ("has_peer_source", models.BooleanField(default=False)),
+                ("has_industry_source", models.BooleanField(default=False)),
+                ("has_supply_chain_source", models.BooleanField(default=False)),
+                ("has_news_source", models.BooleanField(default=False)),
+                ("has_price_source", models.BooleanField(default=False)),
+                ("has_etf_source", models.BooleanField(default=False)),
+                ("has_llm_source", models.BooleanField(default=False)),
+                ("relation_basis_summary", models.TextField(blank=True, default="")),
+                ("first_observed_at", models.DateTimeField(auto_now_add=True)),
+                ("last_observed_at", models.DateTimeField(auto_now=True)),
+                ("last_verified_at", models.DateTimeField(blank=True, null=True)),
+                ("stale_threshold_days", models.IntegerField(default=90)),
+                ("synced_to_neo4j", models.BooleanField(default=False)),
+                ("score_version", models.CharField(default="2.1", max_length=10)),
             ],
             options={
-                'db_table': 'chainsight_relation_confidence',
-                'indexes': [models.Index(fields=['relation_status'], name='chainsight__relatio_c49cf3_idx'), models.Index(fields=['relation_type'], name='chainsight__relatio_00a3df_idx'), models.Index(fields=['synced_to_neo4j'], name='chainsight__synced__2206c6_idx')],
-                'unique_together': {('symbol_a', 'symbol_b', 'relation_type')},
+                "db_table": "chainsight_relation_confidence",
+                "indexes": [
+                    models.Index(
+                        fields=["relation_status"],
+                        name="chainsight__relatio_c49cf3_idx",
+                    ),
+                    models.Index(
+                        fields=["relation_type"], name="chainsight__relatio_00a3df_idx"
+                    ),
+                    models.Index(
+                        fields=["synced_to_neo4j"],
+                        name="chainsight__synced__2206c6_idx",
+                    ),
+                ],
+                "unique_together": {("symbol_a", "symbol_b", "relation_type")},
             },
         ),
     ]

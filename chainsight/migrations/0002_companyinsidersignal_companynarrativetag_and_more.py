@@ -6,79 +6,326 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('chainsight', '0001_initial'),
-        ('stocks', '0007_sp500constituent_industry_and_more'),
+        ("chainsight", "0001_initial"),
+        ("stocks", "0007_sp500constituent_industry_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CompanyInsiderSignal',
+            name="CompanyInsiderSignal",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='insider_signal', serialize=False, to='stocks.stock')),
-                ('insider_buy_count_90d', models.IntegerField(default=0)),
-                ('insider_sell_count_90d', models.IntegerField(default=0)),
-                ('insider_net_amount_90d', models.BigIntegerField(blank=True, null=True)),
-                ('insider_signal', models.CharField(blank=True, choices=[('strong_buy', 'Strong Buy'), ('buy', 'Buy'), ('neutral', 'Neutral'), ('sell', 'Sell'), ('strong_sell', 'Strong Sell')], max_length=20)),
-                ('institutional_ownership_pct', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('institutional_change_qoq', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('top_holder_action', models.CharField(blank=True, choices=[('accumulating', 'Accumulating'), ('stable', 'Stable'), ('distributing', 'Distributing')], max_length=20)),
-                ('short_interest_pct', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('short_interest_change', models.CharField(blank=True, choices=[('increasing', 'Increasing'), ('stable', 'Stable'), ('decreasing', 'Decreasing')], max_length=20)),
-                ('days_to_cover', models.DecimalField(blank=True, decimal_places=2, max_digits=6, null=True)),
-                ('smart_money_signal', models.CharField(blank=True, choices=[('bullish', 'Bullish'), ('neutral', 'Neutral'), ('bearish', 'Bearish')], max_length=20)),
-                ('data_freshness', models.DateField(blank=True, null=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="insider_signal",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                ("insider_buy_count_90d", models.IntegerField(default=0)),
+                ("insider_sell_count_90d", models.IntegerField(default=0)),
+                (
+                    "insider_net_amount_90d",
+                    models.BigIntegerField(blank=True, null=True),
+                ),
+                (
+                    "insider_signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("strong_buy", "Strong Buy"),
+                            ("buy", "Buy"),
+                            ("neutral", "Neutral"),
+                            ("sell", "Sell"),
+                            ("strong_sell", "Strong Sell"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "institutional_ownership_pct",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "institutional_change_qoq",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "top_holder_action",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("accumulating", "Accumulating"),
+                            ("stable", "Stable"),
+                            ("distributing", "Distributing"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "short_interest_pct",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "short_interest_change",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("increasing", "Increasing"),
+                            ("stable", "Stable"),
+                            ("decreasing", "Decreasing"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "days_to_cover",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=6, null=True
+                    ),
+                ),
+                (
+                    "smart_money_signal",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("bullish", "Bullish"),
+                            ("neutral", "Neutral"),
+                            ("bearish", "Bearish"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("data_freshness", models.DateField(blank=True, null=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_insider_signal',
+                "db_table": "chainsight_insider_signal",
             },
         ),
         migrations.CreateModel(
-            name='CompanyNarrativeTag',
+            name="CompanyNarrativeTag",
             fields=[
-                ('symbol', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='narrative_tag', serialize=False, to='stocks.stock')),
-                ('primary_narrative', models.CharField(blank=True, max_length=100)),
-                ('secondary_narrative', models.CharField(blank=True, max_length=100)),
-                ('narrative_strength', models.CharField(blank=True, choices=[('strong', 'Strong'), ('moderate', 'Moderate'), ('weak', 'Weak')], max_length=10)),
-                ('narrative_sentiment', models.CharField(blank=True, choices=[('positive', 'Positive'), ('mixed', 'Mixed'), ('negative', 'Negative')], max_length=10)),
-                ('theme_tags', django.contrib.postgres.fields.ArrayField(base_field=models.CharField(max_length=50), blank=True, default=list, help_text='["ai_infrastructure", "china_risk"]', size=None)),
-                ('avg_sentiment_30d', models.DecimalField(blank=True, decimal_places=3, max_digits=4, null=True)),
-                ('sentiment_trend', models.CharField(blank=True, choices=[('improving', 'Improving'), ('stable', 'Stable'), ('deteriorating', 'Deteriorating')], max_length=20)),
-                ('news_frequency_30d', models.IntegerField(default=0)),
-                ('analyst_consensus', models.CharField(blank=True, choices=[('strong_buy', 'Strong Buy'), ('buy', 'Buy'), ('hold', 'Hold'), ('sell', 'Sell'), ('strong_sell', 'Strong Sell')], max_length=20)),
-                ('analyst_target_vs_price', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('analyst_revision_trend', models.CharField(blank=True, choices=[('upgrading', 'Upgrading'), ('stable', 'Stable'), ('downgrading', 'Downgrading')], max_length=20)),
-                ('generated_by', models.CharField(blank=True, choices=[('llm_batch', 'LLM Batch'), ('rule_based', 'Rule Based'), ('manual', 'Manual')], max_length=20)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('generated_at', models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        primary_key=True,
+                        related_name="narrative_tag",
+                        serialize=False,
+                        to="stocks.stock",
+                    ),
+                ),
+                ("primary_narrative", models.CharField(blank=True, max_length=100)),
+                ("secondary_narrative", models.CharField(blank=True, max_length=100)),
+                (
+                    "narrative_strength",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("strong", "Strong"),
+                            ("moderate", "Moderate"),
+                            ("weak", "Weak"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "narrative_sentiment",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("positive", "Positive"),
+                            ("mixed", "Mixed"),
+                            ("negative", "Negative"),
+                        ],
+                        max_length=10,
+                    ),
+                ),
+                (
+                    "theme_tags",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.CharField(max_length=50),
+                        blank=True,
+                        default=list,
+                        help_text='["ai_infrastructure", "china_risk"]',
+                        size=None,
+                    ),
+                ),
+                (
+                    "avg_sentiment_30d",
+                    models.DecimalField(
+                        blank=True, decimal_places=3, max_digits=4, null=True
+                    ),
+                ),
+                (
+                    "sentiment_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("improving", "Improving"),
+                            ("stable", "Stable"),
+                            ("deteriorating", "Deteriorating"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("news_frequency_30d", models.IntegerField(default=0)),
+                (
+                    "analyst_consensus",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("strong_buy", "Strong Buy"),
+                            ("buy", "Buy"),
+                            ("hold", "Hold"),
+                            ("sell", "Sell"),
+                            ("strong_sell", "Strong Sell"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "analyst_target_vs_price",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "analyst_revision_trend",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("upgrading", "Upgrading"),
+                            ("stable", "Stable"),
+                            ("downgrading", "Downgrading"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "generated_by",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("llm_batch", "LLM Batch"),
+                            ("rule_based", "Rule Based"),
+                            ("manual", "Manual"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("generated_at", models.DateTimeField(auto_now=True)),
             ],
             options={
-                'db_table': 'chainsight_narrative_tag',
+                "db_table": "chainsight_narrative_tag",
             },
         ),
         migrations.CreateModel(
-            name='CompanyEventReaction',
+            name="CompanyEventReaction",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('event_type', models.CharField(db_index=True, help_text='"rate_hike", "china_tariff", "tech_selloff" 등', max_length=50)),
-                ('sample_count', models.IntegerField(default=0)),
-                ('avg_return_1d', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('avg_return_5d', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('hit_rate_negative', models.DecimalField(blank=True, decimal_places=2, max_digits=5, null=True)),
-                ('avg_abnormal_return', models.DecimalField(blank=True, decimal_places=4, max_digits=8, null=True)),
-                ('reaction_grade', models.CharField(blank=True, choices=[('high_negative', 'High Negative'), ('moderate_negative', 'Moderate Negative'), ('neutral', 'Neutral'), ('moderate_positive', 'Moderate Positive'), ('high_positive', 'High Positive')], max_length=20)),
-                ('confidence', models.CharField(choices=[('high', 'High'), ('medium', 'Medium'), ('low', 'Low')], default='low', max_length=10)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('calculated_at', models.DateTimeField(auto_now=True)),
-                ('symbol', models.ForeignKey(db_column='symbol', on_delete=django.db.models.deletion.CASCADE, related_name='event_reactions', to='stocks.stock')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "event_type",
+                    models.CharField(
+                        db_index=True,
+                        help_text='"rate_hike", "china_tariff", "tech_selloff" 등',
+                        max_length=50,
+                    ),
+                ),
+                ("sample_count", models.IntegerField(default=0)),
+                (
+                    "avg_return_1d",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "avg_return_5d",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "hit_rate_negative",
+                    models.DecimalField(
+                        blank=True, decimal_places=2, max_digits=5, null=True
+                    ),
+                ),
+                (
+                    "avg_abnormal_return",
+                    models.DecimalField(
+                        blank=True, decimal_places=4, max_digits=8, null=True
+                    ),
+                ),
+                (
+                    "reaction_grade",
+                    models.CharField(
+                        blank=True,
+                        choices=[
+                            ("high_negative", "High Negative"),
+                            ("moderate_negative", "Moderate Negative"),
+                            ("neutral", "Neutral"),
+                            ("moderate_positive", "Moderate Positive"),
+                            ("high_positive", "High Positive"),
+                        ],
+                        max_length=20,
+                    ),
+                ),
+                (
+                    "confidence",
+                    models.CharField(
+                        choices=[
+                            ("high", "High"),
+                            ("medium", "Medium"),
+                            ("low", "Low"),
+                        ],
+                        default="low",
+                        max_length=10,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("calculated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "symbol",
+                    models.ForeignKey(
+                        db_column="symbol",
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="event_reactions",
+                        to="stocks.stock",
+                    ),
+                ),
             ],
             options={
-                'db_table': 'chainsight_event_reaction',
-                'indexes': [models.Index(fields=['event_type'], name='chainsight__event_t_cb53ba_idx'), models.Index(fields=['symbol'], name='chainsight__symbol_3a9709_idx')],
-                'unique_together': {('symbol', 'event_type')},
+                "db_table": "chainsight_event_reaction",
+                "indexes": [
+                    models.Index(
+                        fields=["event_type"], name="chainsight__event_t_cb53ba_idx"
+                    ),
+                    models.Index(
+                        fields=["symbol"], name="chainsight__symbol_3a9709_idx"
+                    ),
+                ],
+                "unique_together": {("symbol", "event_type")},
             },
         ),
     ]

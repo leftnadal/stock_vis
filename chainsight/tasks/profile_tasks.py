@@ -41,7 +41,9 @@ def _clamp_decimal(val, max_abs=9999.0):
 @shared_task(bind=True, max_retries=1, soft_time_limit=3600, time_limit=3660)
 def calculate_growth_stages(self):
     """S&P 500 전체 GrowthStage 계산."""
-    sp500 = set(SP500Constituent.objects.filter(is_active=True).values_list('symbol', flat=True))
+    sp500 = set(
+        SP500Constituent.objects.filter(is_active=True).values_list("symbol", flat=True)
+    )
     success, fail = 0, 0
 
     for symbol in sp500:
@@ -52,20 +54,27 @@ def calculate_growth_stages(self):
 
             # 최근 3년 Income Statement
             incomes = list(
-                IncomeStatement.objects.filter(stock=stock, period_type='annual')
-                .order_by('-fiscal_year')[:3]
+                IncomeStatement.objects.filter(
+                    stock=stock, period_type="annual"
+                ).order_by("-fiscal_year")[:3]
             )
             if len(incomes) < 2:
                 continue
 
             revenue_latest = _safe_float(incomes[0].total_revenue)
             revenue_prev = _safe_float(incomes[1].total_revenue)
-            revenue_2y = _safe_float(incomes[2].total_revenue) if len(incomes) >= 3 else None
+            revenue_2y = (
+                _safe_float(incomes[2].total_revenue) if len(incomes) >= 3 else None
+            )
 
             if not revenue_latest or not revenue_prev:
                 continue
 
-            growth = (revenue_latest - revenue_prev) / abs(revenue_prev) if revenue_prev else 0
+            growth = (
+                (revenue_latest - revenue_prev) / abs(revenue_prev)
+                if revenue_prev
+                else 0
+            )
             ni_latest = _safe_float(incomes[0].net_income)
 
             # 3년 CAGR
@@ -75,53 +84,85 @@ def calculate_growth_stages(self):
 
             # Stage 분류
             if revenue_latest < 500_000_000 and growth > 0.30:
-                stage = 'early_growth'
+                stage = "early_growth"
             elif growth > 0.15:
-                stage = 'accelerating'
+                stage = "accelerating"
             elif growth >= 0:
                 # 배당 여부로 mature vs cash_cow 구분
-                cf = CashFlowStatement.objects.filter(stock=stock, period_type='annual').order_by('-fiscal_year').first()
-                has_dividend = cf and _safe_float(cf.dividend_payout) and abs(_safe_float(cf.dividend_payout)) > 0
-                stage = 'cash_cow' if has_dividend and growth < 0.05 else 'mature'
+                cf = (
+                    CashFlowStatement.objects.filter(stock=stock, period_type="annual")
+                    .order_by("-fiscal_year")
+                    .first()
+                )
+                has_dividend = (
+                    cf
+                    and _safe_float(cf.dividend_payout)
+                    and abs(_safe_float(cf.dividend_payout)) > 0
+                )
+                stage = "cash_cow" if has_dividend and growth < 0.05 else "mature"
             elif growth < -0.05:
                 # 2년 연속 감소 → declining
                 if revenue_2y and revenue_prev < revenue_2y:
-                    stage = 'declining'
+                    stage = "declining"
                 else:
-                    stage = 'turnaround'
+                    stage = "turnaround"
             else:
-                stage = 'mature'
+                stage = "mature"
 
             # FCF 추세
             cfs = list(
-                CashFlowStatement.objects.filter(stock=stock, period_type='annual')
-                .order_by('-fiscal_year')[:3]
+                CashFlowStatement.objects.filter(
+                    stock=stock, period_type="annual"
+                ).order_by("-fiscal_year")[:3]
             )
-            fcf_trend = ''
+            fcf_trend = ""
             if len(cfs) >= 2:
-                fcf_0 = (_safe_float(cfs[0].operating_cashflow) or 0) - abs(_safe_float(cfs[0].capital_expenditures) or 0)
-                fcf_1 = (_safe_float(cfs[1].operating_cashflow) or 0) - abs(_safe_float(cfs[1].capital_expenditures) or 0)
+                fcf_0 = (_safe_float(cfs[0].operating_cashflow) or 0) - abs(
+                    _safe_float(cfs[0].capital_expenditures) or 0
+                )
+                fcf_1 = (_safe_float(cfs[1].operating_cashflow) or 0) - abs(
+                    _safe_float(cfs[1].capital_expenditures) or 0
+                )
                 if fcf_0 > fcf_1 * 1.05:
-                    fcf_trend = 'growing'
+                    fcf_trend = "growing"
                 elif fcf_0 < fcf_1 * 0.95:
-                    fcf_trend = 'declining'
+                    fcf_trend = "declining"
                 else:
-                    fcf_trend = 'stable'
+                    fcf_trend = "stable"
 
-            confidence = 'high' if len(incomes) >= 3 else 'medium'
+            confidence = "high" if len(incomes) >= 3 else "medium"
 
             CompanyGrowthStage.objects.update_or_create(
                 symbol=stock,
                 defaults={
-                    'stage': stage,
-                    'revenue_cagr_3y': Decimal(str(round(cagr_3y, 4))) if cagr_3y else None,
-                    'net_income_positive_years': sum(1 for i in incomes if _safe_float(i.net_income) and _safe_float(i.net_income) > 0),
-                    'net_income_turned_positive': ni_latest and ni_latest > 0 and len(incomes) >= 2 and (_safe_float(incomes[1].net_income) or 0) <= 0,
-                    'fcf_trend': fcf_trend,
-                    'fcf_positive_years': sum(1 for c in cfs if (_safe_float(c.operating_cashflow) or 0) - abs(_safe_float(c.capital_expenditures) or 0) > 0),
-                    'dividend_started': bool(cfs and _safe_float(cfs[0].dividend_payout) and abs(_safe_float(cfs[0].dividend_payout)) > 0),
-                    'confidence': confidence,
-                }
+                    "stage": stage,
+                    "revenue_cagr_3y": Decimal(str(round(cagr_3y, 4)))
+                    if cagr_3y
+                    else None,
+                    "net_income_positive_years": sum(
+                        1
+                        for i in incomes
+                        if _safe_float(i.net_income) and _safe_float(i.net_income) > 0
+                    ),
+                    "net_income_turned_positive": ni_latest
+                    and ni_latest > 0
+                    and len(incomes) >= 2
+                    and (_safe_float(incomes[1].net_income) or 0) <= 0,
+                    "fcf_trend": fcf_trend,
+                    "fcf_positive_years": sum(
+                        1
+                        for c in cfs
+                        if (_safe_float(c.operating_cashflow) or 0)
+                        - abs(_safe_float(c.capital_expenditures) or 0)
+                        > 0
+                    ),
+                    "dividend_started": bool(
+                        cfs
+                        and _safe_float(cfs[0].dividend_payout)
+                        and abs(_safe_float(cfs[0].dividend_payout)) > 0
+                    ),
+                    "confidence": confidence,
+                },
             )
             success += 1
         except Exception as e:
@@ -135,7 +176,9 @@ def calculate_growth_stages(self):
 @shared_task(bind=True, max_retries=1, soft_time_limit=3600, time_limit=3660)
 def calculate_capital_dna(self):
     """S&P 500 전체 CapitalDNA 계산."""
-    sp500 = set(SP500Constituent.objects.filter(is_active=True).values_list('symbol', flat=True))
+    sp500 = set(
+        SP500Constituent.objects.filter(is_active=True).values_list("symbol", flat=True)
+    )
     success, fail = 0, 0
 
     for symbol in sp500:
@@ -144,9 +187,21 @@ def calculate_capital_dna(self):
             if not stock:
                 continue
 
-            cf = CashFlowStatement.objects.filter(stock=stock, period_type='annual').order_by('-fiscal_year').first()
-            inc = IncomeStatement.objects.filter(stock=stock, period_type='annual').order_by('-fiscal_year').first()
-            bal = BalanceSheet.objects.filter(stock=stock, period_type='annual').order_by('-fiscal_year').first()
+            cf = (
+                CashFlowStatement.objects.filter(stock=stock, period_type="annual")
+                .order_by("-fiscal_year")
+                .first()
+            )
+            inc = (
+                IncomeStatement.objects.filter(stock=stock, period_type="annual")
+                .order_by("-fiscal_year")
+                .first()
+            )
+            bal = (
+                BalanceSheet.objects.filter(stock=stock, period_type="annual")
+                .order_by("-fiscal_year")
+                .first()
+            )
             if not cf or not inc:
                 continue
 
@@ -162,7 +217,11 @@ def calculate_capital_dna(self):
             rd = _safe_float(inc.research_and_development) or 0
 
             # Cash position
-            cash = _safe_float(bal.cash_and_cash_equivalents_at_carrying_value) or 0 if bal else 0
+            cash = (
+                _safe_float(bal.cash_and_cash_equivalents_at_carrying_value) or 0
+                if bal
+                else 0
+            )
             short_debt = _safe_float(bal.short_term_debt) or 0 if bal else 0
             long_debt = _safe_float(bal.long_term_debt) or 0 if bal else 0
             net_cash = cash - short_debt - long_debt
@@ -174,28 +233,32 @@ def calculate_capital_dna(self):
             dividend_ratio = dividend / fcf if fcf > 0 else 0
 
             if rd_ratio > 0.15 or capex_ratio > 0.15:
-                capital_type = 'heavy_investor'
+                capital_type = "heavy_investor"
             elif buyback_yield > 0.03 or dividend_ratio > 0.5:
-                capital_type = 'shareholder_first'
+                capital_type = "shareholder_first"
             elif net_cash / mcap > 0.15:
-                capital_type = 'cash_hoarder'
+                capital_type = "cash_hoarder"
             elif rd_ratio > 0.08 and capex_ratio > 0.08:
-                capital_type = 'aggressive_growth'
+                capital_type = "aggressive_growth"
             else:
-                capital_type = 'balanced'
+                capital_type = "balanced"
 
             CompanyCapitalDNA.objects.update_or_create(
                 symbol=stock,
                 defaults={
-                    'rd_to_revenue': _clamp_decimal(rd_ratio),
-                    'capex_to_revenue': _clamp_decimal(capex_ratio),
-                    'dividend_payout': _clamp_decimal(dividend_ratio),
-                    'buyback_yield': _clamp_decimal(buyback_yield),
-                    'total_shareholder_return_pct': _clamp_decimal((dividend + buyback) / mcap),
-                    'net_cash_position': int(max(min(net_cash, 9_999_999_999_999), -9_999_999_999_999)),
-                    'cash_to_market_cap': _clamp_decimal(cash / mcap),
-                    'capital_type': capital_type,
-                }
+                    "rd_to_revenue": _clamp_decimal(rd_ratio),
+                    "capex_to_revenue": _clamp_decimal(capex_ratio),
+                    "dividend_payout": _clamp_decimal(dividend_ratio),
+                    "buyback_yield": _clamp_decimal(buyback_yield),
+                    "total_shareholder_return_pct": _clamp_decimal(
+                        (dividend + buyback) / mcap
+                    ),
+                    "net_cash_position": int(
+                        max(min(net_cash, 9_999_999_999_999), -9_999_999_999_999)
+                    ),
+                    "cash_to_market_cap": _clamp_decimal(cash / mcap),
+                    "capital_type": capital_type,
+                },
             )
             success += 1
         except Exception as e:

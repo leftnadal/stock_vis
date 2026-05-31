@@ -32,18 +32,20 @@ def extract_co_mentions(self, days_back: int = 90):
     # 2개 이상 entity가 있는 기사 찾기
     multi_news_ids = list(
         NewsEntity.objects.filter(news__published_at__gte=cutoff)
-        .values('news_id')
-        .annotate(cnt=Count('id'))
+        .values("news_id")
+        .annotate(cnt=Count("id"))
         .filter(cnt__gte=2)
-        .values_list('news_id', flat=True)
+        .values_list("news_id", flat=True)
     )
 
     # 기사별 symbol 수집
-    pair_counts = defaultdict(lambda: {"count": 0, "last_date": None, "first_date": None})
+    pair_counts = defaultdict(
+        lambda: {"count": 0, "last_date": None, "first_date": None}
+    )
     events_saved = 0
 
     for news_id in multi_news_ids:
-        entities = NewsEntity.objects.filter(news_id=news_id).select_related('news')
+        entities = NewsEntity.objects.filter(news_id=news_id).select_related("news")
         symbols = list(set(e.symbol for e in entities if e.symbol))
 
         if len(symbols) < 2:
@@ -55,15 +57,15 @@ def extract_co_mentions(self, days_back: int = 90):
         news_obj = entities[0].news
         try:
             _, created = ChainNewsEvent.objects.get_or_create(
-                source=news_obj.source or 'unknown',
+                source=news_obj.source or "unknown",
                 source_id=str(news_obj.id),
                 defaults={
-                    'symbol_id': symbols[0],
-                    'title': (news_obj.title or '')[:500],
-                    'summary': (news_obj.summary or '')[:500],
-                    'published_at': published_at,
-                    'co_mentioned_symbols': symbols[1:],
-                }
+                    "symbol_id": symbols[0],
+                    "title": (news_obj.title or "")[:500],
+                    "summary": (news_obj.summary or "")[:500],
+                    "published_at": published_at,
+                    "co_mentioned_symbols": symbols[1:],
+                },
             )
             if created:
                 events_saved += 1
@@ -76,21 +78,28 @@ def extract_co_mentions(self, days_back: int = 90):
             pair_counts[pair]["count"] += 1
             dt = published_at.date() if published_at else None
             if dt:
-                if not pair_counts[pair]["last_date"] or dt > pair_counts[pair]["last_date"]:
+                if (
+                    not pair_counts[pair]["last_date"]
+                    or dt > pair_counts[pair]["last_date"]
+                ):
                     pair_counts[pair]["last_date"] = dt
-                if not pair_counts[pair]["first_date"] or dt < pair_counts[pair]["first_date"]:
+                if (
+                    not pair_counts[pair]["first_date"]
+                    or dt < pair_counts[pair]["first_date"]
+                ):
                     pair_counts[pair]["first_date"] = dt
 
     # CoMentionEdge upsert
     created_cnt, updated_cnt = 0, 0
     for (a, b), data in pair_counts.items():
         obj, is_new = CoMentionEdge.objects.get_or_create(
-            symbol_a=a, symbol_b=b,
+            symbol_a=a,
+            symbol_b=b,
             defaults={
                 "co_mention_count": data["count"],
                 "last_co_mention_date": data["last_date"],
                 "first_co_mention_date": data["first_date"],
-            }
+            },
         )
         if is_new:
             created_cnt += 1
@@ -147,11 +156,13 @@ def calculate_price_co_movement(self, period_days: int = 90):
 
             prices_a = list(
                 DailyPrice.objects.filter(stock_id=sym_a, date__gte=cutoff)
-                .order_by('date').values_list('date', 'close_price')
+                .order_by("date")
+                .values_list("date", "close_price")
             )
             prices_b = list(
                 DailyPrice.objects.filter(stock_id=sym_b, date__gte=cutoff)
-                .order_by('date').values_list('date', 'close_price')
+                .order_by("date")
+                .values_list("date", "close_price")
             )
 
             if len(prices_a) < 20 or len(prices_b) < 20:
@@ -180,8 +191,10 @@ def calculate_price_co_movement(self, period_days: int = 90):
                 continue
 
             PriceCoMovement.objects.update_or_create(
-                symbol_a=sym_a, symbol_b=sym_b, period=period_key,
-                defaults={'correlation': Decimal(str(round(corr, 4)))}
+                symbol_a=sym_a,
+                symbol_b=sym_b,
+                period=period_key,
+                defaults={"correlation": Decimal(str(round(corr, 4)))},
             )
             success += 1
         except Exception as e:
@@ -263,36 +276,42 @@ def update_relation_confidence(self):
         # ── PEER_OF (truth): peer 또는 industry 증거가 있을 때 ──
         if has_peer or has_industry:
             peer_sources = []
-            if has_peer: peer_sources.append('peer')
-            if has_industry: peer_sources.append('industry')
+            if has_peer:
+                peer_sources.append("peer")
+            if has_industry:
+                peer_sources.append("industry")
             if len(peer_sources) >= 2:
-                tier, status, score = 1, 'confirmed', 85
+                tier, status, score = 1, "confirmed", 85
             else:
-                tier, status, score = 2, 'probable', 60
+                tier, status, score = 2, "probable", 60
 
             parts = []
-            if has_peer: parts.append('Peer 관계')
-            if has_industry: parts.append('같은 산업')
-            summary = ' + '.join(parts)
+            if has_peer:
+                parts.append("Peer 관계")
+            if has_industry:
+                parts.append("같은 산업")
+            summary = " + ".join(parts)
 
             obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a, symbol_b=sym_b, relation_type='PEER_OF',
+                symbol_a=sym_a,
+                symbol_b=sym_b,
+                relation_type="PEER_OF",
                 defaults={
-                    'relation_category': 'truth',
-                    'canonical_direction': 'both',
-                    'relation_status': status,
-                    'truth_score': score,
-                    'evidence_tier_best': tier,
-                    'evidence_count_total': len(peer_sources),
-                    'evidence_count_independent': len(peer_sources),
-                    'evidence_sources': {'sources': peer_sources},
-                    'has_peer_source': has_peer,
-                    'has_industry_source': has_industry,
-                    'has_news_source': False,
-                    'has_price_source': False,
-                    'relation_basis_summary': summary,
+                    "relation_category": "truth",
+                    "canonical_direction": "both",
+                    "relation_status": status,
+                    "truth_score": score,
+                    "evidence_tier_best": tier,
+                    "evidence_count_total": len(peer_sources),
+                    "evidence_count_independent": len(peer_sources),
+                    "evidence_sources": {"sources": peer_sources},
+                    "has_peer_source": has_peer,
+                    "has_industry_source": has_industry,
+                    "has_news_source": False,
+                    "has_price_source": False,
+                    "relation_basis_summary": summary,
                     # audit P0 #9: synced_to_neo4j 제거. update_or_create는 save()를 호출하므로 neo4j_dirty=True 자동.
-                }
+                },
             )
             if is_new:
                 created += 1
@@ -303,30 +322,35 @@ def update_relation_confidence(self):
         if has_news:
             count = co_mention_map[(sym_a, sym_b)]
             if count >= 10:
-                tier, status, score = 1, 'confirmed', 85
+                tier, status, score = 1, "confirmed", 85
             elif count >= 5:
-                tier, status, score = 2, 'probable', 60
+                tier, status, score = 2, "probable", 60
             else:
-                tier, status, score = 3, 'weak', 35
+                tier, status, score = 3, "weak", 35
 
             obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a, symbol_b=sym_b, relation_type='CO_MENTIONED',
+                symbol_a=sym_a,
+                symbol_b=sym_b,
+                relation_type="CO_MENTIONED",
                 defaults={
-                    'relation_category': 'market',
-                    'canonical_direction': 'both',
-                    'relation_status': status,
-                    'market_score': score,
-                    'truth_score': 0,
-                    'evidence_tier_best': tier,
-                    'evidence_count_total': 1,
-                    'evidence_count_independent': 1,
-                    'evidence_sources': {'sources': ['news'], 'co_mention_count': count},
-                    'has_peer_source': False,
-                    'has_industry_source': False,
-                    'has_news_source': True,
-                    'has_price_source': False,
-                    'relation_basis_summary': f'뉴스 동시출현 {count}회',
-                }
+                    "relation_category": "market",
+                    "canonical_direction": "both",
+                    "relation_status": status,
+                    "market_score": score,
+                    "truth_score": 0,
+                    "evidence_tier_best": tier,
+                    "evidence_count_total": 1,
+                    "evidence_count_independent": 1,
+                    "evidence_sources": {
+                        "sources": ["news"],
+                        "co_mention_count": count,
+                    },
+                    "has_peer_source": False,
+                    "has_industry_source": False,
+                    "has_news_source": True,
+                    "has_price_source": False,
+                    "relation_basis_summary": f"뉴스 동시출현 {count}회",
+                },
             )
             if is_new:
                 created += 1
@@ -337,30 +361,32 @@ def update_relation_confidence(self):
         if has_price:
             corr = price_map[(sym_a, sym_b)]
             if corr >= 0.8:
-                tier, status, score = 1, 'confirmed', 85
+                tier, status, score = 1, "confirmed", 85
             elif corr >= 0.6:
-                tier, status, score = 2, 'probable', 60
+                tier, status, score = 2, "probable", 60
             else:
-                tier, status, score = 3, 'weak', 35
+                tier, status, score = 3, "weak", 35
 
             obj, is_new = RelationConfidence.objects.update_or_create(
-                symbol_a=sym_a, symbol_b=sym_b, relation_type='PRICE_CORRELATED',
+                symbol_a=sym_a,
+                symbol_b=sym_b,
+                relation_type="PRICE_CORRELATED",
                 defaults={
-                    'relation_category': 'market',
-                    'canonical_direction': 'both',
-                    'relation_status': status,
-                    'market_score': score,
-                    'truth_score': 0,
-                    'evidence_tier_best': tier,
-                    'evidence_count_total': 1,
-                    'evidence_count_independent': 1,
-                    'evidence_sources': {'sources': ['price'], 'correlation': corr},
-                    'has_peer_source': False,
-                    'has_industry_source': False,
-                    'has_news_source': False,
-                    'has_price_source': True,
-                    'relation_basis_summary': f'주가 상관 {corr:.2f}',
-                }
+                    "relation_category": "market",
+                    "canonical_direction": "both",
+                    "relation_status": status,
+                    "market_score": score,
+                    "truth_score": 0,
+                    "evidence_tier_best": tier,
+                    "evidence_count_total": 1,
+                    "evidence_count_independent": 1,
+                    "evidence_sources": {"sources": ["price"], "correlation": corr},
+                    "has_peer_source": False,
+                    "has_industry_source": False,
+                    "has_news_source": False,
+                    "has_price_source": True,
+                    "relation_basis_summary": f"주가 상관 {corr:.2f}",
+                },
             )
             if is_new:
                 created += 1
@@ -385,24 +411,24 @@ def check_stale_and_decay(self):
     # audit P0 #9: queryset.update()는 save() 미호출 → neo4j_dirty 수동 토글
     # confirmed → stale (90일)
     stale = RelationConfidence.objects.filter(
-        relation_status='confirmed',
+        relation_status="confirmed",
         last_observed_at__lt=now - timedelta(days=90),
     )
-    decayed += stale.update(relation_status='stale', neo4j_dirty=True)
+    decayed += stale.update(relation_status="stale", neo4j_dirty=True)
 
     # probable → weak (60일)
     weak = RelationConfidence.objects.filter(
-        relation_status='probable',
+        relation_status="probable",
         last_observed_at__lt=now - timedelta(days=60),
     )
-    decayed += weak.update(relation_status='weak', neo4j_dirty=True)
+    decayed += weak.update(relation_status="weak", neo4j_dirty=True)
 
     # weak → hidden (30일)
     hidden = RelationConfidence.objects.filter(
-        relation_status='weak',
+        relation_status="weak",
         last_observed_at__lt=now - timedelta(days=30),
     )
-    decayed += hidden.update(relation_status='hidden', neo4j_dirty=True)
+    decayed += hidden.update(relation_status="hidden", neo4j_dirty=True)
 
     logger.info(f"Stale decay: {decayed}건 하향 전이")
     return {"decayed": decayed}

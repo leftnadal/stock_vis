@@ -15,11 +15,11 @@ from .neo4j_loader import (
 )
 
 __all__ = [
-    'get_stock_data_for_neo4j',
-    'load_stocks_to_neo4j',
-    'load_sectors_to_neo4j',
-    'fetch_finnhub_peers',
-    'fetch_fmp_peers',
-    'collect_all_peers',
-    'load_peers_to_neo4j',
+    "get_stock_data_for_neo4j",
+    "load_stocks_to_neo4j",
+    "load_sectors_to_neo4j",
+    "fetch_finnhub_peers",
+    "fetch_fmp_peers",
+    "collect_all_peers",
+    "load_peers_to_neo4j",
 ]

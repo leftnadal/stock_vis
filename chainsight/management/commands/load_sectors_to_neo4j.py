@@ -17,14 +17,20 @@ class Command(BaseCommand):
 
         stock_count = repo.node_count("Stock")
         if stock_count == 0:
-            self.stderr.write(self.style.ERROR(":Stock 노드 없음. CS-1-1 먼저 실행하세요."))
+            self.stderr.write(
+                self.style.ERROR(":Stock 노드 없음. CS-1-1 먼저 실행하세요.")
+            )
             return
 
         self.stdout.write(f"현재 :Stock: {stock_count}개")
         result = load_sectors_to_neo4j()
 
-        self.stdout.write(f":Sector: {result['sectors_created']}, :Industry: {result['industries_created']}")
-        self.stdout.write(f"BELONGS_TO_SECTOR: {result['belongs_to_sector']}, BELONGS_TO_INDUSTRY: {result['belongs_to_industry']}")
+        self.stdout.write(
+            f":Sector: {result['sectors_created']}, :Industry: {result['industries_created']}"
+        )
+        self.stdout.write(
+            f"BELONGS_TO_SECTOR: {result['belongs_to_sector']}, BELONGS_TO_INDUSTRY: {result['belongs_to_industry']}"
+        )
         if result["errors"]:
             for e in result["errors"]:
                 self.stderr.write(self.style.ERROR(e))

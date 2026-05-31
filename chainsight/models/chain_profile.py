@@ -8,10 +8,13 @@ class CompanyChainProfile(models.Model):
     모든 chainsight 테이블 + validation.CategoryScore에서 요약.
     그래프 DB 노드 속성으로 투영되는 원천 (AGE MVP, 추후 backend-swappable).
     """
+
     symbol = models.OneToOneField(
-        'stocks.Stock', on_delete=models.CASCADE,
-        to_field='symbol', primary_key=True,
-        related_name='chain_profile',
+        "stocks.Stock",
+        on_delete=models.CASCADE,
+        to_field="symbol",
+        primary_key=True,
+        related_name="chain_profile",
     )
 
     # sensitivity 요약
@@ -23,7 +26,9 @@ class CompanyChainProfile(models.Model):
 
     # growth_stage 요약
     growth_stage = models.CharField(max_length=30, blank=True)
-    revenue_cagr_3y = models.DecimalField(max_digits=8, decimal_places=4, null=True, blank=True)
+    revenue_cagr_3y = models.DecimalField(
+        max_digits=8, decimal_places=4, null=True, blank=True
+    )
 
     # capital_dna 요약
     capital_type = models.CharField(max_length=30, blank=True)
@@ -34,8 +39,12 @@ class CompanyChainProfile(models.Model):
 
     # revenue_structure 요약
     top_segment = models.CharField(max_length=100, blank=True)
-    top_segment_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    china_revenue_pct = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    top_segment_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    china_revenue_pct = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
     customer_concentration_risk = models.CharField(max_length=10, blank=True)
     business_model_type = models.CharField(max_length=20, blank=True)
 
@@ -43,20 +52,30 @@ class CompanyChainProfile(models.Model):
     primary_narrative = models.CharField(max_length=100, blank=True)
     theme_tags = ArrayField(
         models.CharField(max_length=50),
-        default=list, blank=True,
+        default=list,
+        blank=True,
     )
     narrative_sentiment = models.CharField(max_length=10, blank=True)
 
     # validation score 요약
-    score_profitability = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    score_growth = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
-    score_financial_structure = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    score_profitability = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    score_growth = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
+    score_financial_structure = models.DecimalField(
+        max_digits=5, decimal_places=2, null=True, blank=True
+    )
     overall_grade = models.CharField(max_length=5, blank=True)
 
     # 메타
     profile_completeness = models.DecimalField(
-        max_digits=3, decimal_places=2, null=True, blank=True,
-        help_text='0.0~1.0 채워진 필드 비율'
+        max_digits=3,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text="0.0~1.0 채워진 필드 비율",
     )
     last_updated = models.DateTimeField(auto_now=True)
 
@@ -66,7 +85,7 @@ class CompanyChainProfile(models.Model):
     neo4j_synced_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        db_table = 'chainsight_chain_profile'
+        db_table = "chainsight_chain_profile"
 
     def __str__(self):
         return f"{self.symbol_id}: {self.growth_stage} / {self.overall_grade}"
