@@ -12,7 +12,7 @@ from decimal import Decimal
 import pytest
 from django.db import IntegrityError
 
-from chainsight.models import (
+from apps.chain_sight.models import (
     CompanyCapitalDNA,
     CompanyGrowthStage,
     CompanySensitivityProfile,

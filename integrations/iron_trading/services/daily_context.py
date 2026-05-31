@@ -213,7 +213,7 @@ def _load_narrative_tags(symbols: list[str]) -> dict[str, list[str]]:
     if not symbols:
         return {}
     try:
-        from chainsight.models.narrative_tag import CompanyNarrativeTag
+        from apps.chain_sight.models.narrative_tag import CompanyNarrativeTag
     except Exception:
         return {}
     try:

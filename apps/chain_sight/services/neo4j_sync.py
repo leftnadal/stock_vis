@@ -9,9 +9,9 @@ import logging
 
 from django.utils import timezone
 
-from chainsight.graph import get_graph_repository
-from chainsight.models import RelationConfidence
-from chainsight.utils import normalize_pair
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.models import RelationConfidence
+from apps.chain_sight.utils import normalize_pair
 
 logger = logging.getLogger(__name__)
 

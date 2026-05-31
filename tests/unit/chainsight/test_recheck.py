@@ -7,8 +7,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from chainsight.models import PathAction, SavedPath
-from chainsight.services.recheck_service import (
+from apps.chain_sight.models import PathAction, SavedPath
+from apps.chain_sight.services.recheck_service import (
     RecheckResult,
     _build_headline,
     _classify_edge_change,
@@ -135,7 +135,7 @@ def test_suggestion_repeated_weak_archive():
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.recheck_service._fetch_current_snapshot')
+@patch('apps.chain_sight.services.recheck_service._fetch_current_snapshot')
 def test_run_recheck_basic_flow(mock_fetch):
     old_snapshot = [{'from': 'NVDA', 'to': 'TSM', 'type': 'SUPPLIES_TO', 'truth_score': 60, 'status': 'probable'}]
     new_snapshot = [{'from': 'NVDA', 'to': 'TSM', 'type': 'SUPPLIES_TO', 'truth_score': 85, 'status': 'confirmed'}]
@@ -160,7 +160,7 @@ def test_run_recheck_basic_flow(mock_fetch):
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.recheck_service._fetch_current_snapshot')
+@patch('apps.chain_sight.services.recheck_service._fetch_current_snapshot')
 def test_watching_to_active_transition(mock_fetch):
     mock_fetch.return_value = [{'from': 'A', 'to': 'B', 'type': 'PEER_OF', 'truth_score': 60, 'status': 'probable'}]
     path = SavedPath.objects.create(
@@ -178,7 +178,7 @@ def test_watching_to_active_transition(mock_fetch):
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.recheck_service._fetch_current_snapshot')
+@patch('apps.chain_sight.services.recheck_service._fetch_current_snapshot')
 def test_no_transition_if_too_soon(mock_fetch):
     mock_fetch.return_value = [{'from': 'A', 'to': 'B', 'type': 'PEER_OF', 'truth_score': 60, 'status': 'probable'}]
     path = SavedPath.objects.create(
@@ -202,7 +202,7 @@ def test_recheck_api_archived_rejected(client, user):
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.recheck_service._fetch_current_snapshot')
+@patch('apps.chain_sight.services.recheck_service._fetch_current_snapshot')
 def test_recheck_api_full_response(mock_fetch, client, user):
     mock_fetch.return_value = [{'from': 'A', 'to': 'B', 'type': 'PEER_OF', 'truth_score': 85, 'status': 'confirmed'}]
     path = SavedPath.objects.create(

@@ -23,8 +23,8 @@ def extract_co_mentions(self, days_back: int = 90):
     """
     from django.db.models import Count
 
-    from chainsight.models import ChainNewsEvent, CoMentionEdge
-    from chainsight.utils import normalize_pair
+    from apps.chain_sight.models import ChainNewsEvent, CoMentionEdge
+    from apps.chain_sight.utils import normalize_pair
     from news.models import NewsEntity
 
     cutoff = timezone.now() - timedelta(days=days_back)
@@ -133,8 +133,8 @@ def calculate_price_co_movement(self, period_days: int = 90):
 
     import numpy as np
 
-    from chainsight.graph import get_graph_repository
-    from chainsight.models import PriceCoMovement
+    from apps.chain_sight.graph import get_graph_repository
+    from apps.chain_sight.models import PriceCoMovement
     from packages.shared.stocks.models import DailyPrice
 
     repo = get_graph_repository()
@@ -213,9 +213,13 @@ def update_relation_confidence(self):
     """
     CS-2-4: RelationConfidence 종합 판정. Celery Beat: 주 1회 (일요일 04:00).
     """
-    from chainsight.graph import get_graph_repository
-    from chainsight.models import CoMentionEdge, PriceCoMovement, RelationConfidence
-    from chainsight.utils import normalize_pair
+    from apps.chain_sight.graph import get_graph_repository
+    from apps.chain_sight.models import (
+        CoMentionEdge,
+        PriceCoMovement,
+        RelationConfidence,
+    )
+    from apps.chain_sight.utils import normalize_pair
 
     repo = get_graph_repository()
 
@@ -403,7 +407,7 @@ def check_stale_and_decay(self):
     """
     CS-2-4: Stale 하향 전이. Celery Beat: 주 1회 (일요일 04:30).
     """
-    from chainsight.models import RelationConfidence
+    from apps.chain_sight.models import RelationConfidence
 
     now = timezone.now()
     decayed = 0

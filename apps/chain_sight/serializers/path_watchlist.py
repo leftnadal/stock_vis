@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from chainsight.models import PathAction, SavedPath
+from apps.chain_sight.models import PathAction, SavedPath
 
 
 class PathActionSerializer(serializers.ModelSerializer):

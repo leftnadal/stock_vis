@@ -5,8 +5,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from chainsight.models import PathAction, SavedPath
-from chainsight.services.expand_service import (
+from apps.chain_sight.models import PathAction, SavedPath
+from apps.chain_sight.services.expand_service import (
     _compute_expansion_score,
     find_expansion_candidates,
 )
@@ -42,7 +42,7 @@ def test_expansion_score_relation_priority():
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.expand_service.get_graph_repository')
+@patch('apps.chain_sight.services.expand_service.get_graph_repository')
 def test_find_candidates_mock(mock_get_repo):
     mock_repo = MagicMock()
     mock_repo.run_query.return_value = [
@@ -68,7 +68,7 @@ def test_find_candidates_mock(mock_get_repo):
 
 
 @pytest.mark.django_db
-@patch('chainsight.views.watchlist_views.find_expansion_candidates')
+@patch('apps.chain_sight.views.watchlist_views.find_expansion_candidates')
 def test_expand_api_success(mock_find, client, user):
     path = SavedPath.objects.create(user=user, path_nodes=['NVDA', 'TSM', 'ASML'])
     mock_find.return_value = {

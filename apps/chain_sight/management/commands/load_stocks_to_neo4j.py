@@ -2,8 +2,8 @@
 
 from django.core.management.base import BaseCommand
 
-from chainsight.graph import get_graph_repository
-from chainsight.services import get_stock_data_for_neo4j, load_stocks_to_neo4j
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.services import get_stock_data_for_neo4j, load_stocks_to_neo4j
 from packages.shared.stocks.models import Stock
 
 

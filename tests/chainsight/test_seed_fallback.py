@@ -14,10 +14,10 @@ from unittest.mock import patch
 import pytest
 from django.core.cache import cache
 
-from chainsight.api.views import _get_today_seeds
-from chainsight.models import SeedSnapshot
-from chainsight.services.seed_selection import cache_seed_result
-from chainsight.utils import get_market_date
+from apps.chain_sight.api.views import _get_today_seeds
+from apps.chain_sight.models import SeedSnapshot
+from apps.chain_sight.services.seed_selection import cache_seed_result
+from apps.chain_sight.utils import get_market_date
 
 
 @pytest.fixture
@@ -124,7 +124,7 @@ class TestGetTodaySeeds:
     def test_total_miss_triggers_async_recovery(self):
         market_date = get_market_date()
 
-        with patch('chainsight.tasks.seed_tasks.run_seed_selection.delay') as mock_delay:
+        with patch('apps.chain_sight.tasks.seed_tasks.run_seed_selection.delay') as mock_delay:
             result = _get_today_seeds()
 
         assert result == {
@@ -134,7 +134,7 @@ class TestGetTodaySeeds:
         mock_delay.assert_called_once()
 
     def test_recovery_lock_prevents_duplicate_triggers(self):
-        with patch('chainsight.tasks.seed_tasks.run_seed_selection.delay') as mock_delay:
+        with patch('apps.chain_sight.tasks.seed_tasks.run_seed_selection.delay') as mock_delay:
             _get_today_seeds()
             _get_today_seeds()
 

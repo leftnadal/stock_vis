@@ -1,6 +1,6 @@
 """Alternatives API 서비스 — CS-6-7"""
 
-from chainsight.graph import get_graph_repository
+from apps.chain_sight.graph import get_graph_repository
 
 
 def find_alternatives(path_nodes, target_ticker, limit=10):

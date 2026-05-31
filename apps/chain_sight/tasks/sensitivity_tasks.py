@@ -12,7 +12,7 @@ import requests
 from celery import shared_task
 from django.conf import settings
 
-from chainsight.models import CompanySensitivityProfile
+from apps.chain_sight.models import CompanySensitivityProfile
 from packages.shared.stocks.models import (
     BalanceSheet,
     IncomeStatement,

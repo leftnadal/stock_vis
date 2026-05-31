@@ -13,7 +13,7 @@ import pytest
 from django.db import IntegrityError
 from django.utils import timezone
 
-from chainsight.models import (
+from apps.chain_sight.models import (
     ChainNewsEvent,
     CompanyChainProfile,
     CompanyRevenueStructure,

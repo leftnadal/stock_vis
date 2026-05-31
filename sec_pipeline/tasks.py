@@ -288,8 +288,8 @@ def extract_from_document(self, doc_id: int, symbol: str):
 @shared_task(name='sec-seed-relations-to-chainsight', max_retries=1)
 def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
-    from chainsight.models import RelationConfidence
-    from chainsight.utils import normalize_pair
+    from apps.chain_sight.models import RelationConfidence
+    from apps.chain_sight.utils import normalize_pair
 
     from .models import SupplyChainEvidence as SCE
 
@@ -395,7 +395,7 @@ def sync_dirty_to_neo4j(self):
         return {'synced': 0}
 
     # ── Phase B: Neo4j 동기화 ──
-    from chainsight.graph import get_graph_repository
+    from apps.chain_sight.graph import get_graph_repository
 
     try:
         repo = get_graph_repository()

@@ -5,22 +5,22 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import UserRateThrottle
 
-from chainsight.graph.exceptions import GraphConnectionError, GraphQueryError
-from chainsight.models import PathAction, SavedPath
-from chainsight.serializers.path_watchlist import (
+from apps.chain_sight.graph.exceptions import GraphConnectionError, GraphQueryError
+from apps.chain_sight.models import PathAction, SavedPath
+from apps.chain_sight.serializers.path_watchlist import (
     SavedPathCreateSerializer,
     SavedPathDetailSerializer,
     SavedPathListSerializer,
 )
-from chainsight.services.alternatives_service import find_alternatives
-from chainsight.services.expand_service import find_expansion_candidates
-from chainsight.services.path_service import (
+from apps.chain_sight.services.alternatives_service import find_alternatives
+from apps.chain_sight.services.expand_service import find_expansion_candidates
+from apps.chain_sight.services.path_service import (
     build_edge_snapshot,
     build_initial_why_now,
     build_path_signature,
     generate_summary_path,
 )
-from chainsight.services.recheck_service import run_recheck
+from apps.chain_sight.services.recheck_service import run_recheck
 
 
 class WatchlistUserThrottle(UserRateThrottle):

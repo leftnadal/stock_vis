@@ -17,10 +17,10 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from chainsight.graph import get_graph_repository
-from chainsight.graph.exceptions import GraphConnectionError
-from chainsight.models import CoMentionEdge, PriceCoMovement
-from chainsight.utils import get_market_date
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.graph.exceptions import GraphConnectionError
+from apps.chain_sight.models import CoMentionEdge, PriceCoMovement
+from apps.chain_sight.utils import get_market_date
 from packages.shared.stocks.models import Stock
 
 REASON_LABELS = {
@@ -318,7 +318,7 @@ def _get_today_seeds() -> dict:
             return json.loads(cached) if isinstance(cached, str) else cached
 
     # 2) DB 영속 스냅샷 — 가장 최근 것(최대 7일)
-    from chainsight.models import SeedSnapshot
+    from apps.chain_sight.models import SeedSnapshot
 
     snapshot = (
         SeedSnapshot.objects.filter(market_date__gte=today - timedelta(days=7))
@@ -355,7 +355,7 @@ def _trigger_seed_recovery(market_date: date) -> None:
     if not got_lock:
         return
     try:
-        from chainsight.tasks.seed_tasks import run_seed_selection
+        from apps.chain_sight.tasks.seed_tasks import run_seed_selection
 
         run_seed_selection.delay()
     except Exception as e:

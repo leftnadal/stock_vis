@@ -10,8 +10,8 @@ from typing import Dict, List, Optional
 from django.db import transaction
 from django.utils import timezone
 
-from chainsight.graph import get_graph_repository
-from chainsight.models import PathAction, SavedPath
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.models import PathAction, SavedPath
 
 logger = logging.getLogger(__name__)
 

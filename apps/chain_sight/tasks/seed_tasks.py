@@ -11,14 +11,14 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 
-from chainsight.models import CoMentionEdge, RelationConfidence
-from chainsight.services.seed_selection import (
+from apps.chain_sight.models import CoMentionEdge, RelationConfidence
+from apps.chain_sight.services.seed_selection import (
     build_sector_summary,
     cache_seed_result,
     resolve_seed_type,
     select_seeds,
 )
-from chainsight.utils import get_market_date
+from apps.chain_sight.utils import get_market_date
 from packages.shared.stocks.models import DailyPrice, Stock
 
 logger = logging.getLogger(__name__)
@@ -103,7 +103,7 @@ HEAT_WEIGHTS = {
 @shared_task(name="chainsight-heat-score-daily", max_retries=1, soft_time_limit=300)
 def calculate_heat_scores():
     """매일 실행 — 모든 :Stock의 heat_score 계산 → Neo4j 저장."""
-    from chainsight.graph import get_graph_repository
+    from apps.chain_sight.graph import get_graph_repository
 
     start_time = timezone.now()
 
@@ -175,7 +175,7 @@ def calculate_heat_scores():
 @shared_task(name="chainsight-seed-snapshot-cleanup", max_retries=1)
 def cleanup_seed_snapshots(retain_days: int = 30) -> dict:
     """SeedSnapshot 행이 무한 누적되는 것을 방지. 기본 30일 이전 스냅샷 삭제."""
-    from chainsight.models import SeedSnapshot
+    from apps.chain_sight.models import SeedSnapshot
 
     cutoff = timezone.localdate() - timedelta(days=retain_days)
     deleted, _ = SeedSnapshot.objects.filter(market_date__lt=cutoff).delete()

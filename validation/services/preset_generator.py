@@ -386,7 +386,7 @@ class PresetGenerator:
         GrowthStage × CapitalDNA 조합으로 섹터 횡단 테마 클러스터링.
         같은 (stage, capital_type) 조합 = 비슷한 비즈니스 DNA.
         """
-        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
+        from apps.chain_sight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         # 내 프로파일 조회
         my_gs = CompanyGrowthStage.objects.filter(symbol_id=stock.symbol).first()

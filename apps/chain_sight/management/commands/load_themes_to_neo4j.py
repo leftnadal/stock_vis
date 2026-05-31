@@ -11,7 +11,7 @@ Usage:
 
 from django.core.management.base import BaseCommand
 
-from chainsight.graph import get_graph_repository
+from apps.chain_sight.graph import get_graph_repository
 
 # ETF → Theme 매핑 (ETF 심볼 → 테마 이름 + 설명)
 ETF_THEME_MAP = {

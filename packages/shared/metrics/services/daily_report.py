@@ -239,7 +239,7 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
 
 def collect_coverage_gaps() -> Dict[str, Any]:
     """현재 그래프 외에 새로 추가할 수 있는 노드 후보."""
-    from chainsight.models import CompanyChainProfile
+    from apps.chain_sight.models import CompanyChainProfile
     from packages.shared.stocks.models import Stock
     from sec_pipeline.models import UnmatchedCompanyQueue
 

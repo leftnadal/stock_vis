@@ -103,7 +103,7 @@ def execute_peer_filter(symbol: str, parsed_filter: dict,
     Returns:
         {'peers': [...], 'count': int, 'filters_applied': [...]}
     """
-    from chainsight.models import (
+    from apps.chain_sight.models import (
         CompanyCapitalDNA,
         CompanyGrowthStage,
         CompanyInsiderSignal,

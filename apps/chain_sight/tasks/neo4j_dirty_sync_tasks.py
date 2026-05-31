@@ -6,7 +6,7 @@ import logging
 
 from celery import shared_task
 
-from chainsight.services.neo4j_sync import sync_dirty_relations
+from apps.chain_sight.services.neo4j_sync import sync_dirty_relations
 
 logger = logging.getLogger(__name__)
 

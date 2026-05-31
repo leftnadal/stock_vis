@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from celery import shared_task
 
-from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
+from apps.chain_sight.models import CompanyCapitalDNA, CompanyGrowthStage
 from packages.shared.stocks.models import (
     BalanceSheet,
     CashFlowStatement,

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from chainsight.services.path_service import (
+from apps.chain_sight.services.path_service import (
     _compute_bridge_scores,
     _compute_sector_uniqueness,
     _normalize_rank,
@@ -17,8 +17,8 @@ def test_short_path_unchanged():
     assert generate_summary_path(['A', 'B', 'C', 'D']) == ['A', 'B', 'C', 'D']
 
 
-@patch('chainsight.services.path_service._fetch_centrality')
-@patch('chainsight.services.path_service.Stock.objects.filter')
+@patch('apps.chain_sight.services.path_service._fetch_centrality')
+@patch('apps.chain_sight.services.path_service.Stock.objects.filter')
 def test_long_path_compressed(mock_filter, mock_centrality):
     mock_centrality.return_value = {
         'B': {'pagerank': None, 'betweenness': None, 'degree': 10},
@@ -65,7 +65,7 @@ def test_bridge_score_center_highest():
     assert scores[1] > scores[2]
 
 
-@patch('chainsight.services.path_service.Stock.objects.filter')
+@patch('apps.chain_sight.services.path_service.Stock.objects.filter')
 def test_sector_uniqueness(mock_filter):
     mock_qs = MagicMock()
     mock_qs.values_list.return_value = [
@@ -83,8 +83,8 @@ def test_sector_uniqueness(mock_filter):
     assert scores[2] == pytest.approx(0.25)
 
 
-@patch('chainsight.services.path_service._fetch_centrality')
-@patch('chainsight.services.path_service.Stock.objects.filter')
+@patch('apps.chain_sight.services.path_service._fetch_centrality')
+@patch('apps.chain_sight.services.path_service.Stock.objects.filter')
 def test_null_centrality_fallback(mock_filter, mock_centrality):
     mock_centrality.return_value = {
         'B': {'pagerank': None, 'betweenness': None, 'degree': 5},

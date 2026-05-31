@@ -3,7 +3,7 @@ from unittest.mock import patch
 import pytest
 from rest_framework.test import APIClient
 
-from chainsight.models import PathAction, SavedPath
+from apps.chain_sight.models import PathAction, SavedPath
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ def client(auth_user):
 
 @pytest.mark.django_db
 @patch(
-    'chainsight.views.watchlist_views.build_edge_snapshot',
+    'apps.chain_sight.views.watchlist_views.build_edge_snapshot',
     return_value=[
         {'from': 'NVDA', 'to': 'TSM', 'type': 'SUPPLIES_TO',
          'truth_score': 85, 'status': 'confirmed'}

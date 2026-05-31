@@ -9,7 +9,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from chainsight.models import SavedPath
+from apps.chain_sight.models import SavedPath
 
 User = get_user_model()
 

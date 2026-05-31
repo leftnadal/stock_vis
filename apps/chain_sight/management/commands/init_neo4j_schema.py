@@ -10,8 +10,8 @@ Neo4j 온톨로지 스키마 초기화 커맨드.
 
 from django.core.management.base import BaseCommand
 
-from chainsight.graph import get_graph_repository
-from chainsight.graph.schema import (
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.graph.schema import (
     CONSTRAINTS,
     INDEXES,
     initialize_schema,

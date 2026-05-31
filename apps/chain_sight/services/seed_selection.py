@@ -13,7 +13,7 @@ from django.core.cache import cache
 from django.db.models import Avg, DecimalField, F, OuterRef, StdDev, Subquery
 from django.db.models.functions import Cast
 
-from chainsight.models import CoMentionEdge, RelationConfidence
+from apps.chain_sight.models import CoMentionEdge, RelationConfidence
 from packages.shared.stocks.models import DailyPrice, Stock
 
 logger = logging.getLogger(__name__)
@@ -419,7 +419,7 @@ def cache_seed_result(market_date: date, sector_summary: list, seeds_list: list)
     Redis 휘발 시(테스트 flush, 재시작, maxmemory eviction) DB에서 복구 가능.
     Redis write 실패는 경고로만 남기고 DB write는 반드시 성공시킨다.
     """
-    from chainsight.models import SeedSnapshot  # 순환 import 회피
+    from apps.chain_sight.models import SeedSnapshot  # 순환 import 회피
 
     payload = {
         "date": str(market_date),

@@ -9,8 +9,8 @@ from typing import Any, Dict, List, Tuple
 import requests
 from django.conf import settings
 
-from chainsight.graph import get_graph_repository
-from chainsight.utils import normalize_pair
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.utils import normalize_pair
 from packages.shared.stocks.models import Stock
 
 logger = logging.getLogger(__name__)

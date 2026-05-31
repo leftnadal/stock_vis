@@ -1,6 +1,6 @@
 """Expand API 서비스 — CS-6-6"""
 
-from chainsight.graph import get_graph_repository
+from apps.chain_sight.graph import get_graph_repository
 
 RELATION_PRIORITY = {
     "SUPPLIES_TO": 5,

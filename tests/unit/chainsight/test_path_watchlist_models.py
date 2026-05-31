@@ -1,7 +1,7 @@
 import pytest
 from django.core.exceptions import ValidationError
 
-from chainsight.models import PathAction, SavedPath
+from apps.chain_sight.models import PathAction, SavedPath
 
 
 @pytest.mark.django_db

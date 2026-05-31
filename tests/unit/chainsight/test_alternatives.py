@@ -5,8 +5,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from chainsight.models import PathAction, SavedPath
-from chainsight.services.alternatives_service import find_alternatives
+from apps.chain_sight.models import PathAction, SavedPath
+from apps.chain_sight.services.alternatives_service import find_alternatives
 
 User = get_user_model()
 
@@ -27,7 +27,7 @@ def client(user):
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.alternatives_service.get_graph_repository')
+@patch('apps.chain_sight.services.alternatives_service.get_graph_repository')
 def test_find_alternatives_middle_node(mock_get_repo):
     mock_repo = MagicMock()
     mock_repo.run_query.side_effect = [
@@ -52,7 +52,7 @@ def test_find_alternatives_middle_node(mock_get_repo):
 
 
 @pytest.mark.django_db
-@patch('chainsight.services.alternatives_service.get_graph_repository')
+@patch('apps.chain_sight.services.alternatives_service.get_graph_repository')
 def test_find_alternatives_start_node(mock_get_repo):
     mock_repo = MagicMock()
     mock_repo.run_query.side_effect = [
@@ -75,7 +75,7 @@ def test_find_alternatives_target_not_in_path():
 
 
 @pytest.mark.django_db
-@patch('chainsight.views.watchlist_views.find_alternatives')
+@patch('apps.chain_sight.views.watchlist_views.find_alternatives')
 def test_alternatives_api_success(mock_find, client, user):
     path = SavedPath.objects.create(user=user, path_nodes=['NVDA', 'TSM', 'AMAT', 'LRCX'])
     mock_find.return_value = {

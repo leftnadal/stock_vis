@@ -2,8 +2,8 @@
 
 from django.core.management.base import BaseCommand
 
-from chainsight.graph import get_graph_repository
-from chainsight.services import load_sectors_to_neo4j
+from apps.chain_sight.graph import get_graph_repository
+from apps.chain_sight.services import load_sectors_to_neo4j
 
 
 class Command(BaseCommand):

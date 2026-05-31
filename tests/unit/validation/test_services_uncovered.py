@@ -256,7 +256,7 @@ class TestGenerateLifecycle:
 class TestGenerateThematicWithDNA:
     def test_creates_preset_when_dna_matches(self):
         """본인 + 다른 종목 5개 이상이 같은 stage+capital_type → 프리셋 생성."""
-        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
+        from apps.chain_sight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         stock = _make_stock("DNA_OK", sector="Technology", industry="Cloud")
         CompanyGrowthStage.objects.create(symbol_id="DNA_OK", stage='accelerating')
@@ -280,7 +280,7 @@ class TestGenerateThematicWithDNA:
 
     def test_no_growth_stage_returns_zero(self):
         """CompanyGrowthStage 없으면 0."""
-        from chainsight.models import CompanyCapitalDNA
+        from apps.chain_sight.models import CompanyCapitalDNA
 
         stock = _make_stock("DNA_NGS", sector="Technology", industry="Cloud")
         CompanyCapitalDNA.objects.create(symbol_id="DNA_NGS", capital_type='balanced')
@@ -291,7 +291,7 @@ class TestGenerateThematicWithDNA:
 
     def test_no_capital_dna_returns_zero(self):
         """CompanyCapitalDNA 없으면 0."""
-        from chainsight.models import CompanyGrowthStage
+        from apps.chain_sight.models import CompanyGrowthStage
 
         stock = _make_stock("DNA_NCD", sector="Technology", industry="Cloud")
         CompanyGrowthStage.objects.create(symbol_id="DNA_NCD", stage='mature')
@@ -302,7 +302,7 @@ class TestGenerateThematicWithDNA:
 
     def test_insufficient_dna_peers_returns_zero(self):
         """같은 DNA peer < 5 → 0."""
-        from chainsight.models import CompanyCapitalDNA, CompanyGrowthStage
+        from apps.chain_sight.models import CompanyCapitalDNA, CompanyGrowthStage
 
         stock = _make_stock("DNA_LP", sector="Technology", industry="Niche")
         CompanyGrowthStage.objects.create(symbol_id="DNA_LP", stage='turnaround')

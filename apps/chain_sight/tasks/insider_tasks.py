@@ -13,7 +13,7 @@ import requests
 from celery import shared_task
 from django.conf import settings
 
-from chainsight.models import CompanyInsiderSignal
+from apps.chain_sight.models import CompanyInsiderSignal
 from packages.shared.stocks.models import SP500Constituent, Stock
 
 logger = logging.getLogger(__name__)

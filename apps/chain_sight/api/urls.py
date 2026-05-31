@@ -1,7 +1,7 @@
 from django.urls import path
 from rest_framework.routers import DefaultRouter
 
-from chainsight.views.watchlist_views import WatchlistViewSet
+from apps.chain_sight.views.watchlist_views import WatchlistViewSet
 
 from .views import (
     ChainSightGraphView,

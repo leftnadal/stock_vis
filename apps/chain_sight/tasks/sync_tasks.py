@@ -17,7 +17,7 @@ def aggregate_chain_profiles(self):
     """
     CS-2-5: 개별 프로파일 → ChainProfile 집약. Celery Beat: 주 1회 (일요일 05:00).
     """
-    from chainsight.models import (
+    from apps.chain_sight.models import (
         CompanyCapitalDNA,
         CompanyChainProfile,
         CompanyGrowthStage,
@@ -107,8 +107,8 @@ def aggregate_chain_profiles(self):
 @shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
 def sync_profiles_to_neo4j(self):
     """CS-3-1: ChainProfile → Neo4j :Stock 속성 Delta Sync."""
-    from chainsight.graph import get_graph_repository
-    from chainsight.models import CompanyChainProfile
+    from apps.chain_sight.graph import get_graph_repository
+    from apps.chain_sight.models import CompanyChainProfile
 
     repo = get_graph_repository()
     pending = CompanyChainProfile.objects.filter(neo4j_dirty=True)
@@ -178,14 +178,14 @@ def sync_relations_to_neo4j(self):
     """
     from django.core.cache import cache
 
-    from chainsight.models import RelationConfidence
-    from chainsight.services.neo4j_sync import sync_dirty_relations
+    from apps.chain_sight.models import RelationConfidence
+    from apps.chain_sight.services.neo4j_sync import sync_dirty_relations
 
     # ── 레거시 RELATED_TO 엣지 1회 정리 ──
     cleanup_key = "chainsight:related_to_cleanup_v1"
     if not cache.get(cleanup_key):
         try:
-            from chainsight.graph import get_graph_repository
+            from apps.chain_sight.graph import get_graph_repository
 
             repo = get_graph_repository()
             repo.run_query("MATCH ()-[r:RELATED_TO]-() DELETE r")

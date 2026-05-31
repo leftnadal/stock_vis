@@ -22,8 +22,8 @@ logger = logging.getLogger(__name__)
 )
 def fetch_and_load_peers(self, use_fmp: bool = False):
     """전체 Peer 수집 + Neo4j 로드."""
-    from chainsight.graph import get_graph_repository
-    from chainsight.services import collect_all_peers, load_peers_to_neo4j
+    from apps.chain_sight.graph import get_graph_repository
+    from apps.chain_sight.services import collect_all_peers, load_peers_to_neo4j
 
     repo = get_graph_repository()
     symbols = [
