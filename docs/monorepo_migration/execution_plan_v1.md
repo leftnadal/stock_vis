@@ -54,7 +54,9 @@ services/
 | ~~**PR5**~~ | ~~`apps/market_pulse/`~~ **→ PR4로 흡수 (2026-05-31)** | — | — | — | — |
 | **PR6** | `apps/chain_sight/` | packages 의존 | 중 | ✅ 가능 | 1 세션 |
 | **PR7** | `apps/portfolio/` (coach 포함) | packages 의존 | **최고** | ❌ **금지** | 1 세션 |
-| **PR8** | 루트 메타 정리 + 이관 5건 잔여 | 모든 트랙 정착 후 | 낮음 | ✅ 가능 | 1 세션 |
+| **PR8a** | `services/` 5앱 이동 (news · serverless · rag_analysis · validation · sec_pipeline) | packages 의존 | 중상 | ⚠️ 단독 권장 | 1 세션 |
+| **PR8b** | macro 코드 해체 (서비스/뷰/URL 제거, 모델·테이블 보류) | packages 의존 | 상 | ⚠️ 단독 권장 | 1 세션 |
+| **PR8c** | 메타 정리 (빈 디렉토리·graph_analysis 회귀·plan/blueprint 도식) | 모든 트랙 정착 후 | 낮음 | ✅ 가능 | 1 세션 |
 
 **역방향 근거**: import 경로 변경 시 "참조하는 쪽"은 "참조되는 쪽"이 신경로에 정착한 뒤 옮겨야 깨짐 최소. packages → integrations → apps 순서.
 
@@ -63,6 +65,28 @@ services/
 **PR4 dashboard 보류 (2026-05-31)**: `apps/dashboard/` 실 디렉토리/Django 앱 부재 확인 (코드 fact-check). blueprint §② 정의는 신규 트랙. **monorepo 트랙 외로 이연**, 트리거 = 독립 배포 또는 모듈 경계 명시 필요 시. PR4는 **PR5 원안 `apps/market_pulse/`로 승계** (결번 방지, 원안 PR5는 PR4에 흡수).
 
 **PR 순번 재배치 (2026-05-31)**: PR4=market_pulse / PR5(원안 market_pulse) 결번 / PR6/PR7/PR8 그대로. dashboard 부활 시 PR9 또는 별도 슬롯.
+
+**PR8 3분할 (2026-06-01)**: 원안 "PR8 루트 메타 정리 + 이관 5건"은 카테고리 오류 + 규모 오판. PR8a/b/c 3분할로 정합화. 상세:
+
+- ※ 구 'PR8 이관 5건'은 **옮길 앱이 아니라 미해결 결정 5건**이었음 (thesis 처분 · macro 처분 · 삭제 승인 · 분할 · plan 정합). STEP 0 조사로 규명, 본 정합화로 해소.
+- PR8 STEP 0 fact-check 결과 루트 잔존 7앱 외부 결합 광범위 (250/253/203/150/68/42/34건) → 단일 PR 1세션 불가.
+- **PR8a**: services/ 5앱 일괄 이동 (PR2 답습 패턴). target = `services/{news,serverless,rag_analysis,validation,sec_pipeline}/`. blueprint §② 백엔드 도메인 서비스 분류 정합.
+- **PR8b**: macro 코드 해체 (blueprint §② "해체(소멸)" 결정). MarketIndex/MarketIndexPrice/fred_client/fmp_client → packages/shared로 분배. v1 진입점 → apps/market_pulse 흡수. **모델 3개(EconomicEvent · SectorIndicatorRelation · IndicatorCorrelation) 삭제는 PR8b scope 외 보류** (아래 *macro 모델 보류* 항목).
+- **PR8c**: 메타 정리 — marketpulse/ 빈 디렉토리 (PR4 mv 후 untracked 잔재) + graph_analysis 자기참조 회귀 2건 (PR1 정착 후 어디선가 되돌려짐) + plan/blueprint dashboard 도식 정리 + 기타 잔여.
+
+**thesis 보류 (PR8, 2026-06-01)**: 현재 외부 사용처 0(메인 코드 호출 0, tests 150건만), 단독→공유 전환 여부 미정. monorepo는 자리 정해진 모듈만 이동 → 처분 결정 전 루트 보류. blueprint §② 라인 69 "apps/portfolio (← portfolio + thesis scope 통합)" 명시였으나 PR7는 portfolio만 이동, thesis는 미흡수 상태로 둠. **트리거**:
+- (a) 공유 확정 → `packages/shared/thesis/`
+- (b) 독립 확정 → `services/thesis/`
+- (c) 폐기 → 삭제
+
+기능 설계 트랙 사안, monorepo 밖.
+
+**macro 모델 보류 (PR8b, 2026-06-01)**: macro 모델 3개 (`EconomicEvent` · `SectorIndicatorRelation` · `IndicatorCorrelation`) 삭제 보류. 코드 FK 참조 0(STEP 0-C 확인, 다른 앱 migration `to="macro.X"` 0건)이나 **데이터 안전 별개**. PR8b는 코드 결합만 제거, 모델/테이블 보존. DROP migration = 데이터 백업 + 공실 확인 트리거 후 별도 처리.
+
+**루트 잔존 현황 (PR8a/b 종결 후 예상)**:
+- monorepo 이동 대상 소진 시점 = **PR8a + PR8b 완료 후**
+- 잔존: `thesis/` (의도적 보류 — 위 처분 트리거 충족 시) + `macro/` 모델 껍데기 (테이블 보존)
+- dashboard는 애초 미존재 → 부활 시 PR9 또는 별도 슬롯
 
 ---
 
@@ -77,7 +101,9 @@ services/
 | PR5 | pytest + vitest (market_pulse 분) + IDENTICAL 31/31 | |
 | PR6 | pytest + vitest (chain_sight 분) + IDENTICAL 31/31 | |
 | PR7 | **풀 회귀** (pytest + vitest + IDENTICAL 31/31 + cost_ledger 임계) | **코치 31 응답 byte-level 동일 검증의 핵심 PR** |
-| PR8 | health_check 6✅/0⚠/1❌ + 전체 회귀 1회 | cleanup 후 baseline 재확인 |
+| PR8a | pytest 풀 회귀 + Django check + makemigrations(label 보존 0) | services/ 5앱 일괄 이동, 광범위 영향 |
+| PR8b | pytest 풀 회귀 + Django check + makemigrations(macro 코드 제거 검증) | macro 해체, 모델/테이블 보존 |
+| PR8c | health_check 6✅/0⚠/1❌ + 전체 회귀 1회 | 메타 정리 후 baseline 재확인 |
 
 **IDENTICAL 31/31 적용 시점**: PR4부터 (apps 메인 진입). PR1~3은 코치 응답 영향 없어 smoke로 충분.
 
