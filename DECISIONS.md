@@ -994,3 +994,20 @@ for name, new_task in mapping.items():
 - 첫 적용 (2026-06-01): dev DB 75 row reconcile, idempotent 확인 PASS.
 
 **관련 문서**: `sub_claude_md/common-bugs.md #28` "항구 해결" 절차, `tests/marketpulse/test_sync_beat_schedule.py` 4 tests.
+
+### PR8b-2 Track B — fmp_client / macro_service / constants 판정 = 보존 (2026-06-01)
+
+**결정**: STEP 0 가설("constants 소비자 0건", fmp_client 외부 0)을 reachability 전수 실측으로 정정. 3개 후보 모두 **REACHABLE** → 삭제 0건.
+
+| 후보 | 직접 소비 | Transitive | 결론 |
+|---|---|---|---|
+| `apps/market_pulse/services/fmp_client.py` | `macro_service.py` 단일 | macro_service → views(9) + tasks/macro(4) | reachable |
+| `apps/market_pulse/services/macro_service.py` | views.py 9 + tasks/macro.py 4 (lazy) | — | reachable |
+| `apps/market_pulse/constants/` | `macro_service.py` (`calculate_fear_greed_index`, `get_insight_message`) | → views/tasks 사슬 | reachable |
+
+**Why**: STEP 0 가설은 import만 보고 transitive 호출 사슬을 보지 않은 결함. dead-code 단정 전 transitive 도달성 전수 (import + 동적 + 문자열 + admin + serializer field + task name)는 절대 규칙 2 명시.
+
+**How to apply**: PR8c에서도 위 3개를 dead-code로 단정 짓지 말 것. 동일 이름의 `FMPClient`가 3개 모듈에 존재 (`apps/market_pulse/services/fmp_client.py` vs `packages/shared/api_request/providers/fmp/client.py` vs `services/serverless/services/fmp_client.py`) — 검색 시 혼동 주의, 절대 경로로 식별.
+
+**잔재 (PR8c 정리 대상 태깅)**:
+- `macro/management/commands/__init__.py` 빈 패키지 (안에 .py 0개) → PR8c.
