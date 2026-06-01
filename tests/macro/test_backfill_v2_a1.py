@@ -109,9 +109,9 @@ class TestIdempotency:
     def test_t14_idempotent_economic(self, seed_indicators, seed_market_indices):
         fake_obs = [{'date': date(2026, 4, 1), 'value': '-0.5'}]
 
-        with patch('macro.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=fake_obs), \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=fake_obs), \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
+        with patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=fake_obs), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=fake_obs), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
             out1 = StringIO()
             call_command('backfill_v2_a1', '--series-id', 'NFCI', stdout=out1)
             out2 = StringIO()
@@ -126,9 +126,9 @@ class TestSingleTarget:
     """T15: --series-id 단일 실행은 다른 series fetch 안 함."""
 
     def test_t15_series_id_only(self, seed_indicators, seed_market_indices):
-        with patch('macro.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]) as m_yi, \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]) as m_ohlc:
+        with patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]) as m_yi, \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]) as m_ohlc:
             call_command('backfill_v2_a1', '--series-id', 'NFCI')
 
         # NFCI 한 series만 fetch (FRED 또는 Yahoo 한 곳)
@@ -146,9 +146,9 @@ class TestDateRange:
     """T17: --from/--to 인자가 fetch 메서드에 전달."""
 
     def test_t17_date_range_passed(self, seed_indicators, seed_market_indices):
-        with patch('macro.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]), \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
+        with patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
             call_command(
                 'backfill_v2_a1',
                 '--series-id', 'NFCI',
@@ -167,9 +167,9 @@ class TestLimit:
     """T18: --limit 대상 수 제한."""
 
     def test_t18_limit_3(self, seed_indicators, seed_market_indices):
-        with patch('macro.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]) as m_yi, \
-             patch('macro.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]) as m_ohlc:
+        with patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=[]) as m_fred, \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=[]) as m_yi, \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]) as m_ohlc:
             call_command('backfill_v2_a1', '--limit', '3')
 
         # economic 3개 + market 3개 fetch
