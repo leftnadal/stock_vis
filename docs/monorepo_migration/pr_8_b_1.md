@@ -13,7 +13,7 @@
 3. config는 **실측한 라인만** 갱신. macro app_label·INSTALLED_APPS 'macro'·LLM/spectacular enum 'macro'·URL prefix `/api/v1/macro/`는 **그대로 유지**(모델 잔존이라 label 불변, prefix 불변).
 4. **각 Part 후 `pytest` + 경계 테스트 GREEN 확인.** 빨개지면 그 Part에서 HALT + 보고.
 5. 메모리/이 지시서 경로·라인은 **가설** → Part 0 실측 우선.
-6. **이번 범위 아님:** macro/models·migrations 이동(PR8b-3), #4·#5 청소, fmp/constants dead-code 판정(PR8c).
+6. **이번 범위 아님:** macro/models·migrations 처분(PR8b-3에서 옵션 A 결정 = 이동 안 함, 영구 모델 전용 앱), #4·#5 청소(BOUNDARY-3 재정의 = 소비자 이동), fmp/constants 판정(PR8b-2에서 reachable 보존 결론).
 
 ---
 
@@ -100,7 +100,7 @@ ls apps/market_pulse/tasks/ apps/market_pulse/management/commands/ apps/market_p
 
 ## 잔존 사항 (이번 범위 아님)
 
-- macro/models + migrations (#4·#5 동결 lazy 유지) → **PR8b-3** 트리거 대기(app_label 전략 + DB 백업/공실 확인).
+- macro/models + migrations → **PR8b-3에서 옵션 A 채택 (이동 안 함, 영구 모델 전용 앱)**. #4·#5 lazy import는 BOUNDARY-3 새 정의(소비자 이동, 모델 이동 아님)에서 처리.
 - fmp_client / constants dead-code 판정 → **PR8c**.
 - thesis 처분(보류, 3트리거) 확정 시 → fred 최종 위치 재검토 트리거.
 

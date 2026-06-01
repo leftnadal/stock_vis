@@ -359,6 +359,6 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결: 동결 청소 PR 별도 머지 → `KNOWN_VIOLATIONS` 키 2곳 (tests + health_check) 동시 삭제 → `test_known_violations_still_present`가 누락 차단. 소진 순서:
   1. 우선 #1·#2 circuit_breaker (top-level, 가장 위험) → `BOUNDARY-1`
   2. #3 chain_sight → `BOUNDARY-2`
-  3. #4·#5 macro.models → PR8b-3 모델 이동과 동봉 → `BOUNDARY-3`
+  3. #4·#5 macro.models → **모델 이동 아님**. `BOUNDARY-3` 새 정의 = 소비자 이동(방향1: `eod_regime_calculator.py`/`eod_pipeline.py` → market_pulse) / dependency inversion(방향2) / 모델 shared 승격(C, 조건부 보류). 영구 동결 아님 — burn-down 0 도달 경로 = #1·#2·#3(경계 트랙 청소) + #4·#5(BOUNDARY-3).
 - 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
 - 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)"

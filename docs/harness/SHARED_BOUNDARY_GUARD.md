@@ -28,8 +28,8 @@
 | 1 | `stocks/services/sp500_eod_service.py` | `apps.market_pulse.utils.circuit_breaker` | top-level | TASKQUEUE: BOUNDARY-1 |
 | 2 | `stocks/services/sp500_service.py` | `apps.market_pulse.utils.circuit_breaker` | top-level | TASKQUEUE: BOUNDARY-1 |
 | 3 | `metrics/services/daily_report.py` | `apps.chain_sight.models` | lazy | TASKQUEUE: BOUNDARY-2 |
-| 4 | `stocks/services/eod_regime_calculator.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (PR8b-3 동봉) |
-| 5 | `stocks/services/eod_pipeline.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (PR8b-3 동봉) |
+| 4 | `stocks/services/eod_regime_calculator.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
+| 5 | `stocks/services/eod_pipeline.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
 
 **SSOT**: `tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS`.
 `scripts/health_check.py:_BOUNDARY_KNOWN_VIOLATIONS`는 동기 복사본 — 양쪽을 같이 갱신해야 함(감시 장치는 작아서 중복 허용).
