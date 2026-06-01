@@ -91,6 +91,13 @@ def _git(args: list[str]) -> str:
 # ── 검증 1: PROGRESS origin/main 해시 vs 실제 ────────────────────────────────
 
 
+# PROGRESS hash 자기참조 모순 회피용 tolerance (2026-06-01 결정).
+# 단일 commit이 자기 자신의 push-후 hash를 본문에 적을 수 없는 구조적 한계 때문에,
+# strict ANY-match 정책은 항상 1-behind ❌ 잔여를 만든다. 최근 N commit 중 하나에라도
+# PROGRESS 표기가 매칭되면 PASS로 완화. N은 보수적으로 3 (stale 1주 단위 갱신 가정).
+ORIGIN_MAIN_HASH_TOLERANCE = 3
+
+
 def check_origin_main_hash() -> CheckResult:
     actual = _git(["rev-parse", "--short", "origin/main"])
     if not actual:
@@ -111,19 +118,43 @@ def check_origin_main_hash() -> CheckResult:
             detail=f"PROGRESS.md에 origin/main 해시 표기 0건 (실제: {actual})",
         )
 
-    actual_short = actual[:7]
-    matches = [h for h in hashes_in_doc if h.startswith(actual_short) or actual_short.startswith(h[:7])]
-    if matches:
+    # 최근 N=ORIGIN_MAIN_HASH_TOLERANCE commit hash 수집 (HEAD, HEAD~1, ...)
+    recent_full = _git(
+        ["log", f"-{ORIGIN_MAIN_HASH_TOLERANCE}", "--format=%H", "origin/main"]
+    ).splitlines()
+    recent_short = [h[:7] for h in recent_full if h]
+
+    def _prefix_match(doc_hash: str, target_short: str) -> bool:
+        return doc_hash.startswith(target_short) or target_short.startswith(doc_hash[:7])
+
+    matched_pairs = [
+        (h, target)
+        for h in hashes_in_doc
+        for target in recent_short
+        if _prefix_match(h, target)
+    ]
+    if matched_pairs:
+        matched_target = matched_pairs[0][1]
+        actual_short = recent_short[0]
+        if matched_target == actual_short:
+            detail = f"PROGRESS 표기 일치 ({actual_short})"
+        else:
+            depth = recent_short.index(matched_target)
+            detail = (
+                f"PROGRESS 표기 일치 ({matched_target}, HEAD~{depth}; "
+                f"실제 HEAD={actual_short}, tolerance N={ORIGIN_MAIN_HASH_TOLERANCE})"
+            )
         return CheckResult(
             name="origin/main 해시",
             status=OK,
-            detail=f"PROGRESS 표기 일치 ({actual_short})",
+            detail=detail,
         )
     return CheckResult(
         name="origin/main 해시",
         status=ERROR,
-        detail=f"PROGRESS 표기 {hashes_in_doc} 모두 실제 {actual_short}와 불일치",
-        evidence=[f"실측: origin/main = {actual_short}"] + [f"PROGRESS: {h}" for h in hashes_in_doc],
+        detail=f"PROGRESS 표기 {hashes_in_doc} 모두 최근 {ORIGIN_MAIN_HASH_TOLERANCE} commit과 불일치",
+        evidence=[f"실측 HEAD~0..~{ORIGIN_MAIN_HASH_TOLERANCE - 1}: {recent_short}"]
+        + [f"PROGRESS: {h}" for h in hashes_in_doc],
     )
 
 
