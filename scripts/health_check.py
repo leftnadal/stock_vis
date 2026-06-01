@@ -32,6 +32,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import subprocess
@@ -44,6 +45,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROGRESS_MD = REPO_ROOT / "PROGRESS.md"
 TASKQUEUE_MD = REPO_ROOT / "TASKQUEUE.md"
 DECISIONS_MD = REPO_ROOT / "DECISIONS.md"
+SHARED_ROOT = REPO_ROOT / "packages" / "shared"
+BOUNDARY_LEDGER = REPO_ROOT / "docs" / "harness" / "boundary_ledger.jsonl"
 
 
 # 결과 상태 코드 — Layer 1 단계의 통일된 의미.
@@ -410,6 +413,94 @@ def check_slice_branches_unmerged() -> CheckResult:
     )
 
 
+# ── 검증 8: shared 경계 우회 감지 (tests/architecture와 SSOT 동기화) ───────────
+#
+# SSOT: tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS
+# 동결 항목이 바뀌면 양쪽을 동시에 갱신해야 한다 (감시 장치는 작아서 중복 정의 허용).
+# 야간 적재용 ledger는 --ledger 플래그로만 append (수동 실행 시 ledger 오염 회피).
+
+_BOUNDARY_FORBIDDEN_SEGMENTS = ("apps", "macro")
+
+_BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
+    ("stocks/services/sp500_eod_service.py", "apps.market_pulse.utils.circuit_breaker"),
+    ("stocks/services/sp500_service.py", "apps.market_pulse.utils.circuit_breaker"),
+    ("metrics/services/daily_report.py", "apps.chain_sight.models"),
+    ("stocks/services/eod_regime_calculator.py", "macro.models"),
+    ("stocks/services/eod_pipeline.py", "macro.models"),
+}
+
+
+def _boundary_is_forbidden(module: str) -> bool:
+    if not module:
+        return False
+    return module.split(".", 1)[0] in _BOUNDARY_FORBIDDEN_SEGMENTS
+
+
+def _boundary_collect_violations() -> list[tuple[str, str, int]]:
+    """packages/shared 전 .py를 ast로 파싱해 (rel, module, lineno) 위반 수집."""
+    found: list[tuple[str, str, int]] = []
+    if not SHARED_ROOT.is_dir():
+        return found
+    for py in SHARED_ROOT.rglob("*.py"):
+        try:
+            tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
+        except (SyntaxError, UnicodeDecodeError):
+            continue
+        rel = py.relative_to(SHARED_ROOT).as_posix()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                if node.level and node.level > 0:
+                    continue
+                mod = node.module or ""
+                if _boundary_is_forbidden(mod):
+                    found.append((rel, mod, node.lineno))
+            elif isinstance(node, ast.Import):
+                for alias in node.names:
+                    if _boundary_is_forbidden(alias.name):
+                        found.append((rel, alias.name, node.lineno))
+    return found
+
+
+def check_shared_boundary() -> CheckResult:
+    violations = _boundary_collect_violations()
+    present_keys = {(rel, mod) for (rel, mod, _line) in violations}
+    bypass = [(rel, mod, line) for (rel, mod, line) in violations if (rel, mod) not in _BOUNDARY_KNOWN_VIOLATIONS]
+    frozen_remaining = _BOUNDARY_KNOWN_VIOLATIONS & present_keys
+    n_bypass = len(bypass)
+    n_frozen = len(frozen_remaining)
+
+    if n_bypass == 0:
+        return CheckResult(
+            name="shared 경계",
+            status=OK,
+            detail=f"우회 0 / 동결 잔여 {n_frozen}",
+        )
+    evidence = [f"{rel}:{line} ← from {mod}" for (rel, mod, line) in bypass]
+    return CheckResult(
+        name="shared 경계",
+        status=ERROR,
+        detail=f"우회 {n_bypass}건 / 동결 잔여 {n_frozen}",
+        evidence=evidence,
+    )
+
+
+def _boundary_append_ledger() -> None:
+    """야간 한 줄 추적 — read-only(import 안 함, 코드 수정 안 함)."""
+    violations = _boundary_collect_violations()
+    present_keys = {(rel, mod) for (rel, mod, _line) in violations}
+    bypass = [v for v in violations if (v[0], v[1]) not in _BOUNDARY_KNOWN_VIOLATIONS]
+    frozen_remaining = _BOUNDARY_KNOWN_VIOLATIONS & present_keys
+    entry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "frozen": len(frozen_remaining),
+        "bypass": len(bypass),
+        "total": len(violations),
+    }
+    BOUNDARY_LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    with BOUNDARY_LEDGER.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -421,6 +512,7 @@ CHECKS = [
     check_decisions_freshness,
     check_slice_branches_unmerged,
     check_external_automation_commits,
+    check_shared_boundary,
 ]
 
 
@@ -457,9 +549,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="문서·git 정합성 점검")
     parser.add_argument("--quiet", action="store_true", help="OK 항목 숨김")
     parser.add_argument("--json", action="store_true", help="JSON 출력 (CI/hook용)")
+    parser.add_argument(
+        "--ledger",
+        action="store_true",
+        help="docs/harness/boundary_ledger.jsonl에 shared 경계 추적 한 줄 append (야간 전용)",
+    )
     args = parser.parse_args()
 
     results = run_all()
+
+    if args.ledger:
+        _boundary_append_ledger()
 
     if args.json:
         print(json.dumps([r.to_dict() for r in results], ensure_ascii=False, indent=2))

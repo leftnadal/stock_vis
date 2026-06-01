@@ -36,7 +36,7 @@ cd "$PROJECT_DIR" || exit 0
 
 # JSON 모드 + stderr 통합 저장, exit code는 별도 보존
 HC_EXIT=0
-python3 scripts/health_check.py --json > "$OUTPUT_FILE" 2>>"$REPORT_DIR/health_check.stderr.log" || HC_EXIT=$?
+python3 scripts/health_check.py --json --ledger > "$OUTPUT_FILE" 2>>"$REPORT_DIR/health_check.stderr.log" || HC_EXIT=$?
 
 # 콘솔에도 1줄 요약 (cron log)
 echo "[health_check_nightly] $(date '+%Y-%m-%d %H:%M:%S') exit=$HC_EXIT -> $OUTPUT_FILE"
