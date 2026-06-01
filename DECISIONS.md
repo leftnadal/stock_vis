@@ -1088,3 +1088,28 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - health ❌ 1건 PROGRESS hash 자기참조 (push 트리거, 정합성 Layer 4 영역)
 
 **검증 (최종)**: pytest **3179 passed, 52 skipped** (회귀 0, monorepo 8 PR 시리즈 누적 0건 회귀), 경계 GREEN (우회 0 / 동결 잔여 5), health 7✅/0⚠/1❌(별개 트랙).
+
+### 버킷A — shared 인프라 정착 (circuit_breaker 승격 + FMP namespace 통합) (2026-06-01)
+
+**결정**: monorepo 외 첫 후속 트랙으로 `packages/shared/api_request/` 인프라 정착. (1) `circuit_breaker` 승격으로 BOUNDARY-1 #1·#2 자연 해소 (2) FMP 3벌을 same namespace로 격자화 (#32 1단계 종료).
+
+**HEAD**: `b8f3d00` → `ccbdce5` (+2 commits, branch=main).
+
+**커밋 2**:
+| 순 | hash | 의미 |
+|---|---|---|
+| 1 | `d30915e` | circuit_breaker → `packages/shared/api_request/` 승격, 10 파일 import 갱신, KNOWN_VIOLATIONS #1·#2 해제 (5→3) |
+| 2 | `ccbdce5` | FMP 3 클래스를 `providers/fmp/{client,market_pulse_client,serverless_client}.py`로 격자화, 16 소비처 갱신 (#32 1단계) |
+
+**왜 namespace 옵션 (i) 채택**:
+- (ii) canonical에 24 메서드 이식 = 행위보존 경계 위반 위험.
+- (i) namespace 이동 + 클래스 이름 보존 = 행위보존 100% + #32 "동명 3 모듈" 신호어 해소.
+- 2단계(완전 단일화)는 별도 사이클 (에러 정책 통일 + 메서드 합집합 설계 필요).
+
+**burn-down**: shared 경계 동결 **5 → 3**. 잔여 = #3 (chain_sight), #4·#5 (macro.models).
+**잔존 트랙**:
+- BOUNDARY-2 (#3 chain_sight)
+- BOUNDARY-3 (#4·#5 macro, 소비자 이동 방향1)
+- FMP 2단계 통합 (canonical 메서드 합집합, 사용자 트리거)
+
+**검증**: pytest 3179/52 (회귀 0, 버킷A 누적 0건), 경계 GREEN (우회 0 / 동결 잔여 3), health 8✅/0⚠/0❌.

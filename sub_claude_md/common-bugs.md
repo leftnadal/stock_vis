@@ -342,18 +342,20 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - wrapper는 항상 exit 0 — nightly 전체가 fail로 잡히지 않게. 실제 health_check exit code는 JSON 본문 status 필드로 보존
 - 📎 참조: `scripts/health_check.py`, `scripts/run_health_check_nightly.sh`, `docs/infra/nightly_v3.sh` Phase 5, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션
 
-## FMPClient 동명 3 모듈 — 절대경로 import 필수 (#32)
+## FMPClient 동명 3 모듈 — namespace 통합 (#32, 2026-06-01 1단계 종료)
 
-- 트리거: PR8b-2 reachability 판정에서 발견 (2026-06-01). `FMPClient`라는 이름의 클래스가 **서로 다른 3 모듈**에 존재하며, 책임·인터페이스가 다르다. 상대경로/단축 alias 사용 시 잘못된 클래스를 잡아 silent failure 위험.
-- 3 모듈:
-  | 모듈 | 역할 | 주 소비처 |
+- 트리거: PR8b-2 reachability 판정에서 발견 (2026-06-01). `FMPClient`라는 이름의 클래스가 **서로 다른 3 모듈**에 존재하며, 책임·인터페이스가 다르다.
+- **1단계 종료 (2026-06-01, `ccbdce5`)**: 3 모듈을 `packages/shared/api_request/providers/fmp/` 아래 격자로 모음. 클래스 이름은 유지(행위보존), 모듈 경로만 통일. "동명 3곳" 신호어는 해소.
+
+  | 현재 모듈 경로 | 역할 | 주 소비처 |
   |---|---|---|
-  | `apps.market_pulse.services.fmp_client.FMPClient` | macro v1 Market Pulse 진입점 전용 (Quote / 지수 / Calendar) | `apps.market_pulse.services.macro_service` |
-  | `packages.shared.api_request.providers.fmp.client.FMPClient` | 신규 표준 (Premium/RateLimit/Auth 에러 분리, 단일 source-of-truth 후보) | thesis, FMPNewsProvider, test_fmp_value_postprocess |
-  | `services.serverless.services.fmp_client.FMPClient` | 레거시 serverless (FMPAPIError, screener / chain sight 등) | `packages.shared.stocks.services.sp500_*`, serverless 다수 |
-- 규칙: **항상 절대 경로로 import**. `from .fmp_client import FMPClient` 패턴 금지(상대경로는 같은 패키지의 동명을 잡지만, 다른 패키지의 동명이 의도된 경우 silent 오류).
-- 통합 방향(부채): `api_request/providers/fmp/client.py` single source 채택 + 나머지 2개를 위임 wrapper로 전환. `docs/nightly_auto_system/reports/5월/23일/api_dependency_audit.md:137` 권고. 별도 트랙(PR8 외).
-- 📎 참조: `sub_claude_md/common-bugs.md #23` (FMP 402 / Premium 에러 패턴), `DECISIONS.md` "PR8b-2 Track B" reachability 표
+  | `packages.shared.api_request.providers.fmp.client.FMPClient` | **canonical** — Premium/RateLimit/Auth 에러 분리, 재무제표·검색·뉴스 | thesis, FMPNewsProvider |
+  | `packages.shared.api_request.providers.fmp.market_pulse_client.FMPClient` | Market Pulse v1 거시 도메인 (Quote / 지수 / Calendar / Sector / Forex / Commodities) | `apps.market_pulse.services.macro_service` |
+  | `packages.shared.api_request.providers.fmp.serverless_client.FMPClient` | 레거시 serverless (FMPAPIError, screener / market movers / sp500 constituents / OHLCV) | `packages.shared.stocks.services.sp500_*`, serverless 다수 |
+
+- 규칙: **항상 절대 경로로 import** (`from packages.shared.api_request.providers.fmp.<sub>_client import FMPClient` 패턴). 상대경로 `from .fmp_client` 금지.
+- 2단계 부채 (별도 트랙): canonical(`client.py`)이 나머지 2개를 흡수하는 메서드 단일화. 24개 메서드 갈라짐(거시 11 + 레거시 8 + 재무 13) + 에러 정책 통일(`FMPClientError`/`FMPAPIError` 합치기) 필요. **행위보존 경계** 위반 위험이라 별도 사이클 (사용자 트리거).
+- 📎 참조: `sub_claude_md/common-bugs.md #23` (FMP 402 / Premium 에러 패턴), `DECISIONS.md` "버킷A — FMP 통합 1단계"
 
 ## shared 역방향 import 5건 — 동결, 소진 트랙 (#31)
 
@@ -370,7 +372,7 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 보조: `scripts/health_check.py` 8번째 항목 `shared 경계` — 우회 0 ✅ / 우회 ≥1 ❌. 동결 5건이 남아 있어도 ❌ 아님 (인정된 부채).
 - 야간 추적: `docs/harness/boundary_ledger.jsonl` — burn-down 한 줄/일. **자동 수정 없음, read-only.**
 - 해결: 동결 청소 PR 별도 머지 → `KNOWN_VIOLATIONS` 키 2곳 (tests + health_check) 동시 삭제 → `test_known_violations_still_present`가 누락 차단. 소진 순서:
-  1. 우선 #1·#2 circuit_breaker (top-level, 가장 위험) → `BOUNDARY-1`
+  1. ~~우선 #1·#2 circuit_breaker (top-level)~~ → `BOUNDARY-1` **CLOSE 2026-06-01** (circuit_breaker → `packages/shared/api_request/` 승격, shared→shared로 자연 해소, burn-down 5→3)
   2. #3 chain_sight → `BOUNDARY-2`
   3. #4·#5 macro.models → **모델 이동 아님**. `BOUNDARY-3` 새 정의 = 소비자 이동(방향1: `eod_regime_calculator.py`/`eod_pipeline.py` → market_pulse) / dependency inversion(방향2) / 모델 shared 승격(C, 조건부 보류). 영구 동결 아님 — burn-down 0 도달 경로 = #1·#2·#3(경계 트랙 청소) + #4·#5(BOUNDARY-3).
 - 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.

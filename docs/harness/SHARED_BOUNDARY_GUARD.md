@@ -25,11 +25,13 @@
 
 | # | 파일 (packages/shared/ 기준) | import module | 형태 | 청소 PR |
 |---|---|---|---|---|
-| 1 | `stocks/services/sp500_eod_service.py` | `apps.market_pulse.utils.circuit_breaker` | top-level | TASKQUEUE: BOUNDARY-1 |
-| 2 | `stocks/services/sp500_service.py` | `apps.market_pulse.utils.circuit_breaker` | top-level | TASKQUEUE: BOUNDARY-1 |
+| ~~1~~ | ~~`stocks/services/sp500_eod_service.py`~~ | ~~`apps.market_pulse.utils.circuit_breaker`~~ | ~~top-level~~ | **CLOSE 2026-06-01 BOUNDARY-1**: circuit_breaker → `packages/shared/api_request/` 승격, shared→shared로 정합 |
+| ~~2~~ | ~~`stocks/services/sp500_service.py`~~ | ~~`apps.market_pulse.utils.circuit_breaker`~~ | ~~top-level~~ | **CLOSE 2026-06-01 BOUNDARY-1**: 동 |
 | 3 | `metrics/services/daily_report.py` | `apps.chain_sight.models` | lazy | TASKQUEUE: BOUNDARY-2 |
 | 4 | `stocks/services/eod_regime_calculator.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
 | 5 | `stocks/services/eod_pipeline.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
+
+**burn-down**: 5(2026-06-01 STEP 0 초기) → **3** (2026-06-01 BOUNDARY-1 close 후). 잔여 = #3·#4·#5.
 
 **SSOT**: `tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS`.
 `scripts/health_check.py:_BOUNDARY_KNOWN_VIOLATIONS`는 동기 복사본 — 양쪽을 같이 갱신해야 함(감시 장치는 작아서 중복 허용).

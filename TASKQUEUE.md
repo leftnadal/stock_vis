@@ -36,7 +36,7 @@
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| BOUNDARY-1 | shared → apps.market_pulse.utils.circuit_breaker 2건 청소 (sp500_eod_service, sp500_service, top-level) | @backend | - | todo | `KNOWN_VIOLATIONS` 키 2건 동시 삭제 (tests + health_check) |
+| BOUNDARY-1 | ~~shared → apps.market_pulse.utils.circuit_breaker 2건 청소~~ | @backend | - | **done** (2026-06-01, `d30915e`) | circuit_breaker → `packages/shared/api_request/` 승격으로 자연 해소. `KNOWN_VIOLATIONS` 2건 동시 삭제 완료. burn-down 5→3. |
 | BOUNDARY-2 | shared → apps.chain_sight.models 1건 청소 (daily_report, lazy) | @backend | - | todo | `KNOWN_VIOLATIONS` 키 1건 동시 삭제 |
 | BOUNDARY-3 | shared → macro.models 2건 청소 (eod_regime_calculator, eod_pipeline, lazy) — **모델 이동 아님**. 후보: 방향1(소비자 2파일을 `apps/market_pulse/`로 이동, app→app 합법) / 방향2(dependency inversion) / C(모델 shared 승격, 조건부 보류). 경계 STEP 0(두 파일이 market_pulse 전용 vs 진짜 공용 실측) 후 방향1↔C 결정 | @backend | - | todo | `KNOWN_VIOLATIONS` 키 2건 동시 삭제 |
 
