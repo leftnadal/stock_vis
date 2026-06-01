@@ -63,7 +63,7 @@
 
 | 앱 | 근거 |
 |----|------|
-| `apps/dashboard` | 거시 통합 뷰 — 단독 메인 트랙 |
+| ~~`apps/dashboard`~~ | **보류** (PR4 fact-check에서 실 디렉토리/Django 앱 부재 확인, 2026-05-31). 트리거 = 독립 배포 또는 모듈 경계 명시 필요 시. 부활 시 PR9 또는 별도 슬롯. |
 | `apps/market_pulse` (← `marketpulse` v2 본체 + `macro` v1 진입점·전용자산) | Market Pulse 본체. `dashboard`와 분리 — 둘 다 거시지만 별개 메인 트랙(베이스만 공유). v1+v2 통합 (macro views/urls/tasks + `EconomicIndicator`·`IndicatorValue` 흡수) |
 | `apps/chain_sight` (← `chainsight` 진입점) | 발견/검증/가설 UI. `graph_analysis` 흡수 안 함 (services 독립) |
 | `apps/portfolio` (← `portfolio` + `thesis` scope 통합) | 보유 관리 + 코치. thesis `scope` 분기 `macro/stock/holding` 흡수 |

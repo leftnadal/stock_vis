@@ -342,6 +342,19 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - wrapper는 항상 exit 0 — nightly 전체가 fail로 잡히지 않게. 실제 health_check exit code는 JSON 본문 status 필드로 보존
 - 📎 참조: `scripts/health_check.py`, `scripts/run_health_check_nightly.sh`, `docs/infra/nightly_v3.sh` Phase 5, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션
 
+## FMPClient 동명 3 모듈 — 절대경로 import 필수 (#32)
+
+- 트리거: PR8b-2 reachability 판정에서 발견 (2026-06-01). `FMPClient`라는 이름의 클래스가 **서로 다른 3 모듈**에 존재하며, 책임·인터페이스가 다르다. 상대경로/단축 alias 사용 시 잘못된 클래스를 잡아 silent failure 위험.
+- 3 모듈:
+  | 모듈 | 역할 | 주 소비처 |
+  |---|---|---|
+  | `apps.market_pulse.services.fmp_client.FMPClient` | macro v1 Market Pulse 진입점 전용 (Quote / 지수 / Calendar) | `apps.market_pulse.services.macro_service` |
+  | `packages.shared.api_request.providers.fmp.client.FMPClient` | 신규 표준 (Premium/RateLimit/Auth 에러 분리, 단일 source-of-truth 후보) | thesis, FMPNewsProvider, test_fmp_value_postprocess |
+  | `services.serverless.services.fmp_client.FMPClient` | 레거시 serverless (FMPAPIError, screener / chain sight 등) | `packages.shared.stocks.services.sp500_*`, serverless 다수 |
+- 규칙: **항상 절대 경로로 import**. `from .fmp_client import FMPClient` 패턴 금지(상대경로는 같은 패키지의 동명을 잡지만, 다른 패키지의 동명이 의도된 경우 silent 오류).
+- 통합 방향(부채): `api_request/providers/fmp/client.py` single source 채택 + 나머지 2개를 위임 wrapper로 전환. `docs/nightly_auto_system/reports/5월/23일/api_dependency_audit.md:137` 권고. 별도 트랙(PR8 외).
+- 📎 참조: `sub_claude_md/common-bugs.md #23` (FMP 402 / Premium 에러 패턴), `DECISIONS.md` "PR8b-2 Track B" reachability 표
+
 ## shared 역방향 import 5건 — 동결, 소진 트랙 (#31)
 
 - 트리거: PR8b STEP 0 fact-check (2026-06-01) — `packages/shared/`가 거꾸로 `apps/*`·`macro`를 import하는 5건 검출. shared는 단방향 base 경계이므로 위반.
