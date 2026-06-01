@@ -1145,3 +1145,28 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - FMP 2단계 통합 (사용자 트리거)
 
 **검증**: pytest 3179/52 (회귀 0), 경계 GREEN (우회 0 / 동결 잔여 2), health 8✅/0⚠/0❌.
+
+### 세션 계약서 — 소프트 강제 (worktree + 선언) 확정 (2026-06-01)
+
+**결정**: 다중 Claude Code 세션 동시 실행 시 git 충돌·브랜치 섞임 방지 = **소프트 강제** (worktree 물리 격리 + 계약 헤더 선언). 훅(`.git/hooks` 차단)은 **미도입** — 차선 이탈이 반복되면 국소 승격.
+
+**구성**:
+- 1차 소스 체인: **CLAUDE.md "Session Lifecycle" → `docs/harness/SESSION_STARTUP_CHECKLIST.md` Step 0 → `docs/harness/SESSION_CONTRACT.md` §C** (고아 문서 방지).
+- 세션 종류: 메인(`apps/<단일 앱>`) / 관리(메타 레이어) / 외부 API(`integrations/iron_trading`). 공유 존(`packages/shared`·`config/*`·`packages/web`)은 단독 소유 X — STOP 후 사용자 확인.
+- worktree 패턴: `Desktop/stock_vis_<sess>` 형제 dir + `sess/<name>` 브랜치. 원본 리포(`Desktop/stock_vis`)는 main 전용 머지 지점.
+- 종료 게이트: 자기 브랜치 push + `pytest` + `health_check` 통과 → main 머지(CI 1인 대체).
+
+**Why**:
+- 현재 1인 개발이라 강한 훅·CI는 과함. worktree만으로 물리 충돌면 0.
+- 메타 레이어를 관리 세션 단독 소유로 분리 → 메인 세션이 PROGRESS/DECISIONS 동시 편집 충돌 차단.
+- 1차 소스 체인 미연결 = 고아 문서 위험. 3 문서 모두 상호 참조 + 1차 소스 우선 명시.
+
+**How to apply**:
+- 새 세션 = STARTUP_CHECKLIST Step 0 부터 — SESSION_CONTRACT §C 헤더 빈칸 채워 붙임.
+- worktree 시범 = `../stock_vis_mgmt` + `sess/mgmt` 살아있음(2026-06-01 생성). 다음 관리 세션부터 사용.
+- 미래 확장(사람 증가): PR + CI(GitHub Actions: pytest + 경계 테스트) + CODEOWNERS 3개 추가만으로 충분.
+
+**관련 문서**:
+- 헌장: `docs/harness/SESSION_CONTRACT.md` (§A~§G)
+- 실행 진입: `docs/harness/SESSION_STARTUP_CHECKLIST.md` (Step 0~3)
+- 1차 소스: `CLAUDE.md "Session Lifecycle"` 참조 한 줄
