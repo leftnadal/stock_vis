@@ -850,3 +850,67 @@ pat_dynamic = re.compile(
 - URL prefix `api/`, `api/v1/`은 그대로 (Django 외부 consumer 호환성)
 
 **다음 PR**: PR8 — 루트 메타 정리 + 이관 5건 잔여 (모든 apps/packages/integrations/services 트랙 정착 후). 루트 잔존 7 Django 앱 (rag_analysis, serverless, macro, news, thesis, sec_pipeline, validation) 분류 결정.
+
+### monorepo PR8a — services/ 5앱 이동 (순차 3그룹 / 옵션2) (2026-06-01)
+
+**결과**: `news` + `serverless` + `rag_analysis` + `validation` + `sec_pipeline` → `services/*` 이동 완료. 5앱 일괄 + label 명시 + 보호 케이스 자동 보존. 동적 import 신규 패턴 4종 발견·처리.
+
+**STEP 0 사전 조사 결과**:
+- rename 0 (디렉토리명 그대로 유지)
+- 상호 의존: news→rag(1) / serverless→news/rag(2) / 나머지 독립 — **순환 없음**
+- 공유 유틸 후보 0 (5앱 내 utils/lib 부재)
+- ★ 동적 mock.patch 260건 (5앱 합계, PR7 15건의 17배)
+
+**옵션2 채택 — 순차 3그룹**:
+- 1차: rag_analysis + validation + sec_pipeline (독립, 동시 이동)
+- 2차: news (rag 의존 1)
+- 3차: serverless (news + rag 의존 2)
+
+**commit SHA (PR8a 8 commits, branch `monorepo/pr8a-services`)**:
+- `cfa33e6` — pre-step: ruff format baseline cleanup (200 파일)
+- `57fcc55` — mv 1차 3앱 → services/
+- `6ed3d69` — 1차 import 갱신 (정적 360 + import 단독 1 + mock.patch 107 + Celery 13 = 481건)
+- `ddca3bd` — mv news → services/news
+- `d86c680` — 2차 import 갱신 (정적 198 + mock.patch 89 + monkeypatch 2 + 멀티라인 patch 1 + Celery 38 + test assert 6 = 334건)
+- `e403527` — mv serverless → services/serverless
+- `94f082c` — 3차 import 갱신 (정적 249 + mock.patch 64 + Celery 24 = 337건)
+- `{c8}` — DECISIONS + PROGRESS 정착
+
+**branch SHA (머지 후 main)**: {머지 후 채움}
+
+**규모 (PR1~7 통합 답습)**:
+- 정적 import: 360+198+249 = **807건** (STEP 0 추정 779 +3.6%)
+- 동적 mock.patch: 107+89+64 = **260건** (STEP 0 추정 정확)
+- 신규 동적 패턴 (PR8a 학습): monkeypatch.setattr 2 + 멀티라인 patch 1 + test assert task name 6 = 9건
+- Celery task name: 13+38+24 = **75건**
+- 총 **~1150건** (PR7 545건의 2.1배, STEP 0 추정 1100~1200 정확)
+
+**신규 학습 (부록 A 추가, PR8b/c 답습)**:
+
+1. **monkeypatch.setattr 동적 경로 패턴**: `monkeypatch.setattr('X.Y.Z', ...)` — pytest fixture. mock.patch와 별개. 5앱 중 news 2건. PR8a-2 setup ERROR 12건으로 노출.
+2. **멀티라인 patch 패턴**: `patch(\n    "X.Y.Z",\n    ...)` — 줄바꿈으로 인해 단일라인 regex `patch\(["']X` 미커버. multi 패턴 regex `patch\(\s*\n\s*["']` 추가 필요.
+3. **Test assert hardcode task name**: `assert task['task'] == 'X.tasks.Y'` — Celery task 이름이 test 안에 박혀있음. Celery beat schedule 갱신과 별개로 test 코드도 갱신 필요.
+4. **ready() 안 들여쓰기 import + 주석 # noqa**: `        import X.signals  # noqa` — regex `\s*$|\s+as`로 잡지 못함 (`# noqa`는 `\s*$` 미매칭). 5앱 중 rag_analysis/sec_pipeline 2건 manual 처리.
+
+**검증 결과**:
+- ① Django check: PASS (5앱 모두)
+- ② makemigrations --dry-run: **No changes detected** (★ label 보존 효과 입증)
+- ③ pytest 풀 회귀: **3172 passed, 52 skipped** (PR7 baseline 완전 일치, **회귀 0건**, PR4/PR8a-1 환경 fail 7건도 해소)
+- ④ ruff: main 1010 = PR8a 1010 (델타 0)
+- ⑤ 5앱 정적 잔존 0 (sweep 통과)
+- ⑥ health_check: 5✅/1⚠/1❌ (⚠는 PR8a 무관 `24b748e` docs commit 휴리스틱 misclassify, ❌ 신규 격상 없음 → HALT 사유 아님)
+- ⑦ INSTALLED_APPS 5앱 services.* 적용 확인
+
+**보호된 케이스 (label 보존)**:
+- news: migration to= 2 + lazy ref 8 (model ref 2 + i18n 키 6)
+- serverless: migration to= 4+
+- rag_analysis: migration to= 5+
+- validation: 0
+- sec_pipeline: migration to= 3+ + lazy ref 1
+
+**미처리 (PR8b/c 외)**:
+- macro 해체 (apps/market_pulse + packages/shared 분배) — PR8b
+- thesis 처분 결정 (보류, 사용자 트리거 대기)
+- 메타 정리 (marketpulse/ 빈 디렉토리 + graph_analysis 회귀 + plan 도식) — PR8c
+
+**다음 PR**: PR8b (macro 해체) — services/ 5앱 정착 후 진입. macro v1 진입점 → apps/market_pulse 흡수 + MarketIndex/MarketIndexPrice/fred_client/fmp_client → packages/shared/ 분배 + 삭제 후보 3 model 보류.
