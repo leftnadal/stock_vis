@@ -32,6 +32,19 @@
 
 ---
 
+## shared 경계 부채 소진 (#31 / 2026-06-01)
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| BOUNDARY-1 | shared → apps.market_pulse.utils.circuit_breaker 2건 청소 (sp500_eod_service, sp500_service, top-level) | @backend | - | todo | `KNOWN_VIOLATIONS` 키 2건 동시 삭제 (tests + health_check) |
+| BOUNDARY-2 | shared → apps.chain_sight.models 1건 청소 (daily_report, lazy) | @backend | - | todo | `KNOWN_VIOLATIONS` 키 1건 동시 삭제 |
+| BOUNDARY-3 | shared → macro.models 2건 청소 (eod_regime_calculator, eod_pipeline, lazy) — PR8b-3 모델 이동과 동봉 | @backend | PR8b-3 모델 이동 결정 | todo | `KNOWN_VIOLATIONS` 키 2건 동시 삭제 |
+
+> 우선순위 1 = `BOUNDARY-1` (top-level이라 가장 위험). 동결 잔여는 야간 `docs/harness/boundary_ledger.jsonl` burn-down으로 추세 추적.
+> 청소 절차: `docs/harness/SHARED_BOUNDARY_GUARD.md` "소진 절차" 참조.
+
+---
+
 ## 보류 (On Hold)
 
 | ID | Task | Agent | Reason | Resume Condition |

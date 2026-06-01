@@ -329,3 +329,24 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - 알림 임계는 **단계 2 (2026-06-중 예정)에서 1~2주 관찰 데이터 위에서 결정** — false positive 분포 + 실제 stale 빈도를 보고 warning vs error 라인을 잡는다. 이메일/Slack 알림 채널도 그 시점에 정함
   - wrapper는 항상 exit 0 — nightly 전체가 fail로 잡히지 않게. 실제 health_check exit code는 JSON 본문 status 필드로 보존
 - 📎 참조: `scripts/health_check.py`, `scripts/run_health_check_nightly.sh`, `docs/infra/nightly_v3.sh` Phase 5, `DECISIONS.md` "문서·git 정합성 관리 원칙", `PROGRESS.md` "정합성 문제 발견 (2026-05-28)" 섹션
+
+## shared 역방향 import 5건 — 동결, 소진 트랙 (#31)
+
+- 트리거: PR8b STEP 0 fact-check (2026-06-01) — `packages/shared/`가 거꾸로 `apps/*`·`macro`를 import하는 5건 검출. shared는 단방향 base 경계이므로 위반.
+- 위반 5건 (동결, **고치지 않음**):
+  | # | 파일 (packages/shared/ 기준) | import module | 형태 |
+  |---|---|---|---|
+  | 1 | `stocks/services/sp500_eod_service.py:15` | `apps.market_pulse.utils.circuit_breaker` | top-level |
+  | 2 | `stocks/services/sp500_service.py:13` | `apps.market_pulse.utils.circuit_breaker` | top-level |
+  | 3 | `metrics/services/daily_report.py:242` | `apps.chain_sight.models` | 함수 내 lazy |
+  | 4 | `stocks/services/eod_regime_calculator.py:77` | `macro.models` | 함수 내 lazy |
+  | 5 | `stocks/services/eod_pipeline.py:617` | `macro.models` | 함수 내 lazy |
+- 감지: `tests/architecture/test_shared_boundary.py` — `ast.parse`로 전수 검출. KNOWN_VIOLATIONS에 없는 신규 위반은 pytest FAIL.
+- 보조: `scripts/health_check.py` 8번째 항목 `shared 경계` — 우회 0 ✅ / 우회 ≥1 ❌. 동결 5건이 남아 있어도 ❌ 아님 (인정된 부채).
+- 야간 추적: `docs/harness/boundary_ledger.jsonl` — burn-down 한 줄/일. **자동 수정 없음, read-only.**
+- 해결: 동결 청소 PR 별도 머지 → `KNOWN_VIOLATIONS` 키 2곳 (tests + health_check) 동시 삭제 → `test_known_violations_still_present`가 누락 차단. 소진 순서:
+  1. 우선 #1·#2 circuit_breaker (top-level, 가장 위험) → `BOUNDARY-1`
+  2. #3 chain_sight → `BOUNDARY-2`
+  3. #4·#5 macro.models → PR8b-3 모델 이동과 동봉 → `BOUNDARY-3`
+- 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
+- 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)"
