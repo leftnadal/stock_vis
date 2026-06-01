@@ -19,7 +19,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from django.db.models import Count, Q
 from django.utils import timezone
 
-from serverless.models import (
+from services.serverless.models import (
     ETFHolding,
     ETFProfile,
     StockRelationship,

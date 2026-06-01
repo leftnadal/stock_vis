@@ -20,8 +20,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.models import InstitutionalHolding, StockRelationship
-from serverless.services.institutional_holdings_service import (
+from services.serverless.models import InstitutionalHolding, StockRelationship
+from services.serverless.services.institutional_holdings_service import (
     InstitutionalHoldingsService,
 )
 

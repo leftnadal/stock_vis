@@ -12,8 +12,8 @@ from django.core.cache import cache
 from rest_framework import status as http_status
 from rest_framework.test import APIClient
 
-from serverless.models import AdminActionLog
-from serverless.services.admin_status_service import _suggest_action
+from services.serverless.models import AdminActionLog
+from services.serverless.services.admin_status_service import _suggest_action
 
 User = get_user_model()
 

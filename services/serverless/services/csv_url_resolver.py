@@ -27,7 +27,7 @@ try:
 except ImportError:
     GENAI_AVAILABLE = False
 
-from serverless.models import ETFProfile
+from services.serverless.models import ETFProfile
 
 logger = logging.getLogger(__name__)
 

@@ -22,7 +22,7 @@ from django.test import Client
 from django.utils import timezone
 
 from packages.shared.users.models import User
-from serverless.models import ScreenerPreset
+from services.serverless.models import ScreenerPreset
 
 # ALLOWED_HOSTS 임시 설정
 settings.ALLOWED_HOSTS = ['*']

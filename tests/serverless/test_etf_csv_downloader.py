@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.models import ETFHolding, ETFProfile
-from serverless.services.etf_csv_downloader import (
+from services.serverless.models import ETFHolding, ETFProfile
+from services.serverless.services.etf_csv_downloader import (
     ETF_CSV_SOURCES,
     ETFCSVDownloader,
     ETFCSVDownloadError,

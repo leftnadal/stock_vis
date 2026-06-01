@@ -23,7 +23,7 @@ from rest_framework.test import APIRequestFactory
 from rest_framework.views import APIView
 
 from services.rag_analysis.exceptions import CacheError
-from serverless.exceptions import GenerationFailed, SyncFailed
+from services.serverless.exceptions import GenerationFailed, SyncFailed
 
 
 def _make_view(exc_to_raise):

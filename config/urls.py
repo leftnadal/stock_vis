@@ -38,7 +38,7 @@ urlpatterns = [
     path('api/v1/news/', include("services.news.api.urls")),
     path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
     path('api/v1/rag/', include("services.rag_analysis.urls")),  # RAG 분석
-    path('api/v1/serverless/', include("serverless.urls")),  # Market Movers (AWS 전환 대상)
+    path('api/v1/serverless/', include("services.serverless.urls")),  # Market Movers (AWS 전환 대상)
     path('api/v1/thesis/', include("thesis.urls")),  # Thesis Control (가설 통제실)
     path('api/v1/validation/', include("services.validation.api.urls")),  # 1차 검증
     path('api/v1/chainsight/', include("apps.chain_sight.api.urls")),  # PR6 이동 — Chain Sight 그래프 탐색

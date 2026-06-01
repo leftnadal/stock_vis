@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from django.core.cache import cache
 
-from serverless.services.fmp_client import FMPAPIError, FMPClient
+from services.serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

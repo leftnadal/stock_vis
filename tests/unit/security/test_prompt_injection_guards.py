@@ -8,7 +8,7 @@ from unittest.mock import patch
 import pytest
 
 from services.rag_analysis.services.llm_service import LLMServiceLite
-from serverless.services.thesis_builder import ThesisBuilder
+from services.serverless.services.thesis_builder import ThesisBuilder
 
 
 @pytest.fixture
@@ -17,7 +17,7 @@ def builder(settings):
     # 다른 테스트가 settings.GEMINI_API_KEY를 patch.object(create=True)로
     # 변경/복원하면서 누수되는 케이스를 차단 (test_news_deep_analyzer 등).
     settings.GEMINI_API_KEY = 'test-api-key'
-    with patch('serverless.services.thesis_builder.genai.Client'):
+    with patch('services.serverless.services.thesis_builder.genai.Client'):
         return ThesisBuilder()
 
 

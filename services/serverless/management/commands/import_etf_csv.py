@@ -13,8 +13,8 @@ from decimal import Decimal
 
 from django.core.management.base import BaseCommand, CommandError
 
-from serverless.models import ETFHolding, ETFProfile
-from serverless.services.etf_csv_downloader import ETFCSVDownloader
+from services.serverless.models import ETFHolding, ETFProfile
+from services.serverless.services.etf_csv_downloader import ETFCSVDownloader
 
 
 class Command(BaseCommand):
@@ -140,7 +140,7 @@ class Command(BaseCommand):
         # ThemeMatch 갱신 안내
         self.stdout.write("\n테마 매칭을 갱신하려면:")
         self.stdout.write(
-            '  python manage.py shell -c "from serverless.services.theme_matching_service import ThemeMatchingService; ThemeMatchingService().refresh_all_matches()"'
+            '  python manage.py shell -c "from services.serverless.services.theme_matching_service import ThemeMatchingService; ThemeMatchingService().refresh_all_matches()"'
         )
 
     def _detect_parser_type(self, csv_path: str, profile: ETFProfile) -> str:

@@ -14,8 +14,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from serverless.models import AdminActionLog
-from serverless.services.admin_status_service import AdminStatusService
+from services.serverless.models import AdminActionLog
+from services.serverless.services.admin_status_service import AdminStatusService
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ ADMIN_ACTIONS = {
     },
     # Market Pulse 탭
     "sync_movers": {
-        "task": "serverless.tasks.sync_daily_market_movers",
+        "task": "services.serverless.tasks.sync_daily_market_movers",
         "label": "Market Movers 동기화",
         "cooldown_seconds": 300,
         "dangerous": False,
@@ -76,7 +76,7 @@ ADMIN_ACTIONS = {
         "required_params": [],
     },
     "generate_keywords": {
-        "task": "serverless.tasks.keyword_generation_pipeline",
+        "task": "services.serverless.tasks.keyword_generation_pipeline",
         "label": "AI 키워드 생성",
         "cooldown_seconds": 300,
         "dangerous": False,
@@ -85,7 +85,7 @@ ADMIN_ACTIONS = {
     },
     # Screener 탭
     "sync_breadth": {
-        "task": "serverless.tasks.calculate_daily_market_breadth",
+        "task": "services.serverless.tasks.calculate_daily_market_breadth",
         "label": "Market Breadth 계산",
         "cooldown_seconds": 300,
         "dangerous": False,
@@ -93,7 +93,7 @@ ADMIN_ACTIONS = {
         "required_params": [],
     },
     "sync_heatmap": {
-        "task": "serverless.tasks.calculate_daily_sector_heatmap",
+        "task": "services.serverless.tasks.calculate_daily_sector_heatmap",
         "label": "Sector Heatmap 계산",
         "cooldown_seconds": 300,
         "dangerous": False,
@@ -102,7 +102,7 @@ ADMIN_ACTIONS = {
     },
     # Chain Sight 탭
     "sync_etf_holdings": {
-        "task": "serverless.tasks.sync_etf_holdings",
+        "task": "services.serverless.tasks.sync_etf_holdings",
         "label": "ETF Holdings 동기화",
         "cooldown_seconds": 600,
         "dangerous": False,

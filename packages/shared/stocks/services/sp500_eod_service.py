@@ -14,7 +14,7 @@ from django.db import transaction
 
 from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
-from serverless.services.fmp_client import FMPAPIError, FMPClient
+from services.serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class SP500EODService:
             }
         """
         if target_date is None:
-            from serverless.services.admin_status_service import last_trading_day
+            from services.serverless.services.admin_status_service import last_trading_day
 
             target_date = last_trading_day()
 

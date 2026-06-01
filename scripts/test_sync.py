@@ -7,7 +7,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from serverless.services.data_sync import MarketMoversSync
+from services.serverless.services.data_sync import MarketMoversSync
 
 if __name__ == '__main__':
     print("Market Movers 동기화 시작...")

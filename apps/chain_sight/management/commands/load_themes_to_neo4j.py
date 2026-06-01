@@ -136,7 +136,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from packages.shared.stocks.models import Stock
-        from serverless.models import ETFHolding, ETFProfile
+        from services.serverless.models import ETFHolding, ETFProfile
 
         dry_run = options["dry_run"]
         theme_only = options["theme_only"]

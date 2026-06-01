@@ -37,7 +37,7 @@ from typing import Any, Dict, List, Optional
 from django.db import transaction
 from django.db.models import Count, Q
 
-from serverless.models import StockRelationship
+from services.serverless.models import StockRelationship
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ class InstitutionalHoldingsService:
             self.sec_client = None
 
         try:
-            from serverless.services.cusip_mapper import CUSIPMapper
+            from services.serverless.services.cusip_mapper import CUSIPMapper
 
             self.cusip_mapper = CUSIPMapper()
         except ImportError:
@@ -225,7 +225,7 @@ class InstitutionalHoldingsService:
         try:
             # Check if InstitutionalHolding model exists
             try:
-                from serverless.models import InstitutionalHolding
+                from services.serverless.models import InstitutionalHolding
             except ImportError:
                 logger.error("InstitutionalHolding model not available yet")
                 return {
@@ -382,7 +382,7 @@ class InstitutionalHoldingsService:
             생성된 관계 수
         """
         try:
-            from serverless.models import InstitutionalHolding
+            from services.serverless.models import InstitutionalHolding
         except ImportError:
             logger.error("InstitutionalHolding model not available")
             return 0
@@ -480,7 +480,7 @@ class InstitutionalHoldingsService:
             List of holdings with stock info
         """
         try:
-            from serverless.models import InstitutionalHolding
+            from services.serverless.models import InstitutionalHolding
         except ImportError:
             logger.error("InstitutionalHolding model not available")
             return []
@@ -522,7 +522,7 @@ class InstitutionalHoldingsService:
             List of institutional holders
         """
         try:
-            from serverless.models import InstitutionalHolding
+            from services.serverless.models import InstitutionalHolding
         except ImportError:
             logger.error("InstitutionalHolding model not available")
             return []

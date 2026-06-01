@@ -18,9 +18,9 @@ django.setup()
 
 from django.utils import timezone
 
-from serverless.models import MarketMover, StockKeyword
-from serverless.services.keyword_context import KeywordContextBuilder
-from serverless.services.keyword_generator import KeywordGeneratorService
+from services.serverless.models import MarketMover, StockKeyword
+from services.serverless.services.keyword_context import KeywordContextBuilder
+from services.serverless.services.keyword_generator import KeywordGeneratorService
 
 # ========================================
 # 예시 1: 배치 키워드 생성

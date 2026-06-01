@@ -17,7 +17,7 @@ LLM Relation Extractor Service (Phase 5)
 - 월 예산 ~$5
 
 Usage:
-    from serverless.services.llm_relation_extractor import LLMRelationExtractor
+    from services.serverless.services.llm_relation_extractor import LLMRelationExtractor
 
     extractor = LLMRelationExtractor()
 
@@ -45,13 +45,13 @@ from django.utils import timezone
 from google import genai
 from google.genai import types
 
-from serverless.models import LLMExtractedRelation
-from serverless.services.relation_pre_filter import (
+from services.serverless.models import LLMExtractedRelation
+from services.serverless.services.relation_pre_filter import (
     PreFilterResult,
     RelationPreFilter,
     get_pre_filter,
 )
-from serverless.services.symbol_matcher import SymbolMatcher, get_symbol_matcher
+from services.serverless.services.symbol_matcher import SymbolMatcher, get_symbol_matcher
 
 logger = logging.getLogger(__name__)
 

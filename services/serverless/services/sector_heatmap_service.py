@@ -14,8 +14,8 @@ from typing import Dict, List, Optional
 from django.core.cache import cache
 from django.db import transaction
 
-from serverless.models import SectorETFMapping, SectorPerformance
-from serverless.services.fmp_client import FMPAPIError, FMPClient
+from services.serverless.models import SectorETFMapping, SectorPerformance
+from services.serverless.services.fmp_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

@@ -27,8 +27,8 @@ from django.db import transaction
 from django.utils import timezone
 
 from packages.shared.api_request.sec_edgar_client import SECEdgarClient, SECEdgarError
-from serverless.models import StockRelationship
-from serverless.services.supply_chain_parser import (
+from services.serverless.models import StockRelationship
+from services.serverless.services.supply_chain_parser import (
     SupplyChainParser,
     SupplyChainRelation,
 )
@@ -361,7 +361,7 @@ class SupplyChainService:
             동기화된 관계 수
         """
         try:
-            from serverless.services.neo4j_chain_sight_service import (
+            from services.serverless.services.neo4j_chain_sight_service import (
                 Neo4jChainSightService,
             )
 

@@ -22,8 +22,8 @@ from django.db import IntegrityError
 from django.utils import timezone
 
 from services.news.models import NewsEntity
-from serverless.models import StockRelationship
-from serverless.services.uspto_client import (
+from services.serverless.models import StockRelationship
+from services.serverless.services.uspto_client import (
     COMPANY_ASSIGNEE_MAP,
     USPTOClient,
     USPTOError,

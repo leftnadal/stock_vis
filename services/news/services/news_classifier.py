@@ -166,7 +166,7 @@ class NewsClassifier:
     def symbol_matcher(self):
         """SymbolMatcher lazy initialization"""
         if self._symbol_matcher is None:
-            from serverless.services.symbol_matcher import get_symbol_matcher
+            from services.serverless.services.symbol_matcher import get_symbol_matcher
 
             self._symbol_matcher = get_symbol_matcher()
         return self._symbol_matcher

@@ -578,8 +578,8 @@ class Neo4jChainSightService:
         Returns:
             동기화된 관계 수
         """
-        from serverless.models import StockRelationship
-        from serverless.services.fmp_client import FMPClient
+        from services.serverless.models import StockRelationship
+        from services.serverless.services.fmp_client import FMPClient
 
         if not self.is_available():
             return {"synced": 0, "failed": 0}
@@ -666,7 +666,7 @@ class Neo4jChainSightService:
         Returns:
             동기화 결과
         """
-        from serverless.models import StockRelationship
+        from services.serverless.models import StockRelationship
 
         if not self.is_available():
             return {"total_symbols": 0, "synced": 0, "failed": 0}
@@ -1089,8 +1089,8 @@ class Neo4jChainSightService:
         Returns:
             {'etfs': 21, 'holdings': 1500, 'themes': 21}
         """
-        from serverless.models import ETFHolding, ETFProfile, ThemeMatch
-        from serverless.services.theme_matching_service import THEME_KEYWORDS
+        from services.serverless.models import ETFHolding, ETFProfile, ThemeMatch
+        from services.serverless.services.theme_matching_service import THEME_KEYWORDS
 
         if not self.is_available():
             return {"etfs": 0, "holdings": 0, "themes": 0}

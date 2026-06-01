@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from serverless.services.symbol_matcher import (
+from services.serverless.services.symbol_matcher import (
     SymbolMatcher,
     get_symbol_matcher,
 )

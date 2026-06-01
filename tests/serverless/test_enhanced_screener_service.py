@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.enhanced_screener_service import EnhancedScreenerService
+from services.serverless.services.enhanced_screener_service import EnhancedScreenerService
 
 
 class TestEnhancedScreenerService:
@@ -255,8 +255,8 @@ class TestEnhancedScreenerService:
 class TestEnhancedScreenerIntegration:
     """EnhancedScreenerService 통합 테스트 (Mock)"""
 
-    @patch('serverless.services.enhanced_screener_service.FMPClient')
-    @patch('serverless.services.enhanced_screener_service.cache')
+    @patch('services.serverless.services.enhanced_screener_service.FMPClient')
+    @patch('services.serverless.services.enhanced_screener_service.cache')
     def test_screen_enhanced_with_pe_roe_filter(self, mock_cache, mock_fmp_client):
         """PE/ROE 필터로 Enhanced 스크리닝 테스트"""
         # Mock 설정
@@ -297,8 +297,8 @@ class TestEnhancedScreenerIntegration:
         # AAPL은 PE=28로 실패
         assert result['count'] <= 3
 
-    @patch('serverless.services.enhanced_screener_service.FMPClient')
-    @patch('serverless.services.enhanced_screener_service.cache')
+    @patch('services.serverless.services.enhanced_screener_service.FMPClient')
+    @patch('services.serverless.services.enhanced_screener_service.cache')
     def test_screen_instant_without_enhanced_filters(self, mock_cache, mock_fmp_client):
         """Enhanced 필터 없이 Instant 스크리닝 테스트"""
         mock_cache.get.return_value = None

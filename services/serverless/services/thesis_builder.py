@@ -19,7 +19,7 @@ from django.utils import timezone
 from google import genai
 from google.genai import types
 
-from serverless.models import InvestmentThesis
+from services.serverless.models import InvestmentThesis
 
 logger = logging.getLogger(__name__)
 

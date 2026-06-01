@@ -154,7 +154,7 @@ class MarketFeedService:
         hot_movers = []
 
         try:
-            from serverless.models import SectorPerformance
+            from services.serverless.models import SectorPerformance
 
             latest_sp = SectorPerformance.objects.order_by("-date").first()
             if latest_sp and latest_sp.data:
@@ -175,7 +175,7 @@ class MarketFeedService:
 
             from django.utils import timezone as tz
 
-            from serverless.models import MarketMover
+            from services.serverless.models import MarketMover
 
             recent_date = tz.localdate() - timedelta(days=3)
             movers = MarketMover.objects.filter(

@@ -7,7 +7,7 @@ from decimal import Decimal
 
 import pytest
 
-from serverless.services.chain_sight_service import ChainSightService
+from services.serverless.services.chain_sight_service import ChainSightService
 
 
 class TestChainSightService:

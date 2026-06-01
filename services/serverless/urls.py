@@ -6,8 +6,8 @@ Market Movers, Market Breadth, Screener Presets, Sector Heatmap, Alerts, Admin D
 
 from django.urls import path
 
-from serverless import views
-from serverless.views_admin import (
+from services.serverless import views
+from services.serverless.views_admin import (
     AdminActionView,
     AdminMarketPulseView,
     AdminNewsCategoryDetailView,

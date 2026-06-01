@@ -51,7 +51,7 @@ app.conf.task_routes = {
     'services.rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
     'services.news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
     'services.news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
-    'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
+    'services.serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
     # Chain Sight Neo4j 동기화
     'apps.chain_sight.tasks.sync_tasks.sync_profiles_to_neo4j': {'queue': 'neo4j'},
     'apps.chain_sight.tasks.sync_tasks.sync_relations_to_neo4j': {'queue': 'neo4j'},
@@ -229,14 +229,14 @@ app.conf.beat_schedule = {
 
     # Market Movers 동기화 (매일 07:30 EST, 시장 개장 전)
     'sync-daily-market-movers': {
-        'task': 'serverless.tasks.sync_daily_market_movers',
+        'task': 'services.serverless.tasks.sync_daily_market_movers',
         'schedule': crontab(hour=7, minute=30, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
     # 키워드 생성 파이프라인 (매일 오전 8시 - Market Movers 동기화 30분 후)
     'keyword-generation-pipeline': {
-        'task': 'serverless.tasks.keyword_generation_pipeline',
+        'task': 'services.serverless.tasks.keyword_generation_pipeline',
         'schedule': crontab(hour=8, minute=0),  # 08:00 EST
         'kwargs': {'mover_type': 'gainers'},  # Gainers만 우선 처리
         'options': {'expires': 3600}  # 1시간 후 만료
@@ -505,7 +505,7 @@ app.conf.beat_schedule = {
     # ETF Holdings 자동 수집 (매주 월요일 06:00 EST)
     # 실패 시 이메일 알림 발송: goid545@naver.com, jinie545@gmail.com
     'sync-etf-holdings': {
-        'task': 'serverless.tasks.sync_etf_holdings',
+        'task': 'services.serverless.tasks.sync_etf_holdings',
         'schedule': crontab(hour=6, minute=0, day_of_week=1),  # 월요일 06:00 EST
         'options': {'expires': 3600}  # 1시간 후 만료
     },
@@ -517,7 +517,7 @@ app.conf.beat_schedule = {
     # 공급망 배치 동기화 (매월 15일 03:00 EST)
     # S&P 500 상위 100개 종목의 공급사/고객사 관계를 SEC 10-K에서 추출
     'sync-supply-chain-batch': {
-        'task': 'serverless.tasks.sync_supply_chain_batch',
+        'task': 'services.serverless.tasks.sync_supply_chain_batch',
         'schedule': crontab(hour=3, minute=0, day_of_month=15),
         'options': {'expires': 86400}  # 24시간 후 만료
     },
@@ -528,21 +528,21 @@ app.conf.beat_schedule = {
 
     # Market Breadth 일일 계산 (장 마감 후 16:30 ET)
     'calculate-market-breadth': {
-        'task': 'serverless.tasks.calculate_daily_market_breadth',
+        'task': 'services.serverless.tasks.calculate_daily_market_breadth',
         'schedule': crontab(hour=16, minute=30, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
     # Sector Heatmap 일일 계산 (장 마감 후 16:35 ET)
     'calculate-sector-heatmap': {
-        'task': 'serverless.tasks.calculate_daily_sector_heatmap',
+        'task': 'services.serverless.tasks.calculate_daily_sector_heatmap',
         'schedule': crontab(hour=16, minute=35, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
     # Screener Alerts 체크 (시장 시간 중 15분마다)
     'check-screener-alerts': {
-        'task': 'serverless.tasks.check_screener_alerts',
+        'task': 'services.serverless.tasks.check_screener_alerts',
         'schedule': crontab(minute='*/15', hour='9-16', day_of_week='1-5'),
         'options': {'expires': 600}  # 10분 후 만료
     },
@@ -578,7 +578,7 @@ app.conf.beat_schedule = {
 
     # 뉴스에서 관계 키워드 자동 추출 (매일 09:00 EST, 뉴스 수집 후)
     'extract-news-relations': {
-        'task': 'serverless.tasks.extract_news_relations',
+        'task': 'services.serverless.tasks.extract_news_relations',
         'schedule': crontab(hour=9, minute=0),
         'args': (24,),  # 최근 24시간
         'options': {'expires': 3600}  # 1시간 후 만료
@@ -590,7 +590,7 @@ app.conf.beat_schedule = {
 
     # 관계 키워드 Enrichment (매일 05:30 EST, Gemini Free Tier)
     'enrich-relationship-keywords': {
-        'task': 'serverless.tasks.enrich_relationship_keywords',
+        'task': 'services.serverless.tasks.enrich_relationship_keywords',
         'schedule': crontab(hour=5, minute=30),
         'kwargs': {'limit': 100},
         'options': {'expires': 3600, 'queue': 'neo4j'}
@@ -602,7 +602,7 @@ app.conf.beat_schedule = {
 
     # 기관 보유 현황 동기화 (매월 16일 04:00 EST, 태스크 내에서 분기 체크)
     'sync-institutional-holdings': {
-        'task': 'serverless.tasks.sync_institutional_holdings',
+        'task': 'services.serverless.tasks.sync_institutional_holdings',
         'schedule': crontab(hour=4, minute=0, day_of_month=16),
         'options': {'expires': 86400}  # 24시간 후 만료
     },
@@ -613,14 +613,14 @@ app.conf.beat_schedule = {
 
     # 규제 관계 스캔 (매주 월요일 04:00 EST)
     'scan-regulatory-relationships': {
-        'task': 'serverless.tasks.scan_regulatory_relationships',
+        'task': 'services.serverless.tasks.scan_regulatory_relationships',
         'schedule': crontab(hour=4, minute=0, day_of_week=1),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
     # 특허 네트워크 빌드 (매월 1일 04:30 EST)
     'build-patent-network': {
-        'task': 'serverless.tasks.build_patent_network',
+        'task': 'services.serverless.tasks.build_patent_network',
         'schedule': crontab(hour=4, minute=30, day_of_month=1),
         'options': {'expires': 86400}  # 24시간 후 만료
     },

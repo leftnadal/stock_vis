@@ -573,7 +573,7 @@ Rules:
             생성된 관계 수
         """
         try:
-            from serverless.models import StockRelationship
+            from services.serverless.models import StockRelationship
 
             if category not in REGULATORY_CATEGORIES:
                 logger.warning(f"Invalid category: {category}")

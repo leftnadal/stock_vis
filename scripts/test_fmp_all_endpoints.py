@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from serverless.services.fmp_client import FMPAPIError, FMPClient
+from services.serverless.services.fmp_client import FMPAPIError, FMPClient
 
 
 def test_quote():

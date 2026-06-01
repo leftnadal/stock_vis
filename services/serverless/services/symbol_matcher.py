@@ -11,7 +11,7 @@ FMP Search API + PostgreSQL Stock DB + Redis 캐시 활용.
 4. 배치 처리 (비용 절감)
 
 Usage:
-    from serverless.services.symbol_matcher import SymbolMatcher
+    from services.serverless.services.symbol_matcher import SymbolMatcher
 
     matcher = SymbolMatcher()
 

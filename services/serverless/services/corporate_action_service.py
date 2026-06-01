@@ -214,7 +214,7 @@ class CorporateActionService:
         Returns:
             CorporateAction 객체
         """
-        from serverless.models import CorporateAction
+        from services.serverless.models import CorporateAction
 
         action, created = CorporateAction.objects.update_or_create(
             symbol=symbol.upper(),

@@ -1358,7 +1358,7 @@ class TestNewsClassifierInit:
 
         # get_symbol_matcher is imported inside the property body from serverless
         with patch(
-            "serverless.services.symbol_matcher.get_symbol_matcher",
+            "services.serverless.services.symbol_matcher.get_symbol_matcher",
             return_value=mock_matcher_instance,
         ):
             # Directly patch the inner import by setting _symbol_matcher to None

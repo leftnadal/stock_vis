@@ -21,13 +21,13 @@ class TestRelationshipService:
     @pytest.fixture
     def service(self):
         """서비스 인스턴스"""
-        from serverless.services.relationship_service import RelationshipService
+        from services.serverless.services.relationship_service import RelationshipService
         return RelationshipService()
 
     @pytest.fixture
     def mock_fmp_client(self):
         """FMP 클라이언트 목"""
-        with patch('serverless.services.relationship_service.FMPClient') as mock:
+        with patch('services.serverless.services.relationship_service.FMPClient') as mock:
             client = Mock()
             mock.return_value = client
             yield client
@@ -83,14 +83,14 @@ class TestCategoryGenerator:
     @pytest.fixture
     def generator(self):
         """생성기 인스턴스"""
-        from serverless.services.category_generator import CategoryGenerator
+        from services.serverless.services.category_generator import CategoryGenerator
         return CategoryGenerator()
 
     @pytest.fixture
     def mock_services(self):
         """서비스 목 설정"""
-        with patch('serverless.services.category_generator.RelationshipService') as rel_mock, \
-             patch('serverless.services.category_generator.FMPClient') as fmp_mock:
+        with patch('services.serverless.services.category_generator.RelationshipService') as rel_mock, \
+             patch('services.serverless.services.category_generator.FMPClient') as fmp_mock:
 
             rel_service = Mock()
             rel_mock.return_value = rel_service
@@ -240,15 +240,15 @@ class TestChainSightStockService:
     @pytest.fixture
     def service(self):
         """서비스 인스턴스"""
-        from serverless.services.chain_sight_stock_service import ChainSightStockService
+        from services.serverless.services.chain_sight_stock_service import ChainSightStockService
         return ChainSightStockService()
 
     @pytest.fixture
     def mock_dependencies(self):
         """의존성 목 설정"""
-        with patch('serverless.services.chain_sight_stock_service.CategoryGenerator') as cat_mock, \
-             patch('serverless.services.chain_sight_stock_service.RelationshipService') as rel_mock, \
-             patch('serverless.services.chain_sight_stock_service.FMPClient') as fmp_mock:
+        with patch('services.serverless.services.chain_sight_stock_service.CategoryGenerator') as cat_mock, \
+             patch('services.serverless.services.chain_sight_stock_service.RelationshipService') as rel_mock, \
+             patch('services.serverless.services.chain_sight_stock_service.FMPClient') as fmp_mock:
 
             cat_gen = Mock()
             cat_mock.return_value = cat_gen
@@ -353,7 +353,7 @@ class TestStockRelationshipModel:
 
     def test_create_relationship(self):
         """관계 생성"""
-        from serverless.models import StockRelationship
+        from services.serverless.models import StockRelationship
 
         rel = StockRelationship.objects.create(
             source_symbol='NVDA',
@@ -371,7 +371,7 @@ class TestStockRelationshipModel:
         """중복 관계 방지"""
         from django.db import IntegrityError
 
-        from serverless.models import StockRelationship
+        from services.serverless.models import StockRelationship
 
         StockRelationship.objects.create(
             source_symbol='NVDA',
@@ -388,7 +388,7 @@ class TestStockRelationshipModel:
 
     def test_different_relationship_types_allowed(self):
         """다른 관계 타입은 허용"""
-        from serverless.models import StockRelationship
+        from services.serverless.models import StockRelationship
 
         StockRelationship.objects.create(
             source_symbol='NVDA',
@@ -412,7 +412,7 @@ class TestCategoryCacheModel:
 
     def test_create_cache(self):
         """캐시 생성"""
-        from serverless.models import CategoryCache
+        from services.serverless.models import CategoryCache
 
         cache = CategoryCache.objects.create(
             symbol='NVDA',
@@ -430,7 +430,7 @@ class TestCategoryCacheModel:
 
     def test_auto_expires_at(self):
         """expires_at 자동 설정"""
-        from serverless.models import CategoryCache
+        from services.serverless.models import CategoryCache
 
         cache = CategoryCache(
             symbol='AAPL',

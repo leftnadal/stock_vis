@@ -9,8 +9,8 @@ import logging
 from celery import shared_task
 from django.utils import timezone
 
-from serverless.services.data_sync import MarketMoversSync
-from serverless.services.fmp_client import FMPAPIError
+from services.serverless.services.data_sync import MarketMoversSync
+from services.serverless.services.fmp_client import FMPAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ def sync_daily_market_movers(self, target_date=None):
 
     Usage:
         # 수동 실행
-        from serverless.tasks import sync_daily_market_movers
+        from services.serverless.tasks import sync_daily_market_movers
         result = sync_daily_market_movers.delay()
 
         # 특정 날짜
@@ -116,8 +116,8 @@ def collect_keyword_data(self, movers_date: str, mover_type: str = "gainers"):
     """
     from datetime import datetime
 
-    from serverless.models import MarketMover
-    from serverless.services.keyword_data_collector import KeywordDataCollector
+    from services.serverless.models import MarketMover
+    from services.serverless.services.keyword_data_collector import KeywordDataCollector
 
     try:
         # 날짜 변환
@@ -209,7 +209,7 @@ def generate_keywords_batch(self, collection_result: dict):
     """
     from datetime import datetime
 
-    from serverless.services.keyword_service import KeywordGenerationService
+    from services.serverless.services.keyword_service import KeywordGenerationService
 
     try:
         date_str = collection_result["date"]
@@ -287,8 +287,8 @@ def save_keywords(generation_result: dict):
             'skipped': 0
         }
     """
-    from serverless.models import StockKeyword
-    from serverless.services.keyword_data_collector import KeywordDataCollector
+    from services.serverless.models import StockKeyword
+    from services.serverless.services.keyword_data_collector import KeywordDataCollector
 
     try:
         date_str = generation_result["date"]
@@ -367,8 +367,8 @@ def generate_screener_keywords_task(self, stocks: list):
     """
     from datetime import timedelta
 
-    from serverless.models import StockKeyword
-    from serverless.services.keyword_service import KeywordGenerationService
+    from services.serverless.models import StockKeyword
+    from services.serverless.services.keyword_service import KeywordGenerationService
 
     try:
         logger.info(f"🚀 스크리너 키워드 생성 시작: {len(stocks)}개 종목")
@@ -457,7 +457,7 @@ def keyword_generation_pipeline(movers_date: str = None, mover_type: str = "gain
         mover_type: 'gainers', 'losers', 'actives'
 
     Usage:
-        from serverless.tasks import keyword_generation_pipeline
+        from services.serverless.tasks import keyword_generation_pipeline
         result = keyword_generation_pipeline.delay()
     """
     from celery import chain
@@ -504,13 +504,13 @@ def calculate_daily_market_breadth(self, target_date: str = None):
         }
 
     Usage:
-        from serverless.tasks import calculate_daily_market_breadth
+        from services.serverless.tasks import calculate_daily_market_breadth
         result = calculate_daily_market_breadth.delay()
     """
     from datetime import datetime
 
-    from serverless.services.fmp_client import FMPAPIError
-    from serverless.services.market_breadth_service import MarketBreadthService
+    from services.serverless.services.fmp_client import FMPAPIError
+    from services.serverless.services.market_breadth_service import MarketBreadthService
 
     try:
         if target_date:
@@ -573,13 +573,13 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
         }
 
     Usage:
-        from serverless.tasks import calculate_daily_sector_heatmap
+        from services.serverless.tasks import calculate_daily_sector_heatmap
         result = calculate_daily_sector_heatmap.delay()
     """
     from datetime import datetime
 
-    from serverless.services.fmp_client import FMPAPIError
-    from serverless.services.sector_heatmap_service import SectorHeatmapService
+    from services.serverless.services.fmp_client import FMPAPIError
+    from services.serverless.services.sector_heatmap_service import SectorHeatmapService
 
     try:
         if target_date:
@@ -647,13 +647,13 @@ def check_screener_alerts(self):
         }
 
     Usage:
-        from serverless.tasks import check_screener_alerts
+        from services.serverless.tasks import check_screener_alerts
         result = check_screener_alerts.delay()
     """
     from datetime import timedelta
 
-    from serverless.models import AlertHistory, ScreenerAlert
-    from serverless.services.filter_engine import FilterEngine
+    from services.serverless.models import AlertHistory, ScreenerAlert
+    from services.serverless.services.filter_engine import FilterEngine
 
     try:
         logger.info("🔔 스크리너 알림 체크 시작")
@@ -790,10 +790,10 @@ def sync_stock_relationships(self, symbol: str):
         }
 
     Usage:
-        from serverless.tasks import sync_stock_relationships
+        from services.serverless.tasks import sync_stock_relationships
         result = sync_stock_relationships.delay('NVDA')
     """
-    from serverless.services.relationship_service import RelationshipService
+    from services.serverless.services.relationship_service import RelationshipService
 
     try:
         symbol = symbol.upper()
@@ -837,14 +837,14 @@ def batch_sync_stock_relationships(self, symbols: list = None):
         }
 
     Usage:
-        from serverless.tasks import batch_sync_stock_relationships
+        from services.serverless.tasks import batch_sync_stock_relationships
         result = batch_sync_stock_relationships.delay()
         result = batch_sync_stock_relationships.delay(['AAPL', 'MSFT', 'NVDA'])
     """
     from datetime import timedelta
 
-    from serverless.models import MarketMover
-    from serverless.services.relationship_service import RelationshipService
+    from services.serverless.models import MarketMover
+    from services.serverless.services.relationship_service import RelationshipService
 
     try:
         logger.info("🔗 Chain Sight 배치 동기화 시작")
@@ -911,7 +911,7 @@ def cleanup_expired_category_cache():
     Returns:
         {'deleted': 100}
     """
-    from serverless.models import CategoryCache
+    from services.serverless.models import CategoryCache
 
     try:
         logger.info("🧹 만료된 카테고리 캐시 정리 시작")
@@ -959,12 +959,12 @@ def sync_etf_holdings(self, send_failure_email: bool = True):
         }
 
     Usage:
-        from serverless.tasks import sync_etf_holdings
+        from services.serverless.tasks import sync_etf_holdings
         result = sync_etf_holdings.delay()
     """
-    from serverless.models import ETFHolding, ETFProfile
-    from serverless.services.etf_csv_downloader import ETFCSVDownloader
-    from serverless.services.theme_matching_service import ThemeMatchingService
+    from services.serverless.models import ETFHolding, ETFProfile
+    from services.serverless.services.etf_csv_downloader import ETFCSVDownloader
+    from services.serverless.services.theme_matching_service import ThemeMatchingService
 
     try:
         logger.info("📊 ETF Holdings 자동 수집 시작")
@@ -1142,10 +1142,10 @@ def sync_supply_chain_single(self, symbol: str):
         }
 
     Usage:
-        from serverless.tasks import sync_supply_chain_single
+        from services.serverless.tasks import sync_supply_chain_single
         result = sync_supply_chain_single.delay('TSM')
     """
-    from serverless.services.supply_chain_service import SupplyChainService
+    from services.serverless.services.supply_chain_service import SupplyChainService
 
     try:
         symbol = symbol.upper()
@@ -1199,12 +1199,12 @@ def sync_supply_chain_batch(self, symbols: list = None):
         }
 
     Usage:
-        from serverless.tasks import sync_supply_chain_batch
+        from services.serverless.tasks import sync_supply_chain_batch
         result = sync_supply_chain_batch.delay()
         result = sync_supply_chain_batch.delay(['TSM', 'NVDA', 'AAPL'])
     """
     from packages.shared.stocks.models import Stock
-    from serverless.services.supply_chain_service import SupplyChainService
+    from services.serverless.services.supply_chain_service import SupplyChainService
 
     try:
         logger.info("🔗 공급망 배치 동기화 시작")
@@ -1287,11 +1287,11 @@ def extract_relations_from_news(self, news_id: str):
         }
 
     Usage:
-        from serverless.tasks import extract_relations_from_news
+        from services.serverless.tasks import extract_relations_from_news
         result = extract_relations_from_news.delay('abc123-uuid')
     """
     from services.news.models import NewsEntity
-    from serverless.services.llm_relation_extractor import get_relation_extractor
+    from services.serverless.services.llm_relation_extractor import get_relation_extractor
 
     try:
         logger.info(f"🔍 뉴스 관계 추출 시작: {news_id}")
@@ -1357,14 +1357,14 @@ def batch_extract_relations_from_news(self, hours: int = 24, limit: int = 100):
         }
 
     Usage:
-        from serverless.tasks import batch_extract_relations_from_news
+        from services.serverless.tasks import batch_extract_relations_from_news
         result = batch_extract_relations_from_news.delay(hours=24, limit=100)
     """
     import time
     from datetime import timedelta
 
     from services.news.models import NewsEntity
-    from serverless.services.llm_relation_extractor import get_relation_extractor
+    from services.serverless.services.llm_relation_extractor import get_relation_extractor
 
     try:
         logger.info(f"🔍 뉴스 배치 관계 추출 시작: hours={hours}, limit={limit}")
@@ -1440,13 +1440,13 @@ def sync_llm_relations_to_graph(self, days: int = 7):
         }
 
     Usage:
-        from serverless.tasks import sync_llm_relations_to_graph
+        from services.serverless.tasks import sync_llm_relations_to_graph
         result = sync_llm_relations_to_graph.delay(days=7)
     """
     from datetime import timedelta
 
-    from serverless.models import LLMExtractedRelation, StockRelationship
-    from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+    from services.serverless.models import LLMExtractedRelation, StockRelationship
+    from services.serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
 
     try:
         logger.info(f"🔄 LLM 관계 동기화 시작: days={days}")
@@ -1523,10 +1523,10 @@ def cleanup_expired_llm_relations():
         {'deleted': int}
 
     Usage:
-        from serverless.tasks import cleanup_expired_llm_relations
+        from services.serverless.tasks import cleanup_expired_llm_relations
         result = cleanup_expired_llm_relations.delay()
     """
-    from serverless.models import LLMExtractedRelation
+    from services.serverless.models import LLMExtractedRelation
 
     try:
         logger.info("🧹 만료된 LLM 관계 정리 시작")
@@ -1567,11 +1567,11 @@ def extract_news_relations(self, hours=24):
         {"processed": 50, "relations_created": 12, "co_mentions_updated": 8}
 
     Usage:
-        from serverless.tasks import extract_news_relations
+        from services.serverless.tasks import extract_news_relations
         result = extract_news_relations.delay()
         result = extract_news_relations.delay(hours=168)  # 최근 7일
     """
-    from serverless.services.news_relation_matcher import NewsRelationMatcher
+    from services.serverless.services.news_relation_matcher import NewsRelationMatcher
 
     try:
         logger.info(f"Phase 6 뉴스 관계 추출 시작: hours={hours}")
@@ -1612,10 +1612,10 @@ def enrich_relationship_keywords(self, limit=100):
         {'enriched': int, 'skipped': int, 'failed': int, 'duration_ms': int}
 
     Usage:
-        from serverless.tasks import enrich_relationship_keywords
+        from services.serverless.tasks import enrich_relationship_keywords
         result = enrich_relationship_keywords.delay(limit=50)
     """
-    from serverless.services.relationship_keyword_enricher import (
+    from services.serverless.services.relationship_keyword_enricher import (
         RelationshipKeywordEnricher,
     )
 
@@ -1657,12 +1657,12 @@ def sync_institutional_holdings(self):
          'total_holdings': int, 'relationships_created': int}
 
     Usage:
-        from serverless.tasks import sync_institutional_holdings
+        from services.serverless.tasks import sync_institutional_holdings
         result = sync_institutional_holdings.delay()
     """
     from datetime import datetime
 
-    from serverless.services.institutional_holdings_service import (
+    from services.serverless.services.institutional_holdings_service import (
         InstitutionalHoldingsService,
     )
 
@@ -1719,10 +1719,10 @@ def scan_regulatory_relationships(self):
         {'categories_found': int, 'relationships_created': int}
 
     Usage:
-        from serverless.tasks import scan_regulatory_relationships
+        from services.serverless.tasks import scan_regulatory_relationships
         result = scan_regulatory_relationships.delay()
     """
-    from serverless.services.regulatory_service import RegulatoryService
+    from services.serverless.services.regulatory_service import RegulatoryService
 
     try:
         logger.info("Phase 8.1 규제 관계 스캔 시작")
@@ -1759,11 +1759,11 @@ def build_patent_network(self, symbols=None):
          'dispute_links': int, 'total_relationships': int}
 
     Usage:
-        from serverless.tasks import build_patent_network
+        from services.serverless.tasks import build_patent_network
         result = build_patent_network.delay()
         result = build_patent_network.delay(symbols=['AAPL', 'MSFT', 'NVDA'])
     """
-    from serverless.services.patent_network_service import PatentNetworkService
+    from services.serverless.services.patent_network_service import PatentNetworkService
 
     try:
         logger.info("Phase 8.2 특허 네트워크 빌드 시작")
@@ -1786,27 +1786,27 @@ def build_patent_network(self, symbols=None):
 # CELERY_BEAT_SCHEDULE 추가:
 #
 # 'check-screener-alerts': {
-#     'task': 'serverless.tasks.check_screener_alerts',
+#     'task': 'services.serverless.tasks.check_screener_alerts',
 #     'schedule': crontab(minute='*/15'),  # 15분마다 (시장 시간)
 #     'options': {'expires': 600}  # 10분 후 만료
 # },
 # 'calculate-market-breadth': {
-#     'task': 'serverless.tasks.calculate_daily_market_breadth',
+#     'task': 'services.serverless.tasks.calculate_daily_market_breadth',
 #     'schedule': crontab(hour=16, minute=30),  # 장 마감 후 16:30 ET
 #     'options': {'expires': 3600}
 # },
 # 'calculate-sector-heatmap': {
-#     'task': 'serverless.tasks.calculate_daily_sector_heatmap',
+#     'task': 'services.serverless.tasks.calculate_daily_sector_heatmap',
 #     'schedule': crontab(hour=16, minute=35),  # 16:35 ET
 #     'options': {'expires': 3600}
 # },
 # 'batch-sync-stock-relationships': {
-#     'task': 'serverless.tasks.batch_sync_stock_relationships',
+#     'task': 'services.serverless.tasks.batch_sync_stock_relationships',
 #     'schedule': crontab(hour=5, minute=0),  # 매일 05:00 EST
 #     'options': {'expires': 3600}
 # },
 # 'cleanup-expired-category-cache': {
-#     'task': 'serverless.tasks.cleanup_expired_category_cache',
+#     'task': 'services.serverless.tasks.cleanup_expired_category_cache',
 #     'schedule': crontab(hour=6, minute=0),  # 매일 06:00 EST
 #     'options': {'expires': 600}
 # },

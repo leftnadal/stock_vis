@@ -13,7 +13,7 @@ from django.utils import timezone
 from google import genai
 from google.genai import types
 
-from serverless.models import MarketMover, StockKeyword
+from services.serverless.models import MarketMover, StockKeyword
 
 logger = logging.getLogger(__name__)
 

@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.llm_relation_extractor import (
+from services.serverless.services.llm_relation_extractor import (
     ExtractedRelation,
     ExtractionResult,
     LLMRelationExtractor,
@@ -87,7 +87,7 @@ class TestLLMRelationExtractorParsing:
     def mock_extractor(self, settings):
         """LLM 클라이언트 모킹된 Extractor"""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('serverless.services.llm_relation_extractor.genai.Client'):
+        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
             extractor = LLMRelationExtractor()
             return extractor
 
@@ -270,9 +270,9 @@ class TestLLMRelationExtractorIntegration:
     def mock_extractor(self, settings):
         """모든 외부 의존성 모킹"""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('serverless.services.llm_relation_extractor.genai.Client'):
-            with patch('serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
-                with patch('serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
+        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
+            with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
+                with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
                     # PreFilter 모킹
                     mock_pre_filter = MagicMock()
                     mock_pf.return_value = mock_pre_filter
@@ -358,9 +358,9 @@ class TestLLMRelationExtractorDB:
     def mock_extractor(self, settings):
         """LLM 모킹된 Extractor"""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('serverless.services.llm_relation_extractor.genai.Client'):
-            with patch('serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
-                with patch('serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
+        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
+            with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
+                with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
                     mock_pre_filter = MagicMock()
                     mock_pf.return_value = mock_pre_filter
 
@@ -376,7 +376,7 @@ class TestLLMRelationExtractorDB:
     @pytest.mark.django_db
     def test_extract_and_save(self, mock_extractor):
         """추출 후 DB 저장"""
-        from serverless.models import LLMExtractedRelation
+        from services.serverless.models import LLMExtractedRelation
 
         # PreFilter 통과
         mock_result = MagicMock()
@@ -430,7 +430,7 @@ class TestLLMRelationExtractorDB:
     @pytest.mark.django_db
     def test_extract_and_save_no_symbol_match(self, mock_extractor):
         """심볼 매칭 실패시 저장 안 됨"""
-        from serverless.models import LLMExtractedRelation
+        from services.serverless.models import LLMExtractedRelation
 
         # PreFilter 통과
         mock_result = MagicMock()

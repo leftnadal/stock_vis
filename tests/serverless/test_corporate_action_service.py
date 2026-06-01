@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.corporate_action_service import CorporateActionService
+from services.serverless.services.corporate_action_service import CorporateActionService
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def service():
 @pytest.fixture
 def mock_yfinance():
     """yfinance 모킹"""
-    with patch('serverless.services.corporate_action_service.yf') as mock_yf:
+    with patch('services.serverless.services.corporate_action_service.yf') as mock_yf:
         yield mock_yf
 
 
@@ -40,8 +40,8 @@ class TestCorporateActionService:
         assert service.should_check(-49.9) is False
         assert service.should_check(0.0) is False
 
-    @patch('serverless.services.corporate_action_service.CorporateActionService._check_splits')
-    @patch('serverless.services.corporate_action_service.CorporateActionService._check_dividends')
+    @patch('services.serverless.services.corporate_action_service.CorporateActionService._check_splits')
+    @patch('services.serverless.services.corporate_action_service.CorporateActionService._check_dividends')
     def test_check_actions_split_found(self, mock_div, mock_split, service):
         """주식분할 감지"""
         target_date = date(2026, 1, 20)
@@ -69,8 +69,8 @@ class TestCorporateActionService:
         mock_split.assert_called_once()
         mock_div.assert_not_called()  # 분할 발견 시 배당 체크 안 함
 
-    @patch('serverless.services.corporate_action_service.CorporateActionService._check_splits')
-    @patch('serverless.services.corporate_action_service.CorporateActionService._check_dividends')
+    @patch('services.serverless.services.corporate_action_service.CorporateActionService._check_splits')
+    @patch('services.serverless.services.corporate_action_service.CorporateActionService._check_dividends')
     def test_check_actions_dividend_found(self, mock_div, mock_split, service):
         """배당 감지"""
         target_date = date(2026, 1, 20)

@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from serverless.services import keyword_generator as kg
+from services.serverless.services import keyword_generator as kg
 
 
 def test_module_does_not_import_asyncio():

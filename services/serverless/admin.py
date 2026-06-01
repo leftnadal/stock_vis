@@ -4,7 +4,7 @@ Serverless App Admin
 
 from django.contrib import admin
 
-from serverless.models import (
+from services.serverless.models import (
     CorporateAction,
     MarketMover,
     SectorETFMapping,

@@ -6,7 +6,7 @@ Phase 1 + Phase 2 지표 계산 로직 검증
 import unittest
 from decimal import Decimal
 
-from serverless.services.indicators import IndicatorCalculator
+from services.serverless.services.indicators import IndicatorCalculator
 
 
 class TestIndicatorCalculator(unittest.TestCase):

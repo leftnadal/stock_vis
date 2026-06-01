@@ -12,7 +12,7 @@ from django.db import transaction
 
 from apps.market_pulse.utils.circuit_breaker import CircuitBreakerError, get_circuit
 from packages.shared.stocks.models import SP500Constituent
-from serverless.services.fmp_client import FMPClient
+from services.serverless.services.fmp_client import FMPClient
 
 logger = logging.getLogger(__name__)
 

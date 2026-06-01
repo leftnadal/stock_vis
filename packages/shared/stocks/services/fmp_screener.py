@@ -16,7 +16,7 @@ import httpx
 from django.conf import settings
 from django.core.cache import cache
 
-from serverless.services.quote_enricher import QuoteEnricher
+from services.serverless.services.quote_enricher import QuoteEnricher
 
 logger = logging.getLogger(__name__)
 

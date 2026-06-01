@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, Mock, patch
 import pytest
 from django.utils import timezone
 
-from serverless.models import MarketMover, StockKeyword
-from serverless.services.keyword_service import KeywordGenerationService
+from services.serverless.models import MarketMover, StockKeyword
+from services.serverless.services.keyword_service import KeywordGenerationService
 
 
 @pytest.mark.django_db
@@ -19,7 +19,7 @@ class TestKeywordGenerationService:
     def service(self, settings):
         """서비스 인스턴스 (API 키 없는 환경에서도 동작)"""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('serverless.services.keyword_service.genai.Client'):
+        with patch('services.serverless.services.keyword_service.genai.Client'):
             return KeywordGenerationService()
 
     @pytest.fixture

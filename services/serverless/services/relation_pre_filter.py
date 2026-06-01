@@ -12,7 +12,7 @@ Regex 기반 키워드 매칭으로 관계 추출 가능성이 높은 문서만 
 - SUED_BY: sue, lawsuit, litigation, legal action
 
 Usage:
-    from serverless.services.relation_pre_filter import RelationPreFilter
+    from services.serverless.services.relation_pre_filter import RelationPreFilter
 
     pre_filter = RelationPreFilter()
 

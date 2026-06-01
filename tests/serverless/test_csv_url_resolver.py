@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.models import ETFProfile
-from serverless.services.csv_url_resolver import (
+from services.serverless.models import ETFProfile
+from services.serverless.services.csv_url_resolver import (
     FUND_MANAGER_CONFIG,
     CSVURLResolver,
     CSVURLResolverError,
@@ -393,7 +393,7 @@ class TestSingleton:
     def test_get_csv_url_resolver_returns_same_instance(self):
         """싱글톤 인스턴스 반환"""
         # 기존 인스턴스 초기화
-        import serverless.services.csv_url_resolver as module
+        import services.serverless.services.csv_url_resolver as module
         module._resolver_instance = None
 
         resolver1 = get_csv_url_resolver()

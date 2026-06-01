@@ -197,7 +197,7 @@ INSTALLED_APPS = [
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
-    'serverless',  # Market Movers (AWS Lambda 전환 대상)
+    'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)

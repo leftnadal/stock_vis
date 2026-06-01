@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, Mock, patch
 import msgpack
 import pytest
 
-from serverless.services.keyword_data_collector import KeywordDataCollector
+from services.serverless.services.keyword_data_collector import KeywordDataCollector
 
 
 class TestKeywordDataCollector:
@@ -70,7 +70,7 @@ class TestKeywordDataCollector:
         assert result['52_week_high'] == 199.62
         assert result['52_week_low'] == 164.08
 
-    @patch('serverless.services.keyword_data_collector.cache')
+    @patch('services.serverless.services.keyword_data_collector.cache')
     def test_get_cached_context_hit(self, mock_cache, collector):
         """캐시 HIT 테스트"""
         # 모의 캐시 데이터 (msgpack 압축)
@@ -87,7 +87,7 @@ class TestKeywordDataCollector:
         assert result == cached_data
         mock_cache.get.assert_called_once_with('keyword_context:2026-01-07:AAPL')
 
-    @patch('serverless.services.keyword_data_collector.cache')
+    @patch('services.serverless.services.keyword_data_collector.cache')
     def test_get_cached_context_miss(self, mock_cache, collector):
         """캐시 MISS 테스트"""
         mock_cache.get.return_value = None
@@ -96,7 +96,7 @@ class TestKeywordDataCollector:
 
         assert result is None
 
-    @patch('serverless.services.keyword_data_collector.cache')
+    @patch('services.serverless.services.keyword_data_collector.cache')
     def test_set_cached_context(self, mock_cache, collector):
         """캐시 저장 테스트"""
         data = {
@@ -123,7 +123,7 @@ class TestKeywordDataCollector:
         decompressed = msgpack.unpackb(compressed, raw=False)
         assert decompressed == data
 
-    @patch('serverless.services.keyword_data_collector.cache')
+    @patch('services.serverless.services.keyword_data_collector.cache')
     def test_delete_cached_context(self, mock_cache, collector):
         """캐시 삭제 테스트"""
         result = collector.delete_cached_context('2026-01-07', 'AAPL')
@@ -181,7 +181,7 @@ class TestKeywordDataCollector:
         assert context['news'] == []
         assert context['indicators'] == {}
 
-    @patch('serverless.services.keyword_data_collector.cache')
+    @patch('services.serverless.services.keyword_data_collector.cache')
     def test_collect_single_cache_hit(self, mock_cache, collector):
         """단일 종목 수집 - 캐시 HIT 테스트"""
         # 캐시 HIT

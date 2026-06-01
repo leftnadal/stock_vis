@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from serverless.services.keyword_data_collector import KeywordDataCollector
+from services.serverless.services.keyword_data_collector import KeywordDataCollector
 
 # 로깅 설정
 logging.basicConfig(

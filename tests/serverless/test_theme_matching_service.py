@@ -8,8 +8,8 @@ from decimal import Decimal
 
 import pytest
 
-from serverless.models import ETFHolding, ETFProfile, StockRelationship, ThemeMatch
-from serverless.services.theme_matching_service import (
+from services.serverless.models import ETFHolding, ETFProfile, StockRelationship, ThemeMatch
+from services.serverless.services.theme_matching_service import (
     THEME_KEYWORDS,
     THEME_TO_ETF,
     ThemeMatchingService,

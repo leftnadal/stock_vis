@@ -1507,7 +1507,7 @@ def _get_tier1_symbols(max_symbols=25):
 def _get_mover_symbols(max_symbols=30):
     """MarketMover에서 최근 거래일의 심볼 추출"""
     try:
-        from serverless.models import MarketMover
+        from services.serverless.models import MarketMover
 
         latest_date = (
             MarketMover.objects.order_by("-date").values_list("date", flat=True).first()

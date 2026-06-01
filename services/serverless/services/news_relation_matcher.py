@@ -11,7 +11,7 @@ News Relation Matcher Service (Phase 6)
 4. CO_MENTIONED 관계의 context.mention_count 증가
 
 Usage:
-    from serverless.services.news_relation_matcher import NewsRelationMatcher
+    from services.serverless.services.news_relation_matcher import NewsRelationMatcher
 
     matcher = NewsRelationMatcher()
     result = matcher.process_recent_news(hours=24)
@@ -26,8 +26,8 @@ from typing import Dict, List, Optional, Tuple
 from django.db.models import F
 from django.utils import timezone
 
-from serverless.models import StockRelationship
-from serverless.services.symbol_matcher import SymbolMatcher
+from services.serverless.models import StockRelationship
+from services.serverless.services.symbol_matcher import SymbolMatcher
 
 logger = logging.getLogger(__name__)
 

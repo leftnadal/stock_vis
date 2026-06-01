@@ -7,8 +7,8 @@ from typing import Dict, List, Optional
 
 from django.utils import timezone
 
-from serverless.models import MarketMover, StockKeyword
-from serverless.services.keyword_service import KeywordGenerationService
+from services.serverless.models import MarketMover, StockKeyword
+from services.serverless.services.keyword_service import KeywordGenerationService
 
 logger = logging.getLogger(__name__)
 

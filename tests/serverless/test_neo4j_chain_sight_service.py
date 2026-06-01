@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+from services.serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
 
 
 class TestNeo4jChainSightServiceBasic:
@@ -17,27 +17,27 @@ class TestNeo4jChainSightServiceBasic:
 
     def test_is_available_when_driver_is_none(self):
         """드라이버가 None일 때 is_available() False 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             assert service.is_available() is False
 
     def test_is_available_when_driver_exists(self):
         """드라이버가 있을 때 is_available() True 반환"""
         mock_driver = Mock()
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
             service = Neo4jChainSightService()
             assert service.is_available() is True
 
     def test_create_stock_node_when_unavailable(self):
         """Neo4j 불가 시 create_stock_node() False 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             result = service.create_stock_node('NVDA', 'NVIDIA', 'Technology', 'Semiconductors', 1e12)
             assert result is False
 
     def test_create_relationship_when_unavailable(self):
         """Neo4j 불가 시 create_relationship() False 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             result = service.create_relationship('NVDA', 'AMD', 'PEER_OF', 0.85, 'fmp')
             assert result is False
@@ -45,28 +45,28 @@ class TestNeo4jChainSightServiceBasic:
     def test_create_relationship_invalid_type(self):
         """잘못된 관계 타입에서 False 반환"""
         mock_driver = Mock()
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
             service = Neo4jChainSightService()
             result = service.create_relationship('NVDA', 'AMD', 'INVALID_TYPE', 0.85, 'fmp')
             assert result is False
 
     def test_get_related_stocks_when_unavailable(self):
         """Neo4j 불가 시 get_related_stocks() 빈 리스트 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             result = service.get_related_stocks('NVDA')
             assert result == []
 
     def test_get_n_depth_graph_when_unavailable(self):
         """Neo4j 불가 시 get_n_depth_graph() 빈 그래프 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             result = service.get_n_depth_graph('NVDA', depth=2)
             assert result == {"nodes": [], "edges": []}
 
     def test_get_statistics_when_unavailable(self):
         """Neo4j 불가 시 get_statistics() 빈 딕셔너리 반환"""
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=None):
             service = Neo4jChainSightService()
             result = service.get_statistics()
             assert result == {}
@@ -83,7 +83,7 @@ class TestNeo4jChainSightServiceWithMockDriver:
         mock_driver.session.return_value.__enter__ = Mock(return_value=mock_session)
         mock_driver.session.return_value.__exit__ = Mock(return_value=False)
 
-        with patch('serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
+        with patch('services.serverless.services.neo4j_chain_sight_service.get_neo4j_driver', return_value=mock_driver):
             service = Neo4jChainSightService()
             service._mock_session = mock_session
             yield service
@@ -216,7 +216,7 @@ class TestNeo4jChainSightServiceIntegration:
 
     def test_sync_from_postgres(self, service):
         """PostgreSQL에서 Neo4j로 동기화"""
-        from serverless.models import StockRelationship
+        from services.serverless.models import StockRelationship
 
         # PostgreSQL에 테스트 데이터 있는지 확인
         if not StockRelationship.objects.exists():
@@ -250,12 +250,12 @@ class TestFallbackGraph:
 
     def test_fallback_graph_with_no_relationships(self):
         """관계가 없을 때 fallback 그래프"""
-        from serverless.views import _get_fallback_graph
+        from services.serverless.views import _get_fallback_graph
 
-        with patch('serverless.models.StockRelationship') as mock_model:
+        with patch('services.serverless.models.StockRelationship') as mock_model:
             mock_model.objects.filter.return_value.order_by.return_value.__getitem__ = Mock(return_value=[])
 
-            with patch('serverless.services.fmp_client.FMPClient') as mock_fmp:
+            with patch('services.serverless.services.fmp_client.FMPClient') as mock_fmp:
                 mock_fmp_instance = Mock()
                 mock_fmp_instance.get_company_profile.return_value = {
                     'companyName': 'Test Company',
@@ -270,7 +270,7 @@ class TestFallbackGraph:
 
     def test_fallback_graph_with_relationships(self):
         """관계가 있을 때 fallback 그래프"""
-        from serverless.views import _get_fallback_graph
+        from services.serverless.views import _get_fallback_graph
 
         # Mock 관계 데이터
         mock_rel = Mock()
@@ -279,12 +279,12 @@ class TestFallbackGraph:
         mock_rel.strength = Decimal('0.85')
         mock_rel.context = {'sector': 'Technology'}
 
-        with patch('serverless.models.StockRelationship') as mock_model:
+        with patch('services.serverless.models.StockRelationship') as mock_model:
             mock_qs = Mock()
             mock_qs.order_by.return_value.__getitem__ = Mock(return_value=[mock_rel])
             mock_model.objects.filter.return_value = mock_qs
 
-            with patch('serverless.services.fmp_client.FMPClient') as mock_fmp:
+            with patch('services.serverless.services.fmp_client.FMPClient') as mock_fmp:
                 mock_fmp_instance = Mock()
                 mock_fmp_instance.get_company_profile.return_value = {
                     'companyName': 'Test Company',

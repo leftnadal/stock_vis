@@ -73,7 +73,7 @@ class AdminStatusService:
     def get_overview_summary() -> dict:
         from services.news.models import DailyNewsKeyword, NewsArticle
         from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
-        from serverless.models import (
+        from services.serverless.models import (
             MarketBreadth,
             MarketMover,
             StockKeyword,
@@ -138,7 +138,7 @@ class AdminStatusService:
     def detect_issues() -> list:
         from services.news.models import DailyNewsKeyword
         from packages.shared.stocks.models import DailyPrice, SP500Constituent
-        from serverless.models import (
+        from services.serverless.models import (
             ETFProfile,
             LLMExtractedRelation,
             MarketBreadth,
@@ -469,7 +469,7 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_screener_status() -> dict:
-        from serverless.models import (
+        from services.serverless.models import (
             AlertHistory,
             MarketBreadth,
             ScreenerAlert,
@@ -534,7 +534,7 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_market_pulse_status() -> dict:
-        from serverless.models import MarketMover, StockKeyword
+        from services.serverless.models import MarketMover, StockKeyword
 
         last_td = last_trading_day()
 

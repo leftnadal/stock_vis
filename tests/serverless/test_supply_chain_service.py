@@ -9,8 +9,8 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.supply_chain_parser import SupplyChainRelation
-from serverless.services.supply_chain_service import (
+from services.serverless.services.supply_chain_parser import SupplyChainRelation
+from services.serverless.services.supply_chain_service import (
     SupplyChainService,
     get_supply_chain_for_symbol,
     sync_supply_chain_for_symbol,
@@ -20,8 +20,8 @@ from serverless.services.supply_chain_service import (
 @pytest.fixture
 def service():
     """Create test service with mocked dependencies"""
-    with patch('serverless.services.supply_chain_service.SECEdgarClient'):
-        with patch('serverless.services.supply_chain_service.SupplyChainParser'):
+    with patch('services.serverless.services.supply_chain_service.SECEdgarClient'):
+        with patch('services.serverless.services.supply_chain_service.SupplyChainParser'):
             svc = SupplyChainService()
             yield svc
 
@@ -33,7 +33,7 @@ class TestSupplyChainService:
     # Sync Tests
     # ========================================
 
-    @patch('serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.cache')
     def test_sync_supply_chain_cache_hit(self, mock_cache, service):
         """캐시 히트 시 바로 반환"""
         cached_result = {
@@ -52,7 +52,7 @@ class TestSupplyChainService:
         assert result['customer_count'] == 1
         mock_cache.get.assert_called_once()
 
-    @patch('serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.cache')
     @patch.object(SupplyChainService, '_download_10k')
     @patch.object(SupplyChainService, '_save_relationships')
     @patch.object(SupplyChainService, '_sync_to_neo4j')
@@ -94,7 +94,7 @@ class TestSupplyChainService:
         assert result['supplier_count'] == 0
         assert result['cached'] is False
 
-    @patch('serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.cache')
     @patch.object(SupplyChainService, '_download_10k')
     def test_sync_supply_chain_no_10k(self, mock_download, mock_cache, service):
         """10-K 없음 테스트"""
@@ -138,8 +138,8 @@ class TestSupplyChainService:
     # Query Tests
     # ========================================
 
-    @patch('serverless.services.supply_chain_service.cache')
-    @patch('serverless.services.supply_chain_service.StockRelationship')
+    @patch('services.serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.StockRelationship')
     def test_get_supply_chain_from_cache(self, mock_model, mock_cache, service):
         """캐시에서 공급망 조회"""
         mock_cache.get.return_value = {
@@ -153,7 +153,7 @@ class TestSupplyChainService:
         assert len(result['customers']) == 1
         assert len(result['suppliers']) == 1
 
-    @patch('serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.cache')
     @patch.object(SupplyChainService, '_get_relationships')
     def test_get_supply_chain_from_db(self, mock_get, mock_cache, service):
         """DB에서 공급망 조회"""
@@ -226,7 +226,7 @@ class TestSupplyChainService:
     # Cache Management Tests
     # ========================================
 
-    @patch('serverless.services.supply_chain_service.cache')
+    @patch('services.serverless.services.supply_chain_service.cache')
     def test_clear_cache(self, mock_cache, service):
         """캐시 삭제 테스트"""
         mock_cache.delete.return_value = True
@@ -242,8 +242,8 @@ class TestSaveRelationships:
 
     @pytest.fixture
     def service(self):
-        with patch('serverless.services.supply_chain_service.SECEdgarClient'):
-            with patch('serverless.services.supply_chain_service.SupplyChainParser'):
+        with patch('services.serverless.services.supply_chain_service.SECEdgarClient'):
+            with patch('services.serverless.services.supply_chain_service.SupplyChainParser'):
                 return SupplyChainService()
 
     @pytest.mark.django_db
@@ -262,7 +262,7 @@ class TestSaveRelationships:
         ]
 
         # Mock transaction and model
-        with patch('serverless.services.supply_chain_service.StockRelationship') as mock_model:
+        with patch('services.serverless.services.supply_chain_service.StockRelationship') as mock_model:
             mock_model.objects.update_or_create.return_value = (Mock(), True)
 
             count = service._save_relationships('TSM', relations)
@@ -289,7 +289,7 @@ class TestSaveRelationships:
             )
         ]
 
-        with patch('serverless.services.supply_chain_service.StockRelationship') as mock_model:
+        with patch('services.serverless.services.supply_chain_service.StockRelationship') as mock_model:
             mock_model.objects.update_or_create.return_value = (Mock(), True)
 
             count = service._save_relationships('AAPL', relations)
@@ -315,7 +315,7 @@ class TestSaveRelationships:
             )
         ]
 
-        with patch('serverless.services.supply_chain_service.StockRelationship') as mock_model:
+        with patch('services.serverless.services.supply_chain_service.StockRelationship') as mock_model:
             count = service._save_relationships('TSM', relations)
 
             assert count == 0
@@ -327,8 +327,8 @@ class TestNeo4jSync:
 
     @pytest.fixture
     def service(self):
-        with patch('serverless.services.supply_chain_service.SECEdgarClient'):
-            with patch('serverless.services.supply_chain_service.SupplyChainParser'):
+        with patch('services.serverless.services.supply_chain_service.SECEdgarClient'):
+            with patch('services.serverless.services.supply_chain_service.SupplyChainParser'):
                 return SupplyChainService()
 
     def test_sync_to_neo4j_success(self, service):
@@ -346,7 +346,7 @@ class TestNeo4jSync:
         ]
 
         # Patch where it's imported in the _sync_to_neo4j method
-        with patch('serverless.services.neo4j_chain_sight_service.Neo4jChainSightService') as mock_neo4j:
+        with patch('services.serverless.services.neo4j_chain_sight_service.Neo4jChainSightService') as mock_neo4j:
             mock_instance = Mock()
             mock_instance.is_available.return_value = True
             mock_instance.create_stock_node.return_value = True
@@ -373,7 +373,7 @@ class TestNeo4jSync:
         ]
 
         # Patch where it's imported in the _sync_to_neo4j method
-        with patch('serverless.services.neo4j_chain_sight_service.Neo4jChainSightService') as mock_neo4j:
+        with patch('services.serverless.services.neo4j_chain_sight_service.Neo4jChainSightService') as mock_neo4j:
             mock_instance = Mock()
             mock_instance.is_available.return_value = False
             mock_neo4j.return_value = mock_instance
@@ -386,7 +386,7 @@ class TestNeo4jSync:
 class TestConvenienceFunctions:
     """편의 함수 테스트"""
 
-    @patch('serverless.services.supply_chain_service.SupplyChainService')
+    @patch('services.serverless.services.supply_chain_service.SupplyChainService')
     def test_sync_supply_chain_for_symbol(self, mock_service_class):
         """sync_supply_chain_for_symbol 테스트"""
         mock_instance = Mock()
@@ -398,7 +398,7 @@ class TestConvenienceFunctions:
         assert result['status'] == 'success'
         mock_instance.sync_supply_chain.assert_called_once_with('TSM')
 
-    @patch('serverless.services.supply_chain_service.SupplyChainService')
+    @patch('services.serverless.services.supply_chain_service.SupplyChainService')
     def test_get_supply_chain_for_symbol(self, mock_service_class):
         """get_supply_chain_for_symbol 테스트"""
         mock_instance = Mock()

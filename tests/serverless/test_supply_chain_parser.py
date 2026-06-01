@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from serverless.services.supply_chain_parser import (
+from services.serverless.services.supply_chain_parser import (
     SupplyChainParser,
     SupplyChainRelation,
 )

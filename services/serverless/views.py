@@ -20,7 +20,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied, ValidationErro
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from serverless.exceptions import (
+from services.serverless.exceptions import (
     GenerationFailed,
     InstitutionalError,
     InstitutionalPeersError,
@@ -30,8 +30,8 @@ from serverless.exceptions import (
     SyncFailed,
     ThesisGenerationFailed,
 )
-from serverless.models import AlertHistory, InvestmentThesis, MarketMover, ScreenerAlert
-from serverless.serializers import (
+from services.serverless.models import AlertHistory, InvestmentThesis, MarketMover, ScreenerAlert
+from services.serverless.serializers import (
     AlertHistoryListSerializer,
     AlertHistorySerializer,
     MarketMoverListSerializer,
@@ -39,7 +39,7 @@ from serverless.serializers import (
     ScreenerAlertCreateSerializer,
     ScreenerAlertSerializer,
 )
-from serverless.tasks import sync_daily_market_movers
+from services.serverless.tasks import sync_daily_market_movers
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ def market_movers_api(request):
             }
         }
     """
-    from serverless.processors import MarketMoversProcessor
+    from services.serverless.processors import MarketMoversProcessor
 
     # 쿼리 파라미터
     mover_type = request.GET.get("type", "gainers")
@@ -218,7 +218,7 @@ def sync_now(request):
             }
         }
     """
-    from serverless.services.data_sync import MarketMoversSync
+    from services.serverless.services.data_sync import MarketMoversSync
 
     date_str = request.data.get("date")
 
@@ -272,7 +272,7 @@ def get_keywords(request, symbol):
             }
         }
     """
-    from serverless.models import StockKeyword
+    from services.serverless.models import StockKeyword
 
     symbol = symbol.upper()
     date_str = request.GET.get("date", timezone.localdate().isoformat())
@@ -320,7 +320,7 @@ def get_batch_keywords(request):
             }
         }
     """
-    from serverless.models import StockKeyword
+    from services.serverless.models import StockKeyword
 
     symbols = request.data.get("symbols", [])
     date_str = request.data.get("date", timezone.localdate().isoformat())
@@ -368,7 +368,7 @@ def trigger_keyword_generation(request):
             }
         }
     """
-    from serverless.tasks import keyword_generation_pipeline
+    from services.serverless.tasks import keyword_generation_pipeline
 
     mover_type = request.data.get("type", "gainers")
     date_str = request.data.get("date", timezone.localdate().isoformat())
@@ -431,7 +431,7 @@ def generate_screener_keywords(request):
             }
         }
     """
-    from serverless.tasks import generate_screener_keywords_task
+    from services.serverless.tasks import generate_screener_keywords_task
 
     stocks = request.data.get("stocks", [])
 
@@ -524,9 +524,9 @@ def market_breadth_api(request):
             }
         }
     """
-    from serverless.models import MarketBreadth
-    from serverless.serializers import MarketBreadthSerializer
-    from serverless.services.market_breadth_service import MarketBreadthService
+    from services.serverless.models import MarketBreadth
+    from services.serverless.serializers import MarketBreadthSerializer
+    from services.serverless.services.market_breadth_service import MarketBreadthService
 
     date_str = request.GET.get("date")
 
@@ -609,7 +609,7 @@ def market_breadth_api(request):
 
 def _get_market_indices():
     """주요 시장 지수 데이터 조회 (FMP API)"""
-    from serverless.services.fmp_client import FMPClient
+    from services.serverless.services.fmp_client import FMPClient
 
     indices = {}
     index_symbols = {
@@ -678,9 +678,9 @@ def market_breadth_history(request):
     """
     from datetime import timedelta
 
-    from serverless.models import MarketBreadth
-    from serverless.serializers import MarketBreadthHistorySerializer
-    from serverless.services.market_breadth_service import MarketBreadthService
+    from services.serverless.models import MarketBreadth
+    from services.serverless.serializers import MarketBreadthHistorySerializer
+    from services.serverless.services.market_breadth_service import MarketBreadthService
 
     days = int(request.GET.get("days", 30))
     days = min(days, 90)  # 최대 90일
@@ -714,7 +714,7 @@ def trigger_breadth_sync(request):
 
     POST /api/v1/serverless/breadth/sync
     """
-    from serverless.tasks import calculate_daily_market_breadth
+    from services.serverless.tasks import calculate_daily_market_breadth
 
     date_str = request.data.get("date")
 
@@ -764,9 +764,9 @@ def sector_heatmap_api(request):
     """
     from datetime import datetime
 
-    from serverless.models import SectorPerformance
-    from serverless.serializers import SectorPerformanceSerializer
-    from serverless.services.sector_heatmap_service import SectorHeatmapService
+    from services.serverless.models import SectorPerformance
+    from services.serverless.serializers import SectorPerformanceSerializer
+    from services.serverless.services.sector_heatmap_service import SectorHeatmapService
 
     date_str = request.GET.get("date")
 
@@ -857,7 +857,7 @@ def sector_stocks_api(request, sector):
             }
         }
     """
-    from serverless.services.sector_heatmap_service import SectorHeatmapService
+    from services.serverless.services.sector_heatmap_service import SectorHeatmapService
 
     limit = int(request.GET.get("limit", 5))
     limit = min(limit, 10)  # 최대 10개
@@ -889,7 +889,7 @@ def trigger_heatmap_sync(request):
 
     POST /api/v1/serverless/heatmap/sync
     """
-    from serverless.tasks import calculate_daily_sector_heatmap
+    from services.serverless.tasks import calculate_daily_sector_heatmap
 
     date_str = request.data.get("date")
 
@@ -925,8 +925,8 @@ def screener_presets_api(request):
     GET /api/v1/serverless/presets?category=beginner
     POST /api/v1/serverless/presets
     """
-    from serverless.models import ScreenerPreset
-    from serverless.serializers import (
+    from services.serverless.models import ScreenerPreset
+    from services.serverless.serializers import (
         ScreenerPresetCreateSerializer,
         ScreenerPresetListSerializer,
     )
@@ -984,8 +984,8 @@ def screener_preset_detail(request, preset_id):
     PATCH /api/v1/serverless/presets/{id}
     DELETE /api/v1/serverless/presets/{id}
     """
-    from serverless.models import ScreenerPreset
-    from serverless.serializers import ScreenerPresetSerializer
+    from services.serverless.models import ScreenerPreset
+    from services.serverless.serializers import ScreenerPresetSerializer
 
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
@@ -1037,8 +1037,8 @@ def execute_preset(request, preset_id):
         "page_size": 50
     }
     """
-    from serverless.models import ScreenerPreset
-    from serverless.services.filter_engine import FilterEngine
+    from services.serverless.models import ScreenerPreset
+    from services.serverless.services.filter_engine import FilterEngine
 
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
@@ -1095,8 +1095,8 @@ def screener_filters_api(request):
             }
         }
     """
-    from serverless.models import ScreenerFilter
-    from serverless.serializers import ScreenerFilterSerializer
+    from services.serverless.models import ScreenerFilter
+    from services.serverless.serializers import ScreenerFilterSerializer
 
     category = request.GET.get("category")
 
@@ -1175,7 +1175,7 @@ def advanced_screener_api(request):
             }
         }
     """
-    from serverless.services.filter_engine import FilterEngine
+    from services.serverless.services.filter_engine import FilterEngine
 
     filters_dict = request.data.get("filters", {})
     sort_by = request.data.get("sort_by", "marketCap")
@@ -1461,7 +1461,7 @@ def share_preset(request, preset_id):
     """
     import secrets
 
-    from serverless.models import ScreenerPreset
+    from services.serverless.models import ScreenerPreset
 
     try:
         preset = ScreenerPreset.objects.get(id=preset_id)
@@ -1522,8 +1522,8 @@ def get_shared_preset(request, share_code):
             }
         }
     """
-    from serverless.models import ScreenerPreset
-    from serverless.serializers import ScreenerPresetSerializer
+    from services.serverless.models import ScreenerPreset
+    from services.serverless.serializers import ScreenerPresetSerializer
 
     try:
         preset = ScreenerPreset.objects.get(share_code=share_code, is_public=True)
@@ -1559,7 +1559,7 @@ def import_preset(request, share_code):
             }
         }
     """
-    from serverless.models import ScreenerPreset
+    from services.serverless.models import ScreenerPreset
 
     if not request.user.is_authenticated:
         from rest_framework.exceptions import NotAuthenticated
@@ -1632,8 +1632,8 @@ def trending_presets(request):
     """
     from datetime import timedelta
 
-    from serverless.models import ScreenerPreset
-    from serverless.serializers import ScreenerPresetListSerializer
+    from services.serverless.models import ScreenerPreset
+    from services.serverless.serializers import ScreenerPresetListSerializer
 
     days = int(request.GET.get("days", 7))
     days = min(days, 30)  # 최대 30일
@@ -1719,8 +1719,8 @@ def generate_thesis(request):
             }
         }
     """
-    from serverless.serializers import InvestmentThesisSerializer
-    from serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
+    from services.serverless.serializers import InvestmentThesisSerializer
+    from services.serverless.services.thesis_builder import ThesisBuilder, create_fallback_thesis
 
     # 요청 데이터 파싱
     stocks = request.data.get("stocks", [])
@@ -1802,7 +1802,7 @@ def get_thesis(request, thesis_id):
             }
         }
     """
-    from serverless.serializers import InvestmentThesisSerializer
+    from services.serverless.serializers import InvestmentThesisSerializer
 
     try:
         thesis = InvestmentThesis.objects.get(id=thesis_id)
@@ -1837,7 +1837,7 @@ def list_theses(request):
             }
         }
     """
-    from serverless.serializers import InvestmentThesisListSerializer
+    from services.serverless.serializers import InvestmentThesisListSerializer
 
     # 인증 확인
     if not request.user.is_authenticated:
@@ -1879,7 +1879,7 @@ def get_shared_thesis(request, share_code):
             }
         }
     """
-    from serverless.serializers import InvestmentThesisSerializer
+    from services.serverless.serializers import InvestmentThesisSerializer
 
     try:
         thesis = InvestmentThesis.objects.get(share_code=share_code.upper())
@@ -1951,7 +1951,7 @@ def etf_collection_status(request):
             }
         }
     """
-    from serverless.models import ETFHolding, ETFProfile
+    from services.serverless.models import ETFHolding, ETFProfile
 
     tier = request.query_params.get("tier")
 
@@ -2048,8 +2048,8 @@ def trigger_etf_holdings_sync(request):
             }
         }
     """
-    from serverless.models import ETFProfile
-    from serverless.services.etf_csv_downloader import (
+    from services.serverless.models import ETFProfile
+    from services.serverless.services.etf_csv_downloader import (
         ETFCSVDownloader,
         ETFCSVDownloadError,
         ETFCSVParseError,
@@ -2168,8 +2168,8 @@ def resolve_etf_csv_url(request):
             }
         }
     """
-    from serverless.models import ETFProfile
-    from serverless.services.csv_url_resolver import CSVURLResolver
+    from services.serverless.models import ETFProfile
+    from services.serverless.services.csv_url_resolver import CSVURLResolver
 
     etf_symbol = request.data.get("etf_symbol")
 
@@ -2262,7 +2262,7 @@ def etf_holdings_api(request, etf_symbol: str):
             }
         }
     """
-    from serverless.models import ETFHolding, ETFProfile
+    from services.serverless.models import ETFHolding, ETFProfile
 
     limit = int(request.query_params.get("limit", 50))
     etf_symbol = etf_symbol.upper()
@@ -2324,7 +2324,7 @@ def theme_list_api(request):
             }
         }
     """
-    from serverless.services.theme_matching_service import get_theme_matching_service
+    from services.serverless.services.theme_matching_service import get_theme_matching_service
 
     service = get_theme_matching_service()
     themes = service.get_all_themes()
@@ -2365,7 +2365,7 @@ def theme_stocks_api(request, theme_id: str):
             }
         }
     """
-    from serverless.services.theme_matching_service import get_theme_matching_service
+    from services.serverless.services.theme_matching_service import get_theme_matching_service
 
     limit = int(request.query_params.get("limit", 20))
     min_confidence = request.query_params.get("min_confidence", "medium")
@@ -2418,7 +2418,7 @@ def stock_themes_api(request, symbol: str):
             }
         }
     """
-    from serverless.services.theme_matching_service import get_theme_matching_service
+    from services.serverless.services.theme_matching_service import get_theme_matching_service
 
     symbol = symbol.upper()
     service = get_theme_matching_service()
@@ -2459,7 +2459,7 @@ def etf_peers_api(request, symbol: str):
             }
         }
     """
-    from serverless.services.theme_matching_service import get_theme_matching_service
+    from services.serverless.services.theme_matching_service import get_theme_matching_service
 
     symbol = symbol.upper()
     limit = int(request.query_params.get("limit", 10))
@@ -2492,7 +2492,7 @@ def refresh_theme_matches_api(request):
             }
         }
     """
-    from serverless.services.theme_matching_service import get_theme_matching_service
+    from services.serverless.services.theme_matching_service import get_theme_matching_service
 
     service = get_theme_matching_service()
     result = service.refresh_all_matches()
@@ -2531,7 +2531,7 @@ def extract_relations_from_news_api(request):
             }
         }
     """
-    from serverless.tasks import (
+    from services.serverless.tasks import (
         batch_extract_relations_from_news,
         extract_relations_from_news,
     )
@@ -2606,7 +2606,7 @@ def get_llm_relations_api(request, symbol):
 
     from django.db.models import Q
 
-    from serverless.models import LLMExtractedRelation
+    from services.serverless.models import LLMExtractedRelation
 
     symbol = symbol.upper()
     relation_type = request.query_params.get("relation_type")
@@ -2681,7 +2681,7 @@ def sync_llm_relations_api(request):
             }
         }
     """
-    from serverless.tasks import sync_llm_relations_to_graph
+    from services.serverless.tasks import sync_llm_relations_to_graph
 
     days = int(request.data.get("days", 7))
 
@@ -2727,7 +2727,7 @@ def llm_relations_stats_api(request):
     """
     from django.db.models import Count
 
-    from serverless.models import LLMExtractedRelation
+    from services.serverless.models import LLMExtractedRelation
 
     now = timezone.now()
 
@@ -2801,7 +2801,7 @@ def institutional_holdings_api(request, symbol):
             }
         }
     """
-    from serverless.services.institutional_holdings_service import (
+    from services.serverless.services.institutional_holdings_service import (
         InstitutionalHoldingsService,
     )
 
@@ -2854,7 +2854,7 @@ def institutional_peers_api(request, symbol):
             }
         }
     """
-    from serverless.services.institutional_holdings_service import (
+    from services.serverless.services.institutional_holdings_service import (
         InstitutionalHoldingsService,
     )
 
@@ -2904,7 +2904,7 @@ def institutional_sync_api(request):
             }
         }
     """
-    from serverless.tasks import sync_institutional_holdings
+    from services.serverless.tasks import sync_institutional_holdings
 
     try:
         task = sync_institutional_holdings.delay()
@@ -2943,7 +2943,7 @@ def get_regulatory_relations_api(request, symbol):
             }
         }
     """
-    from serverless.models import StockRelationship
+    from services.serverless.models import StockRelationship
 
     symbol = symbol.upper()
 
@@ -3000,7 +3000,7 @@ def get_patent_relations_api(request, symbol):
             }
         }
     """
-    from serverless.models import StockRelationship
+    from services.serverless.models import StockRelationship
 
     symbol = symbol.upper()
 

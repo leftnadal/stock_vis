@@ -7,8 +7,8 @@ from unittest.mock import patch
 import pytest
 from django.utils import timezone
 
-from serverless.models import MarketMover, StockKeyword
-from serverless.processors import MarketMoversProcessor
+from services.serverless.models import MarketMover, StockKeyword
+from services.serverless.processors import MarketMoversProcessor
 
 
 @pytest.mark.django_db
@@ -19,7 +19,7 @@ class TestMarketMoversProcessor:
     def processor(self, settings):
         """프로세서 인스턴스"""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('serverless.services.keyword_service.genai.Client'):
+        with patch('services.serverless.services.keyword_service.genai.Client'):
             return MarketMoversProcessor()
 
     @pytest.fixture

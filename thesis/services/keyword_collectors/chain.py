@@ -31,7 +31,7 @@ def extract_chain_keywords(target: str) -> list[ContextKeyword]:
     Neo4j 미연결 시 빈 리스트 반환 (silent degrade).
     """
     try:
-        from serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
+        from services.serverless.services.neo4j_chain_sight_service import Neo4jChainSightService
     except ImportError:
         logger.info("Neo4j service not available")
         return []

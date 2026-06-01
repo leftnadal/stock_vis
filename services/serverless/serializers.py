@@ -6,7 +6,7 @@ Market Movers, Market Breadth, Screener Presets, Sector Heatmap
 
 from rest_framework import serializers
 
-from serverless.models import (
+from services.serverless.models import (
     AlertHistory,
     CorporateAction,
     InvestmentThesis,
@@ -124,21 +124,21 @@ class MarketMoverListSerializer(serializers.ModelSerializer):
 
     def get_sector_alpha_display(self, obj):
         """섹터 알파 표시 포맷"""
-        from serverless.services.indicators import IndicatorCalculator
+        from services.serverless.services.indicators import IndicatorCalculator
 
         calc = IndicatorCalculator()
         return calc.format_sector_alpha_display(obj.sector_alpha)
 
     def get_etf_sync_display(self, obj):
         """ETF 동행률 표시 포맷"""
-        from serverless.services.indicators import IndicatorCalculator
+        from services.serverless.services.indicators import IndicatorCalculator
 
         calc = IndicatorCalculator()
         return calc.format_etf_sync_display(obj.etf_sync_rate)
 
     def get_volatility_pct_display(self, obj):
         """변동성 백분위 표시 포맷"""
-        from serverless.services.indicators import IndicatorCalculator
+        from services.serverless.services.indicators import IndicatorCalculator
 
         calc = IndicatorCalculator()
         return calc.format_volatility_percentile_display(obj.volatility_pct)
@@ -220,7 +220,7 @@ class MarketBreadthSerializer(serializers.ModelSerializer):
 
     def get_signal_interpretation(self, obj):
         """시그널 해석 반환"""
-        from serverless.services.market_breadth_service import MarketBreadthService
+        from services.serverless.services.market_breadth_service import MarketBreadthService
 
         service = MarketBreadthService()
         return service.get_signal_interpretation(obj.breadth_signal)
@@ -449,7 +449,7 @@ class SectorPerformanceSerializer(serializers.ModelSerializer):
 
     def get_name_ko(self, obj):
         """한국어 섹터명"""
-        from serverless.services.sector_heatmap_service import SectorHeatmapService
+        from services.serverless.services.sector_heatmap_service import SectorHeatmapService
 
         return SectorHeatmapService.SECTOR_NAMES_KO.get(obj.sector, obj.sector)
 

@@ -15,7 +15,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from serverless.services.enhanced_screener_service import EnhancedScreenerService
+from services.serverless.services.enhanced_screener_service import EnhancedScreenerService
 
 from .serializers_screener import (
     ScreenedStockSerializer,

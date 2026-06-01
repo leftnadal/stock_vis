@@ -101,7 +101,7 @@ def example_celery_task():
         )
 
         # DB 저장
-        from serverless.models import StockKeyword
+        from services.serverless.models import StockKeyword
         from django.utils import timezone
         from datetime import timedelta
 
@@ -153,7 +153,7 @@ async def example_compare_v1_v2():
 
     # V2 결과
     v2_generator = EnhancedKeywordGenerator(enable_enrichment=True)
-    from serverless.models import MarketMover
+    from services.serverless.models import MarketMover
 
     mover = MarketMover.objects.filter(symbol=symbol, date=today).first()
     if mover:
@@ -200,7 +200,7 @@ async def example_compare_v1_v2():
 
 CELERY_BEAT_SCHEDULE = {
     'generate-market-movers-keywords': {
-        'task': 'serverless.tasks.generate_all_keywords_v2',
+        'task': 'services.serverless.tasks.generate_all_keywords_v2',
         'schedule': crontab(hour=7, minute=45),  # 07:45 EST (Movers 동기화 후 15분)
         'options': {'expires': 3600}
     }
