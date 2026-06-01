@@ -1113,3 +1113,35 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - FMP 2단계 통합 (canonical 메서드 합집합, 사용자 트리거)
 
 **검증**: pytest 3179/52 (회귀 0, 버킷A 누적 0건), 경계 GREEN (우회 0 / 동결 잔여 3), health 8✅/0⚠/0❌.
+
+### 버킷B / BOUNDARY-2 — #3 chain_sight 의존 청소 (Django apps.get_model) (2026-06-01)
+
+**결정**: shared cross-app aggregator(`packages/shared/metrics/services/daily_report.py`)에서 `apps.chain_sight.models.CompanyChainProfile` 정적 import 제거. **Django app registry 동적 lookup**(`apps.get_model("chainsight", "CompanyChainProfile")`) 채택.
+
+**HEAD**: `55f3cb6` → `80b9280` (+1 commit).
+
+**왜 방향3 변종 채택**:
+- **방향1 (소비자 이동) 불가**: daily_report = stocks + news + nightly + chain_sight + sec_pipeline + health 횡단 집계 aggregator. 단일 앱 흡수 불가능.
+- **방향2 (callable 주입) 반쪽 효과**: 호출자도 `packages/shared/metrics/` 내부(tasks.py / management command / agent_reports). 의존이 caller chain을 따라 올라가도 shared를 못 벗어남 — 어딘가 static import 필요.
+- **방향3 변종**: Django 공식 cross-app dynamic model lookup 표준. chain_sight 앱 소멸 시 import 단계 폭발 없이 runtime graceful fallback 가능. 행위 100% 보존. AST 가드는 정적 import만 검사 → 위반 자연 해소.
+
+**범위 (행위 보존, 라인 +2 / -1)**:
+- `packages/shared/metrics/services/daily_report.py:240` `collect_coverage_gaps()` 함수 1곳만 변경
+- `from apps.chain_sight.models import CompanyChainProfile` 제거
+- `CompanyChainProfile = django_apps.get_model("chainsight", "CompanyChainProfile")` 추가
+- 사용처 (`CompanyChainProfile.objects.values_list("symbol_id", flat=True)`) 동일
+
+**KNOWN_VIOLATIONS 해제** (tests + health_check 동시 갱신): #3 키 제거 + 사유 주석.
+
+**burn-down**: shared 경계 동결 **3 → 2**. 잔여 = #4·#5 (macro.models lazy).
+
+**가드 회피 vs 정당 패턴 판단**: 회피 아님. 근거 3:
+1. Django 공식 패턴 (`django.apps.AppConfig.get_model`)
+2. 실제로 shared가 chain_sight를 "직접 알지 않음" — 문자열 `'chainsight'`만 사용
+3. cross-app aggregator의 본질 — 1 앱 의존을 정적으로 잡는 게 부적절
+
+**잔존 트랙**:
+- BOUNDARY-3 (#4·#5 macro, 소비자 이동 방향1, 경계 STEP 0 선행)
+- FMP 2단계 통합 (사용자 트리거)
+
+**검증**: pytest 3179/52 (회귀 0), 경계 GREEN (우회 0 / 동결 잔여 2), health 8✅/0⚠/0❌.
