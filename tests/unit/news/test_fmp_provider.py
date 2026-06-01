@@ -9,8 +9,8 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from news.providers.base import RawNewsArticle
-from news.providers.fmp import FMPNewsProvider
+from services.news.providers.base import RawNewsArticle
+from services.news.providers.fmp import FMPNewsProvider
 
 # ===== Fixtures =====
 

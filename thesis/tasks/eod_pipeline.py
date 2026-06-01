@@ -198,7 +198,7 @@ def _fetch_fred_value(indicator):
 
 def _fetch_news_sentiment_value(indicator):
     """뉴스 감성 점수 fetch. data_params의 symbol로 조회."""
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
 
     params = indicator.data_params or {}
     symbol = params.get('symbol')

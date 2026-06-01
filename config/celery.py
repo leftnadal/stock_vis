@@ -49,8 +49,8 @@ app.conf.task_routes = {
     'services.rag_analysis.tasks.delete_stock_from_neo4j': {'queue': 'neo4j'},
     'services.rag_analysis.tasks.batch_sync_stocks_to_neo4j': {'queue': 'neo4j'},
     'services.rag_analysis.tasks.invalidate_graph_cache': {'queue': 'neo4j'},
-    'news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
-    'news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
+    'services.news.tasks.sync_news_to_neo4j': {'queue': 'neo4j'},
+    'services.news.tasks.cleanup_expired_news_relationships': {'queue': 'neo4j'},
     'serverless.tasks.enrich_relationship_keywords': {'queue': 'neo4j'},
     # Chain Sight Neo4j 동기화
     'apps.chain_sight.tasks.sync_tasks.sync_profiles_to_neo4j': {'queue': 'neo4j'},
@@ -248,41 +248,41 @@ app.conf.beat_schedule = {
 
     # 일일 종목 뉴스 수집 (2회/일: 06:00 + 14:30 EST, 평일)
     'collect-daily-news-morning': {
-        'task': 'news.tasks.collect_daily_news',
+        'task': 'services.news.tasks.collect_daily_news',
         'schedule': crontab(hour=6, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
     'collect-daily-news-afternoon': {
-        'task': 'news.tasks.collect_daily_news',
+        'task': 'services.news.tasks.collect_daily_news',
         'schedule': crontab(hour=14, minute=30, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
 
     # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
     'collect-market-news-morning': {
-        'task': 'news.tasks.collect_market_news',
+        'task': 'services.news.tasks.collect_market_news',
         'schedule': crontab(hour=8, minute=0, day_of_week='1-5'),
         'options': {'expires': 600}
     },
     'collect-market-news-noon': {
-        'task': 'news.tasks.collect_market_news',
+        'task': 'services.news.tasks.collect_market_news',
         'schedule': crontab(hour=12, minute=0, day_of_week='1-5'),
         'options': {'expires': 600}
     },
     'collect-market-news-afternoon': {
-        'task': 'news.tasks.collect_market_news',
+        'task': 'services.news.tasks.collect_market_news',
         'schedule': crontab(hour=15, minute=0, day_of_week='1-5'),
         'options': {'expires': 600}
     },
     'collect-market-news-evening': {
-        'task': 'news.tasks.collect_market_news',
+        'task': 'services.news.tasks.collect_market_news',
         'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
         'options': {'expires': 600}
     },
 
     # 일일 감성 분석 집계 (매일 09:00 EST, 뉴스 수집 후)
     'aggregate-daily-sentiment': {
-        'task': 'news.tasks.aggregate_daily_sentiment',
+        'task': 'services.news.tasks.aggregate_daily_sentiment',
         'schedule': crontab(hour=9, minute=0, day_of_week='1-5'),
         'options': {'expires': 3600}  # 1시간 후 만료
     },
@@ -291,26 +291,26 @@ app.conf.beat_schedule = {
     # 16:30 EST에 analyze-news-deep-batch(hour='...,16,...', minute=30)와 Gemini 동시 호출 충돌
     # → Gemini 15 RPM 2배 초과 위험. 15분 분산하여 회피 (audit P0 #8, 2026-04-26)
     'extract-daily-news-keywords': {
-        'task': 'news.tasks.extract_daily_news_keywords',
+        'task': 'services.news.tasks.extract_daily_news_keywords',
         'schedule': crontab(hour=16, minute=45),  # 16:45 EST (analyze-deep와 15분 간격)
         'options': {'expires': 3600}  # 1시간 후 만료
     },
 
     # 카테고리 뉴스 수집 - High (3회/일: 06:30 + 13:00 + 17:00 EST, 평일)
     'collect-category-news-high-morning': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=6, minute=30, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'high'},
         'options': {'expires': 3600}
     },
     'collect-category-news-high-midday': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=13, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'high'},
         'options': {'expires': 3600}
     },
     'collect-category-news-high-evening': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=17, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'high'},
         'options': {'expires': 3600}
@@ -318,13 +318,13 @@ app.conf.beat_schedule = {
 
     # 카테고리 뉴스 수집 - Medium (2회/일: 07:00 + 14:00 EST, 평일)
     'collect-category-news-medium-morning': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=7, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'medium'},
         'options': {'expires': 3600}
     },
     'collect-category-news-medium-afternoon': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=14, minute=0, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'medium'},
         'options': {'expires': 3600}
@@ -332,7 +332,7 @@ app.conf.beat_schedule = {
 
     # 카테고리 뉴스 수집 - Low (매일 1회: 07:30 EST, 평일)
     'collect-category-news-low': {
-        'task': 'news.tasks.collect_category_news',
+        'task': 'services.news.tasks.collect_category_news',
         'schedule': crontab(hour=7, minute=30, day_of_week='1-5'),
         'kwargs': {'priority_filter': 'low'},
         'options': {'expires': 3600}
@@ -344,7 +344,7 @@ app.conf.beat_schedule = {
 
     # 뉴스 분류 배치 (매 2시간, 평일, 수집 후 분류)
     'classify-news-batch-morning': {
-        'task': 'news.tasks.classify_news_batch',
+        'task': 'services.news.tasks.classify_news_batch',
         'schedule': crontab(hour='8,10,12,14,16,18', minute=15, day_of_week='1-5'),
         'kwargs': {'hours': 3},
         'options': {'expires': 3600}
@@ -352,7 +352,7 @@ app.conf.beat_schedule = {
 
     # LLM 심층 분석 배치 (매 2시간, 평일, 분류 후 분석)
     'analyze-news-deep-batch': {
-        'task': 'news.tasks.analyze_news_deep',
+        'task': 'services.news.tasks.analyze_news_deep',
         'schedule': crontab(hour='8,10,12,14,16,18', minute=30, day_of_week='1-5'),
         'kwargs': {'max_articles': 50},
         'options': {'expires': 3600}
@@ -360,7 +360,7 @@ app.conf.beat_schedule = {
 
     # ML Label 수집 (매일 19:00 EST, 장 마감 + 1시간)
     'collect-ml-labels': {
-        'task': 'news.tasks.collect_ml_labels',
+        'task': 'services.news.tasks.collect_ml_labels',
         'schedule': crontab(hour=19, minute=0, day_of_week='1-5'),
         'kwargs': {'lookback_days': 2},
         'options': {'expires': 3600}
@@ -368,7 +368,7 @@ app.conf.beat_schedule = {
 
     # Neo4j 뉴스 이벤트 동기화 (매 2시간, 평일, LLM 분석 후)
     'sync-news-to-neo4j': {
-        'task': 'news.tasks.sync_news_to_neo4j',
+        'task': 'services.news.tasks.sync_news_to_neo4j',
         'schedule': crontab(hour='8,10,12,14,16,18', minute=45, day_of_week='1-5'),
         'kwargs': {'max_articles': 100},
         'options': {'expires': 3600, 'queue': 'neo4j'}
@@ -376,21 +376,21 @@ app.conf.beat_schedule = {
 
     # 만료된 뉴스 이벤트 관계 정리 (매일 04:00 EST)
     'cleanup-expired-news-relationships': {
-        'task': 'news.tasks.cleanup_expired_news_relationships',
+        'task': 'services.news.tasks.cleanup_expired_news_relationships',
         'schedule': crontab(hour=4, minute=0),
         'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ML 가중치 학습 (매주 일요일 03:00 EST)
     'train-importance-model': {
-        'task': 'news.tasks.train_importance_model',
+        'task': 'services.news.tasks.train_importance_model',
         'schedule': crontab(hour=3, minute=0, day_of_week=0),
         'options': {'expires': 7200}  # 2시간 후 만료
     },
 
     # Shadow Mode 비교 리포트 (매주 일요일 03:30 EST, 학습 직후)
     'generate-shadow-report': {
-        'task': 'news.tasks.generate_shadow_report',
+        'task': 'services.news.tasks.generate_shadow_report',
         'schedule': crontab(hour=3, minute=30, day_of_week=0),
         'kwargs': {'days': 7},
         'options': {'expires': 3600}
@@ -398,35 +398,35 @@ app.conf.beat_schedule = {
 
     # ML 자동 배포 체크 (매주 일요일 04:00 EST, Shadow 리포트 이후)
     'check-auto-deploy': {
-        'task': 'news.tasks.check_auto_deploy',
+        'task': 'services.news.tasks.check_auto_deploy',
         'schedule': crontab(hour=4, minute=0, day_of_week=0),
         'options': {'expires': 3600}
     },
 
     # 주간 ML 성능 리포트 (매주 일요일 04:15 EST, auto deploy 이후)
     'generate-weekly-ml-report': {
-        'task': 'news.tasks.generate_weekly_ml_report',
+        'task': 'services.news.tasks.generate_weekly_ml_report',
         'schedule': crontab(hour=4, minute=15, day_of_week=0),
         'options': {'expires': 3600}
     },
 
     # ML 성능 모니터링 (매주 일요일 04:20 EST, 주간 리포트 직후)
     'monitor-ml-performance': {
-        'task': 'news.tasks.monitor_ml_performance',
+        'task': 'services.news.tasks.monitor_ml_performance',
         'schedule': crontab(hour=4, minute=20, day_of_week=0),
         'options': {'expires': 3600}
     },
 
     # LightGBM 학습 (매주 일요일 04:30 EST, 조건 충족 시만 실행)
     'train-lightgbm-model': {
-        'task': 'news.tasks.train_lightgbm_model',
+        'task': 'services.news.tasks.train_lightgbm_model',
         'schedule': crontab(hour=4, minute=30, day_of_week=0),
         'options': {'expires': 7200}  # 2시간 후 만료
     },
 
     # 파이프라인 알림 체크 (30분마다, 7개 트리거 감지)
     'check-pipeline-alerts': {
-        'task': 'news.tasks.check_pipeline_alerts',
+        'task': 'services.news.tasks.check_pipeline_alerts',
         'schedule': crontab(minute='*/30'),
         'options': {'expires': 1500}  # 25분 후 만료 (다음 실행 전)
     },
@@ -437,34 +437,34 @@ app.conf.beat_schedule = {
 
     # FMP S&P 500 News — orchestrator (하루 5회, 평일)
     'collect-sp500-news-fmp-0615': {
-        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'task': 'services.news.tasks.collect_sp500_news_fmp_orchestrator',
         'schedule': crontab(hour=6, minute=15, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
     'collect-sp500-news-fmp-1015': {
-        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'task': 'services.news.tasks.collect_sp500_news_fmp_orchestrator',
         'schedule': crontab(hour=10, minute=15, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
     'collect-sp500-news-fmp-1315': {
-        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'task': 'services.news.tasks.collect_sp500_news_fmp_orchestrator',
         'schedule': crontab(hour=13, minute=15, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
     'collect-sp500-news-fmp-1515': {
-        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'task': 'services.news.tasks.collect_sp500_news_fmp_orchestrator',
         'schedule': crontab(hour=15, minute=15, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
     'collect-sp500-news-fmp-1715': {
-        'task': 'news.tasks.collect_sp500_news_fmp_orchestrator',
+        'task': 'services.news.tasks.collect_sp500_news_fmp_orchestrator',
         'schedule': crontab(hour=17, minute=15, day_of_week='1-5'),
         'options': {'expires': 3600}
     },
 
     # FMP Press Releases (1회/일)
     'collect-press-releases-fmp': {
-        'task': 'news.tasks.collect_press_releases_fmp',
+        'task': 'services.news.tasks.collect_press_releases_fmp',
         'schedule': crontab(hour=7, minute=45, day_of_week='1-5'),
         'kwargs': {'max_symbols': 50},
         'options': {'expires': 3600}
@@ -472,17 +472,17 @@ app.conf.beat_schedule = {
 
     # FMP General News (3회/일)
     'collect-general-news-fmp-morning': {
-        'task': 'news.tasks.collect_general_news_fmp',
+        'task': 'services.news.tasks.collect_general_news_fmp',
         'schedule': crontab(hour=6, minute=45, day_of_week='1-5'),
         'options': {'expires': 600}
     },
     'collect-general-news-fmp-noon': {
-        'task': 'news.tasks.collect_general_news_fmp',
+        'task': 'services.news.tasks.collect_general_news_fmp',
         'schedule': crontab(hour=12, minute=30, day_of_week='1-5'),
         'options': {'expires': 600}
     },
     'collect-general-news-fmp-evening': {
-        'task': 'news.tasks.collect_general_news_fmp',
+        'task': 'services.news.tasks.collect_general_news_fmp',
         'schedule': crontab(hour=17, minute=45, day_of_week='1-5'),
         'options': {'expires': 600}
     },
@@ -493,7 +493,7 @@ app.conf.beat_schedule = {
 
     # 6개월 이상 기사 아카이브 (매월 1일 02:30 EST)
     'archive-old-articles': {
-        'task': 'news.tasks.archive_old_articles',
+        'task': 'services.news.tasks.archive_old_articles',
         'schedule': crontab(hour=2, minute=30, day_of_month=1),
         'options': {'expires': 3600}
     },

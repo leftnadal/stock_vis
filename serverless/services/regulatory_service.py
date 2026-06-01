@@ -189,7 +189,7 @@ class RegulatoryService:
             }
         """
         try:
-            from news.models import NewsArticle
+            from services.news.models import NewsArticle
 
             cutoff = timezone.now() - timedelta(hours=hours)
             articles = (

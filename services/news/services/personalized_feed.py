@@ -13,7 +13,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
-from news.models import NewsArticle
+from services.news.models import NewsArticle
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +109,7 @@ class PersonalizedFeedService:
         )
 
     def _get_interest_symbols(self, user) -> list:
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
         from packages.shared.users.models import UserInterest
 
         symbols = []

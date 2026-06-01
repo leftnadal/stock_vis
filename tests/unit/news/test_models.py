@@ -10,7 +10,7 @@ from decimal import Decimal
 
 import pytest
 
-from news.models import EntityHighlight, NewsArticle, NewsEntity, SentimentHistory
+from services.news.models import EntityHighlight, NewsArticle, NewsEntity, SentimentHistory
 
 
 class TestNewsArticleModel:

@@ -32,7 +32,7 @@ def extract_news_keywords(target: str) -> list[ContextKeyword]:
     최근 7일 뉴스에서 target 관련 키워드 추출.
     NewsEntity.symbol 또는 entity_name으로 매칭.
     """
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
 
     cutoff = timezone.now() - timedelta(days=7)
 

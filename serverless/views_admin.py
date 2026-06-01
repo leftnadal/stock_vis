@@ -500,7 +500,7 @@ class AdminNewsCategoryView(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
 
         categories = NewsCollectionCategory.objects.all()
         result = []
@@ -531,7 +531,7 @@ class AdminNewsCategoryView(APIView):
         return Response({"categories": result})
 
     def post(self, request):
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
         from packages.shared.stocks.models import SP500Constituent
 
         name = request.data.get("name", "").strip()
@@ -637,7 +637,7 @@ class AdminNewsCategoryDetailView(APIView):
     permission_classes = [IsAdminUser]
 
     def put(self, request, category_id):
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
         from packages.shared.stocks.models import SP500Constituent
 
         try:
@@ -732,7 +732,7 @@ class AdminNewsCategoryDetailView(APIView):
         )
 
     def delete(self, request, category_id):
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
 
         try:
             cat = NewsCollectionCategory.objects.get(id=category_id)

@@ -760,7 +760,7 @@ def _create_thesis(state, collected, user):
 def _get_news_title(news_id):
     """뉴스 기사 제목 조회."""
     try:
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
         article = NewsArticle.objects.get(id=news_id)
         return article.title
     except Exception:

@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from news.providers.base import RawNewsArticle
-from news.providers.finnhub import FinnhubNewsProvider
-from news.providers.marketaux import MarketauxNewsProvider
+from services.news.providers.base import RawNewsArticle
+from services.news.providers.finnhub import FinnhubNewsProvider
+from services.news.providers.marketaux import MarketauxNewsProvider
 
 
 class TestFinnhubNewsProvider:
@@ -43,7 +43,7 @@ class TestFinnhubNewsProvider:
         with pytest.raises(ValueError, match="Finnhub API Key not found"):
             FinnhubNewsProvider(api_key='')
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_company_news_success(self, mock_get, provider, sample_finnhub_response):
         """
         Given: 정상적인 Finnhub API 응답
@@ -73,7 +73,7 @@ class TestFinnhubNewsProvider:
         assert len(article.entities) == 1
         assert article.entities[0]['symbol'] == 'AAPL'
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_company_news_symbol_uppercase(self, mock_get, provider):
         """
         Given: 소문자 심볼 입력
@@ -96,7 +96,7 @@ class TestFinnhubNewsProvider:
         params = call_args.kwargs.get('params', {})
         assert params.get('symbol') == 'AAPL'
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_market_news_success(self, mock_get, provider, sample_finnhub_response):
         """
         Given: 정상적인 Finnhub 시장 뉴스 응답
@@ -113,7 +113,7 @@ class TestFinnhubNewsProvider:
         assert len(articles) == 2
         assert all(isinstance(a, RawNewsArticle) for a in articles)
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_market_news_limit_applied(self, mock_get, provider):
         """
         Given: Finnhub가 50개 뉴스 반환
@@ -143,7 +143,7 @@ class TestFinnhubNewsProvider:
 
         assert len(articles) == 10
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_news_api_error(self, mock_get, provider):
         """
         Given: Finnhub API 에러 응답
@@ -159,7 +159,7 @@ class TestFinnhubNewsProvider:
 
         assert articles == []
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_fetch_news_http_error(self, mock_get, provider):
         """
         Given: HTTP 500 에러
@@ -253,7 +253,7 @@ class TestMarketauxNewsProvider:
         with pytest.raises(ValueError, match="Marketaux API Key not found"):
             MarketauxNewsProvider(api_key='')
 
-    @patch('news.providers.marketaux.requests.get')
+    @patch('services.news.providers.marketaux.requests.get')
     def test_fetch_company_news_success(self, mock_get, provider, sample_marketaux_response):
         """
         Given: 정상적인 Marketaux API 응답
@@ -286,7 +286,7 @@ class TestMarketauxNewsProvider:
         assert entity['sentiment_score'] == Decimal('0.75')
         assert len(entity['highlights']) == 2
 
-    @patch('news.providers.marketaux.requests.get')
+    @patch('services.news.providers.marketaux.requests.get')
     def test_fetch_market_news_success(self, mock_get, provider, sample_marketaux_response):
         """
         Given: 정상적인 Marketaux 시장 뉴스 응답
@@ -302,7 +302,7 @@ class TestMarketauxNewsProvider:
 
         assert len(articles) == 2
 
-    @patch('news.providers.marketaux.requests.get')
+    @patch('services.news.providers.marketaux.requests.get')
     def test_fetch_market_news_limit_capped_at_20(self, mock_get, provider, sample_marketaux_response):
         """
         Given: limit=50 요청

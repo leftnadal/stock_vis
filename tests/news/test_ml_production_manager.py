@@ -27,7 +27,7 @@ from django.utils import timezone
 
 @pytest.fixture
 def manager():
-    from news.services.ml_production_manager import MLProductionManager
+    from services.news.services.ml_production_manager import MLProductionManager
     return MLProductionManager()
 
 
@@ -69,7 +69,7 @@ def make_model(
     trained_offset_days=0,
 ):
     """MLModelHistory 헬퍼 팩토리."""
-    from news.models import MLModelHistory
+    from services.news.models import MLModelHistory
 
     w = weights or {
         'source_credibility': 0.20,
@@ -105,7 +105,7 @@ def make_article_with_llm(
     llm_confidence=0.8,
 ):
     """LLM 분석 결과가 있는 NewsArticle 생성."""
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
 
     return NewsArticle.objects.create(
         id=uuid.uuid4(),
@@ -255,7 +255,7 @@ class TestAutoDeployCheck:
     @pytest.mark.django_db
     def test_previous_model_gets_rolled_back_on_deploy(self, manager):
         # Given: 기존 deployed 모델 + 새 조건 충족 shadow 모델
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         old_deployed = make_model('old', f1=0.60, safety_gate_passed=True, deployment_status='deployed', trained_offset_days=28)
         for i, name in enumerate(['m2', 'm3', 'm4']):
@@ -270,7 +270,7 @@ class TestAutoDeployCheck:
     @pytest.mark.django_db
     def test_deploy_updates_model_status(self, manager):
         # Given: 조건 충족
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         for i, name in enumerate(['m1', 'm2', 'm3']):
             make_model(name, f1=0.60, safety_gate_passed=True, trained_offset_days=(3 - i) * 7)
@@ -409,7 +409,7 @@ class TestWeeklyReport:
     @pytest.mark.django_db
     def test_f1_trend_improving(self, manager):
         # Given: F1이 시간에 따라 상승 (4주 내)
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         m1 = MLModelHistory.objects.create(
             model_version='trend_low', training_samples=200, f1_score=0.55,
@@ -431,7 +431,7 @@ class TestWeeklyReport:
     @pytest.mark.django_db
     def test_f1_trend_declining(self, manager):
         # Given: F1이 시간에 따라 하락
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         m1 = MLModelHistory.objects.create(
             model_version='trend_high2', training_samples=200, f1_score=0.75,
@@ -526,7 +526,7 @@ class TestGetDeployedWeights:
     @pytest.mark.django_db
     def test_no_deployed_model_returns_none(self):
         # Given: deployed 모델 없음
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         result = MLProductionManager.get_deployed_weights()
 
@@ -535,7 +535,7 @@ class TestGetDeployedWeights:
     @pytest.mark.django_db
     def test_deployed_model_with_weights(self, sample_weights):
         # Given: deployed 모델 + smoothed_weights
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         make_model('deployed_w', deployment_status='deployed', weights=sample_weights)
 
@@ -548,8 +548,8 @@ class TestGetDeployedWeights:
     @pytest.mark.django_db
     def test_deployed_model_without_weights_returns_none(self):
         # Given: deployed 모델이지만 smoothed_weights=None
-        from news.models import MLModelHistory
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.models import MLModelHistory
+        from services.news.services.ml_production_manager import MLProductionManager
 
         MLModelHistory.objects.create(
             model_version='no_weights',
@@ -567,7 +567,7 @@ class TestGetDeployedWeights:
     @pytest.mark.django_db
     def test_shadow_model_weights_not_returned(self, sample_weights):
         # Given: shadow 모델만 존재
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         make_model('shadow_only', deployment_status='shadow', weights=sample_weights)
 
@@ -588,7 +588,7 @@ class TestEngineIntegration:
         make_model('integration_model', deployment_status='deployed', weights=sample_weights)
 
         # When: NewsClassifier 초기화 (weights 미지정)
-        from news.services.news_classifier import NewsClassifier
+        from services.news.services.news_classifier import NewsClassifier
         classifier = NewsClassifier()
 
         # Then: deployed weights가 로드됨
@@ -597,7 +597,7 @@ class TestEngineIntegration:
     @pytest.mark.django_db
     def test_news_classifier_falls_back_to_default_weights(self):
         # Given: deployed 모델 없음
-        from news.services.news_classifier import DEFAULT_WEIGHTS, NewsClassifier
+        from services.news.services.news_classifier import DEFAULT_WEIGHTS, NewsClassifier
         classifier = NewsClassifier()
 
         assert classifier.weights == DEFAULT_WEIGHTS
@@ -605,18 +605,18 @@ class TestEngineIntegration:
     @pytest.mark.django_db
     def test_news_classifier_uses_explicit_weights(self, sample_weights):
         # Given: 명시적 weights 제공
-        from news.services.news_classifier import NewsClassifier
+        from services.news.services.news_classifier import NewsClassifier
         classifier = NewsClassifier(weights=sample_weights)
 
         assert classifier.weights == sample_weights
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.get_deployed_weights')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.get_deployed_weights')
     def test_weight_loading_error_falls_back_to_default(self, mock_get):
         # Given: get_deployed_weights 예외 발생
         mock_get.side_effect = Exception('DB unavailable')
 
-        from news.services.news_classifier import DEFAULT_WEIGHTS, NewsClassifier
+        from services.news.services.news_classifier import DEFAULT_WEIGHTS, NewsClassifier
         classifier = NewsClassifier()
 
         assert classifier.weights == DEFAULT_WEIGHTS
@@ -629,9 +629,9 @@ class TestEngineIntegration:
 class TestCeleryTasks:
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.check_auto_deploy')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.check_auto_deploy')
     def test_check_auto_deploy_task(self, mock_check):
-        from news.tasks import check_auto_deploy
+        from services.news.tasks import check_auto_deploy
 
         mock_check.return_value = {'action': 'wait', 'reason': 'test', 'models_count': 0}
 
@@ -641,9 +641,9 @@ class TestCeleryTasks:
         assert result['action'] == 'wait'
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
     def test_generate_weekly_ml_report_task(self, mock_report):
-        from news.tasks import generate_weekly_ml_report
+        from services.news.tasks import generate_weekly_ml_report
 
         mock_report.return_value = {
             'period': {'start': '2026-02-18', 'end': '2026-02-25'},
@@ -657,9 +657,9 @@ class TestCeleryTasks:
         assert 'period' in result
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.run_lightgbm_pipeline')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.run_lightgbm_pipeline')
     def test_train_lightgbm_model_task(self, mock_pipeline):
-        from news.tasks import train_lightgbm_model
+        from services.news.tasks import train_lightgbm_model
 
         mock_pipeline.return_value = {'status': 'not_ready', 'readiness': {}}
 
@@ -669,11 +669,11 @@ class TestCeleryTasks:
         assert result['status'] == 'not_ready'
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.check_auto_deploy')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.check_auto_deploy')
     def test_check_auto_deploy_task_retry_on_error(self, mock_check):
         from celery.exceptions import Retry
 
-        from news.tasks import check_auto_deploy
+        from services.news.tasks import check_auto_deploy
 
         mock_check.side_effect = Exception('Service error')
 
@@ -681,11 +681,11 @@ class TestCeleryTasks:
             check_auto_deploy()
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
     def test_generate_weekly_report_task_retry_on_error(self, mock_report):
         from celery.exceptions import Retry
 
-        from news.tasks import generate_weekly_ml_report
+        from services.news.tasks import generate_weekly_ml_report
 
         mock_report.side_effect = Exception('DB error')
 
@@ -700,11 +700,11 @@ class TestCeleryTasks:
 class TestAPIEndpoints:
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
     def test_ml_weekly_report_returns_200(self, mock_report, request_factory, admin_user):
         from django.core.cache import cache
 
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         mock_report.return_value = {
             'period': {'start': '2026-02-18', 'end': '2026-02-25'},
@@ -727,7 +727,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     def test_ml_lightgbm_readiness_returns_200(self, request_factory, admin_user):
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-lightgbm-readiness/')
         request.user = admin_user
@@ -739,7 +739,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     def test_ml_lightgbm_readiness_response_format(self, request_factory, admin_user):
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-lightgbm-readiness/')
         request.user = admin_user
@@ -755,11 +755,11 @@ class TestAPIEndpoints:
         assert 'feature_stability' in conditions
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.generate_weekly_report')
     def test_ml_weekly_report_response_format(self, mock_report, request_factory, admin_user):
         from django.core.cache import cache
 
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         mock_report.return_value = {
             'period': {'start': '2026-02-18', 'end': '2026-02-25'},
@@ -801,7 +801,7 @@ class TestBeatSchedule:
         from config.celery import app
 
         task = app.conf.beat_schedule['check-auto-deploy']
-        assert task['task'] == 'news.tasks.check_auto_deploy'
+        assert task['task'] == 'services.news.tasks.check_auto_deploy'
 
     def test_check_auto_deploy_schedule_sunday(self):
         from config.celery import app
@@ -827,7 +827,7 @@ class TestBeatSchedule:
         from config.celery import app
 
         task = app.conf.beat_schedule['generate-weekly-ml-report']
-        assert task['task'] == 'news.tasks.generate_weekly_ml_report'
+        assert task['task'] == 'services.news.tasks.generate_weekly_ml_report'
 
     def test_generate_weekly_ml_report_schedule_sunday(self):
         from config.celery import app
@@ -846,7 +846,7 @@ class TestBeatSchedule:
         from config.celery import app
 
         task = app.conf.beat_schedule['train-lightgbm-model']
-        assert task['task'] == 'news.tasks.train_lightgbm_model'
+        assert task['task'] == 'services.news.tasks.train_lightgbm_model'
 
     def test_train_lightgbm_model_schedule_sunday(self):
         from config.celery import app
@@ -926,7 +926,7 @@ class TestConsecutiveDeclineDetection:
     @pytest.mark.django_db
     def test_detect_consecutive_decline_partial_broken(self, manager):
         """중간에 F1이 올라가면 연속 하락 미감지"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         # 최신순: 0.58(최신) < 0.63 → decline 1
         # 0.63 > 0.72 → 상승, break → decline_count=1, 3 미만 → False
@@ -978,7 +978,7 @@ class TestConsecutiveDeclineDetection:
     @pytest.mark.django_db
     def test_detect_consecutive_decline_window_shrink_8_to_6(self, manager):
         """연속 하락 감지 시 8주 → 6주로 축소"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         # 4개 모델, 연속 하락
         for i, (ver, offset) in enumerate([
@@ -1003,7 +1003,7 @@ class TestConsecutiveDeclineDetection:
     @pytest.mark.django_db
     def test_detect_consecutive_decline_window_shrink_minimum_4(self, manager):
         """이미 4주면 더 이상 축소 안 됨 (max(4-2, 4) = 4)"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         for i, (ver, offset) in enumerate([
             ('min_w4', 21), ('min_w3', 14), ('min_w2', 7), ('min_w1', 0)
@@ -1027,7 +1027,7 @@ class TestConsecutiveDeclineDetection:
     @pytest.mark.django_db
     def test_detect_consecutive_decline_feature_importance_included(self, manager):
         """연속 하락 감지 시 feature_importance가 반환되는지 확인"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         fi = {'source_credibility': 0.30, 'entity_count': 0.25}
         for i, (ver, offset) in enumerate([
@@ -1051,7 +1051,7 @@ class TestConsecutiveDeclineDetection:
     @pytest.mark.django_db
     def test_detect_consecutive_decline_alert_message_format(self, manager):
         """alert_message가 주수, F1, window 정보를 포함하는지 확인"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         for i, (ver, offset) in enumerate([
             ('alert_w4', 21), ('alert_w3', 14), ('alert_w2', 7), ('alert_w1', 0)
@@ -1083,14 +1083,14 @@ class TestMonitorMLPerformance:
 
     def test_monitor_ml_performance_task_exists(self):
         # Given/When: 태스크 import
-        from news.tasks import monitor_ml_performance
+        from services.news.tasks import monitor_ml_performance
 
         # Then: import 성공
         assert monitor_ml_performance is not None
         assert callable(monitor_ml_performance)
 
     @pytest.mark.django_db
-    @patch('news.services.ml_production_manager.MLProductionManager.detect_consecutive_decline')
+    @patch('services.news.services.ml_production_manager.MLProductionManager.detect_consecutive_decline')
     def test_monitor_ml_performance_calls_detect(self, mock_detect):
         # Given
         mock_detect.return_value = {
@@ -1105,7 +1105,7 @@ class TestMonitorMLPerformance:
         }
 
         # When
-        from news.tasks import monitor_ml_performance
+        from services.news.tasks import monitor_ml_performance
         result = monitor_ml_performance()
 
         # Then: detect_consecutive_decline(weeks=3)이 호출됨
@@ -1124,7 +1124,7 @@ class TestMonitorMLPerformance:
         task_config = beat['monitor-ml-performance']
 
         # 태스크 이름 확인
-        assert task_config['task'] == 'news.tasks.monitor_ml_performance'
+        assert task_config['task'] == 'services.news.tasks.monitor_ml_performance'
 
         # 스케줄 시간 확인 (일요일 04:20)
         schedule = task_config['schedule']

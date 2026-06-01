@@ -21,8 +21,8 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from django.utils import timezone
 
-from news.models import NewsArticle, NewsEntity
-from news.services.ml_label_collector import (
+from services.news.models import NewsArticle, NewsEntity
+from services.news.services.ml_label_collector import (
     ALL_NYSE_HOLIDAYS,
     DEFAULT_THRESHOLD,
     SECTOR_THRESHOLDS,

@@ -648,7 +648,7 @@ def build_question_answer_prompt(collected, suggestions=None, source_news_id=Non
     # 뉴스 원문 컨텍스트
     if source_news_id:
         try:
-            from news.models import NewsArticle
+            from services.news.models import NewsArticle
             article = NewsArticle.objects.filter(id=source_news_id).first()
             if article:
                 ctx_parts.append(f'### 기반 뉴스')

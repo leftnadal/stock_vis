@@ -9,7 +9,7 @@ from decimal import Decimal
 
 import pytest
 
-from news.providers.base import RawNewsArticle
+from services.news.providers.base import RawNewsArticle
 
 # ===== Fixture: Sample Finnhub Response =====
 
@@ -338,7 +338,7 @@ def news_article_aapl():
     """DB에 저장된 Apple 뉴스"""
     from django.utils import timezone
 
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
 
     return NewsArticle.objects.create(
         url='https://example.com/apple-earnings-2024',
@@ -360,7 +360,7 @@ def news_article_aapl():
 @pytest.mark.django_db
 def news_entity_aapl(news_article_aapl):
     """DB에 저장된 Apple NewsEntity"""
-    from news.models import NewsEntity
+    from services.news.models import NewsEntity
 
     return NewsEntity.objects.create(
         news=news_article_aapl,
@@ -382,7 +382,7 @@ def sentiment_history_aapl():
     """DB에 저장된 Apple SentimentHistory"""
     from django.utils import timezone
 
-    from news.models import SentimentHistory
+    from services.news.models import SentimentHistory
 
     return SentimentHistory.objects.create(
         symbol='AAPL',

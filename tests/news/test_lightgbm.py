@@ -25,7 +25,7 @@ from django.utils import timezone
 
 @pytest.fixture
 def optimizer():
-    from news.services.ml_weight_optimizer import MLWeightOptimizer
+    from services.news.services.ml_weight_optimizer import MLWeightOptimizer
     return MLWeightOptimizer()
 
 
@@ -54,7 +54,7 @@ def make_article_with_tickers(
     publish_day=15,
 ):
     """테스트용 NewsArticle + NewsEntity 생성 헬퍼."""
-    from news.models import NewsArticle, NewsEntity
+    from services.news.models import NewsArticle, NewsEntity
 
     pub_at = timezone.now().replace(
         hour=publish_hour,
@@ -238,7 +238,7 @@ class TestExtendedTrainingData:
     @pytest.mark.django_db
     def test_includes_general_news_high_confidence(self, optimizer):
         # Given: General News (entity 없음, confidence=0.85 >= 0.8)
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
 
         for i in range(250):
             NewsArticle.objects.create(
@@ -265,7 +265,7 @@ class TestExtendedTrainingData:
     @pytest.mark.django_db
     def test_excludes_low_confidence_general_news(self, optimizer):
         # Given: General News (entity 없음, confidence=0.5 < 0.8)
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
 
         for i in range(250):
             NewsArticle.objects.create(
@@ -292,7 +292,7 @@ class TestExtendedTrainingData:
     @pytest.mark.django_db
     def test_company_news_only_mode(self, optimizer):
         # Given: Company News (entity 존재) + General News (entity 없음)
-        from news.models import NewsArticle, NewsEntity
+        from services.news.models import NewsArticle, NewsEntity
 
         for i in range(250):
             article = NewsArticle.objects.create(
@@ -330,7 +330,7 @@ class TestExtendedTrainingData:
     @pytest.mark.django_db
     def test_correct_feature_count_10(self, optimizer):
         # Given: 충분한 데이터
-        from news.models import NewsArticle, NewsEntity
+        from services.news.models import NewsArticle, NewsEntity
 
         for i in range(250):
             article = NewsArticle.objects.create(
@@ -587,7 +587,7 @@ class TestLightGBMReadiness:
     @pytest.mark.django_db
     def test_not_ready_insufficient_data(self):
         # Given: 데이터 없음 (< 10,000)
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         result = MLWeightOptimizer.check_lightgbm_readiness()
 
@@ -598,8 +598,8 @@ class TestLightGBMReadiness:
     @pytest.mark.django_db
     def test_not_ready_lr_not_stagnating(self):
         # Given: 충분한 데이터 + LR 계속 개선 중 (stagnation 없음)
-        from news.models import MLModelHistory, NewsArticle
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.models import MLModelHistory, NewsArticle
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         # 10,000개 labeling 시뮬레이션 (비용 절감: patch 사용)
         with patch.object(MLWeightOptimizer, 'check_lightgbm_readiness',
@@ -619,7 +619,7 @@ class TestLightGBMReadiness:
     @pytest.mark.django_db
     def test_not_ready_low_sector_coverage(self):
         # Given: feature_stability 조건 미충족
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         with patch.object(MLWeightOptimizer, 'check_lightgbm_readiness',
                           return_value={
@@ -638,7 +638,7 @@ class TestLightGBMReadiness:
     @pytest.mark.django_db
     def test_ready_all_conditions_met(self):
         # Given: 모든 조건 충족
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         with patch.object(MLWeightOptimizer, 'check_lightgbm_readiness',
                           return_value={
@@ -658,7 +658,7 @@ class TestLightGBMReadiness:
 
     @pytest.mark.django_db
     def test_conditions_dict_has_required_keys(self):
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         result = MLWeightOptimizer.check_lightgbm_readiness()
 
@@ -672,7 +672,7 @@ class TestLightGBMReadiness:
     @pytest.mark.django_db
     def test_no_recent_models_stagnation_not_met(self):
         # Given: LR 모델 없음 → stagnation 조건 False
-        from news.services.ml_weight_optimizer import (
+        from services.news.services.ml_weight_optimizer import (
             LIGHTGBM_STAGNATION_WEEKS,
             MLWeightOptimizer,
         )
@@ -691,7 +691,7 @@ class TestLightGBMReadiness:
 class TestLightGBMPipeline:
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
     def test_not_ready_returns_skip(self, mock_readiness, optimizer):
         # Given: readiness 조건 미충족
         mock_readiness.return_value = {
@@ -709,10 +709,10 @@ class TestLightGBMPipeline:
         assert 'readiness' in result
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.train_lightgbm')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.ab_test')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.train_lightgbm')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.ab_test')
     def test_successful_pipeline(self, mock_ab, mock_train, mock_data, mock_ready, optimizer):
         np.random.seed(42)
 
@@ -752,8 +752,8 @@ class TestLightGBMPipeline:
         assert result.get('algorithm') == 'lightgbm'
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
     def test_data_preparation_failure(self, mock_data, mock_ready, optimizer):
         mock_ready.return_value = {'ready': True, 'conditions': {}}
         mock_data.return_value = {
@@ -769,12 +769,12 @@ class TestLightGBMPipeline:
         assert 'Insufficient' in result['reason']
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.train_lightgbm')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.ab_test')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.check_lightgbm_readiness')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_extended_training_data')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.train_lightgbm')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.ab_test')
     def test_model_saved_with_lightgbm_algorithm(self, mock_ab, mock_train, mock_data, mock_ready, optimizer):
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         np.random.seed(42)
         mock_ready.return_value = {'ready': True, 'conditions': {}}
@@ -851,7 +851,7 @@ class TestVersionGeneration:
         v1 = optimizer._generate_version(algorithm='lr')
         count1 = int(v1.split('_')[-1])
 
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         MLModelHistory.objects.create(
             model_version=v1, training_samples=100, f1_score=0.60,
             safety_gate_passed=True, deployment_status='shadow',

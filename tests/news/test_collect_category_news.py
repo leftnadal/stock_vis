@@ -13,8 +13,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 from django.utils import timezone
 
-from news.models import NewsCollectionCategory
-from news.tasks import collect_category_news
+from services.news.models import NewsCollectionCategory
+from services.news.tasks import collect_category_news
 
 
 @pytest.mark.django_db
@@ -51,7 +51,7 @@ class TestCollectCategoryNews:
     @pytest.fixture
     def mock_aggregator(self):
         """NewsAggregatorService.fetch_and_save_company_news mock"""
-        with patch('news.services.aggregator.NewsAggregatorService') as mock_service:
+        with patch('services.news.services.aggregator.NewsAggregatorService') as mock_service:
             # aggregator.fetch_and_save_company_news 반환값
             mock_instance = MagicMock()
             mock_instance.fetch_and_save_company_news.return_value = {
@@ -64,7 +64,7 @@ class TestCollectCategoryNews:
     @pytest.fixture
     def mock_sleep(self):
         """time.sleep mock (테스트 속도 향상)"""
-        with patch('news.tasks.time.sleep') as mock:
+        with patch('services.news.tasks.time.sleep') as mock:
             yield mock
 
     def test_collect_category_news_by_id(self, mock_aggregator, mock_sleep):

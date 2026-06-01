@@ -31,7 +31,7 @@ from django.utils import timezone
 
 @pytest.fixture
 def optimizer():
-    from news.services.ml_weight_optimizer import MLWeightOptimizer
+    from services.news.services.ml_weight_optimizer import MLWeightOptimizer
     return MLWeightOptimizer()
 
 
@@ -292,7 +292,7 @@ class TestSafetyGate:
     @pytest.mark.django_db
     def test_tier3_degradation_check(self, optimizer):
         """이전 모델 대비 하락 체크"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         MLModelHistory.objects.create(
             model_version='prev_test',
             training_samples=100,
@@ -309,7 +309,7 @@ class TestSafetyGate:
     @pytest.mark.django_db
     def test_tier3_acceptable_degradation(self, optimizer):
         """허용 범위 내 하락은 통과"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         MLModelHistory.objects.create(
             model_version='prev_test2',
             training_samples=100,
@@ -404,7 +404,7 @@ class TestShadowComparison:
     @pytest.mark.django_db
     def test_with_articles(self, optimizer):
         """뉴스가 있을 때 비교 리포트 생성"""
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
 
         # 테스트 뉴스 생성
         for i in range(20):
@@ -465,7 +465,7 @@ class TestPrepareTrainingData:
     @pytest.mark.django_db
     def test_with_sufficient_data(self, optimizer):
         """충분한 데이터가 있을 때 정상 반환"""
-        from news.models import NewsArticle, NewsEntity
+        from services.news.models import NewsArticle, NewsEntity
 
         # 300개 뉴스 + entity 생성
         for i in range(250):
@@ -503,7 +503,7 @@ class TestPrepareTrainingData:
     @pytest.mark.django_db
     def test_date_range(self, optimizer):
         """date_range가 올바르게 반환"""
-        from news.models import NewsArticle, NewsEntity
+        from services.news.models import NewsArticle, NewsEntity
 
         for i in range(210):
             article = NewsArticle.objects.create(
@@ -546,7 +546,7 @@ class TestTrainingPipeline:
     @pytest.mark.django_db
     def test_pipeline_creates_history(self, optimizer):
         """파이프라인 실행 시 MLModelHistory 생성"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
 
         result = optimizer.run_training_pipeline()
         assert MLModelHistory.objects.exists()
@@ -554,8 +554,8 @@ class TestTrainingPipeline:
         assert history.algorithm == 'logistic_regression'
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_training_data')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.train_model')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_training_data')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.train_model')
     def test_pipeline_success_flow(self, mock_train, mock_data, optimizer):
         """성공 플로우 (mock)"""
         np.random.seed(42)
@@ -599,8 +599,8 @@ class TestTrainingPipeline:
         assert result['model_version'] is not None
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_training_data')
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.train_model')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.prepare_training_data')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.train_model')
     def test_pipeline_safety_gate_fail(self, mock_train, mock_data, optimizer):
         """Safety Gate 실패 시 failed 상태"""
         np.random.seed(42)
@@ -655,7 +655,7 @@ class TestModelDeployment:
     @pytest.mark.django_db
     def test_deploy_without_gate(self, optimizer):
         """Safety Gate 미통과 모델 배포 거부"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         model = MLModelHistory.objects.create(
             model_version='test_deploy_1',
             training_samples=100,
@@ -668,7 +668,7 @@ class TestModelDeployment:
 
     @pytest.mark.django_db
     def test_deploy_success(self, optimizer):
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         model = MLModelHistory.objects.create(
             model_version='test_deploy_2',
             training_samples=300,
@@ -693,7 +693,7 @@ class TestModelDeployment:
     @pytest.mark.django_db
     def test_deploy_rolls_back_previous(self, optimizer):
         """새 배포 시 이전 deployed 모델 → rolled_back"""
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         old = MLModelHistory.objects.create(
             model_version='old_deployed',
             training_samples=200,
@@ -723,7 +723,7 @@ class TestModelDeployment:
 
     @pytest.mark.django_db
     def test_deploy_already_deployed(self, optimizer):
-        from news.models import MLModelHistory
+        from services.news.models import MLModelHistory
         model = MLModelHistory.objects.create(
             model_version='already_deployed',
             training_samples=300,
@@ -744,7 +744,7 @@ class TestGetStatus:
 
     @pytest.mark.django_db
     def test_empty_status(self):
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
         status = MLWeightOptimizer.get_current_status()
         assert status['latest_model'] is None
         assert status['deployed_model'] is None
@@ -753,8 +753,8 @@ class TestGetStatus:
 
     @pytest.mark.django_db
     def test_with_models(self):
-        from news.models import MLModelHistory
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.models import MLModelHistory
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         MLModelHistory.objects.create(
             model_version='status_test_1',
@@ -773,7 +773,7 @@ class TestGetStatus:
 
     @pytest.mark.django_db
     def test_ready_for_training(self):
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
         status = MLWeightOptimizer.get_current_status()
         assert 'ready_for_training' in status
         assert 'min_required' in status
@@ -800,9 +800,9 @@ class TestVersionGeneration:
 class TestCeleryTasks:
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.run_training_pipeline')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.run_training_pipeline')
     def test_train_importance_model_task(self, mock_pipeline):
-        from news.tasks import train_importance_model
+        from services.news.tasks import train_importance_model
 
         mock_pipeline.return_value = {
             'status': 'shadow',
@@ -815,16 +815,16 @@ class TestCeleryTasks:
 
     @pytest.mark.django_db
     def test_generate_shadow_report_no_model(self):
-        from news.tasks import generate_shadow_report
+        from services.news.tasks import generate_shadow_report
 
         result = generate_shadow_report()
         assert result['status'] == 'no_model'
 
     @pytest.mark.django_db
-    @patch('news.services.ml_weight_optimizer.MLWeightOptimizer.generate_shadow_comparison')
+    @patch('services.news.services.ml_weight_optimizer.MLWeightOptimizer.generate_shadow_comparison')
     def test_generate_shadow_report_with_model(self, mock_comparison):
-        from news.models import MLModelHistory
-        from news.tasks import generate_shadow_report
+        from services.news.models import MLModelHistory
+        from services.news.tasks import generate_shadow_report
 
         MLModelHistory.objects.create(
             model_version='shadow_report_test',
@@ -858,7 +858,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     def test_ml_status_endpoint(self, request_factory, admin_user):
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-status/')
         request.user = admin_user
@@ -870,7 +870,7 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     def test_ml_shadow_report_no_data(self, request_factory, admin_user):
-        from news.api.views import NewsViewSet
+        from services.news.api.views import NewsViewSet
 
         request = request_factory.get('/api/v1/news/ml-shadow-report/')
         request.user = admin_user
@@ -882,8 +882,8 @@ class TestAPIEndpoints:
 
     @pytest.mark.django_db
     def test_ml_shadow_report_with_data(self, request_factory, admin_user):
-        from news.api.views import NewsViewSet
-        from news.models import MLModelHistory
+        from services.news.api.views import NewsViewSet
+        from services.news.models import MLModelHistory
 
         MLModelHistory.objects.create(
             model_version='api_test',
@@ -926,14 +926,14 @@ class TestBeatSchedule:
         schedule = app.conf.beat_schedule
         assert 'train-importance-model' in schedule
         task = schedule['train-importance-model']
-        assert task['task'] == 'news.tasks.train_importance_model'
+        assert task['task'] == 'services.news.tasks.train_importance_model'
 
     def test_shadow_report_schedule_exists(self):
         from config.celery import app
         schedule = app.conf.beat_schedule
         assert 'generate-shadow-report' in schedule
         task = schedule['generate-shadow-report']
-        assert task['task'] == 'news.tasks.generate_shadow_report'
+        assert task['task'] == 'services.news.tasks.generate_shadow_report'
         assert task['kwargs']['days'] == 7
 
     def test_train_schedule_sunday(self):

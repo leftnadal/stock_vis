@@ -10,9 +10,9 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from news.providers.base import RawNewsArticle
-from news.services.aggregator import NewsAggregatorService
-from news.services.deduplicator import NewsDeduplicator
+from services.news.providers.base import RawNewsArticle
+from services.news.services.aggregator import NewsAggregatorService
+from services.news.services.deduplicator import NewsDeduplicator
 
 
 class TestNewsDeduplicator:
@@ -234,8 +234,8 @@ class TestNewsAggregatorService:
     @pytest.fixture
     def mock_settings(self, monkeypatch):
         """Django settings 모킹"""
-        monkeypatch.setattr('news.services.aggregator.settings.FINNHUB_API_KEY', 'test_finnhub')
-        monkeypatch.setattr('news.services.aggregator.settings.MARKETAUX_API_KEY', 'test_marketaux')
+        monkeypatch.setattr('services.news.services.aggregator.settings.FINNHUB_API_KEY', 'test_finnhub')
+        monkeypatch.setattr('services.news.services.aggregator.settings.MARKETAUX_API_KEY', 'test_marketaux')
 
     @pytest.fixture
     def service(self, mock_settings):
@@ -243,8 +243,8 @@ class TestNewsAggregatorService:
         return NewsAggregatorService()
 
     @pytest.mark.django_db
-    @patch('news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
-    @patch('news.services.aggregator.MarketauxNewsProvider.fetch_company_news')
+    @patch('services.news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
+    @patch('services.news.services.aggregator.MarketauxNewsProvider.fetch_company_news')
     def test_fetch_and_save_company_news_both_providers(
         self,
         mock_marketaux,
@@ -268,7 +268,7 @@ class TestNewsAggregatorService:
         assert result['saved'] >= 1  # 중복 제거 후
 
     @pytest.mark.django_db
-    @patch('news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
+    @patch('services.news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
     def test_fetch_and_save_company_news_finnhub_only(
         self,
         mock_finnhub,
@@ -289,7 +289,7 @@ class TestNewsAggregatorService:
         mock_finnhub.assert_called_once()
 
     @pytest.mark.django_db
-    @patch('news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
+    @patch('services.news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
     def test_fetch_and_save_company_news_symbol_uppercase(self, mock_finnhub, service):
         """
         Given: 소문자 심볼 입력
@@ -303,7 +303,7 @@ class TestNewsAggregatorService:
         assert result['symbol'] == 'AAPL'
 
     @pytest.mark.django_db
-    @patch('news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
+    @patch('services.news.services.aggregator.FinnhubNewsProvider.fetch_company_news')
     def test_fetch_and_save_company_news_provider_failure(self, mock_finnhub, service):
         """
         Given: Finnhub API 에러 발생
@@ -318,7 +318,7 @@ class TestNewsAggregatorService:
         assert result['saved'] == 0
 
     @pytest.mark.django_db
-    @patch('news.services.aggregator.FinnhubNewsProvider.fetch_market_news')
+    @patch('services.news.services.aggregator.FinnhubNewsProvider.fetch_market_news')
     def test_fetch_and_save_market_news(self, mock_finnhub, service, raw_news_article_aapl):
         """
         Given: Finnhub 시장 뉴스 반환
@@ -346,7 +346,7 @@ class TestNewsAggregatorService:
         assert updated == 0
         assert skipped == 0
 
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
         assert NewsArticle.objects.filter(url=raw_news_article_aapl.url).exists()
 
     @pytest.mark.django_db
@@ -419,7 +419,7 @@ class TestNewsAggregatorService:
 
         service._save_entities(news_article_aapl, entities_data)
 
-        from news.models import NewsEntity
+        from services.news.models import NewsEntity
         assert NewsEntity.objects.filter(news=news_article_aapl, symbol='AAPL').exists()
 
     @pytest.mark.django_db
@@ -449,7 +449,7 @@ class TestNewsAggregatorService:
 
         service._save_entities(news_article_aapl, entities_data)
 
-        from news.models import EntityHighlight, NewsEntity
+        from services.news.models import EntityHighlight, NewsEntity
         entity = NewsEntity.objects.get(news=news_article_aapl, symbol='AAPL')
         assert EntityHighlight.objects.filter(news_entity=entity).exists()
 

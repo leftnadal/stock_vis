@@ -1290,7 +1290,7 @@ def extract_relations_from_news(self, news_id: str):
         from serverless.tasks import extract_relations_from_news
         result = extract_relations_from_news.delay('abc123-uuid')
     """
-    from news.models import NewsEntity
+    from services.news.models import NewsEntity
     from serverless.services.llm_relation_extractor import get_relation_extractor
 
     try:
@@ -1363,7 +1363,7 @@ def batch_extract_relations_from_news(self, hours: int = 24, limit: int = 100):
     import time
     from datetime import timedelta
 
-    from news.models import NewsEntity
+    from services.news.models import NewsEntity
     from serverless.services.llm_relation_extractor import get_relation_extractor
 
     try:

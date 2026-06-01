@@ -36,7 +36,7 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
 
     Usage:
         # 수동 실행
-        from news.tasks import extract_daily_news_keywords
+        from services.news.tasks import extract_daily_news_keywords
         result = extract_daily_news_keywords.delay()
 
         # 특정 날짜
@@ -52,7 +52,7 @@ def extract_daily_news_keywords(self, target_date: str = None, force: bool = Fal
         logger.info(f"Starting news keyword extraction for {date_obj}")
 
         # 키워드 추출 서비스 호출
-        from news.services import NewsKeywordExtractor
+        from services.news.services import NewsKeywordExtractor
 
         extractor = NewsKeywordExtractor(language="ko")
         keyword_obj = extractor.extract_daily_keywords(
@@ -119,7 +119,7 @@ def collect_daily_news(self, symbols=None, days=1):
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     _symbols_tried = 0
     try:
-        from news.services.aggregator import NewsAggregatorService
+        from services.news.services.aggregator import NewsAggregatorService
 
         aggregator = NewsAggregatorService()
         total_saved = 0
@@ -207,7 +207,7 @@ def collect_market_news(self, category="general"):
     _start = time.time()
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
-        from news.services.aggregator import NewsAggregatorService
+        from services.news.services.aggregator import NewsAggregatorService
 
         aggregator = NewsAggregatorService()
         result = aggregator.fetch_and_save_market_news(
@@ -264,7 +264,7 @@ def aggregate_daily_sentiment(self, target_date=None):
     try:
         from django.db.models import Avg, Count, Max, Min
 
-        from news.models import NewsEntity, SentimentHistory
+        from services.news.models import NewsEntity, SentimentHistory
 
         # 날짜 결정: 기본값은 전일 (전날 수집된 뉴스 집계)
         if target_date:
@@ -363,8 +363,8 @@ def collect_category_news(self, category_id=None, priority_filter=None):
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     _symbols_tried = 0
     try:
-        from news.models import NewsCollectionCategory
-        from news.services.aggregator import NewsAggregatorService
+        from services.news.models import NewsCollectionCategory
+        from services.news.services.aggregator import NewsAggregatorService
 
         aggregator = NewsAggregatorService()
 
@@ -474,7 +474,7 @@ def collect_category_news(self, category_id=None, priority_filter=None):
         # 에러 시 카테고리에 기록
         if category_id:
             try:
-                from news.models import NewsCollectionCategory
+                from services.news.models import NewsCollectionCategory
 
                 cat = NewsCollectionCategory.objects.get(id=category_id)
                 cat.last_error = str(exc)[:500]
@@ -522,7 +522,7 @@ def classify_news_batch(self, article_ids=None, hours=4):
     _start = time.time()
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
-        from news.services.news_classifier import NewsClassifier
+        from services.news.services.news_classifier import NewsClassifier
 
         classifier = NewsClassifier()
         result = classifier.classify_batch(article_ids=article_ids, hours=hours)
@@ -570,7 +570,7 @@ def analyze_news_deep(self, max_articles=50):
     _start = time.time()
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
-        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+        from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         analyzer = NewsDeepAnalyzer()
         result = analyzer.analyze_batch(max_articles=max_articles)
@@ -614,7 +614,7 @@ def collect_ml_labels(self, lookback_days=2):
         dict: {processed: int, labeled: int, skipped: int, errors: int}
     """
     try:
-        from news.services.ml_label_collector import MLLabelCollector
+        from services.news.services.ml_label_collector import MLLabelCollector
 
         collector = MLLabelCollector()
         result = collector.collect_labels(lookback_days=lookback_days)
@@ -650,7 +650,7 @@ def sync_news_to_neo4j(self, max_articles=100):
     _start = time.time()
     _result = {"saved": 0, "skipped": 0, "errors": 0}
     try:
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         if not sync_service.is_available():
@@ -696,7 +696,7 @@ def cleanup_expired_news_relationships(self):
         dict: {deleted_relationships: int, deleted_nodes: int}
     """
     try:
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         if not sync_service.is_available():
@@ -746,7 +746,7 @@ def train_importance_model(self):
         dict: {status, model_version, metrics, safety_gate, weights}
     """
     try:
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         optimizer = MLWeightOptimizer()
         result = optimizer.run_training_pipeline()
@@ -782,8 +782,8 @@ def generate_shadow_report(self, days=7):
         dict: {model_version, comparison}
     """
     try:
-        from news.models import MLModelHistory
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.models import MLModelHistory
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         # 최신 shadow 또는 deployed 모델 조회
         latest = (
@@ -846,7 +846,7 @@ def check_auto_deploy(self):
         dict: {action, reason, model_version?}
     """
     try:
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         manager = MLProductionManager()
         result = manager.check_auto_deploy()
@@ -880,7 +880,7 @@ def generate_weekly_ml_report(self):
         dict: {period, model_status, performance_trend, llm_accuracy, ...}
     """
     try:
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         manager = MLProductionManager()
         report = manager.generate_weekly_report()
@@ -910,7 +910,7 @@ def monitor_ml_performance(self):
     매주 일요일 04:20 EST 실행 (weekly report 직후).
     """
     try:
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         manager = MLProductionManager()
         result = manager.detect_consecutive_decline(weeks=3)
@@ -951,7 +951,7 @@ def train_lightgbm_model(self):
         dict: {status, model_version?, metrics?, ab_test?}
     """
     try:
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         optimizer = MLWeightOptimizer()
         result = optimizer.run_lightgbm_pipeline()
@@ -988,8 +988,8 @@ def collect_sp500_news_fmp_batch(self, symbols: list):
     Returns:
         dict: {saved, updated, errors}
     """
-    from news.services.aggregator import NewsAggregatorService
-    from news.services.circuit_breaker import CircuitBreaker
+    from services.news.services.aggregator import NewsAggregatorService
+    from services.news.services.circuit_breaker import CircuitBreaker
 
     breaker = CircuitBreaker("fmp")
     if breaker.is_open():
@@ -1078,8 +1078,8 @@ def collect_press_releases_fmp(self, max_symbols=50):
     Returns:
         dict: {saved, updated, errors}
     """
-    from news.services.aggregator import NewsAggregatorService
-    from news.services.circuit_breaker import CircuitBreaker
+    from services.news.services.aggregator import NewsAggregatorService
+    from services.news.services.circuit_breaker import CircuitBreaker
     from packages.shared.stocks.models import SP500Constituent
 
     breaker = CircuitBreaker("fmp")
@@ -1125,8 +1125,8 @@ def collect_press_releases_fmp(self, max_symbols=50):
 )
 def collect_general_news_fmp(self):
     """FMP 일반 시장 뉴스 수집"""
-    from news.services.aggregator import NewsAggregatorService
-    from news.services.circuit_breaker import CircuitBreaker
+    from services.news.services.aggregator import NewsAggregatorService
+    from services.news.services.circuit_breaker import CircuitBreaker
 
     breaker = CircuitBreaker("fmp")
     if breaker.is_open():
@@ -1158,7 +1158,7 @@ def collect_general_news_fmp(self):
 @shared_task
 def archive_old_articles():
     """6개월 이상 기사 → soft delete (is_archived=True)"""
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
 
     cutoff = timezone.now() - timedelta(days=180)
     count = NewsArticle.objects.filter(
@@ -1195,7 +1195,7 @@ def check_pipeline_alerts(self):
     import pytz
     from django.db.models import Sum
 
-    from news.models import (
+    from services.news.models import (
         AlertLog,
         DailyNewsKeyword,
         MLModelHistory,
@@ -1461,7 +1461,7 @@ def check_pipeline_alerts(self):
 def _log_collection(task_name, provider, symbols_tried, results, duration=0):
     """뉴스 수집 로그 기록"""
     try:
-        from news.models import NewsCollectionLog
+        from services.news.models import NewsCollectionLog
 
         NewsCollectionLog.objects.create(
             task_name=task_name,

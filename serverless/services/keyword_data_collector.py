@@ -28,12 +28,12 @@ from packages.shared.api_request.providers.fmp.client import FMPClient
 
 # News Providers (선택적)
 try:
-    from news.providers.marketaux import MarketauxNewsProvider
+    from services.news.providers.marketaux import MarketauxNewsProvider
 except ImportError:
     MarketauxNewsProvider = None
 
 try:
-    from news.providers.finnhub import FinnhubNewsProvider
+    from services.news.providers.finnhub import FinnhubNewsProvider
 except ImportError:
     FinnhubNewsProvider = None
 

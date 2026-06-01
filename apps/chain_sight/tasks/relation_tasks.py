@@ -25,7 +25,7 @@ def extract_co_mentions(self, days_back: int = 90):
 
     from apps.chain_sight.models import ChainNewsEvent, CoMentionEdge
     from apps.chain_sight.utils import normalize_pair
-    from news.models import NewsEntity
+    from services.news.models import NewsEntity
 
     cutoff = timezone.now() - timedelta(days=days_back)
 

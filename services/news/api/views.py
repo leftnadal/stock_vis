@@ -647,7 +647,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         """
         from datetime import datetime
 
-        from news.tasks import extract_daily_news_keywords
+        from services.news.tasks import extract_daily_news_keywords
 
         # 요청 파라미터
         date_str = request.data.get("date")
@@ -897,7 +897,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         """
         from datetime import datetime
 
-        from news.services import NewsBasedStockInsights
+        from services.news.services import NewsBasedStockInsights
 
         # 날짜 파라미터 파싱
         date_str = request.query_params.get("date")
@@ -989,7 +989,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
                 }
             }
         """
-        from news.services.market_feed import MarketFeedService
+        from services.news.services.market_feed import MarketFeedService
 
         service = MarketFeedService()
         data = service.get_feed()
@@ -1027,7 +1027,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
                 ]
             }
         """
-        from news.services.interest_options import InterestOptionsService
+        from services.news.services.interest_options import InterestOptionsService
 
         service = InterestOptionsService()
         data = service.get_options()
@@ -1056,7 +1056,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
                 }
             }
         """
-        from news.services.personalized_feed import PersonalizedFeedService
+        from services.news.services.personalized_feed import PersonalizedFeedService
 
         service = PersonalizedFeedService()
         data = service.get_feed(request.user)
@@ -1103,7 +1103,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         if cached_data:
             return Response(cached_data)
 
-        from news.services import NewsNeo4jSyncService
+        from services.news.services import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
 
@@ -1162,7 +1162,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         if cached_data:
             return Response(cached_data)
 
-        from news.services import NewsNeo4jSyncService
+        from services.news.services import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         data = sync_service.get_impact_map(days=days, limit=50)
@@ -1199,7 +1199,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         if cached_data:
             return Response(cached_data)
 
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         data = MLWeightOptimizer.get_current_status()
 
@@ -1297,7 +1297,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         if cached_data:
             return Response(cached_data)
 
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         manager = MLProductionManager()
         data = manager.generate_weekly_report()
@@ -1327,7 +1327,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
                 }
             }
         """
-        from news.services.ml_weight_optimizer import MLWeightOptimizer
+        from services.news.services.ml_weight_optimizer import MLWeightOptimizer
 
         data = MLWeightOptimizer.check_lightgbm_readiness()
         return Response(data)
@@ -1364,7 +1364,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         """
         from datetime import datetime
 
-        from news.services import NewsBasedStockRecommender
+        from services.news.services import NewsBasedStockRecommender
 
         # 날짜 파라미터 파싱
         date_str = request.query_params.get("date")
@@ -2215,7 +2215,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(cached_data)
 
         # Neo4j 가용성 확인
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
 
         sync_service = NewsNeo4jSyncService()
         available = sync_service.is_available()
@@ -2282,7 +2282,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
         Returns:
             {current_deployed, rollback_target, default_weights, impact_warning}
         """
-        from news.services.news_classifier import DEFAULT_WEIGHTS
+        from services.news.services.news_classifier import DEFAULT_WEIGHTS
 
         deployed = (
             MLModelHistory.objects.filter(deployment_status="deployed")
@@ -2351,7 +2351,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        from news.services.ml_production_manager import MLProductionManager
+        from services.news.services.ml_production_manager import MLProductionManager
 
         manager = MLProductionManager()
         result = manager.rollback_model()

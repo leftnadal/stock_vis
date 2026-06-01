@@ -18,9 +18,9 @@ import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from news.models import DailyNewsKeyword, NewsArticle, NewsEntity
-from news.services.interest_options import PREDEFINED_THEMES, InterestOptionsService
-from news.services.market_feed import MarketFeedService
+from services.news.models import DailyNewsKeyword, NewsArticle, NewsEntity
+from services.news.services.interest_options import PREDEFINED_THEMES, InterestOptionsService
+from services.news.services.market_feed import MarketFeedService
 
 # ===== MarketFeedService 단위 테스트 =====
 

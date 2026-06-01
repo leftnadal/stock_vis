@@ -54,7 +54,7 @@ def _build_fmp_provider():
     if not api_key:
         return None
     try:
-        from news.providers.fmp import FMPNewsProvider
+        from services.news.providers.fmp import FMPNewsProvider
         from packages.shared.api_request.providers.fmp.client import FMPClient
     except Exception as exc:  # noqa: BLE001
         logger.warning("FMP provider import failed: %s", exc)
@@ -67,7 +67,7 @@ def _build_marketaux_provider():
     if not api_key:
         return None
     try:
-        from news.providers.marketaux import MarketauxNewsProvider
+        from services.news.providers.marketaux import MarketauxNewsProvider
     except Exception as exc:  # noqa: BLE001
         logger.warning("Marketaux provider import failed: %s", exc)
         return None

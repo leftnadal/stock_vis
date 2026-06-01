@@ -52,8 +52,8 @@ def mock_neo4j_driver():
 def sync_service(mock_neo4j_driver):
     """NewsNeo4jSyncService with mocked driver"""
     driver, session = mock_neo4j_driver
-    with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+    with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
         service = NewsNeo4jSyncService()
         service._session = session
         return service
@@ -62,8 +62,8 @@ def sync_service(mock_neo4j_driver):
 @pytest.fixture
 def unavailable_service():
     """Neo4j unavailable service"""
-    with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+    with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
         return NewsNeo4jSyncService()
 
 
@@ -551,8 +551,8 @@ class TestSyncBatch:
         session.run.return_value = mock_result
 
         # 기존 이벤트 ID 조회: 빈 set 반환
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
-            from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
+            from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
             service = NewsNeo4jSyncService()
 
             with patch.object(service, '_get_existing_event_ids', return_value=set()):
@@ -570,7 +570,7 @@ class TestSyncBatch:
                     ],
                 }
 
-                with patch('news.models.NewsArticle') as MockArticle:
+                with patch('services.news.models.NewsArticle') as MockArticle:
                     mock_qs = MagicMock()
                     mock_qs.filter.return_value = mock_qs
                     mock_qs.order_by.return_value = mock_qs
@@ -592,8 +592,8 @@ class TestSyncBatch:
 
         existing_id = uuid.uuid4()
 
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
-            from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
+            from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
             service = NewsNeo4jSyncService()
 
             with patch.object(service, '_get_existing_event_ids', return_value={str(existing_id)}):
@@ -601,7 +601,7 @@ class TestSyncBatch:
                 mock_article.id = existing_id
                 mock_article.llm_analysis = {'tier': 'A', 'direct_impacts': []}
 
-                with patch('news.models.NewsArticle') as MockArticle:
+                with patch('services.news.models.NewsArticle') as MockArticle:
                     mock_qs = MagicMock()
                     mock_qs.filter.return_value = mock_qs
                     mock_qs.order_by.return_value = mock_qs
@@ -807,7 +807,7 @@ class TestGetNewsEventsForSymbol:
         """캐시 히트 테스트"""
         _, session = mock_neo4j_driver
 
-        with patch('news.services.news_neo4j_sync.cache') as mock_cache:
+        with patch('services.news.services.news_neo4j_sync.cache') as mock_cache:
             mock_cache.get.return_value = [{'article_id': 'cached'}]
 
             events = sync_service.get_news_events_for_symbol('NVDA')
@@ -904,7 +904,7 @@ class TestGetImpactMap:
     def test_get_impact_map_cached(self, sync_service, mock_neo4j_driver):
         _, session = mock_neo4j_driver
 
-        with patch('news.services.news_neo4j_sync.cache') as mock_cache:
+        with patch('services.news.services.news_neo4j_sync.cache') as mock_cache:
             mock_cache.get.return_value = {'cached': True}
 
             data = sync_service.get_impact_map()
@@ -961,7 +961,7 @@ class TestGetSymbolImpactSummary:
     def test_get_summary_cached(self, sync_service, mock_neo4j_driver):
         _, session = mock_neo4j_driver
 
-        with patch('news.services.news_neo4j_sync.cache') as mock_cache:
+        with patch('services.news.services.news_neo4j_sync.cache') as mock_cache:
             mock_cache.get.return_value = {'symbol': 'NVDA', 'total_events': 10}
 
             summary = sync_service.get_symbol_impact_summary('NVDA')
@@ -995,7 +995,7 @@ class TestTTLConfiguration:
     """TTL 설정 테스트"""
 
     def test_ttl_values(self):
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
         ttl = NewsNeo4jSyncService.RELATIONSHIP_TTL
         assert ttl['DIRECTLY_IMPACTS'] == 30
         assert ttl['INDIRECTLY_IMPACTS'] == 21
@@ -1003,7 +1003,7 @@ class TestTTLConfiguration:
         assert ttl['AFFECTS_SECTOR'] == 21
 
     def test_reinforcement_threshold(self):
-        from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
         assert NewsNeo4jSyncService.REINFORCEMENT_THRESHOLD == 3
         assert NewsNeo4jSyncService.REINFORCEMENT_BOOST == 0.1
 
@@ -1016,10 +1016,10 @@ class TestCeleryTasks:
     """Phase 3 Celery 태스크 테스트"""
 
     def test_sync_news_to_neo4j_task_success(self):
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver') as mock_driver:
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver') as mock_driver:
             mock_driver.return_value = MagicMock()
 
-            with patch('news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
+            with patch('services.news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
                 mock_instance = MagicMock()
                 mock_instance.is_available.return_value = True
                 mock_instance.sync_batch.return_value = {
@@ -1028,25 +1028,25 @@ class TestCeleryTasks:
                 }
                 MockService.return_value = mock_instance
 
-                from news.tasks import sync_news_to_neo4j
+                from services.news.tasks import sync_news_to_neo4j
                 result = sync_news_to_neo4j(max_articles=50)
 
                 assert result['synced'] == 5
                 assert result['total_rels'] == 12
 
     def test_sync_news_to_neo4j_unavailable(self):
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
-            from news.tasks import sync_news_to_neo4j
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
+            from services.news.tasks import sync_news_to_neo4j
             result = sync_news_to_neo4j(max_articles=50)
 
             assert result['neo4j_unavailable'] is True
             assert result['synced'] == 0
 
     def test_cleanup_expired_task_success(self):
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver') as mock_driver:
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver') as mock_driver:
             mock_driver.return_value = MagicMock()
 
-            with patch('news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
+            with patch('services.news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
                 mock_instance = MagicMock()
                 mock_instance.is_available.return_value = True
                 mock_instance.cleanup_expired_relationships.return_value = {
@@ -1054,15 +1054,15 @@ class TestCeleryTasks:
                 }
                 MockService.return_value = mock_instance
 
-                from news.tasks import cleanup_expired_news_relationships
+                from services.news.tasks import cleanup_expired_news_relationships
                 result = cleanup_expired_news_relationships()
 
                 assert result['deleted_relationships'] == 10
                 assert result['deleted_nodes'] == 3
 
     def test_cleanup_expired_unavailable(self):
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
-            from news.tasks import cleanup_expired_news_relationships
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=None):
+            from services.news.tasks import cleanup_expired_news_relationships
             result = cleanup_expired_news_relationships()
 
             assert result['neo4j_unavailable'] is True
@@ -1083,7 +1083,7 @@ class TestNewsEventsAPI:
 
     def test_news_events_success(self, client):
         """정상 요청"""
-        with patch('news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
+        with patch('services.news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
             mock_instance = MagicMock()
             mock_instance.get_news_events_for_symbol.return_value = []
             mock_instance.get_symbol_impact_summary.return_value = {
@@ -1103,7 +1103,7 @@ class TestNewsEventsAPI:
 
     def test_news_events_days_cap(self, client):
         """days 최대 30일 제한"""
-        with patch('news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
+        with patch('services.news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
             mock_instance = MagicMock()
             mock_instance.get_news_events_for_symbol.return_value = []
             mock_instance.get_symbol_impact_summary.return_value = {
@@ -1121,7 +1121,7 @@ class TestNewsEventsAPI:
 
     def test_impact_map_success(self, client):
         """영향도 맵 정상 요청"""
-        with patch('news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
+        with patch('services.news.services.news_neo4j_sync.NewsNeo4jSyncService') as MockService:
             mock_instance = MagicMock()
             mock_instance.get_impact_map.return_value = {
                 'nodes': [], 'edges': [],
@@ -1282,8 +1282,8 @@ class TestSectorRipplePropagation:
         """sync_article에서 sector_ripple 처리 후 propagate_sector_ripple 호출 확인"""
         driver, session = mock_neo4j_driver
 
-        with patch('news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
-            from news.services.news_neo4j_sync import NewsNeo4jSyncService
+        with patch('services.news.services.news_neo4j_sync.get_neo4j_driver', return_value=driver):
+            from services.news.services.news_neo4j_sync import NewsNeo4jSyncService
             service = NewsNeo4jSyncService()
 
             # session.run: 노드 생성, direct impact, sector ripple 모두 성공

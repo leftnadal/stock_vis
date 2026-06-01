@@ -312,7 +312,7 @@ class ContextEnricher:
         try:
             from django.utils import timezone
 
-            from news.models import NewsArticle
+            from services.news.models import NewsArticle
 
             cutoff_date = timezone.now() - timedelta(days=days)
 

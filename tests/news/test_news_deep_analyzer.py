@@ -21,7 +21,7 @@ import pytest
 from django.conf import settings
 from django.utils import timezone
 
-from news.models import NewsArticle
+from services.news.models import NewsArticle
 from packages.shared.stocks.models import Stock
 
 # ===== Helper: analyzer fixture =====
@@ -29,7 +29,7 @@ from packages.shared.stocks.models import Stock
 @pytest.fixture
 def mock_genai():
     """google.genai 모듈 전체를 모킹"""
-    with patch('news.services.news_deep_analyzer.genai') as mock:
+    with patch('services.news.services.news_deep_analyzer.genai') as mock:
         mock_client = MagicMock()
         mock.Client.return_value = mock_client
         yield mock, mock_client
@@ -43,7 +43,7 @@ def analyzer(mock_genai):
     settings.GEMINI_API_KEY 또는 settings.GOOGLE_AI_API_KEY가 설정된 상태에서
     genai.Client 호출을 차단한 채 인스턴스를 생성합니다.
     """
-    from news.services.news_deep_analyzer import NewsDeepAnalyzer
+    from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
     with patch.object(settings, 'GEMINI_API_KEY', 'test-api-key', create=True):
         with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
@@ -54,7 +54,7 @@ def analyzer(mock_genai):
 def analyzer_with_client(mock_genai):
     """analyzer와 mock_client를 함께 반환하는 fixture"""
     _, mock_client = mock_genai
-    from news.services.news_deep_analyzer import NewsDeepAnalyzer
+    from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
     with patch.object(settings, 'GEMINI_API_KEY', 'test-api-key', create=True):
         with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
@@ -107,7 +107,7 @@ class TestNewsDeepAnalyzerInit:
         Then: genai.Client가 해당 키로 호출됨, 예외 없음
         """
         mock_genai_module, mock_client = mock_genai
-        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+        from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GEMINI_API_KEY', 'my-gemini-key', create=True):
             with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
@@ -123,7 +123,7 @@ class TestNewsDeepAnalyzerInit:
         Then: GOOGLE_AI_API_KEY로 genai.Client 호출됨
         """
         mock_genai_module, _ = mock_genai
-        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+        from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GOOGLE_AI_API_KEY', 'google-ai-key', create=True):
             with patch.object(settings, 'GEMINI_API_KEY', None, create=True):
@@ -138,7 +138,7 @@ class TestNewsDeepAnalyzerInit:
         Then: GOOGLE_AI_API_KEY가 우선 사용됨
         """
         mock_genai_module, _ = mock_genai
-        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+        from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GOOGLE_AI_API_KEY', 'google-key', create=True):
             with patch.object(settings, 'GEMINI_API_KEY', 'gemini-key', create=True):
@@ -152,7 +152,7 @@ class TestNewsDeepAnalyzerInit:
         When: NewsDeepAnalyzer() 초기화
         Then: ValueError 발생
         """
-        from news.services.news_deep_analyzer import NewsDeepAnalyzer
+        from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GEMINI_API_KEY', None, create=True):
             with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
@@ -1186,7 +1186,7 @@ class TestAnalyzeSingle:
                 article = news_article_factory(importance_score=0.75)
                 mock_client.models.generate_content.reset_mock()
 
-                with patch('news.services.news_deep_analyzer.types') as mock_types:
+                with patch('services.news.services.news_deep_analyzer.types') as mock_types:
                     mock_config = MagicMock()
                     mock_types.GenerateContentConfig.return_value = mock_config
                     analyzer._analyze_single(article, tier)
@@ -1226,7 +1226,7 @@ class TestAnalyzeBatch:
             llm_analyzed=llm_analyzed,
         )
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_returns_result_dict(self, mock_sleep, analyzer_with_client):
         """
         Given: 분석 대상 기사 없음
@@ -1241,7 +1241,7 @@ class TestAnalyzeBatch:
         assert 'errors' in result
         assert 'skipped' in result
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_skips_low_score_articles(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=0.50 (Tier 없음) 기사
@@ -1256,7 +1256,7 @@ class TestAnalyzeBatch:
         assert result['skipped'] == 1
         assert result['analyzed'] == 0
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_analyzes_high_score_article(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=0.95 (Tier C) 기사
@@ -1279,7 +1279,7 @@ class TestAnalyzeBatch:
         article.refresh_from_db()
         assert article.llm_analyzed is True
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_records_error_on_llm_failure(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=0.90 (Tier B) 기사, LLM 예외 발생
@@ -1299,7 +1299,7 @@ class TestAnalyzeBatch:
         article.refresh_from_db()
         assert article.llm_analyzed is False
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_only_processes_unanalyzed_articles(self, mock_sleep, analyzer_with_client):
         """
         Given: llm_analyzed=True인 기사 (이미 분석됨)
@@ -1315,7 +1315,7 @@ class TestAnalyzeBatch:
         assert result['errors'] == 0
         assert result['skipped'] == 0
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_only_processes_articles_with_importance_score(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=None인 기사
@@ -1340,7 +1340,7 @@ class TestAnalyzeBatch:
         assert result['skipped'] == 0
         assert result['errors'] == 0
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_respects_max_articles_limit(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=0.95인 기사 5개
@@ -1362,7 +1362,7 @@ class TestAnalyzeBatch:
         total = result['analyzed'] + result['skipped'] + result['errors']
         assert total <= 2
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_calls_sleep_between_articles(self, mock_sleep, analyzer_with_client):
         """
         Given: importance_score=0.95 기사 2개
@@ -1384,7 +1384,7 @@ class TestAnalyzeBatch:
         assert mock_sleep.call_count == 2
         mock_sleep.assert_called_with(analyzer.RPM_DELAY)
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_updates_llm_analysis_field(self, mock_sleep, analyzer_with_client):
         """
         Given: 분석 대상 기사, LLM이 유효한 JSON 반환
@@ -1405,7 +1405,7 @@ class TestAnalyzeBatch:
         assert article.llm_analysis is not None
         assert 'direct_impacts' in article.llm_analysis
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_increments_errors_when_analysis_returns_none(self, mock_sleep, analyzer_with_client):
         """
         Given: LLM이 파싱 불가능한 응답 반환 (_analyze_single 반환값 None)
@@ -1424,7 +1424,7 @@ class TestAnalyzeBatch:
         assert result['errors'] == 1
         assert result['analyzed'] == 0
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_processes_only_todays_articles(self, mock_sleep, analyzer_with_client):
         """
         Given: 오늘 날짜 기사 1개, 어제 날짜 기사 1개
@@ -1470,7 +1470,7 @@ class TestAnalyzeBatch:
         total = result['analyzed'] + result['errors'] + result['skipped']
         assert total == 1
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_empty_db_returns_zeros(self, mock_sleep, analyzer_with_client):
         """
         Given: DB에 분석 대상 기사 없음
@@ -1483,7 +1483,7 @@ class TestAnalyzeBatch:
 
         assert result == {'analyzed': 0, 'errors': 0, 'skipped': 0}
 
-    @patch('news.services.news_deep_analyzer.time.sleep')
+    @patch('services.news.services.news_deep_analyzer.time.sleep')
     def test_analyze_batch_mixed_tiers(self, mock_sleep, analyzer_with_client):
         """
         Given: Tier C(0.95), Tier B(0.88), Tier A(0.72), 아래(0.60) 각 1개

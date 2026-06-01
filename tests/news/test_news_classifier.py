@@ -16,8 +16,8 @@ from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from django.utils import timezone
 
-from news.models import NewsArticle, NewsEntity
-from news.services.news_classifier import (
+from services.news.models import NewsArticle, NewsEntity
+from services.news.services.news_classifier import (
     AMBIGUOUS_TICKERS,
     CASHTAG_PATTERN,
     DEFAULT_WEIGHTS,
@@ -1365,7 +1365,7 @@ class TestNewsClassifierInit:
             # and using the module-level import path
             classifier._symbol_matcher = None
             with patch(
-                "news.services.news_classifier.NewsClassifier.symbol_matcher",
+                "services.news.services.news_classifier.NewsClassifier.symbol_matcher",
                 new_callable=PropertyMock,
                 return_value=mock_matcher_instance,
             ):

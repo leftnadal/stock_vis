@@ -14,7 +14,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from news.models import NewsArticle, NewsEntity
+from services.news.models import NewsArticle, NewsEntity
 
 
 class TestNewsViewSet:
@@ -129,7 +129,7 @@ class TestNewsViewSet:
         assert response1.data == response2.data
 
     @pytest.mark.django_db
-    @patch('news.api.views.NewsAggregatorService.fetch_and_save_company_news')
+    @patch('services.news.api.views.NewsAggregatorService.fetch_and_save_company_news')
     def test_stock_news_refresh_true(self, mock_fetch, api_client, news_article_aapl, news_entity_aapl):
         """
         Given: refresh=true 파라미터

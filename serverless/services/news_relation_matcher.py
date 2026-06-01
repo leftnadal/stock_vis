@@ -141,7 +141,7 @@ class NewsRelationMatcher:
         Returns:
             {"processed": 50, "relations_created": 12, "co_mentions_updated": 8}
         """
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
 
         cutoff = timezone.now() - timedelta(hours=hours)
         articles = (

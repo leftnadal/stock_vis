@@ -1069,7 +1069,7 @@ class UserInterestListCreateView(APIView):
             ]
         }
         """
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
 
         interests_data = request.data.get("interests", [])
         if not interests_data or not isinstance(interests_data, list):
@@ -1121,7 +1121,7 @@ class UserInterestListCreateView(APIView):
 
     def _link_category(self, interest):
         """관심사에 맞는 NewsCollectionCategory 자동 연결"""
-        from news.models import NewsCollectionCategory
+        from services.news.models import NewsCollectionCategory
 
         try:
             if interest.interest_type == "sector":
@@ -1138,7 +1138,7 @@ class UserInterestListCreateView(APIView):
                 interest.save(update_fields=["auto_category_id"])
 
             elif interest.interest_type == "theme":
-                from news.services.interest_options import InterestOptionsService
+                from services.news.services.interest_options import InterestOptionsService
 
                 symbols = InterestOptionsService.get_theme_symbols(interest.value)
                 if symbols:

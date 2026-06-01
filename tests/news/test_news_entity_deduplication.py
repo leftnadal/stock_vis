@@ -10,10 +10,10 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from news.models import NewsArticle, NewsEntity
-from news.providers.finnhub import FinnhubNewsProvider
-from news.providers.marketaux import MarketauxNewsProvider
-from news.services.aggregator import NewsAggregatorService
+from services.news.models import NewsArticle, NewsEntity
+from services.news.providers.finnhub import FinnhubNewsProvider
+from services.news.providers.marketaux import MarketauxNewsProvider
+from services.news.services.aggregator import NewsAggregatorService
 
 
 class TestFinnhubEntityMapping:
@@ -99,7 +99,7 @@ class TestAggregatorEntityDeduplication:
 
         시나리오: Nvidia 뉴스를 TSLA, AAPL, GOOGL 조회 시마다 저장 시도
         """
-        from news.providers.base import RawNewsArticle
+        from services.news.providers.base import RawNewsArticle
 
         # 첫 번째 저장 (NVDA entity)
         raw_article = RawNewsArticle(
@@ -153,7 +153,7 @@ class TestAggregatorEntityDeduplication:
         """
         기존 뉴스의 entity는 변경되지 않아야 함
         """
-        from news.providers.base import RawNewsArticle
+        from services.news.providers.base import RawNewsArticle
 
         # 초기 저장
         raw_article = RawNewsArticle(
@@ -279,7 +279,7 @@ class TestNewsAPIViews:
 class TestNewsSystemIntegration:
     """뉴스 시스템 통합 테스트"""
 
-    @patch('news.providers.finnhub.requests.get')
+    @patch('services.news.providers.finnhub.requests.get')
     def test_multiple_symbol_fetches_no_cross_contamination(self, mock_get):
         """
         여러 종목 뉴스 수집 시 교차 오염 없음 확인

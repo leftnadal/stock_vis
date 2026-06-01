@@ -71,7 +71,7 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_overview_summary() -> dict:
-        from news.models import DailyNewsKeyword, NewsArticle
+        from services.news.models import DailyNewsKeyword, NewsArticle
         from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
         from serverless.models import (
             MarketBreadth,
@@ -136,7 +136,7 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def detect_issues() -> list:
-        from news.models import DailyNewsKeyword
+        from services.news.models import DailyNewsKeyword
         from packages.shared.stocks.models import DailyPrice, SP500Constituent
         from serverless.models import (
             ETFProfile,
@@ -582,7 +582,7 @@ class AdminStatusService:
     # ========================================
     @staticmethod
     def get_news_status() -> dict:
-        from news.models import (
+        from services.news.models import (
             DailyNewsKeyword,
             NewsArticle,
             NewsCollectionCategory,

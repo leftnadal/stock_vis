@@ -21,7 +21,7 @@ from typing import Dict, List, Optional, Set
 from django.db import IntegrityError
 from django.utils import timezone
 
-from news.models import NewsEntity
+from services.news.models import NewsEntity
 from serverless.models import StockRelationship
 from serverless.services.uspto_client import (
     COMPANY_ASSIGNEE_MAP,

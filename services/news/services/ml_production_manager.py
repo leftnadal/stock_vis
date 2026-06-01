@@ -486,7 +486,7 @@ class MLProductionManager:
                 alert_message: str or None,
             }
         """
-        from news.services.ml_weight_optimizer import ROLLING_WINDOW_WEEKS
+        from services.news.services.ml_weight_optimizer import ROLLING_WINDOW_WEEKS
 
         # 최근 weeks+1개 모델 조회 (최신순)
         recent_models = list(

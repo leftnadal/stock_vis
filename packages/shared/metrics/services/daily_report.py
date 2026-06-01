@@ -155,7 +155,7 @@ def collect_graph_metrics() -> Dict[str, Any]:
 
 def collect_news_metrics(today: date) -> Dict[str, Any]:
     """뉴스 일일 통계 + 커버리지."""
-    from news.models import NewsArticle, NewsEntity
+    from services.news.models import NewsArticle, NewsEntity
     from packages.shared.stocks.models import Stock
 
     cutoff_24h = timezone.now() - timedelta(hours=24)
@@ -444,7 +444,7 @@ def collect_llm_usage() -> Dict[str, Any]:
       - SEC track_a/track_b: input ~8K, output ~1K tokens/call
       - News LLM 분석: input ~2K, output ~500 tokens/article
     """
-    from news.models import NewsArticle
+    from services.news.models import NewsArticle
     from services.sec_pipeline.models import FilingProcessLog
 
     cutoff = timezone.now() - timedelta(hours=24)

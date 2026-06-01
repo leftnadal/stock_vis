@@ -10,7 +10,7 @@ from datetime import datetime
 from django.core.cache import cache
 from django.utils import timezone
 
-from news.models import DailyNewsKeyword, NewsArticle, NewsEntity
+from services.news.models import DailyNewsKeyword, NewsArticle, NewsEntity
 
 logger = logging.getLogger(__name__)
 

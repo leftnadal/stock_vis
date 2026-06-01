@@ -8,7 +8,7 @@ TestNewsCollectionCategory:
 
 import pytest
 
-from news.models import NewsCollectionCategory
+from services.news.models import NewsCollectionCategory
 
 
 @pytest.mark.django_db

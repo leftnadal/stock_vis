@@ -193,7 +193,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'packages.shared.stocks',  # PR2 이동 (A-min)
     'packages.shared.users',  # PR2 이동 (A-min)
-    'news',
+    'services.news',  # PR8a-2 이동
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석

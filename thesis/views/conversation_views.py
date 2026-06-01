@@ -196,7 +196,7 @@ class NewsIssuesView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from news.models import NewsArticle
+        from services.news.models import NewsArticle
 
         cutoff = timezone.now() - timedelta(days=7)
         articles = (
