@@ -1045,3 +1045,46 @@ for name, new_task in mapping.items():
 **How to apply**: BOUNDARY-3 진입 시 먼저 두 파일의 호출자 + 도메인 사용처 전수 (eod_regime_calculator / eod_pipeline 호출자 grep)→ 단일 도메인이면 방향1, 다도메인이면 C. 절대 모델부터 건드리지 말 것.
 
 **관련 문서**: TASKQUEUE.md `BOUNDARY-3` (새 정의), `docs/harness/SHARED_BOUNDARY_GUARD.md` #4·#5 행.
+
+### monorepo PR8c 종결 — 메타 정리 + 트랙 완주 (2026-06-01)
+
+**결정**: monorepo 8 PR 시리즈 완주. macro = 영구 모델 전용 앱, packages/shared / apps/* / services/* / integrations/* / services/_dormant/ 전 격자 정착.
+
+**커밋 3**:
+| 순 | hash | 의미 |
+|---|---|---|
+| a | `19eeb7f` | 빈 잔재 정리 (`marketpulse/` untracked dir + `macro/management/` 빈 패키지) + blueprint_v1.md dashboard 행 정정 + common-bugs #32 FMPClient 동명 3 모듈 가이드 |
+| b | `dec8941` | graph_analysis 휴면 자기참조 회귀 2건 정정 (`from graph_analysis.models` → `from services._dormant.graph_analysis.models`, 휴면 의도 보존) |
+| c | (이 docs commit) | PROGRESS / DECISIONS 트랙 완주 기록 |
+
+**monorepo 8 PR 시리즈 (history)**:
+1. PR1 (2026-05-30) — `services/_dormant/graph_analysis` 휴면 이동
+2. PR2 (2026-05-30) — `packages/shared/{stocks,users,api_request,metrics}` (A-min)
+3. PR3 (2026-05-30) — `integrations/iron_trading` (옵션 B 네임스페이스)
+4. PR4 (2026-05-31) — `apps/market_pulse` (dashboard 보류 승계)
+5. PR5 — 결번 (PR4 흡수)
+6. PR6 (2026-05-31) — `apps/chain_sight`
+7. PR7 (2026-05-31) — `apps/portfolio` (단일 앱 최대, IDENTICAL 7/7)
+8. PR8a (2026-06-01) — `services/{news,serverless,rag_analysis,validation,sec_pipeline}` (옵션2 3그룹)
+9. PR8b (2026-06-01) — macro 분배 (1: 비모델 → market_pulse / 2: Beat 항구 해결 + reachability 판정 / 3: macro=영구 모델앱)
+10. PR8c (2026-06-01) — 메타 정리 + graph_analysis 회귀 해소 + 완주 정착
+
+**최종 격자**:
+```
+apps/        — 메인 트랙 (chain_sight, market_pulse, portfolio)
+packages/    — 단방향 base (shared/{stocks,users,api_request,metrics}) — 경계 검문소 LIVE
+services/    — 도메인 서비스 (news, serverless, rag_analysis, validation, sec_pipeline)
+services/_dormant/ — 휴면 (graph_analysis)
+integrations/ — 봇 연계 격리 (iron_trading)
+macro/       — 영구 모델 전용 앱 (PR8b-3 옵션 A)
+thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
+```
+
+**잔존 (monorepo 외 트랙)**:
+- BOUNDARY-1/2/3 (경계 트랙 소진 큐)
+- Beat prod DB 동기화 (운영 트리거, `sync_beat_schedule --apply` + beat 재시작)
+- thesis 처분 (a/b/c 트리거 대기)
+- FMPClient 3중화 통합 (별도 부채 트랙)
+- health ❌ 1건 PROGRESS hash 자기참조 (push 트리거, 정합성 Layer 4 영역)
+
+**검증 (최종)**: pytest **3179 passed, 52 skipped** (회귀 0, monorepo 8 PR 시리즈 누적 0건 회귀), 경계 GREEN (우회 0 / 동결 잔여 5), health 7✅/0⚠/1❌(별개 트랙).
