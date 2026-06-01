@@ -6,7 +6,7 @@ import time
 import pytest
 from django.core.cache import cache
 
-from apps.market_pulse.utils.circuit_breaker import (
+from packages.shared.api_request.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerError,
     CircuitState,
@@ -17,7 +17,7 @@ from apps.market_pulse.utils.circuit_breaker import (
 @pytest.fixture(autouse=True)
 def _clear():
     cache.clear()
-    from apps.market_pulse.utils import circuit_breaker as cb_mod
+    from packages.shared.api_request import circuit_breaker as cb_mod
     cb_mod._REGISTRY.clear()
     yield
     cache.clear()

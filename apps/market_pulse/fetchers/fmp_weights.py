@@ -10,7 +10,7 @@ from typing import Any
 import requests
 from django.conf import settings
 
-from apps.market_pulse.utils.circuit_breaker import get_circuit
+from packages.shared.api_request.circuit_breaker import get_circuit
 
 logger = logging.getLogger(__name__)
 

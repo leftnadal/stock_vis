@@ -26,8 +26,8 @@ FORBIDDEN_TOP_SEGMENTS = ("apps", "macro")
 # 키 = (packages/shared 기준 상대경로 POSIX, import된 module 문자열)
 # 라인번호는 키에 포함하지 않는다 — 드리프트로 깨지기 때문.
 KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    ("stocks/services/sp500_eod_service.py", "apps.market_pulse.utils.circuit_breaker"),
-    ("stocks/services/sp500_service.py", "apps.market_pulse.utils.circuit_breaker"),
+    # #1·#2 (sp500_eod_service, sp500_service → circuit_breaker): 2026-06-01 BOUNDARY-1 청소
+    # 완료 (circuit_breaker → packages/shared/api_request 이동, 이제 shared→shared).
     ("metrics/services/daily_report.py", "apps.chain_sight.models"),
     ("stocks/services/eod_regime_calculator.py", "macro.models"),
     ("stocks/services/eod_pipeline.py", "macro.models"),

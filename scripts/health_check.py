@@ -453,8 +453,7 @@ def check_slice_branches_unmerged() -> CheckResult:
 _BOUNDARY_FORBIDDEN_SEGMENTS = ("apps", "macro")
 
 _BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    ("stocks/services/sp500_eod_service.py", "apps.market_pulse.utils.circuit_breaker"),
-    ("stocks/services/sp500_service.py", "apps.market_pulse.utils.circuit_breaker"),
+    # #1·#2: 2026-06-01 BOUNDARY-1 청소 완료 (circuit_breaker → shared)
     ("metrics/services/daily_report.py", "apps.chain_sight.models"),
     ("stocks/services/eod_regime_calculator.py", "macro.models"),
     ("stocks/services/eod_pipeline.py", "macro.models"),

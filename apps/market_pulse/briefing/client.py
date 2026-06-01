@@ -14,7 +14,7 @@ from apps.market_pulse.briefing.prompt import (
     few_shot_messages,
     render_user_prompt,
 )
-from apps.market_pulse.utils.circuit_breaker import get_circuit
+from packages.shared.api_request.circuit_breaker import get_circuit
 
 logger = logging.getLogger(__name__)
 

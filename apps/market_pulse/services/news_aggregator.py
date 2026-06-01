@@ -12,7 +12,7 @@ from django.conf import settings
 from django.utils import timezone as django_timezone
 
 from apps.market_pulse.models.news import MarketPulseNews
-from apps.market_pulse.utils.circuit_breaker import (
+from packages.shared.api_request.circuit_breaker import (
     CircuitBreakerError,
     get_circuit,
 )
