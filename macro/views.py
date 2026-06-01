@@ -18,7 +18,7 @@ from .serializers import (
     InterestRatesResponseSerializer,
     MarketPulseResponseSerializer,
 )
-from .services import MacroEconomicService
+from apps.market_pulse.services.macro_service import MacroEconomicService
 
 logger = logging.getLogger(__name__)
 

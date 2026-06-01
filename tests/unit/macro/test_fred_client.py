@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from macro.services.fred_client import FREDClient
+from packages.shared.api_request.fred_client import FREDClient
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -23,7 +23,7 @@ from macro.services.fred_client import FREDClient
 @pytest.fixture
 def fred_client():
     """테스트용 FREDClient (API 키 하드코딩)"""
-    with patch('macro.services.fred_client.get_rate_limiter') as mock_rl:
+    with patch('packages.shared.api_request.fred_client.get_rate_limiter') as mock_rl:
         mock_limiter = MagicMock()
         mock_limiter.acquire.return_value = True
         mock_rl.return_value = mock_limiter
@@ -34,7 +34,7 @@ def fred_client():
 @pytest.fixture
 def mock_rate_limiter():
     """Rate Limiter mock"""
-    with patch('macro.services.fred_client.get_rate_limiter') as mock_rl:
+    with patch('packages.shared.api_request.fred_client.get_rate_limiter') as mock_rl:
         mock_limiter = MagicMock()
         mock_limiter.acquire.return_value = True
         mock_rl.return_value = mock_limiter
@@ -65,7 +65,7 @@ def _mock_response(status_code=200, json_data=None, text="error"):
 class TestApiKeyNotLeaked:
     """API 키가 로그 메시지에 절대 노출되지 않음을 검증"""
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_api_key_not_in_error_log_on_http_error(self, mock_get, fred_client, caplog):
         """HTTP 에러 시 로그에 API 키 미포함"""
         mock_get.return_value = _mock_response(
@@ -80,7 +80,7 @@ class TestApiKeyNotLeaked:
         for record in caplog.records:
             assert 'test_fred_key_secret_123' not in record.message
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_api_key_not_in_error_log_on_request_exception(
         self, mock_get, fred_client, caplog
     ):
@@ -97,7 +97,7 @@ class TestApiKeyNotLeaked:
         for record in caplog.records:
             assert 'test_fred_key_secret_123' not in record.message
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_response_text_truncated(self, mock_get, fred_client, caplog):
         """응답 텍스트가 200자로 truncate됨"""
         long_text = "x" * 500
@@ -119,8 +119,8 @@ class TestApiKeyNotLeaked:
 class TestRetryLogic:
     """Transient 에러에 대한 재시도, Permanent 에러에 대한 즉시 실패"""
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_transient_500_retries_3_times(self, mock_get, mock_sleep, fred_client):
         """500 에러 → 3회 시도 후 최종 실패"""
         mock_get.return_value = _mock_response(status_code=500)
@@ -130,8 +130,8 @@ class TestRetryLogic:
 
         assert mock_get.call_count == 3
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_transient_502_retries(self, mock_get, mock_sleep, fred_client):
         """502 에러도 재시도 대상"""
         mock_get.return_value = _mock_response(status_code=502)
@@ -141,8 +141,8 @@ class TestRetryLogic:
 
         assert mock_get.call_count == 3
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_transient_recovers_on_second_attempt(self, mock_get, mock_sleep, fred_client):
         """첫 번째 500 → 두 번째 성공"""
         mock_get.side_effect = [
@@ -154,8 +154,8 @@ class TestRetryLogic:
         assert result == {'observations': []}
         assert mock_get.call_count == 2
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_exponential_backoff_delays(self, mock_get, mock_sleep, fred_client):
         """재시도 간 대기 시간: 2s, 4s"""
         mock_get.return_value = _mock_response(status_code=503)
@@ -166,7 +166,7 @@ class TestRetryLogic:
         sleep_calls = [c.args[0] for c in mock_sleep.call_args_list]
         assert sleep_calls == [2, 4]
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_permanent_401_no_retry(self, mock_get, fred_client):
         """401 → 즉시 실패, 재시도 없음"""
         mock_get.return_value = _mock_response(status_code=401)
@@ -176,7 +176,7 @@ class TestRetryLogic:
 
         assert mock_get.call_count == 1
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_permanent_403_no_retry(self, mock_get, fred_client):
         """403 → 즉시 실패"""
         mock_get.return_value = _mock_response(status_code=403)
@@ -186,7 +186,7 @@ class TestRetryLogic:
 
         assert mock_get.call_count == 1
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_permanent_404_no_retry(self, mock_get, fred_client):
         """404 → 즉시 실패"""
         mock_get.return_value = _mock_response(status_code=404)
@@ -196,8 +196,8 @@ class TestRetryLogic:
 
         assert mock_get.call_count == 1
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_connection_error_retries(self, mock_get, mock_sleep, fred_client):
         """ConnectionError → 재시도"""
         import requests as req
@@ -216,7 +216,7 @@ class TestRetryLogic:
 class TestRateLimiterIntegration:
     """Rate Limiter가 매 요청 전에 호출됨을 검증"""
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_rate_limiter_acquire_called(self, mock_get, mock_rate_limiter):
         """정상 요청 시 acquire() 호출됨"""
         mock_get.return_value = _mock_response(
@@ -229,8 +229,8 @@ class TestRateLimiterIntegration:
 
         mock_rate_limiter.acquire.assert_called()
 
-    @patch('macro.services.fred_client.time.sleep')
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.time.sleep')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_rate_limiter_called_per_retry(self, mock_get, mock_sleep, mock_rate_limiter):
         """재시도마다 acquire() 호출됨"""
         mock_get.side_effect = [
@@ -250,7 +250,7 @@ class TestRateLimiterIntegration:
 
 class TestSuccessfulRequests:
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_get_latest_value(self, mock_get, fred_client):
         """최신 값 정상 조회"""
         mock_get.return_value = _mock_response(
@@ -269,7 +269,7 @@ class TestSuccessfulRequests:
         assert result['date'] == '2026-03-01'
         assert result['series_id'] == 'FEDFUNDS'
 
-    @patch('macro.services.fred_client.requests.get')
+    @patch('packages.shared.api_request.fred_client.requests.get')
     def test_parse_value_dot(self, mock_get, fred_client):
         """'.' 값 → None"""
         mock_get.return_value = _mock_response(

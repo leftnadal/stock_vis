@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         from macro.models.indicators import EconomicIndicator, IndicatorValue
-        from macro.services.fred_client import FREDClient
+        from packages.shared.api_request.fred_client import FREDClient
 
         series_codes: Iterable[str] = options['series'] or V2_SERIES_DEFAULT
         limit = options['limit']

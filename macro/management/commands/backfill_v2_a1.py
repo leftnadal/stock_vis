@@ -190,7 +190,7 @@ class Command(BaseCommand):
         return inserted
 
     def _fetch_fred(self, series_id, from_date, to_date):
-        from macro.services.fred_client import FREDClient
+        from packages.shared.api_request.fred_client import FREDClient
         client = FREDClient()
         raw = client.get_series_observations(series_id, observation_start=str(from_date), observation_end=str(to_date))
         out = []

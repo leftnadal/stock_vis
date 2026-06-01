@@ -24,7 +24,7 @@ class TestUpdateEconomicIndicatorsRetry:
             # Celery의 request context를 push하여 retries 설정
             task.push_request(retries=retries_count)
             try:
-                with patch('macro.services.MacroEconomicService',
+                with patch('apps.market_pulse.services.macro_service.MacroEconomicService',
                            side_effect=Exception("FRED down")):
                     with patch('macro.tasks.cache'):
                         task.run()

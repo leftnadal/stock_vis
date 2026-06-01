@@ -156,7 +156,7 @@ def _fetch_fmp_value(indicator):
 
 def _fetch_fred_value(indicator):
     """FRED API에서 지표 값 fetch. data_params의 series_id로 조회."""
-    from macro.services.fred_client import FREDClient
+    from packages.shared.api_request.fred_client import FREDClient
 
     params = indicator.data_params or {}
     series_id = params.get('series_id')

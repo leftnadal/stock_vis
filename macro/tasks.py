@@ -17,7 +17,7 @@ def update_economic_indicators(self):
 
     실행 주기: 매시간 (FRED 데이터는 일간/월간 업데이트)
     """
-    from .services import MacroEconomicService
+    from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
         service = MacroEconomicService()
@@ -73,7 +73,7 @@ def update_market_indices(self):
     from django.utils import timezone
 
     from .models import MarketIndex, MarketIndexPrice
-    from .services import MacroEconomicService
+    from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
         service = MacroEconomicService()
@@ -143,7 +143,7 @@ def update_economic_calendar(self):
     from datetime import date, timedelta
 
     from .models import EconomicEvent
-    from .services import MacroEconomicService
+    from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
         service = MacroEconomicService()
@@ -211,7 +211,7 @@ def refresh_market_pulse_cache():
 
     실행 주기: 시장 운영 시간 중 1분마다
     """
-    from .services import MacroEconomicService
+    from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
         # 기존 캐시 삭제
