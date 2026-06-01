@@ -72,7 +72,7 @@ def update_market_indices(self):
 
     from django.utils import timezone
 
-    from .models import MarketIndex, MarketIndexPrice
+    from macro.models import MarketIndex, MarketIndexPrice
     from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
@@ -142,7 +142,7 @@ def update_economic_calendar(self):
     import hashlib
     from datetime import date, timedelta
 
-    from .models import EconomicEvent
+    from macro.models import EconomicEvent
     from apps.market_pulse.services.macro_service import MacroEconomicService
 
     try:
@@ -238,7 +238,7 @@ def cleanup_old_data():
     """
     from datetime import date, timedelta
 
-    from .models import EconomicEvent, IndicatorValue, MarketIndexPrice
+    from macro.models import EconomicEvent, IndicatorValue, MarketIndexPrice
 
     try:
         # 1년 이상 된 일간 데이터 삭제 (최근 데이터만 유지)

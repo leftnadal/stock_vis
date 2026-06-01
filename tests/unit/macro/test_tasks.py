@@ -15,7 +15,7 @@ class TestUpdateEconomicIndicatorsRetry:
 
     def _run_with_retries(self, retries_count):
         """bind=True 태스크를 특정 retries 값으로 실행"""
-        from macro.tasks import update_economic_indicators
+        from apps.market_pulse.tasks.macro import update_economic_indicators
 
         task = update_economic_indicators
         mock_retry = MagicMock()
@@ -26,7 +26,7 @@ class TestUpdateEconomicIndicatorsRetry:
             try:
                 with patch('apps.market_pulse.services.macro_service.MacroEconomicService',
                            side_effect=Exception("FRED down")):
-                    with patch('macro.tasks.cache'):
+                    with patch('apps.market_pulse.tasks.macro.cache'):
                         task.run()
             finally:
                 task.pop_request()

@@ -181,31 +181,31 @@ app.conf.beat_schedule = {
 
     # 거시경제 지표 업데이트 (4회/일, 평일 - FRED API)
     'update-economic-indicators': {
-        'task': 'macro.tasks.update_economic_indicators',
+        'task': 'apps.market_pulse.tasks.macro.update_economic_indicators',
         'schedule': crontab(minute=0, hour='6,12,18,22', day_of_week='1-5'),
     },
 
     # 시장 지수 업데이트 (시장 시간 중 5분마다 - FMP API)
     'update-market-indices': {
-        'task': 'macro.tasks.update_market_indices',
+        'task': 'apps.market_pulse.tasks.macro.update_market_indices',
         'schedule': crontab(minute='*/5', hour='9-16', day_of_week='1-5'),
     },
 
     # 경제 캘린더 업데이트 (매일 새벽 1시)
     'update-economic-calendar': {
-        'task': 'macro.tasks.update_economic_calendar',
+        'task': 'apps.market_pulse.tasks.macro.update_economic_calendar',
         'schedule': crontab(hour=1, minute=0),
     },
 
     # Market Pulse 캐시 갱신 (시장 시간 중 1분마다)
     'refresh-market-pulse-cache': {
-        'task': 'macro.tasks.refresh_market_pulse_cache',
+        'task': 'apps.market_pulse.tasks.macro.refresh_market_pulse_cache',
         'schedule': crontab(minute='*', hour='9-16', day_of_week='1-5'),
     },
 
     # 오래된 데이터 정리 (매주 일요일 새벽 3시)
     'cleanup-old-macro-data': {
-        'task': 'macro.tasks.cleanup_old_data',
+        'task': 'apps.market_pulse.tasks.macro.cleanup_old_data',
         'schedule': crontab(hour=3, minute=0, day_of_week=0),
     },
 
