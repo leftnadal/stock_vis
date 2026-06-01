@@ -935,3 +935,49 @@ pat_dynamic = re.compile(
 **SSOT**: `tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS`. `scripts/health_check.py:_BOUNDARY_KNOWN_VIOLATIONS`는 동기 복사본 — 양쪽 동시 갱신 필수.
 
 **관련 문서**: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `sub_claude_md/common-bugs.md #31`.
+
+### monorepo PR8b-1 — macro 비모델 분배 (실행) (2026-06-01)
+
+**결정**: macro는 "**모델 전용 shell app**"으로 잔존(INSTALLED_APPS 'macro' 유지, label 'macro' 불변). 비모델 모든 행위는 `apps/market_pulse/`로 동거 이사. fred_client만 `packages/shared/api_request/`로 승격 (추천 B).
+
+**HEAD**: `61b1d97` → `1a20c9b` (+4 commits).
+
+**커밋**:
+| 순 | hash | 의미 |
+|---|---|---|
+| 1a | `0b5c8ed` | services 분배 (fred→shared, fmp/macro_service→market_pulse) |
+| 1b | `083b8da` | entry (views/serializers/urls) → market_pulse, config/urls.py:39 갱신 |
+| 1c | `5ab58ee` | tasks → market_pulse/tasks/macro.py + celery.py Beat 5건 갱신 |
+| 1d | `1a20c9b` | mgmt/constants → market_pulse |
+
+**불변**:
+- `INSTALLED_APPS = ['macro', ...]` (settings.py:197)
+- LLM domain enum `('macro', 'Macro')` (settings.py:404)
+- spectacular_enums.py:19 `MACRO = 'macro'`
+- URL prefix `/api/v1/macro/*` (frontend macroService.ts 영향 0)
+- `reverse('macro:market-pulse')` = `/api/v1/macro/pulse/`
+- `app_label='macro'` (migrations 디렉토리명 기반, 명시 0건 → 변경 불요)
+
+**잔존 (PR8b-2/3/c 트리거 대기)**:
+- macro/models + migrations (#4·#5 shared lazy 동결 유지) — PR8b-3
+- fmp_client / constants dead-code 판정 — PR8c
+- thesis 처분 확정 시 → fred 최종 위치 재검토
+
+**R6 (Beat schedule drift)**: dict + 코드 갱신 완료. **DB sync 미실행**(별도 절차, 사용자 트리거). 운영 동기화 절차:
+```python
+# python manage.py shell
+from django_celery_beat.models import PeriodicTask
+mapping = {
+    'update-economic-indicators':   'apps.market_pulse.tasks.macro.update_economic_indicators',
+    'update-market-indices':        'apps.market_pulse.tasks.macro.update_market_indices',
+    'update-economic-calendar':     'apps.market_pulse.tasks.macro.update_economic_calendar',
+    'refresh-market-pulse-cache':   'apps.market_pulse.tasks.macro.refresh_market_pulse_cache',
+    'cleanup-old-macro-data':       'apps.market_pulse.tasks.macro.cleanup_old_data',
+}
+for name, new_task in mapping.items():
+    updated = PeriodicTask.objects.filter(name=name).update(task=new_task)
+    print(name, '->', updated, 'rows')
+```
+실행 후 celery beat 재시작 필요. 미실행 시 DB의 옛 경로 `macro.tasks.X`로 호출 → ImportError로 task 실패.
+
+**검증**: pytest 3175 passed/52 skipped (회귀 0), 경계 GREEN(우회 0/동결 5), reverse 불변, `find macro -type f` = `__init__.py`/`apps.py`/`admin.py`/`models/`/`migrations/` + 빈 mgmt 패키지.
