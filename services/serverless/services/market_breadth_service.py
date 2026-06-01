@@ -15,7 +15,7 @@ from django.core.cache import cache
 from django.db import transaction
 
 from services.serverless.models import MarketBreadth
-from services.serverless.services.fmp_client import FMPAPIError, FMPClient
+from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

@@ -579,7 +579,7 @@ class Neo4jChainSightService:
             동기화된 관계 수
         """
         from services.serverless.models import StockRelationship
-        from services.serverless.services.fmp_client import FMPClient
+        from packages.shared.api_request.providers.fmp.serverless_client import FMPClient
 
         if not self.is_available():
             return {"synced": 0, "failed": 0}

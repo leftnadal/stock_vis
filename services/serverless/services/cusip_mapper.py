@@ -420,7 +420,7 @@ class CUSIPMapper:
     def _get_fmp_client(self):
         """Lazy load FMP client"""
         if self._fmp_client is None:
-            from services.serverless.services.fmp_client import FMPClient
+            from packages.shared.api_request.providers.fmp.serverless_client import FMPClient
 
             self._fmp_client = FMPClient()
         return self._fmp_client

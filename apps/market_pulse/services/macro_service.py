@@ -14,8 +14,7 @@ from django.utils import timezone
 
 from apps.market_pulse.constants import calculate_fear_greed_index, get_insight_message
 from packages.shared.api_request.fred_client import FREDClient
-
-from .fmp_client import FMPClient
+from packages.shared.api_request.providers.fmp.market_pulse_client import FMPClient
 
 logger = logging.getLogger(__name__)
 

@@ -255,7 +255,7 @@ class TestFallbackGraph:
         with patch('services.serverless.models.StockRelationship') as mock_model:
             mock_model.objects.filter.return_value.order_by.return_value.__getitem__ = Mock(return_value=[])
 
-            with patch('services.serverless.services.fmp_client.FMPClient') as mock_fmp:
+            with patch('packages.shared.api_request.providers.fmp.serverless_client.FMPClient') as mock_fmp:
                 mock_fmp_instance = Mock()
                 mock_fmp_instance.get_company_profile.return_value = {
                     'companyName': 'Test Company',
@@ -284,7 +284,7 @@ class TestFallbackGraph:
             mock_qs.order_by.return_value.__getitem__ = Mock(return_value=[mock_rel])
             mock_model.objects.filter.return_value = mock_qs
 
-            with patch('services.serverless.services.fmp_client.FMPClient') as mock_fmp:
+            with patch('packages.shared.api_request.providers.fmp.serverless_client.FMPClient') as mock_fmp:
                 mock_fmp_instance = Mock()
                 mock_fmp_instance.get_company_profile.return_value = {
                     'companyName': 'Test Company',

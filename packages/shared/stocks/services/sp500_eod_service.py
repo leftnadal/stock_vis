@@ -14,7 +14,7 @@ from django.db import transaction
 
 from packages.shared.api_request.circuit_breaker import CircuitBreakerError, get_circuit
 from packages.shared.stocks.models import DailyPrice, SP500Constituent, Stock
-from services.serverless.services.fmp_client import FMPAPIError, FMPClient
+from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

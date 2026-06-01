@@ -15,7 +15,7 @@ from django.utils import timezone
 from packages.shared.api_request.circuit_breaker import CircuitBreakerError, get_circuit
 from services.serverless.models import MarketMover
 from services.serverless.services.corporate_action_service import CorporateActionService
-from services.serverless.services.fmp_client import FMPAPIError, FMPClient
+from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError, FMPClient
 from services.serverless.services.indicators import IndicatorCalculator
 
 logger = logging.getLogger(__name__)

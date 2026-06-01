@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 from django.core.cache import cache
 
 from services.serverless.models import ScreenerFilter
-from services.serverless.services.fmp_client import FMPAPIError, FMPClient
+from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError, FMPClient
 
 logger = logging.getLogger(__name__)
 

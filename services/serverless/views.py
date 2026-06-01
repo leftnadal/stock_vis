@@ -609,7 +609,7 @@ def market_breadth_api(request):
 
 def _get_market_indices():
     """주요 시장 지수 데이터 조회 (FMP API)"""
-    from services.serverless.services.fmp_client import FMPClient
+    from packages.shared.api_request.providers.fmp.serverless_client import FMPClient
 
     indices = {}
     index_symbols = {

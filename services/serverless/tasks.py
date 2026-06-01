@@ -10,7 +10,7 @@ from celery import shared_task
 from django.utils import timezone
 
 from services.serverless.services.data_sync import MarketMoversSync
-from services.serverless.services.fmp_client import FMPAPIError
+from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError
 
 logger = logging.getLogger(__name__)
 
@@ -509,7 +509,7 @@ def calculate_daily_market_breadth(self, target_date: str = None):
     """
     from datetime import datetime
 
-    from services.serverless.services.fmp_client import FMPAPIError
+    from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError
     from services.serverless.services.market_breadth_service import MarketBreadthService
 
     try:
@@ -578,7 +578,7 @@ def calculate_daily_sector_heatmap(self, target_date: str = None):
     """
     from datetime import datetime
 
-    from services.serverless.services.fmp_client import FMPAPIError
+    from packages.shared.api_request.providers.fmp.serverless_client import FMPAPIError
     from services.serverless.services.sector_heatmap_service import SectorHeatmapService
 
     try:
