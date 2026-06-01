@@ -285,6 +285,18 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   3. 수동 실행(`task_fn()`) 혹은 `task_fn.delay()`로 즉시 동작 검증
   4. `config/celery.py` 상단 주석에 "이 dict는 reference 용도, 실제 스케줄은 DB" 명시
 - 교훈: **`DatabaseScheduler`를 쓰면 config의 `beat_schedule` dict는 선언적 reference로만 기능**. 스케줄 추가 시 반드시 Django admin 또는 `PeriodicTask.objects.create()`로 DB에 등록해야 실행됨. 코드 리뷰 시 "dict에 추가했으면 됐지" 착각에 주의. `celery -A config beat` 프로세스 자체의 생존 확인도 필요 (`ps aux | grep 'celery.*beat'`)
+- 항구 해결 (2026-06-01, PR8b-2 Track A): **task 이동/리네임 시 `sync_beat_schedule` reconcile 커맨드 + beat 재시작 절차로 표준화**. 일회용 shell one-liner를 더 이상 쓰지 않는다.
+  ```bash
+  # source-of-truth = config/celery.py beat_schedule dict
+  poetry run python manage.py sync_beat_schedule              # dry-run, diff 출력만
+  poetry run python manage.py sync_beat_schedule --apply      # 실제 DB UPDATE (task 컬럼만)
+  poetry run python manage.py sync_beat_schedule              # 0 rows (idempotent 검증)
+  # 운영에서는 위 절차 후 반드시 celery beat 재시작 (스케줄러 캐시 갱신)
+  brew services restart celery-beat   # 또는 systemd: systemctl restart celery-beat
+  ```
+  - 위치: `apps/market_pulse/management/commands/sync_beat_schedule.py`. 테스트: `tests/marketpulse/test_sync_beat_schedule.py` 4건 (dry-run / apply+idempotent / extra-db 보존 / missing-db 경고).
+  - 정책: schedule/crontab/enabled 등 다른 필드는 안 건드림. **task 경로 컬럼만 reconcile**. dict 부재 name 은 보존(extra 정보 출력). dict 에 있지만 DB 부재 name 은 경고만(생성 안 함).
+  - 첫 적용 (2026-06-01 dev): 누적 75 row reconcile (macro 5 + serverless / news / chainsight / stocks / validation / sec_pipeline 70). monorepo PR4~PR8a 누적 드리프트가 한 번에 정리됨. 운영 DB 적용은 **사용자 트리거** (`--dry-run` 확인 → `--apply` → beat 재시작).
 
 ## `timezone.now().date()`가 KST 자정~오전 9시에 잘못된 날짜 반환 (#29)
 
