@@ -454,7 +454,7 @@ _BOUNDARY_FORBIDDEN_SEGMENTS = ("apps", "macro")
 
 _BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     # #1·#2: 2026-06-01 BOUNDARY-1 청소 완료 (circuit_breaker → shared)
-    ("metrics/services/daily_report.py", "apps.chain_sight.models"),
+    # #3: 2026-06-01 BOUNDARY-2 청소 완료 (daily_report → apps.get_model 동적 lookup)
     ("stocks/services/eod_regime_calculator.py", "macro.models"),
     ("stocks/services/eod_pipeline.py", "macro.models"),
 }

@@ -28,7 +28,8 @@ FORBIDDEN_TOP_SEGMENTS = ("apps", "macro")
 KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     # #1·#2 (sp500_eod_service, sp500_service → circuit_breaker): 2026-06-01 BOUNDARY-1 청소
     # 완료 (circuit_breaker → packages/shared/api_request 이동, 이제 shared→shared).
-    ("metrics/services/daily_report.py", "apps.chain_sight.models"),
+    # #3 (daily_report → apps.chain_sight.models): 2026-06-01 BOUNDARY-2 청소 완료
+    # (Django apps.get_model 동적 lookup으로 변환, cross-app aggregator 표준 패턴).
     ("stocks/services/eod_regime_calculator.py", "macro.models"),
     ("stocks/services/eod_pipeline.py", "macro.models"),
 }

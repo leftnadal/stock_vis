@@ -239,9 +239,15 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
 
 def collect_coverage_gaps() -> Dict[str, Any]:
     """현재 그래프 외에 새로 추가할 수 있는 노드 후보."""
-    from apps.chain_sight.models import CompanyChainProfile
+    # CompanyChainProfile은 chain_sight 앱 모델 — shared 단방향 경계 때문에
+    # 정적 import 금지. cross-app aggregator에서는 Django app registry로
+    # 동적 lookup하는 게 공식 패턴 (boundary 가드와 정합).
+    from django.apps import apps as django_apps
+
     from packages.shared.stocks.models import Stock
     from services.sec_pipeline.models import UnmatchedCompanyQueue
+
+    CompanyChainProfile = django_apps.get_model("chainsight", "CompanyChainProfile")
 
     drv = _neo4j_session()
     try:
