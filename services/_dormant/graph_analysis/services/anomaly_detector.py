@@ -10,7 +10,7 @@ from typing import List, Optional
 
 from django.db import transaction
 from django.utils import timezone
-from graph_analysis.models import (
+from services._dormant.graph_analysis.models import (
     CorrelationAnomaly,
     CorrelationEdge,
     GraphMetadata,

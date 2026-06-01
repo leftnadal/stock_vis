@@ -13,7 +13,7 @@ import networkx as nx
 import pandas as pd
 from django.db import transaction
 from django.utils import timezone
-from graph_analysis.models import (
+from services._dormant.graph_analysis.models import (
     CorrelationEdge,
     CorrelationMatrix,
     GraphMetadata,
