@@ -36,7 +36,7 @@ urlpatterns = [
     path('api/v1/users/', include("packages.shared.users.urls")),
     path('api/v1/stocks/', include("packages.shared.stocks.urls")),
     path('api/v1/news/', include("services.news.api.urls")),
-    path('api/v1/macro/', include("macro.urls")),  # 거시경제 대시보드
+    path('api/v1/macro/', include("apps.market_pulse.urls")),  # 거시경제 대시보드 (PR8b-1: macro entry → market_pulse, URL prefix 유지)
     path('api/v1/rag/', include("services.rag_analysis.urls")),  # RAG 분석
     path('api/v1/serverless/', include("services.serverless.urls")),  # Market Movers (AWS 전환 대상)
     path('api/v1/thesis/', include("thesis.urls")),  # Thesis Control (가설 통제실)
