@@ -18,7 +18,9 @@
 
 > ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실.
 >
-> ✅ **2026-06-01 monorepo 8 PR 시리즈 완주 push**: `61b1d97..bb08d98 main -> main` (15 commits — shared 경계 검문소 + PR8b-1/8b-2/8b-3 + PR8c). **현재 `origin/main = bb08d98`**.
+> ✅ **2026-06-01 monorepo 8 PR 시리즈 완주 push**: `61b1d97..bb08d98 main -> main` (15 commits — shared 경계 검문소 + PR8b-1/8b-2/8b-3 + PR8c).
+>
+> ✅ **2026-06-01 버킷 A·B push**: `b8f3d00..cd7e486 main -> main` (5 commits — 버킷A circuit_breaker 승격 + FMP namespace 통합 + 버킷B BOUNDARY-2 chain_sight 의존 청소). 동결 5→2. **현재 `origin/main = cd7e486`**.
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
