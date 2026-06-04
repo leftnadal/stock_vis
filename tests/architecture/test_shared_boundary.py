@@ -25,14 +25,13 @@ FORBIDDEN_TOP_SEGMENTS = ("apps", "macro")
 
 # 키 = (packages/shared 기준 상대경로 POSIX, import된 module 문자열)
 # 라인번호는 키에 포함하지 않는다 — 드리프트로 깨지기 때문.
-KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    # #1·#2 (sp500_eod_service, sp500_service → circuit_breaker): 2026-06-01 BOUNDARY-1 청소
-    # 완료 (circuit_breaker → packages/shared/api_request 이동, 이제 shared→shared).
-    # #3 (daily_report → apps.chain_sight.models): 2026-06-01 BOUNDARY-2 청소 완료
-    # (Django apps.get_model 동적 lookup으로 변환, cross-app aggregator 표준 패턴).
-    ("stocks/services/eod_regime_calculator.py", "macro.models"),
-    ("stocks/services/eod_pipeline.py", "macro.models"),
-}
+# #1·#2 (sp500_eod_service, sp500_service → circuit_breaker): 2026-06-01 BOUNDARY-1 청소
+# 완료 (circuit_breaker → packages/shared/api_request 이동, 이제 shared→shared).
+# #3 (daily_report → apps.chain_sight.models): 2026-06-01 BOUNDARY-2 청소 완료
+# (Django apps.get_model 동적 lookup으로 변환, cross-app aggregator 표준 패턴).
+# #4·#5 (eod_regime_calculator, eod_pipeline → macro.models): 2026-06-04 BOUNDARY-3 청소
+# 완료 (VIXProvider 포트 + apps.market_pulse 등록 패턴, 의존 역전).
+KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 
 def _is_forbidden(module: str) -> bool:

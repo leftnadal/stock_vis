@@ -610,28 +610,15 @@ class EODPipeline:
 
     def _get_vix_value(self, target_date: date) -> float:
         """
-        macro.MarketIndexPrice에서 VIX 값을 반환합니다.
+        VIXProvider에서 VIX 값을 반환합니다.
         없으면 20.0 기본값.
         """
         try:
-            from macro.models import MarketIndex, MarketIndexPrice
+            from packages.shared.stocks.services.vix_provider import get_vix_provider
 
-            vix_index = MarketIndex.objects.filter(
-                symbol__in=["VIX", "^VIX", "VIXX"],
-                category="volatility",
-            ).first()
-            if vix_index:
-                price = (
-                    MarketIndexPrice.objects.filter(
-                        index=vix_index,
-                        date__lte=target_date,
-                    )
-                    .order_by("-date")
-                    .values_list("close", flat=True)
-                    .first()
-                )
-                if price is not None:
-                    return float(price)
+            value = get_vix_provider().get_latest_vix(target_date)
+            if value is not None:
+                return value
         except Exception as e:
             logger.warning(f"[EODPipeline] VIX 조회 실패: {e}")
         return 20.0

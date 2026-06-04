@@ -452,12 +452,10 @@ def check_slice_branches_unmerged() -> CheckResult:
 
 _BOUNDARY_FORBIDDEN_SEGMENTS = ("apps", "macro")
 
-_BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    # #1·#2: 2026-06-01 BOUNDARY-1 청소 완료 (circuit_breaker → shared)
-    # #3: 2026-06-01 BOUNDARY-2 청소 완료 (daily_report → apps.get_model 동적 lookup)
-    ("stocks/services/eod_regime_calculator.py", "macro.models"),
-    ("stocks/services/eod_pipeline.py", "macro.models"),
-}
+# #1·#2: 2026-06-01 BOUNDARY-1 청소 완료 (circuit_breaker → shared)
+# #3: 2026-06-01 BOUNDARY-2 청소 완료 (daily_report → apps.get_model 동적 lookup)
+# #4·#5: 2026-06-04 BOUNDARY-3 청소 완료 (eod_* → VIXProvider 의존 역전 + 등록 패턴)
+_BOUNDARY_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 
 def _boundary_is_forbidden(module: str) -> bool:
