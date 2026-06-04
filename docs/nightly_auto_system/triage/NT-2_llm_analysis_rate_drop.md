@@ -267,3 +267,69 @@ print(f'분석률: {qs.filter(llm_analyzed=True).count() / max(qs.count(), 1) * 
 
 - NT-2 상태: `라우팅됨` → **`승인 대기`**. 좀비 워커 종료 + launchd 재기동 명시 승인이 필요. 사용자가 위 명령을 직접 실행하거나, ops에 자동 실행 권한을 부여한 후 재시도.
 - 메모리 lesson `lesson_celery_task_registration.md` 갱신 권장: monorepo 재배치(폴더 이동)도 import 경로 변경에 해당 → 워커 재시작 필수 케이스에 추가.
+
+---
+
+## 조치 실행 + 후속 발견 (2026-06-04 16:17 KST)
+
+사용자 명시 승인 받아 3단 실행 완료.
+
+### 1단: 좀비 워커 종료 ✅
+- `kill -TERM 56586 91784` → 둘 다 5초 내 정상 종료.
+
+### 2단: launchd 워커 재기동 ✅
+- `launchctl kickstart -k gui/$UID/com.stockvis.celery-worker`
+- 신규 워커 PID 17499 (16:17 시작, `--concurrency=4`, plist 명령어 매칭).
+- `celery inspect ping` → **2 nodes online** (celery + neo4j), DuplicateNodenameWarning 사라짐.
+
+### 3단: 수동 트리거 + 검증
+- `analyze_news_deep.delay(max_articles=20)` 큐 전송.
+- 워커 로그: `Task services.news.tasks.analyze_news_deep[2023e8ec-...] received` → `succeeded in 0.08s: {'analyzed': 0, 'errors': 0, 'skipped': 20}`.
+- ✅ **import 경로 미스매치 완전 해소** — 새 경로(`services.news.tasks.*`)로 정상 수신.
+- 🟡 **단 20건 모두 skipped** (analyzed=0). 비즈니스 룰 차단.
+
+### Skip 원인 분석 → 임계 설계 결과
+
+`NewsDeepAnalyzer.analyze_batch` 로직 (services/news/services/news_deep_analyzer.py:57~107):
+```python
+articles = NewsArticle.objects.filter(
+    published_at__gte=start_of_day,   # 오늘 KST 00:00 이후
+    importance_score__isnull=False,
+    llm_analyzed=False,
+).order_by("-importance_score")[:max_articles]
+
+for article in articles:
+    tier = self._determine_tier(article.importance_score)   # >= 0.7 / 0.85 / 0.93
+    if tier is None: skipped += 1; continue
+    ...
+```
+
+오늘(6/4 KST 00:00 ~ 16:21) 신규 34건 실측:
+- importance_score 채워진 것: 20건
+- `>= 0.7` (Tier A 임계): **0건** → 20건 전부 skip
+- importance_score null: 14건 (별도 문제 — ML/규칙 엔진 미채움)
+- 상위 점수: 0.597 / 0.580 / 0.561 ... → 모두 0.7 미만
+
+어제(24~48h) 분포 비교:
+- `>= 0.7`: 3건 (= 어제 LLM 분석된 3건과 정확 일치)
+- `>= 0.5`: 41건
+- `>= 0.3`: 98건
+- null: 236건
+
+### 결론 — Import 미스매치는 해결, 진짜 문제 2건 분리
+
+1. **ROOT CAUSE (import 미스매치) 완전 해결** ✅. NT-2 자체는 성공 종결.
+2. **분석률 "1%"는 사실상 정상**: 시스템은 *"importance_score >= 0.7" 한정 deep 분석* 설계. Daily Report의 "24h 신규 ÷ LLM 분석" 비율 계산은 분모/분자 정의 불일치 → 보고서 지표 자체가 오해를 유발. 보고서 측 보정 권장(별도 트랙).
+3. **NT-2b 후속 (코드 트랙, app:news 핸드오프)**:
+   - Tier A 임계 0.7이 너무 빡빡 (어제 349건 중 3건만 통과 = 0.86%). 0.5 또는 0.55로 낮추면 일일 40건대 분석 가능.
+   - importance_score null이 오늘 14/34 = 41% (어제 236/349 = 68%) → ML/규칙 엔진이 score 채움률 저조. 별도 진단 필요.
+4. **잔여 unregistered task**:
+   - 워커 에러 로그에 `services.news.tasks.check_pipeline_alerts` (15:30), `services.sec_pipeline.tasks.sync_dirty_to_neo4j` (16:00) — **재기동(16:17) 이전 시점**. 재기동 후 재발 여부는 다음 Beat 회차 후 확인.
+
+### 최종 상태
+
+- **NT-2 ROOT CAUSE**: ✅ 해결 (import 미스매치).
+- **NT-2b (코드 트랙)**: 신규 등록 — Tier 임계 + importance_score null률, app:news 핸드오프.
+- **NT-8 (신규)**: Daily Report 분석률 지표 정의 불일치 → 보고서 본문 생성 측 보정(사용자 손 또는 ops).
+- **NT-7 (별도)**: market pulse FileNotFoundError, 이미 등록됨.
+- **메모리 lesson 갱신**: `lesson_celery_task_registration.md`에 "monorepo 재배치 후 워커 재기동 누락" 케이스 추가 (Phase 1 사건과 같은 패턴 재발 — 2026-05-28 monorepo + 2026-06-04 사건).
