@@ -2,19 +2,57 @@
 DynamicRegimeCalculator 단위 테스트
 
 Z-score 기반 VIX 레짐 판별 + 상대값 하한선(rolling_mean 배수) + Redis 캐싱 검증.
+
+BOUNDARY-3(2026-06-04) 이후: VIX 데이터 공급은 VIXProvider 포트 의존성으로 전환.
+기존 `macro.models.*.objects` mock은 fake provider 등록으로 동등 전환.
 """
 
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
+from packages.shared.stocks.services import vix_provider as vp
 from packages.shared.stocks.services.eod_regime_calculator import (
     ABSOLUTE_FALLBACK,
     RELATIVE_FLOOR,
     DynamicRegimeCalculator,
 )
+from packages.shared.stocks.services.vix_provider import (
+    VIXProvider,
+    register_vix_provider,
+)
+
+
+class _FakeVIXProvider(VIXProvider):
+    """테스트용 fake — 미리 정해둔 series를 반환.
+
+    series가 None이면 빈 리스트(=vix_index 없음과 동등 — _calculate_regime 첫 분기에서 'normal').
+    """
+
+    def __init__(self, series=None, latest=None):
+        self._series = list(series) if series is not None else []
+        self._latest = latest
+
+    def get_latest_vix(self, target_date):
+        return self._latest
+
+    def get_vix_series(self, date_from, date_to):
+        return list(self._series)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_provider():
+    """각 테스트 사이 모듈 전역 _provider 격리."""
+    original = vp._provider
+    vp._provider = None
+    yield
+    vp._provider = original
+
+
+def _register_series(prices):
+    register_vix_provider(_FakeVIXProvider(series=prices))
 
 
 class TestDynamicRegimeCalculatorZScore:
@@ -38,14 +76,9 @@ class TestDynamicRegimeCalculatorZScore:
         normal_prices = [Decimal('16')] * 59
         spike_price = [Decimal('35')]
         prices = normal_prices + spike_price
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'high_vol'
 
@@ -64,14 +97,9 @@ class TestDynamicRegimeCalculatorZScore:
         base_prices = np.random.normal(18, 2, 59)
         base_prices = np.clip(base_prices, 10, 30)
         prices = [Decimal(str(round(p, 2))) for p in base_prices] + [Decimal('22')]
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result in ('elevated', 'normal', 'high_vol')
         # z 정확도보다 분기 통과를 검증
@@ -87,14 +115,9 @@ class TestDynamicRegimeCalculatorZScore:
 
         # VIX가 15~16 범위에서 안정적
         prices = [Decimal('15.5')] * 60
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         # std ≈ 0 → absolute_fallback → normal (15.5 < 25)
         assert result == 'normal'
@@ -114,14 +137,9 @@ class TestDynamicRegimeCalculatorRelativeFloor:
 
         # VIX 평균 ~14, 현재 40 → mean_ratio ≈ 2.86 (>= 2.5)
         prices = [Decimal('14')] * 59 + [Decimal('40')]
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'high_vol'
 
@@ -137,14 +155,9 @@ class TestDynamicRegimeCalculatorRelativeFloor:
         # VIX 평균 ~15, 현재 24 → mean_ratio ≈ 1.6 (>= 1.5)
         # z도 높을 것이므로 elevated 이상 확정
         prices = [Decimal('15')] * 59 + [Decimal('24')]
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result in ('elevated', 'high_vol')
 
@@ -160,14 +173,9 @@ class TestDynamicRegimeCalculatorRelativeFloor:
         # VIX 32 유지 중 36으로 급등 → mean_ratio = 36/32.07 ≈ 1.12 (< 1.5)
         # z = (36 - 32.07) / ~0.52 ≈ 7.6 → z >= 2.0 → high_vol
         prices = [Decimal('32')] * 59 + [Decimal('36')]
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'high_vol'
 
@@ -182,14 +190,9 @@ class TestDynamicRegimeCalculatorRelativeFloor:
 
         # VIX 26 안정 → std ≈ 0 → _absolute_fallback(26) → 26 >= 25 → elevated
         prices = [Decimal('26')] * 60
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'elevated'
 
@@ -200,13 +203,13 @@ class TestDynamicRegimeCalculatorFallback:
     @pytest.mark.django_db
     @patch('packages.shared.stocks.services.eod_regime_calculator.cache')
     def test_no_vix_index(self, mock_cache):
-        """VIX 인덱스 없음 → 'normal'."""
+        """VIX 인덱스 없음(provider가 빈 series 반환) → 'normal'."""
         mock_cache.get.return_value = None
 
         calc = DynamicRegimeCalculator()
-        with patch('macro.models.MarketIndex.objects') as mock_mi:
-            mock_mi.filter.return_value.first.return_value = None
-            result = calc._calculate_regime(date(2026, 3, 3))
+        _register_series([])
+
+        result = calc._calculate_regime(date(2026, 3, 3))
 
         assert result == 'normal'
 
@@ -221,14 +224,9 @@ class TestDynamicRegimeCalculatorFallback:
 
         # 데이터 10개만 (< 20)
         prices = [Decimal('15')] * 10
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'normal'  # VIX 15 < 25
 
@@ -242,14 +240,9 @@ class TestDynamicRegimeCalculatorFallback:
         target = date(2026, 3, 3)
 
         prices = [Decimal('36')] * 10
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         assert result == 'high_vol'
 
@@ -302,14 +295,9 @@ class TestDynamicRegimeCalculatorLookbackSlicing:
 
         # 63개 데이터: 처음 3개는 VIX 50 (극단), 마지막 60개는 VIX 15
         prices = [Decimal('50')] * 3 + [Decimal('15')] * 60
+        _register_series(prices)
 
-        mock_index = MagicMock()
-        with patch('macro.models.MarketIndex.objects') as mock_mi, \
-             patch('macro.models.MarketIndexPrice.objects') as mock_mip:
-            mock_mi.filter.return_value.first.return_value = mock_index
-            mock_mip.filter.return_value.order_by.return_value.values_list.return_value = prices
-
-            result = calc._calculate_regime(target)
+        result = calc._calculate_regime(target)
 
         # VIX 15 안정적 → std ≈ 0 → fallback → normal (15 < 25)
         assert result == 'normal'

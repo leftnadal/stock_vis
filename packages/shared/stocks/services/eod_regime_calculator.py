@@ -74,32 +74,19 @@ class DynamicRegimeCalculator:
     def _calculate_regime(self, target_date: date) -> str:
         """Z-score + 상대값 하한선 기반 레짐 계산."""
         try:
-            from macro.models import MarketIndex, MarketIndexPrice
-
-            vix_index = MarketIndex.objects.filter(
-                symbol__in=["VIX", "^VIX", "VIXX"],
-                category="volatility",
-            ).first()
-
-            if not vix_index:
-                logger.warning(
-                    "[DynamicRegimeCalculator] VIX 인덱스 없음, 'normal' 반환"
-                )
-                return "normal"
+            from packages.shared.stocks.services.vix_provider import get_vix_provider
 
             # lookback_days 거래일 ≈ 캘린더 기준 약 1.5배
             calendar_lookback = int(self.lookback_days * 1.5)
             cutoff_date = target_date - timedelta(days=calendar_lookback)
 
-            prices = list(
-                MarketIndexPrice.objects.filter(
-                    index=vix_index,
-                    date__gt=cutoff_date,
-                    date__lte=target_date,
+            prices = get_vix_provider().get_vix_series(cutoff_date, target_date)
+
+            if not prices:
+                logger.warning(
+                    "[DynamicRegimeCalculator] VIX 인덱스 없음, 'normal' 반환"
                 )
-                .order_by("date")
-                .values_list("close", flat=True)
-            )
+                return "normal"
 
             if len(prices) < self.min_data_points:
                 logger.warning(
