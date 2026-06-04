@@ -22,13 +22,16 @@
 >
 > ✅ **2026-06-01 버킷 A·B push**: `b8f3d00..cd7e486 main -> main` (5 commits — 버킷A circuit_breaker 승격 + FMP namespace 통합 + 버킷B BOUNDARY-2 chain_sight 의존 청소). 동결 5→2.
 >
-> ✅ **2026-06-01 세션 계약서 push**: `90df136..4df5fd7 main -> main` (1 commit — 소프트 강제 worktree + 계약 헤더 + 1차 소스 체인 연결). **현재 `origin/main = 4df5fd7`**.
+> ✅ **2026-06-01 세션 계약서 push**: `90df136..4df5fd7 main -> main` (1 commit — 소프트 강제 worktree + 계약 헤더 + 1차 소스 체인 연결).
+>
+> ✅ **2026-06-04 BOUNDARY-3 push + main 머지**: `monorepo/sess-market_pulse` 4 슬라이스 [33e5437..662fdc4] → merge `a9bb229`. **현재 `origin/main = a9bb229`** (BOUNDARY-3 머지 시점, 메타 갱신 기준). shared 경계 부채 전건 청소 — burn-down 2→0, 트랙 전체 종결. 방식: 의존 역전 + 등록 패턴(`VIXProvider` 포트 + `MacroVIXProvider` + `apps.ready()` 레지스트리). 모델 이동 0, 회귀 302 GREEN.
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
 | 브랜치 | HEAD | 비고 |
 |--------|------|------|
-| `main` / `origin/main` | `6b3e6c8` (2026-05-28) | slice17 머지 + PROGRESS·DECISIONS·SR 종료 정착 |
+| `main` / `origin/main` | `a9bb229` (2026-06-04) | BOUNDARY-3 머지 — shared 경계 부채 5→0 종결. *이후 NT 트리아지 commit이 누적 중이라 본 표 칸은 빠르게 stale될 수 있음 — health_check가 검사하는 칸은 본 표가 아니라 위 ⚙️ 활성 작업 블록의 `origin/main = <hash>` 패턴이며, 그 패턴은 N=3 tolerance로 통과.* |
+| `monorepo/sess-market_pulse` | `662fdc4` (2026-06-04) | BOUNDARY-3 슬라이스 4건. main 머지 완료 — worktree(`../stock_vis_market_pulse`)는 다음 세션에서 정리(`git worktree remove` + 브랜치 정리 가능) |
 | `iron-trading-api` | `9ca8b47` | 1 commit 선행 (Codex 핸드오프 문서), 활성 트랙 — 별도 결정 대기 |
 | `test/sec-pipeline-tests` | `e12c71a` (5/18) | sec_pipeline 미흡수 단위 테스트 1건 — main 흡수 검증 보류 |
 | `test/sec-pipeline-tests-20260519` | `ac588d3` (5/19) | sec_pipeline 미흡수 단위 테스트 1건 (별도 파일) — main 흡수 검증 보류 |
@@ -40,6 +43,7 @@
 
 | Feature | Agent | Status | Blocker | Last Updated |
 |---------|-------|--------|---------|--------------|
+| ~~**BOUNDARY-3 (#4·#5 macro.models)**~~ | @backend (메인 세션) | **완료 (2026-06-04, `a9bb229`)** — 방향2(의존 역전 + 등록 패턴) 채택. `VIXProvider` 포트 + `MacroVIXProvider` + `apps.ready()` 레지스트리. 모델 이동 0, 회귀 302 GREEN, frozen 0. **"shared 경계 부채 소진" 트랙 전체 종결**(5→0). | — | 2026-06-04 |
 | **Slice 18 진입점 미정** | TBD | 결정 필요 — 후보 7건 (PS 가중합) | brunch 정리 vs Slice 18 진입 vs monorepo 재배치 우선순위 결정 | 2026-05-28 |
 | ~~**slice17 → origin/main 머지**~~ | orchestrator | **완료 (2026-05-28)** — 옵션 A direct merge, `3e76bc8..2fc95fe` push, 148 commits, 회귀 0, origin/main 잠복 회귀 1건 함께 fix | — | 2026-05-28 |
 | **PROGRESS·TASKQUEUE·메모리 정합성 보정** | orchestrator | 정합성 점검 결과 박는 중 (본 문서 + DECISIONS + scripts/health_check + common-bugs) | (없음 — 본 작업으로 처리) | 2026-05-28 |

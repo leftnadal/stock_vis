@@ -1146,6 +1146,38 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 
 **검증**: pytest 3179/52 (회귀 0), 경계 GREEN (우회 0 / 동결 잔여 2), health 8✅/0⚠/0❌.
 
+### BOUNDARY-3 — #4·#5 macro.models 청소: 의존 역전 + 등록 패턴 (방향2) (2026-06-04)
+
+**결정**: `packages/shared/stocks/services/{eod_pipeline.py:617, eod_regime_calculator.py:77}`의 `from macro.models import MarketIndex, MarketIndexPrice` lazy import 2건을 **의존 역전 + 등록 패턴(방향2)** 으로 청소한다. 모델 이동·소비자 이동 모두 채택하지 않는다.
+
+**구조**:
+1. shared 측: `packages/shared/stocks/services/vix_provider.py` 신설 — `VIXProvider(ABC)` 포트(`get_latest_vix` / `get_vix_series`) + 모듈 전역 `register_vix_provider` / `get_vix_provider` 레지스트리 + `VIXProviderNotRegistered` 명시 예외. shared 코드는 구현 클래스를 import하지 않는다(주석/예외 메시지의 문자열 언급은 ast 검사 비대상).
+2. app 측: `apps/market_pulse/services/macro_vix_provider.py` — `MacroVIXProvider(VIXProvider)` 가 macro.MarketIndex/MarketIndexPrice 쿼리(symbol VIX/^VIX/VIXX + category volatility + close)를 그대로 수행.
+3. 등록: `apps/market_pulse/apps.py::MarketpulseConfig.ready()` 에서 `register_vix_provider(MacroVIXProvider())`. idempotent.
+4. 호출: shared `_get_vix_value` / `_calculate_regime` 가 `get_vix_provider()`만 알면 됨.
+
+**Why (가중합 채점: 방향2 = 4.65 vs 방향1 = 2.45 vs C = 2.35, 마진 2.20)**:
+- (a) shared 내부 역의존 3건(`stocks/tasks.py:596`, `mgmt/pipeline_status.py:37`, `stocks/services/eod_signal_calculator.py:184`) 동반 이동 회피. 방향1은 EOD 스택 전체 이동을 강제했음.
+- (b) 모델 이동/마이그레이션 회피. PR8b-3 결정 "macro=영구 모델앱"과 정합. C는 prod DB 마이그레이션 발생.
+- (c) 포트 표면 최소(VIX 1종) — 새 추상화 비용 < 다른 옵션의 이동 비용.
+- (d) 행위보존: 쿼리·반환 타입·float 변환 시점까지 동치. provider는 쿼리 직후 형태만 반환, float 변환은 호출자 numpy 진입 직전(`[float(p) for p in prices]`)에서 그대로 수행.
+
+**How to apply** (재발 방지 패턴):
+- shared가 app 모델을 lazy로 가리키는 새 위반이 발견되면 → 우선 "포트 + apps.ready() 등록"을 후보 1로. 모델 이동은 prod 영향이 있어 마지막 카드.
+- shared 코드 어디에도 `apps.*` / `macro.*` 가 import 노드로 나타나면 안 됨(주석/문자열은 OK, ast 검사 무관). 검문소 = `tests/architecture/test_shared_boundary.py`.
+
+**검증**:
+- pytest tests/architecture: **3 passed** (frozen=0 / bypass=0).
+- pytest stocks/shared/macro/marketpulse/architecture: **302 passed**.
+- `manage.py makemigrations --check --dry-run` (settings_test): **No changes detected**.
+- health_check shared 경계: **✅ 우회 0 / 동결 잔여 0**.
+
+**구현**: 머지 커밋 `a9bb229` (2026-06-04), 슬라이스 4건 `[33e5437, 7b6572f, 73861d4, 662fdc4]`, 브랜치 `monorepo/sess-market_pulse`.
+
+**트랙 종결**: BOUNDARY-3 close = **"shared 경계 부채 소진" 트랙 전체 종결**. burn-down 5→3→2→**0**.
+
+**📎 참조**: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `sub_claude_md/common-bugs.md` "shared 역방향 import 5건 — 전건 청소 완료(#31, 2026-06-04 종결)", TASKQUEUE.md `BOUNDARY-3`.
+
 ### NT-6 (뉴스 커버 9.5%) 보류 — NT-2 의존 (2026-06-04)
 
 **결정**: TASKQUEUE NT-6(24h 뉴스 커버 51/535=9.5% → 수집 확장)을 **보류**한다. 재개 트리거 = **NT-2(LLM 분석률 1%) 회복 확인 후**.
@@ -1210,3 +1242,31 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 헌장: `docs/harness/SESSION_CONTRACT.md` (§A~§G)
 - 실행 진입: `docs/harness/SESSION_STARTUP_CHECKLIST.md` (Step 0~3)
 - 1차 소스: `CLAUDE.md "Session Lifecycle"` 참조 한 줄
+
+---
+
+### iron-trading 출구 엔드포인트 STEP 0 발견 — 이미 main 라이브 (2026-06-04)
+
+> 입력: `docs/trading_bot_api/api_decision_handoff.md` §2-A. 본 결정은 stock_vis 소유 항목만 기록 — verify-first 가중합 결정·데이터 현실 3종·소비자 구현 지시서는 iron_trading 소유(별도 repo 기록).
+
+**발견 (STEP 0)**: `GET /api/v1/iron-trading/daily-context`는 이미 `main`에 구현·라이브 상태다.
+- 라우팅: `config/urls.py:46` → `include("integrations.iron_trading.urls")`
+- 구현 본체: `integrations/iron_trading/views.py` (DRF `APIView`, `AllowAny`) + `integrations/iron_trading/services/{daily_context.py, signals.py, market_pulse.py}`
+- 머지 흐름: 최초 commit `82aa9b4` (`feat(iron-trading): read-only /api/v1/iron-trading/daily-context`) → monorepo PR3에서 `iron_trading/` → `integrations/iron_trading/`로 이동 (`7171f83`, `6cf961a`) → 현재 main HEAD `16ced49`.
+- 따라서 다음 단계는 "stock_vis에 엔드포인트 추가"가 아니라 "iron_trading 소비자 구현"이다(소비자 구현은 별 repo, 본 결정 범위 밖).
+
+**방침 정합**: `integrations/` 네임스페이스에 가산형(additive) read-only 출구를 둔 것은 기존 방침 "stock_vis 코드 수정 안 함(기존 백엔드 리팩토링 금지)"과 충돌하지 않는다.
+- 두 프로젝트는 여전히 코드·DB·ORM·마이그레이션·import를 공유하지 않고 HTTP로만 연계한다.
+- `integrations/iron_trading/services/daily_context.py`의 의존은 단방향(`packages.shared.stocks.models` + `apps.market_pulse.models.regime` + `apps.chain_sight.models.narrative_tag`)이며 어떤 app/service도 이 출구를 import하지 않는다(외부 출구만).
+
+**Why**:
+- 메모리/인지와 코드 상태의 불일치를 STEP 0가 잡았다 — 메모리는 PROGRESS의 캐시이지 진실의 소스가 아님(2026-05-28 정합성 점검 원칙과 동일 패턴).
+- 가산형 출구가 기존 방침에 위배되는지가 후속 작업 결정에 직접 영향(엔드포인트 폐기·이전·중단을 강제하면 안 됨)이라 결정 본문에 박는다.
+- verify-first/데이터 현실 3종/소비자 구현 결정을 본 repo에 기록하면 iron_trading repo와 평행 출처가 생긴다 — `api_decision_handoff.md §0-2/§0-3`이 명시적으로 금지.
+
+**How to apply**:
+- 본 출구를 폐기·이전 후보로 보지 않는다. 단, 봇 측 요구가 보강을 부르면 보강 항목으로 처리(`TASKQUEUE.md`의 "Iron Trading 출구 (integrations/iron_trading)" 트랙 보류 항목 참조).
+- `handoff_codex.md`가 박은 옛 경로(`iron_trading/`)와 옛 commit(`8c21a52`)은 휘발성이라 stale — 정리 작업은 `TASKQUEUE.md`에 등록(즉시 처리 아님, 수정 전 STEP 0로 실제 경로 재확인).
+- 다음 검증 세션은 read-only 라이브 검증(서버 기동 + 200 응답 1개) 범위로 한정.
+
+**관련 입력 문서**: `docs/trading_bot_api/api_decision_handoff.md` (단일 입력, 본 결정 기록 후 archive 또는 정리 대상 — 평행 출처 방지).

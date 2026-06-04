@@ -21,17 +21,17 @@
    - 일상 점검에서 우회 발생을 보조 추적.
    - 야간(`run_health_check_nightly.sh`)이 `--ledger`로 호출 → `docs/harness/boundary_ledger.jsonl`에 burn-down 기록.
 
-## 동결 (KNOWN_VIOLATIONS — 묵은 부채 5건)
+## 동결 (KNOWN_VIOLATIONS — 묵은 부채 5건, **전건 청소 완료**)
 
 | # | 파일 (packages/shared/ 기준) | import module | 형태 | 청소 PR |
 |---|---|---|---|---|
 | ~~1~~ | ~~`stocks/services/sp500_eod_service.py`~~ | ~~`apps.market_pulse.utils.circuit_breaker`~~ | ~~top-level~~ | **CLOSE 2026-06-01 BOUNDARY-1**: circuit_breaker → `packages/shared/api_request/` 승격, shared→shared로 정합 |
 | ~~2~~ | ~~`stocks/services/sp500_service.py`~~ | ~~`apps.market_pulse.utils.circuit_breaker`~~ | ~~top-level~~ | **CLOSE 2026-06-01 BOUNDARY-1**: 동 |
 | ~~3~~ | ~~`metrics/services/daily_report.py`~~ | ~~`apps.chain_sight.models`~~ | ~~lazy~~ | **CLOSE 2026-06-01 BOUNDARY-2**: `apps.get_model("chainsight", "CompanyChainProfile")` 동적 lookup (cross-app aggregator 표준) |
-| 4 | `stocks/services/eod_regime_calculator.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
-| 5 | `stocks/services/eod_pipeline.py` | `macro.models` | lazy | TASKQUEUE: BOUNDARY-3 (소비자 이동/방향1, 모델 이동 아님) |
+| ~~4~~ | ~~`stocks/services/eod_regime_calculator.py`~~ | ~~`macro.models`~~ | ~~lazy~~ | **CLOSE 2026-06-04 BOUNDARY-3**: VIXProvider 포트 + `apps.market_pulse.services.MacroVIXProvider` + `apps.ready()` 등록 패턴(의존 역전, 방향2). 모델 이동 0 |
+| ~~5~~ | ~~`stocks/services/eod_pipeline.py`~~ | ~~`macro.models`~~ | ~~lazy~~ | **CLOSE 2026-06-04 BOUNDARY-3**: 동 |
 
-**burn-down**: 5(2026-06-01 STEP 0 초기) → 3(BOUNDARY-1 close) → **2** (2026-06-01 BOUNDARY-2 close). 잔여 = #4·#5.
+**burn-down**: 5(2026-06-01 STEP 0 초기) → 3(BOUNDARY-1 close) → 2(2026-06-01 BOUNDARY-2 close) → **0** (2026-06-04 BOUNDARY-3 close). 잔여 = 0. **shared 경계 부채 소진 트랙 전체 종결**.
 
 **SSOT**: `tests/architecture/test_shared_boundary.py:KNOWN_VIOLATIONS`.
 `scripts/health_check.py:_BOUNDARY_KNOWN_VIOLATIONS`는 동기 복사본 — 양쪽을 같이 갱신해야 함(감시 장치는 작아서 중복 허용).
