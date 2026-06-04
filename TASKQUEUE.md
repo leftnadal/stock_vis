@@ -62,12 +62,12 @@
 
 | ID | 등록일 | 출처보고서 | 분류 | 목적지 | 상태 | 트리거(보류시) | 처리세션/커밋 | baseline |
 |----|--------|-----------|------|--------|------|---------------|--------------|----------|
-| NT-1 | 2026-06-04 | 2026-06-04/야간자동화 | ops | ops 풀 지시서 | 신규 | - | - | 🆕신규 |
-| NT-2 | 2026-06-04 | 2026-06-04/뉴스LLM | ops (운영) | ops 운영 트리거 | 신규 | - | - | 🆕신규 |
-| NT-3 | 2026-06-04 | 2026-06-04/노드속성 | app(chainsight) | chainsight Claude Project | 신규 | - | - | 🆕신규 |
-| NT-4 | 2026-06-04 | 2026-06-04/관계균형 | app(sec_pipeline) | sec_pipeline Claude Project | 신규 | - | - | 🆕신규 |
-| NT-5 | 2026-06-04 | 2026-06-04/구조분석 | app(chainsight) | chainsight Claude Project | 신규 | - | - | 🆕신규 |
-| NT-6 | 2026-06-04 | 2026-06-04/뉴스커버 | app(news) | news Claude Project | 신규 | - | - | 🆕신규 |
+| NT-1 | 2026-06-04 | 2026-06-04/야간자동화 | ops | 📎 `docs/nightly_auto_system/triage/NT-1_nightly_duplicate_run.md` | 라우팅됨 | - | - | 🆕신규 |
+| NT-2 | 2026-06-04 | 2026-06-04/뉴스LLM | ops (운영) | 📎 `docs/nightly_auto_system/triage/NT-2_llm_analysis_rate_drop.md` | 라우팅됨 | - | - | 🆕신규 |
+| NT-3 | 2026-06-04 | 2026-06-04/노드속성 | app(chainsight) | 📎 `triage/NT-3to6_app_stubs.md` § NT-3 → chainsight Claude Project | 라우팅됨 | - | - | 🆕신규 |
+| NT-4 | 2026-06-04 | 2026-06-04/관계균형 | app(sec_pipeline) | 📎 `triage/NT-3to6_app_stubs.md` § NT-4 → sec_pipeline Claude Project | 라우팅됨 | - | - | 🆕신규 |
+| NT-5 | 2026-06-04 | 2026-06-04/구조분석 | app(chainsight) | 📎 `triage/NT-3to6_app_stubs.md` § NT-5 → chainsight Claude Project | 라우팅됨 | - | - | 🆕신규 |
+| NT-6 | 2026-06-04 | 2026-06-04/뉴스커버 | app(news) | 📎 `triage/NT-3to6_app_stubs.md` § NT-6 → news Claude Project | 보류 | NT-2 분석률 회복 후 재평가 | - | 🆕신규 |
 
 **발견 상세 (요약)**:
 - **NT-1**: 야간 보고서 22개 = 11종 ×2 흔적 (첫 12종 + 두 번째 10종, performance/security 누락). 자동화 중복 트리거 의심(launchd + cron 동시 등록 / 수동 재실행). → ops STEP 0: `launchctl list | grep stockvis` + `crontab -l` 동시 등록 여부 확인.
