@@ -62,7 +62,22 @@
 
 | ID | 등록일 | 출처보고서 | 분류 | 목적지 | 상태 | 트리거(보류시) | 처리세션/커밋 | baseline |
 |----|--------|-----------|------|--------|------|---------------|--------------|----------|
-| (예시) NT-1 | 2026-06-03 | 2026-06-03/CRITICAL | ops | ops 풀 지시서 | 신규 | - | - | 🆕신규 |
+| NT-1 | 2026-06-04 | 2026-06-04/야간자동화 | ops | ops 풀 지시서 | 신규 | - | - | 🆕신규 |
+| NT-2 | 2026-06-04 | 2026-06-04/뉴스LLM | ops (운영) | ops 운영 트리거 | 신규 | - | - | 🆕신규 |
+| NT-3 | 2026-06-04 | 2026-06-04/노드속성 | app(chainsight) | chainsight Claude Project | 신규 | - | - | 🆕신규 |
+| NT-4 | 2026-06-04 | 2026-06-04/관계균형 | app(sec_pipeline) | sec_pipeline Claude Project | 신규 | - | - | 🆕신규 |
+| NT-5 | 2026-06-04 | 2026-06-04/구조분석 | app(chainsight) | chainsight Claude Project | 신규 | - | - | 🆕신규 |
+| NT-6 | 2026-06-04 | 2026-06-04/뉴스커버 | app(news) | news Claude Project | 신규 | - | - | 🆕신규 |
+
+**발견 상세 (요약)**:
+- **NT-1**: 야간 보고서 22개 = 11종 ×2 흔적 (첫 12종 + 두 번째 10종, performance/security 누락). 자동화 중복 트리거 의심(launchd + cron 동시 등록 / 수동 재실행). → ops STEP 0: `launchctl list | grep stockvis` + `crontab -l` 동시 등록 여부 확인.
+- **NT-2**: 24h 신규 뉴스 315건 중 LLM 분석 3건만 완료, 312건 pending(분석률 1.0%). Gemini paid tier 할당량 / Celery 큐 잠금 / retry backoff 의심. → ops STEP 0: `celery inspect active` + Gemini 콘솔 quota + `news.tasks` retry 로그 확인.
+- **NT-3**: Stock 속성 채움률 `business_model_type=0.0%`, `overall_grade=0.0%`, `theme_tags=0.0%` + ChainProfile 미생성 31종목. 모델 필드 추가 후 backfill 미수행 의심. → chainsight 스텁: 한 줄 문제 = "신규 3 필드 + 31 종목 미생성", STEP 0 = "필드 추가 시점·calculate_all_profiles 동작 여부", 행위보존 = "기존 채움 데이터 손상 금지".
+- **NT-4**: SUPPLIES_TO 61개 (vs PEER_OF 8674), UnmatchedCompanyQueue 1011건 pending. 상위: Flex Ltd. ×4, Compuware ×4, Adyen ×3, JERA ×3, Mitsui ×3. → sec_pipeline 스텁: 한 줄 문제 = "alias 매핑 미흡 → SUPPLIES_TO 추출률 저조", STEP 0 = "상위 빈도 회사명 수동 alias 룰 / fuzzy threshold 검토".
+- **NT-5**: 고립 Stock 5종목 (관계 0). calculate_price_co_movement + update_relation_confidence 누락. → chainsight 스텁: 한 줄 문제 = "5종목 관계 0", STEP 0 = "심볼 식별 + 가격 데이터 존재 여부", 행위보존 = "관계 임계값 변경 금지".
+- **NT-6**: 24h 뉴스 커버 51/535=9.5%, 미커버 484종목. → news 스텁: 한 줄 문제 = "종목 단위 수집 제약", STEP 0 = "Finnhub/MarketAux 종목별 vs sector broadcast 비용·rate limit 비교".
+
+
 
 > 기각·보류는 `DECISIONS.md`에 "왜"를 남긴다(미래 세션 오해 방지). 표 행에는 결정 링크/커밋만 박는다.
 
