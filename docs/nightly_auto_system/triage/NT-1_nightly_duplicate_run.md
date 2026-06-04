@@ -121,25 +121,60 @@
 
 ---
 
-## STEP 0 결과 (실행 후 채움)
+## STEP 0 결과 (2026-06-04 실측)
 
-> 실측 결과를 여기에 붙인다.
+**launchctl**:
+- `com.stockvis.nightly`(미실행 상태 표기 `-`, 23:00 트리거 대기 정상)
+- 워커 3개(`celery-worker`, `celery-worker-neo4j`, `celery-watchdog`) + `pg-backup` + `celery-beat` 모두 등록.
+- LaunchAgents 디렉토리에 nightly plist 1건만 (`com.stockvis.nightly.plist`, May 22 18:54).
 
-```
-launchctl: 
-crontab: 
-plist trigger: 
-mtime 차이: 
-flock 가드 유무: 
-watchdog: 
-```
+**crontab**: 비어 있음 (cron 중복 없음). sudo cron은 권한상 미확인(사용자 손, 기대=비어 있음).
+
+**plist trigger**:
+- `StartCalendarInterval`: Hour=23, Minute=0 (KST 23:00) — 단일 트리거.
+- 실 호출: `/bin/bash -c "..."` → `$NIGHTLY_DIR/run_tier3_audits.sh` (NIGHTLY_DIR=`~/stock-vis-nightly`).
+- ⚠️ **`nightly_v3.sh`는 plist에서 호출되지 않는다.** 3 worktree에 동일 파일 존재(git tracked, diff 차이 없음)하지만 실제 실행은 `run_tier3_audits.sh`.
+
+**`run_tier3_audits.sh` 구조**:
+- `run_audit` 호출 = **12회** (작업 15 / 16 / 17 / 14 / 6 / 20 / 10 / 9 / 18 / 19-A / 19-B / 19-C).
+- 보고서 출력 경로: `docs/nightly_auto_system/reports/$(date +%-m월)/$(date +%-d일)/<name>.md`.
+- 한 회차당 보고서 정확히 12개 생성.
+
+**6/3 보고서 파일 실측**:
+- 파일 수: **12개** (run_audit 호출 수와 1:1 매칭).
+- btime = mtime = ctime 모두 23:05:37 ~ 00:08:41 단조 증가, 덮어쓰기 흔적 없음.
+- inode 12개 모두 고유, 심볼릭/하드 링크 없음.
+
+**메일이 보여준 22행의 정체**:
+- 메일 첫 12행 줄 수와 실제 파일 줄 수를 매핑:
+  - 첫 10행(api_dependency=217 ~ remaining=196) = **6/2 보고서 줄 수**와 일치.
+  - 11~12행(performance=261, security=233) = **6/3 보고서 줄 수**와 일치.
+  - 두 번째 10행(api_dependency=186 ~ remaining=248) = **6/3 보고서 줄 수**와 일치.
+- 즉 야간 회차는 단일 정상. 메일 본문 생성기가 **6/2 일부 + 6/3 전체를 합쳐 22행으로 표기**한 표시 버그.
+
+**flock 가드**: `run_tier3_audits.sh` 첫머리에 `flock`/pidfile 없음. 단, 단일 회차 확인됐으므로 즉시 필요는 낮음.
+
+**watchdog**: `com.stockvis.celery-watchdog` 등록 활성. 메모리 `project_operations_infra_2026-05.md`의 "중복감지" 항목과 일치.
 
 ## 결정 분기
 
-> 경우 A/B/C/D 중 어디인지 + 적용 조치.
+**경우 E (신규 — STEP 0 결과)**: 야간 자동화는 단일 회차 정상 동작. 메일 본문 생성 로직(보고서 카운트·목록 표시)이 6/2 일부 + 6/3 전체를 합쳐 표기하는 표시 버그.
 
-```
-경우: 
-조치: 
-적용 커밋/명령: 
-```
+**조치**:
+1. **NT-1을 재분류**: "야간 자동화 중복 실행" → "**메일 본문 표시 버그**".
+2. **NT-1 본 결정의 처리 책임은 사용자 손 영역** — `~/stock-vis-nightly/run_tier3_audits.sh` 또는 메일 본문 생성 스크립트(보고서 목록 출력 부분)가 git 밖이거나 ops 자동화 영역이라 Claude Code 무수정 정책 적용(setup 문서 결정 ⑤).
+3. **ops 후속**:
+   - 메일 본문 생성 로직 점검 권장(사용자 손). 후보 위치:
+     - `~/stock-vis-nightly/run_tier3_audits.sh` 마지막 단(메일 발송 직전 보고서 목록 빌드)
+     - 또는 별도 메일 본문 빌더가 `find reports/ -mtime -2`로 어제+오늘 합쳐서 출력하는 패턴
+   - 패치 가설: 보고서 목록 빌드 시 **`reports/<오늘 월>/<오늘 일>/` 디렉토리에 한정**하도록 `find` 범위 좁히기.
+4. **NT-1b 후속 권장(별도 트랙)**: `flock`/pidfile 가드를 `run_tier3_audits.sh`에 추가 — 현재 단일 회차지만 우발적 두 번 트리거 방어용. 사용자 손 패치.
+
+**적용 커밋/명령**: 본 STEP 0 결과 박음 (`docs/nightly_auto_system/triage/NT-1_nightly_duplicate_run.md` 갱신).
+
+**경우 A/B/C/D는 모두 미해당** — cron 비어있고, plist 단일이며, 보고서 덮어쓰기 없음, 트리거 1회 정상.
+
+## 후속 조치 (TASKQUEUE)
+
+- NT-1 상태: `라우팅됨` → **`완료 (보고)`** (자동화 자체 이상 없음, 메일 표시 버그는 사용자 손 트랙으로 이관).
+- DECISIONS.md에 결론 박음: "NT-1은 자동화 정상, 메일 본문 표시 버그로 재분류".
