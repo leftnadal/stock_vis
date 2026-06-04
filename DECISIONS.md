@@ -1178,6 +1178,33 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 
 **📎 참조**: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `sub_claude_md/common-bugs.md` "shared 역방향 import 5건 — 전건 청소 완료(#31, 2026-06-04 종결)", TASKQUEUE.md `BOUNDARY-3`.
 
+### NT-8 — Daily Report 뉴스 지표 퍼널 재구성 (2026-06-04)
+
+**결정**: `payload['news']`에 `funnel`(N→M→K→J + 비율 4종) 키 추가. 기존 `today_llm_analyzed_pct`는 호환 유지하되 표시 단계에서 제거. critical 임계는 J/K(실행 건강) 기반으로 보정 + K=0 분기는 🟢 N/A로 명시.
+
+**Why**:
+- 옛 지표 `LLM 분석률 = J/N`은 분모(전체 신규 N)와 시스템 설계(Tier A+ 한정 deep 분석)가 어긋남 → 1%가 항상 critical로 표기되는 착시.
+- 6/3 실측: N=296, M=50, K=3, J=3 → 옛 표시는 "J/N=1.0% 🟡 critical", 새 표시는 "**J/K=100% 🟢 정상** + 점수 기록률 16.9% 🟡 NT-2b" — 진짜 문제(score 채움률)를 가리킴.
+- 보고서는 발견(데이터)이지 명령이 아니어야 → 단일 비율 노출이 디렉터를 잘못된 행동(quota 점검 등)으로 유도하는 위험 차단.
+
+**How to apply**:
+- 새 데이터 키: `payload['news']['funnel']` (`n_today_new`, `m_score_recorded`, `k_tier_a_pass`, `j_deep_analyzed`, `null_count`, `tier_a_threshold`, `score_recording_pct`, `coverage_pct`, `execution_health_pct`, `null_pct`).
+- `tier_a_threshold`는 `NewsDeepAnalyzer.TIER_A_THRESHOLD` 동적 import (하드코딩 금지, 임계 변경 시 자동 반영).
+- `collect_suggestions` 6번: K=0 → 🟢 N/A, K>0 ∧ J/K<80% → 🟡, 그 외 🟢. 6b번: null률>30% → 🟡 NT-2b 포인터.
+- HTML 헤더 카드 "LLM 분석률" → "실행 건강 (J/K)"으로 라벨 교체. 본문에 퍼널 카드 신설.
+- 텍스트 본문 한 줄: `N{}→M{}→K{}→J{}` 표기 + `실행 건강 X%/N/A`.
+
+**행위보존**: 점수화/분류/임계 로직 무변경(읽기 전용 import). `today_llm_analyzed_pct` 등 기존 키 모두 유지 — 외부 컨슈머가 있다면 무중단.
+
+**📎 참조**:
+- 지시서: `docs/nightly_auto_system/nt_8_news_metric_funnel.md`
+- 구현: `packages/shared/metrics/services/daily_report.py` `collect_news_metrics()` + `collect_suggestions()` 6/6b
+- 템플릿: `packages/shared/metrics/templates/email/daily_report.html`
+- 본문: `packages/shared/metrics/tasks.py:46~55`
+- 검증: pytest tests/unit/metrics/ 132 passed.
+
+---
+
 ### NT-6 (뉴스 커버 9.5%) 보류 — NT-2 의존 (2026-06-04)
 
 **결정**: TASKQUEUE NT-6(24h 뉴스 커버 51/535=9.5% → 수집 확장)을 **보류**한다. 재개 트리거 = **NT-2(LLM 분석률 1%) 회복 확인 후**.

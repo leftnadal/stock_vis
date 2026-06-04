@@ -59,8 +59,8 @@
       <div class="value">{{ payload.news.today_new }}</div>
     </div>
     <div class="summary-cell">
-      <div class="label">LLM 분석률</div>
-      <div class="value">{{ payload.news.today_llm_analyzed_pct }}%</div>
+      <div class="label">실행 건강 (J/K)</div>
+      <div class="value">{% if payload.news.funnel.execution_health_pct is not None %}{{ payload.news.funnel.execution_health_pct }}%{% else %}N/A{% endif %}</div>
     </div>
   </div>
 
@@ -156,7 +156,23 @@
       <tr><td>오늘 신규 (24h)</td><td class="num">{{ payload.news.today_new }}</td></tr>
       <tr><td>LLM 분석 완료</td><td class="num">{{ payload.news.today_llm_analyzed }}</td></tr>
       <tr><td>LLM 분석 대기</td><td class="num">{{ payload.news.today_llm_pending }}</td></tr>
-      <tr><td>LLM 분석률</td><td class="num">{{ payload.news.today_llm_analyzed_pct }}%</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>📊 분석 퍼널 (24h, Tier A+ ≥ {{ payload.news.funnel.tier_a_threshold }})</h3>
+    <table>
+      <tr><th>단계</th><th class="num">건수</th><th>설명</th></tr>
+      <tr><td>N · 신규 수집</td><td class="num">{{ payload.news.funnel.n_today_new }}</td><td>윈도 내 신규 NewsArticle</td></tr>
+      <tr><td>M · 점수 기록</td><td class="num">{{ payload.news.funnel.m_score_recorded }}</td><td>importance_score 채워진 건 (null {{ payload.news.funnel.null_count }}건 · {{ payload.news.funnel.null_pct }}% 미기록{% if payload.news.funnel.null_pct > 30 %} ⚠️ NT-2b{% endif %})</td></tr>
+      <tr><td>K · Tier A+ 통과</td><td class="num">{{ payload.news.funnel.k_tier_a_pass }}</td><td>임계 ≥ {{ payload.news.funnel.tier_a_threshold }}</td></tr>
+      <tr><td>J · deep 분석 완료</td><td class="num">{{ payload.news.funnel.j_deep_analyzed }}</td><td>llm_analyzed=True</td></tr>
+    </table>
+    <table style="margin-top:8px;">
+      <tr><th>지표</th><th class="num">값</th><th>의미</th></tr>
+      <tr><td>실행 건강 (J/K)</td><td class="num">{% if payload.news.funnel.execution_health_pct is not None %}{{ payload.news.funnel.execution_health_pct }}%{% else %}N/A (K=0){% endif %}</td><td>통과한 뉴스 중 실제 분석 비율 — K=0이면 N/A, critical 아님</td></tr>
+      <tr><td>커버리지 (K/N)</td><td class="num">{{ payload.news.funnel.coverage_pct }}%</td><td>Tier A+ 한정 설계라 낮음 정상</td></tr>
+      <tr><td>점수 기록률 (M/N)</td><td class="num">{{ payload.news.funnel.score_recording_pct }}%</td><td>30% 미만 시 ⚠️ NT-2b 진단 포인터</td></tr>
     </table>
   </div>
 

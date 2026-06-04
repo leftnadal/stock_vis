@@ -154,11 +154,21 @@ def collect_graph_metrics() -> Dict[str, Any]:
 
 
 def collect_news_metrics(today: date) -> Dict[str, Any]:
-    """뉴스 일일 통계 + 커버리지."""
+    """뉴스 일일 통계 + 커버리지 + 퍼널(N→M→K→J).
+
+    - N(today_new): 24h 신규 수집 전체
+    - M(score_recorded): N 중 importance_score IS NOT NULL
+    - K(tier_a_pass): M 중 score >= TIER_A_THRESHOLD (NewsDeepAnalyzer 상수)
+    - J(deep_analyzed): llm_analyzed=True (이미 today_llm_analyzed)
+    - 분석 설계가 Tier A+ 한정이므로 J/N 단일 비율은 분모/분자 정의 어긋남.
+      퍼널로 실행 건강(J/K)·커버리지(K/N)·점수 기록률(M/N)을 분리 표시한다.
+    """
     from services.news.models import NewsArticle, NewsEntity
+    from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
     from packages.shared.stocks.models import Stock
 
     cutoff_24h = timezone.now() - timedelta(hours=24)
+    tier_a_threshold = NewsDeepAnalyzer.TIER_A_THRESHOLD
 
     total = NewsArticle.objects.count()
     today_count = NewsArticle.objects.filter(created_at__gte=cutoff_24h).count()
@@ -166,6 +176,17 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
         created_at__gte=cutoff_24h, llm_analyzed=True
     ).count()
     today_llm_pending = today_count - today_llm_analyzed
+
+    # 퍼널 N→M→K→J — 동일 24h 윈도
+    funnel_n = today_count
+    funnel_m = NewsArticle.objects.filter(
+        created_at__gte=cutoff_24h, importance_score__isnull=False
+    ).count()
+    funnel_k = NewsArticle.objects.filter(
+        created_at__gte=cutoff_24h, importance_score__gte=tier_a_threshold
+    ).count()
+    funnel_j = today_llm_analyzed
+    funnel_null = funnel_n - funnel_m
 
     # 감성 분포 (24h 내) — NewsEntity.news 가 FK 명, sentiment_score 사용
     sentiment_dist = {"positive": 0, "negative": 0, "neutral": 0}
@@ -216,6 +237,20 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
         "low(<0.4)": imp_qs.filter(importance_score__lt=0.4).count(),
     }
 
+    # 퍼널 비율 — K=0이면 J/K는 None (0으로 나누지 않음)
+    funnel_score_recording_pct = (
+        round(funnel_m * 100 / funnel_n, 1) if funnel_n else 0
+    )
+    funnel_coverage_pct = (
+        round(funnel_k * 100 / funnel_n, 1) if funnel_n else 0
+    )
+    funnel_execution_health_pct = (
+        round(funnel_j * 100 / funnel_k, 1) if funnel_k else None
+    )
+    funnel_null_pct = (
+        round(funnel_null * 100 / funnel_n, 1) if funnel_n else 0
+    )
+
     return {
         "total_articles": total,
         "today_new": today_count,
@@ -224,6 +259,19 @@ def collect_news_metrics(today: date) -> Dict[str, Any]:
         "today_llm_analyzed_pct": (
             round(today_llm_analyzed * 100 / today_count, 1) if today_count else 0
         ),
+        # 퍼널 N→M→K→J (NT-8) — 단일 비율의 분모/분자 정의 어긋남을 분리 표시
+        "funnel": {
+            "n_today_new": funnel_n,
+            "m_score_recorded": funnel_m,
+            "k_tier_a_pass": funnel_k,
+            "j_deep_analyzed": funnel_j,
+            "null_count": funnel_null,
+            "tier_a_threshold": tier_a_threshold,
+            "score_recording_pct": funnel_score_recording_pct,
+            "coverage_pct": funnel_coverage_pct,
+            "execution_health_pct": funnel_execution_health_pct,  # K=0이면 None
+            "null_pct": funnel_null_pct,
+        },
         "sentiment_24h": sentiment_dist,
         "sector_distribution_24h": sector_news,
         "stocks_no_news_count": no_news_count,
@@ -702,24 +750,69 @@ def collect_suggestions(
             }
         )
 
-    # 6. LLM Quality
-    if news["today_new"] > 0 and news["today_llm_analyzed_pct"] < 80:
+    # 6. LLM Quality — 퍼널 N→M→K→J 기반 (NT-8 보정: J/N 단일 비율 착시 제거)
+    funnel = news.get("funnel", {})
+    f_n = funnel.get("n_today_new", 0)
+    f_k = funnel.get("k_tier_a_pass", 0)
+    f_j = funnel.get("j_deep_analyzed", 0)
+    f_threshold = funnel.get("tier_a_threshold", 0.7)
+    f_exec_health = funnel.get("execution_health_pct")  # K=0이면 None
+    f_null_pct = funnel.get("null_pct", 0)
+
+    if f_n == 0:
+        # 신규 0 — 카테고리 출력 없음 (불필요한 노이즈)
+        pass
+    elif f_k == 0:
+        # K=0: 통과 0건이라 J/K 정의 불가 — critical 아님 (Tier A+ 한정 설계)
         suggestions.append(
             {
-                "category": "6. LLM 추출 품질",
-                "severity": "🟡",
-                "issue": f"오늘 신규 뉴스 LLM 분석률 {news['today_llm_analyzed_pct']}% (pending {news['today_llm_pending']}건)",
-                "action": "Gemini paid tier quota 확인, retry batch 트리거",
+                "category": "6. LLM 추출 품질 (실행 건강)",
+                "severity": "🟢",
+                "issue": (
+                    f"Tier A+ 통과 0건 (임계 ≥{f_threshold}) — 실행 건강 N/A. "
+                    f"오늘 신규 {f_n}건 모두 임계 미만. critical 아님 (Tier A+ 한정 분석 설계)."
+                ),
+                "action": "유지",
                 "samples": [],
             }
         )
-    elif news["today_new"] > 0:
+    elif f_exec_health is not None and f_exec_health < 80:
         suggestions.append(
             {
-                "category": "6. LLM 추출 품질",
+                "category": "6. LLM 추출 품질 (실행 건강)",
+                "severity": "🟡",
+                "issue": (
+                    f"실행 건강 {f_exec_health}% (분석 {f_j}/통과 {f_k}, 임계 ≥{f_threshold}). "
+                    f"통과한 Tier A+ 중 {f_k - f_j}건 미분석."
+                ),
+                "action": "Celery 워커 import 경로 확인(NT-2 패턴), Gemini quota, retry 트리거",
+                "samples": [],
+            }
+        )
+    else:
+        suggestions.append(
+            {
+                "category": "6. LLM 추출 품질 (실행 건강)",
                 "severity": "🟢",
-                "issue": f"LLM 분석률 {news['today_llm_analyzed_pct']}% (오늘 {news['today_new']}건)",
+                "issue": (
+                    f"실행 건강 {f_exec_health}% (분석 {f_j}/통과 {f_k}, 임계 ≥{f_threshold}). 정상."
+                ),
                 "action": "유지",
+                "samples": [],
+            }
+        )
+
+    # 6b. 점수 기록률 — null 비율 30% 초과시 NT-2b 진단 포인터
+    if f_n > 0 and f_null_pct > 30:
+        suggestions.append(
+            {
+                "category": "6b. 점수 기록률 (importance_score)",
+                "severity": "🟡",
+                "issue": (
+                    f"점수 기록률 {funnel.get('score_recording_pct', 0)}% "
+                    f"(null {funnel.get('null_count', 0)}/{f_n}건, {f_null_pct}%) ⚠️"
+                ),
+                "action": "NT-2b 진단 — ML/규칙 엔진 importance_score 채움률 확인",
                 "samples": [],
             }
         )
