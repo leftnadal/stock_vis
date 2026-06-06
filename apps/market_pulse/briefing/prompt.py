@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Briefing Prompt Template (PR-E)."""
+"""
+Briefing Prompt Template (PR-E).
+
+소속: apps/market_pulse/briefing (app 레이어 LLM 프롬프트 빌더).
+역할: 4 도메인 스냅샷(regime/breadth/sector/concentration) + 분류된 뉴스 시그널을
+  Gemini 입력 텍스트로 직렬화. JSON 안전 인코딩 포함.
+주요 심볼: build_prompt(...) (또는 동급 헬퍼).
+소비처: briefing/client.py에서 호출.
+"""
 
 from __future__ import annotations
 

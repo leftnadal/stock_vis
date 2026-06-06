@@ -1,4 +1,11 @@
-"""Market Pulse v2 — Briefing Output Safety (PR-E)."""
+"""
+Briefing Output Safety (PR-E).
+
+소속: apps/market_pulse/briefing (app 레이어 LLM 출력 검증).
+역할: Gemini 응답 텍스트의 JSON 형태/면책 조항/금지 키워드 등 출력 안전성 검증.
+  schemas/briefing.py의 Pydantic 스키마와 직교(이쪽은 텍스트 안전성, 스키마는 구조).
+소비처: briefing/client.py 응답 직후 호출.
+"""
 
 from __future__ import annotations
 
