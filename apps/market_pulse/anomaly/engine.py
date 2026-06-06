@@ -1,4 +1,17 @@
-"""Market Pulse v2 — Anomaly Engine (PR-D)."""
+"""
+Anomaly Engine (PR-D) — 4 Core 룰 평가 + 컨텍스트 빌더.
+
+소속: apps/market_pulse/anomaly (app 레이어 — 이상 신호 감지).
+역할:
+  - build_context: ConcentrationSnapshot + macro VIXCLS + SectorFlowSnapshot로
+    AnomalyContext(top10_weight·vix_change_pct·max_abs_sector_z·cross_dispersion 등) 조립.
+  - load_rules: rules.yaml mtime 캐시 로더.
+  - evaluate: 룰별 임계 평가 → FiredRule 리스트.
+  - select_mode: 발동 룰 수 기준 (ANOMALY ≥2 / HYBRID =1 / CALM =0).
+주요 심볼: AnomalyContext, FiredRule, build_context, load_rules, evaluate, select_mode.
+의존: macro.models(EconomicIndicator·IndicatorValue), models.snapshot.
+소비처: tasks/anomaly.py의 mp_detect_anomaly_5min.
+"""
 
 from __future__ import annotations
 
