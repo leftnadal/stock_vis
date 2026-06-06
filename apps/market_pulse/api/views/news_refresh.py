@@ -1,4 +1,11 @@
-"""Market Pulse v2 — News Refresh endpoint (PR-J)."""
+"""
+News Refresh endpoint (PR-J).
+
+소속: apps/market_pulse/api/views (app 레이어 DRF Views).
+역할: 24h 내 동일 user × 동일 news 중복 노출 방지를 강제하면서 신선한 뉴스 N개 응답.
+  NewsViewLog upsert로 노출 이력 기록.
+권한: 인증 사용자. throttle 적용.
+"""
 
 from __future__ import annotations
 

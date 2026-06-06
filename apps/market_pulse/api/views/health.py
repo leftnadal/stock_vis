@@ -1,4 +1,10 @@
-"""Market Pulse v2 — Health endpoint (PR-J, Admin only)."""
+"""
+Health endpoint (PR-J, Admin only).
+
+소속: apps/market_pulse/api/views (app 레이어 DRF Views).
+역할: 4 스냅샷 마지막 갱신 시각·status·coverage·캐시 상태 응답.
+권한: IsAdminUser — 운영 점검용. 일반 사용자 노출 금지.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Overview endpoint (PR-I)."""
+"""
+Overview endpoint (PR-I) — 마켓 펄스 화면 메인 응답.
+
+소속: apps/market_pulse/api/views (app 레이어 DRF Views).
+역할: 4 카드(Regime/Breadth/Sector/Concentration) + 일일 브리핑 + i18n 라벨을 한 번에
+  응답. serializers/overview.py에서 직렬화. cache.py 키로 캐시.
+의존: models의 4 스냅샷·BriefingLog, macro MarketIndex/Price, packages.shared.stocks.
+주의: 응답 구조는 contracts/marketpulse_v2_api_contract와 일치 유지.
+"""
 
 from __future__ import annotations
 
