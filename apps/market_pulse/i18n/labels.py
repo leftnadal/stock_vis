@@ -1,4 +1,12 @@
-"""Market Pulse v2 — i18n 영문 키 → 한글 매핑 (PR-J)."""
+"""
+i18n 영문 키 → 한글 라벨 매핑 (PR-J).
+
+소속: apps/market_pulse/i18n (app 레이어 화면 상수).
+역할: 카드/레짐/지표 영문 키를 한글 표시 라벨로 단방향 매핑.
+주요 심볼:
+  - KO_LABELS: 영문 키 → 한글 dict (regime/카드 명칭 + 단위 등)
+소비처: serializers·api/views/* 응답에서 한글 라벨 부착.
+"""
 
 from __future__ import annotations
 
