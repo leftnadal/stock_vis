@@ -1,4 +1,15 @@
-"""Market Pulse v2 — FMP ETF holdings fetcher (PR-H)."""
+"""
+FMP ETF holdings fetcher (PR-H).
+
+소속: apps/market_pulse/fetchers (app 레이어 외부 데이터 fetcher).
+역할: FMP `/stable/etf/holdings?symbol=SPY` 호출 → HoldingRow 리스트 반환.
+주요 심볼:
+  - HoldingRow: (symbol, weight) 동결 dataclass
+  - fetch_spy_holdings(...): SPY holdings를 정렬·정규화해 반환
+의존: packages.shared.api_request.circuit_breaker(CB `fmp_etf`), requests, settings.
+소비처: calculators/concentration.py의 top5/top10/HHI 산출 입력.
+주의: FMP Starter Plan rate limit(300/m, 10k/d) 준수. Legacy `/api/v3/*` 금지.
+"""
 
 from __future__ import annotations
 
