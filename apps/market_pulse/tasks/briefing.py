@@ -1,4 +1,13 @@
-"""Market Pulse v2 — Briefing Celery task (PR-E)."""
+"""
+Briefing Celery task (PR-E) — `mp_generate_brief_daily`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 평일 NY 17:15 (KST 06:15) — 당일 4 스냅샷 + 뉴스 → briefing/client.py로
+  Gemini 2.5 Flash 동기 호출 → BriefingLog 적재.
+스케줄: Beat name `mp_generate_brief_daily`, crontab NY 17:15 평일.
+주의: Bug #8 — Celery에서 async LLM 호출 금지. 반드시 동기 genai.Client 사용.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 

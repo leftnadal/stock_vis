@@ -1,4 +1,13 @@
-"""Market Pulse v2 — News fetch task (PR-B)."""
+"""
+News fetch task (PR-B) — `mp_fetch_news_hourly`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 매시 :05 — services/news_aggregator로 3 소스 수집 + news_classifier로 6 카테고리
+  분류 + URL hash dedup → MarketPulseNews 적재.
+스케줄: Beat name `mp_fetch_news_hourly`, crontab 매시 :05.
+의존 CB: `fmp_news`, `marketaux`.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 

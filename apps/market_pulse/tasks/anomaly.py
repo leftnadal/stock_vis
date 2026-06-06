@@ -1,4 +1,13 @@
-"""Market Pulse v2 — Anomaly Celery task (PR-D)."""
+"""
+Anomaly Celery task (PR-D) — `mp_detect_anomaly_5min`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 평일 09:30~16:30 매 5분 — anomaly.engine.build_context + load_rules + evaluate +
+  select_mode + fallback.build + news_pairing.find_pair → AnomalySignalLog 적재.
+스케줄: Beat name `mp_detect_anomaly_5min`, crontab `*/5` 평일 시장 시간대 한정.
+주의: max_retries=3, exponential backoff(`60 * 2**retries`). soft_time_limit=120s.
+호출자: Celery Beat scheduler만(코드 직접 호출 없음).
+"""
 
 from __future__ import annotations
 

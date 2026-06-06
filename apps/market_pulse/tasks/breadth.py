@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Breadth Celery task (PR-F)."""
+"""
+Breadth Celery task (PR-F) — `mp_calc_breadth_5min`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 평일 09:30~16:30 매 5분 — calculators.breadth로 advance/decline·52w high/low·
+  AD-line 누적 산출 → BreadthSnapshot upsert.
+스케줄: Beat name `mp_calc_breadth_5min`, crontab `*/5`.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 
