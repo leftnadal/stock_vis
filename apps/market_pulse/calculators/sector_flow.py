@@ -1,4 +1,13 @@
-"""Market Pulse v2 — Sector Flow Calculator (PR-G)."""
+"""
+Sector Flow Calculator (PR-G) — 11 GICS 섹터 ETF 상대강도·분산도 산출.
+
+소속: apps/market_pulse/calculators (app 레이어 도메인 계산기).
+역할: SPY 벤치마크 + 11 SECTOR ETF(XL*) MarketIndexPrice를 읽어
+  S02~S06(섹터별 상대강도/리드/cross-dispersion 등) long-format 11 row/cycle 산출.
+의존: macro.models(MarketIndex·MarketIndexPrice), apps.market_pulse.models.snapshot.
+주의: PR-A1(2026-04-29) GICS 11-sector 확장 이후 sector_group enum 12종(BENCHMARK + GICS 11).
+소비처: tasks/sector_flow.py의 mp_calc_sector_5min → SectorFlowSnapshot.
+"""
 
 from __future__ import annotations
 

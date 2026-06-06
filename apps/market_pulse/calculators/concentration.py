@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Concentration Calculator (PR-H)."""
+"""
+Concentration Calculator (PR-H) — top5/top10 비중·HHI 산출.
+
+소속: apps/market_pulse/calculators (app 레이어 도메인 계산기).
+역할: fetchers/fmp_weights.py가 가져온 SPY ETF holdings를 입력으로
+  top5_weight / top10_weight / HHI(Herfindahl-Hirschman Index) 계산.
+의존: fetchers.fmp_weights.HoldingRow 리스트.
+소비처: tasks/concentration.py의 mp_calc_concentration_daily → ConcentrationSnapshot.
+"""
 
 from __future__ import annotations
 
