@@ -1,7 +1,15 @@
 """
-Investment-Advisor 설계: 거시경제 인사이트 규칙
+거시경제 인사이트 규칙 + 프론트엔드 UX 상수.
 
-시장 상황별 메시지, 색상, 아이콘 등 프론트엔드 UX에 필요한 모든 상수 정의
+소속: apps/market_pulse/constants (app 레이어 상수).
+역할: 시장 상황별 메시지·색상·아이콘 등 UX에 필요한 룰 테이블 정의.
+주요 심볼:
+  - FEAR_GREED_RULES / YIELD_CURVE_RULES / RATE_IMPACT_RULES / VIX_RULES: 구간별 룰 dict
+  - INSIGHT_RULES: 통합 룰 매핑
+  - calculate_fear_greed_index(...): 지수 산출
+  - get_insight_message(...): 룰 → 메시지 텍스트
+  - get_rate_impact_sectors(...): 금리 영향 섹터 후보
+소비처: 프론트(차트 라벨/배지/메시지). Investment-Advisor 설계 기반.
 """
 from typing import Any, Dict, List
 
