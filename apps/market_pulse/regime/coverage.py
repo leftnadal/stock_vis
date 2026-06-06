@@ -1,4 +1,15 @@
-"""Market Pulse v2 — Coverage Gate (PR-C)."""
+"""
+Coverage Gate (PR-C) — intraday regime 입력 충분도 게이트.
+
+소속: apps/market_pulse/regime (app 레이어).
+역할: RegimeInputs 14 키 중 채워진 비율을 계산해 분류 결과 신뢰도 판정.
+  ratio < min_ratio(0.6) → RegimeSnapshot.Status.INSUFFICIENT_DATA로 표기,
+  히스테리시스만 유지하고 신규 전환은 보류.
+주요 심볼:
+  - evaluate(...): inputs + rules → CoverageResult(ratio, status, missing).
+의존: classifier.load_rules(min_ratio 룰 추출), inputs.RegimeInputs.
+소비처: tasks/regime.py의 mp_calc_regime_15min 본 분기.
+"""
 
 from __future__ import annotations
 

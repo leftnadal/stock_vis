@@ -1,4 +1,22 @@
-"""Market Pulse v2 — Regime Classifier engine (PR-C)."""
+"""
+intraday 5단계 Regime Classifier engine (PR-C).
+
+소속: apps/market_pulse/regime (app 레이어 — 마켓 펄스 화면 메인 regime).
+역할: 14 매크로지표(NFCI·OAS·T10Y2Y·VIX·MOVE·SPY 가격블록 등) + 룰 YAML →
+  5단계 regime(BULL_EXPANSION / LATE_BULL / TRANSITION / BEAR_CONTRACTION / CRISIS)
+  + 2일 히스테리시스(crisis 즉시 전환은 예외).
+주요 심볼:
+  - load_rules(...): rules.yaml mtime 캐시 로더
+  - classify_inputs(...): atom·clause 평가 후 candidate regime 산출
+  - apply_hysteresis(...): previous_snapshot 기반 streak 누적, 전환 결정
+  - HysteresisDecision: 최종 regime + previous + streak + transitioned 패키지
+  - build_headline(...): regime + 발동 룰 → 사용자용 한 줄 헤드라인
+의존: rules.yaml, models.regime.RegimeSnapshot, regime.inputs.RegimeInputs.
+소비처: tasks/regime.py의 intraday mp_calc_regime_15min.
+주의: 이 분류기는 **intraday(마켓 펄스 화면)** 전용. packages/shared의 EOD VIX 3단계
+  레짐(DynamicRegimeCalculator, normal/elevated/high_vol)과는 **별개 시스템**.
+  입력·알고리즘·소비처 모두 다름. 혼동 금지.
+"""
 
 from __future__ import annotations
 
