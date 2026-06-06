@@ -1,4 +1,15 @@
-"""Market Pulse v2 — Celery Beat 등록 (DB) 단일 진입점 (Bug #28 패턴, 멱등)."""
+"""
+setup_marketpulse_beat — Celery Beat 등록(DB) 단일 진입점, 멱등 (Bug #28 패턴).
+
+소속: apps/market_pulse/management/commands (app 레이어 운영 커맨드).
+역할: 마켓 펄스 v2의 모든 Celery task에 대해 django_celery_beat의 PeriodicTask·
+  CrontabSchedule을 DB에 idempotent 등록. config/settings.py의
+  CELERY_BEAT_SCHEDULER='django_celery_beat.schedulers:DatabaseScheduler' 환경에서
+  유일한 진실의 소스(config/celery.py dict는 dev 회피용).
+주의: 본 커맨드는 task 신규 등록·schedule 갱신만 처리. 옛 task 경로 잔재가 있을 때는
+  `sync_beat_schedule --apply`로 reconcile 필요(Bug #28).
+사용: `python manage.py setup_marketpulse_beat` (멱등) / `--disable`로 비활성화.
+"""
 
 from __future__ import annotations
 

@@ -1,9 +1,10 @@
 """
-Yahoo Finance에서 VIX3M / MOVE 시계열을 동기화 (FRED 미지원 보완).
+sync_marketpulse_v2_yahoo_indicators — yfinance VIX3M/MOVE 시계열 동기화.
 
-FRED는 NFCI/HY OAS/T10Y3M 등 매크로 지표는 제공하지만, CBOE VIX3M과 ICE BofAML MOVE는
-무료 시리즈가 아니다. 본 커맨드는 yfinance를 통해 Yahoo Finance에서 일별 종가를 받아
-EconomicIndicator(VIX3M / MOVE)에 IndicatorValue로 저장한다.
+소속: apps/market_pulse/management/commands (app 레이어 운영 커맨드).
+역할: FRED 미지원 보완 — CBOE VIX3M(`^VIX3M`)과 ICE BofAML MOVE(`^MOVE`)를 yfinance로
+  일별 종가 fetch → EconomicIndicator(VIX3M/MOVE) + IndicatorValue 저장.
+의존: yfinance, macro.models.
 
 사용:
     python manage.py sync_marketpulse_v2_yahoo_indicators

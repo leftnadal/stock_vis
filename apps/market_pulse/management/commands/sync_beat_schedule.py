@@ -1,17 +1,19 @@
-"""sync_beat_schedule — reconcile DatabaseScheduler 의 `PeriodicTask.task` 경로.
+"""
+sync_beat_schedule — DatabaseScheduler `PeriodicTask.task` 경로 reconcile (Bug #28).
 
-Source of truth: `config/celery.py` 의 `app.conf.beat_schedule[name]['task']`.
-DatabaseScheduler 채택 환경(common-bugs #28)에서 task 이동·리네임 시
-DB row 의 `task` 컬럼이 옛 모듈 경로를 그대로 유지하면 Beat 가 호출 시점에
-ImportError 로 실패한다. 이 커맨드는 dict↔DB 의 `task` 컬럼만 reconcile 한다.
+소속: apps/market_pulse/management/commands (app 레이어 운영 커맨드).
+역할: `config/celery.py`의 `app.conf.beat_schedule[name]['task']`를 진실의 소스로 두고,
+  DB `PeriodicTask.task` 컬럼만 reconcile. monorepo PR4(2026-05-31) 이후 task name이
+  옛 경로(`marketpulse.tasks.*`)로 남아 있으면 Beat 디스패치가 ImportError → unregistered
+  task로 실패하는 패턴을 해소.
 
 사용:
-    python manage.py sync_beat_schedule              # dry-run (기본)
+    python manage.py sync_beat_schedule              # dry-run (기본, diff 출력만)
     python manage.py sync_beat_schedule --apply      # 실제 UPDATE
 
 원칙:
-    - dict 에 없는 name 은 무시(extra DB rows 정보 출력).
-    - dict 에 있지만 DB 에 없는 name 은 경고만(생성 안 함).
+    - dict에 없는 name은 무시(extra DB rows 정보 출력).
+    - dict에 있지만 DB에 없는 name은 경고만(생성 안 함).
     - schedule/crontab/enabled 등 다른 필드는 건드리지 않음(task 컬럼 only).
     - idempotent: 이미 일치하면 0 rows.
     - --apply 후 celery beat 재시작 필요.
