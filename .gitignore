@@ -227,3 +227,7 @@ node_modules/
 # Daily Report mail archive — send_daily_report_task가 메일 발송 직후 사본 저장.
 # 구조: mail_archive/YYYY/MM/DD.md (assistant가 직접 Read로 읽어 트리아지 자동화).
 mail_archive/
+
+# 메인 세션 전용 지시서 — git 외부 보존. 외부에 노출하지 않을 트리아지/실행 브리프.
+# 구조: _briefs/YYYY-MM-DD/<sprint_or_topic>.md
+_briefs/
