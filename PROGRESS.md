@@ -28,7 +28,9 @@
 >
 > ✅ **2026-06-06 market_pulse 헤더 표준화 push + main 머지**: `monorepo/sess-mp-docstrings` 14 슬라이스 → merge `cfc32a7`. 75 파일 docstring 표준화, 코드 0, 회귀 302 동일. 옛 경로 주석 잔재 1건 정리.
 >
-> ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기). **현재 `origin/main = ce68da0`** (메타 갱신 기준).
+> ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기).
+>
+> ✅ **2026-06-06 NT-7 STEP 0 지시서 push**: `d4a9690` (NT-7 STEP 0 지시서 추적 — D1 결정의 입력 문서). **현재 `origin/main = d4a9690`** (메타 갱신 기준).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
