@@ -1,9 +1,14 @@
-"""뉴스 도메인 JSONField Pydantic v2 검증 (PR-A2).
+"""
+뉴스 도메인 JSONField Pydantic v2 검증 (PR-A2).
 
-`MarketPulseNews.matched_symbols` / `matched_keywords` 검증용.
-운영 코드의 필드명 기준으로 매핑:
-    matched_symbols ↔ tickers/sectors (ETF symbol 포함)
-    matched_keywords ↔ topics
+소속: apps/market_pulse/schemas (app 레이어 JSONField 검증).
+역할: `MarketPulseNews.matched_symbols`·`matched_keywords` 구조 검증.
+주요 심볼:
+  - NewsEntities: 매칭된 심볼/키워드 모음 구조
+필드명 매핑(운영 코드 기준):
+  - matched_symbols ↔ tickers/sectors (ETF symbol 포함)
+  - matched_keywords ↔ topics
+소비처: services/news_classifier.py·tasks/news.py — 분류 결과 저장 직전 검증.
 """
 
 from __future__ import annotations

@@ -1,8 +1,14 @@
-"""이상 신호 룰별 evidence Pydantic v2 스키마 (PR-A2).
+"""
+이상 신호 룰별 evidence Pydantic v2 스키마 (PR-A2).
 
-`AnomalySignalLog.inputs` / `threshold` JSONField 검증용.
-4 Core 룰: R02 concentration_extreme, R04 vix_spike,
-            R09 sector_extreme_z, R12 dispersion_spike.
+소속: apps/market_pulse/schemas (app 레이어 JSONField 검증).
+역할: `AnomalySignalLog.inputs`·`threshold` JSONField의 4 Core 룰 evidence 구조 검증.
+주요 심볼:
+  - R02Evidence: concentration_extreme (top10_weight 임계 초과)
+  - R04Evidence: vix_spike (vix_change_pct 급등)
+  - R09Evidence: sector_extreme_z (섹터 rel_strength z-score 극단)
+  - R12Evidence: dispersion_spike (cross-dispersion 급증)
+소비처: tasks/anomaly.py의 mp_detect_anomaly_5min — evidence 저장 직전 검증.
 """
 
 from __future__ import annotations
