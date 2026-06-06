@@ -1,4 +1,11 @@
-"""Market Pulse v2 URL routing (PR-I/J)."""
+"""
+URL routing (PR-I/J).
+
+소속: apps/market_pulse/api (app 레이어 REST API).
+역할: `/api/v1/marketpulse/*` URL → views/* 라우팅 단일 진입점. config/urls.py에서
+  include로 마운트(reverse('macro:...')는 옛 macro v1 호환 — namespace 보존).
+주요 엔드포인트: overview / card detail (4종) / news refresh / health / i18n.
+"""
 
 from __future__ import annotations
 

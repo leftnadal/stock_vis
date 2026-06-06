@@ -1,14 +1,15 @@
 """
-Market Pulse v2에 필요한 11 신규 EconomicIndicator series를 FRED에서 sync.
+sync_marketpulse_v2_indicators — FRED 11 신규 EconomicIndicator series sync.
 
-PR-A1 시드된 series:
+소속: apps/market_pulse/management/commands (app 레이어 운영 커맨드).
+역할: 마켓 펄스 v2에 필요한 11 신규 EconomicIndicator series 명시 sync(PR-A1 시드).
+  기존 `sync_all_indicators`는 하드코딩된 8 series만 처리하므로 v2 신규만 분리.
+시드 대상:
     NFCI, NFCICREDIT, NFCILEVERAGE, NFCIRISK
     BAMLH0A0HYM2, BAMLH0A3HYC
     T10Y3M, VIX3M, MOVE
     + 기존 시드 보강 (DGS10, DGS2)
-
-기존 `sync_all_indicators`(macro/services/macro_service.py)는 하드코딩된 8 series만 처리하므로,
-본 커맨드는 v2 신규 series만 명시적으로 sync한다.
+의존: packages.shared.api_request.fred_client.FREDClient, macro.models.
 
 사용:
     python manage.py sync_marketpulse_v2_indicators                  # 기본 limit=100

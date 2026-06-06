@@ -1,8 +1,11 @@
-"""PR-A1 후속: 신규 EconomicIndicator 11종 + MarketIndex 11종(XL* GICS sector)에 대한 1년치 시계열 백필.
+"""
+backfill_v2_a1 — PR-A1 후속 1년치 시계열 백필 management command.
 
-Idempotent — 동일 명령 재실행 시 추가 적재 행 0.
-
-EconomicIndicator는 FRED, MarketIndex는 Yahoo Finance(yfinance)에서 fetch.
+소속: apps/market_pulse/management/commands (app 레이어 운영 커맨드).
+역할: 신규 EconomicIndicator 11종 + MarketIndex 11종(XL* GICS sector)의 1년치 시계열
+  idempotent 백필. EconomicIndicator는 FRED, MarketIndex는 Yahoo Finance(yfinance).
+  동일 명령 재실행 시 추가 적재 행 0.
+의존: packages.shared.api_request.fred_client.FREDClient, yfinance, macro.models.
 
 사용:
     python manage.py backfill_v2_a1 --check-pending     # 데이터 0인 신규 series/symbol 탐지

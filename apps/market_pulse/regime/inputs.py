@@ -1,4 +1,19 @@
-"""Market Pulse v2 — Regime Inputs Loader (PR-C)."""
+"""
+intraday Regime Inputs Loader (PR-C) — 14 매크로지표 + SPY 가격블록 로드.
+
+소속: apps/market_pulse/regime (app 레이어).
+역할: macro DB(EconomicIndicator·IndicatorValue·MarketIndex·MarketIndexPrice)에서
+  14 지표(NFCI / NFCICREDIT / NFCILEVERAGE / NFCIRISK / BAMLH0A0HYM2 / BAMLH0A3HYC /
+  T10Y2Y / T10Y3M / VIXCLS / VIX3M / MOVE + SPY 가격 파생 3종)를 읽어 RegimeInputs로 직렬화.
+주요 심볼:
+  - RegimeInputs(dataclass): 14 슬롯 + sources + fetched_at + coverage_ratio() 헬퍼.
+  - INDICATOR_CODE_MAP: 내부 키 → FRED/Yahoo code 매핑.
+  - load_inputs(): 단일 진입점, DB only(파일 IO 없음).
+의존: macro.models.indicators (apps→app 합법).
+주의: 이 입력은 **intraday 5단계 classifier 전용**. EOD VIX 3단계 레짐 입력과 다르다.
+  EOD 경로는 packages/shared의 VIX Provider를 통해 별도 획득.
+소비처: regime/classifier.py·coverage.py.
+"""
 
 from __future__ import annotations
 

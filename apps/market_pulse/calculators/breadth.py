@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Breadth Calculator (PR-F)."""
+"""
+Breadth Calculator (PR-F) — 시장 폭 산출(advance/decline, 52w high/low, AD-line).
+
+소속: apps/market_pulse/calculators (app 레이어 도메인 계산기).
+역할: S&P500 구성종목(packages.shared.stocks.SP500Constituent)과 DailyPrice를 읽어
+  advance/decline·52w 신고가/신저가·AD-line 누적값 산출.
+의존: packages.shared.stocks.models(DailyPrice·SP500Constituent) — app→shared 합법.
+소비처: tasks/breadth.py의 mp_calc_breadth_5min → BreadthSnapshot.
+"""
 
 from __future__ import annotations
 

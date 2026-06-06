@@ -1,4 +1,10 @@
-"""Market Pulse v2 — API Status Enum (PR-I)."""
+"""
+API Status Enum (PR-I).
+
+소속: apps/market_pulse/api (app 레이어).
+역할: 응답 본문의 `status` 필드 표준 값(STALE/OK/INSUFFICIENT_DATA 등) 정의.
+  서버·FE 사이 상태 매칭 단일 소스.
+"""
 
 from __future__ import annotations
 

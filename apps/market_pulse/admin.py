@@ -1,4 +1,11 @@
-"""Market Pulse v2 admin (PR-A2)."""
+"""
+Django Admin 등록 (PR-A2).
+
+소속: apps/market_pulse (app 레이어 root).
+역할: 마켓 펄스 도메인 모델 8종(AnomalySignalLog·BriefingLog·MarketPulseNews·
+  NewsViewLog·RegimeSnapshot·BreadthSnapshot·SectorFlowSnapshot·ConcentrationSnapshot)을
+  Django Admin에 등록 — 운영자 점검·강제 갱신용.
+"""
 
 from django.contrib import admin
 

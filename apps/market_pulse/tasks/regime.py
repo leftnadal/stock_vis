@@ -1,4 +1,14 @@
-"""Market Pulse v2 — Regime Classifier task (PR-C)."""
+"""
+intraday Regime Classifier task (PR-C) — `mp_calc_regime_15min`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 매 15분 — regime.inputs.load_inputs(14 매크로지표) + classifier.load_rules +
+  classify_inputs + apply_hysteresis → RegimeSnapshot upsert(date 단위).
+스케줄: Beat name `mp_calc_regime_15min`, crontab `*/15`.
+주의: 이 task는 **intraday 5단계 regime** 전용. packages/shared 의 EOD 3단계
+  레짐(DynamicRegimeCalculator)과 별개. 입력·알고리즘·소비처 모두 다름.
+호출자: Celery Beat scheduler만(코드 직접 호출 없음).
+"""
 
 from __future__ import annotations
 

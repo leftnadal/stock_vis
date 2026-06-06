@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Overview API serializers (PR-I)."""
+"""
+Overview API serializers (PR-I).
+
+소속: apps/market_pulse/api/serializers (app 레이어 응답 직렬화).
+역할: 4 카드(Regime/Breadth/Sector/Concentration) + 일일 브리핑 + i18n 라벨을
+  하나의 overview 응답으로 묶는 DRF Serializer 정의.
+의존: schemas/* Pydantic 검증, i18n/labels.KO_LABELS.
+소비처: views/overview.py.
+"""
 
 from __future__ import annotations
 

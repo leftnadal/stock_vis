@@ -1,4 +1,11 @@
-"""Market Pulse v2 — Card Detail endpoints (PR-J)."""
+"""
+Card Detail endpoints (PR-J).
+
+소속: apps/market_pulse/api/views (app 레이어 DRF Views).
+역할: 4 카드 디테일 엔드포인트(Regime/Breadth/Sector/Concentration) — 시계열 또는
+  세부 메트릭 응답. cache.py 키 빌더로 Redis 캐시.
+소비처: 마켓 펄스 화면 카드 드릴다운.
+"""
 
 from __future__ import annotations
 

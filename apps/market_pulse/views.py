@@ -1,5 +1,10 @@
 """
-거시경제 데이터 API Views
+거시경제 데이터 API Views — macro v1 호환 엔드포인트.
+
+소속: apps/market_pulse (app 레이어 root).
+역할: 옛 macro v1 화면을 위한 view 집합(GlobalMarketsView·FearGreedIndexView·
+  EconomicCalendarView·DataSyncView 등). PR8b-1에서 macro 흡수, 라우팅은 urls.py.
+주의: v2 화면은 `api/views/*`가 진입점. v1·v2는 응답 구조 자체가 다르므로 혼동 금지.
 """
 import logging
 import threading

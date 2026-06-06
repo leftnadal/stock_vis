@@ -1,4 +1,13 @@
-"""Market Pulse v2 — News Pairing (PR-D, 옵션 W)."""
+"""
+News Pairing (PR-D, 옵션 W) — 이상 신호와 가장 가까운 뉴스 1건 매칭.
+
+소속: apps/market_pulse/anomaly (app 레이어).
+역할: FiredRule + AnomalyContext 기준으로 시간/심볼/카테고리 매칭이 가장 가까운
+  MarketPulseNews 1건을 선택. 페어링 실패 시 None.
+주요 심볼: find_pair(fired, ctx) -> Optional[MarketPulseNews].
+의존: apps.market_pulse.models.news.MarketPulseNews.
+소비처: tasks/anomaly.py의 mp_detect_anomaly_5min — AnomalySignalLog.paired_news FK.
+"""
 
 from __future__ import annotations
 

@@ -1,6 +1,16 @@
-"""레짐 도메인 JSONField Pydantic v2 스키마 (PR-A2).
+"""
+intraday 레짐 도메인 JSONField Pydantic v2 스키마 (PR-A2).
 
-`RegimeSnapshot.inputs` / `fired_rules` JSONField 검증용.
+소속: apps/market_pulse/schemas (app 레이어 JSONField 검증).
+역할: `RegimeSnapshot.inputs`·`fired_rules` JSONField의 14 매크로지표 + 발동 룰 검증.
+주요 심볼:
+  - IndicatorValue: 단일 지표(value, source, fetched_at)
+  - IndicatorsSnapshot: 14 지표 묶음
+  - MatchedCondition: 발동 룰 단위 (regime, atom 결과)
+  - PendingTransition: 히스테리시스 후보(streak 누적 중)
+소비처: regime/classifier.py·tasks/regime.py (intraday mp_calc_regime_15min) 저장 전 검증.
+주의: 이 스키마는 **intraday 5단계 regime** 전용. packages/shared의 EOD VIX 3단계
+  (DynamicRegimeCalculator)와는 별개 시스템(검증 대상 자체가 다름).
 """
 
 from __future__ import annotations

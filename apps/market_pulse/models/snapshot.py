@@ -1,4 +1,16 @@
-"""Market Pulse v2 카드 스냅샷 모델 (PR-A3)"""
+"""
+카드 스냅샷 모델 (PR-A3) — Breadth · SectorFlow · Concentration 3 카드 영속 저장.
+
+소속: apps/market_pulse/models (app 레이어 Django models).
+역할:
+  - BreadthSnapshot: 시장 폭 카드 (advance/decline, 52w high/low, AD-line cumulative).
+  - SectorFlowSnapshot: 섹터 흐름 카드 (universe별 long-format 11 row, S02~S06).
+  - ConcentrationSnapshot: 집중도 카드 (top5_weight, top10_weight, HHI).
+    clean() validator로 top5≤top10≤1, hhi∈[0,1] 보장.
+주요 심볼: 위 3 모델 + `Universe` choices (SECTOR/COUNTRY 등).
+소비처: tasks/{breadth,sector_flow,concentration}.py 적재, api/views/* 응답 노출,
+  tasks/finalize.py가 is_finalized=True 마킹 + cache invalidate.
+"""
 
 from decimal import Decimal
 

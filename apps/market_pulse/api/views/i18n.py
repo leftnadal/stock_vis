@@ -1,4 +1,10 @@
-"""Market Pulse v2 — i18n endpoint (PR-J)."""
+"""
+i18n endpoint (PR-J).
+
+소속: apps/market_pulse/api/views (app 레이어 DRF Views).
+역할: i18n/labels.KO_LABELS 한글 매핑 전체를 FE 클라이언트에 응답.
+  FE 초기 로드 시 1회 호출 → 카드 라벨/regime/anomaly 명칭 표시.
+"""
 
 from __future__ import annotations
 

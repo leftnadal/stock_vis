@@ -1,4 +1,13 @@
-"""Market Pulse v2 — Anomaly Fallback (PR-D)."""
+"""
+Anomaly Fallback (PR-D) — 발동 룰 → 사용자용 슬롯 본문 생성.
+
+소속: apps/market_pulse/anomaly (app 레이어).
+역할: FiredRule + AnomalyContext + mode → 화면 슬롯 본문(overview / sector_highlight /
+  portfolio_action) 텍스트 생성. LLM 미실패 시 fallback이지만, 운영에서는 항상 사용 가능한
+  결정론적 카피.
+주요 심볼: build(fired, ctx, mode) -> SlotBody.
+소비처: tasks/anomaly.py의 mp_detect_anomaly_5min — AnomalySignalLog.body에 박힘.
+"""
 
 from __future__ import annotations
 

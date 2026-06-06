@@ -1,4 +1,11 @@
-"""Market Pulse v2 — API cache key builders (PR-I/J)."""
+"""
+API cache key builders (PR-I/J).
+
+소속: apps/market_pulse/api (app 레이어 REST API 캐시).
+역할: overview / card / health 응답의 Redis 캐시 키 표준화.
+  is_finalized 토글에 맞춰 cache invalidate가 동기화되도록 키 패턴 일관 유지.
+주의: 키 패턴 변경 시 tasks/finalize.py의 cache 무효화 코드도 함께 갱신.
+"""
 
 from __future__ import annotations
 

@@ -1,7 +1,13 @@
 """
-거시경제 통합 서비스
+거시경제 통합 서비스 — FRED + FMP 데이터를 마켓 펄스 대시보드용으로 통합.
 
-FRED + FMP 데이터를 통합하여 Market Pulse 대시보드용 데이터 제공
+소속: apps/market_pulse/services (app 레이어 서비스).
+역할: FRED(매크로지표) + FMP(시장 지수·환율 등)에서 시계열을 가져와 macro DB
+  (MarketIndex·MarketIndexPrice·EconomicIndicator·IndicatorValue·EconomicEvent)에 upsert.
+의존: packages.shared.api_request.fred_client.FREDClient,
+  packages.shared.api_request.providers.fmp.market_pulse_client.FMPClient, macro.models.
+주의: FMP는 Starter Plan(300/m, 10k/d, `/stable/*` only). Legacy `/api/v3/*` 금지.
+소비처: tasks/macro.py·management/commands/{backfill_v2_a1, sync_marketpulse_v2_*}.py.
 """
 import logging
 from datetime import date, datetime, timedelta

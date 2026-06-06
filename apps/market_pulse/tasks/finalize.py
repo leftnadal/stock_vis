@@ -1,4 +1,14 @@
-"""Market Pulse v2 — Finalize + Purge tasks (PR-O)."""
+"""
+Finalize + Purge tasks (PR-O) — 일일 마감과 TTL 정리.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery tasks 운영).
+역할:
+  - mp_finalize_daily: 평일 NY 16:30 — 4 스냅샷 is_finalized=True + 캐시 무효화.
+  - mp_purge_news_daily: 매일 NY 14:00 — 90일 초과 + is_exposed=False 뉴스 삭제(D5).
+  - mp_purge_news_view_log_daily: 매일 NY 14:05 — 48h+ NewsViewLog 정리.
+스케줄: 각 Beat name 동일, crontab 위 시각.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 

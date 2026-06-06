@@ -1,4 +1,14 @@
-"""Market Pulse v2 — Gemini Briefing Client (PR-E). 동기 호출만 사용 (Bug #8)."""
+"""
+Gemini Briefing Client (PR-E) — 일일 브리핑 본문 생성.
+
+소속: apps/market_pulse/briefing (app 레이어 LLM 호출 래퍼).
+역할: prompt.py 템플릿에 4 스냅샷(regime/breadth/sector/concentration) + 뉴스를 주입해
+  Gemini 2.5 Flash로 동기 호출 → safety.py로 출력 검증 → 본문 텍스트 반환.
+의존: packages.shared.api_request.circuit_breaker (CB `gemini`), google.genai 동기 클라이언트.
+주의: Celery 안에서 호출 — **반드시 동기 API** 사용(Bug #8 회피).
+  async genai.Client는 Celery worker fork 충돌 발생.
+소비처: tasks/briefing.py의 mp_generate_brief_daily.
+"""
 
 from __future__ import annotations
 

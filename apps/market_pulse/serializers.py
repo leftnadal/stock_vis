@@ -1,5 +1,11 @@
 """
-거시경제 데이터 Serializers
+거시경제 데이터 Serializers (macro v1 진입점 흡수, PR8b-1).
+
+소속: apps/market_pulse (app 레이어 root) — 옛 macro v1 API 호환용.
+역할: MarketIndex·MarketIndexPrice·EconomicIndicator·IndicatorValue·EconomicEvent의
+  v1 DRF Serializer. /api/v1/macro/* 경로(views.py)에서 사용.
+주의: v2(`api/serializers/overview.py`)와는 다른 진입점 — v1은 단일 도메인 응답,
+  v2는 카드 종합 응답.
 """
 from rest_framework import serializers
 

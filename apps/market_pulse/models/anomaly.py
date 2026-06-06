@@ -1,4 +1,13 @@
-"""Market Pulse v2 이상 신호 모델 (PR-A2)"""
+"""
+이상 신호 모델 (PR-A2).
+
+소속: apps/market_pulse/models (app 레이어 Django models).
+역할: AnomalySignalLog — 4 Core 룰 발동 1건의 evidence + 페어링된 뉴스 + 본문 슬롯 저장.
+주요 심볼:
+  - AnomalySignalLog: rule_id·triggered_at·inputs(JSON)·threshold(JSON)·paired_news(FK)·
+    mode·headline·body.
+소비처: tasks/anomaly.py 적재, api/views/* 응답 노출.
+"""
 
 from django.db import models
 

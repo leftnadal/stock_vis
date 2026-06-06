@@ -1,5 +1,10 @@
 """
-거시경제 데이터 API URL 라우팅
+거시경제 데이터 API URL 라우팅 — macro v1 호환 진입점.
+
+소속: apps/market_pulse (app 레이어 root).
+역할: 옛 macro v1 API(/api/v1/macro/*) URL 경로. PR8b-1(2026-06-01)에서
+  app label='marketpulse' 유지하면서 routing은 흡수. v2 API는 `api/urls.py` 별도.
+주의: reverse('macro:...') 호환 유지 — namespace 'macro' 변경 금지.
 """
 from django.urls import path
 

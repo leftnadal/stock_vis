@@ -1,4 +1,13 @@
-"""Market Pulse v2 — Concentration Celery task (PR-H)."""
+"""
+Concentration Celery task (PR-H) — `mp_calc_concentration_daily`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 평일 NY 17:15 — fetchers.fmp_weights로 SPY ETF holdings 가져온 뒤
+  calculators.concentration로 top5/top10/HHI 산출 → ConcentrationSnapshot upsert.
+스케줄: Beat name `mp_calc_concentration_daily`, crontab NY 17:15 평일.
+주의: CB `fmp_etf`. FMP Starter quota 준수.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 

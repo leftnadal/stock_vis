@@ -1,4 +1,12 @@
-"""Market Pulse v2 — Sector Flow Celery task (PR-G)."""
+"""
+Sector Flow Celery task (PR-G) — `mp_calc_sector_5min`.
+
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: 평일 09:30~16:30 매 5분 — calculators.sector_flow로 11 GICS 섹터 ETF 상대강도·
+  cross-dispersion 산출 → SectorFlowSnapshot upsert(long-format 11 row/cycle).
+스케줄: Beat name `mp_calc_sector_5min`, crontab `*/5` 평일.
+호출자: Celery Beat scheduler만.
+"""
 
 from __future__ import annotations
 

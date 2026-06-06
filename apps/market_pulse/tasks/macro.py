@@ -1,7 +1,13 @@
 """
-거시경제 데이터 Celery 태스크
+거시경제 데이터 Celery 태스크 — macro v1 진입점 흡수(PR8b-1, 2026-06-01).
 
-스케줄링된 데이터 업데이트 태스크
+소속: apps/market_pulse/tasks (app 레이어 Celery tasks).
+역할: 옛 `macro` 앱의 비-모델 책임을 흡수 — 시장 지수·매크로지표·경제 캘린더 동기화 +
+  TTL purge + 캐시 갱신. macro 모델은 영구 잔존(PR8b-3 결정).
+주요 심볼: update_market_indices, update_economic_indicators, update_economic_calendar,
+  refresh_market_pulse_cache, cleanup_old_data.
+의존: macro.models(MarketIndex·MarketIndexPrice·EconomicIndicator·IndicatorValue·EconomicEvent).
+스케줄: config/celery.py Beat 등록(PR8b-1 c). 단발성 운영 tasks 위주.
 """
 from celery import shared_task
 from celery.utils.log import get_task_logger

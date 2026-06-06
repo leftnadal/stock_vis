@@ -1,4 +1,13 @@
-"""Market Pulse v2 — 6 카테고리 뉴스 분류기 (PR-B)."""
+"""
+6 카테고리 뉴스 분류기 (PR-B).
+
+소속: apps/market_pulse/services (app 레이어 서비스).
+역할: 뉴스 제목·본문·심볼·소스를 키워드/regex로 분석해 6 카테고리
+  (MACRO/GEOPOLITICS/SECTOR/INDEX/MAG7/SMART_MONEY) 중 하나로 분류 +
+  matched_symbols·matched_keywords(JSON, schemas/news.py로 검증) 채움.
+주요 심볼: classify(...), NewsClassifierResult.
+소비처: services/news_aggregator.py 적재 직전 호출.
+"""
 
 from __future__ import annotations
 

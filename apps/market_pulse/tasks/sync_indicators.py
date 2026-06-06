@@ -1,13 +1,14 @@
 """
-Market Pulse v2 — Yahoo Finance 보조 sync task.
+Yahoo Finance 보조 sync task — `mp_sync_yahoo_indicators_daily`.
 
-FRED는 NFCI / HY OAS / T10Y3M 등을 제공하지만 CBOE VIX3M, ICE MOVE는 무료가 아니다.
-본 task는 yfinance를 통해 ^VIX3M, ^MOVE 일별 종가를 EconomicIndicator(VIX3M / MOVE)에
-IndicatorValue로 저장한다.
-
+소속: apps/market_pulse/tasks (app 레이어 Celery task).
+역할: FRED 미지원 지표(CBOE VIX3M, ICE MOVE)를 yfinance로 보완. ^VIX3M, ^MOVE 일별
+  종가를 EconomicIndicator(VIX3M/MOVE) + IndicatorValue에 idempotent 저장.
+  다음 사이클 `mp_calc_regime_15min`에서 최신값 즉시 반영.
+스케줄: Beat name `mp_sync_yahoo_indicators_daily`, crontab NY 17:35 평일.
 Celery 정책 (Bug #8):
-    동기 yfinance 호출 (LLM 아니므로 무관하지만 일관성).
-    failure threshold는 동일한 cb 패턴은 미적용 (yfinance는 자체 retry, 본 task는 idempotent).
+    동기 yfinance 호출 (LLM 아니지만 일관성 차원에서 동기 유지).
+    yfinance 자체 retry 사용, 본 task는 idempotent하여 별도 CB 미적용.
 
 매일 1회 (KST 06:35 = NY 17:35) 평일 후. NY 17:15 mp_calc_concentration_daily 직후 실행해
 다음 KST 06:15 mp_generate_brief_daily가 최신 데이터로 동작.
