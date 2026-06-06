@@ -1,4 +1,16 @@
-"""Market Pulse v2 Regime Snapshot 모델 (PR-A2)"""
+"""
+intraday Regime Snapshot 모델 (PR-A2).
+
+소속: apps/market_pulse/models (app 레이어 Django models).
+역할: RegimeSnapshot — date 단위 1행, intraday 5단계 regime 분류 결과 저장.
+주요 심볼:
+  - RegimeSnapshot: date(unique)·snapshot_time·regime·status·inputs(JSON)·coverage·
+    fired_rules(JSON)·previous_regime·hysteresis_streak·headline·summary·is_finalized.
+  - RegimeSnapshot.Status: OK / INSUFFICIENT_DATA.
+주의: 이 모델은 **intraday 5단계 regime** 전용. EOD 3단계 레짐(packages/shared)은 별도
+  저장소(EODSignal 등)로 다룸.
+소비처: tasks/regime.py 적재, api/views/* 응답 노출.
+"""
 
 from django.db import models
 

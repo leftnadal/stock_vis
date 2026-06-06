@@ -1,10 +1,13 @@
 """
-Market Pulse v2 뉴스 모델 (PR-A2)
+뉴스 모델 (PR-A2).
 
-- MarketPulseNews: 6 카테고리(MACRO/GEOPOLITICS/SECTOR/INDEX/MAG7/SMART_MONEY)
-- NewsViewLog: 24h 내 동일 user에 동일 news 중복 노출 방지
-
-D5 (노출 영구/미노출 90일 TTL) 정책 적용. TTL purge는 PR-O에서 처리.
+소속: apps/market_pulse/models (app 레이어 Django models).
+역할:
+  - MarketPulseNews: 6 카테고리(MACRO·GEOPOLITICS·SECTOR·INDEX·MAG7·SMART_MONEY) 뉴스.
+    matched_symbols·matched_keywords(JSON, schemas/news.py로 검증).
+  - NewsViewLog: 24h 내 동일 user × 동일 news 중복 노출 방지.
+TTL 정책: D5 — 노출(is_exposed=True) 영구 / 미노출 90일 만료. 정리는 tasks/finalize.py.
+소비처: tasks/news.py·services/news_aggregator.py 적재, anomaly/news_pairing.py 페어링.
 """
 
 from django.conf import settings

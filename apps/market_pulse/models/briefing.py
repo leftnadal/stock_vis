@@ -1,4 +1,12 @@
-"""Market Pulse v2 LLM 브리핑 모델 (PR-A2)"""
+"""
+LLM 브리핑 모델 (PR-A2).
+
+소속: apps/market_pulse/models (app 레이어 Django models).
+역할: BriefingLog — Gemini 일일 브리핑 본문 + 입력 요약(JSON) 저장.
+주요 심볼:
+  - BriefingLog: date·body·inputs_summary(JSON)·status·generated_at.
+소비처: tasks/briefing.py 적재, api 응답에서 일일 브리핑 노출.
+"""
 
 from django.db import models
 
