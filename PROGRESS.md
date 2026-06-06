@@ -24,7 +24,11 @@
 >
 > ✅ **2026-06-01 세션 계약서 push**: `90df136..4df5fd7 main -> main` (1 commit — 소프트 강제 worktree + 계약 헤더 + 1차 소스 체인 연결).
 >
-> ✅ **2026-06-04 BOUNDARY-3 push + main 머지**: `monorepo/sess-market_pulse` 4 슬라이스 [33e5437..662fdc4] → merge `a9bb229`. **현재 `origin/main = a9bb229`** (BOUNDARY-3 머지 시점, 메타 갱신 기준). shared 경계 부채 전건 청소 — burn-down 2→0, 트랙 전체 종결. 방식: 의존 역전 + 등록 패턴(`VIXProvider` 포트 + `MacroVIXProvider` + `apps.ready()` 레지스트리). 모델 이동 0, 회귀 302 GREEN.
+> ✅ **2026-06-04 BOUNDARY-3 push + main 머지**: `monorepo/sess-market_pulse` 4 슬라이스 [33e5437..662fdc4] → merge `a9bb229`. shared 경계 부채 전건 청소 — burn-down 2→0, 트랙 전체 종결. 방식: 의존 역전 + 등록 패턴(`VIXProvider` 포트 + `MacroVIXProvider` + `apps.ready()` 레지스트리). 모델 이동 0, 회귀 302 GREEN.
+>
+> ✅ **2026-06-06 market_pulse 헤더 표준화 push + main 머지**: `monorepo/sess-mp-docstrings` 14 슬라이스 → merge `cfc32a7`. 75 파일 docstring 표준화, 코드 0, 회귀 302 동일. 옛 경로 주석 잔재 1건 정리.
+>
+> ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기). **현재 `origin/main = ce68da0`** (메타 갱신 기준).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
