@@ -1297,3 +1297,30 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 다음 검증 세션은 read-only 라이브 검증(서버 기동 + 200 응답 1개) 범위로 한정.
 
 **관련 입력 문서**: `docs/trading_bot_api/api_decision_handoff.md` (단일 입력, 본 결정 기록 후 archive 또는 정리 대상 — 평행 출처 방지).
+
+---
+
+### D1 — intraday(regime/anomaly) 거취: dashboard 이관 보류, market_pulse 잔류 (옵션3) (2026-06-06)
+
+**결정**:
+- intraday를 dashboard로 이관하지 않고 market_pulse에 잔류.
+- 당면 조치 = NT-7 운영 안정화(Beat 스케줄 재동기화 + 좀비 워커 정리)로 한정. 구조 이동·격리 없음.
+- intraday→dashboard 도메인 이동은 보류 항목으로 강등(`TASKQUEUE.md` `STRUCT-CLEANUP` 등록).
+
+**근거 (STEP 0 실측, 2026-06-06)**:
+- "intraday는 dashboard 전용 → 깨끗한 방향1 이동" 전제가 실측으로 깨짐. 거시↔intraday 양방향 결합:
+  - intraday→거시 2건: `anomaly/engine.py`가 `ConcentrationSnapshot`·`SectorFlowSnapshot` 직접 쿼리, `news_pairing.py`가 `MarketPulseNews` → 이동 시 dashboard→market_pulse 신규 결합.
+  - 거시→intraday 6건: `api/views/overview.py` 메인 4 카드 중 2 카드·`briefing/prompt.py`·`tasks/finalize.py`·`admin.py`·`api/views/cards.py`·`api/views/health.py`가 intraday 인용.
+- 받을 자리 부재: `apps/dashboard/` 백엔드 앱·INSTALLED_APPS·URL 없음(`frontend/app/dashboard/`는 Next.js 화면, 해당 없음).
+- 동결 결정 충돌: 2026-05-31 "dashboard=거시 통합 뷰, marketpulse를 dashboard에 통합 → 취소"(DECISIONS.md L394·L429)와 정면 충돌.
+- dashboard 타 프로젝트 소유 → 이동은 양 세션 직렬화 필요(이 세션 영역 밖, SESSION_CONTRACT.C.3).
+- 가중합(인지 0.25 / 의존 0.20 / 롤백 0.20 / 테스트 0.15 / 효율 0.10 / 유연 0.10): 옵션3 4.25 ≈ 옵션2 4.10 ≫ 옵션1 2.45. 마진 옵션3−옵션1 = 1.80(>1 자동 탈락), 옵션3−옵션2 = 0.15(타이브레이커: D1 미결정 위에 격리 작업 쌓으면 헛수고 → 옵션3).
+
+**보류 트리거 (재개 조건)**:
+- (a) 앱 초기 배포 버전 확정 시 구조 정리 트랙에서 재검토, 또는 (b) 실제 경계 충돌 발생 시.
+- 그 전까지 다른 세션에서 먼저 꺼내지 않음(scope noise 방지).
+
+**재개 시 안전장치 메모**:
+- `RegimeSnapshot` (`mp_regime_snapshot`) · `AnomalySignalLog` (`mp_anomaly_signal_log`) 둘 다 `db_table` 명시 → **SeparateDatabaseAndState 수동 마이그레이션 필수**. 자동 `makemigrations` 금지(DROP+CREATE = prod 데이터 손실).
+
+**관련 입력 문서**: `docs/market_pulse_v2/nt_7_step_0.md` (NT-7 STEP 0 지시서), 본 결정 측정 보고는 세션 컨텍스트 내에 보존(평행 출처 회피).
