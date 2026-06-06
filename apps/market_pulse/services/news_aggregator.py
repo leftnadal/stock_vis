@@ -1,4 +1,13 @@
-"""Market Pulse v2 — News Aggregator (PR-B)."""
+"""
+News Aggregator (PR-B) — 3 소스 뉴스 수집 + URL hash dedup.
+
+소속: apps/market_pulse/services (app 레이어 서비스).
+역할: FMP General + FMP Stock(MAG7) + Marketaux 3 소스에서 뉴스 수집,
+  URL SHA256 해시로 중복 제거, MarketPulseNews 적재.
+의존: packages.shared.api_request.circuit_breaker (CB `fmp_news`/`marketaux`),
+  packages.shared.api_request.providers.fmp.client.FMPClient.
+소비처: tasks/news.py의 mp_fetch_news_hourly.
+"""
 
 from __future__ import annotations
 

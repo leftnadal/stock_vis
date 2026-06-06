@@ -1,10 +1,20 @@
-"""MacroVIXProvider — VIXProvider 포트의 macro.models 기반 구현.
+"""
+MacroVIXProvider — VIXProvider 포트(packages/shared)의 macro.models 기반 구현(BOUNDARY-3).
 
-apps/market_pulse가 macro.models를 import하는 것은 합법(app→app).
-shared/eod 코드는 이 클래스를 직접 알지 못하고 포트만 사용한다.
-
-행위보존: 기존 eod_pipeline._get_vix_value, eod_regime_calculator._calculate_regime
-이 사용하던 쿼리·반환 타입을 그대로 옮긴다.
+소속: apps/market_pulse/services (app 레이어 — shared 포트 구현체).
+역할: packages.shared.stocks.services.vix_provider.VIXProvider ABC의 두 메서드를
+  macro.MarketIndex/MarketIndexPrice 쿼리로 구현. VIX(`VIX`/`^VIX`/`VIXX`, category=
+  volatility) 종가 시계열·최신값 공급.
+주요 심볼:
+  - VIX_SYMBOLS / VIX_CATEGORY: 쿼리 상수.
+  - MacroVIXProvider: get_latest_vix(target_date) -> float|None, get_vix_series(
+    date_from, date_to) -> list[Decimal].
+의존: macro.models (apps→app 합법).
+등록: apps/market_pulse/apps.py::MarketpulseConfig.ready()에서 register_vix_provider(...).
+주의: BOUNDARY-3(2026-06-04) 채택한 의존 역전 + 등록 패턴의 한 축. shared가 macro·apps를
+  거꾸로 import하지 않게 하는 유일한 통로. shared 코드는 이 클래스를 직접 import하지 않는다.
+행위보존: 옛 eod_pipeline._get_vix_value / eod_regime_calculator._calculate_regime이
+  사용하던 쿼리·반환 타입을 그대로 옮긴 것 — 산출 동등성 유지.
 """
 
 from __future__ import annotations
