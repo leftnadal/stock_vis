@@ -223,3 +223,7 @@ frontend/stocks.log
 docs/nightly_auto_system/**/health_check.stderr.log
 # 루트 node_modules (frontend 외 또는 vitest 워크스페이스 산출물)
 node_modules/
+
+# Daily Report mail archive — send_daily_report_task가 메일 발송 직후 사본 저장.
+# 구조: mail_archive/YYYY/MM/DD.md (assistant가 직접 Read로 읽어 트리아지 자동화).
+mail_archive/

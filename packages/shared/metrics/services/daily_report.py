@@ -966,3 +966,230 @@ def build_report_payload(today: date) -> Dict[str, Any]:
     }
     _save_snapshot(today, payload)
     return payload
+
+
+# ────────────────────────────────────────────────────────────
+# Mail archive — 메일 발송 직후 사본을 mail_archive/YYYY/MM/DD.md 에 저장.
+# 사람도 읽기 좋고 assistant Read 도구로 직접 읽어 트리아지 자동화 가능.
+# ────────────────────────────────────────────────────────────
+
+# repo 루트 기준 (BASE_DIR = .../stock_vis). 항상 git checkout 위치를 따른다.
+ARCHIVE_DIR = Path(__file__).resolve().parents[4] / "mail_archive"
+
+
+def _render_markdown_archive(payload: Dict[str, Any]) -> str:
+    """payload → 마크다운 본문. 메일 HTML과 동일 데이터 소스, 사람·AI 읽기 최적화."""
+    lines: List[str] = []
+    d = payload["date"]
+    prev = payload.get("previous_date") or "(없음)"
+    g = payload["graph"]
+    n = payload["news"]
+    f = n.get("funnel", {})
+    gaps = payload["gaps"]
+    h = payload["health"]
+    nightly = payload.get("nightly") or {}
+
+    lines += [
+        f"# 📊 Stock-Vis Daily Report — {d}",
+        "",
+        f"> 어제 ({prev}) 대비 변화. 자동 archive (mail_archive/).",
+        "",
+        "## 헤더 요약",
+        f"- 총 노드: **{g['total_nodes']}** / 총 관계: **{g['total_relations']}**",
+        f"- 24h 신규 뉴스: **{n['today_new']}**",
+        f"- 실행 건강 (J/K): **"
+        + (
+            f"{f['execution_health_pct']}%"
+            if f.get("execution_health_pct") is not None
+            else "N/A (K=0)"
+        )
+        + "**",
+        "",
+        "## 🧬 그래프 상태",
+        "",
+        "### 노드 (라벨별)",
+        "| 라벨 | 개수 | 어제 대비 |",
+        "|------|-----:|----------:|",
+    ]
+    deltas = payload.get("deltas") or {}
+    for label, cnt in g["labels"].items():
+        lines.append(
+            f"| {label} | {cnt} | {deltas.get('labels', {}).get(label, '')} |"
+        )
+
+    lines += [
+        "",
+        "### 관계 (타입별)",
+        "| 타입 | 개수 | 어제 대비 |",
+        "|------|-----:|----------:|",
+    ]
+    for rt, cnt in g["relations"].items():
+        lines.append(
+            f"| {rt} | {cnt} | {deltas.get('relations', {}).get(rt, '')} |"
+        )
+
+    lines += [
+        "",
+        "### Stock 속성 채움률",
+        "| 속성 | 채움률 |",
+        "|------|-------:|",
+    ]
+    for k, v in g.get("stock_attr_completeness_pct", {}).items():
+        lines.append(f"| {k} | {v}% |")
+
+    lines += [
+        "",
+        f"- 외로운 Stock 노드(관계 0): **{g.get('lonely_stocks', 0)}**",
+        f"- 종목당 평균 관계 수: {g.get('avg_relations_per_stock', 0)}",
+        "",
+        "## 🔍 커버리지 갭",
+        "| 항목 | 미반영 |",
+        "|------|------:|",
+        f"| Stock (PG-Neo4j) | {gaps.get('missing_stocks_count', 0)} |",
+        f"| Industry | {gaps.get('missing_industries_count', 0)} |",
+        f"| Sector | {gaps.get('missing_sectors_count', 0)} |",
+        f"| ChainProfile 미생성 | {gaps.get('chain_profile_missing_count', 0)} |",
+        f"| SEC UnmatchedCompanyQueue | {gaps.get('unmatched_companies_pending', 0)} |",
+    ]
+    top10 = gaps.get("unmatched_companies_top10") or []
+    if top10:
+        lines += [
+            "",
+            "### Unmatched 회사 상위",
+            "| 회사명 | 빈도 | top fuzzy |",
+            "|--------|-----:|-----------|",
+        ]
+        for r in top10:
+            tf = r.get("top_fuzzy")
+            tf_s = (
+                f"{tf.get('ticker', '-')} ({tf.get('score', '-')})"
+                if isinstance(tf, dict)
+                else "-"
+            )
+            lines.append(
+                f"| {r.get('raw_name', '?')} | {r.get('occurrence', 0)} | {tf_s} |"
+            )
+
+    lines += [
+        "",
+        "## 📰 뉴스 일일 리포트",
+        "| 지표 | 값 |",
+        "|------|---:|",
+        f"| 전체 누적 NewsArticle | {n.get('total_articles', 0)} |",
+        f"| 오늘 신규 (24h) | {n.get('today_new', 0)} |",
+        f"| LLM 분석 완료 | {n.get('today_llm_analyzed', 0)} |",
+        f"| LLM 분석 대기 | {n.get('today_llm_pending', 0)} |",
+        "",
+        f"### 📊 분석 퍼널 (24h, Tier A+ ≥ {f.get('tier_a_threshold', 0.7)})",
+        "| 단계 | 건수 |",
+        "|------|-----:|",
+        f"| N · 신규 수집 | {f.get('n_today_new', 0)} |",
+        f"| M · 점수 기록 | {f.get('m_score_recorded', 0)} (null {f.get('null_count', 0)} / {f.get('null_pct', 0)}%) |",
+        f"| K · Tier A+ 통과 | {f.get('k_tier_a_pass', 0)} |",
+        f"| J · deep 분석 완료 | {f.get('j_deep_analyzed', 0)} |",
+        "",
+        "| 지표 | 값 |",
+        "|------|---:|",
+        f"| 실행 건강 (J/K) | "
+        + (
+            f"{f['execution_health_pct']}%"
+            if f.get("execution_health_pct") is not None
+            else "N/A (K=0)"
+        )
+        + " |",
+        f"| 커버리지 (K/N) | {f.get('coverage_pct', 0)}% |",
+        f"| 점수 기록률 (M/N) | {f.get('score_recording_pct', 0)}% |",
+    ]
+
+    sentiment = n.get("sentiment_24h") or {}
+    if sentiment:
+        lines += [
+            "",
+            "### sentiment (24h)",
+            "| sentiment | 건수 |",
+            "|-----------|-----:|",
+        ]
+        for k, v in sentiment.items():
+            lines.append(f"| {k} | {v} |")
+
+    sector_dist = n.get("sector_distribution_24h") or {}
+    if sector_dist:
+        lines += [
+            "",
+            "### 섹터 커버리지 (24h)",
+            "| 섹터 | 24h 뉴스 |",
+            "|------|---------:|",
+        ]
+        for sec, cnt in sector_dist.items():
+            lines.append(f"| {sec} | {cnt} |")
+        lines.append(
+            f"- 종목 커버: {n.get('stocks_covered_count', 0)} / 미커버: {n.get('stocks_no_news_count', 0)}"
+        )
+
+    lines += [
+        "",
+        "## 💡 개선 방향",
+    ]
+    for s in payload.get("suggestions", []):
+        lines.append(
+            f"- {s.get('severity', '?')} **{s.get('category', '?')}** — {s.get('issue', '')}"
+        )
+        if s.get("action"):
+            lines.append(f"    → {s['action']}")
+
+    lines += [
+        "",
+        "## 🌙 야간 자동화 보고서",
+        f"- 마지막 실행 종료: {nightly.get('last_finished_at', '?')}",
+        f"- 실행 브랜치: {nightly.get('branch', '?')}",
+        f"- 생성 보고서 수: {nightly.get('report_count', 0)}",
+        f"- 총 줄 수: {nightly.get('total_lines', 0)}",
+        f"- 보고서 디렉토리: `{nightly.get('report_dir', '?')}`",
+    ]
+    reports = nightly.get("reports") or []
+    if reports:
+        lines += [
+            "",
+            "### 보고서 목록",
+            "| 이름 | 줄 수 | 미리보기 |",
+            "|------|-----:|---------|",
+        ]
+        for r in reports:
+            lines.append(
+                f"| {r.get('name', '?')} | {r.get('lines', 0)} | {r.get('title', '')} |"
+            )
+
+    llm = payload.get("llm") or {}
+    lines += [
+        "",
+        "## 🤖 LLM 사용량 + 비용",
+        f"- 24h 호출: {llm.get('news_calls_24h', 0)} (SEC {llm.get('sec_calls_24h', 0)} / News {llm.get('news_calls_24h', 0)})",
+        f"- 24h 추정 비용: ${llm.get('estimated_cost_24h_usd', 0.0)}",
+        f"- 월간 추정: ${llm.get('estimated_cost_monthly_usd', 0.0)}",
+        "",
+        "## ⚙️ 시스템 헬스",
+        f"- Celery worker: {'✅' if h.get('celery_worker_alive') else '❌'} {h.get('celery_worker_count', 0)}개",
+        f"- Celery Beat: {'✅' if h.get('celery_beat_alive') else '❌'}",
+        f"- Neo4j: {'✅' if h.get('neo4j_alive') else '❌'}",
+        f"- SEC 24h 처리: {h.get('sec_24h_processed_filings', 0)} / 전체 누적: {h.get('sec_total_filings', 0)}",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def save_mail_archive(payload: Dict[str, Any]) -> Optional[Path]:
+    """payload 마크다운 사본을 mail_archive/YYYY/MM/DD.md 에 저장.
+
+    실패해도 메일 발송에 영향 주지 않도록 호출 측에서 try/except로 격리할 것.
+    반환: 저장 경로(성공) 또는 None(스킵/실패는 예외 발생).
+    """
+    from datetime import date as _date
+
+    today = _date.fromisoformat(payload["date"])
+    target_dir = ARCHIVE_DIR / f"{today.year:04d}" / f"{today.month:02d}"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target = target_dir / f"{today.day:02d}.md"
+
+    body = _render_markdown_archive(payload)
+    target.write_text(body, encoding="utf-8")
+    return target

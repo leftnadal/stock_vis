@@ -80,6 +80,15 @@ def send_daily_report_task(self):
         msg.send(fail_silently=False)
 
         logger.info(f"daily report sent → {recipient}")
+
+        # Archive 사본 — 메일 발송과 독립(best-effort). 실패해도 메일 영향 없음.
+        try:
+            from packages.shared.metrics.services.daily_report import save_mail_archive
+
+            archive_path = save_mail_archive(payload)
+            logger.info(f"daily report archived → {archive_path}")
+        except Exception as arch_exc:
+            logger.warning(f"daily report archive failed (메일 발송은 성공): {arch_exc}")
         return {
             "status": "sent",
             "recipient": recipient,
