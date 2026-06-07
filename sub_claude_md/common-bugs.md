@@ -395,4 +395,15 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - watchdog 또는 daily report에 `ps -e | grep "celery.*beat" | wc -l > 1` 감지 룰 추가 → 즉시 알림.
   - 가드는 **origin 기반**이 좋음 (cwd가 정상 트리(`Desktop/stock_vis`) 밖이면 좀비 가능성 ↑).
   - 정상 Beat는 항상 `--scheduler django_celery_beat.schedulers:DatabaseScheduler` 명시 — `ps aux`에서 옵션 없는 beat는 좀비.
-- 📎 참조: `DECISIONS.md` "좀비 Beat 56670 = 5/21 Trash stray 기동의 잔불 (2026-06-06)", `TASKQUEUE.md` NT-10/NT-7/NT-11, `_briefs/2026-06-06/sprint_a1_ops_singletons.md` STEP 0 결과
+- NT-2 동일 origin (잔불 16일): NT-2(2026-06-04 좀비 워커 청소)와 본 사건은 **동일 origin** = 5/21 10:06 `~/.Trash/stock_vis.icloud_backup.20260516_144329` 트리에서 셸이 띄운 stray celery. NT-2 회차에서 워커(PID 56586/91784)는 청소했으나 같은 셸 origin의 beat(PID 56670)는 종류가 달라 함께 안 잡혀 잔불 16일. **프로세스 종류별 piecemeal 청소는 잔불 함정** — origin 단위(같은 셸 / 같은 cwd / 같은 시각 기동)로 묶어서 청소해야 한 사이클에 종결.
+- origin 단위 청소 절차 (검증까지):
+  1. `pgrep -f celery` → 모든 celery 프로세스(worker + beat 함께) PID 수집
+  2. 각 PID의 cwd 확인 (`lsof -p <PID> | grep cwd` 또는 `ps -o pid,ppid,lstart,command -p <PID>`) → `.Trash` / repo 밖 / 옛 트리 색출
+  3. stray 전부 `kill -TERM <명시 PID>` (승인 후, 명시 PID만 — `pkill -f` 같은 패턴 kill 금지)
+  4. 정상 launchd 프로세스 보존 검증: `launchctl list | grep stockvis` 살아있고 cwd가 정규 트리
+  5. 검증 3건: 프로세스 종류별 1개(`pgrep -f "celery.*worker" | wc -l == 1`, beat 동일) / 다음 회차 메일 1통 / 워커 에러 로그 옛 task명(`Received unregistered`) 신규 0건
+- 예방 (NT-11 가드 박힘, 2026-06-07):
+  - **daily_report stray 검출 가드** = `packages/shared/metrics/services/daily_report.py:_detect_stray_celery()`. `git worktree list`에서 정규 루트 도출(하드코딩 없음) → 각 celery 프로세스 cwd 비교 → 루트 밖이면 offender. 매일 07:00 KST daily report 발사 시 검출, offender > 0이면 메일 텍스트 1줄 + log.warning + suggestion risk(🔴). offender 0건 무음. **detection-only — 자동 kill 안 함**.
+  - `.Trash` 또는 백업 트리 안에서 celery 명령 ad-hoc 실행 금지. 비교/검증 목적은 git worktree로.
+  - watchdog 셸/plist는 본 가드 트랙에서 무수정 (후속 NT-11b — non-blocking 검문소 정책 결정 시).
+- 📎 참조: `DECISIONS.md` "좀비 Beat 56670 = 5/21 Trash stray 기동의 잔불 (2026-06-06)", `TASKQUEUE.md` NT-10/NT-7/NT-11/NT-11b, `_briefs/2026-06-06/sprint_a1_ops_singletons.md` STEP 0 결과, `tests/unit/test_stray_celery_detection.py` 회귀 7건
