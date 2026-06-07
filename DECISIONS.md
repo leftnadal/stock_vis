@@ -1324,3 +1324,39 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - `RegimeSnapshot` (`mp_regime_snapshot`) · `AnomalySignalLog` (`mp_anomaly_signal_log`) 둘 다 `db_table` 명시 → **SeparateDatabaseAndState 수동 마이그레이션 필수**. 자동 `makemigrations` 금지(DROP+CREATE = prod 데이터 손실).
 
 **관련 입력 문서**: `docs/market_pulse_v2/nt_7_step_0.md` (NT-7 STEP 0 지시서), 본 결정 측정 보고는 세션 컨텍스트 내에 보존(평행 출처 회피).
+
+---
+
+### 좀비 Beat 56670 = 5/21 Trash stray 기동의 잔불 (NT-10/NT-7 단일 origin) (2026-06-06)
+
+**결정**:
+- NT-10(메일 2회 발송) + NT-7의 KeyError(`Received unregistered task`)는 **단일 원인**으로 확정 = 5/21 10:06에 `~/.Trash/stock_vis.icloud_backup.20260516_144329` 트리에서 수동 기동되어 16일간 invisible로 살아남은 좀비 Beat 프로세스(PID 56670).
+- 청소는 **origin 단위**로. PID 단위 단발 kill만으로는 재발 방지 못함 — origin(어디서 어떻게 떠올랐는가)을 끊어야 함.
+- NT-7의 두 증상은 **분리 추적**: KeyError = 좀비 origin과 동일 사건(해소 완료), FileNotFoundError = 별도 원인 가능(서비스 코드 또는 외부 파일 의존), 다음 회차 검증 후 분리 판정.
+- 재발 방지 가드는 **origin(cwd-밖) 기반** 채택 예정 — 정상 트리(`Desktop/stock_vis`) 밖에서 기동된 celery beat는 모두 알림 대상. 가드 코드 구현 범위는 NT-11 트랙에서 별도 결정.
+- 좀비 종료는 단발 kill(SIGTERM)로 완료(2026-06-06 21:30). 검증 = 6/7 07:00 KST 단일 메일 + 6/6 21:30 이후 KeyError 소멸.
+
+**Why**:
+- 단일 PID kill은 "잔불 끄기"일 뿐 — origin(Trash 트리에서 수동 `celery -A config beat` 실행)을 가드하지 않으면 같은 사용자 액션(트리 비교/검증 목적의 ad-hoc 기동)이 다시 좀비를 만든다.
+- iCloud sync OFF 이력(5/16)으로 Trash에 옛 트리가 남아있는 상태가 보존됨. 이 트리에서 어떤 명령이든 실행 가능 → 비정상 cwd 기반 가드가 가장 비용 싸고 일반화 가능.
+- watchdog이 launchd Beat(PID 15151)가 살아있는 것만 확인하는 룰만 가져, 다중 process가 16일간 invisible. **검출 룰의 sparsity가 본 사건의 invisible 기간을 만든 핵심 요인.**
+- KeyError와 FileNotFoundError를 같은 NT-7 묶음으로 보면 한쪽 해소 후 다른 쪽 잔존 신호를 놓친다 — 분리 추적이 안전.
+
+**How to apply**:
+- 가드 채택: `ps aux | grep "celery.*beat"`로 다중 process 감지 + 각 process의 cwd(`lsof -p <PID> | grep cwd`)가 `Desktop/stock_vis` 밖이면 알림. 가드 구현 위치(`config/tasks.py` 또는 watchdog 셸 또는 daily report 섹션) = NT-11 트랙에서 결정.
+- 정상 Beat 기동은 항상 `--scheduler django_celery_beat.schedulers:DatabaseScheduler` 옵션 명시. `ps aux`에서 옵션 없는 beat는 즉시 의심.
+- 운영 트리(`Desktop/stock_vis`) 밖에서 celery 명령 ad-hoc 실행 금지 — 비교/검증 목적이면 worktree 또는 별도 venv로.
+- Trash 또는 백업 트리는 cron 비활성/celery 명령 가드되도록 환경 정책. (사용자 수동 영역, 본 트랙 범위 밖)
+- NT-7 FileNotFoundError 분리 검증: 6/7 회차에서 KeyError 0건이고 FileNotFoundError가 잔존하면 별도 STEP 0 트랙.
+
+**증거 (스냅샷)**:
+- 좀비 메타: PID 56670, PPID 13862(부모 셸 살아있음, orphan 아님), 시작 Thu May 21 10:06:27 2026, cwd=`~/.Trash/stock_vis.icloud_backup.20260516_144329`, stdin/stdout/stderr=`/dev/ttys003`, command `celery -A config beat -l info` (`--scheduler` 옵션 없음 = default PersistentScheduler).
+- 정상 Beat: PID 15151(5/17 시작, launchd `com.stockvis.celery-beat`, DatabaseScheduler). 좀비 종료 후 launchd가 21:30에 PID 86614로 재기동(정상).
+- 워커 에러 로그 task 헤더 origin 두 종류: `gen15151@...`(정상 Beat) + `gen56670@...`(좀비 Beat). 두 origin이 같은 task name으로 발사된 흔적이 발사 다중성의 표지.
+- Beat 로그(`celery-beat-error.log`)는 stdout 아닌 stderr에 출력 — `*-error.log` 파일이 진단 1차 소스. `*.log`(stdout)는 거의 비어있음. 이건 진단 함정.
+
+**관련 트랙**:
+- common-bugs #33 (좀비 Beat 다중 process 패턴)
+- TASKQUEUE NT-10(메일 2회) / NT-7(unregistered task) / NT-11(가드 범위 결정 대기 → git 지시서)
+- iCloud sync OFF 이력: PROGRESS 또는 메모리 `troubleshoot_icloud_desktop_sync_off`
+- Bug #28 (Beat schedule drift dict↔DB)는 본 사건과 **다른 원인** — 정합 상태에서도 다중 process로 KeyError 발생 가능함을 보여주는 사례.
