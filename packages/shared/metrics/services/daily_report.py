@@ -557,6 +557,65 @@ def collect_llm_usage() -> Dict[str, Any]:
     }
 
 
+def _allowed_roots() -> List[str]:
+    """`git worktree list --porcelain` 출력으로 정규 루트 집합 도출.
+
+    런타임 도출 — 하드코딩 금지. 4개 worktree 모두 정상 cwd 후보.
+    """
+    import os
+    import subprocess
+
+    try:
+        out = subprocess.run(
+            ["git", "worktree", "list", "--porcelain"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        ).stdout
+    except Exception:
+        return []
+    return [
+        os.path.realpath(line.split(" ", 1)[1].strip())
+        for line in out.splitlines()
+        if line.startswith("worktree ")
+    ]
+
+
+def _detect_stray_celery() -> List[Dict[str, Any]]:
+    """celery 프로세스의 cwd가 정규 worktree 루트 밖이면 offender 등록.
+
+    detection-only. kill 금지 (NT-11 절대 규칙 1). 좀비 Beat 56670(5/21 `.Trash` 백업
+    stray 기동) 같은 잔불을 매일 07:00 보고서 발사 시 가시화한다.
+    """
+    import os
+
+    try:
+        import psutil
+    except ImportError:
+        return []
+
+    roots = _allowed_roots()
+    if not roots:
+        return []
+
+    offenders: List[Dict[str, Any]] = []
+    for proc in psutil.process_iter(["pid", "cmdline", "cwd"]):
+        try:
+            cmdline = proc.info.get("cmdline") or []
+            cmd = " ".join(cmdline)
+            if "celery" not in cmd:
+                continue
+            cwd = proc.info.get("cwd")
+            if not cwd:
+                continue
+            rp = os.path.realpath(cwd)
+            if not any(rp == r or rp.startswith(r + os.sep) for r in roots):
+                offenders.append({"pid": proc.info["pid"], "cwd": rp})
+        except (psutil.NoSuchProcess, psutil.AccessDenied, KeyError):
+            continue
+    return offenders
+
+
 def collect_system_health() -> Dict[str, Any]:
     """Celery + Neo4j + SEC 파이프라인 헬스."""
     import subprocess
@@ -617,6 +676,14 @@ def collect_system_health() -> Dict[str, Any]:
     sec_total_filings = RawDocumentStore.objects.count()
     sec_total_evidence = SupplyChainEvidence.objects.count()
 
+    stray_celery = _detect_stray_celery()
+    if stray_celery:
+        logger.warning(
+            "stray celery detected: %d offender(s) — %s",
+            len(stray_celery),
+            stray_celery,
+        )
+
     return {
         "celery_worker_alive": celery_worker_alive,
         "celery_worker_count": len(celery_worker_pids),
@@ -625,6 +692,7 @@ def collect_system_health() -> Dict[str, Any]:
         "sec_24h_processed_filings": sec_24h_processed,
         "sec_total_filings": sec_total_filings,
         "sec_total_evidence": sec_total_evidence,
+        "stray_celery": stray_celery,
     }
 
 
@@ -860,6 +928,19 @@ def collect_suggestions(
                 "issue": f"24h 뉴스 커버 종목 {covered}/{total_stocks} = {coverage_pct}%",
                 "action": act,
                 "samples": [],
+            }
+        )
+
+    # 9b. Celery 위생 (stray celery, NT-11 가드) — offender > 0일 때만 알림. 0건이면 완전 무음.
+    stray = health.get("stray_celery") or []
+    if stray:
+        suggestions.append(
+            {
+                "category": "9. 시스템 헬스",
+                "severity": "🔴",
+                "issue": f"stray celery {len(stray)}건 — cwd가 정규 worktree 루트 밖 (좀비 의심)",
+                "action": "수동 확인: `ps -p <pid>` + `lsof -p <pid> | grep cwd` → origin 식별 후 승인 트랙으로 청소 (detection-only, 자동 kill 안 함)",
+                "samples": [f"pid={o['pid']} cwd={o['cwd']}" for o in stray[:5]],
             }
         )
 
@@ -1172,6 +1253,11 @@ def _render_markdown_archive(payload: Dict[str, Any]) -> str:
         f"- Celery Beat: {'✅' if h.get('celery_beat_alive') else '❌'}",
         f"- Neo4j: {'✅' if h.get('neo4j_alive') else '❌'}",
         f"- SEC 24h 처리: {h.get('sec_24h_processed_filings', 0)} / 전체 누적: {h.get('sec_total_filings', 0)}",
+    ]
+    _stray = h.get("stray_celery") or []
+    if _stray:
+        lines.append(f"- ⚠️ stray celery: {len(_stray)}건 (cwd 루트 밖)")
+    lines += [
         "",
     ]
     return "\n".join(lines)
