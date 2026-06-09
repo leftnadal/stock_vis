@@ -125,6 +125,22 @@
 
 ---
 
+## market_pulse v2 Phase 1 잔여 (2026-06-07 카탈로그 역산 확정)
+
+> 근거: `DECISIONS.md` "## [2026-06-07] Phase 1 PR 카탈로그 역산 확정". 백엔드 A~J done(J는 I 흡수), FRED fetcher done, Translation/Playbook은 Phase 1.5/1.6 이관(범위 외). 본 표는 출시 전 정리할 6 트랙.
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|----------------|
+| MP1-K | Phase 1 프론트엔드 Layer0(메인 페이지) — Card A 헤더/지표/regime 표시 | @frontend | - | 신규 (실질 출시 병목) | `frontend/src/app/market-pulse/` (TBD) |
+| MP1-L | Phase 1 프론트엔드 카드 컴포넌트 — Card B/C/D/E 4종 + news/health 위젯 | @frontend | MP1-K(공통 레이아웃) | 신규 | `frontend/src/components/market-pulse/` (TBD) |
+| MP1-C-stress | regime classifier `stress_input` 훅 (1줄 인터페이스, Phase 1.5 무재설계 전제) | @backend | - | 신규 (저비용 선행) | `apps/market_pulse/regime/inputs.py` (또는 classifier.py) 인자 추가 |
+| MP1-M | runbook task 경로 갱신 — `marketpulse.tasks.*` → `apps.market_pulse.tasks.*` (10 task 전건) | @infra(@qa) | - | 신규 | `docs/operations/marketpulse_v2_celery_tasks.md` |
+| MP1-N | market_pulse 능동 모니터링 자산 — `services/news.tasks.check_pipeline_alerts` 패턴을 market_pulse로 확장 (anomaly engine error rate / regime stale / news feed lag 등) | @infra | - | 신규 | `apps/market_pulse/tasks/alerts.py` (TBD) + runbook 모니터링 섹션 |
+| MP1-A3-sep | A3 마이그레이션 3분리 (`BreadthSnapshot`/`SectorFlowSnapshot`/`ConcentrationSnapshot`을 `0002`/`0003`/`0004`로 분리) | @backend | - | 저우선 (미루기 가능, 행위보존) | `apps/market_pulse/migrations/` |
+| MP1-test-gap | PR-I cards/health 도메인별 serializer 분리 + 통합테스트 / PR-B fetchers 테스트 모듈 | @backend + @qa | - | 신규 | `apps/market_pulse/api/serializers/` + `tests/marketpulse/{fetchers,api}/` |
+
+---
+
 ## 보류 (On Hold)
 
 | ID | Task | Agent | Reason | Resume Condition |

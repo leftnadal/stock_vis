@@ -30,7 +30,11 @@
 >
 > ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기).
 >
-> ✅ **2026-06-06 NT-7 STEP 0 지시서 push**: `d4a9690` (NT-7 STEP 0 지시서 추적 — D1 결정의 입력 문서). **현재 `origin/main = d4a9690`** (메타 갱신 기준).
+> ✅ **2026-06-06 NT-7 STEP 0 지시서 push**: `d4a9690` (NT-7 STEP 0 지시서 추적 — D1 결정의 입력 문서).
+>
+> ✅ **2026-06-07 NT-7 종결 push + main 반영**: `f483634` (TASKQUEUE NT-7 완료 표기 + common-bugs #28 Beat drift 예방 + PROGRESS hash 갱신). Beat DB task 경로 갱신(11 row UPDATE) + 좀비 beat 56670 종료로 운영 안정화 — unregistered ∆=0(1705 후 06-07 신규 0건).
+>
+> 📌 **Phase 1 PR 카탈로그 역산 확정 (mgmt, push 대기)**: 권위 문서(4월 PR 카탈로그) repo 부재로 코드를 1차 진실로 역산. 백엔드 A~J done(J는 I 흡수), K/L 프론트 0%(실질 병목), M(runbook stale) + N(market_pulse 자체 모니터링 0건) 각각 (b) 잔여. Translation Layer / Macro Playbook = Phase 1.5/1.6 이관(범위 외). 잔여 6항목 등록(TASKQUEUE). **현재 `origin/main = d4a9690`** (메타 갱신 기준, tolerance N=3).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
