@@ -1368,3 +1368,32 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 본 결정 commit 후 PROGRESS.md/TASKQUEUE.md에 잔여 6항목 동기화.
 
 **관련 입력 문서**: `docs/market_pulse_v2/market_pulse_v2_pr_a1.md` (PR-A1/A2/A3 위임 프롬프트 3건만), STEP 0 측정 보고(2026-06-07)는 세션 컨텍스트 내 보존.
+
+---
+
+## [2026-06-10] stress_input 훅 사전 배선 (Phase 1.5 준비)
+
+**결정**:
+- `apps/market_pulse/regime/classifier.py:classify_inputs(inputs, *, rules=None, stress_input=None)` keyword-only Optional 인자 추가.
+- 본문은 `del stress_input`으로 즉시 폐기 — 받기만 하고 분류 로직에 사용하지 않음 (행위보존).
+- 회귀: `tests/marketpulse` 138 passed (이전 baseline 136 + 신규 2 케이스, 0 regression).
+
+**Why**:
+- Phase 1.5(Crisis/Stress 레이어) 진입 시 classifier 시그니처 재설계 없이 인자 채우기만으로 통합 가능하도록 인터페이스 스텁만 선반영.
+- 분류 로직 변경 0 → Phase 1 출시 영향 0, 향후 1.5 도입 비용은 호출부 + 본문 한 곳으로 한정.
+
+**Why now (Phase 1 소정리 세션에 동승)**:
+- 별도 "인터페이스 변경 commit" 세션을 따로 만들 비용을 제거. `MP1-C-stress`(저비용 선행)로 사전 등록된 항목을 그대로 처리.
+- 동일 mgmt 트랙(`monorepo/sess-mp-phase1-cleanup`)에서 `MP1-M`(runbook 경로 갱신)과 묶어 2 commit ff push (`0b8399a..ef9d064`).
+
+**행위보존 근거**:
+- 신규 테스트 `test_stress_input_none_preserves_output`: `stress_input=None`일 때 baseline과 regime/fired 동일.
+- 신규 테스트 `test_stress_input_dummy_accepted_without_behavior_change`: 비-None dummy 전달 시에도 분류 결과 불변.
+- 기존 14 케이스(BULL/LATE_BULL/TRANSITION/BEAR/CRISIS/yield_inversion/drawdown_crisis/missing_inputs 등) 전건 통과.
+
+**How to apply**:
+- Phase 1.5 도입 시 `tasks/regime.py:mp_calc_regime_15min`에서 stress input 데이터 소스(예: VIX term structure stress index, repo yield stress) 조립 후 `classify_inputs(..., stress_input=<payload>)` 호출.
+- classifier 본문에서 `del stress_input` 제거하고 `_eval_clause` 또는 `_eval_atom` 단계에 stress 평가 분기 추가.
+- 본 결정은 시그니처만 박고 데이터 흐름은 1.5에서 설계 — 모델·테이블·fetcher 신설 금지(이번 commit 범위 외).
+
+**관련 입력 문서**: TASKQUEUE `MP1-C-stress` 항목, `apps/market_pulse/regime/classifier.py:113~127`.
