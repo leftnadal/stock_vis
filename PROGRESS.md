@@ -40,7 +40,11 @@
 >
 > ✅ **2026-06-10 Phase 1 소정리 종결 push**: `4106b4b` (mgmt — PROGRESS hash 갱신 + DECISIONS stress 결정 + TASKQUEUE MP1-C-stress/MP1-M 완료 표기).
 >
-> ✅ **2026-06-10 K/L 종결 + 출시 게이트 신설 (옵션 C)**: STEP 0 보강 측정으로 MP1-K(Layer0) / MP1-L(카드+위젯) 모두 `frontend/app/market-pulse-v2/`에 static 구현 완료 확인. 직전 "0%" 측정은 없는 src 경로 grep 오류(common-bugs #31 등재). 라이브 동작은 별도 게이트 `[GATE:release] MP-LIVE-VERIFY`로 분리 — release 차단. 후속 트랙 3건(MP-KL-F1/F2/F3) + v1 거취 결정 항목(MP-V1-DECISION) 등록. **현재 `origin/main = 4106b4b`** (메타 갱신 기준, 본 mgmt commit push 후 다음 mgmt에서 갱신).
+> ✅ **2026-06-10 K/L 종결 + 출시 게이트 신설 (옵션 C)**: STEP 0 보강 측정으로 MP1-K(Layer0) / MP1-L(카드+위젯) 모두 `frontend/app/market-pulse-v2/`에 static 구현 완료 확인. 직전 "0%" 측정은 없는 src 경로 grep 오류(common-bugs #31 등재). 라이브 동작은 별도 게이트 `[GATE:release] MP-LIVE-VERIFY`로 분리 — release 차단. 후속 트랙 3건(MP-KL-F1/F2/F3) + v1 거취 결정 항목(MP-V1-DECISION) 등록.
+>
+> ✅ **2026-06-10 K/L 게이트 push**: `fc608a3` (mgmt — TASKQUEUE K/L 완료 표기 + MP-LIVE-VERIFY 게이트 + MP-KL-F1/F2/F3 + MP-V1-DECISION 신설 + common-bugs #31 등재).
+>
+> ✅ **2026-06-10 MP-V1-DECISION 종결 (옵션 D)**: v1 `app/market-pulse/page.tsx` 보존 + Phase 2 흡수 예약. 근거: v1(거시 원자료) ↔ v2(regime 판정) 역할 분담, 게이트 통과 전 검증된 fallback 보존, Phase 2 sub-pages 흡수 정합. 가중합 D 3.90 vs C 3.55(마진 0.35). 후속 흡수 트랙 `MP-V1-ABSORB`(trigger-gated, Phase 2 착수 트리거) 등록. **현재 `origin/main = fc608a3`** (메타 갱신 기준, 본 mgmt commit push 후 다음 mgmt에서 갱신).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 

@@ -1433,3 +1433,37 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 같은 mgmt 트랙에서 PR 카탈로그 확정(0b8399a) → 소정리(ef9d064) → close(4106b4b) 흐름 종료 직후. K/L까지 정합화하면 Phase 1 잔여 표가 "release 전 정리할 미완 항목 + release 차단 게이트"로 깔끔하게 분리됨.
 
 **관련 입력 문서**: TASKQUEUE `MP1-K/L`·`MP-LIVE-VERIFY`·`MP-KL-F1~F3`·`MP-V1-DECISION` 항목, STEP 0 보강 측정 보고(세션 컨텍스트), `frontend/app/market-pulse-v2/page.tsx:22~28` `CARD_TITLE`, `apps/market_pulse/api/urls.py`.
+
+---
+
+## [2026-06-10] v1 거시 대시보드 거취 — 옵션 D: 보존 + Phase 2 흡수 예약
+
+**결정**:
+- `app/market-pulse/page.tsx`(v1, 310 lines) **현행 유지**(보존).
+- Phase 2 sub-pages 트랙 착수 시 v1 위젯군 5종(`FearGreedGauge` · `YieldCurveChart` · `EconomicIndicators` · `GlobalMarketsCard` · `MarketMoversSection`)을 v2 하위 페이지로 흡수.
+- 흡수 완료 후 `/market-pulse` → `/market-pulse-v2` 리다이렉트 전환 → v1 코드 제거.
+- 본 결정은 **유지 결정 + 후속 흡수 예약**. 즉시 삭제·리다이렉트 없음.
+
+**근거 (옵션 D 선택)**:
+- **① 신구 버전이 아니라 상호 보완**: v1 위젯 5종(FearGreed/YieldCurve/EconomicIndicators/GlobalMarkets/Movers)은 v2 카드 5장(Regime/Breadth/Sector/Concentration/Brief)에 부재. 삭제 = 대체 없는 정보 손실. v1 = 거시 원자료(매크로 지표 raw), v2 = regime 판정(가공된 시그널) — **역할 분담**.
+- **② 게이트 안전 순서**: `MP-LIVE-VERIFY`(K/L static 완료 + 라이브 미검증) 게이트 미통과 상태에서 v1은 유일하게 검증된 화면. 미검증 v2만 남기는 순서는 위험 — 게이트 통과 전 v1 삭제 금지.
+- **③ Phase 2 흡수 정합**: v1 위젯군은 Phase 2 sub-pages 로드맵의 자연스러운 흡수 재료. 별도 trash 트랙으로 두지 않고 흡수 트랙으로 묶음.
+
+**가중합 평가**:
+- 옵션 A (즉시 폐기 + 코드 제거) **3.10** — 위 ①②로 정보 손실 + 게이트 안전 깨짐
+- 옵션 B (즉시 리다이렉트 → v2) **3.50** — A와 동일 문제 + 라우팅 잔재
+- 옵션 C (v1 유지 + Phase 2 흡수 계획만 메모) **3.55** — 흡수 트랙 미등록으로 풍화 위험
+- **옵션 D (보존 + Phase 2 흡수 예약 `MP-V1-ABSORB` 등록) 3.90** — ①②③ 모두 충족 + 흡수 트랙 명시
+- 마진 D−C = 0.35, 타이브레이커 2건:
+  1. **게이트 안전 순서**: `MP-LIVE-VERIFY` 통과 전까지 v1이 검증된 fallback. 옵션 C는 흡수 트랙을 메모로만 두어 게이트 통과 시점에 흡수 작업이 잊힐 위험.
+  2. **Phase 2 정합 명시**: 흡수 트리거를 "Phase 2 sub-pages 착수"로 등록하면 Phase 2 트랙이 v1 위젯을 자동 흡수 대상으로 인식 — 별도 발견 비용 0.
+
+**의도적 동결 (commit 범위 외)**:
+- v1 내부 `// import { MarketNewsSection } // TODO: 컴포넌트 미구현` 주석 잔재는 **흡수 시점 일괄 처리 대상**으로 동결. 그 전까지 수정·삭제 금지. 흡수 PR에서 MarketNewsSection 처리(구현/제거/대체) + 주석 정리를 한 번에 수행.
+
+**How to apply**:
+- TASKQUEUE `MP-V1-DECISION` 행 → "완료 2026-06-10 (옵션 D)" + 본 결정 참조.
+- TASKQUEUE 신규 `MP-V1-ABSORB` 등록 — Phase 2 sub-pages 착수가 트리거인 trigger-gated 항목. 그 전까지 다른 세션에서 먼저 꺼내지 말 것.
+- 미래 세션이 "v1 왜 있지?"를 재측정하지 않도록 본 결정 본문에 "역할 분담" 명시 — DECISIONS가 1차 진실.
+
+**관련 입력 문서**: TASKQUEUE `MP-V1-DECISION`·`MP-V1-ABSORB` 항목, `app/market-pulse/page.tsx` (310 lines, v1) ↔ `app/market-pulse-v2/page.tsx` (v2 Layer0) 산출물 대조, common-bugs #31(직전 K/L 오측정 사례 — 본 결정의 가중합 평가 입력).
