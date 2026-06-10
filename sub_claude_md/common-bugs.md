@@ -380,3 +380,16 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
 - 패턴 정착(BOUNDARY-3): **포트 + apps.ready() 등록**이 모델 이동 없이 macro→shared 의존 방향을 안전하게 끊는 표준. shared 내부 역의존(tasks·mgmt·다른 service)이 있어 "소비자 이동(방향1)"이 막힐 때 1순위 후보.
 - 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)" + "BOUNDARY-3 (2026-06-04)"
+
+## 잘못된 경로 grep = 거짓 0% 측정 (#31)
+
+- 증상: STEP 0 측정에서 `grep -rEn "market_pulse" frontend/src/` → 0건 → "K/L 프론트엔드 0% 부재"로 보고. 실제는 `frontend/app/market-pulse-v2/`에 page.tsx + 5 Summary + 5 Detail + 5 패널 + API 클라이언트 30+ 타입이 **이미 전건 구현**되어 있었음.
+- 원인: 모노레포가 `frontend/src/` 가 아니라 `frontend/app/` 직접 구조(Next.js 16 app router)인데 측정 에이전트가 `frontend/src/` 경로를 가정하고 grep. **검색 경로 자체가 부재**하면 grep 결과 0건은 "그 경로에 없음" = "어디에도 없음"이 아님. 의미 혼동.
+- 사례: 2026-06-07 Explore agent의 Phase 1 카탈로그 역산 STEP 0 측정. K/L "0%" 보고 → DECISIONS L1352 / TASKQUEUE MP1-K/L `(TBD frontend/src/...)`까지 stale 경로가 박혀 mgmt 사이클 1회 분량(3일) 동안 잘못된 진실로 유통됨. 2026-06-10 보강 STEP 0에서 `ls frontend/` 1회 실행으로 즉시 발각.
+- 감지: 측정 결과가 "0건" / "부재"일 때 검색 경로 자체의 실재 여부를 확인. `ls <경로>` 또는 `test -d <경로>` 가 첫 번째 검증 단계.
+- 해결:
+  1. **경로 실재 확인을 grep 보다 먼저**: `find <repo_root> -maxdepth 2 -type d -name "<후보>"` 로 후보 경로의 존재를 먼저 검증한 뒤 grep 수행.
+  2. **0건 결과를 기록할 때 검색 경로 명시**: "grep `<pattern>` `<path>` = 0건"으로 path를 같이 박아야 후속 측정자가 path 자체를 의심할 수 있음. path 없이 "0건" / "부재" 로만 기록하면 잘못된 진실이 단정으로 굳어짐.
+  3. **`find <repo_root> -name "<symbol>*"` 광역 1회 병행**: 특정 경로 grep과 별개로 repo 전수 find로 같은 심볼이 다른 디렉토리에 있는지 cross-check. 본 사례에선 `find frontend -name "market*"` 1회로 즉시 발각 가능.
+- 교훈: **측정도 메모리만큼 위험**. 측정 결과가 단정(0%, 부재)일수록 경로 가정의 검증이 필수. 메모리·문서 stale은 자동 검증(health_check)이 잡지만, 측정 경로 가정의 stale은 다음 측정 사이클에서야 발각 — 사이클 사이 잘못된 결정(완료/잔여/우선순위)을 누적시킴. **0건 보고는 항상 "어디서 0건인지" + "그 어디가 실재하는지" 둘 다 명시**.
+- 📎 참조: `DECISIONS.md` "[2026-06-10] K/L static 완료 + 라이브 검증 출시 게이트 분리 (옵션 C)", TASKQUEUE `MP1-K/L` 행 stale 경로 정정 이력.

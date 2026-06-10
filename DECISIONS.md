@@ -1397,3 +1397,39 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 본 결정은 시그니처만 박고 데이터 흐름은 1.5에서 설계 — 모델·테이블·fetcher 신설 금지(이번 commit 범위 외).
 
 **관련 입력 문서**: TASKQUEUE `MP1-C-stress` 항목, `apps/market_pulse/regime/classifier.py:113~127`.
+
+---
+
+## [2026-06-10] K/L static 완료 + 라이브 검증 출시 게이트 분리 (옵션 C)
+
+**결정**:
+- `MP1-K`(Layer0 메인 페이지) / `MP1-L`(카드 + news/health 위젯)을 **static 측정 기준 완료**로 표기.
+- 동시에 라이브 동작 검증은 별도 **출시 게이트 `MP-LIVE-VERIFY`** 로 신설 — Phase 1 release를 차단하는 trigger-gated 항목.
+- 후속 트랙 3건 등록: `MP-KL-F1`(테스트), `MP-KL-F2`(`'flow'`→`'concentration'` 리네임), `MP-KL-F3`(health 위젯 명세 검증).
+- v1 페이지 거취는 별도 결정 항목 `MP-V1-DECISION` (실행 항목 아님).
+
+**근거 (STEP 0 보강 측정, 2026-06-10)**:
+- `frontend/app/market-pulse-v2/page.tsx`(Layer0) + `cards/` 5 Summary + `details/` 5 Detail(+Container) + `components/` 5 패널 + `lib/api/marketPulseV2.ts`(30+ 타입 + 4 fetch) + `useOverview()` TanStack Query Hook + `useMarketPulseI18n()` — 전건 static 존재 확인.
+- 백엔드 v2 API 5 엔드포인트(`/overview`, `/cards/<id>/detail`, `/news/refresh`, `/i18n`, `/health`)와 프론트 1:1 매핑 검증 — 라우팅 정합 OK.
+- 단 `frontend/__tests__/`에 market-pulse 테스트 0건, `OverviewView` 실 응답 vs `useOverview()` 렌더 일치 미실측, `'flow'` 변수명이 Concentration을 가리키는 잔재 1건.
+
+**Why (옵션 C 선택)**:
+- 직전 같은 날 측정에서 `frontend/src/` 잘못된 경로 grep으로 K/L "0%"가 거짓 보고된 사례 실증(common-bugs #31).
+- static 표기는 풍화될 수 있음 — 게이트로 보존해야 release 직전 자동 차단.
+- 가중합 평가:
+  - 옵션 A (그대로 "0%" 유지) 4.10 — static 산출물 무시로 측정 실증 폐기
+  - 옵션 B (완료 표기 + 게이트 없음) 4.25 — 라이브 미검증인데 release 가능 위험
+  - **옵션 C (완료 표기 + MP-LIVE-VERIFY 게이트) 4.40** — static 사실 인정 + 라이브 검증을 release blocker로 보존
+  - 마진 C−B = 0.15, 타이브레이커: 당일 오측정 실증으로 게이트의 가치 증명.
+
+**How to apply**:
+- TASKQUEUE Phase 1 잔여 표에서 K/L 행은 "완료 2026-06-10 (static 기준)" + 실 산출물 경로 명시.
+- `MP-LIVE-VERIFY` 게이트는 [GATE:release] 접두어로 차단 표시. 실행 절차: 서버 기동 → `curl -s /api/v2/market-pulse/overview | jq` 200 응답 → 5 card_id 각각 `/cards/<id>/detail` 응답 → `page.tsx` 실 렌더(5 Summary + Detail Container + 5 패널) 대조 → 스크린샷 + 응답 로그를 DECISIONS push 라인에 첨부.
+- `MP-KL-F3`(health 위젯 명세)는 게이트 선결 조건. `StatusBanner`가 health 매핑인지 별도 위젯 필요한지 먼저 정리.
+- `MP-KL-F2`(`'flow'` 리네임)는 게이트 통과 이후 — 행위보존 리네임이라 게이트 차단 사유 아님.
+- v1 페이지(`app/market-pulse/page.tsx`)는 게이트와 무관하게 `MP-V1-DECISION` 별도 결정.
+
+**Why now**:
+- 같은 mgmt 트랙에서 PR 카탈로그 확정(0b8399a) → 소정리(ef9d064) → close(4106b4b) 흐름 종료 직후. K/L까지 정합화하면 Phase 1 잔여 표가 "release 전 정리할 미완 항목 + release 차단 게이트"로 깔끔하게 분리됨.
+
+**관련 입력 문서**: TASKQUEUE `MP1-K/L`·`MP-LIVE-VERIFY`·`MP-KL-F1~F3`·`MP-V1-DECISION` 항목, STEP 0 보강 측정 보고(세션 컨텍스트), `frontend/app/market-pulse-v2/page.tsx:22~28` `CARD_TITLE`, `apps/market_pulse/api/urls.py`.

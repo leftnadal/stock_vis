@@ -36,7 +36,11 @@
 >
 > ✅ **2026-06-10 Phase 1 PR 카탈로그 역산 확정 push**: `0b8399a` (mgmt — DECISIONS 역산 결정 + 잔여 7행 등록). 백엔드 A~J done(J는 I 흡수), K/L 프론트 0%(실질 병목), M(runbook stale) + N(market_pulse 자체 모니터링 0건) 각각 (b) 잔여. Translation Layer / Macro Playbook = Phase 1.5/1.6 이관(범위 외).
 >
-> ✅ **2026-06-10 Phase 1 소정리 push**: `0b8399a..ef9d064` ff (2 commits — `ce0be51` stress_input 훅 / `ef9d064` runbook 경로 갱신). 회귀 138 passed (136 baseline + 2 신규, 0 regression). MP1-C-stress + MP1-M 종결. **현재 `origin/main = ef9d064`** (메타 갱신 기준).
+> ✅ **2026-06-10 Phase 1 소정리 push**: `0b8399a..ef9d064` ff (2 commits — `ce0be51` stress_input 훅 / `ef9d064` runbook 경로 갱신). 회귀 138 passed (136 baseline + 2 신규, 0 regression). MP1-C-stress + MP1-M 종결.
+>
+> ✅ **2026-06-10 Phase 1 소정리 종결 push**: `4106b4b` (mgmt — PROGRESS hash 갱신 + DECISIONS stress 결정 + TASKQUEUE MP1-C-stress/MP1-M 완료 표기).
+>
+> ✅ **2026-06-10 K/L 종결 + 출시 게이트 신설 (옵션 C)**: STEP 0 보강 측정으로 MP1-K(Layer0) / MP1-L(카드+위젯) 모두 `frontend/app/market-pulse-v2/`에 static 구현 완료 확인. 직전 "0%" 측정은 없는 src 경로 grep 오류(common-bugs #31 등재). 라이브 동작은 별도 게이트 `[GATE:release] MP-LIVE-VERIFY`로 분리 — release 차단. 후속 트랙 3건(MP-KL-F1/F2/F3) + v1 거취 결정 항목(MP-V1-DECISION) 등록. **현재 `origin/main = 4106b4b`** (메타 갱신 기준, 본 mgmt commit push 후 다음 mgmt에서 갱신).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 

@@ -131,13 +131,18 @@
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|----------------|
-| MP1-K | Phase 1 프론트엔드 Layer0(메인 페이지) — Card A 헤더/지표/regime 표시 | @frontend | - | 신규 (실질 출시 병목) | `frontend/src/app/market-pulse/` (TBD) |
-| MP1-L | Phase 1 프론트엔드 카드 컴포넌트 — Card B/C/D/E 4종 + news/health 위젯 | @frontend | MP1-K(공통 레이아웃) | 신규 | `frontend/src/components/market-pulse/` (TBD) |
+| MP1-K | Phase 1 프론트엔드 Layer0(메인 페이지) — Card A 헤더/지표/regime 표시 | @frontend | - | **완료 2026-06-10 (static 기준)** | `frontend/app/market-pulse-v2/page.tsx` (Layer0) + `cards/RegimeCardSummary.tsx` + `components/{TickerBar,StatusBanner}.tsx`. 5 card_id 라우팅 + `useOverview()` TanStack Query. 라이브 검증은 `MP-LIVE-VERIFY` 게이트로 분리(아래). 직전 "0%" 측정은 없는 src 경로 grep 오류(common-bugs #31) |
+| MP1-L | Phase 1 프론트엔드 카드 컴포넌트 — Card B/C/D/E 4종 + news/health 위젯 | @frontend | MP1-K | **완료 2026-06-10 (static 기준)** | `frontend/app/market-pulse-v2/cards/` 5 Summary + `details/` 5 Detail(+Container) + `components/{AnomalyPanel,CardDrawer,NewsPanel,StatusBanner,TickerBar}.tsx` + `lib/api/marketPulseV2.ts` (30+ 타입 + 4 fetch). health 위젯은 `StatusBanner` 매핑 추정(`MP-KL-F3` 확인). 라이브 검증 `MP-LIVE-VERIFY` |
 | MP1-C-stress | regime classifier `stress_input` 훅 (1줄 인터페이스, Phase 1.5 무재설계 전제) | @backend | - | **완료 2026-06-10** (`ce0be51`) | `apps/market_pulse/regime/classifier.py:classify_inputs(*, stress_input=None)` keyword-only Optional + 즉시 del. 회귀 138 passed (136+2 신규). 행위보존 |
 | MP1-M | runbook task 경로 갱신 — `marketpulse.tasks.*` → `apps.market_pulse.tasks.*` (10 task 전건) | @infra(@qa) | - | **완료 2026-06-10** (`ef9d064`) | `docs/operations/marketpulse_v2_celery_tasks.md` 10건 전수 치환. grep 옛 경로=0 / 새 경로=10. NT-7 정합 잔재 정리 |
 | MP1-N | market_pulse 능동 모니터링 자산 — `services/news.tasks.check_pipeline_alerts` 패턴을 market_pulse로 확장 (anomaly engine error rate / regime stale / news feed lag 등) | @infra | - | 신규 | `apps/market_pulse/tasks/alerts.py` (TBD) + runbook 모니터링 섹션 |
 | MP1-A3-sep | A3 마이그레이션 3분리 (`BreadthSnapshot`/`SectorFlowSnapshot`/`ConcentrationSnapshot`을 `0002`/`0003`/`0004`로 분리) | @backend | - | 저우선 (미루기 가능, 행위보존) | `apps/market_pulse/migrations/` |
 | MP1-test-gap | PR-I cards/health 도메인별 serializer 분리 + 통합테스트 / PR-B fetchers 테스트 모듈 | @backend + @qa | - | 신규 | `apps/market_pulse/api/serializers/` + `tests/marketpulse/{fetchers,api}/` |
+| **[GATE:release] MP-LIVE-VERIFY** | **Phase 1 출시 전 필수 — 라이브 검증 게이트**. 서버 기동 + `GET /api/v2/market-pulse/overview` 200 응답 + 5 card_id 각각 `/cards/<id>/detail` 응답 + `page.tsx` 실 렌더(5 Summary + CardDetailContainer 펼침 + AnomalyPanel + NewsPanel + StatusBanner) 대조 | @qa + @frontend | MP1-K · MP1-L · MP-KL-F3 | 🚦 **차단(release)** — 이 게이트 미통과 시 Phase 1 출시 불가 | 검증 로그(스크린샷 + curl 응답) + DECISIONS push 라인. 검증 통과 시 DECISIONS에 "K/L 라이브 확정" 1줄 + 본 행 "통과" 표기 |
+| MP-KL-F1 | market-pulse-v2 프론트 테스트 신설 — `frontend/__tests__/` 내 0건 → vitest 기반 단위/통합 추가 | @frontend + @qa | MP1-K · MP1-L | 신규 (후순위, MP-LIVE-VERIFY 이후) | `frontend/__tests__/market-pulse-v2/` (TBD) — page.tsx 라우팅 + 5 카드 펼침 + 4 fetch mock |
+| MP-KL-F2 | cardId `'flow'` → `'concentration'` 행위보존 리네임 (Summary/Detail 파일명 + `CardId` 타입 + `CARD_TITLE` 매핑 + API 계약 영향 범위) | @frontend | MP1-K · MP1-L · MP-LIVE-VERIFY | 신규 (착수 시 STEP 0로 영향 범위 실측 필수) | `frontend/app/market-pulse-v2/{cards,details}/{Flow→Concentration}*` + `page.tsx CardId` + 백엔드 `CardDetailView` 라우팅 `card_id` 정합 확인 |
+| MP-KL-F3 | health 위젯 명세 검증 — `MP1-L`의 "health 위젯"이 `StatusBanner` 매핑인지 별도 위젯 필요한지 `page.tsx` 본문 분석 + `OverviewView` health 필드 대조 | @frontend + @backend | MP1-K · MP1-L | 신규 (MP-LIVE-VERIFY 선결 조건) | `app/market-pulse-v2/page.tsx` + `components/StatusBanner.tsx` + `apps/market_pulse/api/views/{overview,health}.py` 응답 필드 매핑 |
+| MP-V1-DECISION | v1 `app/market-pulse/page.tsx` (310 lines, useMarketPulse v1 hook, `/api/v1/macro/pulse/`) 거취 결정 — 폐기 / 리다이렉트(v2로) / 보존(레거시) 중 택1. v1 내부 `MarketNewsSection` "TODO: 컴포넌트 미구현" 주석 처리 포함 | orchestrator + @frontend | - | 🗳 **결정 세션 대상 (실행 항목 아님)** | DECISIONS 엔트리 1건 + 후속 실행 트랙(폐기/리다이렉트 시) |
 
 ---
 
