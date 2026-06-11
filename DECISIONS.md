@@ -1377,3 +1377,10 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - **MarketGraphCanvas**: 보조 화면(`/chainsight/market-graph`)으로 강등·동결(1017줄 리팩터링 보류).
 - **RD1 STEP 0 정정 (ground truth)**: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock`이 아니라 **`CompanyChainProfile` 필드** (NT-3 및 RD1/RD2 지시서의 `Stock.theme_tags` 가정은 오기). 셋 다 채움률 **0%**(504 profile 전건). 원인: `CompanyChainProfile.theme_tags`는 `sync_tasks.py:67`에서 `CompanyNarrativeTag`로부터 복사되는데 NarrativeTag는 **0 rows**이고, 이를 생성하는 코드가 코드베이스에 **0건**(chain_sight LLM 호출 흔적도 0). → **Part C 분기 (다) HALT** — 임의 신규 로직 작성 금지, 별도 적재 지시서 대기.
 - **Neo4j `:Theme`/`HAS_THEME`**: 현재 0/0. 단 소스 데이터(`ETFProfile` 21 / `ETFHolding` 10,795)는 준비됐고 `load_themes_to_neo4j` command 존재(LLM 불필요, MERGE만). 그래프 드릴다운용 보조 경로로 적재 가능하나, RD2 보드 연료(Postgres `theme_tags`)와는 별개.
+
+### CS-RD-C2 (2026-06-11): 이벤트 그룹 = 섹터 ETF + 테마 ETF 역산, w≥1.0
+- **결정**: 이벤트 그룹 = 섹터 ETF(XL*) + 테마 ETF 역산, **w≥1.0**.
+- **근거**: theme-only는 유니버스 교집합 한계로 3.9% — 보드 성립 불가. w≥2.0은 저비중 멤버(소외 종목 후보군)를 잘라 핵심 차별화와 상충. 가중합 4.65 vs 4.00, 마진 0.65.
+- **제외 가드**: 전(全)시장 광역 ETF(SPY/QQQ/VOO/IWM류)는 제외 유지 — 단 ETF_THEME_MAP에 해당 ETF 미포함이라 실제 제외 목록은 공집합(sector XL* + theme만 존재). 섹터 ETF(XL*)는 "섹터 이벤트 그룹"으로 포함(무의미 그룹 차단 취지 유지).
+- **적재 결과 (2026-06-11)**: 채움률 304/504 profiles(60.3%, 56.8% of stocks), 15 그룹(sector 11 + theme 4), 그룹당 종목 중앙 25(min 1/max 38), 3개 미만 그룹 2건(Lithium 2·Clean 1 — theme ETF 외국 종목 오염). Neo4j `:Theme` 21 / `HAS_THEME` 536. 멱등성 2회 확인.
+- **NarrativeTag 가드(행위보존)**: `aggregate_chain_profiles`(sync_tasks.py:64-68)의 `if nt:` 가드로 NarrativeTag 0행 시 theme_tags 미설정→`update_or_create`가 ETF 적재값 보존. 코드 수정 0건. NarrativeTag(LLM) 태깅은 후속 트랙(CS-COV 인근) — 채워지면 ETF 태그와 병합 방식은 그 시점 결정.
