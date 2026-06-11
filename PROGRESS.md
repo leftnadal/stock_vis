@@ -54,7 +54,11 @@
 >
 > 🟡 **2026-06-11 MP-LIVE-VERIFY 게이트 1차 + MP-LV-D2 수리**: 게이트 1차 = **계약(C·D) 전건 PASS**(d5212d4 검증 — overview concentration 키·/cards/flow 404·i18n·5 카드 렌더·drawer detail). **결함 2건**: MP-LV-D1(Concentration FMP /stable/etf/holdings 프리미엄 402 → 결정 대기, 수리 금지) / **MP-LV-D2 수리 완료**(`62d4025` — briefing 구 SDK→신 SDK genai import+contents 포맷, requirements 0, .apply() SUCCESS+pytest 138+brief 카드 재게이트 통과). 부분 재게이트 원칙 신설(수리가 계약 무관 시 해당 카드 스모크만). UX 전수조사 → MP-UX-POLISH·MP-I18N-EN 등록. 근거 DECISIONS "[2026-06-11] 게이트 1차 결과".
 >
-> ✅ **2026-06-11 게이트 mgmt push 예정**: D2 수리(`62d4025`) + 본 mgmt commit. **현재 `origin/main = d5212d4`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
+> ✅ **2026-06-11 게이트 1차 mgmt push 완료**: `d5212d4..b54e4e7 → origin/main` (D2 수리 + 게이트 1차 결과).
+>
+> 🟢 **2026-06-11 MP-LIVE-VERIFY 게이트 전건 통과 + MP-LV-D1 수리**: **Phase 1 release blocker 0**. 계약(C·D) PASS + Briefing(D2 `62d4025`) + **Concentration(D1 옵션 B `c6b7aa0`)** 전부 확보. D1 = 시총 가중 근사(`weight_source.py` seam 분리, MarketCapWeightSource 기본 / holdings 휴면 / `ACTIVE_WEIGHT_SOURCE` 1곳 전환). universe='SP500_MCAP', 회귀 138→146, 재게이트 통과(top5 28.29%·HHI 0.0221 라이브 렌더, /cards/concentration 200·당일, /cards/flow 404). 근사 점프 top5 +3.9%/HHI +5.0%(기록). 미래 옵션 A = `MP-D1-FMP-UPGRADE`(trigger-gated). 근거 DECISIONS "[2026-06-11] MP-LV-D1 옵션 B".
+>
+> ✅ **2026-06-11 게이트 종결 mgmt push 예정**: D1 수리(`c6b7aa0`) + 본 mgmt commit. **현재 `origin/main = b54e4e7`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
