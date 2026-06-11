@@ -424,3 +424,14 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결: 항목 참조는 **전체 ID만 사용**(`MP-KL-F1`, `NT-7` 등). 지시서·장부 공통. 짧은 라벨 단독 지시 시 출처 문서 명시.
 - 교훈: 라벨의 고유성은 네임스페이스에서 나온다. 트랙 prefix 없는 라벨은 검색 충돌을 부른다.
 - 📎 참조: 2026-06-11 MP-KL 세션 진입 시 `F1~F3` 출처 특정 과정.
+
+## 프로젝트 업로드 사본으로 repo 파일 덮어쓰기 (#36)
+
+> **채번 규칙(2026-06-11)**: common-bugs 번호는 **origin/main 기준 말미에서만 채번**. 브랜치별 독립 증식 금지 — 미머지 브랜치(예: nt11)가 자체적으로 같은 번호를 달면 머지 시 충돌(2026-06-11 nt11 자체 #33 ↔ 본 트랙 #33 동시 존재 사례). 신규 번호 부여 전 origin/main 말미 확인 의무.
+
+- 증상: 메인 디렉터리 working tree에 `docs/claude_project_instructions/project_convention_instruction.md` 미커밋 변경 — 마크다운 깨짐(`circuit_breaker`→`circuit*breaker`, `_직접_`→`*직접\_`) + "관리(mgmt)/ops 세션 범위" bullet 통째 삭제. origin/main엔 정상본 존재.
+- 원인: 채팅 프로젝트에 **업로드된 참조 문서는 업로드 시점의 파생 사본**. 그 사본으로 repo 신본을 역방향 덮어씀. repo가 항상 원본 — 동기화는 **repo→프로젝트 단방향만** 허용.
+- 감지: `git diff`에 의도하지 않은 마크다운 깨짐/내용 삭제가 보이고 repo 원본이 더 신선하면 역방향 덮어쓰기 의심.
+- 해결: `git restore <파일>`로 origin/main 정상본 복원(단일 파일 한정). repo 문서 개정 시 각 프로젝트 업로드본 교체를 후속 항목으로 등록(repo→프로젝트 갱신).
+- 교훈: 업로드 사본은 읽기 참조용 스냅샷. repo로의 역류 금지. 메인 디렉터리 미접촉 원칙(#34)이 이 역류도 차단.
+- 📎 참조: 2026-06-11 worktree 정리 세션 — restore로 복구.

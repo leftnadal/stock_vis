@@ -1523,3 +1523,23 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **[경계 보류 — 해당 트랙 첫 STEP 0로 확정 후 본 엔트리 갱신]**: `useMarketBreadth`·`useSectorHeatmap`·`useMarketMovers`·`useMarketView` 호출 백엔드 / `explorationStore` 사용 분포 / `tests/{unit,scoring,integration}` 소속 / `components/keywords` 소속 / `services/{portfolio,watchlistService,userInterestService}` 소속(portfolio 트랙 vs users·auth 표면).
 
 **근거**: 2026-06-11 타 트랙 커밋 혼입 사고(common-bugs #33) + read-only 전수 측정(백엔드 16구획·`frontend/services` 실 API 계층·dashboard 백엔드 부재·portfolio 최대 앱 196py 확인).
+
+---
+
+## [2026-06-11] MP-LIVE-VERIFY 게이트 1차 결과 — 계약 PASS · 결함 2건 발굴 · 부분 재게이트 원칙
+
+**결과**:
+- **F2 최종 계약(card_id=concentration) 라이브 전건 PASS** (d5212d4 검증): overview 키 `[regime,breadth,sector,concentration,brief]`(flow 부재) · `/cards/concentration/detail` 200 · `/cards/flow/detail` 404 · i18n `card.concentration='집중도'` · /health 비인증 401/admin 200 · 프론트 5 카드 렌더 + drawer detail + 콘솔 0. C(1~6)·D(1~6) 전건.
+- **Part B(5종 데이터) 부분**: Regime/Breadth/SectorFlow 신선 ✅. **결함 2건 발굴** ↓.
+
+**결함 발굴**:
+- **MP-LV-D1 (Concentration, 결정 대기)**: `mp_calc_concentration_daily` → FMP `/stable/etf/holdings`(프리미엄, Starter 미지원) **402** → CB[fmp_etf] OPEN, ConcentrationSnapshot **05-06 이후 중단**. 산출 필요 입력 = 종목별 `weightPercentage` 단일. #23(프리미엄 `.` **심볼**)와 구분되는 **프리미엄 엔드포인트** 이슈. **수리 금지 — 옵션(대체 엔드포인트/산식 교체) 결정은 채팅 몫**.
+- **MP-LV-D2 (Briefing, 수리 완료 `62d4025`)**: `mp_generate_brief_daily` → `ModuleNotFoundError: google.generativeai`(구 SDK) → CB[gemini] OPEN, 생성 이력 0. 수리: 신 SDK(`from google import genai`, 기설치) import + contents `parts` 포맷 `[string]→[{text}]`(requirements 변경 0). `.apply()` SUCCESS → BriefingLog(OK) + pytest 138 + brief 카드 재게이트 통과.
+
+**부분 재게이트 원칙 (신설)**:
+- 결함 수리가 **계약을 건드리지 않으면**(데이터 산출 경로만 수정), 재게이트는 **Part B 해당 항목 + 해당 카드 스모크만** 재실행. **계약 검증(C·D 전건) 재실행 불요** — 계약은 최종본 위에서 이미 1회 PASS.
+- 적용: D2 수리는 briefing 데이터 경로만 변경(계약 무관) → brief 카드 스모크만 재게이트(전건 C/D 재실행 안 함). D1 수리도 동일 원칙(Concentration 데이터 + 해당 카드 스모크).
+
+**게이트 상태**: 🟡 1차 PASS(계약) — **잔여 release blocker = Concentration 데이터 생성(MP-LV-D1 결정 후)** + 해당 카드 스모크. 그 후 "전건 통과".
+
+**근거 입력**: 2026-06-11 MP-LIVE-VERIFY 검증 보고서(curl + DOM 채증), MP-LV-D2 수리(`62d4025`), MP-LV-D1 실측(필드/대체 엔드포인트/모델/#23 대조), UX 전수조사(MP-UX-POLISH 입력).

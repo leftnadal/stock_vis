@@ -50,7 +50,11 @@
 >
 > ✅ **2026-06-11 트랙별 소유권 지도 v2 등록**: 전수 실측(902ec86, A1~D4) 기반. 활성 트랙 4개 확정 — market_pulse·chain_sight(골격)·**portfolio 신설**·**dashboard(표면 전용, BE 부재 실측)**. 무소속 7구획 + 토대(shared) + 경계 보류 명시. 공통 규칙(전용 worktree·자기 구획 한정·메타 4종 mgmt 전용). 사이클 교훈 3건 등재(common-bugs #33 fetch 없는 baseline / #34 공유 디렉터리 혼입 / #35 짧은 라벨 비고유). 근거 DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2".
 >
-> ✅ **2026-06-11 mgmt push 예정**: 본 mgmt commit(F-트랙 종결 표기 + 소유권 지도 v2 + 교훈 3건). **현재 `origin/main = 902ec86`** (메타 갱신 기준, 본 mgmt commit push 후 다음 mgmt에서 갱신).
+> ✅ **2026-06-11 mgmt push 완료(F-트랙 종결 + 소유권 지도 v2 + 교훈 3건)**: `902ec86..d5212d4 → origin/main`.
+>
+> 🟡 **2026-06-11 MP-LIVE-VERIFY 게이트 1차 + MP-LV-D2 수리**: 게이트 1차 = **계약(C·D) 전건 PASS**(d5212d4 검증 — overview concentration 키·/cards/flow 404·i18n·5 카드 렌더·drawer detail). **결함 2건**: MP-LV-D1(Concentration FMP /stable/etf/holdings 프리미엄 402 → 결정 대기, 수리 금지) / **MP-LV-D2 수리 완료**(`62d4025` — briefing 구 SDK→신 SDK genai import+contents 포맷, requirements 0, .apply() SUCCESS+pytest 138+brief 카드 재게이트 통과). 부분 재게이트 원칙 신설(수리가 계약 무관 시 해당 카드 스모크만). UX 전수조사 → MP-UX-POLISH·MP-I18N-EN 등록. 근거 DECISIONS "[2026-06-11] 게이트 1차 결과".
+>
+> ✅ **2026-06-11 게이트 mgmt push 예정**: D2 수리(`62d4025`) + 본 mgmt commit. **현재 `origin/main = d5212d4`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
