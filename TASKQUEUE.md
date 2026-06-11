@@ -17,7 +17,20 @@
 | CS-R6 | 탐색 트레일 + 관계 카드 | @frontend | CS-R5 | done | `ExplorationTrail.tsx`, `RelationCardPanel.tsx` |
 | CS-R7 | 체인 스토리 피드 | @frontend | CS-R5 | done | `ChainStoryFeed.tsx` |
 | CS-R8 | 코드 리뷰 | @qa | CS-R4~R7 | verified | 📎 `docs/chain_sight/task_done/chain_sight_redesign_V1/qa_evaluator_review_01.md` |
-| CS-R9 | 커밋 + 머지 | orchestrator | CS-R8 | todo | PR |
+| CS-R9 | 커밋 + 머지 | orchestrator | CS-R8 | **done** | PR #8 / `be2d6c7` 머지 확인 (2026-06-11 CS-RD1 Part A 정합화) |
+
+---
+
+## Chain Sight 이벤트 보드 개편 (redesign 26.06)
+
+> 첫 화면 정보 구조 역전: 이벤트(테마) 보드 → 관심도 랭킹 → 그래프 드릴다운. 결정 근거: DECISIONS "CS-RD (2026-06-11)".
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-RD1 | 하네스 정합화 + 테마 데이터 적재 (Phase 0–1) | @backend | CS-R9 | **Part A·B done / Part C HALT** | `docs/chain_sight/redesign(26.06)/Cs redesign 01 harness and theme data.md` — Part C 분기 (다): `theme_tags` 생성 파이프라인 부재, 별도 적재 지시서 대기 |
+| CS-RD2 | 관심도 M1 엔진 (모델·배치·API, Phase 2) | @backend | CS-RD1 | **blocked** (RD1 Part C 미완 — 보드 연료 0%) | `docs/chain_sight/redesign(26.06)/Cs redesign 02 attention m1 backend.md` |
+| CS-RD3 | 이벤트 보드·관심도 랭킹 프론트 (Phase 3–4) | @frontend | CS-RD2 | **blocked** (RD2 선행) | `docs/chain_sight/redesign(26.06)/Cs redesign 03 event board frontend .md` |
+| CS-EXT1 | 외부 API 직접 호출 4곳 → shared FMP 래퍼 경유로 이전 | @backend | - | **backlog** (이번 개편 범위 외 — 등록만) | `insider_tasks.py:38`, `sensitivity_tasks.py:80`, `neo4j_loader.py:132,144` (FMP `requests.get` 직접 호출) |
 
 ---
 

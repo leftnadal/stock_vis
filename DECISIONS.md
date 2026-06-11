@@ -1367,3 +1367,13 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - worktree/브랜치 머지 판정 등 **git 도달성 측정 전 `git fetch origin` 선행 필수** (remote-tracking ref 갱신만, working tree 불변).
 - **Why**: TR-6에서 worktree 2건을 `git branch --merged main`(로컬 main 기준)으로 "미머지=ALIVE" 오판 → 실제로는 stale·분기된 로컬 main이라 origin/main에 이미 머지된 DEAD 상태였음. fetch 없이 stale 기준선으로 측정하면 보존/삭제 판단이 뒤집힘. TR-8에서 fetch 후 origin/main 기준 5건 전건 REACHABLE = DEAD 확정으로 정정.
 - **F 가드 부팅 검사 설계 입력 #4** (부팅 시 origin 신선화 → 기준선 stale 차단).
+
+---
+
+### CS-RD (2026-06-11): chain_sight 첫 화면 정보 구조 역전 — "이벤트 보드 → 관심도 랭킹 → 그래프 드릴다운"
+- **결정**: chain_sight 첫 화면을 "이벤트(테마) 보드 → 관심도 랭킹 → 그래프 드릴다운" 구조로 역전.
+- **근거**: 가중합 4.10 (vs 피드형 3.50 / 필터형 3.45, 마진 0.60). 관심도 지표는 M1(거래 기반: `0.50×거래량z + 0.30×변동성백분위 + 0.20×|수익률|백분위`) 선출시, M3(복합: co-mention 결합) 승격 예정.
+- **UX 노출 언어**: 기존 결정 유지 — "테마" 비노출, "이벤트" 프레이밍. 내부 모델 `:Theme` 유지.
+- **MarketGraphCanvas**: 보조 화면(`/chainsight/market-graph`)으로 강등·동결(1017줄 리팩터링 보류).
+- **RD1 STEP 0 정정 (ground truth)**: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock`이 아니라 **`CompanyChainProfile` 필드** (NT-3 및 RD1/RD2 지시서의 `Stock.theme_tags` 가정은 오기). 셋 다 채움률 **0%**(504 profile 전건). 원인: `CompanyChainProfile.theme_tags`는 `sync_tasks.py:67`에서 `CompanyNarrativeTag`로부터 복사되는데 NarrativeTag는 **0 rows**이고, 이를 생성하는 코드가 코드베이스에 **0건**(chain_sight LLM 호출 흔적도 0). → **Part C 분기 (다) HALT** — 임의 신규 로직 작성 금지, 별도 적재 지시서 대기.
+- **Neo4j `:Theme`/`HAS_THEME`**: 현재 0/0. 단 소스 데이터(`ETFProfile` 21 / `ETFHolding` 10,795)는 준비됐고 `load_themes_to_neo4j` command 존재(LLM 불필요, MERGE만). 그래프 드릴다운용 보조 경로로 적재 가능하나, RD2 보드 연료(Postgres `theme_tags`)와는 별개.

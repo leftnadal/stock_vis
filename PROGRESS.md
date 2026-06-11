@@ -29,6 +29,8 @@
 > ✅ **2026-06-06 market_pulse 헤더 표준화 push + main 머지**: `monorepo/sess-mp-docstrings` 14 슬라이스 → merge `cfc32a7`. 75 파일 docstring 표준화, 코드 0, 회귀 302 동일. 옛 경로 주석 잔재 1건 정리.
 >
 > ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기). **현재 `origin/main = ce68da0`** (메타 갱신 기준).
+>
+> 🔧 **2026-06-11 CS-RD1 (chain_sight 이벤트 보드 개편 Phase 0–1)** [worktree `../stock_vis_cs_rd1`, brunch `monorepo/sess-cs-rd1`]: Part A(하네스 정합화: CS-R9 done + CS-RD1~3/CS-EXT1 등록 + DECISIONS CS-RD 결정) + Part B(v1/v2 갈림길 read-only 보고) 완료. **Part C(테마 데이터 적재) HALT** — `theme_tags`/`business_model_type`/`overall_grade`는 `Stock` 아닌 `CompanyChainProfile` 필드(NT-3 필드위치 오기 정정), 채움률 **0%**. 원인: 소스 `CompanyNarrativeTag` 0 rows + 생성 파이프라인 부재 + chain_sight LLM 호출 0건 = **분기 (다)**. Neo4j `:Theme`/`HAS_THEME`도 0/0(ETF 소스 준비됨: ETFProfile 21/ETFHolding 10,795). 별도 적재 지시서 대기.
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
@@ -64,8 +66,8 @@
 |---|------|------|------|
 | 1 | **PROGRESS.md 16일 stale** | 마지막 갱신 2026-05-12 (`3f7dab8`) 이후 16일간 167 commits 누적, PROGRESS 4회만 변경 (모두 5/12 시점) | 매 슬라이스 종결 시 갱신 의무화됐으나 brunch 격리 작업 중 main 정착 보고만 갱신 — Slice 14~17 종결 보고 누락 |
 | 2 | **`origin/main = be2d6c7` 표기 오류** | PROGRESS L15/L21/L43에 5/11 정착 시점 해시 그대로. 실제 `origin/main = 3e76bc8` (5/26) — 2 commits 차이 | 정착 직후 시점 표기를 그 이후 git 변동에 동기화 안 함. 자동 추출 가능 영역인데 수동 유지에 의존 |
-| 3 | **`feature/chainsight-graph-v2` worktree 부재** | PROGRESS L23이 `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2`에 worktree 보존이라 표기. 실제로는 폴더·brunch 모두 부재 (PR-#8 `be2d6c7`로 main 통합 후 정리됨) | PROGRESS 표기와 git/파일시스템 현실 사이 검증 통로 부재 |
-| 4 | **TASKQUEUE CS-R9 상태 충돌** | TASKQUEUE.md에 CS-R9(chainsight v2 머지) 상태 `todo`. 실제로는 `be2d6c7` PR #8 머지로 완료 | 머지 작업이 외부(GitHub PR)에서 발생할 때 TASKQUEUE 상태 갱신 자동 트리거 없음 |
+| 3 | **`feature/chainsight-graph-v2` worktree 부재** | PROGRESS L23이 `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2`에 worktree 보존이라 표기. 실제로는 폴더·brunch 모두 부재 (PR-#8 `be2d6c7`로 main 통합 후 정리됨) | PROGRESS 표기와 git/파일시스템 현실 사이 검증 통로 부재 → ✅ **해소 (2026-06-11, CS-RD1 Part A)**: 잘못된 worktree 표기는 main 버전 PROGRESS에 이미 부재, 기록만 보존 |
+| 4 | **TASKQUEUE CS-R9 상태 충돌** | TASKQUEUE.md에 CS-R9(chainsight v2 머지) 상태 `todo`. 실제로는 `be2d6c7` PR #8 머지로 완료 | 머지 작업이 외부(GitHub PR)에서 발생할 때 TASKQUEUE 상태 갱신 자동 트리거 없음 → ✅ **해소 (2026-06-11, CS-RD1 Part A)**: CS-R9 `done` 갱신 + 근거 명시 |
 | 5 | **slice17 brunch 143 commits 0% 반영** | Slice 14 c-bundle 머지부터 Slice 17 closing + audit 보고서까지 전체가 origin/main 미반영. 단 1 충돌(`scripts/celery-watchdog.sh`) 외에는 깔끔히 흡수 가능 | "slice별 격리 작업 → 종결 후 main 통합" 흐름이 슬라이스 누적되면서 main 정착 단계가 지연됨 |
 
 ### 진단 결과
