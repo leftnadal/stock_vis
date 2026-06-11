@@ -34,7 +34,7 @@ from apps.market_pulse.throttles import (
     MarketPulseUserThrottle,
 )
 
-VALID_CARDS = {"regime", "breadth", "sector", "flow", "brief"}
+VALID_CARDS = {"regime", "breadth", "sector", "concentration", "brief"}
 
 
 def _envelope(payload: dict, started: float, *, cache_state: str) -> dict:
@@ -57,7 +57,7 @@ def _envelope(payload: dict, started: float, *, cache_state: str) -> dict:
             name="card_id",
             type=str,
             location=OpenApiParameter.PATH,
-            enum=["regime", "breadth", "sector", "flow", "brief"],
+            enum=["regime", "breadth", "sector", "concentration", "brief"],
         ),
     ],
     responses={
@@ -92,7 +92,7 @@ class CardDetailView(APIView):
             "regime": _regime_detail,
             "breadth": _breadth_detail,
             "sector": _sector_detail,
-            "flow": _flow_detail,
+            "concentration": _concentration_detail,
             "brief": _brief_detail,
         }[card_id]()
 
@@ -186,7 +186,7 @@ def _sector_detail():
     }
 
 
-def _flow_detail():
+def _concentration_detail():
     snap = ConcentrationSnapshot.objects.order_by("-date").first()
     if snap is None:
         return {"available": False}

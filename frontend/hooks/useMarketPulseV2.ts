@@ -24,7 +24,7 @@ export function useOverview() {
 }
 
 export function useCardDetail<T = unknown>(
-  cardId: 'regime' | 'breadth' | 'sector' | 'flow' | 'brief',
+  cardId: 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief',
   enabled: boolean = true,
 ) {
   return useQuery<CardDetailEnvelope<T>>({

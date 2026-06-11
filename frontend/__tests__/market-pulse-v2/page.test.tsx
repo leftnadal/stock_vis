@@ -105,7 +105,7 @@ describe('MarketPulseV2Page', () => {
     expect(screen.getByText('스냅샷 2일 경과')).toBeInTheDocument()
   })
 
-  it('라우팅: Concentration(flow) 카드 클릭 → drawer 열림 + 타이틀 매핑 + detail fetch', async () => {
+  it('라우팅: Concentration 카드 클릭 → drawer 열림 + 타이틀 매핑 + detail fetch', async () => {
     const user = userEvent.setup()
     server.use(...mpAllHandlers())
     wrap(<MarketPulseV2Page />)
@@ -115,7 +115,7 @@ describe('MarketPulseV2Page', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(dialog).toBeInTheDocument()
-    // page.tsx CARD_TITLE['flow'] = 'Concentration · 집중도'
+    // page.tsx CARD_TITLE['concentration'] = 'Concentration · 집중도'
     expect(within(dialog).getByText('Concentration · 집중도')).toBeInTheDocument()
     // CardDetailContainer가 detail fetch 성공 시 cache 라인 렌더
     await waitFor(() =>

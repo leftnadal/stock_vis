@@ -4,18 +4,18 @@ import { useCardDetail } from '@/hooks/useMarketPulseV2'
 import type {
   BreadthDetail as Breadth,
   BriefDetail as Brief,
-  FlowDetail as Flow,
+  ConcentrationDetail as Concentration,
   RegimeDetail as Regime,
   SectorDetail as Sector,
 } from '@/lib/api/marketPulseV2'
 
 import { BreadthDetail } from './BreadthDetail'
 import { BriefDetail } from './BriefDetail'
-import { FlowDetail } from './FlowDetail'
+import { ConcentrationDetail } from './ConcentrationDetail'
 import { RegimeDetail } from './RegimeDetail'
 import { SectorDetail } from './SectorDetail'
 
-type CardId = 'regime' | 'breadth' | 'sector' | 'flow' | 'brief'
+type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
 export function CardDetailContainer({ cardId, enabled }: { cardId: CardId; enabled: boolean }) {
   const { data, isLoading, isError, error, refetch } = useCardDetail<Record<string, unknown>>(cardId, enabled)
@@ -46,7 +46,7 @@ export function CardDetailContainer({ cardId, enabled }: { cardId: CardId; enabl
       {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} />}
       {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} />}
       {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} />}
-      {cardId === 'flow' && <FlowDetail payload={payload as unknown as Flow} />}
+      {cardId === 'concentration' && <ConcentrationDetail payload={payload as unknown as Concentration} />}
       {cardId === 'brief' && <BriefDetail payload={payload as unknown as Brief} />}
     </div>
   )

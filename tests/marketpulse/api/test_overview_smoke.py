@@ -134,7 +134,7 @@ class TestOverview:
 
 
 class TestCardDetail:
-    @pytest.mark.parametrize('cid', ['regime', 'breadth', 'sector', 'flow', 'brief'])
+    @pytest.mark.parametrize('cid', ['regime', 'breadth', 'sector', 'concentration', 'brief'])
     def test_each_card_200(self, auth_client, populated, cid):
         r = auth_client.get(
             reverse('marketpulse_api_v2:card-detail', kwargs={'card_id': cid}),

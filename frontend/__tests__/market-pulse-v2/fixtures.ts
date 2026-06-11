@@ -77,7 +77,7 @@ export const overviewFixture: OverviewResponse = {
       cross_dispersion: 0.314,
       rotation_index: 0.072,
     },
-    flow: {
+    concentration: {
       universe: 'SPY',
       top5_weight: 0.28,
       top10_weight: 0.41,
@@ -100,7 +100,7 @@ export const i18nFixture: I18nResponse = {
   _meta: { locale: 'ko', supported: ['ko', 'en'], cache: 'MISS' },
   labels: {
     'card.regime': 'Market Regime',
-    'card.flow': 'Concentration',
+    'card.concentration': 'Concentration',
     'regime.BULL_EXPANSION': '강세 확장',
     'mode.CALM': '안정',
   },
@@ -135,7 +135,7 @@ export const cardDetailFixtures: Record<string, Record<string, unknown>> = {
     cross_dispersion: 0.314,
     rotation_index: 0.072,
   },
-  flow: {
+  concentration: {
     available: true,
     date: '2026-06-11',
     universe: 'SPY',
@@ -210,6 +210,6 @@ export function mpAllHandlers() {
     mpOverviewSuccess(),
     mpI18nSuccess(),
     mpNewsRefreshSuccess(),
-    ...['regime', 'breadth', 'sector', 'flow', 'brief'].map(mpCardDetailSuccess),
+    ...['regime', 'breadth', 'sector', 'concentration', 'brief'].map(mpCardDetailSuccess),
   ]
 }

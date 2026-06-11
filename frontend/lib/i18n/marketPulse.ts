@@ -9,7 +9,7 @@ const FALLBACK_LABELS: Record<string, string> = {
   'card.regime': 'Market Regime',
   'card.breadth': 'Market Breadth',
   'card.sector': 'Sector Flow',
-  'card.flow': 'Concentration',
+  'card.concentration': 'Concentration',
   'card.brief': 'Briefing',
   'mode.ANOMALY': 'Anomaly',
   'mode.HYBRID': 'Hybrid',

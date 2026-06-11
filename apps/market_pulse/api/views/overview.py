@@ -214,7 +214,7 @@ def _sector_card():
     }
 
 
-def _flow_card():
+def _concentration_card():
     snap = ConcentrationSnapshot.objects.order_by("-date").first()
     if snap is None:
         return None
@@ -254,7 +254,7 @@ def _build_payload() -> dict:
         "regime": _regime_card(),
         "breadth": _breadth_card(),
         "sector": _sector_card(),
-        "flow": _flow_card(),
+        "concentration": _concentration_card(),
         "brief": _brief_card(),
     }
     has_required = cards["regime"] is not None and cards["breadth"] is not None

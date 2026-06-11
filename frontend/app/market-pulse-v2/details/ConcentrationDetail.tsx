@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from 'recharts'
 
-import type { FlowDetail as Detail } from '@/lib/api/marketPulseV2'
+import type { ConcentrationDetail as Detail } from '@/lib/api/marketPulseV2'
 
 const COLORS = [
   'rgb(99 102 241)', 'rgb(14 165 233)', 'rgb(34 197 94)',
@@ -17,7 +17,7 @@ const COLORS = [
   'rgb(16 185 129)', 'rgb(234 88 12)', 'rgb(217 70 239)', 'rgb(59 130 246)',
 ]
 
-export function FlowDetail({ payload }: { payload: Detail }) {
+export function ConcentrationDetail({ payload }: { payload: Detail }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">집중도 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
