@@ -1467,3 +1467,59 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - 미래 세션이 "v1 왜 있지?"를 재측정하지 않도록 본 결정 본문에 "역할 분담" 명시 — DECISIONS가 1차 진실.
 
 **관련 입력 문서**: TASKQUEUE `MP-V1-DECISION`·`MP-V1-ABSORB` 항목, `app/market-pulse/page.tsx` (310 lines, v1) ↔ `app/market-pulse-v2/page.tsx` (v2 Layer0) 산출물 대조, common-bugs #31(직전 K/L 오측정 사례 — 본 결정의 가중합 평가 입력).
+
+---
+
+## [2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식 기록
+
+**결정 1 — F2(card_id 리네임) 게이트 선행 실행**:
+- TASKQUEUE상 `MP-KL-F2`는 `MP-LIVE-VERIFY` 게이트에 의존(게이트 후 실행) 표기였으나, **의도적으로 게이트에 선행** 실행.
+- 근거: card_id는 **공개 계약**(`/cards/<id>/detail` URL + overview JSON `cards.<id>` 키). 게이트 통과 후 리네임하면 계약이 바뀌어 **게이트 재실행을 강제** → "게이트는 최종 계약 위에서 1회만 실행" 원칙 위반. 따라서 리네임을 먼저 하고 그 위에서 게이트 1회.
+- 배포 보류 상태 = 외부 소비자 0 → 계약 변경 **최저비용 시점**.
+- 가중합: 옵션1(지금 리네임) **4.25** / 옵션2(게이트 후 리네임) **3.30**, 마진 0.95.
+- 후속: TASKQUEUE `MP-KL-F2` 행의 `MP-LIVE-VERIFY` 의존 표기 삭제(본 결정 참조 주석). `MP-LIVE-VERIFY`는 선결 전부 충족 → 게이트 실행 준비 완료.
+
+**결정 2 — 복구 이식(cherry-pick)**:
+- 1차 작업(F1/F3/F2)이 **갈라진 로컬 main**(merge-base `d4a9690`, origin/main 최근 5 commit 부재) + **공유 메인 디렉터리**에서 수행돼 타 트랙 커밋(`82afddb`, 로컬 main `cb5473e`와 동일 메시지·별개 hash)이 작업 브랜치에 혼입.
+- 복구: origin/main(`85557e6`) 위 새 worktree(`sess-mp-kl-f1f3-v2`)에서 `cherry-pick -x`로 3 commit 이식 → `e538e7f`(F1, 원본 `8f1ba79`) / `d5289a2`(F3, 원본 `f16efcb`) / `902ec86`(F2, 원본 `70a00c9`).
+- 이식 검증 전 통과: pytest 138 / vitest 174 / tsc 0 / `manage.py check` 0 / card 문맥 'flow' 잔존 0 / 동명이의 3곳 무변경 / health 8✅. push 완료(`85557e6..902ec86 → origin/main`).
+- 원본 브랜치 `monorepo/sess-mp-kl-f1f3` **폐기 승인 기록**: cherry-pick이라 `git branch -d`가 미머지로 거부할 수 있음 → 내용 동일성 검증 완료로 `-D` 정당. **실행은 병진 수동**.
+
+**근거 입력**: common-bugs #32(fetch 없는 baseline) · #33(공유 디렉터리 작업) · #34(짧은 라벨 비고유), 2026-06-11 복구 세션 측정 로그.
+
+---
+
+## [2026-06-11] 트랙별 소유권 지도 v2 — 전수 실측 기반 (902ec86 측정)
+
+**공통 규칙**:
+1. 각 트랙은 **자기 소유 구획만 직접 변경**.
+2. 한 슬라이스가 타 구획 파일에 **하나라도 걸치면 슬라이스 통째 위임**(쪼개지 않음).
+3. 읽기·grep·실측은 **전 구획 자유**.
+4. 실행 지시서 DoD 표준 = `git diff --name-only` 전수 자기 구획 검사, **위반 = HALT**. 소유영역 문언은 "예시 열거"가 아닌 **"트랙 전용 파일" 취지**로 해석, 판단이 갈리면 사용자 판단에 부침.
+5. 모든 세션 **전용 worktree**, pwd가 메인 디렉터리면 HALT, baseline은 `git fetch` 후 **origin/main 직접 측정**.
+6. **메타 4종**(TASKQUEUE·PROGRESS·DECISIONS·common-bugs) = **mgmt worktree 전용**(전 트랙 공통).
+
+**[확정] market_pulse 트랙**: `apps/market_pulse/**`, `macro/**`(루트 모델 — 이동 동결, BOUNDARY 결정 준수), `tests/marketpulse/**`, `tests/macro/**`, `docs/market_pulse_v2/**`, `docs/operations` 중 marketpulse 문서, FE: `app/market-pulse*/**`, `components/market-pulse/**`, `components/macro/**`(v1 위젯 — `MP-V1-ABSORB` 대상), `lib/api/marketPulseV2*`, `lib/i18n/marketPulse*`, `hooks/useMarketPulse*`, `services/macroService*`, `__tests__/market-pulse*/**` + fixtures, `vitest.setup.ts`(자기 테스트 인프라 한정).
+
+**[확정] portfolio 트랙 (2026-06-11 신설)**: `apps/portfolio/**`(coach API 포함), `tests/coach/**`, `docs/portfolio/**`, FE: `app/coach/**`, `app/portfolio/**`, `lib/coach/**`, `components/coach/**`, `components/portfolio/**`, `__tests__/coach/**` + 관련 fixtures.
+
+**[확정] dashboard 트랙 (표면 전용)**: FE: `app/dashboard/**`, `components/eod/**`, `services/eodService*`, `hooks/useEODDashboard*`, `docs/dashboard_plan/**`. **백엔드 앱 부재(실측)** — 백엔드 신설 여부는 이 트랙의 미래 결정 사안.
+
+**[골격] chain_sight 트랙**: `apps/chain_sight/**`, `tests/chainsight/**`, `docs/chain_sight/**`, FE: `app/chainsight/**`, `components/chainsight/**`, `services/{chainsightService,pathWatchlistService}`, `hooks/{useChainsight,usePathWatchlist}`, `__tests__/chainsight/**` + Neo4j 자산(추정 — 트랙 STEP 0 확정).
+
+**[무소속 — 작업 착수 전 트랙 배정 필수]** (7구획):
+1. **thesis 구획** — 루트 `thesis` BE + thesis 표면 일체
+2. **news 구획** — `services.news` 계열
+3. **screener·admin 구획** — `services.serverless` 계열
+4. **rag·ai-analysis 구획**
+5. **stocks 표면** — 백엔드 `shared.stocks`는 토대
+6. **users·auth 표면** — `login`·`signup`·`mypage`·`watchlist`(백엔드 `shared.users`는 토대)
+7. **BE단독** — `services.sec_pipeline` · `integrations/iron_trading`(프론트 미검출 실측)
+
+상세 파일군은 2026-06-11 전수 측정 보고 기준.
+
+**[토대] shared 트랙**: `packages/shared/**`(stocks·users·metrics·api_request), `tests/{architecture,contracts,unit}/**`, `config/**`, `scripts/**`, `integrations/_shared/**`, FE 공용: `lib/api.ts`, `lib/api/{authAxios,client,config}*`, `components/{common,layout,charts}/**`, `contexts`·`providers`·`types`·`constants`·`utils`, frontend 루트 설정.
+
+**[경계 보류 — 해당 트랙 첫 STEP 0로 확정 후 본 엔트리 갱신]**: `useMarketBreadth`·`useSectorHeatmap`·`useMarketMovers`·`useMarketView` 호출 백엔드 / `explorationStore` 사용 분포 / `tests/{unit,scoring,integration}` 소속 / `components/keywords` 소속 / `services/{portfolio,watchlistService,userInterestService}` 소속(portfolio 트랙 vs users·auth 표면).
+
+**근거**: 2026-06-11 타 트랙 커밋 혼입 사고(common-bugs #33) + read-only 전수 측정(백엔드 16구획·`frontend/services` 실 API 계층·dashboard 백엔드 부재·portfolio 최대 앱 196py 확인).
