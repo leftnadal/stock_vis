@@ -18,7 +18,7 @@ from typing import Iterable
 
 from django.utils import timezone as django_timezone
 
-from apps.market_pulse.fetchers.fmp_weights import HoldingRow, fetch_holdings
+from apps.market_pulse.fetchers.fmp_weights import HoldingRow
 from apps.market_pulse.models.snapshot import ConcentrationSnapshot
 
 logger = logging.getLogger(__name__)
@@ -99,8 +99,26 @@ def upsert_snapshot(
 
 
 def calculate_for_etf(etf_symbol: str = "SPY") -> ConcentrationSnapshot:
-    holdings = fetch_holdings(etf_symbol)
+    # MP-LV-D1: 비중 공급원은 weight_source seam이 결정(기본 시총 근사).
+    # etf_symbol 인자는 호출 호환을 위해 유지하나, universe는 활성 source가 정한다.
+    from apps.market_pulse.fetchers.weight_source import (
+        active_universe,
+        get_constituent_weights,
+    )
+
+    holdings, meta = get_constituent_weights()
     if not holdings:
-        raise RuntimeError(f"fetch_holdings returned empty list for {etf_symbol}")
+        raise RuntimeError(
+            f"weight source returned empty list (source={meta.get('source')})"
+        )
     metrics = compute_metrics(holdings)
-    return upsert_snapshot(metrics, universe=etf_symbol.upper())
+    logger.info(
+        "concentration: source=%s universe=%s coverage=%s top5=%s top10=%s hhi=%s",
+        meta.get("source"),
+        active_universe(),
+        meta.get("coverage"),
+        metrics.top5_weight,
+        metrics.top10_weight,
+        metrics.hhi,
+    )
+    return upsert_snapshot(metrics, universe=active_universe())
