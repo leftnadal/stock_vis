@@ -1624,3 +1624,26 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - **제외 가드**: 전(全)시장 광역 ETF(SPY/QQQ/VOO/IWM류)는 제외 유지 — 단 ETF_THEME_MAP에 해당 ETF 미포함이라 실제 제외 목록은 공집합(sector XL* + theme만 존재). 섹터 ETF(XL*)는 "섹터 이벤트 그룹"으로 포함(무의미 그룹 차단 취지 유지).
 - **적재 결과 (2026-06-11)**: 채움률 304/504 profiles(60.3%, 56.8% of stocks), 15 그룹(sector 11 + theme 4), 그룹당 종목 중앙 25(min 1/max 38), 3개 미만 그룹 2건(Lithium 2·Clean 1 — theme ETF 외국 종목 오염). Neo4j `:Theme` 21 / `HAS_THEME` 536. 멱등성 2회 확인.
 - **NarrativeTag 가드(행위보존)**: `aggregate_chain_profiles`(sync_tasks.py:64-68)의 `if nt:` 가드로 NarrativeTag 0행 시 theme_tags 미설정→`update_or_create`가 ETF 적재값 보존. 코드 수정 0건. NarrativeTag(LLM) 태깅은 후속 트랙(CS-COV 인근) — 채워지면 ETF 태그와 병합 방식은 그 시점 결정.
+
+---
+
+## [2026-06-11] Phase 1 종료 선언 (출시와 구분)
+
+**결정**: MP-LIVE-VERIFY 게이트 전건 통과를 **"Phase 1 종료"**로 선언한다. **"출시"가 아니다** — 출시는 별도 결정·별도 선언.
+
+**Phase 1 범위 완료 근거**:
+- 카드 5종 백엔드(Regime/Breadth/Sector/Concentration/Briefing) + 프론트엔드 K/L(`market-pulse-v2` page + 5 Summary/Detail + 패널).
+- 운영 정리: NT-7(task 경로 정합) · 헤더 표준화 · BOUNDARY-3(shared 경계) 종결.
+- **MP-LIVE-VERIFY 게이트 전건 통과**: 계약(C·D 라이브) + D2 Briefing(SDK 수리 `62d4025`) + D1-B Concentration(시총 근사 `c6b7aa0`).
+- 종료 좌표(게이트 통과 시점): origin/main `575c3fb` · 테스트 BE 146 / FE 174 · health_check 8✅.
+
+**"종료 ≠ 출시" 정의**:
+- **종료** = Phase 1 *범위*의 구현·검증 완료(게이트 통과 = 계약·데이터 경로 라이브 확인).
+- **출시** = ① 운영 **자율 가동 확인**(`MP-OPS-AUTOGEN-CHECK` — 이번 게이트는 *수동 트리거* 검증이었으므로 beat 자율 5종 생성은 별도 확인 필요, Briefing은 LLM 일 1회 과금 시작점) + ② **UX 정비**(`MP-UX-POLISH` — raw 전문어/단위 없는 숫자/용어 도움 부재) 이후, ③ **사용자의 별도 선언**.
+- **STRUCT-CLEANUP 트리거 해석 고정**: 재개 트리거 "(a) 앱 초기 배포 버전 확정"은 **출시 선언 시점**을 가리킨다. **Phase 1 종료(2026-06-11)로는 미발동** — 이 구분으로 STRUCT-CLEANUP의 조기 발동 모호함을 차단.
+
+**잔여 지도(TASKQUEUE "Phase 1 종료 시점 잔여 지도")**: `MP-OPS-RESTART`(병진 수동 — 메인 디렉터리 main 복귀 + ff pull + 구 브랜치 -D + 운영 celery 재기동 + setup_marketpulse_beat) · `MP-OPS-AUTOGEN-CHECK`(출시 선행) · `MP-CONC-FREQ-TUNE`(저우선) · `MP-UX-POLISH`(착수 가능) · `MP-I18N-EN`(minor).
+
+**근거 입력**: 2026-06-11 MP-LIVE-VERIFY 게이트 종결, 사용자 결정(채팅 — "게이트 통과는 출시가 아닌 Phase 1 종료"), STRUCT-CLEANUP 트리거 모호함 방지.
+
+> 비고(2026-06-12 push 충돌 복구): 본 엔트리는 origin/main이 575c3fb→70eb090(chain_sight·trash·harness)로 이동해 non-ff 거부됨에 따라 70eb090 위에 재적용됨. 타 트랙 신규 내용 전부 보존, 본 엔트리만 추가.

@@ -56,9 +56,13 @@
 >
 > ✅ **2026-06-11 게이트 1차 mgmt push 완료**: `d5212d4..b54e4e7 → origin/main` (D2 수리 + 게이트 1차 결과).
 >
-> 🟢 **2026-06-11 MP-LIVE-VERIFY 게이트 전건 통과 + MP-LV-D1 수리**: **Phase 1 release blocker 0**. 계약(C·D) PASS + Briefing(D2 `62d4025`) + **Concentration(D1 옵션 B `c6b7aa0`)** 전부 확보. D1 = 시총 가중 근사(`weight_source.py` seam 분리, MarketCapWeightSource 기본 / holdings 휴면 / `ACTIVE_WEIGHT_SOURCE` 1곳 전환). universe='SP500_MCAP', 회귀 138→146, 재게이트 통과(top5 28.29%·HHI 0.0221 라이브 렌더, /cards/concentration 200·당일, /cards/flow 404). 근사 점프 top5 +3.9%/HHI +5.0%(기록). 미래 옵션 A = `MP-D1-FMP-UPGRADE`(trigger-gated). 근거 DECISIONS "[2026-06-11] MP-LV-D1 옵션 B".
+> 🟢 **2026-06-11 MP-LIVE-VERIFY 게이트 전건 통과 + MP-LV-D1 수리**: 게이트 전건 통과 = **Phase 1 범위 완료**(출시는 별도 결정, 아래 Phase 1 종료 라인). 계약(C·D) PASS + Briefing(D2 `62d4025`) + **Concentration(D1 옵션 B `c6b7aa0`)** 전부 확보. D1 = 시총 가중 근사(`weight_source.py` seam 분리, MarketCapWeightSource 기본 / holdings 휴면 / `ACTIVE_WEIGHT_SOURCE` 1곳 전환). universe='SP500_MCAP', 회귀 138→146, 재게이트 통과(top5 28.29%·HHI 0.0221 라이브 렌더, /cards/concentration 200·당일, /cards/flow 404). 근사 점프 top5 +3.9%/HHI +5.0%(기록). 미래 옵션 A = `MP-D1-FMP-UPGRADE`(trigger-gated). 근거 DECISIONS "[2026-06-11] MP-LV-D1 옵션 B".
 >
-> ✅ **2026-06-11 게이트 종결 mgmt push 예정**: D1 수리(`c6b7aa0`) + 본 mgmt commit. **현재 `origin/main = b54e4e7`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
+> ✅ **2026-06-11 게이트 종결 mgmt push 완료**: `b54e4e7..575c3fb → origin/main` (D1 수리 `c6b7aa0` + 게이트 통과 mgmt). 이후 타 트랙(chain_sight CS-RD1/CS-UNIV 머지 + trash 청산 + nightly 감사 + harness HARN-1)으로 `575c3fb..70eb090` 진행.
+>
+> 🏁 **2026-06-11 Phase 1 공식 종료 (출시와 구분)**: 카드 5종 BE + 프론트(K/L) + 운영 정리(NT-7·헤더·BOUNDARY-3) + MP-LIVE-VERIFY 게이트 전건 통과(계약 C·D + D2 Briefing + D1-B Concentration). **종료 ≠ 출시** — 출시 = 운영 자율 가동 확인(`MP-OPS-AUTOGEN-CHECK`) + UX 정비(`MP-UX-POLISH`) 이후 사용자 별도 선언. STRUCT-CLEANUP "초기 배포 버전 확정" 트리거는 **출시 선언 시점**(이번 종료로 미발동). 종료 좌표: 게이트 통과 시점 origin/main 575c3fb · 테스트 BE 146/FE 174 · health 8✅. 잔여 지도: MP-OPS-RESTART(병진 수동)·MP-OPS-AUTOGEN-CHECK·MP-CONC-FREQ-TUNE 등록. 근거 DECISIONS "[2026-06-11] Phase 1 종료 선언".
+>
+> ✅ **2026-06-11 Phase 1 종료 mgmt push 예정**: 본 mgmt commit(용어 정정 + 잔여 지도 + 종료 선언), 70eb090 위 재적용(직전 push 충돌 복구). **현재 `origin/main = 70eb090`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 >
 > 🔧 **2026-06-11 CS-RD1 (chain_sight 이벤트 보드 개편 Phase 0–1)** [worktree `../stock_vis_cs_rd1`, brunch `monorepo/sess-cs-rd1`]: Part A(하네스 정합화: CS-R9 done + CS-RD1~3/CS-EXT1 등록 + DECISIONS CS-RD 결정) + Part B(v1/v2 갈림길 read-only 보고) 완료. Part C(테마 데이터 적재)는 옵션2(sector+theme w≥1.0)로 완료 — 채움률 60.3%/15그룹, Neo4j :Theme 21/HAS_THEME 536 (DECISIONS CS-RD-C2). 적재 당시 STEP 0 정정: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock` 아닌 `CompanyChainProfile` 필드(NT-3 오기). 후속 CS-RD2(M1 엔진) ready.
 
