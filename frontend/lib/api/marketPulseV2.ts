@@ -111,7 +111,7 @@ export interface SectorCard {
   rotation_index: number
 }
 
-export interface FlowCard {
+export interface ConcentrationCard {
   universe: string
   top5_weight: number
   top10_weight: number
@@ -130,7 +130,7 @@ export interface OverviewCards {
   regime: RegimeCard | null
   breadth: BreadthCard | null
   sector: SectorCard | null
-  flow: FlowCard | null
+  concentration: ConcentrationCard | null
   brief: BriefCard | null
 }
 
@@ -153,7 +153,7 @@ export async function fetchOverview(): Promise<OverviewResponse> {
 }
 
 export async function fetchCardDetail<T = unknown>(
-  cardId: 'regime' | 'breadth' | 'sector' | 'flow' | 'brief',
+  cardId: 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief',
 ): Promise<CardDetailEnvelope<T>> {
   const { data } = await client.get<CardDetailEnvelope<T>>(`/cards/${cardId}/detail`)
   return data
@@ -234,14 +234,14 @@ export interface SectorDetail {
   rotation_index?: number
 }
 
-export interface FlowHistoryPoint {
+export interface ConcentrationHistoryPoint {
   date: string
   top5: number
   top10: number
   hhi: number
 }
 
-export interface FlowDetail {
+export interface ConcentrationDetail {
   available: boolean
   date?: string
   universe?: string
@@ -249,7 +249,7 @@ export interface FlowDetail {
   top10_weight?: number
   hhi?: number
   top_holdings?: { symbol: string; weight: number }[]
-  history_30d?: FlowHistoryPoint[]
+  history_30d?: ConcentrationHistoryPoint[]
 }
 
 export interface BriefDetail {

@@ -1367,3 +1367,243 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - worktree/브랜치 머지 판정 등 **git 도달성 측정 전 `git fetch origin` 선행 필수** (remote-tracking ref 갱신만, working tree 불변).
 - **Why**: TR-6에서 worktree 2건을 `git branch --merged main`(로컬 main 기준)으로 "미머지=ALIVE" 오판 → 실제로는 stale·분기된 로컬 main이라 origin/main에 이미 머지된 DEAD 상태였음. fetch 없이 stale 기준선으로 측정하면 보존/삭제 판단이 뒤집힘. TR-8에서 fetch 후 origin/main 기준 5건 전건 REACHABLE = DEAD 확정으로 정정.
 - **F 가드 부팅 검사 설계 입력 #4** (부팅 시 origin 신선화 → 기준선 stale 차단).
+## [2026-06-07] Phase 1 PR 카탈로그 역산 확정 (권위 문서 부재 → 코드 기준)
+
+**맥락**: "16 PR 카탈로그/frozen-decisions"는 4월 대화 산출물이나 repo 미커밋. `docs/market_pulse_v2/` 하위 PR-A1/A2/A3 위임 프롬프트 3건만 존재, PR-B~O 14건 부재. → 코드·운영 문서를 1차 진실로 PR 상태를 역산 확정한다(추정 카탈로그 복원 아님).
+
+**백엔드 상태 (STEP 0 2026-06-07 측정)**:
+- ✅ done: PR-A1 (sector_group + EconomicIndicator 11 + MarketIndex 20 + backfill), PR-A2 (5모델 + Pydantic schemas), PR-B (fetchers + news_aggregator + circuit_breaker), PR-D (anomaly engine + news_pairing), PR-E (briefing client/prompt/safety), PR-F (breadth), PR-G (sector_flow), PR-H (concentration), PR-O (finalize + 2 purge tasks).
+- ⚠️ done(아래 갭 제외): PR-I (5 views + overview serializer + URL 라우팅), PR-C (regime classifier + rules + 15min task).
+
+**J = PR-I에 흡수**: `apps/market_pulse/api/views/cards.py`·`health.py`가 `overview.py`와 동일 `api/views/` 레이어로 통합 구현됨. 별도 산출물 없음. **분리 복원은 합쳐진 코드를 쪼개는 행위보존 위반이라 안 함.**
+
+**M(운영) = (b) 잔여 — STEP 0 측정 (2026-06-10)**:
+- ✅ 충족: `apps/market_pulse/management/commands/setup_marketpulse_beat.py` (Command 클래스 + help) · `apps/market_pulse/api/views/health.py` (HealthView + DB/cache/last_runs 체크 + URL 라우팅).
+- ❌ 잔여: `docs/operations/marketpulse_v2_celery_tasks.md`가 옛 경로 `marketpulse.tasks.*` 참조로 stale (10개 task 모두). NT-7으로 코드는 `apps.market_pulse.tasks.*` 새 경로로 갱신됐으나 runbook 본문 미갱신.
+
+**N(모니터링) = (b) 잔여 — STEP 0 측정 (2026-06-10)**:
+- ❌ market_pulse 자체 능동 모니터링 자산 0건: `apps/market_pulse/` 전체 + `packages/shared/` 에서 `sentry`/`prometheus`/`statsd`/`datadog`/`opentelemetry`/`pagerduty` grep 0건. monitor·alert 파일 0건. runbook 모니터링 섹션 0건.
+- 참고(범위 외): `services/news/tasks.py:check_pipeline_alerts`가 6 트리거(ML F1 / 키워드 / LLM 에러율 / Neo4j / 수집량 / 미분류) 알람을 운영 중 — 동등 패턴을 market_pulse로 확장하는 게 N 잔여 항목.
+
+**Translation Layer / Macro Playbook = Phase 1 범위 아님**:
+- grep 0건(`translation_layer`/`TranslationLayer`/`macro_playbook`/`MacroPlaybook`) + 로드맵 재정립상 Translation=Phase 1.5, Playbook=Phase 1.6 신규. 잔여가 아니라 미래 Phase 항목.
+
+**Phase 1 확정 잔여**:
+1. **프론트엔드 K/L** (0% — `frontend/src` 내 `market_pulse`/`marketPulse` 검색 무결과. Phase 1 출시 실질 병목)
+2. **PR-C `stress_input` 훅** (1줄 인터페이스 — `apps/market_pulse/regime/` 내 `stress_input` grep 0건. Phase 1.5 무재설계 전제)
+3. **M 잔여**: `docs/operations/marketpulse_v2_celery_tasks.md` task 경로 갱신 (10건 `marketpulse.tasks.*` → `apps.market_pulse.tasks.*`)
+4. **N 잔여**: market_pulse 능동 모니터링 자산 (`check_pipeline_alerts` 패턴 확장 또는 sentry/prometheus 도입)
+5. **A3 마이그레이션 분리** (3 snapshot이 `0001_initial`에 통합됨. 행위보존이라 우선순위 낮음, 미루기 가능)
+6. **I serializer 도메인 분리 + 통합테스트, B fetcher 테스트** (테스트/정리 갭 — overview만 분리 serializer 보유, cards/health 미분리)
+
+**비고**: FRED fetcher는 이미 done (`packages/shared/api_request/fred_client.py` + `backfill_v2_a1._backfill_economic()` + `sync_indicators.mp_sync_yahoo_indicators_daily`) — 이전 추정 "남음" 정정.
+
+**Why**:
+- 권위 문서(4월 PR 카탈로그)가 repo 부재로 "16 vs 17 PR" 불명. PR-B~O 위임 프롬프트를 사후 작성하면 이미 구현된 걸 문서화하는 낭비 — 옵션 A 기각.
+- 코드 실측이 1차 진실이므로 역산 카탈로그로 Phase 1 진행 상태를 확정 (PROGRESS.md 캐시 갱신 가능 상태로).
+
+**How to apply**:
+- Phase 1 추가 PR 위임 프롬프트 작성 금지(이미 구현). 잔여는 위 6항목 한정.
+- Phase 1.5 (Translation Layer) / Phase 1.6 (Macro Playbook) 신규 트랙은 별도 STEP 0 후 신설.
+- 본 결정 commit 후 PROGRESS.md/TASKQUEUE.md에 잔여 6항목 동기화.
+
+**관련 입력 문서**: `docs/market_pulse_v2/market_pulse_v2_pr_a1.md` (PR-A1/A2/A3 위임 프롬프트 3건만), STEP 0 측정 보고(2026-06-07)는 세션 컨텍스트 내 보존.
+
+---
+
+## [2026-06-10] stress_input 훅 사전 배선 (Phase 1.5 준비)
+
+**결정**:
+- `apps/market_pulse/regime/classifier.py:classify_inputs(inputs, *, rules=None, stress_input=None)` keyword-only Optional 인자 추가.
+- 본문은 `del stress_input`으로 즉시 폐기 — 받기만 하고 분류 로직에 사용하지 않음 (행위보존).
+- 회귀: `tests/marketpulse` 138 passed (이전 baseline 136 + 신규 2 케이스, 0 regression).
+
+**Why**:
+- Phase 1.5(Crisis/Stress 레이어) 진입 시 classifier 시그니처 재설계 없이 인자 채우기만으로 통합 가능하도록 인터페이스 스텁만 선반영.
+- 분류 로직 변경 0 → Phase 1 출시 영향 0, 향후 1.5 도입 비용은 호출부 + 본문 한 곳으로 한정.
+
+**Why now (Phase 1 소정리 세션에 동승)**:
+- 별도 "인터페이스 변경 commit" 세션을 따로 만들 비용을 제거. `MP1-C-stress`(저비용 선행)로 사전 등록된 항목을 그대로 처리.
+- 동일 mgmt 트랙(`monorepo/sess-mp-phase1-cleanup`)에서 `MP1-M`(runbook 경로 갱신)과 묶어 2 commit ff push (`0b8399a..ef9d064`).
+
+**행위보존 근거**:
+- 신규 테스트 `test_stress_input_none_preserves_output`: `stress_input=None`일 때 baseline과 regime/fired 동일.
+- 신규 테스트 `test_stress_input_dummy_accepted_without_behavior_change`: 비-None dummy 전달 시에도 분류 결과 불변.
+- 기존 14 케이스(BULL/LATE_BULL/TRANSITION/BEAR/CRISIS/yield_inversion/drawdown_crisis/missing_inputs 등) 전건 통과.
+
+**How to apply**:
+- Phase 1.5 도입 시 `tasks/regime.py:mp_calc_regime_15min`에서 stress input 데이터 소스(예: VIX term structure stress index, repo yield stress) 조립 후 `classify_inputs(..., stress_input=<payload>)` 호출.
+- classifier 본문에서 `del stress_input` 제거하고 `_eval_clause` 또는 `_eval_atom` 단계에 stress 평가 분기 추가.
+- 본 결정은 시그니처만 박고 데이터 흐름은 1.5에서 설계 — 모델·테이블·fetcher 신설 금지(이번 commit 범위 외).
+
+**관련 입력 문서**: TASKQUEUE `MP1-C-stress` 항목, `apps/market_pulse/regime/classifier.py:113~127`.
+
+---
+
+## [2026-06-10] K/L static 완료 + 라이브 검증 출시 게이트 분리 (옵션 C)
+
+**결정**:
+- `MP1-K`(Layer0 메인 페이지) / `MP1-L`(카드 + news/health 위젯)을 **static 측정 기준 완료**로 표기.
+- 동시에 라이브 동작 검증은 별도 **출시 게이트 `MP-LIVE-VERIFY`** 로 신설 — Phase 1 release를 차단하는 trigger-gated 항목.
+- 후속 트랙 3건 등록: `MP-KL-F1`(테스트), `MP-KL-F2`(`'flow'`→`'concentration'` 리네임), `MP-KL-F3`(health 위젯 명세 검증).
+- v1 페이지 거취는 별도 결정 항목 `MP-V1-DECISION` (실행 항목 아님).
+
+**근거 (STEP 0 보강 측정, 2026-06-10)**:
+- `frontend/app/market-pulse-v2/page.tsx`(Layer0) + `cards/` 5 Summary + `details/` 5 Detail(+Container) + `components/` 5 패널 + `lib/api/marketPulseV2.ts`(30+ 타입 + 4 fetch) + `useOverview()` TanStack Query Hook + `useMarketPulseI18n()` — 전건 static 존재 확인.
+- 백엔드 v2 API 5 엔드포인트(`/overview`, `/cards/<id>/detail`, `/news/refresh`, `/i18n`, `/health`)와 프론트 1:1 매핑 검증 — 라우팅 정합 OK.
+- 단 `frontend/__tests__/`에 market-pulse 테스트 0건, `OverviewView` 실 응답 vs `useOverview()` 렌더 일치 미실측, `'flow'` 변수명이 Concentration을 가리키는 잔재 1건.
+
+**Why (옵션 C 선택)**:
+- 직전 같은 날 측정에서 `frontend/src/` 잘못된 경로 grep으로 K/L "0%"가 거짓 보고된 사례 실증(common-bugs #31).
+- static 표기는 풍화될 수 있음 — 게이트로 보존해야 release 직전 자동 차단.
+- 가중합 평가:
+  - 옵션 A (그대로 "0%" 유지) 4.10 — static 산출물 무시로 측정 실증 폐기
+  - 옵션 B (완료 표기 + 게이트 없음) 4.25 — 라이브 미검증인데 release 가능 위험
+  - **옵션 C (완료 표기 + MP-LIVE-VERIFY 게이트) 4.40** — static 사실 인정 + 라이브 검증을 release blocker로 보존
+  - 마진 C−B = 0.15, 타이브레이커: 당일 오측정 실증으로 게이트의 가치 증명.
+
+**How to apply**:
+- TASKQUEUE Phase 1 잔여 표에서 K/L 행은 "완료 2026-06-10 (static 기준)" + 실 산출물 경로 명시.
+- `MP-LIVE-VERIFY` 게이트는 [GATE:release] 접두어로 차단 표시. 실행 절차: 서버 기동 → `curl -s /api/v2/market-pulse/overview | jq` 200 응답 → 5 card_id 각각 `/cards/<id>/detail` 응답 → `page.tsx` 실 렌더(5 Summary + Detail Container + 5 패널) 대조 → 스크린샷 + 응답 로그를 DECISIONS push 라인에 첨부.
+- `MP-KL-F3`(health 위젯 명세)는 게이트 선결 조건. `StatusBanner`가 health 매핑인지 별도 위젯 필요한지 먼저 정리.
+- `MP-KL-F2`(`'flow'` 리네임)는 게이트 통과 이후 — 행위보존 리네임이라 게이트 차단 사유 아님.
+- v1 페이지(`app/market-pulse/page.tsx`)는 게이트와 무관하게 `MP-V1-DECISION` 별도 결정.
+
+**Why now**:
+- 같은 mgmt 트랙에서 PR 카탈로그 확정(0b8399a) → 소정리(ef9d064) → close(4106b4b) 흐름 종료 직후. K/L까지 정합화하면 Phase 1 잔여 표가 "release 전 정리할 미완 항목 + release 차단 게이트"로 깔끔하게 분리됨.
+
+**관련 입력 문서**: TASKQUEUE `MP1-K/L`·`MP-LIVE-VERIFY`·`MP-KL-F1~F3`·`MP-V1-DECISION` 항목, STEP 0 보강 측정 보고(세션 컨텍스트), `frontend/app/market-pulse-v2/page.tsx:22~28` `CARD_TITLE`, `apps/market_pulse/api/urls.py`.
+
+---
+
+## [2026-06-10] v1 거시 대시보드 거취 — 옵션 D: 보존 + Phase 2 흡수 예약
+
+**결정**:
+- `app/market-pulse/page.tsx`(v1, 310 lines) **현행 유지**(보존).
+- Phase 2 sub-pages 트랙 착수 시 v1 위젯군 5종(`FearGreedGauge` · `YieldCurveChart` · `EconomicIndicators` · `GlobalMarketsCard` · `MarketMoversSection`)을 v2 하위 페이지로 흡수.
+- 흡수 완료 후 `/market-pulse` → `/market-pulse-v2` 리다이렉트 전환 → v1 코드 제거.
+- 본 결정은 **유지 결정 + 후속 흡수 예약**. 즉시 삭제·리다이렉트 없음.
+
+**근거 (옵션 D 선택)**:
+- **① 신구 버전이 아니라 상호 보완**: v1 위젯 5종(FearGreed/YieldCurve/EconomicIndicators/GlobalMarkets/Movers)은 v2 카드 5장(Regime/Breadth/Sector/Concentration/Brief)에 부재. 삭제 = 대체 없는 정보 손실. v1 = 거시 원자료(매크로 지표 raw), v2 = regime 판정(가공된 시그널) — **역할 분담**.
+- **② 게이트 안전 순서**: `MP-LIVE-VERIFY`(K/L static 완료 + 라이브 미검증) 게이트 미통과 상태에서 v1은 유일하게 검증된 화면. 미검증 v2만 남기는 순서는 위험 — 게이트 통과 전 v1 삭제 금지.
+- **③ Phase 2 흡수 정합**: v1 위젯군은 Phase 2 sub-pages 로드맵의 자연스러운 흡수 재료. 별도 trash 트랙으로 두지 않고 흡수 트랙으로 묶음.
+
+**가중합 평가**:
+- 옵션 A (즉시 폐기 + 코드 제거) **3.10** — 위 ①②로 정보 손실 + 게이트 안전 깨짐
+- 옵션 B (즉시 리다이렉트 → v2) **3.50** — A와 동일 문제 + 라우팅 잔재
+- 옵션 C (v1 유지 + Phase 2 흡수 계획만 메모) **3.55** — 흡수 트랙 미등록으로 풍화 위험
+- **옵션 D (보존 + Phase 2 흡수 예약 `MP-V1-ABSORB` 등록) 3.90** — ①②③ 모두 충족 + 흡수 트랙 명시
+- 마진 D−C = 0.35, 타이브레이커 2건:
+  1. **게이트 안전 순서**: `MP-LIVE-VERIFY` 통과 전까지 v1이 검증된 fallback. 옵션 C는 흡수 트랙을 메모로만 두어 게이트 통과 시점에 흡수 작업이 잊힐 위험.
+  2. **Phase 2 정합 명시**: 흡수 트리거를 "Phase 2 sub-pages 착수"로 등록하면 Phase 2 트랙이 v1 위젯을 자동 흡수 대상으로 인식 — 별도 발견 비용 0.
+
+**의도적 동결 (commit 범위 외)**:
+- v1 내부 `// import { MarketNewsSection } // TODO: 컴포넌트 미구현` 주석 잔재는 **흡수 시점 일괄 처리 대상**으로 동결. 그 전까지 수정·삭제 금지. 흡수 PR에서 MarketNewsSection 처리(구현/제거/대체) + 주석 정리를 한 번에 수행.
+
+**How to apply**:
+- TASKQUEUE `MP-V1-DECISION` 행 → "완료 2026-06-10 (옵션 D)" + 본 결정 참조.
+- TASKQUEUE 신규 `MP-V1-ABSORB` 등록 — Phase 2 sub-pages 착수가 트리거인 trigger-gated 항목. 그 전까지 다른 세션에서 먼저 꺼내지 말 것.
+- 미래 세션이 "v1 왜 있지?"를 재측정하지 않도록 본 결정 본문에 "역할 분담" 명시 — DECISIONS가 1차 진실.
+
+**관련 입력 문서**: TASKQUEUE `MP-V1-DECISION`·`MP-V1-ABSORB` 항목, `app/market-pulse/page.tsx` (310 lines, v1) ↔ `app/market-pulse-v2/page.tsx` (v2 Layer0) 산출물 대조, common-bugs #31(직전 K/L 오측정 사례 — 본 결정의 가중합 평가 입력).
+
+---
+
+## [2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식 기록
+
+**결정 1 — F2(card_id 리네임) 게이트 선행 실행**:
+- TASKQUEUE상 `MP-KL-F2`는 `MP-LIVE-VERIFY` 게이트에 의존(게이트 후 실행) 표기였으나, **의도적으로 게이트에 선행** 실행.
+- 근거: card_id는 **공개 계약**(`/cards/<id>/detail` URL + overview JSON `cards.<id>` 키). 게이트 통과 후 리네임하면 계약이 바뀌어 **게이트 재실행을 강제** → "게이트는 최종 계약 위에서 1회만 실행" 원칙 위반. 따라서 리네임을 먼저 하고 그 위에서 게이트 1회.
+- 배포 보류 상태 = 외부 소비자 0 → 계약 변경 **최저비용 시점**.
+- 가중합: 옵션1(지금 리네임) **4.25** / 옵션2(게이트 후 리네임) **3.30**, 마진 0.95.
+- 후속: TASKQUEUE `MP-KL-F2` 행의 `MP-LIVE-VERIFY` 의존 표기 삭제(본 결정 참조 주석). `MP-LIVE-VERIFY`는 선결 전부 충족 → 게이트 실행 준비 완료.
+
+**결정 2 — 복구 이식(cherry-pick)**:
+- 1차 작업(F1/F3/F2)이 **갈라진 로컬 main**(merge-base `d4a9690`, origin/main 최근 5 commit 부재) + **공유 메인 디렉터리**에서 수행돼 타 트랙 커밋(`82afddb`, 로컬 main `cb5473e`와 동일 메시지·별개 hash)이 작업 브랜치에 혼입.
+- 복구: origin/main(`85557e6`) 위 새 worktree(`sess-mp-kl-f1f3-v2`)에서 `cherry-pick -x`로 3 commit 이식 → `e538e7f`(F1, 원본 `8f1ba79`) / `d5289a2`(F3, 원본 `f16efcb`) / `902ec86`(F2, 원본 `70a00c9`).
+- 이식 검증 전 통과: pytest 138 / vitest 174 / tsc 0 / `manage.py check` 0 / card 문맥 'flow' 잔존 0 / 동명이의 3곳 무변경 / health 8✅. push 완료(`85557e6..902ec86 → origin/main`).
+- 원본 브랜치 `monorepo/sess-mp-kl-f1f3` **폐기 승인 기록**: cherry-pick이라 `git branch -d`가 미머지로 거부할 수 있음 → 내용 동일성 검증 완료로 `-D` 정당. **실행은 병진 수동**.
+
+**근거 입력**: common-bugs #32(fetch 없는 baseline) · #33(공유 디렉터리 작업) · #34(짧은 라벨 비고유), 2026-06-11 복구 세션 측정 로그.
+
+---
+
+## [2026-06-11] 트랙별 소유권 지도 v2 — 전수 실측 기반 (902ec86 측정)
+
+**공통 규칙**:
+1. 각 트랙은 **자기 소유 구획만 직접 변경**.
+2. 한 슬라이스가 타 구획 파일에 **하나라도 걸치면 슬라이스 통째 위임**(쪼개지 않음).
+3. 읽기·grep·실측은 **전 구획 자유**.
+4. 실행 지시서 DoD 표준 = `git diff --name-only` 전수 자기 구획 검사, **위반 = HALT**. 소유영역 문언은 "예시 열거"가 아닌 **"트랙 전용 파일" 취지**로 해석, 판단이 갈리면 사용자 판단에 부침.
+5. 모든 세션 **전용 worktree**, pwd가 메인 디렉터리면 HALT, baseline은 `git fetch` 후 **origin/main 직접 측정**.
+6. **메타 4종**(TASKQUEUE·PROGRESS·DECISIONS·common-bugs) = **mgmt worktree 전용**(전 트랙 공통).
+
+**[확정] market_pulse 트랙**: `apps/market_pulse/**`, `macro/**`(루트 모델 — 이동 동결, BOUNDARY 결정 준수), `tests/marketpulse/**`, `tests/macro/**`, `docs/market_pulse_v2/**`, `docs/operations` 중 marketpulse 문서, FE: `app/market-pulse*/**`, `components/market-pulse/**`, `components/macro/**`(v1 위젯 — `MP-V1-ABSORB` 대상), `lib/api/marketPulseV2*`, `lib/i18n/marketPulse*`, `hooks/useMarketPulse*`, `services/macroService*`, `__tests__/market-pulse*/**` + fixtures, `vitest.setup.ts`(자기 테스트 인프라 한정).
+
+**[확정] portfolio 트랙 (2026-06-11 신설)**: `apps/portfolio/**`(coach API 포함), `tests/coach/**`, `docs/portfolio/**`, FE: `app/coach/**`, `app/portfolio/**`, `lib/coach/**`, `components/coach/**`, `components/portfolio/**`, `__tests__/coach/**` + 관련 fixtures.
+
+**[확정] dashboard 트랙 (표면 전용)**: FE: `app/dashboard/**`, `components/eod/**`, `services/eodService*`, `hooks/useEODDashboard*`, `docs/dashboard_plan/**`. **백엔드 앱 부재(실측)** — 백엔드 신설 여부는 이 트랙의 미래 결정 사안.
+
+**[골격] chain_sight 트랙**: `apps/chain_sight/**`, `tests/chainsight/**`, `docs/chain_sight/**`, FE: `app/chainsight/**`, `components/chainsight/**`, `services/{chainsightService,pathWatchlistService}`, `hooks/{useChainsight,usePathWatchlist}`, `__tests__/chainsight/**` + Neo4j 자산(추정 — 트랙 STEP 0 확정).
+
+**[무소속 — 작업 착수 전 트랙 배정 필수]** (7구획):
+1. **thesis 구획** — 루트 `thesis` BE + thesis 표면 일체
+2. **news 구획** — `services.news` 계열
+3. **screener·admin 구획** — `services.serverless` 계열
+4. **rag·ai-analysis 구획**
+5. **stocks 표면** — 백엔드 `shared.stocks`는 토대
+6. **users·auth 표면** — `login`·`signup`·`mypage`·`watchlist`(백엔드 `shared.users`는 토대)
+7. **BE단독** — `services.sec_pipeline` · `integrations/iron_trading`(프론트 미검출 실측)
+
+상세 파일군은 2026-06-11 전수 측정 보고 기준.
+
+**[토대] shared 트랙**: `packages/shared/**`(stocks·users·metrics·api_request), `tests/{architecture,contracts,unit}/**`, `config/**`, `scripts/**`, `integrations/_shared/**`, FE 공용: `lib/api.ts`, `lib/api/{authAxios,client,config}*`, `components/{common,layout,charts}/**`, `contexts`·`providers`·`types`·`constants`·`utils`, frontend 루트 설정.
+
+**[경계 보류 — 해당 트랙 첫 STEP 0로 확정 후 본 엔트리 갱신]**: `useMarketBreadth`·`useSectorHeatmap`·`useMarketMovers`·`useMarketView` 호출 백엔드 / `explorationStore` 사용 분포 / `tests/{unit,scoring,integration}` 소속 / `components/keywords` 소속 / `services/{portfolio,watchlistService,userInterestService}` 소속(portfolio 트랙 vs users·auth 표면).
+
+**근거**: 2026-06-11 타 트랙 커밋 혼입 사고(common-bugs #33) + read-only 전수 측정(백엔드 16구획·`frontend/services` 실 API 계층·dashboard 백엔드 부재·portfolio 최대 앱 196py 확인).
+
+---
+
+## [2026-06-11] MP-LIVE-VERIFY 게이트 1차 결과 — 계약 PASS · 결함 2건 발굴 · 부분 재게이트 원칙
+
+**결과**:
+- **F2 최종 계약(card_id=concentration) 라이브 전건 PASS** (d5212d4 검증): overview 키 `[regime,breadth,sector,concentration,brief]`(flow 부재) · `/cards/concentration/detail` 200 · `/cards/flow/detail` 404 · i18n `card.concentration='집중도'` · /health 비인증 401/admin 200 · 프론트 5 카드 렌더 + drawer detail + 콘솔 0. C(1~6)·D(1~6) 전건.
+- **Part B(5종 데이터) 부분**: Regime/Breadth/SectorFlow 신선 ✅. **결함 2건 발굴** ↓.
+
+**결함 발굴**:
+- **MP-LV-D1 (Concentration, 결정 대기)**: `mp_calc_concentration_daily` → FMP `/stable/etf/holdings`(프리미엄, Starter 미지원) **402** → CB[fmp_etf] OPEN, ConcentrationSnapshot **05-06 이후 중단**. 산출 필요 입력 = 종목별 `weightPercentage` 단일. #23(프리미엄 `.` **심볼**)와 구분되는 **프리미엄 엔드포인트** 이슈. **수리 금지 — 옵션(대체 엔드포인트/산식 교체) 결정은 채팅 몫**.
+- **MP-LV-D2 (Briefing, 수리 완료 `62d4025`)**: `mp_generate_brief_daily` → `ModuleNotFoundError: google.generativeai`(구 SDK) → CB[gemini] OPEN, 생성 이력 0. 수리: 신 SDK(`from google import genai`, 기설치) import + contents `parts` 포맷 `[string]→[{text}]`(requirements 변경 0). `.apply()` SUCCESS → BriefingLog(OK) + pytest 138 + brief 카드 재게이트 통과.
+
+**부분 재게이트 원칙 (신설)**:
+- 결함 수리가 **계약을 건드리지 않으면**(데이터 산출 경로만 수정), 재게이트는 **Part B 해당 항목 + 해당 카드 스모크만** 재실행. **계약 검증(C·D 전건) 재실행 불요** — 계약은 최종본 위에서 이미 1회 PASS.
+- 적용: D2 수리는 briefing 데이터 경로만 변경(계약 무관) → brief 카드 스모크만 재게이트(전건 C/D 재실행 안 함). D1 수리도 동일 원칙(Concentration 데이터 + 해당 카드 스모크).
+
+**게이트 상태**: 🟡 1차 PASS(계약) — **잔여 release blocker = Concentration 데이터 생성(MP-LV-D1 결정 후)** + 해당 카드 스모크. 그 후 "전건 통과".
+
+**근거 입력**: 2026-06-11 MP-LIVE-VERIFY 검증 보고서(curl + DOM 채증), MP-LV-D2 수리(`62d4025`), MP-LV-D1 실측(필드/대체 엔드포인트/모델/#23 대조), UX 전수조사(MP-UX-POLISH 입력).
+
+---
+
+## [2026-06-11] MP-LV-D1 옵션 B(시총 가중 근사) 채택 + 미래 옵션 A 전환 경로
+
+**결정**: Concentration 비중 공급원을 ETF holdings(`/stable/etf/holdings`, 프리미엄 402)에서 **시총 가중 근사**로 교체. weight_i = cap_i / Σcap (S&P500 심볼 × FMP quote marketCap). 산식(top5/top10/HHI)·모델 필드·API 계약 불변. 구현 `c6b7aa0`.
+
+**근거**:
+- concentration 산출에 필요한 입력은 종목별 **비중 단일**. holdings의 weightPercentage를 **시총 정규화로 등가 근사** 가능(둘 다 "상대 비중").
+- 제품 목적 = 집중도의 **상대 감각**(top5/HHI 추세) → 근사로 충분. float-adjusted 정밀도는 출시 필수 아님.
+- 고정비 0(FMP 플랜 유지). 솔로 운영에서 플랜 업그레이드 비용 회피.
+- 사용자 결정: "B로 가다가 추후 A 전환".
+
+**가중합**: 옵션 A(holdings, 플랜 업그레이드) **3.85** / **옵션 B(시총 근사) 3.65** / 옵션 C(보류·카드 비활성) 3.55. 마진 B−C 0.10, A−B 0.20. 타이브레이커(B 채택): 고정비 0 + 상대 감각 근사 충분 + seam 분리로 미래 A 무비용 전환.
+
+**전환 경로 (미래 옵션 A)**: `fetchers/weight_source.py:ACTIVE_WEIGHT_SOURCE`를 'holdings'로 1곳 변경 → 휴면 보존된 HoldingsWeightSource 재활성 + CB[fmp_etf] 리셋 + Concentration 스모크. holdings 경로 코드는 **삭제하지 않고 휴면 보존**. TASKQUEUE `MP-D1-FMP-UPGRADE`(trigger-gated).
+
+**한계 명시**:
+- float-adjust 미반영 근사(SPY 실제 비중과 미세 차이). GOOGL+GOOG 등 복수 클래스 분리 집계로 집중도 소폭 과대 가능. 유니버스에 비-S&P500 종목(예: TSM, DB Stock 535) 소량 혼입 가능 — universe='SP500_MCAP'로 정확본(SPY)과 구분.
+- **05-07↔06-11 36일 공백 + 레벨 점프**(백필 안 함): top5 0.2722→0.2829(+3.9%) / top10 0.3863→0.4105(+6.3%) / HHI 0.021076→0.022125(+5.0%). 모달 — 근사 레벨 차 + 36일 시장 변동 합산. 시계열 해석 시 universe 전환점(05-07 SPY → 06-11 SP500_MCAP) 인지.
+- 호출 예산: 종목당 1 quote(Starter 콤마배치 402 → 개별) = ~500/일(일 10k의 5%). 빈도 조정(주간) 여지는 별도.
+- coverage: top_holdings는 `[{symbol,weight}]` 리스트(serializer ListField/프론트 .map 계약) 유지 → coverage는 **로그 + universe 마커**에 기록(top_holdings JSON 구조 변경 = 계약 위반이라 회피). 06-11 실행 402=4건(`.`심볼) 제외, coverage ≈ 99%.
+
+**근거 입력**: MP-LV-D1 실측(STEP 0), 재게이트 검증(curl + DOM, top5 28.29%·HHI 0.0221 렌더), 회귀 146.

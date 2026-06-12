@@ -114,7 +114,11 @@ def classify_inputs(
     inputs: RegimeInputs,
     *,
     rules: dict[str, Any] | None = None,
+    stress_input: Any | None = None,
 ) -> tuple[str, list[str]]:
+    # stress_input: Phase 1.5 인터페이스 스텁. Phase 1에서는 받기만 하고 분류 로직 미사용
+    # (행위보존). 비-None일 때 Phase 1.5 배선 지점이 여기로 들어옴.
+    del stress_input
     rules = rules or load_rules()
     for rule in rules.get("rules", []):
         matched, fired = _eval_rule(rule, inputs)

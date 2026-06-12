@@ -12,18 +12,18 @@ import { StatusBanner } from './components/StatusBanner'
 import { TickerBar } from './components/TickerBar'
 import { BreadthCardSummary } from './cards/BreadthCardSummary'
 import { BriefCardSummary } from './cards/BriefCardSummary'
-import { FlowCardSummary } from './cards/FlowCardSummary'
+import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorCardSummary } from './cards/SectorCardSummary'
 import { CardDetailContainer } from './details/CardDetailContainer'
 
-type CardId = 'regime' | 'breadth' | 'sector' | 'flow' | 'brief'
+type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
 const CARD_TITLE: Record<CardId, string> = {
   regime: 'Market Regime · 시장 국면',
   breadth: 'Market Breadth · 시장 폭',
   sector: 'Sector Flow · 섹터 흐름',
-  flow: 'Concentration · 집중도',
+  concentration: 'Concentration · 집중도',
   brief: 'Briefing · 브리핑',
 }
 
@@ -68,7 +68,7 @@ export default function MarketPulseV2Page() {
           />
           <BreadthCardSummary data={overview.cards.breadth} onOpen={() => setOpenCard('breadth')} />
           <SectorCardSummary data={overview.cards.sector} onOpen={() => setOpenCard('sector')} />
-          <FlowCardSummary data={overview.cards.flow} onOpen={() => setOpenCard('flow')} />
+          <ConcentrationCardSummary data={overview.cards.concentration} onOpen={() => setOpenCard('concentration')} />
           <BriefCardSummary data={overview.cards.brief} onOpen={() => setOpenCard('brief')} />
         </section>
 

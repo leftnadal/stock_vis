@@ -67,6 +67,21 @@ class TestClassifyInputs:
         assert regime == RegimeSnapshot.Regime.BULL_EXPANSION
         assert fired == []
 
+    def test_stress_input_none_preserves_output(self):
+        # Phase 1.5 인터페이스 스텁: stress_input 미지정 = 기존 동작 회귀
+        baseline_regime, baseline_fired = cls.classify_inputs(_bull())
+        hooked_regime, hooked_fired = cls.classify_inputs(_bull(), stress_input=None)
+        assert hooked_regime == baseline_regime
+        assert hooked_fired == baseline_fired
+
+    def test_stress_input_dummy_accepted_without_behavior_change(self):
+        # 비-None stress_input은 받아들여지되 분류 결과에 영향 없음 (행위보존)
+        baseline_regime, baseline_fired = cls.classify_inputs(_bull())
+        dummy = {"placeholder": "phase-1.5-payload"}
+        hooked_regime, hooked_fired = cls.classify_inputs(_bull(), stress_input=dummy)
+        assert hooked_regime == baseline_regime
+        assert hooked_fired == baseline_fired
+
 
 @pytest.mark.django_db
 class TestHysteresis:

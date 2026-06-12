@@ -285,6 +285,8 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   3. 수동 실행(`task_fn()`) 혹은 `task_fn.delay()`로 즉시 동작 검증
   4. `config/celery.py` 상단 주석에 "이 dict는 reference 용도, 실제 스케줄은 DB" 명시
 - 교훈: **`DatabaseScheduler`를 쓰면 config의 `beat_schedule` dict는 선언적 reference로만 기능**. 스케줄 추가 시 반드시 Django admin 또는 `PeriodicTask.objects.create()`로 DB에 등록해야 실행됨. 코드 리뷰 시 "dict에 추가했으면 됐지" 착각에 주의. `celery -A config beat` 프로세스 자체의 생존 확인도 필요 (`ps aux | grep 'celery.*beat'`)
+- 예방: 코드의 task 경로(app_label/모듈)가 바뀌면 Beat DB(PeriodicTask)의 `task` 컬럼은 자동으로 따라오지 않는다. 배포/마이그레이션 절차에 `python manage.py setup_marketpulse_beat` 재실행을 포함해 DB `task` 경로를 코드와 재동기화할 것. (marketpulse는 `config/celery.py`의 `beat_schedule` dict가 아니라 `setup_marketpulse_beat` 커맨드가 DB 직접 등록 → `sync_beat_schedule`로는 갱신되지 않음.)
+- 드리프트 발생 시 즉시 수정: `task` 컬럼만 ORM UPDATE(옵션②, 부작용 0) 또는 `setup_marketpulse_beat` 멱등 재실행(옵션①, 전 필드 덮어씀). 동시에 좀비 beat(launchd 외 프로세스) 유무도 점검 (`ps aux | grep 'celery.*beat'` → 1개여야 함).
 - 항구 해결 (2026-06-01, PR8b-2 Track A): **task 이동/리네임 시 `sync_beat_schedule` reconcile 커맨드 + beat 재시작 절차로 표준화**. 일회용 shell one-liner를 더 이상 쓰지 않는다.
   ```bash
   # source-of-truth = config/celery.py beat_schedule dict
@@ -396,3 +398,57 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - 가드는 **origin 기반**이 좋음 (cwd가 정상 트리(`Desktop/stock_vis`) 밖이면 좀비 가능성 ↑).
   - 정상 Beat는 항상 `--scheduler django_celery_beat.schedulers:DatabaseScheduler` 명시 — `ps aux`에서 옵션 없는 beat는 좀비.
 - 📎 참조: `DECISIONS.md` "좀비 Beat 56670 = 5/21 Trash stray 기동의 잔불 (2026-06-06)", `TASKQUEUE.md` NT-10/NT-7/NT-11, `_briefs/2026-06-06/sprint_a1_ops_singletons.md` STEP 0 결과
+## 잘못된 경로 grep = 거짓 0% 측정 (#31)
+
+- 증상: STEP 0 측정에서 `grep -rEn "market_pulse" frontend/src/` → 0건 → "K/L 프론트엔드 0% 부재"로 보고. 실제는 `frontend/app/market-pulse-v2/`에 page.tsx + 5 Summary + 5 Detail + 5 패널 + API 클라이언트 30+ 타입이 **이미 전건 구현**되어 있었음.
+- 원인: 모노레포가 `frontend/src/` 가 아니라 `frontend/app/` 직접 구조(Next.js 16 app router)인데 측정 에이전트가 `frontend/src/` 경로를 가정하고 grep. **검색 경로 자체가 부재**하면 grep 결과 0건은 "그 경로에 없음" = "어디에도 없음"이 아님. 의미 혼동.
+- 사례: 2026-06-07 Explore agent의 Phase 1 카탈로그 역산 STEP 0 측정. K/L "0%" 보고 → DECISIONS L1352 / TASKQUEUE MP1-K/L `(TBD frontend/src/...)`까지 stale 경로가 박혀 mgmt 사이클 1회 분량(3일) 동안 잘못된 진실로 유통됨. 2026-06-10 보강 STEP 0에서 `ls frontend/` 1회 실행으로 즉시 발각.
+- 감지: 측정 결과가 "0건" / "부재"일 때 검색 경로 자체의 실재 여부를 확인. `ls <경로>` 또는 `test -d <경로>` 가 첫 번째 검증 단계.
+- 해결:
+  1. **경로 실재 확인을 grep 보다 먼저**: `find <repo_root> -maxdepth 2 -type d -name "<후보>"` 로 후보 경로의 존재를 먼저 검증한 뒤 grep 수행.
+  2. **0건 결과를 기록할 때 검색 경로 명시**: "grep `<pattern>` `<path>` = 0건"으로 path를 같이 박아야 후속 측정자가 path 자체를 의심할 수 있음. path 없이 "0건" / "부재" 로만 기록하면 잘못된 진실이 단정으로 굳어짐.
+  3. **`find <repo_root> -name "<symbol>*"` 광역 1회 병행**: 특정 경로 grep과 별개로 repo 전수 find로 같은 심볼이 다른 디렉토리에 있는지 cross-check. 본 사례에선 `find frontend -name "market*"` 1회로 즉시 발각 가능.
+- 교훈: **측정도 메모리만큼 위험**. 측정 결과가 단정(0%, 부재)일수록 경로 가정의 검증이 필수. 메모리·문서 stale은 자동 검증(health_check)이 잡지만, 측정 경로 가정의 stale은 다음 측정 사이클에서야 발각 — 사이클 사이 잘못된 결정(완료/잔여/우선순위)을 누적시킴. **0건 보고는 항상 "어디서 0건인지" + "그 어디가 실재하는지" 둘 다 명시**.
+- 📎 참조: `DECISIONS.md` "[2026-06-10] K/L static 완료 + 라이브 검증 출시 게이트 분리 (옵션 C)", TASKQUEUE `MP1-K/L` 행 stale 경로 정정 이력.
+
+---
+
+> **번호 비고 (2026-06-11)**: 직전 말미가 `#31` **중복**(line 362 "shared 역방향 import" + 위 "잘못된 경로 grep")이고 `#32`(FMPClient 동명 3 모듈, line 347)가 이미 점유되어 있어, 신규 3건은 **#33~#35**로 등록(지시서 `#32~34`에서 +1 조정). 기존 #31 중복은 범위 외로 미수정.
+
+## fetch 없는 baseline 판단 = 갈라진 토대 위 작업 (#33)
+
+- 증상: 로컬 `main` ref로 origin 상태를 추정하고 그 위에서 작업 → 우리가 push한 최근 5 commit이 부재한 **갈라진 토대**(merge-base `d4a9690`)에서 진행. 회귀 기준선이 어긋나(`pytest 136` vs 정상 토대 `138`) 발각.
+- 원인: 로컬 `main`이 `origin/main`보다 뒤처졌는데 `git fetch` 없이 로컬 ref를 진실로 가정. `ce0be51`(stress 훅 +2 테스트)가 origin/main엔 있고 로컬 토대엔 없어 baseline이 136으로 측정됨.
+- 감지: 회귀 수치가 **알고 있는 기준선과 다르면** 토대 오류 신호. 정상 토대 138인데 136이 나오면 "테스트가 줄었다"가 아니라 "토대가 과거다"를 먼저 의심.
+- 해결: baseline 검증은 **반드시 `git fetch origin` 후 `origin/main` 직접 측정**(`git rev-parse origin/main`). 작업 worktree HEAD == origin/main 확인을 STEP 0 표준 항목으로. 회귀 수치 불일치 시 HALT.
+- 교훈: 로컬 ref는 캐시일 뿐 진실이 아니다. fetch 없는 baseline = stale 메모리와 동급 위험.
+- 📎 참조: DECISIONS "[2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식 기록".
+
+## 공유 메인 디렉터리에서 세션 작업 = 타 트랙 커밋 혼입 (#34)
+
+- 증상: 여러 트랙이 공유하는 메인 repo 디렉터리(`/Desktop/stock_vis`)에 작업 브랜치를 체크아웃하고 작업 → 동시에 도는 다른 트랙/자동화의 커밋이 **체크아웃된 브랜치에 혼입**.
+- 원인: 단일 워킹 디렉터리에서 브랜치를 바꿔가며 작업하면 그 시점 체크아웃된 브랜치가 모든 커밋의 목적지가 됨. 본 사례: `82afddb`(trash 청산 트랙)가 F3·F2 커밋 사이에 끼어듦 — 로컬 main의 `cb5473e`와 **동일 메시지·별개 hash** 이중 commit으로 혼입 확정.
+- 감지: `git log --oneline <base>..HEAD`에 작업과 무관한 주제의 커밋이 끼어 있으면 혼입. author/시각이 같아도 주제가 다르면 의심.
+- 해결: **모든 세션은 전용 worktree**(`git worktree add ../sess-<track>-<task>`). `pwd`가 메인 디렉터리면 즉시 HALT를 지시서 표준 항목으로. 혼입 발생 시 깨끗한 토대로 `cherry-pick -x` 이식.
+- 교훈: 디렉터리 격리는 브랜치 격리와 다르다. worktree = 트랙 동시 작업의 물리적 격리.
+- 📎 참조: DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2" 공통 규칙 5, 복구 이식 기록.
+
+## 짧은 라벨 비고유 = 세션 모호성 (#35)
+
+- 증상: 사용자가 `F1~F3`로 지시 → repo 내 감사 리포트 3종(6/8 api_dependency·6/8 beat_schedule·6/6 api_dependency)에 동명 `F1/F2/F3` 라벨이 있어 어느 것인지 특정 불가.
+- 원인: `F1` 같은 짧은 라벨이 여러 문서에서 재사용됨. 전체 ID(`MP-KL-F1`) 없이는 비고유.
+- 감지: 라벨 grep 시 복수 문서 매치 = 비고유 신호. (본 사례는 Claude Code가 HALT + 사용자 확인으로 정확히 대응)
+- 해결: 항목 참조는 **전체 ID만 사용**(`MP-KL-F1`, `NT-7` 등). 지시서·장부 공통. 짧은 라벨 단독 지시 시 출처 문서 명시.
+- 교훈: 라벨의 고유성은 네임스페이스에서 나온다. 트랙 prefix 없는 라벨은 검색 충돌을 부른다.
+- 📎 참조: 2026-06-11 MP-KL 세션 진입 시 `F1~F3` 출처 특정 과정.
+
+## 프로젝트 업로드 사본으로 repo 파일 덮어쓰기 (#36)
+
+> **채번 규칙(2026-06-11)**: common-bugs 번호는 **origin/main 기준 말미에서만 채번**. 브랜치별 독립 증식 금지 — 미머지 브랜치(예: nt11)가 자체적으로 같은 번호를 달면 머지 시 충돌(2026-06-11 nt11 자체 #33 ↔ 본 트랙 #33 동시 존재 사례). 신규 번호 부여 전 origin/main 말미 확인 의무.
+
+- 증상: 메인 디렉터리 working tree에 `docs/claude_project_instructions/project_convention_instruction.md` 미커밋 변경 — 마크다운 깨짐(`circuit_breaker`→`circuit*breaker`, `_직접_`→`*직접\_`) + "관리(mgmt)/ops 세션 범위" bullet 통째 삭제. origin/main엔 정상본 존재.
+- 원인: 채팅 프로젝트에 **업로드된 참조 문서는 업로드 시점의 파생 사본**. 그 사본으로 repo 신본을 역방향 덮어씀. repo가 항상 원본 — 동기화는 **repo→프로젝트 단방향만** 허용.
+- 감지: `git diff`에 의도하지 않은 마크다운 깨짐/내용 삭제가 보이고 repo 원본이 더 신선하면 역방향 덮어쓰기 의심.
+- 해결: `git restore <파일>`로 origin/main 정상본 복원(단일 파일 한정). repo 문서 개정 시 각 프로젝트 업로드본 교체를 후속 항목으로 등록(repo→프로젝트 갱신).
+- 교훈: 업로드 사본은 읽기 참조용 스냅샷. repo로의 역류 금지. 메인 디렉터리 미접촉 원칙(#34)이 이 역류도 차단.
+- 📎 참조: 2026-06-11 worktree 정리 세션 — restore로 복구.

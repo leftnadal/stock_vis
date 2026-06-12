@@ -97,7 +97,7 @@ class ConcentrationHoldingSerializer(serializers.Serializer):
     weight = serializers.FloatField()
 
 
-class FlowCardSerializer(serializers.Serializer):
+class ConcentrationCardSerializer(serializers.Serializer):
     universe = serializers.CharField()
     top5_weight = serializers.FloatField()
     top10_weight = serializers.FloatField()
@@ -118,7 +118,7 @@ class CardsSerializer(serializers.Serializer):
     regime = RegimeCardSerializer(allow_null=True)
     breadth = BreadthCardSerializer(allow_null=True)
     sector = SectorCardSerializer(allow_null=True)
-    flow = FlowCardSerializer(allow_null=True)
+    concentration = ConcentrationCardSerializer(allow_null=True)
     brief = BriefCardSerializer(allow_null=True)
 
 

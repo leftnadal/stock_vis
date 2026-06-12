@@ -144,10 +144,10 @@ def few_shot_messages() -> list[dict]:
     out = []
     for ex in FEW_SHOTS:
         out.append(
-            {"role": "user", "parts": [json.dumps(ex["context"], ensure_ascii=False)]}
+            {"role": "user", "parts": [{"text": json.dumps(ex["context"], ensure_ascii=False)}]}
         )
         out.append(
-            {"role": "model", "parts": [json.dumps(ex["response"], ensure_ascii=False)]}
+            {"role": "model", "parts": [{"text": json.dumps(ex["response"], ensure_ascii=False)}]}
         )
     return out
 

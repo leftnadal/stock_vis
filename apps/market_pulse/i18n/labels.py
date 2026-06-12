@@ -14,7 +14,7 @@ KO_LABELS: dict[str, str] = {
     "card.regime": "시장 레짐",
     "card.breadth": "시장 폭",
     "card.sector": "섹터 흐름",
-    "card.flow": "집중도",
+    "card.concentration": "집중도",
     "card.brief": "브리핑",
     "regime.BULL_EXPANSION": "강세 확장",
     "regime.LATE_BULL": "상승 후반 경계",

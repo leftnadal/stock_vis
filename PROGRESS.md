@@ -28,7 +28,37 @@
 >
 > ✅ **2026-06-06 market_pulse 헤더 표준화 push + main 머지**: `monorepo/sess-mp-docstrings` 14 슬라이스 → merge `cfc32a7`. 75 파일 docstring 표준화, 코드 0, 회귀 302 동일. 옛 경로 주석 잔재 1건 정리.
 >
-> ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기). **현재 `origin/main = ce68da0`** (메타 갱신 기준).
+> ✅ **2026-06-06 D1 결정 push**: `ce68da0` (D1 intraday 거취 = 옵션3 보류 + STRUCT-CLEANUP 트랙 신설 + NT-7 분기).
+>
+> ✅ **2026-06-06 NT-7 STEP 0 지시서 push**: `d4a9690` (NT-7 STEP 0 지시서 추적 — D1 결정의 입력 문서).
+>
+> ✅ **2026-06-07 NT-7 종결 push + main 반영**: `f483634` (TASKQUEUE NT-7 완료 표기 + common-bugs #28 Beat drift 예방 + PROGRESS hash 갱신). Beat DB task 경로 갱신(11 row UPDATE) + 좀비 beat 56670 종료로 운영 안정화 — unregistered ∆=0(1705 후 06-07 신규 0건).
+>
+> ✅ **2026-06-10 Phase 1 PR 카탈로그 역산 확정 push**: `0b8399a` (mgmt — DECISIONS 역산 결정 + 잔여 7행 등록). 백엔드 A~J done(J는 I 흡수), K/L 프론트 0%(실질 병목), M(runbook stale) + N(market_pulse 자체 모니터링 0건) 각각 (b) 잔여. Translation Layer / Macro Playbook = Phase 1.5/1.6 이관(범위 외).
+>
+> ✅ **2026-06-10 Phase 1 소정리 push**: `0b8399a..ef9d064` ff (2 commits — `ce0be51` stress_input 훅 / `ef9d064` runbook 경로 갱신). 회귀 138 passed (136 baseline + 2 신규, 0 regression). MP1-C-stress + MP1-M 종결.
+>
+> ✅ **2026-06-10 Phase 1 소정리 종결 push**: `4106b4b` (mgmt — PROGRESS hash 갱신 + DECISIONS stress 결정 + TASKQUEUE MP1-C-stress/MP1-M 완료 표기).
+>
+> ✅ **2026-06-10 K/L 종결 + 출시 게이트 신설 (옵션 C)**: STEP 0 보강 측정으로 MP1-K(Layer0) / MP1-L(카드+위젯) 모두 `frontend/app/market-pulse-v2/`에 static 구현 완료 확인. 직전 "0%" 측정은 없는 src 경로 grep 오류(common-bugs #31 등재). 라이브 동작은 별도 게이트 `[GATE:release] MP-LIVE-VERIFY`로 분리 — release 차단. 후속 트랙 3건(MP-KL-F1/F2/F3) + v1 거취 결정 항목(MP-V1-DECISION) 등록.
+>
+> ✅ **2026-06-10 K/L 게이트 push**: `fc608a3` (mgmt — TASKQUEUE K/L 완료 표기 + MP-LIVE-VERIFY 게이트 + MP-KL-F1/F2/F3 + MP-V1-DECISION 신설 + common-bugs #31 등재).
+>
+> ✅ **2026-06-10 MP-V1-DECISION 종결 (옵션 D)**: v1 `app/market-pulse/page.tsx` 보존 + Phase 2 흡수 예약. 근거: v1(거시 원자료) ↔ v2(regime 판정) 역할 분담, 게이트 통과 전 검증된 fallback 보존, Phase 2 sub-pages 흡수 정합. 가중합 D 3.90 vs C 3.55(마진 0.35). 후속 흡수 트랙 `MP-V1-ABSORB`(trigger-gated, Phase 2 착수 트리거) 등록.
+>
+> ✅ **2026-06-11 MP-KL F-트랙 종결 + 복구 이식 push**: `85557e6..902ec86 → origin/main` (3 commit). MP-KL-F1(`e538e7f` 프론트 테스트 12건) / F3(`d5289a2` health=StatusBanner 확정) / F2(`902ec86` card_id flow→concentration 계약 횡단 리네임, 게이트 선행). 1차 작업이 갈라진 로컬 main + 공유 디렉터리에서 수행돼 타 트랙 커밋 혼입 → origin/main 위 새 worktree에서 `cherry-pick -x` 이식·전 검증 통과(pytest 138 / vitest 174 / tsc 0). 원본 브랜치 `monorepo/sess-mp-kl-f1f3` 폐기 승인(실행 병진 수동). 근거 DECISIONS "[2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식".
+>
+> ✅ **2026-06-11 트랙별 소유권 지도 v2 등록**: 전수 실측(902ec86, A1~D4) 기반. 활성 트랙 4개 확정 — market_pulse·chain_sight(골격)·**portfolio 신설**·**dashboard(표면 전용, BE 부재 실측)**. 무소속 7구획 + 토대(shared) + 경계 보류 명시. 공통 규칙(전용 worktree·자기 구획 한정·메타 4종 mgmt 전용). 사이클 교훈 3건 등재(common-bugs #33 fetch 없는 baseline / #34 공유 디렉터리 혼입 / #35 짧은 라벨 비고유). 근거 DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2".
+>
+> ✅ **2026-06-11 mgmt push 완료(F-트랙 종결 + 소유권 지도 v2 + 교훈 3건)**: `902ec86..d5212d4 → origin/main`.
+>
+> 🟡 **2026-06-11 MP-LIVE-VERIFY 게이트 1차 + MP-LV-D2 수리**: 게이트 1차 = **계약(C·D) 전건 PASS**(d5212d4 검증 — overview concentration 키·/cards/flow 404·i18n·5 카드 렌더·drawer detail). **결함 2건**: MP-LV-D1(Concentration FMP /stable/etf/holdings 프리미엄 402 → 결정 대기, 수리 금지) / **MP-LV-D2 수리 완료**(`62d4025` — briefing 구 SDK→신 SDK genai import+contents 포맷, requirements 0, .apply() SUCCESS+pytest 138+brief 카드 재게이트 통과). 부분 재게이트 원칙 신설(수리가 계약 무관 시 해당 카드 스모크만). UX 전수조사 → MP-UX-POLISH·MP-I18N-EN 등록. 근거 DECISIONS "[2026-06-11] 게이트 1차 결과".
+>
+> ✅ **2026-06-11 게이트 1차 mgmt push 완료**: `d5212d4..b54e4e7 → origin/main` (D2 수리 + 게이트 1차 결과).
+>
+> 🟢 **2026-06-11 MP-LIVE-VERIFY 게이트 전건 통과 + MP-LV-D1 수리**: **Phase 1 release blocker 0**. 계약(C·D) PASS + Briefing(D2 `62d4025`) + **Concentration(D1 옵션 B `c6b7aa0`)** 전부 확보. D1 = 시총 가중 근사(`weight_source.py` seam 분리, MarketCapWeightSource 기본 / holdings 휴면 / `ACTIVE_WEIGHT_SOURCE` 1곳 전환). universe='SP500_MCAP', 회귀 138→146, 재게이트 통과(top5 28.29%·HHI 0.0221 라이브 렌더, /cards/concentration 200·당일, /cards/flow 404). 근사 점프 top5 +3.9%/HHI +5.0%(기록). 미래 옵션 A = `MP-D1-FMP-UPGRADE`(trigger-gated). 근거 DECISIONS "[2026-06-11] MP-LV-D1 옵션 B".
+>
+> ✅ **2026-06-11 게이트 종결 mgmt push 예정**: D1 수리(`c6b7aa0`) + 본 mgmt commit. **현재 `origin/main = b54e4e7`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 

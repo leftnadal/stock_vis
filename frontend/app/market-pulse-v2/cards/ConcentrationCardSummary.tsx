@@ -1,9 +1,9 @@
 'use client'
 
-import type { FlowCard } from '@/lib/api/marketPulseV2'
+import type { ConcentrationCard } from '@/lib/api/marketPulseV2'
 import { CardShell } from './CardShell'
 
-export function FlowCardSummary({ data, onOpen }: { data: FlowCard | null; onOpen?: () => void }) {
+export function ConcentrationCardSummary({ data, onOpen }: { data: ConcentrationCard | null; onOpen?: () => void }) {
   return (
     <CardShell titleEn="Concentration" titleKo="집중도" onOpen={onOpen}>
       {!data ? (

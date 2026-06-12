@@ -47,7 +47,7 @@ def _resolve_api_key() -> str | None:
 
 
 def _build_client():
-    import google.generativeai as genai_module
+    from google import genai as genai_module
 
     api_key = _resolve_api_key()
     if not api_key:
@@ -61,7 +61,7 @@ def _generate_sync(
     client = _build_client()
     contents = []
     contents.extend(few_shot_messages())
-    contents.append({"role": "user", "parts": [render_user_prompt(ctx)]})
+    contents.append({"role": "user", "parts": [{"text": render_user_prompt(ctx)}]})
     started = time.time()
     response = client.models.generate_content(
         model=model,
