@@ -210,6 +210,14 @@
 
 ---
 
+## 하네스 구조 개선 (HARN)
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| HARN-1 | 하네스 4문서(DECISIONS/PROGRESS/TASKQUEUE/common-bugs)의 **append 충돌 구조적 재발** — `.gitattributes merge=union` 적용 또는 세션별 로그 분리 검토 (별도 결정 사안) | orchestrator | - | **backlog** | 2026-06-12 MAIN-SYNC 머지에서 4문서 전건 충돌 재발(양쪽 append 위치 겹침, 수동 해소). 동반: common-bugs **#33 중복**(좀비 Beat ↔ fetch baseline, origin 비고가 예견) 채번 정리 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
