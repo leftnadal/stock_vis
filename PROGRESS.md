@@ -59,6 +59,8 @@
 > 🟢 **2026-06-11 MP-LIVE-VERIFY 게이트 전건 통과 + MP-LV-D1 수리**: **Phase 1 release blocker 0**. 계약(C·D) PASS + Briefing(D2 `62d4025`) + **Concentration(D1 옵션 B `c6b7aa0`)** 전부 확보. D1 = 시총 가중 근사(`weight_source.py` seam 분리, MarketCapWeightSource 기본 / holdings 휴면 / `ACTIVE_WEIGHT_SOURCE` 1곳 전환). universe='SP500_MCAP', 회귀 138→146, 재게이트 통과(top5 28.29%·HHI 0.0221 라이브 렌더, /cards/concentration 200·당일, /cards/flow 404). 근사 점프 top5 +3.9%/HHI +5.0%(기록). 미래 옵션 A = `MP-D1-FMP-UPGRADE`(trigger-gated). 근거 DECISIONS "[2026-06-11] MP-LV-D1 옵션 B".
 >
 > ✅ **2026-06-11 게이트 종결 mgmt push 예정**: D1 수리(`c6b7aa0`) + 본 mgmt commit. **현재 `origin/main = b54e4e7`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
+>
+> 🔧 **2026-06-11 CS-RD1 (chain_sight 이벤트 보드 개편 Phase 0–1)** [worktree `../stock_vis_cs_rd1`, brunch `monorepo/sess-cs-rd1`]: Part A(하네스 정합화: CS-R9 done + CS-RD1~3/CS-EXT1 등록 + DECISIONS CS-RD 결정) + Part B(v1/v2 갈림길 read-only 보고) 완료. Part C(테마 데이터 적재)는 옵션2(sector+theme w≥1.0)로 완료 — 채움률 60.3%/15그룹, Neo4j :Theme 21/HAS_THEME 536 (DECISIONS CS-RD-C2). 적재 당시 STEP 0 정정: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock` 아닌 `CompanyChainProfile` 필드(NT-3 오기). 후속 CS-RD2(M1 엔진) ready.
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 
@@ -94,8 +96,8 @@
 |---|------|------|------|
 | 1 | **PROGRESS.md 16일 stale** | 마지막 갱신 2026-05-12 (`3f7dab8`) 이후 16일간 167 commits 누적, PROGRESS 4회만 변경 (모두 5/12 시점) | 매 슬라이스 종결 시 갱신 의무화됐으나 brunch 격리 작업 중 main 정착 보고만 갱신 — Slice 14~17 종결 보고 누락 |
 | 2 | **`origin/main = be2d6c7` 표기 오류** | PROGRESS L15/L21/L43에 5/11 정착 시점 해시 그대로. 실제 `origin/main = 3e76bc8` (5/26) — 2 commits 차이 | 정착 직후 시점 표기를 그 이후 git 변동에 동기화 안 함. 자동 추출 가능 영역인데 수동 유지에 의존 |
-| 3 | **`feature/chainsight-graph-v2` worktree 부재** | PROGRESS L23이 `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2`에 worktree 보존이라 표기. 실제로는 폴더·brunch 모두 부재 (PR-#8 `be2d6c7`로 main 통합 후 정리됨) | PROGRESS 표기와 git/파일시스템 현실 사이 검증 통로 부재 |
-| 4 | **TASKQUEUE CS-R9 상태 충돌** | TASKQUEUE.md에 CS-R9(chainsight v2 머지) 상태 `todo`. 실제로는 `be2d6c7` PR #8 머지로 완료 | 머지 작업이 외부(GitHub PR)에서 발생할 때 TASKQUEUE 상태 갱신 자동 트리거 없음 |
+| 3 | **`feature/chainsight-graph-v2` worktree 부재** | PROGRESS L23이 `/Users/byeongjinjeong/Desktop/stock_vis_chainsight_v2`에 worktree 보존이라 표기. 실제로는 폴더·brunch 모두 부재 (PR-#8 `be2d6c7`로 main 통합 후 정리됨) | PROGRESS 표기와 git/파일시스템 현실 사이 검증 통로 부재 → ✅ **해소 (2026-06-11, CS-RD1 Part A)**: 잘못된 worktree 표기는 main 버전 PROGRESS에 이미 부재, 기록만 보존 |
+| 4 | **TASKQUEUE CS-R9 상태 충돌** | TASKQUEUE.md에 CS-R9(chainsight v2 머지) 상태 `todo`. 실제로는 `be2d6c7` PR #8 머지로 완료 | 머지 작업이 외부(GitHub PR)에서 발생할 때 TASKQUEUE 상태 갱신 자동 트리거 없음 → ✅ **해소 (2026-06-11, CS-RD1 Part A)**: CS-R9 `done` 갱신 + 근거 명시 |
 | 5 | **slice17 brunch 143 commits 0% 반영** | Slice 14 c-bundle 머지부터 Slice 17 closing + audit 보고서까지 전체가 origin/main 미반영. 단 1 충돌(`scripts/celery-watchdog.sh`) 외에는 깔끔히 흡수 가능 | "slice별 격리 작업 → 종결 후 main 통합" 흐름이 슬라이스 누적되면서 main 정착 단계가 지연됨 |
 
 ### 진단 결과
