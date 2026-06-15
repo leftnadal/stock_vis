@@ -9,6 +9,7 @@ import {
   Tooltip,
 } from 'recharts'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { ConcentrationDetail as Detail } from '@/lib/api/marketPulseV2'
 
 const COLORS = [
@@ -17,7 +18,7 @@ const COLORS = [
   'rgb(16 185 129)', 'rgb(234 88 12)', 'rgb(217 70 239)', 'rgb(59 130 246)',
 ]
 
-export function ConcentrationDetail({ payload }: { payload: Detail }) {
+export function ConcentrationDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">집중도 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -32,13 +33,15 @@ export function ConcentrationDetail({ payload }: { payload: Detail }) {
   return (
     <div className="grid gap-4">
       <header className="grid grid-cols-3 gap-2 text-center">
-        <Metric label="top5" value={payload.top5_weight ?? 0} />
-        <Metric label="top10" value={payload.top10_weight ?? 0} />
-        <Metric label="HHI" value={payload.hhi ?? 0} digits={4} percent={false} />
+        <Metric labelKey="metric.top5" fallback="top5" value={payload.top5_weight ?? 0} labels={labels} />
+        <Metric labelKey="metric.top10" fallback="top10" value={payload.top10_weight ?? 0} labels={labels} />
+        <Metric labelKey="metric.hhi" fallback="HHI" value={payload.hhi ?? 0} digits={4} percent={false} labels={labels} />
       </header>
 
       <div>
-        <p className="text-xs text-slate-500 mb-1">{payload.universe} 상위 10종 + 나머지</p>
+        <p className="text-xs text-slate-500 mb-1">
+          {translate(`universe.${payload.universe}`, labels, payload.universe ?? '')} 상위 10종 + 나머지
+        </p>
         <div style={{ width: '100%', height: 260 }}>
           <ResponsiveContainer>
             <PieChart>
@@ -71,10 +74,19 @@ export function ConcentrationDetail({ payload }: { payload: Detail }) {
   )
 }
 
-function Metric({ label, value, digits = 2, percent = true }: { label: string; value: number; digits?: number; percent?: boolean }) {
+function Metric({
+  labelKey, fallback, value, digits = 2, percent = true, labels,
+}: {
+  labelKey: string
+  fallback: string
+  value: number
+  digits?: number
+  percent?: boolean
+  labels?: Record<string, string>
+}) {
   return (
     <div>
-      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs text-slate-500">{translate(labelKey, labels, fallback)}</p>
       <p className="text-base font-semibold text-slate-900">
         {percent ? `${(value * 100).toFixed(digits)}%` : value.toFixed(digits)}
       </p>

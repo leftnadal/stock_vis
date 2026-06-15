@@ -10,9 +10,10 @@ import {
   YAxis,
 } from 'recharts'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthDetail as Detail } from '@/lib/api/marketPulseV2'
 
-export function BreadthDetail({ payload }: { payload: Detail }) {
+export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">시장 폭 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -30,14 +31,14 @@ export function BreadthDetail({ payload }: { payload: Detail }) {
         <Cell label="상승" value={payload.advance ?? 0} tone="text-emerald-600" />
         <Cell label="하락" value={payload.decline ?? 0} tone="text-rose-600" />
         <Cell
-          label="AD-line"
+          label={translate('metric.ad_line', labels, 'AD-line')}
           value={payload.ad_line ?? 0}
           sub={(payload.ad_line_change ?? 0) >= 0 ? `+${payload.ad_line_change}` : `${payload.ad_line_change}`}
         />
       </header>
 
       <div>
-        <p className="text-xs text-slate-500 mb-1">AD-line 30일 추이</p>
+        <p className="text-xs text-slate-500 mb-1">{translate('metric.ad_line', labels, 'AD-line')} 30일 추이</p>
         <div style={{ width: '100%', height: 200 }}>
           <ResponsiveContainer>
             <LineChart data={data}>

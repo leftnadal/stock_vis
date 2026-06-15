@@ -11,9 +11,10 @@ import {
   YAxis,
 } from 'recharts'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
 
-export function SectorDetail({ payload }: { payload: Detail }) {
+export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">섹터 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -28,8 +29,9 @@ export function SectorDetail({ payload }: { payload: Detail }) {
   return (
     <div className="grid gap-4">
       <header className="text-xs text-slate-500">
-        date {payload.date} · dispersion {(payload.cross_dispersion ?? 0).toFixed(3)} ·
-        rotation {(payload.rotation_index ?? 0).toFixed(3)}
+        date {payload.date} · {translate('metric.dispersion', labels, 'dispersion')}{' '}
+        {(payload.cross_dispersion ?? 0).toFixed(3)} ·{' '}
+        {translate('metric.rotation', labels, 'rotation')} {(payload.rotation_index ?? 0).toFixed(3)}
       </header>
 
       <div>

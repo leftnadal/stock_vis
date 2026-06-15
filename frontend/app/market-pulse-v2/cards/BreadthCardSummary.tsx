@@ -1,11 +1,12 @@
 'use client'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthCard } from '@/lib/api/marketPulseV2'
 import { CardShell } from './CardShell'
 
 export function BreadthCardSummary({
-  data, onOpen,
-}: { data: BreadthCard | null; onOpen?: () => void }) {
+  data, labels, onOpen,
+}: { data: BreadthCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
   return (
     <CardShell titleEn="Market Breadth" titleKo="시장 폭" onOpen={onOpen}>
       {!data ? (
@@ -17,7 +18,7 @@ export function BreadthCardSummary({
           <Stat label="신고가 52w" value={data.new_high_52w} tone="text-emerald-500" />
           <Stat label="신저가 52w" value={data.new_low_52w} tone="text-rose-500" />
           <Stat
-            label="AD-line"
+            label={translate('metric.ad_line', labels, 'AD-line')}
             value={data.ad_line}
             sub={data.ad_line_change >= 0 ? `+${data.ad_line_change}` : `${data.ad_line_change}`}
             tone="text-slate-700"

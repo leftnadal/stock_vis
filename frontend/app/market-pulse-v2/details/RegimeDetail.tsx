@@ -10,8 +10,11 @@ import {
   Tooltip,
 } from 'recharts'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
 
+// 매크로지표 14종의 raw fallback 라벨. MP-UX-S1: director 확정 5종만 i18n 키로 승격,
+// 나머지 9종은 여기 raw 유지(발명 0). 미정의분 director 확정 시 INDICATOR_I18N에 추가.
 const KEY_LABELS: Record<string, string> = {
   return_1d_pct: '1d 수익률',
   vol_20d_pct: '20d 변동성',
@@ -27,6 +30,15 @@ const KEY_LABELS: Record<string, string> = {
   vix: 'VIX',
   vix3m: 'VIX 3M',
   move: 'MOVE',
+}
+
+// MP-UX-S1: 필드 → KO_LABELS 키. director 확정 5종만. 미수록 지표는 KEY_LABELS raw 유지.
+const INDICATOR_I18N: Record<string, string> = {
+  vix: 'indicator.vix',
+  move: 'indicator.move',
+  nfci: 'indicator.nfci',
+  hy_oas_pct: 'indicator.hy_oas',
+  t10y2y_pct: 'indicator.t10y2y',
 }
 
 function normalize(key: string, value: number | null | undefined): number {
@@ -59,24 +71,28 @@ function normalize(key: string, value: number | null | undefined): number {
   }
 }
 
-export function RegimeDetail({ payload }: { payload: Detail }) {
+export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">레짐 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
 
   const inputs = payload.inputs ?? {}
-  const radarData = Object.entries(KEY_LABELS).map(([key, label]) => ({
-    key: label,
-    value: normalize(key, inputs[key]),
-    raw: inputs[key],
-  }))
+  const radarData = Object.entries(KEY_LABELS).map(([key, fallback]) => {
+    const i18nKey = INDICATOR_I18N[key]
+    return {
+      key: i18nKey ? translate(i18nKey, labels, fallback) : fallback,
+      value: normalize(key, inputs[key]),
+      raw: inputs[key],
+    }
+  })
 
   return (
     <div className="grid gap-4">
       <header>
         <p className="text-base font-semibold text-slate-900">{payload.regime}</p>
         <p className="text-xs text-slate-500">
-          coverage {((payload.coverage ?? 0) * 100).toFixed(0)}% · streak {payload.hysteresis_streak ?? 0}
+          {translate('metric.coverage', labels, 'coverage')} {((payload.coverage ?? 0) * 100).toFixed(0)}% ·{' '}
+          {translate('metric.streak', labels, 'streak')} {payload.hysteresis_streak ?? 0}
           {payload.is_finalized ? ' · finalized' : ''}
         </p>
         {payload.headline ? <p className="text-sm text-slate-700 mt-1">{payload.headline}</p> : null}
