@@ -179,6 +179,11 @@ export async function fetchI18n(locale: string = 'ko'): Promise<I18nResponse> {
 
 // ── Detail payload types (Layer 1) ──
 
+export interface RegimeHistoryPoint {
+  date: string
+  stage: RegimeId
+}
+
 export interface RegimeDetail {
   available: boolean
   date?: string
@@ -191,6 +196,8 @@ export interface RegimeDetail {
   hysteresis_streak?: number
   headline?: string
   is_finalized?: boolean
+  // MP-UX-S3a: 국면 타임라인 데이터원 (렌더는 후속 FE 슬라이스 — 타입만)
+  regime_history_30d?: RegimeHistoryPoint[]
 }
 
 export interface BreadthHistoryPoint {

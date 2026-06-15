@@ -108,6 +108,10 @@ def _regime_detail():
         snap = RegimeSnapshot.objects.order_by("-date").first()
     if snap is None:
         return {"available": False}
+    # MP-UX-S3a: 국면 타임라인 데이터원 (breadth/concentration history_30d 패턴 재사용).
+    # stage = raw regime enum 배열 — 라벨 변환(regime.*)은 FE 담당. 빈데이터 graceful(빈 배열).
+    history = list(RegimeSnapshot.objects.order_by("-date")[:30].values("date", "regime"))
+    history.reverse()
     return {
         "available": True,
         "date": snap.date.isoformat(),
@@ -120,6 +124,9 @@ def _regime_detail():
         "hysteresis_streak": snap.hysteresis_streak,
         "headline": snap.headline,
         "is_finalized": snap.is_finalized,
+        "regime_history_30d": [
+            {"date": h["date"].isoformat(), "stage": h["regime"]} for h in history
+        ],
     }
 
 
