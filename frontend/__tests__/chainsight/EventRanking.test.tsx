@@ -11,6 +11,12 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ back: vi.fn(), push: vi.fn() }),
 }));
 
+vi.mock('next/link', () => ({
+  default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
+    <a href={href} className={className}>{children}</a>
+  ),
+}));
+
 vi.mock('@/constants/eventThemes', () => ({
   getLabelForTheme: (theme: string) => ({
     ko: theme === 'semiconductor' ? '반도체' : theme,
@@ -121,5 +127,13 @@ describe('EventRanking', () => {
     render(<EventRanking theme="robotics_ai" />, { wrapper });
     await screen.findByText('종목 데이터가 없습니다');
     expect(fetchEventStocks).toHaveBeenCalledWith('robotics_ai');
+  });
+
+  it('랭킹 행을 클릭하면 /chainsight/<symbol> 으로 이동하는 링크를 렌더한다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    const link = screen.getByRole('link', { name: /NVDA/ });
+    expect(link).toHaveAttribute('href', '/chainsight/NVDA');
   });
 });

@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { fetchEventStocks } from '@/services/chainsightService';
 import { getLabelForTheme } from '@/constants/eventThemes';
 import type { EventRankingItem } from '@/types/chainsight';
@@ -25,7 +26,10 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
 
   return (
     <div className="border-b border-gray-100 dark:border-gray-700">
-      <div className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+      <Link
+        href={`/chainsight/${item.symbol}`}
+        className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+      >
         <span className="w-6 text-sm font-bold text-gray-400 text-right">{rank}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -40,7 +44,7 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
         </div>
-      </div>
+      </Link>
       {item.is_low_liquidity && (
         <div className="px-4 pb-3">
           <LowLiquidityPanel item={item} />
