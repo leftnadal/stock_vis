@@ -1647,3 +1647,17 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **근거 입력**: 2026-06-11 MP-LIVE-VERIFY 게이트 종결, 사용자 결정(채팅 — "게이트 통과는 출시가 아닌 Phase 1 종료"), STRUCT-CLEANUP 트리거 모호함 방지.
 
 > 비고(2026-06-12 push 충돌 복구): 본 엔트리는 origin/main이 575c3fb→70eb090(chain_sight·trash·harness)로 이동해 non-ff 거부됨에 따라 70eb090 위에 재적용됨. 타 트랙 신규 내용 전부 보존, 본 엔트리만 추가.
+
+---
+
+## CS-EXP-LOAD (2026-06-15) — 신규 테마 ETF 적재, 게이트 미달, U2가 유일 경로
+
+**결정**: PAVE·XBI·KRE를 ETF_CSV_SOURCES에 등록·적재(파서 수정 0, URA는 교집합 경계값으로 제외). 적재 자체는 보존(3개 모두 자격 그룹, DELETE 금지).
+
+**측정 결과(정정)**: 보정 게이트(자격 그룹 ≥6 ∧ 자격 그룹 distinct 유니버스 멤버 중앙값 ≥10) **미달** — 자격 7개(통과)이나 **중앙값 7 < 10**.
+
+**Why(핵심 정정)**: 이전 CS-EXP-GATE/SOURCE의 멤버 수(SOXX 221·ICLN 39 등)는 **다중 snapshot_date 누적 행수**였고, 실제 distinct 유니버스 멤버는 한 자릿수(SOXX 17·ICLN 3). SOURCE의 "ETF 1개로 통과" 예측은 이 오류 수치에 근거. ARKK(12)·ARKG(1)만 snapshot 1개라 우연히 일치했음.
+
+**구조적 결론**: 테마 ETF는 SP500 외 중·소형주 중심 → 535 유니버스 교집합이 그룹당 한 자릿수. **ETF를 더 추가하면 자격 그룹 "수"만 늘고 "중앙값"은 유니버스 상한에 묶여 안 오름.** 게이트(중앙값≥10) 통과는 **ETF 추가가 아니라 유니버스 편입(U2 = CS-EXP Part C)** 으로만 가능 → CS-EXP-U2 등록.
+
+**근거 입력**: CS-EXP-LOAD 실측(최신 snapshot 기준, 멱등 확인), pytest serverless 377 passed.
