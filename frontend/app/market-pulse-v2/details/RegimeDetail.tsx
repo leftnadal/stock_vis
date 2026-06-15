@@ -89,7 +89,9 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
   return (
     <div className="grid gap-4">
       <header>
-        <p className="text-base font-semibold text-slate-900">{payload.regime}</p>
+        <p className="text-base font-semibold text-slate-900">
+          {translate(`regime.${payload.regime}`, labels, payload.regime ?? '')}
+        </p>
         <p className="text-xs text-slate-500">
           {translate('metric.coverage', labels, 'coverage')} {((payload.coverage ?? 0) * 100).toFixed(0)}% ·{' '}
           {translate('metric.streak', labels, 'streak')} {payload.hysteresis_streak ?? 0}

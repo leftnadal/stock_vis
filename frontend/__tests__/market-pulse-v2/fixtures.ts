@@ -98,11 +98,17 @@ export const overviewFixture: OverviewResponse = {
 
 export const i18nFixture: I18nResponse = {
   _meta: { locale: 'ko', supported: ['ko', 'en'], cache: 'MISS' },
+  // MP-UX-S1: status.* 추가 — StatusBanner가 하드코딩 COPY 대신 /i18n 단일소스(translate)를
+  // 쓰도록 전환됨에 따라, mock도 실제 /i18n 응답(labels.py KO_LABELS)처럼 status 라벨을 제공.
   labels: {
     'card.regime': 'Market Regime',
     'card.concentration': 'Concentration',
     'regime.BULL_EXPANSION': '강세 확장',
     'mode.CALM': '안정',
+    'status.INSUFFICIENT_DATA': '데이터 수집 부족',
+    'status.STALE': '데이터 오래됨',
+    'status.FAILED': '계산 실패',
+    'status.MARKET_CLOSED': '장 마감',
   },
 }
 

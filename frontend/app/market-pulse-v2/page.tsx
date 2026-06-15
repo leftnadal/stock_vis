@@ -56,7 +56,7 @@ export default function MarketPulseV2Page() {
     <PageShell title="Market Pulse v2">
       <TickerBar items={overview.ticker_bar} />
       <div className="px-2 py-3">
-        <StatusBanner status={meta.status} reason={meta.status_reason} />
+        <StatusBanner status={meta.status} reason={meta.status_reason} labels={labels} />
 
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
