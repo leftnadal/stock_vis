@@ -147,15 +147,15 @@ ETF_CSV_SOURCES = {
         "name": "ARK Innovation ETF",
         "tier": "theme",
         "theme_id": "innovation",
-        "parser": "ark",
-        "csv_url": "https://ark-funds.com/wp-content/uploads/funds-etf-csv/ARK_INNOVATION_ETF_ARKK_HOLDINGS.csv",
+        "parser": "generic",  # ark 파서 버그: 면책조항 행에서 ticker=None → AttributeError, generic으로 우회
+        "csv_url": "https://assets.ark-funds.com/fund-documents/funds-etf-csv/ARK_INNOVATION_ETF_ARKK_HOLDINGS.csv",
     },
     "ARKG": {
         "name": "ARK Genomic Revolution ETF",
         "tier": "theme",
         "theme_id": "genomics",
-        "parser": "ark",
-        "csv_url": "https://ark-funds.com/wp-content/uploads/funds-etf-csv/ARK_GENOMIC_REVOLUTION_ETF_ARKG_HOLDINGS.csv",
+        "parser": "generic",  # ark 파서 버그: 면책조항 행에서 ticker=None → AttributeError, generic으로 우회
+        "csv_url": "https://assets.ark-funds.com/fund-documents/funds-etf-csv/ARK_GENOMIC_REVOLUTION_ETF_ARKG_HOLDINGS.csv",
     },
     "BOTZ": {
         "name": "Global X Robotics & Artificial Intelligence ETF",
@@ -169,14 +169,20 @@ ETF_CSV_SOURCES = {
         "tier": "theme",
         "theme_id": "solar",
         "parser": "invesco",
-        "csv_url": "https://www.invesco.com/us/financial-products/etfs/holdings/tan",
+        # 이전 URL https://www.invesco.com/us/financial-products/etfs/holdings/tan → 403
+        # Invesco 다운로드 엔드포인트: https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?audienceType=Investor&action=download&ticker=TAN → 403
+        # 공개 직접 CSV 없음. download_holdings 불가 → 소싱 실패
+        "csv_url": "",
     },
     "HACK": {
-        "name": "ETFMG Prime Cyber Security ETF",
+        "name": "Amplify Cybersecurity ETF",  # 운용사 변경: ETFMG → Amplify
         "tier": "theme",
         "theme_id": "cybersecurity",
         "parser": "generic",
-        "csv_url": "",
+        # 데이터 소스 발견: https://amplifyetfs.com/wp-content/uploads/feeds/AmplifyWeb.40XL.XL_Holdings.csv
+        # 형식: Date,Account,StockTicker,CUSIP,SecurityName,Shares,Price,MarketValue,Weightings,...
+        # Account=HACK 필터링 필요 → generic 파서 미지원(StockTicker 컬럼명 비표준) → 파서 미지원으로 적재 불가
+        "csv_url": "https://amplifyetfs.com/wp-content/uploads/feeds/AmplifyWeb.40XL.XL_Holdings.csv",
     },
     "LIT": {
         "name": "Global X Lithium & Battery Tech ETF",
@@ -197,14 +203,20 @@ ETF_CSV_SOURCES = {
         "tier": "theme",
         "theme_id": "china_internet",
         "parser": "kraneshares",
-        "csv_url": "",
+        # URL 패턴: https://kraneshares.com/csv/MM_DD_YYYY_kweb_holdings.csv (date-based)
+        # Cloudflare로 httpx 차단(403), curl로는 200 OK
+        # download_holdings(httpx) 경로로 접근 불가 → 소싱 성공 / 적재 불가
+        "csv_url": "https://kraneshares.com/csv/06_12_2026_kweb_holdings.csv",
     },
     "BETZ": {
         "name": "Roundhill Sports Betting & iGaming ETF",
         "tier": "theme",
         "theme_id": "igaming",
         "parser": "generic",
-        "csv_url": "",
+        # 데이터 소스 발견: https://www.roundhillinvestments.com/assets/data/FilepointRoundhill.40RU.RU_Holdings_{MMDDYYYY}.csv
+        # 형식: Date,Account,StockTicker,CUSIP,SecurityName,Shares,Price,MarketValue,Weightings,...
+        # Account=BETZ 필터링 필요 → generic 파서 미지원(StockTicker 컬럼명 비표준) → 파서 미지원으로 적재 불가
+        "csv_url": "https://www.roundhillinvestments.com/assets/data/FilepointRoundhill.40RU.RU_Holdings_06122026.csv",
     },
 }
 
