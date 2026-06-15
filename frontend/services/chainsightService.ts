@@ -13,6 +13,8 @@ import type {
   SectorGraphResponse,
   NeighborResponse,
   SignalFeedResponse,
+  EventBoardItem,
+  EventRankingItem,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -69,5 +71,19 @@ export async function fetchSignals(page = 1, pageSize = 5, sector?: string): Pro
   const { data } = await authAxios.get<SignalFeedResponse>('/chainsight/signals/', {
     params: { page, page_size: pageSize, ...(sector && { sector }) },
   });
+  return data;
+}
+
+// ── Event Board API (CS-RD3) ──
+
+export async function fetchEvents(): Promise<EventBoardItem[]> {
+  const { data } = await authAxios.get<EventBoardItem[]>('/chainsight/events/');
+  return data;
+}
+
+export async function fetchEventStocks(theme: string): Promise<EventRankingItem[]> {
+  const { data } = await authAxios.get<EventRankingItem[]>(
+    `/chainsight/events/${encodeURIComponent(theme)}/stocks/`,
+  );
   return data;
 }
