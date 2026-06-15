@@ -16,6 +16,8 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-15 MP-UX-S3 정착 + mgmt 장부 정정**: MP-UX-S3(regime history_30d Part A `abf262a` + 다음단계 margin Part B `6d358e8`) BE 정착(무마이그레이션, rules.yaml 단일소스). 직전 ledger의 trigger-gated S3a/S3b → **완료** 정정. **신규 트랙 `MP-DATA-MACRO-COVERAGE` 등록** — S3 STEP 0에서 거시 5종(vix·nfci·hy_oas_pct·t10y2y·t10y3m) actual null 발견(소스 MISSING, FRED 미수집) → 다음단계 게이지 FE 선행 조건. ⚠ **관측: main이 ledger(cdbf79e) 이후 CS-EXP(e0185ea)·S3 등 타 트랙으로 연속 이동 → 분기 전 `git fetch` 상시화(HARN-1 예방)**. NEWS-AUTH/CS-EXP 메타 append-only 보존. **현재 `origin/main = 6d358e8`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
+>
 > ✅ **2026-06-15 MP-UX-S1/S2 정착 + mgmt 장부 정정**: MP-UX-S1(`05e633a`, 라벨 카탈로그 단일소스) + MP-UX-S2(`75eaadb`, 의미 밴드 + 9지표 흡수; NEWS-AUTH `a4c1cc4` non-ff → rebase 경유) push 완료. 본 mgmt(`monorepo/sess-mgmt-ledger`)에서 TASKQUEUE(S1/S2 완료·S3a/S3b·TITLE-SOURCE 등록·MP-OPS-RESTART 완료) + DECISIONS(9지표 확정) 정정. NEWS-AUTH 메타 보존(append-only). insights.py 휴면자산 = 지표별 의미 밴드 후속 재활용 여지(참고). **현재 `origin/main = 75eaadb`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 >
 > ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실.

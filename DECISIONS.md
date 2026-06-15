@@ -1701,3 +1701,11 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **Why**: CS-EXP-LOAD에서 "ETF 추가로는 중앙값 불변, 유니버스 편입(U2)만이 게이트 경로"가 확정됐고, U2SIM이 전체편입 중앙값 26을 예측 → 실행으로 검증. ETF 추가(LOAD)와 유니버스 편입(U2EXEC)의 역할 분리가 데이터로 확정됨.
 
 **잔여(범위 외 후속)**: ① SLR 재시도(FMP 소스 복구 후) ② sector/industry 빈 채움(profile 엔드포인트 별도) ③ BETZ/HACK/KWEB/TAN holdings 적재(CS-EXP-P1/P2) ④ Neo4j 그래프 편입(ETF_THEME_MAP 편집).
+
+---
+
+### MP-UX-S3 — regime history_30d + 다음단계 margin (무마이그레이션, rules.yaml 단일소스) (2026-06-15)
+- **결정**: S2에서 데이터원 부재로 HALT였던 regime 2요소를 백엔드 payload로 노출. ⒜ `regime_history_30d`(국면 타임라인 데이터원 — `_regime_detail`에서 RegimeSnapshot 30일 쿼리, stage=raw enum, 라벨 변환은 FE) ⒝ `next_stage`/`margins`/`next_stage_closest`(인접 상위 단계 진입까지 지표별 거리 — `regime/next_stage.py`).
+- **Why / 단일소스·무마이그레이션**: margin은 `classifier.load_rules`로 rules.yaml을 **읽기만**(임계 하드카피 0) + serializer 계층 **즉석 산출**(모델 신필드 0). `makemigrations --check` = No changes. history는 기존 RegimeSnapshot 쿼리(41 distinct date, 백필 불요). FE 렌더(타임라인/게이지)는 범위 밖 — 데이터원만(후속 FE 슬라이스).
+- **데이터 공백 = 코드 결함 아님**: STEP 0 실측 — 거시 5종(vix·nfci·hy_oas_pct·t10y2y_pct·t10y3m_pct)이 `RegimeSnapshot.inputs`에서 actual null(소스 MISSING, 5/14만 OK) → margin actual null → 헬퍼 graceful. 구조·임계는 정확. coverage 회복은 `MP-DATA-MACRO-COVERAGE`(FRED fetcher, ops/data) 트랙 — **다음단계 게이지 FE의 선행 조건**. 게이지가 "빈 값"이면 원인 = 이 데이터 트랙(메모리-코드 불일치 함정 방지).
+- **관측(HARN-1)**: main이 ledger(`cdbf79e`) 이후 CS-EXP(`e0185ea`)·S3 등 타 트랙으로 연속 이동 → 분기 직전 `git fetch` 상시화로 non-ff 예방.
