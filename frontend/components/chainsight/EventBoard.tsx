@@ -1,0 +1,106 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
+import { Tag } from 'lucide-react';
+import { getLabelForTheme } from '@/constants/eventThemes';
+import { fetchEvents } from '@/services/chainsightService';
+import type { EventBoardItem } from '@/types/chainsight';
+
+// Dynamic icon rendering using lucide-react
+// We import dynamically to avoid bundling all icons; fallback to Tag on miss
+async function loadIcon(iconName: string): Promise<React.ComponentType<{ size?: number; className?: string }> | null> {
+  try {
+    const mod = await import('lucide-react') as Record<string, unknown>;
+    const Icon = mod[iconName];
+    if (typeof Icon === 'function') {
+      return Icon as React.ComponentType<{ size?: number; className?: string }>;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Synchronous icon lookup via static import of the full barrel
+// lucide-react is already in the bundle; we cast the namespace
+import * as LucideIcons from 'lucide-react';
+
+function ThemeIcon({ iconName, className }: { iconName: string; className?: string }) {
+  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number; className?: string }>>;
+  const IconComponent = icons[iconName];
+  if (!IconComponent) {
+    return <Tag size={20} className={className} />;
+  }
+  return <IconComponent size={20} className={className} />;
+}
+
+// Keep loadIcon defined to avoid lint errors (used internally)
+void loadIcon;
+
+function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => void }) {
+  const label = getLabelForTheme(item.theme);
+  const isPositive = item.avg_return >= 0;
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex flex-col gap-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 text-left hover:shadow-md transition-shadow cursor-pointer w-full"
+      aria-label={`${label.ko} 이벤트 보드`}
+    >
+      <div className="flex items-center gap-2">
+        <ThemeIcon iconName={label.icon} className="text-blue-500" />
+        <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{label.ko}</span>
+      </div>
+      <div className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+        {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%
+      </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.avg_score.toFixed(1)}</div>
+      <div className="flex gap-2 text-xs">
+        <span className="text-gray-600 dark:text-gray-300">{item.member_count}개 종목</span>
+        <span className="text-blue-500 font-medium">관심↑ {item.high_attention_count}</span>
+      </div>
+    </button>
+  );
+}
+
+export default function EventBoard() {
+  const router = useRouter();
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['chainsight', 'events'],
+    queryFn: fetchEvents,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-gray-500">로딩 중...</div>;
+  }
+
+  if (isError || !data) {
+    return <div className="p-8 text-center text-red-500">데이터를 불러올 수 없습니다</div>;
+  }
+
+  if (data.length === 0) {
+    return <div className="p-8 text-center text-gray-500">이벤트 데이터가 없습니다</div>;
+  }
+
+  const sorted = [...data].sort((a, b) => b.avg_score - a.avg_score);
+
+  return (
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">이벤트 보드</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">관심 종목 그룹 동향</p>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {sorted.map((item) => (
+          <EventCard
+            key={item.theme}
+            item={item}
+            onClick={() => router.push(`/chainsight/events/${item.theme}`)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
