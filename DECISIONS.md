@@ -1656,3 +1656,10 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
   - **인증(파생 자산 = 우리가 만든 가치)** = `recommendations`(종목 추천)/`stock`(종목 상세 뉴스·감성): backend 인증 유지(IsAuthenticated 기본), frontend **authAxios(JWT 동반)**.
 - **Why**: 4/29 P0 #5(`DEFAULT_PERMISSION_CLASSES → IsAuthenticated`)가 공개 의도 뉴스 read에 AllowAny 면제를 누락해 6주간 전 섹션 401(probe `docs/nightly_auto_system/202606/12/news_api_probe.md`). 보안 강화 의도(파생/민감 보호)는 보존하되 공개 원천만 면제.
 - **Bug #26 클래스 동일 계열**: raw fetch ↔ authAxios 혼용 = 호출 방식이 권한 경계와 어긋나면 깨짐. **이후 신규 뉴스 호출 기본 분류**: 공개 원천이면 fetch, 파생/사용자 데이터면 authAxios.
+
+### MP-UX-S2 — 매크로지표 9종 한글 라벨 확정 + 의미 밴드 데이터원 (2026-06-15)
+- **결정**: regime classifier 14 매크로지표 중 MP-UX-S1 미정의 9종의 한글 표시 라벨을 director 확정값으로 흡수(`indicator.*`).
+  - `return_1d_pct`=1일 수익률 / `vol_20d_pct`=20일 변동성 / `drawdown_pct`=52주 고점대비 낙폭 / `nfci_credit`=NFCI 신용 / `nfci_leverage`=NFCI 레버리지 / `nfci_risk`=NFCI 리스크 / `hy_ccc_oas_pct`=HY CCC 스프레드 / `t10y3m_pct`=장단기 금리차(10Y-3M) / `vix3m`=VIX 3개월.
+- **Why**: S1은 director 확정 5종만 승격하고 9종은 raw 보류(발명 0). S2에서 확정 → RegimeDetail 레이더축 raw 0, `labels.py` `indicator.*` 14종 완비(단일소스).
+- **연계**: S2 의미 밴드(Regime 단계 5종 / Anomaly 모드 3종, 카피 단일소스 `frontend/app/market-pulse-v2/meaning.ts`) + Anomaly `actual↔경보선`(`fired[].threshold` 기바인딩, FE만). 임계는 rules.yaml 백엔드 단일소스 — FE 하드코딩 0.
+- **HALT(데이터원 부재 → 백엔드 미니슬라이스 분리)**: ⒜ Regime 국면 타임라인 = regime 히스토리 시리즈가 summary·detail 어디에도 없음(`previous_regime` 단일값만) → `MP-UX-S3a`. ⒝ Regime "다음 단계 거리" = payload에 next/margin 필드 0 → `MP-UX-S3b`(rules.yaml 임계 FE 하드코딩 금지, 백엔드 margin 산출).

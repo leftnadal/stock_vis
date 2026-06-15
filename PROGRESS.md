@@ -16,6 +16,8 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-15 MP-UX-S1/S2 정착 + mgmt 장부 정정**: MP-UX-S1(`05e633a`, 라벨 카탈로그 단일소스) + MP-UX-S2(`75eaadb`, 의미 밴드 + 9지표 흡수; NEWS-AUTH `a4c1cc4` non-ff → rebase 경유) push 완료. 본 mgmt(`monorepo/sess-mgmt-ledger`)에서 TASKQUEUE(S1/S2 완료·S3a/S3b·TITLE-SOURCE 등록·MP-OPS-RESTART 완료) + DECISIONS(9지표 확정) 정정. NEWS-AUTH 메타 보존(append-only). insights.py 휴면자산 = 지표별 의미 밴드 후속 재활용 여지(참고). **현재 `origin/main = 75eaadb`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
+>
 > ✅ **2026-05-28 slice17 → origin/main 머지 push 완료**: `3e76bc8..2fc95fe slice17 -> main`. 148 commits 정착 (Slice 14~17 + 워크플로우 정리 1단계 + origin/main 잠복 회귀 1건 fix). 충돌 1건(`scripts/celery-watchdog.sh`) origin/main superset 채택으로 해소, slice17 기능 0 손실.
 >
 > ✅ **2026-06-01 monorepo 8 PR 시리즈 완주 push**: `61b1d97..bb08d98 main -> main` (15 commits — shared 경계 검문소 + PR8b-1/8b-2/8b-3 + PR8c).
