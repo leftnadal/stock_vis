@@ -12,6 +12,7 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
+import { REGIME_MEANING, REGIME_TONE } from '../meaning'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
 // MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
@@ -101,6 +102,21 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
         <p className="text-base font-semibold text-slate-900">
           {translate(`regime.${payload.regime}`, labels, payload.regime ?? '')}
         </p>
+        {/* MP-UX-S2: 단계 의미 밴드 (summary와 동일 단일소스). 표시만 추가. */}
+        {payload.regime && REGIME_MEANING[payload.regime] ? (
+          <div className={`mt-1 rounded border px-2 py-1 text-xs ${REGIME_TONE[payload.regime] ?? ''}`}>
+            {REGIME_MEANING[payload.regime]}
+          </div>
+        ) : null}
+        {/* MP-UX-S2: 직전→현재 전환 (기존 previous_regime 데이터, 백엔드 무확장).
+            ⚠ 전체 국면 타임라인(범주형 히스토리)은 regime history 시리즈 부재로 HALT — 백엔드 미니슬라이스 필요. */}
+        {payload.previous_regime && payload.previous_regime !== payload.regime ? (
+          <p className="text-xs text-slate-500 mt-1">
+            직전 {translate(`regime.${payload.previous_regime}`, labels, payload.previous_regime)}
+            {' → '}
+            현재 {translate(`regime.${payload.regime}`, labels, payload.regime ?? '')}
+          </p>
+        ) : null}
         <p className="text-xs text-slate-500">
           {translate('metric.coverage', labels, 'coverage')} {((payload.coverage ?? 0) * 100).toFixed(0)}% ·{' '}
           {translate('metric.streak', labels, 'streak')} {payload.hysteresis_streak ?? 0}
