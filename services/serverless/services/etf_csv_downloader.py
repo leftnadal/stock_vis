@@ -218,6 +218,32 @@ ETF_CSV_SOURCES = {
         # Account=BETZ 필터링 필요 → generic 파서 미지원(StockTicker 컬럼명 비표준) → 파서 미지원으로 적재 불가
         "csv_url": "https://www.roundhillinvestments.com/assets/data/FilepointRoundhill.40RU.RU_Holdings_06122026.csv",
     },
+    # ========================================
+    # CS-EXP-LOAD: 게이트 통과용 신규 테마 ETF (기존 파서 재사용, 파서 코드 수정 0)
+    # 근거: CS-EXP-SOURCE.md — 즉시 로드 가능 4종 중 URA 제외(교집합 ~3 경계값, ARK 역설 방지)
+    # ========================================
+    "XBI": {
+        "name": "SPDR S&P Biotech ETF",
+        "tier": "theme",
+        "theme_id": "biotech",
+        "parser": "spdr",
+        "csv_url": "https://www.ssga.com/us/en/intermediary/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-xbi.xlsx",
+    },
+    "KRE": {
+        "name": "SPDR S&P Regional Banking ETF",
+        "tier": "theme",
+        "theme_id": "regional_banks",
+        "parser": "spdr",
+        "csv_url": "https://www.ssga.com/us/en/intermediary/etfs/library-content/products/fund-data/etfs/us/holdings-daily-us-en-kre.xlsx",
+    },
+    "PAVE": {
+        "name": "Global X U.S. Infrastructure Development ETF",
+        "tier": "theme",
+        "theme_id": "infrastructure",
+        "parser": "globalx",
+        # GlobalX 날짜 기반 URL — 빈 값이면 _resolve_globalx_url()이 최신 영업일 자동 탐지
+        "csv_url": "",
+    },
 }
 
 
