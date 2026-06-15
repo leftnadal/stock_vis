@@ -29,3 +29,28 @@ export const MODE_MEANING: Record<AnomalyMode, string> = {
   HYBRID: '1개 신호 발동. 부분 경계.',
   ANOMALY: '2개 이상 동시 발동. 강한 경계.',
 }
+
+// MP-UX-S4: 단계 심각도 순서 (rules.yaml 오름차순). 전환 방향(개선/악화) 판정 단일소스.
+export const STAGE_ORDER: Record<RegimeId, number> = {
+  BULL_EXPANSION: 0,
+  LATE_BULL: 1,
+  TRANSITION: 2,
+  BEAR_CONTRACTION: 3,
+  CRISIS: 4,
+}
+
+// MP-UX-S4: 전환 방향 문구 토큰 (자유 텍스트 컴포넌트 산재 금지).
+export const TRANSITION_DIR = { improve: '상향(개선)', worsen: '하향(악화)' } as const
+
+// MP-UX-S4: 미지 enum graceful — 색/순서 미정의 시 fallback (crash 0, hex 하드코딩 금지).
+export const REGIME_NEUTRAL_TONE = 'bg-slate-100 text-slate-600 border-slate-200'
+
+export function regimeTone(stage: string): string {
+  return (REGIME_TONE as Record<string, string>)[stage] ?? REGIME_NEUTRAL_TONE
+}
+
+export function stageOrder(stage: string): number | null {
+  return Object.prototype.hasOwnProperty.call(STAGE_ORDER, stage)
+    ? (STAGE_ORDER as Record<string, number>)[stage]
+    : null
+}

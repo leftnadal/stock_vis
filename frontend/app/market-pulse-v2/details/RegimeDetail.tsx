@@ -13,6 +13,7 @@ import {
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
 import { REGIME_MEANING, REGIME_TONE } from '../meaning'
+import { RegimeTimeline } from './RegimeTimeline'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
 // MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
@@ -124,6 +125,11 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
         </p>
         {payload.headline ? <p className="text-sm text-slate-700 mt-1">{payload.headline}</p> : null}
       </header>
+
+      {/* MP-UX-S4 Part A: 30일 국면 타임라인 (S3a regime_history_30d 데이터원). 세그먼트 병합 + 색=meaning.ts tone + KO 범례 + 전환 주석. */}
+      {payload.regime_history_30d && payload.regime_history_30d.length > 0 ? (
+        <RegimeTimeline history={payload.regime_history_30d} labels={labels} />
+      ) : null}
 
       <div style={{ width: '100%', height: 280 }}>
         <ResponsiveContainer>
