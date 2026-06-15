@@ -352,6 +352,13 @@ CORS_ALLOW_HEADERS = [
 #   - DEFAULT_PERMISSION_CLASSES: IsAuthenticatedOrReadOnly → IsAuthenticated (GET 무차별 노출 차단)
 #   - 의도된 공개 뷰는 명시적 [AllowAny] 지정 (users LogIn/PublicUser, simplejwt token 등)
 # audit P0 #14 (페이지네이션 표준)는 별도 PR에서 처리 — 응답 envelope 결정이 선결 조건
+#
+# 공개 read 엔드포인트 화이트리스트 규칙 (NEWS-AUTH, 2026-06-12):
+#   - 공개 read 엔드포인트는 view에 명시적 [AllowAny] 부여 (기본은 IsAuthenticated).
+#   - 화이트리스트 경계 = 순수 뉴스/공개 데이터 원천 한정
+#     (news: all/daily-keywords/trending/sources/insights/news-events + market-feed/interest-options).
+#   - 파생 자산(추천·종목 상세 등 "우리가 만든 가치")은 인증 유지 — AllowAny 부여 금지.
+#   - 근거: 6/12 NEWS-AUTH (4/29 P0 #5 의도 보존). probe: docs/nightly_auto_system/202606/12/news_api_probe.md
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
