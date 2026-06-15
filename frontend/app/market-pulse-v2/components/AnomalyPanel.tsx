@@ -2,6 +2,7 @@
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { AnomalySection } from '@/lib/api/marketPulseV2'
+import { MODE_MEANING } from '../meaning'
 
 const MODE_TONE: Record<string, string> = {
   ANOMALY: 'border-rose-300 bg-rose-50',
@@ -28,6 +29,8 @@ export function AnomalyPanel({ data, labels }: { data: AnomalySection; labels?: 
           <span className="text-xs text-slate-500">{data.fired.length}개 시그널</span>
         ) : null}
       </header>
+      {/* MP-UX-S2: 모드 의미 밴드 (CALM/HYBRID/ANOMALY → 의미 문구). 색은 기존 textTone 재사용. */}
+      <p className={`text-xs mb-2 ${textTone}`}>{MODE_MEANING[data.mode] ?? ''}</p>
       <dl className="grid gap-1.5 text-sm">
         <div>
           <dt className="text-xs text-slate-500">총평</dt>
@@ -49,6 +52,10 @@ export function AnomalyPanel({ data, labels }: { data: AnomalySection; labels?: 
               <span className="font-mono mr-1">{f.rule_id}</span>
               {translate(`rule.${f.rule_id}`, labels, f.headline)} ·{' '}
               <span className="font-medium text-slate-800">{f.actual.toFixed(3)}</span>
+              {/* MP-UX-S2: 경보선 = fired[].threshold(기바인딩, FE만, 임계 하드코딩 0). rule 모두 op '>=' (engine.py) */}
+              {Object.values(f.threshold ?? {})[0] !== undefined ? (
+                <span className="text-slate-400"> (경보선 {Object.values(f.threshold ?? {})[0]} 초과)</span>
+              ) : null}
             </li>
           ))}
         </ul>
