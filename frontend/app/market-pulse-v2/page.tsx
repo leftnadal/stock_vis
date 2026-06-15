@@ -56,7 +56,7 @@ export default function MarketPulseV2Page() {
     <PageShell title="Market Pulse v2">
       <TickerBar items={overview.ticker_bar} />
       <div className="px-2 py-3">
-        <StatusBanner status={meta.status} reason={meta.status_reason} />
+        <StatusBanner status={meta.status} reason={meta.status_reason} labels={labels} />
 
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
@@ -66,9 +66,9 @@ export default function MarketPulseV2Page() {
             labels={labels}
             onOpen={() => setOpenCard('regime')}
           />
-          <BreadthCardSummary data={overview.cards.breadth} onOpen={() => setOpenCard('breadth')} />
-          <SectorCardSummary data={overview.cards.sector} onOpen={() => setOpenCard('sector')} />
-          <ConcentrationCardSummary data={overview.cards.concentration} onOpen={() => setOpenCard('concentration')} />
+          <BreadthCardSummary data={overview.cards.breadth} labels={labels} onOpen={() => setOpenCard('breadth')} />
+          <SectorCardSummary data={overview.cards.sector} labels={labels} onOpen={() => setOpenCard('sector')} />
+          <ConcentrationCardSummary data={overview.cards.concentration} labels={labels} onOpen={() => setOpenCard('concentration')} />
           <BriefCardSummary data={overview.cards.brief} onOpen={() => setOpenCard('brief')} />
         </section>
 
@@ -88,7 +88,7 @@ export default function MarketPulseV2Page() {
         onClose={() => setOpenCard(null)}
         title={openCard ? CARD_TITLE[openCard] : ''}
       >
-        {openCard ? <CardDetailContainer cardId={openCard} enabled={openCard !== null} /> : null}
+        {openCard ? <CardDetailContainer cardId={openCard} enabled={openCard !== null} labels={labels} /> : null}
       </CardDrawer>
     </PageShell>
   )

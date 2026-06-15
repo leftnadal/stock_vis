@@ -17,7 +17,7 @@ export function RegimeCardSummary({
             {translate(`regime.${data.regime}`, labels, data.regime)}
           </p>
           <p className="text-xs text-slate-500 mt-1">
-            coverage {(data.coverage * 100).toFixed(0)}%
+            {translate('metric.coverage', labels, 'coverage')} {(data.coverage * 100).toFixed(0)}%
             {data.transitioned ? ' · 전환' : ''}
           </p>
           {data.headline ? <p className="text-sm text-slate-700 mt-2">{data.headline}</p> : null}

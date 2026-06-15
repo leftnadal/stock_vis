@@ -39,6 +39,23 @@ KO_LABELS: dict[str, str] = {
     "news.INDEX": "지수",
     "news.MAG7": "매그니피센트 7",
     "news.SMART_MONEY": "스마트머니",
+    # MP-UX-S1: 카드 내부 지표 라벨 (전수조사 전문어 raw 노출 해소, director 확정값)
+    "metric.top5": "상위5 비중",
+    "metric.top10": "상위10 비중",
+    "metric.hhi": "허핀달 지수",
+    "metric.dispersion": "섹터 분산도",
+    "metric.rotation": "로테이션 지수",
+    "metric.ad_line": "등락주선",
+    "metric.coverage": "지표 적용범위",
+    "metric.streak": "국면 유지일",
+    # MP-UX-S1: 유니버스 코드값 → 풀네임
+    "universe.SP500_MCAP": "S&P500 시총가중",
+    # MP-UX-S1: 매크로지표 라벨 (director 확정 5종; 나머지 9종은 raw 유지 — 미정의분 발명 금지)
+    "indicator.vix": "VIX (변동성)",
+    "indicator.move": "MOVE (채권 변동성)",
+    "indicator.nfci": "NFCI (금융여건)",
+    "indicator.hy_oas": "HY 스프레드",
+    "indicator.t10y2y": "장단기 금리차(10Y-2Y)",
 }
 
 

@@ -1,5 +1,6 @@
 'use client'
 
+import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorCard } from '@/lib/api/marketPulseV2'
 import { CardShell } from './CardShell'
 
@@ -8,7 +9,9 @@ function formatPct(v: number) {
   return `${sign}${v.toFixed(2)}%`
 }
 
-export function SectorCardSummary({ data, onOpen }: { data: SectorCard | null; onOpen?: () => void }) {
+export function SectorCardSummary({
+  data, labels, onOpen,
+}: { data: SectorCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
   return (
     <CardShell titleEn="Sector Flow" titleKo="섹터 흐름" onOpen={onOpen}>
       {!data ? (
@@ -21,7 +24,8 @@ export function SectorCardSummary({ data, onOpen }: { data: SectorCard | null; o
       )}
       {data ? (
         <p className="text-xs text-slate-500 mt-2">
-          dispersion {data.cross_dispersion.toFixed(3)} · rotation {data.rotation_index.toFixed(3)}
+          {translate('metric.dispersion', labels, 'dispersion')} {data.cross_dispersion.toFixed(3)} ·{' '}
+          {translate('metric.rotation', labels, 'rotation')} {data.rotation_index.toFixed(3)}
         </p>
       ) : null}
     </CardShell>

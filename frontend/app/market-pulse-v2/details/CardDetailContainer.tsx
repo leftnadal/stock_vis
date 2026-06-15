@@ -17,7 +17,9 @@ import { SectorDetail } from './SectorDetail'
 
 type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
-export function CardDetailContainer({ cardId, enabled }: { cardId: CardId; enabled: boolean }) {
+export function CardDetailContainer({
+  cardId, enabled, labels,
+}: { cardId: CardId; enabled: boolean; labels?: Record<string, string> }) {
   const { data, isLoading, isError, error, refetch } = useCardDetail<Record<string, unknown>>(cardId, enabled)
 
   if (!enabled) return null
@@ -43,10 +45,10 @@ export function CardDetailContainer({ cardId, enabled }: { cardId: CardId; enabl
   return (
     <div>
       <p className="text-xs text-slate-400 mb-2">cache: {cacheState}</p>
-      {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} />}
-      {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} />}
-      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} />}
-      {cardId === 'concentration' && <ConcentrationDetail payload={payload as unknown as Concentration} />}
+      {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} labels={labels} />}
+      {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} />}
+      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} />}
+      {cardId === 'concentration' && <ConcentrationDetail payload={payload as unknown as Concentration} labels={labels} />}
       {cardId === 'brief' && <BriefDetail payload={payload as unknown as Brief} />}
     </div>
   )
