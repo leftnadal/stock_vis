@@ -1,3 +1,4 @@
+from .attention import StockAttentionScore
 from .capital_dna import CompanyCapitalDNA
 from .chain_profile import CompanyChainProfile
 from .event_reaction import CompanyEventReaction
@@ -12,6 +13,7 @@ from .seed_snapshot import SeedSnapshot
 from .sensitivity import CompanySensitivityProfile
 
 __all__ = [
+    "StockAttentionScore",
     "CompanySensitivityProfile",
     "CompanyGrowthStage",
     "CompanyCapitalDNA",

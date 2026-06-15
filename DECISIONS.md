@@ -1701,3 +1701,19 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **Why**: CS-EXP-LOAD에서 "ETF 추가로는 중앙값 불변, 유니버스 편입(U2)만이 게이트 경로"가 확정됐고, U2SIM이 전체편입 중앙값 26을 예측 → 실행으로 검증. ETF 추가(LOAD)와 유니버스 편입(U2EXEC)의 역할 분리가 데이터로 확정됨.
 
 **잔여(범위 외 후속)**: ① SLR 재시도(FMP 소스 복구 후) ② sector/industry 빈 채움(profile 엔드포인트 별도) ③ BETZ/HACK/KWEB/TAN holdings 적재(CS-EXP-P1/P2) ④ Neo4j 그래프 편입(ETF_THEME_MAP 편집).
+
+---
+
+## CS-RD2 (2026-06-15) — 관심도 M1 엔진 구현
+
+**결과**: 이벤트 보드 정렬 엔진 M1(거래 기반) 구현 완료. `StockAttentionScore`(migration 0009) + `attention_service`(점수+유동성가드) + Celery task + API 2개(`/api/v1/chainsight/events/`, `/events/<theme>/stocks/`) + 테스트 20.
+- M1 = 0.50×거래량 z-score(20일) + 0.30×변동성 백분위 + 0.20×|수익률| 백분위 → 0~100. 컴포넌트 분리 저장(M3 승격 대비).
+- 670종→634 계산(36 스킵=20일 깊이 미달), 0.16초, score 15.6~99.9, is_low_liquidity 34/634, 멱등 Δ0.
+
+**STEP 0 확정값(지시서 추정 치환)**: DailyPrice 필드 `*_price`(open/high/low/close 아님), Stock FK `"stocks.Stock"`(shared_stocks 아님), 유니버스 670 전체.
+
+**ADV_FLOOR = 45,799,011 USD** = 652종 ADV(close×volume 20일평균) p5, 측정 2026-06-15. 미만은 `is_low_liquidity=True` **플래그만(제외 아님 — "간과된 종목" 보존)**, 적재 시점 고정(멱등). 결정자=디렉터.
+
+**Why**: 보드 1차 정렬은 거래 신호(M1)로 시작, co-mention(M3)은 가중치 상수 교체로 승격. 신규 135종 중소형주 노이즈 대응으로 유동성 가드를 v1 필수 포함(원본은 추정이었으나 STEP0 ADV 실측으로 확정).
+
+**범위 처리**: z-score 불가 18종(기존 0행 10+<20일 8)은 계산서 해당일 제외 → CS-DATA-HYGIENE(backlog) 등록. sector/industry는 M1 미사용(가격only)이라 신규 135 공백 무영향.

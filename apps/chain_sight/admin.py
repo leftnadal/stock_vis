@@ -12,6 +12,7 @@ from .models import (
     CompanySensitivityProfile,
     PathAction,
     SavedPath,
+    StockAttentionScore,
 )
 
 
@@ -153,3 +154,21 @@ class PathActionAdmin(admin.ModelAdmin):
     list_filter = ("action_type", "created_at")
     readonly_fields = ("created_at",)
     ordering = ("-created_at",)
+
+
+@admin.register(StockAttentionScore)
+class StockAttentionScoreAdmin(admin.ModelAdmin):
+    list_display = ("symbol", "date", "score", "is_low_liquidity")
+    list_filter = ("date", "is_low_liquidity")
+    search_fields = ("symbol__symbol",)
+    ordering = ("-date", "-score")
+    readonly_fields = (
+        "symbol",
+        "date",
+        "score",
+        "volume_z",
+        "volatility_pct",
+        "return_pct",
+        "raw_return",
+        "is_low_liquidity",
+    )

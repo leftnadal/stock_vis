@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.chain_sight.views.watchlist_views import WatchlistViewSet
 
+from .event_views import EventBoardView, EventRankingView
 from .views import (
     ChainSightGraphView,
     ChainSightSuggestionView,
@@ -17,6 +18,9 @@ router = DefaultRouter()
 router.register(r"watchlist", WatchlistViewSet, basename="watchlist")
 
 urlpatterns = [
+    # 관심도 이벤트 보드 (CS-RD2)
+    path("events/", EventBoardView.as_view(), name="chainsight-events"),
+    path("events/<str:theme>/stocks/", EventRankingView.as_view(), name="chainsight-event-ranking"),
     # 마켓 뷰 (고정 경로 먼저)
     path("seeds/", SeedListView.as_view(), name="chainsight-seeds"),
     path(
