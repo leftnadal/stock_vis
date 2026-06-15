@@ -12,9 +12,10 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
+import { REGIME_MEANING, REGIME_TONE } from '../meaning'
 
-// 매크로지표 14종의 raw fallback 라벨. MP-UX-S1: director 확정 5종만 i18n 키로 승격,
-// 나머지 9종은 여기 raw 유지(발명 0). 미정의분 director 확정 시 INDICATOR_I18N에 추가.
+// 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
+// MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
 const KEY_LABELS: Record<string, string> = {
   return_1d_pct: '1d 수익률',
   vol_20d_pct: '20d 변동성',
@@ -32,13 +33,22 @@ const KEY_LABELS: Record<string, string> = {
   move: 'MOVE',
 }
 
-// MP-UX-S1: 필드 → KO_LABELS 키. director 확정 5종만. 미수록 지표는 KEY_LABELS raw 유지.
+// 필드 → KO_LABELS 키. MP-UX-S1 5종 + MP-UX-S2 9종 = 14종 전부 매핑(raw 0).
 const INDICATOR_I18N: Record<string, string> = {
   vix: 'indicator.vix',
   move: 'indicator.move',
   nfci: 'indicator.nfci',
   hy_oas_pct: 'indicator.hy_oas',
   t10y2y_pct: 'indicator.t10y2y',
+  return_1d_pct: 'indicator.return_1d_pct',
+  vol_20d_pct: 'indicator.vol_20d_pct',
+  drawdown_pct: 'indicator.drawdown_pct',
+  nfci_credit: 'indicator.nfci_credit',
+  nfci_leverage: 'indicator.nfci_leverage',
+  nfci_risk: 'indicator.nfci_risk',
+  hy_ccc_oas_pct: 'indicator.hy_ccc_oas_pct',
+  t10y3m_pct: 'indicator.t10y3m_pct',
+  vix3m: 'indicator.vix3m',
 }
 
 function normalize(key: string, value: number | null | undefined): number {
@@ -92,6 +102,21 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
         <p className="text-base font-semibold text-slate-900">
           {translate(`regime.${payload.regime}`, labels, payload.regime ?? '')}
         </p>
+        {/* MP-UX-S2: 단계 의미 밴드 (summary와 동일 단일소스). 표시만 추가. */}
+        {payload.regime && REGIME_MEANING[payload.regime] ? (
+          <div className={`mt-1 rounded border px-2 py-1 text-xs ${REGIME_TONE[payload.regime] ?? ''}`}>
+            {REGIME_MEANING[payload.regime]}
+          </div>
+        ) : null}
+        {/* MP-UX-S2: 직전→현재 전환 (기존 previous_regime 데이터, 백엔드 무확장).
+            ⚠ 전체 국면 타임라인(범주형 히스토리)은 regime history 시리즈 부재로 HALT — 백엔드 미니슬라이스 필요. */}
+        {payload.previous_regime && payload.previous_regime !== payload.regime ? (
+          <p className="text-xs text-slate-500 mt-1">
+            직전 {translate(`regime.${payload.previous_regime}`, labels, payload.previous_regime)}
+            {' → '}
+            현재 {translate(`regime.${payload.regime}`, labels, payload.regime ?? '')}
+          </p>
+        ) : null}
         <p className="text-xs text-slate-500">
           {translate('metric.coverage', labels, 'coverage')} {((payload.coverage ?? 0) * 100).toFixed(0)}% ·{' '}
           {translate('metric.streak', labels, 'streak')} {payload.hysteresis_streak ?? 0}

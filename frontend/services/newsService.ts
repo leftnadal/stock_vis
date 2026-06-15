@@ -21,6 +21,9 @@ import {
   MLWeeklyReportResponse,
   LightGBMReadinessResponse,
 } from '@/types/news';
+// NEWS-AUTH (2026-06-12): 파생 자산(종목 상세·추천)은 인증 유지 → authAxios(JWT 동반).
+// 공개 read(all/daily-keywords/trending/sources/insights/news-events)는 raw fetch 유지(AllowAny).
+import { authAxios } from '@/lib/api/authAxios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
@@ -36,22 +39,12 @@ export const newsService = {
     days: number = 7,
     refresh: boolean = false
   ): Promise<StockNewsResponse> {
-    const params = new URLSearchParams({
-      days: days.toString(),
-      refresh: refresh.toString(),
-    });
-
-    const response = await fetch(`${API_URL}/news/stock/${symbol}/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch stock news');
-    }
-
-    return response.json();
+    // 인증 유지 (파생 자산) — authAxios로 JWT 동반
+    const { data } = await authAxios.get<StockNewsResponse>(
+      `/news/stock/${symbol}/`,
+      { params: { days, refresh } }
+    );
+    return data;
   },
 
   /**
@@ -63,21 +56,12 @@ export const newsService = {
     symbol: string,
     days: number = 7
   ): Promise<StockSentiment> {
-    const params = new URLSearchParams({
-      days: days.toString(),
-    });
-
-    const response = await fetch(`${API_URL}/news/stock/${symbol}/sentiment/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch stock sentiment');
-    }
-
-    return response.json();
+    // 인증 유지 (파생 자산) — authAxios로 JWT 동반
+    const { data } = await authAxios.get<StockSentiment>(
+      `/news/stock/${symbol}/sentiment/`,
+      { params: { days } }
+    );
+    return data;
   },
 
   /**
@@ -289,21 +273,14 @@ export const newsService = {
     date?: string,
     limit: number = 10
   ): Promise<RecommendationsResponse> {
-    const params = new URLSearchParams();
-    if (date) params.set('date', date);
-    params.set('limit', limit.toString());
-
-    const response = await fetch(`${API_URL}/news/recommendations/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch recommendations');
-    }
-
-    return response.json();
+    // 인증 유지 (파생 자산) — authAxios로 JWT 동반
+    const params: Record<string, string | number> = { limit };
+    if (date) params.date = date;
+    const { data } = await authAxios.get<RecommendationsResponse>(
+      '/news/recommendations/',
+      { params }
+    );
+    return data;
   },
 
   // ===== Phase A: Market Feed (Cold Start) =====

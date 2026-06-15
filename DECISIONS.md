@@ -1673,3 +1673,12 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **Why**: ETF 추가로는 중앙값이 유니버스 상한에 묶여 안 오름(CS-EXP-LOAD 확정). 전체 편입은 모든 그룹 밀도를 올려 게이트를 여유 통과시키고 보드 품질을 구조적으로 개선. 소규모(13~20종)는 턱걸이라 마진 없음.
 
 **실행 전제(후속 CS-EXP-U2EXEC 세션)**: ① StockSyncService.sync_overview로 136종 편입(STEP0 메커니즘) ② DailyPrice 90일 백필(종목당 1콜, FMP ≤1,500, 실패율 ≤5% else HALT) ③ 게이트 재측정(목표 중앙값≥8) ④ BETZ/HACK/KWEB/TAN은 holdings 미적재라 별도 선행 필요(CS-EXP-P1/P2). Neo4j 그래프 편입은 ETF_THEME_MAP 편집 필요(별도 범위).
+
+---
+
+### NEWS-AUTH — 공개/인증 read 엔드포인트 분류 기준 (2026-06-12)
+- **결정**: 뉴스 API를 두 부류로 나눠 호출 방식을 고정한다.
+  - **공개(순수 뉴스 원천)** = `all`/`daily-keywords`/`trending`/`sources`/`insights`/`news-events` + 기존 `market-feed`/`interest-options`: backend `[AllowAny]`, frontend raw `fetch` 유지.
+  - **인증(파생 자산 = 우리가 만든 가치)** = `recommendations`(종목 추천)/`stock`(종목 상세 뉴스·감성): backend 인증 유지(IsAuthenticated 기본), frontend **authAxios(JWT 동반)**.
+- **Why**: 4/29 P0 #5(`DEFAULT_PERMISSION_CLASSES → IsAuthenticated`)가 공개 의도 뉴스 read에 AllowAny 면제를 누락해 6주간 전 섹션 401(probe `docs/nightly_auto_system/202606/12/news_api_probe.md`). 보안 강화 의도(파생/민감 보호)는 보존하되 공개 원천만 면제.
+- **Bug #26 클래스 동일 계열**: raw fetch ↔ authAxios 혼용 = 호출 방식이 권한 경계와 어긋나면 깨짐. **이후 신규 뉴스 호출 기본 분류**: 공개 원천이면 fetch, 파생/사용자 데이터면 authAxios.

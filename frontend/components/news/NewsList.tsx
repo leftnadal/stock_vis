@@ -72,7 +72,13 @@ export default function NewsList({ symbol, onArticleClick }: NewsListProps) {
       }
     } catch (err) {
       console.error('Failed to fetch news:', err);
-      setError(err instanceof Error ? err : new Error('뉴스를 불러오는데 실패했습니다'));
+      // NEWS-AUTH (2026-06-12): 종목 상세 뉴스는 인증 유지(파생 자산) → 401은 로그인 유도
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 401) {
+        setError(new Error('로그인이 필요합니다. 종목 상세 뉴스는 로그인 후 이용할 수 있습니다.'));
+      } else {
+        setError(err instanceof Error ? err : new Error('뉴스를 불러오는데 실패했습니다'));
+      }
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);

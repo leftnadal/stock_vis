@@ -50,12 +50,22 @@ KO_LABELS: dict[str, str] = {
     "metric.streak": "국면 유지일",
     # MP-UX-S1: 유니버스 코드값 → 풀네임
     "universe.SP500_MCAP": "S&P500 시총가중",
-    # MP-UX-S1: 매크로지표 라벨 (director 확정 5종; 나머지 9종은 raw 유지 — 미정의분 발명 금지)
+    # MP-UX-S1: 매크로지표 라벨 (director 확정 5종)
     "indicator.vix": "VIX (변동성)",
     "indicator.move": "MOVE (채권 변동성)",
     "indicator.nfci": "NFCI (금융여건)",
     "indicator.hy_oas": "HY 스프레드",
     "indicator.t10y2y": "장단기 금리차(10Y-2Y)",
+    # MP-UX-S2: 매크로지표 나머지 9종 한글 흡수 (director 확정 — 레이더축 raw 0)
+    "indicator.return_1d_pct": "1일 수익률",
+    "indicator.vol_20d_pct": "20일 변동성",
+    "indicator.drawdown_pct": "52주 고점대비 낙폭",
+    "indicator.nfci_credit": "NFCI 신용",
+    "indicator.nfci_leverage": "NFCI 레버리지",
+    "indicator.nfci_risk": "NFCI 리스크",
+    "indicator.hy_ccc_oas_pct": "HY CCC 스프레드",
+    "indicator.t10y3m_pct": "장단기 금리차(10Y-3M)",
+    "indicator.vix3m": "VIX 3개월",
 }
 
 

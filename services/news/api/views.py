@@ -322,7 +322,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(data)
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def trending(self, request):
         """
         트렌딩 종목 (뉴스가 많이 나온 종목)
@@ -395,7 +395,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(results)
 
-    @action(detail=False, methods=["get"], url_path="all")
+    @action(detail=False, methods=["get"], url_path="all", permission_classes=[AllowAny])
     def all_news(self, request):
         """
         모든 뉴스 조회 (소스 필터 지원)
@@ -485,7 +485,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(data)
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def sources(self, request):
         """
         사용 가능한 뉴스 소스 목록 + 건수
@@ -536,7 +536,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     # ===== Phase 2: Daily Keywords API =====
 
-    @action(detail=False, methods=["get"], url_path="daily-keywords")
+    @action(detail=False, methods=["get"], url_path="daily-keywords", permission_classes=[AllowAny])
     def daily_keywords(self, request):
         """
         일별 뉴스 키워드 조회
@@ -853,7 +853,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     # ===== Phase 3: Stock Insights API (Fact-Based) =====
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=["get"], permission_classes=[AllowAny])
     def insights(self, request):
         """
         뉴스 기반 종목 인사이트 (팩트 중심)
@@ -1064,7 +1064,7 @@ class NewsViewSet(viewsets.ReadOnlyModelViewSet):
 
     # ===== Phase 3: News Events (Neo4j) API =====
 
-    @action(detail=False, methods=["get"], url_path="news-events")
+    @action(detail=False, methods=["get"], url_path="news-events", permission_classes=[AllowAny])
     def news_events(self, request):
         """
         뉴스 이벤트 조회 (Neo4j 기반)
