@@ -1682,3 +1682,16 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
   - **인증(파생 자산 = 우리가 만든 가치)** = `recommendations`(종목 추천)/`stock`(종목 상세 뉴스·감성): backend 인증 유지(IsAuthenticated 기본), frontend **authAxios(JWT 동반)**.
 - **Why**: 4/29 P0 #5(`DEFAULT_PERMISSION_CLASSES → IsAuthenticated`)가 공개 의도 뉴스 read에 AllowAny 면제를 누락해 6주간 전 섹션 401(probe `docs/nightly_auto_system/202606/12/news_api_probe.md`). 보안 강화 의도(파생/민감 보호)는 보존하되 공개 원천만 면제.
 - **Bug #26 클래스 동일 계열**: raw fetch ↔ authAxios 혼용 = 호출 방식이 권한 경계와 어긋나면 깨짐. **이후 신규 뉴스 호출 기본 분류**: 공개 원천이면 fetch, 파생/사용자 데이터면 authAxios.
+
+---
+
+## CS-EXP-U2EXEC (2026-06-15) — 135종 편입으로 게이트 X=8 통과, CS-EXP 종결
+
+**결과**: 테마 ETF holdings의 비SP500 US 종목 편입 실행 → **게이트 X=8 통과(실측 중앙값 26)**. 유니버스 **535 → 670**(+135).
+- 편입 136 대상 중 135 created, SLR 1종 실패(FMP quote 소스 부재, 0.74%). DailyPrice 90일 백필 135/135(0% 실패, 8,329행, M1 충족).
+- 자격 그룹 9개 분포 `[5,8,12,23,26,30,33,42,45]`. 예측(U2SIM 26) = 실측(26) 정확 일치 — distinct 기준 측정 신뢰 확립.
+- FMP 283콜(≤1500), 코드 diff 0, makemigrations 0, pytest serverless 377 passed, 기존 535 무변경.
+
+**Why**: CS-EXP-LOAD에서 "ETF 추가로는 중앙값 불변, 유니버스 편입(U2)만이 게이트 경로"가 확정됐고, U2SIM이 전체편입 중앙값 26을 예측 → 실행으로 검증. ETF 추가(LOAD)와 유니버스 편입(U2EXEC)의 역할 분리가 데이터로 확정됨.
+
+**잔여(범위 외 후속)**: ① SLR 재시도(FMP 소스 복구 후) ② sector/industry 빈 채움(profile 엔드포인트 별도) ③ BETZ/HACK/KWEB/TAN holdings 적재(CS-EXP-P1/P2) ④ Neo4j 그래프 편입(ETF_THEME_MAP 편집).
