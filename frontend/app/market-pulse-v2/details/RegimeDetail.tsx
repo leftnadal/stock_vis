@@ -13,8 +13,8 @@ import {
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
 
-// 매크로지표 14종의 raw fallback 라벨. MP-UX-S1: director 확정 5종만 i18n 키로 승격,
-// 나머지 9종은 여기 raw 유지(발명 0). 미정의분 director 확정 시 INDICATOR_I18N에 추가.
+// 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
+// MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
 const KEY_LABELS: Record<string, string> = {
   return_1d_pct: '1d 수익률',
   vol_20d_pct: '20d 변동성',
@@ -32,13 +32,22 @@ const KEY_LABELS: Record<string, string> = {
   move: 'MOVE',
 }
 
-// MP-UX-S1: 필드 → KO_LABELS 키. director 확정 5종만. 미수록 지표는 KEY_LABELS raw 유지.
+// 필드 → KO_LABELS 키. MP-UX-S1 5종 + MP-UX-S2 9종 = 14종 전부 매핑(raw 0).
 const INDICATOR_I18N: Record<string, string> = {
   vix: 'indicator.vix',
   move: 'indicator.move',
   nfci: 'indicator.nfci',
   hy_oas_pct: 'indicator.hy_oas',
   t10y2y_pct: 'indicator.t10y2y',
+  return_1d_pct: 'indicator.return_1d_pct',
+  vol_20d_pct: 'indicator.vol_20d_pct',
+  drawdown_pct: 'indicator.drawdown_pct',
+  nfci_credit: 'indicator.nfci_credit',
+  nfci_leverage: 'indicator.nfci_leverage',
+  nfci_risk: 'indicator.nfci_risk',
+  hy_ccc_oas_pct: 'indicator.hy_ccc_oas_pct',
+  t10y3m_pct: 'indicator.t10y3m_pct',
+  vix3m: 'indicator.vix3m',
 }
 
 function normalize(key: string, value: number | null | undefined): number {
