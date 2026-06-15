@@ -20,6 +20,9 @@ vi.mock('@/constants/eventThemes', () => ({
 
 vi.mock('lucide-react', () => ({
   ArrowLeft: () => <span data-testid="arrow-left" />,
+  ChevronDown: () => <span data-testid="chevron-down" />,
+  ChevronUp: () => <span data-testid="chevron-up" />,
+  AlertTriangle: () => <span data-testid="alert-triangle" />,
 }));
 
 import { fetchEventStocks } from '@/services/chainsightService';

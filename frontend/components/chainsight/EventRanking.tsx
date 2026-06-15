@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import { fetchEventStocks } from '@/services/chainsightService';
 import { getLabelForTheme } from '@/constants/eventThemes';
 import type { EventRankingItem } from '@/types/chainsight';
+import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
 
 interface Props {
   theme: string;
@@ -23,21 +24,28 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
   const isPositive = item.raw_return >= 0;
 
   return (
-    <div className="flex items-center gap-4 py-3 px-4 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-      <span className="w-6 text-sm font-bold text-gray-400 text-right">{rank}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{item.symbol}</span>
-          {item.is_low_liquidity && <LowLiquidityBadge />}
+    <div className="border-b border-gray-100 dark:border-gray-700">
+      <div className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+        <span className="w-6 text-sm font-bold text-gray-400 text-right">{rank}</span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{item.symbol}</span>
+            {item.is_low_liquidity && <LowLiquidityBadge />}
+          </div>
+          <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
         </div>
-        <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
-      </div>
-      <div className="text-right">
-        <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
-          {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
+        <div className="text-right">
+          <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+            {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
         </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
       </div>
+      {item.is_low_liquidity && (
+        <div className="px-4 pb-3">
+          <LowLiquidityPanel item={item} />
+        </div>
+      )}
     </div>
   );
 }
