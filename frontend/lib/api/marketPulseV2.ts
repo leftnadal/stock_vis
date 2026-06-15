@@ -184,6 +184,14 @@ export interface RegimeHistoryPoint {
   stage: RegimeId
 }
 
+export interface RegimeMargin {
+  indicator: string
+  op: string
+  threshold: number
+  actual: number | null
+  to_threshold: number | null
+}
+
 export interface RegimeDetail {
   available: boolean
   date?: string
@@ -198,6 +206,10 @@ export interface RegimeDetail {
   is_finalized?: boolean
   // MP-UX-S3a: 국면 타임라인 데이터원 (렌더는 후속 FE 슬라이스 — 타입만)
   regime_history_30d?: RegimeHistoryPoint[]
+  // MP-UX-S3b: 다음 단계까지 거리 (렌더는 후속 FE 슬라이스 — 타입만)
+  next_stage?: RegimeId | null
+  margins?: RegimeMargin[]
+  next_stage_closest?: RegimeMargin | null
 }
 
 export interface BreadthHistoryPoint {

@@ -28,6 +28,7 @@ from apps.market_pulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from apps.market_pulse.regime.next_stage import compute_next_stage_margin
 from apps.market_pulse.throttles import (
     MarketPulseHourThrottle,
     MarketPulseLLMThrottle,
@@ -112,6 +113,8 @@ def _regime_detail():
     # stage = raw regime enum 배열 — 라벨 변환(regime.*)은 FE 담당. 빈데이터 graceful(빈 배열).
     history = list(RegimeSnapshot.objects.order_by("-date")[:30].values("date", "regime"))
     history.reverse()
+    # MP-UX-S3b: 다음(인접 상위) 단계까지 거리. rules.yaml 읽기만(임계 단일소스), 모델 저장 0(즉석 산출).
+    ns = compute_next_stage_margin(snap.regime, snap.inputs)
     return {
         "available": True,
         "date": snap.date.isoformat(),
@@ -127,6 +130,9 @@ def _regime_detail():
         "regime_history_30d": [
             {"date": h["date"].isoformat(), "stage": h["regime"]} for h in history
         ],
+        "next_stage": ns["next_stage"],
+        "margins": ns["margins"],
+        "next_stage_closest": ns["closest"],
     }
 
 
