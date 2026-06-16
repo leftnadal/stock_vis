@@ -1744,3 +1744,15 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **결정**: 섹터 자금흐름 스파크라인은 본 슬라이스(S5)에서 제외하고 `MP-UX-S5-B-SECTOR`로 분리·보류한다.
 
 **왜**: S5 STEP 0 §0-3 분기 실측 — `ConcentrationDetail.history_30d`는 존재(→ 집중도 스파크라인 FE only 완료), 그러나 `SectorDetail`에는 sector 시계열 history 필드가 **0건**. 합성 데이터 금지 원칙(빈 스키마 채우지 않음)에 따라 BE 미니슬라이스(additive serializer 필드)로 history 데이터원 확보 후에야 FE 진행 가능. 선행 트랙으로 TASKQUEUE 등록.
+
+---
+
+## [2026-06-16] MP-DATA-MACRO-COVERAGE 검증 완결 — 코드 0, 운영 갭
+
+**발견(STEP 0 cf82fe9)**: FRED fetcher/backfill command(`backfill_v2_a1`)/shared 래퍼(`packages/shared/api_request/fred_client.py`)/beat(`update_economic_indicators`)/게이지 경로(`regime/inputs.py INDICATOR_CODE_MAP` → `IndicatorValue` → `RegimeSnapshot.inputs` → serializer) **전부 기구현**. 신규 백필 command 작성은 중복(규약 10장 단일출처) → 슬라이스 1 HALT(신규 코드 0).
+
+**진단**: 갭은 코드가 아니라 운영 — `FRED_API_KEY` 미설정(`.env.example`에 키 부재) + 커맨드 미실행. 검증 시점 5종 전부 등록·행 보유하나 최신 적재 19~60일 경과(stale) → `regime/inputs.py` 최신성 윈도우(~14일) 초과 → `sources=MISSING` → 게이지 "대기"(S4 관측과 정합). NT-7과 동류(코드 정상, 운영 이슈).
+
+**검증(병진 수동 백필 후)**: Economic 153 / Market 44 obs 적재. `GET /api/v2/market-pulse/cards/regime/detail` → **HTTP 200, inputs 5종 실값(vix 17.68 / t10y2y 0.4 / t10y3m 0.68 / nfci -0.506 / hy_oas 2.71), sources 14/14 OK, coverage 1.0, 대기 0건, regime=LATE_BULL**. 오늘 스냅샷이 백필 후 자동 재생성돼 신선 반영(별도 재계산 불요). **serializer/FE 변경 0**(데이터 신선도가 트리거).
+
+**결론**: 데이터 적재·게이지 점등 **검증 완료**. **단 지속성은 beat 운영 의존** — 수동 백필 기반이라 beat 미가동 시 ~14일 후 stale→"대기" 회귀. **영구 완료 아님, 출시 ops 사안**(`MP-OPS-FRED-FRESHNESS` 등록). 재발 방지로 `.env.example`에 `FRED_API_KEY` placeholder 추가. 통합 진입점은 `MP-OPS-FRED-ENTRYPOINT`(thin wrapper, 저우선)로 분리.

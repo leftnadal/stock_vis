@@ -16,6 +16,11 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-16 MGMT-FLUSH-3 FRED 트랙 검증 완결 반영**: **현재 `origin/main = cf82fe9`** (MGMT-FLUSH-1, 본 flush3 push 시 HEAD~1로 N=3 안전).
+> - **MP-DATA-MACRO-COVERAGE 검증 완료 (운영 갭, 코드 0)**: FRED fetcher/backfill(`backfill_v2_a1`)/shared 래퍼/beat/게이지 경로 전부 기구현(STEP 0) → 슬라이스 1 신규코드 0. 원인 = `FRED_API_KEY` 미설정 + 미실행으로 5종 stale(19~60일). 병진 수동 백필(Economic 153/Market 44 obs) 후 `GET /cards/regime/detail` **HTTP 200·5종 실값(vix 17.68 등)·sources 14/14 OK·대기 0·regime=LATE_BULL** 입증(serializer/FE 변경 0, 신선도가 트리거). **단 지속성=beat 운영 의존**(미가동 시 ~14일 후 "대기" 회귀 — 영구 완료 아님, 출시 ops).
+> - **재발 방지**: `.env.example`에 `FRED_API_KEY` placeholder 추가(키 부재→sources MISSING 재발 차단). 근거 DECISIONS "[2026-06-16] MP-DATA-MACRO-COVERAGE 검증 완결".
+> - **TASKQUEUE**: MP-DATA 상태 정정(검증완료, 지속성 출시의존) + 신규 `MP-OPS-FRED-FRESHNESS`(출시 체크리스트, beat 신선도 방어·#28·NT-7) + `MP-OPS-FRED-ENTRYPOINT`(thin wrapper 저우선). worktree `sess-fred-backfill` 제거(산출물 0).
+>
 > ✅ **2026-06-16 MGMT-FLUSH-1 장부 일괄 정리**: 실행 세션(S4·S5) 연속 후 누적된 메타 부채를 FRED fetcher(NT-7 진앙) 착수 전에 일괄 해소. **현재 `origin/main = 51303f1`** (S5 Part C, MGMT-FLUSH-2에서 S5 push 후 rebase·bump — flush' = HEAD~1로 N=3 안전).
 > - **MP-UX-S4 완료**: 다음단계 게이지 '대기' 상태(`2fe5300`) origin/main 안착. 게이지 **값/바**는 `MP-DATA-MACRO-COVERAGE`(FRED 거시 5종 수집) 해소 후 별도 슬라이스 — 현재 '대기' UX로 정상 동작(값 렌더 금지는 의도적 데이터 공백 처리).
 > - **MP-UX-S5 완료**: `51303f1` origin/main 안착(`2fe5300..51303f1`, MGMT-FLUSH-2 §3 병진 push) — 자금흐름 의미밴드(Concentration·Sector) + 집중도 30일 스파크라인(history_30d, FE only) + MP-UX-TITLE-SOURCE 제목 '국면' 단일소스 통일. vitest 240 passed(회귀 0) · tsc/eslint 0 · 순수 FE(BE `.py` 0). 사전검증 통과(MGMT-FLUSH-2 Phase A: 레짐 3파일 행위보존 PASS / 스파크라인·밴드·trend 셋 다 top10_weight 일치 PASS). STEP 0 §S5 분기: 집중도 history_30d 존재→스파크라인 완료 / **섹터 history 부재→`MP-UX-S5-B-SECTOR` 보류(선행 BE 미니슬라이스)**.
