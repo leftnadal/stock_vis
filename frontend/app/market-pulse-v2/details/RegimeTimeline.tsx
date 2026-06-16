@@ -2,7 +2,7 @@
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeHistoryPoint } from '@/lib/api/marketPulseV2'
-import { TRANSITION_DIR, regimeTone, stageOrder } from '../meaning'
+import { REGIME_TERM, TRANSITION_DIR, regimeTone, stageOrder } from '../meaning'
 
 export interface RegimeSegment {
   stage: string
@@ -37,7 +37,7 @@ export function RegimeTimeline({
   labels?: Record<string, string>
 }) {
   if (!history || history.length === 0) {
-    return <p className="text-xs text-slate-400">국면 이력 데이터 없음</p>
+    return <p className="text-xs text-slate-400">{REGIME_TERM} 이력 데이터 없음</p>
   }
 
   const segs = groupSegments(history)
@@ -73,11 +73,11 @@ export function RegimeTimeline({
 
   return (
     <div className="grid gap-1.5">
-      <p className="text-xs text-slate-500">최근 {history.length}일 국면</p>
+      <p className="text-xs text-slate-500">최근 {history.length}일 {REGIME_TERM}</p>
       <div
         className="flex h-[22px] w-full overflow-hidden rounded border border-slate-200"
         role="img"
-        aria-label="국면 타임라인"
+        aria-label={`${REGIME_TERM} 타임라인`}
       >
         {segs.map((s, i) => (
           <div

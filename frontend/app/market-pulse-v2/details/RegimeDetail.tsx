@@ -12,7 +12,7 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
-import { REGIME_MEANING, REGIME_TONE } from '../meaning'
+import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
 import { RegimeTimeline } from './RegimeTimeline'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
@@ -84,7 +84,7 @@ function normalize(key: string, value: number | null | undefined): number {
 
 export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
-    return <p className="text-sm text-slate-500">레짐 상세 데이터가 아직 준비되지 않았습니다.</p>
+    return <p className="text-sm text-slate-500">{REGIME_TERM} 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
 
   const inputs = payload.inputs ?? {}
