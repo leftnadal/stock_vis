@@ -4,6 +4,7 @@ from .chain_profile import CompanyChainProfile
 from .event_reaction import CompanyEventReaction
 from .growth_stage import CompanyGrowthStage
 from .insider_signal import CompanyInsiderSignal
+from .leadership import StockLeadershipScore
 from .narrative_tag import CompanyNarrativeTag
 from .news_event import ChainNewsEvent
 from .relation_discovery import CoMentionEdge, PriceCoMovement, RelationConfidence
@@ -14,6 +15,7 @@ from .sensitivity import CompanySensitivityProfile
 
 __all__ = [
     "StockAttentionScore",
+    "StockLeadershipScore",
     "CompanySensitivityProfile",
     "CompanyGrowthStage",
     "CompanyCapitalDNA",
