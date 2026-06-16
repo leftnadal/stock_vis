@@ -23,8 +23,13 @@ from apps.chain_sight.services.attention_service import (
     get_event_board,
     get_event_ranking,
 )
+from apps.chain_sight.services.leadership_compute import attach_leadership
+from apps.chain_sight.services.leadership_service import WINDOWS
 
 logger = logging.getLogger(__name__)
+
+# 주도주 지표 window 기본값(짧은 윈도우 = 최신 모멘텀).
+DEFAULT_LEADERSHIP_WINDOW = 20
 
 
 def _latest_attention_date() -> date | None:
@@ -101,7 +106,14 @@ class EventBoardView(APIView):
             location=OpenApiParameter.QUERY,
             description="조회 날짜 (YYYY-MM-DD). 기본값: 최신 스냅샷 날짜.",
             required=False,
-        )
+        ),
+        OpenApiParameter(
+            name="window",
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="주도주 지표 윈도우(20 또는 120). 기본값: 20. 그 외 값은 20으로 폴백.",
+            required=False,
+        ),
     ],
     responses={200: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT},
 )
@@ -131,11 +143,23 @@ class EventRankingView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        # 주도주 지표 window 파싱(잘못된 값은 기본 20으로 폴백)
+        window_param = request.query_params.get("window")
+        try:
+            window = int(window_param) if window_param is not None else DEFAULT_LEADERSHIP_WINDOW
+        except (TypeError, ValueError):
+            window = DEFAULT_LEADERSHIP_WINDOW
+        if window not in WINDOWS:
+            window = DEFAULT_LEADERSHIP_WINDOW
+
+        ranking = attach_leadership(ranking, theme, target_date, window)
+
         serializer = EventRankingItemSerializer(ranking, many=True)
         return Response(
             {
                 "theme": theme,
                 "date": str(target_date),
+                "window": window,
                 "count": len(ranking),
                 "stocks": serializer.data,
             }

@@ -78,6 +78,51 @@ def _window_closes(series: list[dict], window: int) -> list[float] | None:
     return closes
 
 
+LEADERSHIP_FIELDS = (
+    "trend_quality", "theme_alpha", "theme_beta",
+    "up_capture", "down_capture", "capture_spread", "is_fallback",
+)
+
+
+def attach_leadership(
+    ranking: list[dict],
+    theme: str,
+    as_of_date: date,
+    window: int,
+) -> list[dict]:
+    """
+    M1 랭킹 dict 목록에 선택 window의 주도주 지표를 조인(symbol 기준).
+
+    데이터 미존재 종목은 지표 None(키는 노출), is_fallback=False.
+    M1 필드는 절대 변경하지 않는다(RD3 회귀 0).
+    """
+    symbols = [r["symbol"] for r in ranking]
+    rows = StockLeadershipScore.objects.filter(
+        theme=theme, as_of_date=as_of_date, window=window,
+        stock_id__in=symbols,
+    ).values(
+        "stock_id", "trend_quality", "theme_alpha", "theme_beta",
+        "up_capture", "down_capture", "capture_spread", "is_fallback",
+    )
+    by_symbol = {r["stock_id"]: r for r in rows}
+
+    for item in ranking:
+        lead = by_symbol.get(item["symbol"])
+        if lead:
+            item["trend_quality"] = lead["trend_quality"]
+            item["theme_alpha"] = lead["theme_alpha"]
+            item["theme_beta"] = lead["theme_beta"]
+            item["up_capture"] = lead["up_capture"]
+            item["down_capture"] = lead["down_capture"]
+            item["capture_spread"] = lead["capture_spread"]
+            item["is_fallback"] = lead["is_fallback"]
+        else:
+            for f in LEADERSHIP_FIELDS:
+                item[f] = None
+            item["is_fallback"] = False
+    return ranking
+
+
 def compute_leadership_scores(as_of_date: date) -> int:
     """
     as_of_date 기준 종목×테마×윈도우 4지표 산출 후 bulk upsert.
