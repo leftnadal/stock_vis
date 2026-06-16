@@ -148,3 +148,22 @@ export function sectorSentence(inNames: string[], outNames: string[]): string | 
   if (outNames.length) parts.push(`${outNames.join('·')}서 유출`)
   return parts.length ? parts.join(', ') : null
 }
+
+export type TrendDir = 'up' | 'down' | 'flat'
+
+// MP-UX-S5 Part B: 집중도 추세 방향 문구(스파크라인 주석 단일소스). arrow는 sentence 괄호용.
+export const CONCENTRATION_TREND: Record<TrendDir, { arrow: string; label: string }> = {
+  up: { arrow: '↑', label: '쏠림 심화' },
+  down: { arrow: '↓', label: '분산' },
+  flat: { arrow: '→', label: '유지' },
+}
+
+/** top10 시계열 추세 → 방향(마지막 vs 처음, epsilon 안쪽은 flat). 2점 미만 → null. */
+export function concentrationTrend(values: number[], epsilon = 0.01): TrendDir | null {
+  const clean = values.filter((v) => Number.isFinite(v))
+  if (clean.length < 2) return null
+  const delta = clean[clean.length - 1] - clean[0]
+  if (delta > epsilon) return 'up'
+  if (delta < -epsilon) return 'down'
+  return 'flat'
+}
