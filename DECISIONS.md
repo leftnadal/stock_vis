@@ -1724,3 +1724,23 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **Why**: 보드 1차 정렬은 거래 신호(M1)로 시작, co-mention(M3)은 가중치 상수 교체로 승격. 신규 135종 중소형주 노이즈 대응으로 유동성 가드를 v1 필수 포함(원본은 추정이었으나 STEP0 ADV 실측으로 확정).
 
 **범위 처리**: z-score 불가 18종(기존 0행 10+<20일 8)은 계산서 해당일 제외 → CS-DATA-HYGIENE(backlog) 등록. sector/industry는 M1 미사용(가격only)이라 신규 135 공백 무영향.
+
+---
+
+## [2026-06-16] 집중도 의미밴드 지표 = HHI가 아니라 top10_weight (MP-UX-S5)
+
+**결정**: market-pulse-v2 Concentration 카드의 의미밴드(분산/약한·중간·강한 쏠림)를 **`top10_weight` 기준**으로 산출한다. 앵커 임계 = **0.40**(이상 = "강한 쏠림").
+
+**왜**: 지시서 pseudocode 초안은 `concentrationBand(hhi)` + DOJ 관행 임계(0.15/0.20/0.25)를 제안했으나, MP-UX-S5 STEP 0 실측 결과:
+- HHI = Σ(weight²) 정규화 분율로, `apps/market_pulse/calculators/concentration.py` 산출 스케일이 SPY 실제 **0.02~0.06** 수준 → DOJ 임계(0.15+)로는 **항상 "분산"으로만 읽혀 무용**(밴드가 값을 구분하지 못함).
+- 반면 anomaly `rules.yaml` **R02 "집중도 극단" 경보선 = `top10_weight ≥ 0.40`** 이라는 시스템 내 grounded 앵커가 이미 존재. 카드 밴드를 같은 지표·같은 앵커로 맞추면 **R02 경보와 카드 의미가 동일 좌표를 공유**(정합성↑) + 사용자(중장기·모바일)에게 "상위 10종목이 시장의 41% 차지"가 "HHI 0.05"보다 직관적.
+
+**TUNE**: **0.40만 grounded**(R02 단일 진실). 중간 임계 **0.30/0.35는 잠정**(분산↔약한↔중간 분할) — 실운영 top10_weight 분포 확보 후 보정 권고. 원시 HHI/top5는 카드 펼침(`<details>`)에 보존.
+
+**출처**: MP-UX-S5 STEP 0 실측 + 커밋 `8ea0432`(Part A). 색·임계·문구는 `frontend/app/market-pulse-v2/meaning.ts` 단일소스.
+
+## [2026-06-16] MP-UX-S5-B-SECTOR 분리 = sector history 부재, 합성 금지
+
+**결정**: 섹터 자금흐름 스파크라인은 본 슬라이스(S5)에서 제외하고 `MP-UX-S5-B-SECTOR`로 분리·보류한다.
+
+**왜**: S5 STEP 0 §0-3 분기 실측 — `ConcentrationDetail.history_30d`는 존재(→ 집중도 스파크라인 FE only 완료), 그러나 `SectorDetail`에는 sector 시계열 history 필드가 **0건**. 합성 데이터 금지 원칙(빈 스키마 채우지 않음)에 따라 BE 미니슬라이스(additive serializer 필드)로 history 데이터원 확보 후에야 FE 진행 가능. 선행 트랙으로 TASKQUEUE 등록.

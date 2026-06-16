@@ -16,6 +16,11 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-16 MGMT-FLUSH-1 장부 일괄 정리**: 실행 세션(S4·S5) 연속 후 누적된 메타 부채를 FRED fetcher(NT-7 진앙) 착수 전에 일괄 해소. **현재 `origin/main = 51303f1`** (S5 Part C, MGMT-FLUSH-2에서 S5 push 후 rebase·bump — flush' = HEAD~1로 N=3 안전).
+> - **MP-UX-S4 완료**: 다음단계 게이지 '대기' 상태(`2fe5300`) origin/main 안착. 게이지 **값/바**는 `MP-DATA-MACRO-COVERAGE`(FRED 거시 5종 수집) 해소 후 별도 슬라이스 — 현재 '대기' UX로 정상 동작(값 렌더 금지는 의도적 데이터 공백 처리).
+> - **MP-UX-S5 완료**: `51303f1` origin/main 안착(`2fe5300..51303f1`, MGMT-FLUSH-2 §3 병진 push) — 자금흐름 의미밴드(Concentration·Sector) + 집중도 30일 스파크라인(history_30d, FE only) + MP-UX-TITLE-SOURCE 제목 '국면' 단일소스 통일. vitest 240 passed(회귀 0) · tsc/eslint 0 · 순수 FE(BE `.py` 0). 사전검증 통과(MGMT-FLUSH-2 Phase A: 레짐 3파일 행위보존 PASS / 스파크라인·밴드·trend 셋 다 top10_weight 일치 PASS). STEP 0 §S5 분기: 집중도 history_30d 존재→스파크라인 완료 / **섹터 history 부재→`MP-UX-S5-B-SECTOR` 보류(선행 BE 미니슬라이스)**.
+> - **부수 정리**: TASKQUEUE `MP-UX-S5-B-SECTOR` 신규 등록 / DECISIONS HHI→top10_weight 피벗 근거 기록 / common-bugs #28(setup_marketpulse_beat 재실행) 등재.
+>
 > ✅ **2026-06-15 MP-UX-S3 정착 + mgmt 장부 정정**: MP-UX-S3(regime history_30d Part A `abf262a` + 다음단계 margin Part B `6d358e8`) BE 정착(무마이그레이션, rules.yaml 단일소스). 직전 ledger의 trigger-gated S3a/S3b → **완료** 정정. **신규 트랙 `MP-DATA-MACRO-COVERAGE` 등록** — S3 STEP 0에서 거시 5종(vix·nfci·hy_oas_pct·t10y2y·t10y3m) actual null 발견(소스 MISSING, FRED 미수집) → 다음단계 게이지 FE 선행 조건. ⚠ **관측: main이 ledger(cdbf79e) 이후 CS-EXP(e0185ea)·S3 등 타 트랙으로 연속 이동 → 분기 전 `git fetch` 상시화(HARN-1 예방)**. NEWS-AUTH/CS-EXP 메타 append-only 보존. **현재 `origin/main = 6d358e8`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 >
 > ✅ **2026-06-15 MP-UX-S1/S2 정착 + mgmt 장부 정정**: MP-UX-S1(`05e633a`, 라벨 카탈로그 단일소스) + MP-UX-S2(`75eaadb`, 의미 밴드 + 9지표 흡수; NEWS-AUTH `a4c1cc4` non-ff → rebase 경유) push 완료. 본 mgmt(`monorepo/sess-mgmt-ledger`)에서 TASKQUEUE(S1/S2 완료·S3a/S3b·TITLE-SOURCE 등록·MP-OPS-RESTART 완료) + DECISIONS(9지표 확정) 정정. NEWS-AUTH 메타 보존(append-only). insights.py 휴면자산 = 지표별 의미 밴드 후속 재활용 여지(참고). **현재 `origin/main = 75eaadb`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
