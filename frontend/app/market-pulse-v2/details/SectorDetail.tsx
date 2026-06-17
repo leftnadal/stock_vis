@@ -13,6 +13,7 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
+import { SectorSparkline } from './SectorSparkline'
 
 export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
@@ -25,6 +26,11 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
     momentum_5d: s.momentum_5d,
     rank: s.rank,
   }))
+
+  // MP-UX-S5-B: 섹터별 rel_strength 인라인 스파크라인. BE가 준 sector_history(rank순)
+  //   전부 렌더(FE 절단 0, A-1). 최신 rel_strength 수치는 sectors[]에서 심볼로 결합.
+  const history = payload.sector_history ?? []
+  const relBySymbol = new Map((payload.sectors ?? []).map((s) => [s.symbol, s.rel_strength]))
 
   return (
     <div className="grid gap-4">
@@ -57,6 +63,33 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
           </ResponsiveContainer>
         </div>
       </div>
+
+      {history.length > 0 ? (
+        <div>
+          <p className="text-xs text-slate-500 mb-1">섹터별 상대강도 추세 (최근 ≤30일)</p>
+          <ul className="grid gap-1">
+            {history.map((entry) => {
+              const label = translate(`sector.${entry.symbol}`, labels, entry.symbol)
+              const rel = relBySymbol.get(entry.symbol)
+              return (
+                <li key={entry.symbol} className="flex items-center justify-between gap-2">
+                  <span className="w-20 shrink-0 text-sm text-slate-800">{label}</span>
+                  <span
+                    className={`w-16 shrink-0 text-right text-xs font-medium ${
+                      rel == null ? 'text-slate-400' : rel >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                    }`}
+                  >
+                    {rel == null ? '—' : `${rel >= 0 ? '+' : ''}${rel.toFixed(2)}%`}
+                  </span>
+                  <span className="flex-1 text-right">
+                    <SectorSparkline entry={entry} />
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       <div>
         <p className="text-xs text-slate-500 mb-1">5일 모멘텀</p>
