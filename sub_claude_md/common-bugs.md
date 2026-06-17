@@ -467,3 +467,18 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결: `git restore <파일>`로 origin/main 정상본 복원(단일 파일 한정). repo 문서 개정 시 각 프로젝트 업로드본 교체를 후속 항목으로 등록(repo→프로젝트 갱신).
 - 교훈: 업로드 사본은 읽기 참조용 스냅샷. repo로의 역류 금지. 메인 디렉터리 미접촉 원칙(#34)이 이 역류도 차단.
 - 📎 참조: 2026-06-11 worktree 정리 세션 — restore로 복구.
+
+## ff 거부(로컬 main 분기) 시 즉시 HALT — merge 강행 금지 (#37) `[git]` `[infra]`
+
+- 증상: `git merge --ff-only origin/main`이 `Not possible to fast-forward, aborting` 거부. 이때 곧바로 `git merge --no-ff <feature>`를 실행하면 **분기된 잘못된 base 위에 merge 커밋**이 생겨 prod·origin과 어긋남 (CS-M2-MERGE 사고, 2026-06-17, commit 15fa044).
+- 원인 `[infra]`: **나이틀리 자동화(`com.stockvis.nightly` 감사 보고서)가 로컬 main에 직접 commit하고 push하지 않음**. 병렬 세션이 origin을 전진시키는 동안 로컬 main이 ahead(미push 커밋)/behind 양방향으로 분기됨. → 근본 해결은 자동화가 별도 브랜치를 쓰거나 commit 후 즉시 push 하는 것 (`TASKQUEUE.md MAIN-SYNC-FIX`, `DECISIONS.md` "MAIN-SYNC — ff 거부 = HALT").
+- 감지: `git merge --ff-only origin/main` 거부 = 즉시 HALT 신호. 먼저 분기 구조 측정: `git rev-list --left-right --count origin/main...main`, `git log origin/main..main --no-merges`.
+- 해결 (재발 방지 규칙):
+  1. **ff-only 거부 = HALT**. merge 강행 금지. 분기 구조부터 측정.
+  2. 로컬 main 미push 커밋의 정체를 먼저 파악 — docs/disjoint면 보존 가능, **코드 커밋이 섞이면 HALT·보고**.
+  3. 분기 해소는 **rebase 금지**(미push 커밋 유실 위험), merge 전략만: `git merge --no-ff origin/main`(미push 보존 + origin 흡수) → behind 0 확인 → feature merge → push.
+  4. 각 merge 후 `git status`로 완료/진행중 상태 반드시 확인 (직전 사고는 상태 오판).
+  5. 잘못된 미push 머지커밋은 `git reset --hard <merge직전>`로 안전 복원 (reflog 복구 가능, push 전이면 무손실).
+  6. 충돌은 하네스 문서(DECISIONS/PROGRESS/TASKQUEUE/.env.example)만 preserve-both 수동 해소, **코드/migration 충돌은 무조건 HALT**.
+- 교훈: 로컬 main은 캐시일 뿐 진실이 아니다(#33 fetch baseline과 같은 뿌리). 세션 시작 시 `git fetch origin` 먼저, baseline은 `origin/main` 직접 측정.
+- 📎 참조: `DECISIONS.md` "MAIN-SYNC — ff 거부 = HALT (2026-06-17)", `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴, common-bugs #33(fetch baseline)·#34(worktree 격리).

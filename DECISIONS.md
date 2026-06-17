@@ -1773,3 +1773,20 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **결정 2 (beat 등록)**: `chainsight-leadership-daily`(22:40 UTC) + 미등록이던 `chainsight-attention-daily`(M1, 22:30 UTC) 함께 등록(STEP0 지적 M1 부채 해소). DatabaseScheduler PeriodicTask 멱등(#28). 검증: 두 task autodiscover 등록·beat 매칭 확인, 직접 실행 시 leadership 640행·attention 659행(06-15) 영속·멱등. **M1 stale(06-12 1일치) → 06-12+06-15 2일치로 해소, 백필로 scorable 634→659 증가.**
 
 **불변/경계**: M1 StockAttentionScore 컬럼 추가 0(읽기만), shared 무수정·역import 0, 룩어헤드 0(t지표 t까지만). 보드 진입 재계산 0(사전저장).
+
+---
+
+## MAIN-SYNC — ff 거부 = HALT, 나이틀리 자동화 분기가 근본 원인 (2026-06-17)
+
+**결정**: `git merge --ff-only origin/main` 거부는 **즉시 HALT 신호**다. 거부 직후 `git merge --no-ff <feature>`를 강행하지 않는다. 분기 구조를 먼저 측정(`git rev-list --left-right --count origin/main...main`)하고, 미push 커밋의 정체를 파악한 뒤 **merge 전략으로만**(rebase 금지) 정합한다. 코드/migration 충돌은 무조건 HALT.
+
+**Why**: 나이틀리 자동화(`com.stockvis.nightly` 감사 보고서)가 **로컬 main에 직접 commit하고 push하지 않아**, 병렬 세션이 origin을 전진시키는 동안 로컬 main이 ahead/behind 양방향으로 분기됨. 이 분기 위에서 ff 거부를 무시하고 merge를 강행하면 잘못된 base에 머지 커밋이 생겨 prod·origin과 어긋난다(CS-M2-MERGE 사고, 2026-06-17, commit 15fa044에서 발각·복구).
+
+**How to apply**:
+1. 세션 시작 시 `git fetch origin` → baseline은 `origin/main` 직접 측정(로컬 ref는 캐시, 진실 아님 — common-bugs #33).
+2. ff-only 거부 시: 측정 → 미push 정체 파악(docs=보존, 코드=HALT) → `git merge --no-ff origin/main`(미push 보존+origin 흡수) → behind 0 → feature merge → push. 각 단계 후 `git status` 확인.
+3. 잘못된 미push 머지커밋은 `git reset --hard <merge직전>`(reflog 복구, push 전이면 무손실).
+
+**근본 해결(별 트랙)**: 나이틀리 자동화가 별도 브랜치를 쓰거나 commit 후 즉시 push 하도록 수정 — `TASKQUEUE.md MAIN-SYNC-FIX`(@infra, todo, 재발성). hook 차원의 근본 hardening(`scripts/hooks` + `core.hooksPath`)도 MAIN-SYNC-FIX 트랙.
+
+**📎 참조**: `sub_claude_md/common-bugs.md #37`(ff 거부 HALT `[git][infra]`), `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴.
