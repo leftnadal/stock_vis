@@ -1756,3 +1756,17 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **검증(병진 수동 백필 후)**: Economic 153 / Market 44 obs 적재. `GET /api/v2/market-pulse/cards/regime/detail` → **HTTP 200, inputs 5종 실값(vix 17.68 / t10y2y 0.4 / t10y3m 0.68 / nfci -0.506 / hy_oas 2.71), sources 14/14 OK, coverage 1.0, 대기 0건, regime=LATE_BULL**. 오늘 스냅샷이 백필 후 자동 재생성돼 신선 반영(별도 재계산 불요). **serializer/FE 변경 0**(데이터 신선도가 트리거).
 
 **결론**: 데이터 적재·게이지 점등 **검증 완료**. **단 지속성은 beat 운영 의존** — 수동 백필 기반이라 beat 미가동 시 ~14일 후 stale→"대기" 회귀. **영구 완료 아님, 출시 ops 사안**(`MP-OPS-FRED-FRESHNESS` 등록). 재발 방지로 `.env.example`에 `FRED_API_KEY` placeholder 추가. 통합 진입점은 `MP-OPS-FRED-ENTRYPOINT`(thin wrapper, 저우선)로 분리.
+---
+
+## CS-M2 주도주 지표 엔진 v1 (2026-06-16) — 종목레벨 4지표 + 옵션Y 노출 + beat 등록
+
+**구현**: M1과 별개 `StockLeadershipScore`(migration 0010) + `leadership_service`(T2 trend_quality, T3 theme_alpha, theme_beta, ②capture) + Celery task + serializer 확장. 종목레벨 4지표만(테마 응집/확산=v1.1 범위 밖).
+- WINDOWS=[20,120], MIN_OBS_RATIO=0.8, MIN_THEME_MEMBERS=3, LOO 자기제외 회귀. 게이트/분모0/테마부족 NULL(에러 아님).
+- prod 산출(2026-06-15): 640행/303 테마종목/15테마. is_fallback 0(백필로 120일 전부 충족). theme_beta median 0.92, capture_spread median ~0~6.
+
+**결정 1 (옵션 Y — T2·T3 상관 재평가 반영)**: **T2(trend_quality) 주 노출, T3(theme_alpha) 보조 강등, theme_beta·capture_spread 주 노출 유지.** T3 산출은 4지표 그대로 유지 — **표시만 조정(RD3 serializer/프론트 소관)**.
+- **Why**: STEP0 추정 ρ(T2,T3)=0.66이었으나 **실데이터 ρ=0.84(w20)/0.82(w120)** — 0.85 near-collinear 임계 근접. T2(절대 추세)와 T3(테마 초과수익)이 거의 같은 신호로 수렴 → T3 단독 추가설명력 적음. 분리 노출 유지하되 T3는 보조로 강등. 단순 가산은 여전히 금지.
+
+**결정 2 (beat 등록)**: `chainsight-leadership-daily`(22:40 UTC) + 미등록이던 `chainsight-attention-daily`(M1, 22:30 UTC) 함께 등록(STEP0 지적 M1 부채 해소). DatabaseScheduler PeriodicTask 멱등(#28). 검증: 두 task autodiscover 등록·beat 매칭 확인, 직접 실행 시 leadership 640행·attention 659행(06-15) 영속·멱등. **M1 stale(06-12 1일치) → 06-12+06-15 2일치로 해소, 백필로 scorable 634→659 증가.**
+
+**불변/경계**: M1 StockAttentionScore 컬럼 추가 0(읽기만), shared 무수정·역import 0, 룩어헤드 0(t지표 t까지만). 보드 진입 재계산 0(사전저장).

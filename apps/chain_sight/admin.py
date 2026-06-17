@@ -13,6 +13,7 @@ from .models import (
     PathAction,
     SavedPath,
     StockAttentionScore,
+    StockLeadershipScore,
 )
 
 
@@ -171,4 +172,35 @@ class StockAttentionScoreAdmin(admin.ModelAdmin):
         "return_pct",
         "raw_return",
         "is_low_liquidity",
+    )
+
+
+@admin.register(StockLeadershipScore)
+class StockLeadershipScoreAdmin(admin.ModelAdmin):
+    list_display = (
+        "stock",
+        "theme",
+        "window",
+        "as_of_date",
+        "trend_quality",
+        "theme_beta",
+        "capture_spread",
+        "is_fallback",
+    )
+    list_filter = ("as_of_date", "window", "is_fallback", "theme")
+    search_fields = ("stock__symbol", "theme")
+    ordering = ("-as_of_date", "window", "-trend_quality")
+    readonly_fields = (
+        "stock",
+        "theme",
+        "window",
+        "as_of_date",
+        "trend_quality",
+        "theme_alpha",
+        "theme_beta",
+        "up_capture",
+        "down_capture",
+        "capture_spread",
+        "obs_count",
+        "is_fallback",
     )
