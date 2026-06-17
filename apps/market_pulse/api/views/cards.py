@@ -179,6 +179,34 @@ def _sector_detail():
     latest = sorted(
         [r for r in rows if r.date == latest_date], key=lambda r: r.rank_in_universe
     )
+
+    # MP-UX-S5-B-SECTOR-BE: 섹터별 rel_strength 시계열 (additive, breadth/concentration
+    #   history_30d 패턴 미러 — 단 섹터×날짜 2-D, rel_strength only). SectorFlowSnapshot
+    #   실데이터만(합성 0): 결측·미존재 채우지 않음. 11섹터 전부 반환(절단은 FE slice 2).
+    recent_dates = []
+    _seen_dates = set()
+    for r in rows:  # rows: -date 정렬 → 최근 distinct 날짜 ≤30
+        if r.date not in _seen_dates:
+            _seen_dates.add(r.date)
+            recent_dates.append(r.date)
+            if len(recent_dates) >= 30:
+                break
+    recent_set = set(recent_dates)
+    per_symbol: dict = {}
+    for r in sorted(rows, key=lambda x: x.date):  # date 오름차순 누적
+        if r.date in recent_set and r.rel_strength is not None:  # 결측 skip(0 변환 0)
+            per_symbol.setdefault(r.market_index_id, []).append(
+                {"date": r.date.isoformat(), "rel_strength": float(r.rel_strength)}
+            )
+    ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
+    for sym in per_symbol:
+        if sym not in ordered_symbols:
+            ordered_symbols.append(sym)
+    sector_history = [
+        {"symbol": sym, "history": per_symbol.get(sym, [])}  # 데이터 없는 섹터 → []
+        for sym in ordered_symbols
+    ]
+
     return {
         "available": True,
         "date": latest_date.isoformat(),
@@ -196,6 +224,7 @@ def _sector_detail():
         ],
         "cross_dispersion": float(latest[0].cross_dispersion),
         "rotation_index": float(latest[0].rotation_index),
+        "sector_history": sector_history,
     }
 
 

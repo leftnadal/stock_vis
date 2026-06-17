@@ -245,12 +245,24 @@ export interface SectorRow {
   rank: number
 }
 
+export interface SectorHistoryPoint {
+  date: string
+  rel_strength: number
+}
+
+export interface SectorHistory {
+  symbol: string
+  history: SectorHistoryPoint[]
+}
+
 export interface SectorDetail {
   available: boolean
   date?: string
   sectors?: SectorRow[]
   cross_dispersion?: number
   rotation_index?: number
+  // MP-UX-S5-B-SECTOR-BE: 섹터별 rel_strength 시계열 (2-D, 11섹터 전부). 렌더는 slice 2(SectorSparkline).
+  sector_history?: SectorHistory[]
 }
 
 export interface ConcentrationHistoryPoint {
