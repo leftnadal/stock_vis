@@ -1790,3 +1790,59 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **근본 해결(별 트랙)**: 나이틀리 자동화가 별도 브랜치를 쓰거나 commit 후 즉시 push 하도록 수정 — `TASKQUEUE.md MAIN-SYNC-FIX`(@infra, todo, 재발성). hook 차원의 근본 hardening(`scripts/hooks` + `core.hooksPath`)도 MAIN-SYNC-FIX 트랙.
 
 **📎 참조**: `sub_claude_md/common-bugs.md #37`(ff 거부 HALT `[git][infra]`), `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴.
+
+---
+
+## [2026-06-17] 섹터 스파크라인 지표 = rel_strength 단일 고정 (자금흐름 군)
+
+**결정**: 섹터 스파크라인의 시계열 지표는 `rel_strength` **하나로 고정**한다. momentum_1d/5d/20d·flow_proxy 등은 스파크라인에 혼용하지 않는다(기존 막대차트 영역에만 잔존).
+
+**Why**: 카드 의미밴드(`meaning.ts sectorFlow`)가 `rel_strength` 부호를 유입/유출/중립으로 해석하는 단일 기준 — 스파크라인 추세선이 같은 지표라야 "한 화면 한 의미"가 성립한다. 다지표 혼용은 색·기울기·끝점 의미가 충돌해 가독성을 깬다.
+
+**How to apply**: `SectorSparkline`은 `entry.history[].rel_strength`만 매핑. 다른 지표 추가 요구 시 별 컴포넌트/별 화면으로 분리(혼용 금지).
+
+---
+
+## [2026-06-17] 11섹터 전부 반환·렌더 = BE 절단 0 / FE 절단 0 (A-1)
+
+**결정**: 섹터 history는 BE가 `rank_in_universe` 순으로 **11개 전부 직렬화**하고, FE는 받은 그대로 **전부 렌더**한다(상위 N 절단·필터 없음). 데이터 없는 섹터는 빈 `history: []`로 내려가고 FE는 "—" graceful 처리.
+
+**Why**: BE·FE 어느 쪽도 임계/우선순위를 발명하지 않음 → 계약 1:1, 결측은 skip(합성 0). 절단 로직이 없으니 롤백·검증이 단순하고 additive 안전. order_match(sectors[] == sector_history 동일 rank순)로 결합도 index/symbol 정합.
+
+**How to apply**: `_sector_detail()`는 `ordered_symbols = [r.market_index_id for r in latest]`(rank순) 전부 반환. FE `SectorDetail`은 `payload.sector_history.map(...)` 전건 렌더, 빈 history는 `SectorSparkline`이 "—"로 처리.
+
+**검증**: 실데이터 덤프 11그룹×29일, order_match True. vitest 통합 테스트로 전건 렌더·rank순 결합 보증.
+
+---
+
+## [2026-06-17] 교차 앱 규약 단일 출처 = repo 하네스 (D안)
+
+**결정**: 새 교차 앱(cross-app) 규칙은 코어(공용 커스텀 지시문)에 복제하지 않고 **repo 하네스에 1회만** 기록한다. 코어에는 repo 하네스를 가리키는 **포인터 한 줄**만 둔다.
+
+**Why**: 동일 규약을 코어와 repo 양쪽에 복제하면 drift(불일치 표류)가 발생한다(규약 10장 = 단일 출처 원칙). 진실의 소스를 repo 하네스 하나로 고정해 복제 표류를 차단한다.
+
+**How to apply**: 교차 규칙 발생 → repo 하네스(CLAUDE.md / DECISIONS.md / sub_claude_md)에 기록 → 코어는 포인터만. **주(잔존 부채)**: 세 프로젝트 공용 코어에 포인터 한 줄 추가 = 병진 수동 작업으로 잔존(자동화 안 됨).
+
+**📎 참조**: `PROGRESS.md` 2026-06-17 MGMT-XAPP-RULE 항목, CLAUDE.md "Harness Protocol".
+
+---
+
+## [2026-06-17] 섹터 라벨 KO 도입 + GICS 출처 참조 (slice 2a)
+
+**결정**: `KO_LABELS`에 `sector.*` 11키(SPDR 심볼 → KO명)를 additive 추가한다. KO 값은 **새로 작명하지 않고** frontend `screener.ts`의 GICS 섹터 KO명을 그대로 차용한다.
+
+**Why**: 거시 대시보드에서 원시 심볼(XLK·XLE…) 노출 → 가독성 저하. 라벨 출처를 screener.ts GICS명으로 고정하면 작명 발명 0 + `translate('sector.{SYM}', labels)` 경로 재사용으로 단일소스 유지. 라벨 부재 시 심볼 fallback이라 안전.
+
+**How to apply**: `apps/market_pulse/i18n/labels.py` KO_LABELS에 11키(XLK 기술 / XLC 통신 / XLY 경기소비재 / XLP 필수소비재 / XLE 에너지 / XLF 금융 / XLV 헬스케어 / XLI 산업재 / XLB 소재 / XLRE 부동산 / XLU 유틸리티). 마이그레이션 0(코드 상수). 머지: ebe5540.
+
+---
+
+## [2026-06-17] 섹터 스파크라인 색 = meaning.ts sectorFlow 단일소스 (slice 2b 편차)
+
+**결정**: 섹터 스파크라인의 선/끝점 색은 인라인 임계(목업의 >0.5/<-0.5)가 아니라 `SectorCardSummary`가 이미 쓰는 **`meaning.ts sectorFlow`(epsilon 0.1, flat 포함)** 를 재사용해 결정한다.
+
+**Why**: 색 임계값을 컴포넌트에 산재시키면 카드와 스파크라인의 톤이 어긋나고 임계 출처가 다중화된다(component_boundaries 원칙 위배). 단일 함수로 rel_strength→방향을 통일하면 카드·스파크라인 색이 일관된다.
+
+**검토 결과**: ±0.5(목업) vs ±0.1(구현)의 색 flip을 비교 후 **±0.1 유지 확정**. **트레이드오프(의식적 수용)**: 중립(flat) 밴드가 좁아(±0.1) 약·강 신호의 색 구분이 사라짐 → 신호 강도는 색이 아니라 **선 기울기·끝점 위치**로 구분한다.
+
+**How to apply**: `SectorSparkline`은 `sectorFlow(last).dir`(in/out/flat)로 stroke/fill 클래스 매핑. 임계 변경은 `meaning.ts` 한 곳에서만. 머지: 4998994.

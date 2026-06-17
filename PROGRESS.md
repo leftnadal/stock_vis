@@ -16,6 +16,8 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-17 자금흐름 카드 군(섹터 스파크라인) 완결**: **현재 `origin/main = 4998994`** (본 mgmt push 시 HEAD~1로 N=3 안전). Concentration·Sector 자금흐름 스파크라인 **군 전체 완결** — 집중도 30일 스파크라인(MP-UX-S5, history_30d)에 이어 **섹터 rel_strength 인라인 스파크라인** land로 카드 군 마무리. 분할 슬라이스: **2a `ebe5540`**(BE-only, KO_LABELS `sector.*` 11키 = screener.ts GICS명 차용, 마이그레이션 0) → **2b `4998994`**(FE-only, `SectorSparkline` 신규 + `SectorDetail` 인라인 11섹터 rank순 전부 렌더, sparkPoints 재사용). 회귀 0: 2a pytest marketpulse 162/sector_history 6 불변 · 2b vitest 240→247(+7 신규)·tsc 0. BE 타입 `sector_history`는 섹터 history BE 커밋(1f93291)에 이미 포함돼 2b 코드 변경 3파일(FE only). 비자명 결정 5건 → DECISIONS 흡수(rel_strength 단일고정 / 11섹터 절단0 A-1 / 교차앱 단일출처 D안 / 섹터 KO라벨 GICS출처 / 색=sectorFlow 단일소스 ±0.1 확정). **`MP-UX-S5-B-SECTOR` 보류 해소**(2026-06-16 분리 결정의 선행 BE→FE 완료).
+>
 > ✅ **2026-06-17 MGMT-XAPP-RULE 교차 앱 규약 단일 출처화**: **현재 `origin/main = 1f93291`** (섹터 history BE; 트랙1 rebase·bump 후 push 시 HEAD~1로 N=3 안전 — MGMT-DUALPUSH Phase B). 하네스 규율 2건 추가(코드 0): ⒜ CLAUDE.md "세션 종료" DoD에 **지시서 폐기 전 흡수 확인**(비자명 결정의 '왜'를 DECISIONS로 흡수 후 폐기) ⒝ CLAUDE.md "Harness Protocol"에 **교차 앱 규약 단일 출처 = repo 하네스** 선언(코어는 포인터만, 복제 금지 — 규약 10장). 트랙 2(병진 수동): 3 프로젝트 공용 코어에 포인터 한 줄.
 >
 > ✅ **2026-06-16 MGMT-FLUSH-3 FRED 트랙 검증 완결 반영**: **현재 `origin/main = cf82fe9`** (MGMT-FLUSH-1, 본 flush3 push 시 HEAD~1로 N=3 안전).
