@@ -16,6 +16,8 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-17 MGMT-XAPP-RULE 교차 앱 규약 단일 출처화**: **현재 `origin/main = 1f93291`** (섹터 history BE; 트랙1 rebase·bump 후 push 시 HEAD~1로 N=3 안전 — MGMT-DUALPUSH Phase B). 하네스 규율 2건 추가(코드 0): ⒜ CLAUDE.md "세션 종료" DoD에 **지시서 폐기 전 흡수 확인**(비자명 결정의 '왜'를 DECISIONS로 흡수 후 폐기) ⒝ CLAUDE.md "Harness Protocol"에 **교차 앱 규약 단일 출처 = repo 하네스** 선언(코어는 포인터만, 복제 금지 — 규약 10장). 트랙 2(병진 수동): 3 프로젝트 공용 코어에 포인터 한 줄.
+>
 > ✅ **2026-06-16 MGMT-FLUSH-3 FRED 트랙 검증 완결 반영**: **현재 `origin/main = cf82fe9`** (MGMT-FLUSH-1, 본 flush3 push 시 HEAD~1로 N=3 안전).
 > - **MP-DATA-MACRO-COVERAGE 검증 완료 (운영 갭, 코드 0)**: FRED fetcher/backfill(`backfill_v2_a1`)/shared 래퍼/beat/게이지 경로 전부 기구현(STEP 0) → 슬라이스 1 신규코드 0. 원인 = `FRED_API_KEY` 미설정 + 미실행으로 5종 stale(19~60일). 병진 수동 백필(Economic 153/Market 44 obs) 후 `GET /cards/regime/detail` **HTTP 200·5종 실값(vix 17.68 등)·sources 14/14 OK·대기 0·regime=LATE_BULL** 입증(serializer/FE 변경 0, 신선도가 트리거). **단 지속성=beat 운영 의존**(미가동 시 ~14일 후 "대기" 회귀 — 영구 완료 아님, 출시 ops).
 > - **재발 방지**: `.env.example`에 `FRED_API_KEY` placeholder 추가(키 부재→sources MISSING 재발 차단). 근거 DECISIONS "[2026-06-16] MP-DATA-MACRO-COVERAGE 검증 완결".
