@@ -66,6 +66,19 @@ KO_LABELS: dict[str, str] = {
     "indicator.hy_ccc_oas_pct": "HY CCC 스프레드",
     "indicator.t10y3m_pct": "장단기 금리차(10Y-3M)",
     "indicator.vix3m": "VIX 3개월",
+    # MP-UX-S5-B-SECTOR-LABEL: SPDR 섹터 ETF → GICS KO명 (출처: frontend screener.ts,
+    #   발명 0). 섹터 스파크라인 FE(slice 2b) prerequisite — translate('sector.{SYM}') 단일소스.
+    "sector.XLK": "기술",
+    "sector.XLC": "통신",
+    "sector.XLY": "경기소비재",
+    "sector.XLP": "필수소비재",
+    "sector.XLE": "에너지",
+    "sector.XLF": "금융",
+    "sector.XLV": "헬스케어",
+    "sector.XLI": "산업재",
+    "sector.XLB": "소재",
+    "sector.XLRE": "부동산",
+    "sector.XLU": "유틸리티",
 }
 
 
