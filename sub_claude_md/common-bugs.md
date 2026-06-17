@@ -374,27 +374,7 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 2단계 부채 (별도 트랙): canonical(`client.py`)이 나머지 2개를 흡수하는 메서드 단일화. 24개 메서드 갈라짐(거시 11 + 레거시 8 + 재무 13) + 에러 정책 통일(`FMPClientError`/`FMPAPIError` 합치기) 필요. **행위보존 경계** 위반 위험이라 별도 사이클 (사용자 트리거).
 - 📎 참조: `sub_claude_md/common-bugs.md #23` (FMP 402 / Premium 에러 패턴), `DECISIONS.md` "버킷A — FMP 통합 1단계"
 
-## shared 역방향 import 5건 — 전건 청소 완료 (#31, 2026-06-04 종결)
-
-- 트리거: PR8b STEP 0 fact-check (2026-06-01) — `packages/shared/`가 거꾸로 `apps/*`·`macro`를 import하는 5건 검출. shared는 단방향 base 경계이므로 위반.
-- 위반 5건 (전건 ~~CLOSE~~):
-  | # | 파일 (packages/shared/ 기준) | import module | 형태 | CLOSE |
-  |---|---|---|---|---|
-  | ~~1~~ | `stocks/services/sp500_eod_service.py:15` | `apps.market_pulse.utils.circuit_breaker` | top-level | 2026-06-01 BOUNDARY-1 |
-  | ~~2~~ | `stocks/services/sp500_service.py:13` | `apps.market_pulse.utils.circuit_breaker` | top-level | 2026-06-01 BOUNDARY-1 |
-  | ~~3~~ | `metrics/services/daily_report.py:242` | `apps.chain_sight.models` | 함수 내 lazy | 2026-06-01 BOUNDARY-2 |
-  | ~~4~~ | `stocks/services/eod_regime_calculator.py:77` | `macro.models` | 함수 내 lazy | 2026-06-04 BOUNDARY-3 |
-  | ~~5~~ | `stocks/services/eod_pipeline.py:617` | `macro.models` | 함수 내 lazy | 2026-06-04 BOUNDARY-3 |
-- 감지: `tests/architecture/test_shared_boundary.py` — `ast.parse`로 전수 검출. KNOWN_VIOLATIONS에 없는 신규 위반은 pytest FAIL.
-- 보조: `scripts/health_check.py` 8번째 항목 `shared 경계` — 우회 0 ✅ / 우회 ≥1 ❌. 동결 0건 도달(burn-down 5→3→2→0).
-- 야간 추적: `docs/harness/boundary_ledger.jsonl` — burn-down 한 줄/일. **자동 수정 없음, read-only.**
-- 청소 트랙별 패턴:
-  1. ~~`BOUNDARY-1`~~ **CLOSE 2026-06-01** (#1·#2): circuit_breaker → `packages/shared/api_request/` 승격, shared→shared 정합. burn-down 5→3.
-  2. ~~`BOUNDARY-2`~~ **CLOSE 2026-06-01** (#3): `apps.get_model("chainsight", "CompanyChainProfile")` 동적 lookup으로 정적 import 제거(cross-app aggregator 표준). burn-down 3→2.
-  3. ~~`BOUNDARY-3`~~ **CLOSE 2026-06-04** (#4·#5): **의존 역전 + 등록 패턴** = `VIXProvider` 포트를 `packages/shared/stocks/services/`에 두고, `MacroVIXProvider` 구현체는 `apps/market_pulse/services/`에 두고, `MarketpulseConfig.ready()`에서 `register_vix_provider(MacroVIXProvider())` 등록. shared 코드는 apps를 lazy로라도 import하지 않음(주석/예외 메시지의 문자열 언급은 ast 검사 비대상). 모델 이동 0 / 마이그레이션 0 / 회귀 302 GREEN. burn-down 2→0. 머지 `a9bb229` (slice [33e5437..662fdc4]).
-- 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
-- 패턴 정착(BOUNDARY-3): **포트 + apps.ready() 등록**이 모델 이동 없이 macro→shared 의존 방향을 안전하게 끊는 표준. shared 내부 역의존(tasks·mgmt·다른 service)이 있어 "소비자 이동(방향1)"이 막힐 때 1순위 후보.
-- 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)" + "BOUNDARY-3 (2026-06-04)"
+> **#31 (shared 역방향 import 5건 — 전건 청소 완료, 2026-06-04)** `[boundary]` → **종결**: 본 파일 말미 [아카이브 섹션](#아카이브-종결일회성--이력-보존)으로 이동. 재사용 패턴(포트+`apps.ready()` 등록)은 `DECISIONS.md` "BOUNDARY-3 (2026-06-04)"에 보존. 검문소: `tests/architecture/test_shared_boundary.py`.
 
 ## 좀비 Beat (다중 process) — 메일 2회 발송 + Bug #28 재발 (#33, 2026-06-06)
 
@@ -413,6 +393,8 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   - 가드는 **origin 기반**이 좋음 (cwd가 정상 트리(`Desktop/stock_vis`) 밖이면 좀비 가능성 ↑).
   - 정상 Beat는 항상 `--scheduler django_celery_beat.schedulers:DatabaseScheduler` 명시 — `ps aux`에서 옵션 없는 beat는 좀비.
 - 📎 참조: `DECISIONS.md` "좀비 Beat 56670 = 5/21 Trash stray 기동의 잔불 (2026-06-06)", `TASKQUEUE.md` NT-10/NT-7/NT-11, `_briefs/2026-06-06/sprint_a1_ops_singletons.md` STEP 0 결과
+- 🧭 정본 규칙(S4-1): 이 항목(**함정·진단 체크리스트**)이 common-bugs 정본, DECISIONS는 **결정·근거(왜 좀비였나)** 정본 — **의도적 facet 분리이지 중복 아님**(둘 중 하나를 "dedup"으로 삭제 금지). PROGRESS 언급은 캐시. 큐 복사본은 검색KB로 드레인 완료(2026-06-17).
+
 ## 잘못된 경로 grep = 거짓 0% 측정 (#31)
 
 - 증상: STEP 0 측정에서 `grep -rEn "market_pulse" frontend/src/` → 0건 → "K/L 프론트엔드 0% 부재"로 보고. 실제는 `frontend/app/market-pulse-v2/`에 page.tsx + 5 Summary + 5 Detail + 5 패널 + API 클라이언트 30+ 타입이 **이미 전건 구현**되어 있었음.
@@ -482,3 +464,31 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   6. 충돌은 하네스 문서(DECISIONS/PROGRESS/TASKQUEUE/.env.example)만 preserve-both 수동 해소, **코드/migration 충돌은 무조건 HALT**.
 - 교훈: 로컬 main은 캐시일 뿐 진실이 아니다(#33 fetch baseline과 같은 뿌리). 세션 시작 시 `git fetch origin` 먼저, baseline은 `origin/main` 직접 측정.
 - 📎 참조: `DECISIONS.md` "MAIN-SYNC — ff 거부 = HALT (2026-06-17)", `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴, common-bugs #33(fetch baseline)·#34(worktree 격리).
+
+---
+
+## 아카이브 (종결·일회성 — 이력 보존)
+
+> 트랙이 **완전히 종결**돼 더는 능동적 함정이 아닌 항목을 이력 보존용으로 이동(HARNESS-KB S4, **삭제 0**). 재사용 지식(패턴·규칙)은 능동 섹션 또는 DECISIONS에 별도 보존돼 있다. 영구 삭제는 사용자 수동 판단.
+
+### shared 역방향 import 5건 — 전건 청소 완료 (#31, 2026-06-04 종결) `[boundary]`
+
+- 트리거: PR8b STEP 0 fact-check (2026-06-01) — `packages/shared/`가 거꾸로 `apps/*`·`macro`를 import하는 5건 검출. shared는 단방향 base 경계이므로 위반.
+- 위반 5건 (전건 ~~CLOSE~~):
+  | # | 파일 (packages/shared/ 기준) | import module | 형태 | CLOSE |
+  |---|---|---|---|---|
+  | ~~1~~ | `stocks/services/sp500_eod_service.py:15` | `apps.market_pulse.utils.circuit_breaker` | top-level | 2026-06-01 BOUNDARY-1 |
+  | ~~2~~ | `stocks/services/sp500_service.py:13` | `apps.market_pulse.utils.circuit_breaker` | top-level | 2026-06-01 BOUNDARY-1 |
+  | ~~3~~ | `metrics/services/daily_report.py:242` | `apps.chain_sight.models` | 함수 내 lazy | 2026-06-01 BOUNDARY-2 |
+  | ~~4~~ | `stocks/services/eod_regime_calculator.py:77` | `macro.models` | 함수 내 lazy | 2026-06-04 BOUNDARY-3 |
+  | ~~5~~ | `stocks/services/eod_pipeline.py:617` | `macro.models` | 함수 내 lazy | 2026-06-04 BOUNDARY-3 |
+- 감지: `tests/architecture/test_shared_boundary.py` — `ast.parse`로 전수 검출. KNOWN_VIOLATIONS에 없는 신규 위반은 pytest FAIL.
+- 보조: `scripts/health_check.py` 8번째 항목 `shared 경계` — 우회 0 ✅ / 우회 ≥1 ❌. 동결 0건 도달(burn-down 5→3→2→0).
+- 야간 추적: `docs/harness/boundary_ledger.jsonl` — burn-down 한 줄/일. **자동 수정 없음, read-only.**
+- 청소 트랙별 패턴:
+  1. ~~`BOUNDARY-1`~~ **CLOSE 2026-06-01** (#1·#2): circuit_breaker → `packages/shared/api_request/` 승격, shared→shared 정합. burn-down 5→3.
+  2. ~~`BOUNDARY-2`~~ **CLOSE 2026-06-01** (#3): `apps.get_model("chainsight", "CompanyChainProfile")` 동적 lookup으로 정적 import 제거(cross-app aggregator 표준). burn-down 3→2.
+  3. ~~`BOUNDARY-3`~~ **CLOSE 2026-06-04** (#4·#5): **의존 역전 + 등록 패턴** = `VIXProvider` 포트를 `packages/shared/stocks/services/`에 두고, `MacroVIXProvider` 구현체는 `apps/market_pulse/services/`에 두고, `MarketpulseConfig.ready()`에서 `register_vix_provider(MacroVIXProvider())` 등록. shared 코드는 apps를 lazy로라도 import하지 않음(주석/예외 메시지의 문자열 언급은 ast 검사 비대상). 모델 이동 0 / 마이그레이션 0 / 회귀 302 GREEN. burn-down 2→0. 머지 `a9bb229` (slice [33e5437..662fdc4]).
+- 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
+- 패턴 정착(BOUNDARY-3): **포트 + apps.ready() 등록**이 모델 이동 없이 macro→shared 의존 방향을 안전하게 끊는 표준. shared 내부 역의존(tasks·mgmt·다른 service)이 있어 "소비자 이동(방향1)"이 막힐 때 1순위 후보.
+- 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)" + "BOUNDARY-3 (2026-06-04)"
