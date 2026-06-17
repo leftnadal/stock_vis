@@ -16,11 +16,12 @@ import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorCardSummary } from './cards/SectorCardSummary'
 import { CardDetailContainer } from './details/CardDetailContainer'
+import { REGIME_TERM } from './meaning'
 
 type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
 const CARD_TITLE: Record<CardId, string> = {
-  regime: 'Market Regime · 시장 국면',
+  regime: `Market Regime · 시장 ${REGIME_TERM}`,
   breadth: 'Market Breadth · 시장 폭',
   sector: 'Sector Flow · 섹터 흐름',
   concentration: 'Concentration · 집중도',

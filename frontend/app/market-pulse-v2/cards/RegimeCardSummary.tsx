@@ -2,16 +2,16 @@
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeCard } from '@/lib/api/marketPulseV2'
-import { REGIME_MEANING, REGIME_TONE } from '../meaning'
+import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
 import { CardShell } from './CardShell'
 
 export function RegimeCardSummary({
   data, labels, onOpen,
 }: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
   return (
-    <CardShell titleEn="Market Regime" titleKo="시장 국면" status={data?.status} onOpen={onOpen}>
+    <CardShell titleEn="Market Regime" titleKo={`시장 ${REGIME_TERM}`} status={data?.status} onOpen={onOpen}>
       {!data ? (
-        <p className="text-sm text-slate-400">레짐 데이터 미생성</p>
+        <p className="text-sm text-slate-400">{REGIME_TERM} 데이터 미생성</p>
       ) : (
         <div>
           <p className="text-lg font-semibold text-slate-900">

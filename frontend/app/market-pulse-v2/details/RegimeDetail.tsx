@@ -12,7 +12,8 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
-import { REGIME_MEANING, REGIME_TONE } from '../meaning'
+import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
+import { RegimeTimeline } from './RegimeTimeline'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
 // MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
@@ -83,7 +84,7 @@ function normalize(key: string, value: number | null | undefined): number {
 
 export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
-    return <p className="text-sm text-slate-500">레짐 상세 데이터가 아직 준비되지 않았습니다.</p>
+    return <p className="text-sm text-slate-500">{REGIME_TERM} 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
 
   const inputs = payload.inputs ?? {}
@@ -125,6 +126,14 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
         {payload.headline ? <p className="text-sm text-slate-700 mt-1">{payload.headline}</p> : null}
       </header>
 
+      {/* MP-UX-S4 Part A: 30일 국면 타임라인 (S3a regime_history_30d 데이터원). 세그먼트 병합 + 색=meaning.ts tone + KO 범례 + 전환 주석. */}
+      {payload.regime_history_30d && payload.regime_history_30d.length > 0 ? (
+        <RegimeTimeline history={payload.regime_history_30d} labels={labels} />
+      ) : null}
+
+      {/* MP-UX-S4 Part B: 다음 단계 게이지 — 거시 데이터공백(MP-DATA-MACRO-COVERAGE)이라 '대기'만. */}
+      <RegimeNextStage payload={payload} labels={labels} />
+
       <div style={{ width: '100%', height: 280 }}>
         <ResponsiveContainer>
           <RadarChart data={radarData}>
@@ -158,5 +167,34 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
         </div>
       ) : null}
     </div>
+  )
+}
+
+/**
+ * MP-UX-S4 Part B: 다음 단계 게이지 "대기" 상태.
+ * 거시 5종 actual null(MP-DATA-MACRO-COVERAGE) → 값/바 렌더 금지, '수집 대기'만.
+ * null→0/임의값 변환 절대 금지. 전체 게이지 바는 데이터공백 해소 후 별도 슬라이스.
+ */
+export function RegimeNextStage({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
+  if (!payload.next_stage) return null
+  const ms = payload.margins ?? []
+  const allNull = ms.length > 0 ? ms.every((m) => m.actual === null) : payload.next_stage_closest == null
+  const nextKo = translate(`regime.${payload.next_stage}`, labels, payload.next_stage)
+
+  if (allNull) {
+    return (
+      <p className="text-xs text-slate-400">다음 단계: {nextKo} · 지표 데이터 수집 대기 중</p>
+    )
+  }
+  const c = payload.next_stage_closest
+  if (!c) {
+    return <p className="text-xs text-slate-400">다음 단계: {nextKo}</p>
+  }
+  // 부분 데이터: 가장 가까운 지표 1건만(전체 바는 비구현). indicator KO = INDICATOR_I18N 매핑 재사용.
+  const indKey = INDICATOR_I18N[c.indicator] ?? `indicator.${c.indicator}`
+  return (
+    <p className="text-xs text-slate-600">
+      다음 단계: {nextKo} · 가장 가까운 지표 {translate(indKey, labels, c.indicator)} {c.to_threshold} 남음
+    </p>
   )
 }

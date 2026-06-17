@@ -11,6 +11,7 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { ConcentrationDetail as Detail } from '@/lib/api/marketPulseV2'
+import { ConcentrationSparkline } from './ConcentrationSparkline'
 
 const COLORS = [
   'rgb(99 102 241)', 'rgb(14 165 233)', 'rgb(34 197 94)',
@@ -37,6 +38,12 @@ export function ConcentrationDetail({ payload, labels }: { payload: Detail; labe
         <Metric labelKey="metric.top10" fallback="top10" value={payload.top10_weight ?? 0} labels={labels} />
         <Metric labelKey="metric.hhi" fallback="HHI" value={payload.hhi ?? 0} digits={4} percent={false} labels={labels} />
       </header>
+
+      {/* MP-UX-S5 Part B: 30일 집중도(상위10 비중) 스파크라인 (history_30d 데이터원, FE only).
+          history 없음/공백은 미렌더 — 합성 0. */}
+      {payload.history_30d && payload.history_30d.length > 0 ? (
+        <ConcentrationSparkline history={payload.history_30d} />
+      ) : null}
 
       <div>
         <p className="text-xs text-slate-500 mb-1">
