@@ -1791,6 +1791,25 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 
 **📎 참조**: `sub_claude_md/common-bugs.md #37`(ff 거부 HALT `[git][infra]`), `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴.
 
+### MAIN-SYNC-FIX 적용 — 나이틀리 dated 브랜치 격리 (2026-06-18)
+
+**결정**: 활성 나이틀리 스크립트가 **메인 트리에 직접 commit하지 않고, 전용 worktree의 dated 브랜치(`monorepo/nightly-<YYYYMMDD>`)에만 commit·push**하도록 수정. reset·merge·force 일절 없음.
+
+**오적용 정정 (STEP 0 핵심 발견)**: 2026-06-02 결정(`a84388f`)은 "야간 자동화 브랜치 정책"을 **`nightly_v3.sh`에 적용**하라 했으나, launchd `com.stockvis.nightly`가 실제 호출하는 활성 스크립트는 **`~/stock-vis-nightly/run_tier3_audits.sh`**였다(plist 확인). `nightly_v3.sh`는 비활성(미호출) + 별개 경로(`$YEAR_MONTH/$DAY/`). 따라서 6/2 수정은 **비활성 스크립트에 갔고 활성 스크립트는 미수정** → 재발 지속(e617a8f 등 51 audit commit이 모두 메인 트리 main 직접 commit). 이번에 **활성 스크립트(`run_tier3_audits.sh`)를 고침** — `nightly_v3.sh`는 무변경(꺼둔 tier1/2 auto-fix 보존), plist 재지정도 안 함.
+
+**구현 (boundary = line 30 PROJECT_DIR + git 블록만, 감사 task 로직 1-611 무변경)**:
+- `PROJECT_DIR` → `$HOME/stock-vis-nightly/repo`(전용 worktree). 리포트 생성·git 모두 거기서, 메인 트리 무접촉.
+- `log()` 정의 직후: `git fetch origin` → **porcelain 가드(더러우면 HALT — 직전 run 잔재 보호)** → `git checkout -b monorepo/nightly-$(date +%Y%m%d) origin/main`(없으면 신규, 같은 날 재실행이면 전환해 누적).
+- git 블록: `add` reports → commit → `GIT_TERMINAL_PROMPT=0 git push origin <dated>`(keychain 검증 통과 → 자동 push 채택. 비대화로 hang 방지, 실패 시 로컬 보존 폴백).
+
+**Why dated 브랜치 (reset/merge 대신)**: 단일 롤링 브랜치 + `reset --hard origin/main`은 누적 리포트 폐기 + 비-ff force-push 유발(금지)로 깨짐. dated 브랜치는 매 run 신규라 항상 ff, force 불요, 코드도 항상 최신 origin/main 기반.
+
+**검증(2026-06-18, 수동 격리 테스트)**: dated 브랜치 생성·커밋·push 성공, **메인 트리 main HEAD 무변동(909f406) 입증**, pre-commit `monorepo/*` 화이트리스트 통과. keychain push 실증(dry-run + 실제 push 모두 성공). 테스트 더미 브랜치 local+remote 정리 완료. 감사 7 task는 무변경(고비용이라 재실행 안 함, 경계 보존).
+
+**잔여(별 트랙)**: ① dated 브랜치 누적 정리 — `TASKQUEUE.md NIGHTLY-BRANCH-GC`. ② hook hardening(`scripts/hooks`+`core.hooksPath`) — MAIN-SYNC-FIX 트랙 유지(이번 범위 밖). ③ launchd 재가동(`launchctl load`)은 **사용자 수동 승인** 대기(수정 중 unload 상태).
+
+**📎 참조**: `~/stock-vis-nightly/run_tier3_audits.sh`(백업 `.bak-20260617`), `TASKQUEUE.md MAIN-SYNC-FIX`·`NIGHTLY-BRANCH-GC`, DECISIONS `a84388f`(6/2 브랜치 정책).
+
 ---
 
 ## [2026-06-17] 섹터 스파크라인 지표 = rel_strength 단일 고정 (자금흐름 군)
