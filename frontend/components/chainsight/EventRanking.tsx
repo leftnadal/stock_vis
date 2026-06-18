@@ -5,9 +5,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { fetchEventStocks } from '@/services/chainsightService';
-import { getLabelForTheme } from '@/constants/eventThemes';
+import { getLabelForTheme, METRIC_INFO } from '@/constants/eventThemes';
 import type { EventRankingItem } from '@/types/chainsight';
 import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
+import MetricInfoPopover from '@/components/chainsight/MetricInfoPopover';
 
 interface Props {
   theme: string;
@@ -18,6 +19,40 @@ function LowLiquidityBadge() {
     <span className="inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 text-xs font-medium px-2 py-0.5">
       저유동성
     </span>
+  );
+}
+
+const PRIMARY_METRICS = [
+  'trend_quality',
+  'theme_beta',
+  'capture_spread',
+] as const;
+
+function RankingHeader() {
+  return (
+    <div
+      className="flex items-center gap-4 px-4 py-2 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700"
+      aria-label="지표 컬럼 헤더"
+    >
+      {/* rank placeholder */}
+      <span className="w-6 shrink-0" />
+      {/* symbol/name placeholder */}
+      <div className="flex-1 min-w-0" />
+      {/* return/score placeholder */}
+      <div className="w-20 shrink-0" />
+      {/* 3 primary metric columns */}
+      <div className="flex gap-3">
+        {PRIMARY_METRICS.map((key) => (
+          <div
+            key={key}
+            className="w-20 flex items-center justify-end gap-1 text-xs font-medium text-gray-500 dark:text-gray-400"
+          >
+            <span>{METRIC_INFO[key].label}</span>
+            <MetricInfoPopover metricKey={key} />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -38,11 +73,19 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
         </div>
-        <div className="text-right">
+        <div className="w-20 shrink-0 text-right">
           <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
             {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
+        </div>
+        {/* 3 primary metric value columns — placeholder for Slice 2 */}
+        <div className="flex gap-3">
+          {PRIMARY_METRICS.map((key) => (
+            <div key={key} className="w-20 text-right text-sm text-gray-400 dark:text-gray-500">
+              —
+            </div>
+          ))}
         </div>
       </Link>
       {item.is_low_liquidity && (
@@ -93,6 +136,7 @@ export default function EventRanking({ theme }: Props) {
 
       {data && data.length > 0 && (
         <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <RankingHeader />
           {[...data]
             .sort((a, b) => b.score - a.score)
             .map((item, index) => (

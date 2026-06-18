@@ -22,6 +22,20 @@ vi.mock('@/constants/eventThemes', () => ({
     ko: theme === 'semiconductor' ? '반도체' : theme,
     icon: 'Tag',
   }),
+  METRIC_INFO: {
+    trend_quality: { field: 'trend_quality', label: '추세강도', tier: 'primary', description: '', example: '', range: '' },
+    theme_beta: { field: 'theme_beta', label: '그룹 민감도', tier: 'primary', description: '', example: '', range: '' },
+    capture_spread: { field: 'capture_spread', label: '주도우위', tier: 'primary', description: '', example: '', range: '' },
+    theme_alpha: { field: 'theme_alpha', label: '그룹 초과수익', tier: 'supplementary', description: '', example: '', range: '' },
+    up_capture: { field: 'up_capture', label: '상승 포착', tier: 'supplementary', description: '', example: '', range: '' },
+    down_capture: { field: 'down_capture', label: '하락 방어', tier: 'supplementary', description: '', example: '', range: '' },
+  },
+}));
+
+vi.mock('@/components/chainsight/MetricInfoPopover', () => ({
+  default: ({ metricKey }: { metricKey: string }) => (
+    <button data-testid={`metric-popover-${metricKey}`} aria-label={`${metricKey} 설명`} />
+  ),
 }));
 
 vi.mock('lucide-react', () => ({
@@ -157,5 +171,33 @@ describe('EventRanking', () => {
     await screen.findByText('NVDA');
     const link = screen.getByRole('link', { name: /NVDA/ });
     expect(link).toHaveAttribute('href', '/chainsight/NVDA');
+  });
+
+  it('헤더 행에 3개 지표 라벨(추세강도, 그룹 민감도, 주도우위)을 표시한다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.getByText('추세강도')).toBeInTheDocument();
+    expect(screen.getByText('그룹 민감도')).toBeInTheDocument();
+    expect(screen.getByText('주도우위')).toBeInTheDocument();
+  });
+
+  it('헤더 행에 각 지표의 MetricInfoPopover 트리거가 있다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.getByTestId('metric-popover-trend_quality')).toBeInTheDocument();
+    expect(screen.getByTestId('metric-popover-theme_beta')).toBeInTheDocument();
+    expect(screen.getByTestId('metric-popover-capture_spread')).toBeInTheDocument();
+  });
+
+  it('헤더 추가 후에도 종목 링크 드릴다운이 정상 동작한다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue(mockStocks);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    const nvdaLink = screen.getByRole('link', { name: /NVDA/ });
+    expect(nvdaLink).toHaveAttribute('href', '/chainsight/NVDA');
+    const amdLink = screen.getByRole('link', { name: /AMD/ });
+    expect(amdLink).toHaveAttribute('href', '/chainsight/AMD');
   });
 });
