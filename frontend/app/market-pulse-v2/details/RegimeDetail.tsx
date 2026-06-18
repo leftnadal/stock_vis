@@ -14,6 +14,7 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
 import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
 import { RegimeTimeline } from './RegimeTimeline'
+import { NextStageGauge } from './NextStageGauge'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
 // MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
@@ -190,11 +191,37 @@ export function RegimeNextStage({ payload, labels }: { payload: Detail; labels?:
   if (!c) {
     return <p className="text-xs text-slate-400">다음 단계: {nextKo}</p>
   }
-  // 부분 데이터: 가장 가까운 지표 1건만(전체 바는 비구현). indicator KO = INDICATOR_I18N 매핑 재사용.
+  // 요약(closest 1건) — indicator KO = INDICATOR_I18N 매핑 재사용.
   const indKey = INDICATOR_I18N[c.indicator] ?? `indicator.${c.indicator}`
+
+  // MP-UX-B3: 전체 게이지 — margins 5지표 전부 to_threshold 단일축 부호화 양방향 게이지로.
+  //   to_threshold null(부분 데이터)은 위치 산출 불가 → 게이지에서 제외(요약 라인은 유지).
+  //   scaleRef = 렌더 대상 max|to_threshold| (표시 길이 정규화 전용, 판정 무관).
+  const gauged = ms.filter((m): m is typeof m & { to_threshold: number } => m.to_threshold !== null)
+  const scaleRef = gauged.reduce((mx, m) => Math.max(mx, Math.abs(m.to_threshold)), 0)
+
   return (
-    <p className="text-xs text-slate-600">
-      다음 단계: {nextKo} · 가장 가까운 지표 {translate(indKey, labels, c.indicator)} {c.to_threshold} 남음
-    </p>
+    <div className="grid gap-2">
+      <p className="text-xs text-slate-600">
+        다음 단계: {nextKo} · 가장 가까운 지표 {translate(indKey, labels, c.indicator)} {c.to_threshold} 남음
+      </p>
+      {gauged.length > 0 ? (
+        <ul className="grid gap-1">
+          {gauged.map((m) => {
+            const key = INDICATOR_I18N[m.indicator] ?? `indicator.${m.indicator}`
+            return (
+              <NextStageGauge
+                key={m.indicator}
+                margin={m}
+                isClosest={m.indicator === c.indicator}
+                nextStage={payload.next_stage!}
+                scaleRef={scaleRef}
+                indicatorLabel={translate(key, labels, m.indicator)}
+              />
+            )
+          })}
+        </ul>
+      ) : null}
+    </div>
   )
 }
