@@ -9,6 +9,7 @@ import { getLabelForTheme, METRIC_INFO } from '@/constants/eventThemes';
 import type { EventRankingItem } from '@/types/chainsight';
 import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
 import MetricInfoPopover from '@/components/chainsight/MetricInfoPopover';
+import MetricCell from '@/components/chainsight/MetricCell';
 
 interface Props {
   theme: string;
@@ -79,13 +80,11 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
           </div>
           <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
         </div>
-        {/* 3 primary metric value columns — placeholder for Slice 2 */}
+        {/* 3 primary metric value columns */}
         <div className="flex gap-3">
-          {PRIMARY_METRICS.map((key) => (
-            <div key={key} className="w-20 text-right text-sm text-gray-400 dark:text-gray-500">
-              —
-            </div>
-          ))}
+          <MetricCell value={item.trend_quality} domain="center" domainMax={2} />
+          <MetricCell value={item.theme_beta} domain="baseline" domainMax={2} />
+          <MetricCell value={item.capture_spread} domain="center" domainMax={100} signed />
         </div>
       </Link>
       {item.is_low_liquidity && (
