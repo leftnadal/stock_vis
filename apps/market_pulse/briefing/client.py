@@ -1,22 +1,18 @@
 """
 Gemini Briefing Client (PR-E) — 일일 브리핑 본문 생성.
 
-소속: apps/market_pulse/briefing (app 레이어 LLM 호출 래퍼).
+소속: apps/market_pulse/briefing (app 레이어 LLM 호출 — Brief 고유 프롬프트 조립).
 역할: prompt.py 템플릿에 4 스냅샷(regime/breadth/sector/concentration) + 뉴스를 주입해
-  Gemini 2.5 Flash로 동기 호출 → safety.py로 출력 검증 → 본문 텍스트 반환.
-의존: packages.shared.api_request.circuit_breaker (CB `gemini`), google.genai 동기 클라이언트.
-주의: Celery 안에서 호출 — **반드시 동기 API** 사용(Bug #8 회피).
-  async genai.Client는 Celery worker fork 충돌 발생.
+  Gemini 2.5 Flash로 동기 호출 → 본문 텍스트 반환. genai 호출·CB 결합 plumbing은
+  `apps/market_pulse/llm/client` 공용 모듈로 단일출처화(복제 0, S1 추출).
+의존: apps.market_pulse.llm.client (genai+CB plumbing), prompt.py (Brief 고유 프롬프트).
+주의: Celery 안에서 호출 — **반드시 동기 API**(Bug #8: async genai.Client fork 충돌).
 소비처: tasks/briefing.py의 mp_generate_brief_daily.
 """
 
 from __future__ import annotations
 
 import logging
-import time
-from dataclasses import dataclass
-
-from django.conf import settings
 
 from apps.market_pulse.briefing.prompt import (
     SYSTEM_PROMPT,
@@ -24,60 +20,23 @@ from apps.market_pulse.briefing.prompt import (
     few_shot_messages,
     render_user_prompt,
 )
-from packages.shared.api_request.circuit_breaker import get_circuit
+from apps.market_pulse.llm.client import (
+    DEFAULT_MODEL,
+    LLMRawResponse,
+    generate_with_circuit,
+)
 
 logger = logging.getLogger(__name__)
 
-
-DEFAULT_MODEL = "gemini-2.5-flash"
-
-
-@dataclass(frozen=True)
-class BriefingRawResponse:
-    text: str
-    prompt_tokens: int
-    completion_tokens: int
-    latency_ms: int
+# 후방호환 alias — 기존 소비처가 BriefingRawResponse를 import할 수 있음(공용 LLMRawResponse).
+BriefingRawResponse = LLMRawResponse
 
 
-def _resolve_api_key() -> str | None:
-    return getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
-        settings, "GEMINI_API_KEY", None
-    )
-
-
-def _build_client():
-    from google import genai as genai_module
-
-    api_key = _resolve_api_key()
-    if not api_key:
-        raise RuntimeError("GEMINI_API_KEY/GOOGLE_AI_API_KEY not configured")
-    return genai_module.Client(api_key=api_key)
-
-
-def _generate_sync(
-    ctx: BriefingContext, *, model: str = DEFAULT_MODEL
-) -> BriefingRawResponse:
-    client = _build_client()
-    contents = []
+def generate(ctx: BriefingContext, *, model: str = DEFAULT_MODEL) -> LLMRawResponse:
+    """Brief 고유 프롬프트(few-shot + user) 조립 후 공용 LLM plumbing 위임."""
+    contents: list = []
     contents.extend(few_shot_messages())
     contents.append({"role": "user", "parts": [{"text": render_user_prompt(ctx)}]})
-    started = time.time()
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config={"system_instruction": SYSTEM_PROMPT},
+    return generate_with_circuit(
+        system_instruction=SYSTEM_PROMPT, contents=contents, model=model
     )
-    latency_ms = int((time.time() - started) * 1000)
-    text = getattr(response, "text", "") or ""
-    usage = getattr(response, "usage_metadata", None)
-    prompt_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
-    completion_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
-    return BriefingRawResponse(text, prompt_tokens, completion_tokens, latency_ms)
-
-
-def generate(
-    ctx: BriefingContext, *, model: str = DEFAULT_MODEL
-) -> BriefingRawResponse:
-    cb = get_circuit("gemini")
-    return cb.call(_generate_sync, ctx, model=model)
