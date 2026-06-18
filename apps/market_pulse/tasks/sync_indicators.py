@@ -127,3 +127,64 @@ def mp_sync_yahoo_indicators_daily(
         "total_saved": total_saved,
         "period": period,
     }
+
+
+# MP-DATA-MACRO-COVERAGE: regime 11 macro 중 재귀 beat 미보유 7종(NFCI군 4 + HY pair 2 +
+#   T10Y3M). 수동 command(sync_marketpulse_v2_indicators / backfill_v2_a1)에만 의존해
+#   stale→null 회귀 위험(STEP 0 확정: NFCI age 13 ≈ 14d 컷 근접). 재귀 task로 자동화.
+#   VIX3M·MOVE는 mp_sync_yahoo_indicators_daily(Yahoo)가 별도 커버 → FRED 미지원이라 제외.
+FRED_RECURRING_SERIES = (
+    "NFCI",
+    "NFCICREDIT",
+    "NFCILEVERAGE",
+    "NFCIRISK",
+    "BAMLH0A0HYM2",
+    "BAMLH0A3HYC",
+    "T10Y3M",
+)
+
+
+@shared_task(
+    bind=True,
+    name="apps.market_pulse.tasks.sync_indicators.mp_sync_fred_indicators_daily",
+    max_retries=3,
+    default_retry_delay=300,
+    soft_time_limit=300,
+    time_limit=360,
+)
+def mp_sync_fred_indicators_daily(
+    self, *, limit: int = 100, **kwargs: Any
+) -> dict[str, Any]:
+    """수동 의존 7 FRED 지표(NFCI군·HY pair·T10Y3M) 재귀 동기화.
+
+    검증된 management command `sync_marketpulse_v2_indicators`를 7종으로 스코프해 재사용
+    (sync 로직 신규 발명 0, FRED 접근은 command 내부 packages.shared.FREDClient 경유 =
+    shared 경계 준수). command가 idempotent(update_or_create)하여 별도 CB/멱등 처리 불요.
+
+    Args:
+        limit: 시리즈당 fetch observation 수(command 기본 100, 백필 시 365 권장).
+
+    Returns:
+        {'series': [7 codes], 'output': command stdout}
+    """
+    from io import StringIO
+
+    from django.core.management import call_command
+
+    out = StringIO()
+    try:
+        call_command(
+            "sync_marketpulse_v2_indicators",
+            series=list(FRED_RECURRING_SERIES),
+            limit=limit,
+            stdout=out,
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("mp_sync_fred_indicators_daily failure: %s", exc)
+        countdown = 300 * (2**self.request.retries)
+        raise self.retry(exc=exc, countdown=countdown)
+
+    return {
+        "series": list(FRED_RECURRING_SERIES),
+        "output": out.getvalue(),
+    }

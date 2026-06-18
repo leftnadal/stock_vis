@@ -169,6 +169,23 @@ SCHEDULES: list[dict[str, Any]] = [
         "description": "Market Pulse v2 — Yahoo Finance VIX3M/MOVE 일별 동기화 (FRED 미지원 보완)",
         "kwargs": {"period": "3mo"},
     },
+    {
+        # NY 17:40 = KST 06:40 (DST). yahoo sync(17:35) 직후 → 다음 mp_calc_regime_15min에
+        # 최신 FRED 7종 즉시 반영. MP-DATA-MACRO-COVERAGE: 수동 의존 7종(NFCI군·HY pair·T10Y3M)
+        # 재귀 자동화 → stale→null 회귀 차단. ⚠️ Bug #28: 본 SCHEDULES는 DB 직접 등록 방식이라
+        # 배포 시마다 `setup_marketpulse_beat` 재실행 필요(beat dict는 DatabaseScheduler가 무시).
+        "name": "mp_sync_fred_indicators_daily",
+        "task": "apps.market_pulse.tasks.sync_indicators.mp_sync_fred_indicators_daily",
+        "crontab": {
+            "minute": "40",
+            "hour": "17",
+            "day_of_week": "1-5",
+            "day_of_month": "*",
+            "month_of_year": "*",
+        },
+        "description": "Market Pulse v2 — FRED 7종(NFCI군·HY pair·T10Y3M) 재귀 동기화 (MP-DATA-MACRO-COVERAGE, 수동 의존 해소)",
+        "kwargs": {"limit": 100},
+    },
 ]
 
 

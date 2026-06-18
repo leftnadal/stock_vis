@@ -30,7 +30,10 @@ from .macro import (
 from .news import mp_fetch_news_hourly
 from .regime import mp_calc_regime_15min
 from .sector_flow import mp_calc_sector_5min
-from .sync_indicators import mp_sync_yahoo_indicators_daily
+from .sync_indicators import (
+    mp_sync_fred_indicators_daily,
+    mp_sync_yahoo_indicators_daily,
+)
 
 __all__ = [
     "mp_fetch_news_hourly",
@@ -44,6 +47,7 @@ __all__ = [
     "mp_purge_news_daily",
     "mp_purge_news_view_log_daily",
     "mp_sync_yahoo_indicators_daily",
+    "mp_sync_fred_indicators_daily",
     "update_economic_indicators",
     "update_market_indices",
     "update_economic_calendar",
