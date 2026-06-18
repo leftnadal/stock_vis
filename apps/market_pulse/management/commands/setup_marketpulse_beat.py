@@ -186,6 +186,23 @@ SCHEDULES: list[dict[str, Any]] = [
         "description": "Market Pulse v2 — FRED 7종(NFCI군·HY pair·T10Y3M) 재귀 동기화 (MP-DATA-MACRO-COVERAGE, 수동 의존 해소)",
         "kwargs": {"limit": 100},
     },
+    {
+        # NY 17:45 = KST 06:45 (DST). 카드 데이터 최종화 후 = finalize(16:30)·concentration/brief(17:15)·
+        # yahoo(17:35)·fred(17:40) 모두 뒤 → regime은 다음 */15 사이클에 최신 macro 반영.
+        # Translation(Phase 1.5 S3): 4 카드 raw → 1회 Gemini 호출 → 카드별 감각 유추 → TranslationLog upsert.
+        # ⚠️ Bug #28: 본 SCHEDULES는 DB 직접 등록 → 배포 시 setup_marketpulse_beat 재실행 필요.
+        "name": "mp_generate_translation_daily",
+        "task": "apps.market_pulse.tasks.translation.mp_generate_translation_daily",
+        "crontab": {
+            "minute": "45",
+            "hour": "17",
+            "day_of_week": "1-5",
+            "day_of_month": "*",
+            "month_of_year": "*",
+        },
+        "description": "Market Pulse v2 — 카드별 감각 유추(Translation) LLM 생성 (Gemini 2.5 Flash 동기)",
+        "kwargs": {},
+    },
 ]
 
 
