@@ -225,6 +225,7 @@
 |----|------|-------|------------|--------|----------------|
 | MP-TRANSLATION-S1 | Brief LLM plumbing 단일출처 추출 → `apps/market_pulse/llm/` (행위보존 GATE) | @backend | - | **완료 2026-06-18** (`5104635`, origin/main 안착) | `apps/market_pulse/llm/` Brief 플러밍 단일출처. 토대 3결정 DECISIONS 흡수(① 래퍼 in-zone 재사용 ② 별도 translations envelope=TranslationLog ③ golden+vcr) |
 | MP-TRANSLATION-S2 | TranslationLog 모델 (BriefingLog 미러, 신규 테이블 1개) — 1 LLM 호출의 카드별 감각 유추 문장 전부를 하루 1행에 담는 그릇 | @backend | MP-TRANSLATION-S1 | **완료 2026-06-18** (`daeef5b`, origin/main 안착) | `apps/market_pulse/models/translation.py` (TranslationLog) + 마이그레이션 0006(CreateModel only, 기존 Alter 0, dry-run No changes) + admin + 모델 테스트 18건. 토큰=BriefingLog 정확 미러(prompt/completion 분리) + created_at만(사용자 결정). 기존 모델 FK 0(decouple). 회귀 pytest marketpulse 166→184(+18). 다음=S3(per-card prompt+task) |
+| MP-TRANSLATION-S3 | per-card prompt builder + 생성 task — 1 LLM 호출 → 4카드 감각 유추 JSON → TranslationLog 1행 upsert | @backend | MP-TRANSLATION-S2 | 🟢 **진행 중** (2026-06-18) | `llm/translation_prompt.py`(SYSTEM_PROMPT+context builder, Brief 패턴 미러) + `tasks/translation.py`(`mp_generate_translation_daily`, 공용 `llm.client.generate_with_circuit` 1회 + JSON 파싱 + `llm.safety` + upsert) + beat(NY 17:45, 데이터 최종화 후) + task 테스트(mock 결정론·upsert 멱등·부분실패). **★ STEP 0: 4카드 raw/라벨로 방향-일관 prose 충분 → HALT 없음, 옵션(a) raw+정성지침(meaning.ts 임계 복제 0).** 마이그레이션 0(모델 무접촉) |
 
 ## 보류 (On Hold)
 
