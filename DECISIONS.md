@@ -1980,3 +1980,23 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **빌드 계획**: S1(Brief plumbing 추출·행위보존 GATE) → S2(TranslationLog 모델) → S3(per-card prompt+생성 task) → S4(envelope serializer + FE selector + fallback) → S5(golden/vcr, Brief 동반).
 
 **📎 참조**: `PROGRESS.md` Phase 1.5 Translation recon, `apps/market_pulse/briefing/{client,safety,prompt}.py`(미러 대상), recon 보고(shared 래퍼 부재·BriefingLog 스키마·gemini-2.5-flash).
+
+---
+
+## [2026-06-18] BOUNDARY-LLM 통합 래퍼 형식 = 옵션 C (계층형 멀티프로바이더)
+
+> 상위 트랙 호명: 위 `[2026-06-18] Phase 1.5 Translation Layer` ①이 범용 shared LLM 래퍼를 **BOUNDARY-LLM 트랙(DORMANT)**으로 이연하며 "genai 직접 사용처 3곳(briefing/korean_overview/rag)"으로 인용했다. **본 결정은 그 트랙의 실제 정의**이며, STEP 0 전수 실측으로 "3곳" 수치를 **27파일/9 surface로 정정**한다. (라벨 주의: 본 `BOUNDARY-LLM`은 위 `BOUNDARY-1/2/3`(shared→apps import 경계 청소, 2026-06-04 종결) 및 그 "옵션 C(macro 모델 승격)"와 **무관한 별개 트랙** — 동명 라벨 충돌 회피.)
+
+- **상태**: 형식 결정 **CLOSED**. 실행(슬라이스) **미착수(DORMANT)**. → TASKQUEUE `[보류·DORMANT] BOUNDARY-LLM`.
+- **결정**: `packages/shared/llm` 신설. **코어 층** = portfolio `complete(prompt, provider, model, system, ...)` 추상화(교차-provider 폴백·통합 예외 계층·단가 매핑) 흡수. **정책 층** = market_pulse briefing client 패턴의 circuit_breaker(`get_circuit`) · prompt-injection escape · cost/usage 훅 공통화. **어댑터** = Gemini(우선) · Anthropic(2nd). **OpenAI 미구현**(실측 사용 0건, YAGNI).
+- **Why (STEP 0 실측, HEAD=`feb999b`)**:
+  - 통합 대상 = **27파일 / 9 surface** (차터 "3곳"의 9배). portfolio·thesis 전체 + serverless 8 + news 4 + sec 2 + validation 1이 recon 누락분.
+  - provider 분포 **Gemini 24 : Anthropic 3 : OpenAI 0** → Gemini-우선 형식이 실측 부합.
+  - 외부-LLM-직접호출 가드 **부재**(아키텍처 테스트 `tests/architecture/test_shared_boundary.py`는 shared→apps AST만 검사, `KNOWN_VIOLATIONS` 빈 set) → **규약 부채이지 동결 위반 아님**. 가드 신설이 burn-down 슬라이스.
+  - prompt-injection escape가 27곳 중 **2곳에만** 존재(`rag/llm_service.py`·`serverless/thesis_builder.py`) = 숨은 보안 회귀. escape/CB/재시도를 코어에 공통화하면 25곳 일괄 보강 → 이것이 형식 점수를 가른 결정타.
+  - 성숙 베이스 2개: portfolio `apps/portfolio/llm/client.py`(repo 유일 Anthropic+Gemini 통합·교차폴백·통합예외 = 추상화 1위) + market_pulse `apps/market_pulse/briefing/client.py`(CB+prompt.py/safety.py+usage 수집 = 횡단 인프라 1위). C는 둘을 버리지 않고 **합성**.
+- **가중합 (weights 합=1.00 / 1~5)**: 유지보수 0.28 · 이관안전 0.22 · 확장성 0.20 · 거버넌스 0.18 · 초기비용 0.12. → **A 3.10 / B 3.26 / C 4.48**. 마진 C−B = **1.22 → 운영원칙② 자동결정**(가중치 미조정 원본 표로도 동일 순위).
+- **배제 사유**: **A**(현행 분산 유지)=escape 회귀를 27곳에 고착(거버넌스 1). **B**(단일 무거운 서비스 일괄 정합)=27개 동시 정합 → 1인 이관 리스크(이관안전 3); 단 B의 가치(단일 진입점·폴백)는 portfolio client에 이미 있어 **C 코어로 흡수됨**.
+- **AdaptiveLLMService 처리**: 범용 80%(provider 팩토리·스트리밍·`estimate_cost`)는 코어 추출, 도메인 20%(투자 페르소나 프롬프트·complexity→depth)는 rag 잔류. 봉합선 = `generate_stream` 내부 "system_prompt 빌드+config 결정(도메인) ↔ provider stream 위임(범용)".
+- **How to apply**: 착수 시 TASKQUEUE 슬라이스 ①(코어 신설, 소비처 0, IDENTICAL)부터. 코어는 portfolio client 추상화 + market_pulse 횡단 인프라 합성. 트리거(a) = Translation in-zone 단일출처(`apps/market_pulse/llm/`) 안정 land 후 "깨끗한 1회 lift" 적기.
+- **📎 참조**: BOUNDARY-LLM 차터, STEP 0 LLM 소비처 전수조사 보고(27/9, 9 surface 카드), 상위 `[2026-06-18] Phase 1.5 Translation Layer` ①.

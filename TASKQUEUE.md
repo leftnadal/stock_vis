@@ -245,6 +245,27 @@
 
 ---
 
+## [보류·DORMANT] BOUNDARY-LLM — shared LLM 래퍼 정합 (형식 CLOSED·옵션 C / 실행 DORMANT)
+
+> 형식 결정 = `DECISIONS.md [2026-06-18] BOUNDARY-LLM 통합 래퍼 형식 = 옵션 C`. 상위 트랙 = `[2026-06-18] Phase 1.5 Translation Layer` ①이 이연. (라벨 주의: shared 경계 청소 `BOUNDARY-1/2/3`(2026-06-04 종결)과 무관한 별개 트랙.)
+
+- **상태**: 형식 CLOSED, 실행 DORMANT(trigger-gated). 타 세션 소관 — 본 큐에서 먼저 꺼내지 않음.
+- **실측 갱신 (STEP 0, HEAD=`feb999b`)**: 통합 대상 = **27파일 / 9 surface**(차터·Translation 인용 "3곳" 무효화). provider 분포 **Gemini 24 : Anthropic 3 : OpenAI 0**.
+- **트리거 (차터 §1 "4번째 소비처" 폐기 — 이미 27개로 충족)**:
+  - **(a)** Translation 기능이 in-zone 단일출처(`apps/market_pulse/llm/`)로 안정 land 후 "깨끗한 1회 lift" 적기, OR
+  - **(b)** escape 없는 신규 LLM surface가 추가되어 보안 회귀가 번질 때, OR
+  - **(c)** burn-down 착수 결정 사이클이 별도로 열릴 때.
+- **슬라이스 큰그림 (순서·점수는 착수 시 별도 결정)**:
+  - ① `packages/shared/llm` 코어 신설 (소비처 0 · portfolio+market_pulse client 합성 · escape/CB/재시도 공통화 · IDENTICAL)
+  - ② `korean_overview` 이관 (shared 내부, 최안전 in-zone)
+  - ③ 외부-LLM-직접호출 **가드 신설** (코어 land 후 회귀방지 — 현재 가드 부재 = 규약 부채)
+  - ④ surface별 점진 (escape 부재 큰 surface 우선)
+  - ⑤ rag = **타 surface, 위임/코디** (한 세션에 밀지 않음)
+- **HALT 주의**: 27개 광역 → 한 세션 일괄 금지. cost ledger·BriefingLog·usage 모델 이관이 prod 마이그레이션 건드리면 `makemigrations --dry-run` 후 멈춰 보고.
+- **완료정의 (burn-down)**: `packages/shared/llm` 존재 + 27소비처 전부 단일 경유 + 외부-LLM-직접호출 가드 신설 후 위반 0.
+
+---
+
 ## 하네스 구조 개선 (HARN)
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
