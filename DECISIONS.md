@@ -1985,3 +1985,26 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **불변/검증**: EventRanking 드릴다운·chevron·window 셀렉터 테스트 불변, "테마/theme" UI 비노출, 한국어 라벨 단일소스. METRIC_INFO 키 6→8(volume_z·volatility_pct, tier `context` 추가), 완비/​tier-split 테스트 갱신. vitest 331→**354**(+23), tsc 0. 커밋 cabf5c5(S1)·0b02f7a(S2)·2a1f2a4(S3).
 
 **📎 참조**: `frontend/components/chainsight/{EventRanking,LowLiquidityPanel}.tsx`, `frontend/constants/eventThemes.ts METRIC_INFO`, `apps/chain_sight/services/attention_service.py`(M1 가중치), DECISIONS "CS-M2-DISPLAY S3 (2026-06-18)".
+
+---
+
+## [2026-06-18] Phase 1.5 Translation Layer — 토대 3결정 (래퍼·스키마·테스트)
+
+카드 LLM 해설(prose) 레이어. STEP 0 recon(`42054ae`)으로 ground truth 확정 후 3축 결정.
+
+**① 래퍼 = Brief 패턴 in-zone 재사용** (가중합 4.29 vs (b)shared 선건설 3.17 / (c)rag `AdaptiveLLMService` 재사용 2.81, 마진 1.12 압도적)
+- **Why**: shared 래퍼는 cross-surface 광역(rag 포함)이라 1인 스코프 초과 → 기능이 토대건설에 인질화. Brief 프레임워크(client genai+CB / safety 검출기 / prompt / Log)가 이미 완비 → in-zone 재사용이 최단·최저위험.
+- **보완**: Brief의 재사용 가능 plumbing을 `apps/market_pulse/llm/`로 **단일출처 추출**(복제 0). Brief는 추출분 import로 재배선.
+- **부채 이연**: 범용 shared LLM 래퍼 부재는 **BOUNDARY-LLM 트랙(DORMANT, 타 세션 소관)**으로 이연 — 본 트랙에서 등록·구현 안 함(zone 경계). genai 직접 사용처 3곳(briefing/korean_overview/rag) 통합은 그 트랙 몫.
+
+**② 스키마 = 별도 `translations` envelope** (BriefingLog 미러 `TranslationLog`) (가중합 4.46 vs per-card 필드 3.32, 마진 1.14)
+- **Why**: 결정론 카드 데이터 ↔ 비결정 LLM prose **수명주기 분리**(fallback 자명: envelope 없음→밴드만) + Brief의 단일 Log·단일 호출·단일 캐시 경로와 정합. per-card 필드는 4카드 serializer 동시 변경 + 결정/비결정 혼재.
+- **약점 흡수**: FE join은 얇은 selector(카드 키 merge)로, 카드 컴포넌트는 dumb 유지.
+
+**③ 테스트 = golden + vcr** (Brief 동반 보강) (가중합 4.32 vs 스모크 2.93 / LLM-judge 2.78, 마진 1.39)
+- **Why**: 첫 의도적 LLM 빌드 → 톤 회귀를 출시 전 CI에서 차단. 문구 일치가 아니라 **계약 단언**(길이·금지어·disclaimer·밴드 방향 일관·JSON 구조). vcr 카세트로 비결정 출력 결정론 고정(대표 입력 3~4종 1회 녹화).
+- recon 확인: 현 Brief도 golden/vcr 0(overview_smoke seed만) → 동반 보강.
+
+**빌드 계획**: S1(Brief plumbing 추출·행위보존 GATE) → S2(TranslationLog 모델) → S3(per-card prompt+생성 task) → S4(envelope serializer + FE selector + fallback) → S5(golden/vcr, Brief 동반).
+
+**📎 참조**: `PROGRESS.md` Phase 1.5 Translation recon, `apps/market_pulse/briefing/{client,safety,prompt}.py`(미러 대상), recon 보고(shared 래퍼 부재·BriefingLog 스키마·gemini-2.5-flash).

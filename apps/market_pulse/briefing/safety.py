@@ -11,40 +11,20 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from dataclasses import dataclass
 
 from apps.market_pulse.briefing.prompt import DISCLAIMER
+from apps.market_pulse.llm.safety import (
+    detect_refusal as _detect_refusal,
+    scan_banned as _scan_banned,
+    strip_codeblocks as _strip_codeblocks,
+)
 from apps.market_pulse.models.briefing import BriefingLog
 
 logger = logging.getLogger(__name__)
 
-
-BANNED_PATTERNS = [
-    r"\b추천(\s)*종목\b",
-    r"\b매수\s*추천\b",
-    r"\b매도\s*추천\b",
-    r"\b목표가\b",
-    r"\b오를\s*것\b",
-    r"\b하락할\s*것\b",
-    r"\b오를\s*전망\b",
-    r"\b상승\s*확실\b",
-    r"\b하락\s*확실\b",
-    r"(?i)\bbuy\s+(this|now)\b",
-    r"(?i)\bsell\s+now\b",
-    r"(?i)\bguaranteed\b",
-]
-BANNED_REGEX = [re.compile(p) for p in BANNED_PATTERNS]
-
-REFUSAL_HINTS = [
-    "i cannot",
-    "i'm unable",
-    "as an ai",
-    "죄송하지만",
-    "제공할 수 없",
-    "응답할 수 없",
-]
-
+# 출력 안전 검출기(banned/refusal/codeblock)는 `apps/market_pulse/llm/safety`로 단일출처화(S1 추출).
+# 아래는 Brief 고유 길이 임계 + validate() 오케스트레이션(BriefingLog.Status·{headline,content} 결합).
 MIN_LENGTH = 50
 MAX_LENGTH = 800
 
@@ -55,27 +35,6 @@ class SafetyResult:
     headline: str
     content: str
     issues: list[str]
-
-
-def _strip_codeblocks(text: str) -> str:
-    text = text.strip()
-    if text.startswith("```"):
-        text = re.sub(r"^```(?:json)?\s*", "", text)
-        text = re.sub(r"\s*```$", "", text)
-    return text
-
-
-def _detect_refusal(text: str) -> bool:
-    low = text.lower()
-    return any(hint in low for hint in REFUSAL_HINTS)
-
-
-def _scan_banned(text: str) -> list[str]:
-    issues = []
-    for pat, regex in zip(BANNED_PATTERNS, BANNED_REGEX):
-        if regex.search(text):
-            issues.append(f"banned:{pat}")
-    return issues
 
 
 def validate(raw_text: str) -> SafetyResult:
