@@ -133,10 +133,11 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
 export default function EventRanking({ theme }: Props) {
   const router = useRouter();
   const label = getLabelForTheme(theme);
+  const [selectedWindow, setSelectedWindow] = useState<20 | 120>(20);
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['chainsight', 'events', theme, 'stocks'],
-    queryFn: () => fetchEventStocks(theme),
+    queryKey: ['chainsight', 'events', theme, 'stocks', selectedWindow],
+    queryFn: () => fetchEventStocks(theme, selectedWindow),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -153,6 +154,23 @@ export default function EventRanking({ theme }: Props) {
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
           {label.ko} — 관련 종목 그룹
         </h1>
+        <div className="flex items-center gap-2 mt-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400">관측 기간</span>
+          {([20, 120] as const).map((w) => (
+            <button
+              key={w}
+              onClick={() => setSelectedWindow(w)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                selectedWindow === w
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+              }`}
+              aria-pressed={selectedWindow === w}
+            >
+              {w}일
+            </button>
+          ))}
+        </div>
       </div>
 
       {isLoading && (

@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EventRanking from '@/components/chainsight/EventRanking';
@@ -162,7 +162,7 @@ describe('EventRanking', () => {
     vi.mocked(fetchEventStocks).mockResolvedValue([]);
     render(<EventRanking theme="robotics_ai" />, { wrapper });
     await screen.findByText('종목 데이터가 없습니다');
-    expect(fetchEventStocks).toHaveBeenCalledWith('robotics_ai');
+    expect(fetchEventStocks).toHaveBeenCalledWith('robotics_ai', 20);
   });
 
   it('랭킹 행을 클릭하면 /chainsight/<symbol> 으로 이동하는 링크를 렌더한다', async () => {
@@ -272,5 +272,54 @@ describe('EventRanking', () => {
     fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
     // mockStocks[0].theme_alpha = 0.05 → MetricCell renders it
     expect(screen.getByText('0.05')).toBeInTheDocument();
+  });
+
+  // ── Slice 4: window selector ──────────────────────────────────────────────
+
+  it('기본 window=20으로 fetchEventStocks를 호출한다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('종목 데이터가 없습니다');
+    expect(fetchEventStocks).toHaveBeenCalledWith('semiconductor', 20);
+  });
+
+  it('window 셀렉터에 "20일"과 "120일" 버튼이 렌더된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    expect(screen.getByRole('button', { name: '20일' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '120일' })).toBeInTheDocument();
+  });
+
+  it('기본 상태에서 "20일" 버튼이 aria-pressed="true"이다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    expect(screen.getByRole('button', { name: '20일' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '120일' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('window 변경 시 fetchEventStocks가 해당 window로 호출된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('종목 데이터가 없습니다');
+
+    vi.clearAllMocks();
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+
+    fireEvent.click(screen.getByRole('button', { name: '120일' }));
+
+    await waitFor(() => {
+      expect(fetchEventStocks).toHaveBeenCalledWith('semiconductor', 120);
+    });
+  });
+
+  it('"120일" 클릭 후 aria-pressed 상태가 전환된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('종목 데이터가 없습니다');
+
+    fireEvent.click(screen.getByRole('button', { name: '120일' }));
+
+    expect(screen.getByRole('button', { name: '120일' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: '20일' })).toHaveAttribute('aria-pressed', 'false');
   });
 });
