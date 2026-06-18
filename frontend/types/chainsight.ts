@@ -113,4 +113,13 @@ export interface EventRankingItem {
   volume_z: number;
   volatility_pct: number; // 0~1 range
   is_low_liquidity: boolean;
+
+  // M2 leadership metrics (nullable: 게이트 미달 시 백엔드가 NULL 반환)
+  trend_quality: number | null; // T2 주신호 — 추세강도
+  theme_alpha: number | null; // T3 보조 — 그룹 초과수익
+  theme_beta: number | null; // 주신호 — 그룹 민감도
+  up_capture: number | null; // 보조 — 상승 포착
+  down_capture: number | null; // 보조 — 하락 방어
+  capture_spread: number | null; // 주신호 — 주도우위
+  is_fallback: boolean; // fallback 산출 여부
 }

@@ -32,8 +32,9 @@ vi.mock('lucide-react', () => ({
 }));
 
 import { fetchEventStocks } from '@/services/chainsightService';
+import type { EventRankingItem } from '@/types/chainsight';
 
-const mockStocks = [
+const mockStocks: EventRankingItem[] = [
   {
     symbol: 'NVDA',
     name: 'NVIDIA Corporation',
@@ -42,6 +43,13 @@ const mockStocks = [
     volume_z: 3.2,
     volatility_pct: 0.45,
     is_low_liquidity: false,
+    trend_quality: 0.81,
+    theme_alpha: 0.05,
+    theme_beta: 1.34,
+    up_capture: 1.18,
+    down_capture: 0.99,
+    capture_spread: 19,
+    is_fallback: false,
   },
   {
     symbol: 'SMCI',
@@ -51,6 +59,13 @@ const mockStocks = [
     volume_z: 0.8,
     volatility_pct: 0.72,
     is_low_liquidity: true,
+    trend_quality: null,
+    theme_alpha: null,
+    theme_beta: null,
+    up_capture: null,
+    down_capture: null,
+    capture_spread: null,
+    is_fallback: false,
   },
   {
     symbol: 'AMD',
@@ -60,6 +75,13 @@ const mockStocks = [
     volume_z: 1.5,
     volatility_pct: 0.30,
     is_low_liquidity: false,
+    trend_quality: 0.62,
+    theme_alpha: -0.01,
+    theme_beta: 1.05,
+    up_capture: 1.02,
+    down_capture: 1.1,
+    capture_spread: -8,
+    is_fallback: true,
   },
 ];
 

@@ -81,9 +81,17 @@ export async function fetchEvents(): Promise<EventBoardItem[]> {
   return data;
 }
 
-export async function fetchEventStocks(theme: string): Promise<EventRankingItem[]> {
+/**
+ * 테마 종목 랭킹 조회. window = M2 주도주 지표 윈도우(20=최신 모멘텀 / 120=중기).
+ * 기존 호출 호환을 위해 window 옵셔널 + 기본 20. (셀렉터 UI는 S3에서 연결)
+ */
+export async function fetchEventStocks(
+  theme: string,
+  window: 20 | 120 = 20,
+): Promise<EventRankingItem[]> {
   const { data } = await authAxios.get<EventRankingItem[]>(
     `/chainsight/events/${encodeURIComponent(theme)}/stocks/`,
+    { params: { window } },
   );
   return data;
 }
