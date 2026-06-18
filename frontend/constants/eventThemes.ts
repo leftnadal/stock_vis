@@ -72,9 +72,9 @@ export const METRIC_INFO: Record<MetricKey, MetricInfo> = {
     label: '추세강도',
     tier: 'primary',
     description:
-      '주가가 얼마나 꾸준하고 강하게 우상향했는지. 들쭉날쭉 없이 일정하게 오를수록 높아져요.',
-    example: '예: 0.81 = 강하고 꾸준한 상승',
-    range: '범위: 0~1 · 높을수록 강함',
+      '주가가 얼마나 꾸준하고 강하게 움직였는지. 들쭉날쭉 없이 일정하게 오를수록 +로 커지고, 꾸준히 내리면 −가 돼요.',
+    example: '예: +0.81 = 강하고 꾸준한 상승 / −0.6 = 꾸준한 하락',
+    range: '범위: 음수=하락추세 · 0 근처=중립 · +면 강한 상승',
   },
   theme_beta: {
     field: 'theme_beta',
