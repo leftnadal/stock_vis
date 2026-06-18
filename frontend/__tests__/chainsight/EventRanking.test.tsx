@@ -416,4 +416,37 @@ describe('EventRanking', () => {
     const dashes = screen.getAllByText('—');
     expect(dashes.length).toBeGreaterThanOrEqual(1);
   });
+
+  // ── Slice 2: LowLiquidityPanel 렌더 조건 (is_low_liquidity || is_fallback) ──
+
+  it('is_low_liquidity=true인 종목에 저유동성 경고가 상시 노출된다 (토글 없음)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[1]]); // SMCI: is_low_liquidity=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('SMCI');
+    // 경고가 토글 없이 바로 표시됨
+    expect(screen.getByText(/거래량이 얕아 체결·청산이 불리할 수 있습니다/)).toBeInTheDocument();
+  });
+
+  it('is_fallback=true인 종목에 "보정된 값" 경고가 노출된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[2]]); // AMD: is_fallback=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('AMD');
+    expect(screen.getByText(/데이터가 부족해 보정된 값이에요/)).toBeInTheDocument();
+  });
+
+  it('is_low_liquidity=false AND is_fallback=false이면 경고 영역이 없다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]); // NVDA: both false
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.queryByText(/거래량이 얕아/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/보정된 값/)).not.toBeInTheDocument();
+  });
+
+  it('LowLiquidityPanel에 토글 버튼이 없다 (상시 노출 구조)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[1]]); // SMCI: is_low_liquidity=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('SMCI');
+    // 저유동성 상세 토글 버튼이 없어야 함
+    expect(screen.queryByRole('button', { name: /저유동성 상세/ })).not.toBeInTheDocument();
+  });
 });

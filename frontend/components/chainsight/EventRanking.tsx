@@ -176,7 +176,7 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
           </Link>
         </div>
       )}
-      {item.is_low_liquidity && (
+      {(item.is_low_liquidity || item.is_fallback) && (
         <div className="px-4 pb-3">
           <LowLiquidityPanel item={item} />
         </div>
