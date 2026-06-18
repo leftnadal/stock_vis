@@ -17,6 +17,7 @@ import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorCardSummary } from './cards/SectorCardSummary'
 import { CardDetailContainer } from './details/CardDetailContainer'
 import { REGIME_TERM } from './meaning'
+import { selectSense } from './translationSelector'
 
 type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
@@ -53,6 +54,8 @@ export default function MarketPulseV2Page() {
   }
 
   const meta = overview._meta
+  // S4: translations envelope → 카드별 sense 주입(fallback이 정상 경로 — null이면 카드는 밴드만).
+  const translations = overview.translations
   return (
     <PageShell title="Market Pulse v2">
       <TickerBar items={overview.ticker_bar} />
@@ -66,10 +69,11 @@ export default function MarketPulseV2Page() {
             data={overview.cards.regime}
             labels={labels}
             onOpen={() => setOpenCard('regime')}
+            sense={selectSense(translations, 'regime')}
           />
-          <BreadthCardSummary data={overview.cards.breadth} labels={labels} onOpen={() => setOpenCard('breadth')} />
-          <SectorCardSummary data={overview.cards.sector} labels={labels} onOpen={() => setOpenCard('sector')} />
-          <ConcentrationCardSummary data={overview.cards.concentration} labels={labels} onOpen={() => setOpenCard('concentration')} />
+          <BreadthCardSummary data={overview.cards.breadth} labels={labels} onOpen={() => setOpenCard('breadth')} sense={selectSense(translations, 'breadth')} />
+          <SectorCardSummary data={overview.cards.sector} labels={labels} onOpen={() => setOpenCard('sector')} sense={selectSense(translations, 'sector')} />
+          <ConcentrationCardSummary data={overview.cards.concentration} labels={labels} onOpen={() => setOpenCard('concentration')} sense={selectSense(translations, 'concentration')} />
           <BriefCardSummary data={overview.cards.brief} onOpen={() => setOpenCard('brief')} />
         </section>
 

@@ -4,10 +4,11 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { RegimeCard } from '@/lib/api/marketPulseV2'
 import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
 import { CardShell } from './CardShell'
+import { SenseNote } from './SenseNote'
 
 export function RegimeCardSummary({
-  data, labels, onOpen,
-}: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
+  data, labels, onOpen, sense,
+}: { data: RegimeCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null }) {
   return (
     <CardShell titleEn="Market Regime" titleKo={`시장 ${REGIME_TERM}`} status={data?.status} onOpen={onOpen}>
       {!data ? (
@@ -28,6 +29,8 @@ export function RegimeCardSummary({
             {data.transitioned ? ' · 전환' : ''}
           </p>
           {data.headline ? <p className="text-sm text-slate-700 mt-2">{data.headline}</p> : null}
+          {/* S4: 감각 유추(additive) — 없으면 미렌더, 밴드·raw 불변 */}
+          <SenseNote sense={sense} />
         </div>
       )}
     </CardShell>

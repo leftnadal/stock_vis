@@ -4,6 +4,7 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorCard, SectorCardItem } from '@/lib/api/marketPulseV2'
 import { sectorFlow, sectorSentence } from '../meaning'
 import { CardShell } from './CardShell'
+import { SenseNote } from './SenseNote'
 
 function formatPct(v: number) {
   const sign = v > 0 ? '+' : ''
@@ -11,8 +12,8 @@ function formatPct(v: number) {
 }
 
 export function SectorCardSummary({
-  data, labels, onOpen,
-}: { data: SectorCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
+  data, labels, onOpen, sense,
+}: { data: SectorCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null }) {
   // 섹터 KO 라벨(없으면 symbol fallback — graceful). 라벨 소스는 labels prop 단일.
   const ko = (sym: string) => translate(`sector.${sym}`, labels, sym)
   // 유입=리더(rel_strength>0), 유출=후행(<0). flat은 제외(부분 데이터 graceful). 최대 2개씩.
@@ -44,6 +45,8 @@ export function SectorCardSummary({
               {translate('metric.rotation', labels, 'rotation')} {data.rotation_index.toFixed(3)}
             </p>
           </details>
+          {/* S4: 감각 유추(additive) — 없으면 미렌더 */}
+          <SenseNote sense={sense} />
         </div>
       )}
     </CardShell>

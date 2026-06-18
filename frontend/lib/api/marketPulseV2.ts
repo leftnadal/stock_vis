@@ -134,12 +134,22 @@ export interface OverviewCards {
   brief: BriefCard | null
 }
 
+/** Phase 1.5 S4 — 카드별 감각 유추(senses) envelope. cards와 동렬 블록(미생성 시 null). */
+export interface Translations {
+  senses: Record<string, string>
+  model_version: string
+  generated_at: string
+  status: string
+}
+
 export interface OverviewResponse {
   _meta: Meta
   ticker_bar: TickerItem[]
   news: NewsItem[]
   anomaly: AnomalySection
   cards: OverviewCards
+  // S4: additive — 미생성/구버전 응답엔 없을 수 있어 optional + null 허용.
+  translations?: Translations | null
 }
 
 export interface CardDetailEnvelope<T> {

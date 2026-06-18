@@ -4,10 +4,11 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { ConcentrationCard } from '@/lib/api/marketPulseV2'
 import { CONCENTRATION_SCALE, concentrationBand, concentrationSentence } from '../meaning'
 import { CardShell } from './CardShell'
+import { SenseNote } from './SenseNote'
 
 export function ConcentrationCardSummary({
-  data, labels, onOpen,
-}: { data: ConcentrationCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
+  data, labels, onOpen, sense,
+}: { data: ConcentrationCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null }) {
   // MP-UX-S5: 의미밴드는 top10_weight 기준(R02 0.40 grounded 앵커, meaning.ts 단일소스).
   const band = data ? concentrationBand(data.top10_weight) : null
   return (
@@ -41,6 +42,8 @@ export function ConcentrationCardSummary({
               </ul>
             ) : null}
           </details>
+          {/* S4: 감각 유추(additive) — 없으면 미렌더 */}
+          <SenseNote sense={sense} />
         </div>
       )}
     </CardShell>

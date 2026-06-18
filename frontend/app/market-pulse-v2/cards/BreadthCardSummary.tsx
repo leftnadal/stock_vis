@@ -4,6 +4,7 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthCard } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
 import { CardShell } from './CardShell'
+import { SenseNote } from './SenseNote'
 
 /** 보조 부제(변형 A) — 신고저 우위 + AD 추세 화살표. 빈 신호는 생략. */
 function breadthSubcue(data: BreadthCard, labels?: Record<string, string>): string {
@@ -15,8 +16,8 @@ function breadthSubcue(data: BreadthCard, labels?: Record<string, string>): stri
 }
 
 export function BreadthCardSummary({
-  data, labels, onOpen,
-}: { data: BreadthCard | null; labels?: Record<string, string>; onOpen?: () => void }) {
+  data, labels, onOpen, sense,
+}: { data: BreadthCard | null; labels?: Record<string, string>; onOpen?: () => void; sense?: string | null }) {
   // MP-UX: 의미밴드 1줄(색=meaning.ts FLOW_TONE 단일소스, 문구=i18n breadth.*) + raw 유지(additive).
   const bb = data ? breadthBand(data) : null
   return (
@@ -43,6 +44,8 @@ export function BreadthCardSummary({
               tone="text-slate-700"
             />
           </div>
+          {/* S4: 감각 유추(additive) — 없으면 미렌더 */}
+          <SenseNote sense={sense} />
         </div>
       )}
     </CardShell>
