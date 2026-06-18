@@ -41,3 +41,83 @@ export function getLabelForTheme(theme: string): ThemeLabelEntry {
     }
   );
 }
+
+/**
+ * CS-M2 주도주 지표 메타 — 단일 출처 (drift 방지 위해 THEME_LABELS와 같은 파일).
+ * 컴포넌트(MetricInfoPopover 등)는 여기서 문구를 끌어쓴다. 중복 정의 금지.
+ *
+ * - primary(주신호): trend_quality · theme_beta · capture_spread
+ * - supplementary(보조): theme_alpha · up_capture · down_capture
+ */
+export type MetricKey =
+  | 'trend_quality'
+  | 'theme_beta'
+  | 'capture_spread'
+  | 'theme_alpha'
+  | 'up_capture'
+  | 'down_capture';
+
+export interface MetricInfo {
+  field: MetricKey;
+  label: string;
+  tier: 'primary' | 'supplementary';
+  description: string;
+  example: string;
+  range: string;
+}
+
+export const METRIC_INFO: Record<MetricKey, MetricInfo> = {
+  trend_quality: {
+    field: 'trend_quality',
+    label: '추세강도',
+    tier: 'primary',
+    description:
+      '주가가 얼마나 꾸준하고 강하게 우상향했는지. 들쭉날쭉 없이 일정하게 오를수록 높아져요.',
+    example: '예: 0.81 = 강하고 꾸준한 상승',
+    range: '범위: 0~1 · 높을수록 강함',
+  },
+  theme_beta: {
+    field: 'theme_beta',
+    label: '그룹 민감도',
+    tier: 'primary',
+    description:
+      '같은 이벤트의 관련 종목들이 움직일 때, 이 종목이 얼마나 크게 따라 움직이는지.',
+    example: '예: 1.34 = 그룹이 1% 움직이면 이 종목은 약 1.34%',
+    range: '범위: 1보다 크면 더 민감',
+  },
+  capture_spread: {
+    field: 'capture_spread',
+    label: '주도우위',
+    tier: 'primary',
+    description:
+      '오를 땐 잘 따라 오르고, 내릴 땐 덜 빠지는 정도. 클수록 그룹을 이끄는 주도주.',
+    example: '예: +19 = 상승은 잘 먹고 하락은 잘 버팀',
+    range: '범위: +면 유리 · −면 불리',
+  },
+  theme_alpha: {
+    field: 'theme_alpha',
+    label: '그룹 초과수익',
+    tier: 'supplementary',
+    description:
+      '같은 그룹 평균보다 이 종목이 얼마나 더(또는 덜) 벌었는지. 그룹이 다 같이 오른 효과를 빼고 본 순수 개별 성과.',
+    example: '예: +0.05 = 그룹 평균보다 살짝 앞섬',
+    range: '범위: +면 그룹 평균 초과',
+  },
+  up_capture: {
+    field: 'up_capture',
+    label: '상승 포착',
+    tier: 'supplementary',
+    description: '그룹이 오를 때, 이 종목이 그 상승의 몇 %를 따라갔는지.',
+    example: '예: 1.18 = 그룹이 오를 때 18% 더 오름',
+    range: '범위: 1보다 크면 더 잘 오름',
+  },
+  down_capture: {
+    field: 'down_capture',
+    label: '하락 방어',
+    tier: 'supplementary',
+    description:
+      '그룹이 내릴 때, 이 종목이 그 하락을 얼마나 따라 내렸는지. 작을수록 잘 방어.',
+    example: '예: 0.99 = 거의 비슷하게 빠짐 (0.85면 덜 빠짐)',
+    range: '범위: 1보다 작을수록 잘 방어',
+  },
+};

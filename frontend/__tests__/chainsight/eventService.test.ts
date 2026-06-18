@@ -39,6 +39,13 @@ const mockStocks: EventRankingItem[] = [
     volume_z: 3.2,
     volatility_pct: 0.45,
     is_low_liquidity: false,
+    trend_quality: 0.81,
+    theme_alpha: 0.05,
+    theme_beta: 1.34,
+    up_capture: 1.18,
+    down_capture: 0.99,
+    capture_spread: 19,
+    is_fallback: false,
   },
   {
     symbol: 'SMCI',
@@ -48,6 +55,14 @@ const mockStocks: EventRankingItem[] = [
     volume_z: 0.8,
     volatility_pct: 0.72,
     is_low_liquidity: true,
+    // 게이트 미달(예: 관련주<3) → M2 NULL
+    trend_quality: null,
+    theme_alpha: null,
+    theme_beta: null,
+    up_capture: null,
+    down_capture: null,
+    capture_spread: null,
+    is_fallback: false,
   },
 ];
 
@@ -78,11 +93,21 @@ describe('fetchEvents', () => {
 describe('fetchEventStocks', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('theme 파라미터로 올바른 엔드포인트를 호출한다', async () => {
+  it('theme 파라미터로 올바른 엔드포인트를 호출한다 (window 기본 20)', async () => {
     vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
     const result = await fetchEventStocks('semiconductor');
-    expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/semiconductor/stocks/');
+    expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/semiconductor/stocks/', {
+      params: { window: 20 },
+    });
     expect(result).toHaveLength(2);
+  });
+
+  it('window=120을 params로 전달한다', async () => {
+    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
+    await fetchEventStocks('semiconductor', 120);
+    expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/semiconductor/stocks/', {
+      params: { window: 120 },
+    });
   });
 
   it('EventRankingItem 필드가 모두 파싱된다', async () => {
@@ -107,6 +132,8 @@ describe('fetchEventStocks', () => {
   it('특수문자 포함 theme을 encodeURIComponent로 인코딩한다', async () => {
     vi.mocked(authAxios.get).mockResolvedValueOnce({ data: [] });
     await fetchEventStocks('clean energy');
-    expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/clean%20energy/stocks/');
+    expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/clean%20energy/stocks/', {
+      params: { window: 20 },
+    });
   });
 });

@@ -18,6 +18,13 @@ const lowLiquidityItem: EventRankingItem = {
   volume_z: 0.82,
   volatility_pct: 0.718,
   is_low_liquidity: true,
+  trend_quality: null,
+  theme_alpha: null,
+  theme_beta: null,
+  up_capture: null,
+  down_capture: null,
+  capture_spread: null,
+  is_fallback: false,
 };
 
 const negativeReturnItem: EventRankingItem = {
