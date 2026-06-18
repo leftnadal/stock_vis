@@ -16,6 +16,9 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-17 Path B(Regime 깊이) 묶음3 — 다음단계 게이지(B-3) 완결**: **현재 `origin/main = 8b14dd8`** (본 mgmt push 시 HEAD~1로 N=3 안전). 다음단계 5지표 **부호화 양방향 게이지**(B-3) FE land(`8b14dd8`) — "넘었나/얼마 남았나 + 방향"을 BE `to_threshold` 단일축으로 표시(**FE 부호 로직 0**, `|to_threshold|/scaleRef` 길이 정규화만 = 수치 발명 아님). closest 요약 라인 유지 + 게이지 additive → 기존 '대기' 분기 회귀 0. vitest 253(캐시). 비자명 결정 2건 → DECISIONS 흡수(⑥ Path B 다음조각 = 게이지A 선택·타임라인B 보류, 가중 4.75/2.25 마진 2.50 / ⑦ 게이지 매핑 = B-3 디렉터 결정 — 가중 권고 B-2(4.30)와 상이, 5지표 부호 일관성 STEP 0 통과로 확정, BE 단일축 봉인). **(참고) S4 timeline은 기 land 확인**(이번 STEP 0 발견 → ⑥ 스코프 재정의 근거).
+>
+
 > ✅ **2026-06-17 자금흐름 카드 군(섹터 스파크라인) 완결**: **현재 `origin/main = 4998994`** (본 mgmt push 시 HEAD~1로 N=3 안전). Concentration·Sector 자금흐름 스파크라인 **군 전체 완결** — 집중도 30일 스파크라인(MP-UX-S5, history_30d)에 이어 **섹터 rel_strength 인라인 스파크라인** land로 카드 군 마무리. 분할 슬라이스: **2a `ebe5540`**(BE-only, KO_LABELS `sector.*` 11키 = screener.ts GICS명 차용, 마이그레이션 0) → **2b `4998994`**(FE-only, `SectorSparkline` 신규 + `SectorDetail` 인라인 11섹터 rank순 전부 렌더, sparkPoints 재사용). 회귀 0: 2a pytest marketpulse 162/sector_history 6 불변 · 2b vitest 240→247(+7 신규)·tsc 0. BE 타입 `sector_history`는 섹터 history BE 커밋(1f93291)에 이미 포함돼 2b 코드 변경 3파일(FE only). 비자명 결정 5건 → DECISIONS 흡수(rel_strength 단일고정 / 11섹터 절단0 A-1 / 교차앱 단일출처 D안 / 섹터 KO라벨 GICS출처 / 색=sectorFlow 단일소스 ±0.1 확정). **`MP-UX-S5-B-SECTOR` 보류 해소**(2026-06-16 분리 결정의 선행 BE→FE 완료).
 >
 > ✅ **2026-06-17 MGMT-XAPP-RULE 교차 앱 규약 단일 출처화**: **현재 `origin/main = 1f93291`** (섹터 history BE; 트랙1 rebase·bump 후 push 시 HEAD~1로 N=3 안전 — MGMT-DUALPUSH Phase B). 하네스 규율 2건 추가(코드 0): ⒜ CLAUDE.md "세션 종료" DoD에 **지시서 폐기 전 흡수 확인**(비자명 결정의 '왜'를 DECISIONS로 흡수 후 폐기) ⒝ CLAUDE.md "Harness Protocol"에 **교차 앱 규약 단일 출처 = repo 하네스** 선언(코어는 포인터만, 복제 금지 — 규약 10장). 트랙 2(병진 수동): 3 프로젝트 공용 코어에 포인터 한 줄.
