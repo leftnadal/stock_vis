@@ -1957,3 +1957,31 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **불변/검증**: 기존 EventRanking Link 네비 동작 보존, "테마/theme" 단어 UI 비노출("그룹/관련 종목 그룹"), 한국어 라벨 METRIC_INFO·getLabelForTheme 경유(하드코딩 0). vitest 309→**331**(+22), tsc 0. 커밋 6f0eb98(S1)·54727d4(S2)·f2fa8df(S3)·e8158da(S4)·6ecb0ef(Finding B).
 
 **📎 참조**: `frontend/components/chainsight/{EventRanking,MetricCell,MetricInfoPopover}.tsx`, `frontend/constants/eventThemes.ts METRIC_INFO`, DECISIONS "CS-M2 (2026-06-16)" 옵션Y(T2 주·T3 보조).
+
+---
+
+## [2026-06-18] CS-M2-DISPLAY S4 — 역할 분리(통계=펼침/경고=패널) + is_fallback 신뢰경고
+
+**결정 (S4-B, 디렉터 확정)**: EventRanking 행의 보조 정보를 **역할로 분리** — ① **맥락 통계는 chevron 펼침(모든 행)**, ② **신뢰 경고(저유동성·is_fallback)는 LowLiquidityPanel(경고 전용 영역)**.
+
+**STEP 0 발견 → 정공법(A) 채택**: `LowLiquidityPanel`이 빈 껍데기가 아니라 **이미 점수분해(거래량z·변동성·수익률)+경고를 저유동성 행에 표시**(자체 토글) 중이었음. S4-B를 그대로 하면 통계 중복 → **(A) 통계를 패널에서 빼 펼침으로 이동, 패널은 경고 전용 축소**. 중복 0.
+- **행위보존 재정의(디렉터 명시)**: (A)의 `LowLiquidityPanel` 테스트 갱신은 **의도된 구조 변경**이라 IDENTICAL-hash 가드 대상이 아님. 가드 = "새 구조 테스트 + DECISIONS 기록". 단 EventRanking 드릴다운 Link·chevron·행 본문은 보존(범위 밖).
+
+**펼침 라벨 = "관심도 근거" framing (i)**: 거래량z·변동성은 관심도(M1) 점수의 **가중 입력 그 자체**(score=0.50×거래량z+0.30×변동성+0.20×수익률, `attention_service.py`). 중립 "맥락 통계"는 부정직 → 점수 근거를 점수 옆에 노출(납득도↑). 문구: ① 펼침에 **"관심도 근거"(volume_z·volatility) / "주도지표 보조"(T3)** 소제목 분리(출처 다른 신호 혼동 방지) ② **비중(50/30/20) 노출 + "수익률(20%)은 행의 % 참고" 캐비엇**으로 분해 완결.
+
+**고정 못 (디렉터)**:
+- **R2**: 경고는 **토글 없이 상시 노출**(저유동성 행). 부수이득 — 토글 2개(chevron+패널)→chevron 1개로 단순화.
+- **R3**: raw_return은 행 본문에 이미 있어 **펼침서 재노출 안 함**(volume_z·volatility만).
+- **R4**: is_fallback **현재 prod 0종목** → 라이브 검증 불가 → **is_fallback=true 합성 픽스처 vitest**가 유일 가드(미래 IPO/상폐/프리미엄 대비). 렌더 조건 `is_low_liquidity || is_fallback`.
+- 펼침 통계 **숫자만**(막대 없음, T3와 동일 — volume_z max 47.7 아웃라이어 무관).
+
+**is_fallback 게이트 판정**: help_text="120일 미달로 20윈도우만 산출(IPO/상폐/프리미엄)" = **저신뢰** → S4-B 신뢰경고 영역. 경고 카피 "데이터가 부족해 보정된 값이에요".
+
+**보조지표 range (실측 기반, Finding B 재발 방지)** — StockAttentionScore 2026-06-15 n=659:
+- `volume_z`: med −0.11, p90 1.53, max 47.7(아웃라이어). range "z-score · 0=평소 · +면 급증". tier `context`(신규).
+- `volatility_pct`: 0~1 백분위, med 0.50. range "0~1 백분위 · 1에 가까울수록 변동 큼".
+- ADV·spread = **미저장 확인 → UI 제외**(과대약속 금지).
+
+**불변/검증**: EventRanking 드릴다운·chevron·window 셀렉터 테스트 불변, "테마/theme" UI 비노출, 한국어 라벨 단일소스. METRIC_INFO 키 6→8(volume_z·volatility_pct, tier `context` 추가), 완비/​tier-split 테스트 갱신. vitest 331→**354**(+23), tsc 0. 커밋 cabf5c5(S1)·0b02f7a(S2)·2a1f2a4(S3).
+
+**📎 참조**: `frontend/components/chainsight/{EventRanking,LowLiquidityPanel}.tsx`, `frontend/constants/eventThemes.ts METRIC_INFO`, `apps/chain_sight/services/attention_service.py`(M1 가중치), DECISIONS "CS-M2-DISPLAY S3 (2026-06-18)".
