@@ -85,7 +85,7 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
           </div>
           {/* 3 primary metric value columns */}
           <div className="flex gap-3">
-            <MetricCell value={item.trend_quality} domain="center" domainMax={2} />
+            <MetricCell value={item.trend_quality} domain="center" domainMax={2} signed />
             <MetricCell value={item.theme_beta} domain="baseline" domainMax={2} />
             <MetricCell value={item.capture_spread} domain="center" domainMax={100} signed />
           </div>
