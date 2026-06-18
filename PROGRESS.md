@@ -86,6 +86,8 @@
 > ✅ **2026-06-11 Phase 1 종료 mgmt push 예정**: 본 mgmt commit(용어 정정 + 잔여 지도 + 종료 선언), 70eb090 위 재적용(직전 push 충돌 복구). **현재 `origin/main = 70eb090`** (메타 갱신 기준, 본 push 후 다음 mgmt에서 갱신).
 >
 > 🔧 **2026-06-11 CS-RD1 (chain_sight 이벤트 보드 개편 Phase 0–1)** [worktree `../stock_vis_cs_rd1`, brunch `monorepo/sess-cs-rd1`]: Part A(하네스 정합화: CS-R9 done + CS-RD1~3/CS-EXT1 등록 + DECISIONS CS-RD 결정) + Part B(v1/v2 갈림길 read-only 보고) 완료. Part C(테마 데이터 적재)는 옵션2(sector+theme w≥1.0)로 완료 — 채움률 60.3%/15그룹, Neo4j :Theme 21/HAS_THEME 536 (DECISIONS CS-RD-C2). 적재 당시 STEP 0 정정: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock` 아닌 `CompanyChainProfile` 필드(NT-3 오기). 후속 CS-RD2(M1 엔진) ready.
+>
+> ✅ **2026-06-15 CS-RD3 이벤트 보드 FE 완료**: 이벤트 보드 + 관심도 랭킹 + 저유동성 패널 구현. **현재 `origin/main = 2fe5300`** (CS-RD3 worktree baseline).
 
 ### 활성 브랜치 현황 (2026-05-28 monorepo 청사진 마감 후 brunch 청소)
 

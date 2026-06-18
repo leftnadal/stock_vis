@@ -91,3 +91,26 @@ export interface ForceLink {
   width: number;
   dash?: number[];
 }
+
+// ── Event Board (CS-RD3 이벤트 보드) ──
+
+/** GET /api/v1/chainsight/events/ 응답 항목 */
+export interface EventBoardItem {
+  theme: string;
+  member_count: number;
+  avg_return: number;
+  avg_score: number;
+  high_attention_count: number;
+  low_attention_count: number;
+}
+
+/** GET /api/v1/chainsight/events/<theme>/stocks/ 응답 항목 */
+export interface EventRankingItem {
+  symbol: string;
+  name: string;
+  score: number;
+  raw_return: number;
+  volume_z: number;
+  volatility_pct: number; // 0~1 range
+  is_low_liquidity: boolean;
+}
