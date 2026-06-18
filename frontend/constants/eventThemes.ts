@@ -90,9 +90,9 @@ export const METRIC_INFO: Record<MetricKey, MetricInfo> = {
     label: '주도우위',
     tier: 'primary',
     description:
-      '오를 땐 잘 따라 오르고, 내릴 땐 덜 빠지는 정도. 클수록 그룹을 이끄는 주도주.',
-    example: '예: +19 = 상승은 잘 먹고 하락은 잘 버팀',
-    range: '범위: +면 유리 · −면 불리',
+      '오를 땐 잘 따라 오르고, 내릴 땐 덜 빠지는 정도(상승 포착 − 하락 포착). 클수록 그룹을 이끄는 주도주.',
+    example: '예: +19%p = 상승은 잘 먹고 하락은 잘 버팀',
+    range: '범위: 단위 %p(상승포착−하락포착) · +면 유리 · −면 불리',
   },
   theme_alpha: {
     field: 'theme_alpha',

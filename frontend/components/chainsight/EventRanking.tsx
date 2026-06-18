@@ -105,13 +105,21 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
       {expanded && (
         <div className="px-4 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
           <div className="flex items-start gap-4">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-0.5">
               <span className="text-xs text-gray-500 dark:text-gray-400">{METRIC_INFO.theme_alpha.label}</span>
-              <MetricCell value={item.theme_alpha} domain="center" domainMax={0.5} />
+              {/* T3는 보조 — 막대 없이 숫자만(추세강도와 상관 높아 시각 강조 배제) */}
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                {item.theme_alpha !== null ? item.theme_alpha.toFixed(2) : '—'}
+              </span>
             </div>
-            <p className="flex-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-              {METRIC_INFO.theme_alpha.description}
-            </p>
+            <div className="flex-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                {METRIC_INFO.theme_alpha.description}
+              </p>
+              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                추세강도(주신호)와 상관이 높아 참고용 보조지표예요.
+              </p>
+            </div>
           </div>
           <Link
             href={`/chainsight/${item.symbol}`}
