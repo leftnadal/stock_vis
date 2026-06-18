@@ -1926,3 +1926,32 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **커밋**: `43ae93b` (`a45ee0f..43ae93b`).
 
 **📎 참조**: `PROGRESS.md` "Breadth 의미밴드 완결", `frontend/app/market-pulse-v2/meaning.ts breadthBand`, `TASKQUEUE.md MP-UX-BREADTH-BAND·T-BREADTH-TUNE`. 선례: DECISIONS "[2026-06-17] 섹터 스파크라인 색 = sectorFlow 단일소스".
+
+---
+
+## [2026-06-18] CS-M2-DISPLAY S3 — 주도주 지표 막대 도메인 (측정 기반 고정) + B1 chevron 구조 + Finding B
+
+**맥락**: EventRanking 행에 M2 주도주 3지표(주신호) 노출. A2(숫자+미니막대), B1(chevron=펼침/행클릭=드릴다운 유지) 디렉터 확정.
+
+**STEP 0 실측 (window=20, n≈320, prod 640행)** — 막대 도메인 ground truth:
+| 지표 | min | p10 | med | p90 | max | 성격 |
+|---|---|---|---|---|---|---|
+| trend_quality(T2) | −2.85 | −0.59 | 0.01 | 1.04 | 3.30 | 부호 있음(음수=하락추세) |
+| theme_beta | −1.06 | 0.31 | 0.92 | 1.47 | 2.37 | ~0.9 중심(beta) |
+| capture_spread | −263 | −93 | 5.8 | 99.5 | 367 | 0 center·부호·넓음(아웃라이어) |
+| theme_alpha(T3, 펼침) | −4.13 | −1.25 | 0.07 | 1.17 | 3.42 | 보조 |
+
+**결정 1 — 막대 도메인 (측정 기반 고정 상수, 페이지 정규화 금지. serializer에 percentile 필드 없음 확인)**:
+- `trend_quality`: **center-origin ±2** (p90 1.04 여유, 부호). +teal/−coral.
+- `theme_beta`: **0-baseline [0, 2]** (med 0.92).
+- `capture_spread`: **center-origin ±100** (p10/p90≈±95, 아웃라이어 클램프), +teal/−coral.
+- `theme_alpha`(펼침 보조): center ±0.5 (보조 지표, 시각 강조 약하게 — 후속 튜닝 여지, S3 구현 판단).
+- **Why**: min/max 직접 사용 시 capture_spread(±263~367 아웃라이어)가 막대를 못 읽게 만듦. p10/p90 + 클램프가 분포 대부분을 해상도 있게 표현. 숫자는 항상 병기(2자리)라 클램프로 정보 손실 없음.
+
+**결정 2 — Finding B: `trend_quality` 텍스트 정정 (디렉터 승인)**: S2 METRIC_INFO의 `range:'0~1'`이 실측(−2.85~3.30, 부호)과 불일치 → `range:'음수=하락추세·0근처=중립·+면 강한 상승'` + description 하락(−) 언급 보강. 막대는 center-origin이라 이미 정합. (커밋 6ecb0ef)
+
+**결정 3 — B1 chevron 구조 (STEP 0 0-2 실측 반영)**: 드릴다운은 onClick 핸들러가 아니라 **행 전체 `<Link href=/chainsight/[symbol]>`**(심볼 상세 네비)였음. `<a>` 안 `<button>` 중첩 불가 → chevron을 **Link 바깥 형제**로 배치 + onClick에 `preventDefault()+stopPropagation()`. "관계 그래프 열기"(펼침 영역)는 동일 목적지 Link 재사용. → **chevron이 드릴다운 미발화**(vitest 검증).
+
+**불변/검증**: 기존 EventRanking Link 네비 동작 보존, "테마/theme" 단어 UI 비노출("그룹/관련 종목 그룹"), 한국어 라벨 METRIC_INFO·getLabelForTheme 경유(하드코딩 0). vitest 309→**331**(+22), tsc 0. 커밋 6f0eb98(S1)·54727d4(S2)·f2fa8df(S3)·e8158da(S4)·6ecb0ef(Finding B).
+
+**📎 참조**: `frontend/components/chainsight/{EventRanking,MetricCell,MetricInfoPopover}.tsx`, `frontend/constants/eventThemes.ts METRIC_INFO`, DECISIONS "CS-M2 (2026-06-16)" 옵션Y(T2 주·T3 보조).
