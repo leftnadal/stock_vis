@@ -2,9 +2,9 @@
 Django Admin 등록 (PR-A2).
 
 소속: apps/market_pulse (app 레이어 root).
-역할: 마켓 펄스 도메인 모델 8종(AnomalySignalLog·BriefingLog·MarketPulseNews·
-  NewsViewLog·RegimeSnapshot·BreadthSnapshot·SectorFlowSnapshot·ConcentrationSnapshot)을
-  Django Admin에 등록 — 운영자 점검·강제 갱신용.
+역할: 마켓 펄스 도메인 모델 9종(AnomalySignalLog·BriefingLog·MarketPulseNews·
+  NewsViewLog·RegimeSnapshot·BreadthSnapshot·SectorFlowSnapshot·ConcentrationSnapshot·
+  TranslationLog)을 Django Admin에 등록 — 운영자 점검·강제 갱신용.
 """
 
 from django.contrib import admin
@@ -18,6 +18,7 @@ from apps.market_pulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from apps.market_pulse.models.translation import TranslationLog
 
 
 @admin.register(MarketPulseNews)
@@ -87,4 +88,10 @@ class AnomalySignalLogAdmin(admin.ModelAdmin):
 @admin.register(BriefingLog)
 class BriefingLogAdmin(admin.ModelAdmin):
     list_display = ("date", "model_version", "status", "headline")
+    list_filter = ("status", "model_version")
+
+
+@admin.register(TranslationLog)
+class TranslationLogAdmin(admin.ModelAdmin):
+    list_display = ("date", "model_version", "status", "created_at")
     list_filter = ("status", "model_version")
