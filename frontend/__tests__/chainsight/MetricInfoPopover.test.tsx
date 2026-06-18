@@ -53,9 +53,11 @@ describe('METRIC_INFO 단일 출처', () => {
     'theme_alpha',
     'up_capture',
     'down_capture',
+    'volume_z',
+    'volatility_pct',
   ];
 
-  it('6개 지표 키가 전부 정의돼 있다 (누락 방지)', () => {
+  it('8개 지표 키가 전부 정의돼 있다 (누락 방지)', () => {
     expect(Object.keys(METRIC_INFO).sort()).toEqual([...EXPECTED_KEYS].sort());
   });
 
@@ -64,16 +66,29 @@ describe('METRIC_INFO 단일 출처', () => {
       const info = METRIC_INFO[key];
       expect(info.field).toBe(key);
       expect(info.label).toBeTruthy();
-      expect(['primary', 'supplementary']).toContain(info.tier);
+      expect(['primary', 'supplementary', 'context']).toContain(info.tier);
       expect(info.description).toBeTruthy();
       expect(info.example).toBeTruthy();
       expect(info.range).toBeTruthy();
     }
   });
 
-  it('주신호 3·보조 3으로 분류된다', () => {
+  it('주신호 3·보조 3·맥락 2으로 분류된다 (의도된 tier 구성)', () => {
     const tiers = Object.values(METRIC_INFO).map((m) => m.tier);
     expect(tiers.filter((t) => t === 'primary')).toHaveLength(3);
     expect(tiers.filter((t) => t === 'supplementary')).toHaveLength(3);
+    expect(tiers.filter((t) => t === 'context')).toHaveLength(2);
+  });
+
+  it('volume_z가 context tier이고 거래량 설명을 포함한다', () => {
+    expect(METRIC_INFO.volume_z.tier).toBe('context');
+    expect(METRIC_INFO.volume_z.label).toBeTruthy();
+    expect(METRIC_INFO.volume_z.description).toContain('표준편차');
+  });
+
+  it('volatility_pct가 context tier이고 백분위 설명을 포함한다', () => {
+    expect(METRIC_INFO.volatility_pct.tier).toBe('context');
+    expect(METRIC_INFO.volatility_pct.label).toBeTruthy();
+    expect(METRIC_INFO.volatility_pct.description).toContain('백분위');
   });
 });
