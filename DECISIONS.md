@@ -1945,7 +1945,9 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 - `trend_quality`: **center-origin ±2** (p90 1.04 여유, 부호). +teal/−coral.
 - `theme_beta`: **0-baseline [0, 2]** (med 0.92).
 - `capture_spread`: **center-origin ±100** (p10/p90≈±95, 아웃라이어 클램프), +teal/−coral.
-- `theme_alpha`(펼침 보조): center ±0.5 (보조 지표, 시각 강조 약하게 — 후속 튜닝 여지, S3 구현 판단).
+- `theme_alpha`(펼침 보조): **막대 제거, 숫자만 표시**(Slice 5 결정 — ±0.5 클램프 이슈 해소 + 추세강도와 ρ=0.84 상관이라 시각 강조 부적절. "참고용" 캐비엇 동반).
+
+**결정 1-b — window 도메인 단일화 (Slice 5, window=120 실측 대조)**: w20·w120 양쪽 p10/p90 측정 결과 3 주신호 도메인(±2/[0,2]/±100)이 **둘 다 커버**(w120이 더 좁아 막대가 작게 = 더 긴 관측의 낮은 분산을 정확히 반영). → **per-window 분기 불필요, 단일 고정 도메인 유지**. capture_spread 단위 = %p(상승포착−하락포착) 팝오버 명시.
 - **Why**: min/max 직접 사용 시 capture_spread(±263~367 아웃라이어)가 막대를 못 읽게 만듦. p10/p90 + 클램프가 분포 대부분을 해상도 있게 표현. 숫자는 항상 병기(2자리)라 클램프로 정보 손실 없음.
 
 **결정 2 — Finding B: `trend_quality` 텍스트 정정 (디렉터 승인)**: S2 METRIC_INFO의 `range:'0~1'`이 실측(−2.85~3.30, 부호)과 불일치 → `range:'음수=하락추세·0근처=중립·+면 강한 상승'` + description 하락(−) 언급 보강. 막대는 center-origin이라 이미 정합. (커밋 6ecb0ef)
