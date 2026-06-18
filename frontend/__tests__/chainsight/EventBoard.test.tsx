@@ -26,6 +26,7 @@ vi.mock('@/constants/eventThemes', () => ({
 vi.mock('lucide-react', () => ({
   Tag: ({ className }: { className?: string }) => <span data-testid="icon-tag" className={className} />,
   Cpu: ({ className }: { className?: string }) => <span data-testid="icon-cpu" className={className} />,
+  Share2: ({ className }: { className?: string }) => <span data-testid="icon-share2" className={className} />,
 }));
 
 import { fetchEvents } from '@/services/chainsightService';
@@ -105,5 +106,13 @@ describe('EventBoard', () => {
     render(<EventBoard />, { wrapper });
     await screen.findByRole('button');
     expect(screen.getByText('관심↑ 8')).toBeInTheDocument();
+  });
+
+  // A-1 가드: 강등 이동된 관계 그래프가 보드(Chain Sight 홈)에서 도달 가능해야 함(고아 방지).
+  it('보드에 /chainsight/market-graph 진입 링크를 노출한다 (A-1)', async () => {
+    vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]);
+    render(<EventBoard />, { wrapper });
+    const link = await screen.findByRole('link', { name: /전체 관계 그래프 보기/ });
+    expect(link).toHaveAttribute('href', '/chainsight/market-graph');
   });
 });
