@@ -103,33 +103,80 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
         </button>
       </div>
       {expanded && (
-        <div className="px-4 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
-          <div className="flex items-start gap-4">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-xs text-gray-500 dark:text-gray-400">{METRIC_INFO.theme_alpha.label}</span>
-              {/* T3는 보조 — 막대 없이 숫자만(추세강도와 상관 높아 시각 강조 배제) */}
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                {item.theme_alpha !== null ? item.theme_alpha.toFixed(2) : '—'}
-              </span>
+        <div className="px-4 pb-3 pt-2 border-t border-gray-100 dark:border-gray-700 space-y-3">
+          {/* ── 소제목 1: 관심도 근거 ───────────────────────────────── */}
+          <div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+              관심도 근거
             </div>
-            <div className="flex-1">
-              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
-                {METRIC_INFO.theme_alpha.description}
-              </p>
-              <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                추세강도(주신호)와 상관이 높아 참고용 보조지표예요.
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+              관심도 점수 = 거래량 50% · 변동성 30% · 수익률 20%
+            </p>
+            <div className="flex flex-col gap-1">
+              {/* 거래량 z (비중 50%) */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 w-32 shrink-0">
+                  {METRIC_INFO.volume_z.label} <span className="text-gray-400">(비중 50%)</span>
+                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {item.volume_z !== null && item.volume_z !== undefined
+                    ? item.volume_z.toFixed(2)
+                    : '—'}
+                </span>
+                <MetricInfoPopover metricKey="volume_z" />
+              </div>
+              {/* 변동성 (비중 30%) */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500 dark:text-gray-400 w-32 shrink-0">
+                  {METRIC_INFO.volatility_pct.label} <span className="text-gray-400">(비중 30%)</span>
+                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {item.volatility_pct !== null && item.volatility_pct !== undefined
+                    ? `${(item.volatility_pct * 100).toFixed(0)}%`
+                    : '—'}
+                </span>
+                <MetricInfoPopover metricKey="volatility_pct" />
+              </div>
+              {/* 수익률 캐비엇 (본문에 이미 있음 — 재노출 안 함) */}
+              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+                수익률(20%)은 위 행의 % 참고
               </p>
             </div>
           </div>
+
+          {/* ── 소제목 2: 주도지표 보조 ─────────────────────────────── */}
+          <div>
+            <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">
+              주도지표 보조
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs text-gray-500 dark:text-gray-400">{METRIC_INFO.theme_alpha.label}</span>
+                {/* T3는 보조 — 막대 없이 숫자만(추세강도와 상관 높아 시각 강조 배제) */}
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {item.theme_alpha !== null ? item.theme_alpha.toFixed(2) : '—'}
+                </span>
+              </div>
+              <div className="flex-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  {METRIC_INFO.theme_alpha.description}
+                </p>
+                <p className="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                  추세강도와 상관 높아 참고용
+                </p>
+              </div>
+            </div>
+          </div>
+
           <Link
             href={`/chainsight/${item.symbol}`}
-            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+            className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
             관계 그래프 열기
           </Link>
         </div>
       )}
-      {item.is_low_liquidity && (
+      {(item.is_low_liquidity || item.is_fallback) && (
         <div className="px-4 pb-3">
           <LowLiquidityPanel item={item} />
         </div>

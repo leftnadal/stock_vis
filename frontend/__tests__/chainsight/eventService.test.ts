@@ -121,6 +121,8 @@ describe('fetchEventStocks', () => {
     expect(typeof item.volume_z).toBe('number');
     expect(typeof item.volatility_pct).toBe('number');
     expect(typeof item.is_low_liquidity).toBe('boolean');
+    // Slice 3: is_fallback 필드 타입 확인 (펼침·경고 조건 분기에 사용)
+    expect(typeof item.is_fallback).toBe('boolean');
   });
 
   it('is_low_liquidity가 true인 항목을 올바르게 파싱한다', async () => {

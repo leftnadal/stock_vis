@@ -55,12 +55,14 @@ export type MetricKey =
   | 'capture_spread'
   | 'theme_alpha'
   | 'up_capture'
-  | 'down_capture';
+  | 'down_capture'
+  | 'volume_z'
+  | 'volatility_pct';
 
 export interface MetricInfo {
   field: MetricKey;
   label: string;
-  tier: 'primary' | 'supplementary';
+  tier: 'primary' | 'supplementary' | 'context';
   description: string;
   example: string;
   range: string;
@@ -119,5 +121,23 @@ export const METRIC_INFO: Record<MetricKey, MetricInfo> = {
       '그룹이 내릴 때, 이 종목이 그 하락을 얼마나 따라 내렸는지. 작을수록 잘 방어.',
     example: '예: 0.99 = 거의 비슷하게 빠짐 (0.85면 덜 빠짐)',
     range: '범위: 1보다 작을수록 잘 방어',
+  },
+  volume_z: {
+    field: 'volume_z',
+    label: '거래량 z',
+    tier: 'context',
+    description:
+      '최근 거래량이 평소(과거 평균) 대비 몇 표준편차 위/아래인지. 0=평소, +가 클수록 거래 폭증.',
+    example: '예: +1.5 = 평소보다 거래 급증',
+    range: '범위: z-score · 0=평소 · +면 급증',
+  },
+  volatility_pct: {
+    field: 'volatility_pct',
+    label: '변동성',
+    tier: 'context',
+    description:
+      '그날 변동성이 전체 종목 중 상위 몇 %인지(0~1 백분위). 1에 가까울수록 크게 출렁임.',
+    example: '예: 0.90 = 상위 10% 수준 변동',
+    range: '범위: 0~1 백분위 · 1에 가까울수록 변동 큼',
   },
 };

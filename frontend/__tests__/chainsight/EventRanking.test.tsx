@@ -26,9 +26,11 @@ vi.mock('@/constants/eventThemes', () => ({
     trend_quality: { field: 'trend_quality', label: '추세강도', tier: 'primary', description: '', example: '', range: '' },
     theme_beta: { field: 'theme_beta', label: '그룹 민감도', tier: 'primary', description: '', example: '', range: '' },
     capture_spread: { field: 'capture_spread', label: '주도우위', tier: 'primary', description: '', example: '', range: '' },
-    theme_alpha: { field: 'theme_alpha', label: '그룹 초과수익', tier: 'supplementary', description: '', example: '', range: '' },
+    theme_alpha: { field: 'theme_alpha', label: '그룹 초과수익', tier: 'supplementary', description: '그룹 평균보다 이 종목이 얼마나 더 벌었는지.', example: '', range: '' },
     up_capture: { field: 'up_capture', label: '상승 포착', tier: 'supplementary', description: '', example: '', range: '' },
     down_capture: { field: 'down_capture', label: '하락 방어', tier: 'supplementary', description: '', example: '', range: '' },
+    volume_z: { field: 'volume_z', label: '거래량 z', tier: 'context', description: '최근 거래량이 평소 대비 몇 표준편차인지.', example: '', range: '' },
+    volatility_pct: { field: 'volatility_pct', label: '변동성', tier: 'context', description: '그날 변동성이 전체 종목 중 상위 몇 %인지.', example: '', range: '' },
   },
 }));
 
@@ -321,5 +323,130 @@ describe('EventRanking', () => {
 
     expect(screen.getByRole('button', { name: '120일' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('button', { name: '20일' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  // ── Slice 1: 펼침 영역 2 소제목 ─────────────────────────────────────────
+
+  it('chevron 펼침 시 "관심도 근거" 소제목이 나타난다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByText('관심도 근거')).toBeInTheDocument();
+  });
+
+  it('chevron 펼침 시 "주도지표 보조" 소제목이 나타난다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByText('주도지표 보조')).toBeInTheDocument();
+  });
+
+  it('펼침 시 거래량 z 값을 소수점 2자리로 표시한다 (비중 50% 표기 포함)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    // volume_z=3.2 → '3.20'
+    expect(screen.getByText('3.20')).toBeInTheDocument();
+    expect(screen.getByText('(비중 50%)')).toBeInTheDocument();
+  });
+
+  it('펼침 시 변동성을 정수 퍼센트로 표시한다 (비중 30% 표기 포함)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    // volatility_pct=0.45 → '45%'
+    expect(screen.getByText('45%')).toBeInTheDocument();
+    expect(screen.getByText('(비중 30%)')).toBeInTheDocument();
+  });
+
+  it('펼침 시 수익률 재노출 캐비엇이 있다 (raw_return 숫자는 펼침서 표시 안 함)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByText('수익률(20%)은 위 행의 % 참고')).toBeInTheDocument();
+  });
+
+  it('펼침 시 volume_z 팝오버 트리거가 렌더된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByTestId('metric-popover-volume_z')).toBeInTheDocument();
+  });
+
+  it('펼침 시 volatility_pct 팝오버 트리거가 렌더된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByTestId('metric-popover-volatility_pct')).toBeInTheDocument();
+  });
+
+  it('펼침 영역에 "테마" 또는 "theme" 단어가 노출되지 않는다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    // 라벨·소제목·캐비엇에 "테마" 또는 "theme" 단어가 없어야 함
+    const expandedSection = document.querySelector('.space-y-3');
+    expect(expandedSection).not.toBeNull();
+    expect(expandedSection?.textContent).not.toMatch(/테마|theme/i);
+  });
+
+  it('펼침 영역에 막대(progress/bar) 요소가 없다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(document.querySelector('[role="progressbar"]')).toBeNull();
+  });
+
+  it('volume_z가 null-like일 때 "—"를 표시한다 (방어적 null 처리)', async () => {
+    const nullVolumeStock = { ...mockStocks[1], volume_z: null as unknown as number };
+    vi.mocked(fetchEventStocks).mockResolvedValue([nullVolumeStock]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('SMCI');
+    fireEvent.click(screen.getByRole('button', { name: 'SMCI 상세 펼치기' }));
+    // volume_z null → '—' 표시
+    const dashes = screen.getAllByText('—');
+    expect(dashes.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // ── Slice 2: LowLiquidityPanel 렌더 조건 (is_low_liquidity || is_fallback) ──
+
+  it('is_low_liquidity=true인 종목에 저유동성 경고가 상시 노출된다 (토글 없음)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[1]]); // SMCI: is_low_liquidity=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('SMCI');
+    // 경고가 토글 없이 바로 표시됨
+    expect(screen.getByText(/거래량이 얕아 체결·청산이 불리할 수 있습니다/)).toBeInTheDocument();
+  });
+
+  it('is_fallback=true인 종목에 "보정된 값" 경고가 노출된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[2]]); // AMD: is_fallback=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('AMD');
+    expect(screen.getByText(/데이터가 부족해 보정된 값이에요/)).toBeInTheDocument();
+  });
+
+  it('is_low_liquidity=false AND is_fallback=false이면 경고 영역이 없다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]); // NVDA: both false
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.queryByText(/거래량이 얕아/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/보정된 값/)).not.toBeInTheDocument();
+  });
+
+  it('LowLiquidityPanel에 토글 버튼이 없다 (상시 노출 구조)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[1]]); // SMCI: is_low_liquidity=true
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('SMCI');
+    // 저유동성 상세 토글 버튼이 없어야 함
+    expect(screen.queryByRole('button', { name: /저유동성 상세/ })).not.toBeInTheDocument();
   });
 });
