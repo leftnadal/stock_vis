@@ -261,6 +261,7 @@
   - ③ 외부-LLM-직접호출 **가드 신설** (코어 land 후 회귀방지 — 현재 가드 부재 = 규약 부채)
   - ④ surface별 점진 (escape 부재 큰 surface 우선)
   - ⑤ rag = **타 surface, 위임/코디** (한 세션에 밀지 않음)
+- **착수 전 정정 필요 (2026-06-18 델타 측정)**: DECISIONS BOUNDARY-LLM "코어 베이스 #2" 지칭을 `apps/market_pulse/briefing/client.py` → **`apps/market_pulse/llm/client.py`** 로 정정. (커밋 `5104635`에서 추출·prompt 파라미터화된 정제분; briefing은 위임 잔류, 이 모듈이 정책층 베이스에 더 근접. slice ① "market_pulse client 합성"도 이 경로로 읽을 것.) → DECISIONS 본문 fold-in은 **다음 mgmt 터치 또는 트리거 착수 시**(지금은 메모만).
 - **HALT 주의**: 27개 광역 → 한 세션 일괄 금지. cost ledger·BriefingLog·usage 모델 이관이 prod 마이그레이션 건드리면 `makemigrations --dry-run` 후 멈춰 보고.
 - **완료정의 (burn-down)**: `packages/shared/llm` 존재 + 27소비처 전부 단일 경유 + 외부-LLM-직접호출 가드 신설 후 위반 0.
 
