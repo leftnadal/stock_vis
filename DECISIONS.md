@@ -1906,3 +1906,23 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **정황(이 슬라이스 미수리)**: VIXCLS age 6 = FRED 발행 지연(task는 안정 실행) → 별도 ops 사안(필요 시 후속 트랙).
 
 **📎 참조**: `PROGRESS.md` "MP-DATA-MACRO-COVERAGE 완결", `apps/market_pulse/tasks/sync_indicators.py`, `common-bugs.md #28`(beat DB 등록).
+
+---
+
+## [2026-06-18] Breadth 의미밴드 = 변형 A (v2 카드 자기설명화 완결)
+
+**결정**: 시장 폭(Breadth) 카드 의미밴드 = **변형 A**(단일 종합 밴드 1줄 + 보조신호 부제) 채택. v2 정량 카드 자기설명화의 **마지막 조각** — Regime/Sector/Concentration/Breadth 4개 정량 카드 전부 의미밴드 보유.
+
+**Why**: 4개 정량 카드 자기설명화 일관성 + raw 숫자 보존하며 가산(additive) + Concentration(`concentrationBand`)·Sector(`sectorFlow`) 선례 미러. raw 등락수만 노출하던 Breadth에 "이게 무슨 의미인가" 한 줄 부여.
+
+**임계 근거(발명 0, 투명)**: 주신호 = 등락비율 `advance/(advance+decline)`, `[0,1]` 유계·**0.5 내재 중심**(rel_strength/HHI와 달리 스케일 모호성 없음). → `concentrationBand`(0.5 중심) + `sectorFlow`(epsilon 0.1) **선례 앵커**. 대칭 사다리 ±0.10(lean 0.60/0.40)/±0.20(broad 0.70/0.30), 5밴드(broad_strength/strength/neutral/weakness/broad_weakness). **엇갈림 댐핑**: 신고저·AD가 등락방향과 강하게 반대면 1단계 중립쪽. 색 = `FLOW_TONE`(calm 강세/hot 약세/neutral, 3톤 재사용, broad는 라벨 구분 — 신규 색 0).
+
+**⚠ 미검증 명시(TUNE)**: dev DB breadth 실데이터 부족(STEP 0 = 30행 중 1행만 non-empty, n=1)으로 실분포 검증 불가 → **TUNE 마커**. 임계는 메모리 발명이 아니라 0.5 내재 중심 + 선례 epsilon 관례 앵커. 실 SPY breadth(~500종목) 누적 후 0.60/0.70 경계 재튜닝 예정(`concentrationBand` TUNE 선례와 묶음).
+
+**How to apply**: `meaning.ts breadthBand()`(단일소스, i18n-무관 밴드키+톤 반환) + `BreadthCardSummary`/`BreadthDetail`(밴드 1줄+부제, raw 유지) + `labels.py breadth.*`(5밴드+cue 2). BE serializer/`_breadth_detail`/recharts 차트 **무변경**.
+
+**검증**: vitest market-pulse-v2 91→100(+9), 전체 309, tsc 0, pytest marketpulse 166(labels 회귀 0), 마이그레이션 0.
+
+**커밋**: `43ae93b` (`a45ee0f..43ae93b`).
+
+**📎 참조**: `PROGRESS.md` "Breadth 의미밴드 완결", `frontend/app/market-pulse-v2/meaning.ts breadthBand`, `TASKQUEUE.md MP-UX-BREADTH-BAND·T-BREADTH-TUNE`. 선례: DECISIONS "[2026-06-17] 섹터 스파크라인 색 = sectorFlow 단일소스".
