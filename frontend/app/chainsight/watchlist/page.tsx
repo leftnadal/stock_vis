@@ -62,7 +62,7 @@ export default function WatchlistPage() {
             Chain Sight에서 탐색하며 Watch 버튼을 눌러보세요
           </p>
           <Link
-            href="/chainsight"
+            href="/chainsight/market-graph"
             className="inline-block mt-4 px-4 py-2 rounded-lg bg-blue-500 text-white text-sm hover:bg-blue-600 transition-colors"
           >
             Chain Sight 열기

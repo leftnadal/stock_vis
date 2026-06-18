@@ -1620,6 +1620,21 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 - **MarketGraphCanvas**: 보조 화면(`/chainsight/market-graph`)으로 강등·동결(1017줄 리팩터링 보류).
 - **RD1 STEP 0 정정 (ground truth)**: `theme_tags`/`business_model_type`/`overall_grade`는 `Stock`이 아니라 **`CompanyChainProfile` 필드** (NT-3 및 RD1/RD2 지시서의 `Stock.theme_tags` 가정은 오기). 셋 다 채움률 **0%**(504 profile 전건). 원인: `CompanyChainProfile.theme_tags`는 `sync_tasks.py:67`에서 `CompanyNarrativeTag`로부터 복사되는데 NarrativeTag는 **0 rows**이고, 이를 생성하는 코드가 코드베이스에 **0건**(chain_sight LLM 호출 흔적도 0). → **Part C 분기 (다) HALT** — 임의 신규 로직 작성 금지, 별도 적재 지시서 대기.
 - **Neo4j `:Theme`/`HAS_THEME`**: 현재 0/0. 단 소스 데이터(`ETFProfile` 21 / `ETFHolding` 10,795)는 준비됐고 `load_themes_to_neo4j` command 존재(LLM 불필요, MERGE만). 그래프 드릴다운용 보조 경로로 적재 가능하나, RD2 보드 연료(Postgres `theme_tags`)와는 별개.
+- **[Addendum 2026-06-18] 라우팅 역전 실행 (추적 누락 → 실행)**: CS-RD3 구현(2026-06-15, `573d1dc`) 당시 보드는 `/chainsight/events`에 신규 배치됐고 루트 `/chainsight`는 그래프가 그대로 유지돼, **본 결정의 "루트=보드 + 그래프 `/chainsight/market-graph` 강등"이 미실행**이었음(RD3 재대조에서 확인 — 코드 시도·보류 등록·결정 번복 흔적 모두 0 = 추적 누락 drift, 노선 변경 아님). + 보드가 글로벌 네비에서 고아 상태(Header→`/chainsight`=그래프만). **디렉터 확정(길1 역전 / 실현X)으로 본 세션 실행**: ① 루트 `/chainsight` = 이벤트 보드(`EventBoard`), ② 그래프 화면을 `/chainsight/market-graph`로 강등 이동(MarketGraphCanvas **무수정** — 렌더 위치만, diff 0), ③ `/chainsight/events` 인덱스 → `/chainsight` redirect(중복 보드 URL 제거, 그룹상세 `events/[theme]` 유지), ④ A-1 고아 수정 — 보드 화면에 "전체 관계 그래프 보기" 진입점(`/chainsight/market-graph`) 추가(글로벌 네비 7개 유지, RD3 §2 원안). vitest 354→358(+4: routeReversal 3 + A-1 가드 1), tsc 0, 6경로 스모크 전건 비-500.
+- **[Addendum] 링크 감사표 (역전 영향)**: 변경 5 / 유지 다수.
+
+  | 파일:라인 | 현재 목적지 | 의도 | 역전 후 |
+  |---|---|---|---|
+  | `app/chainsight/page.tsx` | 그래프 | 루트 첫 화면 | **보드 렌더로 교체** |
+  | `app/chainsight/market-graph/page.tsx` | (부재) | 그래프 보조화면 | **신규 — 그래프 이동(import만)** |
+  | `app/chainsight/events/page.tsx` | 보드 | 중복 보드 URL | **`/chainsight` redirect** |
+  | `components/chainsight/EventBoard.tsx` | — | A-1 그래프 진입 | **"전체 관계 그래프 보기" 링크 추가** |
+  | `app/stocks/[symbol]/page.tsx:450` | `/chainsight?focus=` | 그래프행(`?focus`=그래프 전용 파라미터) | **`/chainsight/market-graph?focus=`** |
+  | `app/chainsight/watchlist/page.tsx:65` | `/chainsight` | "탐색하며 Watch"=그래프 맥락(CTA) | **`/chainsight/market-graph`** |
+  | `app/chainsight/watchlist/page.tsx:27` | `/chainsight` | 뒤로=홈 | **유지(보드=홈)** |
+  | `components/layout/Header.tsx:60,183` | `/chainsight` | Chain Sight 네비 | **유지(이제 보드로 resolve)** |
+  | `EventRanking`·`GraphMiniView`·`RelationCardPanel`·`MobileCardList`·`NodeContextMenu`·`[symbol]` | `/chainsight/${종목}` | 종목 드릴다운 | **유지(동적, 무변경)** |
+  | `EventBoard:100`·`WatchButton`·`FullPathView`·`PathCard` | `events/[theme]`·`/chainsight/watchlist*` | 그룹상세·워치리스트 | **유지(무변경)** |
 
 ### CS-RD-C2 (2026-06-11): 이벤트 그룹 = 섹터 ETF + 테마 ETF 역산, w≥1.0
 - **결정**: 이벤트 그룹 = 섹터 ETF(XL*) + 테마 ETF 역산, **w≥1.0**.
