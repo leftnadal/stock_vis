@@ -217,7 +217,14 @@
 | T-BREADTH-LIVE | dev breadth 실데이터(beat 가동, advance/decline 채워진 뒤) 라이브 밴드 눈검증 — 현재 dev DB 거의 EMPTY(오늘 advance+decline=0→밴드 null)라 라이브 미확인. 컴포넌트 테스트로만 렌더 검증됨 | @qa | breadth beat 데이터 채움 | 🆕 경미·데이터종속 | 재개 트리거 = breadth snapshot 실데이터 누적 후 라이브 카드 밴드 1컷 |
 | T-BREADTH-TUNE | 실 SPY breadth(~500종목) 누적 후 `BREADTH_THRESHOLDS`(lean 0.60/broad 0.70) 경계 실분포 재튜닝 — `concentrationBand` TUNE과 **묶음** 처리. 현재 0.5 중심·관례 앵커(STEP 0 dev n=1로 실분포 미검증) | @frontend | breadth 실분포 누적 | 🆕 저우선·TUNE | 실분포 히스토그램으로 5밴드 경계 검증/조정. concentration TUNE 동시 |
 
----
+## market_pulse Phase 1.5 Translation Layer (2026-06-18 착수)
+
+> 근거: `DECISIONS.md` "[2026-06-18] Phase 1.5 Translation Layer 토대 3결정". 카드 LLM 해설(prose/감각 유추) 레이어. **BOUNDARY-LLM(shared 래퍼)은 별도 트랙 이연 — 본 트랙 무접촉**(래퍼=Brief 패턴 in-zone 재사용). S2~S5 로드맵: TranslationLog → per-card prompt+task → envelope serializer+FE selector+fallback → golden/vcr.
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|----------------|
+| MP-TRANSLATION-S1 | Brief LLM plumbing 단일출처 추출 → `apps/market_pulse/llm/` (행위보존 GATE) | @backend | - | **완료 2026-06-18** (`5104635`, origin/main 안착) | `apps/market_pulse/llm/` Brief 플러밍 단일출처. 토대 3결정 DECISIONS 흡수(① 래퍼 in-zone 재사용 ② 별도 translations envelope=TranslationLog ③ golden+vcr) |
+| MP-TRANSLATION-S2 | TranslationLog 모델 (BriefingLog 미러, 신규 테이블 1개) — 1 LLM 호출의 카드별 감각 유추 문장 전부를 하루 1행에 담는 그릇 | @backend | MP-TRANSLATION-S1 | 🟢 **진행 중** (2026-06-18) | `apps/market_pulse/models/translation.py` (TranslationLog) + 마이그레이션 1개(CreateModel only, 기존 Alter 0) + 모델 테스트. 토큰=BriefingLog 정확 미러(prompt/completion 분리) + created_at만(사용자 결정). 기존 모델 FK 0(decouple) |
 
 ## 보류 (On Hold)
 
