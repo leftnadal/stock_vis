@@ -1885,3 +1885,24 @@ STEP 0에서 S4(timeline+대기)는 이미 land 확인 → 스코프 재정의. 
 - **머지**: `8b14dd8`.
 
 **📎 참조**: `PROGRESS.md` "Path B 묶음3 — 다음단계 게이지(B-3)", DECISIONS L1713(데이터 공백=코드 결함 아님 — `MP-DATA-MACRO-COVERAGE` 게이지 값 선행), `apps/market_pulse` 게이지 FE.
+
+---
+
+## [2026-06-18] MP-DATA-MACRO-COVERAGE = 7종 재귀 자동화 (M-1), 트랙 성격 재정의
+
+**⑧ 트랙 재정의 — "null 채우기"가 아니라 "수동 의존 7종 재귀 자동화"**
+
+STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual null")이 **stale**임을 확정 — 실제 **null 0개, coverage 1.0(14/14)**. 따라서 실제 과제는 데이터 채우기가 아니라, **재귀 beat가 없어 수동 유지되던 7종(NFCI·NFCICREDIT·NFCILEVERAGE·NFCIRISK·BAMLH0A0HYM2·BAMLH0A3HYC·T10Y3M)의 재귀 자동화**다. 완료 시 regime 11 macro = **11/11 재귀 자동 sync**(기존 4: T10Y2Y·VIXCLS FRED beat + VIX3M·MOVE Yahoo beat / 신규 7).
+
+**결정: 방법 = M-1 (검증된 sync command를 task 래핑)**
+- **Why M-1**: `sync_marketpulse_v2_indicators` command가 **idempotent**(`update_or_create`)·비대화형·`--series` 스코프 가능 → task 래핑(`call_command`)에 적합, **sync 로직 발명 0**. FRED 접근은 command 내부 `packages.shared.FREDClient` 경유 = **shared 경계 유지**.
+- **Why NOT M-2**: `update_economic_indicators`(목록 편집안)는 **legacy 매크로 대시보드 전용**(FEDFUNDS/DGS2/DGS10/UNRATE/CPIAUCSL 목록 + fear_greed/interest_rates/inflation/global_markets 캐시) → regime v2 전용이 아니라 목록 편집 시 **파급 ≠ 0** → 배제. (단 그 task 자체는 안정 실행 중: enabled, last_run 06-17 22:00, total_run 969 — 정황 측정으로 확인.)
+- **VIX3M·MOVE 제외**: FRED 미지원 + `mp_sync_yahoo_indicators_daily`가 이미 커버 → 재귀 스코프에서 제외(중복/실패 회피).
+
+**How to apply**: `apps/market_pulse/tasks/sync_indicators.py mp_sync_fred_indicators_daily`(7종 스코프) + `setup_marketpulse_beat` SCHEDULES 등록(NY 17:40 M-F, yahoo 17:35 직후). Bug #28(beat DB 직접 등록 → 배포 시 `setup_marketpulse_beat` 재실행 필수) 주석 명시. 마이그레이션 0(데이터 동기화).
+
+**검증**: 실 FRED 트리거 **7/7 succeeded**(total_failed=0, 202 obs), age 리셋(NFCI 13→6 / HY 6→2 / T10Y3M 3→1, **max 6d ≪ 14d 컷**). pytest marketpulse **162→166**(+4), macro 12→16. shared 0 / 타 앱 0.
+
+**정황(이 슬라이스 미수리)**: VIXCLS age 6 = FRED 발행 지연(task는 안정 실행) → 별도 ops 사안(필요 시 후속 트랙).
+
+**📎 참조**: `PROGRESS.md` "MP-DATA-MACRO-COVERAGE 완결", `apps/market_pulse/tasks/sync_indicators.py`, `common-bugs.md #28`(beat DB 등록).

@@ -16,6 +16,9 @@
 
 ## 현재 활성 작업
 
+> ✅ **2026-06-18 MP-DATA-MACRO-COVERAGE 완결 — FRED 7종 재귀 자동화 (M-1)**: **현재 `origin/main = be0b467`** (본 mgmt push 시 HEAD~1로 N=3 안전). regime 11 macro 중 재귀 beat 미보유 7종(NFCI·NFCICREDIT·NFCILEVERAGE·NFCIRISK·BAMLH0A0HYM2·BAMLH0A3HYC·T10Y3M)을 재귀 task `mp_sync_fred_indicators_daily`(beat NY 17:40 M-F)로 자동화 → **regime 11 macro 11/11 재귀 자동 sync 확보**(기존 4 + 신규 7). 방법 = M-1(검증된 `sync_marketpulse_v2_indicators` command를 7종 스코프 `call_command` 래핑, sync 로직 발명 0, FRED=packages.shared.FREDClient 경유). M-2(update_economic_indicators 목록 편집)는 legacy 대시보드 전용이라 파급≠0 → 배제. 검증: 실 FRED 7/7 succeeded(202 obs)·age 리셋(max 6d≪14d), pytest 162→166(+4)·마이그레이션 0·shared 0. 비자명 결정 1건(⑧) → DECISIONS 흡수. 정황(미수리): VIXCLS age 6 = FRED 발행 지연(task 안정) → 후속 ops.
+> - ★ **커버리지 정정 캐시 (다음 세션 오해 방지)**: 기존 인식 "14개 거시 중 9개 actual null(VIX·NFCI·HY OAS·T10Y2Y·T10Y3M 등 FRED 미완)"은 **stale·사실 아님**. STEP 0 실측 = **14/14 채워짐(null 0, coverage 1.0)**. 실제 상태 = "데이터는 다 있으나 7종이 수동 유지 → 신선도 운영 의존". 본 트랙으로 **7종 재귀 자동화 = stale→null 회귀 구조적 차단**. (메모리 측 정정은 디렉터 영역 — repo는 본 캐시로 단일 정정.)
+>
 > ✅ **2026-06-17 Path B(Regime 깊이) 묶음3 — 다음단계 게이지(B-3) 완결**: **현재 `origin/main = 8b14dd8`** (본 mgmt push 시 HEAD~1로 N=3 안전). 다음단계 5지표 **부호화 양방향 게이지**(B-3) FE land(`8b14dd8`) — "넘었나/얼마 남았나 + 방향"을 BE `to_threshold` 단일축으로 표시(**FE 부호 로직 0**, `|to_threshold|/scaleRef` 길이 정규화만 = 수치 발명 아님). closest 요약 라인 유지 + 게이지 additive → 기존 '대기' 분기 회귀 0. vitest 253(캐시). 비자명 결정 2건 → DECISIONS 흡수(⑥ Path B 다음조각 = 게이지A 선택·타임라인B 보류, 가중 4.75/2.25 마진 2.50 / ⑦ 게이지 매핑 = B-3 디렉터 결정 — 가중 권고 B-2(4.30)와 상이, 5지표 부호 일관성 STEP 0 통과로 확정, BE 단일축 봉인). **(참고) S4 timeline은 기 land 확인**(이번 STEP 0 발견 → ⑥ 스코프 재정의 근거).
 >
 
