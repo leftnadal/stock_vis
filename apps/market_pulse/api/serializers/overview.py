@@ -122,9 +122,24 @@ class CardsSerializer(serializers.Serializer):
     brief = BriefCardSerializer(allow_null=True)
 
 
+class TranslationsSerializer(serializers.Serializer):
+    """Phase 1.5 S4 — 카드별 감각 유추(senses) envelope. cards와 별개 동렬 블록.
+
+    senses 키 = cards 키(regime/breadth/sector/concentration) 중 생성된 것만.
+    블록 자체가 null = 미생성, senses={} = 생성됐으나 0개(FE가 둘 다 '밴드만'으로 수렴).
+    """
+
+    senses = serializers.DictField(child=serializers.CharField())
+    model_version = serializers.CharField(allow_blank=True)
+    generated_at = serializers.DateTimeField()
+    status = serializers.CharField()
+
+
 class OverviewResponseSerializer(serializers.Serializer):
     _meta = MetaSerializer()
     ticker_bar = serializers.ListField(child=TickerItemSerializer(), allow_empty=True)
     news = serializers.ListField(child=NewsItemSerializer(), allow_empty=True)
     anomaly = AnomalySectionSerializer()
     cards = CardsSerializer()
+    # S4: cards 무변경 — translations는 동렬 추가 블록(미생성 시 null).
+    translations = TranslationsSerializer(allow_null=True, required=False)

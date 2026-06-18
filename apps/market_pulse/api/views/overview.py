@@ -239,6 +239,27 @@ def _brief_card():
     }
 
 
+def _translations_block():
+    """Phase 1.5 S4 — 최신 TranslationLog 행을 translations envelope로.
+
+    행 없음 → None(미생성). 행 있음 → senses(있는 카드 키만) + 메타.
+    빈 senses({})와 None은 의도적으로 구분(FE fallback이 둘 다 '밴드만'으로 수렴하되,
+    None=미생성 / {}=생성됐으나 0키를 응답에서 식별 가능하게 유지).
+    cards 블록은 건드리지 않는다(동렬 추가).
+    """
+    from apps.market_pulse.models.translation import TranslationLog
+
+    log = TranslationLog.objects.order_by("-date").first()
+    if log is None:
+        return None
+    return {
+        "senses": log.senses or {},
+        "model_version": log.model_version,
+        "generated_at": log.created_at,
+        "status": log.status,
+    }
+
+
 def _data_finalized(cards) -> bool:
     today = django_timezone.localdate()
     snaps = [
@@ -293,6 +314,8 @@ def _build_payload() -> dict:
         "news": _news_items(),
         "anomaly": _anomaly_section(cards),
         "cards": cards,
+        # S4: cards와 동렬 추가(cards 무변경). 미생성 시 null.
+        "translations": _translations_block(),
     }
 
 
