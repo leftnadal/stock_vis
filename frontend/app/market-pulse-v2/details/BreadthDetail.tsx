@@ -12,11 +12,21 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthDetail as Detail } from '@/lib/api/marketPulseV2'
+import { breadthBand } from '../meaning'
 
 export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">시장 폭 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
+
+  // MP-UX: 상세 헤드라인에도 의미밴드 일관 표시(카드 face와 동일 단일소스, additive).
+  const bb = breadthBand({
+    advance: payload.advance ?? 0,
+    decline: payload.decline ?? 0,
+    new_high_52w: payload.new_high_52w ?? 0,
+    new_low_52w: payload.new_low_52w ?? 0,
+    ad_line_change: payload.ad_line_change ?? 0,
+  })
 
   const data = (payload.history_30d ?? []).map((p) => ({
     date: p.date.slice(5),
@@ -27,6 +37,11 @@ export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: R
 
   return (
     <div className="grid gap-4">
+      {bb ? (
+        <p className={`rounded border px-2 py-1 text-sm ${bb.tone}`}>
+          {translate(`breadth.${bb.band}`, labels, bb.band)}
+        </p>
+      ) : null}
       <header className="grid grid-cols-3 gap-2 text-center">
         <Cell label="상승" value={payload.advance ?? 0} tone="text-emerald-600" />
         <Cell label="하락" value={payload.decline ?? 0} tone="text-rose-600" />

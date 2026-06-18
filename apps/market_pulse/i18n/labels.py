@@ -79,6 +79,15 @@ KO_LABELS: dict[str, str] = {
     "sector.XLB": "소재",
     "sector.XLRE": "부동산",
     "sector.XLU": "유틸리티",
+    # MP-UX-BREADTH-BAND: 시장 폭 의미밴드 5단계 + 보조 부제 문구 (meaning.ts breadthBand
+    #   단일소스의 i18n 라벨, sector.* 선례 미러). 색은 meaning.ts FLOW_TONE.
+    "breadth.broad_strength": "광범위한 강세",
+    "breadth.strength": "강세 우위",
+    "breadth.neutral": "중립·혼조",
+    "breadth.weakness": "약세 우위",
+    "breadth.broad_weakness": "광범위한 약세",
+    "breadth.cue.high_lead": "신고가 우위",
+    "breadth.cue.low_lead": "신저가 우위",
 }
 
 

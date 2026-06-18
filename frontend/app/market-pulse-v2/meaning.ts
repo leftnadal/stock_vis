@@ -167,3 +167,77 @@ export function concentrationTrend(values: number[], epsilon = 0.01): TrendDir |
   if (delta < -epsilon) return 'down'
   return 'flat'
 }
+
+// ─────────────────────────────────────────────────────────────
+// MP-UX — 시장 폭(Breadth) 의미밴드 단일소스 (sector/concentration 패턴 미러).
+// 원시 등락수를 "광범위한 강세~광범위한 약세" 5밴드로. 색=FLOW_TONE 재사용,
+// 문구=i18n(breadth.*, 호출부 translate). meaning.ts는 i18n-무관(밴드 키만 반환).
+// ─────────────────────────────────────────────────────────────
+
+export type BreadthBand =
+  | 'broad_strength'
+  | 'strength'
+  | 'neutral'
+  | 'weakness'
+  | 'broad_weakness'
+
+export interface BreadthInputs {
+  advance: number
+  decline: number
+  new_high_52w: number
+  new_low_52w: number
+  ad_line_change: number
+}
+
+// 주신호 = 등락비율 advance/(advance+decline). 0.5 내재 중심(유계 [0,1], 균형=0.5).
+// 사다리 = 0.5 ± 0.10(lean) / ± 0.20(broad) — sectorFlow epsilon 0.1 관례 차용 + 0.5 앵커.
+// ⚠️ TUNE: dev DB breadth 실데이터 부족(STEP 0 n=1)으로 실분포 미검증. 0.5 중심·관례
+//   앵커이며 실 SPY breadth 누적 후 재튜닝(concentrationBand TUNE 선례와 동일 규율).
+export const BREADTH_THRESHOLDS = { lean: 0.6, broad: 0.7 } as const // 대칭: 하단 0.4/0.3
+
+// 강세=calm(녹)·약세=hot(적)·중립=neutral — sectorFlow 3톤 스킴 재사용(green=up 관례).
+//   broad/regular 강도는 색이 아닌 라벨로 구분(신규 색 발명 0).
+const BREADTH_TONE: Record<BreadthBand, string> = {
+  broad_strength: FLOW_TONE.calm,
+  strength: FLOW_TONE.calm,
+  neutral: FLOW_NEUTRAL_TONE,
+  weakness: FLOW_TONE.hot,
+  broad_weakness: FLOW_TONE.hot,
+}
+
+const BREADTH_ORDER: BreadthBand[] = [
+  'broad_weakness',
+  'weakness',
+  'neutral',
+  'strength',
+  'broad_strength',
+]
+
+/**
+ * 등락수 → 5밴드. 데이터 없음(advance+decline≤0) → null(대기, 0 변환 금지).
+ * 엇갈림 댐핑: 내부신호(신고저 우위·AD추세)가 등락방향과 강하게 반대면 1단계 중립쪽 이동
+ * (강세인데 신저가 우위+AD↓ → 한 단계 ↓ / 약세인데 신고가 우위+AD↑ → 한 단계 ↑).
+ */
+export function breadthBand(
+  i: BreadthInputs | null | undefined,
+): { band: BreadthBand; tone: string } | null {
+  if (!i) return null
+  const tot = (i.advance ?? 0) + (i.decline ?? 0)
+  if (tot <= 0) return null
+  const ratio = i.advance / tot
+  const t = BREADTH_THRESHOLDS
+  let idx: number // 0=broad_weakness … 4=broad_strength
+  if (ratio >= t.broad) idx = 4
+  else if (ratio >= t.lean) idx = 3
+  else if (ratio > 1 - t.lean) idx = 2 // (0.40, 0.60)
+  else if (ratio > 1 - t.broad) idx = 1 // (0.30, 0.40]
+  else idx = 0 // ≤ 0.30
+
+  const hlBias = Math.sign((i.new_high_52w ?? 0) - (i.new_low_52w ?? 0))
+  const adTrend = Math.sign(i.ad_line_change ?? 0)
+  if (idx >= 3 && hlBias < 0 && adTrend < 0) idx -= 1 // 강세인데 내부 약함 → 댐핑
+  if (idx <= 1 && hlBias > 0 && adTrend > 0) idx += 1 // 약세인데 내부 강함 → 댐핑
+
+  const band = BREADTH_ORDER[idx]
+  return { band, tone: BREADTH_TONE[band] }
+}
