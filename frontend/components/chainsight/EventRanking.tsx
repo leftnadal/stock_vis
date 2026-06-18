@@ -1,8 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import Link from 'next/link';
 import { fetchEventStocks } from '@/services/chainsightService';
 import { getLabelForTheme, METRIC_INFO } from '@/constants/eventThemes';
@@ -59,34 +60,67 @@ function RankingHeader() {
 
 function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
   const isPositive = item.raw_return >= 0;
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="border-b border-gray-100 dark:border-gray-700">
-      <Link
-        href={`/chainsight/${item.symbol}`}
-        className="flex items-center gap-4 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-      >
-        <span className="w-6 text-sm font-bold text-gray-400 text-right">{rank}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{item.symbol}</span>
-            {item.is_low_liquidity && <LowLiquidityBadge />}
+      <div className="flex items-center">
+        <Link
+          href={`/chainsight/${item.symbol}`}
+          className="flex-1 flex items-center gap-4 py-3 px-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+        >
+          <span className="w-6 text-sm font-bold text-gray-400 text-right">{rank}</span>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">{item.symbol}</span>
+              {item.is_low_liquidity && <LowLiquidityBadge />}
+            </div>
+            <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
           </div>
-          <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
-        </div>
-        <div className="w-20 shrink-0 text-right">
-          <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
-            {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
+          <div className="w-20 shrink-0 text-right">
+            <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+              {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
+          {/* 3 primary metric value columns */}
+          <div className="flex gap-3">
+            <MetricCell value={item.trend_quality} domain="center" domainMax={2} />
+            <MetricCell value={item.theme_beta} domain="baseline" domainMax={2} />
+            <MetricCell value={item.capture_spread} domain="center" domainMax={100} signed />
+          </div>
+        </Link>
+        <button
+          aria-label={expanded ? `${item.symbol} 상세 접기` : `${item.symbol} 상세 펼치기`}
+          className="shrink-0 p-1 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setExpanded((prev) => !prev);
+          }}
+        >
+          {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+      </div>
+      {expanded && (
+        <div className="px-4 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex items-start gap-4">
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-gray-500 dark:text-gray-400">{METRIC_INFO.theme_alpha.label}</span>
+              <MetricCell value={item.theme_alpha} domain="center" domainMax={0.5} />
+            </div>
+            <p className="flex-1 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+              {METRIC_INFO.theme_alpha.description}
+            </p>
+          </div>
+          <Link
+            href={`/chainsight/${item.symbol}`}
+            className="mt-2 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            관계 그래프 열기
+          </Link>
         </div>
-        {/* 3 primary metric value columns */}
-        <div className="flex gap-3">
-          <MetricCell value={item.trend_quality} domain="center" domainMax={2} />
-          <MetricCell value={item.theme_beta} domain="baseline" domainMax={2} />
-          <MetricCell value={item.capture_spread} domain="center" domainMax={100} signed />
-        </div>
-      </Link>
+      )}
       {item.is_low_liquidity && (
         <div className="px-4 pb-3">
           <LowLiquidityPanel item={item} />

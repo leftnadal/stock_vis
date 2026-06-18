@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EventRanking from '@/components/chainsight/EventRanking';
@@ -199,5 +199,78 @@ describe('EventRanking', () => {
     expect(nvdaLink).toHaveAttribute('href', '/chainsight/NVDA');
     const amdLink = screen.getByRole('link', { name: /AMD/ });
     expect(amdLink).toHaveAttribute('href', '/chainsight/AMD');
+  });
+
+  // ── Slice 3: chevron expand/collapse ──────────────────────────────────────
+
+  function isInsideLink(element: HTMLElement): boolean {
+    let node: HTMLElement | null = element;
+    while (node) {
+      if (node.tagName === 'A') return true;
+      node = node.parentElement;
+    }
+    return false;
+  }
+
+  it('각 행에 상세 펼치기 chevron 버튼이 있다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue(mockStocks);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.getByRole('button', { name: 'NVDA 상세 펼치기' })).toBeInTheDocument();
+  });
+
+  it('기본 상태에서 보조 패널이 숨겨져 있다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.queryByText('관계 그래프 열기')).not.toBeInTheDocument();
+  });
+
+  it('chevron 클릭 시 보조 패널이 나타난다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    expect(screen.getByText('관계 그래프 열기')).toBeInTheDocument();
+  });
+
+  it('chevron 두 번 클릭 시 보조 패널이 다시 사라진다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    const btn = screen.getByRole('button', { name: 'NVDA 상세 펼치기' });
+    fireEvent.click(btn);
+    expect(screen.getByText('관계 그래프 열기')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 접기' }));
+    expect(screen.queryByText('관계 그래프 열기')).not.toBeInTheDocument();
+  });
+
+  it('여러 행의 펼침 상태는 독립적이다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue(mockStocks);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    // NVDA 펼치기
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    // NVDA 패널이 열림
+    expect(screen.getByText('관계 그래프 열기')).toBeInTheDocument();
+    // AMD 버튼은 여전히 '펼치기' 상태
+    expect(screen.getByRole('button', { name: 'AMD 상세 펼치기' })).toBeInTheDocument();
+  });
+
+  it('chevron 버튼이 Link(a 태그) 바깥에 있다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    const chevronBtn = screen.getByRole('button', { name: 'NVDA 상세 펼치기' });
+    expect(isInsideLink(chevronBtn)).toBe(false);
+  });
+
+  it('보조 패널에 theme_alpha 값이 표시된다', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[0]]);
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    fireEvent.click(screen.getByRole('button', { name: 'NVDA 상세 펼치기' }));
+    // mockStocks[0].theme_alpha = 0.05 → MetricCell renders it
+    expect(screen.getByText('0.05')).toBeInTheDocument();
   });
 });
