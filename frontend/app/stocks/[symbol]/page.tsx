@@ -447,7 +447,7 @@ function StockDetailContent() {
               <div>
                 <div className="mb-4 flex justify-end">
                   <Link
-                    href={`/chainsight?focus=${symbol.toUpperCase()}`}
+                    href={`/chainsight/market-graph?focus=${symbol.toUpperCase()}`}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition"
                   >
                     <Compass className="h-4 w-4" />
