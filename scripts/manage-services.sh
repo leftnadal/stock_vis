@@ -4,14 +4,17 @@
 
 set -e
 
+WEB_PLIST="$HOME/Library/LaunchAgents/com.stockvis.web.plist"
 WORKER_PLIST="$HOME/Library/LaunchAgents/com.stockvis.celery-worker.plist"
 BEAT_PLIST="$HOME/Library/LaunchAgents/com.stockvis.celery-beat.plist"
 WATCHDOG_PLIST="$HOME/Library/LaunchAgents/com.stockvis.celery-watchdog.plist"
 LOG_DIR="$(dirname "$0")/../logs"
+WEB_LOG_DIR="$HOME/Library/Logs/stockvis"
 
 case "$1" in
     start)
         echo "Starting Stock-Vis services..."
+        launchctl load "$WEB_PLIST" 2>/dev/null && echo "  Web (daphne :18765): started" || echo "  Web (daphne :18765): already loaded"
         launchctl load "$WORKER_PLIST" 2>/dev/null && echo "  Celery worker: started" || echo "  Celery worker: already loaded"
         launchctl load "$BEAT_PLIST" 2>/dev/null && echo "  Celery beat: started" || echo "  Celery beat: already loaded"
         launchctl load "$WATCHDOG_PLIST" 2>/dev/null && echo "  Celery watchdog: started" || echo "  Celery watchdog: already loaded"
@@ -22,6 +25,7 @@ case "$1" in
         launchctl unload "$WATCHDOG_PLIST" 2>/dev/null && echo "  Celery watchdog: stopped" || echo "  Celery watchdog: not loaded"
         launchctl unload "$BEAT_PLIST" 2>/dev/null && echo "  Celery beat: stopped" || echo "  Celery beat: not loaded"
         launchctl unload "$WORKER_PLIST" 2>/dev/null && echo "  Celery worker: stopped" || echo "  Celery worker: not loaded"
+        launchctl unload "$WEB_PLIST" 2>/dev/null && echo "  Web (daphne :18765): stopped" || echo "  Web (daphne :18765): not loaded"
         echo "Done."
         ;;
     restart)
@@ -32,6 +36,8 @@ case "$1" in
         ;;
     status)
         echo "Stock-Vis service status:"
+        echo -n "  Web (daphne):    "
+        launchctl list | grep -q "com.stockvis.web" && echo "running (:18765)" || echo "stopped"
         echo -n "  Celery worker:   "
         launchctl list | grep -q "com.stockvis.celery-worker" && echo "running" || echo "stopped"
         echo -n "  Celery beat:     "
@@ -54,6 +60,9 @@ case "$1" in
     logs)
         LOG_TYPE="${2:-worker}"
         case "$LOG_TYPE" in
+            web)
+                tail -f "$WEB_LOG_DIR/web.log"
+                ;;
             worker)
                 tail -f "$LOG_DIR/celery-worker.log"
                 ;;
@@ -67,13 +76,13 @@ case "$1" in
                 tail -f "$LOG_DIR/celery-worker-error.log" "$LOG_DIR/celery-beat-error.log" "$LOG_DIR/celery-watchdog-error.log"
                 ;;
             *)
-                echo "Usage: $0 logs {worker|beat|watchdog|errors}"
+                echo "Usage: $0 logs {web|worker|beat|watchdog|errors}"
                 exit 1
                 ;;
         esac
         ;;
     *)
-        echo "Usage: $0 {start|stop|restart|status|logs [worker|beat|watchdog|errors]}"
+        echo "Usage: $0 {start|stop|restart|status|logs [web|worker|beat|watchdog|errors]}"
         exit 1
         ;;
 esac
