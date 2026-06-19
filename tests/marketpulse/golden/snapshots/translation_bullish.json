@@ -1,0 +1,26 @@
+{
+  "scenario": "bullish",
+  "kind": "translation",
+  "model": "gemini-2.5-flash",
+  "context": {
+    "date": "2026-06-19",
+    "regime": {
+      "stage": "BULL_EXPANSION",
+      "status": "confirmed"
+    },
+    "breadth": {
+      "advance": 360,
+      "decline": 130,
+      "unchanged": 10
+    },
+    "sector": {
+      "leader": "XLK",
+      "laggard": "XLU"
+    },
+    "concentration": {
+      "top10_weight": 0.3,
+      "hhi": 0.017
+    }
+  },
+  "raw_text": "{\"regime\": \"강세 확장 국면이 확인되며 시장 전반에 차분한 긍정의 기운이 감돕니다.\", \"breadth\": \"오르는 종목이 내리는 종목을 크게 앞서 투자 참여가 폭넓게 나타납니다.\", \"sector\": \"기술 섹터로 자금이 쏠리면서 유틸리티는 상대적으로 소외되는 모습입니다.\", \"concentration\": \"top10 비중이 30%로 낮아 소수 종목 쏠림이 적고 시장 전반으로 고르게 분산되어 있습니다.\"}"
+}
