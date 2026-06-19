@@ -77,8 +77,12 @@ export async function fetchSignals(page = 1, pageSize = 5, sector?: string): Pro
 // ── Event Board API (CS-RD3) ──
 
 export async function fetchEvents(): Promise<EventBoardItem[]> {
-  const { data } = await authAxios.get<EventBoardItem[]>('/chainsight/events/');
-  return data;
+  // 백엔드 응답은 봉투 객체 { date, count, events: [...] } — events 배열만 추출.
+  // (EventBoard는 배열을 기대; 객체를 그대로 넘기면 [...data] 가 깨진다)
+  const { data } = await authAxios.get<{ date: string; count: number; events: EventBoardItem[] }>(
+    '/chainsight/events/',
+  );
+  return data.events;
 }
 
 /**
@@ -89,9 +93,13 @@ export async function fetchEventStocks(
   theme: string,
   window: 20 | 120 = 20,
 ): Promise<EventRankingItem[]> {
-  const { data } = await authAxios.get<EventRankingItem[]>(
-    `/chainsight/events/${encodeURIComponent(theme)}/stocks/`,
-    { params: { window } },
-  );
-  return data;
+  // 백엔드 응답은 봉투 객체 { theme, date, window, count, stocks: [...] } — stocks 배열만 추출.
+  const { data } = await authAxios.get<{
+    theme: string;
+    date: string;
+    window: number;
+    count: number;
+    stocks: EventRankingItem[];
+  }>(`/chainsight/events/${encodeURIComponent(theme)}/stocks/`, { params: { window } });
+  return data.stocks;
 }

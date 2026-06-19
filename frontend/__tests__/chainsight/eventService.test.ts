@@ -69,16 +69,22 @@ const mockStocks: EventRankingItem[] = [
 describe('fetchEvents', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('올바른 엔드포인트를 호출하고 데이터를 반환한다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockEvents });
+  // 백엔드 실제 응답 = 봉투 객체 { date, count, events: [...] }.
+  it('봉투 응답에서 events 배열을 추출해 반환한다', async () => {
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { date: '2026-06-15', count: 2, events: mockEvents },
+    });
     const result = await fetchEvents();
     expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/');
+    expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(2);
     expect(result[0].theme).toBe('semiconductor');
   });
 
   it('EventBoardItem 필드가 모두 파싱된다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockEvents });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { date: '2026-06-15', count: 2, events: mockEvents },
+    });
     const result = await fetchEvents();
     const item = result[0];
     expect(typeof item.theme).toBe('string');
@@ -94,7 +100,9 @@ describe('fetchEventStocks', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('theme 파라미터로 올바른 엔드포인트를 호출한다 (window 기본 20)', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { theme: 'semiconductor', date: '2026-06-15', window: 20, count: 2, stocks: mockStocks },
+    });
     const result = await fetchEventStocks('semiconductor');
     expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/semiconductor/stocks/', {
       params: { window: 20 },
@@ -103,7 +111,9 @@ describe('fetchEventStocks', () => {
   });
 
   it('window=120을 params로 전달한다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { theme: 'semiconductor', date: '2026-06-15', window: 20, count: 2, stocks: mockStocks },
+    });
     await fetchEventStocks('semiconductor', 120);
     expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/semiconductor/stocks/', {
       params: { window: 120 },
@@ -111,7 +121,9 @@ describe('fetchEventStocks', () => {
   });
 
   it('EventRankingItem 필드가 모두 파싱된다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { theme: 'semiconductor', date: '2026-06-15', window: 20, count: 2, stocks: mockStocks },
+    });
     const result = await fetchEventStocks('semiconductor');
     const item = result[0];
     expect(typeof item.symbol).toBe('string');
@@ -126,13 +138,17 @@ describe('fetchEventStocks', () => {
   });
 
   it('is_low_liquidity가 true인 항목을 올바르게 파싱한다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: mockStocks });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { theme: 'semiconductor', date: '2026-06-15', window: 20, count: 2, stocks: mockStocks },
+    });
     const result = await fetchEventStocks('semiconductor');
     expect(result[1].is_low_liquidity).toBe(true);
   });
 
   it('특수문자 포함 theme을 encodeURIComponent로 인코딩한다', async () => {
-    vi.mocked(authAxios.get).mockResolvedValueOnce({ data: [] });
+    vi.mocked(authAxios.get).mockResolvedValueOnce({
+      data: { theme: 'clean energy', date: '2026-06-15', window: 20, count: 0, stocks: [] },
+    });
     await fetchEventStocks('clean energy');
     expect(authAxios.get).toHaveBeenCalledWith('/chainsight/events/clean%20energy/stocks/', {
       params: { window: 20 },
