@@ -2003,6 +2003,24 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 
 ---
 
+## [2026-06-19] CS-RD3 통합 QA — 그래프 "테마"→"그룹" + 관심도 standing 바 + "관심↑" 라벨 + 헤더 정렬
+
+라이브 스크린샷(역전 후) 대조 발견 처리. 디렉터 확정 4건.
+
+**① 그래프 관계라벨 "테마"→"그룹" (키 보존)**: 사용자 노출 텍스트 5곳(`graphStyles.ts`·`FilterPanel`·`RelationFilterChips` label + `NodeTooltip`·`RelationCardPanel` '테마 공유'→'그룹 공유') + 주석 1곳 교체. **관계 타입 키 `HAS_THEME`는 전부 보존**(필터·그래프 엣지·radialLayout 동작 불변 — 키-텍스트가 별도 변수라 결합 위험 0, STEP 0 확인). 그래프 화면 "테마" 노출 0.
+
+**② 관심도 standing 바 신규 (디렉터 옵션2 / C3 = 4번째 미니바 아닌 구분 처리)**: STEP 0 발견 = 랭킹에 관심도 바가 **원래 없었음**(텍스트 "관심도 84.5"만; 화면의 바는 전부 M2 MetricCell). RD3 §2 AttentionScoreBar 미구현분. **신규 `AttentionStandingBar.tsx`** 추가 — 점수 숫자 아래(M2 미니바와 다른 위치) + indigo 채움/slate 트랙(다른 스타일). 채움 = **그룹 내 min-max 정규화** [FLOOR 10%, 100%] (페이지 정규화). **측정 근거**: 2026-06-15 전체 분포 14.8~100/p10 30/med 50/p90 73.5 → 그룹 내 스프레드 충분, 고정 0~100보다 순위 낙차 시각화 우수. 숫자(절대값) 병기로 바=standing 전용. 단일/동점 그룹(range=0)→full.
+
+**③ "관심↑ N" 의미 노출**: `high_attention_count` = 그룹 내 **관심도 ≥ 70 종목 수**(attention_service.py:213, low는 ≤20). 카드가 `<button>`이라 중첩 인터랙티브 팝오버(MetricInfoPopover=button) 불가 → `title` 툴팁 + cursor-help로 라벨 명확화("관심 집중 종목 N개 — 관심도 70점 이상").
+
+**④ 랭킹 헤더 컬럼 폭 정렬**: 헤더가 행의 chevron 버튼 폭 미고려로 라벨이 우측 쏠림 → 헤더를 행 구조(Link[flex-1] + chevron placeholder)와 미러링. 정렬만, 기능 무변경.
+
+**검증**: tsc 0, vitest 365→**371**(+6 AttentionStandingBar 경계/단조/단일그룹). 라이브 육안은 교차포트(:3200) CORS 차단으로 보류 → 머지 후 사용자 :3000에서 확인 권장. HAS_THEME 키 보존으로 그래프·필터 동작 불변.
+
+**📎 참조**: `frontend/components/chainsight/{graphStyles,FilterPanel,RelationFilterChips,NodeTooltip,RelationCardPanel,EventRanking,EventBoard,AttentionStandingBar}.tsx`.
+
+---
+
 ## [2026-06-18] Phase 1.5 Translation Layer — 토대 3결정 (래퍼·스키마·테스트)
 
 카드 LLM 해설(prose) 레이어. STEP 0 recon(`42054ae`)으로 ground truth 확정 후 3축 결정.

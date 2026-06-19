@@ -59,7 +59,12 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
       <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.avg_score.toFixed(1)}</div>
       <div className="flex gap-2 text-xs">
         <span className="text-gray-600 dark:text-gray-300">{item.member_count}개 종목</span>
-        <span className="text-blue-500 font-medium">관심↑ {item.high_attention_count}</span>
+        <span
+          className="text-blue-500 font-medium cursor-help"
+          title={`관심 집중 종목 ${item.high_attention_count}개 — 그룹에서 관심도 70점 이상 (전체 ${item.member_count}개 중)`}
+        >
+          관심↑ {item.high_attention_count}
+        </span>
       </div>
     </button>
   );
