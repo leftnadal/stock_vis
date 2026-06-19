@@ -11,6 +11,7 @@ import type { EventRankingItem } from '@/types/chainsight';
 import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
 import MetricInfoPopover from '@/components/chainsight/MetricInfoPopover';
 import MetricCell from '@/components/chainsight/MetricCell';
+import AttentionStandingBar from '@/components/chainsight/AttentionStandingBar';
 
 interface Props {
   theme: string;
@@ -31,34 +32,52 @@ const PRIMARY_METRICS = [
 ] as const;
 
 function RankingHeader() {
+  // 행 구조(Link[flex-1] + chevron 버튼)와 동일하게 미러링 — 헤더 라벨이
+  // 행의 값 컬럼과 정렬되도록 chevron 폭 placeholder 포함(정렬만, 기능 무변경).
   return (
     <div
-      className="flex items-center gap-4 px-4 py-2 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700"
+      className="flex items-center bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700"
       aria-label="지표 컬럼 헤더"
     >
-      {/* rank placeholder */}
-      <span className="w-6 shrink-0" />
-      {/* symbol/name placeholder */}
-      <div className="flex-1 min-w-0" />
-      {/* return/score placeholder */}
-      <div className="w-20 shrink-0" />
-      {/* 3 primary metric columns */}
-      <div className="flex gap-3">
-        {PRIMARY_METRICS.map((key) => (
-          <div
-            key={key}
-            className="w-20 flex items-center justify-end gap-1 text-xs font-medium text-gray-500 dark:text-gray-400"
-          >
-            <span>{METRIC_INFO[key].label}</span>
-            <MetricInfoPopover metricKey={key} />
-          </div>
-        ))}
+      <div className="flex-1 flex items-center gap-4 px-4 py-2">
+        {/* rank placeholder */}
+        <span className="w-6 shrink-0" />
+        {/* symbol/name placeholder */}
+        <div className="flex-1 min-w-0" />
+        {/* return/score placeholder */}
+        <div className="w-20 shrink-0" />
+        {/* 3 primary metric columns */}
+        <div className="flex gap-3">
+          {PRIMARY_METRICS.map((key) => (
+            <div
+              key={key}
+              className="w-20 flex items-center justify-end gap-1 text-xs font-medium text-gray-500 dark:text-gray-400"
+            >
+              <span>{METRIC_INFO[key].label}</span>
+              <MetricInfoPopover metricKey={key} />
+            </div>
+          ))}
+        </div>
       </div>
+      {/* chevron 버튼 폭 placeholder (행: shrink-0 p-1 + size16) */}
+      <span className="shrink-0 p-1" aria-hidden="true">
+        <span className="block w-4 h-4" />
+      </span>
     </div>
   );
 }
 
-function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
+function RankingRow({
+  item,
+  rank,
+  groupMin,
+  groupMax,
+}: {
+  item: EventRankingItem;
+  rank: number;
+  groupMin: number;
+  groupMax: number;
+}) {
   const isPositive = item.raw_return >= 0;
   const [expanded, setExpanded] = useState(false);
 
@@ -82,6 +101,7 @@ function RankingRow({ item, rank }: { item: EventRankingItem; rank: number }) {
               {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
+            <AttentionStandingBar score={item.score} groupMin={groupMin} groupMax={groupMax} />
           </div>
           {/* 3 primary metric value columns */}
           <div className="flex gap-3">
@@ -240,16 +260,28 @@ export default function EventRanking({ theme }: Props) {
         <div className="p-8 text-center text-gray-500">종목 데이터가 없습니다</div>
       )}
 
-      {data && data.length > 0 && (
-        <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <RankingHeader />
-          {[...data]
-            .sort((a, b) => b.score - a.score)
-            .map((item, index) => (
-              <RankingRow key={item.symbol} item={item} rank={index + 1} />
-            ))}
-        </div>
-      )}
+      {data && data.length > 0 && (() => {
+        // 관심도 standing 바: 그룹 내 min-max 정규화(페이지 정규화)
+        const scores = data.map((d) => d.score);
+        const groupMin = Math.min(...scores);
+        const groupMax = Math.max(...scores);
+        return (
+          <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <RankingHeader />
+            {[...data]
+              .sort((a, b) => b.score - a.score)
+              .map((item, index) => (
+                <RankingRow
+                  key={item.symbol}
+                  item={item}
+                  rank={index + 1}
+                  groupMin={groupMin}
+                  groupMax={groupMax}
+                />
+              ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
