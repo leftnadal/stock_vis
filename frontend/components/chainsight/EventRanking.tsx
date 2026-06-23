@@ -70,13 +70,9 @@ function RankingHeader() {
 function RankingRow({
   item,
   rank,
-  groupMin,
-  groupMax,
 }: {
   item: EventRankingItem;
   rank: number;
-  groupMin: number;
-  groupMax: number;
 }) {
   const isPositive = item.raw_return >= 0;
   const [expanded, setExpanded] = useState(false);
@@ -101,7 +97,7 @@ function RankingRow({
               {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>
-            <AttentionStandingBar score={item.score} groupMin={groupMin} groupMax={groupMax} />
+            <AttentionStandingBar score={item.score} />
           </div>
           {/* 3 primary metric value columns */}
           <div className="flex gap-3">
@@ -260,28 +256,16 @@ export default function EventRanking({ theme }: Props) {
         <div className="p-8 text-center text-gray-500">종목 데이터가 없습니다</div>
       )}
 
-      {data && data.length > 0 && (() => {
-        // 관심도 standing 바: 그룹 내 min-max 정규화(페이지 정규화)
-        const scores = data.map((d) => d.score);
-        const groupMin = Math.min(...scores);
-        const groupMax = Math.max(...scores);
-        return (
-          <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <RankingHeader />
-            {[...data]
-              .sort((a, b) => b.score - a.score)
-              .map((item, index) => (
-                <RankingRow
-                  key={item.symbol}
-                  item={item}
-                  rank={index + 1}
-                  groupMin={groupMin}
-                  groupMax={groupMax}
-                />
-              ))}
-          </div>
-        );
-      })()}
+      {data && data.length > 0 && (
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <RankingHeader />
+          {[...data]
+            .sort((a, b) => b.score - a.score)
+            .map((item, index) => (
+              <RankingRow key={item.symbol} item={item} rank={index + 1} />
+            ))}
+        </div>
+      )}
     </div>
   );
 }
