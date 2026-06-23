@@ -2035,6 +2035,30 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 
 ---
 
+## [2026-06-23] chain_sight 소규모 그룹 — URL 인코딩 버그(ⓑ) 수정 + 멤버<3 보드 노출(ⓐ)
+
+CS-RD3 QA 육안검증 부수 발견 → STEP 0 측정으로 근인 분리 후 결정 게이트 통과.
+
+**ⓑ 그룹명 URL 인코딩 = 광역 버그(수정, 결정 무관)**
+- **증상**: 공백·`&` 포함 다단어 그룹명 7개(Communication Services·Consumer Discretionary·Consumer Staples·Real Estate·Robotics & AI·Lithium & Battery·Clean Energy)의 상세 페이지가 **빈 목록**(제목도 `Communication%20Services`로 이중 인코딩). 보드에 뜨는 그룹(Robotics & AI N=4, Communication Services N=22)도 상세 깨짐 → 누락 그룹 한정 아님.
+- **근인**: `EventBoard.tsx` 카드 클릭 `router.push(`/chainsight/events/${item.theme}`)`가 **encodeURIComponent 없이 raw push** → param 이중 인코딩 도착 → fetchRanking이 또 encode → 백엔드 조회 키 불일치.
+- **수정**: push에 `encodeURIComponent(item.theme)` + 페이지(`[theme]/page.tsx`)에서 `decodeURIComponent` 단일 디코딩(멱등 — % 없으면 no-op이라 Next 자동디코딩 여부와 무관, 그룹명에 literal % 없음). 링크 생성 지점은 단 1곳(0-2 전수 grep 확인).
+- **검증**: 라이브 — Communication Services·Robotics & AI 상세 데이터 정상 로드(제목도 정상 디코딩). vitest 라우트 왕복 10건(특수 7 + 단어1개 회귀 3).
+
+**ⓐ 멤버<3 보드 누락 = 의도된 필터 → 디렉터 결정 (가) 1급 노출**
+- **STEP 0 판정**: `attention_service.py:204` `if len(members) < 3: continue`(docstring 명시) = 의도된 필터, 멤버 **수** 기준(문자 무관). 버그 아님 → 결정 게이트.
+- **결정 (가) 1급 노출 + 저신뢰 표식**(가중합 4.25 vs (나)완전숨김 3.45, 마진 0.80). Why: Chain Sight 정체성 = "관련 종목 그룹 전수를 본다" → 소규모 숨기면 커버리지 구멍. 약점(소표본)은 숨기지 말고 신호.
+- **수정**: `len(members)<3` 필터 제거 → 모든 그룹(멤버=1 포함) 보드 집계. 보드 카드 + 랭킹 타이틀에 **"표본 작음" 저신뢰 표식**(member_count<3, amber, LowLiquidityBadge 결 재사용). `member_count`는 serializer에 이미 노출.
+- **N=1/N=2 상대지표 거짓 0 방지(STEP 0-3)**: 백엔드 `attach_leadership`는 quorum(MIN_THEME_MEMBERS=3) 미달 시 theme_beta·capture_spread = **None 반환**(0 아님), trend_quality(절대)만 산출. `MetricCell`은 이미 `value===null`→**"—"(대시)** 렌더 → 거짓 중립 신호 없음(추가 작업 불요). 라이브 보드 노출은 백엔드 재배포 후(pytest로 API 검증: 멤버<3·=1 그룹 포함 + member_count).
+
+**경계(0-2)**: get_event_board·get_event_ranking은 `apps/chain_sight` 전용. dashboard·market_pulse·shared 미사용, shared→chain_sight 역참조 0 → 안전.
+
+**검증**: vitest 372→387(+15: 인코딩 왕복 10 + 저신뢰 배지 4 + 인코딩 1), tsc 0. chainsight pytest 74/0(소규모·단일멤버 보드 포함 + 회귀 0). 단어1개 그룹·정상 그룹·랭킹·관심도바 불변(행위보존).
+
+**📎 참조**: `frontend/components/chainsight/{EventBoard,EventRanking}.tsx`, `frontend/app/chainsight/events/[theme]/page.tsx`, `apps/chain_sight/services/attention_service.py`, 테스트 `EventBoard/EventRanking/routeReversal.test.tsx`·`tests/chainsight/test_attention.py`.
+
+---
+
 ## [2026-06-18] Phase 1.5 Translation Layer — 토대 3결정 (래퍼·스키마·테스트)
 
 카드 LLM 해설(prose) 레이어. STEP 0 recon(`42054ae`)으로 ground truth 확정 후 3축 결정.

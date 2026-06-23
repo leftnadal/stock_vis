@@ -222,9 +222,20 @@ export default function EventRanking({ theme }: Props) {
           <ArrowLeft size={16} />
           이벤트 보드
         </button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {label.ko} — 관련 종목 그룹
-        </h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {label.ko} — 관련 종목 그룹
+          </h1>
+          {/* ⓐ 저신뢰 표식: 멤버<3(quorum 미달) → 그룹 상대지표 통계 근거 약함(표에서 "—") */}
+          {data && data.length > 0 && data.length < 3 && (
+            <span
+              className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded-full cursor-help"
+              title={`표본 작음 — 멤버 ${data.length}개(3개 미만). 그룹 상대지표(민감도·주도우위)는 통계 근거가 약해 "—"로 표시됩니다. 추세강도(절대 지표)는 유효합니다`}
+            >
+              표본 작음 (멤버 {data.length})
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-3">
           <span className="text-xs text-gray-500 dark:text-gray-400">관측 기간</span>
           {([20, 120] as const).map((w) => (

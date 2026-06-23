@@ -312,8 +312,12 @@ class TestEventBoardAPI:
         resp = auth_client.get(url)
         assert resp.status_code == 404
 
-    def test_event_board_excludes_small_groups(self, auth_client):
-        """멤버 < 3 테마는 제외."""
+    def test_event_board_includes_small_groups(self, auth_client):
+        """ⓐ: 멤버 < 3 테마도 보드에 포함(member_count 노출 → 저신뢰 표식용).
+
+        근거: 그룹 커버리지 완전성(디렉터 결정 (가) 1급 노출, 가중합 4.25).
+        소표본 약점은 숨기지 않고 member_count로 신호.
+        """
         # 2종목만 있는 테마
         for sym in ["TINY1", "TINY2"]:
             stock = _make_stock(sym)
@@ -324,8 +328,23 @@ class TestEventBoardAPI:
         compute_attention_scores(TARGET)
         url = f"/api/v1/chainsight/events/?date={TARGET}"
         resp = auth_client.get(url)
-        themes = [e["theme"] for e in resp.json()["events"]]
-        assert "TINYGROUP" not in themes
+        events = {e["theme"]: e for e in resp.json()["events"]}
+        assert "TINYGROUP" in events
+        assert events["TINYGROUP"]["member_count"] == 2
+
+    def test_event_board_includes_single_member_group(self, auth_client):
+        """ⓐ: 멤버 = 1 그룹도 포함(member_count=1)."""
+        stock = _make_stock("SOLO1")
+        _make_price_history_with_surge(stock, 100.0, 1_000_000, 2_000_000)
+        CompanyChainProfile.objects.get_or_create(
+            symbol_id="SOLO1", defaults={"theme_tags": ["SOLOGROUP"]}
+        )
+        compute_attention_scores(TARGET)
+        url = f"/api/v1/chainsight/events/?date={TARGET}"
+        resp = auth_client.get(url)
+        events = {e["theme"]: e for e in resp.json()["events"]}
+        assert "SOLOGROUP" in events
+        assert events["SOLOGROUP"]["member_count"] == 1
 
 
 @pytest.mark.django_db

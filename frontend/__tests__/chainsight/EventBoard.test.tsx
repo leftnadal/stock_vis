@@ -81,6 +81,20 @@ describe('EventBoard', () => {
     expect(mockPush).toHaveBeenCalledWith('/chainsight/events/semiconductor');
   });
 
+  // ⓑ 가드: 공백·& 포함 다단어 그룹명은 encodeURIComponent로 단일 인코딩 라우팅
+  // (raw push 시 '&'가 literal로 남거나 이중 인코딩 → 상세 빈 목록 버그)
+  it('카드 클릭 시 공백·& 그룹명을 encodeURIComponent로 라우팅한다 (ⓑ)', async () => {
+    const special = [{
+      theme: 'Robotics & AI', member_count: 4, avg_return: 0.01,
+      avg_score: 58.9, high_attention_count: 1, low_attention_count: 0,
+    }];
+    vi.mocked(fetchEvents).mockResolvedValue(special);
+    render(<EventBoard />, { wrapper });
+    const cards = await screen.findAllByRole('button');
+    fireEvent.click(cards[0]);
+    expect(mockPush).toHaveBeenCalledWith('/chainsight/events/Robotics%20%26%20AI');
+  });
+
   it('avg_return이 양수면 ▲ 초록색 표시', async () => {
     vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]);
     render(<EventBoard />, { wrapper });
@@ -99,6 +113,25 @@ describe('EventBoard', () => {
     vi.mocked(fetchEvents).mockResolvedValue([]);
     render(<EventBoard />, { wrapper });
     expect(await screen.findByText('이벤트 데이터가 없습니다')).toBeInTheDocument();
+  });
+
+  // ⓐ 저신뢰 표식: 멤버<3 소규모 그룹은 "표본 작음" 배지(숨기지 않고 신호)
+  it('멤버<3 소규모 그룹은 "표본 작음" 저신뢰 표식을 표시한다 (ⓐ)', async () => {
+    const small = [{
+      theme: 'Lithium & Battery', member_count: 2, avg_return: 0.01,
+      avg_score: 63.0, high_attention_count: 0, low_attention_count: 0,
+    }];
+    vi.mocked(fetchEvents).mockResolvedValue(small);
+    render(<EventBoard />, { wrapper });
+    await screen.findByRole('button');
+    expect(screen.getByText('표본 작음')).toBeInTheDocument();
+  });
+
+  it('멤버>=3 그룹은 저신뢰 표식이 없다 (ⓐ 회귀)', async () => {
+    vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]); // member_count 12
+    render(<EventBoard />, { wrapper });
+    await screen.findByRole('button');
+    expect(screen.queryByText('표본 작음')).not.toBeInTheDocument();
   });
 
   it('high_attention_count를 카드에 표시한다', async () => {

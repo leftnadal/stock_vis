@@ -22,6 +22,11 @@ vi.mock('@/components/chainsight/EventBoard', () => ({
   default: () => <div data-testid="event-board" />,
 }));
 
+// 그룹 상세 sentinel — theme prop을 노출해 디코딩 검증
+vi.mock('@/components/chainsight/EventRanking', () => ({
+  default: ({ theme }: { theme: string }) => <div data-testid="event-ranking">{theme}</div>,
+}));
+
 // 그래프 화면 sentinel + 주변 컴포넌트/훅
 vi.mock('@/components/chainsight/MarketGraphCanvas', () => ({
   default: () => <div data-testid="market-graph-canvas" />,
@@ -59,5 +64,31 @@ describe('RD3 라우트 역전', () => {
     render(<Page />);
     expect(await screen.findByTestId('market-graph-canvas')).toBeInTheDocument();
     expect(screen.queryByTestId('event-board')).not.toBeInTheDocument();
+  });
+
+  // ⓑ 인코딩 정합: 그룹 상세 페이지가 encodeURIComponent된 그룹명을 단일 디코딩해 전달
+  describe('/chainsight/events/[theme] 그룹명 인코딩 왕복 (ⓑ)', () => {
+    // 공백·& 포함 다단어 7개 + 단어1개(회귀 가드)
+    const SPECIAL = [
+      'Communication Services', 'Consumer Discretionary', 'Consumer Staples',
+      'Real Estate', 'Robotics & AI', 'Lithium & Battery', 'Clean Energy',
+    ];
+    const PLAIN = ['Technology', 'Energy', 'Semiconductor'];
+
+    it.each(SPECIAL)('encode→route→decode 왕복으로 "%s" 원본 복원', async (theme) => {
+      const Page = (await import('@/app/chainsight/events/[theme]/page')).default;
+      // EventBoard가 push하는 형태 = encodeURIComponent(theme)
+      const routed = encodeURIComponent(theme);
+      const el = await Page({ params: Promise.resolve({ theme: routed }) });
+      render(el);
+      expect(screen.getByTestId('event-ranking')).toHaveTextContent(theme);
+    });
+
+    it.each(PLAIN)('단어1개 그룹 "%s" 회귀 없음', async (theme) => {
+      const Page = (await import('@/app/chainsight/events/[theme]/page')).default;
+      const el = await Page({ params: Promise.resolve({ theme: encodeURIComponent(theme) }) });
+      render(el);
+      expect(screen.getByTestId('event-ranking')).toHaveTextContent(theme);
+    });
   });
 });

@@ -177,7 +177,9 @@ def get_event_board(target_date: date) -> list[dict]:
 
     Returns:
         평균 관심도 내림차순 list[dict].
-        멤버 < 3 그룹 제외.
+        모든 그룹 포함(멤버=1 포함). 소표본은 member_count로 노출 →
+        프론트 저신뢰 표식. (CS-RD3: 그룹 커버리지 완전성 위해 멤버<3 필터 제거.
+        상대지표는 quorum(MIN_THEME_MEMBERS=3) 미달 시 None → MetricCell이 "—" 렌더.)
     """
     # target_date 스냅샷 존재 확인
     scores_qs = StockAttentionScore.objects.filter(date=target_date).values(
@@ -201,9 +203,6 @@ def get_event_board(target_date: date) -> list[dict]:
 
     result = []
     for theme, members in theme_members.items():
-        if len(members) < 3:
-            continue
-
         member_scores = [score_map[m] for m in members if m in score_map]
         if not member_scores:
             continue
