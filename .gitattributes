@@ -1,0 +1,6 @@
+# 하네스 append 문서 — 양쪽 append 충돌 구조적 해소 (HARN-1).
+# union = 양쪽 라인을 모두 보존(append 로그에 적합). 코드 파일엔 절대 적용 금지.
+DECISIONS.md                  merge=union
+TASKQUEUE.md                  merge=union
+PROGRESS.md                   merge=union
+sub_claude_md/common-bugs.md  merge=union
