@@ -29,7 +29,7 @@
 |----|------|-------|------------|--------|-----------------|
 | CS-RD1 | 하네스 정합화 + 테마 데이터 적재 (Phase 0–1) | @backend | CS-R9 | **done** | Part A·B 정합화 + Part C 적재 완료(옵션2: sector+theme w≥1.0, DECISIONS CS-RD-C2). 채움률 60.3%/15그룹, Neo4j :Theme 21/HAS_THEME 536 |
 | CS-RD2 | 관심도 M1 엔진 (모델·배치·API, Phase 2) | @backend | CS-RD1 | **done** (StockAttentionScore+migration0009 / attention_service(M1+ADV_FLOOR $45.8M 유동성가드) / Celery task / API 2개(events·events/<theme>/stocks) / 테스트 20. 670→634계산 0.16s, score 15.6~99.9, low_liq 34, 멱등Δ0, api/views.py diff0) | v2 지시서 `Cs redesign 02 attention m1 backend v2.md` |
-| CS-RD3 | 이벤트 보드·관심도 랭킹 프론트 (Phase 3–4) | @frontend | CS-RD2 | **ready** (RD2 done — `/api/v1/chainsight/events/` 라이브) | `docs/chain_sight/redesign(26.06)/Cs redesign 03 event board frontend .md` |
+| CS-RD3 | 이벤트 보드·관심도 랭킹 프론트 (Phase 3–4) | @frontend | CS-RD2 | **done** (2026-06-23, `8c276b5`) — QA 4슬라이스 + Slice 2-B(바 정규화 전역0~100) + ⓑ URL 인코딩(common-bugs #38) + ⓐ 소규모 그룹 노출+저신뢰 표식. vitest 387/0·pytest 74/0, 라이브 검증 완료(daphne 재기동) | `docs/chain_sight/redesign(26.06)/Cs redesign 03 event board frontend .md` |
 | CS-DATA-HYGIENE | 기존 0행 10종목·<20일 8종목 가격 공백 원인 점검 (z-score 불가 → 관심도서 해당일 제외 중) | @backend | - | **backlog** | CS-RD2 STEP0 발견. 상폐 8종(CTRA·DAY·FI·HOLX·IPG·K·MMC·WBA) 유니버스 정리 포함 |
 | CS-BACKFILL | DailyPrice 120일 백필 — `/full` days=200 멱등. ≥120일 7→659/670 | @backend | - | **done** (666 성공·멱등·M1 scorable 634→659. 미달 11=IPO1/상폐8/프리미엄2) | DB 데이터(코드변경 0) |
 | CS-M2 | 주도주 지표 엔진 v1 — 종목레벨 4지표(T2/T3/theme_beta/capture) | @backend | CS-RD2·CS-BACKFILL | **done** (StockLeadershipScore+migration0010 적용 / 640행 산출 / beat 2종 등록(leadership+M1 attention 부채) / **옵션Y: T2주·T3보조, ρ실측0.84**) | DECISIONS "CS-M2 (2026-06-16)" |

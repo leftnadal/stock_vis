@@ -465,6 +465,15 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 로컬 main은 캐시일 뿐 진실이 아니다(#33 fetch baseline과 같은 뿌리). 세션 시작 시 `git fetch origin` 먼저, baseline은 `origin/main` 직접 측정.
 - 📎 참조: `DECISIONS.md` "MAIN-SYNC — ff 거부 = HALT (2026-06-17)", `TASKQUEUE.md MAIN-SYNC-FIX`, 메모리 MAIN-SYNC/MP-OPS-RESTART 패턴, common-bugs #33(fetch baseline)·#34(worktree 격리).
 
+## 동적 라우트 그룹명 이중 인코딩 → 상세 빈 목록 (#38) `[frontend]` `[chainsight]`
+
+- 증상: 공백·`&` 포함 다단어 그룹명(`Communication Services`·`Robotics & AI` 등) 상세 페이지가 **빈 목록** + 제목이 `Communication%20Services`(인코딩된 채 노출). 보드에 뜨는 그룹도 상세는 깨짐(필터 누락 그룹 한정 아님). CS-RD3 QA 2026-06-23 발견.
+- 원인 `[frontend]`: `EventBoard.tsx` 카드 클릭 `router.push(`/chainsight/events/${item.theme}`)`가 **encodeURIComponent 없이 raw push** → Next App Router param이 인코딩된 채 도착 → `fetchRanking`이 `encodeURIComponent`로 **또 인코딩**(이중) → 백엔드 `theme_tags__contains=[theme]` 조회 키 불일치 → 빈 목록. 단어1개 그룹(`Technology`)은 인코딩 무관해 정상 → 증상이 다단어 그룹에만 나타나 진단 지연.
+- 감지: 상세 제목에 `%20`/`%26` 같은 percent-encoding이 그대로 보이면 이중 인코딩 신호. URL 바는 `Robotics%20&%20AI`(공백만 %20, `&`는 literal)처럼 혼합 인코딩.
+- 해결: **인코딩은 단일 출처로** — 링크 생성 측(`router.push`)에 `encodeURIComponent(theme)` + 페이지 경계(`[theme]/page.tsx`)에서 `decodeURIComponent(theme)` 1회 디코딩. decodeURIComponent는 멱등(% 없으면 no-op)이라 Next 자동디코딩 여부와 무관하게 안전(그룹명에 literal `%` 없음 전제). fetchRanking의 encodeURIComponent는 그대로 두면 단일 인코딩으로 정합.
+- 교훈: 동적 라우트 세그먼트에 사용자 표시 문자열(공백·`&`·한글)을 넣을 땐 **생성·소비 양측 인코딩 단계를 한 번씩만** 세고 왕복 테스트로 검증. 링크 생성 지점 전수 grep(누락 시 일부 진입로만 깨짐).
+- 📎 참조: `DECISIONS.md` "[2026-06-23] chain_sight 소규모 그룹 — URL 인코딩 버그(ⓑ)", `frontend/components/chainsight/EventBoard.tsx`·`app/chainsight/events/[theme]/page.tsx`, 테스트 `routeReversal.test.tsx`(왕복 10건).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
