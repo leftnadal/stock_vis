@@ -221,6 +221,12 @@ frontend/stocks.log
 
 # health_check stderr 로그 (단계 1, 2026-05-28~) — 빈 파일은 노이즈. JSON만 commit.
 docs/nightly_auto_system/**/health_check.stderr.log
+# B-2 발행본 (2026-06-23~) — nightly 격리 worktree가 생성한 tier3 감사 리포트를
+# publish_reports.sh가 이 read 경로로 복사(발행). 발행본은 미추적(D2): 감사이력은
+# 격리 repo git이 전담, origin/main 무오염. 역사 리포트(≤6/16)는 이미 추적 상태로
+# 그대로 둔다(git rm --cached 안 함 — gitignore는 기추적 파일을 untrack하지 않음).
+# 근거: DECISIONS.md "[2026-06-23] B-2 발행본 = 미추적 + gitignore (옛 main커밋 복원 안 함)".
+docs/nightly_auto_system/reports/**/*.md
 # 루트 node_modules (frontend 외 또는 vitest 워크스페이스 산출물)
 node_modules/
 
