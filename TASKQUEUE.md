@@ -180,9 +180,27 @@
 | TRASH-9 | **`.env` 소비자 4종 launchd 일원화** — worker/beat/worker-neo4j는 launchd, daphne만 수동 기동 → daphne plist 등록으로 다음 회전 = `kickstart 4건`. 소비자 목록 문서화. | @infra | - | todo | LaunchAgents + 문서 |
 | TRASH-10 | **마스킹 로그 스캔 표준 스크립트 작성** (`scripts/scan_logs_masked.py`) — raw 로그 직접 grep 금지의 구조적 대체. 시크릿 패턴(apikey/api_token/password 등 쿼리파라미터·헤더)을 **값 진입 전 차단**(Python에서 파싱·마스킹, 셸 파이프 미경유)하는 방식. 배경: NV-2/TR-5 마스킹 슬립 2회(`ps\|tr\|sed`, `sed`가 `api_token=` 누락) → 구조적 재발 방지. | @infra | - | todo | `scripts/scan_logs_masked.py` |
 | TRASH-11 | **worktree 2건 거취 — DEAD 확정·remove 완료** (TR-7/8 정정). 기존 ALIVE 판정은 **stale 로컬 main 기준 오판**이었음. TR-8 STEP1: unique 커밋 5건(f483634/d4a9690/ce0be51/0b8399a/ef9d064) **전건 origin/main(d5212d4) REACHABLE = DEAD**. `sess-mgmt-phase1-catalog`·`sess-mp-phase1-cleanup` 디렉토리 소멸 + worktree registry 제거 완료(세션 간 외부 선제거, prune 정합). **잔여 결정**: 브랜치 2건 삭제 — 커밋이 origin/main 도달이나 **로컬 main 미도달**이라 `-d` 거부 예상 → 사용자 수동 `-D` 또는 `pull` 후 `-d`. + `sess-mp-kl-f1f3` 머지 시 `82afddb`(TASKQUEUE 9건) 중복은 main `cb5473e`와 동일 → 충돌 시 main 채택. **+ `monorepo/sess-mgmt-llm-decision`(cbc6041, BOUNDARY-LLM 기록): origin push됨·미머지 → consolidation 시 main 머지 후 브랜치 삭제 대상.** **push/pull 통합 결정과 묶음**. | orchestrator | - | todo | 브랜치 삭제 + push/pull 통합 |
+| TRASH-11 | **worktree 2건 거취 — DEAD 확정·remove 완료** (TR-7/8 정정). 기존 ALIVE 판정은 **stale 로컬 main 기준 오판**이었음. TR-8 STEP1: unique 커밋 5건(f483634/d4a9690/ce0be51/0b8399a/ef9d064) **전건 origin/main(d5212d4) REACHABLE = DEAD**. `sess-mgmt-phase1-catalog`·`sess-mp-phase1-cleanup` 디렉토리 소멸 + worktree registry 제거 완료(세션 간 외부 선제거, prune 정합). **잔여 결정**: 브랜치 2건 삭제 — 커밋이 origin/main 도달이나 **로컬 main 미도달**이라 `-d` 거부 예상 → 사용자 수동 `-D` 또는 `pull` 후 `-d`. + `sess-mp-kl-f1f3` 머지 시 `82afddb`(TASKQUEUE 9건) 중복은 main `cb5473e`와 동일 → 충돌 시 main 채택. **push/pull 통합 결정과 묶음**. | orchestrator | - | todo | 브랜치 삭제 + push/pull 통합 |
+## market_pulse v2 Phase 2 로드맵 (2026-06-23 진입 순서 확정)
+
+> 근거: `DECISIONS.md` "[2026-06-23] Phase 2 진입 순서"·"Alerts 트랙 경계 = O3 하이브리드". Phase 1 종료(코어 대시보드+Translation+화면게이트 조건부통과) 후 진입. 순서 = Analog → Alerts → sub-pages → 데이터게이트(FedWatch/GEX) → cross-surface(게이트). P2 roadmap recon(2026-06-23, [E]~[H]) 기반.
+
+| ID | Track | 우선 | Agent | Status | 근거/게이트 |
+|----|-------|------|-------|--------|------------|
+| MP2-ANALOG | historical regime matching(유추 분석) — 현재 regime 입력 vs 과거 유사 국면 매칭 + **MOVE 동봉**(이미 `NEW_ECONOMIC_SERIES` 보유, 별 통합 불요) | **#1** | @backend | 🟢 **active (착수 가능)** | recon [F] analog 미구현 확인. 기존 regime 데이터 위 read-only 분석 = 롤백 표면 작음. 가중 우위 마진 0.35(D-PHASE2-ORDER). 착수 시 STEP 0 재측정 |
+| MP2-ALERTS | 능동 모니터링/알림 (MP1-N 승격) — anomaly error rate / regime stale / news feed lag. **경계 = O3 하이브리드**(전달 port만 shared/stateless, AlertLog·트리거·구독 app 소유) | **#2** | @infra+@backend | 🆕 등록 | D-ALERTS-BOUNDARY(방향만 확정, 마진 0.15 근소). **실행 게이트**: 트랙 STEP 0에서 전달 port 인터페이스 + `news.tasks.check_pipeline_alerts` 재사용성 검증 후 모델/port 분리 |
+| MP2-SUBPAGES | v1 위젯 5종(FearGreedGauge·YieldCurve·EconomicIndicators·GlobalMarkets·MarketMovers) v2 하위 페이지 흡수 (= `MP-V1-ABSORB` 실행) | **#3** | @frontend | 🕒 trigger-gated | recon [G] sub-pages 라우팅 0·v1 위젯 4/5 `frontend/components/macro/` 확인. 트리거 = #1·#2 land 후. STEP 0로 흡수 대상 재확인 |
+| MP2-DATA-FEDWATCH-GEX | FedWatch(fed funds futures)·GEX(감마 익스포저) 외부 데이터원 신설 | **#4** | @infra+@backend | 🔴 **데이터게이트** | recon [E] 코드베이스 흔적 **0**(클라이언트 미보유) → **데이터원 확보 전 착수 금지**. 별도 공급원 조사 선행 |
+| MP2-CROSS-SURFACE | cross-surface 통합(대시보드↔chain_sight↔portfolio 교차 표면) | **#5** | TBD | 🔴 게이트 | 선행 트랙(#1~#3) land 후. 범위는 그 시점 재정의 |
+| MP2-E2E-SAFETYNET | **E2E 화면 회귀 안전망** — Playwright/Cypress 등 `/market-pulse-v2` 라이브 렌더 회귀 테스트(**모바일 에뮬레이션 포함** = resize_window 도구 한계 보완). Phase 2 **첫 인프라** | (인프라) | @qa+@frontend | 🆕 등록 (P2 선행 인프라) | 화면게이트가 수동 브라우저 의존(FE 크래시 2회·모바일 미확보) → Phase 2 변경 전 자동 회귀망 우선. 모바일 뷰포트 에뮬레이션으로 P2-① 구조적 해소 |
+| MP2-DATA-BREADTH-CONC | **Breadth/Concentration raw 미수집** 점검 — Breadth 종목별 등락(상승/하락/신고저 0) + Concentration 상위종목 일부 부재. 화면은 graceful fallback 정상(밴드·sense 렌더)이나 raw 데이터원 점검 | (데이터) | @infra | 🆕 등록 (데이터 파이프라인 트랙) | D-P1-SCREENGATE P2-②. 화면 결함 아님(graceful) → 데이터 수집 task/소스 점검. Analog(#1) 입력 품질과도 연관 가능 |
+| MP2-MOBILE-EYECHECK | **모바일 실기기 눈확인**(P2-① 권고) — 실기기/브라우저 DevTools 모바일 모드로 `/market-pulse-v2` 1회 눈검증 | (권고) | 사용자/병진 | 🟡 **비차단 권고** | D-P1-SCREENGATE P2-①. resize_window 뷰포트 미반영 도구 한계 → 반응형 설계는 JS 코드 입증 완료, 실렌더 눈검증만 잔여. MP2-E2E-SAFETYNET land 시 자동 흡수 가능 |
+
+---
+
 ## market_pulse v2 Phase 1 잔여 (2026-06-07 카탈로그 역산 확정)
 
-> 근거: `DECISIONS.md` "## [2026-06-07] Phase 1 PR 카탈로그 역산 확정". 백엔드 A~J done(J는 I 흡수), FRED fetcher done, Translation/Playbook은 Phase 1.5/1.6 이관(범위 외). 본 표는 출시 전 정리할 6 트랙.
+> 근거: `DECISIONS.md` "## [2026-06-07] Phase 1 PR 카탈로그 역산 확정". 백엔드 A~J done(J는 I 흡수), FRED fetcher done, Translation/Playbook은 Phase 1.5/1.6 이관(범위 외). 본 표는 출시 전 정리할 6 트랙. **Phase 1 종료(2026-06-23, P1-close + 화면게이트 조건부통과) — 잔여는 위 Phase 2 로드맵으로 재배치.**
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|----------------|
