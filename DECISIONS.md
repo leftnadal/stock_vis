@@ -2023,3 +2023,24 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 **빌드 계획**: S1(Brief plumbing 추출·행위보존 GATE) → S2(TranslationLog 모델) → S3(per-card prompt+생성 task) → S4(envelope serializer + FE selector + fallback) → S5(golden/vcr, Brief 동반).
 
 **📎 참조**: `PROGRESS.md` Phase 1.5 Translation recon, `apps/market_pulse/briefing/{client,safety,prompt}.py`(미러 대상), recon 보고(shared 래퍼 부재·BriefingLog 스키마·gemini-2.5-flash).
+
+---
+
+## [2026-06-23] iron-trading `latest-trading-date` 엔드포인트 — 소유권·방안 B·v1.0 플레이스홀더
+
+신규 read-only `GET /api/v1/iron-trading/latest-trading-date`. iron_trading 봇이 local fixture 날짜(`2026-05-07`) 대신 stock_vis가 실제 제공 가능한 daily-context 최신 미국장 거래일을 자동으로 쓰게 한다. STEP 0 측정(`1b28b0c` 시점, M2 read-only 산출 가능·실측 `2026-06-22`→200·HALT 없음) 후 구현.
+
+**① 소유권 = stock_vis** (데이터 제공자 책임·경계 보존)
+- **Why**: "지금 daily-context로 조회 가능한 최신 거래일"은 stock_vis 내부 데이터(EODSignal/DailyPrice/PipelineLog) 상태에만 의존하는 사실이다. 그 사실을 아는 주체가 산출·노출해야 한다(소유권 귀속 원칙). iron_trading은 **소비자 측 결정**(어떻게 호출·fallback)만 자기 repo에 기록한다. 교차 규약 단일출처는 repo 하네스.
+
+**② 방안 B (dry-check 검증) — 단순 최댓값(방안 A) 기각** (계약 라운드트립 200을 구조로 보장)
+- **Why**: 200 보장 날짜는 "DB 최대 날짜"가 아니라 "후보 + OHLCV가 실재해 daily-context가 200을 주는 최신 날짜"다. 방안 A(EODSignal max date 신뢰)는 데이터 정렬이 어긋난 날(EODSignal은 있으나 그 날 OHLCV 없음)에 503으로 깨진다. 방안 B는 후보일 내림차순 순회 + `running` skip + **기존 `_select_candidate_symbols`/`_load_ohlcv_map` 재사용 dry-check**로 daily-context의 200 게이트와 동일 판정을 흉내 내 라운드트립을 우연이 아닌 **구조**로 못 박는다. test 6(비정렬 200)이 이 케이스를 고정.
+- **How to apply**: `_load_ohlcv_map`은 모든 심볼을 빈 리스트로 초기화하므로 dry-check는 `sym in ohlcv`가 아니라 **비어있지 않은 rows**(`any(ohlcv.get(sym))`)를 본다 — daily-context의 `if not rows: continue`와 일치. `failed` pipeline일은 dry-check 후보 0/OHLCV 0으로 자연 배제(별도 분기 불필요). `scan_limit=20`으로 순회 비용 유계. 기존 daily-context는 **무변경(additive only)** — 새 서비스 파일 `services/latest_trading_date.py` + 새 뷰 `LatestTradingDateView`만 추가. `shared→apps` 역방향 import 없음.
+
+**③ v1.0 플레이스홀더 = `freshness_status:"unknown"` + `snapshot_id:""`**
+- **Why(freshness)**: `_build_freshness` 재사용은 snapshot 나이 계산이 들어가 경량 목표에 어긋난다. v1.0은 순수 best-effort `unknown`. **채움 조건**: Part 3.1 신선도 정책 확정 시.
+- **Why(snapshot_id)**: M4대로 계약상 optional이며 정확한 산출엔 사실상 full build(candidate_count)가 필요 → 신규 생성 금지 원칙상 빈 문자열. **채움 조건**: snapshot_id를 read-only로 저장·조회하는 경로가 생기면.
+
+**검증 결과**: 신규 6 + 기존 daily-context 15 = 21 그린(회귀 0 → 행위보존 입증). dev DB 실호출 `2026-06-22`→daily-context round-trip 200(candidates 30). 구현 baseline main `4246d48`(STEP 0 `1b28b0c` 이후 mp-translation S5 무관 커밋 2건 전진, 인용 경로 drift 0).
+
+**📎 참조**: `integrations/iron_trading/services/latest_trading_date.py`, `integrations/iron_trading/views.py`(`LatestTradingDateView`), `integrations/iron_trading/urls.py`, `tests/iron_trading/test_latest_trading_date.py`.
