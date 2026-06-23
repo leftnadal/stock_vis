@@ -1,0 +1,26 @@
+{
+  "scenario": "risk_off",
+  "kind": "translation",
+  "model": "gemini-2.5-flash",
+  "context": {
+    "date": "2026-06-19",
+    "regime": {
+      "stage": "CRISIS",
+      "status": "confirmed"
+    },
+    "breadth": {
+      "advance": 70,
+      "decline": 420,
+      "unchanged": 10
+    },
+    "sector": {
+      "leader": "XLP",
+      "laggard": "XLY"
+    },
+    "concentration": {
+      "top10_weight": 0.45,
+      "hhi": 0.034
+    }
+  },
+  "raw_text": "{\"regime\": \"위기 국면이 확인되어 시장은 안정과 긴장감 속에 움직입니다.\", \"breadth\": \"오르는 종목보다 내리는 종목이 훨씬 많아 시장 약세가 광범위합니다.\", \"sector\": \"필수소비재 섹터로 자금이 몰리며 방어적인 흐름이 강해지고, 경기소비재는 크게 뒤처집니다.\", \"concentration\": \"top10 비중이 45%에 달해 소수 대형주에 쏠림이 매우 강하며 시장 폭이 좁습니다.\"}"
+}

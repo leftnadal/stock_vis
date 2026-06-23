@@ -1,0 +1,26 @@
+{
+  "scenario": "neutral",
+  "kind": "translation",
+  "model": "gemini-2.5-flash",
+  "context": {
+    "date": "2026-06-19",
+    "regime": {
+      "stage": "TRANSITION",
+      "status": "confirmed"
+    },
+    "breadth": {
+      "advance": 250,
+      "decline": 245,
+      "unchanged": 15
+    },
+    "sector": {
+      "leader": "XLV",
+      "laggard": "XLB"
+    },
+    "concentration": {
+      "top10_weight": 0.37,
+      "hhi": 0.022
+    }
+  },
+  "raw_text": "{\"regime\": \"시장 국면이 전환점에 있어 중립적인 분위기가 감돕니다.\", \"breadth\": \"상승과 하락 종목 수가 팽팽하여 시장의 힘이 균형을 이룹니다.\", \"sector\": \"헬스케어 섹터로 자금이 유입되고 소재 섹터는 뒤처지는 모습입니다.\", \"concentration\": \"top10 비중 37%로 특정 대형주에 다소 쏠리는 경향이 있습니다.\"}"
+}

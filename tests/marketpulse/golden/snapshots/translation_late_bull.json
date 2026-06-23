@@ -1,0 +1,26 @@
+{
+  "scenario": "late_bull",
+  "kind": "translation",
+  "model": "gemini-2.5-flash",
+  "context": {
+    "date": "2026-06-19",
+    "regime": {
+      "stage": "LATE_BULL",
+      "status": "confirmed"
+    },
+    "breadth": {
+      "advance": 300,
+      "decline": 190,
+      "unchanged": 10
+    },
+    "sector": {
+      "leader": "XLE",
+      "laggard": "XLRE"
+    },
+    "concentration": {
+      "top10_weight": 0.4,
+      "hhi": 0.026
+    }
+  },
+  "raw_text": "{\"regime\": \"강세장 후반부에 진입하며 시장 전반에 경계심이 필요한 시점입니다.\", \"breadth\": \"상승 종목이 하락 종목보다 많아 전반적으로 긍정적인 참여 흐름을 보입니다.\", \"sector\": \"에너지 섹터가 시장을 이끌며 자금이 쏠리는 반면, 부동산 섹터는 소외되는 모습입니다.\", \"concentration\": \"top10 종목 비중이 40%로 시장 쏠림이 뚜렷하며, 전반적인 시장 폭은 좁게 느껴집니다.\"}"
+}
