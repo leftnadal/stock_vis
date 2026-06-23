@@ -64,6 +64,10 @@ class Command(BaseCommand):
                             help='데이터 0인 신규 series/symbol 탐지 후 종료')
         parser.add_argument('--limit', type=int, default=None,
                             help='대상 수 제한 (테스트용)')
+        parser.add_argument('--econ-only', action='store_true',
+                            help='Economic series만 백필 (Market 심볼 건너뜀). '
+                                 'backfill_macro_all가 목록 밖 FRED series 개별 호출 시 '
+                                 'market 중복 재백필 방지에 사용')
 
     def handle(self, *args, **options):
         if options['check_pending']:
@@ -121,6 +125,8 @@ class Command(BaseCommand):
         return targets
 
     def _resolve_market_targets(self, options):
+        if options.get('econ_only'):
+            return ()
         if options['symbol']:
             return (options['symbol'],)
         targets = NEW_MARKET_SYMBOLS
