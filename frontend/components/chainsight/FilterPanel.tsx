@@ -25,7 +25,7 @@ const REL_TYPE_OPTIONS = [
   { key: 'CUSTOMER_OF', label: '고객' },
   { key: 'COMPETES_WITH', label: '경쟁' },
   { key: 'CO_MENTIONED', label: '뉴스 동시출현' },
-  { key: 'HAS_THEME', label: '테마' },
+  { key: 'HAS_THEME', label: '그룹' },
   { key: 'BELONGS_TO_SECTOR', label: '섹터' },
   { key: 'BELONGS_TO_INDUSTRY', label: '산업' },
   { key: 'RELATED_TO', label: '관련' },

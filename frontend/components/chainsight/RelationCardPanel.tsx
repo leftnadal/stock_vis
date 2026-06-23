@@ -14,7 +14,7 @@ const RELATION_TEMPLATES: Record<string, string> = {
   CO_MENTIONED: '최근 시장/뉴스에서 동시 해석',
   PRICE_CORRELATED: '가격 움직임 유사',
   RELATED_TO: '관련 종목',
-  HAS_THEME: '테마 공유',
+  HAS_THEME: '그룹 공유',
   HELD_BY_SAME_FUND: '동일 펀드 보유',
 };
 

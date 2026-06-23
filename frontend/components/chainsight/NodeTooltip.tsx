@@ -9,7 +9,7 @@ const RELATION_LABELS: Record<string, string> = {
   COMPETES_WITH:    '직접 경쟁',
   PEER_OF:          'Peer (동종 비교)',
   CO_MENTIONED:     '동시출현',
-  HAS_THEME:        '테마 공유',
+  HAS_THEME:        '그룹 공유',
   PRICE_CORRELATED: '가격 상관',
   RELATED_TO:       '관련 종목',
 };

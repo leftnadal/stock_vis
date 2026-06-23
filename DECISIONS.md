@@ -2003,6 +2003,38 @@ STEP 0 재측정으로 메모리/기존 인식("14개 거시 중 9개 actual nul
 
 ---
 
+## [2026-06-19] CS-RD3 통합 QA — 그래프 "테마"→"그룹" + 관심도 standing 바 + "관심↑" 라벨 + 헤더 정렬
+
+라이브 스크린샷(역전 후) 대조 발견 처리. 디렉터 확정 4건.
+
+**① 그래프 관계라벨 "테마"→"그룹" (키 보존)**: 사용자 노출 텍스트 5곳(`graphStyles.ts`·`FilterPanel`·`RelationFilterChips` label + `NodeTooltip`·`RelationCardPanel` '테마 공유'→'그룹 공유') + 주석 1곳 교체. **관계 타입 키 `HAS_THEME`는 전부 보존**(필터·그래프 엣지·radialLayout 동작 불변 — 키-텍스트가 별도 변수라 결합 위험 0, STEP 0 확인). 그래프 화면 "테마" 노출 0.
+
+**② 관심도 standing 바 신규 (디렉터 옵션2 / C3 = 4번째 미니바 아닌 구분 처리)**: STEP 0 발견 = 랭킹에 관심도 바가 **원래 없었음**(텍스트 "관심도 84.5"만; 화면의 바는 전부 M2 MetricCell). RD3 §2 AttentionScoreBar 미구현분. **신규 `AttentionStandingBar.tsx`** 추가 — 점수 숫자 아래(M2 미니바와 다른 위치) + indigo 채움/slate 트랙(다른 스타일). 채움 = **그룹 내 min-max 정규화** [FLOOR 10%, 100%] (페이지 정규화). **측정 근거**: 2026-06-15 전체 분포 14.8~100/p10 30/med 50/p90 73.5 → 그룹 내 스프레드 충분, 고정 0~100보다 순위 낙차 시각화 우수. 숫자(절대값) 병기로 바=standing 전용. 단일/동점 그룹(range=0)→full.
+
+**③ "관심↑ N" 의미 노출**: `high_attention_count` = 그룹 내 **관심도 ≥ 70 종목 수**(attention_service.py:213, low는 ≤20). 카드가 `<button>`이라 중첩 인터랙티브 팝오버(MetricInfoPopover=button) 불가 → `title` 툴팁 + cursor-help로 라벨 명확화("관심 집중 종목 N개 — 관심도 70점 이상").
+
+**④ 랭킹 헤더 컬럼 폭 정렬**: 헤더가 행의 chevron 버튼 폭 미고려로 라벨이 우측 쏠림 → 헤더를 행 구조(Link[flex-1] + chevron placeholder)와 미러링. 정렬만, 기능 무변경.
+
+**검증**: tsc 0, vitest 365→**371**(+6 AttentionStandingBar 경계/단조/단일그룹). 라이브 육안은 교차포트(:3200) CORS 차단으로 보류 → 머지 후 사용자 :3000에서 확인 권장. HAS_THEME 키 보존으로 그래프·필터 동작 불변.
+
+**📎 참조**: `frontend/components/chainsight/{graphStyles,FilterPanel,RelationFilterChips,NodeTooltip,RelationCardPanel,EventRanking,EventBoard,AttentionStandingBar}.tsx`.
+
+---
+
+## [2026-06-23] CS-RD3 QA Slice 2-B — 관심도 바 정규화 교체 (그룹 min-max → 전역 0~100)
+
+위 ②(그룹 내 min-max 정규화)를 **전역 0~100 절대 도메인**으로 교체. **근거 = 측정(N=499, 2026-06-22)** 으로 드러난 그룹 정규화의 2문제:
+1. **소규모·저분산 그룹 과장(거짓 신호)**: `Lithium & Battery`(N=2) score 62.0·64.1 — **단 2.1점 차가 바 10%↔100%**(90%p)로 과장. min-max는 range를 항상 꽉 채우므로 멤버 적고 촘촘한 그룹일수록 시각 낙차가 실제와 괴리.
+2. **그룹 간 비교 불가**: min-max는 각 그룹 최하위를 일률 FLOOR(10%)로 깔아 — Industrials 최하위 22.2점도 Semiconductor 최하위 40.8점도 **둘 다 10%**. 화면에 여러 그룹 공존 시 "최하위는 다 같은 길이" 오해.
+
+**교체**: 채움 공식 `widthPct = (FLOOR + (1−FLOOR)·clamp(score/100,0,1))·100` = **10 + 0.9·score** (FLOOR 0.10 유지). 그룹 min/max 주입 경로(EventRanking IIFE + RankingRow props) 제거, 단일멤버 range=0 특례 제거(전역 도메인엔 불필요). **바 의미 재정의**: "그룹 내 순위" → **"시장 전체 대비 관심도 절대 수준"**. 그룹 내 순위는 정렬·번호·절대 숫자가 전달.
+
+**검증 수치**(새 공식): Technology 89.8→90.8%·87.7→88.9%·85.0→86.5%·83.0→84.7%(자연 분산, 다 차지 않음). Lithium 62.0→65.8%·64.1→67.7%(**차이 1.89%p, 과장 소멸**). 경계 0→10%·50→55%·100→100%, 같은 점수=항상 같은 폭(그룹 간 비교 가능). **vitest 371→372**(바 테스트 6→7: 경계/단조/촘촘동등/그룹무관/클램프), tsc 0. 위치·색(좌측 indigo)·M2 구분·정렬·숫자 표시 불변(행위보존).
+
+**📎 참조**: `frontend/components/chainsight/{AttentionStandingBar,EventRanking}.tsx`, `frontend/__tests__/chainsight/AttentionStandingBar.test.tsx`.
+
+---
+
 ## [2026-06-18] Phase 1.5 Translation Layer — 토대 3결정 (래퍼·스키마·테스트)
 
 카드 LLM 해설(prose) 레이어. STEP 0 recon(`42054ae`)으로 ground truth 확정 후 3축 결정.

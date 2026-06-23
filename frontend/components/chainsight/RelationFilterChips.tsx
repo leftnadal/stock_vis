@@ -6,7 +6,7 @@
  * 6종 관계 타입을 독립 ON/OFF 토글 칩으로 표시.
  * 명세 §2-2 기본 상태:
  *   ON  — 공급망(SUPPLIES_TO+CUSTOMER_OF), 경쟁(COMPETES_WITH), Peer(PEER_OF), 뉴스(CO_MENTIONED)
- *   OFF — 가격상관(PRICE_CORRELATED), 테마(HAS_THEME)
+ *   OFF — 가격상관(PRICE_CORRELATED), 그룹(HAS_THEME)
  *
  * §2-3 시각: 색상 점/라인 + 레이블, ON/OFF 배경·외곽선 차이
  * §2-4 인터랙션: 다중 선택, 모두 끄면 "구조 보기" 모드, 전체 켜기/끄기
@@ -57,7 +57,7 @@ const CHIP_DEFS: ChipDef[] = [
     dashHint: 'dashed',
   },
   {
-    label: '테마',
+    label: '그룹',
     relTypes: ['HAS_THEME'],
     color: '#14B8A6',
     dashHint: 'long-dash',
