@@ -153,6 +153,21 @@ describe('EventRanking', () => {
     expect(await screen.findByText('종목 데이터가 없습니다')).toBeInTheDocument();
   });
 
+  // ⓐ 저신뢰 표식: 멤버<3 그룹 상세 타이틀에 "표본 작음 (멤버 N)"
+  it('멤버<3 소규모 그룹은 타이틀에 "표본 작음" 표식을 표시한다 (ⓐ)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue(mockStocks.slice(0, 2));
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.getByText('표본 작음 (멤버 2)')).toBeInTheDocument();
+  });
+
+  it('멤버>=3 그룹은 "표본 작음" 표식이 없다 (ⓐ 회귀)', async () => {
+    vi.mocked(fetchEventStocks).mockResolvedValue(mockStocks); // 3개 이상
+    render(<EventRanking theme="semiconductor" />, { wrapper });
+    await screen.findByText('NVDA');
+    expect(screen.queryByText(/표본 작음/)).not.toBeInTheDocument();
+  });
+
   it('음수 수익률은 ▼로 표시된다', async () => {
     vi.mocked(fetchEventStocks).mockResolvedValue([mockStocks[2]]);
     render(<EventRanking theme="semiconductor" />, { wrapper });
