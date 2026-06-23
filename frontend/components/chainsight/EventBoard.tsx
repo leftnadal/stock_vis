@@ -57,7 +57,7 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
         {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%
       </div>
       <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.avg_score.toFixed(1)}</div>
-      <div className="flex gap-2 text-xs">
+      <div className="flex flex-wrap gap-2 text-xs">
         <span className="text-gray-600 dark:text-gray-300">{item.member_count}개 종목</span>
         <span
           className="text-blue-500 font-medium cursor-help"
@@ -65,6 +65,15 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
         >
           관심↑ {item.high_attention_count}
         </span>
+        {/* ⓐ 저신뢰 표식: 멤버<3(=quorum 미달)이면 그룹 상대지표 통계 근거 약함 → 숨기지 않고 신호 */}
+        {item.member_count < 3 && (
+          <span
+            className="text-amber-600 dark:text-amber-400 font-medium cursor-help"
+            title={`표본 작음 — 멤버 ${item.member_count}개(3개 미만). 그룹 상대지표(민감도·주도우위)는 통계 근거가 약해 상세에서 "—"로 표시됩니다`}
+          >
+            표본 작음
+          </span>
+        )}
       </div>
     </button>
   );
@@ -113,7 +122,7 @@ export default function EventBoard() {
           <EventCard
             key={item.theme}
             item={item}
-            onClick={() => router.push(`/chainsight/events/${item.theme}`)}
+            onClick={() => router.push(`/chainsight/events/${encodeURIComponent(item.theme)}`)}
           />
         ))}
       </div>
