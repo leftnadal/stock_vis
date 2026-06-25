@@ -23,6 +23,12 @@ export function ConcentrationCardSummary({
           {/* 의미밴드 ● 현 위치 (4구간, 활성만 톤) */}
           <BandScale activeIndex={band.index} />
           <p className="text-sm text-slate-800">{concentrationSentence(band)}</p>
+          {/* 리스크 렌즈 ① 유효 종목 수(1/HHI) — 즉시 파생, HHI>0 가드(D-CONC-RISK-LENSES). */}
+          {data.hhi > 0 ? (
+            <p className="text-xs text-slate-500">
+              유효 종목 수 ≈ {Math.round(1 / data.hhi)}종 <span className="text-slate-400">(1/허핀달)</span>
+            </p>
+          ) : null}
           {/* 원시값(top5/top10/HHI)은 기본 숨김 → 펼침으로만 */}
           <details className="text-xs text-slate-500">
             <summary className="cursor-pointer select-none text-slate-400">원시 지표</summary>
