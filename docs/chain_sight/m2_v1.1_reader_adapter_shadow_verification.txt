@@ -1,0 +1,49 @@
+M2 v1.1 reader 전환 — Slice A 어댑터 + Slice D 쉐도우 검증
+==========================================================
+세션: monorepo/sess-cs-reader (base main e27176c)
+범위 재논의 결과: A안(어댑터만) — STEP 0.4 보드↔스코어링 커플링으로 보드 단독 전환 HALT,
+                  소비자 미배선. leadership 재배선은 후속 세션.
+
+[STEP 0.4 커플링 — 보드 단독 전환을 막은 사유]
+- 보드 리스트(get_event_board): per-symbol attention 점수를 멤버십으로 집계.
+  attention은 theme-agnostic → 그룹핑만 교체 가능(분리 OK).
+- 보드 드릴다운(EventRankingView → attach_leadership): StockLeadershipScore가
+  (stock, theme, window, as_of_date) 키 + theme 멤버 LOO 평균을 벤치마크로 산출.
+  theme 멤버십 자체가 벤치마크 피어셋 → EventGroup 키로는 빈 결과 + 의미 불일치.
+  ⇒ leadership을 EventGroup 멤버십으로 재컴퓨트 필요 = 스코어링 재배선(범위 밖, score-diff 검증).
+
+[Slice A — 어댑터]
+apps/chain_sight/services/event_group_reader.py
+- get_kept_event_groups(as_of_date=None): is_hidden=False만, cohesion 내림차순, prefetch.
+- get_event_group(slug): kept만, gated/부재 None.
+- 게이팅 중앙집중(소비자 중복 필터 불필요). 스코어 비관여(멤버십·메타만).
+- 단위 테스트 10건 green (tests/unit/chainsight/test_event_group_reader.py).
+
+[Slice D — OFF=IDENTICAL 입증]
+main(e27176c) 대비 변경: 신규 2파일만 (event_group_reader.py + test).
+보드/스코어 소비자(event_views/attention_service/leadership_compute/api.views) 변경 0건.
+→ 소비자 미배선이므로 보드 출력은 구조적으로 오늘과 IDENTICAL(diff 0).
+
+[Slice D — ON 쉐도우 덤프 (라이브 쉐도우 16그룹, read-only, 플래그 미점화)]
+적재 total=16  어댑터 kept=9  gated(숨김)=7
+어댑터==kept만: True / gated 노출 0: True / 게이트 경계: 최저 kept 0.232 > 0.2 > 최고 gated 0.1941
+
+kept 9 (cohesion desc, n3 이름 · core/sat):
+  [0.873] applied materials semiconductor        core=3 sat=4  (news-lrcx-4)
+  [0.757] sandisk seagate memory                 core=3 sat=1  (news-stx-8)
+  [0.589] conocophillips oil operating           core=5 sat=1  (news-cop-12)
+  [0.524] bcgd jstc quality                      core=3 sat=0  (news-v-7)
+  [0.496] intel devices semiconductor            core=3 sat=10 (news-amd-1)
+  [0.456] synopsys design cadence                core=3 sat=2  (news-snps-3)
+  [0.417] scholar rock coo                       core=3 sat=0  (news-nclh-13)
+  [0.415] ishares world etf                      core=6 sat=4  (news-stt-6)
+  [0.232] nextera apollo energy                  core=6 sat=0  (news-so-5)
+
+gated 7 (어댑터 미노출, get_event_group()=None):
+  cohesion -0.0088 / 0.1262 / 0.1293 / 0.1392 / 0.146 / 0.1555 / 0.1941
+
+[후속 (사용자 수동/후속 세션)]
+- 보드 소비자 배선 + 플래그 게이트(Slice B): leadership 커플링 해소 후. go-live = Phase 1 완료.
+- leadership 재배선(EventGroup 멤버십 LOO + score-diff 검증) = 선행 후속 세션.
+- 그룹 컴퓨트 beat 등록(Slice C): 소비자 라이브 전 신선도 필요 시점에.
+- 확정값 불변: auto_name=n3, COHESION_GATE=0.2 (이 세션 변경 없음, 확인만).
