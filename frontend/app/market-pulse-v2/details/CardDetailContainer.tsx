@@ -44,7 +44,10 @@ export function CardDetailContainer({
 
   return (
     <div>
-      <p className="text-xs text-slate-400 mb-2">cache: {cacheState}</p>
+      {/* cache_state는 디버그 메타 — 엔드유저 비노출(dev 전용). 봉투 데이터는 무변경. */}
+      {process.env.NODE_ENV !== 'production' ? (
+        <p className="text-xs text-slate-400 mb-2">cache: {cacheState}</p>
+      ) : null}
       {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} labels={labels} />}
       {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} />}
       {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} />}
