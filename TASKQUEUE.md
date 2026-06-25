@@ -195,6 +195,12 @@
 | MP2-E2E-SAFETYNET | **E2E 화면 회귀 안전망** — Playwright/Cypress 등 `/market-pulse-v2` 라이브 렌더 회귀 테스트(**모바일 에뮬레이션 포함** = resize_window 도구 한계 보완). Phase 2 **첫 인프라** | (인프라) | @qa+@frontend | 🆕 등록 (P2 선행 인프라) | 화면게이트가 수동 브라우저 의존(FE 크래시 2회·모바일 미확보) → Phase 2 변경 전 자동 회귀망 우선. 모바일 뷰포트 에뮬레이션으로 P2-① 구조적 해소 |
 | MP2-DATA-BREADTH-CONC | **Breadth/Concentration raw 미수집** 점검 — Breadth 종목별 등락(상승/하락/신고저 0) + Concentration 상위종목 일부 부재. 화면은 graceful fallback 정상(밴드·sense 렌더)이나 raw 데이터원 점검 | (데이터) | @infra | 🆕 등록 (데이터 파이프라인 트랙) | D-P1-SCREENGATE P2-②. 화면 결함 아님(graceful) → 데이터 수집 task/소스 점검. Analog(#1) 입력 품질과도 연관 가능 |
 | MP2-MOBILE-EYECHECK | **모바일 실기기 눈확인**(P2-① 권고) — 실기기/브라우저 DevTools 모바일 모드로 `/market-pulse-v2` 1회 눈검증 | (권고) | 사용자/병진 | 🟡 **비차단 권고** | D-P1-SCREENGATE P2-①. resize_window 뷰포트 미반영 도구 한계 → 반응형 설계는 JS 코드 입증 완료, 실렌더 눈검증만 잔여. MP2-E2E-SAFETYNET land 시 자동 흡수 가능 |
+| **MP1.5-FIX** | **단일 FE 슬라이스** (데이터 충분, 즉시 착수 가능) — ⒜ A1 brief 모달 `body` fallback 매핑 ⒝ A2 authAxios refresh 인터셉터 401 재시도 ⒞ A3 `ConcentrationDetail.tsx:55` `<Pie label>` 포맷터(`toFixed`)+레이블 겹침 처리 ⒟ "cache: MISS" 엔드유저 노출 정리 ⒠ **① 유효 종목 수(1/HHI) 카드 표시**(즉시, 추가 데이터 0) | @frontend | 🟢 **확정 (착수 가능)** | D-P15-TRIAGE. 전부 frontend·데이터 충분. ①은 D-CONC-RISK-LENSES 렌즈①. cache:MISS는 BE `_envelope` 노출 — FE 비표시 또는 BE 제외 택1(슬라이스 STEP 0 판정) |
+| MP2-ANALOG-COND-RESULT | **조건부-과거-결과 primitive (공유)** — D-CONC-RISK-LENSES ②③을 Analog 트랙 산하로 이동. ② 퍼센타일(현재값의 과거 분위) + ③ 조건부 과거결과(고집중→이후 분포, **분포+표본수+신뢰구간만·단일숫자 금지**) | @backend (Analog 산하) | 🔴 **데이터 게이트** | **시간만으로 안 열림**: ②=데이터 깊이(≥1년) + ③=**레짐 다양성**(저집중 표본 필요, 현재 top10 13/13 전부 고집중=변별 0). 집중도뿐 아니라 regime 전반 조건부결과의 공유 primitive로 설계. Analog(#1) 착수 시 통합 |
+
+> **집중도 카드 점진 공개 (D-CONC-RISK-LENSES)**: **① 유효 종목 수 = now**(MP1.5-FIX 동봉) / **② 퍼센타일 = 데이터 깊이 충족 시**(1년 미만이면 "표본 N일, 잠정" 정직 라벨 필수) / **③ 조건부 과거결과 = Analog 트랙**(MP2-ANALOG-COND-RESULT, 레짐 다양성 게이트). 가짜 절대리스크("40%→X%") 금지.
+>
+> **STEP 0 케이던스 실측(2026-06-25)**: beat `mp_calc_concentration_daily` = **평일 daily**(17:15 NY, cron `15 17 * * 1-5`). 최근 6/16~6/25 daily 정상. **단 5/7~6/11 35일 갭**(과거 운영 공백 — daily 의도이나 누락, 주간 의도 아님). → ② 타임라인: **현재부터 daily 누적 시 ~1년 후 가능**(과거 갭 미백필). 데이터 트랙 신규 항목 불요(beat 현재 정상 가동, 갭은 과거분).
 
 ---
 
