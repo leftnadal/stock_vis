@@ -35,9 +35,15 @@ W_CORECONN = 0.15    # 추가 코어 연결당 가산
 
 # ── 입력 레이어 (prod ORM) ───────────────────────────────────────────
 def _build_base(half_life):
-    """ChainNewsEvent → 쌍별 co_count + 종목별 doc_count + as_of."""
-    from apps.chain_sight.models.news_event import ChainNewsEvent
+    """ChainNewsEvent → 쌍별 co_count + 종목별 doc_count + as_of.
 
+    EventGroup은 stocks.Stock FK이므로 co_mentioned_symbols 중 Stock 미존재
+    심볼은 클러스터링 단계에서 제외(적재 시 FK-skip로 코어가 축소되는 것 방지).
+    """
+    from apps.chain_sight.models.news_event import ChainNewsEvent
+    from packages.shared.stocks.models import Stock
+
+    valid = set(Stock.objects.values_list("symbol", flat=True))
     co_count = defaultdict(int)
     occ = defaultdict(list)
     doc_count = defaultdict(int)
@@ -48,7 +54,7 @@ def _build_base(half_life):
     )
     for symbol_id, co, pub in rows:
         syms = sorted({symbol_id, *(co or [])})
-        syms = [s for s in syms if s]
+        syms = [s for s in syms if s and s in valid]
         if len(syms) < 2:
             continue
         N += 1
