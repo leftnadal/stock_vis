@@ -27,12 +27,19 @@ class EventGroup(models.Model):
     )
     confidence = models.FloatField(default=0.0, help_text="코어 멤버 평균 강도")
     window_days = models.IntegerField(default=21, help_text="co-mention half-life 윈도우(일)")
-    cohesion = models.FloatField(null=True, blank=True, help_text="멤버 수익률 pairwise 상관 평균")
+    cohesion = models.FloatField(
+        null=True, blank=True, help_text="코어 멤버 수익률 pairwise 상관 평균(게이팅 기준)"
+    )
     breadth = models.FloatField(null=True, blank=True, help_text="일별 방향 일치도")
+    name_candidates = models.JSONField(
+        default=dict, blank=True,
+        help_text='코어 TF-IDF 이름 후보 {"n2":..,"n3":..,"terms":[..]} (N 미확정 — Phase 1)'
+    )
     member_count = models.IntegerField(default=0)
     core_count = models.IntegerField(default=0)
     is_hidden = models.BooleanField(
-        default=False, db_index=True, help_text="킬스위치/노이즈 게이팅(소표본·저신뢰)"
+        default=False, db_index=True,
+        help_text="킬스위치/노이즈 게이팅(코어 cohesion<0.2 또는 산출불가 = 저신뢰 잡탕 후보)"
     )
     as_of_date = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
