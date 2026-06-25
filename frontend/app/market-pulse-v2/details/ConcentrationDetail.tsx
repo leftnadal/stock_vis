@@ -8,6 +8,7 @@ import {
   ResponsiveContainer,
   Tooltip,
 } from 'recharts'
+import type { PieLabelRenderProps } from 'recharts'
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { ConcentrationDetail as Detail } from '@/lib/api/marketPulseV2'
@@ -18,6 +19,13 @@ const COLORS = [
   'rgb(245 158 11)', 'rgb(244 63 94)', 'rgb(168 85 247)',
   'rgb(16 185 129)', 'rgb(234 88 12)', 'rgb(217 70 239)', 'rgb(59 130 246)',
 ]
+
+// A3: recharts 기본 label은 raw weight(0.6134…) 미반올림 + 조각 겹침.
+// 비율 %로 포맷(toFixed 1) + 작은 조각(<3%) 레이블 생략으로 겹침 해소.
+function renderPieLabel(props: PieLabelRenderProps): string {
+  const v = typeof props.value === 'number' ? props.value : 0
+  return v >= 0.03 ? `${(v * 100).toFixed(1)}%` : ''
+}
 
 export function ConcentrationDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
@@ -52,7 +60,7 @@ export function ConcentrationDetail({ payload, labels }: { payload: Detail; labe
         <div style={{ width: '100%', height: 260 }}>
           <ResponsiveContainer>
             <PieChart>
-              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} label>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} label={renderPieLabel}>
                 {data.map((entry, i) => (
                   <Cell key={entry.name} fill={entry.name === 'others' ? 'rgb(203 213 225)' : COLORS[i % COLORS.length]} />
                 ))}
