@@ -474,6 +474,15 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 동적 라우트 세그먼트에 사용자 표시 문자열(공백·`&`·한글)을 넣을 땐 **생성·소비 양측 인코딩 단계를 한 번씩만** 세고 왕복 테스트로 검증. 링크 생성 지점 전수 grep(누락 시 일부 진입로만 깨짐).
 - 📎 참조: `DECISIONS.md` "[2026-06-23] chain_sight 소규모 그룹 — URL 인코딩 버그(ⓑ)", `frontend/components/chainsight/EventBoard.tsx`·`app/chainsight/events/[theme]/page.tsx`, 테스트 `routeReversal.test.tsx`(왕복 10건).
 
+## verify용 클론은 PORT=3000 — 다른 포트는 CORS 차단('503'처럼 표면화) (#39) `[frontend]` `[infra]`
+
+- 증상: verify용 깨끗한 클론을 `:3100` 등 비표준 포트로 띄우면, 로그인된 세션인데도 `/market-pulse-v2` 등 **전 인증요청이 실패** + 화면은 "데이터를 불러오지 못했습니다". 브라우저 네트워크 패널엔 BE overview/i18n이 **503**으로 찍히나, BE(daphne :18765) access 로그엔 503이 **0건**·전부 `401 Unauthorized`. `curl`(토큰 없음)로는 동일 엔드포인트가 401 — 모순처럼 보임. MP1.5-FIX 시각검증 2026-06-25 발견.
+- 원인 `[infra]`: BE `CORS_ALLOWED_ORIGINS`(`config/settings.py:318`)에 **`http://localhost:3000`·`http://127.0.0.1:3000`만** 등록. `:3100` origin의 preflight(OPTIONS)는 **200이나 응답에 `Access-Control-Allow-Origin` 헤더(ACAO)가 누락** → 브라우저가 본응답을 차단 → axios는 `Network Error`. dev 프록시 계층이 차단된 요청을 **503으로 표기**해 'BE 503'처럼 오인됨(실체는 미인증/CORS). 카드 0렌더라 결함이 데이터/백엔드 문제로 잘못 보임.
+- 감지: `curl -s -D - -o /dev/null -X OPTIONS -H "Origin: http://localhost:3100" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: authorization" http://localhost:18765/api/v2/market-pulse/overview` → `Access-Control-Allow-Origin` 헤더 **부재**면 차단 확정(`:3000`으로 바꾸면 ACAO + `Access-Control-Allow-Credentials: true` 동반). BE access 로그(`~/Library/Logs/stockvis/web-error.log`)가 503이 아니라 401만 찍으면 'BE 503'은 착시.
+- 해결: **클론은 `PORT=3000`으로 띄운다** — 메인 `:3000` dev가 미가동이면 그 포트 재사용이 정석(메인·BE·settings 전부 무접촉, 검증 대상 코드 무변경). `cd <clone>/frontend && PORT=3000 npm run dev` → `:3000`에서 로그인 → CORS 통과(overview 200). 대안: `.env`에 `DJANGO_CORS_ALLOW_ALL=True`(개발 전체허용) — **되돌림 필요·비권장**(BE 재시작 + 운영 전체허용 리스크). settings에 `:3100` 영구 추가도 가능하나 메인 코드 변경이라 검증 세션엔 부적절.
+- 교훈: 카드 0렌더 + '503'을 보면 BE/데이터부터 의심하기 쉬우나, **로그인 세션의 인증요청이 전건 실패하면 CORS origin 화이트리스트를 먼저 의심**한다. preflight 200 ≠ 허용(ACAO 헤더 유무가 진실). 검증환경 포트는 항상 BE가 허용한 origin과 일치시킨다.
+- 📎 참조: `DECISIONS.md` "[2026-06-25] MP1.5-FIX 화면게이트 = 조건부 통과(D-P15-SCREENGATE)", `config/settings.py:318` `CORS_ALLOWED_ORIGINS`, `frontend/app/market-pulse-v2/details/CardDetailContainer.tsx:48`(cache 가드).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
