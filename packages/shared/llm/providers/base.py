@@ -19,6 +19,9 @@ class Provider(Protocol):
         *,
         model: Optional[str],
         system: Optional[str],
-        max_tokens: int,
+        max_tokens: Optional[int],
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
     ) -> LLMRawResponse:
         ...

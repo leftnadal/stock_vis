@@ -46,7 +46,10 @@ class AnthropicProvider:
         *,
         model: Optional[str] = None,
         system: Optional[str] = None,
-        max_tokens: int = 2000,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
     ) -> LLMRawResponse:
         from anthropic import Anthropic
 
@@ -57,11 +60,19 @@ class AnthropicProvider:
         started = time.time()
         try:
             client = Anthropic(api_key=api_key)
-            kwargs: dict = {
-                "model": used_model,
-                "max_tokens": max_tokens,
-                "messages": [{"role": "user", "content": prompt}],
-            }
+            # extra(top_p·stop_sequences 등) 먼저 → 명시 노브 우선.
+            kwargs: dict = dict(extra or {})
+            kwargs.update(
+                {
+                    "model": used_model,
+                    # Anthropic messages.create는 max_tokens 필수 → None이면 2000 폴백.
+                    "max_tokens": max_tokens if max_tokens is not None else 2000,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+            )
+            if temperature is not None:
+                kwargs["temperature"] = temperature
+            # response_format: Anthropic은 response_mime_type 미지원 → 무시(provider 한계, 문서화).
             if system:
                 kwargs["system"] = system
             response = client.messages.create(**kwargs)

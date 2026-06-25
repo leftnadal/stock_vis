@@ -38,13 +38,26 @@ class FakeProvider:
         self.calls = 0
         self.last = None
 
-    def generate(self, prompt, *, model, system, max_tokens):
+    def generate(
+        self,
+        prompt,
+        *,
+        model,
+        system,
+        max_tokens,
+        temperature=None,
+        response_format=None,
+        extra=None,
+    ):
         self.calls += 1
         self.last = {
             "prompt": prompt,
             "model": model,
             "system": system,
             "max_tokens": max_tokens,
+            "temperature": temperature,
+            "response_format": response_format,
+            "extra": extra,
         }
         if self.calls <= self._fail_times:
             raise self._fail_exc
@@ -180,3 +193,84 @@ def test_unknown_provider_raises(patch_registry):
 
     with pytest.raises(LLMInvalidPromptError):
         complete("x", provider="openai")
+
+
+# ── 슬라이스 ②a: 생성 config 통로 ────────────────────────────────────────
+
+
+def test_no_gen_config_knobs_by_default(patch_registry):
+    """노브 전부 생략 = 슬라이스 ① 동작 재현 — 전부 None passthrough."""
+    fp = FakeProvider()
+    patch_registry(gemini=fp)
+
+    complete("x")
+
+    assert fp.last["max_tokens"] is None  # ★ 2000 강제 안 함(버그 수정)
+    assert fp.last["temperature"] is None
+    assert fp.last["response_format"] is None
+    assert fp.last["extra"] is None
+
+
+def test_gen_config_knobs_passthrough(patch_registry):
+    """명시 노브 + extra가 provider까지 그대로 전달."""
+    fp = FakeProvider()
+    patch_registry(gemini=fp)
+
+    complete(
+        "x",
+        temperature=0.3,
+        max_tokens=512,
+        response_format="json",
+        extra={"thinking_config": {"thinking_budget": 0}},
+    )
+
+    assert fp.last["temperature"] == 0.3
+    assert fp.last["max_tokens"] == 512
+    assert fp.last["response_format"] == "json"
+    assert fp.last["extra"] == {"thinking_config": {"thinking_budget": 0}}
+
+
+def test_gemini_provider_config_mapping(monkeypatch):
+    """GeminiProvider: max_tokens None→미설정, response_format→mime, extra→merge."""
+    from packages.shared.llm.providers import gemini as gmod
+
+    captured = {}
+
+    class _Usage:
+        prompt_token_count = 1
+        candidates_token_count = 2
+
+    class _Resp:
+        text = "{}"
+        usage_metadata = _Usage()
+
+    class _Models:
+        def generate_content(self, *, model, contents, config):
+            captured["model"] = model
+            captured["config"] = config
+            return _Resp()
+
+    class _Client:
+        def __init__(self, api_key=None):
+            self.models = _Models()
+
+    import google.genai as real_genai
+
+    monkeypatch.setattr(gmod, "_resolve_api_key", lambda: "fake-key")
+    monkeypatch.setattr(real_genai, "Client", _Client)
+
+    gmod.GeminiProvider().generate(
+        "p",
+        model=None,
+        system=None,
+        max_tokens=None,  # → max_output_tokens 미설정
+        temperature=0.3,
+        response_format="json",  # → response_mime_type
+        extra={"top_p": 0.9},  # → merge
+    )
+
+    cfg = captured["config"]
+    assert getattr(cfg, "max_output_tokens", None) is None  # 현행 재현(강제 안 함)
+    assert getattr(cfg, "temperature", None) == 0.3
+    assert getattr(cfg, "response_mime_type", None) == "application/json"
+    assert getattr(cfg, "top_p", None) == 0.9

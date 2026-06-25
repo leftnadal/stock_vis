@@ -35,13 +35,24 @@ def complete(
     provider: str = "gemini",
     model: Optional[str] = None,
     system: Optional[str] = None,
-    max_tokens: int = 2000,
+    # ── 생성 config: 공통 노브(명시, provider-agnostic) ──
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+    response_format: Optional[str] = None,
+    # ── provider 고유 노브(extra, passthrough) — gemini: GenerateContentConfig에 merge ──
+    extra: Optional[dict] = None,
+    # ── 정책(슬라이스 ① 그대로, 기본 off) ──
     circuit: Optional[str] = None,
     escape: bool = False,
     retries: int = 0,
     cost_track: bool = False,
     fallback: Optional[str] = None,
 ) -> LLMResponse:
+    """단일 LLM 진입점. 생성 config 배치 규칙:
+      명시 노브(temperature·max_tokens·response_format) = 모든 provider 공통 생성 파라미터.
+      extra(dict) = 그 provider 고유 노브(gemini thinking_config·top_p 등).
+    모든 신규 노브 기본 None → 인자 없는 호출 = 슬라이스 ① 동작(노브 미설정, provider 기본).
+    """
     # ── 정책 1: escape(신뢰경계) — escape=True일 때만 prompt 변환 ──────────
     effective_prompt = escape_untrusted(prompt) if escape else prompt
 
@@ -54,6 +65,9 @@ def complete(
                 model=used_model,
                 system=system,
                 max_tokens=max_tokens,
+                temperature=temperature,
+                response_format=response_format,
+                extra=extra,
             )
 
         # ── 정책 2·3: retry( circuit( generate ) ) — 각각 인자 있을 때만 ──

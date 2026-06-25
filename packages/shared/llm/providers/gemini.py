@@ -68,7 +68,10 @@ class GeminiProvider:
         *,
         model: Optional[str] = None,
         system: Optional[str] = None,
-        max_tokens: int = 2000,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
     ) -> LLMRawResponse:
         from google import genai
         from google.genai import types as gtypes
@@ -80,7 +83,14 @@ class GeminiProvider:
         started = time.time()
         try:
             client = genai.Client(api_key=api_key)
-            config_kwargs: dict = {"max_output_tokens": max_tokens}
+            # extra(provider 고유: thinking_config·top_p 등) 먼저 → 명시 노브가 우선(덮어씀).
+            config_kwargs: dict = dict(extra or {})
+            if max_tokens is not None:  # None = 미설정(provider 기본) — 현행 재현
+                config_kwargs["max_output_tokens"] = max_tokens
+            if temperature is not None:
+                config_kwargs["temperature"] = temperature
+            if response_format == "json":
+                config_kwargs["response_mime_type"] = "application/json"
             if system:
                 config_kwargs["system_instruction"] = system
             response = client.models.generate_content(
