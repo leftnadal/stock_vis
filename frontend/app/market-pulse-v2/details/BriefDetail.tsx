@@ -14,7 +14,19 @@ export function BriefDetail({ payload }: { payload: Detail }) {
           {payload.date} · {payload.model_version} · {payload.status}
         </p>
       </header>
-      {payload.content ? (
+      {payload.body_sections && payload.body_sections.length > 0 ? (
+        <div className="grid gap-2">
+          {payload.body_sections.map((section, i) => (
+            <p key={i} className="text-sm text-slate-800 whitespace-pre-wrap">{section}</p>
+          ))}
+        </div>
+      ) : payload.body ? (
+        <div className="grid gap-2">
+          {payload.body.split(/\n\n+/).map((para, i) => (
+            <p key={i} className="text-sm text-slate-800 whitespace-pre-wrap">{para}</p>
+          ))}
+        </div>
+      ) : payload.content ? (
         <p className="text-sm text-slate-800 whitespace-pre-wrap">{payload.content}</p>
       ) : null}
       {payload.tokens ? (

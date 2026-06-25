@@ -299,7 +299,9 @@ export interface BriefDetail {
   model_version?: string
   status?: string
   headline?: string
-  content?: string
+  body?: string
+  body_sections?: string[]
+  content?: string // legacy 호환 (BE는 body/body_sections 반환)
   inputs_summary?: Record<string, unknown>
   tokens?: { prompt: number; completion: number; latency_ms: number }
 }
