@@ -10,9 +10,9 @@ import time
 
 from django.conf import settings
 from django.utils import timezone
-from google import genai
 from google.genai import types
 
+from packages.shared.llm import complete
 from packages.shared.stocks.models import SP500Constituent, Stock, StockOverviewKo
 
 logger = logging.getLogger(__name__)
@@ -26,12 +26,13 @@ class KoreanOverviewService:
     RPM_DELAY = 4  # Gemini Free: 15 RPM
 
     def __init__(self):
+        # 키 검증은 유지(누락 시 조기 ValueError, 현행 동작 보존). genai.Client 생성은
+        # shared/llm complete()로 이관(슬라이스 ②) — 키는 settings 경유로 코어가 해소.
         api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
             settings, "GEMINI_API_KEY", None
         )
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
-        self.client = genai.Client(api_key=api_key)
 
     def generate_for_stock(self, symbol: str, force: bool = False) -> StockOverviewKo:
         """
@@ -59,19 +60,21 @@ class KoreanOverviewService:
         start_time = time.time()
 
         try:
-            response = self.client.models.generate_content(
+            # genai 직접 호출 → shared/llm complete() 경유 (슬라이스 ②, 4노브 IDENTICAL).
+            # response_format="json"→response_mime_type, thinking_config는 extra passthrough,
+            # max_tokens 미지정→미설정(현행 재현). 정책(circuit/escape/retries/cost_track) 전부 off.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model=self.MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    temperature=self.TEMPERATURE,
-                    response_mime_type="application/json",
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+                temperature=self.TEMPERATURE,
+                response_format="json",
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             elapsed_ms = int((time.time() - start_time) * 1000)
 
-            # JSON 파싱
+            # JSON 파싱 (LLMResponse.text — genai response.text와 동일 필드)
             result = json.loads(response.text)
 
             # DB 저장
