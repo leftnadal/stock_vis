@@ -1,9 +1,9 @@
 /**
  * Market Pulse v2 API client (PR-K/L).
  */
-import axios, { AxiosInstance } from 'axios'
+import axios, { AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 
-import { tokenUtils } from '@/lib/api/authAxios'
+import { tokenUtils, refreshAccessToken } from '@/lib/api/authAxios'
 
 const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
 const API_ORIGIN = RAW_API_URL.replace(/\/api\/v\d+\/?$/, '')
@@ -19,6 +19,26 @@ client.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+
+// A2: detail 클릭 시점 access 만료 → 401. 요청 인터셉터만으론 갱신 안 됨.
+// authAxios와 동일 refresh 헬퍼(단일 소스)로 1회 갱신 후 재시도(_retry 무한루프 가드).
+client.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+    if (error.response?.status !== 401 || originalRequest?._retry) {
+      return Promise.reject(error)
+    }
+    originalRequest._retry = true
+    try {
+      const newAccess = await refreshAccessToken()
+      originalRequest.headers.Authorization = `Bearer ${newAccess}`
+      return client(originalRequest)
+    } catch (refreshError) {
+      return Promise.reject(refreshError)
+    }
+  },
+)
 
 export type APIStatus = 'OK' | 'INSUFFICIENT_DATA' | 'STALE' | 'FAILED' | 'MARKET_CLOSED'
 

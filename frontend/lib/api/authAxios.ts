@@ -55,6 +55,20 @@ function processQueue(error: unknown, token: string | null) {
   pendingQueue = []
 }
 
+// ── 공유 refresh 헬퍼 (authAxios + 타 인스턴스[marketPulseV2 client] 단일 소스) ──
+// refresh 토큰으로 access 갱신, rotation(data.refresh) 대응. 새 access 반환.
+export async function refreshAccessToken(): Promise<string> {
+  const refresh = tokenUtils.getRefresh()
+  if (!refresh) throw new Error('No refresh token')
+  const { data } = await axios.post(`${API_URL}/users/jwt/refresh/`, { refresh })
+  if (data.refresh) {
+    tokenUtils.setTokens(data.access, data.refresh)
+  } else {
+    tokenUtils.setAccess(data.access)
+  }
+  return data.access
+}
+
 // ── 다중 탭 동기화: 다른 탭에서 토큰이 갱신/삭제되면 감지 ──
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
@@ -101,21 +115,12 @@ authAxios.interceptors.response.use(
     isRefreshing = true
 
     try {
-      const refresh = tokenUtils.getRefresh()
-      if (!refresh) throw new Error('No refresh token')
+      // 방어 (3) ROTATE_REFRESH_TOKENS 대응은 refreshAccessToken 내부 처리.
+      const newAccess = await refreshAccessToken()
 
-      const { data } = await axios.post(`${API_URL}/users/jwt/refresh/`, { refresh })
+      processQueue(null, newAccess)
 
-      // ── 방어 (3): ROTATE_REFRESH_TOKENS=True 대응 ──
-      if (data.refresh) {
-        tokenUtils.setTokens(data.access, data.refresh)
-      } else {
-        tokenUtils.setAccess(data.access)
-      }
-
-      processQueue(null, data.access)
-
-      originalRequest.headers.Authorization = `Bearer ${data.access}`
+      originalRequest.headers.Authorization = `Bearer ${newAccess}`
       return authAxios(originalRequest)
     } catch (refreshError) {
       processQueue(refreshError, null)
