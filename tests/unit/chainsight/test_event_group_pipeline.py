@@ -93,6 +93,60 @@ class TestCoreSatellite:
         assert d1["edge_confidence"] > d0["edge_confidence"]  # 가산만 — 더 커야
 
 
+class TestCohesionGating:
+    def _add_prices(self, syms, corr_returns):
+        """corr_returns: 길이 25 수익률 시퀀스(공통이면 상관 1.0)."""
+        from datetime import date as _d, timedelta as _td
+
+        from packages.shared.stocks.models import DailyPrice
+        for s in syms:
+            px = 100.0
+            for i, r in enumerate(corr_returns):
+                px *= (1 + r)
+                DailyPrice.objects.create(
+                    stock_id=s, date=_d(2026, 1, 1) + _td(days=i),
+                    open_price=px, high_price=px, low_price=px,
+                    close_price=round(px, 4), volume=1000,
+                )
+
+    def test_high_cohesion_not_gated(self, synthetic):
+        # A,B,C 동일 수익률 → 코어 cohesion=1.0 > 0.2 → is_hidden=False
+        self._add_prices(["A", "B", "C"], [0.01, -0.02, 0.015, -0.01] * 7)
+        from apps.chain_sight.models.event_group import EventGroup
+        pipe.load_event_groups()
+        abc = EventGroup.objects.filter(memberships__symbol_id="B").first()
+        assert abc.cohesion is not None and abc.cohesion > 0.2
+        assert abc.is_hidden is False
+
+    def test_no_cohesion_gated(self, synthetic):
+        # 가격 없음 → cohesion None → is_hidden=True (산출불가 게이팅)
+        from apps.chain_sight.models.event_group import EventGroup
+        summary = pipe.load_event_groups()
+        assert summary["gated_no_cohesion"] >= 1
+        efg = EventGroup.objects.filter(memberships__symbol_id="E").first()
+        assert efg.cohesion is None and efg.is_hidden is True
+
+
+class TestTfidfNames:
+    def test_core_names_attached(self, db):
+        from datetime import timedelta as _td
+
+        for s in ["X1", "X2", "X3"]:
+            _mk_stock(s)
+        # 코어 X1,X2,X3 — 일관된 키워드 "battery lithium"
+        for i in range(5):
+            ChainNewsEvent.objects.create(
+                symbol_id="X1", source="finnhub", source_id=f"x-{i}", title="battery lithium surge",
+                summary="battery lithium demand", published_at=timezone.now() - _td(days=i),
+                co_mentioned_symbols=["X2", "X3"],
+            )
+        res = pipe.compute_event_groups(core_thr=0.2, sat_thr=0.05, min_members=3)
+        g = next(g for g in res["groups"] if set(g["core"]) == {"X1", "X2", "X3"})
+        assert g["name_candidates"].get("terms")
+        assert "battery" in g["name_candidates"]["terms"] or "lithium" in g["name_candidates"]["terms"]
+        assert len(g["name_candidates"]["n2"].split()) <= 2
+
+
 class TestLoad:
     def test_shadow_load_writes_groups(self, synthetic):
         summary = pipe.load_event_groups(core_thr=0.2, sat_thr=0.05, min_members=3)

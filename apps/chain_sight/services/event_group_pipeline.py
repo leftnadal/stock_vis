@@ -187,9 +187,12 @@ def compute_event_groups(
             "confidence": round(
                 float(np.mean([m["edge_confidence"] for m in members])) if members else 0.0, 4
             ),
-            "cohesion": _pairwise_cohesion(all_syms),
+            # cohesion = 코어 멤버 기준(게이팅 임계 0.2의 캘리브레이션 기준)
+            "cohesion": _pairwise_cohesion(core),
             "breadth": _group_breadth(all_syms),
         })
+    # TF-IDF 코어 이름 부여 (corpus = 전 그룹 코어 텍스트)
+    _attach_core_names(groups)
     return {"groups": groups, "as_of": as_of, "params": {
         "half_life": half_life, "core_thr": core_thr,
         "sat_thr": sat_thr, "min_members": min_members,
@@ -259,20 +262,116 @@ def _group_breadth(symbols, min_members=2):
     return round(float(np.mean(agrees)), 4) if agrees else None
 
 
+# ── TF-IDF 코어 이름 (코어 멤버 등장 뉴스 텍스트) ────────────────────
+_NAME_STOP = set("""a an the of in on at to for and or but with by from as is are was were be been
+being this that these those it its their his her our your they them we you i he she has have had
+do does did will would can could should may might must not no nor so than then up down out over
+under more most less least very just also about into onto off above below after before during
+inc corp co ltd llc plc group holdings holding company companies share shares stock stocks
+position decreases increases reduces raises buys sells sold buy sell new report reports reported
+q1 q2 q3 q4 quarter third second first fourth year years market markets price prices target
+analyst analysts rating ratings says said according amid via per pct percent value stake
+million billion trillion fund management asset llp lp ag sa nv systems technologies""".split())
+
+
+def _name_tokens(text, member_syms):
+    import re
+
+    text = (text or "").lower()
+    text = re.sub(r"\$[a-z]+", " ", text)
+    text = re.sub(r"[^a-z\s]", " ", text)
+    member_lower = {m.lower() for m in member_syms}
+    return [t for t in text.split()
+            if len(t) >= 3 and t not in _NAME_STOP and t not in member_lower]
+
+
+def _attach_core_names(groups):
+    """그룹별 코어 멤버 등장 뉴스 텍스트로 TF-IDF 이름 후보 부여(N=2/3 + 원시 텀5).
+
+    엣지: 코어 1명/텍스트 부족 → name_candidates 빈 dict, name "—".
+    """
+    import math
+    from collections import Counter
+
+    from apps.chain_sight.models.news_event import ChainNewsEvent
+
+    # 전 코어 멤버 합집합으로 이벤트 텍스트 1회 로드
+    all_core = set()
+    for g in groups:
+        all_core |= set(g["core"])
+    # 심볼별 등장 이벤트 텍스트 모음
+    sym_texts = defaultdict(list)
+    for symbol_id, co, title, summary in ChainNewsEvent.objects.filter(
+        is_duplicate=False
+    ).values_list("symbol_id", "co_mentioned_symbols", "title", "summary"):
+        syms = {symbol_id, *(co or [])} & all_core
+        if not syms:
+            continue
+        txt = f"{title or ''} {summary or ''}"
+        for s in syms:
+            sym_texts[s].append(txt)
+
+    # 그룹별 코어 토큰 카운트
+    gtok = []
+    for g in groups:
+        cnt = Counter()
+        cset = set(g["core"])
+        for s in g["core"]:
+            for txt in sym_texts.get(s, []):
+                cnt.update(_name_tokens(txt, cset))
+        gtok.append(cnt)
+
+    Ngrp = len(gtok) or 1
+    df = Counter()
+    for cnt in gtok:
+        for t in cnt:
+            df[t] += 1
+
+    for g, cnt in zip(groups, gtok):
+        if len(g["core"]) < 1 or not cnt:
+            g["name_candidates"] = {}
+            g["auto_name"] = "—"
+            continue
+        gtotal = sum(cnt.values()) or 1
+        scores = {}
+        for t, f in cnt.items():
+            if Ngrp >= 3 and df[t] >= Ngrp:  # 충분한 corpus에서만 보편텀 제거
+                continue
+            idf = math.log(Ngrp / df[t]) if Ngrp >= 3 else 1.0
+            scores[t] = (f / gtotal) * idf
+        top = [t for t, _ in sorted(scores.items(), key=lambda x: -x[1])[:5]]
+        if not top:  # 폴백: raw TF 상위(단일 그룹 corpus 등)
+            top = [t for t, _ in cnt.most_common(5)]
+        if not top:
+            g["name_candidates"] = {}
+            g["auto_name"] = "—"
+            continue
+        g["name_candidates"] = {
+            "n2": " ".join(top[:2]),
+            "n3": " ".join(top[:3]),
+            "terms": top,
+        }
+        g["auto_name"] = g["name_candidates"]["n3"]
+
+
 # ── 쉐도우 적재 (EventGroup/GroupMembership) ─────────────────────────
 def _slugify(leader, gi):
     base = "".join(ch for ch in (leader or "grp").lower() if ch.isalnum())
     return f"news-{base or 'grp'}-{gi}"
 
 
-def load_event_groups(min_priced_for_visible=2, **params):
+COHESION_GATE = 0.2  # 확정: 코어 cohesion < 0.2 = 저신뢰 잡탕 후보 → is_hidden
+
+
+def load_event_groups(cohesion_gate=COHESION_GATE, **params):
     """
     파이프라인 실행 → EventGroup/GroupMembership 적재 (Phase 1 덮어쓰기 모드).
 
     기존 theme_tags 소비자 무영향 — 새 테이블에만 쓴다(쉐도우).
-    저신뢰(코어 가격 보유 종목 < min_priced_for_visible 등)는 is_hidden=True 게이팅.
+    게이팅(플래그, 드롭 아님): 코어 cohesion < cohesion_gate(또는 산출불가) → is_hidden=True.
+    그룹명 = 코어 TF-IDF 이름(n3), 후보는 name_candidates에 보존.
 
-    Returns: 적재 요약 dict.
+    Returns: 적재 요약 dict(게이트 분포 포함).
     """
     from django.db import transaction
 
@@ -285,25 +384,37 @@ def load_event_groups(min_priced_for_visible=2, **params):
     as_of = result["as_of"]
     valid_symbols = set(Stock.objects.values_list("symbol", flat=True))
 
-    hidden = 0
+    hidden = gated_low = gated_none = 0
+    cohesions = []
     with transaction.atomic():
         # Phase 1 덮어쓰기: 기존 쉐도우 전량 교체 (새 테이블만 — 기존 reader 무영향)
         GroupMembership.objects.all().delete()
         EventGroup.objects.all().delete()
         for gi, g in enumerate(groups):
-            # 게이팅: 코어 종목 가격 보유 부족 → is_hidden
-            priced_core = len(_load_prices(g["core"]))
-            is_hidden = priced_core < min_priced_for_visible
+            # 게이팅(플래그): 코어 cohesion < gate 또는 산출불가 → is_hidden (드롭 아님)
+            coh = g["cohesion"]
+            if coh is not None:
+                cohesions.append(coh)
+            if coh is None:
+                is_hidden = True
+                gated_none += 1
+            elif coh < cohesion_gate:
+                is_hidden = True
+                gated_low += 1
+            else:
+                is_hidden = False
             if is_hidden:
                 hidden += 1
+            auto_name = g.get("auto_name", "—")
             eg = EventGroup.objects.create(
-                name=f"{g['leader']} 외 {g['member_count']-1}",
+                name=auto_name if auto_name != "—" else f"{g['leader']} 외 {g['member_count']-1}",
                 slug=_slugify(g["leader"], gi),
                 source="news_jaccard",
                 confidence=g["confidence"],
                 window_days=result["params"]["half_life"],
                 cohesion=g["cohesion"],
                 breadth=g["breadth"],
+                name_candidates=g.get("name_candidates", {}),
                 member_count=g["member_count"],
                 core_count=g["core_count"],
                 is_hidden=is_hidden,
@@ -328,9 +439,18 @@ def load_event_groups(min_priced_for_visible=2, **params):
                 eg.core_count = sum(1 for x in ms if x.role == "core")
                 eg.save(update_fields=["member_count", "core_count"])
 
+    cohesions.sort()
+    def _pct(p):
+        return round(cohesions[min(len(cohesions) - 1, int(p * len(cohesions)))], 3) if cohesions else None
     return {
         "groups": len(groups),
         "hidden": hidden,
+        "kept": len(groups) - hidden,
+        "gated_low_cohesion": gated_low,
+        "gated_no_cohesion": gated_none,
+        "cohesion_gate": cohesion_gate,
+        "cohesion_p10_p50_p90": [_pct(0.1), _pct(0.5), _pct(0.9)],
+        "named": sum(1 for g in groups if g.get("auto_name", "—") != "—"),
         "total_members": GroupMembership.objects.count(),
         "as_of": str(as_of),
     }
