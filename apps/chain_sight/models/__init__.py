@@ -1,6 +1,7 @@
 from .attention import StockAttentionScore
 from .capital_dna import CompanyCapitalDNA
 from .chain_profile import CompanyChainProfile
+from .event_group import EventGroup, GroupMembership
 from .event_reaction import CompanyEventReaction
 from .growth_stage import CompanyGrowthStage
 from .insider_signal import CompanyInsiderSignal
@@ -24,6 +25,8 @@ __all__ = [
     "CompanyEventReaction",
     "CompanyRevenueStructure",
     "CompanyChainProfile",
+    "EventGroup",
+    "GroupMembership",
     "ChainNewsEvent",
     "CoMentionEdge",
     "PriceCoMovement",
