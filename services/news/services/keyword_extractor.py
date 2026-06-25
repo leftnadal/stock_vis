@@ -14,8 +14,9 @@ from typing import Dict, List, Optional
 from django.conf import settings
 from django.db.models import Count
 from django.utils import timezone
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import complete
 
 from ..models import DailyNewsKeyword, NewsArticle
 
@@ -70,7 +71,8 @@ class NewsKeywordExtractor:
         """
         self.language = language
 
-        # Gemini API 클라이언트 초기화
+        # 키 검증은 유지(누락 시 조기 ValueError, 현행 동작 보존). genai.Client 생성은
+        # shared/llm complete()로 이관(슬라이스 ④) — 키는 settings 경유로 코어가 해소.
         api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
             settings, "GEMINI_API_KEY", None
         )
@@ -78,7 +80,6 @@ class NewsKeywordExtractor:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
 
     def extract_daily_keywords(
         self, target_date: Optional[date] = None, force: bool = False
@@ -213,16 +214,17 @@ class NewsKeywordExtractor:
         system_prompt = self._build_system_prompt()
         user_prompt = self._build_user_prompt(news_data, target_date)
 
-        # 동기 API 호출 (Celery 호환)
-        response = self.client.models.generate_content(
+        # 동기 API 호출 (Celery 호환) — shared/llm complete() 경유(슬라이스 ④, IDENTICAL).
+        # system_instruction→system, max_output_tokens→max_tokens, thinking_config→extra.
+        # 정책(circuit/escape/retries/cost_track) 전부 off = 현행 동작 재현.
+        response = complete(
+            user_prompt,
+            provider="gemini",
             model=self.MODEL,
-            contents=user_prompt,
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt,
-                max_output_tokens=self.MAX_OUTPUT_TOKENS,
-                temperature=self.TEMPERATURE,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            ),
+            system=system_prompt,
+            max_tokens=self.MAX_OUTPUT_TOKENS,
+            temperature=self.TEMPERATURE,
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
         response_text = response.text

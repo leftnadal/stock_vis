@@ -45,7 +45,6 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/llm/client.py", "Anthropic"),
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
     ("services/news/api/views.py", "genai.Client"),
-    ("services/news/services/keyword_extractor.py", "genai.Client"),
     ("services/news/services/news_deep_analyzer.py", "genai.Client"),
     ("services/news/services/stock_insights.py", "genai.Client"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
@@ -67,7 +66,8 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
 }
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
-FROZEN_COUNT = 23
+# 슬라이스 ④ Part ①-sync burn-down: 23 → (keyword_extractor 이관) 22 → ...
+FROZEN_COUNT = 22
 
 
 def _call_identifier(node: ast.Call) -> str | None:
