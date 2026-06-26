@@ -1,0 +1,61 @@
+M2 v1.1 leadership 재배선 — 정책 C(역할별 비대칭 벤치마크) Slice A+B 검증
+============================================================================
+세션: monorepo/sess-cs-leadership (base main d787499)
+결정: C(비대칭) + L3(불변식+diff+독립 오라클). 라이브 미배선. 옛 경로 불변.
+
+[정책 C]
+- 코어 종목 → 벤치마크 = 코어 LOO(자기 제외 코어 등가중 평균).
+- 위성 종목 → 벤치마크 = 전체 코어 등가중 평균(자기 제외 없음 — 위성은 코어 아님).
+- leadership 수식(α/β·capture·trend_quality·LOO)은 leadership_service 원함수 재사용.
+  바뀐 것은 피어셋 구성뿐(수식 불변).
+
+[Slice A — 새 컴퓨트 경로 (additive)]
+apps/chain_sight/services/leadership_eventgroup.py :: compute_eventgroup_leadership_scores(as_of)
+- 어댑터 get_kept_event_groups()로 kept+role 수신(게이팅 중앙집중).
+- 키 분리: theme='eg:{slug}' (레거시 theme=sector명과 충돌 불가) +
+  additive nullable 컬럼 benchmark_kind ∈ {core_loo, sat_coremean}(레거시=NULL).
+  마이그레이션 0013_stockleadershipscore_benchmark_kind (nullable, 기존 행 자동 NULL).
+- 윈도/날짜 정합: 옛 경로의 _load_price_series/_window_closes/passes_obs_gate 재사용
+  → 같은 입력, 피어셋만 다름(공정 diff).
+- 엣지: 코어1~2개→코어 α/β NULL(LOO 자기제외 후<2), 코어0개→ValueError(HALT),
+  120윈도 게이트미달→is_fallback+NULL, 멱등 upsert.
+- 단위 테스트 8건(tests/chainsight/test_leadership_eventgroup.py).
+
+[Slice B — L3 검증 하네스] tests/chainsight/test_leadership_eventgroup_verification.py (10건 green)
+L1 불변식(5): 역할별 벤치마크 분리(오분류0)·capture_spread 항등식·비소속 무점수·
+              소표본 코어 NULL·β 정상범위.
+L2 구신 diff 특성화(2):
+  - all-core EventGroup == 동일멤버 theme_tags theme → 코어-LOO==theme-LOO →
+    점수 동일(reduction, 이동0). 새 경로가 옛의 일반화임을 고정.
+  - core{A,B,C}+sat{D,E} vs theme{A,B,C,D,E} → 위성 D 벤치마크(코어평균 A,B,C)가
+    옛 theme-LOO(A,B,C,E)와 다름(E 제외) → 발산. 오라클로 양쪽 벤치마크 출처 검증.
+L3 독립 오라클(3, 게이트): tests/chainsight/oracles/leadership_c_oracle.py
+  - DailyPrice 직접 재로드 + numpy.polyfit(프로덕션 _ols_simple과 다른 OLS) + 순수루프 capture.
+  - 코어 점수==오라클 코어-LOO, 위성 점수==오라클 코어평균 (rel=1e-6).
+  - 엣지(코어1개): 오라클 None ↔ 프로덕션 NULL 일치.
+  - tests/에 영구 배치 → 향후 leadership 정교화 회귀 정답지.
+
+[라이브 특성화 (오라클 read-only, as_of=2026-06-25, window=20, prod 무변경)]
+prod엔 마이그레이션 0013 미적용(사용자 수동) → 프로덕션 코드 라이브실행 불가,
+오라클로 대리(L3에서 오라클==프로덕션 입증). 9 kept 그룹 C_beta vs legacy_avg_beta:
+
+  관찰: C_beta가 대체로 legacy_avg_beta보다 낮음(넓은 섹터 LOO → 응집 코어 피어셋).
+    news-lrcx-4: LRCX C+0.925/legacy+1.287, KLAC +1.013/+1.265, AMAT +0.942/+1.159
+    news-amd-1:  코어 AMD +1.107/+1.345, NVDA +0.289/+0.624
+                 위성 AMZN +0.165/+1.416 (반도체 코어와 저상관 → 큰 이동, 설명됨)
+                 위성 MSFT +0.012/+0.379, AAPL +0.049/+0.139, GOOGL +0.059/+0.643
+    news-so-5:   SO +0.340/+1.013, NEE +0.387/+0.963 (유틸 코어 응집 → 낮은 코어상대 beta)
+  → 이동 방향이 '벤치마크 파티션 변화(섹터→EventGroup 코어)'로 일관 설명. 무상관 이동 없음.
+
+[행위보존]
+- 옛 theme_tags 경로/attach_leadership/기존 StockLeadershipScore 3200행 IDENTICAL
+  (새 경로 theme='eg:' 키 분리, benchmark_kind NULL=레거시). 라이브 미배선.
+- pytest green, 경계 위반 0.
+
+[사용자 수동 후속]
+- 브랜치 리뷰→main 머지(검증 세션). 마이그레이션 0013 번호 충돌 확인.
+- prod 마이그레이션 0013 적용 + 새 경로 1회 적재(라이브 점수 생성).
+- 다음 세션: 보드 드릴다운을 EventGroup 그룹+benchmark_kind 정합 leadership에 배선 +
+  플래그. 플래그 ON = go-live = Phase 1 완료.
+- (선택) 신호 정교화(역할별 가중치 등) — 이 L3 오라클이 회귀 정답지.
+- 옛 theme_tags leadership 디프리케이션(파괴적, 한참 뒤) — TASKQUEUE 등록 후보.
