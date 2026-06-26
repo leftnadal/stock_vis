@@ -16,8 +16,9 @@ from typing import Any, Dict, List, Optional
 
 from django.conf import settings
 from django.utils import timezone
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import complete
 
 from services.serverless.models import InvestmentThesis
 
@@ -55,7 +56,7 @@ class ThesisBuilder:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm complete() 경유(슬라이스 ④). 키 검증만 유지.
 
     def build_thesis(
         self,
@@ -344,19 +345,16 @@ class ThesisBuilder:
         """
         logger.info(f"LLM 호출 시작: model={self.MODEL}, max_tokens={self.MAX_TOKENS}")
 
-        config = types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            max_output_tokens=self.MAX_TOKENS,
-            temperature=self.TEMPERATURE,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-            # response_mime_type 제거 - 응답 잘림 문제 발생
-        )
-
-        # 동기 호출 (client.models.generate_content - async 없음)
-        response = self.client.models.generate_content(
+        # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). 정책 전부 off = 현행 재현.
+        # response_mime_type 미설정 보존(응답 잘림 회피). thinking_config→extra.
+        response = complete(
+            user_prompt,
+            provider="gemini",
             model=self.MODEL,
-            contents=user_prompt,
-            config=config,
+            system=system_prompt,
+            max_tokens=self.MAX_TOKENS,
+            temperature=self.TEMPERATURE,
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
         # 응답 텍스트 추출

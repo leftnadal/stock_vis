@@ -58,13 +58,12 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("services/serverless/services/llm_relation_extractor.py", "genai.Client"),
     ("services/serverless/services/regulatory_service.py", "genai.Client"),
     ("services/serverless/services/relationship_keyword_enricher.py", "genai.Client"),
-    ("services/serverless/services/thesis_builder.py", "genai.Client"),
     ("services/validation/services/llm_peer_filter.py", "genai.Client"),
 }
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
-# 슬라이스 ④ Part ①-sync burn-down: 23 → 22 → 21 → 20 → 19(stock_insights) → ... → 9
-FROZEN_COUNT = 19
+# 슬라이스 ④ Part ①-sync burn-down: 23 → ... → 19 → 18(thesis_builder) → ... → 10
+FROZEN_COUNT = 18
 
 
 def _call_identifier(node: ast.Call) -> str | None:
