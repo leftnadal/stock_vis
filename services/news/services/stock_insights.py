@@ -580,16 +580,15 @@ class NewsBasedStockInsights:
             import json
 
             from django.conf import settings as django_settings
-            from google import genai
             from google.genai import types
+
+            from packages.shared.llm import complete
 
             api_key = getattr(django_settings, "GOOGLE_AI_API_KEY", None) or getattr(
                 django_settings, "GEMINI_API_KEY", None
             )
             if not api_key:
                 return
-
-            client = genai.Client(api_key=api_key)
 
             numbered = "\n".join(
                 f"{idx + 1}. {h}" for idx, h in enumerate(unique_headlines)
@@ -603,14 +602,14 @@ class NewsBasedStockInsights:
 
 정확히 {len(unique_headlines)}개의 한국어 키워드를 JSON 배열로만 응답하세요."""
 
-            response = client.models.generate_content(
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). 정책 전부 off = 현행 재현.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model="gemini-2.5-flash",
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=500,
-                    temperature=0.2,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+                max_tokens=500,
+                temperature=0.2,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             json_match = re.search(r"\[[\s\S]*\]", response.text)

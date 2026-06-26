@@ -546,7 +546,6 @@ _LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/llm/client.py", "genai.Client"),
     ("apps/portfolio/llm/client.py", "Anthropic"),
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
-    ("services/news/services/stock_insights.py", "genai.Client"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "GenerativeModel"),
     ("services/rag_analysis/services/context_compressor.py", "genai.Client"),
