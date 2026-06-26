@@ -27,6 +27,8 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
+from packages.shared.llm import complete
+
 logger = logging.getLogger(__name__)
 
 
@@ -140,23 +142,27 @@ class RegulatoryService:
         self._gemini_client = None
 
     def _get_gemini_client(self):
-        """Lazy Gemini client initialization"""
+        """Lazy Gemini 가용성 확인 (genai.Client 직접생성 → complete() 경유, 슬라이스 ④).
+
+        SDK 설치 + 키 존재 시 truthy(True). 호출부의 `if not client` 가드로 LLM 사용 여부를
+        판단하는 현행 게이팅을 그대로 보존(키는 complete()가 settings 경유로 해소).
+        """
         if self._gemini_client is None:
             try:
-                from google import genai
+                import google.genai  # noqa: F401 — SDK 설치 확인용
 
                 api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
                     settings, "GEMINI_API_KEY", None
                 )
                 if api_key:
-                    self._gemini_client = genai.Client(api_key=api_key)
-                    logger.info("Gemini client initialized for regulatory service")
+                    self._gemini_client = True
+                    logger.info("Gemini available for regulatory service")
                 else:
                     logger.warning("Gemini API key not found")
             except ImportError:
                 logger.warning("google.genai not installed")
             except Exception as e:
-                logger.error(f"Failed to initialize Gemini client: {e}")
+                logger.error(f"Failed to check Gemini availability: {e}")
 
         return self._gemini_client
 
@@ -510,14 +516,15 @@ Rules:
 """
 
         try:
-            # Use sync API (Bug #8)
-            response = client.models.generate_content(
+            # Use sync API (Bug #8) — shared/llm complete() 경유(슬라이스 ④).
+            # 원본 config는 dict{temperature,max_output_tokens}(thinking 없음). complete()의
+            # GenerateContentConfig로 동일 필드 → genai가 dict↔config 동일 취급(wire 동일). 정책 off.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model="gemini-2.0-flash-exp",
-                contents=prompt,
-                config={
-                    "temperature": 0.3,
-                    "max_output_tokens": 2000,
-                },
+                max_tokens=2000,
+                temperature=0.3,
             )
 
             # Parse JSON response
