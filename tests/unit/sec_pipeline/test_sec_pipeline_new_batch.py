@@ -103,11 +103,31 @@ class TestCollectorHelpers:
 # ---------------------------------------------------------------------------
 
 class TestGeminiExtractor:
-    """GeminiExtractor — LLM 호출은 전부 mock."""
+    """GeminiExtractor — LLM 호출은 전부 mock.
+
+    슬라이스 ④: genai 직접호출 → complete() 경유로 이관. mock seam도 self._client(제거됨)
+    → google.genai.Client(코어 provider가 생성)로 이동. usage_metadata=None 필수.
+    """
 
     def setup_method(self):
         from services.sec_pipeline.extractor import GeminiExtractor
         self.extractor = GeminiExtractor()
+
+    @pytest.fixture(autouse=True)
+    def _gemini_key(self, settings):
+        # complete()의 gemini provider + extractor._ensure_api_key 둘 다 키 필요.
+        settings.GEMINI_API_KEY = "fake-key"
+
+    @staticmethod
+    def _patch_genai_client(text):
+        """google.genai.Client를 patch해 generate_content가 주어진 text를 반환."""
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        resp = MagicMock()
+        resp.text = text
+        resp.usage_metadata = None  # 코어 provider 토큰 추출(int) 안전
+        mock_cls.return_value.models.generate_content.return_value = resp
+        return patcher
 
     def test_extract_supply_chain_empty_paragraphs(self):
         result = self.extractor.extract_supply_chain('AAPL', 'Apple', [])
@@ -118,84 +138,59 @@ class TestGeminiExtractor:
         assert result == {}
 
     def test_extract_supply_chain_success(self):
-        fake_client = MagicMock()
-        fake_resp = MagicMock()
-        fake_resp.text = json.dumps({'relationships': [
+        patcher = self._patch_genai_client(json.dumps({'relationships': [
             {'target_company_name': 'TSMC', 'relationship_type': 'SUPPLIES_TO'}
-        ]})
-        fake_client.models.generate_content.return_value = fake_resp
-        self.extractor._client = fake_client
-
-        with patch('google.genai.types') as mock_types:
-            mock_types.GenerateContentConfig = MagicMock()
-            mock_types.ThinkingConfig = MagicMock()
+        ]}))
+        try:
             result = self.extractor.extract_supply_chain(
                 'AAPL', 'Apple', ['Apple sources chips from TSMC.']
             )
+        finally:
+            patcher.stop()
         assert 'relationships' in result
         assert len(result['relationships']) == 1
 
     def test_extract_supply_chain_missing_relationships_key(self):
-        fake_client = MagicMock()
-        fake_resp = MagicMock()
-        fake_resp.text = json.dumps({'other_field': []})
-        fake_client.models.generate_content.return_value = fake_resp
-        self.extractor._client = fake_client
-
-        with patch('google.genai.types') as mock_types:
-            mock_types.GenerateContentConfig = MagicMock()
-            mock_types.ThinkingConfig = MagicMock()
+        patcher = self._patch_genai_client(json.dumps({'other_field': []}))
+        try:
             result = self.extractor.extract_supply_chain(
                 'AAPL', 'Apple', ['paragraph']
             )
+        finally:
+            patcher.stop()
         assert result == {'relationships': []}
 
     def test_extract_supply_chain_json_decode_error(self):
-        fake_client = MagicMock()
-        fake_resp = MagicMock()
-        fake_resp.text = 'not valid json {{{'
-        fake_client.models.generate_content.return_value = fake_resp
-        self.extractor._client = fake_client
-
-        with patch('google.genai.types') as mock_types:
-            mock_types.GenerateContentConfig = MagicMock()
-            mock_types.ThinkingConfig = MagicMock()
+        patcher = self._patch_genai_client('not valid json {{{')
+        try:
             result = self.extractor.extract_supply_chain(
                 'AAPL', 'Apple', ['paragraph']
             )
+        finally:
+            patcher.stop()
         assert result['relationships'] == []
         assert 'error' in result
 
     def test_extract_business_model_success(self):
-        fake_client = MagicMock()
-        fake_resp = MagicMock()
-        fake_resp.text = json.dumps({
+        patcher = self._patch_genai_client(json.dumps({
             'direct_customer_contact': {'value': 'direct', 'evidence_text': 'x', 'confidence': 0.9}
-        })
-        fake_client.models.generate_content.return_value = fake_resp
-        self.extractor._client = fake_client
-
-        with patch('google.genai.types') as mock_types:
-            mock_types.GenerateContentConfig = MagicMock()
-            mock_types.ThinkingConfig = MagicMock()
+        }))
+        try:
             result = self.extractor.extract_business_model(
                 'AAPL', 'Apple', ['paragraph about direct sales']
             )
+        finally:
+            patcher.stop()
         assert 'direct_customer_contact' in result
 
     def test_extract_business_model_json_error_returns_error_field(self):
-        fake_client = MagicMock()
-        fake_resp = MagicMock()
-        fake_resp.text = 'broken {'
-        fake_client.models.generate_content.return_value = fake_resp
-        self.extractor._client = fake_client
-
-        with patch('google.genai.types') as mock_types:
-            mock_types.GenerateContentConfig = MagicMock()
-            mock_types.ThinkingConfig = MagicMock()
+        patcher = self._patch_genai_client('broken {')
+        try:
             result = self.extractor.extract_business_model(
                 'AAPL', 'Apple', ['paragraph']
             )
+        finally:
+            patcher.stop()
         assert 'error' in result
 
 
