@@ -157,21 +157,19 @@ class PipelineIntelligenceReporter:
         prompt = PIPELINE_INTELLIGENCE_PROMPT.format(**data)
 
         try:
-            from django.conf import settings
-            from google import genai
             from google.genai import types
 
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.2,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
+            from packages.shared.llm import complete
 
-            response = client.models.generate_content(
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). response_format="json"→
+            # response_mime_type, max_tokens 미지정(Gemini 폴백 없음), thinking_config→extra. 정책 off.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model="gemini-2.5-flash",
-                contents=prompt,
-                config=config,
+                temperature=0.2,
+                response_format="json",
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             text = (
