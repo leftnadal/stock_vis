@@ -13,8 +13,9 @@ from typing import Dict, List, Optional
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import complete
 
 from services.serverless.models import StockRelationship
 
@@ -92,7 +93,7 @@ JSON 배열만 반환하세요 (설명 없음):
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm complete() 경유(슬라이스 ④). 키 검증만 유지.
 
     def enrich_batch(self, limit: int = 100) -> Dict:
         """
@@ -224,22 +225,16 @@ JSON 배열만 반환하세요 (설명 없음):
             # 1. 프롬프트 생성
             prompt = self._build_prompt(source_symbol, target_symbol, rel_type)
 
-            # 2. LLM 호출 (동기)
-            response = self.client.models.generate_content(
+            # 2. LLM 호출 (동기) — shared/llm complete() 경유(슬라이스 ④).
+            # 원본 contents 단일 Content/단일 Part(SYS+prompt) → concat 문자열을 genai가 동일
+            # 구조로 정규화(wire 동일). system_instruction 미설정 보존. thinking_config→extra, 정책 off.
+            response = complete(
+                f"{self.SYSTEM_PROMPT}\n\n{prompt}",
+                provider="gemini",
                 model="gemini-2.5-flash",
-                contents=[
-                    types.Content(
-                        role="user",
-                        parts=[types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")],
-                    )
-                ],
-                config=types.GenerateContentConfig(
-                    max_output_tokens=200,
-                    temperature=0.5,
-                    thinking_config=types.ThinkingConfig(
-                        thinking_budget=0,
-                    ),
-                ),
+                max_tokens=200,
+                temperature=0.5,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             # 3. 응답 추출

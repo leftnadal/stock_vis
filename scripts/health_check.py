@@ -557,7 +557,6 @@ _LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("services/serverless/services/keyword_generator_v2.py", "genai.Client"),
     ("services/serverless/services/llm_relation_extractor.py", "genai.Client"),
     ("services/serverless/services/regulatory_service.py", "genai.Client"),
-    ("services/serverless/services/relationship_keyword_enricher.py", "genai.Client"),
     ("services/validation/services/llm_peer_filter.py", "genai.Client"),
 }
 
