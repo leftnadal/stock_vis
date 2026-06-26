@@ -553,7 +553,6 @@ _LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("services/rag_analysis/services/llm_service.py", "genai.Client"),
     ("services/sec_pipeline/extractor.py", "genai.Client"),
     ("services/sec_pipeline/intelligence.py", "genai.Client"),
-    ("services/serverless/services/csv_url_resolver.py", "genai.Client"),
     ("services/serverless/services/keyword_generator.py", "genai.Client"),
     ("services/serverless/services/keyword_generator_v2.py", "genai.Client"),
     ("services/serverless/services/keyword_service.py", "genai.Client"),
