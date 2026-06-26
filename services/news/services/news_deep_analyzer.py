@@ -16,8 +16,9 @@ from typing import Optional
 
 from django.conf import settings
 from django.utils import timezone
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import complete
 
 from packages.shared.stocks.models import Stock
 
@@ -50,7 +51,7 @@ class NewsDeepAnalyzer:
         )
         if not api_key:
             raise ValueError("GEMINI_API_KEY가 설정되지 않았습니다.")
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm complete() 경유(슬라이스 ④). 키 검증만 유지.
         # 유효 심볼 캐시 (배치 내 재사용)
         self._valid_symbols_cache = None
 
@@ -123,15 +124,15 @@ class NewsDeepAnalyzer:
         max_tokens = {"A": 2000, "B": 4000, "C": 6000}[tier]
 
         try:
-            response = self.client.models.generate_content(
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). tier별 max_tokens 분기 보존.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model=self.MODEL,
-                contents=prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    max_output_tokens=max_tokens,
-                    temperature=self.TEMPERATURE,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+                system=system_prompt,
+                max_tokens=max_tokens,
+                temperature=self.TEMPERATURE,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
             raw = response.text
             analysis = self._parse_response(raw, tier)
