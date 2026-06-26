@@ -18,7 +18,8 @@ from typing import Literal
 
 from anthropic import Anthropic
 from django.conf import settings
-from google import genai
+
+from packages.shared.llm import complete
 
 from apps.portfolio.llm.exceptions import (
     LLMAuthError,
@@ -263,23 +264,26 @@ class LLMClient:
         max_tokens: int,
         start: float,
     ) -> LLMResponse:
-        """Gemini Flash 호출 (신 SDK)."""
-        try:
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            from google.genai import types as gtypes
+        """Gemini Flash 호출 (신 SDK) — shared/llm complete() 경유(슬라이스 ④, IDENTICAL).
 
-            response = client.models.generate_content(
+        config는 max_output_tokens 단일 노브(temperature/mime/system 미설정) → complete()가
+        GenerateContentConfig(max_output_tokens=max_tokens) 동일 생성. 응답은 portfolio
+        LLMResponse로 매핑하고 cost는 자체 단가 상수로 동일 계산(행위 보존). 예외는 complete()가
+        분류한 LLMError를 _classify_gemini_error가 재매핑(클래스명 일치 → 동일 타입).
+        """
+        try:
+            response = complete(
+                prompt,
+                provider="gemini",
                 model=GEMINI_MODEL,
-                contents=prompt,
-                config=gtypes.GenerateContentConfig(max_output_tokens=max_tokens),
+                max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001
             raise _classify_gemini_error(exc) from exc
 
         text = getattr(response, "text", "") or ""
-        usage = getattr(response, "usage_metadata", None)
-        input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
-        output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
+        input_tokens = int(getattr(response, "input_tokens", 0) or 0)
+        output_tokens = int(getattr(response, "output_tokens", 0) or 0)
         cost_usd = (
             input_tokens / 1_000_000 * GEMINI_FLASH_INPUT_USD_PER_1M
             + output_tokens / 1_000_000 * GEMINI_FLASH_OUTPUT_USD_PER_1M
