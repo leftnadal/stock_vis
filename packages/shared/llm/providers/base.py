@@ -25,3 +25,17 @@ class Provider(Protocol):
         extra: Optional[dict] = None,
     ) -> LLMRawResponse:
         ...
+
+    async def agenerate(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str],
+        system: Optional[str],
+        max_tokens: Optional[int],
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ) -> LLMRawResponse:
+        """비동기 생성 (슬라이스 ②b). 미구현 provider는 NotImplementedError."""
+        ...

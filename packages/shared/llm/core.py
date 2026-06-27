@@ -17,9 +17,9 @@ from __future__ import annotations
 from typing import Optional, Tuple
 
 from packages.shared.llm.policy import cost as cost_policy
-from packages.shared.llm.policy.circuit import with_circuit
+from packages.shared.llm.policy.circuit import awith_circuit, with_circuit
 from packages.shared.llm.policy.escape import escape_untrusted
-from packages.shared.llm.policy.retry import with_retry
+from packages.shared.llm.policy.retry import awith_retry, with_retry
 from packages.shared.llm.providers import get_provider
 from packages.shared.llm.types import (
     LLMRateLimitError,
@@ -91,16 +91,26 @@ def complete(
         fallback_from = provider
         prov_name, resolved_model, raw = _run(fallback, None)
 
+    return _finalize(prov_name, resolved_model, raw, fallback_from, cost_track=cost_track)
+
+
+def _finalize(
+    prov_name: str,
+    resolved_model: str,
+    raw: LLMRawResponse,
+    fallback_from: Optional[str],
+    *,
+    cost_track: bool,
+) -> LLMResponse:
+    """cost 계산·기록 + LLMResponse 조립 — sync/async 후처리 단일 출처(복제 0)."""
     cost_usd = cost_policy.compute_cost(
         prov_name, resolved_model, raw.input_tokens, raw.output_tokens
     )
-
     # ── 정책 4: cost 기록 — cost_track=True일 때만 ───────────────────────
     if cost_track:
         cost_policy.record_cost(
             prov_name, resolved_model, raw.input_tokens, raw.output_tokens, cost_usd
         )
-
     return LLMResponse(
         text=raw.text,
         provider=prov_name,
@@ -111,3 +121,65 @@ def complete(
         cost_usd=cost_usd,
         fallback_from=fallback_from,
     )
+
+
+async def acomplete(
+    prompt: str,
+    *,
+    provider: str = "gemini",
+    model: Optional[str] = None,
+    system: Optional[str] = None,
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+    response_format: Optional[str] = None,
+    extra: Optional[dict] = None,
+    circuit: Optional[str] = None,
+    escape: bool = False,
+    retries: int = 0,
+    cost_track: bool = False,
+    fallback: Optional[str] = None,
+) -> LLMResponse:
+    """complete()의 async 동형 (슬라이스 ②b) — aio provider 경로.
+
+    시그니처·기본값(전부 off)·정책 순서(escape → retry(circuit(agenerate)) → cost)는 sync와 동형.
+    provider 조립은 agenerate가 sync generate와 동일 헬퍼 경유 → 하부 config byte 동일.
+    소비처 0으로 land — 이관은 후속 Part. (anthropic agenerate는 ③까지 NotImplementedError.)
+    """
+    # ── 정책 1: escape(신뢰경계) — sync와 동일 순수 변환 ──────────────────
+    effective_prompt = escape_untrusted(prompt) if escape else prompt
+
+    async def _run(prov_name: str, used_model: Optional[str]) -> Tuple[str, str, LLMRawResponse]:
+        prov = get_provider(prov_name)
+
+        async def _gen() -> LLMRawResponse:
+            return await prov.agenerate(
+                effective_prompt,
+                model=used_model,
+                system=system,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                response_format=response_format,
+                extra=extra,
+            )
+
+        # ── 정책 2·3: retry( circuit( agenerate ) ) — 각각 인자 있을 때만 (async 동형) ──
+        thunk = _gen
+        if circuit is not None:
+            inner = thunk
+            thunk = lambda: awith_circuit(inner, name=circuit)  # noqa: E731
+        if retries > 0:
+            raw = await awith_retry(thunk, retries=retries)
+        else:
+            raw = await thunk()
+        return prov.name, (used_model or prov.default_model), raw
+
+    fallback_from: Optional[str] = None
+    try:
+        prov_name, resolved_model, raw = await _run(provider, model)
+    except (LLMRateLimitError, LLMTimeoutError):
+        if not fallback:
+            raise
+        fallback_from = provider
+        prov_name, resolved_model, raw = await _run(fallback, None)
+
+    return _finalize(prov_name, resolved_model, raw, fallback_from, cost_track=cost_track)

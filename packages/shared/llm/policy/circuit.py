@@ -6,7 +6,7 @@ shared 토대 `get_circuit`(packages/shared/api_request/circuit_breaker) 재사�
 
 from __future__ import annotations
 
-from typing import Callable, TypeVar
+from typing import Awaitable, Callable, TypeVar
 
 from packages.shared.api_request.circuit_breaker import get_circuit
 
@@ -17,3 +17,9 @@ def with_circuit(func: Callable[[], T], *, name: str) -> T:
     """func를 named circuit breaker로 감싸 호출."""
     cb = get_circuit(name)
     return cb.call(func)
+
+
+async def awith_circuit(func: Callable[[], Awaitable[T]], *, name: str) -> T:
+    """with_circuit의 async 동형 (슬라이스 ②b) — 동일 named CB의 acall 경유."""
+    cb = get_circuit(name)
+    return await cb.acall(func)

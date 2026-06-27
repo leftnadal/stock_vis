@@ -1,6 +1,11 @@
-"""Gemini provider — genai 동기 Client 래핑 (베이스 #2 build_client 패턴). 우선 provider.
+"""Gemini provider — genai Client 래핑 (베이스 #2 build_client 패턴). 우선 provider.
 
-주의: 동기 API만(Bug #8: async genai.Client는 Celery worker fork 충돌).
+sync `generate`(client.models.generate_content) + async `agenerate`(client.aio.models.
+generate_content, 슬라이스 ②b). config 조립·응답 추출은 단일 출처 헬퍼(_build_config_kwargs·
+_extract_raw)를 둘 다 경유 — 분기는 dispatch(sync/aio)만, 조립 복제 0(drift 방지, 규약 10).
+
+주의(Bug #8): sync 경로는 동기 API만. async 경로(aio)는 asyncio 이벤트 루프 컨텍스트 전용 —
+Celery 동기 태스크에서는 sync `generate`를 쓴다(async genai.Client fork 충돌 회피).
 """
 
 from __future__ import annotations
@@ -58,6 +63,41 @@ def _classify(exc: Exception) -> Exception:
     return exc
 
 
+def _build_config_kwargs(
+    *,
+    max_tokens: Optional[int],
+    temperature: Optional[float],
+    response_format: Optional[str],
+    system: Optional[str],
+    extra: Optional[dict],
+) -> dict:
+    """생성 config 조립 단일 출처 — sync/async 양쪽이 동일하게 경유(byte 동일 보장).
+
+    extra(provider 고유: thinking_config·top_p 등) 먼저 → 명시 노브가 우선(덮어씀).
+    None = 미설정(provider 기본) — 현행 동작 재현.
+    """
+    config_kwargs: dict = dict(extra or {})
+    if max_tokens is not None:
+        config_kwargs["max_output_tokens"] = max_tokens
+    if temperature is not None:
+        config_kwargs["temperature"] = temperature
+    if response_format == "json":
+        config_kwargs["response_mime_type"] = "application/json"
+    if system:
+        config_kwargs["system_instruction"] = system
+    return config_kwargs
+
+
+def _extract_raw(response, started: float) -> LLMRawResponse:
+    """genai 응답 → LLMRawResponse 추출 단일 출처 — sync/async 동일."""
+    latency_ms = int((time.time() - started) * 1000)
+    text = getattr(response, "text", "") or ""
+    usage = getattr(response, "usage_metadata", None)
+    input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
+    output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
+    return LLMRawResponse(text, input_tokens, output_tokens, latency_ms)
+
+
 class GeminiProvider:
     name = "gemini"
     default_model = DEFAULT_MODEL
@@ -73,6 +113,7 @@ class GeminiProvider:
         response_format: Optional[str] = None,
         extra: Optional[dict] = None,
     ) -> LLMRawResponse:
+        """동기 생성 — client.models.generate_content."""
         from google import genai
         from google.genai import types as gtypes
 
@@ -80,20 +121,17 @@ class GeminiProvider:
         if not api_key:
             raise LLMAuthError("GEMINI_API_KEY/GOOGLE_AI_API_KEY not configured")
         used_model = model or DEFAULT_MODEL
+        config_kwargs = _build_config_kwargs(
+            max_tokens=max_tokens,
+            temperature=temperature,
+            response_format=response_format,
+            system=system,
+            extra=extra,
+        )
         started = time.time()
         try:
             client = genai.Client(api_key=api_key)
-            # extra(provider 고유: thinking_config·top_p 등) 먼저 → 명시 노브가 우선(덮어씀).
-            config_kwargs: dict = dict(extra or {})
-            if max_tokens is not None:  # None = 미설정(provider 기본) — 현행 재현
-                config_kwargs["max_output_tokens"] = max_tokens
-            if temperature is not None:
-                config_kwargs["temperature"] = temperature
-            if response_format == "json":
-                config_kwargs["response_mime_type"] = "application/json"
-            if system:
-                config_kwargs["system_instruction"] = system
-            response = client.models.generate_content(
+            response = client.models.generate_content(  # ← sync dispatch
                 model=used_model,
                 contents=prompt,
                 config=gtypes.GenerateContentConfig(**config_kwargs),
@@ -101,9 +139,47 @@ class GeminiProvider:
         except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
             raise _classify(exc) from exc
 
-        latency_ms = int((time.time() - started) * 1000)
-        text = getattr(response, "text", "") or ""
-        usage = getattr(response, "usage_metadata", None)
-        input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
-        output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
-        return LLMRawResponse(text, input_tokens, output_tokens, latency_ms)
+        return _extract_raw(response, started)
+
+    async def agenerate(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ) -> LLMRawResponse:
+        """비동기 생성 — client.aio.models.generate_content (슬라이스 ②b).
+
+        조립(config·contents·model)·추출은 sync `generate`와 동일 헬퍼 경유 →
+        하부 GenerateContentConfig byte 동일. 분기는 dispatch(aio)만.
+        """
+        from google import genai
+        from google.genai import types as gtypes
+
+        api_key = _resolve_api_key()
+        if not api_key:
+            raise LLMAuthError("GEMINI_API_KEY/GOOGLE_AI_API_KEY not configured")
+        used_model = model or DEFAULT_MODEL
+        config_kwargs = _build_config_kwargs(
+            max_tokens=max_tokens,
+            temperature=temperature,
+            response_format=response_format,
+            system=system,
+            extra=extra,
+        )
+        started = time.time()
+        try:
+            client = genai.Client(api_key=api_key)
+            response = await client.aio.models.generate_content(  # ← async dispatch
+                model=used_model,
+                contents=prompt,
+                config=gtypes.GenerateContentConfig(**config_kwargs),
+            )
+        except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
+            raise _classify(exc) from exc
+
+        return _extract_raw(response, started)

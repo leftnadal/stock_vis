@@ -89,3 +89,23 @@ class AnthropicProvider:
         input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
         output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
         return LLMRawResponse(text, input_tokens, output_tokens, latency_ms)
+
+    async def agenerate(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ) -> LLMRawResponse:
+        """Anthropic async 미구현 — 슬라이스 ③ Anthropic 이관에서 AsyncAnthropic로 신설.
+
+        ②b는 Gemini aio만 대상(aio Part 5곳 전부 Gemini). acomplete(provider='anthropic')는
+        여기서 명시 차단(조용한 동기 폴백 금지).
+        """
+        raise NotImplementedError(
+            "Anthropic async(agenerate)는 슬라이스 ③에서 구현 — ②b는 Gemini aio 전용."
+        )
