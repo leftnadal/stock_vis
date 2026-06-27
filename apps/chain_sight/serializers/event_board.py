@@ -6,9 +6,16 @@ from rest_framework import serializers
 
 
 class EventBoardItemSerializer(serializers.Serializer):
-    """테마 그룹 집계 1행."""
+    """테마 그룹 집계 1행.
+
+    OFF(theme_tags): theme=섹터명, name 생략 → 오늘과 IDENTICAL.
+    ON(event_group): theme=slug(드릴다운 키), name=n3 표시명.
+    """
 
     theme = serializers.CharField()
+    # ON 전용 n3 표시명. OFF엔 dict에 키 없음 → required=False만(allow_null 금지)으로
+    # 누락 시 SkipField → 응답에서 생략(OFF 스키마 IDENTICAL). ON은 항상 non-null 문자열.
+    name = serializers.CharField(required=False)
     member_count = serializers.IntegerField()
     avg_return = serializers.FloatField()
     avg_score = serializers.FloatField()

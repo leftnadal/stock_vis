@@ -556,3 +556,11 @@ CELERY_ERROR_RECIPIENTS = [
 CELERY_IGNORED_ERRORS = [
     # 'rag_analysis.tasks.health_check_neo4j',  # AuraDB free tier 간헐적 끊김
 ]
+
+# ============================================================
+# Chain Sight 이벤트 보드 그룹 소스 플래그 (M2 v1.1 reader 전환)
+# ============================================================
+# 'theme_tags'(기본/OFF) = 레거시 섹터형 theme_tags 그룹핑(오늘과 IDENTICAL).
+# 'event_group'(ON) = EventGroup(kept만·n3 이름) + benchmark_kind='eg' leadership.
+# ON(go-live)은 .env CHAINSIGHT_GROUP_SOURCE=event_group + daphne web 재시작 = Phase 1 완료.
+CHAINSIGHT_GROUP_SOURCE = os.getenv('CHAINSIGHT_GROUP_SOURCE', 'theme_tags')
