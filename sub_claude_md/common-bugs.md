@@ -508,3 +508,9 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 함정: sync-only Part에서 sync call만 `complete()`로 이관해도 aio 경로가 그 client를 계속 써서 **genai.Client 제거(동결 −1) 불가**. `complete()`는 동기 전용이라 aio 경로는 같은 Part에서 못 옮김.
 - 교훈: 이관 전 각 client의 **전 호출 경로를 전수 확인**할 것(대표 call_symbol 1개로 판단 금지). "sync/aio"는 call 단위가 아니라 **client 단위 속성** — aio-touched client는 통째로 aio Part 소속.
 - 탐지 한 줄: `grep -c "\.aio\." <file>` — 0 아니면 그 파일의 client는 dual, sync-only Part 제외.
+
+## [환경 known-fail] Finnhub 회귀 1건 — 이관/코드와 무관 (2026-06-27 등록)
+
+- `tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true`는 **FINNHUB_API_KEY 미설정**(테스트 환경) 때문에 실패한다. 환경 의존이며 이관·코드 회귀가 아니다.
+- 회귀 게이트에서 **known-fail로 제외**(이관 회귀 신호를 가리지 않게). SSOT = `scripts/health_check.py:KNOWN_TEST_FAILS` + health_check "known-fail 레지스트리" 항목.
+- 회귀 판정 규칙: `pytest` fail 목록에서 KNOWN_TEST_FAILS를 뺀 나머지가 0이어야 회귀 0. 새 fail이 이 목록 밖이면 진짜 회귀.

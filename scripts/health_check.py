@@ -48,6 +48,15 @@ DECISIONS_MD = REPO_ROOT / "DECISIONS.md"
 SHARED_ROOT = REPO_ROOT / "packages" / "shared"
 BOUNDARY_LEDGER = REPO_ROOT / "docs" / "harness" / "boundary_ledger.jsonl"
 
+# 환경 의존 known-fail 레지스트리 (회귀 게이트 제외 대상 SSOT).
+# 이관·코드 회귀 신호를 환경 fail이 가리지 않게 명시 제외. {test_id: 사유}.
+KNOWN_TEST_FAILS: dict[str, str] = {
+    "tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true": (
+        "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
+    ),
+}
+
 
 # 결과 상태 코드 — Layer 1 단계의 통일된 의미.
 OK = 0
@@ -617,6 +626,25 @@ def check_llm_direct_call_boundary() -> CheckResult:
     )
 
 
+# ── 검증 10: 환경 known-fail 레지스트리 (회귀 게이트 제외 명시) ────────────────
+
+
+def check_known_test_fails() -> CheckResult:
+    """KNOWN_TEST_FAILS를 명시 노출 — 회귀 게이트가 이 환경 fail을 제외함을 표기.
+
+    pytest를 직접 돌리지 않는다(문서성 SSOT). 회귀 카운트 시 이 목록을 빼면
+    이관/코드 회귀 신호가 환경 fail에 묻히지 않는다.
+    """
+    n = len(KNOWN_TEST_FAILS)
+    evidence = [f"{tid}  ← {reason}" for tid, reason in KNOWN_TEST_FAILS.items()]
+    return CheckResult(
+        name="known-fail 레지스트리",
+        status=OK,
+        detail=f"환경 known-fail {n}건 (회귀 게이트 제외, 이관 무관)",
+        evidence=evidence,
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -630,6 +658,7 @@ CHECKS = [
     check_external_automation_commits,
     check_shared_boundary,
     check_llm_direct_call_boundary,
+    check_known_test_fails,
 ]
 
 
