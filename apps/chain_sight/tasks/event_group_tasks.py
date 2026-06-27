@@ -12,6 +12,7 @@ from celery import shared_task
 from django.db.models import Max
 
 from apps.chain_sight.services.event_group_pipeline import load_event_groups
+from apps.chain_sight.services.event_group_reader import invalidate_kept_cache
 from apps.chain_sight.services.leadership_eventgroup import (
     compute_eventgroup_leadership_scores,
 )
@@ -36,6 +37,7 @@ def compute_event_groups_shadow():
         dict: groups/hidden/total_members/as_of.
     """
     summary = load_event_groups()
+    invalidate_kept_cache()  # 그룹 교체 → ON 보드 캐시 무효화
     logger.info("compute_event_groups_shadow: %s", summary)
     return summary
 
@@ -61,6 +63,7 @@ def compute_event_group_leadership_daily():
         dict: groups(적재 요약)/leadership_rows/as_of.
     """
     group_summary = load_event_groups()
+    invalidate_kept_cache()  # 그룹 교체 → ON 보드 캐시 무효화
     as_of = DailyPrice.objects.aggregate(m=Max("date"))["m"]
     if as_of is None:
         logger.warning("compute_event_group_leadership_daily: DailyPrice 없음")
