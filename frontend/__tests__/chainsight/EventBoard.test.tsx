@@ -141,6 +141,22 @@ describe('EventBoard', () => {
     expect(screen.getByText('관심↑ 8')).toBeInTheDocument();
   });
 
+  // ON(event_group) 가드: item.name(n3)이 있으면 라벨로 표시하고, theme(slug)로 라우팅.
+  // OFF(name 없음)는 위 기존 테스트들이 IDENTICAL 보존을 증명.
+  it('ON: item.name(n3)을 라벨로 표시하고 theme(slug)로 라우팅한다', async () => {
+    const eg = [{
+      theme: 'news-amd-1', name: 'intel devices semiconductor',
+      member_count: 5, avg_return: 0.02, avg_score: 70.0,
+      high_attention_count: 2, low_attention_count: 1,
+    }];
+    vi.mocked(fetchEvents).mockResolvedValue(eg);
+    render(<EventBoard />, { wrapper });
+    const card = await screen.findByRole('button');
+    expect(card).toHaveTextContent('intel devices semiconductor'); // n3 표시(섹터 라벨 아님)
+    fireEvent.click(card);
+    expect(mockPush).toHaveBeenCalledWith('/chainsight/events/news-amd-1'); // slug 키
+  });
+
   // A-1 가드: 강등 이동된 관계 그래프가 보드(Chain Sight 홈)에서 도달 가능해야 함(고아 방지).
   it('보드에 /chainsight/market-graph 진입 링크를 노출한다 (A-1)', async () => {
     vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]);
