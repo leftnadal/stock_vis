@@ -97,6 +97,11 @@ export interface ForceLink {
 /** GET /api/v1/chainsight/events/ 응답 항목 */
 export interface EventBoardItem {
   theme: string;
+  /**
+   * ON(event_group)일 때만 존재하는 n3 표시명. OFF(theme_tags)에선 생략 →
+   * 라벨은 getLabelForTheme(theme) 폴백(오늘과 IDENTICAL). theme는 ON에선 slug(드릴다운 키).
+   */
+  name?: string;
   member_count: number;
   avg_return: number;
   avg_score: number;

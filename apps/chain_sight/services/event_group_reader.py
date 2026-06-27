@@ -20,10 +20,22 @@ EventGroup 리더 어댑터 (M2 v1.1 reader 전환 — Slice A).
 
 from datetime import date
 
+from django.core.cache import cache
+
 from apps.chain_sight.models.event_group import EventGroup
 
 # 멤버 정렬: 코어 먼저, 그 안에서 edge_confidence 내림차순.
 _ROLE_ORDER = {"core": 0, "satellite": 1}
+
+# ON 보드 읽기 캐시(전체 kept 목록만). 무효화는 그룹 재적재 시 invalidate_kept_cache().
+# 키 단일 상수(bug #15: 읽기/쓰기/삭제 동일 키). OFF 경로는 이 함수를 안 타므로 무캐시=IDENTICAL.
+_KEPT_CACHE_KEY = "cs:eg:kept_groups:v1"
+_KEPT_CACHE_TTL = 900  # 초. 그룹은 일배치(22:15)로 갱신 → beat가 명시 무효화, TTL은 안전망.
+
+
+def invalidate_kept_cache() -> None:
+    """kept 그룹 캐시 무효화. 그룹 재적재(load_event_groups) 직후 호출."""
+    cache.delete(_KEPT_CACHE_KEY)
 
 
 def _member_dto(m) -> dict:
@@ -68,6 +80,18 @@ def get_kept_event_groups(as_of_date: date | None = None) -> list[dict]:
         정렬은 cohesion 내림차순(None 마지막). 점수(avg_score) 기준 재정렬은
         소비자 몫(어댑터는 점수를 모른다).
     """
+    # 전체 kept(as_of_date 미지정)만 캐시 — ON 보드의 기본 읽기 경로.
+    if as_of_date is None:
+        cached = cache.get(_KEPT_CACHE_KEY)
+        if cached is not None:
+            return cached
+        result = _query_kept_groups(None)
+        cache.set(_KEPT_CACHE_KEY, result, _KEPT_CACHE_TTL)
+        return result
+    return _query_kept_groups(as_of_date)
+
+
+def _query_kept_groups(as_of_date: date | None) -> list[dict]:
     qs = EventGroup.objects.filter(is_hidden=False).prefetch_related("memberships")
     if as_of_date is not None:
         qs = qs.filter(as_of_date=as_of_date)

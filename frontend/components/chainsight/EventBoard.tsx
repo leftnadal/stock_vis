@@ -40,7 +40,10 @@ function ThemeIcon({ iconName, className }: { iconName: string; className?: stri
 void loadIcon;
 
 function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => void }) {
-  const label = getLabelForTheme(item.theme);
+  // ON(event_group): item.name(n3)을 라벨로, 아이콘은 폴백(Tag) 유지.
+  // OFF(theme_tags): name 없음 → getLabelForTheme(섹터명) 그대로(IDENTICAL).
+  const base = getLabelForTheme(item.theme);
+  const label = item.name ? { ...base, ko: item.name } : base;
   const isPositive = item.avg_return >= 0;
 
   return (

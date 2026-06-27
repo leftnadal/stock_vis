@@ -5,8 +5,12 @@ DatabaseScheduler 사용 시 config dict는 무시되므로(bug #28) PeriodicTas
 DB에 직접 등록한다. 멱등(update_or_create).
 
 등록 대상:
+  - chainsight-event-group-leadership-daily  (보드 ON 신선도 — 그룹 재적재 + C leadership)
   - chainsight-attention-daily   (M1 — STEP0가 미등록 지적, 함께 등록)
   - chainsight-leadership-daily  (M2 — 신규)
+
+순서(신선도): EventGroup 그룹·eg: 점수(22:15)를 attention(22:30)·leadership(22:40)보다
+앞서 갱신 → 보드 ON이 읽기 전 그룹/점수가 최신.
 
 ★ prod 적용은 사용자 수동 실행 지점. 이 파일은 메커니즘만 제공한다.
 
@@ -20,6 +24,13 @@ from django.core.management.base import BaseCommand
 # 평일(월~금) UTC 기준 스케줄. attention 먼저, leadership을 약간 뒤로(데이터 의존).
 # 22:30 UTC ≈ 07:30 KST 익일. leadership은 attention 직후 22:40.
 BEATS = [
+    {
+        # 보드 ON 신선도: 그룹 재적재 + C leadership. attention(22:30)보다 앞선 22:15.
+        "name": "chainsight-event-group-leadership-daily",
+        "task": "chainsight-event-group-leadership-daily",
+        "minute": "15",
+        "hour": "22",
+    },
     {
         "name": "chainsight-attention-daily",
         "task": "chainsight-attention-daily",

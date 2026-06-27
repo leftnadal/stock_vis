@@ -55,6 +55,50 @@ def eg_theme_key(slug: str) -> str:
     return f"{EG_THEME_PREFIX}{slug}"
 
 
+_EG_LEADERSHIP_FIELDS = (
+    "trend_quality", "theme_alpha", "theme_beta",
+    "up_capture", "down_capture", "capture_spread",
+)
+
+
+def attach_leadership_eg(
+    ranking: list[dict],
+    slug: str,
+    as_of_date,
+    window: int,
+) -> list[dict]:
+    """
+    드릴다운 랭킹에 EventGroup C leadership(theme='eg:{slug}')을 조인(symbol 기준).
+
+    **재계산 없음** — prod에 적재된 benchmark_kind 행을 *읽기*만. 코어(core_loo)·
+    위성(sat_coremean) 모두 eg:{slug} 행에 있어 그룹과 정합 표시.
+    데이터 미존재 종목은 지표 None(키 노출), is_fallback=False. M1 필드 불변.
+
+    옛 attach_leadership(theme_tags 경로)과 완전 별개 — 그 함수/행 불변.
+    """
+    eg_theme = eg_theme_key(slug)
+    rows = StockLeadershipScore.objects.filter(
+        theme=eg_theme, as_of_date=as_of_date, window=window,
+        stock_id__in=[r["symbol"] for r in ranking],
+    ).values(
+        "stock_id", "trend_quality", "theme_alpha", "theme_beta",
+        "up_capture", "down_capture", "capture_spread", "is_fallback",
+    )
+    by_symbol = {r["stock_id"]: r for r in rows}
+
+    for item in ranking:
+        lead = by_symbol.get(item["symbol"])
+        if lead:
+            for f in _EG_LEADERSHIP_FIELDS:
+                item[f] = lead[f]
+            item["is_fallback"] = lead["is_fallback"]
+        else:
+            for f in _EG_LEADERSHIP_FIELDS:
+                item[f] = None
+            item["is_fallback"] = False
+    return ranking
+
+
 def _member_returns(symbols, price_by_symbol, window) -> dict[str, list[float]]:
     """게이트 통과 멤버의 {symbol: 일수익률}. 옛 경로 member_returns 산정과 동일."""
     out: dict[str, list[float]] = {}
