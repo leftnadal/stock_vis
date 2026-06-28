@@ -160,20 +160,37 @@ class TestFallbackCompress:
 # compress (async, mocked Gemini)
 # ---------------------------------------------------------------------------
 
+def _make_gemini_response(text):
+    """shared/llm gemini provider가 _extract_raw로 읽을 수 있는 응답 mock.
+
+    text + usage_metadata=None (코어 provider가 usage_metadata에서 int 토큰 추출 →
+    None이면 `getattr(..., 0) or 0`으로 0 처리. MagicMock이면 int() TypeError).
+    """
+    resp = MagicMock()
+    resp.text = text
+    resp.usage_metadata = None
+    return resp
+
+
 class TestCompressWithGemini:
-    """Gemini API를 mock한 compress() 테스트"""
+    """Gemini API를 mock한 compress() 테스트.
+
+    슬라이스 ④ Part ①-aio: client.aio.models.generate_content 직접호출 →
+    shared/llm acomplete() 경유. seam이 `self.client`(genai.Client) →
+    `self._llm_enabled`(bool) + `google.genai.Client` patch로 바뀜.
+    """
 
     def test_empty_documents(self):
         with patch.object(ContextCompressor, '__init__', lambda self: None):
             compressor = ContextCompressor()
-            compressor.client = MagicMock()
+            compressor._llm_enabled = True
             result = _run(compressor.compress([], 'any question'))
             assert result == []
 
     def test_no_client_uses_fallback(self):
         with patch.object(ContextCompressor, '__init__', lambda self: None):
             compressor = ContextCompressor()
-            compressor.client = None
+            compressor._llm_enabled = False
             docs = _make_documents(2)
             result = _run(compressor.compress(docs, 'question'))
             assert len(result) == 2
@@ -181,55 +198,61 @@ class TestCompressWithGemini:
                 assert 'compressed' in r
                 assert 'compression_ratio' in r
 
-    def test_successful_compression(self):
+    def test_successful_compression(self, settings):
+        settings.GEMINI_API_KEY = 'fake-key'
         with patch.object(ContextCompressor, '__init__', lambda self: None):
             compressor = ContextCompressor()
-            compressor.client = MagicMock()
+            compressor._llm_enabled = True
 
-            mock_response = MagicMock()
-            mock_response.text = '  Compressed summary here  '
-            compressor.client.aio.models.generate_content = AsyncMock(
-                return_value=mock_response
-            )
+            resp = _make_gemini_response('  Compressed summary here  ')
+            with patch('google.genai.Client') as mock_cls:
+                mock_cls.return_value.aio.models.generate_content = AsyncMock(
+                    return_value=resp
+                )
 
-            docs = _make_documents(1)
-            result = _run(compressor.compress(docs, 'question'))
+                docs = _make_documents(1)
+                result = _run(compressor.compress(docs, 'question'))
             assert len(result) == 1
             assert result[0]['compressed'] == 'Compressed summary here'
 
-    def test_api_error_falls_back_to_truncate(self):
+    def test_api_error_falls_back_to_truncate(self, settings):
+        settings.GEMINI_API_KEY = 'fake-key'
         with patch.object(ContextCompressor, '__init__', lambda self: None):
             compressor = ContextCompressor()
-            compressor.client = MagicMock()
+            compressor._llm_enabled = True
 
-            compressor.client.aio.models.generate_content = AsyncMock(
-                side_effect=RuntimeError('API failed')
-            )
+            # generate_content가 raise → acomplete 내 provider._classify가 분류 후 re-raise.
+            # 'API failed'는 어떤 분류 규칙에도 안 걸려 원본 RuntimeError 그대로 전파 →
+            # context_compressor try/except가 잡고 gather(return_exceptions)가 폴백.
+            with patch('google.genai.Client') as mock_cls:
+                mock_cls.return_value.aio.models.generate_content = AsyncMock(
+                    side_effect=RuntimeError('API failed')
+                )
 
-            docs = _make_documents(1)
-            result = _run(compressor.compress(docs, 'q'))
+                docs = _make_documents(1)
+                result = _run(compressor.compress(docs, 'q'))
             assert len(result) == 1
             # 폴백이므로 여전히 결과가 있어야 함
             assert 'compressed' in result[0]
 
-    def test_batch_processing(self):
+    def test_batch_processing(self, settings):
         """MAX_CONCURRENT=5 배치 처리 확인"""
+        settings.GEMINI_API_KEY = 'fake-key'
         with patch.object(ContextCompressor, '__init__', lambda self: None):
             compressor = ContextCompressor()
-            compressor.client = MagicMock()
+            compressor._llm_enabled = True
             compressor.MAX_CONCURRENT = 2  # 작은 배치 크기
 
-            mock_response = MagicMock()
-            mock_response.text = 'compressed'
-            compressor.client.aio.models.generate_content = AsyncMock(
-                return_value=mock_response
-            )
+            resp = _make_gemini_response('compressed')
+            with patch('google.genai.Client') as mock_cls:
+                gen = AsyncMock(return_value=resp)
+                mock_cls.return_value.aio.models.generate_content = gen
 
-            docs = _make_documents(5)
-            result = _run(compressor.compress(docs, 'question'))
+                docs = _make_documents(5)
+                result = _run(compressor.compress(docs, 'question'))
             assert len(result) == 5
             # 5개 문서 / batch_size 2 = 3 라운드 → generate_content 5번 호출
-            assert compressor.client.aio.models.generate_content.call_count == 5
+            assert gen.call_count == 5
 
 
 # ---------------------------------------------------------------------------
@@ -239,31 +262,31 @@ class TestCompressWithGemini:
 class TestQuestionAwareCompressor:
     """질문 맥락 기반 압축기"""
 
-    def test_prompt_includes_question(self):
+    def test_prompt_includes_question(self, settings):
+        settings.GEMINI_API_KEY = 'fake-key'
         with patch.object(QuestionAwareCompressor, '__init__', lambda self: None):
             compressor = QuestionAwareCompressor()
-            compressor.client = MagicMock()
+            compressor._llm_enabled = True
 
-            mock_response = MagicMock()
-            mock_response.text = 'focused summary'
-            compressor.client.aio.models.generate_content = AsyncMock(
-                return_value=mock_response
-            )
+            resp = _make_gemini_response('focused summary')
+            with patch('google.genai.Client') as mock_cls:
+                gen = AsyncMock(return_value=resp)
+                mock_cls.return_value.aio.models.generate_content = gen
 
-            doc = _make_doc(title='Earnings Report', content='Revenue was $94B')
-            result = _run(compressor._compress_single(doc, 'AAPL 매출은?'))
+                doc = _make_doc(title='Earnings Report', content='Revenue was $94B')
+                result = _run(compressor._compress_single(doc, 'AAPL 매출은?'))
 
-            # generate_content 호출 시 question이 포함된 prompt인지 확인
-            call_args = compressor.client.aio.models.generate_content.call_args
-            prompt_text = call_args.kwargs.get('contents', call_args.args[0] if call_args.args else '')
-            # contents kwarg로 전달
-            contents = call_args[1].get('contents', '') if len(call_args) > 1 else ''
+                # generate_content 호출 시 question이 포함된 prompt(contents)인지 확인.
+                # acomplete 경유 후에도 contents는 불변(byte 동일).
+                call_args = gen.call_args
+                contents = call_args.kwargs.get('contents', '')
+                assert 'AAPL 매출은?' in contents
             assert result['compressed'] == 'focused summary'
 
     def test_inherits_fallback(self):
         with patch.object(QuestionAwareCompressor, '__init__', lambda self: None):
             compressor = QuestionAwareCompressor()
-            compressor.client = None
+            compressor._llm_enabled = False
             docs = _make_documents(1)
             result = _run(compressor.compress(docs, 'question'))
             assert len(result) == 1
