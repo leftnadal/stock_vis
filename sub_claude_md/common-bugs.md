@@ -514,3 +514,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - `tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true`는 **FINNHUB_API_KEY 미설정**(테스트 환경) 때문에 실패한다. 환경 의존이며 이관·코드 회귀가 아니다.
 - 회귀 게이트에서 **known-fail로 제외**(이관 회귀 신호를 가리지 않게). SSOT = `scripts/health_check.py:KNOWN_TEST_FAILS` + health_check "known-fail 레지스트리" 항목.
 - 회귀 판정 규칙: `pytest` fail 목록에서 KNOWN_TEST_FAILS를 뺀 나머지가 0이어야 회귀 0. 새 fail이 이 목록 밖이면 진짜 회귀.
+
+## [의도된 미구현] async Anthropic(`agenerate`)은 슬라이스 ③까지 NotImplementedError (2026-06-28)
+
+- `packages/shared/llm/providers/anthropic.py:agenerate`는 `raise NotImplementedError`다. **버그/누락 아님 — 의도.**
+- 이유: aio Part(②b로 풀린 #10·11·16·17 + #12·#16) 소비처가 **전부 Gemini**라 async Anthropic 불요(YAGNI). `acomplete(provider='anthropic')`가 조용히 sync로 폴백하면 행위 위장 → 명시 차단.
+- 채우는 시점: **슬라이스 ③ Anthropic 이관**(portfolio Anthropic·rag adaptive AsyncAnthropic)에서 AsyncAnthropic로 신설. 그 전에 "빠진 구현"으로 오해해 채우지 말 것.
+- circuit breaker 보존 패턴(Part ①-aio #10): 소비처가 파라미터화 CB(`get_circuit(name, failure_threshold, recovery)`)를 쓰면, acomplete의 circuit 정책(`get_circuit(name)`만)으로 통합하지 말고 **소비자 CB 래퍼 존치 + 감싸는 대상만 acomplete로 교체**. acomplete circuit은 파라미터 미전달이라 threshold/recovery 유실.
