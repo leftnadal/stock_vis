@@ -11,8 +11,9 @@ from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import acomplete, complete
 
 from ..models import MarketMover
 from .keyword_prompts import KeywordPromptBuilder, KeywordResponseParser
@@ -58,7 +59,8 @@ class KeywordGeneratorService:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm complete()/acomplete() 경유(슬라이스 ④ Part ①-aio).
+        # 단일 client를 sync+aio가 공유했으므로 두 경로 동시 이관(키 검증만 유지).
 
     async def generate_keywords_for_movers(
         self, mover_date: date, mover_type: str, max_stocks: int = 20
@@ -214,13 +216,19 @@ class KeywordGeneratorService:
             "industry": mover.industry,
         }
 
-    def _build_llm_config(self) -> types.GenerateContentConfig:
-        system_prompt = self.prompt_builder.get_system_prompt()
-        return types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            max_output_tokens=self.MAX_TOKENS,
+    def _llm_kwargs(self) -> dict:
+        """complete()/acomplete() 공유 노브 — sync·aio 단일 출처(분기 간 byte 동일 보장).
+
+        system_instruction→system, max_output_tokens→max_tokens, thinking_config→extra.
+        기존 _build_llm_config의 GenerateContentConfig와 동일 매핑(정책 off).
+        """
+        return dict(
+            provider="gemini",
+            model=self.MODEL,
+            system=self.prompt_builder.get_system_prompt(),
+            max_tokens=self.MAX_TOKENS,
             temperature=self.TEMPERATURE,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
     @staticmethod
@@ -237,21 +245,19 @@ class KeywordGeneratorService:
         raise ValueError("No text found in LLM response")
 
     async def _call_llm(self, user_prompt: str) -> str:
-        """비동기 LLM 호출 (async 컨텍스트 전용 — Celery에서는 _call_llm_sync 사용)."""
-        response = await self.client.aio.models.generate_content(
-            model=self.MODEL,
-            contents=user_prompt,
-            config=self._build_llm_config(),
-        )
+        """비동기 LLM 호출 (async 컨텍스트 전용 — Celery에서는 _call_llm_sync 사용).
+
+        shared/llm acomplete() 경유(슬라이스 ④, IDENTICAL). 정책 off.
+        """
+        response = await acomplete(user_prompt, **self._llm_kwargs())
         return self._extract_text(response)
 
     def _call_llm_sync(self, user_prompt: str) -> str:
-        """동기 LLM 호출 (Celery 태스크 전용 — common-bugs #8 준수)."""
-        response = self.client.models.generate_content(
-            model=self.MODEL,
-            contents=user_prompt,
-            config=self._build_llm_config(),
-        )
+        """동기 LLM 호출 (Celery 태스크 전용 — common-bugs #8 준수).
+
+        shared/llm complete() 경유(슬라이스 ④, IDENTICAL). aio 경로와 동일 노브(_llm_kwargs).
+        """
+        response = complete(user_prompt, **self._llm_kwargs())
         return self._extract_text(response)
 
     def generate_keywords_for_movers_sync(
