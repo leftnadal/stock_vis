@@ -39,3 +39,20 @@ class Provider(Protocol):
     ) -> LLMRawResponse:
         """비동기 생성 (슬라이스 ②b). 미구현 provider는 NotImplementedError."""
         ...
+
+    def astream(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str],
+        system: Optional[str],
+        max_tokens: Optional[int],
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ):
+        """비동기 스트리밍 — 청크 증분 yield하는 async generator (슬라이스 ②b-stream).
+
+        미구현 provider는 NotImplementedError(반복 시점). 반환 타입은 AsyncGenerator.
+        """
+        ...

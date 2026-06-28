@@ -183,3 +183,46 @@ class GeminiProvider:
             raise _classify(exc) from exc
 
         return _extract_raw(response, started)
+
+    async def astream(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ):
+        """비동기 스트리밍 — client.aio.models.generate_content_stream (슬라이스 ②b-stream).
+
+        조립(config·contents·model)은 generate/agenerate와 동일 `_build_config_kwargs` 경유 →
+        하부 GenerateContentConfig byte 동일. 분기는 dispatch(stream)만. 청크를 **증분 yield**
+        (재청크·버퍼링·뭉개기 0 — 청크 경계·순서 그대로). SDK 예외는 코어 계층으로 분류 후 재전파.
+        """
+        from google import genai
+        from google.genai import types as gtypes
+
+        api_key = _resolve_api_key()
+        if not api_key:
+            raise LLMAuthError("GEMINI_API_KEY/GOOGLE_AI_API_KEY not configured")
+        used_model = model or DEFAULT_MODEL
+        config_kwargs = _build_config_kwargs(
+            max_tokens=max_tokens,
+            temperature=temperature,
+            response_format=response_format,
+            system=system,
+            extra=extra,
+        )
+        try:
+            client = genai.Client(api_key=api_key)
+            stream = await client.aio.models.generate_content_stream(  # ← stream dispatch
+                model=used_model,
+                contents=prompt,
+                config=gtypes.GenerateContentConfig(**config_kwargs),
+            )
+            async for chunk in stream:
+                yield chunk  # 원 청크 그대로(증분 보존)
+        except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
+            raise _classify(exc) from exc

@@ -109,3 +109,24 @@ class AnthropicProvider:
         raise NotImplementedError(
             "Anthropic async(agenerate)는 슬라이스 ③에서 구현 — ②b는 Gemini aio 전용."
         )
+
+    async def astream(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ):
+        """Anthropic async streaming 미구현 — 슬라이스 ③에서 messages.stream(AsyncAnthropic)로 신설.
+
+        ②b-stream은 Gemini 전용(#12 gemini_rag). ③ 예고: #8 adaptive(messages.stream async)가
+        agenerate + astream 둘 다 요구 → ③ 범위 결정에 반영. 반복 시점 NotImplementedError.
+        """
+        raise NotImplementedError(
+            "Anthropic astream은 슬라이스 ③에서 구현 — ②b-stream은 Gemini 전용."
+        )
+        yield  # 도달 불가 — async generator 표식(반복 시 위 raise 발생)

@@ -183,3 +183,67 @@ async def acomplete(
         prov_name, resolved_model, raw = await _run(fallback, None)
 
     return _finalize(prov_name, resolved_model, raw, fallback_from, cost_track=cost_track)
+
+
+async def astream(
+    prompt: str,
+    *,
+    provider: str = "gemini",
+    model: Optional[str] = None,
+    system: Optional[str] = None,
+    temperature: Optional[float] = None,
+    max_tokens: Optional[int] = None,
+    response_format: Optional[str] = None,
+    extra: Optional[dict] = None,
+    circuit: Optional[str] = None,
+    escape: bool = False,
+    retries: int = 0,
+    cost_track: bool = False,
+    fallback: Optional[str] = None,
+):
+    """스트리밍 async 진입점 (슬라이스 ②b-stream) — provider.astream을 청크 증분 yield.
+
+    조립은 generate/agenerate와 동일 헬퍼(provider 내부) → 하부 config byte 동일. 청크는 **원형 그대로**
+    yield(재청크·뭉개기 0). escape(prompt) + cost(스트림 완료 시 집계)만 지원.
+
+    문서화된 gap(억지 구현 금지, CB는 소비자 소유): streaming circuit/retry/fallback은 코어가 흡수하지
+    않는다 — 설정 시 NotImplementedError로 명시 차단(조용한 no-op 금지). #12의 gemini_rag CB는 소비자 존치.
+    """
+    if circuit is not None or retries > 0:
+        raise NotImplementedError(
+            "streaming circuit/retry는 코어 미흡수(gap) — 소비자 소유. ②b-stream."
+        )
+    if fallback is not None:
+        raise NotImplementedError("streaming fallback 미지원(gap). ②b-stream.")
+
+    # ── 정책 1: escape(신뢰경계) — non-stream과 동일 순수 변환 ────────────
+    effective_prompt = escape_untrusted(prompt) if escape else prompt
+    prov = get_provider(provider)
+
+    last_input_tokens = 0
+    last_output_tokens = 0
+    async for chunk in prov.astream(
+        effective_prompt,
+        model=model,
+        system=system,
+        max_tokens=max_tokens,
+        temperature=temperature,
+        response_format=response_format,
+        extra=extra,
+    ):
+        # cost 누적용 usage 추적 — 청크 변형 0(원형 그대로 통과).
+        usage = getattr(chunk, "usage_metadata", None)
+        if usage is not None:
+            last_input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
+            last_output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
+        yield chunk
+
+    # ── 정책 4: cost 기록 — cost_track=True일 때만, 스트림 완료 시점 집계 ──
+    if cost_track:
+        resolved_model = model or prov.default_model
+        cost_usd = cost_policy.compute_cost(
+            prov.name, resolved_model, last_input_tokens, last_output_tokens
+        )
+        cost_policy.record_cost(
+            prov.name, resolved_model, last_input_tokens, last_output_tokens, cost_usd
+        )
