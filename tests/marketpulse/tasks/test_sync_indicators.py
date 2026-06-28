@@ -92,7 +92,7 @@ class TestSyncYahooIndicators:
         assert result['total_saved'] == 0
 
 
-# ── MP-DATA-MACRO-COVERAGE: FRED 7종 재귀 동기화 (M-1) ──────────────────────
+# ── MP-DATA-MACRO-COVERAGE: FRED 11종 재귀 동기화 (M-1 + MP-VIX-STALE) ──────
 
 def _seed_fred():
     for code in FRED_RECURRING_SERIES:
@@ -109,16 +109,22 @@ FAKE_OBS = [
 
 @pytest.mark.django_db
 class TestSyncFredIndicators:
-    def test_syncs_7_scoped_series(self):
+    def test_syncs_all_scoped_series(self):
         _seed_fred()
         with patch('packages.shared.api_request.fred_client.FREDClient') as MockClient:
             MockClient.return_value.get_series_observations.return_value = FAKE_OBS
             result = mp_sync_fred_indicators_daily.apply().get()
 
         assert set(result['series']) == set(FRED_RECURRING_SERIES)
-        assert len(result['series']) == 7  # NFCI×4 + HY pair + T10Y3M
+        # NFCI×4 + HY pair + T10Y3M(초기 7) + VIXCLS·DGS10·DGS2·T10Y2Y(MP-VIX-STALE)
+        assert len(result['series']) == 11
         for code in FRED_RECURRING_SERIES:
             assert IndicatorValue.objects.filter(indicator__code=code).count() == 2
+
+    def test_includes_daily_series_mp_vix_stale(self):
+        # MP-VIX-STALE: 수동만 의존하던 FRED 일간군 4종을 재귀 대상에 편입
+        for code in ('VIXCLS', 'DGS10', 'DGS2', 'T10Y2Y'):
+            assert code in FRED_RECURRING_SERIES
 
     def test_scope_excludes_yahoo_series(self):
         # VIX3M·MOVE는 mp_sync_yahoo_indicators_daily 담당 → FRED 재귀서 제외(미지원/중복 회피)
@@ -132,8 +138,8 @@ class TestSyncFredIndicators:
             mp_sync_fred_indicators_daily.apply().get()
             mp_sync_fred_indicators_daily.apply().get()  # 2회
 
-        # update_or_create → 2회 실행해도 행 수 불변 (7 series × 2 obs)
-        assert IndicatorValue.objects.count() == 14
+        # update_or_create → 2회 실행해도 행 수 불변 (11 series × 2 obs)
+        assert IndicatorValue.objects.count() == 22
 
 
 @pytest.mark.django_db
