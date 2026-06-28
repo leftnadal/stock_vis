@@ -9,10 +9,10 @@ import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 from django.conf import settings
-from google import genai
 from google.genai import types
 
 from packages.shared.api_request.circuit_breaker import CircuitBreakerError, get_circuit
+from packages.shared.llm import acomplete
 
 logger = logging.getLogger(__name__)
 
@@ -46,13 +46,15 @@ class ContextCompressor:
             settings, "GOOGLE_AI_API_KEY", None
         )
 
+        # genai.Client 직접생성 → shared/llm acomplete() 경유(슬라이스 ④ Part ①-aio).
+        # circuit breaker(gemini_compress 5/60)는 소비자단 존치 — acall이 감싸는 대상만 acomplete로 교체.
         if not api_key:
             logger.warning(
                 "GEMINI_API_KEY not set. ContextCompressor will use fallback mode."
             )
-            self.client = None
+            self._llm_enabled = False
         else:
-            self.client = genai.Client(api_key=api_key)
+            self._llm_enabled = True
 
     async def compress(
         self, documents: List[Tuple[dict, float, dict]], question: str
@@ -82,7 +84,7 @@ class ContextCompressor:
             return []
 
         # API 키가 없으면 폴백 모드
-        if not self.client:
+        if not self._llm_enabled:
             logger.info("Using fallback compression (truncate)")
             return [self._fallback_compress(doc) for doc, _, _ in documents]
 
@@ -124,20 +126,19 @@ class ContextCompressor:
         original_tokens = self._estimate_tokens(original_text)
 
         try:
-            config = types.GenerateContentConfig(
-                max_output_tokens=self.MAX_TOKENS_PER_DOC,
-                temperature=0.3,  # 낮은 온도로 일관된 압축
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
-
+            # CB(소비자단 존치, 5/60) 래퍼 유지 — 감싸는 대상만 acomplete로 교체(슬라이스 ④, 정책 off).
+            # acomplete가 GenerateContentConfig(max_output_tokens·temperature·thinking_config) 동일 생성.
             cb = get_circuit(
                 "gemini_compress", failure_threshold=5, recovery_seconds=60
             )
             response = await cb.acall(
-                self.client.aio.models.generate_content,
+                acomplete,
+                self.COMPRESSION_PROMPT.format(document=original_text),
+                provider="gemini",
                 model=self.MODEL,
-                contents=self.COMPRESSION_PROMPT.format(document=original_text),
-                config=config,
+                max_tokens=self.MAX_TOKENS_PER_DOC,
+                temperature=0.3,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             compressed_text = response.text.strip()
@@ -278,22 +279,20 @@ class QuestionAwareCompressor(ContextCompressor):
         original_tokens = self._estimate_tokens(original_text)
 
         try:
-            config = types.GenerateContentConfig(
-                max_output_tokens=self.MAX_TOKENS_PER_DOC,
-                temperature=0.3,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
-
+            # CB(소비자단 존치, 5/60) 래퍼 유지 — 감싸는 대상만 acomplete로 교체(슬라이스 ④, 정책 off).
             cb = get_circuit(
                 "gemini_compress", failure_threshold=5, recovery_seconds=60
             )
             response = await cb.acall(
-                self.client.aio.models.generate_content,
-                model=self.MODEL,
-                contents=self.COMPRESSION_PROMPT.format(
+                acomplete,
+                self.COMPRESSION_PROMPT.format(
                     question=question, document=original_text
                 ),
-                config=config,
+                provider="gemini",
+                model=self.MODEL,
+                max_tokens=self.MAX_TOKENS_PER_DOC,
+                temperature=0.3,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             compressed_text = response.text.strip()
