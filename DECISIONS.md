@@ -8,6 +8,20 @@
 
 ---
 
+## Chain Sight 보드 EventGroup 전환 (2026-06-27, Phase 1 완료)
+
+### 보드 전환은 leadership 커플링에 묶여 A(어댑터)→재배선(C)→전환 3분할
+**결정**: 이벤트 보드를 theme_tags→EventGroup으로 한 번에 바꾸지 않고 3세션으로 분할 — ① 리더 어댑터(kept만·n3, 게이팅 중앙집중) ② C 비대칭 leadership 재컴퓨트(코어=코어LOO/위성=전체코어평균) ③ 보드 소비자 플래그 배선.
+**Why**: STEP 0.4 측정에서 **leadership이 theme-상대 LOO 벤치마크**(`StockLeadershipScore`가 `(stock, theme, window, date)` 키 + theme 멤버 LOO 평균이 피어셋)임이 드러남 → 보드만 EventGroup 키로 바꾸면 드릴다운 leadership이 빈 결과·의미 불일치(HALT). 점수 재배선은 score-diff 검증이 필요해 보드 배선과 분리해야 안전.
+**How to apply**: 새 leadership 행은 `theme='eg:{slug}'` + additive `benchmark_kind`(core_loo/sat_coremean, 레거시=NULL)로 **키 분리**(기존 unique_together·행 불변). 리스트(slug 키)↔드릴다운(slug)이 동일 키 공유 → 커플링 정합 충족.
+
+### 보드 그룹 소스 = settings 플래그 `CHAINSIGHT_GROUP_SOURCE` (기본 OFF)
+**결정**: 전환을 `CHAINSIGHT_GROUP_SOURCE`(`theme_tags`=OFF 기본 / `event_group`=ON) 단일 settings 토글 뒤에 둔다. go-live(ON)는 `.env` 값 + daphne web 재시작.
+**Why**: repo에 기존 피처 플래그 패턴 부재 → settings getattr 최소안(신규 메커니즘 발명 금지). OFF=오늘과 IDENTICAL 보장(레거시 경로 분기만 추가, serializer `name`은 `required=False`만→OFF 생략). 되돌리기가 코드 롤백 없이 `.env`+재시작으로 가능.
+**How to apply**: `apps/chain_sight/flags.py::use_event_group_board()`. ON 신선도는 `chainsight-event-group-leadership-daily` beat(22:15 UTC, attention 22:30보다 앞). 검증·hash: 머지 `202a840`, pytest 191·vitest 19·경계 0. 산출물 `docs/chain_sight/m2_v1.1_board_flag_verification.txt`.
+
+---
+
 ## 데이터 아키텍처
 
 ### 4-Layer 데이터 흐름

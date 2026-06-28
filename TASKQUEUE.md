@@ -5,6 +5,21 @@
 
 ---
 
+## Chain Sight M2 v1.1 — theme_tags → EventGroup reader 전환 (Phase 1)
+
+> 보드를 섹터형 theme_tags → 코어-위성 EventGroup + 정합 leadership으로 전환. 2026-06-27 **Phase 1 완료(go-live)**. 결정: DECISIONS "Chain Sight 보드 EventGroup 전환 (2026-06-27)".
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-EG1 | EventGroup 리더 어댑터 (kept만·n3·core/satellite) | @backend | - | **done** | `event_group_reader.py` (머지 `d787499`) |
+| CS-EG2 | C 비대칭 leadership 재컴퓨트 (코어 LOO/위성 코어평균) + L3 오라클 | @backend | CS-EG1 | **done** | `leadership_eventgroup.py` + migration 0013 (머지 `269d1eb`) + prod eg 114행 |
+| CS-EG3 | 보드 리스트+드릴다운 플래그 배선 (`CHAINSIGHT_GROUP_SOURCE` OFF 기본) | @backend/@frontend | CS-EG2 | **done** | `flags.py`·attach_leadership_eg·EventBoard.tsx (머지 `202a840`) |
+| CS-EG4 | C 컴퓨트 daily beat (22:15 UTC) + 캐시 | @infra | CS-EG3 | **done** | `register_chainsight_beats` + `chainsight-event-group-leadership-daily` 등록·worker 재기동 |
+| CS-EG5 | go-live: 플래그 ON + 서버 재시작 = Phase 1 완료 | orchestrator | CS-EG4 | **done** | `.env event_group` + daphne/celery 재시작, beat `.delay()` 검증 |
+| CS-EG6 | 옛 theme_tags leadership/그룹핑 디프리케이션 (파괴적, 한참 뒤) | @backend | CS-EG5 안정화 | todo | — (전환 안정 후) |
+
+---
+
 ## Chain Sight 마켓 뷰 (redesign v1)
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
