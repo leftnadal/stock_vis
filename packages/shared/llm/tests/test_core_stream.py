@@ -131,12 +131,93 @@ async def test_stream_cost_track_at_completion(monkeypatch):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("kw", [{"circuit": "c"}, {"retries": 1}, {"fallback": "anthropic"}])
+@pytest.mark.parametrize("kw", [{"retries": 1}, {"fallback": "anthropic"}])
 async def test_stream_gap_params_raise(kw):
-    """(c) streaming circuit/retry/fallback = 문서화된 gap → NotImplementedError(조용한 no-op 금지)."""
+    """(c) streaming retry/fallback = 문서화된 gap → NotImplementedError(조용한 no-op 금지).
+
+    circuit은 슬라이스 ④에서 흡수됨(아래 circuit 테스트군) — 더 이상 gap 아님.
+    """
     with pytest.raises(NotImplementedError):
         async for _ in astream("x", provider="gemini", **kw):
             pass
+
+
+# ─── 슬라이스 ④: streaming circuit 흡수 (셋업만 CB, 청크 읽기는 CB 바깥) ───
+
+
+@pytest.mark.asyncio
+async def test_stream_circuit_success_yields_raw_chunks(monkeypatch):
+    """circuit 설정 시 셋업을 CB로 감싸되 청크는 **원형 그대로** yield(재청크 0) + 셋업 실행됨."""
+    cap: dict = {}
+    chunks = [_Chunk("a"), _Chunk("b", usage=_Usage())]
+    _dual_mock_client(cap, chunks, monkeypatch)
+
+    out = []
+    async for chunk in astream("p", provider="gemini", circuit="cb_ok_test"):
+        out.append(chunk)
+
+    assert out == chunks  # 동일 객체·동일 순서(증분 보존)
+    assert cap["stream"]["contents"] == "p"  # 셋업이 CB 경유 후 실행됨
+
+
+@pytest.mark.asyncio
+async def test_stream_circuit_open_raises_before_setup(monkeypatch):
+    """CB가 OPEN이면 셋업 전 CircuitBreakerError(사전체크) — #12 except CircuitBreakerError 동형."""
+    from packages.shared.api_request.circuit_breaker import (
+        CircuitBreakerError,
+        get_circuit,
+    )
+
+    cap: dict = {}
+    _dual_mock_client(cap, [_Chunk("x")], monkeypatch)
+    cb = get_circuit("cb_open_test")
+    cb._set_open()  # 강제 OPEN
+    try:
+        with pytest.raises(CircuitBreakerError):
+            async for _ in astream("p", provider="gemini", circuit="cb_open_test"):
+                pass
+        assert "stream" not in cap  # 셋업 미실행(사전체크에서 차단)
+    finally:
+        cb.reset()
+
+
+@pytest.mark.asyncio
+async def test_stream_circuit_counts_setup_failure_not_iteration(monkeypatch):
+    """셋업 실패만 CB 집계, 청크 읽기 실패는 미집계(#12 동형: cb.acall=셋업만 보호)."""
+    from django.core.cache import cache
+
+    from packages.shared.api_request.circuit_breaker import get_circuit
+    from packages.shared.llm.providers import gemini as gmod
+
+    # (1) 셋업 실패 → CB fail_count 증가 (retry_attempts=1 사전등록 — #12 동형, 빠름)
+    async def _boom_open(self, prompt, **kw):
+        raise RuntimeError("setup failed")
+
+    monkeypatch.setattr(gmod.GeminiProvider, "aopen_stream", _boom_open)
+    cb1 = get_circuit("cb_setup_fail_test", retry_attempts=1)
+    cb1.reset()
+    with pytest.raises(RuntimeError):
+        async for _ in astream("p", provider="gemini", circuit="cb_setup_fail_test"):
+            pass
+    assert cache.get(cb1._fail_count_key()) == 1  # 셋업 실패 1건 집계
+    cb1.reset()
+
+    # (2) 셋업 성공 + 청크 읽기 실패 → CB fail_count 미증가(읽기는 CB 바깥)
+    async def _ok_open_then_boom(self, prompt, **kw):
+        async def _agen():
+            yield _Chunk("a")
+            raise RuntimeError("iteration failed")
+
+        return _agen()
+
+    monkeypatch.setattr(gmod.GeminiProvider, "aopen_stream", _ok_open_then_boom)
+    cb2 = get_circuit("cb_iter_fail_test", retry_attempts=1)
+    cb2.reset()
+    with pytest.raises(RuntimeError):
+        async for _ in astream("p", provider="gemini", circuit="cb_iter_fail_test"):
+            pass
+    assert cache.get(cb2._fail_count_key()) in (0, None)  # 청크 읽기 실패는 미집계
+    cb2.reset()
 
 
 @pytest.mark.asyncio

@@ -110,6 +110,22 @@ class AnthropicProvider:
             "Anthropic async(agenerate)는 슬라이스 ③에서 구현 — ②b는 Gemini aio 전용."
         )
 
+    async def aopen_stream(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ):
+        """Anthropic 스트림 셋업 미구현 — 슬라이스 ③에서 신설. ②b-stream/④는 Gemini 전용."""
+        raise NotImplementedError(
+            "Anthropic aopen_stream은 슬라이스 ③에서 구현 — ②b-stream/④는 Gemini 전용."
+        )
+
     async def astream(
         self,
         prompt: str,

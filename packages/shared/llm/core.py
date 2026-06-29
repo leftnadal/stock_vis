@@ -201,17 +201,22 @@ async def astream(
     cost_track: bool = False,
     fallback: Optional[str] = None,
 ):
-    """스트리밍 async 진입점 (슬라이스 ②b-stream) — provider.astream을 청크 증분 yield.
+    """스트리밍 async 진입점 (슬라이스 ②b-stream + 슬라이스 ④ streaming CB 흡수).
 
     조립은 generate/agenerate와 동일 헬퍼(provider 내부) → 하부 config byte 동일. 청크는 **원형 그대로**
-    yield(재청크·뭉개기 0). escape(prompt) + cost(스트림 완료 시 집계)만 지원.
+    yield(재청크·뭉개기 0). escape(prompt) + cost(스트림 완료 시 집계) + circuit(셋업만 보호) 지원.
 
-    문서화된 gap(억지 구현 금지, CB는 소비자 소유): streaming circuit/retry/fallback은 코어가 흡수하지
-    않는다 — 설정 시 NotImplementedError로 명시 차단(조용한 no-op 금지). #12의 gemini_rag CB는 소비자 존치.
+    circuit(슬라이스 ④): streaming CB — 셋업(스트림 오픈 = provider.aopen_stream)만 named CB로 감싼다
+    (OPEN 사전체크 + 실패/성공 집계). 청크 iteration은 **CB 바깥**(원본 #12 `cb.acall(generate_content_stream)`
+    동형 — 셋업만 보호, 청크 읽기 실패는 미집계, raw 전파). CB 파라미터(failure_threshold·retry_attempts 등)는
+    `get_circuit` 레지스트리 소유 — 소비자가 사전 등록(#10 옵션 A: 파라미터 소비자 존치).
+
+    문서화된 gap(억지 구현 금지): streaming retry/fallback은 코어 미흡수 — 설정 시 NotImplementedError로
+    명시 차단(조용한 no-op 금지). anthropic astream/aopen_stream은 슬라이스 ③까지 NotImplementedError.
     """
-    if circuit is not None or retries > 0:
+    if retries > 0:
         raise NotImplementedError(
-            "streaming circuit/retry는 코어 미흡수(gap) — 소비자 소유. ②b-stream."
+            "streaming retry는 코어 미흡수(gap) — 소비자 소유. ②b-stream."
         )
     if fallback is not None:
         raise NotImplementedError("streaming fallback 미지원(gap). ②b-stream.")
@@ -220,17 +225,37 @@ async def astream(
     effective_prompt = escape_untrusted(prompt) if escape else prompt
     prov = get_provider(provider)
 
+    # ── 정책 2: circuit — 셋업(스트림 오픈)만 CB 보호, 청크 읽기는 CB 바깥(#12 동형) ──
+    # circuit=None: provider.astream 직접(셋업+iteration 융합, ②b-stream 동작).
+    # circuit 설정: aopen_stream(셋업)만 awith_circuit으로 감싸 OPEN 사전체크·실패 집계 →
+    # 반환된 raw iterator를 아래 단일 루프에서 CB 바깥으로 소비(읽기 실패 미집계, raw 전파).
+    if circuit is not None:
+        async def _open():
+            return await prov.aopen_stream(
+                effective_prompt,
+                model=model,
+                system=system,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                response_format=response_format,
+                extra=extra,
+            )
+
+        stream = await awith_circuit(_open, name=circuit)
+    else:
+        stream = prov.astream(
+            effective_prompt,
+            model=model,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            response_format=response_format,
+            extra=extra,
+        )
+
     last_input_tokens = 0
     last_output_tokens = 0
-    async for chunk in prov.astream(
-        effective_prompt,
-        model=model,
-        system=system,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        response_format=response_format,
-        extra=extra,
-    ):
+    async for chunk in stream:
         # cost 누적용 usage 추적 — 청크 변형 0(원형 그대로 통과).
         usage = getattr(chunk, "usage_metadata", None)
         if usage is not None:

@@ -184,7 +184,7 @@ class GeminiProvider:
 
         return _extract_raw(response, started)
 
-    async def astream(
+    async def aopen_stream(
         self,
         prompt: str,
         *,
@@ -195,11 +195,13 @@ class GeminiProvider:
         response_format: Optional[str] = None,
         extra: Optional[dict] = None,
     ):
-        """비동기 스트리밍 — client.aio.models.generate_content_stream (슬라이스 ②b-stream).
+        """비동기 스트림 **셋업만** — client.aio.models.generate_content_stream await
+        (요청 전송 + 스트림 오픈) 후 SDK async iterator 반환. 청크 읽기는 호출자가 수행.
 
-        조립(config·contents·model)은 generate/agenerate와 동일 `_build_config_kwargs` 경유 →
-        하부 GenerateContentConfig byte 동일. 분기는 dispatch(stream)만. 청크를 **증분 yield**
-        (재청크·버퍼링·뭉개기 0 — 청크 경계·순서 그대로). SDK 예외는 코어 계층으로 분류 후 재전파.
+        circuit 경계 분리용(슬라이스 ④): 코어 astream(circuit=)이 이 셋업 coroutine만 CB로 감싸고
+        (원본 #12 `cb.acall(generate_content_stream)`와 동형 — 셋업만 보호), 청크 iteration은 CB
+        바깥에서 돈다. 조립(config·contents·model)은 generate/agenerate/astream과 동일
+        `_build_config_kwargs` 경유 → 하부 GenerateContentConfig byte 동일. SDK 예외는 코어 계층 분류.
         """
         from google import genai
         from google.genai import types as gtypes
@@ -217,11 +219,39 @@ class GeminiProvider:
         )
         try:
             client = genai.Client(api_key=api_key)
-            stream = await client.aio.models.generate_content_stream(  # ← stream dispatch
+            return await client.aio.models.generate_content_stream(  # ← stream dispatch(셋업)
                 model=used_model,
                 contents=prompt,
                 config=gtypes.GenerateContentConfig(**config_kwargs),
             )
+        except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
+            raise _classify(exc) from exc
+
+    async def astream(
+        self,
+        prompt: str,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
+        response_format: Optional[str] = None,
+        extra: Optional[dict] = None,
+    ):
+        """비동기 스트리밍 — aopen_stream 셋업 후 청크 **증분 yield**(재청크·버퍼링·뭉개기 0 —
+        청크 경계·순서 그대로). 조립은 aopen_stream(동일 `_build_config_kwargs`) 경유 → config byte
+        동일. SDK 예외는 코어 계층으로 분류 후 재전파.
+        """
+        stream = await self.aopen_stream(
+            prompt,
+            model=model,
+            system=system,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            response_format=response_format,
+            extra=extra,
+        )
+        try:
             async for chunk in stream:
                 yield chunk  # 원 청크 그대로(증분 보존)
         except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
