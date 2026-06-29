@@ -492,6 +492,24 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 공유 main에서 "동기됨"은 영속 상태가 아니라 만료되는 스냅샷. fetch는 분기 전(#33)뿐 아니라 **push 직전에도** 재실행. 원장은 union-merge라 append-only 규율만 지키면 동시 갱신이 안전하게 합쳐진다.
 - 📎 참조: #33(fetch 없는 baseline), #34(공유 디렉터리 혼입), `.gitattributes`(merge=union 4파일), `feedback_commit_pathspec_shared_main`(메모리).
 
+## 모듈 상수 변경 후 celery 워커 재기동 필수 — push만으론 조용한 갭 (#41) `[infra]` `[celery]`
+
+- 증상: 코드(예 `FRED_RECURRING_SERIES` 7→11)를 push·머지했는데도 자동 task가 여전히 옛 동작(7종만 sync) → 일부 지표 stale 지속. 에러 없이 조용히 누락(silent coverage gap).
+- 원인: celery 워커는 **시작 시점에 모듈을 import**해 상수를 메모리에 적재. 코드 파일이 바뀌어도 **실행 중 워커 프로세스는 옛 상수를 그대로 들고 있음**. push/머지는 디스크 코드만 갱신, 워커 메모리는 미반영. (MP-VIX-STALE 실측: 로컬 main 11종인데 워커 PID 7일 전 시작 = 메모리 7종.)
+- 감지: 코드 종수 vs 실제 task 결과 종수 대조 — `.delay()`(워커 실행)로 트리거 후 결과 확인. ※`.apply()`는 현재 셸에서 실행되어 **항상 새 코드**라 워커 검증에 무의미 — 반드시 `.delay()`.
+- 해결: 코드 push 후 **워커 재기동까지가 1셋트**. `launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-worker`(default 큐 = sync 실행 주체). 재기동 후 `.delay()` 1회로 새 상수 적재 입증(uptime 리셋 + 결과 종수 확인). beat는 스케줄 발행만이라 보통 worker만으로 충분(task 인자는 worker가 모듈에서 읽음).
+- 교훈: 모듈 레벨 상수/리스트를 자동 task가 읽으면, 그 변경의 운영 반영은 "merge"가 아니라 "워커 재기동"에서 완성된다. [[lesson_celery_task_registration]]의 신규 task 등록과 같은 뿌리(워커 메모리 ≠ 디스크 코드).
+- 📎 참조: `DECISIONS.md` "[2026-06-29] MP-VIX-BACKFILL"·"D-MP-VIX-STALE", 메모리 `lesson_celery_task_registration`.
+
+## 공유 main 작업트리 직접 편집 금지 — 워커 코드베이스 + 타 트랙 pull 차단 (#42) `[git]` `[harness]` `[infra]`
+
+- 증상: ⒜ 워커가 옛 코드로 돎(#41과 연동) ⒝ 다른 트랙의 `git pull`/정합이 *"local changes would be overwritten"* 으로 막힘 ⒞ 로컬 main이 origin과 divergence.
+- 원인: `~/Desktop/stock_vis`(공유 main 작업트리)는 **celery 워커가 직접 import하는 코드베이스**(별도 deploy/clone 없음, 우회 불가). 여기서 직접 편집하면 ① 미커밋 변경이 타 트랙 pull을 차단 ② 커밋해도 origin과 분기 ③ 워커는 그 디렉토리 코드를 봄. (실측: cs-board go-live 문서를 메인 작업트리에 직접 작성→미커밋→`eee3b19`로 divergence 유발.)
+- 감지: `git -C ~/Desktop/stock_vis status --porcelain`에 예상 밖 tracked 미커밋(M). 세션 시작 STEP 0에서 점검.
+- 해결: **모든 작업은 worktree에서 격리**(`git worktree add <path> -b <branch> origin/main`). 공유 main 작업트리는 워커 가동·pull 정합 전용으로 두고 직접 Edit/Write 금지. 미커밋이 이미 있으면 비파괴 패치 보존(handoff) 후 원작자 정합 대기(함부로 stash/checkout 금지).
+- 교훈: 공유 main 작업트리는 "편집하는 곳"이 아니라 "워커가 읽고 트랙들이 정합하는 곳". 격리 worktree가 기본, 메인 트리 직접 편집은 운영·정합 둘 다 깨뜨린다.
+- 📎 참조: `DECISIONS.md` "D-MP-VIX-STALE 부수 사건", #34(worktree 격리), #41(워커 재기동), `feedback_commit_pathspec_shared_main`(메모리).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
