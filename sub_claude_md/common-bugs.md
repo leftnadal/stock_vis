@@ -483,6 +483,15 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 카드 0렌더 + '503'을 보면 BE/데이터부터 의심하기 쉬우나, **로그인 세션의 인증요청이 전건 실패하면 CORS origin 화이트리스트를 먼저 의심**한다. preflight 200 ≠ 허용(ACAO 헤더 유무가 진실). 검증환경 포트는 항상 BE가 허용한 origin과 일치시킨다.
 - 📎 참조: `DECISIONS.md` "[2026-06-25] MP1.5-FIX 화면게이트 = 조건부 통과(D-P15-SCREENGATE)", `config/settings.py:318` `CORS_ALLOWED_ORIGINS`, `frontend/app/market-pulse-v2/details/CardDetailContainer.tsx:48`(cache 가드).
 
+## 세션 중 origin/main 빈번 전진 → push 직전 재확인 + 원장은 merge=union rebase 복구 (#40) `[git]` `[harness]`
+
+- 증상: 공유 main에서 한 트랙이 작업·검증하는 동안 **다른 트랙/자동화가 origin/main을 1~2 commit씩 반복 전진**시킴(cs reader→leadership→board 4세션 연속 관측: 매 push 전 0/0이었다가 push 시점 non-ff). 머지/push 직전 갑자기 non-ff 거부 또는 분기 발생.
+- 원인: origin/main은 외부 트랙이 비동기로 갱신하는 공유 ref. 세션 시작 STEP 0의 "0/0 동기"는 **그 순간 스냅샷**일 뿐, push까지 유지 보장 없음.
+- 감지: `git push` 직전 `git fetch` → `git merge-base --is-ancestor origin/main main` 미충족이면 그 사이 전진. (#33 fetch-baseline의 push 단계 변형.)
+- 해결: ① push 직전 항상 `git fetch` + ff 가능여부 재확인(STEP 0의 1회 fetch로 끝내지 말 것). ② non-ff면 `git rebase origin/main`으로 흡수 후 push. ③ **원장 4파일(`PROGRESS.md`·`DECISIONS.md`·`TASKQUEUE.md`·`sub_claude_md/common-bugs.md`)은 `.gitattributes`에 `merge=union`** → append 충돌이 자동 해소되므로 rebase가 거의 항상 무충돌(실측: MP-VIX-STALE `20f0e6d` 등 disjoint 트랙 흡수 충돌 0). 코드 파일이 겹치면 일반 충돌 → 수동.
+- 교훈: 공유 main에서 "동기됨"은 영속 상태가 아니라 만료되는 스냅샷. fetch는 분기 전(#33)뿐 아니라 **push 직전에도** 재실행. 원장은 union-merge라 append-only 규율만 지키면 동시 갱신이 안전하게 합쳐진다.
+- 📎 참조: #33(fetch 없는 baseline), #34(공유 디렉터리 혼입), `.gitattributes`(merge=union 4파일), `feedback_commit_pathspec_shared_main`(메모리).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
