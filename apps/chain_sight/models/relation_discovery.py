@@ -109,6 +109,8 @@ class RelationConfidence(models.Model):
     # 점수 (3단)
     truth_score = models.FloatField(default=0)
     market_score = models.FloatField(null=True, blank=True)
+    # deprecated: per-row 무의미(한 행은 truth/market 중 하나만 가짐). 쌍 단위
+    # relevance는 RelationPairSnapshot(relevance_opp/relevance_risk) 사용. 제거 마이그레이션 보류.
     investment_relevance = models.FloatField(null=True, blank=True)
 
     # 증거
