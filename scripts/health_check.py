@@ -55,6 +55,18 @@ KNOWN_TEST_FAILS: dict[str, str] = {
         "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
         "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
     ),
+    "tests/news/test_news_entity_deduplication.py::TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_existing_article_entity_unchanged": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
 }
 
 

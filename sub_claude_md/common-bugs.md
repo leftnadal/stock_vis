@@ -512,6 +512,7 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 ## [환경 known-fail] Finnhub 회귀 1건 — 이관/코드와 무관 (2026-06-27 등록)
 
 - `tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true`는 **FINNHUB_API_KEY 미설정**(테스트 환경) 때문에 실패한다. 환경 의존이며 이관·코드 회귀가 아니다.
+- (2026-06-29 추가) `tests/news/test_news_entity_deduplication.py`의 3건(`TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination` + `TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves`·`::test_existing_article_entity_unchanged`)도 동일 **Finnhub API 키 미설정**(`finnhub.py:38 ValueError`) — 막간 test 위생 전수 분류에서 선존 확인(`94f082c`, #19 이전). KNOWN_TEST_FAILS 등록.
 - 회귀 게이트에서 **known-fail로 제외**(이관 회귀 신호를 가리지 않게). SSOT = `scripts/health_check.py:KNOWN_TEST_FAILS` + health_check "known-fail 레지스트리" 항목.
 - 회귀 판정 규칙: `pytest` fail 목록에서 KNOWN_TEST_FAILS를 뺀 나머지가 0이어야 회귀 0. 새 fail이 이 목록 밖이면 진짜 회귀.
 
