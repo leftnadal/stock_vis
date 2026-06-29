@@ -20,6 +20,29 @@
 **Why**: repo에 기존 피처 플래그 패턴 부재 → settings getattr 최소안(신규 메커니즘 발명 금지). OFF=오늘과 IDENTICAL 보장(레거시 경로 분기만 추가, serializer `name`은 `required=False`만→OFF 생략). 되돌리기가 코드 롤백 없이 `.env`+재시작으로 가능.
 **How to apply**: `apps/chain_sight/flags.py::use_event_group_board()`. ON 신선도는 `chainsight-event-group-leadership-daily` beat(22:15 UTC, attention 22:30보다 앞). 검증·hash: 머지 `202a840`, pytest 191·vitest 19·경계 0. 산출물 `docs/chain_sight/m2_v1.1_board_flag_verification.txt`.
 
+### EventGroup = 공동언급 Jaccard 정규화 코어-위성 2층 (theme_tags 교체)
+**결정**: 섹터형 `theme_tags`를 뉴스 공동언급 기반 EventGroup으로 교체. 엣지 가중 = Jaccard 정규화(half_life 21d), 코어(jaccard 연결요소, ≥3)–위성(1-hop) 2층.
+**Why**: raw 공동언급은 슈퍼허브(NVDA degree 28)에 가짜 스포크(CAT·UBER·MTB) 흡입 → Jaccard 정규화로 NVDA degree 28→1(임계 0.2), 가짜[CAT 0.017] vs 코어[AMD 0.215] 분리. npmi도 후보였으나 jaccard가 코어 신호 보존 우수.
+**출처**: 파이프라인 세션. `docs/chain_sight/m2_v1.1_norm_jaccard_report.txt`, `m2_v1.1_bc_clustering_report.txt`.
+
+### cohesion < 0.2 게이트 = 가격상관 기반 (구조지표 TPR/conductance 기각)
+**결정**: 코어 cohesion(코어 멤버 수익률 pairwise 상관 평균) < 0.2 → `is_hidden=True`(드롭 아님, 플래그). 구조 토폴로지 지표(TPR/conductance)는 진단으로만.
+**Why**: 구조지표는 그래프 모양만 측정하나 cohesion은 "함께 움직이는가"(실제 투자 신호)를 직접 측정 → 게이트로 채택. 16그룹 중 7 gated(저신뢰 잡탕). 분포 p10/p50/p90 = 0.126/0.415/0.757.
+**출처**: `docs/chain_sight/m2_v1.1_diagnostics_tpr_conductance_naming.txt`, `m2_v1.1_phase1_cohesion_gating_tfidf_names.txt`.
+
+### 그룹명 = 코어 전용 TF-IDF 상위 3텀 (n3)
+**결정**: 그룹명 = 코어 멤버 TF-IDF 상위 3텀(`name_candidates["n3"]`). 후보(n2/n3/원시텀)는 `name_candidates`에 보존.
+**Why**: 위성 포함 시 이름 희석 → 코어 전용 텍스트. 예: AMAT/KLAC/LRCX → "applied materials semiconductor".
+
+### leadership 벤치마크 = C 비대칭 (코어=core_loo / 위성=sat_coremean) — 왜 A·B 아닌 C
+**결정**: 역할별 비대칭 벤치마크 — 코어 종목 = 코어 LOO(자기제외 코어평균), 위성 종목 = 전체 코어평균. leadership 수식(α/β·capture·LOO)은 검증본 재사용, **피어셋만 역할별 분기**.
+**Why**: 대칭 벤치마크는 위성이 코어 벤치마크를 희석하거나 코어를 과소평가. C는 코어/위성을 분리 평가 — 코어는 동료 코어 대비, 위성은 코어 대비 → 각 역할의 실제 위치 측정. 키 분리 `theme='eg:{slug}'` + `benchmark_kind`(core_loo/sat_coremean, 레거시 NULL).
+**출처**: leadership 세션(C 결정 헤더). `docs/chain_sight/m2_v1.1_leadership_eventgroup_C_verification.txt`. 머지 `269d1eb` + prod 0013 + eg 114행.
+
+### L3 오라클 = 역할 분기 정확성 게이트
+**결정**: 역할별 벤치마크 분기를 독립 참조 구현(numpy.polyfit + 순수루프, `tests/chainsight/oracles/`)으로 교차검산 — 코어=코어LOO·위성=코어평균이 프로덕션과 rel 1e-6 일치 + 엣지(코어1개) 일치.
+**Why**: 역할 오분류(코어가 위성 벤치 사용 등)는 조용한 오답 → 독립 오라클이 마지막 게이트. 향후 leadership 정교화의 회귀 정답지로 영구 배치.
+
 ---
 
 ## 데이터 아키텍처

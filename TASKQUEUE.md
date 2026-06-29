@@ -18,6 +18,17 @@
 | CS-EG5 | go-live: 플래그 ON + 서버 재시작 = Phase 1 완료 | orchestrator | CS-EG4 | **done** | `.env event_group` + daphne/celery 재시작, beat `.delay()` 검증 |
 | CS-EG6 | 옛 theme_tags leadership/그룹핑 디프리케이션 (파괴적, 한참 뒤) | @backend | CS-EG5 안정화 | todo | — (전환 안정 후) |
 
+### Chain Sight Phase 2 백로그 (Phase 1 라이브 후, 2026-06-27 등록)
+
+> 출처: Phase 1 마무리 정리 세션. LLM 묶음은 BOUNDARY-LLM 트랙 의존(메모리 `project_boundary_llm_track`).
+
+| ID | Task | Agent | Depends On | Status | 비고 |
+|----|------|-------|------------|--------|------|
+| CS-P2-LLM | LLM 의존 묶음 (LLM 레이어 통합 / 10-K 관계추출 / FRED 해석) | @rag-llm/@backend | **BOUNDARY-LLM 슬라이스① land** | todo | shared LLM 래퍼 통합 선행 필요 |
+| CS-M3 | Path Watchlist (코어-위성 경로 추적) | @backend/@frontend | 독립 | todo | EventGroup 코어-위성 위 경로 추적 |
+| CS-P2-GRAPH | 그래프 화면 정제 (EventGroup 시각화) | @frontend | 독립 | todo | redesign v1 그래프 캔버스 위 EventGroup 반영 |
+| CS-P2-13F | 13F 버그 + CUSIP 매핑 수정 | @backend | 독립 | todo | 위성 cohold_institutions 정확도 |
+
 ---
 
 ## Chain Sight 마켓 뷰 (redesign v1)
