@@ -13,12 +13,14 @@ from services.serverless.services.thesis_builder import ThesisBuilder
 
 @pytest.fixture
 def builder(settings):
-    """ThesisBuilder 인스턴스. settings + genai.Client 모킹으로 환경 의존성 제거."""
-    # 다른 테스트가 settings.GEMINI_API_KEY를 patch.object(create=True)로
-    # 변경/복원하면서 누수되는 케이스를 차단 (test_news_deep_analyzer 등).
+    """ThesisBuilder 인스턴스. settings 키만으로 환경 의존성 제거.
+
+    BOUNDARY-LLM ④: thesis_builder가 complete() 경유로 이관되며 genai.Client 직접생성 제거 →
+    옛 genai.Client seam patch는 AttributeError. __init__은 키 검증만 하므로 patch 불요.
+    다른 테스트의 settings.GEMINI_API_KEY 누수 차단 위해 키는 명시 설정.
+    """
     settings.GEMINI_API_KEY = 'test-api-key'
-    with patch('services.serverless.services.thesis_builder.genai.Client'):
-        return ThesisBuilder()
+    return ThesisBuilder()
 
 
 # ─── thesis_builder ──────────────────────────────────────────────────
