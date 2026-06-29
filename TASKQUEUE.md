@@ -5,6 +5,22 @@
 
 ---
 
+## 🔴 [P0] chainsight-pair-aggregation beat DB 등록 (버그 #28)
+
+> 출처: RelationPairSnapshot 적립 작업(2026-06-29, 브랜치 `monorepo/sess-cs-pair-relevance`). DECISIONS "RelationPairSnapshot 쌍 relevance 적립 [해자]".
+
+- **증상**: dict 정의 beat(`config/celery.py` `chainsight-pair-aggregation`)가 DatabaseScheduler에서 무시됨 → prod에서 일간 집계 미실행(침묵 실패).
+- **영향**: RelationPairSnapshot이 prod에서 적립 안 됨 = **해자 궤적이 안 쌓임**(이 작업 전체의 목적 무력화). GREEN인데 prod 침묵이라 "왜 스냅샷이 안 쌓이지?"로 몇 주 뒤 헤맴.
+- **조치**: `register_chainsight_beats` 류로 `PeriodicTask` DB 등록(task=`apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task`, 11:30 EST).
+- **검증**: prod에서 다음 11:30 EST 이후 당일 period 스냅샷 행 생성 확인.
+- **연관 드리프트**: `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 EST 불일치 — 문서 동기화 동반.
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 + 익일 검증 | @infra | 머지 후 | todo | `register_chainsight_beats` 갱신 |
+
+---
+
 ## Chain Sight M2 v1.1 — theme_tags → EventGroup reader 전환 (Phase 1)
 
 > 보드를 섹터형 theme_tags → 코어-위성 EventGroup + 정합 leadership으로 전환. 2026-06-27 **Phase 1 완료(go-live)**. 결정: DECISIONS "Chain Sight 보드 EventGroup 전환 (2026-06-27)".

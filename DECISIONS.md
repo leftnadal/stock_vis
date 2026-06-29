@@ -8,6 +8,36 @@
 
 ---
 
+## RelationPairSnapshot 쌍 relevance 적립 — 해자 궤적 (2026-06-29) [해자]
+
+### opp/risk = 곱(게이트 AND), [0,1] 정규화
+**결정**: `relevance_opp = max(0, t−m)·t`, `relevance_risk = max(0, m−t)·m` (t=truth_max/100, m=market_max/100). 가중합 아닌 곱.
+**Why**: 곱은 AND 게이트 — 진실/시장 한쪽이 0이면 신호 0(가중합은 한쪽만으로 점수 발생). t==m이면 둘 다 0 → opp/risk 상호배타. truth/market 원천은 [0,100] 계단값(85/60/35) 그대로 두고 opp/risk만 [0,1] 파생.
+**How to apply**: `apps/chain_sight/services/pair_aggregation.py::compute_pair_relevance`.
+
+### 무방향 정규화 쌍 키 (방향성은 원천 행 보존)
+**결정**: 스냅샷 키 = `normalize_pair`(sorted) canonical (a,b). 무방향.
+**Why**: "두 종목 관계를 시장이 가격에 반영했나"는 방향 무관. SUPPLIES_TO 방향성은 원천 RelationConfidence 행에 그대로 보존되어 손실 없음. directional opp가 필요해지면 후속 변형.
+
+### 스냅샷 단일 테이블 (요약 테이블 불채택)
+**결정**: `RelationPairSnapshot` 1테이블. 현재값 = `DISTINCT ON (canonical_a, canonical_b) ... period DESC`.
+**Why**: 수천 쌍 규모(실측 9,562)에서 정렬 병목 없음 → 2테이블은 동기화 버그 위험만 추가. 후일 조회가 실제 병목이면 캐시로 덧붙임(되돌릴 수 있음).
+
+### 궤적 forward-only (backfill = 오늘 1점, 복원 불가)
+**결정**: 점수 히스토리 미보관 → 매일 11:30 EST 집계로 forward-only 적립. backfill은 오늘 단면 1점만.
+**Why**: 원천(CoMention 누적 카운트·PriceCoMovement 현재 상관)도 시계열이 아니라 현재 단면만 → 과거 궤적은 물리적으로 복원 불가. 매일 점이 소실 중이라 적립을 빨리 켤수록 이득.
+**How to apply**: beat `chainsight-pair-aggregation`(11:30, update_relation_confidence 직후). ⚠ 버그 #28 — prod는 DB PeriodicTask 등록 별도 필요(TASKQUEUE P0).
+
+### investment_relevance(per-row) deprecated
+**결정**: `RelationConfidence.investment_relevance`(per-row) 사용 중단. 제거 마이그레이션은 보류(주석만).
+**Why**: `unique_together=(a,b,relation_type)`라 한 행은 truth 또는 market 중 하나만 가짐 → per-row 합성은 무의미. 쌍 단위 `RelationPairSnapshot`(opp/risk)가 대체.
+
+### get_thesis IDOR = 비공개만 소유자 제한 (공유 보존)
+**결정**: 비공개 테제는 소유자만(404로 존재 비노출), 공개(`is_public`)는 누구나. `@authentication_classes([])` 제거.
+**Why**: InvestmentThesis는 `is_public`/`share_code` 공유 기능 보유 → 무조건 user 스코프는 공유를 파괴. 또 `authentication_classes([])`면 `request.user`가 항상 AnonymousUser라 `user=request.user` 한 줄이 모든 요청을 404로 만듦. SEAM-DEBT #1 → SEAM-OK. (전수조사 `docs/audit_out/full_audit_2026-06-26.md`.)
+
+---
+
 ## Chain Sight 보드 EventGroup 전환 (2026-06-27, Phase 1 완료)
 
 ### 보드 전환은 leadership 커플링에 묶여 A(어댑터)→재배선(C)→전환 3분할
