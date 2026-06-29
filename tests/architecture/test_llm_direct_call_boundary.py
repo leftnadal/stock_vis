@@ -45,13 +45,13 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "GenerativeModel"),
-    ("services/rag_analysis/services/llm_service.py", "genai.Client"),
     ("services/serverless/services/llm_relation_extractor.py", "genai.Client"),
 }
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
-# Part ①-aio 완료: 10 → 9 → 8 → 7 → 6(keyword_generator #16 통째). 잔여 6 동결.
-FROZEN_COUNT = 6
+# Part ①-aio 완료: 10 → 9 → 8 → 7 → 6(keyword_generator #16 통째).
+# 슬라이스 ④ #12 완료: 6 → 5(llm_service stream → astream(circuit), 코어 streaming CB 흡수). 잔여 5 동결.
+FROZEN_COUNT = 5
 
 
 def _call_identifier(node: ast.Call) -> str | None:
