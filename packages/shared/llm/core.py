@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 from packages.shared.llm.policy import cost as cost_policy
 from packages.shared.llm.policy.circuit import awith_circuit, with_circuit
@@ -30,7 +30,7 @@ from packages.shared.llm.types import (
 
 
 def complete(
-    prompt: str,
+    prompt: Union[str, list],
     *,
     provider: str = "gemini",
     model: Optional[str] = None,
@@ -52,9 +52,22 @@ def complete(
       명시 노브(temperature·max_tokens·response_format) = 모든 provider 공통 생성 파라미터.
       extra(dict) = 그 provider 고유 노브(gemini thinking_config·top_p 등).
     모든 신규 노브 기본 None → 인자 없는 호출 = 슬라이스 ① 동작(노브 미설정, provider 기본).
+
+    contents 인터페이스(슬라이스 ②c): `prompt`가 `str`이면 기존 단일-str 경로(byte 불변).
+    `str`이 아니면(예 list[Part]/[Content]) **멀티파트 경로** — 코어는 변형 0으로 provider에
+    불투명 pass-through(평탄화·concat·래핑 없음 → genai wire byte 동일). sync `complete()` 전용
+    (acomplete/astream/anthropic 미지원, 범위 밖). escape는 str 신뢰경계 전용.
     """
     # ── 정책 1: escape(신뢰경계) — escape=True일 때만 prompt 변환 ──────────
-    effective_prompt = escape_untrusted(prompt) if escape else prompt
+    # 단일-str 경로는 verbatim 보존. 멀티파트는 추가 분기로만 수용(평탄화 0).
+    if isinstance(prompt, str):
+        effective_prompt = escape_untrusted(prompt) if escape else prompt
+    else:
+        if escape:
+            raise NotImplementedError(
+                "multipart contents에 escape 미지원 — ②c 범위 밖(escape는 str 전용)."
+            )
+        effective_prompt = prompt
 
     def _run(prov_name: str, used_model: Optional[str]) -> Tuple[str, str, LLMRawResponse]:
         prov = get_provider(prov_name)

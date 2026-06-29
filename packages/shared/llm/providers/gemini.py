@@ -11,7 +11,7 @@ Celery 동기 태스크에서는 sync `generate`를 쓴다(async genai.Client fo
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Optional, Union
 
 from packages.shared.llm.types import (
     LLMAuthError,
@@ -104,7 +104,7 @@ class GeminiProvider:
 
     def generate(
         self,
-        prompt: str,
+        prompt: Union[str, list],
         *,
         model: Optional[str] = None,
         system: Optional[str] = None,
@@ -113,7 +113,12 @@ class GeminiProvider:
         response_format: Optional[str] = None,
         extra: Optional[dict] = None,
     ) -> LLMRawResponse:
-        """동기 생성 — client.models.generate_content."""
+        """동기 생성 — client.models.generate_content.
+
+        prompt이 str이면 단일-str contents(현행 byte 불변). str이 아니면(멀티파트:
+        list[Part]/[Content]) `contents=prompt`로 변형 0 pass-through → genai가 그대로 직렬화
+        (슬라이스 ②c, #19 sync 멀티파트 대비). config 조립은 동일 `_build_config_kwargs` 경유.
+        """
         from google import genai
         from google.genai import types as gtypes
 
