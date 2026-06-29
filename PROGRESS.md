@@ -108,7 +108,8 @@
 >
 > ✅ **2026-06-11 MP-KL F-트랙 종결 + 복구 이식 push**: `85557e6..902ec86 → origin/main` (3 commit). MP-KL-F1(`e538e7f` 프론트 테스트 12건) / F3(`d5289a2` health=StatusBanner 확정) / F2(`902ec86` card_id flow→concentration 계약 횡단 리네임, 게이트 선행). 1차 작업이 갈라진 로컬 main + 공유 디렉터리에서 수행돼 타 트랙 커밋 혼입 → origin/main 위 새 worktree에서 `cherry-pick -x` 이식·전 검증 통과(pytest 138 / vitest 174 / tsc 0). 원본 브랜치 `monorepo/sess-mp-kl-f1f3` 폐기 승인(실행 병진 수동). 근거 DECISIONS "[2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식".
 >
-> ✅ **2026-06-11 트랙별 소유권 지도 v2 등록**: 전수 실측(902ec86, A1~D4) 기반. 활성 트랙 4개 확정 — market_pulse·chain_sight(골격)·**portfolio 신설**·**dashboard(표면 전용, BE 부재 실측)**. 무소속 7구획 + 토대(shared) + 경계 보류 명시. 공통 규칙(전용 worktree·자기 구획 한정·메타 4종 mgmt 전용). 사이클 교훈 3건 등재(common-bugs #33 fetch 없는 baseline / #34 공유 디렉터리 혼입 / #35 짧은 라벨 비고유). 근거 DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2".
+> ✅ **2026-06-11 트랙별 소유권 지도 v2 등록**: 전수 실측(902ec86, A1~D4) 기반. 활성 트랙 4개 확정 — market_pulse·chain_sight(골격)·**portfolio 신설**·**dashboard(표면 전용)**. 무소속 7구획 + 토대(shared) + 경계 보류 명시. 공통 규칙(전용 worktree·자기 구획 한정·메타 4종 mgmt 전용). 사이클 교훈 3건 등재(common-bugs #33 fetch 없는 baseline / #34 공유 디렉터리 혼입 / #35 짧은 라벨 비고유). 근거 DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2".
+> 📎 **2026-06-27 STEP 0 정밀화**(불일치-B): "BE 부재 실측" = dashboard 트랙은 **자기 소유 백엔드 앱 없음**(`apps/dashboard/` 부재). 단 소비 데이터(static `/static/signals/*.json`)의 **생산 주체는 shared**(`packages/shared/stocks`: `eod_pipeline`·`eod_json_baker`, celery beat `run-eod-pipeline` 매일 18:30 ET). "백엔드가 데이터를 안 굽는다"는 의미가 아님.
 >
 > ✅ **2026-06-11 mgmt push 완료(F-트랙 종결 + 소유권 지도 v2 + 교훈 3건)**: `902ec86..d5212d4 → origin/main`.
 >
