@@ -17,10 +17,13 @@ class TestMarketMoversProcessor:
 
     @pytest.fixture
     def processor(self, settings):
-        """프로세서 인스턴스"""
+        """프로세서 인스턴스.
+
+        BOUNDARY-LLM ④: keyword_service가 complete() 경유로 이관되며 genai.Client 직접생성
+        제거 → 옛 genai.Client seam patch는 AttributeError. 키 검증만 하므로 patch 불요.
+        """
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('services.serverless.services.keyword_service.genai.Client'):
-            return MarketMoversProcessor()
+        return MarketMoversProcessor()
 
     @pytest.fixture
     def sample_data(self):
