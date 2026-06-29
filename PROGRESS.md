@@ -107,6 +107,7 @@
 > ✅ **2026-06-11 MP-KL F-트랙 종결 + 복구 이식 push**: `85557e6..902ec86 → origin/main` (3 commit). MP-KL-F1(`e538e7f` 프론트 테스트 12건) / F3(`d5289a2` health=StatusBanner 확정) / F2(`902ec86` card_id flow→concentration 계약 횡단 리네임, 게이트 선행). 1차 작업이 갈라진 로컬 main + 공유 디렉터리에서 수행돼 타 트랙 커밋 혼입 → origin/main 위 새 worktree에서 `cherry-pick -x` 이식·전 검증 통과(pytest 138 / vitest 174 / tsc 0). 원본 브랜치 `monorepo/sess-mp-kl-f1f3` 폐기 승인(실행 병진 수동). 근거 DECISIONS "[2026-06-11] MP-KL-F2 게이트 선행 + 복구 이식".
 >
 > ✅ **2026-06-11 트랙별 소유권 지도 v2 등록**: 전수 실측(902ec86, A1~D4) 기반. 활성 트랙 4개 확정 — market_pulse·chain_sight(골격)·**portfolio 신설**·**dashboard(표면 전용, BE 부재 실측)**. 무소속 7구획 + 토대(shared) + 경계 보류 명시. 공통 규칙(전용 worktree·자기 구획 한정·메타 4종 mgmt 전용). 사이클 교훈 3건 등재(common-bugs #33 fetch 없는 baseline / #34 공유 디렉터리 혼입 / #35 짧은 라벨 비고유). 근거 DECISIONS "[2026-06-11] 트랙별 소유권 지도 v2".
+> ✅ **2026-06-29 chain_sight STEP 0 완료**(sess-cs-step0 @ b457bbf): 소유권 [골격]→**[활성·성숙]** 격상(글롭 정확, Neo4j 자산 apps 내부 확정). **RelationConfidence v2.1 엔진 운영 중** — prod 13,695행(probable 8,100·confirmed 2,295), daily beat(co-mention→price→confidence→stale-decay) 가동, neo4j_dirty=0 동기화 완료. **로드맵 함의**: Phase 4·5는 '신규 구축'이 아니라 **기존 RC 연결**(엔진·엣지·neo4j 동기화 이미 가동). 현 프론티어 = M2 v1.1 EventGroup 보드 전환(Phase 1 go-live 2026-06-27). 발견 5건 TASKQUEUE 등재(CS-EXT-API/LEGACY/LAZY/CHOICES/TEST). 근거 DECISIONS "[활성·성숙] chain_sight 트랙".
 >
 > ✅ **2026-06-11 mgmt push 완료(F-트랙 종결 + 소유권 지도 v2 + 교훈 3건)**: `902ec86..d5212d4 → origin/main`.
 >
