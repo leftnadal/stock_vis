@@ -355,6 +355,17 @@
 | DASH-TEST | eod 표면 프론트 테스트 0건 (STEP 0 실측 — `app/page.tsx` + `components/eod/**` + `hooks/useEODDashboard` + `services/eodService` 대응 vitest 0건) | dashboard 트랙 직접 | dashboard 표면에 실작업(리팩토링/레거시 정리)이 잡히면 **그 직전 슬라이스** | 🆕 보류 |
 | DASH-LEGACY | `app/dashboard/page.tsx`(레거시 계정/네비 페이지, eod 무관) 운명 **KEEP/CUT/MOVE** | 결정 안건 | 전 트랙 STEP 0 완료 후 **일괄 KEEP/CUT 사이클** | 🆕 보류 |
 | DASH-VIEWS-EOD | `views_eod` REST API(`/api/v1/stocks/eod/{dashboard,signal,pipeline}`) — 현 프론트 **미소비**(static `/static/signals/*.json`만 소비, 코드젠 타입에만 존재). 존치 vs 폐기 | 결정 안건 | **타 트랙이 이 API를 쓰는지 확인된 뒤**(병렬 경로 안전 폐기 판단 가능) | 🆕 보류 |
+## chain_sight 트랙 발견 (STEP 0 / 2026-06-29)
+
+> chain_sight STEP 0 전수 조사 발견 — 사라지지 않게 등재. 근거: 보고서 sess-cs-step0 @ b457bbf.
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| CS-EXT-API | `insider_tasks`→Finnhub, `sensitivity_tasks`→FMP **직접 `requests.get`**(shared 래퍼·CircuitBreaker 미경유 = 의존 방향 규약 위반) | 결정 안건(이관 설계) + shared 위임 가능 | 전수 조사 후 우선순위 사이클. **※ 행위보존 검증 필수 — 즉시 실행 금지** | 🆕 보류 |
+| CS-LEGACY | 레거시 serverless Chain Sight v1(`chain_sight_service`·`neo4j_chain_sight_service`·`supply_chain_*`·migr 0009) 흡수 vs serverless 잔류 | 결정 안건(경계) | 전 트랙 STEP 0 완료 후 일괄 | 🆕 보류 |
+| CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
+| CS-CHOICES | `RelationConfidence.RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`(53)·`DEPENDS_ON`(41) 미정의, `HAS_THEME`·`HELD_BY_SAME_FUND` 0행 | **chain_sight 트랙 직접** | chain_sight 실작업 슬라이스 | 🆕 보류 |
+| CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
 
 ---
 
