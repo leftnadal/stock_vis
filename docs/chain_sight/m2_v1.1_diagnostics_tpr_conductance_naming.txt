@@ -1,0 +1,114 @@
+==============================================================================
+chain_sight B/C 클러스터링 비교 리포트
+==============================================================================
+입력: events=628 universe=313 priced=200 price_corr=8859 as_of=2026-04-24
+엣지(쌍): 1193  |  half_life=21.0d weight_mode=jaccard price_fusion=none
+임계(C)=[0.05, 0.1, 0.2, 0.35]  min_members=3  γ(B)=[1.0, 2.0, 4.0]
+전체 그래프: 노드 313 엣지 1193 max_degree=263 (슈퍼허브=NVDA)
+
+──────────────────────────────────────────────────────────────────────────────
+허브 진단 — 정규화 모드별 NVDA degree (임계=각 모드 중앙 기본값)
+──────────────────────────────────────────────────────────────────────────────
+mode           임계  NVDAdeg  maxdeg  가짜스포크 vs 코어(엣지강도)
+raw           5.0       28      28  가짜[CAT=4.38 UBER=4.152 MTB=3.935] 코어[AMD=67.71 INTC=68.702 MU=24.893]
+jaccard       0.2        1       8  가짜[CAT=0.017 UBER=0.019 MTB=0.007] 코어[AMD=0.215 INTC=0.179 MU=0.096]
+npmi          0.5        0       3  가짜[CAT=0.037 UBER=0.038 MTB=0.031] 코어[AMD=0.011 INTC=0 MU=0.02]
+
+==============================================================================
+코어-위성 2층 리포트  (core_thr=0.2 sat_thr=0.05 weight_mode=jaccard satellite_13f=weight)
+==============================================================================
+코어 그룹 수: 17  (결정적, ARI=1.0)
+코어 크기 min/med/max: 3/5.0/20
+위성 크기 min/med/max: 0/1.0/8
+섹터교차 중앙: 코어 2.0 → 코어+위성 3.0 (위성이 새 섹터 유입)
+응집도 중앙: 코어 0.32 → 코어+위성 0.19 (위성 느슨함 = 예상)
+위성 13F: 총 43 중 검증불가(13F미커버) 27 / cohold존재 16 / gate제거 0
+
+==============================================================================
+PART A — 구조 진단 (잡탕 후보 상단: TPR↑낮을수록·conductance↓높을수록 의심)
+==============================================================================
+그룹(대표)            코어    TPR  conduct     응집도  자동이름(TF-IDF/LLR)
+AMD 외10            3   0.00    0.546   0.496  devices/alphabet/intel
+AMAT 외8            3   0.00    0.493   0.873  applied/materials/teradyne
+CDNS 외4            3   0.00    0.393   0.456  synopsys/design/cadence
+ANGO 외9            5   0.00    0.288   0.139  skywater/angiodynamics/ionq
+MRK 외2             3   0.00    0.257  -0.009  alphabet/single/msci
+COIN 외3            3   0.00    0.191    None  hewlett/packard/enterprise
+APTV 외12          11   0.64    0.046   0.156  disney/weride/nissan
+BDX 외10            6   0.67    0.085   0.126  corning/optical/duos
+GS 외12             8   0.75    0.202   0.415  apple/etf/comfort
+COR 외4             5   0.80    0.182   0.129  trump/oil/gold
+ABBV 외25          20   0.80    0.056   0.146  analog/devices/caterpillar
+SNDK 외3            3   1.00    0.164   0.757  netapp/seagate/western
+CRM 외3             3   1.00    0.103   0.194  axt/indium/phosphide
+APO 외5             6   1.00    0.087   0.232  apollo/nextera/energy
+COP 외5             5   1.00    0.026   0.589  oracle/microsoft/amd
+BCGD 외4            5   1.00    0.020   0.524  adasina/social/etf
+NCLH 외2            3   1.00    0.000   0.417  scholar/rock/coo
+
+==============================================================================
+PART C — 통합 덤프 (진단+이름, 잡탕 후보 상단)
+==============================================================================
+
+  ◆AMD 외 10  [TPR=0.0 cond=0.546 coh=0.4958857323474029]  이름:devices/alphabet/intel/advanced
+   코어 n=3: AMD(Tech), INTC(Tech), NVDA(TECH)
+   위성 n=8: MU✓8[←NVDA] AVGO✓9[←NVDA] AMZN✓8[←NVDA] MSFT·[←NVDA] QCOM·[←INTC] META·[←AMD] GOOGL·[←NVDA] TSLA·[←INTC]
+
+  ◆AMAT 외 8  [TPR=0.0 cond=0.493 coh=0.8727971463467535]  이름:applied/materials/teradyne/lam
+   코어 n=3: AMAT(Tech), KLAC(Tech), LRCX(Tech)
+   위성 n=6: IT✓3[←AMAT] TER✓4[←KLAC] COHR✓4[←LRCX] AMKR·[←KLAC] IBM·[←LRCX] USD·[←LRCX]
+
+  ◆CDNS 외 4  [TPR=0.0 cond=0.393 coh=0.4560668062782882]  이름:synopsys/design/cadence/ansys
+   코어 n=3: CDNS(Tech), KEYS(Tech), SNPS(Tech)
+   위성 n=2: DLTR✓4[←KEYS] RMD✓3[←CDNS]
+
+  ◆ANGO 외 9  [TPR=0.0 cond=0.288 coh=0.13921774788865537]  이름:skywater/angiodynamics/ionq/elastic
+   코어 n=5: ANGO(), BA(Indu), F(Cons), PSKY(Comm), RBA()
+   위성 n=5: TEL✓4[←F] AGAE·[←PSKY] TJGC·[←PSKY] PSO·[←PSKY] SKYT·[←PSKY]
+
+  ◆MRK 외 2 [소표본]  [TPR=0.0 cond=0.257 coh=-0.008774525406400979]  이름:alphabet/single/msci/point
+   코어 n=3: MRK(Heal), TTD(Tech), ULTA(Cons)
+
+  ◆COIN 외 3  [TPR=0.0 cond=0.191 coh=None]  이름:hewlett/packard/enterprise/msi
+   코어 n=3: COIN(Fina), OPEN(), ORBS()
+   위성 n=1: HPE·[←COIN]
+
+  ◆APTV 외 12  [TPR=0.636 cond=0.046 coh=0.15551619419150395]  이름:disney/weride/nissan/wayve
+   코어 n=11: APTV(Cons), CMG(Cons), DIS(Comm), GOLF(), LHX(Indu), NKE(Cons), PM(Cons), RJF(Fina), TFC(Fina), TPL(Ener) +1
+   위성 n=2: UBER✓5[←APTV] WFC·[←TFC]
+
+  ◆BDX 외 10  [TPR=0.667 cond=0.085 coh=0.12619184389017604]  이름:corning/optical/duos/cny
+   코어 n=6: BDX(Heal), DAR(), FDX(Indu), GENI(), PLTR(Tech), STZ(Cons)
+   위성 n=5: BIIB✓4[←PLTR] JD·[←PLTR] QLYS·[←PLTR] GLW·[←GENI] DUOT·[←PLTR]
+
+  ◆GS 외 12  [TPR=0.75 cond=0.202 coh=0.41463388867308754]  이름:apple/etf/comfort/qqq
+   코어 n=8: GS(Fina), IVZ(Fina), JPM(Fina), MSCI(Fina), SCHW(Fina), SPYG(), STT(Fina), URTH()
+   위성 n=5: SMCI✓3[←IVZ] MS·[←GS] C·[←GS] FIX·[←JPM] AAPL·[←URTH]
+
+  ◆COR 외 4  [TPR=0.8 cond=0.182 coh=0.12925650121106383]  이름:trump/oil/gold/spdr
+   코어 n=5: COR(Heal), DAL(Indu), LLY(), QBTS(), SPY(ETF)
+
+  ◆ABBV 외 25  [TPR=0.8 cond=0.056 coh=0.14600560418667607]  이름:analog/devices/caterpillar/adobe
+   코어 n=20: ABBV(Heal), AIPO(), CSPI(), DD(Basi), DLR(Real), EQIX(Real), ETN(Indu), GEV(Util), GNRC(Indu), HAL(Ener) +10
+   위성 n=6: CRWD✓5[←PANW] ADBE✓4[←PANW] BAC✓3[←NOC] CAT·[←GNRC] ADI·[←PWR] NFLX·[←JNJ]
+
+  ◆SNDK 외 3  [TPR=1.0 cond=0.164 coh=0.7569203433376601]  이름:netapp/seagate/western/sandisk
+   코어 n=3: SNDK(Tech), STX(Tech), WDC(Tech)
+   위성 n=1: NTAP·[←STX]
+
+  ◆CRM 외 3  [TPR=1.0 cond=0.103 coh=0.19405721334862838]  이름:axt/indium/phosphide/lowe
+   코어 n=3: CRM(Tech), HD(Cons), LOW(Cons)
+   위성 n=1: AXTI·[←CRM]
+
+  ◆APO 외 5  [TPR=1.0 cond=0.087 coh=0.2320014259681973]  이름:apollo/nextera/energy/ireland
+   코어 n=6: APO(Fina), BX(Fina), KKR(Fina), NEE(Util), SO(Util), XEL(Util)
+
+  ◆COP 외 5  [TPR=1.0 cond=0.026 coh=0.5892066653510525]  이름:oracle/microsoft/amd/conocophillips
+   코어 n=5: COP(Ener), CVX(Ener), EQT(Ener), FANG(Ener), XOM(Ener)
+   위성 n=1: ORCL✓2[←CVX]
+
+  ◆BCGD 외 4  [TPR=1.0 cond=0.02 coh=0.5241569735476923]  이름:adasina/social/etf/quality
+   코어 n=5: BCGD(), JSTC(), MA(Fina), SPGI(Fina), V(Fina)
+
+  ◆NCLH 외 2 [소표본]  [TPR=1.0 cond=0.0 coh=0.41747911653457354]  이름:scholar/rock/coo/keith
+   코어 n=3: NCLH(Cons), SRRK(), UAL(Indu)

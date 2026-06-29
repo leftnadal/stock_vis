@@ -1,0 +1,194 @@
+==============================================================================
+chain_sight B/C 클러스터링 비교 리포트
+==============================================================================
+입력: events=628 universe=313 priced=200 price_corr=8859 as_of=2026-04-24
+엣지(쌍): 1193  |  half_life=21.0d weight_mode=jaccard price_fusion=none
+임계(C)=[0.05, 0.1, 0.2, 0.35]  min_members=3  γ(B)=[1.0, 2.0, 4.0]
+전체 그래프: 노드 313 엣지 1193 max_degree=263 (슈퍼허브=NVDA)
+
+──────────────────────────────────────────────────────────────────────────────
+허브 진단 — 정규화 모드별 NVDA degree (임계=각 모드 중앙 기본값)
+──────────────────────────────────────────────────────────────────────────────
+mode           임계  NVDAdeg  maxdeg  가짜스포크 vs 코어(엣지강도)
+raw           5.0       28      28  가짜[CAT=4.38 UBER=4.152 MTB=3.935] 코어[AMD=67.71 INTC=68.702 MU=24.893]
+jaccard       0.2        1       8  가짜[CAT=0.017 UBER=0.019 MTB=0.007] 코어[AMD=0.215 INTC=0.179 MU=0.096]
+npmi          0.5        0       3  가짜[CAT=0.037 UBER=0.038 MTB=0.031] 코어[AMD=0.011 INTC=0 MU=0.02]
+
+──────────────────────────────────────────────────────────────────────────────
+정량 비교 (자격게이트 = ≥3 멤버)
+──────────────────────────────────────────────────────────────────────────────
+지표                         C t=0.05      C t=0.1      C t=0.2     C t=0.35      B γ=1.0      B γ=2.0      B γ=4.0
+raw 그룹 수                         11           26           41           33           24           30           40
+자격 그룹 수(≥N)                       2           11           17           10           15           20           28
+raw 크기 min/med/max        2/2.0/193     2/2.0/92     2/2.0/20      2/2.0/5    2/6.0/145    2/5.5/109     2/5.0/56
+자격 크기 min/med/max        3/98.0/193     3/5.0/92     3/5.0/20      3/3.5/5   3/12.0/145    3/9.5/109     3/8.0/56
+최대 그룹 크기                        193           92           20            5          145          109           56
+1·2인 그룹 비율                    0.818        0.577        0.585        0.697        0.375        0.333          0.3
+섹터교차(중앙 distinct)               8.5          1.0          2.0          1.5          5.0          3.5          3.0
+멀티섹터 그룹%                      100.0         45.5         58.8         50.0         93.3         85.0         85.7
+응집도(상관 중앙)                    0.271        0.448        0.323          0.4        0.188        0.188        0.201
+breadth(방향일치 중앙)              0.749        0.824        0.798        0.813        0.718        0.725        0.745
+비자명멤버비(중앙)                     0.49          0.0          0.0          0.0          0.6          0.5         0.31
+실행간안정성(ARI)                     1.0          1.0          1.0          1.0        0.868        0.911        0.915
+
+==============================================================================
+[C t=0.2] 상위 17 자격 그룹
+==============================================================================
+  C t=0.2-0 n=20 lead=DD     conf=1.047
+     멤버: DD(Basi), MMM(Indu), ABBV(Heal), HAL(Ener), GEV(Util), LMT(Indu), PFE(Heal), AIPO(), LIN(Basi), PWR(Indu) +10
+     근거: ABBV↔HAL w=1.0(n=1); AIPO↔PWR w=0.5(n=1); CSPI↔LMT w=0.5(n=1)
+  C t=0.2-1 n=11 lead=PM     conf=1.124
+     멤버: PM(Cons), TPL(Ener), NKE(Cons), APTV(Cons), CMG(Cons), RJF(Fina), DIS(Comm), GOLF(), LHX(Indu), TFC(Fina) +1
+     근거: PM↔TPL w=1.0(n=1); APTV↔PM w=0.5(n=1); APTV↔TPL w=0.5(n=1)
+  C t=0.2-2 n=8  lead=STT    conf=0.771
+     멤버: STT(Fina), URTH(), IVZ(Fina), SPYG(), SCHW(Fina), GS(Fina), MSCI(Fina), JPM(Fina)
+     근거: SCHW↔STT w=0.5(n=1); SPYG↔STT w=0.5(n=1); MSCI↔URTH w=0.4(n=2)
+  C t=0.2-3 n=6  lead=SO     conf=1.094
+     멤버: SO(Util), XEL(Util), NEE(Util), BX(Fina), KKR(Fina), APO(Fina)
+     근거: SO↔XEL w=1.0(n=1); BX↔KKR w=0.5(n=1); NEE↔SO w=0.5(n=1)
+  C t=0.2-4 n=6  lead=BDX    conf=1.733
+     멤버: BDX(Heal), DAR(), FDX(Indu), STZ(Cons), GENI(), PLTR(Tech)
+     근거: BDX↔DAR w=1.0(n=1); BDX↔FDX w=1.0(n=1); DAR↔FDX w=1.0(n=1)
+  C t=0.2-5 n=5  lead=COR    conf=0.853
+     멤버: COR(Heal), LLY(), DAL(Indu), QBTS(), SPY(ETF)
+     근거: COR↔DAL w=0.5(n=1); COR↔QBTS w=0.5(n=1); COR↔LLY w=0.4(n=2)
+  C t=0.2-6 n=5  lead=V      conf=1.6
+     멤버: V(Fina), BCGD(), JSTC(), MA(Fina), SPGI(Fina)
+     근거: BCGD↔SPGI w=1.0(n=1); JSTC↔MA w=1.0(n=1); BCGD↔V w=0.5(n=1)
+  C t=0.2-7 n=5  lead=COP    conf=1.6
+     멤버: COP(Ener), CVX(Ener), EQT(Ener), FANG(Ener), XOM(Ener)
+     근거: CVX↔XOM w=1.0(n=1); EQT↔FANG w=1.0(n=1); COP↔CVX w=0.5(n=1)
+  C t=0.2-8 n=5  lead=BA     conf=0.692
+     멤버: BA(Indu), F(Cons), ANGO(), RBA(), PSKY(Comm)
+     근거: ANGO↔BA w=0.5(n=1); BA↔RBA w=0.5(n=1); F↔PSKY w=0.44(n=4)
+  C t=0.2-9 n=3  lead=AMD    conf=0.347
+     멤버: AMD(Tech), INTC(Tech), NVDA(TECH)
+     근거: AMD↔INTC w=0.31(n=78); AMD↔NVDA w=0.21(n=119)
+  C t=0.2-10 n=3  lead=SNPS   conf=0.363
+     멤버: SNPS(Tech), CDNS(Tech), KEYS(Tech)
+     근거: CDNS↔SNPS w=0.28(n=5); KEYS↔SNPS w=0.27(n=4)
+  C t=0.2-11 n=3  lead=LRCX   conf=0.318
+     멤버: LRCX(Tech), KLAC(Tech), AMAT(Tech)
+     근거: KLAC↔LRCX w=0.27(n=6); AMAT↔LRCX w=0.2(n=9)
+  C t=0.2-12 n=3  lead=COIN   conf=0.333
+     멤버: COIN(Fina), OPEN(), ORBS()
+     근거: COIN↔OPEN w=0.25(n=1); COIN↔ORBS w=0.25(n=1)
+  C t=0.2-13 n=3  lead=STX    conf=0.557
+     멤버: STX(Tech), WDC(Tech), SNDK(Tech)
+     근거: STX↔WDC w=0.3(n=3); SNDK↔STX w=0.29(n=2); SNDK↔WDC w=0.25(n=2)
+  C t=0.2-14 n=3  lead=HD     conf=1.0
+     멤버: HD(Cons), LOW(Cons), CRM(Tech)
+     근거: HD↔LOW w=1.0(n=1); CRM↔HD w=0.25(n=1); CRM↔LOW w=0.25(n=1)
+  C t=0.2-15 n=3  lead=NCLH   conf=2.0
+     멤버: NCLH(Cons), SRRK(), UAL(Indu)
+     근거: NCLH↔SRRK w=1.0(n=1); NCLH↔UAL w=1.0(n=1); SRRK↔UAL w=1.0(n=1)
+  C t=0.2-16 n=3  lead=MRK    conf=0.333
+     멤버: MRK(Heal), TTD(Tech), ULTA(Cons)
+     근거: MRK↔TTD w=0.25(n=1); MRK↔ULTA w=0.25(n=1)
+
+==============================================================================
+[B γ=2.0] 상위 20 자격 그룹
+==============================================================================
+  B γ=2.0-0 n=109 lead=GOOGL  conf=0.141
+     멤버: GOOGL(Tech), MSFT(Tech), NVDA(TECH), INTC(Tech), AMD(Tech), AMZN(E-Co), AAPL(TECH), GOOG(Tech), TSLA(CONS), AVGO() +99
+     근거: GOOG↔GOOGL w=0.35(n=22); AMD↔INTC w=0.31(n=78); AMD↔NVDA w=0.21(n=119)
+  B γ=2.0-1 n=22 lead=DELL   conf=0.281
+     멤버: DELL(Tech), BBY(Cons), HPQ(Tech), TXN(Tech), LOGI(), HPE(Tech), PODD(Heal), ISRG(Heal), ADI(Tech), SMCI(Tech) +12
+     근거: BBY↔LOGI w=0.5(n=1); ISRG↔PODD w=0.33(n=1); DELL↔HPQ w=0.28(n=7)
+  B γ=2.0-2 n=18 lead=STX    conf=0.293
+     멤버: STX(Tech), WDC(Tech), KLAC(Tech), LRCX(Tech), AMAT(Tech), SNDK(Tech), MU(Tech), AMKR(), TER(Tech), NTAP(Tech) +8
+     근거: STX↔WDC w=0.3(n=3); SNDK↔STX w=0.29(n=2); KLAC↔LRCX w=0.27(n=6)
+  B γ=2.0-3 n=15 lead=F      conf=0.771
+     멤버: F(Cons), COR(Heal), PSKY(Comm), BA(Indu), LLY(), QBTS(), DAL(Indu), ANGO(), RBA(), SPY(ETF) +5
+     근거: ANGO↔BA w=0.5(n=1); BA↔RBA w=0.5(n=1); COR↔DAL w=0.5(n=1)
+  B γ=2.0-4 n=15 lead=STT    conf=0.644
+     멤버: STT(Fina), GS(Fina), URTH(), IVZ(Fina), SPYG(), SCHW(Fina), JPM(Fina), MSCI(Fina), MS(Fina), WFC(Fina) +5
+     근거: SCHW↔STT w=0.5(n=1); SPYG↔STT w=0.5(n=1); MSCI↔URTH w=0.4(n=2)
+  B γ=2.0-5 n=13 lead=PM     conf=0.993
+     멤버: PM(Cons), TPL(Ener), APTV(Cons), NKE(Cons), CMG(Cons), RJF(Fina), DIS(Comm), WRD(), UBER(Tech), GOLF() +3
+     근거: PM↔TPL w=1.0(n=1); APTV↔PM w=0.5(n=1); APTV↔TPL w=0.5(n=1)
+  B γ=2.0-6 n=12 lead=CZR    conf=0.502
+     멤버: CZR(Cons), FRT(Real), O(Real), VICI(Real), NFLX(Comm), BMY(Heal), CVS(Heal), CL(Cons), IQ(), LII(Indu) +2
+     근거: CZR↔VICI w=1.0(n=1); FRT↔O w=1.0(n=1); BMY↔CVS w=0.33(n=1)
+  B γ=2.0-7 n=12 lead=DD     conf=1.164
+     멤버: DD(Basi), MMM(Indu), ABBV(Heal), HAL(Ener), LMT(Indu), PFE(Heal), LIN(Basi), NOC(Indu), JNJ(Heal), RTX(Indu) +2
+     근거: ABBV↔HAL w=1.0(n=1); CSPI↔LMT w=0.5(n=1); DD↔PFE w=0.5(n=1)
+  B γ=2.0-8 n=11 lead=MOS    conf=0.49
+     멤버: MOS(Basi), UNH(Heal), CRWD(Tech), TMUS(Comm), FICO(Tech), ACN(Tech), EXPE(Cons), UNIT(), OXM(), T(Comm) +1
+     근거: MOS↔UNH w=1.0(n=1); EXPE↔FICO w=0.25(n=1); TMUS↔UNIT w=0.25(n=1)
+  B γ=2.0-9 n=10 lead=BDX    conf=1.218
+     멤버: BDX(Heal), DAR(), FDX(Indu), STZ(Cons), PLTR(Tech), GENI(), GLW(Tech), QLYS(), DUOT(), COHR(Tech)
+     근거: BDX↔DAR w=1.0(n=1); BDX↔FDX w=1.0(n=1); DAR↔FDX w=1.0(n=1)
+  B γ=2.0-10 n=9  lead=SNPS   conf=0.375
+     멤버: SNPS(Tech), CSCO(Tech), JBL(Tech), KEYS(Tech), CDNS(Tech), DLTR(Cons), RMD(Heal), ANET(Tech), SIXG()
+     근거: CSCO↔JBL w=0.44(n=8); CDNS↔SNPS w=0.28(n=5); KEYS↔SNPS w=0.27(n=4)
+  B γ=2.0-11 n=8  lead=GEV    conf=0.821
+     멤버: GEV(Util), AIPO(), PWR(Indu), EQIX(Real), ETN(Indu), DLR(Real), GNRC(Indu), PANW(Tech)
+     근거: AIPO↔PWR w=0.5(n=1); AIPO↔ETN w=0.33(n=1); AIPO↔GEV w=0.33(n=1)
+  B γ=2.0-12 n=8  lead=HD     conf=0.586
+     멤버: HD(Cons), LOW(Cons), CRM(Tech), NOW(Tech), ADBE(Tech), AXTI(), CSX(Indu), ARM()
+     근거: HD↔LOW w=1.0(n=1); CRM↔HD w=0.25(n=1); CRM↔LOW w=0.25(n=1)
+  B γ=2.0-13 n=6  lead=SO     conf=1.094
+     멤버: SO(Util), XEL(Util), NEE(Util), BX(Fina), KKR(Fina), APO(Fina)
+     근거: SO↔XEL w=1.0(n=1); BX↔KKR w=0.5(n=1); NEE↔SO w=0.5(n=1)
+  B γ=2.0-14 n=6  lead=COP    conf=1.403
+     멤버: COP(Ener), CVX(Ener), XOM(Ener), EQT(Ener), FANG(Ener), ORCL(Tech)
+     근거: CVX↔XOM w=1.0(n=1); EQT↔FANG w=1.0(n=1); COP↔CVX w=0.5(n=1)
+  B γ=2.0-15 n=5  lead=TGT    conf=0.578
+     멤버: TGT(Cons), VST(Util), CAT(Indu), BEN(Fina), DE(Indu)
+     근거: TGT↔VST w=1.0(n=1); BEN↔CAT w=0.11(n=1); CAT↔DE w=0.11(n=1)
+  B γ=2.0-16 n=5  lead=V      conf=1.6
+     멤버: V(Fina), BCGD(), JSTC(), MA(Fina), SPGI(Fina)
+     근거: BCGD↔SPGI w=1.0(n=1); JSTC↔MA w=1.0(n=1); BCGD↔V w=0.5(n=1)
+  B γ=2.0-17 n=3  lead=COIN   conf=0.333
+     멤버: COIN(Fina), OPEN(), ORBS()
+     근거: COIN↔OPEN w=0.25(n=1); COIN↔ORBS w=0.25(n=1)
+  B γ=2.0-18 n=3  lead=MRK    conf=0.333
+     멤버: MRK(Heal), TTD(Tech), ULTA(Cons)
+     근거: MRK↔TTD w=0.25(n=1); MRK↔ULTA w=0.25(n=1)
+  B γ=2.0-19 n=3  lead=NCLH   conf=2.0
+     멤버: NCLH(Cons), SRRK(), UAL(Indu)
+     근거: NCLH↔SRRK w=1.0(n=1); NCLH↔UAL w=1.0(n=1); SRRK↔UAL w=1.0(n=1)
+
+==============================================================================
+종목 기준 diff: C t=0.2 vs B γ=2.0 (자격 그룹 한정, 상위 degree 종목 30)
+==============================================================================
+종목     섹터                               C그룹                         B그룹
+NVDA   TECHNOLOG                   AMD/INTC    AAL/AAPL/AEHR/AGIX/AIP/A
+INTC   Technolog                   AMD/NVDA    AAL/AAPL/AEHR/AGIX/AIP/A
+AMD    Technolog                  INTC/NVDA    AAL/AAPL/AEHR/AGIX/AIP/A
+AMAT   Technolog                  KLAC/LRCX    ACLS/AMKR/ASX/CGNX/IIVI/
+PLTR   Technolog       BDX/DAR/FDX/GENI/STZ    BDX/COHR/DAR/DUOT/FDX/GE
+JPM    Financial   GS/IVZ/MSCI/SCHW/SPYG/ST    BAC/C/CCL/GS/ITW/IVZ/MS/
+LRCX   Technolog                  AMAT/KLAC    ACLS/AMAT/AMKR/ASX/CGNX/
+LLY                        COR/DAL/QBTS/SPY    AGAE/ANGO/BA/COR/DAL/F/P
+SNPS   Technolog                  CDNS/KEYS    ANET/CDNS/CSCO/DLTR/JBL/
+CRM    Technolog                     HD/LOW    ADBE/ARM/AXTI/CSX/HD/LOW
+CDNS   Technolog                  KEYS/SNPS    ANET/CSCO/DLTR/JBL/KEYS/
+MMM    Industria   ABBV/AIPO/CSPI/DD/DLR/EQ    ABBV/CSPI/DD/HAL/INFQ/JN
+PSKY   Communica              ANGO/BA/F/RBA    AGAE/ANGO/BA/COR/DAL/F/L
+URTH               GS/IVZ/JPM/MSCI/SCHW/SPY    BAC/C/CCL/GS/ITW/IVZ/JPM
+GS     Financial   IVZ/JPM/MSCI/SCHW/SPYG/S    BAC/C/CCL/ITW/IVZ/JPM/MS
+JNJ    Healthcar   ABBV/AIPO/CSPI/DD/DLR/EQ    ABBV/CSPI/DD/HAL/INFQ/LI
+NKE    Consumer    APTV/CMG/DIS/GOLF/LHX/PM    APTV/CMG/DIS/GOLF/LCID/L
+F      Consumer            ANGO/BA/PSKY/RBA    AGAE/ANGO/BA/COR/DAL/LLY
+KEYS   Technolog                  CDNS/SNPS    ANET/CDNS/CSCO/DLTR/JBL/
+KLAC   Technolog                  AMAT/LRCX    ACLS/AMAT/AMKR/ASX/CGNX/
+GEV    Utilities   ABBV/AIPO/CSPI/DD/DLR/EQ    AIPO/DLR/EQIX/ETN/GNRC/P
+WDC    Technolog                   SNDK/STX    ACLS/AMAT/AMKR/ASX/CGNX/
+COP    Energy              CVX/EQT/FANG/XOM       CVX/EQT/FANG/ORCL/XOM
+MRK    Healthcar                   TTD/ULTA                    TTD/ULTA
+DD     Basic Mat   ABBV/AIPO/CSPI/DLR/EQIX/    ABBV/CSPI/HAL/INFQ/JNJ/L
+PANW   Technolog   ABBV/AIPO/CSPI/DD/DLR/EQ    AIPO/DLR/EQIX/ETN/GEV/GN
+COIN   Financial                  OPEN/ORBS                   OPEN/ORBS
+APO    Financial          BX/KKR/NEE/SO/XEL           BX/KKR/NEE/SO/XEL
+IVZ    Financial   GS/JPM/MSCI/SCHW/SPYG/ST    BAC/C/CCL/GS/ITW/JPM/MS/
+TFC    Financial   APTV/CMG/DIS/GOLF/LHX/NK    APTV/CMG/DIS/GOLF/LCID/L
+
+==============================================================================
+자동 판독 (구조적 사실 — 선택 아님)
+==============================================================================
+• 허브 지배: max_degree=263/313 = 84% 노드와 연결(NVDA).
+• C 자격그룹 수(임계별): {'C t=0.05': 2, 'C t=0.1': 11, 'C t=0.2': 17, 'C t=0.35': 10}
+• B(Louvain)는 다중 테마 생성. (자격그룹, ARI) = {'B γ=1.0': (15, 0.8684185733542813), 'B γ=2.0': (20, 0.9114940543722618), 'B γ=4.0': (28, 0.9147914123933699)}. γ↑ → 그룹↑·안정성↑·1·2인↑ 트레이드오프.
+• 응집도(상관)는 C 타이트코어 쪽이 약간 높음(같이 보도된 핵심만 남으므로). B는 커버리지 넓고 비자명멤버(세렌디피티) 많음.
