@@ -85,11 +85,10 @@ class TestLLMRelationExtractorParsing:
 
     @pytest.fixture
     def mock_extractor(self, settings):
-        """LLM 클라이언트 모킹된 Extractor"""
+        """Extractor (②c/#19 이관: __init__이 genai.Client 생성 안 함 — 키만 있으면 구성)."""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
-            extractor = LLMRelationExtractor()
-            return extractor
+        extractor = LLMRelationExtractor()
+        return extractor
 
     def test_parse_valid_response(self, mock_extractor):
         """유효한 JSON 응답 파싱"""
@@ -268,24 +267,23 @@ class TestLLMRelationExtractorIntegration:
 
     @pytest.fixture
     def mock_extractor(self, settings):
-        """모든 외부 의존성 모킹"""
+        """외부 의존성 모킹 (②c/#19 이관: genai.Client 생성 없음 — 키만 설정)."""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
-            with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
-                with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
-                    # PreFilter 모킹
-                    mock_pre_filter = MagicMock()
-                    mock_pf.return_value = mock_pre_filter
+        with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
+            with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
+                # PreFilter 모킹
+                mock_pre_filter = MagicMock()
+                mock_pf.return_value = mock_pre_filter
 
-                    # SymbolMatcher 모킹
-                    mock_symbol_matcher = MagicMock()
-                    mock_sm.return_value = mock_symbol_matcher
+                # SymbolMatcher 모킹
+                mock_symbol_matcher = MagicMock()
+                mock_sm.return_value = mock_symbol_matcher
 
-                    extractor = LLMRelationExtractor()
-                    extractor.pre_filter = mock_pre_filter
-                    extractor.symbol_matcher = mock_symbol_matcher
+                extractor = LLMRelationExtractor()
+                extractor.pre_filter = mock_pre_filter
+                extractor.symbol_matcher = mock_symbol_matcher
 
-                    yield extractor
+                yield extractor
 
     def test_extract_skipped_by_prefilter(self, mock_extractor):
         """PreFilter에서 거부된 텍스트는 스킵"""
@@ -356,22 +354,21 @@ class TestLLMRelationExtractorDB:
 
     @pytest.fixture
     def mock_extractor(self, settings):
-        """LLM 모킹된 Extractor"""
+        """Extractor (②c/#19 이관: genai.Client 생성 없음 — 키만 설정)."""
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('services.serverless.services.llm_relation_extractor.genai.Client'):
-            with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
-                with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
-                    mock_pre_filter = MagicMock()
-                    mock_pf.return_value = mock_pre_filter
+        with patch('services.serverless.services.llm_relation_extractor.get_pre_filter') as mock_pf:
+            with patch('services.serverless.services.llm_relation_extractor.get_symbol_matcher') as mock_sm:
+                mock_pre_filter = MagicMock()
+                mock_pf.return_value = mock_pre_filter
 
-                    mock_symbol_matcher = MagicMock()
-                    mock_sm.return_value = mock_symbol_matcher
+                mock_symbol_matcher = MagicMock()
+                mock_sm.return_value = mock_symbol_matcher
 
-                    extractor = LLMRelationExtractor()
-                    extractor.pre_filter = mock_pre_filter
-                    extractor.symbol_matcher = mock_symbol_matcher
+                extractor = LLMRelationExtractor()
+                extractor.pre_filter = mock_pre_filter
+                extractor.symbol_matcher = mock_symbol_matcher
 
-                    yield extractor
+                yield extractor
 
     @pytest.mark.django_db
     def test_extract_and_save(self, mock_extractor):
