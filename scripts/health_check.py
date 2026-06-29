@@ -567,7 +567,6 @@ _LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/llm/client.py", "Anthropic"),
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
-    ("services/rag_analysis/services/adaptive_llm_service.py", "GenerativeModel"),
 }
 
 

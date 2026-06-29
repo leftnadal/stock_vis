@@ -13,7 +13,7 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, TransactionTestCase
+from django.test import TestCase, TransactionTestCase, override_settings
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -614,7 +614,7 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
             data_snapshot={
                 "price": 175.00,
                 "change_percent": 1.5,
-                "market_cap": "2.8T",
+                "market_cap": 2_800_000_000_000,  # context formatter는 숫자 기대(:,.0f)
             },
         )
 
@@ -622,11 +622,12 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
             user=self.user, basket=self.basket, title="Final Pipeline Test Session"
         )
 
-    @patch("services.rag_analysis.services.adaptive_llm_service.genai")
+    @override_settings(GEMINI_API_KEY="fake-key")
+    @patch("google.genai.Client")
     @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.find_similar")
     @patch("services.rag_analysis.services.semantic_cache.SemanticCacheService.store")
     def test_final_pipeline_with_cache_miss(
-        self, mock_cache_store, mock_cache_find, mock_genai
+        self, mock_cache_store, mock_cache_find, mock_client_cls
     ):
         """Final Pipeline 캐시 미스 흐름 테스트"""
         from services.rag_analysis.services.pipeline import AnalysisPipelineFinal
@@ -643,20 +644,47 @@ class AnalysisPipelineFinalE2ETest(TransactionTestCase):
 
         mock_cache_store.side_effect = mock_store
 
-        # Gemini Mock 설정
-        mock_model = MagicMock()
-        mock_response = MagicMock()
+        # Gemini Mock 설정 — 슬라이스 ② #9 이관 후: 코어 astream → 신SDK
+        # genai.Client.aio.models.generate_content_stream 경유(구SDK GenerativeModel 제거).
+        class _Usage:
+            prompt_token_count = 11
+            candidates_token_count = 22
 
-        async def mock_generate():
-            yield MagicMock(text="분석 결과입니다. AAPL은 ")
-            yield MagicMock(text="강력한 실적을 보여주고 있습니다.\n\n")
-            yield MagicMock(text="<suggestions>\n")
-            yield MagicMock(text='{"symbol": "MSFT", "reason": "경쟁사 비교"}\n')
-            yield MagicMock(text="</suggestions>")
+        class _Chunk:
+            def __init__(self, text, usage=None):
+                self.text = text
+                self.usage_metadata = usage
 
-        mock_response.__aiter__ = mock_generate
-        mock_model.generate_content_async = AsyncMock(return_value=mock_response)
-        mock_genai.GenerativeModel.return_value = mock_model
+        stream_chunks = [
+            _Chunk("분석 결과입니다. AAPL은 "),
+            _Chunk("강력한 실적을 보여주고 있습니다.\n\n"),
+            _Chunk("<suggestions>\n"),
+            _Chunk('{"symbol": "MSFT", "reason": "경쟁사 비교"}\n'),
+            _Chunk("</suggestions>", usage=_Usage()),
+        ]
+
+        class _AioModels:
+            async def generate_content_stream(self, *, model, contents, config):
+                async def _agen():
+                    for c in stream_chunks:
+                        yield c
+
+                return _agen()
+
+        class _Aio:
+            def __init__(self):
+                self.models = _AioModels()
+
+        class _FakeClient:
+            def __init__(self, *args, **kwargs):
+                self.aio = _Aio()
+
+        mock_client_cls.side_effect = lambda *a, **k: _FakeClient()
+
+        # adaptive 싱글톤 초기화 — fake-key로 신규 인스턴스 재생성 보장(이전 테스트 오염 방지).
+        import services.rag_analysis.services.adaptive_llm_service as _adaptive_mod
+
+        _adaptive_mod._adaptive_llm_instance = None
 
         # Pipeline 실행
         pipeline = AnalysisPipelineFinal(

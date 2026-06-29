@@ -17,6 +17,8 @@ from typing import Any, AsyncGenerator, Dict, Optional
 
 from django.conf import settings
 
+from packages.shared.llm import astream
+
 from .complexity_classifier import (
     ComplexityClassifier,
     QuestionComplexity,
@@ -82,15 +84,19 @@ class AdaptiveLLMService:
     def _init_client(self):
         """LLM 클라이언트 초기화"""
         if self.provider == "gemini":
-            try:
-                import google.generativeai as genai
-
-                genai.configure(api_key=settings.GEMINI_API_KEY)
-                self._genai = genai
-                logger.info("Gemini client initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize Gemini client: {e}")
+            # 슬라이스 ② #9: 구SDK(google.generativeai GenerativeModel) 제거 →
+            # 코어 astream(신SDK genai.Client.aio) 경유. 가용성은 API 키 존재로 판단
+            # (코어 provider와 동일 키 해석: GOOGLE_AI_API_KEY 우선, GEMINI_API_KEY 폴백).
+            # 구SDK 미설치여도 동작. self._genai = 가용 플래그(이전 모듈 객체 → bool, 가드 의미 동일).
+            key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+                settings, "GEMINI_API_KEY", None
+            )
+            if key:
+                self._genai = True
+                logger.info("Gemini client ready (core astream)")
+            else:
                 self._genai = None
+                logger.error("Gemini API key not configured")
         else:
             try:
                 from anthropic import AsyncAnthropic
@@ -180,15 +186,6 @@ class AdaptiveLLMService:
             return
 
         try:
-            model = self._genai.GenerativeModel(
-                model_name=config["model"],
-                system_instruction=system_prompt,
-                generation_config={
-                    "max_output_tokens": config["max_tokens"],
-                    "temperature": config["temperature"],
-                },
-            )
-
             # 프롬프트 구성
             prompt = f"""## 컨텍스트
 {context}
@@ -198,26 +195,36 @@ class AdaptiveLLMService:
 
 ## 분석"""
 
-            # 스트리밍 생성
-            response = await model.generate_content_async(prompt, stream=True)
-
+            # 슬라이스 ② #9: 구SDK GenerativeModel.generate_content_async(stream=True) →
+            # 코어 astream(신SDK genai.Client.aio.models.generate_content_stream) 경유.
+            # config(system_instruction·max_output_tokens·temperature)·contents·model byte 동일.
+            # CB·escape·extra(thinking) 미설정 = 구SDK 직접호출과 wire IDENTICAL.
             full_response = ""
             input_tokens = 0
             output_tokens = 0
+            got_usage = False
 
-            async for chunk in response:
+            async for chunk in astream(
+                prompt,
+                provider="gemini",
+                model=config["model"],
+                system=system_prompt,
+                max_tokens=config["max_tokens"],
+                temperature=config["temperature"],
+            ):
                 if chunk.text:
                     full_response += chunk.text
                     yield {"type": "delta", "content": chunk.text}
 
-            # 토큰 사용량 (Gemini API에서 제공하는 경우)
-            if hasattr(response, "usage_metadata"):
-                input_tokens = getattr(response.usage_metadata, "prompt_token_count", 0)
-                output_tokens = getattr(
-                    response.usage_metadata, "candidates_token_count", 0
-                )
-            else:
-                # 추정값 사용
+                # 토큰 사용량 (마지막 청크의 usage_metadata에서 제공)
+                usage = getattr(chunk, "usage_metadata", None)
+                if usage:
+                    got_usage = True
+                    input_tokens = getattr(usage, "prompt_token_count", 0) or 0
+                    output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+
+            if not got_usage:
+                # 추정값 사용 (usage_metadata 미제공 시 — 원본 폴백 보존)
                 input_tokens = len((system_prompt + context + question).split()) * 1.3
                 output_tokens = len(full_response.split()) * 1.3
 

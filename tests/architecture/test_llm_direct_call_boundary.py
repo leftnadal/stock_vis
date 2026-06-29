@@ -44,15 +44,17 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/llm/client.py", "Anthropic"),
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
-    ("services/rag_analysis/services/adaptive_llm_service.py", "GenerativeModel"),
 }
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
 # Part ①-aio 완료: 10 → 9 → 8 → 7 → 6(keyword_generator #16 통째).
 # 슬라이스 ④ #12 완료: 6 → 5(llm_service stream → astream(circuit), 코어 streaming CB 흡수).
 # 슬라이스 ④ #19 완료: 5 → 4(llm_relation_extractor multipart → complete(), ②c 통로 경유).
-#   = Gemini 군집(신SDK sync+aio+stream+multipart) 전건 종결. 잔여 4 = ②구SDK 1 + ③Anthropic 2 + ④count_tokens 1.
-FROZEN_COUNT = 4
+#   = Gemini 군집(신SDK sync+aio+stream+multipart) 전건 종결.
+# 슬라이스 ② #9 완료: 4 → 3(adaptive _generate_gemini_stream 구SDK GenerativeModel
+#   .generate_content_async(stream=True) → astream(provider="gemini"), 구→신 SDK wire IDENTICAL).
+#   = 구SDK 군집 종결. 잔여 3 = ③Anthropic 2(adaptive AsyncAnthropic·portfolio Anthropic) + ④count_tokens 1.
+FROZEN_COUNT = 3
 
 
 def _call_identifier(node: ast.Call) -> str | None:
