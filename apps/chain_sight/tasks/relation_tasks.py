@@ -436,3 +436,19 @@ def check_stale_and_decay(self):
 
     logger.info(f"Stale decay: {decayed}건 하향 전이")
     return {"decayed": decayed}
+
+
+@shared_task(bind=True, max_retries=1, soft_time_limit=600, time_limit=660)
+def aggregate_relation_pairs_task(self):
+    """
+    쌍 집계 → RelationPairSnapshot append (해자 궤적 적립 — 옵션3).
+    Celery Beat: update_relation_confidence(매일 11:00 EST) 직후 11:30.
+    최신 truth/market을 읽어야 하므로 반드시 confidence write 완료 후 실행.
+    period=오늘(멱등 키) — 같은 날 재실행은 덮어씀.
+    """
+    from apps.chain_sight.services.pair_aggregation import aggregate_relation_pairs
+
+    period = timezone.now().date()
+    result = aggregate_relation_pairs(period=period)
+    logger.info(f"RelationPairSnapshot 집계: {result} (period={period})")
+    return result

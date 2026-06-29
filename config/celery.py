@@ -723,6 +723,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 600}
     },
 
+    # 관계 쌍 집계 → RelationPairSnapshot (매일 11:30 EST, update_relation_confidence 직후)
+    'chainsight-pair-aggregation': {
+        'task': 'apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task',
+        'schedule': crontab(hour=11, minute=30),
+        'options': {'expires': 3600}
+    },
+
     # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
     'chainsight-aggregate-profiles': {
         'task': 'apps.chain_sight.tasks.sync_tasks.aggregate_chain_profiles',
