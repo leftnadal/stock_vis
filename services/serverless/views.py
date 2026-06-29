@@ -1786,13 +1786,18 @@ def generate_thesis(request):
 
 
 @api_view(["GET"])
-@authentication_classes([])
 @permission_classes([AllowAny])
 def get_thesis(request, thesis_id):
     """
     투자 테제 상세 조회
 
     GET /api/v1/serverless/thesis/{thesis_id}
+
+    접근 정책 (전수조사 SEAM-DEBT #1 — IDOR-read 차단):
+      - 공개 테제(is_public=True): 누구나 조회 (공유 기능 보존).
+      - 비공개 테제: 소유자만. 비소유/미인증은 존재를 숨기기 위해 404.
+    ※ authentication_classes([]) 제거 — 토큰이 있으면 인증되어 소유 판정이 가능해진다
+       (없으면 AnonymousUser; AllowAny라 공개 테제는 무인증 조회 허용).
 
     Response:
         {
@@ -1807,6 +1812,10 @@ def get_thesis(request, thesis_id):
     try:
         thesis = InvestmentThesis.objects.get(id=thesis_id)
     except InvestmentThesis.DoesNotExist:
+        raise NotFound(f"투자 테제를 찾을 수 없습니다: ID={thesis_id}")
+
+    # IDOR 차단: 비공개 테제는 소유자만. 비소유는 404(존재 비노출).
+    if not thesis.is_public and thesis.user_id != getattr(request.user, "id", None):
         raise NotFound(f"투자 테제를 찾을 수 없습니다: ID={thesis_id}")
 
     # 조회수 증가
