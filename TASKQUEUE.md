@@ -360,8 +360,8 @@
 
 | ID | Task | 분류 | 트리거(보류시) | Status |
 |----|------|------|---------------|--------|
-| CS-EXT-API | `insider_tasks`→Finnhub, `sensitivity_tasks`→FMP **직접 `requests.get`**(shared 래퍼·CircuitBreaker 미경유 = 의존 방향 규약 위반) | 결정 안건(이관 설계) + shared 위임 가능 | 전수 조사 후 우선순위 사이클. **※ 행위보존 검증 필수 — 즉시 실행 금지** | 🆕 보류 |
-| CS-LEGACY | 레거시 serverless Chain Sight v1(`chain_sight_service`·`neo4j_chain_sight_service`·`supply_chain_*`·migr 0009) 흡수 vs serverless 잔류 | 결정 안건(경계) | 전 트랙 STEP 0 완료 후 일괄 | 🆕 보류 |
+| CS-EXT-API | `insider_tasks`→Finnhub, `sensitivity_tasks`→FMP **직접 `requests.get`**(shared 래퍼·CircuitBreaker 미경유 = 의존 방향 규약 위반) | 결정 안건(이관 설계) + shared 위임 가능 | 전수 조사 후 우선순위 사이클. **※ 행위보존 검증 필수 — 즉시 실행 금지** 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
+| CS-LEGACY | 레거시 serverless Chain Sight v1(`chain_sight_service`·`neo4j_chain_sight_service`·`supply_chain_*`·migr 0009) 흡수 vs serverless 잔류 | 결정 안건(경계) | 전 트랙 STEP 0 완료 후 일괄. 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
 | CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
 | CS-CHOICES | `RelationConfidence.RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`(53)·`DEPENDS_ON`(41) 미정의, `HAS_THEME`·`HELD_BY_SAME_FUND` 0행 | **chain_sight 트랙 직접** | chain_sight 실작업 슬라이스 | 🆕 보류 |
 | CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
@@ -375,10 +375,10 @@
 | ID | Task | 분류 | 트리거(보류시) | Status |
 |----|------|------|---------------|--------|
 | MP-FMP-WEIGHTS | `fetchers/fmp_weights.py` raw `requests.get` → FMPClient 경유 통일 (※ **CircuitBreaker는 이미 경유** — 코드 일관성만, chain_sight CS-EXT-API와 급이 다름) | market_pulse 트랙 직접 | market_pulse 실작업 슬라이스 (시급도 낮음) | 🆕 보류 |
-| MP-BREADTH-SRC | breadth/concentration **생산(`services.serverless`) ↔ 소비(market_pulse 모델)** 소관 명확화 | 결정 안건(경계) | 로드맵 재검토(Phase 2 촉발 데이터 연계, MP2-DATA-BREADTH-CONC) | 🆕 보류 |
+| MP-BREADTH-SRC | breadth/concentration **생산(`services.serverless`) ↔ 소비(market_pulse 모델)** 소관 명확화 | 결정 안건(경계) | 로드맵 재검토(Phase 2 촉발 데이터 연계, MP2-DATA-BREADTH-CONC). 📌 **로드맵 Phase 2 촉발 데이터 소관**(D-ROADMAP-V1) | 🆕 보류 |
 | MP-NEWS-LAZY | `services/news_aggregator`→`services.news.providers` lazy import 정리 | 결정 안건(경계, news 공통) | 로드맵 재검토 | 🆕 보류 |
 | PF-TEST | coach 테스트 5건 `mock.patch("portfolio.…")` → `apps.portfolio.` 경로 수정(PR7 이관 후 stale mock, `ModuleNotFoundError`) (※ CS-TEST와 동일 유형 — 이관 후 테스트 미추적) | portfolio 트랙 직접 | portfolio 실작업 슬라이스 | 🆕 보류 |
-| PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계) | 🆕 보류 |
+| PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계). 📌 **로드맵 후속 phase**("포트폴리오 변화" 표면, D-ROADMAP-V1) | 🆕 보류 |
 | PF-SCORING | `tests/scoring/**` 소속 확정(coach scoring — 소유권 지도 "[경계 보류]" 해소) | 결정 안건(경계) | 로드맵 재검토 | 🆕 보류 |
 | PF-LLM-CLIENT | `apps/portfolio/llm/client.py`(anthropic·google.genai 직접) → `packages/shared/llm` 코어 합성 | 타 트랙 위임(BOUNDARY-LLM, portfolio+market_pulse client 합성) | BOUNDARY-LLM 트랙 작업 시 | 🆕 보류 |
 
