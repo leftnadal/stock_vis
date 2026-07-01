@@ -11,13 +11,17 @@
 
 - **증상**: dict 정의 beat(`config/celery.py` `chainsight-pair-aggregation`)가 DatabaseScheduler에서 무시됨 → prod에서 일간 집계 미실행(침묵 실패).
 - **영향**: RelationPairSnapshot이 prod에서 적립 안 됨 = **해자 궤적이 안 쌓임**(이 작업 전체의 목적 무력화). GREEN인데 prod 침묵이라 "왜 스냅샷이 안 쌓이지?"로 몇 주 뒤 헤맴.
-- **조치**: `register_chainsight_beats` 류로 `PeriodicTask` DB 등록(task=`apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task`, 11:30 EST).
-- **검증**: prod에서 다음 11:30 EST 이후 당일 period 스냅샷 행 생성 확인.
-- **연관 드리프트**: `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 EST 불일치 — 문서 동기화 동반.
+- **조치 (완료, `bdba71c`)**: B안 — `register_chainsight_beats` BEATS에 pair 엔트리 추가(timezone/day_of_week optional 키 additive 확장). task=`apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task`, **America/New_York 11:30 매일**(confidence 11:00 ET 직후, DST 자동). A안=migration 철회(CI 오염·repo 수동-register 표준 충돌).
+- **⚠ 타임존 정정**: 조치 초안의 "11:30 EST"는 부정확 → 실제 celery TZ = **America/New_York(ET, DST 자동)**. confidence도 동일 ET라 순서 보장.
+- **Gate 1 (통과, 이번 세션)**: 등록 확인(1행)·import resolve·DatabaseScheduler 스케줄 로드(ModelEntry `30 11 매일 ET`)·idempotent(재실행 updated·중복0·기존 3개 UTC/평일 불변).
+- **Gate 2 (익일, prod)**: 배포 후 register 수동 실행 → 다음 11:30 ET 경과 후 당일 period **신규** 스냅샷 행 생성(backfill 점과 생성시각으로 구분) = 진짜 GREEN.
+- **⚠ 배포 절차(B안 약점)**: 배포마다 `python manage.py register_chainsight_beats` 수동 1회 필수 → 배포 체크리스트 영구 등재.
+- **드리프트 (목록만, 이번 PR에서 수리 X)**: ⒜ `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 ET, ⒝ beat 패턴 혼재(relation_tasks=full-path+ET vs register 기존 3개=별칭+UTC).
+- **관찰(PR 밖)**: 11:00→11:30 30분 갭이 confidence 완료를 보장하는지 — 갱신 소요시간 로그 확인 후 갭 재검토.
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 + 익일 검증 | @infra | 머지 후 | todo | `register_chainsight_beats` 갱신 |
+| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 | @infra | - | **Gate1 done / Gate2 익일** | `register_chainsight_beats` (머지 `bdba71c`) |
 
 ---
 
