@@ -14,14 +14,26 @@
 - **조치 (완료, `bdba71c`)**: B안 — `register_chainsight_beats` BEATS에 pair 엔트리 추가(timezone/day_of_week optional 키 additive 확장). task=`apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task`, **America/New_York 11:30 매일**(confidence 11:00 ET 직후, DST 자동). A안=migration 철회(CI 오염·repo 수동-register 표준 충돌).
 - **⚠ 타임존 정정**: 조치 초안의 "11:30 EST"는 부정확 → 실제 celery TZ = **America/New_York(ET, DST 자동)**. confidence도 동일 ET라 순서 보장.
 - **Gate 1 (통과, 이번 세션)**: 등록 확인(1행)·import resolve·DatabaseScheduler 스케줄 로드(ModelEntry `30 11 매일 ET`)·idempotent(재실행 updated·중복0·기존 3개 UTC/평일 불변).
-- **Gate 2 (익일, prod)**: 배포 후 register 수동 실행 → 다음 11:30 ET 경과 후 당일 period **신규** 스냅샷 행 생성(backfill 점과 생성시각으로 구분) = 진짜 GREEN.
-- **⚠ 배포 절차(B안 약점)**: 배포마다 `python manage.py register_chainsight_beats` 수동 1회 필수 → 배포 체크리스트 영구 등재.
-- **드리프트 (목록만, 이번 PR에서 수리 X)**: ⒜ `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 ET, ⒝ beat 패턴 혼재(relation_tasks=full-path+ET vs register 기존 3개=별칭+UTC).
+- **🔴 migrate 누락 발견 (2026-07-01 실측)**: 마이그레이션 0014가 **dev/prod DB에 미적용**이었음(`showmigrations` `[ ] 0014`). 테스트는 별도 테스트 DB(--reuse-db)에서 돌아 GREEN이었으나 **운영 DB엔 `chainsight_relation_pair_snapshot` 테이블 자체가 없었다**. → beat가 돌아도 task가 `ProgrammingError: relation does not exist`로 crash = **register만으로는 부족, `migrate`가 배포 선행 필수**(claude.ai 체크리스트가 놓친 단계). dev는 `migrate chainsight 0014` 적용 완료.
+- **Gate 2 파이프라인 (통과, 2026-07-01 수동 실행 증명)**: migrate 후 `aggregate_relation_pairs_task.apply()` → `{'pairs': 9562, 'created': 9562}` 성공. **period=`2026-07-01` 단일**(중복 주간 행 0) → **드리프트 ⒜는 순수 표기 문제로 확정**(period 로직 정상, 매일 캐이던스 OK). opp 상위 = 순수 truth 쌍(SNDK/WDC opp=0.722). 남은 것 = **beat 자율 틱**(스케줄러가 11:30 ET에 자동 호출)만 익일 로그로 관찰.
+- **⚠ 배포 절차(B안 약점 — 순서 필수)**: 배포마다 ① `python manage.py migrate` (0014 — 테이블 선행) → ② `python manage.py register_chainsight_beats` (beat 등록) → ③ 검증. migrate 빠지면 register돼도 task crash(더 깊은 침묵). 배포 체크리스트 영구 등재.
+- **드리프트 (목록만, 이번 PR에서 수리 X)**: ⒜ `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 ET — **2026-07-01 실측으로 순수 표기 문제 확정**(당일 단일 period, 로직 정상). ⒝ beat 패턴 혼재(relation_tasks=full-path+ET vs register 기존 3개=별칭+UTC).
 - **관찰(PR 밖)**: 11:00→11:30 30분 갭이 confidence 완료를 보장하는지 — 갱신 소요시간 로그 확인 후 갭 재검토.
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 | @infra | - | **Gate1 done / Gate2 익일** | `register_chainsight_beats` (머지 `bdba71c`) |
+| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 (+ migrate 0014 선행) | @infra | - | **Gate1+파이프라인 done / beat 자율틱 익일** | `register_chainsight_beats` (머지 `bdba71c`), dev migrate 완료 |
+| CS-PAIR-DEPLOY | prod 배포: migrate 0014 → register_chainsight_beats → 검증 (아래 체크리스트) | @infra | 머지·배포 | todo | 배포 체크리스트 |
+
+### [배포] Chain Sight #28 beat — 순서 필수 (건너뛰면 prod 침묵 실패)
+
+> ⚠️ 이 단계를 건너뛰면 코드가 머지돼도 prod는 RelationPairSnapshot 0으로 침묵한다(등록·테이블은 "코드"가 아니라 "배포 행위"로만 반영됨). migrate→register 순서 준수.
+
+1. [ ] **migrate (테이블 선행)**: `python manage.py migrate chainsight 0014` — 없으면 task가 `relation does not exist`로 crash.
+2. [ ] **beat 등록**: `python manage.py register_chainsight_beats` (1회) → celery beat 재시작.
+3. [ ] **즉시 검증**: `PeriodicTask.objects.filter(name="chainsight-pair-aggregation").values("enabled","crontab__hour","crontab__minute","crontab__timezone")` → 1행·enabled·`11:30 America/New_York` 확인.
+4. [ ] **익일 검증(진짜 GREEN)**: 다음 11:30 ET 경과 후 당일 `period`의 신규 `RelationPairSnapshot` 행이 **깨끗하게 단일 period**로 생성됐는지(= beat 자율 실행 증명).
+5. [ ] **근본 수리(권장·별도 태스크)**: 위 migrate+register를 배포 스크립트/릴리스 훅에 넣어 수동 의존 제거 — B안의 "사람이 까먹음" 함정(#28이 한 층 위로 옮겨간 것)의 완결.
 
 ---
 
