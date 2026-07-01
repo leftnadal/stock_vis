@@ -396,6 +396,17 @@
 
 ---
 
+## Phase 1 제시 로깅 (STEP 0 / 2026-07-01)
+
+> dashboard Phase 1 제시 로깅 STEP 0(sess-dash-p1-log) 발견. 근거 DECISIONS "[2026-07-01] Phase 1 제시 로깅 STEP 0"(D-P1-STEP0).
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| P1-REC-PROD | 추천 생산 방식 결정 — **EOD-bake 확장**(shared/stocks) vs **뉴스추천 승계**(services/news). 이게 제시 로그 스키마(signal_tag/horizon)·confidence 출처·impression write 경로를 확정 → 선결 결정 | 결정 안건 | **다음 결정 사이클**(Phase 1 착수 선결) | 🆕 보류 |
+| P5-EXCESS-BACKFILL | `SignalAccuracy.excess_{h}d`(SPY 상대) 백필 — prod 3,611행(~12%)만 채워짐 vs return 29,962. **벤치마크 상대 채점 채택 시 선결**(raw return 채점은 즉시 가능하므로 조건부) | 트랙 위임(shared/stocks) | Phase 5 벤치마크 상대 채점 채택 시 | 🆕 보류 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
