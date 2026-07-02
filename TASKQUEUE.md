@@ -402,8 +402,9 @@
 
 | ID | Task | 분류 | 트리거(보류시) | Status |
 |----|------|------|---------------|--------|
-| P1-REC-PROD | 추천 생산 방식 결정 — **EOD-bake 확장**(shared/stocks) vs **뉴스추천 승계**(services/news). 이게 제시 로그 스키마(signal_tag/horizon)·confidence 출처·impression write 경로를 확정 → 선결 결정 | 결정 안건 | **다음 결정 사이클**(Phase 1 착수 선결) | 🆕 보류 |
+| P1-REC-PROD | 추천 생산 방식 결정 — **EOD-bake 확장**(shared/stocks) vs **뉴스추천 승계**(services/news). 이게 제시 로그 스키마(signal_tag/horizon)·confidence 출처·impression write 경로를 확정 → 선결 결정 | 결정 안건 | ~~다음 결정 사이클~~ | ✅ **해소 (D-P1-RECPROD, 2026-07-02)** — EOD-bake 확장 + Baked impression + confidence v1 결정식. 실행은 shared/stocks 위임 대기 |
 | P5-EXCESS-BACKFILL | `SignalAccuracy.excess_{h}d`(SPY 상대) 백필 — prod 3,611행(~12%)만 채워짐 vs return 29,962. **벤치마크 상대 채점 채택 시 선결**(raw return 채점은 즉시 가능하므로 조건부) | 트랙 위임(shared/stocks) | Phase 5 벤치마크 상대 채점 채택 시 | 🆕 보류 |
+| HC-MARKER-TREADMILL | health_check "origin/main 해시" 마커가 **매 mgmt 머지마다 lag=1**(커밋이 자기 머지-후 해시를 스스로 못 적는 구조적 한계). 현재 tolerance N=3가 흡수해 대개 green이나, 마커 3커밋+ 미갱신 시 붉어짐(이전 STEP 0 세션 시작 시 실제 red 이력). **임시 규율**: 매 mgmt에서 마커를 현 origin/main으로 갱신해 lag=1 clean 유지(누적 방지). **durable**: health_check가 "메타-only·lag=1" 시그니처를 허용하도록 수정(하네스 코드 = 별도 슬라이스) | 하네스 개선(HARN) | durable = 하네스 코드 슬라이스 / 임시 = 매 mgmt 상시 | 🆕 등재(임시 규율 상시 적용) |
 
 ---
 
