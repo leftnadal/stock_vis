@@ -30,10 +30,11 @@
 > ⚠️ 이 단계를 건너뛰면 코드가 머지돼도 prod는 RelationPairSnapshot 0으로 침묵한다(등록·테이블은 "코드"가 아니라 "배포 행위"로만 반영됨). migrate→register 순서 준수.
 
 1. [ ] **migrate (테이블 선행)**: `python manage.py migrate chainsight 0014` — 없으면 task가 `relation does not exist`로 crash.
-2. [ ] **beat 등록**: `python manage.py register_chainsight_beats` (1회) → celery beat 재시작.
-3. [ ] **즉시 검증**: `PeriodicTask.objects.filter(name="chainsight-pair-aggregation").values("enabled","crontab__hour","crontab__minute","crontab__timezone")` → 1행·enabled·`11:30 America/New_York` 확인.
-4. [ ] **익일 검증(진짜 GREEN)**: 다음 11:30 ET 경과 후 당일 `period`의 신규 `RelationPairSnapshot` 행이 **깨끗하게 단일 period**로 생성됐는지(= beat 자율 실행 증명).
-5. [ ] **근본 수리(권장·별도 태스크)**: 위 migrate+register를 배포 스크립트/릴리스 훅에 넣어 수동 의존 제거 — B안의 "사람이 까먹음" 함정(#28이 한 층 위로 옮겨간 것)의 완결.
+2. [ ] **beat 등록**: `python manage.py register_chainsight_beats` (1회).
+3. [ ] **🔴 beat + worker 둘 다 재시작**: `launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-beat` **및** `...celery-worker`(+`worker-neo4j`). **worker 재시작을 빠뜨리면** beat는 발화해도 worker가 신규 task를 모름 → `Received unregistered task ... KeyError` crash(2026-07-02 dev 실측). beat만 재시작하면 안 됨.
+4. [ ] **즉시 검증**: `celery -A config inspect registered | grep aggregate_relation_pairs`(등록 확인) + `PeriodicTask...filter(name="chainsight-pair-aggregation")` 1행·enabled·`11:30 America/New_York`.
+5. [ ] **익일 검증(진짜 GREEN)**: 다음 11:30 ET 경과 후 ⓐ worker 로그 `aggregate_relation_pairs succeeded`(unregistered 아님) + ⓑ 당일 `period` 행이 **단일 period·count 정상(중복 없음)**.
+6. [ ] **근본 수리(권장·별도 태스크)**: 위 migrate+register+재시작을 배포 스크립트/릴리스 훅에 넣어 수동 의존 제거 — B안의 "사람이 까먹음" 함정(#28이 한 층 위로 옮겨간 것)의 완결.
 
 ---
 
