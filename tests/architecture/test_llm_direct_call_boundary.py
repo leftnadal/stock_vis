@@ -42,7 +42,6 @@ NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # 동결 23 = 슬라이스 ④ 진행 게이지. 이관 1곳마다 여기서 1키 삭제 + health_check 동시 갱신.
 KNOWN_VIOLATIONS: set[tuple[str, str]] = {
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
-    ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
 }
 
 # health_check.py와 반드시 일치(규약: 양쪽 동시 갱신). 불일치 시 두 곳 다 깨진다.
@@ -55,8 +54,11 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
 #   = 구SDK 군집 종결.
 # 슬라이스 ③a #2 완료: 3 → 2(portfolio _call_anthropic 직접 Anthropic().messages.create →
 #   complete(provider="anthropic"), 코어 generate 재사용·신설 아님, wire IDENTICAL[잉여키 0]).
-#   잔여 2 = #8 adaptive AsyncAnthropic stream(③b) + #3 estimator count_tokens(④).
-FROZEN_COUNT = 2
+# 슬라이스 ③b #8 완료: 2 → 1(adaptive _generate_claude_stream 직접 AsyncAnthropic.messages.stream →
+#   astream(provider="anthropic"), anthropic aopen_stream/astream 어댑터 신설 + 정규화 델타
+#   StreamDelta/StreamFinal, #8은 shim으로 얹음[circuit=None 행위보존]. wire IDENTICAL[잉여키 0]).
+#   잔여 1 = #3 estimator count_tokens(④, 별 표면 messages.count_tokens).
+FROZEN_COUNT = 1
 
 
 def _call_identifier(node: ast.Call) -> str | None:
