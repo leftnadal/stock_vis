@@ -8,6 +8,15 @@
 
 ---
 
+## 뉴스 β 활성화 조사 — C 채택 (본진 복귀) (2026-07-02) [해자]
+
+### 세 레인(A 뉴스β / B SEC β / C #28 본진) 중 C 채택
+**결정**: 가중 채점(합 1.00) C 0.8825 > B 0.795 > A 0.335 → **C 채택**(census 봉인 후 #28 본진 = RelationPairSnapshot 궤적 → 상향 학습 루프 복귀). B(SEC β provenance)는 **#28 Gate 2 통과 직후 다음 β 트랙 예약**, A(뉴스 β)는 **전문 저장 후 통과율·토큰 재측정 조건부 파킹**.
+**Why**: 세 레인 중 **소급 재구성 불가는 #28 궤적뿐** — β 증거는 원문 잔존으로 재추출 가능하나, 궤적 스냅샷은 beat 미가동일 = 영구 공백(moat 정의 "temporal trajectories, none reconstructable retroactively" 직결). 뉴스 β "켜기"는 beat 등록이 아니라 **3층 신규 구축**(β 2-pass 미구현·NewsEntity 배선결함 headline/content/published_at 부재·전문 미저장). ① 현재 월 <$1, **①=②**(SEC 텍스트 β 대상 100% probable+ → 델타≈0).
+**How to apply**: census 봉인 `docs/audit_out/census_beta_provenance_cost.md` §7. B 착수 전 확인 1점: SEC β 2-pass가 "강화"(base 생산중)인가 "신규"(1콜만)인가. A 재개 조건: 뉴스 전문 저장 후 통과율(현 요약본 하한 7%) 재측정.
+
+---
+
 ## RelationPairSnapshot 쌍 relevance 적립 — 해자 궤적 (2026-06-29) [해자]
 
 ### opp/risk = 곱(게이트 AND), [0,1] 정규화
