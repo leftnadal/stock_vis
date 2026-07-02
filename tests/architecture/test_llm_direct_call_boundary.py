@@ -41,7 +41,6 @@ NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 # 슬라이스 ②에서 korean_overview는 이관 완료 → 목록에 없음(회귀 잠금 작동).
 # 동결 23 = 슬라이스 ④ 진행 게이지. 이관 1곳마다 여기서 1키 삭제 + health_check 동시 갱신.
 KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    ("apps/portfolio/llm/client.py", "Anthropic"),
     ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
     ("services/rag_analysis/services/adaptive_llm_service.py", "AsyncAnthropic"),
 }
@@ -53,8 +52,11 @@ KNOWN_VIOLATIONS: set[tuple[str, str]] = {
 #   = Gemini 군집(신SDK sync+aio+stream+multipart) 전건 종결.
 # 슬라이스 ② #9 완료: 4 → 3(adaptive _generate_gemini_stream 구SDK GenerativeModel
 #   .generate_content_async(stream=True) → astream(provider="gemini"), 구→신 SDK wire IDENTICAL).
-#   = 구SDK 군집 종결. 잔여 3 = ③Anthropic 2(adaptive AsyncAnthropic·portfolio Anthropic) + ④count_tokens 1.
-FROZEN_COUNT = 3
+#   = 구SDK 군집 종결.
+# 슬라이스 ③a #2 완료: 3 → 2(portfolio _call_anthropic 직접 Anthropic().messages.create →
+#   complete(provider="anthropic"), 코어 generate 재사용·신설 아님, wire IDENTICAL[잉여키 0]).
+#   잔여 2 = #8 adaptive AsyncAnthropic stream(③b) + #3 estimator count_tokens(④).
+FROZEN_COUNT = 2
 
 
 def _call_identifier(node: ast.Call) -> str | None:

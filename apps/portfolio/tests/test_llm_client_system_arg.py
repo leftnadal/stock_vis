@@ -34,7 +34,10 @@ def test_call_anthropic_omits_system_when_none():
         side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
     )
 
-    with patch("apps.portfolio.llm.client.Anthropic", return_value=fake_sdk):
+    with patch("anthropic.Anthropic", return_value=fake_sdk), patch(
+        "packages.shared.llm.providers.anthropic._resolve_api_key",
+        return_value="fake-key",
+    ):
         client_instance._call_anthropic(
             prompt="user only",
             max_tokens=100,
@@ -61,7 +64,10 @@ def test_call_anthropic_passes_system_when_provided():
         side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
     )
 
-    with patch("apps.portfolio.llm.client.Anthropic", return_value=fake_sdk):
+    with patch("anthropic.Anthropic", return_value=fake_sdk), patch(
+        "packages.shared.llm.providers.anthropic._resolve_api_key",
+        return_value="fake-key",
+    ):
         client_instance._call_anthropic(
             prompt="user question",
             max_tokens=100,
@@ -88,7 +94,10 @@ def test_call_propagates_system_through_layers():
         side_effect=lambda **kw: (captured.update(kw), fake_response)[1]
     )
 
-    with patch("apps.portfolio.llm.client.Anthropic", return_value=fake_sdk):
+    with patch("anthropic.Anthropic", return_value=fake_sdk), patch(
+        "packages.shared.llm.providers.anthropic._resolve_api_key",
+        return_value="fake-key",
+    ):
         client_instance._call(
             provider="anthropic",
             prompt="user",
