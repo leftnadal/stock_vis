@@ -17,7 +17,7 @@ from typing import Any, AsyncGenerator, Dict, Optional
 
 from django.conf import settings
 
-from packages.shared.llm import astream
+from packages.shared.llm import StreamDelta, StreamFinal, astream
 
 from .complexity_classifier import (
     ComplexityClassifier,
@@ -98,14 +98,15 @@ class AdaptiveLLMService:
                 self._genai = None
                 logger.error("Gemini API key not configured")
         else:
-            try:
-                from anthropic import AsyncAnthropic
-
-                self._anthropic = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-                logger.info("Anthropic client initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize Anthropic client: {e}")
+            # 슬라이스 ③b #8: 직접 AsyncAnthropic 제거 → 코어 astream(provider="anthropic") 경유.
+            # 가용성은 API 키 존재로 판단(코어 provider와 동일 키 해석). self._anthropic = 가용 플래그.
+            key = getattr(settings, "ANTHROPIC_API_KEY", None)
+            if key:
+                self._anthropic = True
+                logger.info("Anthropic client ready (core astream)")
+            else:
                 self._anthropic = None
+                logger.error("Anthropic API key not configured")
 
     async def generate_stream(
         self,
@@ -259,30 +260,32 @@ class AdaptiveLLMService:
 
 ## 분석"""
 
-            async with self._anthropic.messages.stream(
+            # 슬라이스 ③b #8: 직접 AsyncAnthropic.messages.stream → 코어 astream(provider="anthropic")
+            # 경유. 코어 정규화 델타(StreamDelta{text}+StreamFinal{usage}) → 기존 dict 봉투로 얇게 변환
+            # (shim). circuit=None(원본 CB 없음, 행위보존). messages·model·max_tokens·temperature·
+            # system wire IDENTICAL. delta str 시퀀스·usage·봉투 형태 불변.
+            full_response = ""
+
+            async for delta in astream(
+                user_message,
+                provider="anthropic",
                 model=config["model"],
                 max_tokens=config["max_tokens"],
                 temperature=config["temperature"],
                 system=system_prompt,
-                messages=[{"role": "user", "content": user_message}],
-            ) as stream:
-                full_response = ""
-
-                async for text in stream.text_stream:
-                    full_response += text
-                    yield {"type": "delta", "content": text}
-
-                # 최종 메시지
-                final_message = await stream.get_final_message()
-
-                yield {
-                    "type": "final",
-                    "content": full_response,
-                    "input_tokens": final_message.usage.input_tokens,
-                    "output_tokens": final_message.usage.output_tokens,
-                    "model": config["model"],
-                    "complexity": config["complexity"].value,
-                }
+            ):
+                if isinstance(delta, StreamDelta):
+                    full_response += delta.text
+                    yield {"type": "delta", "content": delta.text}
+                elif isinstance(delta, StreamFinal):
+                    yield {
+                        "type": "final",
+                        "content": full_response,
+                        "input_tokens": delta.input_tokens,
+                        "output_tokens": delta.output_tokens,
+                        "model": config["model"],
+                        "complexity": config["complexity"].value,
+                    }
 
         except Exception as e:
             logger.error(f"Claude generation error: {e}")
