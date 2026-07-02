@@ -48,6 +48,27 @@ DECISIONS_MD = REPO_ROOT / "DECISIONS.md"
 SHARED_ROOT = REPO_ROOT / "packages" / "shared"
 BOUNDARY_LEDGER = REPO_ROOT / "docs" / "harness" / "boundary_ledger.jsonl"
 
+# 환경 의존 known-fail 레지스트리 (회귀 게이트 제외 대상 SSOT).
+# 이관·코드 회귀 신호를 환경 fail이 가리지 않게 명시 제외. {test_id: 사유}.
+KNOWN_TEST_FAILS: dict[str, str] = {
+    "tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true": (
+        "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_existing_article_entity_unchanged": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+}
+
 
 # 결과 상태 코드 — Layer 1 단계의 통일된 의미.
 OK = 0
@@ -529,6 +550,103 @@ def _boundary_append_ledger() -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+# ── 검증 9: 외부-LLM-직접호출 감지 (BOUNDARY-LLM 슬라이스 ③) ──────────────────
+#
+# SSOT: tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS
+# 동결 항목이 바뀌면 양쪽(테스트 + 여기)을 동시에 갱신해야 한다 (규약: 한쪽만 고치면 드리프트).
+# 동결 N = 슬라이스 ④ burn-down 게이지(이관 1곳 = 동결 1곳 해제, 0 = 완료).
+# 코어 provider(packages/shared/llm/**)는 정상 직접호출 — 예외.
+
+_LLM_SCAN_DIRS = ("apps", "packages", "services")
+_LLM_CORE_EXEMPT_PREFIX = "packages/shared/llm/"
+_LLM_NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
+
+# tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS 와 일치(슬라이스 ④ burn-down).
+# korean_overview는 슬라이스 ②에서 이관 완료 → 목록에 없음(회귀 잠금).
+# 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(23→0, 전 소비처 코어 단일 경유).
+_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+
+
+def _llm_call_identifier(node: ast.Call) -> str | None:
+    func = node.func
+    if isinstance(func, ast.Name) and func.id in _LLM_NAME_CALLS:
+        return func.id
+    if isinstance(func, ast.Attribute):
+        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id == "genai":
+            return "genai.Client"
+        if func.attr == "GenerativeModel":
+            return "GenerativeModel"
+    return None
+
+
+def _llm_collect_violations() -> list[tuple[str, str, int]]:
+    """apps/packages/services 전 .py를 ast로 파싱해 (rel, identifier, lineno) 직접호출 수집.
+
+    코어 provider(_LLM_CORE_EXEMPT_PREFIX)는 제외.
+    """
+    found: list[tuple[str, str, int]] = []
+    for d in _LLM_SCAN_DIRS:
+        root = REPO_ROOT / d
+        if not root.is_dir():
+            continue
+        for py in root.rglob("*.py"):
+            rel = py.relative_to(REPO_ROOT).as_posix()
+            if rel.startswith(_LLM_CORE_EXEMPT_PREFIX):
+                continue
+            try:
+                tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    ident = _llm_call_identifier(node)
+                    if ident is not None:
+                        found.append((rel, ident, node.lineno))
+    return found
+
+
+def check_llm_direct_call_boundary() -> CheckResult:
+    violations = _llm_collect_violations()
+    present_keys = {(rel, ident) for (rel, ident, _line) in violations}
+    bypass = [(rel, ident, line) for (rel, ident, line) in violations if (rel, ident) not in _LLM_KNOWN_VIOLATIONS]
+    frozen_remaining = _LLM_KNOWN_VIOLATIONS & present_keys
+    n_bypass = len(bypass)
+    n_frozen = len(frozen_remaining)
+
+    if n_bypass == 0:
+        return CheckResult(
+            name="외부-LLM 경계",
+            status=OK,
+            detail=f"신규 직접호출 0 / 동결 잔여 {n_frozen} (슬라이스 ④ 게이지)",
+        )
+    evidence = [f"{rel}:{line} ← {ident}(...)" for (rel, ident, line) in bypass]
+    return CheckResult(
+        name="외부-LLM 경계",
+        status=ERROR,
+        detail=f"신규 직접호출 {n_bypass}건 / 동결 잔여 {n_frozen}",
+        evidence=evidence,
+    )
+
+
+# ── 검증 10: 환경 known-fail 레지스트리 (회귀 게이트 제외 명시) ────────────────
+
+
+def check_known_test_fails() -> CheckResult:
+    """KNOWN_TEST_FAILS를 명시 노출 — 회귀 게이트가 이 환경 fail을 제외함을 표기.
+
+    pytest를 직접 돌리지 않는다(문서성 SSOT). 회귀 카운트 시 이 목록을 빼면
+    이관/코드 회귀 신호가 환경 fail에 묻히지 않는다.
+    """
+    n = len(KNOWN_TEST_FAILS)
+    evidence = [f"{tid}  ← {reason}" for tid, reason in KNOWN_TEST_FAILS.items()]
+    return CheckResult(
+        name="known-fail 레지스트리",
+        status=OK,
+        detail=f"환경 known-fail {n}건 (회귀 게이트 제외, 이관 무관)",
+        evidence=evidence,
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -541,6 +659,8 @@ CHECKS = [
     check_slice_branches_unmerged,
     check_external_automation_commits,
     check_shared_boundary,
+    check_llm_direct_call_boundary,
+    check_known_test_fails,
 ]
 
 

@@ -547,3 +547,31 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 단방향 경계는 **검문소가 없으면 새 우회가 PR마다 슬며시 추가**된다. PR8b STEP 0에서 5건이 한꺼번에 드러난 게 시그널. monorepo 단계마다 경계가 새로 생기면 즉시 ast 기반 아키텍처 테스트를 박는 게 비용 가장 싸다.
 - 패턴 정착(BOUNDARY-3): **포트 + apps.ready() 등록**이 모델 이동 없이 macro→shared 의존 방향을 안전하게 끊는 표준. shared 내부 역의존(tasks·mgmt·다른 service)이 있어 "소비자 이동(방향1)"이 막힐 때 1순위 후보.
 - 📎 참조: `docs/harness/SHARED_BOUNDARY_GUARD.md`, `tests/architecture/test_shared_boundary.py`, `scripts/health_check.py:check_shared_boundary`, `DECISIONS.md` "shared 경계 검문소 (2026-06-01)" + "BOUNDARY-3 (2026-06-04)"
+
+## [프로파일링 함정] violation 단위(client 인스턴스) ≠ call 단위 (BOUNDARY-LLM 슬라이스 ④, 2026-06-26)
+
+- 증상: STEP 0 프로파일이 외부-LLM violation을 **genai.Client 인스턴스 단위**로 세고 대표 call_symbol 1개만 기록 → `keyword_generator.py`를 "sync"로 분류. 실제로는 한 `self.client`를 `_call_llm_sync`(sync) + `_call_llm`(aio)가 공유.
+- 함정: sync-only Part에서 sync call만 `complete()`로 이관해도 aio 경로가 그 client를 계속 써서 **genai.Client 제거(동결 −1) 불가**. `complete()`는 동기 전용이라 aio 경로는 같은 Part에서 못 옮김.
+- 교훈: 이관 전 각 client의 **전 호출 경로를 전수 확인**할 것(대표 call_symbol 1개로 판단 금지). "sync/aio"는 call 단위가 아니라 **client 단위 속성** — aio-touched client는 통째로 aio Part 소속.
+- 탐지 한 줄: `grep -c "\.aio\." <file>` — 0 아니면 그 파일의 client는 dual, sync-only Part 제외.
+
+## [환경 known-fail] Finnhub 회귀 1건 — 이관/코드와 무관 (2026-06-27 등록)
+
+- `tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true`는 **FINNHUB_API_KEY 미설정**(테스트 환경) 때문에 실패한다. 환경 의존이며 이관·코드 회귀가 아니다.
+- (2026-06-29 추가) `tests/news/test_news_entity_deduplication.py`의 3건(`TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination` + `TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves`·`::test_existing_article_entity_unchanged`)도 동일 **Finnhub API 키 미설정**(`finnhub.py:38 ValueError`) — 막간 test 위생 전수 분류에서 선존 확인(`94f082c`, #19 이전). KNOWN_TEST_FAILS 등록.
+- 회귀 게이트에서 **known-fail로 제외**(이관 회귀 신호를 가리지 않게). SSOT = `scripts/health_check.py:KNOWN_TEST_FAILS` + health_check "known-fail 레지스트리" 항목.
+- 회귀 판정 규칙: `pytest` fail 목록에서 KNOWN_TEST_FAILS를 뺀 나머지가 0이어야 회귀 0. 새 fail이 이 목록 밖이면 진짜 회귀.
+
+## [의도된 미구현] async Anthropic(`agenerate`)은 슬라이스 ③까지 NotImplementedError (2026-06-28)
+
+- `packages/shared/llm/providers/anthropic.py:agenerate`는 `raise NotImplementedError`다. **버그/누락 아님 — 의도.**
+- 이유: aio Part(②b로 풀린 #10·11·16·17 + #12·#16) 소비처가 **전부 Gemini**라 async Anthropic 불요(YAGNI). `acomplete(provider='anthropic')`가 조용히 sync로 폴백하면 행위 위장 → 명시 차단.
+- 채우는 시점: **슬라이스 ③ Anthropic 이관**(portfolio Anthropic·rag adaptive AsyncAnthropic)에서 AsyncAnthropic로 신설. 그 전에 "빠진 구현"으로 오해해 채우지 말 것.
+- circuit breaker 보존 패턴(Part ①-aio #10): 소비처가 파라미터화 CB(`get_circuit(name, failure_threshold, recovery)`)를 쓰면, acomplete의 circuit 정책(`get_circuit(name)`만)으로 통합하지 말고 **소비자 CB 래퍼 존치 + 감싸는 대상만 acomplete로 교체**. acomplete circuit은 파라미터 미전달이라 threshold/recovery 유실.
+
+## [이관 동반작업] site 이관 = 기존 테스트 seam 갱신 동반 (서프라이즈 방지)
+
+- site 이관(genai 직접호출 → complete()/acomplete())은 `self.client`(옛 seam)를 제거한다 → **그 site의 기존 단위테스트가 옛 seam을 mock하고 있으면 전부 깨진다.** 이관 작업의 일부로 테스트 seam을 함께 갱신해야 한다(미예상 시 회귀 게이트에서 대량 fail로 터짐).
+- 갱신 방법: 옛 `svc.client`/`svc.client.aio.models.generate_content` mock → `google.genai.Client` patch(`.aio.models`(async AsyncMock) / `.models`(sync)). mock 응답에 **`usage_metadata = None` 필수**(코어 provider `_extract_raw`가 `int(getattr(usage, ...) or 0)` → MagicMock이면 TypeError). 피처플래그 site는 `svc.client=mock/None` → `svc._llm_enabled=True/False`.
+- 예외: complete()/acomplete()는 genai 예외를 `_classify`로 분류 후 raise → 테스트의 예외타입 단언 조정(분류 규칙 미매칭 시 원본 그대로 전파). CB site는 1 fail < threshold면 미개방, 실 CB 통과.
+- **이관 지시서마다 이 동반작업을 예상 작업으로 선반영**할 것. 실측: #13(33개 7파일)·Part ①-aio(3파일) churn 발생.

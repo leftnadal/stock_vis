@@ -16,9 +16,9 @@ from __future__ import annotations
 import time
 from typing import Literal
 
-from anthropic import Anthropic
 from django.conf import settings
-from google import genai
+
+from packages.shared.llm import complete
 
 from apps.portfolio.llm.exceptions import (
     LLMAuthError,
@@ -263,23 +263,26 @@ class LLMClient:
         max_tokens: int,
         start: float,
     ) -> LLMResponse:
-        """Gemini Flash 호출 (신 SDK)."""
-        try:
-            client = genai.Client(api_key=settings.GEMINI_API_KEY)
-            from google.genai import types as gtypes
+        """Gemini Flash 호출 (신 SDK) — shared/llm complete() 경유(슬라이스 ④, IDENTICAL).
 
-            response = client.models.generate_content(
+        config는 max_output_tokens 단일 노브(temperature/mime/system 미설정) → complete()가
+        GenerateContentConfig(max_output_tokens=max_tokens) 동일 생성. 응답은 portfolio
+        LLMResponse로 매핑하고 cost는 자체 단가 상수로 동일 계산(행위 보존). 예외는 complete()가
+        분류한 LLMError를 _classify_gemini_error가 재매핑(클래스명 일치 → 동일 타입).
+        """
+        try:
+            response = complete(
+                prompt,
+                provider="gemini",
                 model=GEMINI_MODEL,
-                contents=prompt,
-                config=gtypes.GenerateContentConfig(max_output_tokens=max_tokens),
+                max_tokens=max_tokens,
             )
         except Exception as exc:  # noqa: BLE001
             raise _classify_gemini_error(exc) from exc
 
         text = getattr(response, "text", "") or ""
-        usage = getattr(response, "usage_metadata", None)
-        input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
-        output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
+        input_tokens = int(getattr(response, "input_tokens", 0) or 0)
+        output_tokens = int(getattr(response, "output_tokens", 0) or 0)
         cost_usd = (
             input_tokens / 1_000_000 * GEMINI_FLASH_INPUT_USD_PER_1M
             + output_tokens / 1_000_000 * GEMINI_FLASH_OUTPUT_USD_PER_1M
@@ -309,31 +312,27 @@ class LLMClient:
         system: None이면 messages.create에 전달하지 않아 기존 동작 그대로
         (IDENTICAL hash KPI 보호). 명시되면 Anthropic SDK의 system 인자로
         별도 전달.
+
+        슬라이스 ③a #2: 직접 `Anthropic().messages.create` → shared/llm `complete(provider="anthropic")`
+        경유(코어 AnthropicProvider.generate 재사용, 신설 아님). wire IDENTICAL(model·max_tokens·
+        messages·system[옵션] byte 동일, temperature/stop/tools 미주입 재도출 입증). 코어가 첫 text 블록
+        추출 + usage 정규화(.input_tokens/.output_tokens) → cost는 자체 단가 상수로 동일 계산(행위 보존,
+        _call_gemini 동형). 예외는 코어 분류 LLMError를 _classify_anthropic_error가 재매핑(클래스명 일치).
         """
         try:
-            client = Anthropic(api_key=settings.ANTHROPIC_API_KEY)
-            kwargs: dict = {
-                "model": model,
-                "max_tokens": max_tokens,
-                "messages": [{"role": "user", "content": prompt}],
-            }
-            if system:
-                kwargs["system"] = system
-            response = client.messages.create(**kwargs)
+            response = complete(
+                prompt,
+                provider="anthropic",
+                model=model,
+                max_tokens=max_tokens,
+                system=system,
+            )
         except Exception as exc:  # noqa: BLE001
             raise _classify_anthropic_error(exc) from exc
 
-        # response.content 는 list[ContentBlock] — 첫 text 블록 추출
-        text = ""
-        for block in getattr(response, "content", []) or []:
-            block_type = getattr(block, "type", None)
-            if block_type == "text":
-                text = getattr(block, "text", "") or ""
-                break
-
-        usage = getattr(response, "usage", None)
-        input_tokens = int(getattr(usage, "input_tokens", 0) or 0)
-        output_tokens = int(getattr(usage, "output_tokens", 0) or 0)
+        text = getattr(response, "text", "") or ""
+        input_tokens = int(getattr(response, "input_tokens", 0) or 0)
+        output_tokens = int(getattr(response, "output_tokens", 0) or 0)
         # 모델별 단가 매핑. 미등록 모델은 Sonnet 단가 기본값.
         in_rate, out_rate = _ANTHROPIC_PRICING.get(
             model,

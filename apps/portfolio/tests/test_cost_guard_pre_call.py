@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import logging
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -31,18 +31,20 @@ def _reset():
         0.0  # 테스트 격리 — Slice 9 #43 cumulative는 reset_slice가 보존
     )
     e3.reset_cache()
-    e3.set_client(
-        MagicMock(
-            messages=MagicMock(
-                count_tokens=MagicMock(return_value=SimpleNamespace(input_tokens=100))
-            )
+    # 슬라이스 ④ #3: 구 e3.set_client 주입 → 코어 count_tokens가 생성하는 anthropic.Anthropic 패치.
+    mock_client = MagicMock(
+        messages=MagicMock(
+            count_tokens=MagicMock(return_value=SimpleNamespace(input_tokens=100))
         )
     )
-    yield
+    with patch("anthropic.Anthropic", return_value=mock_client), patch(
+        "packages.shared.llm.providers.anthropic._resolve_api_key",
+        return_value="fake-key",
+    ):
+        yield
     guard.reset_slice("test_slice", max_calls=50)
     guard.cumulative_usd = 0.0
     e3.reset_cache()
-    e3.set_client(None)
 
 
 # ============================================================

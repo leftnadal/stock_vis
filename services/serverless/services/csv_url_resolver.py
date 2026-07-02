@@ -20,12 +20,13 @@ from django.conf import settings
 from django.utils import timezone
 
 try:
-    from google import genai
-    from google.genai import types
+    from google.genai import types  # ThinkingConfig 용 (genai.Client는 complete()로 이관)
 
     GENAI_AVAILABLE = True
 except ImportError:
     GENAI_AVAILABLE = False
+
+from packages.shared.llm import complete
 
 from services.serverless.models import ETFProfile
 
@@ -155,14 +156,15 @@ class CSVURLResolver:
             },
         )
 
-        # LLM 클라이언트 초기화 (선택적)
-        self._llm_client = None
+        # LLM 사용 가능 여부 플래그 (genai.Client 직접생성 → complete() 경유, 슬라이스 ④).
+        # SDK 설치 + 키 존재 = 현행 게이팅 그대로 보존(키는 complete()가 settings 경유로 해소).
+        self._llm_enabled = False
         if GENAI_AVAILABLE:
             api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
                 settings, "GEMINI_API_KEY", None
             )
             if api_key:
-                self._llm_client = genai.Client(api_key=api_key)
+                self._llm_enabled = True
 
     def __del__(self):
         if hasattr(self, "client"):
@@ -213,7 +215,7 @@ class CSVURLResolver:
                 logger.warning(f"{etf_symbol}: 패턴 매칭 URL 검증 실패 - {csv_url}")
 
         # 2단계: LLM 분석 폴백
-        if self._llm_client:
+        if self._llm_enabled:
             csv_url = self._find_csv_url_by_llm(
                 html_content, etf_symbol, parser_type, config
             )
@@ -335,7 +337,7 @@ class CSVURLResolver:
         self, html: str, etf_symbol: str, parser_type: str, config: Dict
     ) -> Optional[str]:
         """LLM으로 HTML 분석하여 CSV URL 찾기"""
-        if not self._llm_client:
+        if not self._llm_enabled:
             return None
 
         # HTML 정리 (토큰 절약)
@@ -363,15 +365,15 @@ HTML (일부):
 CSV/XLSX 다운로드 URL:"""
 
         try:
-            response = self._llm_client.models.generate_content(
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). 정책 전부 off = 현행 재현.
+            response = complete(
+                user_prompt,
+                provider="gemini",
                 model=self.LLM_MODEL,
-                contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    max_output_tokens=self.LLM_MAX_TOKENS,
-                    temperature=self.LLM_TEMPERATURE,
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
+                system=system_prompt,
+                max_tokens=self.LLM_MAX_TOKENS,
+                temperature=self.LLM_TEMPERATURE,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             result = response.text.strip()

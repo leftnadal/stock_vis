@@ -11,10 +11,10 @@ from datetime import date
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple
 
 from django.conf import settings
-from google import genai
 from google.genai import types
 
 from packages.shared.api_request.circuit_breaker import CircuitBreakerError, get_circuit
+from packages.shared.llm import astream
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,10 @@ class LLMServiceLite:
 """
 
     def __init__(self):
-        """Gemini API 클라이언트 초기화"""
+        """Gemini API 키 검증 (클라이언트는 코어 provider가 호출 시 생성 — genai 직접호출 제거).
+
+        구성 시점 fail-fast(ValueError) 가드는 보존 — 키 없으면 생성 단계에서 즉시 실패.
+        """
         api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
             settings, "GEMINI_API_KEY", None
         )
@@ -62,8 +65,6 @@ class LLMServiceLite:
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다. "
                 "환경 변수를 확인하세요."
             )
-
-        self.client = genai.Client(api_key=api_key)
 
     def get_system_prompt(self) -> str:
         """
@@ -165,12 +166,18 @@ class LLMServiceLite:
             f"max_tokens={max_tokens}, temperature={temperature}"
         )
 
-        # Gemini용 설정
-        config = types.GenerateContentConfig(
-            system_instruction=self.get_system_prompt(),
-            max_output_tokens=max_tokens,
-            temperature=temperature,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
+        # Gemini용 생성 파라미터 — 코어 astream에 분해 전달(코어 _build_config_kwargs가 동일 조립).
+        # system_instruction은 원본과 동일하게 루프 밖 1회 계산.
+        system_prompt = self.get_system_prompt()
+        gen_extra = {"thinking_config": types.ThinkingConfig(thinking_budget=0)}
+
+        # gemini_rag CB를 retry_attempts=1로 사전 등록(레지스트리 캐싱) — 코어 astream(circuit=)이
+        # 이 인스턴스를 셋업 래핑에 재사용. 외부 for 재시도와 중복 방지(#10 옵션 A: 파라미터 소비자 존치).
+        get_circuit(
+            "gemini_rag",
+            failure_threshold=5,
+            recovery_seconds=60,
+            retry_attempts=1,
         )
 
         for attempt in range(retries):
@@ -196,20 +203,21 @@ class LLMServiceLite:
                 total_input_tokens = 0
                 total_output_tokens = 0
 
-                cb = get_circuit(
-                    "gemini_rag",
-                    failure_threshold=5,
-                    recovery_seconds=60,
-                    retry_attempts=1,  # 외부 for retry 로직과 중복 방지
-                )
-                stream = await cb.acall(
-                    self.client.aio.models.generate_content_stream,
+                # 셋업(스트림 오픈)만 gemini_rag CB로 보호(코어 astream circuit) — 청크 읽기는
+                # CB 바깥(원본 cb.acall(generate_content_stream) 동형, 셋업만 집계). escape off:
+                # 위 신뢰경계 새니타이즈를 #12가 직접 수행(코어 escape 정책 미사용). config
+                # (system_instruction·max_output_tokens·temperature·thinking_config)는 코어
+                # _build_config_kwargs가 동일 조립 → GenerateContentConfig byte 동일.
+                async for chunk in astream(
+                    user_content,
+                    provider="gemini",
                     model=self.MODEL,
-                    contents=user_content,
-                    config=config,
-                )
-
-                async for chunk in stream:
+                    system=system_prompt,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    extra=gen_extra,
+                    circuit="gemini_rag",
+                ):
                     # 텍스트 청크 스트리밍
                     if chunk.text:
                         yield {"type": "delta", "content": chunk.text}

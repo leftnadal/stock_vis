@@ -2,10 +2,13 @@
 GeminiExtractor 추가 단위 테스트.
 
 기존 test_extractor.py에서 누락된 영역:
-- _get_client lazy init / 캐싱
+- _ensure_api_key 키 검증 (구 _get_client lazy init/캐싱 → 슬라이스 ④에서 의미 변경)
 - 프롬프트에 paragraphs/symbol 주입 검증
 - 비-JSON Exception 재발생
 - empty response.text 처리
+
+슬라이스 ④: genai 직접호출 → shared/llm complete() 경유로 이관됨. 따라서 mock seam도
+`GeminiExtractor._get_client`(제거됨) → `google.genai.Client`(코어 provider가 생성)로 이동.
 
 Gemini LLM 호출은 전부 mock. 실제 API 호출 절대 금지.
 """
@@ -23,36 +26,47 @@ def extractor():
     return GeminiExtractor()
 
 
+@pytest.fixture(autouse=True)
+def _gemini_key(settings):
+    # complete()의 gemini provider + extractor._ensure_api_key 둘 다 키 필요.
+    settings.GEMINI_API_KEY = "fake-key"
+
+
 def _mock_genai_response(text):
     response = MagicMock()
     response.text = text
+    response.usage_metadata = None  # 코어 provider 토큰 추출(int) 안전
     return response
 
 
+def _patch_genai_client(text):
+    """google.genai.Client를 patch해 generate_content가 주어진 text를 반환하도록.
+
+    complete() → gemini provider → genai.Client(api_key).models.generate_content 경로를 가로챈다.
+    """
+    patcher = patch("google.genai.Client")
+    mock_cls = patcher.start()
+    mock_cls.return_value.models.generate_content.return_value = _mock_genai_response(text)
+    return patcher
+
+
 # ---------------------------------------------------------------------------
-# Tests: _get_client lazy init / 캐싱
+# Tests: _ensure_api_key (구 _get_client 키 검증 — 슬라이스 ④에서 rename)
 # ---------------------------------------------------------------------------
 
-class TestGetClientCaching:
-    def test_client_cached_after_first_call(self, extractor):
-        """동일 인스턴스에서 두 번 호출 시 client 1번만 생성."""
+class TestEnsureApiKey:
+    def test_ensure_passes_with_key(self, extractor):
+        """키가 설정되어 있으면 예외 없이 통과."""
         with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = 'test-key'
-            with patch('google.genai.Client') as mock_genai_client:
-                mock_genai_client.return_value = MagicMock()
-                c1 = extractor._get_client()
-                c2 = extractor._get_client()
-                assert c1 is c2
-                # 한 번만 생성되어야 함
-                assert mock_genai_client.call_count == 1
+            # 예외가 발생하지 않으면 성공
+            extractor._ensure_api_key()
 
-    def test_client_initialized_with_api_key(self, extractor):
+    def test_ensure_raises_without_key(self, extractor):
         with patch('services.sec_pipeline.extractor.settings') as mock_settings:
-            mock_settings.GEMINI_API_KEY = 'real-key'
-            with patch('google.genai.Client') as mock_genai_client:
-                mock_genai_client.return_value = MagicMock()
-                extractor._get_client()
-                mock_genai_client.assert_called_once_with(api_key='real-key')
+            mock_settings.GEMINI_API_KEY = None
+            with pytest.raises(ValueError, match="GEMINI_API_KEY"):
+                extractor._ensure_api_key()
 
 
 # ---------------------------------------------------------------------------
@@ -60,37 +74,50 @@ class TestGetClientCaching:
 # ---------------------------------------------------------------------------
 
 class TestExtractSupplyChainAdvanced:
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_paragraphs_joined_into_prompt(self, mock_get_client, extractor):
+    def test_paragraphs_joined_into_prompt(self, extractor):
         """다수 paragraphs는 '---' 구분자로 join되어 프롬프트에 포함."""
-        client = MagicMock()
-        client.models.generate_content.return_value = _mock_genai_response(
-            json.dumps({'relationships': []})
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.return_value = (
+            _mock_genai_response(json.dumps({'relationships': []}))
         )
-        mock_get_client.return_value = client
+        try:
+            extractor.extract_supply_chain(
+                'AAPL', 'Apple Inc.',
+                ['First paragraph about TSMC.', 'Second paragraph about Samsung.']
+            )
+            # generate_content는 contents kwarg로 prompt를 받음(빌더 불변)
+            call = mock_cls.return_value.models.generate_content.call_args
+            prompt = call.kwargs['contents']
+            assert 'AAPL' in prompt
+            assert 'Apple Inc.' in prompt
+            assert 'TSMC' in prompt
+            assert 'Samsung' in prompt
+            assert '---' in prompt
+            # config는 provider가 만든 GenerateContentConfig — json mime + temperature 보존,
+            # max_output_tokens는 미설정(None).
+            config = call.kwargs['config']
+            assert config.response_mime_type == 'application/json'
+            assert config.temperature == 0.1
+            assert config.max_output_tokens is None
+        finally:
+            patcher.stop()
 
-        extractor.extract_supply_chain(
-            'AAPL', 'Apple Inc.',
-            ['First paragraph about TSMC.', 'Second paragraph about Samsung.']
-        )
-        # generate_content는 contents kwarg로 prompt를 받음
-        call_kwargs = client.models.generate_content.call_args.kwargs
-        prompt = call_kwargs['contents']
-        assert 'AAPL' in prompt
-        assert 'Apple Inc.' in prompt
-        assert 'TSMC' in prompt
-        assert 'Samsung' in prompt
-        assert '---' in prompt
+    def test_non_json_exception_reraises(self, extractor):
+        """JSON 외 예외(예: API 오류)는 caller로 전파.
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_non_json_exception_reraises(self, mock_get_client, extractor):
-        """JSON 외 예외(예: API 오류)는 caller로 전파."""
-        client = MagicMock()
-        client.models.generate_content.side_effect = RuntimeError('API down')
-        mock_get_client.return_value = client
-
-        with pytest.raises(RuntimeError, match='API down'):
-            extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['text'])
+        complete()는 genai 예외를 코어 계층(LLMError 하위)으로 재분류한다. 'API down'은
+        분류 규칙에 걸리지 않으므로(api key/invalid/timeout 등 키워드 없음) 원본 RuntimeError
+        그대로 전파된다.
+        """
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.side_effect = RuntimeError('API down')
+        try:
+            with pytest.raises(RuntimeError, match='API down'):
+                extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['text'])
+        finally:
+            patcher.stop()
 
 
 # ---------------------------------------------------------------------------
@@ -98,30 +125,35 @@ class TestExtractSupplyChainAdvanced:
 # ---------------------------------------------------------------------------
 
 class TestExtractBusinessModelAdvanced:
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_empty_response_text_returns_dict(self, mock_get_client, extractor):
+    def test_empty_response_text_returns_dict(self, extractor):
         """response.text가 None이면 빈 dict 반환 ('{}' 파싱)."""
-        response = MagicMock()
-        response.text = None
-        client = MagicMock()
-        client.models.generate_content.return_value = response
-        mock_get_client.return_value = client
-
-        result = extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        patcher = _patch_genai_client(None)
+        try:
+            result = extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        finally:
+            patcher.stop()
         # text=None → '{}' fallback → 빈 dict
         assert result == {}
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_non_json_exception_reraises(self, mock_get_client, extractor):
-        client = MagicMock()
-        client.models.generate_content.side_effect = ConnectionError('timeout')
-        mock_get_client.return_value = client
+    def test_non_json_exception_reraises(self, extractor):
+        """비-JSON 예외는 caller로 전파.
 
-        with pytest.raises(ConnectionError):
-            extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        complete()는 genai 예외를 코어 계층으로 재분류한다. 'connection refused'는 분류
+        키워드(timeout/deadline/quota/api key/invalid 등)에 걸리지 않으므로 원본
+        ConnectionError 그대로 전파된다(의도: 예외 전파 보존).
+        """
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.side_effect = ConnectionError(
+            'connection refused'
+        )
+        try:
+            with pytest.raises(ConnectionError):
+                extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        finally:
+            patcher.stop()
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_full_5_field_response_preserved(self, mock_get_client, extractor):
+    def test_full_5_field_response_preserved(self, extractor):
         """5개 필드 응답이 그대로 전달되는지 확인."""
         result_json = json.dumps({
             'direct_customer_contact': {'value': 'direct', 'evidence_text': 'a', 'confidence': 0.9},
@@ -130,11 +162,11 @@ class TestExtractBusinessModelAdvanced:
             'channel_dependency': {'value': 'low_dependency', 'evidence_text': 'd', 'confidence': 0.6},
             'customer_concentration': {'value': 'diversified', 'evidence_text': 'e', 'confidence': 0.5},
         })
-        client = MagicMock()
-        client.models.generate_content.return_value = _mock_genai_response(result_json)
-        mock_get_client.return_value = client
-
-        result = extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        patcher = _patch_genai_client(result_json)
+        try:
+            result = extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+        finally:
+            patcher.stop()
         assert set(result.keys()) == {
             'direct_customer_contact', 'contract_model',
             'recurring_revenue_signal', 'channel_dependency',

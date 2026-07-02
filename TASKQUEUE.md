@@ -335,6 +335,22 @@
 - **HALT 주의**: 27개 광역 → 한 세션 일괄 금지. cost ledger·BriefingLog·usage 모델 이관이 prod 마이그레이션 건드리면 `makemigrations --dry-run` 후 멈춰 보고.
 - **완료정의 (burn-down)**: `packages/shared/llm` 존재 + 27소비처 전부 단일 경유 + 외부-LLM-직접호출 가드 신설 후 위반 0.
 
+### [test 위생 보류] (a)-large stale LLM seam 청소 — 전용 세션 (2026-06-29 등록)
+- `tests/news/test_news_deep_analyzer.py` 102e — `mock_genai` fixture 17곳 `.models.generate_content` 직접참조.
+- `tests/csv_url_resolver` 계열 `TestLLMAnalysis` 4f — `_llm_client=MagicMock` dead + 3곳.
+- 분류 (a) 확정, 프로덕션 정상(이미 이관 완료). mock 본문 재작성이라 기계적 범위 초과 → BOUNDARY-LLM ②③④ 후 전용 세션에서 처리. 동결 카운트 무관.
+
+### [후속 슬라이스] #12 gemini astream 정규화 델타 이관 + #8 shim 제거 (2026-07-02 등록)
+- ③b에서 `StreamDelta`/`StreamFinal` 정규화 델타 계약 + anthropic astream 신설 완료. gemini astream은
+  #12 IDENTICAL 보존 위해 raw 청크 pass-through 존치(코어가 anthropic만 StreamFinal 인지).
+- 후속: `llm_service.py`(#12 gemini stream) 소비처를 정규화 델타(StreamDelta/StreamFinal)로 이관 →
+  코어 astream의 gemini 경로도 정규화 yield로 통일 → adaptive #8의 shim(코어 타입→dict) 제거 가능.
+- **자기 IDENTICAL 게이트**(delta 시퀀스·usage·봉투 byte 동일). 동결 카운트 무관(이미 #12는 이관 완료 상태).
+
+### [별도 트랙] FMP test-debt — LLM 경계 무관 (2026-06-29 등록)
+- `FMP_API_KEY` 요구로 setup 실패 34건: chain_sight 13e · enhanced_screener 12e · provider_factory 9f.
+- LLM 경계 무접촉(버킷A/FMP). BOUNDARY-LLM 범위 밖 — FMP/버킷A 위생 트랙에서 처리.
+
 ---
 
 ## 하네스 구조 개선 (HARN)

@@ -42,9 +42,9 @@ from typing import Any, Dict, List, Optional, Tuple
 from django.conf import settings
 from django.core.cache import cache
 from django.utils import timezone
-from google import genai
 from google.genai import types
 
+from packages.shared.llm import complete
 from services.serverless.models import LLMExtractedRelation
 from services.serverless.services.relation_pre_filter import (
     PreFilterResult,
@@ -149,7 +149,8 @@ Your task is to identify and extract corporate relationships from the given text
 Important: Return ONLY valid JSON. No explanations or additional text."""
 
     def __init__(self):
-        # Gemini API 클라이언트 초기화
+        # Gemini API 키 검증 (클라이언트는 코어 provider가 호출 시 생성 — genai 직접호출 제거).
+        # 구성 시점 fail-fast(ValueError) 가드 보존.
         api_key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
             settings, "GEMINI_API_KEY", None
         )
@@ -157,7 +158,6 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
 
         # 의존 서비스
         self.pre_filter = get_pre_filter()
@@ -385,9 +385,12 @@ Important: Return ONLY valid JSON. No explanations or additional text."""
 Return only valid JSON with the extracted relations."""
 
         try:
-            response = self.client.models.generate_content(
-                model=self.MODEL,
-                contents=[
+            # 멀티파트 contents(단일 Content + 2 Part[SYS·user])를 코어 complete()에 그대로 전달
+            # (슬라이스 ②c 불투명 pass-through → genai wire byte 동일, 평탄화·concat 0). 정책 off,
+            # escape off(멀티파트는 escape 미지원). config(temperature·max·mime·thinking, system 없음)는
+            # 코어 _build_config_kwargs가 동일 조립.
+            response = complete(
+                [
                     types.Content(
                         role="user",
                         parts=[
@@ -396,25 +399,18 @@ Return only valid JSON with the extracted relations."""
                         ],
                     )
                 ],
-                config=types.GenerateContentConfig(
-                    temperature=self.TEMPERATURE,
-                    max_output_tokens=self.MAX_OUTPUT_TOKENS,
-                    response_mime_type="application/json",
-                    thinking_config=types.ThinkingConfig(thinking_budget=0),
-                ),
-            )
-
-            # 토큰 사용량 추출
-            usage = getattr(response, "usage_metadata", None)
-            prompt_tokens = getattr(usage, "prompt_token_count", 0) if usage else 0
-            completion_tokens = (
-                getattr(usage, "candidates_token_count", 0) if usage else 0
+                provider="gemini",
+                model=self.MODEL,
+                temperature=self.TEMPERATURE,
+                max_tokens=self.MAX_OUTPUT_TOKENS,
+                response_format="json",
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             return {
                 "text": response.text,
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
+                "prompt_tokens": response.input_tokens,
+                "completion_tokens": response.output_tokens,
             }
 
         except Exception as e:
