@@ -261,3 +261,18 @@ class GeminiProvider:
                 yield chunk  # 원 청크 그대로(증분 보존)
         except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
             raise _classify(exc) from exc
+
+    def count_tokens(
+        self,
+        prompt,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+    ) -> int:
+        """util 계량 미구현 — 소비자 미확인 스텁(ADR-LLM-001 γ).
+
+        gemini count_tokens 소비자 0(측정). 실수요 발생 시 client.models.count_tokens로 신설.
+        """
+        raise NotImplementedError(
+            "Gemini count_tokens는 소비자 미확인 — 실수요 시 신설(ADR-LLM-001 γ)."
+        )

@@ -74,3 +74,17 @@ class Provider(Protocol):
         미구현 provider는 NotImplementedError(반복 시점). 반환 타입은 AsyncGenerator.
         """
         ...
+
+    def count_tokens(
+        self,
+        prompt,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+    ) -> int:
+        """util(계량) 진입점 (슬라이스 ④, ADR-LLM-001) — 생성 없이 input 토큰 수만 반환.
+
+        prompt=str이면 단일 user 메시지, list이면 messages(멀티턴) pass-through. 반환 int.
+        소비자 있는 provider만 구현, 없으면 NotImplementedError(γ 스텁).
+        """
+        ...

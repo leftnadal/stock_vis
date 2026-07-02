@@ -291,3 +291,20 @@ async def astream(
         cost_policy.record_cost(
             prov.name, resolved_model, last_input_tokens, last_output_tokens, cost_usd
         )
+
+
+def count_tokens(
+    prompt: Union[str, list],
+    *,
+    provider: str = "anthropic",
+    model: Optional[str] = None,
+    system: Optional[str] = None,
+) -> int:
+    """util 진입점 (슬라이스 ④, ADR-LLM-001) — 토큰 계량(생성 아님) → int.
+
+    complete/astream과 같은 provider 레지스트리 결(get_provider 위임). prompt=str이면 단일 user
+    메시지, list이면 messages(멀티턴) pass-through. 생성이 아니라 계량이므로 LLMResponse가 아닌
+    int 반환(ADR util 분리 근거). 정책(escape/circuit/retry/cost) 미적용 — 순수 계량. 소비자 있는
+    anthropic만 구현, gemini는 스텁(γ, 소비자 0). SDK 예외는 provider가 코어 계층으로 분류·전파.
+    """
+    return get_provider(provider).count_tokens(prompt, model=model, system=system)

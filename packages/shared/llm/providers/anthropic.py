@@ -236,3 +236,35 @@ class AnthropicProvider:
         )
         async for delta in adapter:
             yield delta
+
+    def count_tokens(
+        self,
+        prompt,
+        *,
+        model: Optional[str] = None,
+        system: Optional[str] = None,
+    ) -> int:
+        """util 계량 (슬라이스 ④) — client.messages.count_tokens → int(.input_tokens).
+
+        #3(estimator_v3) 실수요: messages(list) + system을 그대로 넘겨 input_tokens 실측(±2%, 무료).
+        prompt=list이면 messages pass-through(멀티턴·멀티파트 불변), str이면 단일 user 메시지로 래핑.
+        생성 없음 → temperature/max_tokens 미전달(count_tokens API는 model·messages·system만). SDK
+        예외는 코어 계층 분류(호출부 fallback 트리거 보존).
+        """
+        from anthropic import Anthropic
+
+        api_key = _resolve_api_key()
+        if not api_key:
+            raise LLMAuthError("ANTHROPIC_API_KEY not configured")
+        messages = prompt if isinstance(prompt, list) else [
+            {"role": "user", "content": prompt}
+        ]
+        kwargs: dict = {"model": model or DEFAULT_MODEL, "messages": messages}
+        if system:
+            kwargs["system"] = system
+        try:
+            client = Anthropic(api_key=api_key)
+            response = client.messages.count_tokens(**kwargs)
+        except Exception as exc:  # noqa: BLE001 — SDK 예외를 코어 계층으로 분류 후 재전파
+            raise _classify(exc) from exc
+        return int(getattr(response, "input_tokens", 0) or 0)

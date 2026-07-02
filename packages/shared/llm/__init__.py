@@ -12,7 +12,7 @@
 
 from __future__ import annotations
 
-from packages.shared.llm.core import acomplete, astream, complete
+from packages.shared.llm.core import acomplete, astream, complete, count_tokens
 from packages.shared.llm.types import (
     LLMAuthError,
     LLMBudgetExceededError,
@@ -30,6 +30,7 @@ __all__ = [
     "complete",
     "acomplete",
     "astream",
+    "count_tokens",
     "LLMResponse",
     "LLMRawResponse",
     "StreamDelta",
