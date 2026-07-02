@@ -2594,7 +2594,7 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **결정**: 발행 로그 최종 스키마 = **9필드** `(stock, signal_date, signal_tag, confidence, composite_score, conf_ver, rank, published_at, user_id[nullable])`. D-P1-RECPROD의 기등록 8필드를 **본 결정으로 supersede**(정정). join 키 = `(stock, signal_date, signal_tag)` — **SignalAccuracy grain과 정확 일치**.
 
 **Why — divergence별 근거**:
-- **`horizon → signal_tag`**: SignalAccuracy 실 grain은 `(stock, signal_date, signal_tag)`이고 **horizon 컬럼은 부재**(지평은 `return_1d/5d/20d`·`excess_1d/5d/20d` **wide 접미사**로 인코딩). 발행 로그가 `signal_tag`를 쓰면 join 직결. horizon 단일 컬럼(D-P1-RECPROD)은 실구조와 불일치 → 정정. 지평 표현은 wide 관례 유지.
+- **`horizon → signal_tag`**: SignalAccuracy 실 grain은 `(stock, signal_date, signal_tag)`이고 **horizon 컬럼은 부재**(지평은 `return_1d/5d/20d`·`excess_1d/5d/20d` **wide 접미사**로 인코딩). 발행 로그가 `signal_tag`를 쓰면 join 직결. horizon 단일 컬럼(D-P1-RECPROD)은 실구조와 불일치 → 정정. 지평 표현은 wide 관례 유지. ※ **`signal_tag`=시그널 종류 ID**(V1/P2/S1), **`horizon`=SignalAccuracy wide 접미사(별도 축)** — 둘은 다른 차원. 상세 **D-P1-GRAIN**.
 - **`conf_ver` 보존(default=1)**: `published_at`(발행 *시각*)은 confidence *알고리즘 버전*(v1 신호강도 vs v2 레포트반영)을 대체 **불가** — 소급 재계산 시 시각 불변인데 값만 바뀌면 버전 추적 불능. v1/v2 소급 구분 위해 명시 태그 유지.
 - **`rank` 보존**: 발행 시점 캐러셀 top-N 순위 = **발행 사실**(소급 재구성 불가) → 캡처 필수.
 - **`presented_as` 삭제 + ★테이블 분리 명문화**: 발행 로그는 **정의상 전부 baked**라 `presented_as` 컬럼은 상수/중복 → 삭제. **baked/viewed 구분은 Phase 2 Viewed 별도 테이블**(`presented_as='viewed'` 경로)로 분리한다. 이 분리를 명문화해 D-P1-RECPROD의 Phase 2 Viewed enrichment 경로를 **손실 없이 보존**(발행 테이블에서 상수 컬럼만 제거, Phase 5 노출 수준 채점은 Viewed 테이블 join으로 복원).

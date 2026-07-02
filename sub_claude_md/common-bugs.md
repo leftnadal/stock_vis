@@ -520,6 +520,14 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 예방(DoD 규율): 로그/모델 결정 등재 시 각 필드에 대해 **"언제·어느 표면에서 write 되나 + write 시점에 그 값이 알려져 있나"** 자기점검 1패스. union-중복 자기점검과 같은 계열의 결정-등재 DoD.
 - 📎 참조: `DECISIONS.md` D-P1-STEP0 ❓① ↔ D-P1-RECPROD [impression 단위] 정정 주석(2026-07-02).
 
+## 메타 dedup 셀프체크 — 활성작업/큐 섹션 전체 스캔 (union-merge 중복 방지) (#44) `[harness]` `[git]`
+
+- 증상: PROGRESS "현재 활성 작업"·TASKQUEUE 큐에 **같은 항목이 2건** 생김. 하나는 다른 항목 내용이 뒤에 뭉쳐(union-merge 아티팩트) 있기도.
+- 원인: 원장 4파일은 `merge=union`(rebase 무충돌 대가) → **여러 세션이 인접 위치에 삽입하면 양쪽 다 살아남아** 중복·뭉침 발생. 신규 헤더만 보고 커밋하면 못 잡음.
+- 사례: `D-OWN·D-SCHEMA` 활성작업 항목이 2건(하나에 `MP2-SURFACE` 내용 뭉침)으로 union-merge 잔존 → META-TOUCH(2026-07-02)에서 D-OWN·D-SCHEMA 1건 + MP2-SURFACE 독립 1건으로 dedup(내용 유실 0).
+- 예방(DoD 규율): PROGRESS/TASKQUEUE 편집 시 **신규 헤더뿐 아니라 해당 활성작업/큐 섹션 전체를 스캔**해 union-merge 중복이 없는지 확인(정의 각 1건). 뭉친 항목은 제거 아닌 **분리 독립화**(내용 유실 0). union-중복 자기점검(#43 계열)과 동일 DoD.
+- 📎 durable 규율은 **repo 하네스에 단일 등재**(코어 지시문 복제 금지 규약 — 복제는 drift). 관련 [[lesson_origin_main_advance_union_rebase]] · #40(merge=union rebase).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
