@@ -2554,3 +2554,19 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **How to apply — ② 재개 트리거**: Phase 1 발행 로그 스키마가 shared/stocks에 land. 사전 조율 = dashboard 세션에 "Viewed를 얹으려면 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`)" 요구 전달.
 
 **baseline at decision**: origin/main = 8be3f65. prod 쓰기: 0(설계 단계).
+
+## [2026-07-02] Phase 2 촉발 표면: 배치·성격·위계·카피 (D-MP2-SURFACE)
+
+**결정**: ①촉발 시그널 표면화를 **market-pulse-v2 전용 화면(B)**에 구현. 메인 통합(A)·하이브리드(C) 아님.
+
+**화면 성격(경계, 사용자 재정의 2026-07)**: market_pulse 판단 화면 = "지금 사야/팔아야" **현재 시장 판단**. dashboard = **지난 시장 회고**(뉴스·주가 흐름 요약) + 종목추천. 서로 다른 일 → 다른 화면.
+
+**Why — 배치(가중합 합=1.00)**: 도그푸딩 0.30·regime일관성 0.25·구현유지보수 0.25·확장성 0.20 → B=3.95 / C=3.95 / A=3.55. B·C 동점 → 타이브레이커: "판단 vs 회고는 별개 작업" 경계 정합 + regime 척도 단일(intraday 5단계). **A 탈락 = EOD 3단계와 intraday 5단계가 한 화면에서 충돌.**
+
+**Why — 정보 위계(변형1 방향 우선, 합=1.00)**: 판단직결 0.35·가치축정합 0.25·빈상태견고 0.20·훑기효율 0.20 → 변형1=4.55 / 변형2=4.25 / 변형3=3.00. 1-2 마진 0.30<0.40 → 타이브레이커: "사야/팔아야" 첫 물음=방향(①), 섹터(②)는 그다음. **최종 위계: 국면 hero → 촉발 → 섹터 히트맵 → 서술(prose).**
+
+**How to apply**:
+- **hero 판단 문구 = 국면(regime)값별 정적 카피 테이블(LLM 미사용)**. 예 `LATE_BULL` → "신규 매수는 선별적으로 · 방어 비중 점검". 도그푸딩 우선(판단 자세 제시). 향후 서비스 포장 시 톤 재검토 여지(방향 B 이음새 보존).
+- 재사용 자산(anomaly·sector·regime intraday) 기존·활성 — 신규 계산 0.
+
+**baseline at decision**: origin/main = 8aee712. prod 쓰기 0.

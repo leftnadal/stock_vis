@@ -435,6 +435,16 @@
 
 ---
 
+## Phase 2 촉발 표면 구현 (MP2-SURFACE / 2026-07-02)
+
+> D-MP2-SURFACE 확정(B 독립화면 + 변형1 위계). 근거 DECISIONS D-MP2-SURFACE.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-SURFACE | market-pulse-v2를 **변형1 위계**(regime hero + 국면별 판단 카피 + 촉발 카드 + 섹터 히트맵 + prose)로 재구성. **기존 breadth/concentration/brief 카드 행위보존**(떨어뜨리지 말 것). 국면별 판단 카피 = 정적 테이블(LLM 미사용). 참조 D-MP2-SURFACE | market_pulse 트랙 직접 | 구현 STEP 0 후 착수 | 🆕 착수가능 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
