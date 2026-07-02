@@ -23,6 +23,7 @@ EODHD_API_KEY = os.getenv('EODHD_API_KEY', '')  # EODHD Historical Data
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
 MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE', '')  # AV NEWS_SENTIMENT broad co-mention 소스
 FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)

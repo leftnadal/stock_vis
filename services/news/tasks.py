@@ -1527,3 +1527,79 @@ def _get_mover_symbols(max_symbols=30):
     except Exception as e:
         logger.error(f"_get_mover_symbols failed: {e}")
         return []
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=90,  # AV 초당1 스로틀 — 재시도 시 텀 확보
+    soft_time_limit=300,
+    time_limit=360,
+)
+def collect_av_broad_news(
+    self,
+    time_from: str = None,
+    time_to: str = None,
+    topics: str = None,
+    limit: int = 1000,
+    sort: str = "LATEST",
+):
+    """
+    Alpha Vantage NEWS_SENTIMENT broad 수집 (co-mention 소스).
+
+    tickers 미지정 broad 크롤 → 기사당 다종목 ticker_sentiment = co-mention 신호.
+    저장은 NewsAggregatorService._save_articles(url upsert, 멱등)를 재사용하므로
+    창 겹침·재실행에 중복이 생기지 않는다. 기존 FMP/marketaux/finnhub 수집 무영향.
+
+    Args:
+        time_from/time_to: 'YYYYMMDDTHHMM' (백필 페이징용). None이면 최근.
+        topics: AV topic CSV (None이면 provider DEFAULT_TOPICS 전 섹터).
+        limit: 1~1000 (무료 상한 1000).
+        sort: LATEST | EARLIEST | RELEVANCE.
+
+    Returns:
+        dict: {fetched, saved, updated, skipped, window}.
+    """
+    from django.conf import settings
+
+    from services.news.providers.alphavantage import (
+        AlphaVantageNewsProvider,
+        RateLimitExceeded,
+    )
+    from services.news.services.aggregator import NewsAggregatorService
+
+    key = getattr(settings, "ALPHA_VANTAGE_API_KEY", "")
+    if not key:
+        logger.error("collect_av_broad_news: ALPHA_VANTAGE_API_KEY 미설정")
+        return {"error": "no_av_key", "fetched": 0, "saved": 0}
+
+    def _parse(dt):
+        return datetime.strptime(dt, "%Y%m%dT%H%M") if dt else None
+
+    provider = AlphaVantageNewsProvider(key)
+    try:
+        articles = provider.fetch_broad_news(
+            topics=topics,
+            time_from=_parse(time_from),
+            time_to=_parse(time_to),
+            limit=limit,
+            sort=sort,
+        )
+    except RateLimitExceeded as exc:
+        logger.warning(f"collect_av_broad_news: AV 스로틀/한도 → 재시도: {exc}")
+        raise self.retry(exc=exc)
+
+    aggregator = NewsAggregatorService()
+    unique = aggregator.deduplicator.deduplicate(articles)
+    saved, updated, skipped = aggregator._save_articles(unique)
+
+    result = {
+        "fetched": len(articles),
+        "unique": len(unique),
+        "saved": saved,
+        "updated": updated,
+        "skipped": skipped,
+        "window": f"{time_from or 'recent'}~{time_to or 'now'}",
+    }
+    logger.info(f"collect_av_broad_news: {result}")
+    return result
