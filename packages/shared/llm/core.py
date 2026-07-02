@@ -26,6 +26,7 @@ from packages.shared.llm.types import (
     LLMRawResponse,
     LLMResponse,
     LLMTimeoutError,
+    StreamFinal,
 )
 
 
@@ -270,10 +271,15 @@ async def astream(
     last_output_tokens = 0
     async for chunk in stream:
         # cost 누적용 usage 추적 — 청크 변형 0(원형 그대로 통과).
+        # gemini: raw 청크의 usage_metadata(#12 IDENTICAL, 경로 불변).
         usage = getattr(chunk, "usage_metadata", None)
         if usage is not None:
             last_input_tokens = int(getattr(usage, "prompt_token_count", 0) or 0)
             last_output_tokens = int(getattr(usage, "candidates_token_count", 0) or 0)
+        # anthropic(③b): 정규화 종단 StreamFinal에서 usage 흡수(gemini 청크는 해당 없음).
+        elif isinstance(chunk, StreamFinal):
+            last_input_tokens = chunk.input_tokens
+            last_output_tokens = chunk.output_tokens
         yield chunk
 
     # ── 정책 4: cost 기록 — cost_track=True일 때만, 스트림 완료 시점 집계 ──

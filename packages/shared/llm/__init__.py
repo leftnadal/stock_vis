@@ -22,6 +22,8 @@ from packages.shared.llm.types import (
     LLMRawResponse,
     LLMResponse,
     LLMTimeoutError,
+    StreamDelta,
+    StreamFinal,
 )
 
 __all__ = [
@@ -30,6 +32,8 @@ __all__ = [
     "astream",
     "LLMResponse",
     "LLMRawResponse",
+    "StreamDelta",
+    "StreamFinal",
     "LLMError",
     "LLMRateLimitError",
     "LLMTimeoutError",

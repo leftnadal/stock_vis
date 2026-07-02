@@ -4,7 +4,7 @@
   (a) config byte 동일: astream이 generate_content_stream에 넘기는 GenerateContentConfig·contents·
       model이 sync generate와 **동일 조립**(_build_config_kwargs 단일 출처).
   (b) delta 청크 시퀀스 동등성: mock stream의 청크를 astream이 **원형·순서 그대로** yield(재청크·뭉개기 0).
-  (c) gap fail-loud: streaming circuit/retry/fallback → NotImplementedError. anthropic astream → NotImplementedError.
+  (c) gap fail-loud: streaming retry/fallback → NotImplementedError. anthropic astream(③b) → 정규화 델타 yield.
 소비처 0 — 코어 신설만 검증.
 """
 
@@ -221,8 +221,51 @@ async def test_stream_circuit_counts_setup_failure_not_iteration(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_anthropic_astream_not_implemented():
-    """anthropic astream은 ③까지 NotImplementedError(반복 시점)."""
-    with pytest.raises(NotImplementedError):
-        async for _ in astream("x", provider="anthropic"):
-            pass
+async def test_anthropic_astream_yields_normalized_delta(monkeypatch, settings):
+    """anthropic astream(슬라이스 ③b) — StreamDelta*(text) + 종단 StreamFinal(usage) 정규화 yield.
+
+    messages.stream(async with)을 provider 어댑터가 셋업/순회로 분해: text_stream→StreamDelta,
+    get_final_message().usage→StreamFinal, __aexit__로 연결 해제.
+    """
+    settings.ANTHROPIC_API_KEY = "fake-key"
+    from packages.shared.llm.types import StreamDelta, StreamFinal
+
+    class _Stream:
+        @property
+        def text_stream(self):
+            async def _g():
+                for t in ["He", "llo"]:
+                    yield t
+
+            return _g()
+
+        async def get_final_message(self):
+            m = type("M", (), {})()
+            m.usage = type("U", (), {"input_tokens": 7, "output_tokens": 9})()
+            return m
+
+    class _CM:
+        async def __aenter__(self):
+            return _Stream()
+
+        async def __aexit__(self, *a):
+            return None
+
+    class _Msgs:
+        def stream(self, **kw):
+            return _CM()
+
+    class _Client:
+        def __init__(self, api_key=None):
+            self.messages = _Msgs()
+
+    import anthropic as real
+
+    monkeypatch.setattr(real, "AsyncAnthropic", _Client)
+
+    out = [c async for c in astream("x", provider="anthropic")]
+    deltas = [c.text for c in out if isinstance(c, StreamDelta)]
+    finals = [c for c in out if isinstance(c, StreamFinal)]
+    assert deltas == ["He", "llo"]  # 재청크·뭉개기 0
+    assert len(finals) == 1
+    assert (finals[0].input_tokens, finals[0].output_tokens) == (7, 9)

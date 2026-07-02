@@ -66,3 +66,28 @@ class LLMResponse:
     output_tokens: int
     cost_usd: float
     fallback_from: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class StreamDelta:
+    """astream() 정규화 텍스트 조각 (ADR-LLM-001, provider-무관).
+
+    순회 중 0개 이상 yield. §핀1·§핀4 실측: #12(gemini)·#8(anthropic) 공통으로
+    "텍스트 델타 1개"가 스트림 단위 → text 단일 필드로 표준화.
+    """
+
+    text: str
+
+
+@dataclass(frozen=True)
+class StreamFinal:
+    """astream() 종단 usage (ADR-LLM-001, provider-무관).
+
+    스트림 종료 시 정확히 1개 yield(마지막). gemini=마지막 청크 usage_metadata,
+    anthropic=get_final_message().usage — 위치가 provider마다 다른 것을 코어/provider가
+    흡수해 단일 모양으로 노출. cache_tokens는 캐시 히트 토큰(미제공 provider는 0).
+    """
+
+    input_tokens: int
+    output_tokens: int
+    cache_tokens: int = 0
