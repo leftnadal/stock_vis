@@ -2605,3 +2605,28 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 - Phase 2 Viewed 테이블은 별도 스텁(P2-VIEWED-TABLE) — 본 분리 결정의 후속.
 
 **baseline at decision**: origin/main = 008d0b2. prod 쓰기 0(결정 등재만).
+
+## [2026-07-02] 발행 로그 행 grain (D-P1-GRAIN)
+
+**결정**: 발행 로그 1행의 grain = **`(stock, signal_date, signal_tag)`**. 즉 "특정 날짜에, 특정 종목이, 특정 `signal_tag`로 발행됨"이 최소 단위. `rank`는 그 발행의 순위 **속성**(행을 나누지 않음).
+
+**왜**:
+- **★STEP 0 실측 반영 (2026-07-02, `eod_signal_tagger._determine_primary_tag`)**: `signal_tag`는 **시그널 종류 ID**(V1/P2/S1 등 — 모멘텀·거래량·돌파 카테고리의 개별 시그널)이며 **horizon이 아니다**. 한 종목이 **같은 날 복수 시그널 종류로 발행 가능**(primary 1 + `sub_tags` N) → 태그가 grain에 포함돼야 함. **실측으로 grain 모순 없음 확인**(검증조건 통과).
+- **horizon(1d/5d/20d)은 `signal_tag`가 아니라** SignalAccuracy의 `return_1d/5d/20d`·`excess_1d/5d/20d` **wide 접미사**로 별도 표현. 따라서 D-SCHEMA "horizon→signal_tag grain 정합"의 의미 = **grain 키는 signal_tag(시그널 종류), horizon은 wide 컬럼**(둘은 다른 축). SignalAccuracy grain `(stock, signal_date, signal_tag)`과 정확 일치.
+- bake 시점 1회 발행 = 1행(write 표면 0, serve-time 아님).
+- Phase 2 Viewed(per-user impression)와 분리: Viewed는 serve-time·user별로 이 발행 행을 참조(D-SCHEMA 테이블 분리).
+
+**검증조건(충족)**: STEP 0에서 `signal_tag` 실제 의미·동일 `(stock, date)` 내 복수 태그 가능성 실측 완료 → grain 모순 0. (원 초안 "왜"의 "signal_tag가 horizon 구분을 담으면" 표현은 실측 반영해 위와 같이 정정 — signal_tag=시그널 종류, horizon=별도 wide 축.)
+
+**baseline at decision**: origin/main = 98ae812. prod 쓰기 0(결정 등재만).
+
+## [2026-07-02] confidence 소스 — 신호강도 산식 v1 (D-P1-CONF)
+
+**결정**: 발행 로그 `confidence` 값의 소스 = **signal-strength formula v1**(기존 시그널 강도 산식). **LLM-report와 독립**(LLM 신뢰도가 아님). `conf_ver = 1`로 산식 버전 고정. `composite_score`(float, null)는 원점수 보존, enum `confidence`는 그로부터 파생된 라벨.
+
+**왜**:
+- Phase 5 SignalAccuracy 채점이 "어떤 산식 버전으로 매긴 신뢰도인가"를 알아야 캘리브레이션 가능 → `conf_ver`로 버전 태깅해 시계열 비교 가능성 보존(D-SCHEMA `conf_ver` 보존 근거와 동일).
+- **LLM-report 독립**: 레포트 유무·품질과 무관하게 발행 로그가 **항상 채워지도록**(연료 결손 방지 — D-P1-RECPROD "confidence v1이 day-1 유일하게 값 나는 길"과 정합).
+- **실측 근거**: `composite_score`는 실존 float(`eod_signal_tagger._calculate_composite_score`, 범위 −1.0~+1.0, 시그널 0이면 0.0) → 원점수 보존 후 enum 파생 가능.
+
+**baseline at decision**: origin/main = 98ae812. prod 쓰기 0(결정 등재만).
