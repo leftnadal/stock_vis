@@ -103,6 +103,9 @@ export interface RegimeCard {
   headline: string
   fired_rules: string[]
   transitioned: boolean
+  // D-MP2-SURFACE additive: 판단 카피 + 유효성 플래그 (구버전 응답엔 없을 수 있어 optional)
+  stance_copy?: string
+  stance_ok?: boolean
 }
 
 export interface BreadthCard {

@@ -53,10 +53,14 @@ async function renderWith(translations: Translations | null) {
 }
 
 describe('translations fallback 3상태', () => {
-  it('상태1 정상: 4카드 sense 렌더 + 밴드/raw 불변', async () => {
+  // D-MP2-SURFACE: SectorCardSummary → SectorHeatmap 교체로 sector sense가 페이지에서 제거됨.
+  // 따라서 정상 상태에서 sense-note는 3개(regime, breadth, concentration).
+  it('상태1 정상: 3카드 sense 렌더 + 밴드/raw 불변 (sector는 히트맵으로 교체됨)', async () => {
     await renderWith(FULL)
-    expect(screen.getAllByTestId('sense-note')).toHaveLength(4)
+    expect(screen.getAllByTestId('sense-note')).toHaveLength(3)
     expect(screen.getByText(FULL.senses.regime)).toBeInTheDocument()
+    // sector sense는 히트맵으로 교체되어 페이지에서 미렌더(SectorHeatmap은 sense 미지원)
+    expect(screen.queryByText(FULL.senses.sector)).not.toBeInTheDocument()
     // additive 가드: 밴드·raw 그대로
     expect(screen.getByText(BAND_ANCHOR)).toBeInTheDocument()
     expect(screen.getByText('320')).toBeInTheDocument()
