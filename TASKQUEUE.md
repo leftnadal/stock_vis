@@ -34,6 +34,7 @@
 3. [ ] **🔴 beat + worker 둘 다 재시작**: `launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-beat` **및** `...celery-worker`(+`worker-neo4j`). **worker 재시작을 빠뜨리면** beat는 발화해도 worker가 신규 task를 모름 → `Received unregistered task ... KeyError` crash(2026-07-02 dev 실측). beat만 재시작하면 안 됨.
 4. [ ] **즉시 검증**: `celery -A config inspect registered | grep aggregate_relation_pairs`(등록 확인) + `PeriodicTask...filter(name="chainsight-pair-aggregation")` 1행·enabled·`11:30 America/New_York`.
 5. [ ] **익일 검증(진짜 GREEN)**: 다음 11:30 ET 경과 후 ⓐ worker 로그 `aggregate_relation_pairs succeeded`(unregistered 아님) + ⓑ 당일 `period` 행이 **단일 period·count 정상(중복 없음)**.
+   > **[v2 멱등 성격 정정]** `RelationPairSnapshot`은 unique `(canonical_a, canonical_b, period)` = **upsert형**이고 **`updated_at` 필드 없음**(created_at만). 따라서 같은 period 재실행은 **count·타임스탬프 모두 불변** → **발화 증거는 ⓐ worker 로그가 유일**(count "안 늘어남"을 실패로 오판 금지 = 위음성 차단). ⓑ count는 **중복(≈2배=멱등 위반) 감지용**이지 발화 증거 아님. verify_pair_aggregation.py가 A(로그)+B(count) 병행으로 이미 커버.
 6. [ ] **근본 수리(권장·별도 태스크)**: 위 migrate+register+재시작을 배포 스크립트/릴리스 훅에 넣어 수동 의존 제거 — B안의 "사람이 까먹음" 함정(#28이 한 층 위로 옮겨간 것)의 완결.
 
 ---
