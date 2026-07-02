@@ -24,6 +24,7 @@ from rest_framework.views import APIView
 from apps.market_pulse.api import cache as cache_keys
 from apps.market_pulse.api import status as api_status
 from apps.market_pulse.api.serializers.overview import OverviewResponseSerializer
+from apps.market_pulse.i18n.labels import resolve_regime_stance
 from apps.market_pulse.models.anomaly import AnomalySignalLog
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.news import MarketPulseNews
@@ -142,6 +143,8 @@ def _regime_card():
     snap = RegimeSnapshot.objects.filter(date=today).first()
     if snap is None:
         return None
+    # MP2-SURFACE: 국면별 판단 카피 부착(additive). status != OK면 fallback + stance_ok=False.
+    stance_copy, stance_ok = resolve_regime_stance(snap.regime, snap.status)
     return {
         "regime": snap.regime,
         "status": snap.status,
@@ -151,6 +154,8 @@ def _regime_card():
         "transitioned": bool(
             snap.previous_regime and snap.previous_regime != snap.regime
         ),
+        "stance_copy": stance_copy,
+        "stance_ok": stance_ok,
     }
 
 
