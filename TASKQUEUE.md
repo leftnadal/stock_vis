@@ -447,6 +447,18 @@
 
 ---
 
+## MP2-SURFACE 잔여 (2026-07-02)
+
+> MP2-SURFACE land 후 잔여. 근거 DECISIONS D-MP2-SURFACE / PROGRESS 2026-07-02.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-SECTOR-COLOR | 섹터 색 관례 불일치 — 신규 `SectorHeatmap`=상승 빨강(한국) vs 기존 `SectorCardSummary`/`SectorDetail` 드로어 `sectorFlow`=상대강세 녹색(서양). 같은 섹터가 요약↔상세 다른 색 → 혼란. 전면 한국 관례 통일(사용자 #1 한국). UI 결정 → 목업. **#2와 묶어 처리** | UI 결정+FE | 후속 슬라이스 | 🆕 보류 |
+| MP2-SECTOR-SENSE | 섹터 요약이 히트맵으로 교체되며 sector 한국어 sense(TranslationLog) 미표시(translation_fallback 4→3). Brief prose는 유지. 히트맵에 sense 한 줄 얹을지 후속 결정 — **#1과 동일 슬라이스**(경미) | FE | 후속(#1 묶음) | 🆕 보류 |
+| MP2-HEATMAP-FETCH | (관찰) 11-타일 히트맵이 요약 화면에서 sector 상세 eager fetch(로드 시 1콜 추가). 계약 무변경·기능 정상 = **버그 아님**. 선제 최적화 지양(측정 우선). overview 11섹터 additive 부착 전환은 실 성능 데이터 확보 후 판단 | 관찰(성능) | 실측 성능 이슈 시 | 🔵 관찰 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
