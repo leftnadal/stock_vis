@@ -129,10 +129,14 @@ def mp_sync_yahoo_indicators_daily(
     }
 
 
-# MP-DATA-MACRO-COVERAGE: regime 11 macro 중 재귀 beat 미보유 7종(NFCI군 4 + HY pair 2 +
-#   T10Y3M). 수동 command(sync_marketpulse_v2_indicators / backfill_v2_a1)에만 의존해
-#   stale→null 회귀 위험(STEP 0 확정: NFCI age 13 ≈ 14d 컷 근접). 재귀 task로 자동화.
-#   VIX3M·MOVE는 mp_sync_yahoo_indicators_daily(Yahoo)가 별도 커버 → FRED 미지원이라 제외.
+# MP-DATA-MACRO-COVERAGE: 재귀 beat로 자동화하는 FRED 일간 지표.
+#   NFCI군 4 + HY pair 2 + T10Y3M(초기 7종) +
+#   VIXCLS·DGS10·DGS2·T10Y2Y(MP-VIX-STALE 추가, 2026-06-28).
+#   수동 command(sync_marketpulse_v2_indicators / backfill_v2_a1)에만 의존하던 일간군이
+#   06-12~15 stale(VIXCLS 15일 갭) → regime 'normal' degraded 유발. FRED 실호출로 06-25까지
+#   정상 발행 확인(경우 P=커버리지 갭, 우리 수리 가능) → 재귀 task 대상에 편입.
+#   VIX3M·MOVE는 mp_sync_yahoo_indicators_daily(Yahoo)가 별도 커버 → FRED 미지원(400)이라 제외.
+#   CPIAUCSL·FEDFUNDS·UNRATE·PCEPI는 월간 발행이라 일간 재귀 대상 아님(별도).
 FRED_RECURRING_SERIES = (
     "NFCI",
     "NFCICREDIT",
@@ -141,6 +145,10 @@ FRED_RECURRING_SERIES = (
     "BAMLH0A0HYM2",
     "BAMLH0A3HYC",
     "T10Y3M",
+    "VIXCLS",
+    "DGS10",
+    "DGS2",
+    "T10Y2Y",
 )
 
 

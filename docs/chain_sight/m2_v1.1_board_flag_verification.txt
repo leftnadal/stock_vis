@@ -1,0 +1,67 @@
+M2 v1.1 보드 전환 + 플래그 — Slice A~E 검증 (Phase 1 전제 완성)
+================================================================
+세션: monorepo/sess-cs-board (base main fe0241c)
+목표: 이벤트 보드(리스트+드릴다운)가 EventGroup(kept·n3) + eg leadership을 읽도록
+      플래그 뒤 전환. 기본 OFF=IDENTICAL. 플래그 ON(go-live)은 사용자 수동 = Phase 1 완료.
+
+[플래그] settings.CHAINSIGHT_GROUP_SOURCE (.env 주입)
+- 'theme_tags'(기본/OFF) = 레거시 섹터 그룹핑(오늘과 IDENTICAL).
+- 'event_group'(ON) = EventGroup kept·n3 + benchmark_kind eg leadership.
+- 토글: apps/chain_sight/flags.py (use_event_group_board()).
+
+[Slice A — 보드 리스트] get_event_board 분기
+- OFF: _board_from_theme_tags (레거시 로직 추출, IDENTICAL).
+- ON: _board_from_event_groups → 어댑터 get_kept_event_groups(kept만). 키=slug, name=n3.
+- serializer: name = CharField(required=False)만 → OFF 누락 시 SkipField(스키마 IDENTICAL).
+- 프론트: EventBoardItem.name?(ON 전용), EventCard 라벨 = name ?? getLabelForTheme(theme).
+
+[Slice B — 드릴다운] get_event_ranking + attach_leadership_eg 분기
+- OFF: theme_tags__contains 멤버 + attach_leadership(theme=섹터명). IDENTICAL.
+- ON: 어댑터 get_event_group(slug) 멤버 + attach_leadership_eg(theme='eg:{slug}').
+- 리스트(slug 키) ↔ 드릴다운(slug) 동일 키 공유 → STEP 0.4 커플링 정합 충족.
+- leadership 재계산 없음 — prod eg: 114행 읽기만(core core_loo / sat sat_coremean).
+
+[Slice C — beat] compute_event_group_leadership_daily
+- 그룹 재적재(load_event_groups) → C leadership(최신 가격일) 순서.
+- register_chainsight_beats에 22:15 UTC 등록(attention 22:30·leadership 22:40보다 앞).
+- DB PeriodicTask 등록 = prod 변경 → 사용자 수동(`python manage.py register_chainsight_beats`).
+
+[Slice D — 캐시] get_kept_event_groups(전체) 캐시 + 무효화
+- 단일 키 cs:eg:kept_groups:v1, TTL 900s 안전망. 그룹 재적재 태스크가 명시 무효화.
+- OFF 경로는 어댑터 미사용 → 무캐시 IDENTICAL.
+
+[Slice E — 병렬 검증]
+■ OFF=IDENTICAL:
+  - 변경 파일 중 OFF 경로는 분기 추가만(레거시 로직 추출 보존).
+  - 기존 보드 테스트(test_attention TestEventBoardAPI, test_leadership_api) green.
+  - 라이브 OFF 덤프: 15 섹터 그룹(Semiconductor/Technology/…), name 키 없음 → 오늘과 동일.
+■ ON 쉐도우 (라이브 prod read-only, 플래그 in-process 전환, 미점화):
+  최신 attention=2026-06-26 = eg as_of 2026-06-26 → 정합(드릴다운 leadership 실값).
+  ON 보드 = kept 9그룹(gated 7 미노출):
+    news-stx-8  (sandisk seagate memory)     avg_score 86.88  members 4
+    news-v-7    (bcgd jstc quality)          avg_score 81.57  members 3
+    news-lrcx-4 (applied materials semicon)  avg_score 77.94  members 7
+  드릴다운 news-stx-8 (attention 순위 + eg_beta):
+    STX  score 99.8  eg_beta +0.636 (core_loo)
+    WDC  score 99.8  eg_beta +0.917 (core_loo)
+    SNDK score 95.1  eg_beta +1.025 (core_loo)
+    NTAP score 52.8  eg_beta +0.209 (sat_coremean)
+
+[플래그 ON 시 정확히 바뀌는 것 (go-live 판단 근거)]
+1. 보드 리스트: 섹터 15그룹 → EventGroup kept 9그룹(코어-위성, n3 이름).
+2. 그룹 클릭(드릴다운): theme_tags 멤버 → EventGroup core+satellite 멤버.
+3. 드릴다운 leadership: 섹터 LOO → C 벤치마크(코어=코어LOO, 위성=코어평균).
+4. gated 7그룹(저cohesion)은 안 보임.
+※ attention 점수 자체는 불변(theme-agnostic). 옛 theme_tags 데이터/행 그대로 보존.
+
+[행위보존]
+- 옛 theme_tags 보드/드릴다운/leadership·benchmark_kind=NULL 행 IDENTICAL.
+- pytest green(신규 20 + 회귀). vitest 보드 green(OFF 18 + ON 1). 경계 위반 0.
+- 라이브 미배선: 플래그 기본 OFF → 사용자 화면 변화 0.
+
+[사용자 수동 후속]
+1. go-live: .env CHAINSIGHT_GROUP_SOURCE=event_group + daphne web 재시작
+   (`launchctl kickstart -k gui/$(id -u)/com.stockvis.web`) = Phase 1 완료.
+2. C 컴퓨트 beat 등록: `python manage.py register_chainsight_beats` (prod PeriodicTask).
+3. 원격 sess-cs-* 브랜치 삭제, 원장 갱신.
+4. 후속: 옛 theme_tags leadership/그룹핑 디프리케이션(파괴적, 한참 뒤).

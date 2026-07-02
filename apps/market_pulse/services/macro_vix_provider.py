@@ -3,18 +3,20 @@ MacroVIXProvider — VIXProvider 포트(packages/shared)의 macro.models 기반 
 
 소속: apps/market_pulse/services (app 레이어 — shared 포트 구현체).
 역할: packages.shared.stocks.services.vix_provider.VIXProvider ABC의 두 메서드를
-  macro.MarketIndex/MarketIndexPrice 쿼리로 구현. VIX(`VIX`/`^VIX`/`VIXX`, category=
-  volatility) 종가 시계열·최신값 공급.
+  macro.IndicatorValue(code='VIXCLS') 쿼리로 구현. VIX 종가 시계열·최신값 공급.
+소스: macro.IndicatorValue(FRED VIXCLS 시리즈). 이전엔 macro.MarketIndex/
+  MarketIndexPrice(category='volatility')를 읽었으나 해당 소스가 0건이라 regime이
+  항상 'normal'로 degraded → 실제 적재된 VIXCLS(IndicatorValue)로 교체(MP-VIX-SRC).
 주요 심볼:
-  - VIX_SYMBOLS / VIX_CATEGORY: 쿼리 상수.
+  - VIX_INDICATOR_CODE: IndicatorValue 조회 코드('VIXCLS').
   - MacroVIXProvider: get_latest_vix(target_date) -> float|None, get_vix_series(
     date_from, date_to) -> list[Decimal].
-의존: macro.models (apps→app 합법).
+의존: macro.models (apps→app 합법). IndicatorValue도 macro app 소속이라 명칭 'Macro' 유지.
 등록: apps/market_pulse/apps.py::MarketpulseConfig.ready()에서 register_vix_provider(...).
 주의: BOUNDARY-3(2026-06-04) 채택한 의존 역전 + 등록 패턴의 한 축. shared가 macro·apps를
   거꾸로 import하지 않게 하는 유일한 통로. shared 코드는 이 클래스를 직접 import하지 않는다.
-행위보존: 옛 eod_pipeline._get_vix_value / eod_regime_calculator._calculate_regime이
-  사용하던 쿼리·반환 타입을 그대로 옮긴 것 — 산출 동등성 유지.
+계약보존: VIXProvider ABC 시그니처(get_latest_vix/get_vix_series)·반환 타입(float|None /
+  list[Decimal] 날짜 오름차순)·빈 결과 처리([]/None) 불변. 내부 읽기 소스만 교체.
 """
 
 from __future__ import annotations
@@ -26,52 +28,39 @@ from typing import Optional
 from packages.shared.stocks.services.vix_provider import VIXProvider
 
 
-VIX_SYMBOLS = ["VIX", "^VIX", "VIXX"]
-VIX_CATEGORY = "volatility"
+VIX_INDICATOR_CODE = "VIXCLS"
 
 
 class MacroVIXProvider(VIXProvider):
-    """macro.MarketIndex/MarketIndexPrice 기반 VIX 공급체."""
+    """macro.IndicatorValue(VIXCLS) 기반 VIX 공급체."""
 
     def get_latest_vix(self, target_date: date) -> Optional[float]:
-        from macro.models import MarketIndex, MarketIndexPrice
+        from macro.models import IndicatorValue
 
-        vix_index = MarketIndex.objects.filter(
-            symbol__in=VIX_SYMBOLS,
-            category=VIX_CATEGORY,
-        ).first()
-        if not vix_index:
-            return None
-        price = (
-            MarketIndexPrice.objects.filter(
-                index=vix_index,
+        value = (
+            IndicatorValue.objects.filter(
+                indicator__code=VIX_INDICATOR_CODE,
                 date__lte=target_date,
             )
             .order_by("-date")
-            .values_list("close", flat=True)
+            .values_list("value", flat=True)
             .first()
         )
-        if price is None:
+        if value is None:
             return None
-        return float(price)
+        return float(value)
 
     def get_vix_series(
         self, date_from: date, date_to: date
     ) -> list[Decimal]:
-        from macro.models import MarketIndex, MarketIndexPrice
+        from macro.models import IndicatorValue
 
-        vix_index = MarketIndex.objects.filter(
-            symbol__in=VIX_SYMBOLS,
-            category=VIX_CATEGORY,
-        ).first()
-        if not vix_index:
-            return []
         return list(
-            MarketIndexPrice.objects.filter(
-                index=vix_index,
+            IndicatorValue.objects.filter(
+                indicator__code=VIX_INDICATOR_CODE,
                 date__gt=date_from,
                 date__lte=date_to,
             )
             .order_by("date")
-            .values_list("close", flat=True)
+            .values_list("value", flat=True)
         )

@@ -173,13 +173,15 @@ def compute_attention_scores(target_date: date) -> int:
 
 def get_event_board(target_date: date) -> list[dict]:
     """
-    이벤트 그룹(theme_tags)별 집계.
+    이벤트 그룹별 관심도 집계. 그룹 소스는 플래그(CHAINSIGHT_GROUP_SOURCE)로 분기.
+
+    OFF(기본) → theme_tags 그룹핑(오늘과 IDENTICAL).
+    ON → EventGroup(kept만·n3 이름), 키=slug·표시명=name 추가.
+
+    attention 점수는 theme-agnostic이라 그룹핑 소스만 교체(점수 로직 불변).
 
     Returns:
         평균 관심도 내림차순 list[dict].
-        모든 그룹 포함(멤버=1 포함). 소표본은 member_count로 노출 →
-        프론트 저신뢰 표식. (CS-RD3: 그룹 커버리지 완전성 위해 멤버<3 필터 제거.
-        상대지표는 quorum(MIN_THEME_MEMBERS=3) 미달 시 None → MetricCell이 "—" 렌더.)
     """
     # target_date 스냅샷 존재 확인
     scores_qs = StockAttentionScore.objects.filter(date=target_date).values(
@@ -190,7 +192,15 @@ def get_event_board(target_date: date) -> list[dict]:
     if not score_map:
         return []
 
-    # theme_tags → symbol 매핑
+    from apps.chain_sight.flags import use_event_group_board
+
+    if use_event_group_board():
+        return _board_from_event_groups(score_map)
+    return _board_from_theme_tags(score_map)
+
+
+def _board_from_theme_tags(score_map: dict) -> list[dict]:
+    """레거시 theme_tags 그룹핑(오늘과 IDENTICAL). 분기만 추가, 로직 보존."""
     profiles = CompanyChainProfile.objects.filter(
         symbol_id__in=list(score_map.keys())
     ).values("symbol_id", "theme_tags")
@@ -225,22 +235,65 @@ def get_event_board(target_date: date) -> list[dict]:
     return result
 
 
+def _board_from_event_groups(score_map: dict) -> list[dict]:
+    """
+    EventGroup(kept만·n3) 그룹핑. 키=slug(드릴다운), 표시명=name(n3). 게이팅은 어댑터.
+
+    attention 점수 집계는 OFF와 동일(소스만 EventGroup 멤버십).
+    """
+    from apps.chain_sight.services import event_group_reader as reader
+
+    result = []
+    for g in reader.get_kept_event_groups():
+        members = [m["symbol"] for m in g["members"]]
+        member_scores = [score_map[m] for m in members if m in score_map]
+        if not member_scores:
+            continue
+
+        avg_score = sum(r["score"] for r in member_scores) / len(member_scores)
+        avg_return = sum(r["raw_return"] for r in member_scores) / len(member_scores)
+        high_count = sum(1 for r in member_scores if r["score"] >= 70)
+        low_count = sum(1 for r in member_scores if r["score"] <= 20)
+
+        result.append({
+            "theme": g["slug"],   # 드릴다운 키(eg: leadership과 공유)
+            "name": g["name"],    # n3 표시명(프론트 라벨)
+            "member_count": len(member_scores),
+            "avg_return": round(avg_return, 6),
+            "avg_score": round(avg_score, 2),
+            "high_attention_count": high_count,
+            "low_attention_count": low_count,
+        })
+
+    result.sort(key=lambda x: x["avg_score"], reverse=True)
+    return result
+
+
 def get_event_ranking(theme: str, target_date: date) -> list[dict]:
     """
-    특정 테마 소속 종목을 score 내림차순으로 반환.
+    특정 그룹 소속 종목을 score 내림차순으로 반환. 멤버십 소스는 플래그로 분기.
+
+    OFF(기본): theme=섹터명 → CompanyChainProfile.theme_tags (오늘과 IDENTICAL).
+    ON: theme=slug → EventGroup kept 멤버(core+satellite). 게이팅은 어댑터.
 
     Args:
-        theme: CompanyChainProfile.theme_tags 값
+        theme: OFF=theme_tags 값 / ON=EventGroup slug.
         target_date: 조회 날짜
 
     Returns:
         list[dict] — symbol, name, score, raw_return, volume_z, volatility_pct, is_low_liquidity
     """
-    # theme 소속 종목
-    profiles = CompanyChainProfile.objects.filter(
-        theme_tags__contains=[theme]
-    ).values("symbol_id")
-    symbols = [p["symbol_id"] for p in profiles]
+    from apps.chain_sight.flags import use_event_group_board
+
+    if use_event_group_board():
+        from apps.chain_sight.services import event_group_reader as reader
+        group = reader.get_event_group(theme)  # theme = slug, kept만(gated/부재 None)
+        symbols = [m["symbol"] for m in group["members"]] if group else []
+    else:
+        profiles = CompanyChainProfile.objects.filter(
+            theme_tags__contains=[theme]
+        ).values("symbol_id")
+        symbols = [p["symbol_id"] for p in profiles]
 
     if not symbols:
         return []

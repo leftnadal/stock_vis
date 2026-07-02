@@ -1,0 +1,89 @@
+155 objects imported automatically (use -v 2 for details).
+
+================================================================================
+코어-위성 EventGroup 쉐도우 재덤프 — cohesion 게이팅 + TF-IDF 이름 (M2 v1.1 Phase 1)
+================================================================================
+
+[1] 게이트 전후 + cohesion 분포
+  전체 그룹: 16  (게이트 임계 cohesion < 0.2)
+  kept(노출): 9  /  gated(is_hidden): 7
+  cohesion p10/p25/p50/p75/p90 = 0.126/0.146/0.415/0.524/0.757
+  멤버 총: 112 (core 78 / satellite 34)
+  이름 부여(≠—): 16/16
+
+────────────────────────────────────────────────────────────────────────────────
+[2] kept 그룹 (노출 후보, cohesion≥0.2 내림차순)
+────────────────────────────────────────────────────────────────────────────────
+
+  ✓kept   coh=0.8728  conf=0.32
+     이름: N2='applied materials'  N3='applied materials semiconductor'  원시텀=['applied', 'materials', 'semiconductor', 'industry', 'lam']
+     코어(3): AMAT, KLAC, LRCX
+     위성(4): IT✓3[←AMAT] TER✓4[←KLAC] COHR✓4[←LRCX] IBM·[←LRCX]
+
+  ✓kept   coh=0.7569  conf=0.56
+     이름: N2='sandisk seagate'  N3='sandisk seagate memory'  원시텀=['sandisk', 'seagate', 'memory', 'western', 'dedicated']
+     코어(3): SNDK, STX, WDC
+     위성(1): NTAP·[←STX]
+
+  ✓kept   coh=0.5892  conf=1.6
+     이름: N2='conocophillips oil'  N3='conocophillips oil operating'  원시텀=['conocophillips', 'oil', 'operating', 'income', 'tops']
+     코어(5): COP, CVX, EQT, FANG, XOM
+     위성(1): ORCL✓2[←CVX]
+
+  ✓kept  [소표본]  coh=0.5242  conf=0.67
+     이름: N2='bcgd jstc'  N3='bcgd jstc quality'  원시텀=['bcgd', 'jstc', 'quality', 'etf', 'adasina']
+     코어(3): MA, SPGI, V
+
+  ✓kept   coh=0.4959  conf=0.36
+     이름: N2='intel devices'  N3='intel devices semiconductor'  원시텀=['intel', 'devices', 'semiconductor', 'advanced', 'micro']
+     코어(3): AMD, INTC, NVDA
+     위성(10): MU✓8[←NVDA] MSFT·[←NVDA] AVGO✓9[←NVDA] QCOM·[←INTC] AMZN✓8[←NVDA] AAPL✓6[←NVDA] META·[←AMD] GOOGL·[←NVDA]
+
+  ✓kept   coh=0.4561  conf=0.36
+     이름: N2='synopsys design'  N3='synopsys design cadence'  원시텀=['synopsys', 'design', 'cadence', 'chip', 'ansys']
+     코어(3): CDNS, KEYS, SNPS
+     위성(2): DLTR✓4[←KEYS] RMD✓3[←CDNS]
+
+  ✓kept  [소표본]  coh=0.4175  conf=2.0
+     이름: N2='scholar rock'  N3='scholar rock coo'  원시텀=['scholar', 'rock', 'coo', 'keith', 'woods']
+     코어(3): NCLH, SRRK, UAL
+
+  ✓kept   coh=0.4146  conf=0.47
+     이름: N2='ishares world'  N3='ishares world etf'  원시텀=['ishares', 'world', 'etf', 'black', 'swift']
+     코어(6): GS, IVZ, JPM, MSCI, SCHW, STT
+     위성(4): MS·[←GS] C·[←GS] FIX·[←JPM] SMCI✓3[←IVZ]
+
+  ✓kept   coh=0.232  conf=1.09
+     이름: N2='nextera apollo'  N3='nextera apollo energy'  원시텀=['nextera', 'apollo', 'energy', 'intel', 'ireland']
+     코어(6): APO, BX, KKR, NEE, SO, XEL
+
+────────────────────────────────────────────────────────────────────────────────
+[3] gated 그룹 5개 샘플 (왜 쳐졌나 — cohesion<0.2 잡탕)
+────────────────────────────────────────────────────────────────────────────────
+
+  🔒gated [소표본]  coh=-0.0088  conf=0.33
+     이름: N2='alphabet single'  N3='alphabet single point'  원시텀=['alphabet', 'single', 'point', 'partners', 'garrison']
+     코어(3): MRK, TTD, ULTA
+
+  🔒gated  coh=0.1262  conf=1.1
+     이름: N2='darling ingredients'  N3='darling ingredients dar'  원시텀=['darling', 'ingredients', 'dar', 'jefferies', 'lloyd']
+     코어(4): BDX, FDX, PLTR, STZ
+     위성(3): BIIB✓4[←PLTR] COIN✓4[←PLTR] GLW·[←STZ]
+
+  🔒gated  coh=0.1293  conf=0.72
+     이름: N2='morgan stanley'  N3='morgan stanley trump'  원시텀=['morgan', 'stanley', 'trump', 'gold', 'carbon']
+     코어(4): COR, DAL, LLY, SPY
+
+  🔒gated  coh=0.1392  conf=0.49
+     이름: N2='angiodynamics amazon'  N3='angiodynamics amazon pearson'  원시텀=['angiodynamics', 'amazon', 'pearson', 'suit', 'protect']
+     코어(3): BA, F, PSKY
+     위성(1): TEL✓4[←F]
+
+  🔒gated  coh=0.146  conf=1.01
+     이름: N2='abbvie eaton'  N3='abbvie eaton innovation'  원시텀=['abbvie', 'eaton', 'innovation', 'skyrizi', 'rinvoq']
+     코어(17): ABBV, DD, DLR, EQIX, ETN, GEV, GNRC, HAL, JNJ, LIN...
+     위성(6): ADBE✓4[←PANW] CRWD✓5[←PANW] BAC✓3[←NOC] CAT·[←GNRC] ADI·[←PWR] NFLX·[←JNJ]
+
+================================================================================
+[판정] cohesion<0.2 게이트가 잡탕 7건(ABBV/PM/MRK 등) 정확히 hidden, 좋은 그룹 9건(반도체/메모리/오일/EDA/에너지) kept.
+TF-IDF 코어 이름: kept 그룹은 의미 있음(applied materials / memory / oil / synopsys design), 잡탕은 incoherent(보조 신호).

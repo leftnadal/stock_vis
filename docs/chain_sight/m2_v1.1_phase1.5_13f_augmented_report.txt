@@ -1,0 +1,80 @@
+==============================================================================
+chain_sight B/C 클러스터링 비교 리포트
+==============================================================================
+입력: events=628 universe=313 priced=200 price_corr=8859 as_of=2026-04-24
+엣지(쌍): 1193  |  half_life=21.0d weight_mode=jaccard price_fusion=none
+임계(C)=[0.05, 0.1, 0.2, 0.35]  min_members=3  γ(B)=[1.0, 2.0, 4.0]
+전체 그래프: 노드 313 엣지 1193 max_degree=263 (슈퍼허브=NVDA)
+
+──────────────────────────────────────────────────────────────────────────────
+허브 진단 — 정규화 모드별 NVDA degree (임계=각 모드 중앙 기본값)
+──────────────────────────────────────────────────────────────────────────────
+mode           임계  NVDAdeg  maxdeg  가짜스포크 vs 코어(엣지강도)
+raw           5.0       28      28  가짜[CAT=4.38 UBER=4.152 MTB=3.935] 코어[AMD=67.71 INTC=68.702 MU=24.893]
+jaccard       0.2        1       8  가짜[CAT=0.017 UBER=0.019 MTB=0.007] 코어[AMD=0.215 INTC=0.179 MU=0.096]
+npmi          0.5        0       3  가짜[CAT=0.037 UBER=0.038 MTB=0.031] 코어[AMD=0.011 INTC=0 MU=0.02]
+
+==============================================================================
+코어-위성 2층 리포트  (core_thr=0.2 sat_thr=0.05 weight_mode=jaccard satellite_13f=weight)
+==============================================================================
+코어 그룹 수: 17  (결정적, ARI=1.0)
+코어 크기 min/med/max: 3/5.0/20
+위성 크기 min/med/max: 0/1.0/8
+섹터교차 중앙: 코어 2.0 → 코어+위성 3.0 (위성이 새 섹터 유입)
+응집도 중앙: 코어 0.32 → 코어+위성 0.19 (위성 느슨함 = 예상)
+위성 13F: 총 43 중 검증불가(13F미커버) 27 / cohold존재 16 / gate제거 0
+
+──────────────────────────────────────────────────────────────────────────────
+상위 20 코어-위성 그룹 (위성 13F✓=공동보유, ·=미커버/없음)
+──────────────────────────────────────────────────────────────────────────────
+
+  ◆코어 n=20: ABBV(Heal), AIPO(), CSPI(), DD(Basi), DLR(Real), EQIX(Real), ETN(Indu), GEV(Util) +12
+   ◦위성 n=6: CRWD✓5[Tech←PANW] ADBE✓4[Tech←PANW] BAC✓3[Fina←NOC] CAT·[Indu←GNRC] ADI·[Tech←PWR] NFLX·[Comm←JNJ]
+
+  ◆코어 n=11: APTV(Cons), CMG(Cons), DIS(Comm), GOLF(), LHX(Indu), NKE(Cons), PM(Cons), RJF(Fina) +3
+   ◦위성 n=2: UBER✓5[Tech←APTV] WFC·[Fina←TFC]
+
+  ◆코어 n=8: GS(Fina), IVZ(Fina), JPM(Fina), MSCI(Fina), SCHW(Fina), SPYG(), STT(Fina), URTH()
+   ◦위성 n=5: SMCI✓3[Tech←IVZ] MS·[Fina←GS] C·[Fina←GS] FIX·[Indu←JPM] AAPL·[TECH←URTH]
+
+  ◆코어 n=3: AMD(Tech), INTC(Tech), NVDA(TECH)
+   ◦위성 n=8: MU✓8[Tech←NVDA] AVGO✓9[←NVDA] AMZN✓8[E-Co←NVDA] MSFT·[Tech←NVDA] QCOM·[Tech←INTC] META·[Tech←AMD] GOOGL·[Tech←NVDA] TSLA·[CONS←INTC]
+
+  ◆코어 n=6: BDX(Heal), DAR(), FDX(Indu), GENI(), PLTR(Tech), STZ(Cons)
+   ◦위성 n=5: BIIB✓4[Heal←PLTR] JD·[←PLTR] QLYS·[←PLTR] GLW·[Tech←GENI] DUOT·[←PLTR]
+
+  ◆코어 n=5: ANGO(), BA(Indu), F(Cons), PSKY(Comm), RBA()
+   ◦위성 n=5: TEL✓4[Tech←F] AGAE·[←PSKY] TJGC·[←PSKY] PSO·[←PSKY] SKYT·[←PSKY]
+
+  ◆코어 n=3: AMAT(Tech), KLAC(Tech), LRCX(Tech)
+   ◦위성 n=6: IT✓3[Tech←AMAT] TER✓4[Tech←KLAC] COHR✓4[Tech←LRCX] AMKR·[←KLAC] IBM·[Tech←LRCX] USD·[←LRCX]
+
+  ◆코어 n=6: APO(Fina), BX(Fina), KKR(Fina), NEE(Util), SO(Util), XEL(Util)
+   ◦위성 없음
+
+  ◆코어 n=5: COP(Ener), CVX(Ener), EQT(Ener), FANG(Ener), XOM(Ener)
+   ◦위성 n=1: ORCL✓2[Tech←CVX]
+
+  ◆코어 n=5: COR(Heal), DAL(Indu), LLY(), QBTS(), SPY(ETF)
+   ◦위성 없음
+
+  ◆코어 n=3: CDNS(Tech), KEYS(Tech), SNPS(Tech)
+   ◦위성 n=2: DLTR✓4[Cons←KEYS] RMD✓3[Heal←CDNS]
+
+  ◆코어 n=5: BCGD(), JSTC(), MA(Fina), SPGI(Fina), V(Fina)
+   ◦위성 없음
+
+  ◆코어 n=3: COIN(Fina), OPEN(), ORBS()
+   ◦위성 n=1: HPE·[Tech←COIN]
+
+  ◆코어 n=3: SNDK(Tech), STX(Tech), WDC(Tech)
+   ◦위성 n=1: NTAP·[Tech←STX]
+
+  ◆코어 n=3: CRM(Tech), HD(Cons), LOW(Cons)
+   ◦위성 n=1: AXTI·[←CRM]
+
+  ◆코어 n=3: NCLH(Cons), SRRK(), UAL(Indu)
+   ◦위성 없음
+
+  ◆코어 n=3: MRK(Heal), TTD(Tech), ULTA(Cons)
+   ◦위성 없음

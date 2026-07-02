@@ -474,6 +474,52 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 교훈: 동적 라우트 세그먼트에 사용자 표시 문자열(공백·`&`·한글)을 넣을 땐 **생성·소비 양측 인코딩 단계를 한 번씩만** 세고 왕복 테스트로 검증. 링크 생성 지점 전수 grep(누락 시 일부 진입로만 깨짐).
 - 📎 참조: `DECISIONS.md` "[2026-06-23] chain_sight 소규모 그룹 — URL 인코딩 버그(ⓑ)", `frontend/components/chainsight/EventBoard.tsx`·`app/chainsight/events/[theme]/page.tsx`, 테스트 `routeReversal.test.tsx`(왕복 10건).
 
+## verify용 클론은 PORT=3000 — 다른 포트는 CORS 차단('503'처럼 표면화) (#39) `[frontend]` `[infra]`
+
+- 증상: verify용 깨끗한 클론을 `:3100` 등 비표준 포트로 띄우면, 로그인된 세션인데도 `/market-pulse-v2` 등 **전 인증요청이 실패** + 화면은 "데이터를 불러오지 못했습니다". 브라우저 네트워크 패널엔 BE overview/i18n이 **503**으로 찍히나, BE(daphne :18765) access 로그엔 503이 **0건**·전부 `401 Unauthorized`. `curl`(토큰 없음)로는 동일 엔드포인트가 401 — 모순처럼 보임. MP1.5-FIX 시각검증 2026-06-25 발견.
+- 원인 `[infra]`: BE `CORS_ALLOWED_ORIGINS`(`config/settings.py:318`)에 **`http://localhost:3000`·`http://127.0.0.1:3000`만** 등록. `:3100` origin의 preflight(OPTIONS)는 **200이나 응답에 `Access-Control-Allow-Origin` 헤더(ACAO)가 누락** → 브라우저가 본응답을 차단 → axios는 `Network Error`. dev 프록시 계층이 차단된 요청을 **503으로 표기**해 'BE 503'처럼 오인됨(실체는 미인증/CORS). 카드 0렌더라 결함이 데이터/백엔드 문제로 잘못 보임.
+- 감지: `curl -s -D - -o /dev/null -X OPTIONS -H "Origin: http://localhost:3100" -H "Access-Control-Request-Method: GET" -H "Access-Control-Request-Headers: authorization" http://localhost:18765/api/v2/market-pulse/overview` → `Access-Control-Allow-Origin` 헤더 **부재**면 차단 확정(`:3000`으로 바꾸면 ACAO + `Access-Control-Allow-Credentials: true` 동반). BE access 로그(`~/Library/Logs/stockvis/web-error.log`)가 503이 아니라 401만 찍으면 'BE 503'은 착시.
+- 해결: **클론은 `PORT=3000`으로 띄운다** — 메인 `:3000` dev가 미가동이면 그 포트 재사용이 정석(메인·BE·settings 전부 무접촉, 검증 대상 코드 무변경). `cd <clone>/frontend && PORT=3000 npm run dev` → `:3000`에서 로그인 → CORS 통과(overview 200). 대안: `.env`에 `DJANGO_CORS_ALLOW_ALL=True`(개발 전체허용) — **되돌림 필요·비권장**(BE 재시작 + 운영 전체허용 리스크). settings에 `:3100` 영구 추가도 가능하나 메인 코드 변경이라 검증 세션엔 부적절.
+- 교훈: 카드 0렌더 + '503'을 보면 BE/데이터부터 의심하기 쉬우나, **로그인 세션의 인증요청이 전건 실패하면 CORS origin 화이트리스트를 먼저 의심**한다. preflight 200 ≠ 허용(ACAO 헤더 유무가 진실). 검증환경 포트는 항상 BE가 허용한 origin과 일치시킨다.
+- 📎 참조: `DECISIONS.md` "[2026-06-25] MP1.5-FIX 화면게이트 = 조건부 통과(D-P15-SCREENGATE)", `config/settings.py:318` `CORS_ALLOWED_ORIGINS`, `frontend/app/market-pulse-v2/details/CardDetailContainer.tsx:48`(cache 가드).
+
+## 세션 중 origin/main 빈번 전진 → push 직전 재확인 + 원장은 merge=union rebase 복구 (#40) `[git]` `[harness]`
+
+- 증상: 공유 main에서 한 트랙이 작업·검증하는 동안 **다른 트랙/자동화가 origin/main을 1~2 commit씩 반복 전진**시킴(cs reader→leadership→board 4세션 연속 관측: 매 push 전 0/0이었다가 push 시점 non-ff). 머지/push 직전 갑자기 non-ff 거부 또는 분기 발생.
+- 원인: origin/main은 외부 트랙이 비동기로 갱신하는 공유 ref. 세션 시작 STEP 0의 "0/0 동기"는 **그 순간 스냅샷**일 뿐, push까지 유지 보장 없음.
+- 감지: `git push` 직전 `git fetch` → `git merge-base --is-ancestor origin/main main` 미충족이면 그 사이 전진. (#33 fetch-baseline의 push 단계 변형.)
+- 해결: ① push 직전 항상 `git fetch` + ff 가능여부 재확인(STEP 0의 1회 fetch로 끝내지 말 것). ② non-ff면 `git rebase origin/main`으로 흡수 후 push. ③ **원장 4파일(`PROGRESS.md`·`DECISIONS.md`·`TASKQUEUE.md`·`sub_claude_md/common-bugs.md`)은 `.gitattributes`에 `merge=union`** → append 충돌이 자동 해소되므로 rebase가 거의 항상 무충돌(실측: MP-VIX-STALE `20f0e6d` 등 disjoint 트랙 흡수 충돌 0). 코드 파일이 겹치면 일반 충돌 → 수동.
+- 교훈: 공유 main에서 "동기됨"은 영속 상태가 아니라 만료되는 스냅샷. fetch는 분기 전(#33)뿐 아니라 **push 직전에도** 재실행. 원장은 union-merge라 append-only 규율만 지키면 동시 갱신이 안전하게 합쳐진다.
+- 📎 참조: #33(fetch 없는 baseline), #34(공유 디렉터리 혼입), `.gitattributes`(merge=union 4파일), `feedback_commit_pathspec_shared_main`(메모리).
+
+## 모듈 상수 변경 후 celery 워커 재기동 필수 — push만으론 조용한 갭 (#41) `[infra]` `[celery]`
+
+- 증상: 코드(예 `FRED_RECURRING_SERIES` 7→11)를 push·머지했는데도 자동 task가 여전히 옛 동작(7종만 sync) → 일부 지표 stale 지속. 에러 없이 조용히 누락(silent coverage gap).
+- 원인: celery 워커는 **시작 시점에 모듈을 import**해 상수를 메모리에 적재. 코드 파일이 바뀌어도 **실행 중 워커 프로세스는 옛 상수를 그대로 들고 있음**. push/머지는 디스크 코드만 갱신, 워커 메모리는 미반영. (MP-VIX-STALE 실측: 로컬 main 11종인데 워커 PID 7일 전 시작 = 메모리 7종.)
+- 감지: 코드 종수 vs 실제 task 결과 종수 대조 — `.delay()`(워커 실행)로 트리거 후 결과 확인. ※`.apply()`는 현재 셸에서 실행되어 **항상 새 코드**라 워커 검증에 무의미 — 반드시 `.delay()`.
+- 해결: 코드 push 후 **워커 재기동까지가 1셋트**. `launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-worker`(default 큐 = sync 실행 주체). 재기동 후 `.delay()` 1회로 새 상수 적재 입증(uptime 리셋 + 결과 종수 확인). beat는 스케줄 발행만이라 보통 worker만으로 충분(task 인자는 worker가 모듈에서 읽음).
+- 교훈: 모듈 레벨 상수/리스트를 자동 task가 읽으면, 그 변경의 운영 반영은 "merge"가 아니라 "워커 재기동"에서 완성된다. [[lesson_celery_task_registration]]의 신규 task 등록과 같은 뿌리(워커 메모리 ≠ 디스크 코드).
+- 📎 참조: `DECISIONS.md` "[2026-06-29] MP-VIX-BACKFILL"·"D-MP-VIX-STALE", 메모리 `lesson_celery_task_registration`.
+
+## 공유 main 작업트리 직접 편집 금지 — 워커 코드베이스 + 타 트랙 pull 차단 (#42) `[git]` `[harness]` `[infra]`
+
+- 증상: ⒜ 워커가 옛 코드로 돎(#41과 연동) ⒝ 다른 트랙의 `git pull`/정합이 *"local changes would be overwritten"* 으로 막힘 ⒞ 로컬 main이 origin과 divergence.
+- 원인: `~/Desktop/stock_vis`(공유 main 작업트리)는 **celery 워커가 직접 import하는 코드베이스**(별도 deploy/clone 없음, 우회 불가). 여기서 직접 편집하면 ① 미커밋 변경이 타 트랙 pull을 차단 ② 커밋해도 origin과 분기 ③ 워커는 그 디렉토리 코드를 봄. (실측: cs-board go-live 문서를 메인 작업트리에 직접 작성→미커밋→`eee3b19`로 divergence 유발.)
+- 감지: `git -C ~/Desktop/stock_vis status --porcelain`에 예상 밖 tracked 미커밋(M). 세션 시작 STEP 0에서 점검.
+- 해결: **모든 작업은 worktree에서 격리**(`git worktree add <path> -b <branch> origin/main`). 공유 main 작업트리는 워커 가동·pull 정합 전용으로 두고 직접 Edit/Write 금지. 미커밋이 이미 있으면 비파괴 패치 보존(handoff) 후 원작자 정합 대기(함부로 stash/checkout 금지).
+- 교훈: 공유 main 작업트리는 "편집하는 곳"이 아니라 "워커가 읽고 트랙들이 정합하는 곳". 격리 worktree가 기본, 메인 트리 직접 편집은 운영·정합 둘 다 깨뜨린다.
+- 📎 참조: `DECISIONS.md` "D-MP-VIX-STALE 부수 사건", #34(worktree 격리), #41(워커 재기동), `feedback_commit_pathspec_shared_main`(메모리).
+
+---
+
+## 결정 정합 — 로그/모델 스키마가 write 시점·표면 주장과 모순 없는지 자기점검 (#43) `[decision]` `[harness]`
+
+- 증상: 결정 등재 후 후속 세션이 "이 스키마 필드를 언제·어디서 채우나?"에서 막힘. 모델/로그 결정의 **필드**와 **write 시점·표면 주장**이 은근히 모순.
+- 사례: `D-P1-RECPROD`가 한 스키마에 `user_id`(누가 봤나) + "bake 시점 write / 새 write 표면 0"(사용자 미상 = EOD bake는 전 사용자 공용 1회)을 합쳐 **정면 모순**. STEP0가 이미 "생성-시점 로깅은 per-user 모름 부적합"이라 경고했으나 RECPROD가 재현.
+- 해결: **발행 로그(issuance, user 무관, grain=signal_date) vs 임프레션 로그(per-user, 노출 시점) 분리**. user_id는 nullable 예약 컬럼으로 구조만 보존(방향 B), day-1 미충족 명시. "제시 시각"이 발행 시각인지 본 시각인지 **용어 확정**.
+- 예방(DoD 규율): 로그/모델 결정 등재 시 각 필드에 대해 **"언제·어느 표면에서 write 되나 + write 시점에 그 값이 알려져 있나"** 자기점검 1패스. union-중복 자기점검과 같은 계열의 결정-등재 DoD.
+- 📎 참조: `DECISIONS.md` D-P1-STEP0 ❓① ↔ D-P1-RECPROD [impression 단위] 정정 주석(2026-07-02).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)

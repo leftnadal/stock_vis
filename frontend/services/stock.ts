@@ -3,6 +3,16 @@ import type { DynamicLayers } from '@/types/overview';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// 인증 헤더 빌더 — 백엔드 DRF 기본 권한이 IsAuthenticated(2026-04-29 audit P0 #5)이므로
+// 종목 상세/차트 등 파생 자산 GET은 JWT 토큰을 첨부해야 한다. 토큰이 없으면 Content-Type만 보낸다.
+function authHeaders(): Record<string, string> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 export interface StockQuote {
   symbol: string;
   stock_name: string;
@@ -118,9 +128,7 @@ export const stockService = {
   // Get stock quote (basic info) - using overview API which contains quote data
   async getStockQuote(symbol: string): Promise<StockQuote> {
     const response = await fetch(`${API_URL}/stocks/api/overview/${symbol}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -160,9 +168,7 @@ export const stockService = {
   // Get stock overview with meta information
   async getStockOverviewWithMeta(symbol: string): Promise<OverviewWithMeta> {
     const response = await fetch(`${API_URL}/stocks/api/overview/${symbol}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -263,9 +269,7 @@ export const stockService = {
   // Get sync status
   async getSyncStatus(symbol: string): Promise<any> {
     const response = await fetch(`${API_URL}/stocks/api/sync/${symbol}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -296,9 +300,7 @@ export const stockService = {
     console.log('Fetching chart data from:', url);
 
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -325,9 +327,7 @@ export const stockService = {
     console.log('[DEBUG] Balance Sheet URL:', url);
 
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     console.log('[DEBUG] Balance Sheet Response:', response.status, response.statusText);
@@ -354,9 +354,7 @@ export const stockService = {
     });
 
     const response = await fetch(`${API_URL}/stocks/api/income-statement/${symbol}/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -382,9 +380,7 @@ export const stockService = {
     console.log('[DEBUG] Cash Flow URL:', url);
 
     const response = await fetch(url, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     console.log('[DEBUG] Cash Flow Response:', response.status, response.statusText);
@@ -402,9 +398,7 @@ export const stockService = {
   // Search for stocks (will be integrated later)
   async searchStocks(query: string): Promise<any[]> {
     const response = await fetch(`${API_URL}/stocks/api/search/?q=${encodeURIComponent(query)}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -427,9 +421,7 @@ export const stockService = {
     });
 
     const response = await fetch(`${API_URL}/stocks/api/key-metrics/${symbol}/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -452,9 +444,7 @@ export const stockService = {
     });
 
     const response = await fetch(`${API_URL}/stocks/api/ratios/${symbol}/?${params}`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -468,9 +458,7 @@ export const stockService = {
   // Get DCF valuation
   async getDCF(symbol: string): Promise<any> {
     const response = await fetch(`${API_URL}/stocks/api/dcf/${symbol}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {
@@ -484,9 +472,7 @@ export const stockService = {
   // Get investment rating
   async getRating(symbol: string): Promise<any> {
     const response = await fetch(`${API_URL}/stocks/api/rating/${symbol}/`, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: authHeaders(),
     });
 
     if (!response.ok) {

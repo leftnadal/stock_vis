@@ -152,7 +152,14 @@ class EventRankingView(APIView):
         if window not in WINDOWS:
             window = DEFAULT_LEADERSHIP_WINDOW
 
-        ranking = attach_leadership(ranking, theme, target_date, window)
+        # 플래그 분기: ON → eg:{slug} C leadership(읽기만), OFF → 레거시 theme_tags leadership.
+        from apps.chain_sight.flags import use_event_group_board
+
+        if use_event_group_board():
+            from apps.chain_sight.services.leadership_eventgroup import attach_leadership_eg
+            ranking = attach_leadership_eg(ranking, theme, target_date, window)
+        else:
+            ranking = attach_leadership(ranking, theme, target_date, window)
 
         serializer = EventRankingItemSerializer(ranking, many=True)
         return Response(

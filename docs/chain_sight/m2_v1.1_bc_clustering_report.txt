@@ -1,0 +1,113 @@
+==============================================================================
+chain_sight B/C 클러스터링 비교 리포트
+==============================================================================
+입력: events=628 universe=313 priced=200 as_of=2026-04-24
+엣지(쌍): 1193  |  파라미터: half_life=21.0d threshold(C)=[1.0, 3.0, 5.0, 8.0] min_members=3 γ(B)=[1.0, 2.0, 4.0]
+전체 그래프: 노드 313 엣지 1193 max_degree=263 (슈퍼허브=NVDA)
+
+──────────────────────────────────────────────────────────────────────────────
+정량 비교 (자격게이트 = ≥3 멤버)
+──────────────────────────────────────────────────────────────────────────────
+지표                          C t=1.0      C t=3.0      C t=5.0      C t=8.0      B γ=1.0      B γ=2.0      B γ=4.0
+raw 그룹 수                          1            1            1            1            8           18           37
+자격 그룹 수(≥N)                       1            1            1            1            8           17           30
+raw 크기 min/med/max    107/107.0/107   46/46.0/46   32/32.0/32   15/15.0/15   6/23.0/133    2/17.5/46     1/8.0/33
+자격 크기 min/med/max     107/107.0/107   46/46.0/46   32/32.0/32   15/15.0/15   6/23.0/133    4/18.0/46     3/9.5/33
+최대 그룹 크기                        107           46           32           15          133           46           33
+1·2인 그룹 비율                      0.0          0.0          0.0          0.0          0.0        0.056        0.189
+섹터교차(중앙 distinct)              15.0          9.0          7.0          4.0          7.5          4.0          3.0
+멀티섹터 그룹%                      100.0        100.0        100.0        100.0         87.5        100.0         86.7
+응집도(상관 중앙)                    0.177         0.23        0.262        0.298        0.147        0.165        0.159
+breadth(방향일치 중앙)              0.702        0.721        0.729        0.739         0.69        0.708        0.739
+비자명멤버비(중앙)                     0.16        0.067        0.097          0.0        0.458        0.118          0.0
+실행간안정성(ARI)                     1.0          1.0          1.0          1.0        0.561        0.838        0.932
+
+==============================================================================
+[C t=8.0] 상위 1 자격 그룹
+==============================================================================
+  C t=8.0-0 n=15 lead=NVDA   conf=77.134
+     멤버: NVDA(TECH), INTC(Tech), AMD(Tech), MSFT(Tech), GOOGL(Tech), MU(Tech), QCOM(Tech), TSLA(CONS), AMZN(E-Co), GOOG(Tech) +5
+     근거: INTC↔NVDA w=68.7(n=111); AMD↔NVDA w=67.71(n=119); AMD↔INTC w=54.1(n=78)
+
+==============================================================================
+[B γ=2.0] 상위 17 자격 그룹
+==============================================================================
+  B γ=2.0-0 n=46 lead=NVDA   conf=1.726
+     멤버: NVDA(TECH), TMO(Heal), LITE(Tech), SHAZ(), AKAM(Tech), IQV(Heal), CI(Heal), AAOI(), GE(Indu), SNA(Indu) +36
+     근거: NVDA↔TMO w=3.47(n=4); LITE↔NVDA w=2.54(n=3); NVDA↔SHAZ w=2.33(n=3)
+  B γ=2.0-1 n=36 lead=MSFT   conf=3.163
+     멤버: MSFT(Tech), AMZN(E-Co), AAPL(TECH), SPY(ETF), UBER(Tech), AXTI(), QQQ(ETF), TMUS(Comm), NZAC(), NAGE() +26
+     근거: AMZN↔MSFT w=10.36(n=20); AAPL↔MSFT w=7.83(n=14); AAPL↔AMZN w=2.13(n=4)
+  B γ=2.0-2 n=27 lead=NFLX   conf=1.768
+     멤버: NFLX(Comm), JNJ(Heal), MMM(Indu), LLY(), ABBV(Heal), HAL(Ener), LMT(Indu), DD(Basi), NOC(Indu), FRT(Real) +17
+     근거: ABBV↔HAL w=1.0(n=1); ABBV↔JNJ w=1.0(n=1); ABBV↔MMM w=1.0(n=1)
+  B γ=2.0-3 n=21 lead=INTC   conf=10.902
+     멤버: INTC(Tech), AMD(Tech), QCOM(Tech), TSM(Tech), TER(Tech), LIN(Basi), STM(), AAL(), ZTO(), QUIK() +11
+     근거: AMD↔INTC w=54.1(n=78); INTC↔QCOM w=16.47(n=26); AMD↔QCOM w=8.85(n=13)
+  B γ=2.0-4 n=20 lead=PLTR   conf=1.863
+     멤버: PLTR(Tech), NKE(Cons), STZ(Cons), CMG(Cons), BDX(Heal), DAR(), FDX(Indu), APTV(Cons), PM(Cons), TPL(Ener) +10
+     근거: PLTR↔STZ w=1.22(n=2); BIIB↔JD w=0.63(n=1); BIIB↔PLTR w=0.63(n=1)
+  B γ=2.0-5 n=20 lead=MS     conf=2.478
+     멤버: MS(Fina), JPM(Fina), URTH(), GS(Fina), BAC(Fina), WFC(Fina), C(Fina), BX(Fina), IVZ(Fina), BK(Fina) +10
+     근거: GS↔JPM w=1.46(n=2); GS↔URTH w=1.46(n=2); JPM↔URTH w=1.46(n=2)
+  B γ=2.0-6 n=19 lead=DELL   conf=3.192
+     멤버: DELL(Tech), CSCO(Tech), HPQ(Tech), HPE(Tech), SMCI(Tech), MSI(Tech), JBL(Tech), MTB(Fina), BSX(Heal), BBY(Cons) +9
+     근거: DELL↔HPQ w=5.59(n=7); DELL↔HPE w=3.07(n=5); CSCO↔JBL w=2.38(n=8)
+  B γ=2.0-7 n=18 lead=GOOGL  conf=4.259
+     멤버: GOOGL(Tech), GOOG(Tech), MRK(Heal), IBM(Tech), ULTA(Cons), NEE(Util), SO(Util), XEL(Util), TTD(Tech), ATON() +8
+     근거: GOOG↔GOOGL w=13.67(n=22); GOOGL↔IBM w=2.99(n=6); GOOGL↔MRK w=2.94(n=3)
+  B γ=2.0-8 n=18 lead=MU     conf=3.325
+     멤버: MU(Tech), TXN(Tech), WDC(Tech), ADI(Tech), STX(Tech), SNDK(Tech), NXPI(Tech), MCHP(Tech), AMGN(Heal), RMBS() +8
+     근거: MU↔TXN w=3.15(n=4); MU↔WDC w=2.59(n=4); NXPI↔TXN w=2.37(n=3)
+  B γ=2.0-9 n=17 lead=AVGO   conf=2.032
+     멤버: AVGO(), CRWD(Tech), FICO(Tech), PANW(Tech), FIX(Indu), ADBE(Tech), MOS(Basi), UNH(Heal), CRDO(), WRD() +7
+     근거: AVGO↔FIX w=1.96(n=4); AVGO↔FICO w=1.71(n=3); AVGO↔CRWD w=1.57(n=3)
+  B γ=2.0-10 n=15 lead=TSLA   conf=1.806
+     멤버: TSLA(CONS), NOW(Tech), CRM(Tech), HD(Cons), LOW(Cons), HSAI(), CARE(), CETY(), CSX(Indu), NPB() +5
+     근거: NOW↔TSLA w=1.9(n=2); HSAI↔TSLA w=1.59(n=2); CARE↔TSLA w=0.97(n=1)
+  B γ=2.0-11 n=14 lead=AMAT   conf=2.958
+     멤버: AMAT(Tech), LRCX(Tech), KLAC(Tech), V(Fina), IT(Tech), JSTC(), MA(Fina), ASX(), USD(), CGNX() +4
+     근거: AMAT↔LRCX w=4.5(n=9); KLAC↔LRCX w=2.83(n=6); AMAT↔IT w=2.5(n=3)
+  B γ=2.0-12 n=10 lead=META   conf=2.396
+     멤버: META(Tech), GLW(Tech), NCLH(Cons), SRRK(), UAL(Indu), ARM(), COHR(Tech), OCUL(), HIVE(), TD()
+     근거: GLW↔META w=2.43(n=4); ARM↔META w=2.0(n=2); META↔NCLH w=0.88(n=1)
+  B γ=2.0-13 n=10 lead=CAT    conf=1.123
+     멤버: CAT(Indu), GEV(Util), AIPO(), ETN(Indu), PWR(Indu), TGT(Cons), VST(Util), GNRC(Indu), DE(Indu), BEN(Fina)
+     근거: AIPO↔ETN w=0.47(n=1); AIPO↔GEV w=0.47(n=1); AIPO↔PWR w=0.47(n=1)
+  B γ=2.0-14 n=10 lead=F      conf=3.253
+     멤버: F(Cons), PSKY(Comm), BA(Indu), ANGO(), RBA(), AGAE(), PSO(), TJGC(), TEL(Tech), SKYT()
+     근거: F↔PSKY w=3.62(n=4); BA↔F w=1.94(n=2); ANGO↔BA w=0.97(n=1)
+  B γ=2.0-15 n=6  lead=COP    conf=2.008
+     멤버: COP(Ener), CVX(Ener), ORCL(Tech), XOM(Ener), EQT(Ener), FANG(Ener)
+     근거: COP↔CVX w=0.72(n=1); COP↔ORCL w=0.72(n=1); COP↔XOM w=0.72(n=1)
+  B γ=2.0-16 n=4  lead=SNPS   conf=2.95
+     멤버: SNPS(Tech), CDNS(Tech), KEYS(Tech), RMD(Heal)
+     근거: CDNS↔SNPS w=2.41(n=5); KEYS↔SNPS w=2.1(n=4); CDNS↔RMD w=0.7(n=1)
+
+==============================================================================
+종목 기준 diff: C t=8.0 vs B γ=2.0 (자격 그룹 한정, 상위 degree 종목 30)
+==============================================================================
+종목     섹터                               C그룹                         B그룹
+NVDA   TECHNOLOG   AAPL/AMAT/AMD/AMZN/AVGO/    AAOI/ACLS/AEHR/AIXC/AKAM
+INTC   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    AAL/AMD/AXSM/CFG/CRUS/DB
+MSFT   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    AAPL/ACN/AGIX/AIP/AMZN/A
+AMD    Technolog   AAPL/AMAT/AMZN/AVGO/DELL    AAL/AXSM/CFG/CRUS/DB/FOR
+MU     Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    ADI/AMGN/AMKR/ASML/IIVI/
+AMZN   E-Commerc   AAPL/AMAT/AMD/AVGO/DELL/    AAPL/ACN/AGIX/AIP/APLY/A
+GOOGL  Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    APA/ATON/CLS/DLR/DOCU/GO
+AAPL   TECHNOLOG   AMAT/AMD/AMZN/AVGO/DELL/    ACN/AGIX/AIP/AMZN/APLY/A
+AVGO               AAPL/AMAT/AMD/AMZN/DELL/    ADBE/ALAB/COIN/CRDO/CRWD
+TSLA   CONSUMER    AAPL/AMAT/AMD/AMZN/AVGO/    AJG/CARE/CETY/CRM/CSX/HD
+META   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    ARM/COHR/GLW/HIVE/NCLH/O
+QCOM   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    AAL/AMD/AXSM/CFG/CRUS/DB
+DELL   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    ADSK/ANET/BBY/BSX/CSCO/C
+AMAT   Technolog   AAPL/AMD/AMZN/AVGO/DELL/    ASX/BCGD/CGNX/IT/JSTC/KL
+GOOG   Technolog   AAPL/AMAT/AMD/AMZN/AVGO/    APA/ATON/CLS/DLR/DOCU/GO
+
+==============================================================================
+자동 판독 (구조적 사실 — 선택 아님)
+==============================================================================
+• 허브 지배: max_degree=263/313 = 84% 노드와 연결(NVDA).
+• C(연결요소)는 모든 임계([1.0, 3.0, 5.0, 8.0])에서 자격그룹 1개 → 허브가 단일 연결요소 강제. 임계↑는 분리 아닌 축소(크기만 감소). 다중 테마 분리 불가.
+• B(Louvain)는 다중 테마 생성. (자격그룹, ARI) = {'B γ=1.0': (8, 0.5606065463956422), 'B γ=2.0': (17, 0.8378905140479045), 'B γ=4.0': (30, 0.9320124196196484)}. γ↑ → 그룹↑·안정성↑·1·2인↑ 트레이드오프.
+• 응집도(상관)는 C 타이트코어 쪽이 약간 높음(같이 보도된 핵심만 남으므로). B는 커버리지 넓고 비자명멤버(세렌디피티) 많음.

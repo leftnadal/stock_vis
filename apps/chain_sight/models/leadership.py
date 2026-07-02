@@ -62,6 +62,18 @@ class StockLeadershipScore(models.Model):
         default=False,
         help_text="120일 미달로 20 윈도우만 산출된 종목 표시(IPO/상폐/프리미엄).",
     )
+    benchmark_kind = models.CharField(
+        max_length=24,
+        null=True,
+        blank=True,
+        db_index=True,
+        help_text=(
+            "벤치마크 피어셋 구성(additive). NULL=레거시 theme_tags LOO 경로. "
+            "'core_loo'=EventGroup 코어 종목(코어 자기제외 LOO). "
+            "'sat_coremean'=EventGroup 위성 종목(전체 코어 평균). "
+            "새 경로 행은 theme='eg:{slug}'로 레거시 행과 키 분리(unique_together 미변경)."
+        ),
+    )
 
     class Meta:
         unique_together = [("stock", "theme", "window", "as_of_date")]

@@ -5,6 +5,32 @@
 
 ---
 
+## Chain Sight M2 v1.1 — theme_tags → EventGroup reader 전환 (Phase 1)
+
+> 보드를 섹터형 theme_tags → 코어-위성 EventGroup + 정합 leadership으로 전환. 2026-06-27 **Phase 1 완료(go-live)**. 결정: DECISIONS "Chain Sight 보드 EventGroup 전환 (2026-06-27)".
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-EG1 | EventGroup 리더 어댑터 (kept만·n3·core/satellite) | @backend | - | **done** | `event_group_reader.py` (머지 `d787499`) |
+| CS-EG2 | C 비대칭 leadership 재컴퓨트 (코어 LOO/위성 코어평균) + L3 오라클 | @backend | CS-EG1 | **done** | `leadership_eventgroup.py` + migration 0013 (머지 `269d1eb`) + prod eg 114행 |
+| CS-EG3 | 보드 리스트+드릴다운 플래그 배선 (`CHAINSIGHT_GROUP_SOURCE` OFF 기본) | @backend/@frontend | CS-EG2 | **done** | `flags.py`·attach_leadership_eg·EventBoard.tsx (머지 `202a840`) |
+| CS-EG4 | C 컴퓨트 daily beat (22:15 UTC) + 캐시 | @infra | CS-EG3 | **done** | `register_chainsight_beats` + `chainsight-event-group-leadership-daily` 등록·worker 재기동 |
+| CS-EG5 | go-live: 플래그 ON + 서버 재시작 = Phase 1 완료 | orchestrator | CS-EG4 | **done** | `.env event_group` + daphne/celery 재시작, beat `.delay()` 검증 |
+| CS-EG6 | 옛 theme_tags leadership/그룹핑 디프리케이션 (파괴적, 한참 뒤) | @backend | CS-EG5 안정화 | todo | — (전환 안정 후) |
+
+### Chain Sight Phase 2 백로그 (Phase 1 라이브 후, 2026-06-27 등록)
+
+> 출처: Phase 1 마무리 정리 세션. LLM 묶음은 BOUNDARY-LLM 트랙 의존(메모리 `project_boundary_llm_track`).
+
+| ID | Task | Agent | Depends On | Status | 비고 |
+|----|------|-------|------------|--------|------|
+| CS-P2-LLM | LLM 의존 묶음 (LLM 레이어 통합 / 10-K 관계추출 / FRED 해석) | @rag-llm/@backend | **BOUNDARY-LLM 슬라이스① land** | todo | shared LLM 래퍼 통합 선행 필요 |
+| CS-M3 | Path Watchlist (코어-위성 경로 추적) | @backend/@frontend | 독립 | todo | EventGroup 코어-위성 위 경로 추적 |
+| CS-P2-GRAPH | 그래프 화면 정제 (EventGroup 시각화) | @frontend | 독립 | todo | redesign v1 그래프 캔버스 위 EventGroup 반영 |
+| CS-P2-13F | 13F 버그 + CUSIP 매핑 수정 | @backend | 독립 | todo | 위성 cohold_institutions 정확도 |
+
+---
+
 ## Chain Sight 마켓 뷰 (redesign v1)
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
@@ -180,7 +206,6 @@
 | TRASH-9 | **`.env` 소비자 4종 launchd 일원화** — worker/beat/worker-neo4j는 launchd, daphne만 수동 기동 → daphne plist 등록으로 다음 회전 = `kickstart 4건`. 소비자 목록 문서화. | @infra | - | todo | LaunchAgents + 문서 |
 | TRASH-10 | **마스킹 로그 스캔 표준 스크립트 작성** (`scripts/scan_logs_masked.py`) — raw 로그 직접 grep 금지의 구조적 대체. 시크릿 패턴(apikey/api_token/password 등 쿼리파라미터·헤더)을 **값 진입 전 차단**(Python에서 파싱·마스킹, 셸 파이프 미경유)하는 방식. 배경: NV-2/TR-5 마스킹 슬립 2회(`ps\|tr\|sed`, `sed`가 `api_token=` 누락) → 구조적 재발 방지. | @infra | - | todo | `scripts/scan_logs_masked.py` |
 | TRASH-11 | **worktree 2건 거취 — DEAD 확정·remove 완료** (TR-7/8 정정). 기존 ALIVE 판정은 **stale 로컬 main 기준 오판**이었음. TR-8 STEP1: unique 커밋 5건(f483634/d4a9690/ce0be51/0b8399a/ef9d064) **전건 origin/main(d5212d4) REACHABLE = DEAD**. `sess-mgmt-phase1-catalog`·`sess-mp-phase1-cleanup` 디렉토리 소멸 + worktree registry 제거 완료(세션 간 외부 선제거, prune 정합). **잔여 결정**: 브랜치 2건 삭제 — 커밋이 origin/main 도달이나 **로컬 main 미도달**이라 `-d` 거부 예상 → 사용자 수동 `-D` 또는 `pull` 후 `-d`. + `sess-mp-kl-f1f3` 머지 시 `82afddb`(TASKQUEUE 9건) 중복은 main `cb5473e`와 동일 → 충돌 시 main 채택. **+ `monorepo/sess-mgmt-llm-decision`(cbc6041, BOUNDARY-LLM 기록): origin push됨·미머지 → consolidation 시 main 머지 후 브랜치 삭제 대상.** **push/pull 통합 결정과 묶음**. | orchestrator | - | todo | 브랜치 삭제 + push/pull 통합 |
-| TRASH-11 | **worktree 2건 거취 — DEAD 확정·remove 완료** (TR-7/8 정정). 기존 ALIVE 판정은 **stale 로컬 main 기준 오판**이었음. TR-8 STEP1: unique 커밋 5건(f483634/d4a9690/ce0be51/0b8399a/ef9d064) **전건 origin/main(d5212d4) REACHABLE = DEAD**. `sess-mgmt-phase1-catalog`·`sess-mp-phase1-cleanup` 디렉토리 소멸 + worktree registry 제거 완료(세션 간 외부 선제거, prune 정합). **잔여 결정**: 브랜치 2건 삭제 — 커밋이 origin/main 도달이나 **로컬 main 미도달**이라 `-d` 거부 예상 → 사용자 수동 `-D` 또는 `pull` 후 `-d`. + `sess-mp-kl-f1f3` 머지 시 `82afddb`(TASKQUEUE 9건) 중복은 main `cb5473e`와 동일 → 충돌 시 main 채택. **push/pull 통합 결정과 묶음**. | orchestrator | - | todo | 브랜치 삭제 + push/pull 통합 |
 ## market_pulse v2 Phase 2 로드맵 (2026-06-23 진입 순서 확정)
 
 > 근거: `DECISIONS.md` "[2026-06-23] Phase 2 진입 순서"·"Alerts 트랙 경계 = O3 하이브리드". Phase 1 종료(코어 대시보드+Translation+화면게이트 조건부통과) 후 진입. 순서 = Analog → Alerts → sub-pages → 데이터게이트(FedWatch/GEX) → cross-surface(게이트). P2 roadmap recon(2026-06-23, [E]~[H]) 기반.
@@ -195,12 +220,18 @@
 | MP2-E2E-SAFETYNET | **E2E 화면 회귀 안전망** — Playwright/Cypress 등 `/market-pulse-v2` 라이브 렌더 회귀 테스트(**모바일 에뮬레이션 포함** = resize_window 도구 한계 보완). Phase 2 **첫 인프라** | (인프라) | @qa+@frontend | 🆕 등록 (P2 선행 인프라) | 화면게이트가 수동 브라우저 의존(FE 크래시 2회·모바일 미확보) → Phase 2 변경 전 자동 회귀망 우선. 모바일 뷰포트 에뮬레이션으로 P2-① 구조적 해소 |
 | MP2-DATA-BREADTH-CONC | **Breadth/Concentration raw 미수집** 점검 — Breadth 종목별 등락(상승/하락/신고저 0) + Concentration 상위종목 일부 부재. 화면은 graceful fallback 정상(밴드·sense 렌더)이나 raw 데이터원 점검 | (데이터) | @infra | 🆕 등록 (데이터 파이프라인 트랙) | D-P1-SCREENGATE P2-②. 화면 결함 아님(graceful) → 데이터 수집 task/소스 점검. Analog(#1) 입력 품질과도 연관 가능 |
 | MP2-MOBILE-EYECHECK | **모바일 실기기 눈확인**(P2-① 권고) — 실기기/브라우저 DevTools 모바일 모드로 `/market-pulse-v2` 1회 눈검증 | (권고) | 사용자/병진 | 🟡 **비차단 권고** | D-P1-SCREENGATE P2-①. resize_window 뷰포트 미반영 도구 한계 → 반응형 설계는 JS 코드 입증 완료, 실렌더 눈검증만 잔여. MP2-E2E-SAFETYNET land 시 자동 흡수 가능 |
-| **MP1.5-FIX** | **단일 FE 슬라이스** (데이터 충분, 즉시 착수 가능) — ⒜ A1 brief 모달 `body` fallback 매핑 ⒝ A2 authAxios refresh 인터셉터 401 재시도 ⒞ A3 `ConcentrationDetail.tsx:55` `<Pie label>` 포맷터(`toFixed`)+레이블 겹침 처리 ⒟ "cache: MISS" 엔드유저 노출 정리 ⒠ **① 유효 종목 수(1/HHI) 카드 표시**(즉시, 추가 데이터 0) | @frontend | 🟢 **확정 (착수 가능)** | D-P15-TRIAGE. 전부 frontend·데이터 충분. ①은 D-CONC-RISK-LENSES 렌즈①. cache:MISS는 BE `_envelope` 노출 — FE 비표시 또는 BE 제외 택1(슬라이스 STEP 0 판정) |
+| **MP1.5-FIX** | **단일 FE 슬라이스** — ⒜ A1 brief 모달 `body` fallback 매핑 ⒝ A2 authAxios refresh 인터셉터 401 재시도 ⒞ A3 `<Pie label>` 포맷터(`toFixed`)+레이블 겹침 처리 ⒟ "cache: MISS" 엔드유저 노출 정리 ⒠ **① 유효 종목 수(1/HHI) 카드 표시** | @frontend | ✅ **완료 (2026-06-25, `2c9fbca` + 시각검증) — A3-tail 종결로 "완전 통과"** | D-P15-SCREENGATE. 시각검증 실측: A1 본문·① 유효종목수(≈51종)·cache 가드(dev전용, 프로덕션 비노출 코드입증)·회귀 = PASS / A2 = vitest 갈음 / A3 = MP1.5-A3-TAIL(`77847ca`)로 겹침·클리핑 완전 해소. 커밋 `0f86e55`(A1)·`9529671`(A3)·`a079870`(cache)·`2c9fbca`(①)·`77847ca`(A3-tail) |
+| **MP1.5-A3-TAIL** | **A3 도넛 좌상단 소형조각 라벨 겹침** — `ConcentrationDetail.tsx` 라벨 겹침 해소 | @frontend | ✅ **완료 (2026-06-25, `77847ca`)** | **leader-line 외부 라벨**(좌/우 midAngle 분기 + 수직 슬롯 분산) + 상단 클리핑 해소(컨테이너 height 260→320 + nudge 하향 + Y_MIN/MAX 경계 가드) + **전역 가변 제거**(`computeAllLabelLayouts` 순수함수 + useMemo/ref, 다중 인스턴스 안전). 라이브 :3000 데스크탑+모바일(390px) **11개 라벨 전수 가시·클리핑 0·겹침 0** 실측. tsc 0, vitest 신규 28/전체 418. 1차(겹침만 수정)에서 상단 클리핑 결함을 시각검증으로 발견→2차 수정(좌표≠실렌더 교훈) |
 | MP2-ANALOG-COND-RESULT | **조건부-과거-결과 primitive (공유)** — D-CONC-RISK-LENSES ②③을 Analog 트랙 산하로 이동. ② 퍼센타일(현재값의 과거 분위) + ③ 조건부 과거결과(고집중→이후 분포, **분포+표본수+신뢰구간만·단일숫자 금지**) | @backend (Analog 산하) | 🔴 **데이터 게이트** | **시간만으로 안 열림**: ②=데이터 깊이(≥1년) + ③=**레짐 다양성**(저집중 표본 필요, 현재 top10 13/13 전부 고집중=변별 0). 집중도뿐 아니라 regime 전반 조건부결과의 공유 primitive로 설계. Analog(#1) 착수 시 통합 |
+| **MP-VIX-SRC** | VIX provider 읽기 소스 교체 — `MarketIndex/MarketIndexPrice(volatility, 0건)` → `IndicatorValue(VIXCLS, 232행)`. regime degraded(normal 일색) 복구 | @backend | ✅ **완료 (2026-06-26, `bbe6b1b`)** | STEP 0 측정: volatility 소스 0건 → `_calculate_regime`이 항상 'normal'(EODDashboard 75행 전부). 단일 파일(`macro_vix_provider.py`), VIXProvider 포트 ABC·반환계약 불변(BOUNDARY-3 유지). 행위 델타 재계산 `{normal:75}`→`{normal:57,elevated:10,high_vol:8}`. 신규 6 + 회귀 384/1skip |
+| **MP-VIX-BACKFILL** | EODDashboard 76행(2026-02-25~06-26) regime 소급 재적재(B-3) | @backend | ✅ **완료 (2026-06-29)** | `json_data['market_summary']['vix_regime']` 76행 재계산 UPDATE. **18행 변경**(03-03~04-07 고변동 → high_vol/elevated), 분포 `{normal:76}`→`{normal:58,elevated:10,high_vol:8}`. lookback 0부족(MP-VIX-STALE 백필로 전구간 커버) · 결정론적 · **백업 선행**(`eod_regime_backup_20260629.json` normal:76 원본) + 트랜잭션 원자적 + **멱등 재현**(재실행 0행). intraday RegimeSnapshot은 히스테리시스로 forward-only(백필 불가) — EOD만. **MP-VIX 트랙 3종(SRC·STALE·BACKFILL) 전체 종결** ✅ |
+| **MP-VIX-STALE** | VIXCLS(+DGS 일간군) sync stale — 자동 재귀 beat 커버리지 갭 수리 | @infra | ✅ **완료 (2026-06-28~29, 코드 `20f0e6d` + 백필 + 워커 재기동)** | STEP 0: VIXCLS·DGS10·DGS2·T10Y2Y가 `FRED_RECURRING_SERIES`(7종) 밖 = 자동 재귀 미커버 → 수동 의존, 06-12 stale. **경우 P 확정**(FRED는 06-25까지 발행, 우리가 안 받음 — 실호출 검증, FRED 지연 Q 반증). 수리: `FRED_RECURRING_SERIES` **7→11**(일간 4종 편입, beat·task 무변경, 멱등 upsert) + PART2 백필 33행(06-13~25) + **워커 재기동**(celery-worker 33397→6413, `.delay()`로 11종 import 입증 7→11). beat `enabled`(평일 NY17:40). 재발방지 4축(코드·워커·sync·beat) 충족 |
 
 > **집중도 카드 점진 공개 (D-CONC-RISK-LENSES)**: **① 유효 종목 수 = now**(MP1.5-FIX 동봉) / **② 퍼센타일 = 데이터 깊이 충족 시**(1년 미만이면 "표본 N일, 잠정" 정직 라벨 필수) / **③ 조건부 과거결과 = Analog 트랙**(MP2-ANALOG-COND-RESULT, 레짐 다양성 게이트). 가짜 절대리스크("40%→X%") 금지.
 >
 > **STEP 0 케이던스 실측(2026-06-25)**: beat `mp_calc_concentration_daily` = **평일 daily**(17:15 NY, cron `15 17 * * 1-5`). 최근 6/16~6/25 daily 정상. **단 5/7~6/11 35일 갭**(과거 운영 공백 — daily 의도이나 누락, 주간 의도 아님). → ② 타임라인: **현재부터 daily 누적 시 ~1년 후 가능**(과거 갭 미백필). 데이터 트랙 신규 항목 불요(beat 현재 정상 가동, 갭은 과거분).
+>
+> **Phase 1.5 게이트 = 완전 종결(2026-06-25, D-P15-SCREENGATE)**: MP1.5-FIX 5건 전부 PASS — A1 본문·① 유효종목수·cache 가드·회귀 실측 + A2 vitest 갈음 + **A3 = MP1.5-A3-TAIL(`77847ca`)로 겹침·상단 클리핑 완전 해소**(라이브 데스크탑+모바일 11라벨 전수 가시). 잔여 0. **→ Phase 2(#1 MP2-ANALOG) 진입 가능.** 기존 트랙 유지: MP2-ANALOG(#1, active)·MP2-ANALOG-COND-RESULT(②③ 데이터게이트)·MP2-DATA-BREADTH-CONC(B1)·MP2-E2E-SAFETYNET·MP2-MOBILE-EYECHECK.
 
 ---
 
@@ -327,6 +358,70 @@
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
 | HARN-1 | 하네스 4문서(DECISIONS/PROGRESS/TASKQUEUE/common-bugs)의 **append 충돌 구조적 재발** — `.gitattributes merge=union` 적용 또는 세션별 로그 분리 검토 (별도 결정 사안) | orchestrator | - | **완료 2026-06-23** (`642306a`) | 2026-06-12 MAIN-SYNC 머지에서 4문서 전건 충돌 재발(양쪽 append 위치 겹침, 수동 해소). **해소: `.gitattributes`에 4문서 `merge=union` 적용**(`642306a`) → BOUNDARY-LLM consolidation 머지(`63194cd`)에서 DECISIONS/TASKQUEUE 충돌 0 자동 해소 실증(직전 merge-tree는 DECISIONS content 충돌 예측). union=양쪽 라인 보존, 육안검수로 중복 0 확인. 동반: common-bugs **#33 중복**(좀비 Beat ↔ fetch baseline, origin 비고가 예견) 채번 정리 |
+
+---
+
+## dashboard 트랙 보류 (STEP 0 / 2026-06-27)
+
+> dashboard STEP 0 전수 조사 발견 — 전수 조사 단계라 보류, 사라지지 않게 등재. 근거: 보고서 sess-dashboard-step0 @ bbe6b1b.
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| DASH-TEST | eod 표면 프론트 테스트 0건 (STEP 0 실측 — `app/page.tsx` + `components/eod/**` + `hooks/useEODDashboard` + `services/eodService` 대응 vitest 0건) | dashboard 트랙 직접 | dashboard 표면에 실작업(리팩토링/레거시 정리)이 잡히면 **그 직전 슬라이스** | 🆕 보류 |
+| DASH-LEGACY | `app/dashboard/page.tsx`(레거시 계정/네비 페이지, eod 무관) 운명 **KEEP/CUT/MOVE** | 결정 안건 | 전 트랙 STEP 0 완료 후 **일괄 KEEP/CUT 사이클** | 🆕 보류 |
+| DASH-VIEWS-EOD | `views_eod` REST API(`/api/v1/stocks/eod/{dashboard,signal,pipeline}`) — 현 프론트 **미소비**(static `/static/signals/*.json`만 소비, 코드젠 타입에만 존재). 존치 vs 폐기 | 결정 안건 | **타 트랙이 이 API를 쓰는지 확인된 뒤**(병렬 경로 안전 폐기 판단 가능) | 🆕 보류 |
+## chain_sight 트랙 발견 (STEP 0 / 2026-06-29)
+
+> chain_sight STEP 0 전수 조사 발견 — 사라지지 않게 등재. 근거: 보고서 sess-cs-step0 @ b457bbf.
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| CS-EXT-API | `insider_tasks`→Finnhub, `sensitivity_tasks`→FMP **직접 `requests.get`**(shared 래퍼·CircuitBreaker 미경유 = 의존 방향 규약 위반) | 결정 안건(이관 설계) + shared 위임 가능 | 전수 조사 후 우선순위 사이클. **※ 행위보존 검증 필수 — 즉시 실행 금지** 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
+| CS-LEGACY | 레거시 serverless Chain Sight v1(`chain_sight_service`·`neo4j_chain_sight_service`·`supply_chain_*`·migr 0009) 흡수 vs serverless 잔류 | 결정 안건(경계) | 전 트랙 STEP 0 완료 후 일괄. 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
+| CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
+| CS-CHOICES | `RelationConfidence.RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`(53)·`DEPENDS_ON`(41) 미정의, `HAS_THEME`·`HELD_BY_SAME_FUND` 0행 | **chain_sight 트랙 직접** | chain_sight 실작업 슬라이스 | 🆕 보류 |
+| CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
+
+---
+
+## market_pulse + portfolio 트랙 발견 (STEP 0 / 2026-06-29)
+
+> MP STEP 0(sess-mp-step0) + PF STEP 0(sess-pf-step0) 발견 — 사라지지 않게 등재.
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| MP-FMP-WEIGHTS | `fetchers/fmp_weights.py` raw `requests.get` → FMPClient 경유 통일 (※ **CircuitBreaker는 이미 경유** — 코드 일관성만, chain_sight CS-EXT-API와 급이 다름) | market_pulse 트랙 직접 | market_pulse 실작업 슬라이스 (시급도 낮음) | 🆕 보류 |
+| MP-BREADTH-SRC | breadth/concentration **생산(`services.serverless`) ↔ 소비(market_pulse 모델)** 소관 명확화 | 결정 안건(경계) | 로드맵 재검토(Phase 2 촉발 데이터 연계, MP2-DATA-BREADTH-CONC). 📌 **로드맵 Phase 2 촉발 데이터 소관**(D-ROADMAP-V1) | 🆕 보류 |
+| MP-NEWS-LAZY | `services/news_aggregator`→`services.news.providers` lazy import 정리 | 결정 안건(경계, news 공통) | 로드맵 재검토 | 🆕 보류 |
+| PF-TEST | coach 테스트 5건 `mock.patch("portfolio.…")` → `apps.portfolio.` 경로 수정(PR7 이관 후 stale mock, `ModuleNotFoundError`) (※ CS-TEST와 동일 유형 — 이관 후 테스트 미추적) | portfolio 트랙 직접 | portfolio 실작업 슬라이스 | 🆕 보류 |
+| PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계). 📌 **로드맵 후속 phase**("포트폴리오 변화" 표면, D-ROADMAP-V1) | 🆕 보류 |
+| PF-SCORING | `tests/scoring/**` 소속 확정(coach scoring — 소유권 지도 "[경계 보류]" 해소) | 결정 안건(경계) | 로드맵 재검토 | 🆕 보류 |
+| PF-LLM-CLIENT | `apps/portfolio/llm/client.py`(anthropic·google.genai 직접) → `packages/shared/llm` 코어 합성 | 타 트랙 위임(BOUNDARY-LLM, portfolio+market_pulse client 합성) | BOUNDARY-LLM 트랙 작업 시 | 🆕 보류 |
+
+---
+
+## B-1 FRED 백필 트랙 처분 (STEP 0.5 / 2026-06-30)
+
+> B-1 깊은 FRED 피처 백필의 STEP 0.5 게이트 결과 등재. 근거: DECISIONS D-B1-SCOPE-DEPTH. B-1 전 사이클 prod 쓰기 0(읽기전용).
+
+| ID | Task | 분류 | 트리거(재개) | Status |
+|----|------|------|-------------|--------|
+| B1-DEFER | B-1 FRED 깊은 백필 → Phase 5 Analog 설계 산하로 defer. 사유: 현행 소비자 0(Analog 미구축) + full-vector cap 미해결(조인트 벡터 깊이가 최단 시리즈 HY OAS 2023-06-30에 묶임). 확정 범위·깊이 = A1(활성 11)+B3(2018-01-01). 참조 D-B1-SCOPE-DEPTH | market_pulse 트랙(Phase 5 산하) | **Phase 5에서 Analog 매칭 방식(full-vector vs ragged) 확정 시 재개** | 🆕 보류 |
+| B1-C2 | C2 처분: (a) PCEPI deprecate(활성 소비처 0), (b) 오라벨 2종(VIX3M·MOVE) data_source 'fred'→'yahoo' 정정. prod DB 필드 변경이라 유보. 참조 D-B1-SCOPE-DEPTH | 병진 수동 | 병진 승인 | 🆕 보류 |
+| B1-OPS-BEAT | ops: 레거시 경제지표 beat 죽은 정황 — `update_economic_indicators`(celery.py:184)가 FEDFUNDS/UNRATE/CPIAUCSL 1개월 stale(#28 DatabaseScheduler가 dict beat_schedule 무시 패턴). PCEPI 포함 레거시 beat를 한 항목으로 트리아지(piecemeal 금지). B-1과 무관한 ops 트랙 | ops 트랙 직접 | ops 사이클 | 🆕 보류 |
+
+---
+
+## Phase 1 제시 로깅 (STEP 0 / 2026-07-01)
+
+> dashboard Phase 1 제시 로깅 STEP 0(sess-dash-p1-log) 발견. 근거 DECISIONS "[2026-07-01] Phase 1 제시 로깅 STEP 0"(D-P1-STEP0).
+
+| ID | Task | 분류 | 트리거(보류시) | Status |
+|----|------|------|---------------|--------|
+| P1-REC-PROD | 추천 생산 방식 결정 — **EOD-bake 확장**(shared/stocks) vs **뉴스추천 승계**(services/news). 이게 제시 로그 스키마(signal_tag/horizon)·confidence 출처·impression write 경로를 확정 → 선결 결정 | 결정 안건 | ~~다음 결정 사이클~~ | ✅ **해소 (D-P1-RECPROD, 2026-07-02)** — EOD-bake 확장 + Baked impression + confidence v1 결정식. 실행은 shared/stocks 위임 대기 |
+| P5-EXCESS-BACKFILL | `SignalAccuracy.excess_{h}d`(SPY 상대) 백필 — prod 3,611행(~12%)만 채워짐 vs return 29,962. **벤치마크 상대 채점 채택 시 선결**(raw return 채점은 즉시 가능하므로 조건부) | 트랙 위임(shared/stocks) | Phase 5 벤치마크 상대 채점 채택 시 | 🆕 보류 |
+| HC-MARKER-TREADMILL | health_check "origin/main 해시" 마커가 **매 mgmt 머지마다 lag=1**(커밋이 자기 머지-후 해시를 스스로 못 적는 구조적 한계). 현재 tolerance N=3가 흡수해 대개 green이나, 마커 3커밋+ 미갱신 시 붉어짐(이전 STEP 0 세션 시작 시 실제 red 이력). **임시 규율**: 매 mgmt에서 마커를 현 origin/main으로 갱신해 lag=1 clean 유지(누적 방지). **durable**: health_check가 "메타-only·lag=1" 시그니처를 허용하도록 수정(하네스 코드 = 별도 슬라이스). **📌 보강(2026-07-02 preflight)**: N=3 tolerance가 lag=1을 흡수 재확인(5d35fa7 마커=3d670ed=HEAD~1 green). ❌는 lag>3에서만 발현 추정 → **durable 긴급도 하향**, 우선 tolerance 경계 문서화. | 하네스 개선(HARN) | durable = 하네스 코드 슬라이스(긴급도↓) / 임시 = 매 mgmt 상시 | 🆕 등재(임시 규율 상시 적용) |
+| DASH-FE-GLOB | frontend 실경로 = `frontend/app/page.tsx`(≠ 소유권 글롭 `app/dashboard/**`, 레거시 계정 페이지) 재확인 → 소유권 지도 v2 **실경로 반영**(dashboard 불일치-A 후속) | mgmt | 다음 mgmt(급하지 않음 — 이미 D-P1-STEP0·소유권 지도에 사실 기록됨) | 🆕 보류 |
 
 ---
 
