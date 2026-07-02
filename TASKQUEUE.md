@@ -425,6 +425,16 @@
 
 ---
 
+## Phase 2 촉발(제품 로드맵) — ②Viewed defer (2026-07-02)
+
+> 로드맵 Phase 2 촉발 두 축 중 ②만 defer(①촉발 표면화는 즉시 착수). 근거 DECISIONS D-MP2-SEQ. ※ 내부 MP2-ANALOG/MP2-ALERTS 트랙(TASKQUEUE 상단 'market_pulse v2 Phase 2 로드맵')과 **별개** — 라벨 충돌 주의.
+
+| ID | Task | 분류 | 트리거(재개) | Status |
+|----|------|------|-------------|--------|
+| MP2-VIEWED | ②Viewed enrichment(per-user impression, `presented_as='viewed'`) → **defer**(drop 아님). 사전 조율: 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`) 요구를 dashboard 세션에 전달. 참조 D-MP2-SEQ | Phase 2 촉발 ② | **Phase 1 발행 로그(shared/stocks) 스키마 land 시** | 🆕 보류 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |

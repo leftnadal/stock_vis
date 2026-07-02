@@ -2540,3 +2540,17 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **남은 것**: 실행(shared/stocks 위임 대기). 설계·결정은 본 D-P1-RECPROD로 종료.
 
 **baseline at decision**: origin/main = 3d670ed. prod 쓰기: 0(결정 등재만).
+
+## [2026-07-02] Phase 2(market_pulse 촉발) 두 축 설계 순서 (D-MP2-SEQ)
+
+**맥락**: 로드맵 Phase 2(촉발 — 왜 움직였나·이상치·섹터 히트맵)가 `8ab41c6`(D-P1-RECPROD 정합)로 두 축 분화 — ①촉발 시그널 표면화 + ②Viewed enrichment(per-user impression, `presented_as='viewed'`).
+
+**결정**: **①촉발 표면화 먼저** 설계·실행. **②Viewed enrichment는 defer**(drop 아님).
+
+**Why (가중합, 합=1.00)**: 즉시착수 0.30·충돌회피 0.25·사용자가치 0.25·재작업리스크 0.20. **A(①먼저)=5.00 / C(동시)=2.80 / B(②먼저)=2.25. 마진 A−C=2.20>1.00 자동결정.**
+- ① = 재사용 자산 전부 활성·prod 존재(AnomalySignalLog 318·SectorFlowSnapshot 462·RegimeSnapshot intraday 58·briefing) + market_pulse 도메인 내 → 의존 0, 즉시 가능.
+- ② = Phase 1 발행 로그(dashboard가 shared/stocks에 생성) 스키마 위에 얹힘 → 미존재·남의 세션 소관 → 지금 설계 시 크로스-세션 충돌·재작업 위험.
+
+**How to apply — ② 재개 트리거**: Phase 1 발행 로그 스키마가 shared/stocks에 land. 사전 조율 = dashboard 세션에 "Viewed를 얹으려면 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`)" 요구 전달.
+
+**baseline at decision**: origin/main = 8be3f65. prod 쓰기: 0(설계 단계).
