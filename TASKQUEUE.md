@@ -479,3 +479,10 @@
 - 부착: 모델=SignalAccuracy 형제 / bake=eod_json_baker _build_dashboard_json return / write=Stage6·baker 기존 표면(신규 표면 0) / serve=EODDashboardView 무변경 / Phase5 join 정합.
 - open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
 - 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
+
+## NT-OPS-HCHECK-REDESIGN — health_check `origin/main-hash` 체크 재설계
+- 증상: fast-main(세션당 2~3커밋)에서 PROGRESS가 tip을 못 따라잡아 매 세션 blocking ERROR 오발. resync 마감 세션(2026-07-02)에서 land 게이트 직전 HALT 유발.
+- 근거: 규약상 PROGRESS는 캐시(진실 아님) → 그 lag을 ERROR로 취급 = 심각도 불일치. 자기참조 tip 기록은 정확-일치 원리상 불가(단일 커밋이 자기 push-후 해시 미기록). 현행은 tolerance N=3 window로 완화돼 있으나, 여전히 fast-main에서 land 후 window 밖으로 밀려 ERROR 재발.
+- 방향(택1, 전용 세션 결정): (a) ERROR→WARN 강등 / (b) recent-tip-window(N) 상향 또는 시간기반 / (c) 캐시 신선도를 비-blocking 정보로 분리.
+- 제약: `scripts/health_check.py` 로직 변경 → 전용 세션·자기검증 동반(harness 임의 수정 금지).
+- 트리거: 즉시 우선.
