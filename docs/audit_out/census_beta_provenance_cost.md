@@ -160,7 +160,15 @@
 
 - 순위: **C 0.8825 > B 0.795 > A 0.335.** 마진 C−B = **+0.088**, B−A = +0.460.
 - **결정: C 채택** — census 봉인 후 #28 본진(궤적→상향 학습 루프) 복귀.
-- **예약:** B(SEC β provenance 강화)를 **#28 Gate 2 통과 직후 다음 β 트랙**으로. 커밋 전 확인 1점: SEC β 2-pass가 "강화"(base 이미 생산 중)인가 "신규"(1콜만)인가.
+- 예약(해소, 2026-07-02 사전확인): B(SEC β) = 강화형(상 근접) 확정 — 신규형 아님.
+  · base 추출 프로덕션 가동 중(1콜 structured-output, extractor.py:70-74),
+    evidence_text에 원문 verbatim 인용 1,751/1,751 실재(모델 models.py:102, DB 실측).
+  · 뉴스 _call_llm과 비공유(SEC 자체 GeminiExtractor).
+  · 부재분 = native-citation 2-pass grounding **검증**뿐(현 인용은 LLM self-reported).
+  · 착수 범위 = "self-reported 인용 → grounding 검증 인용" 덧대기(추출·필드·1,751 인용 재사용,
+    prompt_version v1→v2). #28 Gate 2 직후 착수 정당 — census "SEC가 뉴스보다 쉽다" 전제 유효.
+  · 검증 방식 = 결정적 정규화 매칭(V-A, LLM 0콜) 확정 — 2026-07-02 결정 ③.
+    상세는 PR_sec_beta_grounding.md 참조.
 - **파킹:** A(뉴스 β 3층)는 **전문 저장 후 통과율·토큰 재측정** 조건부 보류. 현재는 요약본 하한이라 착수 가치 판단 자체가 불완전.
 - **결정 근거(핵심):** 세 레인 중 **소급 재구성 불가는 #28 궤적뿐.** β 증거는 원문 잔존으로 재추출 가능하나, 궤적 스냅샷은 beat 미가동일 = 영구 공백. moat 정의("temporal trajectories, none reconstructable retroactively")에 직결.
 
