@@ -146,6 +146,19 @@ class RelationConfidence(models.Model):
         help_text="직전 상태. 시드 선정 시 relation_upgrade/downgrade 판단용.",
     )
 
+    # 상향 학습 루프 (upward learning — 설계 relation_confidence_upward_loop.md, D1 additive)
+    evidence_streak = models.IntegerField(
+        default=0, help_text="연속 재확인 틱 수. 하향/무증거 시 0 리셋. B의 streak≥N 판정."
+    )
+    last_upgraded_at = models.DateTimeField(null=True, blank=True, help_text="상향 전이 witness.")
+    last_downgraded_at = models.DateTimeField(null=True, blank=True, help_text="하향 전이 witness.")
+    last_computed_at = models.DateTimeField(
+        null=True, blank=True, help_text="궤적 점 계산 시각(기존 드리프트 해소, upsert 감사용)."
+    )
+    fastpath_triggered_at = models.DateTimeField(
+        null=True, blank=True, help_text="C fast-path 발동 감사(오상향 추적)."
+    )
+
     # 동기화 (audit P0 #9 — neo4j_dirty 단일 소스. synced_to_neo4j 제거 2026-04-29)
     neo4j_dirty = models.BooleanField(
         default=True,

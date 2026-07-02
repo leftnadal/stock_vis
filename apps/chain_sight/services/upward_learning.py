@@ -1,0 +1,95 @@
+"""
+RelationConfidence 상향 학습 루프 — 전이 로직 (D1).
+
+설계: docs/features/chain-sight/relation_confidence_upward_loop.md
+철학: B(비대칭 보수 — 이중 임계 + streak) + C(Tier-1 fast-path 1단계).
+
+임계 상수는 하향(`relation_tasks.py:406 check_stale_and_decay`)이 하드코딩(90/60/30일)인
+관례와 동일하게 **모듈 상수**로 둔다(신규 로더 만들지 않음 — 설계 §7). 값 근거는 정책표
+`docs/chain_sight/update_v2/RELATION_CONFIDENCE.md`(truth_score confirmed 85·probable 60·weak 35).
+D2 튜닝 게이트에서 실데이터로 재조정한다.
+"""
+
+from django.utils import timezone
+
+# 강도 사다리 (hidden < weak < probable < confirmed). stale = confirmed cold(측면).
+LADDER = ["hidden", "weak", "probable", "confirmed"]
+
+# 임계 (정책표 근거 — probable 대표값 60. 상향 = 하향 + margin의 anti-whipsaw 이중 임계).
+UPWARD_THRESHOLD = 60   # score([0,100]) ≥ 이 값이어야 상향 후보
+STREAK_MIN = 3          # 연속 재확인 ≥ 이 틱(B 보수 — 하루살이 신호 차단)
+
+
+def upgrade_one_step(status: str) -> str:
+    """사다리 1칸 상향. stale→probable(재획득 특례), confirmed 상한."""
+    if status == "stale":
+        return "probable"  # confirmed 직행 금지 (B)
+    if status in LADDER:
+        i = LADDER.index(status)
+        return LADDER[min(i + 1, len(LADDER) - 1)]
+    return status
+
+
+def recompute_truth_score(pair, trajectory=None) -> float:
+    """
+    정책표 기반 truth_score 재계산 (D1 최소 — 기존 값 유지 폴백).
+    D2에서 궤적(trajectory) 반영 정교화. 현재는 pair.truth_score 폴백.
+    """
+    return float(getattr(pair, "truth_score", 0) or 0)
+
+
+def is_tier1_authoritative(evidence_this_tick) -> bool:
+    """Tier-1(API 직접: FMP/Finnhub/SEC) 권위 증거인가. 정책표 Evidence Tier 1."""
+    if not evidence_this_tick:
+        return False
+    tier = None
+    if isinstance(evidence_this_tick, dict):
+        tier = evidence_this_tick.get("tier") or evidence_this_tick.get("evidence_tier_best")
+    else:
+        tier = getattr(evidence_this_tick, "evidence_tier_best", None)
+    return tier == 1
+
+
+def _upgrade(pair, now):
+    new = upgrade_one_step(pair.relation_status)
+    if new != pair.relation_status:
+        pair.relation_status = new
+        pair.last_upgraded_at = now
+
+
+def apply_upward_learning(pair, evidence_this_tick, trajectory=None, *,
+                          score=None, is_tier1=None, now=None):
+    """
+    증거로 재확인된 pair를 위로 되돌림 (1단계/틱).
+    충돌 배타: 증거無 → no-op(하향 경로가 처리). 증거有 → 상향 평가.
+    score/is_tier1은 미지정 시 내부 계산, 지정 시 사용(테스트 주입).
+    반환: 승급했으면 True.
+    """
+    if not evidence_this_tick:
+        return False  # 하향 경로가 처리 — 이 함수는 no-op
+    now = now or timezone.now()
+    if score is None:
+        score = recompute_truth_score(pair, trajectory)
+    if is_tier1 is None:
+        is_tier1 = is_tier1_authoritative(evidence_this_tick)
+
+    upgraded = False
+    if is_tier1 and score >= UPWARD_THRESHOLD:
+        # C fast-path: streak 면제, 최대 1단계
+        before = pair.relation_status
+        _upgrade(pair, now)
+        if pair.relation_status != before:
+            pair.fastpath_triggered_at = now
+            upgraded = True
+    else:
+        # B 일반: streak 누적 → 이중 임계 충족 시 1단계
+        pair.evidence_streak += 1
+        if score >= UPWARD_THRESHOLD and pair.evidence_streak >= STREAK_MIN:
+            before = pair.relation_status
+            _upgrade(pair, now)
+            if pair.relation_status != before:
+                pair.evidence_streak = 0  # 승급 후 리셋
+                upgraded = True
+
+    pair.last_computed_at = now
+    return upgraded

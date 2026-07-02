@@ -452,3 +452,31 @@ def aggregate_relation_pairs_task(self):
     result = aggregate_relation_pairs(period=period)
     logger.info(f"RelationPairSnapshot 집계: {result} (period={period})")
     return result
+
+
+@shared_task(bind=True, max_retries=1, soft_time_limit=600, time_limit=660)
+def apply_upward_learning_task(self):
+    """
+    상향 학습 루프 (설계 relation_confidence_upward_loop.md, D1).
+    파이프라인: aggregate_relation_pairs(11:30) → check_stale_and_decay(하향) → 이 task(상향).
+    충돌 배타: 증거 있는(이번 틱 재확인) pair만 상향 평가 — 증거 없는 pair는 decay가 처리.
+
+    ★ flag-off 기본(D1) — 실발화는 D2(#28 Gate 2 종결 + 자율 궤적 ≥5틱) 이후 별도 결정으로 활성화.
+      off여도 배선은 완성(활성화 = settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED=True).
+    """
+    from django.conf import settings
+
+    if not getattr(settings, "CHAINSIGHT_UPWARD_LEARNING_ENABLED", False):
+        logger.info("상향 학습 flag-off — skip (D1, 실발화는 D2 게이트)")
+        return {"enabled": False, "upgraded": 0}
+
+    # --- D2 활성화 경로 (골격) ---
+    from apps.chain_sight.services.upward_learning import apply_upward_learning  # noqa: F401
+
+    upgraded = 0
+    # TODO(D2): 이번 틱 재확인된 pair(증거 有)를 선별 + trajectory 조회 후 apply_upward_learning.
+    #   for pair, evidence, traj in _reconfirmed_pairs_this_tick():
+    #       if apply_upward_learning(pair, evidence, traj):
+    #           pair.save(); upgraded += 1
+    logger.info(f"상향 학습: {upgraded}건 승급")
+    return {"enabled": True, "upgraded": upgraded}
