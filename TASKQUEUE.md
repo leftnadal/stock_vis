@@ -19,6 +19,7 @@
 - **⚠ 배포 절차(B안 약점 — 순서 필수)**: 배포마다 ① `python manage.py migrate` (0014 — 테이블 선행) → ② `python manage.py register_chainsight_beats` (beat 등록) → ③ 검증. migrate 빠지면 register돼도 task crash(더 깊은 침묵). 배포 체크리스트 영구 등재.
 - **드리프트 (목록만, 이번 PR에서 수리 X)**: ⒜ `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 ET — **2026-07-01 실측으로 순수 표기 문제 확정**(당일 단일 period, 로직 정상). ⒝ beat 패턴 혼재(relation_tasks=full-path+ET vs register 기존 3개=별칭+UTC).
 - **관찰(PR 밖)**: 11:00→11:30 30분 갭이 confidence 완료를 보장하는지 — 갱신 소요시간 로그 확인 후 갭 재검토.
+- **ops 폐기 기록 (재발 방지, 2026-07-02)**: "worker/beat launchd KeepAlive 감독 신규 설치" PR은 **폐기**. STEP 0 실측 = 기존 `com.stockvis.celery-worker`·`celery-beat` 둘 다 이미 `KeepAlive=true`+`RunAtLoad`+`ThrottleInterval`, worker-neo4j·watchdog까지 존재 → 신규는 중복 + **beat 2개 = 스케줄 2배 발화(능동 오작동)**. 07-02 crash 원인은 KeepAlive 부재 아닌 코드 리로드 누락(해법=`kickstart -k`). 향후 "감독 추가" 논의는 이 실측표부터 확인. 대신 관찰가능성만 보강 = `verify_pair_aggregation.py` C항목(직전 11:30 ET 틱 succeeded 부재 시 ALERT — upsert+updated_at 부재라 로그가 유일 증거).
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
