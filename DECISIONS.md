@@ -8,6 +8,15 @@
 
 ---
 
+## RelationConfidence 상향 학습 루프 — B+C 채택 (2026-07-02) [해자]
+
+### 비대칭 보수(B) 기본 + Tier-1 fast-path(C) 가속 레인
+**결정**: 감쇠 전용(단방향) RelationConfidence에 상향 경로 신설. **B**(하향 빠름·상향 느림/엄격: 이중 임계 + streak≥3, stale→probable 재획득, confirmed 직행 금지) 기본 + **C**(Tier-1 권위 증거는 1단계 즉시 가속, streak 면제·상향임계 충족·최대 1단계). 채점 **B 0.7725 > C 0.685 > A(대칭) 0.6225**.
+**Why**: "잃긴 쉽고 되찾긴 어렵다" — 하향/상향 비대칭이 궤적 품질 = moat를 지킴(whipsaw를 streak 안전핀으로 구조적 차단). C는 권위 증거의 즉시 반영 요구를 "B 안의 가속 레인"으로 수용(궤적 우회 아님, fastpath_triggered_at 감사). 충돌 규칙(결정 2): 한 pair는 한 틱에 하향/상향 배타(증거 있으면 하향 스킵+상향 평가, 없으면 하향+streak 리셋).
+**How to apply**: 설계 `docs/features/chain-sight/relation_confidence_upward_loop.md`. 태스크 접속 = `aggregate_relation_pairs_task`(#28) → `check_stale_and_decay`(하향) → `apply_upward_learning`(신규 상향). 필드 5개 additive(evidence_streak·last_upgraded_at·last_downgraded_at·last_computed_at[드리프트 해소]·fastpath_triggered_at). 임계 = `RELATION_CONFIDENCE.md` 정책표 연동(하드코딩 금지). **구현·D2 실데이터 검증은 #28 Gate 2 종결 + 궤적 N틱 적립 후 게이트**(그 전 D1 설계 스모크까지).
+
+---
+
 ## 뉴스 β 활성화 조사 — C 채택 (본진 복귀) (2026-07-02) [해자]
 
 ### 세 레인(A 뉴스β / B SEC β / C #28 본진) 중 C 채택
