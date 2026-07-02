@@ -80,7 +80,7 @@ export default function MarketPulseV2Page() {
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
         {/* ⑤ Sector 히트맵 (full-width) — 위계 3번 */}
-        <SectorHeatmap labels={labels} onOpen={() => setOpenCard('sector')} />
+        <SectorHeatmap labels={labels} onOpen={() => setOpenCard('sector')} sense={selectSense(translations, 'sector')} />
 
         {/* ⑥ Brief (prose) — 위계 4번 */}
         <div className="mt-4">

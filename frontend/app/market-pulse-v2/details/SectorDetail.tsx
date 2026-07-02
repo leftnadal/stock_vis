@@ -14,6 +14,7 @@ import {
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
 import { SectorSparkline } from './SectorSparkline'
+import { sectorBarFill, sectorTextClass } from '../sectorColor'
 
 export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
   if (!payload.available) {
@@ -55,7 +56,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                 {data.map((entry) => (
                   <Cell
                     key={entry.symbol}
-                    fill={entry.rel_strength >= 0 ? 'rgb(16 185 129)' : 'rgb(244 63 94)'}
+                    fill={sectorBarFill(entry.rel_strength)}
                   />
                 ))}
               </Bar>
@@ -76,7 +77,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                   <span className="w-20 shrink-0 text-sm text-slate-800">{label}</span>
                   <span
                     className={`w-16 shrink-0 text-right text-xs font-medium ${
-                      rel == null ? 'text-slate-400' : rel >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                      rel == null ? 'text-slate-400' : sectorTextClass(rel)
                     }`}
                   >
                     {rel == null ? '—' : `${rel >= 0 ? '+' : ''}${rel.toFixed(2)}%`}
@@ -106,7 +107,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                 {data.map((entry) => (
                   <Cell
                     key={entry.symbol}
-                    fill={entry.momentum_5d >= 0 ? 'rgb(16 185 129)' : 'rgb(244 63 94)'}
+                    fill={sectorBarFill(entry.momentum_5d)}
                   />
                 ))}
               </Bar>

@@ -3,31 +3,8 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail } from '@/lib/api/marketPulseV2'
 import { useCardDetail } from '@/hooks/useMarketPulseV2'
-
-/**
- * rel_strength → diverging 색 클래스 (한국 관례: 상승=빨강, 하락=파랑).
- * epsilon 안쪽은 neutral(slate).
- * 절대값 기준 2단계(mild: |rel|<=0.4, strong: |rel|>0.4).
- *
- * ⚠ rotation_index 절대 사용 금지 — 11섹터 동일값으로 전 타일 동색 버그.
- *   색은 오직 per-섹터 rel_strength.
- */
-function heatTileClass(relStrength: number, epsilon = 0.1): string {
-  if (relStrength > epsilon) {
-    // 상승 = 빨강 (한국 관례)
-    return relStrength > 0.4
-      ? 'bg-rose-300 text-rose-900 border-rose-400'
-      : 'bg-rose-100 text-rose-800 border-rose-200'
-  }
-  if (relStrength < -epsilon) {
-    // 하락 = 파랑 (한국 관례)
-    return relStrength < -0.4
-      ? 'bg-sky-300 text-sky-900 border-sky-400'
-      : 'bg-sky-100 text-sky-800 border-sky-200'
-  }
-  // 중립
-  return 'bg-slate-100 text-slate-600 border-slate-200'
-}
+import { sectorTileClass } from '../sectorColor'
+import { SenseNote } from './SenseNote'
 
 function formatRel(v: number): string {
   const sign = v > 0 ? '+' : ''
@@ -37,16 +14,18 @@ function formatRel(v: number): string {
 interface SectorHeatmapProps {
   labels?: Record<string, string>
   onOpen?: () => void
+  sense?: string | null
 }
 
 /**
  * Sector 히트맵 — D-MP2-SURFACE 신규 full-width 컴포넌트.
  * useCardDetail<SectorDetail>('sector', true) 로 11섹터 fetch.
  * rank 오름차순 정렬 → 11 타일 렌더.
- * 색 = rel_strength diverging (상승=빨강, 하락=파랑, 한국 관례).
+ * 색 = sectorTileClass (상승=rose, 하락=sky, 한국 관례, sectorColor.ts 단일소스).
+ * sense prop → 히트맵 아래 SenseNote 렌더(null이면 미렌더).
  * onOpen → sector 드로어 열림(항상 클릭 가능, 로딩/에러/빈 상태 포함).
  */
-export function SectorHeatmap({ labels, onOpen }: SectorHeatmapProps) {
+export function SectorHeatmap({ labels, onOpen, sense }: SectorHeatmapProps) {
   const { data: envelope, isLoading, isError } = useCardDetail<SectorDetail>('sector', true)
   const detail = envelope?.data
   const sectors = !isLoading && !isError && detail
@@ -82,7 +61,7 @@ export function SectorHeatmap({ labels, onOpen }: SectorHeatmapProps) {
       ) : (
         <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
           {sectors.map((s) => {
-            const tileClass = heatTileClass(s.rel_strength)
+            const tileClass = sectorTileClass(s.rel_strength)
             const label = translate(`sector.${s.symbol}`, labels, s.symbol)
             return (
               <div
@@ -99,6 +78,9 @@ export function SectorHeatmap({ labels, onOpen }: SectorHeatmapProps) {
           })}
         </div>
       )}
+
+      {/* sense 한 줄 복원: 히트맵 아래 상시 — null이면 SenseNote가 미렌더 */}
+      <SenseNote sense={sense} />
     </section>
   )
 }
