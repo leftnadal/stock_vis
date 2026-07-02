@@ -471,3 +471,13 @@
 | TC-1 | Thesis Control FE-PR-1 (라우팅+공통) | @frontend | ~2026-03-10 | 7개 라우트 + 5개 공통 컴포넌트 |
 | TC-2 | Thesis Control FE-PR-2 (목록+변경+진입) | @frontend | ~2026-03-12 | ThesisListCard + TodayChangeCard |
 | VAL-1 | 1차 검증 전체 (Peer+LLM필터) | @backend + @frontend | ~2026-03-05 | 6개 프리셋 + Compute-on-Read |
+
+## NT-OPS-HCHECK-REDESIGN — health_check `origin/main-hash` 체크 재설계 [resolved 2026-07-02]
+- 상태: **resolved** (D-OPS-HCHECK-B2). 해시 대조 → 시간기반(PROGRESS committer-ts, 임계 M=72h) 교체. 순수함수 `is_progress_stale` 분리 + 자기검증 2방향(`tests/test_health_check_freshness.py`) + 전체 health_check 10 OK.
+- 원증상: fast-main(~20min land)+self-ref로 매 세션 blocking ERROR 오발 → resync land 게이트 HALT.
+- ※ 병렬 브랜치 주의: `monorepo/sess-mgmt-v2`(미land, 0126af6)가 이 항목을 **open**으로도 추가함 → PHASE 2에서 v2 rebase·land 시 union-merge 중복 → **dedup 필요**(open 제거, 본 resolved 유지).
+
+## NT-OPS-HCHECK-GATEINFO — health_check gate/info 2계층 분리 (C안, 후보)
+- 내용: blocking gate(코드diff·경계·동결·arch guard) vs 비-blocking info(캐시 신선도)로 출력 모델 재구조화.
+- 이유: 캐시성 체크가 늘면 개념적으로 가장 깨끗(PROGRESS=캐시 규약을 구조에 반영).
+- γ규율: 지금은 소비자 미확정 → 짓지 않음. 트리거: 캐시성 blocking 후보 체크 ≥3 누적 시 결정 사이클.

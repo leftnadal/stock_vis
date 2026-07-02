@@ -2630,3 +2630,24 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 - **실측 근거**: `composite_score`는 실존 float(`eod_signal_tagger._calculate_composite_score`, 범위 −1.0~+1.0, 시그널 0이면 0.0) → 원점수 보존 후 enum 파생 가능.
 
 **baseline at decision**: origin/main = 98ae812. prod 쓰기 0(결정 등재만).
+
+---
+
+## [2026-07-02] health_check `origin/main-hash` 체크 시간기반 재설계 (D-OPS-HCHECK-B2)
+
+**결정**: `scripts/health_check.py`의 검증①을 **해시 대조 → 시간기반**으로 교체. PROGRESS.md의 마지막 커밋 시각(committer epoch, UTC)이 임계 **M=72h**를 넘게 묵었는지만 blocking으로 본다. 구 `origin/main = <hash>` recorded-vs-recent-N 대조 로직·`ORIGIN_MAIN_HASH_TOLERANCE` 완전 제거. 판정은 순수함수 `is_progress_stale(progress_ts, now_ts, threshold_h)`로 분리(테스트 주입). 함수명 `check_origin_main_hash`·display name "origin/main 해시"·등록·심각도(ERROR/blocking)는 레지스트리/JSON 트렌드 호환 위해 **유지**(의미는 신선도로 변경, detail이 설명).
+
+**왜**:
+- **(1) category error**: 규약상 PROGRESS.md는 캐시(진실의 소스 아님 — 진실은 git). 캐시의 lag을 blocking ERROR로 취급한 것이 심각도 불일치.
+- **(2) self-referential 수렴 불가**: 갱신 커밋이 자기 자신의 push-후 해시를 본문에 미리 못 적는 구조 → "정확 tip 기록" 요구는 원리상 수렴 불가(tolerance N=3 완화도 fast-main에선 land 후 window 밖으로 밀려 재발).
+- **(3) 구조적 오발**: 실측(2026-07-02) — main이 인간 병렬 CC 세션들로 **~20min 간격 land**(단일 author leftnadal, 봇 아님). resync 마감 세션이 이 체크 때문에 land 게이트 직전 HALT(마커 treadmill: 사용자가 "META-TOUCH 마커 리셋"·"HC-MARKER-TREADMILL"로 수동 관리해온 흔적).
+- **시간기반의 이점**: blocking(진짜 방치 차단)은 유지하되 해시 의존 제거 → self-ref·fast-main·동시쓰기와 **무관**.
+
+**How to apply**:
+- `PROGRESS_STALE_THRESHOLD_H = 72.0`. 근거(STEP 0 실측): PROGRESS 커밋 최대 정상 gap ≈ **22.6h**(활성 야간 사이클); 주말(금저녁→월아침) ~60–72h 정상 가능 → 초안 48h는 주말 오발 위험 → **72h로 마진**(활성 max의 ~3배, 주말 흡수, 다일 방치는 여전히 차단).
+- committer-ts(`git log -1 --format=%ct -- PROGRESS.md`) 사용 — **파일 mtime 금지**(클론/체크아웃마다 불안정).
+- 자기검증: `tests/test_health_check_freshness.py` 2방향(fast-main 오발 0 / 진짜 방치 차단) + 경계값. 의도적 행위 변경이라 IDENTICAL 불가 — 근거 = 이 2방향 회귀.
+
+**후속**: 캐시성 blocking 체크가 늘면 gate/info 2계층 분리(C안, `NT-OPS-HCHECK-GATEINFO`) — 지금은 소비자 미확정이라 짓지 않음.
+
+**baseline at decision**: origin/main = af08007. 변경 범위 = `health_check.py`(+테스트) only, apps/·packages/shared·prod 무변경.
