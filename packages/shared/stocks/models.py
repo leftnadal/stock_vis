@@ -1093,6 +1093,43 @@ class SignalAccuracy(models.Model):
         return f"{self.stock_id} {self.signal_date} {self.signal_tag}"
 
 
+class IssuanceLog(models.Model):
+    """추천 발행 로그.
+
+    bake 시점에 발행(issuance)된 추천을 기록한다. SignalAccuracy 형제.
+    - grain = (stock, signal_date, signal_tag)  [D-P1-GRAIN]
+      한 종목이 같은 날 복수 signal_tag(시그널 종류)로 발행될 수 있어 태그가 grain에 포함.
+    - confidence = signal-strength formula v1, conf_ver로 산식 버전 태깅  [D-P1-CONF]
+    - user_id = nullable 예약(발행 로그는 user 무관, day-1 미충족). Phase 2 Viewed는 별도 테이블.
+    - presented_as 컬럼 없음 = 발행 로그는 정의상 전부 baked  [D-SCHEMA]
+    """
+
+    stock = models.ForeignKey("Stock", on_delete=models.CASCADE)
+    signal_date = models.DateField()
+    signal_tag = models.CharField(max_length=10)
+
+    confidence = models.CharField(max_length=20)
+    composite_score = models.FloatField(null=True, blank=True)
+    conf_ver = models.IntegerField(default=1)
+    rank = models.IntegerField()
+    published_at = models.DateTimeField()
+
+    # 다중 사용자 이음새 예약(방향 B) — day-1엔 채우지 않음
+    user_id = models.BigIntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "stocks_issuance_log"
+        unique_together = ("stock", "signal_date", "signal_tag")
+        indexes = [
+            models.Index(fields=["signal_date", "signal_tag"]),
+        ]
+
+    def __str__(self):
+        return f"{self.stock_id} {self.signal_date} {self.signal_tag} #{self.rank}"
+
+
 class EODDashboardSnapshot(models.Model):
     """Baked JSON 스냅샷"""
 
