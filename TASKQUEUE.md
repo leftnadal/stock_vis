@@ -422,6 +422,7 @@
 | P5-EXCESS-BACKFILL | `SignalAccuracy.excess_{h}d`(SPY 상대) 백필 — prod 3,611행(~12%)만 채워짐 vs return 29,962. **벤치마크 상대 채점 채택 시 선결**(raw return 채점은 즉시 가능하므로 조건부) | 트랙 위임(shared/stocks) | Phase 5 벤치마크 상대 채점 채택 시 | 🆕 보류 |
 | HC-MARKER-TREADMILL | health_check "origin/main 해시" 마커가 **매 mgmt 머지마다 lag=1**(커밋이 자기 머지-후 해시를 스스로 못 적는 구조적 한계). 현재 tolerance N=3가 흡수해 대개 green이나, 마커 3커밋+ 미갱신 시 붉어짐(이전 STEP 0 세션 시작 시 실제 red 이력). **임시 규율**: 매 mgmt에서 마커를 현 origin/main으로 갱신해 lag=1 clean 유지(누적 방지). **durable**: health_check가 "메타-only·lag=1" 시그니처를 허용하도록 수정(하네스 코드 = 별도 슬라이스). **📌 보강(2026-07-02 preflight)**: N=3 tolerance가 lag=1을 흡수 재확인(5d35fa7 마커=3d670ed=HEAD~1 green). ❌는 lag>3에서만 발현 추정 → **durable 긴급도 하향**, 우선 tolerance 경계 문서화. | 하네스 개선(HARN) | durable = 하네스 코드 슬라이스(긴급도↓) / 임시 = 매 mgmt 상시 | 🆕 등재(임시 규율 상시 적용) |
 | DASH-FE-GLOB | frontend 실경로 = `frontend/app/page.tsx`(≠ 소유권 글롭 `app/dashboard/**`, 레거시 계정 페이지) 재확인 → 소유권 지도 v2 **실경로 반영**(dashboard 불일치-A 후속) | mgmt | 다음 mgmt(급하지 않음 — 이미 D-P1-STEP0·소유권 지도에 사실 기록됨) | 🆕 보류 |
+| P1-BUILD | 병합 스키마(**D-SCHEMA 9필드**)로 **발행 로그 모델 신설**(SignalAccuracy 형제, `packages/shared/stocks`) + **baker `recommend`/`thesis`/`carousel` 필드 add**(dashboard.json 추천 계약 서빙). 빌드용 worktree 브랜치 `monorepo/sess-p1-recprod`. **게이트**: 순수 add(dry-run `No changes` 기저 확인됨)·IDENTICAL(기존 6키 signal_cards 행위보존)·회귀 green·**write 표면 0**(serve 무변경). 참조 D-P1-RECPROD·D-SCHEMA·D-OWN | 트랙 위임(shared/stocks · **dashboard 디렉션** D-OWN) | 착수가능(실행 대기) | 🆕 착수가능 |
 
 ---
 
@@ -432,6 +433,7 @@
 | ID | Task | 분류 | 트리거(재개) | Status |
 |----|------|------|-------------|--------|
 | MP2-VIEWED | ②Viewed enrichment(per-user impression, `presented_as='viewed'`) → **defer**(drop 아님). 사전 조율: 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`) 요구를 dashboard 세션에 전달. 참조 D-MP2-SEQ | Phase 2 촉발 ② | **Phase 1 발행 로그(shared/stocks) 스키마 land 시** | 🆕 보류 |
+| P2-VIEWED-TABLE | **Viewed 별도 테이블 신설**(`presented_as='viewed'` 경로) — **D-SCHEMA의 baked/viewed 분리 결정 후속**. 발행 로그에서 `presented_as` 컬럼을 뺀 대가로, 노출 수준 채점은 이 테이블 join으로 복원(Phase 5). MP2-VIEWED enrichment의 **물리 저장소 스텁**(형제 항목). 참조 D-SCHEMA | Phase 2 촉발 ②(물리 스텁) | **P1-BUILD land 후 + Phase 2 착수 시** | 🆕 스텁(보류) |
 
 ---
 

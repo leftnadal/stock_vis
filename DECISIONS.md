@@ -2539,6 +2539,8 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 
 **남은 것**: 실행(shared/stocks 위임 대기). 설계·결정은 본 D-P1-RECPROD로 종료.
 
+> ★ **2026-07-02 스키마 정정 (D-SCHEMA로 병합 supersede)**: 위 8필드 로그 스키마는 **D-SCHEMA(병합 9필드)로 정정**됨 — `horizon→signal_tag`(SignalAccuracy 실 grain 정합), `presented_as` 삭제(발행 로그=전부 baked 상수 → Phase 2 Viewed 별도 테이블로 분리), `composite_score`·`published_at` 신규. `conf_ver`·`rank`는 보존. **최종 필드는 D-SCHEMA 참조**(이 블록의 8필드는 낡은 버전).
+
 **baseline at decision**: origin/main = 3d670ed. prod 쓰기: 0(결정 등재만).
 
 ## [2026-07-02] Phase 2(market_pulse 촉발) 두 축 설계 순서 (D-MP2-SEQ)
@@ -2570,3 +2572,36 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 - 재사용 자산(anomaly·sector·regime intraday) 기존·활성 — 신규 계산 0.
 
 **baseline at decision**: origin/main = 8aee712. prod 쓰기 0.
+
+## [2026-07-02] Phase 1 소유권 예외 — 발행 로그+추천 생산 빌드 (D-OWN)
+
+**결정**: Phase 1 **발행 로그 + EOD-bake 추천 생산 빌드**는 `packages/shared/stocks` 구획에 놓이나(SignalAccuracy 형제 모델 + baker 확장), **dashboard 표면의 백엔드 생산**이다. → **dashboard 디렉션 하에 실행**하되, **이 슬라이스 한정 예외**로만 소유권 지도 v2에 기록한다. **`shared/stocks` 전체를 dashboard 소유로 넘기지 않는다.**
+
+**Why — ops 경계판정 완료(dashboard Phase 1 STEP 0 재확인 보고)**:
+- **shared 자족**: EOD-bake·발행 로그 경로가 `Stock`·`StockNews`만 소비, `services.news`/`apps.*` 역import **0줄**.
+- **arch 가드**: `tests/architecture/test_shared_boundary.py` **3 tests pass**, 역import 0(스펙 "7 pass"는 오기 — 실제 3 tests).
+- **무파괴**: `makemigrations stocks --dry-run` = `No changes`(발행 로그 신설은 순수 add 예상).
+- D-P1-RECPROD **"★실구현 경계 = 생산은 shared 위임(dashboard는 표면·로그 소비만)"** 과 정합 — 소유권(디렉션)은 dashboard, 물리 구획은 shared/stocks.
+
+**How to apply**:
+- 소유권 지도 v2에 **슬라이스 한정 예외 1건**만 등재: `packages/shared/stocks`의 [발행 로그 모델 + baker 추천 필드 add] → dashboard 디렉션. 나머지 shared/stocks는 기존 소유 불변.
+- Phase 1 종료 시 예외 유효성 재확인(빌드 완료 후 소유 경계 재판정).
+
+**baseline at decision**: origin/main = 008d0b2. prod 쓰기 0(결정 등재만).
+
+## [2026-07-02] 발행 로그 병합 스키마 supersede — D-P1-RECPROD 정정 (D-SCHEMA)
+
+**결정**: 발행 로그 최종 스키마 = **9필드** `(stock, signal_date, signal_tag, confidence, composite_score, conf_ver, rank, published_at, user_id[nullable])`. D-P1-RECPROD의 기등록 8필드를 **본 결정으로 supersede**(정정). join 키 = `(stock, signal_date, signal_tag)` — **SignalAccuracy grain과 정확 일치**.
+
+**Why — divergence별 근거**:
+- **`horizon → signal_tag`**: SignalAccuracy 실 grain은 `(stock, signal_date, signal_tag)`이고 **horizon 컬럼은 부재**(지평은 `return_1d/5d/20d`·`excess_1d/5d/20d` **wide 접미사**로 인코딩). 발행 로그가 `signal_tag`를 쓰면 join 직결. horizon 단일 컬럼(D-P1-RECPROD)은 실구조와 불일치 → 정정. 지평 표현은 wide 관례 유지.
+- **`conf_ver` 보존(default=1)**: `published_at`(발행 *시각*)은 confidence *알고리즘 버전*(v1 신호강도 vs v2 레포트반영)을 대체 **불가** — 소급 재계산 시 시각 불변인데 값만 바뀌면 버전 추적 불능. v1/v2 소급 구분 위해 명시 태그 유지.
+- **`rank` 보존**: 발행 시점 캐러셀 top-N 순위 = **발행 사실**(소급 재구성 불가) → 캡처 필수.
+- **`presented_as` 삭제 + ★테이블 분리 명문화**: 발행 로그는 **정의상 전부 baked**라 `presented_as` 컬럼은 상수/중복 → 삭제. **baked/viewed 구분은 Phase 2 Viewed 별도 테이블**(`presented_as='viewed'` 경로)로 분리한다. 이 분리를 명문화해 D-P1-RECPROD의 Phase 2 Viewed enrichment 경로를 **손실 없이 보존**(발행 테이블에서 상수 컬럼만 제거, Phase 5 노출 수준 채점은 Viewed 테이블 join으로 복원).
+- **`composite_score`·`published_at` 신규**: `composite_score` = baker 카드 실값(`eod_json_baker.py:282`) 캡처(행위 보존), `published_at` = 발행 감사 타임스탬프.
+
+**How to apply**:
+- P1-BUILD가 이 9필드로 발행 로그 모델 신설(SignalAccuracy 형제, `packages/shared/stocks`).
+- Phase 2 Viewed 테이블은 별도 스텁(P2-VIEWED-TABLE) — 본 분리 결정의 후속.
+
+**baseline at decision**: origin/main = 008d0b2. prod 쓰기 0(결정 등재만).
