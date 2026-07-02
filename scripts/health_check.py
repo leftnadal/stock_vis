@@ -563,9 +563,8 @@ _LLM_NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
 
 # tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS 와 일치(슬라이스 ④ burn-down).
 # korean_overview는 슬라이스 ②에서 이관 완료 → 목록에 없음(회귀 잠금).
-_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = {
-    ("apps/portfolio/measure/estimator_v3.py", "Anthropic"),
-}
+# 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(23→0, 전 소비처 코어 단일 경유).
+_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
 
 
 def _llm_call_identifier(node: ast.Call) -> str | None:

@@ -2342,3 +2342,16 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 - **gemini astream은 무변경**(#12 IDENTICAL 보존): 코어 astream이 gemini는 raw 청크 pass-through 유지,
   anthropic만 StreamFinal 인지(cost 분기). **후속 슬라이스** = #12 gemini astream → 정규화 델타 이관 +
   #8 shim 제거(자기 IDENTICAL 게이트). agenerate·batch·strict-tool은 소비자 미확인 스텁 유지(γ).
+
+## 구현 완료 (④ #3, 2026-07-02 — BOUNDARY-LLM burn-down 종결)
+- **util count_tokens 진입점 신설**: `core.count_tokens(prompt: str|list, *, provider, model, system) -> int`
+  (계량, 생성 아님 → LLMResponse 아님, 정책 미적용). anthropic 구현(`messages.count_tokens`, .input_tokens
+  int, prompt=list이면 messages pass-through) + gemini 스텁(소비자 0, γ).
+- **#3 이관**: estimator_v3 직접 `Anthropic().messages.count_tokens` → 코어 util 경유. messages+system
+  wire IDENTICAL(잉여키 0), cache·fallback은 소비자(estimator) 소유(행위보존). `set_client`/`_get_client`
+  주입 seam 제거 → 테스트는 `anthropic.Anthropic` 패치로 이관(#13 선례).
+- **동결 1→0 = burn-down 종결**: KNOWN_VIOLATIONS 빈 목록. **ADR-LLM-001 구현 3종 완료 = sync(#2 complete)
+  · stream(#8 astream) · util(#3 count_tokens)**. 전 LLM 소비처가 `packages/shared/llm` 단일 경유.
+  잔여 스텁(소비자 미확인, γ) = batch·strict tool use·agenerate·gemini count_tokens. 후속 = #12 gemini
+  astream 정규화(동결 무관, 이미 이관됨). burn-down 여정: **23→10(④①-sync)→6(①-aio)→5(#12)→4(#19)
+  →3(②#9)→2(③a#2)→1(③b#8)→0(④#3)**.
