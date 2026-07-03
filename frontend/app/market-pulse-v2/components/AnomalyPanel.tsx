@@ -1,8 +1,73 @@
 'use client'
 
 import { translate } from '@/lib/i18n/marketPulse'
-import type { AnomalySection } from '@/lib/api/marketPulseV2'
+import type { AnomalySection, AnomalyItem } from '@/lib/api/marketPulseV2'
 import { MODE_MEANING } from '../meaning'
+
+/** sector.* 심볼 → 사람 읽는 라벨 (translate 없는 경우 심볼 그대로). */
+function sectorLabel(symbol: string, labels?: Record<string, string>): string {
+  return labels?.[`sector.${symbol}`] ?? symbol
+}
+
+interface AnomalyEvidenceProps {
+  f: AnomalyItem
+  labels?: Record<string, string>
+}
+
+function EvidenceChips({ f, labels }: AnomalyEvidenceProps) {
+  const thresholdVal = Object.values(f.threshold ?? {})[0]
+  const chips: Array<{ label: string; hot: boolean }> = []
+
+  // 분산 칩: rule actual vs threshold
+  if (thresholdVal !== undefined) {
+    const hot = f.actual >= thresholdVal
+    chips.push({ label: `분산 ${f.actual.toFixed(2)}/${thresholdVal}`, hot })
+  }
+
+  // 상위10비중
+  const top10 = f.evidence?.top10_weight
+  if (top10 != null) {
+    chips.push({ label: `상위10 ${(top10 * 100).toFixed(1)}%`, hot: false })
+  }
+
+  // VIX변화
+  const vix = f.evidence?.vix_change_pct
+  if (vix != null) {
+    const sign = vix > 0 ? '+' : ''
+    chips.push({ label: `VIX ${sign}${vix.toFixed(1)}%`, hot: false })
+  }
+
+  // 최대섹터z
+  const sectorZ = f.evidence?.max_abs_sector_z
+  if (sectorZ != null) {
+    chips.push({ label: `섹터z ${sectorZ.toFixed(2)}`, hot: false })
+  }
+
+  // 급등섹터 (hot 강조)
+  const extreme = f.evidence?.sector_extreme_symbol
+  if (extreme != null) {
+    chips.push({ label: sectorLabel(extreme, labels), hot: true })
+  }
+
+  if (chips.length === 0) return null
+
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {chips.map((chip) => (
+        <span
+          key={chip.label}
+          className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-medium ${
+            chip.hot
+              ? 'bg-rose-100 text-rose-700'
+              : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {chip.label}
+        </span>
+      ))}
+    </div>
+  )
+}
 
 const MODE_TONE: Record<string, string> = {
   ANOMALY: 'border-rose-300 bg-rose-50',
@@ -55,6 +120,17 @@ export function AnomalyPanel({ data, labels }: { data: AnomalySection; labels?: 
               {/* MP-UX-S2: 경보선 = fired[].threshold(기바인딩, FE만, 임계 하드코딩 0). rule 모두 op '>=' (engine.py) */}
               {Object.values(f.threshold ?? {})[0] !== undefined ? (
                 <span className="text-slate-400"> (경보선 {Object.values(f.threshold ?? {})[0]} 초과)</span>
+              ) : null}
+              <EvidenceChips f={f} labels={labels} />
+              {f.paired_news_title && f.paired_news_url ? (
+                <a
+                  href={f.paired_news_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block mt-1 text-[10px] text-blue-600 underline hover:text-blue-800"
+                >
+                  🔗 {f.paired_news_title}
+                </a>
               ) : null}
             </li>
           ))}
