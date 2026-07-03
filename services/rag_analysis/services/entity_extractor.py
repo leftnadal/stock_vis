@@ -10,8 +10,9 @@ import re
 from typing import Optional, TypedDict
 
 from django.conf import settings
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import acomplete
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +59,15 @@ JSON:"""
             settings, "GOOGLE_AI_API_KEY", None
         )
 
+        # genai.Client 직접생성 → shared/llm acomplete() 경유(슬라이스 ④ Part ①-aio).
+        # self.client(피처 플래그) → self._llm_enabled로 게이팅 보존(키는 acomplete가 해소).
         if not api_key:
             logger.warning(
                 "GEMINI_API_KEY not set. EntityExtractor will use fallback mode."
             )
-            self.client = None
+            self._llm_enabled = False
         else:
-            self.client = genai.Client(api_key=api_key)
+            self._llm_enabled = True
 
     async def extract(self, question: str) -> ExtractedEntities:
         """
@@ -77,20 +80,19 @@ JSON:"""
             ExtractedEntities: 추출된 엔티티
         """
         # API 키가 없으면 폴백 사용
-        if not self.client:
+        if not self._llm_enabled:
             return self._fallback_extraction(question)
 
         try:
-            config = types.GenerateContentConfig(
-                max_output_tokens=self.MAX_TOKENS,
-                temperature=0.1,  # 낮은 온도로 일관된 JSON 출력
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
-
-            response = await self.client.aio.models.generate_content(
+            # shared/llm acomplete() 경유(슬라이스 ④, IDENTICAL). max_output_tokens→max_tokens,
+            # thinking_config→extra. 정책 전부 off = 현행 재현. contents=prompt(불변).
+            response = await acomplete(
+                self.EXTRACTION_PROMPT.format(question=question),
+                provider="gemini",
                 model=self.MODEL,
-                contents=self.EXTRACTION_PROMPT.format(question=question),
-                config=config,
+                max_tokens=self.MAX_TOKENS,
+                temperature=0.1,
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             content = response.text.strip()

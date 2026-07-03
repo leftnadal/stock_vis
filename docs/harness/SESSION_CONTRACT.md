@@ -7,7 +7,8 @@
 ## A. 불변 규칙 (안 바뀜)
 
 1. 한 세션은 자기 소유 영역만 commit한다.
-2. 작업은 자기 worktree(sess/\* 또는 지정 브랜치)에서만. 원본 리포 main 직접 commit 금지.
+2. 작업은 자기 worktree(`monorepo/sess-*` 또는 지정 브랜치)에서만. 원본 리포 main 직접 commit 금지.
+   → 명명 변경 사유 (2026-06-02): 기존 `sess/*`는 `.git/hooks/pre-commit` 화이트리스트(`monorepo/*`만 통과) 거부 → b 옵션(이름 우회)로 hook 무수정 해소. hook hardening(c)은 트리거 보류(TASKQUEUE CONTRACT-IMPROVE).
 3. 공유 존(packages/shared, config/\*, packages/web)은 한 번에 한 세션만.
    건드리기 전 → STOP → 사용자에게 "공유 편집 필요" 보고 → 단독 확인 후.
 4. 메타 레이어(PROGRESS·DECISIONS·TASKQUEUE·common-bugs·docs·scripts·
@@ -20,8 +21,8 @@
 
 | 세션 종류         | 소유(commit 가능)                                                                     | worktree · 브랜치                                        |
 | ----------------- | ------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| 메인              | apps/{하나} (dashboard·market_pulse·chain_sight·portfolio)                            | ../stock*vis*{앱} · sess/{앱}                            |
-| 관리              | PROGRESS·DECISIONS·TASKQUEUE·common-bugs·docs·scripts·tests/architecture·health_check | ../stock_vis_mgmt · sess/mgmt                            |
+| 메인              | apps/{하나} (dashboard·market_pulse·chain_sight·portfolio)                            | ../stock*vis*{앱} · `monorepo/sess-{앱}`                |
+| 관리              | PROGRESS·DECISIONS·TASKQUEUE·common-bugs·docs·scripts·tests/architecture·health_check | ../stock_vis_mgmt · `monorepo/sess-mgmt`                |
 | 외부 API          | integrations/iron_trading                                                             | ../stock_vis_api · iron-trading-api (기존 브랜치 재사용) |
 | 공유(단독 소유 X) | packages/shared · config/\* · packages/web                                            | 규칙으로 직렬화(한 번에 하나)                            |
 
@@ -42,8 +43,8 @@ worktree: ../stock_vis\_\_\_** · 브랜치: \_**\_
 
 원본 리포 = main 전용 머지 지점. 작업은 전부 worktree에서.
 \`\`\`bash
-git worktree add ../stock_vis_mgmt -b sess/mgmt # 관리(상시)
-git worktree add ../stock_vis_market_pulse -b sess/market_pulse # 메인 예시
+git worktree add ../stock_vis_mgmt -b monorepo/sess-mgmt # 관리(상시)
+git worktree add ../stock_vis_market_pulse -b monorepo/sess-market_pulse # 메인 예시
 git worktree add ../stock_vis_api iron-trading-api # 외부 API(기존 브랜치)
 git worktree list
 \`\`\`

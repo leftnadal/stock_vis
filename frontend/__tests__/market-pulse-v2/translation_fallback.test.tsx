@@ -53,10 +53,14 @@ async function renderWith(translations: Translations | null) {
 }
 
 describe('translations fallback 3상태', () => {
-  it('상태1 정상: 4카드 sense 렌더 + 밴드/raw 불변', async () => {
+  // sector sense 복원: SectorHeatmap에 sense prop 추가 → 히트맵 아래 sense-note 렌더.
+  // 따라서 정상 상태에서 sense-note는 4개(regime, breadth, sector, concentration).
+  it('상태1 정상: 4카드 sense 렌더 + 밴드/raw 불변 (sector sense SectorHeatmap으로 복원)', async () => {
     await renderWith(FULL)
     expect(screen.getAllByTestId('sense-note')).toHaveLength(4)
     expect(screen.getByText(FULL.senses.regime)).toBeInTheDocument()
+    // sector sense가 SectorHeatmap 아래에 렌더됨
+    expect(screen.getByText(FULL.senses.sector)).toBeInTheDocument()
     // additive 가드: 밴드·raw 그대로
     expect(screen.getByText(BAND_ANCHOR)).toBeInTheDocument()
     expect(screen.getByText('320')).toBeInTheDocument()

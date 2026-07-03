@@ -14,7 +14,7 @@ import { BreadthCardSummary } from './cards/BreadthCardSummary'
 import { BriefCardSummary } from './cards/BriefCardSummary'
 import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
-import { SectorCardSummary } from './cards/SectorCardSummary'
+import { SectorHeatmap } from './cards/SectorHeatmap'
 import { CardDetailContainer } from './details/CardDetailContainer'
 import { REGIME_TERM } from './meaning'
 import { selectSense } from './translationSelector'
@@ -56,29 +56,57 @@ export default function MarketPulseV2Page() {
   const meta = overview._meta
   // S4: translations envelope → 카드별 sense 주입(fallback이 정상 경로 — null이면 카드는 밴드만).
   const translations = overview.translations
+
   return (
     <PageShell title="Market Pulse v2">
+      {/* ① Ticker Bar */}
       <TickerBar items={overview.ticker_bar} />
+
       <div className="px-2 py-3">
+        {/* ② Status Banner */}
         <StatusBanner status={meta.status} reason={meta.status_reason} labels={labels} />
 
-        <AnomalyPanel data={overview.anomaly} labels={labels} />
-
-        <section className="mt-4 grid gap-3 sm:grid-cols-2">
+        {/* ③ Regime hero (full-width) — D-MP2-SURFACE 변형1 위계 1번 */}
+        <div className="mt-4">
           <RegimeCardSummary
             data={overview.cards.regime}
             labels={labels}
             onOpen={() => setOpenCard('regime')}
             sense={selectSense(translations, 'regime')}
           />
-          <BreadthCardSummary data={overview.cards.breadth} labels={labels} onOpen={() => setOpenCard('breadth')} sense={selectSense(translations, 'breadth')} />
-          <SectorCardSummary data={overview.cards.sector} labels={labels} onOpen={() => setOpenCard('sector')} sense={selectSense(translations, 'sector')} />
-          <ConcentrationCardSummary data={overview.cards.concentration} labels={labels} onOpen={() => setOpenCard('concentration')} sense={selectSense(translations, 'concentration')} />
+        </div>
+
+        {/* ④ Anomaly Panel — 위계 2번 */}
+        <AnomalyPanel data={overview.anomaly} labels={labels} />
+
+        {/* ⑤ Sector 히트맵 (full-width) — 위계 3번 */}
+        <SectorHeatmap labels={labels} onOpen={() => setOpenCard('sector')} sense={selectSense(translations, 'sector')} />
+
+        {/* ⑥ Brief (prose) — 위계 4번 */}
+        <div className="mt-4">
           <BriefCardSummary data={overview.cards.brief} onOpen={() => setOpenCard('brief')} />
+        </div>
+
+        {/* ⑦ Grid: Breadth + Concentration — 위계 5번 */}
+        <section className="mt-4 grid gap-3 sm:grid-cols-2">
+          <BreadthCardSummary
+            data={overview.cards.breadth}
+            labels={labels}
+            onOpen={() => setOpenCard('breadth')}
+            sense={selectSense(translations, 'breadth')}
+          />
+          <ConcentrationCardSummary
+            data={overview.cards.concentration}
+            labels={labels}
+            onOpen={() => setOpenCard('concentration')}
+            sense={selectSense(translations, 'concentration')}
+          />
         </section>
 
+        {/* ⑧ News */}
         <NewsPanel items={overview.news} labels={labels} />
 
+        {/* ⑨ Footer */}
         <footer className="text-[10px] text-slate-400 mt-6 px-1 py-2">
           generated_at {meta.generated_at} · {meta.latency_ms}ms · cache {meta.cache || '—'}
           {' · '}
@@ -88,6 +116,7 @@ export default function MarketPulseV2Page() {
         </footer>
       </div>
 
+      {/* CardDrawer: 5카드 드로어 전부 살아있어야 함 (sector 포함) */}
       <CardDrawer
         open={openCard !== null}
         onClose={() => setOpenCard(null)}

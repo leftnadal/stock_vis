@@ -14,8 +14,8 @@
 
 `docs/harness/SESSION_CONTRACT.md` §C "세션 시작 헤더"의 빈칸(세션 종류 / 소유 앱 / worktree / 브랜치 / 소유 영역)을 채워 **Claude Code에 그대로 붙여 넣는다.** 이 선언이 세션 동안 commit 허용 경로·금지 경로·종료 절차를 결정한다.
 
-- 메인 세션: `apps/<단일 앱>` 하나만 소유 → worktree `../stock_vis_<앱>` · 브랜치 `sess/<앱>`
-- 관리 세션: 메타 레이어(PROGRESS·DECISIONS·TASKQUEUE·common-bugs·docs·scripts·tests/architecture·health_check) 단독 소유 → worktree `../stock_vis_mgmt` · 브랜치 `sess/mgmt`
+- 메인 세션: `apps/<단일 앱>` 하나만 소유 → worktree `../stock_vis_<앱>` · 브랜치 `monorepo/sess-<앱>`
+- 관리 세션: 메타 레이어(PROGRESS·DECISIONS·TASKQUEUE·common-bugs·docs·scripts·tests/architecture·health_check) 단독 소유 → worktree `../stock_vis_mgmt` · 브랜치 `monorepo/sess-mgmt`
 - 외부 API 세션: `integrations/iron_trading` → worktree `../stock_vis_api` · 브랜치 `iron-trading-api`(기존 재사용)
 - 공유 존(`packages/shared`·`config/*`·`packages/web`) 편집 필요 시 **STOP → 사용자 보고 → 단독 확인 후**
 

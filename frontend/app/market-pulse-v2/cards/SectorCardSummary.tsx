@@ -3,6 +3,7 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorCard, SectorCardItem } from '@/lib/api/marketPulseV2'
 import { sectorFlow, sectorSentence } from '../meaning'
+import { sectorTextClass } from '../sectorColor'
 import { CardShell } from './CardShell'
 import { SenseNote } from './SenseNote'
 
@@ -62,8 +63,7 @@ function Section({
       <p className="text-xs text-slate-500 mb-1">{title}</p>
       <ul className="space-y-1">
         {rows.map((r) => {
-          const flow = sectorFlow(r.rel_strength)
-          const tone = flow.dir === 'in' ? 'text-emerald-600' : flow.dir === 'out' ? 'text-rose-600' : 'text-slate-500'
+          const tone = sectorTextClass(r.rel_strength)
           return (
             <li key={r.symbol} className="flex items-baseline justify-between">
               <span className="font-mono text-sm text-slate-800">{translate(`sector.${r.symbol}`, labels, r.symbol)}</span>

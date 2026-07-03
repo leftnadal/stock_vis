@@ -63,7 +63,20 @@ def matcher():
 def _mock_genai_response(text):
     response = MagicMock()
     response.text = text
+    response.usage_metadata = None  # 코어 provider 토큰 추출(int) 안전
     return response
+
+
+def _patch_genai_client(text):
+    """google.genai.Client를 patch해 generate_content가 주어진 text를 반환.
+
+    슬라이스 ④: complete() → gemini provider → genai.Client(api_key).models.generate_content
+    경로를 가로챈다(구 GeminiExtractor._get_client seam 대체).
+    """
+    patcher = patch("google.genai.Client")
+    mock_cls = patcher.start()
+    mock_cls.return_value.models.generate_content.return_value = _mock_genai_response(text)
+    return patcher, mock_cls
 
 
 # ===========================================================================
@@ -233,40 +246,48 @@ class TestSectionPatternsRegexCompile:
 # ===========================================================================
 
 class TestExtractorThinkingBudget:
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_thinking_budget_is_zero(self, mock_get_client, extractor):
+    def test_thinking_budget_is_zero(self, extractor, settings):
         """thinking_config.thinking_budget=0 으로 호출되어 빠른 응답."""
-        client = MagicMock()
-        client.models.generate_content.return_value = _mock_genai_response('{}')
-        mock_get_client.return_value = client
-
-        extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
-        kwargs = client.models.generate_content.call_args.kwargs
+        settings.GEMINI_API_KEY = "fake-key"
+        patcher, mock_cls = _patch_genai_client('{}')
+        try:
+            extractor.extract_business_model('AAPL', 'Apple Inc.', ['text'])
+            # complete() → gemini provider → genai.Client().models.generate_content
+            kwargs = mock_cls.return_value.models.generate_content.call_args.kwargs
+        finally:
+            patcher.stop()
         config = kwargs['config']
-        # ThinkingConfig 객체에서 thinking_budget 속성 확인
+        # provider GenerateContentConfig 에 extra(thinking_config) 보존
         assert getattr(config.thinking_config, 'thinking_budget', None) == 0
+        # temperature·response_mime_type 보존, max_output_tokens 미설정(현행 재현)
+        assert config.temperature == 0.1
+        assert config.response_mime_type == 'application/json'
+        assert getattr(config, 'max_output_tokens', None) is None
+        # contents=prompt 불변(prompt 자체는 변환 없이 전달)
+        assert kwargs['contents'] is not None
 
 
 class TestExtractorEmptyApiKey:
     def test_empty_string_api_key_raises(self, extractor):
-        """API 키가 빈 문자열인 경우 falsy 체크에 걸려 ValueError."""
+        """API 키가 빈 문자열인 경우 falsy 체크에 걸려 ValueError.
+
+        슬라이스 ④: 구 _get_client → _ensure_api_key 로 rename(키 조기 검증 동작 보존).
+        """
         with patch('services.sec_pipeline.extractor.settings') as mock_settings:
             mock_settings.GEMINI_API_KEY = ''
             with pytest.raises(ValueError, match="GEMINI_API_KEY"):
-                extractor._get_client()
+                extractor._ensure_api_key()
 
 
 class TestExtractSupplyChainEmptyRelationships:
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_empty_relationships_array_preserved(self, mock_get_client, extractor):
+    def test_empty_relationships_array_preserved(self, extractor, settings):
         """LLM 이 {relationships: []} 반환하면 빈 리스트 그대로 보존."""
-        client = MagicMock()
-        client.models.generate_content.return_value = _mock_genai_response(
-            json.dumps({'relationships': []})
-        )
-        mock_get_client.return_value = client
-
-        result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['filler text'])
+        settings.GEMINI_API_KEY = "fake-key"
+        patcher, _ = _patch_genai_client(json.dumps({'relationships': []}))
+        try:
+            result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['filler text'])
+        finally:
+            patcher.stop()
         assert result == {'relationships': []}
 
 

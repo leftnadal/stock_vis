@@ -10,8 +10,9 @@ from typing import Dict, List, Optional
 
 from django.conf import settings
 from django.utils import timezone
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import complete
 
 from services.serverless.models import MarketMover, StockKeyword
 
@@ -76,7 +77,7 @@ JSON 배열만 반환하세요 (추가 설명 없음):
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm complete() 경유(슬라이스 ④). 키 검증만 유지.
 
     def generate_keyword(
         self,
@@ -279,37 +280,28 @@ JSON:"""
 
         for attempt in range(max_retries + 1):
             try:
-                # Gemini API 동기 호출
-                response = self.client.models.generate_content(
+                # Gemini API 동기 호출 — shared/llm complete() 경유(슬라이스 ④).
+                # 원본 contents는 단일 Content(role=user)/단일 Part(text=SYS+prompt). genai가
+                # contents=문자열을 동일 구조로 정규화 → wire 동일. SYS는 user 본문에 합침(현행),
+                # system_instruction 미설정 보존. thinking_config→extra, 정책 전부 off.
+                response = complete(
+                    f"{self.SYSTEM_PROMPT}\n\n{prompt}",
+                    provider="gemini",
                     model="gemini-2.5-flash",
-                    contents=[
-                        types.Content(
-                            role="user",
-                            parts=[
-                                types.Part(text=f"{self.SYSTEM_PROMPT}\n\n{prompt}")
-                            ],
-                        )
-                    ],
-                    config=types.GenerateContentConfig(
-                        max_output_tokens=1200,  # 한국어 응답을 위해 증가 (800 → 1200)
-                        temperature=0.5,
-                        thinking_config=types.ThinkingConfig(
-                            thinking_budget=0,
-                        ),
-                    ),
+                    max_tokens=1200,
+                    temperature=0.5,
+                    extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
                 )
 
                 # 응답 텍스트 추출
                 full_text = response.text if hasattr(response, "text") else ""
 
-                # 토큰 사용량 (있는 경우)
-                metadata = {}
-                if hasattr(response, "usage_metadata"):
-                    usage = response.usage_metadata
-                    metadata = {
-                        "input_tokens": getattr(usage, "prompt_token_count", 0),
-                        "output_tokens": getattr(usage, "candidates_token_count", 0),
-                    }
+                # 토큰 사용량 — LLMResponse.input_tokens/output_tokens는 genai usage_metadata의
+                # prompt_token_count/candidates_token_count와 동일 값(코어가 그대로 전달). 출력 동일.
+                metadata = {
+                    "input_tokens": response.input_tokens,
+                    "output_tokens": response.output_tokens,
+                }
 
                 # JSON 파싱
                 keywords = self._parse_keywords(full_text)

@@ -35,7 +35,7 @@ class TestFallbackExtraction:
     def setup_method(self):
         with patch.object(EntityExtractor, '__init__', lambda self: None):
             self.extractor = EntityExtractor()
-            self.extractor.client = None
+            self.extractor._llm_enabled = False
 
     def test_extracts_uppercase_stock_codes(self):
         result = self.extractor._fallback_extraction('AAPL, TSLA 비교해줘')
@@ -104,66 +104,78 @@ class TestCleanJsonResponse:
 # EntityExtractor — extract (async, mocked Gemini)
 # ---------------------------------------------------------------------------
 
+def _make_genai_client_mock(*, text=None, side_effect=None):
+    """google.genai.Client mock 생성 헬퍼.
+
+    슬라이스 ④ Part ①-aio 이후 seam: acomplete() 내부에서
+    google.genai.Client(api_key).aio.models.generate_content 를 호출한다.
+    resp.text + resp.usage_metadata=None (acomplete usage 파싱용).
+    """
+    mock_cls = MagicMock()
+    if side_effect is not None:
+        mock_cls.return_value.aio.models.generate_content = AsyncMock(
+            side_effect=side_effect
+        )
+    else:
+        resp = MagicMock()
+        resp.text = text
+        resp.usage_metadata = None
+        mock_cls.return_value.aio.models.generate_content = AsyncMock(
+            return_value=resp
+        )
+    return mock_cls
+
+
 class TestExtractWithGemini:
-    """Gemini API를 mock한 extract() 테스트"""
+    """Gemini API를 mock한 extract() 테스트 (google.genai.Client patch seam)"""
 
-    def test_successful_extraction(self):
-        with patch.object(EntityExtractor, '__init__', lambda self: None):
+    def test_successful_extraction(self, settings):
+        settings.GEMINI_API_KEY = "fake-key"
+        mock_cls = _make_genai_client_mock(text=json.dumps({
+            'stocks': ['AAPL', 'MSFT'],
+            'metrics': ['PER'],
+            'concepts': ['성장주'],
+            'timeframe': '2024년',
+        }))
+        with patch('google.genai.Client', mock_cls):
             extractor = EntityExtractor()
-            extractor.client = MagicMock()
-
-            mock_response = MagicMock()
-            mock_response.text = json.dumps({
-                'stocks': ['AAPL', 'MSFT'],
-                'metrics': ['PER'],
-                'concepts': ['성장주'],
-                'timeframe': '2024년',
-            })
-            extractor.client.aio.models.generate_content = AsyncMock(
-                return_value=mock_response
-            )
-
             result = _run(extractor.extract('AAPL과 MSFT의 PER 비교'))
-            assert result['stocks'] == ['AAPL', 'MSFT']
-            assert result['metrics'] == ['PER']
-            assert result['concepts'] == ['성장주']
-            assert result['timeframe'] == '2024년'
 
-    def test_json_parse_error_falls_back(self):
-        with patch.object(EntityExtractor, '__init__', lambda self: None):
+        assert result['stocks'] == ['AAPL', 'MSFT']
+        assert result['metrics'] == ['PER']
+        assert result['concepts'] == ['성장주']
+        assert result['timeframe'] == '2024년'
+
+    def test_json_parse_error_falls_back(self, settings):
+        settings.GEMINI_API_KEY = "fake-key"
+        mock_cls = _make_genai_client_mock(text='invalid json {{')
+        with patch('google.genai.Client', mock_cls):
             extractor = EntityExtractor()
-            extractor.client = MagicMock()
-
-            mock_response = MagicMock()
-            mock_response.text = 'invalid json {{'
-            extractor.client.aio.models.generate_content = AsyncMock(
-                return_value=mock_response
-            )
-
             result = _run(extractor.extract('AAPL 분석'))
-            # 폴백으로 AAPL이 추출되어야 함
-            assert 'AAPL' in result['stocks']
 
-    def test_api_error_falls_back(self):
-        with patch.object(EntityExtractor, '__init__', lambda self: None):
+        # 폴백으로 AAPL이 추출되어야 함
+        assert 'AAPL' in result['stocks']
+
+    def test_api_error_falls_back(self, settings):
+        settings.GEMINI_API_KEY = "fake-key"
+        # acomplete가 genai 예외를 LLMError 하위로 분류 후 raise →
+        # extractor try/except(Exception)가 잡아 _fallback_extraction.
+        mock_cls = _make_genai_client_mock(side_effect=RuntimeError('API error'))
+        with patch('google.genai.Client', mock_cls):
             extractor = EntityExtractor()
-            extractor.client = MagicMock()
-
-            extractor.client.aio.models.generate_content = AsyncMock(
-                side_effect=RuntimeError('API error')
-            )
-
             result = _run(extractor.extract('TSLA 전망'))
-            assert 'TSLA' in result['stocks']
 
-    def test_no_client_uses_fallback(self):
-        with patch.object(EntityExtractor, '__init__', lambda self: None):
-            extractor = EntityExtractor()
-            extractor.client = None
+        assert 'TSLA' in result['stocks']
 
-            result = _run(extractor.extract('삼성전자 매출'))
-            assert '삼성전자' in result['stocks']
-            assert '매출' in result['metrics']
+    def test_no_client_uses_fallback(self, settings):
+        settings.GEMINI_API_KEY = None
+        settings.GOOGLE_AI_API_KEY = None
+        extractor = EntityExtractor()
+        assert extractor._llm_enabled is False
+
+        result = _run(extractor.extract('삼성전자 매출'))
+        assert '삼성전자' in result['stocks']
+        assert '매출' in result['metrics']
 
 
 # ---------------------------------------------------------------------------

@@ -10,8 +10,9 @@ from datetime import date, timedelta
 from typing import Any, Dict, List, Optional
 
 from django.conf import settings
-from google import genai
 from google.genai import types
+
+from packages.shared.llm import acomplete
 
 from ..models import MarketMover
 from .keyword_context_builder import ContextEnricher, KeywordContextBuilder
@@ -66,7 +67,8 @@ class EnhancedKeywordGenerator:
             raise ValueError(
                 "GOOGLE_AI_API_KEY 또는 GEMINI_API_KEY가 설정되지 않았습니다."
             )
-        self.client = genai.Client(api_key=api_key)
+        # genai.Client 직접생성 → shared/llm acomplete() 경유(슬라이스 ④ Part ①-aio). 키 검증만 유지.
+        # sync 래퍼 generate_keywords_sync_v2(asyncio.run)는 존치 — 이제 acomplete() 구동.
 
     async def generate_keywords_for_movers(
         self, mover_date: date, mover_type: str, max_stocks: int = 20
@@ -259,18 +261,16 @@ class EnhancedKeywordGenerator:
         system_prompt = self.prompt_builder.get_system_prompt(mover_type)
         user_prompt = self.prompt_builder.build_batch_prompt(contexts, mover_type)
 
-        config = types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            max_output_tokens=self.MAX_TOKENS,
-            temperature=self.TEMPERATURE,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        )
-
-        # 비동기 호출
-        response = await self.client.aio.models.generate_content(
+        # 비동기 호출 — shared/llm acomplete() 경유(슬라이스 ④, IDENTICAL). 정책 off.
+        # system_instruction→system, max_output_tokens→max_tokens, thinking_config→extra.
+        response = await acomplete(
+            user_prompt,
+            provider="gemini",
             model=self.MODEL,
-            contents=user_prompt,
-            config=config,
+            system=system_prompt,
+            max_tokens=self.MAX_TOKENS,
+            temperature=self.TEMPERATURE,
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
         # 응답 텍스트 추출
@@ -290,18 +290,15 @@ class EnhancedKeywordGenerator:
         system_prompt = self.prompt_builder.get_system_prompt(mover_type)
         user_prompt = self.prompt_builder.build_user_prompt(context)
 
-        config = types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            max_output_tokens=2000,  # 단일 종목은 2000 토큰으로 충분
-            temperature=self.TEMPERATURE,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        )
-
-        # 비동기 호출
-        response = await self.client.aio.models.generate_content(
+        # 비동기 호출 — shared/llm acomplete() 경유(슬라이스 ④, IDENTICAL). 단일 종목 max_tokens=2000 보존.
+        response = await acomplete(
+            user_prompt,
+            provider="gemini",
             model=self.MODEL,
-            contents=user_prompt,
-            config=config,
+            system=system_prompt,
+            max_tokens=2000,  # 단일 종목은 2000 토큰으로 충분
+            temperature=self.TEMPERATURE,
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
         return self._extract_response_text(response)

@@ -548,6 +548,11 @@ class TestFilingProcessLogOrdering:
 
 # =============================================================================
 # Extractor — 보강 케이스 (LLM은 전부 mock)
+#
+# 슬라이스 ④: extractor가 genai 직접호출 → shared/llm complete() 경유로 이관됨.
+# 따라서 mock seam도 `GeminiExtractor._get_client`(제거됨) → `google.genai.Client`
+# (코어 gemini provider가 생성)로 이동. 파싱·에러·조기반환 검증 의도는 그대로(행위 보존).
+# 참고: tests/unit/sec_pipeline/test_extractor.py 의 동일 패턴.
 # =============================================================================
 
 @pytest.fixture
@@ -556,85 +561,123 @@ def extractor():
     return GeminiExtractor()
 
 
+@pytest.fixture(autouse=True)
+def _gemini_key(settings):
+    # complete()의 gemini provider(_resolve_api_key) + extractor._ensure_api_key 둘 다 키 필요.
+    settings.GEMINI_API_KEY = "fake-key"
+
+
+def _mock_genai_response(text):
+    """genai generate_content 응답 mock. text + usage_metadata=None(코어 provider 토큰 추출 안전)."""
+    response = MagicMock()
+    response.text = text
+    response.usage_metadata = None
+    return response
+
+
+def _patch_genai_client(text):
+    """google.genai.Client patch — generate_content가 주어진 text를 반환.
+
+    complete() → gemini provider → genai.Client(api_key).models.generate_content 경로를 가로챈다.
+    호출자는 try/finally로 patcher.stop() 책임.
+    """
+    patcher = patch("google.genai.Client")
+    mock_cls = patcher.start()
+    mock_cls.return_value.models.generate_content.return_value = _mock_genai_response(text)
+    return patcher, mock_cls
+
+
 class TestExtractorEmptyInputs:
-    """빈 입력은 LLM 호출 없이 즉시 반환."""
+    """빈 입력은 LLM 호출 없이 즉시 반환 (genai.Client 미생성)."""
 
     def test_supply_chain_empty_list_returns_empty(self, extractor):
-        with patch.object(extractor, '_get_client') as mock_client:
+        patcher, mock_cls = _patch_genai_client('{}')
+        try:
             result = extractor.extract_supply_chain('AAPL', 'Apple Inc', [])
             assert result == {'relationships': []}
-            mock_client.assert_not_called()
+            mock_cls.assert_not_called()
+        finally:
+            patcher.stop()
 
     def test_business_model_empty_list_returns_empty(self, extractor):
-        with patch.object(extractor, '_get_client') as mock_client:
+        patcher, mock_cls = _patch_genai_client('{}')
+        try:
             result = extractor.extract_business_model('AAPL', 'Apple Inc', [])
             assert result == {}
-            mock_client.assert_not_called()
+            mock_cls.assert_not_called()
+        finally:
+            patcher.stop()
 
 
 class TestExtractorMissingRelationshipsKey:
     """LLM이 'relationships' 키를 누락하면 빈 리스트로 보정."""
 
     def test_missing_key_defaults_to_empty(self, extractor):
-        mock_resp = MagicMock()
-        mock_resp.text = json.dumps({'something_else': []})
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_resp
-
-        with patch.object(extractor, '_get_client', return_value=mock_client):
+        patcher, _ = _patch_genai_client(json.dumps({'something_else': []}))
+        try:
             result = extractor.extract_supply_chain(
                 'AAPL', 'Apple Inc', ['paragraph with supplier mention'],
             )
             assert result == {'relationships': []}
+        finally:
+            patcher.stop()
 
 
 class TestExtractorJsonError:
     """LLM이 invalid JSON 반환 시 error 키 포함."""
 
     def test_supply_chain_json_error_returns_error(self, extractor):
-        mock_resp = MagicMock()
-        mock_resp.text = 'not valid json {'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_resp
-
-        with patch.object(extractor, '_get_client', return_value=mock_client):
+        patcher, _ = _patch_genai_client('not valid json {')
+        try:
             result = extractor.extract_supply_chain(
                 'AAPL', 'Apple Inc', ['paragraph'],
             )
             assert result['relationships'] == []
             assert 'error' in result
             assert 'JSON parse' in result['error']
+        finally:
+            patcher.stop()
 
     def test_business_model_json_error_returns_error(self, extractor):
-        mock_resp = MagicMock()
-        mock_resp.text = 'broken { json'
-        mock_client = MagicMock()
-        mock_client.models.generate_content.return_value = mock_resp
-
-        with patch.object(extractor, '_get_client', return_value=mock_client):
+        patcher, _ = _patch_genai_client('broken { json')
+        try:
             result = extractor.extract_business_model(
                 'AAPL', 'Apple Inc', ['paragraph'],
             )
             assert 'error' in result
             assert 'JSON parse' in result['error']
+        finally:
+            patcher.stop()
 
 
-class TestExtractorClientReuse:
-    """_get_client는 한 번 생성 후 캐싱."""
+class TestExtractorGenerateContentCall:
+    """generate_content 호출 인자: contents=prompt(불변), config=provider GenerateContentConfig.
 
-    def test_client_created_once(self, extractor):
-        # 초기 상태
-        assert extractor._client is None
+    구 TestExtractorClientReuse(_get_client 캐싱)를 대체. 슬라이스 ④에서 client 캐싱은
+    extractor에서 제거되고 코어 gemini provider가 호출마다 genai.Client를 생성한다.
+    따라서 캐싱 검증 대신, complete() 경유 후에도 생성 config가 보존되는지 검증한다.
+    """
 
-        with patch('services.sec_pipeline.extractor.settings') as mock_settings:
-            mock_settings.GEMINI_API_KEY = 'fake-key'
-            # genai.Client 가져오기 — google.genai 모듈 mock
-            mock_genai = MagicMock()
-            mock_client_instance = MagicMock()
-            mock_genai.Client.return_value = mock_client_instance
+    def test_supply_chain_passes_prompt_and_config(self, extractor):
+        from google.genai import types as gtypes
 
-            with patch.dict('sys.modules', {'google': MagicMock(genai=mock_genai),
-                                            'google.genai': mock_genai}):
-                client1 = extractor._get_client()
-                client2 = extractor._get_client()
-                assert client1 is client2
+        patcher, mock_cls = _patch_genai_client(json.dumps({'relationships': []}))
+        try:
+            extractor.extract_supply_chain(
+                'AAPL', 'Apple Inc', ['paragraph with supplier mention'],
+            )
+            call = mock_cls.return_value.models.generate_content.call_args
+            # contents=prompt (불변 — 프롬프트는 그대로 전달)
+            prompt_arg = call.kwargs['contents']
+            assert 'AAPL' in prompt_arg
+            assert 'paragraph with supplier mention' in prompt_arg
+            # config = provider GenerateContentConfig (response_mime_type/temperature/thinking 보존)
+            config = call.kwargs['config']
+            assert isinstance(config, gtypes.GenerateContentConfig)
+            assert config.response_mime_type == 'application/json'
+            assert config.temperature == 0.1
+            assert config.thinking_config is not None
+            # max_output_tokens 미설정 (Gemini는 폴백 없음 — 현행 재현)
+            assert config.max_output_tokens is None
+        finally:
+            patcher.stop()

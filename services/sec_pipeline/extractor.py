@@ -19,18 +19,17 @@ class GeminiExtractor:
     """Gemini 2.5 Flash 기반 관계 추출기."""
 
     def __init__(self):
-        self._client = None
+        pass
 
-    def _get_client(self):
-        """Lazy initialization (Celery fork 안전)."""
-        if self._client is None:
-            from google import genai
+    def _ensure_api_key(self):
+        """키 검증 (genai.Client 직접생성 → complete() 경유, 슬라이스 ④).
 
-            api_key = getattr(settings, "GEMINI_API_KEY", None)
-            if not api_key:
-                raise ValueError("GEMINI_API_KEY not configured")
-            self._client = genai.Client(api_key=api_key)
-        return self._client
+        키 누락 시 조기 ValueError(현행 _get_client 동작 보존). 키는 complete()가
+        settings 경유로 해소(Celery fork 안전 = 코어 provider도 동기 genai.Client).
+        """
+        api_key = getattr(settings, "GEMINI_API_KEY", None)
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY not configured")
 
     def extract_supply_chain(
         self, symbol: str, company_name: str, filtered_paragraphs: list
@@ -60,17 +59,18 @@ class GeminiExtractor:
         try:
             from google.genai import types
 
-            client = self._get_client()
-            config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.1,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
+            from packages.shared.llm import complete
 
-            response = client.models.generate_content(
+            self._ensure_api_key()  # 키 누락 시 조기 ValueError(현행 보존)
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). response_format="json"→
+            # response_mime_type, max_tokens 미지정(Gemini라 폴백 없음), thinking_config→extra. 정책 off.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model="gemini-2.5-flash",
-                contents=prompt,
-                config=config,
+                temperature=0.1,
+                response_format="json",
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             text = (
@@ -123,17 +123,18 @@ class GeminiExtractor:
         try:
             from google.genai import types
 
-            client = self._get_client()
-            config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.1,
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-            )
+            from packages.shared.llm import complete
 
-            response = client.models.generate_content(
+            self._ensure_api_key()  # 키 누락 시 조기 ValueError(현행 보존)
+            # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). response_format="json"→
+            # response_mime_type, max_tokens 미지정(Gemini라 폴백 없음), thinking_config→extra. 정책 off.
+            response = complete(
+                prompt,
+                provider="gemini",
                 model="gemini-2.5-flash",
-                contents=prompt,
-                config=config,
+                temperature=0.1,
+                response_format="json",
+                extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
             )
 
             text = (

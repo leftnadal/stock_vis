@@ -17,10 +17,13 @@ class TestKeywordGenerationService:
 
     @pytest.fixture
     def service(self, settings):
-        """서비스 인스턴스 (API 키 없는 환경에서도 동작)"""
+        """서비스 인스턴스 (API 키 없는 환경에서도 동작).
+
+        BOUNDARY-LLM ④: keyword_service가 complete() 경유로 이관되며 genai.Client 직접생성
+        제거 → 옛 genai.Client seam patch는 AttributeError. __init__은 키 검증만 하므로 patch 불요.
+        """
         settings.GEMINI_API_KEY = 'test-api-key'
-        with patch('services.serverless.services.keyword_service.genai.Client'):
-            return KeywordGenerationService()
+        return KeywordGenerationService()
 
     @pytest.fixture
     def sample_mover(self):

@@ -94,6 +94,32 @@ KO_LABELS: dict[str, str] = {
 LANG_LABELS: dict[str, dict[str, str]] = {"ko": KO_LABELS}
 
 
+# MP2-SURFACE: 국면(regime)별 판단 카피 — "지금 사야/팔아야" 자세 제시.
+#   정적 테이블(LLM 미사용), D-MP2-SURFACE 확정값. status == OK일 때만 노출.
+#   INSUFFICIENT_DATA/STALE/FAILED 등은 fallback(판단 보류)로 수렴.
+REGIME_STANCE: dict[str, str] = {
+    "BULL_EXPANSION": "추세 우호 · 신규 진입·추종 유효",
+    "LATE_BULL": "신규 매수는 선별적으로 · 방어 비중 점검",
+    "TRANSITION": "방향 불확실 · 관망, 현금 비중 확보",
+    "BEAR_CONTRACTION": "리스크 축소 우선 · 반등 신뢰 낮음",
+    "CRISIS": "방어 최우선 · 신규 진입 자제",
+}
+REGIME_STANCE_FALLBACK = "판단 보류 — 데이터 지연/부족"
+
+
+def resolve_regime_stance(regime: str, status: str) -> tuple[str, bool]:
+    """(판단 카피, 노출 가능 여부) 반환.
+
+    status != 'OK'이거나 미정의 regime이면 fallback 문구 + False(hero 게이지·카피 숨김 신호).
+    """
+    if status != "OK":
+        return REGIME_STANCE_FALLBACK, False
+    copy = REGIME_STANCE.get(regime)
+    if copy is None:
+        return REGIME_STANCE_FALLBACK, False
+    return copy, True
+
+
 def get_labels(locale: str = "ko") -> dict[str, str]:
     return LANG_LABELS.get(locale.lower(), {})
 

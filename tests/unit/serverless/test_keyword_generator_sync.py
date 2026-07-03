@@ -51,23 +51,31 @@ def test_generate_keywords_sync_uses_sync_api_only():
 
 
 @pytest.mark.django_db
-def test_call_llm_sync_uses_non_aio_endpoint():
-    """_call_llm_sync는 client.models.generate_content(동기) 사용."""
-    with patch.object(kg.KeywordGeneratorService, '__init__', return_value=None):
+def test_call_llm_sync_uses_non_aio_endpoint(settings):
+    """_call_llm_sync는 shared/llm complete() → genai.Client().models.generate_content(동기) 사용.
+
+    슬라이스 ④ Part ①-aio 이관: 옛 seam(self.client)이 제거됨 → google.genai.Client를
+    patch하고 sync 경로(.models.generate_content)만 쓰이며 aio(.aio.models)는 안 쓰임을 검증.
+    """
+    settings.GEMINI_API_KEY = 'fake-key'
+
+    response = MagicMock()
+    response.text = 'ok'
+    response.usage_metadata = None  # 코어 int 토큰 추출 안전
+
+    import google.genai as real_genai
+
+    with patch.object(real_genai, 'Client') as mock_cls:
+        mock_cls.return_value.models.generate_content.return_value = response
+
         svc = kg.KeywordGeneratorService()
-        svc.MODEL = 'gemini-2.5-flash'
-        svc.MAX_TOKENS = 100
-        svc.TEMPERATURE = 0.3
         svc.prompt_builder = MagicMock()
         svc.prompt_builder.get_system_prompt.return_value = 'sys'
-        svc.client = MagicMock()
-        response = MagicMock()
-        response.text = 'ok'
-        svc.client.models.generate_content.return_value = response
 
         out = svc._call_llm_sync('user prompt')
 
+        # 동기 경로(.models.generate_content)는 호출, aio 경로는 미호출
+        mock_cls.return_value.models.generate_content.assert_called_once()
+        mock_cls.return_value.aio.models.generate_content.assert_not_called()
+
     assert out == 'ok'
-    svc.client.models.generate_content.assert_called_once()
-    # 비동기 경로(aio.models)는 사용하지 않아야 함
-    svc.client.aio.models.generate_content.assert_not_called()

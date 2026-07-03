@@ -20,12 +20,8 @@ import hashlib
 import json
 import logging
 from collections import OrderedDict
-from typing import Any
 
-try:
-    from anthropic import Anthropic
-except ImportError:  # pragma: no cover — dev 환경
-    Anthropic = None  # type: ignore[misc,assignment]
+from packages.shared.llm import count_tokens as _core_count_tokens
 
 from apps.portfolio.llm.token_budgets import estimate_input_tokens as _v2_estimate_input
 
@@ -77,29 +73,6 @@ def cache_stats() -> dict[str, int]:
 
 
 # ============================================================
-# Anthropic client (lazy + 주입 가능 — 테스트 친화)
-# ============================================================
-
-
-_client: Any = None
-
-
-def _get_client() -> Any:
-    global _client
-    if _client is None:
-        if Anthropic is None:
-            raise RuntimeError("anthropic SDK not installed")
-        _client = Anthropic()
-    return _client
-
-
-def set_client(client: Any) -> None:
-    """테스트/mock 주입용."""
-    global _client
-    _client = client
-
-
-# ============================================================
 # Estimators
 # ============================================================
 
@@ -146,12 +119,12 @@ def estimate_input_tokens(
         return cached
 
     try:
-        client = _get_client()
-        kwargs: dict[str, Any] = {"model": model, "messages": messages}
-        if system:
-            kwargs["system"] = system
-        response = client.messages.count_tokens(**kwargs)
-        result = int(response.input_tokens)
+        # 슬라이스 ④ #3: 직접 Anthropic().messages.count_tokens → 코어 count_tokens util 경유
+        # (ADR-LLM-001). messages(list)+system 그대로 전달 → provider가 동일 kwargs로 count_tokens
+        # 호출, .input_tokens int 반환. cache·fallback은 소비자(여기) 소유(행위보존).
+        result = _core_count_tokens(
+            messages, provider="anthropic", model=model, system=system
+        )
         _cache_set(cache_key, result)
         return result
     except Exception as e:

@@ -55,8 +55,9 @@ If the request is unclear, return {{"error": "Could not parse filter request"}}.
 
 def parse_filter_with_llm(user_input: str, symbol: str, sector: str = "") -> dict:
     """자연어 → 구조화 필터 변환 (Gemini Flash)."""
-    from google import genai
     from google.genai import types
+
+    from packages.shared.llm import complete
 
     api_key = getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
@@ -69,17 +70,15 @@ def parse_filter_with_llm(user_input: str, symbol: str, sector: str = "") -> dic
     )
 
     try:
-        client = genai.Client(api_key=api_key)
-        config = types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.1,
-            thinking_config=types.ThinkingConfig(thinking_budget=0),
-        )
-
-        response = client.models.generate_content(
+        # shared/llm complete() 경유(슬라이스 ④, IDENTICAL). response_format="json"→
+        # response_mime_type, max_tokens 미지정(Gemini 폴백 없음), thinking_config→extra. 정책 off.
+        response = complete(
+            prompt,
+            provider="gemini",
             model="gemini-2.5-flash",
-            contents=prompt,
-            config=config,
+            temperature=0.1,
+            response_format="json",
+            extra={"thinking_config": types.ThinkingConfig(thinking_budget=0)},
         )
 
         text = response.text if hasattr(response, "text") and response.text else "{}"

@@ -34,6 +34,7 @@ def _mock_response(json_data=None, text=None, status_code=200):
 def _mock_genai_response(text):
     response = MagicMock()
     response.text = text
+    response.usage_metadata = None  # 코어 provider 토큰 추출(int) 안전
     return response
 
 
@@ -305,40 +306,65 @@ def extractor():
 
 
 class TestExtractorSupplementary:
-    """기존 test_extractor*.py 보강."""
+    """기존 test_extractor*.py 보강.
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_supply_chain_generic_exception_reraises(self, mock_client, extractor):
-        """JSONDecodeError 이외의 예외는 re-raise되어야 한다 (Celery retry용)."""
-        client = MagicMock()
-        client.models.generate_content.side_effect = RuntimeError('quota exceeded')
-        mock_client.return_value = client
+    슬라이스 ④: genai 직접호출 → shared/llm complete() 경유로 이관됨. mock seam도
+    `GeminiExtractor._get_client`(제거됨) → `google.genai.Client`(코어 provider 생성)로 이동.
+    generic 예외는 코어 provider `_classify`가 LLMError 하위로 재분류 후 재전파될 수 있어
+    (예: msg에 'quota' → LLMRateLimitError) 예외 전파 의도는 보존하되 타입을 실동작에 맞춘다.
+    """
 
-        with pytest.raises(RuntimeError, match='quota exceeded'):
-            extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['some text'])
+    def test_supply_chain_generic_exception_reraises(self, extractor, settings):
+        """JSONDecodeError 이외의 예외는 re-raise되어야 한다 (Celery retry용).
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
-    def test_business_model_generic_exception_reraises(self, mock_client, extractor):
-        """BM extractor도 동일하게 generic exception은 re-raise."""
-        client = MagicMock()
-        client.models.generate_content.side_effect = ConnectionError('network')
-        mock_client.return_value = client
+        'quota exceeded'는 코어 provider `_classify`가 LLMRateLimitError로 재분류하므로
+        extractor의 `except Exception: raise`가 그 타입을 그대로 올린다(전파 의도 보존).
+        """
+        from packages.shared.llm.types import LLMRateLimitError
 
-        with pytest.raises(ConnectionError, match='network'):
-            extractor.extract_business_model('AAPL', 'Apple', ['some text'])
+        settings.GEMINI_API_KEY = "fake-key"
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.side_effect = RuntimeError(
+            'quota exceeded'
+        )
+        try:
+            with pytest.raises(LLMRateLimitError, match='quota exceeded'):
+                extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['some text'])
+        finally:
+            patcher.stop()
 
-    @patch('services.sec_pipeline.extractor.GeminiExtractor._get_client')
+    def test_business_model_generic_exception_reraises(self, extractor, settings):
+        """BM extractor도 동일하게 generic exception은 re-raise.
+
+        'network'는 `_classify` 규칙에 안 걸려 원본 ConnectionError가 그대로 전파된다.
+        """
+        settings.GEMINI_API_KEY = "fake-key"
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.side_effect = ConnectionError(
+            'network'
+        )
+        try:
+            with pytest.raises(ConnectionError, match='network'):
+                extractor.extract_business_model('AAPL', 'Apple', ['some text'])
+        finally:
+            patcher.stop()
+
     def test_supply_chain_returns_empty_when_relationships_is_empty_list(
-        self, mock_client, extractor,
+        self, extractor, settings,
     ):
         """LLM이 빈 리스트 반환해도 형식이 맞으면 그대로 반환."""
-        client = MagicMock()
-        client.models.generate_content.return_value = _mock_genai_response(
-            json.dumps({'relationships': []})
+        settings.GEMINI_API_KEY = "fake-key"
+        patcher = patch("google.genai.Client")
+        mock_cls = patcher.start()
+        mock_cls.return_value.models.generate_content.return_value = (
+            _mock_genai_response(json.dumps({'relationships': []}))
         )
-        mock_client.return_value = client
-
-        result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['text'])
+        try:
+            result = extractor.extract_supply_chain('AAPL', 'Apple Inc.', ['text'])
+        finally:
+            patcher.stop()
         assert result == {'relationships': []}
 
 

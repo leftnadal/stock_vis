@@ -83,6 +83,14 @@ export interface AnomalyItem {
   threshold: Record<string, number>
   actual: number
   paired_news_id: number | null
+  evidence?: {
+    top10_weight: number | null
+    vix_change_pct: number | null
+    max_abs_sector_z: number | null
+    sector_extreme_symbol: string | null
+  } | null
+  paired_news_title?: string | null
+  paired_news_url?: string | null
 }
 
 export interface AnomalySection {
@@ -103,6 +111,24 @@ export interface RegimeCard {
   headline: string
   fired_rules: string[]
   transitioned: boolean
+  // D-MP2-SURFACE additive: 판단 카피 + 유효성 플래그 (구버전 응답엔 없을 수 있어 optional)
+  stance_copy?: string
+  stance_ok?: boolean
+  next_stage?: string | null
+  next_stage_closest?: {
+    indicator: string
+    op: string
+    threshold: number
+    actual: number
+    to_threshold: number
+  } | null
+  margins?: Array<{
+    indicator: string
+    op: string
+    threshold: number
+    actual: number
+    to_threshold: number
+  }>
 }
 
 export interface BreadthCard {

@@ -17,6 +17,8 @@ from typing import Any, AsyncGenerator, Dict, Optional
 
 from django.conf import settings
 
+from packages.shared.llm import StreamDelta, StreamFinal, astream
+
 from .complexity_classifier import (
     ComplexityClassifier,
     QuestionComplexity,
@@ -82,24 +84,29 @@ class AdaptiveLLMService:
     def _init_client(self):
         """LLM 클라이언트 초기화"""
         if self.provider == "gemini":
-            try:
-                import google.generativeai as genai
-
-                genai.configure(api_key=settings.GEMINI_API_KEY)
-                self._genai = genai
-                logger.info("Gemini client initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize Gemini client: {e}")
+            # 슬라이스 ② #9: 구SDK(google.generativeai GenerativeModel) 제거 →
+            # 코어 astream(신SDK genai.Client.aio) 경유. 가용성은 API 키 존재로 판단
+            # (코어 provider와 동일 키 해석: GOOGLE_AI_API_KEY 우선, GEMINI_API_KEY 폴백).
+            # 구SDK 미설치여도 동작. self._genai = 가용 플래그(이전 모듈 객체 → bool, 가드 의미 동일).
+            key = getattr(settings, "GOOGLE_AI_API_KEY", None) or getattr(
+                settings, "GEMINI_API_KEY", None
+            )
+            if key:
+                self._genai = True
+                logger.info("Gemini client ready (core astream)")
+            else:
                 self._genai = None
+                logger.error("Gemini API key not configured")
         else:
-            try:
-                from anthropic import AsyncAnthropic
-
-                self._anthropic = AsyncAnthropic(api_key=settings.ANTHROPIC_API_KEY)
-                logger.info("Anthropic client initialized")
-            except Exception as e:
-                logger.error(f"Failed to initialize Anthropic client: {e}")
+            # 슬라이스 ③b #8: 직접 AsyncAnthropic 제거 → 코어 astream(provider="anthropic") 경유.
+            # 가용성은 API 키 존재로 판단(코어 provider와 동일 키 해석). self._anthropic = 가용 플래그.
+            key = getattr(settings, "ANTHROPIC_API_KEY", None)
+            if key:
+                self._anthropic = True
+                logger.info("Anthropic client ready (core astream)")
+            else:
                 self._anthropic = None
+                logger.error("Anthropic API key not configured")
 
     async def generate_stream(
         self,
@@ -180,15 +187,6 @@ class AdaptiveLLMService:
             return
 
         try:
-            model = self._genai.GenerativeModel(
-                model_name=config["model"],
-                system_instruction=system_prompt,
-                generation_config={
-                    "max_output_tokens": config["max_tokens"],
-                    "temperature": config["temperature"],
-                },
-            )
-
             # 프롬프트 구성
             prompt = f"""## 컨텍스트
 {context}
@@ -198,26 +196,36 @@ class AdaptiveLLMService:
 
 ## 분석"""
 
-            # 스트리밍 생성
-            response = await model.generate_content_async(prompt, stream=True)
-
+            # 슬라이스 ② #9: 구SDK GenerativeModel.generate_content_async(stream=True) →
+            # 코어 astream(신SDK genai.Client.aio.models.generate_content_stream) 경유.
+            # config(system_instruction·max_output_tokens·temperature)·contents·model byte 동일.
+            # CB·escape·extra(thinking) 미설정 = 구SDK 직접호출과 wire IDENTICAL.
             full_response = ""
             input_tokens = 0
             output_tokens = 0
+            got_usage = False
 
-            async for chunk in response:
+            async for chunk in astream(
+                prompt,
+                provider="gemini",
+                model=config["model"],
+                system=system_prompt,
+                max_tokens=config["max_tokens"],
+                temperature=config["temperature"],
+            ):
                 if chunk.text:
                     full_response += chunk.text
                     yield {"type": "delta", "content": chunk.text}
 
-            # 토큰 사용량 (Gemini API에서 제공하는 경우)
-            if hasattr(response, "usage_metadata"):
-                input_tokens = getattr(response.usage_metadata, "prompt_token_count", 0)
-                output_tokens = getattr(
-                    response.usage_metadata, "candidates_token_count", 0
-                )
-            else:
-                # 추정값 사용
+                # 토큰 사용량 (마지막 청크의 usage_metadata에서 제공)
+                usage = getattr(chunk, "usage_metadata", None)
+                if usage:
+                    got_usage = True
+                    input_tokens = getattr(usage, "prompt_token_count", 0) or 0
+                    output_tokens = getattr(usage, "candidates_token_count", 0) or 0
+
+            if not got_usage:
+                # 추정값 사용 (usage_metadata 미제공 시 — 원본 폴백 보존)
                 input_tokens = len((system_prompt + context + question).split()) * 1.3
                 output_tokens = len(full_response.split()) * 1.3
 
@@ -252,30 +260,32 @@ class AdaptiveLLMService:
 
 ## 분석"""
 
-            async with self._anthropic.messages.stream(
+            # 슬라이스 ③b #8: 직접 AsyncAnthropic.messages.stream → 코어 astream(provider="anthropic")
+            # 경유. 코어 정규화 델타(StreamDelta{text}+StreamFinal{usage}) → 기존 dict 봉투로 얇게 변환
+            # (shim). circuit=None(원본 CB 없음, 행위보존). messages·model·max_tokens·temperature·
+            # system wire IDENTICAL. delta str 시퀀스·usage·봉투 형태 불변.
+            full_response = ""
+
+            async for delta in astream(
+                user_message,
+                provider="anthropic",
                 model=config["model"],
                 max_tokens=config["max_tokens"],
                 temperature=config["temperature"],
                 system=system_prompt,
-                messages=[{"role": "user", "content": user_message}],
-            ) as stream:
-                full_response = ""
-
-                async for text in stream.text_stream:
-                    full_response += text
-                    yield {"type": "delta", "content": text}
-
-                # 최종 메시지
-                final_message = await stream.get_final_message()
-
-                yield {
-                    "type": "final",
-                    "content": full_response,
-                    "input_tokens": final_message.usage.input_tokens,
-                    "output_tokens": final_message.usage.output_tokens,
-                    "model": config["model"],
-                    "complexity": config["complexity"].value,
-                }
+            ):
+                if isinstance(delta, StreamDelta):
+                    full_response += delta.text
+                    yield {"type": "delta", "content": delta.text}
+                elif isinstance(delta, StreamFinal):
+                    yield {
+                        "type": "final",
+                        "content": full_response,
+                        "input_tokens": delta.input_tokens,
+                        "output_tokens": delta.output_tokens,
+                        "model": config["model"],
+                        "complexity": config["complexity"].value,
+                    }
 
         except Exception as e:
             logger.error(f"Claude generation error: {e}")

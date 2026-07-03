@@ -5,7 +5,7 @@
 자동 감지한다. 2026-05-28 정합성 점검에서 발견된 시스템적 결함의 검문소.
 
 검증 항목:
-    1. PROGRESS의 `origin/main = <hash>` 표기 vs `git rev-parse origin/main` 실측
+    1. PROGRESS.md 마지막 커밋 시각이 임계(72h) 넘게 묵었는지 (시간기반, B2 2026-07-02; 구 origin/main 해시대조 폐기)
     2. PROGRESS가 언급하는 brunch / worktree 폴더 존재 여부
     3. PROGRESS 마지막 갱신 후 누적 commit 수 (50 초과 시 warning, 200 초과 시 error)
     4. TASKQUEUE의 `done` 표시 행 중 매칭 git 머지 commit이 없는 것 (느슨한 휴리스틱)
@@ -48,6 +48,27 @@ DECISIONS_MD = REPO_ROOT / "DECISIONS.md"
 SHARED_ROOT = REPO_ROOT / "packages" / "shared"
 BOUNDARY_LEDGER = REPO_ROOT / "docs" / "harness" / "boundary_ledger.jsonl"
 
+# 환경 의존 known-fail 레지스트리 (회귀 게이트 제외 대상 SSOT).
+# 이관·코드 회귀 신호를 환경 fail이 가리지 않게 명시 제외. {test_id: 사유}.
+KNOWN_TEST_FAILS: dict[str, str] = {
+    "tests/unit/news/test_api.py::TestNewsViewSet::test_stock_news_refresh_true": (
+        "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_existing_article_entity_unchanged": (
+        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
+        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
+    ),
+}
+
 
 # 결과 상태 코드 — Layer 1 단계의 통일된 의미.
 OK = 0
@@ -88,73 +109,49 @@ def _git(args: list[str]) -> str:
         return ""
 
 
-# ── 검증 1: PROGRESS origin/main 해시 vs 실제 ────────────────────────────────
+# ── 검증 1: PROGRESS.md 갱신 신선도 (시간기반, B2 재설계 2026-07-02) ────────────
+#
+# 구설계(폐기): PROGRESS에 박은 `origin/main = <hash>`를 origin/main recent-N과 대조.
+#   함정 3종 → DECISIONS D-OPS-HCHECK-B2:
+#     (1) 규약상 PROGRESS는 캐시(진실 아님)인데 그 lag을 blocking ERROR로 취급 = category error.
+#     (2) 갱신 커밋이 자기 push-후 hash를 본문에 못 적는 self-referential → 수렴 불가.
+#     (3) fast-main(인간 병렬 세션 ~20min 간격 land) + 동시쓰기 → 구조적 오발(마커 treadmill).
+# 신설(B2): PROGRESS.md의 마지막 커밋 시각(committer epoch, UTC)이 임계 M시간 넘게
+#   묵었는지만 본다. blocking(진짜 방치 차단) 유지, 해시 의존 제거 → self-ref·동시쓰기 무관.
+#   committer-ts 사용(파일 mtime 금지 — 클론/체크아웃마다 불안정).
+#
+# M(임계)=72h. 근거(STEP 0 실측 2026-07-02): PROGRESS 커밋 최대 정상 gap ≈ 22.6h(활성 야간
+#   사이클); 주말(금저녁→월아침) ~60-72h 정상 가능 → 48h는 주말 오발 위험 → 72h로 마진.
+PROGRESS_STALE_THRESHOLD_H = 72.0
 
 
-# PROGRESS hash 자기참조 모순 회피용 tolerance (2026-06-01 결정).
-# 단일 commit이 자기 자신의 push-후 hash를 본문에 적을 수 없는 구조적 한계 때문에,
-# strict ANY-match 정책은 항상 1-behind ❌ 잔여를 만든다. 최근 N commit 중 하나에라도
-# PROGRESS 표기가 매칭되면 PASS로 완화. N은 보수적으로 3 (stale 1주 단위 갱신 가정).
-ORIGIN_MAIN_HASH_TOLERANCE = 3
+def is_progress_stale(progress_ts: int, now_ts: int, threshold_h: float) -> bool:
+    """PROGRESS.md 마지막 갱신이 threshold_h 시간 넘게 묵었는가 (순수함수, 테스트 주입용)."""
+    return (now_ts - progress_ts) / 3600.0 > threshold_h
 
 
 def check_origin_main_hash() -> CheckResult:
-    actual = _git(["rev-parse", "--short", "origin/main"])
-    if not actual:
+    """PROGRESS.md 갱신 신선도 (시간기반, B2). 함수명·display name·등록은 레지스트리/JSON 호환 위해 유지."""
+    ts_raw = _git(["log", "-1", "--format=%ct", "--", "PROGRESS.md"])
+    if not ts_raw:
         return CheckResult(
             name="origin/main 해시",
             status=ERROR,
-            detail="git rev-parse origin/main 실패 (remote 미설정?)",
+            detail="PROGRESS.md 커밋 이력 조회 실패 (git log 빈 결과)",
         )
-
-    progress_text = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
-    # PROGRESS에 박힌 origin/main = <7+ hex> 패턴 모두 검출
-    hashes_in_doc = sorted(set(re.findall(r"origin/main\s*=\s*([0-9a-f]{7,40})", progress_text)))
-
-    if not hashes_in_doc:
+    progress_ts = int(ts_raw)
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    age_h = (now_ts - progress_ts) / 3600.0
+    if is_progress_stale(progress_ts, now_ts, PROGRESS_STALE_THRESHOLD_H):
         return CheckResult(
             name="origin/main 해시",
-            status=WARN,
-            detail=f"PROGRESS.md에 origin/main 해시 표기 0건 (실제: {actual})",
-        )
-
-    # 최근 N=ORIGIN_MAIN_HASH_TOLERANCE commit hash 수집 (HEAD, HEAD~1, ...)
-    recent_full = _git(
-        ["log", f"-{ORIGIN_MAIN_HASH_TOLERANCE}", "--format=%H", "origin/main"]
-    ).splitlines()
-    recent_short = [h[:7] for h in recent_full if h]
-
-    def _prefix_match(doc_hash: str, target_short: str) -> bool:
-        return doc_hash.startswith(target_short) or target_short.startswith(doc_hash[:7])
-
-    matched_pairs = [
-        (h, target)
-        for h in hashes_in_doc
-        for target in recent_short
-        if _prefix_match(h, target)
-    ]
-    if matched_pairs:
-        matched_target = matched_pairs[0][1]
-        actual_short = recent_short[0]
-        if matched_target == actual_short:
-            detail = f"PROGRESS 표기 일치 ({actual_short})"
-        else:
-            depth = recent_short.index(matched_target)
-            detail = (
-                f"PROGRESS 표기 일치 ({matched_target}, HEAD~{depth}; "
-                f"실제 HEAD={actual_short}, tolerance N={ORIGIN_MAIN_HASH_TOLERANCE})"
-            )
-        return CheckResult(
-            name="origin/main 해시",
-            status=OK,
-            detail=detail,
+            status=ERROR,
+            detail=f"PROGRESS.md {age_h:.1f}h 미갱신 (임계 {PROGRESS_STALE_THRESHOLD_H:.0f}h) — 방치 의심",
         )
     return CheckResult(
         name="origin/main 해시",
-        status=ERROR,
-        detail=f"PROGRESS 표기 {hashes_in_doc} 모두 최근 {ORIGIN_MAIN_HASH_TOLERANCE} commit과 불일치",
-        evidence=[f"실측 HEAD~0..~{ORIGIN_MAIN_HASH_TOLERANCE - 1}: {recent_short}"]
-        + [f"PROGRESS: {h}" for h in hashes_in_doc],
+        status=OK,
+        detail=f"PROGRESS.md {age_h:.1f}h 전 갱신 (시간기반, 임계 {PROGRESS_STALE_THRESHOLD_H:.0f}h 이내)",
     )
 
 
@@ -529,6 +526,103 @@ def _boundary_append_ledger() -> None:
         f.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
+# ── 검증 9: 외부-LLM-직접호출 감지 (BOUNDARY-LLM 슬라이스 ③) ──────────────────
+#
+# SSOT: tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS
+# 동결 항목이 바뀌면 양쪽(테스트 + 여기)을 동시에 갱신해야 한다 (규약: 한쪽만 고치면 드리프트).
+# 동결 N = 슬라이스 ④ burn-down 게이지(이관 1곳 = 동결 1곳 해제, 0 = 완료).
+# 코어 provider(packages/shared/llm/**)는 정상 직접호출 — 예외.
+
+_LLM_SCAN_DIRS = ("apps", "packages", "services")
+_LLM_CORE_EXEMPT_PREFIX = "packages/shared/llm/"
+_LLM_NAME_CALLS = frozenset({"Anthropic", "AsyncAnthropic"})
+
+# tests/architecture/test_llm_direct_call_boundary.py:KNOWN_VIOLATIONS 와 일치(슬라이스 ④ burn-down).
+# korean_overview는 슬라이스 ②에서 이관 완료 → 목록에 없음(회귀 잠금).
+# 슬라이스 ④ #3 완료 → 빈 목록 = BOUNDARY-LLM burn-down 종결(23→0, 전 소비처 코어 단일 경유).
+_LLM_KNOWN_VIOLATIONS: set[tuple[str, str]] = set()
+
+
+def _llm_call_identifier(node: ast.Call) -> str | None:
+    func = node.func
+    if isinstance(func, ast.Name) and func.id in _LLM_NAME_CALLS:
+        return func.id
+    if isinstance(func, ast.Attribute):
+        if func.attr == "Client" and isinstance(func.value, ast.Name) and func.value.id == "genai":
+            return "genai.Client"
+        if func.attr == "GenerativeModel":
+            return "GenerativeModel"
+    return None
+
+
+def _llm_collect_violations() -> list[tuple[str, str, int]]:
+    """apps/packages/services 전 .py를 ast로 파싱해 (rel, identifier, lineno) 직접호출 수집.
+
+    코어 provider(_LLM_CORE_EXEMPT_PREFIX)는 제외.
+    """
+    found: list[tuple[str, str, int]] = []
+    for d in _LLM_SCAN_DIRS:
+        root = REPO_ROOT / d
+        if not root.is_dir():
+            continue
+        for py in root.rglob("*.py"):
+            rel = py.relative_to(REPO_ROOT).as_posix()
+            if rel.startswith(_LLM_CORE_EXEMPT_PREFIX):
+                continue
+            try:
+                tree = ast.parse(py.read_text(encoding="utf-8"), filename=str(py))
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Call):
+                    ident = _llm_call_identifier(node)
+                    if ident is not None:
+                        found.append((rel, ident, node.lineno))
+    return found
+
+
+def check_llm_direct_call_boundary() -> CheckResult:
+    violations = _llm_collect_violations()
+    present_keys = {(rel, ident) for (rel, ident, _line) in violations}
+    bypass = [(rel, ident, line) for (rel, ident, line) in violations if (rel, ident) not in _LLM_KNOWN_VIOLATIONS]
+    frozen_remaining = _LLM_KNOWN_VIOLATIONS & present_keys
+    n_bypass = len(bypass)
+    n_frozen = len(frozen_remaining)
+
+    if n_bypass == 0:
+        return CheckResult(
+            name="외부-LLM 경계",
+            status=OK,
+            detail=f"신규 직접호출 0 / 동결 잔여 {n_frozen} (슬라이스 ④ 게이지)",
+        )
+    evidence = [f"{rel}:{line} ← {ident}(...)" for (rel, ident, line) in bypass]
+    return CheckResult(
+        name="외부-LLM 경계",
+        status=ERROR,
+        detail=f"신규 직접호출 {n_bypass}건 / 동결 잔여 {n_frozen}",
+        evidence=evidence,
+    )
+
+
+# ── 검증 10: 환경 known-fail 레지스트리 (회귀 게이트 제외 명시) ────────────────
+
+
+def check_known_test_fails() -> CheckResult:
+    """KNOWN_TEST_FAILS를 명시 노출 — 회귀 게이트가 이 환경 fail을 제외함을 표기.
+
+    pytest를 직접 돌리지 않는다(문서성 SSOT). 회귀 카운트 시 이 목록을 빼면
+    이관/코드 회귀 신호가 환경 fail에 묻히지 않는다.
+    """
+    n = len(KNOWN_TEST_FAILS)
+    evidence = [f"{tid}  ← {reason}" for tid, reason in KNOWN_TEST_FAILS.items()]
+    return CheckResult(
+        name="known-fail 레지스트리",
+        status=OK,
+        detail=f"환경 known-fail {n}건 (회귀 게이트 제외, 이관 무관)",
+        evidence=evidence,
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -541,6 +635,8 @@ CHECKS = [
     check_slice_branches_unmerged,
     check_external_automation_commits,
     check_shared_boundary,
+    check_llm_direct_call_boundary,
+    check_known_test_fails,
 ]
 
 
