@@ -460,6 +460,16 @@
 
 ---
 
+## MP2-DELTA — 촉발 심화 축1(어제 대비 변화) (2026-07-03)
+
+> MP2-DEEPEN(전조+원인) 완료 후 남은 심화 축. 근거 D-MP2-DEEPEN / STEP 0 af08007.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-DELTA | 축1 어제 대비 변화(델타) — regime 전환 · sector rank 이동 · anomaly 신규/소멸. **유일 신규 파생**(데이터 시계열은 완비: RegimeSnapshot previous_regime · SectorFlowSnapshot date별 · AnomalySignalLog triggered_at, 단 2날짜 비교 서비스 신규). 전조·원인(MP2-DEEPEN)보다 손이 감. 참조 D-MP2-DEEPEN | market_pulse 트랙 직접 | 다음 촉발 심화 슬라이스 | 🆕 착수가능 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |

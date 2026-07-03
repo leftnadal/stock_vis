@@ -2651,3 +2651,19 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **후속**: 캐시성 blocking 체크가 늘면 gate/info 2계층 분리(C안, `NT-OPS-HCHECK-GATEINFO`) — 지금은 소비자 미확정이라 짓지 않음.
 
 **baseline at decision**: origin/main = af08007. 변경 범위 = `health_check.py`(+테스트) only, apps/·packages/shared·prod 무변경.
+
+## [2026-07-03] MP2-DEEPEN — 촉발 심화(전조+원인, 밀도 B) (D-MP2-DEEPEN)
+
+**결정**: 판단 화면 심화 = **축3 전조(hero)** + **축2 원인(AnomalyPanel)**, 밀도 B(근거 풍부·인라인 칩 전체 + 핵심 hot 강조). 축1 델타는 별도 슬라이스(MP2-DELTA).
+
+**Why**: STEP 0(af08007) 실측 — 전조·원인 자산이 **이미 계산·저장·부분서빙**(신규 계산 0, "구축 아닌 연결·보강" 성립). 전조=`compute_next_stage_margin`(regime 상세에 이미 서빙) → 요약 hero로 additive 승격. 원인=AnomalySignalLog.inputs 9키(모델 저장, overview 일부만) → evidence 서브셋 additive + AnomalyPanel 노출.
+
+**How to apply**:
+- **BE additive만**(계약 형태 불변): `_regime_card` next_stage/next_stage_closest/margins, `_anomaly_section` fired에 evidence(top10_weight·vix_change_pct·max_abs_sector_z·sector_extreme_symbol) + paired_news_title/url.
+- **전조 근접 강조 규칙(3-C, 상시경보 방지)**: `|to_threshold| ≤ 0.2·|threshold|` → 앰버 "전환 임박", 밖 → 담백 "전환 여유". status≠OK → 전조 숨김.
+- **원인 밀도 B 위계**: 임계초과 칩(분산)·sector_extreme_symbol = hot 강조, 나머지 담백, null 칩 생략. paired_news 링크.
+- **신규 계산 0**(기존 자산 노출), packages/shared·prod 무접촉.
+
+**검증**: pytest marketpulse 265/1skip(신규 3) · vitest market-pulse-v2 194(신규 13) · tsc 0 · health_check 10/10. 커밋 BE `0d4f629` + FE `c672495` ff.
+
+**baseline at decision**: origin/main = f892d90. prod 쓰기 0.
