@@ -533,3 +533,10 @@
 - 부착: 모델=SignalAccuracy 형제 / bake=eod_json_baker _build_dashboard_json return / write=Stage6·baker 기존 표면(신규 표면 0) / serve=EODDashboardView 무변경 / Phase5 join 정합.
 - open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
 - 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
+
+## OPS-LOG-FLOOD — celery-worker-error.log 폭주 (등재만, 2026-07-03)
+- 상태: **등재만**(수리 안 함, 사용자 지시). 긴급도 낮음.
+- 관찰: worker-error.log에 모든 INFO + `missed heartbeat`(고빈도) + 15분 regime 등 전량 적재 → 126MB, ~2,700줄/h.
+- 영향: tail-window 로그 도구 오탐 유발(#28 verify E1의 근인). verify는 경계-timestamp 스캔으로 회피 완료 → 판정 정확도 무영향.
+- 후속 트리거: 디스크 압박(수백 MB↑) 또는 타 tail-window 도구 오탐 재발 시. 방안 = 로그 레벨/분리/회전, heartbeat 억제.
+- 상세: `docs/features/chain-sight/PR_ops_verify_enhancement.md`(등재 절).

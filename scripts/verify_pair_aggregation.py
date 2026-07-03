@@ -161,10 +161,10 @@ def main():
         )
 
     # A
-    if unregistered and succeeded == 0:
+    if unregistered:
         verdict = "FAIL"
         notes.append(
-            f"직전 틱 경계 이후 unregistered {unregistered}건 + succeeded 0 → 신규 task 미등록. "
+            f"직전 틱 경계 이후 unregistered {unregistered}건 → 신규 task 미등록. "
             "worker 재시작 필수: launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-worker"
         )
 
