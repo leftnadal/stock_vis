@@ -583,3 +583,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 갱신 방법: 옛 `svc.client`/`svc.client.aio.models.generate_content` mock → `google.genai.Client` patch(`.aio.models`(async AsyncMock) / `.models`(sync)). mock 응답에 **`usage_metadata = None` 필수**(코어 provider `_extract_raw`가 `int(getattr(usage, ...) or 0)` → MagicMock이면 TypeError). 피처플래그 site는 `svc.client=mock/None` → `svc._llm_enabled=True/False`.
 - 예외: complete()/acomplete()는 genai 예외를 `_classify`로 분류 후 raise → 테스트의 예외타입 단언 조정(분류 규칙 미매칭 시 원본 그대로 전파). CB site는 1 fail < threshold면 미개방, 실 CB 통과.
 - **이관 지시서마다 이 동반작업을 예상 작업으로 선반영**할 것. 실측: #13(33개 7파일)·Part ①-aio(3파일) churn 발생.
+
+## [관찰 도구 함정] 고정 tail-window 로그 스캔 = 폭주 로그에서 오탐 (verify_pair, 2026-07-03)
+
+- **증상**: `verify_pair_aggregation.py`가 정상 발화한 자율 틱을 ALERT(오탐)로 판정. 실제 파이프라인은 정상(beat 발송 → worker succeeded → DB 적립)이었으나, 틱 +2h 예약 실행 시 성공 로그를 못 찾음.
+- **원인**: `check_last_tick_succeeded`가 worker 로그 **고정 `[-5000:]`줄**만 읽음. worker-error.log가 시간당 ~2.7k줄(heartbeat + task received)로 폭주 → 틱+2h 지점엔 성공 로그가 창 밖(파일 끝에서 5,396>5,000줄)으로 스크롤아웃. tz 비교 로직은 정상 — 성공 라인 자체가 읽은 바이트 범위 밖.
+- **해결**: 고정 tail창 → `grep`으로 매칭 라인만 **전수 스캔** + 직전 틱 **boundary 이후만** 집계. 로그 폭주 무관하게 증거 누락 없음. 전수 스캔 부작용(이미 해소된 과거 unregistered 부활)은 boundary 이전 제외로 봉인. unregistered FAIL은 `succeeded==0`일 때만(회복된 틱 면제). 커밋 `261b5e3`.
+- **교훈**: 로그 기반 관찰 도구는 "최근 N줄"이 아니라 "관심 이벤트 시각 경계 이후"로 스캔 범위를 정의하라. 고빈도 로그 소스에서 N줄 tail은 시간창이 아니라 이벤트-밀도창이라 시각 기준 판정이 오염된다.
