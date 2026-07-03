@@ -2667,3 +2667,36 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **검증**: pytest marketpulse 265/1skip(신규 3) · vitest market-pulse-v2 194(신규 13) · tsc 0 · health_check 10/10. 커밋 BE `0d4f629` + FE `c672495` ff.
 
 **baseline at decision**: origin/main = f892d90. prod 쓰기 0.
+## [2026-07-03] 추천 캐러셀 정렬 = |composite_score| top-N (D-P1-REC-RANK)
+
+**결정**: `recommendations` 정렬 = **|composite_score| 내림차순 top-N**(방향 불문, 확신 강도 순). **N=10은 잠정** — 최종값은 캐러셀 표면 슬라이스(목업) 때 확정.
+
+**왜**:
+- **코어 방향(도그푸딩, #1 사용자 실전 무기)**: 강한 매수(+)와 강한 매도/회피(−)를 **한 피드에** 올려 실전 유용. 절댓값 순 = "지금 가장 확신 강한 신호" 우선.
+- `composite_score` = `_calculate_composite_score`(−1~+1) 실측 근거. **방향은 부호로 표현**(S-2 실측: payload가 부호 보존 `composite_score`를 담음 → 별도 direction 필드 불요, 부호가 매수+/매도−).
+- **N=10 잠정**: UI 용량 종속 파라미터라 화면 확정 전 값 고정 회피(하드코딩 `RECOMMEND_TOP_N=10`, 잠정 표식).
+
+**가중합**: 안1(절댓값 정렬)=4.00 vs 안2(부호=매수만 상위)=3.65, 마진 0.35 → 타이브레이커 = 도그푸딩 유용성 + 빌드 변경 0(이미 절댓값 구현) → **안1**.
+
+**baseline at decision**: origin/main = f892d90. prod 쓰기 0(결정 등재만).
+
+## [2026-07-03] recommend payload 계약 형태 고정 (D-P1-REC-CONTRACT)
+
+**결정**: `dashboard.json`의 `recommendations` = top-N item 배열. **item 형태(빌드 57e70bb 실측 그대로 고정)**:
+```
+{ rank, ticker, company_name, signal_tag, confidence, conf_ver,
+  composite_score(부호 보존), thesis, perspectives, risk }
+```
+- **방향 표현** = `composite_score` 부호(양=매수 우위, 음=매도/회피 우위). 별도 direction 필드 없음.
+- `signal_tag` = 시그널 종류 ID(V1/P2/S1, tag_details.primary) [D-P1-GRAIN], `confidence`/`conf_ver` = formula v1 [D-P1-CONF].
+
+**placeholder 3키 (유지 B — 사용자 확정 2026-07-03)**: 프론트 소비 0건 실측에도 **계약에 존재로 고정**. 형태:
+- `thesis`: `null`
+- `perspectives`: `{"technical": null, "fundamental": null, "news_context": null}`
+- `risk`: `null`
+
+**왜 유지(B)**: 빌드 코드 변경 0 + 프론트 스키마 안정(키 항상 존재 → 옵셔널 접근 불요). 향후 **LLM 채움은 additive-within**(키·타입 보존, 값만 채움 — shared/chain_sight 후속). 제거(C, 순수 additive)는 빌드 수정+재검증 비용이라 미채택.
+
+**IDENTICAL 기준 축**: 이 placeholder 형태는 **지금부터 신규 키 IDENTICAL 기준에 포함**(기존 6키 `signal_cards` IDENTICAL과 **별개 축**). recommend 필드 변경 시 이 형태 대비 검증.
+
+**baseline at decision**: origin/main = f892d90. prod 쓰기 0(결정 등재만).
