@@ -66,23 +66,36 @@ def pre_check():
     return beat_alive, worker_alive
 
 
-def log_check():
-    """A — worker 로그 최근 흔적. (succeeded 있음 / unregistered 없음)"""
+def log_check(boundary):
+    """A — worker 로그에서 aggregate 태스크의 boundary 이후 succeeded/unregistered 집계.
+
+    tail 고정창(구 [-5000:]) 대신 grep으로 매칭 라인만 전수 스캔 → 로그 폭주 시
+    성공 증거가 창 밖으로 스크롤아웃돼 발생하던 오탐(2026-07-03 사건)을 차단한다.
+    전수 스캔의 부작용(이미 해소된 과거 unregistered 부활)은 boundary 이전 라인 제외로 봉인.
+    """
     succeeded = unregistered = 0
     for name in ("celery-worker.log", "celery-worker-error.log"):
         p = LOGDIR / name
         if not p.exists():
             continue
-        try:
-            tail = p.read_text(errors="replace").splitlines()[-2000:]
-        except Exception:
+        out = _run(["grep", "-a", "aggregate_relation_pairs", str(p)])
+        if out.startswith("<error"):
             continue
-        for ln in tail:
-            if "aggregate_relation_pairs" in ln:
-                if "succeeded" in ln:
-                    succeeded += 1
-                if "unregistered" in ln.lower() or "KeyError" in ln:
-                    unregistered += 1
+        for ln in out.splitlines():
+            if "succeeded" not in ln and "unregistered" not in ln.lower():
+                continue
+            m = _TS_RE.search(ln)
+            if not m:
+                continue
+            ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(
+                tzinfo=_LOG_TZ
+            )
+            if ts < boundary:
+                continue
+            if "succeeded" in ln:
+                succeeded += 1
+            elif "unregistered" in ln.lower():
+                unregistered += 1
     return succeeded, unregistered
 
 
@@ -113,26 +126,14 @@ def last_et_tick_boundary(now_et=None):
     return b if now_et >= b else b - timedelta(days=1)
 
 
-def check_last_tick_succeeded():
-    """직전 11:30 ET 틱 경계 이후 worker 로그에 aggregate succeeded 있는가. (ok, boundary, msg)."""
-    boundary = last_et_tick_boundary()
-    for name in ("celery-worker.log", "celery-worker-error.log"):
-        p = LOGDIR / name
-        if not p.exists():
-            continue
-        try:
-            tail = p.read_text(errors="replace").splitlines()[-5000:]
-        except Exception:
-            continue
-        for ln in tail:
-            if "aggregate_relation_pairs" not in ln or "succeeded" not in ln:
-                continue
-            m = _TS_RE.search(ln)
-            if not m:
-                continue
-            ts = datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").replace(tzinfo=_LOG_TZ)
-            if ts >= boundary:
-                return True, boundary, f"직전 틱({boundary:%Y-%m-%d %H:%M %Z}) 이후 succeeded 확인"
+def check_last_tick_succeeded(boundary, succeeded):
+    """직전 11:30 ET 틱 경계 이후 aggregate succeeded 존재 여부. (ok, boundary, msg).
+
+    succeeded = log_check가 동일 boundary 기준으로 전수 스캔한 성공 건수(별도 재스캔 없음).
+    upsert형이라 로그가 유일한 양성 발화 증거 — grep 전수 스캔이라 로그 폭주에도 누락 없음.
+    """
+    if succeeded > 0:
+        return True, boundary, f"직전 틱({boundary:%Y-%m-%d %H:%M %Z}) 이후 succeeded 확인"
     return False, boundary, (
         f"[ALERT] 직전 자율 틱({boundary:%Y-%m-%d %H:%M %Z}) 이후 succeeded 로그 없음 — "
         "프로세스 생존(watchdog OK)해도 틱 미발화/실패 의심. "
@@ -143,8 +144,9 @@ def check_last_tick_succeeded():
 def main():
     quiet = "--quiet" in sys.argv
     today = timezone.now().date()
+    boundary = last_et_tick_boundary()
     beat_alive, worker_alive = pre_check()
-    succeeded, unregistered = log_check()
+    succeeded, unregistered = log_check(boundary)
     rows, latest = db_check()
 
     verdict = "PASS"
@@ -159,10 +161,10 @@ def main():
         )
 
     # A
-    if unregistered:
+    if unregistered and succeeded == 0:
         verdict = "FAIL"
         notes.append(
-            f"worker 로그에 unregistered/KeyError {unregistered}건 → 신규 task 미등록. "
+            f"직전 틱 경계 이후 unregistered {unregistered}건 + succeeded 0 → 신규 task 미등록. "
             "worker 재시작 필수: launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-worker"
         )
 
@@ -185,7 +187,7 @@ def main():
             notes.append(f"period {latest} count={latest_n}가 밴드[{COUNT_LOW},{COUNT_HIGH}] 밖 → 규모 확인.")
 
     # C — 직전 자율 틱 완주 (crash-loop/미발화 가시화, upsert형이라 로그가 유일 증거)
-    tick_ok, tick_boundary, tick_msg = check_last_tick_succeeded()
+    tick_ok, tick_boundary, tick_msg = check_last_tick_succeeded(boundary, succeeded)
     if not tick_ok:
         if verdict == "PASS":
             verdict = "WARN"
