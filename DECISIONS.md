@@ -2680,6 +2680,27 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 
 **baseline at decision**: origin/main = f892d90. prod 쓰기 0(결정 등재만).
 
+---
+
+## [2026-07-03] graph_analysis CUT — 휴면 상관관계 엔진 제거 ((가)-2 스냅샷 + (나)-1 drop-migration 선행) (D-REHOME-GRAPH)
+
+**결정**: `services/_dormant/graph_analysis`(1444줄) **CUT**. 방식 = **(가)-2**(코드 이력에 IP 스냅샷 남긴 뒤 제거) + **(나)-1**(drop-migration 선행). 2단계: **STAGE 1** = 빈 테이블 5개 drop-migration(`0002`) 생성·prod 적용(사용자 go), **STAGE 2** = INSTALLED_APPS(`config/settings.py:198`)+코드 `git rm`(테이블 DROP 확인 후 별도 세션).
+
+**왜**:
+- **휴면·소비자 0**: repo 전체 참조 = `config/settings.py:198` INSTALLED_APPS 1곳뿐. URL·Celery·beat·scripts·health_check·import·테스트 전부 0(프로브 B).
+- **데이터 손실 위험 0**: prod 5테이블(`graph_correlation_edge/anomaly/matrix`·`graph_metadata`·`graph_price_cache`) 전부 **0 rows**(프로브 D·STAGE 1 STEP 0 재확인).
+- **해자 무접촉**: RelationConfidence/chain_sight 미참조(프로브 C). FK는 Watchlist/Stock 대상(제거해도 참조 대상 무영향).
+- **Postgres 테이블 물림 → 클린 코드 컷 아님**: migration 0001 적용됨 → 코드만 rm하면 5테이블 고아화. **순서 제약(불변)**: 앱이 INSTALLED_APPS+코드로 살아있을 때 `migrate` 해야 DROP 가능 → **migrate(STAGE 1) → 코드 rm(STAGE 2)** 강제.
+
+**IP 스냅샷 (미래 소환 발견성)**: graph_analysis = **통계적 price-correlation 엔진**(chain_sight 해자와 접근 상이 — 통계 상관 vs LLM 관계 발견).
+- `CorrelationCalculator`(correlation_calculator.py, 448줄): 입력 = Watchlist + period_days → 워치리스트 종목 가격 시계열의 **Pearson 상관행렬** 산출(pandas), `CorrelationMatrix`+pairwise `CorrelationEdge` 저장, `PriceCache` 활용, `build_network_graph()`→networkx.Graph.
+- `AnomalyDetector`(anomaly_detector.py, 312줄): 입력 = Watchlist + detection_date → **상관 변동 이상 엣지 탐지** + cooldown + rank/limit → `CorrelationAnomaly` 기록 + 알림 라이프사이클(pending/alerted/dismissed) + `check_stock_pair_anomaly`.
+- **보존 위치**: 복구 기준 SHA **`f892d90`** 이력에 전량 보존(git). 미래 "통계적 상관/이상탐지" 필요 시 이 SHA에서 소환. 현 시점 absorb 미채택(소비자 0·0 rows, 유지비용>가치).
+
+**How to apply (STAGE 1)**: drop-migration `0002_delete_graph_analysis_models`(DeleteModel×5, 삭제순서 Anomaly→Edge→나머지, reversible=`migrate graph_analysis 0001`). 검증: `migrate --plan`=5 DROP, `sqlmigrate`=`DROP TABLE CASCADE`×5, `pytest --create-db`(test DB 21 passed = 0002 무파손 적용), arch 7 pass·health 10 OK. prod `migrate`·main-land = **사용자 수동 go**.
+
+**baseline at decision**: origin/main = e9ae62b. STAGE 1 = 마이그레이션 파일 생성만(비파괴, 브랜치 격리). prod DB·main 무접촉.
+
 ## [2026-07-03] recommend payload 계약 형태 고정 (D-P1-REC-CONTRACT)
 
 **결정**: `dashboard.json`의 `recommendations` = top-N item 배열. **item 형태(빌드 57e70bb 실측 그대로 고정)**:
