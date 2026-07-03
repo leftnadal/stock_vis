@@ -119,7 +119,22 @@ class TestFetchBroad:
         assert p["limit"] == 1000
         assert p["time_from"] == "20260424T0000"
         assert p["sort"] == "EARLIEST"
-        assert "topics" in p  # 기본 topic 세트
+        # topics 미지정 → 키 자체 부재 (다중 지정 시 AV 교집합으로 0건 되는 함정 회피)
+        assert "topics" not in p
+
+    def test_broad_sends_topics_only_when_explicit(self, provider):
+        captured = {}
+
+        def fake_get(url, params=None, timeout=None):
+            captured["params"] = params
+            resp = Mock()
+            resp.raise_for_status = Mock()
+            resp.json = Mock(return_value={"feed": []})
+            return resp
+
+        with patch("services.news.providers.alphavantage.requests.get", side_effect=fake_get):
+            provider.fetch_broad_news(topics="technology")
+        assert captured["params"]["topics"] == "technology"  # 명시 시에만 전송
 
     def test_broad_parses_multi_ticker_feed(self, provider, feed_item_multi):
         def fake_get(url, params=None, timeout=None):

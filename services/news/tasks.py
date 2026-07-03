@@ -1553,7 +1553,7 @@ def collect_av_broad_news(
 
     Args:
         time_from/time_to: 'YYYYMMDDTHHMM' (백필 페이징용). None이면 최근.
-        topics: AV topic CSV (None이면 provider DEFAULT_TOPICS 전 섹터).
+        topics: AV topic CSV (None이면 미지정=전체 broad. 다중 지정은 교집합으로 급감).
         limit: 1~1000 (무료 상한 1000).
         sort: LATEST | EARLIEST | RELEVANCE.
 

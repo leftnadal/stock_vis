@@ -109,11 +109,15 @@ class AlphaVantageNewsProvider(BaseNewsProvider):
         """
         params: Dict[str, Any] = {
             "function": "NEWS_SENTIMENT",
-            "topics": topics or self.DEFAULT_TOPICS,
             "limit": limit,
             "sort": sort,
             "apikey": self.api_key,
         }
+        # topics는 명시 지정 시에만 전송한다. AV topics 다중 지정은 교집합처럼 좁혀
+        # 결과가 급감(11개→0건, 실측 2026-07-03)하므로 broad 기본은 topics 미지정(전체).
+        # DEFAULT_TOPICS는 topic별 실험용으로 남겨두되 자동 주입하지 않는다.
+        if topics:
+            params["topics"] = topics
         if time_from is not None:
             params["time_from"] = time_from.strftime("%Y%m%dT%H%M")
         if time_to is not None:
@@ -152,7 +156,7 @@ class AlphaVantageNewsProvider(BaseNewsProvider):
 
         logger.info(
             f"AV broad: {len(articles)} articles "
-            f"(topics={params['topics'][:40]}..., window={params.get('time_from')}~{params.get('time_to')})"
+            f"(topics={params.get('topics', '(all)')}, window={params.get('time_from')}~{params.get('time_to')})"
         )
         return articles
 

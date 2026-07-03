@@ -575,3 +575,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 갱신 방법: 옛 `svc.client`/`svc.client.aio.models.generate_content` mock → `google.genai.Client` patch(`.aio.models`(async AsyncMock) / `.models`(sync)). mock 응답에 **`usage_metadata = None` 필수**(코어 provider `_extract_raw`가 `int(getattr(usage, ...) or 0)` → MagicMock이면 TypeError). 피처플래그 site는 `svc.client=mock/None` → `svc._llm_enabled=True/False`.
 - 예외: complete()/acomplete()는 genai 예외를 `_classify`로 분류 후 raise → 테스트의 예외타입 단언 조정(분류 규칙 미매칭 시 원본 그대로 전파). CB site는 1 fail < threshold면 미개방, 실 CB 통과.
 - **이관 지시서마다 이 동반작업을 예상 작업으로 선반영**할 것. 실측: #13(33개 7파일)·Part ①-aio(3파일) churn 발생.
+
+## [AV NEWS_SENTIMENT 함정] topics 다중=교집합 0 + 25/day 리셋은 rolling 24h (2026-07-03 실증)
+
+Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers/alphavantage.py`) 진단에서 확정한 2개 함정:
+
+- **topics 다중 지정 = 결과 급감(사실상 AND/교집합).** 실측 동일 창(06-13, 1일, EARLIEST, limit=1000): topics 1개(technology)→1000기사 / 4개→~80 / **11개(DEFAULT_TOPICS)→0**. broad 백필이 `fetched=0`이던 뿌리 = topics 11개. **해결: broad 수집은 topics 미지정**(전체) 또는 topic별 분리 호출. topics 미지정 시 하루 1창 1000기사·2+종목 141(14%)·distinct 824종목(4월 co-mention 17/일 압도).
+- **25 req/day 리셋은 UTC 자정이 아니라 rolling 24h.** 실측: 07-02 예산 소진 후 07-03 00:27·05:06 UTC 모두 한도 지속(UTC 자정·ET 자정 04:00 둘 다 기각), **10:01 UTC 성공**(어제 마지막 호출 ~09:40 UTC +24h). → 백필/캘리브레이션 스케줄은 rolling 24h 기준으로 예산 배분. 한도 응답은 HTTP 200 + JSON `Information` 필드(에러 아님) — `feed` 부재로 감지.
