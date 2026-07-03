@@ -129,6 +129,7 @@ export interface RegimeCard {
     actual: number
     to_threshold: number
   }>
+  transition_from?: string | null
 }
 
 export interface BreadthCard {
@@ -188,6 +189,15 @@ export interface Translations {
   status: string
 }
 
+export interface SectorDelta {
+  sector: string
+  rank: number
+  prev_rank: number
+  rank_delta: number
+  as_of: string
+  vs_date: string
+}
+
 export interface OverviewResponse {
   _meta: Meta
   ticker_bar: TickerItem[]
@@ -196,6 +206,7 @@ export interface OverviewResponse {
   cards: OverviewCards
   // S4: additive — 미생성/구버전 응답엔 없을 수 있어 optional + null 허용.
   translations?: Translations | null
+  sector_deltas?: SectorDelta[]
 }
 
 export interface CardDetailEnvelope<T> {
