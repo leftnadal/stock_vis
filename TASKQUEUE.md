@@ -471,6 +471,17 @@
 
 ---
 
+## MP2-DELTA 슬라이스 (2026-07-03)
+
+> 촉발 심화 축1(어제 대비 변화). 근거 D-DELTA-CALC/SCOPE/YDAY.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-DELTA-S1 | 슬라이스1 = regime from→to(previous_regime 재사용) + sector 순위 델타(조회-시 파생) + DeltaCard "어제와 달라진 것". prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (421fefe)** |
+| MP2-DELTA-S2 | 슬라이스2 = **anomaly 신규/소멸** 델타. "어제"=**직전 발동일 대비**(calendar −1·직전 거래일 아님 — anomaly sparse). 무발동 구간 "변화 없음"이 정상(빈 결과≠에러). 후보 A(조회-시 파생) 유지. 참조 D-DELTA-SCOPE/YDAY | market_pulse 트랙 | 다음 슬라이스 | 🆕 착수가능 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |

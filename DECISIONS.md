@@ -2700,3 +2700,20 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **IDENTICAL 기준 축**: 이 placeholder 형태는 **지금부터 신규 키 IDENTICAL 기준에 포함**(기존 6키 `signal_cards` IDENTICAL과 **별개 축**). recommend 필드 변경 시 이 형태 대비 검증.
 
 **baseline at decision**: origin/main = f892d90. prod 쓰기 0(결정 등재만).
+
+## [2026-07-03] MP2-DELTA — 어제 대비 변화: 계산위치·범위·"어제" 정의 (D-DELTA-*)
+
+### D-DELTA-CALC — 계산 위치 = 후보 A(조회-시 BE 무상태 파생)
+**결정**: 델타는 요청마다 최근 2 스냅샷을 읽어 파생. **prod 쓰기 0·마이그레이션 0·캐시 0.**
+**Why**: 가중합 A=4.55 vs B(저장)3.10 / C(FE)2.85, 마진 1.45>1.00 자동 확정. 선례 2 — `_ticker_bar`의 `[:2]` change_pct 파생(overview.py) + breadth `prev_snapshot` 델타. 후보 B(스냅샷 저장)는 prod 쓰기·마이그레이션 유발이라 회귀 금지.
+
+### D-DELTA-SCOPE — 3종 델타를 2슬라이스로
+**결정**: regime(from→to)+sector(rank 이동)=**슬라이스1(완료)**, anomaly 신규/소멸=**슬라이스2**(별도). **Why**: anomaly는 sparse(무발동 구간 존재)라 "직전 발동일 대비" 로직이 필요 = 리스크 격리. regime/sector와 섞으면 슬라이스1 지연.
+
+### D-DELTA-YDAY — "어제" = 직전 distinct 스냅샷 날짜
+**결정**: `date__lte=today` → `order_by('-date')` → distinct 최근 2날짜의 2번째. **calendar −1 금지**(주말·휴장 갭 자동 흡수, 실측 sector 07-01↔06-27). vs_date는 서버 실날짜를 계약·화면에 노출(FE −1일 하드코딩 금지).
+  - **anomaly(슬라이스2)는 "직전 발동일 대비"로 별도 정의 예정** — 무발동 구간은 "변화 없음"이 정상 동작(빈 결과≠에러).
+
+**검증(슬라이스1)**: pytest marketpulse 272/1skip(신규 delta 7) · vitest 209(신규 15) · tsc 0 · migration 0 · health_check 10/10 · prod 0 · shared 무접촉. 커밋 BE `7f68813` + FE `421fefe` ff.
+
+**baseline at decision**: origin/main = e9ae62b. prod 쓰기 0.
