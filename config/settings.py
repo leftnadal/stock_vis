@@ -199,6 +199,7 @@ INSTALLED_APPS = [
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
+    'packages.shared.alerting',  # MP2-ALERTS — 알림 코어 (D-ALERTS-BOUNDARY-R1)
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
@@ -540,6 +541,9 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
 REPORT_RECIPIENT_EMAIL = os.getenv('REPORT_RECIPIENT_EMAIL', '')
+
+# 알림 본문 딥링크 베이스(하드코딩 금지 — env override). MP2-ALERTS 판단 화면 링크.
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
 
 # ============================================================
 # Celery Error Monitoring
