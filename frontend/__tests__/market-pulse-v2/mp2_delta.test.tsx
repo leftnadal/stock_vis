@@ -18,7 +18,7 @@ import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
 import { describe, expect, it, beforeEach } from 'vitest'
 
-import { MP_V2_BASE, type SectorDelta, type RegimeCard } from '@/lib/api/marketPulseV2'
+import { MP_V2_BASE, type SectorDelta, type RegimeCard, type AnomalyDelta } from '@/lib/api/marketPulseV2'
 import { server } from '../mocks/server'
 import {
   mpAllHandlers,
@@ -179,6 +179,72 @@ describe('DeltaCard — 섹터 순위 변동 블록', () => {
   it('sectorDeltas 빈 배열이면 부제 미렌더', () => {
     render(<DeltaCard regime={baseRegime} sectorDeltas={[]} />)
     expect(screen.queryByTestId('delta-subtitle')).not.toBeInTheDocument()
+  })
+})
+
+// ── Slice 2: DeltaCard 이상 신호 변화 블록 (4상태) ──────────────
+
+describe('DeltaCard — 이상 신호 변화 블록', () => {
+  const baseRegime: RegimeCard = {
+    regime: 'BULL_EXPANSION', status: 'OK', coverage: 0.9,
+    headline: '', fired_rules: [], transitioned: false,
+  }
+  const mkAnomaly = (over: Partial<AnomalyDelta>): AnomalyDelta => ({
+    state: 'quiet', as_of: '2026-07-01', last_fired_date: null, vs_fired_date: null,
+    new_rules: [], gone_rules: [], resolved_rules: [], ...over,
+  })
+
+  it('fired: 신규 칩(warn) + 소멸 칩(취소선) + 직전 발동일 note(서버 MM-DD 표기)', () => {
+    const ad = mkAnomaly({
+      state: 'fired', last_fired_date: '2026-07-01', vs_fired_date: '2026-06-16',
+      new_rules: ['R02'], gone_rules: ['R12'],
+    })
+    render(<DeltaCard regime={baseRegime} anomalyDelta={ad} />)
+    const newChip = screen.getByTestId('anomaly-new-rule')
+    expect(newChip.textContent).toContain('신규')
+    expect(newChip.className).toContain('amber') // FLOW_TONE.warn
+    const goneChip = screen.getByTestId('anomaly-gone-rule')
+    expect(goneChip.textContent).toContain('소멸')
+    expect(goneChip).toHaveClass('line-through')
+    // note는 서버 vs_fired_date를 MM-DD로만 표기 (FE가 날짜 계산하지 않음)
+    expect(screen.getByTestId('anomaly-fired-note').textContent).toContain('06-16')
+  })
+
+  it('resolving: ✓ 해소 칩(positive 토큰) + 사실 진술 note(단정 표현 없음)', () => {
+    const ad = mkAnomaly({ state: 'resolving', last_fired_date: '2026-06-16', resolved_rules: ['R04'] })
+    render(<DeltaCard regime={baseRegime} anomalyDelta={ad} />)
+    const chip = screen.getByTestId('anomaly-resolved-rule')
+    expect(chip.textContent).toContain('해소')
+    expect(chip.className).toContain('emerald') // FLOW_TONE.calm (ok/positive)
+    const note = screen.getByTestId('anomaly-resolving-note')
+    expect(note.textContent).toContain('06-16 발동분 — 이후 재발동 없음')
+    expect(note.textContent).not.toContain('해소 확정') // 단정 금지
+  })
+
+  it('quiet: 한 줄 + 마지막 발동일(서버 MM-DD)', () => {
+    const ad = mkAnomaly({ state: 'quiet', last_fired_date: '2026-06-16' })
+    render(<DeltaCard regime={baseRegime} anomalyDelta={ad} />)
+    const el = screen.getByTestId('anomaly-quiet')
+    expect(el.textContent).toContain('발동 중인 이상 신호 없음')
+    expect(el.textContent).toContain('06-16')
+  })
+
+  it('no_history(및 anomalyDelta 미제공): "이상 신호 기록 없음"', () => {
+    render(<DeltaCard regime={baseRegime} anomalyDelta={mkAnomaly({ state: 'no_history' })} />)
+    expect(screen.getByTestId('anomaly-no-history')).toHaveTextContent('이상 신호 기록 없음')
+    // prop 자체가 없어도 동일 fallback
+    const { unmount } = render(<DeltaCard regime={baseRegime} />)
+    expect(screen.getAllByTestId('anomaly-no-history').length).toBeGreaterThan(0)
+    unmount()
+  })
+
+  it('rule 라벨: labels 있으면 translate 적용, 없으면 rule_id fallback', () => {
+    const ad = mkAnomaly({ state: 'fired', last_fired_date: '2026-07-01', new_rules: ['R04'] })
+    const labels = { 'rule.R04': 'VIX 급등' }
+    const { rerender } = render(<DeltaCard regime={baseRegime} anomalyDelta={ad} labels={labels} />)
+    expect(screen.getByTestId('anomaly-new-rule').textContent).toContain('VIX 급등')
+    rerender(<DeltaCard regime={baseRegime} anomalyDelta={ad} />)
+    expect(screen.getByTestId('anomaly-new-rule').textContent).toContain('R04')
   })
 })
 
