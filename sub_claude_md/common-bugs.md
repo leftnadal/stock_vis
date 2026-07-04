@@ -528,6 +528,21 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 예방(DoD 규율): PROGRESS/TASKQUEUE 편집 시 **신규 헤더뿐 아니라 해당 활성작업/큐 섹션 전체를 스캔**해 union-merge 중복이 없는지 확인(정의 각 1건). 뭉친 항목은 제거 아닌 **분리 독립화**(내용 유실 0). union-중복 자기점검(#43 계열)과 동일 DoD.
 - 📎 durable 규율은 **repo 하네스에 단일 등재**(코어 지시문 복제 금지 규약 — 복제는 drift). 관련 [[lesson_origin_main_advance_union_rebase]] · #40(merge=union rebase).
 
+## 공유 트리 브랜치 표류 → 워커 silent 구코드 bake (#45) `[infra]` `[celery]` `[git]`
+
+- 증상: land된 신규 코드(예: baker recommendations)가 자동 bake 산출물에 **안 나옴**. 런타임 에러 0, 파이프라인은 정상 완주.
+- 원인: celery worker가 import하는 트리 = **공유 편집 트리**(`~/Desktop/stock_vis`, `celery-worker.sh` PROJECT_DIR 하드코딩). 이 트리의 체크아웃 브랜치는 **세션 활동으로 가변** → land 전 브랜치(예: `sess-cs-pair-relevance`)에 머물면 워커가 **구 코드로 bake**. origin/main에 land돼도 워커는 못 봄.
+- 함정: OBSERVE(실산출물 검사) 게이트가 **아니면** 통과함 — 유닛 테스트 green + push 성공이 "반영됐다"는 착시. #41(모듈 변경 후 재기동)·#42(공유 트리 편집 금지)의 확장.
+- 해결(임시): 공유 트리를 `git checkout --detach origin/main` + 워커 재기동. **단 detached는 유지 안 됨**(다른 세션이 재체크아웃 → 재표류) = 트레드밀. **항구 해결 = worker 전용 worktree**(TASKQUEUE `P1-B-WORKER-WORKTREE`).
+- 예방: land마다 "워커 트리 == origin/main?" 확인 + 재기동. 자동 beat 전 diff 점검(`P1-BEAT-PRECHECK`).
+
+## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
+
+- 증상: 모델은 land됐는데 해당 테이블 write가 **조용히 실패**(0행), 상위 파이프라인은 성공으로 완주.
+- 원인: 운영 DB에 migration **미적용**(테이블 부재, `UndefinedTable`). land은 코드만 옮기지 **운영 `migrate`를 자동 실행하지 않음**. 예: `stocks_issuance_log` 부재 → IssuanceLog write 예외. 단 baker는 `atomic_swap`(파일 반영)이 DB write보다 **앞서** 있어 JSON 산출물은 정상 → 결함이 파일만 보면 안 보임.
+- 함정: **스키마 부재 = 조용한 로깅 손실**. JSON만 검사하면 통과, DB까지 봐야 잡힘(OBSERVE는 DB 확인 필수).
+- 해결: `sqlmigrate`로 순수 add 육안 검증 → `migrate`. 재발 방지 = **land에 migration 포함 시 운영 migrate를 배포 단계로 명시**(runbook `P1-RUNBOOK-MIGRATE`) + **health_check "bake 완주 시 IssuanceLog 행 증가"**(`P1-HC-ISSUANCE`, #45와 짝).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)

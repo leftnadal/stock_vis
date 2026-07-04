@@ -1588,6 +1588,7 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 
 **[확정] dashboard 트랙 (표면 전용)**: FE: `app/page.tsx`(루트 EOD 대시보드 본체), `app/dashboard/**`, `components/eod/**`, `services/eodService*`, `hooks/useEODDashboard*`, `types/eod.ts`(eod 전용 타입 — shared 공용 `types/`에서 dashboard 전용 carve-out), `docs/dashboard_plan/**`. **백엔드 앱 부재(실측)** — 백엔드 신설 여부는 이 트랙의 미래 결정 사안.
   - 📎 **2026-06-27 STEP 0 정정**(sess-dashboard-step0 @ bbe6b1b, 불일치-A): `app/page.tsx`(eod 12개 import + `useEODDashboard` 소비 — 사용자가 보는 루트 `/` 대시보드 본체)와 `types/eod.ts`(11곳 import)는 기존 글롭 `app/dashboard/**` 밖이라 **누락**이었음 → 편입. 레거시 `app/dashboard/page.tsx`(계정/네비 페이지, eod 무관)는 글롭에서 **빼지 않고** 운명을 **결정 안건으로 보류**(KEEP/CUT 사이클, `TASKQUEUE` `DASH-LEGACY`).
+  - 📎 **2026-07-04 DASH-FE-GLOB 해소**(sess-carousel SURVEY 실측 @ 47c36b4): `frontend/app/dashboard/` 디렉토리 자체가 **origin/main에 실재하지 않음**(레거시 page.tsx 포함 0건). → 실 dashboard FE 진입 = **`app/page.tsx` + `types/eod.ts`**(위 편입 확정), 캐러셀 신설 위치 = **`components/eod/**`**. 글롭 `app/dashboard/**`는 **실체 없는 표기**이므로 소유 대상에서 실질 제외(DASH-LEGACY도 대상 파일 부재로 자연 소멸). 유지: `components/eod/**`·`services/eodService*`·`hooks/useEODDashboard*`.
 
 **[활성·성숙] chain_sight 트랙** (STEP 0 확정 2026-06-29): `apps/chain_sight/**`, `tests/chainsight/**`, `docs/chain_sight/**`, FE: `app/chainsight/**`, `components/chainsight/**`, `services/{chainsightService,pathWatchlistService}`, `hooks/{useChainsight,usePathWatchlist}`, `__tests__/chainsight/**` + **Neo4j 자산(확정, apps 내부)**: `management/commands/load_*_to_neo4j`(5)·`services/neo4j_{loader,sync}`·`tasks/neo4j_dirty_sync_tasks`.
   - 📎 **STEP 0 실측**(sess-cs-step0 @ b457bbf): 백엔드 85파일·모델 20개·**RelationConfidence 13,695행 prod**(CoMentionEdge 1,361·PriceCoMovement 8,859)·**M2 v1.1 Phase 1 go-live(2026-06-27)**, daily beat 가동·neo4j_dirty=0(동기화 완료). 기존 `[골격]`·`추정` 표기는 성숙도 과소표현이라 격상.
@@ -2768,3 +2769,45 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **잔여(무해)**: prod `django_migrations`의 graph_analysis 0001/0002 행은 앱 미등록으로 Django 무시 = 무해 고아(정리 선택·나중). STAGE 1 전달 브랜치는 임무 완료 후 삭제 후보(수동). 서술 문서(CLAUDE.md 앱표·sub_claude_md/graph-analysis.md) stale 참조 = 후속 doc 위생.
 
 **baseline at decision**: origin/main = 47c36b4. STAGE 2 = 코드/INSTALLED_APPS 제거(브랜치 격리). main-land = 사용자 go.
+
+## [2026-07-04] P1-OBSERVE 충족 — 첫 실bake 관측 (D-P1-OBSERVE-DONE)
+
+**결정**: P1-OBSERVE 게이트 **충족(닫힘)**. 실파이프라인(`run_eod_pipeline` 수동 트리거) 관측으로 recommendations 생산·발행 로그 write를 실증.
+
+**관측 결과**:
+- **JSON**(`frontend/public/static/signals/dashboard.json`): recommendations **N=10** · `|composite_score|` 내림차순(D-P1-REC-RANK) · 기존 6키 **IDENTICAL 보존** · placeholder 3키 null(D-P1-REC-CONTRACT). trading_date `2026-07-02` · is_stale `False`.
+- **DB**(IssuanceLog): **10행 = N 정합** · grain `(stock, signal_date, signal_tag)` **중복 0**(같은 signal_date 재bake에도 `update_or_create` **멱등 실증**) · conf_ver=1 전건 · published_at 전건 존재 · user_id 전건 null(D-SCHEMA·D-P1-CONF).
+- **★매도 비율 = 30%**(3/10) < 50% → 방향 방어 강화 불요(D-P1-CAROUSEL 참조).
+
+**결함 2건 경유(기록)**:
+1. **워커 브랜치 표류**: 워커가 import하는 공유 트리(`~/Desktop/stock_vis`)가 land 전 브랜치(`sess-cs-pair-relevance`)라 **구 코드로 bake**(recommendations 누락, 런타임 에러 없이 6키만 emit) → **A' `checkout --detach origin/main`** 정렬 + 워커 재기동으로 해소. (main checkout은 `sess-main-integrate` worktree 점유로 불가 → detached 채택.)
+2. **migration 0009 미적용**: 운영 DB에 `stocks_issuance_log` 부재 → IssuanceLog write **조용히 실패**(파이프라인 무중단 완주, atomic_swap이 write보다 앞서 파일은 정상). `sqlmigrate` 육안 검증(신규 테이블 대상만·기존 ALTER/DROP 0) 후 **사용자 승인 하 migrate**(D-P1-MIGRATE-0009 참조).
+
+**baseline at decision**: origin/main = ca6d525. prod: migrate 0009 적용(승인) 외 쓰기 0.
+
+## [2026-07-04] 추천 캐러셀 레이아웃 A+ (D-P1-CAROUSEL)
+
+**결정**: dashboard 추천 캐러셀 = **레이아웃 A+**. N=10.
+- **단일 가로 스크롤** · `|composite_score|` 강도순(payload 정렬 순서 그대로, 재정렬 0).
+- **방향 이중 표기**: 색 배지(매수/매도 색) **+ 동사 라벨**("매수"/"매도·회피") — 색 단독 의존 금지(색약 방어).
+- **strength spine**: 방향색 + `|score|` 길이.
+- **placeholder ghost 렌더**: thesis/perspectives/risk가 null이면 ghost 스트립("곧: 논리·3관점·리스크"), null 아니면(향후 LLM 채움) 실내용 승격 = **additive-within**(계약 형태 보존).
+- **카드별 체인사이트 진입**.
+
+**방어 수위**: 실측 매도 **30%(3/10, 정상 거래일 단일 표본)** < 50% → **A+ 이중표기 외 추가 방향 방어 불요**.
+**재검토 트리거**: 관측 누적 시 매도 비율 **50% 상회 관찰**되면 **방어 수위만** 재검토(레이아웃 재설계 아님).
+**N=10**: D-P1-REC-RANK "잠정"의 화면 확정 — 캐러셀 스크롤로 전량 노출, 현 N=10 고정.
+
+**baseline at decision**: origin/main = ca6d525. prod 쓰기 0(결정 등재만).
+
+## [2026-07-04] migration 0009 운영 DB 적용 (D-P1-MIGRATE-0009)
+
+**결정**: `stocks.0009_issuancelog`를 운영 DB에 적용(사용자 승인). IssuanceLog write 결함 해소.
+
+**검증·경위**:
+- **showmigrations 전**: `0007[X] 0008[X] 0009[ ]`(미적용).
+- **sqlmigrate 0009 육안 검증**: `CREATE TABLE stocks_issuance_log` + ALTER(unique·FK to stocks_stock)·INDEX **전부 신규 테이블 대상**. 기존 테이블 ALTER/DROP/TRUNCATE **0** → 순수 add 확인.
+- **적용**: `migrate stocks` → `0009_issuancelog ... OK` → **후 `0009[X]`**.
+- 승인: 운영 DB 스키마 변경이라 워커 런타임 개입 범위 밖 → 사용자 별도 승인.
+
+**baseline at decision**: origin/main = ca6d525. prod: 스키마 add(신규 테이블 1) — 기존 데이터 무변경.
