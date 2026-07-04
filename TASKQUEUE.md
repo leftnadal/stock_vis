@@ -510,3 +510,8 @@
 - 부착: 모델=SignalAccuracy 형제 / bake=eod_json_baker _build_dashboard_json return / write=Stage6·baker 기존 표면(신규 표면 0) / serve=EODDashboardView 무변경 / Phase5 join 정합.
 - open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
 - 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
+
+## NT-REHOME-GRAPH — graph_analysis CUT [resolved 2026-07-03]
+- 상태: **resolved** (D-REHOME-GRAPH). 휴면 상관관계 엔진(1444줄) 제거. STAGE 1=drop-migration 0002 prod 적용(5테이블 DROP, 0 rows) / STAGE 2=INSTALLED_APPS+코드 git rm.
+- 검증: makemigrations --dry-run=No changes · check 0 · health 10 · arch 7 · 회귀 delta 0(선존 chainsight 5실패 무관). 복구 SHA f892d90.
+- 후속(무해·선택): django_migrations 고아행 정리 · STAGE1 브랜치 삭제 · CLAUDE.md/sub_claude_md 서술 doc 위생.
