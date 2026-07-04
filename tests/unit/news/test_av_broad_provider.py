@@ -79,6 +79,23 @@ class TestBroadParsing:
             is None
         )
 
+    def test_overlong_url_skipped(self, provider):
+        # url varchar(2000) 초과 → skip(None). broad 다양 소스의 초장 URL 방어.
+        item = {"url": "https://x.com/" + "a" * 2100, "title": "T",
+                "time_published": "20260501T103000",
+                "ticker_sentiment": [{"ticker": "NVDA", "relevance_score": "0.9"}]}
+        assert provider._parse_article(item, symbol=None) is None
+
+    def test_overlong_image_url_blanked(self, provider):
+        # image_url(banner) 초과 → 비움(비필수), 기사 자체는 유지.
+        item = {"url": "https://x.com/a", "title": "T",
+                "time_published": "20260501T103000",
+                "banner_image": "https://img.com/" + "b" * 2100,
+                "ticker_sentiment": [{"ticker": "NVDA", "relevance_score": "0.9"}]}
+        art = provider._parse_article(item, symbol=None)
+        assert art is not None
+        assert art.image_url == ""
+
     def test_date_parsing_formats(self, provider):
         # AV time_published는 항상 초 포함(예: 20260424T000728) — 실측 15자 형식.
         assert provider._parse_av_date("20260501T103000") == datetime(2026, 5, 1, 10, 30, 0)

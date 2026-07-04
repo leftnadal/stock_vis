@@ -185,21 +185,25 @@ class NewsAggregatorService:
 
         for raw_article in articles:
             try:
-                # NewsArticle 저장/업데이트
-                article, created = self._save_article(raw_article)
+                # 기사별 savepoint 격리: 한 기사의 DB 에러(예: 필드 길이 초과)가
+                # transaction을 오염시켜 배치의 나머지를 연쇄 실패시키는 것을 막는다.
+                # 성공 경로는 savepoint가 곧바로 release되므로 동작 무변경.
+                with transaction.atomic():
+                    # NewsArticle 저장/업데이트
+                    article, created = self._save_article(raw_article)
 
-                if created:
-                    saved_count += 1
-                    # 새 뉴스인 경우 Entity 저장
-                    self._save_entities(article, raw_article.entities)
-                elif article:
-                    updated_count += 1
-                    # 기존 뉴스에 Entity가 없고, 새 Entity가 있으면 추가
-                    if not article.entities.exists() and raw_article.entities:
+                    if created:
+                        saved_count += 1
+                        # 새 뉴스인 경우 Entity 저장
                         self._save_entities(article, raw_article.entities)
-                else:
-                    skipped_count += 1
-                    continue
+                    elif article:
+                        updated_count += 1
+                        # 기존 뉴스에 Entity가 없고, 새 Entity가 있으면 추가
+                        if not article.entities.exists() and raw_article.entities:
+                            self._save_entities(article, raw_article.entities)
+                    else:
+                        skipped_count += 1
+                        continue
 
             except Exception as e:
                 logger.error(f"Failed to save article: {e}, url: {raw_article.url}")

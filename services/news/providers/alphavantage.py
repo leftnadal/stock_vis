@@ -185,6 +185,12 @@ class AlphaVantageNewsProvider(BaseNewsProvider):
         if not url or not title:
             return None
 
+        # 길이 방어: NewsArticle.url/image_url은 varchar(2000). broad는 다양한 소스라
+        # 초장 URL이 섞인다. url 초과는 skip(unique 키라 절단 시 충돌 위험), image_url 초과는 비움.
+        if len(url) > 2000:
+            logger.warning(f"AV url too long ({len(url)}) — skip: {url[:80]}...")
+            return None
+
         published_at = self._parse_av_date(item.get("time_published", ""))
         if not published_at:
             return None
@@ -228,13 +234,17 @@ class AlphaVantageNewsProvider(BaseNewsProvider):
                 },
             )
 
+        banner = item.get("banner_image", "") or ""
+        if len(banner) > 2000:  # image_url varchar(2000) — 초과 시 비움(비필수 필드)
+            banner = ""
+
         return RawNewsArticle(
             url=url,
             title=title,
             summary=item.get("summary", ""),
             source=item.get("source", "Alpha Vantage"),
             published_at=published_at,
-            image_url=item.get("banner_image", ""),
+            image_url=banner,
             language="en",
             category="company",
             provider_id=url,  # AV는 별도 ID 없음 → url을 provider_id로
