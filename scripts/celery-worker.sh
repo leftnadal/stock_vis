@@ -4,7 +4,10 @@
 
 set -e
 
-PROJECT_DIR="/Users/byeongjinjeong/Desktop/stock_vis"
+# B′ worker 전용 트리 (D-B-WORKER): 워커 코드베이스를 공유 편집 트리에서 분리.
+# 공유 트리 브랜치 표류와 무관하게 항상 origin/main 코드로 실행(#45 종료).
+# .env는 worker 트리의 심링크(→ 공유 트리 .env)로 재사용.
+PROJECT_DIR="/Users/byeongjinjeong/worktrees/sv-worker-runtime"
 VENV_DIR="/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_system-_jE0wOmK-py3.12"
 
 cd "$PROJECT_DIR"
