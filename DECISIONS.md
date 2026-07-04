@@ -2726,3 +2726,23 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **R3 실측 결과 = 판별 불가 → 5c-ii 폴백 채택**: AnomalySignalLog는 **발동 행만 적재**(tasks/anomaly.py의 `for f in fired` 내부에서만 create — CALM/run-marker 행 0), 전용 run-marker 모델 부재. RegimeSnapshot은 별도 파이프라인(다른 Celery task)이라 anomaly `*/5` 엔진 실행 증명 불가 → proxy 시 거짓 해소(안전핀 b가 막는 위험) 유입. ∴ `_engine_ran_since` 항상 False → **무발동일 항상 quiet**. `resolving`/`resolved_rules`는 계약에 미래 확장 자리로 보존(FE 4상태 전부 렌더). ANOMALY-RUN-EVIDENCE(run-marker 도입 → resolving 활성) 관찰 항목 등록.
 **검증(슬라이스2)**: pytest marketpulse 279/1skip(신규 delta 7) · vitest 495(신규 5) · tsc 0 · migration 0 · health_check 10/10 · prod 0 · shared 무접촉. 커밋 4분리(BE 파생 507c6d5 / 계약 3d1711e / FE 2ed2f28 / 테스트 b29067e) ff.
 **baseline at decision**: origin/main = 47c36b4 → land b29067e. prod 쓰기 0. ⇒ **MP2-DELTA 트랙 종결**.
+---
+
+## [2026-07-03] graph_analysis CUT 완결 (D-REHOME-GRAPH) — **resolved**
+
+**결정**: 휴면 앱 `services/_dormant/graph_analysis`(1444줄, 11파일) **CUT 완결**. 방식 = (가)-2(IP 스냅샷 후 제거) + (나)-1(drop-migration 선행). 2-STAGE 실행:
+- **STAGE 1**(완료, prod 적용됨): drop-migration `0002_delete_graph_analysis_models`(DeleteModel×5) 생성 → 사용자 수동 `migrate graph_analysis` 적용 → prod 5테이블 DROP(`graph_correlation_edge/anomaly/matrix`·`graph_metadata`·`graph_price_cache`, 전부 0 rows). 전달 브랜치 `monorepo/sess-rehome-graph @ 3ddcb7b`.
+- **STAGE 2**(본 커밋): INSTALLED_APPS(`config/settings.py`) 1줄 제거 + `git rm` 앱 전체(models/admin/apps/views/tests/services/·migrations 0001) → 코드 컷 완결.
+
+**왜**: 휴면·기능 소비자 0(제거 전 repo 전체 참조 = INSTALLED_APPS 1곳뿐)·데이터 0 rows·해자(RelationConfidence/chain_sight) 무접촉(프로브 C). Postgres 테이블 물림이라 순서 제약(migrate→코드 rm) 강제.
+
+**IP 스냅샷(미래 소환)**: 통계적 price-correlation 엔진(chain_sight 관계발견과 접근 상이).
+- `CorrelationCalculator`(448줄): Watchlist+period → 종목 가격 **Pearson 상관행렬**+pairwise edge(pandas), `build_network_graph()`→networkx.
+- `AnomalyDetector`(312줄): 상관 변동 이상 엣지 탐지 + cooldown/rank + 알림 라이프사이클(pending/alerted/dismissed).
+- **복구 기준 SHA `f892d90`** 이력에 전량 보존. 미래 통계상관/이상탐지 필요 시 소환.
+
+**How verified(STAGE 2)**: `makemigrations --dry-run`=**No changes**(잔재 모델참조 0, 과도기 불일치 해소) · `manage.py check`=0 issues · health 10 OK · arch 7 pass · prod 5테이블 부재. **회귀 delta=0**: 전 스위트의 선존 chainsight 실패 5건은 graph_analysis 존재 브랜치에서도 동일 재현(환경성, 본 컷 무관).
+
+**잔여(무해)**: prod `django_migrations`의 graph_analysis 0001/0002 행은 앱 미등록으로 Django 무시 = 무해 고아(정리 선택·나중). STAGE 1 전달 브랜치는 임무 완료 후 삭제 후보(수동). 서술 문서(CLAUDE.md 앱표·sub_claude_md/graph-analysis.md) stale 참조 = 후속 doc 위생.
+
+**baseline at decision**: origin/main = 47c36b4. STAGE 2 = 코드/INSTALLED_APPS 제거(브랜치 격리). main-land = 사용자 go.

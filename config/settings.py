@@ -195,7 +195,6 @@ INSTALLED_APPS = [
     'packages.shared.users',  # PR2 이동 (A-min)
     'services.news',  # PR8a-2 이동
     'macro',  # 거시경제 대시보드 (Market Pulse)
-    'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
