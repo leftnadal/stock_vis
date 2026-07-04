@@ -583,3 +583,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 갱신 방법: 옛 `svc.client`/`svc.client.aio.models.generate_content` mock → `google.genai.Client` patch(`.aio.models`(async AsyncMock) / `.models`(sync)). mock 응답에 **`usage_metadata = None` 필수**(코어 provider `_extract_raw`가 `int(getattr(usage, ...) or 0)` → MagicMock이면 TypeError). 피처플래그 site는 `svc.client=mock/None` → `svc._llm_enabled=True/False`.
 - 예외: complete()/acomplete()는 genai 예외를 `_classify`로 분류 후 raise → 테스트의 예외타입 단언 조정(분류 규칙 미매칭 시 원본 그대로 전파). CB site는 1 fail < threshold면 미개방, 실 CB 통과.
 - **이관 지시서마다 이 동반작업을 예상 작업으로 선반영**할 것. 실측: #13(33개 7파일)·Part ①-aio(3파일) churn 발생.
+
+## [병렬 에이전트] 기존재 오인 → 실행 전 심볼 정의 수 grep으로 중복 방지 (MP2-DELTA, 2026-07-04)
+
+- **증상**: 병렬/다중 에이전트가 "이미 누가 만들었겠지"라고 기존재를 오인하거나, 반대로 이미 있는 함수·타입·블록을 모른 채 재구현 → 중복 정의·충돌.
+- **실측**: MP2-DELTA S1에서 FE 에이전트가 BE 기존재를 오인해 재확인(중복 0으로 방어됨). S2에서는 착수 전 `grep -c 'def compute_anomaly_delta\|interface AnomalyDelta\|anomaly_delta'`로 정의 수를 세어 0건 확인 후 신규 작성.
+- **규칙**: 신규 심볼(함수·타입·컴포넌트 블록) 작성 **직전** `grep`으로 **정의 수를 센다**. 0이면 신규, 1+이면 기존 편집. wiring 지점(`_build_payload`·page.tsx prop)도 동일하게 grep으로 기존 배치 확인 후 additive.
+- **왜**: 병렬 세션은 서로의 working tree를 못 본다. "본 것 같다"는 기억이 아니라 grep 카운트가 유일한 진실. 실행 전 1회 grep이 중복 커밋·충돌 정리 비용(1h+)을 막는다.

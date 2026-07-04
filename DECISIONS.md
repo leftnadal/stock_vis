@@ -2717,3 +2717,12 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **검증(슬라이스1)**: pytest marketpulse 272/1skip(신규 delta 7) · vitest 209(신규 15) · tsc 0 · migration 0 · health_check 10/10 · prod 0 · shared 무접촉. 커밋 BE `7f68813` + FE `421fefe` ff.
 
 **baseline at decision**: origin/main = e9ae62b. prod 쓰기 0.
+
+### D-DELTA-QUIET — 무발동일 표시 = 옵션 2(해소 명시), R3 실측 → 5c-ii 폴백 (2026-07-04)
+**결정**: anomaly 무발동일 표시 방향 = **옵션 2(해소 명시)**. fired-set 비교 = **직전 '발동일' 대비**(D-DELTA-YDAY anomaly 변형 — calendar −1·직전 거래일 아님, sparse라 대부분 빈 결과 방지).
+**Why**: 가중합 옵션2 4.05 vs 옵션1(조용) 3.95(마진 0.10 < 0.40 → 타이브레이커). ① 옵션2의 단점(오독)은 문구로 완화 가능하나 옵션1의 단점(꺼짐 정보 소실)은 구조적. ② S1의 "카드가 대부분의 날 살아있어야" 원칙과 일관.
+**안전핀**: (a) 문구는 관측 사실만 — "해소 확정" 단정 금지, "MM-DD 발동분 — 이후 재발동 없음" 형식. (b) engine 실행 흔적으로 "행 없음 = 진짜 무발동" 판별.
+**lookback = 7일**: 모듈 상수 고정(설정·환경변수 노출 금지). 근거 = 실측 발동 사이클(3주 내 발동 ~6일, 최장 무발동 13일). 조회-시 파생이라 worker 재시작 무관(common-bugs #41 비해당).
+**R3 실측 결과 = 판별 불가 → 5c-ii 폴백 채택**: AnomalySignalLog는 **발동 행만 적재**(tasks/anomaly.py의 `for f in fired` 내부에서만 create — CALM/run-marker 행 0), 전용 run-marker 모델 부재. RegimeSnapshot은 별도 파이프라인(다른 Celery task)이라 anomaly `*/5` 엔진 실행 증명 불가 → proxy 시 거짓 해소(안전핀 b가 막는 위험) 유입. ∴ `_engine_ran_since` 항상 False → **무발동일 항상 quiet**. `resolving`/`resolved_rules`는 계약에 미래 확장 자리로 보존(FE 4상태 전부 렌더). ANOMALY-RUN-EVIDENCE(run-marker 도입 → resolving 활성) 관찰 항목 등록.
+**검증(슬라이스2)**: pytest marketpulse 279/1skip(신규 delta 7) · vitest 495(신규 5) · tsc 0 · migration 0 · health_check 10/10 · prod 0 · shared 무접촉. 커밋 4분리(BE 파생 507c6d5 / 계약 3d1711e / FE 2ed2f28 / 테스트 b29067e) ff.
+**baseline at decision**: origin/main = 47c36b4 → land b29067e. prod 쓰기 0. ⇒ **MP2-DELTA 트랙 종결**.

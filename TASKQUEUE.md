@@ -478,7 +478,8 @@
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
 | MP2-DELTA-S1 | 슬라이스1 = regime from→to(previous_regime 재사용) + sector 순위 델타(조회-시 파생) + DeltaCard "어제와 달라진 것". prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (421fefe)** |
-| MP2-DELTA-S2 | 슬라이스2 = **anomaly 신규/소멸** 델타. "어제"=**직전 발동일 대비**(calendar −1·직전 거래일 아님 — anomaly sparse). 무발동 구간 "변화 없음"이 정상(빈 결과≠에러). 후보 A(조회-시 파생) 유지. 참조 D-DELTA-SCOPE/YDAY | market_pulse 트랙 | 다음 슬라이스 | 🆕 착수가능 |
+| MP2-DELTA-S2 | 슬라이스2 = **anomaly 신규/소멸/해소** 델타 + 무발동일 표시. "어제"=**직전 발동일 대비**. D-DELTA-QUIET(옵션2 해소 명시) + R3 실측=판별 불가 → **5c-ii 폴백(무발동일 항상 quiet)**. anomaly_delta additive(4상태). 참조 D-DELTA-QUIET | market_pulse 트랙 | — | ✅ **done (b29067e)** ⇒ **MP2-DELTA 트랙 종결** |
+| ANOMALY-RUN-EVIDENCE | (관찰 항목, 측정-우선) anomaly engine 실행 흔적(run-marker) 도입 시 D-DELTA-QUIET의 resolving 활성화 가능. 현재 AnomalySignalLog는 발동 행만 적재 → 무발동일 quiet로만 수렴. **실제 오독 사례 관찰 시 착수**(계약엔 resolving/resolved_rules 자리 이미 존재) | market_pulse 트랙 | 오독 관찰 | 👁 관찰 |
 
 ---
 
