@@ -545,5 +545,7 @@
 - 상태: 등재. **트리거 = pair→main 최종 통합 후** 착수(통합 전엔 pair가 공유 dir 점유 필요라 격리 시 워커 코드 갈림).
 - 사건(근거): 2026-07-04 13:13:25 외부 세션이 공유 작업트리 `/Users/byeongjinjeong/Desktop/stock_vis`를 `git checkout origin/main`(detached 7c2f186)으로 탈취 → HEAD가 pair 이탈 + celery-worker 13:13:51 origin/main 코드로 재시작(aggregate 태스크 부재 = 다음 틱 unregistered 위험). 복구: pair(c690307) checkout + 워커 재기동(71696). pair/origin 무손상.
 - 근본 원인: 다중 세션이 단일 작업트리(=celery 워커 코드베이스) 공유. 메모리 lesson "공유 main 작업트리 직접 편집 금지"의 구조적 미비(수동 규율만으론 동시 checkout 못 막음).
+- **ADR 재평가 트리거(실증)**: DECISIONS:1338 "다중 세션 = **소프트 강제**(worktree 격리 + 계약 헤더, 훅 미도입 — 차선 이탈 반복 시 국소 승격)". 이번 사건(reflog `7c2f186 @2026-07-04 13:13:25 checkout origin/main`)이 소프트 강제가 못 막은 **첫 실증 이탈** → 통합 후 "국소 승격"(hook/worktree 물리격리) 재평가 대상.
+- 07-05 후속: worker(71696) + **beat(36421→38604 재기동, 13:13:51 origin/main 재시작분 정정)** 양자 pair코드 정합. 밤사이 자율 틱 period 07-04 적립 = 복구 무인 검증.
 - 방안: 활성 작업 브랜치를 `git worktree`로 분리(SESSION_CONTRACT worktree 규율 정합), 워커는 안정 브랜치 dir 고정 import.
 - 통합 전 방어(잠정): 세션 시작 시 HEAD·워커 시작시각 대조 수동 스모크 + flag-on/merge 전 재확인(P-0 규율에 편입 검토).
