@@ -582,3 +582,10 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 - **topics 다중 지정 = 결과 급감(사실상 AND/교집합).** 실측 동일 창(06-13, 1일, EARLIEST, limit=1000): topics 1개(technology)→1000기사 / 4개→~80 / **11개(DEFAULT_TOPICS)→0**. broad 백필이 `fetched=0`이던 뿌리 = topics 11개. **해결: broad 수집은 topics 미지정**(전체) 또는 topic별 분리 호출. topics 미지정 시 하루 1창 1000기사·2+종목 141(14%)·distinct 824종목(4월 co-mention 17/일 압도).
 - **25 req/day 리셋은 UTC 자정이 아니라 rolling 24h.** 실측: 07-02 예산 소진 후 07-03 00:27·05:06 UTC 모두 한도 지속(UTC 자정·ET 자정 04:00 둘 다 기각), **10:01 UTC 성공**(어제 마지막 호출 ~09:40 UTC +24h). → 백필/캘리브레이션 스케줄은 rolling 24h 기준으로 예산 배분. 한도 응답은 HTTP 200 + JSON `Information` 필드(에러 아님) — `feed` 부재로 감지.
+
+## [저장 함정] 대량 루프 + 단일 transaction = 포이즌 1건이 배치 전멸 (2026-07-04 실증)
+
+- `aggregator._save_articles`가 기사 리스트를 **한 transaction**에서 루프 저장 → 한 기사의 DB 에러(필드 길이 초과 등)가 transaction을 오염시켜 **나머지가 연쇄 실패**(`current transaction is aborted` = "atomic block" 에러). AV broad 백필에서 url `varchar(2000)` 초과 **1건**이 그 반창의 **596건을 전멸**시킴(일별 적재 급락으로 표면화).
+- **방어(`72c1825`)**: ⑴ `_save_articles` 루프를 기사별 `transaction.atomic()`(savepoint)로 격리 — 1건 실패가 rollback되어도 나머지 저장 진행(성공 경로는 savepoint 즉시 release라 동작 무변경). ⑵ broad 계층 길이 sanitize — `url>2000`은 **skip**(unique 키라 truncation 금지, 충돌 위험), `image_url>2000`은 **null/빈값**(비필수).
+- **재발 감지 신호** = 일별/창별 적재 수 급락(정상 700~900 대비 100대). skip 카운터 급증(창당 수십+)도 새 유형 포이즌 정황.
+- 이 패턴은 AV 전용 아님 — **대량 벌크 저장 루프 일반의 함정**. 다른 수집 경로도 savepoint 격리 권장.
