@@ -540,3 +540,10 @@
 - 영향: tail-window 로그 도구 오탐 유발(#28 verify E1의 근인). verify는 경계-timestamp 스캔으로 회피 완료 → 판정 정확도 무영향.
 - 후속 트리거: 디스크 압박(수백 MB↑) 또는 타 tail-window 도구 오탐 재발 시. 방안 = 로그 레벨/분리/회전, heartbeat 억제.
 - 상세: `docs/features/chain-sight/PR_ops_verify_enhancement.md`(등재 절).
+
+## OPS-WORKTREE-ISOLATION — pair 작업 worktree 격리 (등재, 2026-07-04)
+- 상태: 등재. **트리거 = pair→main 최종 통합 후** 착수(통합 전엔 pair가 공유 dir 점유 필요라 격리 시 워커 코드 갈림).
+- 사건(근거): 2026-07-04 13:13:25 외부 세션이 공유 작업트리 `/Users/byeongjinjeong/Desktop/stock_vis`를 `git checkout origin/main`(detached 7c2f186)으로 탈취 → HEAD가 pair 이탈 + celery-worker 13:13:51 origin/main 코드로 재시작(aggregate 태스크 부재 = 다음 틱 unregistered 위험). 복구: pair(c690307) checkout + 워커 재기동(71696). pair/origin 무손상.
+- 근본 원인: 다중 세션이 단일 작업트리(=celery 워커 코드베이스) 공유. 메모리 lesson "공유 main 작업트리 직접 편집 금지"의 구조적 미비(수동 규율만으론 동시 checkout 못 막음).
+- 방안: 활성 작업 브랜치를 `git worktree`로 분리(SESSION_CONTRACT worktree 규율 정합), 워커는 안정 브랜치 dir 고정 import.
+- 통합 전 방어(잠정): 세션 시작 시 HEAD·워커 시작시각 대조 수동 스모크 + flag-on/merge 전 재확인(P-0 규율에 편입 검토).
