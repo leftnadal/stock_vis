@@ -198,6 +198,19 @@ export interface SectorDelta {
   vs_date: string
 }
 
+/** MP2-DELTA 슬라이스2 — anomaly 발동 상태 변화(조회-시 파생). 날짜·state 전부 서버값. */
+export type AnomalyDeltaState = 'fired' | 'resolving' | 'quiet' | 'no_history'
+
+export interface AnomalyDelta {
+  state: AnomalyDeltaState
+  as_of: string
+  last_fired_date: string | null
+  vs_fired_date: string | null
+  new_rules: AnomalyRuleId[]
+  gone_rules: AnomalyRuleId[]
+  resolved_rules: AnomalyRuleId[]
+}
+
 export interface OverviewResponse {
   _meta: Meta
   ticker_bar: TickerItem[]
@@ -207,6 +220,8 @@ export interface OverviewResponse {
   // S4: additive — 미생성/구버전 응답엔 없을 수 있어 optional + null 허용.
   translations?: Translations | null
   sector_deltas?: SectorDelta[]
+  // 슬라이스2: additive — 구버전 응답엔 없을 수 있어 optional.
+  anomaly_delta?: AnomalyDelta
 }
 
 export interface CardDetailEnvelope<T> {

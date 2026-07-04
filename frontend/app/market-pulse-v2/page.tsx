@@ -82,6 +82,7 @@ export default function MarketPulseV2Page() {
           <DeltaCard
             regime={overview.cards.regime}
             sectorDeltas={overview.sector_deltas}
+            anomalyDelta={overview.anomaly_delta}
             labels={labels}
           />
         </div>
