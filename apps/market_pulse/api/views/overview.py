@@ -27,6 +27,7 @@ from apps.market_pulse.api.serializers.overview import OverviewResponseSerialize
 from apps.market_pulse.i18n.labels import resolve_regime_stance
 from apps.market_pulse.models.anomaly import AnomalySignalLog
 from apps.market_pulse.regime.next_stage import compute_next_stage_margin
+from apps.market_pulse.services.anomaly_delta import compute_anomaly_delta
 from apps.market_pulse.services.sector_delta import compute_sector_deltas
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.news import MarketPulseNews
@@ -350,6 +351,8 @@ def _build_payload() -> dict:
         "translations": _translations_block(),
         # MP2-DELTA 슬라이스1(additive): 어제 대비 섹터 순위 이동(조회-시 파생, prod 0).
         "sector_deltas": compute_sector_deltas(django_timezone.localdate()),
+        # MP2-DELTA 슬라이스2(additive): anomaly 신규/소멸/해소 델타(조회-시 파생, prod 0).
+        "anomaly_delta": compute_anomaly_delta(django_timezone.localdate()),
     }
 
 
