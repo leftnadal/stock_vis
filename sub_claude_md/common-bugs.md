@@ -590,3 +590,16 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **실측**: MP2-DELTA S1에서 FE 에이전트가 BE 기존재를 오인해 재확인(중복 0으로 방어됨). S2에서는 착수 전 `grep -c 'def compute_anomaly_delta\|interface AnomalyDelta\|anomaly_delta'`로 정의 수를 세어 0건 확인 후 신규 작성.
 - **규칙**: 신규 심볼(함수·타입·컴포넌트 블록) 작성 **직전** `grep`으로 **정의 수를 센다**. 0이면 신규, 1+이면 기존 편집. wiring 지점(`_build_payload`·page.tsx prop)도 동일하게 grep으로 기존 배치 확인 후 additive.
 - **왜**: 병렬 세션은 서로의 working tree를 못 본다. "본 것 같다"는 기억이 아니라 grep 카운트가 유일한 진실. 실행 전 1회 grep이 중복 커밋·충돌 정리 비용(1h+)을 막는다.
+
+## [휴면 앱 CUT] 코드+prod 스키마는 순서 있는 원자적 제거 (D-REHOME-GRAPH, 2026-07)
+
+- **증상**: Django 앱(모델+마이그레이션 적용됨)을 지울 때 INSTALLED_APPS에서 먼저 빼거나 코드를 먼저 `git rm`하면, Django가 앱을 잊어 **drop 마이그레이션을 자동생성하지 않음** → prod 테이블이 고아로 잔존.
+- **규칙(순서 불변)**: ① 앱이 INSTALLED_APPS+코드로 **살아있을 때** `DeleteModel` 마이그레이션 생성 → **prod 적용**(테이블 DROP) → ② **그 다음** 코드+INSTALLED_APPS `git rm`. STAGE 분리(migrate → 코드 rm).
+- **검증**: 코드 제거 후 `python manage.py makemigrations --dry-run` = **"No changes detected"**(잔재 모델참조 0). 삭제 대상 0 rows면 데이터 위험 0·reversible(`migrate <app> 0001`).
+- **왜**: 마이그레이션은 앱이 등록돼 있어야 DROP을 실행한다. 순서가 뒤바뀌면 DB에 빈 고아 테이블 + `django_migrations` 고아행이 남는다(무해하나 위생 저하).
+
+## [fast-main land] 순간 ff-land엔 `git push origin HEAD:main` (2026-07)
+
+- **증상**: 인간 병렬 CC 세션이 분당 커밋하는 fast-main에서, `git checkout main && git merge --ff-only`는 (a) main이 다른 worktree에 물려 `checkout` 거부, (b) rebase가 그 브랜치의 다른 worktree 때문에 거부, (c) merge~push 사이 main 전진으로 non-ff — 반복 실패.
+- **규칙**: 브랜치가 정확히 `origin/main+1`(그 브랜치 worktree에서 `git rebase origin/main` 선행)일 때, **`git push origin HEAD:main`** = 원자적 ff-push. worktree/checkout/merge 춤 불필요, main이 그새 전진하면 서버가 non-ff로 **안전 거부**(force 아님) → rebase 재시도.
+- **왜**: `push <src>:main`은 서버측 ff 조건을 원자적으로 검사한다. 로컬 checkout/merge 시퀀스는 다중 worktree + 전진 창에 취약. 단 **에이전트의 main 직접 push는 auto-mode가 차단** → land는 사용자 수동 단계로 유지(에이전트는 rebase까지).
