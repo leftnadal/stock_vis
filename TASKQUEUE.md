@@ -436,11 +436,11 @@
 | MP2-VIEWED | ②Viewed enrichment(per-user impression, `presented_as='viewed'`) → **defer**(drop 아님). 사전 조율: 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`) 요구를 dashboard 세션에 전달. 참조 D-MP2-SEQ | Phase 2 촉발 ② | **Phase 1 발행 로그(shared/stocks) 스키마 land 시** | 🆕 보류 |
 | P2-VIEWED-TABLE | **Viewed 별도 테이블 신설**(`presented_as='viewed'` 경로) — **D-SCHEMA의 baked/viewed 분리 결정 후속**. 발행 로그에서 `presented_as` 컬럼을 뺀 대가로, 노출 수준 채점은 이 테이블 join으로 복원(Phase 5). MP2-VIEWED enrichment의 **물리 저장소 스텁**(형제 항목). 참조 D-SCHEMA | Phase 2 촉발 ②(물리 스텁) | ✅ **P1-BUILD land(`1995f93`) 충족** — 잔여 트리거 = Phase 2 진입 결정(별건) | 🆕 트리거 충족·Phase 2 대기 |
 | P1-OBSERVE | 첫 EOD-bake 실행 후 **실파이프라인 관측**. **✅ 충족 2026-07-04**(D-P1-OBSERVE-DONE): JSON recommendations N=10·6키 IDENTICAL + DB IssuanceLog 10행=N·grain 중복 0(멱등 실증)·conf_ver=1·published_at·user_id null·매도 30%. 결함 2건(워커 표류·0009 미적용) 경유 해소 | 관측(dashboard 디렉션) | 완료 2026-07-04 | ✅ 충족 |
-| P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist 수정 + OUTPUT 서빙 위치 연결(심링크/설정) — 워커 코드베이스를 공유 편집 트리에서 분리해 **브랜치 표류 트레드밀 종료**. 참조 D-P1-OBSERVE-DONE 결함① | ops/infra | **land 트레드밀 재발 시(우선)** | 🆕 정식 안건 |
+| P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist 수정 + OUTPUT 서빙 위치 심링크 + `scripts/worker_sync.sh`(fetch+re-detach+재기동 원커맨드) 신설 — 브랜치 표류 트레드밀 종료. **설계 확정 D-B-WORKER**, 스크립트 예외 D-OWN-B-WORKER. 참조 D-P1-OBSERVE-DONE 결함① | ops/infra | **실행 승인** | ✅ 실행 승인(착수가능) |
 | P1-HC-ISSUANCE | health_check 신설: **bake 완주 시 IssuanceLog 행 증가 검증**. 이번 결함(테이블 부재→write 조용히 실패, 파이프라인 무중단 완주 = silent 로깅 손실) 탐지 장치. 짝 = common-bugs "migration 미적용 무중단 완주" | ops(health_check) | 착수가능 | 🆕 등재 |
 | P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
 | P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
-| P1-BEAT-PRECHECK | 월요일 18:30 ET beat 전 점검: `7c2f186..0fd70ea`(+전진분 `ca6d525`) diff에 **bake 경로 코드 포함 시** 공유 트리 re-detach + 워커 재기동(ops 원포인트). 현 공유 트리 `c690307` 재표류 상태라 재정렬 필요 | ops 원포인트 | **월요일 beat 전** | 🆕 등재 |
+| P1-BEAT-PRECHECK | 월요일 18:30 ET beat 전 점검: `7c2f186..0fd70ea`(+전진분) diff에 **bake 경로 코드 포함 시** 공유 트리 re-detach + 워커 재기동(ops 원포인트). **B′(P1-B-WORKER-WORKTREE) 완료 시 대체됨** — 월요일 beat 전 B′ 미완이면 원포인트 fallback **1회**만 | ops 원포인트(B′ 대체 예정) | **월요일 beat 전(B′ 미완 시)** | 🆕 등재(B′로 대체 예정) |
 
 ---
 

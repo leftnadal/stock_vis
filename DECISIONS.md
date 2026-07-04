@@ -2811,3 +2811,24 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 - 승인: 운영 DB 스키마 변경이라 워커 런타임 개입 범위 밖 → 사용자 별도 승인.
 
 **baseline at decision**: origin/main = ca6d525. prod: 스키마 add(신규 테이블 1) — 기존 데이터 무변경.
+
+## [2026-07-05] 워커 전용 worktree — 브랜치 표류 트레드밀 종료 (D-B-WORKER)
+
+**결정**: celery worker 런타임을 **공유 편집 트리에서 분리**해 전용 worktree에서 실행. 설계:
+- **경로**: `~/worktrees/sv-worker-runtime`(detached `origin/main`) — 세션 체크아웃과 무관한 워커 전용 트리.
+- **`celery-worker.sh` PROJECT_DIR 전환**: 하드코딩 `~/Desktop/stock_vis` → 워커 트리 경로.
+- **plist 갱신**(`com.stockvis.celery-worker` WorkingDirectory) — **repo 밖 파일이라 소유권 지도 대상 외**(명기).
+- **OUTPUT**: 워커 트리의 `frontend/public/static/signals/` → **공유 트리 서빙 위치로 심링크**(서빙 주체 `com.stockvis.web`는 공유 트리 frontend를 봄).
+- **갱신 원커맨드 `scripts/worker_sync.sh` 신설**: `fetch + re-detach origin/main + 워커 재기동` 1커맨드(트레드밀의 수동 3스텝을 봉인).
+
+**왜**:
+- **#45가 등재 당일 재현**: 공유 트리(활성 편집) ∧ 워커 런타임이 같은 트리 → detached 정렬이 다른 세션 체크아웃으로 **즉시 표류**(규율로 유지 불가 실증). 구조 분리만이 해결.
+- 가중합 **4.30(전용 worktree) 대 3.20(수동 규율)**, 마진 1.10 → 자동 결정.
+
+**baseline at decision**: origin/main = 0b27c9c. prod 쓰기 0(결정 등재만, 실행은 TASKQUEUE `P1-B-WORKER-WORKTREE`).
+
+## [2026-07-05] D-OWN 계열 — B′ 슬라이스 한정 스크립트 예외 (D-OWN-B-WORKER)
+
+**결정**: **B′(P1-B-WORKER-WORKTREE) 슬라이스에 한해** `scripts/celery-worker.sh`(PROJECT_DIR 전환)·`scripts/worker_sync.sh`(신설) 변경을 허용한다. plist는 repo 밖(지도 대상 외). 이 예외는 **B′ 한정** — infra/ops 구획의 일반 편집 권한 확대가 아님.
+
+**baseline at decision**: origin/main = 0b27c9c. prod 쓰기 0(결정 등재만).
