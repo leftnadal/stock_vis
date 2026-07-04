@@ -590,3 +590,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **실측**: MP2-DELTA S1에서 FE 에이전트가 BE 기존재를 오인해 재확인(중복 0으로 방어됨). S2에서는 착수 전 `grep -c 'def compute_anomaly_delta\|interface AnomalyDelta\|anomaly_delta'`로 정의 수를 세어 0건 확인 후 신규 작성.
 - **규칙**: 신규 심볼(함수·타입·컴포넌트 블록) 작성 **직전** `grep`으로 **정의 수를 센다**. 0이면 신규, 1+이면 기존 편집. wiring 지점(`_build_payload`·page.tsx prop)도 동일하게 grep으로 기존 배치 확인 후 additive.
 - **왜**: 병렬 세션은 서로의 working tree를 못 본다. "본 것 같다"는 기억이 아니라 grep 카운트가 유일한 진실. 실행 전 1회 grep이 중복 커밋·충돌 정리 비용(1h+)을 막는다.
+
+## [STEP 0 실측] 골격 전수 grep은 `services/` 포함 필수 — apps/·packages/만 보면 놓친다 (MP2-ALERTS, 2026-07-06)
+
+- **증상**: MP2-ALERTS STEP 0에서 기존 알림 골격을 `packages`·`apps`만 grep → **0건**으로 오판할 뻔. 재실측(`services/` 포함)에서 `services/serverless/ScreenerAlert`+`AlertHistory`(사용자 알림 프레임워크 상당 부분)·`services/news/AlertLog`(ops)·`check_pipeline_alerts`가 무더기로 나옴.
+- **원인**: monorepo 이동(PR8a)으로 news·serverless·rag_analysis·validation·sec_pipeline이 `services/*`로 재배치됨. 앱 레이어가 `apps/`·`packages/`·**`services/`** 3곳에 분산 → 한 곳만 grep하면 절반을 놓친다.
+- **규칙**: "기존재 전수" 성격의 STEP 0 grep은 **`apps packages services` 3곳 전부**를 대상에 넣는다(+ `config/`도 celery 등록·settings 확인). "없을 것" 가정 금지 + grep 범위 자체를 의심하라.
+- **왜**: STEP 0의 존재 이유가 "발명 금지"인데, grep 범위 누락은 발명 금지를 무력화한다(greenfield 오판 → 중복 프레임워크 구축 위험).
