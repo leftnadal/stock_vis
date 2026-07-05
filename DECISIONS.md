@@ -2847,3 +2847,21 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **결정**: **B′(P1-B-WORKER-WORKTREE) 슬라이스에 한해** `scripts/celery-worker.sh`(PROJECT_DIR 전환)·`scripts/worker_sync.sh`(신설) 변경을 허용한다. plist는 repo 밖(지도 대상 외). 이 예외는 **B′ 한정** — infra/ops 구획의 일반 편집 권한 확대가 아님.
 
 **baseline at decision**: origin/main = 0b27c9c. prod 쓰기 0(결정 등재만).
+
+## [2026-07-05] D-B-WORKER 심링크 방향 반전 (D-B-WORKER-AMEND-1)
+
+**결정**: D-B-WORKER의 OUTPUT 심링크 방향을 **반전(방식 Y)**. 원설계(worker 트리 signals → 공유 서빙 위치)를 **공유 트리 signals(심링크) → worker 트리 signals(실디렉토리)** 로 정정.
+
+**왜**: baker `_atomic_swap`이 `shutil.move(OUTPUT, OLD)` → `shutil.move(TMP, OUTPUT)`로 **OUTPUT 경로 자체를 교체**하는 의미론(os.rename은 심링크를 따라가지 않고 심링크를 이동). 원설계(worker→공유) 심링크는 **첫 bake에서 심링크가 signals_old로 이동 + TMP 실디렉토리가 OUTPUT에 놓여 파괴**됨(HALT 실측). 방식 Y는 atomic_swap이 worker 트리 내부에서만 일어나고 공유 심링크는 경로 기반이라 **inode 교체와 무관하게 생존**.
+
+**검증(bake 2회)**: 스왑 반복 후 심링크 생존 · dashboard.json(심링크 경유) 6키 IDENTICAL + recommendations N=10 · IssuanceLog **10행 멱등**(1회차=2회차, grain 중복 0) · **서빙 HTTP 200**(심링크 추종 실증, :3000).
+
+**부속**:
+- 공유 signals 원본 = `frontend/public/static/signals_pre_b` **보존**(롤백용, 제거는 TASKQUEUE `B-CLEANUP-PREB`).
+- `.env` = worker 트리 심링크(→공유 트리 .env, DB/키 재사용).
+- `worker_sync.sh` 시작 **가드**: 공유 signals가 심링크 ∧ 타겟 디렉토리 실존 검사(조용한 서빙 단절 방지).
+- `celery-beat.sh` 무변경(DatabaseScheduler = 스케줄 DB 소스, task 코드는 worker가 import).
+
+**B′ 완료 상태(경유 기록)**: worker 트리 `~/worktrees/sv-worker-runtime`(detached `origin/main`) · `celery-worker.sh` PROJECT_DIR 전환 · plist 전환(repo 밖 = 소유권 지도 대상 외) · 갱신 절차 = `scripts/worker_sync.sh`. 스크립트 land = `921dc0c`.
+
+**baseline at decision**: origin/main = cd5ff20. prod 쓰기 0(결정 등재만, 실행은 OPS-B-BUILD에서 완료).
