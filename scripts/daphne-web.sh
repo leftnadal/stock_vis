@@ -9,7 +9,10 @@
 
 set -e
 
-PROJECT_DIR="/Users/byeongjinjeong/Desktop/stock_vis"
+# D-DAPHNE-RUNTIME: daphne 전용 트리(공유 편집 트리에서 분리). API 관문이 항상
+# origin/main 코드로 응답 → 공유 트리 브랜치 표류 무관(#45 세 번째 인스턴스 종료).
+# .env는 api 트리의 심링크(→ 공유 트리 .env)로 재사용. 갱신 = scripts/worker_sync.sh.
+PROJECT_DIR="/Users/byeongjinjeong/worktrees/sv-api-runtime"
 VENV_DIR="/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_system-_jE0wOmK-py3.12"
 PORT=18765
 
