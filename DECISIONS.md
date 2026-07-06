@@ -3005,3 +3005,7 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **단서(비게이팅)**: daphne 재기동 시 WebSocket 연결 끊김 — graceful reload는 **휴면 후보**(`DAPHNE-GRACEFUL`, 트리거 = 재기동 끊김이 실사용 불편으로 관측 시).
 
 **baseline at decision**: origin/main = c8f18c1. prod 쓰기 0(결정 등재만, 실행은 DAPHNE-BUILD).
+
+## [2026-07-06] Theme Heat TH-1 = pair HEAD 분기 (마이그레이션 실존 의존)
+
+`monorepo/sess-cs-theme-heat`(TH-1)는 마이그레이션 체인 `0016→0015` 실존 의존으로 **pair HEAD에서 분기**한다(main 분기 시 `0014·0015` 부재로 체인 파손 — repo 실측). 회신 3의 "pair HEAD 분기 금지"는 "0015가 main에 통합됐다"는 반증된 전제에 근거했으므로 철회. **pair→main 통합 완료 시 계보 자연 해소**(TASKQUEUE OPS-WORKTREE-ISOLATION 후속 메모 참조).

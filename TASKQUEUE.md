@@ -593,7 +593,17 @@
 - 방안: 활성 작업 브랜치를 `git worktree`로 분리(SESSION_CONTRACT worktree 규율 정합), 워커는 안정 브랜치 dir 고정 import.
 - 통합 전 방어(잠정): 세션 시작 시 HEAD·워커 시작시각 대조 수동 스모크 + flag-on/merge 전 재확인(P-0 규율에 편입 검토).
 - **2026-07-06 승격 = 대기열 선두**: 트리거("pair→main 통합 후") D2 v5.1 결정 ⑩로 충족 임박. 재발 2차 봉인 추가 — nightly `worker_sync.sh`가 sv-worker-runtime을 origin/main으로 리셋 → 기본 워커가 미머지 pair 태스크 미보유(unregistered) → 궤적 07-05 영구 갭. 遠因 = 본 트리거를 "통합 후"로 잡아 통합 전 재발을 못 막음. 착수는 D2 관찰 창과 겹치지 않게 사용자 호출(§7). 방안 = 워커 runtime을 안정 브랜치 고정 + 활성 트랙 worktree 물리격리 승격(DECISIONS:1338 소프트강제 재평가).
+- **후속 메모 (theme-heat 계보, 2026-07-06)**: `monorepo/sess-cs-theme-heat`(TH-1)는 마이그레이션 체인 `0016→0015` 실존 의존으로 **pair HEAD에서 분기**됨. **pair→main 통합 완료 시 theme-heat 에 main 머지(또는 rebase)하여 계보 정리** — pair 전용 `0014·0015`가 main 에 오르면 계보 자연 해소.
+
 ## NT-REHOME-GRAPH — graph_analysis CUT [resolved 2026-07-03]
 - 상태: **resolved** (D-REHOME-GRAPH). 휴면 상관관계 엔진(1444줄) 제거. STAGE 1=drop-migration 0002 prod 적용(5테이블 DROP, 0 rows) / STAGE 2=INSTALLED_APPS+코드 git rm.
 - 검증: makemigrations --dry-run=No changes · check 0 · health 10 · arch 7 · 회귀 delta 0(선존 chainsight 5실패 무관). 복구 SHA f892d90.
 - 후속(무해·선택): django_migrations 고아행 정리 · STAGE1 브랜치 삭제 · CLAUDE.md/sub_claude_md 서술 doc 위생.
+
+## TH-SEEDHEAT-RECONCILE — 마켓 뷰 PR-1 선행 조율 의무 (등재, 2026-07-06)
+- 상태: 등재(TH-1 종료조건 산출물). **트리거 = 마켓 뷰 PR-1(SeedHeatScore) 착수 시**.
+- 의무(선행 강제): `docs/chain_sight/update_v2/task_instructions/cs_44_seed_node_heat_score.md`의 seed node heat 개념과 TH-1 `ThemeHeatScore`의 관계 정리 + `HeatEntity` 재사용 가능성 검토 → heat 개념이 두 벌 생기는 것을 차단(설계서 theme_heat_design.md v1.2 §11).
+
+## TH-C5-SPDR-SEED — C5 섹터 SPDR 11행 시드 (등재, 2026-07-06)
+- 상태: 등재. **트리거 = C5(투기 심리) 구현 PR**.
+- 의무: ThemeEtfMap 에 섹터 SPDR 11종(XLK/XLV/XLF/XLY/XLI/XLE/XLC/XLRE/XLU/XLB/XLP, role=primary, active=True) 시드 = Cycle 1 C5 주 데이터(설계서 §6.4 v1.2.1). TH-1 시드한 테마 ETF 9행(active=False)은 레인 개방 대기이므로 별개 — 섞지 말 것.

@@ -4,6 +4,15 @@ from .chain_profile import CompanyChainProfile
 from .event_group import EventGroup, GroupMembership
 from .event_reaction import CompanyEventReaction
 from .growth_stage import CompanyGrowthStage
+from .heat import (
+    EstimateSnapshot,
+    HeatEntity,
+    InsiderTransactionRecord,
+    ThemeDemandScore,
+    ThemeEtfMap,
+    ThemeFilingCount,
+    ThemeHeatScore,
+)
 from .insider_signal import CompanyInsiderSignal
 from .leadership import StockLeadershipScore
 from .narrative_tag import CompanyNarrativeTag
@@ -36,4 +45,12 @@ __all__ = [
     "SavedPath",
     "PathAction",
     "SeedSnapshot",
+    # Theme Heat (TH-1, 설계서 §6.0~§6.6)
+    "HeatEntity",
+    "ThemeHeatScore",
+    "ThemeDemandScore",
+    "InsiderTransactionRecord",
+    "ThemeEtfMap",
+    "ThemeFilingCount",
+    "EstimateSnapshot",
 ]
