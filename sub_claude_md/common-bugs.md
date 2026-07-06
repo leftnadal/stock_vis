@@ -535,7 +535,8 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 함정: OBSERVE(실산출물 검사) 게이트가 **아니면** 통과함 — 유닛 테스트 green + push 성공이 "반영됐다"는 착시. #41(모듈 변경 후 재기동)·#42(공유 트리 편집 금지)의 확장.
 - 해결(임시): 공유 트리를 `git checkout --detach origin/main` + 워커 재기동. **단 detached는 유지 안 됨**(다른 세션이 재체크아웃 → 재표류) = 트레드밀. **항구 해결 = worker 전용 worktree**(TASKQUEUE `P1-B-WORKER-WORKTREE`).
 - 예방: land마다 "워커 트리 == origin/main?" 확인 + 재기동. 자동 beat 전 diff 점검(`P1-BEAT-PRECHECK`).
-- **★web 판(2026-07-06 확인)**: 동일 결합이 **dev server(`com.stockvis.web`)에도 존재** — dev server가 공유 트리 frontend를 서빙하므로 land된 FE(예: 캐러셀 `24b0e47`)가 공유 트리 브랜치에 없으면 **화면 미도달**(유닛 green·push 성공이어도). → **D-W-WEB(web 전용 서빙 worktree)으로 해소 예정**(TASKQUEUE `W-BUILD`). worker(B′)와 web(W′) 양쪽 런타임 트리 모두 공유 편집 트리에서 분리해야 완결.
+- **★web 판(2026-07-06 확인·해소)**: 동일 결합이 **dev server(next dev :3000)에도 존재** — next dev가 공유 트리 frontend를 서빙하므로 land된 FE(예: 캐러셀 `24b0e47`)가 공유 트리 브랜치에 없으면 **화면 미도달**(유닛 green·push 성공이어도). → **W′(D-W-WEB-AMEND-1, web 전용 트리 `sv-web-runtime`)로 해소** `75cb4d3`. ※ 애초 `com.stockvis.web`(daphne)로 오지목했으나 실서빙은 next dev(:3000) — 대상 정정. worker(B′)+web(W′) 양쪽 분리로 완결.
+- **★세 번째 인스턴스(daphne, 2026-07-06 확인·미해소)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있음(views_eod 등 표류 대상). 현재 dashboard.json은 정적(next 서빙)이라 즉시 영향 없으나 API 경로는 취약. → **DAPHNE-RUNTIME-SURVEY(read-only)로 실측 후 B′/W′ 패턴 확장 여부 결정**(TASKQUEUE). 런타임 3종(celery worker·next dev·daphne) 중 daphne만 잔여.
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 

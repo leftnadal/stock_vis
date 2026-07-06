@@ -2907,3 +2907,16 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 공용 MultiLineTrendChart(recharts LineChart, 크로스헤어+리드아웃, 반전축, 범위/범례 토글) + 11색 팔레트(1곳) + sector_history rank additive + SectorTrajectory(1호, 강조=서버 rank leaders/laggards). overlays 타입만·구현 0. **emphasis 갈래**: 지시서는 "rank_delta 상위"였으나 FE 델타 재계산 금지 + 제네릭 드로어 무접촉 위해 **서버 rank leaders/laggards로 채택**(진입 컨텍스트, 델타 threading 회피). 검증 pytest marketpulse 288/1skip(신규 2+갱신 1)·vitest 509(신규 7)·tsc 0·migration 0·health 10/10. 커밋 5분리(팔레트 466ee95/컴포넌트 b52b958/BE 99bf0c8/뷰 ceff523/테스트 825ecad) rebase ff.
 
 **baseline at decision**: origin/main = c1cdba4. prod 쓰기 0(rank는 기존 필드 계약 노출, 마이그레이션 0).
+
+## [2026-07-06] D-W-WEB 대상 정정 — 실서빙 = next dev (D-W-WEB-AMEND-1)
+
+**결정**: D-W-WEB의 서빙 대상을 정정. `com.stockvis.web`(daphne, :18765, Django ASGI 백엔드)는 **오지목** — 캐러셀 실서빙은 **next dev(:3000, 수동 실행·launchd 미관리)**. W′는 next dev를 web 전용 트리에서 실행하는 것으로 실현(daphne 무접촉, `com.stockvis.web` plist 무변경).
+
+**부속 실측**:
+- **node_modules 심링크가 next(turbopack)에서 무효**("Symlink node_modules is invalid, it points out of the filesystem root") → **`npm ci` 실설치 채택**. ※ vitest(B′)는 심링크 가능했음 — **도구별 심링크 호환성 상이**(next turbopack이 더 엄격).
+- **signals 절대경로 심링크는 서빙 트리 교체에도 유효**(worker 실디렉토리 절대경로라 공유·web 양 트리에서 동일 타겟).
+- next dev는 **launchd 미관리**(수동 `nohup npm run dev`) — 데몬화는 후보(W-HARDEN-LAUNCHD).
+
+**검증**: :3000 = web 트리 서빙(cwd 확인) · dashboard.json fetch 200·N=10(심링크 경유) · bake 통주(워커 스왑→심링크 생존→화면 데이터 갱신) · 공유 트리 무접촉(dirty 0) · 실화면 캐러셀 렌더(A+ 전 요소) 사용자 확인.
+
+**baseline at decision**: origin/main = 91fd116. prod 쓰기 0(결정 등재만, 실행은 OPS-W-BUILD에서 완료, worker_sync.sh land `75cb4d3`).
