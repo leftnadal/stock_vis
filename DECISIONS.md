@@ -2920,3 +2920,39 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **검증**: :3000 = web 트리 서빙(cwd 확인) · dashboard.json fetch 200·N=10(심링크 경유) · bake 통주(워커 스왑→심링크 생존→화면 데이터 갱신) · 공유 트리 무접촉(dirty 0) · 실화면 캐러셀 렌더(A+ 전 요소) 사용자 확인.
 
 **baseline at decision**: origin/main = 91fd116. prod 쓰기 0(결정 등재만, 실행은 OPS-W-BUILD에서 완료, worker_sync.sh land `75cb4d3`).
+
+## [2026-07-06] 앱 표준 색 언어 = 한국축 (D-COLOR-SYSTEM)
+
+**결정**: 앱 전면의 방향성 색 의미 축을 **한국축**으로 통일한다.
+- **상승 · 매수 · 긍정 = rose(빨강 계열)** / **하락 · 매도 · 부정 = sky(파랑 계열)**.
+- 색상값은 기존 단일 유틸 `frontend/app/market-pulse-v2/sectorColor.ts`와 정합(상승 rose / 하락 sky).
+- **라벨 병기 불변**: 색 단독 인코딩 금지(색맹·맥락 방어) — 방향 라벨/기호를 항상 병기한다.
+
+**왜**:
+- 사용자 #1 확정(목업 3안 비교) + `sectorColor` 선례(앱 내 **유일한 명시적 색 의사 = 한국축**, MP2-SECTOR-COLOR `5459bce`에서 4컴포넌트 통일). 잔여 화면의 글로벌(green=상승/red=하락) 축은 **기본값 표류**로 판정 — 명시적 의사 결정의 산물이 아님.
+- **STEP 0 실측(baseline c8f18c1)**: 방향성 하드코딩 green/red = **133파일**, emerald/rose = **29파일**. 충돌의 원천은 파일 수가 아니라 **의미 축 자체**(같은 rose가 대시보드=매도 vs market-pulse=상승으로 상반). 즉 유틸 하나로 색상값을 모아도 축이 갈리면 화면 간 반전은 남는다.
+  - ※ 지시서 인용치(121/31)에서 최근 커밋(MP2-TREND `trendPalette` 등)만큼 표류 — 결론(축이 충돌 원천)은 불변.
+
+**적용 = R3 단계(마진 1.25 자동 결정)**:
+- **Stage 1 — dashboard**(`components/eod` 로컬 `colorSemantics.ts` 도입, 구획 한정 한국축 전환) → TASKQUEUE `COLOR-STAGE1`.
+- **Stage 2 — chain_sight · portfolio · market_pulse regime/flow**(트랙별 위임, Stage 1 실화면 검수 통과 직후 순차 디스패치) → `COLOR-STAGE2`.
+- **shared 토큰 승격은 2번째 트랙 착수 시 안건화**(선제 shared 추상화 금지 — 소비처 1개 시점 조기 추상화 회피) → `COLOR-TOKEN-PROMOTE`(💤).
+
+**과도기 명시·수용**: Stage 1~2 진행 중 화면 간 반전(대시보드↔체인사이트 등)이 일시 존재함을 명시하고 수용한다(전면 동시 전환 비용 > 과도기 반전 비용). 라벨 병기가 과도기 오독을 방어한다.
+
+**baseline at decision**: origin/main = c8f18c1. prod 쓰기 0(결정 등재만, 실행은 COLOR-STAGE1 이후 각 트랙).
+
+## [2026-07-06] daphne 런타임 = B′ 패턴 확장 (D-DAPHNE-RUNTIME)
+
+**결정**: daphne(`com.stockvis.web`, :18765, Django ASGI 백엔드 API 관문)의 서빙을 **공유 편집 트리에서 분리**해 B′/W′ 패턴을 daphne로 확장한다.
+- **전용 트리**: `~/worktrees/sv-api-runtime`(detached `origin/main`) — 세션 체크아웃과 무관한 API 전용 트리.
+- **기동 스크립트 PROJECT_DIR 전환**: daphne 기동을 API 트리 지향으로 전환(plist는 **repo 밖 = 소유권 지도 대상 외**).
+- **갱신 = `scripts/worker_sync.sh`에 daphne 추가**(worker+web+api 런타임 트리 공통 동기화 단일 출처 — 신규 스크립트 복제 금지).
+
+**왜**:
+- **#45와 동일 결합의 세 번째 인스턴스**(worker=B′, next dev web=W′에 이은 daphne 판). daphne는 **전 화면 API 관문**이라 공유 트리 브랜치 표류 시 **백엔드 응답 자체가 구코드**가 됨 → 피해 범위 최대.
+- 가중합 마진 **1.80 자동 결정**(DAPHNE-RUNTIME-SURVEY read-only 실측 입력).
+
+**단서(비게이팅)**: daphne 재기동 시 WebSocket 연결 끊김 — graceful reload는 **휴면 후보**(`DAPHNE-GRACEFUL`, 트리거 = 재기동 끊김이 실사용 불편으로 관측 시).
+
+**baseline at decision**: origin/main = c8f18c1. prod 쓰기 0(결정 등재만, 실행은 DAPHNE-BUILD).

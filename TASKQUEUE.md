@@ -448,8 +448,13 @@
 | W-BUILD | **web 전용 서빙 worktree**(`~/worktrees/sv-web-runtime`) + next dev(:3000) 서빙 대상 전환 + `worker_sync.sh` 공통 동기화 확장 + node_modules `npm ci` 설치. **✅ 완료 2026-07-06**(OPS-W-BUILD, D-W-WEB-AMEND-1): 대상 정정(com.stockvis.web=daphne 오지목→next dev), worker_sync.sh land `75cb4d3`, 검증(:3000 web 서빙·bake 통주·공유 트리 무접촉·실화면 캐러셀 렌더). #45 web 판 해소 | ops/infra | 완료 2026-07-06 | ✅ 완료 |
 | W-HARDEN-BUILD | (휴면) dev server → `next build`/`next start` 전환 검토. 트리거: **외부 노출 또는 성능 문제 발생 시**. ※ W-HARDEN-LAUNCHD와 한 안건 통합 검토 | ops/infra(휴면) | 외부 노출·성능 문제 시 | 💤 휴면 |
 | W-HARDEN-LAUNCHD | (신규) next dev **데몬화**(현재 수동 `nohup`, 재부팅 시 수동 재시작 필요) — W-HARDEN-BUILD(next build/start 전환)와 **한 안건 통합**. 트리거: **재부팅 후 화면 다운 경험 또는 외부 노출** | ops/infra(휴면) | 재부팅 다운·외부 노출 시 | 💤 휴면 |
-| DAPHNE-RUNTIME-SURVEY | (신규, read-only) daphne(`com.stockvis.web`, :18765)의 **공유 트리 결합 실측**(#45 세 번째 인스턴스) → B′/W′ 패턴을 daphne로 확장할지 결정 입력. daphne는 API 서버라 표류 시 백엔드 응답이 구코드 | ops(조사) | 착수가능 | 🆕 등재 |
-| CAROUSEL-COLOR-REVIEW | 캐러셀 방향 색(emerald=매수/rose=매도·회피). **✅ 활성 전환 2026-07-06**(실화면 확보). 입력: **화면 내 충돌 없음**(대시보드 = 초록 긍정 축 통일). 쟁점 = **market_pulse와의 화면 간 색 체계 일관성**(market-pulse rose=상승 vs dashboard rose=매도) — 크로스-화면 정합 판단 | dashboard FE(디자인) | **활성(착수가능)** | 🟢 활성 |
+| DAPHNE-RUNTIME-SURVEY | (신규, read-only) daphne(`com.stockvis.web`, :18765)의 **공유 트리 결합 실측**(#45 세 번째 인스턴스) → B′/W′ 패턴을 daphne로 확장할지 결정 입력. **✅ 완료 2026-07-06** — 실측 입력으로 D-DAPHNE-RUNTIME 확정(마진 1.80). daphne는 API 관문이라 표류 시 백엔드 응답 자체가 구코드 = 피해 최대 | ops(조사) | 완료 2026-07-06 | ✅ 완료 |
+| DAPHNE-BUILD | **daphne 전용 서빙 worktree**(`~/worktrees/sv-api-runtime` detached origin/main) + 기동 스크립트 PROJECT_DIR 전환 + `scripts/worker_sync.sh`에 daphne 추가(런타임 트리 공통 동기화). #45 세 번째 인스턴스 해소. 참조 DECISIONS D-DAPHNE-RUNTIME | ops/infra | **승인(착수가능)** | 🟢 승인 |
+| DAPHNE-GRACEFUL | (휴면) daphne 재기동 시 WS 연결 끊김 → graceful reload. 트리거: **재기동 끊김이 실사용 불편으로 관측 시** | ops/infra(휴면) | 재기동 끊김 관측 시 | 💤 휴면 |
+| CAROUSEL-COLOR-REVIEW | 캐러셀 방향 색 크로스-화면 정합 판단. **✅ 결정 완료 2026-07-06** → D-COLOR-SYSTEM(앱 표준 = 한국축: 상승·매수·긍정 rose / 하락·매도·부정 sky, sectorColor.ts 정합). 캐러셀 현행 emerald=매수는 Stage 1(COLOR-STAGE1)에서 rose=매수로 전환 예정, 과도기 반전 명시·수용 | dashboard FE(디자인) | 완료 2026-07-06 | ✅ 결정 완료 |
+| COLOR-STAGE1 | **dashboard 구획 한국축 전환** — `components/eod` 로컬 `colorSemantics.ts` 도입, 방향성 색을 D-COLOR-SYSTEM(rose=긍정/매수·sky=부정/매도)으로 통일. 라벨 병기 유지. 참조 DECISIONS D-COLOR-SYSTEM | dashboard FE | **활성(착수가능)** | 🟢 활성 |
+| COLOR-STAGE2 | (위임 후보) chain_sight · portfolio · market_pulse regime/flow 방향성 색 한국축 전환. **트리거: Stage 1(COLOR-STAGE1) 실화면 검수 통과 직후 순차 디스패치**. 참조 D-COLOR-SYSTEM | 트랙별 위임 | Stage 1 검수 통과 후 | 🆕 위임 후보 |
+| COLOR-TOKEN-PROMOTE | (휴면) `colorSemantics` **shared 토큰 승격** — 로컬 유틸을 공용 디자인 토큰으로. **트리거: 2번째 트랙(COLOR-STAGE2) 마이그레이션 착수 시**(소비처 1개 시점 조기 추상화 금지). 참조 D-COLOR-SYSTEM | FE(shared) | 2번째 트랙 착수 시 | 💤 휴면 |
 
 ---
 
