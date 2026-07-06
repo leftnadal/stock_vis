@@ -2923,9 +2923,9 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **Why**: `lesson_regime_transitioned_transient` — transitioned은 전환일 하루종일 True라 저장 시 혼선. 조회-시 파생이 단일 진실. transition_dates는 regime 계약에만 additive로 얹고, breadth·sector 궤적이 공용 소비(컨테이너가 조회해 순수 뷰에 prop 전달 — 뷰 QueryClient 불요).
 
 ### Slice 2 검증(2026-07-06, baseline c8f18c1 → 브랜치 tip 0eb82d8)
-overlays.vlines(전환일 세로선)·refSeries(기준선 MA20 점선) 렌더 활성화 + breadth 궤적 뷰(A/D + MA20 + 전환일) + 섹터 전환일 세로선(공용 계약 실증 E6) + 델타 강조 복원(옵션 B). **BE**: ad_line_ma20(per-date, <20일 null)·ma_deviation_streak_days(latest)·transition_dates 전부 조회-시 파생(저장 0). **검증**: pytest 신규 6 + marketpulse api 72 green · vitest 신규 9(E1/E2/E4/E5/E5b/E5c/E6 + 파생 helper) + 전체 518 green · tsc 0 · **migration 0(No changes detected)**. 커밋 5분리(BE e713ea0 / overlays a401914 / breadth뷰 f06eddc / 섹터+강조 431c8ed / 테스트 0eb82d8) ff. **이탈 음영 = 마커 폴백 채택**.
+overlays.vlines(전환일 세로선)·refSeries(기준선 MA20 점선) 렌더 활성화 + breadth 궤적 뷰(A/D + MA20 + 전환일) + 섹터 전환일 세로선(공용 계약 실증 E6) + 델타 강조 복원(옵션 B). **BE**: ad_line_ma20(per-date, <20일 null)·ma_deviation_streak_days(latest)·transition_dates 전부 조회-시 파생(저장 0). **검증**: pytest 신규 6 + marketpulse api 72 green · vitest 신규 9(E1/E2/E4/E5/E5b/E5c/E6 + 파생 helper) + 전체 518 green · tsc 0 · **migration 0(No changes detected)**. 커밋 5분리(BE e713ea0 / overlays a401914 / breadth뷰 f06eddc / 섹터+강조 431c8ed / 테스트 0eb82d8) ff. **이탈 음영 = 마커 폴백 채택**. **E3(스크럽 리드아웃 갱신) 전용 테스트 부재 사유**: recharts onMouseMove가 jsdom 0폭 SVG(ResponsiveContainer 내부)에서 미발화 → 스크럽 전용 격리 검증 불가. pinLatest 리드아웃(E1) + baselineNote 순수 helper로 간접 검증(음영 폴백과 무관 = jsdom 환경 한계, S1 동일 관행). **land 정산(2026-07-06)**: origin/main c8f18c1→4cf624d 이동 → rebase clean(5커밋)→재검증(api72·vitest230·tsc0·mig0)→`--no-ff` 코드 `acf8274` + mgmt `--no-ff` 메타 `7678ec2` ff push.
 
-**baseline at decision**: origin/main = c8f18c1. prod 쓰기 0(전부 조회-시 파생 + 계약 additive, 마이그레이션 0).
+**baseline at decision**: origin/main = c8f18c1. **land = 7678ec2**. prod 쓰기 0(전부 조회-시 파생 + 계약 additive, 마이그레이션 0).
 
 ## [2026-07-06] D-W-WEB 대상 정정 — 실서빙 = next dev (D-W-WEB-AMEND-1)
 
