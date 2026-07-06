@@ -496,6 +496,16 @@
 
 ---
 
+## MP2-TREND 슬라이스 — 멀티라인 시계열 (2026-07-06)
+
+> 공용 MultiLineTrendChart + 적용 N곳. 근거 D-TREND-PLAN/BASELINE/TOOLTIP.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-TREND-S1 | 1호 = 공용 `MultiLineTrendChart`(recharts, 크로스헤어+고정 리드아웃·반전축·범위/범례 토글, overlays 타입만) + 11색 팔레트 + sector_history rank additive + 섹터 순위 궤적. emphasis=서버 rank leaders/laggards(FE 델타 재계산 금지). prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (c1cdba4)** |
+| MP2-TREND-S2 | 2호 = **전환일 오버레이 공용 계약**(previous_regime≠regime 파생 — RegimeSnapshot transitioned 미저장) + breadth 적용. overlays.vlines 구현 착수. D-TREND-BASELINE 파생선/밴드 일부 | market_pulse 트랙 | S1 land 후 | 🆕 예약 |
+| MP2-TREND-S3 | 3호 = regime 구성요소(inputs 14 매크로) 멀티라인 — 이질이라 z-score 정규화(관문 통과: 병진 승인). inputs 시계열 계약 신설 | market_pulse 트랙 | S2 후 | 🆕 예약 |
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |

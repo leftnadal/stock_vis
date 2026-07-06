@@ -2888,3 +2888,22 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **결정**: **W′(W-BUILD) 슬라이스에 한해** web 기동 스크립트 · `scripts/worker_sync.sh`(런타임 트리 공통 동기화로 확장) 변경을 허용한다. plist는 repo 밖(지도 대상 외). D-B-WORKER 계열 예외 — infra/ops 일반 권한 확대 아님.
 
 **baseline at decision**: origin/main = 24b0e47. prod 쓰기 0(결정 등재만).
+
+## [2026-07-06] MP2-TREND — 멀티라인 시계열 도입 (D-TREND-PLAN / -BASELINE / -TOOLTIP)
+
+### D-TREND-PLAN — 도입 순서·보류
+**결정**: 1호 = 공용 `MultiLineTrendChart` + 섹터 순위 궤적(가중합 4.85) → 2호 = 전환일 오버레이 공용 계약 + breadth → 3호 = regime 구성요소(관문 통과 — z-score 그림 병진 승인). **보류**: ③집중도(데이터 21일로 얕음)·⑤거시 전체·⑥지수가격(이질+계약 부재).
+**Why(STEP 0 실측)**: 섹터만 자연 동질(rank·rel_strength, 정규화 불요) + `sector_history` 계약 이미 서빙(rank 1필드 additive만) + 깊이 44일(30일뷰 성립). 나머지 후보는 이질(정규화 선행) 또는 계약 신설. recharts=확립 스택이나 재사용 멀티라인 부재 → 신규 공용 컴포넌트가 행위보존 안전.
+
+### D-TREND-BASELINE — 기준선 3종 체계(옵션 C)
+**결정**: 고정선 / 파생 기준선(이동평균 류) / 임계 밴드(분류기 실제 컷, 실측 실패 시 ±1σ 폴백). **1호는 슬롯(overlays 타입)만·구현 0**(2·3호 소관).
+**Why**: 가중합 4.35. 타이브레이커 ① 자의성 해소(기준을 근거 있는 컷에 고정) ② thesis 알림 임계 재사용 시너지. 임계 실측 실패 시 ±1σ 폴백.
+
+### D-TREND-TOOLTIP — 플로팅 툴팁 금지, 고정 리드아웃(전 적용처 공통)
+**결정**: 플로팅 툴팁 금지. **크로스헤어(세로선+강조라인 도트) + 차트 하단 고정 리드아웃**(강조 라인만, 짚지 않으면 pinLatest로 최신일). 그래프 위를 가리는 요소 0. 2·3호의 기준선 거리 표기도 리드아웃 부기.
+**Why**: 가중합 4.60/마진 1.70 자동 확정. 병진 지적(그래프 위 박스가 데이터를 가림) 반영. 전 적용처 공통 규약.
+
+### Slice 1 검증(2026-07-06, baseline 24b0e47 → land c1cdba4)
+공용 MultiLineTrendChart(recharts LineChart, 크로스헤어+리드아웃, 반전축, 범위/범례 토글) + 11색 팔레트(1곳) + sector_history rank additive + SectorTrajectory(1호, 강조=서버 rank leaders/laggards). overlays 타입만·구현 0. **emphasis 갈래**: 지시서는 "rank_delta 상위"였으나 FE 델타 재계산 금지 + 제네릭 드로어 무접촉 위해 **서버 rank leaders/laggards로 채택**(진입 컨텍스트, 델타 threading 회피). 검증 pytest marketpulse 288/1skip(신규 2+갱신 1)·vitest 509(신규 7)·tsc 0·migration 0·health 10/10. 커밋 5분리(팔레트 466ee95/컴포넌트 b52b958/BE 99bf0c8/뷰 ceff523/테스트 825ecad) rebase ff.
+
+**baseline at decision**: origin/main = c1cdba4. prod 쓰기 0(rank는 기존 필드 계약 노출, 마이그레이션 0).
