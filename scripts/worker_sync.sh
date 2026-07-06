@@ -1,10 +1,12 @@
 #!/bin/bash
-# worker_sync.sh — 런타임 트리 공통 동기화 (D-B-WORKER / D-W-WEB)
+# worker_sync.sh — 런타임 트리 공통 동기화 (D-B-WORKER / D-W-WEB / D-DAPHNE-RUNTIME)
 #
-# 런타임 트리(worker·web)를 최신 origin/main으로 정렬한다. 공유 편집 트리
-# 브랜치 표류(#45)와 무관하게 워커 bake·web 서빙이 항상 정렬된 코드로 동작.
+# 런타임 트리(worker·web·api)를 최신 origin/main으로 정렬한다. 공유 편집 트리
+# 브랜치 표류(#45)와 무관하게 워커 bake·web 서빙·API 응답이 항상 정렬된 코드로 동작.
 #   - worker 트리: re-detach + celery-worker/beat 재기동(#41).
 #   - web 트리: re-detach만(next dev는 핫리로드). package 변경 시 경고(자동 재시작 금지).
+#   - api 트리(daphne): re-detach + daphne 재기동. ⚠ WS 연결 끊김 유발
+#     (graceful reload는 휴면 후보 DAPHNE-GRACEFUL).
 #
 # 사용: bash scripts/worker_sync.sh
 
@@ -12,6 +14,7 @@ set -euo pipefail
 
 WORKER_TREE="/Users/byeongjinjeong/worktrees/sv-worker-runtime"
 WEB_TREE="/Users/byeongjinjeong/worktrees/sv-web-runtime"
+API_TREE="/Users/byeongjinjeong/worktrees/sv-api-runtime"
 SHARED_SIGNALS="/Users/byeongjinjeong/Desktop/stock_vis/frontend/public/static/signals"
 WEB_SIGNALS="$WEB_TREE/frontend/public/static/signals"
 UID_NUM="$(id -u)"
@@ -52,4 +55,16 @@ if [ -d "$WEB_TREE" ]; then
     if ! git diff --quiet "$PREV" "$(git rev-parse HEAD)" -- frontend/package.json frontend/package-lock.json; then
         echo "[sync] ⚠ WARNING: frontend/package(.json|-lock) 변경 감지 — 'npm install' + next dev 수동 재시작 필요(핫리로드로 미반영)." >&2
     fi
+fi
+
+# ── api 트리(daphne) re-detach + 재기동 (D-DAPHNE-RUNTIME) ────────────
+# daphne는 코드를 프로세스 기동 시점에 import → 핫리로드 없음, 재기동 필수.
+# ⚠ 재기동은 WebSocket 연결을 끊는다(graceful reload는 휴면 후보 DAPHNE-GRACEFUL).
+if [ -d "$API_TREE" ]; then
+    cd "$API_TREE"
+    git fetch origin
+    git checkout --detach origin/main
+    echo "[sync] api 트리 re-detach: $(git rev-parse --short HEAD)"
+    launchctl kickstart -k "gui/${UID_NUM}/com.stockvis.web"
+    echo "[sync] daphne(com.stockvis.web) 재기동 완료 (⚠ WS 재연결 필요)"
 fi

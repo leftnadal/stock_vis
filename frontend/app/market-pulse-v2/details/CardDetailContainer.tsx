@@ -18,9 +18,20 @@ import { SectorDetail } from './SectorDetail'
 type CardId = 'regime' | 'breadth' | 'sector' | 'concentration' | 'brief'
 
 export function CardDetailContainer({
-  cardId, enabled, labels,
-}: { cardId: CardId; enabled: boolean; labels?: Record<string, string> }) {
+  cardId, enabled, labels, emphasisOverride,
+}: {
+  cardId: CardId
+  enabled: boolean
+  labels?: Record<string, string>
+  // MP2-TREND S2(D-TREND-EMPHASIS 옵션 B): 델타→섹터 강조 복원용. 선택적·무영향 기본값(안전판 준수).
+  emphasisOverride?: string[]
+}) {
   const { data, isLoading, isError, error, refetch } = useCardDetail<Record<string, unknown>>(cardId, enabled)
+  // MP2-TREND S2: 전환일 세로선 공용 계약 — breadth·sector 궤적이 regime의 transition_dates를 소비.
+  //   컨테이너(데이터 계층)가 조회해 순수 상세 뷰에 prop 전달(뷰는 QueryClient 불요). 캐시 5분.
+  const needsTransitions = enabled && (cardId === 'breadth' || cardId === 'sector')
+  const { data: regime } = useCardDetail<Regime>('regime', needsTransitions)
+  const transitionDates = regime?.data?.transition_dates ?? []
 
   if (!enabled) return null
   if (isLoading) return <p className="text-sm text-slate-500">불러오는 중…</p>
@@ -49,8 +60,8 @@ export function CardDetailContainer({
         <p className="text-xs text-slate-400 mb-2">cache: {cacheState}</p>
       ) : null}
       {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} labels={labels} />}
-      {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} />}
-      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} />}
+      {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} transitionDates={transitionDates} />}
+      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} transitionDates={transitionDates} emphasisOverride={emphasisOverride} />}
       {cardId === 'concentration' && <ConcentrationDetail payload={payload as unknown as Concentration} labels={labels} />}
       {cardId === 'brief' && <BriefDetail payload={payload as unknown as Brief} />}
     </div>
