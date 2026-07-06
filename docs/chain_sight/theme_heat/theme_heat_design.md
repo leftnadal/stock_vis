@@ -115,6 +115,10 @@ v1.0 §5 규칙 전체 승계:
 - 산식: `net_sell_ratio_90d = Σ(매도금액×가중)/(Σ매도+Σ매수 금액×가중)` 테마 합산, 3년 z.
 - 백필 3년, dedup_key = hash(symbol, reporting_cik, transaction_date, transaction_type,
   securities_transacted, price), upsert 멱등. `backfill_insider_transactions` 커맨드(1회성).
+- **저장 = 원천(FMP) 전체 이력, 집계 창 = 스펙대로**(v1.2.1): FMP 는 종목 전 이력을 반환하고
+  저활동 종목은 페이지에 담긴 전 이력(예: 2011~)이 그대로 적재된다(cutoff 는 페이지 순회
+  중단만 제어). 3년 이전 데이터도 z-히스토리 자산으로 **유지**하고, 90일 rolling 등 집계 창은
+  스펙대로 적용한다. 단 미래 거래일(>오늘)은 원천 이상치로 적재 단에서 컷(TH-INSIDER-DATE-SANITY).
 
 ### 5.2 C2b 발행 (배분 0.06) — filing 메타데이터 카운팅 (G1 PASS + 검증 라운드 재정의, 2026-07-05)
 

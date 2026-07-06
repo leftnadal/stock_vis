@@ -123,6 +123,21 @@ class TestDedupAndUpsert:
         assert InsiderTransactionRecord.objects.count() == 1  # 중복 미생성
 
     @pytest.mark.django_db
+    def test_future_transaction_date_skipped(self):
+        """적재 단 상한 위생: transaction_date > max 는 제외 (미래일 이상치)."""
+        base = {"symbol": "NVDA", "filingDate": "2026-06-29", "reportingCik": "1",
+                "transactionType": "S-Sale", "securitiesTransacted": 10, "price": 100}
+        res = svc.upsert_insider_records(
+            [
+                {**base, "transactionDate": "2026-06-25"},               # 과거 = OK
+                {**base, "transactionDate": "2035-02-05", "reportingCik": "2"},  # 미래 = 제외
+            ],
+            max_transaction_date=date(2026, 7, 7),
+        )
+        assert res["created"] == 1 and res["future_skipped"] == 1
+        assert InsiderTransactionRecord.objects.count() == 1
+
+    @pytest.mark.django_db
     def test_net_sell_ratio_for_symbols_window(self):
         base = {"symbol": "NVDA", "filingDate": "2026-06-29", "reportingCik": "1",
                 "typeOfOwner": "officer", "directOrIndirect": "D"}

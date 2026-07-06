@@ -66,11 +66,12 @@ class Command(BaseCommand):
             self._dry_run(client, symbols)
             return
 
-        totals = {"created": 0, "updated": 0, "skipped": 0, "pages": 0, "premium": 0, "errors": 0}
+        totals = {"created": 0, "updated": 0, "skipped": 0, "future_skipped": 0,
+                  "pages": 0, "premium": 0, "errors": 0}
         for i, sym in enumerate(symbols, 1):
             try:
                 res = backfill_symbol(client, sym, cutoff)
-                for k in ("created", "updated", "skipped", "pages"):
+                for k in ("created", "updated", "skipped", "future_skipped", "pages"):
                     totals[k] += res[k]
                 if i % 25 == 0:
                     self.stdout.write(f"  … {i}/{len(symbols)} (누적 created={totals['created']})")
@@ -83,8 +84,8 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(
             f"완료: created={totals['created']} updated={totals['updated']} "
-            f"skipped={totals['skipped']} pages={totals['pages']} "
-            f"premium={totals['premium']} errors={totals['errors']}"
+            f"skipped={totals['skipped']} future_skipped={totals['future_skipped']} "
+            f"pages={totals['pages']} premium={totals['premium']} errors={totals['errors']}"
         ))
 
     def _dry_run(self, client, symbols):

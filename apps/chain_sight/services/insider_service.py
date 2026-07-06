@@ -80,13 +80,29 @@ def map_fmp_row(row: dict) -> Optional[dict]:
     }
 
 
-def upsert_insider_records(rows: Iterable[dict]) -> dict:
-    """FMP 행 리스트를 dedup_key 로 멱등 upsert. 전건 보존(필터 없음). {created, updated, skipped}."""
-    created = updated = skipped = 0
+def upsert_insider_records(
+    rows: Iterable[dict], max_transaction_date: Optional[date] = None
+) -> dict:
+    """
+    FMP 행 리스트를 dedup_key 로 멱등 upsert. {created, updated, skipped, future_skipped}.
+
+    적재 단 날짜 상한 위생(TH-INSIDER-DATE-SANITY): transaction_date > max_transaction_date
+    (기본 = 오늘) 인 행은 FMP 원천 이상치(미래 거래일)로 보고 적재 제외.
+    하한은 두지 않는다 — 원천 전체 이력 저장 = z-히스토리 자산 (§5.1, 설계서 v1.2.1).
+    """
+    if max_transaction_date is None:
+        from django.utils import timezone
+        max_transaction_date = timezone.now().date()
+    max_iso = max_transaction_date.isoformat()
+
+    created = updated = skipped = future_skipped = 0
     for row in rows:
         fields = map_fmp_row(row)
         if fields is None:
             skipped += 1
+            continue
+        if fields["transaction_date"] > max_iso:  # ISO 문자열 = 사전식 = 날짜순
+            future_skipped += 1
             continue
         dedup_key = fields.pop("dedup_key")
         _, was_created = InsiderTransactionRecord.objects.update_or_create(
@@ -94,20 +110,23 @@ def upsert_insider_records(rows: Iterable[dict]) -> dict:
         )
         created += was_created
         updated += not was_created
-    return {"created": created, "updated": updated, "skipped": skipped}
+    return {
+        "created": created, "updated": updated,
+        "skipped": skipped, "future_skipped": future_skipped,
+    }
 
 
 # ────────────────────────────── 수집 (E1 백필 / E2 증분) ──────────────────────────────
 def backfill_symbol(client, symbol: str, cutoff: date, max_pages: int = 50) -> dict:
     """E1 페이지네이션 순회 — transaction_date 가 cutoff 이전이 될 때까지. 멱등 upsert."""
-    agg = {"created": 0, "updated": 0, "skipped": 0, "pages": 0}
+    agg = {"created": 0, "updated": 0, "skipped": 0, "future_skipped": 0, "pages": 0}
     for page in range(max_pages):
         rows = client.get_insider_trading_search(symbol, page=page, limit=100)
         if not rows:
             break
         agg["pages"] += 1
         res = upsert_insider_records(rows)
-        for k in ("created", "updated", "skipped"):
+        for k in ("created", "updated", "skipped", "future_skipped"):
             agg[k] += res[k]
         # 마지막 행의 거래일이 cutoff 이전이면 순회 종료 (desc 정렬 가정)
         oldest = min((str(r.get("transactionDate", ""))[:10] for r in rows if r.get("transactionDate")), default="")
@@ -120,7 +139,7 @@ def backfill_symbol(client, symbol: str, cutoff: date, max_pages: int = 50) -> d
 
 def collect_latest(client, max_pages: int = 3) -> dict:
     """E2 최신 스트림 기반 증분 수집 (일간). beat 등록은 TH-3."""
-    agg = {"created": 0, "updated": 0, "skipped": 0}
+    agg = {"created": 0, "updated": 0, "skipped": 0, "future_skipped": 0}
     for page in range(max_pages):
         rows = client.get_insider_trading_latest(page=page, limit=100)
         if not rows:

@@ -604,6 +604,10 @@
 - 상태: 등재(TH-1 종료조건 산출물). **트리거 = 마켓 뷰 PR-1(SeedHeatScore) 착수 시**.
 - 의무(선행 강제): `docs/chain_sight/update_v2/task_instructions/cs_44_seed_node_heat_score.md`의 seed node heat 개념과 TH-1 `ThemeHeatScore`의 관계 정리 + `HeatEntity` 재사용 가능성 검토 → heat 개념이 두 벌 생기는 것을 차단(설계서 theme_heat_design.md v1.2 §11).
 
+## TH-INSIDER-DATE-SANITY — 내부자 미래 거래일 위생 (등재+실행, 2026-07-07)
+- 상태: **실행**(TH-2 재개 백필에 동승). 적재 단 `upsert_insider_records` 에 `transaction_date > 오늘` 컷 추가 + 기존 미래일 43행 정리(정리 전후 건수 보고).
+- 근거: FMP 원천에 미래 거래일(2035·2028 등) 이상치 혼입. 90일 창은 자동 배제이나 적재 위생상 컷. 하한은 없음(원천 전체 이력 유지 = z-히스토리 자산, 설계서 §5.1 v1.2.1).
+
 ## TH-C5-SPDR-SEED — C5 섹터 SPDR 11행 시드 (등재, 2026-07-06)
 - 상태: 등재. **트리거 = C5(투기 심리) 구현 PR**.
 - 의무: ThemeEtfMap 에 섹터 SPDR 11종(XLK/XLV/XLF/XLY/XLI/XLE/XLC/XLRE/XLU/XLB/XLP, role=primary, active=True) 시드 = Cycle 1 C5 주 데이터(설계서 §6.4 v1.2.1). TH-1 시드한 테마 ETF 9행(active=False)은 레인 개방 대기이므로 별개 — 섞지 말 것.
