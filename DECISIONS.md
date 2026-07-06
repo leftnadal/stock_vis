@@ -1589,6 +1589,7 @@ thesis/      — 처분 보류 (사용자 트리거 대기, monorepo 외)
 **[확정] dashboard 트랙 (표면 전용)**: FE: `app/page.tsx`(루트 EOD 대시보드 본체), `app/dashboard/**`, `components/eod/**`, `services/eodService*`, `hooks/useEODDashboard*`, `types/eod.ts`(eod 전용 타입 — shared 공용 `types/`에서 dashboard 전용 carve-out), `docs/dashboard_plan/**`. **백엔드 앱 부재(실측)** — 백엔드 신설 여부는 이 트랙의 미래 결정 사안.
   - 📎 **2026-06-27 STEP 0 정정**(sess-dashboard-step0 @ bbe6b1b, 불일치-A): `app/page.tsx`(eod 12개 import + `useEODDashboard` 소비 — 사용자가 보는 루트 `/` 대시보드 본체)와 `types/eod.ts`(11곳 import)는 기존 글롭 `app/dashboard/**` 밖이라 **누락**이었음 → 편입. 레거시 `app/dashboard/page.tsx`(계정/네비 페이지, eod 무관)는 글롭에서 **빼지 않고** 운명을 **결정 안건으로 보류**(KEEP/CUT 사이클, `TASKQUEUE` `DASH-LEGACY`).
   - 📎 **2026-07-04 DASH-FE-GLOB 해소**(sess-carousel SURVEY 실측 @ 47c36b4): `frontend/app/dashboard/` 디렉토리 자체가 **origin/main에 실재하지 않음**(레거시 page.tsx 포함 0건). → 실 dashboard FE 진입 = **`app/page.tsx` + `types/eod.ts`**(위 편입 확정), 캐러셀 신설 위치 = **`components/eod/**`**. 글롭 `app/dashboard/**`는 **실체 없는 표기**이므로 소유 대상에서 실질 제외(DASH-LEGACY도 대상 파일 부재로 자연 소멸). 유지: `components/eod/**`·`services/eodService*`·`hooks/useEODDashboard*`.
+  - 📎 **2026-07-06 AMEND**(CAROUSEL-BUILD 후속, 디렉터 비준): dashboard FE 테스트 구획 = **`frontend/__tests__/eod/**`** 명시 추가(캐러셀 vitest 등재처, 슬라이스 취지 부합 — 문언 공백 해소). eod 컴포넌트/타입의 테스트는 이 경로 단일.
 
 **[활성·성숙] chain_sight 트랙** (STEP 0 확정 2026-06-29): `apps/chain_sight/**`, `tests/chainsight/**`, `docs/chain_sight/**`, FE: `app/chainsight/**`, `components/chainsight/**`, `services/{chainsightService,pathWatchlistService}`, `hooks/{useChainsight,usePathWatchlist}`, `__tests__/chainsight/**` + **Neo4j 자산(확정, apps 내부)**: `management/commands/load_*_to_neo4j`(5)·`services/neo4j_{loader,sync}`·`tasks/neo4j_dirty_sync_tasks`.
   - 📎 **STEP 0 실측**(sess-cs-step0 @ b457bbf): 백엔드 85파일·모델 20개·**RelationConfidence 13,695행 prod**(CoMentionEdge 1,361·PriceCoMovement 8,859)·**M2 v1.1 Phase 1 go-live(2026-06-27)**, daily beat 가동·neo4j_dirty=0(동기화 완료). 기존 `[골격]`·`추정` 표기는 성숙도 과소표현이라 격상.
@@ -2813,6 +2814,8 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **재검토 트리거**: 관측 누적 시 매도 비율 **50% 상회 관찰**되면 **방어 수위만** 재검토(레이아웃 재설계 아님).
 **N=10**: D-P1-REC-RANK "잠정"의 화면 확정 — 캐러셀 스크롤로 전량 노출, 현 N=10 고정.
 
+> ✅ **2026-07-06 구현 완료(land `24b0e47`)**: `RecommendationCarousel`+`RecommendationCard`(components/eod) + `app/page.tsx` Level 2.5 additive 배선 + `types/eod.ts` `Recommendation` 타입. **vitest 7 · tsc 0**. 하위호환 테스트 고정(recommendations 부재/빈 배열 → 캐러셀 생략, 기존 6키 화면 무영향). 체인사이트 진입 = 기존 `/stocks/${ticker}?tab=chain-sight` 관례 재사용(라우트 신설 0). shared/stocks·baker 무접촉(소비만). ⚠ 화면 도달은 W′(D-W-WEB) 완료 시.
+
 **baseline at decision**: origin/main = ca6d525. prod 쓰기 0(결정 등재만).
 
 ## [2026-07-04] migration 0009 운영 DB 적용 (D-P1-MIGRATE-0009)
@@ -2865,3 +2868,23 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 **B′ 완료 상태(경유 기록)**: worker 트리 `~/worktrees/sv-worker-runtime`(detached `origin/main`) · `celery-worker.sh` PROJECT_DIR 전환 · plist 전환(repo 밖 = 소유권 지도 대상 외) · 갱신 절차 = `scripts/worker_sync.sh`. 스크립트 land = `921dc0c`.
 
 **baseline at decision**: origin/main = cd5ff20. prod 쓰기 0(결정 등재만, 실행은 OPS-B-BUILD에서 완료).
+
+## [2026-07-06] web 전용 서빙 worktree (D-W-WEB)
+
+**결정**: dev server(`com.stockvis.web`) 서빙을 **공유 편집 트리에서 분리**해 web 전용 worktree에서 실행. 설계:
+- **경로**: `~/worktrees/sv-web-runtime`(detached `origin/main`) — 세션 체크아웃과 무관한 web 전용 트리.
+- **`com.stockvis.web` 서빙 대상 전환**: 기동 스크립트/plist를 web 트리 지향(plist는 **repo 밖 = 소유권 지도 대상 외** 명기).
+- **갱신 = `worker_sync.sh`를 런타임 트리 공통 동기화로 확장**(worker+web 트리 re-detach+재기동 단일 출처, **신규 스크립트 복제 금지**).
+- **node_modules 조달 = STEP 0 분기**: 공유 node_modules 심링크가 dev server에서 동작하면 **심링크+가드**, 아니면 web 트리 설치.
+
+**왜**:
+- dev server가 **공유 트리(chain_sight 등 작업대) frontend를 서빙** = #45와 **동일 결합의 web 판**. B′ "공유 트리는 세션 자유" 선언과 **양립 불가**(공유 트리 브랜치가 바뀌면 서빙 코드도 바뀜) → 캐러셀(land 24b0e47)이 공유 트리에 없어 **화면 미도달**이 실증.
+- 가중합 **4.45(web 전용 트리) 대 2.95(공유 트리 서빙 유지)**, 마진 1.50 → 자동 결정.
+
+**baseline at decision**: origin/main = 24b0e47. prod 쓰기 0(결정 등재만, 실행은 TASKQUEUE `W-BUILD`).
+
+## [2026-07-06] D-OWN 계열 — W′ 슬라이스 한정 예외 (D-OWN-W-WEB)
+
+**결정**: **W′(W-BUILD) 슬라이스에 한해** web 기동 스크립트 · `scripts/worker_sync.sh`(런타임 트리 공통 동기화로 확장) 변경을 허용한다. plist는 repo 밖(지도 대상 외). D-B-WORKER 계열 예외 — infra/ops 일반 권한 확대 아님.
+
+**baseline at decision**: origin/main = 24b0e47. prod 쓰기 0(결정 등재만).

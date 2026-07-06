@@ -444,6 +444,10 @@
 | P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
 | P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
 | P1-BEAT-PRECHECK | ~~월요일 beat 전 공유 트리 re-detach 점검~~ **✗ 폐기 2026-07-05** — B′ 완료로 목적 소멸. 워커가 공유 트리 **비의존**(전용 worktree + worker_sync.sh)이라 공유 트리 표류가 bake에 영향 없음 | — | — | ✗ 폐기(B′ 완료) |
+| CAROUSEL-BUILD | dashboard 추천 캐러셀 A+ 구현(components/eod + page.tsx, D-P1-CAROUSEL). **✅ 완료 2026-07-06**(land `24b0e47`): RecommendationCarousel+Card·types/eod Recommendation·Level 2.5 배선, vitest 7·tsc 0·하위호환 고정·shared 무접촉. ⚠ 화면 도달은 W′ 완료 시 | dashboard FE | 완료 2026-07-06 | ✅ 완료 |
+| W-BUILD | **web 전용 서빙 worktree**(`~/worktrees/sv-web-runtime` detached origin/main) + `com.stockvis.web` 서빙 대상 전환(스크립트/plist) + `worker_sync.sh` 런타임 트리 공통 동기화 확장 + node_modules STEP 0 분기(심링크+가드 or 설치). **설계 확정 D-W-WEB**, 예외 D-OWN-W-WEB. dev server 공유 트리 서빙(#45 web 판) 해소 → 캐러셀 화면 도달 | ops/infra | **실행 승인** | ✅ 실행 승인(착수가능) |
+| W-HARDEN-BUILD | (휴면) dev server → `next build`/`next start` 전환 검토. 트리거: **외부 노출 또는 성능 문제 발생 시** | ops/infra(휴면) | 외부 노출·성능 문제 시 | 💤 휴면 |
+| CAROUSEL-COLOR-REVIEW | 캐러셀 방향 색(emerald/rose)이 매수/매도 직관 기준 — 한국 등락색(market-pulse rose=상승)과 다른 축. **실화면 확인 후 디자인 조정 여부 판단**. 트리거 = **W′ 완료 직후**(실화면 확인 가능 시점) | dashboard FE(디자인) | **W′ 완료 직후** | 🆕 등재 |
 
 ---
 
