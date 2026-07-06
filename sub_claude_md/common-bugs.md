@@ -589,3 +589,8 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **방어(`72c1825`)**: ⑴ `_save_articles` 루프를 기사별 `transaction.atomic()`(savepoint)로 격리 — 1건 실패가 rollback되어도 나머지 저장 진행(성공 경로는 savepoint 즉시 release라 동작 무변경). ⑵ broad 계층 길이 sanitize — `url>2000`은 **skip**(unique 키라 truncation 금지, 충돌 위험), `image_url>2000`은 **null/빈값**(비필수).
 - **재발 감지 신호** = 일별/창별 적재 수 급락(정상 700~900 대비 100대). skip 카운터 급증(창당 수십+)도 새 유형 포이즌 정황.
 - 이 패턴은 AV 전용 아님 — **대량 벌크 저장 루프 일반의 함정**. 다른 수집 경로도 savepoint 격리 권장.
+
+## [AV rolling 예산 함정] 확인 프로브도 실호출 — 로그 회계로 대체 (2026-07-04)
+
+- rolling 24h 체제에서 **예산 확인용 프로브 1건도 실호출**이라 내일 그 시각까지 예산 1을 잠근다. 게다가 `feed` 반환은 "잔여 ≥1"만 의미하므로 **배치 가능 여부(≥3+α) 판별력이 없다**(잔여 1이어도 feed는 옴).
+- **예산 확인은 직전 24h 호출 로그 회계로 한다** — 각 호출 시각 +24h = 해제 시각. 로그가 유실돼 회계 불가일 때만 프로브 1건 예외(보고에 명시).
