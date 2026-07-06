@@ -11,6 +11,8 @@ interface DeltaCardProps {
   sectorDeltas?: SectorDelta[]
   anomalyDelta?: AnomalyDelta
   labels?: Record<string, string>
+  // MP2-TREND S1: 섹터 순위 궤적 진입(기존 드로어 패턴 재사용 — page가 setOpenCard('sector') 배선).
+  onOpenTrajectory?: () => void
 }
 
 function formatMMDD(isoDate: string): string {
@@ -25,7 +27,7 @@ function ruleLabel(ruleId: string, labels?: Record<string, string>): string {
   return translate(`rule.${ruleId}`, labels, ruleId)
 }
 
-export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels }: DeltaCardProps) {
+export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels, onOpenTrajectory }: DeltaCardProps) {
   const topThree = (sectorDeltas ?? []).slice(0, 3)
   const hasDeltas = topThree.length > 0
   const allFlat = hasDeltas && topThree.every((s) => s.rank_delta === 0)
@@ -62,7 +64,19 @@ export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels }: DeltaC
       )}
 
       {/* Block 2: sector rank movements */}
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mt-3 mb-1">섹터 순위 변동</p>
+      <div className="flex items-center justify-between mt-3 mb-1">
+        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">섹터 순위 변동</p>
+        {onOpenTrajectory ? (
+          <button
+            type="button"
+            data-testid="open-trajectory"
+            onClick={onOpenTrajectory}
+            className="text-xs text-slate-500 hover:text-slate-900 underline"
+          >
+            궤적 보기 →
+          </button>
+        ) : null}
+      </div>
       {!hasDeltas ? (
         <p data-testid="no-sector-data" className="text-sm text-slate-400">비교할 어제 데이터 없음</p>
       ) : allFlat ? (

@@ -84,6 +84,7 @@ export default function MarketPulseV2Page() {
             sectorDeltas={overview.sector_deltas}
             anomalyDelta={overview.anomaly_delta}
             labels={labels}
+            onOpenTrajectory={() => setOpenCard('sector')}
           />
         </div>
 

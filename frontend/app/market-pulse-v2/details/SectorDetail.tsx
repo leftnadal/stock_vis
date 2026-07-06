@@ -14,6 +14,7 @@ import {
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
 import { SectorSparkline } from './SectorSparkline'
+import { SectorTrajectory } from './SectorTrajectory'
 import { sectorBarFill, sectorTextClass } from '../sectorColor'
 
 export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
@@ -40,6 +41,9 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
         {(payload.cross_dispersion ?? 0).toFixed(3)} ·{' '}
         {translate('metric.rotation', labels, 'rotation')} {(payload.rotation_index ?? 0).toFixed(3)}
       </header>
+
+      {/* MP2-TREND S1: 섹터 순위 궤적(공용 MultiLineTrendChart). 기존 Bar·스파크라인 무접촉. */}
+      <SectorTrajectory payload={payload} labels={labels} />
 
       <div>
         <p className="text-xs text-slate-500 mb-1">상대 강도 (sector return − SPY return)</p>
