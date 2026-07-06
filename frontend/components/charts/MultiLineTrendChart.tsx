@@ -5,8 +5,8 @@
  *
  * D-TREND-TOOLTIP: 플로팅 툴팁 금지. 크로스헤어(세로선 + 강조라인 도트) + 차트 하단 고정
  *   리드아웃(강조 라인만). 짚지 않으면 pinLatest로 최신일 값 표시. 그래프 위를 가리는 요소 0.
- * D-TREND-BASELINE: overlays — 2호(S2)가 vlines(전환일 세로선)·refSeries(기준선) 렌더 활성화.
- *   bands/hlines(임계 밴드)는 3호 소관(미구현).
+ * D-TREND-BASELINE: overlays — S2가 vlines(전환일 세로선)·refSeries(기준선), S3가 hlines(수평 임계선) 렌더.
+ *   bands는 R1에서 제거(D-TREND-BASELINE-R1 — raw 컷 hlines로 개정).
  * 팔레트: trendPalette.ts 1곳(신규 hex 산개 금지). 적용처 color 지정 시 우선.
  * FE 값 재계산 금지 — 서버 point.value 그대로. range 토글은 표시 범위 슬라이스만.
  */
@@ -205,6 +205,20 @@ export function MultiLineTrendChart({
                 }
               />
             ))}
+          {/* MP2-TREND S3: 수평 임계선(hlines) — y=value 기준선. 전 x폭. bands는 R1에서 제거. */}
+          {(overlays?.hlines ?? []).map((h, i) => (
+            <ReferenceLine
+              key={`hl-${h.value}-${i}`}
+              y={h.value}
+              stroke="#cbd5e1"
+              strokeDasharray="4 2"
+              label={
+                h.label
+                  ? { value: h.label, position: 'right', fontSize: 9, fill: '#94a3b8' }
+                  : undefined
+              }
+            />
+          ))}
           {/* MP2-TREND S2: 기준선(refSeries) — 점선·muted. 범례/강조/리드아웃 비참여. */}
           {refSeries.map((rs) => (
             <Line
