@@ -98,6 +98,11 @@ class EODJSONBaker:
             target_date, dashboard_json, signals_data, pipeline_log
         )
 
+        # 발행 로그 write (추천 발행 기록) — bake 시점, 신규 serve 경로 0. [D-P1-RECPROD]
+        self._write_issuance_log(
+            dashboard_json.get("recommendations", []), target_date
+        )
+
         logger.info(
             f"[EODJSONBaker] bake 완료: {files_written}개 파일, "
             f"snapshot_id={snapshot.pk}"
@@ -131,6 +136,9 @@ class EODJSONBaker:
 
         signal_cards = self._group_signals_into_cards(signals_data, market_summary)
 
+        # 추천 캐러셀 (top-N 발행 후보) — 기존 signal_cards 계약과 독립, additive 키.
+        recommendations = self._build_recommendations(signals_data)
+
         return {
             "generated_at": generated_at.isoformat(),
             "trading_date": str(target_date),
@@ -145,7 +153,67 @@ class EODJSONBaker:
                 else 0,
                 "stages": pipeline_log.stages if pipeline_log else {},
             },
+            "recommendations": recommendations,
         }
+
+    # 추천 캐러셀 설정
+    RECOMMEND_TOP_N = 10
+    CONF_VER = 1
+
+    def _derive_confidence(self, composite_score: float) -> str:
+        """signal-strength formula v1: |composite_score| magnitude → enum 라벨.
+
+        LLM-report 비의존(day-1 유일하게 값 나는 길). conf_ver로 산식 버전 태깅. [D-P1-CONF]
+        """
+        strength = abs(composite_score or 0.0)
+        if strength >= 0.5:
+            return "high"
+        if strength >= 0.25:
+            return "medium"
+        return "low"
+
+    def _build_recommendations(self, signals_data: list[dict]) -> list[dict]:
+        """추천 캐러셀 top-N 생성.
+
+        - 후보 = primary signal_tag가 있는 종목(시그널 0 제외), |composite_score| 상위 N.
+        - signal_tag = tag_details.primary(시그널 종류 ID), horizon은 별도 축이라 미포함. [D-P1-GRAIN]
+        - thesis/perspectives/risk = placeholder 골격(LLM 채움은 shared/chain_sight 후속). [D-P1-RECPROD 완화책]
+        """
+        candidates = [
+            item
+            for item in signals_data
+            if item.get("tag_details", {}).get("primary")
+        ]
+        candidates.sort(
+            key=lambda it: abs(it.get("composite_score", 0.0)), reverse=True
+        )
+
+        recommendations = []
+        for rank, item in enumerate(candidates[: self.RECOMMEND_TOP_N], start=1):
+            symbol = item.get("stock_id", "")
+            composite_score = item.get("composite_score", 0.0)
+            primary_tag = item["tag_details"]["primary"]
+            recommendations.append(
+                {
+                    "rank": rank,
+                    "ticker": symbol,
+                    "company_name": self._company_name_cache.get(symbol, "")
+                    if hasattr(self, "_company_name_cache")
+                    else "",
+                    "signal_tag": primary_tag,
+                    "confidence": self._derive_confidence(composite_score),
+                    "conf_ver": self.CONF_VER,
+                    "composite_score": round(composite_score, 4),
+                    "thesis": None,
+                    "perspectives": {
+                        "technical": None,
+                        "fundamental": None,
+                        "news_context": None,
+                    },
+                    "risk": None,
+                }
+            )
+        return recommendations
 
     def _group_signals_into_cards(
         self, signals_data: list[dict], market_summary: dict
@@ -578,3 +646,37 @@ class EODJSONBaker:
             },
         )
         return snapshot
+
+    def _write_issuance_log(
+        self, recommendations: list[dict], target_date: date
+    ) -> int:
+        """추천 발행 로그를 IssuanceLog에 write.
+
+        grain = (stock, signal_date, signal_tag) 멱등 upsert. [D-P1-GRAIN]
+        user_id = None(bake-time, per-user 아님 — Phase 2 Viewed와 분리). [D-SCHEMA]
+        """
+        from packages.shared.stocks.models import IssuanceLog, Stock
+
+        published_at = dj_timezone.now()
+        written = 0
+        for rec in recommendations:
+            stock = (
+                Stock.objects.filter(symbol=rec["ticker"]).only("pk").first()
+            )
+            if stock is None:
+                continue
+            IssuanceLog.objects.update_or_create(
+                stock=stock,
+                signal_date=target_date,
+                signal_tag=rec["signal_tag"],
+                defaults={
+                    "confidence": rec["confidence"],
+                    "composite_score": rec["composite_score"],
+                    "conf_ver": rec["conf_ver"],
+                    "rank": rec["rank"],
+                    "published_at": published_at,
+                    "user_id": None,
+                },
+            )
+            written += 1
+        return written

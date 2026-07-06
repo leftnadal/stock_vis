@@ -27,6 +27,8 @@ from apps.market_pulse.api.serializers.overview import OverviewResponseSerialize
 from apps.market_pulse.i18n.labels import resolve_regime_stance
 from apps.market_pulse.models.anomaly import AnomalySignalLog
 from apps.market_pulse.regime.next_stage import compute_next_stage_margin
+from apps.market_pulse.services.anomaly_delta import compute_anomaly_delta
+from apps.market_pulse.services.sector_delta import compute_sector_deltas
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.news import MarketPulseNews
 from apps.market_pulse.models.regime import RegimeSnapshot
@@ -164,15 +166,18 @@ def _regime_card():
     # MP2-DEEPEN 전조(축3): 기존 compute_next_stage_margin 재사용 — 신규 계산 0.
     #   regime 상세(cards.py)에 이미 서빙되던 자산을 요약 hero 계약으로 additive 승격.
     ns = compute_next_stage_margin(snap.regime, snap.inputs)
+    transitioned = bool(
+        snap.previous_regime and snap.previous_regime != snap.regime
+    )
     return {
         "regime": snap.regime,
         "status": snap.status,
         "coverage": float(snap.coverage),
         "headline": snap.headline,
         "fired_rules": snap.fired_rules or [],
-        "transitioned": bool(
-            snap.previous_regime and snap.previous_regime != snap.regime
-        ),
+        "transitioned": transitioned,
+        # MP2-DELTA(additive): 어제 대비 국면 전환 from(재사용 — previous_regime 노출, 계산 0)
+        "transition_from": snap.previous_regime if transitioned else None,
         "stance_copy": stance_copy,
         "stance_ok": stance_ok,
         # MP2-DEEPEN(additive): 다음 국면 전조 — 신규 계산 아님(기존 산출 노출)
@@ -344,6 +349,10 @@ def _build_payload() -> dict:
         "cards": cards,
         # S4: cards와 동렬 추가(cards 무변경). 미생성 시 null.
         "translations": _translations_block(),
+        # MP2-DELTA 슬라이스1(additive): 어제 대비 섹터 순위 이동(조회-시 파생, prod 0).
+        "sector_deltas": compute_sector_deltas(django_timezone.localdate()),
+        # MP2-DELTA 슬라이스2(additive): anomaly 신규/소멸/해소 델타(조회-시 파생, prod 0).
+        "anomaly_delta": compute_anomaly_delta(django_timezone.localdate()),
     }
 
 

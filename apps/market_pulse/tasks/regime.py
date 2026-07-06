@@ -87,6 +87,21 @@ def mp_calc_regime_15min(self, **kwargs: Any) -> dict[str, Any]:
         countdown = 60 * (2**self.request.retries)
         raise self.retry(exc=exc, countdown=countdown)
 
+    # MP2-ALERTS 훅(try/except 밖 — regime 본연 무손상): 전환 시 fire-and-forget 알림.
+    # transitioned은 transient(스냅샷 미저장) → decision 값만 넘기고 재조회 금지.
+    # enqueue 실패조차 regime task를 깨지 않도록 방어(로그만).
+    if decision.transitioned:
+        try:
+            from apps.market_pulse.tasks.alerts import fire_regime_transition_alert
+
+            fire_regime_transition_alert.delay(
+                date=snapshot.date.isoformat(),
+                from_regime=decision.previous_regime,
+                to_regime=decision.final_regime,
+            )
+        except Exception:  # pragma: no cover - broker 장애 방어
+            logger.exception("regime transition alert enqueue 실패(무시)")
+
     return {
         "date": snapshot.date.isoformat(),
         "regime": snapshot.regime,

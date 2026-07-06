@@ -89,7 +89,8 @@ describe('SectorDetail — 인라인 스파크라인 통합', () => {
 
   it('KO 라벨 노출 (심볼 fallback 아님)', () => {
     render(<SectorDetail payload={payload} labels={SECTOR_LABELS} />)
-    expect(screen.getByText('기술')).toBeInTheDocument()
+    // MP2-TREND: 궤적 범례도 KO 라벨을 렌더 → "기술" 다중 출현이 정상(둘 다 번역, 심볼 아님).
+    expect(screen.getAllByText('기술').length).toBeGreaterThan(0)
     expect(screen.queryByText('XLK')).toBeNull()
   })
 

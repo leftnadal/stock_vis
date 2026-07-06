@@ -13,6 +13,7 @@ import { TickerBar } from './components/TickerBar'
 import { BreadthCardSummary } from './cards/BreadthCardSummary'
 import { BriefCardSummary } from './cards/BriefCardSummary'
 import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
+import { DeltaCard } from './cards/DeltaCard'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorHeatmap } from './cards/SectorHeatmap'
 import { CardDetailContainer } from './details/CardDetailContainer'
@@ -73,6 +74,17 @@ export default function MarketPulseV2Page() {
             labels={labels}
             onOpen={() => setOpenCard('regime')}
             sense={selectSense(translations, 'regime')}
+          />
+        </div>
+
+        {/* ③b Delta Card — 어제와 달라진 것 (MP2-DELTA Slice 1) */}
+        <div className="mt-4">
+          <DeltaCard
+            regime={overview.cards.regime}
+            sectorDeltas={overview.sector_deltas}
+            anomalyDelta={overview.anomaly_delta}
+            labels={labels}
+            onOpenTrajectory={() => setOpenCard('sector')}
           />
         </div>
 

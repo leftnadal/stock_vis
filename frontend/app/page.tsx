@@ -8,6 +8,7 @@ import { MarketSummaryBar } from '@/components/eod/MarketSummaryBar';
 import { SignalFilterTabs } from '@/components/eod/SignalFilterTabs';
 import { SignalCardGrid } from '@/components/eod/SignalCardGrid';
 import { SignalDetailSheet } from '@/components/eod/SignalDetailSheet';
+import { RecommendationCarousel } from '@/components/eod/RecommendationCarousel';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import type { SignalCategory, SignalCard } from '@/types/eod';
 
@@ -79,6 +80,9 @@ function HomeContent() {
 
         {/* Level 2: 시장 요약 */}
         <MarketSummaryBar summary={data.market_summary} />
+
+        {/* Level 2.5: 추천 캐러셀 (하위호환 — recommendations 부재 시 생략) */}
+        <RecommendationCarousel recommendations={data.recommendations} />
 
         {/* Level 3: 카테고리 필터 */}
         <SignalFilterTabs

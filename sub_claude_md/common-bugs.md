@@ -528,6 +528,23 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 예방(DoD 규율): PROGRESS/TASKQUEUE 편집 시 **신규 헤더뿐 아니라 해당 활성작업/큐 섹션 전체를 스캔**해 union-merge 중복이 없는지 확인(정의 각 1건). 뭉친 항목은 제거 아닌 **분리 독립화**(내용 유실 0). union-중복 자기점검(#43 계열)과 동일 DoD.
 - 📎 durable 규율은 **repo 하네스에 단일 등재**(코어 지시문 복제 금지 규약 — 복제는 drift). 관련 [[lesson_origin_main_advance_union_rebase]] · #40(merge=union rebase).
 
+## 공유 트리 브랜치 표류 → 워커 silent 구코드 bake (#45) `[infra]` `[celery]` `[git]`
+
+- 증상: land된 신규 코드(예: baker recommendations)가 자동 bake 산출물에 **안 나옴**. 런타임 에러 0, 파이프라인은 정상 완주.
+- 원인: celery worker가 import하는 트리 = **공유 편집 트리**(`~/Desktop/stock_vis`, `celery-worker.sh` PROJECT_DIR 하드코딩). 이 트리의 체크아웃 브랜치는 **세션 활동으로 가변** → land 전 브랜치(예: `sess-cs-pair-relevance`)에 머물면 워커가 **구 코드로 bake**. origin/main에 land돼도 워커는 못 봄.
+- 함정: OBSERVE(실산출물 검사) 게이트가 **아니면** 통과함 — 유닛 테스트 green + push 성공이 "반영됐다"는 착시. #41(모듈 변경 후 재기동)·#42(공유 트리 편집 금지)의 확장.
+- 해결(임시): 공유 트리를 `git checkout --detach origin/main` + 워커 재기동. **단 detached는 유지 안 됨**(다른 세션이 재체크아웃 → 재표류) = 트레드밀. **항구 해결 = worker 전용 worktree**(TASKQUEUE `P1-B-WORKER-WORKTREE`).
+- 예방: land마다 "워커 트리 == origin/main?" 확인 + 재기동. 자동 beat 전 diff 점검(`P1-BEAT-PRECHECK`).
+- **★web 판(2026-07-06 확인·해소)**: 동일 결합이 **dev server(next dev :3000)에도 존재** — next dev가 공유 트리 frontend를 서빙하므로 land된 FE(예: 캐러셀 `24b0e47`)가 공유 트리 브랜치에 없으면 **화면 미도달**(유닛 green·push 성공이어도). → **W′(D-W-WEB-AMEND-1, web 전용 트리 `sv-web-runtime`)로 해소** `75cb4d3`. ※ 애초 `com.stockvis.web`(daphne)로 오지목했으나 실서빙은 next dev(:3000) — 대상 정정. worker(B′)+web(W′) 양쪽 분리로 완결.
+- **★세 번째 인스턴스(daphne, 2026-07-06 확인·해소 예정)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있음(views_eod 등 표류 대상). 현재 dashboard.json은 정적(next 서빙)이라 즉시 영향 없으나 API 경로는 취약. → DAPHNE-RUNTIME-SURVEY(read-only) 실측 완료 → **D-DAPHNE-RUNTIME 확정**(daphne 전용 트리 `sv-api-runtime` + `worker_sync.sh` 확장, 마진 1.80)으로 **해소 예정**(실행 = TASKQUEUE `DAPHNE-BUILD` 승인). 런타임 3종(celery worker B′·next dev W′·daphne) 전부 분리 패턴으로 수렴 — daphne는 결정 등재·실행 대기.
+
+## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
+
+- 증상: 모델은 land됐는데 해당 테이블 write가 **조용히 실패**(0행), 상위 파이프라인은 성공으로 완주.
+- 원인: 운영 DB에 migration **미적용**(테이블 부재, `UndefinedTable`). land은 코드만 옮기지 **운영 `migrate`를 자동 실행하지 않음**. 예: `stocks_issuance_log` 부재 → IssuanceLog write 예외. 단 baker는 `atomic_swap`(파일 반영)이 DB write보다 **앞서** 있어 JSON 산출물은 정상 → 결함이 파일만 보면 안 보임.
+- 함정: **스키마 부재 = 조용한 로깅 손실**. JSON만 검사하면 통과, DB까지 봐야 잡힘(OBSERVE는 DB 확인 필수).
+- 해결: `sqlmigrate`로 순수 add 육안 검증 → `migrate`. 재발 방지 = **land에 migration 포함 시 운영 migrate를 배포 단계로 명시**(runbook `P1-RUNBOOK-MIGRATE`) + **health_check "bake 완주 시 IssuanceLog 행 증가"**(`P1-HC-ISSUANCE`, #45와 짝).
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
@@ -590,3 +607,28 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **원인**: `check_last_tick_succeeded`가 worker 로그 **고정 `[-5000:]`줄**만 읽음. worker-error.log가 시간당 ~2.7k줄(heartbeat + task received)로 폭주 → 틱+2h 지점엔 성공 로그가 창 밖(파일 끝에서 5,396>5,000줄)으로 스크롤아웃. tz 비교 로직은 정상 — 성공 라인 자체가 읽은 바이트 범위 밖.
 - **해결**: 고정 tail창 → `grep`으로 매칭 라인만 **전수 스캔** + 직전 틱 **boundary 이후만** 집계. 로그 폭주 무관하게 증거 누락 없음. 전수 스캔 부작용(이미 해소된 과거 unregistered 부활)은 boundary 이전 제외로 봉인. unregistered FAIL은 `succeeded==0`일 때만(회복된 틱 면제). 커밋 `261b5e3`.
 - **교훈**: 로그 기반 관찰 도구는 "최근 N줄"이 아니라 "관심 이벤트 시각 경계 이후"로 스캔 범위를 정의하라. 고빈도 로그 소스에서 N줄 tail은 시간창이 아니라 이벤트-밀도창이라 시각 기준 판정이 오염된다.
+## [병렬 에이전트] 기존재 오인 → 실행 전 심볼 정의 수 grep으로 중복 방지 (MP2-DELTA, 2026-07-04)
+
+- **증상**: 병렬/다중 에이전트가 "이미 누가 만들었겠지"라고 기존재를 오인하거나, 반대로 이미 있는 함수·타입·블록을 모른 채 재구현 → 중복 정의·충돌.
+- **실측**: MP2-DELTA S1에서 FE 에이전트가 BE 기존재를 오인해 재확인(중복 0으로 방어됨). S2에서는 착수 전 `grep -c 'def compute_anomaly_delta\|interface AnomalyDelta\|anomaly_delta'`로 정의 수를 세어 0건 확인 후 신규 작성.
+- **규칙**: 신규 심볼(함수·타입·컴포넌트 블록) 작성 **직전** `grep`으로 **정의 수를 센다**. 0이면 신규, 1+이면 기존 편집. wiring 지점(`_build_payload`·page.tsx prop)도 동일하게 grep으로 기존 배치 확인 후 additive.
+- **왜**: 병렬 세션은 서로의 working tree를 못 본다. "본 것 같다"는 기억이 아니라 grep 카운트가 유일한 진실. 실행 전 1회 grep이 중복 커밋·충돌 정리 비용(1h+)을 막는다.
+
+## [STEP 0 실측] 골격 전수 grep은 `services/` 포함 필수 — apps/·packages/만 보면 놓친다 (MP2-ALERTS, 2026-07-06)
+
+- **증상**: MP2-ALERTS STEP 0에서 기존 알림 골격을 `packages`·`apps`만 grep → **0건**으로 오판할 뻔. 재실측(`services/` 포함)에서 `services/serverless/ScreenerAlert`+`AlertHistory`(사용자 알림 프레임워크 상당 부분)·`services/news/AlertLog`(ops)·`check_pipeline_alerts`가 무더기로 나옴.
+- **원인**: monorepo 이동(PR8a)으로 news·serverless·rag_analysis·validation·sec_pipeline이 `services/*`로 재배치됨. 앱 레이어가 `apps/`·`packages/`·**`services/`** 3곳에 분산 → 한 곳만 grep하면 절반을 놓친다.
+- **규칙**: "기존재 전수" 성격의 STEP 0 grep은 **`apps packages services` 3곳 전부**를 대상에 넣는다(+ `config/`도 celery 등록·settings 확인). "없을 것" 가정 금지 + grep 범위 자체를 의심하라.
+- **왜**: STEP 0의 존재 이유가 "발명 금지"인데, grep 범위 누락은 발명 금지를 무력화한다(greenfield 오판 → 중복 프레임워크 구축 위험).
+## [휴면 앱 CUT] 코드+prod 스키마는 순서 있는 원자적 제거 (D-REHOME-GRAPH, 2026-07)
+
+- **증상**: Django 앱(모델+마이그레이션 적용됨)을 지울 때 INSTALLED_APPS에서 먼저 빼거나 코드를 먼저 `git rm`하면, Django가 앱을 잊어 **drop 마이그레이션을 자동생성하지 않음** → prod 테이블이 고아로 잔존.
+- **규칙(순서 불변)**: ① 앱이 INSTALLED_APPS+코드로 **살아있을 때** `DeleteModel` 마이그레이션 생성 → **prod 적용**(테이블 DROP) → ② **그 다음** 코드+INSTALLED_APPS `git rm`. STAGE 분리(migrate → 코드 rm).
+- **검증**: 코드 제거 후 `python manage.py makemigrations --dry-run` = **"No changes detected"**(잔재 모델참조 0). 삭제 대상 0 rows면 데이터 위험 0·reversible(`migrate <app> 0001`).
+- **왜**: 마이그레이션은 앱이 등록돼 있어야 DROP을 실행한다. 순서가 뒤바뀌면 DB에 빈 고아 테이블 + `django_migrations` 고아행이 남는다(무해하나 위생 저하).
+
+## [fast-main land] 순간 ff-land엔 `git push origin HEAD:main` (2026-07)
+
+- **증상**: 인간 병렬 CC 세션이 분당 커밋하는 fast-main에서, `git checkout main && git merge --ff-only`는 (a) main이 다른 worktree에 물려 `checkout` 거부, (b) rebase가 그 브랜치의 다른 worktree 때문에 거부, (c) merge~push 사이 main 전진으로 non-ff — 반복 실패.
+- **규칙**: 브랜치가 정확히 `origin/main+1`(그 브랜치 worktree에서 `git rebase origin/main` 선행)일 때, **`git push origin HEAD:main`** = 원자적 ff-push. worktree/checkout/merge 춤 불필요, main이 그새 전진하면 서버가 non-ff로 **안전 거부**(force 아님) → rebase 재시도.
+- **왜**: `push <src>:main`은 서버측 ff 조건을 원자적으로 검사한다. 로컬 checkout/merge 시퀀스는 다중 worktree + 전진 창에 취약. 단 **에이전트의 main 직접 push는 auto-mode가 차단** → land는 사용자 수동 단계로 유지(에이전트는 rebase까지).
