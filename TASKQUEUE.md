@@ -549,3 +549,4 @@
 - 07-05 후속: worker(71696) + **beat(36421→38604 재기동, 13:13:51 origin/main 재시작분 정정)** 양자 pair코드 정합. 밤사이 자율 틱 period 07-04 적립 = 복구 무인 검증.
 - 방안: 활성 작업 브랜치를 `git worktree`로 분리(SESSION_CONTRACT worktree 규율 정합), 워커는 안정 브랜치 dir 고정 import.
 - 통합 전 방어(잠정): 세션 시작 시 HEAD·워커 시작시각 대조 수동 스모크 + flag-on/merge 전 재확인(P-0 규율에 편입 검토).
+- **2026-07-06 승격 = 대기열 선두**: 트리거("pair→main 통합 후") D2 v5.1 결정 ⑩로 충족 임박. 재발 2차 봉인 추가 — nightly `worker_sync.sh`가 sv-worker-runtime을 origin/main으로 리셋 → 기본 워커가 미머지 pair 태스크 미보유(unregistered) → 궤적 07-05 영구 갭. 遠因 = 본 트리거를 "통합 후"로 잡아 통합 전 재발을 못 막음. 착수는 D2 관찰 창과 겹치지 않게 사용자 호출(§7). 방안 = 워커 runtime을 안정 브랜치 고정 + 활성 트랙 worktree 물리격리 승격(DECISIONS:1338 소프트강제 재평가).
