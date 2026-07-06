@@ -5,6 +5,7 @@ import { ArrowUpRight, ArrowDownRight, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
 import { ConfidenceBadge } from './ConfidenceBadge';
+import { CHANGE_TEXT } from './colorSemantics';
 import type { SignalStock } from '@/types/eod';
 
 interface StockRowProps {
@@ -69,9 +70,7 @@ export function StockRow({ stock }: StockRowProps) {
           </p>
           <div
             className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
-              isPositive
-                ? 'text-green-600 dark:text-green-400'
-                : 'text-red-600 dark:text-red-400'
+              isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down
             }`}
           >
             {isPositive ? (

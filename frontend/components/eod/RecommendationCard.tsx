@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { DIRECTION_BADGE, DIRECTION_SPINE } from './colorSemantics';
 import type { Recommendation } from '@/types/eod';
 
 const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {
@@ -21,11 +22,10 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
   const strengthPct = Math.round(Math.min(Math.abs(rec.composite_score), 1) * 100);
   const directionVerb = isBuy ? '매수' : '매도·회피';
 
-  // 색 단독 의존 금지 — 동사 라벨이 주 인코딩, 색은 보조. Tailwind 정적 클래스(퍼지 안전).
-  const badgeClass = isBuy
-    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'
-    : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300';
-  const spineClass = isBuy ? 'bg-emerald-500' : 'bg-rose-500';
+  // 색 단독 의존 금지 — 동사 라벨이 주 인코딩, 색은 보조.
+  // 한국축(D-COLOR-SYSTEM): 매수 rose / 매도 sky. colorSemantics 단일소스(퍼지 안전).
+  const badgeClass = isBuy ? DIRECTION_BADGE.buy : DIRECTION_BADGE.sell;
+  const spineClass = isBuy ? DIRECTION_SPINE.buy : DIRECTION_SPINE.sell;
 
   const perspectivesEmpty =
     !rec.perspectives.technical &&

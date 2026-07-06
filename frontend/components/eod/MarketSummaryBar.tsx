@@ -2,6 +2,7 @@
 
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
 import { VixChip } from './VixChip';
+import { CHANGE_CHIP, STRENGTH_TEXT, STRENGTH_BAR_FILL } from './colorSemantics';
 import type { MarketSummary } from '@/types/eod';
 
 interface MarketSummaryBarProps {
@@ -12,11 +13,12 @@ function ChangeChip({ label, value }: { label: string; value: number }) {
   const isPositive = value > 0;
   const isNeutral = value === 0;
 
+  // 한국축(D-COLOR-SYSTEM): 상승 rose / 하락 sky / 보합 gray. 아이콘·부호 병기(색 보조).
   const colorClass = isNeutral
-    ? 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
+    ? CHANGE_CHIP.neutral
     : isPositive
-    ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-    : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300';
+    ? CHANGE_CHIP.up
+    : CHANGE_CHIP.down;
 
   const Icon = isNeutral ? Minus : isPositive ? TrendingUp : TrendingDown;
 
@@ -37,14 +39,14 @@ function BullBearBar({ bullish, bearish }: { bullish: number; bearish: number })
 
   return (
     <div className="flex items-center gap-1.5">
-      <span className="text-xs text-green-600 dark:text-green-400 font-medium">{bullish}</span>
+      <span className={`text-xs ${STRENGTH_TEXT.positive} font-medium`}>{bullish}</span>
       <div className="w-24 h-2 rounded-full bg-gray-200 dark:bg-gray-600 overflow-hidden">
         <div
-          className="h-full bg-green-500 rounded-full"
+          className={`h-full ${STRENGTH_BAR_FILL} rounded-full`}
           style={{ width: `${bullPct}%` }}
         />
       </div>
-      <span className="text-xs text-red-600 dark:text-red-400 font-medium">{bearish}</span>
+      <span className={`text-xs ${STRENGTH_TEXT.negative} font-medium`}>{bearish}</span>
       <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-0.5">({bullPct}%)</span>
     </div>
   );

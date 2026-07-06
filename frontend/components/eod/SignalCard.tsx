@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { HelpCircle, ChevronRight, TrendingUp, AlertTriangle, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
+import { CHANGE_TEXT } from './colorSemantics';
 import { SIGNAL_CATEGORY_COLORS, SIGNAL_CATEGORY_LABELS } from '@/types/eod';
 import type { SignalCard as SignalCardType } from '@/types/eod';
 
@@ -188,9 +189,7 @@ export function SignalCard({ card, onCardClick }: SignalCardProps) {
                 <MiniSparkline data={stock.mini_chart_20d} width={52} height={20} />
                 <span
                   className={`text-[11px] font-semibold ${
-                    isPositive
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
+                    isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down
                   }`}
                 >
                   {isPositive ? '+' : ''}{stock.change_percent.toFixed(2)}%

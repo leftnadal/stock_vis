@@ -1,5 +1,7 @@
 'use client';
 
+import { DIRECTION_HEX, DIRECTION_FILL_RGBA } from './colorSemantics';
+
 interface MiniSparklineProps {
   data: number[];
   width?: number;
@@ -23,7 +25,8 @@ export function MiniSparkline({ data, width = 80, height = 24 }: MiniSparklinePr
 
   const polylinePoints = points.join(' ');
   const isPositive = data[data.length - 1] >= data[0];
-  const strokeColor = isPositive ? '#3FB950' : '#F85149';
+  // 한국축(D-COLOR-SYSTEM): 상승 rose / 하락 sky. colorSemantics 단일소스.
+  const strokeColor = isPositive ? DIRECTION_HEX.up : DIRECTION_HEX.down;
 
   // 채움 영역을 위한 path
   const firstPoint = points[0].split(',');
@@ -40,7 +43,7 @@ export function MiniSparkline({ data, width = 80, height = 24 }: MiniSparklinePr
       {/* 채움 영역 */}
       <path
         d={fillPath}
-        fill={isPositive ? 'rgba(63,185,80,0.1)' : 'rgba(248,81,73,0.1)'}
+        fill={isPositive ? DIRECTION_FILL_RGBA.up : DIRECTION_FILL_RGBA.down}
         stroke="none"
       />
       {/* 라인 */}
