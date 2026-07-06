@@ -476,6 +476,44 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     # ============================================================
+    # Insider Trading (E1/E2/E3 — Starter 접근 PASS, docs/audits/fmp_insider_access_report.md)
+    # ============================================================
+
+    def get_insider_trading_search(
+        self, symbol: str, page: int = 0, limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        종목별 내부자 거래 검색 (E1). 거래 레벨 레코드.
+
+        API: GET /stable/insider-trading/search?symbol={symbol}&page={page}&limit={limit}
+        """
+        params = {"symbol": symbol.upper(), "page": page, "limit": limit}
+        data = self._make_request("/stable/insider-trading/search", params)
+        return data if isinstance(data, list) else []
+
+    def get_insider_trading_latest(
+        self, page: int = 0, limit: int = 100
+    ) -> List[Dict[str, Any]]:
+        """
+        최신 내부자 거래 스트림 (E2). 시장 전체 증분 수집용.
+
+        API: GET /stable/insider-trading/latest?page={page}&limit={limit}
+        """
+        params = {"page": page, "limit": limit}
+        data = self._make_request("/stable/insider-trading/latest", params)
+        return data if isinstance(data, list) else []
+
+    def get_insider_statistics(self, symbol: str) -> List[Dict[str, Any]]:
+        """
+        종목별 분기 매수/매도 집계 통계 (E3). 자체 집계 sanity check용.
+
+        API: GET /stable/insider-trading/statistics?symbol={symbol}
+        """
+        params = {"symbol": symbol.upper()}
+        data = self._make_request("/stable/insider-trading/statistics", params)
+        return data if isinstance(data, list) else []
+
+    # ============================================================
     # Utility Methods
     # ============================================================
 
