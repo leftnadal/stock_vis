@@ -2908,6 +2908,25 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 
 **baseline at decision**: origin/main = c1cdba4. prod 쓰기 0(rank는 기존 필드 계약 노출, 마이그레이션 0).
 
+### D-TREND-EMPHASIS — 섹터 궤적 진입 강조 = 델타 컨텍스트 복원(옵션 B, Slice 2)
+**결정**: 델타 카드가 자기가 보여준 상위 변동 섹터를 드로어 열기 호출에 **선택적 additive 인자**(`onOpenTrajectory(emphasis?)`)로 전달, 섹터 궤적 뷰가 이를 기본 강조로 사용. **안전판**: 제네릭 CardDrawer/CardDetailContainer 침습이 "선택적 인자 1개 + 무영향 기본값"을 넘으면 HALT → 현 상태 A(강조 복원 없음) 확정.
+**Why**: 병진 확정 4.40 vs 옵션 A(현상 유지) 3.65. S1의 "델타 재계산 금지 + 제네릭 드로어 무접촉" 갈래의 해소 — 델타가 이미 계산한 상위 섹터를 재계산 없이 이관.
+**실측 판정(2026-07-06)**: CardDetailContainer는 `cardId/enabled/labels`만 받음 → `emphasisOverride?: string[]` 1개 additive(무영향 기본값=undefined)로 안전판 **통과**(HALT 불요, B 진행). CardDrawer 무접촉. 델타→섹터 강조 land.
+
+### D-TREND-BASELINE 2호 몫 — breadth 기준선 = A/D선 MA20(파생 기준선)
+**결정**: breadth 궤적 기준선 = A/D선의 **20일 이동평균**(옵션 C의 파생 기준선 계열). 임계 밴드(hlines/bands)는 3호 소관 — S2 구현 0.
+**Why**: 20일 = 단기 추세 표준 + 실측 깊이 56일 내 성립(표시 30일 + 룩백 19일 = 49일 ≤ 56). 이동평균 계산은 **BE 조회-시 파생**(FE 수치 파생 금지). FE 유일 예외 = 리드아웃 "기준선 대비 ±x.x%"(서빙된 ad_line·ad_line_ma20 두 값의 단순 차 표시, 판단 파생 아님).
+**이탈 시각화 갈래 해소**: 목업 = 본선<기준선 구간 음영. recharts 음영(area-between-line)이 fragile + `bands` 타입은 3호 예약(재사용 불가) → **사전 승인 폴백 채택**: 이탈 시작점 마커(vline "이탈 시작") + 리드아웃 streak("n일째 이탈"). 이탈 시작일 식별 가능(E2 충족).
+
+### D-TREND-TRANSITION — 전환일 파생 규칙(양 STEP 0 교차 확정)
+**결정**: RegimeSnapshot에 transitioned 미저장(전일 대비 파생 필드) → 전환일 = `previous_regime ≠ regime`인 날짜의 **BE 조회-시 파생**. FE 파생 금지. 날짜당 1행이라 자연 dedup. 빈 previous_regime(초기 스냅샷)은 전환 아님.
+**Why**: `lesson_regime_transitioned_transient` — transitioned은 전환일 하루종일 True라 저장 시 혼선. 조회-시 파생이 단일 진실. transition_dates는 regime 계약에만 additive로 얹고, breadth·sector 궤적이 공용 소비(컨테이너가 조회해 순수 뷰에 prop 전달 — 뷰 QueryClient 불요).
+
+### Slice 2 검증(2026-07-06, baseline c8f18c1 → 브랜치 tip 0eb82d8)
+overlays.vlines(전환일 세로선)·refSeries(기준선 MA20 점선) 렌더 활성화 + breadth 궤적 뷰(A/D + MA20 + 전환일) + 섹터 전환일 세로선(공용 계약 실증 E6) + 델타 강조 복원(옵션 B). **BE**: ad_line_ma20(per-date, <20일 null)·ma_deviation_streak_days(latest)·transition_dates 전부 조회-시 파생(저장 0). **검증**: pytest 신규 6 + marketpulse api 72 green · vitest 신규 9(E1/E2/E4/E5/E5b/E5c/E6 + 파생 helper) + 전체 518 green · tsc 0 · **migration 0(No changes detected)**. 커밋 5분리(BE e713ea0 / overlays a401914 / breadth뷰 f06eddc / 섹터+강조 431c8ed / 테스트 0eb82d8) ff. **이탈 음영 = 마커 폴백 채택**.
+
+**baseline at decision**: origin/main = c8f18c1. prod 쓰기 0(전부 조회-시 파생 + 계약 additive, 마이그레이션 0).
+
 ## [2026-07-06] D-W-WEB 대상 정정 — 실서빙 = next dev (D-W-WEB-AMEND-1)
 
 **결정**: D-W-WEB의 서빙 대상을 정정. `com.stockvis.web`(daphne, :18765, Django ASGI 백엔드)는 **오지목** — 캐러셀 실서빙은 **next dev(:3000, 수동 실행·launchd 미관리)**. W′는 next dev를 web 전용 트리에서 실행하는 것으로 실현(daphne 무접촉, `com.stockvis.web` plist 무변경).
