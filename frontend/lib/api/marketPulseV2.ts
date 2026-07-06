@@ -288,6 +288,8 @@ export interface RegimeDetail {
   is_finalized?: boolean
   // MP-UX-S3a: 국면 타임라인 데이터원 (렌더는 후속 FE 슬라이스 — 타입만)
   regime_history_30d?: RegimeHistoryPoint[]
+  // MP2-TREND S2(additive): 전환일(previous_regime≠regime, BE 조회-시 파생). 궤적 vlines 공용 소비.
+  transition_dates?: string[]
   // MP-UX-S3b: 다음 단계까지 거리 (렌더는 후속 FE 슬라이스 — 타입만)
   next_stage?: RegimeId | null
   margins?: RegimeMargin[]
@@ -300,6 +302,8 @@ export interface BreadthHistoryPoint {
   decline: number
   ad_line: number
   ad_line_change: number
+  // MP2-TREND S2(additive): A/D선 20일 이동평균(기준선). <20일 구간은 null.
+  ad_line_ma20?: number | null
 }
 
 export interface BreadthDetail {
@@ -314,6 +318,8 @@ export interface BreadthDetail {
   new_low_52w?: number
   ad_line?: number
   ad_line_change?: number
+  // MP2-TREND S2(additive): 최신일 기준 기준선(MA20) 이탈 연속 일수.
+  ma_deviation_streak_days?: number
   history_30d?: BreadthHistoryPoint[]
 }
 
