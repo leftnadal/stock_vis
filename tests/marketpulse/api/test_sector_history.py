@@ -88,13 +88,15 @@ class TestSectorHistory:
         assert xlk_hist[-1]["rel_strength"] == 1.0
         assert xlk_hist[0]["rel_strength"] == 3.0  # base-2 (i=2)
 
-    def test_rel_strength_only_no_other_metrics(self, auth_client):
-        """지표 격리 — history 포인트에 flow_proxy/momentum 없음, rel_strength만."""
+    def test_history_point_keys_date_rel_rank(self, auth_client):
+        """지표 격리 — history 포인트 = date/rel_strength/rank(MP2-TREND additive)만.
+        flow_proxy/momentum은 여전히 누출 없음.
+        """
         xlk = _mk_index("XLK")
-        _mk_snap(xlk, date_cls(2026, 6, 15), 2.0)
+        _mk_snap(xlk, date_cls(2026, 6, 15), 2.0, rank=3)
         sh = auth_client.get(_url()).json()["data"]["sector_history"]
         point = sh[0]["history"][0]
-        assert set(point.keys()) == {"date", "rel_strength"}
+        assert set(point.keys()) == {"date", "rel_strength", "rank"}  # rank additive(S1)
         assert "flow_proxy" not in point
         assert "momentum_1d" not in point and "momentum_5d" not in point
 
@@ -135,3 +137,27 @@ class TestSectorHistory:
         body = auth_client.get(_url()).json()["data"]
         assert body["available"] is False
         assert "sector_history" not in body
+
+    def test_rank_additive_value_matches_snapshot(self, auth_client):
+        """MP2-TREND S1: history 각 포인트 rank = 해당일 rank_in_universe(정확성)."""
+        base = date_cls(2026, 6, 15)
+        xlk = _mk_index("XLK")
+        # 순위가 날짜별로 변함: base-2=5위, base-1=3위, base=1위
+        _mk_snap(xlk, base - timedelta(days=2), 1.0, rank=5)
+        _mk_snap(xlk, base - timedelta(days=1), 1.0, rank=3)
+        _mk_snap(xlk, base, 1.0, rank=1)
+        hist = auth_client.get(_url()).json()["data"]["sector_history"][0]["history"]
+        assert [p["rank"] for p in hist] == [5, 3, 1]  # 날짜 오름차순, 서버 rank 그대로
+
+    def test_rank_additive_purely_additive(self, auth_client):
+        """계약 회귀 — rank는 history에만 additive. sectors[]·rel_strength 등 기존 불변."""
+        xlk = _mk_index("XLK")
+        _mk_snap(xlk, date_cls(2026, 6, 15), 2.0, rank=1)
+        body = auth_client.get(_url()).json()["data"]
+        # 기존 필드 불변
+        assert body["sectors"][0]["rel_strength"] == 2.0
+        assert body["sectors"][0]["rank"] == 1
+        assert "flow_proxy" in body["sectors"][0]
+        # history는 rel_strength 유지 + rank 추가(이 두 개 + date만)
+        point = body["sector_history"][0]["history"][0]
+        assert point["rel_strength"] == 2.0 and point["rank"] == 1
