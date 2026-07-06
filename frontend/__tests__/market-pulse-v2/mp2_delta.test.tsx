@@ -86,8 +86,8 @@ describe('DeltaCard — 국면 전환 블록', () => {
     const regime = { ...baseRegime, transition_from: 'LATE_BULL' }
     render(<DeltaCard regime={regime} />)
     const toBadge = screen.getByTestId('transition-to')
-    // BULL_EXPANSION → bg-emerald-50 text-emerald-800
-    expect(toBadge.className).toContain('emerald')
+    // COLOR-STAGE2(한국축): BULL_EXPANSION → 긍정=rose (was emerald)
+    expect(toBadge.className).toContain('rose')
   })
 })
 

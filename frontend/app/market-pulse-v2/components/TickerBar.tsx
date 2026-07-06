@@ -1,6 +1,7 @@
 'use client'
 
 import type { TickerItem } from '@/lib/api/marketPulseV2'
+import { DIRECTION_TEXT } from '../colorSemantics'
 
 function formatPct(v: number | null) {
   if (v === null || Number.isNaN(v)) return '—'
@@ -8,10 +9,11 @@ function formatPct(v: number | null) {
   return `${sign}${v.toFixed(2)}%`
 }
 
+// COLOR-STAGE2(한국축): 가격 상승=긍정→rose / 하락=부정→sky. 부호(+/−) 라벨 병기 불변.
 function tone(v: number | null) {
   if (v === null) return 'text-slate-400'
-  if (v > 0) return 'text-emerald-600'
-  if (v < 0) return 'text-rose-600'
+  if (v > 0) return DIRECTION_TEXT.positive
+  if (v < 0) return DIRECTION_TEXT.negative
   return 'text-slate-500'
 }
 
