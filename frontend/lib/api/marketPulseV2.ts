@@ -330,6 +330,8 @@ export interface SectorRow {
 export interface SectorHistoryPoint {
   date: string
   rel_strength: number
+  // MP2-TREND S1(additive): 순위 궤적 y값(1~11, 1위 상단). 구버전 응답엔 없을 수 있어 optional.
+  rank?: number
 }
 
 export interface SectorHistory {

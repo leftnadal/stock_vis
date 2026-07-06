@@ -196,7 +196,12 @@ def _sector_detail():
     for r in sorted(rows, key=lambda x: x.date):  # date 오름차순 누적
         if r.date in recent_set and r.rel_strength is not None:  # 결측 skip(0 변환 0)
             per_symbol.setdefault(r.market_index_id, []).append(
-                {"date": r.date.isoformat(), "rel_strength": float(r.rel_strength)}
+                # MP2-TREND S1(additive): rank 노출 — 순위 궤적 y축(1위 상단). rel_strength는 리드아웃 부기용 유지.
+                {
+                    "date": r.date.isoformat(),
+                    "rel_strength": float(r.rel_strength),
+                    "rank": r.rank_in_universe,
+                }
             )
     ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
     for sym in per_symbol:
