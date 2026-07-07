@@ -14,9 +14,13 @@ from django.utils import timezone
 from packages.shared.alerting.delivery.base import get_provider
 from packages.shared.alerting.events import AlertEvent
 from packages.shared.alerting.models import AlertDispatchLog, AlertSubscription
-from packages.shared.alerting.registry import get_alert_renderer
+from packages.shared.alerting.registry import get_alert_fallback, get_alert_renderer
 
 logger = logging.getLogger(__name__)
+
+# MP2-ALERTS S1: 렌더 폴백 사유 접두 — status=SENT + error 이 접두 = "발송됐으나 최소본문 폴백".
+#   status=FAILED(발송 실패)와 로그에서 구분(마이그레이션 0 — 기존 error 필드 재사용).
+RENDER_FALLBACK_PREFIX = "RENDER_FALLBACK: "
 
 
 def dispatch(event: AlertEvent) -> None:
@@ -34,6 +38,20 @@ def dispatch(event: AlertEvent) -> None:
 
     try:
         renderer = get_alert_renderer(event.source_app, event.event_type)
+        # MP2-ALERTS S1: 본문 1회 렌더(구독 무관 동일). 렌더 예외 → 폴백 렌더러(있으면)로 대체해
+        #   발송 자체는 실패하지 않는다. 폴백 사유는 error 필드(RENDER_FALLBACK_PREFIX)에 기록.
+        fallback_note = ""
+        try:
+            subject, text_body, html_body = renderer(event.payload)
+        except Exception as render_exc:
+            fallback = get_alert_fallback(event.source_app, event.event_type)
+            if fallback is None:
+                raise
+            subject, text_body, html_body = fallback(event.payload)
+            fallback_note = f"{RENDER_FALLBACK_PREFIX}{type(render_exc).__name__}: {render_exc}"
+            logger.warning(
+                "alert render fallback[%s]: %s", event.dedup_key, fallback_note
+            )
         subs = list(
             AlertSubscription.objects.filter(
                 source_app=event.source_app,
@@ -42,7 +60,6 @@ def dispatch(event: AlertEvent) -> None:
             )
         )
         for sub in subs:
-            subject, text_body, html_body = renderer(event.payload)
             get_provider(sub.channel).deliver(
                 subject=subject,
                 text_body=text_body,
@@ -53,7 +70,7 @@ def dispatch(event: AlertEvent) -> None:
         log.subscription = subs[0] if len(subs) == 1 else None
         log.status = AlertDispatchLog.Status.SENT
         log.sent_at = timezone.now()
-        log.error = ""
+        log.error = fallback_note  # 폴백 발생 시 사유 기록, 아니면 ""(전건 정상)
         log.save(update_fields=["subscription", "status", "sent_at", "error"])
     except Exception as exc:
         log.status = AlertDispatchLog.Status.FAILED
