@@ -538,15 +538,16 @@
 
 ---
 
-## MP2-TREND 슬라이스 — 멀티라인 시계열 (2026-07-06)
+## MP2-TREND 슬라이스 — 멀티라인 시계열 (2026-07-06) — ✅ **트랙 종결 (2026-07-07)**
 
 > 공용 MultiLineTrendChart + 적용 N곳. 근거 D-TREND-PLAN/BASELINE/TOOLTIP.
+> **종결**: S1·S2·S3(R1) 전건 land(origin/main). S4(z-이상도 뷰)는 **동면** — 트리거 B-1 land(Phase 5)까지 착수 금지 유지.
 
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
 | MP2-TREND-S1 | 1호 = 공용 `MultiLineTrendChart`(recharts, 크로스헤어+고정 리드아웃·반전축·범위/범례 토글, overlays 타입만) + 11색 팔레트 + sector_history rank additive + 섹터 순위 궤적. emphasis=서버 rank leaders/laggards(FE 델타 재계산 금지). prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (c1cdba4)** |
-| MP2-TREND-S2 | 2호 = 전환일 오버레이 공용 계약(previous_regime≠regime 파생) + breadth 궤적(A/D + 기준선 MA20) + overlays.vlines·refSeries 렌더 + 델타 강조 복원(옵션 B, D-TREND-EMPHASIS 안전판 통과). 전부 조회-시 파생·계약 additive·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (브랜치 tip 0eb82d8, 미머지 — 통합 승인 대기)** — pytest 신규6/api72·vitest 신규9/전체518·tsc0·mig0 |
-| MP2-TREND-S3 | 3호(개정 R1) = **국면 재료 판정-거리 소형 다중**(옵션 B). z-score 전제 STEP 0 반증(classifier=raw 복합 룰, D-TREND-BASELINE-R1) → 룰-구동 7지표 raw 스파크라인 + rules.yaml 실제 컷 hlines + 판정거리. 세그먼트 [판정거리 | 이상도(z)🔒 예약탭](D-TREND-VIEWMODE). 컷 하드코딩 0(rules.yaml 단일소스). 조회-시 파생·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (R1, 브랜치 tip f51473d, 미머지 — 통합 승인 대기)** — pytest 신규8/api80·vitest 신규8/전체526·tsc0·mig0. **S3가 트랙 마지막 슬라이스 → MP2-TREND 종결 후보**(S4는 트리거 게이트) |
+| MP2-TREND-S2 | 2호 = 전환일 오버레이 공용 계약(previous_regime≠regime 파생) + breadth 궤적(A/D + 기준선 MA20) + overlays.vlines·refSeries 렌더 + 델타 강조 복원(옵션 B, D-TREND-EMPHASIS 안전판 통과). 전부 조회-시 파생·계약 additive·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (7678ec2)** — pytest 신규6/api72·vitest 신규9/전체518·tsc0·mig0 |
+| MP2-TREND-S3 | 3호(개정 R1) = **국면 재료 판정-거리 소형 다중**(옵션 B). z-score 전제 STEP 0 반증(classifier=raw 복합 룰, D-TREND-BASELINE-R1) → 룰-구동 7지표 raw 스파크라인 + rules.yaml 실제 컷 hlines + 판정거리. 세그먼트 [판정거리 | 이상도(z)🔒 예약탭](D-TREND-VIEWMODE). 컷 하드코딩 0(rules.yaml 단일소스). 조회-시 파생·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (R1, 769dee6, COLOR-STAGE2 CUT_STROKE 정합 포함)** — pytest 신규8/api80·vitest 신규8/전체526·tsc0·mig0. **트랙 마지막 슬라이스 → MP2-TREND 종결** |
 | MP2-TREND-S4 | 4호 = **z-이상도 뷰(예약 탭 채움)** — S3 세그먼트의 이상도(z) placeholder를 실 뷰로. 구성요소 z-정규화(윈도·EOD샘플·history 30→60 확장·저빈도 지표 처리 설계 선행). **트리거: B-1 land(Phase 5) — 그 전 착수 금지** | market_pulse 트랙 | B-1 land(Phase 5) | 🔒 예약(트리거 게이트) |
 
 ## 완료 (최근)
