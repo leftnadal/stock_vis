@@ -459,6 +459,16 @@
 
 ---
 
+## News AV broad 백필 옵스 (2026-07-07)
+
+> 배치1 마감(표적 복구 06-18/19 + 갭 07-04~06, 10호출) 세션 잔여. 근거 project_news_av_broad_track / PROGRESS.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| NEWS-AV-SANITIZE-METRIC | sanitize 발동 카운터/메트릭 부재 — 방어 계층별(provider `url>2000` skip · `_save_articles` 기사별 savepoint skip) 발동 통계 없이는 **"포이즌 미조우 vs sanitize 선차단" 구분 불가**. sanitize 유지 가치 판단의 근거로 추후 필요. (배치1 전 창 `skip=0` 로그는 있으나 provider단 선차단 건수는 별도 미집계 — `skip=0`이 "오염 무"인지 "provider가 이미 걸러냄"인지 판별 불가) | @backend/@infra | sanitize 유지·제거 판단 필요 시 | 🆕 저우선 |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
