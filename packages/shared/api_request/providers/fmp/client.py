@@ -514,6 +514,47 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     # ============================================================
+    # SEC Filings / IPO (C2b 발행 신호 — 설계서 §5.2)
+    # ============================================================
+
+    def get_sec_filings_by_form_type(
+        self,
+        form_type: str,
+        from_date: str,
+        to_date: str,
+        page: int = 0,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """
+        폼타입 전체 검색 (C2b — 424B5 시즌드 발행). 시장 전체 filing 메타.
+
+        API: GET /stable/sec-filings-search/form-type?formType={}&from={}&to={}&page=&limit=
+        주의: 폼타입 필터는 prefix/family 매칭이라 응답에 변형(424B5 외 등) 혼입 가능 →
+        **소비 측 formType 정확 일치 자체 필터 필수** (프로브 2호 A2). 100건 캡이므로
+        일 단위 날짜 창 순회로 수집(§5.2-2, 424B5 일 26~40건 = 캡 비접촉).
+        필드: symbol/cik/filingDate/acceptedDate/formType/link/finalLink.
+        """
+        params = {
+            "formType": form_type,
+            "from": from_date,
+            "to": to_date,
+            "page": page,
+            "limit": limit,
+        }
+        data = self._make_request("/stable/sec-filings-search/form-type", params)
+        return data if isinstance(data, list) else []
+
+    def get_ipos_calendar(self, from_date: str, to_date: str) -> List[Dict[str, Any]]:
+        """
+        IPO 캘린더 (C2b — 신규 공급). 거래소 필터는 소비 측(NYSE/NASDAQ, §5.2-3).
+
+        API: GET /stable/ipos-calendar?from={from_date}&to={to_date}
+        """
+        params = {"from": from_date, "to": to_date}
+        data = self._make_request("/stable/ipos-calendar", params)
+        return data if isinstance(data, list) else []
+
+    # ============================================================
     # Utility Methods
     # ============================================================
 

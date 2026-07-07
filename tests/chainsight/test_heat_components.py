@@ -99,13 +99,51 @@ class TestRealComponents:
         assert comp["z"] > 0, f"{name}: 과열인데 z<=0 (부호 역전 의심)"
 
 
-class TestStubs:
-    def test_c2b_stub_contract_and_reason(self):
-        comp = hc.c2b_issuance()
-        _assert_contract(comp)
-        assert comp["z"] is None and comp["s"] is None
-        assert comp["missing_reason"] == "c2b_not_collected"
+class TestC2bIssuance:
+    """C2b 발행 신호 (§5.2) — 424B5 + IPO 레그 z 평균. 실계산."""
 
+    # 3년 평온한 건수 히스토리 (평균≈4건/window)
+    CALM_COUNTS = [4, 5, 3, 4, 6, 4, 5, 3, 4, 5, 4, 3, 5, 4, 6, 4, 3, 5, 4, 4,
+                   5, 3, 4, 6]
+
+    def test_normal_single_leg_424b5(self):
+        """정상: 424B5 단독(IPO 미제공) → 424B5 z 그대로."""
+        comp = hc.c2b_issuance(5, self.CALM_COUNTS)
+        _assert_contract(comp)
+        assert comp["missing_reason"] is None
+        assert comp["z"] is not None
+        assert comp["s"] == pytest.approx(hc.sigmoid(comp["z"]))
+        assert comp["raw"]["count_424b5"] == 5
+        assert comp["raw"]["legs"]["z_ipo"] is None
+
+    def test_normal_two_legs_average(self):
+        """정상: 두 레그 유효 → 산술평균."""
+        comp = hc.c2b_issuance(
+            5, self.CALM_COUNTS, current_ipo_count=5, history_ipo_counts=self.CALM_COUNTS
+        )
+        assert comp["z"] is not None
+        z424 = comp["raw"]["legs"]["z_424b5"]
+        zipo = comp["raw"]["legs"]["z_ipo"]
+        assert comp["z"] == pytest.approx((z424 + zipo) / 2)
+
+    def test_missing_when_no_legs(self):
+        """결측: 두 레그 모두 None → missing_reason."""
+        comp = hc.c2b_issuance(None, [], current_ipo_count=None)
+        assert comp["z"] is None and comp["s"] is None
+        assert comp["missing_reason"] == "c2b_no_issuance"
+
+    def test_missing_reason_passthrough(self):
+        """상위(from_db)가 명시한 missing_reason 전달 (빈 유니버스 등)."""
+        comp = hc.c2b_issuance(None, [], missing_reason="c2b_empty_universe")
+        assert comp["missing_reason"] == "c2b_empty_universe"
+
+    def test_sign_direction_overheated_positive_z(self):
+        """부호: 발행 건수 급증(current ≫ mean) → z>0 (공급 증가 = 과열, 정방향)."""
+        comp = hc.c2b_issuance(20, self.CALM_COUNTS)  # 20 ≫ mean(≈4)
+        assert comp["z"] is not None and comp["z"] > 0
+
+
+class TestStubs:
     def test_c8_stub_contract_and_reason(self):
         comp = hc.c8_estimate_revision()
         _assert_contract(comp)
