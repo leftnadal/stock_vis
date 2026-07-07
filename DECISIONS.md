@@ -8,6 +8,55 @@
 
 ---
 
+## [2026-07-07] Theme Heat TH-3 — 장기 배치 실행 원칙 + 유니버스 동결 정책 + 성분 계약
+
+### 결정 1: 장기 배치는 전경(foreground) 블로킹으로 실행한다 (백그라운드 금지)
+**결정**: 완결이 필요한 장기 작업(백필·대량 수집·성분 배치 등)은 **전경 블로킹**으로 돌린다.
+`&`·`nohup`·`caffeinate` 등 백그라운드/detach 실행은 금지. 필요 시 멱등 커맨드를 경계
+배치(`--offset`/`--limit`)로 잘라 순차 전경 실행한다.
+**Why**: TH-2 내부자 백필을 배경 실행 시 하네스가 장기 백그라운드 프로세스를 **2회 리핑
+(하드킬)** 해 미완결 반복. 전경 블로킹 배치 2회(offset 250–380/380–501)로 219,410행 완결.
+**How to apply**: 장기 커맨드는 `--offset/--limit`로 슬라이스 + 전경 대기(`TaskOutput(block=true)`
+동턴 유지). 멱등 upsert 전제라 재개 안전. (1차 소스 = PROGRESS 2026-07-07 + 메모리
+`lesson_background_task_reaping`; 본 항목이 DECISIONS 흡수분.)
+
+### 결정 2: 유니버스 정책 = 배치 일자별 스냅샷 동결 (UniverseSnapshot)
+**결정**: 매 배치는 그날 조회한 유니버스(SP500 active − '.' 심볼)를 `UniverseSnapshot
+(batch_date, symbols)`로 박고, 이후 모든 성분 z(특히 C2a 테마 합산)의 **모집단은 배치
+일자 스냅샷을 참조**한다(라이브 재조회 금지). 저장 시 전일 대비 추가/제거 diff 1줄 로그.
+**Why**: `SP500Constituent`는 월 1회 동기화라 `is_active`가 소리 없이 변한다(실측: 전 503행
+`updated_at=2026-05-01`, 이후 미변경 = 정적 스냅샷). 모집단이 배치마다 흔들리면 z 시계열이
+오염된다(설계서 §6.0 잠금장치 3 "구성 동결 — z 히스토리 보호"와 동일 문제, Cycle 1 판).
+TH-2 코드기(485)→완결(501) "변동"은 실제 유니버스 변화가 아니라 중단 실행의 stale 분모였음
+(DB 무변경으로 반증) — 스냅샷이 이 모호성 자체를 제거.
+**How to apply**: 배치 진입 시 `universe_snapshot.get_or_create_universe_snapshot(batch_date)`
+→ 반환 symbols로 `sector_constituents(sector, symbols)` → 성분 계산. 멱등(같은 batch_date
+재호출 = 저장분 반환).
+
+### 결정 3: TH-2 백필 게이트 종결 = 500/501 (BK 구조적 OPEN_EMPTY)
+**결정**: 내부자 백필 게이트를 **500/501(99.8%)로 최종 종결**. 미수집 1종 = **BK(BNY Mellon)**.
+**Why**: BK는 상장 유지(active, 티커 불변)이나 FMP **E1/E2 거래검색이 결정적으로 0행**
+(재시도 1회 확인, HTTP 200 정상 빈응답 = OPEN_EMPTY, 일시 오류 아님). E3 statistics는 98행
+존재하나 원장(§5.1)은 E1/E2 거래 레벨을 쓰므로 BK는 저장할 거래행이 없음. 구조적 원천부재라
+재시도로 해소 불가 + C2a는 테마/섹터 합산이라 단일 종목 결측은 희석 + §3-5 재분배가 성분
+결측을 처리 → 게이트 종결 타당.
+**How to apply**: BK는 유니버스에 유지하되 C2a 풀에 기여 0. 재소환 조건 = FMP가 BK 거래검색을
+채우면 멱등 백필로 자동 회수.
+
+### 결정 4: Heat 8성분 = 전건 정방향(raw↑ → z↑ → 과열↑)
+**결정**: Cycle 1 Heat 8성분(C1·C2a·C3·C4·C5·C6·C7·C8)은 **모두 정방향** — raw 원값 상승이
+과열 상승이 되도록 z 부호를 잡는다(부호 반전 성분 0). 성분 계약 = `{z, s, raw, missing_reason}`
+통일, s=sigmoid(z).
+**Why**: Heat는 "과열 축" 단일 방향이고, 각 성분(밸류에이션 배수·내부자 순매도·키워드 볼륨·
+ETF 순유입·레버리지 거래비율·상관 응집·거래대금·멀티플 단독팽창)이 전부 "높을수록 과열".
+역방향은 Cycle 2 DSS의 D2(DIO 재고일수)뿐이라 본 모듈에 없음. (부호 표 = PROGRESS
+2026-07-07 보고, 검증자 전수 대조 완료.)
+**How to apply**: 새 Heat 성분 추가 시 "raw↑ = 과열↑" 성립 여부를 먼저 판정하고, 역방향이면
+z 부호 반전 + 본 항목 갱신. C2b·C8은 이 슬라이스 스텁(missing_reason=c2b_not_collected/
+c8_cold_start), 각 후속 슬라이스에서 실구현.
+
+---
+
 ## RelationConfidence 상향 학습 루프 — B+C 채택 (2026-07-02) [해자]
 
 ### 비대칭 보수(B) 기본 + Tier-1 fast-path(C) 가속 레인
