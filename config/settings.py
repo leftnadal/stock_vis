@@ -567,3 +567,10 @@ CELERY_IGNORED_ERRORS = [
 # 'event_group'(ON) = EventGroup(kept만·n3 이름) + benchmark_kind='eg' leadership.
 # ON(go-live)은 .env CHAINSIGHT_GROUP_SOURCE=event_group + daphne web 재시작 = Phase 1 완료.
 CHAINSIGHT_GROUP_SOURCE = os.getenv('CHAINSIGHT_GROUP_SOURCE', 'theme_tags')
+
+# 상향 학습 루프 flag (D2 v5.1). OFF(기본) = upward 트리거 미발사(aggregate skip 로그).
+# ON = .env CHAINSIGHT_UPWARD_LEARNING_ENABLED=true + 워커 재기동. D1이 체크만 배선하고
+# plumbing 누락(갭 #6) → 본 줄이 env→settings 연결. flag-off도 동일 경로 역방향(env=false+재기동).
+CHAINSIGHT_UPWARD_LEARNING_ENABLED = (
+    os.getenv('CHAINSIGHT_UPWARD_LEARNING_ENABLED', 'false').lower() == 'true'
+)
