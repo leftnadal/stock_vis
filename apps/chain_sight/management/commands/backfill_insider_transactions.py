@@ -33,7 +33,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--dry-run", action="store_true", help="무적재 — 표본 연결/형상만 검증")
-        parser.add_argument("--limit", type=int, default=None, help="대상 종목 수 제한 (표본)")
+        parser.add_argument("--limit", type=int, default=None, help="대상 종목 수 제한 (표본/배치)")
+        parser.add_argument("--offset", type=int, default=0, help="유니버스 슬라이스 시작 (배치 재개용)")
         parser.add_argument("--years", type=int, default=3, help="백필 깊이 (년, 기본 3)")
 
     def handle(self, *args, **opts):
@@ -53,6 +54,9 @@ class Command(BaseCommand):
         limit = opts["limit"]
         if dry_run and limit is None:
             limit = 10  # dry-run 기본 표본
+        offset = opts["offset"]
+        if offset:
+            symbols = symbols[offset:]
         if limit is not None:
             symbols = symbols[:limit]
 
