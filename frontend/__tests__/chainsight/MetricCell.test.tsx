@@ -9,9 +9,9 @@ describe('MetricCell', () => {
     );
     expect(screen.getByText('—')).toBeInTheDocument();
     // No colored bar element (only the empty container div)
-    expect(container.querySelector('[class*="bg-teal"]')).toBeNull();
+    expect(container.querySelector('[class*="bg-rose"]')).toBeNull();
     expect(container.querySelector('[class*="bg-blue"]')).toBeNull();
-    expect(container.querySelector('[class*="bg-red"]')).toBeNull();
+    expect(container.querySelector('[class*="bg-sky"]')).toBeNull();
   });
 
   it('양수 값(center domain)은 값을 2자리로 표시하고 바가 존재한다', () => {
@@ -41,22 +41,22 @@ describe('MetricCell', () => {
     expect(screen.getByText('1.34')).toBeInTheDocument();
   });
 
-  it('signed + 양수이면 바에 teal 클래스가 붙는다', () => {
+  it('signed + 양수이면 바에 rose 클래스가 붙는다(한국축 긍정)', () => {
     const { container } = render(
       <MetricCell value={19} domain="center" domainMax={100} signed />
     );
     expect(screen.getByText('19.00')).toBeInTheDocument();
     const barTrack = container.querySelector('.relative');
-    const bar = barTrack?.querySelector('[class*="bg-teal"]');
+    const bar = barTrack?.querySelector('[class*="bg-rose"]');
     expect(bar).not.toBeNull();
   });
 
-  it('signed + 음수이면 바에 red 클래스가 붙는다', () => {
+  it('signed + 음수이면 바에 sky 클래스가 붙는다(한국축 부정)', () => {
     const { container } = render(
       <MetricCell value={-8} domain="center" domainMax={100} signed />
     );
     const barTrack = container.querySelector('.relative');
-    const bar = barTrack?.querySelector('[class*="bg-red"]');
+    const bar = barTrack?.querySelector('[class*="bg-sky"]');
     expect(bar).not.toBeNull();
   });
 
