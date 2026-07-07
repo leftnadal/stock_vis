@@ -33,3 +33,9 @@ export const DIRECTION_TEXT_SOFT = {
   positive: 'text-rose-500',
   negative: 'text-sky-500',
 } as const
+
+/** SVG/차트 stroke·fill hex (스파크라인 컷선 등) — 상승/긍정 rose-500 / 하락/부정 sky-500. sectorColor 정합. */
+export const DIRECTION_HEX = {
+  positive: '#f43f5e', // rose-500
+  negative: '#0ea5e9', // sky-500
+} as const

@@ -28,6 +28,8 @@ from apps.market_pulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from apps.market_pulse.regime.classifier import load_rules
+from apps.market_pulse.regime.component_cuts import build_components
 from apps.market_pulse.regime.next_stage import compute_next_stage_margin
 from apps.market_pulse.throttles import (
     MarketPulseHourThrottle,
@@ -137,7 +139,7 @@ def _regime_detail():
     # stage = raw regime enum 배열 — 라벨 변환(regime.*)은 FE 담당. 빈데이터 graceful(빈 배열).
     history = list(
         RegimeSnapshot.objects.order_by("-date")[:30].values(
-            "date", "regime", "previous_regime"
+            "date", "regime", "previous_regime", "inputs"
         )
     )
     history.reverse()
@@ -151,6 +153,9 @@ def _regime_detail():
     ]
     # MP-UX-S3b: 다음(인접 상위) 단계까지 거리. rules.yaml 읽기만(임계 단일소스), 모델 저장 0(즉석 산출).
     ns = compute_next_stage_margin(snap.regime, snap.inputs)
+    # MP2-TREND S3(R1): 국면 재료 판정-거리 — 룰-구동 7지표 raw 시계열 + 컷(rules.yaml 도출) + 판정거리.
+    #   z-score 아님(STEP 0 반증, D-TREND-BASELINE-R1). 컷 하드코딩 0(rules.yaml 단일소스). 저장 0.
+    components = build_components(history, load_rules())
     return {
         "available": True,
         "date": snap.date.isoformat(),
@@ -170,6 +175,7 @@ def _regime_detail():
         "next_stage": ns["next_stage"],
         "margins": ns["margins"],
         "next_stage_closest": ns["closest"],
+        "components": components,
     }
 
 

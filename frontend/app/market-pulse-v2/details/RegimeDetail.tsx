@@ -15,6 +15,7 @@ import type { RegimeDetail as Detail } from '@/lib/api/marketPulseV2'
 import { REGIME_MEANING, REGIME_TERM, REGIME_TONE } from '../meaning'
 import { RegimeTimeline } from './RegimeTimeline'
 import { NextStageGauge } from './NextStageGauge'
+import { RegimeComponents } from './RegimeComponents'
 
 // 매크로지표 14종의 raw fallback 라벨(i18n 미로드/offline 시 폴백).
 // MP-UX-S2: 14종 전부 INDICATOR_I18N으로 i18n 키 승격 완료 — 정상 경로는 한글 렌더.
@@ -134,6 +135,10 @@ export function RegimeDetail({ payload, labels }: { payload: Detail; labels?: Re
 
       {/* MP-UX-S4 Part B: 다음 단계 게이지 — 거시 데이터공백(MP-DATA-MACRO-COVERAGE)이라 '대기'만. */}
       <RegimeNextStage payload={payload} labels={labels} />
+
+      {/* MP2-TREND S3(R1): 국면 재료 판정-거리 소형 다중(7지표 raw + rules.yaml 컷). 전환일 vlines는
+          셀 과밀 가독 저해로 생략(사전 승인 갈래 — 전환 맥락은 위 RegimeTimeline이 담당). */}
+      <RegimeComponents payload={payload} labels={labels} />
 
       <div style={{ width: '100%', height: 280 }}>
         <ResponsiveContainer>

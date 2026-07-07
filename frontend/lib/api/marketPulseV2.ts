@@ -274,6 +274,32 @@ export interface RegimeMargin {
   to_threshold: number | null
 }
 
+// MP2-TREND S3(R1): 국면 재료 판정-거리. 컷 = rules.yaml 도출(하드코딩 0), z-score 아님(raw).
+export interface RegimeCut {
+  value: number
+  regime: RegimeId
+  op: string
+}
+export interface RegimeComponentPoint {
+  date: string
+  value: number | null
+}
+export interface RegimeNearestCut {
+  cut: number
+  regime: RegimeId
+  op: string
+  distance: number
+}
+export interface RegimeComponent {
+  key: string
+  unit: string
+  current: number | null
+  series: RegimeComponentPoint[]
+  cuts: RegimeCut[]
+  crossed_cuts: RegimeCut[]
+  nearest_cut_distance: RegimeNearestCut | null
+}
+
 export interface RegimeDetail {
   available: boolean
   date?: string
@@ -294,6 +320,8 @@ export interface RegimeDetail {
   next_stage?: RegimeId | null
   margins?: RegimeMargin[]
   next_stage_closest?: RegimeMargin | null
+  // MP2-TREND S3(R1, additive): 국면 재료 판정-거리 소형 다중(7지표 raw + 컷).
+  components?: RegimeComponent[]
 }
 
 export interface BreadthHistoryPoint {
