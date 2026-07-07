@@ -127,4 +127,5 @@ class TestTaskFlagOff:
         from apps.chain_sight.tasks.relation_tasks import apply_upward_learning_task
 
         result = apply_upward_learning_task.apply().result
-        assert result == {"enabled": False, "upgraded": 0}
+        # D2 v5.1: 반환 규격에 evaluated/fastpath 추가(flag-off도 일관 shape).
+        assert result == {"enabled": False, "evaluated": 0, "upgraded": 0, "fastpath": 0}

@@ -730,13 +730,8 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # 상향 학습 루프 (매일 11:35 ET, aggregate·decay 직후). D1=flag-off 기본(no-op),
-    # 실발화는 D2 게이트(#28 Gate 2 + 궤적 ≥5틱) 후 CHAINSIGHT_UPWARD_LEARNING_ENABLED=True.
-    'chainsight-upward-learning': {
-        'task': 'apps.chain_sight.tasks.relation_tasks.apply_upward_learning_task',
-        'schedule': crontab(hour=11, minute=35),
-        'options': {'expires': 3600}
-    },
+    # (D2 v5.1 ⑨-C) 상향 학습 죽은 config dict beat 제거 — DatabaseScheduler가
+    # 무시(#28)하던 미배선 항목. 실발화는 aggregate 말미 인라인 트리거(코드 체인)로 대체.
 
     # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
     'chainsight-aggregate-profiles': {
