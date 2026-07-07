@@ -96,8 +96,44 @@ class TestCollect424b5:
         assert ThemeFilingCount.objects.filter(form_type="424B5").count() == 1
 
 
+class TestGenuineIpoFilter:
+    """진성 운영기업 IPO 필터 — SPAC 셸·파생·ETF 제외 (위생 점검 2026-07-08)."""
+
+    @pytest.mark.parametrize("company,symbol", [
+        ("GSR V Acquisition Corp.", "GSRV"),            # SPAC 셸(인접)
+        ("Aeon Acquisition I Corp.", "AESP"),           # SPAC 셸(숫자 삽입형)
+        ("GSR V Acquisition Corp. Rights", "GSRVR"),    # 권리
+        ("Aeon Acquisition I Corp. Warrants", "AESPW"), # 워런트
+        ("Osprey Acquisition Corp. III", "OSPRU"),      # 유닛
+        ("First Eagle Core Municipal ETF", "FECM"),     # ETF
+        ("IQM Quantum Computers Oyj", "IQMXW"),         # 이름 깨끗하나 심볼 파생(W)
+    ])
+    def test_excludes_non_operating(self, company, symbol):
+        assert fs.is_genuine_operating_ipo({"company": company, "symbol": symbol}) is False
+
+    @pytest.mark.parametrize("company,symbol", [
+        ("IQM Quantum Computers Oyj", "IQMX"),          # 진성 (base 심볼)
+        ("Idaho Copper Corporation", "COPR"),           # 4자 R접미 오탐 방지
+        ("Bending Spoons S.p.A.", "BSP"),               # 진성 운영기업
+    ])
+    def test_keeps_genuine(self, company, symbol):
+        assert fs.is_genuine_operating_ipo({"company": company, "symbol": symbol}) is True
+
+
 @pytest.mark.django_db
 class TestCollectIpo:
+    def test_non_operating_filtered_out(self):
+        """SPAC 셸·파생·ETF 는 적재 제외 + 집계."""
+        ipos = [
+            {"symbol": "REAL", "date": "2026-07-06", "exchange": "NASDAQ", "company": "Real Operating Inc."},
+            {"symbol": "SPCU", "date": "2026-07-06", "exchange": "NASDAQ", "company": "Sky Acquisition Corp."},
+            {"symbol": "XETF", "date": "2026-07-06", "exchange": "NYSE", "company": "Big Index ETF"},
+        ]
+        res = fs.collect_ipos_range(_FakeClient(ipos=ipos), date(2026, 7, 1), date(2026, 7, 6))
+        assert res["created"] == 1
+        assert res["skipped_non_operating"] == 2
+        assert ThemeFilingCount.objects.filter(form_type="IPO").get().symbol == "REAL"
+
     def test_exchange_filter_keeps_nyse_nasdaq(self):
         """NYSE/NASDAQ 만 적재 — OTC·해외 제외."""
         ipos = [

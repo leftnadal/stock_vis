@@ -125,22 +125,51 @@ def collect_424b5_range(client, from_date: date, to_date: date, log_fn=None) -> 
     return agg
 
 
-# ────────────────────────────── IPO 수집 (범위 + 거래소 필터) ──────────────────────────────
+# ────────────────────────────── IPO 수집 (범위 + 거래소 + 진성 운영기업 필터) ──────────────────────────────
 def _exchange_ok(exchange: str) -> bool:
     """NYSE/NASDAQ 계열만 (§5.2-3)."""
     ex = (exchange or "").upper()
     return any(ex.startswith(p) for p in IPO_EXCHANGE_PREFIXES)
 
 
+# 진성 운영기업 IPO 모집단 정의 (위생 점검 2026-07-08 실측 반영):
+#   C2b IPO 레그 모집단 = NYSE/NASDAQ **진성 운영기업 IPO** — SPAC 블랭크체크 셸 ·
+#   유닛/워런트/권리 파생증권 · ETF/펀드 상장을 제외한 실제 신규 지분 공급만.
+# 실측(06-15~07-02 103건): "Acquisition Corp" SPAC 셸 + 그 Units(U)/Warrants(W)/
+# Rights(R) 파생 + First Eagle/DEFIANCE ETF 다수 혼입 → 신규 공급 신호 오염.
+_IPO_NAME_EXCLUDE = re.compile(
+    # "acquisition"(블랭크체크 SPAC 관용어 — 'Aeon Acquisition I Corp.'처럼 사이 숫자/로마자
+    # 삽입형도 회수) · blank check · 파생증권 서술어 · ETF/펀드.
+    r"(\bacquisition\b|blank check|"
+    r"\bwarrants?\b|\brights?\b|\bunits?\b|\betf\b|\bfund\b)",
+    re.IGNORECASE,
+)
+# SPAC 파생 심볼 접미(유닛 U/UN·워런트 W/WS·권리 R/RT) — 이름에 표기 없는 파생(예: IQMXW)
+# 회수. len≥5 로 짧은 진성 티커(COPR 4자 등) 오탐 방지.
+_IPO_SYMBOL_DERIVATIVE = re.compile(r"^[A-Z]{3,}(UN|WS|RT|U|W|R)$")
+
+
+def is_genuine_operating_ipo(row: dict) -> bool:
+    """진성 운영기업 IPO 여부. SPAC 셸·파생증권·ETF/펀드 제외."""
+    name = str(row.get("company") or row.get("name") or "")
+    symbol = str(row.get("symbol") or "").upper()
+    if _IPO_NAME_EXCLUDE.search(name):
+        return False
+    if len(symbol) >= 5 and _IPO_SYMBOL_DERIVATIVE.match(symbol):
+        return False
+    return True
+
+
 def collect_ipos_range(client, from_date: date, to_date: date) -> dict:
     """
-    IPO 캘린더 범위 수집 + 거래소 필터(§5.2-3) + 멱등 upsert. form_type=IPO 마커.
+    IPO 캘린더 범위 수집 + 거래소 필터(§5.2-3) + **진성 운영기업 필터** + 멱등 upsert.
 
+    모집단 = NYSE/NASDAQ 진성 운영기업 IPO (SPAC 셸·유닛/워런트/권리·ETF/펀드 제외).
     dedup_key = hash(symbol, cik='', date) — IPO 는 accession 부재라 date 로 대체.
     """
     rows = client.get_ipos_calendar(from_date.isoformat(), to_date.isoformat())
     fetched = len(rows)
-    created = skipped_exchange = skipped_no_symbol = 0
+    created = skipped_exchange = skipped_no_symbol = skipped_non_operating = 0
     for r in rows:
         symbol = str(r.get("symbol") or "").upper()
         if not symbol:
@@ -149,6 +178,9 @@ def collect_ipos_range(client, from_date: date, to_date: date) -> dict:
         exchange = str(r.get("exchange") or r.get("exchangeShortName") or "")
         if not _exchange_ok(exchange):
             skipped_exchange += 1
+            continue
+        if not is_genuine_operating_ipo(r):
+            skipped_non_operating += 1
             continue
         fdate = str(r.get("date") or "")[:10]
         if not fdate:
@@ -160,6 +192,7 @@ def collect_ipos_range(client, from_date: date, to_date: date) -> dict:
         "created": created,
         "skipped_exchange": skipped_exchange,
         "skipped_no_symbol": skipped_no_symbol,
+        "skipped_non_operating": skipped_non_operating,
     }
 
 
