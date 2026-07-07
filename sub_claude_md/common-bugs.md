@@ -641,3 +641,17 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **증상**: 인간 병렬 CC 세션이 분당 커밋하는 fast-main에서, `git checkout main && git merge --ff-only`는 (a) main이 다른 worktree에 물려 `checkout` 거부, (b) rebase가 그 브랜치의 다른 worktree 때문에 거부, (c) merge~push 사이 main 전진으로 non-ff — 반복 실패.
 - **규칙**: 브랜치가 정확히 `origin/main+1`(그 브랜치 worktree에서 `git rebase origin/main` 선행)일 때, **`git push origin HEAD:main`** = 원자적 ff-push. worktree/checkout/merge 춤 불필요, main이 그새 전진하면 서버가 non-ff로 **안전 거부**(force 아님) → rebase 재시도.
 - **왜**: `push <src>:main`은 서버측 ff 조건을 원자적으로 검사한다. 로컬 checkout/merge 시퀀스는 다중 worktree + 전진 창에 취약. 단 **에이전트의 main 직접 push는 auto-mode가 차단** → land는 사용자 수동 단계로 유지(에이전트는 rebase까지).
+
+## [운영 메모] 메일 CTA 링크 = BE 기동 + 브라우저 로그인 세션 전제 (LINK-DATA-FAIL, 2026-07-07)
+
+- **증상**: 알림 메일 CTA(`/market-pulse-v2`) 클릭 → 화면은 뜨나 "데이터를 불러오지 못했습니다".
+- **원인(트리아지 확정, 코드 버그 아님)**: mp 데이터 API(overview·cards)는 `IsAuthenticated`. JWT는 브라우저 **localStorage `access_token`**. 미로그인 브라우저(로그아웃/토큰 삭제/access 만료+refresh 실패)에서 CTA를 열면 overview 401 → mp 페이지가 인증 가드/리다이렉트 없이 바로 실패 문구 표시.
+- **전제**: 메일 링크 정상 동작 = ⑴ BE(daphne :18765) 기동 + ⑵ **해당 브라우저의 로그인 세션**(localStorage JWT). CORS(localhost:3000 허용)·FE base(:18765)·딥링크 라우트는 정상(전부 배제됨).
+- **개발 전용**: `FRONTEND_BASE_URL=localhost:3000`(prod 도메인 부재)이라 메일 링크는 **개발 PC 전용**. prod 배포 시 도메인 설정 필요.
+- **수리 후보(선택)**: 401 구분 문구 + 로그인 리다이렉트(return-to) = TASKQUEUE `MP-401-MSG`(조건부 보류, 실사용 세션만료 혼동 시 트리거).
+
+## [통합 절차] 병행 폭주 + `--rebase-merges` 재정렬 시 브랜치 `-d` 조상검증 구조적 실패 (S3 후속, 2026-07)
+
+- **증상**: fast-main 병행 폭주로 push 경합 → `git rebase --rebase-merges origin/main`로 머지 구조 보존 재정렬 시, 머지·개별 커밋이 **새 해시로 재작성**됨. 결과 원래 feature/mgmt 브랜치 tip이 origin/main의 조상이 아니게 되어 `git branch -d`(머지 검증) + `merge-base --is-ancestor tip origin/main`이 **구조적으로 실패**("미반영"으로 오판).
+- **처리 절차**: 브랜치 tip 조상 검증 실패 시 곧바로 `-D`하지 말고, **내용이 origin/main에 실제 반영됐는지 검증**(산출 파일 존재 `git cat-file -e origin/main:<path>` + 대표 변경 라인 grep) → 반영 확인되면 `-D`는 **후보로 보고**, 실행은 사용자 수동(직접 `-D` 금지 — 오삭제 방어).
+- **왜**: `--rebase-merges`는 replay라 커밋 객체를 새로 만든다. "브랜치가 안 머지됐다"는 `-d`의 신호는 이 경우 **거짓 음성**이므로, 조상 그래프가 아니라 **내용 반영**을 진실의 소스로 삼는다.
