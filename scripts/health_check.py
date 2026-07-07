@@ -623,6 +623,83 @@ def check_known_test_fails() -> CheckResult:
     )
 
 
+# ── 검증 8: 발행 로그(IssuanceLog) 신선도 (D-HC-ISSUANCE) ─────────────────────
+#
+# bake 자가검증(런타임)의 짝 = 검문소(정합성). 최근 거래일 발행 로그가 존재하고
+# 최근성을 유지하는지 최소 검사 — #46(migration 미적용 → write 조용히 실패,
+# silent 로깅 손실) 재발 탐지. DB 접근이 이 스크립트 유일하므로 Django lazy setup +
+# 전 구간 방어(비-런타임 환경·빈 이력은 OK-skip = zero-noise 원칙 준수).
+
+# 최근 거래일 임계(달력일) — 주말(2) + 연휴 여유. 초과 시 stale 의심(WARN).
+ISSUANCE_STALE_DAYS = 5
+
+
+def check_issuance_log_freshness() -> CheckResult:
+    """최근 거래일 IssuanceLog 행 존재 + 최근성(published_at) 최소 검사. [D-HC-ISSUANCE]
+
+    - 비-런타임 환경(Django/DB 미가용)·빈 이력 → OK-skip(노이즈 0).
+    - 테이블 부재/조회 실패(#46 핵심 증상) → WARN.
+    - 이력은 있으나 최근 거래일이 ISSUANCE_STALE_DAYS 초과 → WARN(stale 의심).
+    - 주말·휴장 허용 오차 = ISSUANCE_STALE_DAYS(달력일)로 흡수.
+    """
+    name = "발행 로그 신선도"
+    try:
+        import os
+
+        import django
+
+        # 스크립트 직접 실행 시 sys.path[0]=scripts/ 라 config/packages 미발견 → REPO_ROOT 보강.
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from packages.shared.stocks.models import IssuanceLog
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        latest = IssuanceLog.objects.order_by("-signal_date").first()
+    except Exception as e:  # noqa: BLE001 — 테이블 부재(#46) 등
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="IssuanceLog 조회 실패 — 테이블 부재 가능(#46 증상)",
+            evidence=[str(e)[:120]],
+        )
+
+    if latest is None:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="발행 로그 이력 없음 — 검사 생략(bake 미실행 환경)",
+        )
+
+    latest_date = latest.signal_date
+    count = IssuanceLog.objects.filter(signal_date=latest_date).count()
+    age_days = (datetime.now().date() - latest_date).days
+    published = getattr(latest, "published_at", None)
+    pub_str = published.date().isoformat() if published else "N/A"
+
+    if age_days > ISSUANCE_STALE_DAYS:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"최근 발행 로그 {age_days}일 전({latest_date}) — stale 의심(임계 {ISSUANCE_STALE_DAYS}일)",
+            evidence=[f"최근 거래일 행수={count}, published_at={pub_str}"],
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"최근 거래일 {latest_date} 행 {count}건 (age {age_days}일 ≤ {ISSUANCE_STALE_DAYS})",
+        evidence=[f"published_at={pub_str}"],
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -637,6 +714,7 @@ CHECKS = [
     check_shared_boundary,
     check_llm_direct_call_boundary,
     check_known_test_fails,
+    check_issuance_log_freshness,
 ]
 
 
