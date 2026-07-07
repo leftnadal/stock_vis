@@ -555,6 +555,25 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     # ============================================================
+    # Analyst Estimates (C8 원장 스냅샷 — 설계서 §5.3 · §6.6)
+    # ============================================================
+
+    def get_analyst_estimates(
+        self, symbol: str, period: str = "annual", limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        연간 애널리스트 컨센서스 추정 (C8 EstimateSnapshot 공급원).
+
+        API: GET /stable/analyst-estimates?symbol={}&period=annual&limit={}
+        리비전 타임스탬프 필드 없음 → 컨센서스 스냅샷 공급원. 리비전 시계열은 우리가
+        주간 EstimateSnapshot → 60일 diff 로 생성한다(§5.3). 필드: symbol/date(대상기간
+        종료일)/epsAvg/epsHigh/epsLow/numAnalystsEps/revenueAvg 등.
+        """
+        params = {"symbol": symbol.upper(), "period": period, "limit": limit}
+        data = self._make_request("/stable/analyst-estimates", params)
+        return data if isinstance(data, list) else []
+
+    # ============================================================
     # Utility Methods
     # ============================================================
 

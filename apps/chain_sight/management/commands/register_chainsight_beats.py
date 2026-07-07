@@ -62,6 +62,19 @@ BEATS = [
         "timezone": "America/New_York",
         "day_of_week": None,  # 매일 (confidence가 매일이므로)
     },
+    {
+        # C8 원장 스냅샷 (Theme Heat TH-3, 설계서 §7). 주간 금 마감 후 — 콜드 스타트 시계
+        # 기동(§5.3, Cycle 1 첫 배포일부터). ET 16:30(16:00 마감 직후), 금요일만.
+        # snapshot_date = 그 금요일 = §6.6 "주간(금요일)" 정합. DST 자동 처리 위해 ET 고정.
+        # ★설계 §7 은 주간 = 이 슬라이스는 설계 준수(주간). (지시서 "일일" 표현은 §6.6/§7
+        #  '주간(금요일)' 스펙과 상충 → 설계 앵커 준수, 변경 시 설계 선수정 필요 — 보고서 명기.)
+        "name": "chainsight-snapshot-analyst-estimates",
+        "task": "chainsight-snapshot-analyst-estimates",
+        "minute": "30",
+        "hour": "16",
+        "timezone": "America/New_York",
+        "day_of_week": "5",  # 금요일
+    },
 ]
 
 
