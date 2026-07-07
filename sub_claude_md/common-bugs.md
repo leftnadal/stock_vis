@@ -536,7 +536,16 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결(임시): 공유 트리를 `git checkout --detach origin/main` + 워커 재기동. **단 detached는 유지 안 됨**(다른 세션이 재체크아웃 → 재표류) = 트레드밀. **항구 해결 = worker 전용 worktree**(TASKQUEUE `P1-B-WORKER-WORKTREE`).
 - 예방: land마다 "워커 트리 == origin/main?" 확인 + 재기동. 자동 beat 전 diff 점검(`P1-BEAT-PRECHECK`).
 - **★web 판(2026-07-06 확인·해소)**: 동일 결합이 **dev server(next dev :3000)에도 존재** — next dev가 공유 트리 frontend를 서빙하므로 land된 FE(예: 캐러셀 `24b0e47`)가 공유 트리 브랜치에 없으면 **화면 미도달**(유닛 green·push 성공이어도). → **W′(D-W-WEB-AMEND-1, web 전용 트리 `sv-web-runtime`)로 해소** `75cb4d3`. ※ 애초 `com.stockvis.web`(daphne)로 오지목했으나 실서빙은 next dev(:3000) — 대상 정정. worker(B′)+web(W′) 양쪽 분리로 완결.
-- **★세 번째 인스턴스(daphne, 2026-07-06 확인·해소 예정)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있음(views_eod 등 표류 대상). 현재 dashboard.json은 정적(next 서빙)이라 즉시 영향 없으나 API 경로는 취약. → DAPHNE-RUNTIME-SURVEY(read-only) 실측 완료 → **D-DAPHNE-RUNTIME 확정**(daphne 전용 트리 `sv-api-runtime` + `worker_sync.sh` 확장, 마진 1.80)으로 **해소 예정**(실행 = TASKQUEUE `DAPHNE-BUILD` 승인). 런타임 3종(celery worker B′·next dev W′·daphne) 전부 분리 패턴으로 수렴 — daphne는 결정 등재·실행 대기.
+- **★세 번째 인스턴스(daphne, 2026-07-06 최종 해소 `803e9a9`)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있었음. → DAPHNE-BUILD로 **해소**(daphne 전용 트리 `sv-api-runtime` + `worker_sync.sh` api 섹션 + plist 전환). 검증: 재기동 전후 baseline 일치·CWD api트리·WS 101. **런타임 3종(celery worker B′·next dev W′·daphne) 전부 공유 편집 트리에서 분리 = #45 전면 종결.** 갱신 = `worker_sync.sh` 단일 출처(단, 반드시 런타임 트리 사본으로 실행 — [[#47]] 참조).
+
+## worker_sync.sh는 런타임 트리 사본으로 실행 (공유 트리 사본 = stale) (#47) `[infra]` `[git]` `[ops]`
+
+- 증상: `bash scripts/worker_sync.sh`를 실행했는데 **worker·web만 동기화되고 api 트리는 건너뜀**(부분 동기화). 에러 0, 조용히 일부만 정렬.
+- 원인: **공유 편집 트리**(`~/Desktop/stock_vis`)의 `scripts/worker_sync.sh`가 세션 브랜치(예: `sess-cs-pair-relevance`)에 머물러 **api 섹션이 없는 구버전**. 확장판(api 섹션 = D-DAPHNE-RUNTIME)은 origin/main(`803e9a9`+)에만 존재 → 공유 트리 사본은 stale. #45의 재귀(#45가 "코드가 stale"이면, #47은 "동기화 스크립트 자체가 stale").
+- 함정: 스크립트 파일이 존재하고 정상 종료(exit 0)라 "다 돌았다"는 착시 — 실제로는 최신 트리 하나(api)를 누락.
+- 해결: **반드시 런타임 트리 사본으로 실행** — `bash /Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/worker_sync.sh`(런타임 트리는 detached origin/main이라 항상 확장판 보유). 실행 전 `grep -c API_TREE <사본>`로 api 섹션 유무 확인(0이면 stale, 사용 금지).
+- 예방(고정 진입점 미결): 항상 런타임 사본을 실행하는 래퍼/별칭 = TASKQUEUE `SYNC-ENTRYPOINT`(미결). 그 전까지 **수동 주의**(사본 경로 명시 지정).
+- **첫 준수 사례(2026-07-07)**: MGMT 세션이 공유 트리 사본(api 섹션 0)을 포착·거부하고 런타임 트리 사본으로 실행 → worker·web·api 3종 `9fe326f` 정상 동기화 + daphne 재기동. 자동화 부재 시 수동 규율로 우회 가능함을 실증.
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 
