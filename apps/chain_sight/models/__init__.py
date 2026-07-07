@@ -12,6 +12,7 @@ from .heat import (
     ThemeEtfMap,
     ThemeFilingCount,
     ThemeHeatScore,
+    UniverseSnapshot,
 )
 from .insider_signal import CompanyInsiderSignal
 from .leadership import StockLeadershipScore
@@ -53,4 +54,6 @@ __all__ = [
     "ThemeEtfMap",
     "ThemeFilingCount",
     "EstimateSnapshot",
+    # Theme Heat (TH-3)
+    "UniverseSnapshot",
 ]
