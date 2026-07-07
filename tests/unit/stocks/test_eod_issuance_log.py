@@ -156,3 +156,154 @@ def test_write_issuance_log_skips_unknown_ticker():
     written = baker._write_issuance_log(recs, date(2026, 2, 25))
     assert written == 0
     assert IssuanceLog.objects.count() == 0
+
+
+# ───────────────────────────────────────────────
+# _verify_issuance (D-HC-ISSUANCE — Stage 7 자가검증)
+# ───────────────────────────────────────────────
+
+@pytest.mark.django_db
+def test_verify_issuance_ok_when_rows_match_n():
+    from packages.shared.stocks.models import Stock
+
+    Stock.objects.create(symbol="AAA", stock_name="Alpha")
+    Stock.objects.create(symbol="BBB", stock_name="Beta")
+    baker = EODJSONBaker()
+    target = date(2026, 2, 25)
+    recs = baker._build_recommendations(
+        [_sig("AAA", "V1", 0.8), _sig("BBB", "P2", -0.6)]
+    )
+    baker._write_issuance_log(recs, target)
+
+    verified = baker._verify_issuance(recs, target)
+    assert verified == {"expected": 2, "written": 2, "ok": True}
+
+
+@pytest.mark.django_db
+def test_verify_issuance_flags_mismatch_and_logs_error():
+    """인위 불일치: 종목 미존재로 write < N → ok=False + logger.error(경보). bake 중단 아님."""
+    from packages.shared.stocks.models import Stock
+
+    Stock.objects.create(symbol="AAA", stock_name="Alpha")  # BBB 미존재
+    baker = EODJSONBaker()
+    target = date(2026, 2, 25)
+    recs = baker._build_recommendations(
+        [_sig("AAA", "V1", 0.8), _sig("BBB", "P2", -0.6)]
+    )
+    baker._write_issuance_log(recs, target)  # AAA만 write (BBB skip)
+
+    with patch("packages.shared.stocks.services.eod_json_baker.logger") as mock_log:
+        verified = baker._verify_issuance(recs, target)
+
+    assert verified == {"expected": 2, "written": 1, "ok": False}
+    assert mock_log.error.called  # 경보 발생
+
+
+def test_verify_issuance_query_failure_returns_zero_written():
+    """테이블 부재 등 조회 실패(#46) → written=0, ok=False(경보). 예외 전파 없음."""
+    baker = EODJSONBaker()
+    recs = [{"ticker": "AAA"}, {"ticker": "BBB"}]
+
+    with patch(
+        "packages.shared.stocks.models.IssuanceLog.objects.filter",
+        side_effect=RuntimeError("no such table: stocks_issuance_log"),
+    ), patch("packages.shared.stocks.services.eod_json_baker.logger") as mock_log:
+        verified = baker._verify_issuance(recs, date(2026, 2, 25))
+
+    assert verified == {"expected": 2, "written": 0, "ok": False}
+    assert mock_log.exception.called or mock_log.error.called
+
+
+# ───────────────────────────────────────────────
+# bake() 통합 — pipeline_meta additive-within + 7키 IDENTICAL + write 실패 완주
+# ───────────────────────────────────────────────
+
+def _bake_patches(baker, captured, tmp_dir):
+    """bake()의 파일/DB 무거운 곳을 패치. dashboard.json 내용은 captured에 포착."""
+    baker.TMP_DIR = tmp_dir  # 실 signals_tmp 무접촉
+
+    def fake_write_json(path, data):
+        if path.name == "dashboard.json":
+            captured["dashboard"] = data
+
+    return [
+        patch.object(baker, "_preload_mini_charts"),
+        patch.object(baker, "_group_signals_into_cards", return_value=[]),
+        patch.object(baker, "_write_json", side_effect=fake_write_json),
+        patch.object(baker, "_build_card_jsons", return_value=0),
+        patch.object(baker, "_build_stock_jsons", return_value=0),
+        patch.object(baker, "_build_meta_json", return_value={}),
+        patch.object(baker, "_atomic_swap"),
+        patch.object(baker, "_upsert_snapshot", return_value=MagicMock(pk=1)),
+    ]
+
+
+@pytest.mark.django_db
+def test_bake_injects_issuance_verified_and_keeps_keys(tmp_path):
+    from contextlib import ExitStack
+
+    from packages.shared.stocks.models import Stock
+
+    Stock.objects.create(symbol="AAA", stock_name="Alpha")
+    baker = EODJSONBaker()
+    captured: dict = {}
+    pipeline_log = MagicMock(
+        run_id="rid", status="success", total_duration_seconds=1.0, stages={}
+    )
+
+    with ExitStack() as stack:
+        for p in _bake_patches(baker, captured, tmp_path / "tmp"):
+            stack.enter_context(p)
+        baker.bake(
+            date(2026, 2, 25), [_sig("AAA", "V1", 0.7)], {"headline": "x"}, pipeline_log
+        )
+
+    dashboard = captured["dashboard"]
+    # 7 top-level 키 IDENTICAL(순서·집합 불변)
+    assert list(dashboard.keys()) == [
+        "generated_at", "trading_date", "is_stale",
+        "market_summary", "signal_cards", "pipeline_meta", "recommendations",
+    ]
+    pm = dashboard["pipeline_meta"]
+    # 기존 4 subfield 불변 + issuance_verified additive-within
+    assert set(pm) == {
+        "run_id", "status", "total_duration_seconds", "stages", "issuance_verified",
+    }
+    assert pm["run_id"] == "rid" and pm["status"] == "success"
+    assert pm["issuance_verified"] == {"expected": 1, "written": 1, "ok": True}
+
+
+@pytest.mark.django_db
+def test_bake_completes_and_flags_when_issuance_write_raises(tmp_path):
+    """#46: 발행 로그 write 예외 → bake 완주(파일 서빙) + issuance_verified.ok=False 경보."""
+    from contextlib import ExitStack
+
+    from packages.shared.stocks.models import Stock
+
+    Stock.objects.create(symbol="AAA", stock_name="Alpha")
+    baker = EODJSONBaker()
+    captured: dict = {}
+    pipeline_log = MagicMock(
+        run_id="rid", status="success", total_duration_seconds=1.0, stages={}
+    )
+
+    with ExitStack() as stack:
+        for p in _bake_patches(baker, captured, tmp_path / "tmp"):
+            stack.enter_context(p)
+        # write는 예외, 검증 조회는 0행 → ok=False
+        stack.enter_context(
+            patch.object(
+                baker, "_write_issuance_log", side_effect=RuntimeError("boom")
+            )
+        )
+        result = baker.bake(
+            date(2026, 2, 25), [_sig("AAA", "V1", 0.7)], {"headline": "x"}, pipeline_log
+        )
+
+    # bake는 완주 (files_written 반환, 예외 전파 없음)
+    assert result["files_written"] >= 1
+    # dashboard.json은 정상 서빙 + 경보 필드
+    pm = captured["dashboard"]["pipeline_meta"]
+    assert pm["issuance_verified"]["ok"] is False
+    assert pm["issuance_verified"]["expected"] == 1
+    assert pm["issuance_verified"]["written"] == 0
