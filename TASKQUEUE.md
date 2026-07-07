@@ -611,3 +611,8 @@
 ## TH-C5-SPDR-SEED — C5 섹터 SPDR 11행 시드 (등재, 2026-07-06)
 - 상태: 등재. **트리거 = C5(투기 심리) 구현 PR**.
 - 의무: ThemeEtfMap 에 섹터 SPDR 11종(XLK/XLV/XLF/XLY/XLI/XLE/XLC/XLRE/XLU/XLB/XLP, role=primary, active=True) 시드 = Cycle 1 C5 주 데이터(설계서 §6.4 v1.2.1). TH-1 시드한 테마 ETF 9행(active=False)은 레인 개방 대기이므로 별개 — 섞지 말 것.
+
+## TH-UNIVERSE-REFRESH-ALERT — 유니버스 갱신 소스 복구 + 실패 알림 (등재, 2026-07-07)
+- 상태: 등재. **트리거 = Heat beat 슬라이스**(디렉터 지시로 beat 슬라이스에 편입). 근거 = DECISIONS 2026-07-07 결정 5.
+- 발견: `sync-sp500-constituents` beat 는 살아 발화(enabled·last_run 2026-07-01·total 5)하나 소스 `datahub.io/.../constituents.csv` = **404** → `sync_constituents` 조기 반환(zero stats·`logger.error`만·**알림 없음**). 마지막 성공 동기화 2026-05-01(전 503행 updated_at 증거). = **(c) 조용한 무-op 사망**.
+- 의무: ⑴ 소스 교체(신뢰 소스로 — FMP `/stable/` 구성종목 or 대체) ⑵ **동기화 실패/무-op 시 ops 알림**(zero stats·예외 → 알림, Bug #28 `check_last_tick_succeeded` 대상 등록) ⑶ 성공 시 updated_at 신선도 게이트. UniverseSnapshot 은 정적성 명시화 방어라 즉시 위험은 아니나, 유니버스가 5-01 에 영구 동결되면 신규 상장/편출 미반영.
