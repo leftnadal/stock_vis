@@ -6,6 +6,7 @@
  * 임계·색 로직과 무관 — 표시(밴드)용 텍스트 + 단계별 밴드 색만.
  */
 import type { AnomalyMode, RegimeId } from '@/lib/api/marketPulseV2'
+import { DIRECTION_BAND } from './colorSemantics'
 
 export const REGIME_MEANING: Record<RegimeId, string> = {
   BULL_EXPANSION: '위험자산 우호 국면. 추세 추종 유리, 광범위 강세.',
@@ -15,13 +16,17 @@ export const REGIME_MEANING: Record<RegimeId, string> = {
   CRISIS: '시스템 스트레스. 현금·안전자산 비중, 급변동 대비.',
 }
 
-/** 단계별 밴드 색 (신규 표시 — 기존 카드 색 로직과 무관). good→bad 순. */
+/**
+ * 단계별 밴드 색. good→bad 순. COLOR-STAGE2(한국축, D-COLOR-SYSTEM):
+ *   양끝(방향축) = BULL_EXPANSION 긍정→rose · CRISIS 위기/부정→sky(경고성은 라벨 "위기"가 보존).
+ *   중간(LATE_BULL amber·TRANSITION slate·BEAR orange) = 비-flip축 caution/neutral 톤(무변경).
+ */
 export const REGIME_TONE: Record<RegimeId, string> = {
-  BULL_EXPANSION: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  BULL_EXPANSION: DIRECTION_BAND.positive,
   LATE_BULL: 'bg-amber-50 text-amber-800 border-amber-200',
   TRANSITION: 'bg-slate-50 text-slate-700 border-slate-200',
   BEAR_CONTRACTION: 'bg-orange-50 text-orange-800 border-orange-200',
-  CRISIS: 'bg-rose-50 text-rose-800 border-rose-200',
+  CRISIS: DIRECTION_BAND.negative,
 }
 
 export const MODE_MEANING: Record<AnomalyMode, string> = {
@@ -131,9 +136,10 @@ export function sectorFlow(
   value: number | null | undefined,
   epsilon = 0.1,
 ): { dir: SectorDir; tone: string } {
+  // COLOR-STAGE2(한국축): 유입=상대강세=긍정→rose / 유출=상대약세=부정→sky (FLOW_TONE 방향 소비 탈피).
   if (value == null || !Number.isFinite(value)) return { dir: 'flat', tone: FLOW_NEUTRAL_TONE }
-  if (value > epsilon) return { dir: 'in', tone: FLOW_TONE.calm } // 유입=상대강세
-  if (value < -epsilon) return { dir: 'out', tone: FLOW_TONE.hot } // 유출=상대약세
+  if (value > epsilon) return { dir: 'in', tone: DIRECTION_BAND.positive } // 유입=상대강세
+  if (value < -epsilon) return { dir: 'out', tone: DIRECTION_BAND.negative } // 유출=상대약세
   return { dir: 'flat', tone: FLOW_NEUTRAL_TONE }
 }
 
@@ -195,14 +201,14 @@ export interface BreadthInputs {
 //   앵커이며 실 SPY breadth 누적 후 재튜닝(concentrationBand TUNE 선례와 동일 규율).
 export const BREADTH_THRESHOLDS = { lean: 0.6, broad: 0.7 } as const // 대칭: 하단 0.4/0.3
 
-// 강세=calm(녹)·약세=hot(적)·중립=neutral — sectorFlow 3톤 스킴 재사용(green=up 관례).
-//   broad/regular 강도는 색이 아닌 라벨로 구분(신규 색 발명 0).
+// COLOR-STAGE2(한국축, D-COLOR-SYSTEM): 강세=긍정→rose · 약세=부정→sky · 중립=slate.
+//   broad/regular 강도는 색이 아닌 라벨로 구분(신규 색 발명 0). 방향축 = DIRECTION_BAND 소비.
 const BREADTH_TONE: Record<BreadthBand, string> = {
-  broad_strength: FLOW_TONE.calm,
-  strength: FLOW_TONE.calm,
+  broad_strength: DIRECTION_BAND.positive,
+  strength: DIRECTION_BAND.positive,
   neutral: FLOW_NEUTRAL_TONE,
-  weakness: FLOW_TONE.hot,
-  broad_weakness: FLOW_TONE.hot,
+  weakness: DIRECTION_BAND.negative,
+  broad_weakness: DIRECTION_BAND.negative,
 }
 
 const BREADTH_ORDER: BreadthBand[] = [

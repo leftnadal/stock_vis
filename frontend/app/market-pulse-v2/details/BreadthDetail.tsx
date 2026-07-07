@@ -3,6 +3,7 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthDetail as Detail } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
+import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '../colorSemantics'
 import { BreadthTrajectory } from './BreadthTrajectory'
 
 export function BreadthDetail({
@@ -36,8 +37,8 @@ export function BreadthDetail({
         </p>
       ) : null}
       <header className="grid grid-cols-3 gap-2 text-center">
-        <Cell label="상승" value={payload.advance ?? 0} tone="text-emerald-600" />
-        <Cell label="하락" value={payload.decline ?? 0} tone="text-rose-600" />
+        <Cell label="상승" value={payload.advance ?? 0} tone={DIRECTION_TEXT.positive} />
+        <Cell label="하락" value={payload.decline ?? 0} tone={DIRECTION_TEXT.negative} />
         <Cell
           label={translate('metric.ad_line', labels, 'AD-line')}
           value={payload.ad_line ?? 0}
@@ -51,8 +52,8 @@ export function BreadthDetail({
       <div>
         <p className="text-xs text-slate-500 mb-1">신고가 / 신저가 (52주)</p>
         <div className="grid grid-cols-2 gap-2 text-center">
-          <Cell label="52w 신고가" value={payload.new_high_52w ?? 0} tone="text-emerald-500" />
-          <Cell label="52w 신저가" value={payload.new_low_52w ?? 0} tone="text-rose-500" />
+          <Cell label="52w 신고가" value={payload.new_high_52w ?? 0} tone={DIRECTION_TEXT_SOFT.positive} />
+          <Cell label="52w 신저가" value={payload.new_low_52w ?? 0} tone={DIRECTION_TEXT_SOFT.negative} />
         </div>
       </div>
     </div>
