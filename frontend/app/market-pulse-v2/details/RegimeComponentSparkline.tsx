@@ -8,17 +8,20 @@
  * y-도메인 = series 값 + 컷 값 합집합(컷이 라인 대비 어디인지 보이게).
  */
 import type { RegimeComponent } from '@/lib/api/marketPulseV2'
+import { DIRECTION_HEX } from '../colorSemantics'
 
 const W = 132
 const H = 44
 const PAD = 4
 
-// 컷 심각도 색(regime tone 계열, SVG stroke hex). crisis=rose·bear=orange·transition=slate·late_bull=amber.
+// 컷 심각도 색(regime tone 계열, SVG stroke hex). late_bull=amber·transition=slate·bear=orange.
+// COLOR-STAGE2 정합(선소비 조항): CRISIS = 부정=sky(colorSemantics DIRECTION_HEX.negative) — 위기 축 이동 반영.
+//   (LATE_BULL/TRANSITION/BEAR은 STAGE2가 유지한 비-flip축 caution 톤과 동일 — 무변경.)
 export const CUT_STROKE: Record<string, string> = {
   LATE_BULL: '#d97706',
   TRANSITION: '#64748b',
   BEAR_CONTRACTION: '#ea580c',
-  CRISIS: '#e11d48',
+  CRISIS: DIRECTION_HEX.negative,
   BULL_EXPANSION: '#94a3b8',
 }
 
