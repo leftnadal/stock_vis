@@ -66,3 +66,78 @@ export function sectorBarFill(v: number, epsilon = 0.1): string {
   if (dir === 'down') return '#0ea5e9'
   return '#94a3b8'
 }
+
+/* ───────────────────────── MP2-SECTOR-CD Slice 1 ─────────────────────────
+ * cd_state 4-상태 색 토큰 (단일소스). BE `classify_cd_state`가 서빙한 문자열을
+ * 키로 매핑만 — FE 재분류 0. 유보(null)는 중성 회색.
+ * 상승축(주도·강화)=rose, 하락축(부진·악화)=sky로 기존 한국 관례와 정합.
+ * 중간 상태는 주황(둔화)·청록(개선)으로 분리.
+ */
+
+export type CdState =
+  | 'leading_strengthening' // 주도·강화
+  | 'leading_weakening' // 주도·둔화
+  | 'lagging_improving' // 부진·개선
+  | 'lagging_deteriorating' // 부진·악화
+
+interface CdToken {
+  label: string
+  badge: string // 뱃지 Tailwind (bg/text/border)
+  dot: string // 사분면 점 hex
+}
+
+const CD_TOKENS: Record<CdState, CdToken> = {
+  leading_strengthening: {
+    label: '주도·강화',
+    badge: 'bg-rose-100 text-rose-800 border-rose-200',
+    dot: '#f43f5e', // rose-500
+  },
+  leading_weakening: {
+    label: '주도·둔화',
+    badge: 'bg-amber-100 text-amber-800 border-amber-200',
+    dot: '#f59e0b', // amber-500
+  },
+  lagging_improving: {
+    label: '부진·개선',
+    badge: 'bg-teal-100 text-teal-800 border-teal-200',
+    dot: '#14b8a6', // teal-500
+  },
+  lagging_deteriorating: {
+    label: '부진·악화',
+    badge: 'bg-sky-100 text-sky-800 border-sky-200',
+    dot: '#0ea5e9', // sky-500
+  },
+}
+
+// 유보(null) 중성 토큰.
+const CD_RESERVED_TOKEN: CdToken = {
+  label: '판단 유보',
+  badge: 'bg-slate-100 text-slate-500 border-slate-200',
+  dot: '#cbd5e1', // slate-300 (미표시 대비 폴백; 점은 렌더 안 함)
+}
+
+/** cd_state → 한글 짧은 라벨(유보 포함). */
+export function cdStateLabel(state: CdState | null): string {
+  if (state == null) return CD_RESERVED_TOKEN.label
+  return CD_TOKENS[state].label
+}
+
+/** cd_state → 뱃지 Tailwind 클래스(유보 포함). */
+export function cdStateBadgeClass(state: CdState | null): string {
+  if (state == null) return CD_RESERVED_TOKEN.badge
+  return CD_TOKENS[state].badge
+}
+
+/** cd_state → 사분면 점 hex. 유보는 점 미표시가 원칙이나 폴백값 제공. */
+export function cdStateDotFill(state: CdState | null): string {
+  if (state == null) return CD_RESERVED_TOKEN.dot
+  return CD_TOKENS[state].dot
+}
+
+/** 범례용 4상태 순서(유보 제외). */
+export const CD_STATE_ORDER: CdState[] = [
+  'leading_strengthening',
+  'leading_weakening',
+  'lagging_improving',
+  'lagging_deteriorating',
+]
