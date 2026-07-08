@@ -65,14 +65,6 @@ export default function Header() {
               Chain Sight
             </Link>
             <Link
-              href="/thesis"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/thesis') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              Thesis Control
-            </Link>
-            <Link
               href="/market-pulse"
               className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
                 pathname.startsWith('/market-pulse') ? 'text-blue-600 dark:text-blue-400' : ''
@@ -184,12 +176,6 @@ export default function Header() {
                 className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Chain Sight
-              </Link>
-              <Link
-                href="/thesis"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Thesis Control
               </Link>
               <Link
                 href="/market-pulse"
