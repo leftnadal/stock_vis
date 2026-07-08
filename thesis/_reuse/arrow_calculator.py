@@ -1,6 +1,6 @@
 """Arrow Calculator: score -> degree/color/label 변환 (수학 모델 v2.3.2, Section 3.5)"""
 
-from thesis.services.indicator_scorer import score_indicator_from_model
+from thesis._reuse.indicator_scorer import score_indicator_from_model
 
 # 설계 문서 Section 5.4: 색상 5단계
 COLOR_BANDS = [
