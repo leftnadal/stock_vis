@@ -258,6 +258,17 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # AV broad 뉴스 수집 (co-mention 2+종목 소스). A안: 매일 01:00 UTC.
+    # ⚠ 실 스케줄은 register_news_av_beat 로 DB에 timezone=UTC로 등록(권위) — ET crontab
+    # DST 드리프트 회피. 이 dict 엔트리는 sync_beat_schedule task-path 소스용(schedule 무시).
+    # 하류 체인 기존 등록: extract_co_mentions(10:00 ET) → load_event_groups(22:15 UTC).
+    # 순서 보장: collect(01:00 UTC) < extract(14:00 UTC) < load(22:15 UTC).
+    'collect-av-broad-news': {
+        'task': 'services.news.tasks.collect_av_broad_news',
+        'schedule': crontab(hour=1, minute=0),
+        'options': {'expires': 3600}
+    },
+
     # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
     'collect-market-news-morning': {
         'task': 'services.news.tasks.collect_market_news',
