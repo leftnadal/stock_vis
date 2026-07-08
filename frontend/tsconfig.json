@@ -42,6 +42,7 @@
   ],
   "exclude": [
     "node_modules",
+    "components/thesis/_reuse",
     "vitest.config.ts",
     "**/* 2.ts",
     "**/* 2.tsx",

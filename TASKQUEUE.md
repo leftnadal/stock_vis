@@ -114,14 +114,20 @@
 
 ---
 
-## Thesis Control Phase 2 (프론트엔드)
+## Monitor 허브 재건 (구 Thesis Control — D-MONITOR-REBUILD 2026-07-08)
+
+> 구 thesis 앱 **전량 폐기 후 재건**. 아래 TC-* 는 **폐기 앱 대상이라 무효화** → Monitor 신축 P2~P3로 승계.
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| TC-3 | 대화형 빌더 (AI 조산사 UX) | @frontend | - | todo | 📎 `docs/thesis_control/plan/thesis_control_design.md` |
-| TC-4 | 지표 설정 페이지 | @frontend | TC-3 | todo | - |
-| TC-5 | 관제실 대시보드 (화살표+달 시각화) | @frontend | TC-4 | todo | - |
-| TC-6 | 알림 + 마감 관리 | @frontend | TC-5 | todo | - |
+| MON-P1 | 아카이브 + thesis 앱 철거 | orchestrator | ADR | ✅ 완료 2026-07-08 (8커밋 `2463466`~`c8e1ce9`, worktree `sess-monitor-rebuild`, 미push) |
+| MON-P2 | Monitor 모델(`Monitor{scope}`+`Claim`) + ScopeResolver(종목) + 엔진 4종 `_reuse/`→이식 + 신규 테스트 | @backend | MON-P1 push | todo | ADR §결정2·8 |
+| MON-P3 | 빌더 4단계 + IA-2 페이지 + My 서브탭 shell + 전역 내비 6칸+아바타 개편(결정7) | @frontend | MON-P2 | todo | ADR §결정5·7 |
+| MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
+| MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
+| MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
+| ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
+| MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
 
 ---
 
@@ -247,7 +253,7 @@
 
 | ID | Track | 우선 | Agent | Status | 근거/게이트 |
 |----|-------|------|-------|--------|------------|
-| MP2-ANALOG | historical regime matching(유추 분석) — 현재 regime 입력 vs 과거 유사 국면 매칭 + **MOVE 동봉**(이미 `NEW_ECONOMIC_SERIES` 보유, 별 통합 불요) | **#1** | @backend | 🟢 **active (착수 가능)** | recon [F] analog 미구현 확인. 기존 regime 데이터 위 read-only 분석 = 롤백 표면 작음. 가중 우위 마진 0.35(D-PHASE2-ORDER). 착수 시 STEP 0 재측정 |
+| MP2-ANALOG | historical regime matching(유추 분석) — 현재 regime 입력 vs 과거 유사 국면 매칭 + **MOVE 동봉**. **채택 설계**(un-dorm 시) = 입력벡터 z-정규화 최근접(라벨 매칭 아님, D-ANALOG-GATE) | **#1** | @backend | 🔒 **DORMANT (2026-07-08, D-ANALOG-GATE)** — STEP 0 재측정 = 다양성 게이트 여전히 닫힘(64행/97% LATE_BULL/완전벡터 22). analog 코드 착수 금지 | **트리거**: (a) regime 다양성 — 비-LATE_BULL 일수 유의미 누적 or 전환 ≥2회 관측 **OR** (b) B-1 백필 land 후 소급 벡터 재구성 검증 통과. **그 전 착수 금지** |
 | MP2-ALERTS | 능동 알림. 알림 코어 = `packages/shared/alerting` 신설(D-ALERTS-BOUNDARY-R1), 3단 파이프라인(D-ALERTS-ARCH), 이메일(D-ALERTS-CHANNEL). **승계 게이트 해소 = D-ALERTS-GATE**(serverless 무접촉 격리). S0·S1 land | **#2** | @infra+@backend | ✅ **S0 마감 + S1 done(미머지)** | 다음 슬라이스 후보 = 채널 추가(슬랙 등, delivery port 구현체만) / 트리거 확장(anomaly·dashboard) |
 | MP2-ALERTS-S1 | Slice 1(D-ALERTS-RENDER) = regime 알림 본문 **풀 리포트화**(전환 요약·델타·anomaly 활성·섹터 상위/하위). **단일 경로**=판단 화면과 동일 `overview._build_payload()` 소비(재계산 0). **폴백**=풀 렌더 실패 시 디스패처가 S0 최소 본문으로 대체(발송 무실패, `AlertDispatchLog.error` RENDER_FALLBACK 접두로 식별, status=SENT). registry에 fallback 슬롯 additive. 제목 불변·LLM 0·shared→apps 0·마이그레이션 0 | @backend | ✅ **done (브랜치 tip 0107b1a, 미머지 — 통합 승인 대기)** — pytest 신규7/alerting8·경계3·api80 green·mig0. FE 0 | 실메일 검증 = 병진 수동(§보고 후보 커맨드) |
 | MP2-ALERTS-S0 | Slice 0 = regime 전환 트리거 → 3단 파이프라인 → 이메일 1통 + dedup. shared/alerting 신설(AlertSubscription·AlertDispatchLog·registry·dispatcher·EmailProvider) + market_pulse 훅·렌더러 + seed 커맨드. AST 경계 통과, migration 0001 **생성만** | @infra+@backend | ✅ **실적용 완료 (3eb06a7) — 장부 마감 2026-07-06**: migrate·worker_sync·seed·shell 수동 트리거·실발신 전 6단 완료. **실메일 일반 수신함 정상 도착 확정**(스팸 아님, 발신 신뢰도 이슈 없음) + `AlertDispatchLog` status=sent 1행. 멱등 close(이후 재마감 스킵). | 병진 수동 런북(6단, 2026-07-05 확정 — 완료 기록): **① `python manage.py migrate alerting`**(prod DB 테이블 2개 — 워커 재기동 전 선행: 재기동 창에서 실전환 시 테이블 부재 회피) → **② `bash scripts/worker_sync.sh`**(B′ 배포+워커 재기동 — 신규 task·regime.py 수정·신규 앱 로드 필수, 근거 `lesson_celery_task_registration`. beat 무변경이나 스크립트가 함께 kickstart=무해) → **③ `python manage.py seed_alert_subscription --email <주소>`**(멱등) → **④ shell 수동 트리거** `fire_regime_transition_alert(date="2026-07-05",…)`(직접 동기호출 — 워커 무관·이메일 경로 종단 검증, 07-05 과거날짜라 실전환 dedup 충돌 0) → **⑤ 실메일 확인**(제목·본문 링크·소요·스팸함 + `AlertDispatchLog` status=sent 1행) → **⑥ 첫 메일 "스팸 아님" 처리**. ⚠ **배포 전 prod `FRONTEND_BASE_URL` 도메인 설정 확인**(미설정 시 메일 링크=localhost:3000). **migrate 전까지 prod 미반영** |
@@ -478,7 +484,7 @@
 | P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist + 심링크(방향 반전 방식 Y) + `scripts/worker_sync.sh` 신설 — 브랜치 표류 트레드밀 종료. **✅ 완료 2026-07-05**(OPS-B-BUILD): 스크립트 land `921dc0c`, 검증 bake 2회(심링크 생존·6키 IDENTICAL·N=10·IssuanceLog 10행 멱등·HTTP 200). 심링크 방향 반전 = D-B-WORKER-AMEND-1 | ops/infra | 완료 2026-07-05 | ✅ 완료 |
 | B-HARDEN-OUTPUT | (휴면) baker `OUTPUT_DIR` **env override** 추가 — 심링크 의존 제거. 트리거: **worker 트리 이전 또는 다중 출력 필요 발생 시**. 현재는 심링크(방식 Y)로 충분 | ops/infra(휴면) | worker 트리 이전·다중출력 시 | 💤 휴면 |
 | B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후** | ops(정리) | 자동 beat 1주기 무결 후 | 🆕 등재 |
-| P1-HC-ISSUANCE | 발행 로그 감시 = **C 계층**(D-HC-ISSUANCE): ⑴ bake 자가검증(행수==N, 불일치 시 ERROR + `pipeline_meta` 경보 필드, additive-within·bake 중단 아님) ⑵ health_check 최소(최근 거래일 행 존재·최근성). #46 원 취지=런타임+검문소 짝(마진 0.10). 짝 = common-bugs #46 | ops(health_check) | **결정 완료·실행 승인** | 🟢 승인 |
+| P1-HC-ISSUANCE | 발행 로그 감시 = **C 계층**(D-HC-ISSUANCE): ⑴ bake 자가검증 ⑵ health_check 최소. **✅ done `2e3b91e`+`ad3ae77`(HC-BUILD)** — 회귀 155·migration 0·실관측 통과(07-08: issuance_verified 10/10 ok·검문소 07-07 행10 OK·무경보). 짝 = common-bugs #46 | ops(health_check) | 완료 2026-07-08 | ✅ done |
 | P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
 | P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
 | P1-BEAT-PRECHECK | ~~월요일 beat 전 공유 트리 re-detach 점검~~ **✗ 폐기 2026-07-05** — B′ 완료로 목적 소멸. 워커가 공유 트리 **비의존**(전용 worktree + worker_sync.sh)이라 공유 트리 표류가 bake에 영향 없음 | — | — | ✗ 폐기(B′ 완료) |
@@ -493,11 +499,14 @@
 | COLOR-STAGE1 | **dashboard 구획 한국축 전환** — `components/eod` 로컬 `colorSemantics.ts` 도입, 방향성 색을 D-COLOR-SYSTEM(rose=긍정/매수·sky=부정/매도)으로 통일. **✅ 완료 `3a4706f`**(colorSemantics.ts 신설 + 6컴포넌트, tsc0·vitest509, 실화면 검수 통과 07-06) | dashboard FE | 완료 2026-07-06 | ✅ 완료 |
 | COLOR-STAGE2-chain_sight | chain_sight 방향성 색 한국축 전환(EventRanking·MetricCell 등). **✅ 완료 `9fe326f`**(자기 구획 로컬 시맨틱, import 금지 준수) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
 | COLOR-STAGE2-market_pulse | market_pulse regime/flow `meaning.ts` 한국축 전환. **✅ 완료 `3253cd1`(merge `9169ea9`)** — CRISIS→sky(라벨 보존)·FLOW_TONE 디커플링·잔여 rose 오버로드 2건 수용(DECISIONS 판정 기록) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
-| COLOR-STAGE2-portfolio | portfolio 수익=rose/손실=sky 전환(PortfolioSummary·Table·Chart·Modal·RealtimePortfolio 5파일 green/red 잔존). 자기 구획 로컬 시맨틱(import 금지). 참조 D-COLOR-SYSTEM | portfolio FE | **미착수(착수가능)** | 🆕 등재 |
+| COLOR-STAGE2-portfolio | portfolio 수익=rose/손실=sky 전환(PortfolioSummary·Table·Chart·Modal·RealtimePortfolio **5파일 글로벌축 잔존**). **💤 보류 확정**(D-COLOR-SYSTEM 추기) — 트리거 = **portfolio 트랙 재개 시 그 첫 슬라이스에 선행**(별도 색 슬라이스 신설 대신 흡수). D-COLOR-TOKEN에 따라 재개 시 shared 토큰 **직소비**(로컬 경유 없음) | portfolio FE | portfolio 트랙 재개 시 | 💤 보류 |
 | S3-COLOR-ALIGN | MP2-TREND S3(z-score 멀티라인 regime 구성요소)와 market_pulse 색 시맨틱 겹침 조율 — S3가 이 시맨틱 선소비 허용. **게이트 유지**: S3 land 시 regime 색이 한국축(D-COLOR-SYSTEM)과 일치하는지 확인 | market_pulse FE | S3 land 시 정합 확인 | 🔵 게이트 |
 | COLOR-WARN-SCHEME | (휴면) rose 의미이동(위기→긍정)으로 발생한 **잔여 rose 오버로드 정리** — 경고/위기 표현을 색 아닌 별도 수단(아이콘·채도·라벨)으로 완전 분리. 트리거: 잔여 rose 오버로드가 실사용 오독으로 관측 시. 참조 D-COLOR-SYSTEM 판정 기록 | FE(디자인) | 오독 관측 시 | 💤 휴면 |
-| COLOR-TOKEN-PROMOTE | `colorSemantics` **shared 토큰 승격** — 로컬 유틸을 공용 디자인 토큰으로. **🟢 착수 근거 충족**: 로컬 사본 **3벌 실증**(dashboard·chain_sight·market_pulse) → 조기 추상화 회피 조건 초과. 승격 설계 = 3벌 공통 시맨틱 추출 + drift 방지 단일소스. 참조 DECISIONS 결정 후보 | FE(shared) | **착수가능(설계)** | 🟢 후보 |
-| SYNC-ENTRYPOINT | `worker_sync.sh` **고정 진입점**(래퍼/별칭, 항상 런타임 트리 사본 실행) 신설 — #47(공유 트리 사본 stale → api 섹션 누락 부분 동기화) 근거. 이번 세션 수동 준수로 3종 정상 동기화 실증(자동화 부재 시 수동 규율 우회 가능). 참조 DECISIONS 결정 후보 · common-bugs #47 | ops/infra | 착수가능 | 🆕 등재 |
+| COLOR-TOKEN-PROMOTE | `colorSemantics` **shared 토큰 분할 승격**(D-COLOR-TOKEN) — frontend 공용 인프라 구획에 shared 토큰 신설(위치 = 슬라이스 STEP 0 실측). **🟢 shared 신설 슬라이스부터** 착수. 3벌 실증 근거 충족. 후속 = 3트랙 회수(TOKEN-RECLAIM). 참조 DECISIONS D-COLOR-TOKEN | FE(shared) | **착수 승인(shared 신설)** | 🟢 승인 |
+| TOKEN-RECLAIM-eod | eod가 로컬 `colorSemantics.ts` → shared 토큰 소비로 전환(값 IDENTICAL·렌더 무변경 행위보존 회귀). 트리거 = **shared 토큰 land 후** | dashboard FE | shared 토큰 land 후 | 🆕 등재 |
+| TOKEN-RECLAIM-market-pulse | market-pulse-v2가 로컬 색 축 → shared 토큰 소비 전환(행위보존). 트리거 = **shared 토큰 land 후** | market_pulse FE | shared 토큰 land 후 | 🆕 등재 |
+| TOKEN-RECLAIM-chainsight | chainsight가 로컬 색 시맨틱 → shared 토큰 소비 전환(행위보존). 트리거 = **shared 토큰 land 후** | chain_sight FE | shared 토큰 land 후 | 🆕 등재 |
+| SYNC-ENTRYPOINT | repo 스크립트 실행 **고정 진입점**(D-SYNC-ENTRYPOINT) = ⑴ repo 밖 래퍼 `~/bin/sv`(항상 런타임 트리 스크립트, 대상 worker_sync·health_check 일반화) ⑵ 스크립트 자기가드(자기 트리 HEAD vs origin/main 대조·stale 경고). #47 재귀 2건(worker_sync·health_check) 실증. 참조 DECISIONS D-SYNC-ENTRYPOINT · common-bugs #47 | ops/infra | **실행 승인** | 🟢 승인 |
 
 ---
 

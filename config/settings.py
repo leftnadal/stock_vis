@@ -198,7 +198,6 @@ INSTALLED_APPS = [
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
-    'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'packages.shared.alerting',  # MP2-ALERTS — 알림 코어 (D-ALERTS-BOUNDARY-R1)
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
@@ -407,12 +406,6 @@ SPECTACULAR_SETTINGS = {
     # (value, label) 튜플 list 형식 — drf-spectacular는 sorted hash로 매칭하므로
     # 모델 choices와 정확히 동일한 tuple 필요.
     'ENUM_NAME_OVERRIDES': {
-        # thesis.ThesisPremise.category (6개)
-        'ThesisPremiseCategoryEnum': [
-            ('macro', 'Macro'), ('sector', 'Sector'), ('company', 'Company'),
-            ('technical', 'Technical'), ('sentiment', 'Sentiment'),
-            ('custom', 'Custom'),
-        ],
         # news.NewsArticle.category (6개)
         'NewsCategoryEnum': [
             ('general', 'General'), ('company', 'Company'),
@@ -423,11 +416,6 @@ SPECTACULAR_SETTINGS = {
         'SavedPathStatusEnum': [
             ('watching', 'Watching'), ('active', 'Active'),
             ('archived', 'Archived'), ('resolved', 'Resolved'),
-        ],
-        # thesis.Thesis.status
-        'ThesisStatusEnum': [
-            ('setting_up', 'Setting Up'), ('active', 'Active'),
-            ('closed', 'Closed'), ('paused', 'Paused'),
         ],
     },
 }

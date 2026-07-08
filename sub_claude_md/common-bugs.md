@@ -546,6 +546,7 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결: **반드시 런타임 트리 사본으로 실행** — `bash /Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/worker_sync.sh`(런타임 트리는 detached origin/main이라 항상 확장판 보유). 실행 전 `grep -c API_TREE <사본>`로 api 섹션 유무 확인(0이면 stale, 사용 금지).
 - 예방(고정 진입점 미결): 항상 런타임 사본을 실행하는 래퍼/별칭 = TASKQUEUE `SYNC-ENTRYPOINT`(미결). 그 전까지 **수동 주의**(사본 경로 명시 지정).
 - **첫 준수 사례(2026-07-07)**: MGMT 세션이 공유 트리 사본(api 섹션 0)을 포착·거부하고 런타임 트리 사본으로 실행 → worker·web·api 3종 `9fe326f` 정상 동기화 + daphne 재기동. 자동화 부재 시 수동 규율로 우회 가능함을 실증.
+- **재귀 2건째(health_check, 2026-07-08)**: `python scripts/health_check.py`를 공유 트리에서 실행 → **구버전 10건**(HC-BUILD 신항목 "발행 로그 신선도" 없음). 신항목은 origin/main(`ad3ae77`)에만 → 공유 트리 사본 stale. 런타임 트리 사본(`sv-worker-runtime/scripts/health_check.py`, +.env)에서 실행하니 **11건**(신항목 OK). → **일반화**: "repo 스크립트를 어느 트리 사본으로 실행하나"는 worker_sync 한정이 아니라 **repo 스크립트 소비 전반**의 함정(실행자가 최신 코드를 본다는 보장 없음). 항구 해결 = **D-SYNC-ENTRYPOINT**(래퍼 `~/bin/sv` + 스크립트 자기가드, TASKQUEUE `SYNC-ENTRYPOINT` 🟢 승인).
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 
@@ -673,3 +674,10 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **증상**: fast-main 병행 폭주로 push 경합 → `git rebase --rebase-merges origin/main`로 머지 구조 보존 재정렬 시, 머지·개별 커밋이 **새 해시로 재작성**됨. 결과 원래 feature/mgmt 브랜치 tip이 origin/main의 조상이 아니게 되어 `git branch -d`(머지 검증) + `merge-base --is-ancestor tip origin/main`이 **구조적으로 실패**("미반영"으로 오판).
 - **처리 절차**: 브랜치 tip 조상 검증 실패 시 곧바로 `-D`하지 말고, **내용이 origin/main에 실제 반영됐는지 검증**(산출 파일 존재 `git cat-file -e origin/main:<path>` + 대표 변경 라인 grep) → 반영 확인되면 `-D`는 **후보로 보고**, 실행은 사용자 수동(직접 `-D` 금지 — 오삭제 방어).
 - **왜**: `--rebase-merges`는 replay라 커밋 객체를 새로 만든다. "브랜치가 안 머지됐다"는 `-d`의 신호는 이 경우 **거짓 음성**이므로, 조상 그래프가 아니라 **내용 반영**을 진실의 소스로 삼는다.
+
+## [앱 철거] `migrate <app> zero`는 데이터-스키마 불일치 시 부분 실패 → 전량 폐기엔 raw DROP CASCADE (D-MONITOR-REBUILD, 2026-07-08)
+
+- **증상**: thesis 앱 철거 중 `python manage.py migrate thesis zero`(전 마이그레이션 역적용=테이블 drop)가 **중간에서 IntegrityError로 중단**. `django.db.utils.IntegrityError: column "value" of relation "thesis_indicatorreading" contains null values`. DB가 **부분 상태**(테이블 12→11, django_migrations 9→2)로 남음.
+- **원인**: `migrate zero`는 각 마이그레이션을 **충실히 역재생**한다 — 과거의 필드 변경(예: NOT NULL 제약 추가)을 되돌리며 **옛 스키마를 복원**하려는데, 그 사이 쌓인 데이터(현재 null 허용 컬럼에 실제 null 존재)가 옛 NOT NULL 제약과 충돌. 즉 "reverse migration"은 **데이터가 옛 스키마에 맞을 때만** 안전. 데이터 폐기가 목적인 철거에서는 이 충실한 복원이 오히려 방해.
+- **처리(전량 폐기 목적)**: reverse 복원이 불필요하므로 **raw SQL로 직접 DROP** — `DROP TABLE t1, t2, ... CASCADE` (앱 내부 FK는 CASCADE가 처리) + `DELETE FROM django_migrations WHERE app='<app>'` (고아 마이그레이션 레코드 정리). 단일 트랜잭션. **선행 필수**: ⑴ `pg_dump -t '<app>_*'` 아카이브, ⑵ inbound FK 0 확인(leaf면 CASCADE가 타 앱 데이터 미전파: `information_schema` constraint_column_usage 조회).
+- **왜 zero를 먼저 시도했나 = 교훈**: graph_analysis CUT 선례(DeleteModel 마이그레이션)와 달리 `migrate zero`가 더 간단해 보였으나, **데이터가 있는** 앱에선 reverse 충실성이 함정. 데이터 없는 앱은 zero 안전, **데이터 있는 앱 폐기 = raw DROP**이 정석. beat는 DB PeriodicTask 기준이라 disable→행 삭제 별도 필요(#28).
