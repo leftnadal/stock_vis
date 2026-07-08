@@ -359,6 +359,14 @@ export interface SectorRow {
   momentum_20d: number
   flow_proxy: number
   rank: number
+  // MP2-SECTOR-CD S1(additive): 판단 4-상태. BE payload builder 단독 판정.
+  //   구버전 응답엔 없을 수 있어 optional. null = 판단 유보.
+  cd_state?:
+    | 'leading_strengthening'
+    | 'leading_weakening'
+    | 'lagging_improving'
+    | 'lagging_deteriorating'
+    | null
 }
 
 export interface SectorHistoryPoint {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -13,6 +14,7 @@ import {
 
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
+import { SectorCdPanel } from './SectorCdPanel'
 import { SectorSparkline } from './SectorSparkline'
 import { SectorTrajectory } from './SectorTrajectory'
 import { sectorBarFill, sectorTextClass } from '../sectorColor'
@@ -30,6 +32,10 @@ export function SectorDetail({
   // MP2-TREND S2: 델타 카드가 전달한 상위 변동 섹터(옵션 B). 없으면 무영향(기본 강조).
   emphasisOverride?: string[]
 }) {
+  // MP2-SECTOR-CD S1: 세그먼트 토글 [판단 | 궤적]. 디폴트=판단(5초 즉답 목적).
+  //   RegimeComponents 동형 패턴. 궤적 탭 = 기존 뷰 전체(무변경, additive).
+  const [view, setView] = useState<'cd' | 'trajectory'>('cd')
+
   if (!payload.available) {
     return <p className="text-sm text-slate-500">섹터 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -48,12 +54,43 @@ export function SectorDetail({
 
   return (
     <div className="grid gap-4">
-      <header className="text-xs text-slate-500">
-        date {payload.date} · {translate('metric.dispersion', labels, 'dispersion')}{' '}
-        {(payload.cross_dispersion ?? 0).toFixed(3)} ·{' '}
-        {translate('metric.rotation', labels, 'rotation')} {(payload.rotation_index ?? 0).toFixed(3)}
+      <header className="flex items-center justify-between gap-2">
+        <span className="text-xs text-slate-500">
+          date {payload.date} · {translate('metric.dispersion', labels, 'dispersion')}{' '}
+          {(payload.cross_dispersion ?? 0).toFixed(3)} ·{' '}
+          {translate('metric.rotation', labels, 'rotation')} {(payload.rotation_index ?? 0).toFixed(3)}
+        </span>
+        {/* 세그먼트 토글 [판단 | 궤적] — RegimeComponents 동형. 디폴트=판단. */}
+        <div role="tablist" className="flex rounded border border-slate-200 overflow-hidden text-[11px]">
+          <button
+            type="button"
+            role="tab"
+            data-testid="sector-tab-cd"
+            aria-selected={view === 'cd'}
+            onClick={() => setView('cd')}
+            className={`px-2 py-0.5 ${view === 'cd' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600'}`}
+          >
+            판단
+          </button>
+          <button
+            type="button"
+            role="tab"
+            data-testid="sector-tab-trajectory"
+            aria-selected={view === 'trajectory'}
+            onClick={() => setView('trajectory')}
+            className={`px-2 py-0.5 border-l border-slate-200 ${
+              view === 'trajectory' ? 'bg-slate-800 text-white' : 'bg-white text-slate-600'
+            }`}
+          >
+            궤적
+          </button>
+        </div>
       </header>
 
+      {view === 'cd' ? (
+        <SectorCdPanel payload={payload} labels={labels} />
+      ) : (
+        <>
       {/* MP2-TREND S1: 섹터 순위 궤적(공용 MultiLineTrendChart). S2: 전환일 세로선 + 델타 강조 복원. */}
       <SectorTrajectory
         payload={payload}
@@ -136,6 +173,8 @@ export function SectorDetail({
           </ResponsiveContainer>
         </div>
       </div>
+        </>
+      )}
     </div>
   )
 }
