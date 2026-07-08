@@ -700,6 +700,59 @@ def check_issuance_log_freshness() -> CheckResult:
     )
 
 
+# ── 검증 9: 실행 트리 정합 (D-SYNC-ENTRYPOINT) ───────────────────────────────
+#
+# 이 스크립트가 실행되는 트리가 origin/main 대비 뒤처지면 = 구버전 health_check일
+# 수 있음(신규 항목 누락). #47 재귀(worker_sync에 이어 health_check도 stale 가능)를
+# 결과 자체에 표기 — "이 리포트가 최신 코드로 돈 게 맞나"를 리포트가 스스로 경고.
+# fetch 불가(오프라인) → OK-skip. 순수 분류는 classify_tree_alignment로 분리(테스트).
+
+
+def classify_tree_alignment(fetch_ok: bool, head: str, origin: str) -> int:
+    """실행 트리 정합 상태 → status. fetch 실패는 skip(OK), 뒤처짐은 WARN."""
+    if not fetch_ok:
+        return OK
+    if head and origin and head == origin:
+        return OK
+    return WARN
+
+
+def check_execution_tree_alignment() -> CheckResult:
+    name = "실행 트리 정합"
+    fetch_ok = (
+        subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "fetch", "origin", "--quiet"],
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
+    head = _git(["rev-parse", "HEAD"])
+    origin = _git(["rev-parse", "origin/main"])
+    status = classify_tree_alignment(fetch_ok, head, origin)
+    if not fetch_ok:
+        return CheckResult(
+            name=name, status=OK, detail="fetch 불가(오프라인) — 정합 검사 생략"
+        )
+    short = lambda h: h[:7] if h else "?"  # noqa: E731
+    if status == WARN:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"실행 트리가 origin/main 뒤처짐 — 구버전 항목 누락 가능(#47)",
+            evidence=[
+                f"HEAD={short(head)} ≠ origin/main={short(origin)}",
+                f"트리: {REPO_ROOT}",
+                "→ 'sv health'(런타임 트리 최신화 후 실행) 권장",
+            ],
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"실행 트리 = origin/main ({short(head)}) 정합",
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -715,6 +768,7 @@ CHECKS = [
     check_llm_direct_call_boundary,
     check_known_test_fails,
     check_issuance_log_freshness,
+    check_execution_tree_alignment,
 ]
 
 

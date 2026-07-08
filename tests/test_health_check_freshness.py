@@ -7,7 +7,13 @@
   - 경계값(정확히 M, M 직후) — strict '>' 반경계 확인.
 """
 
-from scripts.health_check import PROGRESS_STALE_THRESHOLD_H, is_progress_stale
+from scripts.health_check import (
+    OK,
+    PROGRESS_STALE_THRESHOLD_H,
+    WARN,
+    classify_tree_alignment,
+    is_progress_stale,
+)
 
 HOUR = 3600
 NOW = 1_782_984_843  # 고정 기준 epoch(테스트 결정성 — 벽시계 미의존)
@@ -35,3 +41,19 @@ def test_boundary_just_over_threshold_is_stale():
 def test_default_threshold_is_72h():
     # 확정 M=72h(STEP 0 실측: 활성 max gap ~22.6h + 주말 마진) 회귀 잠금.
     assert PROGRESS_STALE_THRESHOLD_H == 72.0
+
+
+# ── 실행 트리 정합 (D-SYNC-ENTRYPOINT) ───────────────────────────────────────
+
+def test_tree_alignment_ok_when_head_equals_origin():
+    assert classify_tree_alignment(True, "abc123", "abc123") == OK
+
+
+def test_tree_alignment_warn_when_head_behind():
+    # 뒤처짐 = 구버전 항목 누락 가능 → WARN(#47 재귀).
+    assert classify_tree_alignment(True, "old111", "new222") == WARN
+
+
+def test_tree_alignment_skip_when_fetch_fails():
+    # 오프라인 = 대조 불가 → OK-skip(노이즈 0).
+    assert classify_tree_alignment(False, "", "") == OK
