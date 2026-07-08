@@ -135,8 +135,9 @@
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| MON-P1 | 아카이브 + thesis 앱 철거 | orchestrator | ADR | ✅ 완료 2026-07-08 (8커밋 `2463466`~`c8e1ce9`, worktree `sess-monitor-rebuild`, 미push) |
-| MON-P2 | Monitor 모델(`Monitor{scope}`+`Claim`) + ScopeResolver(종목) + 엔진 4종 `_reuse/`→이식 + 신규 테스트 | @backend | MON-P1 push | todo | ADR §결정2·8 |
+| MON-P1 | 아카이브 + thesis 앱 철거 | orchestrator | ADR | ✅ 완료 2026-07-08 (9커밋, **main 랜딩 `c80783a`** `--no-ff` B안) |
+| MON-P2-S1 | Monitor·Claim 모델 + ScopeResolver(종목) + 테스트 | @backend | MON-P1 | ✅ 완료 2026-07-08 (`f9754c7`, apps/monitor 신설, 10 passed) |
+| MON-P2-S2 | MonitorIndicator·IndicatorReading·Snapshot 모델 + `_reuse` 엔진 4종 이식 + 테스트 | @backend | MON-P2-S1 | todo | ADR §결정8 |
 | MON-P3 | 빌더 4단계 + IA-2 페이지 + My 서브탭 shell + 전역 내비 6칸+아바타 개편(결정7) | @frontend | MON-P2 | todo | ADR §결정5·7 |
 | MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
 | MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
