@@ -5,6 +5,41 @@
 
 ---
 
+## 🔴 [P0] chainsight-pair-aggregation beat DB 등록 (버그 #28)
+
+> 출처: RelationPairSnapshot 적립 작업(2026-06-29, 브랜치 `monorepo/sess-cs-pair-relevance`). DECISIONS "RelationPairSnapshot 쌍 relevance 적립 [해자]".
+
+- **증상**: dict 정의 beat(`config/celery.py` `chainsight-pair-aggregation`)가 DatabaseScheduler에서 무시됨 → prod에서 일간 집계 미실행(침묵 실패).
+- **영향**: RelationPairSnapshot이 prod에서 적립 안 됨 = **해자 궤적이 안 쌓임**(이 작업 전체의 목적 무력화). GREEN인데 prod 침묵이라 "왜 스냅샷이 안 쌓이지?"로 몇 주 뒤 헤맴.
+- **조치 (완료, `bdba71c`)**: B안 — `register_chainsight_beats` BEATS에 pair 엔트리 추가(timezone/day_of_week optional 키 additive 확장). task=`apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task`, **America/New_York 11:30 매일**(confidence 11:00 ET 직후, DST 자동). A안=migration 철회(CI 오염·repo 수동-register 표준 충돌).
+- **⚠ 타임존 정정**: 조치 초안의 "11:30 EST"는 부정확 → 실제 celery TZ = **America/New_York(ET, DST 자동)**. confidence도 동일 ET라 순서 보장.
+- **Gate 1 (통과, 이번 세션)**: 등록 확인(1행)·import resolve·DatabaseScheduler 스케줄 로드(ModelEntry `30 11 매일 ET`)·idempotent(재실행 updated·중복0·기존 3개 UTC/평일 불변).
+- **🔴 migrate 누락 발견 (2026-07-01 실측)**: 마이그레이션 0014가 **dev/prod DB에 미적용**이었음(`showmigrations` `[ ] 0014`). 테스트는 별도 테스트 DB(--reuse-db)에서 돌아 GREEN이었으나 **운영 DB엔 `chainsight_relation_pair_snapshot` 테이블 자체가 없었다**. → beat가 돌아도 task가 `ProgrammingError: relation does not exist`로 crash = **register만으로는 부족, `migrate`가 배포 선행 필수**(claude.ai 체크리스트가 놓친 단계). dev는 `migrate chainsight 0014` 적용 완료.
+- **Gate 2 파이프라인 (통과, 2026-07-01 수동 실행 증명)**: migrate 후 `aggregate_relation_pairs_task.apply()` → `{'pairs': 9562, 'created': 9562}` 성공. **period=`2026-07-01` 단일**(중복 주간 행 0) → **드리프트 ⒜는 순수 표기 문제로 확정**(period 로직 정상, 매일 캐이던스 OK). opp 상위 = 순수 truth 쌍(SNDK/WDC opp=0.722). 남은 것 = **beat 자율 틱**(스케줄러가 11:30 ET에 자동 호출)만 익일 로그로 관찰.
+- **⚠ 배포 절차(B안 약점 — 순서 필수)**: 배포마다 ① `python manage.py migrate` (0014 — 테이블 선행) → ② `python manage.py register_chainsight_beats` (beat 등록) → ③ 검증. migrate 빠지면 register돼도 task crash(더 깊은 침묵). 배포 체크리스트 영구 등재.
+- **드리프트 (목록만, 이번 PR에서 수리 X)**: ⒜ `update_relation_confidence` docstring "주 1회 일요일" vs 실제 매일 11:00 ET — **2026-07-01 실측으로 순수 표기 문제 확정**(당일 단일 period, 로직 정상). ⒝ beat 패턴 혼재(relation_tasks=full-path+ET vs register 기존 3개=별칭+UTC).
+- **관찰(PR 밖)**: 11:00→11:30 30분 갭이 confidence 완료를 보장하는지 — 갱신 소요시간 로그 확인 후 갭 재검토.
+- **ops 폐기 기록 (재발 방지, 2026-07-02)**: "worker/beat launchd KeepAlive 감독 신규 설치" PR은 **폐기**. STEP 0 실측 = 기존 `com.stockvis.celery-worker`·`celery-beat` 둘 다 이미 `KeepAlive=true`+`RunAtLoad`+`ThrottleInterval`, worker-neo4j·watchdog까지 존재 → 신규는 중복 + **beat 2개 = 스케줄 2배 발화(능동 오작동)**. 07-02 crash 원인은 KeepAlive 부재 아닌 코드 리로드 누락(해법=`kickstart -k`). 향후 "감독 추가" 논의는 이 실측표부터 확인. 대신 관찰가능성만 보강 = `verify_pair_aggregation.py` C항목(직전 11:30 ET 틱 succeeded 부재 시 ALERT — upsert+updated_at 부재라 로그가 유일 증거).
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-PAIR-BEAT | chainsight-pair-aggregation PeriodicTask DB 등록 (+ migrate 0014 선행) | @infra | - | **Gate1+파이프라인 done / beat 자율틱 익일** | `register_chainsight_beats` (머지 `bdba71c`), dev migrate 완료 |
+| CS-PAIR-DEPLOY | prod 배포: migrate 0014 → register_chainsight_beats → 검증 (아래 체크리스트) | @infra | 머지·배포 | todo | 배포 체크리스트 |
+
+### [배포] Chain Sight #28 beat — 순서 필수 (건너뛰면 prod 침묵 실패)
+
+> ⚠️ 이 단계를 건너뛰면 코드가 머지돼도 prod는 RelationPairSnapshot 0으로 침묵한다(등록·테이블은 "코드"가 아니라 "배포 행위"로만 반영됨). migrate→register 순서 준수.
+
+1. [ ] **migrate (테이블 선행)**: `python manage.py migrate chainsight 0014` — 없으면 task가 `relation does not exist`로 crash.
+2. [ ] **beat 등록**: `python manage.py register_chainsight_beats` (1회).
+3. [ ] **🔴 beat + worker 둘 다 재시작**: `launchctl kickstart -k gui/$(id -u)/com.stockvis.celery-beat` **및** `...celery-worker`(+`worker-neo4j`). **worker 재시작을 빠뜨리면** beat는 발화해도 worker가 신규 task를 모름 → `Received unregistered task ... KeyError` crash(2026-07-02 dev 실측). beat만 재시작하면 안 됨.
+4. [ ] **즉시 검증**: `celery -A config inspect registered | grep aggregate_relation_pairs`(등록 확인) + `PeriodicTask...filter(name="chainsight-pair-aggregation")` 1행·enabled·`11:30 America/New_York`.
+5. [ ] **익일 검증(진짜 GREEN)**: 다음 11:30 ET 경과 후 ⓐ worker 로그 `aggregate_relation_pairs succeeded`(unregistered 아님) + ⓑ 당일 `period` 행이 **단일 period·count 정상(중복 없음)**.
+   > **[v2 멱등 성격 정정]** `RelationPairSnapshot`은 unique `(canonical_a, canonical_b, period)` = **upsert형**이고 **`updated_at` 필드 없음**(created_at만). 따라서 같은 period 재실행은 **count·타임스탬프 모두 불변** → **발화 증거는 ⓐ worker 로그가 유일**(count "안 늘어남"을 실패로 오판 금지 = 위음성 차단). ⓑ count는 **중복(≈2배=멱등 위반) 감지용**이지 발화 증거 아님. verify_pair_aggregation.py가 A(로그)+B(count) 병행으로 이미 커버.
+6. [ ] **근본 수리(권장·별도 태스크)**: 위 migrate+register+재시작을 배포 스크립트/릴리스 훅에 넣어 수동 의존 제거 — B안의 "사람이 까먹음" 함정(#28이 한 층 위로 옮겨간 것)의 완결.
+
+---
+
 ## Chain Sight M2 v1.1 — theme_tags → EventGroup reader 전환 (Phase 1)
 
 > 보드를 섹터형 theme_tags → 코어-위성 EventGroup + 정합 leadership으로 전환. 2026-06-27 **Phase 1 완료(go-live)**. 결정: DECISIONS "Chain Sight 보드 EventGroup 전환 (2026-06-27)".
@@ -213,7 +248,10 @@
 | ID | Track | 우선 | Agent | Status | 근거/게이트 |
 |----|-------|------|-------|--------|------------|
 | MP2-ANALOG | historical regime matching(유추 분석) — 현재 regime 입력 vs 과거 유사 국면 매칭 + **MOVE 동봉**(이미 `NEW_ECONOMIC_SERIES` 보유, 별 통합 불요) | **#1** | @backend | 🟢 **active (착수 가능)** | recon [F] analog 미구현 확인. 기존 regime 데이터 위 read-only 분석 = 롤백 표면 작음. 가중 우위 마진 0.35(D-PHASE2-ORDER). 착수 시 STEP 0 재측정 |
-| MP2-ALERTS | 능동 모니터링/알림 (MP1-N 승격) — anomaly error rate / regime stale / news feed lag. **경계 = O3 하이브리드**(전달 port만 shared/stateless, AlertLog·트리거·구독 app 소유) | **#2** | @infra+@backend | 🆕 등록 | D-ALERTS-BOUNDARY(방향만 확정, 마진 0.15 근소). **실행 게이트**: 트랙 STEP 0에서 전달 port 인터페이스 + `news.tasks.check_pipeline_alerts` 재사용성 검증 후 모델/port 분리 |
+| MP2-ALERTS | 능동 알림. 알림 코어 = `packages/shared/alerting` 신설(D-ALERTS-BOUNDARY-R1), 3단 파이프라인(D-ALERTS-ARCH), 이메일(D-ALERTS-CHANNEL). **승계 게이트 해소 = D-ALERTS-GATE**(serverless 무접촉 격리). S0·S1 land | **#2** | @infra+@backend | ✅ **S0 마감 + S1 done(미머지)** | 다음 슬라이스 후보 = 채널 추가(슬랙 등, delivery port 구현체만) / 트리거 확장(anomaly·dashboard) |
+| MP2-ALERTS-S1 | Slice 1(D-ALERTS-RENDER) = regime 알림 본문 **풀 리포트화**(전환 요약·델타·anomaly 활성·섹터 상위/하위). **단일 경로**=판단 화면과 동일 `overview._build_payload()` 소비(재계산 0). **폴백**=풀 렌더 실패 시 디스패처가 S0 최소 본문으로 대체(발송 무실패, `AlertDispatchLog.error` RENDER_FALLBACK 접두로 식별, status=SENT). registry에 fallback 슬롯 additive. 제목 불변·LLM 0·shared→apps 0·마이그레이션 0 | @backend | ✅ **done (브랜치 tip 0107b1a, 미머지 — 통합 승인 대기)** — pytest 신규7/alerting8·경계3·api80 green·mig0. FE 0 | 실메일 검증 = 병진 수동(§보고 후보 커맨드) |
+| MP2-ALERTS-S0 | Slice 0 = regime 전환 트리거 → 3단 파이프라인 → 이메일 1통 + dedup. shared/alerting 신설(AlertSubscription·AlertDispatchLog·registry·dispatcher·EmailProvider) + market_pulse 훅·렌더러 + seed 커맨드. AST 경계 통과, migration 0001 **생성만** | @infra+@backend | ✅ **실적용 완료 (3eb06a7) — 장부 마감 2026-07-06**: migrate·worker_sync·seed·shell 수동 트리거·실발신 전 6단 완료. **실메일 일반 수신함 정상 도착 확정**(스팸 아님, 발신 신뢰도 이슈 없음) + `AlertDispatchLog` status=sent 1행. 멱등 close(이후 재마감 스킵). | 병진 수동 런북(6단, 2026-07-05 확정 — 완료 기록): **① `python manage.py migrate alerting`**(prod DB 테이블 2개 — 워커 재기동 전 선행: 재기동 창에서 실전환 시 테이블 부재 회피) → **② `bash scripts/worker_sync.sh`**(B′ 배포+워커 재기동 — 신규 task·regime.py 수정·신규 앱 로드 필수, 근거 `lesson_celery_task_registration`. beat 무변경이나 스크립트가 함께 kickstart=무해) → **③ `python manage.py seed_alert_subscription --email <주소>`**(멱등) → **④ shell 수동 트리거** `fire_regime_transition_alert(date="2026-07-05",…)`(직접 동기호출 — 워커 무관·이메일 경로 종단 검증, 07-05 과거날짜라 실전환 dedup 충돌 0) → **⑤ 실메일 확인**(제목·본문 링크·소요·스팸함 + `AlertDispatchLog` status=sent 1행) → **⑥ 첫 메일 "스팸 아님" 처리**. ⚠ **배포 전 prod `FRONTEND_BASE_URL` 도메인 설정 확인**(미설정 시 메일 링크=localhost:3000). **migrate 전까지 prod 미반영** |
+| SCREENER-ALERT-CONVERGE | (휴면) serverless `ScreenerAlert`/`AlertHistory`(사용자 알림 프레임워크, delivery 미구현) → shared/alerting 코어로 수렴 여부. D-ALERTS-GATE로 현재 **무접촉 격리(KEEP 레거시)** 확정. 전수조사 CUT 판정 없음 → 소멸 예정 아님 | @backend | 🕒 **휴면** | 트리거 = screener 알림 **실활성화** 결정 시(그때 shared 코어 재사용 vs 독립 유지 재평가). 현 시점 착수 금지 |
 | MP2-SUBPAGES | v1 위젯 5종(FearGreedGauge·YieldCurve·EconomicIndicators·GlobalMarkets·MarketMovers) v2 하위 페이지 흡수 (= `MP-V1-ABSORB` 실행) | **#3** | @frontend | 🕒 trigger-gated | recon [G] sub-pages 라우팅 0·v1 위젯 4/5 `frontend/components/macro/` 확인. 트리거 = #1·#2 land 후. STEP 0로 흡수 대상 재확인 |
 | MP2-DATA-FEDWATCH-GEX | FedWatch(fed funds futures)·GEX(감마 익스포저) 외부 데이터원 신설 | **#4** | @infra+@backend | 🔴 **데이터게이트** | recon [E] 코드베이스 흔적 **0**(클라이언트 미보유) → **데이터원 확보 전 착수 금지**. 별도 공급원 조사 선행 |
 | MP2-CROSS-SURFACE | cross-surface 통합(대시보드↔chain_sight↔portfolio 교차 표면) | **#5** | TBD | 🔴 게이트 | 선행 트랙(#1~#3) land 후. 범위는 그 시점 재정의 |
@@ -272,6 +310,8 @@
 | MP-OPS-FRED-FRESHNESS | (출시 체크리스트) 배포 환경에서 `update_economic_indicators` beat + RegimeSnapshot 생성 **지속 실행** 확인 → 거시 5종 14일 staleness 방어(미가동 시 게이지 "대기" 회귀). 배포 시 `setup_marketpulse_beat` 재실행(common-bugs #28) + beat DB drift 점검(NT-7) | @infra | MP-DATA-MACRO-COVERAGE | 🟡 **defer/DORMANT (P1-close 결정, 2026-06-23)** — 배포 절차 전용, 출시 없음 | STEP 0: 명시적 "(출시 체크리스트)·배포 환경" = 순수 배포 절차. 개발 중 화면 영향 0(FRED 거시 5종 null 0·regime 정상·mp_sync_fred 자율 3.0h 전). 출시 계획 없음 → defer. 트리거 = **실제 배포 결정 시**. 수용기준(beat 신선·14일 이내·FRED_API_KEY 배포 설정)은 그 시점 검증 |
 | MP-OPS-FRED-ENTRYPOINT | v2 11종 + VIXCLS·T10Y2Y를 한 진입점에서 날짜범위 백필하는 **thin wrapper**(기존 `backfill_v2_a1`/`sync_marketpulse_v2_indicators`/`sync_all_indicators` 호출 조합, **신규 fetch 로직 0**). 동기 = VIXCLS·T10Y2Y가 `backfill_v2_a1` 기본목록 밖이라 현재 진입점 분기(`--series-id` 개별 또는 v1 sync 경로) | @infra | - | ✅ **완료 (P1-close, 2026-06-23, `1a25d2a`)** | `backfill_macro_all` 신규 — backfill_v2_a1(기본 econ11+market11) + EXTRA_FRED_SERIES(VIXCLS·T10Y2Y) 개별 호출 조합(**신규 fetch 0·shared 무접촉**). backfill_v2_a1에 `--econ-only` additive 플래그(EXTRA 호출 market 중복 재백필 방지). dry-run 실동작 검증(EXTRA Market=0). 테스트 6 + backfill_v2_a1 기존 7 회귀 0. pytest 237→243. 마이그레이션 0 |
 | T-GAUGE-1 | regimeTone 톤 시각 검증 보류 — B-3 게이지(8b14dd8) 라이브 검증 시 5지표 전건 미돌파(LATE_BULL 안정)라 거리 바 중립 slate, regimeTone(돌파 시 강조)은 시각 미노출 = **설계 정합(버그 아님)**. DOM `data-breached=false` 5/5 확인 | @qa | B-3(8b14dd8) | 🆕 경미·데이터종속 | 재개 트리거 = regime 전환 임박/돌파(`to_threshold≤0`) 실발생 시 톤 렌더 재확인 |
+| LINK-DATA-FAIL | (트리아지 종결) 메일 CTA 링크 → mp 화면 뜨나 데이터 로드 실패. read-only 트리아지 T1~T6 실측: FE :3000(CORS 포함)·BE :18765 기동·CORS 허용(ACAO 부여)·FE base 정합·CTA 딥링크 파라미터 없음 → **판정 = 인증 게이트(코드 버그 아님)**. overview/cards = `IsAuthenticated`, JWT=localStorage `access_token`. 미로그인 브라우저(로그아웃/토큰삭제/만료+refresh 실패)에서 CTA 오픈 → 401 → "데이터를 불러오지 못했습니다"(mp 페이지 인증 가드 부재). curl `/overview` = 401 실측 | @qa(read-only) | - | ✅ **종결 (2026-07-07, 커밋 0)** — 수리 불요. CORS/base/딥링크 전부 배제(실측). 운영 메모 = common-bugs 등재 | authed 경로 2차 데이터 결함은 미검증(토큰 엔드포인트 상이, 래빗홀 회피) — 인증이 첫 게이트임은 확정 |
+| MP-401-MSG | (조건부) mp 페이지 401 구분 문구 — 미인증/세션만료 시 "데이터를 불러오지 못했습니다"(일반 실패)와 구분해 **세션 만료/로그인 안내** + 로그인 리다이렉트(return-to 딥링크). LINK-DATA-FAIL 부 판정(FE UX 갭)의 수리 후보 | @frontend | LINK-DATA-FAIL | 🔒 **조건부 보류** | 트리거 = **실사용 세션만료 혼동 발생**. 그 전 착수 금지 |
 | T-GAUGE-2 | 금리차 라벨 절단 — `t10y2y_pct`·`t10y3m_pct` 둘 다 label `w-28`에서 "장단기 금리차(10..."로 절단, 좁은 폭 구분 모호(closest 볼드로 일부 완화). 정확성 문제 아님, 모바일 360px 무오버플로 확인 | @frontend | - | 🆕 경미·UX 저우선 | 후속 라벨 작업 시 묶어 처리(짧은 식별자 "10Y-2Y"/"10Y-3M" 또는 툴팁) |
 | MP-UX-BREADTH-BAND | Breadth 의미밴드(변형 A: 종합 밴드 1줄 + 신고저·AD 부제) — `meaning.ts breadthBand`(0.5 중심 ±0.10/±0.20 사다리, 엇갈림 댐핑, FLOW_TONE) + Summary/Detail + `labels.py breadth.*`. **v2 정량 카드 자기설명화 완결**(Regime·Sector·Concentration·Breadth 4/4 밴드) | @frontend | MP-UX-S2 | **완료 2026-06-18** (`43ae93b`) | vitest market-pulse-v2 91→100(+9)·tsc 0·pytest 166·마이그레이션 0. BE serializer/차트 0. ⚠️ 임계 TUNE(dev n=1 미검증) → T-BREADTH-TUNE |
 | T-BREADTH-LIVE | dev breadth 실데이터(beat 가동, advance/decline 채워진 뒤) 라이브 밴드 눈검증 — 현재 dev DB 거의 EMPTY(오늘 advance+decline=0→밴드 null)라 라이브 미확인. 컴포넌트 테스트로만 렌더 검증됨 | @qa | breadth beat 데이터 채움 | 🆕 경미·데이터종속 | 재개 트리거 = breadth snapshot 실데이터 누적 후 라이브 카드 밴드 1컷 |
@@ -422,7 +462,7 @@
 | P5-EXCESS-BACKFILL | `SignalAccuracy.excess_{h}d`(SPY 상대) 백필 — prod 3,611행(~12%)만 채워짐 vs return 29,962. **벤치마크 상대 채점 채택 시 선결**(raw return 채점은 즉시 가능하므로 조건부) | 트랙 위임(shared/stocks) | Phase 5 벤치마크 상대 채점 채택 시 | 🆕 보류 |
 | HC-MARKER-TREADMILL | health_check "origin/main 해시" 마커가 **매 mgmt 머지마다 lag=1**(커밋이 자기 머지-후 해시를 스스로 못 적는 구조적 한계). 현재 tolerance N=3가 흡수해 대개 green이나, 마커 3커밋+ 미갱신 시 붉어짐(이전 STEP 0 세션 시작 시 실제 red 이력). **임시 규율**: 매 mgmt에서 마커를 현 origin/main으로 갱신해 lag=1 clean 유지(누적 방지). **durable**: health_check가 "메타-only·lag=1" 시그니처를 허용하도록 수정(하네스 코드 = 별도 슬라이스). **📌 보강(2026-07-02 preflight)**: N=3 tolerance가 lag=1을 흡수 재확인(5d35fa7 마커=3d670ed=HEAD~1 green). ❌는 lag>3에서만 발현 추정 → **durable 긴급도 하향**, 우선 tolerance 경계 문서화. | 하네스 개선(HARN) | durable = 하네스 코드 슬라이스(긴급도↓) / 임시 = 매 mgmt 상시 | 🆕 등재(임시 규율 상시 적용) |
 | DASH-FE-GLOB | frontend 실경로 = `frontend/app/page.tsx`(≠ 소유권 글롭 `app/dashboard/**`, 레거시 계정 페이지) 재확인 → 소유권 지도 v2 **실경로 반영**(dashboard 불일치-A 후속) | mgmt | 다음 mgmt(급하지 않음 — 이미 D-P1-STEP0·소유권 지도에 사실 기록됨) | 🆕 보류 |
-| P1-BUILD | 병합 스키마(**D-SCHEMA 9필드**)로 **발행 로그 모델 신설**(SignalAccuracy 형제, `packages/shared/stocks`) + **baker `recommend`/`thesis`/`carousel` 필드 add**(dashboard.json 추천 계약 서빙). 빌드용 worktree 브랜치 `monorepo/sess-p1-recprod`. **게이트**: 순수 add(dry-run `No changes` 기저 확인됨)·IDENTICAL(기존 6키 signal_cards 행위보존)·회귀 green·**write 표면 0**(serve 무변경). grain=`(stock,signal_date,signal_tag)`(D-P1-GRAIN) + confidence=formula v1·conf_ver=1(D-P1-CONF). **선결 결정 4종 완비**(참조 D-P1-RECPROD·D-SCHEMA·D-OWN·D-P1-GRAIN·D-P1-CONF) | 트랙 위임(shared/stocks · **dashboard 디렉션** D-OWN) | 착수가능(실행 대기) | 🆕 착수가능 |
+| P1-BUILD | 병합 스키마(**D-SCHEMA 9필드**)로 **발행 로그 모델 신설**(SignalAccuracy 형제, `packages/shared/stocks`) + **baker `recommend`/`thesis`/`carousel` 필드 add**(dashboard.json 추천 계약 서빙). 빌드용 worktree 브랜치 `monorepo/sess-p1-recprod`. **게이트**: 순수 add(dry-run `No changes` 기저 확인됨)·IDENTICAL(기존 6키 signal_cards 행위보존)·회귀 green·**write 표면 0**(serve 무변경). grain=`(stock,signal_date,signal_tag)`(D-P1-GRAIN) + confidence=formula v1·conf_ver=1(D-P1-CONF). **선결 결정 4종 완비**(참조 D-P1-RECPROD·D-SCHEMA·D-OWN·D-P1-GRAIN·D-P1-CONF) + 정렬·계약 확정(D-P1-REC-RANK·D-P1-REC-CONTRACT). **✅ land `1995f93`**(IssuanceLog 0009 순수 add + baker recommendations additive + 발행로그 write). 완료 근거: 게이트 전건 통과(순수 add·IDENTICAL·회귀 142 green·write표면0·구획 clean·health ✅) + `deece55` 위 rebase clean(4파일 무충돌) → **ff push `deece55..1995f93`**. 첫 실파이프라인 관측은 P1-OBSERVE(후속) | 트랙 위임(shared/stocks · **dashboard 디렉션** D-OWN) | 완료 2026-07-03 | ✅ 완료 |
 
 ---
 
@@ -433,7 +473,31 @@
 | ID | Task | 분류 | 트리거(재개) | Status |
 |----|------|------|-------------|--------|
 | MP2-VIEWED | ②Viewed enrichment(per-user impression, `presented_as='viewed'`) → **defer**(drop 아님). 사전 조율: 발행 로그에 필요한 필드(`user_id`·`signal_date`·`ticker`·`horizon`·`presented_as`) 요구를 dashboard 세션에 전달. 참조 D-MP2-SEQ | Phase 2 촉발 ② | **Phase 1 발행 로그(shared/stocks) 스키마 land 시** | 🆕 보류 |
-| P2-VIEWED-TABLE | **Viewed 별도 테이블 신설**(`presented_as='viewed'` 경로) — **D-SCHEMA의 baked/viewed 분리 결정 후속**. 발행 로그에서 `presented_as` 컬럼을 뺀 대가로, 노출 수준 채점은 이 테이블 join으로 복원(Phase 5). MP2-VIEWED enrichment의 **물리 저장소 스텁**(형제 항목). 참조 D-SCHEMA | Phase 2 촉발 ②(물리 스텁) | **P1-BUILD land 후 + Phase 2 착수 시** | 🆕 스텁(보류) |
+| P2-VIEWED-TABLE | **Viewed 별도 테이블 신설**(`presented_as='viewed'` 경로) — **D-SCHEMA의 baked/viewed 분리 결정 후속**. 발행 로그에서 `presented_as` 컬럼을 뺀 대가로, 노출 수준 채점은 이 테이블 join으로 복원(Phase 5). MP2-VIEWED enrichment의 **물리 저장소 스텁**(형제 항목). 참조 D-SCHEMA | Phase 2 촉발 ②(물리 스텁) | ✅ **P1-BUILD land(`1995f93`) 충족** — 잔여 트리거 = Phase 2 진입 결정(별건) | 🆕 트리거 충족·Phase 2 대기 |
+| P1-OBSERVE | 첫 EOD-bake 실행 후 **실파이프라인 관측**. **✅ 충족 2026-07-04**(D-P1-OBSERVE-DONE): JSON recommendations N=10·6키 IDENTICAL + DB IssuanceLog 10행=N·grain 중복 0(멱등 실증)·conf_ver=1·published_at·user_id null·매도 30%. 결함 2건(워커 표류·0009 미적용) 경유 해소 | 관측(dashboard 디렉션) | 완료 2026-07-04 | ✅ 충족 |
+| P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist + 심링크(방향 반전 방식 Y) + `scripts/worker_sync.sh` 신설 — 브랜치 표류 트레드밀 종료. **✅ 완료 2026-07-05**(OPS-B-BUILD): 스크립트 land `921dc0c`, 검증 bake 2회(심링크 생존·6키 IDENTICAL·N=10·IssuanceLog 10행 멱등·HTTP 200). 심링크 방향 반전 = D-B-WORKER-AMEND-1 | ops/infra | 완료 2026-07-05 | ✅ 완료 |
+| B-HARDEN-OUTPUT | (휴면) baker `OUTPUT_DIR` **env override** 추가 — 심링크 의존 제거. 트리거: **worker 트리 이전 또는 다중 출력 필요 발생 시**. 현재는 심링크(방식 Y)로 충분 | ops/infra(휴면) | worker 트리 이전·다중출력 시 | 💤 휴면 |
+| B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후** | ops(정리) | 자동 beat 1주기 무결 후 | 🆕 등재 |
+| P1-HC-ISSUANCE | 발행 로그 감시 = **C 계층**(D-HC-ISSUANCE): ⑴ bake 자가검증(행수==N, 불일치 시 ERROR + `pipeline_meta` 경보 필드, additive-within·bake 중단 아님) ⑵ health_check 최소(최근 거래일 행 존재·최근성). #46 원 취지=런타임+검문소 짝(마진 0.10). 짝 = common-bugs #46 | ops(health_check) | **결정 완료·실행 승인** | 🟢 승인 |
+| P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
+| P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
+| P1-BEAT-PRECHECK | ~~월요일 beat 전 공유 트리 re-detach 점검~~ **✗ 폐기 2026-07-05** — B′ 완료로 목적 소멸. 워커가 공유 트리 **비의존**(전용 worktree + worker_sync.sh)이라 공유 트리 표류가 bake에 영향 없음 | — | — | ✗ 폐기(B′ 완료) |
+| CAROUSEL-BUILD | dashboard 추천 캐러셀 A+ 구현(components/eod + page.tsx, D-P1-CAROUSEL). **✅ 완료 2026-07-06**(land `24b0e47`): RecommendationCarousel+Card·types/eod Recommendation·Level 2.5 배선, vitest 7·tsc 0·하위호환 고정·shared 무접촉. ⚠ 화면 도달은 W′ 완료 시 | dashboard FE | 완료 2026-07-06 | ✅ 완료 |
+| W-BUILD | **web 전용 서빙 worktree**(`~/worktrees/sv-web-runtime`) + next dev(:3000) 서빙 대상 전환 + `worker_sync.sh` 공통 동기화 확장 + node_modules `npm ci` 설치. **✅ 완료 2026-07-06**(OPS-W-BUILD, D-W-WEB-AMEND-1): 대상 정정(com.stockvis.web=daphne 오지목→next dev), worker_sync.sh land `75cb4d3`, 검증(:3000 web 서빙·bake 통주·공유 트리 무접촉·실화면 캐러셀 렌더). #45 web 판 해소 | ops/infra | 완료 2026-07-06 | ✅ 완료 |
+| W-HARDEN-BUILD | (휴면) dev server → `next build`/`next start` 전환 검토. 트리거: **외부 노출 또는 성능 문제 발생 시**. ※ W-HARDEN-LAUNCHD와 한 안건 통합 검토 | ops/infra(휴면) | 외부 노출·성능 문제 시 | 💤 휴면 |
+| W-HARDEN-LAUNCHD | (신규) next dev **데몬화**(현재 수동 `nohup`, 재부팅 시 수동 재시작 필요) — W-HARDEN-BUILD(next build/start 전환)와 **한 안건 통합**. 트리거: **재부팅 후 화면 다운 경험 또는 외부 노출** | ops/infra(휴면) | 재부팅 다운·외부 노출 시 | 💤 휴면 |
+| DAPHNE-RUNTIME-SURVEY | (신규, read-only) daphne(`com.stockvis.web`, :18765)의 **공유 트리 결합 실측**(#45 세 번째 인스턴스) → B′/W′ 패턴을 daphne로 확장할지 결정 입력. **✅ 완료 2026-07-06** — 실측 입력으로 D-DAPHNE-RUNTIME 확정(마진 1.80). daphne는 API 관문이라 표류 시 백엔드 응답 자체가 구코드 = 피해 최대 | ops(조사) | 완료 2026-07-06 | ✅ 완료 |
+| DAPHNE-BUILD | **daphne 전용 서빙 worktree**(`~/worktrees/sv-api-runtime` detached origin/main) + 기동 스크립트 PROJECT_DIR 전환 + `scripts/worker_sync.sh`에 daphne 추가. **✅ 완료 `803e9a9`** — baseline 전후 일치·CWD api트리·WS 101·:3000 200·공유 트리 무접촉. 런타임 3종 격리 완결. #45 세 번째 인스턴스 해소 | ops/infra | 완료 2026-07-06 | ✅ 완료 |
+| DAPHNE-GRACEFUL | (휴면) daphne 재기동 시 WS 연결 끊김 → graceful reload. 트리거: **재기동 끊김이 실사용 불편으로 관측 시** | ops/infra(휴면) | 재기동 끊김 관측 시 | 💤 휴면 |
+| CAROUSEL-COLOR-REVIEW | 캐러셀 방향 색 크로스-화면 정합 판단. **✅ 결정 완료 2026-07-06** → D-COLOR-SYSTEM(앱 표준 = 한국축: 상승·매수·긍정 rose / 하락·매도·부정 sky, sectorColor.ts 정합). 캐러셀 현행 emerald=매수는 Stage 1(COLOR-STAGE1)에서 rose=매수로 전환 예정, 과도기 반전 명시·수용 | dashboard FE(디자인) | 완료 2026-07-06 | ✅ 결정 완료 |
+| COLOR-STAGE1 | **dashboard 구획 한국축 전환** — `components/eod` 로컬 `colorSemantics.ts` 도입, 방향성 색을 D-COLOR-SYSTEM(rose=긍정/매수·sky=부정/매도)으로 통일. **✅ 완료 `3a4706f`**(colorSemantics.ts 신설 + 6컴포넌트, tsc0·vitest509, 실화면 검수 통과 07-06) | dashboard FE | 완료 2026-07-06 | ✅ 완료 |
+| COLOR-STAGE2-chain_sight | chain_sight 방향성 색 한국축 전환(EventRanking·MetricCell 등). **✅ 완료 `9fe326f`**(자기 구획 로컬 시맨틱, import 금지 준수) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
+| COLOR-STAGE2-market_pulse | market_pulse regime/flow `meaning.ts` 한국축 전환. **✅ 완료 `3253cd1`(merge `9169ea9`)** — CRISIS→sky(라벨 보존)·FLOW_TONE 디커플링·잔여 rose 오버로드 2건 수용(DECISIONS 판정 기록) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
+| COLOR-STAGE2-portfolio | portfolio 수익=rose/손실=sky 전환(PortfolioSummary·Table·Chart·Modal·RealtimePortfolio 5파일 green/red 잔존). 자기 구획 로컬 시맨틱(import 금지). 참조 D-COLOR-SYSTEM | portfolio FE | **미착수(착수가능)** | 🆕 등재 |
+| S3-COLOR-ALIGN | MP2-TREND S3(z-score 멀티라인 regime 구성요소)와 market_pulse 색 시맨틱 겹침 조율 — S3가 이 시맨틱 선소비 허용. **게이트 유지**: S3 land 시 regime 색이 한국축(D-COLOR-SYSTEM)과 일치하는지 확인 | market_pulse FE | S3 land 시 정합 확인 | 🔵 게이트 |
+| COLOR-WARN-SCHEME | (휴면) rose 의미이동(위기→긍정)으로 발생한 **잔여 rose 오버로드 정리** — 경고/위기 표현을 색 아닌 별도 수단(아이콘·채도·라벨)으로 완전 분리. 트리거: 잔여 rose 오버로드가 실사용 오독으로 관측 시. 참조 D-COLOR-SYSTEM 판정 기록 | FE(디자인) | 오독 관측 시 | 💤 휴면 |
+| COLOR-TOKEN-PROMOTE | `colorSemantics` **shared 토큰 승격** — 로컬 유틸을 공용 디자인 토큰으로. **🟢 착수 근거 충족**: 로컬 사본 **3벌 실증**(dashboard·chain_sight·market_pulse) → 조기 추상화 회피 조건 초과. 승격 설계 = 3벌 공통 시맨틱 추출 + drift 방지 단일소스. 참조 DECISIONS 결정 후보 | FE(shared) | **착수가능(설계)** | 🟢 후보 |
+| SYNC-ENTRYPOINT | `worker_sync.sh` **고정 진입점**(래퍼/별칭, 항상 런타임 트리 사본 실행) 신설 — #47(공유 트리 사본 stale → api 섹션 누락 부분 동기화) 근거. 이번 세션 수동 준수로 3종 정상 동기화 실증(자동화 부재 시 수동 규율 우회 가능). 참조 DECISIONS 결정 후보 · common-bugs #47 | ops/infra | 착수가능 | 🆕 등재 |
 
 ---
 
@@ -453,9 +517,10 @@
 
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
-| MP2-SECTOR-COLOR | 섹터 색 관례 불일치 — 신규 `SectorHeatmap`=상승 빨강(한국) vs 기존 `SectorCardSummary`/`SectorDetail` 드로어 `sectorFlow`=상대강세 녹색(서양). 같은 섹터가 요약↔상세 다른 색 → 혼란. 전면 한국 관례 통일(사용자 #1 한국). UI 결정 → 목업. **#2와 묶어 처리** | UI 결정+FE | 후속 슬라이스 | 🆕 보류 |
-| MP2-SECTOR-SENSE | 섹터 요약이 히트맵으로 교체되며 sector 한국어 sense(TranslationLog) 미표시(translation_fallback 4→3). Brief prose는 유지. 히트맵에 sense 한 줄 얹을지 후속 결정 — **#1과 동일 슬라이스**(경미) | FE | 후속(#1 묶음) | 🆕 보류 |
+| MP2-SECTOR-COLOR | 섹터 색 관례 불일치 — 신규 `SectorHeatmap`=상승 빨강(한국) vs 기존 `SectorCardSummary`/`SectorDetail` 드로어 `sectorFlow`=상대강세 녹색(서양). 같은 섹터가 요약↔상세 다른 색 → 혼란. 전면 한국 관례 통일(사용자 #1 한국). **완료** — sectorColor.ts 단일유틸(상승 rose/하락 sky) 4컴포넌트 통일, 요약↔상세 뒤집힘 0 | UI 결정+FE | — | ✅ **done (5459bce)** |
+| MP2-SECTOR-SENSE | 섹터 요약이 히트맵으로 교체되며 sector 한국어 sense(TranslationLog) 미표시(translation_fallback 4→3). Brief prose는 유지. **완료** — SectorHeatmap에 selectSense sector sense 한 줄 복원(SenseNote, 없으면 미렌더) | FE | — | ✅ **done (5459bce)** |
 | MP2-HEATMAP-FETCH | (관찰) 11-타일 히트맵이 요약 화면에서 sector 상세 eager fetch(로드 시 1콜 추가). 계약 무변경·기능 정상 = **버그 아님**. 선제 최적화 지양(측정 우선). overview 11섹터 additive 부착 전환은 실 성능 데이터 확보 후 판단 | 관찰(성능) | 실측 성능 이슈 시 | 🔵 관찰 |
+| MP2-COLOR-AUDIT | (C안) 앱 전면 up/down 색 관례 감사 — sector 외(TickerBar·breadth·concentration·시그널 등). sector는 MP2-SECTOR-COLOR로 한국 통일 완료. **착수 트리거 = sector 외에서 실제 색 뒤집힘/불일치 관찰 시**. 선제 감사 지양(측정 우선) | 관찰(UI 일관성) | 색 불일치 관찰 시 | 🔵 관찰 |
 
 ---
 
@@ -469,6 +534,40 @@
 
 ---
 
+## MP2-DELTA — 촉발 심화 축1(어제 대비 변화) (2026-07-03)
+
+> MP2-DEEPEN(전조+원인) 완료 후 남은 심화 축. 근거 D-MP2-DEEPEN / STEP 0 af08007.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-DELTA | 축1 어제 대비 변화(델타) — regime 전환 · sector rank 이동 · anomaly 신규/소멸. **유일 신규 파생**(데이터 시계열은 완비: RegimeSnapshot previous_regime · SectorFlowSnapshot date별 · AnomalySignalLog triggered_at, 단 2날짜 비교 서비스 신규). 전조·원인(MP2-DEEPEN)보다 손이 감. 참조 D-MP2-DEEPEN | market_pulse 트랙 직접 | 다음 촉발 심화 슬라이스 | 🆕 착수가능 |
+
+---
+
+## MP2-DELTA 슬라이스 (2026-07-03)
+
+> 촉발 심화 축1(어제 대비 변화). 근거 D-DELTA-CALC/SCOPE/YDAY.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-DELTA-S1 | 슬라이스1 = regime from→to(previous_regime 재사용) + sector 순위 델타(조회-시 파생) + DeltaCard "어제와 달라진 것". prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (421fefe)** |
+| MP2-DELTA-S2 | 슬라이스2 = **anomaly 신규/소멸/해소** 델타 + 무발동일 표시. "어제"=**직전 발동일 대비**. D-DELTA-QUIET(옵션2 해소 명시) + R3 실측=판별 불가 → **5c-ii 폴백(무발동일 항상 quiet)**. anomaly_delta additive(4상태). 참조 D-DELTA-QUIET | market_pulse 트랙 | — | ✅ **done (b29067e)** ⇒ **MP2-DELTA 트랙 종결** |
+| ANOMALY-RUN-EVIDENCE | (관찰 항목, 측정-우선) anomaly engine 실행 흔적(run-marker) 도입 시 D-DELTA-QUIET의 resolving 활성화 가능. 현재 AnomalySignalLog는 발동 행만 적재 → 무발동일 quiet로만 수렴. **실제 오독 사례 관찰 시 착수**(계약엔 resolving/resolved_rules 자리 이미 존재) | market_pulse 트랙 | 오독 관찰 | 👁 관찰 |
+
+---
+
+## MP2-TREND 슬라이스 — 멀티라인 시계열 (2026-07-06) — ✅ **트랙 종결 (2026-07-07)**
+
+> 공용 MultiLineTrendChart + 적용 N곳. 근거 D-TREND-PLAN/BASELINE/TOOLTIP.
+> **종결**: S1·S2·S3(R1) 전건 land(origin/main). S4(z-이상도 뷰)는 **동면** — 트리거 B-1 land(Phase 5)까지 착수 금지 유지.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| MP2-TREND-S1 | 1호 = 공용 `MultiLineTrendChart`(recharts, 크로스헤어+고정 리드아웃·반전축·범위/범례 토글, overlays 타입만) + 11색 팔레트 + sector_history rank additive + 섹터 순위 궤적. emphasis=서버 rank leaders/laggards(FE 델타 재계산 금지). prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (c1cdba4)** |
+| MP2-TREND-S2 | 2호 = 전환일 오버레이 공용 계약(previous_regime≠regime 파생) + breadth 궤적(A/D + 기준선 MA20) + overlays.vlines·refSeries 렌더 + 델타 강조 복원(옵션 B, D-TREND-EMPHASIS 안전판 통과). 전부 조회-시 파생·계약 additive·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (7678ec2)** — pytest 신규6/api72·vitest 신규9/전체518·tsc0·mig0 |
+| MP2-TREND-S3 | 3호(개정 R1) = **국면 재료 판정-거리 소형 다중**(옵션 B). z-score 전제 STEP 0 반증(classifier=raw 복합 룰, D-TREND-BASELINE-R1) → 룰-구동 7지표 raw 스파크라인 + rules.yaml 실제 컷 hlines + 판정거리. 세그먼트 [판정거리 | 이상도(z)🔒 예약탭](D-TREND-VIEWMODE). 컷 하드코딩 0(rules.yaml 단일소스). 조회-시 파생·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (R1, 코드머지 `8842531`, COLOR-STAGE2 CUT_STROKE 정합 포함)** — pytest 신규8/api80·vitest 신규8/전체526·tsc0·mig0. **트랙 마지막 슬라이스 → MP2-TREND 종결** |
+| MP2-TREND-S4 | 4호 = **z-이상도 뷰(예약 탭 채움)** — S3 세그먼트의 이상도(z) placeholder를 실 뷰로. 구성요소 z-정규화(윈도·EOD샘플·history 30→60 확장·저빈도 지표 처리 설계 선행). **트리거: B-1 land(Phase 5) — 그 전 착수 금지** | market_pulse 트랙 | B-1 land(Phase 5) | 🔒 예약(트리거 게이트) |
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
@@ -480,3 +579,41 @@
 | TC-1 | Thesis Control FE-PR-1 (라우팅+공통) | @frontend | ~2026-03-10 | 7개 라우트 + 5개 공통 컴포넌트 |
 | TC-2 | Thesis Control FE-PR-2 (목록+변경+진입) | @frontend | ~2026-03-12 | ThesisListCard + TodayChangeCard |
 | VAL-1 | 1차 검증 전체 (Peer+LLM필터) | @backend + @frontend | ~2026-03-05 | 6개 프리셋 + Compute-on-Read |
+
+## NT-OPS-HCHECK-REDESIGN — health_check `origin/main-hash` 체크 재설계 [resolved 2026-07-02]
+- 상태: **resolved** (D-OPS-HCHECK-B2). 해시 대조 → 시간기반(PROGRESS committer-ts, 임계 M=72h) 교체. 순수함수 `is_progress_stale` 분리 + 자기검증 2방향(`tests/test_health_check_freshness.py`) + 전체 health_check 10 OK.
+- 원증상: fast-main(~20min land)+self-ref로 매 세션 blocking ERROR 오발 → resync land 게이트 HALT.
+- ※ 병렬 브랜치 주의: `monorepo/sess-mgmt-v2`(미land, 0126af6)가 이 항목을 **open**으로도 추가함 → PHASE 2에서 v2 rebase·land 시 union-merge 중복 → **dedup 필요**(open 제거, 본 resolved 유지).
+
+## NT-OPS-HCHECK-GATEINFO — health_check gate/info 2계층 분리 (C안, 후보)
+- 내용: blocking gate(코드diff·경계·동결·arch guard) vs 비-blocking info(캐시 신선도)로 출력 모델 재구조화.
+- 이유: 캐시성 체크가 늘면 개념적으로 가장 깨끗(PROGRESS=캐시 규약을 구조에 반영).
+- γ규율: 지금은 소비자 미확정 → 짓지 않음. 트리거: 캐시성 blocking 후보 체크 ≥3 누적 시 결정 사이클.
+## NT-P1-DELEGATE — Phase 1 발행 로그 + EOD-bake 추천 생산 → Dashboard 앱 위임
+- 상태: ops 측정·설계·경계판정 완료. 빌드 실행은 Dashboard 프로젝트 소관(기능 코드).
+- 스펙(단일 출처): HANDOFF_p1_recprod_spec.
+- 확정: D-P1-GRAIN(wide 형제대칭, key=(stock,signal_date,signal_tag), horizon=컬럼, user_id nullable 예약, unique user 제외) · D-P1-CONF(B+ 발행값 캡처: confidence enum + composite_score float, 신규 생산 0).
+- 부착: 모델=SignalAccuracy 형제 / bake=eod_json_baker _build_dashboard_json return / write=Stage6·baker 기존 표면(신규 표면 0) / serve=EODDashboardView 무변경 / Phase5 join 정합.
+- open: #4 채점 모드(raw/excess, Phase 5) · user_id 스코프(멀티테넌트 시 unique 확장).
+- 참고: D-P1-GRAIN·D-P1-CONF의 DECISIONS.md append는 Dashboard 빌드 커밋에 포함(원자적 land).
+
+## OPS-LOG-FLOOD — celery-worker-error.log 폭주 (등재만, 2026-07-03)
+- 상태: **등재만**(수리 안 함, 사용자 지시). 긴급도 낮음.
+- 관찰: worker-error.log에 모든 INFO + `missed heartbeat`(고빈도) + 15분 regime 등 전량 적재 → 126MB, ~2,700줄/h.
+- 영향: tail-window 로그 도구 오탐 유발(#28 verify E1의 근인). verify는 경계-timestamp 스캔으로 회피 완료 → 판정 정확도 무영향.
+- 후속 트리거: 디스크 압박(수백 MB↑) 또는 타 tail-window 도구 오탐 재발 시. 방안 = 로그 레벨/분리/회전, heartbeat 억제.
+- 상세: `docs/features/chain-sight/PR_ops_verify_enhancement.md`(등재 절).
+
+## OPS-WORKTREE-ISOLATION — pair 작업 worktree 격리 (등재, 2026-07-04)
+- 상태: 등재. **트리거 = pair→main 최종 통합 후** 착수(통합 전엔 pair가 공유 dir 점유 필요라 격리 시 워커 코드 갈림).
+- 사건(근거): 2026-07-04 13:13:25 외부 세션이 공유 작업트리 `/Users/byeongjinjeong/Desktop/stock_vis`를 `git checkout origin/main`(detached 7c2f186)으로 탈취 → HEAD가 pair 이탈 + celery-worker 13:13:51 origin/main 코드로 재시작(aggregate 태스크 부재 = 다음 틱 unregistered 위험). 복구: pair(c690307) checkout + 워커 재기동(71696). pair/origin 무손상.
+- 근본 원인: 다중 세션이 단일 작업트리(=celery 워커 코드베이스) 공유. 메모리 lesson "공유 main 작업트리 직접 편집 금지"의 구조적 미비(수동 규율만으론 동시 checkout 못 막음).
+- **ADR 재평가 트리거(실증)**: DECISIONS:1338 "다중 세션 = **소프트 강제**(worktree 격리 + 계약 헤더, 훅 미도입 — 차선 이탈 반복 시 국소 승격)". 이번 사건(reflog `7c2f186 @2026-07-04 13:13:25 checkout origin/main`)이 소프트 강제가 못 막은 **첫 실증 이탈** → 통합 후 "국소 승격"(hook/worktree 물리격리) 재평가 대상.
+- 07-05 후속: worker(71696) + **beat(36421→38604 재기동, 13:13:51 origin/main 재시작분 정정)** 양자 pair코드 정합. 밤사이 자율 틱 period 07-04 적립 = 복구 무인 검증.
+- 방안: 활성 작업 브랜치를 `git worktree`로 분리(SESSION_CONTRACT worktree 규율 정합), 워커는 안정 브랜치 dir 고정 import.
+- 통합 전 방어(잠정): 세션 시작 시 HEAD·워커 시작시각 대조 수동 스모크 + flag-on/merge 전 재확인(P-0 규율에 편입 검토).
+- **2026-07-06 승격 = 대기열 선두**: 트리거("pair→main 통합 후") D2 v5.1 결정 ⑩로 충족 임박. 재발 2차 봉인 추가 — nightly `worker_sync.sh`가 sv-worker-runtime을 origin/main으로 리셋 → 기본 워커가 미머지 pair 태스크 미보유(unregistered) → 궤적 07-05 영구 갭. 遠因 = 본 트리거를 "통합 후"로 잡아 통합 전 재발을 못 막음. 착수는 D2 관찰 창과 겹치지 않게 사용자 호출(§7). 방안 = 워커 runtime을 안정 브랜치 고정 + 활성 트랙 worktree 물리격리 승격(DECISIONS:1338 소프트강제 재평가).
+## NT-REHOME-GRAPH — graph_analysis CUT [resolved 2026-07-03]
+- 상태: **resolved** (D-REHOME-GRAPH). 휴면 상관관계 엔진(1444줄) 제거. STAGE 1=drop-migration 0002 prod 적용(5테이블 DROP, 0 rows) / STAGE 2=INSTALLED_APPS+코드 git rm.
+- 검증: makemigrations --dry-run=No changes · check 0 · health 10 · arch 7 · 회귀 delta 0(선존 chainsight 5실패 무관). 복구 SHA f892d90.
+- 후속(무해·선택): django_migrations 고아행 정리 · STAGE1 브랜치 삭제 · CLAUDE.md/sub_claude_md 서술 doc 위생.

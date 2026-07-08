@@ -9,6 +9,7 @@ from .leadership import StockLeadershipScore
 from .narrative_tag import CompanyNarrativeTag
 from .news_event import ChainNewsEvent
 from .relation_discovery import CoMentionEdge, PriceCoMovement, RelationConfidence
+from .relation_pair_snapshot import RelationPairSnapshot
 from .revenue_structure import CompanyRevenueStructure
 from .saved_path import PathAction, SavedPath
 from .seed_snapshot import SeedSnapshot
@@ -31,6 +32,7 @@ __all__ = [
     "CoMentionEdge",
     "PriceCoMovement",
     "RelationConfidence",
+    "RelationPairSnapshot",
     "SavedPath",
     "PathAction",
     "SeedSnapshot",

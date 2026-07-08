@@ -1,20 +1,21 @@
 'use client'
 
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts'
-
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthDetail as Detail } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
+import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '../colorSemantics'
+import { BreadthTrajectory } from './BreadthTrajectory'
 
-export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
+export function BreadthDetail({
+  payload,
+  labels,
+  transitionDates = [],
+}: {
+  payload: Detail
+  labels?: Record<string, string>
+  // MP2-TREND S2: 전환일 세로선(regime 계약 공용 소비 — 컨테이너가 조회해 전달). 없으면 무영향(E4).
+  transitionDates?: string[]
+}) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">시장 폭 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -28,13 +29,6 @@ export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: R
     ad_line_change: payload.ad_line_change ?? 0,
   })
 
-  const data = (payload.history_30d ?? []).map((p) => ({
-    date: p.date.slice(5),
-    advance: p.advance,
-    decline: -p.decline,
-    ad_line: p.ad_line,
-  }))
-
   return (
     <div className="grid gap-4">
       {bb ? (
@@ -43,8 +37,8 @@ export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: R
         </p>
       ) : null}
       <header className="grid grid-cols-3 gap-2 text-center">
-        <Cell label="상승" value={payload.advance ?? 0} tone="text-emerald-600" />
-        <Cell label="하락" value={payload.decline ?? 0} tone="text-rose-600" />
+        <Cell label="상승" value={payload.advance ?? 0} tone={DIRECTION_TEXT.positive} />
+        <Cell label="하락" value={payload.decline ?? 0} tone={DIRECTION_TEXT.negative} />
         <Cell
           label={translate('metric.ad_line', labels, 'AD-line')}
           value={payload.ad_line ?? 0}
@@ -52,26 +46,14 @@ export function BreadthDetail({ payload, labels }: { payload: Detail; labels?: R
         />
       </header>
 
-      <div>
-        <p className="text-xs text-slate-500 mb-1">{translate('metric.ad_line', labels, 'AD-line')} 30일 추이</p>
-        <div style={{ width: '100%', height: 200 }}>
-          <ResponsiveContainer>
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgb(226 232 240)" />
-              <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Line type="monotone" dataKey="ad_line" stroke="rgb(99 102 241)" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* MP2-TREND S2: 단순 AD-line 차트 → 궤적(A/D + 기준선 MA20 + 전환일). 공용 MultiLineTrendChart. */}
+      <BreadthTrajectory payload={payload} transitionDates={transitionDates} />
 
       <div>
         <p className="text-xs text-slate-500 mb-1">신고가 / 신저가 (52주)</p>
         <div className="grid grid-cols-2 gap-2 text-center">
-          <Cell label="52w 신고가" value={payload.new_high_52w ?? 0} tone="text-emerald-500" />
-          <Cell label="52w 신저가" value={payload.new_low_52w ?? 0} tone="text-rose-500" />
+          <Cell label="52w 신고가" value={payload.new_high_52w ?? 0} tone={DIRECTION_TEXT_SOFT.positive} />
+          <Cell label="52w 신저가" value={payload.new_low_52w ?? 0} tone={DIRECTION_TEXT_SOFT.negative} />
         </div>
       </div>
     </div>

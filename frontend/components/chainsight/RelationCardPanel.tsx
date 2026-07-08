@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useNeighbors, useSeedData } from '@/hooks/useMarketView';
 import type { Neighbor, SeedNode } from '@/types/chainsight';
+import { CHANGE_TEXT } from './colorSemantics';
 
 const RELATION_TEMPLATES: Record<string, string> = {
   SUPPLIES_TO: '공급망 상류/하류 연결',
@@ -133,7 +134,7 @@ function SeedCardList({ seeds }: { seeds: SeedNode[] }) {
           </p>
 
           <div className="flex items-center gap-3 text-xs mb-3">
-            <span className={seed.daily_return >= 0 ? 'text-red-500' : 'text-blue-500'}>
+            <span className={seed.daily_return >= 0 ? CHANGE_TEXT.up : CHANGE_TEXT.down}>
               {seed.daily_return > 0 ? '+' : ''}{seed.daily_return}%
             </span>
             {seed.volume_ratio > 1 && (
@@ -230,7 +231,7 @@ function RelationCard({ neighbor }: { neighbor: Neighbor }) {
       {/* 메타 */}
       <div className="flex items-center gap-2 text-xs text-gray-400 mb-2">
         <span>신뢰도 {confidence}</span>
-        <span className={neighbor.daily_return >= 0 ? 'text-red-500' : 'text-blue-500'}>
+        <span className={neighbor.daily_return >= 0 ? CHANGE_TEXT.up : CHANGE_TEXT.down}>
           {neighbor.daily_return > 0 ? '+' : ''}{neighbor.daily_return}%
         </span>
       </div>

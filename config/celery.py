@@ -723,6 +723,16 @@ app.conf.beat_schedule = {
         'options': {'expires': 600}
     },
 
+    # 관계 쌍 집계 → RelationPairSnapshot (매일 11:30 EST, update_relation_confidence 직후)
+    'chainsight-pair-aggregation': {
+        'task': 'apps.chain_sight.tasks.relation_tasks.aggregate_relation_pairs_task',
+        'schedule': crontab(hour=11, minute=30),
+        'options': {'expires': 3600}
+    },
+
+    # (D2 v5.1 ⑨-C) 상향 학습 죽은 config dict beat 제거 — DatabaseScheduler가
+    # 무시(#28)하던 미배선 항목. 실발화는 aggregate 말미 인라인 트리거(코드 체인)로 대체.
+
     # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
     'chainsight-aggregate-profiles': {
         'task': 'apps.chain_sight.tasks.sync_tasks.aggregate_chain_profiles',

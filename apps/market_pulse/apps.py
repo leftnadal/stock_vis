@@ -29,3 +29,10 @@ class MarketpulseConfig(AppConfig):
         )
 
         register_vix_provider(MacroVIXProvider())
+
+        # MP2-ALERTS: regime 전환 알림 렌더러를 shared alerting registry에 주입.
+        from apps.market_pulse.alert_renderers import (
+            register_market_pulse_alert_renderers,
+        )
+
+        register_market_pulse_alert_renderers()

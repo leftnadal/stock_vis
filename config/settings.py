@@ -196,11 +196,11 @@ INSTALLED_APPS = [
     'packages.shared.users',  # PR2 이동 (A-min)
     'services.news',  # PR8a-2 이동
     'macro',  # 거시경제 대시보드 (Market Pulse)
-    'services._dormant.graph_analysis',  # 휴면 — 그래프 온톨로지 분석 (PR1 이동, monorepo blueprint §7)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
     'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
+    'packages.shared.alerting',  # MP2-ALERTS — 알림 코어 (D-ALERTS-BOUNDARY-R1)
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
@@ -543,6 +543,9 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
 REPORT_RECIPIENT_EMAIL = os.getenv('REPORT_RECIPIENT_EMAIL', '')
 
+# 알림 본문 딥링크 베이스(하드코딩 금지 — env override). MP2-ALERTS 판단 화면 링크.
+FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
+
 # ============================================================
 # Celery Error Monitoring
 # ============================================================
@@ -565,3 +568,10 @@ CELERY_IGNORED_ERRORS = [
 # 'event_group'(ON) = EventGroup(kept만·n3 이름) + benchmark_kind='eg' leadership.
 # ON(go-live)은 .env CHAINSIGHT_GROUP_SOURCE=event_group + daphne web 재시작 = Phase 1 완료.
 CHAINSIGHT_GROUP_SOURCE = os.getenv('CHAINSIGHT_GROUP_SOURCE', 'theme_tags')
+
+# 상향 학습 루프 flag (D2 v5.1). OFF(기본) = upward 트리거 미발사(aggregate skip 로그).
+# ON = .env CHAINSIGHT_UPWARD_LEARNING_ENABLED=true + 워커 재기동. D1이 체크만 배선하고
+# plumbing 누락(갭 #6) → 본 줄이 env→settings 연결. flag-off도 동일 경로 역방향(env=false+재기동).
+CHAINSIGHT_UPWARD_LEARNING_ENABLED = (
+    os.getenv('CHAINSIGHT_UPWARD_LEARNING_ENABLED', 'false').lower() == 'true'
+)

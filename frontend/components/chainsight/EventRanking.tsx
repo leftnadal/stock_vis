@@ -12,6 +12,7 @@ import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
 import MetricInfoPopover from '@/components/chainsight/MetricInfoPopover';
 import MetricCell from '@/components/chainsight/MetricCell';
 import AttentionStandingBar from '@/components/chainsight/AttentionStandingBar';
+import { CHANGE_TEXT } from './colorSemantics';
 
 interface Props {
   theme: string;
@@ -93,7 +94,7 @@ function RankingRow({
             <span className="text-xs text-gray-500 dark:text-gray-400 truncate block">{item.name}</span>
           </div>
           <div className="w-20 shrink-0 text-right">
-            <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+            <div className={`text-sm font-medium ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
               {isPositive ? '▲' : '▼'} {Math.abs(item.raw_return * 100).toFixed(2)}%
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.score.toFixed(1)}</div>

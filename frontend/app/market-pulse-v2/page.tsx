@@ -13,6 +13,7 @@ import { TickerBar } from './components/TickerBar'
 import { BreadthCardSummary } from './cards/BreadthCardSummary'
 import { BriefCardSummary } from './cards/BriefCardSummary'
 import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
+import { DeltaCard } from './cards/DeltaCard'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorHeatmap } from './cards/SectorHeatmap'
 import { CardDetailContainer } from './details/CardDetailContainer'
@@ -34,6 +35,12 @@ export default function MarketPulseV2Page() {
   const { data: i18n } = useMarketPulseI18n()
   const labels = i18n?.labels
   const [openCard, setOpenCard] = useState<CardId | null>(null)
+  // MP2-TREND S2(D-TREND-EMPHASIS 옵션 B): 델타→섹터 진입 시 강조 컨텍스트. 직접 진입/닫기 시 클리어(무영향).
+  const [sectorEmphasis, setSectorEmphasis] = useState<string[] | undefined>(undefined)
+  const openSector = (emphasis?: string[]) => {
+    setSectorEmphasis(emphasis)
+    setOpenCard('sector')
+  }
 
   if (isLoading) {
     return (
@@ -76,11 +83,22 @@ export default function MarketPulseV2Page() {
           />
         </div>
 
+        {/* ③b Delta Card — 어제와 달라진 것 (MP2-DELTA Slice 1) */}
+        <div className="mt-4">
+          <DeltaCard
+            regime={overview.cards.regime}
+            sectorDeltas={overview.sector_deltas}
+            anomalyDelta={overview.anomaly_delta}
+            labels={labels}
+            onOpenTrajectory={openSector}
+          />
+        </div>
+
         {/* ④ Anomaly Panel — 위계 2번 */}
         <AnomalyPanel data={overview.anomaly} labels={labels} />
 
         {/* ⑤ Sector 히트맵 (full-width) — 위계 3번 */}
-        <SectorHeatmap labels={labels} onOpen={() => setOpenCard('sector')} />
+        <SectorHeatmap labels={labels} onOpen={() => openSector(undefined)} sense={selectSense(translations, 'sector')} />
 
         {/* ⑥ Brief (prose) — 위계 4번 */}
         <div className="mt-4">
@@ -119,10 +137,20 @@ export default function MarketPulseV2Page() {
       {/* CardDrawer: 5카드 드로어 전부 살아있어야 함 (sector 포함) */}
       <CardDrawer
         open={openCard !== null}
-        onClose={() => setOpenCard(null)}
+        onClose={() => {
+          setOpenCard(null)
+          setSectorEmphasis(undefined)
+        }}
         title={openCard ? CARD_TITLE[openCard] : ''}
       >
-        {openCard ? <CardDetailContainer cardId={openCard} enabled={openCard !== null} labels={labels} /> : null}
+        {openCard ? (
+          <CardDetailContainer
+            cardId={openCard}
+            enabled={openCard !== null}
+            labels={labels}
+            emphasisOverride={openCard === 'sector' ? sectorEmphasis : undefined}
+          />
+        ) : null}
       </CardDrawer>
     </PageShell>
   )

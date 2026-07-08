@@ -3,6 +3,7 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthCard } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
+import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '../colorSemantics'
 import { CardShell } from './CardShell'
 import { SenseNote } from './SenseNote'
 
@@ -33,10 +34,10 @@ export function BreadthCardSummary({
             </p>
           ) : null}
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <Stat label="상승" value={data.advance} tone="text-emerald-600" />
-            <Stat label="하락" value={data.decline} tone="text-rose-600" />
-            <Stat label="신고가 52w" value={data.new_high_52w} tone="text-emerald-500" />
-            <Stat label="신저가 52w" value={data.new_low_52w} tone="text-rose-500" />
+            <Stat label="상승" value={data.advance} tone={DIRECTION_TEXT.positive} />
+            <Stat label="하락" value={data.decline} tone={DIRECTION_TEXT.negative} />
+            <Stat label="신고가 52w" value={data.new_high_52w} tone={DIRECTION_TEXT_SOFT.positive} />
+            <Stat label="신저가 52w" value={data.new_low_52w} tone={DIRECTION_TEXT_SOFT.negative} />
             <Stat
               label={translate('metric.ad_line', labels, 'AD-line')}
               value={data.ad_line}

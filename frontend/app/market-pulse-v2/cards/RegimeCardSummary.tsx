@@ -43,6 +43,63 @@ function StageGauge({ regime }: { regime: string }) {
   )
 }
 
+// D-MP2-DEEPEN: 전조 블록 sub-component
+interface ClosestShape {
+  indicator: string
+  op: string
+  threshold: number
+  actual: number
+  to_threshold: number
+}
+
+function NextStageBlock({
+  closest,
+  nextStage,
+  labels,
+}: {
+  closest: ClosestShape
+  nextStage?: string | null
+  labels?: Record<string, string>
+}) {
+  const near = Math.abs(closest.to_threshold) <= 0.2 * Math.abs(closest.threshold)
+  const progressPct = Math.max(
+    0,
+    Math.min(100, (1 - Math.abs(closest.to_threshold) / Math.abs(closest.threshold)) * 100),
+  )
+  const sign = closest.to_threshold > 0 ? '+' : ''
+  const containerCls = near
+    ? 'mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs'
+    : 'mt-3 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-xs'
+  const barCls = near ? 'bg-amber-400' : 'bg-slate-400'
+  const badgeTestId = near ? 'next-stage-imminent' : 'next-stage-margin'
+  const badgeText = near ? '전환 임박' : '전환 여유'
+
+  return (
+    <div className={containerCls}>
+      <div className="flex items-center justify-between mb-1">
+        <span data-testid={badgeTestId} className={`font-semibold ${near ? 'text-amber-700' : 'text-slate-600'}`}>
+          {badgeText}
+        </span>
+        {nextStage ? (
+          <span data-testid="next-stage-label" className="text-slate-500">
+            → {translate(`regime.${nextStage}`, labels, nextStage)}
+          </span>
+        ) : null}
+      </div>
+      <p data-testid="next-stage-info" className="text-slate-700 mb-1">
+        전환까지 {closest.indicator} {closest.actual}/{closest.threshold} ({sign}{closest.to_threshold.toFixed(2)} 남음)
+      </p>
+      <div className="h-1.5 rounded bg-slate-200 overflow-hidden">
+        <div
+          data-testid="next-stage-progress"
+          className={`h-full rounded ${barCls} transition-all`}
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
 /**
  * Regime hero — full-width 판단 카드.
  * D-MP2-SURFACE 변형1: hero로 승격, stance_copy + 5단계 게이지 추가.
@@ -79,6 +136,10 @@ export function RegimeCardSummary({
                 {data.stance_copy}
               </p>
               <StageGauge regime={data.regime} />
+              {/* D-MP2-DEEPEN: 전조 블록 */}
+              {data.next_stage_closest != null ? (
+                <NextStageBlock closest={data.next_stage_closest} nextStage={data.next_stage} labels={labels} />
+              ) : null}
             </>
           ) : (
             <p className="mt-3 text-sm text-slate-400" data-testid="stance-fallback">

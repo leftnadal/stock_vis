@@ -14,6 +14,7 @@ import {
   useArchivePath, useResolvePath,
 } from '@/hooks/usePathWatchlist';
 import { PATH_STATUS_BADGE } from '@/lib/utils/pathStatus';
+import { STRENGTH_TEXT } from './colorSemantics';
 
 const REL_LABELS: Record<string, string> = {
   SUPPLIES_TO: 'supply',
@@ -137,13 +138,13 @@ export default function FullPathView({ path: initialPath }: FullPathViewProps) {
           {recheckResult && (
             <div className="space-y-1">
               {recheckResult.strengthened.map((e, i) => (
-                <div key={`s-${i}`} className="flex items-center gap-2 text-xs text-green-600 dark:text-green-400">
+                <div key={`s-${i}`} className={`flex items-center gap-2 text-xs ${STRENGTH_TEXT.positive}`}>
                   <ArrowUpRight className="w-3.5 h-3.5" />
                   <span>{e.from} &rarr; {e.to}: {e.old_score ?? '?'} &rarr; {e.new_score ?? '?'} (strengthened)</span>
                 </div>
               ))}
               {recheckResult.weakened.map((e, i) => (
-                <div key={`w-${i}`} className="flex items-center gap-2 text-xs text-red-500 dark:text-red-400">
+                <div key={`w-${i}`} className={`flex items-center gap-2 text-xs ${STRENGTH_TEXT.negative}`}>
                   <ArrowDownRight className="w-3.5 h-3.5" />
                   <span>{e.from} &rarr; {e.to}: {e.old_score ?? '?'} &rarr; {e.new_score ?? '?'} (weakened)</span>
                 </div>

@@ -83,6 +83,14 @@ export interface AnomalyItem {
   threshold: Record<string, number>
   actual: number
   paired_news_id: number | null
+  evidence?: {
+    top10_weight: number | null
+    vix_change_pct: number | null
+    max_abs_sector_z: number | null
+    sector_extreme_symbol: string | null
+  } | null
+  paired_news_title?: string | null
+  paired_news_url?: string | null
 }
 
 export interface AnomalySection {
@@ -106,6 +114,22 @@ export interface RegimeCard {
   // D-MP2-SURFACE additive: 판단 카피 + 유효성 플래그 (구버전 응답엔 없을 수 있어 optional)
   stance_copy?: string
   stance_ok?: boolean
+  next_stage?: string | null
+  next_stage_closest?: {
+    indicator: string
+    op: string
+    threshold: number
+    actual: number
+    to_threshold: number
+  } | null
+  margins?: Array<{
+    indicator: string
+    op: string
+    threshold: number
+    actual: number
+    to_threshold: number
+  }>
+  transition_from?: string | null
 }
 
 export interface BreadthCard {
@@ -165,6 +189,28 @@ export interface Translations {
   status: string
 }
 
+export interface SectorDelta {
+  sector: string
+  rank: number
+  prev_rank: number
+  rank_delta: number
+  as_of: string
+  vs_date: string
+}
+
+/** MP2-DELTA 슬라이스2 — anomaly 발동 상태 변화(조회-시 파생). 날짜·state 전부 서버값. */
+export type AnomalyDeltaState = 'fired' | 'resolving' | 'quiet' | 'no_history'
+
+export interface AnomalyDelta {
+  state: AnomalyDeltaState
+  as_of: string
+  last_fired_date: string | null
+  vs_fired_date: string | null
+  new_rules: AnomalyRuleId[]
+  gone_rules: AnomalyRuleId[]
+  resolved_rules: AnomalyRuleId[]
+}
+
 export interface OverviewResponse {
   _meta: Meta
   ticker_bar: TickerItem[]
@@ -173,6 +219,9 @@ export interface OverviewResponse {
   cards: OverviewCards
   // S4: additive — 미생성/구버전 응답엔 없을 수 있어 optional + null 허용.
   translations?: Translations | null
+  sector_deltas?: SectorDelta[]
+  // 슬라이스2: additive — 구버전 응답엔 없을 수 있어 optional.
+  anomaly_delta?: AnomalyDelta
 }
 
 export interface CardDetailEnvelope<T> {
@@ -225,6 +274,32 @@ export interface RegimeMargin {
   to_threshold: number | null
 }
 
+// MP2-TREND S3(R1): 국면 재료 판정-거리. 컷 = rules.yaml 도출(하드코딩 0), z-score 아님(raw).
+export interface RegimeCut {
+  value: number
+  regime: RegimeId
+  op: string
+}
+export interface RegimeComponentPoint {
+  date: string
+  value: number | null
+}
+export interface RegimeNearestCut {
+  cut: number
+  regime: RegimeId
+  op: string
+  distance: number
+}
+export interface RegimeComponent {
+  key: string
+  unit: string
+  current: number | null
+  series: RegimeComponentPoint[]
+  cuts: RegimeCut[]
+  crossed_cuts: RegimeCut[]
+  nearest_cut_distance: RegimeNearestCut | null
+}
+
 export interface RegimeDetail {
   available: boolean
   date?: string
@@ -239,10 +314,14 @@ export interface RegimeDetail {
   is_finalized?: boolean
   // MP-UX-S3a: 국면 타임라인 데이터원 (렌더는 후속 FE 슬라이스 — 타입만)
   regime_history_30d?: RegimeHistoryPoint[]
+  // MP2-TREND S2(additive): 전환일(previous_regime≠regime, BE 조회-시 파생). 궤적 vlines 공용 소비.
+  transition_dates?: string[]
   // MP-UX-S3b: 다음 단계까지 거리 (렌더는 후속 FE 슬라이스 — 타입만)
   next_stage?: RegimeId | null
   margins?: RegimeMargin[]
   next_stage_closest?: RegimeMargin | null
+  // MP2-TREND S3(R1, additive): 국면 재료 판정-거리 소형 다중(7지표 raw + 컷).
+  components?: RegimeComponent[]
 }
 
 export interface BreadthHistoryPoint {
@@ -251,6 +330,8 @@ export interface BreadthHistoryPoint {
   decline: number
   ad_line: number
   ad_line_change: number
+  // MP2-TREND S2(additive): A/D선 20일 이동평균(기준선). <20일 구간은 null.
+  ad_line_ma20?: number | null
 }
 
 export interface BreadthDetail {
@@ -265,6 +346,8 @@ export interface BreadthDetail {
   new_low_52w?: number
   ad_line?: number
   ad_line_change?: number
+  // MP2-TREND S2(additive): 최신일 기준 기준선(MA20) 이탈 연속 일수.
+  ma_deviation_streak_days?: number
   history_30d?: BreadthHistoryPoint[]
 }
 
@@ -281,6 +364,8 @@ export interface SectorRow {
 export interface SectorHistoryPoint {
   date: string
   rel_strength: number
+  // MP2-TREND S1(additive): 순위 궤적 y값(1~11, 1위 상단). 구버전 응답엔 없을 수 있어 optional.
+  rank?: number
 }
 
 export interface SectorHistory {

@@ -5,7 +5,7 @@
 자동 감지한다. 2026-05-28 정합성 점검에서 발견된 시스템적 결함의 검문소.
 
 검증 항목:
-    1. PROGRESS의 `origin/main = <hash>` 표기 vs `git rev-parse origin/main` 실측
+    1. PROGRESS.md 마지막 커밋 시각이 임계(72h) 넘게 묵었는지 (시간기반, B2 2026-07-02; 구 origin/main 해시대조 폐기)
     2. PROGRESS가 언급하는 brunch / worktree 폴더 존재 여부
     3. PROGRESS 마지막 갱신 후 누적 commit 수 (50 초과 시 warning, 200 초과 시 error)
     4. TASKQUEUE의 `done` 표시 행 중 매칭 git 머지 commit이 없는 것 (느슨한 휴리스틱)
@@ -109,73 +109,49 @@ def _git(args: list[str]) -> str:
         return ""
 
 
-# ── 검증 1: PROGRESS origin/main 해시 vs 실제 ────────────────────────────────
+# ── 검증 1: PROGRESS.md 갱신 신선도 (시간기반, B2 재설계 2026-07-02) ────────────
+#
+# 구설계(폐기): PROGRESS에 박은 `origin/main = <hash>`를 origin/main recent-N과 대조.
+#   함정 3종 → DECISIONS D-OPS-HCHECK-B2:
+#     (1) 규약상 PROGRESS는 캐시(진실 아님)인데 그 lag을 blocking ERROR로 취급 = category error.
+#     (2) 갱신 커밋이 자기 push-후 hash를 본문에 못 적는 self-referential → 수렴 불가.
+#     (3) fast-main(인간 병렬 세션 ~20min 간격 land) + 동시쓰기 → 구조적 오발(마커 treadmill).
+# 신설(B2): PROGRESS.md의 마지막 커밋 시각(committer epoch, UTC)이 임계 M시간 넘게
+#   묵었는지만 본다. blocking(진짜 방치 차단) 유지, 해시 의존 제거 → self-ref·동시쓰기 무관.
+#   committer-ts 사용(파일 mtime 금지 — 클론/체크아웃마다 불안정).
+#
+# M(임계)=72h. 근거(STEP 0 실측 2026-07-02): PROGRESS 커밋 최대 정상 gap ≈ 22.6h(활성 야간
+#   사이클); 주말(금저녁→월아침) ~60-72h 정상 가능 → 48h는 주말 오발 위험 → 72h로 마진.
+PROGRESS_STALE_THRESHOLD_H = 72.0
 
 
-# PROGRESS hash 자기참조 모순 회피용 tolerance (2026-06-01 결정).
-# 단일 commit이 자기 자신의 push-후 hash를 본문에 적을 수 없는 구조적 한계 때문에,
-# strict ANY-match 정책은 항상 1-behind ❌ 잔여를 만든다. 최근 N commit 중 하나에라도
-# PROGRESS 표기가 매칭되면 PASS로 완화. N은 보수적으로 3 (stale 1주 단위 갱신 가정).
-ORIGIN_MAIN_HASH_TOLERANCE = 3
+def is_progress_stale(progress_ts: int, now_ts: int, threshold_h: float) -> bool:
+    """PROGRESS.md 마지막 갱신이 threshold_h 시간 넘게 묵었는가 (순수함수, 테스트 주입용)."""
+    return (now_ts - progress_ts) / 3600.0 > threshold_h
 
 
 def check_origin_main_hash() -> CheckResult:
-    actual = _git(["rev-parse", "--short", "origin/main"])
-    if not actual:
+    """PROGRESS.md 갱신 신선도 (시간기반, B2). 함수명·display name·등록은 레지스트리/JSON 호환 위해 유지."""
+    ts_raw = _git(["log", "-1", "--format=%ct", "--", "PROGRESS.md"])
+    if not ts_raw:
         return CheckResult(
             name="origin/main 해시",
             status=ERROR,
-            detail="git rev-parse origin/main 실패 (remote 미설정?)",
+            detail="PROGRESS.md 커밋 이력 조회 실패 (git log 빈 결과)",
         )
-
-    progress_text = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
-    # PROGRESS에 박힌 origin/main = <7+ hex> 패턴 모두 검출
-    hashes_in_doc = sorted(set(re.findall(r"origin/main\s*=\s*([0-9a-f]{7,40})", progress_text)))
-
-    if not hashes_in_doc:
+    progress_ts = int(ts_raw)
+    now_ts = int(datetime.now(timezone.utc).timestamp())
+    age_h = (now_ts - progress_ts) / 3600.0
+    if is_progress_stale(progress_ts, now_ts, PROGRESS_STALE_THRESHOLD_H):
         return CheckResult(
             name="origin/main 해시",
-            status=WARN,
-            detail=f"PROGRESS.md에 origin/main 해시 표기 0건 (실제: {actual})",
-        )
-
-    # 최근 N=ORIGIN_MAIN_HASH_TOLERANCE commit hash 수집 (HEAD, HEAD~1, ...)
-    recent_full = _git(
-        ["log", f"-{ORIGIN_MAIN_HASH_TOLERANCE}", "--format=%H", "origin/main"]
-    ).splitlines()
-    recent_short = [h[:7] for h in recent_full if h]
-
-    def _prefix_match(doc_hash: str, target_short: str) -> bool:
-        return doc_hash.startswith(target_short) or target_short.startswith(doc_hash[:7])
-
-    matched_pairs = [
-        (h, target)
-        for h in hashes_in_doc
-        for target in recent_short
-        if _prefix_match(h, target)
-    ]
-    if matched_pairs:
-        matched_target = matched_pairs[0][1]
-        actual_short = recent_short[0]
-        if matched_target == actual_short:
-            detail = f"PROGRESS 표기 일치 ({actual_short})"
-        else:
-            depth = recent_short.index(matched_target)
-            detail = (
-                f"PROGRESS 표기 일치 ({matched_target}, HEAD~{depth}; "
-                f"실제 HEAD={actual_short}, tolerance N={ORIGIN_MAIN_HASH_TOLERANCE})"
-            )
-        return CheckResult(
-            name="origin/main 해시",
-            status=OK,
-            detail=detail,
+            status=ERROR,
+            detail=f"PROGRESS.md {age_h:.1f}h 미갱신 (임계 {PROGRESS_STALE_THRESHOLD_H:.0f}h) — 방치 의심",
         )
     return CheckResult(
         name="origin/main 해시",
-        status=ERROR,
-        detail=f"PROGRESS 표기 {hashes_in_doc} 모두 최근 {ORIGIN_MAIN_HASH_TOLERANCE} commit과 불일치",
-        evidence=[f"실측 HEAD~0..~{ORIGIN_MAIN_HASH_TOLERANCE - 1}: {recent_short}"]
-        + [f"PROGRESS: {h}" for h in hashes_in_doc],
+        status=OK,
+        detail=f"PROGRESS.md {age_h:.1f}h 전 갱신 (시간기반, 임계 {PROGRESS_STALE_THRESHOLD_H:.0f}h 이내)",
     )
 
 
@@ -647,6 +623,83 @@ def check_known_test_fails() -> CheckResult:
     )
 
 
+# ── 검증 8: 발행 로그(IssuanceLog) 신선도 (D-HC-ISSUANCE) ─────────────────────
+#
+# bake 자가검증(런타임)의 짝 = 검문소(정합성). 최근 거래일 발행 로그가 존재하고
+# 최근성을 유지하는지 최소 검사 — #46(migration 미적용 → write 조용히 실패,
+# silent 로깅 손실) 재발 탐지. DB 접근이 이 스크립트 유일하므로 Django lazy setup +
+# 전 구간 방어(비-런타임 환경·빈 이력은 OK-skip = zero-noise 원칙 준수).
+
+# 최근 거래일 임계(달력일) — 주말(2) + 연휴 여유. 초과 시 stale 의심(WARN).
+ISSUANCE_STALE_DAYS = 5
+
+
+def check_issuance_log_freshness() -> CheckResult:
+    """최근 거래일 IssuanceLog 행 존재 + 최근성(published_at) 최소 검사. [D-HC-ISSUANCE]
+
+    - 비-런타임 환경(Django/DB 미가용)·빈 이력 → OK-skip(노이즈 0).
+    - 테이블 부재/조회 실패(#46 핵심 증상) → WARN.
+    - 이력은 있으나 최근 거래일이 ISSUANCE_STALE_DAYS 초과 → WARN(stale 의심).
+    - 주말·휴장 허용 오차 = ISSUANCE_STALE_DAYS(달력일)로 흡수.
+    """
+    name = "발행 로그 신선도"
+    try:
+        import os
+
+        import django
+
+        # 스크립트 직접 실행 시 sys.path[0]=scripts/ 라 config/packages 미발견 → REPO_ROOT 보강.
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from packages.shared.stocks.models import IssuanceLog
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        latest = IssuanceLog.objects.order_by("-signal_date").first()
+    except Exception as e:  # noqa: BLE001 — 테이블 부재(#46) 등
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="IssuanceLog 조회 실패 — 테이블 부재 가능(#46 증상)",
+            evidence=[str(e)[:120]],
+        )
+
+    if latest is None:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="발행 로그 이력 없음 — 검사 생략(bake 미실행 환경)",
+        )
+
+    latest_date = latest.signal_date
+    count = IssuanceLog.objects.filter(signal_date=latest_date).count()
+    age_days = (datetime.now().date() - latest_date).days
+    published = getattr(latest, "published_at", None)
+    pub_str = published.date().isoformat() if published else "N/A"
+
+    if age_days > ISSUANCE_STALE_DAYS:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"최근 발행 로그 {age_days}일 전({latest_date}) — stale 의심(임계 {ISSUANCE_STALE_DAYS}일)",
+            evidence=[f"최근 거래일 행수={count}, published_at={pub_str}"],
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"최근 거래일 {latest_date} 행 {count}건 (age {age_days}일 ≤ {ISSUANCE_STALE_DAYS})",
+        evidence=[f"published_at={pub_str}"],
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -661,6 +714,7 @@ CHECKS = [
     check_shared_boundary,
     check_llm_direct_call_boundary,
     check_known_test_fails,
+    check_issuance_log_freshness,
 ]
 
 

@@ -7,6 +7,7 @@ import { Tag, Share2 } from 'lucide-react';
 import { getLabelForTheme } from '@/constants/eventThemes';
 import { fetchEvents } from '@/services/chainsightService';
 import type { EventBoardItem } from '@/types/chainsight';
+import { CHANGE_TEXT } from './colorSemantics';
 
 // Dynamic icon rendering using lucide-react
 // We import dynamically to avoid bundling all icons; fallback to Tag on miss
@@ -56,7 +57,7 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
         <ThemeIcon iconName={label.icon} className="text-blue-500" />
         <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{label.ko}</span>
       </div>
-      <div className={`text-lg font-bold ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
+      <div className={`text-lg font-bold ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
         {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%
       </div>
       <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.avg_score.toFixed(1)}</div>

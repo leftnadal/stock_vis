@@ -1,8 +1,10 @@
+import { STRENGTH_TEXT, SIGNED_BAR } from './colorSemantics';
+
 interface MetricCellProps {
   value: number | null;
   domain: 'center' | 'baseline'; // 'center' = center-origin signed, 'baseline' = 0-baseline
   domainMax: number;             // positive half for 'center', max for 'baseline'
-  signed?: boolean;              // if true, use teal for positive, coral for negative
+  signed?: boolean;              // if true, 긍정(양수)=rose / 부정(음수)=sky (한국축)
 }
 
 export default function MetricCell({ value, domain, domainMax, signed = false }: MetricCellProps) {
@@ -20,13 +22,13 @@ export default function MetricCell({ value, domain, domainMax, signed = false }:
   // Determine text color
   let textColorClass = 'text-gray-700 dark:text-gray-300';
   if (signed) {
-    textColorClass = isPositive ? 'text-teal-600' : 'text-red-400';
+    textColorClass = isPositive ? STRENGTH_TEXT.positive : STRENGTH_TEXT.negative;
   }
 
   // Determine bar color
   let barColorClass = 'bg-blue-400';
   if (signed) {
-    barColorClass = isPositive ? 'bg-teal-500' : 'bg-red-400';
+    barColorClass = isPositive ? SIGNED_BAR.positive : SIGNED_BAR.negative;
   }
 
   // Compute bar width and position

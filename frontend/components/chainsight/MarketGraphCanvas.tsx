@@ -13,6 +13,7 @@ import {
 import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
 import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
 import RelationLegend from './RelationLegend';
+import { CHANGE_TEXT } from './colorSemantics';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -688,9 +689,7 @@ export default function MarketGraphCanvas() {
                 <span
                   className={[
                     'mt-1 text-[11px] font-medium tabular-nums',
-                    s.pct_change >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-500 dark:text-red-400',
+                    s.pct_change >= 0 ? CHANGE_TEXT.up : CHANGE_TEXT.down,
                   ].join(' ')}
                 >
                   {s.pct_change >= 0 ? '+' : ''}{s.pct_change.toFixed(2)}%

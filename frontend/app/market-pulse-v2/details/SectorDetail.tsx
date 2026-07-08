@@ -14,8 +14,22 @@ import {
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
 import { SectorSparkline } from './SectorSparkline'
+import { SectorTrajectory } from './SectorTrajectory'
+import { sectorBarFill, sectorTextClass } from '../sectorColor'
 
-export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Record<string, string> }) {
+export function SectorDetail({
+  payload,
+  labels,
+  transitionDates = [],
+  emphasisOverride,
+}: {
+  payload: Detail
+  labels?: Record<string, string>
+  // MP2-TREND S2: 전환일 세로선(regime 계약 공용 소비 — 컨테이너가 조회해 전달). 없으면 무영향(E4).
+  transitionDates?: string[]
+  // MP2-TREND S2: 델타 카드가 전달한 상위 변동 섹터(옵션 B). 없으면 무영향(기본 강조).
+  emphasisOverride?: string[]
+}) {
   if (!payload.available) {
     return <p className="text-sm text-slate-500">섹터 상세 데이터가 아직 준비되지 않았습니다.</p>
   }
@@ -40,6 +54,14 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
         {translate('metric.rotation', labels, 'rotation')} {(payload.rotation_index ?? 0).toFixed(3)}
       </header>
 
+      {/* MP2-TREND S1: 섹터 순위 궤적(공용 MultiLineTrendChart). S2: 전환일 세로선 + 델타 강조 복원. */}
+      <SectorTrajectory
+        payload={payload}
+        labels={labels}
+        transitionDates={transitionDates}
+        emphasisOverride={emphasisOverride}
+      />
+
       <div>
         <p className="text-xs text-slate-500 mb-1">상대 강도 (sector return − SPY return)</p>
         <div style={{ width: '100%', height: 240 }}>
@@ -55,7 +77,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                 {data.map((entry) => (
                   <Cell
                     key={entry.symbol}
-                    fill={entry.rel_strength >= 0 ? 'rgb(16 185 129)' : 'rgb(244 63 94)'}
+                    fill={sectorBarFill(entry.rel_strength)}
                   />
                 ))}
               </Bar>
@@ -76,7 +98,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                   <span className="w-20 shrink-0 text-sm text-slate-800">{label}</span>
                   <span
                     className={`w-16 shrink-0 text-right text-xs font-medium ${
-                      rel == null ? 'text-slate-400' : rel >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                      rel == null ? 'text-slate-400' : sectorTextClass(rel)
                     }`}
                   >
                     {rel == null ? '—' : `${rel >= 0 ? '+' : ''}${rel.toFixed(2)}%`}
@@ -106,7 +128,7 @@ export function SectorDetail({ payload, labels }: { payload: Detail; labels?: Re
                 {data.map((entry) => (
                   <Cell
                     key={entry.symbol}
-                    fill={entry.momentum_5d >= 0 ? 'rgb(16 185 129)' : 'rgb(244 63 94)'}
+                    fill={sectorBarFill(entry.momentum_5d)}
                   />
                 ))}
               </Bar>

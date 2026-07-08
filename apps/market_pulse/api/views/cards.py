@@ -28,6 +28,8 @@ from apps.market_pulse.models.snapshot import (
     ConcentrationSnapshot,
     SectorFlowSnapshot,
 )
+from apps.market_pulse.regime.classifier import load_rules
+from apps.market_pulse.regime.component_cuts import build_components
 from apps.market_pulse.regime.next_stage import compute_next_stage_margin
 from apps.market_pulse.throttles import (
     MarketPulseHourThrottle,
@@ -47,6 +49,30 @@ def _envelope(payload: dict, started: float, *, cache_state: str) -> dict:
         },
         "data": payload,
     }
+
+
+# MP2-TREND S2: 조회-시 파생 helper(모델 저장 0). breadth 기준선(A/D선 MA20)·이탈 streak 산출.
+#   D-TREND-BASELINE(옵션 C 2호 몫): 기준선 = A/D선의 20일 이동평균(파생). 임계 밴드는 3호.
+def _sma_series(values: list[int], window: int) -> list[float | None]:
+    """단순이동평균 시계열. 앞선 데이터가 window 미만인 구간은 None(경계 명시 처리)."""
+    out: list[float | None] = []
+    for i in range(len(values)):
+        if i + 1 < window:
+            out.append(None)
+        else:
+            out.append(round(sum(values[i - window + 1 : i + 1]) / window, 2))
+    return out
+
+
+def _deviation_streak(ad_lines: list[int], ma_series: list[float | None]) -> int:
+    """최신일부터 역방향으로 A/D선이 기준선(MA) 아래(<)인 연속 일수. MA None이면 중단."""
+    streak = 0
+    for i in range(len(ad_lines) - 1, -1, -1):
+        ma = ma_series[i]
+        if ma is None or ad_lines[i] >= ma:
+            break
+        streak += 1
+    return streak
 
 
 @extend_schema(
@@ -111,10 +137,25 @@ def _regime_detail():
         return {"available": False}
     # MP-UX-S3a: 국면 타임라인 데이터원 (breadth/concentration history_30d 패턴 재사용).
     # stage = raw regime enum 배열 — 라벨 변환(regime.*)은 FE 담당. 빈데이터 graceful(빈 배열).
-    history = list(RegimeSnapshot.objects.order_by("-date")[:30].values("date", "regime"))
+    history = list(
+        RegimeSnapshot.objects.order_by("-date")[:30].values(
+            "date", "regime", "previous_regime", "inputs"
+        )
+    )
     history.reverse()
+    # MP2-TREND S2(additive): 전환일 파생 — previous_regime≠regime인 날짜(조회-시, 저장 0).
+    #   양 STEP 0 교차 확정 규칙: transitioned 미저장 → BE 조회-시 파생, FE 파생 금지.
+    #   빈 previous_regime(초기 스냅샷)은 전환 아님. 날짜당 1행이라 자연 dedup.
+    transition_dates = [
+        h["date"].isoformat()
+        for h in history
+        if h["previous_regime"] and h["previous_regime"] != h["regime"]
+    ]
     # MP-UX-S3b: 다음(인접 상위) 단계까지 거리. rules.yaml 읽기만(임계 단일소스), 모델 저장 0(즉석 산출).
     ns = compute_next_stage_margin(snap.regime, snap.inputs)
+    # MP2-TREND S3(R1): 국면 재료 판정-거리 — 룰-구동 7지표 raw 시계열 + 컷(rules.yaml 도출) + 판정거리.
+    #   z-score 아님(STEP 0 반증, D-TREND-BASELINE-R1). 컷 하드코딩 0(rules.yaml 단일소스). 저장 0.
+    components = build_components(history, load_rules())
     return {
         "available": True,
         "date": snap.date.isoformat(),
@@ -130,22 +171,39 @@ def _regime_detail():
         "regime_history_30d": [
             {"date": h["date"].isoformat(), "stage": h["regime"]} for h in history
         ],
+        "transition_dates": transition_dates,
         "next_stage": ns["next_stage"],
         "margins": ns["margins"],
         "next_stage_closest": ns["closest"],
+        "components": components,
     }
+
+
+_BREADTH_MA_WINDOW = 20
+_BREADTH_DISPLAY = 30
 
 
 def _breadth_detail():
     snap = BreadthSnapshot.objects.filter(universe="SPY").order_by("-date").first()
     if snap is None:
         return {"available": False}
-    history = list(
+    # MP2-TREND S2: MA20 파생을 위해 표시 30일 + 룩백 19일 = 49일 조회(조회-시 파생, 저장 0).
+    #   최근 30일 전 구간의 기준선까지 채우려면 window-1 만큼 더 필요. 깊이 부족 시 앞구간 None.
+    lookback = _BREADTH_DISPLAY + _BREADTH_MA_WINDOW - 1
+    raw = list(
         BreadthSnapshot.objects.filter(universe="SPY")
-        .order_by("-date")[:30]
+        .order_by("-date")[:lookback]
         .values("date", "advance_count", "decline_count", "ad_line", "ad_line_change")
     )
-    history.reverse()
+    raw.reverse()  # 과거→현재
+    ad_series = [h["ad_line"] for h in raw]
+    ma_full = _sma_series(ad_series, _BREADTH_MA_WINDOW)
+    # 표시 구간 = 마지막 30일(+ 대응 MA 슬라이스)
+    display = raw[-_BREADTH_DISPLAY:]
+    ma_display = ma_full[-_BREADTH_DISPLAY:]
+    streak = _deviation_streak(
+        [h["ad_line"] for h in display], ma_display
+    )
     return {
         "available": True,
         "universe": snap.universe,
@@ -158,6 +216,8 @@ def _breadth_detail():
         "new_low_52w": snap.new_low_52w,
         "ad_line": snap.ad_line,
         "ad_line_change": snap.ad_line_change,
+        # MP2-TREND S2(additive): 최신일 기준 기준선(MA20) 이탈 연속 일수.
+        "ma_deviation_streak_days": streak,
         "history_30d": [
             {
                 "date": h["date"].isoformat(),
@@ -165,8 +225,10 @@ def _breadth_detail():
                 "decline": h["decline_count"],
                 "ad_line": h["ad_line"],
                 "ad_line_change": h["ad_line_change"],
+                # MP2-TREND S2(additive): A/D선 20일 이동평균(기준선). <20일 구간은 null.
+                "ad_line_ma20": ma_display[i],
             }
-            for h in history
+            for i, h in enumerate(display)
         ],
     }
 
@@ -196,7 +258,12 @@ def _sector_detail():
     for r in sorted(rows, key=lambda x: x.date):  # date 오름차순 누적
         if r.date in recent_set and r.rel_strength is not None:  # 결측 skip(0 변환 0)
             per_symbol.setdefault(r.market_index_id, []).append(
-                {"date": r.date.isoformat(), "rel_strength": float(r.rel_strength)}
+                # MP2-TREND S1(additive): rank 노출 — 순위 궤적 y축(1위 상단). rel_strength는 리드아웃 부기용 유지.
+                {
+                    "date": r.date.isoformat(),
+                    "rel_strength": float(r.rel_strength),
+                    "rank": r.rank_in_universe,
+                }
             )
     ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
     for sym in per_symbol:
