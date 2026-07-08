@@ -25,6 +25,18 @@ class Monitor(models.Model):
         PAUSED = "paused", "Paused"
         ARCHIVED = "archived", "Archived"
 
+    class State(models.TextChoices):
+        """상태기(state machine) 판정값 — status(사용자 의도)와 별개의 자동 판정."""
+
+        WARMING_UP = "warming_up", "데이터 수집 중"
+        ACTIVE = "active", "활성 관제 중"
+        STRENGTHENING = "strengthening", "강화 추세"
+        WEAKENING = "weakening", "약화 추세"
+        CRITICAL = "critical", "주의 필요"
+        NEEDS_REVIEW = "needs_review", "점검 필요"
+        EXPIRED = "expired", "기간 만료"
+        PAUSED = "paused", "일시정지"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="monitors"
@@ -36,6 +48,12 @@ class Monitor(models.Model):
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.SETTING_UP
     )
+    # 상태기 자동 판정 (thesis_state_machine 이식)
+    current_state = models.CharField(
+        max_length=20, choices=State.choices, default=State.WARMING_UP
+    )
+    # 관제 종료 목표일 (없으면 무기한 — 90일+ 시 needs_review)
+    target_date_end = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

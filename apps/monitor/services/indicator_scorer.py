@@ -1,4 +1,8 @@
-"""Stage 1: Indicator Scoring - Robust Z + Decay (수학 모델 v2.3.2, Section 3)"""
+"""Stage 1: Indicator Scoring - Robust Z + Decay (수학 모델 v2.3.2, Section 3).
+
+MON-P2-S2 이식: thesis/_reuse → apps/monitor. 소비 모델 = MonitorIndicator/IndicatorReading.
+`score_indicator`는 순수 함수, `score_indicator_from_model`은 MonitorIndicator 인스턴스 소비.
+"""
 
 import logging
 
@@ -105,7 +109,7 @@ def score_indicator(readings, dates, support_direction,
 
 def score_indicator_from_model(indicator, as_of_date=None):
     """
-    ThesisIndicator 모델 인스턴스로부터 score 계산.
+    MonitorIndicator 모델 인스턴스로부터 score 계산.
     DB에서 validated readings를 조회하여 score_indicator()에 전달.
 
     Returns:

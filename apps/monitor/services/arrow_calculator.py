@@ -1,6 +1,9 @@
-"""Arrow Calculator: score -> degree/color/label 변환 (수학 모델 v2.3.2, Section 3.5)"""
+"""Arrow Calculator: score -> degree/color/label 변환 (수학 모델 v2.3.2, Section 3.5).
 
-from thesis._reuse.indicator_scorer import score_indicator_from_model
+MON-P2-S2 이식: thesis/_reuse → apps/monitor. 소비 = MonitorIndicator.
+"""
+
+from apps.monitor.services.indicator_scorer import score_indicator_from_model
 
 # 설계 문서 Section 5.4: 색상 5단계
 COLOR_BANDS = [
@@ -46,7 +49,7 @@ def degree_to_label(degree):
 
 def calculate_indicator_arrow(indicator, as_of_date=None):
     """
-    ThesisIndicator 하나에 대한 전체 화살표 계산.
+    MonitorIndicator 하나에 대한 전체 화살표 계산.
 
     Returns:
         dict with score, degree, color, label, is_extreme_vol, raw_z,

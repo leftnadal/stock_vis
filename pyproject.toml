@@ -47,11 +47,6 @@ pytest = "^9.0.3"
 pytest-django = "^4.11.1"
 pytest-asyncio = "^1.3.0"
 
-[tool.ruff]
-# Monitor 허브 재건(D-MONITOR-REBUILD, 2026-07-08): 재사용 부품 격리소는
-# 의도적 import-broken 상태(P2 재배선·P3 삭제) → 린트 스캔 제외. 상세: thesis/_reuse/README.md
-extend-exclude = ["thesis/_reuse"]
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
