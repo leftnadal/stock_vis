@@ -21,6 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.constants import classify_cd_state
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.regime import RegimeSnapshot
 from apps.market_pulse.models.snapshot import (
@@ -286,6 +287,9 @@ def _sector_detail():
                 "momentum_20d": float(r.momentum_20d),
                 "flow_proxy": float(r.flow_proxy),
                 "rank": r.rank_in_universe,
+                # MP2-SECTOR-CD S1(additive): 판단 4-상태. 판정 로직 단일소스(payload builder).
+                #   FE·2차 소비자는 재계산 금지 — 이 값만 표시. None → 판단 유보.
+                "cd_state": classify_cd_state(r.rel_strength, r.momentum_5d),
             }
             for r in latest
         ],
