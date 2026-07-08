@@ -25,6 +25,9 @@ FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
 MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
 ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE', '')  # AV NEWS_SENTIMENT broad co-mention 소스
 FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
+
+# credit_signals Phase 1 — 수집·계산 태스크 flag guard (기본 false, Decision ⑨-C 패턴)
+CREDIT_SIGNALS_ENABLED = os.getenv('CREDIT_SIGNALS_ENABLED', 'false').lower() == 'true'
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
@@ -206,6 +209,7 @@ INSTALLED_APPS = [
     'apps.portfolio.apps.PortfolioConfig',  # PR7 이동 — Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
+    'apps.credit_signals',  # credit_signals Phase 1 — FRED 크레딧 신호 백본
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트

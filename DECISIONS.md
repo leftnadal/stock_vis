@@ -8,6 +8,39 @@
 
 ---
 
+## credit_signals 신규 앱 (Phase 1) — FRED 크레딧 신호 백본 (2026-07-08) [credit]
+
+**결정**: "채권이 먼저 말한다" 축을 위해 **신규 Django 앱 `apps.credit_signals`**(label `credit_signals`)를
+생성한다. market_pulse/macro/thesis에 얹지 않는다(지시서 §7.2-B). 모델 2종:
+`MacroSeriesHistory`(db_table `macro_series_history`, FRED 관측치 영구 원장) +
+`CreditSignalState`(db_table `credit_signal_state`, signal_key별 최신 파생 상태).
+
+**Why**:
+- **FRED ICE BofA 3년 제한**(2026-04부터 최근 3년만 제공) → 수집 즉시 원장에 **영구 적재**가
+  앱 존재 이유의 절반. 삭제 로직 금지, revise 시 value만 갱신·`ingested_at` 유지·`revised_at` 별도.
+- 소비처(Dashboard/Chain Sight/Thesis Layer E)는 `credit_signal_state`만 읽는 단방향 계약.
+- 독립 앱이라야 Phase 2(HYG/LQD·FMP·SEC·FINRA) 확장 시 경계가 흐트러지지 않음.
+
+**How to apply**:
+- **signal_key = 안정 계약**(Thesis Layer E가 `HY_OAS_Z > 2` 형태로 참조). 6종 계산
+  (`HY_OAS`/`IG_OAS`/`BBB_OAS`/`CCC_OAS`/`CURVE_10Y2Y`/`VIX`) + 2종 키만 예약
+  (`CCC_MINUS_BB`/`BBB_MINUS_A` — BB·A 시리즈 미수집, Phase 2). 수집 6→8 확장 금지(스코프).
+- **z = Robust Z(MAD)** — thesis `indicator_scorer` 규약 동형(`1.4826*mad`, MAD_FLOOR early-return).
+  grade: `z<1` gray / `1≤z<2` yellow / `z≥2` orange / red = orange + HY_OAS 절대값≥8.0(800bp, HY 한정) /
+  관측<60 콜드스타트(z=null, gray).
+- **flag guard** `CREDIT_SIGNALS_ENABLED`(기본 false, Decision ⑨-C 패턴) — ingest/compute/verify 최상단 no-op.
+- **ingest→compute 체이닝** = sec_pipeline in-code `.delay()` 패턴(beat 타이밍 의존 아님).
+- **beat 암묵 자동등록 금지**(bug #28) → `register_credit_beats` 명시 실행. §5 추가: 등록 전 동일
+  crontab (hour,minute) 슬롯 기존 beat 조회·출력(기존 07:30/09:00은 ET tz라 실벽시계 충돌 아님, 참고 보고).
+- **백필 = 포그라운드 블로킹 전용**(harness reaper 정책, README·커맨드 help 명시).
+- **API `/api/credit-signals/strip/`**(지시서 §7 리터럴 경로) — 파생 자산이라 인증 유지(AllowAny 금지,
+  audit P0 #5 정책). N+1 금지(상태 1쿼리 + 시리즈별 spark 단일쿼리).
+- **FRED 인프라 재사용**: `packages/shared/api_request/fred_client.FREDClient`(rate limiter 내장) +
+  settings `FRED_API_KEY`(기존 plumbing). 신규 클라이언트 만들지 않음.
+
+**검증**: 28 test GREEN(upsert 멱등/revise·z(MAD)+floor·콜드스타트·grade 경계 red·flag off·verify 결측ERROR/주말·API 스키마+쿼리상한),
+`manage.py check` 0, migration 0001 정·역·재 OK, macro 회귀 31 GREEN. worktree `monorepo/sess-credit-signals`(origin/main f33ffcc 기준).
+
 ## RelationConfidence 상향 학습 루프 — B+C 채택 (2026-07-02) [해자]
 
 ### 비대칭 보수(B) 기본 + Tier-1 fast-path(C) 가속 레인
