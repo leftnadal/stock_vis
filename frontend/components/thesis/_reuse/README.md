@@ -9,6 +9,6 @@
 | `ArrowIndicator.tsx` | score → 화살표 방향(0~180°)+색 시각화 |
 | `builder/` | 대화형 빌더 골격 (ChatBubble·PremiseCard·SuggestionCard·NewsSelector·OptionButton·MultiSelectFooter·ProgressBar·TextInput·BottomSheet) |
 
-## 수명
-- **P3**: Monitor 빌더 4단계 + IA-2 페이지 신축 시 이 골격을 꺼내 재사용.
-- **P3 완료 시**: 이 폴더 **삭제**.
+## 수명 (⚠️ 이식 즉시 삭제 규칙 — BE _reuse와 동일)
+- **P3**: Monitor 빌더 4단계 + IA-2 페이지 신축 시 이 골격을 꺼내 재사용. **각 부품은 신축 위치로 이식·배선이 끝나는 즉시 이 폴더에서 삭제**(이중 사본 drift 방지).
+- **폴더가 비면 즉시 제거**.
