@@ -7,7 +7,7 @@
  *   2. SectorDetail 통합: sector_history 11섹터 전부 렌더(FE 절단 0),
  *      rank순 결합, KO 라벨 노출(심볼 fallback 아님)
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import type {
@@ -78,7 +78,9 @@ describe('SectorDetail — 인라인 스파크라인 통합', () => {
   }
 
   it('sector_history 전부 렌더(FE 절단 0) + rank순 결합', () => {
-    const { container } = render(<SectorDetail payload={payload} labels={SECTOR_LABELS} />)
+    const { container, getByTestId } = render(<SectorDetail payload={payload} labels={SECTOR_LABELS} />)
+    // MP2-SECTOR-CD S1: 인라인 스파크라인은 '궤적' 탭 뒤로 이동(디폴트=판단). 뷰 무변경.
+    fireEvent.click(getByTestId('sector-tab-trajectory'))
     const items = container.querySelectorAll('ul > li')
     expect(items).toHaveLength(3)
     // rank순: XLK(기술) → XLE(에너지) → XLF(금융)
@@ -95,9 +97,11 @@ describe('SectorDetail — 인라인 스파크라인 통합', () => {
   })
 
   it('sector_history 없으면 인라인 섹션 미렌더(additive)', () => {
-    const { container } = render(
+    const { container, getByTestId } = render(
       <SectorDetail payload={{ ...payload, sector_history: undefined }} labels={SECTOR_LABELS} />,
     )
+    // MP2-SECTOR-CD S1: 궤적 탭에서 검증(디폴트=판단 탭엔 cd 리스트 존재).
+    fireEvent.click(getByTestId('sector-tab-trajectory'))
     expect(container.querySelector('ul > li')).toBeNull()
   })
 })
