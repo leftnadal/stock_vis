@@ -19,6 +19,31 @@ SHARED_SIGNALS="/Users/byeongjinjeong/Desktop/stock_vis/frontend/public/static/s
 WEB_SIGNALS="$WEB_TREE/frontend/public/static/signals"
 UID_NUM="$(id -u)"
 
+# ── 자기가드: 이 스크립트 사본이 origin/main 정합인지 (#47 / D-SYNC-ENTRYPOINT) ──
+# stale 사본(공유 편집 트리·뒤처진 런타임 트리)에서 실행하면 구버전 로직 = 부분
+# 동기화(실패 모드) → 거부가 맞다. 최신화는 래퍼 `sv sync`(exec 전 re-detach)가 담당.
+# 본문의 트리 re-detach는 자기가드 통과 후이므로 자기 파일이 이미 origin/main = no-op
+# (bash 실행 중 파일 무변경 = 버퍼링 위험 없음).
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+guard_self_tree() {
+    if ! git -C "$SCRIPT_DIR" fetch origin --quiet 2>/dev/null; then
+        echo "[sync] ⚠ 네트워크 불가 — origin/main 대조 생략, 진행(graceful)." >&2
+        return 0
+    fi
+    local head origin
+    head="$(git -C "$SCRIPT_DIR" rev-parse HEAD 2>/dev/null)"
+    origin="$(git -C "$SCRIPT_DIR" rev-parse origin/main 2>/dev/null)"
+    if [ "$head" != "$origin" ]; then
+        echo "[sync] ERROR: 이 스크립트 사본이 stale — 부분 동기화 방지 위해 중단(#47/D-SYNC-ENTRYPOINT)." >&2
+        echo "[sync]   위치: $SCRIPT_DIR" >&2
+        echo "[sync]   HEAD=$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null) ≠ origin/main=$(git -C "$SCRIPT_DIR" rev-parse --short origin/main 2>/dev/null)" >&2
+        echo "[sync]   → 해결: 'sv sync'(권장, 최신화 후 실행) 또는 런타임 트리 사본 직접 실행:" >&2
+        echo "[sync]     bash $WORKER_TREE/scripts/worker_sync.sh" >&2
+        exit 2
+    fi
+}
+guard_self_tree
+
 # ── 가드: signals 심링크 ∧ 타겟 실존 (worker 판 + web 판) ─────────────
 # 심링크가 깨졌거나 실디렉토리로 되돌아가면 서빙이 조용히 단절되므로 사전 차단.
 guard_symlink() {
