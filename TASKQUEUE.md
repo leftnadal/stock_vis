@@ -540,6 +540,8 @@
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
 | NEWS-AV-SANITIZE-METRIC | sanitize 발동 카운터/메트릭 부재 — 방어 계층별(provider `url>2000` skip · `_save_articles` 기사별 savepoint skip) 발동 통계 없이는 **"포이즌 미조우 vs sanitize 선차단" 구분 불가**. sanitize 유지 가치 판단의 근거로 추후 필요. (배치1 전 창 `skip=0` 로그는 있으나 provider단 선차단 건수는 별도 미집계 — `skip=0`이 "오염 무"인지 "provider가 이미 걸러냄"인지 판별 불가) | @backend/@infra | sanitize 유지·제거 판단 필요 시 | 🆕 저우선 |
+| EVENTGROUP-WINDOW | `event_group_pipeline._build_base`가 `ChainNewsEvent` **전량(무윈도우)** 소비, `as_of = max(published_at)`. 데이터 누적 시 오래된 co-mention이 현재 내러티브를 희석(그룹 구성이 최신 신호만 반영 못 함). **날짜 윈도우(half_life 기반 컷오프 또는 최근 N일) 도입 검토** — as_of는 max라 전진하나 클러스터링 입력은 전체라 신선도 편차. | @backend | 그룹 내러티브 신선도 이슈 관측 시 | 🆕 저우선 |
+| NEWS-AGG-TEST-ENV | `NewsAggregatorService.__init__`가 `FinnhubNewsProvider`를 즉시 생성 → **Finnhub 키 하드 의존**. 키 부재 환경(settings_test)에서 `ValueError` → savepoint 회귀 테스트(`test_aggregator_savepoint`) 포함 뉴스 계열 테스트가 **침묵 실패**(env 사유로 red). `__init__` 의존 지연/분리(lazy provider init) 또는 테스트에서 provider mock 격리 검토. | @backend/@qa | 뉴스 테스트 green baseline 필요 시 | 🆕 저우선 |
 
 ---
 
