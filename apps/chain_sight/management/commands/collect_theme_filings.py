@@ -82,5 +82,7 @@ class Command(BaseCommand):
             ipo = collect_ipos_range(client, from_date, to_date)
             self.stdout.write(self.style.SUCCESS(
                 f"IPO: fetched={ipo['fetched']} created={ipo['created']} "
-                f"skip_exchange={ipo['skipped_exchange']} skip_no_symbol={ipo['skipped_no_symbol']}"
+                f"skip_exchange={ipo['skipped_exchange']} "
+                f"skip_non_operating={ipo['skipped_non_operating']} "  # SPAC 셸·파생·ETF 위생 컷
+                f"skip_no_symbol={ipo['skipped_no_symbol']}"
             ))
