@@ -2541,6 +2541,25 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 
 **★핵심 단서 (미래 세션 오해 방지)★**: 본 백필은 **'EOD regime 이력 정확화'이지 'MP2-ANALOG 레짐 다양성 해소'가 아니다**. 76행 중 normal이 여전히 58행(다수)이고 elevated/high_vol은 03~04월 고변동 18행뿐 — **Analog 매칭의 레짐 다양성 게이트는 시장 의존으로 미해소**(시장이 다른 국면에 들어가야 열림, D-CONC-RISK-LENSES ③과 동형). "이력을 채웠으니 이제 Analog 매칭 되겠지"는 오해. EOD regime 신호 정확화와 매칭 비교군 다양성은 별개 축이다.
 
+## [2026-07-08] MP2-ANALOG = DORMANT (D-ANALOG-GATE)
+
+**결정**: MP2-ANALOG(#1)를 **DORMANT로 전환**. 착수 시 STEP 0 재측정 결과 데이터 다양성 게이트가 여전히 닫혀 있어 analog 코드 착수를 보류한다.
+
+**STEP 0 재측정 실측(2026-07-08, prod)**: intraday `RegimeSnapshot` **64행**(2026-04-27~07-08) / **regime LATE_BULL 62(97%)·BULL_EXPANSION 2** / status OK 29·INSUFFICIENT_DATA 35 / **inputs 완전벡터(≥14) 22행** / MOVE 107 values 가용 / analog·similarity·distance 코드 **0건**(미구현 재확인). 보조: SectorFlowSnapshot 47 distinct 날짜(11섹터), rotation_index = 시장 전역 스칼라(11섹터 동일값 = per-sector 아님), history_30d 30캡은 **서빙 한정**(데이터 실깊이 47>30, analog는 더 깊이 조회 가능).
+
+**옵션 기각 근거**:
+- **옵션 1(입력벡터 analog 지금 구축) 기각**: 22 완전벡터가 거의 동일 국면(97% LATE_BULL) → 최근접 매칭이 **자기상관**(인접일)으로 수렴, **시점가치 ≈ 0**(과거 유추의 통찰 없음). 인프라만 미리 깔아도 "오늘≈다른 LATE_BULL일" 저신호 반환.
+- **옵션 3(EOD VIX 3-state로 대상 변경) 기각**: intraday classifier(rules.yaml 5국면)와 EOD `DynamicRegimeCalculator`(VIX z-score 3상태)는 **별개 시스템** → 혼입 금지(계약·지표·소비처 상이, classifier.py 주의문 명시).
+
+**채택 설계 노트(un-dorm 시 적용)**:
+- **입력벡터 z-정규화 최근접**(regime 라벨 매칭 아님 — 라벨은 97% 단일이라 무변별). 14지표 + MOVE 벡터를 z-정규화 후 거리 최소 과거일 검색.
+- **자기상관 제외창 ±5일**: 최근접 후보에서 기준일 ±5거래일을 배제(인접일 자기상관 매칭 방지).
+- **과거 국면 합성 경로 = rules.yaml 소급 적용**: 깊은 과거 벡터에 현행 rules.yaml을 소급 적용해 과거 국면을 재구성 → **B-1 백필 land 의존**. HY OAS mid-2023 상한(짝 결손 구간)은 **실측 사안**(full-vector cap 판정 후 유효 깊이 확정).
+
+**un-dorm 트리거**: (a) regime 다양성 — 비-LATE_BULL 일수 유의미 누적 or 전환 ≥2회 관측 **OR** (b) B-1 백필 land 후 소급 벡터 재구성 검증 통과. 그 전 착수 금지(TASKQUEUE MP2-ANALOG DORMANT).
+
+**baseline at decision**: origin/main = 96ae7b5. prod 쓰기 0(read-only STEP 0 재측정만). analog 코드 0.
+
 ## [2026-06-30] 제품 로드맵 v1 — 응축 코어 → Chain Sight 깔때기 (D-ROADMAP-V1)
 
 **발상 동기**: 외부 여러 소스를 안 봐도 **stock_vis 하나로 정보 응축 → 관심 촉발 → Chain Sight 진입**까지 잇는 깔때기. 도그푸딩 기반(정병진 = 사용자 #1). 근거: Phase 0 전수 조사 4트랙 STEP 0 완료(dashboard·chain_sight·market_pulse·portfolio).
