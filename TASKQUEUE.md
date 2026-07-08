@@ -114,14 +114,20 @@
 
 ---
 
-## Thesis Control Phase 2 (프론트엔드)
+## Monitor 허브 재건 (구 Thesis Control — D-MONITOR-REBUILD 2026-07-08)
+
+> 구 thesis 앱 **전량 폐기 후 재건**. 아래 TC-* 는 **폐기 앱 대상이라 무효화** → Monitor 신축 P2~P3로 승계.
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| TC-3 | 대화형 빌더 (AI 조산사 UX) | @frontend | - | todo | 📎 `docs/thesis_control/plan/thesis_control_design.md` |
-| TC-4 | 지표 설정 페이지 | @frontend | TC-3 | todo | - |
-| TC-5 | 관제실 대시보드 (화살표+달 시각화) | @frontend | TC-4 | todo | - |
-| TC-6 | 알림 + 마감 관리 | @frontend | TC-5 | todo | - |
+| MON-P1 | 아카이브 + thesis 앱 철거 | orchestrator | ADR | ✅ 완료 2026-07-08 (8커밋 `2463466`~`c8e1ce9`, worktree `sess-monitor-rebuild`, 미push) |
+| MON-P2 | Monitor 모델(`Monitor{scope}`+`Claim`) + ScopeResolver(종목) + 엔진 4종 `_reuse/`→이식 + 신규 테스트 | @backend | MON-P1 push | todo | ADR §결정2·8 |
+| MON-P3 | 빌더 4단계 + IA-2 페이지 + My 서브탭 shell + 전역 내비 6칸+아바타 개편(결정7) | @frontend | MON-P2 | todo | ADR §결정5·7 |
+| MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
+| MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
+| MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
+| ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
+| MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
 
 ---
 

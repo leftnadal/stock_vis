@@ -651,38 +651,6 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
-    # Thesis Control EOD Pipeline (수학 모델 v2.3.2, Section 7)
-    # ============================================================
-
-    # 지표 데이터 수집 (매일 18:00 ET, 장 마감 후)
-    'thesis-update-readings': {
-        'task': 'thesis.tasks.eod_pipeline.update_indicator_readings',
-        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # 스코어 계산 (매일 18:15 ET, 데이터 수집 완료 후)
-    'thesis-calculate-scores': {
-        'task': 'thesis.tasks.eod_pipeline.calculate_scores',
-        'schedule': crontab(hour=18, minute=15, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # 스냅샷 생성 + 알림 (매일 18:30 ET, 스코어 계산 완료 후)
-    'thesis-create-snapshots': {
-        'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
-        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # AI 요약 생성 (매일 18:35 ET, snapshot 직후 — audit P0 #15)
-    'thesis-generate-summaries': {
-        'task': 'thesis.tasks.summary.generate_thesis_summaries',
-        'schedule': crontab(hour=18, minute=35, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # ============================================================
     # Chain Sight — Tier A 프로파일 + 관계 파이프라인
     # ============================================================
 
