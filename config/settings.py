@@ -208,6 +208,7 @@ INSTALLED_APPS = [
     'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'apps.portfolio.apps.PortfolioConfig',  # PR7 이동 — Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
+    'apps.monitor.apps.MonitorConfig',  # MON-P2 — Monitor 허브 (구 thesis 재건, D-MONITOR-REBUILD)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
     'apps.credit_signals',  # credit_signals Phase 1 — FRED 크레딧 신호 백본
     'rest_framework',
