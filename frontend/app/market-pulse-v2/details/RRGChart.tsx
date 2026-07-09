@@ -3,14 +3,14 @@
 /**
  * MP2-SECTOR-CD Slice 3 — RRG(회전) 사분면 맵.
  *
- * x=rel_strength(시장 대비 우위), y=momentum_5d(상승 동력). 판정선 2축 = 서빙 메타
+ * x=rel_strength_5d(5일 상대수익, CD-STAB A′), y=momentum_5d(상승 동력). 판정선 2축 = 서빙 메타
  *   (cd_rel_strength_baseline·cd_momentum_baseline) — FE 하드코딩 금지(규칙 #2).
  * 점 색 = 서빙된 cd_state의 cd 토큰(재분류 0, 규칙 #1). 출발 섹터 = 확대점+링.
  * 꼬리 = 최근 5거래일(D-CD-TRAIL) raw 좌표 폴리라인 — 색은 해당 섹터의 **현재** 상태색 저투명.
  *   과거 점별 상태 분류·상태색 금지(규칙 #1). 히스토리 부족 시 있는 만큼만(발명 0).
  */
 import { translate } from '@/lib/i18n/marketPulse'
-import type { SectorDetail as Detail } from '@/lib/api/marketPulseV2'
+import type { SectorDetail as Detail, SectorRow } from '@/lib/api/marketPulseV2'
 import { cdStateDotFill } from '../sectorColor'
 
 // D-CD-TRAIL: 꼬리 길이 = 5거래일(momentum_5d 창 정합). FE 표시 상수 단일 정의.
@@ -44,20 +44,22 @@ export function RRGChart({
   labels?: Record<string, string>
   fromSymbol?: string
 }) {
+  // CD-STAB A′: 판단 x축 = rel_strength_5d(5일 상대수익). 서빙값이 숫자인 섹터만(null=판단 유보).
   const sectors = (payload.sectors ?? []).filter(
-    (s) => typeof s.rel_strength === 'number' && typeof s.momentum_5d === 'number',
+    (s): s is SectorRow & { rel_strength_5d: number } =>
+      typeof s.rel_strength_5d === 'number' && typeof s.momentum_5d === 'number',
   )
   const xBase = payload.cd_rel_strength_baseline ?? 0
   const yBase = payload.cd_momentum_baseline ?? 0
 
-  // 꼬리 좌표(섹터별 최근 RRG_TRAIL_DAYS일, 두 축 모두 숫자인 점만).
+  // 꼬리 좌표(섹터별 최근 RRG_TRAIL_DAYS일, 두 축 모두 숫자인 점만). x = rel_strength_5d.
   const histMap = new Map((payload.sector_history ?? []).map((h) => [h.symbol, h.history]))
   const trailBySymbol = new Map<string, Pt[]>()
   for (const s of sectors) {
     const pts = (histMap.get(s.symbol) ?? [])
-      .filter((p) => typeof p.momentum_5d === 'number' && typeof p.rel_strength === 'number')
+      .filter((p) => typeof p.momentum_5d === 'number' && typeof p.rel_strength_5d === 'number')
       .slice(-RRG_TRAIL_DAYS)
-      .map((p) => ({ rel: p.rel_strength, mom: p.momentum_5d as number }))
+      .map((p) => ({ rel: p.rel_strength_5d as number, mom: p.momentum_5d as number }))
     trailBySymbol.set(s.symbol, pts)
   }
 
@@ -66,7 +68,7 @@ export function RRGChart({
   }
 
   // 도메인 = 현재 점 + 꼬리 점 + 기준선 포함, 대칭 패딩(클리핑 금지).
-  const allRel = sectors.map((s) => s.rel_strength)
+  const allRel = sectors.map((s) => s.rel_strength_5d)
   const allMom = sectors.map((s) => s.momentum_5d)
   for (const pts of trailBySymbol.values()) {
     pts.forEach((p) => {
@@ -143,7 +145,7 @@ export function RRGChart({
         {/* 섹터 점 — 색=서빙 cd_state, 출발 섹터=확대+링 */}
         {sectors.map((s) => {
           const isFrom = fromSymbol != null && s.symbol === fromSymbol
-          const cx = px(s.rel_strength)
+          const cx = px(s.rel_strength_5d)
           const cy = py(s.momentum_5d)
           const fill = cdStateDotFill(s.cd_state ?? null)
           return (

@@ -354,6 +354,9 @@ export interface BreadthDetail {
 export interface SectorRow {
   symbol: string
   rel_strength: number
+  // CD-STAB Slice A′(additive): 5일 상대수익(= momentum_5d − bench 5일 수익률). 판단 계열 x축
+  //   (RRG 점·미니맵·카드 근거). bench 소급 부족 시 null. 기존 rel_strength(1일)는 맥박·히트맵.
+  rel_strength_5d?: number | null
   momentum_1d: number
   momentum_5d: number
   momentum_20d: number
@@ -376,6 +379,8 @@ export interface SectorHistoryPoint {
   rank?: number
   // MP2-SECTOR-CD S2(additive): per-date 5일 모멘텀(저장값 노출). 구버전 응답엔 없을 수 있어 optional.
   momentum_5d?: number | null
+  // CD-STAB Slice A′(additive): per-date 5일 상대수익 — RRG 점/꼬리 x축. bench 부족 시 null.
+  rel_strength_5d?: number | null
 }
 
 export interface SectorHistory {

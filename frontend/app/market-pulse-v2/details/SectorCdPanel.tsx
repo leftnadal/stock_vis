@@ -3,10 +3,10 @@
 /**
  * MP2-SECTOR-CD Slice 1 — 섹터 판단(CD) 패널.
  *
- * 제품 목적: "이 섹터 지금 진입할 만한가"를 5초 즉답. rel_strength(x, 시장 대비 우위) ×
+ * 제품 목적: "이 섹터 지금 진입할 만한가"를 5초 즉답. rel_strength_5d(x, 5일 상대수익, CD-STAB A′) ×
  *   momentum_5d(y, 상승 동력)의 사분면 판단.
  * 판정 로직 재계산 0: BE가 서빙한 cd_state를 뱃지·문구에만 사용. 사분면 미니맵의 점 좌표는
- *   서빙된 rel_strength·momentum_5d 원값을 그대로 좌표화(재분류 금지).
+ *   서빙된 rel_strength_5d·momentum_5d 원값을 그대로 좌표화(재분류 금지, cd_state와 동일 x축).
  * CD_STANCE = FE 정적 판정 문구(REGIME_STANCE 톤 동형, LLM 0) — 4상태 + 유보 = 5문구.
  * 회전 맵 어포던스: 행 전체 탭 → rotation?from=<그 행 symbol>(S3 보완, per-row) +
  *   상단 "회전 맵 전체 보기 →"(from=리더). D-SECTOR-NAV 이행.
@@ -40,17 +40,26 @@ function fmtPct(v: number): string {
   return `${v >= 0 ? '+' : ''}${v.toFixed(2)}%`
 }
 
-/** 2×2 사분면 미니맵 — 서빙된 rel_strength(x)·momentum_5d(y) 원값 좌표화. */
+// null(bench 소급 부족 → 판단 유보) = 대시. 발명·0 표기 금지(규칙 #5).
+function fmtPctN(v: number | null | undefined): string {
+  return typeof v === 'number' ? fmtPct(v) : '—'
+}
+
+/** 2×2 사분면 미니맵 — 서빙된 rel_strength_5d(x, CD-STAB A′)·momentum_5d(y) 원값 좌표화. */
 function QuadrantMinimap({ sectors, labels }: { sectors: SectorRow[]; labels?: Record<string, string> }) {
-  const plotted = sectors.filter((s) => s.cd_state != null)
+  // cd_state 판정 = rel_strength_5d 기반 → 좌표도 동일 값(시각 모순 차단, 규칙 #2). 둘 다 있는 섹터만.
+  const plotted = sectors.filter(
+    (s): s is SectorRow & { rel_strength_5d: number } =>
+      s.cd_state != null && typeof s.rel_strength_5d === 'number',
+  )
   // 0 중심 대칭 스케일 — 양축 최대 절대값 기준(패딩 20%). 데이터 없으면 1로 폴백.
-  const maxAbsX = Math.max(0.001, ...plotted.map((s) => Math.abs(s.rel_strength)))
+  const maxAbsX = Math.max(0.001, ...plotted.map((s) => Math.abs(s.rel_strength_5d)))
   const maxAbsY = Math.max(0.001, ...plotted.map((s) => Math.abs(s.momentum_5d)))
   const spanX = maxAbsX * 1.2
   const spanY = maxAbsY * 1.2
   const SIZE = 200
   const C = SIZE / 2
-  // x: rel_strength(오른쪽=우위), y: momentum_5d(위=상승, SVG y 반전).
+  // x: rel_strength_5d(오른쪽=우위), y: momentum_5d(위=상승, SVG y 반전).
   const px = (rel: number) => C + (rel / spanX) * (C - 12)
   const py = (mom: number) => C - (mom / spanY) * (C - 12)
 
@@ -75,13 +84,13 @@ function QuadrantMinimap({ sectors, labels }: { sectors: SectorRow[]; labels?: R
           <g key={s.symbol}>
             <circle
               data-testid={`cd-dot-${s.symbol}`}
-              cx={px(s.rel_strength)}
+              cx={px(s.rel_strength_5d)}
               cy={py(s.momentum_5d)}
               r={4}
               fill={cdStateDotFill(s.cd_state ?? null)}
             />
             <text
-              x={px(s.rel_strength) + 6}
+              x={px(s.rel_strength_5d) + 6}
               y={py(s.momentum_5d) + 3}
               fontSize={8}
               fill="#334155"
@@ -171,9 +180,9 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
                 >
                   {stanceCopy(s.cd_state)}
                 </p>
-                {/* 근거 값 2칸 — rel_strength·momentum_5d 원값 */}
+                {/* 근거 값 2칸 — rel_strength_5d(판단 x축)·momentum_5d 원값 */}
                 <div className="mt-1 flex gap-4 text-[11px] tabular-nums text-slate-500">
-                  <span data-testid={`cd-rel-${s.symbol}`}>상대강도 {fmtPct(s.rel_strength)}</span>
+                  <span data-testid={`cd-rel-${s.symbol}`}>상대강도 (5일) {fmtPctN(s.rel_strength_5d)}</span>
                   <span data-testid={`cd-mom-${s.symbol}`}>5일 모멘텀 {fmtPct(s.momentum_5d)}</span>
                 </div>
               </Link>
