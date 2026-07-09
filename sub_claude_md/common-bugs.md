@@ -692,3 +692,13 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **원인**: `migrate zero`는 각 마이그레이션을 **충실히 역재생**한다 — 과거의 필드 변경(예: NOT NULL 제약 추가)을 되돌리며 **옛 스키마를 복원**하려는데, 그 사이 쌓인 데이터(현재 null 허용 컬럼에 실제 null 존재)가 옛 NOT NULL 제약과 충돌. 즉 "reverse migration"은 **데이터가 옛 스키마에 맞을 때만** 안전. 데이터 폐기가 목적인 철거에서는 이 충실한 복원이 오히려 방해.
 - **처리(전량 폐기 목적)**: reverse 복원이 불필요하므로 **raw SQL로 직접 DROP** — `DROP TABLE t1, t2, ... CASCADE` (앱 내부 FK는 CASCADE가 처리) + `DELETE FROM django_migrations WHERE app='<app>'` (고아 마이그레이션 레코드 정리). 단일 트랜잭션. **선행 필수**: ⑴ `pg_dump -t '<app>_*'` 아카이브, ⑵ inbound FK 0 확인(leaf면 CASCADE가 타 앱 데이터 미전파: `information_schema` constraint_column_usage 조회).
 - **왜 zero를 먼저 시도했나 = 교훈**: graph_analysis CUT 선례(DeleteModel 마이그레이션)와 달리 `migrate zero`가 더 간단해 보였으나, **데이터가 있는** 앱에선 reverse 충실성이 함정. 데이터 없는 앱은 zero 안전, **데이터 있는 앱 폐기 = raw DROP**이 정석. beat는 DB PeriodicTask 기준이라 disable→행 삭제 별도 필요(#28).
+
+## [git 위생] `git add` 다중 pathspec 중 하나라도 미매칭이면 add 전체 중단 → 신규 파일 누락 (Monitor 트랙, 2026-07-09, 반복 3회)
+
+- **증상**: `git add A B C` 실행 시 하나(예: 이미 `git rm`된 경로 `A`)가 워킹트리에 없어 `fatal: pathspec 'A' did not match any files`가 나면, **git add가 전체를 중단**하고 B·C도 스테이징되지 않는다. 이어서 pathspec 없는 `git commit`을 하면 **직전에 `git rm`으로 스테이징된 삭제분만** 커밋되고(=broken commit), **신규/수정 파일은 미커밋**으로 남는다. Monitor 트랙에서 3회 반복(C2 FE 철거·53889bb thesis 처분·ede1160 P3-S1): 각각 "삭제만 커밋되고 실체 누락".
+- **원인**: git add는 나열된 pathspec을 원자적으로 검증 → 하나라도 미매칭이면 non-zero exit + 아무것도 add 안 함(부분 add 아님). 이미 `git rm`/`git mv`로 처리된 경로를 뒤이은 `git add`에 다시 넣으면 그 경로가 워킹트리에 없어 미매칭.
+- **처방**:
+  1. `git rm`/`git mv`로 처리한 경로는 **뒤따르는 `git add`에 다시 넣지 않는다**(이미 인덱스에 반영됨).
+  2. `git commit` 직후 **`git status --short`로 미커밋 잔여 0 확인**(신규 `??` 파일 특히 주의). 잔여 있으면 add 후 `--amend`(미push 시)로 정합화.
+  3. 안전책: 삭제·이동과 신규·수정을 **별도 스테이징 단계**로 분리하거나, `git add -A <디렉터리>`로 디렉터리 단위 스테이징.
+- **탐지**: 커밋 stat이 "deletions only"인데 관련 신규 파일이 있어야 하면 이 버그를 의심. rename/신규가 사라진 broken 중간 커밋은 push 전 `git show --stat HEAD`로 검출.

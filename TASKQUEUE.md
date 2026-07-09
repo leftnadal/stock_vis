@@ -144,6 +144,9 @@
 | MON-P3-S1 | IA-2 리스트 페이지 (서버측 트리아지 정렬·필터 + 스코프/가설만 칩 + 빈상태 CTA + 카드) + MoonPhase·Arrow 이식 | @frontend+@backend | MON-P3-S0 | ✅ 완료 2026-07-09 (`278f7b6`·`ede1160`, FE 14·BE 13·tsc 0, _reuse MoonPhase/Arrow 소진) |
 | MON-P3-S2 | 빌더 4단계 (대상유형→지정[ScopeResolver]→지표·규칙→Claim 부착) + FE `_reuse` 골격 이식·즉시삭제 | @frontend | MON-P3-S1 | todo | ADR §결정5·6 |
 | MON-P3-S3 | 전역 내비 6칸+아바타 개편 (My 서브탭 M-3 [Watchlist→Thesis→Wallet→Portfolio], wallet 자리예약, Profile 아바타). ⚠️ 전역 shell = 병합 시 타 레인 rebase 영향 공지 | @frontend | MON-P3-S2 | todo | ADR §결정7 |
+| MON-P3-PAGINATE | (조건부 메모) DRF 페이지네이션 도입 시 → IA-2 **칩 카운트를 서버 집계로 전환**(현재 list 전량 반환 전제라 클라 카운트. 페이지네이션 켜지면 카운트 정확성 깨짐 → count 엔드포인트 or `?facets=` 응답). 트리거 = REST_FRAMEWORK `DEFAULT_PAGINATION_CLASS` 도입 | @frontend+@backend | 🕒 트리거: 페이지네이션 도입 시 | ADR §결정5 |
+
+> **MON-P3 완료 판정(DoD)**: 단위 테스트(FE vitest·BE pytest·tsc 0) **+ dev 서버 실렌더 스모크 3화면**(리스트 IA-2 / 빌더 4단계 / 전역 내비) — auth 세션 하 실제 브라우저 렌더 확인(좌표 아닌 실 렌더, lesson_visual_verify). 스모크 미수행 시 P3 미완결.
 | MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
 | MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
 | MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
