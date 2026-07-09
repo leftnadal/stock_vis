@@ -85,11 +85,13 @@ class TestSectorMomentumExposure:
         assert field.null is False
 
     def test_existing_keys_unchanged(self, auth_client):
-        """rel_strength·rank 기존 키 불변 — momentum_5d additive만."""
+        """rel_strength·rank 기존 키 불변 — momentum_5d(S2) + rel_strength_5d(A′) additive만."""
         xlk = _mk_index("XLK")
         _mk_snap(xlk, date_cls(2026, 6, 15), 2.0, 0.5, rank=1)
         point = auth_client.get(_url()).json()["data"]["sector_history"][0]["history"][0]
-        assert set(point.keys()) == {"date", "rel_strength", "rank", "momentum_5d"}
+        assert set(point.keys()) == {
+            "date", "rel_strength", "rank", "momentum_5d", "rel_strength_5d"
+        }
         assert point["rel_strength"] == 2.0
         assert point["rank"] == 1
 

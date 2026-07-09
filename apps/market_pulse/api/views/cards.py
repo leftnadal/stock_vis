@@ -10,6 +10,7 @@ Card Detail endpoints (PR-J).
 from __future__ import annotations
 
 import time
+from decimal import Decimal
 from typing import Any
 
 from django.core.cache import cache
@@ -23,8 +24,10 @@ from rest_framework.views import APIView
 from apps.market_pulse.api import cache as cache_keys
 from apps.market_pulse.constants import (
     CD_MOMENTUM_BASELINE,
+    CD_REL_STRENGTH_5D_LOOKBACK,
     CD_REL_STRENGTH_BASELINE,
     classify_cd_state,
+    derive_rel_strength_5d,
     resolve_official_cd_state,
 )
 from apps.market_pulse.models.briefing import BriefingLog
@@ -42,8 +45,39 @@ from apps.market_pulse.throttles import (
     MarketPulseLLMThrottle,
     MarketPulseUserThrottle,
 )
+from macro.models.indicators import MarketIndex, MarketIndexPrice
 
 VALID_CARDS = {"regime", "breadth", "sector", "concentration", "brief"}
+
+# CD-STAB Slice A′ (D-CD-XAXIS-SCOPE): 판단 x축 = 5일 상대수익의 벤치마크.
+#   sector momentum_5d(저장값)에서 이 벤치 5일 수익률을 빼 rel_strength_5d 파생(서빙 시점).
+CD_BENCH_SYMBOL = "SPY"
+
+
+def _bench_5d_return_by_date() -> dict:
+    """벤치(SPY) 5거래일 수익률(%)을 거래일별로 파생 — 서빙 시점 계산(저장 0, 규칙 #3).
+
+    `SectorFlowSnapshot.momentum_5d`(섹터 5일 수익률)와 동일 창(5거래일 룩백) 정합.
+    sector momentum 계산기(calculators/sector_flow._momentum)와 동형: close[i] 대비 5행 전.
+    초기 5거래일(소급 부족)·close 결측 날은 dict 미기입 → 소비 측 None(정직한 null, 규칙 #5).
+    """
+    idx = MarketIndex.objects.filter(symbol=CD_BENCH_SYMBOL).first()
+    if idx is None:
+        return {}
+    rows = list(
+        MarketIndexPrice.objects.filter(index=idx)
+        .order_by("date")
+        .values_list("date", "close")
+    )
+    out: dict = {}
+    n = CD_REL_STRENGTH_5D_LOOKBACK
+    for i in range(n, len(rows)):
+        d, close = rows[i]
+        start = rows[i - n][1]
+        if close is None or start is None or start == 0:
+            continue  # 소급 불가 → 미기입(발명·보간 금지)
+        out[d] = (Decimal(close) - Decimal(start)) / Decimal(start) * Decimal("100")
+    return out
 
 
 def _envelope(payload: dict, started: float, *, cache_state: str) -> dict:
@@ -248,6 +282,14 @@ def _sector_detail():
         [r for r in rows if r.date == latest_date], key=lambda r: r.rank_in_universe
     )
 
+    # CD-STAB Slice A′(D-CD-XAXIS-SCOPE): 판단 x축 = 5일 상대수익(mom5 − bench5d).
+    #   벤치 5일 수익률을 거래일별로 1회 파생(서빙 시점, 저장 0). rel_strength_5d = 이 값을
+    #   섹터 momentum_5d에서 뺀 값 — 판단 계열(classify·리플레이·RRG·카드) 단일 입력.
+    bench_5d = _bench_5d_return_by_date()
+
+    def _rel5(r):
+        return derive_rel_strength_5d(r.momentum_5d, bench_5d.get(r.date))
+
     # MP-UX-S5-B-SECTOR-BE: 섹터별 rel_strength 시계열 (additive, breadth/concentration
     #   history_30d 패턴 미러 — 단 섹터×날짜 2-D, rel_strength only). SectorFlowSnapshot
     #   실데이터만(합성 0): 결측·미존재 채우지 않음. 11섹터 전부 반환(절단은 FE slice 2).
@@ -274,6 +316,11 @@ def _sector_detail():
                     "momentum_5d": (
                         float(r.momentum_5d) if r.momentum_5d is not None else None
                     ),
+                    # CD-STAB Slice A′(additive): per-date 5일 상대수익 — RRG 점/꼬리 x축(판단 계열).
+                    #   bench 소급 부족 날은 null 그대로(발명 금지). 기존 rel_strength(1일)는 그대로 유지.
+                    "rel_strength_5d": (
+                        float(rel5) if (rel5 := _rel5(r)) is not None else None
+                    ),
                 }
             )
     ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
@@ -288,10 +335,13 @@ def _sector_detail():
     # CD-STAB Slice B(D-CD-STAB): 공식 cd_state = 2일 히스테리시스 리플레이(무상태).
     #   입력 = 섹터별 전 구간 distinct 거래일 raw 상태 시퀀스(ORM 전 구간, 30일 서빙 캡 무관).
     #   현재 공식 상태 = 리플레이 마지막 원소. 저장 0 — 매 서빙 시 결정론적 재생.
+    # CD-STAB Slice A′(D-CD-XAXIS-SCOPE): 리플레이 입력 x = rel_strength_5d(5일 상대수익).
+    #   cd_state·cd_state_raw가 일괄 5d 체계로 전환. bench 소급 부족 날 = rel5 None →
+    #   classify None → resolve의 None 방어(후보 리셋·공식 유지) 그대로 적용(규칙 #5).
     raw_seq_by_symbol: dict = {}
     for r in sorted(rows, key=lambda x: x.date):  # 오름차순
         raw_seq_by_symbol.setdefault(r.market_index_id, []).append(
-            classify_cd_state(r.rel_strength, r.momentum_5d)
+            classify_cd_state(_rel5(r), r.momentum_5d)
         )
     official_by_symbol = {
         sym: resolve_official_cd_state(seq)[-1]
@@ -305,17 +355,23 @@ def _sector_detail():
             {
                 "symbol": r.market_index_id,
                 "rel_strength": float(r.rel_strength),
+                # CD-STAB Slice A′(additive): 5일 상대수익 — 판단 계열 x축(RRG 점·미니맵·카드 근거).
+                #   기존 rel_strength(1일)는 맥박 계열(히트맵 등)이 그대로 소비(무접촉, 규칙 #1).
+                #   bench 소급 부족 시 null(발명 금지).
+                "rel_strength_5d": (
+                    float(rel5) if (rel5 := _rel5(r)) is not None else None
+                ),
                 "momentum_1d": float(r.momentum_1d),
                 "momentum_5d": float(r.momentum_5d),
                 "momentum_20d": float(r.momentum_20d),
                 "flow_proxy": float(r.flow_proxy),
                 "rank": r.rank_in_universe,
-                # MP2-SECTOR-CD S1 → CD-STAB Slice B(D-CD-STATE-SEMANTICS): 판단 4-상태.
-                #   cd_state = 공식(2일 히스테리시스 확정) 상태 — 전 소비자(뱃지·점색·문구)가 소비.
-                #   FE·2차 소비자는 재계산 금지. None → 판단 유보.
+                # MP2-SECTOR-CD S1 → CD-STAB Slice B(D-CD-STATE-SEMANTICS) → A′(D-CD-XAXIS-SCOPE):
+                #   판단 4-상태. cd_state = 공식(2일 히스테리시스 확정, 입력 x=5일 상대수익) 상태 —
+                #   전 소비자(뱃지·점색·문구)가 소비. FE·2차 소비자는 재계산 금지. None → 판단 유보.
                 "cd_state": official_by_symbol.get(r.market_index_id),
-                # cd_state_raw(additive): 원시 즉시 분류값. "전환 확인 중" 표시 등 후속 소비용(현 소비자 0).
-                "cd_state_raw": classify_cd_state(r.rel_strength, r.momentum_5d),
+                # cd_state_raw(additive): 원시 즉시 분류값(입력 x=5일 상대수익). "전환 확인 중" 표시 등 후속 소비용.
+                "cd_state_raw": classify_cd_state(_rel5(r), r.momentum_5d),
             }
             for r in latest
         ],
