@@ -3,11 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { useRouter } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { AlertCircle, ArrowLeft, Check, Loader2 } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { ProgressBar } from '@/components/monitor/builder/ProgressBar'
-import { useIndicatorCatalog } from '@/hooks/useMonitor'
+import { monitorKeys, useIndicatorCatalog } from '@/hooks/useMonitor'
 import { monitorService } from '@/services/monitorService'
 import type { CatalogEntry, MonitorScope, SupportDirection } from '@/types/monitor'
 
@@ -28,6 +29,7 @@ interface PickedIndicator {
 
 function BuilderContent() {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const [step, setStep] = useState(1)
   const [scope, setScope] = useState<MonitorScope>('stock')
   const [targetRef, setTargetRef] = useState('')
@@ -107,6 +109,8 @@ function BuilderContent() {
           deadline: deadline || null,
         })
       }
+      // 리스트 캐시 무효화 → 복귀 시 새 카드 즉시 반영 (stale 방지)
+      await queryClient.invalidateQueries({ queryKey: monitorKeys.lists() })
       router.push('/monitor')
     } catch (e: unknown) {
       // API 검증 실패(예: 존재하지 않는 심볼) → 대상 지정 단계로

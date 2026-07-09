@@ -5,11 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const push = vi.fn()
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }))
 
+const invalidateQueries = vi.fn()
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ invalidateQueries }),
+}))
+
 vi.mock('@/components/auth/AuthGuard', () => ({
   AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }))
 
 vi.mock('@/hooks/useMonitor', () => ({
+  monitorKeys: { lists: () => ['monitor', 'list'] },
   useIndicatorCatalog: () => ({
     data: [
       {
@@ -77,6 +83,7 @@ describe('MonitorBuilder 4단계', () => {
     fireEvent.click(screen.getByText('만들기'))
 
     await waitFor(() => expect(push).toHaveBeenCalledWith('/monitor'))
+    expect(invalidateQueries).toHaveBeenCalled() // 생성 후 리스트 캐시 무효화(stale 방지)
     expect(create).toHaveBeenCalledWith({
       scope: 'stock',
       target_ref: 'AAPL',
