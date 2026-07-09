@@ -89,16 +89,17 @@ class TestSectorHistory:
         assert xlk_hist[0]["rel_strength"] == 3.0  # base-2 (i=2)
 
     def test_history_point_keys_date_rel_rank(self, auth_client):
-        """지표 격리 — history 포인트 = date/rel_strength/rank(MP2-TREND additive)만.
-        flow_proxy/momentum은 여전히 누출 없음.
+        """지표 격리 — history 포인트 = date/rel_strength/rank + momentum_5d(S2 additive).
+        flow_proxy/momentum_1d/20d는 여전히 누출 없음.
         """
         xlk = _mk_index("XLK")
         _mk_snap(xlk, date_cls(2026, 6, 15), 2.0, rank=3)
         sh = auth_client.get(_url()).json()["data"]["sector_history"]
         point = sh[0]["history"][0]
-        assert set(point.keys()) == {"date", "rel_strength", "rank"}  # rank additive(S1)
+        # rank additive(S1) + momentum_5d additive(S2)
+        assert set(point.keys()) == {"date", "rel_strength", "rank", "momentum_5d"}
         assert "flow_proxy" not in point
-        assert "momentum_1d" not in point and "momentum_5d" not in point
+        assert "momentum_1d" not in point and "momentum_20d" not in point
 
     def test_caps_at_30_dates(self, auth_client):
         base = date_cls(2026, 6, 15)

@@ -264,6 +264,11 @@ def _sector_detail():
                     "date": r.date.isoformat(),
                     "rel_strength": float(r.rel_strength),
                     "rank": r.rank_in_universe,
+                    # MP2-SECTOR-CD S2(additive): per-date momentum_5d 노출 — 저장값 그대로(재계산 0).
+                    #   초기 룩백 등 저장 null은 null 그대로 서빙(보간·발명 금지).
+                    "momentum_5d": (
+                        float(r.momentum_5d) if r.momentum_5d is not None else None
+                    ),
                 }
             )
     ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
