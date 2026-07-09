@@ -3266,3 +3266,36 @@ c7_dollar_volume 재사용. 조립기 편입(_NOT_WIRED = C1·C3 만 잔여).
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 5d073f4. 전체 371 GREEN /
 13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.
+
+## [2026-07-09] Theme Heat TH-9 — 결정14=A (DailyPrice 백필) + C1/C3 원천 상신
+
+**결정14=A (비준, TH-C6C7-BACKFILL)**: C6/C7 활성용 구성종목 3년 가격 이력을 **공유 정본
+DailyPrice** 에 백필한다. **전용 원장 신설 기각**(이중 정본 drift = 영구 부채). 쓰기 소유권 =
+stocks 앱 management command(`backfill_daily_prices`), chainsight 는 **읽기 전용 유지**(chainsight
+이름의 가격 쓰기 금지). 조정 규약 = FMP `/stable/historical-price-eod/full` close(stock_sync 정합).
+
+**커버리지 리포트 (박제)**: 495 대상 → **written 364,827행 / 487종목**, 총 DailyPrice 366,101행.
+시작일 분포 = **482종목 2023-07(3년 완비)** + 소수 늦음(2023-09×1·2024-03×2·2025-02×1·2025-10×1).
+겹침 대조 오차 median 0.0(대부분 완벽 일치).
+
+**★ 겹침 대조 게이트 정지 8종목(상신)**: 조정 규약 불일치(split/배당 조정 차이 추정)로 쓰기
+정지 — MSFT(446%)·DD(200%)·HON(100%)·CRWD(75%)·META(32%)·SPGI(5.4%)·GLW(0.87%)·ABBV(0.73%).
+기존 DailyPrice 조정 상태 재점검·재백필 = TH-BACKFILL-HALTED-8. 미등록 6종(BNY/ECHO/FDXF/FLEX/
+HONA/VEEV)은 Stock 미등록(sync_overview 선행 필요). **C6/C7 게이트 자연 해제 검증**: 코드 변경 0
+으로 insufficient_history → present 전환(Technology C6 z=-1.36 C7 z=3.68).
+
+**★ C1·C3 원천 상신(배선 정지, C4 선례 우회 금지)**:
+- **C1(밸류에이션)** = EV/Sales·Fwd P/E 3년 z. 직접 원천 FMP `/stable/ratios`·`/stable/key-metrics`
+  (period=quarter) = **402 Premium 유료벽**. enterprise-values(200)만으론 EV/Sales 불가(revenue 결).
+  조합 재구성 = 우회 → 금지. 비준 필요: 프리미엄 업글 vs C1 영구 결측 vs 승인된 대체 산식.
+- **C3(내러티브 볼륨)** = 테마 키워드 20일 합 3년 z. DailyNewsKeyword = 130행(2026-02~, **5개월**,
+  3년 부족) + **일별 전체 키워드 구조(섹터별 집계 부재)**. 테마별 카운트 추출 = 설계 미상세.
+  비준 필요: 섹터별 키워드 집계 원장 설계 + 백필 소스(C4 동형 게이트는 구조 확정 후).
+
+**온도 활성화 현황**: 8성분 중 present 4(C2·C5·C6·C7), 결측 4(C1·C3 상신·C4 8월 게이트·C8 주간
+축적). missing 4 ≥ MISSING_LIMIT(3) → status=not_computed 지속. **활성화 = C1·C3 비준 후**(전환
+경로는 synthesize 테스트로 검증: 6-present + 2-결측 → computed). EstimateSnapshot 0행(7/10 금
+16:30 ET 첫 스냅샷 **미도래**). 실전 소비는 API 단계 요건(결정6 승계 조건 불변).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 39fc4c2. 전체 377 GREEN /
+13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.

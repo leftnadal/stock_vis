@@ -620,10 +620,21 @@
 - 상태: **종결(TH-8, 결정13=C)**. c4_etf_flow_from_db 게이트(diff<26 결측 / 26≤<60 확장 time_series_expanding / ≥60 정식 time_series, 상수 26/60=결정7 병기, 횡단 z 기각) + 조립기 편입. 14 test. **가동은 EtfSnapshot 축적 자동수렴**(예상 8월 중순, 재비준 지점 없음).
 - 근거: DECISIONS 2026-07-09 결정13, 설계 §2 v1.2.5.
 
-## TH-C6C7-BACKFILL — C6/C7 활성용 구성종목 DailyPrice 3년 백필 (등재, 2026-07-09, 상신)
-- 상태: 등재·상신. **트리거 = 백필 규모/저장소 비준**. C6/C7 fetch·조립기 배선은 TH-8 완료(현 c*_insufficient_history 결측 = 3년 커버 미달).
-- 배경(STEP 0 실측): 구성종목 DailyPrice 3년 부재(AAPL 1년·대부분 ~7개월, PriceCoMovement 90d만). 3년 σ(§3-1) 정본 근사(우회) 금지 → 커버 게이트 결측(C4 동형).
-- 비준 필요: 501종목×3년≈380k행 백필의 **저장소(공유 stocks DailyPrice vs chainsight 신설 원장)·도메인 경계·실행 주체**. FMP 종목 3년 = 봉쇄 아님(가용), chainsight 세션은 공유 도메인 대량 쓰기 회피로 강행 안 함.
+## ✅ TH-C6C7-BACKFILL — C6/C7 활성용 구성종목 DailyPrice 3년 백필 (종결, 2026-07-09)
+- 상태: **종결(TH-9, 결정14=A)**. stocks `backfill_daily_prices` command(공유 정본 DailyPrice, 겹침 대조 게이트) → 364,827행/487종목(482종목 2023-07 3년 완비). C6/C7 게이트 자연 해제 검증(present 전환). 6 test.
+- 근거: DECISIONS 2026-07-09 결정14, 커버리지 리포트.
+
+## TH-BACKFILL-HALTED-8 — 겹침 대조 정지 8종목 재조정 (등재, 2026-07-09, 상신)
+- 상태: 등재·상신. 백필 겹침 오차 >0.5%로 쓰기 정지: MSFT(446%)·DD(200%)·HON(100%)·CRWD(75%)·META(32%)·SPGI(5.4%)·GLW(0.87%)·ABBV(0.73%). 조정 규약 불일치(split/배당 조정) 추정.
+- 의무: 기존 DailyPrice 조정 상태 진단(언제·어떤 조정) → 정합화 후 재백필(--symbols 지정). 미등록 6종(BNY/ECHO/FDXF/FLEX/HONA/VEEV)은 sync_overview 선행.
+
+## TH-C1-VALUATION — C1 밸류에이션 원천 비준 (등재, 2026-07-09, 상신)
+- 상태: 등재·상신. C1(EV/Sales·Fwd P/E 3년 z) 직접 원천 FMP ratios/key-metrics(period=quarter) = **402 Premium 유료벽**. 조합 재구성 = 우회 금지.
+- 비준 필요: 프리미엄 업글 vs C1 영구 결측(가중 재분배) vs 승인된 대체 산식(enterprise-values+income 조합 = 우회 여부 판정).
+
+## TH-C3-NARRATIVE — C3 내러티브 볼륨 원천 비준 (등재, 2026-07-09, 상신)
+- 상태: 등재·상신. C3(테마 키워드 20일 합 3년 z) 원료 DailyNewsKeyword = 5개월(3년 부족) + 일별 전체 키워드(섹터별 집계 부재).
+- 비준 필요: 섹터별 키워드 집계 원장 설계 + 백필 소스. 구조 확정 후 C4 동형 게이트 적용.
 
 ## TH-C8-ZMODE-BADGE — API 단계 카드 z_mode 뱃지 노출 검토 (등재, 2026-07-08)
 - 상태: 등재. **트리거 = API/카드 슬라이스**. 근거 = DECISIONS 2026-07-08 결정7(종목별 z_mode 혼재).

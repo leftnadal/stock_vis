@@ -141,3 +141,14 @@ class TestAssemblyWiring:
             assert k in comp
         assert comp["C4"]["missing_reason"] == "c4_insufficient_history"
         assert comp["C6"]["missing_reason"] in ("c6_no_pairs", "c6_no_data", "c6_insufficient_history")
+
+    def test_status_transition_when_missing_below_limit(self):
+        # 6 성분 present + 2 결측(C4 게이트·C8 주간) → missing 2 < MISSING_LIMIT(3) → computed.
+        from apps.chain_sight.services.heat_components import make_component
+        from apps.chain_sight.services.heat_synthesis import synthesize_heat
+
+        comp = {k: make_component(0.5, raw=1) for k in ("C1", "C2", "C3", "C5", "C6", "C7")}
+        comp["C4"] = make_component(None, missing_reason="c4_insufficient_history")
+        comp["C8"] = make_component(None, missing_reason="c8_no_sector_data")
+        synth = synthesize_heat(comp)
+        assert synth["status"] != "not_computed" and synth["score"] is not None

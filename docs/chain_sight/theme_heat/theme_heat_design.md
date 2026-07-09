@@ -1,7 +1,11 @@
 # Theme Heat 설계서 (테마 온도계 + 수요 지지 축)
 
 - **문서 ID**: `theme_heat_design`
-- **버전**: **v1.2.5** (2026-07-09) — v1.2.4 대비: **C4 콜드스타트 게이트**(결정13=C: diff<26
+- **버전**: **v1.2.6** (2026-07-09) — v1.2.5 대비: **C6/C7 활성**(결정14=A DailyPrice 3년 백필
+  364,827행/487종목, 게이트 자연 해제 present 전환) + **C1·C3 원천 상신**(C1=ratios/key-metrics
+  402 유료벽, C3=DailyNewsKeyword 5개월+섹터 집계 부재 → 배선 정지, 우회 금지). 8성분 present
+  4(C2·C5·C6·C7)/결측 4(C1·C3 상신·C4 게이트·C8 주간). §2 산식·부호 불변.
+- **버전(이전)**: **v1.2.5** (2026-07-09) — v1.2.4 대비: **C4 콜드스타트 게이트**(결정13=C: diff<26
   결측 / 26≤diff<60 확장 창 time_series_expanding / ≥60 정식 time_series, 상수 26/60=결정7 체계
   병기, 횡단 z 기각) + **C6/C7 배선**(구성종목 DailyPrice 3년 커버 게이트). 조립기 _NOT_WIRED =
   C1·C3 만 잔여. C6/C7 활성 = DailyPrice 3년 백필(stocks 도메인, 상신). §2 산식·부호 불변.
@@ -385,6 +389,7 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | C5 풀배선 (SPDR 원본 시드) + C4 원료 시계 기동                                        | 마켓 뷰 BE PR             | 1     | 🔶 부분 (2026-07-09, TH-7c: 결정12a SPDR 원본 11종 시드[0018, active primary 11·테마 ETF 7 불변·XLE/XLV 승격] + **C4 원료** EtfSnapshot[0019]·snapshot_etf_metrics_task·beat 17:00ET·스모크 11행 멱등. 12 test. **C5 레버리지 배선·C4 산식은 12b/COLDSTART 대기**) |
 | C5 레버리지 시드 + 거래량 백필 + 계산기 배선 + 조립기 편입                            | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-7d: 결정12b=A 레버리지 9종 시드[0021, ERX 승격·XLB/XLC 결측] + EtfDailyBar[0020] 거래량 3년 백필 15,120행 + c5_speculation_from_db + 조립기 _NOT_WIRED 에서 C5 제거[C1/C3/C4/C6/C7 잔여]. 14 test. C4 산식만 COLDSTART 대기) |
 | C4 콜드스타트 게이트 + C6/C7 배선                                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-8: 결정13=C C4 게이트[diff 26/60 3분기·time_series 전용·순수함수 재사용] + C6/C7[DailyPrice 3년 커버 게이트] 배선. 조립기 _NOT_WIRED=C1·C3 잔여. 14 test. **C4 가동=EtfSnapshot 축적 자동수렴, C6/C7 활성=DailyPrice 3년 백필[stocks 도메인 상신]**) |
+| DailyPrice 3년 백필(C6/C7 활성) + C1/C3 원천 상신                                     | stocks BE PR + 마켓 뷰    | 1     | 🔶 부분 (2026-07-09, TH-9: 결정14=A stocks `backfill_daily_prices`[겹침 대조 게이트·364,827행/487종목·8종목 정지 상신] → C6/C7 present 전환. **C1=402 유료벽·C3=DailyNewsKeyword 5개월+구조 부재 → 상신**[TH-C1-VALUATION·TH-C3-NARRATIVE]. 6 test. 온도 활성=C1/C3 비준 후) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |
