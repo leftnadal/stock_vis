@@ -10,10 +10,12 @@ from .heat import (
     EtfSnapshot,
     HeatEntity,
     InsiderTransactionRecord,
+    QuarterlyValuation,
     ThemeDemandScore,
     ThemeEtfMap,
     ThemeFilingCount,
     ThemeHeatScore,
+    ThemeNewsVolume,
     UniverseSnapshot,
 )
 from .insider_signal import CompanyInsiderSignal
@@ -62,4 +64,7 @@ __all__ = [
     "EtfSnapshot",
     # Theme Heat (TH-7d, C5 거래량 원장)
     "EtfDailyBar",
+    # Theme Heat (TH-10, C1 밸류에이션 · C3 내러티브 원장)
+    "QuarterlyValuation",
+    "ThemeNewsVolume",
 ]

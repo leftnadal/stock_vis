@@ -624,17 +624,23 @@
 - 상태: **종결(TH-9, 결정14=A)**. stocks `backfill_daily_prices` command(공유 정본 DailyPrice, 겹침 대조 게이트) → 364,827행/487종목(482종목 2023-07 3년 완비). C6/C7 게이트 자연 해제 검증(present 전환). 6 test.
 - 근거: DECISIONS 2026-07-09 결정14, 커버리지 리포트.
 
-## TH-BACKFILL-HALTED-8 — 겹침 대조 정지 8종목 재조정 (등재, 2026-07-09, 상신)
-- 상태: 등재·상신. 백필 겹침 오차 >0.5%로 쓰기 정지: MSFT(446%)·DD(200%)·HON(100%)·CRWD(75%)·META(32%)·SPGI(5.4%)·GLW(0.87%)·ABBV(0.73%). 조정 규약 불일치(split/배당 조정) 추정.
-- 의무: 기존 DailyPrice 조정 상태 진단(언제·어떤 조정) → 정합화 후 재백필(--symbols 지정). 미등록 6종(BNY/ECHO/FDXF/FLEX/HONA/VEEV)은 sync_overview 선행.
+## ⬆ TH-BACKFILL-HALTED-8 — 겹침 대조 정지 8종목 재조정 (등재, 2026-07-09, 순번 상향)
+- 상태: 등재·상신(순번 상향). 백필 겹침 오차 >0.5%로 쓰기 정지: MSFT(446%)·DD(200%)·HON(100%)·CRWD(75%)·META(32%)·SPGI(5.4%)·GLW(0.87%)·ABBV(0.73%). 조정 규약 불일치(split/배당 조정) 추정 → C6/C7 8종목 이력 오염 잠재.
+- 의무: 기존 DailyPrice 조정 상태 진단(언제·어떤 조정) → 정합화 후 재백필(--symbols 지정).
 
-## TH-C1-VALUATION — C1 밸류에이션 원천 비준 (등재, 2026-07-09, 상신)
-- 상태: 등재·상신. C1(EV/Sales·Fwd P/E 3년 z) 직접 원천 FMP ratios/key-metrics(period=quarter) = **402 Premium 유료벽**. 조합 재구성 = 우회 금지.
-- 비준 필요: 프리미엄 업글 vs C1 영구 결측(가중 재분배) vs 승인된 대체 산식(enterprise-values+income 조합 = 우회 여부 판정).
+## TH-STOCK-REGISTER-6 — 미등록 6종 Stock 등록 (등재, 2026-07-09)
+- 상태: 등재. BNY(BK개명)·ECHO·FDXF·FLEX·HONA·VEEV = SP500 active 실재 + Stock 미등록(FDXF/HONA 최근 스핀오프). 상장폐지·오염 아님(유니버스 정리 불요).
+- 의무: sync_overview → Stock 등록 → C1/C6/C7 백필 --symbols 지정 편입.
 
-## TH-C3-NARRATIVE — C3 내러티브 볼륨 원천 비준 (등재, 2026-07-09, 상신)
-- 상태: 등재·상신. C3(테마 키워드 20일 합 3년 z) 원료 DailyNewsKeyword = 5개월(3년 부족) + 일별 전체 키워드(섹터별 집계 부재).
-- 비준 필요: 섹터별 키워드 집계 원장 설계 + 백필 소스. 구조 확정 후 C4 동형 게이트 적용.
+## TH-C3-MATCH-EXPAND — C3 키워드 매칭 확장 (등재, 2026-07-09, 상신)
+- 상태: 등재·상신. C3 완전 일치(결정16) 실효성 0 — search_terms_en 다단어 문구 vs KEYWORD_SECTOR_MAP 단어 완전 일치 0 → ThemeNewsVolume 소급 0행 → C3 영구 결측.
+- 비준 필요: 토큰 단위 매칭(문구를 토큰 분해 후 시드 단어 포함 카운트) or n-gram — 정밀도/재현율 균형. 결정16 "확장은 후속" 발동. 배선·원장·게이트는 완료(규칙만 확장).
+
+## ✅ TH-C1-VALUATION — C1 밸류에이션 배선 (종결, 2026-07-09)
+- 상태: **종결(TH-10, 결정15=A)**. EV/Sales = enterprise-values(period=quarter) ÷ income revenue, 동일 fiscal_date 정합. QuarterlyValuation(0022) 백필 7,935행/499종목 + c1_valuation_from_db 조립기 편입. C1 present. Fwd P/E 레그는 결정15 범위 밖(EV/Sales 단독). 13 test 일부.
+
+## ✅ TH-C3-NARRATIVE — C3 내러티브 볼륨 배선 (종결, 2026-07-09)
+- 상태: **종결(TH-10, 결정16=A)**. ThemeNewsVolume(0022) 원장 + aggregate 집계(완전 일치) + 결정13 동형 게이트 + 집계 beat(ET17:15) + 조립기 편입. ★완전 일치 실효성 0 → 매칭 확장은 TH-C3-MATCH-EXPAND(상신).
 
 ## TH-C8-ZMODE-BADGE — API 단계 카드 z_mode 뱃지 노출 검토 (등재, 2026-07-08)
 - 상태: 등재. **트리거 = API/카드 슬라이스**. 근거 = DECISIONS 2026-07-08 결정7(종목별 z_mode 혼재).

@@ -87,6 +87,16 @@ BEATS = [
         "day_of_week": None,  # 매일
     },
     {
+        # Theme Heat C3 내러티브 집계 (TH-10, 결정16=A, 설계 §7) — 뉴스 후단·heat 이전 ET 17:15.
+        # DailyNewsKeyword → ThemeNewsVolume 테마×일자 mention_count. 이름 = 기존 chainsight-* 구분.
+        "name": "chainsight-aggregate-theme-news",
+        "task": "chainsight-aggregate-theme-news",
+        "minute": "15",
+        "hour": "17",
+        "timezone": "America/New_York",
+        "day_of_week": None,  # 매일
+    },
+    {
         # Theme Heat C2b 수집 (TH-5, 설계 §7) — heat 직전. ET 17:30 매일.
         # ★ 기존 chainsight-heat-score-daily(SeedHeatScore, cs_44)와 별개 — 이름 충돌 회피.
         "name": "chainsight-collect-theme-filings",

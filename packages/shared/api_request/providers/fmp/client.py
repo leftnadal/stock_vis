@@ -340,6 +340,20 @@ class FMPClient:
         data = self._make_request("/stable/income-statement", params)
         return data if isinstance(data, list) else []
 
+    def get_enterprise_values(
+        self, symbol: str, period: str = "quarter", limit: int = 16
+    ) -> List[Dict[str, Any]]:
+        """
+        기업가치(EV) 시계열 조회 — C1 밸류에이션 원료(TH-10).
+
+        period="quarter" (기본) = 분기 결산일 = income-statement date 와 정합(시점 정합 정본).
+        Returns: [{date, enterpriseValue, numberOfShares, stockPrice, ...}].
+        API: GET /stable/enterprise-values?symbol={symbol}&period={period}
+        """
+        params = {"symbol": symbol.upper(), "period": period, "limit": limit}
+        data = self._make_request("/stable/enterprise-values", params)
+        return data if isinstance(data, list) else []
+
     def get_balance_sheet(
         self, symbol: str, period: str = "annual", limit: int = 10
     ) -> List[Dict[str, Any]]:

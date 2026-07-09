@@ -348,6 +348,60 @@ class EtfSnapshot(models.Model):
         return f"EtfSnapshot({self.symbol}, {self.snapshot_date})"
 
 
+class QuarterlyValuation(models.Model):
+    """
+    C1 밸류에이션 원료 (TH-10, 결정15=A) — 설계 앵커 §2 C1.
+
+    EV/Sales = enterprise_value ÷ revenue (**동일 분기 라벨 강제**, 시점 정합 정본). EV(FMP
+    enterprise-values.date) 와 revenue(income-statement 동일 date) 를 같은 fiscal_date 로 매칭
+    저장 — 라벨 불일치·미발표 분기는 미저장(추정·직전 분기 대체 금지). 순수함수 c1_valuation
+    은 §2 산식·부호 불변, 이 원장은 원료만.
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    fiscal_date = models.DateField(db_index=True, help_text="분기 결산일 (EV.date == income.date).")
+    enterprise_value = models.DecimalField(max_digits=24, decimal_places=2, null=True, blank=True)
+    revenue = models.DecimalField(max_digits=24, decimal_places=2, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("symbol", "fiscal_date")]
+        ordering = ["symbol", "-fiscal_date"]
+
+    @property
+    def ev_sales(self):
+        if self.enterprise_value is None or self.revenue is None or float(self.revenue) <= 0:
+            return None
+        return float(self.enterprise_value) / float(self.revenue)
+
+    def __str__(self):
+        return f"QuarterlyValuation({self.symbol}, {self.fiscal_date})"
+
+
+class ThemeNewsVolume(models.Model):
+    """
+    C3 내러티브 볼륨 원장 (TH-10, 결정16=A) — 설계 앵커 §2 C3 · §2 v1.2.7 보완.
+
+    테마(섹터)별 일간 키워드 언급 카운트. DailyNewsKeyword 키워드를 정규화 후 테마 키워드
+    시드(KEYWORD_SECTOR_MAP)와 **완전 일치** 매칭해 테마×일자 합산(부분·유사도 매칭 금지 =
+    정밀도 우선). 전방 축적 + 기존분 소급 집계(외부 3년 백필 금지, 결정16).
+    """
+
+    theme = models.ForeignKey(
+        HeatEntity, on_delete=models.PROTECT, db_column="theme_id", related_name="news_volumes"
+    )
+    date = models.DateField(db_index=True)
+    mention_count = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("theme", "date")]
+        ordering = ["theme", "-date"]
+
+    def __str__(self):
+        return f"ThemeNewsVolume({self.theme_id}, {self.date}, {self.mention_count})"
+
+
 class EtfDailyBar(models.Model):
     """
     C5 투기 심리 거래량 원장 (TH-7d, 결정12b) — 설계 앵커 §2 C5.

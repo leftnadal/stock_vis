@@ -53,9 +53,9 @@ HEAT_ENTITY_TO_SP500_SECTOR = {
     "Utilities": "Utilities",
 }
 
-# 배선 안 된 성분 — 데이터 파이프라인 후속 슬라이스.
-# C5=TH-7d, C4/C6/C7=TH-8 배선 완료(C4=결정13 콜드스타트 게이트, C6/C7=DailyPrice 3년 게이트).
-_NOT_WIRED = ("C1", "C3")
+# 배선 안 된 성분 — 전무(TH-10 C1/C3 배선 완료로 8성분 전건 배선).
+# C1=결정15(EV/Sales 분기 조합), C3=결정16(테마 키워드 집계+결정13 게이트).
+_NOT_WIRED = ()
 
 
 # ────────────────────────────── 순수 판정 ──────────────────────────────
@@ -102,6 +102,8 @@ def _real_sector_components(
     entity, sector_symbols: list[str], as_of: date, c8_by_symbol: dict
 ) -> dict:
     """실배선 성분 dict (C2=C2a+C2b, C5, C8; 나머지 not_wired)."""
+    from apps.chain_sight.services.c1_valuation_service import c1_valuation_from_db
+    from apps.chain_sight.services.c3_narrative_service import c3_narrative_from_db
     from apps.chain_sight.services.c4_flow_service import c4_etf_flow_from_db
     from apps.chain_sight.services.c5_speculation_service import (
         c5_speculation_from_db,
@@ -114,6 +116,9 @@ def _real_sector_components(
 
     components = {k: {"z": None, "s": None, "raw": None, "missing_reason": "not_wired"}
                   for k in _NOT_WIRED}
+    # C1 밸류에이션 (TH-10, 결정15) · C3 내러티브 (TH-10, 결정16) — 마지막 2성분.
+    components["C1"] = c1_valuation_from_db(sector_symbols, as_of)
+    components["C3"] = c3_narrative_from_db(entity, as_of)
     if sector_symbols:
         c2a = c2a_insider_from_db(sector_symbols, as_of)
         c2b = c2b_from_db(sector_symbols, as_of)

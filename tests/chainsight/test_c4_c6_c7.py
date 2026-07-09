@@ -130,8 +130,10 @@ class TestC6Correlation:
 # ────────────────────────────── 조립기 편입 ──────────────────────────────
 @pytest.mark.django_db
 class TestAssemblyWiring:
-    def test_not_wired_only_c1_c3(self):
-        assert set(hb._NOT_WIRED) == {"C1", "C3"}
+    def test_c4_c6_c7_wired_not_in_not_wired(self):
+        # TH-10 에서 C1/C3 도 배선되어 _NOT_WIRED 는 빈 튜플. C4/C6/C7 은 배선됨.
+        for k in ("C4", "C6", "C7"):
+            assert k not in hb._NOT_WIRED
 
     def test_c4_c6_c7_in_components(self):
         e = HeatEntity.objects.get(kind="sector", ref_id="Basic Materials")
