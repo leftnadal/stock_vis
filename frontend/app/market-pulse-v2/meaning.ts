@@ -6,7 +6,7 @@
  * 임계·색 로직과 무관 — 표시(밴드)용 텍스트 + 단계별 밴드 색만.
  */
 import type { AnomalyMode, RegimeId } from '@/lib/api/marketPulseV2'
-import { DIRECTION_BAND } from './colorSemantics'
+import { DIRECTION_BAND } from '@/components/common/colorSemantics'
 
 export const REGIME_MEANING: Record<RegimeId, string> = {
   BULL_EXPANSION: '위험자산 우호 국면. 추세 추종 유리, 광범위 강세.',
