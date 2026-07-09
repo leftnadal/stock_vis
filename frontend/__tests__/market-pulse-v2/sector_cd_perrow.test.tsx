@@ -10,8 +10,15 @@ import { describe, expect, it } from 'vitest'
 import type { SectorDetail as Detail, SectorRow } from '@/lib/api/marketPulseV2'
 import { SectorCdPanel } from '@/app/market-pulse-v2/details/SectorCdPanel'
 
-function row(symbol: string, rel: number, mom5: number, rank: number, cd_state: SectorRow['cd_state']): SectorRow {
-  return { symbol, rel_strength: rel, momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state }
+function row(
+  symbol: string, rel: number, mom5: number, rank: number,
+  cd_state: SectorRow['cd_state'], rel5: number | null = rel,
+): SectorRow {
+  // CD-STAB A′: rel_strength_5d = 판단 계열(카드 근거) x축. 기본 = rel(1일).
+  return {
+    symbol, rel_strength: rel, rel_strength_5d: rel5,
+    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state,
+  }
 }
 
 const LABELS: Record<string, string> = { 'sector.XLK': '기술', 'sector.XLE': '에너지', 'sector.XLF': '금융' }

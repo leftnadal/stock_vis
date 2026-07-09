@@ -21,8 +21,12 @@ function row(
   mom5: number,
   rank: number,
   cd_state: SectorRow['cd_state'],
+  rel5: number | null = rel,  // CD-STAB A′: 판단 x축(5일 상대수익). 기본 = rel(1일)와 동일.
 ): SectorRow {
-  return { symbol, rel_strength: rel, momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state }
+  return {
+    symbol, rel_strength: rel, rel_strength_5d: rel5,
+    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state,
+  }
 }
 
 const LABELS: Record<string, string> = {
@@ -79,10 +83,43 @@ describe('SectorCdPanel — 판단 카드', () => {
     }
   })
 
-  it('근거 값 2칸 = 서빙된 rel_strength·momentum_5d 원값', () => {
+  it('근거 값 2칸 = 서빙된 rel_strength_5d(라벨 "상대강도 (5일)")·momentum_5d 원값', () => {
     const { getByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
-    expect(getByTestId('cd-rel-XLK').textContent).toContain('+0.80%')
+    expect(getByTestId('cd-rel-XLK').textContent).toContain('상대강도 (5일)')
+    expect(getByTestId('cd-rel-XLK').textContent).toContain('+0.80%')  // rel5=0.8
     expect(getByTestId('cd-mom-XLE').textContent).toContain('-0.90%')
+  })
+
+  it('구별값: 근거 상대강도 칸 = rel_strength_5d(5d), 1일 rel_strength 아님', () => {
+    // XLK: rel(1일)=+0.80, rel_5d=-0.30 → 판단 계열(카드 근거)은 5d(-0.30%)를 표시.
+    const distinct: Detail = {
+      ...payload,
+      sectors: [row('XLK', 0.8, 0.5, 1, 'leading_strengthening', -0.3)],
+    }
+    const { getByTestId } = render(<SectorDetail payload={distinct} labels={LABELS} />)
+    expect(getByTestId('cd-rel-XLK').textContent).toContain('-0.30%')       // 5d 소비
+    expect(getByTestId('cd-rel-XLK').textContent).not.toContain('+0.80%')   // 1일값 아님
+  })
+
+  it('구별값: 미니맵 점 x = rel_strength_5d(부호). 1일값과 반대여도 5d를 따른다', () => {
+    // rel(1일)=+2(우측) vs rel_5d=-1(좌측) → 점은 중심(C=100) 왼쪽.
+    const distinct: Detail = {
+      ...payload,
+      sectors: [row('XLK', 2.0, 0.5, 1, 'lagging_improving', -1.0)],
+    }
+    const { getByTestId } = render(<SectorDetail payload={distinct} labels={LABELS} />)
+    const cx = Number(getByTestId('cd-dot-XLK').getAttribute('cx'))
+    expect(cx).toBeLessThan(100)  // rel_5d<0 → 좌측(1일 +2였다면 우측이었을 것)
+  })
+
+  it('rel_strength_5d null(bench 유보) → 근거 칸 대시 + 미니맵 점 미표시', () => {
+    const nullRel5: Detail = {
+      ...payload,
+      sectors: [row('XLU', 0.1, 0.1, 1, null, null)],
+    }
+    const { getByTestId, queryByTestId } = render(<SectorDetail payload={nullRel5} labels={LABELS} />)
+    expect(getByTestId('cd-rel-XLU').textContent).toContain('—')  // 발명 금지
+    expect(queryByTestId('cd-dot-XLU')).toBeNull()
   })
 
   it('null cd_state → 판단 유보 뱃지 + 점 미표시 + 유보 문구', () => {

@@ -11,12 +11,25 @@ import type { SectorDetail as Detail, SectorRow } from '@/lib/api/marketPulseV2'
 import { RRGChart } from '@/app/market-pulse-v2/details/RRGChart'
 import { SectorCdPanel } from '@/app/market-pulse-v2/details/SectorCdPanel'
 
-function row(symbol: string, rel: number, mom5: number, rank: number, cd_state: SectorRow['cd_state']): SectorRow {
-  return { symbol, rel_strength: rel, momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state }
+function row(
+  symbol: string, rel: number, mom5: number, rank: number,
+  cd_state: SectorRow['cd_state'], rel5: number | null = rel,
+): SectorRow {
+  // CD-STAB A′: rel_strength_5d = RRG 점 x축(기본 = rel). 기존 rel_strength(1일)는 맥박.
+  return {
+    symbol, rel_strength: rel, rel_strength_5d: rel5,
+    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state,
+  }
 }
 
-function hist(symbol: string, pts: [string, number, number][]) {
-  return { symbol, history: pts.map(([date, rel, m]) => ({ date, rel_strength: rel, rank: 1, momentum_5d: m })) }
+// pts: [date, rel1d, mom5, rel5?] — rel5 기본 = rel1d. 꼬리 x = rel_strength_5d.
+function hist(symbol: string, pts: [string, number, number, number?][]) {
+  return {
+    symbol,
+    history: pts.map(([date, rel, m, rel5]) => ({
+      date, rel_strength: rel, rel_strength_5d: rel5 ?? rel, rank: 1, momentum_5d: m,
+    })),
+  }
 }
 
 const LABELS: Record<string, string> = { 'sector.XLK': '기술', 'sector.XLE': '에너지' }
@@ -79,6 +92,29 @@ describe('RRGChart — 점 색 = 서빙 cd_state (재분류 금지)', () => {
     const payload = mkPayload({ sectors: [row('XLK', 0.1, 0.1, 1, null)] })
     const { getByTestId } = render(<RRGChart payload={payload} labels={LABELS} />)
     expect(getByTestId('rrg-dot-XLK').getAttribute('fill')).toBe('#cbd5e1')
+  })
+})
+
+describe('RRGChart — 점 x축 = rel_strength_5d (CD-STAB A′, 구별값)', () => {
+  it('x 좌표는 rel_strength_5d 순서를 따른다(1일 rel_strength 아님)', () => {
+    // XLK: rel(1일)=+0.9, rel_5d=-0.9 / XLE: rel=-0.9, rel_5d=+0.9.
+    //   5d 소비면 XLE가 XLK보다 오른쪽(cx 큼). 1일 소비였다면 반대.
+    const payload = mkPayload({
+      sectors: [
+        row('XLK', 0.9, 0.5, 1, 'leading_strengthening', -0.9),
+        row('XLE', -0.9, 0.5, 2, 'lagging_improving', 0.9),
+      ],
+    })
+    const { getByTestId } = render(<RRGChart payload={payload} labels={LABELS} />)
+    const cxK = Number(getByTestId('rrg-dot-XLK').getAttribute('cx'))
+    const cxE = Number(getByTestId('rrg-dot-XLE').getAttribute('cx'))
+    expect(cxE).toBeGreaterThan(cxK)  // rel_5d: XLE(+0.9) > XLK(-0.9)
+  })
+
+  it('rel_strength_5d null 섹터 → 점 미표시(판단 유보, 발명 0)', () => {
+    const payload = mkPayload({ sectors: [row('XLK', 0.8, 0.5, 1, 'leading_strengthening', null)] })
+    const { queryByTestId } = render(<RRGChart payload={payload} labels={LABELS} />)
+    expect(queryByTestId('rrg-dot-XLK')).toBeNull()
   })
 })
 
