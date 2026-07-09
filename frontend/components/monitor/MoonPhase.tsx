@@ -1,7 +1,8 @@
 'use client'
 
 import { Moon } from 'lucide-react'
-import { scoreToPhaseMeta } from '@/lib/thesis/utils'
+
+import { scoreToPhaseMeta } from '@/lib/monitor/display'
 
 interface Props {
   score: number | null
@@ -23,7 +24,6 @@ export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
   const { icon: iconSize, text: textClass } = SIZE_MAP[size]
 
   // score=null(warming_up): 흐릿한 달, "데이터 수집 중"
-  // score=-1(강한 반박): 선명하지만 어두운 달, "가설이 힘을 잃고 있어요"
   if (score === null) {
     return (
       <div className="flex flex-col items-center gap-1 opacity-40">
@@ -35,9 +35,7 @@ export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
 
   const meta = scoreToPhaseMeta(score)
   const fillPercent = scoreToFillPercent(score)
-  const fillColor = fillPercent > 60 ? '#FBBF24'
-    : fillPercent > 30 ? '#9CA3AF'
-    : '#4B5563'
+  const fillColor = fillPercent > 60 ? '#FBBF24' : fillPercent > 30 ? '#9CA3AF' : '#4B5563'
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -53,12 +51,7 @@ export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
             className="absolute inset-0 overflow-hidden"
             style={{ clipPath: `inset(0 ${100 - fillPercent}% 0 0)` }}
           >
-            <Moon
-              size={iconSize}
-              style={{ color: fillColor }}
-              fill={fillColor}
-              strokeWidth={1.5}
-            />
+            <Moon size={iconSize} style={{ color: fillColor }} fill={fillColor} strokeWidth={1.5} />
           </div>
         )}
       </div>

@@ -45,13 +45,14 @@ class MonitorSerializer(serializers.ModelSerializer):
     latest_score = serializers.SerializerMethodField()
     indicator_count = serializers.SerializerMethodField()
     next_deadline = serializers.SerializerMethodField()
+    has_claim = serializers.SerializerMethodField()
 
     class Meta:
         model = Monitor
         fields = [
             "id", "scope", "target_ref", "name", "status", "current_state",
             "target_date_end", "resolved_label", "latest_score",
-            "indicator_count", "next_deadline", "created_at", "updated_at",
+            "indicator_count", "next_deadline", "has_claim", "created_at", "updated_at",
         ]
         # current_state는 파이프라인(엔진) 소유 — 사용자 입력 불가
         read_only_fields = ["id", "current_state", "created_at", "updated_at"]
@@ -71,6 +72,9 @@ class MonitorSerializer(serializers.ModelSerializer):
     def get_next_deadline(self, obj):
         d = getattr(obj, "next_deadline", None)
         return d.isoformat() if d else None
+
+    def get_has_claim(self, obj):
+        return bool(getattr(obj, "has_claim", False))
 
     def validate(self, attrs):
         # 생성/수정 시 (scope, target_ref)를 검증·정규화

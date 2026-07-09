@@ -32,6 +32,11 @@ export interface Monitor {
   current_state: MonitorState
   target_date_end: string | null
   resolved_label: string | null
+  // 리스트 카드용 파생값 (list/detail에서 채워짐, create 응답은 null)
+  latest_score: number | null
+  indicator_count: number | null
+  next_deadline: string | null
+  has_claim: boolean
   created_at: string
   updated_at: string
 }

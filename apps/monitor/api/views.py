@@ -72,6 +72,7 @@ class MonitorViewSet(viewsets.ModelViewSet):
                 next_deadline=Min(
                     "claims__deadline", filter=Q(claims__status="active")
                 ),
+                has_claim=Exists(Claim.objects.filter(monitor=OuterRef("pk"))),
             )
         )
 

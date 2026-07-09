@@ -1,17 +1,17 @@
 'use client'
 
-import { degreeToColor, degreeToLabel } from '@/lib/thesis/utils'
+import { degreeToColor, degreeToLabel } from '@/lib/monitor/display'
 
 interface Props {
-  degree: number        // 0~180
+  degree: number // 0~180
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
 }
 
 const SIZE_MAP = {
   sm: { fontSize: '1.125rem', text: 'text-xs' },
-  md: { fontSize: '1.5rem',   text: 'text-xs' },
-  lg: { fontSize: '2.25rem',  text: 'text-sm' },
+  md: { fontSize: '1.5rem', text: 'text-xs' },
+  lg: { fontSize: '2.25rem', text: 'text-sm' },
 }
 
 export function ArrowIndicator({ degree, size = 'md', showLabel = false }: Props) {
@@ -32,7 +32,7 @@ export function ArrowIndicator({ degree, size = 'md', showLabel = false }: Props
         role="img"
         aria-label={label}
       >
-        {'\u2192'}
+        {'→'}
       </span>
       {showLabel && (
         <span style={{ color }} className={textClass}>
