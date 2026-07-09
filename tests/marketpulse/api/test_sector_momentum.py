@@ -16,7 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.market_pulse.constants import CD_MOMENTUM_BASELINE
+from apps.market_pulse.constants import CD_MOMENTUM_BASELINE, CD_REL_STRENGTH_BASELINE
 from apps.market_pulse.models.snapshot import SectorFlowSnapshot
 from macro.models.indicators import MarketIndex
 
@@ -108,3 +108,30 @@ class TestCdMomentumBaselineMeta:
         body = auth_client.get(_url()).json()["data"]
         assert body["available"] is False
         assert "cd_momentum_baseline" not in body
+
+
+@pytest.mark.django_db
+class TestCdRelStrengthBaselineMeta:
+    """MP2-SECTOR-CD S3 — RRG x축 판정선 메타 cd_rel_strength_baseline."""
+
+    def test_rel_baseline_meta_present_and_matches_constant(self, auth_client):
+        """payload 메타 cd_rel_strength_baseline = CD_REL_STRENGTH_BASELINE 상수(값 복제 아님)."""
+        _mk_snap(_mk_index("XLK"), date_cls(2026, 6, 15), 2.0, 0.5, rank=1)
+        body = auth_client.get(_url()).json()["data"]
+        assert "cd_rel_strength_baseline" in body
+        assert body["cd_rel_strength_baseline"] == CD_REL_STRENGTH_BASELINE
+
+    def test_both_axis_baselines_served(self, auth_client):
+        """RRG 두 축 판정선(x=rel, y=momentum) 동시 서빙 — 기존 키 불변."""
+        _mk_snap(_mk_index("XLK"), date_cls(2026, 6, 15), 2.0, 0.5, rank=1)
+        body = auth_client.get(_url()).json()["data"]
+        assert body["cd_rel_strength_baseline"] == CD_REL_STRENGTH_BASELINE
+        assert body["cd_momentum_baseline"] == CD_MOMENTUM_BASELINE
+        # 기존 필드 불변(회귀)
+        assert body["available"] is True
+        assert body["sectors"][0]["symbol"] == "XLK"
+
+    def test_rel_baseline_absent_when_unavailable(self, auth_client):
+        body = auth_client.get(_url()).json()["data"]
+        assert body["available"] is False
+        assert "cd_rel_strength_baseline" not in body
