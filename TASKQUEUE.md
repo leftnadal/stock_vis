@@ -642,9 +642,20 @@
 | PROGRESS-DEDUP-MONITOR | PROGRESS 활성 Monitor 블록 **×5**(2939→5482자, 비-동일본) per-copy superset 검증 후 **5→1**. **blind collapse 금지**(#44 ⑶) | mgmt(dedup) | monitor-rebuild 트랙 접점 | 💤 트리거 게이트 |
 | PROGRESS-DEDUP-MP2TREND | PROGRESS 활성 MP2-TREND Slice 3 블록 **×2**(2009 vs 2076자, 비-동일본) 동형 superset 검증 후 2→1 | mgmt(dedup) | MP2-TREND 트랙 접점 | 💤 트리거 게이트 |
 | STRAY-DOCS-13 | primary 미추적 **13건** 트랙별 회수/폐기 분류(chain_sight redesign 6·thesis 2·trading_bot 2·mp 1·기타 2=.superpowers·worktree forensic) | mgmt(소형) | 착수가능 | 🆕 등재 |
-| NEWS-ORPHAN-ASSIGN | 뉴스 무소속 재료 트랙 배정 — NT-2b(미핸드오프)·NT-6(보류)·뉴스 β A(파킹). **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
+| NEWS-ORPHAN-ASSIGN | 뉴스 무소속 재료 트랙 배정 — NT-2b(미핸드오프)·NT-6(보류)·뉴스 β A(파킹). **결정은 디렉터 사이클**. ※**갱신(2026-07-09, D-DASH-BFF)**: D3(뉴스 축 소비 표면)의 거처 블로커는 **BFF 배치로 해제**(apps/dashboard가 read 소비만) → 잔존 사유는 **NT-2b 등 뉴스 품질 작업 소유 배정**뿐 | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
 | BOUNDARY-EXT-5 | shared 미경유 외부 API 직접 호출 **5건**(NEWS-SURVEY N2: chain_sight neo4j_loader×2·insider_tasks·sensitivity_tasks·market_pulse fmp_weights) 처분. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
 | PROVIDER-DUAL | 뉴스 provider 3종(Finnhub·Marketaux·AlphaVantage) `services/news/providers` 잔류 vs shared 승격 결정. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
+
+---
+
+## News Axis Phase 1 (하이브리드 뉴스 축 / 2026-07-09)
+
+> 근거 DECISIONS D-NEWS-AXIS(표면 S1×경로 D3)·D-DASH-BFF(apps/dashboard BFF)·소유권 지도 v2 AMEND(apps/dashboard/**). 홈 상단 압축 스트립 + 전용 응축 API. dashboard 트랙 소유.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| NEWSAXIS-CONTRACT | 응축 API **응답 계약 설계** — 관련성 정의·가중, 동일 사건 접기 기준, 관계망 배지 규칙, 캐싱 정책. **결정 등재 전 BUILD 착수 금지** | 결정 안건(dashboard) | 디렉터 결정 사이클 | 🕓 대기(결정) |
+| NEWSAXIS-BUILD | `apps/dashboard` BFF 신설 + `/news/strip`류 엔드포인트 + FE 스트립(S1). **착수 시 STEP 0 재실측 필수**(services/news 모델·RelationConfidence 조인 경로·URL 라우팅) | @backend + dashboard FE | **NEWSAXIS-CONTRACT 등재 시** | 💤 트리거 게이트 |
 
 ---
 
