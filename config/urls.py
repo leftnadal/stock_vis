@@ -42,6 +42,7 @@ urlpatterns = [
     path('api/v1/validation/', include("services.validation.api.urls")),  # 1차 검증
     path('api/v1/chainsight/', include("apps.chain_sight.api.urls")),  # PR6 이동 — Chain Sight 그래프 탐색
     path('api/credit-signals/', include("apps.credit_signals.api.urls")),  # credit_signals Phase 1 — 크레딧 신호 스트립
+    path('api/v1/monitor/', include("apps.monitor.api.urls")),  # MON-P2-S3 — Monitor 허브 (구 thesis 재건)
     path('api/v1/sec-pipeline/', include("services.sec_pipeline.urls")),  # SEC Pipeline 대시보드
     path('api/v1/iron-trading/', include("integrations.iron_trading.urls")),  # iron_trading 외부 봇 read-only (PR3 이동)
 

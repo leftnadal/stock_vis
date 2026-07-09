@@ -1,21 +1,15 @@
-"""Stage 3: Thesis State Machine (수학 모델 v2.3.2, Section 5)"""
+"""Stage 3: Monitor State Machine (수학 모델 v2.3.2, Section 5 이식).
+
+MON-P2-S2 이식: thesis_state_machine → apps/monitor. 소비 = Monitor 인스턴스.
+status 매핑: 구 thesis 'closed' → Monitor 'archived'. current_state·target_date_end 사용.
+`score_to_phase`(달 위상)는 순수 함수 그대로.
+"""
 
 import logging
 
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
-
-THESIS_STATES = {
-    'warming_up': '데이터 수집 중',
-    'active': '활성 관제 중',
-    'strengthening': '가설 강화 추세',
-    'weakening': '가설 약화 추세',
-    'critical': '주의 필요',
-    'needs_review': '점검 필요',
-    'expired': '기간 만료',
-    'paused': '일시정지',
-}
 
 # 상태 전환 보류 기준
 DATA_COVERAGE_THRESHOLD = 0.6
@@ -27,26 +21,26 @@ TREND_THRESHOLD = 0.15
 TREND_MIN_SNAPSHOTS = 3
 
 
-def determine_state(thesis, overall_score, prev_score,
+def determine_state(monitor, overall_score, prev_score,
                     data_coverage, days_active, score_history):
     """
-    가설 상태 판정.
+    Monitor 상태 판정.
 
     Args:
-        thesis: Thesis 인스턴스
+        monitor: Monitor 인스턴스
         overall_score: 현재 overall score
         prev_score: 직전 스냅샷의 overall score (없으면 None)
         data_coverage: 유효 지표 비율 (0~1)
-        days_active: 가설 생성 후 경과 일수
+        days_active: Monitor 생성 후 경과 일수
         score_history: 최근 5일간 overall score 목록
 
     Returns:
         dict with state, state_changed, reminder_needed
     """
-    current_state = thesis.current_state
+    current_state = monitor.current_state
 
-    # 이미 마감된 가설은 상태 변경 안 함
-    if thesis.status == 'closed':
+    # 이미 보관(archived)된 Monitor는 상태 변경 안 함 (구 thesis 'closed' 대응)
+    if monitor.status == 'archived':
         return {
             'state': current_state,
             'state_changed': False,
@@ -62,7 +56,7 @@ def determine_state(thesis, overall_score, prev_score,
         }
 
     # paused 상태 체크
-    if thesis.status == 'paused':
+    if monitor.status == 'paused':
         new_state = 'paused'
         return {
             'state': new_state,
@@ -80,7 +74,7 @@ def determine_state(thesis, overall_score, prev_score,
         }
 
     # expired: target_date_end 지남
-    if thesis.target_date_end and timezone.localdate() > thesis.target_date_end:
+    if monitor.target_date_end and timezone.localdate() > monitor.target_date_end:
         new_state = 'expired'
         return {
             'state': new_state,
@@ -89,14 +83,12 @@ def determine_state(thesis, overall_score, prev_score,
         }
 
     # needs_review: 90일 이상 + target_date_end 미설정
-    reminder_needed = False
-    if not thesis.target_date_end and days_active >= NEEDS_REVIEW_DAYS:
+    if not monitor.target_date_end and days_active >= NEEDS_REVIEW_DAYS:
         new_state = 'needs_review'
-        reminder_needed = True
         return {
             'state': new_state,
             'state_changed': new_state != current_state,
-            'reminder_needed': reminder_needed,
+            'reminder_needed': True,
         }
 
     # 최근 스냅샷 기반 판정 (수학 모델 Section 5 의사코드 순서 그대로)
