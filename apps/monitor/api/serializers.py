@@ -41,12 +41,17 @@ class ClaimSerializer(serializers.ModelSerializer):
 class MonitorSerializer(serializers.ModelSerializer):
     # ScopeResolver가 정규화한 표시명 (읽기 전용)
     resolved_label = serializers.SerializerMethodField()
+    # 리스트 카드용 파생값 (ViewSet get_queryset annotation, create 응답서는 None)
+    latest_score = serializers.SerializerMethodField()
+    indicator_count = serializers.SerializerMethodField()
+    next_deadline = serializers.SerializerMethodField()
 
     class Meta:
         model = Monitor
         fields = [
             "id", "scope", "target_ref", "name", "status", "current_state",
-            "target_date_end", "resolved_label", "created_at", "updated_at",
+            "target_date_end", "resolved_label", "latest_score",
+            "indicator_count", "next_deadline", "created_at", "updated_at",
         ]
         # current_state는 파이프라인(엔진) 소유 — 사용자 입력 불가
         read_only_fields = ["id", "current_state", "created_at", "updated_at"]
@@ -56,6 +61,16 @@ class MonitorSerializer(serializers.ModelSerializer):
             return resolve(obj.scope, obj.target_ref).label
         except ScopeResolutionError:
             return None
+
+    def get_latest_score(self, obj):
+        return getattr(obj, "latest_score", None)
+
+    def get_indicator_count(self, obj):
+        return getattr(obj, "indicator_count", None)
+
+    def get_next_deadline(self, obj):
+        d = getattr(obj, "next_deadline", None)
+        return d.isoformat() if d else None
 
     def validate(self, attrs):
         # 생성/수정 시 (scope, target_ref)를 검증·정규화

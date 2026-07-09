@@ -3,6 +3,19 @@
 user 스코프 격리: 모든 queryset은 request.user 소유로 제한(IDOR 방지).
 평가 트리거 = MonitorViewSet.evaluate action (수동). beat 주기 등록은 별도 스텝.
 """
+from django.db.models import (
+    Case,
+    Count,
+    Exists,
+    F,
+    IntegerField,
+    Min,
+    OuterRef,
+    Q,
+    Subquery,
+    Value,
+    When,
+)
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
@@ -20,8 +33,17 @@ from apps.monitor.models import (
     IndicatorReading,
     Monitor,
     MonitorIndicator,
+    MonitorSnapshot,
 )
 from apps.monitor.services.pipeline import evaluate_monitor
+
+# 상태 심각도 랭크: 위험(0) → 약화(1) → 관찰(2) → 유지(3). 트리아지 정렬 1차 키.
+_SEVERITY_WHENS = [
+    When(current_state__in=["critical", "expired", "needs_review"], then=Value(0)),
+    When(current_state="weakening", then=Value(1)),
+    When(current_state__in=["warming_up", "active"], then=Value(2)),
+    # strengthening·paused → 유지(3, default)
+]
 
 
 class MonitorViewSet(viewsets.ModelViewSet):
@@ -29,7 +51,42 @@ class MonitorViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Monitor.objects.filter(user=self.request.user)
+        # 카드 렌더 데이터 + 트리아지 정렬을 서버에서 확정(페이지네이션 하 클라 정렬 금지).
+        latest_snap = (
+            MonitorSnapshot.objects.filter(monitor=OuterRef("pk"))
+            .order_by("-asof_date")
+            .values("overall_score")[:1]
+        )
+        qs = (
+            Monitor.objects.filter(user=self.request.user)
+            .annotate(
+                severity_rank=Case(
+                    *_SEVERITY_WHENS, default=Value(3), output_field=IntegerField()
+                ),
+                latest_score=Subquery(latest_snap),
+                indicator_count=Count(
+                    "indicators",
+                    filter=Q(indicators__is_active=True),
+                    distinct=True,
+                ),
+                next_deadline=Min(
+                    "claims__deadline", filter=Q(claims__status="active")
+                ),
+            )
+        )
+
+        # filter: scope, has_claim (Exists로 distinct 회피)
+        scope = self.request.query_params.get("scope")
+        if scope:
+            qs = qs.filter(scope=scope)
+        has_claim = self.request.query_params.get("has_claim")
+        if has_claim == "true":
+            qs = qs.filter(Exists(Claim.objects.filter(monitor=OuterRef("pk"))))
+
+        # 정렬: 심각도 → 마감 임박(nulls last) → 최근 갱신
+        return qs.order_by(
+            "severity_rank", F("next_deadline").asc(nulls_last=True), "-updated_at"
+        )
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

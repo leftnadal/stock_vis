@@ -112,3 +112,75 @@ class TestEvaluateAction:
         )
         resp = client_alice.post(f"/api/v1/monitor/monitors/{bob_mon.id}/evaluate/")
         assert resp.status_code == 404  # user 스코프 → 존재하지 않음
+
+
+def _items(resp):
+    data = resp.data
+    return data["results"] if isinstance(data, dict) and "results" in data else data
+
+
+@pytest.mark.django_db
+class TestMonitorListOrderingFilter:
+    """서버측 트리아지 정렬·필터 (MON-P3-S1 소보강): 위험→약화→관찰→유지."""
+
+    def _mk(self, alice, ref, name, state):
+        return Monitor.objects.create(
+            user=alice, scope="stock", target_ref=ref, name=name, current_state=state
+        )
+
+    def test_severity_ordering(self, client_alice, alice):
+        self._mk(alice, "A", "keep", "strengthening")
+        self._mk(alice, "B", "risk", "critical")
+        self._mk(alice, "C", "watch", "active")
+        self._mk(alice, "D", "weak", "weakening")
+        names = [m["name"] for m in _items(client_alice.get("/api/v1/monitor/monitors/"))]
+        assert names.index("risk") < names.index("weak") < names.index("watch") < names.index("keep")
+
+    def test_scope_filter(self, client_alice, alice):
+        self._mk(alice, "A", "s1", "active")
+        Monitor.objects.create(
+            user=alice, scope="fund", target_ref="XLK", name="f1", current_state="active"
+        )
+        items = _items(client_alice.get("/api/v1/monitor/monitors/?scope=fund"))
+        assert len(items) == 1
+        assert items[0]["name"] == "f1"
+
+    def test_has_claim_filter(self, client_alice, alice):
+        from apps.monitor.models import Claim
+
+        with_claim = self._mk(alice, "A", "wc", "active")
+        self._mk(alice, "B", "nc", "active")
+        Claim.objects.create(monitor=with_claim, assertion="주장")
+        items = _items(client_alice.get("/api/v1/monitor/monitors/?has_claim=true"))
+        assert [m["name"] for m in items] == ["wc"]
+
+    def test_card_annotations_present(self, client_alice, alice):
+        from datetime import date, timedelta
+
+        from apps.monitor.models import Claim, MonitorIndicator, MonitorSnapshot
+
+        m = self._mk(alice, "A", "card", "active")
+        MonitorIndicator.objects.create(
+            monitor=m, name="i", indicator_type="market_data"
+        )
+        MonitorSnapshot.objects.create(
+            monitor=m, asof_date=date(2026, 7, 1), overall_score=0.42, state="active"
+        )
+        Claim.objects.create(
+            monitor=m, assertion="a", deadline=date.today() + timedelta(days=5)
+        )
+        item = _items(client_alice.get("/api/v1/monitor/monitors/"))[0]
+        assert item["latest_score"] == 0.42
+        assert item["indicator_count"] == 1
+        assert item["next_deadline"] is not None
+
+    def test_create_response_has_null_card_fields(self, client_alice, aapl):
+        # 생성 응답은 annotation 없음 → None (AttributeError 없이)
+        resp = client_alice.post(
+            "/api/v1/monitor/monitors/",
+            {"scope": "stock", "target_ref": "AAPL", "name": "새"},
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.data["latest_score"] is None
+        assert resp.data["indicator_count"] is None
