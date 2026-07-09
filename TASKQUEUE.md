@@ -143,7 +143,7 @@
 | MON-P3-S0 | FE 데이터 레이어 (types·monitorService·useMonitor 훅) | @frontend | MON-P2 land | ✅ 완료 2026-07-09 (`d281813`, 브랜치 `sess-monitor-p3`, 테스트 5·tsc 0) |
 | MON-P3-S1 | IA-2 리스트 페이지 (서버측 트리아지 정렬·필터 + 스코프/가설만 칩 + 빈상태 CTA + 카드) + MoonPhase·Arrow 이식 | @frontend+@backend | MON-P3-S0 | ✅ 완료 2026-07-09 (`278f7b6`·`ede1160`, FE 14·BE 13·tsc 0, _reuse MoonPhase/Arrow 소진) |
 | MON-P3-S2 | 빌더 4단계 + 지표 카탈로그(BE) + FE `_reuse` 완전 소진 | @frontend+@backend | MON-P3-S1 | ✅ 완료 2026-07-09 (`f908188`·`49a3fbe`, 카탈로그 3종+source_key, 빌더 4단계, _reuse 소멸, BE 17·FE 16·tsc 0) |
-| MON-P2-INGEST | 지표 판독 이식 태스크 — `source_key`(eod_composite 등)로 EODSignal→IndicatorReading 채움(평가 파이프라인 데이터 공급원). 없으면 지표는 라벨만 | @backend+@infra | MON-P3 land | todo (BEAT와 함께 별도 지시서) | catalog.py source |
+| MON-P2-INGEST | 지표 판독 이식 — `source_key`→EODSignal→IndicatorReading (백필 N=120일, 멱등 unique 0004, 수동 커맨드 ingest_readings·refresh_monitors) | @backend | MON-P3 land | ✅ 완료 2026-07-09 (`6458da5`, E2E: AAPL score 0.1698·display 실값, 테스트 68·collect 3668). 다음=**MON-P2-BEAT** |
 | MON-P3-DISPLAY-FILL | (선택, 급하지 않음) BE `display`에 `fill_percent` 포함(FE `scoreToFillPercent` 흡수) — 달 채움도 API 단일 소스로 | @backend | - | 🕒 선택 과제 | ADR 재계산 원칙 |
 | MON-P3-S3 | 전역 내비 6칸+아바타 + My 서브탭 M-3 (+ 실렌더 스모크 3화면 + 캐시 무효화 fix) | @frontend | MON-P3-S2 | ✅ 완료 2026-07-09 (`4222e7e`·`65975f7`, 스모크 통과, vitest 544·tsc 0). **MON-P3 = P3 완결** → 병합 대기 |
 | MON-P3-PAGINATE | (조건부 메모) DRF 페이지네이션 도입 시 → IA-2 **칩 카운트를 서버 집계로 전환**(현재 list 전량 반환 전제라 클라 카운트. 페이지네이션 켜지면 카운트 정확성 깨짐 → count 엔드포인트 or `?facets=` 응답). 트리거 = REST_FRAMEWORK `DEFAULT_PAGINATION_CLASS` 도입 | @frontend+@backend | 🕒 트리거: 페이지네이션 도입 시 | ADR §결정5 |

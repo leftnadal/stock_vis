@@ -77,6 +77,12 @@ class IndicatorReading(models.Model):
     class Meta:
         ordering = ["asof"]
         indexes = [models.Index(fields=["indicator", "asof"])]
+        constraints = [
+            # 멱등 ingest: (지표, 판독시점) 1행 — 재실행 시 upsert(update_or_create).
+            models.UniqueConstraint(
+                fields=["indicator", "asof"], name="uniq_reading_indicator_asof"
+            )
+        ]
 
     def __str__(self):
         return f"{self.indicator_id} = {self.value} @ {self.asof:%Y-%m-%d}"
