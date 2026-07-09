@@ -1,247 +1,101 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { TrendingUp, Search, Menu, User, LogOut, LogIn } from 'lucide-react';
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { usePathname } from 'next/navigation';
+import { Search, TrendingUp } from 'lucide-react';
+
+import { AvatarMenu } from '@/components/layout/AvatarMenu';
+import { MySubNav, isMyPage } from '@/components/layout/MySubNav';
+
+// 전역 내비 6칸 (MON-P3-S3): Dashboard · Market Pulse · Chain Sight · News · Screener · My.
+// 포트폴리오·마이페이지는 top nav에서 제거 → My 서브탭·아바타로 이동.
+const NAV_PUBLIC = [
+  { href: '/', label: '대시보드', exact: true },
+  { href: '/market-pulse', label: 'Market Pulse' },
+  { href: '/chainsight', label: 'Chain Sight' },
+  { href: '/news', label: '뉴스' },
+  { href: '/screener', label: '스크리너' },
+];
+
+const MY_STORAGE_KEY = 'my:lastSubpage';
 
 export default function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, logout } = useAuth();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  // M-3: My 슬롯은 마지막 방문 My 서브페이지로 연결(기억). 하이드레이션 안전 위해 기본값 후 useEffect.
+  const [myHref, setMyHref] = useState('/watchlist');
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(MY_STORAGE_KEY);
+    if (saved) setMyHref(saved);
+  }, []);
+
+  useEffect(() => {
+    if (isMyPage(pathname)) {
+      window.localStorage.setItem(MY_STORAGE_KEY, pathname);
+      setMyHref(pathname);
+    }
+  }, [pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 검색 기능 구현
     console.log('Search:', searchQuery);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.push('/');
-  };
+  const linkClass = (active: boolean) =>
+    `px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 ${
+      active ? 'text-blue-600 dark:text-blue-400' : ''
+    }`;
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2">
-              <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Stock-Vis
-              </span>
-            </Link>
-          </div>
+    <header className="border-b border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          <Link href="/" className="flex items-center space-x-2">
+            <TrendingUp className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            <span className="text-xl font-bold text-gray-900 dark:text-white">Stock-Vis</span>
+          </Link>
 
-          {/* Navigation - Desktop */}
-          <nav className="hidden md:flex space-x-8">
-            <Link
-              href="/"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname === '/' ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              대시보드
+          <nav className="hidden md:flex md:space-x-4">
+            {NAV_PUBLIC.map((item) => {
+              const active = item.exact
+                ? pathname === item.href
+                : pathname.startsWith(item.href);
+              return (
+                <Link key={item.href} href={item.href} className={linkClass(active)}>
+                  {item.label}
+                </Link>
+              );
+            })}
+            {/* My = 마지막 서브페이지 직행 + 활성 표시 */}
+            <Link href={myHref} className={linkClass(isMyPage(pathname))}>
+              My
             </Link>
-            <Link
-              href="/portfolio"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/portfolio') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              포트폴리오
-            </Link>
-            <Link
-              href="/chainsight"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/chainsight') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              Chain Sight
-            </Link>
-            <Link
-              href="/market-pulse"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/market-pulse') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              Market Pulse
-            </Link>
-            <Link
-              href="/news"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/news') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              뉴스
-            </Link>
-            <Link
-              href="/screener"
-              className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                pathname.startsWith('/screener') ? 'text-blue-600 dark:text-blue-400' : ''
-              }`}
-            >
-              스크리너
-            </Link>
-            {user && (
-              <Link
-                href="/mypage"
-                className={`text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 px-3 py-2 text-sm font-medium ${
-                  pathname.startsWith('/mypage') ? 'text-blue-600 dark:text-blue-400' : ''
-                }`}
-              >
-                마이페이지
-              </Link>
-            )}
           </nav>
 
-          {/* Search Bar */}
-          <div className="hidden md:block flex-1 max-w-md mx-4">
+          <div className="mx-4 hidden max-w-md flex-1 md:block">
             <form onSubmit={handleSearch} className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="종목 검색 (예: AAPL, Microsoft)"
-                className="w-full px-4 py-2 pl-10 pr-4 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
+                className="w-full rounded-lg border border-gray-300 bg-gray-100 px-4 py-2 pl-10 text-gray-700 focus:border-blue-500 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
               />
               <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
             </form>
           </div>
 
-          {/* User Actions - Desktop */}
-          <div className="hidden md:flex items-center space-x-4">
-            {user ? (
-              <>
-                <Link
-                  href="/mypage"
-                  className="flex items-center space-x-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  <User className="h-5 w-5" />
-                  <span className="text-sm font-medium">{user.nick_name || user.user_name}</span>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
-                >
-                  <LogOut className="h-4 w-4" />
-                  <span>로그아웃</span>
-                </button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
-              >
-                <LogIn className="h-4 w-4" />
-                <span>로그인</span>
-              </Link>
-            )}
+          <div className="hidden md:block">
+            <AvatarMenu />
           </div>
-
-          {/* audit P0 #12: Header 햄버거를 모바일에서 비표시 (MobileNav가 모바일 네비 단일 소스).
-              이중 네비 제거 + 데스크톱은 상단 nav 사용. 본 버튼은 hidden — 향후 모바일 검색 패널 등 확장 시 부활 검토. */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="메뉴 열기"
-            className="hidden inline-flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-md text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                href="/"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                대시보드
-              </Link>
-              <Link
-                href="/portfolio"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                포트폴리오
-              </Link>
-              <Link
-                href="/chainsight"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Chain Sight
-              </Link>
-              <Link
-                href="/market-pulse"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Market Pulse
-              </Link>
-              <Link
-                href="/news"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                뉴스
-              </Link>
-              <Link
-                href="/screener"
-                className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                스크리너
-              </Link>
-              {user && (
-                <Link
-                  href="/mypage"
-                  className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  마이페이지
-                </Link>
-              )}
-              {/* User Actions - Mobile */}
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                {user ? (
-                  <>
-                    <div className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
-                      {user.nick_name || user.user_name}님
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-3 py-2 rounded-md text-base font-medium text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    >
-                      로그아웃
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    로그인
-                  </Link>
-                )}
-              </div>
-            </div>
-            {/* Mobile Search */}
-            <div className="px-2 pb-3">
-              <form onSubmit={handleSearch}>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="종목 검색"
-                  className="w-full px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:border-blue-500"
-                />
-              </form>
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* My 영역 서브탭 (M-3) — My 페이지에서만 표시 */}
+      {isMyPage(pathname) && <MySubNav />}
     </header>
   );
 }
