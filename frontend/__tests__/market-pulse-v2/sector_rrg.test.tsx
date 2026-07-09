@@ -14,11 +14,12 @@ import { SectorCdPanel } from '@/app/market-pulse-v2/details/SectorCdPanel'
 function row(
   symbol: string, rel: number, mom5: number, rank: number,
   cd_state: SectorRow['cd_state'], rel5: number | null = rel,
+  cd_state_raw: SectorRow['cd_state_raw'] = cd_state,  // CD-READ: 기본 = cd_state(전환 아님).
 ): SectorRow {
   // CD-STAB A′: rel_strength_5d = RRG 점 x축(기본 = rel). 기존 rel_strength(1일)는 맥박.
   return {
     symbol, rel_strength: rel, rel_strength_5d: rel5,
-    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state,
+    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state, cd_state_raw,
   }
 }
 
@@ -126,6 +127,69 @@ describe('RRGChart — 출발 섹터 하이라이트', () => {
     // 비-출발 섹터는 링 없음 + r=4
     expect(queryByTestId('rrg-ring-XLE')).toBeNull()
     expect(getByTestId('rrg-dot-XLE').getAttribute('r')).toBe('4')
+  })
+})
+
+describe('RRGChart — 변형 H (포커스 디폴트 · 전체 꼬리 토글 · 탭 전환)', () => {
+  function twoSector(over: Partial<Detail> = {}) {
+    return mkPayload({
+      sectors: [
+        row('XLK', 0.8, 0.5, 1, 'leading_strengthening'),
+        row('XLE', -0.6, -0.4, 2, 'lagging_deteriorating'),
+      ],
+      sector_history: [
+        hist('XLK', [['2026-07-08', 0.1, 0.1], ['2026-07-09', 0.2, 0.2]]),
+        hist('XLE', [['2026-07-08', -0.1, -0.1], ['2026-07-09', -0.2, -0.2]]),
+      ],
+      ...over,
+    })
+  }
+
+  it('포커스 디폴트: from 섹터만 꼬리 + 링, 나머지 꼬리 부재', () => {
+    const { getByTestId, queryByTestId } = render(<RRGChart payload={twoSector()} labels={LABELS} fromSymbol="XLK" />)
+    expect(getByTestId('rrg-trail-XLK')).toBeInTheDocument()
+    expect(getByTestId('rrg-ring-XLK')).toBeInTheDocument()
+    expect(queryByTestId('rrg-trail-XLE')).toBeNull()
+  })
+
+  it('전체 꼬리 토글 OFF→ON → 전 섹터 꼬리 렌더', () => {
+    const { getByTestId, queryByTestId } = render(<RRGChart payload={twoSector()} labels={LABELS} fromSymbol="XLK" />)
+    const toggle = getByTestId('rrg-trail-toggle')
+    expect(toggle.getAttribute('aria-pressed')).toBe('false')
+    expect(queryByTestId('rrg-trail-XLE')).toBeNull()
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-pressed')).toBe('true')
+    expect(getByTestId('rrg-trail-XLE')).toBeInTheDocument()
+    expect(getByTestId('rrg-trail-XLK')).toBeInTheDocument()
+  })
+
+  it('점 탭 → 포커스 전환(꼬리·링 이동) + onFocusChange 호출', () => {
+    const onFocus = vi.fn()
+    const { getByTestId, queryByTestId } = render(
+      <RRGChart payload={twoSector()} labels={LABELS} fromSymbol="XLK" onFocusChange={onFocus} />,
+    )
+    expect(getByTestId('rrg-ring-XLK')).toBeInTheDocument()
+    fireEvent.click(getByTestId('rrg-dot-XLE'))
+    expect(onFocus).toHaveBeenCalledWith('XLE')
+    expect(getByTestId('rrg-ring-XLE')).toBeInTheDocument()
+    expect(queryByTestId('rrg-ring-XLK')).toBeNull()
+    expect(getByTestId('rrg-trail-XLE')).toBeInTheDocument()
+    expect(queryByTestId('rrg-trail-XLK')).toBeNull()
+  })
+
+  it('확인 중(cd_state≠cd_state_raw) 포커스 → 점선 링 + ⏳ 라벨', () => {
+    const trans = mkPayload({
+      sectors: [row('XLK', 0.5, 0.5, 1, 'lagging_deteriorating', 0.5, 'leading_strengthening')],
+    })
+    const { getByTestId } = render(<RRGChart payload={trans} labels={LABELS} fromSymbol="XLK" />)
+    expect(getByTestId('rrg-ring-XLK').getAttribute('stroke-dasharray')).toBeTruthy()
+    expect(getByTestId('rrg-label-XLK').textContent).toContain('⏳')
+  })
+
+  it('평시(cd_state==cd_state_raw) 포커스 → 실선 링, ⏳ 없음(무영향)', () => {
+    const { getByTestId } = render(<RRGChart payload={twoSector()} labels={LABELS} fromSymbol="XLK" />)
+    expect(getByTestId('rrg-ring-XLK').getAttribute('stroke-dasharray')).toBeFalsy()
+    expect(getByTestId('rrg-label-XLK').textContent ?? '').not.toContain('⏳')
   })
 })
 

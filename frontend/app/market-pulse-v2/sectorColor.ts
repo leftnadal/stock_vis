@@ -134,6 +134,21 @@ export function cdStateDotFill(state: CdState | null): string {
   return CD_TOKENS[state].dot
 }
 
+/**
+ * "전환 확인 중" 판정 — 서빙된 공식(cd_state)과 원시(cd_state_raw)가 서로 다름.
+ * CD-TRANSITION-INDICATOR(CD-READ). **재분류 아님**: 좌표·값 기반 분류 로직 신설 0,
+ *   두 서빙값의 단순 비교뿐(규칙 #1). 어느 하나 null이면 false(비교 불가 → 표시 안 함).
+ */
+export function isTransitioning(
+  cd_state: CdState | null | undefined,
+  cd_state_raw: CdState | null | undefined,
+): boolean {
+  return cd_state != null && cd_state_raw != null && cd_state !== cd_state_raw
+}
+
+/** 전환 확인 중 강조색(주황 계열) — 점선 링·칩 단일소스. cd 상태색과 구분되는 중성 신호색. */
+export const CD_TRANSITION_HEX = '#f97316' // orange-500
+
 /** 범례용 4상태 순서(유보 제외). */
 export const CD_STATE_ORDER: CdState[] = [
   'leading_strengthening',

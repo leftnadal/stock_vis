@@ -22,10 +22,11 @@ function row(
   rank: number,
   cd_state: SectorRow['cd_state'],
   rel5: number | null = rel,  // CD-STAB A′: 판단 x축(5일 상대수익). 기본 = rel(1일)와 동일.
+  cd_state_raw: SectorRow['cd_state_raw'] = cd_state,  // CD-READ: 기본 = cd_state(전환 아님=평시).
 ): SectorRow {
   return {
     symbol, rel_strength: rel, rel_strength_5d: rel5,
-    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state,
+    momentum_1d: 0, momentum_5d: mom5, momentum_20d: 0, flow_proxy: 0, rank, cd_state, cd_state_raw,
   }
 }
 
@@ -83,6 +84,17 @@ describe('SectorCdPanel — 판단 카드', () => {
     }
   })
 
+  it('CD-READ: 미니맵에 섹터명 텍스트 라벨 없음(점+색만, 코너 라벨은 유지)', () => {
+    const { getByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    const minimap = getByTestId('cd-minimap')
+    // 코너 사분면 라벨은 유지
+    expect(minimap.textContent).toContain('주도·강화')
+    // 섹터명(기술/에너지/금융/헬스케어)은 미니맵 SVG 내 텍스트로 없어야 함
+    for (const name of ['기술', '에너지', '금융', '헬스케어']) {
+      expect(minimap.textContent).not.toContain(name)
+    }
+  })
+
   it('근거 값 2칸 = 서빙된 rel_strength_5d(라벨 "상대강도 (5일)")·momentum_5d 원값', () => {
     const { getByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
     expect(getByTestId('cd-rel-XLK').textContent).toContain('상대강도 (5일)')
@@ -120,6 +132,37 @@ describe('SectorCdPanel — 판단 카드', () => {
     const { getByTestId, queryByTestId } = render(<SectorDetail payload={nullRel5} labels={LABELS} />)
     expect(getByTestId('cd-rel-XLU').textContent).toContain('—')  // 발명 금지
     expect(queryByTestId('cd-dot-XLU')).toBeNull()
+  })
+
+  it('CD-TRANSITION: cd_state≠cd_state_raw → 칩+보조문+미니맵 점선 링 렌더', () => {
+    // XLK: 공식=부진·악화(sky), 원시=주도·강화 → 전환 확인 중.
+    const trans: Detail = {
+      ...payload,
+      sectors: [row('XLK', 0.5, 0.5, 1, 'lagging_deteriorating', 0.5, 'leading_strengthening')],
+    }
+    const { getByTestId } = render(<SectorDetail payload={trans} labels={LABELS} />)
+    // 행 칩
+    expect(getByTestId('cd-transition-chip-XLK').textContent).toContain('전환 확인 중')
+    // 보조문 = 원시 신호 한글명(단일소스 매핑) + 전환 조건
+    const note = getByTestId('cd-transition-note-XLK').textContent ?? ''
+    expect(note).toContain('주도·강화')       // cd_state_raw 한글명
+    expect(note).toContain('2일 연속')
+    // 미니맵 점선 링
+    const ring = getByTestId('cd-ring-XLK')
+    expect(ring).toBeInTheDocument()
+    expect(ring.getAttribute('stroke-dasharray')).toBeTruthy()
+    // 공식 뱃지는 여전히 공식(부진·악화)
+    expect(getByTestId('cd-badge-XLK').textContent).toBe('부진·악화')
+  })
+
+  it('CD-TRANSITION 평시 무영향: cd_state==cd_state_raw → 칩·보조문·링 전부 부재', () => {
+    // 기본 payload는 row 헬퍼가 cd_state_raw=cd_state로 세팅 → 평시.
+    const { queryByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    for (const s of ['XLK', 'XLE', 'XLF', 'XLV']) {
+      expect(queryByTestId(`cd-transition-chip-${s}`)).toBeNull()
+      expect(queryByTestId(`cd-transition-note-${s}`)).toBeNull()
+      expect(queryByTestId(`cd-ring-${s}`)).toBeNull()
+    }
   })
 
   it('null cd_state → 판단 유보 뱃지 + 점 미표시 + 유보 문구', () => {

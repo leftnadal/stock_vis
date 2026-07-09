@@ -53,14 +53,10 @@ export function CardDetailContainer({
   if (!data) return null
 
   const payload = data.data as Record<string, unknown>
-  const cacheState = data._meta.cache
 
   return (
     <div>
-      {/* cache_state는 디버그 메타 — 엔드유저 비노출(dev 전용). 봉투 데이터는 무변경. */}
-      {process.env.NODE_ENV !== 'production' ? (
-        <p className="text-xs text-slate-400 mb-2">cache: {cacheState}</p>
-      ) : null}
+      {/* CD-READ: cache 디버그 메타(cache: MISS) 제거 — 판단 표면 가독성. 봉투 데이터는 무변경(_meta 유지). */}
       {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} labels={labels} />}
       {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} transitionDates={transitionDates} />}
       {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} transitionDates={transitionDates} emphasisOverride={emphasisOverride} regimeHistory={regimeHistory} />}
