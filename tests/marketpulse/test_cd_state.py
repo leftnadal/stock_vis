@@ -11,6 +11,7 @@ from apps.market_pulse.constants.sector_cd import (
     CD_MOMENTUM_BASELINE,
     CD_REL_STRENGTH_BASELINE,
     classify_cd_state,
+    derive_rel_strength_5d,
     resolve_official_cd_state,
 )
 
@@ -79,6 +80,32 @@ def test_baselines_are_zero():
     # 임계 상수 단일소스 값 고정(하드코딩 산재 방지의 회귀 가드).
     assert CD_REL_STRENGTH_BASELINE == 0.0
     assert CD_MOMENTUM_BASELINE == 0.0
+
+
+class TestDeriveRelStrength5d:
+    """CD-STAB Slice A′ — rel_strength_5d = momentum_5d − bench(SPY) 5일 수익률(순수)."""
+
+    def test_subtracts_bench(self):
+        # mom5=1.5, bench5d=0.5 → 1.0
+        assert derive_rel_strength_5d(Decimal("1.5"), Decimal("0.5")) == Decimal("1.0")
+
+    def test_negative_relative(self):
+        # 섹터가 벤치보다 언더퍼폼 → 음수(부진)
+        assert derive_rel_strength_5d(Decimal("1.0"), Decimal("3.0")) == Decimal("-2.0")
+
+    def test_zero_when_matches_bench(self):
+        # 경계: mom5 == bench → 0(baseline 귀속은 classify가 하위로)
+        assert derive_rel_strength_5d(Decimal("2.0"), Decimal("2.0")) == Decimal("0")
+
+    def test_none_momentum_yields_none(self):
+        assert derive_rel_strength_5d(None, Decimal("0.5")) is None
+
+    def test_none_bench_yields_none(self):
+        # bench 소급 부족 → None(발명·보간 금지, 규칙 #5)
+        assert derive_rel_strength_5d(Decimal("1.0"), None) is None
+
+    def test_both_none(self):
+        assert derive_rel_strength_5d(None, None) is None
 
 
 class TestResolveOfficialCdState:

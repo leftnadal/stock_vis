@@ -13,9 +13,27 @@ MP2-SECTOR-CD Slice 1. rel_strength × momentum_5d 사분면 분류.
   대안(1.0 비율 중심)은 두 값이 차분/수익률이라 기각.
 """
 
+from decimal import Decimal
+
 # 임계 baseline 단일소스 — 하드코딩 산재 금지. 이 상수만이 유일 출처.
 CD_REL_STRENGTH_BASELINE = 0.0
 CD_MOMENTUM_BASELINE = 0.0
+
+# CD-STAB Slice A′ (D-CD-XAXIS-SCOPE): 판단 x축 = 5일 상대수익. 5거래일 룩백.
+#   저장 0(서빙 시점 파생) — bench(SPY) 5일 수익률은 payload builder가 서빙 시 계산.
+CD_REL_STRENGTH_5D_LOOKBACK = 5
+
+
+def derive_rel_strength_5d(momentum_5d, bench_5d_return):
+    """5일 상대수익 = 섹터 5일 수익률 − 벤치(SPY) 5일 수익률.
+
+    A′ 판단 x축(D-CD-XAXIS-SCOPE). 기존 rel_strength(1일 차분)와 별개 additive 필드.
+    어느 하나 None → None 반환(판단 유보, 값 발명·보간 금지 — 규칙 #5).
+    bench가 소급 부족(초기 5거래일)·close 결측이면 bench_5d_return None으로 들어옴.
+    """
+    if momentum_5d is None or bench_5d_return is None:
+        return None
+    return Decimal(momentum_5d) - Decimal(bench_5d_return)
 
 # 4-상태 + 유보. FE 색 토큰·CD_STANCE 문구가 이 문자열을 키로 매핑한다.
 CD_LEADING_STRENGTHENING = "leading_strengthening"  # 주도·강화

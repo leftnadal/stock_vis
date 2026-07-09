@@ -15,8 +15,8 @@ const PAYLOAD: SectorDetail = {
   cd_rel_strength_baseline: 0,
   cd_momentum_baseline: 0,
   sectors: [
-    { symbol: 'XLK', rel_strength: 0.8, momentum_1d: 0, momentum_5d: 0.5, momentum_20d: 0, flow_proxy: 0, rank: 1, cd_state: 'leading_strengthening' },
-    { symbol: 'XLE', rel_strength: -0.6, momentum_1d: 0, momentum_5d: -0.4, momentum_20d: 0, flow_proxy: 0, rank: 2, cd_state: 'lagging_deteriorating' },
+    { symbol: 'XLK', rel_strength: 0.8, rel_strength_5d: 0.8, momentum_1d: 0, momentum_5d: 0.5, momentum_20d: 0, flow_proxy: 0, rank: 1, cd_state: 'leading_strengthening' },
+    { symbol: 'XLE', rel_strength: -0.6, rel_strength_5d: -0.6, momentum_1d: 0, momentum_5d: -0.4, momentum_20d: 0, flow_proxy: 0, rank: 2, cd_state: 'lagging_deteriorating' },
   ],
   sector_history: [],
 }
