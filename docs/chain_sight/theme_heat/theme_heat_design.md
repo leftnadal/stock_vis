@@ -1,7 +1,12 @@
 # Theme Heat 설계서 (테마 온도계 + 수요 지지 축)
 
 - **문서 ID**: `theme_heat_design`
-- **버전**: **v1.2.2** (2026-07-08) — v1.2.1 대비: §5.3 z_mode 전환을 종목별·유효 EPS diff
+- **버전**: **v1.2.3** (2026-07-09) — v1.2.2 대비: §6.4 명세 공백 해소(결정12a) — Cycle 1
+  C5 "섹터 SPDR 11종"을 **원본 전수(role=primary, active=True)로 확정**(XLK/XLF/XLE/XLV/XLI/
+  XLY/XLP/XLU/XLB/XLRE/XLC), **레버리지 짝은 존재 섹터만·부재 섹터는 §3-5 결측**으로 정합화
+  (§2 C5 산식과 §6.4 진술 = 상충 아닌 공백 판정). §7에 C4 원료 스냅샷 beat(EtfSnapshot) 추가.
+  C4 산식은 미배선(FMP shares_out 이력 부재 → 원료 축적, TH-C4-COLDSTART 대기). §2 산식 불변.
+- **버전(이전)**: **v1.2.2** (2026-07-08) — v1.2.1 대비: §5.3 z_mode 전환을 종목별·유효 EPS diff
   카운트 기반(≥26→time_series)으로 개정(결정7 비준, TH-4 C8 구현 발견). §2 C8 산식 불변(앵커).
 - **버전(이전)**: **v1.2.1 FINAL** (2026-07-06) — v1.2 대비: TH-1 구현 발견 정정 2건 —
   §6.6 unique_together = (symbol, snapshot_date, fiscal_year) 3튜플로 정정(fiscal_year
@@ -258,6 +263,16 @@ Django 앱 경로 = `apps/chain_sight`.
 지킨다(모델 필드 미추가 = §6.0 잠금 준수). 섹터 SPDR 시드 11행 추가는 **C5 구현 PR**에서
 수행(TASKQUEUE `TH-C5-SPDR-SEED`).
 
+**v1.2.3 확정 (결정12a, TH-7c)**: 섹터 SPDR 11종 원본 = **XLK(Technology)·XLF(Financial
+Services)·XLE(Energy)·XLV(Healthcare)·XLI(Industrials)·XLY(Consumer Cyclical)·XLP(Consumer
+Defensive)·XLU(Utilities)·XLB(Basic Materials)·XLRE(Real Estate)·XLC(Communication Services)**
+— HeatEntity kind=sector 11행(GICS 정본)과 1:1. `role=primary, active=True`로 시드
+(migration 0018, FMP 프로브 11/11 존재+3년 이력 통과). ⚠️ XLE·XLV 는 0016 테마 ETF 9행에
+active=False 로 이미 존재 → 섹터 원본으로 **active=True 승격**(순수 테마 ETF 7행 불변).
+**레버리지 짝(C5 분자)은 존재·유동성 있는 섹터만 별도 시드(`TH-C5-SPDR-LEVERAGED`=12b 비준
+대기), 부재/저유동 섹터는 §3-5 결측** — §2 "레버리지÷원본" 산식과 "SPDR 11종" 진술의 세분도
+공백을 이렇게 정합화(상충 아님). C5 계산기 배선은 12b 비준 후.
+
 ### 6.5 ThemeFilingCount (신규, C2b)
 
 | 필드                             | 타입                     | 비고                                                                             |
@@ -286,6 +301,7 @@ Django 앱 경로 = `apps/chain_sight`.
 | `compute_theme_demand_task` (Cycle 2) | 주간, 토 09:00 KST           | D성분 → DSS upsert (분기 재무 기반이라 주간 충분)                                         |
 | `collect_theme_filings_task`          | 일간, heat 직전              | C2b 수집 — 일 단위 날짜 창 순회 + 정확 일치 필터 (§5.2)                                   |
 | `snapshot_analyst_estimates_task`     | 주간, 금 마감 후             | C8 원장 스냅샷 (§5.3) — **Cycle 1 첫 배포일부터 가동** (콜드 스타트 시계를 최대한 앞당김) |
+| `snapshot_etf_metrics_task` (TH-7c)   | 일간, America/New_York 17:00 | C4 원료 스냅샷 (§2, 결정11=A) — active primary ETF(SPDR 11) shares_out·nav·aum → EtfSnapshot. heat(18:00)·filings(17:30) 앞. FMP shares_out 이력 부재 대응 축적, 산식은 TH-C4-COLDSTART 대기 |
 
 공통: 성분별 try/except 실패 격리, `register_chainsight_beats` 명시 등록(Bug #28 교훈),
 ops_verify `check_last_tick_succeeded()` 대상 등록.
@@ -333,6 +349,7 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | C8 실구현 (리비전 괴리 diff + z_mode 종목별 전환)                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, TH-4: z(가격60d)−z(EPS60d) + lag8→9 + z_mode≥26 + 단면30 가드, 22 test. v1.2.2 결정7) |
 | Heat beat 오케스트레이션 — compute_theme_heat_task + collect_theme_filings_task       | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-5: 유니버스→C2·C8 배선→신시사이저→upsert·universe_stale 결정8·beat 2종 등록. C1/C3~C7 배선·소스 복구 후속. 13 test) |
 | 유니버스 소스 복구 + REFRESH-ALERT (Wikipedia 결정9 B)                                | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-6: datahub 404→Wikipedia+가드+비파괴 sync·refresh/monitor beat 2종·실갱신 편입7/편출7[BK→BNY]·staleness fresh. 14 test. 결정6 해제=verifier 판정 대기) |
+| C5 풀배선 (SPDR 원본 시드) + C4 원료 시계 기동                                        | 마켓 뷰 BE PR             | 1     | 🔶 부분 (2026-07-09, TH-7c: 결정12a SPDR 원본 11종 시드[0018, active primary 11·테마 ETF 7 불변·XLE/XLV 승격] + **C4 원료** EtfSnapshot[0019]·snapshot_etf_metrics_task·beat 17:00ET·스모크 11행 멱등. 12 test. **C5 레버리지 배선·C4 산식은 12b/COLDSTART 대기**) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |

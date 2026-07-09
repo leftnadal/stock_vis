@@ -2,6 +2,7 @@
 # __init__.py에서 서브모듈을 import해야 task가 등록된다.
 from .attention_tasks import *  # noqa: F401,F403
 from .estimate_tasks import *  # noqa: F401,F403
+from .etf_snapshot_tasks import *  # noqa: F401,F403
 from .event_group_tasks import *  # noqa: F401,F403
 from .heat_tasks import *  # noqa: F401,F403
 from .insider_tasks import *  # noqa: F401,F403

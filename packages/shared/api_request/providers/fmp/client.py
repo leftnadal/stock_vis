@@ -203,6 +203,30 @@ class FMPClient:
             return data[0]
         return {}
 
+    def get_etf_shares_float(self, symbol: str) -> Dict[str, Any]:
+        """
+        ETF 발행주식수(현재 스냅샷) 조회 — C4 원료(TH-7c).
+
+        Returns: {outstandingShares, floatShares, date, ...} 또는 {}.
+        API: GET /stable/shares-float?symbol={symbol}
+        """
+        data = self._make_request("/stable/shares-float", {"symbol": symbol.upper()})
+        if isinstance(data, list) and len(data) > 0:
+            return data[0]
+        return {}
+
+    def get_etf_info(self, symbol: str) -> Dict[str, Any]:
+        """
+        ETF 정보(NAV·AUM 등 현재 스냅샷) 조회 — C4 원료(TH-7c).
+
+        Returns: {nav, assetsUnderManagement, expenseRatio, ...} 또는 {}.
+        API: GET /stable/etf/info?symbol={symbol}
+        """
+        data = self._make_request("/stable/etf/info", {"symbol": symbol.upper()})
+        if isinstance(data, list) and len(data) > 0:
+            return data[0]
+        return {}
+
     def get_historical_price(
         self,
         symbol: str,

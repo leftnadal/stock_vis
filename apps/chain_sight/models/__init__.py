@@ -6,6 +6,7 @@ from .event_reaction import CompanyEventReaction
 from .growth_stage import CompanyGrowthStage
 from .heat import (
     EstimateSnapshot,
+    EtfSnapshot,
     HeatEntity,
     InsiderTransactionRecord,
     ThemeDemandScore,
@@ -56,4 +57,6 @@ __all__ = [
     "EstimateSnapshot",
     # Theme Heat (TH-3)
     "UniverseSnapshot",
+    # Theme Heat (TH-7c, C4 원료)
+    "EtfSnapshot",
 ]

@@ -76,6 +76,17 @@ BEATS = [
         "day_of_week": "5",  # 금요일
     },
     {
+        # Theme Heat C4 원료 스냅샷 (TH-7c, 결정11=A, 설계 §7) — heat 이전. ET 17:00 매일.
+        # active primary ETF(섹터 SPDR 11종) shares_out·nav·aum 적립(EtfSnapshot). 16:00 마감
+        # 후 데이터 준비 + filings(17:30)·heat(18:00) 앞. 이름 = 기존 estimates 스냅샷과 구분.
+        "name": "chainsight-snapshot-etf-metrics",
+        "task": "chainsight-snapshot-etf-metrics",
+        "minute": "0",
+        "hour": "17",
+        "timezone": "America/New_York",
+        "day_of_week": None,  # 매일
+    },
+    {
         # Theme Heat C2b 수집 (TH-5, 설계 §7) — heat 직전. ET 17:30 매일.
         # ★ 기존 chainsight-heat-score-daily(SeedHeatScore, cs_44)와 별개 — 이름 충돌 회피.
         "name": "chainsight-collect-theme-filings",

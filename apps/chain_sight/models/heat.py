@@ -307,3 +307,38 @@ class UniverseSnapshot(models.Model):
 
     def __str__(self):
         return f"UniverseSnapshot({self.batch_date}, n={len(self.symbols or [])})"
+
+
+class EtfSnapshot(models.Model):
+    """
+    C4 ETF 플로우 **원료 시계** (TH-7c, 결정11=A).
+
+    C4 산식 = Σ(Δshares_out × NAV) 20일 이동합의 3년 z (설계 앵커 §2). FMP Starter 는
+    shares_outstanding 의 **이력을 제공하지 않아**(TH-7 프로브: historical/shares_float 404,
+    etf/holdings 402, v3 legacy 403 — 현재 스냅샷만 가용), EstimateSnapshot(§6.6) 전례처럼
+    **일간 스냅샷을 직접 축적**해 diff 시계열을 자체 구성한다. 이 모델은 원료만 적립하며,
+    산식·z·콜드스타트(3년 σ 부재 대응)는 TH-C4-COLDSTART 비준 후 별도 배선한다.
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    snapshot_date = models.DateField(db_index=True, help_text="수집 기준일. diff 의 시간축.")
+    shares_outstanding = models.DecimalField(
+        max_digits=24, decimal_places=2, null=True, blank=True,
+        help_text="FMP /stable/shares-float outstandingShares.",
+    )
+    nav = models.DecimalField(
+        max_digits=20, decimal_places=6, null=True, blank=True,
+        help_text="FMP /stable/etf/info nav.",
+    )
+    aum = models.DecimalField(
+        max_digits=24, decimal_places=2, null=True, blank=True,
+        help_text="FMP /stable/etf/info assetsUnderManagement (보조).",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("symbol", "snapshot_date")]
+        ordering = ["symbol", "-snapshot_date"]
+
+    def __str__(self):
+        return f"EtfSnapshot({self.symbol}, {self.snapshot_date})"

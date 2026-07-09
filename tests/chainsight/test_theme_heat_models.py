@@ -64,16 +64,16 @@ class TestHeatEntitySeed:
         )
 
     def test_etf_map_seed_present(self):
-        """§6.4 초기 시드 (검수 미완). Technology 에 primary/leveraged 존재."""
-        assert ThemeEtfMap.objects.count() == 9
+        """§6.4 시드. 테마 ETF 9행(0016) + SPDR 원본 11종(0018, TH-7c) = 18행(XLE·XLV 중복)."""
+        assert ThemeEtfMap.objects.count() == 18
         tech = HeatEntity.objects.get(kind="sector", ref_id="Technology")
         assert tech.etf_maps.filter(role="primary").exists()
         assert tech.etf_maps.filter(role="leveraged", leverage_factor=3).exists()
 
-    def test_etf_map_seed_inactive(self):
-        """§6.4 v1.2.1: 테마 ETF 9행은 active=False (레인 개방 대기)."""
-        assert ThemeEtfMap.objects.filter(active=True).count() == 0
-        assert ThemeEtfMap.objects.filter(active=False).count() == 9
+    def test_etf_map_seed_active_split(self):
+        """TH-7c(결정12a): SPDR 원본 11 active=True, 순수 테마 ETF 7 active=False 불변."""
+        assert ThemeEtfMap.objects.filter(active=True, role="primary").count() == 11
+        assert ThemeEtfMap.objects.filter(active=False).count() == 7
 
 
 # ─────────────────────────── 잠금장치 1 (3필드) ───────────────────────────
@@ -156,9 +156,10 @@ class TestModelsCreateRead:
         assert r.transaction_type == ""
 
     def test_theme_etf_map(self):
+        # XLU 는 SPDR 원본 시드(0018)에 이미 존재 → 충돌 회피 위해 미시드 심볼로 default 검증.
         m = ThemeEtfMap.objects.create(
             theme=HeatEntity.objects.get(kind="sector", ref_id="Utilities"),
-            etf_symbol="XLU",
+            etf_symbol="ZZTEST",
             role=ThemeEtfMap.ROLE_PRIMARY,
         )
         assert m.leverage_factor == 1 and m.active is True

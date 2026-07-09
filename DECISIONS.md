@@ -3182,3 +3182,38 @@ stream은 #8 단일 소비자용 옵션(세 앱 전수 stream 수요 0). sync/ba
 ## [2026-07-06] Theme Heat TH-1 = pair HEAD 분기 (마이그레이션 실존 의존)
 
 `monorepo/sess-cs-theme-heat`(TH-1)는 마이그레이션 체인 `0016→0015` 실존 의존으로 **pair HEAD에서 분기**한다(main 분기 시 `0014·0015` 부재로 체인 파손 — repo 실측). 회신 3의 "pair HEAD 분기 금지"는 "0015가 main에 통합됐다"는 반증된 전제에 근거했으므로 철회. **pair→main 통합 완료 시 계보 자연 해소**(TASKQUEUE OPS-WORKTREE-ISOLATION 후속 메모 참조).
+
+## [2026-07-09] Theme Heat TH-7 — 결정6 해제 · 결정10=C · 결정11=A · 결정12a (C4/C5 디커플링)
+
+TH-7 슬라이스(C4/C5 ETF 계열 성분 배선)에서 확정한 결정 일괄 기록. 원료 = FMP 프로브 실측.
+
+**결정6 해제 (universe_stale)**: TH-6에서 판정 대기였던 결정6(유니버스 stale 처리)을 해제한다.
+조건 = **stale 행 소비 차단을 API 계층 요건으로 승계**(배선 계층은 stale 행을 저장하되 마킹만,
+소비 차단은 소비처 API가 책임). 노출 경로 생성은 이 트랙에서도 금지 지속.
+
+**결정10=C (배선 순서)**: C4/C5 최우선(리스크 정면 돌파) → C6/C7 → C3 → C1. 근거 = ETF 계열
+데이터 가용성이 최대 미지수 → 먼저 프로브로 리스크를 확정. **프로브 결과**: C5(레버리지÷원본
+거래량) = `/stable/historical-price-eod/full` 200·3년 소급 확정. C4(Σ(Δshares_out×NAV)) =
+shares_out **이력 부재**(historical/shares_float 404, etf/holdings 402, v3 legacy 403 — 현재
+스냅샷만). → 리스크가 정확히 C4에서 현실화, C5는 통과.
+
+**결정11=A (C4/C5 디커플링)**: C5는 즉시 풀배선(프로브 200), C4는 산식 미구현·**일간 스냅샷
+수집만 기동**(원료 축적 우선, EstimateSnapshot §5.3 전례). C4 콜드스타트 산식(3년 σ 부재 대응)은
+별도 비준 = **TH-C4-COLDSTART**. Why: 이력 부재로 C4 z를 지금 산출 불가하나 스냅샷을 지금부터
+쌓아야 콜드스타트 시계가 앞당겨짐(C8 결정7 동형). 봉쇄 실측이 A안(디커플링)을 정당화.
+
+**결정12a (SPDR 원본 시드, 조건부 비준 충족)**: Cycle 1 C5 원본 = 섹터 SPDR 11종
+(XLK/XLF/XLE/XLV/XLI/XLY/XLP/XLU/XLB/XLRE/XLC), HeatEntity kind=sector 11행과 1:1.
+조건(시드 전 FMP 프로브 전수 통과=존재+3년 이력) = **11/11 충족**(보류 0). role=primary·
+active=True 시드(migration 0018). ⚠️ **XLE·XLV 는 0016 테마 시드에 active=False 로 존재 →
+섹터 원본으로 active=True 승격**(순수 테마 ETF 7행 SOXX/SMH/SOXL/QQQ/TQQQ/ITA/ERX 는 불변).
+**상충 재분류**: §2 "레버리지÷원본" 산식과 §6.4 "섹터 SPDR 11종" 진술의 긴장은 **상충 아닌
+명세 공백** — 독해 = SPDR 11종 원본 전수 + 레버리지는 존재 섹터만 + 부재 섹터 §3-5 결측.
+레버리지 짝 시드·C5 계산기 배선은 **12b(TH-C5-SPDR-LEVERAGED) 비준 후**(후보 실측표 상신).
+
+**worktree 판정**: TH-7 작업 위치 = `~/worktrees/sv-theme-heat`(브랜치 전용 트리, 공유
+Desktop 트리는 세션 중 detached origin/main 이동 관측). 공유 트리 무접촉 지속. .env 는
+gitignore(커밋 무영향)라 공유 트리 .env 심링크로 셋업.
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 86ddbc2. 전체 343 GREEN /
+13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.

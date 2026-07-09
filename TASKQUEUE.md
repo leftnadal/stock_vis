@@ -608,9 +608,19 @@
 - 상태: **실행**(TH-2 재개 백필에 동승). 적재 단 `upsert_insider_records` 에 `transaction_date > 오늘` 컷 추가 + 기존 미래일 43행 정리(정리 전후 건수 보고).
 - 근거: FMP 원천에 미래 거래일(2035·2028 등) 이상치 혼입. 90일 창은 자동 배제이나 적재 위생상 컷. 하한은 없음(원천 전체 이력 유지 = z-히스토리 자산, 설계서 §5.1 v1.2.1).
 
-## TH-C5-SPDR-SEED — C5 섹터 SPDR 11행 시드 (등재, 2026-07-06)
-- 상태: 등재. **트리거 = C5(투기 심리) 구현 PR**.
-- 의무: ThemeEtfMap 에 섹터 SPDR 11종(XLK/XLV/XLF/XLY/XLI/XLE/XLC/XLRE/XLU/XLB/XLP, role=primary, active=True) 시드 = Cycle 1 C5 주 데이터(설계서 §6.4 v1.2.1). TH-1 시드한 테마 ETF 9행(active=False)은 레인 개방 대기이므로 별개 — 섞지 말 것.
+## ✅ TH-C5-SPDR-SEED — C5 섹터 SPDR 11행 원본 시드 (종결 원본분, 2026-07-09)
+- 상태: **원본 시드 종결(TH-7c, 결정12a)**. migration 0018 = SPDR 11종 role=primary·active=True (프로브 11/11 통과). XLE·XLV 승격, 순수 테마 ETF 7행 active=False 불변. 테스트 갱신(18행·active split).
+- 잔여 = 레버리지 짝 → **TH-C5-SPDR-LEVERAGED**(아래).
+
+## TH-C5-SPDR-LEVERAGED — C5 레버리지 짝 시드 + 계산기 배선 (등재, 2026-07-09, 12b 비준 대기)
+- 상태: 등재. **트리거 = 12b(레버리지 후보 실측표) 비준**. TH-7c에서 후보 전수 FMP 실측 완료(상신).
+- 의무: 비준된 섹터별 레버리지 ETF를 ThemeEtfMap(role=leveraged, active=True) 시드 → c5_speculation fetch 레이어(레버리지÷원본 20일 거래량 비율 → 3년 z) 배선 → 조립기 _NOT_WIRED 에서 C5 제거. 레버리지 부재/저유동 섹터 = §3-5 결측.
+- 판정 필요: 유동성 하한선(20d 중위 거래대금), 배율(2x/3x) 혼용 정책, Consumer Defensive(3x NEED 3년미만)·Basic Materials(UYM 저유동)·Communication(후보 부실) 결측 확정 여부.
+
+## TH-C4-COLDSTART — C4 산식 배선 + 콜드스타트 규칙 (등재, 2026-07-09, 비준 대기)
+- 상태: 등재. **트리거 = 데이터 축적 중**(EtfSnapshot 원료 일간 적립 가동, snapshot_etf_metrics_task beat 17:00ET). 산식 배선은 비준 대기.
+- 배경: FMP Starter shares_out 이력 부재(TH-7 프로브) → C4 = Σ(Δshares_out×NAV) 20일 이동합의 3년 z 를 지금 산출 불가. EtfSnapshot 을 지금부터 축적(결정11=A).
+- 비준 필요: 3년 σ 부재 대응 콜드스타트 규칙(C8 §5.3 cross_sectional 폴백 동형 or 축적 N일 도달 게이트). §2/§6.4 에 C4 콜드스타트 미정의 = 비준 사안(C8 결정7 동형).
 
 ## TH-C8-ZMODE-BADGE — API 단계 카드 z_mode 뱃지 노출 검토 (등재, 2026-07-08)
 - 상태: 등재. **트리거 = API/카드 슬라이스**. 근거 = DECISIONS 2026-07-08 결정7(종목별 z_mode 혼재).
