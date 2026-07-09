@@ -625,9 +625,26 @@
 
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
-| LLMFILL-BUILD | `packages/shared/stocks/llm/` 신설(card_fill_prompt + fill_service) + baker 삽입 지점 A additive 배선 + item 가드 테스트(7키 무변경 + 3키 타입 계약, D-LLMFILL ⑹). 실호출 금지(mock only). 게이트: scoped 테스트 green(심링크 OK, D-TEST-ENV) + 기존 테스트 무수정 통과(IDENTICAL) + diff=자기 구획(shared/stocks) | @backend (shared/stocks 구획) | — (D-LLMFILL 등재로 즉시) | 🟢 착수가능 |
+| LLMFILL-BUILD | `packages/shared/stocks/llm/` 신설(card_fill_prompt + fill_service) + baker 삽입 지점 A additive 배선 + item 가드 테스트. **✅ done `9f2355d`** (scoped 161: 기존 150 IDENTICAL + 신규 11, 실호출 0, diff=자기 구획 6파일, ff push). 편차 1건=닫힌 집합 격리 patch(→ PM-CLOSEDSET-LLMFILL) | @backend (shared/stocks 구획) | 완료 2026-07-09 | ✅ done |
+| PM-CLOSEDSET-LLMFILL | `pipeline_meta` 닫힌 집합 단언(test_eod_issuance_log)에 `llm_fill` **정식 등록** + `_bake_patches` 격리 patch 제거(issuance_verified 등록 방식 동형). BUILD의 구조 충돌 편차 정리 | @backend (소형) | 착수가능 | 🆕 등재 |
 | LLM-GUARD-3 | 외부-LLM-직접호출 **가드 신설**(BOUNDARY-LLM 슬라이스③ 연동 — 코어 land 후 회귀방지). 본 슬라이스(LLMFILL) 스코프 분리분. 트리거: **다음 shared/llm 접점**(BOUNDARY-LLM 트리거 (b) 누적 또는 burn-down 착수) | @backend (BOUNDARY-LLM 연동) | 다음 shared/llm 접점 | 💤 등재(트리거 게이트) |
-| LLMFILL-OBSERVE | LLMFILL-BUILD land 후 **첫 무인 bake 아침**에 실호출 관측 — `pipeline_meta.llm_fill`{attempted, filled, failed, cost_usd, tokens} 실값 확인 + 3키 실채움/부분실패 내성 실증 + 비용 상한(일 1 bake × N=10) 준수 확인 | 관측(dashboard 디렉션) | **BUILD land 후 첫 무인 bake 아침** | 💤 휴면(트리거 게이트) |
+| LLMFILL-OBSERVE | LLMFILL-BUILD land 후 **첫 무인 bake 아침**에 실호출 관측 — `pipeline_meta.llm_fill`{attempted, filled, failed, cost_usd, tokens} 실값 확인 + 3키 실채움/부분실패 내성 실증 + 비용 상한(일 1 bake × N=10) 준수 확인 | 관측(dashboard 디렉션) | **✅ 트리거 충족**(sync `1cdea3c` 완료 → 오늘 밤 bake) — 내일 아침 관측 대기 | 🆕 트리거 충족·대기 |
+
+---
+
+## MGMT-BATCH-7 후속 (theme-heat 감사·이주 + dedup 부채 / 2026-07-09)
+
+> 근거 DECISIONS D-THEMEHEAT-AUDIT·D-OWN-HOME + common-bugs #44 강화·#49·#50. theme-heat land 게이트 + 선존 union 중복 정산 + stray 문서 회수.
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| THEMEHEAT-LAND-GATE | `sess-cs-theme-heat` land 전 **mgmt 선행 정산 세션 필수** — ① 브랜치 #47 → 실측+1 재번호 ② mgmt 밖 등재 결정 3건(결정7·8·9) 정합 검토 ③ 메타 4종 union 중복 #44 전수 스캔. **단순 rebase-push 금지** | mgmt(chain_sight) | theme-heat land 착수 시 | 🔒 게이트(land 전 필수) |
+| PROGRESS-DEDUP-MONITOR | PROGRESS 활성 Monitor 블록 **×5**(2939→5482자, 비-동일본) per-copy superset 검증 후 **5→1**. **blind collapse 금지**(#44 ⑶) | mgmt(dedup) | monitor-rebuild 트랙 접점 | 💤 트리거 게이트 |
+| PROGRESS-DEDUP-MP2TREND | PROGRESS 활성 MP2-TREND Slice 3 블록 **×2**(2009 vs 2076자, 비-동일본) 동형 superset 검증 후 2→1 | mgmt(dedup) | MP2-TREND 트랙 접점 | 💤 트리거 게이트 |
+| STRAY-DOCS-13 | primary 미추적 **13건** 트랙별 회수/폐기 분류(chain_sight redesign 6·thesis 2·trading_bot 2·mp 1·기타 2=.superpowers·worktree forensic) | mgmt(소형) | 착수가능 | 🆕 등재 |
+| NEWS-ORPHAN-ASSIGN | 뉴스 무소속 재료 트랙 배정 — NT-2b(미핸드오프)·NT-6(보류)·뉴스 β A(파킹). **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
+| BOUNDARY-EXT-5 | shared 미경유 외부 API 직접 호출 **5건**(NEWS-SURVEY N2: chain_sight neo4j_loader×2·insider_tasks·sensitivity_tasks·market_pulse fmp_weights) 처분. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
+| PROVIDER-DUAL | 뉴스 provider 3종(Finnhub·Marketaux·AlphaVantage) `services/news/providers` 잔류 vs shared 승격 결정. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
 
 ---
 

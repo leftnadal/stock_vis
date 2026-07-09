@@ -527,6 +527,8 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 사례: `D-OWN·D-SCHEMA` 활성작업 항목이 2건(하나에 `MP2-SURFACE` 내용 뭉침)으로 union-merge 잔존 → META-TOUCH(2026-07-02)에서 D-OWN·D-SCHEMA 1건 + MP2-SURFACE 독립 1건으로 dedup(내용 유실 0).
 - 예방(DoD 규율): PROGRESS/TASKQUEUE 편집 시 **신규 헤더뿐 아니라 해당 활성작업/큐 섹션 전체를 스캔**해 union-merge 중복이 없는지 확인(정의 각 1건). 뭉친 항목은 제거 아닌 **분리 독립화**(내용 유실 0). union-중복 자기점검(#43 계열)과 동일 DoD.
 - 📎 durable 규율은 **repo 하네스에 단일 등재**(코어 지시문 복제 금지 규약 — 복제는 drift). 관련 [[lesson_origin_main_advance_union_rebase]] · #40(merge=union rebase).
+- **원인 메커니즘(2026-07-09 강화, MGMT-BATCH-7)**: 활성 블록이 여러 세션에 걸쳐 **재커밋**될 때 `merge=union` 드라이버가 옛 스냅샷 + 새 스냅샷을 **양쪽 보존** → 같은 블록의 진화 스냅샷이 2·3·…개로 **누적**(비-동일본, 길이 상이). 실증: Monitor 허브 블록 ×5(2939→5482자)·MP2-TREND ×2. 신규 헤더만 스캔하면 "제목 1건"으로 보여 못 잡고, 내용이 갈라져 `uniq`도 안 걸림.
+- **규칙 승격**: ⑴ 활성 블록 **재커밋 전 자기-블록 dedup 셀프체크**(같은 트랙의 이전 스냅샷을 최신 superset로 흡수, 내용 유실 0). ⑵ **번호·슬롯 예약 금지 = 등재 시점 실측 +1**(common-bugs 신규 번호도 하드코딩 금지, 본선 max 실측 후 +1 — theme-heat #47 충돌 선례). ⑶ per-copy가 **비-동일본이면 blind collapse 금지** — superset 검증 후 병합(별도 dedup 태스크로 분리).
 
 ## 공유 트리 브랜치 표류 → 워커 silent 구코드 bake (#45) `[infra]` `[celery]` `[git]`
 
@@ -558,6 +560,7 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 판정 근거(VERIFY-SUITE-BASELINE, 2026-07-09): 격리 **npm ci(비-심링크) + node v22.19.0**에서 **519/519 green** · react가 worktree 실경로 단일 resolve · `.node` 실존 로드. 심링크에서 12/6 실패하던 파일이 실설치 전건 green.
 - 선례: eod land 시 with/without 커밋 대조로 무관 입증 → **push HALT는 정당한 보수적 정지**(거짓 red를 실회귀로 오인 안 함). 
 - 대응: **D-TEST-ENV**(full-suite 게이트 = 격리 npm ci + node 고정에서만 유효 / scoped는 심링크 허용). `sv health` "full-suite 전 npm ci 확인" 안내(`TEST-ENV-GUIDE`).
+- **★서사 보정(2026-07-09, D-THEMEHEAT-AUDIT ⑶)**: 이 거짓 red의 오염원은 "특정 세션의 잘못"이 아니라 **심링크 관행 × primary 트리의 stale node_modules(5/25 설치) × 복수 세션 공유**의 구조적 합작. 책임 귀속(누가 깨뜨렸나)이 아니라 환경 구조를 고쳐야 재발이 멎음 → D-TEST-ENV 이원 정책이 그 처방.
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 
@@ -565,6 +568,22 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 원인: 운영 DB에 migration **미적용**(테이블 부재, `UndefinedTable`). land은 코드만 옮기지 **운영 `migrate`를 자동 실행하지 않음**. 예: `stocks_issuance_log` 부재 → IssuanceLog write 예외. 단 baker는 `atomic_swap`(파일 반영)이 DB write보다 **앞서** 있어 JSON 산출물은 정상 → 결함이 파일만 보면 안 보임.
 - 함정: **스키마 부재 = 조용한 로깅 손실**. JSON만 검사하면 통과, DB까지 봐야 잡힘(OBSERVE는 DB 확인 필수).
 - 해결: `sqlmigrate`로 순수 add 육안 검증 → `migrate`. 재발 방지 = **land에 migration 포함 시 운영 migrate를 배포 단계로 명시**(runbook `P1-RUNBOOK-MIGRATE`) + **health_check "bake 완주 시 IssuanceLog 행 증가"**(`P1-HC-ISSUANCE`, #45와 짝).
+
+## 1브랜치를 복수 세션이 공유하면 tip이 세션 모르게 전진 (#49) `[git]` `[harness]`
+
+- 증상: 세션 시작 스냅샷의 브랜치 tip과 현재 tip이 다름 — 내가 커밋한 적 없는데 tip이 3커밋 전진(theme-heat TH-6 `cc7ed9c`·`cf6062c`·`86ddbc2` 실증).
+- 원인: 동일 브랜치(`monorepo/sess-cs-theme-heat`)를 **복수 세션이 공유**(primary 트리 + 타 세션). 한 세션이 커밋하면 다른 세션은 모른 채 tip이 움직임 → 이력 오귀속·중복 편집·표류.
+- 함정: `git status`가 clean이라 "내 작업만 있다"는 착시. 커밋 주체가 불분명해 land 시 이력 추적·AMEND 대상 판정이 흐려짐.
+- 규칙: **1브랜치-1세션**, `worktree-per-세션`과 짝(각 세션 전용 worktree+브랜치). 공유 primary 트리에 세션 브랜치를 얹지 않는다 — 작업은 전용 worktree로 이주([[#45]] 런타임 격리의 편집 세션판).
+- 참조: D-THEMEHEAT-AUDIT ⑷(RELOCATE = 브랜치를 `~/worktrees/sv-theme-heat`로 이주, primary는 detached origin/main).
+
+## 트랙 세션이 메타 4종을 직접 편집·커밋 = mgmt 분리 규약 위반 (#50) `[harness]` `[git]`
+
+- 증상: 트랙(구현) 세션 브랜치 이력이 DECISIONS·PROGRESS·TASKQUEUE·common-bugs를 **광범위 직접 편집·커밋**(theme-heat `origin/main..86ddbc2` = DECISIONS 8·PROGRESS 11·TASKQUEUE 6·common-bugs 1, "결정7·8·9" mgmt 밖 등재 포함).
+- 원인: 메타 4종(장부)은 **mgmt 세션 전담**(union 드라이버·번호 관리·dedup 규율의 단일 통제점)인데 트랙 세션이 우회해 직접 기입 → 번호 충돌(#47)·union 중복 누적(#44)·미검토 결정 등재.
+- 함정: 트랙 세션은 "내 작업 기록"으로 장부를 만지지만 mgmt 통제 밖이라 dedup·번호 실측·정합 검토가 누락 → land 시 정산 부채로 폭발.
+- 규칙: 트랙 세션은 장부 **직접 편집 금지** — 교훈·결정은 mgmt에 위임(또는 지연 커밋 블록). **mgmt 분리 규약을 트랙 Project 지시문에 전파**해야 구조적으로 멎음.
+- 참조: D-THEMEHEAT-AUDIT ⑵, THEMEHEAT-LAND-GATE(land 전 mgmt 선행 정산).
 
 ---
 
