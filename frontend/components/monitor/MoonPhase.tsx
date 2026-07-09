@@ -2,10 +2,12 @@
 
 import { Moon } from 'lucide-react'
 
-import { scoreToPhaseMeta } from '@/lib/monitor/display'
+import { scoreToFillPercent } from '@/lib/monitor/display'
 
+// 렌더 전용: 달 채움은 score의 순수 기하 매핑(진행바 폭과 동급), 라벨은 API(phase_label).
 interface Props {
   score: number | null
+  label?: string | null // API phase_label (null이면 라벨 숨김)
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
 }
@@ -16,11 +18,7 @@ const SIZE_MAP = {
   lg: { icon: 48, text: 'text-base' },
 }
 
-function scoreToFillPercent(score: number): number {
-  return Math.round(((Math.max(-1, Math.min(1, score)) + 1) / 2) * 100)
-}
-
-export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
+export function MoonPhase({ score, label, size = 'md', showLabel = false }: Props) {
   const { icon: iconSize, text: textClass } = SIZE_MAP[size]
 
   // score=null(warming_up): 흐릿한 달, "데이터 수집 중"
@@ -33,7 +31,6 @@ export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
     )
   }
 
-  const meta = scoreToPhaseMeta(score)
   const fillPercent = scoreToFillPercent(score)
   const fillColor = fillPercent > 60 ? '#FBBF24' : fillPercent > 30 ? '#9CA3AF' : '#4B5563'
 
@@ -55,7 +52,7 @@ export function MoonPhase({ score, size = 'md', showLabel = false }: Props) {
           </div>
         )}
       </div>
-      {showLabel && <span className={`text-gray-400 ${textClass}`}>{meta.label}</span>}
+      {showLabel && label && <span className={`text-gray-400 ${textClass}`}>{label}</span>}
     </div>
   )
 }

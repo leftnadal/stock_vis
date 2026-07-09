@@ -46,12 +46,14 @@ class MonitorSerializer(serializers.ModelSerializer):
     indicator_count = serializers.SerializerMethodField()
     next_deadline = serializers.SerializerMethodField()
     has_claim = serializers.SerializerMethodField()
+    # 파생 표시값(각도·색·라벨·달위상) — BE 엔진이 단일 소스, FE는 렌더 전용
+    display = serializers.SerializerMethodField()
 
     class Meta:
         model = Monitor
         fields = [
             "id", "scope", "target_ref", "name", "status", "current_state",
-            "target_date_end", "resolved_label", "latest_score",
+            "target_date_end", "resolved_label", "latest_score", "display",
             "indicator_count", "next_deadline", "has_claim", "created_at", "updated_at",
         ]
         # current_state는 파이프라인(엔진) 소유 — 사용자 입력 불가
@@ -75,6 +77,29 @@ class MonitorSerializer(serializers.ModelSerializer):
 
     def get_has_claim(self, obj):
         return bool(getattr(obj, "has_claim", False))
+
+    def get_display(self, obj):
+        # latest_score(스냅샷 overall_score)에서 파생값을 BE 엔진으로 산출(단일 소스).
+        score = getattr(obj, "latest_score", None)
+        if score is None:
+            return None
+        from apps.monitor.services.arrow_calculator import (
+            degree_to_color,
+            degree_to_label,
+            score_to_degree,
+        )
+        from apps.monitor.services.state_machine import score_to_phase
+
+        degree = round(score_to_degree(score), 1)
+        phase = score_to_phase(score)
+        return {
+            "degree": degree,
+            "color": degree_to_color(degree),
+            "label": degree_to_label(degree),
+            "phase": phase["phase"],
+            "phase_label": phase["label"],
+            "phase_icon": phase["icon"],
+        }
 
     def validate(self, attrs):
         # 생성/수정 시 (scope, target_ref)를 검증·정규화

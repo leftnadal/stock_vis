@@ -173,6 +173,16 @@ class TestMonitorListOrderingFilter:
         assert item["latest_score"] == 0.42
         assert item["indicator_count"] == 1
         assert item["next_deadline"] is not None
+        # display = BE 엔진 파생값(FE 재계산 제거). score 양수 → 각도 < 90
+        assert item["display"] is not None
+        assert item["display"]["degree"] < 90
+        assert "color" in item["display"] and "phase_label" in item["display"]
+
+    def test_display_null_without_snapshot(self, client_alice, alice):
+        self._mk(alice, "Z", "no-snap", "warming_up")
+        item = _items(client_alice.get("/api/v1/monitor/monitors/"))[0]
+        assert item["latest_score"] is None
+        assert item["display"] is None
 
     def test_create_response_has_null_card_fields(self, client_alice, aapl):
         # 생성 응답은 annotation 없음 → None (AttributeError 없이)

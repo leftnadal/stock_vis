@@ -23,6 +23,16 @@ export type SupportDirection = 'positive' | 'negative'
 export type ClaimStatus = 'active' | 'resolved'
 export type ClaimOutcome = 'pending' | 'validated' | 'invalidated' | 'inconclusive'
 
+// BE 엔진(arrow_calculator·state_machine)이 산출한 파생 표시값 — FE는 렌더만.
+export interface MonitorDisplay {
+  degree: number // 0~180
+  color: string // hex
+  label: string // 화살표 라벨
+  phase: 'full_moon' | 'waxing' | 'half_moon' | 'waning' | 'new_moon'
+  phase_label: string
+  phase_icon: string
+}
+
 export interface Monitor {
   id: string
   scope: MonitorScope
@@ -34,6 +44,7 @@ export interface Monitor {
   resolved_label: string | null
   // 리스트 카드용 파생값 (list/detail에서 채워짐, create 응답은 null)
   latest_score: number | null
+  display: MonitorDisplay | null
   indicator_count: number | null
   next_deadline: string | null
   has_claim: boolean

@@ -4,7 +4,7 @@ import Link from 'next/link'
 
 import { ArrowIndicator } from '@/components/monitor/ArrowIndicator'
 import { MoonPhase } from '@/components/monitor/MoonPhase'
-import { ddayLabel, scoreToDegree, stateMeta } from '@/lib/monitor/display'
+import { ddayLabel, stateMeta } from '@/lib/monitor/display'
 import type { Monitor } from '@/types/monitor'
 
 const SCOPE_LABEL: Record<Monitor['scope'], string> = {
@@ -24,6 +24,7 @@ const TONE_CLASS: Record<string, string> = {
 
 export function MonitorListCard({ monitor }: { monitor: Monitor }) {
   const score = monitor.latest_score ?? null
+  const display = monitor.display // API 파생값 (degree·color·label·phase), score 없으면 null
   const meta = stateMeta(monitor.current_state)
   const dday = ddayLabel(monitor.next_deadline)
 
@@ -33,7 +34,7 @@ export function MonitorListCard({ monitor }: { monitor: Monitor }) {
       className="flex items-center gap-4 rounded-xl border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-800"
       data-testid="monitor-card"
     >
-      <MoonPhase score={score} size="md" />
+      <MoonPhase score={score} label={display?.phase_label} size="md" />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -62,7 +63,18 @@ export function MonitorListCard({ monitor }: { monitor: Monitor }) {
         </div>
       </div>
 
-      <ArrowIndicator degree={scoreToDegree(score ?? 0)} size="md" />
+      {display ? (
+        <ArrowIndicator
+          degree={display.degree}
+          color={display.color}
+          label={display.label}
+          size="md"
+        />
+      ) : (
+        <span className="text-gray-300" aria-label="데이터 부족">
+          —
+        </span>
+      )}
     </Link>
   )
 }

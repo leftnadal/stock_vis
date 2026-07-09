@@ -1,40 +1,7 @@
-// Monitor 표시 유틸 검증 (MON-P3-S1) — BE 미러 정합
+// Monitor 표시 유틸 검증 (MON-P3-S1) — 렌더 전용 매핑만 (재계산 제거됨)
 import { describe, expect, it } from 'vitest'
 
-import {
-  ddayLabel,
-  degreeToColor,
-  degreeToLabel,
-  scoreToDegree,
-  scoreToPhaseMeta,
-  stateMeta,
-} from '@/lib/monitor/display'
-
-describe('scoreToDegree', () => {
-  it('score→degree 매핑 (1→0, 0→90, -1→180)', () => {
-    expect(scoreToDegree(1)).toBe(0)
-    expect(scoreToDegree(0)).toBe(90)
-    expect(scoreToDegree(-1)).toBe(180)
-  })
-})
-
-describe('degreeToColor/Label', () => {
-  it('밴드별 색·라벨', () => {
-    expect(degreeToColor(10)).toBe('#2563EB')
-    expect(degreeToColor(90)).toBe('#9CA3AF')
-    expect(degreeToColor(180)).toBe('#DC2626')
-    expect(degreeToLabel(10)).toBe('강하게 지지')
-    expect(degreeToLabel(90)).toBe('중립')
-  })
-})
-
-describe('scoreToPhaseMeta', () => {
-  it('달 위상 구간', () => {
-    expect(scoreToPhaseMeta(0.8).phase).toBe('full_moon')
-    expect(scoreToPhaseMeta(0).phase).toBe('half_moon')
-    expect(scoreToPhaseMeta(-0.8).phase).toBe('new_moon')
-  })
-})
+import { ddayLabel, scoreToFillPercent, stateMeta } from '@/lib/monitor/display'
 
 describe('stateMeta', () => {
   it('상태→톤 (위험/약화/관찰/유지)', () => {
@@ -53,5 +20,13 @@ describe('ddayLabel', () => {
     const today = new Date()
     const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
     expect(ddayLabel(iso)).toBe('D-day')
+  })
+})
+
+describe('scoreToFillPercent', () => {
+  it('score→달 채움 비율 (순수 기하, -1→0, 0→50, 1→100)', () => {
+    expect(scoreToFillPercent(-1)).toBe(0)
+    expect(scoreToFillPercent(0)).toBe(50)
+    expect(scoreToFillPercent(1)).toBe(100)
   })
 })

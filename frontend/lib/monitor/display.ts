@@ -1,59 +1,7 @@
-// Monitor 시각화 유틸 (MON-P3-S1) — BE arrow_calculator/state_machine 미러.
-// score(-1~1) → 각도/색/라벨/달위상. 서버 계산과 FE 표시를 한 소스로 정합.
-
-// COLOR_BANDS (arrow_calculator.py와 동일)
-const COLOR_BANDS: [number, number, string][] = [
-  [0, 45, '#2563EB'], // 강한 지지
-  [45, 75, '#60A5FA'], // 지지
-  [75, 105, '#9CA3AF'], // 중립
-  [105, 135, '#FB923C'], // 약화
-  [135, 180, '#DC2626'], // 강한 반박
-]
-
-const LABEL_BANDS: [number, number, string][] = [
-  [0, 30, '강하게 지지'],
-  [30, 60, '지지하는 중'],
-  [60, 80, '살짝 지지'],
-  [80, 100, '중립'],
-  [100, 120, '살짝 약화'],
-  [120, 150, '약화 중'],
-  [150, 180, '강하게 반박'],
-]
-
-export function scoreToDegree(score: number): number {
-  return 90 - score * 90
-}
-
-export function degreeToColor(degree: number): string {
-  for (const [low, high, color] of COLOR_BANDS) {
-    if (degree >= low && degree < high) return color
-  }
-  return '#DC2626'
-}
-
-export function degreeToLabel(degree: number): string {
-  for (const [low, high, label] of LABEL_BANDS) {
-    if (degree >= low && degree < high) return label
-  }
-  return '강하게 반박'
-}
-
-export interface PhaseMeta {
-  phase: 'full_moon' | 'waxing' | 'half_moon' | 'waning' | 'new_moon'
-  label: string
-  icon: string
-}
-
-// score_to_phase (state_machine.py와 동일)
-export function scoreToPhaseMeta(score: number): PhaseMeta {
-  if (score > 0.6) return { phase: 'full_moon', label: '가설이 빛나고 있어요', icon: '🌕' }
-  if (score > 0.2) return { phase: 'waxing', label: '조금씩 밝아지고 있어요', icon: '🌔' }
-  if (score > -0.2) return { phase: 'half_moon', label: '반반이에요', icon: '🌓' }
-  if (score > -0.6) return { phase: 'waning', label: '조금씩 어두워지고 있어요', icon: '🌒' }
-  return { phase: 'new_moon', label: '가설이 힘을 잃고 있어요', icon: '🌑' }
-}
-
-// 상태 심각도 표시 메타 (위험→약화→관찰→유지)
+// Monitor 표시 유틸 (MON-P3-S1) — **렌더 전용**.
+// ⚠️ 값의 진실 = API 응답(스냅샷 파생 `monitor.display`: degree·color·label·phase).
+// 점수→각도·달위상 재계산은 BE 엔진(arrow_calculator·state_machine)이 단일 소스이므로
+// 여기서 하지 않는다. 아래는 API가 주는 값(current_state·deadline)의 순수 UI 매핑만.
 import type { MonitorState } from '@/types/monitor'
 
 export interface StateMeta {
@@ -61,6 +9,7 @@ export interface StateMeta {
   tone: 'danger' | 'warn' | 'watch' | 'stable'
 }
 
+// current_state(API 판정) → UI 톤. 위험→약화→관찰→유지.
 const STATE_META: Record<MonitorState, StateMeta> = {
   critical: { label: '주의 필요', tone: 'danger' },
   expired: { label: '기간 만료', tone: 'danger' },
@@ -76,7 +25,7 @@ export function stateMeta(state: MonitorState): StateMeta {
   return STATE_META[state] ?? { label: state, tone: 'watch' }
 }
 
-// D-day 계산 (마감일 → "D-3" / "D-day" / "D+2")
+// 마감일(API 필드) → "D-3" / "D-day" / "D+2". 날짜 포맷팅(판정 아님).
 export function ddayLabel(deadline: string | null): string | null {
   if (!deadline) return null
   const today = new Date()
@@ -85,4 +34,9 @@ export function ddayLabel(deadline: string | null): string | null {
   const diff = Math.round((due.getTime() - today.getTime()) / 86400000)
   if (diff === 0) return 'D-day'
   return diff > 0 ? `D-${diff}` : `D+${-diff}`
+}
+
+// score(-1~1) → 달 채움 비율(0~100). 순수 기하 렌더(임계·판정 없음, 진행바 폭과 동급).
+export function scoreToFillPercent(score: number): number {
+  return Math.round(((Math.max(-1, Math.min(1, score)) + 1) / 2) * 100)
 }
