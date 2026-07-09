@@ -5,6 +5,21 @@
 
 ---
 
+## credit_signals — Phase 1 라이브 종결 + Phase 2/2.5 대기 (2026-07-09)
+
+> 출처: credit_signals Phase 1 실가동(origin/main `a27fd14`, ff land). DECISIONS "credit_signals 신규 앱 (§7.2-B)". 소비처(Dashboard) 착수는 **별도 결정** — 현재 수집·계산·API 백본만 가동, 실전 노출 없음(Heat Score 원칙).
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| CS-CREDIT-P1 | credit_signals Phase 1 실가동 (FRED 6종 수집·MAD z·strip API·beat) | @infra | - | **live done 2026-07-09** (beat 자율 verify OK, fresh 07:30 tick 익일 최종확인) | origin/main `a27fd14`, 원장 4600+행, beat 2종 enabled |
+| CS-CREDIT-P2 | Phase 2: FMP HYG/LQD ETF flow + 차환 절벽(refinancing cliff) 지표 | @backend | 별도 결정 | **대기(착수 미정)** | - |
+| CS-CREDIT-P2.5 | Phase 2.5: SEC 424B2/FWP 발행 신호 파이프라인 | @backend | 별도 결정 | **대기(착수 미정)** | - |
+| CS-CREDIT-CONSUME | Dashboard 프론트에 크레딧 신호 스트립 노출 (소비 시작) | @frontend | 별도 결정 | **대기(별도 결정)** | strip API `/api/credit-signals/strip/` |
+
+> **배포 절차 (재발 방지)**: credit_signals도 #28 계열 — 신규 task는 ① worktree/api/web/worker 트리 origin/main 동기화(`worker_sync.sh` = worker+web만, **daphne api 트리 `sv-api-runtime`은 별도 수동 sync 필요**) → ② worker+beat+daphne 재시작 → ③ runtime `.env`(Desktop 심링크)에 `CREDIT_SIGNALS_ENABLED=true` → ④ `register_credit_beats` + `PeriodicTask enabled=True`. **worker_sync.sh가 sv-api-runtime 미포함**은 부채(DAPHNE-BUILD 후속) — API 라우트 배포 시 수동 sync 필수.
+
+---
+
 ## 🔴 [P0] chainsight-pair-aggregation beat DB 등록 (버그 #28)
 
 > 출처: RelationPairSnapshot 적립 작업(2026-06-29, 브랜치 `monorepo/sess-cs-pair-relevance`). DECISIONS "RelationPairSnapshot 쌍 relevance 적립 [해자]".
