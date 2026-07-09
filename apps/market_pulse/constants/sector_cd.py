@@ -45,3 +45,56 @@ def classify_cd_state(rel_strength, momentum_5d):
     if rel_lead:
         return CD_LEADING_STRENGTHENING if mom_up else CD_LEADING_WEAKENING
     return CD_LAGGING_IMPROVING if mom_up else CD_LAGGING_DETERIORATING
+
+
+# CD-STAB Slice B — 2일 히스테리시스 (D-CD-STAB, D-CD-STATE-SEMANTICS).
+CD_HYSTERESIS_CONFIRM_DAYS = 2  # 후보 사분면이 이 연속 거래일수 유지되면 공식 전환.
+
+
+def resolve_official_cd_state(raw_sequence):
+    """저장 raw 상태 시퀀스(거래일 오름차순) → 공식(확정) 상태 시퀀스.
+
+    무상태 리플레이(규칙 #2): 저장 히스토리를 결정론적으로 재생. `classify_cd_state`는
+    무변경 — 이 함수는 그 출력 시퀀스만 소비하는 별도 순수 함수(규칙 #3).
+
+    규칙 명세(D-CD-STAB):
+      - 시드: 시퀀스 첫 non-None raw = 초기 공식 상태.
+      - 전환: 후보 사분면(≠현재 공식)이 CD_HYSTERESIS_CONFIRM_DAYS(2) 연속 거래일 유지될 때만
+        공식 전환. 전환 인정일 = 2일째.
+      - 후보 리셋: 유지 중 후보가 다른 사분면으로 바뀌면 카운터 리셋(새 후보 1일차).
+      - raw가 공식과 같은 날: 후보 카운터 리셋.
+      - raw None인 날: 후보 카운터 리셋 + 공식 상태 유지(유보값으로 전환 안 함 — 방어 명세,
+        현재 momentum_5d non-nullable이라 dead path).
+
+    반환: raw_sequence와 동일 길이의 공식 상태 리스트. payload는 마지막 원소(현재 공식)를 소비.
+    """
+    official = None
+    candidate = None
+    streak = 0
+    out = []
+    for raw in raw_sequence:
+        if official is None:
+            # 시드: 첫 non-None을 초기 공식으로.
+            if raw is not None:
+                official = raw
+            candidate = None
+            streak = 0
+        elif raw is None:
+            # 유보값으로 전환 안 함 — 후보만 리셋, 공식 유지.
+            candidate = None
+            streak = 0
+        elif raw == official:
+            candidate = None
+            streak = 0
+        elif raw == candidate:
+            streak += 1
+            if streak >= CD_HYSTERESIS_CONFIRM_DAYS:
+                official = raw  # 2연속 확정 → 이 날(2일째) 전환.
+                candidate = None
+                streak = 0
+        else:
+            # 새 후보(1일차).
+            candidate = raw
+            streak = 1
+        out.append(official)
+    return out

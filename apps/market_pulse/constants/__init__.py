@@ -20,6 +20,7 @@ from .sector_cd import (
     CD_MOMENTUM_BASELINE,
     CD_REL_STRENGTH_BASELINE,
     classify_cd_state,
+    resolve_official_cd_state,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
     'CD_REL_STRENGTH_BASELINE',
     'CD_MOMENTUM_BASELINE',
     'classify_cd_state',
+    'resolve_official_cd_state',
 ]
