@@ -17,9 +17,11 @@ import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail, SectorRow } from '@/lib/api/marketPulseV2'
 import {
   CD_STATE_ORDER,
+  CD_TRANSITION_HEX,
   cdStateBadgeClass,
   cdStateDotFill,
   cdStateLabel,
+  isTransitioning,
   type CdState,
 } from '../sectorColor'
 
@@ -79,26 +81,35 @@ function QuadrantMinimap({ sectors, labels }: { sectors: SectorRow[]; labels?: R
         <text x={4} y={12} fontSize={9} fill="#0f766e">부진·개선</text>
         <text x={SIZE - 4} y={SIZE - 4} textAnchor="end" fontSize={9} fill="#b45309">주도·둔화</text>
         <text x={4} y={SIZE - 4} fontSize={9} fill="#0369a1">부진·악화</text>
-        {/* 섹터 점 — 서빙 값 그대로 좌표화 */}
-        {plotted.map((s) => (
-          <g key={s.symbol}>
-            <circle
-              data-testid={`cd-dot-${s.symbol}`}
-              cx={px(s.rel_strength_5d)}
-              cy={py(s.momentum_5d)}
-              r={4}
-              fill={cdStateDotFill(s.cd_state ?? null)}
-            />
-            <text
-              x={px(s.rel_strength_5d) + 6}
-              y={py(s.momentum_5d) + 3}
-              fontSize={8}
-              fill="#334155"
-            >
-              {translate(`sector.${s.symbol}`, labels, s.symbol)}
-            </text>
-          </g>
-        ))}
+        {/* 섹터 점 — 서빙 값 그대로 좌표화. CD-READ: 라벨 제거(점+색만), 확인 중=점선 링. */}
+        {plotted.map((s) => {
+          const cx = px(s.rel_strength_5d)
+          const cy = py(s.momentum_5d)
+          const transitioning = isTransitioning(s.cd_state, s.cd_state_raw)
+          return (
+            <g key={s.symbol}>
+              {transitioning ? (
+                <circle
+                  data-testid={`cd-ring-${s.symbol}`}
+                  cx={cx}
+                  cy={cy}
+                  r={7}
+                  fill="none"
+                  stroke={CD_TRANSITION_HEX}
+                  strokeWidth={1}
+                  strokeDasharray="2 2"
+                />
+              ) : null}
+              <circle
+                data-testid={`cd-dot-${s.symbol}`}
+                cx={cx}
+                cy={cy}
+                r={4}
+                fill={cdStateDotFill(s.cd_state ?? null)}
+              />
+            </g>
+          )
+        })}
       </svg>
     </div>
   )
@@ -147,6 +158,7 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
         {sectors.map((s) => {
           const label = translate(`sector.${s.symbol}`, labels, s.symbol)
           const reserved = s.cd_state == null
+          const transitioning = isTransitioning(s.cd_state, s.cd_state_raw)
           return (
             <li
               key={s.symbol}
@@ -171,6 +183,15 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
                   >
                     {cdStateLabel(s.cd_state ?? null)}
                   </span>
+                  {/* CD-TRANSITION-INDICATOR(CD-READ): 확인 중 칩 — cd_state≠cd_state_raw일 때만(규칙 #2). */}
+                  {transitioning ? (
+                    <span
+                      data-testid={`cd-transition-chip-${s.symbol}`}
+                      className="shrink-0 rounded border border-dashed border-orange-300 px-1.5 py-0.5 text-[10px] font-medium text-orange-600"
+                    >
+                      ⏳ 전환 확인 중
+                    </span>
+                  ) : null}
                   {/* 우측 화살표 어포던스 — 행이 회전 맵 진입임을 표시 */}
                   <span aria-hidden className="ml-auto shrink-0 text-slate-300">→</span>
                 </div>
@@ -180,6 +201,15 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
                 >
                   {stanceCopy(s.cd_state)}
                 </p>
+                {/* 확인 중 보조문 — 원시 신호 한글명(기존 매핑 단일소스, 규칙 #3) + 전환 조건 설명. */}
+                {transitioning ? (
+                  <p
+                    data-testid={`cd-transition-note-${s.symbol}`}
+                    className="mt-0.5 text-[11px] text-orange-600"
+                  >
+                    원시 신호는 {cdStateLabel(s.cd_state_raw ?? null)} — 2일 연속 유지 시 공식 전환.
+                  </p>
+                ) : null}
                 {/* 근거 값 2칸 — rel_strength_5d(판단 x축)·momentum_5d 원값 */}
                 <div className="mt-1 flex gap-4 text-[11px] tabular-nums text-slate-500">
                   <span data-testid={`cd-rel-${s.symbol}`}>상대강도 (5일) {fmtPctN(s.rel_strength_5d)}</span>

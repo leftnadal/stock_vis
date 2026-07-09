@@ -370,6 +370,14 @@ export interface SectorRow {
     | 'lagging_improving'
     | 'lagging_deteriorating'
     | null
+  // CD-STAB Slice B(additive): 원시 즉시 분류값(히스테리시스 전). CD-TRANSITION-INDICATOR가 첫 소비
+  //   (CD-READ) — cd_state ≠ cd_state_raw면 "전환 확인 중". 재분류 아님, 두 서빙값 비교뿐.
+  cd_state_raw?:
+    | 'leading_strengthening'
+    | 'leading_weakening'
+    | 'lagging_improving'
+    | 'lagging_deteriorating'
+    | null
 }
 
 export interface SectorHistoryPoint {
