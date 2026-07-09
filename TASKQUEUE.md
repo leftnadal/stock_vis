@@ -507,7 +507,7 @@
 | P1-OBSERVE | 첫 EOD-bake 실행 후 **실파이프라인 관측**. **✅ 충족 2026-07-04**(D-P1-OBSERVE-DONE): JSON recommendations N=10·6키 IDENTICAL + DB IssuanceLog 10행=N·grain 중복 0(멱등 실증)·conf_ver=1·published_at·user_id null·매도 30%. 결함 2건(워커 표류·0009 미적용) 경유 해소 | 관측(dashboard 디렉션) | 완료 2026-07-04 | ✅ 충족 |
 | P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist + 심링크(방향 반전 방식 Y) + `scripts/worker_sync.sh` 신설 — 브랜치 표류 트레드밀 종료. **✅ 완료 2026-07-05**(OPS-B-BUILD): 스크립트 land `921dc0c`, 검증 bake 2회(심링크 생존·6키 IDENTICAL·N=10·IssuanceLog 10행 멱등·HTTP 200). 심링크 방향 반전 = D-B-WORKER-AMEND-1 | ops/infra | 완료 2026-07-05 | ✅ 완료 |
 | B-HARDEN-OUTPUT | (휴면) baker `OUTPUT_DIR` **env override** 추가 — 심링크 의존 제거. 트리거: **worker 트리 이전 또는 다중 출력 필요 발생 시**. 현재는 심링크(방식 Y)로 충분 | ops/infra(휴면) | worker 트리 이전·다중출력 시 | 💤 휴면 |
-| B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후** | ops(정리) | 자동 beat 1주기 무결 후 | 🆕 등재 |
+| B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후**. **카운트 3/5**(7/6·7/7·7/8 무결 bake, 7/6 개시). 5/5 도달 시 🟢 발화 | ops(정리) | 3/5 (5/5 시 발화) | 🆕 등재 |
 | P1-HC-ISSUANCE | 발행 로그 감시 = **C 계층**(D-HC-ISSUANCE): ⑴ bake 자가검증 ⑵ health_check 최소. **✅ done `2e3b91e`+`ad3ae77`(HC-BUILD)** — 회귀 155·migration 0·실관측 통과(07-08: issuance_verified 10/10 ok·검문소 07-07 행10 OK·무경보). 짝 = common-bugs #46 | ops(health_check) | 완료 2026-07-08 | ✅ done |
 | P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
 | P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
@@ -524,13 +524,17 @@
 | COLOR-STAGE2-chain_sight | chain_sight 방향성 색 한국축 전환(EventRanking·MetricCell 등). **✅ 완료 `9fe326f`**(자기 구획 로컬 시맨틱, import 금지 준수) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
 | COLOR-STAGE2-market_pulse | market_pulse regime/flow `meaning.ts` 한국축 전환. **✅ 완료 `3253cd1`(merge `9169ea9`)** — CRISIS→sky(라벨 보존)·FLOW_TONE 디커플링·잔여 rose 오버로드 2건 수용(DECISIONS 판정 기록) | 트랙 위임 | 완료 2026-07-07 | ✅ 완료 |
 | COLOR-STAGE2-portfolio | portfolio 수익=rose/손실=sky 전환(PortfolioSummary·Table·Chart·Modal·RealtimePortfolio **5파일 글로벌축 잔존**). **💤 보류 확정**(D-COLOR-SYSTEM 추기) — 트리거 = **portfolio 트랙 재개 시 그 첫 슬라이스에 선행**(별도 색 슬라이스 신설 대신 흡수). D-COLOR-TOKEN에 따라 재개 시 shared 토큰 **직소비**(로컬 경유 없음) | portfolio FE | portfolio 트랙 재개 시 | 💤 보류 |
-| S3-COLOR-ALIGN | MP2-TREND S3(z-score 멀티라인 regime 구성요소)와 market_pulse 색 시맨틱 겹침 조율 — S3가 이 시맨틱 선소비 허용. **게이트 유지**: S3 land 시 regime 색이 한국축(D-COLOR-SYSTEM)과 일치하는지 확인 | market_pulse FE | S3 land 시 정합 확인 | 🔵 게이트 |
+| S3-COLOR-ALIGN | MP2-TREND S3 z-score 멀티라인과 market_pulse 색 시맨틱 겹침 조율. **✅ done** — `CUT_STROKE.CRISIS = HEX_SIGNED` 소비 정합(regime 색 한국축 일치 확인) | market_pulse FE | 완료 2026-07-09 | ✅ done |
 | COLOR-WARN-SCHEME | (휴면) rose 의미이동(위기→긍정)으로 발생한 **잔여 rose 오버로드 정리** — 경고/위기 표현을 색 아닌 별도 수단(아이콘·채도·라벨)으로 완전 분리. 트리거: 잔여 rose 오버로드가 실사용 오독으로 관측 시. 참조 D-COLOR-SYSTEM 판정 기록 | FE(디자인) | 오독 관측 시 | 💤 휴면 |
-| COLOR-TOKEN-PROMOTE | `colorSemantics` **shared 토큰 분할 승격**(D-COLOR-TOKEN) — frontend 공용 인프라 구획에 shared 토큰 신설(위치 = 슬라이스 STEP 0 실측). **🟢 shared 신설 슬라이스부터** 착수. 3벌 실증 근거 충족. 후속 = 3트랙 회수(TOKEN-RECLAIM). 참조 DECISIONS D-COLOR-TOKEN | FE(shared) | **착수 승인(shared 신설)** | 🟢 승인 |
-| TOKEN-RECLAIM-eod | eod가 로컬 `colorSemantics.ts` → shared 토큰 소비로 전환(값 IDENTICAL·렌더 무변경 행위보존 회귀). 트리거 = **shared 토큰 land 후** | dashboard FE | shared 토큰 land 후 | 🆕 등재 |
-| TOKEN-RECLAIM-market-pulse | market-pulse-v2가 로컬 색 축 → shared 토큰 소비 전환(행위보존). 트리거 = **shared 토큰 land 후** | market_pulse FE | shared 토큰 land 후 | 🆕 등재 |
-| TOKEN-RECLAIM-chainsight | chainsight가 로컬 색 시맨틱 → shared 토큰 소비 전환(행위보존). 트리거 = **shared 토큰 land 후** | chain_sight FE | shared 토큰 land 후 | 🆕 등재 |
-| SYNC-ENTRYPOINT | repo 스크립트 실행 **고정 진입점**(D-SYNC-ENTRYPOINT) = ⑴ repo 밖 래퍼 `~/bin/sv`(항상 런타임 트리 스크립트, 대상 worker_sync·health_check 일반화) ⑵ 스크립트 자기가드(자기 트리 HEAD vs origin/main 대조·stale 경고). #47 재귀 2건(worker_sync·health_check) 실증. 참조 DECISIONS D-SYNC-ENTRYPOINT · common-bugs #47 | ops/infra | **실행 승인** | 🟢 승인 |
+| COLOR-TOKEN-PROMOTE | `colorSemantics` shared 토큰 분할 승격(D-COLOR-TOKEN). **✅ done `694d6f5`** — components/common/colorSemantics.ts 신설(14 export, DIRECTION_HEX 축분리 D-COLOR-TOKEN-AMEND-1) | FE(shared) | 완료 2026-07-09 | ✅ done |
+| TOKEN-RECLAIM-eod | eod 로컬 → shared 토큰 회수. **✅ done `d70d665`**(6소비처 전환·로컬 삭제, DIRECTION_HEX→HEX_CHANGE, tsc0·색단언 무수정 green) | dashboard FE | 완료 2026-07-09 | ✅ done |
+| TOKEN-RECLAIM-market-pulse | market-pulse-v2 로컬 → shared 회수. **✅ done `8194fd7`**(DIRECTION_HEX→HEX_SIGNED, 행위보존) | market_pulse FE | 완료 2026-07-09 | ✅ done |
+| TOKEN-RECLAIM-chainsight | chainsight 로컬 → shared 회수. **✅ done `c9310fb`**(순수 import swap, 행위보존) | chain_sight FE | 완료 2026-07-09 | ✅ done |
+| SYNC-ENTRYPOINT | repo 스크립트 실행 고정 진입점(D-SYNC-ENTRYPOINT) = 래퍼 `~/bin/sv` + 자기가드. **✅ done `942a991`·`f084cd6`** — stale abort·health WARN·sv health 12/12·3종 트리 일치 실증. #47 구조 해소 | ops/infra | 완료 2026-07-09 | ✅ done |
+| VERIFY-SUITE-BASELINE | full-suite 140 거짓 red 규명(검증 세션, 쓰기 0). **✅ done(판정 a — 환경 아티팩트)** — 격리 npm ci·v22.19.0에서 519/519 green(심링크 실패 파일 실설치 전건 통과). #48 실증 | @qa | 완료 2026-07-09 | ✅ done |
+| TEST-ENV-POLICY | full-suite 게이트 환경 정책 결정. **✅ done** — D-TEST-ENV 등재(이원 정책 A)로 종결 | @qa | 완료 2026-07-09 | ✅ done |
+| TEST-ENV-GUIDE | (신규, 소형 ops) `sv health`(또는 health_check)에 "**full-suite 전 npm ci 격리 확인**" 안내 추가. 참조 D-TEST-ENV | ops/infra | 트리거: 다음 ops 접점 | 🆕 등재 |
+| THEME-HEAT-AUDIT | (신규) 공유 트리 세션의 **메타 직접 편집 흔적** + node_modules **심링크 오염 관여**(#48 원인 환경) 확인 — 4턴 이월 중이므로 큐 등재로 고정 | chain_sight 트랙 | 트리거: chain_sight 다음 접점 | 🆕 등재 |
 
 ---
 

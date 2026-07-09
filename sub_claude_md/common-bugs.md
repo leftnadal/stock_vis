@@ -546,7 +546,18 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결: **반드시 런타임 트리 사본으로 실행** — `bash /Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/worker_sync.sh`(런타임 트리는 detached origin/main이라 항상 확장판 보유). 실행 전 `grep -c API_TREE <사본>`로 api 섹션 유무 확인(0이면 stale, 사용 금지).
 - 예방(고정 진입점 미결): 항상 런타임 사본을 실행하는 래퍼/별칭 = TASKQUEUE `SYNC-ENTRYPOINT`(미결). 그 전까지 **수동 주의**(사본 경로 명시 지정).
 - **첫 준수 사례(2026-07-07)**: MGMT 세션이 공유 트리 사본(api 섹션 0)을 포착·거부하고 런타임 트리 사본으로 실행 → worker·web·api 3종 `9fe326f` 정상 동기화 + daphne 재기동. 자동화 부재 시 수동 규율로 우회 가능함을 실증.
-- **재귀 2건째(health_check, 2026-07-08)**: `python scripts/health_check.py`를 공유 트리에서 실행 → **구버전 10건**(HC-BUILD 신항목 "발행 로그 신선도" 없음). 신항목은 origin/main(`ad3ae77`)에만 → 공유 트리 사본 stale. 런타임 트리 사본(`sv-worker-runtime/scripts/health_check.py`, +.env)에서 실행하니 **11건**(신항목 OK). → **일반화**: "repo 스크립트를 어느 트리 사본으로 실행하나"는 worker_sync 한정이 아니라 **repo 스크립트 소비 전반**의 함정(실행자가 최신 코드를 본다는 보장 없음). 항구 해결 = **D-SYNC-ENTRYPOINT**(래퍼 `~/bin/sv` + 스크립트 자기가드, TASKQUEUE `SYNC-ENTRYPOINT` 🟢 승인).
+- **재귀 2건째(health_check, 2026-07-08)**: `python scripts/health_check.py`를 공유 트리에서 실행 → **구버전 10건**(HC-BUILD 신항목 "발행 로그 신선도" 없음). 신항목은 origin/main(`ad3ae77`)에만 → 공유 트리 사본 stale. 런타임 트리 사본(`sv-worker-runtime/scripts/health_check.py`, +.env)에서 실행하니 **11건**(신항목 OK). → **일반화**: "repo 스크립트를 어느 트리 사본으로 실행하나"는 worker_sync 한정이 아니라 **repo 스크립트 소비 전반**의 함정(실행자가 최신 코드를 본다는 보장 없음).
+- **★해소(2026-07-09, D-SYNC-ENTRYPOINT land)**: 래퍼 `~/bin/sv`(exec 전 런타임 트리 최신화) + 스크립트 자기가드(`worker_sync.sh` stale abort exit 2 / `health_check.py` "실행 트리 정합" WARN)로 **구조적 해소**. land `942a991`·`f084cd6`. 실증: stale 사본 abort·WARN, `sv sync` 3종 일치, `sv health` 12/12. 이후 repo 스크립트는 `sv`로 실행.
+
+## 심링크 node_modules × vitest4/rolldown → full-suite 거짓 red (#48) `[frontend]` `[test]` `[env]`
+
+- 증상: worktree에서 `vitest run`(전체) 시 **140 테스트 거짓 실패**(21파일). 코드 회귀 아님 — 같은 코드가 실설치 환경에선 전건 green.
+- 원인: worktree의 `node_modules`가 **공유 트리 심링크**일 때, vitest4의 번들러 **rolldown이 native binding(`.node`)을 심링크 경로에서 resolve 실패**. 특정 파일이 그 native 경로를 타면 로드 자체 실패(Startup Error). W′의 turbopack 심링크 비호환과 동형(도구별 심링크 엄격도 상이).
+- 증상 2형(공통 뿌리 = 심링크 경로 native resolve 실패): ⑴ **React 이중 인스턴스형**(심링크로 react가 두 경로 resolve) ⑵ **@rolldown 바인딩 부재형**(`Cannot find native binding @rolldown/binding-darwin-arm64`).
+- 재현 조건: **공유 트리 심링크 node_modules + full-suite**. scoped 테스트(자기 구획, 예 eod 7/7)는 심링크에서도 **green(오탐 아님)**.
+- 판정 근거(VERIFY-SUITE-BASELINE, 2026-07-09): 격리 **npm ci(비-심링크) + node v22.19.0**에서 **519/519 green** · react가 worktree 실경로 단일 resolve · `.node` 실존 로드. 심링크에서 12/6 실패하던 파일이 실설치 전건 green.
+- 선례: eod land 시 with/without 커밋 대조로 무관 입증 → **push HALT는 정당한 보수적 정지**(거짓 red를 실회귀로 오인 안 함). 
+- 대응: **D-TEST-ENV**(full-suite 게이트 = 격리 npm ci + node 고정에서만 유효 / scoped는 심링크 허용). `sv health` "full-suite 전 npm ci 확인" 안내(`TEST-ENV-GUIDE`).
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 
