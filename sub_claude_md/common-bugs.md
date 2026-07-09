@@ -721,3 +721,10 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
   2. `git commit` 직후 **`git status --short`로 미커밋 잔여 0 확인**(신규 `??` 파일 특히 주의). 잔여 있으면 add 후 `--amend`(미push 시)로 정합화.
   3. 안전책: 삭제·이동과 신규·수정을 **별도 스테이징 단계**로 분리하거나, `git add -A <디렉터리>`로 디렉터리 단위 스테이징.
 - **탐지**: 커밋 stat이 "deletions only"인데 관련 신규 파일이 있어야 하면 이 버그를 의심. rename/신규가 사라진 broken 중간 커밋은 push 전 `git show --stat HEAD`로 검출.
+
+## [Celery beat] ET 스케줄 태스크에서 `timezone.localdate()`는 Seoul 날짜 → 거래일 off-by-one (MON-P2-BEAT, 2026-07-09)
+
+- **증상**: 미국 EOD 후(예: 18:45 America/New_York) 도는 beat 태스크가 `timezone.localdate()`로 "오늘"을 구하면, 프로젝트 `TIME_ZONE=Asia/Seoul`(USE_TZ=True)이라 **Seoul 날짜(=ET 기준 +1일)**를 반환한다. 18:45 ET ≈ 다음날 07:45 KST이기 때문. 결과: 신선도 가드가 엉뚱한 날짜를 검사하고, ingest 범위·스냅샷 `asof_date`가 실제 EOD 거래일보다 하루 앞서 기록됨.
+- **원인**: `CELERY_TIMEZONE='America/New_York'`(스케줄 발화 시각)와 `TIME_ZONE='Asia/Seoul'`(localdate 기준)이 다르다. beat 발화는 ET로 맞지만, 태스크 본문의 날짜 계산은 Seoul 기준이라 어긋난다.
+- **처방**: ET 기준 거래일이 필요한 태스크는 명시 계산한다 — `timezone.now().astimezone(ZoneInfo("America/New_York")).date()` (예: `apps/monitor/tasks.py:et_today`). 이 값을 신선도 가드(`max(EODSignal.date) == et_today`)와 서비스 `as_of_date`에 일관 주입해 EOD 거래일에 정합시킨다. `localdate()`는 사용자 로컬 표시용이지 미국 거래일 판정용이 아니다.
+- **일반화**: EODSignal·DailyPrice 등 미국 거래일(ET) 키를 다루는 모든 Celery 태스크에 적용. beat 시각대(CELERY_TIMEZONE)와 날짜 계산 시각대(TIME_ZONE)가 다를 때 항상 의심.

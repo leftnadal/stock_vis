@@ -9,8 +9,9 @@ import logging
 from django.db import transaction
 from django.utils import timezone
 
-from apps.monitor.models import MonitorSnapshot
+from apps.monitor.models import Monitor, MonitorSnapshot
 from apps.monitor.services.indicator_scorer import score_indicator_from_model
+from apps.monitor.services.ingest import BACKFILL_DAYS, ingest_readings_for_monitor
 from apps.monitor.services.monitor_aggregator import aggregate_monitor
 from apps.monitor.services.state_machine import determine_state
 
@@ -98,4 +99,38 @@ def evaluate_monitors(queryset, as_of_date=None):
             results.append(evaluate_monitor(monitor, as_of_date=as_of_date))
         except Exception:  # noqa: BLE001 — 배치 격리
             logger.exception("evaluate_monitor 실패: monitor_id=%s", monitor.id)
+    return results
+
+
+def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
+    """단일 Monitor를 refresh: ingest(EODSignal→Reading) → evaluate 체이닝.
+
+    수동 커맨드(refresh_monitors)와 Celery beat 태스크가 **공유하는 단일 서비스 함수**
+    (MON-P2-BEAT §3 — 커맨드/태스크는 이 함수를 각각 얇게 호출한다).
+    반환 = 평가 결과 dict에 이식 증분(ingested)을 덧붙인 요약.
+    """
+    ingest_results = ingest_readings_for_monitor(
+        monitor, backfill_days=backfill_days, as_of_date=as_of_date
+    )
+    ingested = sum(r["ingested"] for r in ingest_results)
+    result = evaluate_monitor(monitor, as_of_date=as_of_date)
+    result["ingested"] = ingested
+    return result
+
+
+def refresh_monitors(queryset=None, backfill_days=BACKFILL_DAYS, as_of_date=None):
+    """stock scope Monitor 전체(또는 주어진 queryset) refresh. 개별 실패는 격리.
+
+    queryset 미지정 시 stock scope 전체가 대상(ingest 매핑이 stock scope 카탈로그 전제).
+    """
+    if queryset is None:
+        queryset = Monitor.objects.filter(scope=Monitor.Scope.STOCK)
+    results = []
+    for monitor in queryset:
+        try:
+            results.append(
+                refresh_monitor(monitor, backfill_days=backfill_days, as_of_date=as_of_date)
+            )
+        except Exception:  # noqa: BLE001 — 배치 격리
+            logger.exception("refresh_monitor 실패: monitor_id=%s", monitor.id)
     return results

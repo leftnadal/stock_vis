@@ -753,6 +753,84 @@ def check_execution_tree_alignment() -> CheckResult:
     )
 
 
+# ── 검증 12: monitor refresh 태스크 신선도 (MON-P2-BEAT §6) ──────────────────
+#
+# refresh_monitors_task(18:45 ET beat)는 성공 시 각 stock Monitor에 asof=오늘 스냅샷을
+# upsert한다 → 최근 MonitorSnapshot.asof_date가 refresh 성공의 관측 가능한 흔적.
+# 최근 2 거래일 내 성공 기록을 요구하되, 주말·연휴는 임계(달력일)로 흡수(zero-noise).
+# check_issuance_log_freshness와 동일한 방어 패턴(Django lazy setup + OK-skip).
+
+# 2 거래일 ≈ 주말(2) 흡수해 5 달력일. issuance 관례(ISSUANCE_STALE_DAYS=5)와 정합.
+MONITOR_REFRESH_STALE_DAYS = 5
+
+
+def check_monitor_refresh_freshness() -> CheckResult:
+    """최근 MonitorSnapshot(=refresh 태스크 성공 흔적) 신선도. [MON-P2-BEAT §6]
+
+    - 비-런타임/DB 미가용 → OK-skip(노이즈 0).
+    - stock scope Monitor 0건(관제 대상 없음) → OK-skip.
+    - Monitor 있으나 스냅샷 이력 0 / 최근 asof가 임계 초과 → WARN(태스크 미실행·skip 누적 의심).
+    """
+    name = "monitor refresh 신선도"
+    try:
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from apps.monitor.models import Monitor, MonitorSnapshot
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        has_stock = Monitor.objects.filter(scope="stock").exists()
+        latest = MonitorSnapshot.objects.order_by("-asof_date").first()
+    except Exception as e:  # noqa: BLE001 — 테이블 부재 등
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="MonitorSnapshot 조회 실패 — 테이블 부재 가능",
+            evidence=[str(e)[:120]],
+        )
+
+    if not has_stock:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="stock scope Monitor 0건 — 검사 생략(관제 대상 없음)",
+        )
+    if latest is None:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="Monitor 있으나 스냅샷 이력 0건 — refresh 미실행 의심",
+        )
+
+    age_days = (datetime.now().date() - latest.asof_date).days
+    if age_days > MONITOR_REFRESH_STALE_DAYS:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=(
+                f"최근 refresh {age_days}일 전({latest.asof_date}) — 임계 "
+                f"{MONITOR_REFRESH_STALE_DAYS}일 초과(태스크 미실행/skip 누적 의심)"
+            ),
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"최근 refresh asof {latest.asof_date} (age {age_days}일 ≤ {MONITOR_REFRESH_STALE_DAYS})",
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -769,6 +847,7 @@ CHECKS = [
     check_known_test_fails,
     check_issuance_log_freshness,
     check_execution_tree_alignment,
+    check_monitor_refresh_freshness,
 ]
 
 
