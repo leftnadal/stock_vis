@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { HelpCircle, ChevronRight, TrendingUp, AlertTriangle, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 import { SIGNAL_CATEGORY_COLORS, SIGNAL_CATEGORY_LABELS } from '@/types/eod';
 import type { SignalCard as SignalCardType } from '@/types/eod';
 

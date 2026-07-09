@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { DIRECTION_BADGE, DIRECTION_SPINE } from './colorSemantics';
+import { DIRECTION_BADGE, DIRECTION_SPINE } from '@/components/common/colorSemantics';
 import type { Recommendation } from '@/types/eod';
 
 const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {

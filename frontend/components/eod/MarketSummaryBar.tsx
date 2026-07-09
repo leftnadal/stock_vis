@@ -2,7 +2,7 @@
 
 import { TrendingUp, TrendingDown, Minus, AlertTriangle } from 'lucide-react';
 import { VixChip } from './VixChip';
-import { CHANGE_CHIP, STRENGTH_TEXT, STRENGTH_BAR_FILL } from './colorSemantics';
+import { CHANGE_CHIP, STRENGTH_TEXT, STRENGTH_BAR_FILL } from '@/components/common/colorSemantics';
 import type { MarketSummary } from '@/types/eod';
 
 interface MarketSummaryBarProps {

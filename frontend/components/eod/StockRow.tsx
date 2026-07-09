@@ -5,7 +5,7 @@ import { ArrowUpRight, ArrowDownRight, Network } from 'lucide-react';
 import { MiniSparkline } from './MiniSparkline';
 import { NewsContextBadge } from './NewsContextBadge';
 import { ConfidenceBadge } from './ConfidenceBadge';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 import type { SignalStock } from '@/types/eod';
 
 interface StockRowProps {

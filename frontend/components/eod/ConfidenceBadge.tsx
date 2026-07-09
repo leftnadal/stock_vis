@@ -1,6 +1,6 @@
 'use client';
 
-import { CONFIDENCE_DOT } from './colorSemantics';
+import { CONFIDENCE_DOT } from '@/components/common/colorSemantics';
 
 interface ConfidenceBadgeProps {
   score: number;
