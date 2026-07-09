@@ -48,6 +48,9 @@ export interface Monitor {
   indicator_count: number | null
   next_deadline: string | null
   has_claim: boolean
+  // 파이프라인(엔진) 소유 파생값 — 사용자 입력 불가 (MON-P3-ALERT)
+  close_suggested: boolean
+  danger_streak: number
   created_at: string
   updated_at: string
 }
@@ -121,4 +124,52 @@ export interface CatalogEntry {
   source: string
   unit: string
   description: string
+}
+
+// ── 전이 알림 (MON-P3-ALERT, GET /monitor/alerts/) ──
+// 억제(is_suppressed) 알림은 서버가 목록에서 이미 제외 → 개별 행에서 항상 false로 관측됨.
+export interface AlertEvent {
+  id: string
+  monitor: string
+  monitor_name: string
+  target_ref: string
+  from_state: MonitorState
+  to_state: MonitorState
+  from_label: string
+  to_label: string
+  asof: string
+  score: number
+  is_deterioration: boolean
+  is_suppressed: boolean
+  read: boolean
+  created_at: string
+}
+
+// 헤더 벨 배지용 (GET /monitor/alerts/summary/) — 악화만 카운트.
+export interface AlertSummary {
+  unread_deterioration_count: number
+}
+
+// ── 상태밴드 스파크라인 (MON-P3-ALERT §6, GET /monitor/monitors/{id}/sparkline/) ──
+export type SparklinePhase = 'full_moon' | 'waxing' | 'half_moon' | 'waning' | 'new_moon'
+
+export interface SparklinePoint {
+  asof: string
+  score: number
+}
+
+// min/max는 score 정의역 [-1,1] 구간 — BE 엔진(score_to_phase)이 단일 출처, FE 하드코딩 금지.
+export interface SparklineBand {
+  phase: SparklinePhase
+  label: string
+  min: number
+  max: number
+}
+
+export interface SparklineResponse {
+  series: SparklinePoint[]
+  bands: SparklineBand[]
+  transitions: string[] // AlertEvent asof(ISO) 목록
+  delta_5d: number | null // 계산값만 통과 — 표시는 회전 맵 트랙 몫(이번 트랙은 미표시)
+  window: number
 }

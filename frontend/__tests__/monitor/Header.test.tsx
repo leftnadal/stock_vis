@@ -14,6 +14,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 
 vi.mock('@/hooks/useMonitor', () => ({
   useMonitors: () => ({ data: [] }),
+  useAlertSummary: () => ({ data: { unread_deterioration_count: 0 } }),
 }))
 
 import Header from '@/components/layout/Header'

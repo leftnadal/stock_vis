@@ -4,6 +4,8 @@ import Link from 'next/link'
 
 import { ArrowIndicator } from '@/components/monitor/ArrowIndicator'
 import { MoonPhase } from '@/components/monitor/MoonPhase'
+import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
+import { useSparkline } from '@/hooks/useMonitor'
 import { ddayLabel, stateMeta } from '@/lib/monitor/display'
 import type { Monitor } from '@/types/monitor'
 
@@ -27,6 +29,8 @@ export function MonitorListCard({ monitor }: { monitor: Monitor }) {
   const display = monitor.display // API 파생값 (degree·color·label·phase), score 없으면 null
   const meta = stateMeta(monitor.current_state)
   const dday = ddayLabel(monitor.next_deadline)
+  // score 없는(warming_up) 모니터는 스파크라인 조회 자체를 생략.
+  const { data: spark } = useSparkline(monitor.id, 30, score !== null)
 
   return (
     <Link
@@ -61,6 +65,15 @@ export function MonitorListCard({ monitor }: { monitor: Monitor }) {
             <span className="font-medium text-gray-600 dark:text-gray-300">{dday}</span>
           )}
         </div>
+        {spark && (
+          <div className="mt-2">
+            <StateBandSparkline
+              series={spark.series}
+              bands={spark.bands}
+              transitions={spark.transitions}
+            />
+          </div>
+        )}
       </div>
 
       {display ? (

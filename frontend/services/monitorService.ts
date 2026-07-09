@@ -2,12 +2,15 @@
 // authAxios baseURL에 이미 /api/v1 포함 → 경로에 중복 금지 (common-bug #19)
 import { authAxios } from '@/lib/api/authAxios'
 import type {
+  AlertEvent,
+  AlertSummary,
   CatalogEntry,
   Claim,
   EvaluateResult,
   Monitor,
   MonitorIndicator,
   MonitorInput,
+  SparklineResponse,
 } from '@/types/monitor'
 
 // DRF 페이지네이션 대응: {results:[...]} 또는 배열 모두 수용
@@ -72,6 +75,38 @@ export const monitorService = {
     payload: { monitor: string; assertion: string; deadline?: string | null }
   ): Promise<Claim> => {
     const { data } = await authAxios.post('/monitor/claims/', payload)
+    return data
+  },
+
+  // ── 전이 알림 (MON-P3-ALERT) ──
+  listAlerts: async (params?: {
+    unread?: boolean
+    deterioration?: boolean
+  }): Promise<AlertEvent[]> => {
+    const query: Record<string, string> = {}
+    if (params?.unread) query.unread = 'true'
+    if (params?.deterioration) query.deterioration = 'true'
+    const { data } = await authAxios.get('/monitor/alerts/', { params: query })
+    return unwrapList<AlertEvent>(data)
+  },
+  getAlertSummary: async (): Promise<AlertSummary> => {
+    const { data } = await authAxios.get('/monitor/alerts/summary/')
+    return data
+  },
+  markAlertRead: async (id: string): Promise<AlertEvent> => {
+    const { data } = await authAxios.post(`/monitor/alerts/${id}/read/`)
+    return data
+  },
+  markAllAlertsRead: async (): Promise<{ marked_read: number }> => {
+    const { data } = await authAxios.post('/monitor/alerts/read_all/')
+    return data
+  },
+
+  // ── 상태밴드 스파크라인 (MON-P3-ALERT §6) ──
+  getSparkline: async (monitorId: string, window = 30): Promise<SparklineResponse> => {
+    const { data } = await authAxios.get(`/monitor/monitors/${monitorId}/sparkline/`, {
+      params: { window },
+    })
     return data
   },
 }

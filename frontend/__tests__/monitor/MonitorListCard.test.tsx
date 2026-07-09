@@ -1,9 +1,21 @@
-// MonitorListCard 렌더 검증 (MON-P3-S1)
+// MonitorListCard 렌더 검증 (MON-P3-S1 · MON-P3-ALERT 스파크라인 부착)
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { MonitorListCard } from '@/components/monitor/MonitorListCard'
 import type { Monitor } from '@/types/monitor'
+
+// 카드가 부착한 스파크라인 훅의 네트워크를 차단(렌더 검증만 대상)
+vi.mock('@/services/monitorService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/monitorService')>()
+  return { ...actual, monitorService: { ...actual.monitorService, getSparkline: vi.fn().mockResolvedValue(null) } }
+})
+
+function wrapper({ children }: { children: React.ReactNode }) {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+}
 
 function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
   return {
@@ -27,6 +39,8 @@ function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
     indicator_count: 3,
     next_deadline: null,
     has_claim: false,
+    close_suggested: false,
+    danger_streak: 0,
     created_at: '2026-07-01T00:00:00Z',
     updated_at: '2026-07-01T00:00:00Z',
     ...overrides,
@@ -35,7 +49,7 @@ function makeMonitor(overrides: Partial<Monitor> = {}): Monitor {
 
 describe('MonitorListCard', () => {
   it('이름·상태 라벨·지표 수를 표시한다', () => {
-    render(<MonitorListCard monitor={makeMonitor()} />)
+    render(<MonitorListCard monitor={makeMonitor()} />, { wrapper })
     expect(screen.getByText('애플 감시')).toBeInTheDocument()
     expect(screen.getByText('주의 필요')).toBeInTheDocument() // critical → 위험 톤
     expect(screen.getByText('지표 3')).toBeInTheDocument()
@@ -43,7 +57,7 @@ describe('MonitorListCard', () => {
   })
 
   it('상세 링크로 연결된다', () => {
-    render(<MonitorListCard monitor={makeMonitor({ id: 'abc' })} />)
+    render(<MonitorListCard monitor={makeMonitor({ id: 'abc' })} />, { wrapper })
     expect(screen.getByTestId('monitor-card')).toHaveAttribute('href', '/monitor/abc')
   })
 
@@ -51,7 +65,7 @@ describe('MonitorListCard', () => {
     const d = new Date()
     d.setDate(d.getDate() + 3)
     const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-    render(<MonitorListCard monitor={makeMonitor({ next_deadline: iso })} />)
+    render(<MonitorListCard monitor={makeMonitor({ next_deadline: iso })} />, { wrapper })
     expect(screen.getByText('D-3')).toBeInTheDocument()
   })
 })

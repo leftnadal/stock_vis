@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Search, TrendingUp } from 'lucide-react';
 
+import { AlertBell } from '@/components/layout/AlertBell';
 import { AvatarMenu } from '@/components/layout/AvatarMenu';
 import { MySubNav, isMyPage } from '@/components/layout/MySubNav';
 
@@ -88,7 +89,8 @@ export default function Header() {
             </form>
           </div>
 
-          <div className="hidden md:block">
+          <div className="hidden items-center gap-2 md:flex">
+            <AlertBell />
             <AvatarMenu />
           </div>
         </div>
