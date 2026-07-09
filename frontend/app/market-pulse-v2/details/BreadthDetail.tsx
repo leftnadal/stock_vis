@@ -3,7 +3,7 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthDetail as Detail } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
-import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '../colorSemantics'
+import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '@/components/common/colorSemantics'
 import { BreadthTrajectory } from './BreadthTrajectory'
 
 export function BreadthDetail({

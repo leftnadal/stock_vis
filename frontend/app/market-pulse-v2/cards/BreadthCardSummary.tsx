@@ -3,7 +3,7 @@
 import { translate } from '@/lib/i18n/marketPulse'
 import type { BreadthCard } from '@/lib/api/marketPulseV2'
 import { breadthBand } from '../meaning'
-import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '../colorSemantics'
+import { DIRECTION_TEXT, DIRECTION_TEXT_SOFT } from '@/components/common/colorSemantics'
 import { CardShell } from './CardShell'
 import { SenseNote } from './SenseNote'
 

@@ -1,7 +1,7 @@
 'use client'
 
 import type { TickerItem } from '@/lib/api/marketPulseV2'
-import { DIRECTION_TEXT } from '../colorSemantics'
+import { DIRECTION_TEXT } from '@/components/common/colorSemantics'
 
 function formatPct(v: number | null) {
   if (v === null || Number.isNaN(v)) return '—'
