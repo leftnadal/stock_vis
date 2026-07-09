@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.market_pulse.api import cache as cache_keys
-from apps.market_pulse.constants import classify_cd_state
+from apps.market_pulse.constants import CD_MOMENTUM_BASELINE, classify_cd_state
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.regime import RegimeSnapshot
 from apps.market_pulse.models.snapshot import (
@@ -301,6 +301,9 @@ def _sector_detail():
         "cross_dispersion": float(latest[0].cross_dispersion),
         "rotation_index": float(latest[0].rotation_index),
         "sector_history": sector_history,
+        # MP2-SECTOR-CD S2(additive): 모멘텀 판정선 단일소스. FE가 y=0 하드코딩 금지 —
+        #   이 서빙값(= CD_MOMENTUM_BASELINE 상수)을 hline으로 그린다. 값 복제 아님(import 참조).
+        "cd_momentum_baseline": CD_MOMENTUM_BASELINE,
     }
 
 

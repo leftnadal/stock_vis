@@ -16,6 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from apps.market_pulse.constants import CD_MOMENTUM_BASELINE
 from apps.market_pulse.models.snapshot import SectorFlowSnapshot
 from macro.models.indicators import MarketIndex
 
@@ -91,3 +92,19 @@ class TestSectorMomentumExposure:
         assert set(point.keys()) == {"date", "rel_strength", "rank", "momentum_5d"}
         assert point["rel_strength"] == 2.0
         assert point["rank"] == 1
+
+
+@pytest.mark.django_db
+class TestCdMomentumBaselineMeta:
+    def test_baseline_meta_present_and_matches_constant(self, auth_client):
+        """payload 메타 cd_momentum_baseline = CD_MOMENTUM_BASELINE 상수(값 복제 아님)."""
+        _mk_snap(_mk_index("XLK"), date_cls(2026, 6, 15), 2.0, 0.5, rank=1)
+        body = auth_client.get(_url()).json()["data"]
+        assert "cd_momentum_baseline" in body
+        assert body["cd_momentum_baseline"] == CD_MOMENTUM_BASELINE
+
+    def test_baseline_absent_when_unavailable(self, auth_client):
+        """스냅샷 없으면 unavailable — baseline 메타 미포함."""
+        body = auth_client.get(_url()).json()["data"]
+        assert body["available"] is False
+        assert "cd_momentum_baseline" not in body
