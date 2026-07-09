@@ -53,8 +53,9 @@ HEAT_ENTITY_TO_SP500_SECTOR = {
     "Utilities": "Utilities",
 }
 
-# 배선 안 된 성분 — 데이터 파이프라인 후속 슬라이스 (C5 는 TH-7d 배선 완료로 제외)
-_NOT_WIRED = ("C1", "C3", "C4", "C6", "C7")
+# 배선 안 된 성분 — 데이터 파이프라인 후속 슬라이스.
+# C5=TH-7d, C4/C6/C7=TH-8 배선 완료(C4=결정13 콜드스타트 게이트, C6/C7=DailyPrice 3년 게이트).
+_NOT_WIRED = ("C1", "C3")
 
 
 # ────────────────────────────── 순수 판정 ──────────────────────────────
@@ -101,9 +102,14 @@ def _real_sector_components(
     entity, sector_symbols: list[str], as_of: date, c8_by_symbol: dict
 ) -> dict:
     """실배선 성분 dict (C2=C2a+C2b, C5, C8; 나머지 not_wired)."""
+    from apps.chain_sight.services.c4_flow_service import c4_etf_flow_from_db
     from apps.chain_sight.services.c5_speculation_service import (
         c5_speculation_from_db,
         sector_etf_pair,
+    )
+    from apps.chain_sight.services.c6c7_service import (
+        c6_correlation_from_db,
+        c7_dollar_volume_from_db,
     )
 
     components = {k: {"z": None, "s": None, "raw": None, "missing_reason": "not_wired"}
@@ -114,9 +120,14 @@ def _real_sector_components(
         components["C2"] = c2_supply_reaction(c2a, c2b)
     else:
         components["C2"] = {"z": None, "s": None, "raw": None, "missing_reason": "c2_no_symbols"}
-    # C5 투기 심리 (TH-7d) — 섹터 ETF 쌍 기반. 레버리지 부재 섹터(XLB·XLC)는 §3-5 결측.
+    # C4 ETF 플로우 (TH-8, 결정13 콜드스타트 게이트) — 섹터 primary ETF EtfSnapshot diff.
     pri, lev = sector_etf_pair(entity)
+    components["C4"] = c4_etf_flow_from_db(pri, as_of)
+    # C5 투기 심리 (TH-7d) — 섹터 ETF 쌍 기반. 레버리지 부재 섹터(XLB·XLC)는 §3-5 결측.
     components["C5"] = c5_speculation_from_db(pri, lev, as_of)
+    # C6 상관 응집 · C7 거래대금 (TH-8) — 구성종목 DailyPrice 3년 게이트(백필 도달 시 활성).
+    components["C6"] = c6_correlation_from_db(sector_symbols, as_of)
+    components["C7"] = c7_dollar_volume_from_db(sector_symbols, as_of)
     components["C8"] = _aggregate_c8_for_sector(sector_symbols, c8_by_symbol)
     return components
 

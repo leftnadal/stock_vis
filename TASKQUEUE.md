@@ -616,10 +616,14 @@
 - 상태: **종결(TH-7d, 결정12b=A)**. 레버리지 9종 시드(0021, ERX 승격·XLB/XLC 결측 확정) + EtfDailyBar(0020) 거래량 3년 백필 15,120행 + c5_speculation_from_db + 조립기 _NOT_WIRED 에서 C5 제거. 14 test. 유동성 하한 $1M·배율 3x우선+2x대체 판정.
 - 근거: 설계 §6.4 v1.2.4 확정 매핑표 + DECISIONS 2026-07-09 결정12b.
 
-## TH-C4-COLDSTART — C4 산식 배선 + 콜드스타트 규칙 (등재, 2026-07-09, 비준 대기)
-- 상태: 등재. **트리거 = 데이터 축적 중**(EtfSnapshot 원료 일간 적립 가동, snapshot_etf_metrics_task beat 17:00ET). 산식 배선은 비준 대기.
-- 배경: FMP Starter shares_out 이력 부재(TH-7 프로브) → C4 = Σ(Δshares_out×NAV) 20일 이동합의 3년 z 를 지금 산출 불가. EtfSnapshot 을 지금부터 축적(결정11=A).
-- 비준 필요: 3년 σ 부재 대응 콜드스타트 규칙(C8 §5.3 cross_sectional 폴백 동형 or 축적 N일 도달 게이트). §2/§6.4 에 C4 콜드스타트 미정의 = 비준 사안(C8 결정7 동형).
+## ✅ TH-C4-COLDSTART — C4 산식 배선 + 콜드스타트 게이트 (종결, 2026-07-09)
+- 상태: **종결(TH-8, 결정13=C)**. c4_etf_flow_from_db 게이트(diff<26 결측 / 26≤<60 확장 time_series_expanding / ≥60 정식 time_series, 상수 26/60=결정7 병기, 횡단 z 기각) + 조립기 편입. 14 test. **가동은 EtfSnapshot 축적 자동수렴**(예상 8월 중순, 재비준 지점 없음).
+- 근거: DECISIONS 2026-07-09 결정13, 설계 §2 v1.2.5.
+
+## TH-C6C7-BACKFILL — C6/C7 활성용 구성종목 DailyPrice 3년 백필 (등재, 2026-07-09, 상신)
+- 상태: 등재·상신. **트리거 = 백필 규모/저장소 비준**. C6/C7 fetch·조립기 배선은 TH-8 완료(현 c*_insufficient_history 결측 = 3년 커버 미달).
+- 배경(STEP 0 실측): 구성종목 DailyPrice 3년 부재(AAPL 1년·대부분 ~7개월, PriceCoMovement 90d만). 3년 σ(§3-1) 정본 근사(우회) 금지 → 커버 게이트 결측(C4 동형).
+- 비준 필요: 501종목×3년≈380k행 백필의 **저장소(공유 stocks DailyPrice vs chainsight 신설 원장)·도메인 경계·실행 주체**. FMP 종목 3년 = 봉쇄 아님(가용), chainsight 세션은 공유 도메인 대량 쓰기 회피로 강행 안 함.
 
 ## TH-C8-ZMODE-BADGE — API 단계 카드 z_mode 뱃지 노출 검토 (등재, 2026-07-08)
 - 상태: 등재. **트리거 = API/카드 슬라이스**. 근거 = DECISIONS 2026-07-08 결정7(종목별 z_mode 혼재).

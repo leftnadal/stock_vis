@@ -1,7 +1,11 @@
 # Theme Heat 설계서 (테마 온도계 + 수요 지지 축)
 
 - **문서 ID**: `theme_heat_design`
-- **버전**: **v1.2.4** (2026-07-09) — v1.2.3 대비: §6.4 C5 레버리지 짝 **확정 매핑 9종 명문화**
+- **버전**: **v1.2.5** (2026-07-09) — v1.2.4 대비: **C4 콜드스타트 게이트**(결정13=C: diff<26
+  결측 / 26≤diff<60 확장 창 time_series_expanding / ≥60 정식 time_series, 상수 26/60=결정7 체계
+  병기, 횡단 z 기각) + **C6/C7 배선**(구성종목 DailyPrice 3년 커버 게이트). 조립기 _NOT_WIRED =
+  C1·C3 만 잔여. C6/C7 활성 = DailyPrice 3년 백필(stocks 도메인, 상신). §2 산식·부호 불변.
+- **버전(이전)**: **v1.2.4** (2026-07-09) — v1.2.3 대비: §6.4 C5 레버리지 짝 **확정 매핑 9종 명문화**
   (결정12b=A: 유동성 하한 20일 중위 거래대금 ≥ $1M · 배율 3x 우선+2x 대체 · XLB·XLC 결측 확정).
   C5 **풀배선 완료**(레버리지 시드 0021 + EtfDailyBar 거래량 3년 백필 + c5_speculation_from_db
   fetch + 조립기 _NOT_WIRED 에서 C5 제거). §2 C5 산식 불변.
@@ -72,6 +76,12 @@ v1.0의 제외 근거였던 "C4 중첩"은 재검토 결과 기각(C4=돈의 이
 측정 대상 상이), 커버리지 문제는 §3-6 결측 재분배로 처리.
 
 보조 지표 (가중합 밖): T0 지수 프록시 — VIX·VXN·OVX·SKEW, CBOE put/call. 카드 툴팁 배경용.
+
+**C4 콜드스타트 게이트 (결정13=C, v1.2.5)**: FMP shares_out 이력 부재로 C4 z는 EtfSnapshot
+축적 위 **시계열 전용**(횡단 z 기각 — n=11 통계 부적격). 종목별 유효 diff: <26 → 결측
+(`c4_insufficient_history`) / 26≤diff<60 → 확장 창(window=min(이력,60), `time_series_expanding`)
+/ ≥60 → 정식 60 창(`time_series`). 상수 26/60 = 결정7 체계 병기(반년 표본 하한·정식 창).
+**C6/C7**: 구성종목 DailyPrice 3년 커버 미달 시 `c*_insufficient_history`(백필 도달 시 자동 활성).
 
 ## 3. 합성 규칙 (양 축 공통 골격)
 
@@ -374,6 +384,7 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | 유니버스 소스 복구 + REFRESH-ALERT (Wikipedia 결정9 B)                                | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-6: datahub 404→Wikipedia+가드+비파괴 sync·refresh/monitor beat 2종·실갱신 편입7/편출7[BK→BNY]·staleness fresh. 14 test. 결정6 해제=verifier 판정 대기) |
 | C5 풀배선 (SPDR 원본 시드) + C4 원료 시계 기동                                        | 마켓 뷰 BE PR             | 1     | 🔶 부분 (2026-07-09, TH-7c: 결정12a SPDR 원본 11종 시드[0018, active primary 11·테마 ETF 7 불변·XLE/XLV 승격] + **C4 원료** EtfSnapshot[0019]·snapshot_etf_metrics_task·beat 17:00ET·스모크 11행 멱등. 12 test. **C5 레버리지 배선·C4 산식은 12b/COLDSTART 대기**) |
 | C5 레버리지 시드 + 거래량 백필 + 계산기 배선 + 조립기 편입                            | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-7d: 결정12b=A 레버리지 9종 시드[0021, ERX 승격·XLB/XLC 결측] + EtfDailyBar[0020] 거래량 3년 백필 15,120행 + c5_speculation_from_db + 조립기 _NOT_WIRED 에서 C5 제거[C1/C3/C4/C6/C7 잔여]. 14 test. C4 산식만 COLDSTART 대기) |
+| C4 콜드스타트 게이트 + C6/C7 배선                                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-8: 결정13=C C4 게이트[diff 26/60 3분기·time_series 전용·순수함수 재사용] + C6/C7[DailyPrice 3년 커버 게이트] 배선. 조립기 _NOT_WIRED=C1·C3 잔여. 14 test. **C4 가동=EtfSnapshot 축적 자동수렴, C6/C7 활성=DailyPrice 3년 백필[stocks 도메인 상신]**) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |
