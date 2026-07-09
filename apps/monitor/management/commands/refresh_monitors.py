@@ -1,18 +1,20 @@
-"""ingest → evaluate 체이닝 (MON-P2-INGEST, 수동 트리거).
+"""ingest → evaluate 체이닝 수동 트리거 (MON-P2-INGEST/BEAT).
 
-판독 이식 후 곧바로 평가 파이프라인 실행 → 스냅샷·상태·display 갱신. 예:
+체이닝 로직 본체는 서비스 함수 `pipeline.refresh_monitors`에 있고, 본 커맨드와
+Celery beat 태스크(`apps.monitor.tasks.refresh_monitors_task`)가 이를 각각 얇게
+호출한다(MON-P2-BEAT §3). 커맨드는 수동/온디맨드 트리거 전용. 예:
     python manage.py refresh_monitors                 # 전체 stock 모니터
     python manage.py refresh_monitors --monitor <id>  # 특정 모니터
 """
 from django.core.management.base import BaseCommand
 
 from apps.monitor.models import Monitor
-from apps.monitor.services.ingest import BACKFILL_DAYS, ingest_readings_for_monitor
-from apps.monitor.services.pipeline import evaluate_monitor
+from apps.monitor.services.ingest import BACKFILL_DAYS
+from apps.monitor.services.pipeline import refresh_monitors
 
 
 class Command(BaseCommand):
-    help = "ingest(EODSignal→Reading) 후 evaluate 체이닝 (수동)"
+    help = "ingest(EODSignal→Reading) 후 evaluate 체이닝 (수동, 서비스 함수 호출)"
 
     def add_arguments(self, parser):
         parser.add_argument("--monitor", dest="monitor", default=None)
@@ -23,11 +25,11 @@ class Command(BaseCommand):
         if options["monitor"]:
             qs = qs.filter(id=options["monitor"])
 
-        for m in qs:
-            ingest_readings_for_monitor(m, backfill_days=options["days"])
-            res = evaluate_monitor(m)
+        results = refresh_monitors(queryset=qs, backfill_days=options["days"])
+        for res in results:
             self.stdout.write(
-                f"  {m.target_ref}: score={res['overall_score']} "
-                f"state={res['state']} coverage={res['data_coverage']}"
+                f"  {res['monitor_id'][:8]}: score={res['overall_score']} "
+                f"state={res['state']} ingested={res['ingested']} "
+                f"coverage={res['data_coverage']}"
             )
-        self.stdout.write(self.style.SUCCESS(f"refresh 완료: {qs.count()}개 모니터"))
+        self.stdout.write(self.style.SUCCESS(f"refresh 완료: {len(results)}개 모니터"))
