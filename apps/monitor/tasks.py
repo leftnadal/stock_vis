@@ -78,12 +78,24 @@ def refresh_monitors_task(self):
     results = refresh_monitors(as_of_date=as_of)
     ingested = sum(r.get("ingested", 0) for r in results)
     changed = sum(1 for r in results if r.get("state_changed"))
+    alerts_created = sum(1 for r in results if r.get("alert_created"))
+    new_close_ids = [r["monitor_id"] for r in results if r.get("newly_close_suggested")]
+
+    # 다이제스트 이메일: 당일 전이 ≥1건 또는 마감 제안 신규 시에만(전이일 한정, best-effort).
+    from apps.monitor.services.alerts import send_digest
+
+    digest_res = send_digest(as_of, new_close_monitor_ids=new_close_ids)
+
     logger.info(
-        "monitor refresh 완료: as_of=%s monitors=%d readings+=%d state_changed=%d",
+        "monitor refresh 완료: as_of=%s monitors=%d readings+=%d state_changed=%d "
+        "alerts=%d close_suggest_new=%d digest_sent=%s",
         as_of,
         len(results),
         ingested,
         changed,
+        alerts_created,
+        len(new_close_ids),
+        digest_res["sent"],
     )
     return {
         "status": "ok",
@@ -91,4 +103,7 @@ def refresh_monitors_task(self):
         "monitors": len(results),
         "readings_ingested": ingested,
         "state_changed": changed,
+        "alerts_created": alerts_created,
+        "close_suggest_new": len(new_close_ids),
+        "digest_sent": digest_res["sent"],
     }

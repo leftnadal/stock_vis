@@ -2,6 +2,7 @@
 from rest_framework import serializers
 
 from apps.monitor.models import (
+    AlertEvent,
     Claim,
     IndicatorReading,
     Monitor,
@@ -38,6 +39,32 @@ class ClaimSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
+class AlertEventSerializer(serializers.ModelSerializer):
+    """전이 알림 — 인앱 패널 행(상태색/라벨 파생 포함)."""
+
+    monitor_name = serializers.CharField(source="monitor.name", read_only=True)
+    target_ref = serializers.CharField(source="monitor.target_ref", read_only=True)
+    from_label = serializers.SerializerMethodField()
+    to_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AlertEvent
+        fields = [
+            "id", "monitor", "monitor_name", "target_ref",
+            "from_state", "to_state", "from_label", "to_label",
+            "asof", "score", "is_deterioration", "is_suppressed", "read", "created_at",
+        ]
+        read_only_fields = fields
+
+    _LABELS = dict(Monitor.State.choices)
+
+    def get_from_label(self, obj):
+        return self._LABELS.get(obj.from_state, obj.from_state)
+
+    def get_to_label(self, obj):
+        return self._LABELS.get(obj.to_state, obj.to_state)
+
+
 class MonitorSerializer(serializers.ModelSerializer):
     # ScopeResolver가 정규화한 표시명 (읽기 전용)
     resolved_label = serializers.SerializerMethodField()
@@ -54,10 +81,14 @@ class MonitorSerializer(serializers.ModelSerializer):
         fields = [
             "id", "scope", "target_ref", "name", "status", "current_state",
             "target_date_end", "resolved_label", "latest_score", "display",
-            "indicator_count", "next_deadline", "has_claim", "created_at", "updated_at",
+            "indicator_count", "next_deadline", "has_claim",
+            "close_suggested", "danger_streak", "created_at", "updated_at",
         ]
-        # current_state는 파이프라인(엔진) 소유 — 사용자 입력 불가
-        read_only_fields = ["id", "current_state", "created_at", "updated_at"]
+        # current_state·마감제안은 파이프라인(엔진) 소유 — 사용자 입력 불가
+        read_only_fields = [
+            "id", "current_state", "close_suggested", "danger_streak",
+            "created_at", "updated_at",
+        ]
 
     def get_resolved_label(self, obj):
         try:

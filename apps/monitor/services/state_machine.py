@@ -130,6 +130,25 @@ def determine_state(monitor, overall_score, prev_score,
     }
 
 
+# 상태 심각도 랭크 (높을수록 건강) — 전이 악화/개선 판정 단일 출처 (MON-P3-ALERT).
+# 트리아지 정렬(api/views._SEVERITY_WHENS)과 방향 일치: critical/expired/needs_review 최하.
+STATE_RANK = {
+    "strengthening": 4,
+    "active": 3,
+    "warming_up": 3,
+    "paused": 3,
+    "weakening": 2,
+    "needs_review": 1,
+    "critical": 0,
+    "expired": 0,
+}
+
+
+def is_deterioration(from_state, to_state):
+    """전이가 악화(심각도 랭크 하락)인가. 미지 상태는 중립(3)으로 방어."""
+    return STATE_RANK.get(to_state, 3) < STATE_RANK.get(from_state, 3)
+
+
 def score_to_phase(score):
     """score -> Moon Phase 시각화 (수학 모델 Section 5.4)."""
     if score > 0.6:

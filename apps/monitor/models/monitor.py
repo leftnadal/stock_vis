@@ -54,6 +54,10 @@ class Monitor(models.Model):
     )
     # 관제 종료 목표일 (없으면 무기한 — 90일+ 시 needs_review)
     target_date_end = models.DateField(null=True, blank=True)
+    # 마감 제안 (MON-P3-ALERT): danger(critical) 연속 거래일 카운터 + 10일↑ 제안 플래그.
+    # 제안만 — 마감은 사용자 수동 확정(결정 3-B). 배지 UI는 CLOSE 트랙 몫.
+    danger_streak = models.IntegerField(default=0)
+    close_suggested = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

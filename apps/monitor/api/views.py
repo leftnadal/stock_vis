@@ -26,12 +26,14 @@ from rest_framework.views import APIView
 from apps.monitor.catalog import catalog_for
 
 from apps.monitor.api.serializers import (
+    AlertEventSerializer,
     ClaimSerializer,
     IndicatorReadingSerializer,
     MonitorIndicatorSerializer,
     MonitorSerializer,
 )
 from apps.monitor.models import (
+    AlertEvent,
     Claim,
     IndicatorReading,
     Monitor,
@@ -39,6 +41,7 @@ from apps.monitor.models import (
     MonitorSnapshot,
 )
 from apps.monitor.services.pipeline import evaluate_monitor
+from apps.monitor.services.sparkline import score_series
 
 # 상태 심각도 랭크: 위험(0) → 약화(1) → 관찰(2) → 유지(3). 트리아지 정렬 1차 키.
 _SEVERITY_WHENS = [
@@ -111,6 +114,61 @@ class MonitorViewSet(viewsets.ModelViewSet):
         monitor = self.get_object()  # user 스코프 자동 적용
         result = evaluate_monitor(monitor)
         return Response(result, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"])
+    def sparkline(self, request, pk=None):
+        """상태밴드 스파크라인 데이터 — 최근 N거래일 score 시계열 + 밴드 + 전이 표식."""
+        monitor = self.get_object()  # user 스코프 자동 적용
+        try:
+            window = int(request.query_params.get("window", 30))
+        except (TypeError, ValueError):
+            window = 30
+        window = max(5, min(window, 120))
+        return Response(score_series(monitor, window=window))
+
+
+class AlertEventViewSet(viewsets.ReadOnlyModelViewSet):
+    """전이 알림 — 인앱 패널·헤더 벨 (user 스코프, 읽기 + 읽음 처리 action)."""
+
+    serializer_class = AlertEventSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # 억제 알림은 개별 행에서 제외(배지·목록 숨김, 결정 1-C 쿨다운)
+        qs = AlertEvent.objects.filter(
+            monitor__user=self.request.user, is_suppressed=False
+        ).select_related("monitor")
+        if self.request.query_params.get("unread") == "true":
+            qs = qs.filter(read=False)
+        if self.request.query_params.get("deterioration") == "true":
+            qs = qs.filter(is_deterioration=True)
+        return qs
+
+    @action(detail=False, methods=["get"])
+    def summary(self, request):
+        """헤더 벨 배지용 — 미확인 악화 알림 수(악화만 카운트, 결정 1-C)."""
+        count = AlertEvent.objects.filter(
+            monitor__user=request.user,
+            is_suppressed=False,
+            is_deterioration=True,
+            read=False,
+        ).count()
+        return Response({"unread_deterioration_count": count})
+
+    @action(detail=True, methods=["post"])
+    def read(self, request, pk=None):
+        """개별 알림 읽음 처리."""
+        alert = self.get_object()
+        if not alert.read:
+            alert.read = True
+            alert.save(update_fields=["read"])
+        return Response(self.get_serializer(alert).data)
+
+    @action(detail=False, methods=["post"])
+    def read_all(self, request):
+        """미확인 알림 일괄 읽음 처리."""
+        n = self.get_queryset().filter(read=False).update(read=True)
+        return Response({"marked_read": n})
 
 
 class _OwnedByMonitorMixin:
