@@ -1204,7 +1204,7 @@ thesis/      — ✅ 제거됨 (D-MONITOR-REBUILD, apps/monitor 편입, 2026-07-
 **잔존 (monorepo 외 트랙)**:
 - BOUNDARY-1/2/3 (경계 트랙 소진 큐)
 - Beat prod DB 동기화 (운영 트리거, `sync_beat_schedule --apply` + beat 재시작)
-- ~~thesis 처분 (a/b/c 트리거 대기)~~ — **✅ 종결(D-MONITOR-REBUILD, 2026-07-09, P2-S3)**: 트리거 발동(사용자 트랙 배정) → 구 thesis 앱 폐기·main 랜딩 `c80783a` → 후속 `apps/monitor` 신축. **top-level `thesis/` 디렉터리 제거 완료**(BE `_reuse` 엔진 4종 P2-S2 소진 후 `__init__.py` 플레이스홀더만 남아 조기 제거). "monorepo 외 잔존" 해소 = apps/ 편입 수렴. ※ 잔여 = **FE `frontend/components/thesis/_reuse`뿐**(빌더 골격, P3 소진 후 제거) — 이는 처분 사안이 아니라 P3 이식 큐.
+- ~~thesis 처분 (a/b/c 트리거 대기)~~ — **✅ 종결(D-MONITOR-REBUILD, 2026-07-09, P2-S3)**: 트리거 발동(사용자 트랙 배정) → 구 thesis 앱 폐기·main 랜딩 `c80783a` → 후속 `apps/monitor` 신축. **top-level `thesis/` 디렉터리 제거 완료**(BE `_reuse` 엔진 4종 P2-S2 소진 후 `__init__.py` 플레이스홀더만 남아 조기 제거). "monorepo 외 잔존" 해소 = apps/ 편입 수렴. **✅ 최종 종결(P3-S2b, 2026-07-09)**: FE `frontend/components/thesis/_reuse`(빌더 골격)도 소진 → `components/thesis/` 디렉터리째 제거. **thesis 흔적 0**(BE·FE 전 잔재 소멸), 처분 사안 완전 클로즈.
 - FMPClient 3중화 통합 (별도 부채 트랙)
 - health ❌ 1건 PROGRESS hash 자기참조 (push 트리거, 정합성 Layer 4 영역)
 

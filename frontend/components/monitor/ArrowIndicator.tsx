@@ -1,22 +1,21 @@
 'use client'
 
-import { degreeToColor, degreeToLabel } from '@/lib/thesis/utils'
-
+// 렌더 전용: degree·color·label은 API(monitor.display)에서 받는다. FE 재계산 없음.
 interface Props {
-  degree: number        // 0~180
+  degree: number // 0~180 (API 제공)
+  color: string // hex (API 제공)
+  label: string // (API 제공)
   size?: 'sm' | 'md' | 'lg'
   showLabel?: boolean
 }
 
 const SIZE_MAP = {
   sm: { fontSize: '1.125rem', text: 'text-xs' },
-  md: { fontSize: '1.5rem',   text: 'text-xs' },
-  lg: { fontSize: '2.25rem',  text: 'text-sm' },
+  md: { fontSize: '1.5rem', text: 'text-xs' },
+  lg: { fontSize: '2.25rem', text: 'text-sm' },
 }
 
-export function ArrowIndicator({ degree, size = 'md', showLabel = false }: Props) {
-  const color = degreeToColor(degree)
-  const label = degreeToLabel(degree)
+export function ArrowIndicator({ degree, color, label, size = 'md', showLabel = false }: Props) {
   const { fontSize, text: textClass } = SIZE_MAP[size]
 
   return (
@@ -32,7 +31,7 @@ export function ArrowIndicator({ degree, size = 'md', showLabel = false }: Props
         role="img"
         aria-label={label}
       >
-        {'\u2192'}
+        {'→'}
       </span>
       {showLabel && (
         <span style={{ color }} className={textClass}>

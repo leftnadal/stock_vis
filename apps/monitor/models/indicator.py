@@ -33,6 +33,8 @@ class MonitorIndicator(models.Model):
         max_length=8, choices=SupportDirection.choices, default=SupportDirection.POSITIVE
     )
     weight = models.FloatField(default=1.0)
+    # 카탈로그 소스 키 (예: 'eod_composite'). None = 사용자 정의(수동 판독). 이식 태스크가 이 키로 EODSignal→IndicatorReading 채움.
+    source_key = models.CharField(max_length=40, blank=True, default="")
 
     # 스코어링 파라미터 (None → indicator_scorer 기본값)
     epsilon = models.FloatField(null=True, blank=True)
