@@ -138,7 +138,9 @@
 | MON-P1 | 아카이브 + thesis 앱 철거 | orchestrator | ADR | ✅ 완료 2026-07-08 (9커밋, **main 랜딩 `c80783a`** `--no-ff` B안) |
 | MON-P2-S1 | Monitor·Claim 모델 + ScopeResolver(종목) + 테스트 | @backend | MON-P1 | ✅ 완료 2026-07-08 (`f9754c7`, apps/monitor 신설, 10 passed) |
 | MON-P2-S2 | MonitorIndicator·IndicatorReading·Snapshot 모델 + `_reuse` 엔진 4종 이식 + 테스트 | @backend | MON-P2-S1 | ✅ 완료 2026-07-08 (`e62760f`, 모델 3+엔진 4, 테스트 37 누적, BE _reuse 소진) |
-| MON-P2-S3 | 파이프라인 서비스(지표 스코어→집계→스냅샷→상태) + `api/v1/monitor/` REST + 테스트 | @backend | MON-P2-S2 | todo | ADR §결정4·6 |
+| MON-P2-S3 | 파이프라인 서비스 + `api/v1/monitor/` REST + 실 DB migrate + 테스트 | @backend | MON-P2-S2 | ✅ 완료 2026-07-09 (`e37a87e`, **P2 완결**, 테스트 50, 실 DB 5테이블 적용) |
+| MON-P2-BEAT | Monitor 평가 beat 주기 등록 (EOD 창 18:00~18:35 ET 경합 설계 + DB PeriodicTask #28) | @infra | MON-P2-S3 land | todo (별도 지시서 필요) | ADR §결정6 |
+| MON-P3 | 대화형 빌더 4단계 + IA-2 페이지 + My 서브탭 + 전역 내비 6칸+아바타 (FE `_reuse` 골격 소진) | @frontend | MON-P2 land | todo | ADR §결정5·7 |
 | MON-P3 | 빌더 4단계 + IA-2 페이지 + My 서브탭 shell + 전역 내비 6칸+아바타 개편(결정7) | @frontend | MON-P2 | todo | ADR §결정5·7 |
 | MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
 | MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
