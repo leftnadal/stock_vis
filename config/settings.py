@@ -536,6 +536,8 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
 REPORT_RECIPIENT_EMAIL = os.getenv('REPORT_RECIPIENT_EMAIL', '')
+# Monitor 전이 다이제스트 수신자 1인(MON-P3-ALERT). 미설정 시 발송 skip(인앱 이중화).
+MONITOR_ALERT_RECIPIENT = os.getenv('MONITOR_ALERT_RECIPIENT', '')
 
 # 알림 본문 딥링크 베이스(하드코딩 금지 — env override). MP2-ALERTS 판단 화면 링크.
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')

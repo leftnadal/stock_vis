@@ -26,6 +26,8 @@ def evaluate_monitor(monitor, as_of_date=None):
     """
     as_of = as_of_date or timezone.localdate()
 
+    prev_state = monitor.current_state  # 전이 감지용(update 전 상태, MON-P3-ALERT)
+
     indicators = list(monitor.indicators.filter(is_active=True))
 
     indicator_scores = {}
@@ -79,6 +81,7 @@ def evaluate_monitor(monitor, as_of_date=None):
         'asof_date': as_of.isoformat(),
         'overall_score': overall_score,
         'state': new_state,
+        'prev_state': prev_state,
         'state_changed': state_res['state_changed'],
         'reminder_needed': state_res['reminder_needed'],
         'data_coverage': round(data_coverage, 4),
@@ -109,12 +112,27 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
     (MON-P2-BEAT §3 — 커맨드/태스크는 이 함수를 각각 얇게 호출한다).
     반환 = 평가 결과 dict에 이식 증분(ingested)을 덧붙인 요약.
     """
+    from datetime import date as _date
+
+    from apps.monitor.services.alerts import (
+        detect_and_record_alert,
+        update_danger_streak,
+    )
+
     ingest_results = ingest_readings_for_monitor(
         monitor, backfill_days=backfill_days, as_of_date=as_of_date
     )
     ingested = sum(r["ingested"] for r in ingest_results)
     result = evaluate_monitor(monitor, as_of_date=as_of_date)
     result["ingested"] = ingested
+
+    # 전이 알림 감지 + 마감 제안 갱신 (MON-P3-ALERT, evaluate 직후 같은 흐름 — 신규 beat 없음)
+    as_of = _date.fromisoformat(result["asof_date"])
+    alert_res = detect_and_record_alert(monitor, result)
+    newly_close_suggested = update_danger_streak(monitor, as_of)
+    result["alert_created"] = bool(alert_res["created"])
+    result["alert_suppressed"] = bool(alert_res["suppressed"])
+    result["newly_close_suggested"] = newly_close_suggested
     return result
 
 
