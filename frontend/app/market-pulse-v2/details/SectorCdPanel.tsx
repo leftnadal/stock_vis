@@ -10,6 +10,8 @@
  * CD_STANCE = FE 정적 판정 문구(REGIME_STANCE 톤 동형, LLM 0) — 4상태 + 유보 = 5문구.
  * 회전 맵 어포던스 미포함(D-SECTOR-NAV — Slice 3).
  */
+import Link from 'next/link'
+
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail as Detail, SectorRow } from '@/lib/api/marketPulseV2'
 import {
@@ -112,10 +114,24 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
     return <p className="text-sm text-slate-500">섹터 판단 데이터가 아직 준비되지 않았습니다.</p>
   }
 
+  // MP2-SECTOR-CD S3: 회전 맵 CTA — 출발 섹터 = rank-1 리더(sectors[]는 rank순). D-SECTOR-NAV 어포던스 활성화.
+  const leadSymbol = sectors[0]?.symbol
+
   return (
     <div className="grid gap-4" data-testid="sector-cd-panel">
       <QuadrantMinimap sectors={sectors} labels={labels} />
-      <CdLegend />
+      <div className="flex items-center justify-between">
+        <CdLegend />
+        {leadSymbol ? (
+          <Link
+            href={`/market-pulse-v2/rotation?from=${leadSymbol}`}
+            data-testid="rrg-cta"
+            className="shrink-0 rounded border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+          >
+            회전 맵에서 보기 →
+          </Link>
+        ) : null}
+      </div>
 
       <ul className="grid gap-2">
         {sectors.map((s) => {

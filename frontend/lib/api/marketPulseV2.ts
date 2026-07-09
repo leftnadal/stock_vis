@@ -393,6 +393,8 @@ export interface SectorDetail {
   sector_history?: SectorHistory[]
   // MP2-SECTOR-CD S2(additive): 모멘텀 판정선 단일소스(= CD_MOMENTUM_BASELINE). FE y=0 하드코딩 금지.
   cd_momentum_baseline?: number
+  // MP2-SECTOR-CD S3(additive): RRG x축(상대강도) 판정선 단일소스(= CD_REL_STRENGTH_BASELINE). FE 하드코딩 금지.
+  cd_rel_strength_baseline?: number
 }
 
 export interface ConcentrationHistoryPoint {
