@@ -16,6 +16,7 @@ import { useMemo, useState } from 'react'
 import { MultiLineTrendChart, type TrendSeries } from '@/components/charts/MultiLineTrendChart'
 import { translate } from '@/lib/i18n/marketPulse'
 import type { SectorDetail } from '@/lib/api/marketPulseV2'
+import { RegimeStrip } from './RegimeStrip'
 import { transitionVlines } from './trendOverlays'
 
 // 모멘텀 모드 표시 창(일). 국면 스트립과 동일 날짜 창을 쓰기 위해 고정(랭킹 뷰는 7/30 토글 유지).
@@ -26,6 +27,7 @@ export function SectorTrajectory({
   labels,
   transitionDates = [],
   emphasisOverride,
+  regimeHistory = [],
 }: {
   payload: SectorDetail
   labels?: Record<string, string>
@@ -33,6 +35,8 @@ export function SectorTrajectory({
   transitionDates?: string[]
   // MP2-TREND S2(D-TREND-EMPHASIS 옵션 B): 델타 카드가 전달한 상위 변동 섹터. 없으면 기본(leaders/laggards).
   emphasisOverride?: string[]
+  // MP2-SECTOR-CD S2: 국면 스트립 데이터원(regime_history_30d 기서빙). 없으면 스트립 미렌더.
+  regimeHistory?: { date: string; stage: string }[]
 }) {
   const history = payload.sector_history ?? []
   const sectors = payload.sectors ?? []
@@ -91,6 +95,14 @@ export function SectorTrajectory({
     return typeof b === 'number' ? [{ value: b, label: '판정선' }] : []
   }, [payload.cd_momentum_baseline])
 
+  // 국면 스트립 날짜 창 = 모멘텀 차트와 동일(전 시리즈 통합 날짜 최근 MOMENTUM_WINDOW).
+  const stripDates = useMemo(() => {
+    const set = new Set<string>()
+    momentumSeries.forEach((s) => s.points.forEach((p) => set.add(p.date)))
+    const all = Array.from(set).sort()
+    return all.slice(Math.max(0, all.length - MOMENTUM_WINDOW))
+  }, [momentumSeries])
+
   const entityCount = series.length || 11
 
   if (series.length === 0) {
@@ -140,15 +152,19 @@ export function SectorTrajectory({
           readout={{ pinLatest: true }}
         />
       ) : (
-        <MultiLineTrendChart
-          series={momentumSeries}
-          yAxis={{ domain: ['auto', 'auto'], tickFormat: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` }}
-          ranges={[MOMENTUM_WINDOW]}
-          emphasis={{ default: emphasisDefault, legendToggle: true }}
-          overlays={{ vlines, hlines: momentumHlines }}
-          readout={{ pinLatest: true }}
-          connectNulls={false}
-        />
+        <>
+          <MultiLineTrendChart
+            series={momentumSeries}
+            yAxis={{ domain: ['auto', 'auto'], tickFormat: (v) => `${v >= 0 ? '+' : ''}${v.toFixed(1)}%` }}
+            ranges={[MOMENTUM_WINDOW]}
+            emphasis={{ default: emphasisDefault, legendToggle: true }}
+            overlays={{ vlines, hlines: momentumHlines }}
+            readout={{ pinLatest: true }}
+            connectNulls={false}
+          />
+          {/* 국면 스트립 레인 — 차트와 동일 날짜 창(D-SECTOR-MOM-LANE 변형2). */}
+          <RegimeStrip dates={stripDates} regimeHistory={regimeHistory} labels={labels} />
+        </>
       )}
     </section>
   )
