@@ -75,6 +75,26 @@ BEATS = [
         "timezone": "America/New_York",
         "day_of_week": "5",  # 금요일
     },
+    {
+        # Theme Heat C2b 수집 (TH-5, 설계 §7) — heat 직전. ET 17:30 매일.
+        # ★ 기존 chainsight-heat-score-daily(SeedHeatScore, cs_44)와 별개 — 이름 충돌 회피.
+        "name": "chainsight-collect-theme-filings",
+        "task": "chainsight-collect-theme-filings",
+        "minute": "30",
+        "hour": "17",
+        "timezone": "America/New_York",
+        "day_of_week": None,  # 매일
+    },
+    {
+        # Theme Heat 일배치 (TH-5, 설계 §7 compute_theme_heat_task) — ET 18:00 매일.
+        # filings(17:30)·estimates(금 16:30) 뒤 = 신선한 성분으로 계산. SeedHeatScore와 별개.
+        "name": "chainsight-theme-heat-daily",
+        "task": "chainsight-theme-heat-daily",
+        "minute": "0",
+        "hour": "18",
+        "timezone": "America/New_York",
+        "day_of_week": None,  # 매일
+    },
 ]
 
 

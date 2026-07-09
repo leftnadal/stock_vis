@@ -205,6 +205,34 @@ def c2a_insider_from_db(
     return make_component(z, raw=current)
 
 
+# ────────────────────────────── C2 복합 슬롯 (C2a 0.12 + C2b 0.06 → 0.18) ──────────────────────────────
+C2A_SUBWEIGHT = 0.12  # §2 C2 내부 배분 — 내부자
+C2B_SUBWEIGHT = 0.06  # §2 C2 내부 배분 — 발행
+
+
+def c2_supply_reaction(c2a: Optional[dict], c2b: Optional[dict]) -> dict:
+    """
+    C2 공급 반응 복합 슬롯 (§2). C2a(내부자 0.12) + C2b(발행 0.06) 하위가중 결합.
+
+    신시사이저 HEAT_WEIGHTS 는 C2 를 단일 0.18 슬롯으로 본다 → C2a/C2b 를 여기서 결합:
+    유효 하위성분의 하위가중 정규화 가중합. 하위 결측은 §3-5 와 동형(하위 재분배).
+    둘 다 결측 → C2 결측. raw 에 하위 성분 원본 보존(evidence·감사).
+    """
+    subs = [(C2A_SUBWEIGHT, c2a), (C2B_SUBWEIGHT, c2b)]
+    present = [(w, c) for w, c in subs if _is_present_component(c)]
+    raw = {"c2a": c2a, "c2b": c2b}
+    if not present:
+        return {"z": None, "s": None, "raw": raw, "missing_reason": "c2_no_supply"}
+    tot = sum(w for w, _ in present)
+    z = sum(w * float(c["z"]) for w, c in present) / tot
+    return {"z": z, "s": sigmoid(z), "raw": raw, "missing_reason": None}
+
+
+def _is_present_component(comp: Optional[dict]) -> bool:
+    """성분 dict 유효 여부 (z not None + missing_reason 없음)."""
+    return bool(comp) and comp.get("z") is not None and not comp.get("missing_reason")
+
+
 # ────────────────────────────── C3 내러티브 볼륨 (0.14) ──────────────────────────────
 def c3_narrative(
     current_volume: Optional[float],

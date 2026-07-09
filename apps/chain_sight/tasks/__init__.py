@@ -3,6 +3,7 @@
 from .attention_tasks import *  # noqa: F401,F403
 from .estimate_tasks import *  # noqa: F401,F403
 from .event_group_tasks import *  # noqa: F401,F403
+from .heat_tasks import *  # noqa: F401,F403
 from .insider_tasks import *  # noqa: F401,F403
 from .leadership_tasks import *  # noqa: F401,F403
 from .neo4j_dirty_sync_tasks import *  # noqa: F401,F403
