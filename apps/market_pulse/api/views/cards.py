@@ -25,6 +25,7 @@ from apps.market_pulse.constants import (
     CD_MOMENTUM_BASELINE,
     CD_REL_STRENGTH_BASELINE,
     classify_cd_state,
+    resolve_official_cd_state,
 )
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.regime import RegimeSnapshot
@@ -284,6 +285,19 @@ def _sector_detail():
         for sym in ordered_symbols
     ]
 
+    # CD-STAB Slice B(D-CD-STAB): 공식 cd_state = 2일 히스테리시스 리플레이(무상태).
+    #   입력 = 섹터별 전 구간 distinct 거래일 raw 상태 시퀀스(ORM 전 구간, 30일 서빙 캡 무관).
+    #   현재 공식 상태 = 리플레이 마지막 원소. 저장 0 — 매 서빙 시 결정론적 재생.
+    raw_seq_by_symbol: dict = {}
+    for r in sorted(rows, key=lambda x: x.date):  # 오름차순
+        raw_seq_by_symbol.setdefault(r.market_index_id, []).append(
+            classify_cd_state(r.rel_strength, r.momentum_5d)
+        )
+    official_by_symbol = {
+        sym: resolve_official_cd_state(seq)[-1]
+        for sym, seq in raw_seq_by_symbol.items()
+    }
+
     return {
         "available": True,
         "date": latest_date.isoformat(),
@@ -296,9 +310,12 @@ def _sector_detail():
                 "momentum_20d": float(r.momentum_20d),
                 "flow_proxy": float(r.flow_proxy),
                 "rank": r.rank_in_universe,
-                # MP2-SECTOR-CD S1(additive): 판단 4-상태. 판정 로직 단일소스(payload builder).
-                #   FE·2차 소비자는 재계산 금지 — 이 값만 표시. None → 판단 유보.
-                "cd_state": classify_cd_state(r.rel_strength, r.momentum_5d),
+                # MP2-SECTOR-CD S1 → CD-STAB Slice B(D-CD-STATE-SEMANTICS): 판단 4-상태.
+                #   cd_state = 공식(2일 히스테리시스 확정) 상태 — 전 소비자(뱃지·점색·문구)가 소비.
+                #   FE·2차 소비자는 재계산 금지. None → 판단 유보.
+                "cd_state": official_by_symbol.get(r.market_index_id),
+                # cd_state_raw(additive): 원시 즉시 분류값. "전환 확인 중" 표시 등 후속 소비용(현 소비자 0).
+                "cd_state_raw": classify_cd_state(r.rel_strength, r.momentum_5d),
             }
             for r in latest
         ],
