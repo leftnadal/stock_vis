@@ -143,12 +143,20 @@ class TestC2bIssuance:
         assert comp["z"] is not None and comp["z"] > 0
 
 
-class TestStubs:
-    def test_c8_stub_contract_and_reason(self):
-        comp = hc.c8_estimate_revision()
-        _assert_contract(comp)
-        assert comp["z"] is None and comp["s"] is None
-        assert comp["missing_reason"] == "c8_cold_start"
+class TestC8Combiner:
+    """C8 = z_price − z_eps (§2). 계약 = 기본 4키 + C8 전용 z_mode."""
+
+    def test_valid_has_zmode_and_diff(self):
+        comp = hc.c8_estimate_revision(z_price=1.0, z_eps=0.2, z_mode="cross_sectional")
+        assert set(comp.keys()) == {"z", "s", "raw", "missing_reason", "z_mode"}
+        assert comp["z"] == pytest.approx(0.8)
+        assert comp["z_mode"] == "cross_sectional"
+        assert comp["missing_reason"] is None
+
+    def test_missing_leg_nulls_zmode(self):
+        comp = hc.c8_estimate_revision(z_price=None, z_eps=0.2)
+        assert comp["z"] is None and comp["z_mode"] is None
+        assert comp["missing_reason"] == "c8_z_unavailable"
 
 
 @pytest.mark.django_db

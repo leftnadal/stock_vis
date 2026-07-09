@@ -344,14 +344,30 @@ def c2b_issuance(
     return make_component(z, raw=raw)
 
 
-# ────────────────────────────── C8 추정치 리비전 (스텁 — 콜드 스타트) ──────────────────────────────
-def c8_estimate_revision(*args, **kwargs) -> dict:
+# ────────────────────────────── C8 추정치 리비전 괴리 (0.08) ──────────────────────────────
+def c8_estimate_revision(
+    z_price: Optional[float],
+    z_eps: Optional[float],
+    z_mode: Optional[str] = None,
+    raw: Any = None,
+    missing_reason: Optional[str] = None,
+) -> dict:
     """
-    C8 추정치 리비전 괴리 (§5.3) — **이 슬라이스 미구현 스텁 (콜드 스타트)**.
+    C8 추정치 리비전 괴리 (§2, v1.2.2 판정). **순수 조립기** — 레그 z 두 개를 결합.
 
-    주가 60일 수익률 z − EPS 컨센서스 60일 변화 z (양수 = 멀티플 단독 팽창 = 과열, 정방향).
-    리비전 시계열은 EstimateSnapshot 주간 스냅샷 → 60일 diff 로 자체 생성하며, 배포 후
-    60일 축적 전까지는 구조적 결측(§3-5 재분배). z_mode(cross_sectional→time_series) 감사
-    필드는 실구현 슬라이스에서 components 에 기록. 지금은 계약 만족 결측 반환.
+        C8_raw = z(가격 60일 수익률) − z(EPS 컨센서스 60일 변화)
+
+    부호: 양수 = 가격↑·이익 미확인 = **멀티플 단독 팽창 = 과열 기여**. EPS 상향(z_eps↑) →
+    C8 하락(이익이 과열을 식힘). 레그 산출·z_mode 판정·단면 오케스트레이션은
+    `estimate_revision.compute_c8_for_symbols`. 여기는 결합만.
+
+    양 레그 z 중 하나라도 None 또는 missing_reason → C8 None (반쪽 계산 금지). 계약에
+    C8 전용 `z_mode` 키('time_series'|'cross_sectional'|None) 추가.
     """
-    return make_component(None, raw=None, missing_reason="c8_cold_start")
+    if missing_reason is not None or z_price is None or z_eps is None:
+        return {
+            "z": None, "s": None, "raw": raw,
+            "missing_reason": missing_reason or "c8_z_unavailable", "z_mode": None,
+        }
+    z = float(z_price) - float(z_eps)
+    return {"z": z, "s": sigmoid(z), "raw": raw, "missing_reason": None, "z_mode": z_mode}
