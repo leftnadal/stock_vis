@@ -616,6 +616,18 @@
 | MP2-TREND-S3 | 3호(개정 R1) = **국면 재료 판정-거리 소형 다중**(옵션 B). z-score 전제 STEP 0 반증(classifier=raw 복합 룰, D-TREND-BASELINE-R1) → 룰-구동 7지표 raw 스파크라인 + rules.yaml 실제 컷 hlines + 판정거리. 세그먼트 [판정거리 | 이상도(z)🔒 예약탭](D-TREND-VIEWMODE). 컷 하드코딩 0(rules.yaml 단일소스). 조회-시 파생·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (R1, 코드머지 `8842531`, COLOR-STAGE2 CUT_STROKE 정합 포함)** — pytest 신규8/api80·vitest 신규8/전체526·tsc0·mig0. **트랙 마지막 슬라이스 → MP2-TREND 종결** |
 | MP2-TREND-S4 | 4호 = **z-이상도 뷰(예약 탭 채움)** — S3 세그먼트의 이상도(z) placeholder를 실 뷰로. 구성요소 z-정규화(윈도·EOD샘플·history 30→60 확장·저빈도 지표 처리 설계 선행). **트리거: B-1 land(Phase 5) — 그 전 착수 금지** | market_pulse 트랙 | B-1 land(Phase 5) | 🔒 예약(트리거 게이트) |
 
+## Carousel LLM 채움 (LLMFILL / 2026-07-09)
+
+> 근거 DECISIONS `[2026-07-09] D-LLMFILL`. CAROUSEL-BUILD(`24b0e47`)가 심은 3키 placeholder(thesis·perspectives·risk)를 EOD-bake 조립 직후(삽입 지점 A)에 shared LLM 래퍼 경유로 채운다. 부분 실패 내성(카드별 개별 호출) + `pipeline_meta.llm_fill` 관측(#46형 검문소 짝).
+
+| ID | Task | 분류 | 트리거 | Status |
+|----|------|------|--------|--------|
+| LLMFILL-BUILD | `packages/shared/stocks/llm/` 신설(card_fill_prompt + fill_service) + baker 삽입 지점 A additive 배선 + item 가드 테스트(7키 무변경 + 3키 타입 계약, D-LLMFILL ⑹). 실호출 금지(mock only). 게이트: scoped 테스트 green(심링크 OK, D-TEST-ENV) + 기존 테스트 무수정 통과(IDENTICAL) + diff=자기 구획(shared/stocks) | @backend (shared/stocks 구획) | — (D-LLMFILL 등재로 즉시) | 🟢 착수가능 |
+| LLM-GUARD-3 | 외부-LLM-직접호출 **가드 신설**(BOUNDARY-LLM 슬라이스③ 연동 — 코어 land 후 회귀방지). 본 슬라이스(LLMFILL) 스코프 분리분. 트리거: **다음 shared/llm 접점**(BOUNDARY-LLM 트리거 (b) 누적 또는 burn-down 착수) | @backend (BOUNDARY-LLM 연동) | 다음 shared/llm 접점 | 💤 등재(트리거 게이트) |
+| LLMFILL-OBSERVE | LLMFILL-BUILD land 후 **첫 무인 bake 아침**에 실호출 관측 — `pipeline_meta.llm_fill`{attempted, filled, failed, cost_usd, tokens} 실값 확인 + 3키 실채움/부분실패 내성 실증 + 비용 상한(일 1 bake × N=10) 준수 확인 | 관측(dashboard 디렉션) | **BUILD land 후 첫 무인 bake 아침** | 💤 휴면(트리거 게이트) |
+
+---
+
 ## 완료 (최근)
 
 | ID | Task | Agent | Completed | Notes |
