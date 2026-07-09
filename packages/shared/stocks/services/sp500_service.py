@@ -16,6 +16,32 @@ from packages.shared.api_request.providers.fmp.serverless_client import FMPClien
 
 logger = logging.getLogger(__name__)
 
+# 검증 가드 (TH-6 결정9) — 소스 오염·부분응답으로부터 유니버스 보호. 위반 시 DB 무접촉.
+UNIVERSE_MIN_ROWS = 480
+UNIVERSE_MAX_ROWS = 520
+
+
+def validate_universe(raw_constituents: List[Dict]) -> Dict:
+    """
+    유니버스 소스 응답 검증 가드. {"ok": bool, "reason": str|None, "count": int}.
+
+    가드: 행수 480~520 · 필수 필드(symbol·sector) 존재 · 심볼 중복 0.
+    위반이면 ok=False (호출부는 DB 무접촉 + 실패 처리).
+    """
+    n = len(raw_constituents or [])
+    if not (UNIVERSE_MIN_ROWS <= n <= UNIVERSE_MAX_ROWS):
+        return {"ok": False, "reason": f"count_out_of_range({n})", "count": n}
+    symbols = []
+    for item in raw_constituents:
+        sym = str(item.get("symbol") or "").upper().strip()
+        sector = str(item.get("sector") or "").strip()
+        if not sym or not sector:
+            return {"ok": False, "reason": "missing_required_field", "count": n}
+        symbols.append(sym)
+    if len(symbols) != len(set(symbols)):
+        return {"ok": False, "reason": "duplicate_symbols", "count": n}
+    return {"ok": True, "reason": None, "count": n}
+
 
 class SP500Service:
     """S&P 500 구성 종목 관리 서비스"""
@@ -48,6 +74,13 @@ class SP500Service:
         if not raw_constituents:
             logger.error("FMP에서 S&P 500 구성 종목을 가져오지 못했습니다")
             return {"created": 0, "updated": 0, "deactivated": 0, "total": 0}
+
+        # 검증 가드 (TH-6 결정9) — 위반 시 DB 무접촉 + 실패 신호
+        guard = validate_universe(raw_constituents)
+        if not guard["ok"]:
+            logger.error("유니버스 가드 위반 — DB 무접촉: %s", guard["reason"])
+            return {"created": 0, "updated": 0, "deactivated": 0,
+                    "total": guard["count"], "guard_violation": guard["reason"]}
 
         stats = {
             "created": 0,

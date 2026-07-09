@@ -95,6 +95,25 @@ BEATS = [
         "timezone": "America/New_York",
         "day_of_week": None,  # 매일
     },
+    {
+        # 유니버스 갱신 (TH-6, 결정9 B=Wikipedia) — 주 1회 월 07:00 ET, heat(18:00)보다 먼저.
+        # 죽은 sync-sp500-constituents(월간·datahub 404) 대체 = 소스 수리 + 가드 + 알림.
+        "name": "chainsight-refresh-sp500-universe",
+        "task": "chainsight-refresh-sp500-universe",
+        "minute": "0",
+        "hour": "7",
+        "timezone": "America/New_York",
+        "day_of_week": "1",  # 월요일
+    },
+    {
+        # 유니버스 신선도 감시 (TH-6, TH-UNIVERSE-REFRESH-ALERT) — 주 1회 월 07:30 ET, refresh 뒤.
+        "name": "chainsight-monitor-universe-staleness",
+        "task": "chainsight-monitor-universe-staleness",
+        "minute": "30",
+        "hour": "7",
+        "timezone": "America/New_York",
+        "day_of_week": "1",  # 월요일
+    },
 ]
 
 

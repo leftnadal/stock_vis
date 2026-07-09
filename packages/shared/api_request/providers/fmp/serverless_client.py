@@ -324,28 +324,19 @@ class FMPClient:
 
     def get_sp500_constituents(self) -> List[Dict]:
         """
-        S&P 500 구성 종목 조회
+        S&P 500 구성 종목 조회 — Wikipedia "List of S&P 500 companies" 파싱.
 
-        datahub.io의 S&P 500 CSV를 사용합니다.
-        (FMP /stable/sp500-constituent는 Professional Plan 이상 필요)
+        2026-07 교체(결정9 B): 기존 datahub.io CSV 소스가 404(조용한 무-op 사망, 마지막
+        성공 2026-05-01) → Wikipedia 정본으로 대체. FMP /stable/sp500-constituent 는 Starter
+        플랜 미포함(402), legacy /api/v3/sp500_constituent 403(실호출 2026-07-09 확인).
+        Wikipedia 는 GICS 섹터 컬럼 제공(SP500Constituent.sector 와 동일 택소노미).
 
-        Returns:
-            [
-                {
-                    "symbol": "AAPL",
-                    "name": "Apple Inc.",
-                    "sector": "Technology",
-                    "subSector": "Consumer Electronics",
-                    "headQuarter": "Cupertino, California",
-                    "dateFirstAdded": "1982-11-30",
-                    "cik": "0000320193",
-                    "founded": "1976",
-                },
-                ...
-            ]
+        Returns: [{symbol, name, sector, subSector, headQuarter, dateFirstAdded, cik, founded}, ...]
         """
-        import csv
-        from io import StringIO
+        import io
+
+        import pandas as pd
+        import requests
 
         cache_key = "fmp:sp500_constituents"
         cached = cache.get(cache_key)
@@ -353,34 +344,46 @@ class FMPClient:
             logger.debug("SP500 cache HIT: sp500_constituents")
             return cached
 
-        url = "https://datahub.io/core/s-and-p-500-companies/r/constituents.csv"
+        url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
         try:
-            response = self.client.get(url, timeout=30.0, follow_redirects=True)
-            response.raise_for_status()
-        except Exception as e:
-            logger.error(f"SP500 CSV 다운로드 실패: {e}")
-            raise FMPAPIError(f"Failed to fetch SP500 constituents: {e}")
-
-        reader = csv.DictReader(StringIO(response.text))
-        data = []
-        for row in reader:
-            data.append(
-                {
-                    "symbol": row.get("Symbol", "").strip(),
-                    "name": row.get("Security", ""),
-                    "sector": row.get("GICS Sector", ""),
-                    "subSector": row.get("GICS Sub-Industry", ""),
-                    "headQuarter": row.get("Headquarters Location", ""),
-                    "dateFirstAdded": row.get("Date added", ""),
-                    "cik": row.get("CIK", ""),
-                    "founded": row.get("Founded", ""),
-                }
+            # requests 사용(httpx 아님): Wikipedia 봇 탐지가 httpx TLS/헤더 지문을 UA 무관 403
+            # 차단(2026-07-09 실측 httpx 403 / requests 200). 브라우저형 UA 필수.
+            response = requests.get(
+                url, timeout=30,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; stock-vis-universe-sync/1.0)"},
             )
+            response.raise_for_status()
+            tables = pd.read_html(io.StringIO(response.text), attrs={"id": "constituents"})
+        except Exception as e:
+            logger.error(f"SP500 Wikipedia 파싱 실패: {e}")
+            raise FMPAPIError(f"Failed to fetch SP500 constituents (wikipedia): {e}")
+
+        if not tables:
+            raise FMPAPIError("SP500 Wikipedia constituents table not found")
+        df = tables[0]
+
+        def _cell(row, col):
+            # 각주 참조([1] 등) 제거 위해 문자열화 후 대괄호 이후 절단
+            val = str(row.get(col, "")).strip()
+            return val.split("[")[0].strip()
+
+        data = []
+        for _, row in df.iterrows():
+            data.append({
+                "symbol": _cell(row, "Symbol").replace("​", ""),
+                "name": _cell(row, "Security"),
+                "sector": _cell(row, "GICS Sector"),
+                "subSector": _cell(row, "GICS Sub-Industry"),
+                "headQuarter": _cell(row, "Headquarters Location"),
+                "dateFirstAdded": _cell(row, "Date added"),
+                "cik": _cell(row, "CIK"),
+                "founded": _cell(row, "Founded"),
+            })
 
         if not data:
-            raise FMPAPIError("SP500 CSV is empty")
+            raise FMPAPIError("SP500 Wikipedia table empty")
 
-        logger.info(f"SP500 구성 종목 {len(data)}개 로드 완료 (datahub.io)")
+        logger.info(f"SP500 구성 종목 {len(data)}개 로드 완료 (wikipedia)")
         cache.set(cache_key, data, 86400)  # 24시간 캐시
         return data
 

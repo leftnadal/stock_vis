@@ -13,3 +13,4 @@ from .relation_tasks import *  # noqa: F401,F403
 from .seed_tasks import *  # noqa: F401,F403
 from .sensitivity_tasks import *  # noqa: F401,F403
 from .sync_tasks import *  # noqa: F401,F403
+from .universe_tasks import *  # noqa: F401,F403
