@@ -122,6 +122,24 @@ export function RRGChart({
         <text x={W - M.right} y={H - M.bottom} textAnchor="end" fontSize={10} fill="#b45309">주도·둔화</text>
         <text x={M.left} y={H - M.bottom} fontSize={10} fill="#0369a1">부진·악화</text>
 
+        {/* 꼬리 폴리라인 — raw 좌표, 색=현재 상태색 저투명(과거 점 재분류 금지, D-CD-TRAIL) */}
+        {sectors.map((s) => {
+          const pts = trailBySymbol.get(s.symbol) ?? []
+          if (pts.length < 2) return null
+          const poly = pts.map((p) => `${px(p.rel).toFixed(1)},${py(p.mom).toFixed(1)}`).join(' ')
+          return (
+            <polyline
+              key={`trail-${s.symbol}`}
+              data-testid={`rrg-trail-${s.symbol}`}
+              points={poly}
+              fill="none"
+              stroke={cdStateDotFill(s.cd_state ?? null)}
+              strokeWidth={1.5}
+              strokeOpacity={0.35}
+            />
+          )
+        })}
+
         {/* 섹터 점 — 색=서빙 cd_state, 출발 섹터=확대+링 */}
         {sectors.map((s) => {
           const isFrom = fromSymbol != null && s.symbol === fromSymbol
