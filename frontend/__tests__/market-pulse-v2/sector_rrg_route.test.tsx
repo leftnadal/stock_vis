@@ -22,8 +22,10 @@ const PAYLOAD: SectorDetail = {
 }
 
 let SEARCH = 'from=XLK'
+const replaceMock = vi.fn()
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(SEARCH),
+  useRouter: () => ({ replace: replaceMock, push: vi.fn() }),
 }))
 vi.mock('@/hooks/useMarketPulseV2', () => ({
   useCardDetail: () => ({ data: { data: PAYLOAD, _meta: { cache: 'hit' } }, isLoading: false, isError: false }),
@@ -50,10 +52,13 @@ describe('RRG 서브스크린 라우트', () => {
     expect(getByTestId('rrg-back').getAttribute('href')).toBe('/market-pulse-v2')
   })
 
-  it('from 없이 진입 → 맵 렌더(하이라이트 없음)', () => {
+  it('from 없이 진입 → 맵 렌더 + 포커스 디폴트 = rank-1(변형 H)', () => {
     SEARCH = ''
-    const { getByTestId, queryByTestId } = render(<RotationPage />)
+    const { getByTestId } = render(<RotationPage />)
     expect(getByTestId('rrg-chart')).toBeInTheDocument()
-    expect(queryByTestId('rrg-ring-XLK')).toBeNull()
+    // CD-READ 변형 H: from 없으면 포커스가 rank-1(XLK)로 디폴트 → 링 표시.
+    expect(getByTestId('rrg-ring-XLK')).toBeInTheDocument()
+    // 비-포커스(XLE)는 링 없음.
+    expect(getByTestId('rrg-dot-XLE')).toBeInTheDocument()
   })
 })
