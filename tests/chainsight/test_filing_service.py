@@ -151,6 +151,17 @@ class TestCollectIpo:
         kept = set(ThemeFilingCount.objects.filter(form_type="IPO").values_list("symbol", flat=True))
         assert kept == {"IPO1", "IPO2"}
 
+    def test_same_day_rerun_idempotent(self):
+        """collect_theme_filings 같은 날짜 2회(IPO 레그) → 수집 행 수 불변 (dedup_key)."""
+        ipos = [{"symbol": "IPO1", "date": "2026-07-06", "exchange": "NYSE"}]
+        client = _FakeClient(ipos=ipos)
+
+        r1 = fs.collect_ipos_range(client, date(2026, 7, 1), date(2026, 7, 6))
+        r2 = fs.collect_ipos_range(client, date(2026, 7, 1), date(2026, 7, 6))
+
+        assert r1["created"] == 1 and r2["created"] == 0  # 2회차 신규 0
+        assert ThemeFilingCount.objects.filter(form_type="IPO").count() == 1  # 행 수 불변
+
 
 @pytest.mark.django_db
 class TestC2bAggregation:
