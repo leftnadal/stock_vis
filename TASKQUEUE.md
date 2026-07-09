@@ -139,7 +139,7 @@
 | MON-P2-S1 | Monitor·Claim 모델 + ScopeResolver(종목) + 테스트 | @backend | MON-P1 | ✅ 완료 2026-07-08 (`f9754c7`, apps/monitor 신설, 10 passed) |
 | MON-P2-S2 | MonitorIndicator·IndicatorReading·Snapshot 모델 + `_reuse` 엔진 4종 이식 + 테스트 | @backend | MON-P2-S1 | ✅ 완료 2026-07-08 (`e62760f`, 모델 3+엔진 4, 테스트 37 누적, BE _reuse 소진) |
 | MON-P2-S3 | 파이프라인 서비스 + `api/v1/monitor/` REST + 실 DB migrate + 테스트 | @backend | MON-P2-S2 | ✅ 완료 2026-07-09 (`e37a87e`, **P2 완결**, 테스트 50, 실 DB 5테이블 적용) |
-| MON-P2-BEAT | Monitor 평가 beat 주기 등록 (EOD 창 18:00~18:35 ET 경합 설계 + DB PeriodicTask #28) | @infra | MON-P2-S3 land | todo (별도 지시서 필요) | ADR §결정6 |
+| MON-P2-BEAT | Monitor 평가 beat 주기 등록 (EOD 창 18:00~18:35 ET 경합 설계 + DB PeriodicTask #28) | @infra | MON-P2-S3 land | ✅ 완료 2026-07-09 (**origin/main `924ef96`** `--no-ff`, 배포+워커등록 검증). `sync_monitor_beat` 멱등커맨드·`refresh_monitors_task`(가드+재시도)·health 13항목·구 thesis 4beat 회수. DECISIONS `D-MONITOR-BEAT`. 첫 발화=평일 18:45 ET | ADR §결정6 |
 | MON-P3-S0 | FE 데이터 레이어 (types·monitorService·useMonitor 훅) | @frontend | MON-P2 land | ✅ 완료 2026-07-09 (`d281813`, 브랜치 `sess-monitor-p3`, 테스트 5·tsc 0) |
 | MON-P3-S1 | IA-2 리스트 페이지 (서버측 트리아지 정렬·필터 + 스코프/가설만 칩 + 빈상태 CTA + 카드) + MoonPhase·Arrow 이식 | @frontend+@backend | MON-P3-S0 | ✅ 완료 2026-07-09 (`278f7b6`·`ede1160`, FE 14·BE 13·tsc 0, _reuse MoonPhase/Arrow 소진) |
 | MON-P3-S2 | 빌더 4단계 + 지표 카탈로그(BE) + FE `_reuse` 완전 소진 | @frontend+@backend | MON-P3-S1 | ✅ 완료 2026-07-09 (`f908188`·`49a3fbe`, 카탈로그 3종+source_key, 빌더 4단계, _reuse 소멸, BE 17·FE 16·tsc 0) |
@@ -154,6 +154,19 @@
 | MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
 | ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
 | MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
+
+---
+
+## 테스트 부채 상환 — pytest 선존 실패 120건 (MON-P2-BEAT §0에서 고정, 2026-07-09)
+
+> **출처**: MON-P2-BEAT preflight에서 전체 pytest 베이스라인 실측 → `18 failed / 102 errors = 120건` 선존 확인(전부 `apps/monitor` disjoint, 신규 회귀 아님). **SSOT 스냅샷** = [`docs/harness/pytest_baseline_failures.md`](../docs/harness/pytest_baseline_failures.md). 세션 게이트가 "green" 대신 **"이 베이스라인 대비 델타 0"**으로 판정되도록 고정. 상환 시 SSOT 목록에서 개별 삭제(줄어드는 방향으로만).
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| DEBT-TEST-BOUNDARY-LLM | `test_news_deep_analyzer`(102e) + `test_csv_url_resolver`(4f) mock을 **shared LLM 래퍼 seam으로 재작성** (옛 `patch('...genai')` → 래퍼 mock). 근본원인=BOUNDARY-LLM 이관으로 직접 genai import 제거, 코드 정상·테스트 stale | @qa+@rag-llm | - | todo | SSOT C1·C2 / BOUNDARY-LLM backlog와 동일건 |
+| DEBT-TEST-CHAINSIGHT | `test_attention`(6f, `assert 'SEMICON' in []`) + `test_leadership_api`(7f, `404==200`) + `test_upward_learning`(1f) = 14f. **pristine 체크아웃 재현으로 판정** — 오탐(stale `_dormant`+공유 test DB, lesson_...)이면 격리 픽스처/시드, 진성이면 코드 수정 | @qa+@backend | - | todo | SSOT C3·C4 |
+
+> **판정 원칙**: DEBT-TEST-CHAINSIGHT는 `.claude/worktrees/`의 stale 워크트리·`_dormant` 잔재가 공유 test DB를 오염시킨 오탐일 수 있음(메모리 `lesson_visual_verify`가 아닌 stale-artifact lesson) → **pristine 격리 체크아웃에서만 진위 확정**. DEBT-TEST-BOUNDARY-LLM은 시그니처가 명확(genai attr 부재)해 즉시 착수 가능.
 
 ---
 
