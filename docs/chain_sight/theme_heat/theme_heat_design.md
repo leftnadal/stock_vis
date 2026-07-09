@@ -1,7 +1,9 @@
 # Theme Heat 설계서 (테마 온도계 + 수요 지지 축)
 
 - **문서 ID**: `theme_heat_design`
-- **버전**: **v1.2.1 FINAL** (2026-07-06) — v1.2 대비: TH-1 구현 발견 정정 2건 —
+- **버전**: **v1.2.2** (2026-07-08) — v1.2.1 대비: §5.3 z_mode 전환을 종목별·유효 EPS diff
+  카운트 기반(≥26→time_series)으로 개정(결정7 비준, TH-4 C8 구현 발견). §2 C8 산식 불변(앵커).
+- **버전(이전)**: **v1.2.1 FINAL** (2026-07-06) — v1.2 대비: TH-1 구현 발견 정정 2건 —
   §6.6 unique_together = (symbol, snapshot_date, fiscal_year) 3튜플로 정정(fiscal_year
   복수 행 정합), §6.4 = Cycle 1 C5 주 데이터 섹터 SPDR 11종 + 테마 ETF 9행 비활성 보존
   (레인 개방 후 원 테마 복원). v1.2 대비: §6.1/6.3/6.4 외부 참조("v1.0과 동일")를
@@ -170,6 +172,13 @@ v1.0 §5 규칙 전체 승계:
      components JSONB 의 `z_mode` 필드(cross_sectional / time_series)로 감사 기록.
   3. evidence 템플릿 분리: cross_sectional 기간엔 "테마 간 상대 +N위/σ" 표현 사용.
 
+> **[v1.2.2 개정 — 결정7 (2026-07-08 비준), 위 1·2 대체]** z_mode 전환은 시스템 전체·시간
+> 기반(60/365일 1회)이 아니라 **종목별·유효 EPS diff 카운트 기반**으로 확정한다: 종목의 유효
+> EPS diff **≥ 26 → time_series**, 미만 → **cross_sectional**(양 레그 공동). diff 정의 = 현재 vs
+> lag 8(56d) 스냅샷, lag 8 부재 시 lag 9(63d) 폴백. cross_sectional 단면(양 레그 성립 종목)
+> < 30 → 그 날짜 C8 전체 None. 근거: 수집 결손·신규 상장 자동 내성. 상세 = DECISIONS
+> [2026-07-08] Theme Heat C8. **C8 산식(§2 `z(가격60d) − z(EPS60d변화)`)은 불변** — 앵커 유지.
+
 ## 6. 데이터 모델
 
 **TH-1 독립 마이그레이션**으로 생성 (동승 전략은 마켓 뷰 PR-1 미착수 실측으로 폐기 — §14).
@@ -321,7 +330,8 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | 유니버스 동결(UniverseSnapshot 0017) + 성분 계산기 C1·C2a·C3~C7 (계약 통일)          | 마켓 뷰 BE PR             | 1     | ✅ 부분 (2026-07-07, C2a 백필 위 즉시 가동·C2b/C8 스텁·57 test). §6.0 잠금3 Cycle1판 |
 | C2b 발행 신호 (424B5 일창 수집 + IPO 진성필터 + 계산기 + 3년 백필)                    | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, 424B5 21,755행 오염0 + IPO 1,425행 위생·SPAC/파생/ETF 컷. IPO 레그 섹터귀속 후속) |
 | estimates 스냅샷 beat (C8 콜드스타트 시계 기동)                                       | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, snapshot_analyst_estimates_task + beat 금16:30ET enabled, 필드 8/8) |
-| Heat 8성분 배치(beat) + C8 실구현(diff+z_mode)                                        | 마켓 뷰 BE PR             | 1     | ☐ (계산기 C1~C7·C2b 완료 → 배치 오케스트레이션·C8 60일 diff 잔여) |
+| C8 실구현 (리비전 괴리 diff + z_mode 종목별 전환)                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, TH-4: z(가격60d)−z(EPS60d) + lag8→9 + z_mode≥26 + 단면30 가드, 22 test. v1.2.2 결정7) |
+| Heat 8성분 배치(beat) — C1~C8 오케스트레이션 + upsert                                 | 마켓 뷰 BE PR             | 1     | ☐ (전 성분 계산기 완료 → compute_theme_heat_task 조립·유니버스 소스 복구 선행) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |

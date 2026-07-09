@@ -8,6 +8,33 @@
 
 ---
 
+## [2026-07-08] Theme Heat C8 (TH-4) — 리비전 괴리 산식 + z_mode 종목별 전환 (결정7 비준)
+
+### C8 산식 = 앵커 §2 준수 (상충 A 판정 ⓐ)
+**결정**: C8 = "추정치 리비전 **괴리**(estimate revision divergence)". 산식 =
+`C8_raw = z(가격 60일 수익률) − z(EPS 컨센서스 60일 변화)`. 부호: **양수 = 가격↑·이익
+미확인 = 멀티플 단독 팽창 = 과열 기여**, EPS 상향 → C8 하락(이익이 과열을 식힘).
+**Why**: TH-4 지시문 초안이 C8을 "revision momentum"(EPS 단독)으로 표기했으나 앵커 §2는
+가격 레그를 뺀 **차분(괴리)**. STEP 0-5 상충 보고 → verifier 판정 ⓐ(앵커 우선), "momentum"
+표기는 오류로 정정. **How to apply**: 레그 하나라도 죽으면 C8=None(반쪽 계산 금지).
+EPS 레그 = 현재 vs lag 8(56d) 스냅샷 diff, **lag 8 부재 시 lag 9(63d) 폴백**, 둘 다 부재 →
+None. 가격 레그 = DailyPrice 60캘린더일 수익률, 결측 → None.
+
+### 결정7 (비준): z_mode 전환 = 종목별·EPS diff 카운트 기반 (§5.3 대체)
+**결정**: z_mode 전환 키 = **해당 종목의 유효 EPS diff 개수**. **≥ 26 → time_series**(자기
+역사 z), **< 26 → cross_sectional**(그 날짜 단면 z). **양 레그 공동 적용**(한 종목 안에서 레그
+간 모드 혼합 금지 — EPS 레그가 binding constraint라 EPS 카운트가 단일 기준). cross_sectional
+단면 = 양 레그 성립 종목, **< 30 → 그 날짜 cross_sectional 종목 C8 전체 None**(얇은 단면 z 금지).
+z_mode 기록(행 단위, components JSONB) = `time_series` | `cross_sectional` | null(C8 None).
+**임계 상수(단일 정의 = estimate_revision.py)**: `Z_MODE_TS_THRESHOLD=26`(반년 표본=시계열 std
+최소), `LAG_PRIMARY_DAYS=56`/`LAG_FALLBACK_DAYS=63`, `CROSS_SECTIONAL_MIN_SYMBOLS=30`.
+**Why**: 앵커 §5.3은 시스템 전체·시간 기반 전환(60일→cs, 365일→ts, 1회)이나, 수집 결손·신규
+상장에 자동 내성을 갖도록 **종목별 카운트 기반**으로 개선. 트레이드오프(스냅샷 내 잣대 혼재)는
+혼합 비율 로그(`z_mode mix: ts=N cs=M none=K`) + 추후 카드 뱃지로 관리(TASKQUEUE). 전환 후엔
+26 유효 diff = time_series 표본 충분. **결정7이 §5.3을 대체** — 설계 v1.2.2 §5.3 개정 주석.
+**How to apply**: `estimate_revision.compute_c8_for_symbols`(순수, 주입 데이터 테스트) +
+`compute_c8_from_db`(TH-5 beat). 신시사이저는 C8=None 시 기존 §3-5 비례 재분배 그대로 적용.
+
 ## [2026-07-08] 프로토콜: 지시-설계 상충 시 설계 앵커 준수 + 즉시 보고
 
 **표준**: 실행 지시(지시서·회신)가 설계서/스펙과 상충하면 **설계 앵커를 준수**하고 **상충을
