@@ -3206,7 +3206,7 @@ shares_out **이력 부재**(historical/shares_float 404, etf/holdings 402, v3 l
 (XLK/XLF/XLE/XLV/XLI/XLY/XLP/XLU/XLB/XLRE/XLC), HeatEntity kind=sector 11행과 1:1.
 조건(시드 전 FMP 프로브 전수 통과=존재+3년 이력) = **11/11 충족**(보류 0). role=primary·
 active=True 시드(migration 0018). ⚠️ **XLE·XLV 는 0016 테마 시드에 active=False 로 존재 →
-섹터 원본으로 active=True 승격**(순수 테마 ETF 7행 SOXX/SMH/SOXL/QQQ/TQQQ/ITA/ERX 는 불변).
+섹터 원본으로 active=True 승격**(순수 테마 ETF 7행 SOXX/SMH/SOXL/QQQ/TQQQ/ITA/ERX 는 불변). **기존 행 승격 2건(XLE·XLV) 포함, update_or_create 멱등·유니크 제약(theme,symbol,role) 정합.**
 **상충 재분류**: §2 "레버리지÷원본" 산식과 §6.4 "섹터 SPDR 11종" 진술의 긴장은 **상충 아닌
 명세 공백** — 독해 = SPDR 11종 원본 전수 + 레버리지는 존재 섹터만 + 부재 섹터 §3-5 결측.
 레버리지 짝 시드·C5 계산기 배선은 **12b(TH-C5-SPDR-LEVERAGED) 비준 후**(후보 실측표 상신).
@@ -3216,4 +3216,26 @@ Desktop 트리는 세션 중 detached origin/main 이동 관측). 공유 트리 
 gitignore(커밋 무영향)라 공유 트리 .env 심링크로 셋업.
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 86ddbc2. 전체 343 GREEN /
+13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.
+
+## [2026-07-09] Theme Heat TH-7d — 결정12b=A (C5 레버리지 짝 + 풀배선)
+
+**결정12b=A (비준)**: Cycle 1 C5 레버리지 짝을 확정. **유동성 하한 = 20일 중위 거래대금 ≥
+$1M**(미만·부재 섹터는 §3-5 결측), **배율 = 3x(Direxion) 우선 + 3x 부재·부적격 섹터 2x
+(ProShares) 대체**. 확정 매핑 9종(원본→레버리지, 배율, 실측 20d중위): XLK→TECL(3x,$218.3M)·
+XLF→FAS(3x,$89.2M)·XLE→ERX(2x,$30.9M,승격)·XLRE→DRN(3x,$13.5M)·XLV→CURE(3x,$10.0M)·
+XLU→UTSL(3x,$4.9M)·XLI→DUSL(3x,$2.0M)·XLY→WANT(3x,$1.1M)·XLP→UGE(2x,$1.4M). **XLB·XLC =
+레버리지 결측 확정**(XLB=UYM $253K<하한, XLC=LTL $49K/CRDT 3년미만) → C5 §3-5 결측, 온도는
+잔여 성분으로 산출.
+
+Why: TH-7c 12b FMP 실측표 상신 → 유동성·배율·결측을 데이터 근거로 판정. 근거값은
+`ThemeEtfMap.measured_liquidity_usd`(감사용 스냅샷, 자동 갱신·보정 없음)에 박제.
+
+구현(TH-7d): 레버리지 9종 시드(0021, ERX 승격 재사용) + `EtfDailyBar`(0020, C5 거래량 원장,
+EtfSnapshot 과 별개) 3년 백필 20종×756일=15,120행(foreground) + `c5_speculation_from_db`
+(레버리지Σ20d vol ÷ 원본Σ20d vol 비율의 3년 z, 순수함수 `c5_speculation` 재사용) + 조립기
+`_NOT_WIRED` 에서 C5 제거(C1/C3/C4/C6/C7 잔여). `multiplier` = 기존 `leverage_factor` 재사용
+(중복 필드 신설 안 함 — drift 방지). 14 test.
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 86ddbc2. 전체 357 GREEN /
 13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.

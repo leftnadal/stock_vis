@@ -64,16 +64,18 @@ class TestHeatEntitySeed:
         )
 
     def test_etf_map_seed_present(self):
-        """§6.4 시드. 테마 ETF 9행(0016) + SPDR 원본 11종(0018, TH-7c) = 18행(XLE·XLV 중복)."""
-        assert ThemeEtfMap.objects.count() == 18
+        """§6.4 시드. 테마 9(0016)+SPDR 원본 11(0018)+레버리지 9(0021)=26행(XLE·XLV·ERX 중복)."""
+        assert ThemeEtfMap.objects.count() == 26
         tech = HeatEntity.objects.get(kind="sector", ref_id="Technology")
         assert tech.etf_maps.filter(role="primary").exists()
         assert tech.etf_maps.filter(role="leveraged", leverage_factor=3).exists()
 
     def test_etf_map_seed_active_split(self):
-        """TH-7c(결정12a): SPDR 원본 11 active=True, 순수 테마 ETF 7 active=False 불변."""
+        """TH-7c/d: SPDR 원본 11 + 레버리지 9 active=True, 순수 테마 ETF active=False.
+        ERX 는 TH-7d 로 승격 → active=False = 6(SOXX/SMH/SOXL/QQQ/TQQQ/ITA)."""
         assert ThemeEtfMap.objects.filter(active=True, role="primary").count() == 11
-        assert ThemeEtfMap.objects.filter(active=False).count() == 7
+        assert ThemeEtfMap.objects.filter(active=True, role="leveraged").count() == 9
+        assert ThemeEtfMap.objects.filter(active=False).count() == 6
 
 
 # ─────────────────────────── 잠금장치 1 (3필드) ───────────────────────────

@@ -53,8 +53,8 @@ HEAT_ENTITY_TO_SP500_SECTOR = {
     "Utilities": "Utilities",
 }
 
-# 배선 안 된 성분 — 데이터 파이프라인 후속 슬라이스
-_NOT_WIRED = ("C1", "C3", "C4", "C5", "C6", "C7")
+# 배선 안 된 성분 — 데이터 파이프라인 후속 슬라이스 (C5 는 TH-7d 배선 완료로 제외)
+_NOT_WIRED = ("C1", "C3", "C4", "C6", "C7")
 
 
 # ────────────────────────────── 순수 판정 ──────────────────────────────
@@ -98,9 +98,14 @@ def _aggregate_c8_for_sector(sector_symbols: list[str], c8_by_symbol: dict) -> d
 
 
 def _real_sector_components(
-    sector_symbols: list[str], as_of: date, c8_by_symbol: dict
+    entity, sector_symbols: list[str], as_of: date, c8_by_symbol: dict
 ) -> dict:
-    """실배선 성분 dict (C2=C2a+C2b, C8 집계; 나머지 not_wired)."""
+    """실배선 성분 dict (C2=C2a+C2b, C5, C8; 나머지 not_wired)."""
+    from apps.chain_sight.services.c5_speculation_service import (
+        c5_speculation_from_db,
+        sector_etf_pair,
+    )
+
     components = {k: {"z": None, "s": None, "raw": None, "missing_reason": "not_wired"}
                   for k in _NOT_WIRED}
     if sector_symbols:
@@ -109,6 +114,9 @@ def _real_sector_components(
         components["C2"] = c2_supply_reaction(c2a, c2b)
     else:
         components["C2"] = {"z": None, "s": None, "raw": None, "missing_reason": "c2_no_symbols"}
+    # C5 투기 심리 (TH-7d) — 섹터 ETF 쌍 기반. 레버리지 부재 섹터(XLB·XLC)는 §3-5 결측.
+    pri, lev = sector_etf_pair(entity)
+    components["C5"] = c5_speculation_from_db(pri, lev, as_of)
     components["C8"] = _aggregate_c8_for_sector(sector_symbols, c8_by_symbol)
     return components
 
@@ -150,7 +158,7 @@ def compute_theme_heat(
         )
 
         def build_components(entity, sector_symbols):
-            return _real_sector_components(sector_symbols, as_of, c8_by_symbol)
+            return _real_sector_components(entity, sector_symbols, as_of, c8_by_symbol)
 
     results = []
     for entity in HeatEntity.objects.filter(kind="sector").order_by("ref_id"):

@@ -196,8 +196,12 @@ class ThemeEtfMap(models.Model):
     )
     etf_symbol = models.CharField(max_length=16)
     role = models.CharField(max_length=16, choices=ROLE_CHOICES)
-    leverage_factor = models.SmallIntegerField(default=1, help_text="1, 2, 3.")
+    leverage_factor = models.SmallIntegerField(default=1, help_text="배율 1, 2, 3 (= multiplier).")
     active = models.BooleanField(default=True, help_text="상장폐지 대응.")
+    measured_liquidity_usd = models.DecimalField(
+        max_digits=20, decimal_places=2, null=True, blank=True,
+        help_text="시드 시점 실측 20일 중위 거래대금(감사용, 자동 갱신 없음·보정 미적용). 결정12b.",
+    )
 
     class Meta:
         unique_together = [("theme", "etf_symbol", "role")]
@@ -342,3 +346,26 @@ class EtfSnapshot(models.Model):
 
     def __str__(self):
         return f"EtfSnapshot({self.symbol}, {self.snapshot_date})"
+
+
+class EtfDailyBar(models.Model):
+    """
+    C5 투기 심리 거래량 원장 (TH-7d, 결정12b) — 설계 앵커 §2 C5.
+
+    C5 = 레버리지÷원본 ETF 거래량 20일 비율의 3년 z. 이 원장은 레버리지 9 + 원본 11 ETF의
+    일별 close·volume 을 3년 백필·적립해 비율 시계열의 입력을 제공한다(EtfSnapshot §6.x =
+    C4 현재 스냅샷과 별개 — 목적·대상·시간축 상이). FMP historical-price-eod 소스.
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    date = models.DateField(db_index=True)
+    close = models.DecimalField(max_digits=20, decimal_places=6, null=True, blank=True)
+    volume = models.BigIntegerField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = [("symbol", "date")]
+        ordering = ["symbol", "-date"]
+
+    def __str__(self):
+        return f"EtfDailyBar({self.symbol}, {self.date})"

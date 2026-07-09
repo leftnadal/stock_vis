@@ -23,7 +23,8 @@ from apps.chain_sight.services import etf_snapshot_service as svc
 AS_OF = date(2026, 7, 9)
 
 SPDR_PRIMARY = {"XLK", "XLF", "XLE", "XLV", "XLI", "XLY", "XLP", "XLU", "XLB", "XLRE", "XLC"}
-THEME_ETF_7 = {"SOXX", "SMH", "SOXL", "QQQ", "TQQQ", "ITA", "ERX"}
+# 순수 테마 ETF (active=False 보존). ERX 는 TH-7d(0021)로 레버리지 원본 승격 → 제외 = 6종.
+THEME_ETF_INACTIVE = {"SOXX", "SMH", "SOXL", "QQQ", "TQQQ", "ITA"}
 
 
 # ────────────────────────────── 시드 (migration 0018) ──────────────────────────────
@@ -37,11 +38,11 @@ class TestSpdrPrimarySeed:
         )
         assert active == SPDR_PRIMARY
 
-    def test_theme_etf_7_active_false_unchanged(self):
+    def test_theme_etf_inactive_unchanged(self):
         inactive = set(
             ThemeEtfMap.objects.filter(active=False).values_list("etf_symbol", flat=True)
         )
-        assert inactive == THEME_ETF_7
+        assert inactive == THEME_ETF_INACTIVE
 
     def test_xle_xlv_promoted_to_active_primary(self):
         # XLE(Energy)·XLV(Healthcare)는 0016 테마 시드에 active=False 로 있었으나 SPDR 원본으로 승격.

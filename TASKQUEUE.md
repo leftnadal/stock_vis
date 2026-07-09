@@ -612,10 +612,9 @@
 - 상태: **원본 시드 종결(TH-7c, 결정12a)**. migration 0018 = SPDR 11종 role=primary·active=True (프로브 11/11 통과). XLE·XLV 승격, 순수 테마 ETF 7행 active=False 불변. 테스트 갱신(18행·active split).
 - 잔여 = 레버리지 짝 → **TH-C5-SPDR-LEVERAGED**(아래).
 
-## TH-C5-SPDR-LEVERAGED — C5 레버리지 짝 시드 + 계산기 배선 (등재, 2026-07-09, 12b 비준 대기)
-- 상태: 등재. **트리거 = 12b(레버리지 후보 실측표) 비준**. TH-7c에서 후보 전수 FMP 실측 완료(상신).
-- 의무: 비준된 섹터별 레버리지 ETF를 ThemeEtfMap(role=leveraged, active=True) 시드 → c5_speculation fetch 레이어(레버리지÷원본 20일 거래량 비율 → 3년 z) 배선 → 조립기 _NOT_WIRED 에서 C5 제거. 레버리지 부재/저유동 섹터 = §3-5 결측.
-- 판정 필요: 유동성 하한선(20d 중위 거래대금), 배율(2x/3x) 혼용 정책, Consumer Defensive(3x NEED 3년미만)·Basic Materials(UYM 저유동)·Communication(후보 부실) 결측 확정 여부.
+## ✅ TH-C5-SPDR-LEVERAGED — C5 레버리지 짝 시드 + 계산기 배선 (종결, 2026-07-09)
+- 상태: **종결(TH-7d, 결정12b=A)**. 레버리지 9종 시드(0021, ERX 승격·XLB/XLC 결측 확정) + EtfDailyBar(0020) 거래량 3년 백필 15,120행 + c5_speculation_from_db + 조립기 _NOT_WIRED 에서 C5 제거. 14 test. 유동성 하한 $1M·배율 3x우선+2x대체 판정.
+- 근거: 설계 §6.4 v1.2.4 확정 매핑표 + DECISIONS 2026-07-09 결정12b.
 
 ## TH-C4-COLDSTART — C4 산식 배선 + 콜드스타트 규칙 (등재, 2026-07-09, 비준 대기)
 - 상태: 등재. **트리거 = 데이터 축적 중**(EtfSnapshot 원료 일간 적립 가동, snapshot_etf_metrics_task beat 17:00ET). 산식 배선은 비준 대기.
