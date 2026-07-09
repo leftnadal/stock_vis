@@ -753,8 +753,10 @@ def check_execution_tree_alignment() -> CheckResult:
     )
 
 
-# ── 검증 12: monitor refresh 태스크 신선도 (MON-P2-BEAT §6) ──────────────────
+# ── 검증 13: monitor refresh 태스크 신선도 (MON-P2-BEAT §6) ──────────────────
 #
+# ※ CHECKS 레지스트리 기준 13번째 항목. 지시서 §6의 "12번째"는 stale count(issuance·
+#   execution_tree 추가 전 11 가정) 기준 — 착수 시점 실제 12개 → 이 항목이 13번째.
 # refresh_monitors_task(18:45 ET beat)는 성공 시 각 stock Monitor에 asof=오늘 스냅샷을
 # upsert한다 → 최근 MonitorSnapshot.asof_date가 refresh 성공의 관측 가능한 흔적.
 # 최근 2 거래일 내 성공 기록을 요구하되, 주말·연휴는 임계(달력일)로 흡수(zero-noise).
