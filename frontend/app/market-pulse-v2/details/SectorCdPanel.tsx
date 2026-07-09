@@ -8,7 +8,8 @@
  * 판정 로직 재계산 0: BE가 서빙한 cd_state를 뱃지·문구에만 사용. 사분면 미니맵의 점 좌표는
  *   서빙된 rel_strength·momentum_5d 원값을 그대로 좌표화(재분류 금지).
  * CD_STANCE = FE 정적 판정 문구(REGIME_STANCE 톤 동형, LLM 0) — 4상태 + 유보 = 5문구.
- * 회전 맵 어포던스 미포함(D-SECTOR-NAV — Slice 3).
+ * 회전 맵 어포던스: 행 전체 탭 → rotation?from=<그 행 symbol>(S3 보완, per-row) +
+ *   상단 "회전 맵 전체 보기 →"(from=리더). D-SECTOR-NAV 이행.
  */
 import Link from 'next/link'
 
@@ -128,7 +129,7 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
             data-testid="rrg-cta"
             className="shrink-0 rounded border border-slate-200 px-2 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
           >
-            회전 맵에서 보기 →
+            회전 맵 전체 보기 →
           </Link>
         ) : null}
       </div>
@@ -141,31 +142,41 @@ export function SectorCdPanel({ payload, labels }: { payload: Detail; labels?: R
             <li
               key={s.symbol}
               data-testid={`cd-row-${s.symbol}`}
-              className="rounded border border-slate-200 bg-white px-3 py-2"
+              className="rounded border border-slate-200 bg-white"
             >
-              <div className="flex items-center gap-2">
-                <span className="w-6 shrink-0 text-xs tabular-nums text-slate-400">#{s.rank}</span>
-                <span className="w-16 shrink-0 text-sm font-medium text-slate-800">{label}</span>
-                <span
-                  data-testid={`cd-badge-${s.symbol}`}
-                  className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${cdStateBadgeClass(
-                    s.cd_state ?? null,
-                  )}`}
-                >
-                  {cdStateLabel(s.cd_state ?? null)}
-                </span>
-              </div>
-              <p
-                data-testid={`cd-stance-${s.symbol}`}
-                className={`mt-1 text-xs ${reserved ? 'text-slate-400' : 'text-slate-700'}`}
+              {/* MP2-SECTOR-CD S3 보완: 행 전체 = 회전 맵 진입(그 행 symbol이 from). 기존 행 탭 인터랙션 부재로 충돌 0. */}
+              <Link
+                href={`/market-pulse-v2/rotation?from=${s.symbol}`}
+                data-testid={`cd-row-link-${s.symbol}`}
+                aria-label={`${label} 회전 맵에서 보기`}
+                className="block rounded px-3 py-2 hover:bg-slate-50"
               >
-                {stanceCopy(s.cd_state)}
-              </p>
-              {/* 근거 값 2칸 — rel_strength·momentum_5d 원값 */}
-              <div className="mt-1 flex gap-4 text-[11px] tabular-nums text-slate-500">
-                <span data-testid={`cd-rel-${s.symbol}`}>상대강도 {fmtPct(s.rel_strength)}</span>
-                <span data-testid={`cd-mom-${s.symbol}`}>5일 모멘텀 {fmtPct(s.momentum_5d)}</span>
-              </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-6 shrink-0 text-xs tabular-nums text-slate-400">#{s.rank}</span>
+                  <span className="w-16 shrink-0 text-sm font-medium text-slate-800">{label}</span>
+                  <span
+                    data-testid={`cd-badge-${s.symbol}`}
+                    className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${cdStateBadgeClass(
+                      s.cd_state ?? null,
+                    )}`}
+                  >
+                    {cdStateLabel(s.cd_state ?? null)}
+                  </span>
+                  {/* 우측 화살표 어포던스 — 행이 회전 맵 진입임을 표시 */}
+                  <span aria-hidden className="ml-auto shrink-0 text-slate-300">→</span>
+                </div>
+                <p
+                  data-testid={`cd-stance-${s.symbol}`}
+                  className={`mt-1 text-xs ${reserved ? 'text-slate-400' : 'text-slate-700'}`}
+                >
+                  {stanceCopy(s.cd_state)}
+                </p>
+                {/* 근거 값 2칸 — rel_strength·momentum_5d 원값 */}
+                <div className="mt-1 flex gap-4 text-[11px] tabular-nums text-slate-500">
+                  <span data-testid={`cd-rel-${s.symbol}`}>상대강도 {fmtPct(s.rel_strength)}</span>
+                  <span data-testid={`cd-mom-${s.symbol}`}>5일 모멘텀 {fmtPct(s.momentum_5d)}</span>
+                </div>
+              </Link>
             </li>
           )
         })}
