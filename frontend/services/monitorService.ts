@@ -2,6 +2,7 @@
 // authAxios baseURL에 이미 /api/v1 포함 → 경로에 중복 금지 (common-bug #19)
 import { authAxios } from '@/lib/api/authAxios'
 import type {
+  CatalogEntry,
   Claim,
   EvaluateResult,
   Monitor,
@@ -41,6 +42,11 @@ export const monitorService = {
   evaluate: async (id: string): Promise<EvaluateResult> => {
     const { data } = await authAxios.post(`/monitor/monitors/${id}/evaluate/`)
     return data
+  },
+
+  getCatalog: async (scope: string): Promise<CatalogEntry[]> => {
+    const { data } = await authAxios.get('/monitor/catalog/', { params: { scope } })
+    return data.indicators ?? []
   },
 
   listIndicators: async (monitorId?: string): Promise<MonitorIndicator[]> => {

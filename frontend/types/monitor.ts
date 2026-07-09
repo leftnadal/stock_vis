@@ -59,6 +59,7 @@ export interface MonitorIndicator {
   indicator_type: IndicatorType
   support_direction: SupportDirection
   weight: number
+  source_key: string
   epsilon: number | null
   window: number | null
   decay: number | null
@@ -109,4 +110,15 @@ export interface MonitorInput {
   name: string
   status?: MonitorStatus
   target_date_end?: string | null
+}
+
+// 지표 카탈로그 항목 (GET /monitor/catalog/)
+export interface CatalogEntry {
+  key: string
+  name: string
+  indicator_type: IndicatorType
+  default_direction: SupportDirection
+  source: string
+  unit: string
+  description: string
 }

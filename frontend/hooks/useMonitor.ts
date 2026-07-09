@@ -61,3 +61,11 @@ export function useMonitorClaims(id: string) {
     enabled: !!id,
   })
 }
+
+export function useIndicatorCatalog(scope: string) {
+  return useQuery({
+    queryKey: [...monitorKeys.all, 'catalog', scope] as const,
+    queryFn: () => monitorService.getCatalog(scope),
+    staleTime: 1000 * 60 * 60, // 카탈로그는 상수 — 1시간 캐시
+  })
+}

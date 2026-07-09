@@ -67,4 +67,11 @@ describe('monitorService', () => {
     expect(post).toHaveBeenCalledWith('/monitor/monitors/5/evaluate/')
     expect(res.overall_score).toBe(0.3)
   })
+
+  it('getCatalog는 scope로 카탈로그를 조회하고 indicators를 언랩한다', async () => {
+    get.mockResolvedValue({ data: { scope: 'stock', indicators: [{ key: 'eod_composite' }] } })
+    const res = await monitorService.getCatalog('stock')
+    expect(get).toHaveBeenCalledWith('/monitor/catalog/', { params: { scope: 'stock' } })
+    expect(res).toEqual([{ key: 'eod_composite' }])
+  })
 })
