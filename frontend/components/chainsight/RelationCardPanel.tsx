@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useNeighbors, useSeedData } from '@/hooks/useMarketView';
 import type { Neighbor, SeedNode } from '@/types/chainsight';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 const RELATION_TEMPLATES: Record<string, string> = {
   SUPPLIES_TO: '공급망 상류/하류 연결',

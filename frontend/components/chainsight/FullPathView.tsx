@@ -14,7 +14,7 @@ import {
   useArchivePath, useResolvePath,
 } from '@/hooks/usePathWatchlist';
 import { PATH_STATUS_BADGE } from '@/lib/utils/pathStatus';
-import { STRENGTH_TEXT } from './colorSemantics';
+import { STRENGTH_TEXT } from '@/components/common/colorSemantics';
 
 const REL_LABELS: Record<string, string> = {
   SUPPLIES_TO: 'supply',

@@ -1,4 +1,4 @@
-import { STRENGTH_TEXT, SIGNED_BAR } from './colorSemantics';
+import { STRENGTH_TEXT, SIGNED_BAR } from '@/components/common/colorSemantics';
 
 interface MetricCellProps {
   value: number | null;

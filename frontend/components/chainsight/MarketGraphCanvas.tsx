@@ -13,7 +13,7 @@ import {
 import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
 import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
 import RelationLegend from './RelationLegend';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 

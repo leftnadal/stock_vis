@@ -7,7 +7,7 @@ import { Tag, Share2 } from 'lucide-react';
 import { getLabelForTheme } from '@/constants/eventThemes';
 import { fetchEvents } from '@/services/chainsightService';
 import type { EventBoardItem } from '@/types/chainsight';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 // Dynamic icon rendering using lucide-react
 // We import dynamically to avoid bundling all icons; fallback to Tag on miss

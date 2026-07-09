@@ -12,7 +12,7 @@ import LowLiquidityPanel from '@/components/chainsight/LowLiquidityPanel';
 import MetricInfoPopover from '@/components/chainsight/MetricInfoPopover';
 import MetricCell from '@/components/chainsight/MetricCell';
 import AttentionStandingBar from '@/components/chainsight/AttentionStandingBar';
-import { CHANGE_TEXT } from './colorSemantics';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 interface Props {
   theme: string;
