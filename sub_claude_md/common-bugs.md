@@ -632,3 +632,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **증상**: 인간 병렬 CC 세션이 분당 커밋하는 fast-main에서, `git checkout main && git merge --ff-only`는 (a) main이 다른 worktree에 물려 `checkout` 거부, (b) rebase가 그 브랜치의 다른 worktree 때문에 거부, (c) merge~push 사이 main 전진으로 non-ff — 반복 실패.
 - **규칙**: 브랜치가 정확히 `origin/main+1`(그 브랜치 worktree에서 `git rebase origin/main` 선행)일 때, **`git push origin HEAD:main`** = 원자적 ff-push. worktree/checkout/merge 춤 불필요, main이 그새 전진하면 서버가 non-ff로 **안전 거부**(force 아님) → rebase 재시도.
 - **왜**: `push <src>:main`은 서버측 ff 조건을 원자적으로 검사한다. 로컬 checkout/merge 시퀀스는 다중 worktree + 전진 창에 취약. 단 **에이전트의 main 직접 push는 auto-mode가 차단** → land는 사용자 수동 단계로 유지(에이전트는 rebase까지).
+
+## httpx는 Wikipedia 봇탐지에 UA 무관 403 → requests 사용 (#47) `[infra]` `[scraping]`
+
+- **증상**: TH-6 유니버스 복구에서 Wikipedia "List of S&P 500 companies" 파싱 시 `httpx.get`이 **User-Agent를 브라우저형(Mozilla/5.0)으로 줘도 403 Forbidden**. 동일 URL·동일 UA를 `requests.get`으로 부르면 **200**(503행 정상).
+- **원인**: Wikipedia 봇 탐지가 **httpx의 TLS 지문·헤더 순서(HTTP2 등)를 UA와 무관하게 차단**. UA 문자열만으로는 우회 불가.
+- **해결**: 스크래핑성 GET은 `requests` 사용(httpx 아님) + 브라우저형 UA(`Mozilla/5.0 (compatible; ...)`). 정책 준수 식별자 포함. (`serverless_client.get_sp500_constituents` 2026-07-09.)
+- **왜**: 프로젝트 공용 httpx 클라이언트(`self.client`)를 재사용하려는 유혹이 있으나, 외부 사이트 봇탐지 앞에선 requests가 더 관대. 실측 분기(httpx 403 / requests 200)로 확정 후 선택할 것 — UA만 바꿔 재시도 반복 금지.
