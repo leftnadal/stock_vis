@@ -331,7 +331,7 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | C2b 발행 신호 (424B5 일창 수집 + IPO 진성필터 + 계산기 + 3년 백필)                    | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, 424B5 21,755행 오염0 + IPO 1,425행 위생·SPAC/파생/ETF 컷. IPO 레그 섹터귀속 후속) |
 | estimates 스냅샷 beat (C8 콜드스타트 시계 기동)                                       | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, snapshot_analyst_estimates_task + beat 금16:30ET enabled, 필드 8/8) |
 | C8 실구현 (리비전 괴리 diff + z_mode 종목별 전환)                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-08, TH-4: z(가격60d)−z(EPS60d) + lag8→9 + z_mode≥26 + 단면30 가드, 22 test. v1.2.2 결정7) |
-| Heat 8성분 배치(beat) — C1~C8 오케스트레이션 + upsert                                 | 마켓 뷰 BE PR             | 1     | ☐ (전 성분 계산기 완료 → compute_theme_heat_task 조립·유니버스 소스 복구 선행) |
+| Heat beat 오케스트레이션 — compute_theme_heat_task + collect_theme_filings_task       | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-5: 유니버스→C2·C8 배선→신시사이저→upsert·universe_stale 결정8·beat 2종 등록. C1/C3~C7 배선·소스 복구 후속. 13 test) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |

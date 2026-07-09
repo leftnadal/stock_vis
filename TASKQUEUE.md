@@ -617,6 +617,13 @@
 - 의무: C8 z_mode 가 종목별 혼재(스냅샷 내 cross_sectional/time_series 공존)이므로, 2축 카드 evidence 에 **z_mode 뱃지**(예: "테마 간 상대"[cs] vs "자기 역사 대비"[ts]) 노출을 검토해 잣대 혼재를 사용자에게 투명화. cross_sectional 기간 evidence 템플릿 = 설계 §5.3-3 "테마 간 상대 +N위/σ".
 
 ## TH-UNIVERSE-REFRESH-ALERT — 유니버스 갱신 소스 복구 + 실패 알림 (등재, 2026-07-07)
-- 상태: 등재. **트리거 = Heat beat 슬라이스**(디렉터 지시로 beat 슬라이스에 편입). 근거 = DECISIONS 2026-07-07 결정 5.
+- 상태: 등재. **트리거 = 다음 트랙**(TH-5 에서 scope 고정으로 미생성 — 알림 시스템 별도). 근거 = DECISIONS 2026-07-07 결정 5.
 - 발견: `sync-sp500-constituents` beat 는 살아 발화(enabled·last_run 2026-07-01·total 5)하나 소스 `datahub.io/.../constituents.csv` = **404** → `sync_constituents` 조기 반환(zero stats·`logger.error`만·**알림 없음**). 마지막 성공 동기화 2026-05-01(전 503행 updated_at 증거). = **(c) 조용한 무-op 사망**.
 - 의무: ⑴ 소스 교체(신뢰 소스로 — FMP `/stable/` 구성종목 or 대체) ⑵ **동기화 실패/무-op 시 ops 알림**(zero stats·예외 → 알림, Bug #28 `check_last_tick_succeeded` 대상 등록) ⑶ 성공 시 updated_at 신선도 게이트. UniverseSnapshot 은 정적성 명시화 방어라 즉시 위험은 아니나, 유니버스가 5-01 에 영구 동결되면 신규 상장/편출 미반영.
+- **stale 플래그 해제 절차 (TH-5 결정8 연동)**: 소스 복구로 `SP500Constituent.updated_at` 이 신선(30일 이내)해지면, `compute_theme_heat` 재산출 시 `is_universe_stale`=false → 저장 행 components 의 `universe_stale`=false 자연 해제(별도 백필 불요, 멱등 upsert 로 갱신). 소비층은 `universe_stale`=false 확인 후 실전 노출(결정6 게이트 해소). 과거 stale 행은 그대로 두거나(감사 이력) 재산출로 덮어씀.
+
+## TH-HEATENTITY-SECTOR-RECONCILE — HeatEntity 섹터 택소노미 정렬 (등재, 2026-07-09)
+- 상태: 등재. **트리거 = 성분 배선 확대 or 시드 정리 슬라이스**. 근거 = DECISIONS 2026-07-09.
+- 발견: `HeatEntity.ref_id`(TH-1 시드 = Yahoo/FMP 계열 Technology·Healthcare·Basic Materials 등) ≠ `SP500Constituent.sector`(GICS Information Technology·Health Care·Materials 등), 6/11 명칭 불일치. 설계 §6.0 은 ref_id="GICS 섹터 키"라 시드가 스펙과도 불일치.
+- 현재 처리: `heat_beat.HEAT_ENTITY_TO_SP500_SECTOR` 매핑으로 비파괴 해소(구성종목 정상 resolve, 실측 missing=7=C2만 present 확인).
+- 의무: 매핑 영구화 vs 시드 GICS 재정렬(ThemeHeatScore 0행·ThemeEtfMap 은 재생성 가능이라 저위험) 중 택일. 재정렬 시 §6.0 "GICS" 정합 + 매핑 삭제.

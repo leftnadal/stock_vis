@@ -8,6 +8,28 @@
 
 ---
 
+## [2026-07-09] Theme Heat beat (TH-5) — 오케스트레이션 + universe_stale 마킹 (결정8 비준)
+
+### 결정8: beat 즉시 가동 + 산출 행 universe_stale 마킹
+**결정**: Heat 일배치(`compute_theme_heat_task`, ET 18:00) + C2b 수집(`collect_theme_filings_task`,
+ET 17:30)를 즉시 가동하되, **유니버스 동결 상태에서 산출된 ThemeHeatScore 행에 stale 표식**을
+남긴다: 유니버스 최종 갱신일(`max(SP500Constituent.updated_at)`)이 **30일 초과**면 components
+JSONB 에 `universe_stale=true` + `universe_as_of` 기록. 소비층이 코드로 차단 가능(결정6 게이트).
+**Why**: 유니버스 소스(datahub 404)가 2026-05-01 동결이라 실전 소비 금지(결정6)이나, beat 를
+지금 가동해야 C8 콜드 스타트 시계·파이프라인이 돈다. stale 마킹 = "계산은 하되 소비는 차단
+가능"의 명시 신호. 임계 30일 = `heat_beat.UNIVERSE_STALE_DAYS`(단일 정의), 순수 판정
+`is_universe_stale`. **How to apply**: 소스 복구(TH-UNIVERSE-REFRESH-ALERT) 후 신선 유니버스로
+재산출되면 stale=false 자연 해제. 성분 배선 = C2(C2a+C2b)·C8 실배선, C1/C3/C4/C5/C6/C7 =
+not_wired(후속) → 현재 전 섹터 not_computed(결측 ≥3)라 저장 0 — 골격 가동·성분 배선 시 채워짐.
+
+### beat 이름 충돌 회피 + 섹터 택소노미 발견
+**결정**: Heat beat = `chainsight-theme-heat-daily`(SeedHeatScore `chainsight-heat-score-daily`
+=cs_44 와 **별개 개념**, 이름 충돌 회피). ThemeHeatScore not_computed 는 저장 안 함(§6.1
+status 미포함). **발견**: `HeatEntity.ref_id`(Yahoo/FMP 계열: Technology/Healthcare/Basic
+Materials…) ≠ `SP500Constituent.sector`(GICS: Information Technology/Health Care/Materials…)
+6/11 불일치 → `HEAT_ENTITY_TO_SP500_SECTOR` 매핑으로 비파괴 해소. TASKQUEUE
+`TH-HEATENTITY-SECTOR-RECONCILE`(시드 GICS 정렬 or 매핑 영구화 판정).
+
 ## [2026-07-08] Theme Heat C8 (TH-4) — 리비전 괴리 산식 + z_mode 종목별 전환 (결정7 비준)
 
 ### C8 산식 = 앵커 §2 준수 (상충 A 판정 ⓐ)
