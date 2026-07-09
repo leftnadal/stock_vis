@@ -9,7 +9,7 @@
  */
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 import { useCardDetail } from '@/hooks/useMarketPulseV2'
 import { useMarketPulseI18n } from '@/lib/i18n/marketPulse'
@@ -20,7 +20,13 @@ import { CD_STATE_ORDER, cdStateDotFill, cdStateLabel } from '../sectorColor'
 function RotationInner() {
   // ⚠ 변수명 searchParams 금지(Turbopack 충돌) — params 사용.
   const params = useSearchParams()
+  const router = useRouter()
   const fromSymbol = params.get('from')?.toUpperCase() || undefined
+
+  // CD-READ 변형 H: 점 탭 → 포커스 전환 = URL from 동기화(현행 구조). scroll 유지.
+  const handleFocusChange = (symbol: string) => {
+    router.replace(`/market-pulse-v2/rotation?from=${symbol}`, { scroll: false })
+  }
 
   const { data, isLoading, isError } = useCardDetail<SectorDetail>('sector', true)
   const { data: i18n } = useMarketPulseI18n()
@@ -49,7 +55,7 @@ function RotationInner() {
         <p data-testid="rrg-unavailable" className="text-sm text-slate-500">회전 맵 데이터가 아직 준비되지 않았습니다.</p>
       ) : (
         <>
-          <RRGChart payload={payload} labels={labels} fromSymbol={fromSymbol} />
+          <RRGChart payload={payload} labels={labels} fromSymbol={fromSymbol} onFocusChange={handleFocusChange} />
           <ul data-testid="rrg-legend" className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-slate-500">
             {CD_STATE_ORDER.map((state) => (
               <li key={state} className="flex items-center gap-1">
@@ -59,7 +65,8 @@ function RotationInner() {
             ))}
           </ul>
           <p className="mt-2 text-[10px] text-slate-400">
-            꼬리 = 최근 {5}거래일 궤적(현재 상태색). 배경 사분면·점 색은 서빙된 판정(cd_state) 기준.
+            점을 탭하면 그 섹터로 포커스(꼬리·라벨)가 이동합니다. 꼬리 = 최근 {5}거래일 궤적(현재 상태색) —
+            포커스 섹터만 표시, "전체 꼬리"로 전 섹터 궤적을 켤 수 있습니다. 배경·점 색은 서빙된 판정(cd_state) 기준.
           </p>
         </>
       )}
