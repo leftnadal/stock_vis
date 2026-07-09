@@ -15,8 +15,8 @@ class MonitorIndicatorSerializer(serializers.ModelSerializer):
         model = MonitorIndicator
         fields = [
             "id", "monitor", "name", "indicator_type", "support_direction",
-            "weight", "epsilon", "window", "decay", "is_active", "is_paused",
-            "override_score", "created_at", "updated_at",
+            "weight", "source_key", "epsilon", "window", "decay", "is_active",
+            "is_paused", "override_score", "created_at", "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 

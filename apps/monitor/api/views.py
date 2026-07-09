@@ -21,6 +21,9 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from apps.monitor.catalog import catalog_for
 
 from apps.monitor.api.serializers import (
     ClaimSerializer,
@@ -44,6 +47,16 @@ _SEVERITY_WHENS = [
     When(current_state__in=["warming_up", "active"], then=Value(2)),
     # strengthening·paused → 유지(3, default)
 ]
+
+
+class IndicatorCatalogView(APIView):
+    """scope별 지표 카탈로그 (빌더 3단계). GET /monitor/catalog/?scope=stock."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        scope = request.query_params.get("scope", "stock")
+        return Response({"scope": scope, "indicators": catalog_for(scope)})
 
 
 class MonitorViewSet(viewsets.ModelViewSet):

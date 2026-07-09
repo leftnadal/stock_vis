@@ -194,3 +194,35 @@ class TestMonitorListOrderingFilter:
         assert resp.status_code == 201
         assert resp.data["latest_score"] is None
         assert resp.data["indicator_count"] is None
+
+
+@pytest.mark.django_db
+class TestCatalog:
+    def test_stock_catalog(self, client_alice):
+        resp = client_alice.get("/api/v1/monitor/catalog/?scope=stock")
+        assert resp.status_code == 200
+        keys = [i["key"] for i in resp.data["indicators"]]
+        assert "eod_composite" in keys
+        assert all("source" in i and "default_direction" in i for i in resp.data["indicators"])
+
+    def test_unsupported_scope_empty(self, client_alice):
+        resp = client_alice.get("/api/v1/monitor/catalog/?scope=sector")
+        assert resp.status_code == 200
+        assert resp.data["indicators"] == []
+
+    def test_indicator_create_with_source_key(self, client_alice, alice):
+        m = Monitor.objects.create(
+            user=alice, scope="stock", target_ref="AAPL", name="애플", current_state="active"
+        )
+        resp = client_alice.post(
+            "/api/v1/monitor/indicators/",
+            {
+                "monitor": str(m.id),
+                "name": "EOD 종합 신호",
+                "indicator_type": "market_data",
+                "source_key": "eod_composite",
+            },
+            format="json",
+        )
+        assert resp.status_code == 201
+        assert resp.data["source_key"] == "eod_composite"
