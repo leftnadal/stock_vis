@@ -235,6 +235,8 @@ def _bake_patches(baker, captured, tmp_dir):
         patch.object(baker, "_build_meta_json", return_value={}),
         patch.object(baker, "_atomic_swap"),
         patch.object(baker, "_upsert_snapshot", return_value=MagicMock(pk=1)),
+        # LLM 채움 격리(mock only — 실호출 금지). llm_fill 동작은 test_eod_llm_fill 전담. [D-LLMFILL]
+        patch.object(baker, "_fill_recommendations_llm"),
     ]
 
 

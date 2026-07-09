@@ -75,6 +75,10 @@ class EODJSONBaker:
             target_date, signals_data, market_summary, pipeline_log
         )
 
+        # 추천 3키(thesis/perspectives/risk) LLM 채움.
+        # 삽입 지점 A: 조립 직후·직렬화 전·트랜잭션 밖. [D-LLMFILL]
+        self._fill_recommendations_llm(dashboard_json, signals_data)
+
         # 발행 로그 write + Stage 7 자가검증 (dashboard.json write 전 = pipeline_meta 반영). [D-HC-ISSUANCE]
         # write는 try/except로 감싸 파일 서빙은 항상 완주(경보≠중단, #46). 검증은 DB 실측.
         recommendations = dashboard_json.get("recommendations", [])
@@ -223,6 +227,29 @@ class EODJSONBaker:
                 }
             )
         return recommendations
+
+    def _fill_recommendations_llm(
+        self, dashboard_json: dict, signals_data: list[dict]
+    ) -> None:
+        """추천 3키(thesis/perspectives/risk) LLM 채움 — 이중 방어. [D-LLMFILL ⑵⑶]
+
+        fill_service 내부(카드별 try/except) + 여기(전체 try/except) 이중 방어.
+        예외 시 placeholder null 유지 + `pipeline_meta.llm_fill.ok=False` 기록,
+        bake는 정상 진행. 성공 시 meta를 additive 기입(7 core 키·기존 흐름 무변경).
+        """
+        try:
+            from packages.shared.stocks.llm.fill_service import fill_recommendations
+
+            filled, meta = fill_recommendations(
+                dashboard_json.get("recommendations", []), signals_data
+            )
+            dashboard_json["recommendations"] = filled
+            dashboard_json["pipeline_meta"]["llm_fill"] = {"ok": True, **meta}
+        except Exception:
+            logger.exception(
+                "[EODJSONBaker] LLM 채움 실패 — bake 계속(placeholder null 유지). [D-LLMFILL]"
+            )
+            dashboard_json["pipeline_meta"]["llm_fill"] = {"ok": False}
 
     def _group_signals_into_cards(
         self, signals_data: list[dict], market_summary: dict
