@@ -211,6 +211,7 @@ INSTALLED_APPS = [
     'apps.monitor.apps.MonitorConfig',  # MON-P2 — Monitor 허브 (구 thesis 재건, D-MONITOR-REBUILD)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
     'apps.credit_signals',  # credit_signals Phase 1 — FRED 크레딧 신호 백본
+    'apps.dashboard.apps.DashboardConfig',  # NEWSAXIS-BUILD — 표면 전용 BFF (D-DASH-BFF config 예외 1/2)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
