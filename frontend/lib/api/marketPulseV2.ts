@@ -374,6 +374,8 @@ export interface SectorHistoryPoint {
   rel_strength: number
   // MP2-TREND S1(additive): 순위 궤적 y값(1~11, 1위 상단). 구버전 응답엔 없을 수 있어 optional.
   rank?: number
+  // MP2-SECTOR-CD S2(additive): per-date 5일 모멘텀(저장값 노출). 구버전 응답엔 없을 수 있어 optional.
+  momentum_5d?: number | null
 }
 
 export interface SectorHistory {
@@ -389,6 +391,8 @@ export interface SectorDetail {
   rotation_index?: number
   // MP-UX-S5-B-SECTOR-BE: 섹터별 rel_strength 시계열 (2-D, 11섹터 전부). 렌더는 slice 2(SectorSparkline).
   sector_history?: SectorHistory[]
+  // MP2-SECTOR-CD S2(additive): 모멘텀 판정선 단일소스(= CD_MOMENTUM_BASELINE). FE y=0 하드코딩 금지.
+  cd_momentum_baseline?: number
 }
 
 export interface ConcentrationHistoryPoint {

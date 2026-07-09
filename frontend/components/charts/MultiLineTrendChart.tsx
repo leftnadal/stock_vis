@@ -58,6 +58,9 @@ interface MultiLineTrendChartProps {
   overlays?: TrendOverlays // 미사용(계약만)
   readout?: { pinLatest?: boolean }
   height?: number
+  // MP2-SECTOR-CD S2(additive): 메인 시리즈 null 연결 여부. 기본 true(랭킹 뷰 무영향).
+  //   모멘텀 뷰는 false로 결측 구간 선 끊김(값 발명 금지).
+  connectNulls?: boolean
 }
 
 function mmdd(iso: string): string {
@@ -74,6 +77,7 @@ export function MultiLineTrendChart({
   overlays,
   readout = { pinLatest: true },
   height = 260,
+  connectNulls = true,
 }: MultiLineTrendChartProps) {
   // MP2-TREND S2: overlays 중 refSeries(파생선)·vlines(전환일 세로선) 렌더 활성화.
   //   bands/hlines(임계 밴드)는 3호 소관 — 이번 미구현.
@@ -251,7 +255,7 @@ export function MultiLineTrendChart({
                 dot={false}
                 activeDot={false}
                 isAnimationActive={false}
-                connectNulls
+                connectNulls={connectNulls}
               />
             )
           })}
