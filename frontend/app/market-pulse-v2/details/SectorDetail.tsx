@@ -24,6 +24,7 @@ export function SectorDetail({
   labels,
   transitionDates = [],
   emphasisOverride,
+  regimeHistory = [],
 }: {
   payload: Detail
   labels?: Record<string, string>
@@ -31,6 +32,8 @@ export function SectorDetail({
   transitionDates?: string[]
   // MP2-TREND S2: 델타 카드가 전달한 상위 변동 섹터(옵션 B). 없으면 무영향(기본 강조).
   emphasisOverride?: string[]
+  // MP2-SECTOR-CD S2: 국면 스트립 데이터원(regime_history_30d 기서빙 — 컨테이너 전달). 없으면 스트립 미렌더.
+  regimeHistory?: { date: string; stage: string }[]
 }) {
   // MP2-SECTOR-CD S1: 세그먼트 토글 [판단 | 궤적]. 디폴트=판단(5초 즉답 목적).
   //   RegimeComponents 동형 패턴. 궤적 탭 = 기존 뷰 전체(무변경, additive).
@@ -97,6 +100,7 @@ export function SectorDetail({
         labels={labels}
         transitionDates={transitionDates}
         emphasisOverride={emphasisOverride}
+        regimeHistory={regimeHistory}
       />
 
       <div>

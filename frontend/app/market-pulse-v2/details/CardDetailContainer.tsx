@@ -32,6 +32,8 @@ export function CardDetailContainer({
   const needsTransitions = enabled && (cardId === 'breadth' || cardId === 'sector')
   const { data: regime } = useCardDetail<Regime>('regime', needsTransitions)
   const transitionDates = regime?.data?.transition_dates ?? []
+  // MP2-SECTOR-CD S2: 국면 스트립 데이터원 — 동일 regime 조회의 regime_history_30d 재사용(신규 fetch 0).
+  const regimeHistory = regime?.data?.regime_history_30d ?? []
 
   if (!enabled) return null
   if (isLoading) return <p className="text-sm text-slate-500">불러오는 중…</p>
@@ -61,7 +63,7 @@ export function CardDetailContainer({
       ) : null}
       {cardId === 'regime' && <RegimeDetail payload={payload as unknown as Regime} labels={labels} />}
       {cardId === 'breadth' && <BreadthDetail payload={payload as unknown as Breadth} labels={labels} transitionDates={transitionDates} />}
-      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} transitionDates={transitionDates} emphasisOverride={emphasisOverride} />}
+      {cardId === 'sector' && <SectorDetail payload={payload as unknown as Sector} labels={labels} transitionDates={transitionDates} emphasisOverride={emphasisOverride} regimeHistory={regimeHistory} />}
       {cardId === 'concentration' && <ConcentrationDetail payload={payload as unknown as Concentration} labels={labels} />}
       {cardId === 'brief' && <BriefDetail payload={payload as unknown as Brief} />}
     </div>

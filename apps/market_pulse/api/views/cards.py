@@ -21,7 +21,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.market_pulse.api import cache as cache_keys
-from apps.market_pulse.constants import classify_cd_state
+from apps.market_pulse.constants import CD_MOMENTUM_BASELINE, classify_cd_state
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.regime import RegimeSnapshot
 from apps.market_pulse.models.snapshot import (
@@ -264,6 +264,11 @@ def _sector_detail():
                     "date": r.date.isoformat(),
                     "rel_strength": float(r.rel_strength),
                     "rank": r.rank_in_universe,
+                    # MP2-SECTOR-CD S2(additive): per-date momentum_5d 노출 — 저장값 그대로(재계산 0).
+                    #   초기 룩백 등 저장 null은 null 그대로 서빙(보간·발명 금지).
+                    "momentum_5d": (
+                        float(r.momentum_5d) if r.momentum_5d is not None else None
+                    ),
                 }
             )
     ordered_symbols = [r.market_index_id for r in latest]  # sectors[]와 동일 rank 순
@@ -296,6 +301,9 @@ def _sector_detail():
         "cross_dispersion": float(latest[0].cross_dispersion),
         "rotation_index": float(latest[0].rotation_index),
         "sector_history": sector_history,
+        # MP2-SECTOR-CD S2(additive): 모멘텀 판정선 단일소스. FE가 y=0 하드코딩 금지 —
+        #   이 서빙값(= CD_MOMENTUM_BASELINE 상수)을 hline으로 그린다. 값 복제 아님(import 참조).
+        "cd_momentum_baseline": CD_MOMENTUM_BASELINE,
     }
 
 
