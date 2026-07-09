@@ -8,6 +8,33 @@
 
 ---
 
+## [2026-07-09] 유니버스 소스 복구 (TH-6) — 결정9 = B 폴백(Wikipedia) 확정
+
+### 결정9: 유니버스 소스 = Wikipedia (FMP Starter 미포함 → 사전승인 B 폴백)
+**결정**: S&P 500 구성종목 소스 = **Wikipedia "List of S&P 500 companies"** 파싱. FMP
+sp500-constituent 는 Starter 플랜 미포함 실측 확인(2026-07-09: `/stable/sp500-constituent`
+**402**, `/api/v3/sp500_constituent` **403** Error Message, historical 402/403). 결정9 사전승인
+대로 재비준 없이 B 폴백 발동. **Why**: 기존 소스 datahub.io CSV 404 사망(결정5, 마지막 성공
+2026-05-01). Wikipedia = GICS 섹터 컬럼(SP500Constituent.sector 동일 택소노미)·503행·중복0.
+**How to apply**: `serverless_client.get_sp500_constituents` 교체(datahub→Wikipedia). **함정**:
+Wikipedia 봇 탐지가 **httpx TLS/헤더 지문을 UA 무관 403** 차단(실측 httpx 403 / requests 200)
+→ fetcher 는 `requests` + 브라우저형 UA 사용(httpx 아님). 검증 가드(결정9): 행수 480~520 ·
+필수 필드(symbol·sector) · 심볼 중복 0 → 위반 시 **DB 무접촉**(`validate_universe`,
+`sp500_service`). 비파괴 sync(편출=is_active=False, 물리 삭제 금지) 유지.
+
+### 실갱신 결과 + 편출입 소급 공백
+**실행(2026-07-09)**: created=7·updated=496·deactivated=7·active 503→503. **편입** BNY·ECHO·
+FDXF·FLEX·HONA·MRVL·VEEV / **편출** BK·CAG·CPB·CTRA·EPAM·POOL·SATS. ★**BK→BNY 티커 변경**
+포착 = TH-2 BK OPEN_EMPTY(FMP 내부자 0행) 미스터리 해소(BK 개명). **편출입 소급 공백**:
+historical constituent 엔드포인트도 Starter 미포함(402/403) → 5/1~현재 개별 편출입 **일자
+소급 불가**, 현재 리스트 일괄 갱신으로 갈음(멤버십은 정확, 중간 전이 일자는 미복원).
+
+### 결정8 연동 + 결정6 게이트
+staleness = `SP500Constituent.updated_at` max, 갱신 성공 시 신선(days_since=0) → `is_universe_
+stale`=false 자연 전환 확인(E2E). 알림(TH-UNIVERSE-REFRESH-ALERT): ERROR 로그 정본 +
+send_mail best-effort, 주간 감시(>7일 경고, >30일 stale=결정8 상수 재사용). **결정6 게이트는
+자동 해제 아님** — 실갱신 확인했으므로 **verifier 판정 대기**(이 트랙은 해제하지 않음).
+
 ## [2026-07-09] Theme Heat beat (TH-5) — 오케스트레이션 + universe_stale 마킹 (결정8 비준)
 
 ### 결정8: beat 즉시 가동 + 산출 행 universe_stale 마킹
