@@ -667,8 +667,8 @@
 
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
-| NEWSAXIS-CONTRACT | 응축 API **응답 계약 설계** — 관련성 정의·가중, 동일 사건 접기 기준, 관계망 배지 규칙, 캐싱 정책. **결정 등재 전 BUILD 착수 금지** | 결정 안건(dashboard) | 디렉터 결정 사이클 | 🕓 대기(결정) |
-| NEWSAXIS-BUILD | `apps/dashboard` BFF 신설 + `/news/strip`류 엔드포인트 + FE 스트립(S1). **착수 시 STEP 0 재실측 필수**(services/news 모델·RelationConfidence 조인 경로·URL 라우팅) | @backend + dashboard FE | **NEWSAXIS-CONTRACT 등재 시** | 💤 트리거 게이트 |
+| NEWSAXIS-CONTRACT | 응축 API **응답 계약 설계** — 관련성 정의·가중, 동일 사건 접기 기준, 관계망 배지 규칙, 캐싱 정책. **✅ 종결**(D-NEWSAXIS-CONTRACT 4항 등재: F2 관련성·자체 접기+제목핵심어 안전핀·RelationConfidence θ배지·15/30 캐싱 + item 계약) | 결정 안건(dashboard) | 완료 2026-07-09 | ✅ done |
+| NEWSAXIS-BUILD | `apps/dashboard` BFF 신설 + `/news/strip`류 엔드포인트 + FE 스트립(S1). **착수 시 STEP 0 재실측 필수**(services/news 모델·RelationConfidence 조인 경로+θ 분위·T1/T3 거처·URL 라우팅) | @backend + dashboard FE | **✅ 게이트 해제**(NEWSAXIS-CONTRACT 종결) | 🟢 착수가능 |
 
 ---
 
