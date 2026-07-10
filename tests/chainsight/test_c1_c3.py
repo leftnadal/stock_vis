@@ -18,7 +18,28 @@ from apps.chain_sight.services.c1_valuation_service import c1_valuation_from_db
 from apps.chain_sight.services.c3_narrative_service import (
     aggregate_theme_news_volume,
     c3_narrative_from_db,
+    match_term_to_sectors,
 )
+
+
+# ────────────────────────────── C3 토큰 매칭 (순수, 결정17) ──────────────────────────────
+class TestC3TokenMatch:
+    KM = {"ai": "Technology", "cloud": "Technology", "bank": "Financials",
+          "artificial intelligence": "Technology", "interest rate": "Financials"}
+
+    def test_single_word_token(self):
+        assert match_term_to_sectors("buying tech AI stocks", self.KM) == {"Technology"}
+
+    def test_multiword_phrase(self):
+        # 다단어 시드 구 포함 일치
+        assert "Technology" in match_term_to_sectors("artificial intelligence boom", self.KM)
+
+    def test_no_substring_false_match(self):
+        # 'aid' 는 토큰 'ai' 와 완전 일치 아님(부분 문자열 금지)
+        assert match_term_to_sectors("aid workers relief", self.KM) == set()
+
+    def test_multi_sector(self):
+        assert match_term_to_sectors("bank ai merger", self.KM) == {"Financials", "Technology"}
 
 AS_OF = date(2026, 7, 9)
 
@@ -76,13 +97,13 @@ def _mk_news(d, term_lists):
 
 @pytest.mark.django_db
 class TestC3Aggregation:
-    def test_exact_match_normalized(self):
-        # 'AI'·'cloud'(Technology) 완전 일치 2 / 'ai ruling'(부분) 매칭 안 됨
+    def test_token_match(self):
+        # 토큰 매칭(결정17): 'AI'·'cloud'·'ai ruling'(토큰 ai 포함) 전부 Technology = 3
         _mk_news(date(2026, 6, 1), [["AI", "cloud", "ai ruling"]])
         aggregate_theme_news_volume()
         tech = HeatEntity.objects.get(kind="sector", ref_id="Technology")
         tnv = ThemeNewsVolume.objects.get(theme=tech, date=date(2026, 6, 1))
-        assert tnv.mention_count == 2  # ai + cloud (ai ruling 제외)
+        assert tnv.mention_count == 3
 
     def test_sector_name_mapping(self):
         # 'bank'(Financials) → HeatEntity 'Financial Services'

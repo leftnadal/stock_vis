@@ -3333,3 +3333,35 @@ FDXF/HONA는 최근 스핀오프). 유니버스 정리 불요.
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = d9af340. 전체 390 GREEN /
 13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.
+
+## [2026-07-10] Theme Heat TH-11 — 결정17(C3 단계형 매칭) + 결정18(HALTED-8 정본 통일) + 첫 온도
+
+**결정17 = 단계형 (C3 매칭)**: 1차 규칙 = **토큰 완전 일치** — 정규화 토큰 단위(단일 단어 시드는
+검색어 토큰 완전 일치, 다단어 키워드는 구 포함 일치, **부분 문자열·유사도 금지**). H2(LLM
+큐레이션 정적 사전)는 **설계 부록 박제만·구현 금지**. 승격 트리거 = 표본 감사 정밀도 <80%
+**또는** 미배정 검색어 비중 >40% → TH-C3-LLM-DICT 자동 상신.
+
+★**트리거 발동(상신)**: 재집계 결과 검색어 1,787건 중 배정 42.8% / **미배정 57.2% > 40%**
+(감사 20건 정밀도 ~78% <80% 소지: SpaceX IPO→Financials·Goldman airline→Consumer 오배정) →
+**TH-C3-LLM-DICT 상신**(H2 구현 금지, 사실만). 단 1차 규칙은 가동 = ThemeNewsVolume 0→218행.
+
+**결정18 = A (HALTED-8 정본 통일)**: 겹침 정지 8종 재당김 → 기업행동(split/배당) 날짜 정렬 대조
+→ **통과분만 단일 트랜잭션 교체**. 판정표: **통과 5종** — DD(split 2026-06-24 1:3)·HON(1:2)·
+CRWD(4:1)=미조정 데이터, GLW·ABBV=배당락 소액 1일. **재정지 3종** — MSFT(446%)·META(32%)·
+SPGI(5.4%)=split 없는 원인불명 괴리(배당으로 설명 불가) → 쓰기 금지 유지. 교체 3,765행 →
+겹침 재대조 **max_err 0.0 오차 완전 해소**(FMP 정본 통일). backfill --force(게이트 우회) 신설.
+
+★**첫 온도 산출(마일스톤)**: C3 토큰 매칭 점등(days≥26 테마) → 결측 2 도달 → **4테마 computed**:
+Technology **60**·Financial Services **63**·Energy **57**·Consumer Cyclical **45**(전부 주의 밴드
+40-69, 결측 = C4 8월 게이트·C8 주간). 7테마 not_computed(C3 days<26 or C5 결측). §3-5 가중
+재분배(결측 C4 0.12+C8 0.08=0.20 → present 0.80 정규화). **실전 소비 차단 유지**(결정6 승계, API 요건).
+
+**TH-STOCK-REGISTER-6 종결**: 6종(BNY=BK개명·ECHO·FDXF·FLEX·HONA·VEEV) sync_overview 등록 +
+백필 2,337행 → **커버리지 501/501 수렴**. 계수: QuarterlyValuation 499 = 501 − 2(ECHO·HONA,
+C1 백필 당시 EV·income 분기 교집합 0=no_matched_quarter, 신규/스핀오프 분기 이력 부족, 자연 해소).
+
+**Fwd P/E**: TH-C1-FWDPE 등재(원료=EstimateSnapshot 축적, C8 시간표 동조). EstimateSnapshot
+0행(7/10 금 16:30 ET 미도래).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = f0f5ab1. 전체 395 GREEN /
+13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.

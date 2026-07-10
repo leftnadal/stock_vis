@@ -1,7 +1,11 @@
 # Theme Heat 설계서 (테마 온도계 + 수요 지지 축)
 
 - **문서 ID**: `theme_heat_design`
-- **버전**: **v1.2.7** (2026-07-09) — v1.2.6 대비: **C1·C3 배선(8성분 전건 배선, _NOT_WIRED=())**.
+- **버전**: **v1.2.8** (2026-07-10) — v1.2.7 대비: **C3 토큰 매칭 가동(결정17 1차 규칙)** →
+  **첫 온도 4테마 산출**(Technology 60·Financial Services 63·Energy 57·Consumer Cyclical 45,
+  주의 밴드). HALTED-8 정본 통일(결정18=A, 통과 5종 교체·재정지 3종). H2 부록(§부록 A) 박제.
+  ★C3 미배정 57.2%>40% → TH-C3-LLM-DICT 상신. §2 산식·부호 불변.
+- **버전(이전)**: **v1.2.7** (2026-07-09) — v1.2.6 대비: **C1·C3 배선(8성분 전건 배선, _NOT_WIRED=())**.
   C1(결정15=A: EV/Sales = enterprise-values[quarter] ÷ income revenue, 동일 fiscal_date 정합) +
   C3(결정16=A: ThemeNewsVolume 테마×일자 집계, 완전 일치 매칭, 결정13 동형 게이트). §2 C3 집계
   규칙 보완 명세(아래). C3 완전 일치 실효성 0(다단어 문구) → 매칭 확장 상신. present 5/결측 3.
@@ -91,11 +95,12 @@ v1.0의 제외 근거였던 "C4 중첩"은 재검토 결과 기각(C4=돈의 이
 분기 3년 z(min_n 8분기). Fwd P/E 레그는 결정15 범위 밖(EV/Sales 단독). ★enterprise-values 는
 period 미지정 시 연간 → quarter 명시 필수.
 
-**C3 집계 규칙 보완 (결정16=A, v1.2.7)**: 테마별 일간 mention_count = DailyNewsKeyword 키워드
-(search_terms_en) 정규화(소문자·공백 정리) 후 테마 키워드 시드(news `KEYWORD_SECTOR_MAP`)와
-**완전 일치** 매칭 → 섹터명 → HeatEntity(11 GICS 매핑) 카운트 합산(원장 ThemeNewsVolume).
-부분·유사도 매칭 금지(정밀도 우선). 게이트 = 결정13 동형. ★완전 일치 실효성 0(실 데이터 다단어
-문구) → 토큰 매칭 확장은 후속(TH-C3-MATCH-EXPAND). 3년 외부 백필 금지(전방 축적 + 소급).
+**C3 집계 규칙 (결정16=A + 결정17 1차 규칙, v1.2.8)**: 테마별 일간 mention_count =
+DailyNewsKeyword search_terms_en 정규화(소문자·공백) 후 테마 키워드 시드(news
+`KEYWORD_SECTOR_MAP`)와 **토큰 매칭** — 단일 단어 시드는 검색어 토큰 완전 일치, 다단어 키워드는
+구 포함 일치, **부분 문자열·유사도 금지**. → 섹터명 → HeatEntity(11 GICS 매핑) 합산(원장
+ThemeNewsVolume). 게이트 = 결정13 동형. 3년 외부 백필 금지(전방 축적 + 소급). ★1차 규칙 배정
+42.8%/미배정 57.2% → **승격 트리거(미배정>40%) 초과 → H2(§부록 A) 상신**(TH-C3-LLM-DICT).
 
 **C4 콜드스타트 게이트 (결정13=C, v1.2.5)**: FMP shares_out 이력 부재로 C4 z는 EtfSnapshot
 축적 위 **시계열 전용**(횡단 z 기각 — n=11 통계 부적격). 종목별 유효 diff: <26 → 결측
@@ -408,6 +413,7 @@ Heat components |z| 상위 2개 + (DSS 가용 시) §3-6 사분면 문장. 예: 
 | C4 콜드스타트 게이트 + C6/C7 배선                                                     | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-8: 결정13=C C4 게이트[diff 26/60 3분기·time_series 전용·순수함수 재사용] + C6/C7[DailyPrice 3년 커버 게이트] 배선. 조립기 _NOT_WIRED=C1·C3 잔여. 14 test. **C4 가동=EtfSnapshot 축적 자동수렴, C6/C7 활성=DailyPrice 3년 백필[stocks 도메인 상신]**) |
 | DailyPrice 3년 백필(C6/C7 활성) + C1/C3 원천 상신                                     | stocks BE PR + 마켓 뷰    | 1     | 🔶 부분 (2026-07-09, TH-9: 결정14=A stocks `backfill_daily_prices`[겹침 대조 게이트·364,827행/487종목·8종목 정지 상신] → C6/C7 present 전환. **C1=402 유료벽·C3=DailyNewsKeyword 5개월+구조 부재 → 상신**[TH-C1-VALUATION·TH-C3-NARRATIVE]. 6 test. 온도 활성=C1/C3 비준 후) |
 | C1 밸류에이션 + C3 내러티브 배선 (마지막 2성분, 8성분 전건)                            | 마켓 뷰 BE PR             | 1     | ✅ (2026-07-09, TH-10: 결정15=A C1[EV/Sales=EV[quarter]÷revenue 동일 fiscal_date·QuarterlyValuation 7,935행·present z=0.82] + 결정16=A C3[ThemeNewsVolume 완전일치 집계·결정13 게이트·beat 17:15ET]. **_NOT_WIRED=() 8성분 전건 배선**. 13 test. C3 완전일치 실효0→매칭확장 상신[TH-C3-MATCH-EXPAND]. present 5/결측 3 not_computed) |
+| C3 토큰 매칭 가동 + HALTED-8 정본 통일 + 정비 (🌡️첫 온도)                             | 마켓 뷰 + stocks BE PR    | 1     | ✅ (2026-07-10, TH-11: 결정17 C3 토큰 매칭[0→218행·미배정57.2%→TH-C3-LLM-DICT 상신] → **첫 온도 4테마**[Tech 60·Fin 63·Energy 57·ConsCyc 45 주의밴드] + 결정18=A HALTED-8[통과5 교체 max_err0.0·재정지3] + REGISTER-6[커버리지 501/501]. 5 test. 온도 확대=C3 days≥26 테마·C4/C8 도래) |
 | 버튼바 온도 게이지 + 시드 온도 링                                                    | 마켓 뷰 FE PR             | 1     | ☐                         |
 | 2축 카드 (DSS "수집 중" 상태 포함)                                                   | Market Pulse FE PR        | 1     | ☐                         |
 | DSS 성분 계산 + 주간 beat                                                            | 마켓 뷰 BE PR             | 2     | ☐                         |
@@ -498,3 +504,18 @@ v1.0 §13 대비 대부분 편입 완료. 잔여 5건:
 > "동승"은 틀린 전제 위 최적화였으므로 폐기, TH-1 = 독립 마이그레이션 (B안 7.85 / 대기
 > 6.65 / 흡수 5.40). 보완: 마켓 뷰 PR-1 착수 시 cs_44 와의 개념 조율 + HeatEntity 재사용
 > 검토를 선행 의무로 §11 에 명시. 문서 동승 대상 = TH-1, 위치 `docs/chain_sight/theme_heat/`.
+
+## 부록 A. C3 H2 — LLM 큐레이션 정적 사전 (박제, 구현 금지 — 결정17 승격 대기)
+
+> 결정17 단계형의 2차 규칙. **명세 박제만·구현 금지** — 승격 트리거(정밀도 <80% 또는 미배정
+> >40%, TH-11에서 발동) 비준 후 TH-C3-LLM-DICT 에서 착수.
+
+- **문제**: 1차 토큰 매칭은 고유명사·이벤트 문구를 못 잡음(미배정 57.2%). 예 미배정: "SpaceX IPO"
+  (우주항공), "BYD performance"(전기차), "Iran attacks"(지정학), "Anthropic Claude"(AI 기업).
+  오배정: "SpaceX IPO"→Financials(ipo 토큰), "Goldman Sachs airline"→Consumer(airline 토큰).
+- **H2 설계**: LLM(Gemini sync, Celery 동기)으로 미배정·저신뢰 검색어를 배치 큐레이션 →
+  **정적 사전(committed dict)** 에 (검색어 정규화형 → 섹터) 확정 매핑 추가. 런타임 LLM 호출 없음
+  (정적 사전 조회만 = 결정론·비용 0). 사전은 주기적 재큐레이션(신규 미배정 축적 시).
+- **가드**: LLM 배정 신뢰도 임계 + 사람 검수 훅(오배정 교정). 사전은 1차 토큰 규칙 **뒤에** 적용
+  (토큰 우선, 미배정분만 사전 조회). 부분 문자열·유사도는 여전히 금지(사전은 정규화형 완전 일치).
+- **트리거 재평가**: H2 적용 후 배정률·정밀도 재측정 → 목표 미배정 ≤40% & 정밀도 ≥80%.

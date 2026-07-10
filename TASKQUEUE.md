@@ -624,17 +624,22 @@
 - 상태: **종결(TH-9, 결정14=A)**. stocks `backfill_daily_prices` command(공유 정본 DailyPrice, 겹침 대조 게이트) → 364,827행/487종목(482종목 2023-07 3년 완비). C6/C7 게이트 자연 해제 검증(present 전환). 6 test.
 - 근거: DECISIONS 2026-07-09 결정14, 커버리지 리포트.
 
-## ⬆ TH-BACKFILL-HALTED-8 — 겹침 대조 정지 8종목 재조정 (등재, 2026-07-09, 순번 상향)
-- 상태: 등재·상신(순번 상향). 백필 겹침 오차 >0.5%로 쓰기 정지: MSFT(446%)·DD(200%)·HON(100%)·CRWD(75%)·META(32%)·SPGI(5.4%)·GLW(0.87%)·ABBV(0.73%). 조정 규약 불일치(split/배당 조정) 추정 → C6/C7 8종목 이력 오염 잠재.
-- 의무: 기존 DailyPrice 조정 상태 진단(언제·어떤 조정) → 정합화 후 재백필(--symbols 지정).
+## ✅ TH-BACKFILL-HALTED-8 — 겹침 정지 8종 정본 통일 (종결, 2026-07-10)
+- 상태: **부분 종결(TH-11, 결정18=A)**. 통과 5종(DD/HON/CRWD=split·GLW/ABBV=배당락) 교체 3,765행 → 겹침 max_err 0.0. **재정지 3종(MSFT/META/SPGI=split없는 원인불명)** 쓰기 금지 유지 — 원인 조사는 별도 안건.
 
-## TH-STOCK-REGISTER-6 — 미등록 6종 Stock 등록 (등재, 2026-07-09)
-- 상태: 등재. BNY(BK개명)·ECHO·FDXF·FLEX·HONA·VEEV = SP500 active 실재 + Stock 미등록(FDXF/HONA 최근 스핀오프). 상장폐지·오염 아님(유니버스 정리 불요).
-- 의무: sync_overview → Stock 등록 → C1/C6/C7 백필 --symbols 지정 편입.
+## ✅ TH-STOCK-REGISTER-6 — 미등록 6종 Stock 등록 (종결, 2026-07-10)
+- 상태: **종결(TH-11)**. 6종 sync_overview 등록 + DailyPrice 백필 2,337행 → 커버리지 501/501 수렴. C1(QuarterlyValuation)은 ECHO·HONA 분기 이력 부족으로 499 유지(자연 해소).
 
-## TH-C3-MATCH-EXPAND — C3 키워드 매칭 확장 (등재, 2026-07-09, 상신)
-- 상태: 등재·상신. C3 완전 일치(결정16) 실효성 0 — search_terms_en 다단어 문구 vs KEYWORD_SECTOR_MAP 단어 완전 일치 0 → ThemeNewsVolume 소급 0행 → C3 영구 결측.
-- 비준 필요: 토큰 단위 매칭(문구를 토큰 분해 후 시드 단어 포함 카운트) or n-gram — 정밀도/재현율 균형. 결정16 "확장은 후속" 발동. 배선·원장·게이트는 완료(규칙만 확장).
+## ✅ TH-C3-MATCH-EXPAND — C3 토큰 매칭 가동 (종결, 2026-07-10)
+- 상태: **종결(TH-11, 결정17 1차 규칙)**. 토큰 완전 일치(단어=토큰·다단어=구 포함) → 재집계 0→218행 → 4테마 C3 점등(days≥26). ★미배정 57.2%>40% 트리거 초과 → TH-C3-LLM-DICT 상신.
+
+## TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (등재, 2026-07-10, 조건부 상신)
+- 상태: 등재·상신(결정17 트리거 발동 = 미배정 57.2%>40%, 정밀도 ~78%<80%). H2 = LLM 큐레이션 정적 사전(설계 부록 명세만, 구현 금지).
+- 비준 필요: H2 착수 여부. 미배정 다수(고유명사·이벤트 문구: "Iran attacks"·"SpaceX IPO"·"BYD performance")를 LLM으로 정적 사전 확장. 오배정(SpaceX IPO→Financials 등) 교정 포함.
+
+## TH-C1-FWDPE — C1 Fwd P/E 레그 배선 (등재, 2026-07-10)
+- 상태: 등재(TH-10 승인). C1 현재 EV/Sales 단독 → Fwd P/E 레그 추가(§2 "EV/Sales·Fwd P/E 중앙값").
+- 원료: forward EPS = analyst estimates(EstimateSnapshot 축적, C8 시간표 동조). 시점 정합 규칙 동일 적용.
 
 ## ✅ TH-C1-VALUATION — C1 밸류에이션 배선 (종결, 2026-07-09)
 - 상태: **종결(TH-10, 결정15=A)**. EV/Sales = enterprise-values(period=quarter) ÷ income revenue, 동일 fiscal_date 정합. QuarterlyValuation(0022) 백필 7,935행/499종목 + c1_valuation_from_db 조립기 편입. C1 present. Fwd P/E 레그는 결정15 범위 밖(EV/Sales 단독). 13 test 일부.

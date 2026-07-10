@@ -67,3 +67,12 @@ class TestBackfillGate:
         backfill_daily_prices(_client(bars), ["AAA"], FROM, TO)
         backfill_daily_prices(_client(bars), ["AAA"], FROM, TO)
         assert DailyPrice.objects.filter(stock=st).count() == 1  # 멱등 upsert
+
+    def test_force_bypasses_gate_replaces(self):
+        # 겹침 오차 커도 force=True 면 교체(TH-11 결정18). 기존 close 100 → FMP 150 갱신.
+        st = Stock.objects.create(symbol="AAA")
+        _existing(st, date(2025, 1, 2), 100)
+        bars = [{"date": "2025-01-02", "open": 150, "high": 150, "low": 150, "close": 150, "volume": 1000}]
+        r = backfill_daily_prices(_client(bars), ["AAA"], FROM, TO, force=True)
+        assert not r["halted"] and r["written"] == 1
+        assert DailyPrice.objects.get(stock=st, date=date(2025, 1, 2)).close_price == Decimal("150")

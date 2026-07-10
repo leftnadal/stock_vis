@@ -42,8 +42,34 @@ KW_SECTOR_TO_HEAT_ENTITY = {
 
 
 def _normalize(term: str) -> str:
-    """소문자 + 공백 정리 (완전 일치 매칭 전처리)."""
+    """소문자 + 공백 정리 (매칭 전처리)."""
     return " ".join(str(term).lower().split())
+
+
+# 오배정 유발 토큰 제외 훅 (결정17 — 표본 감사로 발견 시 추가). 현재 비어있음.
+MATCH_EXCLUDE_TOKENS: frozenset = frozenset()
+
+
+def match_term_to_sectors(term: str, keyword_map: dict) -> set:
+    """
+    검색어 → 매칭 섹터명 집합 (결정17 1차 규칙, 순수함수).
+
+    - 단일 단어 시드(공백 없음): 정규화 검색어의 **토큰 완전 일치**(부분 문자열 금지).
+    - 다단어 시드(공백 있음): 검색어 문자열에 **구 포함 일치**(공백 경계 자연 확보).
+    - 유사도·부분 문자열(단어) 금지. 제외 토큰(MATCH_EXCLUDE_TOKENS)은 단어 매칭에서 배제.
+    """
+    norm = _normalize(term)
+    if not norm:
+        return set()
+    tokens = set(norm.split()) - MATCH_EXCLUDE_TOKENS
+    sectors = set()
+    for kw, sec in keyword_map.items():
+        if " " in kw:
+            if kw in norm:  # 구 포함 일치
+                sectors.add(sec)
+        elif kw in tokens:  # 토큰 완전 일치
+            sectors.add(sec)
+    return sectors
 
 
 def aggregate_theme_news_volume(target_date: Optional[date] = None) -> dict:
@@ -68,10 +94,10 @@ def aggregate_theme_news_volume(target_date: Optional[date] = None) -> dict:
             if not isinstance(kw, dict):
                 continue
             for term in kw.get("search_terms_en") or []:
-                sec = KEYWORD_SECTOR_MAP.get(_normalize(term))
-                ref = KW_SECTOR_TO_HEAT_ENTITY.get(sec) if sec else None
-                if ref and ref in entities:
-                    counts[ref] += 1
+                for sec in match_term_to_sectors(term, KEYWORD_SECTOR_MAP):
+                    ref = KW_SECTOR_TO_HEAT_ENTITY.get(sec)
+                    if ref and ref in entities:
+                        counts[ref] += 1
         days += 1
         for ref, cnt in counts.items():
             ThemeNewsVolume.objects.update_or_create(
