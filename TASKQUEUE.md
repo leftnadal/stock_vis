@@ -21,6 +21,17 @@
 
 ---
 
+## Theme Heat runtime 배포 — 오늘 배포 포기·C8 1주 연기 (2026-07-10)
+
+> 출처: credit_signals 종결 관찰(TH beat 2종 unregistered 에러). A-0 실측: TH 코드는 `sv-theme-heat`(branch `monorepo/sess-cs-theme-heat`, 26커밋 미머지 WIP)에만 존재, origin/main·runtime worker에 없음. 경로②-머지불가 판정.
+
+| ID | Task | Agent | Depends On | Status | Output Artifact |
+|----|------|-------|------------|--------|-----------------|
+| TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **blocked (오늘 배포 포기, 미머지 WIP)** | beat 3종 현재 `enabled=False` |
+| TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **대기** | `PeriodicTask enabled=True` |
+
+> **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.
+
 ## 🔴 [P0] chainsight-pair-aggregation beat DB 등록 (버그 #28)
 
 > 출처: RelationPairSnapshot 적립 작업(2026-06-29, 브랜치 `monorepo/sess-cs-pair-relevance`). DECISIONS "RelationPairSnapshot 쌍 relevance 적립 [해자]".
