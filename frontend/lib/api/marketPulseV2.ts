@@ -241,6 +241,16 @@ export async function fetchCardDetail<T = unknown>(
   return data
 }
 
+// MP2-TREND S4: z-이상도 전용 엔드포인트(카드 detail과 별개, lazy fetch). 봉투 동일.
+export async function fetchRegimeZScore(): Promise<
+  CardDetailEnvelope<RegimeZScorePayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<RegimeZScorePayload>>(
+    '/regime/zscore',
+  )
+  return data
+}
+
 export async function refreshNews(): Promise<{
   _meta: { generated_at: string; count: number; pool_size: number; seen_count: number }
   items: NewsItem[]
@@ -298,6 +308,33 @@ export interface RegimeComponent {
   cuts: RegimeCut[]
   crossed_cuts: RegimeCut[]
   nearest_cut_distance: RegimeNearestCut | null
+}
+
+// MP2-TREND S4: 국면 성분 z-이상도. baseline = 고정 소급 모집단 μ·σ(표본), z serve-time·미저장.
+export interface RegimeZPoint {
+  date: string
+  z: number | null
+}
+export interface RegimeZBaseline {
+  mean: number | null
+  std: number | null
+  n: number
+}
+export interface RegimeZComponent {
+  key: string
+  unit: string
+  series: RegimeZPoint[]
+  baseline: RegimeZBaseline
+  insufficient: boolean
+}
+export interface RegimeZScorePayload {
+  available: boolean
+  components: RegimeZComponent[]
+  meta: {
+    low_confidence_until?: string
+    live_start?: string | null
+    downsample_recent_daily?: number
+  }
 }
 
 export interface RegimeDetail {

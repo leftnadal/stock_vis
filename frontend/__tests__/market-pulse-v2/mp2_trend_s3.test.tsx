@@ -7,6 +7,7 @@
  * ※ 스크럽류(E3'): jsdom 0폭 SVG 한계 — 순수 payload 기반 셀 렌더로 간접 검증(사유: recharts
  *   onMouseMove 미발화, S2 관행). 컷/시계열은 mock payload 그대로 소비(하드코딩 없음).
  */
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
@@ -80,15 +81,20 @@ describe('MP2-TREND S3 — RegimeComponents (E1/E2/E3/E4/E6)', () => {
     expect(screen.getByTestId('dist-vix')).toHaveTextContent('⚠ 컷 통과')
   })
 
-  it('E4: 세그먼트 컨트롤 — 기본=판정거리, z 탭 → placeholder', () => {
-    render(<RegimeComponents payload={mkPayload([mkComponent({})])} />)
+  it('E4: 세그먼트 컨트롤 — 기본=판정거리, z 탭 → z 뷰(placeholder 제거, S4)', () => {
+    // S4: z 탭은 RegimeZTab(useRegimeZScore) 마운트 → QueryClientProvider 필요.
+    const qc = new QueryClient()
+    render(
+      <QueryClientProvider client={qc}>
+        <RegimeComponents payload={mkPayload([mkComponent({})])} />
+      </QueryClientProvider>,
+    )
     // 기본 탭 = 판정 거리(그리드 노출)
     expect(screen.getByTestId('tab-raw')).toHaveAttribute('aria-selected', 'true')
     expect(screen.getByTestId('comp-cell-vix')).toBeInTheDocument()
-    expect(screen.queryByTestId('zscore-placeholder')).not.toBeInTheDocument()
-    // z 탭 클릭 → placeholder 전환, 그리드 숨김
+    // z 탭 클릭 → placeholder는 더 이상 존재하지 않음(실 뷰로 교체), raw 그리드 숨김
     fireEvent.click(screen.getByTestId('tab-z'))
-    expect(screen.getByTestId('zscore-placeholder')).toBeInTheDocument()
+    expect(screen.queryByTestId('zscore-placeholder')).not.toBeInTheDocument()
     expect(screen.queryByTestId('comp-cell-vix')).not.toBeInTheDocument()
   })
 

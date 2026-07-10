@@ -11,11 +11,39 @@
  */
 import { useState } from 'react'
 
-import type { RegimeComponent, RegimeDetail, RegimeNearestCut } from '@/lib/api/marketPulseV2'
+import { useRegimeZScore } from '@/hooks/useMarketPulseV2'
+import type {
+  RegimeComponent,
+  RegimeDetail,
+  RegimeNearestCut,
+  RegimeZComponent,
+} from '@/lib/api/marketPulseV2'
 import { RegimeComponentSparkline } from './RegimeComponentSparkline'
+import { RegimeZSparkline } from './RegimeZSparkline'
 
-// 예약 탭(이상도 z) 노출 플래그 — S4 착수 전까지 placeholder. 끄려면 false.
+// 예약 탭(이상도 z)은 S4로 실 뷰 장착 — 상수는 계약 하위호환 위해 유지(항상 노출).
 export const SHOW_ZSCORE_TAB = true
+
+// |z|≥2 = danger(이상). 스파크라인 밴드와 동일 임계.
+const Z_DANGER = 2
+
+// 성분 series의 현재(최신 non-null) z. 없으면 null.
+function currentZ(c: RegimeZComponent): number | null {
+  for (let i = c.series.length - 1; i >= 0; i--) {
+    if (c.series[i].z != null) return c.series[i].z
+  }
+  return null
+}
+
+// 정렬: |현재 z| 내림차순 → 현재 z null(기준 충분) → insufficient 최후미.
+function sortByAnomaly(a: RegimeZComponent, b: RegimeZComponent): number {
+  const rank = (c: RegimeZComponent) => (c.insufficient ? 2 : currentZ(c) == null ? 1 : 0)
+  const ra = rank(a)
+  const rb = rank(b)
+  if (ra !== rb) return ra - rb
+  if (ra === 0) return Math.abs(currentZ(b) as number) - Math.abs(currentZ(a) as number)
+  return 0
+}
 
 const INDICATOR_LABEL: Record<string, string> = {
   vix: 'VIX',
@@ -83,6 +111,111 @@ function ComponentCell({ component }: { component: RegimeComponent }) {
   )
 }
 
+function ZComponentCell({
+  component,
+  lowConfidenceUntil,
+}: {
+  component: RegimeZComponent
+  lowConfidenceUntil?: string
+}) {
+  const label = INDICATOR_LABEL[component.key] ?? component.key
+  const cz = currentZ(component)
+  const danger = cz != null && Math.abs(cz) >= Z_DANGER
+
+  return (
+    <div
+      data-testid={`zcomp-cell-${component.key}`}
+      className="rounded border border-slate-200 bg-white px-2 py-1.5"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-700">{label}</span>
+        {component.insufficient ? (
+          <span data-testid={`zchip-${component.key}`} className="text-[10px] text-slate-400">
+            기준 부족
+          </span>
+        ) : (
+          <span
+            data-testid={`zchip-${component.key}`}
+            className={`text-[10px] font-semibold tabular-nums rounded px-1 ${
+              danger ? 'bg-rose-100 text-rose-700' : 'text-slate-500'
+            }`}
+          >
+            {cz == null ? 'z —' : `z ${cz > 0 ? '+' : ''}${cz.toFixed(1)}`}
+          </span>
+        )}
+      </div>
+      <div className="my-1">
+        {component.insufficient ? (
+          <div className="h-11 flex items-center text-[10px] text-slate-400">기준 불충분</div>
+        ) : (
+          <RegimeZSparkline component={component} lowConfidenceUntil={lowConfidenceUntil} />
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ZView({
+  loading,
+  error,
+  components,
+  lowConfidenceUntil,
+}: {
+  loading: boolean
+  error: boolean
+  components: RegimeZComponent[]
+  lowConfidenceUntil?: string
+}) {
+  if (loading) {
+    return (
+      <div data-testid="zview-loading" className="px-3 py-6 text-center text-xs text-slate-400">
+        이상도(z) 불러오는 중…
+      </div>
+    )
+  }
+  if (error) {
+    return (
+      <div data-testid="zview-error" className="px-3 py-6 text-center text-xs text-rose-600">
+        이상도(z)를 불러오지 못했습니다.
+      </div>
+    )
+  }
+  if (components.length === 0) {
+    return (
+      <div data-testid="zview-empty" className="px-3 py-6 text-center text-xs text-slate-400">
+        z 기준 분포가 아직 부족합니다.
+      </div>
+    )
+  }
+  const sorted = [...components].sort(sortByAnomaly)
+  return (
+    <div data-testid="zview">
+      <div className="grid grid-cols-2 gap-2">
+        {sorted.map((c) => (
+          <ZComponentCell key={c.key} component={c} lowConfidenceUntil={lowConfidenceUntil} />
+        ))}
+      </div>
+      <p data-testid="zview-caption" className="text-[10px] text-slate-400 mt-2">
+        점선 ±2σ · 기준: 3년 소급 분포 · 좌측 음영 = 저신뢰 초입
+      </p>
+    </div>
+  )
+}
+
+// z 탭 — mode==='z'일 때만 마운트 → useRegimeZScore가 그때만 호출(lazy).
+//   raw 모드에선 미마운트 → 훅 무호출 → 기존 raw 탭 테스트 QueryClient 불요(무영향).
+function RegimeZTab() {
+  const { data, isLoading, isError } = useRegimeZScore(true)
+  return (
+    <ZView
+      loading={isLoading}
+      error={isError}
+      components={data?.data?.components ?? []}
+      lowConfidenceUntil={data?.data?.meta?.low_confidence_until}
+    />
+  )
+}
+
 export function RegimeComponents({ payload }: { payload: RegimeDetail; labels?: Record<string, string> }) {
   const [mode, setMode] = useState<'raw' | 'z'>('raw')
   const components = payload.components ?? []
@@ -121,12 +254,7 @@ export function RegimeComponents({ payload }: { payload: RegimeDetail; labels?: 
       </div>
 
       {mode === 'z' ? (
-        <div
-          data-testid="zscore-placeholder"
-          className="rounded border border-dashed border-slate-200 bg-slate-50 px-3 py-6 text-center text-xs text-slate-400"
-        >
-          이상도(z) 뷰는 장기 히스토리 확보 후 제공 예정입니다.
-        </div>
+        <RegimeZTab />
       ) : (
         <>
           <div className="grid grid-cols-2 gap-2">

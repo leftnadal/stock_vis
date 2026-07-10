@@ -22,6 +22,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.market_pulse.api import cache as cache_keys
+from apps.market_pulse.management.commands.backfill_v2_regime_vectors import (
+    BACKFILL_MARK,  # 소급 합성행 provenance 마커 단일 소스(드리프트 방지)
+)
 from apps.market_pulse.constants import (
     CD_MOMENTUM_BASELINE,
     CD_REL_STRENGTH_5D_LOOKBACK,
@@ -168,6 +171,47 @@ class CardDetailView(APIView):
         return Response(_envelope(payload, started, cache_state="MISS"))
 
 
+@extend_schema(
+    summary="Regime z-anomaly (S4)",
+    description=(
+        "국면 성분 z-이상도 시계열. baseline = 소급 모집단(고정 잣대) μ·σ(표본). "
+        "z는 serve-time·미저장. 24h 캐시. 다운샘플(최근 90영업일 일간 + 이전 주간)."
+    ),
+    tags=["Market Pulse v2"],
+    responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT},
+)
+class RegimeZScoreView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [MarketPulseUserThrottle, MarketPulseHourThrottle]
+
+    def get(self, request, *args, **kwargs):
+        from django.db.models import Max, Min
+
+        started = time.time()
+        bound = RegimeSnapshot.objects.filter(summary=BACKFILL_MARK).aggregate(
+            mn=Min("date"), mx=Max("date")
+        )
+        if bound["mn"] is None:
+            # 소급 모집단 부재 → 빈 응답(발명 금지).
+            empty = {"available": False, "components": [], "meta": {}}
+            return Response(_envelope(empty, started, cache_state="MISS"))
+
+        key = cache_keys.regime_zscore_key(bound["mn"], bound["mx"])
+        try:
+            cached = cache.get(key)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백
+            cached = None
+        if cached is not None:
+            return Response(_envelope(cached, started, cache_state="HIT"))
+
+        payload = _regime_zscore_detail()
+        try:
+            cache.set(key, payload, timeout=cache_keys.REGIME_ZSCORE_TTL_SEC)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백(재계산으로 응답)
+            pass
+        return Response(_envelope(payload, started, cache_state="MISS"))
+
+
 def _regime_detail():
     today = django_timezone.localdate()
     snap = RegimeSnapshot.objects.filter(date=today).first()
@@ -216,6 +260,80 @@ def _regime_detail():
         "margins": ns["margins"],
         "next_stage_closest": ns["closest"],
         "components": components,
+    }
+
+
+# MP2-TREND S4 (D-S4-*): 국면 성분 z-이상도 — 전용 빌더(기존 _regime_detail 무변경).
+#   baseline = 고정 소급 모집단(summary=BACKFILL_MARK)의 μ·σ(표본), z는 serve-time·미저장.
+#   대상 = raw 탭 대칭 7 룰-구동 지표(TARGET_INDICATORS). baseline 함수는 전 14성분 산출
+#   (ANALOG 재사용 대비). 다운샘플: 최근 90영업일 일간 + 그 이전 주간.
+def _regime_zscore_detail() -> dict:
+    from apps.market_pulse.regime.component_cuts import (
+        INDICATOR_UNITS,
+        TARGET_INDICATORS,
+    )
+    from apps.market_pulse.regime.inputs import ALL_INPUT_KEYS
+    from apps.market_pulse.regime.zscore import (
+        compute_baseline,
+        downsample,
+        z_of,
+    )
+
+    # 소급 모집단(고정 잣대) — 날짜 오름차순 inputs.
+    syn = list(
+        RegimeSnapshot.objects.filter(summary=BACKFILL_MARK)
+        .order_by("date")
+        .values_list("date", "inputs")
+    )
+    if not syn:
+        return {"available": False, "components": [], "meta": {}}
+    pop = [inp for _, inp in syn]
+    baseline = compute_baseline(pop, ALL_INPUT_KEYS)
+
+    # 전체 행(소급 + 라이브) — summary 미선택 → 마커 미노출. 다운샘플 적용.
+    all_rows = list(
+        RegimeSnapshot.objects.order_by("date").values_list("date", "inputs")
+    )
+    ds_rows = downsample(all_rows)
+
+    components = []
+    for key in TARGET_INDICATORS:
+        base = baseline.get(key) or {"mean": None, "std": None, "n": 0, "insufficient": True}
+        series = [
+            {"date": d.isoformat(), "z": z_of((inp or {}).get(key), base)}
+            for d, inp in ds_rows
+        ]
+        components.append(
+            {
+                "key": key,
+                "unit": INDICATOR_UNITS.get(key, ""),
+                "series": series,
+                "baseline": {
+                    "mean": round(base["mean"], 4) if base["mean"] is not None else None,
+                    "std": round(base["std"], 4) if base["std"] is not None else None,
+                    "n": base["n"],
+                },
+                "insufficient": bool(base["insufficient"]),
+            }
+        )
+
+    # low_confidence_until = 소급창 시작 후 20영업일째(초입 저신뢰 음영 경계).
+    syn_dates = [d for d, _ in syn]
+    low_conf = syn_dates[19] if len(syn_dates) >= 20 else syn_dates[-1]
+    live_start = (
+        RegimeSnapshot.objects.exclude(summary=BACKFILL_MARK)
+        .order_by("date")
+        .values_list("date", flat=True)
+        .first()
+    )
+    return {
+        "available": True,
+        "components": components,
+        "meta": {
+            "low_confidence_until": low_conf.isoformat(),
+            "live_start": live_start.isoformat() if live_start else None,
+            "downsample_recent_daily": 90,
+        },
     }
 
 
