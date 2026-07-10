@@ -26,10 +26,32 @@ COLLAPSE_WINDOW_HOURS = 24
 CACHE_TTL_SECONDS = 15 * 60  # 서버 15분 TTL
 _CACHE_KEY = "dashboard:news_strip:v1:user:{uid}"
 
-# 제목 핵심어 추출 stopword(접기 안전핀용, 과접합 방지)
+# 접기 안전핀 상수 (D-STRIP-FOLD-TUNE — STRIP-FOLD-TUNE STEP 0 실데이터 근거).
+# ⓑ 라운드업 배제: 언급 심볼 수 > MAX_ABSORB_SYMBOLS인 기사는 타 기사 흡수 금지
+#    (자신은 대표로 잔류). 근거: 기사당 심볼 수 최근 7일 p95=3 → >3(≥4)=라운드업.
+MAX_ABSORB_SYMBOLS = 3
+# ⓒ 그룹 크기 상한: 한 접기 그룹 최대 멤버(대표+흡수). 초과분 독립 잔류.
+#    근거: 심볼별 24h 기사 수 median=1·q3=2 → 같은-사건 클러스터 소형. rep+2.
+MAX_GROUP_SIZE = 3
+
+# ⓐ 제목 핵심어 stopword(접기 안전핀 — 특이어 공유만 접합 근거로 인정).
+# 근거: STEP 0 T0-2 최근 7일 제목 토큰 문서빈도 상위(일반 금융어·구조어·회사 접미).
+# 이 일반어 공유는 "같은 사건"의 근거가 못 됨(라운드업이 stock/price/market 공유로
+# 오접합하던 경로 차단). 심볼 토큰 제외는 _collapse에서 별도 유지.
 _STOPWORDS = {
+    # 구조어(영문)
     "the", "a", "an", "of", "to", "in", "on", "for", "and", "or", "is", "are",
+    "as", "its", "with", "from", "by", "us", "after", "why", "you", "at", "be",
+    # 일반 금융·시장어(T0-2 상위 DF)
+    "stock", "stocks", "price", "prices", "shares", "market", "markets",
+    "nasdaq", "nyse", "sec", "etf", "earnings", "investors", "investor",
+    "buy", "sell", "hold", "growth", "value", "forward", "financial",
+    "enterprise", "corp", "inc", "group", "ltd", "co", "company",
+    # 숫자성 잡음
+    "2026", "2025", "000",
+    # 일반어(한글)
     "그", "이", "저", "및", "등", "관련", "뉴스", "속보", "종목", "주가",
+    "상승", "하락", "전망", "마감", "시장", "주식", "투자", "분석",
 }
 _TOKEN_RE = re.compile(r"[0-9A-Za-z가-힣]+")
 
@@ -193,13 +215,21 @@ def _collapse(articles: list) -> list[dict]:
             continue
         members = [base]
         used[i] = True
-        for j in range(i + 1, len(enriched)):
-            if used[j]:
-                continue
-            cand = enriched[j]
-            if _same_event(base, cand):
-                members.append(cand)
-                used[j] = True
+        # ⓑ 라운드업(심볼 수 > 상한)은 타 기사를 흡수하지 못함 — 단독 대표로 잔류.
+        base_is_roundup = len(base["symbols"]) > MAX_ABSORB_SYMBOLS
+        if not base_is_roundup:
+            for j in range(i + 1, len(enriched)):
+                if used[j]:
+                    continue
+                if len(members) >= MAX_GROUP_SIZE:  # ⓒ 그룹 상한 — 초과분 독립 잔류
+                    break
+                cand = enriched[j]
+                # ⓑ 라운드업 후보도 흡수 대상 제외(독립 잔류).
+                if len(cand["symbols"]) > MAX_ABSORB_SYMBOLS:
+                    continue
+                if _same_event(base, cand):
+                    members.append(cand)
+                    used[j] = True
         rep = max(members, key=lambda m: (m["mention"], m["published_at"]))
         rep_symbols = set()
         for m in members:

@@ -229,3 +229,71 @@ def test_endpoint_authed_returns_200_empty():
     resp = client.get("/api/dashboard/news-strip/")
     assert resp.status_code == 200
     assert resp.data["items"] == []
+
+
+# ── STRIP-FOLD-TUNE: 접기 안전핀 강화 (D-STRIP-FOLD-TUNE) ─────────────────
+
+
+@pytest.mark.django_db
+def test_fold_stopword_blocks_generic_only_share():
+    """ⓐ 일반어(stock)만 공유하는 상이 사건은 비접합 — stopword 안전핀."""
+    a = _article("http://f/1", "AAPL stock climbs", ["AAPL"], hours_ago=1)
+    b = _article("http://f/2", "AAPL stock tumbles", ["AAPL"], hours_ago=2)
+    groups = strip_service._collapse([a, b])
+    assert len(groups) == 2  # 'stock'=stopword → 특이어 미공유 → 비접합(정반대 사건)
+
+
+@pytest.mark.django_db
+def test_genuine_same_event_still_collapses():
+    """과소접힘 회귀 방지: 특이어(recall) 공유 = 여전히 접힘."""
+    a = _article("http://f/3", "AAPL recall crisis widens", ["AAPL"], hours_ago=1)
+    b = _article("http://f/4", "AAPL recall investigation opens", ["AAPL"], hours_ago=2)
+    groups = strip_service._collapse([a, b])
+    assert len(groups) == 1
+    assert groups[0]["collapsed_count"] == 1
+
+
+@pytest.mark.django_db
+def test_roundup_not_absorbed():
+    """ⓑ 라운드업(심볼>3)은 흡수 금지 — 독립 대표로 잔류."""
+    roundup = _article(
+        "http://f/r", "recall crisis roundup", ["AAA", "BBB", "CCC", "DDD", "EEE"],
+        hours_ago=1,
+    )
+    single = _article("http://f/s", "AAA recall crisis", ["AAA"], hours_ago=2)
+    groups = strip_service._collapse([roundup, single])
+    assert len(groups) == 2  # 라운드업 비흡수(심볼 5 > 상한 3)
+
+
+@pytest.mark.django_db
+def test_group_size_cap_splits_oversized():
+    """ⓒ 그룹 상한 = MAX_GROUP_SIZE(rep+2). 초과 동일사건은 분할·독립 잔류."""
+    arts = [
+        _article(f"http://f/g{i}", "AAPL recall crisis event", ["AAPL"], hours_ago=i + 1)
+        for i in range(6)
+    ]
+    groups = strip_service._collapse(arts)
+    assert all(
+        g["collapsed_count"] <= strip_service.MAX_GROUP_SIZE - 1 for g in groups
+    )
+    assert len(groups) >= 2  # 6 동일사건 → 그룹당 3 상한 → 최소 2그룹
+
+
+@pytest.mark.django_db
+def test_aapl_plus10_overcollapse_regression():
+    """★07-09 AAPL '+10건' 오접합 박제: 상이 사건들이 한 칩으로 안 뭉친다."""
+    titles = [
+        "App Store Growth Report",
+        "Oil Drops Sharply Overnight",
+        "Meta Bull Bear Prediction",
+        "Nikkei Rebounds Broadly",
+        "Chip Sector Rotation Begins",
+    ]
+    arts = [
+        _article(f"http://f/x{i}", t, ["AAPL"], hours_ago=i + 1)
+        for i, t in enumerate(titles)
+    ]
+    groups = strip_service._collapse(arts)
+    # 상이 사건 5건 → 1칩 뭉침 없음(다수 칩) + 어떤 그룹도 상한 초과 안 함
+    assert len(groups) >= 3
+    assert max(g["collapsed_count"] for g in groups) <= strip_service.MAX_GROUP_SIZE - 1
