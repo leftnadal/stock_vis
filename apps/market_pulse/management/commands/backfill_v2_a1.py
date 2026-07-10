@@ -89,9 +89,9 @@ class Command(BaseCommand):
         n_econ = 0
         for series_id in series_targets:
             try:
-                inserted = self._backfill_economic(series_id, from_date, to_date)
+                fetched, inserted = self._backfill_economic(series_id, from_date, to_date)
                 n_econ += inserted
-                self.stdout.write(f'  {series_id}: {inserted} obs inserted')
+                self.stdout.write(f'  {series_id}: fetched {fetched}, inserted {inserted}')
             except Exception as exc:
                 logger.error('Failed to backfill %s: %s', series_id, exc, exc_info=True)
                 self.stderr.write(self.style.WARNING(f'  {series_id}: SKIPPED ({exc})'))
@@ -99,9 +99,9 @@ class Command(BaseCommand):
         n_market = 0
         for symbol in symbol_targets:
             try:
-                inserted = self._backfill_market(symbol, from_date, to_date)
+                fetched, inserted = self._backfill_market(symbol, from_date, to_date)
                 n_market += inserted
-                self.stdout.write(f'  {symbol}: {inserted} bars inserted')
+                self.stdout.write(f'  {symbol}: fetched {fetched}, inserted {inserted}')
             except Exception as exc:
                 logger.error('Failed to backfill %s: %s', symbol, exc, exc_info=True)
                 self.stderr.write(self.style.WARNING(f'  {symbol}: SKIPPED ({exc})'))
@@ -173,7 +173,8 @@ class Command(BaseCommand):
             )
             if created:
                 inserted += 1
-        return inserted
+        # (fetched, inserted): fetched=0(못 가져옴) vs fetched>0·inserted=0(이미 존재) 구분 — 침묵 해소.
+        return len(observations), inserted
 
     @transaction.atomic
     def _backfill_market(self, symbol, from_date, to_date):
@@ -196,12 +197,20 @@ class Command(BaseCommand):
             )
             if created:
                 inserted += 1
-        return inserted
+        return len(bars), inserted
 
     def _fetch_fred(self, series_id, from_date, to_date):
         from packages.shared.api_request.fred_client import FREDClient
         client = FREDClient()
-        raw = client.get_series_observations(series_id, observation_start=str(from_date), observation_end=str(to_date))
+        # get_series_observations 기본 limit=100·sort desc → 심층 백필 시 최신 100건(대개 기존
+        #   행)만 와서 0 삽입(침묵). 전 창 확보 위해 limit·asc 명시(FRED 최대 100000).
+        raw = client.get_series_observations(
+            series_id,
+            observation_start=str(from_date),
+            observation_end=str(to_date),
+            limit=100000,
+            sort_order='asc',
+        )
         out = []
         for r in raw:
             d_str = r.get('date')
