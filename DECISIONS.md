@@ -3395,3 +3395,40 @@ full=light=non-split-adjusted=dividend-adjusted **전 변형 일관**(조정 방
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 128de39. 전체 395 GREEN /
 13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.
+
+## [2026-07-10] Theme Heat TH-12b — 결정20(HALTED-3=A 집행) + H2 계수 회신 + 원장 무적용
+
+**결정20 = A (HALTED-3 전체 재백필, 집행 완료)**: MSFT/META/SPGI = 기존 DB 7개월행 오염 확정
+(TH-12 프로브 = FMP 정본). **삭제 후 재백필**(--force 없음, 기존 `backfill_daily_prices` 경로
+그대로·신규 우회 0). 삭제로 겹침=0 → 겹침 대조 게이트 자연 통과(우회 아님). 삭제 522행
+(MSFT 196·META 174·SPGI 152) → 재백필 2,256행(각 752, 2023-07-11~2026-07-09). **4게이트 전건 PASS**:
+G1 전 기간 FMP 재대조 max_err **0.0**(3종 각 752행 대조)·G2 앵커 개별 일치(**MSFT@2025-10-29
+541.55**·**META@2025-10-28 751.44**·**SPGI@2026-06-04 397.37**, 전부 FMP 정본과 오차 0.0)·
+G3 행수 before 196/174/152 → after 752/752/752 **미기록 0**(결측 거래일 없음, FMP 응답 전량 기록)·
+G4 회귀 **395 GREEN / 13 사전존재**(C8 test_c4_c6_c7·test_heat_synthesis 포함 통과, 신규 회귀 0).
+**HALTED-3 해제** — TH-BACKFILL-HALTED-8 재정지 3종 잔여 소멸.
+
+**작업1 회신 — H2 계수 질의(읽기 전용 포렌식, 원 scratch 재현·DB 표류 0)**:
+- **질의① 사라진 3건(925→922)**: batch 실패 로그 0건(JSON 파싱 실패/API 누락 아님). 원인 =
+  **h2_dict `_normalize(term)` 키 충돌** — 입력 925는 `.strip()`만으로 dedup, dict 키는 소문자화
+  정규화 → 대소문자만 다른 3쌍이 동일 키로 붕괴. 식별: `NVIDIA Marvell deal`/`Nvidia Marvell deal`,
+  `NVIDIA valuation`/`Nvidia valuation`, `SNOW Buy rating`/`SNOW buy rating`. **폐기 아님·재시도
+  불필요**: C3 매칭(match_term_to_sectors·h2 조회)도 `_normalize` 기반이라 두 변형 모두 단일 배정
+  엔트리로 커버됨(실효 손실 0). "3건 손실"은 검수표 카운트 착시.
+- **질의② 배정률 81.3% 산출**: 분모 = **total_terms 1,787**(전 search-term occurrence, 중복 포함·
+  unique 아님). 분자 before(1차규칙만) = **765 → 42.8%**(스크립트 하드코딩과 실측 일치), after
+  (1차+H2 671 전량) = **1,452 → 81.3%**. **적용 범위 = 검수표 671 전량**(확신 필터 없음 —
+  high 599/med 52/High 17/Medium 2/low 1 전부). **강등 0건**(초판 스크립트는 미배정만 분류,
+  `if not secs`일 때만 h2 조회 → 기배정 행 무접촉, MATCH_EXCLUDE_TOKENS 비어있음 → 구조적 강등
+  불가 → demotions 섹션 미상신). **57.2% 정합**: 미배정 occurrence 1,022 = 1,787−765 → 57.2%
+  (TH-11 기준선과 산술 정합). 미배정 occurrence 1,022 → strip-unique 925(차 97=중복 발생분) =
+  925 vs 1,022 갭 해소. ★잔여 gap 상신: 결정19 명시 "오배정 재검"은 초판 스크립트 미실행
+  (미배정 분류만) → TH-13 박제 전 오배정 재검 별도 필요.
+
+**원장 무적용 유지**: 본 세션 ThemeNewsVolume 원장·h2_dict_draft.json 적용 0(박제·재집계는 TH-13).
+
+**작업3 EstimateSnapshot**: 0행, 현재 2026-07-10 03:06 UTC(=07-09 23:06 EDT 목) < 첫 beat
+2026-07-10 16:30 EDT(=20:30 UTC 금) → **미도래**(1줄 보고, 대기 없음).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = e27c652. HALTED-3 해제 후
+395 GREEN / 13 사전존재(동일). DailyPrice 프로덕션 정본 교체(2,256행), 마이그레이션 0.

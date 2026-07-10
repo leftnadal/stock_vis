@@ -624,8 +624,8 @@
 - 상태: **종결(TH-9, 결정14=A)**. stocks `backfill_daily_prices` command(공유 정본 DailyPrice, 겹침 대조 게이트) → 364,827행/487종목(482종목 2023-07 3년 완비). C6/C7 게이트 자연 해제 검증(present 전환). 6 test.
 - 근거: DECISIONS 2026-07-09 결정14, 커버리지 리포트.
 
-## ✅ TH-BACKFILL-HALTED-8 — 겹침 정지 8종 정본 통일 (종결, 2026-07-10)
-- 상태: **부분 종결(TH-11, 결정18=A)**. 통과 5종(DD/HON/CRWD=split·GLW/ABBV=배당락) 교체 3,765행 → 겹침 max_err 0.0. **재정지 3종(MSFT/META/SPGI=split없는 원인불명)** 쓰기 금지 유지 — 원인 조사는 별도 안건.
+## ✅ TH-BACKFILL-HALTED-8 — 겹침 정지 8종 정본 통일 (전건 종결, 2026-07-10)
+- 상태: **전건 종결**. TH-11(결정18=A) 통과 5종(DD/HON/CRWD=split·GLW/ABBV=배당락) 교체 3,765행. **재정지 3종(MSFT/META/SPGI)은 TH-12b 결정20=A로 삭제+재백필 집행 → 잔여 소멸**(아래 TH-HALTED-3-PROBE 참조).
 
 ## ✅ TH-STOCK-REGISTER-6 — 미등록 6종 Stock 등록 (종결, 2026-07-10)
 - 상태: **종결(TH-11)**. 6종 sync_overview 등록 + DailyPrice 백필 2,337행 → 커버리지 501/501 수렴. C1(QuarterlyValuation)은 ECHO·HONA 분기 이력 부족으로 499 유지(자연 해소).
@@ -636,10 +636,11 @@
 ## TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (초판 상신, 2026-07-10, 박제 비준 대기)
 - 상태: **초판 완성(TH-12, 결정19=A)**. 미배정 925 → LLM 배치 → 검수표 671 배정(`docs/chain_sight/theme_heat/h2_dict_draft.json`). dry-run: 배정률 42.8%→81.3%, Industrials 신규 computed 도달 예상. **원장 미적용**.
 - 비준 필요: 검수표 검수(확신 low/medium 54건 우선) → **원장 박제 + 재집계**(다음 슬라이스). LLM=초안 편집자, 원장 결정적 유지.
+- **TH-12b 작업1 포렌식(회신)**: 925→922 손실 = `_normalize` 키 충돌 3쌍(대소문자, NVIDIA/Nvidia Marvell deal·NVIDIA/Nvidia valuation·SNOW Buy/buy rating) → 매칭도 정규화 기반이라 실효 손실 0(폐기·재시도 불요). 81.3% = 분모 total_terms 1,787·분자 1,452(671 전량, 확신필터 없음)·강등 0(초판=미배정 분류만). ★**박제 전 오배정 재검 별도 필요**(결정19 "오배정 재검"은 초판 미실행 — SpaceX IPO·Goldman airline 류).
 
-## TH-HALTED-3-PROBE — MSFT/META/SPGI 괴리 원인 판정 (판정 완료, 2026-07-10)
-- 상태: **판정 완료(TH-12, 읽기 전용)**. 엔드포인트 변형(full/light/non-split/dividend-adj) 전 일관, 기존 DB만 이탈 → **괴리 = 기존 DB 7개월행 오염**(MSFT 99.21=명백 오류·실제 541.55), FMP 정본.
-- 의무: 3종 기존 DailyPrice 삭제 + 재백필(--force 제거됨 → 삭제 후 겹침 없이 백필). 다음 슬라이스 비준.
+## ✅ TH-HALTED-3-PROBE → 교체 집행 (종결, TH-12b 2026-07-10, 결정20=A)
+- 상태: **교체 집행 종결**. TH-12 판정(기존 DB 7개월행 오염, FMP 정본) → TH-12b 삭제+재백필 집행. 삭제 522행(MSFT 196·META 174·SPGI 152) → 재백필 2,256행(각 752, 2023-07-11~2026-07-09, 기존 `backfill_daily_prices` 경로·우회 0).
+- 게이트 전건 PASS: G1 전 기간 재대조 max_err 0.0·G2 앵커 3종 정본 일치(MSFT 541.55/META 751.44/SPGI 397.37)·G3 행수 미기록 0·G4 회귀 395G/13사전존재(C8 포함). **HALTED-3 해제**.
 
 ## TH-C1-FWDPE — C1 Fwd P/E 레그 배선 (등재, 2026-07-10)
 - 상태: 등재(TH-10 승인). C1 현재 EV/Sales 단독 → Fwd P/E 레그 추가(§2 "EV/Sales·Fwd P/E 중앙값").
