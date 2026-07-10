@@ -642,14 +642,16 @@
 ## MP2-TREND 슬라이스 — 멀티라인 시계열 (2026-07-06) — ✅ **트랙 종결 (2026-07-07)**
 
 > 공용 MultiLineTrendChart + 적용 N곳. 근거 D-TREND-PLAN/BASELINE/TOOLTIP.
-> **종결**: S1·S2·S3(R1) 전건 land(origin/main). ~~S4(z-이상도 뷰)는 **동면** — 트리거 B-1 land(Phase 5)까지 착수 금지 유지.~~ → **S4 동면 해제(2026-07-10, B1-S2-FIRE)**: B-1 소급 백필 완료로 트리거 충족. z-이상도 뷰는 이제 683 완전벡터 소급 시계열 위에서 착수 가능.
+> **종결**: S1·S2·S3(R1) 전건 land(origin/main). ~~S4(z-이상도 뷰)는 **동면** — 트리거 B-1 land(Phase 5)까지 착수 금지 유지.~~ → S4 동면 해제(2026-07-10, B1-S2-FIRE) → **S4 land(2026-07-10) = MP2-TREND 트랙 재종결**. z-이상도 뷰는 703 소급 시계열 baseline 위에서 구현 완료.
 
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
 | MP2-TREND-S1 | 1호 = 공용 `MultiLineTrendChart`(recharts, 크로스헤어+고정 리드아웃·반전축·범위/범례 토글, overlays 타입만) + 11색 팔레트 + sector_history rank additive + 섹터 순위 궤적. emphasis=서버 rank leaders/laggards(FE 델타 재계산 금지). prod 0·마이그레이션 0 | market_pulse 트랙 | — | ✅ **done (c1cdba4)** |
 | MP2-TREND-S2 | 2호 = 전환일 오버레이 공용 계약(previous_regime≠regime 파생) + breadth 궤적(A/D + 기준선 MA20) + overlays.vlines·refSeries 렌더 + 델타 강조 복원(옵션 B, D-TREND-EMPHASIS 안전판 통과). 전부 조회-시 파생·계약 additive·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (7678ec2)** — pytest 신규6/api72·vitest 신규9/전체518·tsc0·mig0 |
 | MP2-TREND-S3 | 3호(개정 R1) = **국면 재료 판정-거리 소형 다중**(옵션 B). z-score 전제 STEP 0 반증(classifier=raw 복합 룰, D-TREND-BASELINE-R1) → 룰-구동 7지표 raw 스파크라인 + rules.yaml 실제 컷 hlines + 판정거리. 세그먼트 [판정거리 | 이상도(z)🔒 예약탭](D-TREND-VIEWMODE). 컷 하드코딩 0(rules.yaml 단일소스). 조회-시 파생·마이그레이션 0 | market_pulse 트랙 | — | ✅ **land (R1, 코드머지 `8842531`, COLOR-STAGE2 CUT_STROKE 정합 포함)** — pytest 신규8/api80·vitest 신규8/전체526·tsc0·mig0. **트랙 마지막 슬라이스 → MP2-TREND 종결** |
-| MP2-TREND-S4 | 4호 = **z-이상도 뷰(예약 탭 채움)** — S3 세그먼트의 이상도(z) placeholder를 실 뷰로. 구성요소 z-정규화(윈도·EOD샘플·history 30→60 확장·저빈도 지표 처리 설계 선행). **트리거: B-1 land(Phase 5) — 그 전 착수 금지** | market_pulse 트랙 | B-1 land(Phase 5) | 🔒 예약(트리거 게이트) |
+| MP2-TREND-S4 | 4호 = **z-이상도 뷰** — 예약 placeholder → 실 뷰(절충안 격자형, D-S4-FORM). 전용 엔드포인트 `regime/zscore`(고정 소급 모집단 baseline·serve-time z·24h 캐시·다운샘플 57.1KB, D-S4-ENDPOINT/BASELINE). baseline 순수함수=ANALOG 재사용 단일소스 | market_pulse 트랙 | B-1 land(충족) | ✅ **land (2026-07-10, `monorepo/sess-s4`: BE `e418829` + FE `a9cb79b`)** — pytest 358→374(+16)·vitest 295→304(+9)·tsc0·mig0·health13/0·payload 57.1KB. **MP2-TREND 트랙 재종결** |
+| S4-REBASE | z baseline μ·σ **재기준** — 라이브 축적분을 모집단에 포함해 잣대 갱신(현재 = 소급 703 고정). 소급 vintage(D-B1-VINTAGE)와 라이브 실시간 값의 분포 차이 흡수 | market_pulse 트랙 | **라이브 축적 1년 도달** | 🕒 예약(데이터 게이트) |
+| S4-EXPAND | z 뷰 **카드 탭 확대 뷰 + 정렬 토글**(|z|순 ↔ 지표순) — S4 범위 밖(격자형만 land). 종합 이상도 지수도 후보 | market_pulse+FE 트랙 | **MP2-ANALOG 세션에서 순위/확대 시각 어휘 구축 시 함께** | 🕒 예약(어휘 게이트) |
 
 ## Carousel LLM 채움 (LLMFILL / 2026-07-09)
 
