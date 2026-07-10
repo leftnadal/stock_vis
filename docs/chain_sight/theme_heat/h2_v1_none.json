@@ -1,0 +1,1011 @@
+{
+ "source": "h2_v1",
+ "count": 251,
+ "note": "박제 대상 아님. TH-H2-RECHECK 대조용(none 251).",
+ "none": [
+  {
+   "term_normalized": "2026 economic outlook",
+   "term_original": "2026 economic outlook"
+  },
+  {
+   "term_normalized": "aaii sentiment",
+   "term_original": "AAII sentiment"
+  },
+  {
+   "term_normalized": "aaii sentiment survey",
+   "term_original": "AAII sentiment survey"
+  },
+  {
+   "term_normalized": "affordability improves",
+   "term_original": "affordability improves"
+  },
+  {
+   "term_normalized": "ai-driven selloff",
+   "term_original": "AI-driven selloff"
+  },
+  {
+   "term_normalized": "alternative growth",
+   "term_original": "alternative growth"
+  },
+  {
+   "term_normalized": "american economic sentiment",
+   "term_original": "American economic sentiment"
+  },
+  {
+   "term_normalized": "autonomous economy",
+   "term_original": "autonomous economy"
+  },
+  {
+   "term_normalized": "bay area job cuts",
+   "term_original": "Bay Area job cuts"
+  },
+  {
+   "term_normalized": "bearish sentiment",
+   "term_original": "bearish sentiment"
+  },
+  {
+   "term_normalized": "beijing trading crackdown",
+   "term_original": "Beijing trading crackdown"
+  },
+  {
+   "term_normalized": "bill gates portfolio",
+   "term_original": "Bill Gates portfolio"
+  },
+  {
+   "term_normalized": "canada deepfake ban",
+   "term_original": "Canada deepfake ban"
+  },
+  {
+   "term_normalized": "canada venture recovery",
+   "term_original": "Canada venture recovery"
+  },
+  {
+   "term_normalized": "canadian economy weakness",
+   "term_original": "Canadian economy weakness"
+  },
+  {
+   "term_normalized": "ceasefire uncertainty",
+   "term_original": "ceasefire uncertainty"
+  },
+  {
+   "term_normalized": "cio warning",
+   "term_original": "CIO warning"
+  },
+  {
+   "term_normalized": "conference board consumer",
+   "term_original": "Conference Board consumer"
+  },
+  {
+   "term_normalized": "consumer confidence decline",
+   "term_original": "consumer confidence decline"
+  },
+  {
+   "term_normalized": "consumer confidence jobs",
+   "term_original": "consumer confidence jobs"
+  },
+  {
+   "term_normalized": "consumer favorites oversold",
+   "term_original": "consumer favorites oversold"
+  },
+  {
+   "term_normalized": "cost-of-living adjustment",
+   "term_original": "cost-of-living adjustment"
+  },
+  {
+   "term_normalized": "customer growth engine",
+   "term_original": "customer growth engine"
+  },
+  {
+   "term_normalized": "decentralized exchange",
+   "term_original": "decentralized exchange"
+  },
+  {
+   "term_normalized": "defensive rotation",
+   "term_original": "defensive rotation"
+  },
+  {
+   "term_normalized": "defensive stocks rally",
+   "term_original": "defensive stocks rally"
+  },
+  {
+   "term_normalized": "dividend safety",
+   "term_original": "dividend safety"
+  },
+  {
+   "term_normalized": "dow jones 50000",
+   "term_original": "Dow Jones 50000"
+  },
+  {
+   "term_normalized": "dow jones fall",
+   "term_original": "Dow Jones fall"
+  },
+  {
+   "term_normalized": "dow jones gains",
+   "term_original": "Dow Jones gains"
+  },
+  {
+   "term_normalized": "dow jones milestone",
+   "term_original": "Dow Jones milestone"
+  },
+  {
+   "term_normalized": "dow jones outlook",
+   "term_original": "Dow Jones outlook"
+  },
+  {
+   "term_normalized": "dow jones rises",
+   "term_original": "Dow Jones rises"
+  },
+  {
+   "term_normalized": "dow milestone",
+   "term_original": "Dow milestone"
+  },
+  {
+   "term_normalized": "dow s&p nasdaq red",
+   "term_original": "Dow S&P Nasdaq red"
+  },
+  {
+   "term_normalized": "earnings season kicks off",
+   "term_original": "earnings season kicks off"
+  },
+  {
+   "term_normalized": "economic crash warning",
+   "term_original": "economic crash warning"
+  },
+  {
+   "term_normalized": "economic data",
+   "term_original": "economic data"
+  },
+  {
+   "term_normalized": "economic development",
+   "term_original": "economic development"
+  },
+  {
+   "term_normalized": "economic outlook",
+   "term_original": "economic outlook"
+  },
+  {
+   "term_normalized": "economic outlook germany",
+   "term_original": "economic outlook Germany"
+  },
+  {
+   "term_normalized": "economic slowdown italy",
+   "term_original": "economic slowdown Italy"
+  },
+  {
+   "term_normalized": "economy outlook",
+   "term_original": "economy outlook"
+  },
+  {
+   "term_normalized": "el-erian warning",
+   "term_original": "El-Erian warning"
+  },
+  {
+   "term_normalized": "elliott wave target",
+   "term_original": "Elliott Wave target"
+  },
+  {
+   "term_normalized": "elon musk security cost",
+   "term_original": "Elon Musk security cost"
+  },
+  {
+   "term_normalized": "elon musk trillionaire",
+   "term_original": "Elon Musk trillionaire"
+  },
+  {
+   "term_normalized": "elon musk trillionaire status",
+   "term_original": "Elon Musk trillionaire status"
+  },
+  {
+   "term_normalized": "elon musk wealth",
+   "term_original": "Elon Musk wealth"
+  },
+  {
+   "term_normalized": "emerging markets outperform",
+   "term_original": "emerging markets outperform"
+  },
+  {
+   "term_normalized": "employer job cuts",
+   "term_original": "employer job cuts"
+  },
+  {
+   "term_normalized": "equity inflows",
+   "term_original": "equity inflows"
+  },
+  {
+   "term_normalized": "eth inflows",
+   "term_original": "ETH inflows"
+  },
+  {
+   "term_normalized": "euro growth fears",
+   "term_original": "Euro growth fears"
+  },
+  {
+   "term_normalized": "europe stoxx 600 recovery",
+   "term_original": "Europe STOXX 600 recovery"
+  },
+  {
+   "term_normalized": "european commission hack",
+   "term_original": "European Commission hack"
+  },
+  {
+   "term_normalized": "fomc meeting",
+   "term_original": "FOMC meeting"
+  },
+  {
+   "term_normalized": "fomc minutes",
+   "term_original": "FOMC minutes"
+  },
+  {
+   "term_normalized": "fomc outlook",
+   "term_original": "FOMC outlook"
+  },
+  {
+   "term_normalized": "fomc policy",
+   "term_original": "FOMC policy"
+  },
+  {
+   "term_normalized": "fomc statement change",
+   "term_original": "FOMC statement change"
+  },
+  {
+   "term_normalized": "foreign investment vietnam",
+   "term_original": "foreign investment Vietnam"
+  },
+  {
+   "term_normalized": "futures surge",
+   "term_original": "futures surge"
+  },
+  {
+   "term_normalized": "garfield startup",
+   "term_original": "Garfield startup"
+  },
+  {
+   "term_normalized": "geosurge funding",
+   "term_original": "geoSurge funding"
+  },
+  {
+   "term_normalized": "german growth forecast cut",
+   "term_original": "German growth forecast cut"
+  },
+  {
+   "term_normalized": "germany growth forecast",
+   "term_original": "Germany growth forecast"
+  },
+  {
+   "term_normalized": "gig-work model",
+   "term_original": "gig-work model"
+  },
+  {
+   "term_normalized": "global equities turbulence",
+   "term_original": "global equities turbulence"
+  },
+  {
+   "term_normalized": "government contract",
+   "term_original": "government contract"
+  },
+  {
+   "term_normalized": "hark $700 million",
+   "term_original": "Hark $700 million"
+  },
+  {
+   "term_normalized": "hut 8 buy rating",
+   "term_original": "Hut 8 buy rating"
+  },
+  {
+   "term_normalized": "hut stock surge",
+   "term_original": "HUT stock surge"
+  },
+  {
+   "term_normalized": "hut stock upgrade",
+   "term_original": "HUT stock upgrade"
+  },
+  {
+   "term_normalized": "imf global growth forecast",
+   "term_original": "IMF global growth forecast"
+  },
+  {
+   "term_normalized": "improper billing",
+   "term_original": "improper billing"
+  },
+  {
+   "term_normalized": "india iip revamp",
+   "term_original": "India IIP revamp"
+  },
+  {
+   "term_normalized": "india market impact",
+   "term_original": "India market impact"
+  },
+  {
+   "term_normalized": "india uae partnership",
+   "term_original": "India UAE partnership"
+  },
+  {
+   "term_normalized": "input prices elevated",
+   "term_original": "input prices elevated"
+  },
+  {
+   "term_normalized": "investor caution",
+   "term_original": "investor caution"
+  },
+  {
+   "term_normalized": "investor optimism",
+   "term_original": "investor optimism"
+  },
+  {
+   "term_normalized": "investor optimism fall",
+   "term_original": "investor optimism fall"
+  },
+  {
+   "term_normalized": "investor sentiment",
+   "term_original": "investor sentiment"
+  },
+  {
+   "term_normalized": "iran attacks",
+   "term_original": "Iran attacks"
+  },
+  {
+   "term_normalized": "iran ceasefire",
+   "term_original": "Iran ceasefire"
+  },
+  {
+   "term_normalized": "iran ceasefire extension",
+   "term_original": "Iran ceasefire extension"
+  },
+  {
+   "term_normalized": "iran ceasefire hopes",
+   "term_original": "Iran ceasefire hopes"
+  },
+  {
+   "term_normalized": "iran ceasefire optimism",
+   "term_original": "Iran ceasefire optimism"
+  },
+  {
+   "term_normalized": "iran conflict",
+   "term_original": "Iran conflict"
+  },
+  {
+   "term_normalized": "iran conflict stock market",
+   "term_original": "Iran conflict stock market"
+  },
+  {
+   "term_normalized": "iran de-escalation",
+   "term_original": "Iran de-escalation"
+  },
+  {
+   "term_normalized": "iran peace deal",
+   "term_original": "Iran peace deal"
+  },
+  {
+   "term_normalized": "iran president order",
+   "term_original": "Iran president order"
+  },
+  {
+   "term_normalized": "iran strait of hormuz",
+   "term_original": "Iran Strait of Hormuz"
+  },
+  {
+   "term_normalized": "iran war",
+   "term_original": "Iran war"
+  },
+  {
+   "term_normalized": "iran war concerns",
+   "term_original": "Iran war concerns"
+  },
+  {
+   "term_normalized": "iran war germany economy",
+   "term_original": "Iran war Germany economy"
+  },
+  {
+   "term_normalized": "iran war impact",
+   "term_original": "Iran war impact"
+  },
+  {
+   "term_normalized": "iran war negotiations",
+   "term_original": "Iran war negotiations"
+  },
+  {
+   "term_normalized": "iran war shock",
+   "term_original": "Iran war shock"
+  },
+  {
+   "term_normalized": "israel strike",
+   "term_original": "Israel strike"
+  },
+  {
+   "term_normalized": "italy growth forecast cut",
+   "term_original": "Italy growth forecast cut"
+  },
+  {
+   "term_normalized": "jamie dimon market",
+   "term_original": "Jamie Dimon market"
+  },
+  {
+   "term_normalized": "job prospects low",
+   "term_original": "job prospects low"
+  },
+  {
+   "term_normalized": "joint investments",
+   "term_original": "joint investments"
+  },
+  {
+   "term_normalized": "keel stock surge",
+   "term_original": "KEEL stock surge"
+  },
+  {
+   "term_normalized": "kospi circuit-breaker",
+   "term_original": "KOSPI circuit-breaker"
+  },
+  {
+   "term_normalized": "market bubble",
+   "term_original": "market bubble"
+  },
+  {
+   "term_normalized": "market bulls",
+   "term_original": "market bulls"
+  },
+  {
+   "term_normalized": "market exuberance",
+   "term_original": "market exuberance"
+  },
+  {
+   "term_normalized": "market gains",
+   "term_original": "market gains"
+  },
+  {
+   "term_normalized": "market next big move",
+   "term_original": "market next big move"
+  },
+  {
+   "term_normalized": "market optimism",
+   "term_original": "market optimism"
+  },
+  {
+   "term_normalized": "market rally",
+   "term_original": "market rally"
+  },
+  {
+   "term_normalized": "market rally earnings",
+   "term_original": "market rally earnings"
+  },
+  {
+   "term_normalized": "market relief rally",
+   "term_original": "market relief rally"
+  },
+  {
+   "term_normalized": "market retreats",
+   "term_original": "market retreats"
+  },
+  {
+   "term_normalized": "market sentiment",
+   "term_original": "market sentiment"
+  },
+  {
+   "term_normalized": "market sentiment lift",
+   "term_original": "market sentiment lift"
+  },
+  {
+   "term_normalized": "market strategist s&p",
+   "term_original": "market strategist S&P"
+  },
+  {
+   "term_normalized": "market trend",
+   "term_original": "market trend"
+  },
+  {
+   "term_normalized": "match act",
+   "term_original": "Match Act"
+  },
+  {
+   "term_normalized": "michael burry earnings illusion",
+   "term_original": "Michael Burry earnings illusion"
+  },
+  {
+   "term_normalized": "microsoft bullish",
+   "term_original": "Microsoft bullish"
+  },
+  {
+   "term_normalized": "microsoft discount",
+   "term_original": "Microsoft discount"
+  },
+  {
+   "term_normalized": "microsoft earnings margin",
+   "term_original": "Microsoft earnings margin"
+  },
+  {
+   "term_normalized": "microsoft lawsuit",
+   "term_original": "Microsoft lawsuit"
+  },
+  {
+   "term_normalized": "microsoft layoffs",
+   "term_original": "Microsoft layoffs"
+  },
+  {
+   "term_normalized": "microsoft long-term bet",
+   "term_original": "Microsoft long-term bet"
+  },
+  {
+   "term_normalized": "microsoft oversold",
+   "term_original": "Microsoft oversold"
+  },
+  {
+   "term_normalized": "microsoft stock decline",
+   "term_original": "Microsoft stock decline"
+  },
+  {
+   "term_normalized": "microsoft strong buy",
+   "term_original": "Microsoft Strong Buy"
+  },
+  {
+   "term_normalized": "microsoft union partnership",
+   "term_original": "Microsoft union partnership"
+  },
+  {
+   "term_normalized": "microsoft valuation",
+   "term_original": "Microsoft valuation"
+  },
+  {
+   "term_normalized": "middle east conflict",
+   "term_original": "Middle East conflict"
+  },
+  {
+   "term_normalized": "middle east de-escalation",
+   "term_original": "Middle East de-escalation"
+  },
+  {
+   "term_normalized": "middle east peace talks",
+   "term_original": "Middle East peace talks"
+  },
+  {
+   "term_normalized": "middle east tension ease",
+   "term_original": "Middle East tension ease"
+  },
+  {
+   "term_normalized": "middle east tensions",
+   "term_original": "Middle East tensions"
+  },
+  {
+   "term_normalized": "msci emerging markets",
+   "term_original": "MSCI Emerging Markets"
+  },
+  {
+   "term_normalized": "musk bet against",
+   "term_original": "Musk bet against"
+  },
+  {
+   "term_normalized": "musk wealth",
+   "term_original": "Musk wealth"
+  },
+  {
+   "term_normalized": "nasdaq burn",
+   "term_original": "Nasdaq burn"
+  },
+  {
+   "term_normalized": "nasdaq decline",
+   "term_original": "Nasdaq decline"
+  },
+  {
+   "term_normalized": "nasdaq rate relief",
+   "term_original": "Nasdaq rate relief"
+  },
+  {
+   "term_normalized": "nasdaq selloff",
+   "term_original": "Nasdaq selloff"
+  },
+  {
+   "term_normalized": "new iip series",
+   "term_original": "new IIP series"
+  },
+  {
+   "term_normalized": "new nasdaq members",
+   "term_original": "new Nasdaq members"
+  },
+  {
+   "term_normalized": "non-euro stablecoins",
+   "term_original": "non-euro stablecoins"
+  },
+  {
+   "term_normalized": "non-farm payrolls beat",
+   "term_original": "non-farm payrolls beat"
+  },
+  {
+   "term_normalized": "north india heatwave",
+   "term_original": "North India heatwave"
+  },
+  {
+   "term_normalized": "nvda bull trap",
+   "term_original": "NVDA bull trap"
+  },
+  {
+   "term_normalized": "nvda market performance",
+   "term_original": "NVDA market performance"
+  },
+  {
+   "term_normalized": "options trades small caps",
+   "term_original": "options trades small caps"
+  },
+  {
+   "term_normalized": "pelosi stock picks",
+   "term_original": "Pelosi stock picks"
+  },
+  {
+   "term_normalized": "political deepfakes",
+   "term_original": "political deepfakes"
+  },
+  {
+   "term_normalized": "private jobs added april",
+   "term_original": "private jobs added April"
+  },
+  {
+   "term_normalized": "profit margins",
+   "term_original": "profit margins"
+  },
+  {
+   "term_normalized": "project delays india",
+   "term_original": "project delays India"
+  },
+  {
+   "term_normalized": "prometheus funding",
+   "term_original": "Prometheus funding"
+  },
+  {
+   "term_normalized": "q1 2026 investment",
+   "term_original": "Q1 2026 investment"
+  },
+  {
+   "term_normalized": "q1 economic decline",
+   "term_original": "Q1 economic decline"
+  },
+  {
+   "term_normalized": "q2 market open",
+   "term_original": "Q2 market open"
+  },
+  {
+   "term_normalized": "qmmm delisting notice",
+   "term_original": "QMMM delisting notice"
+  },
+  {
+   "term_normalized": "qmmm holdings limited",
+   "term_original": "QMMM Holdings Limited"
+  },
+  {
+   "term_normalized": "quality stocks focus",
+   "term_original": "quality stocks focus"
+  },
+  {
+   "term_normalized": "quebec expansion",
+   "term_original": "Quebec expansion"
+  },
+  {
+   "term_normalized": "retailer margin pressure",
+   "term_original": "retailer margin pressure"
+  },
+  {
+   "term_normalized": "revenue growth stocks",
+   "term_original": "revenue growth stocks"
+  },
+  {
+   "term_normalized": "reverse stock split",
+   "term_original": "reverse stock split"
+  },
+  {
+   "term_normalized": "rider safety",
+   "term_original": "rider safety"
+  },
+  {
+   "term_normalized": "ripple eu license",
+   "term_original": "Ripple EU license"
+  },
+  {
+   "term_normalized": "rising costs profit hit",
+   "term_original": "rising costs profit hit"
+  },
+  {
+   "term_normalized": "rising input costs",
+   "term_original": "rising input costs"
+  },
+  {
+   "term_normalized": "risk appetite returns",
+   "term_original": "risk appetite returns"
+  },
+  {
+   "term_normalized": "risk-taking surge",
+   "term_original": "risk-taking surge"
+  },
+  {
+   "term_normalized": "roze revenue drop",
+   "term_original": "ROZE revenue drop"
+  },
+  {
+   "term_normalized": "s&p 500 8000",
+   "term_original": "S&P 500 8000"
+  },
+  {
+   "term_normalized": "s&p 500 april gain",
+   "term_original": "S&P 500 April gain"
+  },
+  {
+   "term_normalized": "s&p 500 dips",
+   "term_original": "S&P 500 dips"
+  },
+  {
+   "term_normalized": "s&p 500 earnings",
+   "term_original": "S&P 500 earnings"
+  },
+  {
+   "term_normalized": "s&p 500 futures",
+   "term_original": "S&P 500 futures"
+  },
+  {
+   "term_normalized": "s&p 500 nasdaq peak",
+   "term_original": "S&P 500 Nasdaq peak"
+  },
+  {
+   "term_normalized": "s&p 500 recovery",
+   "term_original": "S&P 500 recovery"
+  },
+  {
+   "term_normalized": "saudi investment licenses",
+   "term_original": "Saudi investment licenses"
+  },
+  {
+   "term_normalized": "saudi project win",
+   "term_original": "Saudi project win"
+  },
+  {
+   "term_normalized": "sexual assault claims",
+   "term_original": "sexual assault claims"
+  },
+  {
+   "term_normalized": "small cap rally",
+   "term_original": "small cap rally"
+  },
+  {
+   "term_normalized": "small cap valuation",
+   "term_original": "small cap valuation"
+  },
+  {
+   "term_normalized": "small caps breakout",
+   "term_original": "small caps breakout"
+  },
+  {
+   "term_normalized": "small-cap stocks",
+   "term_original": "small-cap stocks"
+  },
+  {
+   "term_normalized": "social security 2032",
+   "term_original": "Social Security 2032"
+  },
+  {
+   "term_normalized": "social security cola",
+   "term_original": "Social Security COLA"
+  },
+  {
+   "term_normalized": "social security insolvency",
+   "term_original": "Social Security insolvency"
+  },
+  {
+   "term_normalized": "spy target",
+   "term_original": "SPY target"
+  },
+  {
+   "term_normalized": "staff cuts",
+   "term_original": "staff cuts"
+  },
+  {
+   "term_normalized": "stagflation fears",
+   "term_original": "stagflation fears"
+  },
+  {
+   "term_normalized": "stock market comeback",
+   "term_original": "stock market comeback"
+  },
+  {
+   "term_normalized": "stock market correction",
+   "term_original": "stock market correction"
+  },
+  {
+   "term_normalized": "stock market decline",
+   "term_original": "stock market decline"
+  },
+  {
+   "term_normalized": "stock market rally",
+   "term_original": "stock market rally"
+  },
+  {
+   "term_normalized": "stock market rebound",
+   "term_original": "stock market rebound"
+  },
+  {
+   "term_normalized": "strong and free elections act",
+   "term_original": "Strong and Free Elections Act"
+  },
+  {
+   "term_normalized": "strong labor market",
+   "term_original": "strong labor market"
+  },
+  {
+   "term_normalized": "strong profit growth",
+   "term_original": "strong profit growth"
+  },
+  {
+   "term_normalized": "tesla analyst forecasts",
+   "term_original": "Tesla analyst forecasts"
+  },
+  {
+   "term_normalized": "tesla earnings",
+   "term_original": "Tesla earnings"
+  },
+  {
+   "term_normalized": "tesla growth slows",
+   "term_original": "Tesla growth slows"
+  },
+  {
+   "term_normalized": "tesla lawsuit",
+   "term_original": "Tesla lawsuit"
+  },
+  {
+   "term_normalized": "tesla overbought",
+   "term_original": "Tesla overbought"
+  },
+  {
+   "term_normalized": "tesla overvalued",
+   "term_original": "Tesla overvalued"
+  },
+  {
+   "term_normalized": "tesla stock correction",
+   "term_original": "Tesla stock correction"
+  },
+  {
+   "term_normalized": "tesla stock outlook",
+   "term_original": "Tesla stock outlook"
+  },
+  {
+   "term_normalized": "tim cook leadership",
+   "term_original": "Tim Cook leadership"
+  },
+  {
+   "term_normalized": "tim cook steps down",
+   "term_original": "Tim Cook steps down"
+  },
+  {
+   "term_normalized": "tokenized capital idle",
+   "term_original": "tokenized capital idle"
+  },
+  {
+   "term_normalized": "trade policy impact",
+   "term_original": "trade policy impact"
+  },
+  {
+   "term_normalized": "trading volumes",
+   "term_original": "trading volumes"
+  },
+  {
+   "term_normalized": "trump iran attack cancelled",
+   "term_original": "Trump Iran attack cancelled"
+  },
+  {
+   "term_normalized": "trump iran deadline",
+   "term_original": "Trump Iran deadline"
+  },
+  {
+   "term_normalized": "uni price surge",
+   "term_original": "UNI price surge"
+  },
+  {
+   "term_normalized": "uniswap protocol fee",
+   "term_original": "Uniswap protocol fee"
+  },
+  {
+   "term_normalized": "us business activity recovery",
+   "term_original": "US business activity recovery"
+  },
+  {
+   "term_normalized": "us business impact",
+   "term_original": "US business impact"
+  },
+  {
+   "term_normalized": "us capital crunch",
+   "term_original": "US capital crunch"
+  },
+  {
+   "term_normalized": "us consumer sentiment",
+   "term_original": "US consumer sentiment"
+  },
+  {
+   "term_normalized": "us iran resolution",
+   "term_original": "US Iran resolution"
+  },
+  {
+   "term_normalized": "us labor market",
+   "term_original": "US labor market"
+  },
+  {
+   "term_normalized": "us labor market momentum",
+   "term_original": "US labor market momentum"
+  },
+  {
+   "term_normalized": "us market performance",
+   "term_original": "US market performance"
+  },
+  {
+   "term_normalized": "us sanctions iran",
+   "term_original": "US sanctions Iran"
+  },
+  {
+   "term_normalized": "us social security reform",
+   "term_original": "US social security reform"
+  },
+  {
+   "term_normalized": "us stock futures",
+   "term_original": "US stock futures"
+  },
+  {
+   "term_normalized": "us stock market crash",
+   "term_original": "US stock market crash"
+  },
+  {
+   "term_normalized": "us stock market decline",
+   "term_original": "US stock market decline"
+  },
+  {
+   "term_normalized": "us stock market drop",
+   "term_original": "US stock market drop"
+  },
+  {
+   "term_normalized": "us stocks earnings surge",
+   "term_original": "US stocks earnings surge"
+  },
+  {
+   "term_normalized": "us stocks outlook",
+   "term_original": "US stocks outlook"
+  },
+  {
+   "term_normalized": "us-iran peace deal",
+   "term_original": "US-Iran peace deal"
+  },
+  {
+   "term_normalized": "us-iran tensions",
+   "term_original": "US-Iran tensions"
+  },
+  {
+   "term_normalized": "us-iran war",
+   "term_original": "US-Iran war"
+  },
+  {
+   "term_normalized": "vb etf",
+   "term_original": "VB ETF"
+  },
+  {
+   "term_normalized": "vietnam china-plus-one",
+   "term_original": "Vietnam China-plus-one"
+  },
+  {
+   "term_normalized": "villeroy de galhau statement",
+   "term_original": "Villeroy de Galhau statement"
+  },
+  {
+   "term_normalized": "volatility spike",
+   "term_original": "volatility spike"
+  },
+  {
+   "term_normalized": "volume surge",
+   "term_original": "volume surge"
+  },
+  {
+   "term_normalized": "wall st gains iran",
+   "term_original": "Wall St gains Iran"
+  },
+  {
+   "term_normalized": "wall street gains",
+   "term_original": "Wall Street gains"
+  },
+  {
+   "term_normalized": "wall street iran",
+   "term_original": "Wall Street Iran"
+  },
+  {
+   "term_normalized": "wall street winning streak",
+   "term_original": "Wall Street winning streak"
+  }
+ ]
+}

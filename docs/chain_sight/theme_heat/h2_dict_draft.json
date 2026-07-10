@@ -4,11 +4,9 @@
  "assigned_nonnone": 671,
  "none": 251,
  "confidence_dist": {
-  "Medium": 2,
-  "High": 17,
-  "low": 1,
-  "medium": 52,
-  "high": 599
+  "medium": 54,
+  "high": 616,
+  "low": 1
  },
  "sector_dist": {
   "Technology": 313,
@@ -67,115 +65,115 @@
   {
    "term": "Tesla Renew Home deal",
    "sector": "Technology",
-   "confidence": "Medium",
+   "confidence": "medium",
    "reason": "테슬라의 가정용 재생에너지 솔루션 관련 거래로 혁신 기술 섹터에 해당."
   },
   {
    "term": "Tesla Robotaxi issues",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "테슬라의 자율주행 로보택시 기술 및 서비스 관련 문제로 기술 섹터에 해당."
   },
   {
    "term": "Tesla robotaxi",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "테슬라의 자율주행 로보택시 기술 및 서비스."
   },
   {
    "term": "Tesla robotaxi rollout",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "테슬라의 자율주행 로보택시 서비스 출시."
   },
   {
    "term": "Tesla virtual power plant",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "테슬라의 가상 발전소는 에너지 관리 기술 솔루션."
   },
   {
    "term": "Tesla xAI shuffle",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "xAI는 인공지능 기술 기업으로, 관련 인력/전략 변화는 기술 섹터에 해당."
   },
   {
    "term": "Thermon acquisition",
    "sector": "Industrials",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "Thermon은 산업용 공정 가열 솔루션 기업으로 산업재 섹터에 해당."
   },
   {
    "term": "Toro earnings",
    "sector": "Industrials",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "Toro는 잔디 깎는 기계, 관개 시스템 등 산업 및 상업용 장비를 제조하는 산업재 기업."
   },
   {
    "term": "Trainer Pennsylvania fire",
    "sector": "Energy",
-   "confidence": "Medium",
+   "confidence": "medium",
    "reason": "펜실베이니아 트레이너 지역의 정유 공장 화재일 가능성이 높아 에너지 섹터와 관련."
   },
   {
    "term": "Trainium Graviton",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "Trainium과 Graviton은 AWS의 머신러닝 칩 및 프로세서로 기술 섹터에 해당."
   },
   {
    "term": "Trump administration wind",
    "sector": "Utilities",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "트럼프 행정부의 풍력 에너지 정책은 유틸리티 섹터와 관련."
   },
   {
    "term": "UBS AMD upside",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "AMD는 반도체 기업으로 기술 섹터에 해당하며, UBS의 분석은 AMD 기업 자체에 대한 것."
   },
   {
    "term": "UBS Rechtschaffen",
    "sector": "Financial Services",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "UBS는 금융 서비스 기업이며, 관련 인물 소식은 금융 서비스 섹터에 해당."
   },
   {
    "term": "UBS auto dealerships",
    "sector": "Consumer Cyclical",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "자동차 딜러십은 소비자의 재량적 구매와 관련된 경기소비재 섹터에 해당."
   },
   {
    "term": "UDAN scheme",
    "sector": "Industrials",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "UDAN은 인도 지역 공항 개발 및 항공 연결성 계획으로 산업재 섹터에 해당."
   },
   {
    "term": "US crude inventory decline",
    "sector": "Energy",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "원유 재고 감소는 에너지 섹터와 직접 관련."
   },
   {
    "term": "US factory activity",
    "sector": "Industrials",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "미국 공장 활동은 제조업 생산과 관련되어 산업재 섹터에 해당."
   },
   {
    "term": "US funding IBM",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "IBM은 기술 기업으로, 정부 자금 지원은 기술 섹터에 해당."
   },
   {
    "term": "US government quantum investment",
    "sector": "Technology",
-   "confidence": "High",
+   "confidence": "high",
    "reason": "양자 기술 투자는 기술 섹터에 해당."
   },
   {

@@ -508,10 +508,12 @@ v1.0 §13 대비 대부분 편입 완료. 잔여 5건:
 > 6.65 / 흡수 5.40). 보완: 마켓 뷰 PR-1 착수 시 cs_44 와의 개념 조율 + HeatEntity 재사용
 > 검토를 선행 의무로 §11 에 명시. 문서 동승 대상 = TH-1, 위치 `docs/chain_sight/theme_heat/`.
 
-## 부록 A. C3 H2 — LLM 큐레이션 정적 사전 (박제, 구현 금지 — 결정17 승격 대기)
+## 부록 A. C3 H2 — LLM 큐레이션 정적 사전 (✅ TH-13 박제 완료, 결정19=A/결정21=C)
 
-> 결정17 단계형의 2차 규칙. **명세 박제만·구현 금지** — 승격 트리거(정밀도 <80% 또는 미배정
-> >40%, TH-11에서 발동) 비준 후 TH-C3-LLM-DICT 에서 착수.
+> 결정17 단계형의 2차 규칙. TH-11 승격 트리거 발동 → TH-12 초판(671) → **TH-13 박제 완료**:
+> `ThemeKeywordH2` 원장(정규화형→섹터, provenance source=h2_v1/applied_at/confidence, migration
+> 0023). `aggregate_theme_news_volume(use_h2=True)`가 1차 규칙 **뒤에** 조회(미배정분만). 배정률
+> 42.8%→**81.3%**, computed 4→**5테마**(Industrials). 오배정 재검은 TH-H2-RECHECK 이연(결정21=C).
 
 - **문제**: 1차 토큰 매칭은 고유명사·이벤트 문구를 못 잡음(미배정 57.2%). 예 미배정: "SpaceX IPO"
   (우주항공), "BYD performance"(전기차), "Iran attacks"(지정학), "Anthropic Claude"(AI 기업).

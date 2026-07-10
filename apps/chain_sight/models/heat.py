@@ -402,6 +402,48 @@ class ThemeNewsVolume(models.Model):
         return f"ThemeNewsVolume({self.theme_id}, {self.date}, {self.mention_count})"
 
 
+class ThemeKeywordH2(models.Model):
+    """
+    C3 H2 LLM 큐레이션 정적 사전 원장 (TH-13, 결정19=A/결정21=C) — 설계 부록 A 박제.
+
+    1차 토큰 규칙(match_term_to_sectors) 미배정 검색어의 정규화형 → 섹터(HeatEntity.ref_id,
+    GICS 정본) 확정 매핑. 런타임 LLM 호출 없음(정적 사전 조회 = 결정론·비용 0). 집계 계층은
+    1차 규칙 **뒤에** 이 원장을 조회한다(토큰 우선, 미배정분만 = 기배정 무접촉).
+
+    provenance: source/applied_at/confidence 로 사후 오배정 선별 회수(TH-H2-RECHECK) 지원.
+    term_normalized 유일 = 정규화형 완전 일치 조회 키(대소문자 충돌 자연 병합, TH-12b 판정).
+    """
+
+    SOURCE_H2_V1 = "h2_v1"
+    CONF_HIGH = "high"
+    CONF_MEDIUM = "medium"
+    CONF_LOW = "low"
+    CONFIDENCE_CHOICES = [(CONF_HIGH, "high"), (CONF_MEDIUM, "medium"), (CONF_LOW, "low")]
+
+    term_normalized = models.CharField(
+        max_length=255, unique=True, help_text="_normalize 형(소문자·공백정리). 조회 키."
+    )
+    term_original = models.CharField(max_length=255, help_text="LLM 입력 원문(감사).")
+    sector = models.CharField(max_length=32, help_text="HeatEntity.ref_id (GICS 정본).")
+    confidence = models.CharField(
+        max_length=8, choices=CONFIDENCE_CHOICES, help_text="정규화 등급(소문자)."
+    )
+    source = models.CharField(
+        max_length=16, default=SOURCE_H2_V1, db_index=True,
+        help_text="박제 배치 표식(provenance). h2_v1 = TH-13 초판.",
+    )
+    reason = models.TextField(blank=True, help_text="LLM 배정 근거 1줄(감사).")
+    applied_at = models.DateTimeField(help_text="박제 시각(provenance).")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["term_normalized"]
+        indexes = [models.Index(fields=["source"], name="h2_source_idx")]
+
+    def __str__(self):
+        return f"ThemeKeywordH2({self.term_normalized} → {self.sector}, {self.confidence})"
+
+
 class EtfDailyBar(models.Model):
     """
     C5 투기 심리 거래량 원장 (TH-7d, 결정12b) — 설계 앵커 §2 C5.

@@ -3432,3 +3432,45 @@ G4 회귀 **395 GREEN / 13 사전존재**(C8 test_c4_c6_c7·test_heat_synthesis 
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = e27c652. HALTED-3 해제 후
 395 GREEN / 13 사전존재(동일). DailyPrice 프로덕션 정본 교체(2,256행), 마이그레이션 0.
+
+## [2026-07-10] Theme Heat TH-13 — 결정21(재검 이연) + H2 박제(provenance) + computed 5테마
+
+**결정21 = C (오배정 재검 이연)**: TH-11 감사에서 발견된 오배정(SpaceX IPO→Financials·Goldman
+airline→Consumer 류)의 재검을 **TH-H2-RECHECK로 분리 이연**, 검수 완료분(671) 선행 박제. 근거:
+재검은 기배정 765 occurrence 계열 + h2_v1 671 전수 재분류로 별도 슬라이스 규모 → 초판 박제
+지연 없이 배정률 목표(≤40% 미배정) 선달성이 우선. provenance 태깅으로 사후 선별 회수 보장.
+
+**provenance 방침**: H2 원장 `ThemeKeywordH2` 모든 행에 source/applied_at/confidence 태깅.
+source="h2_v1"(TH-13 초판) — 오배정 재검 시 특정 배치만 선별 회수(전량 롤백 회피). 집계 계층은
+`load_h2_sector_map(source)`로 배치 선택 로드. **1차 토큰 규칙 뒤에만 조회**(미배정분 = 기배정
+무접촉, 부록 A 원칙). 확신 등급은 소문자 정규화(high/medium/low) 후 비교 — 원시 문자열 비교 금지.
+
+**작업0 정규화**: h2_dict_draft.json confidence 소문자화 → **high 616 / medium 54 / low 1 = 671
+정합**. none 251 = 원장 밖 `h2_v1_none.json` 보존(TH-H2-RECHECK 대조용, 922 normalize-unique −
+671 assigned).
+
+**작업1 박제 (게이트 PASS)**: 검수표 671 → `ThemeKeywordH2` upsert(멱등). **P1**: 정규화 유니크
+671, 충돌 병합 **0**(3쌍 대소문자 충돌은 925→922 LLM 입력 dedup 단계서 이미 흡수, 671은 내부
+충돌 0=TH-12b 확인) → source=h2_v1 **671행**. **P2**: 1차-규칙 배정 정규화 term 723 ∩ H2 키 671
+= **교집합 0**(기배정 무접촉 검증).
+
+**작업2 재집계 (게이트 PASS)**: `aggregate_theme_news_volume(use_h2=True)` — 1차 뒤 미배정분만
+H2 조회. **R1**: 배정률 실측 **1,452/1,787 = 81.3%**(dry-run 예측 정확 일치). **R2**: Industrials
+days **25→39**(예측 정확 일치), days≥26 도달 **5테마**(Technology 56·Financial Services 42·Energy
+42·Consumer Cyclical 43·Industrials 39). **R3**: 기존 218행 감소 **0**·소실 **0**(H2 추가만, 기존
+매칭 소실 없음). ThemeNewsVolume 218→300행.
+
+**작업3 computed 확대 (5테마)**: heat 재산출(as_of 2026-07-10) — computed 4→**5**(Industrials
+신규). 전 테마 present=C1/C2/C3/C5/C6/C7·missing=C4/C8 → 재분배 divisor **0.80**(C4 0.12+C8 0.08
+=0.20 결측). universe_stale=**False**(TH-6 유니버스 신선). 실전 소비 차단은 API 요건으로 승계
+(heat 미노출). **온도 ±변동**(TH-11/12 검증값 대비, 원인=H2 확장 C3 z + TH-12b DailyPrice 정본
+교체로 C6/C7/C1 변동, 변동 정상): Financial Services 63→**67**(+4)·Energy 57→**58**(+1)·Technology
+60→**58**(−2)·Consumer Cyclical 45→**44**(−1)·Industrials 신규 **58**. 전 테마 주의 밴드(40-69).
+※TH-11/12 값은 prod ThemeHeatScore 미영속(검증값), TH-13이 5행 첫 영속.
+
+**작업5 EstimateSnapshot**: 0행, 현재 2026-07-10 03:27 UTC(=07-09 23:27 EDT 목) < 첫 beat
+2026-07-10 20:30 UTC(금 16:30 EDT) → **미도래**.
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = d9c270b. 402 GREEN / 13 사전존재
+(attention 6 + leadership_api 7, Neo4j-env). 신규 7 test(H2). 마이그레이션 0023(ThemeKeywordH2),
+드리프트 0. 원장 박제 671(prod), ThemeNewsVolume 재집계 300행, ThemeHeatScore 5행(prod).

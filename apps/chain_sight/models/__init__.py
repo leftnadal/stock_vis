@@ -15,6 +15,7 @@ from .heat import (
     ThemeEtfMap,
     ThemeFilingCount,
     ThemeHeatScore,
+    ThemeKeywordH2,
     ThemeNewsVolume,
     UniverseSnapshot,
 )
@@ -67,4 +68,6 @@ __all__ = [
     # Theme Heat (TH-10, C1 밸류에이션 · C3 내러티브 원장)
     "QuarterlyValuation",
     "ThemeNewsVolume",
+    # Theme Heat (TH-13, C3 H2 LLM 큐레이션 사전 원장)
+    "ThemeKeywordH2",
 ]

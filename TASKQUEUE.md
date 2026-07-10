@@ -633,10 +633,15 @@
 ## ✅ TH-C3-MATCH-EXPAND — C3 토큰 매칭 가동 (종결, 2026-07-10)
 - 상태: **종결(TH-11, 결정17 1차 규칙)**. 토큰 완전 일치(단어=토큰·다단어=구 포함) → 재집계 0→218행 → 4테마 C3 점등(days≥26). ★미배정 57.2%>40% 트리거 초과 → TH-C3-LLM-DICT 상신.
 
-## TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (초판 상신, 2026-07-10, 박제 비준 대기)
-- 상태: **초판 완성(TH-12, 결정19=A)**. 미배정 925 → LLM 배치 → 검수표 671 배정(`docs/chain_sight/theme_heat/h2_dict_draft.json`). dry-run: 배정률 42.8%→81.3%, Industrials 신규 computed 도달 예상. **원장 미적용**.
-- 비준 필요: 검수표 검수(확신 low/medium 54건 우선) → **원장 박제 + 재집계**(다음 슬라이스). LLM=초안 편집자, 원장 결정적 유지.
-- **TH-12b 작업1 포렌식(회신)**: 925→922 손실 = `_normalize` 키 충돌 3쌍(대소문자, NVIDIA/Nvidia Marvell deal·NVIDIA/Nvidia valuation·SNOW Buy/buy rating) → 매칭도 정규화 기반이라 실효 손실 0(폐기·재시도 불요). 81.3% = 분모 total_terms 1,787·분자 1,452(671 전량, 확신필터 없음)·강등 0(초판=미배정 분류만). ★**박제 전 오배정 재검 별도 필요**(결정19 "오배정 재검"은 초판 미실행 — SpaceX IPO·Goldman airline 류).
+## ✅ TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (박제 종결, TH-13 2026-07-10, 결정19=A/결정21=C)
+- 상태: **종결**. 검수표 671 → `ThemeKeywordH2` 원장 박제(provenance source=h2_v1·applied_at·confidence). migration 0023 + `seed_theme_keyword_h2` 커맨드(멱등). confidence 소문자 정규화(high 616/medium 54/low 1=671). none 251 = `h2_v1_none.json` 보존.
+- 재집계·확대: `aggregate_theme_news_volume(use_h2=True)` — 배정률 81.3%(1452/1787, dry-run 정확 일치), Industrials 25→39, ThemeNewsVolume 218→300행, computed 4→5테마(Industrials 신규, 첫 온도 58 주의). 게이트 P1/P2/R1/R2/R3 전건 PASS. 신규 7 test.
+- 오배정 재검은 **TH-H2-RECHECK로 이연**(결정21=C, 아래).
+
+## TH-H2-RECHECK — H2 오배정 재검 + 기배정 재분류 (등재, TH-13 2026-07-10, 결정21=C)
+- 상태: **등재**(결정19 잔여 이행분). 대상 = 기배정 765 occurrence 계열 + h2_v1 671건 전수 오배정 재검(SpaceX IPO→Financials·Goldman airline→Consumer 류, TH-11 감사 발견). provenance(source=h2_v1) 기반 선별 회수 — 오배정 판정 행만 강등/재배정(전량 롤백 회피).
+- 대조 자료: `h2_v1_none.json`(none 251) + 검수표 low/medium 55건(우선 검수). MATCH_EXCLUDE_TOKENS 훅 또는 원장 confidence 강등 경로.
+- 트리거 = 다음 유지보수 슬라이스 또는 사후 검수에서 오배정 발견 시 즉시 승격.
 
 ## ✅ TH-HALTED-3-PROBE → 교체 집행 (종결, TH-12b 2026-07-10, 결정20=A)
 - 상태: **교체 집행 종결**. TH-12 판정(기존 DB 7개월행 오염, FMP 정본) → TH-12b 삭제+재백필 집행. 삭제 522행(MSFT 196·META 174·SPGI 152) → 재백필 2,256행(각 752, 2023-07-11~2026-07-09, 기존 `backfill_daily_prices` 경로·우회 0).

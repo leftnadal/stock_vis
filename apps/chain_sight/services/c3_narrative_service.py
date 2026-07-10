@@ -50,6 +50,21 @@ def _normalize(term: str) -> str:
 MATCH_EXCLUDE_TOKENS: frozenset = frozenset()
 
 
+def load_h2_sector_map(source: str = "h2_v1") -> dict:
+    """
+    H2 사전 원장 → {정규화 검색어: 섹터(HeatEntity.ref_id)} (TH-13, 부록 A 2차 규칙).
+
+    1차 토큰 규칙 미배정분에만 적용(집계 계층에서 secs 공집합일 때만 조회). source 로 박제
+    배치 선별(provenance) — 오배정 재검(TH-H2-RECHECK) 시 특정 배치만 회수 가능.
+    """
+    from apps.chain_sight.models import ThemeKeywordH2
+
+    return {
+        r["term_normalized"]: r["sector"]
+        for r in ThemeKeywordH2.objects.filter(source=source).values("term_normalized", "sector")
+    }
+
+
 def match_term_to_sectors(term: str, keyword_map: dict) -> set:
     """
     검색어 → 매칭 섹터명 집합 (결정17 1차 규칙, 순수함수).
@@ -72,17 +87,22 @@ def match_term_to_sectors(term: str, keyword_map: dict) -> set:
     return sectors
 
 
-def aggregate_theme_news_volume(target_date: Optional[date] = None) -> dict:
+def aggregate_theme_news_volume(
+    target_date: Optional[date] = None, use_h2: bool = True
+) -> dict:
     """
     DailyNewsKeyword → ThemeNewsVolume 집계 (멱등). target_date=None 이면 전체 소급.
 
-    각 일자 키워드의 search_terms_en 을 정규화·완전 일치 매칭해 섹터별 카운트 → 테마×일자 upsert.
+    각 일자 키워드의 search_terms_en 을 정규화·완전 일치 매칭(1차 규칙)해 섹터별 카운트 →
+    테마×일자 upsert. use_h2=True 면 1차 규칙 미배정분에 H2 사전(TH-13, 부록 A) 을 **뒤에**
+    조회해 추가 배정(기배정 무접촉 — secs 공집합일 때만). H2 추가만 = 기존 매칭 소실 없음.
     """
     from apps.chain_sight.models import HeatEntity, ThemeNewsVolume
     from services.news.models import DailyNewsKeyword
     from services.news.services.keyword_sector_map import KEYWORD_SECTOR_MAP
 
     entities = {e.ref_id: e for e in HeatEntity.objects.filter(kind="sector")}
+    h2 = load_h2_sector_map() if use_h2 else {}
     qs = DailyNewsKeyword.objects.exclude(keywords__isnull=True)
     if target_date is not None:
         qs = qs.filter(date=target_date)
@@ -94,10 +114,18 @@ def aggregate_theme_news_volume(target_date: Optional[date] = None) -> dict:
             if not isinstance(kw, dict):
                 continue
             for term in kw.get("search_terms_en") or []:
-                for sec in match_term_to_sectors(term, KEYWORD_SECTOR_MAP):
-                    ref = KW_SECTOR_TO_HEAT_ENTITY.get(sec)
-                    if ref and ref in entities:
-                        counts[ref] += 1
+                secs = match_term_to_sectors(term, KEYWORD_SECTOR_MAP)
+                if secs:  # 1차 규칙 우선
+                    for sec in secs:
+                        ref = KW_SECTOR_TO_HEAT_ENTITY.get(sec)
+                        if ref and ref in entities:
+                            counts[ref] += 1
+                elif h2:  # 2차: 미배정분만 H2 사전 조회 (기배정 무접촉)
+                    h2sec = h2.get(_normalize(term))
+                    if h2sec:
+                        ref = KW_SECTOR_TO_HEAT_ENTITY.get(h2sec, h2sec)
+                        if ref in entities:
+                            counts[ref] += 1
         days += 1
         for ref, cnt in counts.items():
             ThemeNewsVolume.objects.update_or_create(
