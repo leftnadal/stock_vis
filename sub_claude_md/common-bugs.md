@@ -743,3 +743,16 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **확정 원인·처방**: **`npm ci`(실경로 node_modules, v22.19.0) + `rm -rf .next` + 재기동 → HTTP 200·에러 0으로 복구.** 즉 원인은 @swc/helpers 자체 결함이 아니라(그건 멀쩡) **node_modules 설치 상태의 미묘한 불일치**(package-lock과의 드리프트/부분 상태) — **node의 관대한 resolver는 통과시키나 Turbopack의 엄격한 resolver가 거부**하며, 그 증상이 하필 next 런타임의 @swc/helpers import에서 표면화. `.next` 청소로는 안 풀리고 **전체 재설치(npm ci)만** 정규화한다.
 - **복구 사다리(싼 것부터, 한 칸씩 검증)**: ⒜ 실행 프로세스 node 버전 확인 → 불일치면 nvm 올바른 버전으로 재기동만. ⒝ node_modules 실체(심링크/mtime) 확인 → 트리 불일치면 실경로 정리. ⒞ **⒜⒝ 기각 시 `npm ci`(실경로) + `.next` 제거 + 재기동**(이번 건 여기서 복구). ⒟ 그래도 재현이면 Turbopack 자체 버그 가능성 → webpack dev 폴백 등은 디렉터 결정.
 - **운영 함정(관측, 인과 미확정)**: 이번엔 `worker_sync.sh`(sv sync)가 web 런타임 트리를 origin/main으로 **re-detach(git checkout)하는 동안 next dev 서버가 계속 기동 중**이었다(reflog 16:01·16:42·16:53 checkout, 그 사이 dev PID 생존). worker_sync는 web 트리를 **재기동 없이 "핫리로드 반영"만** 한다(주석 명시). 라이브 checkout이 위 불일치를 유발했는지는 **확정 못 했으나**(node_modules mtime은 checkout 이전이라 checkout이 파일을 바꾼 건 아님), 복구에 dev **완전 재기동 + npm ci**가 필요했던 점에서 — **worker_sync의 web 트리 처리에 "next dev 선종료→재기동" 추가 여부**를 후속 검토 대상으로 남긴다(P1 일상 표면이므로 조용한 500은 치명적).
+
+## [백필 함정] FREDClient.get_series_observations 기본 limit=100·sort desc — 심층 백필 시 반드시 override (B1-S1, 2026-07-10)
+
+- **증상**: `backfill_v2_a1`의 FRED 경로 9건 전부 "0 obs inserted"(에러 없음). Yahoo 경로(VIX3M·MOVE·SPY)는 정상 삽입. 인증·CB 무관(키 정상, 좁은 창 23건 실값 반환).
+- **원인**: `FREDClient.get_series_observations(...)` 기본 인자 **`limit=100, sort_order='desc'`**. `_fetch_fred`가 이를 **넘기지 않아** 3년 창이라도 **최신 100건(desc)만** 요청 → 그 100건은 전부 최근 날짜(현 DB min 이후)라 `get_or_create`가 **기존으로 skip → 0 삽입**. 심층 과거 행(예: HY 2023-07~2026-02)은 **요청 자체가 안 됨**. Yahoo(`yf.history`)엔 이 cap이 없어 정상이었음.
+- **처방**: 심층 백필 호출엔 **`limit=100000`(FRED 최대)·`sort_order='asc'` 명시**. backfill_v2_a1은 이 수정으로 해소(`7759265`). **신규 FRED 소비처 작성 시 주의** — 증분 sync(최신 N건)는 기본 limit=100으로 충분하나, **백필/히스토리 성격이면 반드시 limit override**(안 하면 조용히 최신 100만).
+- **로깅 교훈**: "N obs inserted" 단일 출력은 **"0=이미 존재"와 "0=못 가져옴"을 침묵 동치**로 만든다 → `fetched N, inserted M` 구분 출력으로 해소(같은 커밋). 백필 커맨드는 fetch 수와 insert 수를 항상 분리 노출할 것.
+
+## [리허설 사각] dry-run은 API 무호출 — fetch 층 결함은 리허설로 미탐지 (B1-S1, 2026-07-10)
+
+- **증상**: B1-S1 후보 리포트에서 `--dry-run`은 대상·창을 정상 출력했으나, 실제 실행에서 FRED 전건 0행(위 limit 함정)이 드러남.
+- **원인**: `backfill_v2_a1`의 `--dry-run`은 대상 목록만 출력하고 **fetch 호출 전에 return**(API 무호출). fetch 층(get_series_observations limit)의 결함은 리허설 경로를 **구조적으로 지나침**.
+- **교훈**: dry-run 통과 ≠ fetch 정상. 신규/변경 백필 경로 검증엔 **좁은 창 실 fetch 1콜**(예: 1개월)을 별도로 돌려 반환 건수를 눈으로 확인할 것. 후보 리포트에 "실 fetch 리허설 1콜" 항목을 포함하면 이 사각을 닫는다.
