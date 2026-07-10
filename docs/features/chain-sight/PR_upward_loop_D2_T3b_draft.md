@@ -61,7 +61,28 @@ pair.save(update_fields=["relation_status","evidence_streak","last_upgraded_at",
 - **④-iii 현상 유지(1일 지연 수용)**: ①②로 신호는 정확, 반영이 1틱 늦을 뿐. 최소 변경·부작용 0. 관찰·학습 목적엔 1일 지연 무해.
 - 초안 권고: **④-iii**(최소 변경) 기본, ④-i/ii는 지연이 실사용 문제로 관측될 때.
 
-## §4. 회부 흐름 (판정대로)
-- 07-10 틱: evaluated로 "1일 지연(~270 재등장) vs 진동" 확정.
-- 07-11(토) decay 후: 30 승급쌍 하향 수 실측(9쌍=30% 브레이크 동일 기준).
+## §3-bis. 관찰 창 성과 #2 — 권위 규칙 충돌 실증 (2026-07-10 확인 1)
+
+07-10 틱: evaluated=270(**1일 지연 확정**), upgraded=30/fastpath=30 **재등장**. 코호트 실측 = 
+`fastpath_triggered_at` 전부 07-10 이동(07-08 코호트=0), 전이 **probable→probable**(net 불변).
+
+**재분류(중요): whipsaw(상향 품질)가 아니라 권위 규칙 충돌 + 멱등 가드 관통.**
+- **기제(타임스탬프 증거)**: `last_computed(upward)=07-09 15:31 UTC` → `last_observed(SEC seed)=07-09 16:01 UTC`(30분 뒤). SEC seed(`sec_pipeline/tasks.py:379` `status="confirmed" if score>=85 else "probable"`)가 score=60<85 → **probable 설정** ↔ upward fast-path **probable→confirmed 승급** → SEC seed **리셋**. 매일 flap, net-zero.
+- **승자 미정의**: SEC seed status 규칙(85 컷) vs fast-path 규칙(Tier-1+60 승급) 충돌, 우선순위 없음.
+- **멱등 가드 관통**: 타임스탬프 기준 가드가 SEC 리셋(last_observed 이동)에 함께 리셋 — `fastpath_triggered_at` 덮어쓰기 실측.
+- **쓰기 증폭 정량(07-10)**: upward 270 save/틱(30 유의미+240 no-op) + SEC seed `{updated:330}`/일 + neo4j_dirty=270 → 30 flap쌍 일일 재sync churn(net 상태 변화 0).
+- **§5 브레이크 미발동 사유**: 상쇄 주체가 시장 반박이 아닌 **내부 규칙 충돌**, net-zero, 오염 창 일 30분. **조건부 재장전**: flap이 net-zero 이탈(코호트 외 확산·net 상태 변화·예외) 시 즉시 §5 발동 후 보고.
+
+## §3-ter. T-3b 추가 항목 (성과 #2 대응, 개정)
+
+- **ⓓ 권위 충돌 해소** (선별 수정만으론 미해결 — 별도 필수): 후보 구도(회부 시 택1)
+  - ⓓ-1 SEC seed status 산정이 **기존 confirmed를 하향 못 하게 보호**(update_or_create defaults에서 상향 상태 보존).
+  - ⓓ-2 **status 권위를 confidence 엔진으로 일원화** — seed는 관측·score만 공급, status 결정 금지.
+  - ⓓ-3 **fast-path 재승급에 상태 기반 가드**(이미 목표 이상이면 skip).
+- **ⓔ 멱등 가드 상태 기반화**: 타임스탬프(last_computed) → 상태 기반. **이미 confirmed면 fast-path skip** + `fastpath_triggered_at`은 **최초 1회만** 기록(덮어쓰기 금지). ①의 F() 선별과 병행.
+
+## §4. 회부 흐름 (판정대로 + 확장)
+- 07-10 틱(확인 1): **1일 지연 확정 + 성과 #2(권위 충돌) 봉인 완료**. flag 유지(2안).
+- 07-11(토) decay 후(확인 2·3): 30 승급쌍 하향 수 실측(9쌍=30% 브레이크). decay 사전 포렌식(§2).
+- 07-12(일) 확인 4: **"SEC flap ∩ decay 하향" 삼자 교차** 확장 채집.
 - 일요일 틱까지 채집 → **주말 일괄 회부**: 창 판정 + T-3b(①②③) 적용 + ④ 선택지 결정.
