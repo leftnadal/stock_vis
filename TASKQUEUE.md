@@ -633,9 +633,13 @@
 ## ✅ TH-C3-MATCH-EXPAND — C3 토큰 매칭 가동 (종결, 2026-07-10)
 - 상태: **종결(TH-11, 결정17 1차 규칙)**. 토큰 완전 일치(단어=토큰·다단어=구 포함) → 재집계 0→218행 → 4테마 C3 점등(days≥26). ★미배정 57.2%>40% 트리거 초과 → TH-C3-LLM-DICT 상신.
 
-## TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (등재, 2026-07-10, 조건부 상신)
-- 상태: 등재·상신(결정17 트리거 발동 = 미배정 57.2%>40%, 정밀도 ~78%<80%). H2 = LLM 큐레이션 정적 사전(설계 부록 명세만, 구현 금지).
-- 비준 필요: H2 착수 여부. 미배정 다수(고유명사·이벤트 문구: "Iran attacks"·"SpaceX IPO"·"BYD performance")를 LLM으로 정적 사전 확장. 오배정(SpaceX IPO→Financials 등) 교정 포함.
+## TH-C3-LLM-DICT — C3 LLM 큐레이션 정적 사전 (초판 상신, 2026-07-10, 박제 비준 대기)
+- 상태: **초판 완성(TH-12, 결정19=A)**. 미배정 925 → LLM 배치 → 검수표 671 배정(`docs/chain_sight/theme_heat/h2_dict_draft.json`). dry-run: 배정률 42.8%→81.3%, Industrials 신규 computed 도달 예상. **원장 미적용**.
+- 비준 필요: 검수표 검수(확신 low/medium 54건 우선) → **원장 박제 + 재집계**(다음 슬라이스). LLM=초안 편집자, 원장 결정적 유지.
+
+## TH-HALTED-3-PROBE — MSFT/META/SPGI 괴리 원인 판정 (판정 완료, 2026-07-10)
+- 상태: **판정 완료(TH-12, 읽기 전용)**. 엔드포인트 변형(full/light/non-split/dividend-adj) 전 일관, 기존 DB만 이탈 → **괴리 = 기존 DB 7개월행 오염**(MSFT 99.21=명백 오류·실제 541.55), FMP 정본.
+- 의무: 3종 기존 DailyPrice 삭제 + 재백필(--force 제거됨 → 삭제 후 겹침 없이 백필). 다음 슬라이스 비준.
 
 ## TH-C1-FWDPE — C1 Fwd P/E 레그 배선 (등재, 2026-07-10)
 - 상태: 등재(TH-10 승인). C1 현재 EV/Sales 단독 → Fwd P/E 레그 추가(§2 "EV/Sales·Fwd P/E 중앙값").

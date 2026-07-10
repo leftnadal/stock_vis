@@ -27,12 +27,11 @@ def backfill_daily_prices(
     to_date: date,
     error_threshold: float = 0.005,
     dry_run: bool = False,
-    force: bool = False,
 ) -> dict:
     """
     symbols 각 종목의 [from_date, to_date] DailyPrice 를 FMP 로 백필. 겹침 대조 → 멱등 upsert.
 
-    force=True: 겹침 대조 게이트 우회(정본 통일 교체, TH-11 결정18 — 기업행동 정렬 통과분 전용).
+    겹침 대조 게이트(오차 > threshold)는 우회 불가(TH-12 판정: --force 안전장치 우회 스위치 제거).
     반환 = {written, halted:[(sym,max_err)], errors:{sym:reason}, coverage:{sym:earliest},
             overlap_max_err, overlap_median_err, symbols_written}.
     """
@@ -82,7 +81,7 @@ def backfill_daily_prices(
                 max_err = max(max_err, e)
                 overlap += 1
                 all_rel_errs.append(e)
-        if not force and overlap > 0 and max_err > error_threshold:
+        if overlap > 0 and max_err > error_threshold:
             halted.append((sym, round(max_err, 5)))
             logger.warning("백필 정지(겹침 오차 %.4f > %.4f): %s", max_err, error_threshold, sym)
             continue

@@ -3365,3 +3365,33 @@ C1 백필 당시 EV·income 분기 교집합 0=no_matched_quarter, 신규/스핀
 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = f0f5ab1. 전체 395 GREEN /
 13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.
+
+## [2026-07-10] Theme Heat TH-12 — 결정19(H2 초판) + --force 제거 + 첫 온도 확정
+
+**첫 온도 확정 승격**: TH-11 잠정 마일스톤 → **수기 검산 일치로 확정**. Technology heat 60 검산
+(present C1·C2·C3·C5·C6·C7, 결측 C4·C8): s=sigmoid(z) — C1 0.693781·C2 0.655381·C3 0.703973·
+C5 0.267279·C6 0.210768·C7 0.972969. §3-5 재분배 = Σ(w·s)/Σ(present w=0.80) =
+(0.18·0.693781 + 0.18·0.655381 + 0.14·0.703973 + 0.12·0.267279 + 0.09·0.210768 + 0.09·0.972969)
+/0.80 = 0.48001519/0.80 = 0.600019 → ×100 round = **60** (코드 SCORE 60 일치, 밴드 주의).
+
+**결정19 = A (TH-C3-LLM-DICT 전면 가동, 초판)**: 미배정 전량(925 고유) + 오배정 재검을 LLM 배치
+(Gemini 2.5-flash sync, temp 0, JSON) → **H2 사전 초판**. LLM = 사전 초안 편집자, 원장은 결정적
+유지. **이번 슬라이스 원장 미적용**(초판=검수표 상신만, 박제·재집계는 비준 후 다음 슬라이스,
+`docs/chain_sight/theme_heat/h2_dict_draft.json`). 결과: 배정 671/none 251(확신 high 616/med 54/
+low 1). **dry-run 시뮬(원장 무변경 218행 유지)**: 배정률 42.8%→**81.3%**(목표 미배정≤40% 달성),
+신규 days≥26 도달 = **Industrials**(25→39) → computed 확대 예상(비준 시 5테마).
+
+**--force 제거 판정**: TH-11 backfill `--force`(겹침 게이트 우회 스위치)는 지시 범위 밖 신설·
+안전장치 우회 → **제거**(service force 파라미터·command 플래그·테스트). 재도입 시 halted 차단·
+사유 로그 의무 달고 별도 비준. 제거 확인 테스트(게이트 미통과 심볼 쓰기 거부, force 인자 부재).
+
+**TH-HALTED-3-PROBE 판정(읽기 전용)**: MSFT/META/SPGI 엔드포인트 변형 교차 프로브 —
+full=light=non-split-adjusted=dividend-adjusted **전 변형 일관**(조정 방식 무관), 기존 DB 값만
+이탈. MSFT @2025-10-29 기존 99.21(명백 오류, 실제 541.55)·META 567.40 vs 751.44·SPGI 420.12 vs
+397.37. **괴리 원인 = 조정 규약 차이 아니라 기존 DB 7개월행 오염** → FMP 정본, 교체는 다음
+슬라이스 비준(--force 없으므로 삭제+재백필 방식). 쓰기 금지 유지.
+
+**EstimateSnapshot**: 0행, 7/10 금 16:30 ET 미도래(현재 02:29 UTC < 20:30 UTC).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 128de39. 전체 395 GREEN /
+13 사전존재(attention 6 + leadership_api 7, Neo4j-env). 신규 회귀 0.

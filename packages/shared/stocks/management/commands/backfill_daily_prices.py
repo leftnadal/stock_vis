@@ -27,8 +27,6 @@ class Command(BaseCommand):
         parser.add_argument("--error-threshold", type=float, default=0.005,
                             help="겹침 close 상대오차 정지 임계(기본 0.5%).")
         parser.add_argument("--dry-run", action="store_true", help="쓰기 없이 겹침 대조만.")
-        parser.add_argument("--force", action="store_true",
-                            help="겹침 게이트 우회 교체(TH-11 결정18, 기업행동 정렬 통과분 전용).")
 
     def handle(self, *args, **opts):
         from django.conf import settings
@@ -59,7 +57,6 @@ class Command(BaseCommand):
         r = backfill_daily_prices(
             client, symbols, from_date, to_date,
             error_threshold=opts["error_threshold"], dry_run=opts["dry_run"],
-            force=opts["force"],
         )
 
         self.stdout.write(self.style.SUCCESS(
