@@ -300,6 +300,10 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   3. 수동 실행(`task_fn()`) 혹은 `task_fn.delay()`로 즉시 동작 검증
   4. `config/celery.py` 상단 주석에 "이 dict는 reference 용도, 실제 스케줄은 DB" 명시
 - 교훈: **`DatabaseScheduler`를 쓰면 config의 `beat_schedule` dict는 선언적 reference로만 기능**. 스케줄 추가 시 반드시 Django admin 또는 `PeriodicTask.objects.create()`로 DB에 등록해야 실행됨. 코드 리뷰 시 "dict에 추가했으면 됐지" 착각에 주의. `celery -A config beat` 프로세스 자체의 생존 확인도 필요 (`ps aux | grep 'celery.*beat'`)
+- **★ 정정 (2026-07-10 tz 사고)**: 위 "dict는 런타임에 완전히 무시됨"은 **부정확 — dispatch 타이밍 한정**이다. **`DatabaseScheduler`는 beat 기동 시 `app.conf.beat_schedule` dict를 DB로 sync한다(create/update PeriodicTask+CrontabSchedule)**. 따라서:
+  - **stale config 트리에서 beat를 띄우면**(예: 브랜치 표류한 편집 repo) 옛 dict가 **매 재기동마다 DB를 덮어써 수동 교정을 무효화**한다. 실사고: `collect-av-broad-news`의 crontab을 DB에서 UTC로 교정해도, beat가 옛 dict(`crontab(hour=1)`=CELERY_TIMEZONE ET 해석)를 로드·sync해 재기동마다 ET로 되돌림. → **beat는 반드시 origin/main 정렬된 런타임 트리에서 기동**(celery-beat.sh PROJECT_DIR = `~/worktrees/sv-worker-runtime`, worker와 동일 B′).
+  - dict crontab의 tz = **CELERY_TIMEZONE(app tz, 여기선 America/New_York)** 로 해석된다. UTC 의도면 dict `crontab(hour=1)`은 ET가 되어 위험. **UTC 고정이 필요한 beat는 dict에 두지 말고** 전용 관리명령(`register_news_av_beat`)으로 `CrontabSchedule(timezone='UTC')` 직접 등록.
+  - **비-dict DB 엔트리는 startup sync가 삭제·변경하지 않는다**. 즉 dict에서 뺀 엔트리는 DB 값(UTC)이 재기동에도 보존된다(위 전용 등록이 durable해지는 근거).
 - 예방: 코드의 task 경로(app_label/모듈)가 바뀌면 Beat DB(PeriodicTask)의 `task` 컬럼은 자동으로 따라오지 않는다. 배포/마이그레이션 절차에 `python manage.py setup_marketpulse_beat` 재실행을 포함해 DB `task` 경로를 코드와 재동기화할 것. (marketpulse는 `config/celery.py`의 `beat_schedule` dict가 아니라 `setup_marketpulse_beat` 커맨드가 DB 직접 등록 → `sync_beat_schedule`로는 갱신되지 않음.)
 - 드리프트 발생 시 즉시 수정: `task` 컬럼만 ORM UPDATE(옵션②, 부작용 0) 또는 `setup_marketpulse_beat` 멱등 재실행(옵션①, 전 필드 덮어씀). 동시에 좀비 beat(launchd 외 프로세스) 유무도 점검 (`ps aux | grep 'celery.*beat'` → 1개여야 함).
 - 항구 해결 (2026-06-01, PR8b-2 Track A): **task 이동/리네임 시 `sync_beat_schedule` reconcile 커맨드 + beat 재시작 절차로 표준화**. 일회용 shell one-liner를 더 이상 쓰지 않는다.
