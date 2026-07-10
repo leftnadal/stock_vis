@@ -648,7 +648,7 @@
 | LLMFILL-BUILD | `packages/shared/stocks/llm/` 신설(card_fill_prompt + fill_service) + baker 삽입 지점 A additive 배선 + item 가드 테스트. **✅ done `9f2355d`** (scoped 161: 기존 150 IDENTICAL + 신규 11, 실호출 0, diff=자기 구획 6파일, ff push). 편차 1건=닫힌 집합 격리 patch(→ PM-CLOSEDSET-LLMFILL) | @backend (shared/stocks 구획) | 완료 2026-07-09 | ✅ done |
 | PM-CLOSEDSET-LLMFILL | `pipeline_meta` 닫힌 집합 단언(test_eod_issuance_log)에 `llm_fill` **정식 등록** + `_bake_patches` 격리 patch 제거(issuance_verified 등록 방식 동형). BUILD의 구조 충돌 편차 정리 | @backend (소형) | 착수가능 | 🆕 등재 |
 | LLM-GUARD-3 | 외부-LLM-직접호출 **가드 신설**(BOUNDARY-LLM 슬라이스③ 연동 — 코어 land 후 회귀방지). 본 슬라이스(LLMFILL) 스코프 분리분. 트리거: **다음 shared/llm 접점**(BOUNDARY-LLM 트리거 (b) 누적 또는 burn-down 착수) | @backend (BOUNDARY-LLM 연동) | 다음 shared/llm 접점 | 💤 등재(트리거 게이트) |
-| LLMFILL-OBSERVE | LLMFILL-BUILD land 후 **첫 무인 bake 아침**에 실호출 관측 — `pipeline_meta.llm_fill`{attempted, filled, failed, cost_usd, tokens} 실값 확인 + 3키 실채움/부분실패 내성 실증 + 비용 상한(일 1 bake × N=10) 준수 확인 | 관측(dashboard 디렉션) | **✅ 트리거 충족**(sync `1cdea3c` 완료 → 오늘 밤 bake) — 내일 아침 관측 대기 | 🆕 트리거 충족·대기 |
+| LLMFILL-OBSERVE | LLMFILL-BUILD land 후 첫 무인 bake 관측. **✅ 종결·판정 (a) 전건 성공**(07-09 bake filled 10/10·실패 0·$0.001001·6832tok, 파일↔스냅샷 일치, 7 core 무결, IssuanceLog 10/10 ok, 홈 렌더·콘솔0, fundamental=null 정직 실증). D-LLMFILL 추기 | 관측(dashboard 디렉션) | 완료 2026-07-10 | ✅ done |
 
 ---
 
@@ -675,7 +675,11 @@
 | ID | Task | 분류 | 트리거 | Status |
 |----|------|------|--------|--------|
 | NEWSAXIS-CONTRACT | 응축 API **응답 계약 설계** — 관련성 정의·가중, 동일 사건 접기 기준, 관계망 배지 규칙, 캐싱 정책. **✅ 종결**(D-NEWSAXIS-CONTRACT 4항 등재: F2 관련성·자체 접기+제목핵심어 안전핀·RelationConfidence θ배지·15/30 캐싱 + item 계약) | 결정 안건(dashboard) | 완료 2026-07-09 | ✅ done |
-| NEWSAXIS-BUILD | `apps/dashboard` BFF 신설 + `/news/strip`류 엔드포인트 + FE 스트립(S1). **착수 시 STEP 0 재실측 필수**(services/news 모델·RelationConfidence 조인 경로+θ 분위·T1/T3 거처·URL 라우팅). **구획**(D-OWN-HOME·AMEND·AMEND-2): `apps/dashboard/**`+`app/page.tsx`+`components/strip/**`·`services/stripService*`·`hooks/useNewsStrip*`. **config 예외 2줄만 허용**(INSTALLED_APPS+root urls, D-DASH-BFF 추기 — 그 외 config=HALT, DoD 2줄 diff 채증 의무) | @backend + dashboard FE | **✅ 게이트 해제**(NEWSAXIS-CONTRACT 종결) | 🟢 착수가능 |
+| NEWSAXIS-BUILD | `apps/dashboard` BFF(Slice1) + FE 스트립 S1(Slice2). **✅ done `90b04fe`** — BFF θ배지·티어 F2·자체접기 + FE 홈 상단 스트립, scoped BE 12·FE 6·config 예외 2줄. **실가동 확인 07-10**(스트립 라이브: T2/T3/T4 칩·`AAPL↔GOOGL` 배지 발화·카드 LLM 채움 렌더). 후속=STRIP-FOLD-TUNE·URL-V1-ALIGN·STRIP-BADGE-VARIETY | @backend + dashboard FE | 완료 2026-07-10 | ✅ done |
+| STRIP-FOLD-TUNE | 접기 안전핀 강화 3종(D-STRIP-FOLD-TUNE): 일반 금융어 stopword·라운드업 배제(언급 심볼 수 상한)·그룹 크기 상한. **AAPL "+10건" 오접합 fixture 박제 의무**. 임계 상수는 STEP 0 실데이터 결정(하드코딩 금지) | @backend (apps/dashboard in-zone) | **D-STRIP-FOLD-TUNE 등재로 착수가능** | 🟢 착수가능 |
+| STRIP-BADGE-VARIETY | 칩별 관련 엣지 다양화 — 동일 `seed↔seed` 배지(AAPL↔GOOGL) 반복 완화(chip이 seed 심볼 언급 시 seed↔seed 최강 선택되는 편향). 외부 노드 연결 우선 등 개선 | dashboard 트랙(개선) | 다음 strip 접점 | 💤 등재(트리거 게이트) |
+| URL-V1-ALIGN | BFF 경로 `/api/dashboard/` → `/api/v1/dashboard/` 관례 정렬 + FE stripService의 base 우회(`/api/v1` 제거 로직) 제거. **TUNE과 동승 가능**(같은 apps/dashboard 접점) | @backend + dashboard FE | 다음 apps/dashboard 접점 | 💤 등재(트리거 게이트) |
+| HEALTH-13TH-IDENT | sv health 검사 항목 **12→13 증가분** 정체 확인·기록(monitor refresh 신선도 = MON-P2-BEAT 귀속 추정, 실측 확정) | mgmt(소형) | 착수가능 | 🆕 등재 |
 
 ---
 
