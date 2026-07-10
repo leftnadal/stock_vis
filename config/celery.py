@@ -258,16 +258,12 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # AV broad 뉴스 수집 (co-mention 2+종목 소스). A안: 매일 01:00 UTC.
-    # ⚠ 실 스케줄은 register_news_av_beat 로 DB에 timezone=UTC로 등록(권위) — ET crontab
-    # DST 드리프트 회피. 이 dict 엔트리는 sync_beat_schedule task-path 소스용(schedule 무시).
-    # 하류 체인 기존 등록: extract_co_mentions(10:00 ET) → load_event_groups(22:15 UTC).
-    # 순서 보장: collect(01:00 UTC) < extract(14:00 UTC) < load(22:15 UTC).
-    'collect-av-broad-news': {
-        'task': 'services.news.tasks.collect_av_broad_news',
-        'schedule': crontab(hour=1, minute=0),
-        'options': {'expires': 3600}
-    },
+    # ⚠ collect-av-broad-news는 이 dict에 두지 않는다(의도적 제외). 근거: 이 dict의
+    #    crontab(hour=1)은 CELERY_TIMEZONE(ET)로 해석돼 update-economic-calendar의
+    #    동일 ET 행(0 1 * * * ET)과 공유·충돌 → collect-av가 ET로 변질(2026-07-10 실사고).
+    #    스케줄은 register_news_av_beat 가 전용 timezone=UTC CrontabSchedule로 등록(권위,
+    #    ET DST 드리프트+공유행 변질 원천 차단). sync_beat_schedule은 이 태스크를
+    #    "extra DB row"로 스킵(무해). 하류 순서: collect(01 UTC)<extract(14 UTC)<load(22:15 UTC).
 
     # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
     'collect-market-news-morning': {

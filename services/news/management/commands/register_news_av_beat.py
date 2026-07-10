@@ -7,15 +7,20 @@ register_chainsight_beats.py와 동일 패턴(CrontabSchedule + PeriodicTask.upd
 
 등록 beat:
   - collect-av-broad-news @ 01:00 UTC 매일 (A안): collect_av_broad_news 로 broad
-    NEWS_SENTIMENT 수집(topics 미지정=전체, LATEST). co-mention(2+종목) 소스.
+    NEWS_SENTIMENT 수집(topics 미지정=전체, **전일 am+pm 2창**). co-mention(2+종목) 소스.
     하류 체인(extract_co_mentions 10:00 ET · load_event_groups 22:15 UTC)은 기존 등록됨
     → collect(01:00 UTC) < extract(14:00 UTC) < load(22:15 UTC) 순서 보장.
 
-시각은 timezone="UTC"로 명시 등록(ET crontab의 DST 드리프트 회피).
+시각은 **전용 timezone="UTC" CrontabSchedule**로 명시 등록한다. 근거:
+  - ET crontab의 DST 드리프트 회피.
+  - config/celery.py의 crontab(hour=1)은 CELERY_TIMEZONE(ET)로 해석돼
+    update-economic-calendar의 공유 ET 행(0 1 * * * ET)과 충돌 → collect-av가 ET로
+    변질된 실사고(2026-07-10). 이 명령이 **UTC 전용 행으로 재연결하는 복구 경로**다
+    (멱등 재실행 = ET→UTC 교정). ⚠ 공유 ET 행은 절대 건드리지 않는다(update-economic 파급 방지).
 
 사용:
     python manage.py register_news_av_beat            # dry-run (등록 계획만)
-    python manage.py register_news_av_beat --apply    # 실제 등록
+    python manage.py register_news_av_beat --apply    # 실제 등록/재연결
     # --apply 후 celery beat 재시작 필요.
 """
 
@@ -83,6 +88,15 @@ class Command(BaseCommand):
                     f"{verb}: {obj.name} @ {beat['hour']}:{beat['minute'].zfill(2)} {tz} ({dow_label})"
                 )
             )
+            # 재연결 검증(복구 확인): crontab이 UTC 전용 행을 가리키는지
+            obj.refresh_from_db()
+            actual_tz = str(obj.crontab.timezone)
+            if actual_tz != tz:
+                self.stderr.write(self.style.ERROR(
+                    f"  ⚠ {obj.name} crontab tz={actual_tz} (기대 {tz} 아님) — 재연결 실패, 확인 필요"
+                ))
+            else:
+                self.stdout.write(f"  ✓ 재연결 검증: crontab tz={actual_tz} (id={obj.crontab_id})")
 
         if not apply_changes:
             self.stdout.write(self.style.WARNING("dry-run: 아무것도 등록하지 않음."))
