@@ -760,3 +760,10 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **증상**: B1-S1 후보 리포트에서 `--dry-run`은 대상·창을 정상 출력했으나, 실제 실행에서 FRED 전건 0행(위 limit 함정)이 드러남.
 - **원인**: `backfill_v2_a1`의 `--dry-run`은 대상 목록만 출력하고 **fetch 호출 전에 return**(API 무호출). fetch 층(get_series_observations limit)의 결함은 리허설 경로를 **구조적으로 지나침**.
 - **교훈**: dry-run 통과 ≠ fetch 정상. 신규/변경 백필 경로 검증엔 **좁은 창 실 fetch 1콜**(예: 1개월)을 별도로 돌려 반환 건수를 눈으로 확인할 것. 후보 리포트에 "실 fetch 리허설 1콜" 항목을 포함하면 이 사각을 닫는다.
+
+## [백필 함정] 소급 행이 '경계 앵커'를 스스로 오염 — 멱등 재실행 시 보호 창 붕괴 (B1-S2, 2026-07-10)
+
+- **증상**: `backfill_v2_regime_vectors`가 대상 창 상한을 `RegimeSnapshot.objects.min(date)`(라이브 최초일)에서 파생. 1차 실행이 과거 행을 합성하면 min(date)가 과거로 끌려내려가, **재실행 시 상한 = 합성 최초일 − 1** → 창이 붕괴(빈 창 CommandError). 첫 회는 정상, 재실행만 깨짐(멱등성 위반).
+- **원인**: 보호 경계를 "쓰기 대상과 같은 테이블의 집계"에서 파생하면, 쓰기가 경계를 이동시킨다(자기참조 오염). get_or_create의 "기존행 불가침"은 지켜지지만 **창 산정 자체가 무너짐**.
+- **해결**: 합성행에 **불가시 provenance 마커**(여기선 `summary="[BACKFILL_V2]"` — 이 필드는 어떤 RegimeSnapshot serializer에도 미노출임을 grep으로 확인)를 박고, 경계는 `exclude(summary=MARK).min(date)`로 **합성행을 제외**해 산정. 라이브 행만 경계에 기여 → 재실행 무해.
+- **교훈**: 백필/멱등 커맨드에서 **보호 경계는 쓰기 대상이 오염시킬 수 없는 소스에서 파생**할 것. 같은 테이블에서 파생해야 한다면 합성분을 구별하는 마커가 필수. 마커 필드는 사용자 노출 여부를 먼저 확인(노출되면 UI 오염). 회귀 테스트에 "재실행 시 synthesized=0/skipped=N + 창 불변"을 박제.
