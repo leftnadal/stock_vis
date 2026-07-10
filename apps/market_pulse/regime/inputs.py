@@ -85,33 +85,43 @@ class RegimeInputs:
         return [k for k in ALL_INPUT_KEYS if getattr(self, k) is None]
 
 
-def _latest_indicator_value(code: str, *, max_age_days: int = 14) -> float | None:
+def _latest_indicator_value(
+    code: str, *, max_age_days: int = 14, as_of: date_cls | None = None
+) -> float | None:
+    # as_of: 기준일(미지정=오늘). "그 날 기준" 최신값 = date<=as_of 중 최신, max_age 이내.
+    # date__lte=ref 상한은 라이브(ref=오늘)에서 무영향(미래 지표행 없음),
+    # 소급(ref=과거 D)에서는 look-ahead 차단 역할(B1-S2 규칙 #1).
     ind = EconomicIndicator.objects.filter(code=code).first()
     if ind is None:
         return None
-    today = django_timezone.localdate()
+    ref = as_of or django_timezone.localdate()
     val = (
         IndicatorValue.objects.filter(
-            indicator=ind, date__gte=today - timedelta(days=max_age_days * 2)
+            indicator=ind,
+            date__gte=ref - timedelta(days=max_age_days * 2),
+            date__lte=ref,
         )
         .order_by("-date")
         .first()
     )
     if val is None:
         return None
-    if (today - val.date).days > max_age_days:
+    if (ref - val.date).days > max_age_days:
         return None
     return float(val.value)
 
 
-def _spy_price_series(*, days: int = 260) -> list[tuple[date_cls, Decimal]]:
+def _spy_price_series(
+    *, days: int = 260, as_of: date_cls | None = None
+) -> list[tuple[date_cls, Decimal]]:
+    # as_of: 기준일(미지정=오늘). date<=as_of 상한은 라이브 무영향, 소급 look-ahead 차단.
     spy = MarketIndex.objects.filter(symbol="SPY").first()
     if spy is None:
         return []
-    today = django_timezone.localdate()
+    ref = as_of or django_timezone.localdate()
     rows = list(
         MarketIndexPrice.objects.filter(
-            index=spy, date__gte=today - timedelta(days=days * 2)
+            index=spy, date__gte=ref - timedelta(days=days * 2), date__lte=ref
         )
         .order_by("-date")
         .values_list("date", "close")[:days]
@@ -149,11 +159,12 @@ def _compute_price_block(
     return out
 
 
-def load_inputs() -> RegimeInputs:
+def load_inputs(*, as_of: date_cls | None = None) -> RegimeInputs:
+    # as_of: 소급 합성(B1-S2)용 기준일. 미지정 시 오늘 기준(라이브 경로 무변경).
     inputs = RegimeInputs()
     sources: dict[str, str] = {}
 
-    series = _spy_price_series()
+    series = _spy_price_series(as_of=as_of)
     if not series:
         for k in PRICE_KEYS:
             sources[k] = "MISSING"
@@ -164,7 +175,7 @@ def load_inputs() -> RegimeInputs:
             sources[k] = "OK" if v is not None else "STALE"
 
     for key, code in INDICATOR_CODE_MAP.items():
-        v = _latest_indicator_value(code)
+        v = _latest_indicator_value(code, as_of=as_of)
         if v is not None:
             setattr(inputs, key, v)
             sources[key] = "OK"
