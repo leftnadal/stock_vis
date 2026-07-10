@@ -44,6 +44,18 @@ def card_detail_ttl(card_id: str) -> int:
     return GLOBAL_BRIEF_CARD_TTL_SEC if card_id == "brief" else GLOBAL_CARD_TTL_SEC
 
 
+# MP2-TREND S4: z-이상도 baseline 24h 캐시. 키에 소급창 경계(min·max) 포함 —
+#   백필 재실행으로 창이 바뀌면 키가 자연 무효화(stale baseline 방지).
+REGIME_ZSCORE_TTL_SEC = 86400
+
+
+def regime_zscore_key(window_start, window_end) -> str:
+    return (
+        f"mp:global:regime_zscore:{window_start}:{window_end}:"
+        f"{_bucket(REGIME_ZSCORE_TTL_SEC)}"
+    )
+
+
 def i18n_key(locale: str = "ko") -> str:
     return f"mp:global:i18n:{locale}:{_bucket(I18N_TTL_SEC)}"
 
