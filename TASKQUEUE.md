@@ -14,7 +14,7 @@
 | CS-CREDIT-P1 | credit_signals Phase 1 실가동 (FRED 6종 수집·MAD z·strip API·beat) | @infra | - | **🏁 종결 2026-07-10** (fresh 07:30 cron tick GREEN, verify OK, unregistered 0) | origin/main `004ba61`, 원장 4600+행, beat 2종 enabled |
 | CS-CREDIT-P2 | Phase 2: FMP HYG/LQD ETF flow + 차환 절벽(refinancing cliff) 지표 | @backend | 별도 결정 | **대기(착수 미정)** | - |
 | CS-CREDIT-P2.5 | Phase 2.5: SEC 424B2/FWP 발행 신호 파이프라인 | @backend | 별도 결정 | **대기(착수 미정)** | - |
-| CS-CREDIT-CONSUME | Dashboard 프론트에 크레딧 신호 스트립 노출 (소비 시작) | @frontend | 별도 결정 | **대기(별도 결정)** | strip API `/api/credit-signals/strip/` |
+| CS-CREDIT-CONSUME | Dashboard 프론트에 크레딧 신호 스트립 노출 (소비 시작) | @frontend | 별도 결정 | **🏁 종결 2026-07-11** (MacroStrip 라이브 렌더, gray5+yellow1) | `MacroStrip`+`GradeChip`, origin/main `50ec128` |
 | OPS-API-TREE-SYNC | `worker_sync.sh`에 daphne api 트리(`sv-api-runtime`) 포함 + --dry-run + 단계간 health 체크 | @infra | - | **🏁 종결 2026-07-10** | api 트리 포함=`803e9a9`(DAPHNE-BUILD)·자기가드=`942a991`(기해소) + --dry-run/health 체크=`3e774c3`. real run 검증: 3트리 동기화·worker ping·daphne 401·strip 200·기존 서비스 무영향 |
 
 > **배포 절차 (재발 방지)**: credit_signals도 #28 계열 — 신규 task는 ① worktree/api/web/worker 트리 origin/main 동기화(`worker_sync.sh` = worker+web만, **daphne api 트리 `sv-api-runtime`은 별도 수동 sync 필요**) → ② worker+beat+daphne 재시작 → ③ runtime `.env`(Desktop 심링크)에 `CREDIT_SIGNALS_ENABLED=true` → ④ `register_credit_beats` + `PeriodicTask enabled=True`. **worker_sync.sh가 sv-api-runtime 미포함**은 부채(DAPHNE-BUILD 후속) — API 라우트 배포 시 수동 sync 필수.
