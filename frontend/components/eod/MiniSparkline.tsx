@@ -6,9 +6,13 @@ interface MiniSparklineProps {
   data: number[];
   width?: number;
   height?: number;
+  /** 지정 시 등락 방향색(rose/sky) 대신 이 stroke 색 사용 (예: grade 색). */
+  stroke?: string;
+  /** 지정 시 채움 rgba override (stroke와 짝). */
+  fill?: string;
 }
 
-export function MiniSparkline({ data, width = 80, height = 24 }: MiniSparklineProps) {
+export function MiniSparkline({ data, width = 80, height = 24, stroke, fill }: MiniSparklineProps) {
   if (!data || data.length < 2) {
     return <div style={{ width, height }} className="bg-gray-100 dark:bg-gray-700 rounded" />;
   }
@@ -26,7 +30,9 @@ export function MiniSparkline({ data, width = 80, height = 24 }: MiniSparklinePr
   const polylinePoints = points.join(' ');
   const isPositive = data[data.length - 1] >= data[0];
   // 한국축(D-COLOR-SYSTEM): 상승 rose / 하락 sky. colorSemantics 단일소스.
-  const strokeColor = isPositive ? DIRECTION_HEX_CHANGE.up : DIRECTION_HEX_CHANGE.down;
+  // stroke/fill prop 지정 시 방향색 대신 사용(grade 색 등, 기존 소비처는 미전달=불변).
+  const strokeColor = stroke ?? (isPositive ? DIRECTION_HEX_CHANGE.up : DIRECTION_HEX_CHANGE.down);
+  const fillColor = fill ?? (isPositive ? DIRECTION_FILL_RGBA.up : DIRECTION_FILL_RGBA.down);
 
   // 채움 영역을 위한 path
   const firstPoint = points[0].split(',');
@@ -43,7 +49,7 @@ export function MiniSparkline({ data, width = 80, height = 24 }: MiniSparklinePr
       {/* 채움 영역 */}
       <path
         d={fillPath}
-        fill={isPositive ? DIRECTION_FILL_RGBA.up : DIRECTION_FILL_RGBA.down}
+        fill={fillColor}
         stroke="none"
       />
       {/* 라인 */}

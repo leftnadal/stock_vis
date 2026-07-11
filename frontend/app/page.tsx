@@ -10,6 +10,7 @@ import { SignalCardGrid } from '@/components/eod/SignalCardGrid';
 import { SignalDetailSheet } from '@/components/eod/SignalDetailSheet';
 import { RecommendationCarousel } from '@/components/eod/RecommendationCarousel';
 import { NewsStrip } from '@/components/strip/NewsStrip';
+import { MacroStrip } from '@/components/strip/MacroStrip';
 import { EODSkeleton } from '@/components/eod/EODSkeleton';
 import type { SignalCategory, SignalCard } from '@/types/eod';
 
@@ -81,6 +82,9 @@ function HomeContent() {
 
         {/* Level 2: 시장 요약 */}
         <MarketSummaryBar summary={data.market_summary} />
+
+        {/* Level 2.3: 크레딧 매크로 스트립 (실패·빈응답 시 자체 비표시) */}
+        <MacroStrip />
 
         {/* Level 2.4: 뉴스 축 스트립 S1 (실패·빈응답 시 자체 비표시) */}
         <NewsStrip />

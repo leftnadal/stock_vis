@@ -122,3 +122,37 @@ export const CONFIDENCE_DOT = {
   sell: 'bg-sky-400',
   sellStrong: 'bg-sky-500',
 } as const;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// grade 축(상태등급 gray/yellow/orange/red) — ⚠ 방향색(rose/sky) 아님, 강도/경고 축.
+// ─────────────────────────────────────────────────────────────────────────────
+// credit_signals 상태등급 + TH 히트 밴드 등 "등급 강도"를 표현하는 비방향 색.
+// gray는 저채도로 눌러(낮은 대비) 비-gray(yellow→orange→red)가 자연 부상하도록 설계.
+// 로컬 grade 색 정의 금지 — 소비처는 이 토큰만 소비(D-COLOR-TOKEN 단일소스 원칙).
+
+/** 상태등급 리터럴 유니온 (credit_signals grade + 재사용). */
+export type Grade = 'gray' | 'yellow' | 'orange' | 'red';
+
+/** grade 칩(bg + text + border) — gray 저채도, yellow/orange/red 상향 강조. (Tailwind 정적 리터럴) */
+export const GRADE_CHIP = {
+  gray: 'bg-gray-50 text-gray-400 border-gray-200 dark:bg-gray-800/40 dark:text-gray-500 dark:border-gray-700',
+  yellow: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-900/25 dark:text-amber-300 dark:border-amber-700',
+  orange: 'bg-orange-50 text-orange-700 border-orange-400 dark:bg-orange-900/25 dark:text-orange-300 dark:border-orange-600',
+  red: 'bg-red-50 text-red-700 border-red-400 dark:bg-red-900/30 dark:text-red-300 dark:border-red-600',
+} as const;
+
+/** grade 도트/스파크라인 stroke hex — gray 저채도(gray-400), 상향 강조. */
+export const GRADE_DOT_HEX = {
+  gray: '#9ca3af', // gray-400
+  yellow: '#f59e0b', // amber-500
+  orange: '#f97316', // orange-500
+  red: '#ef4444', // red-500
+} as const;
+
+/** grade 스파크라인 채움 rgba(GRADE_DOT_HEX 동일 톤, gray는 최저 알파). */
+export const GRADE_SPARK_FILL = {
+  gray: 'rgba(156,163,175,0.08)', // gray-400 @ .08
+  yellow: 'rgba(245,158,11,0.12)', // amber-500 @ .12
+  orange: 'rgba(249,115,22,0.12)', // orange-500 @ .12
+  red: 'rgba(239,68,68,0.14)', // red-500 @ .14
+} as const;
