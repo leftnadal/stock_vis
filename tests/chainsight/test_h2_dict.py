@@ -59,6 +59,20 @@ class TestLoadH2SectorMap:
         m = load_h2_sector_map(source="h2_v1")
         assert m == {"alpha term": "Technology"}
 
+    def test_default_loads_active_union(self):
+        # TH-14 provenance 체인: 기본(source=None) = h2_v1 유지분 + h2_v2 재검분 = 활성 전체
+        _h2("alpha term", "Technology", source="h2_v1")
+        _h2("beta term", "Energy", source="h2_v2")  # 재검 교정분
+        m = load_h2_sector_map()
+        assert m == {"alpha term": "Technology", "beta term": "Energy"}
+
+    def test_demote_delete_removes_from_active(self):
+        # 강등 = 행 삭제 → 활성 사전에서 제거(미배정 복귀)
+        row = _h2("gamma term", "Energy", source="h2_v1")
+        assert _normalize("gamma term") in load_h2_sector_map()
+        row.delete()
+        assert _normalize("gamma term") not in load_h2_sector_map()
+
 
 @pytest.mark.django_db
 class TestAggregateWithH2:

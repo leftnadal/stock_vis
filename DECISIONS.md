@@ -3474,3 +3474,54 @@ days **25→39**(예측 정확 일치), days≥26 도달 **5테마**(Technology 
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = d9c270b. 402 GREEN / 13 사전존재
 (attention 6 + leadership_api 7, Neo4j-env). 신규 7 test(H2). 마이그레이션 0023(ThemeKeywordH2),
 드리프트 0. 원장 박제 671(prod), ThemeNewsVolume 재집계 300행, ThemeHeatScore 5행(prod).
+
+## [2026-07-12] Theme Heat TH-14 — 결정22(TH-H2-RECHECK 집행) + K1~K4 기준표 + provenance 체인
+
+**결정22 = TH-H2-RECHECK 집행 (h2_v1 671 재검 → h2_v2 provenance 체인)**: 결정19 잔여 이행분.
+LLM 재검(Gemini temp0, K1~K4 프롬프트 포함)으로 h2_v1 오배정 선별 회수. **provenance 체인 의미**:
+source=h2_v1(재검 유지분) + h2_v2(재검 교정분) = **활성 사전**, 강등분은 행 삭제(미배정 복귀).
+`load_h2_sector_map(source=None)` = 잔존 전체 로드(활성 집합), source 지정 시 선별(감사·회수용).
+
+**K1~K4 기준표 채택 (설계 앵커 규약, 초판 편향 재생산 방지)**: 재검 LLM 프롬프트에 원문 포함.
+K1 애널리스트/펀드/은행 평가 뉴스 → **평가 대상 종목 섹터**(주체 아님). K2 종목 뉴스는 종목 GICS
+기본값(타 사업부 예외 시 근거 1줄). K3 비상장 주체(SpaceX/OpenAI): 금융상품/시장구조축→FinSvc,
+산업활동축→해당 산업. K4 none 허용(강제 배정 금지). cs_65_recheck_api.md와 상충 시 본 기준표 정본.
+
+**작업1 재검 (읽기전용 상신 h2_recheck_v1.json)**: 유지 **635** / 재배정 **32** / 강등 **4**(no-op
+동일섹터 재배정 6건은 keep 재분류). K1 교정 6건 FinSvc→대상종목(Wolfe/Barclays/Vulcan/Wells
+Fargo/sovereign wealth/RBC). K3 SpaceX 금융축 14건 Industrials→FinSvc(옵션·예측시장·valuation·
+pre-IPO·공매도). K4 지정학 4건 강등(Strait of Hormuz·Iran war). **FinSvc: 유입 14·유출 6·강등 0
+= net +8건**(그러나 온도는 하락, 아래).
+
+**작업2 기배정 733 재검 (읽기전용 상신 h2_firstrule_recheck.json, 무적용)**: 정상 518 / **오배정
+215**(규칙결함 197 / 개별예외 18). ★**"ai" 토큰 75건 최다 오배정**(JPMorgan AI→FinSvc·Jabil
+AI→Industrials·Meta AI→Comm, K2 위반) + macro 토큰(fed 13·inflation 12·crypto 12·geopolitical
+10·regulation 10 등 → none 대상). **1차 규칙 로직 수정은 별도 비준**(TH-FIRSTRULE-DEFECT 등재).
+
+**작업3 적용 (h2_v1 한정, 게이트 PASS)**: Q1 변경 행수 = 갱신 32 + 삭제 4 = **36**(집계표 일치).
+Q2 after source = h2_v1 635 + h2_v2 32, **非{h2_v1,h2_v2} 변경 0**(1차 규칙 원장 무접촉 재증명).
+강등 4 → none 파일 이동(count 251→255). 재집계 → ThemeNewsVolume 305행. **Q4 배정률 81.3%→
+80.4%**(1460/1817, 강등 4 제거 + corpus 성장 2일분 반영, 하락 정상). **Q3 온도 재산출(2026-07-12
+영속) computed 5 유지**(days≥26 전 테마 잔존): Financial Services 67→**65**(−2)·Industrials 58→
+**57**(−1)·Energy/Technology/Consumer Cyclical ±0(58/58/44).
+
+**★FinSvc 온도 = 67 → 65 (−2, 편향 정리 효과)**: C3 z 1.248→0.895 하락. term 수는 net +8이나
+K1 제거된 애널리스트 6건이 최근 20일 창을 스파이크시킨 고빈도항이라, 이력에 퍼진 SpaceX 14건
+유입보다 현재창 하락 효과가 커 z 순감소 = FinSvc 과열 편향 완화.
+
+**작업4 EstimateSnapshot 발화 실패 진단 (읽기전용, 수정 금지)**: 첫 beat(2026-07-10 20:30 UTC)
+경과했으나 **0행**. **근본원인 = PeriodicTask `chainsight-snapshot-analyst-estimates` enabled=False**
+(cron `30 16 * * 5 America/New_York` 정상 등록·task 경로 일치·last_run_at=None). theme-heat beat
+3종(snapshot·theme-heat-daily·) 모두 disabled = 실전 소비 차단 정합. cron 오등록·import 오류·워커
+다운 아님. **활성화는 다음 슬라이스 비준**(TH-ESTIMATE-BEAT-ENABLE 등재) — 활성 시 첫 스냅샷 7/17
+(주간 금), C8 콜드스타트 시계(60일 축적) 그만큼 지연.
+
+**TH-15 G0 정지 사례 (하네스 기록)**: TH-15(API 슬라이스)는 선행 게이트 G0(재검 후 온도 영속)
+미충족으로 **정당하게 정지·서면 보고만** 수행했다(당시 h2_v2 부재, FinSvc 67 편향값만 영속).
+본 TH-14 집행으로 G0 해소 — 재검 후 온도(2026-07-12, FinSvc 65) 영속. 게이트 규약이 편향 노출을
+사전 차단한 실증 사례(절차가 아닌 실질 보호).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = ad0685e. 404 GREEN / 13 사전존재
+(attention 6 + leadership_api 7, Neo4j-env). 신규 2 test(provenance 체인). 마이그레이션 0(모델
+무변경, load_h2_sector_map 활성 로드 갱신만). 원장 h2_v1 635 + h2_v2 32 = 활성 667(prod), 강등 4
+삭제, ThemeHeatScore 2026-07-12 5행 영속(재검 온도).

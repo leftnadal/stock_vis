@@ -1,6 +1,6 @@
 {
  "source": "h2_v1",
- "count": 251,
+ "count": 255,
  "note": "박제 대상 아님. TH-H2-RECHECK 대조용(none 251).",
  "none": [
   {
@@ -1006,6 +1006,48 @@
   {
    "term_normalized": "wall street winning streak",
    "term_original": "Wall Street winning streak"
+  },
+  {
+   "term_normalized": "strait of hormuz",
+   "term_original": "Strait of Hormuz"
+  },
+  {
+   "term_normalized": "strait of hormuz open",
+   "term_original": "Strait of Hormuz open"
+  },
+  {
+   "term_normalized": "strait of hormuz threat",
+   "term_original": "Strait of Hormuz threat"
+  },
+  {
+   "term_normalized": "protracted iran war",
+   "term_original": "protracted Iran war"
+  }
+ ],
+ "demoted_in_recheck_v1": [
+  {
+   "term_normalized": "strait of hormuz",
+   "term_original": "Strait of Hormuz",
+   "demoted_from": "Energy",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어."
+  },
+  {
+   "term_normalized": "strait of hormuz open",
+   "term_original": "Strait of Hormuz open",
+   "demoted_from": "Energy",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어."
+  },
+  {
+   "term_normalized": "strait of hormuz threat",
+   "term_original": "Strait of Hormuz threat",
+   "demoted_from": "Energy",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어."
+  },
+  {
+   "term_normalized": "protracted iran war",
+   "term_original": "protracted Iran war",
+   "demoted_from": "Energy",
+   "reason": "거시경제 및 지정학적 이슈로 특정 섹터에 직접 배정하기 어려움."
   }
  ]
 }

@@ -638,10 +638,17 @@
 - 재집계·확대: `aggregate_theme_news_volume(use_h2=True)` — 배정률 81.3%(1452/1787, dry-run 정확 일치), Industrials 25→39, ThemeNewsVolume 218→300행, computed 4→5테마(Industrials 신규, 첫 온도 58 주의). 게이트 P1/P2/R1/R2/R3 전건 PASS. 신규 7 test.
 - 오배정 재검은 **TH-H2-RECHECK로 이연**(결정21=C, 아래).
 
-## TH-H2-RECHECK — H2 오배정 재검 + 기배정 재분류 (등재, TH-13 2026-07-10, 결정21=C)
-- 상태: **등재**(결정19 잔여 이행분). 대상 = 기배정 765 occurrence 계열 + h2_v1 671건 전수 오배정 재검(SpaceX IPO→Financials·Goldman airline→Consumer 류, TH-11 감사 발견). provenance(source=h2_v1) 기반 선별 회수 — 오배정 판정 행만 강등/재배정(전량 롤백 회피).
-- 대조 자료: `h2_v1_none.json`(none 251) + 검수표 low/medium 55건(우선 검수). MATCH_EXCLUDE_TOKENS 훅 또는 원장 confidence 강등 경로.
-- 트리거 = 다음 유지보수 슬라이스 또는 사후 검수에서 오배정 발견 시 즉시 승격.
+## ✅ TH-H2-RECHECK — H2 오배정 재검 + 기배정 재분류 (집행 종결, TH-14 2026-07-12, 결정22)
+- 상태: **집행 종결(h2_v1 671)**. K1~K4 기준표 LLM 재검 → 유지 635/재배정 32/강등 4. provenance 선별 회수: 재배정 32 → source h2_v1→h2_v2(교정), 강등 4 → 행 삭제(none 파일 이동). 활성 = h2_v1 635 + h2_v2 32 = 667. 게이트 Q1(변경 36)·Q2(非h2 무접촉)·Q3(computed 5 유지, ★FinSvc 67→65)·Q4(배정률 80.4%) PASS. `load_h2_sector_map` 활성 전체 로드 갱신. 상신물 `h2_recheck_v1.json`.
+- **기배정 733 재검은 목록 상신만**(무적용) → 아래 TH-FIRSTRULE-DEFECT.
+
+## TH-FIRSTRULE-DEFECT — 1차 규칙 토큰 오매칭 수정 (등재 상신, TH-14 2026-07-12)
+- 상태: **등재**(작업2 상신, `h2_firstrule_recheck.json`). 733 유니크 중 오배정 215(규칙결함 197/개별예외 18). ★"ai" 토큰 75건 최다(회사 종목 뉴스인데 무조건 Technology 배정 — JPMorgan AI→FinSvc·Jabil AI→Industrials·Meta AI→Comm) + macro 토큰(fed/inflation/crypto/geopolitical/regulation → none 대상).
+- 수정 후보: KEYWORD_SECTOR_MAP "ai" 등 다의 토큰 제거/맥락화 or MATCH_EXCLUDE_TOKENS 확장. **1차 규칙 로직 변경은 별도 비준**(배정률·정밀도 영향 큼). 트리거 = 유지보수 슬라이스.
+
+## TH-ESTIMATE-BEAT-ENABLE — EstimateSnapshot beat 활성화 (등재, TH-14 2026-07-12)
+- 상태: **등재**(작업4 진단). PeriodicTask `chainsight-snapshot-analyst-estimates` **enabled=False**(cron `30 16 * * 5 America/New_York` 정상 등록·last_run_at=None)이 0행 원인. theme-heat beat 3종 모두 disabled(소비 차단 정합).
+- 조치: 활성화 비준 시 `PeriodicTask.enabled=True` (첫 스냅샷 7/17 금, C8 콜드스타트 60일 시계 개시). cron/import/워커 정상 — **비활성화만 해제하면 됨**. 트리거 = C8 활성 비준.
 
 ## ✅ TH-HALTED-3-PROBE → 교체 집행 (종결, TH-12b 2026-07-10, 결정20=A)
 - 상태: **교체 집행 종결**. TH-12 판정(기존 DB 7개월행 오염, FMP 정본) → TH-12b 삭제+재백필 집행. 삭제 522행(MSFT 196·META 174·SPGI 152) → 재백필 2,256행(각 752, 2023-07-11~2026-07-09, 기존 `backfill_daily_prices` 경로·우회 0).

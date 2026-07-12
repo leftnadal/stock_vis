@@ -1,0 +1,5402 @@
+{
+ "total": 671,
+ "keep": 635,
+ "reassign": 32,
+ "demote": 4,
+ "reassign_matrix": {
+  "Industrials→Financial Services": 14,
+  "Technology→Consumer Cyclical": 4,
+  "Energy→Industrials": 3,
+  "Financial Services→Technology": 3,
+  "Financial Services→Communication Services": 2,
+  "Consumer Cyclical→Consumer Defensive": 1,
+  "Financial Services→Industrials": 1,
+  "Technology→Industrials": 1,
+  "Technology→Communication Services": 1,
+  "Technology→Energy": 1,
+  "Technology→Utilities": 1
+ },
+ "finsvc": {
+  "reassign_in": 14,
+  "reassign_out": 6,
+  "demote": 0,
+  "net_finsvc_change": 8
+ },
+ "verdicts": [
+  {
+   "term": "Strait of Hormuz",
+   "cur_sector": "Energy",
+   "verdict": "demote",
+   "new_sector": "none",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어.",
+   "confidence": "high"
+  },
+  {
+   "term": "Strait of Hormuz open",
+   "cur_sector": "Energy",
+   "verdict": "demote",
+   "new_sector": "none",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어.",
+   "confidence": "high"
+  },
+  {
+   "term": "Strait of Hormuz threat",
+   "cur_sector": "Energy",
+   "verdict": "demote",
+   "new_sector": "none",
+   "reason": "K4에 따라 '호르무즈 해협'은 특정 섹터에 직접 배정하기 어려운 지정학적 용어.",
+   "confidence": "high"
+  },
+  {
+   "term": "protracted Iran war",
+   "cur_sector": "Energy",
+   "verdict": "demote",
+   "new_sector": "none",
+   "reason": "거시경제 및 지정학적 이슈로 특정 섹터에 직접 배정하기 어려움.",
+   "confidence": "high"
+  },
+  {
+   "term": "ALBM domestic production",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "앨버말(ALBM)은 리튬 등 기초 소재를 생산하는 기업으로 기초 소재 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Codelco strategy",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "구리 채굴 기업의 전략 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "GLW re-rating",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "GLW(Corning)는 특수 유리 및 세라믹 제조업체로 기초 소재 섹터에 해당하며, K1 기준에 따라 평가 대상 종목의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "India fertilizer subsidy",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "비료는 기초 소재 제품으로, 관련 보조금은 Basic Materials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "India urea prices",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "요소(Urea)는 기초 소재 제품인 비료의 일종으로 Basic Materials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "MOS stock decline",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "Mosaic Company는 비료 생산 기업으로 기초 소재 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Mosaic Company trade",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "Mosaic Company는 비료 생산 기업으로 기초 소재 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Sipchem methanol plant",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "시프켐은 화학 기업이며, 메탄올 공장은 기초 소재 섹터의 산업 시설에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "United States Antimony",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "안티모니는 기초 원자재이며, 관련 기업은 Basic Materials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Ur-Energy outlook",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "Ur-Energy는 우라늄 채굴 기업으로 Basic Materials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "agricultural commodities",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "농산물은 원자재에 해당하며, 기초 소재 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "antimony export curbs",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "기초 소재인 안티몬의 수출 규제에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "antimony price spike",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "기초 소재인 안티몬의 가격 급등에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "critical minerals partnership",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "핵심 광물은 기초 소재 산업에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "digital trail fertilizer",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "비료는 기초 소재 산업에 해당하며, 디지털 기술 적용은 부차적이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "fertilizer market",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "비료는 농업용 화학 제품으로 기초 소재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "fertilizer price surge",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "비료 가격 변동은 기초 소재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "fertilizer stocks drop",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "비료 관련 기업 주식은 기초 소재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "low-carbon smelter",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "'smelter'는 기초 소재 섹터의 핵심 생산 시설이며, 'low-carbon'은 해당 산업의 공정 개선을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "rice supply disruption",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "쌀은 농산물 원자재로, 공급 차질은 기초 소재 섹터에 직접적인 영향을 미침.",
+   "confidence": "high"
+  },
+  {
+   "term": "uranium bull market",
+   "cur_sector": "Basic Materials",
+   "verdict": "keep",
+   "new_sector": "Basic Materials",
+   "reason": "우라늄은 기초 원자재이며, 관련 시장 동향은 Basic Materials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Alphabet PT raised",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "알파벳은 커뮤니케이션 서비스 섹터 기업이며, 목표 주가 상향은 해당 기업 주식에 대한 평가임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Alphabet buy",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "알파벳은 커뮤니케이션 서비스 섹터 기업이며, 매수는 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Alphabet earnings growth",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "알파벳은 커뮤니케이션 서비스 섹터 기업이며, 실적 성장은 해당 기업의 재무 성과에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Cramer Meta",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "애널리스트의 평가 대상인 Meta Platforms는 Communication Services 섹터이므로 현재 배정 유지 (K1 적용).",
+   "confidence": "high"
+  },
+  {
+   "term": "Elon Musk platform",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Elon Musk가 소유한 소셜 미디어 플랫폼(X) 관련 내용으로 통신 서비스 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "FOX Q3 results",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Fox는 미디어 기업으로 통신 서비스 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Fox Roku acquisition",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Fox와 Roku는 모두 통신 서비스 섹터에 속하는 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Fox buys Roku",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Fox와 Roku는 모두 통신 서비스 섹터에 속하는 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Fox earnings beat",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Fox는 미디어 기업으로 통신 서비스 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "India regional carriers",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "'캐리어'는 통신 서비스를 제공하는 기업을 의미하며, Communication Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "India root server",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "루트 서버는 인터넷 통신 인프라의 핵심 요소로 Communication Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Internet resilience India",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "'Internet resilience'는 통신 서비스 인프라의 안정성을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Iran internet access",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "'internet access'는 통신 서비스 섹터의 핵심 요소이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Jose Luis Crespo Reddit",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Reddit은 통신 서비스 섹터 기업이며, 인물 관련 뉴스는 해당 기업에 대한 것이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "META hyperscaler",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 통신 서비스 제공을 위한 대규모 인프라를 운영하는 하이퍼스케일러입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "META stock gain",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta Muse Spark",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta의 제품 또는 이니셔티브는 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta child safety",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta layoff reassurance",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta layoffs",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta negative sentiment",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Meta workforce",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Meta는 소셜 미디어 및 통신 기업으로 통신 서비스 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Prime Music offline",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Prime Music은 스트리밍 서비스로 Communication Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snap Inc job cuts",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Snap Inc.는 통신 서비스 섹터의 소셜 미디어 기업이며, 인력 감축은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snap layoffs",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "Snap은 통신 서비스 섹터의 소셜 미디어 기업이며, 인력 감축은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snapchat workforce reduction",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "스냅챗은 통신 서비스 섹터의 소셜 미디어 플랫폼이며, 인력 감축은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX Starlink competition",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "SpaceX의 Starlink 사업은 Communication Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "X advertisers boycott",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "X는 소셜 미디어 플랫폼으로 통신 서비스 섹터에 속하며, 광고주 보이콧은 해당 섹터의 직접적인 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "X platform lawsuit dismissed",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "X는 소셜 미디어 플랫폼으로 통신 서비스 섹터에 속하며, 플랫폼 관련 소송은 해당 섹터의 직접적인 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "YY Group stock drop",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "YY Group은 소셜 미디어 및 라이브 스트리밍 플랫폼 기업으로 통신 서비스 섹터에 속한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Zacks top stock Alphabet",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "K1 기준에 따라 평가 주체(Zacks)가 아닌 평가 대상 종목(Alphabet)의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Zuckerberg layoffs",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "마크 저커버그는 메타 플랫폼스(통신 서비스 섹터)의 CEO이며, 해고는 해당 기업의 직접적인 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "internet reopening",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "'internet'은 통신 서비스 섹터의 핵심 요소이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "maritime connectivity",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "해상 연결성은 통신 서비스의 한 분야입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "optical networking stocks",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "광학 네트워킹은 통신 인프라의 핵심 기술이며, 관련 주식은 Communication Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "satellite internet",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "위성 인터넷은 통신 서비스를 제공하므로 통신 서비스 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMZN Q1 results",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존의 분기 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMZN fee hike",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존의 핵심 사업 관련 요금 인상에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMZN new phone",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존의 소비자 제품군 확장에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AN Q1 earnings",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "오토네이션의 분기 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AZO earnings beat",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "AutoZone (AZO)은 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon Alexa price history",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존은 소비재 섹터 기업이며, 알렉사는 소비자를 위한 제품으로 가격 이력은 소비재 시장 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon Leo service",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존은 소비재 섹터 기업이며, Leo 서비스는 패션 소매업과 관련된 소비재 서비스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon Walmart data broker",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존과 월마트는 소비재 섹터 기업이며, 데이터 브로커 활동은 소비재 소매업의 고객 데이터 활용과 관련됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon debt offering",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존은 소비재 섹터 기업이며, 채권 발행은 해당 기업의 재무 활동에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon smartphone comeback",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "아마존은 소비재 섹터 기업이며, 스마트폰 시장 복귀는 소비재 판매 및 시장 점유율과 관련됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "AutoNation buy rating",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "AutoNation 주식에 대한 애널리스트 매수 평가. (K1 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "AutoNation revenue fall",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "AutoNation의 매출 감소에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AutoZone stock drop",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "AutoZone은 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BBY leadership change",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Best Buy (BBY)는 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BBY stock jump",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Best Buy (BBY)는 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BYD US market",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "BYD는 Consumer Cyclical 섹터의 자동차 제조업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BYD domestic sales",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "BYD는 Consumer Cyclical 섹터의 자동차 제조업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BYD exports",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "BYD는 Consumer Cyclical 섹터의 자동차 제조업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BYD performance",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "BYD는 Consumer Cyclical 섹터의 자동차 제조업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Beijing Auto Show",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "자동차 쇼는 Consumer Cyclical 섹터의 자동차 산업과 직접적으로 관련됩니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Best Buy acquisition rumor",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Best Buy는 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Best Buy new CEO",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Best Buy는 Consumer Cyclical 섹터의 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CarMax earnings fall",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "CarMax는 Consumer Cyclical 섹터의 중고차 소매업체입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Columbia women's wear",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Columbia Sportswear의 의류 제품 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Elon Musk Tesla",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla는 자동차 제조업체로 경기소비재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Fiat Topolino US",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Fiat는 자동차 브랜드로 경기소비재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "GNTX organic growth",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "GNTX(Gentex)는 자동차 부품 제조업체로 경기소비재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "GameStop takeover buzz",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "GameStop은 비디오 게임 소매업체로 경기소비재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Gentex Q1 results",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Gentex는 자동차 부품 제조업체로 경기소비재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "HD Q1 results",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Home Depot(HD)는 소비재 순환 기업으로, 실적 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Hilton Grand Vacations",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "힐튼 그랜드 베이케이션은 숙박 및 레저 관련 기업으로 소비재 순환 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Home Depot earnings beat",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Home Depot은 소비재 순환 기업으로, 실적 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "KMX turnaround plan",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "KMX(CarMax)는 경기소비재 섹터 기업이며, 'turnaround plan'은 해당 기업의 사업 회복 계획을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "LCID capital intensive",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "LCID(Lucid Group)는 경기소비재 섹터 기업이며, 'capital intensive'는 해당 기업의 사업 특성을 설명한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "LVMH Iran war impact",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "LVMH는 명품 기업으로 소비재-경기민감 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Levi's growth strategy",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Levi's는 경기소비재 섹터 기업이며, 'growth strategy'는 해당 기업의 사업 계획을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Lime scooter bet",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Lime 스쿠터 서비스는 소비자에게 제공되는 운송 및 레저 서비스로 경기소비재 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Lithia Motors stock",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Lithia Motors는 경기소비재 섹터 기업이며, 'stock'은 해당 기업의 주식을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Lucid stock drop",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Lucid는 자동차 제조업체로 소비재-경기민감 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Model 3 accident",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Model 3는 Tesla의 차량으로 소비재-경기민감 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "NIO March deliveries",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NIO는 Consumer Cyclical 섹터 종목이며, 종목 판매량 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NIO Q1 revenue",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NIO는 Consumer Cyclical 섹터 종목이며, 종목 재무 지표 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NIO sales surge",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NIO는 Consumer Cyclical 섹터 종목이며, 종목 판매량 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NIO stock drop",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NIO는 Consumer Cyclical 섹터 종목이며, 종목 주가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NKE EPS beat",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NKE는 Consumer Cyclical 섹터 종목이며, 종목 실적 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NKE stock fall",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "NKE는 Consumer Cyclical 섹터 종목이며, 종목 주가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nike 52-week low",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Nike는 Consumer Cyclical 섹터 종목이며, 종목 주가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nike earnings",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Nike는 Consumer Cyclical 섹터 종목이며, 종목 실적 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nike earnings call",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Nike는 Consumer Cyclical 섹터 종목이며, 종목 실적 발표 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nike earnings preview",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Nike는 Consumer Cyclical 섹터 종목이며, 종목 실적 예상 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Prime membership value",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Prime 멤버십은 주로 소매 및 전자상거래 서비스와 관련되어 Consumer Cyclical 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Rivian layoffs",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "리비안은 소비재-경기민감 섹터의 전기차 제조업체이며, 인력 감축은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA April turning point",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 주가 및 실적 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA FSD problems",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "FSD는 Tesla 자동차의 핵심 기능으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA Q1 results",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 분기 실적 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA analyst support",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "K1 기준에 따라 평가 대상 종목인 Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA deliveries fall",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 자동차 판매량 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA delivery momentum",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 자동차 판매량 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA earnings report",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 실적 발표 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA expenses",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 비용 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA future bright",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 미래 전망 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA new normal",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 상황 변화 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA sales miss",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 판매 실적 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA sales surge",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 판매 실적 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA stock crash",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 주가 변동 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA stock fall",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 주가 변동 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA stock surge",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 주가 변동 관련 내용으로, Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA technical analysis",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "K1 기준에 따라 평가 대상 종목인 Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSLA upgrade",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "K1 기준에 따라 평가 대상 종목인 Tesla의 GICS 섹터인 Consumer Cyclical을 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Target earnings beat",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Target은 소매업을 영위하는 Consumer Cyclical 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Target sales turnaround",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Target은 소매업을 영위하는 Consumer Cyclical 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Terafab cost Tesla",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla는 자동차 제조를 주력으로 하는 Consumer Cyclical 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla CEO threats",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla는 자동차 제조를 주력으로 하는 Consumer Cyclical 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Cybercab",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 Cybercab은 자동차 관련 제품으로 Consumer Cyclical 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Europe registrations",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 유럽 차량 등록은 자동차 판매 관련 뉴스로 Consumer Cyclical 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Q1 deliveries",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 분기별 차량 인도는 자동차 판매 관련 뉴스로 Consumer Cyclical 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Q1 earnings",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 분기별 실적은 기업의 주요 사업 활동 관련 뉴스로 Consumer Cyclical 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Q2 deliveries",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Tesla의 분기별 차량 인도는 자동차 판매 관련 뉴스로 Consumer Cyclical 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "UBS auto dealerships",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "K1 기준에 따라 평가 대상 산업인 자동차 딜러십은 Consumer Cyclical 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Uber investment",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Uber는 승차 공유 및 음식 배달 서비스를 제공하는 Consumer Cyclical 섹터 기업임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Uber lawsuit",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Uber의 사업 운영 관련 소송으로, Consumer Cyclical 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "apparel women's market",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "여성 의류 시장 동향에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "auto deliveries weak",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "자동차 산업의 판매 부진에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "automaker cost hurdle",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "자동차 제조업체의 비용 문제에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "leisure demand",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "'leisure demand'는 경기 변동에 민감한 소비 활동으로, 경기소비재 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "textile supply chain",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "섬유는 의류 등 소비재의 핵심 원료이며, 공급망은 해당 산업 활동에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "tourism revenue",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "관광은 여행, 레저, 숙박 등 소비자의 재량 지출과 관련된 활동으로 Consumer Cyclical에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "used car retailer",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "keep",
+   "new_sector": "Consumer Cyclical",
+   "reason": "중고차 소매업은 자동차 산업의 일부로 Consumer Cyclical 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "CL Q1 organic sales",
+   "cur_sector": "Consumer Defensive",
+   "verdict": "keep",
+   "new_sector": "Consumer Defensive",
+   "reason": "Colgate-Palmolive(CL)의 실적 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Colgate-Palmolive earnings",
+   "cur_sector": "Consumer Defensive",
+   "verdict": "keep",
+   "new_sector": "Consumer Defensive",
+   "reason": "Colgate-Palmolive의 실적 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Walmart competitive advantage",
+   "cur_sector": "Consumer Defensive",
+   "verdict": "keep",
+   "new_sector": "Consumer Defensive",
+   "reason": "월마트는 소비재 방어 섹터의 대표적인 기업이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Walmart strategy",
+   "cur_sector": "Consumer Defensive",
+   "verdict": "keep",
+   "new_sector": "Consumer Defensive",
+   "reason": "월마트는 소비재 방어 섹터의 대표적인 기업이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "European battery storage",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "배터리 저장 기술은 에너지 인프라 및 공급과 직접적으로 관련되어 에너지 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "FCEL Jefferies",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "FCEL(FuelCell Energy)은 에너지 섹터 기업이며, K1 기준에 따라 평가 대상 종목의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "FuelCell stock jump",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "FuelCell Energy는 에너지 섹터 기업으로 K2 기준에 따라 해당 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Hormuz Strait open",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "호르무즈 해협 개방은 에너지 운송 및 시장에 직접적인 영향을 미침.",
+   "confidence": "high"
+  },
+  {
+   "term": "Hormuz closure",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "호르무즈 해협 폐쇄는 주로 에너지 공급 및 가격에 직접적인 영향을 미침.",
+   "confidence": "high"
+  },
+  {
+   "term": "Hormuz opening impact",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "호르무즈 해협 개방의 영향은 주로 에너지 시장에 직접적인 영향을 미침.",
+   "confidence": "high"
+  },
+  {
+   "term": "Iran tanker attack",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "'tanker attack'은 에너지 운송 및 공급에 직접적인 영향을 미치므로 에너지 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Kharg Island attack",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "Kharg Island는 주요 석유 수출 터미널이며, 공격은 에너지 공급에 직접적인 영향을 미친다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Kuwait crude production",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "'crude production'은 에너지 섹터의 핵심 활동이며, 쿠웨이트는 주요 산유국이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Sunrun partnership",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "Sunrun은 태양광 에너지 솔루션 제공 Energy 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Sunrun virtual power plant",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "Sunrun은 태양광 에너지 솔루션 제공 Energy 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla NatPower deal",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "Tesla의 NatPower 거래는 에너지 사업부 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Trainer Pennsylvania fire",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "Trainer 지역의 화재는 정유 시설과 관련되어 에너지 생산에 영향을 미치므로 Energy 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US crude inventory decline",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "원유 재고는 에너지 상품과 직접 관련되어 Energy 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "WTI crude drop",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "WTI 원유는 에너지 섹터의 핵심 상품이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "YPF Tesla collaboration",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "YPF는 에너지 기업이며, Tesla와의 협력은 에너지 관련 사업을 지칭한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "election day gas prices",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "유가 변동에 대한 뉴스로 에너지 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "fuel prices soaring",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "연료 가격 변동은 에너지 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "gas prices higher",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "유가 변동은 에너지 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "jet fuel price surge",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "'jet fuel'은 에너지 섹터의 핵심 제품이며, 가격 변동은 해당 섹터에 직접적인 영향을 미친다.",
+   "confidence": "high"
+  },
+  {
+   "term": "jet fuel prices",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "'jet fuel'은 에너지 섹터의 핵심 제품이며, 가격은 해당 섹터에 직접적인 영향을 미친다.",
+   "confidence": "high"
+  },
+  {
+   "term": "peace deal Hormuz",
+   "cur_sector": "Energy",
+   "verdict": "keep",
+   "new_sector": "Energy",
+   "reason": "호르무즈 해협은 주요 원유 수송로이며, 평화 협정은 에너지 시장에 직접적인 영향을 미침.",
+   "confidence": "high"
+  },
+  {
+   "term": "30yr fixed index",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "금융 상품 및 시장 구조와 직접적으로 관련됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "AI-driven finance",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "인공지능이 금융 산업에 적용되어 금융 활동을 주도하는 현상을 지칭하므로 금융 서비스 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMP margins",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "AMP의 핵심 재무 지표인 마진에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "BLK margin improvement",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "BlackRock (BLK)은 Financial Services 섹터의 자산운용사입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Belgian prosecutors Wise",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Wise는 금융 기술 기업으로 Financial Services 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BlackRock Nasdaq-100 fund",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "BlackRock은 Financial Services 섹터의 자산운용사이며, 펀드 운용은 금융 서비스 활동입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BlackRock buy rating",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "BlackRock은 Financial Services 섹터의 자산운용사입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CFTC 24/7 trading",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "CFTC와 24/7 트레이딩은 금융 시장 및 규제와 관련되어 Financial Services 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CME CFTC lawsuit",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "금융 거래소와 금융 규제 기관 간의 소송 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Citi Poland sale",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Citigroup은 Financial Services 섹터의 은행입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Citigroup overseas retreat",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Citigroup은 Financial Services 섹터의 은행입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Citizens Financial Group",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "금융기관 자체에 대한 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Clough Capital strategy",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "투자 운용사의 전략 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Coinbase perpetual futures",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "암호화폐 거래소의 금융 상품 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "ECB capital reserve",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "유럽중앙은행의 자본 준비금 관련 내용으로 금융 서비스 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "FY26 lending rebound",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "대출 활동은 금융 서비스 섹터의 핵심 영역.",
+   "confidence": "high"
+  },
+  {
+   "term": "Fiserv downgrade",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Fiserv는 금융 기술 기업으로 금융 서비스 섹터에 해당하며, K1 기준에 따라 평가 대상 종목의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Global Payments downgrade",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Global Payments는 금융 기술 기업으로 금융 서비스 섹터에 해당하며, K1 기준에 따라 평가 대상 종목의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Goldman Sachs data",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Goldman Sachs는 투자 은행으로 금융 서비스 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Hartford Emerging Markets",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "금융 상품 및 시장 구조와 직접적으로 관련된 용어임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Invesco competition",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Invesco는 금융 서비스 섹터 기업이며, 경쟁은 해당 기업의 사업 환경을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "J.P. Morgan rating",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "J.P. Morgan은 금융 서비스 섹터 기업이며, 'rating'은 해당 기업에 대한 평가를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "JPM potential deal",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "JPM은 금융 서비스 섹터 기업이며, 'potential deal'은 해당 기업의 사업 활동을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "JPMorgan Amazon Prime",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "JPMorgan은 금융 서비스 섹터 기업이며, Amazon Prime과의 연계는 금융 상품 또는 서비스 관련 활동이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "JPMorgan acquisition",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "JPMorgan은 금융 서비스 섹터 기업이며, 'acquisition'은 해당 기업의 사업 활동을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Jamie Dimon M&A",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Jamie Dimon은 금융 서비스 섹터 기업인 JPMorgan의 CEO이며, M&A는 금융 서비스의 핵심 활동이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "KPMG scandal",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "KPMG는 금융 서비스 섹터에 속하는 전문 서비스 기업이며, 'scandal'은 해당 기업의 사업 운영 관련 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Mastercard Agent Pay",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Mastercard는 결제 서비스 기업으로 금융 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "NYSE non-compliance",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "NYSE는 금융 시장 운영 주체이며, 규정 미준수는 금융 시장 활동에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq $1 threshold",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 거래소의 상장 기준에 대한 뉴스로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq 100 changes",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 100 지수 변경은 시장 구조 및 금융 상품과 관련되므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq debut",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 상장은 금융 시장 활동의 일환이므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq delisting",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 상장 폐지는 금융 시장 활동의 일환이므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq index rules",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 지수 규칙은 금융 시장 구조와 관련되므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq listing requirements",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 상장 요건은 금융 시장 구조와 관련되므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq-100 ETF",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "ETF는 금융 상품이므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nasdaq-100 rebalance",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Nasdaq 100 지수 리밸런싱은 금융 시장 구조 및 상품과 관련되므로 Financial Services 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Point72 portfolio",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Point72는 헤지펀드로 Financial Services 섹터에 해당하며, 포트폴리오는 해당 기업의 핵심 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "RBI agricultural loans",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "RBI는 금융 기관이며, 농업 대출은 금융 서비스 활동에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Raymond James downgrade",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "레이먼드 제임스는 금융 서비스 회사이며, 특정 종목 언급 없이 회사 자체의 활동을 지칭함.",
+   "confidence": "medium"
+  },
+  {
+   "term": "Regions Financial",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "리전스 파이낸셜은 금융 서비스 섹터의 은행 지주 회사임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Robinhood layoffs",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "로빈후드는 금융 서비스 섹터의 증권 중개 플랫폼이며, 인력 감축은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "S&P Global survey",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "S&P Global은 금융 정보 및 분석 회사로, 설문조사는 금융 서비스 활동에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "SPCX tokenized stock",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'토큰화된 주식'은 금융 상품/시장 구조 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Shift4 Payments downgrade",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Shift4 Payments는 금융 서비스 섹터의 결제 처리 기업이며, 등급 하향은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "UBS Rechtschaffen",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "UBS는 금융 서비스 기업이며, 해당 용어는 UBS 관련 인물을 지칭하므로 Financial Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Wise money laundering",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "Wise는 금융 기술 기업으로 금융 서비스 섹터에 속하며, 자금 세탁은 해당 섹터의 직접적인 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "accounting firm split",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "회계 법인은 금융 서비스를 제공하는 주체이며, 분할은 해당 산업 내 기업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "alternative investments",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "대체 투자는 금융 상품 및 투자 전략의 한 종류로 금융 서비스 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "audit consulting separation",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "회계 및 컨설팅 산업의 구조적 변화에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "collateral waiver",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "담보 면제는 금융 거래와 관련된 용어이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "cross-border payments",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "국경 간 결제는 금융 서비스의 핵심 영역이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "digital lending unsecured",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "디지털 대출은 금융 서비스의 핵심 영역이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "leveraged ETF risk",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'leveraged ETF'는 금융 상품이며, 'risk'는 해당 상품의 시장 특성을 의미하므로 금융 서비스 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "leveraged ETF trading",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'leveraged ETF'는 금융 상품이며, 'trading'은 해당 상품의 거래 활동을 의미하므로 금융 서비스 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "real-world assets tokenization",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "실물 자산 토큰화는 새로운 금융 상품 및 시장 구조를 형성하는 금융 활동임. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "single-stock ETFs",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "단일 종목 ETF는 금융 상품의 일종으로 금융 서비스 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "space economy investment",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "우주 경제에 대한 '투자' 활동 자체에 초점을 맞춘 금융 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "startup funding",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'스타트업 자금 조달'은 금융 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "stockholders' equity rules",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'주주 자본 규정'은 금융 서비스 및 회계 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "systemic risk ETFs",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'시스템 리스크'와 'ETF'는 금융 시장 및 상품 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "uneven financing trends",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'Financing'은 금융 시장 및 자본 조달과 직접적으로 관련된 용어로 Financial Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "unremunerated capital",
+   "cur_sector": "Financial Services",
+   "verdict": "keep",
+   "new_sector": "Financial Services",
+   "reason": "'Capital'은 금융 자산 및 투자와 관련된 용어로 Financial Services 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "ALLO ALPHA 3 trial",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "알로진 테라퓨틱스(ALLO)는 바이오 제약 기업으로 헬스케어 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AbbVie 52-week high",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "애브비(AbbVie)는 헬스케어 섹터 기업이며, 주가 지표는 해당 기업에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Allogene Cema-Cel data",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "알로진은 헬스케어 섹터 기업이며, Cema-Cel 데이터는 임상 시험 결과에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Alnylam Pharmaceuticals",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "알닐람 파마슈티컬스는 바이오 제약 기업으로 헬스케어 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "CAR-T platform strength",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "CAR-T 플랫폼은 Healthcare 섹터의 생명공학 및 제약 기술에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CVS fine",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "CVS Health는 헬스케어 기업이며, 운영 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "CVS settlement",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "CVS Health는 헬스케어 기업이며, 운영 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Eli Lilly Foundayo data",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Eli Lilly의 신약 데이터 관련 내용으로 헬스케어 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Eli Lilly all-time high",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Eli Lilly는 제약 회사로 헬스케어 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Foundayo weight loss",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Foundayo는 체중 감량 관련 의약품 또는 치료법으로 헬스케어 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Gilead Hepcludex approval",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Gilead Sciences는 바이오 제약 회사로 헬스케어 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "HCA earnings",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "HCA는 헬스케어 기업으로, 실적 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "India weight-loss drugs",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "체중 감량 약물은 제약 제품으로 Healthcare 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "J&J stock",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "J&J는 헬스케어 섹터 기업이며, 'stock'은 해당 기업의 주식을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "J&J stock high",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "J&J는 헬스케어 섹터 기업이며, 'stock high'는 해당 기업의 주가 성과를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "JNJ Q1 2026",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "JNJ는 헬스케어 섹터 기업이며, 'Q1 2026'은 해당 기업의 재무 보고 기간을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "JNJ cancer focus",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "JNJ는 헬스케어 섹터 기업이며, 'cancer focus'는 해당 기업의 의료 사업 분야를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Jim Cramer JNJ",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Jim Cramer는 평가 주체이며, JNJ는 헬스케어 섹터 기업이므로 평가 대상 종목의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Johnson & Johnson earnings",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Johnson & Johnson은 헬스케어 섹터 기업이며, 실적은 해당 기업의 사업 성과를 나타낸다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Lagevrio impact",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Lagevrio는 의약품이며, 'impact'는 해당 의약품의 효능 또는 시장 영향을 의미하므로 헬스케어 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Lilly Centessa acquisition",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Lilly와 Centessa는 모두 헬스케어 섹터 기업이며, 인수는 해당 섹터 내의 기업 활동이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MRK M&A",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "MRK는 Merck & Co.의 티커로 헬스케어 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MRK phase 3",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "MRK의 3상 임상 시험은 헬스케어 섹터의 핵심 활동입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MRNA losing streak",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "MRNA는 Moderna의 티커로 헬스케어 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Merck acquisition",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Merck는 제약 회사로 헬스케어 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Merck endometrial cancer",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Merck의 질병 치료제 개발은 헬스케어 섹터의 핵심 활동입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Moderna stock drop",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Moderna는 생명공학 기업으로 헬스케어 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Omnicare case",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Omnicare는 약국 서비스 제공업체로 Healthcare 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "PFE dividend yield",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Pfizer는 Healthcare 섹터 기업이며, 배당 수익률은 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Paxlovid impact",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "팍스로비드는 의약품으로 Healthcare 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Pfizer dividend risk",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Pfizer는 Healthcare 섹터 기업이며, 배당 위험은 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "RFK Jr. COVID EUA",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "RFK Jr.는 정치인이지만, COVID EUA는 헬스케어 정책 및 의약품 관련 주제임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Regeneron myasthenia gravis",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "리제네론은 헬스케어 섹터 기업이며, 중증 근무력증 치료제 개발은 해당 섹터 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SonoThera Series B",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "SonoThera는 Healthcare 섹터 기업의 자금 조달 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SonoThera gene therapy",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "SonoThera는 유전자 치료 전문 Healthcare 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Terns Pharmaceuticals",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Terns Pharmaceuticals는 제약 바이오 Healthcare 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "anti-obesity market",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "비만 치료제 시장 동향에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "bulevirtide approval",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "Bulevirtide는 의약품으로, 신약 승인 뉴스는 Healthcare 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "deafness treatment",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "난청 치료는 의료 및 헬스케어 분야의 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "life sciences innovation",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "'life sciences'는 헬스케어 섹터의 핵심 분야이며, 'innovation'은 해당 분야의 발전을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "nonviral genetic medicine",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "유전자 의학은 Healthcare 섹터의 핵심 분야에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "sacituzumab tirumotecan",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "사시투주맙 티루모테칸은 의약품으로, 헬스케어 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "sleep disorder drugs",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "수면 장애 치료제는 의약품으로 헬스케어 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "A2L headwinds",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "A2L 냉매는 산업용 제품(HVAC 등)과 관련이 깊음.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVAV March performance",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "AeroVironment (AVAV)는 Industrials 섹터의 항공우주 및 방위 산업 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AeroVironment government contract",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "에어로바이런먼트는 무인 항공 시스템을 제조하는 산업재 섹터 기업임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AeroVironment stock crash",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "에어로바이런먼트는 산업재 섹터 기업이며, 주가 폭락은 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "American Airlines bag fees",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "아메리칸 항공의 핵심 서비스 요금에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "CECE stock upgrade",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "CECO Environmental (CECE)는 Industrials 섹터의 환경 서비스 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CECO Environmental buy",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "CECO Environmental은 Industrials 섹터의 환경 서비스 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "DAL strategy",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Delta Air Lines(DAL)는 항공사로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Deere precision agriculture",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Deere는 농업 기계 제조업체로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Delta United target",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Delta와 United는 모두 항공사로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Delta bag fees",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Delta Air Lines는 항공사로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Delta global expansion",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Delta Air Lines는 항공사로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Ducommun downgrade",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "애널리스트의 평가 대상인 Ducommun은 산업재 섹터에 해당하므로 현재 배정 유지 (K1 적용).",
+   "confidence": "high"
+  },
+  {
+   "term": "India battery sector",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "배터리 제조 및 관련 산업은 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "India electric bus incentive",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "전기 버스 제조 및 관련 인센티브는 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "India infra cost overrun",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "인프라 건설 및 관련 비용 초과는 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Omega Flex underperform",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Omega Flex는 산업용 제품 제조업체로 Industrials 섹터에 해당하며, 평가 주체가 아닌 평가 대상 종목의 섹터를 따름.",
+   "confidence": "high"
+  },
+  {
+   "term": "PLUG cash burn",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Plug Power는 수소 연료전지 시스템 제조업체로 Industrials 섹터에 해당하며, 현금 소진은 해당 기업의 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "R2 launch",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "R2는 로켓 랩의 발사체로, 항공우주 제조 및 발사 서비스는 산업재 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "RKLB revenue growth",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "RKLB(로켓 랩)는 산업재 섹터의 항공우주 기업이며, 매출 성장은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Raytheon satellite",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "레이시온은 산업재 섹터의 항공우주 및 방위 산업 기업이며 위성 제조는 해당 분야에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Rocket Lab Iridium deal",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "로켓 랩은 산업재 섹터의 발사 서비스 기업이며, 이리듐과의 계약은 해당 기업의 사업 활동에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "TTC outlook raise",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Toro는 산업용 장비 제조 기업으로 Industrials 섹터에 적합함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Thermon acquisition",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Thermon은 산업용 가열 솔루션을 제공하는 기업으로 Industrials 섹터에 적합함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Toro earnings",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "Toro는 잔디 및 조경 유지보수 장비를 제조하는 기업으로 Industrials 섹터에 적합함.",
+   "confidence": "high"
+  },
+  {
+   "term": "UDAN scheme",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "UDAN 계획은 공항 및 항공 운송 인프라 개발과 관련되어 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US factory activity",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "공장 활동은 제조업의 핵심 지표로 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "United Airlines labor deal",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "United Airlines는 항공사로 Industrials 섹터에 해당하며, 노사 협상은 기업 운영의 일부임.",
+   "confidence": "high"
+  },
+  {
+   "term": "aviation connectivity India",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "항공 연결성은 항공 산업의 인프라 및 운영과 관련되어 Industrials 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "congressional SpaceX",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "SpaceX의 우주 산업 활동 관련 뉴스이므로 현재 배정 유지 (K3 적용).",
+   "confidence": "high"
+  },
+  {
+   "term": "drone demand",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "드론은 제조 및 산업적 활용이 주를 이루므로 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "drone maker decline",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "드론 제조업체는 산업재 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "flight attendants raises",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "항공 승무원은 항공 산업에 속하며, 항공사는 산업재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "missile production expansion",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "미사일 생산은 항공우주 및 방위 산업으로 산업재 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "private jet cost",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "개인 제트기는 항공기 제조 및 운송 서비스와 관련되어 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "space stock earnings",
+   "cur_sector": "Industrials",
+   "verdict": "keep",
+   "new_sector": "Industrials",
+   "reason": "우주 산업 관련 기업들의 실적을 다루는 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "DHC valuation",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "Diversified Healthcare Trust(DHC)는 부동산 투자 신탁으로 부동산 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "RVI public offering",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "RVI는 부동산 섹터의 리츠 기업이며, 공모는 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "existing home sales",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "주택 판매는 부동산 섹터의 핵심 지표.",
+   "confidence": "high"
+  },
+  {
+   "term": "expensive REITs",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "REITs는 부동산 투자 신탁으로 부동산 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "foreclosures increase",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "주택 압류 증가는 부동산 시장과 직접적으로 관련.",
+   "confidence": "high"
+  },
+  {
+   "term": "small-cap REITs valuation",
+   "cur_sector": "Real Estate",
+   "verdict": "keep",
+   "new_sector": "Real Estate",
+   "reason": "소형 리츠는 부동산 섹터에 속하며, 가치 평가는 해당 섹터의 금융 관련 주제임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AAPL guidance",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플(AAPL)은 기술 섹터 기업이며, 가이던스는 기업 실적 전망에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AAPL management",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플(AAPL)은 기술 섹터 기업이며, 경영진은 기업 운영의 핵심 주체임.",
+   "confidence": "high"
+  },
+  {
+   "term": "ACN outcompeted",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "액센츄어(ACN)는 IT 컨설팅 등 기술 서비스를 제공하는 기업임.",
+   "confidence": "high"
+  },
+  {
+   "term": "ADBE profit taking",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어도비(ADBE)는 기술 섹터 기업이며, 이익 실현은 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "ADBE valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어도비(ADBE)는 기술 섹터 기업이며, 기업 가치 평가는 해당 기업에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "ADP stock decline",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "ADP는 IT 서비스(기술) 섹터 기업이며, 주가 하락은 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AGIBOT deployment",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AGIBOT은 인공지능 기반 로봇으로, 소프트웨어 및 AI 기술 개발에 중점을 두어 기술 섹터에 해당함.",
+   "confidence": "medium"
+  },
+  {
+   "term": "AI-driven demand",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI는 핵심 기술 분야이며, AI 기반 수요는 기술 섹터의 성장을 의미함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AI-driven demand optimism",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI는 핵심 기술 분야이며, AI 기반 수요에 대한 낙관론은 기술 섹터의 전망과 관련됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "AI-focused security",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 기반 보안은 사이버 보안 기술의 한 분야로, 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AI-powered devices",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 기반 장치는 인공지능 기술을 활용한 제품으로, 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "ALAB growth opportunity",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "아스테라 랩스(ALAB)는 반도체 연결 솔루션 기업으로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMAT Q1 FY2026 results",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어플라이드 머티리얼즈(AMAT)는 기술 섹터 기업이며, 분기 실적은 해당 기업의 재무 성과에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMAT earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어플라이드 머티리얼즈(AMAT)는 반도체 장비 기업으로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMAT investor focus",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어플라이드 머티리얼즈(AMAT)는 기술 섹터 기업이며, 투자자 관심은 해당 기업에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMAT surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어플라이드 머티리얼즈(AMAT)는 기술 섹터 기업이며, 주가 급등은 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD CPU demand",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD의 핵심 사업인 CPU 수요에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD Q1 earnings beat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD의 분기 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD competitive",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD는 반도체 기업으로 기술 섹터에 속하며, 경쟁력은 해당 기업의 시장 지위에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD record high",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식의 최고가 기록에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD stock buy",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식 매수에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD stock call",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식에 대한 애널리스트 평가. (K1 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD stock gain",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식 상승에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD stock retreat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식 하락에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD strong earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD의 강력한 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AMD valuation concern",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD 주식 가치 평가에 대한 우려.",
+   "confidence": "high"
+  },
+  {
+   "term": "APLD Delta Forge 1",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Applied Digital의 핵심 인프라 프로젝트에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "ARM stock surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Arm Holdings 주식 급등에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "ASML earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "반도체 장비 기업 ASML의 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVGO Meta extension",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom (AVGO)은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVGO VMware integration",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom (AVGO)은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVGO bullish",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom (AVGO)은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVGO downgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom (AVGO)은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AVGO margin compression",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom (AVGO)은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "AWS account stolen",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AWS는 클라우드 컴퓨팅 서비스로 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Adobe stock buy",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어도비는 기술 섹터 기업이며, 주식 매수는 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Adobe stock dip",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "어도비는 기술 섹터 기업이며, 주가 하락은 해당 기업 주식에 대한 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Advanced Micro Devices momentum",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AMD는 기술 섹터 기업이며, 모멘텀은 해당 기업의 사업 또는 주가 추세에 대한 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "AgriStack database",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AgriStack은 농업 관련 데이터베이스 및 기술 플랫폼으로, 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Akamai NVIDIA security",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "아카마이와 엔비디아 모두 기술 섹터 기업이며, 보안은 기술 서비스의 한 분야임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amaravati Quantum Valley",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "퀀텀 밸리는 양자 컴퓨팅 및 기술 개발 허브를 의미하며, 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Anthropic Claude Science",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 연구 기업 Anthropic의 핵심 기술 개발에 대한 뉴스. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Anthropic Mythos",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 연구 기업 Anthropic의 신규 프로젝트/제품에 대한 뉴스. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Anthropic Mythos threat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 연구 기업 Anthropic의 프로젝트 관련 위협에 대한 뉴스. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Anthropic hires",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 연구 기업 Anthropic의 인력 충원에 대한 뉴스. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Anthropic restrictions",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 연구 기업 Anthropic의 사업 활동 규제에 대한 뉴스. (K3 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple CEO skills",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플 CEO의 역량에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple CEO transition",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플 CEO의 교체 가능성에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple MacBook Neo",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 핵심 제품인 맥북 신제품에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple Q2 results",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 분기 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple earnings beat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 분기 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple iPhone price hike",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 핵심 제품인 아이폰 가격 인상에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple new MacBook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 핵심 제품인 맥북 신제품에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple patent lawsuit",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플의 지적 재산권 관련 소송에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple playbook Nvidia",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플과 엔비디아 모두 기술 기업이며, 전략 비교에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple price hike",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플 제품/서비스의 가격 인상에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Apple prices",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "애플 제품/서비스의 가격 동향에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Applied Materials attention",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "반도체 장비 기업 Applied Materials에 대한 시장 관심.",
+   "confidence": "high"
+  },
+  {
+   "term": "Arm Holdings announcement",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "반도체 IP 기업 Arm Holdings의 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Arm price target",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Arm Holdings 주식에 대한 애널리스트 목표가. (K1 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Astera Labs Scorpio X",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Astera Labs의 핵심 제품/기술에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Atlassian earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "소프트웨어 기업 Atlassian의 실적 발표에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Aurionpro US contract",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "IT 솔루션 기업 Aurionpro의 미국 계약 체결에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Azure growth slowdown",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Azure는 클라우드 컴퓨팅 서비스로 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BLZE adjusted EBITDA",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Backblaze (BLZE)는 클라우드 스토리지 기업으로 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BlueConic acquires Blueshift",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "두 회사 모두 소프트웨어 및 데이터 플랫폼 기업으로 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BofA Micron",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 대상 종목인 Micron은 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom $400 target",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom customer concentration",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom guidance miss",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom hyperscaler",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom plunge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom sell rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Broadcom valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Broadcom은 Technology 섹터의 반도체 및 소프트웨어 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "CRDO valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Credo Technology Group(CRDO)은 기술 기업이며, 기업 가치 평가 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "CUDA growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "CUDA는 Nvidia의 핵심 기술 플랫폼으로 기술 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Cadence Design NVIDIA",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Cadence Design과 NVIDIA는 모두 Technology 섹터의 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Cloudflare Snowflake",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "두 기술 기업에 대한 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "CoreWeave Jane Street",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "CoreWeave는 기술 기업이며, Jane Street와의 관계는 기술 활용 또는 투자에 초점.",
+   "confidence": "high"
+  },
+  {
+   "term": "CoreWeave stock",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "CoreWeave는 기술 기업이며, 주식 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Corning Nvidia partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Corning과 Nvidia는 모두 기술 기업이며, 파트너십은 기술 관련이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Credo Technology stock",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Credo Technology Group은 기술 기업이며, 주식 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Credo fundamentals",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Credo Technology Group은 기술 기업이며, 기업의 펀더멘털 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "CrowdStrike gains",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "CrowdStrike는 기술 기업이며, 실적 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "DELL growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Dell Technologies는 기술 기업이며, 성장 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "DELL stock surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Dell Technologies는 기술 기업이며, 주가 상승 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "DOCU GenAI",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Docusign(DOCU)은 기술 기업이며, 생성형 AI는 기술 관련 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "DRAM ETF",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "DRAM 관련 ETF는 반도체 기술 기업에 투자하므로 기술 섹터에 해당 (K1 적용).",
+   "confidence": "high"
+  },
+  {
+   "term": "DRAM demand",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "DRAM은 반도체 메모리로 기술 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "DRAM innovation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "DRAM 혁신은 반도체 기술 발전과 관련된 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Dell CFO strategy",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Dell Technologies는 기술 기업이며, CFO의 전략은 기업 운영 관련이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Dell EMC Air Force",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Dell EMC는 기술 기업이며, 공군과의 협력은 기술 솔루션 제공 관련이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Dell acquisition rumor",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Dell Technologies는 기술 기업이며, 인수 루머 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Department of Commerce quantum",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "상무부의 양자 기술 관련 활동은 기술 섹터에 해당하므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Docusign enterprise momentum",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Docusign은 기술 기업이며, 기업 시장에서의 모멘텀 관련 뉴스이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Dust GTM.AI",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 관련 기술 기업으로 판단.",
+   "confidence": "high"
+  },
+  {
+   "term": "ElevenLabs Toronto office",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 음성 기술 기업의 사무실 확장 관련 내용으로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "ElevenLabs expansion",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "AI 음성 기술 기업의 사업 확장 관련 내용으로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "GOOGL buy rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "GOOGL(Alphabet)은 기술 기업으로 K1 기준에 따라 평가 대상 종목의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "GOOGL price strength",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "GOOGL(Alphabet)은 기술 기업으로 K2 기준에 따라 해당 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "GOOGL pullback",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "GOOGL(Alphabet)은 기술 기업으로 K2 기준에 따라 해당 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Google DeepMind departure",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google DeepMind는 Google의 AI 연구 부문으로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Google I/O",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google I/O는 Google의 기술 개발자 컨퍼런스로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Google billing practices",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google의 사업 관행은 기술 기업으로서의 운영과 직접적으로 관련.",
+   "confidence": "high"
+  },
+  {
+   "term": "Google investigation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google에 대한 조사는 기술 기업으로서의 사업 관행과 관련.",
+   "confidence": "high"
+  },
+  {
+   "term": "Google memory breakthrough",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google의 기술적 돌파구는 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Grok 4.5",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Grok은 AI 챗봇으로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "HBM sold-out",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "HBM은 반도체 기술 제품으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "HP stock pullback",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "HP는 기술 기업으로, 주가 관련 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "HPQ earnings preview",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "HPQ는 기술 기업으로, 실적 관련 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "IBM $2 billion quantum",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "IBM은 기술 기업이며, 퀀텀 컴퓨팅은 기술 분야에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "IBM quantum computing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "IBM은 기술 기업이며, 퀀텀 컴퓨팅은 기술 분야에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC CPU outlook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업이며, CPU는 핵심 기술 제품임.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC analyst outlook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업으로, 애널리스트 평가는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC fab ownership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업이며, 반도체 제조 시설 소유는 핵심 사업에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC foundry",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업이며, 파운드리 사업은 핵심 사업에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC growth stock",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업으로, 성장주 평가는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC outperforming",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업으로, 주가 성과 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC stock gain",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업으로, 주가 상승 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC stock upgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업으로, 주식 등급 상향 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTC x86 reliance",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTC(Intel)는 기술 기업이며, x86 의존도는 핵심 기술 전략에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "INTU price target lowered",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "INTU(Intuit)는 기술 섹터 기업이며, 가격 목표는 해당 기업에 대한 평가이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "India quantum computer",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "퀀텀 컴퓨터는 기술 제품으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel Apollo deal",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 관련 거래 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel Apple partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel과 Apple은 모두 기술 기업이며, 양사 간 파트너십은 기술 관련 사업 개발임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel CPU business",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업이며, CPU 사업은 핵심 기술 사업임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel Fab 34 repurchase",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업이며, 반도체 제조 시설 재매입은 핵심 사업에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel Odisha",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 특정 지역에서의 사업 활동은 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel cautious rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 애널리스트 평가는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel comeback",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 기업의 회복 관련 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel foundry",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업이며, 파운드리 사업은 핵심 사업에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel price target",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 애널리스트 목표 주가는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel quantum computing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업이며, 퀀텀 컴퓨팅은 기술 분야에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel repurchase",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 자사주 매입은 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel shares jump",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 주가 상승 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel stock outlook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 주식 전망 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel stock surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 주가 급등 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel stock up",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 기업으로, 주가 상승 뉴스는 해당 기업의 섹터에 배정됨.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel turnaround",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 섹터 기업이며, 'turnaround'는 기업의 사업 회복을 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel upgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 섹터 기업이며, 'upgrade'는 기업 또는 제품에 대한 평가를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intel valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intel은 기술 섹터 기업이며, 'valuation'은 기업 가치 평가를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Intuit FQ3 results",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Intuit은 기술 섹터 기업이며, 분기 실적은 해당 기업의 사업 성과를 나타낸다.",
+   "confidence": "high"
+  },
+  {
+   "term": "IonQ quantum computing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "IonQ는 기술 섹터 기업이며, 양자 컴퓨팅은 핵심 사업 분야이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Jim Cramer AMD",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Jim Cramer는 평가 주체이며, AMD는 기술 섹터 기업이므로 평가 대상 종목의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "John Jumper leaves Google",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Google은 기술 섹터 기업이며, 인력 변동은 기업 관련 뉴스이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "John Ternus CEO",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "John Ternus는 기술 섹터 기업인 Apple의 임원이며, CEO 관련 뉴스는 해당 기업에 대한 것이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "LITE stock surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "LITE(Lumentum Holdings)는 기술 섹터 기업이며, 'stock surge'는 해당 기업의 주가 성과를 의미한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "LLM audits",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "'LLM'은 인공지능 기술의 한 종류이며, 'audits'는 해당 기술의 평가 또는 규제에 관한 것으로 기술 섹터에 해당한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Linux CIQ partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Linux와 CIQ는 모두 기술 섹터에 속하는 소프트웨어 관련 주체이며, 파트너십은 해당 섹터 내의 협력이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MDA Space acquisition",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MDA Space는 위성 시스템 및 로봇 공학 등 첨단 기술 개발 기업입니다.",
+   "confidence": "medium"
+  },
+  {
+   "term": "MSFT CapEx",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT digital asset",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft의 디지털 자산 관련 활동은 기술 섹터의 범주에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT investment",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT job cuts",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT long-term growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT market cap drawdown",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT market position",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT technical analysis",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Microsoft의 티커로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MSFT value trap",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MSFT는 Technology 섹터 종목이며, 종목 평가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "MU gross margins",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MU는 Technology 섹터 종목이며, 종목 재무 지표 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Magellan Microsoft",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft는 기술 섹터의 핵심 기업입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Marvell trillion dollar",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Marvell Technology는 반도체 기업으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "MeitY Secretary",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "MeitY는 인도 전자정보기술부로 기술 정책과 관련이 있습니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Micron HBM capacity",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "HBM은 Micron의 핵심 사업인 반도체 메모리로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Micron catalyst",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Micron Technology는 반도체 기업으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Micron earnings surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Micron Technology는 반도체 기업으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Micron profits",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Micron Technology는 반도체 기업으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft Azure growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft Azure는 클라우드 컴퓨팅 서비스로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft Copilot",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft Copilot은 AI 소프트웨어 제품으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft Copilot Cowork",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft Copilot은 AI 소프트웨어 제품으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft Maia 200",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft Maia 200은 AI 칩으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft OpenAI",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft와 OpenAI의 협력은 AI 기술 개발로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Microsoft OpenAI hype",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Microsoft와 OpenAI의 협력은 AI 기술 개발로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Musk xAI",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "xAI는 AI 개발 회사로 Technology 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA ecosystem",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA importance",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA market share",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 시장 점유율 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA outlook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 전망 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 파트너십 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA rating upgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 평가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA stock outlook",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 주가 전망 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA stock price",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 주가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA threat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVDA valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVDA는 Technology 섹터 종목이며, 종목 가치 평가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA $20 billion debt",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 재무 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA 2026",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA Blackwell",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 제품 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA Dell takeover",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 인수합병 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA SK Group collaboration",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 협업은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA climbs",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 주가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "NVIDIA는 Technology 섹터 종목이며, 종목 실적 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA stock fall",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 주가 하락은 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "NVIDIA vs AMD",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia와 AMD 모두 Technology 섹터 기업이며, 경쟁은 해당 섹터 내 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Needham Docusign upgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Needham의 Docusign 평가 뉴스로, 평가 대상인 Docusign은 Technology 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia Abridge partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 파트너십 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia Marvell deal",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 거래/협력 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia Marvell praise",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 거래/협력 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia Nokia investment",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 투자 활동 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia buy rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 평가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia competition",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 경쟁 관련 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia hold rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 평가 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia investor returns",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 종목이며, 종목 투자 수익률 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia partnership",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 파트너십은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia performance",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 실적은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia profitability",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 수익성은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia revenue growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 매출 성장은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia shareholder value",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 주주 가치는 해당 기업의 일반적인 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia stock chart",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 주가 차트는 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia stock strength",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 주가 강세는 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Nvidia valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Nvidia는 Technology 섹터 기업이며, 기업 가치 평가는 해당 기업의 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "ORCL capex",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Oracle은 Technology 섹터 기업이며, 자본 지출은 해당 기업의 일반적인 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI Anthropic",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI와 Anthropic은 AI 기술 개발 기업으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI GPT-5.6 restriction",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, GPT-5.6은 해당 기업의 핵심 기술임.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI exposure",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, '노출'은 해당 기술에 대한 시장 관련 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI hiring",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, 채용은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI lawsuit",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, 소송은 해당 기업의 일반적인 사업 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI public offering",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, 기업의 자금 조달 활동은 해당 기업의 섹터를 따름.",
+   "confidence": "high"
+  },
+  {
+   "term": "OpenAI voice model",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "OpenAI는 AI 기술 개발 기업으로 Technology 섹터에 해당하며, 음성 모델은 해당 기업의 핵심 기술임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Oppenheimer Broadcom",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "평가 주체(Oppenheimer)가 아닌 평가 대상 종목(Broadcom)의 섹터인 Technology를 따름.",
+   "confidence": "high"
+  },
+  {
+   "term": "PC market comeback",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "PC 시장은 Technology 섹터에 속하는 제품 시장임.",
+   "confidence": "high"
+  },
+  {
+   "term": "PLTR stock upgrade",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "평가 주체가 아닌 평가 대상 종목(Palantir)의 섹터인 Technology를 따름.",
+   "confidence": "high"
+  },
+  {
+   "term": "PLTR valuation",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Palantir는 Technology 섹터 기업이며, 기업 가치 평가는 해당 기업의 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Palantir earnings caution",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Palantir는 Technology 섹터 기업이며, 실적 경고는 해당 기업의 일반적인 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Palantir net retention",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Palantir는 Technology 섹터 기업이며, 순유지율은 해당 기업의 일반적인 사업 지표임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Palantir sell call",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "평가 주체가 아닌 평가 대상 종목(Palantir)의 섹터인 Technology를 따름.",
+   "confidence": "high"
+  },
+  {
+   "term": "Palantir strong fundamentals",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Palantir는 Technology 섹터 기업이며, 펀더멘털은 해당 기업의 일반적인 재무 활동임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Palo Alto Networks rally",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Palo Alto Networks는 Technology 섹터 기업이며, 주가 상승은 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "QCOM stock surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "QCOM은 기술 섹터 기업으로 주가 관련 뉴스는 해당 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "RAMageddon",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "RAM은 컴퓨터 하드웨어의 핵심 부품으로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "SK Hynix Nasdaq listing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "SK하이닉스는 기술 섹터의 반도체 기업이며, 나스닥 상장은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SK Hynix US listing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "SK하이닉스는 기술 섹터의 반도체 기업이며, 미국 상장은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SMCI margin recovery",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "SMCI는 기술 섹터의 서버 및 스토리지 기업이며, 마진 회복은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SNOW buy rating",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "SNOW(스노우플레이크)는 기술 섹터의 클라우드 데이터 웨어하우징 기업이며, 매수 등급은 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SNOW earnings",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "SNOW(스노우플레이크)는 기술 섹터의 클라우드 데이터 웨어하우징 기업이며, 실적 발표는 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "SNOW stock performance",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "SNOW stock weakness",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Samsung earnings miss",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "삼성은 기술 섹터의 주요 전자 및 반도체 기업이며, 실적 발표는 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Shopify lawsuit settlement",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "쇼피파이는 기술 섹터의 전자상거래 플랫폼 기업이며, 소송 합의는 회사 관련 뉴스임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Shopline copyright",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "샵라인은 전자상거래 플랫폼으로 기술 섹터에 속하며, 저작권 이슈는 해당 분야에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Sivers Semiconductors",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "시버스 반도체는 기술 섹터의 반도체 기업임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snowflake Q1 results",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snowflake long-term winner",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Snowflake stock fall",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Super Micro earnings beat",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Super Micro는 서버 및 스토리지 솔루션 제공 Technology 섹터 기업.",
+   "confidence": "high"
+  },
+  {
+   "term": "Susquehanna Intuit",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K1에 따라 평가 대상인 Intuit의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "TSMC revenue surge",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "TSMC는 반도체 제조 기업으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Optimus",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K2 예외: Tesla의 Optimus 로봇 프로젝트는 Technology 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla robotaxi",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K2 예외: Tesla의 로보택시는 자율주행 기술 및 AI 관련 Technology 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla xAI shuffle",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "xAI는 인공지능 전문 기업으로, 해당 용어는 AI 기술 관련 이슈를 지칭함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Trainium Graviton",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Trainium과 Graviton은 AWS의 반도체 칩으로 기술 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "UBS AMD upside",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 대상 종목인 AMD의 GICS 섹터인 Technology를 유지함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US funding IBM",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "IBM은 기술 기업으로, 해당 기업에 대한 자금 지원은 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US government quantum investment",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 기술 투자는 첨단 기술 분야로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US quantum computing investment",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 컴퓨팅 투자는 첨단 기술 분야로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "US sanctions Huawei",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Huawei는 기술 기업으로, 해당 기업에 대한 제재는 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Vietnam electronics hub",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "베트남의 전자제품 제조 허브는 기술 산업 활동을 직접 지칭한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Wall Street Intel",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 주체(Wall Street)가 아닌 평가 대상 종목(Intel)의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Waymo recall",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Waymo는 자율주행 기술 기업으로 기술 섹터에 속한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Xbox restructuring",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Xbox는 마이크로소프트의 게임 사업부로 기술 섹터에 속한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Xiao-I Apple",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Xiao-I와 Apple 모두 기술 섹터에 속하는 기업이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "ZS earnings preview",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "ZS(Zscaler)는 클라우드 보안 기업으로 기술 섹터에 속한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "ZoomInfo GTM intelligence",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "ZoomInfo는 GTM 인텔리전스 소프트웨어 서비스를 제공하는 기술 기업이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "advanced packaging",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "첨단 패키징은 반도체 산업의 핵심 기술로, 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "autonomous driving",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "자율주행 기술 개발 및 동향에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "autonomous driving legal",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "자율주행 기술 및 관련 규제는 Technology 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "autonomous vehicle safety",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "자율주행 차량의 안전 문제는 Technology 섹터의 핵심 주제입니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "chipmaking technology",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "칩 제조 기술은 Technology 섹터의 핵심인 반도체 산업에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "cyberattack data theft",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "사이버 공격 및 데이터 도난은 정보 기술 보안과 관련된 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "data systems modernization",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "데이터 시스템 현대화는 정보 기술 인프라 및 서비스와 관련된 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "data-driven services",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "데이터 기반 서비스는 기술 플랫폼 및 데이터 분석과 관련된 주제이므로 현재 배정 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "enterprise security budget",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "기업 보안은 기술 섹터의 핵심 영역에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "foundational models",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "파운데이션 모델은 AI 및 소프트웨어 개발의 핵심 개념으로 기술 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "handset fundamentals",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "핸드셋(휴대폰)은 기술 섹터의 핵심 제품군.",
+   "confidence": "high"
+  },
+  {
+   "term": "humanoid robot market",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "휴머노이드 로봇은 기술 제품 및 관련 시장으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "humanoid robots",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "휴머노이드 로봇은 기술 제품으로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "iPhone patent infringement",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "iPhone은 기술 섹터 기업인 Apple의 제품이며, 특허 침해는 기술 관련 이슈이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "iPhone pricing",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "iPhone은 기술 섹터 기업인 Apple의 제품이며, 가격 책정은 제품 전략의 일부이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "iPhone pricing strategy",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "iPhone은 기술 섹터 기업인 Apple의 제품이며, 가격 전략은 제품 전략의 일부이다.",
+   "confidence": "high"
+  },
+  {
+   "term": "low-cost drone",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "드론은 기술 하드웨어 및 부품과 밀접하게 관련되어 있습니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "low-cost laptop market",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "노트북은 기술 하드웨어 및 장비에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "memory cost increase",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "메모리는 반도체 제품으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "memory shortage",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "메모리는 반도체 제품으로 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "memory stock tumble",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "메모리 관련 주식은 반도체 산업의 기술 섹터에 속합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "open-access quantum",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 컴퓨팅은 첨단 기술 분야로 Technology 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "optical interconnects",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "광학 인터커넥트는 데이터 통신 및 컴퓨팅에 사용되는 핵심 기술 부품임.",
+   "confidence": "high"
+  },
+  {
+   "term": "profit taking SNOW",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "Snowflake는 Technology 섹터 기업이며, 차익 실현은 해당 기업의 주식 관련 정보임.",
+   "confidence": "high"
+  },
+  {
+   "term": "quantum computing leaders",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 컴퓨팅은 기술 산업의 핵심 분야임.",
+   "confidence": "high"
+  },
+  {
+   "term": "quantum computing stock",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 컴퓨팅 관련 주식은 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "quantum stock",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "'퀀텀'은 일반적으로 양자 기술을 의미하며 관련 주식은 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "quantum technology funding",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "양자 기술에 대한 자금 조달은 기술 섹터 활동에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "rack scale market",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "랙 스케일 시장은 데이터 센터 인프라 관련 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "robotics future",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "로보틱스는 핵심 기술 분야이며, 그 미래는 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "robotics stocks",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "로보틱스 관련 주식은 일반적으로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "self-driving OS",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "자율주행 OS는 자율주행 기술의 핵심 구성 요소로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "silicon photonics",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "실리콘 포토닉스는 첨단 기술 분야로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "smart mobility",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "스마트 모빌리티는 기술 기반의 첨단 운송 솔루션을 의미하므로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "smart ring Oura",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "스마트 링 오우라는 웨어러블 기술 기기로 기술 섹터에 속함.",
+   "confidence": "high"
+  },
+  {
+   "term": "tech-fueled rally",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "'기술주 주도 랠리'는 Technology 섹터의 시장 성과를 의미.",
+   "confidence": "high"
+  },
+  {
+   "term": "technology weak period",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "'기술 섹터 약세'는 Technology 섹터 자체에 대한 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "wafer-fab spending",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "웨이퍼 팹 지출은 반도체 산업의 핵심 활동으로 기술 섹터에 속한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "BofA Oklo Buy rating",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "K1 기준에 따라 평가 대상 종목인 Oklo는 Utilities 섹터에 해당합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "NEE Q1 results",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "NEE는 Utilities 섹터 종목이며, 종목 재무 지표 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NextEra guidance",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "NextEra Energy는 Utilities 섹터 종목이며, 종목 가이던스 뉴스이므로 해당 섹터 유지.",
+   "confidence": "high"
+  },
+  {
+   "term": "NuScale Power",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "NuScale Power는 소형 모듈형 원자로 개발사로, 전력 생산과 관련되어 Utilities 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "Oklo small modular reactors",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "Oklo의 소형 모듈형 원자로는 전력 생산 기술로 Utilities 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Trump administration wind",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "풍력 에너지는 전력 생산 및 공급과 관련된 유틸리티 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "fast-charging network",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "전기차 충전 네트워크는 전력 공급 서비스로 유틸리티 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "offshore wind lawsuit",
+   "cur_sector": "Utilities",
+   "verdict": "keep",
+   "new_sector": "Utilities",
+   "reason": "해상 풍력 발전은 전력 생산 활동으로 Utilities 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Amazon Prime Music ads",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "아마존의 핵심 사업은 소비재 섹터이나, Prime Music은 스트리밍 미디어 서비스로 커뮤니케이션 서비스 섹터에 해당함.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "Amazon acquisition Globalstar",
+   "cur_sector": "Communication Services",
+   "verdict": "keep",
+   "new_sector": "Communication Services",
+   "reason": "아마존의 글로벌스타 인수는 위성 통신 사업 확장과 관련되며, 이는 커뮤니케이션 서비스 섹터에 해당함.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "TGT guidance raised",
+   "cur_sector": "Consumer Cyclical",
+   "verdict": "reassign",
+   "new_sector": "Consumer Defensive",
+   "reason": "Target(TGT)은 GICS상 General Merchandise Stores로 Consumer Defensive 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Plug Power CEO AMA",
+   "cur_sector": "Energy",
+   "verdict": "reassign",
+   "new_sector": "Industrials",
+   "reason": "Plug Power는 수소 연료전지 시스템 제조업체로 GICS 분류상 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Plug Power turnaround",
+   "cur_sector": "Energy",
+   "verdict": "reassign",
+   "new_sector": "Industrials",
+   "reason": "Plug Power는 수소 연료전지 시스템 제조업체로 GICS 분류상 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "hydrogen strategy PLUG",
+   "cur_sector": "Energy",
+   "verdict": "reassign",
+   "new_sector": "Industrials",
+   "reason": "PLUG는 수소 연료전지 기술 및 장비 제조 기업으로 Industrials 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "Barclays AMD PT",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 주체(Barclays)가 아닌 평가 대상 종목(AMD)의 섹터로 배정합니다.",
+   "confidence": "high"
+  },
+  {
+   "term": "RBC DCO rating",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Industrials",
+   "reason": "RBC는 평가 주체이며, 평가 대상 종목인 DCO(Donaldson Company)는 산업재 섹터에 속함. (K1 적용)",
+   "confidence": "high"
+  },
+  {
+   "term": "Vulcan Value Partners MSFT",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 주체(Vulcan Value Partners)가 아닌 평가 대상 종목(MSFT)의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Wells Fargo Alphabet",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Communication Services",
+   "reason": "K1 기준에 따라 평가 주체(Wells Fargo)가 아닌 평가 대상 종목(Alphabet)의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "Wolfe Research Nvidia",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Technology",
+   "reason": "K1 기준에 따라 평가 주체(Wolfe Research)가 아닌 평가 대상 종목(Nvidia)의 섹터로 배정한다.",
+   "confidence": "high"
+  },
+  {
+   "term": "sovereign wealth fund Alphabet",
+   "cur_sector": "Financial Services",
+   "verdict": "reassign",
+   "new_sector": "Communication Services",
+   "reason": "K1에 따라 평가 대상인 Alphabet의 섹터로 배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "chatbot overdose advice",
+   "cur_sector": "Healthcare",
+   "verdict": "keep",
+   "new_sector": "Healthcare",
+   "reason": "챗봇의 기술 자체보다는 제공하는 의료 관련 조언의 내용이 Healthcare 섹터에 해당합니다.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "Polymarket SpaceX",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "비상장 주체(SpaceX)의 산업 활동이 아닌, 예측 시장(Polymarket)이라는 금융 시장 구조에 대한 내용이므로 Financial Services로 재배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "SPCE inclusion",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K2 예외: 종목의 '지수 편입'은 금융 시장 구조 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX Nasdaq debut",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 Nasdaq 상장 데뷔는 금융 시장 구조 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX Nasdaq-100",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 Nasdaq-100 지수 편입은 금융 시장 구조 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX OpenAI valuation",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 비상장 기업의 '가치 평가'는 금융 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX market cap",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 비상장 기업의 '시가총액'은 금융 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX pre-IPO shares",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 'pre-IPO 주식'은 금융 상품 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX shares shorted",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 '주식 공매도'는 금융 시장 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX short sellers",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 '공매도 세력'은 금융 시장 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX stock buys",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 '주식 매수'는 금융 시장 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX stock gain",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 '주식 상승'은 금융 시장 성과 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX valuation",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 비상장 기업의 '가치 평가'는 금융 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "SpaceX valuation surge",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "K3에 따라 비상장 기업의 '가치 평가'는 금융 활동 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "options pricing SpaceX",
+   "cur_sector": "Industrials",
+   "verdict": "reassign",
+   "new_sector": "Financial Services",
+   "reason": "비상장 주체(SpaceX)의 산업 활동이 아닌, 금융 상품(옵션)의 가격 책정에 대한 내용이므로 Financial Services로 재배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Alphabet memory",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "알파벳의 핵심 사업은 커뮤니케이션 서비스이나, '메모리'는 하드웨어 및 반도체 기술 개발과 관련되어 기술 섹터로 재배정.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "Amazon AWS growth",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "아마존의 핵심 사업은 소비재 섹터이나, AWS는 클라우드 컴퓨팅 서비스로 명백히 기술 섹터 사업부에 해당함.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "Amazon Graviton5 CPU",
+   "cur_sector": "Technology",
+   "verdict": "keep",
+   "new_sector": "Technology",
+   "reason": "아마존의 핵심 사업은 소비재 섹터이나, Graviton5 CPU는 AWS를 위한 반도체 개발로 명백히 기술 섹터 사업부에 해당함.",
+   "confidence": "high",
+   "_noop_reclassified": true
+  },
+  {
+   "term": "Elon Musk SpaceX",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Industrials",
+   "reason": "SpaceX는 항공우주 제조 및 운송 서비스 기업으로 K3 기준에 따라 산업재 섹터에 해당.",
+   "confidence": "high"
+  },
+  {
+   "term": "IONQ satellite networking",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Communication Services",
+   "reason": "IonQ의 주력 사업은 양자 컴퓨팅(기술 섹터)이나, 'satellite networking'은 통신 서비스 섹터의 핵심 사업 영역이다.",
+   "confidence": "medium"
+  },
+  {
+   "term": "Instacart Gemini integration",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Consumer Cyclical",
+   "reason": "Instacart는 온라인 식료품 배달 서비스 기업으로 Consumer Cyclical 섹터에 해당하며, AI 통합은 서비스 개선의 일환임.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Renew Home deal",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Energy",
+   "reason": "K2 예외: Tesla의 Renew Home 거래는 에너지 사업부 관련 뉴스.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla Robotaxi issues",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Consumer Cyclical",
+   "reason": "테슬라의 주력 사업인 자동차(로보택시) 관련 이슈이므로 Consumer Cyclical로 재배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla robotaxi rollout",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Consumer Cyclical",
+   "reason": "테슬라의 주력 사업인 자동차(로보택시) 관련 이슈이므로 Consumer Cyclical로 재배정.",
+   "confidence": "high"
+  },
+  {
+   "term": "Tesla virtual power plant",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Utilities",
+   "reason": "테슬라의 에너지 사업부 중 가상 발전소는 유틸리티 섹터에 해당함.",
+   "confidence": "high"
+  },
+  {
+   "term": "robotaxi long waits",
+   "cur_sector": "Technology",
+   "verdict": "reassign",
+   "new_sector": "Consumer Cyclical",
+   "reason": "로보택시의 '대기 시간'은 기술 개발보다는 소비자 대상 운송 서비스 운영 측면에 해당하므로 소비재-경기민감 섹터로 재배정.",
+   "confidence": "medium"
+  }
+ ],
+ "noop_reclassified_to_keep": 6
+}

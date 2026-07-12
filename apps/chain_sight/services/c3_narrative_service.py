@@ -50,19 +50,22 @@ def _normalize(term: str) -> str:
 MATCH_EXCLUDE_TOKENS: frozenset = frozenset()
 
 
-def load_h2_sector_map(source: str = "h2_v1") -> dict:
+def load_h2_sector_map(source: Optional[str] = None) -> dict:
     """
-    H2 사전 원장 → {정규화 검색어: 섹터(HeatEntity.ref_id)} (TH-13, 부록 A 2차 규칙).
+    H2 사전 원장 → {정규화 검색어: 섹터(HeatEntity.ref_id)} (TH-13/TH-14, 부록 A 2차 규칙).
 
-    1차 토큰 규칙 미배정분에만 적용(집계 계층에서 secs 공집합일 때만 조회). source 로 박제
-    배치 선별(provenance) — 오배정 재검(TH-H2-RECHECK) 시 특정 배치만 회수 가능.
+    1차 토큰 규칙 미배정분에만 적용(집계 계층에서 secs 공집합일 때만 조회).
+
+    provenance 체인(TH-14 재검): source=h2_v1(초판 유지분) + h2_v2(재검 교정분) = **활성 사전**.
+    강등분은 행 삭제(원장 부재 = 미배정 복귀). 따라서 source=None(기본)이면 잔존 전체 = 활성 집합.
+    source 지정 시 특정 배치만 선별 로드(감사·선별 회수용).
     """
     from apps.chain_sight.models import ThemeKeywordH2
 
-    return {
-        r["term_normalized"]: r["sector"]
-        for r in ThemeKeywordH2.objects.filter(source=source).values("term_normalized", "sector")
-    }
+    qs = ThemeKeywordH2.objects.all()
+    if source is not None:
+        qs = qs.filter(source=source)
+    return {r["term_normalized"]: r["sector"] for r in qs.values("term_normalized", "sector")}
 
 
 def match_term_to_sectors(term: str, keyword_map: dict) -> set:

@@ -1,0 +1,2979 @@
+{
+ "total": 733,
+ "correct": 518,
+ "misassigned": 215,
+ "rule_defect": 197,
+ "individual_exception": 18,
+ "defect_token_freq": {
+  "ai": 75,
+  "infrastructure": 17,
+  "fed": 13,
+  "inflation": 12,
+  "crypto": 12,
+  "ipo": 11,
+  "china": 11,
+  "regulation": 10,
+  "geopolitical": 10,
+  "energy": 9,
+  "bond": 7,
+  "bank": 6,
+  "stablecoin": 6,
+  "tech": 6,
+  "nuclear": 6,
+  "bitcoin": 5,
+  "data center": 3,
+  "blockchain": 3,
+  "rate hike": 3,
+  "tariff": 3
+ },
+ "misassigned_list": [
+  {
+   "term": "Alphabet infrastructure bet",
+   "assigned": [
+    "Industrials"
+   ],
+   "match_tokens": [
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "individual_exception",
+   "reason": "Alphabet의 인프라 투자는 주로 IT 인프라를 의미하며 이는 Technology 섹터에 해당합니다."
+  },
+  {
+   "term": "Apple Intel chip manufacturing",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "chip",
+    "manufacturing"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "individual_exception",
+   "reason": "Apple과 Intel의 칩 제조는 Technology 섹터의 핵심 활동입니다."
+  },
+  {
+   "term": "EV bus adoption India",
+   "assigned": [
+    "Consumer Cyclical"
+   ],
+   "match_tokens": [
+    "ev"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "individual_exception",
+   "reason": "EV 버스는 상업용 차량으로 Industrials 섹터에 해당함 (K2 규칙의 명백한 타 섹터 사업부 예외)."
+  },
+  {
+   "term": "FuelCell Energy data center",
+   "assigned": [
+    "Energy",
+    "Technology"
+   ],
+   "match_tokens": [
+    "data center",
+    "energy"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "individual_exception",
+   "reason": "FuelCell Energy는 Energy 섹터 기업이며, 데이터 센터 관련 활동도 본업의 연장선으로 볼 수 있음 (K2 규칙 적용)."
+  },
+  {
+   "term": "JPMorgan AI agents",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "individual_exception",
+   "reason": "JPMorgan은 금융 서비스 기업이므로, AI 관련 뉴스라도 해당 기업의 섹터를 따르는 것이 원칙임."
+  },
+  {
+   "term": "JPMorgan AI productivity",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "individual_exception",
+   "reason": "JPMorgan은 금융 서비스 기업이므로, AI 관련 뉴스라도 해당 기업의 섹터를 따르는 것이 원칙임."
+  },
+  {
+   "term": "JPMorgan engineers AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "individual_exception",
+   "reason": "JPMorgan은 금융 서비스 기업이므로, AI 관련 뉴스라도 해당 기업의 섹터를 따르는 것이 원칙임."
+  },
+  {
+   "term": "Jabil AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "individual_exception",
+   "reason": "Jabil은 산업재 섹터 기업이므로, AI 관련 뉴스라도 해당 기업의 섹터를 따르는 것이 원칙임."
+  },
+  {
+   "term": "Keel Infrastructure AI",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "individual_exception",
+   "reason": "Keel Infrastructure는 산업재 섹터 기업이므로, AI 관련 뉴스라도 해당 기업의 섹터를 따르는 것이 원칙임."
+  },
+  {
+   "term": "Meta AI engagement",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "individual_exception",
+   "reason": "'AI engagement'는 Meta의 핵심 사업인 소셜 미디어 내 사용자 참여를 의미하므로 Communication Services 섹터에 가깝습니다."
+  },
+  {
+   "term": "Trump AI council",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "individual_exception",
+   "reason": "트럼프 AI 위원회는 정부 정책 및 거버넌스 관련 이슈로, 특정 산업 섹터보다는 섹터 무관인 none으로 분류하는 것이 적절하다."
+  },
+  {
+   "term": "automotive tech",
+   "assigned": [
+    "Consumer Cyclical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "automotive",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "individual_exception",
+   "reason": "자동차 기술은 자동차 산업 내의 기술로, GICS Consumer Cyclical 섹터에 해당합니다."
+  },
+  {
+   "term": "data center REITs",
+   "assigned": [
+    "Real Estate",
+    "Technology"
+   ],
+   "match_tokens": [
+    "data center",
+    "data center reit"
+   ],
+   "correct": false,
+   "should_be": "Real Estate",
+   "error_type": "individual_exception",
+   "reason": "데이터 센터 REITs는 부동산 투자 신탁으로, 본질적으로 부동산 섹터에 속한다."
+  },
+  {
+   "term": "industrial AI adoption",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "industrial"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "individual_exception",
+   "reason": "AI 기술의 산업 부문 도입 활동에 대한 뉴스이므로 산업 섹터가 주가 되어야 함."
+  },
+  {
+   "term": "interest rate hike pressure",
+   "assigned": [
+    "Financial Services",
+    "Macro"
+   ],
+   "match_tokens": [
+    "interest rate",
+    "rate hike"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "individual_exception",
+   "reason": "금리 인상은 금융 시장의 직접적인 주제이므로 금융 서비스 섹터가 적절함. 거시경제는 'none'으로 분류됨."
+  },
+  {
+   "term": "oil shipping lane",
+   "assigned": [
+    "Energy",
+    "Industrials"
+   ],
+   "match_tokens": [
+    "oil",
+    "shipping"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "individual_exception",
+   "reason": "석유 운송 경로는 운송 인프라에 해당하므로 Industrials 섹터로 분류하는 것이 더 적절하다."
+  },
+  {
+   "term": "pharma AI investment",
+   "assigned": [
+    "Healthcare",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "pharma"
+   ],
+   "correct": false,
+   "should_be": "Healthcare",
+   "error_type": "individual_exception",
+   "reason": "제약 산업의 AI 투자는 Healthcare 섹터 내에서 AI 기술을 활용하는 주제이므로 Healthcare가 더 적절하다."
+  },
+  {
+   "term": "tech AI government debt",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "individual_exception",
+   "reason": "정부 부채는 거시경제적 이슈로 섹터 무관인 none으로 분류되어야 하며, Technology 섹터와 직접적인 연관성이 낮다."
+  },
+  {
+   "term": "401k AI risk",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "401k는 금융상품으로, AI 관련 리스크도 금융 서비스 섹터에 해당한다."
+  },
+  {
+   "term": "ADP employment report",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "employment"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "ADP 고용 보고서는 거시 경제 지표이므로 특정 섹터가 아닌 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI ETF performance",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "ETF는 금융 상품이므로 금융 서비스 섹터로 분류되어야 한다. (K3)"
+  },
+  {
+   "term": "AI IPO market",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "IPO 시장은 금융 시장 구조에 해당하므로 금융 서비스 섹터가 주된 분류이다. (K3)"
+  },
+  {
+   "term": "AI IPO wave",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 관련 IPO 물결은 금융 시장 구조에 해당하므로 금융 서비스 섹터가 주된 분류이다. (K3)"
+  },
+  {
+   "term": "AI academic integrity",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI가 학문적 무결성에 미치는 영향은 특정 산업 섹터가 아닌 사회적, 교육적 이슈이므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI agentic economy",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'AI agentic economy'는 AI가 경제 전반에 미치는 영향을 다루는 거시 경제적 개념이므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI automation impact",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI 자동화의 영향은 특정 섹터에 국한되지 않는 거시 경제적 또는 사회적 이슈이므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI banking cyber risk",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "banking"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI가 은행 사이버 리스크에 미치는 영향은 금융 서비스 산업 내의 리스크 관리 문제이므로 Financial Services 섹터가 주가 되어야 한다."
+  },
+  {
+   "term": "AI bubble burst",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 버블은 AI 관련 기업들의 시장 가치 평가 및 시장 구조에 대한 논의이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI bubble pop",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 버블 붕괴는 AI 관련 기업들의 시장 가치 평가 및 시장 구조에 대한 논의이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI bubble risk",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 버블 리스크는 AI 관련 기업들의 시장 가치 평가 및 시장 구조에 대한 논의이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI bubble warning",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 버블 경고는 AI 관련 기업들의 시장 가치 평가 및 시장 구조에 대한 논의이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI copyright law",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI 저작권법은 AI 기술의 법적, 사회적 측면을 다루는 것으로 특정 산업 섹터가 아닌 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI cost disclosure",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 비용 공개는 기업의 재무 보고 및 시장 투명성과 관련된 이슈이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI customer service jobs",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI가 고객 서비스 일자리에 미치는 영향은 노동 시장 및 거시 경제적 이슈이므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI data center liability",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "data center"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI 데이터 센터의 책임 문제는 법적, 규제적 이슈로 특정 산업 섹터가 아닌 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI disruption fears",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI로 인한 파괴적 변화에 대한 우려는 특정 산업 섹터에 국한되지 않는 거시 경제적 또는 사회적 이슈이므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "AI economy froth",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'AI economy froth'는 AI 관련 시장의 과열 및 투기적 현상에 대한 논의이므로 Financial Services 섹터가 적절하다."
+  },
+  {
+   "term": "AI financial security",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI가 금융 보안에 활용되는 맥락이므로 금융 서비스 섹터가 적절하다. (K2)"
+  },
+  {
+   "term": "AI fintech Aspire US launch",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "fintech"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "핀테크는 금융 기술을 의미하며, 금융 서비스 섹터가 주된 분류이다. (K2)"
+  },
+  {
+   "term": "AI grocery shopping",
+   "assigned": [
+    "Consumer Defensive",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "grocery"
+   ],
+   "correct": false,
+   "should_be": "Consumer Defensive",
+   "error_type": "rule_defect",
+   "reason": "AI가 식료품 쇼핑에 적용되는 사례이므로 소비재(필수소비재) 섹터가 주된 분류이다. (K2)"
+  },
+  {
+   "term": "AI impact on leadership",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI가 리더십에 미치는 영향은 특정 섹터에 국한되지 않는 광범위한 주제이다. (K4)"
+  },
+  {
+   "term": "AI in auto industry",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "AI가 자동차 산업에 적용되는 사례이므로 소비재(경기소비재) 섹터가 주된 분류이다. (K2)"
+  },
+  {
+   "term": "AI in finance",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI가 금융 분야에 적용되는 사례이므로 금융 서비스 섹터가 주된 분류이다. (K2)"
+  },
+  {
+   "term": "AI inflation threat",
+   "assigned": [
+    "Macro",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI가 인플레이션에 미치는 영향은 거시경제적 주제이므로 특정 섹터에 국한되지 않는다. (K4)"
+  },
+  {
+   "term": "AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라는 데이터 센터, 서버 등 기술 구현을 위한 핵심 요소이므로 기술 섹터가 주된 분류이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure Canada",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라는 기술 섹터의 핵심 요소이며, 지역 정보는 섹터 분류에 영향을 주지 않는다. (K2)"
+  },
+  {
+   "term": "AI infrastructure bullish",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라에 대한 긍정적 전망은 기술 섹터에 속한다. (K2)"
+  },
+  {
+   "term": "AI infrastructure challenge",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라의 도전 과제는 기술 섹터의 이슈이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure demand",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라 수요는 기술 섹터의 동향이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure growth",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라 성장은 기술 섹터의 동향이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure investment",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라 투자는 기술 섹터의 활동이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure opportunity",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라 기회는 기술 섹터의 동향이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure spending",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라 지출은 기술 섹터의 활동이다. (K2)"
+  },
+  {
+   "term": "AI infrastructure sustainability",
+   "assigned": [
+    "ESG",
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure",
+    "sustainability"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라의 지속가능성은 기술 섹터의 이슈이다. (K2)"
+  },
+  {
+   "term": "AI job cuts",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI로 인한 일자리 감소는 특정 섹터에 국한되지 않는 사회경제적 주제이다. (K4)"
+  },
+  {
+   "term": "AI job displacement",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI로 인한 일자리 대체는 특정 섹터에 국한되지 않는 사회경제적 주제이다. (K4)"
+  },
+  {
+   "term": "AI law firm wins case",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI 로펌의 소송 승리는 법률 서비스 활동이며, 해당 섹터가 없으므로 특정 섹터에 국한하기 어렵다. (K4)"
+  },
+  {
+   "term": "AI layoffs",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI로 인한 해고는 특정 섹터에 국한되지 않는 사회경제적 주제이다. (K4)"
+  },
+  {
+   "term": "AI legal risks",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI의 법적 위험은 특정 섹터에 국한되지 않는 광범위한 규제 및 윤리적 주제이다. (K4)"
+  },
+  {
+   "term": "AI payment infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Financial Services, Technology",
+   "error_type": "rule_defect",
+   "reason": "결제 인프라는 금융 서비스의 핵심이며, AI는 이를 지원하는 기술이므로 Financial Services 섹터가 포함되어야 합니다."
+  },
+  {
+   "term": "AI personal finance",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services, Technology",
+   "error_type": "rule_defect",
+   "reason": "개인 금융은 Financial Services 섹터에 해당하며, AI는 이를 활용하는 기술입니다."
+  },
+  {
+   "term": "AI power demand",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Utilities, Technology",
+   "error_type": "rule_defect",
+   "reason": "AI로 인한 전력 수요는 Utilities 섹터와 직접적인 관련이 있으며, AI는 Technology 섹터입니다."
+  },
+  {
+   "term": "AI regulation bill",
+   "assigned": [
+    "Regulation",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 규제 법안은 AI 기술 자체에 대한 것이므로 Technology 섹터가 적절합니다. 'Regulation'은 GICS 섹터가 아닙니다."
+  },
+  {
+   "term": "AI replacing jobs",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI의 일자리 대체는 거시 경제 및 사회 전반에 걸친 이슈이므로 특정 섹터에 국한되지 않습니다."
+  },
+  {
+   "term": "AI workforce development",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI 인력 개발은 거시 경제 및 사회 전반에 걸친 이슈이므로 특정 섹터에 국한되지 않습니다."
+  },
+  {
+   "term": "Amazon bond sale",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "기업의 채권 발행은 금융 상품 관련 활동으로 Financial Services 섹터에 해당하며, Macro는 적절하지 않습니다."
+  },
+  {
+   "term": "BNP Paribas AI capex",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'ai' 토큰이 기업의 본업 섹터(Financial Services)를 무시하고 Technology로 오배정하는 구조적 오류가 있습니다."
+  },
+  {
+   "term": "BTC momentum",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "btc"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'btc' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 관련 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "BTC price prediction",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "btc"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'btc' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 가격 예측 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "Bank of Canada recession",
+   "assigned": [
+    "Financial Services",
+    "Macro"
+   ],
+   "match_tokens": [
+    "bank",
+    "recession"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "캐나다 중앙은행 관련 뉴스로 Financial Services 섹터에 해당하며, 'Macro'는 섹터가 아닙니다."
+  },
+  {
+   "term": "Bank of England stablecoin",
+   "assigned": [
+    "Crypto",
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "bank",
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'stablecoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 중앙은행의 금융상품 관련 뉴스는 Financial Services에 해당합니다."
+  },
+  {
+   "term": "Bank of France stablecoin",
+   "assigned": [
+    "Crypto",
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "bank",
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'stablecoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 중앙은행의 금융상품 관련 뉴스는 Financial Services에 해당합니다."
+  },
+  {
+   "term": "Bernstein Bitcoin target",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "bitcoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bitcoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 관련 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "Big Tech AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "big tech",
+    "infrastructure",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "'infrastructure' 토큰이 AI와 결합될 때 Industrials로 오배정되는 구조적 오류가 있습니다."
+  },
+  {
+   "term": "Bitcoin $150K",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "bitcoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bitcoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 가격 관련 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "Bitcoin $1M forecast",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "bitcoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bitcoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 가격 전망 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "Bitcoin big tech rally",
+   "assigned": [
+    "Crypto",
+    "Technology"
+   ],
+   "match_tokens": [
+    "big tech",
+    "bitcoin",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bitcoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 복합 시장 랠리는 none에 해당합니다."
+  },
+  {
+   "term": "Bitcoin breaks 78K",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "bitcoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bitcoin' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 암호화폐 가격 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "Blackstone AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "'infrastructure' 토큰이 AI와 결합될 때 Industrials로 오배정되는 구조적 오류가 있습니다."
+  },
+  {
+   "term": "CPI inflation spike",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "cpi",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "CPI 인플레이션 급등은 거시 경제 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "Caterpillar data centers",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "data center"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "'data center' 토큰이 기업의 본업 섹터(Industrials)를 무시하고 Technology로 오배정하는 구조적 오류가 있습니다."
+  },
+  {
+   "term": "China AI model ban",
+   "assigned": [
+    "Geopolitical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "china"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'china' 토큰이 유발한 'Geopolitical' 섹터는 유효하지 않으며, 지정학적 이슈는 none에 해당합니다."
+  },
+  {
+   "term": "China EV growth",
+   "assigned": [
+    "Consumer Cyclical",
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china",
+    "ev"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "'china' 토큰이 유발한 'Geopolitical' 섹터는 유효하지 않으며, 중국 EV 성장은 Consumer Cyclical에 해당합니다."
+  },
+  {
+   "term": "China national security mandate",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'china' 토큰이 유발한 'Geopolitical' 섹터는 유효하지 않으며, 지정학적 이슈는 none에 해당합니다."
+  },
+  {
+   "term": "China revenue headwinds",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'china' 토큰이 유발한 'Geopolitical' 섹터는 유효하지 않으며, 거시/지정학적 이슈는 none에 해당합니다."
+  },
+  {
+   "term": "China tech regulation",
+   "assigned": [
+    "Geopolitical",
+    "Regulation",
+    "Technology"
+   ],
+   "match_tokens": [
+    "china",
+    "regulation",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'china' 및 'regulation' 토큰이 유발한 섹터는 유효하지 않으며, 지정학적 규제는 none에 해당합니다."
+  },
+  {
+   "term": "China tech strategy",
+   "assigned": [
+    "Geopolitical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "china",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'china' 토큰이 유발한 'Geopolitical' 섹터는 유효하지 않으며, 지정학적 전략은 none에 해당합니다."
+  },
+  {
+   "term": "Deere data center growth",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "data center"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "Deere는 산업재 섹터 기업이며, 데이터 센터 성장은 기업의 운영 활동에 해당하므로 산업재 섹터로 분류되어야 한다."
+  },
+  {
+   "term": "Dell AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "Dell은 기술 기업이며 AI 인프라는 기술 섹터에 속한다."
+  },
+  {
+   "term": "Dow Jones PCE",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "pce"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "PCE는 거시경제 지표이므로 특정 섹터에 속하지 않고 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "ECB inflation control",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "ECB와 인플레이션 통제는 거시경제 주제이므로 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "EU crypto regulation",
+   "assigned": [
+    "Crypto",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "crypto",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "EU 암호화폐 규제는 암호화폐 및 규제 관련 주제이므로 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "Eli Lilly manufacturing",
+   "assigned": [
+    "Industrials"
+   ],
+   "match_tokens": [
+    "manufacturing"
+   ],
+   "correct": false,
+   "should_be": "Healthcare",
+   "error_type": "rule_defect",
+   "reason": "Eli Lilly는 헬스케어 기업이며, 제조 활동은 헬스케어 제품 생산의 핵심이므로 헬스케어 섹터로 분류되어야 한다."
+  },
+  {
+   "term": "Elon Musk China",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "일론 머스크와 중국 관련 뉴스는 지정학적 주제이므로 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "Ethereum whale accumulation",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "ethereum"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "이더리움은 암호화폐 관련 주제이므로 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "Europe AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "AI 인프라는 기술 섹터에 속한다."
+  },
+  {
+   "term": "European monetary policy",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "monetary policy"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "유럽 통화 정책은 거시경제 주제이므로 'none'으로 분류되어야 한다."
+  },
+  {
+   "term": "FCEL EXIM Bank",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "bank"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "FCEL은 Energy 섹터 기업이며, 은행은 거래 주체일 뿐이므로 FCEL의 섹터를 따라야 함 ('bank' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed Williams energy",
+   "assigned": [
+    "Energy",
+    "Macro"
+   ],
+   "match_tokens": [
+    "energy",
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "Fed의 에너지 관련 발언은 Energy 섹터에 해당하며, 'Macro'는 유효한 섹터가 아님 ('fed' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed destructive policies",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 관련 정책은 거시 경제 이슈로 특정 섹터에 속하지 않으므로 'none'으로 분류해야 함 ('fed' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed inflation concerns",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 및 인플레이션 관련 내용은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed', 'inflation' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed inflation explanation",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 및 인플레이션 관련 내용은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed', 'inflation' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed minutes split",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 관련 내용은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed rate hike",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "rate hike"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 금리 인상은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed', 'rate hike' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed rate hike fears",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "rate hike"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 금리 인상 우려는 거시 경제 이슈로 'none'으로 분류해야 함 ('fed', 'rate hike' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed rate hike odds",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "rate hike"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 금리 인상 확률은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed', 'rate hike' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed rate hold",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 금리 동결은 거시 경제 이슈로 'none'으로 분류해야 함 ('fed' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Fed real rates negative",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Fed 실질 금리는 거시 경제 이슈로 'none'으로 분류해야 함 ('fed' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "Federal Reserve criticism",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "federal reserve"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "Federal Reserve 관련 내용은 거시 경제 이슈로 'none'으로 분류해야 함 ('federal reserve' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "German inflation outlook",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "인플레이션은 특정 섹터에 국한되지 않는 거시 경제 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "Harbor AI ETF return",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "AI 관련 ETF는 금융 상품이므로 K3 규칙에 따라 금융 서비스 섹터로 분류해야 합니다."
+  },
+  {
+   "term": "Hut 8 AI infrastructure lease",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "'AI 인프라'는 기술 섹터에 직접적으로 해당하며, 다중 섹터 할당은 허용되지 않습니다."
+  },
+  {
+   "term": "Illinois AI regulation",
+   "assigned": [
+    "Regulation",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "'Regulation'은 섹터가 아니며, AI 규제는 기술 섹터에 대한 주제이므로 기술 섹터로 분류해야 합니다."
+  },
+  {
+   "term": "Iran nuclear deal",
+   "assigned": [
+    "Utilities"
+   ],
+   "match_tokens": [
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'nuclear' 토큰이 핵 에너지(Utilities)와 핵무기/정치(none)를 구분하지 못해 발생한 구조적 오류임."
+  },
+  {
+   "term": "Microsoft Azure crypto",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'crypto'는 암호화폐 관련 주제이므로 K4에 따라 'none'으로 분류되어야 합니다."
+  },
+  {
+   "term": "Morgan Stanley stablecoin",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'stablecoin'은 암호화폐 관련 주제이므로 K4에 따라 'none'으로 분류되어야 합니다."
+  },
+  {
+   "term": "NALA stablecoin remittance",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'stablecoin'은 암호화폐 관련 주제이므로 K4에 따라 'none'으로 분류되어야 합니다."
+  },
+  {
+   "term": "NVIDIA bond offering",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "NVIDIA는 Technology 섹터 기업이며, 회사채 발행은 기업의 재무 활동으로 해당 기업의 섹터에 속한다."
+  },
+  {
+   "term": "NVIDIA corporate bond",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "NVIDIA는 Technology 섹터 기업이며, 회사채는 기업의 재무 활동으로 해당 기업의 섹터에 속한다."
+  },
+  {
+   "term": "NY Fed inflation expectations",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "연준의 인플레이션 기대치는 거시경제 지표로 특정 섹터에 국한되지 않으므로 'none'으로 분류되어야 한다 (K4)."
+  },
+  {
+   "term": "NextEra Energy earnings miss",
+   "assigned": [
+    "Energy"
+   ],
+   "match_tokens": [
+    "energy"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "NextEra Energy는 유틸리티 섹터 기업이므로 K2에 따라 Utilities가 기본값입니다."
+  },
+  {
+   "term": "Quantinuum IPO",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "IPO는 금융 이벤트이나, 퀀티넘(Quantinuum)은 양자 컴퓨팅 기업으로 기술 섹터가 본질이다. (K2 적용)"
+  },
+  {
+   "term": "Questrade AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "퀘스트레이드(Questrade)는 금융 서비스 기업이며, AI는 해당 기업의 사업 활동에 적용되는 기술이다. (K2 적용)"
+  },
+  {
+   "term": "SK Hynix IPO",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "SK하이닉스는 반도체 기업으로 기술 섹터가 본질이며, IPO는 해당 기업의 이벤트이다. (K2 적용)"
+  },
+  {
+   "term": "SK Hynix Nasdaq IPO",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "SK하이닉스는 반도체 기업으로 기술 섹터가 본질이며, IPO는 해당 기업의 이벤트이다. (K2 적용)"
+  },
+  {
+   "term": "Snowflake AI infrastructure",
+   "assigned": [
+    "Industrials",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "infrastructure"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "스노우플레이크(Snowflake)는 클라우드 데이터 웨어하우징 기업으로 기술 섹터이며, AI 인프라도 기술 섹터에 속한다. (K2 적용)"
+  },
+  {
+   "term": "SpaceX IPO",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "SpaceX는 항공우주 산업 기업이므로 IPO 관련 뉴스라도 해당 기업의 섹터인 Industrials로 분류되어야 한다."
+  },
+  {
+   "term": "SpaceX IPO anticipation",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "SpaceX는 항공우주 산업 기업이므로 IPO 관련 뉴스라도 해당 기업의 섹터인 Industrials로 분류되어야 한다."
+  },
+  {
+   "term": "SpaceX IPO buzz",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "SpaceX는 항공우주 산업 기업이므로 IPO 관련 뉴스라도 해당 기업의 섹터인 Industrials로 분류되어야 한다."
+  },
+  {
+   "term": "SpaceX IPO surge",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "SpaceX는 항공우주 산업 기업이므로 IPO 관련 뉴스라도 해당 기업의 섹터인 Industrials로 분류되어야 한다."
+  },
+  {
+   "term": "Spotify AI fan covers",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "rule_defect",
+   "reason": "Spotify는 Communication Services 섹터에 속하며, AI 기술 적용 뉴스라도 해당 기업의 섹터가 우선시되어야 한다."
+  },
+  {
+   "term": "Supreme Court tariff ruling",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "tariff"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "관세 관련 뉴스는 지정학적/거시경제적 이슈로 섹터 무관인 none으로 분류되어야 한다."
+  },
+  {
+   "term": "Talen Energy AI",
+   "assigned": [
+    "Energy",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "energy"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "Talen Energy는 Energy 섹터 기업이므로 AI 기술 적용 뉴스라도 해당 기업의 주 섹터인 Energy로 분류되어야 한다."
+  },
+  {
+   "term": "Tesla AI robotics",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "테슬라는 Consumer Cyclical 섹터 기업이므로 AI 및 로봇 관련 뉴스라도 해당 기업의 주 섹터인 Consumer Cyclical로 분류되어야 한다."
+  },
+  {
+   "term": "Tesla AI5 chip",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "chip"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "테슬라는 Consumer Cyclical 섹터 기업이므로 칩 관련 뉴스라도 해당 기업의 주 섹터인 Consumer Cyclical로 분류되어야 한다."
+  },
+  {
+   "term": "Tesla China sales",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "테슬라의 중국 판매는 Consumer Cyclical 섹터에 속하는 기업의 사업 활동이므로 해당 섹터로 분류되어야 한다."
+  },
+  {
+   "term": "Tesla competition China",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "china"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "테슬라의 중국 내 경쟁은 Consumer Cyclical 섹터에 속하는 기업의 사업 활동이므로 해당 섹터로 분류되어야 한다."
+  },
+  {
+   "term": "Treasury yield spike",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "treasury"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "국채 수익률은 거시경제적 이슈로 섹터 무관인 none으로 분류되어야 한다."
+  },
+  {
+   "term": "Trump tariff refunds",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "tariff"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "관세 환급은 지정학적/거시경제적 이슈로 섹터 무관인 none으로 분류되어야 한다."
+  },
+  {
+   "term": "Twilio AI impact",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "rule_defect",
+   "reason": "Twilio는 Communication Services 섹터 기업이므로 AI 기술 영향 뉴스라도 해당 기업의 주 섹터인 Communication Services로 분류되어야 한다."
+  },
+  {
+   "term": "UK stablecoin rules",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 관련 뉴스는 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US CPI inflation rise",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "cpi",
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "CPI 및 인플레이션은 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US China chip ban",
+   "assigned": [
+    "Geopolitical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "china",
+    "chip"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "미중 칩 금지 조치는 지정학적 이슈가 핵심이므로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US bond yield high",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "채권 금리는 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US consumer inflation",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "소비자 인플레이션은 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US jobs report",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "jobs report"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "고용 보고서는 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "US national debt AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "국가 부채는 거시경제 주제로 K4에 따라 'none'으로 분류되어야 하며, AI는 부차적인 요소로 보임."
+  },
+  {
+   "term": "Universal Music Group AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "rule_defect",
+   "reason": "Universal Music Group은 Communication Services 섹터이며, AI 활용은 해당 기업의 사업 활동으로 간주되어야 함 (K2 적용)."
+  },
+  {
+   "term": "VanEck crypto research",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 관련 뉴스는 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "Wall Street blockchain",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "blockchain"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "월스트리트의 블록체인 활용은 금융 서비스 산업 활동에 해당하므로 Financial Services 섹터로 분류되어야 함 (K3 적용)."
+  },
+  {
+   "term": "Waller interest rate",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "interest rate"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "금리는 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "Warsh Fed",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "연준(Fed) 관련 뉴스는 거시경제 주제로 K4에 따라 'none'으로 분류되어야 함."
+  },
+  {
+   "term": "XPENG Physical AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "XPENG은 Consumer Cyclical 섹터의 자동차 제조업체이며, AI는 해당 기업의 제품 기술로 간주되어야 함 (K2 적용)."
+  },
+  {
+   "term": "Zuckerberg AI pricing",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "rule_defect",
+   "reason": "Zuckerberg가 이끄는 Meta는 Communication Services 섹터이며, AI는 해당 기업의 사업 활동으로 간주되어야 함 (K2 적용)."
+  },
+  {
+   "term": "Zuckerberg cloud",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "cloud"
+   ],
+   "correct": false,
+   "should_be": "Communication Services",
+   "error_type": "rule_defect",
+   "reason": "Zuckerberg가 이끄는 Meta는 Communication Services 섹터이며, 클라우드는 해당 기업의 인프라 또는 사업 활동으로 간주되어야 함 (K2 적용)."
+  },
+  {
+   "term": "airline consolidation",
+   "assigned": [
+    "Consumer Cyclical"
+   ],
+   "match_tokens": [
+    "airline"
+   ],
+   "correct": false,
+   "should_be": "Industrials",
+   "error_type": "rule_defect",
+   "reason": "항공사는 GICS 분류상 Industrials 섹터의 운송(Transportation) 하위 섹터에 해당합니다."
+  },
+  {
+   "term": "antitrust probe Google",
+   "assigned": [
+    "Regulation"
+   ],
+   "match_tokens": [
+    "antitrust"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "Google에 대한 독점 금지 조사는 Google의 GICS Technology 섹터에 해당합니다. 'Regulation'은 섹터가 아닙니다."
+  },
+  {
+   "term": "automakers AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "자동차 제조사의 AI 관련 뉴스는 해당 제조사의 GICS Consumer Cyclical 섹터에 해당합니다."
+  },
+  {
+   "term": "bank regulation Europe",
+   "assigned": [
+    "Financial Services",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "bank",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'regulation' 토큰이 유발한 'Regulation' 섹터는 유효하지 않으며, 은행 규제는 Financial Services에 해당합니다."
+  },
+  {
+   "term": "biotech regulatory",
+   "assigned": [
+    "Healthcare"
+   ],
+   "match_tokens": [
+    "biotech"
+   ],
+   "correct": false,
+   "should_be": "Healthcare",
+   "error_type": "rule_defect",
+   "reason": "'regulatory' 토큰이 유발한 'Regulatory' 섹터는 유효하지 않으며, 바이오테크 규제는 Healthcare에 해당합니다."
+  },
+  {
+   "term": "blockchain company",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "blockchain"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'blockchain' 토큰이 유발한 'Crypto' 섹터는 유효하지 않으며, 블록체인 관련 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "blockchain regulation",
+   "assigned": [
+    "Crypto",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "blockchain",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'blockchain' 및 'regulation' 토큰이 유발한 섹터는 유효하지 않으며, 블록체인 규제는 none에 해당합니다."
+  },
+  {
+   "term": "bond market stress",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bond' 토큰이 유발한 'Macro' 섹터는 유효하지 않으며, 채권 시장 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "bond yields",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'bond' 토큰이 유발한 'Macro' 섹터는 유효하지 않으며, 채권 수익률 뉴스는 none에 해당합니다."
+  },
+  {
+   "term": "central bank gold buying",
+   "assigned": [
+    "Basic Materials",
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "bank",
+    "gold"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'gold' 토큰이 중앙은행의 금융 활동 맥락에서 Basic Materials로 오배정되는 구조적 오류가 있습니다."
+  },
+  {
+   "term": "college students AI cheat",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "AI의 사회적 활용에 대한 뉴스이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "consumer inflation fears",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "소비자 인플레이션 우려는 거시 경제 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "courts AI ruling",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "법원의 AI 판결은 AI 기술의 법적 측면에 대한 내용이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto asset provider",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 자산 제공자는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto derivatives regulation",
+   "assigned": [
+    "Crypto",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "crypto",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 파생상품 규제는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto exposure",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 노출은 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto institutional adoption",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 기관 채택은 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto market rally",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 시장 랠리는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto market sentiment",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 시장 심리는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto mining stock",
+   "assigned": [
+    "Basic Materials",
+    "Crypto"
+   ],
+   "match_tokens": [
+    "crypto",
+    "mining"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 채굴 주식은 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto regulation",
+   "assigned": [
+    "Crypto",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "crypto",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 규제는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "crypto regulation UK",
+   "assigned": [
+    "Crypto",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "crypto",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "영국 암호화폐 규제는 암호화폐 관련 주제이므로 특정 섹터와 무관하다."
+  },
+  {
+   "term": "doctor-patient AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Healthcare",
+   "error_type": "rule_defect",
+   "reason": "의사와 환자 간 AI는 의료 분야에서의 AI 적용을 다루므로 헬스케어 섹터로 분류되어야 한다."
+  },
+  {
+   "term": "drug discovery AI",
+   "assigned": [
+    "Healthcare",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "drug"
+   ],
+   "correct": false,
+   "should_be": "Healthcare",
+   "error_type": "rule_defect",
+   "reason": "AI를 활용한 신약 개발은 헬스케어 섹터의 주요 활동이다."
+  },
+  {
+   "term": "e-commerce AI",
+   "assigned": [
+    "Consumer Cyclical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "e-commerce"
+   ],
+   "correct": false,
+   "should_be": "Consumer Cyclical",
+   "error_type": "rule_defect",
+   "reason": "전자상거래 AI는 소비재-경기민감 섹터의 전자상거래 활동에 AI가 적용된 경우이다."
+  },
+  {
+   "term": "energy demand AI",
+   "assigned": [
+    "Energy",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "energy"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "에너지 수요 AI는 에너지 섹터의 수요 관리에 AI가 적용된 경우이다."
+  },
+  {
+   "term": "fintech regulation",
+   "assigned": [
+    "Financial Services",
+    "Regulation"
+   ],
+   "match_tokens": [
+    "fintech",
+    "regulation"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "핀테크 규제는 Financial Services 섹터에 해당하며, 'Regulation'은 유효한 섹터가 아님 ('regulation' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "gas prices inflation",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "인플레이션은 거시 경제 이슈로 'none'으로 분류해야 함 ('inflation' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "geopolitical instability",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 불안정은 특정 섹터에 속하지 않으므로 'none'으로 분류해야 함 ('geopolitical' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "geopolitical oil impact",
+   "assigned": [
+    "Energy",
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical",
+    "oil"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "지정학적 요인의 석유 영향은 Energy 섹터에 해당하며, 'Geopolitical'은 유효한 섹터가 아님 ('geopolitical' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "geopolitical oil risk",
+   "assigned": [
+    "Energy",
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical",
+    "oil"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "지정학적 요인의 석유 위험은 Energy 섹터에 해당하며, 'Geopolitical'은 유효한 섹터가 아님 ('geopolitical' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "geopolitical pressures",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 압력은 특정 섹터에 속하지 않으므로 'none'으로 분류해야 함 ('geopolitical' 토큰의 구조적 오매칭)."
+  },
+  {
+   "term": "geopolitical risk",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 위험은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "geopolitical risk crude",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 위험은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "geopolitical risk market",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 위험은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "geopolitical tension",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 긴장은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "geopolitical tensions",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 긴장은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "geopolitical tensions ease",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "geopolitical"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "지정학적 긴장은 특정 섹터에 국한되지 않는 거시적 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "global recession risk",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "recession"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "경기 침체 위험은 특정 섹터에 국한되지 않는 거시 경제 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "grocers AI",
+   "assigned": [
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai"
+   ],
+   "correct": false,
+   "should_be": "Consumer Defensive",
+   "error_type": "rule_defect",
+   "reason": "'grocers'는 소비재 방어 섹터에 해당하며, AI가 해당 산업에 적용되는 맥락이므로 소비재 방어 섹터로 분류해야 합니다."
+  },
+  {
+   "term": "hawkish Fed",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "fed"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "연준의 정책은 특정 섹터에 국한되지 않는 거시 경제 주제이므로 none으로 분류해야 합니다."
+  },
+  {
+   "term": "health tech IPO",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ipo",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "IPO는 금융 시장 구조에 관한 주제이므로 K3 규칙에 따라 금융 서비스 섹터로 분류해야 합니다."
+  },
+  {
+   "term": "healthcare REITs growth",
+   "assigned": [
+    "Healthcare"
+   ],
+   "match_tokens": [
+    "healthcare"
+   ],
+   "correct": false,
+   "should_be": "Real Estate",
+   "error_type": "rule_defect",
+   "reason": "REITs는 부동산 투자 신탁으로, 헬스케어 관련이라도 부동산 섹터로 분류해야 합니다."
+  },
+  {
+   "term": "high bond yields AI",
+   "assigned": [
+    "Macro",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "bond"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "'bond yields'는 금융 상품 또는 거시 경제 주제이므로 금융 서비스 또는 none으로 분류해야 하며, 다중 섹터 할당은 허용되지 않습니다."
+  },
+  {
+   "term": "memory giant IPO",
+   "assigned": [
+    "Financial Services"
+   ],
+   "match_tokens": [
+    "ipo"
+   ],
+   "correct": false,
+   "should_be": "Technology",
+   "error_type": "rule_defect",
+   "reason": "IPO는 금융 이벤트이나, 'memory giant'는 기술 기업이므로 K2에 따라 기술 섹터가 기본값입니다."
+  },
+  {
+   "term": "metal stock tariff",
+   "assigned": [
+    "Geopolitical"
+   ],
+   "match_tokens": [
+    "tariff"
+   ],
+   "correct": false,
+   "should_be": "Basic Materials",
+   "error_type": "rule_defect",
+   "reason": "'metal stock'은 Basic Materials 섹터에 해당하며, 관세는 해당 섹터에 미치는 영향이므로 K2에 따라 Basic Materials가 기본값입니다."
+  },
+  {
+   "term": "monetary policy rules",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "monetary policy"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'monetary policy'는 거시경제 관련 주제이므로 K4에 따라 'none'으로 분류되어야 합니다."
+  },
+  {
+   "term": "nonfarm payrolls",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "nonfarm payroll"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "'nonfarm payrolls'는 거시경제 관련 주제이므로 K4에 따라 'none'으로 분류되어야 합니다."
+  },
+  {
+   "term": "nuclear energy 2026",
+   "assigned": [
+    "Energy",
+    "Utilities"
+   ],
+   "match_tokens": [
+    "energy",
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "'nuclear energy'는 주로 전력 생산과 관련되므로 유틸리티 섹터가 더 적합합니다."
+  },
+  {
+   "term": "nuclear energy demand",
+   "assigned": [
+    "Energy",
+    "Utilities"
+   ],
+   "match_tokens": [
+    "energy",
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "'nuclear energy'는 주로 전력 생산과 관련되므로 유틸리티 섹터가 더 적합합니다."
+  },
+  {
+   "term": "nuclear energy outlook",
+   "assigned": [
+    "Energy",
+    "Utilities"
+   ],
+   "match_tokens": [
+    "energy",
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "'nuclear energy'는 주로 전력 생산과 관련되므로 유틸리티 섹터가 더 적합합니다."
+  },
+  {
+   "term": "nuclear energy resistance",
+   "assigned": [
+    "Energy",
+    "Utilities"
+   ],
+   "match_tokens": [
+    "energy",
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "'nuclear energy'는 주로 전력 생산과 관련되므로 유틸리티 섹터가 더 적합합니다."
+  },
+  {
+   "term": "nuclear energy stocks",
+   "assigned": [
+    "Energy",
+    "Utilities"
+   ],
+   "match_tokens": [
+    "energy",
+    "nuclear"
+   ],
+   "correct": false,
+   "should_be": "Utilities",
+   "error_type": "rule_defect",
+   "reason": "'nuclear energy' 관련 주식은 주로 유틸리티 섹터에 해당합니다."
+  },
+  {
+   "term": "precious metals inflation",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "inflation"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "귀금속과 인플레이션은 거시경제 주제로 특정 섹터에 국한되지 않으므로 'none'으로 분류되어야 한다 (K4)."
+  },
+  {
+   "term": "solar stock surge",
+   "assigned": [
+    "Utilities"
+   ],
+   "match_tokens": [
+    "solar"
+   ],
+   "correct": false,
+   "should_be": "Energy",
+   "error_type": "rule_defect",
+   "reason": "태양광 관련 기업은 에너지 생산, 장비 제조 등 다양한 사업을 영위하며, 반드시 Utilities 섹터에만 속하지 않고 Energy, Industrials, Technology 등에도 분포한다."
+  },
+  {
+   "term": "spot Ethereum ETF",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "ethereum"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "암호화폐 관련 뉴스는 섹터 무관으로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "stablecoin reserves fund",
+   "assigned": [
+    "Crypto"
+   ],
+   "match_tokens": [
+    "stablecoin"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "스테이블코인 관련 뉴스는 암호화폐에 해당하므로 none으로 분류되어야 한다."
+  },
+  {
+   "term": "tech geopolitics China",
+   "assigned": [
+    "Geopolitical",
+    "Technology"
+   ],
+   "match_tokens": [
+    "china",
+    "tech"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "기술과 지정학의 결합은 섹터 무관인 none으로 분류되어야 하며, Technology 섹터만으로 한정하기 어렵다."
+  },
+  {
+   "term": "telco banking AI",
+   "assigned": [
+    "Financial Services",
+    "Technology"
+   ],
+   "match_tokens": [
+    "ai",
+    "banking"
+   ],
+   "correct": false,
+   "should_be": "Financial Services",
+   "error_type": "rule_defect",
+   "reason": "통신사(Communication Services)가 AI(Technology)를 활용한 뱅킹(Financial Services)을 다루는 복합적인 주제로, 단일 섹터로 분류하기 어려우며 Communication Services 섹터가 누락되었다."
+  },
+  {
+   "term": "unemployment rate",
+   "assigned": [
+    "Macro"
+   ],
+   "match_tokens": [
+    "unemployment"
+   ],
+   "correct": false,
+   "should_be": "none",
+   "error_type": "rule_defect",
+   "reason": "실업률은 거시경제 지표로 K4에 따라 'none'으로 분류되어야 함."
+  }
+ ]
+}
