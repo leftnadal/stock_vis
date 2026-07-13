@@ -333,6 +333,13 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 영향 범위 (운영 코드 22개 파일, 49건): news/services/_*, news/api/views.py, serverless/_*, chainsight/tasks/seed_tasks.py, macro/_*, thesis/_*, sec_pipeline/intelligence.py, rag_analysis/models.py, config/management/commands/celery_errors.py 등
 - 교훈: **`USE_TZ=True` + non-UTC `TIME_ZONE`이면 `timezone.now().date()` 사용 금지**. 항상 `timezone.localdate()` 또는 `timezone.localtime().date()`. CI는 UTC로 도는 게 일반적이라 잘 안 잡히고, 한국 운영 환경의 자정~오전 9시 구간에서 잠복하다 회귀로 드러남. 날짜 의존 테스트는 freezegun 등으로 시간 고정 권장
 
+## ORM에서 읽은 aware datetime에 naive `.date()` 직접 호출 금지 — tz 경계 하루 밀림 (#51, 2026-07-13 MON-CLOSE)
+
+- 증상: **진단/관측 스크립트**에서 ORM으로 읽은 aware datetime에 `.date()`를 직접 호출하면 하루 밀린 값이 나온다. MON-OPS-FIRSTFIRE/ALERTFIRE 진단에서 `IndicatorReading.asof`(저장 시 `make_aware(combine(d, time.min), 'Asia/Seoul')` = 자정 KST)를 `values_list("asof").first().date()`로 읽어 "AAPL reading max asof=07-08/07-09"로 **오관측** → "T-1 구조적 지연"이라는 **존재하지 않는 결함**을 좇음(실제는 시스템 정상, 진단 쿼리 버그).
+- 원인: 자정 KST = **전일 15:00 UTC**. Django가 aware datetime을 UTC로 반환할 때 `dt.date()`는 UTC date(=전일)를 준다. `.date()`는 tz 변환을 하지 않으므로 저장 시점의 로컬 자정이 조회 시 UTC 전일로 밀린다. #29(`timezone.now().date()`)의 사촌 — 본건은 **ORM에서 읽은 임의 aware datetime**에 발생.
+- 해결: 날짜 추출/비교는 `.date()` 직접 호출 금지. (a) ORM `__date` lookup `filter(asof__date=d)`(connection.timezone 기준 tz-aware), (b) `QuerySet.dates('asof','day')`(현재 tz 기준 정확한 date 목록), (c) 굳이 파이썬에서 좁힐 땐 `timezone.localtime(dt).date()`.
+- 교훈: **진단 스크립트도 코드와 동일한 tz 규칙을 적용**하라. 관측 도구의 tz 버그가 시스템 이상으로 오판되면 없는 결함을 좇고 잘못된 배포 판단(발화 시각 변경 등)까지 갈 수 있다. aware datetime을 date로 좁힐 땐 항상 tz를 명시.
+
 ## 문서·git 정합성 stale 패턴 (#30)
 
 - 증상: PROGRESS.md·TASKQUEUE.md·Claude 메모리가 git 현실과 어긋남

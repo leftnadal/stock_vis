@@ -100,7 +100,7 @@ function MonitorListContent() {
     <div className="mx-auto max-w-2xl px-4 py-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Thesis</h1>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Monitor</h1>
           <p className="text-sm text-gray-500">내 모니터링</p>
         </div>
         <Link

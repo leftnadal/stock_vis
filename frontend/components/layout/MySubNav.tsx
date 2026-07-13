@@ -1,7 +1,7 @@
 'use client'
 
-// My 영역 서브탭 (M-3): Watchlist → Thesis → Wallet(자리예약) → Portfolio.
-// Thesis 배지(위험 개수) = 기존 useMonitors 리스트 재사용(배지 전용 엔드포인트 신설 안 함).
+// My 영역 서브탭 (M-3): Watchlist → Monitor → Wallet(자리예약) → Portfolio.
+// Monitor 배지(위험 개수) = 기존 useMonitors 리스트 재사용(배지 전용 엔드포인트 신설 안 함).
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -24,7 +24,7 @@ interface Tab {
 
 const TABS: Tab[] = [
   { label: 'Watchlist', href: '/watchlist' },
-  { label: 'Thesis', href: '/monitor' },
+  { label: 'Monitor', href: '/monitor' },
   { label: 'Wallet', href: null }, // 자리예약 — 금융 API 연동은 별도 트랙(MON-WALLET)
   { label: 'Portfolio', href: '/portfolio' },
 ]
@@ -44,7 +44,7 @@ export function MySubNav() {
           const active = tab.href
             ? pathname === tab.href || pathname.startsWith(tab.href + '/')
             : false
-          const badge = tab.label === 'Thesis' && dangerCount > 0 ? dangerCount : null
+          const badge = tab.label === 'Monitor' && dangerCount > 0 ? dangerCount : null
 
           const content = (
             <span className="flex items-center gap-1.5">
@@ -52,7 +52,7 @@ export function MySubNav() {
               {badge !== null && (
                 <span
                   className="rounded-full bg-red-500 px-1.5 text-[10px] font-semibold leading-4 text-white"
-                  data-testid="thesis-badge"
+                  data-testid="monitor-badge"
                 >
                   {badge}
                 </span>
