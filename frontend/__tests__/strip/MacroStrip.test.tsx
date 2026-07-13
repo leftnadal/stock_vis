@@ -78,4 +78,41 @@ describe('MacroStrip', () => {
     render(<MacroStrip />);
     expect(screen.getByText('z —')).toBeInTheDocument();
   });
+
+  it('헤드라인: CCC 단독 yellow → HY 내부 분화 (규칙 자동 문장)', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'CCC_OAS', name: 'CCC- OAS', grade: 'yellow', value: 9.75, z: 1.11 }),
+      sig({ key: 'VIX', name: 'VIX Close', grade: 'gray' }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    expect(screen.getByTestId('macro-headline')).toHaveTextContent(
+      'HY 내부 분화 — CCC 스프레드 단독 상승',
+    );
+  });
+
+  it('헤드라인: 전부 gray → 안정 문장', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'VIX', name: 'VIX Close', grade: 'gray' }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    expect(screen.getByTestId('macro-headline')).toHaveTextContent(
+      '크레딧 전반 안정 — 특이 신호 없음',
+    );
+  });
+
+  it('칩 툴팁(정의) 렌더', () => {
+    mockResult({
+      isError: false,
+      data: {
+        as_of: '2026-07-08',
+        signals: [sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' })],
+      },
+    });
+    render(<MacroStrip />);
+    expect(screen.getByTestId('grade-tooltip').textContent).toContain('하이일드');
+  });
 });

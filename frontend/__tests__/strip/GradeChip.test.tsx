@@ -40,4 +40,27 @@ describe('GradeChip', () => {
     const { container } = render(<GradeChip grade="red" label="X" value="1.0" />);
     expect(container.querySelector('svg')).toBeNull();
   });
+
+  it('info 미전달이면 툴팁 없음 + focusable 아님 (하위호환)', () => {
+    render(<GradeChip grade="gray" label="X" value="1.0" />);
+    expect(screen.queryByTestId('grade-tooltip')).toBeNull();
+    expect(screen.getByTestId('grade-chip').getAttribute('tabindex')).toBeNull();
+  });
+
+  it('info 전달 시 툴팁(정의·상태·밴드) + focusable', () => {
+    render(
+      <GradeChip
+        grade="yellow"
+        label="CCC- OAS"
+        value="9.75"
+        info={{ def: '최저신용 회사채 가산금리.', state: '현재 9.75 · z +1.11 · 최근 30일 상승', band: 'gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3' }}
+      />,
+    );
+    const tip = screen.getByTestId('grade-tooltip');
+    expect(tip).toBeInTheDocument();
+    expect(tip.textContent).toContain('최저신용');
+    expect(tip.textContent).toContain('현재 9.75');
+    expect(tip.textContent).toContain('red ≥3');
+    expect(screen.getByTestId('grade-chip').getAttribute('tabindex')).toBe('0');
+  });
 });
