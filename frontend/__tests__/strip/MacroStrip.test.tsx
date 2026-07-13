@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { MacroStrip } from '@/components/strip/MacroStrip';
@@ -77,5 +77,59 @@ describe('MacroStrip', () => {
     });
     render(<MacroStrip />);
     expect(screen.getByText('z —')).toBeInTheDocument();
+  });
+
+  it('헤드라인: CCC 단독 yellow → HY 내부 분화 (규칙 자동 문장)', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'CCC_OAS', name: 'CCC- OAS', grade: 'yellow', value: 9.75, z: 1.11 }),
+      sig({ key: 'VIX', name: 'VIX Close', grade: 'gray' }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    expect(screen.getByTestId('macro-headline')).toHaveTextContent(
+      'HY 내부 분화 — CCC 스프레드 단독 상승',
+    );
+  });
+
+  it('헤드라인: 전부 gray → 안정 문장', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'VIX', name: 'VIX Close', grade: 'gray' }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    expect(screen.getByTestId('macro-headline')).toHaveTextContent(
+      '크레딧 전반 안정 — 특이 신호 없음',
+    );
+  });
+
+  it('리드아웃 기본 = 최고 심각도 신호(정의·상태·밴드)', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'CCC_OAS', name: 'CCC- OAS', grade: 'yellow', value: 9.75, z: 1.11 }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    const readout = screen.getByTestId('macro-readout');
+    // 기본 = 최고 심각도(CCC yellow)
+    expect(readout.textContent).toContain('CCC- OAS');
+    expect(readout.textContent).toContain('최저신용');
+    expect(readout.textContent).toContain('밴드 gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3');
+  });
+
+  it('칩 hover 시 리드아웃이 해당 신호로 갱신', () => {
+    const signals = [
+      sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray' }),
+      sig({ key: 'CCC_OAS', name: 'CCC- OAS', grade: 'yellow', value: 9.75, z: 1.11 }),
+    ];
+    mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
+    render(<MacroStrip />);
+    // HY 칩 hover → 리드아웃이 HY 정의로
+    const hyChip = screen.getAllByTestId('grade-chip').find((c) =>
+      c.textContent?.includes('US HY OAS'),
+    )!;
+    fireEvent.mouseEnter(hyChip);
+    expect(screen.getByTestId('macro-readout').textContent).toContain('하이일드');
   });
 });

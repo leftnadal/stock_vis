@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 
 import { GradeChip } from '@/components/strip/GradeChip';
 import { GRADE_DOT_HEX } from '@/components/common/colorSemantics';
@@ -39,5 +39,26 @@ describe('GradeChip', () => {
   it('spark 미전달이면 스파크라인 생략', () => {
     const { container } = render(<GradeChip grade="red" label="X" value="1.0" />);
     expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('onActivate 미전달이면 focusable 아님 (하위호환)', () => {
+    render(<GradeChip grade="gray" label="X" value="1.0" />);
+    expect(screen.getByTestId('grade-chip').getAttribute('tabindex')).toBeNull();
+  });
+
+  it('onActivate 전달 시 focusable + hover/focus에 발화', () => {
+    const onActivate = vi.fn();
+    render(<GradeChip grade="yellow" label="CCC- OAS" value="9.75" onActivate={onActivate} />);
+    const chip = screen.getByTestId('grade-chip');
+    expect(chip.getAttribute('tabindex')).toBe('0');
+    fireEvent.mouseEnter(chip);
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    fireEvent.focus(chip);
+    expect(onActivate).toHaveBeenCalledTimes(2);
+  });
+
+  it('active면 강조 링(data-active)', () => {
+    render(<GradeChip grade="orange" label="X" value="1.0" active onActivate={() => {}} />);
+    expect(screen.getByTestId('grade-chip').getAttribute('data-active')).toBe('true');
   });
 });
