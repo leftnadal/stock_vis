@@ -81,3 +81,38 @@ def test_cash_crud_roundtrip_and_precision(user):
     # delete
     mc.delete_cash_for_wallet(wallet)
     assert mc.get_cash_for_user(user).count() == 0
+
+
+@pytest.mark.django_db
+def test_cash_multicurrency_rows(user):
+    """SLICE19A 카디널리티 전환: 지갑당 통화별 다행(unique(wallet, currency))."""
+    wallet = Wallet.objects.create(user=user)
+
+    # 같은 지갑에 USD + KRW 두 통화 현금 공존
+    mc.upsert_cash_for_wallet(wallet, Decimal("1000.00"), currency="USD")
+    mc.upsert_cash_for_wallet(wallet, Decimal("500000.00"), currency="KRW")
+    assert mc.get_cash_for_user(user).count() == 2
+
+    # 통화별 독립 수정 (USD만 변경, KRW 불변)
+    mc.upsert_cash_for_wallet(wallet, Decimal("1200.00"), currency="USD")
+    assert CashBalance.objects.get(wallet=wallet, currency="USD").amount == Decimal("1200.00")
+    assert CashBalance.objects.get(wallet=wallet, currency="KRW").amount == Decimal("500000.00")
+    assert mc.get_cash_for_user(user).count() == 2  # 여전히 2행(다행 upsert)
+
+    # unique(wallet, currency) 제약 — 같은 통화 재삽입은 update
+    from django.db import IntegrityError
+
+    with pytest.raises(IntegrityError):
+        CashBalance.objects.create(wallet=wallet, currency="USD", amount=Decimal("1"))
+
+
+@pytest.mark.django_db
+def test_cash_delete_by_currency(user):
+    wallet = Wallet.objects.create(user=user)
+    mc.upsert_cash_for_wallet(wallet, Decimal("1000"), currency="USD")
+    mc.upsert_cash_for_wallet(wallet, Decimal("500000"), currency="KRW")
+
+    # 통화 지정 삭제 → 해당 통화만
+    mc.delete_cash_for_wallet(wallet, currency="USD")
+    remaining = mc.get_cash_for_user(user)
+    assert remaining.count() == 1 and remaining.first().currency == "KRW"

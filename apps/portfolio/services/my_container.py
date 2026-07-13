@@ -57,19 +57,23 @@ def delete_goal_for_user(user):
 
 
 def get_cash_for_user(user):
-    """사용자의 현금 잔고 전체(지갑 경유 스코프). QuerySet 반환."""
+    """사용자의 현금 잔고 전체(지갑 경유 스코프, 통화별 다행). QuerySet 반환."""
     return CashBalance.objects.for_user(user)
 
 
-def upsert_cash_for_wallet(wallet, amount):
-    """지갑 현금 잔고 생성 또는 수정(지갑당 1개)."""
+def upsert_cash_for_wallet(wallet, amount, currency="USD"):
+    """지갑 현금 잔고 생성 또는 수정(지갑당 통화별 1행 = unique(wallet, currency))."""
     cash, _created = CashBalance.objects.update_or_create(
         wallet=wallet,
+        currency=currency,
         defaults={"amount": Decimal(str(amount))},
     )
     return cash
 
 
-def delete_cash_for_wallet(wallet):
-    """지갑 현금 잔고 삭제."""
-    return CashBalance.objects.filter(wallet=wallet).delete()
+def delete_cash_for_wallet(wallet, currency=None):
+    """지갑 현금 잔고 삭제. currency 지정 시 해당 통화만, 없으면 전체."""
+    qs = CashBalance.objects.filter(wallet=wallet)
+    if currency is not None:
+        qs = qs.filter(currency=currency)
+    return qs.delete()
