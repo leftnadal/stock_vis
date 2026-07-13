@@ -20,6 +20,7 @@ from apps.portfolio.models_my import CashBalance
 
 # 매수 억제/발동 임계 — 19b에서 보정. 여기선 뼈대 자리표시.
 IDLE_CASH_THRESHOLD = Decimal("0.10")  # 유휴현금 비중 10% 초과 → 매수 여력 있음
+CONCENTRATION_THRESHOLD = Decimal("0.30")  # 한 종목 통화별 30% 초과 → TRIM 후보
 
 
 def _current_price(stock) -> Decimal:
@@ -104,3 +105,96 @@ def determine_mode(progress_gap: dict, allocation_gap: dict) -> str:
     )
     below_target = any(p["gap_pct"] < 0 for p in progress_gap.values())
     return "BUY" if (idle_high or below_target) else "DEFEND"
+
+
+# ============================================================
+# 후보 랭킹 (B-min) — RelationConfidence(주) + 진입가 여유(부). 가중치 없음(19b).
+# ============================================================
+
+
+def _relation_score(candidate_symbol, holding_symbols) -> float:
+    """후보 심볼이 보유 심볼(seed)과 연결된 최대 RelationConfidence.truth_score.
+
+    해자(관계 신뢰도)를 랭킹 키로 재사용. dashboard strip_service와 동일 소스.
+    연결 없으면 0.0.
+    """
+    if not holding_symbols:
+        return 0.0
+    from django.db.models import Q
+
+    from apps.chain_sight.models.relation_discovery import RelationConfidence
+
+    scores = RelationConfidence.objects.filter(
+        Q(symbol_a=candidate_symbol, symbol_b__in=holding_symbols)
+        | Q(symbol_b=candidate_symbol, symbol_a__in=holding_symbols)
+    ).values_list("truth_score", flat=True)
+    return max(scores, default=0.0)
+
+
+def rank_candidates(user, currency, allocation_gap) -> list:
+    """매수 모드 후보 정렬. 통화별 매수여력 게이트(가드레일 1) + 통화 분리.
+
+    정렬 키: RelationConfidence(주, 내림) → distance_from_entry(부, 오름=목표가 아래 우선).
+    가중치 없음(단순 정렬) — 19b에서 가중 스코어로 교체.
+    """
+    from packages.shared.users.models import WatchlistItem
+
+    alloc = allocation_gap.get(currency)
+    # 가드레일 1: 유휴현금 임계 미만 → 매수 억제(빈 후보)
+    if alloc is None or alloc["idle_ratio"] < IDLE_CASH_THRESHOLD:
+        return []
+
+    holdings = WalletHolding.objects.filter(wallet__user=user).select_related("stock")
+    holding_symbols = [h.stock.symbol for h in holdings if h.stock.currency == currency]
+
+    candidates = WatchlistItem.objects.filter(
+        watchlist__user=user
+    ).select_related("stock")
+
+    ranked = []
+    for wi in candidates:
+        if wi.stock.currency != currency:  # 통화 분리 (환전 없음)
+            continue
+        ranked.append(
+            {
+                "symbol": wi.stock.symbol,
+                "currency": currency,
+                "relation_score": _relation_score(wi.stock.symbol, holding_symbols),
+                "distance_from_entry": wi.distance_from_entry,  # None 가능
+            }
+        )
+
+    ranked.sort(
+        key=lambda x: (
+            -x["relation_score"],
+            x["distance_from_entry"] if x["distance_from_entry"] is not None else 0.0,
+        )
+    )
+    return ranked
+
+
+def find_trim_candidates(user) -> list:
+    """가드레일 2: 통화별 집중도 초과 보유 → TRIM 후보.
+
+    비중 = 종목 평가액 / (해당 통화 총 보유평가). 임계 초과 시 TRIM.
+    """
+    holdings = list(
+        WalletHolding.objects.filter(wallet__user=user).select_related("stock")
+    )
+    valued = [(h, h.shares * _current_price(h.stock)) for h in holdings]
+
+    total_by_cur: dict[str, Decimal] = {}
+    for h, v in valued:
+        cur = h.stock.currency
+        total_by_cur[cur] = total_by_cur.get(cur, Decimal(0)) + v
+
+    trims = []
+    for h, v in valued:
+        cur = h.stock.currency
+        total = total_by_cur[cur]
+        weight = (v / total) if total else Decimal(0)
+        if weight > CONCENTRATION_THRESHOLD:
+            trims.append(
+                {"symbol": h.stock.symbol, "currency": cur, "weight": weight}
+            )
+    return trims
