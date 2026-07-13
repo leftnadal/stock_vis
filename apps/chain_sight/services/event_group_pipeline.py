@@ -23,7 +23,7 @@ import numpy as np
 logger = logging.getLogger(__name__)
 
 # 확정 파라미터 (하니스 동치)
-DEFAULT_HALF_LIFE = 21
+DEFAULT_WINDOW_DAYS = 21  # as_of 기준 co-mention 집계 윈도우(일). window 밖은 그룹핑서 제외.
 DEFAULT_CORE_THR = 0.2
 DEFAULT_SAT_THR = 0.05
 DEFAULT_MIN_MEMBERS = 3
@@ -34,20 +34,25 @@ W_CORECONN = 0.15    # 추가 코어 연결당 가산
 
 
 # ── 입력 레이어 (prod ORM) ───────────────────────────────────────────
-def _build_base(half_life):
+def _build_base(window_days=DEFAULT_WINDOW_DAYS):
     """ChainNewsEvent → 쌍별 co_count + 종목별 doc_count + as_of.
 
     EventGroup은 stocks.Stock FK이므로 co_mentioned_symbols 중 Stock 미존재
     심볼은 클러스터링 단계에서 제외(적재 시 FK-skip로 코어가 축소되는 것 방지).
+
+    window_days: as_of(최신 유효 이벤트일) 기준 이 일수 이내
+    (pub.date() >= as_of - window_days)만 co/doc 카운팅. window 밖(오래된) co-mention은
+    그룹핑 희석(stale 뿌리) 방지 위해 제외한다. as_of(max_d)는 window 적용 **전** 전량
+    유효 2+종목 이벤트 기준 max라 윈도우 축소와 무관하게 고정된다.
     """
+    from datetime import timedelta
+
     from apps.chain_sight.models.news_event import ChainNewsEvent
     from packages.shared.stocks.models import Stock
 
     valid = set(Stock.objects.values_list("symbol", flat=True))
-    co_count = defaultdict(int)
-    occ = defaultdict(list)
-    doc_count = defaultdict(int)
-    N = 0
+    # 1패스: 유효 2+종목 이벤트만 정제 수집 + as_of(전량 max) 산출
+    events = []
     max_d = None
     rows = ChainNewsEvent.objects.filter(is_duplicate=False).values_list(
         "symbol_id", "co_mentioned_symbols", "published_at"
@@ -57,9 +62,20 @@ def _build_base(half_life):
         syms = [s for s in syms if s and s in valid]
         if len(syms) < 2:
             continue
-        N += 1
         d = pub.date()
         max_d = d if max_d is None or d > max_d else max_d
+        events.append((syms, d))
+
+    # 2패스: window 적용(as_of - window_days 이내)만 co/doc 카운팅
+    lower = None if max_d is None else max_d - timedelta(days=window_days)
+    co_count = defaultdict(int)
+    occ = defaultdict(list)
+    doc_count = defaultdict(int)
+    N = 0
+    for syms, d in events:
+        if lower is not None and d < lower:
+            continue
+        N += 1
         for s in syms:
             doc_count[s] += 1
         for a, b in combinations(syms, 2):
@@ -101,13 +117,13 @@ def _cohold_count(cohold, a, b):
 
 # ── 코어-위성 클러스터링 (하니스 동치) ──────────────────────────────
 def compute_event_groups(
-    half_life=DEFAULT_HALF_LIFE,
+    window_days=DEFAULT_WINDOW_DAYS,
     core_thr=DEFAULT_CORE_THR,
     sat_thr=DEFAULT_SAT_THR,
     min_members=DEFAULT_MIN_MEMBERS,
 ):
     """코어-위성 그룹 계산(메모리). DB 미투입 — 적재/동치검증 공용."""
-    co_count, doc_count, occ, N, as_of = _build_base(half_life)
+    co_count, doc_count, occ, N, as_of = _build_base(window_days)
     weights = _jaccard_weights(co_count, doc_count)
     cohold = _cohold_map()
 
@@ -194,7 +210,7 @@ def compute_event_groups(
     # TF-IDF 코어 이름 부여 (corpus = 전 그룹 코어 텍스트)
     _attach_core_names(groups)
     return {"groups": groups, "as_of": as_of, "params": {
-        "half_life": half_life, "core_thr": core_thr,
+        "window_days": window_days, "core_thr": core_thr,
         "sat_thr": sat_thr, "min_members": min_members,
     }}
 
@@ -411,7 +427,7 @@ def load_event_groups(cohesion_gate=COHESION_GATE, **params):
                 slug=_slugify(g["leader"], gi),
                 source="news_jaccard",
                 confidence=g["confidence"],
-                window_days=result["params"]["half_life"],
+                window_days=result["params"]["window_days"],
                 cohesion=g["cohesion"],
                 breadth=g["breadth"],
                 name_candidates=g.get("name_candidates", {}),
