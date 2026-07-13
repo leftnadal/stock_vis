@@ -212,6 +212,47 @@ class RegimeZScoreView(APIView):
         return Response(_envelope(payload, started, cache_state="MISS"))
 
 
+@extend_schema(
+    summary="Regime analog card (Slice B)",
+    description=(
+        "유사 국면 카드 결정론 코어. 오늘 z-벡터 가족가중 최근접(②C) + 이웃 SPY 선도수익 "
+        "지평별 정직 팬(①C). 뉴스·LLM 무의존. label 슬롯 null(Slice C). 1h 캐시."
+    ),
+    tags=["Market Pulse v2"],
+    responses={200: OpenApiTypes.OBJECT, 401: OpenApiTypes.OBJECT},
+)
+class RegimeAnalogView(APIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [MarketPulseUserThrottle, MarketPulseHourThrottle]
+
+    def get(self, request, *args, **kwargs):
+        from django.db.models import Max
+
+        started = time.time()
+        today = django_timezone.localdate()
+        wend = RegimeSnapshot.objects.filter(summary=BACKFILL_MARK).aggregate(
+            mx=Max("date")
+        )["mx"]
+        if wend is None:
+            return Response(
+                _envelope({"available": False}, started, cache_state="MISS")
+            )
+        key = cache_keys.regime_analog_key(today, wend)
+        try:
+            cached = cache.get(key)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백
+            cached = None
+        if cached is not None:
+            return Response(_envelope(cached, started, cache_state="HIT"))
+
+        payload = _regime_analog_detail()
+        try:
+            cache.set(key, payload, timeout=cache_keys.REGIME_ANALOG_TTL_SEC)
+        except Exception:  # pragma: no cover - 캐시 장애 폴백
+            pass
+        return Response(_envelope(payload, started, cache_state="MISS"))
+
+
 def _regime_detail():
     today = django_timezone.localdate()
     snap = RegimeSnapshot.objects.filter(date=today).first()
@@ -333,6 +374,97 @@ def _regime_zscore_detail() -> dict:
             "low_confidence_until": low_conf.isoformat(),
             "live_start": live_start.isoformat() if live_start else None,
             "downsample_recent_daily": 90,
+        },
+    }
+
+
+# MP2-ANALOG Slice B: 유사 국면 카드 결정론 코어(뉴스·LLM 무의존).
+#   오늘 z-벡터 vs 소급 모집단 가족가중 최근접(②C) + 이웃 SPY 선도수익 지평별 정직 팬(①C).
+#   label 슬롯(cat_slot·why)은 null — Slice C가 채움.
+def _regime_analog_detail() -> dict:
+    from django.utils import timezone as _tz
+
+    from apps.market_pulse.regime import analog, inputs as inputs_mod
+    from apps.market_pulse.regime.inputs import ALL_INPUT_KEYS
+    from apps.market_pulse.regime.zscore import compute_baseline
+    from macro.models.indicators import MarketIndex, MarketIndexPrice
+
+    # 모집단(완전벡터 소급) + S4 잣대 baseline 재사용.
+    pop_rows = list(
+        RegimeSnapshot.objects.filter(summary=BACKFILL_MARK, coverage__gte=1.0)
+        .order_by("date")
+        .values_list("date", "inputs")
+    )
+    if not pop_rows:
+        return {"available": False}
+    baseline = compute_baseline([inp for _, inp in pop_rows], ALL_INPUT_KEYS)
+    weights = analog.component_weights()
+
+    # 오늘 벡터(as_of=오늘, 소급과 동형 문법) → z.
+    today = _tz.localdate()
+    today_z = analog.to_z(inputs_mod.load_inputs(as_of=today).as_dict(), baseline)
+
+    population = [(d, analog.to_z(inp, baseline)) for d, inp in pop_rows]
+    neighbors, nearest = analog.select_neighbors(today_z, population, weights)
+    alert_on = analog.is_alert(nearest)
+
+    # SPY 선도수익용 거래일 캘린더(주말 제외 — 비거래일 15행이 T+n 조인에 새지 않게).
+    spy = MarketIndex.objects.filter(symbol="SPY").first()
+    closes_rows = (
+        list(
+            MarketIndexPrice.objects.filter(index=spy)
+            .exclude(close__isnull=True)
+            .order_by("date")
+            .values_list("date", "close")
+        )
+        if spy
+        else []
+    )
+    trading = [(d, float(c)) for d, c in closes_rows if d.weekday() < 5]
+    price_index = {d: i for i, (d, _) in enumerate(trading)}
+    closes = [c for _, c in trading]
+
+    neighbor_out = []
+    neighbor_fwd = []
+    for nb in neighbors:
+        fwd = analog.forward_returns(nb["date"], price_index, closes)
+        neighbor_out.append({
+            "date": nb["date"].isoformat(),
+            "dist": nb["dist"],
+            "cat_slot": None,   # Slice C 라벨 슬롯(비활성)
+            "why": None,        # Slice C L3 맥락 슬롯(비활성)
+            "fwd": {str(h): v for h, v in fwd.items()},
+        })
+        neighbor_fwd.append({"date": nb["date"], "fwd": fwd})
+
+    fan = analog.build_fan(neighbor_fwd, k=len(neighbors))
+
+    # 오늘 국면 4 유효 축(z 막대): 가족 평균 z + 단독.
+    def _axis_z(keys):
+        zs = [today_z[k] for k in keys if k in today_z]
+        return round(sum(zs) / len(zs), 3) if zs else None
+
+    today_axes = [
+        {"axis": "stress", "z": _axis_z(analog.REGIME_FAMILIES["stress"])},
+        {"axis": "financial", "z": _axis_z(analog.REGIME_FAMILIES["financial"])},
+        {"axis": "return_1d_pct", "z": _axis_z(("return_1d_pct",))},
+        {"axis": "vol_20d_pct", "z": _axis_z(("vol_20d_pct",))},
+    ]
+
+    return {
+        "available": True,
+        "as_of": today.isoformat(),
+        "today_axes": today_axes,
+        "neighbors": neighbor_out,
+        "fan": fan,
+        "alert": {"on": alert_on, "nearest_dist": round(nearest, 4) if nearest is not None else None},
+        "meta": {
+            "k_max": analog.K_MAX,
+            "tau_radius": analog.TAU_RADIUS,
+            "tau_alert": analog.TAU_ALERT,
+            "horizons": list(analog.HORIZONS),
+            "population": len(pop_rows),
+            "spy_trading_days": len(trading),
         },
     }
 
