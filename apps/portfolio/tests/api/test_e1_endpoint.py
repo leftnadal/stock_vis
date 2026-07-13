@@ -75,7 +75,7 @@ def test_post_e1_returns_200_with_valid_request(
 ):
     """POST /api/v1/coach/e1/ 정상 요청 → 200 + E1Output 계약 부합."""
     with patch(
-        "portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1
+        "apps.portfolio.api.views.run_e1_coach", return_value=mock_llm_response_e1
     ) as mock_run:
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
 
@@ -167,7 +167,7 @@ def test_post_e1_service_exception_returns_500_no_stacktrace(
 ):
     """run_e1_coach가 일반 예외 → 500 + 스택트레이스 노출 금지."""
     with patch(
-        "portfolio.api.views.run_e1_coach",
+        "apps.portfolio.api.views.run_e1_coach",
         side_effect=RuntimeError("internal database error with secret /tmp/abc"),
     ):
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
@@ -185,7 +185,7 @@ def test_post_e1_llm_budget_exceeded_returns_429(api_client, e1_request_body):
     from apps.portfolio.llm.exceptions import LLMBudgetExceededError
 
     with patch(
-        "portfolio.api.views.run_e1_coach",
+        "apps.portfolio.api.views.run_e1_coach",
         side_effect=LLMBudgetExceededError(scope="slice", count=51, limit=50),
     ):
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")
@@ -198,7 +198,7 @@ def test_post_e1_llm_error_returns_502(api_client, e1_request_body):
     from apps.portfolio.llm.exceptions import LLMRateLimitError
 
     with patch(
-        "portfolio.api.views.run_e1_coach",
+        "apps.portfolio.api.views.run_e1_coach",
         side_effect=LLMRateLimitError("upstream rate limit"),
     ):
         response = api_client.post(E1_ENDPOINT, data=e1_request_body, format="json")

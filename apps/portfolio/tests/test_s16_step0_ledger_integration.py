@@ -130,12 +130,12 @@ def test_client_complete_without_entry_point_keeps_backward_compat(
 @pytest.mark.parametrize(
     "service_module,expected_entry",
     [
-        ("portfolio.services.coach.e1_service", "e1"),
-        ("portfolio.services.coach.e2_service", "e2"),
-        ("portfolio.services.coach.e3_service", "e3"),
-        ("portfolio.services.coach.e4_service", "e4"),
-        ("portfolio.services.coach.e5_service", "e5"),
-        ("portfolio.services.coach.e6_service", "e6"),
+        ("apps.portfolio.services.coach.e1_service", "e1"),
+        ("apps.portfolio.services.coach.e2_service", "e2"),
+        ("apps.portfolio.services.coach.e3_service", "e3"),
+        ("apps.portfolio.services.coach.e4_service", "e4"),
+        ("apps.portfolio.services.coach.e5_service", "e5"),
+        ("apps.portfolio.services.coach.e6_service", "e6"),
     ],
 )
 def test_coach_service_source_contains_entry_point_literal(

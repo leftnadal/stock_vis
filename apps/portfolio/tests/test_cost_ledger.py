@@ -277,7 +277,7 @@ def test_client_complete_ledger_failure_does_not_break(monkeypatch):
             return_value=fake_response,
         ),
         patch(
-            "portfolio.llm.cost_ledger.append_call",
+            "apps.portfolio.llm.cost_ledger.append_call",
             side_effect=RuntimeError("simulated ledger crash"),
         ),
     ):
