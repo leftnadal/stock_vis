@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 
 import { GradeChip } from '@/components/strip/GradeChip';
 import { GRADE_DOT_HEX } from '@/components/common/colorSemantics';
@@ -41,26 +41,24 @@ describe('GradeChip', () => {
     expect(container.querySelector('svg')).toBeNull();
   });
 
-  it('info 미전달이면 툴팁 없음 + focusable 아님 (하위호환)', () => {
+  it('onActivate 미전달이면 focusable 아님 (하위호환)', () => {
     render(<GradeChip grade="gray" label="X" value="1.0" />);
-    expect(screen.queryByTestId('grade-tooltip')).toBeNull();
     expect(screen.getByTestId('grade-chip').getAttribute('tabindex')).toBeNull();
   });
 
-  it('info 전달 시 툴팁(정의·상태·밴드) + focusable', () => {
-    render(
-      <GradeChip
-        grade="yellow"
-        label="CCC- OAS"
-        value="9.75"
-        info={{ def: '최저신용 회사채 가산금리.', state: '현재 9.75 · z +1.11 · 최근 30일 상승', band: 'gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3' }}
-      />,
-    );
-    const tip = screen.getByTestId('grade-tooltip');
-    expect(tip).toBeInTheDocument();
-    expect(tip.textContent).toContain('최저신용');
-    expect(tip.textContent).toContain('현재 9.75');
-    expect(tip.textContent).toContain('red ≥3');
-    expect(screen.getByTestId('grade-chip').getAttribute('tabindex')).toBe('0');
+  it('onActivate 전달 시 focusable + hover/focus에 발화', () => {
+    const onActivate = vi.fn();
+    render(<GradeChip grade="yellow" label="CCC- OAS" value="9.75" onActivate={onActivate} />);
+    const chip = screen.getByTestId('grade-chip');
+    expect(chip.getAttribute('tabindex')).toBe('0');
+    fireEvent.mouseEnter(chip);
+    expect(onActivate).toHaveBeenCalledTimes(1);
+    fireEvent.focus(chip);
+    expect(onActivate).toHaveBeenCalledTimes(2);
+  });
+
+  it('active면 강조 링(data-active)', () => {
+    render(<GradeChip grade="orange" label="X" value="1.0" active onActivate={() => {}} />);
+    expect(screen.getByTestId('grade-chip').getAttribute('data-active')).toBe('true');
   });
 });

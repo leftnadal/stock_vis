@@ -1,12 +1,19 @@
 // 크레딧 매크로 스트립 — 홈 상단(MarketSummaryBar–NewsStrip 사이). CS-CREDIT-CONSUME + 의미 2층.
-// credit_signal_state 6종을 grade 칩으로 가로 나열 + 헤드라인 한 줄(규칙 기반 자동 문장) + 칩 툴팁.
-// NewsStrip 실패 격리 패턴 동형: API 실패/빈 응답 → 스트립 자체 비표시(null), 홈 나머지 무영향.
+// credit_signal_state 6종 = grade 칩 가로 나열 + 헤드라인 한 줄(규칙 자동문장) + 하단 리드아웃(칩 hover/탭).
+// NewsStrip 실패 격리 동형: API 실패/빈 응답 → 비표시(null). 리드아웃은 overflow 밖(수평스크롤 클리핑 회피).
 'use client';
+
+import { useState } from 'react';
 
 import { GRADE_DOT_HEX } from '@/components/common/colorSemantics';
 import { GradeChip } from '@/components/strip/GradeChip';
 import { useCreditSignals } from '@/hooks/useCreditSignals';
-import { buildChipInfo, deriveHeadline } from '@/lib/credit/creditMeaning';
+import {
+  GRADE_SEVERITY,
+  buildChipInfo,
+  deriveHeadline,
+} from '@/lib/credit/creditMeaning';
+import type { CreditSignal } from '@/services/creditSignalsService';
 
 function zLabel(z: number | null): string {
   if (z === null) return 'z —';
@@ -15,6 +22,7 @@ function zLabel(z: number | null): string {
 
 export function MacroStrip() {
   const { data, isError } = useCreditSignals();
+  const [activeKey, setActiveKey] = useState<string | null>(null);
 
   // 실패 격리: 에러·빈 응답·미도착 → 비표시.
   if (isError || !data || data.signals.length === 0) {
@@ -23,8 +31,15 @@ export function MacroStrip() {
 
   const headline = deriveHeadline(data.signals);
   const headlineDot = GRADE_DOT_HEX[headline.grade] ?? GRADE_DOT_HEX.gray;
-  // 전부 gray(안정) → 저채도 눌림.
-  const headlineMuted = headline.grade === 'gray';
+  const headlineMuted = headline.grade === 'gray'; // 전부 gray → 저채도 눌림.
+
+  // 리드아웃 기본 = 최고 심각도 신호(헤드라인 대상), hover/포커스로 갱신.
+  const mostSevere = [...data.signals].sort(
+    (a, b) => GRADE_SEVERITY[b.grade] - GRADE_SEVERITY[a.grade],
+  )[0];
+  const active: CreditSignal =
+    data.signals.find((s) => s.key === activeKey) ?? mostSevere;
+  const info = buildChipInfo(active);
 
   return (
     <section aria-label="크레딧 매크로" className="w-full">
@@ -45,10 +60,10 @@ export function MacroStrip() {
         <span>{headline.text}</span>
       </div>
 
-      {/* 의미 2층: 칩(hover/탭 툴팁) */}
+      {/* 칩 (hover/탭 → 하단 리드아웃 갱신) */}
       <div
         role="list"
-        className="flex gap-3 overflow-x-auto overflow-y-visible snap-x snap-mandatory pb-1"
+        className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1"
       >
         {data.signals.map((s) => (
           <GradeChip
@@ -58,9 +73,27 @@ export function MacroStrip() {
             value={s.value.toFixed(2)}
             sub={zLabel(s.z)}
             spark={s.spark.map((p) => p.value)}
-            info={buildChipInfo(s)}
+            active={active.key === s.key}
+            onActivate={() => setActiveKey(s.key)}
           />
         ))}
+      </div>
+
+      {/* 의미 2층: 리드아웃 (overflow 밖 — 정의·현재상태·밴드) */}
+      <div
+        data-testid="macro-readout"
+        className="mt-1.5 rounded-md border border-gray-100 bg-gray-50/60 px-2.5 py-1.5 text-[11px] leading-snug dark:border-gray-700 dark:bg-gray-800/40"
+      >
+        <span className="font-medium text-gray-900 dark:text-gray-100">
+          {active.name}
+        </span>
+        <span className="text-gray-600 dark:text-gray-300"> — {info.def}</span>
+        <span className="mt-0.5 block tabular-nums text-gray-800 dark:text-gray-200">
+          {info.state}
+        </span>
+        <span className="mt-0.5 block text-[10px] text-gray-400 dark:text-gray-500">
+          밴드 {info.band}
+        </span>
       </div>
     </section>
   );
