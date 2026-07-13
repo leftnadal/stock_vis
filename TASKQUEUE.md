@@ -658,9 +658,12 @@
 ## ✅ 결정29 — 전환일 driver 보류 (B 채택, 집행 종결, 2026-07-13)
 - 상태: **집행 종결**. `heat_history_markers.HISTORY_MARKERS`(개정일 단일소스, 1건=07-12 c1_thin_quarter_guard) + `crossing_marker` + build_card 배선. delta 구간이 개정일 가로지르면 driver 보류(held=true, direction/basis/% 미표시), 온도·delta·신뢰·성분은 노출. 라이브: 07-12 5테마 전부 held, 07-13 daily beat부터 자동 재개. 신규 5 test.
 
-## 집행 순서 (결정28+29) — 프론트 렌더 게이트
-- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · [DONE] 결정29 driver 보류(백엔드)
-- 3. [NEXT] TH-ZMODE-LABEL-FIX (표시 결함 c) · 4. 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 조건 부착 · 5. TH-FIRSTRULE-DEFECT(별도 비준)
+## ✅ 결정30 — driver 보류 정밀화 지연 반영 (선택지3, 스펙 등재만, 2026-07-13)
+- 상태: **스펙 등재**(코드 미적용). 현행 date 기반 전역 보류(결정29) 유지 — 오늘 가시적 손실 0(Energy delta=0 → driver=none, held/none 동일). 정밀화(marker.affected_themes로 보류 한정)는 **TH-HISTORY-MARKER DB 승격 슬라이스**에서 반영. 07-12 백필 = {FinSvc, ConsCyc, Tech, Industrials}(G3 실측 정합, Energy 제외).
+
+## 집행 순서 (결정28+29+30) — 프론트 렌더 게이트
+- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류(백엔드) · 결정30[등재] 정밀화 지연
+- 3. [NEXT] TH-ZMODE-LABEL-FIX (표시 결함 c) · 4. 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 조건(현행 date 기반) 부착 · 5. TH-FIRSTRULE-DEFECT(별도 비준)
 - 프론트 게이트 = (A 프로브 ✅) AND (B 가드 ✅) AND (C 재산출 ✅) → **v3 렌더 개방**. FinSvc 재산출 값 55로만 노출. driver 파트는 hold_driver 분기(07-12 보류/07-13 재개).
 
 ## TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (등재, 가드 뒤 = 결정28 3순위)
@@ -668,6 +671,7 @@
 
 ## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (부분 착수, 결정29 자동연동, 우선순위 상향)
 - 상태: **부분 착수**(결정29 초석). `heat_history_markers.py` 단일소스(현 1건 07-12)가 driver 보류 트리거원으로 가동 중. **잔여(정식화)**: DB 원장 승격 + admin 등록 + 프론트 이력 차트 개정일 마커 표시 + 사전 개정(h2_v1→h2_v2 07-12) 마커 추가 검토. 트리거원으로서 결정29와 자동 배선 완료.
+- **★결정30 동시 반영(승격 시)**: 마커에 `affected_themes` 필드 추가 → hold 조건 `crossing AND theme∈affected_themes`로 정밀화(미기재=전역 하위호환). 07-12 마커 백필 = {FinSvc, ConsCyc, Tech, Industrials}. 검증: 07-12 재현 시 Energy held:false·나머지 4 held:true.
 
 ## TH-DSS-IMPL — DSS 점수화 구현 (등재, TH-16 2026-07-13)
 - 상태: **등재**(사분면 가로축). E2 quadrant.dss 채움. **전제: EstimateSnapshot 2회차(7/24 예상) 이상 축적**. 설계 초안 별도 비준.
