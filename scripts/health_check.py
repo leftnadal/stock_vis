@@ -55,18 +55,9 @@ KNOWN_TEST_FAILS: dict[str, str] = {
         "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
         "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
     ),
-    "tests/news/test_news_entity_deduplication.py::TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
-    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
-    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_existing_article_entity_unchanged": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
+    # 아래 3건(test_news_entity_deduplication)은 지시서⑫ C2 에서 provider 주입(S5 seam)으로
+    # env-독립 상환 완료 → env -i 격리서 green → 레지스트리에서 제거(스테일 방지).
+    # 제거 근거: NewsAggregatorService(finnhub=FinnhubNewsProvider(api_key='test...')) 주입.
 }
 
 
@@ -297,6 +288,61 @@ def check_taskqueue_done_matching() -> CheckResult:
         status=OK,
         detail=f"TASKQUEUE done/verified 표기 {len(done_ids)}건 (휴리스틱 검증 — Layer 3 강화 예정)",
         evidence=[f"감지된 ID 예시: {done_ids[:5]}"],
+    )
+
+
+# ── 검증 4b: TASKQUEUE 주장 상태 vs 증거 대조 (advisory, WARN-only) ──────────
+# 목적: 스테일 하네스 항목 조기 감지. 트랙이 실제로 landed(산출물 존재 + DECISIONS 종결)
+# 인데 TASKQUEUE가 그 사실을 acknowledge하지 않으면(여전히 미착수/DORMANT처럼 보이면) WARN.
+# 근거 사례 = BOUNDARY-LLM DORMANT-vs-landed 스테일(지시서⑪ 발견, ⑫ C3 가드화).
+# ★ 판정 불변: 항상 OK/WARN 만 반환(ERROR 없음) = pass/fail baseline 무변경(advisory).
+# 오탐 방지: "이력 보존용 옛 문구"가 남아 있어도, landed **ack 토큰**의 존재만 확인하므로
+# retained 히스토리에 false-positive 하지 않는다(정합=ack 토큰 有).
+
+# 규칙 = landed 판정에 필요한 증거(DECISIONS 종결 문구 + 산출물 경로) + TASKQUEUE ack 토큰.
+_CLAIM_EVIDENCE_RULES: list[dict] = [
+    {
+        "label": "BOUNDARY-LLM",
+        "decisions_landed": "BOUNDARY-LLM 실행 완료",
+        "artifact": "packages/shared/llm/core.py",
+        "ack_tokens": ["종결·LANDED", "실행 완료 (landed)", "상태 정정 (2026-07-13"],
+    },
+]
+
+
+def _evaluate_claim_evidence(tq_text, dec_text, artifact_exists, rules) -> list[str]:
+    """순수 함수(테스트 가능). landed 증거가 있는데 TASKQUEUE ack 없는 규칙의 경고 목록 반환."""
+    mismatches: list[str] = []
+    for rule in rules:
+        landed = (rule["decisions_landed"] in dec_text) and artifact_exists(rule["artifact"])
+        if not landed:
+            continue  # landed 증거 없음 → 검증 대상 아님
+        acknowledged = any(tok in tq_text for tok in rule["ack_tokens"])
+        if not acknowledged:
+            mismatches.append(
+                f"{rule['label']}: landed 증거(DECISIONS 종결 + {rule['artifact']}) 있으나 "
+                f"TASKQUEUE에 landed ack 토큰 부재 — 정합 필요(스테일 주장 의심)"
+            )
+    return mismatches
+
+
+def check_taskqueue_claim_vs_evidence() -> CheckResult:
+    tq = TASKQUEUE_MD.read_text(encoding="utf-8") if TASKQUEUE_MD.exists() else ""
+    dec = DECISIONS_MD.read_text(encoding="utf-8") if DECISIONS_MD.exists() else ""
+    mism = _evaluate_claim_evidence(
+        tq, dec, lambda a: (REPO_ROOT / a).exists(), _CLAIM_EVIDENCE_RULES
+    )
+    if mism:
+        return CheckResult(
+            name="TASKQUEUE 주장 vs 증거",
+            status=WARN,
+            detail=f"스테일 주장 의심 {len(mism)}건 (landed인데 TASKQUEUE 미ack)",
+            evidence=mism,
+        )
+    return CheckResult(
+        name="TASKQUEUE 주장 vs 증거",
+        status=OK,
+        detail=f"주장-증거 정합 (규칙 {len(_CLAIM_EVIDENCE_RULES)}건 대조, 불일치 0)",
     )
 
 
@@ -841,6 +887,7 @@ CHECKS = [
     check_brunch_worktree_existence,
     check_progress_staleness,
     check_taskqueue_done_matching,
+    check_taskqueue_claim_vs_evidence,
     check_decisions_freshness,
     check_slice_branches_unmerged,
     check_external_automation_commits,

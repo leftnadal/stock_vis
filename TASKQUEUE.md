@@ -89,7 +89,7 @@
 
 | ID | Task | Agent | Depends On | Status | 비고 |
 |----|------|-------|------------|--------|------|
-| CS-P2-LLM | LLM 의존 묶음 (LLM 레이어 통합 / 10-K 관계추출 / FRED 해석) | @rag-llm/@backend | **BOUNDARY-LLM 슬라이스① land** | todo | shared LLM 래퍼 통합 선행 필요 |
+| CS-P2-LLM | LLM 의존 묶음 (LLM 레이어 통합 / 10-K 관계추출 / FRED 해석) | @rag-llm/@backend | ~~BOUNDARY-LLM 슬라이스① land~~ **해소(언블록, 2026-07-13)** | todo | ✅ 의존 충족 — `packages/shared/llm` 코어 landed(merge `8be3f65`, ⑪ 실측). 착수 가능 |
 | CS-M3 | Path Watchlist (코어-위성 경로 추적) | @backend/@frontend | 독립 | todo | EventGroup 코어-위성 위 경로 추적 |
 | CS-P2-GRAPH | 그래프 화면 정제 (EventGroup 시각화) | @frontend | 독립 | todo | redesign v1 그래프 캔버스 위 EventGroup 반영 |
 | CS-P2-13F | 13F 버그 + CUSIP 매핑 수정 | @backend | 독립 | todo | 위성 cohold_institutions 정확도 |
@@ -183,7 +183,7 @@
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| DEBT-TEST-BOUNDARY-LLM | `test_news_deep_analyzer`(102e) + `test_csv_url_resolver`(4f) mock을 **shared LLM 래퍼 seam으로 재작성** (옛 `patch('...genai')` → 래퍼 mock). 근본원인=BOUNDARY-LLM 이관으로 직접 genai import 제거, 코드 정상·테스트 stale | @qa+@rag-llm | - | todo | SSOT C1·C2 / BOUNDARY-LLM backlog와 동일건 |
+| DEBT-TEST-BOUNDARY-LLM | `test_news_deep_analyzer`(102e) + `test_csv_url_resolver`(4f) mock을 **shared LLM 래퍼 seam으로 재작성** (옛 `patch('...genai')` → 래퍼 mock). 근본원인=BOUNDARY-LLM 이관으로 직접 genai import 제거, 코드 정상·테스트 stale | @qa+@rag-llm | - | **🏁 종결 2026-07-13 (지시서⑫ C2)** | seam genai→`complete` 재작성(응답 설정 관성 보존 trick), init 테스트는 제거된 genai.Client 계약 대신 실제 키검증 계약으로 강화. + `test_multiple_symbol_fetches`(S5 키-env) provider 주입으로 env-독립화. **env -i 격리서 deep_analyzer 102 + csv 28 + entity_dedup 1 = 131 green, 은폐(skip/xfail/삭제) 0** |
 | DEBT-TEST-CHAINSIGHT | `test_attention`(6f, `assert 'SEMICON' in []`) + `test_leadership_api`(7f, `404==200`) + `test_upward_learning`(1f) = 14f. **pristine 체크아웃 재현으로 판정** — 오탐(stale `_dormant`+공유 test DB, lesson_...)이면 격리 픽스처/시드, 진성이면 코드 수정 | @qa+@backend | - | todo | SSOT C3·C4 |
 
 > **판정 원칙**: DEBT-TEST-CHAINSIGHT는 `.claude/worktrees/`의 stale 워크트리·`_dormant` 잔재가 공유 test DB를 오염시킨 오탐일 수 있음(메모리 `lesson_visual_verify`가 아닌 stale-artifact lesson) → **pristine 격리 체크아웃에서만 진위 확정**. DEBT-TEST-BOUNDARY-LLM은 시그니처가 명확(genai attr 부재)해 즉시 착수 가능.
@@ -432,11 +432,12 @@
 
 ---
 
-## [보류·DORMANT] BOUNDARY-LLM — shared LLM 래퍼 정합 (형식 CLOSED·옵션 C / 실행 DORMANT)
+## [🏁 종결·LANDED] BOUNDARY-LLM — shared LLM 래퍼 정합 (옵션 C / burn-down 23→0)
 
-> 형식 결정 = `DECISIONS.md [2026-06-18] BOUNDARY-LLM 통합 래퍼 형식 = 옵션 C`. 상위 트랙 = `[2026-06-18] Phase 1.5 Translation Layer` ①이 이연. (라벨 주의: shared 경계 청소 `BOUNDARY-1/2/3`(2026-06-04 종결)과 무관한 별개 트랙.)
+> 형식 결정 = `DECISIONS.md [2026-06-18] BOUNDARY-LLM 통합 래퍼 형식 = 옵션 C`. (라벨 주의: shared 경계 청소 `BOUNDARY-1/2/3`(2026-06-04 종결)과 무관한 별개 트랙.)
 
-- **상태**: 형식 CLOSED, 실행 DORMANT(trigger-gated). 타 세션 소관 — 본 큐에서 먼저 꺼내지 않음.
+- **★ 상태 정정 (2026-07-13, 지시서⑪⑫ origin/main `8dd5ca9` 실측)**: 아래 "DORMANT·미착수" 기록은 **stale**. **실행 완료·landed** — `packages/shared/llm/` 코어(12파일) 존재, LLM 직접호출 **burn-down 23→0** 병합(merge `8be3f65`, 슬라이스①~④), 아키텍처 가드 2종(`test_shared_boundary`·`test_llm_direct_call_boundary`) **KNOWN_VIOLATIONS=0/FROZEN_COUNT=0 7 passed**, `health_check` SSOT 동기. 잔여 테스트 부채 `DEBT-TEST-BOUNDARY-LLM`도 ⑫ C2로 종결. **하류 CS-P2-LLM 언블록.** 아래 원문(트리거·슬라이스 큰그림)은 이력 보존용. (DECISIONS `[2026-07-13] BOUNDARY-LLM 실행 완료` 참조.)
+- **상태(원)**: 형식 CLOSED, 실행 DORMANT(trigger-gated). 타 세션 소관 — 본 큐에서 먼저 꺼내지 않음. ← **상기 정정으로 무효**
 - **실측 갱신 (STEP 0, HEAD=`feb999b`)**: 통합 대상 = **27파일 / 9 surface**(차터·Translation 인용 "3곳" 무효화). provider 분포 **Gemini 24 : Anthropic 3 : OpenAI 0**.
 - **트리거 (차터 §1 "4번째 소비처" 폐기 — 이미 27개로 충족)**:
   - **(a)** Translation 기능이 in-zone 단일출처(`apps/market_pulse/llm/`)로 안정 land 후 "깨끗한 1회 lift" 적기, OR
