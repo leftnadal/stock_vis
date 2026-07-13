@@ -8,6 +8,14 @@
 
 ---
 
+## SLICE18-D1-REOPEN — Slice 18 컨테이너 4모델 소속 재결정 필요 (2026-07-13) [portfolio]
+
+**결정(안건 등재, 미확정)**: Slice 18 지시서의 닫힌 결정 **D1(신규 4모델 전부 apps/portfolio)의 전제가 STEP 0 실측으로 파기됨** → D1 재결정을 디렉터 세션으로 회부. 이 세션은 HALT·정지(코드 0).
+- **Why(전제 파기)**: D1 전제 = "watchlist 등은 지금 portfolio만 소비". 실측 = `apps/dashboard/services/strip_service.py`(T1 보유·T3 관심 심볼 집합)와 `apps/chain_sight`(WatchlistViewSet)가 **이미 `shared/users.WatchlistItem`을 소비**. → watchlist는 범용 자산(shared 정당), D1 타이브레이커("교차앱 소비자 부재") 거짓.
+- **Why(의미 중복)**: 신규 4종 중 2종이 기존 모델과 **동명·상위집합** — `WalletHolding`(apps/portfolio.WalletHolding, 동명=Django 충돌)·`WatchlistItem`(shared/users.WatchlistItem, REST 완비). 신규 생성 시 진실 소스 분할.
+- **How to apply(재설계 입력)**: ⑴ 재사용 확정 시 Slice 18 신규 = **UserGoal·CashBalance 2종**으로 축소 ⑵ D2(UserScopedModel 직접 user FK)는 기존 재사용 2종(간접 user 스코프)과 상충 → 어댑터/이원화 ⑶ D3 격리 테스트 대상 범위 재정의. 상세 = `docs/portfolio/coach/slice18/STEP0_FINDINGS.md`.
+- **STEP 0 측정**: baseline `pytest apps/portfolio tests/architecture` = 574 passed/0 failed(깨끗한 출발선). base origin/main `a340816`.
+
 ## T-3b — 상향학습 선별·자가오염·seed status 권위 일원화 (2026-07-13) [chainsight]
 
 **결정**: RelationConfidence 상향학습의 재승급 flap을 **엔진 국소 수정(①②③ⓔ) + seed status 권위 제거(ⓓ-2)**로 근절. ⓓ-1(seed 단조 가드)·ⓓ-3 미채택. 병합=`--no-ff`(rebase 금지, Phase 커밋 해시 보존).
