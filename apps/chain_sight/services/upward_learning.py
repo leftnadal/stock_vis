@@ -21,8 +21,13 @@ STREAK_MIN = 3          # 연속 재확인 ≥ 이 틱(B 보수 — 하루살이
 
 # T-3b ⓓ-2 B-2: 구 seed(≥85→confirmed) 규칙을 엔진으로 이관 — score≥이 값이면 confirmed 직행.
 # 상수 단일 출처: seed(services/sec_pipeline/tasks.py 신규 pair 초기값)는 이 상수를 import(중복 정의 금지).
-# 상향 권위 = 이 엔진(highscore/fast-path/streak 3경로). 하향 권위 = decay 전담
-# (relation_tasks.check_stale_and_decay). seed는 status 무기록(기존 pair) — flap 소멸.
+#
+# status 권위 도메인 분할(B-0 감사 확정 — 제4 기록자 update_relation_confidence 도메인 승인):
+#   - 비-market(truth) status 권위 = 이 엔진(상향: highscore/fast-path/streak 3경로)
+#                                    + decay(하향 전담, relation_tasks.check_stale_and_decay).
+#     seed(sec_pipeline)는 기존 pair status 무기록 — flap 소멸.
+#   - market status 관할 = update_relation_confidence 베이스라인(매 틱 직접 재산정,
+#     upward 제외 대상 — 이중관리 방지). 본 엔진 밖(비-market만 처리).
 HIGHSCORE_THRESHOLD = 85
 
 
