@@ -8,6 +8,14 @@
 
 ---
 
+## SLICE18R-CARDINALITY — OneToOne 카디널리티 가정 (미확정, 19a 재검토 트리거) (2026-07-13) [portfolio]
+
+**결정(가정 명시, 뒤집는 게 아님)**: 18-R의 신규 2모델 카디널리티를 **현재 `OneToOne`으로 두되 "가정"임을 명시**하고 19a STEP 0에서 강제 재검토한다.
+- **CashBalance ⇔ Wallet = `OneToOneField`** (지갑당 현금 1행). **Why(현 선택)**: STEP 0.5 house 패턴(WalletHolding과 동일 Wallet 컨테이너) 정렬 + USD 고정 MVP(다통화 YAGNI). **한계**: 단일통화 현금만 표현 가능 — 사용자가 다통화 현금(KRW+USD 등) 보유 시 부족.
+- **UserGoal ⇔ User = `OneToOneField`** (사용자당 목표 1행). **Why**: 단일 투자 목표 MVP 가정. **한계**: 다중목표(은퇴·주택 등 병렬 목표) 미지원.
+- **재검토 트리거(닫힌 결정 = 언제·무엇으로)**: **19a STEP 0**에서 ⑴ Wallet의 통화 모델을 실측 → 다통화 현금 필요 판명 시 **CashBalance를 `ForeignKey(Wallet)` + `unique_together(wallet, currency)`로 전환**, ⑵ 다중목표 필요 여부 확인 → 필요 시 UserGoal FK 전환. **미해결 시 19a 진행 금지**(TASKQUEUE `SLICE18R-CARDINALITY-REVISIT`).
+- **Why(지금 안 바꾸고 트리거로 미루나)**: prod 미적용(0002 dev만 = 되돌림 가능) + 19a 미착수(쿼리 미결합) + Wallet 통화 모델 미측정 상태에서 즉시 변경 = 추측 기반. 측정 가능 시점(19a STEP 0)으로 결정을 미루되 트리거로 강제(옵션 B, 디렉터 확정).
+
 ## SLICE18R — 사용자 상태 그릇 재설계 (원안 폐기 + D1'·D2'·D3') (2026-07-13) [portfolio]
 
 **원안 폐기 사유(supersede SLICE18-D1-REOPEN)**: 원안 `SLICE18_INSTRUCTION.md`는 4모델(UserGoal·WatchlistItem·WalletHolding·CashBalance) 전부 신규 생성을 지시했으나 STEP 0 실측에서 **HALT 2건** 확정 → 개정본 `SLICE18_INSTRUCTION.md`(rev2)로 대체. ⑴ 의미 중복: `apps/portfolio.WalletHolding`(models.py:78, 동명·상위집합=Django 정의 충돌)·`shared/users.WatchlistItem`(users/models.py:215, 상위집합·REST 완비). ⑵ D1 전제 파기: WatchlistItem을 `apps/dashboard/services/strip_service.py:84`·`apps/chain_sight`(WatchlistViewSet)가 이미 소비=교차앱 자산.
