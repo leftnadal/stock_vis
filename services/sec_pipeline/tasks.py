@@ -339,6 +339,7 @@ def extract_from_document(self, doc_id: int, symbol: str):
 def seed_relations_to_chainsight():
     """매칭된 SupplyChainEvidence → RelationConfidence 레코드 생성."""
     from apps.chain_sight.models import RelationConfidence
+    from apps.chain_sight.services.upward_learning import HIGHSCORE_THRESHOLD
     from apps.chain_sight.utils import normalize_pair
 
     from .models import SupplyChainEvidence as SCE
@@ -369,19 +370,31 @@ def seed_relations_to_chainsight():
         score_map = {"high": 85, "medium": 60, "low": 35}
         score = score_map.get(ev.confidence_grade, 60)
 
+        # T-3b ⓓ-2 B-1: seed의 relation_status 권위 제거 (flap 소멸).
+        #   - 기존 pair(update 경로): relation_status 무접촉 — score/관측치/evidence만 갱신.
+        #     (하향 권위 = decay 전담, 상향 권위 = upward 엔진. seed가 매 틱 status를 다시
+        #      써서 upward가 올린 confirmed를 probable로 되돌리던 flap을 근절.)
+        #   - 신규 pair(create 경로): 초기 status 설정은 생성자의 정당 권한 → create_defaults로 유지.
+        #     ≥85 규칙은 upward 엔진의 HIGHSCORE_THRESHOLD 단일 출처 참조(중복 정의 금지).
+        common = {
+            "relation_category": "truth",
+            "canonical_direction": direction,
+            "truth_score": score,
+            "evidence_tier_best": 1,
+            "has_supply_chain_source": True,
+            "relation_basis_summary": f"SEC 10-K: {ev.evidence_text[:100]}",
+            # audit P0 #9: synced_to_neo4j 제거. update_or_create의 save()가 neo4j_dirty=True 자동.
+        }
         obj, is_new = RelationConfidence.objects.update_or_create(
             symbol_a=sym_a,
             symbol_b=sym_b,
             relation_type=rel_type,
-            defaults={
-                "relation_category": "truth",
-                "canonical_direction": direction,
-                "relation_status": "confirmed" if score >= 85 else "probable",
-                "truth_score": score,
-                "evidence_tier_best": 1,
-                "has_supply_chain_source": True,
-                "relation_basis_summary": f"SEC 10-K: {ev.evidence_text[:100]}",
-                # audit P0 #9: synced_to_neo4j 제거. update_or_create의 save()가 neo4j_dirty=True 자동.
+            defaults=common,  # 기존 pair: status 무접촉
+            create_defaults={
+                **common,
+                "relation_status": (
+                    "confirmed" if score >= HIGHSCORE_THRESHOLD else "probable"
+                ),
             },
         )
         if is_new:
