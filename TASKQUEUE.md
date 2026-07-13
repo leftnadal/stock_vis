@@ -655,16 +655,19 @@
 ## ✅ TH-C1-THIN-QUARTER-GUARD — C1 얇은 분기 가드 (집행 종결, TH-16-RATIFY 2026-07-13, 결정28)
 - 상태: **집행 종결**. `representative_series`(heat_components, ratio=0.60, floor=ceil(0.6×median n_syms)) + `c1_valuation_from_db` 배선. G3 재산출: **양방향 교정** — FinSvc 65→**55**(FDS 단독 상방 오염)·ConsCyc 44→**57**(하방 오염, 미예측)·Tech 58→56·Ind 57→56·Energy 58(무영향). 신규 5 test. 향후 daily beat 자동 반영.
 
-## 집행 순서 (결정28) — 프론트 렌더 게이트
-- 1. [DONE] TH-C1-Z-PROBE (판정) · 2. [DONE] TH-C1-THIN-QUARTER-GUARD (값 결함 d, 재산출 완료)
-- 3. [NEXT] TH-ZMODE-LABEL-FIX (표시 결함 c) · 4. 프론트 렌더(v3) — 선행 게이트 A·B·C 충족(가드+재산출 완료)로 **개방** · 5. TH-FIRSTRULE-DEFECT(별도 비준)
-- 프론트 게이트 = (A 프로브 클리어 ✅) AND (B 가드 적용 ✅) AND (C 영향 테마 재산출 완료 ✅) → **v3 카드 렌더 개방**. FinSvc는 재산출 값 55로만 노출.
+## ✅ 결정29 — 전환일 driver 보류 (B 채택, 집행 종결, 2026-07-13)
+- 상태: **집행 종결**. `heat_history_markers.HISTORY_MARKERS`(개정일 단일소스, 1건=07-12 c1_thin_quarter_guard) + `crossing_marker` + build_card 배선. delta 구간이 개정일 가로지르면 driver 보류(held=true, direction/basis/% 미표시), 온도·delta·신뢰·성분은 노출. 라이브: 07-12 5테마 전부 held, 07-13 daily beat부터 자동 재개. 신규 5 test.
+
+## 집행 순서 (결정28+29) — 프론트 렌더 게이트
+- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · [DONE] 결정29 driver 보류(백엔드)
+- 3. [NEXT] TH-ZMODE-LABEL-FIX (표시 결함 c) · 4. 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 조건 부착 · 5. TH-FIRSTRULE-DEFECT(별도 비준)
+- 프론트 게이트 = (A 프로브 ✅) AND (B 가드 ✅) AND (C 재산출 ✅) → **v3 렌더 개방**. FinSvc 재산출 값 55로만 노출. driver 파트는 hold_driver 분기(07-12 보류/07-13 재개).
 
 ## TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (등재, 가드 뒤 = 결정28 3순위)
 - 상태: **등재**(프로브 (c)). heat_api_service가 present C1/C2/C5/C6/C7을 "cross_sectional"로 체계적 오라벨(실제 timeseries_z). 성분별 실제 z 방식 반영(C1~C7 time_series, C8 z_mode 저장값). API 표시 전용(원장 무변경). 가드 재산출 후 별도 슬라이스.
 
-## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (등재, TH-16-RATIFY로 우선순위 상향 사유 추가)
-- 상태: **등재**(백로그). ★가드 도입으로 07-10(가드 전 67) vs 07-12(가드 후 55) delta_1d=−12 artifact 발생 — 방법론 개정일 마킹으로 delta/history 구분 필요. 사전 개정(h2_v1→h2_v2)·산식 개정일 마커.
+## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (부분 착수, 결정29 자동연동, 우선순위 상향)
+- 상태: **부분 착수**(결정29 초석). `heat_history_markers.py` 단일소스(현 1건 07-12)가 driver 보류 트리거원으로 가동 중. **잔여(정식화)**: DB 원장 승격 + admin 등록 + 프론트 이력 차트 개정일 마커 표시 + 사전 개정(h2_v1→h2_v2 07-12) 마커 추가 검토. 트리거원으로서 결정29와 자동 배선 완료.
 
 ## TH-DSS-IMPL — DSS 점수화 구현 (등재, TH-16 2026-07-13)
 - 상태: **등재**(사분면 가로축). E2 quadrant.dss 채움. **전제: EstimateSnapshot 2회차(7/24 예상) 이상 축적**. 설계 초안 별도 비준.

@@ -3655,3 +3655,30 @@ FinSvc 55 최하(기존 최상 → 최하).
 ThemeHeatScore 07-12 5행 in-place upsert(가드 반영). **beat 3종 상태(결정26=C 상시)**: 전부
 enabled(theme-heat-daily·collect-theme-filings·snapshot-analyst-estimates, estimates next 07-17
 16:30 ET). daily beat 향후 발화 시 가드 자동 반영.
+
+## [2026-07-13] Theme Heat 결정29 — 전환일 driver 보류 (추천 B, 집행)
+
+**결정29 = B (견인 칩만 보류)**: driver.direction은 delta_1d를 읽는데, 개정일을 가로지르는 delta는
+방법론 artifact(07-12 가드 재산출로 FinSvc −12·ConsCyc +13 등 전 테마 인공 점프). → **온도·신뢰·
+성분 칩은 노출, driver(견인 서사)만 조건부 산출 보류**. 범위 = FinSvc 단독 아님(07-12 5 present 테마
+전부 재산출 → 그날 전 테마 보류). 스코어 B 8.90 > C 8.35 > D 6.80(UX 0.40·이력불변 0.25·비용 0.20·
+정보손실 0.15). D(이력 소급 재산출)=이력 불변 위반으로 기각, C(카드 전체 보류)=검증된 온도까지 손실.
+
+**보류 산식 (전역)**: `hold_driver(theme, day)` = delta 구간 (prior_snapshot_date, day] 이 HISTORY_
+MARKER 개정일을 가로지르면 True. 마커 단일 소스 = `heat_history_markers.HISTORY_MARKERS`(현재 1건:
+2026-07-12 c1_thin_quarter_guard). `crossing_marker(prior_date, day)` 헬퍼. **자동 연동**: TH-HISTORY-
+MARKER와 배선 — delta가 마커 가로지르면 자동 보류, 양 끝점 같은 방법론(둘 다 마커 이후)이면 자동 재개.
+
+**API 계약 (E2 build_card)**: 보류 시 `driver = {held:true, reason:"methodology_revision", marker,
+note}` (direction/basis/contribution_pct **미표시**). 정상 시 결정27=B driver + `held:false`. **온도·
+delta_1d 원값·신뢰·성분은 보류와 무관하게 항상 노출**(값+공백 = 정직 신호). 프론트: 보류 칩 muted +
+ⓘ 툴팁, 온도/신뢰/펼침은 게이트만 통과하면 정상 렌더(driver hold 독립).
+
+**라이브 실측**: 07-12 스냅샷 5 present 테마 전부 driver held(prev 07-10 < marker 07-12 ≤ 07-12).
+FinSvc score 55·delta −12 노출 + 견인 보류. **07-13 daily beat부터 정상 재개**(prev 07-12, marker
+미가로지름). 프론트 렌더 게이트(결정28 A·B·C)는 driver 파트에 결정29 hold 조건 부착 후 개방.
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = a6c11bd. 428 GREEN / 13 사전존재
+(attention 6 + leadership_api 7, Neo4j-env). 신규 5 test(driver 보류·crossing_marker). 마이그레이션
+0(API·헬퍼 쓰기만, 원장 무변경). 신규 파일 heat_history_markers.py(TH-HISTORY-MARKER 초석).
+**beat 3종(결정26=C 상시)**: 전부 enabled, estimates next 07-17 16:30 ET.

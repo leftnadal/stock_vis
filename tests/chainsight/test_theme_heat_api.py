@@ -18,6 +18,7 @@ from apps.chain_sight.services.heat_api_service import (
     compute_driver,
     eta_days,
 )
+from apps.chain_sight.services.heat_history_markers import crossing_marker
 
 
 def _sector(ref_id):
@@ -107,6 +108,45 @@ class TestLatestRowSelection:
         tech = next(t for t in resp.json()["themes"] if t["theme"] == "Technology")
         assert tech["status"] == "computed" and tech["score"] == 58
         assert tech["band_display"] == "가열"
+
+
+# ────────────────────────── 결정29 전환일 driver 보류 ──────────────────────────
+class TestCrossingMarker:
+    def test_crosses_guard_marker(self):
+        # 07-10 → 07-12 구간이 07-12 개정 마커를 가로지름
+        m = crossing_marker(date(2026, 7, 10), date(2026, 7, 12))
+        assert m and m["kind"] == "c1_thin_quarter_guard"
+
+    def test_after_marker_no_cross(self):
+        # 07-12 → 07-13 구간엔 (07-12, 07-13] 마커 없음 → 정상
+        assert crossing_marker(date(2026, 7, 12), date(2026, 7, 13)) is None
+
+    def test_no_prior_no_cross(self):
+        assert crossing_marker(None, date(2026, 7, 12)) is None
+
+
+@pytest.mark.django_db
+class TestDriverHold:
+    def _c(self, s):
+        return {"C1": _comp(0.5, s), "C2": _comp(0.5, 0.6), "C3": _comp(0.5, 0.6, z_mode="time_series")}
+
+    def test_hold_across_marker(self):
+        # prev 07-10, latest 07-12 → 마커 가로지름 → driver 보류, 온도·delta 노출
+        _score("Technology", date(2026, 7, 10), 67, components=self._c(0.9))
+        _score("Technology", date(2026, 7, 12), 55, components=self._c(0.5))
+        card = build_card("Technology")
+        assert card["score"] == 55 and card["delta_1d"] == -12  # 온도·delta 노출
+        assert card["driver"]["held"] is True
+        assert card["driver"]["reason"] == "methodology_revision"
+        assert "direction" not in card["driver"]  # direction/basis/percent 미표시
+
+    def test_normal_after_marker(self):
+        # prev 07-12, latest 07-13 → 마커 미가로지름 → 정상 driver
+        _score("Technology", date(2026, 7, 12), 55, components=self._c(0.5))
+        _score("Technology", date(2026, 7, 13), 57, components=self._c(0.7))
+        card = build_card("Technology")
+        assert card["driver"]["held"] is False
+        assert card["driver"]["direction"] == "up"  # 정상 재개
 
 
 # ────────────────────────── A3 accumulating days ──────────────────────────

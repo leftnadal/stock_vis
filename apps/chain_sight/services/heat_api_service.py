@@ -14,6 +14,7 @@ import math
 from datetime import date, timedelta
 from typing import Optional
 
+from apps.chain_sight.services.heat_history_markers import crossing_marker
 from apps.chain_sight.services.heat_labels import COMPONENT_ORDER, component_label
 from apps.chain_sight.services.heat_synthesis import HEAT_WEIGHTS, _is_present
 
@@ -234,7 +235,21 @@ def build_card(ref_id: str) -> Optional[dict]:
     prev = rows[1] if len(rows) > 1 else None
     comps = latest.components or {}
     delta = (latest.score - prev.score) if prev else None
-    driver, _shares = compute_driver(comps, (prev.components if prev else None), delta)
+
+    # 결정29=B: delta 구간이 방법론 개정 마커를 가로지르면 driver(견인 서사)만 보류.
+    # 온도·신뢰·성분은 무관하게 노출(값+공백 = 정직 신호). delta_1d 원값은 유지.
+    marker = crossing_marker(prev.date if prev else None, latest.date)
+    if marker:
+        driver = {
+            "held": True,
+            "reason": "methodology_revision",
+            "marker": marker["date"].isoformat(),
+            "note": "계산 방식 개선일 — 하루 변화 해석은 다음 정상일부터.",
+        }
+    else:
+        driver, _shares = compute_driver(comps, (prev.components if prev else None), delta)
+        if driver is not None:
+            driver["held"] = False
 
     # confidence — 실제 결측 성분에서 도출(하드코딩 금지)
     present = [k for k in COMPONENT_ORDER if k in comps and _is_present(comps.get(k))]

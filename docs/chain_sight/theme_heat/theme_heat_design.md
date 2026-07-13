@@ -119,6 +119,11 @@ cool/warning/overheated 유지, 표시 라벨(band_display)만 **0–39 냉각 /
 - 퇴화(delta 부호와 일치하는 증분 성분 부재 = 재분배·반올림 기인) → level 폴백 + direction 유지.
 - 성분 기여율 합 = 100%(±0.1%p). `basis`("delta"|"level")·`direction`("up"|"down"|"none") 병기.
 
+**전환일 driver 보류 (결정29=B, TH-16 검증 후)**: delta_1d 구간(직전 스냅샷~당일)이 방법론 개정일
+(`heat_history_markers.HISTORY_MARKERS`)을 가로지르면 그 delta는 artifact → **driver(견인 서사)만
+보류**(`driver.held=true`, direction/basis/% 미표시). 온도·delta_1d 원값·신뢰·성분은 무관하게 노출
+(값+공백 = 정직 신호). 양 끝점이 같은 방법론일 때 자동 재개. `crossing_marker(prior_date, day)` 산식.
+
 **C1 밸류에이션 조합 (결정15=A, v1.2.7)**: EV/Sales = FMP enterprise-values(**period=quarter**)
 ÷ income-statement(quarter) revenue. **시점 정합 정본**: EV.date == income.date 동일 fiscal_date
 강제(라벨 불일치·미발표 미저장, 추정·대체 금지). 원장 QuarterlyValuation. 섹터 EV/Sales 중앙값의
