@@ -17,16 +17,67 @@ from services.news.services.aggregator import NewsAggregatorService
 @pytest.mark.parametrize(
     "raw,expected",
     [
+        # (a) 무쿼리 / 슬래시·대소문자 정규화 (구 규칙과 동일)
         ("https://Example.com/A/", "https://example.com/a"),
-        ("https://example.com/a?utm_source=x&y=1", "https://example.com/a"),
         ("  https://EXAMPLE.com/Path/  ", "https://example.com/path"),
         ("https://example.com/a", "https://example.com/a"),
         (None, ""),
         ("", ""),
+        # (b) tracking-only → 구 규칙과 동일하게 base 만 (IDENTICAL)
+        ("https://x.com/a?utm_source=z&utm_medium=e", "https://x.com/a"),
+        ("https://x.com/a?fbclid=123", "https://x.com/a"),
+        ("https://x.com/a?gclid=1", "https://x.com/a"),
+        ("https://x.com/a?ref=twitter", "https://x.com/a"),
+        # (c) id 보존 (NEWS-URLNORM-IDQUERY 수정 목표)
+        ("https://www.youtube.com/watch?v=abc", "https://www.youtube.com/watch?v=abc"),
+        ("https://finviz.com/quote?t=aapl", "https://finviz.com/quote?t=aapl"),
+        # (c) tracking 만 제거하고 id 는 보존
+        ("https://example.com/a?utm_source=x&y=1", "https://example.com/a?y=1"),
+        ("https://x.com/a?gclid=1&id=99", "https://x.com/a?id=99"),
+        # ambiguous key(ocid)는 blocklist 미포함 → 보존(과소병합=가역)
+        ("https://msn.com/x?ocid=abc", "https://msn.com/x?ocid=abc"),
     ],
 )
 def test_normalize_news_url_rules(raw, expected):
     assert normalize_news_url(raw) == expected
+
+
+def _old_normalize(u):
+    """구 규칙(쿼리 전량 제거) — 행위보존 오라클."""
+    n = (u or "").strip().lower()
+    if "?" in n:
+        n = n.split("?")[0]
+    if n.endswith("/"):
+        n = n[:-1]
+    return n
+
+
+@pytest.mark.parametrize(
+    "raw",
+    [
+        "https://example.com/a",                 # (a)
+        "https://EXAMPLE.com/Path/",             # (a)
+        "https://x.com/a?utm_source=z",          # (b)
+        "https://x.com/a?fbclid=1&utm_medium=e",  # (b)
+        "https://x.com/a#frag",                  # (a) fragment 보존(구 규칙 동치)
+        "",
+    ],
+)
+def test_behavior_preserved_for_noquery_and_tracking_only(raw):
+    """(a)무쿼리·(b)tracking-only 는 구 규칙과 IDENTICAL (골든셋 회귀)."""
+    assert normalize_news_url(raw) == _old_normalize(raw)
+
+
+def test_collapse_groups_now_split_by_id():
+    """구 규칙이 붕괴시키던 공유경로 URL 이 id 별로 distinct 키가 된다."""
+    yt = ["https://www.youtube.com/watch?v=abc", "https://www.youtube.com/watch?v=xyz"]
+    fv = ["https://finviz.com/quote?t=aapl", "https://finviz.com/quote?t=msft"]
+    # 구 규칙: 각 그룹이 1키로 붕괴
+    assert len({_old_normalize(u) for u in yt}) == 1
+    assert len({_old_normalize(u) for u in fv}) == 1
+    # 신 규칙: 각 원본이 distinct 키
+    assert len({normalize_news_url(u) for u in yt}) == 2
+    assert len({normalize_news_url(u) for u in fv}) == 2
 
 
 def test_all_providers_share_one_normalization():
