@@ -8,6 +8,20 @@
 
 ---
 
+## T-3b — 상향학습 선별·자가오염·seed status 권위 일원화 (2026-07-13) [chainsight]
+
+**결정**: RelationConfidence 상향학습의 재승급 flap을 **엔진 국소 수정(①②③ⓔ) + seed status 권위 제거(ⓓ-2)**로 근절. ⓓ-1(seed 단조 가드)·ⓓ-3 미채택. 병합=`--no-ff`(rebase 금지, Phase 커밋 해시 보존).
+- ① 선별식 = `Q(last_computed_at__isnull=True) | Q(last_observed_at__gt=F(last_computed_at))`(비-market). 구 `last_observed_at__date=period` 폐기 + 콜드스타트 백필 마이그 0016(NULL 행 `last_computed_at←last_observed_at`).
+- ② upward save를 `update_fields`로 — `last_observed_at`(auto_now) 제외. **①·② 필수 동반**(auto_now가 선별식을 영구참으로 만듦). `previous_status`·`neo4j_dirty`는 save() override가 쓰므로 update_fields에 포함(기존 행위 보존).
+- ⓔ 멱등 상태화: confirmed면 fast-path·save skip, fastpath_triggered_at 최초 1회, last_upgraded_at 실 전이 시만.
+- ⓓ-2: **status 권위 도메인 분할** — 비-market(truth) 상향=upward 엔진(highscore≥85/fast-path/streak), 하향=decay 전담. SEC seed(`sec_pipeline/tasks.py`)는 기존 pair status 무기록(`defaults`), 신규만 초기값(`create_defaults`). market status=`update_relation_confidence` 베이스라인 관할(upward 제외). 구 seed ≥85 규칙은 `HIGHSCORE_THRESHOLD=85`로 엔진 단일출처 이관.
+
+**Why**: 관찰 창(07-08~12) 실측 — SEC seed(매일 01:00)가 upward 틱(00:30)이 fast-path로 올린 medium-grade tier1 공급망 pair(37건)를 30분 뒤 probable로 되돌림 = fastpath=30 churn(격일). "잃긴 쉽고 되찾긴 어렵다"의 하향/상향 비대칭을 지키려면 **한 pair의 status 상향/하향 권위가 각 1주체**여야 flap 불성립. B-0 감사(하드게이트): 기록자 전수=SEC seed/update_relation_confidence(upward보다 먼저 도는 베이스라인, flap 원천 아님)/upward/decay — 예상 밖·강의존 없음, SEC seed는 truth 전용이라 market 고아화 없음(제4 기록자 도메인 분할로 승인).
+
+**How to apply**: 지시서 T-3b. 커밋 Phase A `b5a9485`·Phase B `7252590`·명문화 `6ab8955` → 병합 `3a3e921`(P-0 충돌 0·rerere clean). prod 마이그 0016(NULL 13,427→0). §4 관찰(거래일 3틱, 첫 유의미 틱부터 기산): 첫 신로직 틱(07-14) evaluated≈270(SEC 재관측 경로 = 0 아님), 코호트 30~37 confirmed 승급 마지막 1회 + 01:00 seed 후 유지(flap 소멸) + 쓰기 증폭 감소. §6 동결 재적용(§4 종료까지 chain_sight·sec_pipeline merge/rebase 금지). 정리 대기: DB beat 삭제·pair 브랜치·OPS-WORKTREE-ISOLATION·SEC β(seed status 무기록 승계 명기). **검증**: 545 passed(신규 31), 사전존재 13(attention6+leadership7 Neo4j-env) 무관.
+
+---
+
 ## credit_signals 신규 앱 (Phase 1) — FRED 크레딧 신호 백본 (2026-07-08) [credit]
 
 **결정**: "채권이 먼저 말한다" 축을 위해 **신규 Django 앱 `apps.credit_signals`**(label `credit_signals`)를
