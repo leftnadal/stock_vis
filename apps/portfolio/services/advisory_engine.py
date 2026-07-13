@@ -183,10 +183,13 @@ def find_trim_candidates(user) -> list:
     )
     valued = [(h, h.shares * _current_price(h.stock)) for h in holdings]
 
+    # 집중도 분모 = 통화별 총 배치(보유평가 + 현금). 현금 많으면 종목 집중 완화(정직).
     total_by_cur: dict[str, Decimal] = {}
     for h, v in valued:
         cur = h.stock.currency
         total_by_cur[cur] = total_by_cur.get(cur, Decimal(0)) + v
+    for cb in CashBalance.objects.filter(wallet__user=user):
+        total_by_cur[cb.currency] = total_by_cur.get(cb.currency, Decimal(0)) + cb.amount
 
     trims = []
     for h, v in valued:
@@ -198,3 +201,97 @@ def find_trim_candidates(user) -> list:
                 {"symbol": h.stock.symbol, "currency": cur, "weight": weight}
             )
     return trims
+
+
+# ============================================================
+# 산출 계약 (D4) — Slice 20이 소비하는 안정 형태
+# ============================================================
+
+DISCLAIMER = (
+    "19a는 수익 예측기가 아닙니다 — 목표-의식·신뢰도/여력 기반 배치 코치. "
+    "갭은 후행(현재 수익률)·구조(유휴현금) 사실이며 forward 예측이 아닙니다."
+)
+
+
+def recommend(user) -> dict:
+    """목표-대비 권유 산출(계약). action ∈ {BUY, HOLD, TRIM}.
+
+    반환:
+      {
+        "mode": "BUY"|"DEFEND",
+        "summary": {progress_gap(통화별), allocation_gap(통화별), goal_target_return_pct},
+        "recommendations": [{action, symbol, currency, score, rationale}, ...],
+        "disclaimer": "...예측 아님...",
+      }
+    """
+    from apps.portfolio.services.my_container import get_goal_for_user
+
+    goal = get_goal_for_user(user)
+    progress = compute_progress_gap(user, goal)
+    allocation = compute_allocation_gap(user)
+    mode = determine_mode(progress, allocation)
+
+    recommendations = []
+
+    # 가드레일 2: TRIM (집중도 초과, 모드 무관 항상 검사)
+    trim_symbols = set()
+    for t in find_trim_candidates(user):
+        trim_symbols.add(t["symbol"])
+        recommendations.append(
+            {
+                "action": "TRIM",
+                "symbol": t["symbol"],
+                "currency": t["currency"],
+                "score": None,
+                "rationale": (
+                    f"통화별 집중도 {t['weight'] * 100:.0f}% > "
+                    f"{CONCENTRATION_THRESHOLD * 100:.0f}% — 배치 규칙(예측 아님)"
+                ),
+            }
+        )
+
+    # HOLD: 보유 중 TRIM 아닌 것 (현재 포지션 유지)
+    holdings = WalletHolding.objects.filter(wallet__user=user).select_related("stock")
+    for h in holdings:
+        if h.stock.symbol not in trim_symbols:
+            recommendations.append(
+                {
+                    "action": "HOLD",
+                    "symbol": h.stock.symbol,
+                    "currency": h.stock.currency,
+                    "score": None,
+                    "rationale": "집중도 정상 — 보유 유지",
+                }
+            )
+
+    # BUY: 매수 모드 & 통화별 여력 있는 후보 (RelationConfidence+진입가 정렬)
+    if mode == "BUY":
+        for currency in allocation:
+            for c in rank_candidates(user, currency, allocation):
+                dist = c["distance_from_entry"]
+                dist_txt = f"진입가 여유 {dist:.1f}%" if dist is not None else "진입가 미설정"
+                recommendations.append(
+                    {
+                        "action": "BUY",
+                        "symbol": c["symbol"],
+                        "currency": currency,
+                        "score": c["relation_score"],
+                        "rationale": (
+                            f"관계 신뢰도 {c['relation_score']:.2f}, {dist_txt} "
+                            "— 신뢰도/여력 기반(예측 아님)"
+                        ),
+                    }
+                )
+
+    return {
+        "mode": mode,
+        "summary": {
+            "progress_gap": progress,
+            "allocation_gap": allocation,
+            "goal_target_return_pct": (
+                goal.target_return_pct if goal else None
+            ),
+        },
+        "recommendations": recommendations,
+        "disclaimer": DISCLAIMER,
+    }
