@@ -8,6 +8,17 @@
 
 ---
 
+## SLICE19A — 목표-대비 권유 엔진: 정직한 A (원안 폐기 + 정직한 갭) (2026-07-13) [portfolio]
+
+**원안 폐기(supersede)**: 원안 SLICE19A(갭=목표수익−현재기대수익, forward 예측 골격)는 STEP 0 A-게이트 **실패**로 폐기. 측정=`docs/portfolio/coach/slice19a/STEP0_SIGNAL_INVENTORY.md`. forward 기대수익 정본 신호 0: analyst_target_price·analyst_rating·forward_pe=유령 필드(writer 없음·항상 null), EstimateSnapshot 부재, 프리셋 스코어링 엔진=0~100 품질점수(기대수익 아님)+고아(미배선), return_12m=리졸버 부재·후행. → **정직한-A 채택**(디렉터 재판정 4.75 vs B후퇴 3.95/신호선구축 3.55/정지 3.95, 마진 0.80, 사용자 승인).
+
+- **제품 정체성**: 19a는 수익 예측기 아님 = "목표-의식 + 신뢰도 기반 배치 코치". 현금 KRW+USD 다통화 / 목표 단일 "수익"(총수익·배당 제외).
+- **카디널리티(트리거 종결)**: `CashBalance` `OneToOne(Wallet)` → **`FK(Wallet)`+`unique(wallet,currency)`**(지갑당 통화별 현금 1행). `UserGoal` **OneToOne(user) 유지**(단일 목표, 다중목표 안 함).
+- **정직한 갭(뼈대 A)**: ⑴ 진행 갭 = 현재 포트폴리오 수익률(avg_cost vs 현재가 DailyPrice) − 목표수익률(후행·사실). ⑵ 배치 갭 = 유휴현금 비중(현금/총평가·구조). **forward 예측 없음** — 없는 예측치를 프록시로 짓지 않는다(유령 필드 실수 회피).
+- **랭킹 드라이버**: RelationConfidence(주, symbol_a/b 티커→WatchlistItem 매핑)+distance_from_entry(부). 가중치 벡터=19b.
+- **FX**: 통화별 매수여력 분리(환전 없음). 교차환전=19b.
+- **Why(정직한-A)**: 데이터가 실제 받쳐주는 두 축(진행·배치)으로 갭 재정의 + 후보는 해자(RelationConfidence)가 정렬. 진짜 기대수익 최적화는 forward 신호 인프라(미래) 필요.
+
 ## SLICE18R-CARDINALITY — OneToOne 카디널리티 가정 (미확정, 19a 재검토 트리거) (2026-07-13) [portfolio]
 
 **결정(가정 명시, 뒤집는 게 아님)**: 18-R의 신규 2모델 카디널리티를 **현재 `OneToOne`으로 두되 "가정"임을 명시**하고 19a STEP 0에서 강제 재검토한다.
