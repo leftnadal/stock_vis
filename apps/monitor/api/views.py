@@ -40,6 +40,7 @@ from apps.monitor.models import (
     MonitorIndicator,
     MonitorSnapshot,
 )
+from apps.monitor.services import closure
 from apps.monitor.services.pipeline import evaluate_monitor
 from apps.monitor.services.sparkline import score_series
 
@@ -202,6 +203,32 @@ class ClaimViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         self._assert_owner(serializer.validated_data["monitor"])
         serializer.save()
+
+    @action(detail=True, methods=["get"], url_path="close-preview")
+    def close_preview(self, request, pk=None):
+        """마감 모달 프리필 — 제안 판정·종합점수·지표 목록 (상태 변경 없음)."""
+        claim = self.get_object()  # owner 스코프 자동 적용
+        return Response(closure.close_preview(claim), status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["post"])
+    def close(self, request, pk=None):
+        """가설 마감 (원자적) — 판정·회고·지표별 결과·동결 스냅샷."""
+        claim = self.get_object()
+        data = request.data
+        try:
+            closed = closure.close_claim(
+                claim,
+                final_verdict=data.get("final_verdict"),
+                factor_tags=data.get("factor_tags", []),
+                retro_memo=data.get("retro_memo", ""),
+                indicator_results=data.get("indicator_results", []),
+                user=request.user,
+            )
+        except closure.AlreadyClosedError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_409_CONFLICT)
+        except closure.ClosureValidationError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(closed).data, status=status.HTTP_200_OK)
 
 
 class IndicatorReadingViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):

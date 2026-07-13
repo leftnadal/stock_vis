@@ -172,6 +172,8 @@
 | ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
 | MON-P3-ALERT | 전이 알림·다이제스트·상태밴드 스파크라인 (AlertEvent + 인앱 벨 + 이메일 + FE 스파크라인) | @backend+@frontend+@infra | MON-P2-BEAT land | ✅ 완료 2026-07-09 (land `8433fe1`). **배포 완료 2026-07-13**(FIRSTFIRE Case A green → sv sync + migrate 0005 + env `MONITOR_ALERT_RECIPIENT` + 재기동, ALERTFIRE 첫 알림코드 무인 발화 alerts=0 정상). DECISIONS `D-MONITOR-ALERTCLOSE` | ADR §결정1~4 |
 | MON-CLOSE | Monitor 검증 단계 4 DoD 종결 + 부수 정리 5건 + 결정 봉인 | @infra+@frontend | MON-P3-ALERT 배포 | ✅ 완료 2026-07-13 (`monorepo/mon-close`). 4 DoD 완결(authed 픽셀=goid545 세션 스파크라인 렌더)·63fa58cb 삭제·라벨 Thesis→Monitor·T-1 정정 각주·common-bugs #51·빌더 스모크 항목화. OWNERFIX 폐기. DECISIONS `MON-CLOSE` | - |
+| MON-CLOSE-UI-P1 | 마감 데이터·엔드포인트 (BE) — Claim verdict/회고/동결 + close 액션 | @backend | MON-CLOSE-UI RECON | ✅ 완료 2026-07-13 (`monorepo/mon-close-ui-p1`). ClaimIndicatorResult·ClosureSnapshot·Claim 회고필드(migration 0006 additive)·propose_verdict(±0.333)·close-preview/close 액션. 엔진·beat·shared 불변. DECISIONS `D-MONITOR-CLOSE-UI-P1`. **실 DB migrate 0006은 배포 단계** | - |
+| MON-CLOSE-UI-P2 | 마감 FE — `/monitor/[id]` 상세(dangling link 해소)·CloseModal·VerdictBadge·마감 필터탭·동결 카드 | @frontend | MON-CLOSE-UI-P1 검증 | 🕒 예약(P1 검증 후 별도 지시서) | - |
 | MON-VIZ-ROTATIONMAP | 모니터 회전 맵(RRG 동형 2축 분포) — 상태밴드 스파크라인의 후속 시각화 | @frontend+@backend | **착수조건: 활성 모니터 ≥5** | 🕒 예약(조건 미충족) | ⚠ market_pulse 컴포넌트 **직접 import 금지** — shared 승격 vs 재구현은 착수 시 결정(D-MONITOR-ALERTCLOSE 1b) |
 | MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
 

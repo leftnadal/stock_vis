@@ -34,9 +34,14 @@ class ClaimSerializer(serializers.ModelSerializer):
         model = Claim
         fields = [
             "id", "monitor", "assertion", "deadline", "status", "outcome",
+            "proposed_verdict", "resolved_by", "factor_tags", "retro_memo",
             "created_at", "resolved_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        # 마감 회고 필드는 close 액션에서만 설정 — 직접 CRUD로 쓰지 못하게 read-only
+        read_only_fields = [
+            "id", "created_at", "proposed_verdict", "resolved_by",
+            "factor_tags", "retro_memo", "resolved_at",
+        ]
 
 
 class AlertEventSerializer(serializers.ModelSerializer):
