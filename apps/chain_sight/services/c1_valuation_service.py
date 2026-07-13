@@ -16,11 +16,16 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any, Optional, Sequence
 
-from apps.chain_sight.services.heat_components import c1_valuation, make_component
+from apps.chain_sight.services.heat_components import (
+    c1_valuation,
+    make_component,
+    representative_series,
+)
 
 logger = logging.getLogger(__name__)
 
 C1_MIN_QUARTERS = 8  # 3년 z 표본 하한(분기 단위 ≈ 2년). 미만 → 결측.
+C1_THIN_RATIO = 0.60  # 얇은 분기 가드(결정28) — floor = ceil(0.60 × median(분기 n_syms)).
 
 
 def _to_decimal(v: Any) -> Optional[Decimal]:
@@ -109,6 +114,9 @@ def c1_valuation_from_db(
 
     quarters = sorted(by_quarter)
     medians = [statistics.median(by_quarter[q]) for q in quarters]
-    current = medians[-1]
-    history = medians[:-1]
+    sizes = [len(by_quarter[q]) for q in quarters]  # 분기별 제출 종목 수
+    # 얇은 분기 가드(결정28): 비대표 median(얇은 표본) 버킷 제외 → current/history 대표성 확보.
+    current, history, _info = representative_series(medians, sizes, ratio=C1_THIN_RATIO)
+    if current is None:
+        return make_component(None, raw=None, missing_reason="c1_thin_quarters")
     return c1_valuation(current, history, min_n=min_n)

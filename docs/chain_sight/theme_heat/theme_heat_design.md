@@ -125,6 +125,12 @@ cool/warning/overheated 유지, 표시 라벨(band_display)만 **0–39 냉각 /
 분기 3년 z(min_n 8분기). Fwd P/E 레그는 결정15 범위 밖(EV/Sales 단독). ★enterprise-values 는
 period 미지정 시 연간 → quarter 명시 필수.
 
+**C1 얇은 분기 가드 (결정28, TH-16-RATIFY)**: 섹터 분기 median 은 그 분기 제출 종목 수(n_syms)로
+뒷받침될 때만 대표값. floor = ceil(0.60 × median(분기별 n_syms)) 미만 버킷 제외(`representative_series`
+공용 헬퍼) → current/history 대표성 확보. 근거: FinSvc 2026Q2 = FDS 단독(n=1) median 18.07 →
+z 7.51 폭등(상방 오염), ConsCyc 2026Q2 n=13 → z −2.98(하방 오염). 가드는 **양방향** 교정. 채택 0
+→ `c1_thin_quarters` 결측. 시계열 성분(C1/C2/C5/C6/C7) 공용(현재 C1 배선).
+
 **C3 집계 규칙 (결정16=A + 결정17 1차 규칙, v1.2.8)**: 테마별 일간 mention_count =
 DailyNewsKeyword search_terms_en 정규화(소문자·공백) 후 테마 키워드 시드(news
 `KEYWORD_SECTOR_MAP`)와 **토큰 매칭** — 단일 단어 시드는 검색어 토큰 완전 일치, 다단어 키워드는

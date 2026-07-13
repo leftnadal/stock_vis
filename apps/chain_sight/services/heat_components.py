@@ -79,6 +79,36 @@ def timeseries_z(
     return (float(current) - mean) / std
 
 
+def representative_series(
+    values: Sequence[float], sizes: Sequence[int], ratio: float = 0.60
+) -> tuple:
+    """
+    얇은 표본 가드 (TH-C1-THIN-QUARTER-GUARD, 결정28) — 시계열 성분 공용.
+
+    버킷(분기 등) 오름차순 `values`/`sizes` 평행 리스트. 각 버킷 대표값(예: 섹터 median)이
+    표본 `sizes[i]`(예: 제출 종목 수)로 뒷받침될 때만 채택 — 얇은 버킷(비대표 median)이 z 를
+    왜곡하는 것을 차단(FinSvc 2026Q2 = FDS 단독 n=1 → median 18.07 폭등 사례).
+
+    floor = ceil(ratio × median(sizes)) (테마 자기 참조, 얇은 버킷에 강건). size ≥ floor 버킷만
+    채택 → current = 채택 최신값, history = 그 이전 채택값들. 채택 0 → (None, [], info).
+
+    반환 (current, history, info={floor, reference, dropped, kept_n}).
+    """
+    import math
+    import statistics as _st
+
+    if not sizes:
+        return None, [], {"floor": None, "reference": None, "dropped": 0, "kept_n": 0}
+    reference = _st.median(sizes)
+    floor = math.ceil(ratio * reference)
+    kept = [(v, s) for v, s in zip(values, sizes) if s >= floor]
+    info = {"floor": floor, "reference": reference,
+            "dropped": len(values) - len(kept), "kept_n": len(kept)}
+    if not kept:
+        return None, [], info
+    return kept[-1][0], [v for v, _ in kept[:-1]], info
+
+
 def cross_sectional_z(
     value: Optional[float], population: Sequence[Optional[float]], min_n: int = 3
 ) -> Optional[float]:

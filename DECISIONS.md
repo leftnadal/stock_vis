@@ -3612,3 +3612,46 @@ collect-theme-filings=enabled(next 07-13 17:30 ET)·snapshot-analyst-estimates=e
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 8725258. 418 GREEN / 13 사전존재
 (attention 6 + leadership_api 7, Neo4j-env). 신규 1 test(down direction). 마이그레이션 0(driver
 산식·테스트·문서 쓰기만, 원장 무변경). 프로브는 읽기 전용.
+
+## [2026-07-13] Theme Heat TH-16-RATIFY — 결정28 (가드 우선 집행 + 프론트 게이트 강화)
+
+**결정28 = 가드우선**: C1 수정 단계에서 **TH-C1-THIN-QUARTER-GUARD(d, 값 결함)를 TH-ZMODE-LABEL-
+FIX(c, 표시 결함)보다 먼저** 집행. 사유: '상한 위반'은 오경보(횡단면이어도 n=75 상한 8.545 >
+7.513), 진짜 결함은 (d) 얇은 분기 오염 → 표시(c)보다 값(d)이 급함. C1은 최대 가중 성분(0.18).
+
+**프론트 렌더 선행 게이트 개정**: 기존 'C1 프로브 클리어'에 **AND ⑵ TH-C1-THIN-QUARTER-GUARD
+반영 + ⑶ 영향 테마 원장 재산출 완료** 추가(TH-15 게이트 선례 동형). 부풀린 값이 화면 첫 숫자가
+되는 것을 구조 차단. **본 세션에서 ⑵⑶ 충족** → 게이트 A·B·C 전부 클리어.
+
+**가드 집행 (TH-C1-THIN-QUARTER-GUARD)**: 헬퍼 `representative_series(values, sizes, ratio=0.60)`
+(heat_components, 시계열 성분 공용) — floor = ceil(0.60 × median(분기 n_syms)) 미만 버킷 제외 →
+current/history 대표성 확보. `c1_valuation_from_db` 배선(current 분기 median 산출 1곳). 채택 0 →
+`c1_thin_quarters` 결측. **G0 실측**: 4/5 테마 최신 2026Q2 얇음(FinSvc n=1·Tech 33·Industrials 13·
+ConsCyc 13, Energy는 2026Q2 부재=영향 없음). 중도 0.60이 정상 분기 과드롭 없음(Tech만 초기 2022Q2
+동반 드롭=무해).
+
+**G3 재산출 (07-12 원장, 가드 격리) — 양방향 오염 교정 실측**:
+| 테마 | 온도 전→후 | C1 s 전→후 | 사유 |
+|---|---|---|---|
+| Consumer Cyclical | 44→**57** (+13) | 0.049→0.660 | 2026Q2(n=13) **하방** 오염 교정 |
+| Energy | 58→58 (0) | 0.663→0.663 | 얇은 분기 없음 |
+| Industrials | 57→56 (−1) | 0.772→0.705 | |
+| Technology | 58→56 (−2) | 0.694→0.620 | |
+| Financial Services | 65→**55** (−10) | 0.999→0.534 | FDS 단독 **상방** 오염 교정 |
+
+★**FinSvc 온도 확정 = 55**(C1 z 7.5135→0.1369). **결정28 정량 예상(s→0.831)과 실제(s→0.534)
+괴리**: 예상은 완화 교정 가정, 실제는 current=2026Q1 median 11.70이 history 평균 11.58 근처라 z≈0.14
+(중립). 예상보다 강한 교정 = 정상(예상은 "예상"). ★**ConsCyc +13은 미예측 발견** — 얇은 분기가
+하방으로도 오염(z=−2.976 저평가) → 가드가 **양방향** 교정. 재산출 후 랭킹 역전: Energy 58 최상,
+FinSvc 55 최하(기존 최상 → 최하).
+
+**history-marker 주의(TH-HISTORY-MARKER)**: 07-10 행(TH-13, 가드 전·h2_v1)은 이력이라 재산출 안 함
+(과거 스냅샷 보존). 07-12(가드 후 55) vs 07-10(67) delta_1d = −12는 **방법론 변경 artifact**(실 1일
+이동 아님). 프론트 노출은 게이트로 차단 중 + 향후 daily beat가 가드 일관 적용하므로 이후 delta는
+정상. TH-HISTORY-MARKER로 개정일 마킹 권장.
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 962cfca. 423 GREEN / 13 사전존재
+(attention 6 + leadership_api 7, Neo4j-env). 신규 5 test(가드). 마이그레이션 0. 원장 재산출 =
+ThemeHeatScore 07-12 5행 in-place upsert(가드 반영). **beat 3종 상태(결정26=C 상시)**: 전부
+enabled(theme-heat-daily·collect-theme-filings·snapshot-analyst-estimates, estimates next 07-17
+16:30 ET). daily beat 향후 발화 시 가드 자동 반영.
