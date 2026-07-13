@@ -103,3 +103,23 @@ export async function fetchEventStocks(
   }>(`/chainsight/events/${encodeURIComponent(theme)}/stocks/`, { params: { window } });
   return data.stocks;
 }
+
+// ── Theme Heat API (TH-15/16) ──
+
+import type { ThemeHeatBarItem, ThemeHeatCard } from '@/types/chainsight';
+
+/** GET /chainsight/theme-heat/ — 버튼바. 봉투 { count, themes:[...] }에서 themes 추출. */
+export async function fetchThemeHeatBar(): Promise<ThemeHeatBarItem[]> {
+  const { data } = await authAxios.get<{ count: number; themes: ThemeHeatBarItem[] }>(
+    '/chainsight/theme-heat/',
+  );
+  return data.themes;
+}
+
+/** GET /chainsight/theme-heat/{theme}/ — 카드. 객체 직접 반환. */
+export async function fetchThemeHeatCard(theme: string): Promise<ThemeHeatCard> {
+  const { data } = await authAxios.get<ThemeHeatCard>(
+    `/chainsight/theme-heat/${encodeURIComponent(theme)}/`,
+  );
+  return data;
+}

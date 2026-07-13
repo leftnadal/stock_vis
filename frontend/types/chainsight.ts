@@ -128,3 +128,67 @@ export interface EventRankingItem {
   capture_spread: number | null; // 주신호 — 주도우위
   is_fallback: boolean; // fallback 산출 여부
 }
+
+// ── Theme Heat (TH-15/16, 결정23B/24C/25③/27/29) ──
+
+/** GET /api/v1/chainsight/theme-heat/ 버튼바 항목 (테마당) */
+export interface ThemeHeatBarItem {
+  theme: string;
+  status: 'computed' | 'accumulating';
+  score: number | null;        // computed만
+  band: 'cool' | 'warning' | 'overheated' | null;
+  band_display: string | null; // 냉각/가열/과열
+  delta_1d: number | null;
+  days: number;
+  days_required: number;       // 26
+  eta_days: number | null;     // D-n, CV<0.3일 때만
+  universe_stale: boolean;
+}
+
+/** E2 driver — 결정27 산식 + 결정29 보류 */
+export interface ThemeHeatDriver {
+  held: boolean;
+  reason?: string;
+  marker?: string;
+  note?: string;
+  component?: string;
+  label_surface?: string;
+  label_technical?: string;
+  z?: number;
+  contribution_pct?: number;
+  basis?: 'delta' | 'level';
+  direction?: 'up' | 'down' | 'none';
+}
+
+/** E2 성분 (결정25 이중사전 + z_mode) */
+export interface ThemeHeatComponent {
+  id: string;                  // C1..C8
+  label_surface: string;
+  label_technical: string;
+  z: number | null;
+  w: number;
+  s: number | null;
+  z_mode: 'time_series' | 'cross_sectional' | null;
+  status: 'computed' | 'accumulating' | 'coldstart';
+}
+
+/** GET /api/v1/chainsight/theme-heat/{theme}/ 카드 */
+export interface ThemeHeatCard {
+  theme: string;
+  as_of: string | null;
+  status: 'computed' | 'accumulating';
+  score: number | null;
+  band: string | null;
+  band_display: string | null;
+  delta_1d: number | null;
+  z_mode: string | null;
+  driver: ThemeHeatDriver | null;
+  confidence: { present: number; total: number; missing: string[]; renorm_divisor: number } | null;
+  components: ThemeHeatComponent[];
+  quadrant: { heat: number | null; dss: number | null; dss_status: string; dss_eta: string };
+  history: { values: number[]; capacity: number; filled: number };
+  days?: number;
+  days_required?: number;
+  eta_days?: number | null;
+  blocked?: { reason: string; since: string | null; days_stale: number | null };
+}

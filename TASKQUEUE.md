@@ -661,9 +661,13 @@
 ## ✅ 결정30 — driver 보류 정밀화 지연 반영 (선택지3, 스펙 등재만, 2026-07-13)
 - 상태: **스펙 등재**(코드 미적용). 현행 date 기반 전역 보류(결정29) 유지 — 오늘 가시적 손실 0(Energy delta=0 → driver=none, held/none 동일). 정밀화(marker.affected_themes로 보류 한정)는 **TH-HISTORY-MARKER DB 승격 슬라이스**에서 반영. 07-12 백필 = {FinSvc, ConsCyc, Tech, Industrials}(G3 실측 정합, Energy 제외).
 
+## ✅ 프론트 v3 렌더 — 테마 온도계 카드+버튼바 (집행 종결, 2026-07-13, 결정28 #4)
+- 상태: **집행 종결**. R0-b z_mode 불변식 잠금(`zmode_violations`, 재발 차단, 3 test). R1~R4: 타입·서비스(fetchThemeHeatBar/Card) + `ThemeHeatBar`(결정23B)·`ThemeHeatCard`(결정24C, 견인칩 결정29 held/결정27 방향 분기)·`themeHeatCopy`(z_mode 근거 문구) + `app/chainsight/theme-heat/` 페이지. R5: 컴포넌트 실렌더 6 vitest 통과(전환일 보류·정상일 방향·의미 레이어·버튼바·D-n·onSelect), tsc 0. 백엔드 433 GREEN.
+- ⚠️ 라이브 브라우저 스크린샷 유예(07-13 스냅샷 미도래·dev 스택 미기동) — 컴포넌트 실 DOM 검증으로 계약 A/B 확인. affected_themes(결정30) 미반영=현행 date 기반 렌더.
+
 ## 집행 순서 (결정28+29+30) — 프론트 렌더 게이트
-- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류(백엔드) · 결정30[등재] 정밀화 지연 · 3. [DONE] TH-ZMODE-LABEL-FIX (표시 결함 c 종결)
-- 4. [NEXT] 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 분기(현행 date 기반) + z_mode 정정 라벨(의미 레이어) · 5. TH-FIRSTRULE-DEFECT(별도 비준)
+- 1~2. [DONE] TH-C1-Z-PROBE · TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류 · 결정30[등재] 정밀화 지연 · 3. [DONE] TH-ZMODE-LABEL-FIX · 4. [DONE] 프론트 v3 렌더
+- 5. [NEXT] TH-FIRSTRULE-DEFECT(오배정 215, 별도 비준) · 후순위: C4(8월)·C8(7/17)·TH-DSS-IMPL(7/24)·TH-HISTORY-MARKER DB 승격(결정30 affected_themes)
 - 프론트 게이트 = (A 프로브 ✅) AND (B 가드 ✅) AND (C 재산출 ✅) → **v3 렌더 개방**. FinSvc 재산출 값 55로만 노출. driver 파트는 hold_driver 분기(07-12 보류/07-13 재개).
 
 ## ✅ TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (집행 종결, 2026-07-13, 결정28 #3)

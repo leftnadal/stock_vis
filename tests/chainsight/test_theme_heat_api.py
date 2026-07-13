@@ -181,6 +181,26 @@ class TestZModeLabelFix:
         assert zmap["C8"] == "cross_sectional"       # C8 저장 횡단면 우선(유일 실제 횡단면)
 
 
+class TestZModeInvariant:
+    # R0-b: 미래에 C1/C2/C5/C6/C7이 cross_sectional을 저장하면 CI 즉시 실패(재발 차단)
+    def test_good_components_no_violation(self):
+        from apps.chain_sight.services.heat_labels import zmode_violations
+        good = {"C3": _comp(0.5, 0.6, z_mode="time_series_expanding"),
+                "C8": _comp(0.3, 0.5, z_mode="cross_sectional")}  # C8 횡단면 정당
+        assert zmode_violations(good) == []
+
+    def test_c5_cross_sectional_flagged(self):
+        from apps.chain_sight.services.heat_labels import zmode_violations
+        bad = {"C5": _comp(0.5, 0.6, z_mode="cross_sectional")}  # C5는 time_series여야 함
+        v = zmode_violations(bad)
+        assert len(v) == 1 and v[0]["component"] == "C5"
+
+    def test_c8_time_series_not_flagged(self):
+        # C8 콜드스타트 후 time_series 전환은 정당(위반 아님)
+        from apps.chain_sight.services.heat_labels import zmode_violations
+        assert zmode_violations({"C8": _comp(0.3, 0.5, z_mode="time_series")}) == []
+
+
 # ────────────────────────── A3 accumulating days ──────────────────────────
 @pytest.mark.django_db
 class TestAccumulatingDays:

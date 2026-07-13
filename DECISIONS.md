@@ -3728,3 +3728,34 @@ driver hold 분기 + z_mode 정정 라벨 완비).
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 4944dd5. 430 GREEN / 13 사전존재
 (attention 6 + leadership_api 7, Neo4j-env). 신규 2 test(z_mode 라벨). 마이그레이션 0(API 라벨·문서만,
 원장·z·온도 불변). **beat 3종(결정26=C 상시)**: 전부 enabled, estimates next 07-17 16:30 ET.
+
+## [2026-07-13] Theme Heat 프론트 v3 렌더 집행 (결정28 순서 #4 — 확정 결정 23·24·25·27·29 화면 구현)
+
+**성격**: 프론트 표시 계층(frontend/), 원장·API 무변경. 게이트 A·B·C 개방 상태에서 확정 결정의 화면화.
+
+**R0-b z_mode 불변식 잠금(백엔드)**: `heat_labels.zmode_violations(components)` — C1~C7 저장 z_mode 가
+정본 맵과 불일치하면 위반 반환(C8 = 콜드스타트↔시계열 전환 정당, 제외). 미래에 시계열 성분이
+cross_sectional 을 저장하면 CI 즉시 실패 → TH-ZMODE-LABEL-FIX 재발 차단. 신규 3 test.
+
+**R1~R4 프론트**: 타입(`types/chainsight.ts` ThemeHeatBarItem/Card/Driver/Component) + 서비스
+(`chainsightService.ts` fetchThemeHeatBar/Card, 봉투 themes 추출) + 컴포넌트 3(`ThemeHeatBar`
+버튼바[결정23=B computed 버튼+accumulating 진행바+D-n 조건부]·`ThemeHeatCard` 카드[결정24=C 온도·
+delta·견인칩·신뢰칩·펼침]·`themeHeatCopy` 표시카피) + 페이지(`app/chainsight/theme-heat/`). **견인 칩
+결정29 분기**: held → "산출 보류 ⓘ"(muted, note 툴팁), held=false → 결정27=B 방향(▲견인/▼냉각/●수준)
++ 기여율%. **의미 레이어 결정25**: 성분 이중사전(label_surface·label_technical, 백엔드 단일소스) +
+z_mode 근거 문구(time_series="3년 자기 이력 대비"·cross_sectional="동일 시점 동종 대비", 미도래=수집
+대기). **delta_1d 원값 항상 노출**(전환일에도 숨기지 않음, 서사만 보류) — 이력 artifact는 게이트·견인
+보류로 차단.
+
+**R5 검증**: 컴포넌트 실렌더(jsdom testing-library) **6 vitest 통과** — 전환일 driver 보류(07-12, 온도
+55·delta −12 노출 + "산출 보류")·정상일 방향 기여율(07-13, ▼냉각 이야기 밀도 86%)·의미 레이어 z_mode
+근거·버튼바 computed/accumulating·D-n 조건부·onSelect. tsc theme-heat 에러 0. ★**라이브 브라우저
+스크린샷은 유예**: 07-13 스냅샷 미도래(daily beat 18:00 ET 07-13 대기, 실데이터 부재)·dev 스택 미기동.
+컴포넌트 실렌더로 계약 A/B 검증 완료(좌표 아닌 실 DOM). affected_themes 정밀화(결정30) 미반영 =
+현행 date 기반 전역 보류로 렌더(승격 시 반영). C8 콜드스타트 미도래 → 라벨 계약만 준비.
+
+**게이트**: 결정28 순서 #4 종결 → #5(TH-FIRSTRULE-DEFECT, 별도 비준) 또는 후순위(C4/C8 합류·DSS).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = e48e7f8. 백엔드 신규 3 test(R0-b 불변식)
+→ 433 GREEN / 13 사전존재. 프론트 신규 6 vitest(scoped, 심링크 node_modules 검증 후 제거). 마이그레이션
+0. **beat 3종(결정26=C 상시)**: 전부 enabled(07-13 daily 미발화, ET 대기), estimates next 07-17 16:30 ET.

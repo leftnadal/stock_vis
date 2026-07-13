@@ -39,3 +39,27 @@ def component_label(component_id: str) -> dict:
     return COMPONENT_LABELS.get(
         component_id, {"label_technical": component_id, "label_surface": component_id}
     )
+
+
+def zmode_violations(components: dict) -> list:
+    """
+    z_mode 불변식 검사 (TH-ZMODE-LABEL-FIX 재발 차단, R0-b) — 저장 z_mode 가 정본 맵과 불일치.
+
+    C1~C7 은 고정 방식(time_series). 저장 z_mode 가 있으면 반드시 맵과 일치해야 함(불일치=위반).
+    C8 은 콜드스타트(cross_sectional) ↔ 60일 후 time_series **전환이 정당**하므로 검사 제외.
+    저장 z_mode 부재 성분은 빌더가 맵을 쓰므로 위반 불가 → 검사 안 함. 반환 = 위반 목록.
+    """
+    out = []
+    for cid, expected in COMPONENT_Z_METHOD.items():
+        if cid == "C8":
+            continue
+        c = components.get(cid)
+        if not isinstance(c, dict):
+            continue
+        raw = c.get("z_mode")
+        if raw is None:
+            continue
+        norm = "time_series" if str(raw).startswith("time_series") else "cross_sectional"
+        if norm != expected:
+            out.append({"component": cid, "stored": raw, "expected": expected})
+    return out
