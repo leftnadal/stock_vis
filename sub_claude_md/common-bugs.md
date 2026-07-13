@@ -768,3 +768,13 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **원인**: 보호 경계를 "쓰기 대상과 같은 테이블의 집계"에서 파생하면, 쓰기가 경계를 이동시킨다(자기참조 오염). get_or_create의 "기존행 불가침"은 지켜지지만 **창 산정 자체가 무너짐**.
 - **해결**: 합성행에 **불가시 provenance 마커**(여기선 `summary="[BACKFILL_V2]"` — 이 필드는 어떤 RegimeSnapshot serializer에도 미노출임을 grep으로 확인)를 박고, 경계는 `exclude(summary=MARK).min(date)`로 **합성행을 제외**해 산정. 라이브 행만 경계에 기여 → 재실행 무해.
 - **교훈**: 백필/멱등 커맨드에서 **보호 경계는 쓰기 대상이 오염시킬 수 없는 소스에서 파생**할 것. 같은 테이블에서 파생해야 한다면 합성분을 구별하는 마커가 필수. 마커 필드는 사용자 노출 여부를 먼저 확인(노출되면 UI 오염). 회귀 테스트에 "재실행 시 synthesized=0/skipped=N + 창 불변"을 박제.
+
+## [이관 함정] 앱 재배치(`portfolio`→`apps.portfolio`) 후 테스트가 구 경로를 참조 — 2형, green이 조기 maxfail로 착시 (PF-TEST, 2026-07-13)
+
+- **증상**: PR7에서 `portfolio/`를 `apps/portfolio/`로 `git mv` 후, coach 테스트 **43건**이 실패. 소스·마이그레이션은 정상(no changes detected)인데 테스트만 red.
+- **원인 2형(둘 다 이관 잔재, 로직 회귀 아님)**:
+  1. **경로 문자열 stale (31건)**: `mock.patch("portfolio.api.views.run_e1_coach")`·`@parametrize("portfolio.services.coach.eN_service")` 등 **문자열로 된 모듈 경로**는 `git mv`가 갱신하지 않음 → `ModuleNotFoundError: No module named 'portfolio'`. (import 문은 IDE/grep로 잡히지만 patch/parametrize **문자열은 안 잡힘**.)
+  2. **경로 오프셋 `parents[N]` (12건)**: `Path(__file__).resolve().parents[2] / "docs/..."`가 앱이 `apps/` 하위로 **한 단계 깊어져** repo_root 계산이 어긋남 → `apps/docs/...` FileNotFoundError·빈 `load_raw()`(`assert 0 == 14`). `parents[2]→parents[3]`.
+- **착시 함정**: `pytest`가 기본 addopts의 `maxfail`로 "5 failed"에서 조기 중단 → 실제 43건을 과소평가(TASKQUEUE도 "5건"으로 등재됨). **선행 게이트 판정 시 `--maxfail=1000`으로 전수 확인** 필수. 반대로 `-o addopts=""`로 덮으면 ini의 `filterwarnings`(구 Django 카테고리)까지 노출돼 별도 에러 → **addopts 유지 + `--maxfail` 만 CLI 오버라이드**.
+- **오탐 주의(무접촉 대상)**: 같은 grep에 걸려도 `caplog.at_level(logger="portfolio.llm.cost_guard")`(로거명)·회귀 분류기 데이터 `["portfolio/llm/cost_guard.py"]`(경로 패턴)는 **stale 아님**(현재 통과 중). 치환 전 "실패 목록에 대응하는가"로 필터링 — 통과 테스트를 깨지 말 것.
+- **교훈**: 앱 재배치 시 ⑴ `grep -rn "[\"']<oldapp>\." tests/`로 **문자열 경로**를 별도 스윕, ⑵ `parents[N]` 상수를 전수 재계산, ⑶ green 판정은 `--maxfail` 해제 전수. 유형은 CS-TEST(chainsight)와 동일 — 이관 PR은 "테스트 문자열·경로 상수 스윕"을 DoD에 포함.
