@@ -56,6 +56,18 @@ def regime_zscore_key(window_start, window_end) -> str:
     )
 
 
+# MP2-ANALOG Slice B: 유사 국면 카드 1h 캐시. 키에 오늘 날짜 + 모집단 경계 포함
+#   (오늘 벡터가 매일 바뀜 / 백필 창 변화 시 자연 무효화).
+REGIME_ANALOG_TTL_SEC = 3600
+
+
+def regime_analog_key(today, window_end) -> str:
+    return (
+        f"mp:global:regime_analog:{today}:{window_end}:"
+        f"{_bucket(REGIME_ANALOG_TTL_SEC)}"
+    )
+
+
 def i18n_key(locale: str = "ko") -> str:
     return f"mp:global:i18n:{locale}:{_bucket(I18N_TTL_SEC)}"
 
