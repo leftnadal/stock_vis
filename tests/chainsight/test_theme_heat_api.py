@@ -149,6 +149,38 @@ class TestDriverHold:
         assert card["driver"]["direction"] == "up"  # 정상 재개
 
 
+# ────────────────────────── TH-ZMODE-LABEL-FIX z_mode 라벨 ──────────────────────────
+class TestZModeMap:
+    def test_map_matches_audited_truth(self):
+        # L0 감사: C1~C7 = timeseries_z, C8 = cross_sectional_z (유일 횡단면)
+        from apps.chain_sight.services.heat_labels import COMPONENT_Z_METHOD
+        assert COMPONENT_Z_METHOD == {
+            "C1": "time_series", "C2": "time_series", "C3": "time_series", "C4": "time_series",
+            "C5": "time_series", "C6": "time_series", "C7": "time_series", "C8": "cross_sectional",
+        }
+
+
+@pytest.mark.django_db
+class TestZModeLabelFix:
+    def test_present_components_time_series(self):
+        # 저장 z_mode 없는 시계열 성분(C1/C2/C5/C6/C7) → time_series (cross_sectional 오라벨 아님)
+        comps = {
+            "C1": _comp(0.5, 0.6), "C2": _comp(0.5, 0.6),
+            "C3": _comp(0.5, 0.6, z_mode="time_series_expanding"),  # 저장값 우선
+            "C5": _comp(0.5, 0.6), "C6": _comp(0.5, 0.6), "C7": _comp(0.5, 0.6),
+            "C8": _comp(0.3, 0.5, z_mode="cross_sectional"),  # C8 저장 횡단면 유지
+        }
+        _score("Technology", date(2026, 7, 12), 58, components=comps)
+        card = build_card("Technology")
+        zmap = {c["id"]: c["z_mode"] for c in card["components"]}
+        for cid in ("C1", "C2", "C3", "C5", "C6", "C7", "C8"):
+            assert zmap[cid] is not None
+        assert zmap["C1"] == "time_series" and zmap["C5"] == "time_series"
+        assert zmap["C6"] == "time_series" and zmap["C7"] == "time_series"
+        assert zmap["C3"] == "time_series"          # 저장 time_series_expanding → 정규화
+        assert zmap["C8"] == "cross_sectional"       # C8 저장 횡단면 우선(유일 실제 횡단면)
+
+
 # ────────────────────────── A3 accumulating days ──────────────────────────
 @pytest.mark.django_db
 class TestAccumulatingDays:

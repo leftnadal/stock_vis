@@ -24,6 +24,15 @@ COMPONENT_LABELS = {
 # 성분 순서 (C1~C8 고정 — components 배열 정렬용)
 COMPONENT_ORDER = ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8"]
 
+# 성분별 정본 z 산출 방식 (TH-ZMODE-LABEL-FIX, 결정28 #3) — 단일 소스, 오라벨 재발 방지.
+# 근거(L0 감사, heat_components): C1~C7 = timeseries_z(3년 히스토리 σ), C8 = cross_sectional_z
+# (콜드스타트, 유일한 실제 횡단면; 60일 축적 후 time_series 전환은 저장 z_mode 우선).
+# 저장 z_mode 가 있으면(C3·C8) 그 실측값 우선, 없으면(C1/C2/C4/C5/C6/C7) 이 맵 사용.
+COMPONENT_Z_METHOD = {
+    "C1": "time_series", "C2": "time_series", "C3": "time_series", "C4": "time_series",
+    "C5": "time_series", "C6": "time_series", "C7": "time_series", "C8": "cross_sectional",
+}
+
 
 def component_label(component_id: str) -> dict:
     """성분 id → 라벨 dict. 미지 id는 id 자체를 폴백 라벨로."""

@@ -119,6 +119,12 @@ cool/warning/overheated 유지, 표시 라벨(band_display)만 **0–39 냉각 /
 - 퇴화(delta 부호와 일치하는 증분 성분 부재 = 재분배·반올림 기인) → level 폴백 + direction 유지.
 - 성분 기여율 합 = 100%(±0.1%p). `basis`("delta"|"level")·`direction`("up"|"down"|"none") 병기.
 
+**z_mode 라벨 정본 (TH-ZMODE-LABEL-FIX, 결정28 #3)**: 성분별 z 산출 방식 = 단일소스
+`heat_labels.COMPONENT_Z_METHOD`. **C1~C7 = time_series**(3년 히스토리 σ, timeseries_z), **C8 =
+cross_sectional**(콜드스타트, 유일한 실제 횡단면; 60일 축적 후 time_series 전환은 저장 z_mode 우선).
+API는 저장 z_mode(C3·C8 실측) 우선, 없으면 이 맵. 의미 레이어 사용자 문구: time_series → "3년 자기
+이력 대비", cross_sectional → "동일 시점 동종 대비". (오라벨 정정 = 근거 진실성 회복.)
+
 **전환일 driver 보류 (결정29=B, TH-16 검증 후)**: delta_1d 구간(직전 스냅샷~당일)이 방법론 개정일
 (`heat_history_markers.HISTORY_MARKERS`)을 가로지르면 그 delta는 artifact → **driver(견인 서사)만
 보류**(`driver.held=true`, direction/basis/% 미표시). 온도·delta_1d 원값·신뢰·성분은 무관하게 노출

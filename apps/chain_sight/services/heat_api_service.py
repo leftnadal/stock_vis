@@ -15,7 +15,11 @@ from datetime import date, timedelta
 from typing import Optional
 
 from apps.chain_sight.services.heat_history_markers import crossing_marker
-from apps.chain_sight.services.heat_labels import COMPONENT_ORDER, component_label
+from apps.chain_sight.services.heat_labels import (
+    COMPONENT_ORDER,
+    COMPONENT_Z_METHOD,
+    component_label,
+)
 from apps.chain_sight.services.heat_synthesis import HEAT_WEIGHTS, _is_present
 
 DAYS_REQUIRED = 26        # C3_EXPAND_MIN (결정13 체계)
@@ -261,7 +265,9 @@ def build_card(ref_id: str) -> Optional[dict]:
     for cid in COMPONENT_ORDER:
         c = comps.get(cid) or {}
         is_present = _is_present(c)
-        zmode = _norm_z_mode(c.get("z_mode"))
+        # z_mode 라벨(TH-ZMODE-LABEL-FIX): 저장된 실측 방식(C3·C8) 우선, 없으면 정본 맵.
+        raw_zmode = c.get("z_mode")
+        zmode = _norm_z_mode(raw_zmode) if raw_zmode else COMPONENT_Z_METHOD.get(cid, "cross_sectional")
         if is_present and zmode == "time_series":
             any_ts = True
         status = ("computed" if is_present

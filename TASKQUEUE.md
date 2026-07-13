@@ -662,12 +662,13 @@
 - 상태: **스펙 등재**(코드 미적용). 현행 date 기반 전역 보류(결정29) 유지 — 오늘 가시적 손실 0(Energy delta=0 → driver=none, held/none 동일). 정밀화(marker.affected_themes로 보류 한정)는 **TH-HISTORY-MARKER DB 승격 슬라이스**에서 반영. 07-12 백필 = {FinSvc, ConsCyc, Tech, Industrials}(G3 실측 정합, Energy 제외).
 
 ## 집행 순서 (결정28+29+30) — 프론트 렌더 게이트
-- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류(백엔드) · 결정30[등재] 정밀화 지연
-- 3. [NEXT] TH-ZMODE-LABEL-FIX (표시 결함 c) · 4. 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 조건(현행 date 기반) 부착 · 5. TH-FIRSTRULE-DEFECT(별도 비준)
+- 1. [DONE] TH-C1-Z-PROBE · 2. [DONE] TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류(백엔드) · 결정30[등재] 정밀화 지연 · 3. [DONE] TH-ZMODE-LABEL-FIX (표시 결함 c 종결)
+- 4. [NEXT] 프론트 렌더(v3) — 게이트 A·B·C **개방** + driver 파트에 결정29 hold 분기(현행 date 기반) + z_mode 정정 라벨(의미 레이어) · 5. TH-FIRSTRULE-DEFECT(별도 비준)
 - 프론트 게이트 = (A 프로브 ✅) AND (B 가드 ✅) AND (C 재산출 ✅) → **v3 렌더 개방**. FinSvc 재산출 값 55로만 노출. driver 파트는 hold_driver 분기(07-12 보류/07-13 재개).
 
-## TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (등재, 가드 뒤 = 결정28 3순위)
-- 상태: **등재**(프로브 (c)). heat_api_service가 present C1/C2/C5/C6/C7을 "cross_sectional"로 체계적 오라벨(실제 timeseries_z). 성분별 실제 z 방식 반영(C1~C7 time_series, C8 z_mode 저장값). API 표시 전용(원장 무변경). 가드 재산출 후 별도 슬라이스.
+## ✅ TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (집행 종결, 2026-07-13, 결정28 #3)
+- 상태: **집행 종결**. L0 감사(heat_components): C1~C7 timeseries_z·C8 cross_sectional_z(유일 횡단면). L1: 단일소스 `heat_labels.COMPONENT_Z_METHOD` + build_card(저장 z_mode 우선, 없으면 맵). present 5성분(C1/C2/C5/C6/C7) cross_sectional→time_series 정정. 표시 전용(원장·z·온도 불변). 신규 2 test → 430 GREEN. 의미 레이어 계약: time_series="3년 자기 이력 대비", cross_sectional="동일 시점 동종 대비".
+- **게이트: 표시 결함 c 종결 → 결정28 순서 #4(프론트 v3 렌더) 착수 가능.**
 
 ## TH-HISTORY-MARKER — heat 이력 방법론 변경 마커 (부분 착수, 결정29 자동연동, 우선순위 상향)
 - 상태: **부분 착수**(결정29 초석). `heat_history_markers.py` 단일소스(현 1건 07-12)가 driver 보류 트리거원으로 가동 중. **잔여(정식화)**: DB 원장 승격 + admin 등록 + 프론트 이력 차트 개정일 마커 표시 + 사전 개정(h2_v1→h2_v2 07-12) 마커 추가 검토. 트리거원으로서 결정29와 자동 배선 완료.
