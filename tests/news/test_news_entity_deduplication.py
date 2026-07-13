@@ -90,7 +90,12 @@ class TestAggregatorEntityDeduplication:
 
     @pytest.fixture
     def service(self):
-        return NewsAggregatorService()
+        # S5(NEWS-AGG-TEST-ENV) 이후 __init__ 은 FINNHUB_API_KEY 부재 시 finnhub=None.
+        # 이 클래스 테스트는 finnhub entity dedup 이 대상이므로 더미 키 provider 를 **주입**해
+        # env 의존을 제거한다(requests.get 은 각 테스트에서 mock).
+        return NewsAggregatorService(
+            finnhub=FinnhubNewsProvider(api_key='test-finnhub-key')
+        )
 
     @pytest.mark.django_db
     def test_no_duplicate_entities_on_multiple_saves(self, service):
@@ -324,8 +329,14 @@ class TestNewsSystemIntegration:
 
         mock_get.side_effect = mock_response
 
-        # 서비스 실행
-        service = NewsAggregatorService()
+        # 서비스 실행.
+        # S5(NEWS-AGG-TEST-ENV) 이후 __init__ 은 FINNHUB_API_KEY 부재 시 finnhub=None →
+        # 격리 env 에서 수집 0. 이 테스트는 finnhub 경로(교차오염 검증)가 대상이므로,
+        # 더미 키 provider 를 **주입**해 env 의존을 제거한다(requests.get 은 위에서 mock).
+        from services.news.providers.finnhub import FinnhubNewsProvider
+        service = NewsAggregatorService(
+            finnhub=FinnhubNewsProvider(api_key='test-finnhub-key')
+        )
 
         # TSLA 뉴스 수집
         result1 = service.fetch_and_save_company_news('TSLA', days=7, use_marketaux=False)

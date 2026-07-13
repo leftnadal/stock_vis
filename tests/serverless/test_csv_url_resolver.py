@@ -19,22 +19,38 @@ from services.serverless.services.csv_url_resolver import (
 
 @pytest.fixture
 def resolver():
-    """CSVURLResolver 인스턴스 (LLM 없이)"""
+    """CSVURLResolver 인스턴스 (LLM 비활성).
+
+    계약 변경(BOUNDARY-LLM ④): 게이팅이 `_llm_client` 객체 → `_llm_enabled` bool 로 바뀜
+    (`genai.Client` 직접생성 제거, 호출은 complete() 경유). `_find_csv_url_by_llm` 은
+    `if not self._llm_enabled: return None`.
+    """
     with patch.object(CSVURLResolver, '__init__', lambda self: None):
         r = CSVURLResolver()
         r.client = MagicMock()
-        r._llm_client = None
+        r._llm_enabled = False
         return r
 
 
 @pytest.fixture
 def resolver_with_llm():
-    """CSVURLResolver 인스턴스 (LLM 포함)"""
+    """CSVURLResolver 인스턴스 (LLM 활성).
+
+    LLM seam = 모듈에 import된 `complete`. 응답 설정 관성 보존을 위해 complete 를
+    `r._llm_client.models.generate_content` 로 patch(모듈이 complete() 반환값의 .text 를
+    읽으므로, 테스트가 `._llm_client.models.generate_content.return_value.text` 로 설정하던
+    방식 그대로 유효).
+    """
     with patch.object(CSVURLResolver, '__init__', lambda self: None):
         r = CSVURLResolver()
         r.client = MagicMock()
-        r._llm_client = MagicMock()
-        return r
+        r._llm_enabled = True
+        r._llm_client = MagicMock()  # 응답 설정 핸들(테스트 본문 보존용)
+    with patch(
+        'services.serverless.services.csv_url_resolver.complete',
+        r._llm_client.models.generate_content,
+    ):
+        yield r
 
 
 class TestFundManagerConfig:
