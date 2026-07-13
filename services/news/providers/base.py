@@ -10,6 +10,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+from .url_utils import normalize_news_url
+
 
 @dataclass
 class RawNewsArticle:
@@ -107,26 +109,9 @@ class BaseNewsProvider(ABC):
 
     def normalize_url(self, url: str) -> str:
         """
-        URL 정규화 (중복 체크용)
+        URL 정규화 (중복 체크용).
 
-        Args:
-            url: 원본 URL
-
-        Returns:
-            str: 정규화된 URL
+        정규화 규칙의 단일 소스는 `url_utils.normalize_news_url` (S3, provider 공통).
+        모든 provider(AV/FMP/finnhub/marketaux)가 이 경로로 동일 규칙 적용.
         """
-        # 공백 제거, 소문자 변환
-        normalized = url.strip().lower()
-
-        # 쿼리 파라미터 제거 (utm_source 등)
-        if "?" in normalized:
-            base_url = normalized.split("?")[0]
-            # 중요한 쿼리 파라미터만 유지 (id, article 등)
-            # 현재는 단순하게 전체 제거
-            normalized = base_url
-
-        # 마지막 슬래시 제거
-        if normalized.endswith("/"):
-            normalized = normalized[:-1]
-
-        return normalized
+        return normalize_news_url(url)

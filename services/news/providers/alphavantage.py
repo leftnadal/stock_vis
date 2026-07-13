@@ -180,7 +180,8 @@ class AlphaVantageNewsProvider(BaseNewsProvider):
         ticker_sentiment[] 전체를 entities로 보존(다종목=co-mention). relevance_cut
         미만 종목은 제외. broad(symbol=None)에서는 "요청 심볼 강제 추가"를 하지 않는다.
         """
-        url = item.get("url")
+        # S3: URL 정규화를 provider 공통 규칙으로 통일 (cross-provider dedup).
+        url = self.normalize_url(item.get("url", ""))
         title = item.get("title")
         if not url or not title:
             return None
