@@ -164,11 +164,14 @@
 | MON-P3-PAGINATE | (조건부 메모) DRF 페이지네이션 도입 시 → IA-2 **칩 카운트를 서버 집계로 전환**(현재 list 전량 반환 전제라 클라 카운트. 페이지네이션 켜지면 카운트 정확성 깨짐 → count 엔드포인트 or `?facets=` 응답). 트리거 = REST_FRAMEWORK `DEFAULT_PAGINATION_CLASS` 도입 | @frontend+@backend | 🕒 트리거: 페이지네이션 도입 시 | ADR §결정5 |
 
 > **MON-P3 완료 판정(DoD)**: 단위 테스트(FE vitest·BE pytest·tsc 0) **+ dev 서버 실렌더 스모크 3화면**(리스트 IA-2 / 빌더 4단계 / 전역 내비) — auth 세션 하 실제 브라우저 렌더 확인(좌표 아닌 실 렌더, lesson_visual_verify). 스모크 미수행 시 P3 미완결.
+>
+> **FE 스모크 정식 항목(MON-CLOSE 추가, 2026-07-13)**: 위 3화면 + **① 대화형 빌더로 두 번째 모니터를 실제 생성**(빌더 4단계 관통 → 생성 후 목록에 반영 확인 — 회귀 시 빌더 경로 생존 보장) + ② authed 픽셀: 데이터 보유 모니터 카드의 StateBandSparkline 렌더(색 밴드+선). 빌더 실사용 검증은 owner 세션에서 수행(owner-scoping).
 | MON-P4 | 시장/섹터 scope — shared 수집 태스크 신설(EOD 창 경합 명시) | @backend+@infra | MON-P2 | todo | - |
 | MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
 | MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
 | ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
-| MON-P3-ALERT | 전이 알림·다이제스트·상태밴드 스파크라인 (AlertEvent + 인앱 벨 + 이메일 + FE 스파크라인) | @backend+@frontend+@infra | MON-P2-BEAT land | in_progress 2026-07-09 (`monorepo/mon-p3-alert`, base `90b04fe`). DECISIONS `D-MONITOR-ALERTCLOSE`. **발화 게이트 전 → 랜딩 허용·배포 보류** | ADR §결정1~4 |
+| MON-P3-ALERT | 전이 알림·다이제스트·상태밴드 스파크라인 (AlertEvent + 인앱 벨 + 이메일 + FE 스파크라인) | @backend+@frontend+@infra | MON-P2-BEAT land | ✅ 완료 2026-07-09 (land `8433fe1`). **배포 완료 2026-07-13**(FIRSTFIRE Case A green → sv sync + migrate 0005 + env `MONITOR_ALERT_RECIPIENT` + 재기동, ALERTFIRE 첫 알림코드 무인 발화 alerts=0 정상). DECISIONS `D-MONITOR-ALERTCLOSE` | ADR §결정1~4 |
+| MON-CLOSE | Monitor 검증 단계 4 DoD 종결 + 부수 정리 5건 + 결정 봉인 | @infra+@frontend | MON-P3-ALERT 배포 | ✅ 완료 2026-07-13 (`monorepo/mon-close`). 4 DoD 완결(authed 픽셀=goid545 세션 스파크라인 렌더)·63fa58cb 삭제·라벨 Thesis→Monitor·T-1 정정 각주·common-bugs #51·빌더 스모크 항목화. OWNERFIX 폐기. DECISIONS `MON-CLOSE` | - |
 | MON-VIZ-ROTATIONMAP | 모니터 회전 맵(RRG 동형 2축 분포) — 상태밴드 스파크라인의 후속 시각화 | @frontend+@backend | **착수조건: 활성 모니터 ≥5** | 🕒 예약(조건 미충족) | ⚠ market_pulse 컴포넌트 **직접 import 금지** — shared 승격 vs 재구현은 착수 시 결정(D-MONITOR-ALERTCLOSE 1b) |
 | MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
 
