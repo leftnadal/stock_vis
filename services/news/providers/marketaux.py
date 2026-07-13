@@ -242,7 +242,9 @@ class MarketauxNewsProvider(BaseNewsProvider):
                 "exchange": entity_data.get("exchange", ""),
                 "country": entity_data.get("country", ""),
                 "industry": entity_data.get("industry", ""),
-                "match_score": Decimal(str(entity_data.get("match_score", 1.0))),
+                "match_score": self._normalize_match_score(
+                    entity_data.get("match_score")
+                ),
                 "sentiment_score": self._safe_decimal(
                     entity_data.get("sentiment_score")
                 ),
@@ -297,6 +299,28 @@ class MarketauxNewsProvider(BaseNewsProvider):
             entities=entities,
             is_press_release=False,
         )
+
+    def _normalize_match_score(self, raw) -> Decimal:
+        """Marketaux match_score 를 모델 제약 [0,1] 로 정규화 (S4).
+
+        스케일 출처: Marketaux `/news/all` entities[].match_score 는 **상한 없는
+        relevance 점수**다 — 라이브 실측 9.44·58.15(2026-07-13), 공식 문서 예시
+        65·176·219, 우리 저장 데이터 min 1.75·max 299.6. (구 docstring 의 0.98765
+        예시는 부정확.) NewsEntity.match_score validator 는 0~1 이므로 저장 전 정규화가
+        필요하다. **100 을 saturation 기준으로 clamp**: score>=100 → 1.0, 그 외 raw/100.
+        미제공(None) 시 1.0 (finnhub/fmp 관례 = 정보 없음 → 기본 만점).
+        """
+        if raw is None:
+            return Decimal("1.0")
+        try:
+            v = Decimal(str(raw)) / Decimal("100")
+        except Exception:
+            return Decimal("1.0")
+        if v < 0:
+            return Decimal("0")
+        if v > 1:
+            return Decimal("1.0")
+        return v
 
     def _safe_decimal(self, value) -> Decimal:
         """
