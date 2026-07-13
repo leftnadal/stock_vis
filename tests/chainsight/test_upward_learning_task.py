@@ -109,3 +109,78 @@ def test_market_relations_excluded(settings):
     r = relation_tasks.apply_upward_learning_task.apply(
         kwargs={"period": period.isoformat()}).get()
     assert r["evaluated"] == 0
+
+
+# ─────────────────────────── T-3b Phase A (①②③ⓔ) ───────────────────────────
+
+def _make_pair(sym_a, sym_b, *, status="probable", tier=1, score=80.0,
+               category="truth", rel_type="SUPPLIES_TO"):
+    return RelationConfidence.objects.create(
+        symbol_a=sym_a, symbol_b=sym_b, relation_type=rel_type,
+        relation_category=category, relation_status=status,
+        truth_score=score, evidence_tier_best=tier,
+    )
+
+
+@pytest.mark.django_db
+def test_a_backfilled_pairs_not_reselected_until_reobserved(settings):
+    """(a) ① 백필 후: last_observed==last_computed 정지 pair는 재선별 안 됨(콜드스타트 폭주 방지);
+    재관측(last_observed>last_computed)된 pair만 evaluated."""
+    from datetime import timedelta
+    settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
+    t0 = timezone.now() - timedelta(days=2)
+    stable = _make_pair("AAA", "BBB")  # 백필됨, 재관측 없음
+    RelationConfidence.objects.filter(pk=stable.pk).update(
+        last_observed_at=t0, last_computed_at=t0)
+    reobs = _make_pair("CCC", "DDD")   # 재관측: last_observed > last_computed
+    RelationConfidence.objects.filter(pk=reobs.pk).update(
+        last_observed_at=timezone.now(), last_computed_at=t0)
+    r = relation_tasks.apply_upward_learning_task.apply(kwargs={"period": None}).get()
+    assert r["evaluated"] == 1  # reobs만 (stable은 gt 미충족)
+
+
+@pytest.mark.django_db
+def test_b_last_observed_at_unchanged_after_upward_save(settings):
+    """(b) ② 자가오염 차단: upward save가 last_observed_at(auto_now)을 밀지 않음."""
+    settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
+    p = _make_pair("AAA", "BBB", status="probable", tier=1, score=80.0)  # last_computed NULL
+    p.refresh_from_db()
+    before = p.last_observed_at
+    relation_tasks.apply_upward_learning_task.apply(kwargs={"period": None}).get()
+    p.refresh_from_db()
+    assert p.last_observed_at == before      # 불변 (update_fields 제외)
+    assert p.last_computed_at is not None     # 멱등 마커는 갱신
+
+
+@pytest.mark.django_db
+def test_c_processed_pair_not_reselected(settings):
+    """(c) F() 멱등: last_computed_at >= last_observed_at 이면 재선별 안 됨."""
+    from datetime import timedelta
+    settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
+    now = timezone.now()
+    p = _make_pair("AAA", "BBB")
+    RelationConfidence.objects.filter(pk=p.pk).update(
+        last_observed_at=now - timedelta(minutes=1), last_computed_at=now)
+    r = relation_tasks.apply_upward_learning_task.apply(kwargs={"period": None}).get()
+    assert r["evaluated"] == 0
+
+
+@pytest.mark.django_db
+def test_d_confirmed_pair_skipped_and_fastpath_preserved(settings):
+    """(d) ⓔ: 이미 confirmed면 선별돼도 fast-path·save skip; fastpath_triggered_at 보존."""
+    from datetime import timedelta
+    settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = True
+    witness = timezone.now() - timedelta(days=5)
+    old_comp = timezone.now() - timedelta(days=3)
+    p = _make_pair("AAA", "BBB", status="confirmed", tier=1, score=80.0)
+    # 재관측되게(선별 대상) + witness/last_computed 고정
+    RelationConfidence.objects.filter(pk=p.pk).update(
+        last_observed_at=timezone.now(), last_computed_at=old_comp,
+        fastpath_triggered_at=witness)
+    r = relation_tasks.apply_upward_learning_task.apply(kwargs={"period": None}).get()
+    assert r["evaluated"] == 1   # 선별은 됨
+    assert r["upgraded"] == 0    # confirmed → skip
+    p.refresh_from_db()
+    assert p.relation_status == "confirmed"
+    assert p.fastpath_triggered_at == witness   # 보존
+    assert p.last_computed_at == old_comp        # skip = save 안 함 → 불변

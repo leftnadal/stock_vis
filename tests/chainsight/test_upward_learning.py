@@ -97,6 +97,35 @@ class TestApplyUpwardLearning:
         apply_upward_learning(p, evidence_this_tick={"t": 1}, score=0, is_tier1=False)
         assert p.last_computed_at is not None
 
+    # ── T-3b ⓓ-2 B-2 highscore 경로 + ⓔ 멱등 ──
+
+    def test_highscore_jumps_directly_to_confirmed(self):
+        """(g) score≥HIGHSCORE(85) → confirmed 직행(fast-path 1단계 아님). 구 seed 규칙 이관."""
+        from apps.chain_sight.services.upward_learning import HIGHSCORE_THRESHOLD
+
+        p = _pair("weak", streak=0)  # 사다리상 2칸 아래
+        path = apply_upward_learning(
+            p, evidence_this_tick={"t": 1}, score=HIGHSCORE_THRESHOLD, is_tier1=True)
+        assert p.relation_status == "confirmed"  # 직행 (weak→probable 1단계가 아님)
+        assert path == "highscore"
+        assert p.last_upgraded_at is not None
+
+    def test_confirmed_is_noop_ceiling(self):
+        """(g/ⓔ) 이미 confirmed면 어떤 경로도 no-op(멱등 상한). last_computed_at도 불변."""
+        p = _pair("confirmed")
+        path = apply_upward_learning(
+            p, evidence_this_tick={"t": 1}, score=99, is_tier1=True)
+        assert path is None
+        assert p.relation_status == "confirmed"
+        assert p.last_computed_at is None  # skip = 마커도 안 씀 (태스크가 save skip)
+
+    def test_return_is_path_string_or_none(self):
+        """반환 규격: 승급 경로 문자열 또는 None(구 bool 진리값 호환)."""
+        up = _pair("weak")
+        assert apply_upward_learning(up, {"t": 1}, score=60, is_tier1=True) == "fastpath"
+        noop = _pair("weak")
+        assert apply_upward_learning(noop, evidence_this_tick=None, score=99) is None
+
 
 @pytest.mark.django_db
 class TestMigrationNondestructive:
@@ -122,10 +151,12 @@ class TestMigrationNondestructive:
 
 @pytest.mark.django_db
 class TestTaskFlagOff:
-    def test_task_is_noop_when_flag_off(self):
-        """D1: flag-off 기본 → 상향 task는 no-op(실발화 없음)."""
+    def test_task_is_noop_when_flag_off(self, settings):
+        """flag-off → 상향 task는 no-op(실발화 없음). T-3b: prod .env=true라 앰비언트
+        의존 제거 — 명시적 flag-off로 결정적 검증(모든 환경 GREEN)."""
         from apps.chain_sight.tasks.relation_tasks import apply_upward_learning_task
 
+        settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED = False
         result = apply_upward_learning_task.apply().result
         # D2 v5.1: 반환 규격에 evaluated/fastpath 추가(flag-off도 일관 shape).
         assert result == {"enabled": False, "evaluated": 0, "upgraded": 0, "fastpath": 0}
