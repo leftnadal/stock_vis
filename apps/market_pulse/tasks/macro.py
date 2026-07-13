@@ -15,6 +15,13 @@ from django.core.cache import cache
 
 logger = get_task_logger(__name__)
 
+# A-S0 (D-ANALOG-SPY-RETENTION): 롤링 365일 purge 보존 예외 심볼.
+#   유사 국면 카드의 사후 선도수익률(analog "그 후")은 SPY EOD 3년 전 구간이 필요하나,
+#   cleanup_old_data의 블랭킷 date cutoff가 이를 매주 잘라냈다(199/683만 생존).
+#   이 심볼들은 purge에서 제외해 재백필 자산이 다시 소실되지 않도록 한다.
+#   모델 무변경(마커 필드 X) — 심볼 단위 보존 예외(방식 '나', prod 마이그레이션 회피).
+PRESERVED_INDEX_SYMBOLS = frozenset({"SPY"})
+
 
 @shared_task(bind=True, max_retries=3)
 def update_economic_indicators(self):
@@ -251,7 +258,12 @@ def cleanup_old_data():
         cutoff_date = date.today() - timedelta(days=365)
 
         deleted_indicators = IndicatorValue.objects.filter(date__lt=cutoff_date).delete()
-        deleted_prices = MarketIndexPrice.objects.filter(date__lt=cutoff_date).delete()
+        # A-S0: 보존 예외 심볼(SPY 등)은 purge에서 제외 — analog 사후수익률용 3년 EOD 유지.
+        deleted_prices = (
+            MarketIndexPrice.objects.filter(date__lt=cutoff_date)
+            .exclude(index__symbol__in=PRESERVED_INDEX_SYMBOLS)
+            .delete()
+        )
 
         # 지난 이벤트 삭제 (30일 이전)
         event_cutoff = date.today() - timedelta(days=30)
