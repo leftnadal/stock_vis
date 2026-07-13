@@ -251,6 +251,16 @@ export async function fetchRegimeZScore(): Promise<
   return data
 }
 
+// MP2-ANALOG Slice B: 유사 국면 카드 전용 엔드포인트(1h 캐시). 봉투 동일.
+export async function fetchRegimeAnalog(): Promise<
+  CardDetailEnvelope<RegimeAnalogPayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<RegimeAnalogPayload>>(
+    '/regime/analog',
+  )
+  return data
+}
+
 export async function refreshNews(): Promise<{
   _meta: { generated_at: string; count: number; pool_size: number; seen_count: number }
   items: NewsItem[]
@@ -334,6 +344,43 @@ export interface RegimeZScorePayload {
     low_confidence_until?: string
     live_start?: string | null
     downsample_recent_daily?: number
+  }
+}
+
+// MP2-ANALOG Slice B: 유사 국면 카드(결정론). label 슬롯(cat_slot·why)은 Slice C가 채움.
+export interface AnalogAxis {
+  axis: string
+  z: number | null
+}
+export interface AnalogNeighbor {
+  date: string
+  dist: number
+  cat_slot: string | null
+  why: string | null
+  fwd: Record<string, number | null>
+}
+export interface AnalogFanPoint {
+  horizon: number
+  median: number | null
+  lo: number | null
+  hi: number | null
+  n: number
+  n_eff: number
+}
+export interface RegimeAnalogPayload {
+  available: boolean
+  as_of?: string
+  today_axes: AnalogAxis[]
+  neighbors: AnalogNeighbor[]
+  fan: AnalogFanPoint[]
+  alert: { on: boolean; nearest_dist: number | null }
+  meta?: {
+    k_max?: number
+    tau_radius?: number
+    tau_alert?: number
+    horizons?: number[]
+    population?: number
+    spy_trading_days?: number
   }
 }
 

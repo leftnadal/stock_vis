@@ -16,6 +16,7 @@ import { ConcentrationCardSummary } from './cards/ConcentrationCardSummary'
 import { DeltaCard } from './cards/DeltaCard'
 import { RegimeCardSummary } from './cards/RegimeCardSummary'
 import { SectorHeatmap } from './cards/SectorHeatmap'
+import { AnalogCardContainer } from './details/AnalogCard'
 import { CardDetailContainer } from './details/CardDetailContainer'
 import { REGIME_TERM } from './meaning'
 import { selectSense } from './translationSelector'
@@ -119,6 +120,11 @@ export default function MarketPulseV2Page() {
             onOpen={() => setOpenCard('concentration')}
             sense={selectSense(translations, 'concentration')}
           />
+        </section>
+
+        {/* ⑦.5 유사 국면 카드 (MP2-ANALOG Slice B) — 결정론 코어, 라벨 슬롯 Slice C */}
+        <section className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+          <AnalogCardContainer />
         </section>
 
         {/* ⑧ News */}
