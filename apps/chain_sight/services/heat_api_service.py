@@ -73,29 +73,41 @@ def component_contributions(components: dict) -> dict:
     return out
 
 
-def compute_driver(today_components: dict, prev_components: Optional[dict]):
+def compute_driver(
+    today_components: dict, prev_components: Optional[dict], delta_1d: Optional[int] = None
+):
     """
-    (driver dict | None, shares dict) 반환. shares = 성분→contribution_pct(합 100).
-    delta 기준 우선(전일 존재 시), 아니면 level 폴백.
+    (driver dict | None, shares dict) 반환 — 대칭 확장(결정27=B).
+
+    방향 판정 = delta_1d **부호** 기준(성분 증분 부호 아님):
+      delta_1d > 0 → direction="up", 양(+) 증분만 합산, contribution = 증분/Σ양증분.
+      delta_1d < 0 → direction="down", 음(−) 증분만 합산, contribution = |증분|/Σ|음증분|.
+      delta_1d == 0 또는 전일 부재 → direction="none", level 폴백(성분 w_norm·s / Σ).
+    퇴화(delta 부호와 일치하는 증분 성분 없음 = 재분배·반올림 기인) → level 폴백 + direction 유지.
+    shares 합 = 100(±0.1) 항상.
     """
     today = component_contributions(today_components)
     if not today:
         return None, {}
 
-    if prev_components is not None:
+    if prev_components is not None and delta_1d is not None and delta_1d != 0:
         prev = component_contributions(prev_components)
         deltas = {k: today[k] - prev.get(k, 0.0) for k in today}
-        pos = {k: d for k, d in deltas.items() if d > 0}
-        if not pos:
-            return None, {}  # 전 성분 증분 ≤ 0 → 견인 칩 숨김
-        total = sum(pos.values())
-        shares = {k: 100.0 * v / total for k, v in pos.items()}
-        basis = "delta"
+        if delta_1d > 0:
+            direction = "up"
+            mags = {k: d for k, d in deltas.items() if d > 0}
+        else:
+            direction = "down"
+            mags = {k: -d for k, d in deltas.items() if d < 0}  # |음증분|
+        if mags:
+            pool, basis = mags, "delta"
+        else:  # 퇴화: delta 부호와 일치하는 증분 성분 없음 → level 폴백, direction 유지
+            pool, basis = today, "level"
     else:
-        total = sum(today.values())
-        shares = {k: 100.0 * v / total for k, v in today.items()}
-        basis = "level"
+        direction, pool, basis = "none", today, "level"
 
+    total = sum(pool.values())
+    shares = {k: 100.0 * v / total for k, v in pool.items()}
     top = max(shares, key=shares.get)
     lbl = component_label(top)
     driver = {
@@ -105,6 +117,7 @@ def compute_driver(today_components: dict, prev_components: Optional[dict]):
         "z": float(today_components[top]["z"]),
         "contribution_pct": round(shares[top], 1),
         "basis": basis,
+        "direction": direction,
     }
     return driver, shares
 
@@ -221,7 +234,7 @@ def build_card(ref_id: str) -> Optional[dict]:
     prev = rows[1] if len(rows) > 1 else None
     comps = latest.components or {}
     delta = (latest.score - prev.score) if prev else None
-    driver, _shares = compute_driver(comps, (prev.components if prev else None))
+    driver, _shares = compute_driver(comps, (prev.components if prev else None), delta)
 
     # confidence — 실제 결측 성분에서 도출(하드코딩 금지)
     present = [k for k in COMPONENT_ORDER if k in comps and _is_present(comps.get(k))]

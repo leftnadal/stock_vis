@@ -56,24 +56,32 @@ class TestDriver:
     def _comps(self, s1, s2, s3):
         return {"C1": _comp(0.5, s1), "C2": _comp(0.5, s2), "C3": _comp(0.5, s3, z_mode="time_series")}
 
-    def test_delta_sum_100(self):
+    def test_up_direction_sum_100(self):  # B1 up
         today = self._comps(0.9, 0.6, 0.7)
-        prev = self._comps(0.5, 0.6, 0.5)   # C1 +, C2 =, C3 + → 양 증분 2개
-        driver, shares = compute_driver(today, prev)
-        assert driver["basis"] == "delta"
-        assert abs(sum(shares.values()) - 100.0) < 0.1  # A2
+        prev = self._comps(0.5, 0.6, 0.5)   # C1 +, C3 + (양 증분)
+        driver, shares = compute_driver(today, prev, delta_1d=3)
+        assert driver["direction"] == "up" and driver["basis"] == "delta"
+        assert abs(sum(shares.values()) - 100.0) < 0.1  # A2/B1
 
-    def test_level_sum_100(self):
+    def test_down_direction_sum_100(self):  # B1 down (신설)
+        today = self._comps(0.4, 0.6, 0.4)
+        prev = self._comps(0.9, 0.6, 0.7)   # C1 −, C3 − (음 증분)
+        driver, shares = compute_driver(today, prev, delta_1d=-3)
+        assert driver["direction"] == "down" and driver["basis"] == "delta"
+        assert abs(sum(shares.values()) - 100.0) < 0.1  # B1
+
+    def test_none_direction_level(self):  # B1 none (전일 부재)
         today = self._comps(0.9, 0.6, 0.7)
-        driver, shares = compute_driver(today, None)  # 전일 부재 → level
-        assert driver["basis"] == "level"
-        assert abs(sum(shares.values()) - 100.0) < 0.1  # A2
+        driver, shares = compute_driver(today, None)
+        assert driver["direction"] == "none" and driver["basis"] == "level"
+        assert abs(sum(shares.values()) - 100.0) < 0.1
 
-    def test_all_nonpositive_delta_none(self):
+    def test_degenerate_keeps_direction(self):  # 퇴화: delta>0인데 양증분 없음 → level 폴백 + direction 유지
         today = self._comps(0.4, 0.5, 0.4)
-        prev = self._comps(0.9, 0.6, 0.7)  # 전 성분 하락 → driver null
-        driver, shares = compute_driver(today, prev)
-        assert driver is None
+        prev = self._comps(0.9, 0.6, 0.7)   # 전 성분 하락(양증분 0)인데 delta_1d>0 강제
+        driver, shares = compute_driver(today, prev, delta_1d=1)
+        assert driver["direction"] == "up" and driver["basis"] == "level"
+        assert abs(sum(shares.values()) - 100.0) < 0.1
 
 
 # ────────────────────────── A1 최신행 선택 + 원장 일치 ──────────────────────────

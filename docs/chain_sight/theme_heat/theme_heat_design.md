@@ -110,6 +110,15 @@ v1.0의 제외 근거였던 "C4 중첩"은 재검토 결과 기각(C4=돈의 이
 **band_display 매핑 (결정24, TH-15 — 표시층, 공식 밴드 규약 무변경)**: 공식 밴드명(band 필드)은
 cool/warning/overheated 유지, 표시 라벨(band_display)만 **0–39 냉각 / 40–69 가열 / 70–100 과열**.
 
+**driver 산식 (결정24+결정27=B, TH-16 — 대칭 확장 정본)**: E2 카드 견인 칩. 방향 = delta_1d
+**부호** 기준(성분 증분 부호 아님):
+- `delta_1d > 0` → direction="up", 양(+) 증분만 합산, contribution_pct = 성분 증분 / Σ양증분.
+- `delta_1d < 0` → direction="down"(신설, "무엇이 식혔나"), 음(−) 증분만, contribution_pct = |성분
+  증분| / Σ|음증분|.
+- `delta_1d == 0` 또는 전일 부재 → direction="none", level 폴백(성분 w_norm·s / Σ(present w_norm·s)).
+- 퇴화(delta 부호와 일치하는 증분 성분 부재 = 재분배·반올림 기인) → level 폴백 + direction 유지.
+- 성분 기여율 합 = 100%(±0.1%p). `basis`("delta"|"level")·`direction`("up"|"down"|"none") 병기.
+
 **C1 밸류에이션 조합 (결정15=A, v1.2.7)**: EV/Sales = FMP enterprise-values(**period=quarter**)
 ÷ income-statement(quarter) revenue. **시점 정합 정본**: EV.date == income.date 동일 fiscal_date
 강제(라벨 불일치·미발표 미저장, 추정·대체 금지). 원장 QuarterlyValuation. 섹터 EV/Sales 중앙값의

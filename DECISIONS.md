@@ -3573,3 +3573,42 @@ collect-theme-filings=enabled(next 2026-07-13 17:30 ET)·snapshot-analyst-estima
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = 7c17f35. 417 GREEN / 13 사전존재
 (attention 6 + leadership_api 7, Neo4j-env). 신규 13 test(API). 마이그레이션 0(읽기 전용 API +
 beat enable 쓰기만). 신규 파일 heat_labels·heat_api_service·heat_views + urls 2 route.
+
+## [2026-07-13] Theme Heat TH-16 — 결정27B(driver 대칭 확장) + TH-C1-Z-PROBE 판정
+
+**결정27 = B (driver 산식 대칭 확장)**: E2 driver에 `direction`("up"|"down"|"none") 추가. 방향 =
+**delta_1d 부호** 기준. delta>0 → up(양 증분/Σ양증분). delta<0 → **down 신설**(|음 증분|/Σ|음
+증분|, "무엇이 식혔나"). delta=0·전일부재 → none(level 폴백). 퇴화(delta 부호와 일치 증분 부재)
+→ level 폴백 + direction 유지. 기여율 합 100%±0.1. 설계 §2 정본 개정. 게이트 B1(3분기 합100)·
+B2·B3(418 GREEN) PASS. **B2 라이브**: FinSvc 07-12(delta −2) driver=**C3(이야기 밀도) down 86.1%**
+— "뉴스 밀도가 식힘"(analyst 6건 제거로 C3 z 1.248→0.895). 화면 문구 재료 확정.
+
+**TH-C1-Z-PROBE 판정 (읽기 전용, 수정 0)**:
+- **P1 모집단**: C1 z = 섹터 구성종목 EV/Sales의 **분기 중앙값 시계열**(current 분기 vs 3년 history,
+  `timeseries_z`, 분모=history 모표준편차). 설계 §2 "3년 z" 정합. **횡단면 아님** → (n−1)/√n 상한
+  미적용(그 상한은 value∈population인 `cross_sectional_z` 전용).
+- **P2 분포**(computed 5): FinSvc z=7.513(cur 18.07/hist_mean 11.58/std 0.86/n_hist 16)·Energy
+  0.675·Technology 0.818·Industrials 1.217·Consumer Cyclical −2.976. 시계열 z라 상한 위반 없음.
+- **P3 FinSvc 완전 추적**: 분기 17개(종목 75), history 분기 median 9.76~12.96(n_syms 73~75).
+  ★**최신 2026Q2 median=18.07이 n_syms=1(FDS 단독)** — 나머지 74종목 2026Q2 미제출. 1종목 median을
+  75종목 history와 비교 → z=(18.07−11.58)/0.86=7.51. current가 history 범위 밖.
+- **P4 판정 = (c)+(d)**: **(c) z_mode 라벨 오기** — C1은 시계열인데 API가 cross_sectional 표기(내
+  TH-15 heat_api_service 기본값). **(d) 이상치 오염** — 최신 분기 얇은 표본(n_syms=1) median이 비대표
+  → z 폭등. **(a) 종목 단위 아님**(분기중앙값 시계열)·**(b) z 계산식 자체는 정상**(오염된 입력이 문제).
+- **P5 영향 범위**: `cross_sectional_z` 사용처 = **C8 콜드스타트 전용**. C1/C2/C3/C5/C6/C7 = 전부
+  `timeseries_z`. → API가 present C1/C2/C5/C6/C7을 "cross_sectional"로 **체계적 오라벨**(C3만 정상
+  time_series, C8만 실제 cross_sectional 가능). z_mode 표시가 5성분에서 틀림.
+- **수정 제안(서면만, 미적용, 다음 슬라이스 비준)**: ⑴ **(d) 얇은 분기 가드** — `c1_valuation_from_db`
+  current 분기 median 표본 하한(예: n_syms ≥ history 중앙값의 일정 비율, 미달 시 직전 완전분기 사용
+  또는 결측). ⑵ **(c) z_mode 라벨** — heat_api_service가 성분별 실제 z 방식(C1~C7 time_series, C8
+  z_mode 저장값) 반영. 둘 다 heat 원장/API 쓰기 → 본 슬라이스 범위 밖(TH-C1-THIN-QUARTER-GUARD·
+  TH-ZMODE-LABEL-FIX 등재).
+
+**beat 3종 상태(결정26=C 상시)**: theme-heat-daily=enabled(★첫 자동 발화 확인 2026-07-13 01:07 UTC
+= enable 직후 catch-up, 07-12 heat 5테마 idempotent 재산출, **Healthcare 미점등** days 25<26)·
+collect-theme-filings=enabled(next 07-13 17:30 ET)·snapshot-analyst-estimates=enabled(next 07-17
+16:30 ET, last_run_at=None). 07-13 18:00 ET 정규 발화는 미도래(현재 ET 07-12 22:12).
+
+**baseline at decision**: origin/monorepo/sess-cs-theme-heat = 8725258. 418 GREEN / 13 사전존재
+(attention 6 + leadership_api 7, Neo4j-env). 신규 1 test(down direction). 마이그레이션 0(driver
+산식·테스트·문서 쓰기만, 원장 무변경). 프로브는 읽기 전용.
