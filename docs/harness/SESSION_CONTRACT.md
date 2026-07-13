@@ -73,6 +73,8 @@ git worktree remove ../stock*vis*<앱>
 \`\`\`
 공유 파일 만진 세션이 둘이면 머지 순서대로, 두 번째가 충돌 해결(머지 1회).
 
+**세션 끝 DoD (back-annotation 필수)**: 결정/항목 해소 시 **새 블록 append로 끝내지 말고, 원 'pending/대기' 블록에 해소 델타(→ RESOLVED/LANDED/SUPERSEDED @커밋)를 반드시 부기**한다. (미부기 시 stale pending이 인계로 무검증 전파 — 2026-07 D2 phantom. `health_check.py`의 "stale pending 백-어노테이션" 규칙이 WARN으로 감시.)
+
 ## F. 미래 확장 (사람 늘면)
 
 PR(원격) + CI(GitHub Actions: pytest·경계테스트) + CODEOWNERS 3개만 추가.

@@ -879,6 +879,66 @@ def check_monitor_refresh_freshness() -> CheckResult:
     )
 
 
+# ── (15) stale pending 백-어노테이션 검문 (MGMT-HARDEN, common-bugs #52) ──────
+# D2 phantom 교훈: 해소된 결정이 구 pending(⏸️) 블록 미갱신으로 stale 잔존 → 인계로 무검증 전파.
+# 판정: PROGRESS.md의 ⏸️(paused) 상태 블록 중, 해소 델타(→ RESOLVED/LANDED/SUPERSEDED 등)
+#       없이 타임스탬프가 PENDING_STALE_DAYS(3 거래일 근사 = 달력 3일) 초과 방치 → WARN.
+# WARN-only(FAIL 아님. 1주 클린 후 FAIL 승격은 별도 — 지금 승격 금지).
+# TASKQUEUE 제외: 큐는 설계상 장기 pending(💤/🕓 트리거 게이트) 보유 — ⏸️ 미사용이라 오탐 원천.
+# 거래일 캘린더 = issuance/execution-tree의 "달력일 임계로 주말 흡수" 관례 재사용(엄밀 NYSE 캘린더 부재).
+PENDING_STALE_DAYS = 3
+PENDING_MARKER = "⏸️"
+PENDING_DELTA_MARKERS = ("RESOLVED", "LANDED", "SUPERSEDED", "해소 델타", "소화됨", "해소됨")
+
+
+def _scan_stale_pending(text: str, today) -> list[tuple[str, int]]:
+    """⏸️ + 날짜 有 + 해소델타 無 + age > 임계 인 블록을 (헤더요약, age) 리스트로 반환.
+
+    순수 함수(DB·git 접근 0) → 합성 픽스처로 양방향 검증 가능. today = datetime.date.
+    """
+    stale: list[tuple[str, int]] = []
+    for line in text.splitlines():
+        if PENDING_MARKER not in line:
+            continue
+        if any(mk in line for mk in PENDING_DELTA_MARKERS):
+            continue  # 해소 델타 부기됨 → 정상(백-어노테이션 완료, WARN 억제)
+        m = re.search(r"(\d{4})-(\d{2})-(\d{2})", line)
+        if not m:
+            continue
+        try:
+            block_date = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+        except ValueError:
+            continue
+        age = (today - block_date).days
+        if age > PENDING_STALE_DAYS:
+            hm = re.search(r"\*\*(.+?)\*\*", line)
+            head = (hm.group(1) if hm else line.strip())[:70]
+            stale.append((head, age))
+    return stale
+
+
+def check_stale_pending_backannotation() -> CheckResult:
+    name = "stale pending 백-어노테이션"
+    text = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
+    today = datetime.now().date()
+    stale = _scan_stale_pending(text, today)
+    if not stale:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail=f"⏸️ 해소 델타 없는 stale pending 0건 (임계 {PENDING_STALE_DAYS} 거래일, PROGRESS)",
+        )
+    return CheckResult(
+        name=name,
+        status=WARN,
+        detail=(
+            f"⏸️ 해소 델타 없는 stale pending {len(stale)}건 (> {PENDING_STALE_DAYS} 거래일) — "
+            "원 블록에 → RESOLVED/LANDED/SUPERSEDED 부기(백-어노테이션) 필요 (D2 phantom 재발 방지 #52)"
+        ),
+        evidence=[f"{h} (age {a}일)" for h, a in stale],
+    )
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -897,6 +957,7 @@ CHECKS = [
     check_issuance_log_freshness,
     check_execution_tree_alignment,
     check_monitor_refresh_freshness,
+    check_stale_pending_backannotation,
 ]
 
 

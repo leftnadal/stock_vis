@@ -793,3 +793,13 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 - **교훈**: 백필로 채운 과거 자산이 있으면 **롤링 purge/retention이 그것을 인지하는지 먼저 확인**. 심볼/출처 무인지 blanket cutoff는 백필과 상충. 백필 커맨드 DoD에 "보존 예외 대상인가" 포함. 마커(가) vs 심볼 예외(나) 택일 = 정책 형태 + 마이그레이션 비용(모델 변경이 prod 마이그레이션이면 나 우선).
 - **⚠️ 미해소 동류 지뢰 (IndicatorValue)**: 같은 `cleanup_old_data`가 `IndicatorValue.filter(date__lt=today-365).delete()`도 실행 — B1-S2가 백필한 매크로지표 3년치도 매주 삭제 중. **현재 analog 벡터는 stored(RegimeSnapshot.inputs JSON)라 무영향**이나, **S4-REBASE 재합성(라이브+소급 재-z) 시 71% 결손이 재현**된다. A-S0는 SPY만 보존 → IndicatorValue는 미보존. TASKQUEUE `INDVAL-PURGE-LANDMINE`(트리거=S4-REBASE)로 등재. 재합성 착수 시 A-S0와 동형(코드/시리즈 보존 예외) 선행 필수.
 - **교훈**: 앱 재배치 시 ⑴ `grep -rn "[\"']<oldapp>\." tests/`로 **문자열 경로**를 별도 스윕, ⑵ `parents[N]` 상수를 전수 재계산, ⑶ green 판정은 `--maxfail` 해제 전수. 유형은 CS-TEST(chainsight)와 동일 — 이관 PR은 "테스트 문자열·경로 상수 스윕"을 DoD에 포함.
+
+## 해소된 결정이 구 'pending' 블록 미갱신으로 stale 잔존 → 인계로 무검증 전파 (#52, 2026-07-13 MGMT-HARDEN) `[harness]` `[decision]`
+
+- **증상**: 결정/항목이 해소(LANDED/확정)됐는데 그 사실이 **새 PROGRESS 블록 append로만** 기록되고, 원래의 'pending/대기'(⏸️) 블록은 그대로 잔존. 다음 세션이 구 블록만 읽고 "아직 대기"로 **무검증 전파**(2026-07 D2 phantom: T-3b(`3a3e921`)로 소화된 "결정 4건 대기"를 후속 인계가 "대기 중"으로 오전파). **부수 위험**: 배치 지시서의 일부 슬라이스가 조용히 누락돼도 append-only 기록은 "다 했다"처럼 읽힘.
+- **원인**: PROGRESS는 union-merge append 로그라 새 블록이 계속 쌓이지만, **구 블록의 상태는 자동 갱신되지 않는다**. 해소 사실과 원 pending 블록이 물리적으로 분리되면, 스캔 순서·상속 메모에 따라 구 상태가 살아남는다.
+- **소진(3층 방지, MGMT-HARDEN)**:
+  1. **A 백-어노테이션 규약**(SESSION_CONTRACT DoD): 해소 시 원 블록에 **해소 델타(→ RESOLVED/LANDED/SUPERSEDED @커밋) 부기 필수** — 새 블록 append로 끝내지 않는다. 원문은 취소선/註로 보존(삭제 금지).
+  2. **C health_check WARN**(`scripts/health_check.py::check_stale_pending_backannotation`): PROGRESS의 ⏸️ 블록 중 해소 델타 없이 3 거래일 초과 방치 → WARN(FAIL 아님). TASKQUEUE 제외(큐는 장기 pending 보유 설계).
+  3. **D STEP 0 재측정**(SESSION_STARTUP_CHECKLIST): 상속된 인계 메모/타 트랙 'pending' 주장은 **행동 전 그 트랙 현재 장부로 재측정**(추정 전파 금지).
+- **교훈**: append-only 로그에서 "상태"는 스스로 갱신되지 않는다 — 해소는 **원 지점 back-annotation**으로 닫아야 한다. 그리고 **실행 보고는 반드시 지시서 DoD 전수 대조**(일부 슬라이스 조용한 누락 방지). 검문소는 "해소 델타 유무"라는 값싼 신호로 phantom을 잡는다.
