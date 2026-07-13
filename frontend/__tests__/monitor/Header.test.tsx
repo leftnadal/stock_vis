@@ -56,6 +56,6 @@ describe('Header 6칸 내비', () => {
   it('My 페이지(/monitor)에선 서브탭 표시', () => {
     pathname = '/monitor'
     render(<Header />)
-    expect(screen.getByTestId('tab-thesis')).toBeInTheDocument()
+    expect(screen.getByTestId('tab-monitor')).toBeInTheDocument()
   })
 })
