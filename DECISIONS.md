@@ -8,6 +8,29 @@
 
 ---
 
+## SLICE18R — 사용자 상태 그릇 재설계 (원안 폐기 + D1'·D2'·D3') (2026-07-13) [portfolio]
+
+**원안 폐기 사유(supersede SLICE18-D1-REOPEN)**: 원안 `SLICE18_INSTRUCTION.md`는 4모델(UserGoal·WatchlistItem·WalletHolding·CashBalance) 전부 신규 생성을 지시했으나 STEP 0 실측에서 **HALT 2건** 확정 → 개정본 `SLICE18_INSTRUCTION.md`(rev2)로 대체. ⑴ 의미 중복: `apps/portfolio.WalletHolding`(models.py:78, 동명·상위집합=Django 정의 충돌)·`shared/users.WatchlistItem`(users/models.py:215, 상위집합·REST 완비). ⑵ D1 전제 파기: WatchlistItem을 `apps/dashboard/services/strip_service.py:84`·`apps/chain_sight`(WatchlistViewSet)가 이미 소비=교차앱 자산.
+
+### D1' — 소속 (재확정)
+**결정**: 신규는 **UserGoal·CashBalance 2종만 `apps/portfolio`**. WatchlistItem은 `shared/users` 유지(소비만), WalletHolding은 `apps/portfolio` 기존 유지 — **둘 다 생성 없음, 재사용**.
+- **Why**: "재료는 어느 요리에 들어갈지 몰라야 한다." watchlist는 이미 dashboard·chain_sight 다중 소비 → shared 정당. cash/goal은 STEP 0(e) 실측상 portfolio만 소비(교차앱 흔적 0) → portfolio 정당.
+- **How to apply**: 신규 2모델만 `apps/portfolio/models_my.py`(ADDITIVE)에 정의. 기존 WalletHolding/WatchlistItem 정의·마이그레이션 무접촉.
+- **STEP 0 측정**: cash/goal 교차앱 소비자 grep(dashboard·chain_sight·market_pulse) = 0건 → D1' 전제 유지.
+
+### D2' — user 스코프 이음새: house 패턴(컨테이너 경유) 정렬
+**결정**: STEP 0.5 실측 **house 스코핑 = 컨테이너 경유**(WalletHolding·WalletSnapshot·Portfolio 전부 `wallet=FK(Wallet)`, `Wallet.user=FK(AUTH_USER_MODEL)`; WatchlistItem=`watchlist__user`). 신규 2모델을 이 패턴에 정렬하되 가지는 데이터 성격으로 분기:
+- **CashBalance → `wallet = OneToOneField(Wallet)`**, 스코핑 `wallet__user`. (현금은 지갑 속성 = WalletHolding과 동일 컨테이너, "한 지갑 = 보유 + 현금".)
+- **UserGoal → `user = OneToOneField(AUTH_USER_MODEL)`**, 직접 스코핑. (투자 목표는 지갑이 아니라 사용자 전역 속성 = 지시서 D2' 기본 가정.)
+- **추상 베이스 강제 안 함(YAGNI)**: 두 모델이 상이한 가지(컨테이너 vs 직접) → 억지 추상 = 부채. 이음새는 "user로 좁혀지는 표준 조회 경로"로 확보(`for_user` 매니저 헬퍼).
+- **Why(vs 원안 직접FK 강행)**: 기존 자산이 컨테이너 경유인데 신규만 직접 FK면 격리 테스트·19a 조회 경로가 이원화 → 유지보수 부채. house 일관성 우선.
+- **STEP 0.5 측정**: WalletHolding `wallet=FK(Wallet)` 확인, Wallet=사용자당 1개(MVP). AUTH_USER_MODEL=`users.User`.
+
+### D3' — 보안 트리거 재정의 (유지·범위 조정)
+**결정**: 멀티테넌트 하드닝(온보딩/권한/테넌시 격벽)은 계속 **동결**. 단 user 차원(직접 FK 또는 컨테이너 경유)을 갖는 테이블이 새로 생기면 **교차 사용자 누수-0 격리 테스트를 반드시 동반**. 신규 UserGoal·CashBalance에 누수-0 테스트 + (권장) 재사용 WalletHolding·WatchlistItem 스모크 격리 추가(기존 격리 테스트 0건 실측) + introspection 등록 가드(직접/컨테이너 양 스코핑 인식).
+- **Why**: 재사용하는 순간 19a가 이들 위에서 사용자 데이터를 다루므로 데이터 계층 격리는 지금부터 강제. UI/과금/온보딩은 계속 동결(외피 동결 ↔ 이음새 보존 경계 명확화).
+- **가중합(기록용)**: 프로세스 "정지·재설계" 4.60 vs "웜세션 축소" 3.10(마진 1.50 자동). D2' "house 정렬" > "원안 직접FK 강행"(일관성·격리·유지보수 우위).
+
 ## SLICE18-D1-REOPEN — Slice 18 컨테이너 4모델 소속 재결정 필요 (2026-07-13) [portfolio]
 
 **결정(안건 등재, 미확정)**: Slice 18 지시서의 닫힌 결정 **D1(신규 4모델 전부 apps/portfolio)의 전제가 STEP 0 실측으로 파기됨** → D1 재결정을 디렉터 세션으로 회부. 이 세션은 HALT·정지(코드 0).
