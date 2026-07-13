@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from apps.chain_sight.views.watchlist_views import WatchlistViewSet
 
 from .event_views import EventBoardView, EventRankingView
+from .heat_views import ThemeHeatBarView, ThemeHeatCardView
 from .views import (
     ChainSightGraphView,
     ChainSightSuggestionView,
@@ -21,6 +22,9 @@ urlpatterns = [
     # 관심도 이벤트 보드 (CS-RD2)
     path("events/", EventBoardView.as_view(), name="chainsight-events"),
     path("events/<str:theme>/stocks/", EventRankingView.as_view(), name="chainsight-event-ranking"),
+    # Theme Heat API (TH-15, 고정 경로 — 동적 symbol 경로보다 먼저)
+    path("theme-heat/", ThemeHeatBarView.as_view(), name="chainsight-theme-heat-bar"),
+    path("theme-heat/<str:theme>/", ThemeHeatCardView.as_view(), name="chainsight-theme-heat-card"),
     # 마켓 뷰 (고정 경로 먼저)
     path("seeds/", SeedListView.as_view(), name="chainsight-seeds"),
     path(

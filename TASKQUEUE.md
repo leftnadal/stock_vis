@@ -646,9 +646,13 @@
 - 상태: **등재**(작업2 상신, `h2_firstrule_recheck.json`). 733 유니크 중 오배정 215(규칙결함 197/개별예외 18). ★"ai" 토큰 75건 최다(회사 종목 뉴스인데 무조건 Technology 배정 — JPMorgan AI→FinSvc·Jabil AI→Industrials·Meta AI→Comm) + macro 토큰(fed/inflation/crypto/geopolitical/regulation → none 대상).
 - 수정 후보: KEYWORD_SECTOR_MAP "ai" 등 다의 토큰 제거/맥락화 or MATCH_EXCLUDE_TOKENS 확장. **1차 규칙 로직 변경은 별도 비준**(배정률·정밀도 영향 큼). 트리거 = 유지보수 슬라이스.
 
-## TH-ESTIMATE-BEAT-ENABLE — EstimateSnapshot beat 활성화 (등재, TH-14 2026-07-12)
-- 상태: **등재**(작업4 진단). PeriodicTask `chainsight-snapshot-analyst-estimates` **enabled=False**(cron `30 16 * * 5 America/New_York` 정상 등록·last_run_at=None)이 0행 원인. theme-heat beat 3종 모두 disabled(소비 차단 정합).
-- 조치: 활성화 비준 시 `PeriodicTask.enabled=True` (첫 스냅샷 7/17 금, C8 콜드스타트 60일 시계 개시). cron/import/워커 정상 — **비활성화만 해제하면 됨**. 트리거 = C8 활성 비준.
+## ✅ TH-ESTIMATE-BEAT-ENABLE → TH-15 작업0 흡수 종결 (2026-07-13, 결정26=C)
+- 상태: **종결**. TH-15 작업0에서 beat 3종 enabled=True(theme-heat-daily·collect-theme-filings·snapshot-analyst-estimates). snapshot-analyst-estimates 첫 발화 2026-07-17 16:30 ET(주간 금), C8 콜드스타트 60일 시계 개시. **결정26=C 상시 의무: 이후 모든 보고에 beat 3종 상태 1줄**.
+
+## ✅ TH-15 — Theme Heat API 슬라이스 (집행 종결, 2026-07-13, 결정23B/24C/25③/26C)
+- 상태: **종결**. E1 `GET /api/v1/chainsight/theme-heat/`(버튼바 11종, computed score desc→accumulating days desc) + E2 `GET .../theme-heat/{theme}/`(카드: driver·confidence·components8·quadrant·history·z_mode·blocked). 읽기 전용(원장 조회, 재계산 없음). 성분 이름표 `heat_labels.py` 단일 소스(설계 §2 정본). IsAuthenticated.
+- 게이트 A1~A5 PASS. 신규 13 test → 417 GREEN/13 사전존재. 파일: heat_labels·heat_api_service·heat_views + urls 2 route. driver 산식·band_display 매핑 = 설계 §2·DECISIONS 결정24.
+- ★소비 차단 = blocked 구조(값+사유 동봉). universe_stale 현재 False(TH-6 신선), stale 픽스처 테스트로 검증. 프론트 트랙(버튼바·카드 렌더)은 별도.
 
 ## ✅ TH-HALTED-3-PROBE → 교체 집행 (종결, TH-12b 2026-07-10, 결정20=A)
 - 상태: **교체 집행 종결**. TH-12 판정(기존 DB 7개월행 오염, FMP 정본) → TH-12b 삭제+재백필 집행. 삭제 522행(MSFT 196·META 174·SPGI 152) → 재백필 2,256행(각 752, 2023-07-11~2026-07-09, 기존 `backfill_daily_prices` 경로·우회 0).

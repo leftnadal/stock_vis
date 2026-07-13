@@ -92,6 +92,24 @@ v1.0의 제외 근거였던 "C4 중첩"은 재검토 결과 기각(C4=돈의 이
 
 보조 지표 (가중합 밖): T0 지수 프록시 — VIX·VXN·OVX·SKEW, CBOE put/call. 카드 툴팁 배경용.
 
+**성분 이름표 사전 (결정25=③, TH-15 — 정본)**: API·프론트는 이 표만 참조(하드코딩 금지, 단일
+소스 = 코드 미러 `apps/chain_sight/services/heat_labels.py`). `label_technical`(기술 표기) /
+`label_surface`(사용자 표면):
+
+| 성분 | label_technical | label_surface |
+| --- | --- | --- |
+| C1 | 밸류에이션 | 몸값 부담 |
+| C2 | 내부자·증자 신호 | 내부자 이탈 |
+| C3 | 뉴스 밀도 | 이야기 밀도 |
+| C4 | ETF 자금흐름 | ETF 돈줄 |
+| C5 | 레버리지 투기 | 빚투 강도 |
+| C6 | 상관 동조화 | 같이 움직임 |
+| C7 | 거래량 급증 | 거래 열기 |
+| C8 | 추정치 괴리 | 실적 안 따라옴 |
+
+**band_display 매핑 (결정24, TH-15 — 표시층, 공식 밴드 규약 무변경)**: 공식 밴드명(band 필드)은
+cool/warning/overheated 유지, 표시 라벨(band_display)만 **0–39 냉각 / 40–69 가열 / 70–100 과열**.
+
 **C1 밸류에이션 조합 (결정15=A, v1.2.7)**: EV/Sales = FMP enterprise-values(**period=quarter**)
 ÷ income-statement(quarter) revenue. **시점 정합 정본**: EV.date == income.date 동일 fiscal_date
 강제(라벨 불일치·미발표 미저장, 추정·대체 금지). 원장 QuarterlyValuation. 섹터 EV/Sales 중앙값의
