@@ -897,3 +897,10 @@ class Decision(models.Model):
 
     def __str__(self):
         return f"Decision[{self.decision_type}] | {self.user} | {self.decision_at:%Y-%m-%d}"
+
+
+# ============================================================
+# Slice 18-R — 사용자 상태 그릇 신규 모델 (ADDITIVE, models_my.py)
+# Django 앱 모델 발견용 재노출. 정의는 models_my.py 참조 (DECISIONS SLICE18R).
+# ============================================================
+from apps.portfolio.models_my import CashBalance, ScopedManager, UserGoal  # noqa: E402,F401
