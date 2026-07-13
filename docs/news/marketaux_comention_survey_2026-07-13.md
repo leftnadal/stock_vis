@@ -82,8 +82,22 @@ Marketaux `/news/all` 응답 아이템 (provider 주석 + `_parse_article` `mark
 
 - 코드/설정 **가정**: `config/settings.py:99` `marketaux.per_day=2500`, provider 주석 "Basic Plan 2,500 calls/day, 20 articles/request", `get_rate_limit()`={2500/86400s}.
 - **기사당 entities 상한**: request당 `limit=20`(Basic), `filter_entities=true` 시 필터 심볼만 반환.
-- ⚠️ **미실증**: 위는 전부 **Basic 플랜 가정**. 실제 자격증명(`MARKETAUX_API_KEY`)이 **무료(Free) 플랜인지 Basic인지 미확인**. Marketaux 무료 플랜은 통상 훨씬 낮음(일 100건대) — **실호출 없이는 확정 불가**. 리셋 방식(rolling vs 자정 UTC)도 **문서/코드에 근거 없음 = 미실증** (AV rolling 함정 재발 방지 위해 실호출 전 반드시 공식 문서 확인 권장).
-- 이번 세션 실호출 0건 → 플랜 한도 실측 미수행(의도적: 스키마·밀도가 저장 데이터로 충족돼 호출 불필요).
+
+### ★ 실증 추기 (지시서 ⑦ S2, 2026-07-13, 실호출 2건)
+
+응답 **헤더에 쿼터가 노출**됨 — 대시보드 없이 실증 가능:
+
+| 항목 | 실증값 (헤더) | 판정 |
+|------|--------------|------|
+| 일 한도 | `X-Usagelimit-Limit: 2500` | **Basic 플랜 확정** (코드 가정 정확 — free 100 아님) |
+| 일 잔여 | `X-Usagelimit-Remaining: 2496` (2호출 후) | 금일 사용 소량 → 확장 여유 큼 |
+| 분당 버스트 | `X-Ratelimit-Limit: 30`, `Remaining: 29` | 분당 30 (provider `request_delay=10s` = 안전 여유) |
+| 리셋 방식 | 일일(daily) usage 카운터. **정확한 리셋 시각(UTC 자정?)은 헤더 미노출 = 미실증** | 웹 문서도 리셋 시각 명시 없음 |
+| match_score 스케일 | 라이브 58.15·9.44 (unbounded relevance) | 0-1도 0-100도 아님 → **S4 정규화 근거** |
+
+- 웹 확인(marketaux.com 문서는 403이나 검색 결과): **free 플랜 ≈ 100 req/day** — 하지만 이 계정 키는 **Basic 2500**(헤더 실증)이므로 free 제약 무관.
+- **결정적 재확증**: `symbols=AAPL,MSFT`+`filter_entities=true` 실호출인데도 기사당 `entities=1`(AAPL만) 반환 → survey의 "단일심볼 붕괴로 co-mention 무익" **라이브 확증**.
+- **A 재결정 입력**: 일 2500 여유(현 사용 ~수십/일) → broad/market 경로(심볼 무필터, 다중엔티티 보존) 신설이 한도상 충분히 가능. 리셋 시각만 확장 전 실증 권장(잔여=0 도달 시점 관찰).
 
 ---
 
@@ -126,7 +140,11 @@ Marketaux `/news/all` 응답 아이템 (provider 주석 + `_parse_article` `mark
 
 ## Marketaux 실호출 회계
 
-- **총 0건.** (스키마=저장 데이터+provider 코드, 밀도=DB 집계로 충족. 플랜 한도만 미실증으로 남김.)
+- **조사 세션(지시서 ⑥): 총 0건.**
+- **위생 세션(지시서 ⑦ S2): 총 2건** (상한 ≤2 준수, 문서 확인 선행):
+  - #1 `2026-07-13T01:30:31Z` `GET /v1/news/all?limit=3&filter_entities=true` → HTTP 200, 헤더로 쿼터 실증.
+  - #2 `2026-07-13T01:31:12Z` `GET /v1/news/all?symbols=AAPL,MSFT&limit=2&filter_entities=true` → HTTP 200, match_score 라이브(58.15·9.44) + 단일심볼 붕괴 확증.
+  - Usage-Remaining 2497→2496. AV 호출 0·프로브 0 유지.
 
 ## 조사 방법 회계
 
