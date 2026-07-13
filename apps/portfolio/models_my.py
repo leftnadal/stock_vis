@@ -49,24 +49,35 @@ class ScopedManager(models.Manager):
 
 class CashBalance(models.Model):
     """
-    Wallet의 현금 잔고. 지갑당 1개(OneToOne) — WalletHolding과 동일 컨테이너.
+    Wallet의 통화별 현금 잔고. 지갑당 통화별 1행(SLICE19A: FK + unique(wallet, currency)).
     스코핑: `CashBalance.objects.for_user(user)` → `wallet__user`.
-    통화는 USD 고정(필드 없음 — 다통화 YAGNI).
+    다통화(KRW+USD) — 19a 제품의도 확정. 환전 없음(통화별 매수여력 분리, 교차환전은 19b).
     """
 
     USER_SCOPE_LOOKUP = "wallet__user"
 
+    CURRENCY_CHOICES = [
+        ("USD", "USD"),
+        ("KRW", "KRW"),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    wallet = models.OneToOneField(
+    wallet = models.ForeignKey(
         Wallet,
         on_delete=models.CASCADE,
-        related_name="cash_balance",
+        related_name="cash_balances",
+    )
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default="USD",
+        help_text="통화 (USD/KRW). 지갑당 통화별 1행.",
     )
     amount = models.DecimalField(
         max_digits=16,
         decimal_places=2,
         default=Decimal("0"),
-        help_text="현금 잔고 (USD).",
+        help_text="현금 잔고 (해당 통화 단위).",
     )
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -74,9 +85,10 @@ class CashBalance(models.Model):
 
     class Meta:
         indexes = [models.Index(fields=["wallet"])]
+        unique_together = [("wallet", "currency")]
 
     def __str__(self):
-        return f"${self.amount} in {self.wallet.name}"
+        return f"{self.amount} {self.currency} in {self.wallet.name}"
 
 
 # ============================================================
