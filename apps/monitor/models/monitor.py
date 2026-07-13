@@ -6,6 +6,7 @@ Claim = Monitor에 부착되는 주장·마감 (구 thesis 개념의 재정의).
 import uuid
 
 from django.conf import settings
+from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
 
@@ -84,9 +85,25 @@ class Claim(models.Model):
 
     class Outcome(models.TextChoices):
         PENDING = "pending", "Pending"
+        VALIDATED = "validated", "Validated"          # 적중
+        PARTIAL = "partial", "Partial"                # 부분적중 (MON-CLOSE-UI ④)
+        INVALIDATED = "invalidated", "Invalidated"    # 빗나감
+        INCONCLUSIVE = "inconclusive", "Inconclusive" # 엣지(버튼 미노출)
+
+    class ProposedVerdict(models.TextChoices):
+        """시스템 제안 판정 (마감 시점 종합점수 밴드 매핑). 최종=outcome, 델타=캘리브레이션."""
+
         VALIDATED = "validated", "Validated"
+        PARTIAL = "partial", "Partial"
         INVALIDATED = "invalidated", "Invalidated"
-        INCONCLUSIVE = "inconclusive", "Inconclusive"
+
+    class FactorTag(models.TextChoices):
+        """회고 공통 요인 태그 (고정 enum — 자유문자열 금지)."""
+
+        TIMING = "timing", "타이밍"
+        EXT_SHOCK = "ext_shock", "외부 충격"
+        INDICATOR_NOISE = "indicator_noise", "지표 노이즈"
+        LUCK = "luck", "운"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     monitor = models.ForeignKey(
@@ -100,6 +117,21 @@ class Claim(models.Model):
     outcome = models.CharField(
         max_length=16, choices=Outcome.choices, default=Outcome.PENDING
     )
+    # 마감 회고 (MON-CLOSE-UI Phase 1) — 전부 마감 액션(close)에서만 설정.
+    proposed_verdict = models.CharField(
+        max_length=16, choices=ProposedVerdict.choices, null=True, blank=True,
+        help_text="시스템 제안 판정 (마감 전 없음)",
+    )
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="resolved_claims",
+        help_text="마감 주체",
+    )
+    factor_tags = ArrayField(
+        models.CharField(max_length=20, choices=FactorTag.choices),
+        default=list, blank=True, help_text="회고 요인 태그(고정 enum)",
+    )
+    retro_memo = models.TextField(blank=True, default="", help_text="회고 선택 한 줄")
     created_at = models.DateTimeField(auto_now_add=True)
     resolved_at = models.DateTimeField(null=True, blank=True)
 
