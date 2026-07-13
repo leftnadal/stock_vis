@@ -6,8 +6,8 @@ import {
   sparkDirection,
   signalStateLine,
   buildChipInfo,
-  GRADE_BAND_TEXT,
 } from '@/lib/credit/creditMeaning';
+import { bandCaption } from '@/lib/credit/creditGrading';
 import type { CreditSignal } from '@/services/creditSignalsService';
 import type { Grade } from '@/components/common/colorSemantics';
 
@@ -119,11 +119,14 @@ describe('signalStateLine + buildChipInfo', () => {
     expect(signalStateLine(s)).toBe('현재 16.90 · 콜드스타트(관측 부족)');
   });
 
-  it('buildChipInfo = 정의 + 상태 + 고정 밴드', () => {
+  it('buildChipInfo = 정의 + 상태 + 신호별 도출 밴드', () => {
     const info = buildChipInfo(sig('CCC_OAS', 'yellow', { value: 9.75, z: 1.11 }));
     expect(info.def).toContain('최저신용');
     expect(info.state).toContain('현재 9.75');
-    expect(info.band).toBe(GRADE_BAND_TEXT);
-    expect(info.band).toBe('gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3');
+    // 비-HY(CCC) → red 미포함, bandCaption 도출값과 일치
+    expect(info.band).toBe(bandCaption('CCC_OAS'));
+    expect(info.band).not.toContain('red');
+    // HY → red 절대 레벨 포함
+    expect(buildChipInfo(sig('HY_OAS', 'gray')).band).toContain('red z≥2 & 값≥8.0%(800bp)');
   });
 });

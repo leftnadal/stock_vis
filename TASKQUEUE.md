@@ -15,7 +15,8 @@
 | CS-CREDIT-P2 | Phase 2: FMP HYG/LQD ETF flow + 차환 절벽(refinancing cliff) 지표 | @backend | 별도 결정 | **대기(착수 미정)** | - |
 | CS-CREDIT-P2.5 | Phase 2.5: SEC 424B2/FWP 발행 신호 파이프라인 | @backend | 별도 결정 | **대기(착수 미정)** | - |
 | CS-CREDIT-CONSUME | Dashboard 프론트에 크레딧 신호 스트립 노출 (소비 시작) | @frontend | 별도 결정 | **🏁 종결 2026-07-11** (MacroStrip 라이브 렌더, gray5+yellow1) | `MacroStrip`+`GradeChip`, origin/main `50ec128` |
-| CS-CREDIT-MEANING | 의미 2층: 헤드라인(규칙 자동문장) + 칩 툴팁(정의·상태·밴드) | @frontend | - | **🏁 종결 2026-07-13** (626 GREEN, 라이브 렌더) | `lib/credit/creditMeaning.ts`, GradeChip info 프롭 |
+| CS-CREDIT-MEANING | 의미 2층: 헤드라인(규칙 자동문장) + 하단 리드아웃(정의·상태·밴드) | @frontend | - | **🏁 종결 2026-07-13** (628 GREEN, 라이브 렌더) | `lib/credit/creditMeaning.ts` |
+| CS-CREDIT-CAPTION-FIX | 리드아웃 밴드를 백엔드 grading 규칙에서 도출(신호별, signed z·orange 무상한·red 절대레벨) | @frontend | - | **🏁 종결 2026-07-13** (632 GREEN, 라이브 렌더) | `lib/credit/creditGrading.ts` (백엔드 무변경) |
 | CS-CREDIT-INFOPANEL | ⓘ 확장 패널 — **TH 밴드 대시보드 합류 시 재검토** (이번 범위 제외) | @frontend | TH 밴드 합류 | **대기(범위 제외)** | - |
 | OPS-API-TREE-SYNC | `worker_sync.sh`에 daphne api 트리(`sv-api-runtime`) 포함 + --dry-run + 단계간 health 체크 | @infra | - | **🏁 종결 2026-07-10** | api 트리 포함=`803e9a9`(DAPHNE-BUILD)·자기가드=`942a991`(기해소) + --dry-run/health 체크=`3e774c3`. real run 검증: 3트리 동기화·worker ping·daphne 401·strip 200·기존 서비스 무영향 |
 

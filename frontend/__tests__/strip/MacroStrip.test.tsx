@@ -115,7 +115,9 @@ describe('MacroStrip', () => {
     // 기본 = 최고 심각도(CCC yellow)
     expect(readout.textContent).toContain('CCC- OAS');
     expect(readout.textContent).toContain('최저신용');
-    expect(readout.textContent).toContain('밴드 gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3');
+    // 신호별 도출 밴드 (CCC=비-HY → red 없음, orange 무상한, signed z)
+    expect(readout.textContent).toContain('밴드 gray z<1(음수 포함) · yellow 1≤z<2 · orange z≥2');
+    expect(readout.textContent).not.toContain('red');
   });
 
   it('칩 hover 시 리드아웃이 해당 신호로 갱신', () => {

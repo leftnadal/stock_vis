@@ -2,6 +2,7 @@
 // 전부 프론트 상수(백엔드 무변경). 순수 함수 = 테스트 용이.
 import type { Grade } from '@/components/common/colorSemantics';
 import type { CreditSignal } from '@/services/creditSignalsService';
+import { bandCaption } from '@/lib/credit/creditGrading';
 
 // 심각도 순위 (헤드라인 톤·나열 순서).
 export const GRADE_SEVERITY: Record<Grade, number> = {
@@ -73,8 +74,9 @@ export const CREDIT_SIGNAL_DEF: Record<string, string> = {
   VIX: 'S&P500 옵션 내재 변동성 지수(‘공포지수’) — 높을수록 시장 불안이 크다.',
 };
 
-// 밴드 기준 고정 표기 (지시서 리터럴 — 강도 눈금 교육용 카피).
-export const GRADE_BAND_TEXT = 'gray |z|<1 · yellow 1–2 · orange 2–3 · red ≥3';
+// 밴드 표기는 신호별 실규칙에서 도출한다(creditGrading.bandCaption). 손글씨 고정문구 폐기 —
+// signed z 하방 미발화 · orange 무상한 · red 절대 레벨(HY 한정)이 그대로 드러나야 하므로.
+// (CS-CREDIT-CAPTION-FIX 2026-07-13)
 
 /** 30일 스파크 방향 (첫↔마지막, 소폭은 횡보). */
 export function sparkDirection(spark: number[]): '상승' | '하락' | '횡보' {
@@ -105,11 +107,11 @@ export interface ChipInfo {
   band: string;
 }
 
-/** 칩 툴팁 콘텐츠 조립 (사전 + 현재 상태 + 고정 밴드). */
+/** 칩 툴팁 콘텐츠 조립 (사전 + 현재 상태 + 신호별 도출 밴드). */
 export function buildChipInfo(sig: CreditSignal): ChipInfo {
   return {
     def: CREDIT_SIGNAL_DEF[sig.key] ?? sig.name,
     state: signalStateLine(sig),
-    band: GRADE_BAND_TEXT,
+    band: bandCaption(sig.key), // 신호별 실규칙 도출 (HY만 red 절대 레벨 포함)
   };
 }
