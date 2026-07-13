@@ -33,10 +33,13 @@ export function MacroStrip() {
   const headlineDot = GRADE_DOT_HEX[headline.grade] ?? GRADE_DOT_HEX.gray;
   const headlineMuted = headline.grade === 'gray'; // 전부 gray → 저채도 눌림.
 
-  // 리드아웃 기본 = 최고 심각도 신호(헤드라인 대상), hover/포커스로 갱신.
-  const mostSevere = [...data.signals].sort(
+  // 심각도 정렬(red>orange>yellow>gray, 동급은 API 순서 유지 = stable sort). 비-gray가
+  // 항상 좌측 → 가로 스크롤 밖 잠복 방지. 칩 폭·컨테이너 계약은 무변경(정렬만).
+  const sortedSignals = [...data.signals].sort(
     (a, b) => GRADE_SEVERITY[b.grade] - GRADE_SEVERITY[a.grade],
-  )[0];
+  );
+  // 리드아웃 기본 = 최고 심각도 신호(헤드라인 대상), hover/포커스로 갱신.
+  const mostSevere = sortedSignals[0];
   const active: CreditSignal =
     data.signals.find((s) => s.key === activeKey) ?? mostSevere;
   const info = buildChipInfo(active);
@@ -65,7 +68,7 @@ export function MacroStrip() {
         role="list"
         className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1"
       >
-        {data.signals.map((s) => (
+        {sortedSignals.map((s) => (
           <GradeChip
             key={s.key}
             grade={s.grade}

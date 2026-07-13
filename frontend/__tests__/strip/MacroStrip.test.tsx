@@ -49,7 +49,7 @@ describe('MacroStrip', () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it('6종 칩을 렌더한다(실데이터 분포 gray 5 + yellow 1)', () => {
+  it('8종 칩(raw 6 + 파생 2)을 심각도순으로 렌더한다', () => {
     const signals = [
       sig({ key: 'HY_OAS', name: 'US HY OAS', grade: 'gray', value: 2.7, z: -1.08 }),
       sig({ key: 'IG_OAS', name: 'US IG OAS', grade: 'gray', value: 0.76, z: -1.01 }),
@@ -57,13 +57,17 @@ describe('MacroStrip', () => {
       sig({ key: 'CCC_OAS', name: 'CCC- OAS', grade: 'yellow', value: 9.75, z: 1.11 }),
       sig({ key: 'CURVE_10Y2Y', name: '10Y-2Y', grade: 'gray', value: 0.38, z: 0.28 }),
       sig({ key: 'VIX', name: 'VIX Close', grade: 'gray', value: 16.9, z: 0.15 }),
+      sig({ key: 'CCC_MINUS_BB', name: 'CCC−BB', grade: 'gray', value: 8.15, z: 0.42 }),
+      sig({ key: 'BBB_MINUS_A', name: 'BBB−A', grade: 'gray', value: 0.31, z: 0.33 }),
     ];
     mockResult({ isError: false, data: { as_of: '2026-07-08', signals } });
     render(<MacroStrip />);
     const chips = screen.getAllByTestId('grade-chip');
-    expect(chips).toHaveLength(6);
-    expect(chips.filter((c) => c.getAttribute('data-grade') === 'gray')).toHaveLength(5);
+    expect(chips).toHaveLength(8);
+    expect(chips.filter((c) => c.getAttribute('data-grade') === 'gray')).toHaveLength(7);
     expect(chips.filter((c) => c.getAttribute('data-grade') === 'yellow')).toHaveLength(1);
+    // 심각도 정렬: 비-gray(yellow)가 맨 앞으로(API 4번째 → 정렬 후 0번째).
+    expect(chips[0].getAttribute('data-grade')).toBe('yellow');
     // 값·z 병기(색 단독 인코딩 금지)
     expect(screen.getByText('9.75')).toBeInTheDocument();
     expect(screen.getByText('z +1.11')).toBeInTheDocument();

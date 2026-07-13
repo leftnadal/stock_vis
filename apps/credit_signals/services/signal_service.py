@@ -18,6 +18,7 @@ from decimal import Decimal
 import numpy as np
 
 from ..constants import (
+    DERIVED_SIGNAL_MAP,
     HY_OAS_CRISIS_BP,
     MAD_CONSISTENCY,
     MAD_FLOOR,
@@ -125,13 +126,80 @@ def compute_signal(signal_key: str) -> CreditSignalState | None:
     return state
 
 
+def compute_derived_signal(key: str) -> CreditSignalState | None:
+    """
+    파생 스프레드 키(CCC_MINUS_BB / BBB_MINUS_A)를 compute-on-read로 계산.
+
+    두 소스 시리즈(피감·감수)의 원장을 각각 로드 → **날짜 inner-join**(양쪽 다
+    있는 날짜만) → 스프레드 = 피감 − 감수 → robust_z → grade_from_z.
+    파생키는 signal_key != "HY_OAS" 이므로 red 자동 미발화(orange 상한없음).
+    ★ 스프레드값은 CreditSignalState에만 upsert하고 MacroSeriesHistory(원장)에는
+      절대 적재하지 않는다(원장 순수성 — raw 관측 전용).
+    소스 원장이 비었거나 정합 날짜가 없으면 None(상태 미생성).
+    """
+    minuend_id, subtrahend_id = DERIVED_SIGNAL_MAP[key]
+    m_rows = dict(
+        MacroSeriesHistory.objects.filter(series_id=minuend_id)
+        .values_list("date", "value")
+    )
+    s_rows = dict(
+        MacroSeriesHistory.objects.filter(series_id=subtrahend_id)
+        .values_list("date", "value")
+    )
+    if not m_rows or not s_rows:
+        return None
+
+    common = sorted(set(m_rows) & set(s_rows))
+    if not common:
+        return None
+
+    spreads = [m_rows[d] - s_rows[d] for d in common]  # Decimal − Decimal (원본 정밀도 보존)
+    as_of = common[-1]
+    current_spread = spreads[-1]
+    values = [float(x) for x in spreads]
+
+    z = robust_z(values)
+    grade = grade_from_z(z, current_spread, key)  # key != HY_OAS → red 미발화
+    z_dec = None if z is None else Decimal(str(z)).quantize(_QUANT_Z)
+
+    n_dropped = len(set(m_rows) | set(s_rows)) - len(common)
+    detail = {
+        "derived": True,
+        "minuend": minuend_id,
+        "subtrahend": subtrahend_id,
+        "n_aligned": len(common),
+        "n_dropped": n_dropped,
+        "window_days": Z_WINDOW_DAYS,
+        "n_obs": len(values),
+        "min_obs": MIN_OBSERVATIONS,
+        "mad_floor": float(MAD_FLOOR),
+        "consistency": MAD_CONSISTENCY,
+        "cold_start": z is None,
+    }
+
+    state, _ = CreditSignalState.objects.update_or_create(
+        signal_key=key,
+        defaults={
+            "as_of": as_of,
+            "value": current_spread,
+            "z_score": z_dec,
+            "grade": grade,
+            "detail": detail,
+        },
+    )
+    return state
+
+
 def compute_all_signals() -> dict:
     """
-    수집 대상 6개 signal_key 전부 계산 (flag 무관 — 서비스 계층 직접 진입점).
+    수집 대상 6 raw signal_key + 파생 2키 전부 계산 (flag 무관 — 서비스 계층 진입점).
     태스크(compute_credit_signals_task)와 백필 커맨드가 공유한다.
     """
     results = {}
     for signal_key in SIGNAL_SERIES_MAP:
         state = compute_signal(signal_key)
         results[signal_key] = None if state is None else state.grade
+    for key in DERIVED_SIGNAL_MAP:
+        state = compute_derived_signal(key)
+        results[key] = None if state is None else state.grade
     return results

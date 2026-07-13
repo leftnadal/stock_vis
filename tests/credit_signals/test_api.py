@@ -64,16 +64,44 @@ class TestStripApi:
         assert resp.status_code == 200
         assert resp.json() == {"as_of": None, "signals": []}
 
-    def test_query_count_bounded(self, auth_client, django_assert_max_num_queries):
-        """N+1 금지: 상태 1쿼리 + 시리즈별 spark 단일 쿼리 (6종 기준 상한 고정)."""
+    def test_query_count_bounded_and_derived_included(
+        self, auth_client, django_assert_max_num_queries
+    ):
+        """N+1 상한: 상태 1 + raw spark 6 + 파생 spark 2×2 = 11 + raw 6 + 파생 2 = 8칩."""
         for key, sid in [
             ("HY_OAS", "BAMLH0A0HYM2"), ("IG_OAS", "BAMLC0A0CM"),
             ("BBB_OAS", "BAMLC0A4CBBB"), ("CCC_OAS", "BAMLH0A3HYC"),
             ("CURVE_10Y2Y", "T10Y2Y"), ("VIX", "VIXCLS"),
         ]:
-            _seed_signal(key, sid, n_spark=35)
-        # 1(states) + 6(spark) = 7. 인증 오버헤드 여유 포함 상한 10.
-        with django_assert_max_num_queries(10):
+            _seed_signal(key, sid, n_spark=35)  # CCC(3.50+)·BBB(3.50+) 소스 포함
+        # 파생 감수 시리즈(BB·A) + 파생 상태 2 (스프레드 ≈ 3.50 − 2.00 = 1.50)
+        start = date(2026, 6, 1)
+        for sid in ["BAMLH0A1HYBB", "BAMLC0A3CA"]:
+            for i in range(35):
+                MacroSeriesHistory.objects.create(
+                    series_id=sid, date=start + timedelta(days=i),
+                    value=Decimal("2.00") + Decimal(str(i)) / 100,
+                )
+        for key in ["CCC_MINUS_BB", "BBB_MINUS_A"]:
+            CreditSignalState.objects.create(
+                signal_key=key, as_of=start + timedelta(days=34),
+                value=Decimal("1.50"), z_score=Decimal("0.30"), grade="gray",
+                detail={"derived": True},
+            )
+        # 11 쿼리 + 인증 오버헤드 여유 → 상한 13
+        with django_assert_max_num_queries(13):
             resp = auth_client.get(STRIP_URL)
         assert resp.status_code == 200
-        assert len(resp.json()["signals"]) == 6
+        signals = resp.json()["signals"]
+        assert len(signals) == 8
+        # raw 6 먼저(계약 순서), 파생 2 뒤 (정렬은 프론트 담당)
+        assert [s["key"] for s in signals[:6]] == [
+            "HY_OAS", "IG_OAS", "BBB_OAS", "CCC_OAS", "CURVE_10Y2Y", "VIX",
+        ]
+        assert {s["key"] for s in signals[6:]} == {"CCC_MINUS_BB", "BBB_MINUS_A"}
+        ccc_bb = next(s for s in signals if s["key"] == "CCC_MINUS_BB")
+        assert ccc_bb["name"] == "CCC−BB"
+        assert set(ccc_bb.keys()) == {"key", "name", "value", "z", "grade", "spark"}
+        assert len(ccc_bb["spark"]) == 30
+        # 파생 spark = 스프레드 (CCC 3.50+ − BB 2.00+ ≈ 1.50)
+        assert ccc_bb["spark"][0]["value"] == pytest.approx(1.5, abs=0.02)
