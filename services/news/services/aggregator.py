@@ -22,23 +22,40 @@ logger = logging.getLogger(__name__)
 class NewsAggregatorService:
     """뉴스 통합 서비스"""
 
-    def __init__(self):
-        """Provider 초기화"""
-        # Finnhub Provider
-        self.finnhub = FinnhubNewsProvider(
-            api_key=settings.FINNHUB_API_KEY,
-            request_delay=1.0,  # 60 calls/min
-        )
+    def __init__(self, finnhub=None, marketaux=None, fmp=None):
+        """Provider 초기화.
 
-        # Marketaux Provider
-        self.marketaux = MarketauxNewsProvider(
-            api_key=settings.MARKETAUX_API_KEY,
-            request_delay=10.0,  # 2,500 calls/day (Basic plan, 10초 간격)
-        )
+        S5: API 키 의존을 분리한다. 각 provider는 (1) 주입값이 있으면 그대로 사용,
+        (2) 없으면 키가 있을 때만 생성, 키가 없으면 None(경고 후 건너뜀). FMP가 이미 쓰던
+        조건부 패턴을 finnhub/marketaux 로 확대 — 격리/CI 환경(키 부재)에서도
+        `NewsAggregatorService()` 인스턴스화 및 `_save_articles`(수집 무관) 사용이 가능하다.
+        테스트는 provider 를 주입하거나 미주입(None)으로 검증한다. (NEWS-AGG-TEST-ENV 해소)
+        """
+        # Finnhub Provider (FINNHUB_API_KEY가 있을 때만 초기화)
+        self.finnhub = finnhub
+        if self.finnhub is None and getattr(settings, "FINNHUB_API_KEY", ""):
+            try:
+                self.finnhub = FinnhubNewsProvider(
+                    api_key=settings.FINNHUB_API_KEY,
+                    request_delay=1.0,  # 60 calls/min
+                )
+            except Exception as e:
+                logger.warning(f"Finnhub news provider init failed: {e}")
+
+        # Marketaux Provider (MARKETAUX_API_KEY가 있을 때만 초기화)
+        self.marketaux = marketaux
+        if self.marketaux is None and getattr(settings, "MARKETAUX_API_KEY", ""):
+            try:
+                self.marketaux = MarketauxNewsProvider(
+                    api_key=settings.MARKETAUX_API_KEY,
+                    request_delay=10.0,  # 2,500 calls/day (Basic plan, 10초 간격)
+                )
+            except Exception as e:
+                logger.warning(f"Marketaux news provider init failed: {e}")
 
         # FMP Provider (FMP_API_KEY가 있을 때만 초기화)
-        self.fmp = None
-        if getattr(settings, "FMP_API_KEY", None):
+        self.fmp = fmp
+        if self.fmp is None and getattr(settings, "FMP_API_KEY", None):
             try:
                 from packages.shared.api_request.providers.fmp.client import FMPClient
 
@@ -75,18 +92,19 @@ class NewsAggregatorService:
         # Provider별 뉴스 수집
         all_articles = []
 
-        # Finnhub (항상 사용)
-        try:
-            finnhub_articles = self.finnhub.fetch_company_news(
-                symbol, from_date, to_date
-            )
-            all_articles.extend(finnhub_articles)
-            logger.info(f"Finnhub: {len(finnhub_articles)} articles")
-        except Exception as e:
-            logger.error(f"Finnhub fetch failed: {e}")
+        # Finnhub (키 있을 때만 — S5)
+        if self.finnhub:
+            try:
+                finnhub_articles = self.finnhub.fetch_company_news(
+                    symbol, from_date, to_date
+                )
+                all_articles.extend(finnhub_articles)
+                logger.info(f"Finnhub: {len(finnhub_articles)} articles")
+            except Exception as e:
+                logger.error(f"Finnhub fetch failed: {e}")
 
-        # Marketaux (선택적)
-        if use_marketaux:
+        # Marketaux (선택적 + 키 있을 때만 — S5)
+        if use_marketaux and self.marketaux:
             try:
                 marketaux_articles = self.marketaux.fetch_company_news(
                     symbol, from_date, to_date
@@ -131,16 +149,17 @@ class NewsAggregatorService:
 
         all_articles = []
 
-        # Finnhub (항상 사용)
-        try:
-            finnhub_articles = self.finnhub.fetch_market_news(category, limit=50)
-            all_articles.extend(finnhub_articles)
-            logger.info(f"Finnhub: {len(finnhub_articles)} articles")
-        except Exception as e:
-            logger.error(f"Finnhub fetch failed: {e}")
+        # Finnhub (키 있을 때만 — S5)
+        if self.finnhub:
+            try:
+                finnhub_articles = self.finnhub.fetch_market_news(category, limit=50)
+                all_articles.extend(finnhub_articles)
+                logger.info(f"Finnhub: {len(finnhub_articles)} articles")
+            except Exception as e:
+                logger.error(f"Finnhub fetch failed: {e}")
 
-        # Marketaux (선택적 - Entity 데이터 포함)
-        if use_marketaux:
+        # Marketaux (선택적 + 키 있을 때만 — S5, Entity 데이터 포함)
+        if use_marketaux and self.marketaux:
             try:
                 marketaux_articles = self.marketaux.fetch_market_news(
                     category, limit=20
