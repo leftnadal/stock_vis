@@ -514,6 +514,8 @@
 
 > B-1 깊은 FRED 피처 백필의 STEP 0.5 게이트 결과 등재. 근거: DECISIONS D-B1-SCOPE-DEPTH. B-1 전 사이클 prod 쓰기 0(읽기전용).
 
+> 🏁 **B-1 트랙 종결 보고(MGMT-BATCH-9 실측 정합, 2026-07-13, base origin/main `3b50612`)**: **B-1 코어 트랙 전건 종결 = origin/main에 완전 반영**. 실측 검증: `ef312d6`(S1 백필 land)·`307306d`(S2)·`b45ee1f`(TREND-S4) **전부 origin/main 조상**(머지됨), `monorepo/sess-b1-s2` tip `97f11d2`도 조상(머지됨). **잔여 슬라이스 = 0**(B1-S1 백필+Part4 통과·B1-S2 703행 합성+Part4 통과·B1-S2-FIRE 발화 완료). **두 언락 키 전부 발화**: ⑴ **MP2-ANALOG un-dorm**(D-ANALOG-GATE (a)(b) 충족, 착수 가능) ⑵ **MP2-TREND S4 land + 트랙 재종결**(`b45ee1f`). deferred 잔존 = B1-DEFER(Phase 5 재개 대기)·B1-C2(마이그레이션 결정 사안)·B1-OPS-BEAT(별도 ops 트랙) — B-1 코어와 무관. ⚠️ **stale 전제 정합화**: BATCH-9 지시서는 "ef312d6=s1-fix land, sess-b1-s2 **활성**"을 전제했으나, 실측 origin/main(`3b50612`)에서 s2·FIRE 모두 이미 종결 — 지시서 작성 이후 origin/main 전진(reference lesson: origin/main 세션 중 반복 전진). 종결 보고 요청은 본 실측으로 **자기충족**(별도 보고 세션 불요).
+
 | ID | Task | 분류 | 트리거(재개) | Status |
 |----|------|------|-------------|--------|
 | B1-DEFER | B-1 FRED 깊은 백필 → Phase 5 Analog 설계 산하로 defer. 사유: 현행 소비자 0(Analog 미구축) + full-vector cap 미해결(조인트 벡터 깊이가 최단 시리즈 HY OAS 2023-06-30에 묶임). 확정 범위·깊이 = A1(활성 11)+B3(2018-01-01). 참조 D-B1-SCOPE-DEPTH. **★착수 STEP 0 필수(2026-07-09 SECTOR-CD S3 추가)**: momentum floor-0 초기 구간 식별·소급 처리 방침 결정 — 계산기가 룩백 부족 구간 momentum을 0으로 floor(SectorFlowSnapshot 초기 5 distinct일 위장), 가짜 0이 소급 차트·cd_state 분석 오염 방지(SECTOR-CD S3 STEP 0-2는 초기 5일 제외로 회피) | market_pulse 트랙(Phase 5 산하) | **Phase 5에서 Analog 매칭 방식(full-vector vs ragged) 확정 시 재개** | 🆕 보류 |
@@ -551,7 +553,7 @@
 | P1-OBSERVE | 첫 EOD-bake 실행 후 **실파이프라인 관측**. **✅ 충족 2026-07-04**(D-P1-OBSERVE-DONE): JSON recommendations N=10·6키 IDENTICAL + DB IssuanceLog 10행=N·grain 중복 0(멱등 실증)·conf_ver=1·published_at·user_id null·매도 30%. 결함 2건(워커 표류·0009 미적용) 경유 해소 | 관측(dashboard 디렉션) | 완료 2026-07-04 | ✅ 충족 |
 | P1-B-WORKER-WORKTREE | **worker 전용 worktree**(`~/worktrees/sv-worker-runtime` detached origin/main) + `celery-worker.sh` PROJECT_DIR/plist + 심링크(방향 반전 방식 Y) + `scripts/worker_sync.sh` 신설 — 브랜치 표류 트레드밀 종료. **✅ 완료 2026-07-05**(OPS-B-BUILD): 스크립트 land `921dc0c`, 검증 bake 2회(심링크 생존·6키 IDENTICAL·N=10·IssuanceLog 10행 멱등·HTTP 200). 심링크 방향 반전 = D-B-WORKER-AMEND-1 | ops/infra | 완료 2026-07-05 | ✅ 완료 |
 | B-HARDEN-OUTPUT | (휴면) baker `OUTPUT_DIR` **env override** 추가 — 심링크 의존 제거. 트리거: **worker 트리 이전 또는 다중 출력 필요 발생 시**. 현재는 심링크(방식 Y)로 충분 | ops/infra(휴면) | worker 트리 이전·다중출력 시 | 💤 휴면 |
-| B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후**. **카운트 3/5**(7/6·7/7·7/8 무결 bake, 7/6 개시). 5/5 도달 시 🟢 발화 | ops(정리) | 3/5 (5/5 시 발화) | 🆕 등재 |
+| B-CLEANUP-PREB | `frontend/public/static/signals_pre_b`(B′ 전환 전 백업) **제거**. 트리거: **정상 거래일 자동 beat 1주기(월~금) 무결 통과 후**. **카운트 5/5 도달**(7/6·7/7·7/8·7/9·7/10 전 행 무결 bake). **제거 완료**: 대상 = 5.0M·Desktop 트리·미추적(git 무관)·DB 무관(정적 백업 디렉토리) — STEP 0로 대상 실체 확정 후 **사용자 수동 rm 완료**(2026-07-13, MGMT-BATCH-9). Phase 1 잔여 0 해소의 한 축(D-P1-CLOSE) | ops(정리) | 5/5 발화 → 제거 완료 | ✅ **종결 (2026-07-13)** |
 | P1-HC-ISSUANCE | 발행 로그 감시 = **C 계층**(D-HC-ISSUANCE): ⑴ bake 자가검증 ⑵ health_check 최소. **✅ done `2e3b91e`+`ad3ae77`(HC-BUILD)** — 회귀 155·migration 0·실관측 통과(07-08: issuance_verified 10/10 ok·검문소 07-07 행10 OK·무경보). 짝 = common-bugs #46 | ops(health_check) | 완료 2026-07-08 | ✅ done |
 | P1-RUNBOOK-MIGRATE | 운영 절차(runbook): **land에 migration 포함 시 운영 DB `migrate`를 배포 단계로 명시**. 0009 미적용 재발 방지 | ops(docs) | 착수가능 | 🆕 등재 |
 | P1-TAG-VOCAB | 검증: **signal_tag 어휘 대조** — 실데이터 관측치 `S2`가 등록 태그 집합에 속하는지 + D-P1-GRAIN 표기(V1/P2/S1 예시)와 대조. 불일치 시 장부 표기 정정 안건화(결정 무효 아님, 예시 표기 갱신) | 검증(read-only) | 착수가능 | 🆕 등재 |
@@ -663,6 +665,7 @@
 | PM-CLOSEDSET-LLMFILL | `pipeline_meta` 닫힌 집합 단언(test_eod_issuance_log)에 `llm_fill` **정식 등록** + `_bake_patches` 격리 patch 제거(issuance_verified 등록 방식 동형). BUILD의 구조 충돌 편차 정리 | @backend (소형) | 착수가능 | 🆕 등재 |
 | LLM-GUARD-3 | 외부-LLM-직접호출 **가드 신설**(BOUNDARY-LLM 슬라이스③ 연동 — 코어 land 후 회귀방지). 본 슬라이스(LLMFILL) 스코프 분리분. 트리거: **다음 shared/llm 접점**(BOUNDARY-LLM 트리거 (b) 누적 또는 burn-down 착수) | @backend (BOUNDARY-LLM 연동) | 다음 shared/llm 접점 | 💤 등재(트리거 게이트) |
 | LLMFILL-OBSERVE | LLMFILL-BUILD land 후 첫 무인 bake 관측. **✅ 종결·판정 (a) 전건 성공**(07-09 bake filled 10/10·실패 0·$0.001001·6832tok, 파일↔스냅샷 일치, 7 core 무결, IssuanceLog 10/10 ok, 홈 렌더·콘솔0, fundamental=null 정직 실증). D-LLMFILL 추기 | 관측(dashboard 디렉션) | 완료 2026-07-10 | ✅ done |
+| LLMFILL-FUND-MATERIAL | **재료 확장으로 `fundamental` 채움률 개선(수리 아님)**. 관측(MGMT-BATCH-9): `fundamental=null`은 **영구 결손이 아니라 조건부** — 07-09 채움 **0/10**, 07-10 채움 **1/10**. 날조 억제 설계대로 작동(재료 부족 시 채우지 않음 = 정직 null, D-LLMFILL "fundamental=null 정직" 승계). 개선 경로 = **투입 재료(펀더멘털 컨텍스트) 확장**이지 프롬프트/파서 수리가 아님(현행 동작은 결함 아님). 착수 시 STEP 0 = null 사유 실측(재료 부재 vs 게이트 과보수) | @backend (shared/stocks 재료) | 재료 확장 우선순위 결정 시 | 💤 등재(재료 게이트) |
 
 ---
 
@@ -676,6 +679,7 @@
 | PROGRESS-DEDUP-MONITOR | PROGRESS 활성 Monitor 블록 **×5**(2939→5482자, 비-동일본) per-copy superset 검증 후 **5→1**. **blind collapse 금지**(#44 ⑶) | mgmt(dedup) | monitor-rebuild 트랙 접점 | 💤 트리거 게이트 |
 | PROGRESS-DEDUP-MP2TREND | PROGRESS 활성 MP2-TREND Slice 3 블록 **×2**(2009 vs 2076자, 비-동일본) 동형 superset 검증 후 2→1 | mgmt(dedup) | MP2-TREND 트랙 접점 | 💤 트리거 게이트 |
 | STRAY-DOCS-13 | primary 미추적 **13건** 트랙별 회수/폐기 분류(chain_sight redesign 6·thesis 2·trading_bot 2·mp 1·기타 2=.superpowers·worktree forensic) | mgmt(소형) | 착수가능 | 🆕 등재 |
+| MGMT-WT-SWEEP | mgmt worktree 6종 tip **전수 측정 → 머지 완료분 제거 후보 보고**(제거는 사용자 수동). **STEP 0 실측(2026-07-13, base origin/main `3b50612`)**: 6종 **전부 ahead=0 = origin/main 완전 머지 = 전량 제거 후보** — sess-mgmt-flush `cf82fe9`·sess-mgmt-flush3 `b8b15cb`·sess-mgmt-ledger `cdbf79e`·sess-mgmt-ledger-s3 `3062bb0`·sess-mgmt-xapp-rule `079f233`·sess-mgmt-v2 `f892d90`. 제거 절차 = `git worktree remove <path>` + `git branch -d monorepo/<b>`(조상 검증 통과 시). **본 세션은 등재·측정만**(실 제거는 사용자 판단·수동, 활성 사용 여부 최종 확인 후) | mgmt(정리) | 사용자 제거 승인 시 | 💤 등재(측정 완료·제거 대기) |
 | NEWS-ORPHAN-ASSIGN | 뉴스 무소속 재료 트랙 배정 — NT-2b(미핸드오프)·NT-6(보류)·뉴스 β A(파킹). **결정은 디렉터 사이클**. ※**갱신(2026-07-09, D-DASH-BFF)**: D3(뉴스 축 소비 표면)의 거처 블로커는 **BFF 배치로 해제**(apps/dashboard가 read 소비만) → 잔존 사유는 **NT-2b 등 뉴스 품질 작업 소유 배정**뿐 | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
 | BOUNDARY-EXT-5 | shared 미경유 외부 API 직접 호출 **5건**(NEWS-SURVEY N2: chain_sight neo4j_loader×2·insider_tasks·sensitivity_tasks·market_pulse fmp_weights) 처분. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
 | PROVIDER-DUAL | 뉴스 provider 3종(Finnhub·Marketaux·AlphaVantage) `services/news/providers` 잔류 vs shared 승격 결정. **결정은 디렉터 사이클** | 결정 안건 | 디렉터 결정 사이클 | 🕓 대기(결정) |
@@ -690,9 +694,9 @@
 |----|------|------|--------|--------|
 | NEWSAXIS-CONTRACT | 응축 API **응답 계약 설계** — 관련성 정의·가중, 동일 사건 접기 기준, 관계망 배지 규칙, 캐싱 정책. **✅ 종결**(D-NEWSAXIS-CONTRACT 4항 등재: F2 관련성·자체 접기+제목핵심어 안전핀·RelationConfidence θ배지·15/30 캐싱 + item 계약) | 결정 안건(dashboard) | 완료 2026-07-09 | ✅ done |
 | NEWSAXIS-BUILD | `apps/dashboard` BFF(Slice1) + FE 스트립 S1(Slice2). **✅ done `90b04fe`** — BFF θ배지·티어 F2·자체접기 + FE 홈 상단 스트립, scoped BE 12·FE 6·config 예외 2줄. **실가동 확인 07-10**(스트립 라이브: T2/T3/T4 칩·`AAPL↔GOOGL` 배지 발화·카드 LLM 채움 렌더). 후속=STRIP-FOLD-TUNE·URL-V1-ALIGN·STRIP-BADGE-VARIETY | @backend + dashboard FE | 완료 2026-07-10 | ✅ done |
-| STRIP-FOLD-TUNE | 접기 안전핀 강화 3종(D-STRIP-FOLD-TUNE): 일반 금융어 stopword·라운드업 배제(언급 심볼 수 상한)·그룹 크기 상한. **AAPL "+10건" 오접합 fixture 박제 의무**. 임계 상수는 STEP 0 실데이터 결정(하드코딩 금지) | @backend (apps/dashboard in-zone) | **D-STRIP-FOLD-TUNE 등재로 착수가능** | 🟢 착수가능 |
+| STRIP-FOLD-TUNE | 접기 안전핀 강화 3종(D-STRIP-FOLD-TUNE): 일반 금융어 stopword·라운드업 배제(언급 심볼 수 상한)·그룹 크기 상한. **AAPL "+10건" 오접합 fixture 박제 의무**. 임계 상수는 STEP 0 실데이터 결정(하드코딩 금지). **✅ done `62eec71`** — 실서빙 실효 채증(MGMT-BATCH-9): "+10건"(오접합)→"+2건"(=`MAX_GROUP_SIZE−1` 상한 준수), 전 칩 ≤+2건. 검증 = live DB×배포 코드 직접 실행(JWT 만료로 서비스-레벨 갈음, 렌더 미변경 등가). 잔여 "+2건" 정밀도는 도그푸딩 관찰 지속, 근본 해소=v2 LLM 클러스터링 예약(D-STRIP-FOLD-TUNE 추기) | @backend (apps/dashboard in-zone) | 완료 2026-07-10(land) | ✅ **done** |
 | STRIP-BADGE-VARIETY | 칩별 관련 엣지 다양화 — 동일 `seed↔seed` 배지(AAPL↔GOOGL) 반복 완화(chip이 seed 심볼 언급 시 seed↔seed 최강 선택되는 편향). 외부 노드 연결 우선 등 개선 | dashboard 트랙(개선) | 다음 strip 접점 | 💤 등재(트리거 게이트) |
-| URL-V1-ALIGN | BFF 경로 `/api/dashboard/` → `/api/v1/dashboard/` 관례 정렬 + FE stripService의 base 우회(`/api/v1` 제거 로직) 제거. **TUNE과 동승 가능**(같은 apps/dashboard 접점) | @backend + dashboard FE | 다음 apps/dashboard 접점 | 💤 등재(트리거 게이트) |
+| URL-V1-ALIGN | BFF 경로 `/api/dashboard/` → `/api/v1/dashboard/` 관례 정렬 + FE stripService의 base 우회(`/api/v1` 제거 로직) 제거. ~~TUNE과 동승 가능~~(TUNE은 `62eec71`로 이미 land). **config 접촉 사전 정당화**: D-DASH-BFF config 예외 범위가 URL-V1-ALIGN 포함으로 확장됨(MGMT-BATCH-9) — root `urls` include 경로 1줄 수정은 내재 산출물로 허용, 그 외 config 변경은 HALT. 착수 시 diff 원문 채증 의무 | @backend + dashboard FE | 다음 apps/dashboard 접점 | 💤 등재(트리거 게이트) |
 | HEALTH-13TH-IDENT | sv health 검사 항목 **12→13 증가분** 정체 확인·기록(monitor refresh 신선도 = MON-P2-BEAT 귀속 추정, 실측 확정) | mgmt(소형) | 착수가능 | 🆕 등재 |
 
 ---
