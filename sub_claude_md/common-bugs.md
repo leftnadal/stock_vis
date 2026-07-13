@@ -784,4 +784,11 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
   2. **경로 오프셋 `parents[N]` (12건)**: `Path(__file__).resolve().parents[2] / "docs/..."`가 앱이 `apps/` 하위로 **한 단계 깊어져** repo_root 계산이 어긋남 → `apps/docs/...` FileNotFoundError·빈 `load_raw()`(`assert 0 == 14`). `parents[2]→parents[3]`.
 - **착시 함정**: `pytest`가 기본 addopts의 `maxfail`로 "5 failed"에서 조기 중단 → 실제 43건을 과소평가(TASKQUEUE도 "5건"으로 등재됨). **선행 게이트 판정 시 `--maxfail=1000`으로 전수 확인** 필수. 반대로 `-o addopts=""`로 덮으면 ini의 `filterwarnings`(구 Django 카테고리)까지 노출돼 별도 에러 → **addopts 유지 + `--maxfail` 만 CLI 오버라이드**.
 - **오탐 주의(무접촉 대상)**: 같은 grep에 걸려도 `caplog.at_level(logger="portfolio.llm.cost_guard")`(로거명)·회귀 분류기 데이터 `["portfolio/llm/cost_guard.py"]`(경로 패턴)는 **stale 아님**(현재 통과 중). 치환 전 "실패 목록에 대응하는가"로 필터링 — 통과 테스트를 깨지 말 것.
+
+## [보존 함정] 롤링 purge가 백필 자산을 먹음 — 블랭킷 date cutoff가 심볼 무인지 (A-S0, 2026-07-13)
+
+- **증상**: B1-S2가 백필한 SPY EOD 768행(2023~)이 3일 만에 265행(최근 1년)으로 축소. analog 사후수익률 모집단 683→**199(71% 결손)**. IndicatorValue 3년 백필도 동일 축소.
+- **원인**: `apps/market_pulse/tasks/macro.py::cleanup_old_data`(celery beat `cleanup-old-macro-data`, 주간 일요일)가 `MarketIndexPrice.filter(date__lt=today-365).delete()` — **블랭킷 date cutoff, 심볼/출처 무인지**. 백필 자산(과거 3년)이 롤링 창 밖이라 매주 재삭제 → 백필과 purge가 상쇄(백필→다음 일요일 소실).
+- **해결(A-S0, 방식 나)**: `PRESERVED_INDEX_SYMBOLS`(SPY) 도입 → purge에서 `.exclude(index__symbol__in=...)`. 모델 무변경(마커 필드 X = prod 마이그레이션 회피). 재백필 전에 보존 예외가 **먼저/함께 land**해야 재소실 방지(순서 규율).
+- **교훈**: 백필로 채운 과거 자산이 있으면 **롤링 purge/retention이 그것을 인지하는지 먼저 확인**. 심볼/출처 무인지 blanket cutoff는 백필과 상충. 백필 커맨드 DoD에 "보존 예외 대상인가" 포함. 마커(가) vs 심볼 예외(나) 택일 = 정책 형태 + 마이그레이션 비용(모델 변경이 prod 마이그레이션이면 나 우선).
 - **교훈**: 앱 재배치 시 ⑴ `grep -rn "[\"']<oldapp>\." tests/`로 **문자열 경로**를 별도 스윕, ⑵ `parents[N]` 상수를 전수 재계산, ⑶ green 판정은 `--maxfail` 해제 전수. 유형은 CS-TEST(chainsight)와 동일 — 이관 PR은 "테스트 문자열·경로 상수 스윕"을 DoD에 포함.
