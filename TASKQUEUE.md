@@ -506,7 +506,7 @@
 | MP-FMP-WEIGHTS | `fetchers/fmp_weights.py` raw `requests.get` → FMPClient 경유 통일 (※ **CircuitBreaker는 이미 경유** — 코드 일관성만, chain_sight CS-EXT-API와 급이 다름) | market_pulse 트랙 직접 | market_pulse 실작업 슬라이스 (시급도 낮음) | 🆕 보류 |
 | MP-BREADTH-SRC | breadth/concentration **생산(`services.serverless`) ↔ 소비(market_pulse 모델)** 소관 명확화 | 결정 안건(경계) | 로드맵 재검토(Phase 2 촉발 데이터 연계, MP2-DATA-BREADTH-CONC). 📌 **로드맵 Phase 2 촉발 데이터 소관**(D-ROADMAP-V1) | 🆕 보류 |
 | MP-NEWS-LAZY | `services/news_aggregator`→`services.news.providers` lazy import 정리 | 결정 안건(경계, news 공통) | 로드맵 재검토 | 🆕 보류 |
-| PF-TEST | coach 테스트 5건 `mock.patch("portfolio.…")` → `apps.portfolio.` 경로 수정(PR7 이관 후 stale mock, `ModuleNotFoundError`) (※ CS-TEST와 동일 유형 — 이관 후 테스트 미추적) | portfolio 트랙 직접 | portfolio 실작업 슬라이스 | 🆕 보류 |
+| PF-TEST | coach 테스트 **실측 43건**(큐 "5건" 과소평가) `mock.patch("portfolio.…")`·parametrize 문자열 + 경로 오프셋 `parents[2]→[3]` 수정(PR7 이관 후 stale). **✅ 완료** `monorepo/sess-pf-test`(cea40c9 문자열 31건 + e46bb97 오프셋 12건) — pytest apps/portfolio **43 failed→567 passed**(2026-07-13, `pytest apps/portfolio -q --maxfail=1000`), 회귀 0, 로직 회귀 0(전부 이관 잔재), architecture 7 passed. cost_guard 로거명/경로 데이터 3건은 stale 아님→무접촉 | portfolio 트랙 직접 | 완료 2026-07-13 | ✅ 완료 |
 | PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계). 📌 **로드맵 후속 phase**("포트폴리오 변화" 표면, D-ROADMAP-V1) | 🆕 보류 |
 | PF-SCORING | `tests/scoring/**` 소속 확정(coach scoring — 소유권 지도 "[경계 보류]" 해소) | 결정 안건(경계) | 로드맵 재검토 | 🆕 보류 |
 | PF-LLM-CLIENT | `apps/portfolio/llm/client.py`(anthropic·google.genai 직접) → `packages/shared/llm` 코어 합성 | 타 트랙 위임(BOUNDARY-LLM, portfolio+market_pulse client 합성) | BOUNDARY-LLM 트랙 작업 시 | 🆕 보류 |
