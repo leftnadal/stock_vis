@@ -1241,3 +1241,70 @@ SELECT
     volume
 FROM stocks_weekly_price
 """
+
+
+class ImpressionLog(models.Model):
+    """추천/뉴스 표면 노출·클릭 로그 (serve-time, Phase 2 impression 축).
+
+    D-P2-IMPRESSION. per-user serve-time impression/click을 기록한다.
+    - "봤다" 판정 = 뷰포트 50% × 1초(IntersectionObserver). 단, 임계 상수(50%·1초)는
+      S3(프론트) 소관이며 이 스키마에 저장하지 않는다.
+    - serve-time 신설 — bake-time IssuanceLog와 직교(lesson #43). IssuanceLog를 참조·import하지 않는다.
+    - user_id = BigIntegerField (다중 사용자 이음새 방향 B — IssuanceLog 스코프 규약 그대로,
+      shared→users FK 미도입으로 shared 디커플링 보존).
+    - object_ref = 관측 대상 식별자 문자열(추천 카드/뉴스 칩과 조인 키 — 조인 해석은 소비 시점).
+    - event_type = impression | click (클릭은 별도 이벤트로 병행 확보).
+    - impression 행: (user_id, surface, object_ref) partial unique = S2 upsert 키.
+      first_seen_at 최초 관측 후 갱신 안 함, seen_count 누적. click 행에는 유니크 없음.
+    - write(upsert/증가) 로직은 S2 소관 — 본 슬라이스(S1)는 순수 스키마만.
+    """
+
+    # 관측 표면 (choices 상수 분리)
+    SURFACE_DASHBOARD_EOD = "dashboard_eod"
+    SURFACE_CHAIN_SIGHT = "chain_sight"
+    SURFACE_NEWS_CHIP = "news_chip"
+    SURFACE_CHOICES = (
+        (SURFACE_DASHBOARD_EOD, "Dashboard EOD 추천 카드"),
+        (SURFACE_CHAIN_SIGHT, "Chain Sight 표면"),
+        (SURFACE_NEWS_CHIP, "뉴스 스트립 칩"),
+    )
+
+    # 이벤트 타입 (choices 상수 분리)
+    EVENT_IMPRESSION = "impression"
+    EVENT_CLICK = "click"
+    EVENT_TYPE_CHOICES = (
+        (EVENT_IMPRESSION, "노출"),
+        (EVENT_CLICK, "클릭"),
+    )
+
+    # 다중 사용자 이음새(방향 B) — IssuanceLog 규약 그대로 BigIntegerField (User FK 미도입)
+    user_id = models.BigIntegerField(null=True, blank=True)
+    surface = models.CharField(max_length=32, choices=SURFACE_CHOICES)
+    object_ref = models.CharField(max_length=128)
+    event_type = models.CharField(max_length=16, choices=EVENT_TYPE_CHOICES)
+
+    # impression 행 최초 관측 시각(이후 갱신 안 함)
+    first_seen_at = models.DateTimeField()
+    # impression 누적 재노출 카운트(click 행은 미사용, 0)
+    seen_count = models.IntegerField(default=0)
+    session_id = models.CharField(max_length=64)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "stocks_impression_log"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user_id", "surface", "object_ref"],
+                condition=models.Q(event_type="impression"),
+                name="uniq_impression_user_surface_object",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["user_id", "surface", "object_ref"]),
+            models.Index(fields=["user_id", "event_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} u{self.user_id} {self.surface}:{self.object_ref}"
