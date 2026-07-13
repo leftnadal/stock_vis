@@ -64,11 +64,21 @@ export default function ThemeHeatCard({ theme, rank, total }: { theme: string; r
       {isComputed ? (
         <>
           {/* 온도 (대형) + delta 보조 */}
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 flex-wrap">
             <span className={`text-4xl font-bold ${bandColorClass(card.band)}`} data-testid="heat-score">{card.score}</span>
             <span className="text-xs text-gray-500 mb-1">{card.band_display}</span>
             {card.delta_1d !== null && (
               <span className="text-xs text-gray-400 mb-1" data-testid="heat-delta">{deltaSign}{card.delta_1d} (1일)</span>
+            )}
+            {/* 결정31=C: 개정일엔 delta 원값 옆에 중립 마커(경보 아님) — driver.held 재사용 */}
+            {card.driver?.held && (
+              <span
+                className="text-[10px] text-gray-400 border border-gray-200 dark:border-gray-600 rounded px-1 mb-1 cursor-help"
+                title="계산 방식 개선일 재산출 — 시장 이동이 아닙니다."
+                data-testid="revision-marker"
+              >
+                개정일 재산출
+              </span>
             )}
           </div>
           {/* 견인 칩 + 신뢰 칩 */}

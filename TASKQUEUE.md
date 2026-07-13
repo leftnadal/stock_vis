@@ -665,9 +665,13 @@
 - 상태: **집행 종결**. R0-b z_mode 불변식 잠금(`zmode_violations`, 재발 차단, 3 test). R1~R4: 타입·서비스(fetchThemeHeatBar/Card) + `ThemeHeatBar`(결정23B)·`ThemeHeatCard`(결정24C, 견인칩 결정29 held/결정27 방향 분기)·`themeHeatCopy`(z_mode 근거 문구) + `app/chainsight/theme-heat/` 페이지. R5: 컴포넌트 실렌더 6 vitest 통과(전환일 보류·정상일 방향·의미 레이어·버튼바·D-n·onSelect), tsc 0. 백엔드 433 GREEN.
 - ⚠️ 라이브 브라우저 스크린샷 유예(07-13 스냅샷 미도래·dev 스택 미기동) — 컴포넌트 실 DOM 검증으로 계약 A/B 확인. affected_themes(결정30) 미반영=현행 date 기반 렌더.
 
-## 집행 순서 (결정28+29+30) — 프론트 렌더 게이트
-- 1~2. [DONE] TH-C1-Z-PROBE · TH-C1-THIN-QUARTER-GUARD · 결정29[DONE] driver 보류 · 결정30[등재] 정밀화 지연 · 3. [DONE] TH-ZMODE-LABEL-FIX · 4. [DONE] 프론트 v3 렌더
-- 5. [NEXT] TH-FIRSTRULE-DEFECT(오배정 215, 별도 비준) · 후순위: C4(8월)·C8(7/17)·TH-DSS-IMPL(7/24)·TH-HISTORY-MARKER DB 승격(결정30 affected_themes)
+## ✅ 결정31 — 전환일 delta 개정일 마커 C (집행 종결, 2026-07-13)
+- 상태: **집행 종결(프론트 소패치, 백엔드 0)**. ThemeHeatCard delta 영역: driver.held 재사용 → 개정일엔 delta 원값 + 중립 마커 "개정일 재산출"(muted). 신규 2 vitest(총 8). 결정30 반영 시 자동 정밀화.
+- ⏸ **R5 라이브 스크린샷 유예**: 본 브랜치 미배포(worker_sync 미실행=라이브에 라우트 부재) + beat 前(07-13 데이터 부재) → 배포 세션에서 촬영. 계약은 컴포넌트 실 DOM(vitest 8)으로 검증.
+
+## 집행 순서 (결정28+29+30+31) — 프론트 렌더 게이트
+- 1~2. [DONE] C1-Z-PROBE · THIN-QUARTER-GUARD · 결정29[DONE] · 결정30[등재] · 3. [DONE] ZMODE-LABEL-FIX · 4. [DONE] 프론트 v3 · 4b. [DONE] 결정31 delta 마커
+- ⏸ R5 라이브 스크린샷(배포+07-13 데이터 후) · 5. [NEXT] TH-FIRSTRULE-DEFECT(별도 비준) · 후순위: C4(8월)·C8(7/17)·TH-DSS-IMPL(7/24)·TH-HISTORY-MARKER DB 승격(결정30)
 - 프론트 게이트 = (A 프로브 ✅) AND (B 가드 ✅) AND (C 재산출 ✅) → **v3 렌더 개방**. FinSvc 재산출 값 55로만 노출. driver 파트는 hold_driver 분기(07-12 보류/07-13 재개).
 
 ## ✅ TH-ZMODE-LABEL-FIX — z_mode 라벨 정정 (집행 종결, 2026-07-13, 결정28 #3)

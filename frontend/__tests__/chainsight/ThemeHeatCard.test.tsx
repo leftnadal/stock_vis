@@ -52,6 +52,26 @@ describe('ThemeHeatCard', () => {
     expect(chip).toHaveTextContent('86%');
   });
 
+  it('전환일: delta 원값 옆 "개정일 재산출" 중립 마커(결정31=C)', async () => {
+    (fetchThemeHeatCard as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...baseCard,
+      driver: { held: true, reason: 'methodology_revision', marker: '2026-07-12' },
+    });
+    wrap(<ThemeHeatCard theme="Financial Services" />);
+    expect(await screen.findByTestId('heat-delta')).toHaveTextContent('-12'); // 원값 유지
+    expect(screen.getByTestId('revision-marker')).toHaveTextContent('개정일 재산출');
+  });
+
+  it('정상일: 개정일 마커 부재', async () => {
+    (fetchThemeHeatCard as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...baseCard,
+      driver: { held: false, component: 'C3', label_surface: '이야기 밀도', contribution_pct: 86.1, basis: 'delta', direction: 'down' },
+    });
+    wrap(<ThemeHeatCard theme="Financial Services" />);
+    await screen.findByTestId('heat-score');
+    expect(screen.queryByTestId('revision-marker')).toBeNull();
+  });
+
   it('펼치면 의미 레이어에 z_mode 근거 문구(3년 자기 이력 대비)', async () => {
     (fetchThemeHeatCard as ReturnType<typeof vi.fn>).mockResolvedValue({ ...baseCard, driver: { held: true } });
     wrap(<ThemeHeatCard theme="Financial Services" />);
