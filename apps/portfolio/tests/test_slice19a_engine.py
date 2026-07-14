@@ -159,7 +159,7 @@ def test_recommend_contract_shape(user, wallet):
 
     out = eng.recommend(user)
     assert out["mode"] == "BUY"
-    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire", "cost_basis_note"}
+    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire", "cost_basis_note", "fx_context"}
     actions = {r["action"] for r in out["recommendations"]}
     assert actions <= {"BUY", "HOLD", "TRIM"}
     assert "BUY" in actions and "HOLD" in actions  # 후보 매수 + 보유 유지
