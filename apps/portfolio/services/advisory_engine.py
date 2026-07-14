@@ -284,6 +284,46 @@ DISCLAIMER = (
 )
 
 
+def fx_context(pair: str = "USDKRW") -> dict:
+    """현재 환율의 역사적 백분위(백필 시계열 대비). **사실·맥락 — 예측 아님.**
+
+    distance_from_entry와 동성격. 랭킹·모드 판정에 가중치로 넣지 않는다(그건 19c).
+    반환: {available, pair, spot, percentile, sample_n, span, note} 또는 {available:False}.
+    """
+    from django.db.models import Max, Min
+
+    from packages.shared.fx.models import ExchangeRate
+    from packages.shared.fx.services import get_spot_rate
+
+    spot = get_spot_rate(pair)
+    if spot is None:
+        return {"available": False}
+
+    rates = list(
+        ExchangeRate.objects.filter(pair=pair).values_list("close", flat=True)
+    )
+    if not rates:
+        return {"available": False}
+
+    below = sum(1 for r in rates if r <= spot)
+    percentile = round(below / len(rates) * 100, 1)
+    dates = ExchangeRate.objects.filter(pair=pair).aggregate(
+        lo=Min("date"), hi=Max("date")
+    )
+    return {
+        "available": True,
+        "pair": pair,
+        "spot": spot,
+        "percentile": percentile,
+        "sample_n": len(rates),
+        "span": {"from": dates["lo"], "to": dates["hi"]},
+        "note": (
+            f"현재 {pair} {spot}는 {dates['lo']}~{dates['hi']} 대비 "
+            f"{percentile:.0f}백분위 (사실·맥락, 예측 아님)"
+        ),
+    }
+
+
 def _cost_basis_note(labels: dict) -> str:
     """KRW 취득원가 근사 포함 여부를 사실로 명시(정직성 장치, '예측 아님'과 동렬)."""
     approx = labels.get("approx_first_buy", 0) + labels.get("approx_low_confidence", 0)
@@ -372,6 +412,7 @@ def recommend(user) -> dict:
             ),
             "numeraire": "KRW",
             "cost_basis_note": _cost_basis_note(progress["cost_labels"]),
+            "fx_context": fx_context("USDKRW"),  # 역사적 백분위(사실·맥락, 예측 아님)
         },
         "recommendations": recommendations,
         "disclaimer": DISCLAIMER,

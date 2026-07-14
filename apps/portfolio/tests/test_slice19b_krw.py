@@ -139,3 +139,38 @@ def test_allocation_gap_krw_unified_multicurrency(user, wallet, fx_rates):
     assert alloc["holdings_value_krw"] == Decimal("1000000")
     assert alloc["idle_ratio"] == Decimal("2000000") / Decimal("3000000")
     assert set(alloc["by_currency"]) == {"USD", "KRW"}
+
+
+# ---- FX 맥락 factor (역사적 백분위, 예측 아님) ----
+
+
+@pytest.mark.django_db
+def test_fx_context_percentile(user, fx_rates):
+    # spot = 최신 1400 (3건 중 최고) → 100 백분위
+    ctx = eng.fx_context("USDKRW")
+    assert ctx["available"] is True
+    assert ctx["spot"] == Decimal("1400")
+    assert ctx["percentile"] == 100.0  # 1400 >= 1300,1350,1400 = 3/3
+    assert ctx["sample_n"] == 3
+    assert "예측 아님" in ctx["note"]
+
+
+@pytest.mark.django_db
+def test_fx_context_unavailable_no_data(db):
+    # ExchangeRate 없음 → available False
+    assert eng.fx_context("USDKRW") == {"available": False}
+
+
+@pytest.mark.django_db
+def test_recommend_v2_includes_fx_context_and_labels(user, wallet, fx_rates):
+    h = _hold(wallet, _stock("GGG", "USD", "120"), shares="1", avg_cost="100")
+    h.acquisition_fx_rate = Decimal("1300")
+    h.save()
+    mc.upsert_cash_for_wallet(wallet, Decimal("100"), currency="USD")
+    mc.upsert_goal_for_user(user, target_return_pct=Decimal("50"), horizon_months=12)
+
+    out = eng.recommend(user)
+    assert out["summary"]["numeraire"] == "KRW"
+    assert out["summary"]["fx_context"]["available"] is True
+    assert "cost_basis_note" in out["summary"]
+    assert "예측" in out["disclaimer"]
