@@ -72,6 +72,10 @@ class RelationConfidence(models.Model):
         ("HAS_THEME", "Has Theme"),
         ("COMPETES_WITH", "Competes With"),
         ("HELD_BY_SAME_FUND", "Held by Same Fund"),
+        # additive 정합(⑰): DB에 이미 존재하는 값(PARTNER_WITH 54행·DEPENDS_ON 41행)에
+        # 라벨 부여 — choices는 검증/표시용이라 컬럼 DDL 무변경(sqlmigrate no-op).
+        ("PARTNER_WITH", "Partner With"),
+        ("DEPENDS_ON", "Depends On"),
     ]
     RELATION_CATEGORY_CHOICES = [
         ("truth", "Truth"),
