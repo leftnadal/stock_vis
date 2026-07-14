@@ -77,3 +77,27 @@ def delete_cash_for_wallet(wallet, currency=None):
     if currency is not None:
         qs = qs.filter(currency=currency)
     return qs.delete()
+
+
+# ============================================================
+# WalletHolding 취득 환율 (SLICE19B 게이트1 해소 — 신규 캡처/수동 정정)
+# ============================================================
+
+
+def set_acquisition_fx_rate(holding, rate=None):
+    """보유의 매수 시점 USD/KRW 환율 설정.
+
+    rate=None이면 현재 spot을 기본 캡처(신규 매수 시점 호출용).
+    rate 지정 시 사용자 수동 정정(증권사 실환율) — exact 라벨로 승격.
+    KRW 종목은 no-op(환산 불요).
+    """
+    if holding.stock.currency == "KRW":
+        return holding
+    if rate is None:
+        from packages.shared.fx.services import get_spot_rate
+
+        rate = get_spot_rate("USDKRW")
+    if rate is not None:
+        holding.acquisition_fx_rate = rate
+        holding.save(update_fields=["acquisition_fx_rate", "updated_at"])
+    return holding

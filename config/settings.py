@@ -203,6 +203,7 @@ INSTALLED_APPS = [
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'packages.shared.alerting',  # MP2-ALERTS — 알림 코어 (D-ALERTS-BOUNDARY-R1)
+    'packages.shared.fx',  # SLICE19B — FX 환율 (KRW numéraire 토대, 앱 불가지론 범용)
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)

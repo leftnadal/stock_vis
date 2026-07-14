@@ -64,8 +64,10 @@ def test_progress_gap_unrealized_return(user, wallet):
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("15"), horizon_months=12)
 
     gap = eng.compute_progress_gap(user, goal)
-    assert gap["USD"]["return_pct"] == Decimal("20")
-    assert gap["USD"]["gap_pct"] == Decimal("5")  # 20 − 15, 목표 초과
+    # KRW 교정(SLICE19B): FX rate 미적재 시 1배 fallback → 수익률 보존, KRW 통합 구조
+    assert gap["return_pct"] == Decimal("20")
+    assert gap["gap_pct"] == Decimal("5")  # 20 − 15
+    assert "USD" in gap["by_currency"]  # 통화별 소계 참고 유지
 
 
 @pytest.mark.django_db
@@ -74,7 +76,7 @@ def test_progress_gap_below_target(user, wallet):
     _hold(wallet, stock, avg_cost="100")
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("10"), horizon_months=12)
     gap = eng.compute_progress_gap(user, goal)
-    assert gap["USD"]["gap_pct"] < 0  # 목표 미달
+    assert gap["gap_pct"] < 0  # KRW 통합 목표 미달
 
 
 # ---- 배치 갭 + 모드 분기 ----
@@ -87,7 +89,7 @@ def test_allocation_gap_and_buy_mode_idle_cash(user, wallet):
     mc.upsert_cash_for_wallet(wallet, Decimal("900"), currency="USD")  # 현금 900
 
     alloc = eng.compute_allocation_gap(user)
-    assert alloc["USD"]["idle_ratio"] == Decimal("0.9")  # 900/1000
+    assert alloc["idle_ratio"] == Decimal("0.9")  # KRW 통합 900/1000
 
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("5"), horizon_months=12)
     progress = eng.compute_progress_gap(user, goal)
@@ -157,7 +159,7 @@ def test_recommend_contract_shape(user, wallet):
 
     out = eng.recommend(user)
     assert out["mode"] == "BUY"
-    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct"}
+    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire", "cost_basis_note", "fx_context"}
     actions = {r["action"] for r in out["recommendations"]}
     assert actions <= {"BUY", "HOLD", "TRIM"}
     assert "BUY" in actions and "HOLD" in actions  # 후보 매수 + 보유 유지

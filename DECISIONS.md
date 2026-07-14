@@ -8,6 +8,19 @@
 
 ---
 
+## SLICE19B — FX·KRW 기준 통합 (토대) + 게이트 1 해소 (2026-07-14) [portfolio]
+
+**로드맵(사용자 확정)**: 19b=FX·KRW 토대(좁게) → 19c=가중치+공격성 다이얼+FX매크로 후보 → Slice 20=화면. 가중합 4.70/3.70/2.90(마진 1.00).
+
+- **numéraire = KRW**: 수익 = 원화 자산 증가. 환율은 수익의 구성요소(US 실수익 = USD 수익 × USD/KRW 변화). 19a "통화별 사일로 갭" 철회 → KRW 통합 갭으로 교정(의도된 의미 변경). 상세=`OBJECTIVE_KRW_NUMERAIRE.md`.
+- **FX 정직성 4원칙**: 측정 O(KRW 환산) / 맥락 O(역사적 백분위 사실) / 실현 FX 반응 O(KRW 갭 emergent, 별도 규칙 없음) / **예측 X**(방향·타이밍 베팅·환전 결정 예측 금지).
+- **FX 모델 소속 = `packages/shared`**(마진 1.60 자동 — 환율=앱 불가지론 범용 재료). 수집=shared FMP 래퍼 경유.
+- **게이트 판정(STEP 0, base bb91c98)**: 게이트1=취득원가 KRW 복원 **불가**(avg_cost=USD 평단·매수시점 환율 미저장·환전 이력 0). 게이트2=**통과**(FMP spot + USDKRW 과거 1373건/**5년**, 백분위 창 5년). 게이트d=중복 0. baseline 592 green.
+- **게이트 1 해소(디렉터 판정 + 사용자 승인)**: ① 매수일 환율 근사 + 신규 캡처 + 수동 정정(마진 1.28 자동). **`WalletHolding.acquisition_fx_rate`**(DecimalField null 가산, 기존 모델 접촉 유일 승인) 신설. KRW 취득원가 우선순위 = `exact`(캡처/정정) > `approx_first_buy`(매수일 환율) > `approx_low_confidence`(창 밖) > `native_krw`. 상세=`SLICE19B_GATE1_RESOLUTION.md`.
+  - **Why(②③④ 기각)**: ②현재환율 근사=과거 FX손익 0으로 소거(정직성 충돌). ③신규만=사용자 #1 보유 미교정(도그푸딩 0). ④정지=과잉.
+- **의도된 의미 변경 선언**: 19a 엔진 산출 KRW화 → 관련 테스트 갱신은 회귀 아님(Part C에서 목록화).
+- **19c 이월**: 가중치 벡터(합=1.00)·공격성 다이얼·FX매크로 후보·교차환전 리밸런싱.
+
 ## SLICE19A — 목표-대비 권유 엔진: 정직한 A (원안 폐기 + 정직한 갭) (2026-07-13) [portfolio]
 
 **원안 폐기(supersede)**: 원안 SLICE19A(갭=목표수익−현재기대수익, forward 예측 골격)는 STEP 0 A-게이트 **실패**로 폐기. 측정=`docs/portfolio/coach/slice19a/STEP0_SIGNAL_INVENTORY.md`. forward 기대수익 정본 신호 0: analyst_target_price·analyst_rating·forward_pe=유령 필드(writer 없음·항상 null), EstimateSnapshot 부재, 프리셋 스코어링 엔진=0~100 품질점수(기대수익 아님)+고아(미배선), return_12m=리졸버 부재·후행. → **정직한-A 채택**(디렉터 재판정 4.75 vs B후퇴 3.95/신호선구축 3.55/정지 3.95, 마진 0.80, 사용자 승인).
