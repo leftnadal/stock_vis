@@ -41,69 +41,135 @@ def _current_price(stock) -> Decimal:
     return Decimal(stock.real_time_price or 0)
 
 
-def compute_progress_gap(user, goal) -> dict:
-    """통화별 진행 갭 = (현재 미실현 수익률) − (목표수익률). 후행·사실.
+def _krw_rate(currency: str) -> Decimal:
+    """통화→KRW 환산 rate. KRW=1, USD=현재 spot. spot 부재 시 1(교정 불가 명시는 상위).
 
-    반환: {currency: {"return_pct", "gap_pct", "cost", "value"}}.
+    SLICE19B: numéraire=KRW. USD 자산을 현재 환율로 KRW 평가.
+    """
+    if currency == "KRW":
+        return Decimal(1)
+    from packages.shared.fx.services import get_spot_rate
+
+    spot = get_spot_rate("USDKRW")
+    return spot if spot is not None else Decimal(1)
+
+
+def krw_cost_basis(holding) -> tuple[Decimal, str]:
+    """보유의 KRW 취득원가 + 출처 라벨 (게이트1 우선순위 로직, SLICE19B_GATE1_RESOLUTION §1).
+
+    우선순위: exact(acquisition_fx_rate) > approx_first_buy(매수일 환율)
+             > approx_low_confidence(창 밖 = 가장 오래된 환율) > native_krw.
+    """
+    usd_cost = holding.shares * holding.avg_cost  # 종목 통화 단위 원가
+
+    if holding.stock.currency == "KRW":
+        return usd_cost, "native_krw"
+
+    # 1. exact — 사용자 캡처/정정값
+    if holding.acquisition_fx_rate is not None:
+        return usd_cost * holding.acquisition_fx_rate, "exact"
+
+    from packages.shared.fx.services import get_rate_on, oldest_available
+
+    # 2. approx_first_buy — 매수일(휴장일이면 직전 영업일) 환율
+    rate = get_rate_on(holding.first_bought_at, "USDKRW")
+    if rate is not None:
+        return usd_cost * rate, "approx_first_buy"
+
+    # 3. approx_low_confidence — 백필 창 밖 → 가장 오래된 가용 환율
+    oldest = oldest_available("USDKRW")
+    if oldest is not None:
+        return usd_cost * oldest, "approx_low_confidence"
+
+    # 환율 데이터 전무 — 원가 통화 그대로(상위에서 근사 명시)
+    return usd_cost, "approx_low_confidence"
+
+
+def compute_progress_gap(user, goal) -> dict:
+    """진행 갭 = KRW 기준 포트폴리오 미실현 수익률 − 목표수익률 (후행·사실).
+
+    numéraire=KRW(SLICE19B). USD 자산은 현재 환율로 KRW 평가, 원가는 취득원가 우선순위.
+    통화별 소계(by_currency)는 참고 유지, 갭·모드 정본은 KRW 통합.
+    반환: {"return_pct","gap_pct","cost_krw","value_krw","by_currency","cost_labels"}.
     """
     holdings = WalletHolding.objects.filter(wallet__user=user).select_related("stock")
+    total_cost_krw, total_value_krw = Decimal(0), Decimal(0)
     by_cur: dict[str, list] = {}
+    labels: dict[str, int] = {}
+
     for h in holdings:
         cur = h.stock.currency
-        cost = h.shares * h.avg_cost
-        value = h.shares * _current_price(h.stock)
+        rate = _krw_rate(cur)
+        cost_krw, label = krw_cost_basis(h)
+        value_krw = h.shares * _current_price(h.stock) * rate
+        total_cost_krw += cost_krw
+        total_value_krw += value_krw
+        labels[label] = labels.get(label, 0) + 1
         acc = by_cur.setdefault(cur, [Decimal(0), Decimal(0)])
-        acc[0] += cost
-        acc[1] += value
+        acc[0] += cost_krw
+        acc[1] += value_krw
 
     target = Decimal(goal.target_return_pct) if goal else Decimal(0)
-    result = {}
-    for cur, (cost, value) in by_cur.items():
-        ret_pct = ((value - cost) / cost * 100) if cost else Decimal(0)
-        result[cur] = {
-            "return_pct": ret_pct,
-            "gap_pct": ret_pct - target,  # 음수 = 목표 미달
-            "cost": cost,
-            "value": value,
-        }
-    return result
+    ret_pct = (
+        (total_value_krw - total_cost_krw) / total_cost_krw * 100
+        if total_cost_krw
+        else Decimal(0)
+    )
+    return {
+        "return_pct": ret_pct,
+        "gap_pct": ret_pct - target,  # 음수 = 목표 미달
+        "cost_krw": total_cost_krw,
+        "value_krw": total_value_krw,
+        "by_currency": {
+            c: {"cost_krw": v[0], "value_krw": v[1]} for c, v in by_cur.items()
+        },
+        "cost_labels": labels,  # {exact: n, approx_first_buy: m, ...} 정직성 표시
+    }
 
 
 def compute_allocation_gap(user) -> dict:
-    """통화별 배치 갭 = 유휴현금 비중(현금 / (현금+보유평가)). 구조·사실.
+    """배치 갭 = KRW 통합 유휴현금 비중(현금 / (현금+보유평가)). 구조·사실.
 
-    반환: {currency: {"cash", "holdings_value", "idle_ratio"}}.
+    numéraire=KRW: USD 현금·보유를 현재 환율로 KRW 평가 후 통합.
+    반환: {"cash_krw","holdings_value_krw","idle_ratio","by_currency"}.
     """
-    cash_by_cur: dict[str, Decimal] = {}
-    for cb in CashBalance.objects.filter(wallet__user=user):
-        cash_by_cur[cb.currency] = cash_by_cur.get(cb.currency, Decimal(0)) + cb.amount
+    cash_krw, hold_krw = Decimal(0), Decimal(0)
+    by_cur: dict[str, list] = {}
 
-    hold_by_cur: dict[str, Decimal] = {}
+    for cb in CashBalance.objects.filter(wallet__user=user):
+        rate = _krw_rate(cb.currency)
+        v = cb.amount * rate
+        cash_krw += v
+        by_cur.setdefault(cb.currency, [Decimal(0), Decimal(0)])[0] += v
+
     holdings = WalletHolding.objects.filter(wallet__user=user).select_related("stock")
     for h in holdings:
-        cur = h.stock.currency
-        hold_by_cur[cur] = hold_by_cur.get(cur, Decimal(0)) + h.shares * _current_price(h.stock)
+        rate = _krw_rate(h.stock.currency)
+        v = h.shares * _current_price(h.stock) * rate
+        hold_krw += v
+        by_cur.setdefault(h.stock.currency, [Decimal(0), Decimal(0)])[1] += v
 
-    result = {}
-    for cur in set(cash_by_cur) | set(hold_by_cur):
-        cash = cash_by_cur.get(cur, Decimal(0))
-        hold = hold_by_cur.get(cur, Decimal(0))
-        total = cash + hold
-        idle_ratio = (cash / total) if total else Decimal(1)
-        result[cur] = {"cash": cash, "holdings_value": hold, "idle_ratio": idle_ratio}
-    return result
+    total = cash_krw + hold_krw
+    idle_ratio = (cash_krw / total) if total else Decimal(1)
+    return {
+        "cash_krw": cash_krw,
+        "holdings_value_krw": hold_krw,
+        "idle_ratio": idle_ratio,
+        "by_currency": {
+            c: {"cash_krw": v[0], "holdings_value_krw": v[1]}
+            for c, v in by_cur.items()
+        },
+    }
 
 
 def determine_mode(progress_gap: dict, allocation_gap: dict) -> str:
-    """모드 분기: 어느 통화든 (유휴현금 임계 초과 OR 목표 미달) → BUY, 아니면 DEFEND.
+    """모드 분기(KRW 통합 정본): (유휴현금 임계 초과 OR 목표 미달) → BUY, else DEFEND.
 
-    - BUY  = 매수 여력 있음(현금) 또는 목표 미달(더 굴려야) → 배치 권유
-    - DEFEND = 완전투자 & 목표 달성 → 방어(HOLD/TRIM 중심)
+    - BUY  = 매수 여력(KRW 현금) 또는 목표 미달(KRW 갭<0)
+    - DEFEND = 완전투자 & 목표 달성
     """
-    idle_high = any(
-        a["idle_ratio"] > IDLE_CASH_THRESHOLD for a in allocation_gap.values()
-    )
-    below_target = any(p["gap_pct"] < 0 for p in progress_gap.values())
+    idle_high = allocation_gap["idle_ratio"] > IDLE_CASH_THRESHOLD
+    below_target = progress_gap["gap_pct"] < 0
     return "BUY" if (idle_high or below_target) else "DEFEND"
 
 
@@ -139,9 +205,14 @@ def rank_candidates(user, currency, allocation_gap) -> list:
     """
     from packages.shared.users.models import WatchlistItem
 
-    alloc = allocation_gap.get(currency)
-    # 가드레일 1: 유휴현금 임계 미만 → 매수 억제(빈 후보)
-    if alloc is None or alloc["idle_ratio"] < IDLE_CASH_THRESHOLD:
+    # 가드레일 1 + 통화 분리: 해당 통화 현금 여력(환전 없음). KRW 환산 소계로 판정.
+    cur_alloc = allocation_gap.get("by_currency", {}).get(currency)
+    if not cur_alloc:
+        return []
+    cur_cash = cur_alloc["cash_krw"]
+    cur_total = cur_cash + cur_alloc["holdings_value_krw"]
+    cur_idle = (cur_cash / cur_total) if cur_total else Decimal(0)
+    if cur_idle < IDLE_CASH_THRESHOLD:
         return []
 
     holdings = WalletHolding.objects.filter(wallet__user=user).select_related("stock")
@@ -213,8 +284,16 @@ DISCLAIMER = (
 )
 
 
+def _cost_basis_note(labels: dict) -> str:
+    """KRW 취득원가 근사 포함 여부를 사실로 명시(정직성 장치, '예측 아님'과 동렬)."""
+    approx = labels.get("approx_first_buy", 0) + labels.get("approx_low_confidence", 0)
+    if approx:
+        return f"KRW 원가 {approx}건은 매수일/근사 환율 기준(정본 아님, 사용자 정정 시 exact)."
+    return "KRW 원가 전건 정확(exact/native_krw)."
+
+
 def recommend(user) -> dict:
-    """목표-대비 권유 산출(계약). action ∈ {BUY, HOLD, TRIM}.
+    """목표-대비 권유 산출(계약 v2, KRW 기준). action ∈ {BUY, HOLD, TRIM}.
 
     반환:
       {
@@ -266,7 +345,7 @@ def recommend(user) -> dict:
 
     # BUY: 매수 모드 & 통화별 여력 있는 후보 (RelationConfidence+진입가 정렬)
     if mode == "BUY":
-        for currency in allocation:
+        for currency in allocation["by_currency"]:
             for c in rank_candidates(user, currency, allocation):
                 dist = c["distance_from_entry"]
                 dist_txt = f"진입가 여유 {dist:.1f}%" if dist is not None else "진입가 미설정"
@@ -291,6 +370,8 @@ def recommend(user) -> dict:
             "goal_target_return_pct": (
                 goal.target_return_pct if goal else None
             ),
+            "numeraire": "KRW",
+            "cost_basis_note": _cost_basis_note(progress["cost_labels"]),
         },
         "recommendations": recommendations,
         "disclaimer": DISCLAIMER,

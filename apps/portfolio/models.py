@@ -108,6 +108,16 @@ class WalletHolding(models.Model):
     first_bought_at = models.DateField(
         help_text="최초 매수일",
     )
+    acquisition_fx_rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text=(
+            "매수 시점 USD/KRW 환율, 사용자 정정 가능 (SLICE19B). "
+            "null이면 매수일(first_bought_at) 환율로 근사."
+        ),
+    )
 
     # ---- 투자 근거 (Thesis Y1) ----
     investment_thesis = models.TextField(
