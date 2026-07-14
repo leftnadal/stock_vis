@@ -355,7 +355,8 @@ export interface AnalogAxis {
 export interface AnalogNeighbor {
   date: string
   dist: number
-  cat_slot: string | null
+  cat_slot: string | null // L2(C-core): 그날 국면 유형 라벨(사실 표기)
+  cat_key: RegimeId | null // L2(C-core): 톤용 RegimeId(FE regimeTone 소비)
   why: string | null
   fwd: Record<string, number | null>
 }
@@ -371,6 +372,7 @@ export interface RegimeAnalogPayload {
   available: boolean
   as_of?: string
   today_axes: AnalogAxis[]
+  today_category: { key: RegimeId; label: string } | null // L2(C-core): 오늘 국면 태그(없으면 null)
   neighbors: AnalogNeighbor[]
   fan: AnalogFanPoint[]
   alert: { on: boolean; nearest_dist: number | null }

@@ -22,6 +22,7 @@ function alertPayload(): RegimeAnalogPayload {
     available: true,
     as_of: '2026-07-13',
     today_axes: AXES,
+    today_category: null,
     neighbors: [],
     fan: [1, 5, 10, 20, 60].map((h) => ({ horizon: h, median: null, lo: null, hi: null, n: 0, n_eff: 0 })),
     alert: { on: true, nearest_dist: 1.02 },
@@ -34,9 +35,10 @@ function populatedPayload(): RegimeAnalogPayload {
     available: true,
     as_of: '2026-07-13',
     today_axes: AXES,
+    today_category: { key: 'LATE_BULL', label: '상승 후반 경계' },
     neighbors: [
-      { date: '2024-08-05', dist: 0.31, cat_slot: null, why: null, fwd: { '20': 0.042 } },
-      { date: '2025-04-03', dist: 0.48, cat_slot: null, why: null, fwd: { '20': -0.015 } },
+      { date: '2024-08-05', dist: 0.31, cat_slot: '위기', cat_key: 'CRISIS', why: null, fwd: { '20': 0.042 } },
+      { date: '2025-04-03', dist: 0.48, cat_slot: null, cat_key: null, why: null, fwd: { '20': -0.015 } },
     ],
     fan: [
       { horizon: 1, median: 0.001, lo: -0.002, hi: 0.004, n: 2, n_eff: 2 },
@@ -79,15 +81,34 @@ describe('AnalogCard', () => {
     expect(screen.getByTestId('analog-nb-2024-08-05')).toBeInTheDocument()
   })
 
-  it('label 슬롯 비활성 — cat_slot=—, "왜?" disabled (Slice C 연결점)', () => {
+  it('L2 카테고리 태그(C-core) — 이웃 cat_slot 라벨+톤 렌더, null은 —', () => {
     render(<AnalogCard payload={populatedPayload()} />)
-    expect(screen.getByTestId('analog-cat-2024-08-05')).toHaveTextContent('—')
-    const why = screen.getByTestId('analog-why-slot')
-    expect(why).toBeDisabled()
+    // 채워진 이웃: 사실 분류 라벨('위기') + 톤 클래스(regimeTone CRISIS)
+    const cat = screen.getByTestId('analog-cat-2024-08-05')
+    expect(cat).toHaveTextContent('위기')
+    expect(cat).not.toHaveTextContent('유사') // CRISIS 게이트: 유사성 주장 카피 아님
+    expect(cat.className).toContain('border')
+    // 미커버 이웃: —
+    expect(screen.getByTestId('analog-cat-2025-04-03')).toHaveTextContent('—')
+  })
+
+  it('오늘 국면 태그(C-core) — today_category 있으면 렌더', () => {
+    render(<AnalogCard payload={populatedPayload()} />)
+    expect(screen.getByTestId('analog-today-category')).toHaveTextContent('상승 후반 경계')
+  })
+
+  it('오늘 국면 태그(C-core) — today_category 없으면 미표시', () => {
+    render(<AnalogCard payload={alertPayload()} />)
+    expect(screen.queryByTestId('analog-today-category')).not.toBeInTheDocument()
+  })
+
+  it('"왜?"(L3) 슬롯 무접촉 — 여전히 disabled', () => {
+    render(<AnalogCard payload={populatedPayload()} />)
+    expect(screen.getByTestId('analog-why-slot')).toBeDisabled()
   })
 
   it('unavailable — 빈 상태', () => {
-    render(<AnalogCard payload={{ available: false, today_axes: [], neighbors: [], fan: [], alert: { on: true, nearest_dist: null } }} />)
+    render(<AnalogCard payload={{ available: false, today_axes: [], today_category: null, neighbors: [], fan: [], alert: { on: true, nearest_dist: null } }} />)
     expect(screen.getByTestId('analog-unavailable')).toBeInTheDocument()
   })
 })

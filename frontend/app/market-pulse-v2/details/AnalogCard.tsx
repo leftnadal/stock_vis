@@ -13,6 +13,7 @@ import type {
   AnalogNeighbor,
   RegimeAnalogPayload,
 } from '@/lib/api/marketPulseV2'
+import { regimeTone } from '../meaning'
 
 const AXIS_LABEL: Record<string, string> = {
   stress: '스트레스',
@@ -109,10 +110,19 @@ function NeighborRow({ nb }: { nb: AnalogNeighbor }) {
   return (
     <div data-testid={`analog-nb-${nb.date}`} className="flex items-center justify-between text-[11px] py-0.5">
       <span className="tabular-nums text-slate-700">{nb.date}</span>
-      {/* label 슬롯(카테고리) — 비활성(Slice C가 cat_slot 채움) */}
-      <span data-testid={`analog-cat-${nb.date}`} className="text-[10px] text-slate-300">
-        {nb.cat_slot ?? '—'}
-      </span>
+      {/* L2 카테고리 태그(C-core): 그날 국면 유형(사실 표기). 톤=기존 regimeTone 재사용. */}
+      {nb.cat_slot ? (
+        <span
+          data-testid={`analog-cat-${nb.date}`}
+          className={`text-[10px] rounded border px-1.5 py-px ${regimeTone(nb.cat_key ?? '')}`}
+        >
+          {nb.cat_slot}
+        </span>
+      ) : (
+        <span data-testid={`analog-cat-${nb.date}`} className="text-[10px] text-slate-300">
+          —
+        </span>
+      )}
       <span className="tabular-nums text-slate-500">d {nb.dist.toFixed(2)}</span>
       <span className="tabular-nums text-slate-600">{pct(nb.fwd['20'] ?? null)}</span>
     </div>
@@ -131,7 +141,18 @@ export function AnalogCard({ payload }: { payload: RegimeAnalogPayload }) {
   return (
     <section data-testid="analog-card" className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">오늘 국면</p>
+        <div className="flex items-center gap-2">
+          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">오늘 국면</p>
+          {/* 오늘 국면 태그(C-core): 사실 표기. 유사성 주장 아님. */}
+          {payload.today_category ? (
+            <span
+              data-testid="analog-today-category"
+              className={`text-[10px] rounded border px-1.5 py-px ${regimeTone(payload.today_category.key)}`}
+            >
+              {payload.today_category.label}
+            </span>
+          ) : null}
+        </div>
         {payload.as_of ? <span className="text-[10px] text-slate-400">{payload.as_of}</span> : null}
       </div>
       <AxisBars axes={payload.today_axes} />

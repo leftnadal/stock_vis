@@ -385,6 +385,7 @@ def _regime_analog_detail() -> dict:
     from django.utils import timezone as _tz
 
     from apps.market_pulse.regime import analog, inputs as inputs_mod
+    from apps.market_pulse.regime.category import categorize_or_none, categorize_regime
     from apps.market_pulse.regime.inputs import ALL_INPUT_KEYS
     from apps.market_pulse.regime.zscore import compute_baseline
     from macro.models.indicators import MarketIndex, MarketIndexPrice
@@ -399,6 +400,12 @@ def _regime_analog_detail() -> dict:
         return {"available": False}
     baseline = compute_baseline([inp for _, inp in pop_rows], ALL_INPUT_KEYS)
     weights = analog.component_weights()
+
+    # L2 카테고리(C-core): 이웃일 date → regime 확정치. 결정론 파생(저장 0).
+    regime_by_date = dict(
+        RegimeSnapshot.objects.filter(summary=BACKFILL_MARK, coverage__gte=1.0)
+        .values_list("date", "regime")
+    )
 
     # 오늘 벡터(as_of=오늘, 소급과 동형 문법) → z.
     today = _tz.localdate()
@@ -428,11 +435,13 @@ def _regime_analog_detail() -> dict:
     neighbor_fwd = []
     for nb in neighbors:
         fwd = analog.forward_returns(nb["date"], price_index, closes)
+        cat = categorize_or_none(regime_by_date.get(nb["date"]))  # L2(C-core): 그날 국면 유형
         neighbor_out.append({
             "date": nb["date"].isoformat(),
             "dist": nb["dist"],
-            "cat_slot": None,   # Slice C 라벨 슬롯(비활성)
-            "why": None,        # Slice C L3 맥락 슬롯(비활성)
+            "cat_slot": cat["label"] if cat else None,  # 사실 분류 표기(string 계약 유지)
+            "cat_key": cat["key"] if cat else None,     # FE 톤용 RegimeId(additive)
+            "why": None,        # L3 맥락 슬롯(비활성 — C-L3 소관)
             "fwd": {str(h): v for h, v in fwd.items()},
         })
         neighbor_fwd.append({"date": nb["date"], "fwd": fwd})
@@ -451,10 +460,19 @@ def _regime_analog_detail() -> dict:
         {"axis": "vol_20d_pct", "z": _axis_z(("vol_20d_pct",))},
     ]
 
+    # 오늘 국면 태그(가능 시): 라이브 스냅샷 regime 확정치가 status OK일 때만(사실 표기).
+    today_snap = (
+        RegimeSnapshot.objects.filter(date=today, status=RegimeSnapshot.Status.OK)
+        .order_by("-snapshot_time")
+        .first()
+    )
+    today_category = categorize_regime(today_snap.regime) if today_snap and today_snap.regime else None
+
     return {
         "available": True,
         "as_of": today.isoformat(),
         "today_axes": today_axes,
+        "today_category": today_category,
         "neighbors": neighbor_out,
         "fan": fan,
         "alert": {"on": alert_on, "nearest_dist": round(nearest, 4) if nearest is not None else None},

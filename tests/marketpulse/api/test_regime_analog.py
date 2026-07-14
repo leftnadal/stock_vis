@@ -123,9 +123,11 @@ class TestRegimeAnalog:
         }
         assert [f["horizon"] for f in body["fan"]] == [1, 5, 10, 20, 60]
         assert "on" in body["alert"] and "nearest_dist" in body["alert"]
-        # 이웃 있으면 label 슬롯 null(Slice C 연결점)
+        # C-core: cat_slot=국면 라벨 채움 + cat_key=RegimeId, why는 null 유지(C-L3 소관).
         for nb in body["neighbors"]:
-            assert nb["cat_slot"] is None and nb["why"] is None
+            assert nb["why"] is None
+            assert nb["cat_key"] == "TRANSITION"          # 시드 regime
+            assert nb["cat_slot"] == RegimeSnapshot.Regime.TRANSITION.label
             assert "dist" in nb and "fwd" in nb
 
     def test_marker_not_exposed(self, auth_client):
@@ -141,3 +143,26 @@ class TestRegimeAnalog:
         # 모집단이 SPY 창 밖(2023-08)이라 선도수익 미실현 → N=0 정직(발명 없음)
         for f in body["fan"]:
             assert f["n"] >= 0 and f["n_eff"] >= 0
+
+    def test_today_category_none_without_today_snapshot(self, auth_client):
+        # C-core: 오늘 라이브 스냅샷 없으면 today_category=null(억지 태그 금지)
+        _seed_population()
+        _seed_today_inputs()
+        body = auth_client.get(_url()).json()["data"]
+        assert body["today_category"] is None
+
+    def test_today_category_populated_from_ok_snapshot(self, auth_client):
+        from django.utils import timezone
+
+        _seed_population()
+        _seed_today_inputs()
+        today = timezone.localdate()
+        RegimeSnapshot.objects.create(
+            date=today, snapshot_time=today, regime=RegimeSnapshot.Regime.LATE_BULL,
+            status=RegimeSnapshot.Status.OK, coverage=1.0, inputs={}, fired_rules=[],
+            previous_regime="", hysteresis_streak=1, summary="live",
+        )
+        body = auth_client.get(_url()).json()["data"]
+        assert body["today_category"] == {
+            "key": "LATE_BULL", "label": RegimeSnapshot.Regime.LATE_BULL.label,
+        }
