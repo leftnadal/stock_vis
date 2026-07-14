@@ -7,10 +7,13 @@ import { Plus } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { MonitorListCard } from '@/components/monitor/MonitorListCard'
-import { useMonitors } from '@/hooks/useMonitor'
-import type { Monitor, MonitorScope } from '@/types/monitor'
+import { useAuth } from '@/contexts/AuthContext'
+import { useClaims, useMonitors } from '@/hooks/useMonitor'
+import { summarizeClaimClosure } from '@/lib/monitor/closure'
+import type { Claim, Monitor, MonitorScope } from '@/types/monitor'
 
 type ScopeFilter = 'all' | MonitorScope
+type StatusFilter = 'active' | 'closed' | 'all'
 
 const SCOPE_CHIPS: { key: ScopeFilter; label: string }[] = [
   { key: 'all', label: '전체' },
@@ -19,6 +22,12 @@ const SCOPE_CHIPS: { key: ScopeFilter; label: string }[] = [
   { key: 'sector', label: '섹터' },
   { key: 'theme', label: '테마' },
   { key: 'fund', label: '펀드' },
+]
+
+const STATUS_SEGMENTS: { key: StatusFilter; label: string }[] = [
+  { key: 'active', label: '진행 중' },
+  { key: 'closed', label: '마감' },
+  { key: 'all', label: '전체' },
 ]
 
 function Chip({
@@ -50,6 +59,38 @@ function Chip({
   )
 }
 
+function StatusSegment({
+  value,
+  onChange,
+}: {
+  value: StatusFilter
+  onChange: (v: StatusFilter) => void
+}) {
+  return (
+    <div
+      className="mb-4 inline-flex rounded-lg bg-gray-100 p-1 dark:bg-gray-800"
+      data-testid="status-segment"
+    >
+      {STATUS_SEGMENTS.map((s) => (
+        <button
+          key={s.key}
+          type="button"
+          onClick={() => onChange(s.key)}
+          data-testid={`status-seg-${s.key}`}
+          aria-pressed={value === s.key}
+          className={`rounded-md px-3 py-1 text-sm transition ${
+            value === s.key
+              ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-700 dark:text-gray-100'
+              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+          }`}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function EmptyState() {
   return (
     <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-gray-300 py-16 text-center dark:border-gray-700">
@@ -74,8 +115,36 @@ function EmptyState() {
 
 function MonitorListContent() {
   const { data: monitors, isLoading, isError } = useMonitors()
+  const { data: claims } = useClaims()
+  const { user } = useAuth()
   const [scope, setScope] = useState<ScopeFilter>('all')
   const [claimOnly, setClaimOnly] = useState(false)
+  const [status, setStatus] = useState<StatusFilter>('active')
+
+  // 모니터별 필터는 클라이언트단(BE는 monitor로 필터하지 않음) — 전체 Claim을 모니터 id로 그룹핑.
+  const claimsByMonitor = useMemo(() => {
+    const map = new Map<string, Claim[]>()
+    for (const c of claims ?? []) {
+      const list = map.get(c.monitor) ?? []
+      list.push(c)
+      map.set(c.monitor, list)
+    }
+    return map
+  }, [claims])
+
+  // 0.3 마감 상태 파생: Monitor:Claim=1:N → 전 Claim resolved면 "마감", 일부면 "진행+n중 m".
+  const closureByMonitor = useMemo(() => {
+    const map = new Map<string, ReturnType<typeof summarizeClaimClosure>>()
+    for (const m of monitors ?? []) {
+      map.set(m.id, summarizeClaimClosure(claimsByMonitor.get(m.id) ?? []))
+    }
+    return map
+  }, [monitors, claimsByMonitor])
+
+  const closedCount = useMemo(
+    () => [...closureByMonitor.values()].filter((c) => c.isFullyClosed).length,
+    [closureByMonitor]
+  )
 
   const scopeCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -88,13 +157,17 @@ function MonitorListContent() {
     [monitors]
   )
 
-  // 서버가 트리아지 순서로 정렬해 반환 → 칩 필터는 순서를 보존한 채 부분집합만.
+  // 서버가 트리아지 순서로 정렬해 반환 → 칩/세그먼트 필터는 순서를 보존한 채 부분집합만(AND 교차).
   const filtered = useMemo(() => {
-    return (monitors ?? []).filter(
-      (m: Monitor) =>
-        (scope === 'all' || m.scope === scope) && (!claimOnly || m.has_claim)
-    )
-  }, [monitors, scope, claimOnly])
+    return (monitors ?? []).filter((m: Monitor) => {
+      if (scope !== 'all' && m.scope !== scope) return false
+      if (claimOnly && !m.has_claim) return false
+      const closure = closureByMonitor.get(m.id)
+      if (status === 'active' && closure?.isFullyClosed) return false
+      if (status === 'closed' && !closure?.isFullyClosed) return false
+      return true
+    })
+  }, [monitors, scope, claimOnly, status, closureByMonitor])
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -112,23 +185,27 @@ function MonitorListContent() {
       </div>
 
       {!isLoading && !isError && (monitors?.length ?? 0) > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2">
-          {SCOPE_CHIPS.map((c) => (
+        <>
+          <div className="mb-3 flex flex-wrap gap-2">
+            {SCOPE_CHIPS.map((c) => (
+              <Chip
+                key={c.key}
+                active={scope === c.key}
+                label={c.label}
+                count={c.key === 'all' ? monitors?.length : scopeCounts[c.key] ?? 0}
+                onClick={() => setScope(c.key)}
+              />
+            ))}
             <Chip
-              key={c.key}
-              active={scope === c.key}
-              label={c.label}
-              count={c.key === 'all' ? monitors?.length : scopeCounts[c.key] ?? 0}
-              onClick={() => setScope(c.key)}
+              active={claimOnly}
+              label="가설만"
+              count={claimCount}
+              onClick={() => setClaimOnly((v) => !v)}
             />
-          ))}
-          <Chip
-            active={claimOnly}
-            label="가설만"
-            count={claimCount}
-            onClick={() => setClaimOnly((v) => !v)}
-          />
-        </div>
+          </div>
+          {/* 0.2 B-1: 마감 0건이면 세그먼트 자체를 숨긴다(빈 세그먼트 노출 금지). */}
+          {closedCount > 0 && <StatusSegment value={status} onChange={setStatus} />}
+        </>
       )}
 
       {isLoading && <p className="py-12 text-center text-gray-400">불러오는 중…</p>}
@@ -139,7 +216,12 @@ function MonitorListContent() {
       {!isLoading && !isError && (monitors?.length ?? 0) > 0 && (
         <div className="flex flex-col gap-3">
           {filtered.map((m: Monitor) => (
-            <MonitorListCard key={m.id} monitor={m} />
+            <MonitorListCard
+              key={m.id}
+              monitor={m}
+              closureSummary={closureByMonitor.get(m.id)}
+              judgeUsername={user?.username}
+            />
           ))}
           {filtered.length === 0 && (
             <p className="py-8 text-center text-sm text-gray-400">
