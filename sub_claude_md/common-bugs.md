@@ -803,3 +803,18 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
   2. **C health_check WARN**(`scripts/health_check.py::check_stale_pending_backannotation`): PROGRESS의 ⏸️ 블록 중 해소 델타 없이 3 거래일 초과 방치 → WARN(FAIL 아님). TASKQUEUE 제외(큐는 장기 pending 보유 설계).
   3. **D STEP 0 재측정**(SESSION_STARTUP_CHECKLIST): 상속된 인계 메모/타 트랙 'pending' 주장은 **행동 전 그 트랙 현재 장부로 재측정**(추정 전파 금지).
 - **교훈**: append-only 로그에서 "상태"는 스스로 갱신되지 않는다 — 해소는 **원 지점 back-annotation**으로 닫아야 한다. 그리고 **실행 보고는 반드시 지시서 DoD 전수 대조**(일부 슬라이스 조용한 누락 방지). 검문소는 "해소 델타 유무"라는 값싼 신호로 phantom을 잡는다.
+## [백필 함정] FMP 뉴스 과거 조회 = 402 유료벽 + 페이지 캡 → AV NEWS_SENTIMENT가 과거 소스 (Slice C-N, 2026-07-13)
+
+**증상**: analog 카드 L3(그날의 맥락) 그라운딩용 과거 시장 뉴스를 FMP로 백필하려 하니 `/stable/news/stock`·`general-latest`에 `from`/`to` 날짜 파라미터 = **402 Premium Query Parameter**. 페이지네이션도 page~200부터 400(캡), page50(limit100)이 ~2026-05 도달 한계. 모집단(2023~) 미도달.
+
+**원인**: FMP Starter 플랜은 뉴스·경제캘린더 공히 **historical 날짜 범위 = 프리미엄**. 최근 뉴스만 limit로 제공(그래서 NewsArticle이 2025-12+ 7개월뿐).
+
+**해결**: **Alpha Vantage NEWS_SENTIMENT** 사용. `AlphaVantageNewsProvider.fetch_broad_news(time_from, time_to, limit≤1000, sort)`가 과거 창 조회 지원(실측 2023-09 도달, 모집단 전 구간 커버). 제약 = 무료 25 req/day·1 req/s → 전량 백필은 병진 수일(`--max-requests` 배치). 커맨드 `services/news/management/commands/backfill_broad_news.py`가 라이브 broad 수집과 동일 save 경로(dedup+url upsert 멱등) 재사용.
+
+**교훈**: 과거 데이터 소스는 provider별 tier 차이가 크다 — FMP historical=프리미엄, AV NEWS_SENTIMENT=무료 과거창(단 25/day). 백필 착수 전 GN(과거 타당성) 프로브 필수. 지시서가 특정 provider(FMP)를 지목해도 GN 정신(과거 가용성)은 대체 provider로 충족 가능.
+
+## [보존 함정 후속] NewsArticle은 나이 purge 아닌 soft delete(is_archived) — 백필분 영속, 단 그라운딩 쿼리는 is_archived 포함 (Slice C-N, 2026-07-13)
+
+**맥락**: A-S0(SPY)·IndicatorValue는 롤링 purge에 삭제되어 보존 예외가 필요했으나, **NewsArticle은 삭제 경로 없음**. `archive_old_articles`(services/news/tasks.py)가 6개월+ 기사를 `is_archived=True`로 **soft delete**만 — 행 영속. → 과거 뉴스 백필은 SPY식 보존 예외 불필요.
+
+**함정**: 그러나 백필한 과거 뉴스는 즉시 `is_archived=True` 대상(6개월+). **C-L3 그라운딩 쿼리가 `is_archived=False` 필터를 걸면 백필분 전량 누락**. → 그라운딩은 `is_archived` 무관(또는 True 포함)으로 조회해야 함.
