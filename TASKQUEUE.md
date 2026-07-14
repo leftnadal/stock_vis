@@ -504,7 +504,11 @@
 | CS-EXT-API | `insider_tasks`→Finnhub, `sensitivity_tasks`→FMP **직접 `requests.get`**(shared 래퍼·CircuitBreaker 미경유 = 의존 방향 규약 위반) | 결정 안건(이관 설계) + shared 위임 가능 | 전수 조사 후 우선순위 사이클. **※ 행위보존 검증 필수 — 즉시 실행 금지** 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
 | CS-LEGACY | 레거시 serverless Chain Sight v1(`chain_sight_service`·`neo4j_chain_sight_service`·`supply_chain_*`·migr 0009) 흡수 vs serverless 잔류 | 결정 안건(경계) | 전 트랙 STEP 0 완료 후 일괄. 📌 **로드맵 Phase 3 선결 조건**(D-ROADMAP-V1) | 🆕 보류 |
 | CS-LAZY | `apps/chain_sight`→`services.{validation,news,serverless}` lazy import 정리 방향(교차 트랙 결합) | 결정 안건(경계) | 동일(전 트랙 STEP 0 후 일괄) | 🆕 보류 |
-| CS-CHOICES | `RelationConfidence.RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`(53)·`DEPENDS_ON`(41) 미정의, `HAS_THEME`·`HELD_BY_SAME_FUND` 0행 | **chain_sight 트랙 직접** | chain_sight 실작업 슬라이스 | 🆕 보류 |
+| CS-CHOICES | ~~`RELATION_TYPE_CHOICES` ↔ DB drift — `PARTNER_WITH`·`DEPENDS_ON` 미정의~~ **✅ PARTNER_WITH·DEPENDS_ON 추가(⑰ S1-a, mig 0017 no-op)**. 잔여=`HAS_THEME`·`HELD_BY_SAME_FUND` **0행 choices 제거 후보**(파괴적, 아래 GRAPH-CHOICES-0ROW로 분리) | chain_sight | ⑰ S1-a | 🟡 부분해소 |
+| GRAPH-EGO-NEO4J-REEVAL | Neo4j 거취 재평가 — **동결 중**(D-GRAPH-EGO-BACKEND). **트리거**: 멀티홉(2+hop)·커뮤니티탐지(GDS)·대규모 순회가 제품 요구로 발생 시 Neo4j 재가동+dirty 270 재동기 재평가. 그 전엔 PG 네이티브 ego로 충분 | @backend/@infra | 트리거 충족 시 | 💤 동결 |
+| GRAPH-TRUTHSCORE-NORM | truth_score 정규화(0~85 미정규화 → 0~1 또는 0~100). **ego 화면이 소비자가 됨**(truth_score를 굵기/불투명도로 렌더) → 우선순위 상향 후보. 별도 트랙(ego API·기존 소비처 동시 영향, 행위보존 회귀 필요) | @backend | ego 화면 land 후 | 🆕 후보(상향) |
+| GRAPH-CHOICES-0ROW | 0행 choices(`HAS_THEME`·`HELD_BY_SAME_FUND`) 제거 — **파괴적**(choices 제거 시 기존 데이터 유입 경로 확인 필요, migration DDL 가능성). 보고만, 착수 전 영향분석 | @backend | 영향분석 후 | 🆕 후보(보류) |
+| GRAPH-NEO4J-SYNC-DEACTIVATE | neo4j sync 태스크 3종(`chainsight-neo4j-dirty-sync`·`sync-profiles-neo4j`·`sync-relations-neo4j`) 전부 enabled이나 Neo4j DOWN → dirty 270 재동기 실패 반복(무효 가동). **비활성 후보**(에러 누적 차단). beat 변경=병진 수동. Neo4j 재가동 결정(GRAPH-EGO-NEO4J-REEVAL)과 연동 | @infra | 병진 결정 | 🆕 후보(보고만) |
 | CS-TEST | EventBoard/Ranking 테스트 5건 404(`theme_tags` 플래그 OFF ↔ EventGroup 보드 기대, 라우트는 등록됨) | chain_sight 트랙 직접 | 동일(chain_sight 실작업 슬라이스) | 🆕 보류 |
 
 ---
