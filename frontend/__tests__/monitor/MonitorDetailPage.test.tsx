@@ -61,6 +61,7 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
     resolved_by: null,
     factor_tags: [],
     retro_memo: '',
+    closure_snapshot: null,
     created_at: '2026-07-01T00:00:00Z',
     resolved_at: null,
     ...overrides,

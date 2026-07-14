@@ -74,6 +74,8 @@ function ClaimRow({
         {!pending && (
           <p className="mt-1 text-xs text-gray-400" data-testid="claim-row-closure-summary">
             {claim.resolved_at ? `${formatDate(claim.resolved_at)} 마감` : '마감'}
+            {typeof claim.closure_snapshot?.overall_score === 'number' &&
+              ` · 동결 점수 ${claim.closure_snapshot.overall_score.toFixed(3)}`}
             {judgeUsername && ` · 판정자 ${judgeUsername}`}
           </p>
         )}

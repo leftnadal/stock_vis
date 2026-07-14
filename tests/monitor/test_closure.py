@@ -193,3 +193,44 @@ class TestCloseAPI:
             f"/api/v1/monitor/claims/{claim.id}/close/", {"final_verdict": "validated"}, format="json"
         )
         assert resp.status_code == 404  # owner 스코프 격리
+
+
+# ── §2 ClosureSnapshot 노출 (P1.5) ─────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestClosureSnapshotExposure:
+    def _client(self, user):
+        c = APIClient()
+        c.force_authenticate(user=user)
+        return c
+
+    def test_pending_claim_snapshot_null(self, monitor_with_indicators, alice):
+        m, claim, i1, i2 = monitor_with_indicators
+        resp = self._client(alice).get(f"/api/v1/monitor/claims/{claim.id}/")
+        assert resp.status_code == 200
+        assert resp.data["closure_snapshot"] is None
+
+    def test_resolved_claim_exposes_frozen_snapshot(self, monitor_with_indicators, alice):
+        m, claim, i1, i2 = monitor_with_indicators
+        closure.close_claim(claim, final_verdict=Claim.Outcome.VALIDATED, user=alice)
+        resp = self._client(alice).get(f"/api/v1/monitor/claims/{claim.id}/")
+        snap = resp.data["closure_snapshot"]
+        assert snap is not None
+        assert snap["overall_score"] == 0.5  # 동결값(마감 시점 스냅샷)
+        assert "frozen_at" in snap and "payload" in snap
+        assert "sparkline" in snap["payload"] and "indicators" in snap["payload"]
+
+    def test_closure_snapshot_read_only(self, monitor_with_indicators, alice):
+        m, claim, i1, i2 = monitor_with_indicators
+        # PATCH로 closure_snapshot 주입 시도 → 무시(read-only)
+        resp = self._client(alice).patch(
+            f"/api/v1/monitor/claims/{claim.id}/",
+            {"closure_snapshot": {"overall_score": 9.9, "payload": {}, "frozen_at": "2020-01-01T00:00:00Z"}},
+            format="json",
+        )
+        assert resp.status_code in (200, 400)
+        claim.refresh_from_db()
+        # 마감 안 했으니 스냅샷 없음(주입 불가)
+        from apps.monitor.models import ClosureSnapshot
+        assert ClosureSnapshot.objects.filter(claim=claim).count() == 0

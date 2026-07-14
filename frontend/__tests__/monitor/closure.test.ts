@@ -1,7 +1,7 @@
 // Claim 마감 파생 유틸 단위 검증 (MON-CLOSE-UI Phase 2 §0.3)
 import { describe, expect, it } from 'vitest'
 
-import { outcomeToVerdict, summarizeClaimClosure } from '@/lib/monitor/closure'
+import { frozenScore, outcomeToVerdict, summarizeClaimClosure } from '@/lib/monitor/closure'
 import type { Claim } from '@/types/monitor'
 
 function makeClaim(overrides: Partial<Claim> = {}): Claim {
@@ -16,6 +16,7 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
     resolved_by: null,
     factor_tags: [],
     retro_memo: '',
+    closure_snapshot: null,
     created_at: '2026-07-01T00:00:00Z',
     resolved_at: null,
     ...overrides,
@@ -71,5 +72,26 @@ describe('outcomeToVerdict', () => {
 
   it('pending은 방어적으로 inconclusive(중립)로 폴백한다', () => {
     expect(outcomeToVerdict('pending')).toBe('inconclusive')
+  })
+})
+
+describe('frozenScore (P1.5 동결값 우선순위)', () => {
+  it('resolved + closure_snapshot → 동결값 사용', () => {
+    const claim = makeClaim({
+      outcome: 'validated',
+      resolved_at: '2026-07-10T00:00:00Z',
+      closure_snapshot: { overall_score: 0.42, frozen_at: '2026-07-10T00:00:00Z', payload: {} },
+    })
+    expect(frozenScore(claim, 0.99)).toBe(0.42) // live 0.99 무시, 동결 0.42
+  })
+
+  it('closure_snapshot null인 resolved → live 폴백(방어)', () => {
+    const claim = makeClaim({ outcome: 'validated', closure_snapshot: null })
+    expect(frozenScore(claim, 0.7)).toBe(0.7)
+  })
+
+  it('claim null/undefined → live 폴백', () => {
+    expect(frozenScore(null, 0.5)).toBe(0.5)
+    expect(frozenScore(undefined, null)).toBeNull()
   })
 })

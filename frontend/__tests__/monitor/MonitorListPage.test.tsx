@@ -73,6 +73,7 @@ function makeClaim(overrides: Partial<Claim> = {}): Claim {
     resolved_by: null,
     factor_tags: [],
     retro_memo: '',
+    closure_snapshot: null,
     created_at: '2026-07-01T00:00:00Z',
     resolved_at: null,
     ...overrides,
@@ -139,6 +140,23 @@ describe('MonitorListPage 상태 세그먼트', () => {
       expect(screen.getByText('부분마감')).toBeInTheDocument()
       expect(screen.getByText('진행중')).toBeInTheDocument()
     })
+  })
+
+  it('동결 카드는 live latest_score가 아닌 closure_snapshot 동결값을 렌더한다 (P1.5)', async () => {
+    list.mockResolvedValue([makeMonitor({ id: 'fc', name: '동결카드', latest_score: 0.99 })])
+    listClaims.mockResolvedValue([
+      makeClaim({
+        id: 'c1', monitor: 'fc', outcome: 'validated', resolved_at: '2026-07-10T00:00:00Z',
+        closure_snapshot: { overall_score: 0.123, frozen_at: '2026-07-10T00:00:00Z', payload: {} },
+      }),
+    ])
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('status-seg-closed')).toBeInTheDocument())
+    fireEvent.click(screen.getByTestId('status-seg-closed'))
+    await waitFor(() => expect(screen.getByText('동결카드')).toBeInTheDocument())
+    const meta = screen.getByTestId('monitor-card-frozen-meta')
+    expect(meta).toHaveTextContent('동결 점수 0.123') // 동결값(snapshot)
+    expect(meta).not.toHaveTextContent('0.990') // live latest_score 아님
   })
 
   it('scope 필터와 status 필터가 AND로 교차 적용된다', async () => {
