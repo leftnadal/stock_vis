@@ -818,3 +818,11 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 **맥락**: A-S0(SPY)·IndicatorValue는 롤링 purge에 삭제되어 보존 예외가 필요했으나, **NewsArticle은 삭제 경로 없음**. `archive_old_articles`(services/news/tasks.py)가 6개월+ 기사를 `is_archived=True`로 **soft delete**만 — 행 영속. → 과거 뉴스 백필은 SPY식 보존 예외 불필요.
 
 **함정**: 그러나 백필한 과거 뉴스는 즉시 `is_archived=True` 대상(6개월+). **C-L3 그라운딩 쿼리가 `is_archived=False` 필터를 걸면 백필분 전량 누락**. → 그라운딩은 `is_archived` 무관(또는 True 포함)으로 조회해야 함.
+
+## [테스트 함정] FMP autouse 더미키 픽스처 — "키 부재" 시나리오는 본문에서 로컬 override 필수 (⑮ 도입, ⑯ 등재 2026-07-14) [process]
+
+**맥락**: `tests/conftest.py`의 `_ensure_fmp_api_key`(autouse)가 FMP 키 부재(falsy) 시 `settings.FMP_API_KEY` + `os.environ`에 더미(`test_dummy_fmp_key`)를 주입한다(⑮ FMP-TESTDEBT env-독립화). 덕분에 provider 인스턴스화가 CI(키 없는 env)에서도 결정론적으로 성공한다.
+
+**함정**: 따라서 **"키 부재" 시나리오를 테스트하려면 테스트 본문에서 로컬 override로 키를 명시적으로 제거**해야 한다 — 안 하면 autouse 픽스처가 더미를 깔아 테스트가 "키 있음" 경로로 **조용히 통과**한다(거짓 green). 올바른 선례: `tests/marketpulse/fetchers/test_fmp_weights.py::TestRequestEtfHolderGuards::test_missing_api_key_raises` — `settings` 픽스처로 `settings.FMP_API_KEY=None`을 테스트 본문에서 세팅 후 `pytest.raises`(본문이 픽스처 setup보다 후행이라 override 성립).
+
+**일반화(동형 함정 주의)**: autouse 픽스처/ambient `.env`가 설정값을 채워 격리성을 주는 경우, 그 값의 **부재/반대 상태를 검증하는 테스트는 반드시 로컬 override로 상태를 되돌려야** 한다. **미상환 동형 사례(⑯ 발견)**: `.env`에 `CHAINSIGHT_GROUP_SOURCE=event_group`(go-live)이 있어 `settings_test`가 이를 상속 → EventBoard/Ranking 테스트가 `theme_tags`로 시드하면서 플래그를 고정하지 않아 event_group 경로로 읽혀 실패(**chainsight 13 red = attention 6 + leadership 7**, 전부 test-only). 해법 동일 = 테스트에서 `override_settings(CHAINSIGHT_GROUP_SOURCE=...)`로 플래그를 결정론적으로 고정. (⑰ 청소 대상.)
