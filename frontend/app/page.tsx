@@ -90,7 +90,10 @@ function HomeContent() {
         <NewsStrip />
 
         {/* Level 2.5: 추천 캐러셀 (하위호환 — recommendations 부재 시 생략) */}
-        <RecommendationCarousel recommendations={data.recommendations} />
+        <RecommendationCarousel
+          recommendations={data.recommendations}
+          tradingDate={data.trading_date}
+        />
 
         {/* Level 3: 카테고리 필터 */}
         <SignalFilterTabs

@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { DIRECTION_BADGE, DIRECTION_SPINE } from '@/components/common/colorSemantics';
+import { useImpressionTracker } from '@/hooks/useImpressionTracker';
+import { recoObjectRef, SURFACE_RECO_CARD } from '@/hooks/impressionTelemetry';
 import type { Recommendation } from '@/types/eod';
 
 const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {
@@ -17,10 +19,20 @@ const CONFIDENCE_LABEL: Record<Recommendation['confidence'], string> = {
  * - placeholder ghost: thesis/perspectives/risk가 모두 null이면 자리 예약 스트립(additive-within 대비).
  * - 카드 → 체인사이트 진입(기존 eod 관례 /stocks/{ticker}?tab=chain-sight 재사용).
  */
-export function RecommendationCard({ rec }: { rec: Recommendation }) {
+export function RecommendationCard({
+  rec,
+  tradingDate,
+}: {
+  rec: Recommendation;
+  tradingDate?: string;
+}) {
   const isBuy = rec.composite_score >= 0;
   const strengthPct = Math.round(Math.min(Math.abs(rec.composite_score), 1) * 100);
   const directionVerb = isBuy ? '매수' : '매도·회피';
+
+  // impression/click 추적: object_ref = ticker:trading_date:signal_tag (IssuanceLog grain 정합).
+  const objectRef = recoObjectRef(rec.ticker, tradingDate ?? '', rec.signal_tag);
+  const { ref, onClick } = useImpressionTracker<HTMLDivElement>(SURFACE_RECO_CARD, objectRef);
 
   // 색 단독 의존 금지 — 동사 라벨이 주 인코딩, 색은 보조.
   // 한국축(D-COLOR-SYSTEM): 매수 rose / 매도 sky. colorSemantics 단일소스(퍼지 안전).
@@ -36,6 +48,7 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
 
   return (
     <div
+      ref={ref}
       role="group"
       aria-label={`추천 ${rec.rank}위 ${rec.ticker} ${directionVerb} · ${CONFIDENCE_LABEL[rec.confidence]}`}
       className="flex w-64 flex-shrink-0 snap-start flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800"
@@ -98,6 +111,7 @@ export function RecommendationCard({ rec }: { rec: Recommendation }) {
       {/* 체인사이트 진입 */}
       <Link
         href={`/stocks/${rec.ticker}?tab=chain-sight`}
+        onClick={onClick}
         className="mt-auto inline-flex items-center text-xs font-medium text-blue-600 hover:underline dark:text-blue-400"
       >
         체인사이트 분석 →

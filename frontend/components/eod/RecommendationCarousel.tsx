@@ -12,8 +12,10 @@ import { RecommendationCard } from './RecommendationCard';
  */
 export function RecommendationCarousel({
   recommendations,
+  tradingDate,
 }: {
   recommendations?: Recommendation[];
+  tradingDate?: string;
 }) {
   if (!recommendations || recommendations.length === 0) {
     return null; // 하위호환 — 표면 생략
@@ -37,7 +39,7 @@ export function RecommendationCarousel({
       >
         {sorted.map((rec) => (
           <div role="listitem" key={`${rec.rank}-${rec.ticker}`}>
-            <RecommendationCard rec={rec} />
+            <RecommendationCard rec={rec} tradingDate={tradingDate} />
           </div>
         ))}
       </div>

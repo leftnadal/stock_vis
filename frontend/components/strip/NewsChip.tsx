@@ -1,5 +1,9 @@
+'use client';
+
 // 뉴스 스트립 칩 1장 — 방향점·헤드라인·relevance_line·"+n건"·관계망 배지. [D-NEWSAXIS-CONTRACT]
 import { DIRECTION_HEX_SIGNED } from '@/components/common/colorSemantics';
+import { useImpressionTracker } from '@/hooks/useImpressionTracker';
+import { newsChipObjectRef, SURFACE_NEWS_CHIP } from '@/hooks/impressionTelemetry';
 import type { NewsStripItem, StripDirection } from '@/services/stripService';
 
 // 방향점 색 = 공용 토큰만 소비(로컬 색 사전 금지, D-COLOR-TOKEN). 중립은 방향 없음=회색.
@@ -10,9 +14,16 @@ function dotColor(direction: StripDirection): string {
 }
 
 export function NewsChip({ item }: { item: NewsStripItem }) {
+  // impression/click 추적: object_ref = article_url(안정 식별자).
+  const { ref, onClick } = useImpressionTracker<HTMLAnchorElement>(
+    SURFACE_NEWS_CHIP,
+    newsChipObjectRef(item.article_url),
+  );
   return (
     <a
+      ref={ref}
       href={item.article_url}
+      onClick={onClick}
       target="_blank"
       rel="noopener noreferrer"
       role="listitem"
