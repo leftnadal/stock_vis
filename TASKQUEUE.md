@@ -519,7 +519,8 @@
 | SLICE18R-CARDINALITY-REVISIT | 18-R의 `OneToOne` 카디널리티 가정 2건 재검토. **✅ 19a에서 종결(2026-07-13)**: 제품의도 다통화(KRW+USD) 확정 → **CashBalance `OneToOne(Wallet)`→`FK(Wallet)`+`unique(wallet,currency)` 전환**(19a Part A). UserGoal은 단일목표 → **OneToOne 유지**(다중목표 안 함). | portfolio 트랙 | 완료 2026-07-13 | ✅ 종결(19a) |
 | SIGNAL-GHOST-FIELDS | `stocks.Stock`의 `analyst_target_price`·`analyst_rating_*`·`forward_pe` = **유령 필드**(선언·serializer 노출되나 writer 전무·항상 null). 프론트로 null 나가 실데이터 오인 위험. → writer 배선 or serializer 노출 중단 결정. 19a 신호 인벤토리(STEP0_SIGNAL_INVENTORY) 발견 | portfolio/stocks | 후보(19a 밖) | 🔶 부채 |
 | SCORING-ENGINE-ORPHAN | `apps/portfolio/services/scoring` 12 preset 엔진이 **고아**(종목→정규화 metrics 산출 계산 계층 부재, 유일 호출부 e3_service도 optional skip). 랭킹/기대수익에 미사용. → metrics 리졸버 구축 시 활성화 | portfolio | 후보(19b/미래) | 🔶 부채 |
-| FX-PERSIST-ABSENT | 환율 영속 모델 부재(라이브 조회만) + `Stock.currency` default=USD라 KRW 미세팅 시 오판. 다통화 정규화가 라이브 의존 | portfolio/stocks | 후보(19b 교차환전 시) | 🔶 부채 |
+| FX-PERSIST-ABSENT | 환율 영속 모델 부재(라이브 조회만) + `Stock.currency` default=USD라 KRW 미세팅 시 오판. 다통화 정규화가 라이브 의존 | portfolio/stocks | **19b에서 종결 예정**(FX 모델 신설·백필) | 🔶 부채 |
+| FX-ACQ-RATE-WEIGHTED-UPDATE | `WalletHolding.acquisition_fx_rate`(19b 신설)는 매수 시점 USD/KRW 환율. **추가매수로 `avg_cost`가 갱신될 때 acquisition_fx_rate의 가중평균 재계산이 필요**하나 19b 범위 밖. 현재는 사용자 수동 정정으로 커버. Phase 2 Trade 모델 도입 시 자동 계산과 함께 처리 | portfolio | 후보(추가매수 흐름/Trade 모델 시) | 🔶 부채 |
 | SIGNAL-FORWARD-INFRA | 기대수익 정본 신호 인프라(analyst target writer / EstimateSnapshot / forward 추정 모델) 구축. 완성 시 19a 정직한-A의 갭 계산에 slot-in → **정직한-A → 기대수익-A 승격**. 19a A-게이트 실패의 근본 해소 | portfolio 트랙 | **미래 슬라이스**(19a·19b 밖) | 🔮 미래 |
 | PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계). 📌 **로드맵 후속 phase**("포트폴리오 변화" 표면, D-ROADMAP-V1) | 🆕 보류 |
 | PF-SCORING | `tests/scoring/**` 소속 확정(coach scoring — 소유권 지도 "[경계 보류]" 해소) | 결정 안건(경계) | 로드맵 재검토 | 🆕 보류 |
