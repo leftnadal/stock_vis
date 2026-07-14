@@ -470,9 +470,10 @@
   코어 astream의 gemini 경로도 정규화 yield로 통일 → adaptive #8의 shim(코어 타입→dict) 제거 가능.
 - **자기 IDENTICAL 게이트**(delta 시퀀스·usage·봉투 byte 동일). 동결 카운트 무관(이미 #12는 이관 완료 상태).
 
-### [별도 트랙] FMP test-debt — LLM 경계 무관 (2026-06-29 등록)
-- `FMP_API_KEY` 요구로 setup 실패 34건: chain_sight 13e · enhanced_screener 12e · provider_factory 9f.
-- LLM 경계 무접촉(버킷A/FMP). BOUNDARY-LLM 범위 밖 — FMP/버킷A 위생 트랙에서 처리.
+### [✅ 종결·LANDED] FMP test-debt — env-독립화 (2026-06-29 등록 → 2026-07-14 종결, 지시서⑮)
+- ~~`FMP_API_KEY` 요구로 setup 실패 34건: chain_sight 13e · enhanced_screener 12e · provider_factory 9f.~~
+- **✅ 해소(브랜치 `monorepo/sess-fmp-testdebt` tip `903e2d7`, 미머지)**: `tests/conftest.py` autouse 픽스처 `_ensure_fmp_api_key`(settings+os.environ 2경로, falsy만 더미 주입=실키 보존, monkeypatch 자동복원). env -i+`FMP_API_KEY=""` → 34 green·라이브 호출 0. "키부재→에러" 계약(`test_fmp_weights::test_missing_api_key_raises`) 보존(PASSED). 전체 회귀 신규 red 0(잔여 13=chainsight, 범위 밖). 프로덕션 코드 변경 0. 결정 `D-FMP-TESTDEBT`.
+- LLM 경계 무접촉(버킷A/FMP). BOUNDARY-LLM 범위 밖이었음.
 
 ---
 
