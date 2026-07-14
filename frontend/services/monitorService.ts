@@ -6,6 +6,8 @@ import type {
   AlertSummary,
   CatalogEntry,
   Claim,
+  CloseClaimInput,
+  ClosePreview,
   EvaluateResult,
   Monitor,
   MonitorIndicator,
@@ -75,6 +77,16 @@ export const monitorService = {
     payload: { monitor: string; assertion: string; deadline?: string | null }
   ): Promise<Claim> => {
     const { data } = await authAxios.post('/monitor/claims/', payload)
+    return data
+  },
+
+  // ── 마감 (MON-CLOSE-UI Phase 2) ──
+  closePreview: async (claimId: string): Promise<ClosePreview> => {
+    const { data } = await authAxios.get(`/monitor/claims/${claimId}/close-preview/`)
+    return data
+  },
+  closeClaim: async (claimId: string, payload: CloseClaimInput): Promise<Claim> => {
+    const { data } = await authAxios.post(`/monitor/claims/${claimId}/close/`, payload)
     return data
   },
 

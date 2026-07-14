@@ -25,6 +25,14 @@ export function stateMeta(state: MonitorState): StateMeta {
   return STATE_META[state] ?? { label: state, tone: 'watch' }
 }
 
+// stateMeta().tone → 칩 클래스. 카드·상세 페이지가 공유(중복 정의 금지).
+export const STATE_TONE_CLASS: Record<StateMeta['tone'], string> = {
+  danger: 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300',
+  warn: 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
+  watch: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+  stable: 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300',
+}
+
 // 마감일(API 필드) → "D-3" / "D-day" / "D+2". 날짜 포맷팅(판정 아님).
 export function ddayLabel(deadline: string | null): string | null {
   if (!deadline) return null

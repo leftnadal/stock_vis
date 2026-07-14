@@ -2,14 +2,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { monitorService } from '@/services/monitorService'
-import type { MonitorInput } from '@/types/monitor'
+import type { CloseClaimInput, MonitorInput } from '@/types/monitor'
 
 export const monitorKeys = {
   all: ['monitor'] as const,
   lists: () => [...monitorKeys.all, 'list'] as const,
   detail: (id: string) => [...monitorKeys.all, 'detail', id] as const,
-  claims: (id: string) => [...monitorKeys.all, 'claims', id] as const,
+  // Claim은 사용자 전체 단일 목록(BE가 monitor로 필터하지 않음 — 모니터별 필터는
+  // 클라이언트단). list/detail 페이지가 같은 키를 공유해 요청을 dedupe한다.
+  claims: () => [...monitorKeys.all, 'claims'] as const,
   indicators: (id: string) => [...monitorKeys.all, 'indicators', id] as const,
+  closePreview: (claimId: string) => [...monitorKeys.all, 'closePreview', claimId] as const,
   alerts: () => [...monitorKeys.all, 'alerts'] as const,
   alertsList: (params?: { unread?: boolean; deterioration?: boolean }) =>
     [...monitorKeys.alerts(), 'list', params ?? {}] as const,
@@ -60,11 +63,30 @@ export function useEvaluateMonitor() {
   })
 }
 
-export function useMonitorClaims(id: string) {
+// 사용자 전체 Claim (모니터 무관) — 리스트 페이지의 상태 세그먼트·"n중 m 마감" 파생용.
+export function useClaims() {
   return useQuery({
-    queryKey: monitorKeys.claims(id),
-    queryFn: () => monitorService.listClaims(id),
+    queryKey: monitorKeys.claims(),
+    queryFn: () => monitorService.listClaims(),
+  })
+}
+
+// 특정 모니터의 Claim만 — BE가 monitor로 필터하지 않으므로 전체 목록을 클라단에서 거른다
+// (useClaims와 동일 쿼리키를 공유해 상세·리스트 페이지 간 요청을 dedupe).
+export function useMonitorClaims(id: string) {
+  const query = useQuery({
+    queryKey: monitorKeys.claims(),
+    queryFn: () => monitorService.listClaims(),
     enabled: !!id,
+  })
+  return { ...query, data: query.data?.filter((c) => c.monitor === id) }
+}
+
+export function useIndicators(monitorId: string) {
+  return useQuery({
+    queryKey: monitorKeys.indicators(monitorId),
+    queryFn: () => monitorService.listIndicators(monitorId),
+    enabled: !!monitorId,
   })
 }
 
@@ -109,6 +131,38 @@ export function useMarkAllAlertsRead() {
   return useMutation({
     mutationFn: () => monitorService.markAllAlertsRead(),
     onSuccess: () => qc.invalidateQueries({ queryKey: monitorKeys.alerts() }),
+  })
+}
+
+// ── 상태밴드 스파크라인 (MON-P3-ALERT §6) ──
+
+// ── 가설 마감 (MON-CLOSE-UI Phase 2) ──
+
+// 마감 모달 프리필 — 무상태(claim 상태와 무관하게 항상 monitor의 현재 값을 반환).
+export function useClosePreview(claimId: string, enabled = true) {
+  return useQuery({
+    queryKey: monitorKeys.closePreview(claimId),
+    queryFn: () => monitorService.closePreview(claimId),
+    enabled: enabled && !!claimId,
+  })
+}
+
+export function useCloseClaim() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      claimId,
+      payload,
+    }: {
+      claimId: string
+      monitorId: string
+      payload: CloseClaimInput
+    }) => monitorService.closeClaim(claimId, payload),
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: monitorKeys.claims() })
+      qc.invalidateQueries({ queryKey: monitorKeys.detail(vars.monitorId) })
+      qc.invalidateQueries({ queryKey: monitorKeys.lists() })
+    },
   })
 }
 

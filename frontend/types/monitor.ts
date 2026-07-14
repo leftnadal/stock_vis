@@ -21,7 +21,16 @@ export type IndicatorType =
 export type SupportDirection = 'positive' | 'negative'
 
 export type ClaimStatus = 'active' | 'resolved'
-export type ClaimOutcome = 'pending' | 'validated' | 'invalidated' | 'inconclusive'
+export type ClaimOutcome = 'pending' | 'validated' | 'partial' | 'invalidated' | 'inconclusive'
+
+// 마감 시 사용자가 고를 수 있는 최종 판정 (inconclusive 제외 — 엣지, 버튼 미노출).
+export type ProposedVerdict = 'validated' | 'partial' | 'invalidated'
+// VerdictBadge 등 표시용 — ProposedVerdict + inconclusive(중립 표시).
+export type Verdict = ProposedVerdict | 'inconclusive'
+// 회고 공통 요인 태그 (고정 enum — BE Claim.FactorTag 미러).
+export type FactorTag = 'timing' | 'ext_shock' | 'indicator_noise' | 'luck'
+// 지표별 마감 결과 (BE ClaimIndicatorResult.Result 미러).
+export type IndicatorResultValue = 'hit' | 'partial' | 'miss' | 'na'
 
 // BE 엔진(arrow_calculator·state_machine)이 산출한 파생 표시값 — FE는 렌더만.
 export interface MonitorDisplay {
@@ -80,8 +89,39 @@ export interface Claim {
   deadline: string | null
   status: ClaimStatus
   outcome: ClaimOutcome
+  // 마감 회고 (MON-CLOSE-UI Phase 1) — 전부 close 액션에서만 채워짐(마감 전 null/빈값).
+  proposed_verdict: ProposedVerdict | null
+  resolved_by: number | null // user id만 옴 — 마감자=소유자=현재 뷰어(owner-scoping)
+  factor_tags: FactorTag[]
+  retro_memo: string
   created_at: string
   resolved_at: string | null
+}
+
+// GET /monitor/claims/{id}/close-preview/ — 마감 모달 프리필(무상태, 읽기 전용).
+export interface ClosePreviewIndicator {
+  id: string
+  name: string
+  latest_value: number | null
+}
+
+export interface ClosePreview {
+  proposed_verdict: ProposedVerdict
+  overall_score: number
+  indicators: ClosePreviewIndicator[]
+}
+
+// POST /monitor/claims/{id}/close/ 요청 바디.
+export interface IndicatorResultInput {
+  indicator_id: string
+  result: IndicatorResultValue
+}
+
+export interface CloseClaimInput {
+  final_verdict: ProposedVerdict
+  factor_tags: FactorTag[]
+  retro_memo?: string
+  indicator_results: IndicatorResultInput[]
 }
 
 export interface WeakestLink {
