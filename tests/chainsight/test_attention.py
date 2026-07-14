@@ -17,18 +17,15 @@ API:
 """
 
 from datetime import date, timedelta
-from unittest.mock import patch
 
 import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from apps.chain_sight.models import CompanyChainProfile, StockAttentionScore
+from apps.chain_sight.models import StockAttentionScore
 from apps.chain_sight.services.attention_service import (
     ADV_FLOOR,
     compute_attention_scores,
-    get_event_board,
-    get_event_ranking,
 )
 from packages.shared.stocks.models import DailyPrice, Stock
 
@@ -266,8 +263,29 @@ class TestSkipInsufficient:
 
 # ── API 테스트 ────────────────────────────────────────────────────────────────
 
-def _setup_theme_data(theme: str, n_stocks: int = 4, target_date: date = TARGET):
-    """theme_tags에 theme를 포함하는 n개 종목 + 스코어 생성."""
+def _make_event_group(slug: str, symbols: list[str]):
+    """kept EventGroup(slug) + core GroupMembership 시드 (⑰ S3: theme_tags 대체).
+
+    보드/랭킹의 event_group 경로(get_kept_event_groups·get_event_group)가 slug로
+    조회하므로, theme=slug 규약으로 시드한다. is_hidden=False = kept.
+    """
+    from apps.chain_sight.models.event_group import EventGroup, GroupMembership
+
+    eg = EventGroup.objects.create(
+        name=slug, slug=slug, source="news_jaccard", is_hidden=False,
+        member_count=len(symbols), core_count=len(symbols),
+    )
+    for sym in symbols:
+        GroupMembership.objects.create(group=eg, symbol_id=sym, role="core")
+    return eg
+
+
+def _setup_event_group_data(theme: str, n_stocks: int = 4, target_date: date = TARGET):
+    """slug=theme EventGroup + n개 종목 + 관심도 스코어 생성 (event_group 규약).
+
+    ⑰ S3: 구 theme_tags 시드를 EventGroup/GroupMembership로 전환. compute_attention_scores는
+    price 기반이라 theme_tags 무의존 — theme_tags 신규 생산 없음.
+    """
     symbols = [f"TH{i:02d}" for i in range(n_stocks)]
     for i, sym in enumerate(symbols):
         stock = _make_stock(sym)
@@ -277,11 +295,8 @@ def _setup_theme_data(theme: str, n_stocks: int = 4, target_date: date = TARGET)
             surge_vol=2_000_000 * (i + 1),
             target_date=target_date,
         )
-        CompanyChainProfile.objects.get_or_create(
-            symbol_id=sym,
-            defaults={"theme_tags": [theme]},
-        )
     compute_attention_scores(target_date)
+    _make_event_group(theme, symbols)
     return symbols
 
 
@@ -289,7 +304,7 @@ def _setup_theme_data(theme: str, n_stocks: int = 4, target_date: date = TARGET)
 class TestEventBoardAPI:
     def test_event_board_schema(self, auth_client):
         """events/ 응답 스키마 확인."""
-        _setup_theme_data("AI")
+        _setup_event_group_data("AI")
         url = f"/api/v1/chainsight/events/?date={TARGET}"
         resp = auth_client.get(url)
         assert resp.status_code == 200
@@ -300,7 +315,7 @@ class TestEventBoardAPI:
 
     def test_event_board_has_theme(self, auth_client):
         """AI 테마가 이벤트 목록에 포함."""
-        _setup_theme_data("SEMICON")
+        _setup_event_group_data("SEMICON")
         url = f"/api/v1/chainsight/events/?date={TARGET}"
         resp = auth_client.get(url)
         themes = [e["theme"] for e in resp.json()["events"]]
@@ -318,14 +333,12 @@ class TestEventBoardAPI:
         근거: 그룹 커버리지 완전성(디렉터 결정 (가) 1급 노출, 가중합 4.25).
         소표본 약점은 숨기지 않고 member_count로 신호.
         """
-        # 2종목만 있는 테마
+        # 2종목만 있는 그룹
         for sym in ["TINY1", "TINY2"]:
             stock = _make_stock(sym)
             _make_price_history_with_surge(stock, 100.0, 1_000_000, 2_000_000)
-            CompanyChainProfile.objects.get_or_create(
-                symbol_id=sym, defaults={"theme_tags": ["TINYGROUP"]}
-            )
         compute_attention_scores(TARGET)
+        _make_event_group("TINYGROUP", ["TINY1", "TINY2"])
         url = f"/api/v1/chainsight/events/?date={TARGET}"
         resp = auth_client.get(url)
         events = {e["theme"]: e for e in resp.json()["events"]}
@@ -336,10 +349,8 @@ class TestEventBoardAPI:
         """ⓐ: 멤버 = 1 그룹도 포함(member_count=1)."""
         stock = _make_stock("SOLO1")
         _make_price_history_with_surge(stock, 100.0, 1_000_000, 2_000_000)
-        CompanyChainProfile.objects.get_or_create(
-            symbol_id="SOLO1", defaults={"theme_tags": ["SOLOGROUP"]}
-        )
         compute_attention_scores(TARGET)
+        _make_event_group("SOLOGROUP", ["SOLO1"])
         url = f"/api/v1/chainsight/events/?date={TARGET}"
         resp = auth_client.get(url)
         events = {e["theme"]: e for e in resp.json()["events"]}
@@ -351,7 +362,7 @@ class TestEventBoardAPI:
 class TestEventRankingAPI:
     def test_ranking_sorted_by_score_desc(self, auth_client):
         """score 내림차순 정렬."""
-        _setup_theme_data("SORTED")
+        _setup_event_group_data("SORTED")
         url = f"/api/v1/chainsight/events/SORTED/stocks/?date={TARGET}"
         resp = auth_client.get(url)
         assert resp.status_code == 200
@@ -362,14 +373,14 @@ class TestEventRankingAPI:
     def test_ranking_missing_theme_returns_404(self, auth_client):
         """없는 테마 요청 시 404 — 스냅샷이 있어도 해당 테마 없으면 404."""
         # 스냅샷이 존재해야 "데이터 없음 404"와 구분됨
-        _setup_theme_data("EXIST_THEME_FOR_404")
+        _setup_event_group_data("EXIST_THEME_FOR_404")
         url = f"/api/v1/chainsight/events/NONEXISTENT_THEME_XYZ/stocks/?date={TARGET}"
         resp = auth_client.get(url)
         assert resp.status_code == 404
 
     def test_ranking_includes_is_low_liquidity(self, auth_client):
         """is_low_liquidity 필드 포함."""
-        _setup_theme_data("LIQCHECK")
+        _setup_event_group_data("LIQCHECK")
         url = f"/api/v1/chainsight/events/LIQCHECK/stocks/?date={TARGET}"
         resp = auth_client.get(url)
         assert resp.status_code == 200
@@ -378,7 +389,7 @@ class TestEventRankingAPI:
 
     def test_ranking_response_schema(self, auth_client):
         """랭킹 응답 필드 스키마 검증."""
-        _setup_theme_data("SCHEMA")
+        _setup_event_group_data("SCHEMA")
         url = f"/api/v1/chainsight/events/SCHEMA/stocks/?date={TARGET}"
         resp = auth_client.get(url)
         assert resp.status_code == 200

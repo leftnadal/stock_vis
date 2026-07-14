@@ -8,12 +8,14 @@ import {
   fetchSectorGraph,
   fetchNeighbors,
   fetchSignals,
+  fetchEgo,
 } from '@/services/chainsightService';
 import type {
   SeedResponse,
   SectorGraphResponse,
   NeighborResponse,
   SignalFeedResponse,
+  EgoGraphResponse,
 } from '@/types/chainsight';
 
 const STALE_30M = 1000 * 60 * 30;
@@ -24,6 +26,7 @@ export const MARKET_VIEW_KEYS = {
   seeds: ['chainsight', 'seeds'] as const,
   sectorGraph: (sector: string) => ['chainsight', 'sectorGraph', sector] as const,
   neighbors: (symbol: string) => ['chainsight', 'neighbors', symbol] as const,
+  ego: (symbol: string) => ['chainsight', 'ego', symbol] as const,
   signals: (sector?: string) => ['chainsight', 'signals', sector ?? 'all'] as const,
 };
 
@@ -50,6 +53,16 @@ export function useNeighbors(symbol: string | null) {
   return useQuery<NeighborResponse>({
     queryKey: MARKET_VIEW_KEYS.neighbors(symbol ?? ''),
     queryFn: () => fetchNeighbors(symbol!, 8),
+    staleTime: STALE_5M,
+    gcTime: GC_TIME,
+    enabled: !!symbol,
+  });
+}
+
+export function useEgo(symbol: string | null) {
+  return useQuery<EgoGraphResponse>({
+    queryKey: MARKET_VIEW_KEYS.ego(symbol ?? ''),
+    queryFn: () => fetchEgo(symbol!),
     staleTime: STALE_5M,
     gcTime: GC_TIME,
     enabled: !!symbol,
