@@ -15,6 +15,7 @@ import type {
   SignalFeedResponse,
   EventBoardItem,
   EventRankingItem,
+  EgoGraphResponse,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -63,6 +64,32 @@ export async function fetchNeighbors(
   const { data } = await authAxios.get<NeighborResponse>(
     `/chainsight/${symbol.toUpperCase()}/neighbors/`,
     { params: { limit, rel_types: relTypes, min_truth_score: minTruthScore } },
+  );
+  return data;
+}
+
+export interface FetchEgoOptions {
+  minScore?: number;
+  types?: string[];
+  limit?: number;
+  trendWindow?: number;
+}
+
+export async function fetchEgo(
+  symbol: string,
+  opts: FetchEgoOptions = {},
+): Promise<EgoGraphResponse> {
+  const { minScore = 0, types, limit = 50, trendWindow = 12 } = opts;
+  const { data } = await authAxios.get<EgoGraphResponse>(
+    `/chainsight/${symbol.toUpperCase()}/ego/`,
+    {
+      params: {
+        min_score: minScore,
+        ...(types && types.length > 0 && { types: types.join(',') }),
+        limit,
+        trend_window: trendWindow,
+      },
+    },
   );
   return data;
 }

@@ -44,6 +44,13 @@ export type {
   TraceResponse,
   // Exploration State
   TrailNode,
+  // Ego Graph
+  EgoTrendPoint,
+  EgoTrend,
+  EgoNode,
+  EgoEdge,
+  EgoMeta,
+  EgoGraphResponse,
 } from '@contracts/shared-types';
 
 // ── 관계 타입 시각 체계 (FE 전용) ──

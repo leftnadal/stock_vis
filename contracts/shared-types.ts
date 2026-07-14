@@ -344,6 +344,57 @@ export interface FilingDataResponse {
   filings: FilingEntry[];
 }
 
+// ──────────────── Chain Sight: Ego Graph ────────────────
+
+/** ego API edge trend point */
+export interface EgoTrendPoint {
+  period: string;   // ISO date string e.g. "2026-07-01"
+  score: number;
+}
+
+/** ego API edge trend */
+export interface EgoTrend {
+  direction: 'up' | 'down' | 'flat';
+  delta: number;
+  points: EgoTrendPoint[];
+}
+
+/** ego API node (non-center) */
+export interface EgoNode {
+  symbol: string;
+  name: string;
+  sector: string;
+}
+
+/** ego API edge */
+export interface EgoEdge {
+  source: string;
+  target: string;
+  relation_type: string;
+  truth_score: number;
+  trend: EgoTrend;
+}
+
+/** ego API meta */
+export interface EgoMeta {
+  total_edges: number;
+  returned: number;
+  filtered_by: {
+    min_score: number;
+    types: string[] | null;
+    limit: number;
+    trend_window: number;
+  };
+}
+
+/** GET /api/v1/chainsight/ego/<symbol>/ response */
+export interface EgoGraphResponse {
+  center: { symbol: string; name: string };
+  nodes: EgoNode[];
+  edges: EgoEdge[];
+  meta: EgoMeta;
+}
+
 // ──────────────── Thesis Control ────────────────
 
 export type ThesisState =

@@ -3,7 +3,7 @@
 import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
-import { useSectorGraph, useNeighbors, useSeedData } from '@/hooks/useMarketView';
+import { useSectorGraph, useNeighbors, useEgo, useSeedData } from '@/hooks/useMarketView';
 import type { MarketNode, MarketEdge, Neighbor, CrossEdge } from '@/types/chainsight';
 import {
   computeRadialPositions,
@@ -69,6 +69,13 @@ const NODE_SIZE_MAP = { xl: 20, lg: 17, md: 14, sm: 10 };
 // § 7 호버 애니메이션 duration (ms)
 const HOVER_FADE_DURATION = 100;
 
+// ── Ego API 어댑터 (순수 변환 함수 — egoAdapter.ts에서 import) ──
+import {
+  egoToNeighborShape,
+  egoTruthScoreToWidth,
+  egoTrendToColor,
+} from './egoAdapter';
+
 interface GraphNode {
   id: string;
   name: string;
@@ -92,6 +99,8 @@ interface GraphLink {
   type: string;
   truth_score: number | null;
   relation_category: string;
+  /** ego API 전용: trend direction (up/down/flat) — 시각 인코딩 채널 ⑵ */
+  _ego_trend_direction?: 'up' | 'down' | 'flat';
 }
 
 // § 7: 호버 alpha를 부드럽게 보간하는 헬퍼
@@ -204,7 +213,14 @@ export default function MarketGraphCanvas() {
   const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
     selectedSector && !centerSymbol ? selectedSector : null,
   );
-  const { data: neighborData, isLoading: neighborLoading } = useNeighbors(centerSymbol);
+  // Neighbor 모드: ego API (PostgreSQL 네이티브) 사용. useNeighbors는 동결(삭제 금지).
+  const { data: egoData, isLoading: egoLoading } = useEgo(centerSymbol);
+
+  // ego 응답을 buildNeighborGraph 형태로 변환 (메모이즈)
+  const neighborData = useMemo(
+    () => (egoData ? egoToNeighborShape(egoData) : null),
+    [egoData],
+  );
 
   // 데이터 변환
   const { nodes, links } = useMemo(() => {
@@ -547,7 +563,7 @@ export default function MarketGraphCanvas() {
     }, 200);
   }, [buildTooltipInfo, getCanvasPos]);
 
-  const isLoading = sectorLoading || neighborLoading;
+  const isLoading = sectorLoading || egoLoading;
   const isEmpty = !selectedSector && !centerSymbol;
 
   // § 7 링크 alpha 합성 계산 — 칩 토글(chip) + 호버 dim(hover) 누적
@@ -793,9 +809,13 @@ export default function MarketGraphCanvas() {
         }}
         linkColor={(link: any) => {
           // § 6-1 + § 7: 칩 토글 alpha + 호버 dim alpha 합성
+          // 시각 인코딩 채널 ⑵: ego trend direction → 색 오버라이드 (flat이면 타입 기본색 유지)
           const alpha = getLinkAlpha(link);
           if (alpha <= 0) return 'rgba(0,0,0,0)';
-          const baseColor = EDGE_COLORS[link.type] || '#9CA3AF';
+          const trendColor = link._ego_trend_direction
+            ? egoTrendToColor(link._ego_trend_direction)
+            : null;
+          const baseColor = trendColor ?? EDGE_COLORS[link.type] ?? '#9CA3AF';
           const hex = baseColor.replace('#', '');
           const rr = parseInt(hex.substring(0, 2), 16);
           const gg = parseInt(hex.substring(2, 4), 16);
@@ -803,7 +823,11 @@ export default function MarketGraphCanvas() {
           return `rgba(${rr},${gg},${bb},${alpha.toFixed(3)})`;
         }}
         linkWidth={(link: any) => {
-          // § 6-1 엣지 굵기 적용
+          // 시각 인코딩 채널 ⑴: ego truth_score → 선 굵기 (ego 링크는 truth_score 우선)
+          if (link._ego_trend_direction !== undefined && link.truth_score !== null) {
+            return egoTruthScoreToWidth(link.truth_score);
+          }
+          // § 6-1 기존 엣지 굵기 (sector 그래프 등)
           return EDGE_WIDTHS[link.type] ?? 1;
         }}
         linkLineDash={(link: any) => {
@@ -1002,6 +1026,9 @@ function buildNeighborGraph(
       type: n.relation.type,
       truth_score: n.relation.truth_score,
       relation_category: n.relation.relation_category,
+      // ego 전용 시각 인코딩 채널 ⑵ — 일반 neighbors에는 undefined
+      _ego_trend_direction: (n.relation as any)._ego_trend_direction as
+        'up' | 'down' | 'flat' | undefined,
     })),
     ...data.cross_edges.map((ce) => ({
       source: ce.source,
