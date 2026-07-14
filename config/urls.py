@@ -44,6 +44,7 @@ urlpatterns = [
     path('api/credit-signals/', include("apps.credit_signals.api.urls")),  # credit_signals Phase 1 — 크레딧 신호 스트립
     path('api/v1/monitor/', include("apps.monitor.api.urls")),  # MON-P2-S3 — Monitor 허브 (구 thesis 재건)
     path('api/dashboard/', include("apps.dashboard.api.urls")),  # NEWSAXIS-BUILD — 뉴스 스트립 BFF (D-DASH-BFF config 예외 2/2)
+    path('api/v1/telemetry/', include("apps.platform.api.urls")),  # P2-IMPRESSION-BUILD-S2 — impression 수신 (D-P2-S2-PLATFORM)
     path('api/v1/sec-pipeline/', include("services.sec_pipeline.urls")),  # SEC Pipeline 대시보드
     path('api/v1/iron-trading/', include("integrations.iron_trading.urls")),  # iron_trading 외부 봇 read-only (PR3 이동)
 
