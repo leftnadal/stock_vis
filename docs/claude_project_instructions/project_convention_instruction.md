@@ -9,6 +9,7 @@
 `apps → shared`만 허용. 핵심 직관: **재료는 자기가 어느 요리에 들어갈지 몰라야 한다.** shared가 특정 앱을 알기 시작하면 "범용 재료"가 아니라 "그 앱에 묶인 부품"이 되어, 그 앱이 바뀔 때 shared와 shared를 쓰는 모든 앱이 연쇄로 흔들린다. 그래서 shared는 누구도 모르게 유지한다.
 
 - **외부 API(FMP 데이터·LLM 제공자)는 `packages/shared`의 래퍼 경유로만 접근한다**(예: FMP client, LLMClient 래퍼, circuit_breaker). 앱이 외부를 _직접_ 때리지 않는다 — 의존 방향 규칙의 연장(외부 의존도 토대에 모은다). 구체 엔드포인트·rate limit·제공자 정책·통합 상태는 ground truth → STEP 0/코드/DECISIONS에서 확인(여기 박지 않는다).
+- **제3범주 `apps/platform`(교차관심 telemetry·알림·플래그 서빙)**: apps(기능)·shared(재료) 2분법의 빈틈을 메우는 중립 홈, 의존은 `platform → shared` 정방향만. 단일 출처 = DECISIONS `[2026-07-14] 제3범주(platform) 아키텍처 규약 성문화`(본문 복제 금지, 규약 10장).
 
 ## 2. 경계 가드 메커니즘
 
