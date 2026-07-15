@@ -4,11 +4,21 @@ from rest_framework import serializers
 from apps.monitor.models import (
     AlertEvent,
     Claim,
+    ClosureSnapshot,
     IndicatorReading,
     Monitor,
     MonitorIndicator,
 )
 from apps.monitor.services.scope_resolver import ScopeResolutionError, resolve
+
+
+class ClosureSnapshotSerializer(serializers.ModelSerializer):
+    """마감 동결 스냅샷 (읽기 전용). 동결값 표시용 — payload 통째 노출(개인용)."""
+
+    class Meta:
+        model = ClosureSnapshot
+        fields = ["overall_score", "frozen_at", "payload"]
+        read_only_fields = fields
 
 
 class MonitorIndicatorSerializer(serializers.ModelSerializer):
@@ -30,18 +40,28 @@ class IndicatorReadingSerializer(serializers.ModelSerializer):
 
 
 class ClaimSerializer(serializers.ModelSerializer):
+    # 마감 동결 스냅샷 (resolved면 값, PENDING이면 null). 동결값 우선 표시용.
+    closure_snapshot = serializers.SerializerMethodField()
+
     class Meta:
         model = Claim
         fields = [
             "id", "monitor", "assertion", "deadline", "status", "outcome",
             "proposed_verdict", "resolved_by", "factor_tags", "retro_memo",
-            "created_at", "resolved_at",
+            "closure_snapshot", "created_at", "resolved_at",
         ]
         # 마감 회고 필드는 close 액션에서만 설정 — 직접 CRUD로 쓰지 못하게 read-only
         read_only_fields = [
             "id", "created_at", "proposed_verdict", "resolved_by",
-            "factor_tags", "retro_memo", "resolved_at",
+            "factor_tags", "retro_memo", "closure_snapshot", "resolved_at",
         ]
+
+    def get_closure_snapshot(self, obj):
+        # OneToOne 역참조 — 마감 전이면 미존재
+        try:
+            return ClosureSnapshotSerializer(obj.closure_snapshot).data
+        except ClosureSnapshot.DoesNotExist:
+            return None
 
 
 class AlertEventSerializer(serializers.ModelSerializer):

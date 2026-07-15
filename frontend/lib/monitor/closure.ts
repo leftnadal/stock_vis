@@ -1,9 +1,8 @@
-// Claim 마감 파생 유틸 (MON-CLOSE-UI Phase 2) — 렌더 전용.
+// Claim 마감 파생 유틸 (MON-CLOSE-UI Phase 2·P1.5) — 렌더 전용.
 // ⚠️ Monitor.State는 Claim 마감과 무관하게 계속 갱신된다(D-MONITOR-REBUILD 불변) — 이
-// 파일은 카드/상세의 "몇 건 중 몇 건 마감" 파생만 담당한다. 진짜 마감 시점 동결값
-// (ClosureSnapshot.overall_score)은 이번 Phase의 API 계약에 노출되지 않으므로(ClaimSerializer
-// 미포함, 전용 엔드포인트 없음) monitor.latest_score로 근사한다 — closure.py
-// current_overall_score()의 주석대로 "최신 스냅샷 = 카드와 동일 소스"라 값 자체는 같다.
+// 파일은 카드/상세의 "몇 건 중 몇 건 마감" 파생 + 동결값 표시 우선순위를 담당한다.
+// P1.5에서 BE가 ClosureSnapshot을 노출 → resolved Claim은 closure_snapshot.overall_score
+// (마감 시점 불변 동결값)를 우선 사용, PENDING은 live 값. frozenScore 참조.
 import type { Claim, ClaimOutcome, Verdict } from '@/types/monitor'
 
 export interface ClaimClosureSummary {
@@ -34,4 +33,14 @@ export function summarizeClaimClosure(claims: Claim[]): ClaimClosureSummary {
 // 방어적으로 중립(inconclusive)로 폴백.
 export function outcomeToVerdict(outcome: ClaimOutcome): Verdict {
   return outcome === 'pending' ? 'inconclusive' : outcome
+}
+
+// 표시 우선순위(P1.5): resolved Claim = 동결값(closure_snapshot.overall_score),
+// PENDING/누락 = liveFallback. closure_snapshot이 null인 resolved(이론상 없음)는 조용히 live 폴백.
+export function frozenScore(
+  claim: Claim | null | undefined,
+  liveFallback: number | null = null,
+): number | null {
+  if (!claim) return liveFallback
+  return claim.closure_snapshot?.overall_score ?? liveFallback
 }

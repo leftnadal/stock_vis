@@ -7,7 +7,7 @@ import { MoonPhase } from '@/components/monitor/MoonPhase'
 import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { useSparkline } from '@/hooks/useMonitor'
-import { outcomeToVerdict, type ClaimClosureSummary } from '@/lib/monitor/closure'
+import { frozenScore, outcomeToVerdict, type ClaimClosureSummary } from '@/lib/monitor/closure'
 import { STATE_TONE_CLASS, ddayLabel, stateMeta } from '@/lib/monitor/display'
 import type { Monitor } from '@/types/monitor'
 
@@ -43,6 +43,8 @@ export function MonitorListCard({ monitor, closureSummary, judgeUsername }: Moni
   // 0.4 동결 카드: 이 모니터의 Claim이 전부 resolved → 서리 렌더(중복 렌더 로직 없이 조건부 분기만).
   if (closureSummary?.isFullyClosed) {
     const claim = closureSummary.lastResolvedClaim
+    // 동결값 우선(P1.5): resolved Claim의 closure_snapshot, 없으면 live 폴백.
+    const frozen = frozenScore(claim, score)
     return (
       <Link
         href={`/monitor/${monitor.id}`}
@@ -51,7 +53,7 @@ export function MonitorListCard({ monitor, closureSummary, judgeUsername }: Moni
         data-frozen="true"
       >
         <div className="relative flex-shrink-0 opacity-50 grayscale">
-          <MoonPhase score={score} label={display?.phase_label} size="md" />
+          <MoonPhase score={frozen} label={display?.phase_label} size="md" />
           <span className="absolute -right-1 -top-1 text-sm" aria-hidden="true">
             ❄️
           </span>
@@ -71,7 +73,7 @@ export function MonitorListCard({ monitor, closureSummary, judgeUsername }: Moni
             data-testid="monitor-card-frozen-meta"
           >
             {claim?.resolved_at ? `${formatDate(claim.resolved_at)} 마감` : '마감'}
-            {typeof score === 'number' && ` · 동결 점수 ${score.toFixed(3)}`}
+            {typeof frozen === 'number' && ` · 동결 점수 ${frozen.toFixed(3)}`}
             {judgeUsername && ` · 판정자 ${judgeUsername}`}
           </p>
           {spark && (

@@ -94,8 +94,17 @@ export interface Claim {
   resolved_by: number | null // user id만 옴 — 마감자=소유자=현재 뷰어(owner-scoping)
   factor_tags: FactorTag[]
   retro_memo: string
+  // 마감 동결 스냅샷 (MON-CLOSE-UI P1.5) — resolved면 동결값, PENDING이면 null.
+  closure_snapshot: ClosureSnapshotData | null
   created_at: string
   resolved_at: string | null
+}
+
+// 마감 시점 불변 동결값 (BE ClosureSnapshot 노출). 동결 점수·지표·달 위상 표시 소스.
+export interface ClosureSnapshotData {
+  overall_score: number
+  frozen_at: string
+  payload: Record<string, unknown>
 }
 
 // GET /monitor/claims/{id}/close-preview/ — 마감 모달 프리필(무상태, 읽기 전용).
