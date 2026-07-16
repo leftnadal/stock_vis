@@ -11,6 +11,7 @@ import { AlertCircle, Loader2, Sparkles } from 'lucide-react'
 
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AdvisorySummaryStrip } from '@/components/advisory/AdvisorySummaryStrip'
+import { DeepDiveSection } from '@/components/advisory/DeepDiveSection'
 import { ExpectedReturnSlot } from '@/components/advisory/ExpectedReturnSlot'
 import { KnobsPanel } from '@/components/advisory/KnobsPanel'
 import { RecommendationCard } from '@/components/advisory/RecommendationCard'
@@ -132,6 +133,13 @@ function AdvisoryPageContent() {
               {output.disclaimer} 신뢰도/여력 기반 산출이며 예측이 아닙니다.
             </p>
           )}
+        </div>
+      )}
+
+      {/* 심층 진단 진입점 (Part E — D4 섹션만). 로딩·에러 외 항상 노출. */}
+      {!isLoading && !isError && (
+        <div className="mt-6">
+          <DeepDiveSection />
         </div>
       )}
     </div>
