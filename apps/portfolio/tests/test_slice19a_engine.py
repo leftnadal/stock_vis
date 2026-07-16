@@ -93,7 +93,9 @@ def test_allocation_gap_and_buy_mode_idle_cash(user, wallet):
 
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("5"), horizon_months=12)
     progress = eng.compute_progress_gap(user, goal)
-    assert eng.determine_mode(progress, alloc) == "BUY"  # 유휴현금 큼
+    # SLICE19C: determine_mode는 다이얼(deployable) 소비. 기본 손잡이 → 버퍼 10% 재현.
+    dial = eng.compute_dial(user, alloc, goal)
+    assert eng.determine_mode(progress, dial) == "BUY"  # 여력 존재(유휴현금 큼)
 
 
 @pytest.mark.django_db
@@ -104,7 +106,9 @@ def test_defend_mode_full_invest_target_met(user, wallet):
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("10"), horizon_months=12)
     progress = eng.compute_progress_gap(user, goal)
     alloc = eng.compute_allocation_gap(user)
-    assert eng.determine_mode(progress, alloc) == "DEFEND"  # 목표 달성 & 유휴현금 0
+    # SLICE19C: 여력 0(현금 0 → deployable 0) & 목표 달성 → DEFEND.
+    dial = eng.compute_dial(user, alloc, goal)
+    assert eng.determine_mode(progress, dial) == "DEFEND"  # 목표 달성 & 여력 0
 
 
 # ---- 가드레일 2: 집중도 TRIM ----
@@ -138,11 +142,12 @@ def test_rank_currency_separation_and_idle_guard(user, wallet):
     WatchlistItem.objects.create(watchlist=wl, stock=cand_krw)
 
     alloc = eng.compute_allocation_gap(user)
-    ranked_usd = eng.rank_candidates(user, "USD", alloc)
+    dial = eng.compute_dial(user, alloc)  # SLICE19C: 게이트=다이얼 deployable
+    ranked_usd = eng.rank_candidates(user, "USD", dial)
     assert {c["symbol"] for c in ranked_usd} == {"CANDUSD"}  # KRW 후보 제외(통화 분리)
 
-    # KRW 여력 없음 → 가드레일 1(빈 후보)
-    assert eng.rank_candidates(user, "KRW", alloc) == []
+    # KRW 여력 없음(dial by_currency에 KRW 없음) → 자격 박탈(빈 후보)
+    assert eng.rank_candidates(user, "KRW", dial) == []
 
 
 # ---- 산출 계약 + 경계 ----
@@ -159,13 +164,17 @@ def test_recommend_contract_shape(user, wallet):
 
     out = eng.recommend(user)
     assert out["mode"] == "BUY"
-    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire", "cost_basis_note", "fx_context"}
+    # 계약 v3(SLICE19C): v2 + dial·knobs·max_concentration·notes
+    assert set(out["summary"]) == {
+        "progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire",
+        "cost_basis_note", "fx_context", "dial", "knobs", "max_concentration", "notes",
+    }
     actions = {r["action"] for r in out["recommendations"]}
     assert actions <= {"BUY", "HOLD", "TRIM"}
     assert "BUY" in actions and "HOLD" in actions  # 후보 매수 + 보유 유지
     assert "예측" in out["disclaimer"]  # 예측-아님 명시
     for r in out["recommendations"]:
-        assert set(r) == {"action", "symbol", "currency", "score", "rationale"}
+        assert set(r) == {"action", "symbol", "currency", "score", "rationale", "lane"}
 
 
 @pytest.mark.django_db
