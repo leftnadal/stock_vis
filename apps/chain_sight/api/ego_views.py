@@ -39,6 +39,19 @@ def _parse_float(value, default):
         return default
 
 
+def _trend_summary(points_raw, trend_window):
+    """canonical 쌍 궤적 리스트[(period, score)] → trend 요약(방향·delta·points)."""
+    pts = points_raw[-trend_window:]
+    points = [{"period": str(p), "score": round(s, 2)} for p, s in pts]
+    if len(pts) >= 2:
+        delta = round(pts[-1][1] - pts[0][1], 2)
+        direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
+    else:
+        delta = 0.0
+        direction = "flat"
+    return {"direction": direction, "delta": delta, "points": points}
+
+
 class EgoGraphView(APIView):
     """GET /api/v1/chainsight/ego/<symbol>/ — PG 네이티브 1-hop ego 그래프."""
 
@@ -55,6 +68,9 @@ class EgoGraphView(APIView):
             if types_param
             else None
         )
+        include_cross_edges = str(
+            request.query_params.get("include_cross_edges", "")
+        ).lower() in ("1", "true", "yes")
 
         center_stock = Stock.objects.filter(symbol=symbol).only(
             "symbol", "stock_name"
@@ -88,6 +104,20 @@ class EgoGraphView(APIView):
             other = e["symbol_b"] if e["symbol_a"] == symbol else e["symbol_a"]
             neighbors.add(other)
             pairs.add(normalize_pair(e["symbol_a"], e["symbol_b"]))
+
+        # cross_edges (A1 부분 흡수, ⑲ D②): limit 절단 후 이웃 집합 사이의 RC 엣지.
+        # 단일 양방향 쿼리(N+1 금지). 궤적 계산 위해 cross 쌍도 아래 RPS 조회에 합류.
+        cross_edge_rows = []
+        if include_cross_edges and len(neighbors) >= 2:
+            cross_edge_rows = [
+                e
+                for e in RelationConfidence.objects.filter(
+                    symbol_a__in=neighbors, symbol_b__in=neighbors
+                ).values("symbol_a", "symbol_b", "relation_type", "truth_score")
+                if e["symbol_a"] != e["symbol_b"]
+            ]
+            for e in cross_edge_rows:
+                pairs.add(normalize_pair(e["symbol_a"], e["symbol_b"]))
 
         # 노드 보강 (단일 쿼리)
         node_syms = {symbol} | neighbors
@@ -129,23 +159,15 @@ class EgoGraphView(APIView):
         for e in edge_rows:
             other = e["symbol_b"] if e["symbol_a"] == symbol else e["symbol_a"]
             key = normalize_pair(e["symbol_a"], e["symbol_b"])
-            pts = traj.get(key, [])[-trend_window:]
-            points = [{"period": str(p), "score": round(s, 2)} for p, s in pts]
-            if len(pts) >= 2:
-                delta = round(pts[-1][1] - pts[0][1], 2)
-                direction = "up" if delta > 0 else "down" if delta < 0 else "flat"
-            else:
-                delta = 0.0
-                direction = "flat"
             edges.append({
                 "source": symbol,
                 "target": other,
                 "relation_type": e["relation_type"],
                 "truth_score": round(e["truth_score"] or 0.0, 2),
-                "trend": {"direction": direction, "delta": delta, "points": points},
+                "trend": _trend_summary(traj.get(key, []), trend_window),
             })
 
-        return Response({
+        payload = {
             "center": {"symbol": symbol, "name": center_stock.stock_name or ""},
             "nodes": nodes,
             "edges": edges,
@@ -159,4 +181,24 @@ class EgoGraphView(APIView):
                     "trend_window": trend_window,
                 },
             },
-        })
+        }
+
+        # cross_edges = additive: true일 때만 키 추가(기본 false = 응답 바이트 불변)
+        if include_cross_edges:
+            cross_edges = [
+                {
+                    "source": e["symbol_a"],
+                    "target": e["symbol_b"],
+                    "relation_type": e["relation_type"],
+                    "truth_score": round(e["truth_score"] or 0.0, 2),
+                    "trend": _trend_summary(
+                        traj.get(normalize_pair(e["symbol_a"], e["symbol_b"]), []),
+                        trend_window,
+                    ),
+                }
+                for e in cross_edge_rows
+            ]
+            payload["cross_edges"] = cross_edges
+            payload["meta"]["cross_edges_count"] = len(cross_edges)
+
+        return Response(payload)
