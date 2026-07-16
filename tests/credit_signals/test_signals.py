@@ -6,6 +6,7 @@ import pytest
 
 from apps.credit_signals.models import CreditSignalState, MacroSeriesHistory
 from apps.credit_signals.services.signal_service import (
+    compute_derived_signal,
     compute_signal,
     grade_from_z,
     robust_z,
@@ -94,3 +95,78 @@ class TestComputeSignal:
         assert s1.pk == s2.pk  # update_or_create — 단일 행
         assert CreditSignalState.objects.filter(signal_key="HY_OAS").count() == 1
         assert s2.z_score == pytest.approx(Decimal("0.6745"), abs=Decimal("0.001"))
+
+
+@pytest.mark.django_db
+class TestComputeDerivedSignal:
+    """P2-0 파생 스프레드 (compute-on-read, inner-join, red 미발화, 원장 미적재)."""
+
+    CCC = "BAMLH0A3HYC"   # CCC_MINUS_BB 피감
+    BB = "BAMLH0A1HYBB"   # CCC_MINUS_BB 감수
+
+    def _seed(self, series_id, start, values):
+        MacroSeriesHistory.objects.bulk_create([
+            MacroSeriesHistory(series_id=series_id, date=start + timedelta(days=i),
+                               value=Decimal(str(v)))
+            for i, v in enumerate(values)
+        ])
+
+    def test_spread_arithmetic(self):
+        """스프레드 = 피감 − 감수, value = 마지막 정합일 스프레드."""
+        start = date(2026, 1, 1)
+        self._seed(self.CCC, start, [9.0] * 60)
+        self._seed(self.BB, start, [2.0] * 60)
+        state = compute_derived_signal("CCC_MINUS_BB")
+        assert state is not None
+        assert state.value == Decimal("7.0000")  # 9 − 2
+        assert state.detail["derived"] is True
+        assert state.detail["minuend"] == self.CCC
+        assert state.detail["subtrahend"] == self.BB
+        assert state.detail["n_aligned"] == 60
+        assert state.detail["n_dropped"] == 0
+
+    def test_inner_join_drops_unaligned_dates(self):
+        """한쪽에만 있는 날짜는 drop — 정합 날짜만 스프레드."""
+        start = date(2026, 1, 1)
+        self._seed(self.CCC, start, [9.0] * 65)  # day 0..64
+        self._seed(self.BB, start, [2.0] * 60)   # day 0..59
+        state = compute_derived_signal("CCC_MINUS_BB")
+        assert state.detail["n_aligned"] == 60
+        assert state.detail["n_dropped"] == 5
+        assert state.as_of == start + timedelta(days=59)  # 마지막 정합일
+
+    def test_cold_start_gray_z_null(self):
+        """정합 관측 <60 → z=null, grade=gray."""
+        start = date(2026, 1, 1)
+        self._seed(self.CCC, start, [9.0] * 20)
+        self._seed(self.BB, start, [2.0] * 20)
+        state = compute_derived_signal("CCC_MINUS_BB")
+        assert state.grade == "gray"
+        assert state.z_score is None
+        assert state.detail["cold_start"] is True
+
+    def test_derived_never_red_even_when_orange_and_large(self):
+        """파생키는 orange(z≥2)·절대값 큼에도 red 미발화 (red=HY_OAS 한정)."""
+        start = date(2026, 1, 1)
+        # 분포에 변동(MAD>0) + 마지막 급등 → z≥2 orange, 스프레드 20.0(>8).
+        #   spread med=11, MAD=1, current=20 → z≈6.07
+        self._seed(self.CCC, start, [10.0] * 30 + [12.0] * 29 + [20.0])
+        self._seed(self.BB, start, [0.0] * 60)
+        state = compute_derived_signal("CCC_MINUS_BB")
+        assert state.z_score is not None and float(state.z_score) >= 2.0
+        assert float(state.value) >= 8.0  # 절대값은 크지만
+        assert state.grade == "orange"    # red 승격 없음 (파생키)
+
+    def test_ledger_not_written(self):
+        """★ 파생 계산은 MacroSeriesHistory(원장)에 아무 것도 쓰지 않는다."""
+        start = date(2026, 1, 1)
+        self._seed(self.CCC, start, [9.0] * 60)
+        self._seed(self.BB, start, [2.0] * 60)
+        before = MacroSeriesHistory.objects.count()
+        compute_derived_signal("CCC_MINUS_BB")
+        assert MacroSeriesHistory.objects.count() == before == 120  # 원장 불변
+        assert not MacroSeriesHistory.objects.filter(series_id="CCC_MINUS_BB").exists()
+
+    def test_no_source_data_returns_none(self):
+        assert compute_derived_signal("CCC_MINUS_BB") is None
+        assert CreditSignalState.objects.filter(signal_key="CCC_MINUS_BB").count() == 0

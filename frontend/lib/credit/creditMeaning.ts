@@ -55,6 +55,10 @@ export function deriveHeadline(signals: CreditSignal[]): Headline {
   if (only('VIX')) {
     return { text: '변동성 축 신호 — VIX 이례적', grade: worst };
   }
+  // CCC−BB 파생 단독 = HY 최저신용 분화 심화 (P2-0)
+  if (only('CCC_MINUS_BB')) {
+    return { text: 'HY 최저신용 분화 심화 — CCC−BB 스프레드 확대', grade: worst };
+  }
 
   // 기타 조합 = 중립 폴백: 비-gray 심각도순 나열 + 관찰 n건.
   const names = [...nonGray]
@@ -72,6 +76,8 @@ export const CREDIT_SIGNAL_DEF: Record<string, string> = {
   CCC_OAS: '최저신용(CCC) 회사채 가산금리 — 부실·디폴트 위험의 최전선.',
   CURVE_10Y2Y: '10년−2년 국채 금리차 — 음수(역전)는 경기침체 선행 신호로 읽힌다.',
   VIX: 'S&P500 옵션 내재 변동성 지수(‘공포지수’) — 높을수록 시장 불안이 크다.',
+  CCC_MINUS_BB: 'CCC−BB 스프레드 — HY 내부 최저신용(CCC)과 BB의 격차. 벌어질수록 부실 구간의 차별적 스트레스가 커진다.',
+  BBB_MINUS_A: 'BBB−A 스프레드 — 투자등급 내 최하단(BBB)과 A의 격차. 등급 강등 경계선의 압력 차.',
 };
 
 // 밴드 표기는 신호별 실규칙에서 도출한다(creditGrading.bandCaption). 손글씨 고정문구 폐기 —

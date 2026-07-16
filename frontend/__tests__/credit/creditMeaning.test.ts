@@ -90,6 +90,12 @@ describe('deriveHeadline 패턴 매칭 (초기 6건)', () => {
     expect(h.text).toBe('관찰 2건 — BBB OAS, US IG OAS');
     expect(h.grade).toBe('orange');
   });
+
+  it('⑦ CCC−BB 파생 단독 → HY 최저신용 분화 심화 (P2-0)', () => {
+    const h = deriveHeadline([...SIX_GRAY, sig('CCC_MINUS_BB', 'yellow')]);
+    expect(h.text).toBe('HY 최저신용 분화 심화 — CCC−BB 스프레드 확대');
+    expect(h.grade).toBe('yellow');
+  });
 });
 
 describe('sparkDirection', () => {
@@ -128,5 +134,12 @@ describe('signalStateLine + buildChipInfo', () => {
     expect(info.band).not.toContain('red');
     // HY → red 절대 레벨 포함
     expect(buildChipInfo(sig('HY_OAS', 'gray')).band).toContain('red z≥2 & 값≥8.0%(800bp)');
+  });
+
+  it('파생키(CCC−BB) 정의·밴드 = 비-HY 자동 도출 (P2-0)', () => {
+    const info = buildChipInfo(sig('CCC_MINUS_BB', 'gray', { value: 8.15, z: 0.42 }));
+    expect(info.def).toContain('CCC−BB');
+    expect(info.band).toBe(bandCaption('CCC_MINUS_BB'));
+    expect(info.band).not.toContain('red'); // 파생키 = 비-HY → red 미발화
   });
 });
