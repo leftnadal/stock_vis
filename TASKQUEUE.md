@@ -5,6 +5,20 @@
 
 ---
 
+## 지시서⑲ 파생 — Neo4j 동결 완결 + 중심성 착공 후속 (2026-07-16)
+
+> 출처: ⑲ S4 실측(discovery 정체=분류 b) + ⑱ 판정 이월. 브랜치 `monorepo/sess-19-centrality`.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| Q19-PYTEST-FILTERWARN | pytest.ini `filterwarnings`의 stale `RemovedInDjango50Warning`(Django 5.2 제거됨) 정리 → `RemovedInDjango60Warning` | @qa | - | **todo(저우선)** | 평소 `-p no:warnings`가 파싱 차단해 무해, `-o addopts=""` override 시만 config red. ⑱·⑲ STEP 0 재확인 |
+| Q19-REDUNDANT-SIGNAL | 잉여 신호층 정리: PRICE_CORRELATED 3,784쌍 **전부** PEER_OF와 겹침(구조 엣지 0 기여) → truth_score 정규화/가중 재설계에 연결 | @backend | 정규화 트랙 | **todo** | ⑱ 검산·⑲ S3 weight=max(truth,market) 확인. 정규화 트랙과 얽힘(단독 착수 금지) |
+| Q19-SD-LINKPRED | S-D 링크예측 재도전 — 시간분할 검증(과거→예측→미래 확인) | @backend | RPS 궤적 견고화 + discovery 재가동 | **예약(트리거 대기)** | ⑱ 기각(궤적 깊이 부족). 트리거: RPS 주간 궤적 ~3-4개월 축적 **또는** discovery 재가동(Q19-DISCOVERY-REACT) |
+| Q19-A3-SECTOR-MOCKUP | A3 섹터 그래프(Sector 모드 Neo4j) 존치/전환 판단 → 전체 조망 목업 트랙(⑳)으로 회부 | @UI-UX-designer | ⑳ 목업 | **회부** | ⑱ A3 카드: Sector 모드 Neo4j 잔존, PG 전환 비용 중. 살릴지 = 병진 가치판단 |
+| Q19-DISCOVERY-REACT | discovery 해자 폭 재성장 — 신규 RC 유입 재가동(고정 S&P500 유니버스 포화 극복) | @backend | 별도 결정 | **todo(조치 보류)** | ⑲ S4: 태스크 전부 enabled·최근 실행이나 **신규 0(분류 b)**. co-mention 입력 04-25~07-08 단절 후 broad 재개(07-08)·유니버스 포화. 재성장=유니버스 확장/신규 소스(대) |
+
+---
+
 ## credit_signals — Phase 1 라이브 종결 + Phase 2/2.5 대기 (2026-07-09)
 
 > 출처: credit_signals Phase 1 실가동(origin/main `a27fd14`, ff land). DECISIONS "credit_signals 신규 앱 (§7.2-B)". 소비처(Dashboard) 착수는 **별도 결정** — 현재 수집·계산·API 백본만 가동, 실전 노출 없음(Heat Score 원칙).
