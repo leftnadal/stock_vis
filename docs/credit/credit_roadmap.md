@@ -16,6 +16,7 @@
 
 | 트랙                   | 종결일     | 내용                                                                                         | 최종 커밋 |
 | ---------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------- |
+| CS-CREDIT-P2-0         | 2026-07-16 | 예약 2키 실현: BB/A 수집(6→8, 재비준 F) + 파생 CCC−BB·BBB−A compute-on-read + 8칩 심각도정렬(결정 g) | 32c0559   |
 | CS-CREDIT-CAPTION-FIX  | 2026-07-13 | 리드아웃 밴드 문구를 손글씨 → grading 코드 도출로 교체 (creditGrading.ts 미러 신설)          | 9ffd379   |
 | CS-CREDIT-MEANING      | 2026-07-13 | 의미 2층: 규칙 기반 헤드라인(6패턴) + 신호별 리드아웃. 팝오버→리드아웃 전환(overflow 클리핑) | c1bc255   |
 | CS-CREDIT-CONSUME      | 2026-07-12 | MacroStrip + GradeChip(제네릭) 홈 삽입, grade 색 토큰 colorSemantics 신설                    | —         |
@@ -23,16 +24,19 @@
 
 ## 3. 계약 (코드 포인터)
 
-- **신호 6키**: HY_OAS · IG_OAS · BBB_OAS · CCC_OAS · CURVE_10Y2Y · VIX.
-  예약 2키(미생성): CCC_MINUS_BB · BBB_MINUS_A. → `apps/credit_signals/` 모델·태스크.
+- **신호 8키** = raw 6(HY_OAS · IG_OAS · BBB_OAS · CCC_OAS · CURVE_10Y2Y · VIX)
+  + 파생 2(CCC_MINUS_BB · BBB_MINUS_A, **compute-on-read** — 원장 미적재, 정본
+  `compute_derived_signal`). 예약 키 없음(`RESERVED_SIGNAL_KEYS = ()`, P2-0 실현).
+  → `apps/credit_signals/` 모델·태스크.
 - **grading (signed z, 하방 미발화)**: gray z<1(음수 포함) · yellow 1≤z<2 · orange z≥2(무상한)
   · red = HY_OAS 한정 z≥2 ∧ 값≥800bp(절대 레벨). 정본 `grade_from_z`(백엔드).
   프론트 미러 `frontend/lib/credit/creditGrading.ts` — Z_YELLOW=1 · Z_ORANGE=2 ·
   HY_CRISIS_BP=800 (백엔드 HY_OAS_CRISIS_BP의 미러, 값 동일).
   **백엔드 상수 변경 시 미러 1곳 동기화** (양쪽 주석 존재).
 - **의미 1층 헤드라인**: `frontend/lib/credit/creditMeaning.ts` 순수함수, LLM 아님.
-  6패턴: 전부gray안정 / CCC단독=HY내부분화 / HY+CCC=광범위확대 / CURVE단독=금리축 /
-  VIX단독=변동성축 / 기타=중립폴백 "관찰 n건".
+  **7패턴**: 기존 6(전부gray안정 / CCC단독=HY내부분화 / HY+CCC=광범위확대 / CURVE단독=금리축 /
+  VIX단독=변동성축 / 기타=중립폴백 "관찰 n건") + **CCC_MINUS_BB단독=HY최저신용분화 심화**(P2-0).
+  **BBB_MINUS_A 단독 패턴은 의도적 부재**(IG 내부 격차 단독 발화 희소 → 중립 폴백이 소화) — 누락 아님.
 - **API**: `/api/credit-signals/strip/` (config/urls.py) — IsAuthenticated,
   {as_of, signals:[{key,name,value,z,grade,spark×30}]}.
 - **UI**: MacroStrip.tsx + GradeChip.tsx (onActivate/active optional — TH 밴드 재사용 전제),
@@ -82,6 +86,8 @@
 | —   | 문구 도출   | 화면의 규칙 서술은 코드에서 도출, 손글씨 금지                               |
 | E   | P2 시퀀스   | 소스 판정 후 P2-0(예약2키·FRED) → P2a(HYG/LQD·iShares 직결합) → P2b 파킹    |
 | g   | 스트립 밀도 | 6키 고정 해제 → 8칩 확장 + 심각도 정렬(비-gray 좌측), 칩 폭 불변(TH 무침범) |
+| F   | 스코프 재비준 | FRED 6→8종 "고정" 불변규칙 명시 해제 (BB/A 수집, constants docstring 근거) — P2-0 |
+| —   | 파생 저장   | compute-on-read 채택 — 원장 raw 순수성, STEP0 정합 0.00%(787=787)로 검증    |
 
 ## 6. 교훈 (이 트랙에서 발원)
 
