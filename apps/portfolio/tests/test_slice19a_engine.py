@@ -164,13 +164,17 @@ def test_recommend_contract_shape(user, wallet):
 
     out = eng.recommend(user)
     assert out["mode"] == "BUY"
-    assert set(out["summary"]) == {"progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire", "cost_basis_note", "fx_context"}
+    # 계약 v3(SLICE19C): v2 + dial·knobs·max_concentration·notes
+    assert set(out["summary"]) == {
+        "progress_gap", "allocation_gap", "goal_target_return_pct", "numeraire",
+        "cost_basis_note", "fx_context", "dial", "knobs", "max_concentration", "notes",
+    }
     actions = {r["action"] for r in out["recommendations"]}
     assert actions <= {"BUY", "HOLD", "TRIM"}
     assert "BUY" in actions and "HOLD" in actions  # 후보 매수 + 보유 유지
     assert "예측" in out["disclaimer"]  # 예측-아님 명시
     for r in out["recommendations"]:
-        assert set(r) == {"action", "symbol", "currency", "score", "rationale"}
+        assert set(r) == {"action", "symbol", "currency", "score", "rationale", "lane"}
 
 
 @pytest.mark.django_db

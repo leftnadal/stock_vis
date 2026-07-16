@@ -464,3 +464,127 @@ def test_exploration_lane_off_when_E_zero(user):
     dial = compute_dial(user, compute_allocation_gap(user), goal)
     ranked = rank_candidates(user, "USD", dial, goal)
     assert all(c["lane"] == "core" for c in ranked)
+
+
+# ============================================================
+# Part F — 계약 v3 + AdvisoryRun + 불가침 불변식
+# ============================================================
+
+from django.core.exceptions import ValidationError  # noqa: E402
+
+from apps.portfolio.models_my import AdvisoryRun, PortfolioSnapshot  # noqa: E402
+from apps.portfolio.services import my_container as mc  # noqa: E402
+from apps.portfolio.services.advisory_engine import (  # noqa: E402
+    compute_allocation_gap,
+    recommend,
+    run_advisory,
+)
+
+
+# ---- 범위 검증기 (저장 거부) ----
+
+
+@pytest.mark.django_db
+def test_knob_range_validator_rejects_out_of_range(user):
+    """손잡이 범위 밖 저장 거부(§0-2 검증기)."""
+    g = UserGoal.objects.create(user=user, target_return_pct=Decimal("10"), horizon_months=12)
+    for field, bad in [
+        ("aggressiveness_offset", 8),  # >7
+        ("growth_boost", 8),
+        ("diversification_weight", Decimal("0.25")),  # >0.20
+        ("concentration_limit", 10),  # <15
+        ("exploration_ratio", 40),  # >30
+    ]:
+        setattr(g, field, bad)
+        with pytest.raises(ValidationError):
+            g.save()
+        # 원복(다음 필드 검증 위해)
+        setattr(g, field, UserGoal.KNOB_RANGES[field][0])
+
+
+# ---- 통화 여력 음수 클램프 ----
+
+
+@pytest.mark.django_db
+def test_dial_deployable_negative_clamp(user):
+    """유휴현금 비중 < 버퍼 → 여력·deployable 0 클램프."""
+    _goal(user, date(2026, 7, 1))
+    dial = compute_dial(user, _alloc({"USD": 50}, holdings_krw="950"))  # idle 0.05 < 0.10
+    assert dial["headroom_frac"] == Decimal("0")
+    assert dial["by_currency"]["USD"]["deployable_krw"] == Decimal("0")
+
+
+# ---- 불가침 불변식 ----
+
+
+@pytest.mark.django_db
+def test_invariant_buffer_floor_3pct_any_knobs(user):
+    """어떤 손잡이 + 큰 드로다운 조합에도 버퍼 바닥 3% 불가침."""
+    _goal(user, date(2026, 7, 1), aggressiveness_offset=7, growth_boost=7)
+    _snap(user, date(2026, 7, 1), 1000)
+    _snap(user, date(2026, 7, 2), 500)  # dd 50%
+    dial = compute_dial(user, _alloc({"USD": 500}, holdings_krw="500"))
+    assert dial["buffer"] == Decimal("0.03")  # a=0.57 → 바닥 클램프
+    assert dial["buffer"] >= Decimal("0.03")
+
+
+@pytest.mark.django_db
+def test_invariant_max_concentration_always_reported(user):
+    """사실 보고: L=100(TRIM 소멸)이어도 최대 보유 집중도 항상 표기."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("ONLY", price="100"), shares="10")  # 100%
+    _goal(user, date(2026, 7, 1), concentration_limit=100)
+    out = recommend(user)
+    assert not any(r["action"] == "TRIM" for r in out["recommendations"])  # L=100 TRIM 소멸
+    mc_fact = out["summary"]["max_concentration"]
+    assert mc_fact["symbol"] == "ONLY"
+    assert mc_fact["weight"] == Decimal("1")
+
+
+# ---- 계약 v3 + AdvisoryRun ----
+
+
+@pytest.mark.django_db
+def test_recommend_v3_contract(user):
+    """계약 v3: summary에 dial·knobs·max_concentration·notes, rec에 lane."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("HC", price="100"), shares="1")
+    mc.upsert_cash_for_wallet(wallet, Decimal("900"), currency="USD")
+    _goal(user, date(2026, 7, 1), aggressiveness_offset=2)
+    out = recommend(user)
+    s = out["summary"]
+    assert {"dial", "knobs", "max_concentration", "notes"} <= set(s)
+    assert s["knobs"]["A"] == 2
+    assert s["dial"]["buffer"] == Decimal("0.08")  # A=2 → 8%
+    assert any("공격성 +2%p" in n for n in s["notes"])
+    for r in out["recommendations"]:
+        assert r["lane"] in {"core", "exploration"}
+
+
+@pytest.mark.django_db
+def test_run_advisory_records_snapshot_and_run(user):
+    """run_advisory: 스냅샷 upsert + AdvisoryRun 기록(손잡이 스냅 포함)."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("RA", price="100"), shares="1")
+    mc.upsert_cash_for_wallet(wallet, Decimal("900"), currency="USD")
+    _goal(user, date(2026, 7, 1), aggressiveness_offset=3, exploration_ratio=10)
+    out = run_advisory(user)
+    assert PortfolioSnapshot.objects.filter(user=user).count() == 1
+    run = AdvisoryRun.objects.get(user=user)
+    assert run.snapshot is not None
+    assert run.knobs_snapshot["A"] == 3
+    assert run.knobs_snapshot["E"] == 10
+    assert run.output["mode"] in {"BUY", "DEFEND"}
+    assert out["summary"]["knobs"]["E"] == 10
+
+
+@pytest.mark.django_db
+def test_run_advisory_idempotent_snapshot(user):
+    """run_advisory 재실행 → 스냅샷 멱등(같은 날 1행), AdvisoryRun은 누적."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("IX", price="100"), shares="1")
+    _goal(user, date(2026, 7, 1))
+    run_advisory(user)
+    run_advisory(user)
+    assert PortfolioSnapshot.objects.filter(user=user).count() == 1  # 멱등(unique user,date)
+    assert AdvisoryRun.objects.filter(user=user).count() == 2  # 실행 이력 누적

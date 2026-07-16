@@ -536,6 +536,92 @@ def _cost_basis_note(labels: dict) -> str:
     return "KRW 원가 전건 정확(exact/native_krw)."
 
 
+def _max_concentration(user) -> dict | None:
+    """최대 보유 집중도(사실 — L 값 무관 항상 표기, §0-7). 통화 버킷별 비중 최대."""
+    holdings = list(
+        WalletHolding.objects.filter(wallet__user=user).select_related("stock")
+    )
+    if not holdings:
+        return None
+    valued = [(h, h.shares * _current_price(h.stock)) for h in holdings]
+    total_by_cur: dict[str, Decimal] = {}
+    for h, v in valued:
+        total_by_cur[h.stock.currency] = total_by_cur.get(h.stock.currency, Decimal(0)) + v
+    for cb in CashBalance.objects.filter(wallet__user=user):
+        total_by_cur[cb.currency] = total_by_cur.get(cb.currency, Decimal(0)) + cb.amount
+    best = None
+    for h, v in valued:
+        total = total_by_cur[h.stock.currency]
+        weight = (v / total) if total else Decimal(0)
+        if best is None or weight > best["weight"]:
+            best = {"symbol": h.stock.symbol, "currency": h.stock.currency, "weight": weight}
+    return best
+
+
+def _advisory_notes(dial: dict, k: dict) -> list:
+    """자동 장치 작동 + 손잡이 적용을 사실 문구로(§0-7 사실 보고 원칙)."""
+    notes = []
+    if dial.get("frozen"):
+        notes.append("가격 신선도 밖(영업일 2일 초과) — dd 직전 유효값 동결")
+    if dial["dd"] > 0:
+        notes.append(f"드로다운 {dial['dd'] * 100:.1f}% 반영(입출금 flow 제외·환율 자동)")
+    if dial["buffer"] == FLOOR_BUFFER:
+        notes.append("버퍼 바닥 3% 클램프(불가침 불변식)")
+    if k["A"]:
+        notes.append(f"사용자 공격성 +{k['A']}%p")
+    if k["G"] and dial["is_new_high"]:
+        notes.append(f"성장 부스트 +{k['G']}%p(신고점 국면)")
+    if k["w"]:
+        notes.append(f"분산 가중 w={k['w']}")
+    if k["L"] != 30:
+        notes.append(f"집중도 한도 L={k['L']}%")
+    if k["E"]:
+        notes.append(f"탐험 배정 E={k['E']}%")
+    return notes
+
+
+def _jsonable(obj):
+    """AdvisoryRun.output/knobs JSON 저장용 재귀 직렬화(Decimal→str, date→iso)."""
+    import datetime as _dt
+
+    if isinstance(obj, Decimal):
+        return str(obj)
+    if isinstance(obj, (_dt.date, _dt.datetime)):
+        return obj.isoformat()
+    if isinstance(obj, dict):
+        return {k: _jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_jsonable(v) for v in obj]
+    return obj
+
+
+def run_advisory(user):
+    """엔진 실행 진입점: 스냅샷 upsert(이중 기록) + recommend + AdvisoryRun 기록.
+
+    recommend()는 순수 계산(부작용 없음) — 이 함수가 영속화를 담당(테스트 격리).
+    반환: recommend() 산출(계약 v3).
+    """
+    from apps.portfolio.models_my import AdvisoryRun
+    from apps.portfolio.services.snapshot import upsert_snapshot
+
+    snap = upsert_snapshot(user)
+    result = recommend(user)
+    dial = result["summary"]["dial"]
+    knobs_snap = {
+        **result["summary"]["knobs"],
+        "dd": dial["dd"],
+        "buffer": dial["buffer"],
+        "deployable_krw_total": dial["deployable_krw_total"],
+    }
+    AdvisoryRun.objects.create(
+        user=user,
+        snapshot=snap,
+        output=_jsonable(result),
+        knobs_snapshot=_jsonable(knobs_snap),
+    )
+    return result
+
+
 def recommend(user) -> dict:
     """목표-대비 권유 산출(계약 v2, KRW 기준). action ∈ {BUY, HOLD, TRIM}.
 
@@ -550,6 +636,7 @@ def recommend(user) -> dict:
     from apps.portfolio.services.my_container import get_goal_for_user
 
     goal = get_goal_for_user(user)
+    k = _knobs(goal)
     progress = compute_progress_gap(user, goal)
     allocation = compute_allocation_gap(user)
     dial = compute_dial(user, allocation, goal)
@@ -557,9 +644,9 @@ def recommend(user) -> dict:
 
     recommendations = []
 
-    # 가드레일 2: TRIM (집중도 초과, 모드 무관 항상 검사)
+    # 가드레일 2: TRIM (집중도 > L, 모드 무관 항상 검사)
     trim_symbols = set()
-    for t in find_trim_candidates(user):
+    for t in find_trim_candidates(user, goal):
         trim_symbols.add(t["symbol"])
         recommendations.append(
             {
@@ -567,9 +654,10 @@ def recommend(user) -> dict:
                 "symbol": t["symbol"],
                 "currency": t["currency"],
                 "score": None,
+                "lane": "core",
                 "rationale": (
-                    f"통화별 집중도 {t['weight'] * 100:.0f}% > "
-                    f"{CONCENTRATION_THRESHOLD * 100:.0f}% — 배치 규칙(예측 아님)"
+                    f"통화별 집중도 {t['weight'] * 100:.0f}% > 한도 {k['L']}% "
+                    "— 배치 규칙(예측 아님)"
                 ),
             }
         )
@@ -584,6 +672,7 @@ def recommend(user) -> dict:
                     "symbol": h.stock.symbol,
                     "currency": h.stock.currency,
                     "score": None,
+                    "lane": "core",
                     "rationale": "집중도 정상 — 보유 유지",
                 }
             )
@@ -610,6 +699,7 @@ def recommend(user) -> dict:
                         "symbol": c["symbol"],
                         "currency": currency,
                         "score": c["score"],
+                        "lane": c["lane"],
                         "rationale": rationale,
                     }
                 )
@@ -619,12 +709,25 @@ def recommend(user) -> dict:
         "summary": {
             "progress_gap": progress,
             "allocation_gap": allocation,
-            "goal_target_return_pct": (
-                goal.target_return_pct if goal else None
-            ),
+            "goal_target_return_pct": (goal.target_return_pct if goal else None),
             "numeraire": "KRW",
             "cost_basis_note": _cost_basis_note(progress["cost_labels"]),
             "fx_context": fx_context("USDKRW"),  # 역사적 백분위(사실·맥락, 예측 아님)
+            # --- 계약 v3 (SLICE19C) ---
+            "dial": {
+                "dd": dial["dd"],
+                "a": dial["a"],
+                "buffer": dial["buffer"],
+                "is_new_high": dial["is_new_high"],
+                "headroom_frac": dial["headroom_frac"],
+                "deployable_krw_total": dial["deployable_krw_total"],
+                "frozen": dial["frozen"],
+                "window_days": dial["window_days"],
+                "by_currency": dial["by_currency"],
+            },
+            "knobs": k,  # 손잡이 5종 스냅(사후분석·사실 보고)
+            "max_concentration": _max_concentration(user),  # 사실 항상 표기(L 무관)
+            "notes": _advisory_notes(dial, k),  # 자동 장치 + 손잡이 적용 사실
         },
         "recommendations": recommendations,
         "disclaimer": DISCLAIMER,
