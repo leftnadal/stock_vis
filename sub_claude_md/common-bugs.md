@@ -879,3 +879,17 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 **원인**: 상대 URL은 페이지 origin(:3000)에 붙어 **next.config의 stale rewrite**로 흘러감. 앱 API 호출은 `NEXT_PUBLIC_API_URL`(=/api/v1 포함 절대 base) 규약을 쓰는데 신규 호출이 이를 우회.
 
 **해결**: 신규 FE API 호출은 반드시 **앱 base 규약**(authAxios와 동일 `NEXT_PUBLIC_API_URL` 절대 base) 준수. **죽은 포트 하드코딩 폴백 금지** — env 미설정 시 skip+warn(유실 허용 데이터) 또는 앱 표준 폴백. 해소 = FIX-1(`46e6865`, 번들 검증까지). cf. 배포 체크리스트 ③.
+
+## [DoD 함정] celery 태스크 신설 = tasks/__init__ import 누락을 단위 테스트가 못 잡는다 (⑲ 배포 실증) [process] [celery]
+
+**증상**: 신규 celery 태스크의 단위 테스트(함수 직접 호출·`.apply()`)는 전부 green인데, 실배포 워커가 태스크를 **미등록**(`celery inspect registered`에 없음) → beat 등록해도 "task not registered"로 미발화.
+
+**원인**: `tasks/` 가 **패키지**일 때 celery autodiscover는 `tasks/__init__.py`만 임포트한다. 서브모듈(`centrality_tasks.py` 등)은 `__init__.py`에서 명시 import해야 `@shared_task`가 레지스트리에 등록된다. 단위 테스트는 모듈을 직접 import해 호출하므로 이 누락을 우회(거짓 green). ⑲ S3에서 `centrality_tasks` import 누락 → 배포 중 워커 registered 검증에서 포착, fix `f2397b4`.
+
+**해결**: 신규 celery 태스크 슬라이스의 **DoD에 등록 검증 필수** — `app.loader.import_default_modules()` 후 `'<task path>' in app.tasks` 또는 라이브 워커 `celery inspect registered` 확인. [[lesson_celery_task_registration]](워커 재시작 필수)의 등록판. 배포 시 `worker_sync` 재기동 후 registered 재확인.
+
+## [잡음 차단] pre-commit iCloud 경고는 무해·비차단 — 판단 소모 금지 [ops]
+
+**증상**: 커밋 시 pre-commit hook이 "iCloud 측 작업 의심. 확인 후 진행하세요 (강제 차단 아님)" stderr 출력.
+
+**해결**: **비차단 경고** — 커밋은 정상 통과한다. iCloud sync는 OFF 상태([[project_icloud_sync_off]])라 오탐. 이 경고에 판단·조사 소모하지 말고 커밋 결과(`✅ pre-commit 검증 통과`)만 확인하고 진행.

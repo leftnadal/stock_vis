@@ -5,6 +5,17 @@
 
 ---
 
+## 지시서⑳ 파생 — 중심성 UI 트랙 (2026-07-16)
+
+> 출처: ⑳-1 리더보드 착지(브랜치 `monorepo/sess-20-leaderboard`) + ⑲ S4 discovery 실측 이월.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|----|------|-------|------------|--------|-----------|
+| Q20-DISCOVERY-REMEASURE | 2026-07-30경 discovery 신규 RC 카운트 재측정(read-only). 재개=종결 / 여전히 0이면 유니버스 확장 결정 사이클 개시 | @backend | 지시서⑦(match_score 정규화) | **예약(07-30경)** | D-DISCOVERY-WATCH. broad 입력 재개(07-08) 후 자연 재개 관찰. 확장 전제=⑦ 완료 |
+| Q20-2-BACKBONE-GRAPH | ⑳-2 백본 그래프: 중심성 top-N + RelationConfidence 상위 엣지 필터 뷰 | @frontend | ⑳-1 배포 + ego 5관점 메모 접수 | **대기(착수 조건)** | D-CENTRALITY-UI-TRACK(A⊂C). ⑳-1 데이터/색/ego 계약 재사용 |
+
+---
+
 ## 지시서⑲ 파생 — Neo4j 동결 완결 + 중심성 착공 후속 (2026-07-16)
 
 > 출처: ⑲ S4 실측(discovery 정체=분류 b) + ⑱ 판정 이월. 브랜치 `monorepo/sess-19-centrality`.

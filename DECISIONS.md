@@ -8,6 +8,22 @@
 
 ---
 
+## [2026-07-16] D-CENTRALITY-UI-TRACK — ⑳ UI 트랙 A(리더보드)→C(백본 그래프) 단계 진화 [chainsight]
+
+**결정**: 중심성 데이터의 화면 노출을 **A(리더보드) 먼저 → C(백본 그래프) 다음** 단계로 진화. ⑳-1 = 리더보드(rank/rank_delta + Top-20 테이블), ⑳-2 = 백본 그래프(중심성 top-N + RC 상위 엣지 필터 뷰).
+
+**Why**: 가중합 **A 4.50 vs C 4.20**(마진 0.30). 타이브레이커 = **A ⊂ C 포함 관계** — 리더보드의 데이터 계약(rank/rank_delta/name)·색 규약·ego 링크가 백본 그래프에도 재사용되므로 A 선행이 **작업 무손실**(C가 A를 흡수). 좁은 A로 데이터·API 계약을 먼저 굳히고 C에서 시각화 확장.
+
+**How to apply**: ⑳-1 additive API(rank/rank_delta/name)를 ⑳-2가 재사용. ⑳-2 착수 조건 = ⑳-1 배포 + ego 5관점 메모 접수(TASKQUEUE).
+
+## [2026-07-16] D-DISCOVERY-WATCH — discovery 신규 0 대응 = 관찰 대기(즉시 유니버스 확장 보류) [chainsight]
+
+**결정**: ⑲ S4에서 확인된 discovery 신규 RC 0(분류 b)에 대해 **즉시 조치 대신 관찰 대기**. 2026-07-30경 재측정 후 판단.
+
+**Why**: 가중합 **A(관찰 대기) 4.40 vs B(즉시 확장) 2.70**(마진 1.70 > 1.00, 자동 결정). ① co-mention 입력 단절(04-25 AV per-symbol 제거 ~ 07-08 broad 재개)이 **막 해소된 직후**라 정체 원인(입력 vs 유니버스 포화)이 미확정 — broad 축적으로 자연 재개될 수 있음. ② 유니버스 확장의 실제 비용축 = **FMP 심볼별 시장데이터 콜 + 노이즈**(broad news fetch는 universe-agnostic이라 AV 콜수는 유니버스 크기와 무관, 매칭 단계만 영향). ③ 노이즈 억제 = **match_score 정규화(지시서 ⑦) 선행 필요** → ⑦ 없이 확장하면 저품질 엣지 양산.
+
+**How to apply**: 07-30경 read-only 재측정(TASKQUEUE). 재개=종결 / 여전히 0이면 유니버스 확장 결정 사이클 개시(전제: 지시서 ⑦ 완료).
+
 ## [2026-07-16] P2-IMPRESSION-500 사건 — impression 배관 개통 중 500 2건 전말 [platform] [dashboard]
 
 > 트랙: MGMT-P2-IMPR-CLOSE(mgmt, 메타-only). 상위 = P2-IMPRESSION-BUILD(S1~S3+FIX-1). 배관 개통 중 발생한 500 2건의 원인·해소 기록. baseline = origin/main `dbe0986`, prod 쓰기 0.
