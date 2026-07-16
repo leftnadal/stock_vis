@@ -80,4 +80,19 @@ describe('ThemeHeatCard', () => {
     expect(ml).toHaveTextContent('3년 자기 이력 대비'); // C1 time_series
     expect(ml).toHaveTextContent('수집 대기');           // C8 coldstart
   });
+
+  // 트랙1 S2: 긴 성분명이 z값과 한 행에서 충돌하지 않도록 truncate/min-w-0 가드
+  it('의미 레이어: 긴 성분명은 truncate 가드로 z값과 충돌하지 않음', async () => {
+    (fetchThemeHeatCard as ReturnType<typeof vi.fn>).mockResolvedValue({
+      ...baseCard, driver: { held: true },
+      components: [
+        { id: 'C1', label_surface: '아주 긴 성분 이름이 우측 z값 근거 문구와 한 행에서 겹칠 수 있는 경우', label_technical: '매우 긴 기술 라벨 밸류에이션 지표', z: 0.14, w: 0.18, s: 0.53, z_mode: 'time_series', status: 'computed' },
+      ],
+    });
+    wrap(<ThemeHeatCard theme="Financial Services" />);
+    fireEvent.click(await screen.findByTestId('expand-toggle'));
+    const label = screen.getByTestId('component-label');
+    expect(label.className).toContain('truncate');
+    expect(label.className).toContain('min-w-0');
+  });
 });

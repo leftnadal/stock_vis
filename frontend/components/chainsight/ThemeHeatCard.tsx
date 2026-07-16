@@ -15,7 +15,7 @@ function DriverChip({ driver }: { driver: ThemeHeatCardType['driver'] }) {
   if (driver.held) {
     return (
       <span
-        className="inline-flex items-center gap-1 text-xs text-gray-400 cursor-help"
+        className="inline-flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 cursor-help"
         title={driver.note ?? '계산 방식 개선일 — 하루 변화 해석은 다음 정상일부터.'}
         data-testid="driver-held"
       >
@@ -68,12 +68,12 @@ export default function ThemeHeatCard({ theme, rank, total }: { theme: string; r
             <span className={`text-4xl font-bold ${bandColorClass(card.band)}`} data-testid="heat-score">{card.score}</span>
             <span className="text-xs text-gray-500 mb-1">{card.band_display}</span>
             {card.delta_1d !== null && (
-              <span className="text-xs text-gray-400 mb-1" data-testid="heat-delta">{deltaSign}{card.delta_1d} (1일)</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 mb-1" data-testid="heat-delta">{deltaSign}{card.delta_1d} (1일)</span>
             )}
             {/* 결정31=C: 개정일엔 delta 원값 옆에 중립 마커(경보 아님) — driver.held 재사용 */}
             {card.driver?.held && (
               <span
-                className="text-[10px] text-gray-400 border border-gray-200 dark:border-gray-600 rounded px-1 mb-1 cursor-help"
+                className="text-[10px] text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-600 rounded px-1 mb-1 cursor-help"
                 title="계산 방식 개선일 재산출 — 시장 이동이 아닙니다."
                 data-testid="revision-marker"
               >
@@ -102,12 +102,12 @@ export default function ThemeHeatCard({ theme, rank, total }: { theme: string; r
           {expanded && (
             <div className="flex flex-col gap-1 border-t border-gray-100 dark:border-gray-700 pt-2" data-testid="meaning-layer">
               {card.components.map((c) => (
-                <div key={c.id} className="flex items-center justify-between text-xs">
-                  <span className="text-gray-700 dark:text-gray-200">
+                <div key={c.id} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="min-w-0 truncate text-gray-700 dark:text-gray-200" data-testid="component-label">
                     {c.label_surface}
                     <span className="text-gray-400"> · {c.label_technical}</span>
                   </span>
-                  <span className="text-gray-500 text-right">
+                  <span className="shrink-0 text-gray-500 text-right">
                     {c.status === 'computed' ? (
                       <>z {c.z?.toFixed(2)} · <span className="text-gray-400">{zModeBasisText(c.z_mode)}</span></>
                     ) : (
