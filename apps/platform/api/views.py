@@ -5,7 +5,9 @@ impression/click 이벤트 배치(sendBeacon)를 shared ImpressionLog 에 기록
 """
 from __future__ import annotations
 
-from django.db import IntegrityError
+import logging
+
+from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import F
 from django.utils import timezone
 from rest_framework.permissions import IsAuthenticated
@@ -14,8 +16,14 @@ from rest_framework.views import APIView
 
 from packages.shared.stocks.models import ImpressionLog
 
+logger = logging.getLogger(__name__)
+
 # 배치 상한 (도그푸딩 튜닝 대상 상수 — STRIP-FOLD-TUNE 패턴). 초과 시 413.
 MAX_IMPRESSION_BATCH = 100
+
+# rejected 사유 코드 (응답 봉투 rejected_reasons 키)
+REJECT_INVALID = "invalid"      # _clean_item 검증 실패(형식/허용값)
+REJECT_DB_ERROR = "db_error"    # 항목 단위 구조적 DB 오류(IntegrityError/DataError 등)
 
 _VALID_SURFACES = {c[0] for c in ImpressionLog.SURFACE_CHOICES}
 _VALID_EVENTS = {ImpressionLog.EVENT_IMPRESSION, ImpressionLog.EVENT_CLICK}
@@ -60,12 +68,15 @@ def _record(user_id, ev, now):
         )
         if not updated:
             try:
-                ImpressionLog.objects.create(
-                    seen_count=1,
-                    first_seen_at=now,
-                    session_id=ev["session_id"],
-                    **key,
-                )
+                # 레이스 IntegrityError를 중첩 savepoint로 격리 →
+                # 외부 per-item atomic(트랜잭션)을 오염시키지 않고 아래 복구 update 실행 가능.
+                with transaction.atomic():
+                    ImpressionLog.objects.create(
+                        seen_count=1,
+                        first_seen_at=now,
+                        session_id=ev["session_id"],
+                        **key,
+                    )
             except IntegrityError:
                 # 동시 생성 레이스(partial unique) → 증가로 수렴
                 ImpressionLog.objects.filter(**key).update(
@@ -91,6 +102,11 @@ class ImpressionIngestView(APIView):
       first_seen_at 최초 고정(이후 불변). click: 무조건 append.
     - 유효 항목만 처리 + 거부 건수 응답(배치 유실 최소화). 배열 상한 MAX_IMPRESSION_BATCH.
     - 인증 필수(익명 거부). user_id = request.user.id (모델의 nullable user_id 는 예약, 미사용).
+    - **per-item 격리(PLATFORM-INGEST-DB-ISOLATE)**: 각 항목을 개별 savepoint(transaction.atomic)로
+      감싸 구조적 DB 오류(IntegrityError/DataError 등)가 **항목 단위로만** 실패하도록 한다.
+      정상 항목은 전량 수신되고, 실패 항목만 rejected(db_error)로 집계 — 배치 전체 500 없음.
+    - 응답 봉투 = {received(=accepted), rejected, rejected_reasons{code: count}}.
+      배치가 비거나 전 항목 실패여도 500이 아닌 정상 2xx로 rejected 전량 보고.
     """
 
     permission_classes = [IsAuthenticated]
@@ -107,12 +123,37 @@ class ImpressionIngestView(APIView):
         user_id = request.user.id
         now = timezone.now()
         received = 0
-        rejected = 0
+        rejected_reasons: dict[str, int] = {}
         for item in data:
             ev = _clean_item(item)
             if ev is None:
-                rejected += 1
+                rejected_reasons[REJECT_INVALID] = (
+                    rejected_reasons.get(REJECT_INVALID, 0) + 1
+                )
                 continue
-            _record(user_id, ev, now)
+            try:
+                # per-item savepoint — 이 항목의 구조적 DB 오류가 다른 항목·배치 전체를
+                # 무너뜨리지 않도록 격리(rollback 범위 = 이 항목만).
+                with transaction.atomic():
+                    _record(user_id, ev, now)
+            except DatabaseError:
+                # IntegrityError/DataError 등 구조적 DB 오류 → 항목 단위 거부, 배치 유지.
+                rejected_reasons[REJECT_DB_ERROR] = (
+                    rejected_reasons.get(REJECT_DB_ERROR, 0) + 1
+                )
+                logger.warning(
+                    "impression ingest 항목 DB 오류로 거부 (surface=%s, event_type=%s)",
+                    ev["surface"],
+                    ev["event_type"],
+                    exc_info=True,
+                )
+                continue
             received += 1
-        return Response({"received": received, "rejected": rejected})
+        rejected = sum(rejected_reasons.values())
+        return Response(
+            {
+                "received": received,
+                "rejected": rejected,
+                "rejected_reasons": rejected_reasons,
+            }
+        )
