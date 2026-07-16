@@ -1,6 +1,7 @@
 /**
  * 거시경제 데이터 API 서비스
  */
+import { API_BASE_URL } from '@/lib/api/config'
 import type {
   MarketPulseDashboard,
   FearGreedIndex,
@@ -9,9 +10,6 @@ import type {
   GlobalMarketsDashboard,
   EconomicCalendar,
 } from '@/types/macro';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
 class MacroService {
   private baseUrl = `${API_BASE_URL}/macro`;
 

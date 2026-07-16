@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
@@ -81,7 +82,7 @@ export default function PortfolioTable() {
   }>({});
 
   // API URL 설정
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  const API_URL = API_BASE_URL;
 
   useEffect(() => {
     fetchPortfolioTable();

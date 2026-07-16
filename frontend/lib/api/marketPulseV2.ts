@@ -1,11 +1,12 @@
 /**
  * Market Pulse v2 API client (PR-K/L).
  */
+import { API_BASE_URL } from '@/lib/api/config'
 import axios, { AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 
 import { tokenUtils, refreshAccessToken } from '@/lib/api/authAxios'
 
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const RAW_API_URL = API_BASE_URL
 const API_ORIGIN = RAW_API_URL.replace(/\/api\/v\d+\/?$/, '')
 export const MP_V2_BASE = `${API_ORIGIN}/api/v2/market-pulse`
 

@@ -1,9 +1,10 @@
 // API 클라이언트 설정
 
+import { API_BASE_URL } from '@/lib/api/config';
 import axios from 'axios';
 import { StockListResponse, StockDetailResponse, RAGContext } from '@/types/stock';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 // Axios 인스턴스 생성
 const apiClient = axios.create({

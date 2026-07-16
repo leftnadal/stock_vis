@@ -1,7 +1,8 @@
+import { API_BASE_URL } from '@/lib/api/config';
 import axios from 'axios';
 import type { ServerlessMarketMoversResponse, MoverType } from '@/types/market';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 const api = axios.create({
   baseURL: API_URL,

@@ -1,6 +1,7 @@
 // Strategy Analysis service for fetching market data and stock screener
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+import { API_BASE_URL } from '@/lib/api/config'
+const API_URL = API_BASE_URL;
 
 export interface MajorIndex {
   symbol: string;

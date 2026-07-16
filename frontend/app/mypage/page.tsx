@@ -1,5 +1,6 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/api/config';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -56,7 +57,7 @@ function MyPageContent() {
     try {
       if (typeof window === 'undefined') return;
       const token = localStorage.getItem('access_token');
-      const response = await axios.patch('http://localhost:8000/api/v1/users/me/', {
+      const response = await axios.patch(`${API_BASE_URL}/users/me/`, {
         nick_name: formData.nick_name,
         email: formData.email,
       }, {
