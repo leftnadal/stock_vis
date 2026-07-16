@@ -846,3 +846,36 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 **해결**: 배포 = **⑴ main 머지 → ⑵ `sv sync`(=런타임 트리 사본 `worker_sync.sh`, 3트리 origin/main로 재-detach) → ⑶ daphne·celery 재시작** 순서를 반드시 완주. next dev(web)는 핫리로드지만 daphne/celery는 프로세스 재기동 필요. 머지에서 멈추면 "머지했는데 화면 그대로" 함정. 스크립트는 반드시 런타임 트리 사본으로([[#47]] `sv` 래퍼), 공유 트리 사본은 stale.
 
 **교훈**: "머지 = 배포"가 아니다. 런타임 분리 아키텍처에서 배포의 마지막 칸은 **런타임 트리 동기화 + 재시작**이다. 코드가 origin에 있음 ≠ 서버가 그 코드를 실행 중.
+
+## 배포 체크리스트 — 마이그레이션·env 인라인 포함 슬라이스 (단일 출처) [ops] [deploy]
+
+> **단일 출처**: 마이그레이션 또는 FE env 인라인을 포함하는 슬라이스의 배포 규약은 **본 항목 하나**에 둔다. 세션 지시서·CLAUDE.md는 포인터만(복제 금지 — drift). 런타임 트리 동기화·재시작은 위 [배포 절차](⑰-M, sv sync) 항목과 짝.
+
+마이그레이션·env 인라인을 포함하는 슬라이스는 **배포 단계**에 다음을 명시·완주한다:
+1. **prod migrate**: `sqlmigrate`로 순수 add 육안 → `migrate` → `showmigrations`로 적용 확인. (코드 착지 ≠ DB 적용 — #53.)
+2. **적용 검증은 서빙 프로세스와 동일 env/연결 기준**: "테이블 존재"·"번들 반영"은 **서빙 프로세스가 실제로 보는 DB 연결/체크아웃**에서 확인(셸 env ≠ 서빙 env — #54).
+3. **FE env 인라인 변경 시**: 재빌드 + 재기동 + **번들 검증**(컴파일 산출물에 절대 URL/env 리터럴이 인라인됐는지 grep). `NEXT_PUBLIC_*`은 빌드타임 인라인 — 머지·핫리로드만으로 미반영 가능(#55).
+
+## 코드 착지 ≠ prod DB 적용 — migrate는 배포 단계, 착지 보고만 믿지 말 것 (#53, 2026-07-16 P2-IMPR-CLOSE) [db] [ops] [deploy]
+
+**증상**: 모델·마이그레이션을 origin/main에 머지·"착지 완료" 보고했는데 런타임 write 500. (P2-IMPRESSION: `apps/platform` ImpressionLog 테이블 부재 → ingest 500.)
+
+**원인**: 마이그레이션 파일 착지 = 코드일 뿐, **prod DB 적용은 별개의 배포 단계**. 착지 보고를 "적용됨"으로 오독.
+
+**해결**: land에 migration 포함 시 **배포 단계에 prod migrate를 명시**(위 배포 체크리스트 ①). 착지 보고와 DB 적용을 분리 추적. cf. #46(migration 미적용 → write 조용히 실패), 런북 `P1-RUNBOOK-MIGRATE`.
+
+## 적용 검증은 서빙 프로세스 기준 — 셸 env ≠ 서빙 env (#54, 2026-07-16 P2-IMPR-CLOSE) [ops] [db] [deploy]
+
+**증상**: "테이블 있음"·"코드 최신"을 셸에서 확인했는데 서빙은 여전히 실패/구코드.
+
+**원인**: 확인에 쓴 셸의 env/DB 연결·체크아웃 트리가 **서빙 프로세스(런타임 트리·launchd env)와 다름**. 셸에서 보이는 상태 ≠ 서버가 보는 상태.
+
+**해결**: 적용·번들 검증은 **서빙 프로세스가 실제로 보는 것**으로. DB는 서빙 DB 연결에서 `showmigrations`, FE 번들은 서빙 트리 `.next` 컴파일 산출물 grep. cf. #45(공유 트리 표류→구코드 bake), 배포 체크리스트 ②.
+
+## FE 신규 API 호출은 앱 base 규약(NEXT_PUBLIC_API_URL 절대 base) 준수 — 상대 URL 금지 (#55, 2026-07-16 P2-IMPR-CLOSE) [frontend] [ops]
+
+**증상**: FE 신규 API 호출이 죽은 포트(:8000)로 라우팅되어 실패. (P2-IMPRESSION telemetry가 상대경로 `/api/v1/telemetry/impressions` 호출 → Next dev origin에 붙어 stale rewrite로 :8000.)
+
+**원인**: 상대 URL은 페이지 origin(:3000)에 붙어 **next.config의 stale rewrite**로 흘러감. 앱 API 호출은 `NEXT_PUBLIC_API_URL`(=/api/v1 포함 절대 base) 규약을 쓰는데 신규 호출이 이를 우회.
+
+**해결**: 신규 FE API 호출은 반드시 **앱 base 규약**(authAxios와 동일 `NEXT_PUBLIC_API_URL` 절대 base) 준수. **죽은 포트 하드코딩 폴백 금지** — env 미설정 시 skip+warn(유실 허용 데이터) 또는 앱 표준 폴백. 해소 = FIX-1(`46e6865`, 번들 검증까지). cf. 배포 체크리스트 ③.
