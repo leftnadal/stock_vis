@@ -115,7 +115,10 @@ class TestEgoGraphAPI:
         d = resp.json()
         assert d["edges"] == []
         assert d["meta"]["total_edges"] == 0
-        assert d["nodes"] == [{"symbol": "LONE", "name": "LONE Inc.", "sector": "Technology"}]
+        assert d["nodes"] == [{
+            "symbol": "LONE", "name": "LONE Inc.", "sector": "Technology",
+            "pagerank_rank": None, "betweenness_rank": None,  # ⑲ S3 additive, 스냅샷 부재 시 null
+        }]
 
     def test_unknown_symbol_404(self, ego_data, auth_client):
         resp = auth_client.get("/api/v1/chainsight/ego/NOPE/")

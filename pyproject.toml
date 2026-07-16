@@ -23,6 +23,7 @@ django-redis = "^6.0.0"
 daphne = "^4.2.1"
 pandas = "^2.3.3"
 numpy = "^2.3.5"
+networkx = "^3.6"  # ⑲ S3 중심성 배치 — PG+networkx GDS(Neo4j 불사용, D-SC-CENTRALITY)
 psycopg2-binary = "^2.9.11"
 neo4j = "^5.0.0"
 anthropic = "^0.48.0"

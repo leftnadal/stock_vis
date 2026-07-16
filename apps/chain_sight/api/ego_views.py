@@ -16,7 +16,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.chain_sight.models import RelationConfidence, RelationPairSnapshot
+from apps.chain_sight.models import (
+    RelationConfidence,
+    RelationPairSnapshot,
+    SymbolCentrality,
+)
 from apps.chain_sight.utils import normalize_pair
 from packages.shared.stocks.models import Stock
 
@@ -144,14 +148,34 @@ class EgoGraphView(APIView):
                 if key in pairs:  # __in 카테시안 과대조회분 제거
                     traj[key].append((r["period"], r["truth_max"]))
 
+        # 중심성 순위 (⑲ S3, additive) — 최신 as_of 스냅샷 기준, 없으면 null.
+        # 단일 조회(최신 as_of) + 단일 조회(순위) — N+1 없음. 스냅샷 부재 시 1쿼리로 종료.
+        latest_as_of = (
+            SymbolCentrality.objects.filter(symbol__in=node_syms)
+            .order_by("-as_of")
+            .values_list("as_of", flat=True)
+            .first()
+        )
+        rank_map = {}
+        if latest_as_of is not None:
+            rank_map = {
+                r["symbol"]: r
+                for r in SymbolCentrality.objects.filter(
+                    symbol__in=node_syms, as_of=latest_as_of
+                ).values("symbol", "pagerank_rank", "betweenness_rank")
+            }
+
         # 노드 payload
         nodes = []
         for sym in node_syms:
             st = stock_map.get(sym)
+            rk = rank_map.get(sym)
             nodes.append({
                 "symbol": sym,
                 "name": (st.stock_name if st else "") or "",
                 "sector": (st.sector if st else "") or "",
+                "pagerank_rank": rk["pagerank_rank"] if rk else None,
+                "betweenness_rank": rk["betweenness_rank"] if rk else None,
             })
 
         # 엣지 payload (+ trend 요약)
