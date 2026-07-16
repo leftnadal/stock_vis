@@ -553,6 +553,8 @@
 | FX-ACQ-RATE-WEIGHTED-UPDATE | `WalletHolding.acquisition_fx_rate`(19b 신설)는 매수 시점 USD/KRW 환율. **추가매수로 `avg_cost`가 갱신될 때 acquisition_fx_rate의 가중평균 재계산이 필요**하나 19b 범위 밖. 현재는 사용자 수동 정정으로 커버. Phase 2 Trade 모델 도입 시 자동 계산과 함께 처리 | portfolio | 후보(추가매수 흐름/Trade 모델 시) | 🔶 부채 |
 | SIGNAL-FORWARD-INFRA | 기대수익 정본 신호 인프라(analyst target writer / EstimateSnapshot / forward 추정 모델 + PredictionRecord 기록). 완성 시 19a 정직한-A의 갭 계산에 slot-in → **정직한-A → 기대수익-A 승격**. **⬆ 19c에서 우선순위 상승**(원칙 3계층 ⑶ 종목 수익성 예측=목표의 구현 의존물, AdvisoryRun 위 사후분석). 로드맵 배치는 19c 랜딩 후 결정 사이클(Slice 20 화면과 순서 판정) | portfolio 트랙 | **우선순위 상승**(랜딩 후 배치 결정) | 🔮→⬆ 미래 |
 | SLICE19D-RECAL | AdvisoryRun 라벨 축적 후 가중치·손잡이 효과 **사후분석 재보정**(성장 부스트 G 실효 검증 포함). 19c 원장이 토대 | portfolio 트랙 | 후보(AdvisoryRun 축적 후) | 🔮 미래 |
+| SLICE20A-COACH-UI | Slice 20a — Coach 화면 1부: REST 표면(최신 권유·자산요약·손잡이 읽기·수동진단 POST) + My 탭 권유 읽기 화면 + admin 입력 지름길. AdvisoryRun.trigger 가산(auto/manual, mig 0006) + nightly advisory 태스크. 계약 가산 전용(D0)·유령필드 미노출·손잡이 쓰기 금지(20b). base `01486cc` | portfolio 트랙 | 🔄 진행 중(`monorepo/sess-slice20a-rest`, 2026-07-16) | 🔄 진행 |
+| SLICE20B-COACH-INPUT | Slice 20b — 손잡이 슬라이더 패널(쓰기 REST 포함, D3=①) + wallet/watchlist 입력 UI + E1~E6 My 탭 연결. 20a 화면 위 입력 계층 | portfolio 트랙 | 후보(20a 랜딩 후) | 🔮 다음 |
 | PF-TAX-FEE | 세금·수수료 미반영(KRW 수익률·취득원가에 거래비용·양도세 제외). 19c 범위 밖 부채 | portfolio | 후보 | 🔶 부채 |
 | FX-MACRO-B | FX매크로 대체후보(b) — 환율 백분위를 배치 다이얼에 반영하는 대안. 19c에서 **유보**(예측 냄새 평가 필요·다이얼은 dd emergent로 충분). 재검토 후보 | portfolio 트랙 | 유보(19c 밖) | 🔶 유보 |
 | PF-LEGACY-FE | `app/portfolio`·`components/portfolio`·`services/portfolio.ts`(레거시 `users.Portfolio` 소비) 귀속 = portfolio 트랙 vs users·auth 표면 | 결정 안건(경계) | 로드맵 재검토(서비스 플로우 "포트폴리오 변화" 표면 연계). 📌 **로드맵 후속 phase**("포트폴리오 변화" 표면, D-ROADMAP-V1) | 🆕 보류 |

@@ -8,6 +8,18 @@
 
 ---
 
+## SLICE20A — Coach 화면 1부: REST 표면 + 권유 읽기 (admin 입력 지름길) (2026-07-16 결정 / 2026-07-16 실행) [portfolio]
+
+**전제**: 19c까지 엔진(정직한 A + KRW 기준 + 드로다운 다이얼 + 손잡이 5종 + 원장 2종)은 완성됐으나 **UI 진입점 0**(`run_advisory`는 파이썬 함수·REST 없음, coach E1~E6 dead-end). 20a는 엔진을 **매일 읽는 화면**으로 만든다. 입력은 20b, 당분간 Django admin이 입력 지름길(1인 도그푸딩).
+
+- **D0 — 계약 가산 전용 진화 (신규 원칙·이 슬라이스의 헌법)**: 계약 v3 진화는 **필드 추가만 허용**, 기존 필드의 의미·형태·단위 변경 금지. SIGNAL-FORWARD-INFRA의 예상수익률도 가산으로 들어와 화면 빈 슬롯을 채운다.
+  - **Why**: 프론트가 처음 이 계약을 소비 — 여기서 비틀면 이후 전부 재작업. 위반 필요 시 = 디렉터 결정 사이클 재소집.
+- **D1 — 스코프 분할 (자동 확정, 마진 1.10)**: 20a = REST 표면 + 권유 읽기 화면 + admin 입력 지름길 / 20b = 손잡이 슬라이더 패널·wallet/watchlist 입력 UI·E1~E6 연결. 근거 = 슬라이스 리스크·도그푸딩 도달 속도·방법론 정합.
+- **D2 — 실행 트리거 = 혼합 (사용자 확정, 4.60)**: nightly 자동 기록(`trigger=auto`, 원장 시계열 보존) + 화면 수동 재실행(`trigger=manual`, 즉시성). **사후분석은 `trigger=auto`만 표본으로 쓰는 것을 관례로 함께 기록**(수동 실행이 시계열을 오염하지 않도록).
+- **D3 — 손잡이 UI = 슬라이더 직접 노출 (사용자 확정, 타이브레이커=도그푸딩 우선)**: 실행은 20b. 20a는 **읽기 전용 표시까지**. 프리셋 껍데기는 서비스 포장 해동 시 재검토.
+- **mgmt 인라인 관례 명문화**: **실행 세션 지시서 = repo 배치 필수** / mgmt(랜딩 등 코드 0) 세션 = 인라인 전문 허용. 19b·19c 랜딩 선례를 규칙으로 승격. (20a 세션은 실행이므로 `docs/portfolio/coach/slice20a/SLICE20A_INSTRUCTION.md` 배치 후 시작.)
+- **20a 절대 규칙 승계**: 유령 필드(analyst_*·forward_pe) 화면 노출 금지(예상수익률=빈 슬롯 placeholder) / 손잡이 쓰기 금지(20b) / 엔진 로직 무변경 / mig 0006(AdvisoryRun.trigger 가산) 외 재생성 0 / prod 미적용(dev만).
+
 ## [2026-07-16] P2-IMPRESSION-500 사건 — impression 배관 개통 중 500 2건 전말 [platform] [dashboard]
 
 > 트랙: MGMT-P2-IMPR-CLOSE(mgmt, 메타-only). 상위 = P2-IMPRESSION-BUILD(S1~S3+FIX-1). 배관 개통 중 발생한 500 2건의 원인·해소 기록. baseline = origin/main `dbe0986`, prod 쓰기 0.
