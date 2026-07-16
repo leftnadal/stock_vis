@@ -162,15 +162,99 @@ def compute_allocation_gap(user) -> dict:
     }
 
 
-def determine_mode(progress_gap: dict, allocation_gap: dict) -> str:
-    """모드 분기(KRW 통합 정본): (유휴현금 임계 초과 OR 목표 미달) → BUY, else DEFEND.
+# ============================================================
+# 드로다운 비례 다이얼 (SLICE19C — 하드 10% 버퍼 게이트 대체)
+# ============================================================
 
-    - BUY  = 매수 여력(KRW 현금) 또는 목표 미달(KRW 갭<0)
-    - DEFEND = 완전투자 & 목표 달성
+BASELINE_BUFFER = Decimal("0.10")  # 기존 하드 10% = 다이얼 baseline(무드로다운·무손잡이 재현)
+FLOOR_BUFFER = Decimal("0.03")  # 불가침 바닥 3% = 엔진 고정 가치관 "현금 3%는 남긴다"
+
+
+def _knobs(goal) -> dict:
+    """UserGoal 손잡이 5종 (없으면 전부 보수 기본값). 엔진은 이 값을 자동 조정하지 않는다."""
+    if goal is None:
+        return {"A": 0, "G": 0, "w": Decimal("0"), "L": 30, "E": 0}
+    return {
+        "A": goal.aggressiveness_offset,
+        "G": goal.growth_boost,
+        "w": goal.diversification_weight,
+        "L": goal.concentration_limit,
+        "E": goal.exploration_ratio,
+    }
+
+
+def compute_dial(user, allocation: dict, goal=None) -> dict:
+    """드로다운 비례 다이얼 → 통화별 매수 여력(deployable). 하드 10% 게이트 대체.
+
+        a    = dd + A%p + G%p·𝟙(신고점 국면)          # 자동 반응은 dd(측정 사실)뿐
+        버퍼 = max(10% − a, 3%)                        # 바닥 3% 불가침
+        여력 = 유휴현금 비중 − 버퍼                     # 통화별 현금 비례 배분, 음수 0 클램프
+
+    dd/is_new_high는 flow 조정 드로다운(snapshot.compute_drawdown). 스냅샷 없으면 dd=0·
+    신고점(=기본 버퍼 10% = 기존 게이트 재현). A·G는 %p(정수) → /100 환산.
     """
-    idle_high = allocation_gap["idle_ratio"] > IDLE_CASH_THRESHOLD
+    from apps.portfolio.services.snapshot import compute_drawdown
+
+    if goal is None:
+        from apps.portfolio.services.my_container import get_goal_for_user
+
+        goal = get_goal_for_user(user)
+    k = _knobs(goal)
+    dd_info = compute_drawdown(user)
+    dd = dd_info["dd"]
+    is_new_high = dd_info["is_new_high"]
+
+    a = dd + Decimal(k["A"]) / 100
+    if is_new_high:
+        a += Decimal(k["G"]) / 100  # G는 신고점 국면에서만
+    buffer = max(BASELINE_BUFFER - a, FLOOR_BUFFER)
+
+    total = allocation["cash_krw"] + allocation["holdings_value_krw"]
+    cash_total = allocation["cash_krw"]
+    idle_ratio = allocation["idle_ratio"]
+    headroom_frac = max(Decimal(0), idle_ratio - buffer)
+    buffer_krw = buffer * total  # 예약할 총 버퍼 KRW
+
+    by_cur = {}
+    for cur, v in allocation["by_currency"].items():
+        cash = v["cash_krw"]
+        # 버퍼의 통화별 현금 비례 배분(현금 많은 통화가 버퍼 더 부담)
+        share = (buffer_krw * (cash / cash_total)) if cash_total > 0 else Decimal(0)
+        deployable = max(Decimal(0), cash - share)
+        by_cur[cur] = {
+            "cash_krw": cash,
+            "buffer_share_krw": share,
+            "deployable_krw": deployable,
+            "headroom_ratio": (deployable / cash) if cash > 0 else Decimal(0),
+        }
+
+    return {
+        "dd": dd,
+        "a": a,
+        "buffer": buffer,
+        "is_new_high": is_new_high,
+        "idle_ratio": idle_ratio,
+        "headroom_frac": headroom_frac,
+        "buffer_krw": buffer_krw,
+        "deployable_krw_total": headroom_frac * total,
+        "by_currency": by_cur,
+        "knobs": k,
+        "frozen": dd_info.get("frozen", False),
+        "window_days": dd_info.get("window_days", 0),
+        "dd_available": dd_info.get("available", False),
+    }
+
+
+def determine_mode(progress_gap: dict, dial: dict) -> str:
+    """모드 분기(KRW 통합 정본): (매수 여력 있음 OR 목표 미달) → BUY, else DEFEND.
+
+    SLICE19C: 하드 10% 대신 **다이얼 deployable**(버퍼 차감 후 배치 가능 현금)으로 판정.
+    - BUY  = 다이얼 여력(deployable_krw_total > 0) 또는 목표 미달(KRW 갭<0)
+    - DEFEND = 여력 0 & 목표 달성
+    """
+    has_headroom = dial["deployable_krw_total"] > 0
     below_target = progress_gap["gap_pct"] < 0
-    return "BUY" if (idle_high or below_target) else "DEFEND"
+    return "BUY" if (has_headroom or below_target) else "DEFEND"
 
 
 # ============================================================
@@ -348,7 +432,8 @@ def recommend(user) -> dict:
     goal = get_goal_for_user(user)
     progress = compute_progress_gap(user, goal)
     allocation = compute_allocation_gap(user)
-    mode = determine_mode(progress, allocation)
+    dial = compute_dial(user, allocation, goal)
+    mode = determine_mode(progress, dial)
 
     recommendations = []
 

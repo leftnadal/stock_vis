@@ -25,10 +25,14 @@ def user(db):
     return User.objects.create_user(username="dd_user", password="x")
 
 
-def _goal(user, window_start: date):
-    """목표 생성 후 updated_at을 window_start로 백데이트(고점 창 = 그 이후 스냅샷)."""
+def _goal(user, window_start: date, **knobs):
+    """목표 생성(손잡이 포함) 후 updated_at을 window_start로 백데이트.
+
+    knobs를 생성 시점에 넣고 backdate를 **마지막**에 해야 auto_now 재-bump가
+    고점 창을 리셋하지 않는다(목표 변경=고점 리셋 규칙).
+    """
     g = UserGoal.objects.create(
-        user=user, target_return_pct=Decimal("10"), horizon_months=12
+        user=user, target_return_pct=Decimal("10"), horizon_months=12, **knobs
     )
     UserGoal.objects.filter(pk=g.pk).update(
         updated_at=timezone.make_aware(datetime(window_start.year, window_start.month, window_start.day))
@@ -189,3 +193,99 @@ def test_no_snapshots_unavailable(user):
     r = compute_drawdown(user)
     assert r["available"] is False
     assert r["dd"] == Decimal("0")
+
+
+# ============================================================
+# Part D — 다이얼 (compute_dial)
+# ============================================================
+
+from apps.portfolio.services.advisory_engine import compute_dial  # noqa: E402
+
+
+def _alloc(cash_by_cur, holdings_krw="0"):
+    """compute_dial 입력 allocation dict 구성(테스트용)."""
+    holdings = Decimal(str(holdings_krw))
+    cash_total = sum((Decimal(str(v)) for v in cash_by_cur.values()), Decimal(0))
+    total = cash_total + holdings
+    return {
+        "cash_krw": cash_total,
+        "holdings_value_krw": holdings,
+        "idle_ratio": (cash_total / total) if total else Decimal(1),
+        "by_currency": {
+            c: {"cash_krw": Decimal(str(v)), "holdings_value_krw": Decimal(0)}
+            for c, v in cash_by_cur.items()
+        },
+    }
+
+
+@pytest.mark.django_db
+def test_dial_default_reproduces_hard_10pct(user):
+    """기본 손잡이 + 스냅샷 없음 → 버퍼 10%(기존 하드 게이트 재현)."""
+    _goal(user, date(2026, 7, 1))
+    dial = compute_dial(user, _alloc({"USD": 300}, holdings_krw="700"))
+    assert dial["buffer"] == Decimal("0.10")
+    assert dial["headroom_frac"] == Decimal("0.2")  # idle 0.3 − 버퍼 0.10
+
+
+@pytest.mark.django_db
+def test_dial_drawdown_widens_headroom_3pct(user):
+    """⑴ 자산 −3%(dd 3%) → 버퍼 7% → 여력 +3%p."""
+    _goal(user, date(2026, 7, 1))
+    _snap(user, date(2026, 7, 1), 1000)
+    _snap(user, date(2026, 7, 2), 970)
+    dial = compute_dial(user, _alloc({"USD": 300}, holdings_krw="700"))
+    assert dial["dd"] == Decimal("0.03")
+    assert dial["buffer"] == Decimal("0.07")  # max(0.10−0.03, 0.03)
+    assert dial["headroom_frac"] == Decimal("0.23")  # idle 0.3 − 0.07 (기본 대비 +0.03)
+
+
+@pytest.mark.django_db
+def test_dial_floor_clamp_extreme_knobs(user):
+    """⑷ A=7 + G=7(신고점) → a=0.14 → 버퍼 바닥 3% 클램프(불가침)."""
+    _goal(user, date(2026, 7, 1), aggressiveness_offset=7, growth_boost=7)
+    # 스냅샷 없음 → is_new_high True → G 적용
+    dial = compute_dial(user, _alloc({"USD": 500}, holdings_krw="500"))
+    assert dial["a"] == Decimal("0.14")
+    assert dial["buffer"] == Decimal("0.03")  # 바닥 클램프
+
+
+@pytest.mark.django_db
+def test_dial_currency_proportional_buffer(user):
+    """버퍼는 통화별 현금 비례 배분 + deployable 음수 0 클램프."""
+    _goal(user, date(2026, 7, 1))
+    dial = compute_dial(user, _alloc({"USD": 600, "KRW": 400}, holdings_krw="0"))
+    # 버퍼 10% × 1000 = 100 KRW, USD/KRW 현금 6:4 배분
+    assert dial["by_currency"]["USD"]["deployable_krw"] == Decimal("540")  # 600 − 60
+    assert dial["by_currency"]["KRW"]["deployable_krw"] == Decimal("360")  # 400 − 40
+
+
+@pytest.mark.django_db
+def test_dial_aggressiveness_offset(user):
+    """A=2%p → a=0.02 → 버퍼 8%(상시 오프셋)."""
+    _goal(user, date(2026, 7, 1), aggressiveness_offset=2)
+    dial = compute_dial(user, _alloc({"USD": 500}, holdings_krw="500"))
+    assert dial["buffer"] == Decimal("0.08")
+
+
+@pytest.mark.django_db
+def test_dial_growth_boost_gated_by_new_high(user):
+    """G는 신고점 국면에서만 적용(하락 국면에선 무시)."""
+    _goal(user, date(2026, 7, 1), growth_boost=5)
+    # dd 3% (신고점 아님) → G 무시 → 버퍼 0.07 (a=0.03만)
+    _snap(user, date(2026, 7, 1), 1000)
+    _snap(user, date(2026, 7, 2), 970)
+    dial = compute_dial(user, _alloc({"USD": 500}, holdings_krw="500"))
+    assert dial["is_new_high"] is False
+    assert dial["buffer"] == Decimal("0.07")  # G 미적용
+
+
+@pytest.mark.django_db
+def test_dial_growth_boost_applies_at_new_high(user):
+    """신고점 국면 → G 적용(a에 가산)."""
+    _goal(user, date(2026, 7, 1), growth_boost=5)
+    _snap(user, date(2026, 7, 1), 1000)
+    _snap(user, date(2026, 7, 2), 1050)  # 신고점
+    dial = compute_dial(user, _alloc({"USD": 500}, holdings_krw="500"))
+    assert dial["is_new_high"] is True
+    assert dial["a"] == Decimal("0.05")  # dd 0 + G 0.05
+    assert dial["buffer"] == Decimal("0.05")

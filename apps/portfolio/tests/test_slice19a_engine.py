@@ -93,7 +93,9 @@ def test_allocation_gap_and_buy_mode_idle_cash(user, wallet):
 
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("5"), horizon_months=12)
     progress = eng.compute_progress_gap(user, goal)
-    assert eng.determine_mode(progress, alloc) == "BUY"  # 유휴현금 큼
+    # SLICE19C: determine_mode는 다이얼(deployable) 소비. 기본 손잡이 → 버퍼 10% 재현.
+    dial = eng.compute_dial(user, alloc, goal)
+    assert eng.determine_mode(progress, dial) == "BUY"  # 여력 존재(유휴현금 큼)
 
 
 @pytest.mark.django_db
@@ -104,7 +106,9 @@ def test_defend_mode_full_invest_target_met(user, wallet):
     goal = mc.upsert_goal_for_user(user, target_return_pct=Decimal("10"), horizon_months=12)
     progress = eng.compute_progress_gap(user, goal)
     alloc = eng.compute_allocation_gap(user)
-    assert eng.determine_mode(progress, alloc) == "DEFEND"  # 목표 달성 & 유휴현금 0
+    # SLICE19C: 여력 0(현금 0 → deployable 0) & 목표 달성 → DEFEND.
+    dial = eng.compute_dial(user, alloc, goal)
+    assert eng.determine_mode(progress, dial) == "DEFEND"  # 목표 달성 & 여력 0
 
 
 # ---- 가드레일 2: 집중도 TRIM ----
