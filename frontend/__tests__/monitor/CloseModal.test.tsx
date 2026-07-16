@@ -48,7 +48,7 @@ describe('CloseModal', () => {
     render(<CloseModal monitorId="m1" claimId="c1" onClose={vi.fn()} />, { wrapper })
 
     await waitFor(() =>
-      expect(screen.getByTestId('close-modal-proposal-banner')).toHaveTextContent('적중')
+      expect(screen.getByTestId('close-modal-proposal-banner')).toHaveTextContent('익절')
     )
     expect(screen.getByTestId('close-modal-verdict-validated')).toHaveAttribute(
       'aria-pressed',
@@ -106,7 +106,7 @@ describe('CloseModal', () => {
     await waitFor(() => expect(screen.getByTestId('close-modal-submit')).toBeInTheDocument())
     fireEvent.click(screen.getByTestId('close-modal-submit'))
 
-    await waitFor(() => expect(screen.getByText('이미 마감된 가설입니다.')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('이미 마감된 시나리오입니다.')).toBeInTheDocument())
     expect(onClose).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByTestId('close-modal-ack'))

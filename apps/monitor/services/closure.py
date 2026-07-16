@@ -124,7 +124,7 @@ def close_claim(claim, *, final_verdict, factor_tags=None, retro_memo="",
     raises: AlreadyClosedError(재마감), ClosureValidationError(잘못된 입력).
     """
     if claim.outcome != Claim.Outcome.PENDING:
-        raise AlreadyClosedError("이미 마감된 가설입니다.")
+        raise AlreadyClosedError("이미 마감된 시나리오입니다.")
 
     if final_verdict not in FINAL_VERDICT_CHOICES:
         raise ClosureValidationError(

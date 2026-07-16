@@ -9,6 +9,7 @@ from apps.monitor.api.views import (
     IndicatorReadingViewSet,
     MonitorIndicatorViewSet,
     MonitorViewSet,
+    ScenarioSuggestView,
 )
 
 router = DefaultRouter()
@@ -20,5 +21,6 @@ router.register(r"alerts", AlertEventViewSet, basename="alert")
 
 urlpatterns = [
     path("catalog/", IndicatorCatalogView.as_view(), name="monitor-catalog"),
+    path("scenario-suggest/", ScenarioSuggestView.as_view(), name="monitor-scenario-suggest"),
     *router.urls,
 ]

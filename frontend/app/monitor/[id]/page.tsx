@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import { AuthGuard } from '@/components/auth/AuthGuard'
 import { CloseModal } from '@/components/monitor/CloseModal'
 import { MoonPhase } from '@/components/monitor/MoonPhase'
+import { PriceLadder } from '@/components/monitor/PriceLadder'
 import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { useAuth } from '@/contexts/AuthContext'
@@ -44,9 +45,9 @@ function IndicatorRow({
   latestValue: number | null | undefined
 }) {
   return (
-    <div className="flex items-center justify-between border-b border-gray-100 py-2 text-sm last:border-0 dark:border-gray-800">
-      <span className="text-gray-600 dark:text-gray-300">{name}</span>
-      <span className="text-gray-400">
+    <div className="flex items-center justify-between gap-2 border-b border-gray-100 py-2 text-sm last:border-0 dark:border-gray-800">
+      <span className="min-w-0 flex-1 truncate text-gray-600 dark:text-gray-300">{name}</span>
+      <span className="flex-shrink-0 text-gray-400">
         {typeof latestValue === 'number' ? latestValue.toFixed(3) : '—'}
       </span>
     </div>
@@ -135,6 +136,8 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
 
   const meta = stateMeta(monitor.current_state)
   const dday = ddayLabel(monitor.next_deadline)
+  // 가격축(TIMING-P2): 활성 Claim 중 zone_display 있는 첫 건 → 수직 사다리.
+  const zoneClaim = (claims ?? []).find((c) => c.status === 'active' && c.zone_display?.zone)
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -178,6 +181,19 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
         )}
       </div>
 
+      {/* 가격 구간 사다리 (TIMING-P2 §5) — 가격 시나리오 있을 때만. 신호축과 별개. */}
+      {zoneClaim?.zone_display && (
+        <section className="mb-6" data-testid="detail-price-ladder">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+            가격 구간
+          </h2>
+          <div className="rounded-xl border border-gray-100 p-4 dark:border-gray-800">
+            <PriceLadder zoneDisplay={zoneClaim.zone_display} />
+            <p className="mt-3 text-[11px] text-gray-400">일봉 기준 · 스윙 타이밍</p>
+          </div>
+        </section>
+      )}
+
       <section className="mb-6">
         <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">지표</h2>
         {(indicators ?? []).length === 0 ? (
@@ -192,9 +208,11 @@ function MonitorDetailContent({ monitorId }: { monitorId: string }) {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">가설</h2>
+        <h2 className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+          매수 시나리오
+        </h2>
         {(claims ?? []).length === 0 ? (
-          <p className="text-sm text-gray-400">등록된 가설이 없어요.</p>
+          <p className="text-sm text-gray-400">등록된 매수 시나리오가 없어요.</p>
         ) : (
           <div className="rounded-xl border border-gray-100 px-3 dark:border-gray-800">
             {(claims ?? []).map((c) => (

@@ -141,6 +141,18 @@ function MonitorListContent() {
     return map
   }, [monitors, claimsByMonitor])
 
+  // 가격축(TIMING-P2): 모니터별 활성 Claim 중 zone_display 있는 첫 건 → 카드 가격축.
+  const zoneByMonitor = useMemo(() => {
+    const map = new Map<string, Claim['zone_display']>()
+    for (const m of monitors ?? []) {
+      const active = (claimsByMonitor.get(m.id) ?? []).find(
+        (c) => c.status === 'active' && c.zone_display?.zone
+      )
+      if (active?.zone_display) map.set(m.id, active.zone_display)
+    }
+    return map
+  }, [monitors, claimsByMonitor])
+
   const closedCount = useMemo(
     () => [...closureByMonitor.values()].filter((c) => c.isFullyClosed).length,
     [closureByMonitor]
@@ -198,7 +210,7 @@ function MonitorListContent() {
             ))}
             <Chip
               active={claimOnly}
-              label="가설만"
+              label="시나리오만"
               count={claimCount}
               onClick={() => setClaimOnly((v) => !v)}
             />
@@ -221,6 +233,7 @@ function MonitorListContent() {
               monitor={m}
               closureSummary={closureByMonitor.get(m.id)}
               judgeUsername={user?.username}
+              zoneDisplay={zoneByMonitor.get(m.id)}
             />
           ))}
           {filtered.length === 0 && (

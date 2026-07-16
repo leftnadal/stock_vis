@@ -7,11 +7,11 @@ import type { SparklineBand, SparklinePoint } from '@/types/monitor'
 
 // BE score_to_phase 경계(단일 소스)와 동일한 5밴드 — 테스트도 API 값을 그대로 주입(하드코딩 아님)
 const BANDS: SparklineBand[] = [
-  { phase: 'full_moon', label: '가설이 빛나고 있어요', min: 0.6, max: 1.0 },
-  { phase: 'waxing', label: '조금씩 밝아지고 있어요', min: 0.2, max: 0.6 },
+  { phase: 'full_moon', label: '신호가 환하게 켜졌어요', min: 0.6, max: 1.0 },
+  { phase: 'waxing', label: '신호가 밝아지고 있어요', min: 0.2, max: 0.6 },
   { phase: 'half_moon', label: '반반이에요', min: -0.2, max: 0.2 },
-  { phase: 'waning', label: '조금씩 어두워지고 있어요', min: -0.6, max: -0.2 },
-  { phase: 'new_moon', label: '가설이 힘을 잃고 있어요', min: -1.0, max: -0.6 },
+  { phase: 'waning', label: '신호가 어두워지고 있어요', min: -0.6, max: -0.2 },
+  { phase: 'new_moon', label: '신호가 힘을 잃고 있어요', min: -1.0, max: -0.6 },
 ]
 
 // 실제 AAPL 형태의 38 거래일 score 시계열(상승 추세)

@@ -12,6 +12,7 @@ import type {
   Monitor,
   MonitorIndicator,
   MonitorInput,
+  ScenarioSuggest,
   SparklineResponse,
 } from '@/types/monitor'
 
@@ -74,9 +75,27 @@ export const monitorService = {
     return unwrapList<Claim>(data)
   },
   createClaim: async (
-    payload: { monitor: string; assertion: string; deadline?: string | null }
+    payload: {
+      monitor: string
+      assertion: string
+      deadline?: string | null
+      // 매수 시나리오 가격 (TIMING-P2, 선택 — 시나리오 작성 시에만).
+      entry_price?: string | null
+      target_price?: string | null
+      stop_price?: string | null
+      fair_value_low?: string | null
+      fair_value_high?: string | null
+    }
   ): Promise<Claim> => {
     const { data } = await authAxios.post('/monitor/claims/', payload)
+    return data
+  },
+
+  // ── L계열 가격 제안 (TIMING-P2 §3, 읽기 전용) ──
+  scenarioSuggest: async (symbol: string): Promise<ScenarioSuggest> => {
+    const { data } = await authAxios.get('/monitor/scenario-suggest/', {
+      params: { symbol },
+    })
     return data
   },
 

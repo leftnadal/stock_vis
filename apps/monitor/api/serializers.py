@@ -71,6 +71,27 @@ class ClaimSerializer(serializers.ModelSerializer):
         except ClosureSnapshot.DoesNotExist:
             return None
 
+    def validate(self, attrs):
+        # 가격 시나리오 검증 (TIMING-P2 §3, additive — 가격 제출 시에만). 기존 무가격 Claim 무영향.
+        inst = self.instance
+        entry = attrs.get("entry_price", getattr(inst, "entry_price", None))
+        target = attrs.get("target_price", getattr(inst, "target_price", None))
+        stop = attrs.get("stop_price", getattr(inst, "stop_price", None))
+        # 셋 다 있을 때만 순서 검증 (부분 입력·무가격은 통과 — 빌더가 4필수 강제)
+        if entry is not None and target is not None and stop is not None:
+            if not (stop < entry < target):
+                raise serializers.ValidationError(
+                    {"entry_price": "손절가 < 진입가 < 목표가 순서여야 합니다."}
+                )
+        # 기한 = 미래 (가격 시나리오 신규 제출 시). deadline 단독 수정은 검사 생략.
+        deadline = attrs.get("deadline")
+        if deadline is not None and entry is not None and inst is None:
+            from django.utils import timezone
+
+            if deadline <= timezone.localdate():
+                raise serializers.ValidationError({"deadline": "기한은 미래 날짜여야 합니다."})
+        return attrs
+
     def get_zone_display(self, obj):
         # 가격 3필드 모두 있어야 구간 산출. 라벨·경계값을 BE에서 완결(FE 렌더 전용).
         if obj.entry_price is None or obj.target_price is None or obj.stop_price is None:

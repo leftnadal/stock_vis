@@ -29,6 +29,8 @@ vi.mock('@/hooks/useMonitor', () => ({
       },
     ],
   }),
+  // TIMING-P2: 빌더 4단계 가격 제안 훅 (테스트에선 미가용으로 배너 숨김)
+  useScenarioSuggest: () => ({ data: { available: false } }),
 }))
 
 const create = vi.fn()

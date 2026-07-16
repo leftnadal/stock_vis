@@ -21,12 +21,46 @@ export type IndicatorType =
 export type SupportDirection = 'positive' | 'negative'
 
 export type ClaimStatus = 'active' | 'resolved'
-export type ClaimOutcome = 'pending' | 'validated' | 'partial' | 'invalidated' | 'inconclusive'
+export type ClaimOutcome =
+  | 'pending'
+  | 'validated'
+  | 'partial'
+  | 'invalidated'
+  | 'inconclusive'
+  | 'expired' // 기한만료 (D-TIMING-DECISIONS-5 ④-B)
 
-// 마감 시 사용자가 고를 수 있는 최종 판정 (inconclusive 제외 — 엣지, 버튼 미노출).
-export type ProposedVerdict = 'validated' | 'partial' | 'invalidated'
+// 마감 시 사용자가 고를 수 있는 최종 판정 (inconclusive 제외 — 엣지). expired = 시스템 제안·선택 가능.
+export type ProposedVerdict = 'validated' | 'partial' | 'invalidated' | 'expired'
 // VerdictBadge 등 표시용 — ProposedVerdict + inconclusive(중립 표시).
 export type Verdict = ProposedVerdict | 'inconclusive'
+
+// 가격 구간축 (BE Claim.PriceZone 미러 — TIMING-P1).
+export type PriceZone = 'exited' | 'entry' | 'approach' | 'waiting' | 'overheated'
+
+// zone_display (serializer, BE 완결 표시 메타 — FE 재계산 금지). 가격 3필드 없으면 null.
+export interface ZoneDisplay {
+  zone: PriceZone | null
+  label: string | null
+  close: number | null
+  boundaries: {
+    stop: number
+    entry: number
+    approach_ceiling: number
+    target: number
+  }
+}
+
+// L계열 가격 제안 (GET /monitor/scenario-suggest/?symbol=).
+export interface ScenarioSuggest {
+  available: boolean
+  symbol: string
+  close?: number
+  support_low?: number
+  entry_suggest?: number
+  atr?: number | null
+  stop_suggest?: number | null
+  basis?: string
+}
 // 회고 공통 요인 태그 (고정 enum — BE Claim.FactorTag 미러).
 export type FactorTag = 'timing' | 'ext_shock' | 'indicator_noise' | 'luck'
 // 지표별 마감 결과 (BE ClaimIndicatorResult.Result 미러).
@@ -96,6 +130,16 @@ export interface Claim {
   retro_memo: string
   // 마감 동결 스냅샷 (MON-CLOSE-UI P1.5) — resolved면 동결값, PENDING이면 null.
   closure_snapshot: ClosureSnapshotData | null
+  // 매수 시나리오 가격 (TIMING-P1, DRF Decimal→문자열). 무가격 구 가설이면 전부 null.
+  entry_price: string | null
+  target_price: string | null
+  stop_price: string | null
+  fair_value_low: string | null
+  fair_value_high: string | null
+  // 가격 구간축 (파이프라인 소유·read-only) + BE 완결 표시 메타.
+  last_price_zone: PriceZone | null
+  entry_reached_at: string | null
+  zone_display: ZoneDisplay | null
   created_at: string
   resolved_at: string | null
 }
@@ -164,7 +208,9 @@ export interface MonitorInput {
   target_date_end?: string | null
 }
 
-// 지표 카탈로그 항목 (GET /monitor/catalog/)
+// 지표 카탈로그 항목 (GET /monitor/catalog/). S계열 6종은 신규 메타 포함(TIMING-P1).
+export type EvidenceStrength = 'strong' | 'medium' | 'weak'
+
 export interface CatalogEntry {
   key: string
   name: string
@@ -173,6 +219,11 @@ export interface CatalogEntry {
   source: string
   unit: string
   description: string
+  // S계열 전용 메타 (기존 3종은 undefined).
+  evidence_strength?: EvidenceStrength
+  scoring_mode?: 'zscore' | 'bounded'
+  default_selected?: boolean
+  compute_key?: string
 }
 
 // ── 전이 알림 (MON-P3-ALERT, GET /monitor/alerts/) ──

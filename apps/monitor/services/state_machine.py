@@ -152,12 +152,12 @@ def is_deterioration(from_state, to_state):
 def score_to_phase(score):
     """score -> Moon Phase 시각화 (수학 모델 Section 5.4)."""
     if score > 0.6:
-        return {'phase': 'full_moon', 'label': '가설이 빛나고 있어요', 'icon': '🌕'}
+        return {'phase': 'full_moon', 'label': '신호가 환하게 켜졌어요', 'icon': '🌕'}
     elif score > 0.2:
-        return {'phase': 'waxing', 'label': '조금씩 밝아지고 있어요', 'icon': '🌔'}
+        return {'phase': 'waxing', 'label': '신호가 밝아지고 있어요', 'icon': '🌔'}
     elif score > -0.2:
         return {'phase': 'half_moon', 'label': '반반이에요', 'icon': '🌓'}
     elif score > -0.6:
-        return {'phase': 'waning', 'label': '조금씩 어두워지고 있어요', 'icon': '🌒'}
+        return {'phase': 'waning', 'label': '신호가 어두워지고 있어요', 'icon': '🌒'}
     else:
-        return {'phase': 'new_moon', 'label': '가설이 힘을 잃고 있어요', 'icon': '🌑'}
+        return {'phase': 'new_moon', 'label': '신호가 힘을 잃고 있어요', 'icon': '🌑'}

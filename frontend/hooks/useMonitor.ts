@@ -98,6 +98,16 @@ export function useIndicatorCatalog(scope: string) {
   })
 }
 
+// L계열 가격 제안 (TIMING-P2 §3) — 심볼 확정 + enabled일 때만 조회(빌더 4단계).
+export function useScenarioSuggest(symbol: string, enabled: boolean) {
+  return useQuery({
+    queryKey: [...monitorKeys.all, 'scenarioSuggest', symbol] as const,
+    queryFn: () => monitorService.scenarioSuggest(symbol),
+    enabled: enabled && symbol.trim() !== '',
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
 // ── 전이 알림 (MON-P3-ALERT) ──
 
 export function useAlerts(params?: { unread?: boolean; deterioration?: boolean }) {

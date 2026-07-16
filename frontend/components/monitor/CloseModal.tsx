@@ -1,6 +1,6 @@
 'use client'
 
-// 가설 마감 모달 (MON-CLOSE-UI Phase 2, 설계 0.1 A-1 단일 스크롤).
+// 매수 시나리오 마감 모달 (MON-CLOSE-UI Phase 2 · TIMING-P2 어휘, 설계 0.1 A-1 단일 스크롤).
 // 열기 → close-preview 프리필(proposed_verdict 프리셀렉트) → 제출 → close POST
 // (미선택 지표는 indicator_results에서 제외) → 성공 시 닫고 캐시 무효화.
 // 409(이미 마감)는 안내 후 닫고 재조회, 그 외 오류는 모달 유지 + 인라인 에러(입력 보존).
@@ -10,24 +10,13 @@ import { useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, Loader2 } from 'lucide-react'
 
 import { monitorKeys, useCloseClaim, useClosePreview } from '@/hooks/useMonitor'
+import { VERDICT_META, VERDICT_OPTIONS } from '@/lib/monitor/verdictLabels'
 import type { FactorTag, IndicatorResultValue, ProposedVerdict } from '@/types/monitor'
 
 interface CloseModalProps {
   monitorId: string
   claimId: string
   onClose: () => void
-}
-
-const VERDICT_OPTIONS: { key: ProposedVerdict; label: string }[] = [
-  { key: 'validated', label: '적중' },
-  { key: 'partial', label: '부분적중' },
-  { key: 'invalidated', label: '빗나감' },
-]
-
-const PROPOSED_LABEL: Record<ProposedVerdict, string> = {
-  validated: '적중',
-  partial: '부분적중',
-  invalidated: '빗나감',
 }
 
 const RESULT_CHIPS: { key: IndicatorResultValue; label: string }[] = [
@@ -125,7 +114,7 @@ export function CloseModal({ monitorId, claimId, onClose }: CloseModalProps) {
       <div className="flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-white dark:bg-gray-900 sm:rounded-2xl">
         {alreadyClosed ? (
           <div className="flex flex-col items-center gap-4 p-8 text-center">
-            <p className="text-gray-800 dark:text-gray-100">이미 마감된 가설입니다.</p>
+            <p className="text-gray-800 dark:text-gray-100">이미 마감된 시나리오입니다.</p>
             <button
               type="button"
               onClick={onClose}
@@ -138,7 +127,9 @@ export function CloseModal({ monitorId, claimId, onClose }: CloseModalProps) {
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-5">
-              <h2 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">가설 마감</h2>
+              <h2 className="mb-4 font-semibold text-gray-900 dark:text-gray-100">
+                매수 시나리오 마감
+              </h2>
 
               {isLoading && <p className="py-8 text-center text-gray-400">불러오는 중…</p>}
               {previewError && (
@@ -149,23 +140,25 @@ export function CloseModal({ monitorId, claimId, onClose }: CloseModalProps) {
 
               {preview && (
                 <>
-                  {/* 1. 제안 배너 */}
+                  {/* 1. 제안 배너 (expired면 기한만료 안내) */}
                   <div
                     className="mb-4 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-800 dark:bg-blue-900/30 dark:text-blue-200"
                     data-testid="close-modal-proposal-banner"
                   >
-                    시스템 제안: {PROPOSED_LABEL[preview.proposed_verdict]}
+                    시스템 제안: {VERDICT_META[preview.proposed_verdict].label}
                     <span className="ml-1 block text-xs text-blue-600 dark:text-blue-300">
-                      overall_score {preview.overall_score.toFixed(3)} · 밴드 [−0.333, +0.333]
+                      {preview.proposed_verdict === 'expired'
+                        ? '기한 경과 · 진입 구간 미도달'
+                        : `overall_score ${preview.overall_score.toFixed(3)} · 밴드 [−0.333, +0.333]`}
                     </span>
                   </div>
 
-                  {/* 2. 판정 3버튼 */}
+                  {/* 2. 판정 버튼 (익절/부분 실현/손절/기한만료) */}
                   <div className="mb-5">
                     <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                       판정
                     </p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {VERDICT_OPTIONS.map((opt) => {
                         const active = verdict === opt.key
                         const suggested = preview.proposed_verdict === opt.key

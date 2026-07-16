@@ -4,12 +4,13 @@ import Link from 'next/link'
 
 import { ArrowIndicator } from '@/components/monitor/ArrowIndicator'
 import { MoonPhase } from '@/components/monitor/MoonPhase'
+import { MiniPriceLadder, ZoneChip } from '@/components/monitor/PriceLadder'
 import { StateBandSparkline } from '@/components/monitor/StateBandSparkline'
 import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import { useSparkline } from '@/hooks/useMonitor'
 import { frozenScore, outcomeToVerdict, type ClaimClosureSummary } from '@/lib/monitor/closure'
 import { STATE_TONE_CLASS, ddayLabel, stateMeta } from '@/lib/monitor/display'
-import type { Monitor } from '@/types/monitor'
+import type { Monitor, ZoneDisplay } from '@/types/monitor'
 
 const SCOPE_LABEL: Record<Monitor['scope'], string> = {
   market: '시장',
@@ -30,9 +31,16 @@ interface MonitorListCardProps {
   closureSummary?: ClaimClosureSummary
   // "판정자" 표시용 — AuthContext는 카드가 직접 참조하지 않고 상위(페이지)에서 주입.
   judgeUsername?: string | null
+  // 매수 시나리오 가격축(TIMING-P2) — 활성 Claim에 가격 있으면 상위에서 주입, 없으면 미표시.
+  zoneDisplay?: ZoneDisplay | null
 }
 
-export function MonitorListCard({ monitor, closureSummary, judgeUsername }: MonitorListCardProps) {
+export function MonitorListCard({
+  monitor,
+  closureSummary,
+  judgeUsername,
+  zoneDisplay,
+}: MonitorListCardProps) {
   const score = monitor.latest_score ?? null
   const display = monitor.display // API 파생값 (degree·color·label·phase), score 없으면 null
   const meta = stateMeta(monitor.current_state)
@@ -132,6 +140,8 @@ export function MonitorListCard({ monitor, closureSummary, judgeUsername }: Moni
               {closureSummary.total}중 {closureSummary.resolved}마감
             </span>
           )}
+          {/* 가격축 zone 칩 (TIMING-P2) — 가격 시나리오 있을 때만 */}
+          {zoneDisplay?.zone && <ZoneChip zoneDisplay={zoneDisplay} />}
         </div>
         {spark && (
           <div className="mt-2">
@@ -142,6 +152,8 @@ export function MonitorListCard({ monitor, closureSummary, judgeUsername }: Moni
             />
           </div>
         )}
+        {/* 가격 미니 사다리 (신호축 스파크라인과 별개 축) */}
+        {zoneDisplay?.zone && <MiniPriceLadder zoneDisplay={zoneDisplay} />}
       </div>
 
       {display ? (

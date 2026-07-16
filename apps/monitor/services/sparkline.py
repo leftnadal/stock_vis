@@ -16,11 +16,11 @@ WINDOW_DEFAULT = 30  # 최근 거래일 수
 # score_to_phase(state_machine) 경계와 동기화된 상태 밴드(높은 score→밝은 위상).
 # FE는 이 값으로 색 밴드를 그린다(하드코딩 금지). 상·하한은 score 정의역 [-1, 1].
 SCORE_BANDS = [
-    {"phase": "full_moon", "label": "가설이 빛나고 있어요", "min": 0.6, "max": 1.0},
-    {"phase": "waxing", "label": "조금씩 밝아지고 있어요", "min": 0.2, "max": 0.6},
+    {"phase": "full_moon", "label": "신호가 환하게 켜졌어요", "min": 0.6, "max": 1.0},
+    {"phase": "waxing", "label": "신호가 밝아지고 있어요", "min": 0.2, "max": 0.6},
     {"phase": "half_moon", "label": "반반이에요", "min": -0.2, "max": 0.2},
-    {"phase": "waning", "label": "조금씩 어두워지고 있어요", "min": -0.6, "max": -0.2},
-    {"phase": "new_moon", "label": "가설이 힘을 잃고 있어요", "min": -1.0, "max": -0.6},
+    {"phase": "waning", "label": "신호가 어두워지고 있어요", "min": -0.6, "max": -0.2},
+    {"phase": "new_moon", "label": "신호가 힘을 잃고 있어요", "min": -1.0, "max": -0.6},
 ]
 
 

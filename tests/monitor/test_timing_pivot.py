@@ -434,3 +434,103 @@ class TestClaimSerializerZone:
         data = ClaimSerializer(claim).data
         assert data["zone_display"] is None
         assert data["entry_price"] is None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# TIMING-P2 BE 지원 — L계열 제안 endpoint + serializer 가격 검증
+# ══════════════════════════════════════════════════════════════════════════════
+
+from apps.monitor.services.scenario_suggest import suggest_scenario
+
+
+@pytest.mark.django_db
+class TestScenarioSuggest:
+    def test_sufficient_history_returns_candidates(self, aapl_monitor, daily_prices):
+        daily_prices(60, close_fn=lambda i: 100.0 - i * 0.2)  # 하락 → 저점 존재
+        res = suggest_scenario("AAPL")
+        assert res["available"] is True
+        assert res["entry_suggest"] is not None
+        assert res["atr"] is not None
+        assert res["stop_suggest"] < res["entry_suggest"]  # 손절 < 지지선
+
+    def test_insufficient_history_unavailable(self, aapl_monitor, daily_prices):
+        daily_prices(5)
+        res = suggest_scenario("AAPL")
+        assert res["available"] is False
+
+
+@pytest.mark.django_db
+class TestScenarioSuggestAPI:
+    def _client(self, owner):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=owner)
+        return c
+
+    def test_missing_symbol_400(self, owner):
+        r = self._client(owner).get("/api/v1/monitor/scenario-suggest/")
+        assert r.status_code == 400
+
+    def test_with_symbol_200(self, owner, stock_aapl, daily_prices):
+        daily_prices(60)
+        r = self._client(owner).get("/api/v1/monitor/scenario-suggest/", {"symbol": "AAPL"})
+        assert r.status_code == 200
+        assert r.data["available"] is True
+
+
+@pytest.mark.django_db
+class TestClaimPriceValidation:
+    def _client(self, owner):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=owner)
+        return c
+
+    def test_valid_order_accepted(self, owner, aapl_monitor):
+        r = self._client(owner).post(
+            "/api/v1/monitor/claims/",
+            {
+                "monitor": str(aapl_monitor.id), "assertion": "반등",
+                "entry_price": "100", "target_price": "120", "stop_price": "90",
+                "deadline": (date.today() + timedelta(days=30)).isoformat(),
+            },
+            format="json",
+        )
+        assert r.status_code == 201, r.data
+
+    def test_wrong_order_rejected(self, owner, aapl_monitor):
+        r = self._client(owner).post(
+            "/api/v1/monitor/claims/",
+            {
+                "monitor": str(aapl_monitor.id), "assertion": "반등",
+                "entry_price": "100", "target_price": "90", "stop_price": "80",  # target<entry
+            },
+            format="json",
+        )
+        assert r.status_code == 400
+        # 커스텀 예외 핸들러가 errors 키로 감쌈
+        errors = r.data.get("errors", r.data)
+        assert "entry_price" in errors
+
+    def test_past_deadline_with_price_rejected(self, owner, aapl_monitor):
+        r = self._client(owner).post(
+            "/api/v1/monitor/claims/",
+            {
+                "monitor": str(aapl_monitor.id), "assertion": "반등",
+                "entry_price": "100", "target_price": "120", "stop_price": "90",
+                "deadline": (date.today() - timedelta(days=1)).isoformat(),
+            },
+            format="json",
+        )
+        assert r.status_code == 400
+
+    def test_no_price_legacy_claim_ok(self, owner, aapl_monitor):
+        # 무가격 구 가설 — 검증 무영향
+        r = self._client(owner).post(
+            "/api/v1/monitor/claims/",
+            {"monitor": str(aapl_monitor.id), "assertion": "상시 관찰"},
+            format="json",
+        )
+        assert r.status_code == 201, r.data

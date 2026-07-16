@@ -63,6 +63,26 @@ class IndicatorCatalogView(APIView):
         return Response({"scope": scope, "indicators": catalog_for(scope)})
 
 
+class ScenarioSuggestView(APIView):
+    """L계열 가격 제안 (빌더 4단계, 읽기 전용). GET /monitor/scenario-suggest/?symbol=AAPL.
+
+    DailyPrice에서 지지선(스윙 저점)·ATR×2 손절 폭 산출(서버측 — 3년 OHLC 클라 전송 금지).
+    확정은 항상 사용자(3-B). 히스토리 부족 시 available=False.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.monitor.services.scenario_suggest import suggest_scenario
+
+        symbol = (request.query_params.get("symbol") or "").strip()
+        if not symbol:
+            return Response(
+                {"detail": "symbol 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        return Response(suggest_scenario(symbol))
+
+
 class MonitorViewSet(viewsets.ModelViewSet):
     serializer_class = MonitorSerializer
     permission_classes = [IsAuthenticated]

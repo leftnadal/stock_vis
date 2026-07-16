@@ -6,9 +6,10 @@ import { VerdictBadge } from '@/components/monitor/VerdictBadge'
 import type { Verdict } from '@/types/monitor'
 
 const EXPECTED: Record<Verdict, string> = {
-  validated: '적중',
-  partial: '부분적중',
-  invalidated: '빗나감',
+  validated: '익절',
+  partial: '부분 실현',
+  invalidated: '손절',
+  expired: '기한만료',
   inconclusive: '불명확',
 }
 
