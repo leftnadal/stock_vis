@@ -142,11 +142,12 @@ def test_rank_currency_separation_and_idle_guard(user, wallet):
     WatchlistItem.objects.create(watchlist=wl, stock=cand_krw)
 
     alloc = eng.compute_allocation_gap(user)
-    ranked_usd = eng.rank_candidates(user, "USD", alloc)
+    dial = eng.compute_dial(user, alloc)  # SLICE19C: 게이트=다이얼 deployable
+    ranked_usd = eng.rank_candidates(user, "USD", dial)
     assert {c["symbol"] for c in ranked_usd} == {"CANDUSD"}  # KRW 후보 제외(통화 분리)
 
-    # KRW 여력 없음 → 가드레일 1(빈 후보)
-    assert eng.rank_candidates(user, "KRW", alloc) == []
+    # KRW 여력 없음(dial by_currency에 KRW 없음) → 자격 박탈(빈 후보)
+    assert eng.rank_candidates(user, "KRW", dial) == []
 
 
 # ---- 산출 계약 + 경계 ----

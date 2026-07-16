@@ -289,3 +289,178 @@ def test_dial_growth_boost_applies_at_new_high(user):
     assert dial["is_new_high"] is True
     assert dial["a"] == Decimal("0.05")  # dd 0 + G 0.05
     assert dial["buffer"] == Decimal("0.05")
+
+
+# ============================================================
+# Part E — 게이트·랭킹·레인
+# ============================================================
+
+from apps.portfolio.models import Wallet, WalletHolding  # noqa: E402
+from apps.portfolio.services.advisory_engine import (  # noqa: E402
+    CCY_WEIGHT,
+    CONF_WEIGHT,
+    ENTRY_WEIGHT,
+    _placement_score,
+    find_trim_candidates,
+    rank_candidates,
+)
+from packages.shared.stocks.models import Stock  # noqa: E402
+from packages.shared.users.models import Watchlist, WatchlistItem  # noqa: E402
+
+
+def _stock(sym, currency="USD", price="100"):
+    return Stock.objects.create(
+        symbol=sym, currency=currency, real_time_price=Decimal(str(price))
+    )
+
+
+def _hold(wallet, stock, shares="1", avg_cost="100"):
+    return WalletHolding.objects.create(
+        wallet=wallet,
+        stock=stock,
+        shares=Decimal(str(shares)),
+        avg_cost=Decimal(str(avg_cost)),
+        first_bought_at=date(2026, 1, 1),
+    )
+
+
+# ---- 신뢰도 지배 불변식 (구조) ----
+
+
+def test_confidence_dominance_invariant():
+    """w 상한 0.20에도 신뢰도 성분 가중이 최대 성분(불가침)."""
+    for w in [Decimal("0"), Decimal("0.05"), Decimal("0.20")]:
+        conf_wt = (Decimal(1) - w) * CONF_WEIGHT
+        entry_wt = (Decimal(1) - w) * ENTRY_WEIGHT
+        ccy_wt = (Decimal(1) - w) * CCY_WEIGHT
+        div_wt = w
+        assert conf_wt >= entry_wt
+        assert conf_wt >= ccy_wt
+        assert conf_wt >= div_wt  # (1−w)0.6 ≥ w ⟺ w ≤ 0.375
+    assert (Decimal(1) - Decimal("0.20")) * CONF_WEIGHT == Decimal("0.48")
+
+
+def test_w0_diversification_exactly_zero():
+    """w=0(기본) → 분산 한계효과 영향 정확히 0."""
+    base = _placement_score(Decimal("0.5"), Decimal("0.5"), Decimal("0.5"), Decimal("0"), Decimal("0"))
+    with_div = _placement_score(Decimal("0.5"), Decimal("0.5"), Decimal("0.5"), Decimal("1"), Decimal("0"))
+    assert base == with_div
+    # base = 0.60·0.5 + 0.25·0.5 + 0.15·0.5 = 0.5
+    assert base == Decimal("0.5")
+
+
+def test_w020_confidence_beats_high_div_low_conf():
+    """w=0.20에서도 고신뢰도 후보가 저신뢰도·고분산 후보를 이긴다."""
+    high_conf = _placement_score(Decimal("1"), Decimal("0"), Decimal("0"), Decimal("0"), Decimal("0.20"))
+    low_conf_high_div = _placement_score(Decimal("0"), Decimal("0"), Decimal("0"), Decimal("1"), Decimal("0.20"))
+    assert high_conf > low_conf_high_div  # 0.48 > 0.20
+
+
+# ---- L 게이트 (TRIM) ----
+
+
+@pytest.mark.django_db
+def test_trim_L100_no_trim(user):
+    """L=100 → 집중도 무제한 → TRIM 소멸."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("BIG", price="100"), shares="8")  # 80%
+    _hold(wallet, _stock("SML", price="100"), shares="2")  # 20%
+    goal = _goal(user, date(2026, 7, 1), concentration_limit=100)
+    assert find_trim_candidates(user, goal) == []
+
+
+@pytest.mark.django_db
+def test_trim_L_change_alters_eligibility(user):
+    """L 변경 → TRIM 자격 변화(50% 보유: L=30 TRIM, L=60 비-TRIM)."""
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("HALF", price="100"), shares="5")  # 50%
+    _hold(wallet, _stock("REST", price="100"), shares="5")  # 50%
+    g30 = _goal(user, date(2026, 7, 1), concentration_limit=30)
+    assert {t["symbol"] for t in find_trim_candidates(user, g30)} == {"HALF", "REST"}
+    UserGoal.objects.filter(pk=g30.pk).update(concentration_limit=60)
+    g60 = UserGoal.objects.get(pk=g30.pk)
+    assert find_trim_candidates(user, g60) == []  # 50% < 60% → TRIM 없음
+
+
+# ---- 매수 자격 게이트 (기존 집중도 >= L) ----
+
+
+@pytest.mark.django_db
+def test_buy_eligibility_excludes_over_limit_holding(user):
+    """관심 후보가 이미 L 초과 보유 → 매수 자격 박탈."""
+    wallet = Wallet.objects.create(user=user)
+    over = _stock("OVER", price="100")
+    _hold(wallet, over, shares="4")  # 400/(400+600현금)=40% > L30
+    from apps.portfolio.services import my_container as mc
+
+    mc.upsert_cash_for_wallet(wallet, Decimal("600"), currency="USD")
+    wl = Watchlist.objects.create(user=user, name="wl")
+    WatchlistItem.objects.create(watchlist=wl, stock=over)  # 이미 40% 보유 종목
+    WatchlistItem.objects.create(watchlist=wl, stock=_stock("NEW", price="50"))
+    goal = _goal(user, date(2026, 7, 1))  # L 기본 30
+    from apps.portfolio.services.advisory_engine import compute_allocation_gap
+
+    dial = compute_dial(user, compute_allocation_gap(user), goal)
+    ranked = rank_candidates(user, "USD", dial, goal)
+    symbols = {c["symbol"] for c in ranked}
+    assert "OVER" not in symbols  # 기존 40% > L30 → 자격 박탈
+    assert "NEW" in symbols  # 신규 → 자격 통과
+
+
+# ---- 탐험 레인 ----
+
+
+@pytest.mark.django_db
+def test_exploration_lane_splits_young(user):
+    """E>0 → 젊은 후보(관측<30일)는 탐험 레인, 성숙 후보는 코어."""
+    from apps.chain_sight.models.relation_discovery import RelationConfidence
+
+    wallet = Wallet.objects.create(user=user)
+    held = _stock("HELD", price="100")
+    _hold(wallet, held, shares="1")
+    from apps.portfolio.services import my_container as mc
+
+    mc.upsert_cash_for_wallet(wallet, Decimal("900"), currency="USD")
+
+    young_c = _stock("YOUNG", price="50")
+    mature_c = _stock("MATURE", price="50")
+    wl = Watchlist.objects.create(user=user, name="wl")
+    WatchlistItem.objects.create(watchlist=wl, stock=young_c)
+    WatchlistItem.objects.create(watchlist=wl, stock=mature_c)
+
+    # 두 엣지 모두 생성 후, MATURE 엣지만 관측시작 백데이트(성숙)
+    RelationConfidence.objects.create(symbol_a="HELD", symbol_b="YOUNG", relation_type="PEER", truth_score=0.5)
+    e_mat = RelationConfidence.objects.create(symbol_a="HELD", symbol_b="MATURE", relation_type="PEER", truth_score=0.5)
+    RelationConfidence.objects.filter(pk=e_mat.pk).update(
+        first_observed_at=timezone.make_aware(datetime(2026, 1, 1))
+    )
+    goal = _goal(user, date(2026, 7, 1), exploration_ratio=15)
+    from apps.portfolio.services.advisory_engine import compute_allocation_gap
+
+    dial = compute_dial(user, compute_allocation_gap(user), goal)
+    ranked = rank_candidates(user, "USD", dial, goal)
+    lanes = {c["symbol"]: c["lane"] for c in ranked}
+    assert lanes["YOUNG"] == "exploration"
+    assert lanes["MATURE"] == "core"
+
+
+@pytest.mark.django_db
+def test_exploration_lane_off_when_E_zero(user):
+    """E=0(기본) → 탐험 레인 없음(젊은 후보도 코어)."""
+    from apps.chain_sight.models.relation_discovery import RelationConfidence
+
+    wallet = Wallet.objects.create(user=user)
+    _hold(wallet, _stock("HELD", price="100"), shares="1")
+    from apps.portfolio.services import my_container as mc
+
+    mc.upsert_cash_for_wallet(wallet, Decimal("900"), currency="USD")
+    young_c = _stock("YOUNG", price="50")
+    wl = Watchlist.objects.create(user=user, name="wl")
+    WatchlistItem.objects.create(watchlist=wl, stock=young_c)
+    RelationConfidence.objects.create(symbol_a="HELD", symbol_b="YOUNG", relation_type="PEER", truth_score=0.5)
+    goal = _goal(user, date(2026, 7, 1))  # E=0 기본
+    from apps.portfolio.services.advisory_engine import compute_allocation_gap
+
+    dial = compute_dial(user, compute_allocation_gap(user), goal)
+    ranked = rank_candidates(user, "USD", dial, goal)
+    assert all(c["lane"] == "core" for c in ranked)
