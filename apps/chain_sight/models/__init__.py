@@ -17,6 +17,7 @@ from .heat import (
     ThemeHeatScore,
     ThemeKeywordH2,
     ThemeNewsVolume,
+    ThemeTermOverride,
     UniverseSnapshot,
 )
 from .insider_signal import CompanyInsiderSignal
@@ -70,4 +71,6 @@ __all__ = [
     "ThemeNewsVolume",
     # Theme Heat (TH-13, C3 H2 LLM 큐레이션 사전 원장)
     "ThemeKeywordH2",
+    # Theme Heat (TH-C3-LLM-DICT-1, 결정35 per-term override 레이어)
+    "ThemeTermOverride",
 ]

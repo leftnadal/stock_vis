@@ -49,6 +49,9 @@ def _normalize(term: str) -> str:
 # 오배정 유발 토큰 제외 훅 (결정17 — 표본 감사로 발견 시 추가). 현재 비어있음.
 MATCH_EXCLUDE_TOKENS: frozenset = frozenset()
 
+# override disposition 'none' 리터럴 (ThemeTermOverride.DISPOSITION_NONE 미러 — 순환 import 회피).
+_OVERRIDE_NONE = "none"
+
 
 def load_h2_sector_map(source: Optional[str] = None) -> dict:
     """
@@ -66,6 +69,23 @@ def load_h2_sector_map(source: Optional[str] = None) -> dict:
     if source is not None:
         qs = qs.filter(source=source)
     return {r["term_normalized"]: r["sector"] for r in qs.values("term_normalized", "sector")}
+
+
+def load_override_map(generation: str = "ovr_v1") -> dict:
+    """
+    term별 override 처분 원장 → {정규화 검색어: disposition} (TH-C3-LLM-DICT-1, 결정35=1).
+
+    disposition = HeatEntity.ref_id CSV(재배정) 또는 'none'(제거). 1차 규칙 **이전**에 조회
+    (aggregate_theme_news_volume). 미등재 term은 기존 경로 불변. generation = 활성 세대(롤백 단위).
+    """
+    from apps.chain_sight.models import ThemeTermOverride
+
+    return {
+        r["term_normalized"]: r["disposition"]
+        for r in ThemeTermOverride.objects.filter(generation=generation).values(
+            "term_normalized", "disposition"
+        )
+    }
 
 
 def match_term_to_sectors(term: str, keyword_map: dict) -> set:
@@ -91,14 +111,20 @@ def match_term_to_sectors(term: str, keyword_map: dict) -> set:
 
 
 def aggregate_theme_news_volume(
-    target_date: Optional[date] = None, use_h2: bool = True
+    target_date: Optional[date] = None,
+    use_h2: bool = True,
+    use_override: bool = True,
+    override_generation: str = "ovr_v1",
 ) -> dict:
     """
     DailyNewsKeyword → ThemeNewsVolume 집계 (멱등). target_date=None 이면 전체 소급.
 
-    각 일자 키워드의 search_terms_en 을 정규화·완전 일치 매칭(1차 규칙)해 섹터별 카운트 →
-    테마×일자 upsert. use_h2=True 면 1차 규칙 미배정분에 H2 사전(TH-13, 부록 A) 을 **뒤에**
-    조회해 추가 배정(기배정 무접촉 — secs 공집합일 때만). H2 추가만 = 기존 매칭 소실 없음.
+    처분 순서: **override(결정35) → 1차 규칙 → H2 gap-fill**.
+    - use_override=True 면 각 term 을 override 원장(TH-C3-LLM-DICT-1)에 **먼저** 조회 →
+      등재 시 disposition('none'=제거 / 섹터CSV=재배정)으로 종결(1차 규칙·H2 우회).
+      **미등재 term 은 기존 경로(1차 규칙 → H2) 문자 그대로 불변.**
+    - 1차 규칙: search_terms_en 정규화·완전 일치 매칭. use_h2=True 면 미배정분(secs 공집합)만
+      H2 사전(TH-13) 을 뒤에 조회해 추가 배정(기배정 무접촉).
     """
     from apps.chain_sight.models import HeatEntity, ThemeNewsVolume
     from services.news.models import DailyNewsKeyword
@@ -106,6 +132,7 @@ def aggregate_theme_news_volume(
 
     entities = {e.ref_id: e for e in HeatEntity.objects.filter(kind="sector")}
     h2 = load_h2_sector_map() if use_h2 else {}
+    overrides = load_override_map(override_generation) if use_override else {}
     qs = DailyNewsKeyword.objects.exclude(keywords__isnull=True)
     if target_date is not None:
         qs = qs.filter(date=target_date)
@@ -117,6 +144,18 @@ def aggregate_theme_news_volume(
             if not isinstance(kw, dict):
                 continue
             for term in kw.get("search_terms_en") or []:
+                # override(결정35) 최우선 — 등재 term 은 처분으로 종결, 1차 규칙/H2 우회.
+                disp = overrides.get(_normalize(term)) if overrides else None
+                if disp is not None:
+                    if disp != _OVERRIDE_NONE:  # 재배정
+                        for sec in disp.split(","):
+                            sec = sec.strip()
+                            ref = sec if sec in entities else KW_SECTOR_TO_HEAT_ENTITY.get(sec)
+                            if ref and ref in entities:
+                                counts[ref] += 1
+                    # disp == 'none' → 크레딧 0 (제거)
+                    continue
+                # 미등재: 기존 경로 불변 (1차 규칙 → H2)
                 secs = match_term_to_sectors(term, KEYWORD_SECTOR_MAP)
                 if secs:  # 1차 규칙 우선
                     for sec in secs:

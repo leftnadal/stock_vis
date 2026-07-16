@@ -444,6 +444,51 @@ class ThemeKeywordH2(models.Model):
         return f"ThemeKeywordH2({self.term_normalized} → {self.sector}, {self.confidence})"
 
 
+class ThemeTermOverride(models.Model):
+    """
+    C3 오배정 정정 per-term override 레이어 (TH-C3-LLM-DICT-1, 결정35=1).
+
+    1차 토큰 규칙 **이전**에 조회되는 term별 처분 원장(허용 A). 미등재 term은 기존 경로
+    (1차 규칙 → H2 gap-fill) 문자 그대로 불변. 1차 규칙/블랭킷 스톱리스트/H2 elif 무변경.
+    - disposition: HeatEntity.ref_id CSV(재배정, 예 "Financial Services") 또는 'none'(제거).
+    - generation: 세대 태깅(h2_v1→v2 선례 정합) — 롤백 = 세대 비활성 후 재산출.
+    - provenance: 2×2 셀 라벨(real/none × pollute/noeffect) + should_be + 처분종류 + 근거(감사).
+    term_normalized+generation 유일 = 세대별 1행. 원 매핑 이력 = recheck 원장(롤백 소스).
+    """
+
+    DISPOSITION_NONE = "none"
+    GEN_V1 = "ovr_v1"
+
+    term_normalized = models.CharField(
+        max_length=255, db_index=True, help_text="_normalize 형(소문자·공백정리). 조회 키."
+    )
+    term_original = models.CharField(max_length=255, help_text="재검 입력 원문(감사).")
+    disposition = models.CharField(
+        max_length=64, help_text="HeatEntity.ref_id CSV(재배정) 또는 'none'(제거)."
+    )
+    generation = models.CharField(
+        max_length=16, default=GEN_V1, db_index=True,
+        help_text="세대 태깅(롤백 단위). ovr_v1 = 결정35 초판.",
+    )
+    provenance = models.JSONField(
+        default=dict,
+        help_text="{cell, should_be, disposition_kind, reason}. 2×2 셀 라벨 등재.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["term_normalized"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["term_normalized", "generation"], name="uq_termoverride_term_gen"
+            )
+        ]
+        indexes = [models.Index(fields=["generation"], name="termoverride_gen_idx")]
+
+    def __str__(self):
+        return f"ThemeTermOverride({self.term_normalized} → {self.disposition} [{self.generation}])"
+
+
 class EtfDailyBar(models.Model):
     """
     C5 투기 심리 거래량 원장 (TH-7d, 결정12b) — 설계 앵커 §2 C5.
