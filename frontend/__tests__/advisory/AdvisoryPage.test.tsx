@@ -18,6 +18,7 @@ const getLatest = vi.fn()
 const getSummary = vi.fn()
 const getKnobs = vi.fn()
 const run = vi.fn()
+const updateKnobs = vi.fn()
 
 vi.mock('@/services/advisoryService', () => ({
   advisoryService: {
@@ -25,6 +26,7 @@ vi.mock('@/services/advisoryService', () => ({
     getSummary: (...a: unknown[]) => getSummary(...a),
     getKnobs: (...a: unknown[]) => getKnobs(...a),
     run: (...a: unknown[]) => run(...a),
+    updateKnobs: (...a: unknown[]) => updateKnobs(...a),
   },
 }))
 
@@ -178,11 +180,14 @@ describe('AdvisoryPage 성공 상태', () => {
     const returnSlot = screen.getByTestId('expected-return-slot')
     expect(returnSlot).toHaveTextContent('예측 인프라 준비 중')
 
-    // 손잡이 5종 읽기 전용
-    expect(screen.getByTestId('knob-aggressiveness_offset')).toHaveTextContent('2%p')
-    expect(screen.getByTestId('knob-concentration_limit')).toHaveTextContent('30%')
-    // 슬라이더/입력 없음 (읽기 전용)
-    expect(screen.getByTestId('knobs-panel').querySelectorAll('input, [role="slider"]')).toHaveLength(0)
+    // 손잡이 5종 편집 슬라이더 (Slice 20b — 읽기전용 → 편집 승격)
+    expect(screen.getByTestId('knob-value-aggressiveness_offset')).toHaveTextContent('2%p')
+    expect(screen.getByTestId('knob-value-concentration_limit')).toHaveTextContent('30%')
+    // 슬라이더 5종 + 저장 버튼 존재(편집 가능)
+    expect(
+      screen.getByTestId('knobs-panel').querySelectorAll('input[type="range"]')
+    ).toHaveLength(5)
+    expect(screen.getByTestId('knobs-save-button')).toBeInTheDocument()
 
     // 근거 문구
     expect(screen.getByTestId('advisory-disclaimer')).toHaveTextContent('참고용')
