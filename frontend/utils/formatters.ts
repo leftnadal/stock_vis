@@ -19,6 +19,21 @@ export const formatCurrency = (value: number | string): string => {
 };
 
 /**
+ * KRW 통화 포맷 (₩ 정수원, ko-KR 천단위 구분) — Slice 20a advisory 화면용.
+ */
+export const formatKRW = (value: number | string): string => {
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  if (isNaN(numValue)) return '₩0';
+
+  return new Intl.NumberFormat('ko-KR', {
+    style: 'currency',
+    currency: 'KRW',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(numValue);
+};
+
+/**
  * 퍼센트 포맷 (+/- 기호 포함)
  */
 export const formatPercent = (value: number | string): string => {

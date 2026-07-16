@@ -303,6 +303,21 @@ class AdvisoryRun(models.Model):
         help_text="이 실행이 근거한 자산 스냅샷.",
     )
     run_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    TRIGGER_CHOICES = [
+        ("auto", "Auto (nightly)"),
+        ("manual", "Manual (화면 진단)"),
+    ]
+    trigger = models.CharField(
+        max_length=10,
+        choices=TRIGGER_CHOICES,
+        default="manual",
+        db_index=True,
+        help_text=(
+            "실행 트리거 (SLICE20A). auto=nightly 자동 기록(원장 시계열), "
+            "manual=화면 수동 진단. **사후분석은 auto만 표본으로 사용**(수동 오염 배제)."
+        ),
+    )
     output = models.JSONField(
         default=dict,
         help_text="산출 전문(계약 v3). recommendations는 lane(core/exploration) 라벨 포함.",

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from django.urls import path
 
-from apps.portfolio.api import views
+from apps.portfolio.api import advisory, views
 
 app_name = "portfolio_api"
 
@@ -23,4 +23,6 @@ urlpatterns = [
     path("coach/e5/", views.coach_e5, name="coach_e5"),
     path("coach/e6/", views.coach_e6, name="coach_e6"),
     # E1~E6 6개 endpoint 완료 (Slice 13 Part 5 종결).
+    # SLICE20A — 권유 REST 표면 (advisory/latest·summary·knobs·run)
+    *advisory.urlpatterns,
 ]

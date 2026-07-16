@@ -595,10 +595,11 @@ def _jsonable(obj):
     return obj
 
 
-def run_advisory(user):
+def run_advisory(user, trigger: str = "manual"):
     """엔진 실행 진입점: 스냅샷 upsert(이중 기록) + recommend + AdvisoryRun 기록.
 
     recommend()는 순수 계산(부작용 없음) — 이 함수가 영속화를 담당(테스트 격리).
+    trigger(SLICE20A): "auto"=nightly 자동, "manual"=화면 수동 진단(기본).
     반환: recommend() 산출(계약 v3).
     """
     from apps.portfolio.models_my import AdvisoryRun
@@ -616,6 +617,7 @@ def run_advisory(user):
     AdvisoryRun.objects.create(
         user=user,
         snapshot=snap,
+        trigger=trigger,
         output=_jsonable(result),
         knobs_snapshot=_jsonable(knobs_snap),
     )
