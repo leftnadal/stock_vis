@@ -825,4 +825,24 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **함정**: 따라서 **"키 부재" 시나리오를 테스트하려면 테스트 본문에서 로컬 override로 키를 명시적으로 제거**해야 한다 — 안 하면 autouse 픽스처가 더미를 깔아 테스트가 "키 있음" 경로로 **조용히 통과**한다(거짓 green). 올바른 선례: `tests/marketpulse/fetchers/test_fmp_weights.py::TestRequestEtfHolderGuards::test_missing_api_key_raises` — `settings` 픽스처로 `settings.FMP_API_KEY=None`을 테스트 본문에서 세팅 후 `pytest.raises`(본문이 픽스처 setup보다 후행이라 override 성립).
 
-**일반화(동형 함정 주의)**: autouse 픽스처/ambient `.env`가 설정값을 채워 격리성을 주는 경우, 그 값의 **부재/반대 상태를 검증하는 테스트는 반드시 로컬 override로 상태를 되돌려야** 한다. **미상환 동형 사례(⑯ 발견)**: `.env`에 `CHAINSIGHT_GROUP_SOURCE=event_group`(go-live)이 있어 `settings_test`가 이를 상속 → EventBoard/Ranking 테스트가 `theme_tags`로 시드하면서 플래그를 고정하지 않아 event_group 경로로 읽혀 실패(**chainsight 13 red = attention 6 + leadership 7**, 전부 test-only). 해법 동일 = 테스트에서 `override_settings(CHAINSIGHT_GROUP_SOURCE=...)`로 플래그를 결정론적으로 고정. (⑰ 청소 대상.)
+**일반화(동형 함정 주의)**: autouse 픽스처/ambient `.env`가 설정값을 채워 격리성을 주는 경우, 그 값의 **부재/반대 상태를 검증하는 테스트는 반드시 로컬 override로 상태를 되돌려야** 한다. **미상환 동형 사례(⑯ 발견)**: `.env`에 `CHAINSIGHT_GROUP_SOURCE=event_group`(go-live)이 있어 `settings_test`가 이를 상속 → EventBoard/Ranking 테스트가 `theme_tags`로 시드하면서 플래그를 고정하지 않아 event_group 경로로 읽혀 실패(**chainsight 13 red = attention 6 + leadership 7**, 전부 test-only). 해법 동일 = 테스트에서 `override_settings(CHAINSIGHT_GROUP_SOURCE=...)`로 플래그를 결정론적으로 고정. **★해소됨(⑰ S3, 2026-07-14 `8377ba5`)**: override 주입 대신 **chainsight 13 red 테스트를 `event_group` 시드로 재작성**(go-live 플래그와 정합) → theme_tags 경로 의존 제거. 검증: pristine origin/main(`6013865`) 전체회귀 **3866 passed·0 failed**(⑱ STEP 0 실측)로 재확인 — attention 6 + leadership 7 red 소멸.
+
+## [검증 함정] 서브에이전트의 "통과" 주장 = 해당 worktree에서 직접 재실행으로만 신뢰 (⑰ S2 실증, ⑱ 등재) [process]
+
+**증상**: 서브에이전트(또는 타 세션)가 "tsc 0 / pytest green"을 보고해도, 그 검증이 **다른 worktree·다른 브랜치·공유 test DB** 위에서 돌았다면 현 세션 트리의 실상과 어긋날 수 있다. cross-worktree 환경에서 green은 "그 트리에서 green"일 뿐, 인계받는 트리의 보증이 아니다.
+
+**원인**: ① worktree마다 체크아웃 코드·`node_modules`(심링크 여부)·`.env`가 다름 ② 공유 test DB/캐시 오염(stale 시드·`_dormant` 잔재)이 특정 트리에서만 red/green을 만듦(예: news-av-broad 트랙의 `_dormant/graph_analysis` + 공유 test DB가 attention 5건 오탐) ③ 서브에이전트는 자기 컨텍스트의 트리를 검증하지, 호출자 트리를 검증하지 않음.
+
+**해결**: 서브에이전트의 tsc/pytest 통과 주장은 **인계 후 호출자 자신의 worktree에서 직접 재실행**으로만 확정한다(주장을 그대로 승계 금지). UI/시각 산출물은 [[feedback_ui_slice_live_screenshot]]과 동형 — 라이브 재현으로만 종결. 판정이 오염에 민감한 chainsight류는 **pristine 체크아웃**(origin/main 신규 worktree)에서 재측정.
+
+**교훈**: "누가 어느 트리에서 green을 봤는가"가 green 자체보다 중요하다. 검증의 신뢰 경계는 worktree다 — 경계를 넘은 green은 재실행 전까지 미검증이다. #45/#47(repo 스크립트를 어느 트리 사본으로 실행하나)의 검증판 동형.
+
+## [배포 절차] daphne/celery는 런타임 트리에서 서빙 → main 머지만으로 화면 미반영, worker_sync 동기화 + 재시작 필수 (⑰-M 실증, ⑱ 등재) [ops] [git]
+
+**증상**: FE/BE 코드를 origin/main에 머지했는데도 **라이브 화면·API 응답이 구코드**. 테스트 green·push 성공인데 사용자 화면에 반영 안 됨.
+
+**원인**: 런타임 3종(celery worker=`sv-worker-runtime`·next dev web=`sv-web-runtime`·daphne API=`sv-api-runtime`)은 **공유 편집 트리가 아닌 전용 런타임 트리**(detached origin/main)에서 서빙된다(#45 종결의 귀결). main 머지는 origin 참조만 전진시킬 뿐, 런타임 트리 사본을 자동 갱신하지 않는다.
+
+**해결**: 배포 = **⑴ main 머지 → ⑵ `sv sync`(=런타임 트리 사본 `worker_sync.sh`, 3트리 origin/main로 재-detach) → ⑶ daphne·celery 재시작** 순서를 반드시 완주. next dev(web)는 핫리로드지만 daphne/celery는 프로세스 재기동 필요. 머지에서 멈추면 "머지했는데 화면 그대로" 함정. 스크립트는 반드시 런타임 트리 사본으로([[#47]] `sv` 래퍼), 공유 트리 사본은 stale.
+
+**교훈**: "머지 = 배포"가 아니다. 런타임 분리 아키텍처에서 배포의 마지막 칸은 **런타임 트리 동기화 + 재시작**이다. 코드가 origin에 있음 ≠ 서버가 그 코드를 실행 중.

@@ -1,0 +1,932 @@
+{
+  "B1": {
+    "nodes": 555,
+    "edges": 9551,
+    "density": 0.062126,
+    "degree_dist": {
+      "min": 1,
+      "median": 31,
+      "p90": 57,
+      "max": 110,
+      "n": 555
+    },
+    "top10_degree": [
+      [
+        "NVDA",
+        110
+      ],
+      [
+        "GOOGL",
+        76
+      ],
+      [
+        "MSFT",
+        75
+      ],
+      [
+        "GPN",
+        74
+      ],
+      [
+        "ADP",
+        73
+      ],
+      [
+        "CPRT",
+        72
+      ],
+      [
+        "AAPL",
+        71
+      ],
+      [
+        "CAT",
+        70
+      ],
+      [
+        "AVY",
+        68
+      ],
+      [
+        "META",
+        67
+      ]
+    ],
+    "num_components": 1,
+    "giant_size": 555,
+    "giant_pct": 100.0,
+    "component_size_hist": [
+      [
+        555,
+        1
+      ]
+    ],
+    "by_type": {
+      "PRICE_CORRELATED": {
+        "raw_rows": 3784,
+        "nodes": 500,
+        "edges": 3784,
+        "components": 10,
+        "giant": 403
+      },
+      "PEER_OF": {
+        "raw_rows": 9365,
+        "nodes": 544,
+        "edges": 9365,
+        "components": 2,
+        "giant": 523
+      },
+      "CO_MENTIONED": {
+        "raw_rows": 278,
+        "nodes": 117,
+        "edges": 278,
+        "components": 1,
+        "giant": 117
+      },
+      "PARTNER_WITH": {
+        "raw_rows": 49,
+        "nodes": 65,
+        "edges": 49,
+        "components": 18,
+        "giant": 17
+      },
+      "COMPETES_WITH": {
+        "raw_rows": 113,
+        "nodes": 128,
+        "edges": 113,
+        "components": 23,
+        "giant": 45
+      },
+      "DEPENDS_ON": {
+        "raw_rows": 37,
+        "nodes": 55,
+        "edges": 36,
+        "components": 19,
+        "giant": 8
+      },
+      "SUPPLIES_TO": {
+        "raw_rows": 58,
+        "nodes": 77,
+        "edges": 58,
+        "components": 23,
+        "giant": 17
+      }
+    },
+    "directionality": {
+      "PRICE_CORRELATED": {
+        "both": 3784
+      },
+      "PEER_OF": {
+        "both": 9365
+      },
+      "CO_MENTIONED": {
+        "both": 278
+      },
+      "PARTNER_WITH": {
+        "a\u2192b": 49
+      },
+      "COMPETES_WITH": {
+        "both": 113
+      },
+      "DEPENDS_ON": {
+        "a\u2192b": 37
+      },
+      "SUPPLIES_TO": {
+        "a\u2192b": 58
+      }
+    },
+    "truth_score_dist_by_type": {
+      "PRICE_CORRELATED": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.0,
+        "mean": 0.0,
+        "n": 3784
+      },
+      "PEER_OF": {
+        "min": 35.0,
+        "median": 60.0,
+        "max": 85.0,
+        "mean": 62.93,
+        "n": 9365
+      },
+      "CO_MENTIONED": {
+        "min": 0.0,
+        "median": 0.0,
+        "max": 0.0,
+        "mean": 0.0,
+        "n": 278
+      },
+      "PARTNER_WITH": {
+        "min": 35.0,
+        "median": 85.0,
+        "max": 85.0,
+        "mean": 75.82,
+        "n": 49
+      },
+      "COMPETES_WITH": {
+        "min": 60.0,
+        "median": 85.0,
+        "max": 85.0,
+        "mean": 84.12,
+        "n": 113
+      },
+      "DEPENDS_ON": {
+        "min": 35.0,
+        "median": 85.0,
+        "max": 85.0,
+        "mean": 79.59,
+        "n": 37
+      },
+      "SUPPLIES_TO": {
+        "min": 35.0,
+        "median": 85.0,
+        "max": 85.0,
+        "mean": 79.83,
+        "n": 58
+      }
+    }
+  },
+  "B2_community": {
+    "modularity": 0.841,
+    "num_communities": 11,
+    "size_dist": [
+      124,
+      76,
+      73,
+      60,
+      57,
+      37,
+      33,
+      31,
+      25,
+      21,
+      18
+    ],
+    "giant_nodes": 555,
+    "sector_purity_mean": 0.99,
+    "sector_purity_weighted": 0.99,
+    "sector_purity_detail_big": [
+      {
+        "size": 124,
+        "dominant": "Technology",
+        "purity": 0.95
+      },
+      {
+        "size": 76,
+        "dominant": "Industrials",
+        "purity": 1.0
+      },
+      {
+        "size": 73,
+        "dominant": "Financial Services",
+        "purity": 0.99
+      },
+      {
+        "size": 60,
+        "dominant": "Healthcare",
+        "purity": 1.0
+      },
+      {
+        "size": 57,
+        "dominant": "Consumer Cyclical",
+        "purity": 0.98
+      },
+      {
+        "size": 37,
+        "dominant": "Consumer Defensive",
+        "purity": 1.0
+      },
+      {
+        "size": 33,
+        "dominant": "Utilities",
+        "purity": 0.97
+      },
+      {
+        "size": 31,
+        "dominant": "Real Estate",
+        "purity": 1.0
+      },
+      {
+        "size": 25,
+        "dominant": "Energy",
+        "purity": 1.0
+      },
+      {
+        "size": 21,
+        "dominant": "Basic Materials",
+        "purity": 1.0
+      },
+      {
+        "size": 18,
+        "dominant": "Communication Services",
+        "purity": 1.0
+      }
+    ],
+    "eventgroup_overlap": [
+      {
+        "group": "rockwell works eaton",
+        "members_in_giant": 15,
+        "total_members": 16,
+        "spread_communities": 4,
+        "max_containment": 0.8
+      },
+      {
+        "group": "abbott medtronic resmed",
+        "members_in_giant": 14,
+        "total_members": 14,
+        "spread_communities": 1,
+        "max_containment": 1.0
+      },
+      {
+        "group": "comfort hvac xylem",
+        "members_in_giant": 14,
+        "total_members": 14,
+        "spread_communities": 3,
+        "max_containment": 0.86
+      },
+      {
+        "group": "oil chevron exxonmobil",
+        "members_in_giant": 13,
+        "total_members": 13,
+        "spread_communities": 3,
+        "max_containment": 0.85
+      },
+      {
+        "group": "nextera dominion energy",
+        "members_in_giant": 12,
+        "total_members": 12,
+        "spread_communities": 2,
+        "max_containment": 0.92
+      },
+      {
+        "group": "mills soup campbell",
+        "members_in_giant": 12,
+        "total_members": 12,
+        "spread_communities": 2,
+        "max_containment": 0.92
+      },
+      {
+        "group": "michigan storms storm",
+        "members_in_giant": 12,
+        "total_members": 12,
+        "spread_communities": 1,
+        "max_containment": 1.0
+      },
+      {
+        "group": "underwriting travelers chubb",
+        "members_in_giant": 11,
+        "total_members": 11,
+        "spread_communities": 1,
+        "max_containment": 1.0
+      },
+      {
+        "group": "form apple broadcom",
+        "members_in_giant": 11,
+        "total_members": 11,
+        "spread_communities": 2,
+        "max_containment": 0.73
+      },
+      {
+        "group": "defense aerospace lockheed",
+        "members_in_giant": 10,
+        "total_members": 10,
+        "spread_communities": 2,
+        "max_containment": 0.9
+      },
+      {
+        "group": "esi element fragrances",
+        "members_in_giant": 10,
+        "total_members": 10,
+        "spread_communities": 2,
+        "max_containment": 0.9
+      },
+      {
+        "group": "walmart costco amazon",
+        "members_in_giant": 10,
+        "total_members": 10,
+        "spread_communities": 3,
+        "max_containment": 0.6
+      },
+      {
+        "group": "trimble autodesk tetra",
+        "members_in_giant": 10,
+        "total_members": 10,
+        "spread_communities": 1,
+        "max_containment": 1.0
+      },
+      {
+        "group": "equinix crown castle",
+        "members_in_giant": 10,
+        "total_members": 10,
+        "spread_communities": 2,
+        "max_containment": 0.9
+      },
+      {
+        "group": "brown marsh mclennan",
+        "members_in_giant": 9,
+        "total_members": 9,
+        "spread_communities": 2,
+        "max_containment": 0.89
+      }
+    ],
+    "eventgroup_overlap_summary": {
+      "groups_analyzed": 45,
+      "avg_max_containment": 0.868,
+      "avg_spread": 1.82
+    },
+    "no_pricecomovement": {
+      "nodes": 555,
+      "edges": 9551,
+      "num_components": 1,
+      "giant": 555,
+      "modularity": 0.841,
+      "num_communities": 11,
+      "sector_purity_mean": 0.99,
+      "size_dist": [
+        124,
+        76,
+        73,
+        60,
+        57,
+        37,
+        33,
+        31,
+        25,
+        21,
+        18
+      ]
+    }
+  },
+  "B2_centrality": {
+    "top20_pagerank": [
+      [
+        "NVDA",
+        0.0088,
+        "TECHNOLOGY"
+      ],
+      [
+        "GOOGL",
+        0.00413,
+        "Technology"
+      ],
+      [
+        "MSFT",
+        0.0041,
+        "Technology"
+      ],
+      [
+        "AAPL",
+        0.0038,
+        "TECHNOLOGY"
+      ],
+      [
+        "HPE",
+        0.00359,
+        "Technology"
+      ],
+      [
+        "META",
+        0.00349,
+        "Technology"
+      ],
+      [
+        "CSCO",
+        0.00334,
+        "Technology"
+      ],
+      [
+        "MSI",
+        0.00324,
+        "Technology"
+      ],
+      [
+        "GOOG",
+        0.0032,
+        "Technology"
+      ],
+      [
+        "ACGL",
+        0.00306,
+        "Financial Services"
+      ],
+      [
+        "MS",
+        0.00306,
+        "Financial Services"
+      ],
+      [
+        "JPM",
+        0.00306,
+        "Financial Services"
+      ],
+      [
+        "AMD",
+        0.00301,
+        "Technology"
+      ],
+      [
+        "BAC",
+        0.00299,
+        "Financial Services"
+      ],
+      [
+        "BR",
+        0.00298,
+        "Technology"
+      ],
+      [
+        "EA",
+        0.00298,
+        "Technology"
+      ],
+      [
+        "ZBRA",
+        0.00297,
+        "Technology"
+      ],
+      [
+        "GS",
+        0.00297,
+        "Financial Services"
+      ],
+      [
+        "J",
+        0.00296,
+        "Technology"
+      ],
+      [
+        "HIG",
+        0.0029,
+        "Financial Services"
+      ]
+    ],
+    "top20_betweenness": [
+      [
+        "NVDA",
+        0.32738,
+        "TECHNOLOGY"
+      ],
+      [
+        "TSLA",
+        0.0525,
+        "CONSUMER CYCLICAL"
+      ],
+      [
+        "GOOGL",
+        0.04481,
+        "Technology"
+      ],
+      [
+        "GEV",
+        0.04208,
+        "Utilities"
+      ],
+      [
+        "CDNS",
+        0.04135,
+        "Technology"
+      ],
+      [
+        "WMT",
+        0.03958,
+        null
+      ],
+      [
+        "CTVA",
+        0.03556,
+        "Basic Materials"
+      ],
+      [
+        "CAT",
+        0.03528,
+        "Industrials"
+      ],
+      [
+        "CEG",
+        0.03517,
+        "Utilities"
+      ],
+      [
+        "LLY",
+        0.0298,
+        null
+      ],
+      [
+        "FSLR",
+        0.02938,
+        "Energy"
+      ],
+      [
+        "INTC",
+        0.02829,
+        "Technology"
+      ],
+      [
+        "GPN",
+        0.02819,
+        "Industrials"
+      ],
+      [
+        "APO",
+        0.02814,
+        "Financial Services"
+      ],
+      [
+        "AAPL",
+        0.02773,
+        "TECHNOLOGY"
+      ],
+      [
+        "ADP",
+        0.02681,
+        "Industrials"
+      ],
+      [
+        "COST",
+        0.02345,
+        "Consumer Defensive"
+      ],
+      [
+        "ACGL",
+        0.02273,
+        "Financial Services"
+      ],
+      [
+        "Q",
+        0.02265,
+        "Technology"
+      ],
+      [
+        "DLTR",
+        0.02098,
+        "Consumer Defensive"
+      ]
+    ],
+    "hub_only(pr_not_bt)": [
+      "AMD",
+      "BAC",
+      "BR",
+      "CSCO",
+      "EA",
+      "GOOG",
+      "GS",
+      "HIG",
+      "HPE",
+      "J",
+      "JPM",
+      "META",
+      "MS",
+      "MSFT",
+      "MSI",
+      "ZBRA"
+    ],
+    "bridge_only(bt_not_pr)": [
+      "ADP",
+      "APO",
+      "CAT",
+      "CDNS",
+      "CEG",
+      "COST",
+      "CTVA",
+      "DLTR",
+      "FSLR",
+      "GEV",
+      "GPN",
+      "INTC",
+      "LLY",
+      "Q",
+      "TSLA",
+      "WMT"
+    ],
+    "overlap": [
+      "AAPL",
+      "ACGL",
+      "GOOGL",
+      "NVDA"
+    ]
+  },
+  "B2_path": {
+    "giant_nodes": 555,
+    "avg_shortest_path": 3.064,
+    "diameter_approx": 7,
+    "sample_paths": {
+      "Technology->Energy": [
+        "EA",
+        "GOOGL",
+        "ORCL",
+        "CVX"
+      ],
+      "Financial Services->Healthcare": [
+        "HOOD",
+        "MS",
+        "NVDA",
+        "LLY",
+        "ZTS"
+      ],
+      "Consumer Cyclical->Utilities": [
+        "HAS",
+        "TSLA",
+        "NVDA",
+        "GEV"
+      ]
+    }
+  },
+  "B2_linkpred": {
+    "top20_jaccard": [
+      [
+        "SHAZ",
+        "PMEC",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "HIMX",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "ACLS",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "STM",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "BMR",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "LSCC",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "INFQ",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "SITM",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "DOCU",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "RMBS",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "DUOT",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "SHAZ",
+        "FN",
+        1.0,
+        null,
+        "Technology"
+      ],
+      [
+        "PMEC",
+        "HIMX",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "ACLS",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "STM",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "BMR",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "DOCU",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "RMBS",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "DUOT",
+        1.0,
+        null,
+        null
+      ],
+      [
+        "PMEC",
+        "LSCC",
+        1.0,
+        null,
+        null
+      ]
+    ],
+    "top20_adamic_adar": [
+      [
+        "RJF",
+        "PFG",
+        14.294
+      ],
+      [
+        "AAPL",
+        "TTWO",
+        14.144
+      ],
+      [
+        "PRU",
+        "WFC",
+        13.925
+      ],
+      [
+        "PRU",
+        "SCHW",
+        13.925
+      ],
+      [
+        "PRU",
+        "RJF",
+        13.925
+      ],
+      [
+        "RJF",
+        "WFC",
+        13.925
+      ],
+      [
+        "WFC",
+        "PFG",
+        13.925
+      ],
+      [
+        "WFC",
+        "SCHW",
+        13.925
+      ],
+      [
+        "PFG",
+        "SCHW",
+        13.925
+      ],
+      [
+        "VTRS",
+        "UHS",
+        13.919
+      ],
+      [
+        "VTRS",
+        "VRTX",
+        13.919
+      ],
+      [
+        "VTRS",
+        "WBA",
+        13.919
+      ],
+      [
+        "VRTX",
+        "UHS",
+        13.919
+      ],
+      [
+        "VRTX",
+        "WBA",
+        13.919
+      ],
+      [
+        "VRTX",
+        "ZTS",
+        13.919
+      ],
+      [
+        "WBA",
+        "UHS",
+        13.919
+      ],
+      [
+        "WBA",
+        "ZTS",
+        13.919
+      ],
+      [
+        "UHS",
+        "ZTS",
+        13.919
+      ],
+      [
+        "AAPL",
+        "ZBRA",
+        13.81
+      ],
+      [
+        "ZBRA",
+        "TTWO",
+        13.81
+      ]
+    ]
+  },
+  "_timing_sec": {
+    "total_analysis": 3.92,
+    "path_stage": 0.59,
+    "linkpred_stage": 1.79
+  },
+  "_meta": {
+    "edge_count": 13697,
+    "symbol_count": 555,
+    "sector_known": 522,
+    "group_count": 45
+  }
+}
