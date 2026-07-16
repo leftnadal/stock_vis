@@ -38,10 +38,13 @@ def _make_plain_extension(serializer_path: str, model: type, name: str) -> type:
     return _Ext
 
 
+# ★ target_class는 serializer의 실제 __module__ 경로 = `apps.portfolio...`(apps. 접두 필수).
+# apps/ 디렉터리 구조에서 `portfolio...`로 쓰면 import_string 실패 → 확장 no-op(빈 스키마).
+# (coach openapi_extensions.py는 apps. 누락된 선존 버그 — 20a 범위 밖, TASKQUEUE 플래그.)
 _MAPPINGS: list[tuple[str, type, str]] = [
-    ("portfolio.api.advisory.LatestAdvisorySerializer", LatestAdvisoryContract, "LatestAdvisory"),
-    ("portfolio.api.advisory.AssetSummarySerializer", AssetSummaryContract, "AssetSummary"),
-    ("portfolio.api.advisory.KnobsReadSerializer", KnobsReadContract, "KnobsRead"),
+    ("apps.portfolio.api.advisory.LatestAdvisorySerializer", LatestAdvisoryContract, "LatestAdvisory"),
+    ("apps.portfolio.api.advisory.AssetSummarySerializer", AssetSummaryContract, "AssetSummary"),
+    ("apps.portfolio.api.advisory.KnobsReadSerializer", KnobsReadContract, "KnobsRead"),
 ]
 
 _EXTENSIONS = [_make_plain_extension(p, m, n) for p, m, n in _MAPPINGS]
