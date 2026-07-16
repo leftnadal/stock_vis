@@ -10,7 +10,7 @@ import type { MonitorState } from '@/types/monitor'
 
 const DANGER_STATES: MonitorState[] = ['critical', 'expired', 'needs_review']
 
-export const MY_SUBPAGES = ['/watchlist', '/monitor', '/advisory', '/portfolio'] as const
+export const MY_SUBPAGES = ['/watchlist', '/monitor', '/advisory', '/wallet', '/portfolio'] as const
 
 export function isMyPage(pathname: string): boolean {
   return MY_SUBPAGES.some((p) => pathname === p || pathname.startsWith(p + '/'))
@@ -26,7 +26,7 @@ const TABS: Tab[] = [
   { label: 'Watchlist', href: '/watchlist' },
   { label: 'Monitor', href: '/monitor' },
   { label: '코치', href: '/advisory' }, // Slice 20a — 권유 읽기 화면(My 탭 진입점)
-  { label: 'Wallet', href: null }, // 자리예약 — 금융 API 연동은 별도 트랙(MON-WALLET)
+  { label: 'Wallet', href: '/wallet' }, // Slice 20b — 지갑 입력 UI(보유·현금, admin 지름길 대체)
   { label: 'Portfolio', href: '/portfolio' },
 ]
 

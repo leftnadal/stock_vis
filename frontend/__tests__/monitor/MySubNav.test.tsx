@@ -23,20 +23,22 @@ describe('isMyPage', () => {
     expect(isMyPage('/monitor')).toBe(true)
     expect(isMyPage('/monitor/abc')).toBe(true)
     expect(isMyPage('/portfolio')).toBe(true)
+    expect(isMyPage('/wallet')).toBe(true) // Slice 20b — 지갑 활성화
     expect(isMyPage('/chainsight')).toBe(false)
     expect(isMyPage('/')).toBe(false)
   })
 })
 
 describe('MySubNav', () => {
-  it('4개 탭 렌더, Wallet은 비활성(준비 중)', () => {
+  it('5개 탭 렌더, Wallet은 /wallet 링크로 활성(Slice 20b)', () => {
     render(<MySubNav />)
     expect(screen.getByTestId('tab-watchlist')).toBeInTheDocument()
     expect(screen.getByTestId('tab-monitor')).toBeInTheDocument()
     expect(screen.getByTestId('tab-portfolio')).toBeInTheDocument()
     const wallet = screen.getByTestId('tab-wallet')
-    expect(wallet).toHaveAttribute('aria-disabled', 'true')
-    expect(wallet.textContent).toContain('준비 중')
+    expect(wallet).not.toHaveAttribute('aria-disabled')
+    expect(wallet).toHaveAttribute('href', '/wallet')
+    expect(wallet.textContent).not.toContain('준비 중')
   })
 
   it('Monitor 배지 = 위험 상태 개수 (기존 리스트 재사용)', () => {
