@@ -16,7 +16,7 @@ from django.db import models
 
 import apps.portfolio.models_my as models_my
 from apps.portfolio.models import Wallet, WalletHolding
-from apps.portfolio.models_my import CashBalance, UserGoal
+from apps.portfolio.models_my import AdvisoryRun, CashBalance, PortfolioSnapshot, UserGoal
 from packages.shared.stocks.models import Stock
 from packages.shared.users.models import Watchlist, WatchlistItem
 
@@ -47,6 +47,10 @@ def _make(model, user):
     if model is CashBalance:
         wallet = Wallet.objects.create(user=user)
         return model.objects.create(wallet=wallet, amount=Decimal("100"))
+    if model is PortfolioSnapshot:  # SLICE19C 원장 (user 스코프)
+        return model.objects.create(user=user, date=date(2026, 1, 1))
+    if model is AdvisoryRun:  # SLICE19C 원장 (user 스코프)
+        return model.objects.create(user=user)
     raise NotImplementedError(
         f"스코프 모델 {model.__name__}의 격리 팩토리 미등록 — _make()에 추가할 것."
     )
@@ -92,7 +96,12 @@ def test_scoped_model_no_cross_user_leak(model, user_a, user_b):
 @pytest.mark.django_db
 def test_scoped_model_registry_guard():
     names = {m.__name__ for m in SCOPED_MODELS}
-    assert names == {"CashBalance", "UserGoal"}, (
+    assert names == {
+        "CashBalance",
+        "UserGoal",
+        "PortfolioSnapshot",  # SLICE19C 원장
+        "AdvisoryRun",  # SLICE19C 원장
+    }, (
         f"USER_SCOPE_LOOKUP 스코프 모델 집합이 바뀜: {names}. "
         "신규 스코프 모델은 _make() 팩토리에 등록하고 이 기대집합을 갱신할 것 "
         "(D3' 등록 가드)."

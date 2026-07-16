@@ -912,5 +912,12 @@ class Decision(models.Model):
 # ============================================================
 # Slice 18-R — 사용자 상태 그릇 신규 모델 (ADDITIVE, models_my.py)
 # Django 앱 모델 발견용 재노출. 정의는 models_my.py 참조 (DECISIONS SLICE18R).
+# SLICE19C: PortfolioSnapshot·AdvisoryRun 원장 2종 재노출.
 # ============================================================
-from apps.portfolio.models_my import CashBalance, ScopedManager, UserGoal  # noqa: E402,F401
+from apps.portfolio.models_my import (  # noqa: E402,F401
+    AdvisoryRun,
+    CashBalance,
+    PortfolioSnapshot,
+    ScopedManager,
+    UserGoal,
+)
