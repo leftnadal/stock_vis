@@ -1,6 +1,7 @@
 /**
  * ETF 수집 상태 관리 훅
  */
+import { API_BASE_URL } from '@/lib/api/config'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ETFCollectionStatusResponse,
@@ -8,7 +9,7 @@ import {
   ETFProfile,
 } from '@/types/etf';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE = API_BASE_URL;
 
 /**
  * ETF 수집 상태 조회 훅

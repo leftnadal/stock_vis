@@ -1,5 +1,6 @@
 'use client'
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { useState, useEffect, useRef } from 'react'
 import { X, Search, TrendingUp, Check } from 'lucide-react'
 import { portfolioService, CreatePortfolioData, Portfolio } from '@/services/portfolio'
@@ -74,7 +75,7 @@ export default function PortfolioModal({
     setSearching(true)
     try {
       const response = await axios.get(
-        `http://localhost:8000/api/v1/stocks/api/search/symbols/`,
+        `${API_BASE_URL}/stocks/api/search/symbols/`,
         {
           params: { keywords: keyword }
         }

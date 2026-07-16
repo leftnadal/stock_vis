@@ -1,6 +1,7 @@
 // 크레딧 신호 스트립 서비스 — /api/credit-signals/strip/ 소비 (read-only, CS-CREDIT-CONSUME).
 // 엔드포인트가 /api/credit-signals/(v1 아님)라 authAxios base(/api/v1)를 벗어나므로
 // 절대 URL로 호출(authAxios 인터셉터의 JWT는 그대로 유지). stripService 패턴 동형.
+import { API_BASE_URL } from '@/lib/api/config';
 import { authAxios } from '@/lib/api/authAxios';
 import type { Grade } from '@/components/common/colorSemantics';
 
@@ -24,7 +25,7 @@ export interface CreditStripResponse {
 }
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  API_BASE_URL;
 // base의 /api/v1 접미를 벗겨 origin 도출 → /api/credit-signals/ 절대경로.
 const ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, '');
 

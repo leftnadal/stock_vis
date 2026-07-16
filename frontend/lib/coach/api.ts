@@ -32,7 +32,7 @@ export const COACH_E6_PATH = '/coach/e6/'
 /**
  * E1 GARP 진단 호출.
  *
- * authAxios의 baseURL은 `NEXT_PUBLIC_API_URL` (기본 `http://localhost:8000/api/v1`)
+ * authAxios의 baseURL은 `NEXT_PUBLIC_API_URL`(절대 base, 단일 소스 lib/api/config, #55)
  * — 코드는 path만 신경쓰면 된다 (#19 회피).
  */
 export async function postE1Coach(req: E1Request): Promise<E1Response> {

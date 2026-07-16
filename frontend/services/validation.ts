@@ -5,6 +5,7 @@
  * POST/DELETE(peer-preference)는 JWT 필요 → authAxios 사용.
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { authAxios } from '@/lib/api/authAxios';
 import type {
   ValidationSummary,
@@ -13,7 +14,7 @@ import type {
   PresetListResponse,
 } from '@/types/validation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url, {
