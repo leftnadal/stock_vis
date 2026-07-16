@@ -115,8 +115,82 @@ class TestEgoGraphAPI:
         d = resp.json()
         assert d["edges"] == []
         assert d["meta"]["total_edges"] == 0
-        assert d["nodes"] == [{"symbol": "LONE", "name": "LONE Inc.", "sector": "Technology"}]
+        assert d["nodes"] == [{
+            "symbol": "LONE", "name": "LONE Inc.", "sector": "Technology",
+            "pagerank_rank": None, "betweenness_rank": None,  # ⑲ S3 additive, 스냅샷 부재 시 null
+        }]
 
     def test_unknown_symbol_404(self, ego_data, auth_client):
         resp = auth_client.get("/api/v1/chainsight/ego/NOPE/")
         assert resp.status_code == 404
+
+
+@pytest.fixture
+def ego_cross_data(ego_data):
+    """ego_data(AAA 이웃 BBB/CCC/DDD) 위에 이웃끼리의 cross 엣지 BBB↔CCC 추가."""
+    _rc("BBB", "CCC", "PEER_OF", 70.0)
+    return None
+
+
+class TestEgoCrossEdges:
+    """S2 (⑲ D②): include_cross_edges — 기본 false 바이트 불변 + true 정확성."""
+
+    def test_default_false_is_additive(self, ego_cross_data, auth_client):
+        """기본(파라미터 없음): cross_edges 키·meta.cross_edges_count 부재 = 응답 바이트 불변."""
+        resp = auth_client.get("/api/v1/chainsight/ego/AAA/")
+        d = resp.json()
+        assert set(d.keys()) == {"center", "nodes", "edges", "meta"}
+        assert "cross_edges" not in d
+        assert set(d["meta"].keys()) == {"total_edges", "returned", "filtered_by"}
+        assert "cross_edges_count" not in d["meta"]
+        # 중심 엣지는 이웃끼리 링크(BBB-CCC)를 포함하지 않는다(center=AAA source만)
+        assert all(e["source"] == "AAA" for e in d["edges"])
+
+    def test_explicit_false_same_as_default(self, ego_cross_data, auth_client):
+        base = auth_client.get("/api/v1/chainsight/ego/AAA/").json()
+        off = auth_client.get(
+            "/api/v1/chainsight/ego/AAA/?include_cross_edges=false"
+        ).json()
+        assert base == off
+
+    def test_true_returns_cross_edges(self, ego_cross_data, auth_client):
+        """true: 이웃 BBB↔CCC 사이 RC 엣지가 동일 스키마로 cross_edges에 실린다."""
+        resp = auth_client.get(
+            "/api/v1/chainsight/ego/AAA/?include_cross_edges=true"
+        )
+        d = resp.json()
+        assert d["meta"]["cross_edges_count"] == 1
+        ce = d["cross_edges"][0]
+        assert {ce["source"], ce["target"]} == {"BBB", "CCC"}
+        assert ce["relation_type"] == "PEER_OF"
+        assert ce["truth_score"] == 70.0
+        assert set(ce.keys()) == {"source", "target", "relation_type", "truth_score", "trend"}
+        # 중심 엣지(edges)에는 여전히 cross가 섞이지 않는다
+        assert all(e["source"] == "AAA" for e in d["edges"])
+        assert d["meta"]["returned"] == len(d["edges"]) == 3
+
+    def test_true_empty_when_no_neighbor_links(self, ego_data, auth_client):
+        """이웃끼리 엣지가 없으면(ego_data만) cross_edges=[]."""
+        resp = auth_client.get(
+            "/api/v1/chainsight/ego/AAA/?include_cross_edges=true"
+        )
+        d = resp.json()
+        assert d["cross_edges"] == []
+        assert d["meta"]["cross_edges_count"] == 0
+
+    def test_cross_edges_use_post_limit_neighbor_set(self, ego_cross_data, auth_client):
+        """limit=1 → 이웃 {BBB}뿐 → cross(BBB-CCC) 성립 불가 → 빈 리스트(절단 후 집합 기준)."""
+        resp = auth_client.get(
+            "/api/v1/chainsight/ego/AAA/?include_cross_edges=true&limit=1"
+        )
+        d = resp.json()
+        assert d["meta"]["returned"] == 1
+        assert d["cross_edges"] == []
+
+    def test_cross_edges_no_nplus1(self, ego_cross_data, auth_client):
+        """cross 조회는 단일 양방향 쿼리 — 쿼리 수 상수급 유지."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            auth_client.get("/api/v1/chainsight/ego/AAA/?include_cross_edges=true")
+        assert len(ctx.captured_queries) <= 9

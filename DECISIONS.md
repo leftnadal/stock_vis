@@ -8,6 +8,41 @@
 
 ---
 
+## [2026-07-16] D-NEO4J-FREEZE — Neo4j 동결 트리거 정교화 + celery dict 완전 제거 (지시서⑲ S1) [chainsight]
+
+**결정**: ego 서빙이 PostgreSQL 네이티브로 전환된 뒤([[D-GRAPH-EGO-BACKEND]]) Neo4j는 **삭제 아닌 동결**. celery.py `beat_schedule`의 chainsight neo4j sync 3블록(⑰-M이 주석 처리)을 **완전 제거**(주석 잔류 금지). 태스크 함수·DB PeriodicTask·task_routes(queue:neo4j 3배정)는 보존.
+
+**Why**: ⑱ 드라이런 실증 — RC 전량(555노드·9551엣지) GDS 4종(커뮤니티·경로·중심성·링크예측)이 networkx in-memory로 **3.92초** 완주. 현 규모에서 Neo4j를 요구하는 시나리오 0. 주석 잔류(⑰-M)는 dict→DB 재동기(#28)로 enabled 부활 위험 + drift 소지 → 완전 제거가 정답.
+
+**재평가 트리거(정교화)**: **엣지 ~10만+ 또는 실시간 다중 홉 서빙 요구** 시 재평가(근거: 555노드에선 PG+networkx 충분, 규모/실시간성이 Neo4j 가치의 전제). 현 RC=13,697(엣지 collapse 9,551) → 트리거의 ~7% 수준.
+
+**원 스케줄(복원용, celery.py 주석 대체 보존)**:
+- `chainsight-sync-profiles-neo4j`: `sync_profiles_to_neo4j` @ crontab(hour=12, minute=0)
+- `chainsight-sync-relations-neo4j`: `sync_relations_to_neo4j` @ crontab(hour=12, minute=30)
+- `chainsight-neo4j-dirty-sync`: @ crontab(hour=4, minute=30, day_of_week=0), options={expires:3600, queue:neo4j}
+
+**How to apply**: 재활성 = DB PeriodicTask enabled=True(dict 등록 금지 — #28). DB 3건은 이미 enabled=False(⑰-M 실측 2026-07-16). 검증: celery app 로드 OK·chainsight neo4j beat 0.
+
+## [2026-07-16] D-A2-DEEPDIVE — Deep Dive(N-hop) 화면 폐기, 코드 동결 (지시서⑲ D④) [chainsight]
+
+**결정**: `/chainsight/[symbol]` Deep Dive(N-hop Neo4j 탐색) 화면에 **신규 투자 0**. 코드는 삭제 아닌 동결(A1/A2/A3 프론트·Neo4j endpoint 무변경).
+
+**Why**: ⑱ 판정 — 방향성 엣지 144개(전체 1.05%)·각 18~23 성분 파편화. 자이언트 연결은 무방향 peer/price가 접착하고 경로는 메가허브(NVDA/GOOGL) 경유라 **인과적 다중 홉 전파로 해석 불가**(S-B 시나리오 기각). N-hop 탐색의 정보 가치가 비용(Neo4j 유지)을 정당화 못 함. depth=1은 ego(PG)가 이미 대체.
+
+**How to apply**: A2에 기능 추가 금지. 자연 대체 = ego(1-hop PG). 전면 재평가는 D-NEO4J-FREEZE 트리거와 연동.
+
+## [2026-07-16] D-SC-CENTRALITY — 중심성 일간 배치 착공 (PG+networkx, Neo4j 불사용) (지시서⑲ S3) [chainsight]
+
+**결정**: ⑱에서 "유일하게 성립"으로 판정된 S-C(중심성)를 해자 궤적으로 착공. `SymbolCentrality`(일별 append, (symbol,as_of) unique) + `compute_symbol_centrality` 태스크(RC 전량 → networkx 무방향 그래프 → PageRank+betweenness) + 조회 API `/chainsight/centrality/top/` + ego 노드 rank 필드(additive). **화면 노출은 ⑳**(이번은 데이터/API까지).
+
+**Why**: PageRank(허브) vs betweenness(브리지) 목록이 실질 괴리 → GICS 섹터 라벨이 안 주는 신호(⑱ S-C 성립 근거). networkx 정식 의존 승격(pyproject `^3.6`, lock 정합) — Neo4j 불사용(드라이런 3.92초 실증).
+
+**로직 = ⑱ 드라이런 동일성**: collapse weight=max(truth_score, market_score), PageRank 가중, betweenness는 프로덕션 정확 계산(드라이런 k-샘플링 제거). **대조 검증(prod read-only 2026-07-16)**: nodes 555·edges 9551·PageRank top10 **완전 일치**(NVDA GOOGL MSFT AAPL HPE META CSCO MSI GOOG ACGL)·1.95초. betweenness는 동일 모집단(정확값이라 샘플 대비 소폭 재배열 = 개선).
+
+**beat 스펙(등록 금지 — 명세만, #28)**: 이름 `chainsight-daily-centrality` · DB-only · 일 1회 = RC 갱신 체인(`chainsight-relation-confidence` 11:00 EST + `chainsight-pair-aggregation` 11:30 EST) **후속**으로 12:00 EST(17:00 UTC) 이후 제안.
+
+**How to apply**: 멱등(동일 as_of=update_or_create). 궤적 보존(덮어쓰기 금지). truth_score 미정규화(별도 트랙). symbol=CharField(Stock 미등재 33심볼 포함).
+
 ## SLICE19B — FX·KRW 기준 통합 (토대) + 게이트 1 해소 (2026-07-14) [portfolio]
 
 **로드맵(사용자 확정)**: 19b=FX·KRW 토대(좁게) → 19c=가중치+공격성 다이얼+FX매크로 후보 → Slice 20=화면. 가중합 4.70/3.70/2.90(마진 1.00).

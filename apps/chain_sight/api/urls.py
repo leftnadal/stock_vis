@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.chain_sight.views.watchlist_views import WatchlistViewSet
 
+from .centrality_views import CentralityTopView
 from .ego_views import EgoGraphView
 from .event_views import EventBoardView, EventRankingView
 from .views import (
@@ -33,6 +34,8 @@ urlpatterns = [
     path("trace/", ChainSightTraceView.as_view(), name="chainsight-trace"),
     # PG 네이티브 ego 그래프 (⑰ S1-b, Neo4j 무의존) — 고정 프리픽스 ego/ 로 동적 경로와 분리
     path("ego/<str:symbol>/", EgoGraphView.as_view(), name="chainsight-ego"),
+    # 중심성 상위 조회 (⑲ S3, S-C — 화면 노출은 ⑳)
+    path("centrality/top/", CentralityTopView.as_view(), name="chainsight-centrality-top"),
     # 동적 경로 (symbol 기반)
     path(
         "<str:symbol>/neighbors/",

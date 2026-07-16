@@ -715,15 +715,9 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # ── Neo4j 동기화 3태스크 = 동결 (D-GRAPH-EGO-BACKEND, ⑰-M 결정①) ──
-    # ego 서빙이 PostgreSQL 네이티브로 전환돼 Neo4j는 삭제 아닌 동결. dict에서 제외해
-    # DatabaseScheduler의 dict→DB 재동기(#28)로 enabled가 되살아나는 것을 차단 → DB
-    # PeriodicTask는 enabled=False로 durable 동결. 재활성 = enabled=True 한 줄(재평가
-    # 트리거: 멀티홉·GDS·대규모 순회, TASKQUEUE GRAPH-EGO-NEO4J-REEVAL). task_routes의
-    # queue:neo4j 배정은 유지(재활성/수동 실행용). 원 스케줄 보존(복원용):
-    #   'chainsight-sync-profiles-neo4j': sync_profiles_to_neo4j @ crontab(hour=12, minute=0)
-    #   'chainsight-sync-relations-neo4j': sync_relations_to_neo4j @ crontab(hour=12, minute=30)
-    #   (neo4j-dirty-sync는 아래 시드 선정 다음 위치 참조)
+    # Neo4j 동기화 3태스크 = beat_schedule에서 완전 제거(동결, ⑲ D-NEO4J-FREEZE).
+    # 원 스케줄·재활성 절차·재평가 트리거는 DECISIONS.md(D-NEO4J-FREEZE) 참조. task_routes의
+    # queue:neo4j 배정(56~58)만 유지 = 수동 실행/재활성 시 라우팅 보존. DB PeriodicTask는 병진 수동.
 
     # Heat Score 배치 (매일 07:00 UTC, 시드 선정 전)
     'chainsight-heat-score-daily': {
@@ -738,10 +732,6 @@ app.conf.beat_schedule = {
         'schedule': crontab(hour=13, minute=0),
         'options': {'expires': 3600}
     },
-
-    # Neo4j dirty 동기화 = 동결 (D-GRAPH-EGO-BACKEND, ⑰-M 결정① — dict 제외, 위 동결 주석 참조)
-    # 원 스케줄 보존(복원용): 'chainsight-neo4j-dirty-sync' @ crontab(hour=4, minute=30,
-    #   day_of_week=0), options={'expires': 3600, 'queue': 'neo4j'}
 
     # ============================================================
     # Validation — 1차 검증 주간 배치

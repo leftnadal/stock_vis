@@ -14,6 +14,7 @@ from .revenue_structure import CompanyRevenueStructure
 from .saved_path import PathAction, SavedPath
 from .seed_snapshot import SeedSnapshot
 from .sensitivity import CompanySensitivityProfile
+from .symbol_centrality import SymbolCentrality
 
 __all__ = [
     "StockAttentionScore",
@@ -36,4 +37,5 @@ __all__ = [
     "SavedPath",
     "PathAction",
     "SeedSnapshot",
+    "SymbolCentrality",
 ]
