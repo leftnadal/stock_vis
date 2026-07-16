@@ -5,11 +5,15 @@ import {
   IMPRESSION_FLUSH_INTERVAL_MS,
   IMPRESSION_MAX_RETRIES,
   IMPRESSION_BATCH_LIMIT,
+  defaultSend,
+  type ImpressionEvent,
 } from '@/hooks/impressionTelemetry';
 
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   window.sessionStorage.clear();
 });
 
@@ -66,6 +70,38 @@ describe('ImpressionQueue', () => {
     expect(warn).toHaveBeenCalled();
     expect(q.pending).toBe(0); // 상한 초과 → drop
     q.destroy();
+  });
+
+  const sampleEvent = (): ImpressionEvent => ({
+    surface: 'dashboard_eod',
+    object_ref: 'AAPL:2026-07-14:V1',
+    event_type: 'impression',
+    session_id: 's',
+  });
+
+  it('defaultSend는 NEXT_PUBLIC_API_URL 절대 base로 전송한다(상대경로 금지)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', 'http://api.example.com/api/v1');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const ok = await defaultSend([sampleEvent()]);
+
+    expect(ok).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // 절대 URL(호스트 포함) — 후행 슬래시 정규화 + /telemetry/impressions 부착
+    expect(fetchMock.mock.calls[0][0]).toBe('http://api.example.com/api/v1/telemetry/impressions');
+  });
+
+  it('NEXT_PUBLIC_API_URL 미설정 시 전송을 skip한다(하드코딩 포트 폴백 없음)', async () => {
+    vi.stubEnv('NEXT_PUBLIC_API_URL', '');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const ok = await defaultSend([sampleEvent()]);
+
+    expect(ok).toBe(true); // skip은 실패 아님 → 재시도 큐에 남기지 않음
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('배치 상한(100) 초과분은 다음 flush로 이월한다', async () => {

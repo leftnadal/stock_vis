@@ -24,7 +24,28 @@ export const IMPRESSION_BATCH_LIMIT = 100; // 서버 배치 상한과 정합
 export const SURFACE_RECO_CARD = 'dashboard_eod';
 export const SURFACE_NEWS_CHIP = 'news_chip';
 
-export const TELEMETRY_ENDPOINT = '/api/v1/telemetry/impressions';
+// ── 전송 엔드포인트 (절대 URL) ──
+// authAxios와 동일하게 NEXT_PUBLIC_API_URL(= /api/v1 포함)을 절대 base로 사용.
+// (상대 경로 '/api/v1/...'는 Next dev 서버 origin에 붙어 stale rewrite로 흘러가므로 금지 — DIAG-2.)
+// authAxios는 미설정 시 로컬 기본 포트 URL로 폴백하지만, telemetry는 유실 허용 데이터이므로
+// 죽은 포트로 조용히 보내느니 전송을 skip한다(하드코딩 포트 폴백 금지 — 지시서 명시).
+export const TELEMETRY_PATH = '/telemetry/impressions';
+
+let warnedMissingApiBase = false;
+
+/** 절대 telemetry URL을 반환. NEXT_PUBLIC_API_URL 미설정 시 null(전송 skip) + 최초 1회 경고. */
+export function resolveTelemetryEndpoint(): string | null {
+  const base = process.env.NEXT_PUBLIC_API_URL;
+  if (!base) {
+    if (!warnedMissingApiBase) {
+      warnedMissingApiBase = true;
+      // eslint-disable-next-line no-console
+      console.warn('[impression] NEXT_PUBLIC_API_URL 미설정 — telemetry 전송 skip(유실 허용)');
+    }
+    return null;
+  }
+  return `${base.replace(/\/+$/, '')}${TELEMETRY_PATH}`;
+}
 
 export type ImpressionEventType = 'impression' | 'click';
 
@@ -59,10 +80,12 @@ export function getSessionId(): string {
 
 export type SendFn = (events: ImpressionEvent[]) => Promise<boolean>;
 
-async function defaultSend(events: ImpressionEvent[]): Promise<boolean> {
+export async function defaultSend(events: ImpressionEvent[]): Promise<boolean> {
+  const endpoint = resolveTelemetryEndpoint();
+  if (endpoint === null) return true; // env 미설정 → 전송 skip(재시도 큐에 남기지 않음, 유실 허용)
   try {
     const token = tokenUtils.getAccess();
-    const res = await fetch(TELEMETRY_ENDPOINT, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       keepalive: true, // 페이지 이탈 중에도 전송 보장(sendBeacon 동등물)
       headers: {
