@@ -175,6 +175,10 @@
 | MON-CLOSE-UI-P1 | 마감 데이터·엔드포인트 (BE) — Claim verdict/회고/동결 + close 액션 | @backend | MON-CLOSE-UI RECON | ✅ 완료 2026-07-13 (`monorepo/mon-close-ui-p1`). ClaimIndicatorResult·ClosureSnapshot·Claim 회고필드(migration 0006 additive)·propose_verdict(±0.333)·close-preview/close 액션. 엔진·beat·shared 불변. DECISIONS `D-MONITOR-CLOSE-UI-P1`. **실 DB migrate 0006은 배포 단계** | - |
 | MON-CLOSE-UI-P2 | 마감 FE — `/monitor/[id]` 상세·CloseModal·VerdictBadge·마감 필터탭·동결 카드 | @frontend | MON-CLOSE-UI-P1 | ✅ 완료 2026-07-14 (origin/main `468e29a`, 배포됨). 상세(dangling 해소)·A-1 모달·B-1 세그먼트·동결카드. tsc0·vitest660. 실 DB 0006 선제적용. **갭: ClosureSnapshot 미노출→동결점수 live 근사**(BE 후속 후보). 스모크: dangling해소·모달렌더·콘솔0·실데이터 무변경 | - |
 | MON-CLOSE-UI-P1.5 | 동결값 노출(ClosureSnapshot) + FE 우선 표시 + throwaway E2E | @backend+@frontend | MON-CLOSE-UI-P2 | ✅ 완료 2026-07-15 (origin/main `6013865`, 배포됨). ClaimSerializer closure_snapshot nested(마이그레이션0)·frozenScore 우선순위·throwaway E2E(빌더→마감 확정→동결카드 0.000·적중배지·세그먼트 양방향→정리 아티팩트0, c9be8802 불변). **MON-CLOSE-UI 트랙 최종 종결**. DECISIONS 종결선언 | - |
+| TIMING-P0 | RECON(실측 전용): Claim 확장지점·state_machine 재정의 가능성·지표 프리셋 EOD 산출가능성(200일SMA·12M수익률·52주고가 소스 전수)·라벨 전수 | @backend | D-MONITOR-TIMING-PIVOT | 🟢 착수 가능(다음 트랙) | ADR §7.1 — 코드 변경 0 |
+| TIMING-P1 | 의미 피벗(BE): Claim 가격 시나리오 필드 additive·프리셋 등록·진입 매력도 재해석·verdict 익절/손절/기한만료 매핑 | @backend | TIMING-P0 | 🕒 예약 | 엔진·마감루프 구조 불변, additive-only |
+| TIMING-P2 | 어휘 피벗(FE): 상태·알림·카드·빌더 언어 행동어화, 빌더="가설작성"→"매수 시나리오 작성"(진입가·목표가·손절가·기한·신호) | @frontend | TIMING-P1 | 🕒 예약 | 라벨 전수 교체 + 스모크 |
+| TIMING-P3 | (백로그) 마감≥20건 후: 밴드 재조정·지표별 승률·백테스트 착수 결정 · **E계열(차트패턴·캔들 탐지=신규 기계 최초구현) 착수 결정 사이클** | (미배정) | TIMING-P2 + 마감≥20 | 💤 백로그 | §5.3 E계열 격리, 근거 혼재(캔들 부정 Marshall 2006) |
 | MON-VIZ-ROTATIONMAP | 모니터 회전 맵(RRG 동형 2축 분포) — 상태밴드 스파크라인의 후속 시각화 | @frontend+@backend | **착수조건: 활성 모니터 ≥5** | 🕒 예약(조건 미충족) | ⚠ market_pulse 컴포넌트 **직접 import 금지** — shared 승격 vs 재구현은 착수 시 결정(D-MONITOR-ALERTCLOSE 1b) |
 | MON-WALLET | Wallet 금융 API(증권사) 연동 — **별도 트랙**(본 프로젝트는 My 서브탭 자리+thesis 접점만) | (미배정) | - | 💤 별도 트랙 | ADR §결정7 |
 
