@@ -10,10 +10,10 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.monitor.models import Monitor, MonitorSnapshot
-from apps.monitor.services.indicator_scorer import score_indicator_from_model
 from apps.monitor.services.ingest import BACKFILL_DAYS, ingest_readings_for_monitor
 from apps.monitor.services.monitor_aggregator import aggregate_monitor
 from apps.monitor.services.state_machine import determine_state
+from apps.monitor.services.technical import score_indicator_dispatch
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,8 @@ def evaluate_monitor(monitor, as_of_date=None):
     scored = 0    # active·non-paused 지표 수 (coverage 분모)
     covered = 0   # 그 중 충분한 실데이터 보유 수 (분자)
     for ind in indicators:
-        res = score_indicator_from_model(ind, as_of_date=as_of)
+        # dispatch: bounded 지표만 선형 매핑 우회, 그 외는 기존 score_indicator_from_model 통과(행위보존).
+        res = score_indicator_dispatch(ind, as_of_date=as_of)
         indicator_scores[str(ind.id)] = res['score']
         if not ind.is_paused:
             scored += 1
@@ -118,11 +119,17 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
         detect_and_record_alert,
         update_danger_streak,
     )
+    from apps.monitor.services.scenario import process_monitor_scenarios
+    from apps.monitor.services.technical import ingest_technical_for_monitor
 
+    # 지표 이식: 기존 EODSignal 3종(불변) + S계열 DailyPrice 산출(additive, 공존)
     ingest_results = ingest_readings_for_monitor(
         monitor, backfill_days=backfill_days, as_of_date=as_of_date
     )
-    ingested = sum(r["ingested"] for r in ingest_results)
+    tech_results = ingest_technical_for_monitor(monitor, as_of_date=as_of_date)
+    ingested = sum(r["ingested"] for r in ingest_results) + sum(
+        r["ingested"] for r in tech_results
+    )
     result = evaluate_monitor(monitor, as_of_date=as_of_date)
     result["ingested"] = ingested
 
@@ -133,6 +140,9 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
     result["alert_created"] = bool(alert_res["created"])
     result["alert_suppressed"] = bool(alert_res["suppressed"])
     result["newly_close_suggested"] = newly_close_suggested
+
+    # 매수 시나리오: 가격 구간 전이 + 기한만료 제안 (TIMING-P1, evaluate 직후 additive)
+    result["scenario_events"] = process_monitor_scenarios(monitor, as_of_date=as_of)
     return result
 
 

@@ -42,18 +42,26 @@ class IndicatorReadingSerializer(serializers.ModelSerializer):
 class ClaimSerializer(serializers.ModelSerializer):
     # 마감 동결 스냅샷 (resolved면 값, PENDING이면 null). 동결값 우선 표시용.
     closure_snapshot = serializers.SerializerMethodField()
+    # 가격 구간축 표시 메타 (BE 완결 단일 소스 — FE 재계산 금지). 가격 없으면 null.
+    zone_display = serializers.SerializerMethodField()
 
     class Meta:
         model = Claim
         fields = [
             "id", "monitor", "assertion", "deadline", "status", "outcome",
             "proposed_verdict", "resolved_by", "factor_tags", "retro_memo",
+            # 매수 시나리오 가격 (write 허용 — 빌더 P2 대비) + 적정가 밴드
+            "entry_price", "target_price", "stop_price",
+            "fair_value_low", "fair_value_high",
+            # 구간축 (read-only — 파이프라인 소유) + 표시 메타
+            "last_price_zone", "entry_reached_at", "zone_display",
             "closure_snapshot", "created_at", "resolved_at",
         ]
-        # 마감 회고 필드는 close 액션에서만 설정 — 직접 CRUD로 쓰지 못하게 read-only
+        # 마감 회고 + 파이프라인 소유 필드는 직접 CRUD로 쓰지 못하게 read-only
         read_only_fields = [
             "id", "created_at", "proposed_verdict", "resolved_by",
             "factor_tags", "retro_memo", "closure_snapshot", "resolved_at",
+            "last_price_zone", "entry_reached_at", "zone_display",
         ]
 
     def get_closure_snapshot(self, obj):
@@ -62,6 +70,30 @@ class ClaimSerializer(serializers.ModelSerializer):
             return ClosureSnapshotSerializer(obj.closure_snapshot).data
         except ClosureSnapshot.DoesNotExist:
             return None
+
+    def get_zone_display(self, obj):
+        # 가격 3필드 모두 있어야 구간 산출. 라벨·경계값을 BE에서 완결(FE 렌더 전용).
+        if obj.entry_price is None or obj.target_price is None or obj.stop_price is None:
+            return None
+        from decimal import Decimal
+
+        from apps.monitor.services.price_zone import APPROACH_BUFFER, resolve_zone
+        from apps.monitor.services.scenario import latest_close
+
+        close = latest_close(obj.monitor.target_ref)
+        zone = resolve_zone(close, obj.entry_price, obj.target_price, obj.stop_price)
+        label_map = dict(Claim.PriceZone.choices)
+        return {
+            "zone": zone,
+            "label": label_map.get(zone),
+            "close": close,
+            "boundaries": {
+                "stop": float(obj.stop_price),
+                "entry": float(obj.entry_price),
+                "approach_ceiling": float(obj.entry_price * (Decimal("1") + APPROACH_BUFFER)),
+                "target": float(obj.target_price),
+            },
+        }
 
 
 class AlertEventSerializer(serializers.ModelSerializer):

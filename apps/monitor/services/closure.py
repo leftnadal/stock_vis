@@ -40,8 +40,26 @@ class ClosureValidationError(ClosureError):
     """잘못된 입력 (→ 400)."""
 
 
-def propose_verdict(overall_score):
-    """종합점수 → 제안 판정 (③). 순수 함수."""
+def is_expired_scenario(claim, as_of):
+    """매수 시나리오가 '기한만료'인가 — 진입가 있고, 기한 경과했고, 진입 미도달.
+
+    (D-TIMING-DECISIONS-5 ④-B) entry_price 없는 구 가설은 대상 아님(EXPIRED은 진입 개념 전제).
+    """
+    return bool(
+        claim.entry_price is not None
+        and claim.deadline is not None
+        and claim.deadline < as_of
+        and claim.entry_reached_at is None
+    )
+
+
+def propose_verdict(overall_score, *, expired=False):
+    """종합점수 → 제안 판정 (③). 순수 함수.
+
+    만료 분기(④-B): 기존 밴드 로직 **앞단** — expired=True면 EXPIRED 제안(그 외 기존 불변).
+    """
+    if expired:
+        return Claim.ProposedVerdict.EXPIRED
     if overall_score >= VERDICT_HI:
         return Claim.ProposedVerdict.VALIDATED
     if overall_score <= VERDICT_LO:
@@ -60,8 +78,11 @@ def _latest_indicator_value(indicator):
     return r
 
 
-def _build_payload(monitor, score):
-    """동결 payload — 지표별 최종값·달위상·스파크라인 시리즈."""
+def _build_payload(monitor, score, claim=None):
+    """동결 payload — 지표별 최종값·달위상·스파크라인 시리즈.
+
+    가격 시나리오 마감(TIMING-P1 ⑤): claim 가격 있으면 close·손익률·최종 zone additive 동결.
+    """
     from apps.monitor.services.sparkline import score_series
     from apps.monitor.services.state_machine import score_to_phase
 
@@ -69,12 +90,30 @@ def _build_payload(monitor, score):
         {"id": str(i.id), "name": i.name, "latest_value": _latest_indicator_value(i)}
         for i in monitor.indicators.filter(is_active=True)
     ]
-    return {
+    payload = {
         "overall_score": score,
         "phase": score_to_phase(score),
         "indicators": indicators,
         "sparkline": score_series(monitor),
     }
+
+    # 가격 시나리오 동결 (entry_price 있을 때만, additive — 기존 키 불변)
+    if claim is not None and claim.entry_price is not None:
+        from apps.monitor.services.price_zone import resolve_zone
+        from apps.monitor.services.scenario import latest_close
+
+        close = latest_close(monitor.target_ref)
+        entry = float(claim.entry_price)
+        pnl_pct = ((close - entry) / entry * 100.0) if (close is not None and entry) else None
+        payload["scenario"] = {
+            "close_price": close,
+            "entry_price": entry,
+            "pnl_pct": round(pnl_pct, 4) if pnl_pct is not None else None,
+            "zone": resolve_zone(
+                close, claim.entry_price, claim.target_price, claim.stop_price
+            ),
+        }
+    return payload
 
 
 @transaction.atomic
@@ -118,7 +157,8 @@ def close_claim(claim, *, final_verdict, factor_tags=None, retro_memo="",
 
     score = current_overall_score(monitor)
 
-    claim.proposed_verdict = propose_verdict(score)
+    expired = is_expired_scenario(claim, timezone.localdate())
+    claim.proposed_verdict = propose_verdict(score, expired=expired)
     claim.outcome = final_verdict
     claim.status = Claim.Status.RESOLVED
     claim.resolved_by = user
@@ -134,7 +174,7 @@ def close_claim(claim, *, final_verdict, factor_tags=None, retro_memo="",
         ClaimIndicatorResult.objects.bulk_create(rows)
 
     ClosureSnapshot.objects.create(
-        claim=claim, overall_score=score, payload=_build_payload(monitor, score)
+        claim=claim, overall_score=score, payload=_build_payload(monitor, score, claim=claim)
     )
 
     logger.info(

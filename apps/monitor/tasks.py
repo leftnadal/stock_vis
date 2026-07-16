@@ -80,11 +80,15 @@ def refresh_monitors_task(self):
     changed = sum(1 for r in results if r.get("state_changed"))
     alerts_created = sum(1 for r in results if r.get("alert_created"))
     new_close_ids = [r["monitor_id"] for r in results if r.get("newly_close_suggested")]
+    # 매수 시나리오 이벤트(가격 구간 전이·기한만료) 취합 → 다이제스트에 additive 전달
+    scenario_events = [e for r in results for e in r.get("scenario_events", [])]
 
     # 다이제스트 이메일: 당일 전이 ≥1건 또는 마감 제안 신규 시에만(전이일 한정, best-effort).
     from apps.monitor.services.alerts import send_digest
 
-    digest_res = send_digest(as_of, new_close_monitor_ids=new_close_ids)
+    digest_res = send_digest(
+        as_of, new_close_monitor_ids=new_close_ids, scenario_events=scenario_events
+    )
 
     logger.info(
         "monitor refresh 완료: as_of=%s monitors=%d readings+=%d state_changed=%d "

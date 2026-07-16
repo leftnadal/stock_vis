@@ -89,6 +89,20 @@ class Claim(models.Model):
         PARTIAL = "partial", "Partial"                # 부분적중 (MON-CLOSE-UI ④)
         INVALIDATED = "invalidated", "Invalidated"    # 빗나감
         INCONCLUSIVE = "inconclusive", "Inconclusive" # 엣지(버튼 미노출)
+        EXPIRED = "expired", "기한만료"                # 기한 경과·진입 미도달 (D-TIMING-DECISIONS-5 ④-B)
+
+    class PriceZone(models.TextChoices):
+        """가격 구간축 — Claim 가격 파라미터 대비 현재 종가의 위치 (D-TIMING-DECISIONS-5 ③-B).
+
+        state_machine(신호축)과 별개의 가격축. 순수 파생값(price_zone.resolve_zone) — 저장은
+        전이 감지용 직전값(last_price_zone)만. 라벨은 매수 타이밍 행동어.
+        """
+
+        EXITED = "exited", "이탈"           # close ≤ stop_price
+        ENTRY = "entry", "진입 구간"         # stop < close ≤ entry
+        APPROACH = "approach", "접근"        # entry < close ≤ entry×(1+버퍼)
+        WAITING = "waiting", "관망"          # 버퍼 초과 ~ target 미만
+        OVERHEATED = "overheated", "과열"    # close ≥ target
 
     class ProposedVerdict(models.TextChoices):
         """시스템 제안 판정 (마감 시점 종합점수 밴드 매핑). 최종=outcome, 델타=캘리브레이션."""
@@ -96,6 +110,7 @@ class Claim(models.Model):
         VALIDATED = "validated", "Validated"
         PARTIAL = "partial", "Partial"
         INVALIDATED = "invalidated", "Invalidated"
+        EXPIRED = "expired", "기한만료"  # 기한 경과·진입 미도달 (D-TIMING-DECISIONS-5 ④-B)
 
     class FactorTag(models.TextChoices):
         """회고 공통 요인 태그 (고정 enum — 자유문자열 금지)."""
@@ -111,6 +126,34 @@ class Claim(models.Model):
     )
     assertion = models.TextField(help_text="주장")
     deadline = models.DateField(null=True, blank=True, help_text="마감")
+
+    # 매수 시나리오 가격 파라미터 (D-TIMING-DECISIONS-5 ②-A, additive).
+    # 전부 null=구 가설(가격 없는 Claim, 그대로 유효). 정밀도=리포 관례 shared stocks OHLC.
+    entry_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="진입가"
+    )
+    target_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="목표가(익절)"
+    )
+    stop_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="손절가"
+    )
+    # 적정가 밴드 (⑤-A) — 수동 입력 기본, 가치평가 통로의 미래 착지점(스키마는 별도 결정).
+    fair_value_low = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="적정가 하단"
+    )
+    fair_value_high = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="적정가 상단"
+    )
+    # 가격 구간축 상태 (③-B) — 전이 감지용 직전 구간 + 진입 최초 도달 시각(EXPIRED 판정·통계 원천).
+    last_price_zone = models.CharField(
+        max_length=16, choices=PriceZone.choices, null=True, blank=True,
+        help_text="직전 가격 구간(전이 감지용)",
+    )
+    entry_reached_at = models.DateTimeField(
+        null=True, blank=True, help_text="진입 구간 최초 도달 시각(1회 기록)"
+    )
+
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.ACTIVE
     )

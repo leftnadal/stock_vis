@@ -113,11 +113,11 @@ def update_danger_streak(monitor, as_of):
 _STATE_LABEL = dict(Monitor.State.choices)
 
 
-def build_digest(as_of, new_close_monitor_ids=None):
+def build_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
     """당일(as_of) 다이제스트 데이터. 억제 알림은 개별 행에서 제외.
 
-    반환: {"as_of", "deteriorations":[...], "improvements":[...], "close_suggestions":[...],
-           "has_content": bool}
+    scenario_events(TIMING-P1, additive): 가격 구간 전이·기한만료 → 즉시/다이제스트 분류.
+    반환: {..., "zone_immediate":[...], "zone_digest":[...], "expiries":[...], "has_content"}
     """
     new_close_monitor_ids = set(new_close_monitor_ids or [])
     rows = list(
@@ -145,22 +145,57 @@ def build_digest(as_of, new_close_monitor_ids=None):
         for m in Monitor.objects.filter(id__in=new_close_monitor_ids)
     ]
 
-    has_content = bool(deteriorations or improvements or close_suggestions)
+    # 매수 시나리오 이벤트 분류 (즉시=진입/이탈, 다이제스트=접근/관망/과열, 만료=즉시)
+    from apps.monitor.models import Claim
+    zone_label = dict(Claim.PriceZone.choices)
+    events = scenario_events or []
+
+    def _zone_row(e):
+        return {
+            "monitor_name": e["monitor_name"],
+            "target_ref": e["target_ref"],
+            "from_zone": e.get("from_zone"),
+            "to_zone": e["to_zone"],
+            "from_label": zone_label.get(e.get("from_zone"), e.get("from_zone") or "—"),
+            "to_label": zone_label.get(e["to_zone"], e["to_zone"]),
+            "close": e.get("close"),
+        }
+
+    zone_immediate = [_zone_row(e) for e in events if e["type"] == "zone" and e["immediate"]]
+    zone_digest = [_zone_row(e) for e in events if e["type"] == "zone" and not e["immediate"]]
+    expiries = [
+        {"monitor_name": e["monitor_name"], "target_ref": e["target_ref"], "deadline": e.get("deadline")}
+        for e in events if e["type"] == "expiry"
+    ]
+
+    has_content = bool(
+        deteriorations or improvements or close_suggestions
+        or zone_immediate or zone_digest or expiries
+    )
     return {
         "as_of": as_of.isoformat(),
         "deteriorations": deteriorations,
         "improvements": improvements,
         "close_suggestions": close_suggestions,
+        "zone_immediate": zone_immediate,
+        "zone_digest": zone_digest,
+        "expiries": expiries,
         "has_content": has_content,
     }
 
 
 def render_digest_subject(digest):
-    """제목 = 악화 요약 우선(대시보드 상태 우선순위 문법)."""
+    """제목 = 진입/이탈·악화 요약 우선(대시보드 상태 우선순위 문법)."""
+    n_zone = len(digest.get("zone_immediate", []))
+    n_exp = len(digest.get("expiries", []))
     nd = len(digest["deteriorations"])
     ni = len(digest["improvements"])
     nc = len(digest["close_suggestions"])
     parts = []
+    if n_zone:
+        parts.append(f"진입/이탈 {n_zone}건")
+    if n_exp:
+        parts.append(f"기한만료 {n_exp}건")
     if nd:
         parts.append(f"악화 {nd}건")
     if nc:
@@ -172,8 +207,21 @@ def render_digest_subject(digest):
 
 
 def render_digest_text(digest):
-    """플레인 텍스트 본문(악화 → 개선 → 마감 제안 순)."""
+    """플레인 텍스트 본문(진입/이탈 → 기한만료 → 악화 → 개선 → 마감 제안 → 구간 변동 순)."""
     lines = [f"Monitor 다이제스트 — {digest['as_of']}", ""]
+    if digest.get("zone_immediate"):
+        lines.append("■ 진입/이탈 (즉시)")
+        for r in digest["zone_immediate"]:
+            lines.append(
+                f"  - {r['monitor_name']} [{r['target_ref']}]: "
+                f"{r['from_label']} → {r['to_label']} (종가 {r['close']})"
+            )
+        lines.append("")
+    if digest.get("expiries"):
+        lines.append("■ 기한만료 (진입 미도달)")
+        for r in digest["expiries"]:
+            lines.append(f"  - {r['monitor_name']} [{r['target_ref']}]: 기한 {r['deadline']} 경과 → 마감 검토")
+        lines.append("")
     if digest["deteriorations"]:
         lines.append("■ 악화 전이")
         for r in digest["deteriorations"]:
@@ -197,6 +245,14 @@ def render_digest_text(digest):
                 f"  - {r['monitor_name']} [{r['target_ref']}]: "
                 f"위험 {r['danger_streak']}거래일 연속 → 마감 검토 제안"
             )
+        lines.append("")
+    if digest.get("zone_digest"):
+        lines.append("■ 구간 변동 (접근/관망/과열)")
+        for r in digest["zone_digest"]:
+            lines.append(
+                f"  - {r['monitor_name']} [{r['target_ref']}]: "
+                f"{r['from_label']} → {r['to_label']} (종가 {r['close']})"
+            )
     return "\n".join(lines)
 
 
@@ -205,6 +261,9 @@ def render_digest_html(digest):
     _DET = "#c0392b"
     _IMP = "#1e824c"
     _CLOSE = "#b7791f"
+
+    _ZONE = "#2c5aa0"
+    _EXP = "#6b46c1"
 
     def _section(title, rows, color, kind):
         if not rows:
@@ -216,6 +275,19 @@ def render_digest_html(digest):
                     f"<strong>{r['monitor_name']}</strong> "
                     f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
                     f"위험 {r['danger_streak']}거래일 연속 → 마감 검토 제안"
+                )
+            elif kind == "zone":
+                body = (
+                    f"<strong>{r['monitor_name']}</strong> "
+                    f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
+                    f"{r['from_label']} → <strong>{r['to_label']}</strong> "
+                    f"<span style=\"color:#888\">(종가 {r['close']})</span>"
+                )
+            elif kind == "expiry":
+                body = (
+                    f"<strong>{r['monitor_name']}</strong> "
+                    f"<span style=\"color:#888\">[{r['target_ref']}]</span> — "
+                    f"기한 {r['deadline']} 경과 → 마감 검토"
                 )
             else:
                 body = (
@@ -234,9 +306,12 @@ def render_digest_html(digest):
         )
 
     body = (
-        _section("악화 전이", digest["deteriorations"], _DET, "transition")
+        _section("진입/이탈 (즉시)", digest.get("zone_immediate", []), _ZONE, "zone")
+        + _section("기한만료", digest.get("expiries", []), _EXP, "expiry")
+        + _section("악화 전이", digest["deteriorations"], _DET, "transition")
         + _section("개선 전이", digest["improvements"], _IMP, "transition")
         + _section("마감 제안", digest["close_suggestions"], _CLOSE, "close")
+        + _section("구간 변동", digest.get("zone_digest", []), _ZONE, "zone")
     )
     return (
         '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;'
@@ -248,12 +323,14 @@ def render_digest_html(digest):
     )
 
 
-def send_digest(as_of, new_close_monitor_ids=None):
+def send_digest(as_of, new_close_monitor_ids=None, scenario_events=None):
     """전이일 한정 다이제스트 발송(best-effort). 내용 없으면 미발송.
 
     반환: {"sent": bool, "reason": str}. 수신자 미설정·내용 없음·발송 실패 모두 로그 후 skip.
     """
-    digest = build_digest(as_of, new_close_monitor_ids=new_close_monitor_ids)
+    digest = build_digest(
+        as_of, new_close_monitor_ids=new_close_monitor_ids, scenario_events=scenario_events
+    )
     if not digest["has_content"]:
         return {"sent": False, "reason": "no_content"}
 
