@@ -16,6 +16,7 @@ import type {
   EventBoardItem,
   EventRankingItem,
   EgoGraphResponse,
+  CentralityTopResponse,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -90,6 +91,24 @@ export async function fetchEgo(
         trend_window: trendWindow,
       },
     },
+  );
+  return data;
+}
+
+export interface FetchCentralityTopOptions {
+  metric?: string;
+  n?: number;
+  asOf?: string;
+}
+
+/** 중심성 리더보드 (⑳-1). GET /chainsight/centrality/top/ */
+export async function fetchCentralityTop(
+  opts: FetchCentralityTopOptions = {},
+): Promise<CentralityTopResponse> {
+  const { metric = 'pagerank', n = 20, asOf } = opts;
+  const { data } = await authAxios.get<CentralityTopResponse>(
+    '/chainsight/centrality/top/',
+    { params: { metric, n, ...(asOf && { as_of: asOf }) } },
   );
   return data;
 }

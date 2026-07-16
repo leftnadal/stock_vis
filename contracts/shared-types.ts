@@ -395,6 +395,31 @@ export interface EgoGraphResponse {
   meta: EgoMeta;
 }
 
+// ──────────────── Chain Sight: Centrality Leaderboard (⑳-1) ────────────────
+
+export type CentralityMetric = 'pagerank' | 'betweenness';
+
+export interface CentralityLeaderboardItem {
+  symbol: string;
+  name: string;
+  pagerank: number;
+  betweenness: number;
+  pagerank_rank: number;
+  betweenness_rank: number;
+  graph_nodes: number;
+  graph_edges: number;
+  rank: number; // 요청 지표 기준 당일 순위(1-base)
+  rank_delta: number | null; // 전일_rank − 당일_rank(상승=양수). 전일 부재 시 null
+}
+
+export interface CentralityTopResponse {
+  as_of: string | null;
+  metric: string;
+  n: number;
+  graph_size: { nodes: number; edges: number } | null;
+  results: CentralityLeaderboardItem[];
+}
+
 // ──────────────── Thesis Control ────────────────
 
 export type ThesisState =

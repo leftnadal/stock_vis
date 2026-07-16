@@ -51,6 +51,10 @@ export type {
   EgoEdge,
   EgoMeta,
   EgoGraphResponse,
+  // Centrality Leaderboard (⑳-1)
+  CentralityMetric,
+  CentralityLeaderboardItem,
+  CentralityTopResponse,
 } from '@contracts/shared-types';
 
 // ── 관계 타입 시각 체계 (FE 전용) ──

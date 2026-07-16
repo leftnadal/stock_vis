@@ -9,6 +9,7 @@ import {
   fetchNeighbors,
   fetchSignals,
   fetchEgo,
+  fetchCentralityTop,
 } from '@/services/chainsightService';
 import type {
   SeedResponse,
@@ -16,6 +17,7 @@ import type {
   NeighborResponse,
   SignalFeedResponse,
   EgoGraphResponse,
+  CentralityTopResponse,
 } from '@/types/chainsight';
 
 const STALE_30M = 1000 * 60 * 30;
@@ -28,6 +30,8 @@ export const MARKET_VIEW_KEYS = {
   neighbors: (symbol: string) => ['chainsight', 'neighbors', symbol] as const,
   ego: (symbol: string) => ['chainsight', 'ego', symbol] as const,
   signals: (sector?: string) => ['chainsight', 'signals', sector ?? 'all'] as const,
+  centralityTop: (metric: string, n: number) =>
+    ['chainsight', 'centralityTop', metric, n] as const,
 };
 
 export function useSeedData() {
@@ -66,6 +70,15 @@ export function useEgo(symbol: string | null) {
     staleTime: STALE_5M,
     gcTime: GC_TIME,
     enabled: !!symbol,
+  });
+}
+
+export function useCentralityTop(metric: string, n: number) {
+  return useQuery<CentralityTopResponse>({
+    queryKey: MARKET_VIEW_KEYS.centralityTop(metric, n),
+    queryFn: () => fetchCentralityTop({ metric, n }),
+    staleTime: STALE_30M,
+    gcTime: GC_TIME,
   });
 }
 
