@@ -164,6 +164,96 @@ class TestCentralityTopAPI:
         assert resp.json()["results"] == []
 
 
+# ── rank / rank_delta (⑳-1 additive) ─────────────────────────
+
+def _sc(symbol, as_of, pr_rank, bt_rank=None, pr=0.0, bt=0.0):
+    return SymbolCentrality.objects.create(
+        symbol=symbol, as_of=as_of, pagerank=pr, betweenness=bt,
+        pagerank_rank=pr_rank, betweenness_rank=bt_rank if bt_rank else pr_rank,
+        graph_nodes=3, graph_edges=3,
+    )
+
+
+class TestRankDelta:
+    CURR = date(2026, 7, 16)
+    PREV = date(2026, 7, 15)
+
+    def test_delta_up_down_unchanged(self, db, auth_client):
+        # 전일 rank: X=3 Y=1 Z=2 / 당일 rank: X=1 Y=3 Z=2
+        for s, r in [("X", 3), ("Y", 1), ("Z", 2)]:
+            _sc(s, self.PREV, r)
+        for s, r in [("X", 1), ("Y", 3), ("Z", 2)]:
+            _sc(s, self.CURR, r)
+        d = auth_client.get("/api/v1/chainsight/centrality/top/?metric=pagerank").json()
+        by = {r["symbol"]: r for r in d["results"]}
+        assert by["X"]["rank"] == 1 and by["X"]["rank_delta"] == 2   # 3→1 상승 +2
+        assert by["Y"]["rank"] == 3 and by["Y"]["rank_delta"] == -2  # 1→3 하락 -2
+        assert by["Z"]["rank"] == 2 and by["Z"]["rank_delta"] == 0   # 2→2 불변
+
+    def test_delta_null_single_day(self, db, auth_client):
+        for s, r in [("X", 1), ("Y", 2)]:
+            _sc(s, self.CURR, r)
+        d = auth_client.get("/api/v1/chainsight/centrality/top/").json()
+        assert all(r["rank_delta"] is None for r in d["results"])
+        assert all(r["rank"] == r["pagerank_rank"] for r in d["results"])
+
+    def test_delta_uses_most_recent_prior_date_gap(self, db, auth_client):
+        """전일이 비어도(갭) 그 이전 최근 날짜를 전일로 사용."""
+        _sc("X", date(2026, 7, 13), 5)      # 3일 전(주말 갭 모사)
+        _sc("X", self.CURR, 1)               # 당일 (07-15 없음)
+        d = auth_client.get("/api/v1/chainsight/centrality/top/").json()
+        assert d["results"][0]["rank_delta"] == 4  # 5→1
+
+    def test_rank_equals_active_metric_rank(self, db, auth_client):
+        """metric=betweenness면 rank·delta가 betweenness_rank 기준."""
+        _sc("X", self.PREV, pr_rank=1, bt_rank=2)
+        _sc("X", self.CURR, pr_rank=1, bt_rank=1)
+        d = auth_client.get(
+            "/api/v1/chainsight/centrality/top/?metric=betweenness"
+        ).json()
+        assert d["results"][0]["rank"] == 1              # betweenness_rank
+        assert d["results"][0]["rank_delta"] == 1        # 2→1
+
+    def test_additive_existing_fields_preserved(self, db, auth_client):
+        """기존 7필드 보존 + 신규 rank/rank_delta만 추가(additive 증빙)."""
+        _sc("X", self.CURR, 1)
+        d = auth_client.get("/api/v1/chainsight/centrality/top/").json()
+        item = d["results"][0]
+        # 기존(⑲) 필드 전부 존재
+        for f in ["symbol", "pagerank", "betweenness", "pagerank_rank",
+                  "betweenness_rank", "graph_nodes", "graph_edges"]:
+            assert f in item, f
+        # 신규 필드 추가(rank, rank_delta, name — ⑳-1)
+        assert set(item.keys()) == {
+            "symbol", "pagerank", "betweenness", "pagerank_rank",
+            "betweenness_rank", "graph_nodes", "graph_edges",
+            "rank", "rank_delta", "name",
+        }
+        # top-level 키는 불변
+        assert set(d.keys()) == {"as_of", "metric", "n", "graph_size", "results"}
+
+    def test_name_join(self, db, auth_client):
+        """name = Stock join(미등재 심볼은 "")."""
+        Stock.objects.create(symbol="X", stock_name="X Corp", sector="Technology")
+        _sc("X", self.CURR, 1)
+        _sc("NOSTOCK", self.CURR, 2)  # Stock 미등재
+        d = auth_client.get("/api/v1/chainsight/centrality/top/").json()
+        by = {r["symbol"]: r for r in d["results"]}
+        assert by["X"]["name"] == "X Corp"
+        assert by["NOSTOCK"]["name"] == ""
+
+    def test_no_nplus1_prev_lookup(self, db, auth_client):
+        for s, r in [("X", 3), ("Y", 1), ("Z", 2)]:
+            _sc(s, self.PREV, r)
+        for s, r in [("X", 1), ("Y", 3), ("Z", 2)]:
+            _sc(s, self.CURR, r)
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            auth_client.get("/api/v1/chainsight/centrality/top/?n=50")
+        assert len(ctx.captured_queries) <= 8  # 이웃 수 비례 아님(상수급)
+
+
 # ── ego rank 필드 ────────────────────────────────────────────
 
 class TestEgoRankFields:
