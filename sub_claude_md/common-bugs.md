@@ -880,6 +880,14 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **해결**: 신규 FE API 호출은 반드시 **앱 base 규약**(authAxios와 동일 `NEXT_PUBLIC_API_URL` 절대 base) 준수. **죽은 포트 하드코딩 폴백 금지** — env 미설정 시 skip+warn(유실 허용 데이터) 또는 앱 표준 폴백. 해소 = FIX-1(`46e6865`, 번들 검증까지). cf. 배포 체크리스트 ③.
 
+## 실행자 세션은 .env 파일을 열지 않는다 — 환경변수 확인은 키 존재 bool까지, 값 출력 금지 (#56, 2026-07-16 STEP0-P2-AXIS) [security] [process]
+
+**증상**: 실행 세션이 환경변수를 확인하려 `.env`를 grep/cat하다가 시크릿 원문이 stdout·로그에 노출. (07-16 STEP0-P2-AXIS: 마스킹 정규식이 `GEMINI_API_KEY_..._PROJECT=` 형태를 놓쳐 **API 키 원문 1회 노출** → 키 회전 조치 유발.)
+
+**원인**: `.env` 개봉 자체가 노출 표면. 마스킹 sed/정규식은 키 이름 변형(접미사·언더스코어)에 취약 — 한 줄이라도 빠지면 유출.
+
+**해결**: **실행자 세션은 `.env`를 열지 않는다(grep 포함).** 환경변수 확인이 필요하면 ⑴ 프로세스 env 로드는 기존 설정 경로(Django settings·Next 로더)에 맡기고, ⑵ 확인은 **키 존재 여부 bool까지만**(`bool(os.environ.get(...))` 또는 파일 미개봉 `grep -c '^KEY='` 카운트) — **값·head/tail·풀 문자열 출력 절대 금지**([[feedback_secret_masking_policy]] 승계). **자기점검**: 지시서에 ".env 접근 금지" 조항이 포함됐는지 확인하고, 없으면 실행자가 보수적으로 금지 적용.
+
 ## [DoD 함정] celery 태스크 신설 = tasks/__init__ import 누락을 단위 테스트가 못 잡는다 (⑲ 배포 실증) [process] [celery]
 
 **증상**: 신규 celery 태스크의 단위 테스트(함수 직접 호출·`.apply()`)는 전부 green인데, 실배포 워커가 태스크를 **미등록**(`celery inspect registered`에 없음) → beat 등록해도 "task not registered"로 미발화.

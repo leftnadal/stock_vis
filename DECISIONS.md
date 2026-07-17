@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-07-16] MGMT-BATCH-10 백-어노테이션 — impression 배관 청소 3건 (사후 추인) [platform] [frontend] [ops]
+
+> 트랙: MGMT-BATCH-10(mgmt, 메타-only). 청소 브랜치 2건(merge `4e166d5`·`af1e37a`) 착지 후 실행자 재량 판단을 사후 추인. baseline = origin/main `aafdd97`, prod 쓰기 0.
+
+**① PLATFORM-INGEST-DB-ISOLATE — per-item savepoint 채택**(`238c410`→`4e166d5`). impression ingest `post()`가 각 항목을 **`transaction.atomic()` savepoint**로 감싸 구조적 DB 오류(IntegrityError/DataError)를 항목 단위로 격리(정상 항목 전량 수신, 실패만 `rejected_reasons.db_error` 집계, 배치 500 없음). **Why**: `ATOMIC_REQUESTS`는 현재 False(autocommit)이나 savepoint는 **autocommit·ATOMIC_REQUESTS 양쪽에서 안전** → 미래 방어. `_record`의 레이스 IntegrityError 복구는 **중첩 savepoint**로 감싸 외부 per-item atomic 오염을 차단. 응답 봉투 = `received`/`rejected`(FE 계약 유지) + `rejected_reasons`(additive). 실행자 재량 판단 — 사후 추인.
+
+**② FE-DEAD-8000-SWEEP — fail-fast + 절대 base 단일 소스**(`9f03a30`→`af1e37a`). env 누락 시 **fail-fast(옵션 a)** 채택 — 죽은 포트 폴백 대신 즉시 throw(빌드/기동 시점). 신설 단일 소스 `lib/api/config.ts::resolveApiBase`/`API_BASE_URL`로 27개 소비처 통일 + 하드코딩 절대 URL 4파일·상대 호출 1건 흡수. next.config **stale rewrite 완전 사멸** + fail-fast 게이트. **Why**: #55 규약(절대 base 단일 준수) 완성 — 상대 URL이 stale rewrite(:8000)로 새던 구조 근절. **⚠ 착지≠반영**(#53): NEXT_PUBLIC_API_URL 빌드 인라인이라 prod 반영엔 재빌드 필요 → **FE-8000-PROD-APPLY(별건)**.
+
+**③ 운영 사실 기록 — :3000 서빙 사멸 발견**. `:3000` 서빙(launchd 입양 고아 `npm run dev`, sv-web-runtime)이 **07-16 ⑳ 검증 시점에 사멸 상태로 발견**됨(도그푸딩 impression 수집 중단 리스크 실증). 당시 임시 dev 프로세스로 검증 수행. **정식 부활은 FE-8000-PROD-APPLY로 통합**(재빌드+재기동+RUNBOOK 채록). WEB-RUNTIME-RUNBOOK 상향 근거.
+
+---
+
 ## [2026-07-16] D-DEPLOY-DELEGATE — 배포 대행 표준 승격 (선택 b) [harness]
 
 **결정**: CC가 **자기 세션 브랜치의 main 머지·origin push·`sv sync`·worker/beat/daphne 재시작**을 사용자 명시 승인 없이 대행한다(표준 승격). 정위치 = `SESSION_CONTRACT.md §H`(규칙 본문 단일 출처).
