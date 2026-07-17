@@ -896,7 +896,7 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **해결**: 신규 celery 태스크 슬라이스의 **DoD에 등록 검증 필수** — `app.loader.import_default_modules()` 후 `'<task path>' in app.tasks` 또는 라이브 워커 `celery inspect registered` 확인. [[lesson_celery_task_registration]](워커 재시작 필수)의 등록판. 배포 시 `worker_sync` 재기동 후 registered 재확인.
 
-## ego 그래프 렌더 단절 = FE↔BE URL 미스매치(미검증 이월) (#56, 2026-07-16 ⑳-D DIAG) [frontend] [chainsight] [process]
+## ego 그래프 렌더 단절 = FE↔BE URL 미스매치(미검증 이월) (#57, 2026-07-16 ⑳-D DIAG) [frontend] [chainsight] [process]
 
 **증상**: market-graph focus/ego 경로가 **모든 심볼에서 빈 캔버스**. 리더보드 행 클릭 → `?focus=SYM` → 그래프 안 그려짐. API·테스트는 전부 green이었음.
 

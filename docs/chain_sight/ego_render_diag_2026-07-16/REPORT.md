@@ -84,5 +84,5 @@
 
 ## 5. KB 정산
 
-`sub_claude_md/common-bugs.md`에 신규 버그 등록:
+`sub_claude_md/common-bugs.md`에 신규 버그 **#57** 등록 (origin/main이 세션 중 #56=STEP0-P2-AXIS를 선점 → 번호 양보):
 - **ego 그래프 렌더 단절 = FE↔BE URL 미스매치(미검증 이월)**: 백엔드 `ego/<symbol>/`(프리픽스 분리) vs 프론트 `<symbol>/ego/`. API green·테스트 green이었으나 라이브 focus→ego 화면 미검증으로 배포. `feedback_ui_slice_live_screenshot` 규약(라이브 렌더 확인 전 완료 아님)의 실증 사례. 교정=프론트 경로 순서 정합 + `contracts/`에 ego 경로 명시.
