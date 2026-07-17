@@ -50,6 +50,10 @@ export function useSectorGraph(sector: string | null) {
     staleTime: STALE_30M,
     gcTime: GC_TIME,
     enabled: !!sector,
+    // ⑳-E: localhost API — onlineManager 오프라인 오판으로 재시도가 paused 되면
+    // 에러(503)가 isError 로 표면화되지 못해 sector-unavailable 상태가 미발화한다.
+    // 'always' 로 pause 없이 실패를 error 상태로 확정시킨다.
+    networkMode: 'always',
   });
 }
 
@@ -70,6 +74,8 @@ export function useEgo(symbol: string | null) {
     staleTime: STALE_5M,
     gcTime: GC_TIME,
     enabled: !!symbol,
+    // ⑳-E: pause 없이 실패를 error 로 확정 → load-error 상태 신뢰성 확보(useSectorGraph 동일).
+    networkMode: 'always',
   });
 }
 
