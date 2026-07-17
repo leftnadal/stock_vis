@@ -8,6 +8,22 @@
 
 ---
 
+## [2026-07-17] D-HEALTH-BLOCKED-DISTINCTION — stale pending에 'blocked(외부 의존)' 상태 도입 [harness]
+
+> 트랙: MGMT-BATCH-11(mgmt, 메타-only). baseline = origin/main `87dc92e`, prod 쓰기 0. 상위 = [C] HEALTH-STALE-FAIL-PROMOTE(~07-20 승격).
+
+**결정**: `check_stale_pending_backannotation`(MGMT-HARDEN `4ce46ed`)의 stale pending 검사에 **'blocked(외부 의존)' 상태**를 도입한다.
+- **blocked 항목 = WARN 유지**(FAIL 승격 대상 아님) — 사유 + **의존 태스크 ID**를 표시. 실제 미해소(외부 트랙/결정 의존)이지 부기 누락이 아니므로 알람은 유지하되 FAIL로 올리지 않는다.
+- **순수 부기 누락만 [C] 승격 대상(FAIL)** — 해소됐는데 `→ RESOLVED/LANDED/SUPERSEDED` 부기를 빠뜨린 phantom(#52).
+- **blocked 표기 문법(단일 출처)** = `blocked(dep=<TASK-ID>)`. build ②(HEALTH-BLOCKED-BUILD)가 이 문법을 파싱 대상으로 삼는다.
+- **남용 방지 게이트**: health_check가 `dep=<TASK-ID>`의 **TASKQUEUE 실존을 검증**한다. 실존하지 않는 ID로 blocked를 달면 검사 실패(부기 회피 차단).
+
+**Why**: 가중합 **A 4.40 > B 3.45 > D 3.25 > C 3.05**(마진 0.95). 타이브레이커 — C(전량 WARN 유지=알람 피로)·D(07-10 기각 선례 재현으로 질적 결격). **TH stale(07-10)은 부기 누락이 아니라 실제 blocked**(TH 트랙 `sess-cs-theme-heat` 26커밋 WIP 정식 머지 의존)로 판명 — MGMT-BATCH-10 STEP 12 실측. 부기 누락과 실제 미해소를 같은 FAIL로 묶으면 오탐.
+
+**How to apply**: ⑴ 본 결정으로 문법 확정 → ⑵ TH stale 항목에 `blocked(dep=TH-RUNTIME-DEPLOY)` 표기(실존 ID 인용) → ⑶ HEALTH-BLOCKED-BUILD가 health_check에 blocked 인식 + dep 실존 검증 구현(시한 ~07-20 전) → ⑷ [C] HEALTH-STALE-FAIL-PROMOTE는 이 구분 착지 후 **예정대로 승격**.
+
+---
+
 ## [2026-07-16] MGMT-BATCH-10 백-어노테이션 — impression 배관 청소 3건 (사후 추인) [platform] [frontend] [ops]
 
 > 트랙: MGMT-BATCH-10(mgmt, 메타-only). 청소 브랜치 2건(merge `4e166d5`·`af1e37a`) 착지 후 실행자 재량 판단을 사후 추인. baseline = origin/main `aafdd97`, prod 쓰기 0.
