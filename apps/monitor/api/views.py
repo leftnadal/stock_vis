@@ -207,7 +207,12 @@ class MonitorIndicatorViewSet(_OwnedByMonitorMixin, viewsets.ModelViewSet):
     serializer_class = MonitorIndicatorSerializer
 
     def get_queryset(self):
-        return MonitorIndicator.objects.filter(monitor__user=self.request.user)
+        qs = MonitorIndicator.objects.filter(monitor__user=self.request.user)
+        # ?monitor= 존중 — 상세 페이지가 특정 모니터 지표만 조회(모니터 2개+ 시 교차 표시 방지).
+        monitor_id = self.request.query_params.get("monitor")
+        if monitor_id:
+            qs = qs.filter(monitor_id=monitor_id)
+        return qs
 
     def perform_create(self, serializer):
         self._assert_owner(serializer.validated_data["monitor"])

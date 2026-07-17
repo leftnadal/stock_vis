@@ -534,3 +534,34 @@ class TestClaimPriceValidation:
             format="json",
         )
         assert r.status_code == 201, r.data
+
+
+@pytest.mark.django_db
+class TestIndicatorMonitorFilter:
+    """?monitor= 필터 존중 — 상세 지표 교차 표시 방지(스모크 노출 선존 결함)."""
+
+    def _client(self, owner):
+        from rest_framework.test import APIClient
+
+        c = APIClient()
+        c.force_authenticate(user=owner)
+        return c
+
+    def test_monitor_param_scopes_indicators(self, owner, stock_aapl):
+        m1 = Monitor.objects.create(user=owner, scope="stock", target_ref="AAPL", name="m1")
+        m2 = Monitor.objects.create(user=owner, scope="stock", target_ref="MSFT", name="m2")
+        m1.indicators.create(name="EOD", indicator_type="market_data", source_key="eod_composite")
+        m2.indicators.create(name="SMA", indicator_type="technical", source_key="sma200_gap")
+
+        def rows(resp):
+            d = resp.data
+            return d["results"] if isinstance(d, dict) and "results" in d else d
+
+        c = self._client(owner)
+        r = c.get("/api/v1/monitor/indicators/", {"monitor": str(m2.id)})
+        names = [i["name"] for i in rows(r)]
+        assert names == ["SMA"]  # m1의 EOD 미포함
+
+        # 필터 없으면 전체(기존 동작 보존)
+        r_all = c.get("/api/v1/monitor/indicators/")
+        assert len(rows(r_all)) == 2
