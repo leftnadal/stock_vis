@@ -888,6 +888,18 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **해결**: 신규 celery 태스크 슬라이스의 **DoD에 등록 검증 필수** — `app.loader.import_default_modules()` 후 `'<task path>' in app.tasks` 또는 라이브 워커 `celery inspect registered` 확인. [[lesson_celery_task_registration]](워커 재시작 필수)의 등록판. 배포 시 `worker_sync` 재기동 후 registered 재확인.
 
+## ego 그래프 렌더 단절 = FE↔BE URL 미스매치(미검증 이월) (#56, 2026-07-16 ⑳-D DIAG) [frontend] [chainsight] [process]
+
+**증상**: market-graph focus/ego 경로가 **모든 심볼에서 빈 캔버스**. 리더보드 행 클릭 → `?focus=SYM` → 그래프 안 그려짐. API·테스트는 전부 green이었음.
+
+**원인 (2중 게이트, 실측)**:
+1. **URL 미스매치(주근인)** — 백엔드 라우트 `apps/chain_sight/api/urls.py:36` = `ego/<symbol>/`(동적 경로와 충돌 회피 위해 `ego/` 프리픽스 분리), 그러나 프론트 `chainsightService.ts:85` `fetchEgo`는 구 패턴 `/chainsight/${symbol}/ego/` 호출. resolver 실측: `/chainsight/AAPL/ego/` → **404**, `/chainsight/ego/AAPL/` → OK. 프론트 배선 첫 커밋(`a9256b8` S2)부터 어긋나 **한 번도 작동한 적 없음**(회귀 아님·미검증).
+2. **시드 제약(부근인)** — `market-graph/page.tsx:24` focus 핸들러가 `seedData.seeds.find(...)` 있을 때만 초기화. 리더보드 상위(centrality)는 대체로 비-시드(NVDA#1·MSFT·AAPL이 오늘 시드 20개에 없음) → 조용히 무시.
+
+ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건강(NVDA 48노드/224엣지 200 405ms). 섹터 모드만 별개로 Neo4j 동결로 빈 렌더.
+
+**해결**: 프론트 경로 순서 정합(`/chainsight/${symbol}/ego/` → `/chainsight/ego/${symbol}/`) + 시드 게이트 우회(PG ego 직행) + `contracts/` OpenAPI에 ego 경로 명시(드리프트 재발 방지). **교훈**: API green·단위테스트 green ≠ 화면 작동. [[feedback_ui_slice_live_screenshot]] 규약(라이브 렌더 확인 전 완료 아님)의 실증 사례 — focus→ego 라이브 검증 누락으로 URL 불일치가 배포까지 이월. 상세=`docs/chain_sight/ego_render_diag_2026-07-16/REPORT.md`.
+
 ## [잡음 차단] pre-commit iCloud 경고는 무해·비차단 — 판단 소모 금지 [ops]
 
 **증상**: 커밋 시 pre-commit hook이 "iCloud 측 작업 의심. 확인 후 진행하세요 (강제 차단 아님)" stderr 출력.
