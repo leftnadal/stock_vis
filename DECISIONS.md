@@ -65,6 +65,18 @@
 - **mgmt 인라인 관례 명문화**: **실행 세션 지시서 = repo 배치 필수** / mgmt(랜딩 등 코드 0) 세션 = 인라인 전문 허용. 19b·19c 랜딩 선례를 규칙으로 승격. (20a 세션은 실행이므로 `docs/portfolio/coach/slice20a/SLICE20A_INSTRUCTION.md` 배치 후 시작.)
 - **20a 절대 규칙 승계**: 유령 필드(analyst_*·forward_pe) 화면 노출 금지(예상수익률=빈 슬롯 placeholder) / 손잡이 쓰기 금지(20b) / 엔진 로직 무변경 / mig 0006(AdvisoryRun.trigger 가산) 외 재생성 0 / prod 미적용(dev만).
 
+## SLICE20B — Coach 화면 2부: 손잡이 쓰기 + 입력 UI + 심층 진단 연결 (2026-07-16 결정 / 2026-07-16 실행) [portfolio]
+
+**전제**: 20a로 Coach는 "읽는 화면"(권유·갭·모드 + [지금 진단]). 20b는 "만지는 화면" — ⑴ 손잡이 5종 직접 조정(주권 실물화) ⑵ admin 지름길 → 지갑·관심 입력 UI 대체 ⑶ dead-end coach E1~E6에 진입점 연결. **모델 무변경 — REST 엔드포인트 + 화면만 가산**(D0 계약 가산 전용의 REST 층 적용). base origin/main = `8e04a18`(지시서 명시 `f00dbca`의 상위집합 — FE-DEAD-8000-SWEEP frontend services base URL 정리 포함, 20b 소비 대상이라 최신에서 분기).
+
+- **D4 — E 진입 = 분기 (사용자 확정, 4.10 / 타이브레이커: 하방=① 동일·상방만 존재)**: 기본 = 코치 탭 하단 "심층 진단" 섹션. 종목 컨텍스트 E가 STEP 0(d)에서 실측될 때만 권유 카드 딥링크 가산. **STEP 0(d) 판정 = 섹션만(수렴)**: E1~E6 전부 포트폴리오 수준(app/coach/eN 정적 라우트, `[symbol]` 동적 세그먼트 0, API 페이로드 `portfolio_id`+`holdings[]`, `?symbol=` 읽는 코드 0) → **종목 수준 E 0개 → 딥링크 가산 없음, 6개 정적 타일 섹션만**.
+- **D5 — 입력 UI = 목록+모달 (사용자 확정, 4.40 / 마진 0.80)**: 강등 단서 = STEP 0(c) 하우스 모달 표본 부재 시 ② 폼 페이지. **STEP 0(c) 판정 = ① 진행**: 폼 담은 하우스 모달 4+ 실존(`components/portfolio/PortfolioModal.tsx`·`components/watchlist/WatchlistModal.tsx`·`AddStockModal.tsx`·`components/monitor/CloseModal.tsx`). 공유 베이스 모달·focus trap·`role="dialog"` 부재(각 모달 개별 처리) → 하우스 관용구(overlay `fixed inset-0 bg-black/50`+card `bg-white dark:bg-gray-800 rounded-xl max-w-md`+X+form+actions, `if(!isOpen) return null`) 답습, **접근성은 과설계 없이 role/aria-modal 최소 가산**. mutation = TanStack `invalidateQueries`(낙관적 갱신 미채택 — 하우스 관례 답습, 실코드에 optimistic 0).
+- **손잡이 저장 ≠ 진단 실행 (D2 혼합 트리거 유지)**: 저장 후 진단은 [지금 진단] 수동 경유. 엔진·태스크·저장 훅의 손잡이 자동 조정 금지 재확인(19c 불변식의 REST 확장 — 서버측 검증기 `KNOB_RANGES`+`clean/save` 그대로 강제, 프론트 검증만으로 대체 금지).
+- **CRUD 재사용 원칙 (18-R 교훈의 REST 층)**: 진실 소스 분할 금지 — 기존 CRUD는 소비, 부족분만 가산. **STEP 0(b) 판정**: WatchlistItem = 완비 재사용(`/api/v1/users/watchlist/*` + `watchlistService.ts`, 관심 탭 = 기존 `/watchlist` 소비 — 재구축 0) / WalletHolding·CashBalance CRUD = **없음 → 신규 가산**(cash upsert/delete 서비스 헬퍼는 재사용, Wallet get-or-create만 신규) / UserGoal 손잡이 쓰기 = **없음 → PATCH 가산**(GET knobs 읽기 재사용).
+- **UserGoal 검증기 정본 확인 (§7 HALT 해소)**: 서버측 실존 — `models_my.py` UserGoal 필드 `validators=` + `KNOB_RANGES` 단일소스 + `clean()`/`save()` 이중방어. 범위 A 0~7·G 0~7·w 0~0.20·L 15~100(default 30)·E 0~30 = 지시서 완전 일치. 슬라이더 스펙 = 이 정본과 1:1.
+- **20b 절대 규칙 승계**: 모델·마이그레이션 무변경(신규 mig 0 기대, 필요 시 HALT) / 유령 필드 노출 금지·예상수익률 빈 슬롯 유지 / E 화면 행위보존(diff 0, 라우팅만 가산) / WatchlistItem shared 소속 그대로 소비(재정의·이동 금지) / prod 미적용 유지(누적 후보 19b·19c·20a 무접촉).
+- **baseline at decision**: origin/main = `8e04a18`. pytest(coach+portfolio) 733 passed/1 skipped · tsc 0 · vitest 713 passed(92파일) — 전부 GREEN(지시서 명시 651/319는 base 전진으로 무효, 종료 재측정 기준).
+
 ## [2026-07-16] P2-IMPRESSION-500 사건 — impression 배관 개통 중 500 2건 전말 [platform] [dashboard]
 
 > 트랙: MGMT-P2-IMPR-CLOSE(mgmt, 메타-only). 상위 = P2-IMPRESSION-BUILD(S1~S3+FIX-1). 배관 개통 중 발생한 500 2건의 원인·해소 기록. baseline = origin/main `dbe0986`, prod 쓰기 0.

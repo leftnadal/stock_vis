@@ -12,6 +12,9 @@ Pydantic 계약(advisory_contract)으로 매핑(advisory_schema.py, apps.ready()
 
 from __future__ import annotations
 
+from decimal import Decimal, InvalidOperation
+
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.urls import path
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers
@@ -50,7 +53,47 @@ class KnobsReadSerializer(serializers.Serializer):
         return instance
 
 
+class KnobsUpdateSerializer(serializers.Serializer):
+    """손잡이 5종 + 목표 수익률 부분 수정 요청(SLICE20B). 전부 optional(partial).
+
+    검증은 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+    여기 선언은 스키마 앵커일 뿐, 범위 강제는 뷰에서 full_clean 경유(프론트 검증 대체 금지).
+    """
+
+    target_return_pct = serializers.DecimalField(max_digits=6, decimal_places=2, required=False)
+    aggressiveness_offset = serializers.IntegerField(required=False)
+    growth_boost = serializers.IntegerField(required=False)
+    diversification_weight = serializers.DecimalField(max_digits=3, decimal_places=2, required=False)
+    concentration_limit = serializers.IntegerField(required=False)
+    exploration_ratio = serializers.IntegerField(required=False)
+
+
 # ── 헬퍼 ──
+
+# 손잡이 PATCH 대상 필드 (모델 검증기가 범위 강제 — 여기선 형변환만)
+_KNOB_INT_FIELDS = {
+    "aggressiveness_offset",
+    "growth_boost",
+    "concentration_limit",
+    "exploration_ratio",
+}
+_KNOB_DEC_FIELDS = {"diversification_weight", "target_return_pct"}
+_PATCHABLE_FIELDS = _KNOB_INT_FIELDS | _KNOB_DEC_FIELDS
+
+
+def _knobs_payload(goal: UserGoal) -> dict:
+    """손잡이 5종 + 목표 수익률 봉투(GET/PATCH 공용). target_return_pct는 20b 가산."""
+    return _jsonable(
+        {
+            "available": True,
+            "target_return_pct": goal.target_return_pct,
+            "aggressiveness_offset": goal.aggressiveness_offset,
+            "growth_boost": goal.growth_boost,
+            "diversification_weight": goal.diversification_weight,
+            "concentration_limit": goal.concentration_limit,
+            "exploration_ratio": goal.exploration_ratio,
+        }
+    )
 
 
 def _latest_advisory_payload(user) -> dict:
@@ -106,26 +149,59 @@ def advisory_summary(request: Request) -> Response:
     )
 
 
-@extend_schema(responses={200: KnobsReadSerializer}, tags=["portfolio-advisory"])
-@api_view(["GET"])
+@extend_schema(methods=["GET"], responses={200: KnobsReadSerializer}, tags=["portfolio-advisory"])
+@extend_schema(
+    methods=["PATCH"],
+    request=KnobsUpdateSerializer,
+    responses={200: KnobsReadSerializer},
+    tags=["portfolio-advisory"],
+)
+@api_view(["GET", "PATCH"])
 @permission_classes([IsAuthenticated])
 def advisory_knobs(request: Request) -> Response:
-    """손잡이 5종 현재값(읽기 전용). 쓰기는 20b — 여기 PUT/PATCH 없음."""
+    """손잡이 5종 + 목표 수익률.
+
+    GET   현재값(읽기).
+    PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
+          UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
+          범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
+          엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
+    """
     goal = UserGoal.objects.for_user(request.user).first()
+
+    if request.method == "PATCH":
+        if goal is None:
+            return Response(
+                {"available": False, "detail": "먼저 투자 목표를 설정하세요(admin)."},
+                status=400,
+            )
+        provided = {k: v for k, v in request.data.items() if k in _PATCHABLE_FIELDS}
+        if not provided:
+            return Response({"detail": "수정할 손잡이/목표 필드가 없습니다."}, status=400)
+
+        coerce_errors: dict[str, str] = {}
+        for field, raw in provided.items():
+            try:
+                if field in _KNOB_INT_FIELDS:
+                    setattr(goal, field, int(raw))
+                else:
+                    setattr(goal, field, Decimal(str(raw)))
+            except (ValueError, TypeError, InvalidOperation):
+                coerce_errors[field] = f"{field}: 숫자 형식이 아닙니다 (입력: {raw})."
+        if coerce_errors:
+            return Response({"errors": coerce_errors}, status=400)
+
+        try:
+            goal.full_clean()  # 필드 validators + KNOB_RANGES(clean) 강제
+        except DjangoValidationError as exc:
+            return Response({"errors": exc.message_dict}, status=400)
+        goal.save()
+        return Response(_knobs_payload(goal))
+
+    # GET
     if goal is None:
         return Response({"available": False})
-    return Response(
-        _jsonable(
-            {
-                "available": True,
-                "aggressiveness_offset": goal.aggressiveness_offset,
-                "growth_boost": goal.growth_boost,
-                "diversification_weight": goal.diversification_weight,
-                "concentration_limit": goal.concentration_limit,
-                "exploration_ratio": goal.exploration_ratio,
-            }
-        )
-    )
+    return Response(_knobs_payload(goal))
 
 
 @extend_schema(request=None, responses={200: LatestAdvisorySerializer}, tags=["portfolio-advisory"])

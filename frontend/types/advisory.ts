@@ -113,12 +113,24 @@ export interface AssetSummary {
   mode?: AdvisoryMode
 }
 
-// GET /advisory/knobs/ — 읽기 전용(쓰기는 20b)
+// GET /advisory/knobs/ (target_return_pct는 20b 가산) · PATCH 응답 동형
 export interface KnobsRead {
   available: boolean
+  target_return_pct?: string
   aggressiveness_offset?: number
   growth_boost?: number
   diversification_weight?: string
   concentration_limit?: number
   exploration_ratio?: number
+}
+
+// PATCH /advisory/knobs/ 요청(SLICE20B) — 부분 수정, 값은 string 전송(Decimal 정밀도).
+// 범위 강제는 서버측 full_clean(검증기) — 프론트 슬라이더 클램프는 UX 보조일 뿐.
+export interface KnobsUpdateInput {
+  target_return_pct?: string
+  aggressiveness_offset?: string
+  growth_boost?: string
+  diversification_weight?: string
+  concentration_limit?: string
+  exploration_ratio?: string
 }

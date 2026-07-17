@@ -42,3 +42,13 @@ export function useRunAdvisory() {
     },
   })
 }
+
+// 손잡이/목표 저장(SLICE20B). **저장 ≠ 진단 실행(D2)** — knobs만 재검증하고
+// latest/summary는 건드리지 않는다(진단은 [지금 진단] 수동 경유).
+export function useUpdateKnobs() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: advisoryService.updateKnobs,
+    onSuccess: () => qc.invalidateQueries({ queryKey: advisoryKeys.knobs() }),
+  })
+}

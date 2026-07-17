@@ -597,6 +597,19 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 규칙: 트랙 세션은 장부 **직접 편집 금지** — 교훈·결정은 mgmt에 위임(또는 지연 커밋 블록). **mgmt 분리 규약을 트랙 Project 지시문에 전파**해야 구조적으로 멎음.
 - 참조: D-THEMEHEAT-AUDIT ⑵, THEMEHEAT-LAND-GATE(land 전 mgmt 선행 정산).
 
+### Turbopack이 심링크 node_modules 거부 — worktree dev/캡처는 실제 npm ci 필요 (Slice 20b, 2026-07-16) `[frontend][dev-infra]`
+
+- 증상: worktree frontend에서 `node_modules`를 main repo로 심링크한 뒤 `next dev`(Turbopack) 기동 시 `Symlink [project]/node_modules is invalid, it points out of the filesystem root` → 컴파일 실패.
+- 원인: Turbopack은 파일시스템 루트 밖을 가리키는 심링크 node_modules를 거부(webpack과 다름). **scoped `vitest`는 심링크로 OK**(memory `project_color_ops_testenv_arc`)지만 dev 서버는 불가.
+- 해결: worktree에서 라이브 dev/캡처가 필요하면 심링크 제거 후 **실제 `npm ci`**(node v22.19.0). 캡처 종료 후 worktree 제거 시 자연 정리(gitignored).
+- 캡처 격리 레시피(Slice 20b): Django `runserver 127.0.0.1:8010`(`DJANGO_CORS_ALLOW_ALL=True`+dev DB) + `next dev -p 3010`(`NEXT_PUBLIC_API_URL=http://127.0.0.1:8010/api/v1`) + JWT `RefreshToken.for_user` 발급→`localStorage.access_token/refresh_token` 주입(로그인 UI 우회). 공유 launchd 런타임(:18765) 무접촉.
+
+### React Query mutation 거부가 vitest서 unhandled로 표면화 — 컴포넌트 에러 테스트는 훅 mock (Slice 20b, 2026-07-16) `[frontend][testing]`
+
+- 증상: `service.updateKnobs`를 `mockRejectedValue`로 mock하고 컴포넌트 저장 버튼 클릭 → 컴포넌트가 `mutateAsync`를 try/catch로 잡아 로컬 에러 state를 세팅해도, vitest가 `Error: xxx`를 **unhandled rejection으로 잡아 테스트 실패**. `mutations:{retry:false}`·`mutate`+onError·mutateAsync+catch 전부 누수.
+- 원인: 서비스를 mock하면 React Query 실 mutation 머신(Retryer/MutationObserver)이 거부 promise를 생성→vitest 프로세스 리스너가 unhandled로 포착. CloseModal이 통과하는 건 표면적 유사일 뿐, 격리 조건이 다름.
+- 해결: 컴포넌트의 **에러 상태 테스트는 훅(`useUpdateKnobs`)을 mock**(서비스 mock 아님) — `{ mutateAsync: vi.fn().mockRejectedValue(...), isPending, isError }` 반환. RQ 실 머신을 우회해 거부가 컴포넌트 try/catch 안에서만 처리됨. 컴포넌트 자체는 mutateAsync+try/catch+로컬 에러 state(CloseModal 관례) 유지. range input은 jsdom서 키보드 조정 불가 → `fireEvent.change(slider,{target:{value}})`.
+
 ---
 
 ## 아카이브 (종결·일회성 — 이력 보존)
