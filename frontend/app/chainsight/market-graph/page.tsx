@@ -18,14 +18,13 @@ function MarketGraphPageInner() {
   const { data: seedData, isLoading } = useSeedData();
   const state = useExplorationStore();
 
-  // ?focus=NVDA 처리: 전용 초기화 액션으로 원자적 처리
+  // ?focus=SYM 처리: 시드 여부와 무관하게 PG ego 직행(⑳-E — 시드 게이트 해제).
+  // 시드면 sector 브레드크럼 포함, 비시드면 sector 미상(null)으로 종목만 초점.
   useEffect(() => {
-    if (focusSymbol && seedData) {
-      const stock = seedData.seeds.find((s) => s.symbol === focusSymbol.toUpperCase());
-      if (stock) {
-        state.initializeFocusExploration(stock.sector, stock.symbol);
-      }
-    }
+    if (!focusSymbol) return;
+    const sym = focusSymbol.toUpperCase();
+    const seedSector = seedData?.seeds.find((s) => s.symbol === sym)?.sector ?? null;
+    state.initializeFocusExploration(seedSector, sym);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusSymbol, seedData]);
 

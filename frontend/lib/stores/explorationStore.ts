@@ -31,7 +31,8 @@ interface ExplorationState {
   selectNode: (symbol: string, relationFromPrev?: string) => void;
   undoToTrailNode: (depth: number) => void;
   startChainExploration: (sector: string, symbol: string) => void;
-  initializeFocusExploration: (sector: string, symbol: string) => void;
+  // ⑳-E: sector nullable — 비시드 focus 는 sector 미상(null)으로 PG ego 직행.
+  initializeFocusExploration: (sector: string | null, symbol: string) => void;
   setCurrentNeighbors: (neighbors: Neighbor[]) => void;
   setHighlightedChain: (chainId: string | null) => void;
   toggleRelType: (type: RelationType) => void;
@@ -126,10 +127,13 @@ export const useExplorationStore = create<ExplorationState>()((set) => ({
     set({
       selectedSector: sector,
       centerSymbol: symbol,
-      trail: [
-        { symbol: sector, type: 'sector', depth: 0 },
-        { symbol, type: 'stock', depth: 1 },
-      ],
+      // sector 있으면 섹터 브레드크럼 포함(시드 경로 보존), 없으면 종목만(비시드 ego 직행).
+      trail: sector
+        ? [
+            { symbol: sector, type: 'sector', depth: 0 },
+            { symbol, type: 'stock', depth: 1 },
+          ]
+        : [{ symbol, type: 'stock', depth: 0 }],
       historyNodes: [],
       currentNeighbors: [],
       highlightedChain: null,
