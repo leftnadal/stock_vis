@@ -194,3 +194,32 @@ class TestEgoCrossEdges:
         with CaptureQueriesContext(connection) as ctx:
             auth_client.get("/api/v1/chainsight/ego/AAA/?include_cross_edges=true")
         assert len(ctx.captured_queries) <= 9
+
+
+class TestEgoRouteContract:
+    """FE↔BE ego 경로 계약 (⑳-E S1).
+
+    짝: frontend/services/chainsightPaths.ts::egoPath 가 생성하는 경로가
+    EgoGraphView 로 resolve 되고, 구 404 패턴(`<sym>/ego/`)은 resolve 되지 않음을 못박는다.
+    common-bugs #57 재발 방지.
+    """
+
+    # FE egoPath('NVDA') === '/chainsight/ego/NVDA/' (authAxios base=/api/v1 포함).
+    FE_EGO_FULL_PATH = "/api/v1/chainsight/ego/NVDA/"
+    OLD_BROKEN_PATH = "/api/v1/chainsight/NVDA/ego/"
+
+    def test_fe_ego_path_resolves_to_ego_view(self):
+        from django.urls import resolve
+
+        from apps.chain_sight.api.ego_views import EgoGraphView
+
+        match = resolve(self.FE_EGO_FULL_PATH)
+        assert match.func.view_class is EgoGraphView
+        assert match.kwargs.get("symbol") == "NVDA"
+
+    def test_old_broken_path_does_not_resolve(self):
+        from django.urls import resolve
+        from django.urls.exceptions import Resolver404
+
+        with pytest.raises(Resolver404):
+            resolve(self.OLD_BROKEN_PATH)

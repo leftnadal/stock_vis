@@ -5,6 +5,7 @@
  */
 
 import { authAxios } from '@/lib/api/authAxios';
+import { egoPath } from './chainsightPaths';
 import type {
   GraphResponse,
   SuggestionsResponse,
@@ -82,7 +83,7 @@ export async function fetchEgo(
 ): Promise<EgoGraphResponse> {
   const { minScore = 0, types, limit = 50, trendWindow = 12 } = opts;
   const { data } = await authAxios.get<EgoGraphResponse>(
-    `/chainsight/${symbol.toUpperCase()}/ego/`,
+    egoPath(symbol),
     {
       params: {
         min_score: minScore,
