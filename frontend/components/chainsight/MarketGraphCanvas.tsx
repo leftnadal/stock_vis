@@ -13,6 +13,7 @@ import {
 import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
 import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
 import RelationLegend from './RelationLegend';
+import GraphStatePanel from './GraphStatePanel';
 import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
@@ -210,11 +211,19 @@ export default function MarketGraphCanvas() {
   }, [hoveredNode]);
 
   const { data: seedData } = useSeedData();
-  const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
-    selectedSector && !centerSymbol ? selectedSector : null,
-  );
+  const {
+    data: sectorData,
+    isLoading: sectorLoading,
+    isError: sectorError,
+    refetch: refetchSector,
+  } = useSectorGraph(selectedSector && !centerSymbol ? selectedSector : null);
   // Neighbor 모드: ego API (PostgreSQL 네이티브) 사용. useNeighbors는 동결(삭제 금지).
-  const { data: egoData, isLoading: egoLoading } = useEgo(centerSymbol);
+  const {
+    data: egoData,
+    isLoading: egoLoading,
+    isError: egoError,
+    refetch: refetchEgo,
+  } = useEgo(centerSymbol);
 
   // ego 응답을 buildNeighborGraph 형태로 변환 (메모이즈)
   const neighborData = useMemo(
@@ -767,6 +776,20 @@ export default function MarketGraphCanvas() {
         </div>
       </div>
     );
+  }
+
+  // ⑳-E S3/S4: 로드 실패·빈 결과를 조용한 빈 캔버스로 수렴시키지 않고 상태별로 분리.
+  // (b) ego 로드 실패(404/500/예외·focus 미해석) → 오류 명시 + 재시도
+  if (centerSymbol && egoError) {
+    return <GraphStatePanel variant="load-error" symbol={centerSymbol} onRetry={() => refetchEgo()} />;
+  }
+  // (a) ego 200·관계 0 (이웃 없음) → 오류 아님, 안내만
+  if (centerSymbol && egoData && egoData.edges.length === 0) {
+    return <GraphStatePanel variant="empty-neighbors" symbol={centerSymbol} />;
+  }
+  // S4: 섹터 관계망(Neo4j 의존) 로드 실패 → 명시 상태(조용한 빈 캔버스 금지)
+  if (selectedSector && !centerSymbol && sectorError) {
+    return <GraphStatePanel variant="sector-unavailable" onRetry={() => refetchSector()} />;
   }
 
   return (
