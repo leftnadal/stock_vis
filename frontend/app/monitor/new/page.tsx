@@ -158,10 +158,15 @@ function BuilderContent() {
         })
       }
       // 3) Claim 선택 부착 (매수 시나리오 가격 또는 근거 메모가 있으면)
-      if (hasScenario || assertion.trim()) {
+      // assertion은 BE 필수(non-blank) — 메모 없는 시나리오는 가격으로 자동 합성.
+      const memo = assertion.trim()
+      if (hasScenario || memo) {
+        const finalAssertion =
+          memo ||
+          `매수 시나리오 · 진입 ${entryPrice} / 목표 ${targetPrice} / 손절 ${stopPrice}`
         await monitorService.createClaim({
           monitor: monitor.id,
-          assertion: assertion.trim(),
+          assertion: finalAssertion,
           deadline: deadline || null,
           entry_price: hasScenario ? entryPrice : null,
           target_price: hasScenario ? targetPrice : null,

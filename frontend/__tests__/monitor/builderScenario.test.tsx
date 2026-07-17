@@ -94,6 +94,19 @@ describe('빌더 매수 시나리오 검증', () => {
     )
   })
 
+  it('메모 없는 시나리오 → assertion 가격으로 자동 합성(BE non-blank 방어)', async () => {
+    gotoStep4()
+    fireEvent.change(screen.getByTestId('scenario-entry-price'), { target: { value: '349.2' } })
+    fireEvent.change(screen.getByTestId('scenario-target-price'), { target: { value: '400' } })
+    fireEvent.change(screen.getByTestId('scenario-stop-price'), { target: { value: '324.94' } })
+    fireEvent.change(screen.getByTestId('scenario-deadline'), { target: { value: FUTURE } })
+    fireEvent.click(screen.getByText('만들기'))
+    await waitFor(() => expect(createClaim).toHaveBeenCalled())
+    const arg = createClaim.mock.calls[0][0]
+    expect(arg.assertion).toContain('진입 349.2')
+    expect(arg.assertion).not.toBe('') // non-blank 보장
+  })
+
   it('제안 배너 [적용] → 진입/손절 입력 채움', () => {
     gotoStep4()
     expect(screen.getByTestId('scenario-suggest-banner')).toHaveTextContent('제안 근거')
