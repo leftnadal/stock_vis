@@ -5,6 +5,20 @@
 
 ---
 
+## T-3b 후속 — 정리 목록 + 미발화 경로 (2026-07-17 종결)
+
+> T-3b 종결(§4 3틱 통과, PROGRESS `b5e3aae`). 정리 목록 ⓐ~ⓓ + 관찰서 prod 미발화한 엔진 경로 2건.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|---|---|---|---|---|---|
+| T3B-CLEANUP-A | DB beat #7 `chainsight-upward-learning` 정식 삭제 | @사용자 | §4 종결 | **사용자 실행(스냅샷 전달됨)** | 즉결안 `forensics_db_beat_7.md`. 주체=DatabaseScheduler 2.9.0 config sync, 재물질화 방지 확인. §H상 beat DB 변경은 배포대행 제외 |
+| T3B-CLEANUP-B | pair 브랜치 + sess-cs-t3b 브랜치 삭제 | @infra | §4 종결 | **✅ done 2026-07-17** | 태그 봉인 `d2-pair-integrated-20260706`(3a60da5)·`t3b-code-complete`(6ab8955) 후 로컬·원격 삭제, 손실 0 검증 |
+| T3B-CLEANUP-C | OPS-WORKTREE-ISOLATION 착수 | @infra | 사용자 결정 | **회부(설계 완비)** | `design_ops_worktree_isolation_v1.md` Opt-2 추천. §6 동결 무겹침 시점 착수 |
+| T3B-CLEANUP-D | SEC β 착수 | @backend | 사용자 호출 | **대기** | seed status 무기록·ⓓ-2 승계 명기. "재관측이 왜 270/330쌍인가" 질문 이관 |
+| T3B-PATH-VERIFY | **미발화 경로 2건** prod 첫 발화 채록(적격 후보 등장 시 1회 검증) | @backend | 적격 후보 등장 | **예약(모니터)** | §4 미발화: ⑴ **streak(B-path)** — 관찰 창 적격 후보 0(재확인 pair 대다수 tier1 fast-path/이미 confirmed). streak≥3 누적 첫 승급 미실증. ⑵ **highscore(≥85 직행, B-2)** — 잔여 probable 7 전부 score35<60, 신규 high-grade SEC pair 미유입으로 미발화. 둘 다 단위 테스트 GREEN·prod 미검증. 적격 후보(streak 누적 truth pair / score≥85 유입) 등장 시 로그 채록 |
+
+---
+
 ## 지시서⑳ 파생 — 중심성 UI 트랙 (2026-07-16)
 
 > 출처: ⑳-1 리더보드 착지(브랜치 `monorepo/sess-20-leaderboard`) + ⑲ S4 discovery 실측 이월.
