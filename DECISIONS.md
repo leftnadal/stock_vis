@@ -3780,3 +3780,46 @@ dual-server 스택 미기동 → 라이브 스크린샷은 **배포 필요 작�
 **baseline at decision**: origin/monorepo/sess-cs-theme-heat = f7cb527. 프론트 신규 2 vitest(delta 마커,
 총 8). 백엔드 433 GREEN 불변. 마이그레이션 0. **beat 3종(결정26=C 상시)**: 전부 enabled(07-13 daily
 미발화, ET 03:59 → 18:00 ET 대기), estimates next 07-17 16:30 ET.
+
+## [2026-07-17] TH-C3-LLM-DICT-1 — 결정35/36/37 (per-term override + 30건 판정 + K3 한정)
+
+**결정35=1 = per-term override 레이어 신설**: 1차 규칙 자체 수정·블랭킷 스톱리스트로는 215 오배정
+교정 불가(토큰-전역 과교정 / H2 additive-fallback은 1차 매칭 override 불가, 실측 확인). 해소책 =
+`aggregate_theme_news_volume` 상단 override 조회(허용 A, 미등재 term 경로 불변) + `ThemeTermOverride`
+모델 1개(term/disposition[sector|none]/generation/provenance, 마이그 0024) + 세대 태깅 롤백.
+
+**결정36 = disposition 권위 = 재검(결정22 K4) 기본 + 3차 검증**: 독립 LLM 재판정이 재검과 40% 이격
+(131 일치 / 84 불일치 = 정책 49 + 실질이견 35). 정책 49(크립토·AI-사회·매크로·지정학·규제 = K4 none)
+는 결정22 K4 라인이라 재검 확정. 실질이견 35만 K4-명문 3차 판정 → 5 재검확정 / 30 검증자 회부.
+회부 30 판정: A 14(recheck 과배정=K4 자기위반) → **none 제거** / B 5(기업 이벤트) → 당사 GICS /
+C 11(기업 GICS 이견) → FMP 프로파일 결정적 조회(6 확정, 5 조회불능 회부). LLM 판정은 기업 GICS
+귀속에 불사용(FMP 정본).
+
+**결정37 = K2/K3 경계 한정**: 기업 특정 이벤트 뉴스(IPO·증자·상장폐지·채권발행 등)는 **K2 = 당사(발행/
+대상) 기업 GICS 섹터 귀속**. **K3(금융축→Financial Services)는 당사 기업이 금융 섹터인 시장인프라
+뉴스(거래소·브로커·자산운용)로 적용 한정** — 이벤트가 금융성이라는 이유로 비-금융 기업을 FinSvc로
+배정 금지(예: SpaceX IPO=Industrials, Amazon 채권발행=Consumer Cyclical).
+**K4 각주(원자재 채널)**: 특정 원자재 물류·채널을 명시한 term은 해당 원자재의 섹터에 귀속
+(예: "oil shipping lane"=Energy). 순수 지정학/거시 term(none)과 구분 — 명시된 원자재 축이 있으면 섹터.
+
+## [2026-07-18] TH beat 순수 수동 체제 + 배포 방침 (결정38·A-1·B-1)
+
+**[결정38] TH beat 순수 수동 체제 확정 (임시)**: TH beat 3종(chainsight-snapshot-analyst-estimates·
+chainsight-collect-theme-filings·chainsight-theme-heat-daily) `enabled=False`. 워커 미배포(태스크 미등록)
+상태에서 beat가 발화해도 no-op이므로, 발화 자체를 중단하고 **sv-theme-heat worktree 수동 운용**으로
+일원화(운용표 = TRACKS.md). **단 임시 조치** — TH-DEPLOY 완료 시 재활성화.
+
+**[방침 기록] "배포"의 정의**: TH-DEPLOY = worktree→main 병합 + 워커 재시동(`worker_sync.sh` + kickstart).
+**같은 머신 내부 재시동일 뿐, 외부 공개(external)가 아님.** 사용자 배포 승인은 **상시 가능**(2026-07-18 확인) —
+결정34의 유보는 *승인 문제가 아니라 순서 문제*(override 적재 완결 선행). TH-DEPLOY = override 적재 완결
+직후의 **차기 정식 트랙으로 승격**, 착수 조건 = 쓰기 3단(0024 적용→적재→재산출) + G2 검증 완료.
+
+**[provenance] 07-17 EstimateSnapshot 보정 수집**: 주말 보정 수집(beat 미발화분 수동 makeup). snapshot_date=
+2026-07-17, **컨센서스 불변 구간**(금 마감 후 주말은 애널리스트 추정 갱신 없음)이라 07-18 실행이나 07-17 라벨
+유효. 실측: 997행/499종목/커버리지 99.6%/eps 결측 0%/no_data 2·errors 0. 스키마 무변경.
+
+**집행자·검증자 정정 기록**: (1) H2 override 오가정(H2가 1차 규칙 교정 가능하다는 전제)은 코드상 오류
+— H2는 secs 공집합일 때만 발화(gap-fill), 1차 매칭 override 불가. (2) 0-2 중첩 가정(114 real ⊂ 121
+polluters, ①잔여 7)은 오류 — 2×2 교차 분할(91/23/30/71)이 정본. (3) "활성화≠배포" — TH beat
+enabled·발화하나 워커 미배포(태스크 미등록)면 산출 0(no-op). (4) F2 정지(1차 규칙 슬라이스) → 결정35
+override로 해소.
