@@ -26,7 +26,9 @@
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
 | Q20-DISCOVERY-REMEASURE | 2026-07-30경 discovery 신규 RC 카운트 재측정(read-only). 재개=종결 / 여전히 0이면 유니버스 확장 결정 사이클 개시 | @backend | 지시서⑦(match_score 정규화) | **예약(07-30경)** | D-DISCOVERY-WATCH. broad 입력 재개(07-08) 후 자연 재개 관찰. 확장 전제=⑦ 완료 |
-| Q20-2-BACKBONE-GRAPH | ⑳-2 백본 그래프: 중심성 top-N + RelationConfidence 상위 엣지 필터 뷰 | @frontend | ⑳-1 배포 + ego 5관점 메모 접수 | **대기(착수 조건)** | D-CENTRALITY-UI-TRACK(A⊂C). ⑳-1 데이터/색/ego 계약 재사용 |
+| Q20-2-BACKBONE-GRAPH | ⑳-2 백본 그래프: 중심성 top-N + RelationConfidence 상위 엣지 필터 뷰 | @frontend | ⑳-1 배포 + ego 5관점 메모 접수 | **대기(착수 조건)** | D-CENTRALITY-UI-TRACK(A⊂C). ⑳-1 데이터/색/ego 계약 재사용. ⑳-E로 ego 화면 복구됨→5관점 메모 수집 가능해짐 |
+| SECTOR-MODE-DISPOSITION | 섹터 모드 거취 결정: Neo4j 의존 SectorGraphView를 (a) PG 재구현(RelationConfidence+Stock.sector, ego와 동일 소스) vs (b) 숨김/비활성 | @frontend | ⑳-2 백본 결정 | **이관(⑳-2)** | ⑳-E OUT 스코프(④). 현재 Neo4j 동결→503→sector-unavailable 명시 상태로 폴백 중(⑳-E S4). ⑳-2 백본 PG 방향과 통합 결정 |
+| FE-SERVE-MODE-TIDY | 프론트 서빙 방식 정리: next dev :3000 상시 기동을 LaunchAgent로 편입할지 결정(도그푸딩 마찰 해소) | @infra | 사용자 결정 | **대기** | ⑳-E 라이브 검증 중 :3000 세션 백그라운드 프로세스가 하네스에 반복 리핑됨([[lesson_background_task_reaping]]). 편집 worktree는 node_modules 심링크로 dev 불가(#48)→sv-web-runtime 전용. 상시성 필요 시 launchd 편입 검토 |
 
 ---
 

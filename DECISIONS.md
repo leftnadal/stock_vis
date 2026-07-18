@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-07-17] D-EGO-REPAIR-STANDALONE — ego 동선 복구를 ⑳-2 통합과 분리해 단독 선행 [chainsight]
+
+> 트랙: ⑳-E. baseline = origin/main `87dc92e`, 배포 `bea1de0`.
+
+**결정**: ego 동선 복구(URL 계약·시드 게이트·빈상태·예외 견고성)를 ⑳-2(섹터 모드 PG 전환·백본 그래프)와 **분리해 단독으로 선행 배포**한다. 섹터 모드 거취(④)는 ⑳-E에서 손대지 않고 ⑳-2로 이관.
+
+**Why**: 가중합 **단독 4.60 > 통합 2.60**(마진 2.00). ⑳-2의 핵심 입력인 "5관점 ego 평가 메모"가 **화면이 실제로 떠야** 수집 가능한데, 그 화면 복구가 바로 ⑳-E다 → 복구는 ⑳-2의 **선행 의존**. 통합 시 섹터 백본 재설계(M~L)가 한 줄 URL 교정(S)을 볼모로 잡아 리드타임·리스크 동반 상승. 복구는 additive-only(시드 경로 무변경)라 단독 배포 리스크 최소.
+
+**How to apply**: ⑳-E는 ①②③⑤만. 섹터 모드 PG 전환·숨김·백본은 ⑳-2 결정 사이클(TASKQUEUE `SECTOR-MODE-DISPOSITION`). ego API 백엔드는 건강 확인됨 → 무접근(HALT 조건).
+
+## [2026-07-17] D-KB-NUMBER-YIELD — union 머지 KB 번호 충돌 시 자기 항목 후순위 양보·재번호 [harness]
+
+**결정**: `.gitattributes merge=union`인 원장(common-bugs 등)에서 세션 중 origin/main이 **같은 항목 번호(#N)를 선점**하면, 자기 세션이 붙인 #N을 **다음 번호로 양보·재번호**한다(origin 우선). 머지 후 육안검수에서 번호 중복(`grep -c "(#N,"` = 2)을 확인해 즉시 교정.
+
+**Why**: union은 양쪽 라인 보존이라 번호 충돌을 자동 해소하지 못한다(내용 정합 미보장 — DECISIONS HARN 이력). origin이 먼저 커밋된 정본이므로 후행 세션이 양보하는 것이 결정론적·무논쟁. ⑳-D에서 #56 충돌을 #57 양보로 사후 처리한 선례를 **표준 규칙으로 승격**(사후 승인). [[lesson_origin_main_advance_union_rebase]] 연장.
+
+**How to apply**: 세션 종료 KB 정산 시 `grep -oE "\(#[0-9]+," | sort | uniq -d`로 중복 검사 → 자기 항목을 max+1로 재번호 + 보고서/포인터 참조 동기화.
+
+---
+
 ## [2026-07-17] D-HEALTH-BLOCKED-DISTINCTION — stale pending에 'blocked(외부 의존)' 상태 도입 [harness]
 
 > 트랙: MGMT-BATCH-11(mgmt, 메타-only). baseline = origin/main `87dc92e`, prod 쓰기 0. 상위 = [C] HEALTH-STALE-FAIL-PROMOTE(~07-20 승격).

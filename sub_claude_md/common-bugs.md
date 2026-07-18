@@ -926,3 +926,25 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **증상**: 커밋 시 pre-commit hook이 "iCloud 측 작업 의심. 확인 후 진행하세요 (강제 차단 아님)" stderr 출력.
 
 **해결**: **비차단 경고** — 커밋은 정상 통과한다. iCloud sync는 OFF 상태([[project_icloud_sync_off]])라 오탐. 이 경고에 판단·조사 소모하지 말고 커밋 결과(`✅ pre-commit 검증 통과`)만 확인하고 진행.
+
+## FE↔BE URL 계약은 계약 테스트로 못박아라 — 미검증 이월 방지 (#58, 2026-07-17 ⑳-E) [frontend] [process]
+
+**증상**: FE가 부르는 API 경로와 BE 라우트가 어긋나 404인데도 API green·단위테스트 green으로 통과, 실화면 미검증으로 배포까지 이월(#57 ego a9256b8부터 404).
+
+**원인**: FE URL을 인라인 문자열로 산재 하드코딩 → BE가 라우트를 옮겨도(예: `<sym>/ego/`→`ego/<sym>/`) FE 미추종. 두 진영이 서로의 계약을 강제하는 테스트가 없음.
+
+**해결**: ⑴ FE URL은 **단일 상수/헬퍼**로 수렴(`chainsightPaths.ts::egoPath`). ⑵ **양측 계약 테스트 표준화**: FE(vitest)에서 헬퍼가 만드는 경로 문자열 검증 + BE(pytest)에서 **동일 경로가 해당 View로 resolve**하고 구 패턴은 `Resolver404`임을 검증. 하드코딩 경로 신설 = 계약 테스트 동반 필수. cf. [[feedback_ui_slice_live_screenshot]].
+
+## 전 세션 STEP 0에 worktree 최신성(origin/main 대비) 확인 강제 (#59, 2026-07-17 ⑳-E) [process] [harness]
+
+**증상**: 편집 worktree가 origin/main보다 수십~백 커밋 뒤(stale)인데 그 위에서 조사·구현 → 배포 실화면과 다른 코드를 봐 오진(⑳-D에서 worktree 102 커밋 stale, ego 신규 파일 부재를 못 보고 초기 탐색 2건 오판).
+
+**해결**: **조사·구현 불문 모든 세션 STEP 0에 최신성 확인 강제** — `git fetch && git rev-list --left-right --count origin/main...HEAD`로 behind 기록. behind>0이면 브랜치를 `origin/main` 기준으로 새로 파거나 merge. 배포 실화면 판정은 반드시 origin/main 정합 트리에서. ⑳-E는 이 규칙 적용해 니어미스 회피(진입 시 behind 8 확인 후 origin/main에서 브랜치 생성).
+
+## react-query 실패 쿼리가 fetchStatus='paused'에 갇혀 isError 미도달 → 에러 UI 미발화 (#60, 2026-07-17 ⑳-E 라이브) [frontend]
+
+**증상**: API가 503을 정확히 반환하는데도 프론트 에러 상태 UI가 안 뜨고 조용한 빈 화면. react-query 캐시 실측 시 해당 쿼리 `status:'pending', fetchStatus:'paused', failureCount:1`.
+
+**원인**: react-query `onlineManager`가 오프라인으로 오판(`navigator.onLine=true`인데도) → **첫 실패 후 retry 직전에 pause**. 성공 쿼리(첫 시도 성공)는 무영향, 실패 쿼리만 error 상태에 도달 못해 `isError`가 영영 false. `networkMode:'always'`만으로는 이 버전에서 retry-pause를 못 막음(쿼리 옵션엔 반영되나 여전히 paused).
+
+**해결**: 에러 상태 UI가 필수인 쿼리(localhost API 등)는 **`retry:false`**(+`networkMode:'always'`)로 첫 실패를 즉시 error 확정 → 에러 패널 발화, 사용자 재시도는 "다시 시도" 버튼으로. 진단 팁: fiber에서 QueryClient 추출해 `getQueryCache().getAll()`의 `state.fetchStatus`를 실측(좌표·화면만 보면 "로딩 안 끝남"으로 오판). 발견 경로=라이브 검증(단위테스트 GREEN 통과, [[feedback_ui_slice_live_screenshot]]).
