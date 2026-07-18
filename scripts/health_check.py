@@ -890,13 +890,22 @@ PENDING_STALE_DAYS = 3
 PENDING_MARKER = "⏸️"
 PENDING_DELTA_MARKERS = ("RESOLVED", "LANDED", "SUPERSEDED", "해소 델타", "소화됨", "해소됨")
 
+# [C] HEALTH-STALE-FAIL-PROMOTE 트리거 — 이 날짜부터 '순수 stale'(비-blocked)만 WARN→FAIL 승격.
+# 승격은 today 게이트(순수함수 파라미터화 관례) — 테스트는 today를 주입해 승격 전/후 양방향 검증.
+STALE_FAIL_PROMOTE_DATE = datetime(2026, 7, 20).date()
 
-def _scan_stale_pending(text: str, today) -> list[tuple[str, int]]:
-    """⏸️ + 날짜 有 + 해소델타 無 + age > 임계 인 블록을 (헤더요약, age) 리스트로 반환.
+# blocked(외부 의존) 표기 문법 — 단일 출처 = D-HEALTH-BLOCKED-DISTINCTION (MGMT-BATCH-11 적용).
+# blocked(dep=<TASK_ID>) 항목은 FAIL 승격 제외(WARN 유지), 단 dep가 TASKQUEUE 실존해야 유효.
+_BLOCKED_RE = re.compile(r"blocked\(dep=([A-Za-z0-9][A-Za-z0-9_\-]*)\)")
 
-    순수 함수(DB·git 접근 0) → 합성 픽스처로 양방향 검증 가능. today = datetime.date.
+
+def _scan_stale_pending(text: str, today) -> list[tuple[str, int, str | None]]:
+    """⏸️ + 날짜 有 + 해소델타 無 + age > 임계 인 블록을 (헤더요약, age, blocked_dep) 리스트로 반환.
+
+    blocked_dep = `blocked(dep=<ID>)` 표기의 ID(없으면 None). 순수 함수(DB·git 접근 0)
+    → 합성 픽스처로 양방향 검증 가능. today = datetime.date.
     """
-    stale: list[tuple[str, int]] = []
+    stale: list[tuple[str, int, str | None]] = []
     for line in text.splitlines():
         if PENDING_MARKER not in line:
             continue
@@ -913,30 +922,78 @@ def _scan_stale_pending(text: str, today) -> list[tuple[str, int]]:
         if age > PENDING_STALE_DAYS:
             hm = re.search(r"\*\*(.+?)\*\*", line)
             head = (hm.group(1) if hm else line.strip())[:70]
-            stale.append((head, age))
+            bm = _BLOCKED_RE.search(line)
+            stale.append((head, age, bm.group(1) if bm else None))
     return stale
 
 
-def check_stale_pending_backannotation() -> CheckResult:
+def _taskqueue_has_task_id(tq_text: str, task_id: str) -> bool:
+    """dep=<TASK_ID>가 TASKQUEUE 표의 **정의 행**(첫 칸 셀)로 실존하는지.
+
+    프로즈 언급·타 행의 참조와 구분하기 위해 `^| <ID> |` 정의 행만 인정(남용 방지).
+    """
+    return re.search(r"(?m)^\|\s*" + re.escape(task_id) + r"\s*\|", tq_text) is not None
+
+
+def evaluate_stale_pending(progress_text: str, tq_text: str, today) -> CheckResult:
+    """stale pending 판정(순수함수 — 파일/시계 미접근, today·텍스트 주입).
+
+    blocked(dep=<ID>) + dep 실존 → WARN 유지(FAIL 승격 제외).
+    blocked이나 dep 미실존 → **무효**: 일반 stale 규칙 적용 + 무효 경고 별도 표시.
+    비-blocked 순수 stale → today ≥ 승격일이면 FAIL, 아니면 WARN.
+    """
     name = "stale pending 백-어노테이션"
-    text = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
-    today = datetime.now().date()
-    stale = _scan_stale_pending(text, today)
+    stale = _scan_stale_pending(progress_text, today)
     if not stale:
         return CheckResult(
             name=name,
             status=OK,
             detail=f"⏸️ 해소 델타 없는 stale pending 0건 (임계 {PENDING_STALE_DAYS} 거래일, PROGRESS)",
         )
-    return CheckResult(
-        name=name,
-        status=WARN,
-        detail=(
-            f"⏸️ 해소 델타 없는 stale pending {len(stale)}건 (> {PENDING_STALE_DAYS} 거래일) — "
-            "원 블록에 → RESOLVED/LANDED/SUPERSEDED 부기(백-어노테이션) 필요 (D2 phantom 재발 방지 #52)"
-        ),
-        evidence=[f"{h} (age {a}일)" for h, a in stale],
-    )
+
+    promoted = today >= STALE_FAIL_PROMOTE_DATE
+    valid_blocked: list[tuple[str, int, str]] = []
+    invalid_blocked: list[tuple[str, int, str]] = []
+    pure: list[tuple[str, int]] = []
+    for head, age, dep in stale:
+        if dep is None:
+            pure.append((head, age))
+        elif _taskqueue_has_task_id(tq_text, dep):
+            valid_blocked.append((head, age, dep))
+        else:
+            invalid_blocked.append((head, age, dep))
+
+    # 무효 blocked = 일반 stale 취급(승격 대상) — dep 실존 검증 실패 시 부기 회피 차단.
+    effective_pure = pure + [(h, a) for h, a, _ in invalid_blocked]
+
+    evidence: list[str] = []
+    for h, a, dep in valid_blocked:
+        evidence.append(f"{h} (age {a}일) — blocked(dep={dep}) 유효 → WARN 유지·[C] FAIL 승격 제외")
+    for h, a, dep in invalid_blocked:
+        evidence.append(
+            f"{h} (age {a}일) — ⚠ 무효 blocked(dep={dep} = TASKQUEUE 미실존) → 일반 stale 적용"
+        )
+    for h, a in pure:
+        evidence.append(f"{h} (age {a}일) — 순수 stale (→ RESOLVED/LANDED/SUPERSEDED 부기 필요)")
+
+    status = ERROR if (effective_pure and promoted) else WARN
+
+    parts: list[str] = []
+    if effective_pure:
+        verb = "FAIL(승격됨)" if promoted else "WARN(승격 전)"
+        parts.append(f"순수 stale {len(effective_pure)}건 → {verb} (부기 필요, #52)")
+    if valid_blocked:
+        parts.append(f"blocked(외부 의존) {len(valid_blocked)}건 → WARN 유지(승격 제외)")
+    if invalid_blocked:
+        parts.append(f"⚠ 무효 blocked 표기 {len(invalid_blocked)}건 (dep TASKQUEUE 미실존)")
+    detail = " · ".join(parts) + f" [임계 {PENDING_STALE_DAYS}거래일 · 승격일 {STALE_FAIL_PROMOTE_DATE}]"
+    return CheckResult(name=name, status=status, detail=detail, evidence=evidence)
+
+
+def check_stale_pending_backannotation() -> CheckResult:
+    progress = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
+    tq = TASKQUEUE_MD.read_text(encoding="utf-8") if TASKQUEUE_MD.exists() else ""
+    return evaluate_stale_pending(progress, tq, datetime.now().date())
 
 
 # ── main runner ─────────────────────────────────────────────────────────────
