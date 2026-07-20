@@ -5,6 +5,20 @@
 
 ---
 
+## OPS-WORKTREE-ISOLATION 트랙 (2026-07-20)
+
+> 정리목록 ⓒ. Opt-2 단계형. 지시서 `docs/instructions/ops_worktree_isolation_impl_directive.md`.
+
+| ID | Task | Agent | Depends On | Status | 근거/비고 |
+|---|---|---|---|---|---|
+| OPS-ISO-P1 | Phase 1 마커+헬퍼+worker_sync 존중 | @infra | §0 | **✅ done (`1f2bf5f`)** | 마커 라이브러리·wt-open/close·테스트 8/8·실동작 skip 실측 |
+| OPS-ISO-P3 | Phase 3 verify section D 3항목 | @infra | P1 | **✅ done (`b76d9ab`)** | 조상기반 drift·stale마커·코드버전, mock 12/12, 라이브 PASS+D=info/ok/ok |
+| OPS-ISO-P2 | Phase 2 공유트리 git hook(post-checkout 경고·pre-push·pre-commit 보호브랜치 차단) | @infra | P1 + **클린 창** | **대기(클린창)** | ⚠ Desktop 공유트리 `sess-mon-timing-p25` 점유(dirty 18) — 차단 hook이라 무점유 창 필요. 그 세션 wip커밋·클린 포착 시 착수 |
+| OPS-VERIFY-EXEC-TREE | verify launchd가 표류 Desktop 트리서 실행 → 안정 트리(런타임/전용) 지향 검토 | @infra | 별도 결정 | **todo(발견 등재)** | Phase 3서 실측: Desktop 세션 브랜치 표류 시 구 verify 실행. Phase 2 또는 후속서 실행-트리 안정화 |
+| OPS-ISO-CLOSE | 전 Phase 완료 → §5-2(DECISIONS·임시규칙"pair세션만"폐지·봉인) → ⓒ종결→ⓓ SEC β | @infra | P2 | **대기** | - |
+
+---
+
 ## T-3b 후속 — 정리 목록 + 미발화 경로 (2026-07-17 종결)
 
 > T-3b 종결(§4 3틱 통과, PROGRESS `b5e3aae`). 정리 목록 ⓐ~ⓓ + 관찰서 prod 미발화한 엔진 경로 2건.
