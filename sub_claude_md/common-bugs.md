@@ -948,3 +948,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: react-query `onlineManager`가 오프라인으로 오판(`navigator.onLine=true`인데도) → **첫 실패 후 retry 직전에 pause**. 성공 쿼리(첫 시도 성공)는 무영향, 실패 쿼리만 error 상태에 도달 못해 `isError`가 영영 false. `networkMode:'always'`만으로는 이 버전에서 retry-pause를 못 막음(쿼리 옵션엔 반영되나 여전히 paused).
 
 **해결**: 에러 상태 UI가 필수인 쿼리(localhost API 등)는 **`retry:false`**(+`networkMode:'always'`)로 첫 실패를 즉시 error 확정 → 에러 패널 발화, 사용자 재시도는 "다시 시도" 버튼으로. 진단 팁: fiber에서 QueryClient 추출해 `getQueryCache().getAll()`의 `state.fetchStatus`를 실측(좌표·화면만 보면 "로딩 안 끝남"으로 오판). 발견 경로=라이브 검증(단위테스트 GREEN 통과, [[feedback_ui_slice_live_screenshot]]).
+
+## 서빙 포트 기동 전 완전 정리 — 기존 리스너 kill → 45초+ 무respawn 확인 후 기동 (#61, 2026-07-18 FE-8000-PROD-APPLY) [ops]
+
+**증상**: 새 서버(prod `next start`)를 기동했는데 **~34초 만에 사망**하고, 다른 프로세스(임시 `npm run dev`)가 그 포트(:3000)를 재점유. 화면은 뜨지만 의도한 모드/코드가 아님.
+
+**원인**: 기동 시점에 **잔존 리스너(구 dev)가 살아있거나 곧 되살아나** 새 서버와 포트 경합 → 한쪽이 밀려 사망. supervisor(launchd KeepAlive) 유무를 확인하지 않고 기동하면 respawn과 충돌.
+
+**해결**: 서빙 포트 기동 절차에 **완전 정리 단계**를 포함한다 — ⑴ `lsof -iTCP:<port> -sTCP:LISTEN`로 기존 리스너 kill → **리스너 0 확인** ⑵ **45초+ 무respawn 관측**(감독자 존재 시 되살아남 = 그 감독자를 먼저 처리/판단) ⑶ 그 후 신규 기동. **자기점검**: 기동 절차에 "리스너 0 확인" 단계가 포함됐는지. cf. WEB-RUNTIME-RUNBOOK §2, [[reference_worker_runtime_tree]].

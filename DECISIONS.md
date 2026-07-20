@@ -8,6 +8,20 @@
 
 ---
 
+## [2026-07-18] FE-8000-PROD-APPLY 집행 기록 (백-어노테이션) [ops] [frontend]
+
+> 트랙: MGMT-BATCH-12(mgmt, 메타+docs). baseline = origin/main `e5ee004`, prod 쓰기 0(서빙 반영은 07-18 집행 완료·이 등재는 사후 기록). 상위 = FE-DEAD-8000-SWEEP(#55)·WEB-RUNTIME-RUNBOOK.
+
+**① dev→prod 모드 전환**: `:3000`을 `next dev`에서 **`next start`(prod)**로 전환. **Why**: NEXT_PUBLIC_API_URL이 빌드 인라인이라 반영에 `npm run build`가 어차피 필수 → 상시 서빙엔 prod(build+start)가 자연 적합. dev의 핫리로드 이점은 상시 서빙에 불요.
+
+**② 1차 기동 경합 사망 → clean 재기동**: 1차 prod 기동이 **잔존 임시 dev와 :3000 경합해 ~34초 만에 사망**, `npm run dev`(출처 불명·일회성)가 재점유. **supervisor 부재 실측**(dev kill 후 45초+ 무respawn) 후 **clean 상태에서 재기동**하니 안정(PID 불변·8틱 생존). **교훈 → RUNBOOK 반영**: 기동 전 리스너 완전 정리 + 45초 무respawn 확인(common-bugs #61).
+
+**③ ":3000 launchd 무감독" 실체 확정 — 종전 서술 정정**: 종전 장부의 **"launchd 입양 고아"** 서술은 **오인**. `com.stockvis.web` launchd 라벨 = **daphne 백엔드(:18765)**로 :3000과 무관, :3000엔 전용 감독 plist 없음(45초 무respawn이 증거). → RUNBOOK 서빙 실체 정정 반영 + 재부팅 지속용 plist 초안 별첨(`LAUNCHD-WEB-PLIST-LOAD`, load는 사용자 수동).
+
+**검증(07-18)**: :3000 200 · 홈+리더보드 실렌더 · 네트워크 절대 base(`:18765`, 비-:8000) · impression 당일 신규 8행(dashboard_eod 4+news_chip 4) = 수집 재개. 코드·메타 0 변경(서빙 반영·read-only만).
+
+---
+
 ## [2026-07-17] D-EGO-REPAIR-STANDALONE — ego 동선 복구를 ⑳-2 통합과 분리해 단독 선행 [chainsight]
 
 > 트랙: ⑳-E. baseline = origin/main `87dc92e`, 배포 `bea1de0`.

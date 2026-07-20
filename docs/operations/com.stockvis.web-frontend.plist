@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ⚠ DRAFT — 초안 (MGMT-BATCH-12, 2026-07-20). 이 저장소 파일은 등재 초안이다.
+  ~/Library/LaunchAgents 복사·bootstrap·load 는 사용자 수동 (시스템 설정 = 자동 금지).
+  적용/검증 절차 = docs/operations/web-runtime-runbook.md §5 + TASKQUEUE LAUNCHD-WEB-PLIST-LOAD.
+  참조 모델 = com.stockvis.web (daphne :18765).
+  ⚠ 적용 전 확인: `npm`/`node` 절대 경로가 이 머신의 nvm 경로와 일치하는지
+     (`which npm` 실측 후 ProgramArguments 교정). 아래는 관측 기준 초안값.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.stockvis.web-frontend</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>-lc</string>
+        <string>cd /Users/byeongjinjeong/worktrees/sv-web-runtime/frontend &amp;&amp; exec npm run start</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/byeongjinjeong/worktrees/sv-web-runtime/frontend</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/web-frontend.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/web-frontend-error.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>
