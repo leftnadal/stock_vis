@@ -1,0 +1,2582 @@
+[
+{
+"term_normalized": "alphabet infrastructure bet",
+"term_original": "Alphabet infrastructure bet",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "FMP_GICS",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "apple intel chip manufacturing",
+"term_original": "Apple Intel chip manufacturing",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ev bus adoption india",
+"term_original": "EV bus adoption India",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "fuelcell energy data center",
+"term_original": "FuelCell Energy data center",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Energy",
+"path": "FMP_GICS",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "jpmorgan ai agents",
+"term_original": "JPMorgan AI agents",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "jpmorgan ai productivity",
+"term_original": "JPMorgan AI productivity",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "jpmorgan engineers ai",
+"term_original": "JPMorgan engineers AI",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "jabil ai",
+"term_original": "Jabil AI",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "keel infrastructure ai",
+"term_original": "Keel Infrastructure AI",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Industrials",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "meta ai engagement",
+"term_original": "Meta AI engagement",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Communication Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "trump ai council",
+"term_original": "Trump AI council",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "automotive tech",
+"term_original": "automotive tech",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "data center reits",
+"term_original": "data center REITs",
+"disposition": "Real Estate",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Real Estate",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "industrial ai adoption",
+"term_original": "industrial AI adoption",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "interest rate hike pressure",
+"term_original": "interest rate hike pressure",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "oil shipping lane",
+"term_original": "oil shipping lane",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "final6_회부확정",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "pharma ai investment",
+"term_original": "pharma AI investment",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Healthcare",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "tech ai government debt",
+"term_original": "tech AI government debt",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "401k ai risk",
+"term_original": "401k AI risk",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "adp employment report",
+"term_original": "ADP employment report",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai etf performance",
+"term_original": "AI ETF performance",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai ipo market",
+"term_original": "AI IPO market",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai ipo wave",
+"term_original": "AI IPO wave",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai academic integrity",
+"term_original": "AI academic integrity",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai agentic economy",
+"term_original": "AI agentic economy",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai automation impact",
+"term_original": "AI automation impact",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai banking cyber risk",
+"term_original": "AI banking cyber risk",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai bubble burst",
+"term_original": "AI bubble burst",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai bubble pop",
+"term_original": "AI bubble pop",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai bubble risk",
+"term_original": "AI bubble risk",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai bubble warning",
+"term_original": "AI bubble warning",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai copyright law",
+"term_original": "AI copyright law",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai cost disclosure",
+"term_original": "AI cost disclosure",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai customer service jobs",
+"term_original": "AI customer service jobs",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai data center liability",
+"term_original": "AI data center liability",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai disruption fears",
+"term_original": "AI disruption fears",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai economy froth",
+"term_original": "AI economy froth",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai financial security",
+"term_original": "AI financial security",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai fintech aspire us launch",
+"term_original": "AI fintech Aspire US launch",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai grocery shopping",
+"term_original": "AI grocery shopping",
+"disposition": "Consumer Defensive",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Defensive",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai impact on leadership",
+"term_original": "AI impact on leadership",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai in auto industry",
+"term_original": "AI in auto industry",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai in finance",
+"term_original": "AI in finance",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai inflation threat",
+"term_original": "AI inflation threat",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai infrastructure",
+"term_original": "AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure canada",
+"term_original": "AI infrastructure Canada",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure bullish",
+"term_original": "AI infrastructure bullish",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure challenge",
+"term_original": "AI infrastructure challenge",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure demand",
+"term_original": "AI infrastructure demand",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure growth",
+"term_original": "AI infrastructure growth",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure investment",
+"term_original": "AI infrastructure investment",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure opportunity",
+"term_original": "AI infrastructure opportunity",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure spending",
+"term_original": "AI infrastructure spending",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai infrastructure sustainability",
+"term_original": "AI infrastructure sustainability",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai job cuts",
+"term_original": "AI job cuts",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai job displacement",
+"term_original": "AI job displacement",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai law firm wins case",
+"term_original": "AI law firm wins case",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai layoffs",
+"term_original": "AI layoffs",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai legal risks",
+"term_original": "AI legal risks",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai payment infrastructure",
+"term_original": "AI payment infrastructure",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services, Technology",
+"path": "final6_회부확정",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai personal finance",
+"term_original": "AI personal finance",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services, Technology",
+"path": "final6_회부확정",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ai power demand",
+"term_original": "AI power demand",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Utilities, Technology",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai regulation bill",
+"term_original": "AI regulation bill",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Technology",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai replacing jobs",
+"term_original": "AI replacing jobs",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ai workforce development",
+"term_original": "AI workforce development",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "amazon bond sale",
+"term_original": "Amazon bond sale",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "FMP_GICS",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "bnp paribas ai capex",
+"term_original": "BNP Paribas AI capex",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "btc momentum",
+"term_original": "BTC momentum",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "btc price prediction",
+"term_original": "BTC price prediction",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bank of canada recession",
+"term_original": "Bank of Canada recession",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bank of england stablecoin",
+"term_original": "Bank of England stablecoin",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "bank of france stablecoin",
+"term_original": "Bank of France stablecoin",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "bernstein bitcoin target",
+"term_original": "Bernstein Bitcoin target",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "big tech ai infrastructure",
+"term_original": "Big Tech AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "bitcoin $150k",
+"term_original": "Bitcoin $150K",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bitcoin $1m forecast",
+"term_original": "Bitcoin $1M forecast",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bitcoin big tech rally",
+"term_original": "Bitcoin big tech rally",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bitcoin breaks 78k",
+"term_original": "Bitcoin breaks 78K",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "blackstone ai infrastructure",
+"term_original": "Blackstone AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "cpi inflation spike",
+"term_original": "CPI inflation spike",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "caterpillar data centers",
+"term_original": "Caterpillar data centers",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "china ai model ban",
+"term_original": "China AI model ban",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "china ev growth",
+"term_original": "China EV growth",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "china national security mandate",
+"term_original": "China national security mandate",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "china revenue headwinds",
+"term_original": "China revenue headwinds",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "china tech regulation",
+"term_original": "China tech regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "china tech strategy",
+"term_original": "China tech strategy",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "deere data center growth",
+"term_original": "Deere data center growth",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "dell ai infrastructure",
+"term_original": "Dell AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "dow jones pce",
+"term_original": "Dow Jones PCE",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ecb inflation control",
+"term_original": "ECB inflation control",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "eu crypto regulation",
+"term_original": "EU crypto regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "eli lilly manufacturing",
+"term_original": "Eli Lilly manufacturing",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Healthcare",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "elon musk china",
+"term_original": "Elon Musk China",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "ethereum whale accumulation",
+"term_original": "Ethereum whale accumulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "europe ai infrastructure",
+"term_original": "Europe AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "european monetary policy",
+"term_original": "European monetary policy",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fcel exim bank",
+"term_original": "FCEL EXIM Bank",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Energy",
+"path": "FMP_GICS",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "fed williams energy",
+"term_original": "Fed Williams energy",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Energy",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "fed destructive policies",
+"term_original": "Fed destructive policies",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed inflation concerns",
+"term_original": "Fed inflation concerns",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed inflation explanation",
+"term_original": "Fed inflation explanation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed minutes split",
+"term_original": "Fed minutes split",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed rate hike",
+"term_original": "Fed rate hike",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed rate hike fears",
+"term_original": "Fed rate hike fears",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed rate hike odds",
+"term_original": "Fed rate hike odds",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed rate hold",
+"term_original": "Fed rate hold",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "fed real rates negative",
+"term_original": "Fed real rates negative",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "federal reserve criticism",
+"term_original": "Federal Reserve criticism",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "german inflation outlook",
+"term_original": "German inflation outlook",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "harbor ai etf return",
+"term_original": "Harbor AI ETF return",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "hut 8 ai infrastructure lease",
+"term_original": "Hut 8 AI infrastructure lease",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "illinois ai regulation",
+"term_original": "Illinois AI regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Technology",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "iran nuclear deal",
+"term_original": "Iran nuclear deal",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "microsoft azure crypto",
+"term_original": "Microsoft Azure crypto",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "morgan stanley stablecoin",
+"term_original": "Morgan Stanley stablecoin",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nala stablecoin remittance",
+"term_original": "NALA stablecoin remittance",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nvidia bond offering",
+"term_original": "NVIDIA bond offering",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "nvidia corporate bond",
+"term_original": "NVIDIA corporate bond",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "ny fed inflation expectations",
+"term_original": "NY Fed inflation expectations",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nextera energy earnings miss",
+"term_original": "NextEra Energy earnings miss",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Utilities",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "quantinuum ipo",
+"term_original": "Quantinuum IPO",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "questrade ai",
+"term_original": "Questrade AI",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "sk hynix ipo",
+"term_original": "SK Hynix IPO",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "sk hynix nasdaq ipo",
+"term_original": "SK Hynix Nasdaq IPO",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "snowflake ai infrastructure",
+"term_original": "Snowflake AI infrastructure",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spacex ipo",
+"term_original": "SpaceX IPO",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spacex ipo anticipation",
+"term_original": "SpaceX IPO anticipation",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spacex ipo buzz",
+"term_original": "SpaceX IPO buzz",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spacex ipo surge",
+"term_original": "SpaceX IPO surge",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spotify ai fan covers",
+"term_original": "Spotify AI fan covers",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Communication Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "supreme court tariff ruling",
+"term_original": "Supreme Court tariff ruling",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "talen energy ai",
+"term_original": "Talen Energy AI",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Energy",
+"path": "FMP_GICS",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "tesla ai robotics",
+"term_original": "Tesla AI robotics",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "tesla ai5 chip",
+"term_original": "Tesla AI5 chip",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "tesla china sales",
+"term_original": "Tesla China sales",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "tesla competition china",
+"term_original": "Tesla competition China",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "treasury yield spike",
+"term_original": "Treasury yield spike",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "trump tariff refunds",
+"term_original": "Trump tariff refunds",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "twilio ai impact",
+"term_original": "Twilio AI impact",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Communication Services",
+"path": "FMP_GICS",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "uk stablecoin rules",
+"term_original": "UK stablecoin rules",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us cpi inflation rise",
+"term_original": "US CPI inflation rise",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us china chip ban",
+"term_original": "US China chip ban",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us bond yield high",
+"term_original": "US bond yield high",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us consumer inflation",
+"term_original": "US consumer inflation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us jobs report",
+"term_original": "US jobs report",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "us national debt ai",
+"term_original": "US national debt AI",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "universal music group ai",
+"term_original": "Universal Music Group AI",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Communication Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "vaneck crypto research",
+"term_original": "VanEck crypto research",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "wall street blockchain",
+"term_original": "Wall Street blockchain",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "waller interest rate",
+"term_original": "Waller interest rate",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "warsh fed",
+"term_original": "Warsh Fed",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "xpeng physical ai",
+"term_original": "XPENG Physical AI",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "zuckerberg ai pricing",
+"term_original": "Zuckerberg AI pricing",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Communication Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "zuckerberg cloud",
+"term_original": "Zuckerberg cloud",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Communication Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "airline consolidation",
+"term_original": "airline consolidation",
+"disposition": "Industrials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Industrials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "antitrust probe google",
+"term_original": "antitrust probe Google",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "Technology",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "automakers ai",
+"term_original": "automakers AI",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "bank regulation europe",
+"term_original": "bank regulation Europe",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "biotech regulatory",
+"term_original": "biotech regulatory",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Healthcare",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "blockchain company",
+"term_original": "blockchain company",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "blockchain regulation",
+"term_original": "blockchain regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bond market stress",
+"term_original": "bond market stress",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "bond yields",
+"term_original": "bond yields",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "central bank gold buying",
+"term_original": "central bank gold buying",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "college students ai cheat",
+"term_original": "college students AI cheat",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "consumer inflation fears",
+"term_original": "consumer inflation fears",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "courts ai ruling",
+"term_original": "courts AI ruling",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto asset provider",
+"term_original": "crypto asset provider",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto derivatives regulation",
+"term_original": "crypto derivatives regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto exposure",
+"term_original": "crypto exposure",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto institutional adoption",
+"term_original": "crypto institutional adoption",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto market rally",
+"term_original": "crypto market rally",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto market sentiment",
+"term_original": "crypto market sentiment",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto mining stock",
+"term_original": "crypto mining stock",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto regulation",
+"term_original": "crypto regulation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "crypto regulation uk",
+"term_original": "crypto regulation UK",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "doctor-patient ai",
+"term_original": "doctor-patient AI",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Healthcare",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "drug discovery ai",
+"term_original": "drug discovery AI",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Healthcare",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "e-commerce ai",
+"term_original": "e-commerce AI",
+"disposition": "Consumer Cyclical",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Cyclical",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "energy demand ai",
+"term_original": "energy demand AI",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Energy",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "fintech regulation",
+"term_original": "fintech regulation",
+"disposition": "Financial Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Financial Services",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "gas prices inflation",
+"term_original": "gas prices inflation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical instability",
+"term_original": "geopolitical instability",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical oil impact",
+"term_original": "geopolitical oil impact",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Energy",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "geopolitical oil risk",
+"term_original": "geopolitical oil risk",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Energy",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "유지"
+}
+},
+{
+"term_normalized": "geopolitical pressures",
+"term_original": "geopolitical pressures",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical risk",
+"term_original": "geopolitical risk",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical risk crude",
+"term_original": "geopolitical risk crude",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical risk market",
+"term_original": "geopolitical risk market",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical tension",
+"term_original": "geopolitical tension",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical tensions",
+"term_original": "geopolitical tensions",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "geopolitical tensions ease",
+"term_original": "geopolitical tensions ease",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "global recession risk",
+"term_original": "global recession risk",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "grocers ai",
+"term_original": "grocers AI",
+"disposition": "Consumer Defensive",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Consumer Defensive",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "hawkish fed",
+"term_original": "hawkish Fed",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "health tech ipo",
+"term_original": "health tech IPO",
+"disposition": "Healthcare",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "final6_회부확정",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "healthcare reits growth",
+"term_original": "healthcare REITs growth",
+"disposition": "Real Estate",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Real Estate",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "high bond yields ai",
+"term_original": "high bond yields AI",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Financial Services",
+"path": "A14_none(K4자기위반)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "memory giant ipo",
+"term_original": "memory giant IPO",
+"disposition": "Technology",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Technology",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "metal stock tariff",
+"term_original": "metal stock tariff",
+"disposition": "Basic Materials",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_noeffect",
+"should_be": "Basic Materials",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "monetary policy rules",
+"term_original": "monetary policy rules",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nonfarm payrolls",
+"term_original": "nonfarm payrolls",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nuclear energy 2026",
+"term_original": "nuclear energy 2026",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Utilities",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "nuclear energy demand",
+"term_original": "nuclear energy demand",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Utilities",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "nuclear energy outlook",
+"term_original": "nuclear energy outlook",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Utilities",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "nuclear energy resistance",
+"term_original": "nuclear energy resistance",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "Utilities",
+"path": "final6_회부확정",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "nuclear energy stocks",
+"term_original": "nuclear energy stocks",
+"disposition": "Utilities",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Utilities",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "precious metals inflation",
+"term_original": "precious metals inflation",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "solar stock surge",
+"term_original": "solar stock surge",
+"disposition": "Energy",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Energy",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "spot ethereum etf",
+"term_original": "spot Ethereum ETF",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "stablecoin reserves fund",
+"term_original": "stablecoin reserves fund",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "tech geopolitics china",
+"term_original": "tech geopolitics China",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_pollute",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+},
+{
+"term_normalized": "telco banking ai",
+"term_original": "telco banking AI",
+"disposition": "Communication Services",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "real_pollute",
+"should_be": "Financial Services",
+"path": "final6_회부확정",
+"kind": "재배정"
+}
+},
+{
+"term_normalized": "unemployment rate",
+"term_original": "unemployment rate",
+"disposition": "none",
+"generation": "ovr_v1",
+"provenance": {
+"cell": "none_noeffect",
+"should_be": "none",
+"path": "recheck(자동/정책/3차일치)",
+"kind": "제거"
+}
+}
+]

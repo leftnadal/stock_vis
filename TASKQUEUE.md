@@ -726,3 +726,8 @@
 - 발견: `HeatEntity.ref_id`(TH-1 시드 = Yahoo/FMP 계열 Technology·Healthcare·Basic Materials 등) ≠ `SP500Constituent.sector`(GICS Information Technology·Health Care·Materials 등), 6/11 명칭 불일치. 설계 §6.0 은 ref_id="GICS 섹터 키"라 시드가 스펙과도 불일치.
 - 현재 처리: `heat_beat.HEAT_ENTITY_TO_SP500_SECTOR` 매핑으로 비파괴 해소(구성종목 정상 resolve, 실측 missing=7=C2만 present 확인).
 - 의무: 매핑 영구화 vs 시드 GICS 재정렬(ThemeHeatScore 0행·ThemeEtfMap 은 재생성 가능이라 저위험) 중 택일. 재정렬 시 §6.0 "GICS" 정합 + 매핑 삭제.
+
+## TH-UNIVERSE-DOTSYM 🔵 (백로그, 2026-07-18 등재)
+- 발견: SP500Constituent active **503** 중 점(.) 포함 **2종목**(클래스주 BRK.B·BF.B류)이 `live_universe_symbols()`에서 제외(FMP 파싱 이슈) → universe **501**. EstimateSnapshot·heat 유니버스에서 상시 누락.
+- 태스크: 하이픈 변환 프로브(BRK.B→BRK-B FMP 심볼 규약) 검증 → 2종 복원 여부 판정.
+- 시한: **7/24 주간 EstimateSnapshot 전** 착수(다음 수집에 반영 여부 결정).
