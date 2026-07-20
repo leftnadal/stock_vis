@@ -26,6 +26,8 @@ fi
 WORKER_TREE="/Users/byeongjinjeong/worktrees/sv-worker-runtime"
 WEB_TREE="/Users/byeongjinjeong/worktrees/sv-web-runtime"
 API_TREE="/Users/byeongjinjeong/worktrees/sv-api-runtime"
+# OPS-WORKTREE-ISOLATION Phase 1: 마커 라이브러리(R1 런타임 트리는 마커 예외 — 이상 감지만)
+source "$(cd "$(dirname "$0")" && pwd)/lib/session_marker.sh"
 SHARED_SIGNALS="/Users/byeongjinjeong/Desktop/stock_vis/frontend/public/static/signals"
 WEB_SIGNALS="$WEB_TREE/frontend/public/static/signals"
 UID_NUM="$(id -u)"
@@ -123,6 +125,12 @@ guard_symlink() {
 }
 guard_symlink "$SHARED_SIGNALS" "공유(worker bake)"
 [ -d "$WEB_TREE" ] && guard_symlink "$WEB_SIGNALS" "web(next dev)"
+
+# ── 마커 이상 감지: 런타임 트리는 자동화 단독 소유(R1) — 세션 마커가 있으면 이상.
+#    respect verdict=proceed(항상, 런타임 예외)이나 마커 존재 시 stderr 경고 남긴다.
+for _rt in "$WORKER_TREE" "$WEB_TREE" "$API_TREE"; do
+    [ -d "$_rt" ] && marker_respect "$_rt" "worker_sync" >/dev/null
+done
 
 # ── worker 트리 re-detach + 재기동 ───────────────────────────────────
 cd "$WORKER_TREE"
