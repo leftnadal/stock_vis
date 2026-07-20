@@ -73,14 +73,34 @@ class ScenarioSuggestView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        from apps.monitor.services.scenario_suggest import suggest_scenario
+        from apps.monitor.services.scenario_suggest import (
+            recompute_coherence,
+            suggest_scenario,
+        )
 
         symbol = (request.query_params.get("symbol") or "").strip()
         if not symbol:
             return Response(
                 {"detail": "symbol 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST
             )
-        return Response(suggest_scenario(symbol))
+
+        payload = suggest_scenario(symbol)
+
+        # 정합 재계산(additive, TIMING-P2.5): entry + (target|deadline) 제공 시 나머지 후보.
+        qp = request.query_params
+        entry = qp.get("entry")
+        if entry:
+            try:
+                payload["coherence"] = recompute_coherence(
+                    symbol,
+                    entry=entry,
+                    target=qp.get("target") or None,
+                    deadline=qp.get("deadline") or None,
+                    stop=qp.get("stop") or None,
+                )
+            except (ValueError, ArithmeticError) as e:
+                payload["coherence"] = {"error": "정합 계산 실패", "detail": str(e)}
+        return Response(payload)
 
 
 class MonitorViewSet(viewsets.ModelViewSet):

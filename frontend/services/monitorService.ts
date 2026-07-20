@@ -91,10 +91,14 @@ export const monitorService = {
     return data
   },
 
-  // ── L계열 가격 제안 (TIMING-P2 §3, 읽기 전용) ──
-  scenarioSuggest: async (symbol: string): Promise<ScenarioSuggest> => {
+  // ── L계열 가격 제안 + 정합 재계산 (TIMING-P2/P2.5, 읽기 전용) ──
+  // params.entry + (target|deadline) 제공 시 응답에 coherence 블록 포함(힌트용).
+  scenarioSuggest: async (
+    symbol: string,
+    params?: { entry?: string; target?: string; deadline?: string; stop?: string }
+  ): Promise<ScenarioSuggest> => {
     const { data } = await authAxios.get('/monitor/scenario-suggest/', {
-      params: { symbol },
+      params: { symbol, ...(params ?? {}) },
     })
     return data
   },

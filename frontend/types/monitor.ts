@@ -50,16 +50,44 @@ export interface ZoneDisplay {
   }
 }
 
-// L계열 가격 제안 (GET /monitor/scenario-suggest/?symbol=).
+// 정합 재계산 블록 (TIMING-P2.5) — 힌트용, 자동 개서 아님.
+export interface Coherence {
+  symbol: string
+  sigma: number | null
+  note: string
+  basis?: string
+  coherent_horizon_days?: number
+  coherent_deadline?: string
+  coherent_target?: string
+  rr?: number | null
+  error?: string
+}
+
+// L계열 가격 제안 + 정합 프리필 (GET /monitor/scenario-suggest/?symbol=).
 export interface ScenarioSuggest {
   available: boolean
   symbol: string
   close?: number
   support_low?: number
+  resistance_high?: number
   entry_suggest?: number
   atr?: number | null
+  sigma?: number | null
   stop_suggest?: number | null
+  target_suggest?: number | null
+  horizon_days?: number | null
+  deadline_suggest?: string | null
+  rr_suggest?: number | null
+  omit?: string | null
+  captions?: {
+    entry?: string | null
+    stop?: string | null
+    target?: string | null
+    deadline?: string | null
+  }
   basis?: string
+  // entry + (target|deadline) 쿼리 제공 시에만 (재계산)
+  coherence?: Coherence
 }
 // 회고 공통 요인 태그 (고정 enum — BE Claim.FactorTag 미러).
 export type FactorTag = 'timing' | 'ext_shock' | 'indicator_noise' | 'luck'

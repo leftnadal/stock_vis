@@ -29,6 +29,7 @@ vi.mock('@/services/monitorService', () => ({
     create: (...a: unknown[]) => create(...a),
     createIndicator: (...a: unknown[]) => createIndicator(...a),
     createClaim: (...a: unknown[]) => createClaim(...a),
+    scenarioSuggest: async () => ({ available: false }), // 정합 힌트 미가용
   },
 }))
 

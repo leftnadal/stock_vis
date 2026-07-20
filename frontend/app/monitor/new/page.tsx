@@ -12,6 +12,7 @@ import { monitorKeys, useIndicatorCatalog, useScenarioSuggest } from '@/hooks/us
 import { monitorService } from '@/services/monitorService'
 import type {
   CatalogEntry,
+  Coherence,
   EvidenceStrength,
   MonitorScope,
   SupportDirection,
@@ -91,10 +92,65 @@ function BuilderContent() {
     return null
   }, [hasScenario, entryPrice, targetPrice, stopPrice, deadline])
 
+  // TIMING-P2.5: 4단계 진입 시 4필드 프리필(빈 칸에만 — 사용자 입력 덮어쓰기 금지)
+  const [prefilled, setPrefilled] = useState(false)
+  useEffect(() => {
+    if (step !== 4 || !suggest?.available || prefilled) return
+    setPrefilled(true)
+    if (suggest.entry_suggest != null) setEntryPrice((v) => v || String(suggest.entry_suggest))
+    if (suggest.target_suggest != null) setTargetPrice((v) => v || String(suggest.target_suggest))
+    if (suggest.stop_suggest != null) setStopPrice((v) => v || String(suggest.stop_suggest))
+    if (suggest.deadline_suggest) setDeadline((v) => v || suggest.deadline_suggest!)
+  }, [step, suggest, prefilled])
+
+  // 정합 힌트(인터랙티브 조정) — 사용자가 마지막 수정한 필드 기준 나머지 재제안(자동 개서 금지)
+  const [lastEdited, setLastEdited] = useState<'target' | 'deadline' | null>(null)
+  const [hint, setHint] = useState<Coherence | null>(null)
+  useEffect(() => {
+    if (step !== 4 || !targetRef || !entryPrice.trim() || !lastEdited) {
+      setHint(null)
+      return
+    }
+    const params =
+      lastEdited === 'target'
+        ? targetPrice.trim()
+          ? { entry: entryPrice, target: targetPrice, stop: stopPrice || undefined }
+          : null
+        : deadline
+          ? { entry: entryPrice, deadline, stop: stopPrice || undefined }
+          : null
+    if (!params) {
+      setHint(null)
+      return
+    }
+    const id = setTimeout(async () => {
+      try {
+        const r = await monitorService.scenarioSuggest(targetRef, params)
+        setHint(r.coherence ?? null)
+      } catch {
+        setHint(null)
+      }
+    }, 500) // 디바운스: 입력 중 호출 억제
+    return () => clearTimeout(id)
+  }, [step, targetRef, entryPrice, targetPrice, deadline, stopPrice, lastEdited])
+
+  // 손익비 R:R (로컬 즉시 계산) = (목표−진입)/(진입−손절)
+  const rr = useMemo(() => {
+    const e = Number(entryPrice)
+    const t = Number(targetPrice)
+    const s = Number(stopPrice)
+    if ([e, t, s].some((n) => Number.isNaN(n))) return null
+    const risk = e - s
+    if (risk <= 0) return null
+    return (t - e) / risk
+  }, [entryPrice, targetPrice, stopPrice])
+
   function applySuggest() {
     if (!suggest?.available) return
     if (suggest.entry_suggest != null) setEntryPrice(String(suggest.entry_suggest))
     if (suggest.stop_suggest != null) setStopPrice(String(suggest.stop_suggest))
+    if (suggest.target_suggest != null) setTargetPrice(String(suggest.target_suggest))
+    if (suggest.deadline_suggest) setDeadline(suggest.deadline_suggest)
   }
 
   // 입력이 있으면 하드 이탈(새로고침/닫기) 시 경고
@@ -326,7 +382,7 @@ function BuilderContent() {
               </div>
             )}
 
-            {/* 가격 3필드 */}
+            {/* 가격 3필드 + 출처 캡션 (TIMING-P2.5 프리필) */}
             <div className="grid grid-cols-3 gap-2">
               <label className="text-xs text-gray-500">
                 진입가
@@ -339,6 +395,9 @@ function BuilderContent() {
                   placeholder="진입"
                   className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
                 />
+                {suggest?.captions?.entry && (
+                  <span className="mt-0.5 block text-[10px] text-gray-400">{suggest.captions.entry}</span>
+                )}
               </label>
               <label className="text-xs text-gray-500">
                 목표가
@@ -346,11 +405,17 @@ function BuilderContent() {
                   type="number"
                   inputMode="decimal"
                   value={targetPrice}
-                  onChange={(e) => setTargetPrice(e.target.value)}
+                  onChange={(e) => {
+                    setTargetPrice(e.target.value)
+                    setLastEdited('target')
+                  }}
                   data-testid="scenario-target-price"
                   placeholder="익절"
                   className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
                 />
+                {suggest?.captions?.target && (
+                  <span className="mt-0.5 block text-[10px] text-gray-400">{suggest.captions.target}</span>
+                )}
               </label>
               <label className="text-xs text-gray-500">
                 손절가
@@ -363,19 +428,78 @@ function BuilderContent() {
                   placeholder="손절"
                   className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
                 />
+                {suggest?.captions?.stop && (
+                  <span className="mt-0.5 block text-[10px] text-gray-400">{suggest.captions.stop}</span>
+                )}
               </label>
             </div>
+
+            {/* 목표 재제안 힌트 (기한 수정 시) — 자동 개서 금지, [적용] 1탭 */}
+            {lastEdited === 'deadline' && hint?.coherent_target && (
+              <div
+                data-testid="scenario-target-hint"
+                className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <span>{hint.basis}</span>
+                <button
+                  type="button"
+                  data-testid="scenario-target-hint-apply"
+                  onClick={() => {
+                    setTargetPrice(hint.coherent_target!)
+                    setLastEdited(null)
+                  }}
+                  className="flex-shrink-0 rounded bg-gray-700 px-2 py-0.5 font-medium text-white hover:bg-gray-800"
+                >
+                  적용
+                </button>
+              </div>
+            )}
 
             <label className="text-sm text-gray-500">
               기한
               <input
                 type="date"
                 value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
+                onChange={(e) => {
+                  setDeadline(e.target.value)
+                  setLastEdited('deadline')
+                }}
                 data-testid="scenario-deadline"
                 className="ml-2 rounded-lg border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
               />
+              {suggest?.captions?.deadline && (
+                <span className="mt-0.5 block text-[10px] text-gray-400">{suggest.captions.deadline}</span>
+              )}
             </label>
+
+            {/* 기한 재제안 힌트 (목표 수정 시) */}
+            {lastEdited === 'target' && hint?.coherent_deadline && (
+              <div
+                data-testid="scenario-deadline-hint"
+                className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+              >
+                <span>{hint.basis}</span>
+                <button
+                  type="button"
+                  data-testid="scenario-deadline-hint-apply"
+                  onClick={() => {
+                    setDeadline(hint.coherent_deadline!)
+                    setLastEdited(null)
+                  }}
+                  className="flex-shrink-0 rounded bg-gray-700 px-2 py-0.5 font-medium text-white hover:bg-gray-800"
+                >
+                  재제안 적용
+                </button>
+              </div>
+            )}
+
+            {/* 손익비 R:R + 고지 */}
+            {rr != null && (
+              <p data-testid="scenario-rr" className="text-xs text-gray-500">
+                손익비 {rr.toFixed(1)} : 1
+                <span className="ml-1 text-[10px] text-gray-400">· 변동성 기준 정합 · 예측 아님</span>
+              </p>
+            )}
 
             {/* 적정가 밴드 (선택) */}
             <details className="text-sm text-gray-500">
