@@ -89,7 +89,7 @@ describe('CentralityLeaderboardTable', () => {
     expect(delta.textContent).toContain('—');
   });
 
-  it('rank_delta null → — (전일 데이터 부재)', () => {
+  it('rank_delta null → NEW (전일 데이터 부재, 0과 의미 분리) (⑳-2 S5)', () => {
     render(
       <CentralityLeaderboardTable
         items={[item({ symbol: 'DDD', rank_delta: null })]}
@@ -97,8 +97,9 @@ describe('CentralityLeaderboardTable', () => {
       />,
     );
     const delta = screen.getByTestId('rank-delta');
-    expect(delta).toHaveAttribute('data-state', 'flat');
-    expect(delta.textContent).toContain('—');
+    expect(delta).toHaveAttribute('data-state', 'new');
+    expect(delta.textContent).toContain('NEW');
+    expect(delta.textContent).not.toContain('—');
   });
 
   it('ego 링크 URL = /chainsight/market-graph?focus=SYMBOL', () => {

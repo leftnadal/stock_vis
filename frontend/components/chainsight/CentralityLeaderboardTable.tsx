@@ -15,8 +15,16 @@ import {
 } from './leaderboardConfig';
 
 function RankDelta({ delta }: { delta: number | null }) {
-  // 상승(순위 개선)=양수 → 한국축 강세색(rose). 하락=음수 → 약세색(sky). 0/null → 중립.
-  if (delta === null || delta === undefined || delta === 0) {
+  // ⑳-2 S5: 의미 분리 — null(전일 데이터 없음)=NEW, 0(순위 불변)=—, ±n=▲▼.
+  // 상승(순위 개선)=양수 → 한국축 강세색(rose). 하락=음수 → 약세색(sky).
+  if (delta === null || delta === undefined) {
+    return (
+      <span data-testid="rank-delta" data-state="new" className="text-blue-500 font-medium text-[11px]">
+        NEW
+      </span>
+    );
+  }
+  if (delta === 0) {
     return (
       <span data-testid="rank-delta" data-state="flat" className="text-gray-400">
         —
