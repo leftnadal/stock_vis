@@ -8,6 +8,34 @@
 
 ---
 
+## [2026-07-20] D-DRILLDOWN-CARD-FIRST — ego 드릴다운 기본 = 관계 카드, 그래프는 토글(C안) [chainsight] [frontend]
+
+> 트랙: ⑳-2. 배포 `2c74160`.
+
+**결정**: ego 드릴다운 기본 화면을 **관계 카드 리스트**로 하고, 그래프(force)는 `[지도]` 토글 뒤로 격하한다(C안). 신뢰도(관계 강도) 전달은 **카드의 숫자+바**로 이관하고, **그래프 엣지 굵기 인코딩 개선은 포기**한다.
+
+**Why**: 가중합 **C 4.40 > A 3.55 > B 3.35**(마진 0.85, 사용자 확인 2026-07-20). ⑳-V 실측에서 force 그래프가 이웃 많은 허브(48노드)에서 라벨 겹침·밀도로 정보 전달 실패 — 굵기·라벨 회피 튜닝은 수렁(force 파라미터 상호작용). 카드는 신뢰도·근거·최근 언급일을 **결정론적 숫자**로 전달해 겹침 문제를 원천 회피. 그래프는 "관계망 조망"이 필요할 때만(토글) 제공("지도는 원할 때만").
+
+**How to apply**: 카드 데이터는 ego API additive(evidence_count·last_mentioned). 그래프 뷰는 토글 뒤 보존(additive, 기존 동작 불변). 굵기 인코딩·라벨 회피는 하지 않음(OUT). 전체 조망(백본)+섹터 모드는 ⑳-3.
+
+## [2026-07-20] D-UI-VERIFY-POSTDEPLOY — UI 라이브 검증은 "배포 직후 즉시 + 결함 시 fix-forward"가 현 인프라 표준 [harness] [frontend]
+
+**결정**: UI 슬라이스의 라이브 렌더 검증은 **배포 직후 즉시 검증 + 결함 발견 시 fix-forward/롤백**을 표준 시퀀스로 한다(⑳-E 편차의 규칙화).
+
+**Why**: 편집 worktree는 node_modules 심링크(#48)로 `next dev` 기동 불가 + JWT localStorage 포트격리 → **미머지 프론트의 격리 라이브 검증이 런타임상 불가**. 유일한 인증 렌더 표면=배포된 :3000(prod 빌드). 배포 전 검증은 tsc·vitest·pytest GREEN으로 대체하고, 실렌더는 배포 직후 확인. [[feedback_ui_slice_live_screenshot]] 정신(실렌더 필수)은 유지하되 시점을 배포-후로 명문화.
+
+**How to apply**: FE 배포=`npm run build`+`npm run start` 재시작([[reference_web_runtime_prod_build]]) → 즉시 라이브 캡처 → 결함 시 D-H1-FIXFORWARD. **FE-SERVE-MODE-TIDY(격리 dev 서빙) 완료 시 배포-전 검증으로 재검토**.
+
+## [2026-07-20] D-H1-FIXFORWARD — 라이브 검증 중 발견 결함은 H1 3조건 충족 시 fix-forward 허용 [harness]
+
+**결정**: 배포 후 라이브 검증에서 발견한 결함은 **H1 자가해소 3조건(additive·IN 범위·마이그레이션 무발생) 충족 시 fix-forward**(추가 커밋+재배포)를 허용하고 **보고 필수**로 한다(⑳-E 선례 사후 승인).
+
+**Why**: D-UI-VERIFY-POSTDEPLOY상 검증이 배포-후이므로, 결함이 라이브에서만 드러난다(⑳-E react-query paused 2건). 3조건 밖(스키마·범위 밖·비-additive)이면 HALT·상신. 조건 내면 즉시 교정이 롤백보다 안전·빠름(원장에 fix-forward 커밋 명기).
+
+**How to apply**: 결함 발견 → 3조건 판정 → 충족 시 최소 수정 커밋(라벨 "fix-forward")+재빌드+재검증, 미충족 시 HALT. 보고서에 결함·수정 전말 기재.
+
+---
+
 ## [2026-07-18] FE-8000-PROD-APPLY 집행 기록 (백-어노테이션) [ops] [frontend]
 
 > 트랙: MGMT-BATCH-12(mgmt, 메타+docs). baseline = origin/main `e5ee004`, prod 쓰기 0(서빙 반영은 07-18 집행 완료·이 등재는 사후 기록). 상위 = FE-DEAD-8000-SWEEP(#55)·WEB-RUNTIME-RUNBOOK.

@@ -956,3 +956,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 기동 시점에 **잔존 리스너(구 dev)가 살아있거나 곧 되살아나** 새 서버와 포트 경합 → 한쪽이 밀려 사망. supervisor(launchd KeepAlive) 유무를 확인하지 않고 기동하면 respawn과 충돌.
 
 **해결**: 서빙 포트 기동 절차에 **완전 정리 단계**를 포함한다 — ⑴ `lsof -iTCP:<port> -sTCP:LISTEN`로 기존 리스너 kill → **리스너 0 확인** ⑵ **45초+ 무respawn 관측**(감독자 존재 시 되살아남 = 그 감독자를 먼저 처리/판단) ⑶ 그 후 신규 기동. **자기점검**: 기동 절차에 "리스너 0 확인" 단계가 포함됐는지. cf. WEB-RUNTIME-RUNBOOK §2, [[reference_worker_runtime_tree]].
+
+## FE 배포는 재빌드 필수 — :3000이 prod 빌드(npm run start)면 sv sync만으론 미반영 (#62, 2026-07-20 ⑳-2) [frontend] [ops] [deploy]
+
+**증상**: 프론트 코드 머지·`sv sync`(web 트리 re-detach) 후에도 :3000 화면이 구 코드 그대로. next dev로 착각해 핫리로드를 기대.
+
+**원인**: sv-web-runtime :3000은 `npm run start` = **prod 빌드 서빙**(`.next` 정적 산출물). `sv sync`는 소스 트리만 origin/main으로 갱신할 뿐 **`.next`를 재생성하지 않음** → 서빙은 옛 빌드. next dev(핫리로드)와 다름.
+
+**해결**: FE 변경 배포 = `sv sync` 후 **web 트리에서 `npm run build` → `npm run start` 재시작**([[reference_web_runtime_prod_build]]). 신규 컴포넌트·훅 옵션은 특히 재빌드 없이는 절대 반영 안 됨. 절차: 리스너 0 확인(#61) → build → start → :3000 200·신규 표식 grep 확인. cf. FE-SERVE-MODE-TIDY(격리 dev 서빙 도입 시 이 마찰 해소).
