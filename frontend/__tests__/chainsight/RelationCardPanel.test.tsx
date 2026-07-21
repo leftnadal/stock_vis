@@ -55,24 +55,14 @@ describe('RelationCardPanel', () => {
     expect(screen.getByText(/섹터를 선택하면 대표 시드 카드가 표시됩니다/)).toBeInTheDocument();
   });
 
-  it('centerSymbol이 있고 로딩 중이면 스피너를 표시한다', () => {
+  it('centerSymbol이 있으면 ego 드릴다운(EgoDrilldown)이 담당하므로 아무것도 렌더하지 않는다 (⑳-2)', () => {
     mockExplorationStore.selectedSector = 'Technology';
     mockExplorationStore.centerSymbol = 'AAPL';
-    mockNeighborResult = { data: undefined, isLoading: true, isError: false };
 
-    render(<RelationCardPanel />);
+    const { container } = render(<RelationCardPanel />);
 
-    expect(screen.getByText(/관계 데이터를 불러오는 중/)).toBeInTheDocument();
-  });
-
-  it('centerSymbol이 있고 에러 시 에러 메시지를 표시한다', () => {
-    mockExplorationStore.selectedSector = 'Technology';
-    mockExplorationStore.centerSymbol = 'AAPL';
-    mockNeighborResult = { data: undefined, isLoading: false, isError: true };
-
-    render(<RelationCardPanel />);
-
-    expect(screen.getByText(/관계 데이터를 불러오지 못했습니다/)).toBeInTheDocument();
+    // 구 Neo4j(useNeighbors) 카드/스피너/에러 브랜치 제거 — 중복 방지.
+    expect(container).toBeEmptyDOMElement();
   });
 
   it('selectedSector만 있고 centerSymbol이 없으면 시드 카드를 표시한다', () => {

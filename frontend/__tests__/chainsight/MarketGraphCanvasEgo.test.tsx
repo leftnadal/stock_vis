@@ -31,6 +31,8 @@ function makeEgoResponse(overrides: Partial<EgoGraphResponse> = {}): EgoGraphRes
         target: 'MSFT',
         relation_type: 'PEER_OF',
         truth_score: 80,
+        evidence_count: 5,
+        last_mentioned: '2026-07-19',
         trend: { direction: 'up', delta: 30, points: [{ period: '2026-07-01', score: 50 }] },
       },
       {
@@ -38,6 +40,8 @@ function makeEgoResponse(overrides: Partial<EgoGraphResponse> = {}): EgoGraphRes
         target: 'GOOGL',
         relation_type: 'COMPETES_WITH',
         truth_score: 60,
+        evidence_count: 0,
+        last_mentioned: null,
         trend: { direction: 'flat', delta: 0, points: [] },
       },
     ],
@@ -131,6 +135,8 @@ describe('egoToNeighborShape', () => {
       target: `SYM${i}`,
       relation_type: 'PEER_OF',
       truth_score: 50,
+      evidence_count: 0,
+      last_mentioned: null,
       trend: { direction: 'flat' as const, delta: 0, points: [] },
     }));
     const ego = makeEgoResponse({

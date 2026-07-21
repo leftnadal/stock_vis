@@ -372,6 +372,10 @@ export interface EgoEdge {
   target: string;
   relation_type: string;
   truth_score: number;
+  /** ⑳-2 카드: 근거 뉴스 건수 */
+  evidence_count: number;
+  /** ⑳-2 카드: 최근 관측일 YYYY-MM-DD (없으면 null) */
+  last_mentioned: string | null;
   trend: EgoTrend;
 }
 

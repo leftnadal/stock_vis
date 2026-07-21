@@ -6,7 +6,7 @@ import { useExplorationStore } from '@/lib/stores/explorationStore';
 import { useSeedData } from '@/hooks/useMarketView';
 import SectorBar from '@/components/chainsight/SectorBar';
 import RelationFilterChips from '@/components/chainsight/RelationFilterChips';
-import MarketGraphCanvas from '@/components/chainsight/MarketGraphCanvas';
+import EgoDrilldown from '@/components/chainsight/EgoDrilldown';
 import ExplorationTrail from '@/components/chainsight/ExplorationTrail';
 import RelationCardPanel from '@/components/chainsight/RelationCardPanel';
 import ChainStoryFeed from '@/components/chainsight/ChainStoryFeed';
@@ -65,8 +65,8 @@ function MarketGraphPageInner() {
       {/* ② 관계 칩 바 — § 5-1: SectorBar와 MarketGraphCanvas 사이, 섹터 미선택 시 disabled */}
       <RelationFilterChips disabled={!state.selectedSector} />
 
-      {/* ③ 그래프 캔버스 */}
-      <MarketGraphCanvas />
+      {/* ③ ego 드릴다운 (⑳-2: 기본=관계 카드 리스트, [지도] 토글로 그래프) */}
+      <EgoDrilldown />
 
       {/* ④ 탐색 트레일 */}
       <ExplorationTrail />
