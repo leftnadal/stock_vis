@@ -46,6 +46,22 @@ DERIVED_SERIES = {
 # 예약 키 실현됨(P2-0) — 더 이상 예약 없음.
 RESERVED_SIGNAL_KEYS = ()
 
+# ETF NAV 디스카운트 신호 (P2a-1). signal_key → ETF symbol.
+# 신호값 = (nav − price)/nav (디스카운트, %). 스트레스(디스카운트)가 양의 z로
+# 상향되도록 부호를 잡아 grade_from_z를 무변경 재사용한다(신규 임계 0).
+# 원장 = EtfNavHistory(raw nav·price), 디스카운트는 compute-on-read(원장 미적재).
+ETF_DISCOUNT_MAP = {
+    "HYG_NAV_DISCOUNT": "HYG",
+    "LQD_NAV_DISCOUNT": "LQD",
+}
+
+# 수집 대상 ETF (FMP etf/info nav + quote price — 동일 provider).
+ETF_SYMBOLS = ("HYG", "LQD")
+
+# resolve 규칙: 정본 거래일 = quote timestamp의 ET 거래일. nav updatedAt이 정본
+# 거래일과 이 일수를 초과해 괴리하면 해당 관측을 skip + 로그(자가 보정 금지).
+ETF_NAV_MAX_LAG_DAYS = 1
+
 Z_WINDOW_DAYS = 756          # 3년 거래일 근사 (3년 롤링 z-score)
 MAD_FLOOR = 1e-6             # Robust Z(MAD) 분모 과폭발 방지 floor (Thesis Control 규약과 동형)
 MIN_OBSERVATIONS = 60        # 콜드스타트 하한 — 60개 미만이면 z=null, grade=gray

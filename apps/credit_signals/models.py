@@ -9,6 +9,11 @@ MacroSeriesHistory:
 CreditSignalState:
     signal_key별 최신 파생 상태 1행. 소비처(Dashboard/Chain Sight/Thesis)는
     이 테이블만 읽는다.
+
+EtfNavHistory:
+    ETF NAV·시장가 영구 원장 (P2a-1). MacroSeriesHistory(FRED 전용)와 분리해
+    앱 내 원장 의미 순수성을 유지한다. nav·price는 동일 (symbol, 거래일) 쌍이라
+    2컬럼 1행이 write-time 거래일 정합을 강제한다.
 """
 from django.db import models
 
@@ -54,3 +59,35 @@ class CreditSignalState(models.Model):
 
     def __str__(self) -> str:
         return f"{self.signal_key}={self.grade}(z={self.z_score})"
+
+
+class EtfNavHistory(models.Model):
+    """
+    ETF NAV·시장가 영구 원장 (P2a-1, insert-only + revise-on-change).
+
+    정본 거래일(date) = quote timestamp의 ET 거래일. nav는 해당 거래일 행에
+    함께 upsert하되, nav updatedAt이 정본 거래일과 1영업일 초과 괴리 시 수집을
+    skip한다(자가 보정 금지 — 서비스 계층에서 처리). 삭제 로직 절대 금지(§10).
+
+    파생 신호(*_NAV_DISCOUNT = (nav−price)/nav)는 여기 미적재 — compute-on-read
+    (P2-0 파생 계약 복제, 원장 raw 순수성).
+    """
+
+    symbol = models.CharField(max_length=16, db_index=True)
+    date = models.DateField()  # 정본 거래일 (quote timestamp ET 기준)
+    nav = models.DecimalField(max_digits=12, decimal_places=4)
+    price = models.DecimalField(max_digits=12, decimal_places=4)
+    # 최초 적재 시각 — revise가 일어나도 유지한다.
+    ingested_at = models.DateTimeField(auto_now_add=True)
+    # nav/price가 갱신(revise)된 시각 (최초 적재 시 null).
+    revised_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "etf_nav_history"
+        constraints = [
+            models.UniqueConstraint(fields=["symbol", "date"], name="uniq_etf_symbol_date"),
+        ]
+        indexes = [models.Index(fields=["symbol", "-date"])]
+
+    def __str__(self) -> str:
+        return f"{self.symbol}@{self.date} nav={self.nav} price={self.price}"

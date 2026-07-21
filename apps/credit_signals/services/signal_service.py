@@ -19,6 +19,7 @@ import numpy as np
 
 from ..constants import (
     DERIVED_SIGNAL_MAP,
+    ETF_DISCOUNT_MAP,
     HY_OAS_CRISIS_BP,
     MAD_CONSISTENCY,
     MAD_FLOOR,
@@ -28,7 +29,7 @@ from ..constants import (
     Z_WINDOW_DAYS,
     Z_YELLOW,
 )
-from ..models import CreditSignalState, MacroSeriesHistory
+from ..models import CreditSignalState, EtfNavHistory, MacroSeriesHistory
 
 logger = logging.getLogger(__name__)
 
@@ -190,10 +191,64 @@ def compute_derived_signal(key: str) -> CreditSignalState | None:
     return state
 
 
+def compute_etf_discount_signal(key: str) -> CreditSignalState | None:
+    """
+    ETF NAV 디스카운트 신호(HYG_NAV_DISCOUNT / LQD_NAV_DISCOUNT)를 compute-on-read.
+
+    신호값 = (nav − price)/nav × 100 (디스카운트, %). 스트레스(디스카운트 = ETF가
+    NAV 아래 거래)가 **양의 z로 상향**되도록 부호를 잡아 grade_from_z를 무변경
+    재사용한다(신규 임계 0). key != "HY_OAS" 이므로 red 자동 미발화(orange 상한).
+    ★ 디스카운트값은 CreditSignalState에만 upsert, EtfNavHistory(원장)엔 미적재.
+    원장(EtfNavHistory)에 행이 없으면 None(상태 미생성).
+    """
+    symbol = ETF_DISCOUNT_MAP[key]
+    rows = list(
+        EtfNavHistory.objects.filter(symbol=symbol)
+        .order_by("date")
+        .values_list("date", "nav", "price")
+    )
+    if not rows:
+        return None
+
+    # 디스카운트 = (nav − price)/nav × 100. Decimal 정밀도 보존 후 값만 4dp quantize.
+    discounts = [(nav - price) / nav * Decimal(100) for _, nav, price in rows]
+    as_of = rows[-1][0]
+    current = discounts[-1].quantize(_QUANT_Z)
+    values = [float(x) for x in discounts]
+
+    z = robust_z(values)
+    grade = grade_from_z(z, current, key)  # key != HY_OAS → red 미발화
+    z_dec = None if z is None else Decimal(str(z)).quantize(_QUANT_Z)
+
+    detail = {
+        "etf_discount": True,
+        "symbol": symbol,
+        "formula": "(nav - price)/nav * 100",
+        "window_days": Z_WINDOW_DAYS,
+        "n_obs": len(values),
+        "min_obs": MIN_OBSERVATIONS,
+        "mad_floor": float(MAD_FLOOR),
+        "consistency": MAD_CONSISTENCY,
+        "cold_start": z is None,
+    }
+
+    state, _ = CreditSignalState.objects.update_or_create(
+        signal_key=key,
+        defaults={
+            "as_of": as_of,
+            "value": current,
+            "z_score": z_dec,
+            "grade": grade,
+            "detail": detail,
+        },
+    )
+    return state
+
+
 def compute_all_signals() -> dict:
     """
-    수집 대상 6 raw signal_key + 파생 2키 전부 계산 (flag 무관 — 서비스 계층 진입점).
-    태스크(compute_credit_signals_task)와 백필 커맨드가 공유한다.
+    수집 대상 6 raw signal_key + 파생 2키 + ETF 디스카운트 2키 전부 계산
+    (flag 무관 — 서비스 계층 진입점). 태스크·백필 커맨드가 공유한다.
     """
     results = {}
     for signal_key in SIGNAL_SERIES_MAP:
@@ -201,5 +256,8 @@ def compute_all_signals() -> dict:
         results[signal_key] = None if state is None else state.grade
     for key in DERIVED_SIGNAL_MAP:
         state = compute_derived_signal(key)
+        results[key] = None if state is None else state.grade
+    for key in ETF_DISCOUNT_MAP:
+        state = compute_etf_discount_signal(key)
         results[key] = None if state is None else state.grade
     return results
