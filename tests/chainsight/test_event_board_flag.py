@@ -172,3 +172,28 @@ class TestAttachLeadershipEg:
         before = StockLeadershipScore.objects.exclude(theme__startswith="eg:").count()
         attach_leadership_eg([{"symbol": "AMD"}], "news-amd-1", AS_OF, 20)
         assert StockLeadershipScore.objects.exclude(theme__startswith="eg:").count() == before
+
+
+class TestBoardMembers:
+    """⑳-2 S4(additive): 구성 티커 목록 — 카드 제목 티커 병기용."""
+
+    @override_settings(**ON)
+    def test_on_includes_members(self, world):
+        board = get_event_board(AS_OF)
+        item = board[0]  # news-amd-1
+        assert "members" in item
+        assert set(item["members"]) == {"AMD", "INTC", "NVDA", "MU", "AAPL"}
+        assert len(item["members"]) == item["member_count"]
+
+    @override_settings(**ON)
+    def test_serializer_includes_members(self, world):
+        board = get_event_board(AS_OF)
+        data = EventBoardItemSerializer(board, many=True).data
+        assert set(data[0]["members"]) == {"AMD", "INTC", "NVDA", "MU", "AAPL"}
+
+    @override_settings(**OFF)
+    def test_off_includes_members(self, world):
+        board = get_event_board(AS_OF)
+        semi = next(b for b in board if b["theme"] == "Semiconductors")
+        assert "members" in semi
+        assert set(semi["members"]) == {"AMD", "INTC", "NVDA", "MU"}

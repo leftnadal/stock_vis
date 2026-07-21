@@ -17,6 +17,8 @@ class EventBoardItemSerializer(serializers.Serializer):
     # 누락 시 SkipField → 응답에서 생략(OFF 스키마 IDENTICAL). ON은 항상 non-null 문자열.
     name = serializers.CharField(required=False)
     member_count = serializers.IntegerField()
+    # ⑳-2 S4(additive): 구성 티커 목록. 카드 제목 티커 병기용(표시 가공은 프론트).
+    members = serializers.ListField(child=serializers.CharField(), required=False)
     avg_return = serializers.FloatField()
     avg_score = serializers.FloatField()
     high_attention_count = serializers.IntegerField()
