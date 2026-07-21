@@ -140,7 +140,16 @@ export function MonitorListCard({
               {closureSummary.total}중 {closureSummary.resolved}마감
             </span>
           )}
-          {/* 가격축 zone 칩 (TIMING-P2) — 가격 시나리오 있을 때만 */}
+          {/* 보유 관리 모드 칩 (HOLD-P1) */}
+          {zoneDisplay?.mode === 'hold' && zoneDisplay.mode_label && (
+            <span
+              data-testid="monitor-card-hold-chip"
+              className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+            >
+              {zoneDisplay.mode_label}
+            </span>
+          )}
+          {/* 가격축 zone 칩 (TIMING-P2) — 라벨 + 손익%(hold) / 진입 대비%(신규) */}
           {zoneDisplay?.zone && <ZoneChip zoneDisplay={zoneDisplay} />}
         </div>
         {spark && (

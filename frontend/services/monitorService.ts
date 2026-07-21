@@ -13,6 +13,7 @@ import type {
   MonitorIndicator,
   MonitorInput,
   ScenarioSuggest,
+  ScenarioType,
   SparklineResponse,
 } from '@/types/monitor'
 
@@ -79,10 +80,15 @@ export const monitorService = {
       monitor: string
       assertion: string
       deadline?: string | null
+      // 시나리오 모드 (HOLD-P1) — 기본 new_entry.
+      scenario_type?: ScenarioType
       // 매수 시나리오 가격 (TIMING-P2, 선택 — 시나리오 작성 시에만).
       entry_price?: string | null
       target_price?: string | null
       stop_price?: string | null
+      // 보유 확정 사실 (HOLD-P1) — hold 모드에서만.
+      purchase_price?: string | null
+      purchase_date?: string | null
       fair_value_low?: string | null
       fair_value_high?: string | null
     }
@@ -93,9 +99,17 @@ export const monitorService = {
 
   // ── L계열 가격 제안 + 정합 재계산 (TIMING-P2/P2.5, 읽기 전용) ──
   // params.entry + (target|deadline) 제공 시 응답에 coherence 블록 포함(힌트용).
+  // params.mode='hold' + purchase_price 제공 시 보유 프리필(HOLD-P1).
   scenarioSuggest: async (
     symbol: string,
-    params?: { entry?: string; target?: string; deadline?: string; stop?: string }
+    params?: {
+      entry?: string
+      target?: string
+      deadline?: string
+      stop?: string
+      mode?: ScenarioType
+      purchase_price?: string
+    }
   ): Promise<ScenarioSuggest> => {
     const { data } = await authAxios.get('/monitor/scenario-suggest/', {
       params: { symbol, ...(params ?? {}) },

@@ -43,11 +43,29 @@ def resolve_zone(close, entry, target, stop):
     return PriceZone.WAITING
 
 
-# 즉시 알림 대상 구간(도달 시점에 행동 필요) vs 다이제스트 대상.
-IMMEDIATE_ALERT_ZONES = frozenset({PriceZone.ENTRY, PriceZone.EXITED})
+# "익절 접근" 표시 재구간화 임계 (D-HOLD-DECISIONS 부속) — close ≥ target×(1-이 값)이면 익절 접근.
+# 저장 zone(resolve_zone) 무관 — hold 표시 전용.
+NEAR_TARGET_BUFFER = Decimal("0.03")
+
+# 즉시 알림 대상 구간 — 모드별(D-HOLD-DECISIONS 부속, 소비처만 모드 인지).
+# new_entry: →ENTRY(진입 도달)·→EXITED(이탈). hold: →OVERHEATED(목표 도달)·→EXITED(손절 이탈).
+IMMEDIATE_ALERT_ZONES = frozenset({PriceZone.ENTRY, PriceZone.EXITED})  # new_entry(하위호환 기본)
+IMMEDIATE_ALERT_ZONES_HOLD = frozenset({PriceZone.OVERHEATED, PriceZone.EXITED})
 DIGEST_ALERT_ZONES = frozenset({PriceZone.APPROACH, PriceZone.WAITING, PriceZone.OVERHEATED})
 
 
-def is_immediate_zone_alert(to_zone):
-    """→ENTRY, →EXITED = 즉시 알림. 관망↔접근·과열 = 다이제스트."""
+def is_immediate_zone_alert(to_zone, mode=None):
+    """즉시 알림 대상 zone인가. mode='hold'면 목표 도달/이탈 즉시(진입 억제), 그 외 진입/이탈 즉시."""
+    if mode == Claim.ScenarioType.HOLD:
+        return to_zone in IMMEDIATE_ALERT_ZONES_HOLD
     return to_zone in IMMEDIATE_ALERT_ZONES
+
+
+def zone_anchor(claim):
+    """zone 계산의 중심 앵커 — hold면 매입가(확정), 그 외 진입가(제안). resolve_zone entry 인자로 치환.
+
+    (D-HOLD-DECISIONS 2) resolve_zone 수학 불변 — 앵커만 모드별로 선택.
+    """
+    if claim.scenario_type == Claim.ScenarioType.HOLD:
+        return claim.purchase_price
+    return claim.entry_price

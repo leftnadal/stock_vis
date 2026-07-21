@@ -75,6 +75,7 @@ class ScenarioSuggestView(APIView):
     def get(self, request):
         from apps.monitor.services.scenario_suggest import (
             recompute_coherence,
+            suggest_hold_scenario,
             suggest_scenario,
         )
 
@@ -83,6 +84,23 @@ class ScenarioSuggestView(APIView):
             return Response(
                 {"detail": "symbol 파라미터가 필요합니다."}, status=status.HTTP_400_BAD_REQUEST
             )
+
+        # 보유 관리 프리필 (D-HOLD-DECISIONS 부속) — mode=hold + purchase_price. 기존 키 불변.
+        mode = (request.query_params.get("mode") or "").strip()
+        if mode == "hold":
+            purchase = request.query_params.get("purchase_price")
+            if not purchase:
+                return Response(
+                    {"detail": "mode=hold는 purchase_price 파라미터가 필요합니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            try:
+                return Response(suggest_hold_scenario(symbol, purchase))
+            except (ValueError, ArithmeticError):
+                return Response(
+                    {"detail": "purchase_price가 올바른 숫자여야 합니다."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         payload = suggest_scenario(symbol)
 

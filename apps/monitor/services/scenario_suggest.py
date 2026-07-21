@@ -133,6 +133,110 @@ def suggest_scenario(symbol, as_of=None):
     }
 
 
+def suggest_hold_scenario(symbol, purchase_price, as_of=None):
+    """보유 관리 프리필 (D-HOLD-DECISIONS 부속, 읽기 전용). 매입가는 절대 제안하지 않는다.
+
+    목표=저항선(재사용) · 손절=수익 중 본전(purchase) 승격 / 손실 중 ATR×2(close 아래, 앵커링 방지) ·
+    기한=horizon_for_target(close, target, σ) · 손실 중 부가정보=본전 회복 ~N주(close→purchase).
+    R:R(hold)=(target−close)/(close−stop). 히스토리 부족 시 available=False.
+    """
+    from django.utils import timezone
+
+    sym = symbol.upper()
+    as_of = as_of or timezone.localdate()
+
+    base = _base_prices(sym, as_of)
+    if base is None:
+        logger.info("hold suggest: 히스토리 부족 symbol=%s", sym)
+        return {"available": False, "symbol": sym}
+
+    purchase = float(purchase_price)
+    close = base["close"]
+    atr = base["atr"]
+    target_suggest = base["resistance_high"]
+
+    in_profit = close > purchase
+    if in_profit:
+        stop_suggest = round(purchase, 4)  # 본전 승격
+        stop_caption = "본전(매입가) 승격 — 수익 구간"
+    elif atr is not None:
+        stop_suggest = round(close - ATR_STOP_MULT * atr, 4)  # 현재가 아래 ATR×2
+        stop_caption = (
+            f"ATR({ATR_PERIOD}) {round(atr, 2)}×{ATR_STOP_MULT:g} (현재가 기준) · "
+            "매입가 앵커링 아님 — 지금 손실 방어 기준"
+        )
+    else:
+        stop_suggest = None
+        stop_caption = "ATR 산출 불가"
+
+    # 불변식 가드: close < target, stop < close < target (수익 시 stop=purchase<close 성립).
+    omit = None
+    if stop_suggest is None:
+        omit = "atr_unavailable"
+    elif not (stop_suggest < close < target_suggest):
+        omit = "invariant_violation"
+
+    sigma = coherence.daily_sigma(sym, as_of=as_of)
+    horizon_days = None
+    deadline_suggest = None
+    rr_suggest = None
+    horizon_basis = None
+    if omit is None:
+        horizon_days = coherence.horizon_for_target(close, target_suggest, sigma)
+        if horizon_days is None:
+            horizon_days = FALLBACK_HORIZON_DAYS
+            horizon_basis = "변동성 산출 불가 · 고정 90일"
+        else:
+            wk = round(horizon_days / 7)
+            horizon_basis = f"목표까지 변동성 기준 ~{wk}주 (σ={round(sigma, 4)})"
+        deadline_suggest = (as_of + timedelta(days=horizon_days)).isoformat()
+        # R:R(hold) = (target−close)/(close−stop)
+        risk = close - stop_suggest
+        rr_suggest = round((target_suggest - close) / risk, 2) if risk > 0 else None
+
+    # 손실 중 본전 회복 통상 N주 (close→purchase). 수익 중이면 None.
+    breakeven_weeks = None
+    breakeven_caption = None
+    if not in_profit:
+        bd = coherence.horizon_for_target(close, purchase, sigma)
+        if bd is not None:
+            breakeven_weeks = round(bd / 7)
+            breakeven_caption = (
+                f"본전({round(purchase, 2)}) 회복 통상 ~{breakeven_weeks}주 · 변동성 기준 · 예측 아님"
+            )
+
+    return {
+        "available": True,
+        "mode": "hold",
+        "symbol": sym,
+        "close": close,
+        "purchase_price": round(purchase, 4),
+        "resistance_high": base["resistance_high"],
+        "atr": atr,
+        "sigma": round(sigma, 6) if sigma is not None else None,
+        "in_profit": in_profit,
+        # 매입가는 제안 금지 — entry_suggest 없음. target/stop/기한만 제안.
+        "target_suggest": None if omit else target_suggest,
+        "stop_suggest": stop_suggest,
+        "horizon_days": horizon_days,
+        "deadline_suggest": deadline_suggest,
+        "rr_suggest": rr_suggest,
+        "breakeven_weeks": breakeven_weeks,
+        "omit": omit,
+        "captions": {
+            "target": None if omit else f"최근 {base['resistance_lookback']}거래일 스윙 고점(저항선)",
+            "stop": stop_caption,
+            "deadline": horizon_basis,
+            "breakeven": breakeven_caption,
+        },
+        "basis": (
+            f"목표 {target_suggest}(저항선) · 손절 {stop_suggest}"
+            f"({'본전' if in_profit else 'ATR'}) · 기한 {horizon_basis or '—'}"
+            + (f" · {breakeven_caption}" if breakeven_caption else "")
+        ),
+    }
+
+
 def recompute_coherence(symbol, *, entry, target=None, deadline=None, stop=None, as_of=None):
     """사용자 확정값 → 나머지 정합 후보(자동 개서 아님, 힌트용). 예측 아님(변동성 스케일링).
 

@@ -37,7 +37,22 @@ export type Verdict = ProposedVerdict | 'inconclusive'
 // 가격 구간축 (BE Claim.PriceZone 미러 — TIMING-P1).
 export type PriceZone = 'exited' | 'entry' | 'approach' | 'waiting' | 'overheated'
 
+// 시나리오 모드 (BE Claim.ScenarioType 미러 — HOLD-P1).
+export type ScenarioType = 'new_entry' | 'hold' | 'add_on'
+
+// 사다리 밴드/틱 (BE zone_display 완결 — FE 하드코딩 제거, HOLD-P1).
+export interface ZoneBand {
+  key: string
+  tone: PriceZone // ZONE_TONE 조회 키
+  active: boolean
+}
+export interface ZoneTick {
+  label: string
+  value: number
+}
+
 // zone_display (serializer, BE 완결 표시 메타 — FE 재계산 금지). 가격 3필드 없으면 null.
+// bands/ticks/rows/marker/pnl 전부 BE 단일 소스(HOLD-P1). ?는 하위호환(구 응답 폴백 허용).
 export interface ZoneDisplay {
   zone: PriceZone | null
   label: string | null
@@ -48,6 +63,15 @@ export interface ZoneDisplay {
     approach_ceiling: number
     target: number
   }
+  // ── HOLD-P1 additive ──
+  mode?: ScenarioType
+  mode_label?: string | null
+  pnl_pct?: number | null // hold: (close/purchase−1)×100
+  marker_fraction?: number | null // 현재가 위치 0~1
+  anchor_fraction?: number | null // hold 매입가 마커 0~1 (new_entry는 null)
+  bands?: ZoneBand[] // 색 밴드(new_entry 5·hold 4)
+  ticks?: ZoneTick[] // 미니 사다리 하단 라벨
+  rows?: ZoneTick[] // 수직 사다리 우측 라벨(위→아래)
 }
 
 // 정합 재계산 블록 (TIMING-P2.5) — 힌트용, 자동 개서 아님.
@@ -64,9 +88,11 @@ export interface Coherence {
 }
 
 // L계열 가격 제안 + 정합 프리필 (GET /monitor/scenario-suggest/?symbol=).
+// mode=hold + purchase_price 제공 시 보유 프리필(매입가·진입가 미제안 + 본전 회복 N주).
 export interface ScenarioSuggest {
   available: boolean
   symbol: string
+  mode?: ScenarioType
   close?: number
   support_low?: number
   resistance_high?: number
@@ -79,11 +105,16 @@ export interface ScenarioSuggest {
   deadline_suggest?: string | null
   rr_suggest?: number | null
   omit?: string | null
+  // ── hold 전용 ──
+  purchase_price?: number
+  in_profit?: boolean
+  breakeven_weeks?: number | null
   captions?: {
     entry?: string | null
     stop?: string | null
     target?: string | null
     deadline?: string | null
+    breakeven?: string | null
   }
   basis?: string
   // entry + (target|deadline) 쿼리 제공 시에만 (재계산)
@@ -158,10 +189,15 @@ export interface Claim {
   retro_memo: string
   // 마감 동결 스냅샷 (MON-CLOSE-UI P1.5) — resolved면 동결값, PENDING이면 null.
   closure_snapshot: ClosureSnapshotData | null
+  // 시나리오 모드 (HOLD-P1). 기존 데이터 default=new_entry.
+  scenario_type: ScenarioType
   // 매수 시나리오 가격 (TIMING-P1, DRF Decimal→문자열). 무가격 구 가설이면 전부 null.
   entry_price: string | null
   target_price: string | null
   stop_price: string | null
+  // 보유 확정 사실 (HOLD-P1) — hold 모드에서만 채워짐.
+  purchase_price: string | null
+  purchase_date: string | null
   fair_value_low: string | null
   fair_value_high: string | null
   // 가격 구간축 (파이프라인 소유·read-only) + BE 완결 표시 메타.

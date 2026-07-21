@@ -9,8 +9,17 @@ import logging
 from django.utils import timezone
 
 from apps.monitor.models import Claim
-from apps.monitor.services.closure import is_expired_scenario
-from apps.monitor.services.price_zone import is_immediate_zone_alert, resolve_zone
+from apps.monitor.services.closure import (
+    current_overall_score,
+    is_expired_scenario,
+    is_hold_deadline_passed,
+    propose_verdict,
+)
+from apps.monitor.services.price_zone import (
+    is_immediate_zone_alert,
+    resolve_zone,
+    zone_anchor,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -41,14 +50,20 @@ def process_claim_scenario(claim, close, as_of):
     """
     events = []
     update_fields = []
+    mode = claim.scenario_type
+    is_hold = mode == Claim.ScenarioType.HOLD
 
-    # ── 가격 구간 전이 ──
-    zone = resolve_zone(close, claim.entry_price, claim.target_price, claim.stop_price)
+    # ── 가격 구간 전이 (앵커 = hold면 매입가, 그 외 진입가 — 수학 동일) ──
+    zone = resolve_zone(close, zone_anchor(claim), claim.target_price, claim.stop_price)
     if zone is not None:
         prev = claim.last_price_zone
 
-        # ENTRY 최초 도달 → entry_reached_at 1회 기록
-        if zone == Claim.PriceZone.ENTRY and claim.entry_reached_at is None:
+        # ENTRY 최초 도달 → entry_reached_at 1회 기록 (신규 매수 전용 — hold는 진입 개념 없음)
+        if (
+            not is_hold
+            and zone == Claim.PriceZone.ENTRY
+            and claim.entry_reached_at is None
+        ):
             claim.entry_reached_at = timezone.now()
             update_fields.append("entry_reached_at")
 
@@ -60,24 +75,40 @@ def process_claim_scenario(claim, close, as_of):
                 "target_ref": claim.monitor.target_ref,
                 "from_zone": prev,
                 "to_zone": zone,
-                "immediate": is_immediate_zone_alert(zone),
+                "immediate": is_immediate_zone_alert(zone, mode=mode),
                 "close": close,
             })
             claim.last_price_zone = zone
             update_fields.append("last_price_zone")
 
-    # ── 기한만료 제안 (자동 마감 금지 — proposed_verdict 제안 + 1회 알림 가드) ──
-    if is_expired_scenario(claim, as_of) and claim.proposed_verdict != Claim.ProposedVerdict.EXPIRED:
-        claim.proposed_verdict = Claim.ProposedVerdict.EXPIRED
-        update_fields.append("proposed_verdict")
-        events.append({
-            "type": "expiry",
-            "claim_id": str(claim.id),
-            "monitor_name": claim.monitor.name,
-            "target_ref": claim.monitor.target_ref,
-            "deadline": claim.deadline.isoformat() if claim.deadline else None,
-            "immediate": True,
-        })
+    # ── 기한만료 (자동 마감 금지 — 1회 알림 가드) ──
+    if not is_hold:
+        # 신규 매수: 진입 미도달 만료 → EXPIRED 제안 (기존 불변)
+        if is_expired_scenario(claim, as_of) and claim.proposed_verdict != Claim.ProposedVerdict.EXPIRED:
+            claim.proposed_verdict = Claim.ProposedVerdict.EXPIRED
+            update_fields.append("proposed_verdict")
+            events.append({
+                "type": "expiry",
+                "claim_id": str(claim.id),
+                "monitor_name": claim.monitor.name,
+                "target_ref": claim.monitor.target_ref,
+                "deadline": claim.deadline.isoformat() if claim.deadline else None,
+                "immediate": True,
+            })
+    else:
+        # 보유 관리: 만료 = 알림 1회 + 기존 점수 밴드 제안 유지(EXPIRED 미설정, D-HOLD-DECISIONS 부속).
+        # 가드 = proposed_verdict None→score-band 전이 1회.
+        if is_hold_deadline_passed(claim, as_of) and claim.proposed_verdict is None:
+            claim.proposed_verdict = propose_verdict(current_overall_score(claim.monitor))
+            update_fields.append("proposed_verdict")
+            events.append({
+                "type": "expiry",
+                "claim_id": str(claim.id),
+                "monitor_name": claim.monitor.name,
+                "target_ref": claim.monitor.target_ref,
+                "deadline": claim.deadline.isoformat() if claim.deadline else None,
+                "immediate": True,
+            })
 
     if update_fields:
         claim.save(update_fields=update_fields)
