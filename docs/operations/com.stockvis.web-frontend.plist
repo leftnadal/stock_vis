@@ -4,8 +4,16 @@
   ~/Library/LaunchAgents 복사·bootstrap·load 는 사용자 수동 (시스템 설정 = 자동 금지).
   적용/검증 절차 = docs/operations/web-runtime-runbook.md §5 + TASKQUEUE LAUNCHD-WEB-PLIST-LOAD.
   참조 모델 = com.stockvis.web (daphne :18765).
-  ⚠ 적용 전 확인: `npm`/`node` 절대 경로가 이 머신의 nvm 경로와 일치하는지
-     (`which npm` 실측 후 ProgramArguments 교정). 아래는 관측 기준 초안값.
+
+  ✅ nvm 절대경로 교정 완료 (OPS-PLIST-FIX, 2026-07-21):
+     - ProgramArguments를 `/bin/bash -lc … npm run start`(로그인셸 래퍼) →
+       nvm npm 절대경로 직접 실행으로 교정.
+     - 근거(실측 2026-07-21): 로그인셸(`/bin/bash -lc`)에서 `npm`이
+       /usr/local/bin/npm(node v20.11.0)으로 해석되어, 빌드·서빙 실체
+       (next-server v16.2.6 @ nvm node v22.19.0)와 런타임 불일치했음.
+     - EnvironmentVariables.PATH 선두에 nvm bin을 둬 npm-cli.js(`env node` shebang)가
+       v22.19.0 node를 해석하도록 보장.
+     - ⚠ nvm node 버전 변경 시 ProgramArguments[0] 및 PATH의 절대경로 동반 갱신 필수.
 -->
 <plist version="1.0">
 <dict>
@@ -14,13 +22,19 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/bin/bash</string>
-        <string>-lc</string>
-        <string>cd /Users/byeongjinjeong/worktrees/sv-web-runtime/frontend &amp;&amp; exec npm run start</string>
+        <string>/Users/byeongjinjeong/.nvm/versions/node/v22.19.0/bin/npm</string>
+        <string>run</string>
+        <string>start</string>
     </array>
 
     <key>WorkingDirectory</key>
     <string>/Users/byeongjinjeong/worktrees/sv-web-runtime/frontend</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/Users/byeongjinjeong/.nvm/versions/node/v22.19.0/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
 
     <key>RunAtLoad</key>
     <true/>
