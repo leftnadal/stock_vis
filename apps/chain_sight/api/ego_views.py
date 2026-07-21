@@ -97,7 +97,14 @@ class EgoGraphView(APIView):
         total_edges = edge_qs.count()
         edge_rows = list(
             edge_qs.order_by("-truth_score").values(
-                "symbol_a", "symbol_b", "relation_type", "truth_score"
+                # ⑳-2: 카드 필드 additive — evidence_count_total·last_observed_at 는
+                # 동일 쿼리에 컬럼만 추가(N+1 없음). 기존 필드 불변.
+                "symbol_a",
+                "symbol_b",
+                "relation_type",
+                "truth_score",
+                "evidence_count_total",
+                "last_observed_at",
             )[:limit]
         )
 
@@ -183,11 +190,15 @@ class EgoGraphView(APIView):
         for e in edge_rows:
             other = e["symbol_b"] if e["symbol_a"] == symbol else e["symbol_a"]
             key = normalize_pair(e["symbol_a"], e["symbol_b"])
+            last_obs = e.get("last_observed_at")
             edges.append({
                 "source": symbol,
                 "target": other,
                 "relation_type": e["relation_type"],
                 "truth_score": round(e["truth_score"] or 0.0, 2),
+                # ⑳-2 카드 필드(additive): 근거 건수·최근 관측일(YYYY-MM-DD).
+                "evidence_count": e.get("evidence_count_total") or 0,
+                "last_mentioned": last_obs.date().isoformat() if last_obs else None,
                 "trend": _trend_summary(traj.get(key, []), trend_window),
             })
 

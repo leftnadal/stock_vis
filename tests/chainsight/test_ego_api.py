@@ -223,3 +223,42 @@ class TestEgoRouteContract:
 
         with pytest.raises(Resolver404):
             resolve(self.OLD_BROKEN_PATH)
+
+
+class TestEgoCardFields:
+    """⑳-2 카드 필드 additive — evidence_count·last_mentioned (기존 필드 불변)."""
+
+    @pytest.fixture
+    def card_data(self, db):
+        for s in ["HUB", "N1", "N2"]:
+            _stock(s)
+        rc1 = _rc("HUB", "N1", "PEER_OF", 80.0)
+        rc1.evidence_count_total = 5
+        rc1.save(update_fields=["evidence_count_total"])
+        _rc("HUB", "N2", "SUPPLIES_TO", 40.0)  # evidence 기본 0
+        return None
+
+    def test_card_fields_present_additive(self, card_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        e0 = d["edges"][0]  # truth desc → N1(80)
+        # 신규 카드 필드
+        assert e0["evidence_count"] == 5
+        assert isinstance(e0["last_mentioned"], str)
+        assert len(e0["last_mentioned"]) == 10 and e0["last_mentioned"][4] == "-"
+        # 기존 필드 불변(회귀 가드)
+        for k in ("source", "target", "relation_type", "truth_score", "trend"):
+            assert k in e0
+
+    def test_evidence_count_defaults_zero(self, card_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        e_n2 = next(e for e in d["edges"] if e["target"] == "N2")
+        assert e_n2["evidence_count"] == 0
+
+    def test_card_fields_no_extra_queries(self, card_data, auth_client):
+        """카드 필드는 동일 쿼리 컬럼 추가 — 쿼리 수 상수급 유지(N+1 없음)."""
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            auth_client.get("/api/v1/chainsight/ego/HUB/")
+        assert len(ctx.captured_queries) <= 8
