@@ -324,3 +324,36 @@ def test_default_scenario_type_new_entry(make_claim):
     c = make_claim(entry_price=Decimal("100"), target_price=Decimal("120"), stop_price=Decimal("90"))
     assert c.scenario_type == Claim.ScenarioType.NEW_ENTRY
     assert c.purchase_price is None and c.purchase_date is None
+
+
+# ── beat 경로 통합 회귀: refresh_monitor → process_monitor_scenarios 배선 ──────
+
+@pytest.mark.django_db
+class TestRefreshBeatIntegration:
+    """refresh_monitor(수동 커맨드 + Celery beat 공유 단일 서비스 함수) 통합 회귀.
+
+    HOLD-P1 이전엔 `process_monitor_scenarios(monitor, as_of_date=as_of)` kwargs 오타로 이 경로가
+    try/except 밖 TypeError로 전건 크래시 → refresh beat의 scenario 처리 무발화(last_price_zone
+    전부 None 근본 원인, common-bugs #62). 기존 테스트는 build_digest에 수동 events만 주입해
+    이 배선을 커버 못 했다. 본 테스트가 kwargs 정합을 못박아 재발을 차단한다.
+    """
+
+    def test_refresh_processes_scenarios_and_records_zone(
+        self, aapl_monitor, make_claim, daily_prices
+    ):
+        from apps.monitor.services.pipeline import refresh_monitor
+
+        daily_prices(30, close_fn=lambda i: 100.0 + i)  # 최신 close ≈ 129 → target 120 초과 = OVERHEATED
+        claim = make_claim(
+            scenario_type=Claim.ScenarioType.NEW_ENTRY,
+            entry_price=Decimal("100"), target_price=Decimal("120"), stop_price=Decimal("90"),
+        )
+        assert claim.last_price_zone is None
+
+        # 버그(as_of_date=) 재발 시 이 호출에서 TypeError → 테스트 실패로 즉시 검출.
+        result = refresh_monitor(aapl_monitor)
+
+        assert "scenario_events" in result  # 배선 정상(예외 없이 이벤트 목록 반환)
+        claim.refresh_from_db()
+        # 전이가 실제로 기록됨 = scenario 처리 경로가 refresh 안에서 작동했다는 증거
+        assert claim.last_price_zone == Claim.PriceZone.OVERHEATED
