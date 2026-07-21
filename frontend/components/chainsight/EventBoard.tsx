@@ -8,6 +8,7 @@ import { getLabelForTheme } from '@/constants/eventThemes';
 import { fetchEvents } from '@/services/chainsightService';
 import type { EventBoardItem } from '@/types/chainsight';
 import { CHANGE_TEXT } from '@/components/common/colorSemantics';
+import { formatMemberTitle } from './eventBoardTitle';
 
 // Dynamic icon rendering using lucide-react
 // We import dynamically to avoid bundling all icons; fallback to Tag on miss
@@ -46,6 +47,8 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
   const base = getLabelForTheme(item.theme);
   const label = item.name ? { ...base, ko: item.name } : base;
   const isPositive = item.avg_return >= 0;
+  // ⑳-2 S4: 구성 티커 대문자 병기를 주표기로, 기존 키워드 라벨은 부제로 강등.
+  const tickerTitle = formatMemberTitle(item.members);
 
   return (
     <button
@@ -54,8 +57,19 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
       aria-label={`${label.ko} 이벤트 보드`}
     >
       <div className="flex items-center gap-2">
-        <ThemeIcon iconName={label.icon} className="text-blue-500" />
-        <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">{label.ko}</span>
+        <ThemeIcon iconName={label.icon} className="text-blue-500 shrink-0" />
+        <div className="min-w-0">
+          {/* 주표기: 구성 티커 병기(있을 때). 없으면 기존 라벨 유지(구버전 응답 호환). */}
+          <span className="block font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">
+            {tickerTitle || label.ko}
+          </span>
+          {/* 부제: 기존 키워드 라벨(티커 병기가 있을 때만 강등 표기) */}
+          {tickerTitle && (
+            <span className="block text-[11px] text-gray-400 dark:text-gray-500 truncate">
+              {label.ko}
+            </span>
+          )}
+        </div>
       </div>
       <div className={`text-lg font-bold ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
         {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%

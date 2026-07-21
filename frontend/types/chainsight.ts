@@ -114,6 +114,8 @@ export interface EventBoardItem {
    */
   name?: string;
   member_count: number;
+  /** ⑳-2 S4: 구성 티커 목록(카드 제목 티커 병기). 구버전 응답엔 없을 수 있어 optional. */
+  members?: string[];
   avg_return: number;
   avg_score: number;
   high_attention_count: number;

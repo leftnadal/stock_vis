@@ -157,6 +157,20 @@ describe('EventBoard', () => {
     expect(mockPush).toHaveBeenCalledWith('/chainsight/events/news-amd-1'); // slug 키
   });
 
+  // ⑳-2 S4: members 있으면 티커 병기를 주표기로, name은 부제로.
+  it('members 티커를 카드 주제목으로 병기한다 (⑳-2 S4)', async () => {
+    const eg = [{
+      theme: 'news-amd-1', name: 'intel devices semiconductor',
+      member_count: 5, members: ['amd', 'intc', 'nvda', 'mu', 'aapl'],
+      avg_return: 0.02, avg_score: 70.0, high_attention_count: 2, low_attention_count: 1,
+    }];
+    vi.mocked(fetchEvents).mockResolvedValue(eg);
+    render(<EventBoard />, { wrapper });
+    const card = await screen.findByRole('button');
+    expect(card).toHaveTextContent('AMD · INTC · NVDA · MU 외 1'); // 티커 병기 주표기
+    expect(card).toHaveTextContent('intel devices semiconductor'); // 부제로 유지
+  });
+
   // A-1 가드: 강등 이동된 관계 그래프가 보드(Chain Sight 홈)에서 도달 가능해야 함(고아 방지).
   it('보드에 /chainsight/market-graph 진입 링크를 노출한다 (A-1)', async () => {
     vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]);
