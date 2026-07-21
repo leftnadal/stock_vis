@@ -465,6 +465,10 @@ export default function MarketGraphCanvas() {
           if (pos !== undefined) {
             node.fx = pos.fx;
             node.fy = pos.fy;
+            // ⑳-2 S3②: x/y 도 radial 좌표로 동기화 → zoomToFit 이 실제 렌더 배치(radial)
+            // 기준으로 맞춤. (이전엔 force 위치 기준으로 fit → radial 스냅 후 뭉침 노출)
+            node.x = pos.fx;
+            node.y = pos.fy;
           }
         }
       }
@@ -473,8 +477,8 @@ export default function MarketGraphCanvas() {
       // §8-1: d3ReheatSimulation 호출 금지 — fx/fy 주입 후 시뮬레이션 재가동 없음
     }
 
-    // 모든 노드가 화면에 보이도록 fit (한 번만)
-    fg.zoomToFit?.(400, 80);
+    // ⑳-2 S3②: 안정화(fx/fy 주입) 후 모든 노드가 보이도록 fit. 여유 padding 확대(80→90).
+    fg.zoomToFit?.(400, 90);
   }, []);
 
   const handleNodeClick = useCallback(
