@@ -84,6 +84,8 @@
 
 **How to apply**: ⑴ 본 결정으로 문법 확정 → ⑵ TH stale 항목에 `blocked(dep=TH-RUNTIME-DEPLOY)` 표기(실존 ID 인용) → ⑶ HEALTH-BLOCKED-BUILD가 health_check에 blocked 인식 + dep 실존 검증 구현(시한 ~07-20 전) → ⑷ [C] HEALTH-STALE-FAIL-PROMOTE는 이 구분 착지 후 **예정대로 승격**.
 
+**[백-어노테이션 2026-07-22 — 승격 후 첫 실측 = 승격 성공]** [C] HEALTH-STALE-FAIL-PROMOTE(07-20 승격) 후 첫 health_check 실측(2026-07-20, read-only 세션) = **13 OK / 2 WARN / 0 FAIL**. WARN 2건 모두 설명됨 — ① TH blocked(`dep=TH-RUNTIME-DEPLOY`, 실존 ID → 설계대로 승격 제외) ② 실행 트리 정합(read-only 세션의 의도적 트리 뒤처짐 HEAD≠origin/main을 신규 검사가 정확히 검출 = 정상 동작, 조치 불요). **오탐 0·부기누락 FAIL 0** — blocked/부기누락 구분 설계가 의도대로 작동. 이후 트리 정합 트리에서 실행 시(2026-07-22, MGMT-PLIST-LAND 직후) 실행 트리 정합 WARN 해소 → **14 OK / 1 WARN / 0 FAIL**(TH blocked만 잔존)로 확인. 승격 성공 판정.
+
 ---
 
 ## [2026-07-16] MGMT-BATCH-10 백-어노테이션 — impression 배관 청소 3건 (사후 추인) [platform] [frontend] [ops]
@@ -4261,3 +4263,21 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **부수 발견 (STEP 0)**: `refresh_monitor`(pipeline.py)가 `process_monitor_scenarios(monitor, as_of_date=as_of)`로 호출하나 함수 시그니처는 `as_of=` — try/except 밖 TypeError로 refresh beat의 scenario 처리 전건 무발화(RECON의 "last_price_zone 전부 None" 근본 원인). HOLD-P1에서 `as_of=as_of`로 교정(common-bugs 등재).
 
 **baseline at decision**: origin/main = `6973bda`(research lab foundation), monitor pytest 193 · monitor vitest 76.
+## [2026-07-22] MGMT-BATCH-13 — P2 커버리지 표면 결정 (2건) [platform] [dashboard]
+
+> 트랙: MGMT-BATCH-13(mgmt, 메타-only). baseline = origin/main `9f2e6c5`(OPS-PLIST-FIX-LAND 직후), prod·코드·마이그레이션 쓰기 0. 근거 재료 = STEP0-P2-DESIGN-PREP 실측(2026-07-20, read-only): 발급 grain 110 / dashboard_eod 노출 8 / 노출율 7.3% / 조인 실패 0. impression 축 데이터는 이미 존재(#43 IssuanceLog 읽기 조인만).
+
+### D-P2-COVERAGE-SURFACE — 발급 vs 노출 분석 표면 = 선택지 C(하이브리드) 채택
+
+**결정**: Phase 2 "발급 vs 노출" 분석 표면 = **선택지 C(하이브리드)** = 대시보드 상단 **커버리지 스트립** + `/dashboard/coverage` **상세 페이지**. 가중합 **C 4.23 > B 3.93 > A 3.65**, 마진 0.30 < 0.40 → 타이브레이커 = **단계 분해 가능성**(C를 C-1/C-2 슬라이스로 쪼갤 수 있음)으로 C 확정.
+- **C-1** = 스트립(발급/노출/율 + 미노출 N건 링크) + 상세 페이지의 **미노출 리스트**. 상세 페이지 내에서 발생하는 노출은 `surface='coverage_detail'`로 **분리 기록**(유기(organic) 지표 오염 격리 — 진단용 표면의 노출이 대시보드 유기 노출율을 부풀리지 않게).
+- **C-2** = 4단 퍼널(발급→표시→노출→클릭) 추이·**표시 층 분해**. 트리거 = impression 데이터 **2~3주 숙성**(상수 튜닝 재료 확보 시점).
+- **퍼널 4단 전제 명기**: "표시(presented)" 층은 **베이크 산출 JSON 읽기 파생**이다(#43 무변경 — 별도 축 신설·집계 아님, bake JSON에서 읽음).
+
+**Why**: A(스트립 단독)는 진단 깊이 부족, B(상세 단독)는 상시 가시성 부족. C는 상시 스트립(발견성) + 온디맨드 상세(진단)를 겸하며, 무엇보다 **C-1(즉시 가치)/C-2(데이터 숙성 후)로 안전 분해**되어 마진 열세(0.30)를 단계화로 상쇄. `coverage_detail` 분리 기록이 유기 지표 순수성을 보존.
+
+### D-P2-COVERAGE-API — 데이터 공급 = read-time 조회 API @ apps/platform
+
+**결정**: 커버리지 데이터 공급 = **read-time 조회 API**, 소속 = **apps/platform**(telemetry 홈), 엔드포인트 = `GET /api/v1/telemetry/coverage` 계열. 가중합 **read-time 4.50 vs bake-time 3.20, 마진 1.30 > 1 → 자동 결정**(타이브레이커 불요). platform → shared **읽기 조인만**(#43 안전 — IssuanceLog/ImpressionLog 무변경).
+
+**Why**: bake-time 사전집계는 impression이 serve-time 갱신(seen_count 누적)이라 신선도 지체 + 스냅샷 스키마 확장 필요. read-time 조회는 신선하고 additive-free이며, telemetry가 이미 platform 홈이라 소속이 자연스럽다. 마진 1.30으로 단계 분해 타이브레이커 없이 자동 확정.
