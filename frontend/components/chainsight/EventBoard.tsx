@@ -59,11 +59,11 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
       <div className="flex items-center gap-2">
         <ThemeIcon iconName={label.icon} className="text-blue-500 shrink-0" />
         <div className="min-w-0">
-          {/* 주표기: 구성 티커 병기(있을 때). 없으면 기존 라벨 유지(구버전 응답 호환). */}
-          <span className="block font-semibold text-sm text-gray-800 dark:text-gray-100 truncate">
+          {/* ⑳-G S4 주표기: 구성 티커 병기(있을 때) — 주표기 강조 강화(bold·base). */}
+          <span className="block font-bold text-base text-gray-900 dark:text-gray-50 truncate">
             {tickerTitle || label.ko}
           </span>
-          {/* 부제: 기존 키워드 라벨(티커 병기가 있을 때만 강등 표기) */}
+          {/* 부제: 기존 키워드 라벨(티커 병기가 있을 때만 강등 표기) — 대비 강화(약화). */}
           {tickerTitle && (
             <span className="block text-[11px] text-gray-400 dark:text-gray-500 truncate">
               {label.ko}
@@ -71,14 +71,16 @@ function EventCard({ item, onClick }: { item: EventBoardItem; onClick: () => voi
           )}
         </div>
       </div>
-      <div className={`text-lg font-bold ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
+      {/* ⑳-G S4: 등락률 = 카드 최상위 강조(크기·굵기 상향). */}
+      <div className={`text-2xl font-extrabold tabular-nums ${isPositive ? CHANGE_TEXT.up : CHANGE_TEXT.down}`}>
         {isPositive ? '▲' : '▼'} {Math.abs(item.avg_return * 100).toFixed(2)}%
       </div>
-      <div className="text-xs text-gray-500 dark:text-gray-400">관심도 {item.avg_score.toFixed(1)}</div>
-      <div className="flex flex-wrap gap-2 text-xs">
-        <span className="text-gray-600 dark:text-gray-300">{item.member_count}개 종목</span>
+      {/* ⑳-G S4: 관심도·종목수 = 보조 정보로 시각 강등(크기·명도 하향). */}
+      <div className="text-[11px] text-gray-400 dark:text-gray-500">관심도 {item.avg_score.toFixed(1)}</div>
+      <div className="flex flex-wrap gap-2 text-[11px]">
+        <span className="text-gray-400 dark:text-gray-500">{item.member_count}개 종목</span>
         <span
-          className="text-blue-500 font-medium cursor-help"
+          className="text-blue-500/80 font-medium cursor-help"
           title={`관심 집중 종목 ${item.high_attention_count}개 — 그룹에서 관심도 70점 이상 (전체 ${item.member_count}개 중)`}
         >
           관심↑ {item.high_attention_count}
