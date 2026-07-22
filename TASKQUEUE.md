@@ -869,3 +869,14 @@
 - 상태: **resolved** (D-REHOME-GRAPH). 휴면 상관관계 엔진(1444줄) 제거. STAGE 1=drop-migration 0002 prod 적용(5테이블 DROP, 0 rows) / STAGE 2=INSTALLED_APPS+코드 git rm.
 - 검증: makemigrations --dry-run=No changes · check 0 · health 10 · arch 7 · 회귀 delta 0(선존 chainsight 5실패 무관). 복구 SHA f892d90.
 - 후속(무해·선택): django_migrations 고아행 정리 · STAGE1 브랜치 삭제 · CLAUDE.md/sub_claude_md 서술 doc 위생.
+
+## CS-EVIDENCE-SEC-COUNT — evidence_count_total SEC 텍스트 미집계 (백로그, 2026-07-22 ⑳-G)
+- 상태: **백로그 등재만**(⑳-G OUT 범위 = 파이프라인 변경). ⑳-F 진단 근거.
+- 관찰: SEC 10-K 관계(SUPPLIES_TO/COMPETES_WITH/DEPENDS_ON/PARTNER_WITH, 272행)는 `evidence_count_total=0`인데 `relation_basis_summary`에 실제 근거(공시 문장) 존재. 카운터가 co-mention/peer/price만 세고 SEC 텍스트 근거를 세지 않음 → "근거 0건" 오해.
+- 잠정 완화(⑳-G): 카드가 공시 관계는 근거건수 미표기 + basis_summary를 근거로 노출(표시층).
+- 근본 수정 후보: SEC 관계 생성 파이프라인에서 basis 문장 수/출처를 evidence_count_total·evidence_sources에 반영. 파이프라인 변경 = 별도 트랙.
+
+## CS-RC-NORMALIZE — RC 연속 점수 정규화 (재정의, 2026-07-22 ⑳-G)
+- 상태: **재정의**(구 "후순위" → "유형 통합 단일 랭킹이 필요할 때만 선행"). ⑳-G D-GRADE-HONEST-UI.
+- 근거: truth_score는 tier 계단값(0/35/60/85), truth/market/SEC-grade가 이질 스케일. 유형 분리 UI(⑳-G)로 "무변별" 인식은 정규화 없이 해소됨 → 정규화는 유형 간 통합 랭킹 요구가 생길 때만 착수.
+- 착수 조건: "공급/경쟁/Peer/시장을 하나의 0~100 신뢰도로 합쳐 정렬"하는 요구가 확정될 때. 그 전엔 불필요.
