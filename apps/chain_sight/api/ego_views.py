@@ -28,6 +28,55 @@ DEFAULT_LIMIT = 50
 MAX_LIMIT = 200
 DEFAULT_TREND_WINDOW = 12
 
+# ⑳-G S1: 정직화 additive 상수 — 카드가 연속 신뢰도인 척하지 않도록
+# 계단 등급/소스/근거를 서버가 명시한다(⑳-F 진단 반영).
+# 표시점수(truth 관계=truth_score, market 관계=market_score) 계단값→등급 코드.
+# STEP 0-4 대응표 ground truth: 계단값 85/60/35 (+ 미검증 0/기타).
+GRADE_CONFIRMED = "confirmed"
+GRADE_LIKELY = "likely"
+GRADE_OBSERVED = "observed"
+GRADE_UNVERIFIED = "unverified"
+
+
+def _grade_by_score(score):
+    """표시점수 계단값 → 등급 코드(FE가 문구로 렌더). 원점수 체계는 불변."""
+    if score is None:
+        return GRADE_UNVERIFIED
+    if score >= 85:
+        return GRADE_CONFIRMED
+    if score >= 60:
+        return GRADE_LIKELY
+    if score >= 35:
+        return GRADE_OBSERVED
+    return GRADE_UNVERIFIED
+
+
+# relation_type → 근거 소스 코드. SEC 공시 계열은 basis_summary가 근거 역할
+# (evidence_count_total은 SEC 텍스트 미집계 → '근거 0건' 오해 방지, ⑳-F Q2-3).
+SOURCE_SEC = "sec_filing"
+SOURCE_MARKET_PEER = "market_peer"
+SOURCE_CO_MENTION = "co_mention"
+SOURCE_PRICE_CORR = "price_corr"
+SOURCE_UNKNOWN = "unknown"
+
+GRADE_SOURCE_BY_TYPE = {
+    "SUPPLIES_TO": SOURCE_SEC,
+    "COMPETES_WITH": SOURCE_SEC,
+    "DEPENDS_ON": SOURCE_SEC,
+    "PARTNER_WITH": SOURCE_SEC,
+    "PEER_OF": SOURCE_MARKET_PEER,
+    "PEER": SOURCE_MARKET_PEER,
+    "CO_MENTIONED": SOURCE_CO_MENTION,
+    "PRICE_CORRELATED": SOURCE_PRICE_CORR,
+}
+
+# 카드 1줄 노출용 서버측 길이 캡(방어). basis_summary 실측 최대 110자이나
+# 파이프라인 변경 시 대비해 상한을 둔다(HALT 조건: 비정형 대용량 방지).
+BASIS_SUMMARY_MAX_LEN = 160
+
+# 표시점수는 관계 카테고리에 따라 다른 컬럼에서 온다(truth vs market).
+TRUTH_CATEGORY = "truth"
+
 
 def _parse_int(value, default, lo, hi):
     try:
@@ -105,6 +154,10 @@ class EgoGraphView(APIView):
                 "truth_score",
                 "evidence_count_total",
                 "last_observed_at",
+                # ⑳-G S1: 등급·소스·근거 additive — 동일 쿼리 컬럼 추가(N+1 없음).
+                "relation_category",
+                "market_score",
+                "relation_basis_summary",
             )[:limit]
         )
 
@@ -191,6 +244,14 @@ class EgoGraphView(APIView):
             other = e["symbol_b"] if e["symbol_a"] == symbol else e["symbol_a"]
             key = normalize_pair(e["symbol_a"], e["symbol_b"])
             last_obs = e.get("last_observed_at")
+            # ⑳-G S1: 표시점수는 카테고리별 컬럼에서(truth vs market). 원값 불변.
+            display_score = (
+                e["truth_score"]
+                if e.get("relation_category") == TRUTH_CATEGORY
+                else e.get("market_score")
+            )
+            basis = (e.get("relation_basis_summary") or "")[:BASIS_SUMMARY_MAX_LEN]
+            last_obs_iso = last_obs.date().isoformat() if last_obs else None
             edges.append({
                 "source": symbol,
                 "target": other,
@@ -198,8 +259,15 @@ class EgoGraphView(APIView):
                 "truth_score": round(e["truth_score"] or 0.0, 2),
                 # ⑳-2 카드 필드(additive): 근거 건수·최근 관측일(YYYY-MM-DD).
                 "evidence_count": e.get("evidence_count_total") or 0,
-                "last_mentioned": last_obs.date().isoformat() if last_obs else None,
+                "last_mentioned": last_obs_iso,  # 기존 필드 유지(호환)
                 "trend": _trend_summary(traj.get(key, []), trend_window),
+                # ⑳-G S1 additive: 정직화 카드용 등급·소스·근거·확인일.
+                "grade": _grade_by_score(display_score),
+                "grade_source": GRADE_SOURCE_BY_TYPE.get(
+                    e["relation_type"], SOURCE_UNKNOWN
+                ),
+                "basis_summary": basis,
+                "last_observed_at": last_obs_iso,  # 신규 명시 필드(FE는 "확인일"로 사용)
             })
 
         payload = {

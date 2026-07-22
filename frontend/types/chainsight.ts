@@ -49,6 +49,8 @@ export type {
   EgoTrend,
   EgoNode,
   EgoEdge,
+  EgoGrade,
+  EgoGradeSource,
   EgoMeta,
   EgoGraphResponse,
   // Centrality Leaderboard (⑳-1)

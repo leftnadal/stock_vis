@@ -366,6 +366,17 @@ export interface EgoNode {
   sector: string;
 }
 
+/** ego 관계 등급 코드 (⑳-G): 표시점수 계단값→등급. 연속 신뢰도 아님. */
+export type EgoGrade = 'confirmed' | 'likely' | 'observed' | 'unverified';
+
+/** ego 관계 근거 소스 코드 (⑳-G). SEC 공시 계열은 basis_summary가 근거 역할. */
+export type EgoGradeSource =
+  | 'sec_filing'
+  | 'market_peer'
+  | 'co_mention'
+  | 'price_corr'
+  | 'unknown';
+
 /** ego API edge */
 export interface EgoEdge {
   source: string;
@@ -377,6 +388,14 @@ export interface EgoEdge {
   /** ⑳-2 카드: 최근 관측일 YYYY-MM-DD (없으면 null) */
   last_mentioned: string | null;
   trend: EgoTrend;
+  /** ⑳-G 정직화: 표시점수(truth/market) 계단값→등급 코드 */
+  grade: EgoGrade;
+  /** ⑳-G 정직화: 근거 소스 코드 */
+  grade_source: EgoGradeSource;
+  /** ⑳-G 정직화: 근거 요약(SEC 문장·"뉴스 동시출현 N회"·"주가 상관 0.83"), 없으면 "" */
+  basis_summary: string;
+  /** ⑳-G 정직화: 확인일 YYYY-MM-DD (last_mentioned 재명명, auto_now 저장시각) */
+  last_observed_at: string | null;
 }
 
 /** ego API meta */
