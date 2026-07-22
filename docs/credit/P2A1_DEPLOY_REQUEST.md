@@ -21,11 +21,12 @@ git push origin monorepo/sess-credit-p2a-1
 ```
 
 ## b. 선행 체크리스트 (배포 착수 전 read-only 확인)
+0. **prod DB 접속성 확인 (`SELECT 1`) — 실패 시 STOP.** 이 세션에서 psql 직접 접속 자체가 타임아웃했으므로, 배포 창에서 **접속성부터** 분리 확인한다(접속 불가면 배포 중단·상신).
 1. **origin/main 현재 HEAD 재확인** — 작성 시 `1cd9460`. 배포 시 반드시 재 `git fetch` (main 계속 이동, 해시 고정 금지).
 2. **chain_sight 멀티헤드 상태 확인 (TH C8 실행 결과 반영):**
    - 07-16 통지 기준 prod chainsight = **3중 멀티헤드**(0016/0017/0018 각 2계보: 메인라인 vs TH계보).
    - 절차: `showmigrations chainsight`로 양 계보 확인 → `makemigrations --merge`(양측 기적용 시 **no-op**) → merge 마이그레이션 생성 후 main 접촉.
-   - ⚠️ **본 세션에서 라이브 확인 실패**(showmigrations·psql 반복 타임아웃, 멀티헤드 그래프 오버헤드 추정) → **배포 시 반드시 재확인**. merge가 no-op 아니면 STOP + 에스컬레이션.
+   - ⚠️ **본 세션에서 라이브 확인 실패**(showmigrations·psql 반복 타임아웃). **원인 미확정**(그래프 오버헤드 또는 접속 경로 — psql은 migration 그래프 미로드이므로 접속 경로 가능성) → **배포 창에서 분리 확인**(b-0 접속성 선행). merge가 no-op 아니면 STOP + 에스컬레이션.
    - ★ **credit_signals 0002는 chainsight와 독립 앱** — 멀티헤드와 무관. 단 배포가 `migrate`(전체 앱)를 돌리면 chainsight 멀티헤드 **선해소 필요**(app-scoped `migrate credit_signals`면 회피).
 3. **no-op merge migration 필요 여부 판정:**
    - `credit_signals`: 0002가 유일 신규, 선형(0001→0002) → **merge 불필요**.
