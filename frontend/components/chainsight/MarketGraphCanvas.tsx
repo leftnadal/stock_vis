@@ -146,6 +146,9 @@ export default function MarketGraphCanvas() {
 
   // § 7: hoveredNode 상태 — 호버 중인 노드 ID
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  // ⑳-G S3: 방사형 시뮬레이션 안정화(fx/fy 주입+zoomToFit) 완료 여부.
+  // 초기 뭉침 프레임을 로딩 오버레이로 가려 노출하지 않는다(추가 force 튜닝 없이 표시층 처치).
+  const [simStabilized, setSimStabilized] = useState(false);
   // § 7: 호버 애니메이션 진행값 (0.0~1.0), 애니메이션 프레임 ref
   const hoverProgressRef = useRef<number>(0);
   const hoverAnimFrameRef = useRef<number | null>(null);
@@ -445,6 +448,11 @@ export default function MarketGraphCanvas() {
     }
   }, [nodes, links]);
 
+  // ⑳-G S3: 재배치 시작(중심/섹터 전환)마다 안정화 플래그 리셋 → 오버레이 재노출.
+  useEffect(() => {
+    setSimStabilized(false);
+  }, [centerSymbol, selectedSector]);
+
   // §FE-PR-3 §8-1: onEngineStop 직후 한 번만 fx/fy 주입 → d3ReheatSimulation 미호출
   // 시뮬레이션이 cooldown 완료 후 발화 → 이 시점에 노드 객체에 fx/fy 직접 주입
   // 이후 graphData가 새 객체로 교체되어도 nodePositionsRef에서 복구 가능
@@ -479,6 +487,8 @@ export default function MarketGraphCanvas() {
 
     // ⑳-2 S3②: 안정화(fx/fy 주입) 후 모든 노드가 보이도록 fit. 여유 padding 확대(80→90).
     fg.zoomToFit?.(400, 90);
+    // ⑳-G S3: 안정화 완료 → 초기 뭉침 가림 오버레이 해제.
+    setSimStabilized(true);
   }, []);
 
   const handleNodeClick = useCallback(
@@ -800,6 +810,19 @@ export default function MarketGraphCanvas() {
     // § 5-1 메인 캔버스 560px (기존 400px → 560px)
     // § 7 cross-fade: opacity transition 200ms (스켈레톤→실제 그래프)
     <div ref={containerRef} className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity duration-200 opacity-100">
+      {/* ⑳-G S3: 방사형(중심 드릴다운) 초기 뭉침 프레임을 안정화 완료 전까지 가림.
+          섹터 뷰(centerSymbol 없음)는 대상 아님. pointer-events-none으로 상호작용 비차단. */}
+      {centerSymbol && !simStabilized && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center bg-gray-50/80 dark:bg-gray-900/80 pointer-events-none transition-opacity duration-200"
+          aria-hidden
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-xs text-gray-400 dark:text-gray-500">관계 배치 정리 중...</p>
+          </div>
+        </div>
+      )}
       <ForceGraph2D
         ref={graphRef}
         graphData={{ nodes, links }}
