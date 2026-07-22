@@ -54,3 +54,4 @@
   ```
   적용 후 재부팅 지속 검증 = `LAUNCHD-WEB-PLIST-LOAD`.
 - `.next.old-*` 격리 백업(구 빌드)은 무해하나 정리 후보 → 사용자 수동 `rm -rf`.
+- **유지보수**: nvm node 버전 변경 시 plist `ProgramArguments` 절대경로 및 `EnvironmentVariables.PATH`를 동반 갱신 필수. (OPS-PLIST-FIX, 2026-07-21 — 로그인셸 `npm`이 `/usr/local/bin/npm`(node v20.11.0)을 잡던 것을 nvm v22.19.0 절대경로 직접 실행으로 교정. 근거 상세 = plist 파일 헤더 주석, 복제 금지·파일 참조.)
