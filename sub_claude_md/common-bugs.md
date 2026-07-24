@@ -983,6 +983,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: 서빙 빌드 판별은 ⑴ 배포 재빌드 후 **HTTP로 `_next/static/<BUILD_ID>/` 추출**(HTTP 응답 가능 시), ⑵ next-server 부모 스크립트/런타임 트리 문서([[reference_daphne_api_tree_sync_gap]], WEB-RUNTIME-RUNBOOK)로 트리 특정, ⑶ 어느 쪽이든 07-21 커밋 반영은 재빌드 필요(#62)이므로 배포 단계 재빌드로 실측 대체. 판별 미완 시 표시층 처치(오버레이)는 빌드 상태 무관하게 안전.
 
+**종결(2026-07-24, ⑳-G 배포 실증)**: ⑳-G FE를 `~/worktrees/sv-web-runtime/frontend`에서 재빌드→`npm run start`→⑳-G 등급 배지·카드 섹션 변경이 :3000 라이브 반영(S5 4종 사용자 확인·`curl 200`). **∴ 서빙 트리 = sv-web-runtime 확정**(원본 공유 리포 아님). 공유 리포 `.next`의 05-24 BUILD_ID(Dwq0DX9…)는 **미서빙 트리의 잔재**로 확정 = ⑳-F Q4 "지도 튜닝 미반영" 판정은 **원본리포 오측정**(부분 오측정→확정). 논리 결론이 실증으로 봉인됨. **측정 경로 대조 교훈**: 서빙 판별의 최종 실측은 "파일 BUILD_ID"가 아니라 **배포 재빌드가 라이브에 반영되는가**(BUILD_ID는 트리 특정 후에만 의미). cf. [[reference_web_runtime_prod_build]].
+
 ## refresh beat의 scenario 처리가 kwargs 오타로 전건 무발화 — try/except 밖 TypeError (#65, 2026-07-21 HOLD-P1 STEP 0) [backend] [monitor]
 
 **증상**: monitor 가격 시나리오의 `last_price_zone`이 생성 후 며칠이 지나도 **전부 None**, 전이 알림도 무발화. RECON은 "refresh beat가 아직 안 돎"으로 오해석하기 쉬움(실제론 매 beat 크래시).
