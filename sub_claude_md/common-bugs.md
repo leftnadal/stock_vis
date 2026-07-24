@@ -832,6 +832,8 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **함정**: 그러나 백필한 과거 뉴스는 즉시 `is_archived=True` 대상(6개월+). **C-L3 그라운딩 쿼리가 `is_archived=False` 필터를 걸면 백필분 전량 누락**. → 그라운딩은 `is_archived` 무관(또는 True 포함)으로 조회해야 함.
 
+**C-L3 구현 실측 반전(2026-07-24, D-CL3-ARCHIVE-BLIND)**: 착수 시 실측 = 과거분(2023-08·2024-05·2025-11)이 **현재 대부분 `is_archived=False`**(archive_old_articles가 아직 미실행). 즉 지금은 필터해도 안 걸리지만, **미래 아카이브 시 벙어리화**가 진짜 위험. → `grounding.fetch_day_candidates`는 is_archived로 **필터하지 않음**(True/False 무관). 회귀 테스트 `test_fetch_includes_archived_articles`가 is_archived=True 행 포함을 명시 단언(미래 아카이브 대비 잠금). 원지시서의 "is_archived=True 포함 필수"는 방향이 "True를 잃지 말라"는 뜻으로, 실제 구현 = **무필터**가 정답.
+
 ## [테스트 함정] FMP autouse 더미키 픽스처 — "키 부재" 시나리오는 본문에서 로컬 override 필수 (⑮ 도입, ⑯ 등재 2026-07-14) [process]
 
 **맥락**: `tests/conftest.py`의 `_ensure_fmp_api_key`(autouse)가 FMP 키 부재(falsy) 시 `settings.FMP_API_KEY` + `os.environ`에 더미(`test_dummy_fmp_key`)를 주입한다(⑮ FMP-TESTDEBT env-독립화). 덕분에 provider 인스턴스화가 CI(키 없는 env)에서도 결정론적으로 성공한다.
