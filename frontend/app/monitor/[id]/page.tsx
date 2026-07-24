@@ -70,6 +70,35 @@ function ClaimRow({
       data-testid="claim-row"
     >
       <div className="min-w-0 flex-1">
+        {/* 보유 관리 모드 칩 + 손익 (HOLD-P1) */}
+        {claim.scenario_type === 'hold' && (
+          <div className="mb-1 flex items-center gap-1.5">
+            <span
+              data-testid="claim-hold-chip"
+              className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+            >
+              {claim.zone_display?.mode_label ?? '보유 관리'}
+            </span>
+            {claim.zone_display?.pnl_pct != null && (
+              <span
+                data-testid="claim-pnl-chip"
+                className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${
+                  claim.zone_display.pnl_pct > 0
+                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                    : claim.zone_display.pnl_pct < 0
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                }`}
+              >
+                {claim.zone_display.pnl_pct >= 0 ? '+' : ''}
+                {claim.zone_display.pnl_pct.toFixed(1)}%
+              </span>
+            )}
+            {claim.purchase_price && (
+              <span className="text-[11px] text-gray-400">매입 {claim.purchase_price}</span>
+            )}
+          </div>
+        )}
         <p className="text-sm text-gray-800 dark:text-gray-100">{claim.assertion}</p>
         {claim.deadline && <p className="mt-0.5 text-xs text-gray-400">마감 {claim.deadline}</p>}
         {!pending && (

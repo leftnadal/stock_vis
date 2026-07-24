@@ -44,12 +44,26 @@ def is_expired_scenario(claim, as_of):
     """매수 시나리오가 '기한만료'인가 — 진입가 있고, 기한 경과했고, 진입 미도달.
 
     (D-TIMING-DECISIONS-5 ④-B) entry_price 없는 구 가설은 대상 아님(EXPIRED은 진입 개념 전제).
+    (D-HOLD-DECISIONS 부속) hold 모드는 진입 개념 없음 → EXPIRED 제안 대상 아님.
     """
     return bool(
-        claim.entry_price is not None
+        claim.scenario_type != Claim.ScenarioType.HOLD
+        and claim.entry_price is not None
         and claim.deadline is not None
         and claim.deadline < as_of
         and claim.entry_reached_at is None
+    )
+
+
+def is_hold_deadline_passed(claim, as_of):
+    """보유 관리 시나리오의 기한 경과 여부 (D-HOLD-DECISIONS 부속).
+
+    hold는 진입 개념이 없어 EXPIRED이 아니라 '만료 알림 1회'만 — 이 판정으로 게이트한다.
+    """
+    return bool(
+        claim.scenario_type == Claim.ScenarioType.HOLD
+        and claim.deadline is not None
+        and claim.deadline < as_of
     )
 
 
@@ -97,22 +111,43 @@ def _build_payload(monitor, score, claim=None):
         "sparkline": score_series(monitor),
     }
 
-    # 가격 시나리오 동결 (entry_price 있을 때만, additive — 기존 키 불변)
-    if claim is not None and claim.entry_price is not None:
+    # 가격 시나리오 동결 (앵커=hold면 매입가, 그 외 진입가 — 있을 때만, additive)
+    if claim is not None:
+        from apps.monitor.services.price_zone import zone_anchor
         from apps.monitor.services.price_zone import resolve_zone
         from apps.monitor.services.scenario import latest_close
 
-        close = latest_close(monitor.target_ref)
-        entry = float(claim.entry_price)
-        pnl_pct = ((close - entry) / entry * 100.0) if (close is not None and entry) else None
-        payload["scenario"] = {
-            "close_price": close,
-            "entry_price": entry,
-            "pnl_pct": round(pnl_pct, 4) if pnl_pct is not None else None,
-            "zone": resolve_zone(
-                close, claim.entry_price, claim.target_price, claim.stop_price
-            ),
-        }
+        anchor = zone_anchor(claim)
+        if anchor is not None:
+            close = latest_close(monitor.target_ref)
+            anchor_f = float(anchor)
+            pnl_pct = (
+                (close - anchor_f) / anchor_f * 100.0
+                if (close is not None and anchor_f)
+                else None
+            )
+            is_hold = claim.scenario_type == Claim.ScenarioType.HOLD
+            scenario_freeze = {
+                "close_price": close,
+                # entry_price 키는 하위호환 유지(앵커 값) — 소비처 계약 불변.
+                "entry_price": anchor_f,
+                "pnl_pct": round(pnl_pct, 4) if pnl_pct is not None else None,
+                "zone": resolve_zone(
+                    close, anchor, claim.target_price, claim.stop_price
+                ),
+                "scenario_type": claim.scenario_type,
+            }
+            if is_hold:
+                # 보유 기간 사후분석 (D-HOLD-DECISIONS 5) — purchase_date 있으면 동결.
+                scenario_freeze["purchase_price"] = anchor_f
+                scenario_freeze["purchase_date"] = (
+                    claim.purchase_date.isoformat() if claim.purchase_date else None
+                )
+                if claim.purchase_date:
+                    scenario_freeze["holding_days"] = (
+                        timezone.localdate() - claim.purchase_date
+                    ).days
+            payload["scenario"] = scenario_freeze
     return payload
 
 

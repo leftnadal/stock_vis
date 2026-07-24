@@ -120,12 +120,35 @@ class Claim(models.Model):
         INDICATOR_NOISE = "indicator_noise", "지표 노이즈"
         LUCK = "luck", "운"
 
+    class ScenarioType(models.TextChoices):
+        """시나리오 모드 (D-HOLD-DECISIONS 6). 저장 축 — 수익/손실/중립은 파생 상태(매입가 vs 종가).
+
+        new_entry(미보유·매수 타이밍) / hold(보유 관리·매입가 앵커) / add_on(추가 매수·평단 백로그).
+        """
+
+        NEW_ENTRY = "new_entry", "신규 매수"
+        HOLD = "hold", "보유 관리"
+        ADD_ON = "add_on", "추가 매수"
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     monitor = models.ForeignKey(
         Monitor, on_delete=models.CASCADE, related_name="claims"
     )
     assertion = models.TextField(help_text="주장")
     deadline = models.DateField(null=True, blank=True, help_text="마감")
+
+    # 시나리오 모드 (D-HOLD-DECISIONS) — 기존 10행 default=new_entry 무해 편입.
+    scenario_type = models.CharField(
+        max_length=16, choices=ScenarioType.choices, default=ScenarioType.NEW_ENTRY,
+        help_text="시나리오 모드(신규 매수/보유 관리/추가 매수)",
+    )
+    # 보유 모드 확정 사실 (D-HOLD-DECISIONS 1·5) — entry_price(제안·미래)와 분리. hold zone 앵커.
+    purchase_price = models.DecimalField(
+        max_digits=15, decimal_places=4, null=True, blank=True, help_text="매입가(확정 사실)"
+    )
+    purchase_date = models.DateField(
+        null=True, blank=True, help_text="매입일(보유 기간 원천)"
+    )
 
     # 매수 시나리오 가격 파라미터 (D-TIMING-DECISIONS-5 ②-A, additive).
     # 전부 null=구 가설(가격 없는 Claim, 그대로 유효). 정밀도=리포 관례 shared stocks OHLC.

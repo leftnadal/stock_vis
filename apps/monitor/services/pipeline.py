@@ -142,7 +142,9 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
     result["newly_close_suggested"] = newly_close_suggested
 
     # 매수 시나리오: 가격 구간 전이 + 기한만료 제안 (TIMING-P1, evaluate 직후 additive)
-    result["scenario_events"] = process_monitor_scenarios(monitor, as_of_date=as_of)
+    # (버그교정 HOLD-P1) process_monitor_scenarios 시그니처는 as_of= — 기존 as_of_date=는 TypeError로
+    # refresh beat의 scenario 처리를 전건 무발화시켜 왔다(last_price_zone 전부 None 근본 원인).
+    result["scenario_events"] = process_monitor_scenarios(monitor, as_of=as_of)
     return result
 
 

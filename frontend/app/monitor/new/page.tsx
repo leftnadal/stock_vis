@@ -15,6 +15,8 @@ import type {
   Coherence,
   EvidenceStrength,
   MonitorScope,
+  ScenarioSuggest,
+  ScenarioType,
   SupportDirection,
 } from '@/types/monitor'
 
@@ -40,6 +42,13 @@ const EVIDENCE_BADGE: Record<EvidenceStrength, { label: string; cls: string }> =
   weak: { label: '약', cls: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400' },
 }
 
+// 시나리오 모드 토글 (HOLD-P1 §5, 4단계 내 3종 — 신규 스텝 아님).
+const SCENARIO_MODES: { key: ScenarioType; label: string; hint: string }[] = [
+  { key: 'new_entry', label: '신규 매수', hint: '아직 안 샀어요 — 언제·얼마에 살까' },
+  { key: 'hold', label: '보유 관리', hint: '이미 보유 중 — 매입가 기준 익절·손절' },
+  { key: 'add_on', label: '추가 매수', hint: '보유 중 추가 진입 타이밍' },
+]
+
 function BuilderContent() {
   const router = useRouter()
   const queryClient = useQueryClient()
@@ -51,18 +60,24 @@ function BuilderContent() {
   const [pickedInit, setPickedInit] = useState(false)
   const [assertion, setAssertion] = useState('')
   const [deadline, setDeadline] = useState('')
+  // 시나리오 모드 (HOLD-P1) — 신규 매수 기본.
+  const [scenarioType, setScenarioType] = useState<ScenarioType>('new_entry')
   // 매수 시나리오 가격 (TIMING-P2) — 문자열 입력, 제출 시 검증.
   const [entryPrice, setEntryPrice] = useState('')
   const [targetPrice, setTargetPrice] = useState('')
   const [stopPrice, setStopPrice] = useState('')
+  // 보유 확정 사실 (HOLD-P1) — hold 모드 전용.
+  const [purchasePrice, setPurchasePrice] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState('')
   const [fairLow, setFairLow] = useState('')
   const [fairHigh, setFairHigh] = useState('')
+  const isHold = scenarioType === 'hold'
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const { data: catalog } = useIndicatorCatalog(scope)
-  // L계열 제안 — 4단계 진입 + 심볼 확정 시에만 조회
-  const { data: suggest } = useScenarioSuggest(targetRef, step === 4)
+  // L계열 제안 — 4단계 진입 + 심볼 확정 + 신규/추가 매수 시에만 조회(hold는 별도 프리필)
+  const { data: suggest } = useScenarioSuggest(targetRef, step === 4 && scenarioType !== 'hold')
 
   // 카탈로그 로드 시 default_selected 지표 1회 프리선택(사용자 미조작 시에만)
   useEffect(() => {
@@ -75,13 +90,24 @@ function BuilderContent() {
     setPickedInit(true)
   }, [catalog, pickedInit])
 
-  // 가격 시나리오 검증(4단계 제출 게이트) — 진입가 입력 시 4필수 + 순서 + 미래 기한.
-  const hasScenario = entryPrice.trim() !== ''
+  // 가격 시나리오 검증(4단계 제출 게이트) — 모드별. 신규/추가=진입 4필수, 보유=매입가+4필수.
+  const hasScenario = isHold ? purchasePrice.trim() !== '' : entryPrice.trim() !== ''
   const scenarioError = useMemo(() => {
     if (!hasScenario) return null
-    const e = Number(entryPrice)
     const t = Number(targetPrice)
     const s = Number(stopPrice)
+    if (isHold) {
+      const p = Number(purchasePrice)
+      if (!targetPrice.trim() || !stopPrice.trim() || !deadline || !purchaseDate)
+        return '매입가·매입일·목표가·손절가·기한을 모두 입력해 주세요.'
+      if ([p, t, s].some((n) => Number.isNaN(n))) return '가격은 숫자여야 해요.'
+      if (!(s < t)) return '손절가 < 목표가 순서여야 해요.'
+      const today0 = new Date()
+      today0.setHours(0, 0, 0, 0)
+      if (new Date(deadline + 'T00:00:00') <= today0) return '기한은 미래 날짜여야 해요.'
+      return null
+    }
+    const e = Number(entryPrice)
     if (!targetPrice.trim() || !stopPrice.trim() || !deadline)
       return '진입가·목표가·손절가·기한을 모두 입력해 주세요.'
     if ([e, t, s].some((n) => Number.isNaN(n))) return '가격은 숫자여야 해요.'
@@ -90,34 +116,83 @@ function BuilderContent() {
     today.setHours(0, 0, 0, 0)
     if (new Date(deadline + 'T00:00:00') <= today) return '기한은 미래 날짜여야 해요.'
     return null
-  }, [hasScenario, entryPrice, targetPrice, stopPrice, deadline])
+  }, [hasScenario, isHold, entryPrice, purchasePrice, purchaseDate, targetPrice, stopPrice, deadline])
 
-  // TIMING-P2.5: 4단계 진입 시 4필드 프리필(빈 칸에만 — 사용자 입력 덮어쓰기 금지)
+  // TIMING-P2.5: 4단계 진입 시 4필드 프리필(빈 칸에만 — 사용자 입력 덮어쓰기 금지). hold는 별도 경로.
   const [prefilled, setPrefilled] = useState(false)
   useEffect(() => {
-    if (step !== 4 || !suggest?.available || prefilled) return
+    if (step !== 4 || isHold || !suggest?.available || prefilled) return
     setPrefilled(true)
     if (suggest.entry_suggest != null) setEntryPrice((v) => v || String(suggest.entry_suggest))
     if (suggest.target_suggest != null) setTargetPrice((v) => v || String(suggest.target_suggest))
     if (suggest.stop_suggest != null) setStopPrice((v) => v || String(suggest.stop_suggest))
     if (suggest.deadline_suggest) setDeadline((v) => v || suggest.deadline_suggest!)
-  }, [step, suggest, prefilled])
+  }, [step, isHold, suggest, prefilled])
 
-  // 정합 힌트(인터랙티브 조정) — 사용자가 마지막 수정한 필드 기준 나머지 재제안(자동 개서 금지)
+  // HOLD-P1: 매입일 기본 오늘(마운트 후 — 하이드레이션 불일치 방지, 버그 #24). 빈 칸에만.
+  useEffect(() => {
+    if (isHold && !purchaseDate) {
+      setPurchaseDate(new Date().toISOString().slice(0, 10))
+    }
+  }, [isHold, purchaseDate])
+
+  // HOLD-P1: 보유 프리필 — 매입가 확정 시 목표/손절/기한 제안(mode=hold). 매입가는 절대 제안 안 함.
+  const [holdSuggest, setHoldSuggest] = useState<ScenarioSuggest | null>(null)
+  const [holdPrefilled, setHoldPrefilled] = useState(false)
+  useEffect(() => {
+    if (step !== 4 || !isHold || !targetRef || !purchasePrice.trim()) {
+      setHoldSuggest(null)
+      return
+    }
+    const id = setTimeout(async () => {
+      try {
+        const r = await monitorService.scenarioSuggest(targetRef, {
+          mode: 'hold',
+          purchase_price: purchasePrice,
+        })
+        setHoldSuggest(r)
+        if (r.available && !holdPrefilled) {
+          setHoldPrefilled(true)
+          if (r.target_suggest != null) setTargetPrice((v) => v || String(r.target_suggest))
+          if (r.stop_suggest != null) setStopPrice((v) => v || String(r.stop_suggest))
+          if (r.deadline_suggest) setDeadline((v) => v || r.deadline_suggest!)
+        }
+      } catch {
+        setHoldSuggest(null)
+      }
+    }, 500) // 디바운스
+    return () => clearTimeout(id)
+  }, [step, isHold, targetRef, purchasePrice, holdPrefilled])
+
+  // hold 손익 상태(수익/손실/중립 — |pnl|<1% 중립). 현재가 = holdSuggest.close.
+  const holdPnl = useMemo(() => {
+    const p = Number(purchasePrice)
+    const close = holdSuggest?.close
+    if (!Number.isFinite(p) || p <= 0 || close == null) return null
+    return (close / p - 1) * 100
+  }, [purchasePrice, holdSuggest])
+
+  // 정합 힌트(인터랙티브 조정) — 사용자가 마지막 수정한 필드 기준 나머지 재제안(자동 개서 금지).
+  // 앵커 = 신규/추가는 진입가, 보유는 현재가(close). P2.5 규칙 승계(hold 동일 작동).
+  const coherenceAnchor = isHold
+    ? holdSuggest?.close != null
+      ? String(holdSuggest.close)
+      : ''
+    : entryPrice
   const [lastEdited, setLastEdited] = useState<'target' | 'deadline' | null>(null)
   const [hint, setHint] = useState<Coherence | null>(null)
   useEffect(() => {
-    if (step !== 4 || !targetRef || !entryPrice.trim() || !lastEdited) {
+    if (step !== 4 || !targetRef || !coherenceAnchor.trim() || !lastEdited) {
       setHint(null)
       return
     }
     const params =
       lastEdited === 'target'
         ? targetPrice.trim()
-          ? { entry: entryPrice, target: targetPrice, stop: stopPrice || undefined }
+          ? { entry: coherenceAnchor, target: targetPrice, stop: stopPrice || undefined }
           : null
         : deadline
-          ? { entry: entryPrice, deadline, stop: stopPrice || undefined }
+          ? { entry: coherenceAnchor, deadline, stop: stopPrice || undefined }
           : null
     if (!params) {
       setHint(null)
@@ -132,18 +207,18 @@ function BuilderContent() {
       }
     }, 500) // 디바운스: 입력 중 호출 억제
     return () => clearTimeout(id)
-  }, [step, targetRef, entryPrice, targetPrice, deadline, stopPrice, lastEdited])
+  }, [step, targetRef, coherenceAnchor, targetPrice, deadline, stopPrice, lastEdited])
 
-  // 손익비 R:R (로컬 즉시 계산) = (목표−진입)/(진입−손절)
+  // 손익비 R:R (로컬 즉시 계산). 신규/추가=(목표−진입)/(진입−손절), 보유=(목표−현재가)/(현재가−손절).
   const rr = useMemo(() => {
-    const e = Number(entryPrice)
+    const anchor = Number(coherenceAnchor)
     const t = Number(targetPrice)
     const s = Number(stopPrice)
-    if ([e, t, s].some((n) => Number.isNaN(n))) return null
-    const risk = e - s
+    if ([anchor, t, s].some((n) => Number.isNaN(n))) return null
+    const risk = anchor - s
     if (risk <= 0) return null
-    return (t - e) / risk
-  }, [entryPrice, targetPrice, stopPrice])
+    return (t - anchor) / risk
+  }, [coherenceAnchor, targetPrice, stopPrice])
 
   function applySuggest() {
     if (!suggest?.available) return
@@ -159,7 +234,8 @@ function BuilderContent() {
     name.trim() !== '' ||
     Object.keys(picked).length > 0 ||
     assertion.trim() !== '' ||
-    entryPrice.trim() !== ''
+    entryPrice.trim() !== '' ||
+    purchasePrice.trim() !== ''
   useEffect(() => {
     if (!dirty) return
     const handler = (e: BeforeUnloadEvent) => {
@@ -213,20 +289,26 @@ function BuilderContent() {
           source_key: entry.key,
         })
       }
-      // 3) Claim 선택 부착 (매수 시나리오 가격 또는 근거 메모가 있으면)
+      // 3) Claim 선택 부착 (시나리오 가격 또는 근거 메모가 있으면)
       // assertion은 BE 필수(non-blank) — 메모 없는 시나리오는 가격으로 자동 합성.
       const memo = assertion.trim()
       if (hasScenario || memo) {
         const finalAssertion =
           memo ||
-          `매수 시나리오 · 진입 ${entryPrice} / 목표 ${targetPrice} / 손절 ${stopPrice}`
+          (isHold
+            ? `보유 관리 · 매입 ${purchasePrice} / 목표 ${targetPrice} / 손절 ${stopPrice}`
+            : `매수 시나리오 · 진입 ${entryPrice} / 목표 ${targetPrice} / 손절 ${stopPrice}`)
         await monitorService.createClaim({
           monitor: monitor.id,
           assertion: finalAssertion,
           deadline: deadline || null,
-          entry_price: hasScenario ? entryPrice : null,
+          scenario_type: scenarioType,
+          // 신규/추가 매수: 진입가 기준. 보유: 매입가 기준(진입가 null).
+          entry_price: !isHold && hasScenario ? entryPrice : null,
           target_price: hasScenario ? targetPrice : null,
           stop_price: hasScenario ? stopPrice : null,
+          purchase_price: isHold && hasScenario ? purchasePrice : null,
+          purchase_date: isHold && hasScenario ? purchaseDate || null : null,
           fair_value_low: fairLow.trim() || null,
           fair_value_high: fairHigh.trim() || null,
         })
@@ -355,14 +437,203 @@ function BuilderContent() {
 
         {step === 4 && (
           <section data-testid="step-claim" className="flex flex-col gap-3">
-            <h2 className="font-medium">매수 시나리오를 작성할까요?</h2>
+            <h2 className="font-medium">시나리오를 작성할까요?</h2>
+
+            {/* 모드 토글 3종 (HOLD-P1 §5) — 전환 시 필드셋 교체 */}
+            <div className="grid grid-cols-3 gap-1.5" data-testid="scenario-mode-toggle">
+              {SCENARIO_MODES.map((m) => (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setScenarioType(m.key)}
+                  data-testid={`scenario-mode-${m.key}`}
+                  aria-pressed={scenarioType === m.key}
+                  className={`rounded-lg border px-2 py-1.5 text-xs font-medium transition ${
+                    scenarioType === m.key
+                      ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                      : 'border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
             <p className="text-sm text-gray-500">
-              진입·목표·손절가와 기한을 정하면 <b>매수 시나리오</b>가 됩니다. 건너뛰면 상시
-              모니터로 둬요.
+              {SCENARIO_MODES.find((m) => m.key === scenarioType)?.hint}
+              {'. '}건너뛰면 상시 모니터로 둬요.
             </p>
 
-            {/* L계열 제안 배너 (TIMING-P2 §3) */}
-            {suggest?.available && (
+            {/* ── 보유 관리 필드셋 (HOLD-P1) ── */}
+            {isHold && (
+              <div data-testid="hold-fieldset" className="flex flex-col gap-3">
+                {/* 상태 배지 (수익/손실/중립) */}
+                {holdPnl != null && (
+                  <span
+                    data-testid="hold-pnl-badge"
+                    className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      Math.abs(holdPnl) < 1
+                        ? 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'
+                        : holdPnl > 0
+                          ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                          : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                    }`}
+                  >
+                    {Math.abs(holdPnl) < 1 ? '중립' : holdPnl > 0 ? '수익' : '손실'}{' '}
+                    {holdPnl >= 0 ? '+' : ''}
+                    {holdPnl.toFixed(1)}%
+                  </span>
+                )}
+
+                {/* 매입가·매입일 (확정 사실 — 제안 없음) */}
+                <div className="grid grid-cols-2 gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 dark:border-amber-800/60 dark:bg-amber-900/10">
+                  <label className="text-xs text-amber-800 dark:text-amber-300">
+                    매입가
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={purchasePrice}
+                      onChange={(e) => setPurchasePrice(e.target.value)}
+                      data-testid="hold-purchase-price"
+                      placeholder="매입 단가"
+                      className="mt-1 w-full rounded-lg border border-amber-300 px-2 py-1.5 text-sm text-gray-900 dark:border-amber-700 dark:bg-gray-900 dark:text-gray-100"
+                    />
+                  </label>
+                  <label className="text-xs text-amber-800 dark:text-amber-300">
+                    매입일
+                    <input
+                      type="date"
+                      value={purchaseDate}
+                      onChange={(e) => setPurchaseDate(e.target.value)}
+                      data-testid="hold-purchase-date"
+                      className="mt-1 w-full rounded-lg border border-amber-300 px-2 py-1.5 text-sm text-gray-900 dark:border-amber-700 dark:bg-gray-900 dark:text-gray-100"
+                    />
+                  </label>
+                  <span className="col-span-2 text-[10px] text-amber-700 dark:text-amber-400">
+                    확정 사실 — 제안 없음
+                  </span>
+                </div>
+
+                {/* 목표·손절 (제안 프리필 + 출처 캡션) */}
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="text-xs text-gray-500">
+                    목표가
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={targetPrice}
+                      onChange={(e) => {
+                        setTargetPrice(e.target.value)
+                        setLastEdited('target')
+                      }}
+                      data-testid="hold-target-price"
+                      placeholder="익절"
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    {holdSuggest?.captions?.target && (
+                      <span className="mt-0.5 block text-[10px] text-gray-400">
+                        {holdSuggest.captions.target}
+                      </span>
+                    )}
+                  </label>
+                  <label className="text-xs text-gray-500">
+                    손절가
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      value={stopPrice}
+                      onChange={(e) => setStopPrice(e.target.value)}
+                      data-testid="hold-stop-price"
+                      placeholder="손절"
+                      className="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
+                    />
+                    {holdSuggest?.captions?.stop && (
+                      <span className="mt-0.5 block text-[10px] text-gray-400" data-testid="hold-stop-caption">
+                        {holdSuggest.captions.stop}
+                      </span>
+                    )}
+                  </label>
+                </div>
+
+                {/* 기한 */}
+                <label className="text-sm text-gray-500">
+                  기한
+                  <input
+                    type="date"
+                    value={deadline}
+                    onChange={(e) => {
+                      setDeadline(e.target.value)
+                      setLastEdited('deadline')
+                    }}
+                    data-testid="hold-deadline"
+                    className="ml-2 rounded-lg border border-gray-300 px-2 py-1 dark:border-gray-700 dark:bg-gray-900"
+                  />
+                  {holdSuggest?.captions?.deadline && (
+                    <span className="mt-0.5 block text-[10px] text-gray-400">
+                      {holdSuggest.captions.deadline}
+                    </span>
+                  )}
+                </label>
+
+                {/* 정합 힌트(목표↔기한) — P2.5 재사용, hold 동일 작동 */}
+                {lastEdited === 'deadline' && hint?.coherent_target && (
+                  <div
+                    data-testid="hold-target-hint"
+                    className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  >
+                    <span>{hint.basis}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetPrice(hint.coherent_target!)
+                        setLastEdited(null)
+                      }}
+                      className="flex-shrink-0 rounded bg-gray-700 px-2 py-0.5 font-medium text-white hover:bg-gray-800"
+                    >
+                      적용
+                    </button>
+                  </div>
+                )}
+                {lastEdited === 'target' && hint?.coherent_deadline && (
+                  <div
+                    data-testid="hold-deadline-hint"
+                    className="flex items-center justify-between gap-2 rounded-md bg-gray-50 px-2.5 py-1.5 text-xs text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                  >
+                    <span>{hint.basis}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDeadline(hint.coherent_deadline!)
+                        setLastEdited(null)
+                      }}
+                      className="flex-shrink-0 rounded bg-gray-700 px-2 py-0.5 font-medium text-white hover:bg-gray-800"
+                    >
+                      재제안 적용
+                    </button>
+                  </div>
+                )}
+
+                {/* 손익비 R:R (hold = (목표−현재가)/(현재가−손절)) */}
+                {rr != null && (
+                  <p data-testid="hold-rr" className="text-xs text-gray-500">
+                    손익비 {rr.toFixed(1)} : 1
+                    <span className="ml-1 text-[10px] text-gray-400">· 현재가 기준 · 예측 아님</span>
+                  </p>
+                )}
+
+                {/* honest 문구 2건 (본전 회복 N주 · ATR 손절 이유) */}
+                {holdSuggest?.captions?.breakeven && (
+                  <p data-testid="hold-breakeven" className="rounded-md bg-blue-50 px-2.5 py-1.5 text-[11px] text-blue-700 dark:bg-blue-900/20 dark:text-blue-300">
+                    {holdSuggest.captions.breakeven}
+                  </p>
+                )}
+                <p className="text-[11px] text-gray-400">
+                  매입가는 확정 사실이라 제안하지 않아요. 목표·손절·기한만 변동성 기준으로 제안합니다.
+                </p>
+              </div>
+            )}
+
+            {/* L계열 제안 배너 (TIMING-P2 §3) — 신규/추가 매수 */}
+            {!isHold && suggest?.available && (
               <div
                 data-testid="scenario-suggest-banner"
                 className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm dark:border-blue-800 dark:bg-blue-900/25"
@@ -382,6 +653,9 @@ function BuilderContent() {
               </div>
             )}
 
+            {/* ── 신규/추가 매수 필드셋 (진입 기준) ── */}
+            {!isHold && (
+            <div data-testid="entry-fieldset" className="flex flex-col gap-3">
             {/* 가격 3필드 + 출처 캡션 (TIMING-P2.5 프리필) */}
             <div className="grid grid-cols-3 gap-2">
               <label className="text-xs text-gray-500">
@@ -499,6 +773,8 @@ function BuilderContent() {
                 손익비 {rr.toFixed(1)} : 1
                 <span className="ml-1 text-[10px] text-gray-400">· 변동성 기준 정합 · 예측 아님</span>
               </p>
+            )}
+            </div>
             )}
 
             {/* 적정가 밴드 (선택) */}

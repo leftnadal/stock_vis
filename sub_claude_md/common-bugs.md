@@ -980,3 +980,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: :3000 next-server의 실제 cwd 실측 도구(`lsof -p`, `psutil.Process().cwd()`, `curl`, `urllib`)가 이 환경(sandbox)에서 전부 hang. grep/find/파이프 계열도 동일 hang. worktree엔 `.next` 부재라 어느 트리가 서빙하는지 파일만으론 불확정.
 
 **해결**: 서빙 빌드 판별은 ⑴ 배포 재빌드 후 **HTTP로 `_next/static/<BUILD_ID>/` 추출**(HTTP 응답 가능 시), ⑵ next-server 부모 스크립트/런타임 트리 문서([[reference_daphne_api_tree_sync_gap]], WEB-RUNTIME-RUNBOOK)로 트리 특정, ⑶ 어느 쪽이든 07-21 커밋 반영은 재빌드 필요(#62)이므로 배포 단계 재빌드로 실측 대체. 판별 미완 시 표시층 처치(오버레이)는 빌드 상태 무관하게 안전.
+
+## refresh beat의 scenario 처리가 kwargs 오타로 전건 무발화 — try/except 밖 TypeError (#65, 2026-07-21 HOLD-P1 STEP 0) [backend] [monitor]
+
+**증상**: monitor 가격 시나리오의 `last_price_zone`이 생성 후 며칠이 지나도 **전부 None**, 전이 알림도 무발화. RECON은 "refresh beat가 아직 안 돎"으로 오해석하기 쉬움(실제론 매 beat 크래시).
+
+**원인**: `pipeline.py::refresh_monitor`가 `process_monitor_scenarios(monitor, as_of_date=as_of)`로 호출하나 함수 시그니처는 `process_monitor_scenarios(monitor, as_of=None)` — 키워드 인자명 불일치로 **`TypeError: unexpected keyword argument 'as_of_date'`**. 이 호출은 evaluate 격리용 try/except **밖**에 있어(그 try/except는 evaluate_monitor 전용) 예외가 refresh_monitor 전체를 중단시킴 → scenario_events 미생성, zone 저장 영영 안 됨. 단위테스트는 digest를 수동 events로만 검증해 이 경로를 커버 안 함(미검출 잠복).
+
+**해결**: 호출부를 `process_monitor_scenarios(monitor, as_of=as_of)`로 교정. **교훈**: ⑴ 파이프라인 통합 지점의 kwargs는 시그니처 대조 필수(테스트가 서비스 함수를 직접 호출·수동 events만 쓰면 통합 경로가 잠복). ⑵ "관측값이 계속 None" = "아직 안 돎"이 아니라 "매번 조용히 실패" 가능성을 먼저 의심. [[feedback_ui_slice_live_screenshot]]와 동류 — green ≠ 통합 경로 작동.
