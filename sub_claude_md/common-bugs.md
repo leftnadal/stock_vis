@@ -988,3 +988,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: `pipeline.py::refresh_monitor`가 `process_monitor_scenarios(monitor, as_of_date=as_of)`로 호출하나 함수 시그니처는 `process_monitor_scenarios(monitor, as_of=None)` — 키워드 인자명 불일치로 **`TypeError: unexpected keyword argument 'as_of_date'`**. 이 호출은 evaluate 격리용 try/except **밖**에 있어(그 try/except는 evaluate_monitor 전용) 예외가 refresh_monitor 전체를 중단시킴 → scenario_events 미생성, zone 저장 영영 안 됨. 단위테스트는 digest를 수동 events로만 검증해 이 경로를 커버 안 함(미검출 잠복).
 
 **해결**: 호출부를 `process_monitor_scenarios(monitor, as_of=as_of)`로 교정. **교훈**: ⑴ 파이프라인 통합 지점의 kwargs는 시그니처 대조 필수(테스트가 서비스 함수를 직접 호출·수동 events만 쓰면 통합 경로가 잠복). ⑵ "관측값이 계속 None" = "아직 안 돎"이 아니라 "매번 조용히 실패" 가능성을 먼저 의심. [[feedback_ui_slice_live_screenshot]]와 동류 — green ≠ 통합 경로 작동.
+
+## 배포 실물은 서빙/공유 트리 디스크가 아니라 `git show origin/main:<path>`로 추출 — 세션 트리 산출물은 뒤처질 수 있다 (#66, 2026-07-24 LAUNCHD-WEB-PLIST-LOAD) [ops] [deploy]
+
+**증상**: plist load 집행 시 서빙 세션트리(`Desktop/stock_vis` @ `sess-hold-p1`, base `6973bda`)의 디스크 plist `docs/operations/com.stockvis.web-frontend.plist`가 **교정 전 초안**(`/bin/bash -lc … npm run start`)이었다. 그대로 `cp ~/Library/LaunchAgents`로 설치했다면 로그인셸 npm=`/usr/local/bin/npm`(node v20.11.0) 오해석 버그(OPS-PLIST-FIX가 고친 바로 그 결함)가 재현될 뻔했다.
+
+**원인**: 배포 대상 파일은 origin/main `9f2e6c5`(OPS-PLIST-FIX `56251a9`)에서 교정됐으나, 집행 세션이 그 머지보다 **이전 base**의 브랜치(`sess-hold-p1` base `6973bda`)에 체크아웃돼 있어 디스크 산출물이 구본이었다. 공유/세션 트리의 디스크 상태는 "현재 체크아웃된 브랜치"에 종속 = origin/main 최신과 무관하게 뒤처질 수 있다.
+
+**해결**: **배포 실물(plist·설정 파일·스크립트 등)은 디스크 cp가 아니라 `git show origin/main:<path>`로 추출**해 배치한다. 근본: "무엇이 배포돼 있는가(origin/main)"와 "무엇이 현 트리에 있는가(체크아웃 브랜치)"를 분리 사고. cf. #64(서빙 빌드 판별=HTTP BUILD_ID)·[[reference_web_runtime_prod_build]]와 동류 — 트리 파일만으론 배포 실체 불확정. 실측: 배치 전 `plutil -lint` + `PlistBuddy -c "Print :ProgramArguments"`로 교정본 확인 필수.

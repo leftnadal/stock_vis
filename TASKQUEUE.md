@@ -5,6 +5,18 @@
 
 ---
 
+## P2 커버리지 표면 (P2-COVERAGE / 2026-07-22)
+
+> 근거 DECISIONS `[2026-07-22] MGMT-BATCH-13` (D-P2-COVERAGE-SURFACE=선택지 C 하이브리드 · D-P2-COVERAGE-API=read-time @ apps/platform). 재료 = STEP0-P2-DESIGN-PREP 실측(발급 110 / 노출 8 / 율 7.3%). 구획 분리로 C-1을 API/FE 순차 발급.
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| P2-COVERAGE-C1-API | (platform) 커버리지 조회 API build — `GET /api/v1/telemetry/coverage` 계열. platform→shared 읽기 조인만(#43 안전, IssuanceLog/ImpressionLog 무변경). 발급 grain 대비 dashboard_eod 노출 매칭 = 발급 N/노출 M/율% + 미노출 리스트. | @backend (platform 구획) | 없음 | 🆕 등재(착수가능) |
+| P2-COVERAGE-C1-FE | (dashboard) 상단 커버리지 스트립(발급/노출/율 + 미노출 N건 링크) + `/dashboard/coverage` 상세의 미노출 리스트. 상세 페이지 내 노출은 `surface='coverage_detail'`로 분리 기록(유기 지표 오염 격리). | @frontend (dashboard 구획) | P2-COVERAGE-C1-API | 🆕 등재(dep 대기) |
+| P2-COVERAGE-C2 | 4단 퍼널(발급→표시→노출→클릭) 추이·표시 층 분해. "표시" 층 = 베이크 산출 JSON 읽기 파생(#43 무변경). | 상세(dashboard/platform) | **트리거 = impression 데이터 2~3주 숙성**(상수 튜닝 재료 확보) | 💤 보류(숙성 게이트) |
+
+---
+
 ## OPS-WORKTREE-ISOLATION 트랙 (2026-07-20)
 
 > 정리목록 ⓒ. Opt-2 단계형. 지시서 `docs/instructions/ops_worktree_isolation_impl_directive.md`.
@@ -655,7 +667,7 @@
 | FE-DEAD-8000-SWEEP | **:8000 참조 일소** — next.config stale rewrite 정정 + authAxios `http://localhost:8000/api/v1` 하드코딩 폴백 제거(ops/env·FE 위생). 앱 API 호출은 절대 base 규약(#55) 단일 준수 | @frontend + @infra | — | ✅ **완료·착지 (2026-07-16, `9f03a30` → merge `af1e37a`)** — `grep ':8000'` 0·fail-fast 단일소스 `lib/api/config.ts`·rewrite 사멸·tsc0·vitest 707·build 성공. **⚠ 착지만 — prod 반영은 FE-8000-PROD-APPLY(별건, #53 착지≠반영)** |
 | FE-8000-PROD-APPLY | sv-web-runtime을 `af1e37a`로 갱신(`worker_sync`/re-detach) + **재빌드**(NEXT_PUBLIC_API_URL 빌드 인라인 → 재빌드 필수) + **:3000 재기동**. GATE TRUE(.env.local 키 존재) 확인 완료(MERGE-CLEANUP-2). :3000 서빙 부활 + impression 수집 재개 + **WEB-RUNTIME-RUNBOOK 초안 채록 겸함** | @infra | FE-DEAD-8000-SWEEP 착지(완료) | ✅ **완료 (2026-07-18 집행)** — 트리 `bea1de0`(⊇af1e37a)·`next start` prod 전환·:3000 200·홈+리더보드 실렌더·절대 base(:18765) 확인·**impression 재개 8행**(dashboard_eod 4+news_chip 4). 절차 = WEB-RUNTIME-RUNBOOK 전사. DECISIONS 백-어노테이션(MGMT-BATCH-12) |
 | WEB-RUNTIME-RUNBOOK | :3000 서빙 실체(sv-web-runtime) 성문화 — dev/prod 구분·기동/재빌드·번들 검증 절차 | @infra | FE-8000-PROD-APPLY 집행 | ✅ **완료 (2026-07-20, MGMT-BATCH-12)** — `docs/operations/web-runtime-runbook.md` 성문화(서빙 실체 정정: launchd 무감독·`com.stockvis.web`=daphne 별개 / 6단계 절차 / 검증 3종 / 리스크 3). **종전 "launchd 입양 고아" 서술은 오인 → 정정 반영** |
-| LAUNCHD-WEB-PLIST-LOAD | `:3000` prod 서버 **launchd 정식 등록**(재부팅 지속) — plist 초안 `docs/operations/com.stockvis.web-frontend.plist` 검토 → `~/Library/LaunchAgents` 복사 + `launchctl bootstrap` **사용자 수동** → 재부팅 후 :3000 자동 부활 검증. ⚠ 적용 전 npm/node 절대경로 실측 교정(초안값) | @사용자수동 | plist 초안 검토(MGMT-BATCH-12 완료) | 🆕 **등재 (사용자 수동, MGMT-BATCH-12)** — 초안 위치=`docs/operations/com.stockvis.web-frontend.plist` |
+| LAUNCHD-WEB-PLIST-LOAD | `:3000` prod 서버 **launchd 정식 등록**(재부팅 지속) — plist 초안 `docs/operations/com.stockvis.web-frontend.plist` 검토 → `~/Library/LaunchAgents` 복사 + `launchctl bootstrap` **사용자 수동** → 재부팅 후 :3000 자동 부활 검증. ⚠ 적용 전 npm/node 절대경로 실측 교정(초안값) | @사용자수동 | plist 초안 검토(MGMT-BATCH-12 완료) | ✅ **완료 (2026-07-24 집행, Gate4 사용자 명시 승인 절차)** — launchd job `com.stockvis.web-frontend` bootstrap 성공. 검증 3종 PASS: launchctl list `12408 exit0`·lsof :3000 node LISTEN·curl HTTP 200. ⚠ 서빙트리(`sess-hold-p1` base `6973bda`) 디스크 plist=교정 전 초안 → 설치 차단, `git show origin/main:…plist`(nvm 절대경로 교정본) 우회 배치. KeepAlive+RunAtLoad 승격 = orphan 무respawn 근본 해소·impression 재개. 재부팅(집행 7h 전) 선행으로 **다운타임 0**(#66) |
 | WEB-NEXTOLD-CLEANUP | `.next.old-1784176095` 격리 백업(구 빌드, `sv-web-runtime/frontend`) 정리 — 무해하나 디스크 점유. 사용자 수동 `rm -rf` | @사용자수동 (저우선) | — | 💤 **등재 (저우선·수동, MGMT-BATCH-12)** |
 | IMPR-OBJREF-TRUNC | (저우선) `object_ref` 128자 절단 충돌 부채 — 실데이터는 finnhub 단축 id URL이라 위험 낮음 관측(2026-07-16). 뉴스 식별자 재설계 시 함께 처리 | @backend (저우선) | 뉴스 식별자 재설계 시 | 💤 등재 (저우선·수용, MGMT-P2-IMPR-CLOSE) |
 | HEALTH-STALE-FAIL-PROMOTE | **[C] health_check stale pending WARN→FAIL 승격** — `check_stale_pending_backannotation`(MGMT-HARDEN `4ce46ed`)을 1주 클린 관찰 후 FAIL로 격상. 트리거 = **~2026-07-20**(1주 클린) | mgmt(health_check) | ~2026-07-20 (1주 클린 관찰 후) · **HEALTH-BLOCKED-BUILD 착지 선행**(D-HEALTH-BLOCKED-DISTINCTION) | 🕓 대기(트리거 게이트) |
@@ -786,6 +798,7 @@
 | LLM-GUARD-3 | 외부-LLM-직접호출 **가드 신설**(BOUNDARY-LLM 슬라이스③ 연동 — 코어 land 후 회귀방지). 본 슬라이스(LLMFILL) 스코프 분리분. 트리거: **다음 shared/llm 접점**(BOUNDARY-LLM 트리거 (b) 누적 또는 burn-down 착수) | @backend (BOUNDARY-LLM 연동) | 다음 shared/llm 접점 | 💤 등재(트리거 게이트) |
 | LLMFILL-OBSERVE | LLMFILL-BUILD land 후 첫 무인 bake 관측. **✅ 종결·판정 (a) 전건 성공**(07-09 bake filled 10/10·실패 0·$0.001001·6832tok, 파일↔스냅샷 일치, 7 core 무결, IssuanceLog 10/10 ok, 홈 렌더·콘솔0, fundamental=null 정직 실증). D-LLMFILL 추기 | 관측(dashboard 디렉션) | 완료 2026-07-10 | ✅ done |
 | LLMFILL-FUND-MATERIAL | **재료 확장으로 `fundamental` 채움률 개선(수리 아님)**. 관측(MGMT-BATCH-9): `fundamental=null`은 **영구 결손이 아니라 조건부** — 07-09 채움 **0/10**, 07-10 채움 **1/10**. 날조 억제 설계대로 작동(재료 부족 시 채우지 않음 = 정직 null, D-LLMFILL "fundamental=null 정직" 승계). 개선 경로 = **투입 재료(펀더멘털 컨텍스트) 확장**이지 프롬프트/파서 수리가 아님(현행 동작은 결함 아님). 착수 시 STEP 0 = null 사유 실측(재료 부재 vs 게이트 과보수) | @backend (shared/stocks 재료) | 재료 확장 우선순위 결정 시 | 💤 등재(재료 게이트) |
+| LLMFILL-PROVENANCE | `pipeline_meta.llm_fill`에 **provider·fallback_from 출처 기록** 정식화(어느 LLM/폴백 경로로 채웠는지 관측 축). shared 트랙 회부 — burn-down·계약 영향 실측 후 착수. 저우선(MGMT-BATCH-13 적립). | @backend (shared 구획) | 없음 | 🆕 등재(저우선) |
 
 ---
 
