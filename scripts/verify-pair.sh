@@ -5,7 +5,10 @@
 
 set -uo pipefail
 
-PROJECT_DIR="/Users/byeongjinjeong/Desktop/stock_vis"
+# PROJECT_DIR = 이 스크립트가 속한 트리(scripts/의 부모)를 self-locate로 도출.
+# 하드코딩 시 launchd가 어느 트리로 plist를 지향하든 래퍼가 공유트리로 cd해 drift 발생 →
+# BASH_SOURCE 기준 자기위치 도출로 "래퍼가 있는 트리"의 코드를 돌린다(OPS-VERIFY-EXEC-TREE, 개정문1).
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV_DIR="/Users/byeongjinjeong/Library/Caches/pypoetry/virtualenvs/stock_javis_system-_jE0wOmK-py3.12"
 
 cd "$PROJECT_DIR"
