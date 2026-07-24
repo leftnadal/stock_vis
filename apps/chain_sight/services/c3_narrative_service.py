@@ -116,6 +116,7 @@ def aggregate_theme_news_volume(
     use_override: bool = True,
     override_generation: str = "ovr_v1",
     date_lte: Optional[date] = None,
+    date_gte: Optional[date] = None,
     zero_missing_existing: bool = False,
 ) -> dict:
     """
@@ -129,8 +130,9 @@ def aggregate_theme_news_volume(
       H2 사전(TH-13) 을 뒤에 조회해 추가 배정(기배정 무접촉).
 
     스코프/재산출 옵션 (TH-C3-LLM-DICT-1 쓰기 3단, 둘 다 additive·기본 무영향):
-    - date_lte: target_date=None 일 때 `date ≤ date_lte` 로 코퍼스 상한 스코프(동결 유지).
-      target_date 지정 시 무시(단일일 우선). 기본 None = 전체.
+    - date_lte / date_gte: target_date=None 일 때 `date ≤ date_lte` / `date ≥ date_gte`
+      코퍼스 스코프(범위 백필용, 둘 다 지정 시 [date_gte, date_lte] 구간). target_date 지정
+      시 무시(단일일 우선). 기본 None = 무제한.
     - zero_missing_existing: override 제거로 그 날 크레딧이 0 이 된 기존 (theme,date) 행을
       **mention_count=0 으로 forward-only 갱신**(행 삭제 아님). 기본 False = 기존 동작(그 날
       크레딧 받은 테마만 upsert, 나머지 잔존). 재산출 시 True 로 override 완전 반영.
@@ -145,8 +147,11 @@ def aggregate_theme_news_volume(
     qs = DailyNewsKeyword.objects.exclude(keywords__isnull=True)
     if target_date is not None:
         qs = qs.filter(date=target_date)
-    elif date_lte is not None:
-        qs = qs.filter(date__lte=date_lte)
+    else:
+        if date_lte is not None:
+            qs = qs.filter(date__lte=date_lte)
+        if date_gte is not None:
+            qs = qs.filter(date__gte=date_gte)
 
     days = written = zeroed = 0
     for dnk in qs.only("date", "keywords"):

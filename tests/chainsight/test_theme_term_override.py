@@ -110,6 +110,18 @@ class TestRecomputeOptions:
         assert ThemeNewsVolume.objects.filter(date=date(2026, 6, 1)).exists()
         assert not ThemeNewsVolume.objects.filter(date=date(2026, 8, 1)).exists()
 
+    def test_date_gte_scope_backfill_range(self):
+        """date_gte+date_lte 범위: [gte, lte] 구간만 집계(≤gte 미만 무접촉 = 백필 스코프)."""
+        _mk_news(date(2026, 7, 1), ["ai"])        # < gte (제외돼야)
+        _mk_news(date(2026, 7, 15), ["ai"])       # 범위 내
+        _mk_news(date(2026, 8, 1), ["ai"])        # > lte (제외돼야)
+        aggregate_theme_news_volume(
+            date_gte=date(2026, 7, 12), date_lte=date(2026, 7, 24), use_override=False
+        )
+        assert not ThemeNewsVolume.objects.filter(date=date(2026, 7, 1)).exists()
+        assert ThemeNewsVolume.objects.filter(date=date(2026, 7, 15)).exists()
+        assert not ThemeNewsVolume.objects.filter(date=date(2026, 8, 1)).exists()
+
     def test_zero_missing_existing_zeros_removed_credit(self):
         """override 'none' 재산출 시 기존 크레딧 행을 0 으로 갱신(삭제 아님, forward-only)."""
         # 1) baseline: ai → Technology 크레딧 1 (override 없음)

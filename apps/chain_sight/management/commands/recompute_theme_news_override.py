@@ -21,7 +21,8 @@ class Command(BaseCommand):
     help = "ThemeNewsVolume override(ovr_v1) 재산출 (≤date_cut, forward-only)"
 
     def add_arguments(self, parser):
-        parser.add_argument("--date-cut", default="2026-07-11", help="동결 코퍼스 상한(YYYY-MM-DD)")
+        parser.add_argument("--date-cut", default="2026-07-11", help="동결 코퍼스 상한(date_lte, YYYY-MM-DD)")
+        parser.add_argument("--date-gte", default=None, help="코퍼스 하한(date_gte, YYYY-MM-DD) — 범위 백필용")
         parser.add_argument("--generation", default="ovr_v1", help="override 세대")
         parser.add_argument(
             "--dry-run", action="store_true",
@@ -34,16 +35,16 @@ class Command(BaseCommand):
 
         try:
             cut = datetime.strptime(opts["date_cut"], "%Y-%m-%d").date()
+            gte = datetime.strptime(opts["date_gte"], "%Y-%m-%d").date() if opts["date_gte"] else None
         except ValueError as e:
-            raise CommandError(f"--date-cut 형식 오류(YYYY-MM-DD): {e}")
+            raise CommandError(f"날짜 형식 오류(YYYY-MM-DD): {e}")
 
-        n_days = (
-            DailyNewsKeyword.objects.filter(date__lte=cut)
-            .exclude(keywords__isnull=True)
-            .values("date").distinct().count()
-        )
+        scope = DailyNewsKeyword.objects.filter(date__lte=cut).exclude(keywords__isnull=True)
+        if gte is not None:
+            scope = scope.filter(date__gte=gte)
+        n_days = scope.values("date").distinct().count()
         self.stdout.write(
-            f"[recompute] date_cut={cut} generation={opts['generation']} "
+            f"[recompute] date_gte={gte} date_cut={cut} generation={opts['generation']} "
             f"코퍼스 대상일수={n_days}"
         )
 
@@ -53,6 +54,7 @@ class Command(BaseCommand):
 
         res = aggregate_theme_news_volume(
             date_lte=cut,
+            date_gte=gte,
             use_h2=True,
             use_override=True,
             override_generation=opts["generation"],
