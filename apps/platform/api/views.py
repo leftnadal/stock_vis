@@ -6,6 +6,7 @@ impression/click 이벤트 배치(sendBeacon)를 shared ImpressionLog 에 기록
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 
 from django.db import DatabaseError, IntegrityError, transaction
 from django.db.models import F
@@ -14,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from packages.shared.stocks.models import ImpressionLog
+from packages.shared.stocks.models import ImpressionLog, IssuanceLog
 
 logger = logging.getLogger(__name__)
 
@@ -155,5 +156,129 @@ class ImpressionIngestView(APIView):
                 "received": received,
                 "rejected": rejected,
                 "rejected_reasons": rejected_reasons,
+            }
+        )
+
+
+# ── P2-COVERAGE-C1-API: 발급(IssuanceLog) 대비 노출(ImpressionLog) 커버리지 조회 ──
+#
+# 읽기 전용 compute-on-read. 경계 #43: IssuanceLog·ImpressionLog **읽기만**(스키마 무변경).
+# 의존 방향 platform → shared (읽기 조인). 조인 키 = object_ref 문자열 동치.
+#   IssuanceLog grain(stock, signal_date, signal_tag) → `SYMBOL:YYYY-MM-DD:TAG`
+#   ↔ FE recoObjectRef(ticker, tradingDate, signalTag) 단일 출처와 바이트 정합(실측 2026-07-24).
+#   (Stock PK=symbol 이므로 iss.stock_id 가 곧 심볼 문자열 — select_related 불요.)
+
+# 창 상수 (요청 window_days 파싱 기준)
+DEFAULT_COVERAGE_WINDOW_DAYS = 7
+MAX_COVERAGE_WINDOW_DAYS = 90
+
+# 응답 미노출 리스트 상한 (임시 상수 — C-2 튜닝 대상)
+UNEXPOSED_RESPONSE_LIMIT = 50
+
+# 커버리지 유기 표면 = 발급 grain object_ref 를 쓰는 표면만(현재 dashboard_eod).
+# news_chip 은 object_ref=URL(발급 grain 아님) → 커버리지 조인 대상 아님.
+# 향후 표면 추가 시 grain 정합 확인 후 이 화이트리스트에 편입(C-2). surfaces_included 의 단일 근거.
+COVERAGE_SURFACES = (ImpressionLog.SURFACE_DASHBOARD_EOD,)
+
+# 상세 페이지 자기노출 표면 — 유기 지표 오염 격리(D-P2-COVERAGE-SURFACE)로 exposed 집계서 제외.
+# 아직 ImpressionLog.SURFACE_CHOICES 미등재(C1-FE 가 발신 예정) → 방어적 제외.
+COVERAGE_DETAIL_SURFACE = "coverage_detail"
+
+
+class CoverageView(APIView):
+    """GET /api/v1/telemetry/coverage — 발급 대비 유기 노출 커버리지(요청 사용자 스코프).
+
+    - IssuanceLog(발급, user-agnostic day-1) 를 window_days(발급 signal_date 기준 창) 로 집계 = issued.
+    - 그 중 요청 사용자가 유기 표면(COVERAGE_SURFACES, coverage_detail 제외)에서 impression 한 건 = exposed.
+    - 미노출(issued − exposed) 리스트는 signal_date desc, 상한 UNEXPOSED_RESPONSE_LIMIT.
+    - 사용자 impression 이나 in-window 발급 grain 에 매칭 안 되는 건 = meta.join_misses(침묵 유실 금지).
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        raw = request.query_params.get("window_days")
+        window_days = DEFAULT_COVERAGE_WINDOW_DAYS
+        if raw is not None:
+            try:
+                window_days = int(raw)
+            except (TypeError, ValueError):
+                return Response(
+                    {"detail": "window_days must be an integer"}, status=400
+                )
+            if window_days < 1:
+                return Response(
+                    {"detail": "window_days must be >= 1"}, status=400
+                )
+            window_days = min(window_days, MAX_COVERAGE_WINDOW_DAYS)
+
+        to_date = timezone.localdate()
+        from_date = to_date - timedelta(days=window_days)
+
+        # 발급 grain → object_ref (user-agnostic). unique_together 보장으로 ref 충돌 없음.
+        issued_map = {
+            f"{iss.stock_id}:{iss.signal_date.isoformat()}:{iss.signal_tag}": iss
+            for iss in IssuanceLog.objects.filter(
+                signal_date__gte=from_date, signal_date__lte=to_date
+            )
+        }
+        issued_refs = set(issued_map)
+        issued = len(issued_refs)
+
+        # 요청 사용자의 유기 노출 refs (coverage_detail 방어적 제외).
+        imp_refs = set(
+            ImpressionLog.objects.filter(
+                user_id=request.user.id,
+                event_type=ImpressionLog.EVENT_IMPRESSION,
+                surface__in=COVERAGE_SURFACES,
+            )
+            .exclude(surface=COVERAGE_DETAIL_SURFACE)
+            .values_list("object_ref", flat=True)
+        )
+
+        exposed_refs = issued_refs & imp_refs
+        exposed = len(exposed_refs)
+        unexposed_refs = issued_refs - imp_refs
+        unexposed_count = len(unexposed_refs)
+        # in-window 발급에 귀속 안 되는 사용자 노출(창밖 발급·grain 불일치 등) — exposed 에 세지 않고 보고만.
+        join_misses = len(imp_refs - issued_refs)
+
+        unexposed_items = sorted(
+            (issued_map[r] for r in unexposed_refs),
+            key=lambda i: i.signal_date,
+            reverse=True,
+        )[:UNEXPOSED_RESPONSE_LIMIT]
+        unexposed = [
+            {
+                "object_ref": f"{i.stock_id}:{i.signal_date.isoformat()}:{i.signal_tag}",
+                "ticker": i.stock_id,
+                "signal_date": i.signal_date.isoformat(),
+                "signal_tag": i.signal_tag,
+                "days_since_issue": (to_date - i.signal_date).days,
+            }
+            for i in unexposed_items
+        ]
+
+        exposure_rate = round(exposed / issued, 4) if issued else 0.0
+
+        return Response(
+            {
+                "window": {
+                    "days": window_days,
+                    "from": from_date.isoformat(),
+                    "to": to_date.isoformat(),
+                },
+                "summary": {
+                    "issued": issued,
+                    "exposed": exposed,
+                    "exposure_rate": exposure_rate,
+                    "unexposed_count": unexposed_count,
+                },
+                "unexposed": unexposed,
+                "meta": {
+                    "surfaces_included": list(COVERAGE_SURFACES),
+                    "generated_at": timezone.now().isoformat(),
+                    "join_misses": join_misses,
+                },
             }
         )
