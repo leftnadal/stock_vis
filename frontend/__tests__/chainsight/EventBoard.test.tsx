@@ -171,6 +171,41 @@ describe('EventBoard', () => {
     expect(card).toHaveTextContent('intel devices semiconductor'); // 부제로 유지
   });
 
+  // ⑳-G S4: 위계 강화 — 등락률 최상위 강조, 관심도/종목수 보조 강등(데이터 무변경).
+  it('⑳-G S4: 등락률이 최상위 강조 폰트(text-2xl·extrabold)로 렌더된다', async () => {
+    vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]); // avg_return 0.045
+    render(<EventBoard />, { wrapper });
+    await screen.findByRole('button');
+    const ret = screen.getByText(/4\.50%/);
+    expect(ret.className).toMatch(/text-2xl/);
+    expect(ret.className).toMatch(/font-extrabold/);
+  });
+
+  it('⑳-G S4: 관심도·종목수는 보조 정보로 강등(text-[11px]·gray-400)', async () => {
+    vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]); // avg_score 85.3, member 12
+    render(<EventBoard />, { wrapper });
+    await screen.findByRole('button');
+    const att = screen.getByText(/관심도 85\.3/);
+    expect(att.className).toMatch(/text-\[11px\]/);
+    expect(att.className).toMatch(/text-gray-400/);
+    const cnt = screen.getByText('12개 종목');
+    expect(cnt.className).toMatch(/text-gray-400/);
+  });
+
+  it('⑳-G S4: members 티커 주표기가 강조(font-bold·text-base)로 렌더된다', async () => {
+    const eg = [{
+      theme: 'news-amd-1', name: 'intel semiconductor',
+      member_count: 5, members: ['amd', 'intc', 'nvda'],
+      avg_return: 0.02, avg_score: 70.0, high_attention_count: 2, low_attention_count: 1,
+    }];
+    vi.mocked(fetchEvents).mockResolvedValue(eg);
+    render(<EventBoard />, { wrapper });
+    await screen.findByRole('button');
+    const title = screen.getByText(/AMD · INTC · NVDA/);
+    expect(title.className).toMatch(/font-bold/);
+    expect(title.className).toMatch(/text-base/);
+  });
+
   // A-1 가드: 강등 이동된 관계 그래프가 보드(Chain Sight 홈)에서 도달 가능해야 함(고아 방지).
   it('보드에 /chainsight/market-graph 진입 링크를 노출한다 (A-1)', async () => {
     vi.mocked(fetchEvents).mockResolvedValue([mockEvents[0]]);

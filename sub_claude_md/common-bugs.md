@@ -964,3 +964,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: sv-web-runtime :3000은 `npm run start` = **prod 빌드 서빙**(`.next` 정적 산출물). `sv sync`는 소스 트리만 origin/main으로 갱신할 뿐 **`.next`를 재생성하지 않음** → 서빙은 옛 빌드. next dev(핫리로드)와 다름.
 
 **해결**: FE 변경 배포 = `sv sync` 후 **web 트리에서 `npm run build` → `npm run start` 재시작**([[reference_web_runtime_prod_build]]). 신규 컴포넌트·훅 옵션은 특히 재빌드 없이는 절대 반영 안 됨. 절차: 리스너 0 확인(#61) → build → start → :3000 200·신규 표식 grep 확인. cf. FE-SERVE-MODE-TIDY(격리 dev 서빙 도입 시 이 마찰 해소).
+
+## 표시 필드 명명은 근원 필드의 의미 실측 후 — auto_now를 "최근 언급일"로 오라벨 (#63, 2026-07-21 ⑳-F/⑳-G) [frontend] [backend]
+
+**증상**: ego 카드가 "최근 언급 N일" / 근거 뉴스일로 노출한 `last_mentioned`가 실제로는 관계가 마지막 뉴스에 언급된 날이 아님. SEC 공시 관계(evidence 0건)에 07-20 같은 날짜가 붙어 "근거 0건인데 최근 언급?" 모순으로 보임.
+
+**원인**: `last_mentioned` ← `RelationConfidence.last_observed_at`인데 이 필드는 모델에서 **`auto_now=True`** = 행이 마지막 `save()`된 시각(배치 실행 시각)이지 뉴스 언급일이 아니다. 07-20/06-20 군집 = SEC 배치 vs peer 배치의 마지막 실행 시각 차이. ⑳-2 지시서가 근원 필드 의미를 실측하지 않고 표시 라벨("최근 언급일")을 명명한 결함.
+
+**해결**: 표시 필드 명명 전 **근원 컬럼의 의미(auto_now/auto_now_add/파생/원값)를 실측**한다. ⑳-G에서 라벨을 "확인일"(last_observed_at 명시 필드)로 교정. 진짜 언급일이 필요하면 `CoMentionEdge.last_co_mention_date`(뉴스 실제 최종 동시출현일) 사용. 교훈: 카드 신뢰도 "전원 85"도 같은 뿌리 — 표시(연속 신뢰도)가 근원(tier 계단값)의 실체와 불일치. 진단 `docs/chain_sight/confidence_diag_2026-07-21/REPORT.md`.
+
+## 서빙 프로세스 cwd 실측 도구 hang 시 HTTP BUILD_ID로 우회 (#64, 2026-07-22 ⑳-G STEP 0) [ops]
+
+**증상**: ⑳-F Q4가 원본 리포 `frontend/.next`(05-24 빌드)를 서빙 트리로 보고 "지도 튜닝 미반영" 판정. 그러나 ⑳-2(07-21)는 배포·라이브 확인됨 → 05-24 빌드에 07-21 카드가 있을 수 없어 **서빙 트리가 원본 리포가 아닐 가능성**(부분 오측정).
+
+**원인**: :3000 next-server의 실제 cwd 실측 도구(`lsof -p`, `psutil.Process().cwd()`, `curl`, `urllib`)가 이 환경(sandbox)에서 전부 hang. grep/find/파이프 계열도 동일 hang. worktree엔 `.next` 부재라 어느 트리가 서빙하는지 파일만으론 불확정.
+
+**해결**: 서빙 빌드 판별은 ⑴ 배포 재빌드 후 **HTTP로 `_next/static/<BUILD_ID>/` 추출**(HTTP 응답 가능 시), ⑵ next-server 부모 스크립트/런타임 트리 문서([[reference_daphne_api_tree_sync_gap]], WEB-RUNTIME-RUNBOOK)로 트리 특정, ⑶ 어느 쪽이든 07-21 커밋 반영은 재빌드 필요(#62)이므로 배포 단계 재빌드로 실측 대체. 판별 미완 시 표시층 처치(오버레이)는 빌드 상태 무관하게 안전.

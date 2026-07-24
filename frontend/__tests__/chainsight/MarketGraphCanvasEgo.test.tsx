@@ -34,6 +34,10 @@ function makeEgoResponse(overrides: Partial<EgoGraphResponse> = {}): EgoGraphRes
         evidence_count: 5,
         last_mentioned: '2026-07-19',
         trend: { direction: 'up', delta: 30, points: [{ period: '2026-07-01', score: 50 }] },
+        grade: 'confirmed',
+        grade_source: 'market_peer',
+        basis_summary: 'Peer 관계 + 같은 산업',
+        last_observed_at: '2026-07-19',
       },
       {
         source: 'AAPL',
@@ -43,6 +47,10 @@ function makeEgoResponse(overrides: Partial<EgoGraphResponse> = {}): EgoGraphRes
         evidence_count: 0,
         last_mentioned: null,
         trend: { direction: 'flat', delta: 0, points: [] },
+        grade: 'likely',
+        grade_source: 'sec_filing',
+        basis_summary: 'SEC 10-K: compete',
+        last_observed_at: null,
       },
     ],
     meta: {
@@ -138,6 +146,10 @@ describe('egoToNeighborShape', () => {
       evidence_count: 0,
       last_mentioned: null,
       trend: { direction: 'flat' as const, delta: 0, points: [] },
+      grade: 'observed' as const,
+      grade_source: 'market_peer' as const,
+      basis_summary: '',
+      last_observed_at: null,
     }));
     const ego = makeEgoResponse({
       edges: limitedEdges,

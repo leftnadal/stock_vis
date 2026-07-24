@@ -1,9 +1,9 @@
 /**
- * RelationCardList (⑳-2 S2) — ego 카드 리스트: 정렬·절단 총량·빈 상태·카드 클릭.
+ * RelationCardList (⑳-2 S2 → ⑳-G 정직화) — 섹션 분리·등급 배지·근거·확인일·절단·빈 상태.
  */
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { EgoGraphResponse } from '@/types/chainsight';
+import type { EgoGraphResponse, EgoEdge } from '@/types/chainsight';
 
 const selectNode = vi.fn();
 const mockStore = { centerSymbol: 'NVDA' as string | null, selectNode };
@@ -18,22 +18,35 @@ vi.mock('@/hooks/useMarketView', () => ({
 
 import RelationCardList from '@/components/chainsight/RelationCardList';
 
-function makeEgo(edgeCount: number, total: number): EgoGraphResponse {
-  const edges = Array.from({ length: edgeCount }, (_, i) => ({
+function egde(partial: Partial<EgoEdge> & { target: string }): EgoEdge {
+  return {
     source: 'NVDA',
-    target: `SYM${i}`,
     relation_type: 'PEER_OF',
-    truth_score: 100 - i, // 내림차순 확인용
-    evidence_count: i,
+    truth_score: 85,
+    evidence_count: 0,
     last_mentioned: '2026-07-20',
-    trend: { direction: 'flat' as const, delta: 0, points: [] },
-  }));
+    trend: { direction: 'flat', delta: 0, points: [] },
+    grade: 'confirmed',
+    grade_source: 'market_peer',
+    basis_summary: '',
+    last_observed_at: '2026-07-20',
+    ...partial,
+  };
+}
+
+function wrap(edges: EgoEdge[], total: number): EgoGraphResponse {
   return {
     center: { symbol: 'NVDA', name: 'NVIDIA' },
     nodes: edges.map((e) => ({ symbol: e.target, name: `${e.target} Inc`, sector: 'Tech' })),
     edges,
-    meta: { total_edges: total, returned: edgeCount, filtered_by: { min_score: 0, types: null, limit: 50, trend_window: 12 } },
+    meta: { total_edges: total, returned: edges.length, filtered_by: { min_score: 0, types: null, limit: 50, trend_window: 12 } },
   };
+}
+
+function manyPeers(n: number): EgoEdge[] {
+  return Array.from({ length: n }, (_, i) =>
+    egde({ target: `SYM${String(i).padStart(2, '0')}`, evidence_count: i, grade: 'confirmed' }),
+  );
 }
 
 beforeEach(() => {
@@ -42,26 +55,78 @@ beforeEach(() => {
   egoResult = { data: undefined, isLoading: false, isError: false, refetch: vi.fn() };
 });
 
-describe('RelationCardList (⑳-2)', () => {
-  it('신뢰도 내림차순 기본 정렬 + 배지 렌더', () => {
-    egoResult = { data: makeEgo(3, 3), isLoading: false, isError: false, refetch: vi.fn() };
+describe('RelationCardList (⑳-G 정직화)', () => {
+  it('유형별 섹션 분리: 공급망·경쟁·Peer 헤더', () => {
+    egoResult = {
+      data: wrap([
+        egde({ target: 'TSM', relation_type: 'SUPPLIES_TO', grade_source: 'sec_filing', basis_summary: 'SEC 10-K: foundry' }),
+        egde({ target: 'ANET', relation_type: 'COMPETES_WITH', grade_source: 'sec_filing', basis_summary: 'SEC 10-K: compete' }),
+        egde({ target: 'AMD', relation_type: 'PEER_OF' }),
+      ], 3),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
     render(<RelationCardList />);
-    const cards = screen.getAllByRole('button', { name: /관계 카드/ });
-    expect(cards[0]).toHaveTextContent('SYM0'); // truth 100 최상단
-    expect(screen.getAllByText('Peer').length).toBe(3); // 배지
+    expect(screen.getByRole('heading', { name: '공급망' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '경쟁' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Peer' })).toBeInTheDocument();
   });
 
-  it('절단 총량 명시: 전체 M개 중 N개 (loaded < total)', () => {
-    egoResult = { data: makeEgo(50, 224), isLoading: false, isError: false, refetch: vi.fn() };
+  it('등급 배지 렌더(확정 · 동종 / 관찰 · 뉴스)', () => {
+    egoResult = {
+      data: wrap([
+        egde({ target: 'AMD', grade: 'confirmed', grade_source: 'market_peer' }),
+        egde({ target: 'CMX', relation_type: 'CO_MENTIONED', grade: 'observed', grade_source: 'co_mention', truth_score: 0, basis_summary: '뉴스 동시출현 4회' }),
+      ], 2),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<RelationCardList />);
+    expect(screen.getByText('확정 · 동종')).toBeInTheDocument();
+    expect(screen.getByText('관찰 · 뉴스')).toBeInTheDocument();
+  });
+
+  it('공시 관계는 basis_summary 노출·근거건수 미표기(0건 오해 차단)', () => {
+    egoResult = {
+      data: wrap([
+        egde({ target: 'TSM', relation_type: 'SUPPLIES_TO', grade_source: 'sec_filing', evidence_count: 0, basis_summary: 'SEC 10-K: We utilize foundries such as TSMC' }),
+      ], 1),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<RelationCardList />);
+    expect(screen.getByText(/SEC 10-K: We utilize foundries/)).toBeInTheDocument();
+    expect(screen.queryByText(/근거 0건/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/뉴스 근거/)).not.toBeInTheDocument();
+  });
+
+  it('뉴스 관계는 "뉴스 근거 N건" 표기', () => {
+    egoResult = {
+      data: wrap([
+        egde({ target: 'CMX', relation_type: 'CO_MENTIONED', grade_source: 'co_mention', evidence_count: 3, basis_summary: '뉴스 동시출현 7회' }),
+      ], 1),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<RelationCardList />);
+    expect(screen.getByText(/뉴스 근거 3건/)).toBeInTheDocument();
+  });
+
+  it('확인일(last_observed_at) 라벨 노출', () => {
+    egoResult = {
+      data: wrap([egde({ target: 'AMD', last_observed_at: '2026-06-20' })], 1),
+      isLoading: false, isError: false, refetch: vi.fn(),
+    };
+    render(<RelationCardList />);
+    expect(screen.getByText(/확인일 2026-06-20/)).toBeInTheDocument();
+  });
+
+  it('절단 총량 명시 + 더 보기', () => {
+    egoResult = { data: wrap(manyPeers(50), 224), isLoading: false, isError: false, refetch: vi.fn() };
     render(<RelationCardList />);
     expect(screen.getByText(/전체 224개 관계 중/)).toBeInTheDocument();
     expect(screen.getByText(/상위 50개까지 제공/)).toBeInTheDocument();
-    // 기본 12개 표시 + 더 보기
     expect(screen.getByRole('button', { name: /더 보기/ })).toBeInTheDocument();
   });
 
   it('더 보기 클릭 시 표시 개수 증가', () => {
-    egoResult = { data: makeEgo(50, 224), isLoading: false, isError: false, refetch: vi.fn() };
+    egoResult = { data: wrap(manyPeers(50), 224), isLoading: false, isError: false, refetch: vi.fn() };
     render(<RelationCardList />);
     const before = screen.getAllByRole('button', { name: /관계 카드/ }).length;
     fireEvent.click(screen.getByRole('button', { name: /더 보기/ }));
@@ -70,7 +135,7 @@ describe('RelationCardList (⑳-2)', () => {
   });
 
   it('빈 이웃: GraphStatePanel empty-neighbors', () => {
-    egoResult = { data: makeEgo(0, 0), isLoading: false, isError: false, refetch: vi.fn() };
+    egoResult = { data: wrap([], 0), isLoading: false, isError: false, refetch: vi.fn() };
     render(<RelationCardList />);
     expect(screen.getByTestId('graph-state-empty-neighbors')).toBeInTheDocument();
   });
@@ -82,9 +147,9 @@ describe('RelationCardList (⑳-2)', () => {
   });
 
   it('카드 클릭 → selectNode(target, relation_type)', () => {
-    egoResult = { data: makeEgo(2, 2), isLoading: false, isError: false, refetch: vi.fn() };
+    egoResult = { data: wrap([egde({ target: 'AMD' })], 1), isLoading: false, isError: false, refetch: vi.fn() };
     render(<RelationCardList />);
-    fireEvent.click(screen.getAllByRole('button', { name: /관계 카드/ })[0]);
-    expect(selectNode).toHaveBeenCalledWith('SYM0', 'PEER_OF');
+    fireEvent.click(screen.getByRole('button', { name: /관계 카드/ }));
+    expect(selectNode).toHaveBeenCalledWith('AMD', 'PEER_OF');
   });
 });

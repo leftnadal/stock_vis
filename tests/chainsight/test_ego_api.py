@@ -262,3 +262,97 @@ class TestEgoCardFields:
         with CaptureQueriesContext(connection) as ctx:
             auth_client.get("/api/v1/chainsight/ego/HUB/")
         assert len(ctx.captured_queries) <= 8
+
+
+class TestEgoGradeFields:
+    """⑳-G S1 정직화 additive — grade·grade_source·basis_summary·last_observed_at.
+
+    ⑳-F 진단 반영: 표시점수(truth 관계=truth_score, market 관계=market_score)
+    계단값→등급 코드 매핑, 소스 명시, basis_summary 노출, 확인일 신규 필드.
+    기존 필드(truth_score·evidence_count·last_mentioned·trend)는 불변.
+    """
+
+    @pytest.fixture
+    def grade_data(self, db):
+        for s in ["HUB", "SUP", "PR85", "PR60", "PR35", "CM", "PC"]:
+            _stock(s)
+        # SEC 공시(truth): basis_summary가 근거 역할, evidence 0이어도 등급 confirmed
+        sup = _rc("HUB", "SUP", "SUPPLIES_TO", 85.0, category="truth")
+        sup.relation_basis_summary = "SEC 10-K: We purchase memory from Micron."
+        sup.save(update_fields=["relation_basis_summary"])
+        # PEER_OF(truth) 계단값 3종
+        _rc("HUB", "PR85", "PEER_OF", 85.0, category="truth")
+        _rc("HUB", "PR60", "PEER_OF", 60.0, category="truth")
+        _rc("HUB", "PR35", "PEER_OF", 35.0, category="truth")
+        # market 관계: truth_score=0, market_score에 값 → grade는 market_score 기반
+        cm = _rc("HUB", "CM", "CO_MENTIONED", 0.0, category="market")
+        cm.market_score = 35.0
+        cm.relation_basis_summary = "뉴스 동시출현 4회"
+        cm.save(update_fields=["market_score", "relation_basis_summary"])
+        pc = _rc("HUB", "PC", "PRICE_CORRELATED", 0.0, category="market")
+        pc.market_score = 85.0
+        pc.relation_basis_summary = "주가 상관 0.83"
+        pc.save(update_fields=["market_score", "relation_basis_summary"])
+        return None
+
+    def _edge(self, d, target):
+        return next(e for e in d["edges"] if e["target"] == target)
+
+    def test_grade_by_display_score_truth(self, grade_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        assert self._edge(d, "PR85")["grade"] == "confirmed"
+        assert self._edge(d, "PR60")["grade"] == "likely"
+        assert self._edge(d, "PR35")["grade"] == "observed"
+
+    def test_grade_by_market_score_for_market_relations(self, grade_data, auth_client):
+        """market 관계는 truth_score=0이지만 market_score 기반 등급을 받는다."""
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        cm = self._edge(d, "CM")
+        pc = self._edge(d, "PC")
+        assert cm["truth_score"] == 0.0  # 원값 불변
+        assert cm["grade"] == "observed"  # market_score 35
+        assert pc["grade"] == "confirmed"  # market_score 85
+
+    def test_grade_source_mapping(self, grade_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        assert self._edge(d, "SUP")["grade_source"] == "sec_filing"
+        assert self._edge(d, "PR85")["grade_source"] == "market_peer"
+        assert self._edge(d, "CM")["grade_source"] == "co_mention"
+        assert self._edge(d, "PC")["grade_source"] == "price_corr"
+
+    def test_basis_summary_exposed(self, grade_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        assert self._edge(d, "SUP")["basis_summary"].startswith("SEC 10-K:")
+        assert self._edge(d, "CM")["basis_summary"] == "뉴스 동시출현 4회"
+
+    def test_basis_summary_length_cap(self, db, auth_client):
+        from apps.chain_sight.api.ego_views import BASIS_SUMMARY_MAX_LEN
+        _stock("BH")
+        _stock("BT")
+        rc = _rc("BH", "BT", "SUPPLIES_TO", 85.0, category="truth")
+        rc.relation_basis_summary = "X" * 500
+        rc.save(update_fields=["relation_basis_summary"])
+        d = auth_client.get("/api/v1/chainsight/ego/BH/").json()
+        assert len(d["edges"][0]["basis_summary"]) == BASIS_SUMMARY_MAX_LEN
+
+    def test_last_observed_at_mirrors_last_mentioned(self, grade_data, auth_client):
+        """신규 last_observed_at = 기존 last_mentioned 동일값(확인일 명시 필드)."""
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        e = self._edge(d, "PR85")
+        assert e["last_observed_at"] == e["last_mentioned"]
+        assert len(e["last_observed_at"]) == 10
+
+    def test_existing_fields_unchanged_additive(self, grade_data, auth_client):
+        """회귀 가드: 기존 필드 전부 존재(additive-only)."""
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        e = self._edge(d, "PR85")
+        for k in ("source", "target", "relation_type", "truth_score",
+                  "evidence_count", "last_mentioned", "trend"):
+            assert k in e
+
+    def test_grade_fields_no_extra_queries(self, grade_data, auth_client):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+        with CaptureQueriesContext(connection) as ctx:
+            auth_client.get("/api/v1/chainsight/ego/HUB/")
+        assert len(ctx.captured_queries) <= 8
