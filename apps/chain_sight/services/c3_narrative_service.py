@@ -115,6 +115,8 @@ def aggregate_theme_news_volume(
     use_h2: bool = True,
     use_override: bool = True,
     override_generation: str = "ovr_v1",
+    date_lte: Optional[date] = None,
+    zero_missing_existing: bool = False,
 ) -> dict:
     """
     DailyNewsKeyword → ThemeNewsVolume 집계 (멱등). target_date=None 이면 전체 소급.
@@ -125,6 +127,13 @@ def aggregate_theme_news_volume(
       **미등재 term 은 기존 경로(1차 규칙 → H2) 문자 그대로 불변.**
     - 1차 규칙: search_terms_en 정규화·완전 일치 매칭. use_h2=True 면 미배정분(secs 공집합)만
       H2 사전(TH-13) 을 뒤에 조회해 추가 배정(기배정 무접촉).
+
+    스코프/재산출 옵션 (TH-C3-LLM-DICT-1 쓰기 3단, 둘 다 additive·기본 무영향):
+    - date_lte: target_date=None 일 때 `date ≤ date_lte` 로 코퍼스 상한 스코프(동결 유지).
+      target_date 지정 시 무시(단일일 우선). 기본 None = 전체.
+    - zero_missing_existing: override 제거로 그 날 크레딧이 0 이 된 기존 (theme,date) 행을
+      **mention_count=0 으로 forward-only 갱신**(행 삭제 아님). 기본 False = 기존 동작(그 날
+      크레딧 받은 테마만 upsert, 나머지 잔존). 재산출 시 True 로 override 완전 반영.
     """
     from apps.chain_sight.models import HeatEntity, ThemeNewsVolume
     from services.news.models import DailyNewsKeyword
@@ -136,8 +145,10 @@ def aggregate_theme_news_volume(
     qs = DailyNewsKeyword.objects.exclude(keywords__isnull=True)
     if target_date is not None:
         qs = qs.filter(date=target_date)
+    elif date_lte is not None:
+        qs = qs.filter(date__lte=date_lte)
 
-    days = written = 0
+    days = written = zeroed = 0
     for dnk in qs.only("date", "keywords"):
         counts: dict[str, int] = defaultdict(int)
         for kw in dnk.keywords or []:
@@ -174,9 +185,24 @@ def aggregate_theme_news_volume(
                 theme=entities[ref], date=dnk.date, defaults={"mention_count": cnt}
             )
             written += 1
+        if zero_missing_existing:
+            # 그 날 기존 행 중 이번 재산출 크레딧이 0 인 테마 → 0 갱신(forward-only, 삭제 아님).
+            existing = set(
+                ThemeNewsVolume.objects.filter(date=dnk.date).values_list(
+                    "theme__ref_id", flat=True
+                )
+            )
+            for ref in existing - set(counts):
+                if ref in entities:
+                    ThemeNewsVolume.objects.update_or_create(
+                        theme=entities[ref], date=dnk.date, defaults={"mention_count": 0}
+                    )
+                    zeroed += 1
 
-    logger.info("ThemeNewsVolume 집계: days=%d rows_upserted=%d", days, written)
-    return {"days": days, "written": written}
+    logger.info(
+        "ThemeNewsVolume 집계: days=%d rows_upserted=%d zeroed=%d", days, written, zeroed
+    )
+    return {"days": days, "written": written, "zeroed": zeroed}
 
 
 def c3_narrative_from_db(

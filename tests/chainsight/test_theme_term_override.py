@@ -96,3 +96,50 @@ class TestThemeTermOverride:
         assert not ThemeNewsVolume.objects.filter(
             theme__ref_id="Financial Services", date=date(2026, 6, 4)
         ).exists()
+
+
+@pytest.mark.django_db
+class TestRecomputeOptions:
+    """쓰기 3단 재산출 옵션(date_lte 스코프 + zero_missing_existing) 검증."""
+
+    def test_date_lte_scope_excludes_later(self):
+        """date_lte 스코프: 상한 초과일 코퍼스는 집계에서 제외(동결 유지)."""
+        _mk_news(date(2026, 6, 1), ["ai"])       # ≤ cut
+        _mk_news(date(2026, 8, 1), ["ai"])       # > cut (제외돼야)
+        aggregate_theme_news_volume(date_lte=date(2026, 7, 11), use_override=False)
+        assert ThemeNewsVolume.objects.filter(date=date(2026, 6, 1)).exists()
+        assert not ThemeNewsVolume.objects.filter(date=date(2026, 8, 1)).exists()
+
+    def test_zero_missing_existing_zeros_removed_credit(self):
+        """override 'none' 재산출 시 기존 크레딧 행을 0 으로 갱신(삭제 아님, forward-only)."""
+        # 1) baseline: ai → Technology 크레딧 1 (override 없음)
+        _mk_news(date(2026, 6, 5), ["ai"])
+        aggregate_theme_news_volume(use_override=False)
+        row = ThemeNewsVolume.objects.get(theme__ref_id="Technology", date=date(2026, 6, 5))
+        assert row.mention_count == 1
+        # 2) override 등재: ai → none (제거). zero_missing 없이 재산출하면 옛 값 잔존(기존 동작)
+        ThemeTermOverride.objects.create(
+            term_normalized="ai", term_original="ai",
+            disposition="none", generation="ovr_v1", provenance={"cell": "none_pollute"},
+        )
+        aggregate_theme_news_volume(use_override=True)  # zero_missing_existing=False(기본)
+        assert ThemeNewsVolume.objects.get(
+            theme__ref_id="Technology", date=date(2026, 6, 5)
+        ).mention_count == 1  # 잔존(그 날 counts 에 Technology 없어 upsert 미발생)
+        # 3) zero_missing_existing=True 재산출 → 0 으로 갱신, 행은 보존(삭제 아님)
+        res = aggregate_theme_news_volume(use_override=True, zero_missing_existing=True)
+        row2 = ThemeNewsVolume.objects.get(theme__ref_id="Technology", date=date(2026, 6, 5))
+        assert row2.mention_count == 0
+        assert res["zeroed"] >= 1
+
+    def test_zero_missing_preserves_active_credit(self):
+        """zero_missing_existing 이 그 날 크레딧 받은 테마는 건드리지 않음."""
+        ThemeTermOverride.objects.create(
+            term_normalized="jpmorgan ai agents", term_original="JPMorgan AI agents",
+            disposition="Financial Services", generation="ovr_v1", provenance={},
+        )
+        _mk_news(date(2026, 6, 6), ["JPMorgan AI agents"])
+        aggregate_theme_news_volume(use_override=True, zero_missing_existing=True)
+        assert ThemeNewsVolume.objects.get(
+            theme__ref_id="Financial Services", date=date(2026, 6, 6)
+        ).mention_count == 1

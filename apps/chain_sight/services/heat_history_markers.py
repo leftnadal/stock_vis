@@ -11,6 +11,12 @@ from datetime import date
 from typing import Optional
 
 # 방법론 개정일 (오름차순). date=개정 적용일(그날 재산출로 delta 불연속 발생).
+# ⏳ TH-C3-LLM-DICT-1 override(ovr_v1) 개정일 마커 = **heat 재산출 세션으로 이연**.
+#   근거: 쓰기 3단(2026-07-24)은 ThemeNewsVolume(≤07-11) 만 override 재작성했고 heat
+#   (ThemeHeatScore) 는 재계산하지 않았다(범위 밖). 이 상태에서 override 마커(07-11)를
+#   등재하면 crossing_marker 가 기존 heat delta(07-10→07-12, override 미반영)에 "override
+#   때문에 보류"로 **거짓 적용**된다(test_crosses_guard_marker 로 실증). 마커는 heat 가
+#   override 를 실제 반영(heat 재산출)한 시점에 등재해야 정합 → 후속 heat 재산출 세션 이연.
 HISTORY_MARKERS = [
     {
         "date": date(2026, 7, 12),
