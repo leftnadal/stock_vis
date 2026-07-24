@@ -7,6 +7,8 @@
  *   + 이웃 리스트(날짜·거리·20d 수익률). label 슬롯(카테고리·"왜?")은 **비활성**(Slice C 연결점).
  * 순수 뷰(payload prop) — fetch는 AnalogCardContainer.
  */
+import { useState } from 'react'
+
 import { useRegimeAnalog } from '@/hooks/useMarketPulseV2'
 import type {
   AnalogFanPoint,
@@ -107,24 +109,75 @@ function Fan({ fan }: { fan: AnalogFanPoint[] }) {
 }
 
 function NeighborRow({ nb }: { nb: AnalogNeighbor }) {
+  const [open, setOpen] = useState(false)
+  const hasWhy = nb.why != null
+  const prov = nb.why_provenance ?? []
   return (
-    <div data-testid={`analog-nb-${nb.date}`} className="flex items-center justify-between text-[11px] py-0.5">
-      <span className="tabular-nums text-slate-700">{nb.date}</span>
-      {/* L2 카테고리 태그(C-core): 그날 국면 유형(사실 표기). 톤=기존 regimeTone 재사용. */}
-      {nb.cat_slot ? (
-        <span
-          data-testid={`analog-cat-${nb.date}`}
-          className={`text-[10px] rounded border px-1.5 py-px ${regimeTone(nb.cat_key ?? '')}`}
+    <div data-testid={`analog-nb-${nb.date}`} className="py-0.5">
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="tabular-nums text-slate-700">{nb.date}</span>
+        {/* L2 카테고리 태그(C-core): 그날 국면 유형(사실 표기). 톤=기존 regimeTone 재사용. */}
+        {nb.cat_slot ? (
+          <span
+            data-testid={`analog-cat-${nb.date}`}
+            className={`text-[10px] rounded border px-1.5 py-px ${regimeTone(nb.cat_key ?? '')}`}
+          >
+            {nb.cat_slot}
+          </span>
+        ) : (
+          <span data-testid={`analog-cat-${nb.date}`} className="text-[10px] text-slate-300">
+            —
+          </span>
+        )}
+        <span className="tabular-nums text-slate-500">d {nb.dist.toFixed(2)}</span>
+        <span className="tabular-nums text-slate-600">{pct(nb.fwd['20'] ?? null)}</span>
+        {/* L3(C-L3) "왜?" 슬롯 — 저장분 있으면 펼침 토글, 없으면 비활성(미생성 표시 유지). */}
+        {hasWhy ? (
+          <button
+            type="button"
+            data-testid={`analog-why-${nb.date}`}
+            onClick={() => setOpen((o) => !o)}
+            className="text-[10px] text-sky-600 hover:text-sky-700"
+            aria-expanded={open}
+          >
+            왜? {open ? '▲' : '▼'}
+          </button>
+        ) : (
+          <span data-testid={`analog-why-${nb.date}`} className="text-[10px] text-slate-300">
+            왜?
+          </span>
+        )}
+      </div>
+      {open && hasWhy ? (
+        <div
+          data-testid={`analog-why-panel-${nb.date}`}
+          className="mt-1 rounded bg-slate-50 border border-slate-100 px-2 py-1.5 text-[11px] text-slate-600"
         >
-          {nb.cat_slot}
-        </span>
-      ) : (
-        <span data-testid={`analog-cat-${nb.date}`} className="text-[10px] text-slate-300">
-          —
-        </span>
-      )}
-      <span className="tabular-nums text-slate-500">d {nb.dist.toFixed(2)}</span>
-      <span className="tabular-nums text-slate-600">{pct(nb.fwd['20'] ?? null)}</span>
+          <span className="mr-1.5 text-[9px] rounded bg-slate-200 text-slate-500 px-1 py-px align-middle">
+            맥락
+          </span>
+          <span>{nb.why}</span>
+          {prov.length > 0 ? (
+            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+              {prov.slice(0, 3).map((p) => (
+                <a
+                  key={p.id}
+                  href={p.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-sky-600 hover:underline truncate max-w-[180px]"
+                  title={p.title}
+                >
+                  {p.title}
+                </a>
+              ))}
+            </div>
+          ) : null}
+          <div className="mt-1 text-[9px] text-slate-400">
+            생성 {nb.why_version ?? '—'} · 근거 {prov.length}건
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
@@ -185,15 +238,6 @@ export function AnalogCard({ payload }: { payload: RegimeAnalogPayload }) {
                 <NeighborRow key={nb.date} nb={nb} />
               ))}
             </div>
-            {/* "왜?" 라벨 슬롯 — 비활성(Slice C L3 맥락 연결점) */}
-            <button
-              type="button"
-              data-testid="analog-why-slot"
-              disabled
-              className="mt-2 text-[10px] text-slate-300 cursor-not-allowed"
-            >
-              왜? (맥락 준비 중)
-            </button>
           </div>
         </>
       )}

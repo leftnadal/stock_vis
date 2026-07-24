@@ -123,9 +123,9 @@ class TestRegimeAnalog:
         }
         assert [f["horizon"] for f in body["fan"]] == [1, 5, 10, 20, 60]
         assert "on" in body["alert"] and "nearest_dist" in body["alert"]
-        # C-core: cat_slot=국면 라벨 채움 + cat_key=RegimeId, why는 null 유지(C-L3 소관).
+        # 미생성 이웃(AnalogDayContext 부재) = why null. cat_slot/cat_key는 C-core 채움.
         for nb in body["neighbors"]:
-            assert nb["why"] is None
+            assert nb["why"] is None  # 이 픽스처는 L3 미생성 → null(populated는 별도 테스트)
             assert nb["cat_key"] == "TRANSITION"          # 시드 regime
             assert nb["cat_slot"] == RegimeSnapshot.Regime.TRANSITION.label
             assert "dist" in nb and "fwd" in nb
@@ -166,3 +166,43 @@ class TestRegimeAnalog:
         assert body["today_category"] == {
             "key": "LATE_BULL", "label": RegimeSnapshot.Regime.LATE_BULL.label,
         }
+
+    def test_l3_why_populated_partial_and_render_no_llm(self, auth_client, monkeypatch):
+        """C-L3: 저장분 있는 이웃만 why 채움(부분), 렌더 경로 LLM 호출 0.
+
+        이웃 선정은 오늘 벡터 의존이라 고정 이웃 2개로 monkeypatch — 배선(why lookup)만 격리 검증.
+        """
+        from apps.market_pulse.llm import client as llm_client
+        from apps.market_pulse.models import AnalogDayContext
+        from apps.market_pulse.regime import analog
+
+        # 렌더 경로가 LLM을 부르면 즉시 실패(읽기 결정론 증명).
+        def _boom(**_kw):
+            raise AssertionError("렌더 경로에서 LLM 호출 금지(읽기 결정론 위반)")
+
+        monkeypatch.setattr(llm_client, "generate_with_circuit", _boom)
+
+        days = _seed_population()  # weekdays(2023-08-07, 40)
+        _seed_today_inputs()
+        d0, d1 = days[0], days[1]  # 고정 이웃(모집단 실재일)
+        monkeypatch.setattr(
+            analog, "select_neighbors",
+            lambda *a, **k: ([{"date": d0, "dist": 0.11}, {"date": d1, "dist": 0.22}], 0.11),
+        )
+
+        # d0에만 L3 저장분 생성(부분 상태).
+        AnalogDayContext.objects.create(
+            date=d0, why_text="긴축 우려가 부각된 국면.",
+            provenance=[{"id": "1", "url": "https://ex.com/1", "title": "h"}],
+            prompt_version="cl3_v1",
+        )
+        cache.clear()
+        by_date = {nb["date"]: nb for nb in auth_client.get(_url()).json()["data"]["neighbors"]}
+
+        hit = by_date[d0.isoformat()]
+        assert hit["why"] == "긴축 우려가 부각된 국면."
+        assert hit["why_version"] == "cl3_v1"
+        assert len(hit["why_provenance"]) == 1
+        # 부분: 저장분 없는 d1은 여전히 null(additive·미오염).
+        miss = by_date[d1.isoformat()]
+        assert miss["why"] is None and miss["why_provenance"] is None and miss["why_version"] is None

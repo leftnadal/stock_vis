@@ -33,6 +33,7 @@ from apps.market_pulse.constants import (
     derive_rel_strength_5d,
     resolve_official_cd_state,
 )
+from apps.market_pulse.models.analog_context import AnalogDayContext
 from apps.market_pulse.models.briefing import BriefingLog
 from apps.market_pulse.models.regime import RegimeSnapshot
 from apps.market_pulse.models.snapshot import (
@@ -431,17 +432,26 @@ def _regime_analog_detail() -> dict:
     price_index = {d: i for i, (d, _) in enumerate(trading)}
     closes = [c for _, c in trading]
 
+    # L3 맥락(C-L3): 이웃일 date → 저장분 read(렌더 LLM 0). 단일 쿼리(N+1 방지).
+    ctx_by_date = {
+        c.date: c
+        for c in AnalogDayContext.objects.filter(date__in=[nb["date"] for nb in neighbors])
+    }
+
     neighbor_out = []
     neighbor_fwd = []
     for nb in neighbors:
         fwd = analog.forward_returns(nb["date"], price_index, closes)
         cat = categorize_or_none(regime_by_date.get(nb["date"]))  # L2(C-core): 그날 국면 유형
+        ctx = ctx_by_date.get(nb["date"])  # L3(C-L3): 저장분(없으면 why=null)
         neighbor_out.append({
             "date": nb["date"].isoformat(),
             "dist": nb["dist"],
             "cat_slot": cat["label"] if cat else None,  # 사실 분류 표기(string 계약 유지)
             "cat_key": cat["key"] if cat else None,     # FE 톤용 RegimeId(additive)
-            "why": None,        # L3 맥락 슬롯(비활성 — C-L3 소관)
+            "why": ctx.why_text if ctx else None,       # L3 맥락 1문장(저장분 read, 미생성=null)
+            "why_provenance": ctx.provenance if ctx else None,  # 근거 헤드라인 [{id,url,title}]
+            "why_version": ctx.prompt_version if ctx else None,  # 생성 프롬프트 버전
             "fwd": {str(h): v for h, v in fwd.items()},
         })
         neighbor_fwd.append({"date": nb["date"], "fwd": fwd})

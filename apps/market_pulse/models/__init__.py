@@ -7,6 +7,7 @@ apps/market_pulse/models — Django 모델 통합 패키지.
   MarketPulseNews · NewsViewLog · RegimeSnapshot · SectorFlowSnapshot · TranslationLog.
 """
 
+from .analog_context import AnalogDayContext
 from .anomaly import AnomalySignalLog
 from .briefing import BriefingLog
 from .news import MarketPulseNews, NewsViewLog
@@ -19,6 +20,7 @@ from .snapshot import (
 from .translation import TranslationLog
 
 __all__ = [
+    "AnalogDayContext",
     "AnomalySignalLog",
     "BriefingLog",
     "BreadthSnapshot",

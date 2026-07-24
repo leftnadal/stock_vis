@@ -358,7 +358,9 @@ export interface AnalogNeighbor {
   dist: number
   cat_slot: string | null // L2(C-core): 그날 국면 유형 라벨(사실 표기)
   cat_key: RegimeId | null // L2(C-core): 톤용 RegimeId(FE regimeTone 소비)
-  why: string | null
+  why: string | null // L3(C-L3): 그날 맥락 1문장(저장분, 미생성=null)
+  why_provenance?: { id: string; url: string; title: string }[] | null // L3 근거 헤드라인
+  why_version?: string | null // L3 생성 프롬프트 버전
   fwd: Record<string, number | null>
 }
 export interface AnalogFanPoint {

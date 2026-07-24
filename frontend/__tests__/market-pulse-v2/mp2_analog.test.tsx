@@ -4,7 +4,7 @@
  * 커버리지: 오늘 4축 z 막대 / ②C 경보 상태 / ①C 팬 + 지평별 N·n_eff / 이웃 리스트 /
  *   label 슬롯 비활성(cat_slot·why = Slice C 연결점) / 빈·unavailable 상태.
  */
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { AnalogCard } from '@/app/market-pulse-v2/details/AnalogCard'
@@ -37,7 +37,13 @@ function populatedPayload(): RegimeAnalogPayload {
     today_axes: AXES,
     today_category: { key: 'LATE_BULL', label: '상승 후반 경계' },
     neighbors: [
-      { date: '2024-08-05', dist: 0.31, cat_slot: '위기', cat_key: 'CRISIS', why: null, fwd: { '20': 0.042 } },
+      {
+        date: '2024-08-05', dist: 0.31, cat_slot: '위기', cat_key: 'CRISIS',
+        why: '긴축 우려가 부각된 국면.',
+        why_provenance: [{ id: '1', url: 'https://ex.com/1', title: '헤드라인 1' }],
+        why_version: 'cl3_v1',
+        fwd: { '20': 0.042 },
+      },
       { date: '2025-04-03', dist: 0.48, cat_slot: null, cat_key: null, why: null, fwd: { '20': -0.015 } },
     ],
     fan: [
@@ -102,9 +108,36 @@ describe('AnalogCard', () => {
     expect(screen.queryByTestId('analog-today-category')).not.toBeInTheDocument()
   })
 
-  it('"왜?"(L3) 슬롯 무접촉 — 여전히 disabled', () => {
+  it('"왜?"(L3) 슬롯 — 저장분 있는 이웃은 버튼, 없는 이웃은 비활성 span', () => {
     render(<AnalogCard payload={populatedPayload()} />)
-    expect(screen.getByTestId('analog-why-slot')).toBeDisabled()
+    // 저장분 있는 이웃 = 버튼(펼침 가능)
+    const hit = screen.getByTestId('analog-why-2024-08-05')
+    expect(hit.tagName).toBe('BUTTON')
+    // 미생성 이웃 = 비활성 span(기존 표시 유지)
+    const miss = screen.getByTestId('analog-why-2025-04-03')
+    expect(miss.tagName).toBe('SPAN')
+  })
+
+  it('"왜?"(L3) 펼침 — 맥락 1문장 + 맥락 배지 + 근거 링크 + 생성 vN·근거 n건', () => {
+    render(<AnalogCard payload={populatedPayload()} />)
+    // 펼치기 전엔 패널 없음
+    expect(screen.queryByTestId('analog-why-panel-2024-08-05')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByTestId('analog-why-2024-08-05'))
+    const panel = screen.getByTestId('analog-why-panel-2024-08-05')
+    expect(panel).toHaveTextContent('긴축 우려가 부각된 국면.')
+    expect(panel).toHaveTextContent('맥락')
+    expect(panel).toHaveTextContent('생성 cl3_v1')
+    expect(panel).toHaveTextContent('근거 1건')
+    // 근거 헤드라인 링크(외부, 새 탭)
+    const link = screen.getByText('헤드라인 1').closest('a')
+    expect(link).toHaveAttribute('href', 'https://ex.com/1')
+    expect(link).toHaveAttribute('target', '_blank')
+  })
+
+  it('"왜?"(L3) — 미생성 이웃 클릭해도 패널 없음(억지 노출 없음)', () => {
+    render(<AnalogCard payload={populatedPayload()} />)
+    fireEvent.click(screen.getByTestId('analog-why-2025-04-03'))
+    expect(screen.queryByTestId('analog-why-panel-2025-04-03')).not.toBeInTheDocument()
   })
 
   it('unavailable — 빈 상태', () => {
