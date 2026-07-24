@@ -639,3 +639,24 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **원인**: Wikipedia 봇 탐지가 **httpx의 TLS 지문·헤더 순서(HTTP2 등)를 UA와 무관하게 차단**. UA 문자열만으로는 우회 불가.
 - **해결**: 스크래핑성 GET은 `requests` 사용(httpx 아님) + 브라우저형 UA(`Mozilla/5.0 (compatible; ...)`). 정책 준수 식별자 포함. (`serverless_client.get_sp500_constituents` 2026-07-09.)
 - **왜**: 프로젝트 공용 httpx 클라이언트(`self.client`)를 재사용하려는 유혹이 있으나, 외부 사이트 봇탐지 앞에선 requests가 더 관대. 실측 분기(httpx 403 / requests 200)로 확정 후 선택할 것 — UA만 바꿔 재시도 반복 금지.
+
+## [게이트 재현성] 검증 산출 스크립트는 스크래치패드 금지 — 커밋 필수 (G2 dry-run, 2026-07-24) `[harness]`
+
+- **증상**: TH-C3-LLM-DICT-1 쓰기1단 세션이 G2 게이트 목표치(92/19/0/0)를 `scratchpad/final_confirmed.py`로 산출했으나, 스크래치패드는 세션 종료 시 정리 → 스크립트 **소멸**. 다음 세션이 재개하려니 "이 숫자를 어떻게 냈나"의 절차·명령·산식이 어느 커밋에도 없어 **3f HALT**(즉석 발명 금지 조건에 걸려 정지). 복원에 트랜스크립트 포렌식 1세션 소요.
+- **원인**: 판정·게이트를 만드는 코드가 `/private/tmp/.../scratchpad/`에만 존재. 재개점 노트엔 결과 수치만 있고 산출 하네스가 repo 밖 → 재현 불가.
+- **규칙**: **게이트·판정·검산의 산출 로직은 스크래치패드가 아니라 repo 관리 명령/서비스로 커밋**한다(`apps/*/management/commands/` + 순수함수 서비스). 일회성 탐색은 스크래치패드 OK지만, **결과가 재개점·승인 근거가 되는 순간 커밋 대상**. 재개점 노트엔 "목표 92/19/0/0"이 아니라 "`manage.py g2_dry_run --date-cut ...`로 재현"을 적는다.
+- **왜**: 하네스 원칙(Agent=Model+Harness)에서 검증은 인프라다. 인프라가 휘발성 임시본이면 다음 세션은 그것을 신뢰도 재현도 못 해 정지한다. "산출 스크립트 = 커밋" = 게이트의 재현성 보장.
+
+## [기준선 함정] 살아있는 테이블에 정적 행수 기준 금지 — 기준일 스코프로 못박아라 (G2 dry-run, 2026-07-24) `[harness]` `[testing]`
+
+- **증상**: G2 dry-run 재개점 노트가 "코퍼스 동결 ≤07-11 전제"를 적었으나 `DailyNewsKeyword`는 매일 유입(07-24 현재 최신)이라, 아무 필터 없이 재집계하면 동결 시점과 **다른 값**이 나온다. "왜 92/19가 재현 안 되지"의 원천이 될 뻔.
+- **원인**: 검산 기준을 "테이블 전체"로 잡으면 그 테이블이 증가형(append-only 원장)일 때 시점마다 답이 달라진다. 정적 스냅샷처럼 취급한 게 오류.
+- **규칙**: 증가형 테이블(`DailyNewsKeyword`·`ThemeNewsVolume`·`EstimateSnapshot` 등) 위 검산·재현은 **반드시 `date__lte=<기준일>` 스코프**로 못박고, 산출 메타에 그 기준일을 출력한다(`g2_dry_run`은 `date_cut` + `corpus_days`/`corpus_term_hits`를 메타로 노출). 재현 명령에 기준일을 인자로 강제(`--date-cut`, 기본값 명시).
+- **왜**: "동결 코퍼스"는 프로세스 규율이 아니라 **쿼리 스코프**로 강제해야 실효. 노트의 "동결 전제"는 다음 세션이 안 지키면 깨지지만, `date__lte` 필터는 코드가 지킨다. STEP 0에서 `date≤cut distinct 행수`를 실측 보고하는 것도 같은 이유.
+
+## [세션 위치] 셸 기동 위치 ≠ 세션 worktree — STEP 0에서 원장 대조로 확정 (G2 dry-run, 2026-07-24) `[harness]`
+
+- **증상**: `manage.py shell` 실행 시 cwd/트리에 따라 다른 코드·다른 DB를 볼 수 있음. TH 트랙은 `~/worktrees/sv-theme-heat`(브랜치 전용, 미머지 WIP)에서만 `ThemeTermOverride`·마이그 0024가 존재 — 공유 트리 `Desktop/stock_vis`에서 돌리면 모델 부재로 오판. 실제로 `get_model('chain_sight',...)`가 앱 라벨 불일치로 실패하거나, `apps.news` 부재(monorepo는 `services.news`) 등 트리별 차이가 드러남.
+- **원인**: 세션이 여러 worktree를 오가며 작업하는데, 셸 명령의 실행 위치(cwd + venv + DJANGO_SETTINGS_MODULE)를 확정하지 않으면 "어느 코드·어느 원장을 보는가"가 모호.
+- **규칙**: **STEP 0에서 실행 위치를 원장 대조로 확정**한다 — `git -C <worktree> rev-parse HEAD`(코드 버전) + 핵심 테이블 실측 행수(예 `ThemeTermOverride 215`)로 "이 트리가 맞다"를 증명한 뒤 작업. 명령은 절대경로 worktree + 명시 venv + `DJANGO_SETTINGS_MODULE`로 고정(`cd ~/worktrees/sv-theme-heat && ... "$VENV/bin/python" manage.py ...`).
+- **왜**: 다중 worktree 환경에서 "지금 어디서 도는가"는 암묵이 아니라 실측이어야 한다. HEAD 해시 + 원장 행수 대조 = 위치의 유일한 진실. 위치를 틀리면 무쓰기 프로브조차 엉뚱한 트리를 읽어 잘못된 결론을 낸다.
