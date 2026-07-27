@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
+import { CoverageStrip } from '@/components/dashboard/CoverageStrip'
 
 export default function DashboardPage() {
   const { user, loading, isAuthenticated, logout } = useAuth()
@@ -51,6 +52,9 @@ export default function DashboardPage() {
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
+          {/* 추천 커버리지 스트립 (P2-COVERAGE-C1-FE) — fail-quiet, 본체 무영향 */}
+          <CoverageStrip />
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* 포트폴리오 카드 */}
             <div className="bg-white overflow-hidden shadow rounded-lg">
