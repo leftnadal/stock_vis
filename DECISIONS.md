@@ -4094,6 +4094,8 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 
 **검증**: grounding 10·tone_guard 15·generator 4·command 5·api +1 = 신규 35 green. marketpulse+architecture **446 pass**·vitest mp2_analog **10**·tsc **0**·경계 신규위반 **0**·health ❌**0**·mig `--check` clean.
 
+**D-CL3-QUALITY-LIMIT (거시 맥락 빈약 — 관찰 2026-07-25, 전량생성 후)**: 491 전량 생성 후 스팟체크(2024-08-05 엔캐리 급락·2023-10-19 국채 5% 돌파·2024-05-15 CPI 둔화) = **3일 전부 "개별 기업 소식" 균질**, 그날 거시 국면 맥락을 놓침. 규명(read-only): 원인 = ⑴ broad 피드 거시뉴스 **희소**(08-05 KST 220건 중 급락 키워드 4건뿐, AV NEWS_SENTIMENT가 개별 기업 PR/실적/M&A 위주) ⑵ 선별 `abs(sent)+entity_count`가 개별 기업 강감성 PR을 상위로(거시 뉴스 top-12 탈락) ⑶ KST 창 어긋남은 **부차**(엔캐리 심층기사 일부 08-06 KST, 그러나 08-05에도 급락 4건 존재→선별 탈락이 주). **배포분 491 유지**(사실 기반·톤가드 통과·해롭지 않음·analog 카드 alert 다수라 노출 드묾). 개선 = TASKQUEUE `C-L3-SELECT-V2`(index/거시 entity 우선·거시 키워드 가중). ★근본 한계 = broad 데이터 거시 절대량 부족 → v2로도 **부분 개선만**. C-N-REPAIR(창 뒷날 복구)와 시너지.
+
 **baseline at decision**: base origin/main `b9ddf41a`. LLM 경로 = generate_with_circuit(신규 genai 직접생성 0).
 ## [2026-07-13] D-EVENTGROUP-WINDOW — EventGroup co-mention 집계에 날짜 윈도우 실적용 (기본 21d·config)
 
