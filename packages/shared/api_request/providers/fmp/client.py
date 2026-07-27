@@ -203,6 +203,23 @@ class FMPClient:
             return data[0]
         return {}
 
+    def get_etf_info(self, symbol: str) -> Dict[str, Any]:
+        """
+        ETF 정보 조회 (NAV 포함).
+
+        Args:
+            symbol: ETF 심볼 (예: "HYG")
+
+        Returns:
+            ETF 정보 데이터 (nav, navCurrency, updatedAt 등)
+
+        API: GET /stable/etf/info?symbol={symbol}
+        """
+        data = self._make_request("/stable/etf/info", {"symbol": symbol.upper()})
+        if isinstance(data, list) and len(data) > 0:
+            return data[0]
+        return {}
+
     def get_historical_price(
         self,
         symbol: str,
