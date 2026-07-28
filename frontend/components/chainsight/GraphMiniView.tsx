@@ -14,6 +14,7 @@ import { useMemo, useRef, useEffect, useState } from 'react';
 // 전환. Slice 1(GraphCanvas)과 동일 어댑터(egoToGraphResponse) 공유 — 2벌 복제 금지.
 import { useEgo } from '@/hooks/useMarketView';
 import { egoToGraphResponse } from './egoAdapter';
+import { qualificationChips } from './cardListConfig';
 import { getRelationStyle, getSectorColor, getNodeRadius } from './graphStyles';
 import type { ForceNode } from '@/types/chainsight';
 
@@ -81,22 +82,22 @@ export default function GraphMiniView({ symbol }: GraphMiniViewProps) {
     return { nodes, links };
   }, [graphData]);
 
-  // 연결 종목 태그 — ⑳-3 S3: suggestions(레거시 Neo4j) 대신 ego 엣지에서 파생.
-  // 이웃 심볼 + 관계 라벨(getRelationStyle)로 상위 6개(중복 제거, truth_score 순).
+  // 연결 종목 태그 — ⑳-3 S3/S2: suggestions(레거시 Neo4j) 대신 ego 엣지에서 파생.
+  // S2 C-5: 라벨을 칩 분화(qualificationChips 첫 칩 = "Peer·FMP"/"뉴스 동시출현 N회" 등)로. 상위 6개.
   const connectedTags = useMemo(() => {
-    if (!graphData) return [];
-    const center = graphData.center.ticker;
+    if (!egoData) return [];
+    const center = egoData.center.symbol;
     const seen = new Set<string>();
     const tags: { ticker: string; label: string }[] = [];
-    for (const e of graphData.edges) {
-      const neighbor = e.from === center ? e.to : e.from;
+    for (const e of egoData.edges) {
+      const neighbor = e.source === center ? e.target : e.source;
       if (neighbor === center || seen.has(neighbor)) continue;
       seen.add(neighbor);
-      tags.push({ ticker: neighbor, label: getRelationStyle(e.derived_type || e.type).label });
+      tags.push({ ticker: neighbor, label: qualificationChips(e)[0] ?? getRelationStyle(e.relation_type).label });
       if (tags.length >= 6) break;
     }
     return tags;
-  }, [graphData]);
+  }, [egoData]);
 
   if (isLoading) {
     return (

@@ -1,7 +1,7 @@
 /**
  * EgoDrilldown (⑳-2 S2) — [목록][지도] 토글, 기본=목록, 비-ego=그래프만.
  */
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockStore = { centerSymbol: null as string | null };
@@ -29,20 +29,14 @@ describe('EgoDrilldown (⑳-2)', () => {
     expect(screen.queryByRole('tab', { name: '목록' })).not.toBeInTheDocument();
   });
 
-  it('ego 모드: 토글 존재, 기본 = 목록(카드 리스트)', () => {
+  // ⑳-3 S2 D-3 (지도-B): ego 모드에서 [지도] 토글 접힘 → 목록(RelationCardList)만 노출.
+  it('ego 모드: 지도-B로 토글 없이 목록만(지도 진입 제거)', () => {
     mockStore.centerSymbol = 'NVDA';
     render(<EgoDrilldown />);
-    expect(screen.getByRole('tab', { name: '목록' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: '지도' })).toBeInTheDocument();
     expect(screen.getByTestId('relation-card-list')).toBeInTheDocument();
+    // 지도 토글/캔버스 미노출(코드는 보존, MAP_ENABLED=false)
+    expect(screen.queryByRole('tab', { name: '지도' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('tab', { name: '목록' })).not.toBeInTheDocument();
     expect(screen.queryByTestId('market-graph-canvas')).not.toBeInTheDocument();
-  });
-
-  it('지도 토글 클릭 → 그래프 뷰(기존 동작 보존)', () => {
-    mockStore.centerSymbol = 'NVDA';
-    render(<EgoDrilldown />);
-    fireEvent.click(screen.getByRole('tab', { name: '지도' }));
-    expect(screen.getByTestId('market-graph-canvas')).toBeInTheDocument();
-    expect(screen.queryByTestId('relation-card-list')).not.toBeInTheDocument();
   });
 });
