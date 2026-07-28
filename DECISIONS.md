@@ -299,7 +299,24 @@
 
 **Why**: 관찰 창(07-08~12) 실측 — SEC seed(매일 01:00)가 upward 틱(00:30)이 fast-path로 올린 medium-grade tier1 공급망 pair(37건)를 30분 뒤 probable로 되돌림 = fastpath=30 churn(격일). "잃긴 쉽고 되찾긴 어렵다"의 하향/상향 비대칭을 지키려면 **한 pair의 status 상향/하향 권위가 각 1주체**여야 flap 불성립. B-0 감사(하드게이트): 기록자 전수=SEC seed/update_relation_confidence(upward보다 먼저 도는 베이스라인, flap 원천 아님)/upward/decay — 예상 밖·강의존 없음, SEC seed는 truth 전용이라 market 고아화 없음(제4 기록자 도메인 분할로 승인).
 
-**How to apply**: 지시서 T-3b. 커밋 Phase A `b5a9485`·Phase B `7252590`·명문화 `6ab8955` → 병합 `3a3e921`(P-0 충돌 0·rerere clean). prod 마이그 0016(NULL 13,427→0). §4 관찰(거래일 3틱, 첫 유의미 틱부터 기산): 첫 신로직 틱(07-14) evaluated≈270(SEC 재관측 경로 = 0 아님), 코호트 30~37 confirmed 승급 마지막 1회 + 01:00 seed 후 유지(flap 소멸) + 쓰기 증폭 감소. §6 동결 재적용(§4 종료까지 chain_sight·sec_pipeline merge/rebase 금지). 정리 대기: DB beat 삭제·pair 브랜치·OPS-WORKTREE-ISOLATION·SEC β(seed status 무기록 승계 명기). **검증**: 545 passed(신규 31), 사전존재 13(attention6+leadership7 Neo4j-env) 무관.
+**How to apply**: 지시서 T-3b. 커밋 Phase A `b5a9485`·Phase B `7252590`·명문화 `6ab8955` → 병합 `3a3e921`(P-0 충돌 0·rerere clean). prod 마이그 0016(NULL 13,427→0). §4 관찰(거래일 3틱, 첫 유의미 틱부터 기산): 첫 신로직 틱(07-14) evaluated≈270(SEC 재관측 경로 = 0 아님), 코호트 30~37 confirmed 승급 마지막 1회 + 01:00 seed 후 유지(flap 소멸) + 쓰기 증폭 감소. §6 동결 재적용(§4 종료까지 chain_sight·sec_pipeline merge/rebase 금지). 정리: DB beat 삭제·pair 브랜치(잔여 병진 수동)·**OPS-WORKTREE-ISOLATION ✅ 봉인·클로즈(2026-07-28, 아래 블록)**·SEC β(seed status 무기록 승계 = ⓓ SEC β 이관). **검증**: 545 passed(신규 31), 사전존재 13(attention6+leadership7 Neo4j-env) 무관.
+
+## OPS-WORKTREE-ISOLATION 클로즈 — 격리 3층 방어선 봉인 (2026-07-28) [ops] [harness]
+
+**결정**: 동시성 사고 3건(트리 탈취 07-04·워커 리셋·미커밋 WIP) 대책 Opt-2 단계형(정리목록 ⓒ)을 **전 Phase 완료로 봉인·클로즈**. 3층 방어선 = Phase 1 세션 마커(`1f2bf5f`, respect verdict·heal·런타임 R1 예외) / Phase 2 공유트리 git hook(존치·트리거 대기, OBE) / Phase 3 verify 무인 파수꾼 section D(`b76d9ab`, 조상기반 drift·stale마커·코드버전). 클로즈 선언 = `docs/features/chain-sight/OPS_ISO_CLOSE_declaration.md`.
+
+**본 트랙 결정 색인**:
+- **래퍼 self-locate 채택**: verify launchd repoint가 plist-only로 불가(래퍼 `PROJECT_DIR` 공유트리 하드코딩+`cd`) → `PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"` self-locate. 행위보존 IDENTICAL 실측(공유트리 위치 호출 == 기존 하드코딩 값). origin/main `b9ddf41a`.
+- **§1 결정 = α(sv-worker-runtime)**: verify 실행 트리 = origin/main 추적·worker_sync 전파·.env 완비 런타임 트리(β 전용 ops 트리 대비 이동부품 0). `launchctl print` 실효경로 확증.
+- **야간→주간 집행 변경**: worker_sync blast radius(celery-worker+beat+daphne/WS 3종 재기동) 때문에 병진 야간 창 번들로 이행 → 실제 집행은 07-27 11:48(사전점검 게이트 충족: 금지구간 밖·nightly not running·celery active empty)에 병진 명시 지시로 CC 구동, 안전 게이트 엄수.
+
+**Why**: 라이브 자동화 배치가 공유 세션 개발 트리를 읽으면 체크아웃 브랜치 따라 배포 drift(→ common-bugs #67). 브랜치별 cherry-pick은 수리 아님(재발). 배치 자체를 origin/main 추적 트리로 교정해야 근본 해소.
+
+**임시규칙 일괄 정리**:
+- **폐지**: ⑴ "마커 존중은 pair 세션만"(rollout 한시 스코프) — 전 세션 표준으로 승격 대신 Phase 1 마커 계약(respect verdict)이 상시 규약이므로 한시 표현 폐지. ⑵ "§6 동결 = §4 종료까지 chain_sight/sec_pipeline merge 금지"(T-3b 관찰 창 한시) — §4 종료로 자동 해제, SEC β 착수 시 재적용은 그 트랙 소관.
+- **영구 승격 2건**(common-bugs 등록): ⑴ "지시서는 repo 커밋이 0번째 게이트, 원본 불변·개정문 누적"(#68). ⑵ "라이브 자동화 배치는 origin/main 추적 트리만 참조"(#67).
+
+**봉인 증거**: 2026-07-28 02:30:05 KST 라이브 첫 section D 발화 `drift/marker/codever=ok/ok/ok`(07-19~27 라이브엔 전무=전후 대조). §3-2 인위 stale마커 발화→marker warn→원복→ok 복귀 실증. IDENTICAL PASS(`scripts/ops/compare_verify_skeleton.py`, section D 제외 diff=0). **차기 트랙**: ⓓ SEC β(`docs/features/chain-sight/PR_sec_beta_grounding.md`) — seed status 권위 잔여 질문(270 save/330 seed 재관측) 이관.
 
 ---
 

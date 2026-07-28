@@ -24,10 +24,10 @@
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |---|---|---|---|---|---|
 | OPS-ISO-P1 | Phase 1 마커+헬퍼+worker_sync 존중 | @infra | §0 | **✅ done (`1f2bf5f`)** | 마커 라이브러리·wt-open/close·테스트 8/8·실동작 skip 실측 |
-| OPS-ISO-P3 | Phase 3 verify section D 3항목 | @infra | P1 | **✅ done (`b76d9ab`)** | 조상기반 drift·stale마커·코드버전, mock 12/12, 라이브 PASS+D=info/ok/ok |
-| OPS-ISO-P2 | Phase 2 공유트리 git hook(post-checkout 경고·pre-push·pre-commit 보호브랜치 차단) | @infra | P1 + **클린 창** | **대기(클린창)** | ⚠ Desktop 공유트리 `sess-mon-timing-p25` 점유(dirty 18) — 차단 hook이라 무점유 창 필요. 그 세션 wip커밋·클린 포착 시 착수 |
-| OPS-VERIFY-EXEC-TREE | verify launchd가 표류 Desktop 트리서 실행 → 안정 트리(런타임/전용) 지향 검토 | @infra | 별도 결정 | **todo(발견 등재)** | Phase 3서 실측: Desktop 세션 브랜치 표류 시 구 verify 실행. Phase 2 또는 후속서 실행-트리 안정화 |
-| OPS-ISO-CLOSE | 전 Phase 완료 → §5-2(DECISIONS·임시규칙"pair세션만"폐지·봉인) → ⓒ종결→ⓓ SEC β | @infra | P2 | **대기** | - |
+| OPS-ISO-P3 | Phase 3 verify section D 3항목 | @infra | P1 | **🏁 봉인 (`b76d9ab` + repoint)** | 조상기반 drift·stale마커·코드버전, mock 12/12. **봉인 2026-07-28 02:30:05 KST 라이브 첫 section D 발화** `drift/marker/codever=ok/ok/ok`(07-19~27 라이브엔 전무=전후 대조). §3-2 인위 stale마커 발화→warn→원복→ok 복귀 실증. IDENTICAL PASS(`scripts/ops/compare_verify_skeleton.py`) |
+| OPS-ISO-P2 | Phase 2 공유트리 git hook(post-checkout 경고·pre-push·pre-commit 보호브랜치 차단) | @infra | P1 + **클린 창** | **존치(트리거 대기, OBE)** | 원 차단 대상 `sess-mon-timing-p25` 트리 소멸 → 원 클린창 전제 무효(OBE). 방어종심으로 존치, **재트리거 = 공유 dirty 트리 재출현 or 세션트리 접촉 자동화 신설 시 재스코프** |
+| OPS-VERIFY-EXEC-TREE | verify launchd repoint → origin/main 추적 트리(α=sv-worker-runtime) | @infra | 별도 결정 | **✅ done (repoint 07-27, 봉인 07-28)** | 근본원인=래퍼 PROJECT_DIR 공유트리 하드코딩+cd(plist-only 불가). 대체안 BASH_SOURCE self-locate(origin/main `b9ddf41a`)·§1=α. 집행 07-27 11:48~11:51(A게이트→sv sync→plist 2필드 교체 bootout/bootstrap·실효경로 sv-worker-runtime)·라이브 봉인 07-28. 개정문1/2+야간 명령서 main 편입 |
+| OPS-ISO-CLOSE | 전 Phase 완료 → §5-2 정리·봉인 → ⓒ종결→ⓓ SEC β | @infra | P2 | **✅ done (2026-07-28)** | 회수·종결 세션: STEP0 봉인판정 G→§1~§6 완주. 클로즈 선언 `docs/features/chain-sight/OPS_ISO_CLOSE_declaration.md`. 임시규칙 폐지·영구승격 2건(common-bugs #67·#68). 차기=ⓓ SEC β(`PR_sec_beta_grounding.md`) |
 
 ---
 

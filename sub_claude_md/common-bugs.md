@@ -1000,3 +1000,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 배포 대상 파일은 origin/main `9f2e6c5`(OPS-PLIST-FIX `56251a9`)에서 교정됐으나, 집행 세션이 그 머지보다 **이전 base**의 브랜치(`sess-hold-p1` base `6973bda`)에 체크아웃돼 있어 디스크 산출물이 구본이었다. 공유/세션 트리의 디스크 상태는 "현재 체크아웃된 브랜치"에 종속 = origin/main 최신과 무관하게 뒤처질 수 있다.
 
 **해결**: **배포 실물(plist·설정 파일·스크립트 등)은 디스크 cp가 아니라 `git show origin/main:<path>`로 추출**해 배치한다. 근본: "무엇이 배포돼 있는가(origin/main)"와 "무엇이 현 트리에 있는가(체크아웃 브랜치)"를 분리 사고. cf. #64(서빙 빌드 판별=HTTP BUILD_ID)·[[reference_web_runtime_prod_build]]와 동류 — 트리 파일만으론 배포 실체 불확정. 실측: 배치 전 `plutil -lint` + `PlistBuddy -c "Print :ProgramArguments"`로 교정본 확인 필수.
+
+## 라이브 자동화 배치는 origin/main 추적 트리만 참조 — 공유 세션 트리를 읽으면 체크아웃 브랜치 따라 배포 drift (#67, 2026-07-24~28 OPS-VERIFY-EXEC-TREE) [ops] [deploy]
+
+**증상**: verify launchd(`com.stockvis.verify-pair`, 02:30)의 section D(Phase 3 파수꾼)가 origin/main에 배선(`b76d9ab`)됐는데도 라이브 02:30 로그에 **section D가 전무**. "코드 착지=라이브 발현"으로 오판하기 쉬움(07-20 "라이브 PASS"는 실은 dev 트리 관찰이었음).
+
+**원인**: verify 래퍼 `scripts/verify-pair.sh`가 `PROJECT_DIR="…/Desktop/stock_vis"`(공유 세션 트리)를 **하드코딩+`cd`** → 그 트리의 체크아웃 브랜치(`sess-hold-p1`, `b76d9ab` 미포함)를 실행. 공유트리엔 `ops_verify_checks.py` 파일 자체가 없어 section D 없는 구버전 py를 돌렸다. 라이브 자동화가 "현재 체크아웃된 브랜치에 종속되는 공유 편집 트리"를 읽으면, origin/main에 무엇이 있든 실행물은 그 트리의 브랜치를 따른다(#66과 동류 — 읽기 접촉판).
+
+**해결**: **라이브 자동화 배치(launchd·cron)는 origin/main 추적 트리(런타임/전용 트리)만 참조**한다. 래퍼는 `PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`로 **self-locate** → plist가 지향한 트리의 코드를 돈다. 브랜치별 cherry-pick은 수리 아님(drift 재발) — 배치 자체를 교정. **"무접촉" 주장 시 읽기/쓰기 구분 필수**: verify의 `cd`+실행은 쓰기가 아니어도 읽기 접촉이므로 공유트리 브랜치에 종속된다(놓치기 쉬움). cf. `sv sync`/`sv`(D-SYNC-ENTRYPOINT)가 스크립트 진입점을 origin/main 트리로 고정하는 것과 동일 원리.
+
+## 지시서는 repo 커밋이 0번째 게이트 — 미커밋 지시서는 소비 불가, 발행 시점 보존 (#68, 2026-07-24~28 OPS-ISO 트랙) [harness]
+
+**증상**: 실행 지시서(`*_directive.md`)를 대화/디스크에만 두고 소비하면, 소비 근거·발행 시점·개정 이력이 휘발돼 사후 추적 불가. 승인 스펙이 물리적으로 불가한 지점을 발견해도(예: plist-only repoint) 원 지시서와 개정문의 관계가 남지 않는다.
+
+**원인**: 지시서는 휘발성이라 repo에 보관 안 하는 관행이었으나, 소비(집행) 전 커밋을 강제하지 않으면 "무엇을 근거로 무엇을 했는가"의 계보가 끊긴다.
+
+**해결**: **지시서 소비의 0번째 게이트 = 해당 파일이 `docs/instructions/`에 커밋돼 있을 것.** 원 지시서는 **수정하지 않고**(발행 시점 보존), 스펙 변경·불가 발견은 **개정문(`*_amendment*.md`)을 별도 커밋**으로 쌓는다(원본 불변, 개정 계보 누적). 세션 종료 전 CLAUDE.md Harness Protocol의 "지시서 폐기 전 흡수 확인"(비자명 결정의 '왜'가 DECISIONS에 흡수·task ID 추적)과 병행. 실측 사례: OPS-VERIFY-EXEC-TREE = 원 지시서(`b8d767aa`) + 개정문1(self-locate, origin/main) + 개정문2(야간 번들) 3층 계보.
