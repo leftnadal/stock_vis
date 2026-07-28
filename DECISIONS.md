@@ -340,6 +340,16 @@
 
 **게이트별 사인오프**: Gate 1(flag-off·매처·additive 마이그·dry-run 분포)에서 정지. Gate 2(백필 실기록·flag-on 1 filing·prompt v2)는 **본 분포 감독 비준 후에만**. flag `SEC_GROUNDING_ENABLED`(G2, 기본 False)·prompt v1→v2는 미도입(G1 범위 밖).
 
+## SEC β G1.5 — not_found 437 분해·재판정 (2026-07-28) [chainsight] [sec]
+
+**결정(회부 자료)**: G1 not_found 24.96%(>15%)를 결정론 분해(LLM 0콜, `scripts/sec/grounding_g15_decompose.py`, 리포트 `docs/features/chain-sight/sec_beta_g15_decomposition_report.md`). 결과:
+- **① 중복**: 1,751→유니크 937(중복률 46.5%). not_found 437→유니크 182.
+- **② 동인 분리**: missing_source_section=0(구조적 — Track A 추출은 item_1+7만 LLM 투입, `normalizer.py:56`). 정규화 갭 테스트(source=raw vs `normalize_section_all`)=not_found 불변 0 → 정제갭 동인 아님. 판정 5종 확장 실발생 0 → 마이그 additive 수정 불요.
+- **③ 비-verbatim 패턴**(유니크 182, prefix 결정론): tail 발산(절단/mid-word) **169(92.9%)** · 중간 재서술 5 · 합성 8.
+- **재판정**: 잔여 순수 not_found 명목 24.96%/유니크 19.42% — 둘 다 >15% → **V-B 부분도입 결정 사이클 회부**.
+
+**Why(권고 = V-B보다 prompt v2 우선)**: 잔여의 92.9%가 "옳은 문장의 tail 발산"(prompt v2 verbatim 강제 표적)이지 검증(V-B) 대상 아님. → **prompt v2 롤아웃 후 재측정 우선**, V-B 채택 시 범위 = 합성/재서술 ~13 유니크로 한정. 최종 결정 감독. 부수: 빈 store 61=regex 추출 실패(status=failed, 미참조 무해). Gate 2 정지 유지.
+
 ---
 
 ## credit_signals 신규 앱 (Phase 1) — FRED 크레딧 신호 백본 (2026-07-08) [credit]
