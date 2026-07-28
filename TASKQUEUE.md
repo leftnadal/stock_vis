@@ -12,8 +12,15 @@
 | ID | Task | 분류 | Depends On | Status |
 |----|------|------|-----------|--------|
 | P2-COVERAGE-C1-API | (platform) 커버리지 조회 API build — `GET /api/v1/telemetry/coverage` 계열. platform→shared 읽기 조인만(#43 안전, IssuanceLog/ImpressionLog 무변경). 발급 grain 대비 dashboard_eod 노출 매칭 = 발급 N/노출 M/율% + 미노출 리스트. | @backend (platform 구획) | 없음 | 🆕 등재(착수가능) |
-| P2-COVERAGE-C1-FE | (dashboard) 상단 커버리지 스트립(발급/노출/율 + 미노출 N건 링크) + `/dashboard/coverage` 상세의 미노출 리스트. 상세 페이지 내 노출은 `surface='coverage_detail'`로 분리 기록(유기 지표 오염 격리). | @frontend (dashboard 구획) | P2-COVERAGE-C1-API | 🆕 등재(dep 대기) |
+| P2-COVERAGE-C1-FE | (dashboard) 상단 커버리지 스트립(발급/노출/율 + 미노출 N건 링크) + `/dashboard/coverage` 상세의 미노출 리스트. 상세 페이지 내 노출은 `surface='coverage_detail'`로 분리 기록(유기 지표 오염 격리). | @frontend (dashboard 구획) | P2-COVERAGE-C1-API | ✅ **build 완료·push (`58e18c7d`, 2026-07-27, 미머지)** — vitest 12·tsc 0. **관문 판정=경로 B**: ingest surface 화이트리스트(views.py:29·41)가 `coverage_detail` 거부 → 상세 impression **추적 미연결**(발신 0=오염 0, C-1 취지 충족). surface 등재는 shared 구획 → 아래 COVERAGE-DETAIL-SURFACE로 이관. **LAND는 MGMT-BATCH-14 착지 후 재개**(72h FAIL 선행 해소) |
+| COVERAGE-DETAIL-SURFACE | (shared) `ImpressionLog.SURFACE_CHOICES`에 **`coverage_detail` 추가** — 상세 페이지 impression 추적 연결의 **선행 조건**(C1-FE 경로 B 해소). ⚠ **choices 추가 시 `makemigrations --dry-run` 필수**(choices는 DB 스키마 무영향=무마이그 기대 — 마이그 발생 시 HALT 후 보고). 근거: C1-FE STEP 0 관문(views.py:29·41 화이트리스트가 coverage_detail 거부 → 추적 미연결). | @backend (shared 구획) | **C-2 게이트 연동**(impression 숙성 8월 초 검토와 동일 게이트) | 💤 보류(C-2 숙성 게이트 — 그 전 실행 금지) |
 | P2-COVERAGE-C2 | 4단 퍼널(발급→표시→노출→클릭) 추이·표시 층 분해. "표시" 층 = 베이크 산출 JSON 읽기 파생(#43 무변경). | 상세(dashboard/platform) | **트리거 = impression 데이터 2~3주 숙성**(상수 튜닝 재료 확보) | 💤 보류(숙성 게이트) |
+
+### 하네스 위생 후속 (MGMT-BATCH-14 적립)
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| HEALTH-72H-SEVERITY-SPLIT | `scripts/health_check.py`의 **72h PROGRESS 위생 검사 severity를 세션 종류별 분리** 검토 — merge 세션=WARN(구획 밖이라 자체 해소 불가) / mgmt 세션=FAIL(갱신 권한 보유). 근거=#69(2026-07-27 C1-FE-LAND가 72h FAIL로 교착). ⚠ **착수 전 결정 사이클 필요**(세션 종류 판별 방법·오분류 리스크). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 낮음, 구현 아님) |
 
 ---
 
