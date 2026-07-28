@@ -47,7 +47,7 @@ def seed_spdr_primary(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("chainsight", "0017_universesnapshot"),
+        ("chainsight", "0020_universesnapshot"),
     ]
 
     operations = [

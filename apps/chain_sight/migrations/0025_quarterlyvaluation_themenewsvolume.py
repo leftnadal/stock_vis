@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0021_seed_spdr_leveraged_etfs'),
+        ('chainsight', '0024_seed_spdr_leveraged_etfs'),
     ]
 
     operations = [

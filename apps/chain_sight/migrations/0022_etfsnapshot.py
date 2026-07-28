@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0018_seed_spdr_primary_etfs'),
+        ('chainsight', '0021_seed_spdr_primary_etfs'),
     ]
 
     operations = [

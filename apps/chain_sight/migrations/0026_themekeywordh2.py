@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0022_quarterlyvaluation_themenewsvolume'),
+        ('chainsight', '0025_quarterlyvaluation_themenewsvolume'),
     ]
 
     operations = [

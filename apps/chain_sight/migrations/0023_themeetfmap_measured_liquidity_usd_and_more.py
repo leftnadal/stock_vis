@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0019_etfsnapshot'),
+        ('chainsight', '0022_etfsnapshot'),
     ]
 
     operations = [

@@ -49,7 +49,7 @@ def seed_spdr_leveraged(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("chainsight", "0020_themeetfmap_measured_liquidity_usd_and_more"),
+        ("chainsight", "0023_themeetfmap_measured_liquidity_usd_and_more"),
     ]
 
     operations = [

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0023_themekeywordh2'),
+        ('chainsight', '0026_themekeywordh2'),
     ]
 
     operations = [
