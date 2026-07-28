@@ -11,13 +11,22 @@ from datetime import date
 from typing import Optional
 
 # 방법론 개정일 (오름차순). date=개정 적용일(그날 재산출로 delta 불연속 발생).
-# ⏳ TH-C3-LLM-DICT-1 override(ovr_v1) 개정일 마커 = **heat 재산출 세션으로 이연**.
-#   근거: 쓰기 3단(2026-07-24)은 ThemeNewsVolume(≤07-11) 만 override 재작성했고 heat
-#   (ThemeHeatScore) 는 재계산하지 않았다(범위 밖). 이 상태에서 override 마커(07-11)를
-#   등재하면 crossing_marker 가 기존 heat delta(07-10→07-12, override 미반영)에 "override
-#   때문에 보류"로 **거짓 적용**된다(test_crosses_guard_marker 로 실증). 마커는 heat 가
-#   override 를 실제 반영(heat 재산출)한 시점에 등재해야 정합 → 후속 heat 재산출 세션 이연.
 HISTORY_MARKERS = [
+    {
+        # TH-C3-LLM-DICT-1 override(ovr_v1) 개정일 마커 (결정35, 쓰기 3b 2026-07-28 등재).
+        # 3b 에서 heat 를 date>=07-12 로만 override 반영 재산출(경로 b). 07-10(마커 이전)은
+        # 무접촉이므로 이 마커가 이제 heat delta 에 참으로 적용된다(3단의 "거짓 적용" 해소).
+        # date=07-11 = override 재작성 코퍼스 경계. 07-12 이후 heat delta 는 override 방법론 반영.
+        # affected_themes(결정30): 07-12 이후 재산출로 score/C3 변동 = FinSvc/CC/Energy/Ind/
+        # Tech(기존) + Healthcare(결측 해소 신규).
+        "date": date(2026, 7, 11),
+        "kind": "ovr_v1_dict_recompute",
+        "note": "TH-C3-LLM-DICT-1 override(ovr_v1) 사전 재산출 — heat date>=07-12 override 반영(결정35, 3b). 07-12 이후 C3 delta 방법론 불연속.",
+        "affected_themes": [
+            "Financial Services", "Consumer Cyclical", "Energy",
+            "Industrials", "Technology", "Healthcare",
+        ],
+    },
     {
         "date": date(2026, 7, 12),
         "kind": "c1_thin_quarter_guard",

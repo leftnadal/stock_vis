@@ -112,9 +112,16 @@ class TestLatestRowSelection:
 
 # ────────────────────────── 결정29 전환일 driver 보류 ──────────────────────────
 class TestCrossingMarker:
-    def test_crosses_guard_marker(self):
-        # 07-10 → 07-12 구간이 07-12 개정 마커를 가로지름
+    def test_crosses_override_marker(self):
+        # 07-10 → 07-12 구간: 최초 마커 = 07-11 override 재산출(ovr_v1_dict_recompute).
+        # 3b 에서 heat 를 date>=07-12 override 반영 재산출 → 이 마커가 delta 에 **참** 적용
+        # (3단의 "거짓 적용" 해소: 이전엔 heat override 미반영이라 거짓이었음).
         m = crossing_marker(date(2026, 7, 10), date(2026, 7, 12))
+        assert m and m["kind"] == "ovr_v1_dict_recompute"
+
+    def test_crosses_guard_marker(self):
+        # 07-11 → 07-12 구간: (07-11, 07-12] 에 가드(07-12)만 포함 → 가드 반환(정상 통과 유지).
+        m = crossing_marker(date(2026, 7, 11), date(2026, 7, 12))
         assert m and m["kind"] == "c1_thin_quarter_guard"
 
     def test_after_marker_no_cross(self):

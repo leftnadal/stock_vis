@@ -1,0 +1,1367 @@
+[
+{
+"theme": "Consumer Cyclical",
+"date": "2026-07-10",
+"score": 44,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.04851293662156447,
+"z": -2.9761955937734363,
+"raw": 8.036218435283264,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5496661000173576,
+"z": 0.19932169541478278,
+"raw": {
+"c2a": {
+"s": 0.5880196525822918,
+"z": 0.3557847223297303,
+"raw": 0.9957710931859796,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.4716294162802095,
+"z": -0.11360435841511232,
+"raw": {
+"legs": {
+"z_ipo": -0.43519413988924455,
+"z_424b5": 0.2079854230590199
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.6858810727472182,
+"z": 0.7809325859409202,
+"raw": 61,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.4683139258385401,
+"z": -0.12691437625917998,
+"raw": 0.0035046481661995996,
+"missing_reason": null
+},
+"C6": {
+"s": 0.43544847350486726,
+"z": -0.25965518396290305,
+"raw": 0.267317101730366,
+"missing_reason": null
+},
+"C7": {
+"s": 0.5584816231879577,
+"z": 0.23500207133563958,
+"raw": 1198963933541.3,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": -2.9761955937734363,
+"component": "C1"
+},
+{
+"z": 0.7809325859409202,
+"component": "C3"
+}
+]
+},
+{
+"theme": "Consumer Cyclical",
+"date": "2026-07-12",
+"score": 57,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6604794780912208,
+"z": 0.66543166059617,
+"raw": 11.222324474628032,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5503207586130449,
+"z": 0.20196677402523938,
+"raw": {
+"c2a": {
+"s": 0.5908010733027756,
+"z": 0.367277956205035,
+"raw": 0.996920392657455,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.4678803945398069,
+"z": -0.12865559033435187,
+"raw": {
+"legs": {
+"z_ipo": -0.4455034034019808,
+"z_424b5": 0.18819222273327707
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.6888900482147754,
+"z": 0.7949352841724657,
+"raw": 63,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.4684352624725264,
+"z": -0.12642708021247873,
+"raw": 0.0035046481661995996,
+"missing_reason": null
+},
+"C6": {
+"s": 0.44287997955820774,
+"z": -0.22948188643897974,
+"raw": 0.269348497518889,
+"missing_reason": null
+},
+"C7": {
+"s": 0.5445675764868715,
+"z": 0.17874469311416796,
+"raw": 1186854764523.97,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 0.7949352841724657,
+"component": "C3"
+},
+{
+"z": 0.66543166059617,
+"component": "C1"
+}
+]
+},
+{
+"theme": "Consumer Cyclical",
+"date": "2026-07-13",
+"score": 57,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6604794780912208,
+"z": 0.66543166059617,
+"raw": 11.222324474628032,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5499524432684159,
+"z": 0.20047854889715205,
+"raw": {
+"c2a": {
+"s": 0.5912165391178189,
+"z": 0.3689967643999852,
+"raw": 0.9968814133374017,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.4659134836200214,
+"z": -0.13655788210851422,
+"raw": {
+"legs": {
+"z_ipo": -0.4455034034019808,
+"z_424b5": 0.17238763918495234
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.6888900482147754,
+"z": 0.7949352841724657,
+"raw": 63,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.4686604390406354,
+"z": -0.12552279571528047,
+"raw": 0.0035046481661995996,
+"missing_reason": null
+},
+"C6": {
+"s": 0.4389329553712869,
+"z": -0.24549372736196085,
+"raw": 0.2686800940035627,
+"missing_reason": null
+},
+"C7": {
+"s": 0.5297106479209244,
+"z": 0.11898276214835055,
+"raw": 1177635005093.07,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 0.7949352841724657,
+"component": "C3"
+},
+{
+"z": 0.66543166059617,
+"component": "C1"
+}
+]
+},
+{
+"theme": "Energy",
+"date": "2026-07-10",
+"score": 58,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6626482958974431,
+"z": 0.6751183571768457,
+"raw": 9.840913886022244,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5119153807148195,
+"z": 0.04767054834358586,
+"raw": {
+"c2a": {
+"s": 0.7220681747469757,
+"z": 0.9547437085790454,
+"raw": 0.9996063848419737,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.14598114878237128,
+"z": -1.7664757721273334,
+"raw": {
+"legs": {
+"z_ipo": null,
+"z_424b5": -1.7664757721273334
+},
+"count_ipo": 0,
+"count_424b5": 0
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7027461425580372,
+"z": 0.8604092081211097,
+"raw": 51,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.2883224748232641,
+"z": -0.9035453367556615,
+"raw": 0.010107878738996476,
+"missing_reason": null
+},
+"C6": {
+"s": 0.5087486722805401,
+"z": 0.03499826106878637,
+"raw": 0.5261614737035718,
+"missing_reason": null
+},
+"C7": {
+"s": 0.8016020683233127,
+"z": 1.3963375407911904,
+"raw": 283900911003.07,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 1.3963375407911904,
+"component": "C7"
+},
+{
+"z": -0.9035453367556615,
+"component": "C5"
+}
+]
+},
+{
+"theme": "Energy",
+"date": "2026-07-12",
+"score": 58,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6626482958974431,
+"z": 0.6751183571768457,
+"raw": 9.840913886022244,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5094301453300414,
+"z": 0.037725054811381234,
+"raw": {
+"c2a": {
+"s": 0.7201520653726708,
+"z": 0.9452160265911624,
+"raw": 0.9996065734495885,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.1446421833567551,
+"z": -1.777256888748181,
+"raw": {
+"legs": {
+"z_ipo": null,
+"z_424b5": -1.777256888748181
+},
+"count_ipo": 0,
+"count_424b5": 0
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7432918062485736,
+"z": 1.0631487012630465,
+"raw": 51,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.2890481051408167,
+"z": -0.9000116410534118,
+"raw": 0.010107878738996476,
+"missing_reason": null
+},
+"C6": {
+"s": 0.5022368159432253,
+"z": 0.00894732346195472,
+"raw": 0.5248093265908739,
+"missing_reason": null
+},
+"C7": {
+"s": 0.7849047928369939,
+"z": 1.2944816732928042,
+"raw": 279932832248.91003,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 1.2944816732928042,
+"component": "C7"
+},
+{
+"z": 1.0631487012630465,
+"component": "C3"
+}
+]
+},
+{
+"theme": "Energy",
+"date": "2026-07-13",
+"score": 58,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6626482958974431,
+"z": 0.6751183571768457,
+"raw": 9.840913886022244,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5075313096136965,
+"z": 0.030127517061430794,
+"raw": {
+"c2a": {
+"s": 0.7191915685756711,
+"z": 0.9404550616104039,
+"raw": 0.9996067616390353,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.14300805378739234,
+"z": -1.7905275720365155,
+"raw": {
+"legs": {
+"z_ipo": null,
+"z_424b5": -1.7905275720365155
+},
+"count_ipo": 0,
+"count_424b5": 0
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7432918062485736,
+"z": 1.0631487012630465,
+"raw": 51,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.2882522506881907,
+"z": -0.9038875967335468,
+"raw": 0.010107878738996476,
+"missing_reason": null
+},
+"C6": {
+"s": 0.507337616279002,
+"z": 0.029352572384342118,
+"raw": 0.5270469169269472,
+"missing_reason": null
+},
+"C7": {
+"s": 0.7791066238475904,
+"z": 1.2604677849756325,
+"raw": 279316261318.33,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 1.2604677849756325,
+"component": "C7"
+},
+{
+"z": 1.0631487012630465,
+"component": "C3"
+}
+]
+},
+{
+"theme": "Financial Services",
+"date": "2026-07-10",
+"score": 67,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.999454607672377,
+"z": 7.5134596139749865,
+"raw": 18.068115145171596,
+"missing_reason": null
+},
+"C2": {
+"s": 0.5021873482662755,
+"z": 0.008749448880949556,
+"raw": {
+"c2a": {
+"s": 0.4737842203208622,
+"z": -0.1049593694890572,
+"raw": 0.920845556178737,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.5587688726902879,
+"z": 0.23616708562096306,
+"raw": {
+"legs": {
+"z_ipo": -0.5774963906588376,
+"z_424b5": 1.0498305619007637
+},
+"count_ipo": 0,
+"count_424b5": 21
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7769097823610948,
+"z": 1.2477479803593805,
+"raw": 65,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.5046264222376484,
+"z": 0.01850621710005162,
+"raw": 0.016947364044402714,
+"missing_reason": null
+},
+"C6": {
+"s": 0.23000316861747044,
+"z": -1.208293314325642,
+"raw": 0.24705932481343004,
+"missing_reason": null
+},
+"C7": {
+"s": 0.8236190802229274,
+"z": 1.5410621685482626,
+"raw": 999538143265.47,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 7.5134596139749865,
+"component": "C1"
+},
+{
+"z": 1.5410621685482626,
+"component": "C7"
+}
+]
+},
+{
+"theme": "Financial Services",
+"date": "2026-07-12",
+"score": 55,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.5341840305817102,
+"z": 0.13694976543298895,
+"raw": 11.697504017109358,
+"missing_reason": null
+},
+"C2": {
+"s": 0.49960729271739074,
+"z": -0.0015708294534394062,
+"raw": {
+"c2a": {
+"s": 0.4724720372023225,
+"z": -0.11022330932985334,
+"raw": 0.920845556178737,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.553725323871953,
+"z": 0.21573413029938848,
+"raw": {
+"legs": {
+"z_ipo": -0.5798655523515976,
+"z_424b5": 1.0113338129503746
+},
+"count_ipo": 0,
+"count_424b5": 21
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7098577762628585,
+"z": 0.8946934054064144,
+"raw": 66,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.5067247890653055,
+"z": 0.026900778377068377,
+"raw": 0.016947364044402714,
+"missing_reason": null
+},
+"C6": {
+"s": 0.22818012942475432,
+"z": -1.2186158361563926,
+"raw": 0.2448420023217891,
+"missing_reason": null
+},
+"C7": {
+"s": 0.8138324818791098,
+"z": 1.4751076451629364,
+"raw": 989777832521.06,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 1.4751076451629364,
+"component": "C7"
+},
+{
+"z": -1.2186158361563926,
+"component": "C6"
+}
+]
+},
+{
+"theme": "Financial Services",
+"date": "2026-07-13",
+"score": 55,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.5341840305817102,
+"z": 0.13694976543298895,
+"raw": 11.697504017109358,
+"missing_reason": null
+},
+"C2": {
+"s": 0.4971475606354633,
+"z": -0.011409881239855129,
+"raw": {
+"c2a": {
+"s": 0.4713637297718967,
+"z": -0.11467056942648843,
+"raw": 0.92004809615062,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.5486237189119851,
+"z": 0.19511149513341147,
+"raw": {
+"legs": {
+"z_ipo": -0.5798655523515976,
+"z_424b5": 0.9700885426184206
+},
+"count_ipo": 0,
+"count_424b5": 21
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7098577762628585,
+"z": 0.8946934054064144,
+"raw": 66,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.5109850133727705,
+"z": 0.043947125231303945,
+"raw": 0.016947364044402714,
+"missing_reason": null
+},
+"C6": {
+"s": 0.23014647553278517,
+"z": -1.2074843124246954,
+"raw": 0.2464713775242701,
+"missing_reason": null
+},
+"C7": {
+"s": 0.8081653854614753,
+"z": 1.438133104340309,
+"raw": 985789034962.17,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 1.438133104340309,
+"component": "C7"
+},
+{
+"z": -1.2074843124246954,
+"component": "C6"
+}
+]
+},
+{
+"theme": "Industrials",
+"date": "2026-07-10",
+"score": 58,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.7715198044846933,
+"z": 1.216912806704431,
+"raw": 15.317513253810471,
+"missing_reason": null
+},
+"C2": {
+"s": 0.12530542506076306,
+"z": -1.9431206106715857,
+"raw": {
+"c2a": {
+"s": 0.06753266126111032,
+"z": -2.625222774037627,
+"raw": 0.8202196626667826,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.35918199481976887,
+"z": -0.5789162839395032,
+"raw": {
+"legs": {
+"z_ipo": -0.4842572538244431,
+"z_424b5": -0.6735753140545634
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.7600891133688877,
+"z": 1.153168132152099,
+"raw": 53,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.7340018469880272,
+"z": 1.0150221797502312,
+"raw": 0.002938749122198661,
+"missing_reason": null
+},
+"C6": {
+"s": 0.2549469572471385,
+"z": -1.0723999014454229,
+"raw": 0.2184691595244568,
+"missing_reason": null
+},
+"C7": {
+"s": 0.9179842248867542,
+"z": 2.4152685980620885,
+"raw": 963068228534.19,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 2.4152685980620885,
+"component": "C7"
+},
+{
+"z": -1.9431206106715857,
+"component": "C2"
+}
+]
+},
+{
+"theme": "Industrials",
+"date": "2026-07-12",
+"score": 56,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.7050790320887858,
+"z": 0.8716024837218306,
+"raw": 14.50322315731758,
+"missing_reason": null
+},
+"C2": {
+"s": 0.12123139378837533,
+"z": -1.9808205516483304,
+"raw": {
+"c2a": {
+"s": 0.06432633345537529,
+"z": -2.677297680908313,
+"raw": 0.8197213868122694,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.3571245753601108,
+"z": -0.5878662931283649,
+"raw": {
+"legs": {
+"z_ipo": -0.4842572538244431,
+"z_424b5": -0.6914753324322868
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.735993957881334,
+"z": 1.0252499195972722,
+"raw": 49,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.7328871407996337,
+"z": 1.0093204584119801,
+"raw": 0.002938749122198661,
+"missing_reason": null
+},
+"C6": {
+"s": 0.25837384775700356,
+"z": -1.0544377198351433,
+"raw": 0.21763511176660433,
+"missing_reason": null
+},
+"C7": {
+"s": 0.9073159859869302,
+"z": 2.281294766233612,
+"raw": 946703364861.5499,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 2.281294766233612,
+"component": "C7"
+},
+{
+"z": -1.9808205516483304,
+"component": "C2"
+}
+]
+},
+{
+"theme": "Industrials",
+"date": "2026-07-13",
+"score": 55,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.7050790320887858,
+"z": 0.8716024837218306,
+"raw": 14.50322315731758,
+"missing_reason": null
+},
+"C2": {
+"s": 0.11554106882199089,
+"z": -2.035350039864001,
+"raw": {
+"c2a": {
+"s": 0.05969849758145794,
+"z": -2.756893717147263,
+"raw": 0.8152142283103099,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.3561158578093735,
+"z": -0.5922626852974777,
+"raw": {
+"legs": {
+"z_ipo": -0.4842572538244431,
+"z_424b5": -0.7002681167705124
+},
+"count_ipo": 0,
+"count_424b5": 7
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.735993957881334,
+"z": 1.0252499195972722,
+"raw": 49,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.7376575592632546,
+"z": 1.033829029015957,
+"raw": 0.002938749122198661,
+"missing_reason": null
+},
+"C6": {
+"s": 0.26041830855185016,
+"z": -1.043795527337652,
+"raw": 0.218746349846541,
+"missing_reason": null
+},
+"C7": {
+"s": 0.897873994720378,
+"z": 2.173822344022402,
+"raw": 933913387254.7699,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 2.173822344022402,
+"component": "C7"
+},
+{
+"z": -2.035350039864001,
+"component": "C2"
+}
+]
+},
+{
+"theme": "Technology",
+"date": "2026-07-10",
+"score": 58,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6937808120631893,
+"z": 0.8178549318804067,
+"raw": 23.746325358247585,
+"missing_reason": null
+},
+"C2": {
+"s": 0.6553812145542782,
+"z": 0.6427782369082975,
+"raw": {
+"c2a": {
+"s": 0.6390709840756742,
+"z": 0.5713342271885893,
+"raw": 0.9980352054184994,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.6869000351551291,
+"z": 0.7856662563477137,
+"raw": {
+"legs": {
+"z_ipo": -0.3004626062886658,
+"z_424b5": 1.8717951189840931
+},
+"count_ipo": 0,
+"count_424b5": 14
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.5937403687996465,
+"z": 0.37944969331524525,
+"raw": 254,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.2672792491451989,
+"z": -1.0084706730438684,
+"raw": 0.08288236745229725,
+"missing_reason": null
+},
+"C6": {
+"s": 0.21021390748636568,
+"z": -1.3236365204592173,
+"raw": 0.16015353010461283,
+"missing_reason": null
+},
+"C7": {
+"s": 0.9742098285708883,
+"z": 3.631633243198347,
+"raw": 6666640086137.67,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 3.631633243198347,
+"component": "C7"
+},
+{
+"z": -1.3236365204592173,
+"component": "C6"
+}
+]
+},
+{
+"theme": "Technology",
+"date": "2026-07-12",
+"score": 56,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6197470438083756,
+"z": 0.48847469548340994,
+"raw": 22.965325783317383,
+"missing_reason": null
+},
+"C2": {
+"s": 0.6529956658265121,
+"z": 0.6322332216466375,
+"raw": {
+"c2a": {
+"s": 0.6394295186143499,
+"z": 0.5728889539753557,
+"raw": 0.9980262838647103,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.6793795122284599,
+"z": 0.7509217569892012,
+"raw": {
+"legs": {
+"z_ipo": -0.3004626062886658,
+"z_424b5": 1.802306120267068
+},
+"count_ipo": 0,
+"count_424b5": 14
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.5834626360569654,
+"z": 0.3370042485677644,
+"raw": 249,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.2667567755796655,
+"z": -1.0111401769926267,
+"raw": 0.08288236745229725,
+"missing_reason": null
+},
+"C6": {
+"s": 0.21553469763494845,
+"z": -1.2918804357247287,
+"raw": 0.15959987036940218,
+"missing_reason": null
+},
+"C7": {
+"s": 0.969377328399935,
+"z": 3.454913299299002,
+"raw": 6541187409292.19,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 3.454913299299002,
+"component": "C7"
+},
+{
+"z": -1.2918804357247287,
+"component": "C6"
+}
+]
+},
+{
+"theme": "Technology",
+"date": "2026-07-13",
+"score": 56,
+"status": "warning",
+"components": {
+"C1": {
+"s": 0.6197470438083756,
+"z": 0.48847469548340994,
+"raw": 22.965325783317383,
+"missing_reason": null
+},
+"C2": {
+"s": 0.6524951697548314,
+"z": 0.6300251716005207,
+"raw": {
+"c2a": {
+"s": 0.6408640806751512,
+"z": 0.5791164696109342,
+"raw": 0.9980244981828064,
+"missing_reason": null
+},
+"c2b": {
+"s": 0.6752094828030258,
+"z": 0.7318425755796938,
+"raw": {
+"legs": {
+"z_ipo": -0.3004626062886658,
+"z_424b5": 1.7641477574480533
+},
+"count_ipo": 0,
+"count_424b5": 14
+},
+"missing_reason": null
+}
+},
+"missing_reason": null
+},
+"C3": {
+"s": 0.5834626360569654,
+"z": 0.3370042485677644,
+"raw": 249,
+"z_mode": "time_series_expanding",
+"missing_reason": null
+},
+"C4": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c4_insufficient_history"
+},
+"C5": {
+"s": 0.26706787073846294,
+"z": -1.0095502808850145,
+"raw": 0.08288236745229725,
+"missing_reason": null
+},
+"C6": {
+"s": 0.21203860237133978,
+"z": -1.3126807561235383,
+"raw": 0.15785987000416093,
+"missing_reason": null
+},
+"C7": {
+"s": 0.9630523195363686,
+"z": 3.260604869638377,
+"raw": 6383058433656.35,
+"missing_reason": null
+},
+"C8": {
+"s": null,
+"z": null,
+"raw": null,
+"z_mode": null,
+"missing_reason": "c8_no_sector_data"
+},
+"universe_as_of": "2026-07-09",
+"universe_stale": false
+},
+"evidence": [
+{
+"z": 3.260604869638377,
+"component": "C7"
+},
+{
+"z": -1.3126807561235383,
+"component": "C6"
+}
+]
+}
+]
