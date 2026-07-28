@@ -35,6 +35,7 @@
 | OPS-ISO-P2 | Phase 2 공유트리 git hook(post-checkout 경고·pre-push·pre-commit 보호브랜치 차단) | @infra | P1 + **클린 창** | **존치(트리거 대기, OBE)** | 원 차단 대상 `sess-mon-timing-p25` 트리 소멸 → 원 클린창 전제 무효(OBE). 방어종심으로 존치, **재트리거 = 공유 dirty 트리 재출현 or 세션트리 접촉 자동화 신설 시 재스코프** |
 | OPS-VERIFY-EXEC-TREE | verify launchd repoint → origin/main 추적 트리(α=sv-worker-runtime) | @infra | 별도 결정 | **✅ done (repoint 07-27, 봉인 07-28)** | 근본원인=래퍼 PROJECT_DIR 공유트리 하드코딩+cd(plist-only 불가). 대체안 BASH_SOURCE self-locate(origin/main `b9ddf41a`)·§1=α. 집행 07-27 11:48~11:51(A게이트→sv sync→plist 2필드 교체 bootout/bootstrap·실효경로 sv-worker-runtime)·라이브 봉인 07-28. 개정문1/2+야간 명령서 main 편입 |
 | OPS-ISO-CLOSE | 전 Phase 완료 → §5-2 정리·봉인 → ⓒ종결→ⓓ SEC β | @infra | P2 | **✅ done (2026-07-28)** | 회수·종결 세션: STEP0 봉인판정 G→§1~§6 완주. 클로즈 선언 `docs/features/chain-sight/OPS_ISO_CLOSE_declaration.md`. 임시규칙 폐지·영구승격 2건(common-bugs #67·#68). 차기=ⓓ SEC β(`PR_sec_beta_grounding.md`) |
+| OPS-ISO-PLIST-BACKUP-RM | plist 백업 삭제 `~/Library/LaunchAgents/com.stockvis.verify-pair.plist.pre_repoint_backup` | @사용자(병진) | 봉인 안정화 | **트리거: 2026-08-04, 병진 수동** | repoint 봉인(07-28) 후 1주 안정화 대기. 파괴적 작업=병진 수동. 삭제 시 repoint 원복 근거 소멸 유의 |
 
 ---
 
@@ -47,7 +48,7 @@
 | T3B-CLEANUP-A | DB beat #7 `chainsight-upward-learning` 정식 삭제 | @사용자 | §4 종결 | **사용자 실행(스냅샷 전달됨)** | 즉결안 `forensics_db_beat_7.md`. 주체=DatabaseScheduler 2.9.0 config sync, 재물질화 방지 확인. §H상 beat DB 변경은 배포대행 제외 |
 | T3B-CLEANUP-B | pair 브랜치 + sess-cs-t3b 브랜치 삭제 | @infra | §4 종결 | **✅ done 2026-07-17** | 태그 봉인 `d2-pair-integrated-20260706`(3a60da5)·`t3b-code-complete`(6ab8955) 후 로컬·원격 삭제, 손실 0 검증 |
 | T3B-CLEANUP-C | OPS-WORKTREE-ISOLATION 착수 | @infra | 사용자 결정 | **회부(설계 완비)** | `design_ops_worktree_isolation_v1.md` Opt-2 추천. §6 동결 무겹침 시점 착수 |
-| T3B-CLEANUP-D | SEC β 착수 | @backend | 사용자 호출 | **대기** | seed status 무기록·ⓓ-2 승계 명기. "재관측이 왜 270/330쌍인가" 질문 이관 |
+| T3B-CLEANUP-D | SEC β 착수(grounding 검증, PR_sec_beta_grounding.md) | @backend | 사용자 호출 | **🔵 킥오프 완료 (2026-07-28) — G1 착수 가능** | STEP0 통과(원장 1,751·v1·원문 511건 보존=P-4 GREEN·프리플라이트 P1~P4·전스위트 4050 GREEN/13 사전존재). ⓓ-2·seed status 무기록·270/330쌍 이관 인수. **다음=G1**(grounding.py 결정론 매처 + additive 마이그 3필드 + 백필 dry-run, LLM 0콜). worktree `sess-secb-kickoff` |
 | T3B-PATH-VERIFY | **미발화 경로 2건** prod 첫 발화 채록(적격 후보 등장 시 1회 검증) | @backend | 적격 후보 등장 | **예약(모니터)** | §4 미발화: ⑴ **streak(B-path)** — 관찰 창 적격 후보 0(재확인 pair 대다수 tier1 fast-path/이미 confirmed). streak≥3 누적 첫 승급 미실증. ⑵ **highscore(≥85 직행, B-2)** — 잔여 probable 7 전부 score35<60, 신규 high-grade SEC pair 미유입으로 미발화. 둘 다 단위 테스트 GREEN·prod 미검증. 적격 후보(streak 누적 truth pair / score≥85 유입) 등장 시 로그 채록 |
 
 ---
@@ -109,6 +110,7 @@
 |----|------|-------|------------|--------|-----------------|
 | TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **blocked (오늘 배포 포기, 미머지 WIP)** | beat 3종 현재 `enabled=False` |
 | TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **대기** | `PeriodicTask enabled=True` |
+| TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — corpus unfreeze + TNV 백필 세션 1 | @infra (TH 소유 세션) | **트리거: SEC β 종결** | **대기(트리거)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). SEC β 종결 전 착수 금지 |
 
 > **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.
 
