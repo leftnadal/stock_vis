@@ -513,6 +513,20 @@
 
 ---
 
+## [조사 완료·결정 대기] MP-UNIFY — market_pulse v1/v2 공존 통합
+
+- **S0 조사 완료(2026-07-28, read-only)**: 지도 `docs/features/mp_unify/coexistence_map.md`. 브랜치 `monorepo/sess-MP-unify-s0`, base `2a1bd10c`. 코드 변경 0.
+- **공존 실체**: v1 = macro 레거시(`/api/v1/macro/*` + `frontend/app/market-pulse`, 라이브 FRED/FMP API, **정식 메뉴 노출 실서빙**). v2 = `/api/v2/market-pulse/*` + `market-pulse-v2`(DB 스냅샷·payload builder, **메뉴 미노출 베타**, v1 배너로만 도달).
+- **★타이밍 판정**: 통합은 **서빙 게이트·DB와 독립**(makemigrations 0·v1 전용 테이블 없음·worker_sync=origin/main 통째 checkout 절차 무변경) → **C-N-REPAIR/C-L3 서빙 경로와 무충돌, 서빙 전 완주 가능**(동결 불요). 단 v1 프론트 표면 처분은 제품 결정.
+- **분류**: DELETE 후보(v1 `vix/`·`sectors/` 순수 무소비) / MIGRATE(개별 엔드포인트 5종, 서비스 로직은 pulse 경유 유지) / FREEZE(v1 프론트 표면·pulse/sync = 제품 결정 종속).
+- **drift**: 섹터 1건(v1 라이브 FMP change_pct vs v2 DB 상대강도·rank) — 코드 존재하나 **v1 sectors 프론트 무소비 + pulse 미포함 = 실노출 0**(대기 불가 버그 아님, 통합 시 v1 삭제로 해소). VIX/금리 source-split(위험 기록).
+- **규모 추정**: 엔드포인트 정리 ~1세션 / 표면 통합(메뉴 교체+pulse 처분) ~1~2세션.
+- **미해결(read-only 한계)**: v1 실응답 vs v2 실값 비교(서비스 접촉 필요·미측정)·v1 표면 실트래픽·v2 승격 계획·v1 표면 처분 방향 = 디렉터 결정.
+- **STRUCT-CLEANUP 대조**: 아래 STRUCT-CLEANUP(intraday→dashboard 이동)과 **별개 축**(intraday=본 조사 "대상 아님"). 병합 불요, 순서 조율만 감안.
+- **다음**: orchestrator/디렉터 결정 사이클 — 통합 실행 여부·범위·표면 처분 확정 후 실행 세션.
+
+---
+
 ## [보류·DORMANT] STRUCT-CLEANUP — 초기 배포 버전 확정 후 구조 정리
 
 - **상태**: 보류(trigger-gated). 재개 트리거 = **(a) 앱 초기 배포 버전 확정**, OR **(b) 실제 경계 충돌 발생**.
