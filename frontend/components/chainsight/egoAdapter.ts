@@ -7,7 +7,15 @@
  * 분리 이유: vitest에서 React 없이 단독 테스트 가능하게 하기 위해
  */
 
-import type { EgoGraphResponse, EgoNode, Neighbor, CrossEdge } from '@/types/chainsight';
+import type {
+  EgoGraphResponse,
+  EgoNode,
+  Neighbor,
+  CrossEdge,
+  GraphResponse,
+  GraphNode,
+  GraphEdge,
+} from '@/types/chainsight';
 
 // ── 시각 인코딩 상수 ──
 
@@ -101,5 +109,59 @@ export function egoToNeighborShape(ego: EgoGraphResponse): {
     },
     neighbors,
     cross_edges: [],  // ego는 2-hop 미제공
+  };
+}
+
+/**
+ * EgoGraphResponse → GraphResponse(레거시 Neo4j graph 계약)로 매핑.
+ *
+ * ⑳-3 S1: /chainsight/[symbol] 표면과 GraphMiniView가 소비하던 레거시 Neo4j
+ * `/graph/` 응답 형태(GraphResponse)를 PG ego 응답에서 재구성한다. GraphCanvas·
+ * GraphMiniView 렌더 로직 무변경으로 데이터 소스만 PG ego로 전환하기 위한 순수 어댑터.
+ *
+ * 매핑 규칙:
+ *  - center: ego.center(symbol→ticker), sector는 ego.nodes에서 조회(center 객체엔 없음)
+ *  - nodes: ego.nodes에서 center 제외(symbol→ticker, sector 유지)
+ *  - edges: ego.edges(source→from, target→to, relation_type→type). derived_type 없음
+ *    (GraphCanvas는 `derived_type || type`로 폴백하므로 type만으로 렌더 정상)
+ *  - meta: node_count=center+이웃, edge_count=edges, query_ms=0(PG는 미측정)
+ *
+ * ego 미제공 필드(market_cap·pagerank_score·growth_stage·capital_dna)는 생략 →
+ * GraphNode의 optional이라 렌더 시 기본값/조건부 미표시로 안전 수렴.
+ */
+export function egoToGraphResponse(ego: EgoGraphResponse): GraphResponse {
+  const nodeInfo = new Map<string, EgoNode>(ego.nodes.map((n) => [n.symbol, n]));
+  const centerSym = ego.center.symbol;
+
+  const center: GraphNode = {
+    ticker: centerSym,
+    name: ego.center.name || centerSym,
+    sector: nodeInfo.get(centerSym)?.sector ?? '',
+  };
+
+  const nodes: GraphNode[] = ego.nodes
+    .filter((n) => n.symbol !== centerSym)
+    .map((n) => ({
+      ticker: n.symbol,
+      name: n.name || n.symbol,
+      sector: n.sector ?? '',
+    }));
+
+  const edges: GraphEdge[] = ego.edges.map((e) => ({
+    from: e.source,
+    to: e.target,
+    type: e.relation_type,
+  }));
+
+  return {
+    center,
+    nodes,
+    edges,
+    meta: {
+      depth: 1,
+      node_count: nodes.length + 1,
+      edge_count: edges.length,
+      query_ms: 0,
+    },
   };
 }
