@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-07-28] D-20-3-LEGACY-CONSUMER-MIGRATION — 레거시 Neo4j 소비자 ego 전환(안A) [chainsight] [frontend]
+
+> 트랙: ⑳-3 S1. 브랜치 `monorepo/sess-20-3-s1`.
+
+**결정**: `/chainsight/[symbol]` 표면 + `stocks/[symbol]` GraphMiniView 2개 레거시 Neo4j 소비자를 PG ego 계약(`/chainsight/ego/{symbol}/`)으로 전환(안A). 레거시 엔드포인트(ChainSightGraphView·SuggestionView) 자체는 무접촉 방치.
+
+**Why**: STEP 0-B 실측 — 레거시 `/graph/`·`/suggestions/`는 Neo4j 동결로 **전 심볼 HTTP 500**(HAL·NVDA 동일), PG `/ego/{symbol}/`는 **200 정상**(HAL RC 39엣지). 소비자를 PG로 옮기면 무데이터 화면이 즉시 복구되고 백엔드/레거시 무접촉이라 blast radius 최소. 스코어카드 = 안A(소비자 전환) vs 안B(레거시 백엔드 PG 재구현): A가 마진 **0.50** 우위(A=즉시복구·저위험·ego 계약 재사용 / B=백엔드 대공사·Neo4j 해동 또는 재구현 필요).
+
+**How to apply**: FE는 `useEgo` + `egoToGraphResponse` 순수 어댑터(GraphCanvas/GraphMiniView 렌더 무변경). suggestions는 미복구 → AIGuidePanel "준비 중" 정직 표시(TASKQUEUE SUGGESTIONS-PG-REDESIGN). trace(useTrace)는 ego에 경로추적 계약 부재로 전환 보류(LEGACY-NEO4J-ENDPOINT-REMOVAL에서 추적). 레거시 제거는 소비자 0 확인 후 별도. cf. common-bugs #70(표면별 서빙 경로 분기).
+
+---
+
 ## [2026-07-20] D-DRILLDOWN-CARD-FIRST — ego 드릴다운 기본 = 관계 카드, 그래프는 토글(C안) [chainsight] [frontend]
 
 > 트랙: ⑳-2. 배포 `2c74160`.

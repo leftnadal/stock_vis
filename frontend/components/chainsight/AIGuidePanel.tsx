@@ -11,6 +11,11 @@ import type { SuggestionCategory } from '@/types/chainsight';
 interface AIGuidePanelProps {
   categories: SuggestionCategory[];
   isLoading: boolean;
+  /**
+   * ⑳-3 S2: 카테고리(suggestions) 기능이 아직 PG로 복구되지 않아 "준비 중" 상태로
+   * 정직 표시. true이면 에러/빈 배열을 "카테고리 없음"으로 오표시하지 않고 준비 중 안내.
+   */
+  preparing?: boolean;
   activeCategory: string | null;
   centerSymbol: string;
   onCategorySelect: (categoryId: string | null) => void;
@@ -27,6 +32,7 @@ const STRENGTH_LABELS: Record<string, string> = {
 export default function AIGuidePanel({
   categories,
   isLoading,
+  preparing = false,
   activeCategory,
   centerSymbol,
   onCategorySelect,
@@ -47,6 +53,14 @@ export default function AIGuidePanel({
             {[1, 2, 3].map(i => (
               <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
             ))}
+          </div>
+        ) : preparing ? (
+          // ⑳-3 S2: (b) 준비 중 상태 — suggestions PG 재설계 전까지 정직 표시(오류≠무데이터)
+          <div className="py-6 text-center space-y-1">
+            <p className="text-xs text-gray-500">탐색 카테고리는 준비 중입니다</p>
+            <p className="text-[11px] text-gray-400">
+              관계 그래프는 아래 지도에서 바로 탐색할 수 있어요
+            </p>
           </div>
         ) : (
           categories.map(cat => {
@@ -79,7 +93,7 @@ export default function AIGuidePanel({
           })
         )}
 
-        {!isLoading && categories.length === 0 && (
+        {!isLoading && !preparing && categories.length === 0 && (
           <p className="text-xs text-gray-400 py-4 text-center">
             탐색 가능한 카테고리가 없습니다.
           </p>
