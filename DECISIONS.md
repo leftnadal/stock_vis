@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-07-28] D-DASH-SURFACE-UNIFY — 대시보드 표면 통일: CoverageStrip을 루트 `/`로 이동 + `/dashboard`→`/` redirect [dashboard]
+
+> 배경: DASH-SURFACE-SPLIT-SURVEY(2026-07-28, origin/main `dfaf1243` 기준 read-only 실측). 재료 = 루트 `/`(`app/page.tsx`)=실 대시보드(활성 개발선·impression 실데이터 44행 전량 발생지·네비 전체가 지향), `/dashboard`(`app/dashboard/page.tsx`)=2025-11 방치 레거시(네비 도달 경로 0). 공유 컴포넌트 import 0(완전 별개)·`/`↔`/dashboard` redirect 없음. C1-FE 스트립이 레거시 `/dashboard`에 배선됨(계측 0인 표면).
+
+**결정 D-1**: `CoverageStrip`을 **루트 `/`(`app/page.tsx`) 상단**(`DataFreshnessBadge` 아래, `MarketSummaryBar` 위 = L1.5)으로 이동하고 `app/dashboard/page.tsx`에서 제거. 가중합 **4.60 vs 2.85, 마진 1.75 → 자동 결정**.
+- **Why**: 스트립(발급 대비 노출 커버리지 UI)은 impression이 실제 발생하는 표면에 있어야 발견성이 유의미. 실데이터·네비 지향·활성 개발선 3중으로 `/`가 실 대시보드이고, 레거시 `/dashboard`는 계측 0·도달 경로 0이라 스트립이 사실상 비노출. 마진 1.75(≥0.40)로 타이브레이커 불요.
+
+**결정 D-2**: `/dashboard` → `/` **redirect 1줄**(임시·가역 조치). 가중합 ㉡(redirect) **4.30 vs ㉠(레거시 유지) 4.10, 마진 0.20** → 타이브레이커 = 사용자의 표면 통일 명시 의도 + 가역성.
+- **사용자 확정 인용(2026-07-28)**: "그래 그러도록 하자."
+- **Why**: 네비에 도달 경로 없는 레거시를 직접 URL로 진입 시 실 대시보드로 안내(표면 혼선 제거). redirect는 1줄·완전 가역이라 DASH-LEGACY 최종 사이클에서 뒤집기 가능.
+
+**관계 명시**:
+- **DASH-LEGACY(KEEP/CUT/MOVE) 보류는 유지** — redirect는 `/dashboard/page.tsx`의 최종 운명 확정이 아니며 본 사이클에서 뒤집기 가능. (TASKQUEUE `DASH-LEGACY` 상태 불변)
+- **`/dashboard/coverage`는 자체 page**라 `/dashboard` redirect의 영향을 받지 않는다(별도 라우트). 빌드 라우트 생존은 STRIP-REHOME build 슬라이스의 테스트로 검증 예정.
+- **D-OWN-HOME([2026-07-09])과 정합**: 실 랜딩 = `app/page.tsx` 규정 재확인. 스트립을 `/`로 옮기는 것은 D-OWN-HOME이 이미 dashboard 트랙 소유로 편입한 `app/page.tsx`에 대한 정상 배선.
+
+**How to apply**: 구현은 TASKQUEUE `STRIP-REHOME`(dashboard FE build 슬라이스). 본 결정은 등재만(prod 쓰기 0).
+
+---
+
 ## [2026-07-28] D-20-3-LEGACY-CONSUMER-MIGRATION — 레거시 Neo4j 소비자 ego 전환(안A) [chainsight] [frontend]
 
 > 트랙: ⑳-3 S1. 브랜치 `monorepo/sess-20-3-s1`.

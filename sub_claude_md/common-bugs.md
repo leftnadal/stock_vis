@@ -1041,3 +1041,21 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 이 repo의 pytest addopts에 **`--maxfail=5`(또는 `-x` 계열)**가 설정돼 있어, 5번째 실패에서 **조기 정지**한다(34개만 실행하고 멈춤). 알파벳 순서상 `tests/chainsight/test_attention.py`가 앞이라 그 5개 실패에서 즉시 정지 → 전체 4116개 중 34개만 본 부분 결과를 "전체 실패 수"로 오인.
 
 **해결**: **실패 수를 보고·인용하기 전에 전수 실행으로 확정**한다 — `--maxfail=60`(임계 상향) 또는 `--maxfail=0`(해제)로 재실행. 교차검증: 알려진 사전존재 파일만 따로 `--maxfail` 상향 실행해 그 합이 full census 총수와 일치하는지 확인(07-28: attention 6 + leadership 7 = 13 = full census 13 → 신규 0 확정). 부수: `-q` 리다이렉트 시 `\r` 진행표시가 FAILED 목록을 덮으므로 `tr '\r' '\n'` 후 grep. "N failed"만 보고 세부 노드를 안 세면 조기정지 여부를 놓친다.
+
+> ⚠ **채번 충돌 관측(MGMT-BATCH-15, 2026-07-28)**: 위 두 항목(⑳-3 S1 · SEC β 킥오프)이 병렬 세션에서 **둘 다 `#70`을 부여**함(채번 실측+1 규율 #44 미준수 선례 — 각 세션이 상대의 등재를 못 보고 동시 채번). 소급 재번호는 참조 깨짐 위험이라 **보류**(둘 다 `#70`으로 존치), 신규 채번은 **#71부터** 이어간다. 재발 방지 = 채번 직전 `grep -oE '\(#[0-9]+' | sort -n | tail`로 최댓값 실측(헤딩·본문 구분).
+
+## 표면 배선(스트립·위젯·훅) 지시서는 소유권 글롭이 아니라 라우트 실주소(파일+URL)를 명시 — 글롭만 믿으면 레거시에 착지 (#71, 2026-07-28 DASH-SURFACE-SPLIT-SURVEY) [frontend] [process]
+
+**증상**: P2-COVERAGE-C1-FE가 `CoverageStrip`을 `app/dashboard/page.tsx`(2025-11 방치 레거시, 네비 도달 경로 0·impression 계측 0)에 배선. 정작 실 대시보드는 루트 `/`(`app/page.tsx`, impression 실데이터 44행 전량 발생지)라, 스트립이 **사용자가 도달하지 않는 표면**에 놓여 사실상 비노출(07-28 SURVEY로 발견).
+
+**원인**: 디렉터 지시서가 "dashboard 구획"만 명시하고 **라우트 실주소(파일 경로 + 실제 URL)를 미명시**. 실행자가 소유권 지도 글롭 `app/dashboard/**`를 문자 그대로 해석해 동명 레거시 파일에 배선. 표면 관련 기존 결정(D-OWN-HOME=실 랜딩은 `app/page.tsx`)을 교차 확인하지 않음.
+
+**해결**: **표면 배선(스트립·위젯·훅 부착) 지시서는 라우트 실주소를 명시**한다 — "`app/page.tsx`(URL `/`) L1.5 위치" 처럼 파일+URL+삽입 지점. 글롭 `app/dashboard/**`는 소유권(누가 고치나)이지 배선처(어디에 렌더되나)가 아니다. 지시서 작성 시 **표면 관련 기존 결정 교차 확인 필수**(D-OWN-HOME·소유권 지도 AMEND 등). cf. 동명 파일 함정 — `app/page.tsx`(실 랜딩) vs `app/dashboard/page.tsx`(레거시)가 둘 다 "대시보드"라 불려 혼동. 교정 = D-DASH-SURFACE-UNIFY(스트립 `/`로 이동 + `/dashboard`→`/` redirect).
+
+## launchd 검증 PASS는 스냅샷 — orphan이 포트 선점하면 조용히 crash loop("재빌드 미반영" 증상) (#72, 2026-07-24~27 web-frontend) [ops] [deploy]
+
+**증상**: `/dashboard/coverage` 신규 라우트를 재빌드했는데 라이브가 404. `com.stockvis.web-frontend` launchd job은 07-24 load 때 "검증 3종 PASS"였으나, 07-27 재빌드가 라이브에 반영 안 됨. 실제로는 job이 **`runs=34,664`회 EADDRINUSE crash loop**(약 4일), 실서빙은 job 밖 orphan(PID 36207 npm, 07-24 11:32~ + 자식 next-server, **구 빌드 ca062581** 고착)이 수행 중이었다.
+
+**원인**: launchd 승격 "검증 PASS"는 그 순간의 스냅샷일 뿐. 07-24 load 직후 별도 프로세스(orphan)가 :3000을 선점하자, launchd job은 새 프로세스 기동마다 `EADDRINUSE`로 exit 1 → ThrottleInterval(10s) 재시도를 4일간 반복(좀비 loop). 포트는 orphan이 물고 있어 서빙은 계속되지만 코드는 07-24 시점 빌드에 고착. `kickstart -k`도 orphan 앞에선 무효(EADDRINUSE 지속).
+
+**해결**: 검출 = `launchctl print gui/$(id -u)/<label>`의 **`runs` 폭증 + `last exit code=1`** + 실서빙 PID의 **cwd·ppid 대조**(`lsof -a -p <pid> -d cwd`, `ps -o ppid`)로 job 밖 orphan 판별. 해소 = **#61 orphan 정리**(`kill -TERM <npm 부모 pid>` → 자식 전파) → KeepAlive가 즉시 :3000 탈환(새 빌드 로드). 재발 방지 = 배포 후 `runs` 카운터 불변 + `/신규라우트` 200 확인. launchd 승격 직후엔 orphan 잔존 여부를 반드시 `lsof :3000` PID의 ppid로 확정(launchd 직속 아니면 orphan). cf. [[reference_web_runtime_prod_build]] · TASKQUEUE `HEALTH-LAUNCHD-LOOP-CHECK`(자동 검출 검토).
