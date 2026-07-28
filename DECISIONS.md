@@ -4097,6 +4097,21 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 **D-CL3-QUALITY-LIMIT (거시 맥락 빈약 — 관찰 2026-07-25, 전량생성 후)**: 491 전량 생성 후 스팟체크(2024-08-05 엔캐리 급락·2023-10-19 국채 5% 돌파·2024-05-15 CPI 둔화) = **3일 전부 "개별 기업 소식" 균질**, 그날 거시 국면 맥락을 놓침. 규명(read-only): 원인 = ⑴ broad 피드 거시뉴스 **희소**(08-05 KST 220건 중 급락 키워드 4건뿐, AV NEWS_SENTIMENT가 개별 기업 PR/실적/M&A 위주) ⑵ 선별 `abs(sent)+entity_count`가 개별 기업 강감성 PR을 상위로(거시 뉴스 top-12 탈락) ⑶ KST 창 어긋남은 **부차**(엔캐리 심층기사 일부 08-06 KST, 그러나 08-05에도 급락 4건 존재→선별 탈락이 주). **배포분 491 유지**(사실 기반·톤가드 통과·해롭지 않음·analog 카드 alert 다수라 노출 드묾). 개선 = TASKQUEUE `C-L3-SELECT-V2`(index/거시 entity 우선·거시 키워드 가중). ★근본 한계 = broad 데이터 거시 절대량 부족 → v2로도 **부분 개선만**. C-N-REPAIR(창 뒷날 복구)와 시너지.
 
 **baseline at decision**: base origin/main `b9ddf41a`. LLM 경로 = generate_with_circuit(신규 genai 직접생성 0).
+## [2026-07-28] C-N-REPAIR STEP0 — 뒷단 38일 원인 판정 + 표적 재수집 방식 (D-CN-REPAIR-*)
+
+> 트랙: C-N 백필 보수(D-CN-COMPLETE 폐기 후속). base origin/main `ca062581`. 브랜치 `monorepo/sess-CN-repair`. 범위 = 뉴스 원료 재수집만(L3 생성·SELECT-V2는 후속).
+
+**D-CN-REPAIR-BACKTAIL (뒷단 38일 = 미수집 공백, 재수집 대상)**: null 192 = 구간내 154 + 뒷단 38. 뒷단 38 = **2025-12-10~2026-02-19 연속**(구간내 154의 요일 편중과 달리 연속). 실측: 그 전(백필 ~2025-12-05)·그 후(2026-02-20~04-24 = 60일 17,694건)는 채워짐, **뒷단만 공백**. AV broad는 2023-08~2026-07-27 전 범위 존재 → 뒷단 = **백필 종료 ~ 라이브 broad 가동(2026-02-20경) 사이 미수집** (STEP0 (b)). ★정확 원인(beat 미가동 vs 실패)은 `NewsCollectionLog`에 broad task_name 미기록으로 **미상**, 결과 = 공백 → 재수집으로 복구(원인 규명 부차, 복구가 목표).
+
+**D-CN-REPAIR-TARGET (표적 소창 = --dates window-days=1)**: 재수집은 `backfill_broad_news --dates`(가산 옵션) — 각 명시일을 **1일 독립 창**으로. 창 논리(EARLIEST+1000cap) 원천 차단(1일 창엔 삼킬 뒷날 없음), 주말·공휴일 낭비 0(모집단 거래일만 명시). skip-covered 임계 1×3=3(멱등). 범위 --from/--to 방식은 주말 창 낭비라 기각. 기존 --from/--to 경로 무변경(가산) → HALT 미해당.
+
+**D-CN-REPAIR-DONE-CRITERION (완료 판정 = 일 단위 존재)**: ★D-CN-COMPLETE 폐기 교훈 계승 — "창 완료"(122/122)류 판정 금지. 완료 = **null 192일 각각 `published_at__date=D` 기사 >0**(잔여 0). 그 후 C-L3-REGEN-V2 진입.
+
+**예산·계획**: AV 25/day − broad beat 2 − 여유 3 = **20 req/실행**(beat 소비 2<<5, 예산 하향 불요). 1일당 ≈1 req(limit 1000, 과거 <1000 saturation 없음). 192÷20 = **10 배치**(각 20일, 22:00 KST 이후 병진 수동). SATURATED 2023 2창(10-30·12-25주)은 967·927건 이미 커버(154 무포함). NewsArticle 보존 = archive_old_articles soft delete만(purge 삭제 없음), 재수집분 안전. 계획서 `docs/features/cn_repair/repair_batch_plan.md`.
+
+**검증**: backfill 테스트 6→11(신규 5: window-1 독립·멱등 skip·null 재수집·--dates 표적·--dates 멱등)·경계 GREEN·health ❌0. 커맨드 로직 무변경(--dates 가산만).
+
+**baseline at decision**: base origin/main `ca062581`. 실행(재수집 --commit)은 병진 수동 유보.
 ## [2026-07-13] D-EVENTGROUP-WINDOW — EventGroup co-mention 집계에 날짜 윈도우 실적용 (기본 21d·config)
 
 **맥락**: `event_group_pipeline._build_base(half_life)`가 `half_life` 파라미터를 **선언만 하고 본문에서 미사용** — `ChainNewsEvent(is_duplicate=False)` **전량**을 날짜 무관하게 co/doc 카운팅해 왔다. `EventGroup.window_days` 필드는 `half_life`(=21) 값을 저장하나 실제 윈도우링은 없었다(라벨과 행위 불일치). 결과: 데이터 누적 시 오래된 co-mention이 현재 그룹 내러티브를 **희석**(TASKQUEUE `EVENTGROUP-WINDOW`).

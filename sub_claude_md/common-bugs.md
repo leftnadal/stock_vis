@@ -1000,3 +1000,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 배포 대상 파일은 origin/main `9f2e6c5`(OPS-PLIST-FIX `56251a9`)에서 교정됐으나, 집행 세션이 그 머지보다 **이전 base**의 브랜치(`sess-hold-p1` base `6973bda`)에 체크아웃돼 있어 디스크 산출물이 구본이었다. 공유/세션 트리의 디스크 상태는 "현재 체크아웃된 브랜치"에 종속 = origin/main 최신과 무관하게 뒤처질 수 있다.
 
 **해결**: **배포 실물(plist·설정 파일·스크립트 등)은 디스크 cp가 아니라 `git show origin/main:<path>`로 추출**해 배치한다. 근본: "무엇이 배포돼 있는가(origin/main)"와 "무엇이 현 트리에 있는가(체크아웃 브랜치)"를 분리 사고. cf. #64(서빙 빌드 판별=HTTP BUILD_ID)·[[reference_web_runtime_prod_build]]와 동류 — 트리 파일만으론 배포 실체 불확정. 실측: 배치 전 `plutil -lint` + `PlistBuddy -c "Print :ProgramArguments"`로 교정본 확인 필수.
+
+## [드리프트] 백필 창 보정 논리가 창 뒷날을 삼킴 — EARLIEST + limit cap → 표적 1일 창으로 회피 (#72, C-N-REPAIR 2026-07-28)
+
+**증상**: broad 뉴스 백필(7일 창·EARLIEST 정렬·1000행 cap)이 "122/122 창 완료" 후에도 커버 구간 내 **154일 0건**. 요일 편중(금 65·목 47·수 30·화 12) = 고볼륨 창의 뒷날들이 통째로 누락. 하류 C-L3 생성이 그 154일 null(빈약 맥락).
+
+**원인**: 고볼륨 7일 창에서 EARLIEST 정렬이 앞날부터 1000행 cap을 소진 → 창 뒷날(주 후반)이 AV 응답에 안 담김. "다음 창이 보정한다"는 논리는 **비중첩 연속 창에서 성립하지 않음**(각 7일 창 독립 — 다음 창은 다음 7일이라 이번 창 뒷날을 채우지 않음). + "표본 2창 확인"을 683 전체로 일반화한 오류(→ D-CN-COMPLETE 판정 폐기).
+
+**해결**: 표적 재수집 = **누락일만 명시하는 1일 독립 창**(`backfill_broad_news --dates D1,D2,… --window-days 1`, --dates는 가산 옵션) — 창당 1일이라 cap이 삼킬 뒷날 자체가 없음. 주말·공휴일 낭비 0(거래일만 명시). 완료 판정은 "창 완료"가 아니라 **일 단위 존재 검증**(각 날 `published_at__date` >0). cf. D-CN-COMPLETE 폐기·D-CN-REPAIR-* (2026-07-28).
