@@ -113,3 +113,17 @@ describe('Slice 20b-f1 — 매수일 선택화', () => {
     expect(createHolding.mock.calls[0][0].first_bought_at).toBe('2025-03-15')
   })
 })
+
+describe('Slice 20b-f1 — 목록 미입력 표지', () => {
+  it('매수일 null 보유에 "입력일부터 추적" 표지 + 입력된 보유엔 없음', async () => {
+    listHoldings.mockResolvedValue([
+      holding({ id: 'h-null', symbol: 'NULLX', first_bought_at: null }),
+      holding({ id: 'h-set', symbol: 'SETX', first_bought_at: '2025-01-01' }),
+    ])
+    listCash.mockResolvedValue([])
+    renderPage()
+    await waitFor(() => expect(screen.getByTestId('holdings-list')).toBeInTheDocument())
+    expect(screen.getByTestId('holding-fallback-badge-NULLX')).toHaveTextContent('입력일부터 추적')
+    expect(screen.queryByTestId('holding-fallback-badge-SETX')).not.toBeInTheDocument()
+  })
+})
