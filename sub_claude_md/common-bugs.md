@@ -903,6 +903,8 @@ Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers
 
 **해결**: **실행자 세션은 `.env`를 열지 않는다(grep 포함).** 환경변수 확인이 필요하면 ⑴ 프로세스 env 로드는 기존 설정 경로(Django settings·Next 로더)에 맡기고, ⑵ 확인은 **키 존재 여부 bool까지만**(`bool(os.environ.get(...))` 또는 파일 미개봉 `grep -c '^KEY='` 카운트) — **값·head/tail·풀 문자열 출력 절대 금지**([[feedback_secret_masking_policy]] 승계). **자기점검**: 지시서에 ".env 접근 금지" 조항이 포함됐는지 확인하고, 없으면 실행자가 보수적으로 금지 적용.
 
+**보충(2026-07-27, MGMT-BATCH-14)**: 금지 대상은 **내용 열람·출력·복사**뿐이다. 신규 worktree에서 Django/Next 런타임 구동을 위한 **.env 심링크 생성·연결(`ln -sf …/stock_vis/.env <worktree>/.env`)은 허용** — 심링크는 파일 내용을 열지 않고 로더 경로만 잇는다(gitignore로 추적 제외 확인 필수). 선례: `sess-cov-c1-api`(실 API 조인 실측)·`sess-cov-c1-fe`가 실 응답 타이핑을 위해 심링크 동반. 즉 "미개봉"은 **byte 열람 금지**이지 **경로 연결 금지가 아니다**.
+
 ## [DoD 함정] celery 태스크 신설 = tasks/__init__ import 누락을 단위 테스트가 못 잡는다 (⑲ 배포 실증) [process] [celery]
 
 **증상**: 신규 celery 태스크의 단위 테스트(함수 직접 호출·`.apply()`)는 전부 green인데, 실배포 워커가 태스크를 **미등록**(`celery inspect registered`에 없음) → beat 등록해도 "task not registered"로 미발화.
@@ -1016,3 +1018,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 지시서는 휘발성이라 repo에 보관 안 하는 관행이었으나, 소비(집행) 전 커밋을 강제하지 않으면 "무엇을 근거로 무엇을 했는가"의 계보가 끊긴다.
 
 **해결**: **지시서 소비의 0번째 게이트 = 해당 파일이 `docs/instructions/`에 커밋돼 있을 것.** 원 지시서는 **수정하지 않고**(발행 시점 보존), 스펙 변경·불가 발견은 **개정문(`*_amendment*.md`)을 별도 커밋**으로 쌓는다(원본 불변, 개정 계보 누적). 세션 종료 전 CLAUDE.md Harness Protocol의 "지시서 폐기 전 흡수 확인"(비자명 결정의 '왜'가 DECISIONS에 흡수·task ID 추적)과 병행. 실측 사례: OPS-VERIFY-EXEC-TREE = 원 지시서(`b8d767aa`) + 개정문1(self-locate, origin/main) + 개정문2(야간 번들) 3층 계보.
+
+## PROGRESS 72h 위생 검사는 세션 종류 불문 FAIL — build 사이클이 72h 넘길 전망이면 mgmt 배치를 LAND보다 선행한다 (#69, 2026-07-27 C1-FE-LAND HALT) [harness] [process]
+
+**증상**: `health_check.py`의 "origin/main 해시" 검사(PROGRESS.md 마지막 갱신 age 기반)가 **73.9h > 임계 72h**로 ❌FAIL 트립. C1-FE-LAND(merge 세션)의 pre-merge 게이트가 "FAIL만 HALT"에 걸려 정당 HALT — merge는 메타 4종 무변경이라 PROGRESS를 못 고쳐 자체 해소 불가.
+
+**원인**: 72h 검사는 세션 종류(merge/build/mgmt)를 구분하지 않는다. build→build→LAND로 이어지는 사이클이 길어지면 그 사이 PROGRESS가 갱신 안 돼 LAND 시점에 임계를 넘긴다. merge 세션은 PROGRESS 쓰기 권한이 없어(구획 밖) 스스로 못 푼다 = 구조적 교착.
+
+**해결**: **build 사이클이 72h를 넘길 전망이면 mgmt 장부 배치를 LAND보다 선행 배치**한다(PROGRESS 갱신으로 72h 리셋 후 LAND). 실측: 2026-07-27 C1-FE-LAND HALT → MGMT-BATCH-14 선행(이 배치) → PROGRESS 갱신으로 FAIL 소멸 → LAND 재개. 후속 검토(등재만): `HEALTH-72H-SEVERITY-SPLIT`(TASKQUEUE) — 72h severity를 세션 종류별 분리(merge=WARN/mgmt=FAIL)할지. cf. #47(실행트리 정합=transient WARN)과 달리 72h는 시간 경과라 머지로 안 풀림.
