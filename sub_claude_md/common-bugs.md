@@ -1034,3 +1034,10 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 같은 도메인 데이터를 **복수 표면이 서로 다른 서빙 경로**(PG ego vs 레거시 Neo4j)로 소비. 한 표면만 전환하면 나머지는 조용히 구경로에 남아 이월 누락. FE는 500/에러를 무데이터로 뭉뚱그려 표시(에러≠무데이터 정직성 부재).
 
 **해결**: ⑴ 도메인 데이터의 **표면 인벤토리**를 만들고(소비 훅·엔드포인트 grep), 경로 전환 시 **전 소비자 일괄** 전환(STEP 0-B의 소비자 전수 검색이 GraphMiniView 제2소비자를 발견 = 누락 방지). ⑵ 어댑터를 **단일 순수함수로 공유**(`egoToGraphResponse` — 표면별 복제 금지). ⑶ FE는 로딩/오류(준비 중)/데이터 **3상태 분리**. cf. #64(서빙 경로 실측), DECISIONS D-GRAPH-EGO-BACKEND(ego=PG)·D-20-3-LEGACY-CONSUMER-MIGRATION.
+## pytest default maxfail 조기정지는 부분 실패 수를 전체로 오인시킨다 — 실패 수 인용 전 전수 실행으로 확정 (#70, 2026-07-28 SEC β 킥오프) [testing] [process]
+
+**증상**: SEC β 킥오프 STEP 0에서 전스위트를 `pytest -q`로 돌리자 "**5 failed, 29 passed**"로 종료 — 이를 "실패 5건"으로 인용하려던 순간, 다른 실행에서는 "**13 failed, 4050 passed**"가 나와 모순 발생. 부분 census를 전체로 오인할 뻔함.
+
+**원인**: 이 repo의 pytest addopts에 **`--maxfail=5`(또는 `-x` 계열)**가 설정돼 있어, 5번째 실패에서 **조기 정지**한다(34개만 실행하고 멈춤). 알파벳 순서상 `tests/chainsight/test_attention.py`가 앞이라 그 5개 실패에서 즉시 정지 → 전체 4116개 중 34개만 본 부분 결과를 "전체 실패 수"로 오인.
+
+**해결**: **실패 수를 보고·인용하기 전에 전수 실행으로 확정**한다 — `--maxfail=60`(임계 상향) 또는 `--maxfail=0`(해제)로 재실행. 교차검증: 알려진 사전존재 파일만 따로 `--maxfail` 상향 실행해 그 합이 full census 총수와 일치하는지 확인(07-28: attention 6 + leadership 7 = 13 = full census 13 → 신규 0 확정). 부수: `-q` 리다이렉트 시 `\r` 진행표시가 FAILED 목록을 덮으므로 `tr '\r' '\n'` 후 grep. "N failed"만 보고 세부 노드를 안 세면 조기정지 여부를 놓친다.
