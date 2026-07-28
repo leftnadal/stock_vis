@@ -4308,6 +4308,12 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **부수 발견 (STEP 0)**: `refresh_monitor`(pipeline.py)가 `process_monitor_scenarios(monitor, as_of_date=as_of)`로 호출하나 함수 시그니처는 `as_of=` — try/except 밖 TypeError로 refresh beat의 scenario 처리 전건 무발화(RECON의 "last_price_zone 전부 None" 근본 원인). HOLD-P1에서 `as_of=as_of`로 교정(common-bugs 등재).
 
 **baseline at decision**: origin/main = `6973bda`(research lab foundation), monitor pytest 193 · monitor vitest 76.
+
+---
+
+## [2026-07-28] MON-RESET — 모니터 10건 전량 삭제 (보유/신규 재구성 목적)
+
+사용자 결정으로 모니터 10건 전량 삭제(보유/신규 재구성 목적) · 검증된 CASCADE 경로(HOLD-P1 E2E와 동일 ORM `delete()`) · 마감 카운트 0/20 리셋. 삭제 합계 5808 objs(Monitor 10·Claim 10·MonitorIndicator 82·MonitorSnapshot 68·IndicatorReading 5630·AlertEvent 7·ClosureSnapshot 1). 잔존 전량 0 검증. 코드·스키마·beat 무접촉(빈 집합 no-op = pipeline.refresh_monitors queryset 0회 순회). shared Stock·EODSignal 등 원천 데이터 무접촉.
 ## [2026-07-22] MGMT-BATCH-13 — P2 커버리지 표면 결정 (2건) [platform] [dashboard]
 
 > 트랙: MGMT-BATCH-13(mgmt, 메타-only). baseline = origin/main `9f2e6c5`(OPS-PLIST-FIX-LAND 직후), prod·코드·마이그레이션 쓰기 0. 근거 재료 = STEP0-P2-DESIGN-PREP 실측(2026-07-20, read-only): 발급 grain 110 / dashboard_eod 노출 8 / 노출율 7.3% / 조인 실패 0. impression 축 데이터는 이미 존재(#43 IssuanceLog 읽기 조인만).
