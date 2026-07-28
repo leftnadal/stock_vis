@@ -68,6 +68,9 @@ class Command(BaseCommand):
                             help="이미 커버된 창도 재조회(기본은 skip으로 재개·예산 절약)")
         parser.add_argument("--commit", action="store_true",
                             help="실제 DB 쓰기 + AV 요청 소비(미지정 시 dry-run 산정만)")
+        parser.add_argument("--dates", type=str, default=None,
+                            help="표적 날짜 리스트 YYYY-MM-DD,... (지정 시 각 1일 독립 창 — "
+                                 "--from/--to/--window-days 무시. C-N-REPAIR: 누락 거래일만 표적 재수집)")
 
     def handle(self, *args, **options):
         from_date = self._parse(options["from_date"]) or DEFAULT_FROM
@@ -82,9 +85,18 @@ class Command(BaseCommand):
         skip_covered = not options["no_skip_covered"]
         commit = options["commit"]
 
-        windows = self._windows(from_date, to_date, window_days)
+        # 표적 날짜 모드(--dates): 각 명시일을 1일 독립 창으로 → 창 논리(EARLIEST 보정) 우회(C-N-REPAIR).
+        target_dates = options.get("dates")
+        if target_dates:
+            tds = [self._parse(s.strip()) for s in target_dates.split(",") if s.strip()]
+            windows = [(d, d + timedelta(days=1)) for d in tds]
+            window_days = 1  # skip-covered 임계 = 1×COVERED_PER_DAY(멱등)
+            scope_desc = f"표적 {len(tds)}일(각 1일 창)"
+        else:
+            windows = self._windows(from_date, to_date, window_days)
+            scope_desc = f"구간 {from_date}~{to_date} · 창 {window_days}일"
         self.stdout.write(
-            f"[backfill_broad_news] 구간 {from_date}~{to_date} · 창 {window_days}일 · "
+            f"[backfill_broad_news] {scope_desc} · "
             f"총 {len(windows)}창 · limit {limit} · sort {sort} · "
             f"{'COMMIT' if commit else 'DRY-RUN'}"
         )
