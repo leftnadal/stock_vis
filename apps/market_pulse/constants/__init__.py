@@ -16,6 +16,14 @@ from .insights import (
     get_insight_message,
     get_rate_impact_sectors,
 )
+from .sector_cd import (
+    CD_MOMENTUM_BASELINE,
+    CD_REL_STRENGTH_5D_LOOKBACK,
+    CD_REL_STRENGTH_BASELINE,
+    classify_cd_state,
+    derive_rel_strength_5d,
+    resolve_official_cd_state,
+)
 
 __all__ = [
     'INSIGHT_RULES',
@@ -26,4 +34,10 @@ __all__ = [
     'YIELD_CURVE_RULES',
     'RATE_IMPACT_RULES',
     'VIX_RULES',
+    'CD_REL_STRENGTH_BASELINE',
+    'CD_MOMENTUM_BASELINE',
+    'CD_REL_STRENGTH_5D_LOOKBACK',
+    'classify_cd_state',
+    'derive_rel_strength_5d',
+    'resolve_official_cd_state',
 ]

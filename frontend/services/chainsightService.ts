@@ -5,6 +5,7 @@
  */
 
 import { authAxios } from '@/lib/api/authAxios';
+import { egoPath } from './chainsightPaths';
 import type {
   GraphResponse,
   SuggestionsResponse,
@@ -15,6 +16,8 @@ import type {
   SignalFeedResponse,
   EventBoardItem,
   EventRankingItem,
+  EgoGraphResponse,
+  CentralityTopResponse,
 } from '@/types/chainsight';
 
 export async function fetchGraph(symbol: string, depth: number = 1): Promise<GraphResponse> {
@@ -63,6 +66,50 @@ export async function fetchNeighbors(
   const { data } = await authAxios.get<NeighborResponse>(
     `/chainsight/${symbol.toUpperCase()}/neighbors/`,
     { params: { limit, rel_types: relTypes, min_truth_score: minTruthScore } },
+  );
+  return data;
+}
+
+export interface FetchEgoOptions {
+  minScore?: number;
+  types?: string[];
+  limit?: number;
+  trendWindow?: number;
+}
+
+export async function fetchEgo(
+  symbol: string,
+  opts: FetchEgoOptions = {},
+): Promise<EgoGraphResponse> {
+  const { minScore = 0, types, limit = 50, trendWindow = 12 } = opts;
+  const { data } = await authAxios.get<EgoGraphResponse>(
+    egoPath(symbol),
+    {
+      params: {
+        min_score: minScore,
+        ...(types && types.length > 0 && { types: types.join(',') }),
+        limit,
+        trend_window: trendWindow,
+      },
+    },
+  );
+  return data;
+}
+
+export interface FetchCentralityTopOptions {
+  metric?: string;
+  n?: number;
+  asOf?: string;
+}
+
+/** 중심성 리더보드 (⑳-1). GET /chainsight/centrality/top/ */
+export async function fetchCentralityTop(
+  opts: FetchCentralityTopOptions = {},
+): Promise<CentralityTopResponse> {
+  const { metric = 'pagerank', n = 20, asOf } = opts;
+  const { data } = await authAxios.get<CentralityTopResponse>(
+    '/chainsight/centrality/top/',
+    { params: { metric, n, ...(asOf && { as_of: asOf }) } },
   );
   return data;
 }

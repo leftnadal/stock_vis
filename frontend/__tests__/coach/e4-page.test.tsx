@@ -14,6 +14,7 @@
  *   6. assistant turn content == output.summary (E4Turn 계약 종단 검증)
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -35,7 +36,7 @@ function wrap(ui: ReactNode) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = API_BASE_URL
 const E4_URL = `${API_URL}/coach/e4/`
 
 describe('E4 coach page (E4CoachContent)', () => {

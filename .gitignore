@@ -237,3 +237,6 @@ mail_archive/
 # 메인 세션 전용 지시서 — git 외부 보존. 외부에 노출하지 않을 트리아지/실행 브리프.
 # 구조: _briefs/YYYY-MM-DD/<sprint_or_topic>.md
 _briefs/
+
+# OPS-WORKTREE-ISOLATION: scripts/lib은 추적(위 lib/ 패턴 예외)
+!scripts/lib/

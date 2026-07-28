@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ExternalLink, Loader2, Newspaper, AlertCircle, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { BottomSheet } from '@/components/thesis/common/BottomSheet';
+import { BottomSheet } from '@/components/common/BottomSheet';
 import { useKeywordDetail } from '@/hooks/useNews';
 import { DailyKeyword } from '@/types/news';
 

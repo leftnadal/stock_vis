@@ -72,7 +72,7 @@ def seed_heat_entities_and_etf_map(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('chainsight', '0015_relationconfidence_evidence_streak_and_more'),
+        ('chainsight', '0018_symbolcentrality'),
     ]
 
     operations = [

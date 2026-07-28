@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.chain_sight.graph import get_graph_repository
-from apps.chain_sight.graph.exceptions import GraphConnectionError
+from apps.chain_sight.graph.exceptions import GraphConnectionError, GraphQueryError
 from apps.chain_sight.models import CoMentionEdge, PriceCoMovement
 from apps.chain_sight.utils import get_market_date
 from packages.shared.stocks.models import Stock
@@ -519,9 +519,12 @@ class SectorGraphView(APIView):
             cache.set(cache_key, json.dumps(response_data), timeout=3600)
             return Response(response_data)
 
-        except GraphConnectionError:
+        # ⑳-E S4: Neo4j 연결/쿼리 실패를 500 누출 대신 503으로 정규화 →
+        # 프론트가 sectorError(isError)로 구분해 "섹터 관계망 이용 불가" 명시 렌더.
+        # GraphQueryError = Cypher 실행 중 연결 끊김 등(동결 시 실제 발생 경로).
+        except (GraphConnectionError, GraphQueryError):
             return Response(
-                {"error": "Graph service unavailable"},
+                {"error": "Graph service unavailable", "code": "graph_unavailable"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 

@@ -30,6 +30,10 @@ from zoneinfo import ZoneInfo
 
 # repo 루트를 import 경로에 추가 (scripts/ 하위에서 실행돼도 config 패키지 발견)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+# OPS-WORKTREE-ISOLATION Phase 3: 순수 점검 모듈(django 무의존)
+sys.path.insert(0, str(Path(__file__).resolve().parent / "lib"))
+import ops_verify_checks as ovc  # noqa: E402
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
 import django  # noqa: E402
@@ -193,12 +197,35 @@ def main():
             verdict = "WARN"
         notes.append(tick_msg)
 
+    # D — OPS-WORKTREE-ISOLATION 감시 (Phase 3, additive·WARN 상한·격벽).
+    #   무인 파수꾼 원칙: 어떤 경우에도 코어(A/B/C) 판정 무영향 + FAIL 승격 없음(최대 WARN).
+    #   예외는 전량 흡수(침묵결함 방지 — 조용히 죽지 않고 note로 가시화).
+    d_results = []
+    try:
+        d_results = ovc.run_all(int(timezone.now().timestamp()))
+    except Exception as exc:  # noqa: BLE001 — 격벽: 감시 실패가 코어 오염 불가
+        notes.append(f"D(ops isolation) 점검 예외(코어 무영향, 무시): {exc}")
+    d_warns = 0
+    for sev, msg in d_results:
+        if sev == "warn":
+            d_warns += 1
+            if verdict == "PASS":
+                verdict = "WARN"
+            notes.append(msg)
+        elif msg:  # info/skip = 정보성(판정 무변경)
+            notes.append(msg)
+
     # 출력
     print(f"[verify_pair_aggregation] {verdict} @ {timezone.now():%Y-%m-%d %H:%M %Z}")
     if not quiet:
         print(f"  PRE: beat={beat_alive} worker={worker_alive}")
         print(f"  A(log): succeeded={succeeded} unregistered={unregistered}")
         print(f"  C(tick): {'OK' if tick_ok else 'ALERT'} — 경계 {tick_boundary:%Y-%m-%d %H:%M %Z}")
+        _d_sev = [s for s, _ in d_results]
+        print(
+            f"  D(ops isolation): {'ALERT' if d_warns else 'OK'} — "
+            f"drift/marker/codever = {'/'.join(_d_sev) if _d_sev else '미실행'}"
+        )
         print(f"  B(db): 최신 period={latest}, period 수={len(rows)}")
         for r in rows[-5:]:
             print(f"         {r['period']} → {r['n']}행")

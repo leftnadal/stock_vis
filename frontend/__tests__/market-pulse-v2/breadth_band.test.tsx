@@ -30,7 +30,7 @@ describe('breadthBand', () => {
   it('광범위한 강세 (ratio≥0.70) → broad_strength', () => {
     const r = breadthBand(inp({ advance: 382, decline: 118, new_high_52w: 45, new_low_52w: 12, ad_line_change: 3 }))
     expect(r?.band).toBe('broad_strength')
-    expect(r?.tone).toContain('emerald')
+    expect(r?.tone).toContain('rose') // 강세=긍정=rose(COLOR-STAGE2 한국축)
   })
 
   it('중립 (ratio 0.50) → neutral', () => {
@@ -42,7 +42,7 @@ describe('breadthBand', () => {
   it('광범위한 약세 (ratio≤0.30) → broad_weakness', () => {
     const r = breadthBand(inp({ advance: 120, decline: 380, new_high_52w: 8, new_low_52w: 50, ad_line_change: -4 }))
     expect(r?.band).toBe('broad_weakness')
-    expect(r?.tone).toContain('rose')
+    expect(r?.tone).toContain('sky') // 약세=부정=sky(COLOR-STAGE2 한국축)
   })
 
   it('엇갈림 댐핑: 등락 강세(0.62)인데 신저가 우위+AD↓ → strength→neutral (1단계 ↓)', () => {

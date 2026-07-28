@@ -27,21 +27,32 @@ from packages.shared.stocks.models import Stock
 # ===== Helper: analyzer fixture =====
 
 @pytest.fixture
-def mock_genai():
-    """google.genai 모듈 전체를 모킹"""
-    with patch('services.news.services.news_deep_analyzer.genai') as mock:
-        mock_client = MagicMock()
-        mock.Client.return_value = mock_client
-        yield mock, mock_client
+def mock_llm():
+    """shared/llm `complete()` 를 모킹.
+
+    BOUNDARY-LLM 슬라이스④에서 NewsDeepAnalyzer 가 `genai.Client` 직접생성 →
+    `packages.shared.llm.complete()` 경유로 이관됐다. 따라서 LLM seam 은 이 모듈에
+    import된 `complete` 심볼이다(옛 `genai` 패치는 attr 부재로 실패).
+
+    응답 설정 관성 보존: `complete` 를 `mock_client.models.generate_content` 로 patch한다.
+    모듈은 `response = complete(...)` 후 `response.text` 를 읽으므로, 테스트가
+    `mock_client.models.generate_content.return_value.text = ...` 로 응답을 설정하던
+    방식이 그대로 유효(호출 인자 검증도 `.call_args` 로 동일하게 가능)."""
+    mock_client = MagicMock()
+    with patch(
+        'services.news.services.news_deep_analyzer.complete',
+        mock_client.models.generate_content,
+    ):
+        yield mock_client
 
 
 @pytest.fixture
-def analyzer(mock_genai):
+def analyzer():
     """
-    NewsDeepAnalyzer 인스턴스 (Gemini 클라이언트 모킹)
+    NewsDeepAnalyzer 인스턴스.
 
-    settings.GEMINI_API_KEY 또는 settings.GOOGLE_AI_API_KEY가 설정된 상태에서
-    genai.Client 호출을 차단한 채 인스턴스를 생성합니다.
+    현행 `__init__` 은 키 존재만 검증하고 LLM 클라이언트를 만들지 않는다(complete() 경유).
+    따라서 pure 메서드 테스트는 LLM mock 없이 키만 설정하면 생성된다.
     """
     from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
@@ -51,15 +62,14 @@ def analyzer(mock_genai):
 
 
 @pytest.fixture
-def analyzer_with_client(mock_genai):
-    """analyzer와 mock_client를 함께 반환하는 fixture"""
-    _, mock_client = mock_genai
+def analyzer_with_client(mock_llm):
+    """analyzer 와 LLM mock 을 함께 반환. (mock_client.models.generate_content == complete 패치)"""
     from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
     with patch.object(settings, 'GEMINI_API_KEY', 'test-api-key', create=True):
         with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
             inst = NewsDeepAnalyzer()
-    return inst, mock_client
+    return inst, mock_llm
 
 
 @pytest.fixture
@@ -100,53 +110,56 @@ def news_article_factory():
 class TestNewsDeepAnalyzerInit:
     """__init__() 초기화 테스트"""
 
-    def test_init_success_with_gemini_api_key(self, mock_genai):
+    # 계약 변경(BOUNDARY-LLM ④): __init__ 은 더 이상 genai.Client 를 만들지 않고
+    # **키 존재만 검증**한다(인증은 complete() 가 settings 경유로 해소). 따라서 옛
+    # `genai.Client.assert_called_once_with(...)` 는 제거된 동작을 검증하던 것이라 삭제하고,
+    # 실제 현행 계약(키 있으면 생성 성공·cache None, 없으면 ValueError)으로 강화한다.
+
+    def test_init_success_with_gemini_api_key(self):
         """
-        Given: settings.GEMINI_API_KEY가 설정된 상태
+        Given: settings.GEMINI_API_KEY 설정
         When: NewsDeepAnalyzer() 초기화
-        Then: genai.Client가 해당 키로 호출됨, 예외 없음
+        Then: 예외 없이 생성, _valid_symbols_cache 는 None
         """
-        mock_genai_module, mock_client = mock_genai
         from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GEMINI_API_KEY', 'my-gemini-key', create=True):
             with patch.object(settings, 'GOOGLE_AI_API_KEY', None, create=True):
                 inst = NewsDeepAnalyzer()
 
-        mock_genai_module.Client.assert_called_once_with(api_key='my-gemini-key')
         assert inst._valid_symbols_cache is None
 
-    def test_init_success_with_google_ai_api_key(self, mock_genai):
+    def test_init_success_with_google_ai_api_key(self):
         """
-        Given: settings.GOOGLE_AI_API_KEY가 설정된 상태 (GEMINI_API_KEY 없음)
+        Given: settings.GOOGLE_AI_API_KEY 만 설정 (GEMINI_API_KEY 없음)
         When: NewsDeepAnalyzer() 초기화
-        Then: GOOGLE_AI_API_KEY로 genai.Client 호출됨
+        Then: 예외 없이 생성 (GOOGLE_AI_API_KEY 로도 키 검증 통과)
         """
-        mock_genai_module, _ = mock_genai
         from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GOOGLE_AI_API_KEY', 'google-ai-key', create=True):
             with patch.object(settings, 'GEMINI_API_KEY', None, create=True):
                 inst = NewsDeepAnalyzer()
 
-        mock_genai_module.Client.assert_called_once_with(api_key='google-ai-key')
+        assert inst._valid_symbols_cache is None
 
-    def test_init_prefers_google_ai_api_key_over_gemini_key(self, mock_genai):
+    def test_init_succeeds_when_either_key_present(self):
         """
-        Given: GOOGLE_AI_API_KEY와 GEMINI_API_KEY 모두 설정
+        Given: GOOGLE_AI_API_KEY 와 GEMINI_API_KEY 모두 설정
         When: NewsDeepAnalyzer() 초기화
-        Then: GOOGLE_AI_API_KEY가 우선 사용됨
+        Then: 예외 없이 생성.
+        (구 테스트 'prefers google over gemini' 의 키 우선순위는 이관 후 외부 관측 불가 —
+         키는 저장/사용되지 않고 검증만 됨. 관측 가능한 계약 = 둘 중 하나라도 있으면 성공.)
         """
-        mock_genai_module, _ = mock_genai
         from services.news.services.news_deep_analyzer import NewsDeepAnalyzer
 
         with patch.object(settings, 'GOOGLE_AI_API_KEY', 'google-key', create=True):
             with patch.object(settings, 'GEMINI_API_KEY', 'gemini-key', create=True):
-                NewsDeepAnalyzer()
+                inst = NewsDeepAnalyzer()
 
-        mock_genai_module.Client.assert_called_once_with(api_key='google-key')
+        assert inst._valid_symbols_cache is None
 
-    def test_init_raises_when_no_api_key(self, mock_genai):
+    def test_init_raises_when_no_api_key(self):
         """
         Given: API 키가 전혀 설정되지 않은 상태
         When: NewsDeepAnalyzer() 초기화
@@ -1171,10 +1184,10 @@ class TestAnalyzeSingle:
         """
         Given: Tier A, B, C 각각
         When: _analyze_single() 호출
-        Then: max_output_tokens가 A=2000, B=4000, C=6000으로 설정됨
+        Then: complete() 에 max_tokens 가 A=2000, B=4000, C=6000 으로 전달됨.
+        (계약 변경: max_output_tokens 는 types.GenerateContentConfig 가 아니라
+         complete(max_tokens=...) kwarg 로 넘어간다 — shared/llm 이 provider config 구성.)
         """
-        from google.genai import types
-
         analyzer, mock_client = analyzer_with_client
 
         mock_response = MagicMock()
@@ -1186,14 +1199,11 @@ class TestAnalyzeSingle:
                 article = news_article_factory(importance_score=0.75)
                 mock_client.models.generate_content.reset_mock()
 
-                with patch('services.news.services.news_deep_analyzer.types') as mock_types:
-                    mock_config = MagicMock()
-                    mock_types.GenerateContentConfig.return_value = mock_config
-                    analyzer._analyze_single(article, tier)
+                analyzer._analyze_single(article, tier)
 
-                mock_types.GenerateContentConfig.assert_called_once()
-                call_kwargs = mock_types.GenerateContentConfig.call_args.kwargs
-                assert call_kwargs['max_output_tokens'] == expected_tokens, f"Tier {tier}: expected {expected_tokens}"
+                call_kwargs = mock_client.models.generate_content.call_args.kwargs
+                assert call_kwargs['max_tokens'] == expected_tokens, f"Tier {tier}: expected {expected_tokens}"
+                assert call_kwargs['model'] == 'gemini-2.5-flash'
 
 
 # ===== TestAnalyzeBatch =====

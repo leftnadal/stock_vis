@@ -12,7 +12,8 @@ interface DeltaCardProps {
   anomalyDelta?: AnomalyDelta
   labels?: Record<string, string>
   // MP2-TREND S1: 섹터 순위 궤적 진입(기존 드로어 패턴 재사용 — page가 setOpenCard('sector') 배선).
-  onOpenTrajectory?: () => void
+  // S2(D-TREND-EMPHASIS 옵션 B): 델타가 보여준 상위 변동 섹터를 선택적 additive 인자로 전달(강조 복원).
+  onOpenTrajectory?: (emphasis?: string[]) => void
 }
 
 function formatMMDD(isoDate: string): string {
@@ -31,6 +32,10 @@ export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels, onOpenTr
   const topThree = (sectorDeltas ?? []).slice(0, 3)
   const hasDeltas = topThree.length > 0
   const allFlat = hasDeltas && topThree.every((s) => s.rank_delta === 0)
+  // 델타가 보여준 상위 변동 섹터(강조 컨텍스트). 행 탭 시 해당 섹터를 앞에 두고 나머지 상위와 union.
+  const topSymbols = topThree.map((s) => s.sector)
+  const deltaEmphasis = (tapped?: string) =>
+    Array.from(new Set([tapped, ...topSymbols].filter(Boolean) as string[]))
 
   return (
     <CardShell titleEn="Delta" titleKo="어제와 달라진 것">
@@ -70,7 +75,7 @@ export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels, onOpenTr
           <button
             type="button"
             data-testid="open-trajectory"
-            onClick={onOpenTrajectory}
+            onClick={() => onOpenTrajectory(deltaEmphasis())}
             className="text-xs text-slate-500 hover:text-slate-900 underline"
           >
             궤적 보기 →
@@ -83,19 +88,37 @@ export function DeltaCard({ regime, sectorDeltas, anomalyDelta, labels, onOpenTr
         <p data-testid="no-rank-change" className="text-sm text-slate-400">순위 변동 없음</p>
       ) : (
         <div className="space-y-1">
-          {topThree.map((item) => (
-            <div data-testid="sector-row" key={item.sector} className="flex items-center gap-2 text-sm">
-              <span className="text-slate-700 flex-1">
-                {translate(`sector.${item.sector}`, labels, item.sector)}
-              </span>
-              <span data-testid="rank-delta-badge" className={`font-semibold ${sectorTextClass(item.rank_delta)}`}>
-                {item.rank_delta > 0 ? `▲${item.rank_delta}` : `▼${Math.abs(item.rank_delta)}`}
-              </span>
-              <span data-testid="rank-trail" className="text-slate-400 text-xs">
-                {item.prev_rank}위 → {item.rank}위
-              </span>
-            </div>
-          ))}
+          {topThree.map((item) => {
+            // S2: 행 탭 → 해당 섹터를 기본 강조로 궤적 진입(델타 컨텍스트 복원). onOpenTrajectory 없으면 비대화형.
+            const row = (
+              <>
+                <span className="text-slate-700 flex-1 text-left">
+                  {translate(`sector.${item.sector}`, labels, item.sector)}
+                </span>
+                <span data-testid="rank-delta-badge" className={`font-semibold ${sectorTextClass(item.rank_delta)}`}>
+                  {item.rank_delta > 0 ? `▲${item.rank_delta}` : `▼${Math.abs(item.rank_delta)}`}
+                </span>
+                <span data-testid="rank-trail" className="text-slate-400 text-xs">
+                  {item.prev_rank}위 → {item.rank}위
+                </span>
+              </>
+            )
+            return onOpenTrajectory ? (
+              <button
+                type="button"
+                data-testid="sector-row"
+                key={item.sector}
+                onClick={() => onOpenTrajectory(deltaEmphasis(item.sector))}
+                className="flex w-full items-center gap-2 text-sm hover:bg-slate-50 rounded px-1 -mx-1"
+              >
+                {row}
+              </button>
+            ) : (
+              <div data-testid="sector-row" key={item.sector} className="flex items-center gap-2 text-sm">
+                {row}
+              </div>
+            )
+          })}
         </div>
       )}
 

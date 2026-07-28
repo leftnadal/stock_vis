@@ -446,37 +446,113 @@ def aggregate_relation_pairs_task(self):
     최신 truth/market을 읽어야 하므로 반드시 confidence write 완료 후 실행.
     period=오늘(멱등 키) — 같은 날 재실행은 덮어씀.
     """
+    from django.conf import settings
+
     from apps.chain_sight.services.pair_aggregation import aggregate_relation_pairs
 
     period = timezone.now().date()
     result = aggregate_relation_pairs(period=period)
     logger.info(f"RelationPairSnapshot 집계: {result} (period={period})")
+
+    # D2 v4 ⑨-C: 자율 틱 체인 트리거. 쉘 수동 .delay() 금지 규칙의 예외 아님 —
+    # 이것이 정상 경로. 참조: PR_upward_loop_D2. 트리거 실패(브로커 예외 등)는
+    # 격벽(try/except)으로 흡수 → aggregate 결과에 무영향 보장.
+    if getattr(settings, "CHAINSIGHT_UPWARD_LEARNING_ENABLED", False):
+        try:
+            apply_upward_learning_task.delay(period=period.isoformat())
+        except Exception as exc:  # noqa: BLE001 — 격벽: 트리거 실패가 집계 오염 불가
+            logger.error(f"상향 학습 트리거 실패(aggregate 무영향): {exc}")
+    else:
+        logger.info("상향 학습 flag-off — 트리거 skip")
+
     return result
 
 
-@shared_task(bind=True, max_retries=1, soft_time_limit=600, time_limit=660)
-def apply_upward_learning_task(self):
+@shared_task(bind=True, max_retries=0, soft_time_limit=600, time_limit=660)
+def apply_upward_learning_task(self, period=None):
     """
-    상향 학습 루프 (설계 relation_confidence_upward_loop.md, D1).
-    파이프라인: aggregate_relation_pairs(11:30) → check_stale_and_decay(하향) → 이 task(상향).
-    충돌 배타: 증거 있는(이번 틱 재확인) pair만 상향 평가 — 증거 없는 pair는 decay가 처리.
+    상향 학습 루프 (설계 relation_confidence_upward_loop.md, D1→D2 v5.1).
+    파이프라인: aggregate_relation_pairs(11:30, ⑨-C 인라인 트리거) → 이 task(상향).
+    충돌 배타(설계 결정 2): 증거 있는(이번 틱 재확인) pair만 상향 평가 — 무증거는 decay가 처리.
+    멱등: 동일 period 재실행은 last_computed_at 가드로 이중 상향 금지.
+    자동 재시도 없음(max_retries=0) — 실패 시 다음 자율 틱이 자연 재평가(P-6 격벽).
 
-    ★ flag-off 기본(D1) — 실발화는 D2(#28 Gate 2 종결 + 자율 궤적 ≥5틱) 이후 별도 결정으로 활성화.
-      off여도 배선은 완성(활성화 = settings.CHAINSIGHT_UPWARD_LEARNING_ENABLED=True).
+    period: 트리거가 aggregate period(ISO 날짜 문자열) 전달. 미지정 시 오늘.
+
+    ★ flag-off 기본 — 실발화는 D2(#28 Gate 2 종결 + 궤적 ≥5틱) 이후 flag-on.
     """
+    from datetime import date
+
     from django.conf import settings
+    from django.db.models import F, Q
+
+    from apps.chain_sight.models import RelationConfidence
+    from apps.chain_sight.services.upward_learning import apply_upward_learning
 
     if not getattr(settings, "CHAINSIGHT_UPWARD_LEARNING_ENABLED", False):
-        logger.info("상향 학습 flag-off — skip (D1, 실발화는 D2 게이트)")
-        return {"enabled": False, "upgraded": 0}
+        logger.info("상향 학습 flag-off — skip (실발화는 D2 게이트)")
+        return {"enabled": False, "evaluated": 0, "upgraded": 0, "fastpath": 0}
 
-    # --- D2 활성화 경로 (골격) ---
-    from apps.chain_sight.services.upward_learning import apply_upward_learning  # noqa: F401
+    now = timezone.now()
+    # ③ period는 로그 전용 (선별 인자에서 제거 — ①이 대체). localdate 정합.
+    if isinstance(period, str):
+        period = date.fromisoformat(period)
+    elif period is None:
+        period = timezone.localdate()
 
-    upgraded = 0
-    # TODO(D2): 이번 틱 재확인된 pair(증거 有)를 선별 + trajectory 조회 후 apply_upward_learning.
-    #   for pair, evidence, traj in _reconfirmed_pairs_this_tick():
-    #       if apply_upward_learning(pair, evidence, traj):
-    #           pair.save(); upgraded += 1
-    logger.info(f"상향 학습: {upgraded}건 승급")
-    return {"enabled": True, "upgraded": upgraded}
+    # ① 선별(T-3b): "마지막 상향 계산 이후 새로 재관측된" pair만. 구 date-guard
+    #    (last_observed_at__date=period + exclude last_computed_at__date=period) 폐기.
+    #    - last_computed_at IS NULL  → 진짜 신규 pair (콜드스타트 백필 0002로 기존 행은 이미 채워짐).
+    #    - last_observed_at > last_computed_at → 마지막 틱 이후 seed가 재관측(신선 증거).
+    #    비-market 유지: market 관계는 update_relation_confidence가 매 틱 직접 재산정(이중관리 방지).
+    #    ② 자가오염 차단(아래 save update_fields)이 없으면 auto_now가 last_observed_at을
+    #    매 save마다 밀어 이 선별식이 영구 참이 되므로, ①과 ②는 반드시 함께 간다.
+    qs = (
+        RelationConfidence.objects.filter(
+            Q(last_computed_at__isnull=True)
+            | Q(last_observed_at__gt=F("last_computed_at"))
+        ).exclude(relation_category="market")
+    )
+
+    evaluated = upgraded = fastpath = highscore = streak_up = skipped = 0
+    for pair in qs:
+        evaluated += 1
+        # ⓔ 상한: 이미 confirmed면 fast-path·저장 skip (재승급 churn·쓰기 증폭 차단).
+        if pair.relation_status == "confirmed":
+            skipped += 1
+            continue
+        path = apply_upward_learning(
+            pair, {"evidence_tier_best": pair.evidence_tier_best}, now=now
+        )
+        if path:
+            pair.neo4j_dirty = True
+        # ② 자가오염 차단: update_fields로 저장 — last_observed_at(auto_now) 제외.
+        #    (save() override의 previous_status·neo4j_dirty도 필드에 포함해야 영속됨.)
+        pair.save(update_fields=[
+            "relation_status", "previous_status", "evidence_streak",
+            "last_upgraded_at", "fastpath_triggered_at", "last_computed_at",
+            "neo4j_dirty",
+        ])
+        if path:
+            upgraded += 1
+            if path == "fastpath":
+                fastpath += 1
+            elif path == "highscore":
+                highscore += 1
+            elif path == "streak":
+                streak_up += 1
+
+    result = {
+        "enabled": True,
+        "task_id": self.request.id,
+        "period": period.isoformat(),
+        "evaluated": evaluated,
+        "upgraded": upgraded,
+        "fastpath": fastpath,
+    }
+    # upgraded=0도 INFO(정상값 — STREAK≥3 특성). 경로 3튜플(+skip)은 로그로 관찰(반환 shape 불변).
+    logger.info(
+        f"상향 학습: {result} | paths: highscore={highscore} "
+        f"streak={streak_up} skipped={skipped}"
+    )
+    return result

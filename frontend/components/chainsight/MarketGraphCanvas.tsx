@@ -3,7 +3,7 @@
 import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useExplorationStore } from '@/lib/stores/explorationStore';
-import { useSectorGraph, useNeighbors, useSeedData } from '@/hooks/useMarketView';
+import { useSectorGraph, useNeighbors, useEgo, useSeedData } from '@/hooks/useMarketView';
 import type { MarketNode, MarketEdge, Neighbor, CrossEdge } from '@/types/chainsight';
 import {
   computeRadialPositions,
@@ -13,6 +13,8 @@ import {
 import NodeTooltip, { type TooltipNodeInfo } from './NodeTooltip';
 import NodeContextMenu, { type ContextMenuNodeInfo } from './NodeContextMenu';
 import RelationLegend from './RelationLegend';
+import GraphStatePanel from './GraphStatePanel';
+import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -68,6 +70,13 @@ const NODE_SIZE_MAP = { xl: 20, lg: 17, md: 14, sm: 10 };
 // § 7 호버 애니메이션 duration (ms)
 const HOVER_FADE_DURATION = 100;
 
+// ── Ego API 어댑터 (순수 변환 함수 — egoAdapter.ts에서 import) ──
+import {
+  egoToNeighborShape,
+  egoTruthScoreToWidth,
+  egoTrendToColor,
+} from './egoAdapter';
+
 interface GraphNode {
   id: string;
   name: string;
@@ -91,6 +100,8 @@ interface GraphLink {
   type: string;
   truth_score: number | null;
   relation_category: string;
+  /** ego API 전용: trend direction (up/down/flat) — 시각 인코딩 채널 ⑵ */
+  _ego_trend_direction?: 'up' | 'down' | 'flat';
 }
 
 // § 7: 호버 alpha를 부드럽게 보간하는 헬퍼
@@ -135,6 +146,9 @@ export default function MarketGraphCanvas() {
 
   // § 7: hoveredNode 상태 — 호버 중인 노드 ID
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  // ⑳-G S3: 방사형 시뮬레이션 안정화(fx/fy 주입+zoomToFit) 완료 여부.
+  // 초기 뭉침 프레임을 로딩 오버레이로 가려 노출하지 않는다(추가 force 튜닝 없이 표시층 처치).
+  const [simStabilized, setSimStabilized] = useState(false);
   // § 7: 호버 애니메이션 진행값 (0.0~1.0), 애니메이션 프레임 ref
   const hoverProgressRef = useRef<number>(0);
   const hoverAnimFrameRef = useRef<number | null>(null);
@@ -200,10 +214,25 @@ export default function MarketGraphCanvas() {
   }, [hoveredNode]);
 
   const { data: seedData } = useSeedData();
-  const { data: sectorData, isLoading: sectorLoading } = useSectorGraph(
-    selectedSector && !centerSymbol ? selectedSector : null,
+  const {
+    data: sectorData,
+    isLoading: sectorLoading,
+    isError: sectorError,
+    refetch: refetchSector,
+  } = useSectorGraph(selectedSector && !centerSymbol ? selectedSector : null);
+  // Neighbor 모드: ego API (PostgreSQL 네이티브) 사용. useNeighbors는 동결(삭제 금지).
+  const {
+    data: egoData,
+    isLoading: egoLoading,
+    isError: egoError,
+    refetch: refetchEgo,
+  } = useEgo(centerSymbol);
+
+  // ego 응답을 buildNeighborGraph 형태로 변환 (메모이즈)
+  const neighborData = useMemo(
+    () => (egoData ? egoToNeighborShape(egoData) : null),
+    [egoData],
   );
-  const { data: neighborData, isLoading: neighborLoading } = useNeighbors(centerSymbol);
 
   // 데이터 변환
   const { nodes, links } = useMemo(() => {
@@ -419,6 +448,11 @@ export default function MarketGraphCanvas() {
     }
   }, [nodes, links]);
 
+  // ⑳-G S3: 재배치 시작(중심/섹터 전환)마다 안정화 플래그 리셋 → 오버레이 재노출.
+  useEffect(() => {
+    setSimStabilized(false);
+  }, [centerSymbol, selectedSector]);
+
   // §FE-PR-3 §8-1: onEngineStop 직후 한 번만 fx/fy 주입 → d3ReheatSimulation 미호출
   // 시뮬레이션이 cooldown 완료 후 발화 → 이 시점에 노드 객체에 fx/fy 직접 주입
   // 이후 graphData가 새 객체로 교체되어도 nodePositionsRef에서 복구 가능
@@ -439,6 +473,10 @@ export default function MarketGraphCanvas() {
           if (pos !== undefined) {
             node.fx = pos.fx;
             node.fy = pos.fy;
+            // ⑳-2 S3②: x/y 도 radial 좌표로 동기화 → zoomToFit 이 실제 렌더 배치(radial)
+            // 기준으로 맞춤. (이전엔 force 위치 기준으로 fit → radial 스냅 후 뭉침 노출)
+            node.x = pos.fx;
+            node.y = pos.fy;
           }
         }
       }
@@ -447,8 +485,10 @@ export default function MarketGraphCanvas() {
       // §8-1: d3ReheatSimulation 호출 금지 — fx/fy 주입 후 시뮬레이션 재가동 없음
     }
 
-    // 모든 노드가 화면에 보이도록 fit (한 번만)
-    fg.zoomToFit?.(400, 80);
+    // ⑳-2 S3②: 안정화(fx/fy 주입) 후 모든 노드가 보이도록 fit. 여유 padding 확대(80→90).
+    fg.zoomToFit?.(400, 90);
+    // ⑳-G S3: 안정화 완료 → 초기 뭉침 가림 오버레이 해제.
+    setSimStabilized(true);
   }, []);
 
   const handleNodeClick = useCallback(
@@ -546,7 +586,7 @@ export default function MarketGraphCanvas() {
     }, 200);
   }, [buildTooltipInfo, getCanvasPos]);
 
-  const isLoading = sectorLoading || neighborLoading;
+  const isLoading = sectorLoading || egoLoading;
   const isEmpty = !selectedSector && !centerSymbol;
 
   // § 7 링크 alpha 합성 계산 — 칩 토글(chip) + 호버 dim(hover) 누적
@@ -688,9 +728,7 @@ export default function MarketGraphCanvas() {
                 <span
                   className={[
                     'mt-1 text-[11px] font-medium tabular-nums',
-                    s.pct_change >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-red-500 dark:text-red-400',
+                    s.pct_change >= 0 ? CHANGE_TEXT.up : CHANGE_TEXT.down,
                   ].join(' ')}
                 >
                   {s.pct_change >= 0 ? '+' : ''}{s.pct_change.toFixed(2)}%
@@ -754,10 +792,37 @@ export default function MarketGraphCanvas() {
     );
   }
 
+  // ⑳-E S3/S4: 로드 실패·빈 결과를 조용한 빈 캔버스로 수렴시키지 않고 상태별로 분리.
+  // (b) ego 로드 실패(404/500/예외·focus 미해석) → 오류 명시 + 재시도
+  if (centerSymbol && egoError) {
+    return <GraphStatePanel variant="load-error" symbol={centerSymbol} onRetry={() => refetchEgo()} />;
+  }
+  // (a) ego 200·관계 0 (이웃 없음) → 오류 아님, 안내만
+  if (centerSymbol && egoData && egoData.edges.length === 0) {
+    return <GraphStatePanel variant="empty-neighbors" symbol={centerSymbol} />;
+  }
+  // S4: 섹터 관계망(Neo4j 의존) 로드 실패 → 명시 상태(조용한 빈 캔버스 금지)
+  if (selectedSector && !centerSymbol && sectorError) {
+    return <GraphStatePanel variant="sector-unavailable" onRetry={() => refetchSector()} />;
+  }
+
   return (
     // § 5-1 메인 캔버스 560px (기존 400px → 560px)
     // § 7 cross-fade: opacity transition 200ms (스켈레톤→실제 그래프)
     <div ref={containerRef} className="relative h-[560px] bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden transition-opacity duration-200 opacity-100">
+      {/* ⑳-G S3: 방사형(중심 드릴다운) 초기 뭉침 프레임을 안정화 완료 전까지 가림.
+          섹터 뷰(centerSymbol 없음)는 대상 아님. pointer-events-none으로 상호작용 비차단. */}
+      {centerSymbol && !simStabilized && (
+        <div
+          className="absolute inset-0 z-20 flex items-center justify-center bg-gray-50/80 dark:bg-gray-900/80 pointer-events-none transition-opacity duration-200"
+          aria-hidden
+        >
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-6 h-6 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+            <p className="text-xs text-gray-400 dark:text-gray-500">관계 배치 정리 중...</p>
+          </div>
+        </div>
+      )}
       <ForceGraph2D
         ref={graphRef}
         graphData={{ nodes, links }}
@@ -794,9 +859,13 @@ export default function MarketGraphCanvas() {
         }}
         linkColor={(link: any) => {
           // § 6-1 + § 7: 칩 토글 alpha + 호버 dim alpha 합성
+          // 시각 인코딩 채널 ⑵: ego trend direction → 색 오버라이드 (flat이면 타입 기본색 유지)
           const alpha = getLinkAlpha(link);
           if (alpha <= 0) return 'rgba(0,0,0,0)';
-          const baseColor = EDGE_COLORS[link.type] || '#9CA3AF';
+          const trendColor = link._ego_trend_direction
+            ? egoTrendToColor(link._ego_trend_direction)
+            : null;
+          const baseColor = trendColor ?? EDGE_COLORS[link.type] ?? '#9CA3AF';
           const hex = baseColor.replace('#', '');
           const rr = parseInt(hex.substring(0, 2), 16);
           const gg = parseInt(hex.substring(2, 4), 16);
@@ -804,7 +873,11 @@ export default function MarketGraphCanvas() {
           return `rgba(${rr},${gg},${bb},${alpha.toFixed(3)})`;
         }}
         linkWidth={(link: any) => {
-          // § 6-1 엣지 굵기 적용
+          // 시각 인코딩 채널 ⑴: ego truth_score → 선 굵기 (ego 링크는 truth_score 우선)
+          if (link._ego_trend_direction !== undefined && link.truth_score !== null) {
+            return egoTruthScoreToWidth(link.truth_score);
+          }
+          // § 6-1 기존 엣지 굵기 (sector 그래프 등)
           return EDGE_WIDTHS[link.type] ?? 1;
         }}
         linkLineDash={(link: any) => {
@@ -1003,6 +1076,9 @@ function buildNeighborGraph(
       type: n.relation.type,
       truth_score: n.relation.truth_score,
       relation_category: n.relation.relation_category,
+      // ego 전용 시각 인코딩 채널 ⑵ — 일반 neighbors에는 undefined
+      _ego_trend_direction: (n.relation as any)._ego_trend_direction as
+        'up' | 'down' | 'flat' | undefined,
     })),
     ...data.cross_edges.map((ce) => ({
       source: ce.source,

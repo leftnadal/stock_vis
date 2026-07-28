@@ -108,6 +108,16 @@ class WalletHolding(models.Model):
     first_bought_at = models.DateField(
         help_text="최초 매수일",
     )
+    acquisition_fx_rate = models.DecimalField(
+        max_digits=12,
+        decimal_places=4,
+        null=True,
+        blank=True,
+        help_text=(
+            "매수 시점 USD/KRW 환율, 사용자 정정 가능 (SLICE19B). "
+            "null이면 매수일(first_bought_at) 환율로 근사."
+        ),
+    )
 
     # ---- 투자 근거 (Thesis Y1) ----
     investment_thesis = models.TextField(
@@ -897,3 +907,17 @@ class Decision(models.Model):
 
     def __str__(self):
         return f"Decision[{self.decision_type}] | {self.user} | {self.decision_at:%Y-%m-%d}"
+
+
+# ============================================================
+# Slice 18-R — 사용자 상태 그릇 신규 모델 (ADDITIVE, models_my.py)
+# Django 앱 모델 발견용 재노출. 정의는 models_my.py 참조 (DECISIONS SLICE18R).
+# SLICE19C: PortfolioSnapshot·AdvisoryRun 원장 2종 재노출.
+# ============================================================
+from apps.portfolio.models_my import (  # noqa: E402,F401
+    AdvisoryRun,
+    CashBalance,
+    PortfolioSnapshot,
+    ScopedManager,
+    UserGoal,
+)

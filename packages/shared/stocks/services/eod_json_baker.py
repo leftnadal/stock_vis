@@ -74,6 +74,24 @@ class EODJSONBaker:
         dashboard_json = self._build_dashboard_json(
             target_date, signals_data, market_summary, pipeline_log
         )
+
+        # 추천 3키(thesis/perspectives/risk) LLM 채움.
+        # 삽입 지점 A: 조립 직후·직렬화 전·트랜잭션 밖. [D-LLMFILL]
+        self._fill_recommendations_llm(dashboard_json, signals_data)
+
+        # 발행 로그 write + Stage 7 자가검증 (dashboard.json write 전 = pipeline_meta 반영). [D-HC-ISSUANCE]
+        # write는 try/except로 감싸 파일 서빙은 항상 완주(경보≠중단, #46). 검증은 DB 실측.
+        recommendations = dashboard_json.get("recommendations", [])
+        try:
+            self._write_issuance_log(recommendations, target_date)
+        except Exception:
+            logger.exception(
+                "[EODJSONBaker] 발행 로그 write 실패 — bake 계속(자가검증이 경보). #46"
+            )
+        dashboard_json["pipeline_meta"]["issuance_verified"] = (
+            self._verify_issuance(recommendations, target_date)
+        )
+
         self._write_json(self.TMP_DIR / "dashboard.json", dashboard_json)
         files_written += 1
 
@@ -96,11 +114,6 @@ class EODJSONBaker:
         # DB upsert
         snapshot = self._upsert_snapshot(
             target_date, dashboard_json, signals_data, pipeline_log
-        )
-
-        # 발행 로그 write (추천 발행 기록) — bake 시점, 신규 serve 경로 0. [D-P1-RECPROD]
-        self._write_issuance_log(
-            dashboard_json.get("recommendations", []), target_date
         )
 
         logger.info(
@@ -214,6 +227,29 @@ class EODJSONBaker:
                 }
             )
         return recommendations
+
+    def _fill_recommendations_llm(
+        self, dashboard_json: dict, signals_data: list[dict]
+    ) -> None:
+        """추천 3키(thesis/perspectives/risk) LLM 채움 — 이중 방어. [D-LLMFILL ⑵⑶]
+
+        fill_service 내부(카드별 try/except) + 여기(전체 try/except) 이중 방어.
+        예외 시 placeholder null 유지 + `pipeline_meta.llm_fill.ok=False` 기록,
+        bake는 정상 진행. 성공 시 meta를 additive 기입(7 core 키·기존 흐름 무변경).
+        """
+        try:
+            from packages.shared.stocks.llm.fill_service import fill_recommendations
+
+            filled, meta = fill_recommendations(
+                dashboard_json.get("recommendations", []), signals_data
+            )
+            dashboard_json["recommendations"] = filled
+            dashboard_json["pipeline_meta"]["llm_fill"] = {"ok": True, **meta}
+        except Exception:
+            logger.exception(
+                "[EODJSONBaker] LLM 채움 실패 — bake 계속(placeholder null 유지). [D-LLMFILL]"
+            )
+            dashboard_json["pipeline_meta"]["llm_fill"] = {"ok": False}
 
     def _group_signals_into_cards(
         self, signals_data: list[dict], market_summary: dict
@@ -680,3 +716,34 @@ class EODJSONBaker:
             )
             written += 1
         return written
+
+    def _verify_issuance(
+        self, recommendations: list[dict], target_date: date
+    ) -> dict:
+        """Stage 7 발행 로그 자가검증. [D-HC-ISSUANCE]
+
+        당일(signal_date=target_date) IssuanceLog 실제 행수 == recommendations N 대조.
+        불일치는 경보(logger.error + pipeline_meta.issuance_verified)만 — bake 중단 아님.
+        #46(migration 미적용 → write 조용히 실패, silent 로깅 손실) 탐지 장치.
+
+        Returns:
+            {"expected": int, "written": int, "ok": bool}
+            written = DB 실측 행수(테이블 부재 등 조회 실패 시 0 → ok=False로 경보).
+        """
+        expected = len(recommendations)
+        try:
+            from packages.shared.stocks.models import IssuanceLog
+
+            written = IssuanceLog.objects.filter(signal_date=target_date).count()
+        except Exception:
+            logger.exception(
+                "[EODJSONBaker] 발행 로그 자가검증 조회 실패(테이블 부재 가능 — #46)"
+            )
+            written = 0
+        ok = written == expected
+        if not ok:
+            logger.error(
+                f"[EODJSONBaker] 발행 로그 자가검증 실패: expected={expected}, "
+                f"written={written} (signal_date={target_date}). #46 / D-HC-ISSUANCE"
+            )
+        return {"expected": expected, "written": written, "ok": ok}

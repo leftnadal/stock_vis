@@ -169,6 +169,48 @@ rm /tmp/stockvis-worker-down
 
 ---
 
+## 머신 재구축 / LaunchAgent plist 재생성 체크리스트
+
+> ⚠️ plist 파일(`~/Library/LaunchAgents/com.stockvis.celery-{worker,beat}.plist`)은 **repo 밖 = 머신 로컬**이다. 머신 재구축·OS 재설치·plist 손상 시 **아래를 재적용**해야 한다. (2026-07-10 tz 사고 근원 = beat plist만 메인 repo 경로를 가리키는 **비대칭** 상태였음 → Bug #28 재변질.)
+
+1. **경로 대칭 확인 (가장 중요)** — worker·beat **양쪽** plist의 `ProgramArguments`와 `WorkingDirectory`가 **둘 다** 런타임 트리(`~/worktrees/sv-worker-runtime/scripts/*.sh`)를 가리키는지 확인:
+
+   ```bash
+   for svc in worker beat; do
+     echo "=== $svc ==="
+     plutil -extract ProgramArguments xml1 -o - ~/Library/LaunchAgents/com.stockvis.celery-$svc.plist | grep sv-worker-runtime
+     plutil -extract WorkingDirectory  raw  -o - ~/Library/LaunchAgents/com.stockvis.celery-$svc.plist
+   done
+   ```
+
+   - **메인 편집 repo 경로(`~/Desktop/stock_vis`)를 가리키면 안 된다.** 브랜치 표류한 메인 repo는 stale `config/celery.py`를 로드 → `DatabaseScheduler`의 주기 sync가 DB 스케줄을 옛 dict로 변질시킨다 ([common-bugs #28](../../../sub_claude_md/common-bugs.md) 참조).
+   - worker만 런타임 트리·beat는 메인 repo인 **비대칭**이 2026-07-10 사고 원인. 반드시 **둘 다** 런타임 트리.
+
+2. **경로 변경 시 재적재** — `launchctl kickstart`(단순 재기동)로는 plist 변경이 반영되지 않는다. **bootout → bootstrap** 필수:
+
+   ```bash
+   launchctl bootout   gui/$(id -u) ~/Library/LaunchAgents/com.stockvis.celery-beat.plist
+   launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.stockvis.celery-beat.plist
+   # worker도 동일
+   ```
+
+3. **beat DB 스케줄 재점** — 재적재 후 UTC 고정 태스크를 재등록·검증:
+
+   ```bash
+   cd ~/worktrees/sv-worker-runtime
+   python manage.py register_news_av_beat --apply
+   # 검증: collect-av-broad-news 의 CrontabSchedule tz=UTC (crontab id=101)
+   python manage.py shell -c "from django_celery_beat.models import PeriodicTask; \
+     pt=PeriodicTask.objects.get(name='collect-av-broad-news'); \
+     print('tz=', pt.crontab.timezone, 'crontab.id=', pt.crontab_id, 'enabled=', pt.enabled)"
+   ```
+
+4. **좀비 beat 0 확인** — `ps aux | grep 'celery.*beat'` → **정확히 1개** (launchd 관리 프로세스만).
+
+> UTC 고정이 필요한 beat 태스크는 `config/celery.py`의 `beat_schedule` dict에 두지 않고 `register_news_av_beat` 전용 관리명령으로만 등록한다(dict crontab은 `CELERY_TIMEZONE`=ET로 해석되어 변질). 근거·상세: [common-bugs #28](../../../sub_claude_md/common-bugs.md).
+
+---
+
 ## 로그 파일 목록
 
 | 파일 | 내용 |

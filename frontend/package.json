@@ -11,7 +11,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "gen:coach-schema": "cd .. && poetry run python manage.py spectacular --file frontend/lib/coach/schema.yml",
-    "gen:coach-types": "npm run gen:coach-schema && openapi-typescript lib/coach/schema.yml -o lib/coach/api-types.ts"
+    "gen:coach-types": "npm run gen:coach-schema && openapi-typescript lib/coach/schema.yml -o lib/coach/api-types.ts",
+    "gen:advisory-schema": "cd .. && poetry run python manage.py spectacular --file frontend/lib/advisory/schema.yml",
+    "gen:advisory-types": "npm run gen:advisory-schema && openapi-typescript lib/advisory/schema.yml -o lib/advisory/api-types.ts"
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",

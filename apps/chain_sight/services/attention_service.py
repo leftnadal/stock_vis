@@ -225,6 +225,8 @@ def _board_from_theme_tags(score_map: dict) -> list[dict]:
         result.append({
             "theme": theme,
             "member_count": len(members),
+            # ⑳-2 S4(additive): 구성 티커 목록(점수 있는 멤버만). OFF 경로도 동형.
+            "members": [m for m in members if m in score_map],
             "avg_return": round(avg_return, 6),
             "avg_score": round(avg_score, 2),
             "high_attention_count": high_count,
@@ -259,6 +261,9 @@ def _board_from_event_groups(score_map: dict) -> list[dict]:
             "theme": g["slug"],   # 드릴다운 키(eg: leadership과 공유)
             "name": g["name"],    # n3 표시명(프론트 라벨)
             "member_count": len(member_scores),
+            # ⑳-2 S4(additive): 구성 티커 목록 — 카드 제목 티커 병기용(표시 가공).
+            # 점수 있는 멤버만(화면 집계 대상과 일치). 프론트가 상위 N + "외 N" 처리.
+            "members": [m for m in members if m in score_map],
             "avg_return": round(avg_return, 6),
             "avg_score": round(avg_score, 2),
             "high_attention_count": high_count,

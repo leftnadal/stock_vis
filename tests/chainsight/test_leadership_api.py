@@ -14,9 +14,10 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from apps.chain_sight.models import CompanyChainProfile
 from apps.chain_sight.services.attention_service import compute_attention_scores
-from apps.chain_sight.services.leadership_compute import compute_leadership_scores
+from apps.chain_sight.services.leadership_eventgroup import (
+    compute_eventgroup_leadership_scores,
+)
 from packages.shared.stocks.models import DailyPrice, Stock
 
 User = get_user_model()
@@ -64,14 +65,25 @@ def _make_prices(sym: str, n_days: int = 30, drift: float = 0.005):
 
 
 def _setup(theme: str, n: int = 4):
+    """slug=theme EventGroup + n종목 + 관심도 + eg:{slug} leadership 시드.
+
+    ⑰ S3: 구 theme_tags 시드를 event_group 규약으로 전환. 랭킹의 event_group 경로
+    (get_event_ranking→attach_leadership_eg)는 EventGroup slug + eg:{slug} leadership을
+    읽으므로 compute_eventgroup_leadership_scores로 계산(구 compute_leadership_scores 대체).
+    """
+    from apps.chain_sight.models.event_group import EventGroup, GroupMembership
+
     syms = [f"L{i:02d}" for i in range(n)]
     for s in syms:
         _make_prices(s)
-        CompanyChainProfile.objects.update_or_create(
-            symbol_id=s, defaults={"theme_tags": [theme]}
-        )
     compute_attention_scores(AS_OF)
-    compute_leadership_scores(AS_OF)
+    eg = EventGroup.objects.create(
+        name=theme, slug=theme, source="news_jaccard", is_hidden=False,
+        member_count=n, core_count=n,
+    )
+    for s in syms:
+        GroupMembership.objects.create(group=eg, symbol_id=s, role="core")
+    compute_eventgroup_leadership_scores(AS_OF)
     return syms
 
 

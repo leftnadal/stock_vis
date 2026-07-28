@@ -1,3 +1,4 @@
+from .alphavantage import AlphaVantageNewsProvider, RateLimitExceeded
 from .base import BaseNewsProvider, RawNewsArticle
 from .finnhub import FinnhubNewsProvider
 from .fmp import FMPNewsProvider
@@ -9,4 +10,6 @@ __all__ = [
     "FinnhubNewsProvider",
     "MarketauxNewsProvider",
     "FMPNewsProvider",
+    "AlphaVantageNewsProvider",
+    "RateLimitExceeded",
 ]

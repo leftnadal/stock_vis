@@ -55,18 +55,9 @@ KNOWN_TEST_FAILS: dict[str, str] = {
         "Finnhub API 키가 테스트 환경에 없음 — 환경 의존, 이관/코드와 무관. "
         "BOUNDARY-LLM 슬라이스 ④ Part ①-sync 회귀에서 선존 확인(2026-06-26)."
     ),
-    "tests/news/test_news_entity_deduplication.py::TestNewsSystemIntegration::test_multiple_symbol_fetches_no_cross_contamination": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
-    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_no_duplicate_entities_on_multiple_saves": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
-    "tests/news/test_news_entity_deduplication.py::TestAggregatorEntityDeduplication::test_existing_article_entity_unchanged": (
-        "Finnhub API 키가 테스트 환경에 없음(finnhub.py:38 ValueError) — 환경 의존, 이관/코드와 무관. "
-        "BOUNDARY-LLM 막간 test 위생(2026-06-29) 전수 분류에서 선존 확인(94f082c, #19 이전)."
-    ),
+    # 아래 3건(test_news_entity_deduplication)은 지시서⑫ C2 에서 provider 주입(S5 seam)으로
+    # env-독립 상환 완료 → env -i 격리서 green → 레지스트리에서 제거(스테일 방지).
+    # 제거 근거: NewsAggregatorService(finnhub=FinnhubNewsProvider(api_key='test...')) 주입.
 }
 
 
@@ -297,6 +288,61 @@ def check_taskqueue_done_matching() -> CheckResult:
         status=OK,
         detail=f"TASKQUEUE done/verified 표기 {len(done_ids)}건 (휴리스틱 검증 — Layer 3 강화 예정)",
         evidence=[f"감지된 ID 예시: {done_ids[:5]}"],
+    )
+
+
+# ── 검증 4b: TASKQUEUE 주장 상태 vs 증거 대조 (advisory, WARN-only) ──────────
+# 목적: 스테일 하네스 항목 조기 감지. 트랙이 실제로 landed(산출물 존재 + DECISIONS 종결)
+# 인데 TASKQUEUE가 그 사실을 acknowledge하지 않으면(여전히 미착수/DORMANT처럼 보이면) WARN.
+# 근거 사례 = BOUNDARY-LLM DORMANT-vs-landed 스테일(지시서⑪ 발견, ⑫ C3 가드화).
+# ★ 판정 불변: 항상 OK/WARN 만 반환(ERROR 없음) = pass/fail baseline 무변경(advisory).
+# 오탐 방지: "이력 보존용 옛 문구"가 남아 있어도, landed **ack 토큰**의 존재만 확인하므로
+# retained 히스토리에 false-positive 하지 않는다(정합=ack 토큰 有).
+
+# 규칙 = landed 판정에 필요한 증거(DECISIONS 종결 문구 + 산출물 경로) + TASKQUEUE ack 토큰.
+_CLAIM_EVIDENCE_RULES: list[dict] = [
+    {
+        "label": "BOUNDARY-LLM",
+        "decisions_landed": "BOUNDARY-LLM 실행 완료",
+        "artifact": "packages/shared/llm/core.py",
+        "ack_tokens": ["종결·LANDED", "실행 완료 (landed)", "상태 정정 (2026-07-13"],
+    },
+]
+
+
+def _evaluate_claim_evidence(tq_text, dec_text, artifact_exists, rules) -> list[str]:
+    """순수 함수(테스트 가능). landed 증거가 있는데 TASKQUEUE ack 없는 규칙의 경고 목록 반환."""
+    mismatches: list[str] = []
+    for rule in rules:
+        landed = (rule["decisions_landed"] in dec_text) and artifact_exists(rule["artifact"])
+        if not landed:
+            continue  # landed 증거 없음 → 검증 대상 아님
+        acknowledged = any(tok in tq_text for tok in rule["ack_tokens"])
+        if not acknowledged:
+            mismatches.append(
+                f"{rule['label']}: landed 증거(DECISIONS 종결 + {rule['artifact']}) 있으나 "
+                f"TASKQUEUE에 landed ack 토큰 부재 — 정합 필요(스테일 주장 의심)"
+            )
+    return mismatches
+
+
+def check_taskqueue_claim_vs_evidence() -> CheckResult:
+    tq = TASKQUEUE_MD.read_text(encoding="utf-8") if TASKQUEUE_MD.exists() else ""
+    dec = DECISIONS_MD.read_text(encoding="utf-8") if DECISIONS_MD.exists() else ""
+    mism = _evaluate_claim_evidence(
+        tq, dec, lambda a: (REPO_ROOT / a).exists(), _CLAIM_EVIDENCE_RULES
+    )
+    if mism:
+        return CheckResult(
+            name="TASKQUEUE 주장 vs 증거",
+            status=WARN,
+            detail=f"스테일 주장 의심 {len(mism)}건 (landed인데 TASKQUEUE 미ack)",
+            evidence=mism,
+        )
+    return CheckResult(
+        name="TASKQUEUE 주장 vs 증거",
+        status=OK,
+        detail=f"주장-증거 정합 (규칙 {len(_CLAIM_EVIDENCE_RULES)}건 대조, 불일치 0)",
     )
 
 
@@ -623,6 +669,333 @@ def check_known_test_fails() -> CheckResult:
     )
 
 
+# ── 검증 8: 발행 로그(IssuanceLog) 신선도 (D-HC-ISSUANCE) ─────────────────────
+#
+# bake 자가검증(런타임)의 짝 = 검문소(정합성). 최근 거래일 발행 로그가 존재하고
+# 최근성을 유지하는지 최소 검사 — #46(migration 미적용 → write 조용히 실패,
+# silent 로깅 손실) 재발 탐지. DB 접근이 이 스크립트 유일하므로 Django lazy setup +
+# 전 구간 방어(비-런타임 환경·빈 이력은 OK-skip = zero-noise 원칙 준수).
+
+# 최근 거래일 임계(달력일) — 주말(2) + 연휴 여유. 초과 시 stale 의심(WARN).
+ISSUANCE_STALE_DAYS = 5
+
+
+def check_issuance_log_freshness() -> CheckResult:
+    """최근 거래일 IssuanceLog 행 존재 + 최근성(published_at) 최소 검사. [D-HC-ISSUANCE]
+
+    - 비-런타임 환경(Django/DB 미가용)·빈 이력 → OK-skip(노이즈 0).
+    - 테이블 부재/조회 실패(#46 핵심 증상) → WARN.
+    - 이력은 있으나 최근 거래일이 ISSUANCE_STALE_DAYS 초과 → WARN(stale 의심).
+    - 주말·휴장 허용 오차 = ISSUANCE_STALE_DAYS(달력일)로 흡수.
+    """
+    name = "발행 로그 신선도"
+    try:
+        import os
+
+        import django
+
+        # 스크립트 직접 실행 시 sys.path[0]=scripts/ 라 config/packages 미발견 → REPO_ROOT 보강.
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from packages.shared.stocks.models import IssuanceLog
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        latest = IssuanceLog.objects.order_by("-signal_date").first()
+    except Exception as e:  # noqa: BLE001 — 테이블 부재(#46) 등
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="IssuanceLog 조회 실패 — 테이블 부재 가능(#46 증상)",
+            evidence=[str(e)[:120]],
+        )
+
+    if latest is None:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="발행 로그 이력 없음 — 검사 생략(bake 미실행 환경)",
+        )
+
+    latest_date = latest.signal_date
+    count = IssuanceLog.objects.filter(signal_date=latest_date).count()
+    age_days = (datetime.now().date() - latest_date).days
+    published = getattr(latest, "published_at", None)
+    pub_str = published.date().isoformat() if published else "N/A"
+
+    if age_days > ISSUANCE_STALE_DAYS:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"최근 발행 로그 {age_days}일 전({latest_date}) — stale 의심(임계 {ISSUANCE_STALE_DAYS}일)",
+            evidence=[f"최근 거래일 행수={count}, published_at={pub_str}"],
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"최근 거래일 {latest_date} 행 {count}건 (age {age_days}일 ≤ {ISSUANCE_STALE_DAYS})",
+        evidence=[f"published_at={pub_str}"],
+    )
+
+
+# ── 검증 9: 실행 트리 정합 (D-SYNC-ENTRYPOINT) ───────────────────────────────
+#
+# 이 스크립트가 실행되는 트리가 origin/main 대비 뒤처지면 = 구버전 health_check일
+# 수 있음(신규 항목 누락). #47 재귀(worker_sync에 이어 health_check도 stale 가능)를
+# 결과 자체에 표기 — "이 리포트가 최신 코드로 돈 게 맞나"를 리포트가 스스로 경고.
+# fetch 불가(오프라인) → OK-skip. 순수 분류는 classify_tree_alignment로 분리(테스트).
+
+
+def classify_tree_alignment(fetch_ok: bool, head: str, origin: str) -> int:
+    """실행 트리 정합 상태 → status. fetch 실패는 skip(OK), 뒤처짐은 WARN."""
+    if not fetch_ok:
+        return OK
+    if head and origin and head == origin:
+        return OK
+    return WARN
+
+
+def check_execution_tree_alignment() -> CheckResult:
+    name = "실행 트리 정합"
+    fetch_ok = (
+        subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "fetch", "origin", "--quiet"],
+            capture_output=True,
+            check=False,
+        ).returncode
+        == 0
+    )
+    head = _git(["rev-parse", "HEAD"])
+    origin = _git(["rev-parse", "origin/main"])
+    status = classify_tree_alignment(fetch_ok, head, origin)
+    if not fetch_ok:
+        return CheckResult(
+            name=name, status=OK, detail="fetch 불가(오프라인) — 정합 검사 생략"
+        )
+    short = lambda h: h[:7] if h else "?"  # noqa: E731
+    if status == WARN:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=f"실행 트리가 origin/main 뒤처짐 — 구버전 항목 누락 가능(#47)",
+            evidence=[
+                f"HEAD={short(head)} ≠ origin/main={short(origin)}",
+                f"트리: {REPO_ROOT}",
+                "→ 'sv health'(런타임 트리 최신화 후 실행) 권장",
+            ],
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"실행 트리 = origin/main ({short(head)}) 정합",
+    )
+
+
+# ── 검증 13: monitor refresh 태스크 신선도 (MON-P2-BEAT §6) ──────────────────
+#
+# ※ CHECKS 레지스트리 기준 13번째 항목. 지시서 §6의 "12번째"는 stale count(issuance·
+#   execution_tree 추가 전 11 가정) 기준 — 착수 시점 실제 12개 → 이 항목이 13번째.
+# refresh_monitors_task(18:45 ET beat)는 성공 시 각 stock Monitor에 asof=오늘 스냅샷을
+# upsert한다 → 최근 MonitorSnapshot.asof_date가 refresh 성공의 관측 가능한 흔적.
+# 최근 2 거래일 내 성공 기록을 요구하되, 주말·연휴는 임계(달력일)로 흡수(zero-noise).
+# check_issuance_log_freshness와 동일한 방어 패턴(Django lazy setup + OK-skip).
+
+# 2 거래일 ≈ 주말(2) 흡수해 5 달력일. issuance 관례(ISSUANCE_STALE_DAYS=5)와 정합.
+MONITOR_REFRESH_STALE_DAYS = 5
+
+
+def check_monitor_refresh_freshness() -> CheckResult:
+    """최근 MonitorSnapshot(=refresh 태스크 성공 흔적) 신선도. [MON-P2-BEAT §6]
+
+    - 비-런타임/DB 미가용 → OK-skip(노이즈 0).
+    - stock scope Monitor 0건(관제 대상 없음) → OK-skip.
+    - Monitor 있으나 스냅샷 이력 0 / 최근 asof가 임계 초과 → WARN(태스크 미실행·skip 누적 의심).
+    """
+    name = "monitor refresh 신선도"
+    try:
+        import os
+
+        import django
+
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+        django.setup()
+        from apps.monitor.models import Monitor, MonitorSnapshot
+    except Exception as e:  # noqa: BLE001 — 비-런타임 환경은 검사 대상 아님
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="Django/DB 미가용 — 검사 생략(비-런타임 환경)",
+            evidence=[str(e)[:120]],
+        )
+
+    try:
+        has_stock = Monitor.objects.filter(scope="stock").exists()
+        latest = MonitorSnapshot.objects.order_by("-asof_date").first()
+    except Exception as e:  # noqa: BLE001 — 테이블 부재 등
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="MonitorSnapshot 조회 실패 — 테이블 부재 가능",
+            evidence=[str(e)[:120]],
+        )
+
+    if not has_stock:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail="stock scope Monitor 0건 — 검사 생략(관제 대상 없음)",
+        )
+    if latest is None:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail="Monitor 있으나 스냅샷 이력 0건 — refresh 미실행 의심",
+        )
+
+    age_days = (datetime.now().date() - latest.asof_date).days
+    if age_days > MONITOR_REFRESH_STALE_DAYS:
+        return CheckResult(
+            name=name,
+            status=WARN,
+            detail=(
+                f"최근 refresh {age_days}일 전({latest.asof_date}) — 임계 "
+                f"{MONITOR_REFRESH_STALE_DAYS}일 초과(태스크 미실행/skip 누적 의심)"
+            ),
+        )
+    return CheckResult(
+        name=name,
+        status=OK,
+        detail=f"최근 refresh asof {latest.asof_date} (age {age_days}일 ≤ {MONITOR_REFRESH_STALE_DAYS})",
+    )
+
+
+# ── (15) stale pending 백-어노테이션 검문 (MGMT-HARDEN, common-bugs #52) ──────
+# D2 phantom 교훈: 해소된 결정이 구 pending(⏸️) 블록 미갱신으로 stale 잔존 → 인계로 무검증 전파.
+# 판정: PROGRESS.md의 ⏸️(paused) 상태 블록 중, 해소 델타(→ RESOLVED/LANDED/SUPERSEDED 등)
+#       없이 타임스탬프가 PENDING_STALE_DAYS(3 거래일 근사 = 달력 3일) 초과 방치 → WARN.
+# WARN-only(FAIL 아님. 1주 클린 후 FAIL 승격은 별도 — 지금 승격 금지).
+# TASKQUEUE 제외: 큐는 설계상 장기 pending(💤/🕓 트리거 게이트) 보유 — ⏸️ 미사용이라 오탐 원천.
+# 거래일 캘린더 = issuance/execution-tree의 "달력일 임계로 주말 흡수" 관례 재사용(엄밀 NYSE 캘린더 부재).
+PENDING_STALE_DAYS = 3
+PENDING_MARKER = "⏸️"
+PENDING_DELTA_MARKERS = ("RESOLVED", "LANDED", "SUPERSEDED", "해소 델타", "소화됨", "해소됨")
+
+# [C] HEALTH-STALE-FAIL-PROMOTE 트리거 — 이 날짜부터 '순수 stale'(비-blocked)만 WARN→FAIL 승격.
+# 승격은 today 게이트(순수함수 파라미터화 관례) — 테스트는 today를 주입해 승격 전/후 양방향 검증.
+STALE_FAIL_PROMOTE_DATE = datetime(2026, 7, 20).date()
+
+# blocked(외부 의존) 표기 문법 — 단일 출처 = D-HEALTH-BLOCKED-DISTINCTION (MGMT-BATCH-11 적용).
+# blocked(dep=<TASK_ID>) 항목은 FAIL 승격 제외(WARN 유지), 단 dep가 TASKQUEUE 실존해야 유효.
+_BLOCKED_RE = re.compile(r"blocked\(dep=([A-Za-z0-9][A-Za-z0-9_\-]*)\)")
+
+
+def _scan_stale_pending(text: str, today) -> list[tuple[str, int, str | None]]:
+    """⏸️ + 날짜 有 + 해소델타 無 + age > 임계 인 블록을 (헤더요약, age, blocked_dep) 리스트로 반환.
+
+    blocked_dep = `blocked(dep=<ID>)` 표기의 ID(없으면 None). 순수 함수(DB·git 접근 0)
+    → 합성 픽스처로 양방향 검증 가능. today = datetime.date.
+    """
+    stale: list[tuple[str, int, str | None]] = []
+    for line in text.splitlines():
+        if PENDING_MARKER not in line:
+            continue
+        if any(mk in line for mk in PENDING_DELTA_MARKERS):
+            continue  # 해소 델타 부기됨 → 정상(백-어노테이션 완료, WARN 억제)
+        m = re.search(r"(\d{4})-(\d{2})-(\d{2})", line)
+        if not m:
+            continue
+        try:
+            block_date = datetime(int(m.group(1)), int(m.group(2)), int(m.group(3))).date()
+        except ValueError:
+            continue
+        age = (today - block_date).days
+        if age > PENDING_STALE_DAYS:
+            hm = re.search(r"\*\*(.+?)\*\*", line)
+            head = (hm.group(1) if hm else line.strip())[:70]
+            bm = _BLOCKED_RE.search(line)
+            stale.append((head, age, bm.group(1) if bm else None))
+    return stale
+
+
+def _taskqueue_has_task_id(tq_text: str, task_id: str) -> bool:
+    """dep=<TASK_ID>가 TASKQUEUE 표의 **정의 행**(첫 칸 셀)로 실존하는지.
+
+    프로즈 언급·타 행의 참조와 구분하기 위해 `^| <ID> |` 정의 행만 인정(남용 방지).
+    """
+    return re.search(r"(?m)^\|\s*" + re.escape(task_id) + r"\s*\|", tq_text) is not None
+
+
+def evaluate_stale_pending(progress_text: str, tq_text: str, today) -> CheckResult:
+    """stale pending 판정(순수함수 — 파일/시계 미접근, today·텍스트 주입).
+
+    blocked(dep=<ID>) + dep 실존 → WARN 유지(FAIL 승격 제외).
+    blocked이나 dep 미실존 → **무효**: 일반 stale 규칙 적용 + 무효 경고 별도 표시.
+    비-blocked 순수 stale → today ≥ 승격일이면 FAIL, 아니면 WARN.
+    """
+    name = "stale pending 백-어노테이션"
+    stale = _scan_stale_pending(progress_text, today)
+    if not stale:
+        return CheckResult(
+            name=name,
+            status=OK,
+            detail=f"⏸️ 해소 델타 없는 stale pending 0건 (임계 {PENDING_STALE_DAYS} 거래일, PROGRESS)",
+        )
+
+    promoted = today >= STALE_FAIL_PROMOTE_DATE
+    valid_blocked: list[tuple[str, int, str]] = []
+    invalid_blocked: list[tuple[str, int, str]] = []
+    pure: list[tuple[str, int]] = []
+    for head, age, dep in stale:
+        if dep is None:
+            pure.append((head, age))
+        elif _taskqueue_has_task_id(tq_text, dep):
+            valid_blocked.append((head, age, dep))
+        else:
+            invalid_blocked.append((head, age, dep))
+
+    # 무효 blocked = 일반 stale 취급(승격 대상) — dep 실존 검증 실패 시 부기 회피 차단.
+    effective_pure = pure + [(h, a) for h, a, _ in invalid_blocked]
+
+    evidence: list[str] = []
+    for h, a, dep in valid_blocked:
+        evidence.append(f"{h} (age {a}일) — blocked(dep={dep}) 유효 → WARN 유지·[C] FAIL 승격 제외")
+    for h, a, dep in invalid_blocked:
+        evidence.append(
+            f"{h} (age {a}일) — ⚠ 무효 blocked(dep={dep} = TASKQUEUE 미실존) → 일반 stale 적용"
+        )
+    for h, a in pure:
+        evidence.append(f"{h} (age {a}일) — 순수 stale (→ RESOLVED/LANDED/SUPERSEDED 부기 필요)")
+
+    status = ERROR if (effective_pure and promoted) else WARN
+
+    parts: list[str] = []
+    if effective_pure:
+        verb = "FAIL(승격됨)" if promoted else "WARN(승격 전)"
+        parts.append(f"순수 stale {len(effective_pure)}건 → {verb} (부기 필요, #52)")
+    if valid_blocked:
+        parts.append(f"blocked(외부 의존) {len(valid_blocked)}건 → WARN 유지(승격 제외)")
+    if invalid_blocked:
+        parts.append(f"⚠ 무효 blocked 표기 {len(invalid_blocked)}건 (dep TASKQUEUE 미실존)")
+    detail = " · ".join(parts) + f" [임계 {PENDING_STALE_DAYS}거래일 · 승격일 {STALE_FAIL_PROMOTE_DATE}]"
+    return CheckResult(name=name, status=status, detail=detail, evidence=evidence)
+
+
+def check_stale_pending_backannotation() -> CheckResult:
+    progress = PROGRESS_MD.read_text(encoding="utf-8") if PROGRESS_MD.exists() else ""
+    tq = TASKQUEUE_MD.read_text(encoding="utf-8") if TASKQUEUE_MD.exists() else ""
+    return evaluate_stale_pending(progress, tq, datetime.now().date())
+
+
 # ── main runner ─────────────────────────────────────────────────────────────
 
 
@@ -631,12 +1004,17 @@ CHECKS = [
     check_brunch_worktree_existence,
     check_progress_staleness,
     check_taskqueue_done_matching,
+    check_taskqueue_claim_vs_evidence,
     check_decisions_freshness,
     check_slice_branches_unmerged,
     check_external_automation_commits,
     check_shared_boundary,
     check_llm_direct_call_boundary,
     check_known_test_fails,
+    check_issuance_log_freshness,
+    check_execution_tree_alignment,
+    check_monitor_refresh_freshness,
+    check_stale_pending_backannotation,
 ]
 
 

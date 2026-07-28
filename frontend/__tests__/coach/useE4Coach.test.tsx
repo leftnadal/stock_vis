@@ -5,6 +5,7 @@
  * 3건 (첫 질문 happy / 멀티턴 payload 단언 / error).
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
@@ -32,7 +33,7 @@ function createWrapper() {
   }
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = API_BASE_URL
 const E4_URL = `${API_URL}/coach/e4/`
 
 describe('useE4Coach', () => {

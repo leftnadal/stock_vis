@@ -258,6 +258,13 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
+    # ⚠ collect-av-broad-news는 이 dict에 두지 않는다(의도적 제외). 근거: 이 dict의
+    #    crontab(hour=1)은 CELERY_TIMEZONE(ET)로 해석돼 update-economic-calendar의
+    #    동일 ET 행(0 1 * * * ET)과 공유·충돌 → collect-av가 ET로 변질(2026-07-10 실사고).
+    #    스케줄은 register_news_av_beat 가 전용 timezone=UTC CrontabSchedule로 등록(권위,
+    #    ET DST 드리프트+공유행 변질 원천 차단). sync_beat_schedule은 이 태스크를
+    #    "extra DB row"로 스킵(무해). 하류 순서: collect(01 UTC)<extract(14 UTC)<load(22:15 UTC).
+
     # 시장 뉴스 수집 (4회/일: 08:00, 12:00, 15:00, 18:00 EST)
     'collect-market-news-morning': {
         'task': 'services.news.tasks.collect_market_news',
@@ -651,38 +658,6 @@ app.conf.beat_schedule = {
     },
 
     # ============================================================
-    # Thesis Control EOD Pipeline (수학 모델 v2.3.2, Section 7)
-    # ============================================================
-
-    # 지표 데이터 수집 (매일 18:00 ET, 장 마감 후)
-    'thesis-update-readings': {
-        'task': 'thesis.tasks.eod_pipeline.update_indicator_readings',
-        'schedule': crontab(hour=18, minute=0, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # 스코어 계산 (매일 18:15 ET, 데이터 수집 완료 후)
-    'thesis-calculate-scores': {
-        'task': 'thesis.tasks.eod_pipeline.calculate_scores',
-        'schedule': crontab(hour=18, minute=15, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # 스냅샷 생성 + 알림 (매일 18:30 ET, 스코어 계산 완료 후)
-    'thesis-create-snapshots': {
-        'task': 'thesis.tasks.eod_pipeline.create_snapshots_and_alerts',
-        'schedule': crontab(hour=18, minute=30, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # AI 요약 생성 (매일 18:35 ET, snapshot 직후 — audit P0 #15)
-    'thesis-generate-summaries': {
-        'task': 'thesis.tasks.summary.generate_thesis_summaries',
-        'schedule': crontab(hour=18, minute=35, day_of_week='1-5'),
-        'options': {'expires': 3600}
-    },
-
-    # ============================================================
     # Chain Sight — Tier A 프로파일 + 관계 파이프라인
     # ============================================================
 
@@ -730,13 +705,8 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # 상향 학습 루프 (매일 11:35 ET, aggregate·decay 직후). D1=flag-off 기본(no-op),
-    # 실발화는 D2 게이트(#28 Gate 2 + 궤적 ≥5틱) 후 CHAINSIGHT_UPWARD_LEARNING_ENABLED=True.
-    'chainsight-upward-learning': {
-        'task': 'apps.chain_sight.tasks.relation_tasks.apply_upward_learning_task',
-        'schedule': crontab(hour=11, minute=35),
-        'options': {'expires': 3600}
-    },
+    # (D2 v5.1 ⑨-C) 상향 학습 죽은 config dict beat 제거 — DatabaseScheduler가
+    # 무시(#28)하던 미배선 항목. 실발화는 aggregate 말미 인라인 트리거(코드 체인)로 대체.
 
     # ChainProfile 집계 (매주 토요일 04:30 EST, 프로파일+관계 완료 후)
     'chainsight-aggregate-profiles': {
@@ -745,19 +715,9 @@ app.conf.beat_schedule = {
         'options': {'expires': 3600}
     },
 
-    # Neo4j 프로파일 동기화 (매일 12:00 EST, 관계 갱신 후)
-    'chainsight-sync-profiles-neo4j': {
-        'task': 'apps.chain_sight.tasks.sync_tasks.sync_profiles_to_neo4j',
-        'schedule': crontab(hour=12, minute=0),
-        'options': {'expires': 3600}
-    },
-
-    # Neo4j 관계 동기화 (매일 12:30 EST, 프로파일 동기화 후)
-    'chainsight-sync-relations-neo4j': {
-        'task': 'apps.chain_sight.tasks.sync_tasks.sync_relations_to_neo4j',
-        'schedule': crontab(hour=12, minute=30),
-        'options': {'expires': 3600}
-    },
+    # Neo4j 동기화 3태스크 = beat_schedule에서 완전 제거(동결, ⑲ D-NEO4J-FREEZE).
+    # 원 스케줄·재활성 절차·재평가 트리거는 DECISIONS.md(D-NEO4J-FREEZE) 참조. task_routes의
+    # queue:neo4j 배정(56~58)만 유지 = 수동 실행/재활성 시 라우팅 보존. DB PeriodicTask는 병진 수동.
 
     # Heat Score 배치 (매일 07:00 UTC, 시드 선정 전)
     'chainsight-heat-score-daily': {
@@ -771,13 +731,6 @@ app.conf.beat_schedule = {
         'task': 'chainsight-seed-selection',
         'schedule': crontab(hour=13, minute=0),
         'options': {'expires': 3600}
-    },
-
-    # Neo4j dirty 동기화 (매주 일요일 04:30 UTC)
-    'chainsight-neo4j-dirty-sync': {
-        'task': 'chainsight-neo4j-dirty-sync',
-        'schedule': crontab(hour=4, minute=30, day_of_week=0),
-        'options': {'expires': 3600, 'queue': 'neo4j'}
     },
 
     # ============================================================

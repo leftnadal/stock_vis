@@ -110,6 +110,7 @@ celery -A config beat -l info
 | 28 | Beat schedule drift (config dict vs DB) | DatabaseScheduler 사용 시 dict는 무시됨, `PeriodicTask.objects.create(...)`로 DB 등록 |
 
 > 전체 버그 상세: [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md)
+> 배포 체크리스트(마이그레이션·env 인라인 포함 슬라이스 — 단일 출처): [sub_claude_md/common-bugs.md](sub_claude_md/common-bugs.md) "배포 체크리스트" 항목 (#53~#55 짝)
 
 ---
 

@@ -23,7 +23,11 @@ EODHD_API_KEY = os.getenv('EODHD_API_KEY', '')  # EODHD Historical Data
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 FINNHUB_API_KEY = os.getenv('FINNHUB_API_KEY', '')
 MARKETAUX_API_KEY = os.getenv('MARKETAUX_API_KEY', '')
+ALPHA_VANTAGE_API_KEY = os.getenv('ALPHA_VANTAGE', '')  # AV NEWS_SENTIMENT broad co-mention 소스
 FRED_API_KEY = os.getenv('FRED_API_KEY', '')  # FRED 거시경제 데이터
+
+# credit_signals Phase 1 — 수집·계산 태스크 flag guard (기본 false, Decision ⑨-C 패턴)
+CREDIT_SIGNALS_ENABLED = os.getenv('CREDIT_SIGNALS_ENABLED', 'false').lower() == 'true'
 ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')  # Claude API for RAG
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', '')  # Gemini API for RAG (primary)
 
@@ -197,15 +201,19 @@ INSTALLED_APPS = [
     'macro',  # 거시경제 대시보드 (Market Pulse)
     'services.rag_analysis',  # PR8a-1 이동  # RAG 기반 AI 분석
     'services.serverless',  # PR8a-3 이동  # Market Movers (AWS Lambda 전환 대상)
-    'thesis',  # Thesis Control (가설 통제실)
     'packages.shared.metrics',  # PR2 이동 (A-min) — 공유 지표 메타데이터 + 배치 실행 이력
     'packages.shared.alerting',  # MP2-ALERTS — 알림 코어 (D-ALERTS-BOUNDARY-R1)
+    'packages.shared.fx',  # SLICE19B — FX 환율 (KRW numéraire 토대, 앱 불가지론 범용)
     'services.validation',  # PR8a-1 이동  # 1차 검증 (최신값 캐시, 벤치마크 비교)
     'apps.chain_sight',  # PR6 이동 — Chain Sight 기업 프로파일 (민감도, 성장, 자본DNA)
     'services.sec_pipeline',  # PR8a-1 이동  # SEC EDGAR 파이프라인 (Supply Chain + Business Model)
     'apps.portfolio.apps.PortfolioConfig',  # PR7 이동 — Portfolio Coach (Wallet/Portfolio/AnalysisRun/Coach)
     'apps.market_pulse.apps.MarketpulseConfig',  # PR4 이동 — Market Pulse v2 (Phase 1)
+    'apps.monitor.apps.MonitorConfig',  # MON-P2 — Monitor 허브 (구 thesis 재건, D-MONITOR-REBUILD)
     'integrations.iron_trading.apps.IronTradingConfig',  # PR3 이동 — iron_trading 외부 봇 read-only API
+    'apps.credit_signals',  # credit_signals Phase 1 — FRED 크레딧 신호 백본
+    'apps.dashboard.apps.DashboardConfig',  # NEWSAXIS-BUILD — 표면 전용 BFF (D-DASH-BFF config 예외 1/2)
+    'apps.platform.apps.PlatformConfig',  # P2-IMPRESSION-BUILD-S2 — 제3범주 telemetry 홈 (D-P2-S2-PLATFORM)
     'rest_framework',
     'rest_framework_simplejwt',  # JWT 인증 추가
     'rest_framework_simplejwt.token_blacklist',  # JWT 토큰 블랙리스트
@@ -406,12 +414,6 @@ SPECTACULAR_SETTINGS = {
     # (value, label) 튜플 list 형식 — drf-spectacular는 sorted hash로 매칭하므로
     # 모델 choices와 정확히 동일한 tuple 필요.
     'ENUM_NAME_OVERRIDES': {
-        # thesis.ThesisPremise.category (6개)
-        'ThesisPremiseCategoryEnum': [
-            ('macro', 'Macro'), ('sector', 'Sector'), ('company', 'Company'),
-            ('technical', 'Technical'), ('sentiment', 'Sentiment'),
-            ('custom', 'Custom'),
-        ],
         # news.NewsArticle.category (6개)
         'NewsCategoryEnum': [
             ('general', 'General'), ('company', 'Company'),
@@ -422,11 +424,6 @@ SPECTACULAR_SETTINGS = {
         'SavedPathStatusEnum': [
             ('watching', 'Watching'), ('active', 'Active'),
             ('archived', 'Archived'), ('resolved', 'Resolved'),
-        ],
-        # thesis.Thesis.status
-        'ThesisStatusEnum': [
-            ('setting_up', 'Setting Up'), ('active', 'Active'),
-            ('closed', 'Closed'), ('paused', 'Paused'),
         ],
     },
 }
@@ -541,6 +538,8 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'stockvis@example.com')
 REPORT_RECIPIENT_EMAIL = os.getenv('REPORT_RECIPIENT_EMAIL', '')
+# Monitor 전이 다이제스트 수신자 1인(MON-P3-ALERT). 미설정 시 발송 skip(인앱 이중화).
+MONITOR_ALERT_RECIPIENT = os.getenv('MONITOR_ALERT_RECIPIENT', '')
 
 # 알림 본문 딥링크 베이스(하드코딩 금지 — env override). MP2-ALERTS 판단 화면 링크.
 FRONTEND_BASE_URL = os.getenv('FRONTEND_BASE_URL', 'http://localhost:3000')
@@ -567,3 +566,10 @@ CELERY_IGNORED_ERRORS = [
 # 'event_group'(ON) = EventGroup(kept만·n3 이름) + benchmark_kind='eg' leadership.
 # ON(go-live)은 .env CHAINSIGHT_GROUP_SOURCE=event_group + daphne web 재시작 = Phase 1 완료.
 CHAINSIGHT_GROUP_SOURCE = os.getenv('CHAINSIGHT_GROUP_SOURCE', 'theme_tags')
+
+# 상향 학습 루프 flag (D2 v5.1). OFF(기본) = upward 트리거 미발사(aggregate skip 로그).
+# ON = .env CHAINSIGHT_UPWARD_LEARNING_ENABLED=true + 워커 재기동. D1이 체크만 배선하고
+# plumbing 누락(갭 #6) → 본 줄이 env→settings 연결. flag-off도 동일 경로 역방향(env=false+재기동).
+CHAINSIGHT_UPWARD_LEARNING_ENABLED = (
+    os.getenv('CHAINSIGHT_UPWARD_LEARNING_ENABLED', 'false').lower() == 'true'
+)

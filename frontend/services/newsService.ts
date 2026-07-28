@@ -1,5 +1,6 @@
 // News service for fetching news data
 
+import { API_BASE_URL } from '@/lib/api/config'
 import {
   NewsArticle,
   StockNewsResponse,
@@ -25,7 +26,7 @@ import {
 // 공개 read(all/daily-keywords/trending/sources/insights/news-events)는 raw fetch 유지(AllowAny).
 import { authAxios } from '@/lib/api/authAxios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 export const newsService = {
   /**

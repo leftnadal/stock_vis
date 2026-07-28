@@ -9,6 +9,7 @@
  *    이 충실성이 깨지면 Part 3 통합 테스트가 거짓 위에 선다.
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { http, HttpResponse } from 'msw'
 
 import {
@@ -28,7 +29,7 @@ import type {
   E6Response,
 } from '@/lib/coach/types'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = API_BASE_URL
 const E1_URL = `${API_URL}${COACH_E1_PATH}`
 const E2_URL = `${API_URL}${COACH_E2_PATH}`
 const E3_URL = `${API_URL}${COACH_E3_PATH}`

@@ -156,7 +156,8 @@ class FMPNewsProvider(BaseNewsProvider):
         - image → image_url
         - symbol → entities
         """
-        url = item.get("url")
+        # S3: URL 정규화를 provider 공통 규칙으로 통일 (cross-provider dedup).
+        url = self.normalize_url(item.get("url", ""))
         title = item.get("title")
         if not url or not title:
             return None
@@ -202,7 +203,8 @@ class FMPNewsProvider(BaseNewsProvider):
         self, item: Dict[str, Any], symbol: str
     ) -> Optional[RawNewsArticle]:
         """보도자료를 RawNewsArticle로 변환"""
-        url = item.get("url")
+        # S3: URL 정규화를 provider 공통 규칙으로 통일 (cross-provider dedup).
+        url = self.normalize_url(item.get("url", ""))
         title = item.get("title")
         if not url or not title:
             return None

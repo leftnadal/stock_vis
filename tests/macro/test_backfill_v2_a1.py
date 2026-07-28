@@ -13,7 +13,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from decimal import Decimal
 from io import StringIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from django.core.management import call_command
@@ -117,8 +117,47 @@ class TestIdempotency:
             out2 = StringIO()
             call_command('backfill_v2_a1', '--series-id', 'NFCI', stdout=out2)
 
-        assert 'NFCI: 1 obs inserted' in out1.getvalue()
-        assert 'NFCI: 0 obs inserted' in out2.getvalue()
+        assert 'NFCI: fetched 1, inserted 1' in out1.getvalue()
+        # 2회차: fetched>0(가져옴) 이나 inserted 0(이미 존재) — 침묵 동치 해소.
+        assert 'NFCI: fetched 1, inserted 0' in out2.getvalue()
+
+
+@pytest.mark.django_db
+class TestFredDeepBackfill:
+    """FRED 심층 백필 회귀 — limit·sort_order override로 전 창 확보 + fetched/inserted 구분."""
+
+    def test_fetch_fred_passes_full_limit_and_asc(self, seed_indicators, seed_market_indices):
+        """_fetch_fred가 get_series_observations에 limit=100000·sort_order='asc' 전달.
+
+        (기본 limit=100·desc면 심층 창에서 최신 100건[대개 기존]만 와 0 삽입 = 원 장애.)
+        """
+        fake_client = MagicMock()
+        fake_client.get_series_observations.return_value = [
+            {'date': '2023-07-10', 'value': '0.10'},
+            {'date': '2023-07-11', 'value': '0.20'},
+        ]
+        with patch('packages.shared.api_request.fred_client.FREDClient', return_value=fake_client), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
+            call_command(
+                'backfill_v2_a1', '--series-id', 'NFCI', '--econ-only',
+                '--from', '2023-07-10', '--to', '2026-07-09',
+            )
+        fake_client.get_series_observations.assert_called_once()
+        kwargs = fake_client.get_series_observations.call_args.kwargs
+        assert kwargs.get('limit') == 100000
+        assert kwargs.get('sort_order') == 'asc'
+
+    def test_log_distinguishes_fetched_from_inserted(self, seed_indicators, seed_market_indices):
+        """fetched>0·inserted=0(이미 존재)이 'fetched N, inserted 0'로 노출 — 침묵 해소."""
+        fake_obs = [{'date': date(2026, 4, 1), 'value': '-0.5'}]
+        with patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_fred', return_value=fake_obs), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_indicator', return_value=fake_obs), \
+             patch('apps.market_pulse.management.commands.backfill_v2_a1.Command._fetch_yahoo_ohlc', return_value=[]):
+            call_command('backfill_v2_a1', '--series-id', 'NFCI', '--econ-only')  # 1회차 삽입
+            out = StringIO()
+            call_command('backfill_v2_a1', '--series-id', 'NFCI', '--econ-only', stdout=out)  # 2회차 기존
+        v = out.getvalue()
+        assert 'NFCI: fetched 1, inserted 0' in v  # 가져왔으나 이미 존재(못 가져옴 아님)
 
 
 @pytest.mark.django_db

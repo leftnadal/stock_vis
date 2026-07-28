@@ -18,6 +18,32 @@ User = get_user_model()
 
 # ===== Fixture: 환경 변수 =====
 
+# 격리 테스트 env(.env·실키 부재, 예: CI)에서도 FMP provider 인스턴스화가 되도록
+# 더미 FMP_API_KEY를 보장한다(FMP-TESTDEBT env-독립화, 지시서⑮).
+# - 실키가 있으면(dev/.env) 보존(setdefault/falsy-guard) → 실키 환경 회귀 무손상.
+# - 라이브 호출은 각 테스트가 이미 mock(FMPClient·_request_* patch) → 더미로 충분,
+#   라이브 FMP 호출 0.
+# - "키부재→에러" 계약 테스트(예: test_fmp_weights::test_missing_api_key_raises)는
+#   `settings`/`monkeypatch`로 키를 로컬 override(픽스처 setup 이후 테스트 본문이 후행) →
+#   본 픽스처와 무충돌, 계약 그대로 검증됨.
+_DUMMY_FMP_API_KEY = "test_dummy_fmp_key"
+
+
+@pytest.fixture(autouse=True)
+def _ensure_fmp_api_key(settings, monkeypatch):
+    """FMP 키 부재 환경 격리용 더미 키 선주입(load_dotenv override 무관).
+
+    두 읽기 경로 모두 커버: settings.FMP_API_KEY(serverless_client) +
+    os.getenv(factory→provider 생성자). falsy(부재·빈문자열)일 때만 주입해 실키 보존.
+    os.environ는 monkeypatch로 테스트 종료 시 자동 복원(세션 누수 없음).
+    """
+    if not getattr(settings, "FMP_API_KEY", None):
+        settings.FMP_API_KEY = _DUMMY_FMP_API_KEY
+    if not os.environ.get("FMP_API_KEY"):
+        monkeypatch.setenv("FMP_API_KEY", _DUMMY_FMP_API_KEY)
+    yield
+
+
 @pytest.fixture
 def env_fmp(monkeypatch):
     """FMP Provider 환경 변수"""

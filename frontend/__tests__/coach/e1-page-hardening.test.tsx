@@ -8,6 +8,7 @@
  * 화면·데이터 레이어 무수정 (검증만 보강).
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -43,7 +44,7 @@ describe('E1 coach page — a11y + 폼 검증 보강', () => {
     // mockE1Success는 즉시 응답하므로 isPending을 잡기 어려움.
     // 대신 직접 핸들러 등록 — http.post 사용.
     const { http, HttpResponse } = await import('msw')
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+    const API_URL = API_BASE_URL
     server.use(
       http.post(`${API_URL}/coach/e1/`, async () => {
         await responseDone

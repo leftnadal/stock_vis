@@ -3,7 +3,7 @@
 from pathlib import Path
 
 RUBRIC_PATH = (
-    Path(__file__).resolve().parents[2]
+    Path(__file__).resolve().parents[3]
     / "docs"
     / "portfolio"
     / "coach"

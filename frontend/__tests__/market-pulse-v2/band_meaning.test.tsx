@@ -28,18 +28,18 @@ function regime(overrides: Partial<RegimeCard>): RegimeCard {
 }
 
 describe('Regime 의미 밴드 경계 전환', () => {
-  it('강세 확장 → 의미 문구 + good(emerald) 색', () => {
+  it('강세 확장 → 의미 문구 + 긍정(rose) 색 [COLOR-STAGE2 한국축]', () => {
     render(<RegimeCardSummary data={regime({ regime: 'BULL_EXPANSION' })} />)
     const band = screen.getByText('위험자산 우호 국면. 추세 추종 유리, 광범위 강세.')
     expect(band).toBeInTheDocument()
-    expect(band.className).toContain('emerald')
+    expect(band.className).toContain('rose') // 긍정=rose(한국축, D-COLOR-SYSTEM)
   })
 
-  it('위기 → 의미 문구 + bad(rose) 색 (경계 반대편)', () => {
+  it('위기 → 의미 문구 + 부정(sky) 색, 경고는 라벨 보존 [COLOR-STAGE2 한국축]', () => {
     render(<RegimeCardSummary data={regime({ regime: 'CRISIS' })} />)
     const band = screen.getByText('시스템 스트레스. 현금·안전자산 비중, 급변동 대비.')
     expect(band).toBeInTheDocument()
-    expect(band.className).toContain('rose')
+    expect(band.className).toContain('sky') // 위기/부정=sky(한국축), 경고성은 문구가 보존
   })
 
   it('전환 → 중립(slate) 색 (단계별 색이 실제로 갈림)', () => {

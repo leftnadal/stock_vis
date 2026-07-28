@@ -1,11 +1,12 @@
 /**
  * Market Pulse v2 API client (PR-K/L).
  */
+import { API_BASE_URL } from '@/lib/api/config'
 import axios, { AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 
 import { tokenUtils, refreshAccessToken } from '@/lib/api/authAxios'
 
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const RAW_API_URL = API_BASE_URL
 const API_ORIGIN = RAW_API_URL.replace(/\/api\/v\d+\/?$/, '')
 export const MP_V2_BASE = `${API_ORIGIN}/api/v2/market-pulse`
 
@@ -241,6 +242,26 @@ export async function fetchCardDetail<T = unknown>(
   return data
 }
 
+// MP2-TREND S4: z-이상도 전용 엔드포인트(카드 detail과 별개, lazy fetch). 봉투 동일.
+export async function fetchRegimeZScore(): Promise<
+  CardDetailEnvelope<RegimeZScorePayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<RegimeZScorePayload>>(
+    '/regime/zscore',
+  )
+  return data
+}
+
+// MP2-ANALOG Slice B: 유사 국면 카드 전용 엔드포인트(1h 캐시). 봉투 동일.
+export async function fetchRegimeAnalog(): Promise<
+  CardDetailEnvelope<RegimeAnalogPayload>
+> {
+  const { data } = await client.get<CardDetailEnvelope<RegimeAnalogPayload>>(
+    '/regime/analog',
+  )
+  return data
+}
+
 export async function refreshNews(): Promise<{
   _meta: { generated_at: string; count: number; pool_size: number; seen_count: number }
   items: NewsItem[]
@@ -274,6 +295,100 @@ export interface RegimeMargin {
   to_threshold: number | null
 }
 
+// MP2-TREND S3(R1): 국면 재료 판정-거리. 컷 = rules.yaml 도출(하드코딩 0), z-score 아님(raw).
+export interface RegimeCut {
+  value: number
+  regime: RegimeId
+  op: string
+}
+export interface RegimeComponentPoint {
+  date: string
+  value: number | null
+}
+export interface RegimeNearestCut {
+  cut: number
+  regime: RegimeId
+  op: string
+  distance: number
+}
+export interface RegimeComponent {
+  key: string
+  unit: string
+  current: number | null
+  series: RegimeComponentPoint[]
+  cuts: RegimeCut[]
+  crossed_cuts: RegimeCut[]
+  nearest_cut_distance: RegimeNearestCut | null
+}
+
+// MP2-TREND S4: 국면 성분 z-이상도. baseline = 고정 소급 모집단 μ·σ(표본), z serve-time·미저장.
+export interface RegimeZPoint {
+  date: string
+  z: number | null
+}
+export interface RegimeZBaseline {
+  mean: number | null
+  std: number | null
+  n: number
+}
+export interface RegimeZComponent {
+  key: string
+  unit: string
+  series: RegimeZPoint[]
+  baseline: RegimeZBaseline
+  insufficient: boolean
+}
+export interface RegimeZScorePayload {
+  available: boolean
+  components: RegimeZComponent[]
+  meta: {
+    low_confidence_until?: string
+    live_start?: string | null
+    downsample_recent_daily?: number
+  }
+}
+
+// MP2-ANALOG Slice B: 유사 국면 카드(결정론). label 슬롯(cat_slot·why)은 Slice C가 채움.
+export interface AnalogAxis {
+  axis: string
+  z: number | null
+}
+export interface AnalogNeighbor {
+  date: string
+  dist: number
+  cat_slot: string | null // L2(C-core): 그날 국면 유형 라벨(사실 표기)
+  cat_key: RegimeId | null // L2(C-core): 톤용 RegimeId(FE regimeTone 소비)
+  why: string | null // L3(C-L3): 그날 맥락 1문장(저장분, 미생성=null)
+  why_provenance?: { id: string; url: string; title: string }[] | null // L3 근거 헤드라인
+  why_version?: string | null // L3 생성 프롬프트 버전
+  fwd: Record<string, number | null>
+}
+export interface AnalogFanPoint {
+  horizon: number
+  median: number | null
+  lo: number | null
+  hi: number | null
+  n: number
+  n_eff: number
+}
+export interface RegimeAnalogPayload {
+  available: boolean
+  as_of?: string
+  today_axes: AnalogAxis[]
+  today_category: { key: RegimeId; label: string } | null // L2(C-core): 오늘 국면 태그(없으면 null)
+  neighbors: AnalogNeighbor[]
+  fan: AnalogFanPoint[]
+  alert: { on: boolean; nearest_dist: number | null }
+  meta?: {
+    k_max?: number
+    tau_radius?: number
+    tau_alert?: number
+    horizons?: number[]
+    population?: number
+    spy_trading_days?: number
+  }
+}
+
 export interface RegimeDetail {
   available: boolean
   date?: string
@@ -288,10 +403,14 @@ export interface RegimeDetail {
   is_finalized?: boolean
   // MP-UX-S3a: 국면 타임라인 데이터원 (렌더는 후속 FE 슬라이스 — 타입만)
   regime_history_30d?: RegimeHistoryPoint[]
+  // MP2-TREND S2(additive): 전환일(previous_regime≠regime, BE 조회-시 파생). 궤적 vlines 공용 소비.
+  transition_dates?: string[]
   // MP-UX-S3b: 다음 단계까지 거리 (렌더는 후속 FE 슬라이스 — 타입만)
   next_stage?: RegimeId | null
   margins?: RegimeMargin[]
   next_stage_closest?: RegimeMargin | null
+  // MP2-TREND S3(R1, additive): 국면 재료 판정-거리 소형 다중(7지표 raw + 컷).
+  components?: RegimeComponent[]
 }
 
 export interface BreadthHistoryPoint {
@@ -300,6 +419,8 @@ export interface BreadthHistoryPoint {
   decline: number
   ad_line: number
   ad_line_change: number
+  // MP2-TREND S2(additive): A/D선 20일 이동평균(기준선). <20일 구간은 null.
+  ad_line_ma20?: number | null
 }
 
 export interface BreadthDetail {
@@ -314,17 +435,38 @@ export interface BreadthDetail {
   new_low_52w?: number
   ad_line?: number
   ad_line_change?: number
+  // MP2-TREND S2(additive): 최신일 기준 기준선(MA20) 이탈 연속 일수.
+  ma_deviation_streak_days?: number
   history_30d?: BreadthHistoryPoint[]
 }
 
 export interface SectorRow {
   symbol: string
   rel_strength: number
+  // CD-STAB Slice A′(additive): 5일 상대수익(= momentum_5d − bench 5일 수익률). 판단 계열 x축
+  //   (RRG 점·미니맵·카드 근거). bench 소급 부족 시 null. 기존 rel_strength(1일)는 맥박·히트맵.
+  rel_strength_5d?: number | null
   momentum_1d: number
   momentum_5d: number
   momentum_20d: number
   flow_proxy: number
   rank: number
+  // MP2-SECTOR-CD S1(additive): 판단 4-상태. BE payload builder 단독 판정.
+  //   구버전 응답엔 없을 수 있어 optional. null = 판단 유보.
+  cd_state?:
+    | 'leading_strengthening'
+    | 'leading_weakening'
+    | 'lagging_improving'
+    | 'lagging_deteriorating'
+    | null
+  // CD-STAB Slice B(additive): 원시 즉시 분류값(히스테리시스 전). CD-TRANSITION-INDICATOR가 첫 소비
+  //   (CD-READ) — cd_state ≠ cd_state_raw면 "전환 확인 중". 재분류 아님, 두 서빙값 비교뿐.
+  cd_state_raw?:
+    | 'leading_strengthening'
+    | 'leading_weakening'
+    | 'lagging_improving'
+    | 'lagging_deteriorating'
+    | null
 }
 
 export interface SectorHistoryPoint {
@@ -332,6 +474,10 @@ export interface SectorHistoryPoint {
   rel_strength: number
   // MP2-TREND S1(additive): 순위 궤적 y값(1~11, 1위 상단). 구버전 응답엔 없을 수 있어 optional.
   rank?: number
+  // MP2-SECTOR-CD S2(additive): per-date 5일 모멘텀(저장값 노출). 구버전 응답엔 없을 수 있어 optional.
+  momentum_5d?: number | null
+  // CD-STAB Slice A′(additive): per-date 5일 상대수익 — RRG 점/꼬리 x축. bench 부족 시 null.
+  rel_strength_5d?: number | null
 }
 
 export interface SectorHistory {
@@ -347,6 +493,10 @@ export interface SectorDetail {
   rotation_index?: number
   // MP-UX-S5-B-SECTOR-BE: 섹터별 rel_strength 시계열 (2-D, 11섹터 전부). 렌더는 slice 2(SectorSparkline).
   sector_history?: SectorHistory[]
+  // MP2-SECTOR-CD S2(additive): 모멘텀 판정선 단일소스(= CD_MOMENTUM_BASELINE). FE y=0 하드코딩 금지.
+  cd_momentum_baseline?: number
+  // MP2-SECTOR-CD S3(additive): RRG x축(상대강도) 판정선 단일소스(= CD_REL_STRENGTH_BASELINE). FE 하드코딩 금지.
+  cd_rel_strength_baseline?: number
 }
 
 export interface ConcentrationHistoryPoint {

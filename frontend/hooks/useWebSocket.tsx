@@ -1,4 +1,9 @@
+import { API_BASE_URL } from '@/lib/api/config';
 import { useState, useEffect, useRef, useCallback } from 'react';
+
+
+// ws origin = API_BASE_URL(절대 http base)에서 스킴(http→ws) 전환 + /api/vN 접미 제거 (#55)
+const WS_ORIGIN = API_BASE_URL.replace(/^http/, 'ws').replace(/\/api\/v\d+\/?$/, '');
 
 interface WebSocketMessage {
   type: string;
@@ -40,7 +45,7 @@ export const useWebSocket = (
   const connect = useCallback(() => {
     try {
       // WebSocket URL 구성
-      const wsUrl = url.startsWith('ws') ? url : `ws://localhost:8000${url}`;
+      const wsUrl = url.startsWith('ws') ? url : `${WS_ORIGIN}${url}`;
 
       ws.current = new WebSocket(wsUrl);
 

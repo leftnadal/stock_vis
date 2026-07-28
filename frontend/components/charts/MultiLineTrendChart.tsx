@@ -5,7 +5,8 @@
  *
  * D-TREND-TOOLTIP: 플로팅 툴팁 금지. 크로스헤어(세로선 + 강조라인 도트) + 차트 하단 고정
  *   리드아웃(강조 라인만). 짚지 않으면 pinLatest로 최신일 값 표시. 그래프 위를 가리는 요소 0.
- * D-TREND-BASELINE: overlays(고정선/파생선/밴드/전환일 세로선)는 **타입 계약만** — 1호 렌더 0(2·3호 소관).
+ * D-TREND-BASELINE: overlays — S2가 vlines(전환일 세로선)·refSeries(기준선), S3가 hlines(수평 임계선) 렌더.
+ *   bands는 R1에서 제거(D-TREND-BASELINE-R1 — raw 컷 hlines로 개정).
  * 팔레트: trendPalette.ts 1곳(신규 hex 산개 금지). 적용처 color 지정 시 우선.
  * FE 값 재계산 금지 — 서버 point.value 그대로. range 토글은 표시 범위 슬라이스만.
  */
@@ -57,6 +58,9 @@ interface MultiLineTrendChartProps {
   overlays?: TrendOverlays // 미사용(계약만)
   readout?: { pinLatest?: boolean }
   height?: number
+  // MP2-SECTOR-CD S2(additive): 메인 시리즈 null 연결 여부. 기본 true(랭킹 뷰 무영향).
+  //   모멘텀 뷰는 false로 결측 구간 선 끊김(값 발명 금지).
+  connectNulls?: boolean
 }
 
 function mmdd(iso: string): string {
@@ -70,9 +74,14 @@ export function MultiLineTrendChart({
   yAxis,
   ranges = [7, 30],
   emphasis,
+  overlays,
   readout = { pinLatest: true },
   height = 260,
+  connectNulls = true,
 }: MultiLineTrendChartProps) {
+  // MP2-TREND S2: overlays 중 refSeries(파생선)·vlines(전환일 세로선) 렌더 활성화.
+  //   bands/hlines(임계 밴드)는 3호 소관 — 이번 미구현.
+  const refSeries = overlays?.refSeries ?? []
   const [activeRange, setActiveRange] = useState<number>(ranges[0] ?? 7)
   const [activeDate, setActiveDate] = useState<string | null>(null)
   const [emphasized, setEmphasized] = useState<Set<string>>(
@@ -97,11 +106,11 @@ export function MultiLineTrendChart({
   )
   const shownSet = useMemo(() => new Set(shownDates), [shownDates])
 
-  // recharts용 merged rows: [{date, [key]:value, ...}]
+  // recharts용 merged rows: [{date, [key]:value, ...}] — series + refSeries(기준선) 병합.
   const rows = useMemo(() => {
     const byDate = new Map<string, Record<string, number | string>>()
     shownDates.forEach((d) => byDate.set(d, { date: d }))
-    series.forEach((s) =>
+    ;[...series, ...refSeries].forEach((s) =>
       s.points.forEach((p) => {
         if (shownSet.has(p.date)) {
           const row = byDate.get(p.date)!
@@ -110,7 +119,7 @@ export function MultiLineTrendChart({
       }),
     )
     return shownDates.map((d) => byDate.get(d)!)
-  }, [series, shownDates, shownSet])
+  }, [series, refSeries, shownDates, shownSet])
 
   const maxLen = useMemo(
     () => Math.max(0, ...series.map((s) => s.points.filter((p) => shownSet.has(p.date)).length)),
@@ -184,6 +193,51 @@ export function MultiLineTrendChart({
             width={32}
             allowDecimals={false}
           />
+          {/* MP2-TREND S2: 전환일 세로선(vlines) — 표시 구간 내만. 라벨은 상단. */}
+          {(overlays?.vlines ?? [])
+            .filter((v) => shownSet.has(v.date))
+            .map((v, i) => (
+              <ReferenceLine
+                key={`vl-${v.date}-${i}`}
+                x={v.date}
+                stroke="#cbd5e1"
+                strokeDasharray="3 3"
+                label={
+                  v.label
+                    ? { value: v.label, position: 'insideTop', fontSize: 9, fill: '#94a3b8' }
+                    : undefined
+                }
+              />
+            ))}
+          {/* MP2-TREND S3: 수평 임계선(hlines) — y=value 기준선. 전 x폭. bands는 R1에서 제거. */}
+          {(overlays?.hlines ?? []).map((h, i) => (
+            <ReferenceLine
+              key={`hl-${h.value}-${i}`}
+              y={h.value}
+              stroke="#cbd5e1"
+              strokeDasharray="4 2"
+              label={
+                h.label
+                  ? { value: h.label, position: 'right', fontSize: 9, fill: '#94a3b8' }
+                  : undefined
+              }
+            />
+          ))}
+          {/* MP2-TREND S2: 기준선(refSeries) — 점선·muted. 범례/강조/리드아웃 비참여. */}
+          {refSeries.map((rs) => (
+            <Line
+              key={`ref-${rs.key}`}
+              type="monotone"
+              dataKey={rs.key}
+              stroke={rs.color ?? '#94a3b8'}
+              strokeWidth={1}
+              strokeDasharray="5 3"
+              dot={false}
+              activeDot={false}
+              isAnimationActive={false}
+              connectNulls={false}
+            />
+          ))}
           {/* 크로스헤어 세로선(플로팅 툴팁 대체) */}
           {readoutDate ? (
             <ReferenceLine x={readoutDate} stroke="#94a3b8" strokeDasharray="2 2" />
@@ -201,7 +255,7 @@ export function MultiLineTrendChart({
                 dot={false}
                 activeDot={false}
                 isAnimationActive={false}
-                connectNulls
+                connectNulls={connectNulls}
               />
             )
           })}

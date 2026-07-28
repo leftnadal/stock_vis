@@ -1,3 +1,4 @@
+import { API_BASE_URL } from '@/lib/api/config'
 import axios from 'axios'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import type {
@@ -8,7 +9,7 @@ import type {
   SSEEvent,
 } from '@/types/rag'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = API_BASE_URL
 
 // API 인스턴스 생성
 const api = axios.create({

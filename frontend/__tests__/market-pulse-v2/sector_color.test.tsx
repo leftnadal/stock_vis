@@ -10,7 +10,7 @@
  *      (파일 grep 방식)
  *   sense: SectorHeatmap에 sense 주면 sense-note 렌더 / null이면 미렌더
  */
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
@@ -129,7 +129,9 @@ describe('cross-surface: SectorDetail 색 방향 (up=rose, down=sky)', () => {
   }
 
   it('상승 섹터(XLK rel=+1.23) → rel 텍스트가 rose 계열 클래스 보유', () => {
-    const { container } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    const { container, getByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    // MP2-SECTOR-CD S1: 궤적 스파크라인은 '궤적' 탭 뒤로 이동(디폴트=판단). 뷰 무변경.
+    fireEvent.click(getByTestId('sector-tab-trajectory'))
     const items = container.querySelectorAll('ul > li')
     // XLK는 rank1이므로 items[0]
     const xlkSpan = items[0].querySelector('span.text-rose-600')
@@ -138,7 +140,8 @@ describe('cross-surface: SectorDetail 색 방향 (up=rose, down=sky)', () => {
   })
 
   it('하락 섹터(XLE rel=-0.95) → rel 텍스트가 sky 계열 클래스 보유', () => {
-    const { container } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    const { container, getByTestId } = render(<SectorDetail payload={payload} labels={LABELS} />)
+    fireEvent.click(getByTestId('sector-tab-trajectory'))
     const items = container.querySelectorAll('ul > li')
     // XLE는 rank2이므로 items[1]
     const xleSpan = items[1].querySelector('span.text-sky-600')

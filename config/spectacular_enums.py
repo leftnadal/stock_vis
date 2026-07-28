@@ -14,15 +14,6 @@ from __future__ import annotations
 from enum import Enum
 
 
-class ThesisPremiseCategoryEnum(str, Enum):
-    """thesis.ThesisPremise.category."""
-    MACRO = 'macro'
-    SECTOR = 'sector'
-    COMPANY = 'company'
-    TECHNICAL = 'technical'
-    SENTIMENT = 'sentiment'
-
-
 class NewsCategoryEnum(str, Enum):
     """news.NewsArticle.category."""
     GENERAL = 'general'
@@ -38,11 +29,3 @@ class SavedPathStatusEnum(str, Enum):
     ACTIVE = 'active'
     ARCHIVED = 'archived'
     RESOLVED = 'resolved'
-
-
-class ThesisStatusEnum(str, Enum):
-    """thesis.Thesis.status."""
-    SETTING_UP = 'setting_up'
-    ACTIVE = 'active'
-    CLOSED = 'closed'
-    PAUSED = 'paused'

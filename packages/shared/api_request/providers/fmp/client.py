@@ -217,9 +217,9 @@ class FMPClient:
 
     def get_etf_info(self, symbol: str) -> Dict[str, Any]:
         """
-        ETF 정보(NAV·AUM 등 현재 스냅샷) 조회 — C4 원료(TH-7c).
+        ETF 정보(NAV·AUM 등 현재 스냅샷) 조회 — C4 원료(TH-7c) + credit P2a-1 NAV 디스카운트.
 
-        Returns: {nav, assetsUnderManagement, expenseRatio, ...} 또는 {}.
+        Returns: {nav, assetsUnderManagement, expenseRatio, navCurrency, updatedAt, ...} 또는 {}.
         API: GET /stable/etf/info?symbol={symbol}
         """
         data = self._make_request("/stable/etf/info", {"symbol": symbol.upper()})

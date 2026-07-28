@@ -343,6 +343,8 @@ describe('행위보존 회귀', () => {
 
     const dialog = await screen.findByRole('dialog')
     expect(within(dialog).getByText('Concentration · 집중도')).toBeInTheDocument()
-    await waitFor(() => expect(within(dialog).getByText(/cache:/)).toBeInTheDocument())
+    // CD-READ: cache 디버그 제거 → detail fetch 완료 프록시 = concentration 실콘텐츠.
+    await waitFor(() => expect(within(dialog).getByText('상위 보유 종목')).toBeInTheDocument())
+    expect(within(dialog).queryByText(/cache:/)).toBeNull()
   })
 })

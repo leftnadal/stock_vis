@@ -1,7 +1,8 @@
 // Stock service for fetching stock data
+import { API_BASE_URL } from '@/lib/api/config';
 import type { DynamicLayers } from '@/types/overview';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 // 인증 헤더 빌더 — 백엔드 DRF 기본 권한이 IsAuthenticated(2026-04-29 audit P0 #5)이므로
 // 종목 상세/차트 등 파생 자산 GET은 JWT 토큰을 첨부해야 한다. 토큰이 없으면 Content-Type만 보낸다.

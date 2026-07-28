@@ -10,9 +10,15 @@ import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useMemo, useRef, useEffect, useState } from 'react';
 
-import { useGraphData, useSuggestions } from '@/hooks/useChainsight';
+// ⑳-3 S1/S3: 데이터 소스를 레거시 Neo4j(/graph/·/suggestions/)에서 PG ego(/ego/{symbol}/)로
+// 전환. Slice 1(GraphCanvas)과 동일 어댑터(egoToGraphResponse) 공유 — 2벌 복제 금지.
+import { useEgo } from '@/hooks/useMarketView';
+import { egoToGraphResponse } from './egoAdapter';
 import { getRelationStyle, getSectorColor, getNodeRadius } from './graphStyles';
 import type { ForceNode } from '@/types/chainsight';
+
+// 미니뷰 이웃 표시 상한(기존 표시 규모 유지) — ego는 truth_score 내림차순이라 상위 관계 우선.
+const MINI_NEIGHBOR_CAP = 10;
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
@@ -21,8 +27,11 @@ interface GraphMiniViewProps {
 }
 
 export default function GraphMiniView({ symbol }: GraphMiniViewProps) {
-  const { data: graphData, isLoading } = useGraphData(symbol, 1);
-  const { data: suggestions } = useSuggestions(symbol);
+  const { data: egoData, isLoading } = useEgo(symbol);
+  const graphData = useMemo(
+    () => (egoData ? egoToGraphResponse(egoData) : undefined),
+    [egoData],
+  );
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(600);
 
@@ -46,7 +55,7 @@ export default function GraphMiniView({ symbol }: GraphMiniViewProps) {
       depth: 0,
     }];
 
-    for (const n of graphData.nodes) {
+    for (const n of graphData.nodes.slice(0, MINI_NEIGHBOR_CAP)) {
       if (n.ticker && n.ticker !== graphData.center.ticker) {
         nodes.push({
           id: n.ticker,
@@ -72,17 +81,22 @@ export default function GraphMiniView({ symbol }: GraphMiniViewProps) {
     return { nodes, links };
   }, [graphData]);
 
-  // 연결 종목 태그
+  // 연결 종목 태그 — ⑳-3 S3: suggestions(레거시 Neo4j) 대신 ego 엣지에서 파생.
+  // 이웃 심볼 + 관계 라벨(getRelationStyle)로 상위 6개(중복 제거, truth_score 순).
   const connectedTags = useMemo(() => {
-    if (!suggestions?.categories) return [];
+    if (!graphData) return [];
+    const center = graphData.center.ticker;
+    const seen = new Set<string>();
     const tags: { ticker: string; label: string }[] = [];
-    for (const cat of suggestions.categories) {
-      for (const t of cat.top_tickers.slice(0, 2)) {
-        tags.push({ ticker: t, label: cat.label });
-      }
+    for (const e of graphData.edges) {
+      const neighbor = e.from === center ? e.to : e.from;
+      if (neighbor === center || seen.has(neighbor)) continue;
+      seen.add(neighbor);
+      tags.push({ ticker: neighbor, label: getRelationStyle(e.derived_type || e.type).label });
+      if (tags.length >= 6) break;
     }
-    return tags.slice(0, 6);
-  }, [suggestions]);
+    return tags;
+  }, [graphData]);
 
   if (isLoading) {
     return (

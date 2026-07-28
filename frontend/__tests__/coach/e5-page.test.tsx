@@ -6,6 +6,7 @@
  *  예시 채우기 버튼). 총 8건.
  */
 
+import { API_BASE_URL } from '@/lib/api/config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -27,7 +28,7 @@ function wrap(ui: ReactNode) {
   return render(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1'
+const API_URL = API_BASE_URL
 const E5_URL = `${API_URL}/coach/e5/`
 
 describe('E5 coach page (E5CoachContent)', () => {

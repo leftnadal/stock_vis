@@ -44,6 +44,19 @@ export type {
   TraceResponse,
   // Exploration State
   TrailNode,
+  // Ego Graph
+  EgoTrendPoint,
+  EgoTrend,
+  EgoNode,
+  EgoEdge,
+  EgoGrade,
+  EgoGradeSource,
+  EgoMeta,
+  EgoGraphResponse,
+  // Centrality Leaderboard (⑳-1)
+  CentralityMetric,
+  CentralityLeaderboardItem,
+  CentralityTopResponse,
 } from '@contracts/shared-types';
 
 // ── 관계 타입 시각 체계 (FE 전용) ──
@@ -103,6 +116,8 @@ export interface EventBoardItem {
    */
   name?: string;
   member_count: number;
+  /** ⑳-2 S4: 구성 티커 목록(카드 제목 티커 병기). 구버전 응답엔 없을 수 있어 optional. */
+  members?: string[];
   avg_return: number;
   avg_score: number;
   high_attention_count: number;

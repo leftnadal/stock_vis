@@ -300,6 +300,11 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   3. 수동 실행(`task_fn()`) 혹은 `task_fn.delay()`로 즉시 동작 검증
   4. `config/celery.py` 상단 주석에 "이 dict는 reference 용도, 실제 스케줄은 DB" 명시
 - 교훈: **`DatabaseScheduler`를 쓰면 config의 `beat_schedule` dict는 선언적 reference로만 기능**. 스케줄 추가 시 반드시 Django admin 또는 `PeriodicTask.objects.create()`로 DB에 등록해야 실행됨. 코드 리뷰 시 "dict에 추가했으면 됐지" 착각에 주의. `celery -A config beat` 프로세스 자체의 생존 확인도 필요 (`ps aux | grep 'celery.*beat'`)
+- **★ 정정 (2026-07-10 tz 사고)**: 위 "dict는 런타임에 완전히 무시됨"은 **부정확 — dispatch 타이밍 한정**이다. **`DatabaseScheduler`는 beat 기동 시 `app.conf.beat_schedule` dict를 DB로 sync한다(create/update PeriodicTask+CrontabSchedule)**. 따라서:
+  - **stale config 트리에서 beat를 띄우면**(예: 브랜치 표류한 편집 repo) 옛 dict가 **매 재기동마다 DB를 덮어써 수동 교정을 무효화**한다. 실사고: `collect-av-broad-news`의 crontab을 DB에서 UTC로 교정해도, beat가 옛 dict(`crontab(hour=1)`=CELERY_TIMEZONE ET 해석)를 로드·sync해 재기동마다 ET로 되돌림. → **beat는 반드시 origin/main 정렬된 런타임 트리에서 기동**(celery-beat.sh PROJECT_DIR = `~/worktrees/sv-worker-runtime`, worker와 동일 B′).
+  - dict crontab의 tz = **CELERY_TIMEZONE(app tz, 여기선 America/New_York)** 로 해석된다. UTC 의도면 dict `crontab(hour=1)`은 ET가 되어 위험. **UTC 고정이 필요한 beat는 dict에 두지 말고** 전용 관리명령(`register_news_av_beat`)으로 `CrontabSchedule(timezone='UTC')` 직접 등록.
+  - **비-dict DB 엔트리는 startup sync가 삭제·변경하지 않는다**. 즉 dict에서 뺀 엔트리는 DB 값(UTC)이 재기동에도 보존된다(위 전용 등록이 durable해지는 근거).
+- **★ 재정정 (2026-07-11 주기 sync 실측)**: 위 07-10 정정의 함의("beat **기동 시** sync")는 **불충분**하다. `DatabaseScheduler`는 `app.conf.beat_schedule` dict를 **startup 뿐 아니라 주기 sync로 상시** DB에 반영(create/update PeriodicTask+CrontabSchedule)한다. 즉 "dict 런타임 무시"는 **dispatch 타이밍 한정**이고, dict→DB 반영은 상시다. 따라서 **stale config 트리에서 beat가 실행 중이면 DB 수동 교정(ORM UPDATE)은 재기동 없이도 수분 내 무효화**된다 — 07-10 실측: 재기동 없이 crontab을 UTC로 고쳐도 다음 sync에서 옛 dict(`crontab(hour=1)`=ET)로 재변질. **90초 내구 실험**(교정 후 90초 관찰 → ET 복귀 확인)으로 원인을 격리한 뒤, 해당 태스크를 dict에서 제외(`config/celery.py` L261 주석)해야 고정됐다. 비-dict DB 엔트리는 sync가 삭제·변경하지 않으므로, **UTC 고정이 필요한 태스크는 dict에서 빼고 전용 관리명령(`register_news_av_beat`)으로만 등록**하는 것이 유일한 durable 경로. (07-11 재확인: crontab id=101 tz=UTC durable, 재기동 없이 01:00 UTC 정시 발화.)
 - 예방: 코드의 task 경로(app_label/모듈)가 바뀌면 Beat DB(PeriodicTask)의 `task` 컬럼은 자동으로 따라오지 않는다. 배포/마이그레이션 절차에 `python manage.py setup_marketpulse_beat` 재실행을 포함해 DB `task` 경로를 코드와 재동기화할 것. (marketpulse는 `config/celery.py`의 `beat_schedule` dict가 아니라 `setup_marketpulse_beat` 커맨드가 DB 직접 등록 → `sync_beat_schedule`로는 갱신되지 않음.)
 - 드리프트 발생 시 즉시 수정: `task` 컬럼만 ORM UPDATE(옵션②, 부작용 0) 또는 `setup_marketpulse_beat` 멱등 재실행(옵션①, 전 필드 덮어씀). 동시에 좀비 beat(launchd 외 프로세스) 유무도 점검 (`ps aux | grep 'celery.*beat'` → 1개여야 함).
 - 항구 해결 (2026-06-01, PR8b-2 Track A): **task 이동/리네임 시 `sync_beat_schedule` reconcile 커맨드 + beat 재시작 절차로 표준화**. 일회용 shell one-liner를 더 이상 쓰지 않는다.
@@ -327,6 +332,13 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
   4. ORM `__date` lookup의 비교값도 `localdate()` 사용 (connection.timezone과 정렬)
 - 영향 범위 (운영 코드 22개 파일, 49건): news/services/_*, news/api/views.py, serverless/_*, chainsight/tasks/seed_tasks.py, macro/_*, thesis/_*, sec_pipeline/intelligence.py, rag_analysis/models.py, config/management/commands/celery_errors.py 등
 - 교훈: **`USE_TZ=True` + non-UTC `TIME_ZONE`이면 `timezone.now().date()` 사용 금지**. 항상 `timezone.localdate()` 또는 `timezone.localtime().date()`. CI는 UTC로 도는 게 일반적이라 잘 안 잡히고, 한국 운영 환경의 자정~오전 9시 구간에서 잠복하다 회귀로 드러남. 날짜 의존 테스트는 freezegun 등으로 시간 고정 권장
+
+## ORM에서 읽은 aware datetime에 naive `.date()` 직접 호출 금지 — tz 경계 하루 밀림 (#51, 2026-07-13 MON-CLOSE)
+
+- 증상: **진단/관측 스크립트**에서 ORM으로 읽은 aware datetime에 `.date()`를 직접 호출하면 하루 밀린 값이 나온다. MON-OPS-FIRSTFIRE/ALERTFIRE 진단에서 `IndicatorReading.asof`(저장 시 `make_aware(combine(d, time.min), 'Asia/Seoul')` = 자정 KST)를 `values_list("asof").first().date()`로 읽어 "AAPL reading max asof=07-08/07-09"로 **오관측** → "T-1 구조적 지연"이라는 **존재하지 않는 결함**을 좇음(실제는 시스템 정상, 진단 쿼리 버그).
+- 원인: 자정 KST = **전일 15:00 UTC**. Django가 aware datetime을 UTC로 반환할 때 `dt.date()`는 UTC date(=전일)를 준다. `.date()`는 tz 변환을 하지 않으므로 저장 시점의 로컬 자정이 조회 시 UTC 전일로 밀린다. #29(`timezone.now().date()`)의 사촌 — 본건은 **ORM에서 읽은 임의 aware datetime**에 발생.
+- 해결: 날짜 추출/비교는 `.date()` 직접 호출 금지. (a) ORM `__date` lookup `filter(asof__date=d)`(connection.timezone 기준 tz-aware), (b) `QuerySet.dates('asof','day')`(현재 tz 기준 정확한 date 목록), (c) 굳이 파이썬에서 좁힐 땐 `timezone.localtime(dt).date()`.
+- 교훈: **진단 스크립트도 코드와 동일한 tz 규칙을 적용**하라. 관측 도구의 tz 버그가 시스템 이상으로 오판되면 없는 결함을 좇고 잘못된 배포 판단(발화 시각 변경 등)까지 갈 수 있다. aware datetime을 date로 좁힐 땐 항상 tz를 명시.
 
 ## 문서·git 정합성 stale 패턴 (#30)
 
@@ -527,6 +539,8 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 사례: `D-OWN·D-SCHEMA` 활성작업 항목이 2건(하나에 `MP2-SURFACE` 내용 뭉침)으로 union-merge 잔존 → META-TOUCH(2026-07-02)에서 D-OWN·D-SCHEMA 1건 + MP2-SURFACE 독립 1건으로 dedup(내용 유실 0).
 - 예방(DoD 규율): PROGRESS/TASKQUEUE 편집 시 **신규 헤더뿐 아니라 해당 활성작업/큐 섹션 전체를 스캔**해 union-merge 중복이 없는지 확인(정의 각 1건). 뭉친 항목은 제거 아닌 **분리 독립화**(내용 유실 0). union-중복 자기점검(#43 계열)과 동일 DoD.
 - 📎 durable 규율은 **repo 하네스에 단일 등재**(코어 지시문 복제 금지 규약 — 복제는 drift). 관련 [[lesson_origin_main_advance_union_rebase]] · #40(merge=union rebase).
+- **원인 메커니즘(2026-07-09 강화, MGMT-BATCH-7)**: 활성 블록이 여러 세션에 걸쳐 **재커밋**될 때 `merge=union` 드라이버가 옛 스냅샷 + 새 스냅샷을 **양쪽 보존** → 같은 블록의 진화 스냅샷이 2·3·…개로 **누적**(비-동일본, 길이 상이). 실증: Monitor 허브 블록 ×5(2939→5482자)·MP2-TREND ×2. 신규 헤더만 스캔하면 "제목 1건"으로 보여 못 잡고, 내용이 갈라져 `uniq`도 안 걸림.
+- **규칙 승격**: ⑴ 활성 블록 **재커밋 전 자기-블록 dedup 셀프체크**(같은 트랙의 이전 스냅샷을 최신 superset로 흡수, 내용 유실 0). ⑵ **번호·슬롯 예약 금지 = 등재 시점 실측 +1**(common-bugs 신규 번호도 하드코딩 금지, 본선 max 실측 후 +1 — theme-heat #47 충돌 선례). ⑶ per-copy가 **비-동일본이면 blind collapse 금지** — superset 검증 후 병합(별도 dedup 태스크로 분리).
 
 ## 공유 트리 브랜치 표류 → 워커 silent 구코드 bake (#45) `[infra]` `[celery]` `[git]`
 
@@ -536,7 +550,29 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 해결(임시): 공유 트리를 `git checkout --detach origin/main` + 워커 재기동. **단 detached는 유지 안 됨**(다른 세션이 재체크아웃 → 재표류) = 트레드밀. **항구 해결 = worker 전용 worktree**(TASKQUEUE `P1-B-WORKER-WORKTREE`).
 - 예방: land마다 "워커 트리 == origin/main?" 확인 + 재기동. 자동 beat 전 diff 점검(`P1-BEAT-PRECHECK`).
 - **★web 판(2026-07-06 확인·해소)**: 동일 결합이 **dev server(next dev :3000)에도 존재** — next dev가 공유 트리 frontend를 서빙하므로 land된 FE(예: 캐러셀 `24b0e47`)가 공유 트리 브랜치에 없으면 **화면 미도달**(유닛 green·push 성공이어도). → **W′(D-W-WEB-AMEND-1, web 전용 트리 `sv-web-runtime`)로 해소** `75cb4d3`. ※ 애초 `com.stockvis.web`(daphne)로 오지목했으나 실서빙은 next dev(:3000) — 대상 정정. worker(B′)+web(W′) 양쪽 분리로 완결.
-- **★세 번째 인스턴스(daphne, 2026-07-06 확인·해소 예정)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있음(views_eod 등 표류 대상). 현재 dashboard.json은 정적(next 서빙)이라 즉시 영향 없으나 API 경로는 취약. → DAPHNE-RUNTIME-SURVEY(read-only) 실측 완료 → **D-DAPHNE-RUNTIME 확정**(daphne 전용 트리 `sv-api-runtime` + `worker_sync.sh` 확장, 마진 1.80)으로 **해소 예정**(실행 = TASKQUEUE `DAPHNE-BUILD` 승인). 런타임 3종(celery worker B′·next dev W′·daphne) 전부 분리 패턴으로 수렴 — daphne는 결정 등재·실행 대기.
+- **★세 번째 인스턴스(daphne, 2026-07-06 최종 해소 `803e9a9`)**: `com.stockvis.web` = **daphne 백엔드(:18765)** 도 공유 트리에서 실행 → API 응답이 구코드일 수 있었음. → DAPHNE-BUILD로 **해소**(daphne 전용 트리 `sv-api-runtime` + `worker_sync.sh` api 섹션 + plist 전환). 검증: 재기동 전후 baseline 일치·CWD api트리·WS 101. **런타임 3종(celery worker B′·next dev W′·daphne) 전부 공유 편집 트리에서 분리 = #45 전면 종결.** 갱신 = `worker_sync.sh` 단일 출처(단, 반드시 런타임 트리 사본으로 실행 — [[#47]] 참조).
+
+## worker_sync.sh는 런타임 트리 사본으로 실행 (공유 트리 사본 = stale) (#47) `[infra]` `[git]` `[ops]`
+
+- 증상: `bash scripts/worker_sync.sh`를 실행했는데 **worker·web만 동기화되고 api 트리는 건너뜀**(부분 동기화). 에러 0, 조용히 일부만 정렬.
+- 원인: **공유 편집 트리**(`~/Desktop/stock_vis`)의 `scripts/worker_sync.sh`가 세션 브랜치(예: `sess-cs-pair-relevance`)에 머물러 **api 섹션이 없는 구버전**. 확장판(api 섹션 = D-DAPHNE-RUNTIME)은 origin/main(`803e9a9`+)에만 존재 → 공유 트리 사본은 stale. #45의 재귀(#45가 "코드가 stale"이면, #47은 "동기화 스크립트 자체가 stale").
+- 함정: 스크립트 파일이 존재하고 정상 종료(exit 0)라 "다 돌았다"는 착시 — 실제로는 최신 트리 하나(api)를 누락.
+- 해결: **반드시 런타임 트리 사본으로 실행** — `bash /Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/worker_sync.sh`(런타임 트리는 detached origin/main이라 항상 확장판 보유). 실행 전 `grep -c API_TREE <사본>`로 api 섹션 유무 확인(0이면 stale, 사용 금지).
+- 예방(고정 진입점 미결): 항상 런타임 사본을 실행하는 래퍼/별칭 = TASKQUEUE `SYNC-ENTRYPOINT`(미결). 그 전까지 **수동 주의**(사본 경로 명시 지정).
+- **첫 준수 사례(2026-07-07)**: MGMT 세션이 공유 트리 사본(api 섹션 0)을 포착·거부하고 런타임 트리 사본으로 실행 → worker·web·api 3종 `9fe326f` 정상 동기화 + daphne 재기동. 자동화 부재 시 수동 규율로 우회 가능함을 실증.
+- **재귀 2건째(health_check, 2026-07-08)**: `python scripts/health_check.py`를 공유 트리에서 실행 → **구버전 10건**(HC-BUILD 신항목 "발행 로그 신선도" 없음). 신항목은 origin/main(`ad3ae77`)에만 → 공유 트리 사본 stale. 런타임 트리 사본(`sv-worker-runtime/scripts/health_check.py`, +.env)에서 실행하니 **11건**(신항목 OK). → **일반화**: "repo 스크립트를 어느 트리 사본으로 실행하나"는 worker_sync 한정이 아니라 **repo 스크립트 소비 전반**의 함정(실행자가 최신 코드를 본다는 보장 없음).
+- **★해소(2026-07-09, D-SYNC-ENTRYPOINT land)**: 래퍼 `~/bin/sv`(exec 전 런타임 트리 최신화) + 스크립트 자기가드(`worker_sync.sh` stale abort exit 2 / `health_check.py` "실행 트리 정합" WARN)로 **구조적 해소**. land `942a991`·`f084cd6`. 실증: stale 사본 abort·WARN, `sv sync` 3종 일치, `sv health` 12/12. 이후 repo 스크립트는 `sv`로 실행.
+
+## 심링크 node_modules × vitest4/rolldown → full-suite 거짓 red (#48) `[frontend]` `[test]` `[env]`
+
+- 증상: worktree에서 `vitest run`(전체) 시 **140 테스트 거짓 실패**(21파일). 코드 회귀 아님 — 같은 코드가 실설치 환경에선 전건 green.
+- 원인: worktree의 `node_modules`가 **공유 트리 심링크**일 때, vitest4의 번들러 **rolldown이 native binding(`.node`)을 심링크 경로에서 resolve 실패**. 특정 파일이 그 native 경로를 타면 로드 자체 실패(Startup Error). W′의 turbopack 심링크 비호환과 동형(도구별 심링크 엄격도 상이).
+- 증상 2형(공통 뿌리 = 심링크 경로 native resolve 실패): ⑴ **React 이중 인스턴스형**(심링크로 react가 두 경로 resolve) ⑵ **@rolldown 바인딩 부재형**(`Cannot find native binding @rolldown/binding-darwin-arm64`).
+- 재현 조건: **공유 트리 심링크 node_modules + full-suite**. scoped 테스트(자기 구획, 예 eod 7/7)는 심링크에서도 **green(오탐 아님)**.
+- 판정 근거(VERIFY-SUITE-BASELINE, 2026-07-09): 격리 **npm ci(비-심링크) + node v22.19.0**에서 **519/519 green** · react가 worktree 실경로 단일 resolve · `.node` 실존 로드. 심링크에서 12/6 실패하던 파일이 실설치 전건 green.
+- 선례: eod land 시 with/without 커밋 대조로 무관 입증 → **push HALT는 정당한 보수적 정지**(거짓 red를 실회귀로 오인 안 함). 
+- 대응: **D-TEST-ENV**(full-suite 게이트 = 격리 npm ci + node 고정에서만 유효 / scoped는 심링크 허용). `sv health` "full-suite 전 npm ci 확인" 안내(`TEST-ENV-GUIDE`).
+- **★서사 보정(2026-07-09, D-THEMEHEAT-AUDIT ⑶)**: 이 거짓 red의 오염원은 "특정 세션의 잘못"이 아니라 **심링크 관행 × primary 트리의 stale node_modules(5/25 설치) × 복수 세션 공유**의 구조적 합작. 책임 귀속(누가 깨뜨렸나)이 아니라 환경 구조를 고쳐야 재발이 멎음 → D-TEST-ENV 이원 정책이 그 처방.
 
 ## migration 미적용 → write 실패에도 파이프라인 무중단 완주 (#46) `[infra]` `[db]`
 
@@ -544,6 +580,35 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 원인: 운영 DB에 migration **미적용**(테이블 부재, `UndefinedTable`). land은 코드만 옮기지 **운영 `migrate`를 자동 실행하지 않음**. 예: `stocks_issuance_log` 부재 → IssuanceLog write 예외. 단 baker는 `atomic_swap`(파일 반영)이 DB write보다 **앞서** 있어 JSON 산출물은 정상 → 결함이 파일만 보면 안 보임.
 - 함정: **스키마 부재 = 조용한 로깅 손실**. JSON만 검사하면 통과, DB까지 봐야 잡힘(OBSERVE는 DB 확인 필수).
 - 해결: `sqlmigrate`로 순수 add 육안 검증 → `migrate`. 재발 방지 = **land에 migration 포함 시 운영 migrate를 배포 단계로 명시**(runbook `P1-RUNBOOK-MIGRATE`) + **health_check "bake 완주 시 IssuanceLog 행 증가"**(`P1-HC-ISSUANCE`, #45와 짝).
+
+## 1브랜치를 복수 세션이 공유하면 tip이 세션 모르게 전진 (#49) `[git]` `[harness]`
+
+- 증상: 세션 시작 스냅샷의 브랜치 tip과 현재 tip이 다름 — 내가 커밋한 적 없는데 tip이 3커밋 전진(theme-heat TH-6 `cc7ed9c`·`cf6062c`·`86ddbc2` 실증).
+- 원인: 동일 브랜치(`monorepo/sess-cs-theme-heat`)를 **복수 세션이 공유**(primary 트리 + 타 세션). 한 세션이 커밋하면 다른 세션은 모른 채 tip이 움직임 → 이력 오귀속·중복 편집·표류.
+- 함정: `git status`가 clean이라 "내 작업만 있다"는 착시. 커밋 주체가 불분명해 land 시 이력 추적·AMEND 대상 판정이 흐려짐.
+- 규칙: **1브랜치-1세션**, `worktree-per-세션`과 짝(각 세션 전용 worktree+브랜치). 공유 primary 트리에 세션 브랜치를 얹지 않는다 — 작업은 전용 worktree로 이주([[#45]] 런타임 격리의 편집 세션판).
+- 참조: D-THEMEHEAT-AUDIT ⑷(RELOCATE = 브랜치를 `~/worktrees/sv-theme-heat`로 이주, primary는 detached origin/main).
+
+## 트랙 세션이 메타 4종을 직접 편집·커밋 = mgmt 분리 규약 위반 (#50) `[harness]` `[git]`
+
+- 증상: 트랙(구현) 세션 브랜치 이력이 DECISIONS·PROGRESS·TASKQUEUE·common-bugs를 **광범위 직접 편집·커밋**(theme-heat `origin/main..86ddbc2` = DECISIONS 8·PROGRESS 11·TASKQUEUE 6·common-bugs 1, "결정7·8·9" mgmt 밖 등재 포함).
+- 원인: 메타 4종(장부)은 **mgmt 세션 전담**(union 드라이버·번호 관리·dedup 규율의 단일 통제점)인데 트랙 세션이 우회해 직접 기입 → 번호 충돌(#47)·union 중복 누적(#44)·미검토 결정 등재.
+- 함정: 트랙 세션은 "내 작업 기록"으로 장부를 만지지만 mgmt 통제 밖이라 dedup·번호 실측·정합 검토가 누락 → land 시 정산 부채로 폭발.
+- 규칙: 트랙 세션은 장부 **직접 편집 금지** — 교훈·결정은 mgmt에 위임(또는 지연 커밋 블록). **mgmt 분리 규약을 트랙 Project 지시문에 전파**해야 구조적으로 멎음.
+- 참조: D-THEMEHEAT-AUDIT ⑵, THEMEHEAT-LAND-GATE(land 전 mgmt 선행 정산).
+
+### Turbopack이 심링크 node_modules 거부 — worktree dev/캡처는 실제 npm ci 필요 (Slice 20b, 2026-07-16) `[frontend][dev-infra]`
+
+- 증상: worktree frontend에서 `node_modules`를 main repo로 심링크한 뒤 `next dev`(Turbopack) 기동 시 `Symlink [project]/node_modules is invalid, it points out of the filesystem root` → 컴파일 실패.
+- 원인: Turbopack은 파일시스템 루트 밖을 가리키는 심링크 node_modules를 거부(webpack과 다름). **scoped `vitest`는 심링크로 OK**(memory `project_color_ops_testenv_arc`)지만 dev 서버는 불가.
+- 해결: worktree에서 라이브 dev/캡처가 필요하면 심링크 제거 후 **실제 `npm ci`**(node v22.19.0). 캡처 종료 후 worktree 제거 시 자연 정리(gitignored).
+- 캡처 격리 레시피(Slice 20b): Django `runserver 127.0.0.1:8010`(`DJANGO_CORS_ALLOW_ALL=True`+dev DB) + `next dev -p 3010`(`NEXT_PUBLIC_API_URL=http://127.0.0.1:8010/api/v1`) + JWT `RefreshToken.for_user` 발급→`localStorage.access_token/refresh_token` 주입(로그인 UI 우회). 공유 launchd 런타임(:18765) 무접촉.
+
+### React Query mutation 거부가 vitest서 unhandled로 표면화 — 컴포넌트 에러 테스트는 훅 mock (Slice 20b, 2026-07-16) `[frontend][testing]`
+
+- 증상: `service.updateKnobs`를 `mockRejectedValue`로 mock하고 컴포넌트 저장 버튼 클릭 → 컴포넌트가 `mutateAsync`를 try/catch로 잡아 로컬 에러 state를 세팅해도, vitest가 `Error: xxx`를 **unhandled rejection으로 잡아 테스트 실패**. `mutations:{retry:false}`·`mutate`+onError·mutateAsync+catch 전부 누수.
+- 원인: 서비스를 mock하면 React Query 실 mutation 머신(Retryer/MutationObserver)이 거부 promise를 생성→vitest 프로세스 리스너가 unhandled로 포착. CloseModal이 통과하는 건 표면적 유사일 뿐, 격리 조건이 다름.
+- 해결: 컴포넌트의 **에러 상태 테스트는 훅(`useUpdateKnobs`)을 mock**(서비스 mock 아님) — `{ mutateAsync: vi.fn().mockRejectedValue(...), isPending, isError }` 반환. RQ 실 머신을 우회해 거부가 컴포넌트 try/catch 안에서만 처리됨. 컴포넌트 자체는 mutateAsync+try/catch+로컬 에러 state(CloseModal 관례) 유지. range input은 jsdom서 키보드 조정 불가 → `fireEvent.change(slider,{target:{value}})`.
 
 ---
 
@@ -601,6 +666,24 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - 예외: complete()/acomplete()는 genai 예외를 `_classify`로 분류 후 raise → 테스트의 예외타입 단언 조정(분류 규칙 미매칭 시 원본 그대로 전파). CB site는 1 fail < threshold면 미개방, 실 CB 통과.
 - **이관 지시서마다 이 동반작업을 예상 작업으로 선반영**할 것. 실측: #13(33개 7파일)·Part ①-aio(3파일) churn 발생.
 
+## [AV NEWS_SENTIMENT 함정] topics 다중=교집합 0 + 25/day 리셋은 rolling 24h (2026-07-03 실증)
+
+Alpha Vantage broad 뉴스 재설계(co-mention 소스, `services/news/providers/alphavantage.py`) 진단에서 확정한 2개 함정:
+
+- **topics 다중 지정 = 결과 급감(사실상 AND/교집합).** 실측 동일 창(06-13, 1일, EARLIEST, limit=1000): topics 1개(technology)→1000기사 / 4개→~80 / **11개(DEFAULT_TOPICS)→0**. broad 백필이 `fetched=0`이던 뿌리 = topics 11개. **해결: broad 수집은 topics 미지정**(전체) 또는 topic별 분리 호출. topics 미지정 시 하루 1창 1000기사·2+종목 141(14%)·distinct 824종목(4월 co-mention 17/일 압도).
+- **25 req/day 리셋은 UTC 자정이 아니라 rolling 24h.** 실측: 07-02 예산 소진 후 07-03 00:27·05:06 UTC 모두 한도 지속(UTC 자정·ET 자정 04:00 둘 다 기각), **10:01 UTC 성공**(어제 마지막 호출 ~09:40 UTC +24h). → 백필/캘리브레이션 스케줄은 rolling 24h 기준으로 예산 배분. 한도 응답은 HTTP 200 + JSON `Information` 필드(에러 아님) — `feed` 부재로 감지.
+
+## [저장 함정] 대량 루프 + 단일 transaction = 포이즌 1건이 배치 전멸 (2026-07-04 실증)
+
+- `aggregator._save_articles`가 기사 리스트를 **한 transaction**에서 루프 저장 → 한 기사의 DB 에러(필드 길이 초과 등)가 transaction을 오염시켜 **나머지가 연쇄 실패**(`current transaction is aborted` = "atomic block" 에러). AV broad 백필에서 url `varchar(2000)` 초과 **1건**이 그 반창의 **596건을 전멸**시킴(일별 적재 급락으로 표면화).
+- **방어(`72c1825`)**: ⑴ `_save_articles` 루프를 기사별 `transaction.atomic()`(savepoint)로 격리 — 1건 실패가 rollback되어도 나머지 저장 진행(성공 경로는 savepoint 즉시 release라 동작 무변경). ⑵ broad 계층 길이 sanitize — `url>2000`은 **skip**(unique 키라 truncation 금지, 충돌 위험), `image_url>2000`은 **null/빈값**(비필수).
+- **재발 감지 신호** = 일별/창별 적재 수 급락(정상 700~900 대비 100대). skip 카운터 급증(창당 수십+)도 새 유형 포이즌 정황.
+- 이 패턴은 AV 전용 아님 — **대량 벌크 저장 루프 일반의 함정**. 다른 수집 경로도 savepoint 격리 권장.
+
+## [AV rolling 예산 함정] 확인 프로브도 실호출 — 로그 회계로 대체 (2026-07-04)
+
+- rolling 24h 체제에서 **예산 확인용 프로브 1건도 실호출**이라 내일 그 시각까지 예산 1을 잠근다. 게다가 `feed` 반환은 "잔여 ≥1"만 의미하므로 **배치 가능 여부(≥3+α) 판별력이 없다**(잔여 1이어도 feed는 옴).
+- **예산 확인은 직전 24h 호출 로그 회계로 한다** — 각 호출 시각 +24h = 해제 시각. 로그가 유실돼 회계 불가일 때만 프로브 1건 예외(보고에 명시).
 ## [관찰 도구 함정] 고정 tail-window 로그 스캔 = 폭주 로그에서 오탐 (verify_pair, 2026-07-03)
 
 - **증상**: `verify_pair_aggregation.py`가 정상 발화한 자율 틱을 ALERT(오탐)로 판정. 실제 파이프라인은 정상(beat 발송 → worker succeeded → DB 적립)이었으나, 틱 +2h 예약 실행 시 성공 로그를 못 찾음.
@@ -660,3 +743,328 @@ useEffect(() => setTime(relativeTime(dateStr)), [dateStr])
 - **원인**: 세션이 여러 worktree를 오가며 작업하는데, 셸 명령의 실행 위치(cwd + venv + DJANGO_SETTINGS_MODULE)를 확정하지 않으면 "어느 코드·어느 원장을 보는가"가 모호.
 - **규칙**: **STEP 0에서 실행 위치를 원장 대조로 확정**한다 — `git -C <worktree> rev-parse HEAD`(코드 버전) + 핵심 테이블 실측 행수(예 `ThemeTermOverride 215`)로 "이 트리가 맞다"를 증명한 뒤 작업. 명령은 절대경로 worktree + 명시 venv + `DJANGO_SETTINGS_MODULE`로 고정(`cd ~/worktrees/sv-theme-heat && ... "$VENV/bin/python" manage.py ...`).
 - **왜**: 다중 worktree 환경에서 "지금 어디서 도는가"는 암묵이 아니라 실측이어야 한다. HEAD 해시 + 원장 행수 대조 = 위치의 유일한 진실. 위치를 틀리면 무쓰기 프로브조차 엉뚱한 트리를 읽어 잘못된 결론을 낸다.
+## [운영 메모] 메일 CTA 링크 = BE 기동 + 브라우저 로그인 세션 전제 (LINK-DATA-FAIL, 2026-07-07)
+
+- **증상**: 알림 메일 CTA(`/market-pulse-v2`) 클릭 → 화면은 뜨나 "데이터를 불러오지 못했습니다".
+- **원인(트리아지 확정, 코드 버그 아님)**: mp 데이터 API(overview·cards)는 `IsAuthenticated`. JWT는 브라우저 **localStorage `access_token`**. 미로그인 브라우저(로그아웃/토큰 삭제/access 만료+refresh 실패)에서 CTA를 열면 overview 401 → mp 페이지가 인증 가드/리다이렉트 없이 바로 실패 문구 표시.
+- **전제**: 메일 링크 정상 동작 = ⑴ BE(daphne :18765) 기동 + ⑵ **해당 브라우저의 로그인 세션**(localStorage JWT). CORS(localhost:3000 허용)·FE base(:18765)·딥링크 라우트는 정상(전부 배제됨).
+- **개발 전용**: `FRONTEND_BASE_URL=localhost:3000`(prod 도메인 부재)이라 메일 링크는 **개발 PC 전용**. prod 배포 시 도메인 설정 필요.
+- **수리 후보(선택)**: 401 구분 문구 + 로그인 리다이렉트(return-to) = TASKQUEUE `MP-401-MSG`(조건부 보류, 실사용 세션만료 혼동 시 트리거).
+
+## [통합 절차] 병행 폭주 + `--rebase-merges` 재정렬 시 브랜치 `-d` 조상검증 구조적 실패 (S3 후속, 2026-07)
+
+- **증상**: fast-main 병행 폭주로 push 경합 → `git rebase --rebase-merges origin/main`로 머지 구조 보존 재정렬 시, 머지·개별 커밋이 **새 해시로 재작성**됨. 결과 원래 feature/mgmt 브랜치 tip이 origin/main의 조상이 아니게 되어 `git branch -d`(머지 검증) + `merge-base --is-ancestor tip origin/main`이 **구조적으로 실패**("미반영"으로 오판).
+- **처리 절차**: 브랜치 tip 조상 검증 실패 시 곧바로 `-D`하지 말고, **내용이 origin/main에 실제 반영됐는지 검증**(산출 파일 존재 `git cat-file -e origin/main:<path>` + 대표 변경 라인 grep) → 반영 확인되면 `-D`는 **후보로 보고**, 실행은 사용자 수동(직접 `-D` 금지 — 오삭제 방어).
+- **왜**: `--rebase-merges`는 replay라 커밋 객체를 새로 만든다. "브랜치가 안 머지됐다"는 `-d`의 신호는 이 경우 **거짓 음성**이므로, 조상 그래프가 아니라 **내용 반영**을 진실의 소스로 삼는다.
+
+## [앱 철거] `migrate <app> zero`는 데이터-스키마 불일치 시 부분 실패 → 전량 폐기엔 raw DROP CASCADE (D-MONITOR-REBUILD, 2026-07-08)
+
+- **증상**: thesis 앱 철거 중 `python manage.py migrate thesis zero`(전 마이그레이션 역적용=테이블 drop)가 **중간에서 IntegrityError로 중단**. `django.db.utils.IntegrityError: column "value" of relation "thesis_indicatorreading" contains null values`. DB가 **부분 상태**(테이블 12→11, django_migrations 9→2)로 남음.
+- **원인**: `migrate zero`는 각 마이그레이션을 **충실히 역재생**한다 — 과거의 필드 변경(예: NOT NULL 제약 추가)을 되돌리며 **옛 스키마를 복원**하려는데, 그 사이 쌓인 데이터(현재 null 허용 컬럼에 실제 null 존재)가 옛 NOT NULL 제약과 충돌. 즉 "reverse migration"은 **데이터가 옛 스키마에 맞을 때만** 안전. 데이터 폐기가 목적인 철거에서는 이 충실한 복원이 오히려 방해.
+- **처리(전량 폐기 목적)**: reverse 복원이 불필요하므로 **raw SQL로 직접 DROP** — `DROP TABLE t1, t2, ... CASCADE` (앱 내부 FK는 CASCADE가 처리) + `DELETE FROM django_migrations WHERE app='<app>'` (고아 마이그레이션 레코드 정리). 단일 트랜잭션. **선행 필수**: ⑴ `pg_dump -t '<app>_*'` 아카이브, ⑵ inbound FK 0 확인(leaf면 CASCADE가 타 앱 데이터 미전파: `information_schema` constraint_column_usage 조회).
+- **왜 zero를 먼저 시도했나 = 교훈**: graph_analysis CUT 선례(DeleteModel 마이그레이션)와 달리 `migrate zero`가 더 간단해 보였으나, **데이터가 있는** 앱에선 reverse 충실성이 함정. 데이터 없는 앱은 zero 안전, **데이터 있는 앱 폐기 = raw DROP**이 정석. beat는 DB PeriodicTask 기준이라 disable→행 삭제 별도 필요(#28).
+
+## [git 위생] `git add` 다중 pathspec 중 하나라도 미매칭이면 add 전체 중단 → 신규 파일 누락 (Monitor 트랙, 2026-07-09, 반복 3회)
+
+- **증상**: `git add A B C` 실행 시 하나(예: 이미 `git rm`된 경로 `A`)가 워킹트리에 없어 `fatal: pathspec 'A' did not match any files`가 나면, **git add가 전체를 중단**하고 B·C도 스테이징되지 않는다. 이어서 pathspec 없는 `git commit`을 하면 **직전에 `git rm`으로 스테이징된 삭제분만** 커밋되고(=broken commit), **신규/수정 파일은 미커밋**으로 남는다. Monitor 트랙에서 3회 반복(C2 FE 철거·53889bb thesis 처분·ede1160 P3-S1): 각각 "삭제만 커밋되고 실체 누락".
+- **원인**: git add는 나열된 pathspec을 원자적으로 검증 → 하나라도 미매칭이면 non-zero exit + 아무것도 add 안 함(부분 add 아님). 이미 `git rm`/`git mv`로 처리된 경로를 뒤이은 `git add`에 다시 넣으면 그 경로가 워킹트리에 없어 미매칭.
+- **처방**:
+  1. `git rm`/`git mv`로 처리한 경로는 **뒤따르는 `git add`에 다시 넣지 않는다**(이미 인덱스에 반영됨).
+  2. `git commit` 직후 **`git status --short`로 미커밋 잔여 0 확인**(신규 `??` 파일 특히 주의). 잔여 있으면 add 후 `--amend`(미push 시)로 정합화.
+  3. 안전책: 삭제·이동과 신규·수정을 **별도 스테이징 단계**로 분리하거나, `git add -A <디렉터리>`로 디렉터리 단위 스테이징.
+- **탐지**: 커밋 stat이 "deletions only"인데 관련 신규 파일이 있어야 하면 이 버그를 의심. rename/신규가 사라진 broken 중간 커밋은 push 전 `git show --stat HEAD`로 검출.
+
+## [Celery beat] ET 스케줄 태스크에서 `timezone.localdate()`는 Seoul 날짜 → 거래일 off-by-one (MON-P2-BEAT, 2026-07-09)
+
+- **증상**: 미국 EOD 후(예: 18:45 America/New_York) 도는 beat 태스크가 `timezone.localdate()`로 "오늘"을 구하면, 프로젝트 `TIME_ZONE=Asia/Seoul`(USE_TZ=True)이라 **Seoul 날짜(=ET 기준 +1일)**를 반환한다. 18:45 ET ≈ 다음날 07:45 KST이기 때문. 결과: 신선도 가드가 엉뚱한 날짜를 검사하고, ingest 범위·스냅샷 `asof_date`가 실제 EOD 거래일보다 하루 앞서 기록됨.
+- **원인**: `CELERY_TIMEZONE='America/New_York'`(스케줄 발화 시각)와 `TIME_ZONE='Asia/Seoul'`(localdate 기준)이 다르다. beat 발화는 ET로 맞지만, 태스크 본문의 날짜 계산은 Seoul 기준이라 어긋난다.
+- **처방**: ET 기준 거래일이 필요한 태스크는 명시 계산한다 — `timezone.now().astimezone(ZoneInfo("America/New_York")).date()` (예: `apps/monitor/tasks.py:et_today`). 이 값을 신선도 가드(`max(EODSignal.date) == et_today`)와 서비스 `as_of_date`에 일관 주입해 EOD 거래일에 정합시킨다. `localdate()`는 사용자 로컬 표시용이지 미국 거래일 판정용이 아니다.
+- **일반화**: EODSignal·DailyPrice 등 미국 거래일(ET) 키를 다루는 모든 Celery 태스크에 적용. beat 시각대(CELERY_TIMEZONE)와 날짜 계산 시각대(TIME_ZONE)가 다를 때 항상 의심.
+## [측정 함정] 소급 시뮬 수락 앵커는 입력 데이터 스냅샷에 결박 — 후속 재현은 경계값에서 ±1 갈림 (CD-STAB A′, 2026-07-09)
+
+- **증상**: 측정 세션이 소급 시뮬로 산출한 수락 앵커(CD-STAB C = 총 반전 83·반전율 0.175)를 다음 세션의 랜딩 구현이 재현하려 하자 **84 / 0.1776**이 나옴(1반전 차이). 방법론 자체는 옳음 — 동일 파이프라인으로 Slice B 앵커(99/0.209)는 **정확 재현**됨.
+- **원인**: 앵커는 **측정 시점의 입력 데이터 스냅샷에 결박**된다. ⑴ 경계값(XLU 2026-05-19 rel5=+0.00998, 카운트 창 idx=5 경계)이 baseline 0에 razor-thin으로 근접 → 입력 미세 변화에 부호가 갈림. ⑵ 측정 세션 이후 가격 재fetch·스냅샷 갱신으로 데이터 상태가 이동(시뮬 83이 저장값 기준 84·가격 재계산 82 **사이**에 위치 = 데이터 드리프트 지문). 정밀도 반올림(6자리)은 무관(변형 4종 전부 84).
+- **처방(측정 세션)**: 앵커 수치와 **함께 입력 지문**을 기록 — 대상 행 수·창 경계(from/to)·관련 테이블 최종 갱신 시점(예: SectorFlowSnapshot 528행/48일, SPY MarketIndexPrice ≤07-09/101행). 그래야 후속 세션이 "같은 데이터였는가"를 판정 가능.
+- **처방(하드 게이트 문안)**: "정확 재현" 게이트에 *"동일 데이터 상태 전제, 경계 1건 이내 편차는 원인 규명 시 디렉터 판정"*을 명시. 규칙 #3(서빙-정확 입력=저장값)과 시뮬(재계산 가능)이 다르면 **서빙값 기준이 진실** — 앵커를 서빙값으로 이원화(방법론 앵커=알고리즘 충실성 증명 / 서빙 앵커=랜딩 실측). 참조 D-CD-XAXIS-SCOPE.
+- **왜**: 소급 시뮬은 "그때 그 데이터"의 함수다. 앵커를 불변 상수로 취급하면 경계값 1건이 갈릴 때 멀쩡한 구현이 게이트에 막힌다. 앵커는 **입력 지문과 한 쌍**일 때만 재현 가능한 계약이 된다.
+
+## [dev 환경] Turbopack "@swc/helpers 모듈 못 찾음"은 파일 존재해도 발생 — .next 청소 무효, npm ci가 해결 (DEV-3000-DOWN, 2026-07-09)
+
+- **증상**: :3000 next dev(Next 16.2.6 Turbopack)가 페이지 요청에 **500 + 빈 화면**. 콘솔/로그 = `Error: Cannot find module '@swc/helpers/_/_interop_require_default'`, **Next.js 자체 client 런타임 청크**(`node_modules_next_dist_client_*.js`)에서 발생 = **앱 코드 진입 전** 실패(어느 앱 페이지든 동일). 증상 프로필의 함정: **파일은 물리적으로 존재하고 `node require.resolve`로도 정상 해석되는데** 오직 Turbopack 번들러만 못 찾는다.
+- **확정 진단(전부 read-only로 기각)**: ⑴ node 버전 정상(실행 프로세스 lsof txt → v22.19.0, /usr/local/bin의 구 v20.11 아님). ⑵ node_modules = 실디렉토리(심링크 아님), git re-detach가 안 건드림(mtime이 checkout 이전). ⑶ `@swc/helpers` 0.5.15 = `next` package.json 기대치 정확 일치, `cjs/esm` 각 104파일 완비, exports 맵에 `./_/_interop_require_default` 항목 존재, 중복 패키지 0, `node -e require.resolve(...)` 성공. ⑷ `rm -rf .next`(903M) + 재기동해도 **재현**(→ .next 캐시 아님).
+- **확정 원인·처방**: **`npm ci`(실경로 node_modules, v22.19.0) + `rm -rf .next` + 재기동 → HTTP 200·에러 0으로 복구.** 즉 원인은 @swc/helpers 자체 결함이 아니라(그건 멀쩡) **node_modules 설치 상태의 미묘한 불일치**(package-lock과의 드리프트/부분 상태) — **node의 관대한 resolver는 통과시키나 Turbopack의 엄격한 resolver가 거부**하며, 그 증상이 하필 next 런타임의 @swc/helpers import에서 표면화. `.next` 청소로는 안 풀리고 **전체 재설치(npm ci)만** 정규화한다.
+- **복구 사다리(싼 것부터, 한 칸씩 검증)**: ⒜ 실행 프로세스 node 버전 확인 → 불일치면 nvm 올바른 버전으로 재기동만. ⒝ node_modules 실체(심링크/mtime) 확인 → 트리 불일치면 실경로 정리. ⒞ **⒜⒝ 기각 시 `npm ci`(실경로) + `.next` 제거 + 재기동**(이번 건 여기서 복구). ⒟ 그래도 재현이면 Turbopack 자체 버그 가능성 → webpack dev 폴백 등은 디렉터 결정.
+- **운영 함정(관측, 인과 미확정)**: 이번엔 `worker_sync.sh`(sv sync)가 web 런타임 트리를 origin/main으로 **re-detach(git checkout)하는 동안 next dev 서버가 계속 기동 중**이었다(reflog 16:01·16:42·16:53 checkout, 그 사이 dev PID 생존). worker_sync는 web 트리를 **재기동 없이 "핫리로드 반영"만** 한다(주석 명시). 라이브 checkout이 위 불일치를 유발했는지는 **확정 못 했으나**(node_modules mtime은 checkout 이전이라 checkout이 파일을 바꾼 건 아님), 복구에 dev **완전 재기동 + npm ci**가 필요했던 점에서 — **worker_sync의 web 트리 처리에 "next dev 선종료→재기동" 추가 여부**를 후속 검토 대상으로 남긴다(P1 일상 표면이므로 조용한 500은 치명적).
+
+## [백필 함정] FREDClient.get_series_observations 기본 limit=100·sort desc — 심층 백필 시 반드시 override (B1-S1, 2026-07-10)
+
+- **증상**: `backfill_v2_a1`의 FRED 경로 9건 전부 "0 obs inserted"(에러 없음). Yahoo 경로(VIX3M·MOVE·SPY)는 정상 삽입. 인증·CB 무관(키 정상, 좁은 창 23건 실값 반환).
+- **원인**: `FREDClient.get_series_observations(...)` 기본 인자 **`limit=100, sort_order='desc'`**. `_fetch_fred`가 이를 **넘기지 않아** 3년 창이라도 **최신 100건(desc)만** 요청 → 그 100건은 전부 최근 날짜(현 DB min 이후)라 `get_or_create`가 **기존으로 skip → 0 삽입**. 심층 과거 행(예: HY 2023-07~2026-02)은 **요청 자체가 안 됨**. Yahoo(`yf.history`)엔 이 cap이 없어 정상이었음.
+- **처방**: 심층 백필 호출엔 **`limit=100000`(FRED 최대)·`sort_order='asc'` 명시**. backfill_v2_a1은 이 수정으로 해소(`7759265`). **신규 FRED 소비처 작성 시 주의** — 증분 sync(최신 N건)는 기본 limit=100으로 충분하나, **백필/히스토리 성격이면 반드시 limit override**(안 하면 조용히 최신 100만).
+- **로깅 교훈**: "N obs inserted" 단일 출력은 **"0=이미 존재"와 "0=못 가져옴"을 침묵 동치**로 만든다 → `fetched N, inserted M` 구분 출력으로 해소(같은 커밋). 백필 커맨드는 fetch 수와 insert 수를 항상 분리 노출할 것.
+
+## [리허설 사각] dry-run은 API 무호출 — fetch 층 결함은 리허설로 미탐지 (B1-S1, 2026-07-10)
+
+- **증상**: B1-S1 후보 리포트에서 `--dry-run`은 대상·창을 정상 출력했으나, 실제 실행에서 FRED 전건 0행(위 limit 함정)이 드러남.
+- **원인**: `backfill_v2_a1`의 `--dry-run`은 대상 목록만 출력하고 **fetch 호출 전에 return**(API 무호출). fetch 층(get_series_observations limit)의 결함은 리허설 경로를 **구조적으로 지나침**.
+- **교훈**: dry-run 통과 ≠ fetch 정상. 신규/변경 백필 경로 검증엔 **좁은 창 실 fetch 1콜**(예: 1개월)을 별도로 돌려 반환 건수를 눈으로 확인할 것. 후보 리포트에 "실 fetch 리허설 1콜" 항목을 포함하면 이 사각을 닫는다.
+
+## [백필 함정] 소급 행이 '경계 앵커'를 스스로 오염 — 멱등 재실행 시 보호 창 붕괴 (B1-S2, 2026-07-10)
+
+- **증상**: `backfill_v2_regime_vectors`가 대상 창 상한을 `RegimeSnapshot.objects.min(date)`(라이브 최초일)에서 파생. 1차 실행이 과거 행을 합성하면 min(date)가 과거로 끌려내려가, **재실행 시 상한 = 합성 최초일 − 1** → 창이 붕괴(빈 창 CommandError). 첫 회는 정상, 재실행만 깨짐(멱등성 위반).
+- **원인**: 보호 경계를 "쓰기 대상과 같은 테이블의 집계"에서 파생하면, 쓰기가 경계를 이동시킨다(자기참조 오염). get_or_create의 "기존행 불가침"은 지켜지지만 **창 산정 자체가 무너짐**.
+- **해결**: 합성행에 **불가시 provenance 마커**(여기선 `summary="[BACKFILL_V2]"` — 이 필드는 어떤 RegimeSnapshot serializer에도 미노출임을 grep으로 확인)를 박고, 경계는 `exclude(summary=MARK).min(date)`로 **합성행을 제외**해 산정. 라이브 행만 경계에 기여 → 재실행 무해.
+- **교훈**: 백필/멱등 커맨드에서 **보호 경계는 쓰기 대상이 오염시킬 수 없는 소스에서 파생**할 것. 같은 테이블에서 파생해야 한다면 합성분을 구별하는 마커가 필수. 마커 필드는 사용자 노출 여부를 먼저 확인(노출되면 UI 오염). 회귀 테스트에 "재실행 시 synthesized=0/skipped=N + 창 불변"을 박제.
+
+## [이관 함정] 앱 재배치(`portfolio`→`apps.portfolio`) 후 테스트가 구 경로를 참조 — 2형, green이 조기 maxfail로 착시 (PF-TEST, 2026-07-13)
+
+- **증상**: PR7에서 `portfolio/`를 `apps/portfolio/`로 `git mv` 후, coach 테스트 **43건**이 실패. 소스·마이그레이션은 정상(no changes detected)인데 테스트만 red.
+- **원인 2형(둘 다 이관 잔재, 로직 회귀 아님)**:
+  1. **경로 문자열 stale (31건)**: `mock.patch("portfolio.api.views.run_e1_coach")`·`@parametrize("portfolio.services.coach.eN_service")` 등 **문자열로 된 모듈 경로**는 `git mv`가 갱신하지 않음 → `ModuleNotFoundError: No module named 'portfolio'`. (import 문은 IDE/grep로 잡히지만 patch/parametrize **문자열은 안 잡힘**.)
+  2. **경로 오프셋 `parents[N]` (12건)**: `Path(__file__).resolve().parents[2] / "docs/..."`가 앱이 `apps/` 하위로 **한 단계 깊어져** repo_root 계산이 어긋남 → `apps/docs/...` FileNotFoundError·빈 `load_raw()`(`assert 0 == 14`). `parents[2]→parents[3]`.
+- **착시 함정**: `pytest`가 기본 addopts의 `maxfail`로 "5 failed"에서 조기 중단 → 실제 43건을 과소평가(TASKQUEUE도 "5건"으로 등재됨). **선행 게이트 판정 시 `--maxfail=1000`으로 전수 확인** 필수. 반대로 `-o addopts=""`로 덮으면 ini의 `filterwarnings`(구 Django 카테고리)까지 노출돼 별도 에러 → **addopts 유지 + `--maxfail` 만 CLI 오버라이드**.
+- **오탐 주의(무접촉 대상)**: 같은 grep에 걸려도 `caplog.at_level(logger="portfolio.llm.cost_guard")`(로거명)·회귀 분류기 데이터 `["portfolio/llm/cost_guard.py"]`(경로 패턴)는 **stale 아님**(현재 통과 중). 치환 전 "실패 목록에 대응하는가"로 필터링 — 통과 테스트를 깨지 말 것.
+
+## [보존 함정] 롤링 purge가 백필 자산을 먹음 — 블랭킷 date cutoff가 심볼 무인지 (A-S0, 2026-07-13)
+
+- **증상**: B1-S2가 백필한 SPY EOD 768행(2023~)이 3일 만에 265행(최근 1년)으로 축소. analog 사후수익률 모집단 683→**199(71% 결손)**. IndicatorValue 3년 백필도 동일 축소.
+- **원인**: `apps/market_pulse/tasks/macro.py::cleanup_old_data`(celery beat `cleanup-old-macro-data`, 주간 일요일)가 `MarketIndexPrice.filter(date__lt=today-365).delete()` — **블랭킷 date cutoff, 심볼/출처 무인지**. 백필 자산(과거 3년)이 롤링 창 밖이라 매주 재삭제 → 백필과 purge가 상쇄(백필→다음 일요일 소실).
+- **해결(A-S0, 방식 나)**: `PRESERVED_INDEX_SYMBOLS`(SPY) 도입 → purge에서 `.exclude(index__symbol__in=...)`. 모델 무변경(마커 필드 X = prod 마이그레이션 회피). 재백필 전에 보존 예외가 **먼저/함께 land**해야 재소실 방지(순서 규율).
+- **교훈**: 백필로 채운 과거 자산이 있으면 **롤링 purge/retention이 그것을 인지하는지 먼저 확인**. 심볼/출처 무인지 blanket cutoff는 백필과 상충. 백필 커맨드 DoD에 "보존 예외 대상인가" 포함. 마커(가) vs 심볼 예외(나) 택일 = 정책 형태 + 마이그레이션 비용(모델 변경이 prod 마이그레이션이면 나 우선).
+- **⚠️ 미해소 동류 지뢰 (IndicatorValue)**: 같은 `cleanup_old_data`가 `IndicatorValue.filter(date__lt=today-365).delete()`도 실행 — B1-S2가 백필한 매크로지표 3년치도 매주 삭제 중. **현재 analog 벡터는 stored(RegimeSnapshot.inputs JSON)라 무영향**이나, **S4-REBASE 재합성(라이브+소급 재-z) 시 71% 결손이 재현**된다. A-S0는 SPY만 보존 → IndicatorValue는 미보존. TASKQUEUE `INDVAL-PURGE-LANDMINE`(트리거=S4-REBASE)로 등재. 재합성 착수 시 A-S0와 동형(코드/시리즈 보존 예외) 선행 필수.
+- **교훈**: 앱 재배치 시 ⑴ `grep -rn "[\"']<oldapp>\." tests/`로 **문자열 경로**를 별도 스윕, ⑵ `parents[N]` 상수를 전수 재계산, ⑶ green 판정은 `--maxfail` 해제 전수. 유형은 CS-TEST(chainsight)와 동일 — 이관 PR은 "테스트 문자열·경로 상수 스윕"을 DoD에 포함.
+
+## 해소된 결정이 구 'pending' 블록 미갱신으로 stale 잔존 → 인계로 무검증 전파 (#52, 2026-07-13 MGMT-HARDEN) `[harness]` `[decision]`
+
+- **증상**: 결정/항목이 해소(LANDED/확정)됐는데 그 사실이 **새 PROGRESS 블록 append로만** 기록되고, 원래의 'pending/대기'(⏸️) 블록은 그대로 잔존. 다음 세션이 구 블록만 읽고 "아직 대기"로 **무검증 전파**(2026-07 D2 phantom: T-3b(`3a3e921`)로 소화된 "결정 4건 대기"를 후속 인계가 "대기 중"으로 오전파). **부수 위험**: 배치 지시서의 일부 슬라이스가 조용히 누락돼도 append-only 기록은 "다 했다"처럼 읽힘.
+- **원인**: PROGRESS는 union-merge append 로그라 새 블록이 계속 쌓이지만, **구 블록의 상태는 자동 갱신되지 않는다**. 해소 사실과 원 pending 블록이 물리적으로 분리되면, 스캔 순서·상속 메모에 따라 구 상태가 살아남는다.
+- **소진(3층 방지, MGMT-HARDEN)**:
+  1. **A 백-어노테이션 규약**(SESSION_CONTRACT DoD): 해소 시 원 블록에 **해소 델타(→ RESOLVED/LANDED/SUPERSEDED @커밋) 부기 필수** — 새 블록 append로 끝내지 않는다. 원문은 취소선/註로 보존(삭제 금지).
+  2. **C health_check WARN**(`scripts/health_check.py::check_stale_pending_backannotation`): PROGRESS의 ⏸️ 블록 중 해소 델타 없이 3 거래일 초과 방치 → WARN(FAIL 아님). TASKQUEUE 제외(큐는 장기 pending 보유 설계).
+  3. **D STEP 0 재측정**(SESSION_STARTUP_CHECKLIST): 상속된 인계 메모/타 트랙 'pending' 주장은 **행동 전 그 트랙 현재 장부로 재측정**(추정 전파 금지).
+- **교훈**: append-only 로그에서 "상태"는 스스로 갱신되지 않는다 — 해소는 **원 지점 back-annotation**으로 닫아야 한다. 그리고 **실행 보고는 반드시 지시서 DoD 전수 대조**(일부 슬라이스 조용한 누락 방지). 검문소는 "해소 델타 유무"라는 값싼 신호로 phantom을 잡는다.
+## [백필 함정] FMP 뉴스 과거 조회 = 402 유료벽 + 페이지 캡 → AV NEWS_SENTIMENT가 과거 소스 (Slice C-N, 2026-07-13)
+
+**증상**: analog 카드 L3(그날의 맥락) 그라운딩용 과거 시장 뉴스를 FMP로 백필하려 하니 `/stable/news/stock`·`general-latest`에 `from`/`to` 날짜 파라미터 = **402 Premium Query Parameter**. 페이지네이션도 page~200부터 400(캡), page50(limit100)이 ~2026-05 도달 한계. 모집단(2023~) 미도달.
+
+**원인**: FMP Starter 플랜은 뉴스·경제캘린더 공히 **historical 날짜 범위 = 프리미엄**. 최근 뉴스만 limit로 제공(그래서 NewsArticle이 2025-12+ 7개월뿐).
+
+**해결**: **Alpha Vantage NEWS_SENTIMENT** 사용. `AlphaVantageNewsProvider.fetch_broad_news(time_from, time_to, limit≤1000, sort)`가 과거 창 조회 지원(실측 2023-09 도달, 모집단 전 구간 커버). 제약 = 무료 25 req/day·1 req/s → 전량 백필은 병진 수일(`--max-requests` 배치). 커맨드 `services/news/management/commands/backfill_broad_news.py`가 라이브 broad 수집과 동일 save 경로(dedup+url upsert 멱등) 재사용.
+
+**교훈**: 과거 데이터 소스는 provider별 tier 차이가 크다 — FMP historical=프리미엄, AV NEWS_SENTIMENT=무료 과거창(단 25/day). 백필 착수 전 GN(과거 타당성) 프로브 필수. 지시서가 특정 provider(FMP)를 지목해도 GN 정신(과거 가용성)은 대체 provider로 충족 가능.
+
+## [보존 함정 후속] NewsArticle은 나이 purge 아닌 soft delete(is_archived) — 백필분 영속, 단 그라운딩 쿼리는 is_archived 포함 (Slice C-N, 2026-07-13)
+
+**맥락**: A-S0(SPY)·IndicatorValue는 롤링 purge에 삭제되어 보존 예외가 필요했으나, **NewsArticle은 삭제 경로 없음**. `archive_old_articles`(services/news/tasks.py)가 6개월+ 기사를 `is_archived=True`로 **soft delete**만 — 행 영속. → 과거 뉴스 백필은 SPY식 보존 예외 불필요.
+
+**함정**: 그러나 백필한 과거 뉴스는 즉시 `is_archived=True` 대상(6개월+). **C-L3 그라운딩 쿼리가 `is_archived=False` 필터를 걸면 백필분 전량 누락**. → 그라운딩은 `is_archived` 무관(또는 True 포함)으로 조회해야 함.
+
+**C-L3 구현 실측 반전(2026-07-24, D-CL3-ARCHIVE-BLIND)**: 착수 시 실측 = 과거분(2023-08·2024-05·2025-11)이 **현재 대부분 `is_archived=False`**(archive_old_articles가 아직 미실행). 즉 지금은 필터해도 안 걸리지만, **미래 아카이브 시 벙어리화**가 진짜 위험. → `grounding.fetch_day_candidates`는 is_archived로 **필터하지 않음**(True/False 무관). 회귀 테스트 `test_fetch_includes_archived_articles`가 is_archived=True 행 포함을 명시 단언(미래 아카이브 대비 잠금). 원지시서의 "is_archived=True 포함 필수"는 방향이 "True를 잃지 말라"는 뜻으로, 실제 구현 = **무필터**가 정답.
+
+## [테스트 함정] FMP autouse 더미키 픽스처 — "키 부재" 시나리오는 본문에서 로컬 override 필수 (⑮ 도입, ⑯ 등재 2026-07-14) [process]
+
+**맥락**: `tests/conftest.py`의 `_ensure_fmp_api_key`(autouse)가 FMP 키 부재(falsy) 시 `settings.FMP_API_KEY` + `os.environ`에 더미(`test_dummy_fmp_key`)를 주입한다(⑮ FMP-TESTDEBT env-독립화). 덕분에 provider 인스턴스화가 CI(키 없는 env)에서도 결정론적으로 성공한다.
+
+**함정**: 따라서 **"키 부재" 시나리오를 테스트하려면 테스트 본문에서 로컬 override로 키를 명시적으로 제거**해야 한다 — 안 하면 autouse 픽스처가 더미를 깔아 테스트가 "키 있음" 경로로 **조용히 통과**한다(거짓 green). 올바른 선례: `tests/marketpulse/fetchers/test_fmp_weights.py::TestRequestEtfHolderGuards::test_missing_api_key_raises` — `settings` 픽스처로 `settings.FMP_API_KEY=None`을 테스트 본문에서 세팅 후 `pytest.raises`(본문이 픽스처 setup보다 후행이라 override 성립).
+
+**일반화(동형 함정 주의)**: autouse 픽스처/ambient `.env`가 설정값을 채워 격리성을 주는 경우, 그 값의 **부재/반대 상태를 검증하는 테스트는 반드시 로컬 override로 상태를 되돌려야** 한다. **미상환 동형 사례(⑯ 발견)**: `.env`에 `CHAINSIGHT_GROUP_SOURCE=event_group`(go-live)이 있어 `settings_test`가 이를 상속 → EventBoard/Ranking 테스트가 `theme_tags`로 시드하면서 플래그를 고정하지 않아 event_group 경로로 읽혀 실패(**chainsight 13 red = attention 6 + leadership 7**, 전부 test-only). 해법 동일 = 테스트에서 `override_settings(CHAINSIGHT_GROUP_SOURCE=...)`로 플래그를 결정론적으로 고정. **★해소됨(⑰ S3, 2026-07-14 `8377ba5`)**: override 주입 대신 **chainsight 13 red 테스트를 `event_group` 시드로 재작성**(go-live 플래그와 정합) → theme_tags 경로 의존 제거. 검증: pristine origin/main(`6013865`) 전체회귀 **3866 passed·0 failed**(⑱ STEP 0 실측)로 재확인 — attention 6 + leadership 7 red 소멸.
+
+## [검증 함정] 서브에이전트의 "통과" 주장 = 해당 worktree에서 직접 재실행으로만 신뢰 (⑰ S2 실증, ⑱ 등재) [process]
+
+**증상**: 서브에이전트(또는 타 세션)가 "tsc 0 / pytest green"을 보고해도, 그 검증이 **다른 worktree·다른 브랜치·공유 test DB** 위에서 돌았다면 현 세션 트리의 실상과 어긋날 수 있다. cross-worktree 환경에서 green은 "그 트리에서 green"일 뿐, 인계받는 트리의 보증이 아니다.
+
+**원인**: ① worktree마다 체크아웃 코드·`node_modules`(심링크 여부)·`.env`가 다름 ② 공유 test DB/캐시 오염(stale 시드·`_dormant` 잔재)이 특정 트리에서만 red/green을 만듦(예: news-av-broad 트랙의 `_dormant/graph_analysis` + 공유 test DB가 attention 5건 오탐) ③ 서브에이전트는 자기 컨텍스트의 트리를 검증하지, 호출자 트리를 검증하지 않음.
+
+**해결**: 서브에이전트의 tsc/pytest 통과 주장은 **인계 후 호출자 자신의 worktree에서 직접 재실행**으로만 확정한다(주장을 그대로 승계 금지). UI/시각 산출물은 [[feedback_ui_slice_live_screenshot]]과 동형 — 라이브 재현으로만 종결. 판정이 오염에 민감한 chainsight류는 **pristine 체크아웃**(origin/main 신규 worktree)에서 재측정.
+
+**교훈**: "누가 어느 트리에서 green을 봤는가"가 green 자체보다 중요하다. 검증의 신뢰 경계는 worktree다 — 경계를 넘은 green은 재실행 전까지 미검증이다. #45/#47(repo 스크립트를 어느 트리 사본으로 실행하나)의 검증판 동형.
+
+## [배포 절차] daphne/celery는 런타임 트리에서 서빙 → main 머지만으로 화면 미반영, worker_sync 동기화 + 재시작 필수 (⑰-M 실증, ⑱ 등재) [ops] [git]
+
+**증상**: FE/BE 코드를 origin/main에 머지했는데도 **라이브 화면·API 응답이 구코드**. 테스트 green·push 성공인데 사용자 화면에 반영 안 됨.
+
+**원인**: 런타임 3종(celery worker=`sv-worker-runtime`·next dev web=`sv-web-runtime`·daphne API=`sv-api-runtime`)은 **공유 편집 트리가 아닌 전용 런타임 트리**(detached origin/main)에서 서빙된다(#45 종결의 귀결). main 머지는 origin 참조만 전진시킬 뿐, 런타임 트리 사본을 자동 갱신하지 않는다.
+
+**해결**: 배포 = **⑴ main 머지 → ⑵ `sv sync`(=런타임 트리 사본 `worker_sync.sh`, 3트리 origin/main로 재-detach) → ⑶ daphne·celery 재시작** 순서를 반드시 완주. next dev(web)는 핫리로드지만 daphne/celery는 프로세스 재기동 필요. 머지에서 멈추면 "머지했는데 화면 그대로" 함정. 스크립트는 반드시 런타임 트리 사본으로([[#47]] `sv` 래퍼), 공유 트리 사본은 stale.
+
+**교훈**: "머지 = 배포"가 아니다. 런타임 분리 아키텍처에서 배포의 마지막 칸은 **런타임 트리 동기화 + 재시작**이다. 코드가 origin에 있음 ≠ 서버가 그 코드를 실행 중.
+
+## 배포 체크리스트 — 마이그레이션·env 인라인 포함 슬라이스 (단일 출처) [ops] [deploy]
+
+> **단일 출처**: 마이그레이션 또는 FE env 인라인을 포함하는 슬라이스의 배포 규약은 **본 항목 하나**에 둔다. 세션 지시서·CLAUDE.md는 포인터만(복제 금지 — drift). 런타임 트리 동기화·재시작은 위 [배포 절차](⑰-M, sv sync) 항목과 짝.
+
+마이그레이션·env 인라인을 포함하는 슬라이스는 **배포 단계**에 다음을 명시·완주한다:
+1. **prod migrate**: `sqlmigrate`로 순수 add 육안 → `migrate` → `showmigrations`로 적용 확인. (코드 착지 ≠ DB 적용 — #53.)
+2. **적용 검증은 서빙 프로세스와 동일 env/연결 기준**: "테이블 존재"·"번들 반영"은 **서빙 프로세스가 실제로 보는 DB 연결/체크아웃**에서 확인(셸 env ≠ 서빙 env — #54).
+3. **FE env 인라인 변경 시**: 재빌드 + 재기동 + **번들 검증**(컴파일 산출물에 절대 URL/env 리터럴이 인라인됐는지 grep). `NEXT_PUBLIC_*`은 빌드타임 인라인 — 머지·핫리로드만으로 미반영 가능(#55).
+
+## 코드 착지 ≠ prod DB 적용 — migrate는 배포 단계, 착지 보고만 믿지 말 것 (#53, 2026-07-16 P2-IMPR-CLOSE) [db] [ops] [deploy]
+
+**증상**: 모델·마이그레이션을 origin/main에 머지·"착지 완료" 보고했는데 런타임 write 500. (P2-IMPRESSION: `apps/platform` ImpressionLog 테이블 부재 → ingest 500.)
+
+**원인**: 마이그레이션 파일 착지 = 코드일 뿐, **prod DB 적용은 별개의 배포 단계**. 착지 보고를 "적용됨"으로 오독.
+
+**해결**: land에 migration 포함 시 **배포 단계에 prod migrate를 명시**(위 배포 체크리스트 ①). 착지 보고와 DB 적용을 분리 추적. cf. #46(migration 미적용 → write 조용히 실패), 런북 `P1-RUNBOOK-MIGRATE`.
+
+## 적용 검증은 서빙 프로세스 기준 — 셸 env ≠ 서빙 env (#54, 2026-07-16 P2-IMPR-CLOSE) [ops] [db] [deploy]
+
+**증상**: "테이블 있음"·"코드 최신"을 셸에서 확인했는데 서빙은 여전히 실패/구코드.
+
+**원인**: 확인에 쓴 셸의 env/DB 연결·체크아웃 트리가 **서빙 프로세스(런타임 트리·launchd env)와 다름**. 셸에서 보이는 상태 ≠ 서버가 보는 상태.
+
+**해결**: 적용·번들 검증은 **서빙 프로세스가 실제로 보는 것**으로. DB는 서빙 DB 연결에서 `showmigrations`, FE 번들은 서빙 트리 `.next` 컴파일 산출물 grep. cf. #45(공유 트리 표류→구코드 bake), 배포 체크리스트 ②.
+
+## FE 신규 API 호출은 앱 base 규약(NEXT_PUBLIC_API_URL 절대 base) 준수 — 상대 URL 금지 (#55, 2026-07-16 P2-IMPR-CLOSE) [frontend] [ops]
+
+**증상**: FE 신규 API 호출이 죽은 포트(:8000)로 라우팅되어 실패. (P2-IMPRESSION telemetry가 상대경로 `/api/v1/telemetry/impressions` 호출 → Next dev origin에 붙어 stale rewrite로 :8000.)
+
+**원인**: 상대 URL은 페이지 origin(:3000)에 붙어 **next.config의 stale rewrite**로 흘러감. 앱 API 호출은 `NEXT_PUBLIC_API_URL`(=/api/v1 포함 절대 base) 규약을 쓰는데 신규 호출이 이를 우회.
+
+**해결**: 신규 FE API 호출은 반드시 **앱 base 규약**(authAxios와 동일 `NEXT_PUBLIC_API_URL` 절대 base) 준수. **죽은 포트 하드코딩 폴백 금지** — env 미설정 시 skip+warn(유실 허용 데이터) 또는 앱 표준 폴백. 해소 = FIX-1(`46e6865`, 번들 검증까지). cf. 배포 체크리스트 ③.
+
+## 실행자 세션은 .env 파일을 열지 않는다 — 환경변수 확인은 키 존재 bool까지, 값 출력 금지 (#56, 2026-07-16 STEP0-P2-AXIS) [security] [process]
+
+**증상**: 실행 세션이 환경변수를 확인하려 `.env`를 grep/cat하다가 시크릿 원문이 stdout·로그에 노출. (07-16 STEP0-P2-AXIS: 마스킹 정규식이 `GEMINI_API_KEY_..._PROJECT=` 형태를 놓쳐 **API 키 원문 1회 노출** → 키 회전 조치 유발.)
+
+**원인**: `.env` 개봉 자체가 노출 표면. 마스킹 sed/정규식은 키 이름 변형(접미사·언더스코어)에 취약 — 한 줄이라도 빠지면 유출.
+
+**해결**: **실행자 세션은 `.env`를 열지 않는다(grep 포함).** 환경변수 확인이 필요하면 ⑴ 프로세스 env 로드는 기존 설정 경로(Django settings·Next 로더)에 맡기고, ⑵ 확인은 **키 존재 여부 bool까지만**(`bool(os.environ.get(...))` 또는 파일 미개봉 `grep -c '^KEY='` 카운트) — **값·head/tail·풀 문자열 출력 절대 금지**([[feedback_secret_masking_policy]] 승계). **자기점검**: 지시서에 ".env 접근 금지" 조항이 포함됐는지 확인하고, 없으면 실행자가 보수적으로 금지 적용.
+
+**보충(2026-07-27, MGMT-BATCH-14)**: 금지 대상은 **내용 열람·출력·복사**뿐이다. 신규 worktree에서 Django/Next 런타임 구동을 위한 **.env 심링크 생성·연결(`ln -sf …/stock_vis/.env <worktree>/.env`)은 허용** — 심링크는 파일 내용을 열지 않고 로더 경로만 잇는다(gitignore로 추적 제외 확인 필수). 선례: `sess-cov-c1-api`(실 API 조인 실측)·`sess-cov-c1-fe`가 실 응답 타이핑을 위해 심링크 동반. 즉 "미개봉"은 **byte 열람 금지**이지 **경로 연결 금지가 아니다**.
+
+## [DoD 함정] celery 태스크 신설 = tasks/__init__ import 누락을 단위 테스트가 못 잡는다 (⑲ 배포 실증) [process] [celery]
+
+**증상**: 신규 celery 태스크의 단위 테스트(함수 직접 호출·`.apply()`)는 전부 green인데, 실배포 워커가 태스크를 **미등록**(`celery inspect registered`에 없음) → beat 등록해도 "task not registered"로 미발화.
+
+**원인**: `tasks/` 가 **패키지**일 때 celery autodiscover는 `tasks/__init__.py`만 임포트한다. 서브모듈(`centrality_tasks.py` 등)은 `__init__.py`에서 명시 import해야 `@shared_task`가 레지스트리에 등록된다. 단위 테스트는 모듈을 직접 import해 호출하므로 이 누락을 우회(거짓 green). ⑲ S3에서 `centrality_tasks` import 누락 → 배포 중 워커 registered 검증에서 포착, fix `f2397b4`.
+
+**해결**: 신규 celery 태스크 슬라이스의 **DoD에 등록 검증 필수** — `app.loader.import_default_modules()` 후 `'<task path>' in app.tasks` 또는 라이브 워커 `celery inspect registered` 확인. [[lesson_celery_task_registration]](워커 재시작 필수)의 등록판. 배포 시 `worker_sync` 재기동 후 registered 재확인.
+
+## ego 그래프 렌더 단절 = FE↔BE URL 미스매치(미검증 이월) (#57, 2026-07-16 ⑳-D DIAG) [frontend] [chainsight] [process]
+
+**증상**: market-graph focus/ego 경로가 **모든 심볼에서 빈 캔버스**. 리더보드 행 클릭 → `?focus=SYM` → 그래프 안 그려짐. API·테스트는 전부 green이었음.
+
+**원인 (2중 게이트, 실측)**:
+1. **URL 미스매치(주근인)** — 백엔드 라우트 `apps/chain_sight/api/urls.py:36` = `ego/<symbol>/`(동적 경로와 충돌 회피 위해 `ego/` 프리픽스 분리), 그러나 프론트 `chainsightService.ts:85` `fetchEgo`는 구 패턴 `/chainsight/${symbol}/ego/` 호출. resolver 실측: `/chainsight/AAPL/ego/` → **404**, `/chainsight/ego/AAPL/` → OK. 프론트 배선 첫 커밋(`a9256b8` S2)부터 어긋나 **한 번도 작동한 적 없음**(회귀 아님·미검증).
+2. **시드 제약(부근인)** — `market-graph/page.tsx:24` focus 핸들러가 `seedData.seeds.find(...)` 있을 때만 초기화. 리더보드 상위(centrality)는 대체로 비-시드(NVDA#1·MSFT·AAPL이 오늘 시드 20개에 없음) → 조용히 무시.
+
+ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건강(NVDA 48노드/224엣지 200 405ms). 섹터 모드만 별개로 Neo4j 동결로 빈 렌더.
+
+**해결**: 프론트 경로 순서 정합(`/chainsight/${symbol}/ego/` → `/chainsight/ego/${symbol}/`) + 시드 게이트 우회(PG ego 직행) + `contracts/` OpenAPI에 ego 경로 명시(드리프트 재발 방지). **교훈**: API green·단위테스트 green ≠ 화면 작동. [[feedback_ui_slice_live_screenshot]] 규약(라이브 렌더 확인 전 완료 아님)의 실증 사례 — focus→ego 라이브 검증 누락으로 URL 불일치가 배포까지 이월. 상세=`docs/chain_sight/ego_render_diag_2026-07-16/REPORT.md`.
+
+## [잡음 차단] pre-commit iCloud 경고는 무해·비차단 — 판단 소모 금지 [ops]
+
+**증상**: 커밋 시 pre-commit hook이 "iCloud 측 작업 의심. 확인 후 진행하세요 (강제 차단 아님)" stderr 출력.
+
+**해결**: **비차단 경고** — 커밋은 정상 통과한다. iCloud sync는 OFF 상태([[project_icloud_sync_off]])라 오탐. 이 경고에 판단·조사 소모하지 말고 커밋 결과(`✅ pre-commit 검증 통과`)만 확인하고 진행.
+
+## FE↔BE URL 계약은 계약 테스트로 못박아라 — 미검증 이월 방지 (#58, 2026-07-17 ⑳-E) [frontend] [process]
+
+**증상**: FE가 부르는 API 경로와 BE 라우트가 어긋나 404인데도 API green·단위테스트 green으로 통과, 실화면 미검증으로 배포까지 이월(#57 ego a9256b8부터 404).
+
+**원인**: FE URL을 인라인 문자열로 산재 하드코딩 → BE가 라우트를 옮겨도(예: `<sym>/ego/`→`ego/<sym>/`) FE 미추종. 두 진영이 서로의 계약을 강제하는 테스트가 없음.
+
+**해결**: ⑴ FE URL은 **단일 상수/헬퍼**로 수렴(`chainsightPaths.ts::egoPath`). ⑵ **양측 계약 테스트 표준화**: FE(vitest)에서 헬퍼가 만드는 경로 문자열 검증 + BE(pytest)에서 **동일 경로가 해당 View로 resolve**하고 구 패턴은 `Resolver404`임을 검증. 하드코딩 경로 신설 = 계약 테스트 동반 필수. cf. [[feedback_ui_slice_live_screenshot]].
+
+## 전 세션 STEP 0에 worktree 최신성(origin/main 대비) 확인 강제 (#59, 2026-07-17 ⑳-E) [process] [harness]
+
+**증상**: 편집 worktree가 origin/main보다 수십~백 커밋 뒤(stale)인데 그 위에서 조사·구현 → 배포 실화면과 다른 코드를 봐 오진(⑳-D에서 worktree 102 커밋 stale, ego 신규 파일 부재를 못 보고 초기 탐색 2건 오판).
+
+**해결**: **조사·구현 불문 모든 세션 STEP 0에 최신성 확인 강제** — `git fetch && git rev-list --left-right --count origin/main...HEAD`로 behind 기록. behind>0이면 브랜치를 `origin/main` 기준으로 새로 파거나 merge. 배포 실화면 판정은 반드시 origin/main 정합 트리에서. ⑳-E는 이 규칙 적용해 니어미스 회피(진입 시 behind 8 확인 후 origin/main에서 브랜치 생성).
+
+## react-query 실패 쿼리가 fetchStatus='paused'에 갇혀 isError 미도달 → 에러 UI 미발화 (#60, 2026-07-17 ⑳-E 라이브) [frontend]
+
+**증상**: API가 503을 정확히 반환하는데도 프론트 에러 상태 UI가 안 뜨고 조용한 빈 화면. react-query 캐시 실측 시 해당 쿼리 `status:'pending', fetchStatus:'paused', failureCount:1`.
+
+**원인**: react-query `onlineManager`가 오프라인으로 오판(`navigator.onLine=true`인데도) → **첫 실패 후 retry 직전에 pause**. 성공 쿼리(첫 시도 성공)는 무영향, 실패 쿼리만 error 상태에 도달 못해 `isError`가 영영 false. `networkMode:'always'`만으로는 이 버전에서 retry-pause를 못 막음(쿼리 옵션엔 반영되나 여전히 paused).
+
+**해결**: 에러 상태 UI가 필수인 쿼리(localhost API 등)는 **`retry:false`**(+`networkMode:'always'`)로 첫 실패를 즉시 error 확정 → 에러 패널 발화, 사용자 재시도는 "다시 시도" 버튼으로. 진단 팁: fiber에서 QueryClient 추출해 `getQueryCache().getAll()`의 `state.fetchStatus`를 실측(좌표·화면만 보면 "로딩 안 끝남"으로 오판). 발견 경로=라이브 검증(단위테스트 GREEN 통과, [[feedback_ui_slice_live_screenshot]]).
+
+## 서빙 포트 기동 전 완전 정리 — 기존 리스너 kill → 45초+ 무respawn 확인 후 기동 (#61, 2026-07-18 FE-8000-PROD-APPLY) [ops]
+
+**증상**: 새 서버(prod `next start`)를 기동했는데 **~34초 만에 사망**하고, 다른 프로세스(임시 `npm run dev`)가 그 포트(:3000)를 재점유. 화면은 뜨지만 의도한 모드/코드가 아님.
+
+**원인**: 기동 시점에 **잔존 리스너(구 dev)가 살아있거나 곧 되살아나** 새 서버와 포트 경합 → 한쪽이 밀려 사망. supervisor(launchd KeepAlive) 유무를 확인하지 않고 기동하면 respawn과 충돌.
+
+**해결**: 서빙 포트 기동 절차에 **완전 정리 단계**를 포함한다 — ⑴ `lsof -iTCP:<port> -sTCP:LISTEN`로 기존 리스너 kill → **리스너 0 확인** ⑵ **45초+ 무respawn 관측**(감독자 존재 시 되살아남 = 그 감독자를 먼저 처리/판단) ⑶ 그 후 신규 기동. **자기점검**: 기동 절차에 "리스너 0 확인" 단계가 포함됐는지. cf. WEB-RUNTIME-RUNBOOK §2, [[reference_worker_runtime_tree]].
+
+## FE 배포는 재빌드 필수 — :3000이 prod 빌드(npm run start)면 sv sync만으론 미반영 (#62, 2026-07-20 ⑳-2) [frontend] [ops] [deploy]
+
+**증상**: 프론트 코드 머지·`sv sync`(web 트리 re-detach) 후에도 :3000 화면이 구 코드 그대로. next dev로 착각해 핫리로드를 기대.
+
+**원인**: sv-web-runtime :3000은 `npm run start` = **prod 빌드 서빙**(`.next` 정적 산출물). `sv sync`는 소스 트리만 origin/main으로 갱신할 뿐 **`.next`를 재생성하지 않음** → 서빙은 옛 빌드. next dev(핫리로드)와 다름.
+
+**해결**: FE 변경 배포 = `sv sync` 후 **web 트리에서 `npm run build` → `npm run start` 재시작**([[reference_web_runtime_prod_build]]). 신규 컴포넌트·훅 옵션은 특히 재빌드 없이는 절대 반영 안 됨. 절차: 리스너 0 확인(#61) → build → start → :3000 200·신규 표식 grep 확인. cf. FE-SERVE-MODE-TIDY(격리 dev 서빙 도입 시 이 마찰 해소).
+
+## 표시 필드 명명은 근원 필드의 의미 실측 후 — auto_now를 "최근 언급일"로 오라벨 (#63, 2026-07-21 ⑳-F/⑳-G) [frontend] [backend]
+
+**증상**: ego 카드가 "최근 언급 N일" / 근거 뉴스일로 노출한 `last_mentioned`가 실제로는 관계가 마지막 뉴스에 언급된 날이 아님. SEC 공시 관계(evidence 0건)에 07-20 같은 날짜가 붙어 "근거 0건인데 최근 언급?" 모순으로 보임.
+
+**원인**: `last_mentioned` ← `RelationConfidence.last_observed_at`인데 이 필드는 모델에서 **`auto_now=True`** = 행이 마지막 `save()`된 시각(배치 실행 시각)이지 뉴스 언급일이 아니다. 07-20/06-20 군집 = SEC 배치 vs peer 배치의 마지막 실행 시각 차이. ⑳-2 지시서가 근원 필드 의미를 실측하지 않고 표시 라벨("최근 언급일")을 명명한 결함.
+
+**해결**: 표시 필드 명명 전 **근원 컬럼의 의미(auto_now/auto_now_add/파생/원값)를 실측**한다. ⑳-G에서 라벨을 "확인일"(last_observed_at 명시 필드)로 교정. 진짜 언급일이 필요하면 `CoMentionEdge.last_co_mention_date`(뉴스 실제 최종 동시출현일) 사용. 교훈: 카드 신뢰도 "전원 85"도 같은 뿌리 — 표시(연속 신뢰도)가 근원(tier 계단값)의 실체와 불일치. 진단 `docs/chain_sight/confidence_diag_2026-07-21/REPORT.md`.
+
+## 서빙 프로세스 cwd 실측 도구 hang 시 HTTP BUILD_ID로 우회 (#64, 2026-07-22 ⑳-G STEP 0) [ops]
+
+**증상**: ⑳-F Q4가 원본 리포 `frontend/.next`(05-24 빌드)를 서빙 트리로 보고 "지도 튜닝 미반영" 판정. 그러나 ⑳-2(07-21)는 배포·라이브 확인됨 → 05-24 빌드에 07-21 카드가 있을 수 없어 **서빙 트리가 원본 리포가 아닐 가능성**(부분 오측정).
+
+**원인**: :3000 next-server의 실제 cwd 실측 도구(`lsof -p`, `psutil.Process().cwd()`, `curl`, `urllib`)가 이 환경(sandbox)에서 전부 hang. grep/find/파이프 계열도 동일 hang. worktree엔 `.next` 부재라 어느 트리가 서빙하는지 파일만으론 불확정.
+
+**해결**: 서빙 빌드 판별은 ⑴ 배포 재빌드 후 **HTTP로 `_next/static/<BUILD_ID>/` 추출**(HTTP 응답 가능 시), ⑵ next-server 부모 스크립트/런타임 트리 문서([[reference_daphne_api_tree_sync_gap]], WEB-RUNTIME-RUNBOOK)로 트리 특정, ⑶ 어느 쪽이든 07-21 커밋 반영은 재빌드 필요(#62)이므로 배포 단계 재빌드로 실측 대체. 판별 미완 시 표시층 처치(오버레이)는 빌드 상태 무관하게 안전.
+
+**종결(2026-07-24, ⑳-G 배포 실증)**: ⑳-G FE를 `~/worktrees/sv-web-runtime/frontend`에서 재빌드→`npm run start`→⑳-G 등급 배지·카드 섹션 변경이 :3000 라이브 반영(S5 4종 사용자 확인·`curl 200`). **∴ 서빙 트리 = sv-web-runtime 확정**(원본 공유 리포 아님). 공유 리포 `.next`의 05-24 BUILD_ID(Dwq0DX9…)는 **미서빙 트리의 잔재**로 확정 = ⑳-F Q4 "지도 튜닝 미반영" 판정은 **원본리포 오측정**(부분 오측정→확정). 논리 결론이 실증으로 봉인됨. **측정 경로 대조 교훈**: 서빙 판별의 최종 실측은 "파일 BUILD_ID"가 아니라 **배포 재빌드가 라이브에 반영되는가**(BUILD_ID는 트리 특정 후에만 의미). cf. [[reference_web_runtime_prod_build]].
+
+## refresh beat의 scenario 처리가 kwargs 오타로 전건 무발화 — try/except 밖 TypeError (#65, 2026-07-21 HOLD-P1 STEP 0) [backend] [monitor]
+
+**증상**: monitor 가격 시나리오의 `last_price_zone`이 생성 후 며칠이 지나도 **전부 None**, 전이 알림도 무발화. RECON은 "refresh beat가 아직 안 돎"으로 오해석하기 쉬움(실제론 매 beat 크래시).
+
+**원인**: `pipeline.py::refresh_monitor`가 `process_monitor_scenarios(monitor, as_of_date=as_of)`로 호출하나 함수 시그니처는 `process_monitor_scenarios(monitor, as_of=None)` — 키워드 인자명 불일치로 **`TypeError: unexpected keyword argument 'as_of_date'`**. 이 호출은 evaluate 격리용 try/except **밖**에 있어(그 try/except는 evaluate_monitor 전용) 예외가 refresh_monitor 전체를 중단시킴 → scenario_events 미생성, zone 저장 영영 안 됨. 단위테스트는 digest를 수동 events로만 검증해 이 경로를 커버 안 함(미검출 잠복).
+
+**해결**: 호출부를 `process_monitor_scenarios(monitor, as_of=as_of)`로 교정. **교훈**: ⑴ 파이프라인 통합 지점의 kwargs는 시그니처 대조 필수(테스트가 서비스 함수를 직접 호출·수동 events만 쓰면 통합 경로가 잠복). ⑵ "관측값이 계속 None" = "아직 안 돎"이 아니라 "매번 조용히 실패" 가능성을 먼저 의심. [[feedback_ui_slice_live_screenshot]]와 동류 — green ≠ 통합 경로 작동.
+
+## 배포 실물은 서빙/공유 트리 디스크가 아니라 `git show origin/main:<path>`로 추출 — 세션 트리 산출물은 뒤처질 수 있다 (#66, 2026-07-24 LAUNCHD-WEB-PLIST-LOAD) [ops] [deploy]
+
+**증상**: plist load 집행 시 서빙 세션트리(`Desktop/stock_vis` @ `sess-hold-p1`, base `6973bda`)의 디스크 plist `docs/operations/com.stockvis.web-frontend.plist`가 **교정 전 초안**(`/bin/bash -lc … npm run start`)이었다. 그대로 `cp ~/Library/LaunchAgents`로 설치했다면 로그인셸 npm=`/usr/local/bin/npm`(node v20.11.0) 오해석 버그(OPS-PLIST-FIX가 고친 바로 그 결함)가 재현될 뻔했다.
+
+**원인**: 배포 대상 파일은 origin/main `9f2e6c5`(OPS-PLIST-FIX `56251a9`)에서 교정됐으나, 집행 세션이 그 머지보다 **이전 base**의 브랜치(`sess-hold-p1` base `6973bda`)에 체크아웃돼 있어 디스크 산출물이 구본이었다. 공유/세션 트리의 디스크 상태는 "현재 체크아웃된 브랜치"에 종속 = origin/main 최신과 무관하게 뒤처질 수 있다.
+
+**해결**: **배포 실물(plist·설정 파일·스크립트 등)은 디스크 cp가 아니라 `git show origin/main:<path>`로 추출**해 배치한다. 근본: "무엇이 배포돼 있는가(origin/main)"와 "무엇이 현 트리에 있는가(체크아웃 브랜치)"를 분리 사고. cf. #64(서빙 빌드 판별=HTTP BUILD_ID)·[[reference_web_runtime_prod_build]]와 동류 — 트리 파일만으론 배포 실체 불확정. 실측: 배치 전 `plutil -lint` + `PlistBuddy -c "Print :ProgramArguments"`로 교정본 확인 필수.
+
+## 라이브 자동화 배치는 origin/main 추적 트리만 참조 — 공유 세션 트리를 읽으면 체크아웃 브랜치 따라 배포 drift (#67, 2026-07-24~28 OPS-VERIFY-EXEC-TREE) [ops] [deploy]
+
+**증상**: verify launchd(`com.stockvis.verify-pair`, 02:30)의 section D(Phase 3 파수꾼)가 origin/main에 배선(`b76d9ab`)됐는데도 라이브 02:30 로그에 **section D가 전무**. "코드 착지=라이브 발현"으로 오판하기 쉬움(07-20 "라이브 PASS"는 실은 dev 트리 관찰이었음).
+
+**원인**: verify 래퍼 `scripts/verify-pair.sh`가 `PROJECT_DIR="…/Desktop/stock_vis"`(공유 세션 트리)를 **하드코딩+`cd`** → 그 트리의 체크아웃 브랜치(`sess-hold-p1`, `b76d9ab` 미포함)를 실행. 공유트리엔 `ops_verify_checks.py` 파일 자체가 없어 section D 없는 구버전 py를 돌렸다. 라이브 자동화가 "현재 체크아웃된 브랜치에 종속되는 공유 편집 트리"를 읽으면, origin/main에 무엇이 있든 실행물은 그 트리의 브랜치를 따른다(#66과 동류 — 읽기 접촉판).
+
+**해결**: **라이브 자동화 배치(launchd·cron)는 origin/main 추적 트리(런타임/전용 트리)만 참조**한다. 래퍼는 `PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"`로 **self-locate** → plist가 지향한 트리의 코드를 돈다. 브랜치별 cherry-pick은 수리 아님(drift 재발) — 배치 자체를 교정. **"무접촉" 주장 시 읽기/쓰기 구분 필수**: verify의 `cd`+실행은 쓰기가 아니어도 읽기 접촉이므로 공유트리 브랜치에 종속된다(놓치기 쉬움). cf. `sv sync`/`sv`(D-SYNC-ENTRYPOINT)가 스크립트 진입점을 origin/main 트리로 고정하는 것과 동일 원리.
+
+## 지시서는 repo 커밋이 0번째 게이트 — 미커밋 지시서는 소비 불가, 발행 시점 보존 (#68, 2026-07-24~28 OPS-ISO 트랙) [harness]
+
+**증상**: 실행 지시서(`*_directive.md`)를 대화/디스크에만 두고 소비하면, 소비 근거·발행 시점·개정 이력이 휘발돼 사후 추적 불가. 승인 스펙이 물리적으로 불가한 지점을 발견해도(예: plist-only repoint) 원 지시서와 개정문의 관계가 남지 않는다.
+
+**원인**: 지시서는 휘발성이라 repo에 보관 안 하는 관행이었으나, 소비(집행) 전 커밋을 강제하지 않으면 "무엇을 근거로 무엇을 했는가"의 계보가 끊긴다.
+
+**해결**: **지시서 소비의 0번째 게이트 = 해당 파일이 `docs/instructions/`에 커밋돼 있을 것.** 원 지시서는 **수정하지 않고**(발행 시점 보존), 스펙 변경·불가 발견은 **개정문(`*_amendment*.md`)을 별도 커밋**으로 쌓는다(원본 불변, 개정 계보 누적). 세션 종료 전 CLAUDE.md Harness Protocol의 "지시서 폐기 전 흡수 확인"(비자명 결정의 '왜'가 DECISIONS에 흡수·task ID 추적)과 병행. 실측 사례: OPS-VERIFY-EXEC-TREE = 원 지시서(`b8d767aa`) + 개정문1(self-locate, origin/main) + 개정문2(야간 번들) 3층 계보.
+
+## PROGRESS 72h 위생 검사는 세션 종류 불문 FAIL — build 사이클이 72h 넘길 전망이면 mgmt 배치를 LAND보다 선행한다 (#69, 2026-07-27 C1-FE-LAND HALT) [harness] [process]
+
+**증상**: `health_check.py`의 "origin/main 해시" 검사(PROGRESS.md 마지막 갱신 age 기반)가 **73.9h > 임계 72h**로 ❌FAIL 트립. C1-FE-LAND(merge 세션)의 pre-merge 게이트가 "FAIL만 HALT"에 걸려 정당 HALT — merge는 메타 4종 무변경이라 PROGRESS를 못 고쳐 자체 해소 불가.
+
+**원인**: 72h 검사는 세션 종류(merge/build/mgmt)를 구분하지 않는다. build→build→LAND로 이어지는 사이클이 길어지면 그 사이 PROGRESS가 갱신 안 돼 LAND 시점에 임계를 넘긴다. merge 세션은 PROGRESS 쓰기 권한이 없어(구획 밖) 스스로 못 푼다 = 구조적 교착.
+
+**해결**: **build 사이클이 72h를 넘길 전망이면 mgmt 장부 배치를 LAND보다 선행 배치**한다(PROGRESS 갱신으로 72h 리셋 후 LAND). 실측: 2026-07-27 C1-FE-LAND HALT → MGMT-BATCH-14 선행(이 배치) → PROGRESS 갱신으로 FAIL 소멸 → LAND 재개. 후속 검토(등재만): `HEALTH-72H-SEVERITY-SPLIT`(TASKQUEUE) — 72h severity를 세션 종류별 분리(merge=WARN/mgmt=FAIL)할지. cf. #47(실행트리 정합=transient WARN)과 달리 72h는 시간 경과라 머지로 안 풀림.
+
+## 표면별 서빙 경로 분기 — ego 복구가 한 표면만 전환, 나머지 이월 누락 (#70, 2026-07-28 ⑳-3 S1) [frontend] [chainsight]
+
+**증상**: ⑳-E가 ego 동선(market-graph 표면)을 PG로 복구했으나, 같은 "종목 관계 그래프"를 그리는 **다른 표면**(`/chainsight/[symbol]` 전용 워크스페이스 · `stocks/[symbol]` GraphMiniView)은 여전히 레거시 Neo4j `/graph/`·`/suggestions/`를 호출 → Neo4j 동결로 전 심볼 500 → "데이터가 없습니다"·"카테고리 없음". 데이터(RelationConfidence)는 PG에 실재(HAL 39엣지)하는데도 표면이 죽어 보임.
+
+**원인**: 같은 도메인 데이터를 **복수 표면이 서로 다른 서빙 경로**(PG ego vs 레거시 Neo4j)로 소비. 한 표면만 전환하면 나머지는 조용히 구경로에 남아 이월 누락. FE는 500/에러를 무데이터로 뭉뚱그려 표시(에러≠무데이터 정직성 부재).
+
+**해결**: ⑴ 도메인 데이터의 **표면 인벤토리**를 만들고(소비 훅·엔드포인트 grep), 경로 전환 시 **전 소비자 일괄** 전환(STEP 0-B의 소비자 전수 검색이 GraphMiniView 제2소비자를 발견 = 누락 방지). ⑵ 어댑터를 **단일 순수함수로 공유**(`egoToGraphResponse` — 표면별 복제 금지). ⑶ FE는 로딩/오류(준비 중)/데이터 **3상태 분리**. cf. #64(서빙 경로 실측), DECISIONS D-GRAPH-EGO-BACKEND(ego=PG)·D-20-3-LEGACY-CONSUMER-MIGRATION.
+## pytest default maxfail 조기정지는 부분 실패 수를 전체로 오인시킨다 — 실패 수 인용 전 전수 실행으로 확정 (#70, 2026-07-28 SEC β 킥오프) [testing] [process]
+
+**증상**: SEC β 킥오프 STEP 0에서 전스위트를 `pytest -q`로 돌리자 "**5 failed, 29 passed**"로 종료 — 이를 "실패 5건"으로 인용하려던 순간, 다른 실행에서는 "**13 failed, 4050 passed**"가 나와 모순 발생. 부분 census를 전체로 오인할 뻔함.
+
+**원인**: 이 repo의 pytest addopts에 **`--maxfail=5`(또는 `-x` 계열)**가 설정돼 있어, 5번째 실패에서 **조기 정지**한다(34개만 실행하고 멈춤). 알파벳 순서상 `tests/chainsight/test_attention.py`가 앞이라 그 5개 실패에서 즉시 정지 → 전체 4116개 중 34개만 본 부분 결과를 "전체 실패 수"로 오인.
+
+**해결**: **실패 수를 보고·인용하기 전에 전수 실행으로 확정**한다 — `--maxfail=60`(임계 상향) 또는 `--maxfail=0`(해제)로 재실행. 교차검증: 알려진 사전존재 파일만 따로 `--maxfail` 상향 실행해 그 합이 full census 총수와 일치하는지 확인(07-28: attention 6 + leadership 7 = 13 = full census 13 → 신규 0 확정). 부수: `-q` 리다이렉트 시 `\r` 진행표시가 FAILED 목록을 덮으므로 `tr '\r' '\n'` 후 grep. "N failed"만 보고 세부 노드를 안 세면 조기정지 여부를 놓친다.

@@ -1,12 +1,13 @@
 'use client';
 
+import { API_BASE_URL } from '@/lib/api/config';
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ApiUsageInfo, ProviderType } from '@/types/provider';
 
-// API 사용량 조회 함수
+// API 사용량 조회 함수 (절대 base 규약 #55 — 구 상대 '/api/v1' + rewrite 의존 제거)
 async function fetchApiUsage(): Promise<Record<ProviderType, ApiUsageInfo>> {
-  const response = await fetch('/api/v1/admin/providers/rate-limits/', {
+  const response = await fetch(`${API_BASE_URL}/admin/providers/rate-limits/`, {
     credentials: 'include',
   });
 

@@ -12,8 +12,12 @@ import { useParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 
-import { useGraphData, useSuggestions, useTrace } from '@/hooks/useChainsight';
-import type { GraphNode, SuggestionCategory } from '@/types/chainsight';
+// ⑳-3 S1: 데이터 소스를 레거시 Neo4j(/graph/·/suggestions/)에서 PG ego(/ego/{symbol}/)로 전환.
+// useTrace(/chainsight/trace/)는 여전히 레거시 Neo4j 의존 — ego에 경로추적 계약 없어 전환 보류(S1-3 HALT-item).
+import { useTrace } from '@/hooks/useChainsight';
+import { useEgo } from '@/hooks/useMarketView';
+import { egoToGraphResponse } from '@/components/chainsight/egoAdapter';
+import type { GraphNode } from '@/types/chainsight';
 
 import AIGuidePanel from '@/components/chainsight/AIGuidePanel';
 import NodeDetailPanel from '@/components/chainsight/NodeDetailPanel';
@@ -64,8 +68,13 @@ export default function ChainSightPage() {
   const [canvasSize, setCanvasSize] = useState({ w: 800, h: 600 });
 
   // ── API 데이터 ──
-  const { data: graphData, isLoading: graphLoading } = useGraphData(symbol, depth);
-  const { data: suggestions, isLoading: sugLoading } = useSuggestions(symbol);
+  // ⑳-3 S1: PG ego 응답을 레거시 GraphResponse 형태로 어댑트(GraphCanvas 무변경).
+  // ego는 1-hop 전용 → depth 토글은 데이터에 영향 없음(표시 유지, 근본 재설계는 ⑳-3 백본 트랙).
+  const { data: egoData, isLoading: graphLoading } = useEgo(symbol);
+  const graphData = useMemo(
+    () => (egoData ? egoToGraphResponse(egoData) : undefined),
+    [egoData],
+  );
   const { data: traceData, isLoading: traceLoading } = useTrace(
     traceTarget?.from || '', traceTarget?.to || ''
   );
@@ -161,7 +170,7 @@ export default function ChainSightPage() {
         </header>
         <MobileCardList
           graphData={graphData}
-          suggestions={suggestions}
+          suggestions={undefined}
           symbol={symbol}
           onShowGraph={() => setGraphOverlay(true)}
         />
@@ -297,8 +306,9 @@ export default function ChainSightPage() {
         {leftOpen && (
           <aside className="w-60 border-r border-gray-200 bg-white shrink-0 overflow-hidden">
             <AIGuidePanel
-              categories={suggestions?.categories || []}
-              isLoading={sugLoading}
+              categories={[]}
+              isLoading={false}
+              preparing
               activeCategory={activeCategory}
               centerSymbol={symbol}
               onCategorySelect={handleCategorySelect}

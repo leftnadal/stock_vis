@@ -1,6 +1,7 @@
+import { API_BASE_URL } from '@/lib/api/config';
 import { UserInterest } from '@/types/news';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_URL = API_BASE_URL;
 
 function getAuthHeaders(): HeadersInit {
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;

@@ -117,10 +117,12 @@ describe('MarketPulseV2Page', () => {
     expect(dialog).toBeInTheDocument()
     // page.tsx CARD_TITLE['concentration'] = 'Concentration · 집중도'
     expect(within(dialog).getByText('Concentration · 집중도')).toBeInTheDocument()
-    // CardDetailContainer가 detail fetch 성공 시 cache 라인 렌더
+    // CD-READ: cache 디버그 라인 제거 → detail 로드 프록시 = concentration 실콘텐츠.
     await waitFor(() =>
-      expect(within(dialog).getByText(/cache:/)).toBeInTheDocument(),
+      expect(within(dialog).getByText('상위 보유 종목')).toBeInTheDocument(),
     )
+    // cache 디버그 문자열 부재(가독성 — CD-READ)
+    expect(within(dialog).queryByText(/cache:/)).toBeNull()
   })
 
   it.each([
