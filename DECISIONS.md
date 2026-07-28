@@ -27,6 +27,23 @@
 **How to apply**: 구현은 TASKQUEUE `STRIP-REHOME`(dashboard FE build 슬라이스). 본 결정은 등재만(prod 쓰기 0).
 
 ---
+## [2026-07-28] D-REL-QUALIFICATION — 관계 정성화 표면화 옵션 2+ 채택 [chainsight] [frontend]
+
+> 트랙: ⑳-3 S2. 브랜치 `monorepo/sess-20-3-s2`.
+
+**결정**: 옵션 2+ 채택 — 칩 분화 + 근거 문장 + 등급 라벨 + 도메인 태그 자리(목업 확정본). 마진 0.70.
+
+**Why**: STEP 0 실측 — ego 응답에 basis_summary·grade·grade_source 이미 존재(⑳-G), has_*_source·status·co_mention_count는 additive로 확보 가능. SEC 4종 270건 basis 전건 실존(형식 `"SEC 10-K: <10-K 발췌문>"`, 출처 내장, 깨짐 0) = 표시 적합. 옵션1(등급 라벨만) 대비 근거 문장이 "왜 이 관계인가"를 직접 전달 → 마진 0.70.
+
+**How to apply**: ego additive(B-1) + `RelationQualification` 컴포넌트(C). ★C-2 근거 게이트 = **basis_summary 존재 기준**(evidence_count 미사용 — CS-EVIDENCE-SEC-COUNT 백필 우회). 노출 유형 = SEC 4종 + CO_MENTIONED만, **PEER는 칩만**(basis 있어도 문장 미노출). 칩 분화 C-1: PEER→has_peer/has_industry로 "Peer·FMP"/"동종산업". 도메인 태그 C-4 = relation_domain(S2-B 전엔 null, 필드 자리만). ⚠ basis 품질 편차(일부 오라벨·노이즈)는 S2-B 도메인 추출 과제.
+
+## [2026-07-28] D-20-3-MAP-FOLD — market-graph 지도 토글 접기(지도-B) [chainsight] [frontend]
+
+> 트랙: ⑳-3 S2. 브랜치 `monorepo/sess-20-3-s2`.
+
+**결정**: EgoDrilldown [지도] 토글 숨김(`MAP_ENABLED=false`) → 목록(RelationCardList)만. MarketGraphCanvas·S3 오버레이 **코드 삭제 금지**(플래그로만 접음). 마진 0.85.
+
+**Why**: [symbol] ego 화면(카드 리스트)이 관계 시각화 역할을 대체 → market-graph 지도 진입이 중복·저가치. 지도 뭉침(MAP-VISIBILITY)·섹터 Neo4j 동결 미해결 상태라 노출 유지가 오히려 부채. 부활 조건 = 백본 트랙(Q20-3-BACKBONE-SECTOR) 재설계 시.
 
 ## [2026-07-28] D-20-3-LEGACY-CONSUMER-MIGRATION — 레거시 Neo4j 소비자 ego 전환(안A) [chainsight] [frontend]
 

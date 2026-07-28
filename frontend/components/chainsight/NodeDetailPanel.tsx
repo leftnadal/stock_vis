@@ -6,12 +6,15 @@
  */
 
 import Link from 'next/link';
-import type { GraphNode } from '@/types/chainsight';
+import type { GraphNode, EgoEdge } from '@/types/chainsight';
+import RelationQualification from './RelationQualification';
 
 interface NodeDetailPanelProps {
   node: GraphNode | null;
   centerSymbol: string;
   relationLabel?: string;
+  /** ⑳-3 S2: 선택 노드와 center의 ego 엣지(정성화 표면화용). 없으면 relationLabel 폴백. */
+  edge?: EgoEdge | null;
   onExploreHere: (ticker: string) => void;
   onStartTrace: (to: string) => void;
 }
@@ -20,9 +23,10 @@ export default function NodeDetailPanel({
   node,
   centerSymbol,
   relationLabel,
+  edge,
   onExploreHere,
-  onStartTrace,
 }: NodeDetailPanelProps) {
+  // ⑳-3 S2 D-1: onStartTrace 미사용(경로 탐색 준비 중).
   if (!node) {
     return (
       <div className="p-4 text-sm text-gray-400">
@@ -47,10 +51,17 @@ export default function NodeDetailPanel({
           </Link>
         </div>
         <p className="text-sm text-gray-600 mt-0.5">{node.name}</p>
-        {relationLabel && !isCenter && (
-          <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
-            {relationLabel}
-          </span>
+        {/* ⑳-3 S2: 관계 정성화(칩 분화·등급·근거·도메인). edge 없으면 단일 라벨 폴백. */}
+        {!isCenter && edge ? (
+          <div className="mt-2">
+            <RelationQualification edge={edge} />
+          </div>
+        ) : (
+          relationLabel && !isCenter && (
+            <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700">
+              {relationLabel}
+            </span>
+          )
         )}
       </div>
 
@@ -103,11 +114,13 @@ export default function NodeDetailPanel({
           >
             여기서 탐색 시작
           </button>
+          {/* ⑳-3 S2 D-1: 경로 탐색(레거시 Neo4j trace) 비활성 — 준비 중 정직 표시. */}
           <button
-            onClick={() => onStartTrace(node.ticker)}
-            className="w-full text-sm py-2 px-3 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition"
+            disabled
+            title="경로 탐색은 준비 중입니다 (백본 트랙 재설계 후)"
+            className="w-full text-sm py-2 px-3 rounded-lg bg-gray-50 text-gray-400 cursor-not-allowed"
           >
-            {centerSymbol} → {node.ticker} 경로 찾기
+            경로 탐색 준비 중
           </button>
         </div>
       )}

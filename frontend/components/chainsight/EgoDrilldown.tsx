@@ -8,9 +8,16 @@ import RelationCardList from './RelationCardList';
 type DrillView = 'list' | 'map';
 
 /**
+ * ⑳-3 S2 D-3 (지도-B): ego 모드 [지도] 토글 접기.
+ * [symbol] ego 화면이 관계 시각화 역할을 대체하므로 market-graph 지도 진입을 숨긴다.
+ * 코드·컴포넌트(MarketGraphCanvas·S3 오버레이)는 삭제하지 않고 이 플래그로만 접는다.
+ * 부활 조건 = 백본 트랙(Q20-3-BACKBONE-SECTOR) 재설계. (D-20-3-MAP-FOLD)
+ */
+const MAP_ENABLED = false;
+
+/**
  * ego 드릴다운 래퍼 (⑳-2 S2/C안).
- * - ego 모드(centerSymbol 존재): [목록][지도] 토글. 기본 = 목록(관계 카드 리스트).
- *   지도 = 기존 그래프 뷰(MarketGraphCanvas) 보존.
+ * - ego 모드(centerSymbol 존재): 기본 = 목록(관계 카드 리스트). 지도-B로 [지도] 토글 접힘.
  * - 비-ego(섹터/빈 상태): MarketGraphCanvas 그대로(기존 동작 불변).
  */
 export default function EgoDrilldown() {
@@ -20,6 +27,11 @@ export default function EgoDrilldown() {
   // 비-ego 모드: 기존 그래프 뷰 그대로(섹터 불가·빈 상태 등 MarketGraphCanvas가 처리).
   if (!centerSymbol) {
     return <MarketGraphCanvas />;
+  }
+
+  // 지도-B: 토글 숨김 → 목록(RelationCardList)만. MarketGraphCanvas는 코드 보존(미마운트).
+  if (!MAP_ENABLED) {
+    return <RelationCardList />;
   }
 
   return (

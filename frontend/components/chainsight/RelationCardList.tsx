@@ -9,6 +9,8 @@ import {
   gradeBadge,
   buildNodeMap,
   groupEdgesBySection,
+  qualificationChips,
+  showsBasis,
 } from './cardListConfig';
 import type { EgoEdge, EgoNode } from '@/types/chainsight';
 
@@ -134,6 +136,8 @@ function RelationCard({
   // 뉴스 관계만 건수 노출("뉴스 근거 N건"). 공시(SEC)는 basis_summary가 근거이므로
   // 건수 표기 안 함(⑳-F Q2-3: evidence_count=0 → '근거 0건' 오해 차단).
   const showNewsCount = edge.grade_source === 'co_mention';
+  // ⑳-3 S2 C-1: 칩 분화(PEER→Peer·FMP/동종산업, 뉴스→N회 등).
+  const chips = qualificationChips(edge);
 
   return (
     <button
@@ -157,8 +161,25 @@ function RelationCard({
         </span>
       </div>
 
-      {/* 근거 요약 1줄(말줄임, hover 전체) */}
-      {edge.basis_summary && (
+      {/* ⑳-3 S2 C-1: 칩 분화 */}
+      <div className="flex flex-wrap gap-1 mb-1.5">
+        {chips.map((c) => (
+          <span
+            key={c}
+            className="inline-block px-1.5 py-0.5 text-[10px] rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+          >
+            {c}
+          </span>
+        ))}
+        {edge.relation_domain && (
+          <span className="inline-block px-1.5 py-0.5 text-[10px] rounded-full bg-gray-800 text-white">
+            {edge.relation_domain}
+          </span>
+        )}
+      </div>
+
+      {/* ⑳-3 S2 C-2: 근거 문장 — SEC 4종 + CO_MENTIONED만(PEER 제외), 출처 내장 */}
+      {showsBasis(edge) && (
         <p
           className="text-[11px] text-gray-600 dark:text-gray-300 truncate mb-1"
           title={edge.basis_summary}

@@ -1059,3 +1059,10 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: launchd 승격 "검증 PASS"는 그 순간의 스냅샷일 뿐. 07-24 load 직후 별도 프로세스(orphan)가 :3000을 선점하자, launchd job은 새 프로세스 기동마다 `EADDRINUSE`로 exit 1 → ThrottleInterval(10s) 재시도를 4일간 반복(좀비 loop). 포트는 orphan이 물고 있어 서빙은 계속되지만 코드는 07-24 시점 빌드에 고착. `kickstart -k`도 orphan 앞에선 무효(EADDRINUSE 지속).
 
 **해결**: 검출 = `launchctl print gui/$(id -u)/<label>`의 **`runs` 폭증 + `last exit code=1`** + 실서빙 PID의 **cwd·ppid 대조**(`lsof -a -p <pid> -d cwd`, `ps -o ppid`)로 job 밖 orphan 판별. 해소 = **#61 orphan 정리**(`kill -TERM <npm 부모 pid>` → 자식 전파) → KeepAlive가 즉시 :3000 탈환(새 빌드 로드). 재발 방지 = 배포 후 `runs` 카운터 불변 + `/신규라우트` 200 확인. launchd 승격 직후엔 orphan 잔존 여부를 반드시 `lsof :3000` PID의 ppid로 확정(launchd 직속 아니면 orphan). cf. [[reference_web_runtime_prod_build]] · TASKQUEUE `HEALTH-LAUNCHD-LOOP-CHECK`(자동 검출 검토).
+## 레거시 에러(500)를 "없음"으로 오번역 — 3상태 정직화가 소진 순서 (#71, 2026-07-28 ⑳-3 S2) [frontend] [chainsight]
+
+**증상**: 죽은 레거시 Neo4j 엔드포인트의 500을 FE가 "데이터 없음"류로 오번역. 실측 2사례: ⑴ AIGuidePanel suggestions 500 → "탐색 가능한 카테고리가 없습니다"(S1) ⑵ Chain Trace 500 → "경로 없음"(NVDA→MPWR가 실제 직접 이웃인데 "경로 없음"으로 표시). 기능 미비/서버 오류인데 사용자에겐 "빈 결과·관계 없음"으로 읽혀 오해.
+
+**원인**: FE가 **error와 empty를 한 갈래로 렌더**. 레거시 표면이 통째로 죽어있으면(Neo4j 동결) 모든 조회가 조용히 "없음"처럼 보인다. 데이터(RC)가 PG에 실재해도 화면은 "관계 없음".
+
+**해결**: **로딩 / 오류(준비 중) / 데이터 3상태 분리** + 죽은 레거시는 아예 미호출. trace는 traceTarget 미설정 → `useTrace(enabled:!!from&&!!to)` 자연 비발화(0 호출). "준비 중"으로 정직 표시(에러≠무데이터). 순서: 소비자 전환(#70) → 잔여 레거시 표면 3상태화 → 레거시 제거. cf. #70(표면별 서빙경로 분기), D-REL-QUALIFICATION.

@@ -116,6 +116,54 @@ export function relationBadge(relationType: string): { color: string; label: str
   return { color: s.color, label: s.label };
 }
 
+// ── ⑳-3 S2: 관계 정성화 (칩 분화·근거 게이트·등급 라벨) ──
+
+/** relation_status → 한글 등급 라벨(D-GRADE-HONEST-UI 승계). grade(점수tier)와 별개. */
+export const STATUS_LABELS: Record<string, string> = {
+  confirmed: '확인됨',
+  probable: '추정',
+  weak: '약함',
+  hidden: '숨김',
+  stale: '오래됨',
+};
+
+/** basis_summary를 카드/패널에 노출하는 유형(SEC 4종 + CO_MENTIONED). PEER 계열 제외(등급만). */
+export const BASIS_TYPES = new Set([
+  'SUPPLIES_TO', 'COMPETES_WITH', 'DEPENDS_ON', 'PARTNER_WITH', 'CO_MENTIONED',
+]);
+
+/** C-2: 근거 문장 노출 여부 — 유형이 BASIS_TYPES ∧ basis_summary 존재(evidence_count 미사용). */
+export function showsBasis(edge: EgoEdge): boolean {
+  return BASIS_TYPES.has(edge.relation_type) && !!edge.basis_summary;
+}
+
+/**
+ * C-1: 칩 분화.
+ *  - PEER_OF: has_peer+has_industry → ["Peer·FMP","동종산업"] / industry만 → ["동종산업"] / peer만 → ["Peer·FMP"]
+ *  - CO_MENTIONED: ["뉴스 동시출현 N회"] (N 없으면 "뉴스 동시출현")
+ *  - 그 외: 유형 라벨 1칩(공급/경쟁 등)
+ */
+export function qualificationChips(edge: EgoEdge): string[] {
+  const t = edge.relation_type;
+  if (t === 'PEER_OF' || t === 'PEER') {
+    const chips: string[] = [];
+    if (edge.has_peer_source) chips.push('Peer·FMP');
+    if (edge.has_industry_source) chips.push('동종산업');
+    return chips.length ? chips : ['Peer'];
+  }
+  if (t === 'CO_MENTIONED') {
+    return [edge.co_mention_count ? `뉴스 동시출현 ${edge.co_mention_count}회` : '뉴스 동시출현'];
+  }
+  return [relationBadge(t).label];
+}
+
+/** C-3: 등급 라벨 — status(확인됨/추정) + truth_score 병기(>0일 때). status 없으면 빈 문자열. */
+export function gradeLine(edge: EgoEdge): string {
+  const s = edge.status ? (STATUS_LABELS[edge.status] ?? edge.status) : '';
+  const ts = edge.truth_score > 0 ? ` ${Math.round(edge.truth_score)}` : '';
+  return s ? `${s}${ts}` : '';
+}
+
 /** 이웃 노드 심볼 → 노드 메타 맵(카드가 회사명·섹터 조회용). */
 export function buildNodeMap(nodes: EgoNode[]): Record<string, EgoNode> {
   const m: Record<string, EgoNode> = {};
