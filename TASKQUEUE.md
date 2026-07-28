@@ -905,3 +905,14 @@
 - 상태: **재정의**(구 "후순위" → "유형 통합 단일 랭킹이 필요할 때만 선행"). ⑳-G D-GRADE-HONEST-UI.
 - 근거: truth_score는 tier 계단값(0/35/60/85), truth/market/SEC-grade가 이질 스케일. 유형 분리 UI(⑳-G)로 "무변별" 인식은 정규화 없이 해소됨 → 정규화는 유형 간 통합 랭킹 요구가 생길 때만 착수.
 - 착수 조건: "공급/경쟁/Peer/시장을 하나의 0~100 신뢰도로 합쳐 정렬"하는 요구가 확정될 때. 그 전엔 불필요.
+
+## SLICE-20B-F1 — 매수일 선택화 + 입력일부터 추적 폴백 (실행 세션, 2026-07-28) [portfolio][coach]
+- 상태: **진행 중**. worktree `~/worktrees/sv-20bf1` @ `monorepo/sess-20bf1-buydate-fallback`, base origin/main `61abaf21`. 공유 DB 무접촉.
+- 결정: DECISIONS `D-20BF1-BUYDATE-OPTIONAL`·`D-20BF1-FALLBACK-A`·`D-DEV-PROD-SHARED-DB`(2026-07-28 등재).
+- 범위: ①first_bought_at null=False→null=True(마이그레이션 파일 생성) ②serializer required=False ③생성 뷰 A안 spot 캡처(미입력 한정, 가산) ④프론트 required 제거 + "입력일부터 KRW 추적" 안내 ⑤테스트(test DB).
+- **병진 수동 후속(닫기 보고 첨부)**: ⓐ 실 DB migrate(런북 S1 준용·G1 확인 쿼리) ⓑ `sv sync`(재기동) ⓒ 라이브 캡처(미입력 flow) + s20b_demo 삭제·beat 등록 잔여분.
+
+## DEV-PROD-SHARED-DB — dev=prod 물리 DB 공유 거버넌스 (항구 규약, 2026-07-24 발견) [ops][platform]
+- 상태: **항구 규약 등재**(DECISIONS `D-DEV-PROD-SHARED-DB`). 조치 트랙 아님 — 모든 세션 준수 대상.
+- 규약: dev migrate·shell 쓰기 = prod-write(자율 금지·병진 수동) / 캡처 데모는 생성 세션이 삭제·증명 / "정리 완료" = 검증 쿼리 동반.
+- 근거: 2026-07-24 코치 런북 준비 중 dev 작업이 prod DB 반영 확인 + s20b_demo(goal 보유) 잔존 사례.

@@ -4326,3 +4326,31 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **결정**: 커버리지 데이터 공급 = **read-time 조회 API**, 소속 = **apps/platform**(telemetry 홈), 엔드포인트 = `GET /api/v1/telemetry/coverage` 계열. 가중합 **read-time 4.50 vs bake-time 3.20, 마진 1.30 > 1 → 자동 결정**(타이브레이커 불요). platform → shared **읽기 조인만**(#43 안전 — IssuanceLog/ImpressionLog 무변경).
 
 **Why**: bake-time 사전집계는 impression이 serve-time 갱신(seen_count 누적)이라 신선도 지체 + 스냅샷 스키마 확장 필요. read-time 조회는 신선하고 additive-free이며, telemetry가 이미 platform 홈이라 소속이 자연스럽다. 마진 1.30으로 단계 분해 타이브레이커 없이 자동 확정.
+
+## [2026-07-28] SLICE-20B-F1 — 매수일 선택화 + "입력일부터 추적" 폴백 (도그푸딩 #1) [portfolio] [coach]
+
+> 트랙: Slice 20b-f1(실행 세션, 미니). base = origin/main `61abaf21`(재측정 — 지시서 참고값 39c20c3에서 전진). 공유 DB 무접촉(worktree `monorepo/sess-20bf1-buydate-fallback`), 마이그레이션 = 파일 생성 + test DB 검증까지, 실 적용 = 병진 수동. STEP 0 실측 근거: `first_bought_at` DateField null=False / `acquisition_fx_rate` DecimalField null=True(기존) / serializer `HoldingCreateSerializer`(wallet.py:70) first_bought_at required=True(DRF기본) / 소비 정본 = `advisory_engine.krw_cost_basis`(4단 폴백 exact>approx_first_buy>approx_low_confidence>native) / spot 하우스 함수 `get_rate_on`·`get_spot_rate`·`oldest_available`(packages/shared/fx/services.py) 존재.
+
+### D-20BF1-BUYDATE-OPTIONAL — 매수일 선택화 (피드백 #1)
+
+**결정**: 보유 입력 시 `first_bought_at`(최초 매수일)을 **필수 → 선택**으로 완화. 계층 = ①모델 null=False→null=True(마이그레이션 1개) ②serializer `HoldingCreateSerializer.first_bought_at` required=False ③생성 뷰 `wallet_holdings`에서 `data.get("first_bought_at")`(None-safe) ④프론트 `HoldingModal.tsx` HTML `required` 제거 + 라벨 "*" 제거.
+
+**Why**: 병진 라이브 온보딩 첫 시도에서 매수일을 기억 못 해 입력이 막힘(도그푸딩 #1). 실제 사용자는 매수일 미상이 흔하다. 필수 유지 = 온보딩 마찰 → 원장 축적 지연. 선택화가 최우선 미니 슬라이스.
+
+### D-20BF1-FALLBACK-A — 미입력 취득환율 = 입력일 spot ("입력일부터 KRW 추적", A안, 가중합 4.85)
+
+**결정**: 매수일 **미입력** 보유의 `acquisition_fx_rate` = **생성 시점 spot**(`get_spot_rate("USDKRW")`, ExchangeRate 최신 close). 삽입점 = 생성 뷰(가산): `first_bought_at` None **그리고** `acquisition_fx_rate` 미전달일 때만 spot 캡처. 매수일 **입력** 보유는 기존 경로 완전 불변(`acquisition_fx_rate` 미전달 시 None 유지 → read-time `krw_cost_basis`가 `approx_first_buy`로 매수일 환율 조회, 소급 재계산 없음).
+- **폴백 표지 = `first_bought_at == null` 자체**(별도 필드 발명 금지 — §0-2 충족). 미입력 holding은 생성 시 `acquisition_fx_rate=spot` 기록 → `krw_cost_basis` tier1 `exact`에서 포착, `get_rate_on(None)` 미도달. (방어적 None-guard = None 경로 한정, 매수일 있는 경로 무영향.)
+- **spot 부재 규칙**: 입력일 spot은 `get_spot_rate`(최신 저장 close). 주말/휴장일 케이스는 `get_rate_on`의 `date__lte` 직전 영업일 fallback으로 이미 닫힘. 그 이상 예측·근사 발명 금지.
+- **화면 사실 표기**: 미입력 보유에 "매수일 미입력 — 입력일부터 KRW 추적" 안내(모달 힌트 최소 형태). 과거 수익 아는 척 금지(USD 손익은 avg_cost로 실측되되 FX는 입력일부터).
+
+**기각**: 과거 매수일 복원 시도(사용자가 모름) / 임의 근사 강제 / 계산 제외(KRW 미표시) 전부 기각 — A안 가중합 4.85 사용자 확정(2026-07-24).
+
+### D-DEV-PROD-SHARED-DB — dev = prod 물리 DB 공유(stock_vis) 거버넌스 (환경 사실, 2026-07-24 발견)
+
+**결정(항구 규약)**: dev와 prod가 **동일 물리 DB `stock_vis`(localhost)를 공유**한다. 따라서:
+1. dev 설정으로의 `migrate`·`manage.py shell` **쓰기 = prod-write로 간주** — 세션 자율 실행 금지, 병진 수동(런북 S1 절차 준용).
+2. 라이브 캡처용 **데모 시드는 생성한 세션이 삭제·증명 책임**을 진다. `portfolio_goal` 보유 데모는 beat 2종의 nightly 대상이 되므로, 캡처 후 같은 세션에서 cascade 삭제 + `User.objects.filter(portfolio_goal__isnull=False)` 잔존 0 쿼리로 증명한다.
+3. **"정리 완료" 주장은 검증 쿼리 출력을 반드시 동반**한다(s20b_demo 잔존 재발 방지).
+
+**Why**: 2026-07-24 코치 스택 런북 실행 준비 중 발견 — dev 세션 작업이 곧 prod DB에 반영됨(마이그레이션·backfill 이미 적용 상태였음). 이 사실이 명문화되지 않으면 dev 검증이 무심코 prod를 오염시킨다. 데모 유저 `s20b_demo`(goal 보유)가 삭제 없이 잔존해 beat 대상 오염 위험을 남긴 사례가 근거.
