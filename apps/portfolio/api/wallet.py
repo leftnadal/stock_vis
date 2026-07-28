@@ -71,7 +71,7 @@ class HoldingCreateSerializer(serializers.Serializer):
     symbol = serializers.CharField(max_length=20)
     shares = serializers.DecimalField(max_digits=14, decimal_places=4)
     avg_cost = serializers.DecimalField(max_digits=12, decimal_places=4)
-    first_bought_at = serializers.DateField()
+    first_bought_at = serializers.DateField(required=False, allow_null=True)  # SLICE20BF1 선택화
     investment_thesis = serializers.CharField(required=False, allow_blank=True)
     acquisition_fx_rate = serializers.DecimalField(
         max_digits=12, decimal_places=4, required=False, allow_null=True
@@ -132,14 +132,24 @@ def wallet_holdings(request: Request) -> Response:
             status=400,
         )
 
+    first_bought_at = data.get("first_bought_at")
+    acquisition_fx_rate = data.get("acquisition_fx_rate")
+    # A안 폴백(SLICE20BF1, D-20BF1-FALLBACK-A): 매수일 미입력 + fx 미전달 + 비KRW →
+    # 입력일 spot 캡처("입력일부터 KRW 추적"). first_bought_at==None 자체가 폴백 표지.
+    # spot 부재 시 None 유지(근사·예측 발명 금지). 매수일 입력 보유는 이 분기 미진입 = 기존 경로 불변.
+    if first_bought_at is None and acquisition_fx_rate is None and stock.currency != "KRW":
+        from packages.shared.fx.services import get_spot_rate
+
+        acquisition_fx_rate = get_spot_rate("USDKRW")
+
     holding = WalletHolding.objects.create(
         wallet=wallet,
         stock=stock,
         shares=data["shares"],
         avg_cost=data["avg_cost"],
-        first_bought_at=data["first_bought_at"],
+        first_bought_at=first_bought_at,
         investment_thesis=data.get("investment_thesis", "") or "",
-        acquisition_fx_rate=data.get("acquisition_fx_rate"),
+        acquisition_fx_rate=acquisition_fx_rate,
     )
     return Response(_holding_payload(holding), status=201)
 

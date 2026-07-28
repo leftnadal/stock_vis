@@ -7,20 +7,12 @@ import { useEffect, useState } from 'react'
 import { X } from 'lucide-react'
 
 import { useCreateHolding, useDeleteHolding, useUpdateHolding } from '@/hooks/useWallet'
-import type { Holding } from '@/types/wallet'
+import type { Holding, HoldingCreateInput, HoldingUpdateInput } from '@/types/wallet'
 
 interface HoldingModalProps {
   isOpen: boolean
   onClose: () => void
   editing?: Holding | null
-}
-
-function todayISO(): string {
-  // 모듈 레벨 Date.now() 금지(#24) — 렌더 시점 지역 계산은 OK
-  const d = new Date()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${mm}-${dd}`
 }
 
 const INPUT_CLS =
@@ -45,7 +37,7 @@ export function HoldingModal({ isOpen, onClose, editing = null }: HoldingModalPr
   const [symbol, setSymbol] = useState('')
   const [shares, setShares] = useState('')
   const [avgCost, setAvgCost] = useState('')
-  const [firstBoughtAt, setFirstBoughtAt] = useState(todayISO())
+  const [firstBoughtAt, setFirstBoughtAt] = useState('')
   const [thesis, setThesis] = useState('')
   const [error, setError] = useState<string | null>(null)
 
@@ -59,13 +51,13 @@ export function HoldingModal({ isOpen, onClose, editing = null }: HoldingModalPr
       setSymbol(editing.symbol)
       setShares(editing.shares)
       setAvgCost(editing.avg_cost)
-      setFirstBoughtAt(editing.first_bought_at ?? todayISO())
+      setFirstBoughtAt(editing.first_bought_at ?? '')
       setThesis(editing.investment_thesis ?? '')
     } else {
       setSymbol('')
       setShares('')
       setAvgCost('')
-      setFirstBoughtAt(todayISO())
+      setFirstBoughtAt('')
       setThesis('')
     }
     setError(null)
@@ -99,19 +91,21 @@ export function HoldingModal({ isOpen, onClose, editing = null }: HoldingModalPr
       return
     }
     try {
+      // SLICE20BF1: 매수일 미입력('')은 페이로드에서 omit → 백엔드가 입력일 spot 캡처.
+      // 빈 문자열 전송 금지(DateField 검증 실패). 입력 시에만 전달 = 기존 경로 불변.
       if (isEdit && editing) {
-        await updateM.mutateAsync({
-          id: editing.id,
-          input: { shares, avg_cost: avgCost, first_bought_at: firstBoughtAt, investment_thesis: thesis },
-        })
+        const input: HoldingUpdateInput = { shares, avg_cost: avgCost, investment_thesis: thesis }
+        if (firstBoughtAt) input.first_bought_at = firstBoughtAt
+        await updateM.mutateAsync({ id: editing.id, input })
       } else {
-        await createM.mutateAsync({
+        const input: HoldingCreateInput = {
           symbol: symbol.trim().toUpperCase(),
           shares,
           avg_cost: avgCost,
-          first_bought_at: firstBoughtAt,
           investment_thesis: thesis,
-        })
+        }
+        if (firstBoughtAt) input.first_bought_at = firstBoughtAt
+        await createM.mutateAsync(input)
       }
       onClose()
     } catch (err) {
@@ -210,7 +204,7 @@ export function HoldingModal({ isOpen, onClose, editing = null }: HoldingModalPr
 
             <div>
               <label htmlFor="h-date" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                최초 매수일 *
+                최초 매수일 (선택)
               </label>
               <input
                 id="h-date"
@@ -218,8 +212,12 @@ export function HoldingModal({ isOpen, onClose, editing = null }: HoldingModalPr
                 value={firstBoughtAt}
                 onChange={(e) => setFirstBoughtAt(e.target.value)}
                 className={INPUT_CLS}
-                required
               />
+              {!firstBoughtAt && (
+                <p className="mt-1 text-xs text-amber-600 dark:text-amber-400" data-testid="buydate-fallback-hint">
+                  매수일 미입력 — 입력일부터 KRW 추적(과거 수익은 계산하지 않습니다)
+                </p>
+              )}
             </div>
 
             <div>
