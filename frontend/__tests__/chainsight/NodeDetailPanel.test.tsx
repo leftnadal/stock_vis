@@ -87,8 +87,11 @@ describe('NodeDetailPanel', () => {
     fireEvent.click(screen.getByText('여기서 탐색 시작'));
     expect(onExploreHere).toHaveBeenCalledWith('MSFT');
 
-    fireEvent.click(screen.getByText(/경로 찾기/));
-    expect(onStartTrace).toHaveBeenCalledWith('MSFT');
+    // ⑳-3 S2 D-1: 경로 탐색은 준비 중(레거시 Neo4j trace 미호출) — 버튼 비활성, 콜백 미호출.
+    const traceBtn = screen.getByText(/경로 탐색 준비 중/);
+    expect(traceBtn).toBeDisabled();
+    fireEvent.click(traceBtn);
+    expect(onStartTrace).not.toHaveBeenCalled();
   });
 
   it('센터 노드일 때는 relationLabel을 표시하지 않는다', () => {

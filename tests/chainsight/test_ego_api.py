@@ -95,6 +95,48 @@ class TestEgoGraphAPI:
         assert d["meta"]["returned"] == 1      # 절단
         assert d["edges"][0]["truth_score"] == 80.0  # 상위 1건
 
+    # ── ⑳-3 S2 B-1/B-2: 정성화 additive 필드 (기존 필드 불변 계약) ──
+    def test_s2_additive_fields_present(self, ego_data, auth_client):
+        """S2 신규 필드(status·has_*_source·co_mention_count·relation_domain)가 엣지에 존재."""
+        resp = auth_client.get("/api/v1/chainsight/ego/AAA/")
+        assert resp.status_code == 200
+        for e in resp.json()["edges"]:
+            for k in ("status", "has_peer_source", "has_industry_source",
+                      "has_news_source", "co_mention_count", "relation_domain"):
+                assert k in e, f"S2 additive 필드 누락: {k}"
+            assert e["relation_domain"] is None  # S2-B 전엔 항상 null 자리확보
+
+    def test_s2_existing_fields_unchanged(self, ego_data, auth_client):
+        """⑳-2/⑳-G 기존 필드가 S2 후에도 전부 보존(계약 additive — 변경/삭제 0)."""
+        e = auth_client.get("/api/v1/chainsight/ego/AAA/").json()["edges"][0]
+        for k in ("source", "target", "relation_type", "truth_score", "evidence_count",
+                  "last_mentioned", "trend", "grade", "grade_source", "basis_summary",
+                  "last_observed_at"):
+            assert k in e, f"기존 필드 유실: {k}"
+
+    def test_s2_source_flags_and_co_mention(self, db, auth_client):
+        """has_peer/has_industry 반영 + CO_MENTIONED co_mention_count 추출."""
+        for s in ("PPP", "QQQ", "RRR"):
+            _stock(s)
+        RelationConfidence.objects.create(
+            symbol_a="PPP", symbol_b="QQQ", relation_type="PEER_OF",
+            relation_category="truth", truth_score=85.0, relation_status="confirmed",
+            has_peer_source=True, has_industry_source=True,
+        )
+        RelationConfidence.objects.create(
+            symbol_a="PPP", symbol_b="RRR", relation_type="CO_MENTIONED",
+            relation_category="market", truth_score=0.0, market_score=60.0,
+            relation_status="probable", has_news_source=True,
+            evidence_sources={"sources": ["news"], "co_mention_count": 7},
+        )
+        edges = {e["target"]: e for e in auth_client.get("/api/v1/chainsight/ego/PPP/").json()["edges"]}
+        assert edges["QQQ"]["has_peer_source"] is True
+        assert edges["QQQ"]["has_industry_source"] is True
+        assert edges["QQQ"]["status"] == "confirmed"
+        assert edges["RRR"]["has_news_source"] is True
+        assert edges["RRR"]["co_mention_count"] == 7
+        assert edges["QQQ"]["co_mention_count"] is None  # PEER는 co_mention 없음
+
     def test_trajectory_join(self, ego_data, auth_client):
         """AAA-BBB 궤적(50→80 상승)이 trend에 실린다. N+1 없이."""
         from django.test.utils import CaptureQueriesContext

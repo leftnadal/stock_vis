@@ -108,6 +108,14 @@ export default function ChainSightPage() {
     return graphData.nodes.find(n => n.ticker === selectedNode) || null;
   }, [selectedNode, graphData]);
 
+  // ⑳-3 S2: 선택 노드와 center의 ego 엣지(정성화 표면화용, 원본 egoData에서 조회).
+  const selectedEdge = useMemo(() => {
+    if (!selectedNode || !egoData) return null;
+    return egoData.edges.find(
+      (e) => e.source === selectedNode || e.target === selectedNode,
+    ) ?? null;
+  }, [selectedNode, egoData]);
+
   // ── 선택된 노드의 관계 라벨 ──
   const selectedRelLabel = useMemo(() => {
     if (!selectedNode || !graphData) return '';
@@ -254,16 +262,17 @@ export default function ChainSightPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Depth 전환 */}
-          <div className="flex border border-gray-200 rounded-lg overflow-hidden text-sm">
+          {/* Depth 전환 — ⑳-3 S2 D-2: ego 1-hop 전용이라 비활성. 심화 탐색은 백본 트랙. */}
+          <div
+            className="flex border border-gray-200 rounded-lg overflow-hidden text-sm opacity-40 cursor-not-allowed"
+            title="심화 탐색은 준비 중입니다 (ego 1-hop 전용, 백본 트랙 재설계 후)"
+          >
             {[1, 2, 3].map(d => (
               <button
                 key={d}
-                onClick={() => setDepth(d)}
-                className={`px-3 py-1.5 ${
-                  depth === d
-                    ? 'bg-gray-800 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                disabled
+                className={`px-3 py-1.5 cursor-not-allowed ${
+                  d === 1 ? 'bg-gray-800 text-white' : 'bg-white text-gray-400'
                 }`}
               >
                 {d}
@@ -370,6 +379,7 @@ export default function ChainSightPage() {
             node={selectedNodeData}
             centerSymbol={symbol}
             relationLabel={selectedRelLabel}
+            edge={selectedEdge}
             onExploreHere={handleExploreHere}
             onStartTrace={handleStartTrace}
           />

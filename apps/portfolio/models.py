@@ -106,7 +106,12 @@ class WalletHolding(models.Model):
         help_text="평균 매수 단가 (USD). Phase 2 Trade 모델 도입 시 자동 계산.",
     )
     first_bought_at = models.DateField(
-        help_text="최초 매수일",
+        null=True,
+        blank=True,
+        help_text=(
+            "최초 매수일. 미입력 허용(SLICE20BF1) — null이면 취득 FX를 "
+            "입력일 spot으로 캡처('입력일부터 KRW 추적', 과거 환율 복원 없음)."
+        ),
     )
     acquisition_fx_rate = models.DecimalField(
         max_digits=12,

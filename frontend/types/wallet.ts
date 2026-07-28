@@ -20,7 +20,7 @@ export interface HoldingCreateInput {
   symbol: string
   shares: string
   avg_cost: string
-  first_bought_at: string
+  first_bought_at?: string // SLICE20BF1 선택화 — 미입력 시 백엔드가 입력일 spot 캡처
   investment_thesis?: string
   acquisition_fx_rate?: string | null
 }

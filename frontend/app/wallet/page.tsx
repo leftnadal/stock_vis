@@ -158,6 +158,15 @@ function WalletPageContent() {
                           <span className="rounded-full bg-gray-100 px-1.5 text-[10px] text-gray-500 dark:bg-gray-800">
                             {h.currency}
                           </span>
+                          {!h.first_bought_at && (
+                            <span
+                              data-testid={`holding-fallback-badge-${h.symbol}`}
+                              title="매수일 미입력 — 입력일부터 KRW 추적(과거 수익은 계산하지 않습니다)"
+                              className="rounded-full bg-amber-50 px-1.5 text-[10px] text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+                            >
+                              입력일부터 추적
+                            </span>
+                          )}
                         </div>
                         {h.investment_thesis && (
                           <p className="mt-0.5 truncate text-xs text-gray-400">{h.investment_thesis}</p>

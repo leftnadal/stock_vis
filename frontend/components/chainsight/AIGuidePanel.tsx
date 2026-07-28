@@ -5,7 +5,6 @@
  * 카테고리 카드 + Chain Trace 입력
  */
 
-import { useState } from 'react';
 import type { SuggestionCategory } from '@/types/chainsight';
 
 interface AIGuidePanelProps {
@@ -34,12 +33,9 @@ export default function AIGuidePanel({
   isLoading,
   preparing = false,
   activeCategory,
-  centerSymbol,
   onCategorySelect,
-  onTrace,
 }: AIGuidePanelProps) {
-  const [traceTo, setTraceTo] = useState('');
-
+  // ⑳-3 S2 D-1: Chain Trace(레거시 Neo4j /trace/) 미호출 — centerSymbol·onTrace 미사용.
   return (
     <div className="flex flex-col h-full">
       {/* 카테고리 섹션 */}
@@ -100,36 +96,13 @@ export default function AIGuidePanel({
         )}
       </div>
 
-      {/* Chain Trace 섹션 */}
+      {/* 경로 탐색 섹션 — ⑳-3 S2 D-1: 레거시 Neo4j trace 미호출(500→"경로 없음" 오번역 제거).
+          준비 중으로 정직 표시(TRACE-PG-REDESIGN, 백본 트랙 연계 후보). */}
       <div className="border-t border-gray-200 p-3">
         <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
-          Chain Trace
+          경로 탐색
         </h4>
-        <div className="space-y-2">
-          <div className="text-xs">
-            <span className="text-gray-500">From:</span>{' '}
-            <span className="font-medium">{centerSymbol}</span>
-          </div>
-          <input
-            type="text"
-            placeholder="To: 종목 심볼 입력"
-            value={traceTo}
-            onChange={e => setTraceTo(e.target.value.toUpperCase())}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && traceTo) {
-                onTrace(centerSymbol, traceTo);
-              }
-            }}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-blue-500"
-          />
-          <button
-            onClick={() => traceTo && onTrace(centerSymbol, traceTo)}
-            disabled={!traceTo}
-            className="w-full text-sm py-2 rounded-lg bg-gray-800 text-white disabled:opacity-40 hover:bg-gray-700 transition"
-          >
-            경로 찾기
-          </button>
-        </div>
+        <p className="text-xs text-gray-400 py-2">경로 탐색은 준비 중입니다</p>
       </div>
     </div>
   );
