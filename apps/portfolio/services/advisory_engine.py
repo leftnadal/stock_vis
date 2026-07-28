@@ -72,9 +72,12 @@ def krw_cost_basis(holding) -> tuple[Decimal, str]:
     from packages.shared.fx.services import get_rate_on, oldest_available
 
     # 2. approx_first_buy — 매수일(휴장일이면 직전 영업일) 환율
-    rate = get_rate_on(holding.first_bought_at, "USDKRW")
-    if rate is not None:
-        return usd_cost * rate, "approx_first_buy"
+    # SLICE20BF1: 매수일 미입력(None) 보유는 생성 시 acquisition_fx_rate=spot이 잡혀 위 exact에서
+    # 포착되므로 여기 미도달. 방어적으로 None이면 get_rate_on(None) 회피 → 아래 강등 경로로.
+    if holding.first_bought_at is not None:
+        rate = get_rate_on(holding.first_bought_at, "USDKRW")
+        if rate is not None:
+            return usd_cost * rate, "approx_first_buy"
 
     # 3. approx_low_confidence — 백필 창 밖 → 가장 오래된 가용 환율
     oldest = oldest_available("USDKRW")
