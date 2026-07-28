@@ -330,6 +330,16 @@
 
 **봉인 증거**: 2026-07-28 02:30:05 KST 라이브 첫 section D 발화 `drift/marker/codever=ok/ok/ok`(07-19~27 라이브엔 전무=전후 대조). §3-2 인위 stale마커 발화→marker warn→원복→ok 복귀 실증. IDENTICAL PASS(`scripts/ops/compare_verify_skeleton.py`, section D 제외 diff=0). **차기 트랙**: ⓓ SEC β(`docs/features/chain-sight/PR_sec_beta_grounding.md`) — seed status 권위 잔여 질문(270 save/330 seed 재관측) 이관.
 
+## SEC β G1 — grounding 검증 V-A 채택 + v1 dry-run 기준선 (2026-07-28) [chainsight] [sec]
+
+**결정**: SEC 10-K 추출 인용의 verbatim 검증을 **V-A(결정적 정규화 매칭, LLM 0콜)**로 채택(2026-07-02 결정 ③ 승계, 퀀트 0.94 vs V-B 2콜 0.51). 판정 4종 = verified / normalized_match / not_found / **missing_source**(개정문1 — missing_source는 not_found와 합산 금지). 매처 = `services/sec_pipeline/grounding.py` 순수함수(NFKC+스마트따옴표/대시 ASCII+공백정규화). additive 마이그 0002(grounding_status/method/at, null=미검증).
+
+**v1 dry-run 기준선(1,751건, flag-off, 쓰기0)**: verified **1,273(72.7%)** · normalized_match **41(2.3%)** · not_found **437(24.96% 순수)** · missing_source **0**. 접지 성공(v+n) = 75.04%. 리포트 = `docs/features/chain-sight/sec_beta_g1_dryrun_report.md`. **이 기준선은 prompt v2 롤아웃 후 비교 기준**(PR Gate 2).
+
+**Why(임계 사전 고정, 개정문2)**: dry-run 분포를 보기 전 커밋에 임계를 박아 사후 합리화 차단 — not_found(순수) > 15% → V-B 부분 도입 사용자 재판정 회부(진행 차단 아님). 실측 24.96% > 15% → **V-B 재판정 회부 상태**(분포+샘플 20건 첨부, 감독 결정 대기).
+
+**게이트별 사인오프**: Gate 1(flag-off·매처·additive 마이그·dry-run 분포)에서 정지. Gate 2(백필 실기록·flag-on 1 filing·prompt v2)는 **본 분포 감독 비준 후에만**. flag `SEC_GROUNDING_ENABLED`(G2, 기본 False)·prompt v1→v2는 미도입(G1 범위 밖).
+
 ---
 
 ## credit_signals 신규 앱 (Phase 1) — FRED 크레딧 신호 백본 (2026-07-08) [credit]

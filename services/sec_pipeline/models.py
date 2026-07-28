@@ -7,6 +7,8 @@ Track B: Business Model 분류
 
 from django.db import models
 
+from services.sec_pipeline import grounding
+
 # ──────────────────────────────────────────────
 # 1. RawDocumentStore — SEC filing 원문 저장
 # ──────────────────────────────────────────────
@@ -114,6 +116,22 @@ class SupplyChainEvidence(models.Model):
 
     prompt_version = models.CharField(max_length=10, default="v1")
     extracted_at = models.DateTimeField(auto_now_add=True)
+
+    # ── SEC β grounding 검증 (G1, additive · null=미검증(백필 전 상태)) ──
+    # read-path는 이 필드를 모름 → 무영향. 판정 4종은 grounding.py 단일 소스.
+    grounding_status = models.CharField(
+        max_length=20,
+        choices=[
+            (grounding.STATUS_VERIFIED, "Verified"),
+            (grounding.STATUS_NORMALIZED_MATCH, "Normalized match"),
+            (grounding.STATUS_NOT_FOUND, "Not found"),
+            (grounding.STATUS_MISSING_SOURCE, "Missing source"),
+        ],
+        null=True,
+        blank=True,
+    )
+    grounding_method = models.CharField(max_length=30, null=True, blank=True)
+    grounded_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "sec_supply_chain_evidence"

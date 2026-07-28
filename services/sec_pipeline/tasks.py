@@ -598,6 +598,15 @@ def generate_intelligence_report(self, hours_back: int = 24):
     return reporter.generate_report(hours_back=hours_back)
 
 
+@shared_task(bind=True, max_retries=1, soft_time_limit=1800, time_limit=1860)
+def backfill_grounding_task(self, dry_run: bool = True):
+    """SEC β G1: evidence grounding 백필. 기본 dry_run=True(분포만·쓰기 0건).
+    실기록(dry_run=False)은 Gate 1 분포 감독 비준 후에만(게이트별 사인오프)."""
+    from .grounding_backfill import run_grounding_backfill
+
+    return run_grounding_backfill(dry_run=dry_run)
+
+
 @shared_task(bind=True, max_retries=0, soft_time_limit=7200, time_limit=7260)
 def run_batch_and_report(self, symbols: list = None):
     """
