@@ -1026,3 +1026,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 72h 검사는 세션 종류(merge/build/mgmt)를 구분하지 않는다. build→build→LAND로 이어지는 사이클이 길어지면 그 사이 PROGRESS가 갱신 안 돼 LAND 시점에 임계를 넘긴다. merge 세션은 PROGRESS 쓰기 권한이 없어(구획 밖) 스스로 못 푼다 = 구조적 교착.
 
 **해결**: **build 사이클이 72h를 넘길 전망이면 mgmt 장부 배치를 LAND보다 선행 배치**한다(PROGRESS 갱신으로 72h 리셋 후 LAND). 실측: 2026-07-27 C1-FE-LAND HALT → MGMT-BATCH-14 선행(이 배치) → PROGRESS 갱신으로 FAIL 소멸 → LAND 재개. 후속 검토(등재만): `HEALTH-72H-SEVERITY-SPLIT`(TASKQUEUE) — 72h severity를 세션 종류별 분리(merge=WARN/mgmt=FAIL)할지. cf. #47(실행트리 정합=transient WARN)과 달리 72h는 시간 경과라 머지로 안 풀림.
+
+## 표면별 서빙 경로 분기 — ego 복구가 한 표면만 전환, 나머지 이월 누락 (#70, 2026-07-28 ⑳-3 S1) [frontend] [chainsight]
+
+**증상**: ⑳-E가 ego 동선(market-graph 표면)을 PG로 복구했으나, 같은 "종목 관계 그래프"를 그리는 **다른 표면**(`/chainsight/[symbol]` 전용 워크스페이스 · `stocks/[symbol]` GraphMiniView)은 여전히 레거시 Neo4j `/graph/`·`/suggestions/`를 호출 → Neo4j 동결로 전 심볼 500 → "데이터가 없습니다"·"카테고리 없음". 데이터(RelationConfidence)는 PG에 실재(HAL 39엣지)하는데도 표면이 죽어 보임.
+
+**원인**: 같은 도메인 데이터를 **복수 표면이 서로 다른 서빙 경로**(PG ego vs 레거시 Neo4j)로 소비. 한 표면만 전환하면 나머지는 조용히 구경로에 남아 이월 누락. FE는 500/에러를 무데이터로 뭉뚱그려 표시(에러≠무데이터 정직성 부재).
+
+**해결**: ⑴ 도메인 데이터의 **표면 인벤토리**를 만들고(소비 훅·엔드포인트 grep), 경로 전환 시 **전 소비자 일괄** 전환(STEP 0-B의 소비자 전수 검색이 GraphMiniView 제2소비자를 발견 = 누락 방지). ⑵ 어댑터를 **단일 순수함수로 공유**(`egoToGraphResponse` — 표면별 복제 금지). ⑶ FE는 로딩/오류(준비 중)/데이터 **3상태 분리**. cf. #64(서빙 경로 실측), DECISIONS D-GRAPH-EGO-BACKEND(ego=PG)·D-20-3-LEGACY-CONSUMER-MIGRATION.
