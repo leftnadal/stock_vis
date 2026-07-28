@@ -178,6 +178,23 @@ IPO 레그는 근사 결측**(IPO 는 SP500 구성종목이 아니라 `sector_co
 급등·급락 양쪽에서 함께 치솟는다(패닉 매도도 거래대금·상관↑). Cycle 1 실데이터 검증 시
 **급락 구간의 Heat Score 오독 여부**(급락인데 과열로 표시되는지)를 관찰 항목으로 확인한다 —
 필요 시 방향 게이트(수익률 부호 조건부) 도입 검토. (지금은 설계서 §2 정방향 유지, 관찰만.)
+## [2026-07-28] D-DASH-SURFACE-UNIFY — 대시보드 표면 통일: CoverageStrip을 루트 `/`로 이동 + `/dashboard`→`/` redirect [dashboard]
+
+> 배경: DASH-SURFACE-SPLIT-SURVEY(2026-07-28, origin/main `dfaf1243` 기준 read-only 실측). 재료 = 루트 `/`(`app/page.tsx`)=실 대시보드(활성 개발선·impression 실데이터 44행 전량 발생지·네비 전체가 지향), `/dashboard`(`app/dashboard/page.tsx`)=2025-11 방치 레거시(네비 도달 경로 0). 공유 컴포넌트 import 0(완전 별개)·`/`↔`/dashboard` redirect 없음. C1-FE 스트립이 레거시 `/dashboard`에 배선됨(계측 0인 표면).
+
+**결정 D-1**: `CoverageStrip`을 **루트 `/`(`app/page.tsx`) 상단**(`DataFreshnessBadge` 아래, `MarketSummaryBar` 위 = L1.5)으로 이동하고 `app/dashboard/page.tsx`에서 제거. 가중합 **4.60 vs 2.85, 마진 1.75 → 자동 결정**.
+- **Why**: 스트립(발급 대비 노출 커버리지 UI)은 impression이 실제 발생하는 표면에 있어야 발견성이 유의미. 실데이터·네비 지향·활성 개발선 3중으로 `/`가 실 대시보드이고, 레거시 `/dashboard`는 계측 0·도달 경로 0이라 스트립이 사실상 비노출. 마진 1.75(≥0.40)로 타이브레이커 불요.
+
+**결정 D-2**: `/dashboard` → `/` **redirect 1줄**(임시·가역 조치). 가중합 ㉡(redirect) **4.30 vs ㉠(레거시 유지) 4.10, 마진 0.20** → 타이브레이커 = 사용자의 표면 통일 명시 의도 + 가역성.
+- **사용자 확정 인용(2026-07-28)**: "그래 그러도록 하자."
+- **Why**: 네비에 도달 경로 없는 레거시를 직접 URL로 진입 시 실 대시보드로 안내(표면 혼선 제거). redirect는 1줄·완전 가역이라 DASH-LEGACY 최종 사이클에서 뒤집기 가능.
+
+**관계 명시**:
+- **DASH-LEGACY(KEEP/CUT/MOVE) 보류는 유지** — redirect는 `/dashboard/page.tsx`의 최종 운명 확정이 아니며 본 사이클에서 뒤집기 가능. (TASKQUEUE `DASH-LEGACY` 상태 불변)
+- **`/dashboard/coverage`는 자체 page**라 `/dashboard` redirect의 영향을 받지 않는다(별도 라우트). 빌드 라우트 생존은 STRIP-REHOME build 슬라이스의 테스트로 검증 예정.
+- **D-OWN-HOME([2026-07-09])과 정합**: 실 랜딩 = `app/page.tsx` 규정 재확인. 스트립을 `/`로 옮기는 것은 D-OWN-HOME이 이미 dashboard 트랙 소유로 편입한 `app/page.tsx`에 대한 정상 배선.
+
+**How to apply**: 구현은 TASKQUEUE `STRIP-REHOME`(dashboard FE build 슬라이스). 본 결정은 등재만(prod 쓰기 0).
 
 ---
 
@@ -512,6 +529,16 @@ IPO 레그는 근사 결측**(IPO 는 SP500 구성종목이 아니라 `sector_co
 **Why(임계 사전 고정, 개정문2)**: dry-run 분포를 보기 전 커밋에 임계를 박아 사후 합리화 차단 — not_found(순수) > 15% → V-B 부분 도입 사용자 재판정 회부(진행 차단 아님). 실측 24.96% > 15% → **V-B 재판정 회부 상태**(분포+샘플 20건 첨부, 감독 결정 대기).
 
 **게이트별 사인오프**: Gate 1(flag-off·매처·additive 마이그·dry-run 분포)에서 정지. Gate 2(백필 실기록·flag-on 1 filing·prompt v2)는 **본 분포 감독 비준 후에만**. flag `SEC_GROUNDING_ENABLED`(G2, 기본 False)·prompt v1→v2는 미도입(G1 범위 밖).
+
+## SEC β G1.5 — not_found 437 분해·재판정 (2026-07-28) [chainsight] [sec]
+
+**결정(회부 자료)**: G1 not_found 24.96%(>15%)를 결정론 분해(LLM 0콜, `scripts/sec/grounding_g15_decompose.py`, 리포트 `docs/features/chain-sight/sec_beta_g15_decomposition_report.md`). 결과:
+- **① 중복**: 1,751→유니크 937(중복률 46.5%). not_found 437→유니크 182.
+- **② 동인 분리**: missing_source_section=0(구조적 — Track A 추출은 item_1+7만 LLM 투입, `normalizer.py:56`). 정규화 갭 테스트(source=raw vs `normalize_section_all`)=not_found 불변 0 → 정제갭 동인 아님. 판정 5종 확장 실발생 0 → 마이그 additive 수정 불요.
+- **③ 비-verbatim 패턴**(유니크 182, prefix 결정론): tail 발산(절단/mid-word) **169(92.9%)** · 중간 재서술 5 · 합성 8.
+- **재판정**: 잔여 순수 not_found 명목 24.96%/유니크 19.42% — 둘 다 >15% → **V-B 부분도입 결정 사이클 회부**.
+
+**Why(권고 = V-B보다 prompt v2 우선)**: 잔여의 92.9%가 "옳은 문장의 tail 발산"(prompt v2 verbatim 강제 표적)이지 검증(V-B) 대상 아님. → **prompt v2 롤아웃 후 재측정 우선**, V-B 채택 시 범위 = 합성/재서술 ~13 유니크로 한정. 최종 결정 감독. 부수: 빈 store 61=regex 추출 실패(status=failed, 미참조 무해). Gate 2 정지 유지.
 
 ---
 

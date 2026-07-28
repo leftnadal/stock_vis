@@ -15,12 +15,14 @@
 | P2-COVERAGE-C1-FE | (dashboard) 상단 커버리지 스트립(발급/노출/율 + 미노출 N건 링크) + `/dashboard/coverage` 상세의 미노출 리스트. 상세 페이지 내 노출은 `surface='coverage_detail'`로 분리 기록(유기 지표 오염 격리). | @frontend (dashboard 구획) | P2-COVERAGE-C1-API | ✅ **build 완료·push (`58e18c7d`, 2026-07-27, 미머지)** — vitest 12·tsc 0. **관문 판정=경로 B**: ingest surface 화이트리스트(views.py:29·41)가 `coverage_detail` 거부 → 상세 impression **추적 미연결**(발신 0=오염 0, C-1 취지 충족). surface 등재는 shared 구획 → 아래 COVERAGE-DETAIL-SURFACE로 이관. **LAND는 MGMT-BATCH-14 착지 후 재개**(72h FAIL 선행 해소) |
 | COVERAGE-DETAIL-SURFACE | (shared) `ImpressionLog.SURFACE_CHOICES`에 **`coverage_detail` 추가** — 상세 페이지 impression 추적 연결의 **선행 조건**(C1-FE 경로 B 해소). ⚠ **choices 추가 시 `makemigrations --dry-run` 필수**(choices는 DB 스키마 무영향=무마이그 기대 — 마이그 발생 시 HALT 후 보고). 근거: C1-FE STEP 0 관문(views.py:29·41 화이트리스트가 coverage_detail 거부 → 추적 미연결). | @backend (shared 구획) | **C-2 게이트 연동**(impression 숙성 8월 초 검토와 동일 게이트) | 💤 보류(C-2 숙성 게이트 — 그 전 실행 금지) |
 | P2-COVERAGE-C2 | 4단 퍼널(발급→표시→노출→클릭) 추이·표시 층 분해. "표시" 층 = 베이크 산출 JSON 읽기 파생(#43 무변경). | 상세(dashboard/platform) | **트리거 = impression 데이터 2~3주 숙성**(상수 튜닝 재료 확보) | 💤 보류(숙성 게이트) |
+| STRIP-REHOME | (dashboard FE) 커버리지 스트립 표면 통일 배선 — ⑴ `CoverageStrip`을 `app/page.tsx` 상단(L1.5=DataFreshnessBadge 아래·MarketSummaryBar 위)으로 이동 + `app/dashboard/page.tsx`에서 제거, ⑵ `/dashboard`→`/` redirect 1줄(가역), ⑶ `/dashboard/coverage` 라우트 **생존 테스트**(redirect 무영향 확인), ⑷ 기존 vitest 스트립 테스트 경로 정합. 근거=D-DASH-SURFACE-UNIFY(D-1·D-2). `app/page.tsx`는 D-OWN-HOME으로 dashboard 트랙 소유. | @frontend (dashboard 구획) | D-DASH-SURFACE-UNIFY 등재(완료) | 🆕 **등재(즉시 실행 가능)** |
 
 ### 하네스 위생 후속 (MGMT-BATCH-14 적립)
 
 | ID | Task | 분류 | Depends On | Status |
 |----|------|------|-----------|--------|
 | HEALTH-72H-SEVERITY-SPLIT | `scripts/health_check.py`의 **72h PROGRESS 위생 검사 severity를 세션 종류별 분리** 검토 — merge 세션=WARN(구획 밖이라 자체 해소 불가) / mgmt 세션=FAIL(갱신 권한 보유). 근거=#69(2026-07-27 C1-FE-LAND가 72h FAIL로 교착). ⚠ **착수 전 결정 사이클 필요**(세션 종류 판별 방법·오분류 리스크). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 낮음, 구현 아님) |
+| HEALTH-LAUNCHD-LOOP-CHECK | `scripts/health_check.py`에 **launchd 서빙 잡 crash loop 검출** 추가 검토 — `launchctl print`의 `runs` 폭증(직전 대비 급증) + 실서빙 PID cwd/ppid 정합(job 밖 orphan이 포트 선점 판별) 검사. 근거=#72(07-24~27 web-frontend가 orphan 선점으로 4일 34,664회 loop, 무검출). ⚠ **착수 전 결정 사이클 필요**(runs 델타 임계·다중 잡 일반화). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 중 — 4일 무검출 실증) |
 
 ---
 
