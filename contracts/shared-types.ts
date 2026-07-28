@@ -396,6 +396,16 @@ export interface EgoEdge {
   basis_summary: string;
   /** ⑳-G 정직화: 확인일 YYYY-MM-DD (last_mentioned 재명명, auto_now 저장시각) */
   last_observed_at: string | null;
+  /** ⑳-3 S2: relation_status(confirmed/probable/…) — 등급 라벨 병기용. additive(구 소비자 호환 위해 optional) */
+  status?: string;
+  /** ⑳-3 S2: 출처 플래그 — PEER 칩 분화(Peer·FMP / 동종산업) */
+  has_peer_source?: boolean;
+  has_industry_source?: boolean;
+  has_news_source?: boolean;
+  /** ⑳-3 S2: CO_MENTIONED 뉴스 동시출현 횟수(없으면 null) */
+  co_mention_count?: number | null;
+  /** ⑳-3 S2: 도메인 태그(제품/시장). S2-B 전엔 항상 null(필드 자리 확보) */
+  relation_domain?: string | null;
 }
 
 /** ego API meta */

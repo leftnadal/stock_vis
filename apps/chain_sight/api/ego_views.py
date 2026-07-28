@@ -158,6 +158,12 @@ class EgoGraphView(APIView):
                 "relation_category",
                 "market_score",
                 "relation_basis_summary",
+                # ⑳-3 S2 B-1: 정성화 표면화용 additive — 출처 플래그·status·co_mention(동일 쿼리).
+                "relation_status",
+                "has_peer_source",
+                "has_industry_source",
+                "has_news_source",
+                "evidence_sources",
             )[:limit]
         )
 
@@ -268,6 +274,19 @@ class EgoGraphView(APIView):
                 ),
                 "basis_summary": basis,
                 "last_observed_at": last_obs_iso,  # 신규 명시 필드(FE는 "확인일"로 사용)
+                # ⑳-3 S2 B-1 additive: 정성화 표면화(칩 분화·근거·도메인). 기존 필드 불변.
+                "status": e.get("relation_status") or "",
+                "has_peer_source": bool(e.get("has_peer_source")),
+                "has_industry_source": bool(e.get("has_industry_source")),
+                "has_news_source": bool(e.get("has_news_source")),
+                # CO_MENTIONED evidence_sources={"sources":["news"],"co_mention_count":N}
+                "co_mention_count": (
+                    (e.get("evidence_sources") or {}).get("co_mention_count")
+                    if isinstance(e.get("evidence_sources"), dict)
+                    else None
+                ),
+                # relation_domain: 모델 필드 미존재(S2-B) → null 자리 확보(additive).
+                "relation_domain": None,
             })
 
         payload = {
