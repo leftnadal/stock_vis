@@ -75,59 +75,10 @@ class EconomicEventSerializer(serializers.ModelSerializer):
 # ============================================================================
 # Dashboard Response Serializers (API 응답용)
 # ============================================================================
-
-class FearGreedResponseSerializer(serializers.Serializer):
-    """공포/탐욕 지수 응답"""
-    value = serializers.IntegerField()
-    rule_key = serializers.CharField()
-    label = serializers.CharField()
-    label_en = serializers.CharField(required=False)
-    color = serializers.CharField()
-    message = serializers.CharField()
-    action_hint = serializers.CharField(required=False)
-    vix = serializers.DictField(required=False)
-    yield_spread = serializers.DictField(required=False)
-    last_updated = serializers.CharField()
-
-
-class InterestRatesResponseSerializer(serializers.Serializer):
-    """금리 대시보드 응답"""
-    fed_funds_rate = serializers.FloatField(allow_null=True)
-    treasury_2y = serializers.FloatField(allow_null=True)
-    treasury_10y = serializers.FloatField(allow_null=True)
-    yield_spread = serializers.DictField()
-    yield_curve_status = serializers.DictField()
-    yield_curve_data = serializers.ListField()
-    last_updated = serializers.CharField()
-
-
-class InflationResponseSerializer(serializers.Serializer):
-    """인플레이션 대시보드 응답"""
-    inflation = serializers.DictField()
-    employment = serializers.DictField()
-    gdp = serializers.DictField(allow_null=True)
-    last_updated = serializers.CharField()
-
-
-class GlobalMarketsResponseSerializer(serializers.Serializer):
-    """글로벌 시장 대시보드 응답"""
-    indices = serializers.DictField()
-    global_indices = serializers.DictField()
-    sectors = serializers.DictField()
-    forex = serializers.DictField()
-    commodities = serializers.DictField()
-    dxy = serializers.DictField(allow_null=True)
-    vix = serializers.DictField(allow_null=True)
-    last_updated = serializers.CharField()
-
-
-class EconomicCalendarResponseSerializer(serializers.Serializer):
-    """경제 캘린더 응답"""
-    events_by_date = serializers.DictField()
-    total_count = serializers.IntegerField()
-    from_date = serializers.CharField()
-    to_date = serializers.CharField()
-    last_updated = serializers.CharField()
+# MP-UNIFY-1(2026-07-29): 개별 섹션 응답 serializer 5종
+# (FearGreed/InterestRates/Inflation/GlobalMarkets/EconomicCalendar) 제거 —
+# 해당 무소비 엔드포인트 삭제로 유일 참조처가 사라짐. pulse 집계 응답은
+# 아래 MarketPulseResponseSerializer(DictField 기반, 독립)로 유지.
 
 
 class MarketPulseResponseSerializer(serializers.Serializer):
