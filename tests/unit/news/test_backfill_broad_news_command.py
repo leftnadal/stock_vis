@@ -123,6 +123,90 @@ def test_boundary_spillover_below_threshold_not_skipped():
     assert "커버됨 skip: 0창" in out.getvalue()
 
 
+# ── C-N-REPAIR: 표적 소창(window-days=1) — 창 논리 함정 회피 ──
+def test_target_single_day_windows_are_independent():
+    """window-days=1 → 각 날이 1일 독립 창. EARLIEST 보정이 삼킬 '창 뒷날'이 없음(154 누락 원인 차단)."""
+    cmd = mod.Command()
+    ws = cmd._windows(dt.date(2024, 5, 3), dt.date(2024, 5, 5), 1)
+    assert ws == [
+        (dt.date(2024, 5, 3), dt.date(2024, 5, 4)),
+        (dt.date(2024, 5, 4), dt.date(2024, 5, 5)),
+        (dt.date(2024, 5, 5), dt.date(2024, 5, 6)),
+    ]
+    # 각 창 span=1일 → 창 내부 EARLIEST 절단으로 뒷날이 잘릴 여지 자체가 없음
+    for s, e in ws:
+        assert (e - s).days == 1
+
+
+@pytest.mark.django_db
+@override_settings(ALPHA_VANTAGE_API_KEY="testkey")
+def test_target_single_day_idempotent_skip():
+    """표적일에 이미 임계(1×COVERED_PER_DAY) 이상 기사 → 재수집 skip(멱등, 기존 행 무변경)."""
+    for i in range(mod.COVERED_PER_DAY):  # 1일 창 임계 = 1×3
+        _mk_article(dt.datetime(2024, 5, 3, 12, tzinfo=dt.timezone.utc), i)
+    prov, agg = _mock_provider_aggregator()
+    out = StringIO()
+    with patch("services.news.providers.alphavantage.AlphaVantageNewsProvider", return_value=prov), \
+         patch("services.news.services.aggregator.NewsAggregatorService", return_value=agg), \
+         patch.object(mod.time, "sleep"):
+        call_command(CMD, "--from", "2024-05-03", "--to", "2024-05-03",
+                     "--window-days", "1", "--commit", stdout=out)
+    assert prov.fetch_broad_news.call_count == 0  # 이미 커버 → 요청 0(멱등)
+    assert "커버됨 skip: 1창" in out.getvalue()
+
+
+@pytest.mark.django_db
+@override_settings(ALPHA_VANTAGE_API_KEY="testkey")
+def test_target_single_day_null_day_refetched():
+    """표적일이 비어(0건) 있으면 window-days=1 창이 재수집 대상(154 복구 경로)."""
+    prov, agg = _mock_provider_aggregator(n_arts=5, saved=5)
+    out = StringIO()
+    with patch("services.news.providers.alphavantage.AlphaVantageNewsProvider", return_value=prov), \
+         patch("services.news.services.aggregator.NewsAggregatorService", return_value=agg), \
+         patch.object(mod.time, "sleep"):
+        call_command(CMD, "--from", "2024-05-03", "--to", "2024-05-03",
+                     "--window-days", "1", "--commit", stdout=out)
+    assert prov.fetch_broad_news.call_count == 1  # 빈 날 → 재수집
+    assert agg._save_articles.call_count == 1
+
+
+# ── C-N-REPAIR: --dates 표적 모드(명시일만, 주말/공휴일 낭비 0) ──
+@pytest.mark.django_db
+@override_settings(ALPHA_VANTAGE_API_KEY="testkey")
+def test_dates_mode_targets_only_listed_days():
+    """--dates: 명시한 날짜만 1일 창으로 재수집(범위 주말 낭비 없음)."""
+    prov, agg = _mock_provider_aggregator(n_arts=5, saved=5)
+    out = StringIO()
+    with patch("services.news.providers.alphavantage.AlphaVantageNewsProvider", return_value=prov), \
+         patch("services.news.services.aggregator.NewsAggregatorService", return_value=agg), \
+         patch.object(mod.time, "sleep"):
+        call_command(CMD, "--dates", "2024-05-03,2024-08-05,2023-10-19", "--commit", stdout=out)
+    assert prov.fetch_broad_news.call_count == 3  # 명시 3일만(주말·중간일 생성 안 함)
+    assert "표적 3일(각 1일 창)" in out.getvalue()
+
+
+@pytest.mark.django_db
+@override_settings(ALPHA_VANTAGE_API_KEY="testkey")
+def test_dates_mode_idempotent_and_dry_run():
+    """--dates 멱등(커버된 명시일 skip) + dry-run(쓰기·요청 0)."""
+    for i in range(mod.COVERED_PER_DAY):  # 2024-05-03 커버(임계 3)
+        _mk_article(dt.datetime(2024, 5, 3, 12, tzinfo=dt.timezone.utc), i)
+    prov, agg = _mock_provider_aggregator()
+    out = StringIO()
+    # dry-run: provider 미호출
+    with patch("services.news.providers.alphavantage.AlphaVantageNewsProvider") as P:
+        call_command(CMD, "--dates", "2024-05-03,2024-05-06", stdout=out)
+    P.assert_not_called()
+    assert "DRY-RUN" in out.getvalue()
+    # commit: 커버된 05-03 skip, 05-06만 fetch
+    out2 = StringIO()
+    with patch("services.news.providers.alphavantage.AlphaVantageNewsProvider", return_value=prov), \
+         patch("services.news.services.aggregator.NewsAggregatorService", return_value=agg), \
+         patch.object(mod.time, "sleep"):
+        call_command(CMD, "--dates", "2024-05-03,2024-05-06", "--commit", stdout=out2)
+    assert prov.fetch_broad_news.call_count == 1  # 05-03 커버 skip
+
+
 # ── saturation 감지(fetched >= limit) ──────────────────────
 @pytest.mark.django_db
 @override_settings(ALPHA_VANTAGE_API_KEY="testkey")

@@ -412,7 +412,7 @@
 | MP2-NEWS-BACKFILL (C-N) | 과거 broad 시장 뉴스 소급 백필 = L3 그라운딩 재료. AV NEWS_SENTIMENT(FMP 402 유료벽 대체, GN 실측 2023-09 도달). `backfill_broad_news` 커맨드(라이브 collect_av_broad 동일 save 경로 재사용·멱등·dry-run 기본·--max-requests 25/day 캡). 미커버 122창(2023-08~2025-12) | @backend(news) | ✅ **전량 완료 (2026-07-23, 122/122창)** — 각 창 317~950행 적재·SATURATED 2구간 실갭없음(매일 기사존재→재패스 불요)·완료 후 AV 0req(전부 skip). 커맨드 land(`monorepo/sess-CN-news-backfill`)·테스트 6 green·경계0. AV 회계 조사(07-22): 로컬 쿼터 카운터 부재=서버측 전용. D-CN-REUSE/-NO-PRESERVE/-SKIP-COVERED | ✅ **완료 → C-L3 언블록** |
 | MP2-ANALOG C-core | L2 국면 카테고리(결정론, RegimeSnapshot.regime·enum 라벨 재사용) + cat_slot/cat_key 배선 + FE 태그(regimeTone 재사용) + today 태그 + docs 정착(D-DOCS-PERSIST). D-ANALOG-L2 | @backend+@frontend | 🔵 **done + main 안착 (`monorepo/sess-C-core-l2`)** — `regime/category.py`(5값 전사·미지값 에러)+cards 배선(cat_slot string 유지·cat_key/today_category additive)+FE AnalogCard 태그. 카테고리8+api6+FE8 green·marketpulse 404·tsc0·mig0·경계0·CRISIS 카피게이트 준수. 라이브 today "상승 후반 경계" | ⚠️ **실화면 게이트 이연**(아래 별행) → 그 후 잔여 0(why=C-L3) |
 | MP2-ANALOG C-L3 | LLM cached 맥락 생성(그라운딩=C-N 백필, 톤가드·동결) → 이웃 why 채움. 대량 생성 dry-run+수동 유보. ★그라운딩 쿼리 is_archived **무필터**(D-CL3-ARCHIVE-BLIND) | @rag-llm+@backend | ✅ **구현·검증 완료·배포 대기 (`monorepo/sess-C-L3-context`, base `b9ddf41a`)** — 신규 `AnalogDayContext`(mig 0007 additive·dev 적용)·`grounding.py`(결정론 선별 abs(sent)→entity→cap3, importance_score 0% 실측→제외)·`tone_guard.py`·`context_generator.py`·`generate_analog_context` 커맨드(멱등·동결·dry-run 기본)·cards payload why/provenance/version 배선·FE per-neighbor "왜?" 펼침. **LLM=market_pulse `generate_with_circuit` 재사용**(원지시서 "shared complete()"는 실측 정정: BOUNDARY-LLM 종결·경계 통과). 신규 35 green·446 marketpulse·vitest 10·tsc0·경계0·health❌0. 소량 8일 실생성(톤가드 전통과). **배포(07-24~25)**: push→main `96fd17bc`·mig 0007 적용(단일 DB stock_vis)·491일 --commit 진행. ★683 중 **154일 null=상류 C-N 백필 공백**(→`C-N-REPAIR`, C-L3 결함 아님). 실화면 캡처=병진 잔여 | ✅ **배포·491 생성 완료 → 154일은 C-N-REPAIR 후 재생성** |
-| C-N-REPAIR | C-N 백필 창 뒷날(주 후반) 누락 보강 — `D-CN-COMPLETE` 폐기 후속(2026-07-25). 대상=구간 내 154일(인접유기사 113 + 실갭후보 41) + 뒷단 38일(>2025-12-05 라이브 수집 갭, 원인 별도=beat 결손일 여부 확인 포함). 방식=누락일 **표적 소창(1~2일) 재패스**(EARLIEST+1000cap 회피). 예산=AV 20/day 기준 ~10일(192일÷20, 소창당 페이지네이션 가산). 지시서=디렉터 별도 발행 | @backend(news) | 🕒 대기 — 지시서 대기 | C-L3 154일 재생성 선행조건 |
+| C-N-REPAIR | C-N 백필 창 뒷날 누락 보강 — `D-CN-COMPLETE` 폐기 후속. 대상=null 192일(구간내 154 창뒷날 누락 + 뒷단 38 미수집공백). 방식=`backfill_broad_news --dates`(1일 독립 창, 창논리 우회). D-CN-REPAIR-*(#72) | @backend(news) | ✅ **STEP0+커맨드+계획서 완료 (`monorepo/sess-CN-repair`, base `ca062581`) — 재수집 실행만 병진 유보** — STEP0: null 192(154+38) 확정·뒷단38=백필종료~라이브 미수집공백(재수집대상)·SATURATED 2창 이미커버·보존 OK(purge없음)·예산 20/실행(beat 2<<5). `--dates` 표적모드 가산(커맨드 로직 무변경)·backfill 테스트 6→11·경계GREEN·health❌0. 계획서 `docs/features/cn_repair/repair_batch_plan.md`(10배치 원라이너·22:00 KST후). **완료판정=일 단위 존재(창완료 아님)** | ✅ **계획서 완료 → 10배치 병진 수동 → C-L3-REGEN-V2** |
 | BOUNDARY-LLM-ALIAS-CHECK | `apps/market_pulse/llm/client.py`가 `from google import genai as genai_module` 후 `genai_module.Client(...)` — 경계 테스트 AST(`genai.Client`만 매칭)의 **사각지대**로 우회 중. BOUNDARY-LLM 종결(FROZEN_COUNT=0) 선언과 정합성: 의도 동결(허용)인지 vs 미이관 잔재(경계 강화 대상)인지 확인 필요 | @qa+@infra | 🕒 대기 — 의도 판정 | 종결 선언 정합성 점검 |
 | C-L3-SELECT-V2 | C-L3 그라운딩 선별 품질 개선 — 거시 사건일 맥락 빈약(스팟체크 2024-08-05 급락·2023-10-19 국채·2024-05-15 CPI 전부 "개별 기업 소식"). 원인=broad 피드 거시뉴스 희소(08-05 220건 중 급락 4건)+선별 abs(sent)/entity가 개별기업 상위(D-CL3-QUALITY-LIMIT). 개선안=index/거시 entity 우선·거시 키워드 가중·소스 다양성 재조정 → `--regenerate --prompt-version cl3_v2`. ★근본 한계=broad 거시 절대량 부족→부분 개선만. C-N-REPAIR(창 뒷날 복구)와 시너지 | @rag-llm+@backend | 🕒 대기 — 개선 설계(부분개선 기대치 관리) | C-L3 v2 재생성 |
 | MP2-ANALOG C-core 실화면 게이트(이연) | 첫 non-alert 날(analog 이웃 ≥1)에 market-pulse-v2 카드 실화면 캡처 → **이웃 태그 렌더 확인** 후 게이트 닫기. 오늘 카드 alert(이웃 0)라 이웃 태그 off-surface → 실화면 검증 이연(폐기 아님, D-ANALOG-L2 실화면 3택 중 2번) | 병진(아침 루틴) | 🕒 **열림** — non-alert 날 대기 | 증빙=스크린샷, 확인 후 close |
@@ -515,6 +515,20 @@
 | MM-L | Market Movers AWS Lambda 전환 | @infra | 비용 최적화 우선순위 낮음 | 트래픽 증가 시 |
 | GA-1 | Graph Analysis REST API + Frontend | @backend + @frontend | 모델/서비스만 완료 | Chain Sight 안정화 후 |
 | SR (트랙) | 서비스 리모델링 — Dashboard / Chain Sight / Portfolio 3탭 전환 (옛 SR-1~4) | orchestrator + @backend + @frontend + @qa | 미시작 계획서. 44일 정체(2026-04-14~). 브랜치 `data_structure_remodeling_V1` 부재. 재개 시 현 시스템(Slice 14~17) 기준 재설계 필요 | 사용자 명시 재개 신호 + 현 코드 기준 설계 재검증. 설계 사고는 `docs/stock_vis_service_remodeling/` 보존 |
+
+---
+
+## [조사 완료·결정 대기] MP-UNIFY — market_pulse v1/v2 공존 통합
+
+- **S0 조사 완료(2026-07-28, read-only)**: 지도 `docs/features/mp_unify/coexistence_map.md`. 브랜치 `monorepo/sess-MP-unify-s0`, base `2a1bd10c`. 코드 변경 0.
+- **공존 실체**: v1 = macro 레거시(`/api/v1/macro/*` + `frontend/app/market-pulse`, 라이브 FRED/FMP API, **정식 메뉴 노출 실서빙**). v2 = `/api/v2/market-pulse/*` + `market-pulse-v2`(DB 스냅샷·payload builder, **메뉴 미노출 베타**, v1 배너로만 도달).
+- **★타이밍 판정**: 통합은 **서빙 게이트·DB와 독립**(makemigrations 0·v1 전용 테이블 없음·worker_sync=origin/main 통째 checkout 절차 무변경) → **C-N-REPAIR/C-L3 서빙 경로와 무충돌, 서빙 전 완주 가능**(동결 불요). 단 v1 프론트 표면 처분은 제품 결정.
+- **분류**: DELETE 후보(v1 `vix/`·`sectors/` 순수 무소비) / MIGRATE(개별 엔드포인트 5종, 서비스 로직은 pulse 경유 유지) / FREEZE(v1 프론트 표면·pulse/sync = 제품 결정 종속).
+- **drift**: 섹터 1건(v1 라이브 FMP change_pct vs v2 DB 상대강도·rank) — 코드 존재하나 **v1 sectors 프론트 무소비 + pulse 미포함 = 실노출 0**(대기 불가 버그 아님, 통합 시 v1 삭제로 해소). VIX/금리 source-split(위험 기록).
+- **규모 추정**: 엔드포인트 정리 ~1세션 / 표면 통합(메뉴 교체+pulse 처분) ~1~2세션.
+- **미해결(read-only 한계)**: v1 실응답 vs v2 실값 비교(서비스 접촉 필요·미측정)·v1 표면 실트래픽·v2 승격 계획·v1 표면 처분 방향 = 디렉터 결정.
+- **STRUCT-CLEANUP 대조**: 아래 STRUCT-CLEANUP(intraday→dashboard 이동)과 **별개 축**(intraday=본 조사 "대상 아님"). 병합 불요, 순서 조율만 감안.
+- **다음**: orchestrator/디렉터 결정 사이클 — 통합 실행 여부·범위·표면 처분 확정 후 실행 세션.
 
 ---
 
