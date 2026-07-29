@@ -115,8 +115,8 @@
 
 | ID | Task | Agent | Depends On | Status | Output Artifact |
 |----|------|-------|------------|--------|-----------------|
-| TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **blocked (오늘 배포 포기, 미머지 WIP)** | beat 3종 현재 `enabled=False` |
-| TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **대기** | `PeriodicTask enabled=True` |
+| TH-RUNTIME-DEPLOY | TH 트랙(sess-cs-theme-heat) 정식 머지 → worker_sync + 재기동 → TH beat 3종 재활성화(C8 EstimateSnapshot 포함) | @infra (TH 소유 세션) | TH 트랙 클린 체크포인트 머지 | **✅ done 2026-07-29** | 마이그 renumber 0016~24→0019~27(`995f8846`)·역병합·push origin/main `f7f3f63d`·DB name UPDATE 9행(showmigrations 0014~27 선형·migrate --check clean)·worker_sync 3트리 f7f3f63d·theme_heat 3종 registered 게이트 통과 |
+| TH-BEAT-REENABLE | UNREGISTERED 3 beat(collect-theme-filings·theme-heat-daily·snapshot-analyst-estimates) 재활성화 | @infra | TH-RUNTIME-DEPLOY | **✅ done 2026-07-29** | `PeriodicTask enabled=True` 3행(트랜잭션) + `PeriodicTasks.update_changed()`(DatabaseScheduler Schedule changed 확인). 다음 발화: theme-heat-daily 18:00 ET·filings 17:30 ET·estimates 금 16:30 ET. **익일 산출물 행 확인 대기** |
 | TH-RESUME-CORPUS-UNFREEZE | TH 트랙 재개 — corpus unfreeze + TNV 백필 세션 1 | @infra (TH 소유 세션) | **트리거: SEC β 종결** | **대기(트리거)** | G2 앵커(92/19/0/0, ≤07-11 스코프)는 **백필 후 비교 대상 아님** 조항 승계(corpus 확장 시 앵커 무효). SEC β 종결 전 착수 금지 |
 
 > **오늘 조치(완료)**: UNREGISTERED 3 beat `enabled=False`(에러 플러드 + 깨진 C8 발화 차단). 정상 배포 beat(heat-score-daily·seed-snapshot-cleanup) 무접촉. **C8 첫 EstimateSnapshot(금 16:30 ET) 1주+ 연기** — 시한 때문에 미머지 26커밋 강행 머지 금지(최악). 재개는 TH 트랙 소유자/디렉터가 클린 머지 후.
