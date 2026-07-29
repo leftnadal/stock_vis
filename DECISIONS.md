@@ -4319,6 +4319,15 @@ chainsight-collect-theme-filings·chainsight-theme-heat-daily) `enabled=False`. 
 상태에서 beat가 발화해도 no-op이므로, 발화 자체를 중단하고 **sv-theme-heat worktree 수동 운용**으로
 일원화(운용표 = TRACKS.md). **단 임시 조치** — TH-DEPLOY 완료 시 재활성화.
 
+**[결정38 해제 — 2026-07-29] 수동 → 자동 복귀 (TH-DEPLOY 봉인)**: 결정38의 임시 조치 **해제**. TH-DEPLOY
+집행 완료(origin/main `f7f3f63d`, 마이그 renumber 0019~0027, worker_sync 3트리 재기동, theme_heat 3종
+registered 게이트 통과) → beat 3종 `enabled=True` 재활성(+`PeriodicTasks.update_changed()`로 DatabaseScheduler
+reload). **봉인 증거(false-green 아님, 산출물 행 실측)**: 2026-07-29 09:57 KST beat reload catch-up 발화 —
+워커 로그 `collect-theme-filings succeeded {b5_created:119, ipo_created:9}` → ThemeFilingCount 07-29 3행,
+`theme-heat-daily succeeded {as_of:2026-07-29, sectors:11, stored:6}` → ThemeHeatScore 07-29 6행(created_at
+00:57:31~00:58:06 UTC 순차). estimates는 금요일 cron(07-31 첫 자동 발화 대기, 미도래=정상). **운용 복귀**:
+수동 운용(TRACKS.md) 종료, beat 자율 발화 체제. C8 EstimateSnapshot 자동 축적 재개(07-17·07-24 수동분 + 07-31~ 자동).
+
 **[방침 기록] "배포"의 정의**: TH-DEPLOY = worktree→main 병합 + 워커 재시동(`worker_sync.sh` + kickstart).
 **같은 머신 내부 재시동일 뿐, 외부 공개(external)가 아님.** 사용자 배포 승인은 **상시 가능**(2026-07-18 확인) —
 결정34의 유보는 *승인 문제가 아니라 순서 문제*(override 적재 완결 선행). TH-DEPLOY = override 적재 완결
