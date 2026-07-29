@@ -5022,6 +5022,23 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 **검증**: backfill 테스트 6→11(신규 5: window-1 독립·멱등 skip·null 재수집·--dates 표적·--dates 멱등)·경계 GREEN·health ❌0. 커맨드 로직 무변경(--dates 가산만).
 
 **baseline at decision**: base origin/main `ca062581`. 실행(재수집 --commit)은 병진 수동 유보.
+
+## [2026-07-29] C-N-REPAIR-AUTOMATION — 무인 야간 배치(launchd) (D-CN-REPAIR-AUTO-*)
+
+> 트랙: C-N-REPAIR 재수집을 사람 트리거 없이 돌리는 무인 자동화. 지시서 소비. base = sess-CN-repair(origin/main `68aeea28` 랜딩분 위). 산출 = `scripts/cn_repair_nightly.sh`·`scripts/cn_repair_status.py`·`docs/operations/com.stockvis.cn_repair.nightly.plist`·런북. **활성화(launchctl load·kickstart)는 prod 쓰기+AV 소비 = 디렉터 명시 승인 게이트**([[feedback_deploy_approval_explicit_quote]]).
+
+**D-CN-REPAIR-AUTO-CHECKPOINT (순번 = 캘린더 산술 아닌 체크포인트 카운터)**: 지시서 STEP 2-1 문자 그대로의 "경과일+1"을 **기각**. 실측(2026-07-29): 시작일 07-28 기준 오늘 경과일=1 → "경과일+1"=batch2인데 **batch1(07-28)은 미실행** → 캘린더 산술은 batch1을 영구 스킵. 대신 `status.json.next_batch`를 **성공 시에만 전진**(zero/fail=보류→다음 밤 재시도). max()로 재실행 역행 방지. 멱등(url upsert+skip-covered)이라 재실행도 무해.
+
+**D-CN-REPAIR-AUTO-HOLD1 (실행당 1배치 보존)**: 10배치로 나눈 이유 = AV 레이트리밋(20 req/실행, 192÷20≈10일, STEP 0-2). 자동화는 "사람 트리거"만 없애고 **간격은 보존**(하루 1배치). 압축(한 밤 다배치+sleep)은 디렉터 승인 후 옵션(기본 미채택).
+
+**D-CN-REPAIR-AUTO-TREE (실행 트리 = sv-worker-runtime, self-locate)**: 계획서 원라이너의 `cd Desktop/stock_vis`는 그 트리가 세션 브랜치(현 sess-hold-p1, --dates 없음) 표류 → 부적합. 스케줄러는 **origin/main 추적 트리 `~/worktrees/sv-worker-runtime`**(f7f3f63d=origin/main, --dates·계획서 착지, .env 심링크)에서 실행. 래퍼는 BASH_SOURCE self-locate로 REPO_DIR=자기 트리 → plist는 worker-runtime의 래퍼 호출. **전제**: 래퍼·헬퍼가 origin/main 랜딩 후 worker_sync로 그 트리에 동기화돼야 함(활성화 전 게이트).
+
+**D-CN-REPAIR-AUTO-ANOMALY (이상치 = 0건 or 중앙값 밴드 [0.3×,3.0×])**: 정상=무알림, 이상 시에만 알림(ALERT 파일 + osascript). exit≠0=fail(전진 보류)·net 0건=zero(대상일 null인데 무수집=fetch실패/전량skip 의심, 전진 보류)·밴드밖(표본≥3, net>0)=ok_review(데이터는 수집됨→전진, 검토만 권장). 로그/상태는 **`~/Library/Logs/stockvis/cn_repair`**(지시서 `logs/cn_repair`는 Desktop TCC 위험 → pg-backup 관례로 이전).
+
+**D-CN-REPAIR-AUTO-DONE (10/10 자동 마무리)**: 래퍼가 next_batch>10 감지 시 DONE 마커 + launchd 자동 unload(bootout) + 다음 단계 안내(일 단위 존재 검증→SELECT-V2/REGEN-V2). Cowork 리마인더 삭제/용도변경은 **수동 유보(후보만)**.
+
+**검증**: 신규 pytest 9(status 머신)·기존 backfill 11(멱등 3건 포함)·래퍼 dry-run(batch1→20창 매핑·카운터 불변)·완료 경로(next=11→DONE)·경계 GREEN(stdlib만). **활성화·라이브 2회 IDENTICAL·kickstart는 게이트(prod)**.
+
 ## [2026-07-13] D-EVENTGROUP-WINDOW — EventGroup co-mention 집계에 날짜 윈도우 실적용 (기본 21d·config)
 
 **맥락**: `event_group_pipeline._build_base(half_life)`가 `half_life` 파라미터를 **선언만 하고 본문에서 미사용** — `ChainNewsEvent(is_duplicate=False)` **전량**을 날짜 무관하게 co/doc 카운팅해 왔다. `EventGroup.window_days` 필드는 `half_life`(=21) 값을 저장하나 실제 윈도우링은 없었다(라벨과 행위 불일치). 결과: 데이터 누적 시 오래된 co-mention이 현재 그룹 내러티브를 **희석**(TASKQUEUE `EVENTGROUP-WINDOW`).

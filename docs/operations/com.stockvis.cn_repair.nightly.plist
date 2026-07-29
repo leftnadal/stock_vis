@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  C-N-REPAIR 야간 재수집 무인 배치 (하루 1배치, 22:10 KST).
+  설치: cp 이 파일 ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.stockvis.cn_repair.nightly.plist
+  전제: 래퍼(scripts/cn_repair_nightly.sh)·계획서·backfill --dates 가 sv-worker-runtime 트리에 착지(worker_sync).
+  RunAtLoad=false — load 만으로 prod 배치가 돌지 않음. StartCalendarInterval = 슬립 중 놓친 잡을 기상 시 실행.
+  ⚠️ 등록·kickstart 는 디렉터 명시 승인 후 (prod 쓰기 + AV 소비).
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.stockvis.cn_repair.nightly</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/byeongjinjeong/worktrees/sv-worker-runtime/scripts/cn_repair_nightly.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/byeongjinjeong/worktrees/sv-worker-runtime</string>
+
+    <!-- 매일 22:10 (시스템 timezone = KST). 리마인더 22:00 뒤. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>22</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+
+    <!-- load 만으로 실행 금지 (예약 시각에만). -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <!-- 실패 시 재시도 안 함 (다음 밤 재시도 = 래퍼 카운터가 전진 보류). -->
+    <key>KeepAlive</key>
+    <false/>
+
+    <!-- TCC 안 걸리는 ~/Library/Logs 위치. -->
+    <key>StandardOutPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/cn_repair/launchd_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/byeongjinjeong/Library/Logs/stockvis/cn_repair/launchd_stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+        <key>HOME</key>
+        <string>/Users/byeongjinjeong</string>
+    </dict>
+</dict>
+</plist>
