@@ -1,7 +1,8 @@
 """P2a-1 — EtfNavHistory upsert 멱등성 · 디스카운트 compute-on-read · 부호 규약 ·
 콜드스타트 · 원장 누적 · resolve 괴리 skip · 기존 8키 무영향(회귀)."""
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import pytest
 from django.contrib.auth import get_user_model
@@ -155,6 +156,114 @@ class TestResolveAndUpsert:
         r = resolve_and_upsert_one(client, "HYG")
         assert r["result"] == "skipped"
         assert not EtfNavHistory.objects.filter(symbol="HYG").exists()
+
+
+def _epoch_et(y, m, d, hh=16, mm=0):
+    """ET wall-clock → epoch (quote timestamp 생성용, 날짜 식별 목적)."""
+    return int(datetime(y, m, d, hh, mm, tzinfo=ZoneInfo("America/New_York")).timestamp())
+
+
+# 2026-07-27(월) 정본 거래일 epoch. 오늘 실 사고(07-27 nav = 07-24 strike 재기록) 재현.
+_TS_MON_0727 = _epoch_et(2026, 7, 27)
+_TS_MON_0105 = _epoch_et(2026, 1, 5)  # 겨울(EST) DST 경계용 (월요일)
+
+
+@pytest.mark.django_db
+class TestNavUpdatedAtStored:
+    """A — nav_updated_at(FMP strike 시각) 원장 병기."""
+
+    def test_upsert_stores_nav_updated_at(self):
+        dt = datetime(2026, 7, 27, 16, 30, tzinfo=ZoneInfo("America/New_York"))
+        upsert_etf_nav("HYG", date(2026, 7, 27), _D("79.19"), _D("79.27"), nav_updated_at=dt)
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 7, 27))
+        assert row.nav_updated_at == dt
+
+    def test_upsert_nav_updated_at_defaults_null(self):
+        """하위호환: nav_updated_at 미전달 시 null(기존 6행·기존 호출)."""
+        upsert_etf_nav("HYG", date(2026, 7, 27), _D("79.19"), _D("79.27"))
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 7, 27))
+        assert row.nav_updated_at is None
+
+    def test_revise_updates_nav_updated_at(self):
+        dt1 = datetime(2026, 7, 27, 16, 30, tzinfo=ZoneInfo("America/New_York"))
+        dt2 = datetime(2026, 7, 28, 6, 0, tzinfo=ZoneInfo("America/New_York"))
+        upsert_etf_nav("HYG", date(2026, 7, 27), _D("79.19"), _D("79.27"), nav_updated_at=dt1)
+        assert upsert_etf_nav(
+            "HYG", date(2026, 7, 27), _D("79.30"), _D("79.28"), nav_updated_at=dt2
+        ) == "updated"
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 7, 27))
+        assert row.nav_updated_at == dt2
+
+    def test_resolve_populates_nav_updated_at(self):
+        """resolve 통과(마감 후) 시 원장에 nav_updated_at 저장."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0727},
+            info={"symbol": "HYG", "nav": 79.30, "updatedAt": "2026-07-27T20:30:00Z"},  # 16:30 ET
+        )
+        r = resolve_and_upsert_one(client, "HYG")
+        assert r["result"] == "created"
+        row = EtfNavHistory.objects.get(symbol="HYG", date=date(2026, 7, 27))
+        assert row.nav_updated_at is not None
+        # 16:30 EDT = 20:30 UTC
+        assert row.nav_updated_at.astimezone(ZoneInfo("America/New_York")).hour == 16
+
+
+@pytest.mark.django_db
+class TestCloseGateCprime:
+    """C′ — 마감시각 게이트 (updatedAt ≤ 거래일 16:00 ET → skip, 구형 strike 차단)."""
+
+    def test_skip_pre_close_stale(self):
+        """오늘 실사고 재현: 07-27 14:19 ET 갱신 = 07-24 strike 재기록 → skip."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0727},
+            info={"symbol": "HYG", "nav": 79.19, "updatedAt": "2026-07-27T18:19:20Z"},  # 14:19 ET
+        )
+        r = resolve_and_upsert_one(client, "HYG")
+        assert r["result"] == "skipped"
+        assert r["reason"] == "nav_pre_close"
+        assert not EtfNavHistory.objects.filter(symbol="HYG").exists()
+
+    def test_accept_post_close_same_day(self):
+        """마감 후 당일 게시(16:30 ET) → created."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0727},
+            info={"symbol": "HYG", "nav": 79.30, "updatedAt": "2026-07-27T20:30:00Z"},  # 16:30 ET
+        )
+        assert resolve_and_upsert_one(client, "HYG")["result"] == "created"
+
+    def test_accept_next_day_publish(self):
+        """익일 새벽 게시(07-28 06:00 ET, 1영업일 lag) → created(C′·lag 모두 통과)."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0727},
+            info={"symbol": "HYG", "nav": 79.30, "updatedAt": "2026-07-28T10:00:00Z"},  # 06:00 ET
+        )
+        assert resolve_and_upsert_one(client, "HYG")["result"] == "created"
+
+    def test_dst_winter_pre_close_skip(self):
+        """겨울 EST(UTC−5): 01-05 14:00 EST(마감 전) → skip (offset 자동)."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0105},
+            info={"symbol": "HYG", "nav": 79.19, "updatedAt": "2026-01-05T19:00:00Z"},  # 14:00 EST
+        )
+        r = resolve_and_upsert_one(client, "HYG")
+        assert r["result"] == "skipped" and r["reason"] == "nav_pre_close"
+
+    def test_dst_winter_post_close_accept(self):
+        """겨울 EST: 01-05 16:30 EST(마감 후) → created (offset 자동)."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0105},
+            info={"symbol": "HYG", "nav": 79.30, "updatedAt": "2026-01-05T21:30:00Z"},  # 16:30 EST
+        )
+        assert resolve_and_upsert_one(client, "HYG")["result"] == "created"
+
+    def test_lag_gate_precedes_close_gate(self):
+        """병존·순서: lag 초과는 nav_lag_로 skip(C′ 도달 전) — 기존 reason 보존."""
+        client = _FakeClient(
+            quote={"symbol": "HYG", "price": 79.27, "timestamp": _TS_MON_0727},
+            info={"symbol": "HYG", "nav": 79.19, "updatedAt": "2026-07-10T20:00:00Z"},  # 먼 과거
+        )
+        r = resolve_and_upsert_one(client, "HYG")
+        assert r["result"] == "skipped" and r["reason"].startswith("nav_lag_")
 
 
 @pytest.mark.django_db
