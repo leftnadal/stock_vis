@@ -1,0 +1,96 @@
+# type_change 매트릭스 (총 119건)
+
+현재 타입 → LLM 제안 타입 : 건수
+   COMPETES_WITH → COMPETES_WITH            : 17
+    PARTNER_WITH → PARTNER_WITH             : 16
+     SUPPLIES_TO → SUPPLIES_TO              : 15
+   COMPETES_WITH → (미지정·match=False)        : 11
+     SUPPLIES_TO → (미지정·match=False)        : 9
+     SUPPLIES_TO → PARTNER_WITH             : 9
+    PARTNER_WITH → (미지정·match=False)        : 8
+      DEPENDS_ON → DEPENDS_ON               : 5
+      DEPENDS_ON → (미지정·match=False)        : 5
+     SUPPLIES_TO → DEPENDS_ON               : 5
+    PARTNER_WITH → COMPETES_WITH            : 4
+    PARTNER_WITH → DEPENDS_ON               : 4
+      DEPENDS_ON → COMPETES_WITH            : 3
+      DEPENDS_ON → SUPPLIES_TO              : 3
+    PARTNER_WITH → SUPPLIES_TO              : 2
+   COMPETES_WITH → SUPPLIES_TO              : 1
+   COMPETES_WITH → DEPENDS_ON               : 1
+   COMPETES_WITH → PARTNER_WITH             : 1
+
+★ 119건 3분해: 진짜 타입변경(제안≠현재) 33건 · 자가모순(match=False인데 같은 타입) 53건 · 미지정(match=False·제안없음) 33건
+★ SUPPLIES_TO ↔ DEPENDS_ON 상호 플립: 8건 (방향 컨벤션 충돌 후보)
+★ 실효 타입변경률 = 33/270 = 12% (raw 44%는 자가모순·미지정 포함 과대)
+
+## 셀별 대표 사례 2건
+
+[COMPETES_WITH → COMPETES_WITH] 17건
+   · AAPL↔SYF: SEC 10-K: In addition, some larger technology focused companies, e.g., Apple and Google, and la
+   · ANET↔AVGO: SEC 10-K: For example, Broadcom has acquired VMware, Hewlett Packard Enterprise has acquired Ju
+
+[PARTNER_WITH → PARTNER_WITH] 16건
+   · AKAM↔APTV: SEC 10-K: We market and sell our solutions globally through our field sales and services organi
+   · AKAM↔MSFT: SEC 10-K: We market and sell our solutions globally through our field sales and services organi
+
+[SUPPLIES_TO → SUPPLIES_TO] 15건
+   · ALGN↔IDXX: SEC 10-K: We also sell our products to dental laboratories who use our products to manufacture 
+   · AOS↔AMZN: SEC 10-K: We sell our A. O. Smith branded water treatment products primarily through our water 
+
+[COMPETES_WITH → (미지정·match=False)] 11건
+   · ALGN↔IDXX: SEC 10-K: The Invisalign System competes primarily against traditional wires and brackets and i
+   · BAX↔COO: SEC 10-K: Larger companies such as Johnson & Johnson, Baxter International, Medtronic and Holog
+
+[SUPPLIES_TO → (미지정·match=False)] 9건
+   · A↔WST: SEC 10-K: Prior to joining West, he served as the Chief Financial Officer of Agilent Technologi
+   · ALGN↔FTNT: SEC 10-K: Our current manufacturing partners include Accton Technology (“Accton”), IBASE Techno
+
+[SUPPLIES_TO → PARTNER_WITH] 9건
+   · ETN↔FTNT: SEC 10-K: Our current manufacturing partners include Accton Technology (“Accton”), IBASE Techno
+   · GIS↔DRI: SEC 10-K: We were acquired by General Mills, Inc. in 1970 and became a separate publicly held c
+
+[PARTNER_WITH → (미지정·match=False)] 8건
+   · CRWD↔AMZN: SEC 10-K: To further meet the compliance demands of the government, customers can elect to depl
+   · EQT↔XEL: SEC 10-K: Prior to that he served as Senior Director, Technical Accounting and Financial Report
+
+[DEPENDS_ON → DEPENDS_ON] 5건
+   · AMGN↔HCA: SEC 10-K: In 2024, Change Healthcare, a large U.S. insurance claim and co-pay card processing c
+   · CI↔HCA: SEC 10-K: For example, Change Healthcare, a health technology company owned by UnitedHealth Gro
+
+[DEPENDS_ON → (미지정·match=False)] 5건
+   · CCI↔EQT: SEC 10-K: The restrictions and requirements imposed on our business and operations pursuant to 
+   · CSGP↔GOOGL: SEC 10-K: For example, starting on July 1, 2024, Universal Analytics (UA), Google’s legacy anal
+
+[SUPPLIES_TO → DEPENDS_ON] 5건
+   · ALGN↔AVGO: SEC 10-K: We use third-party CMs for a significant majority of our assembly and test operations
+   · COR↔ABBV: SEC 10-K: In 2025, three wholesale distributors (McKesson Corporation, Cardinal Health, Inc. an
+
+[PARTNER_WITH → COMPETES_WITH] 4건
+   · ABBV↔ABT: SEC 10-K: On January 1, 2013, AbbVie became an independent, publicly-traded company as a result
+   · CAH↔IONQ: SEC 10-K: The performance of our MSO platforms positively impacted the year-over-year compariso
+
+[PARTNER_WITH → DEPENDS_ON] 4건
+   · ANET↔AVGO: SEC 10-K: Our product development efforts also depend upon continued collaboration with our key
+   · DLR↔DLR: SEC 10-K: Digital Realty Trust, Inc. (the Parent), through its controlling interest in Digital 
+
+[DEPENDS_ON → COMPETES_WITH] 3건
+   · GDDY↔META: SEC 10-K: Our customers and their businesses rely heavily on tools and solutions that help them
+   · GPN↔USB: SEC 10-K: Elavon, Inc., a subsidiary of U.S. Bancorp
+
+[DEPENDS_ON → SUPPLIES_TO] 3건
+   · HWM↔AEE: SEC 10-K: Arconic Architectural Products SAS (“AAP SAS”) (now a subsidiary of Arconic Corporati
+   · SYF↔FISV: SEC 10-K: For example, our principal technology and related services (including credit card tra
+
+[PARTNER_WITH → SUPPLIES_TO] 2건
+   · PANW↔IBM: SEC 10-K: In June 2025, we amended the terms of our contingent consideration arrangement with I
+   · WST↔ROP: SEC 10-K: He has also served as an Independent Director at OraSure Technologies, Inc. since 202
+
+[COMPETES_WITH → SUPPLIES_TO] 1건
+   · DAY↔WDAY: SEC 10-K: These vendors include, without limitation, Anaplan, Inc.; ADP; Coupa Software Inc.; D
+
+[COMPETES_WITH → DEPENDS_ON] 1건
+   · EBAY↔GOOG: SEC 10-K: From time to time, Alphabet has made changes to their algorithms and methodologies th
+
+[COMPETES_WITH → PARTNER_WITH] 1건
+   · HPQ↔MSFT: SEC 10-K: Our primary competitors are Acer Inc., Apple Inc., ASUSTeK Computer Inc., Dell Inc., 

@@ -37,12 +37,13 @@ const COPY: Record<
     retry: true,
     tone: 'error',
   },
+  // ⑳-3 S2-B 섹터-b: 섹터 지도는 접힘(부활=백본 트랙) → 영구 실패("다시 시도") 제거·실동선 안내.
   'sector-unavailable': {
     testId: 'graph-state-sector-unavailable',
-    title: '섹터 관계망은 현재 이용할 수 없어요',
-    body: '섹터 관계망은 지금 일시적으로 제공되지 않아요. 종목을 선택하면 관계망을 볼 수 있어요.',
-    retry: true,
-    tone: 'error',
+    title: '종목 관계망을 이용해 보세요',
+    body: '섹터 단위 지도는 준비 중이에요. 종목을 선택하면 관계망을 볼 수 있어요.',
+    retry: false,
+    tone: 'neutral',
   },
 };
 

@@ -1,0 +1,25 @@
+# target_not_in_basis 구조 분류
+(raw target_in_basis=False = 169건 / 이 중 단독 pending 사유 89건, 나머지는 type_change 등 상위사유 병존)
+
+(a) 출처기업 경쟁사 나열·center(symbol_a) 존재, 타깃(symbol_b) 미존재: 14건
+(b) 두 심볼 모두 basis에 없음: 83건
+(c) 나열형이나 둘 다 없음(원천 evidence 100자 캡 절단 추정): 72건
+
+
+## (a) center 존재 대표 3건
+   · ABBV↔COO [COMPETES_WITH]: SEC 10-K: With Paragard, we compete with manufacturers of hormonal IUDs including Bayer an
+   · CAT↔WAB [COMPETES_WITH]: SEC 10-K: Our primary competition for locomotives is Progress Rail, owned by a subsidiary 
+   · DAY↔WDAY [COMPETES_WITH]: SEC 10-K: These vendors include, without limitation, Anaplan, Inc.; ADP; Coupa Software In
+
+## (b) 둘다 없음 대표 3건
+   · AAPL↔SYF [COMPETES_WITH]: SEC 10-K: In addition, some larger technology focused companies, e.g., Apple and Google, a
+   · ANET↔HPE [COMPETES_WITH]: SEC 10-K: competition also coming from other large network equipment and system vendors, i
+   · ANET↔NVDA [COMPETES_WITH]: SEC 10-K: competition also coming from other large network equipment and system vendors, i
+
+## (c) 기타/절단 대표 3건
+   · AAPL↔HPQ [COMPETES_WITH]: SEC 10-K: Our primary competitors are Acer Inc., Apple Inc., ASUSTeK Computer Inc., Dell I
+   · ABNB↔EXPE [COMPETES_WITH]: SEC 10-K: Businesses such as Airbnb, Vrbo and Booking.com have emerged as the leaders, bri
+   · ABT↔DXCM [COMPETES_WITH]: SEC 10-K: In selling our current CGM systems, we compete directly with the Diabetes Care d
+
+★ 완화안('심볼_a 또는 symbol_b 실존') 적용 시 현재 pending 215건 중 → auto 이동 가능 **5건**
+  (완화 후에도 type_change_proposed·저confidence·시그니처fail은 잔류 pending)

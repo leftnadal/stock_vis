@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-07-29] D-DOMAIN-AUTOMATION — 관계 도메인 태깅 자동-C 파이프라인 [chainsight]
+
+> 트랙: ⑳-3 S2-B. 브랜치 `monorepo/sess-20-3-s2b`.
+
+**결정**: 자동-C 채택 — 파이프라인 훅 + 기계검증 + 임계 자동승인, 검수는 예외 중심. **안전핀 2**: ①타입 변경은 영구 비자동(검수 승인만이 타입 변경) ②첫 배치=게이트 캘리브레이션(`DOMAIN_AUTO_APPROVE` 스위치는 검수 후 활성).
+
+**Why**: SEC 270건 basis 실존이나 품질 편차(오라벨·타깃 비집중, S2-B STEP0). 전건 수동 검수는 비확장, 전건 자동은 위험. 자동-C = 기계검증 통과 + 고confidence만 auto 후보, 나머지 pending 예외 검수 → 확장성과 안전 양립.
+
+**How to apply**: 코어 `apps/chain_sight/services/domain_tagging.py`(커맨드·훅 공유, 복제0). LLM=`generate_with_circuit`(gemini-2.5-flash, JSON 프롬프트+파싱). 기계검증 ①타깃 실존 ②타입 시그니처(경쟁어휘 비경쟁타입=fail) ③confidence≥임계. 게이트: 전항 pass ∧ type_match → auto 후보(단 `DOMAIN_AUTO_APPROVE`=False면 pending). **draft·machine_check만 기록, relation_domain(승인본)은 검수 승인=Phase 2**. 마이그 0028 additive(미적용, 배포 게이트). 첫 배치 CSV=`outputs/domain_tagging/`. TASKQUEUE DOMAIN-AUTO-SWITCH(캘리브레이션 후 THRESHOLD 확정+스위치).
+
+## [2026-07-29] D-MINDMAP — ego 관계 마인드맵 뷰 맵-3(접힘 카테고리+클릭 펼침) [chainsight] [frontend]
+
+> 트랙: ⑳-3 S3(후속). 이번 S2-B는 데이터(도메인 태그)만.
+
+**결정**: 맵-3 채택 — 접힘 카테고리 + 클릭 펼침. 타이브레이커 = 라벨 겹침 재발 방지(방사형 뭉침 회귀 회피).
+
+**Why**: 지도-B로 접은 관계 지도를 도메인 기반 마인드맵으로 대체 후보. 접힘+펼침이 초기 뭉침·라벨 겹침 문제를 구조적으로 회피(⑳-G S3 오버레이 임시처치의 근본 대안). 구현=S3 트랙, 착수조건=S2-B 도메인 반영(relation_domain 승인본).
+
+**How to apply**: 데이터 선행(S2-B: relation_domain 필드+태깅)→S3 UI(MINDMAP-EGO-VIEW). 섹터-b(D-20-3-MAP-FOLD 연장)로 섹터 지도 진입도 숨김(마진 2.00, 섹터 그래프 Neo4j 동결·실노출0).
+
 ## [2026-07-09] 유니버스 소스 복구 (TH-6) — 결정9 = B 폴백(Wikipedia) 확정
 
 ### 결정9: 유니버스 소스 = Wikipedia (FMP Starter 미포함 → 사전승인 B 폴백)
@@ -5307,6 +5327,22 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 
 **1단 집행 결과(MP-UNIFY-1, 2026-07-29)**: v1 API 10→3. 라우트·뷰 7종 + 개별 serializer 5종 제거, 서비스/클라이언트 메서드는 pulse 집계 경유 공유로 전량 보존. pulse/sync/sync-status IDENTICAL(진입점·서비스·serializer 바이트 불변, 회귀 테스트로 라우트 resolve·pulse 필드계약 못박음). v2·프론트·intraday 무접촉·마이그 0.
 
+## [2026-07-30] D-REL-DIRECTION-CONVENTION — 관계 방향 컨벤션(SUPPLIES_TO 정본) [chainsight]
+
+> 트랙: ⑳-3 S2-C. 브랜치 `monorepo/sess-20-3-s2c`.
+
+**결정**: 관계 방향의 정본 = **재화·부품 흐름 방향 기준 `SUPPLIES_TO`**. `DEPENDS_ON`은
+**매출 의존(고객 집중)** 의미일 때만 사용한다. `SUPPLIES_TO ↔ DEPENDS_ON` 상호 플립(같은
+사실을 양방향으로 라벨)은 **정본(SUPPLIES_TO)으로 정규화**한다.
+
+**Why**: 캘리브레이션(S2-B/S2-C) 실측상 SD 상호 플립 8건이 방향 컨벤션 충돌로 확인됨. 공급자
+관점(SUPPLIES_TO)과 수요자 관점(DEPENDS_ON)이 같은 부품 흐름을 서로 반대로 태깅 → LLM
+type_match 자가모순·검수 노이즈의 구조적 원인. 흐름 방향을 정본으로 못박아 양방향 중복을 제거한다.
+
+**How to apply**: ⑴ 부품·재화가 A→B로 흐르면 `A SUPPLIES_TO B`(정본). ⑵ `DEPENDS_ON`은
+"매출의 상당 비중이 특정 고객에 집중"처럼 **의존(수요 집중)** 의미에 한정. ⑶ SD 상호 플립
+후보는 검수 시 SUPPLIES_TO로 수렴. ⑷ 이 컨벤션은 검수(Phase 2)·차기 프롬프트 개정의 기준이며,
+S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재작성 아님** — 검수·재추출에서 적용.
 ### D-LANDING-ONE-SESSION-PER-APPROVAL — origin/main 착지·push = 승인 1건당 전담 세션 1개 (규약, 2026-07-29)
 
 **결정(규약)**: **origin/main 착지·push 작업은 하나의 승인당 전담 세션 1개**에만 위임한다. **동일 착지 승인을 복수 세션에 중복 전달 금지.** 착지 세션은 자기 트랙에 대해서만 rebase/ff-push를 수행하고, 다른 세션의 착지분과 경합하지 않는다.

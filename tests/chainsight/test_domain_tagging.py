@@ -1,0 +1,218 @@
+"""⑳-3 S2-B 도메인 태깅 코어 테스트 — 기계검증·게이트·하드룰(타입 비자동)."""
+
+import pytest
+from django.test import override_settings
+
+from apps.chain_sight.services import domain_tagging as dt
+
+
+# ── JSON 파싱 ──
+def test_parse_strips_markdown_fence():
+    out = dt.parse_llm_json('```json\n{"domain_tags": ["메모리·HBM"], "confidence": 0.9}\n```')
+    assert out["domain_tags"] == ["메모리·HBM"]
+
+
+def test_parse_malformed_returns_none():
+    assert dt.parse_llm_json("이건 JSON이 아님") is None
+    assert dt.parse_llm_json("") is None
+
+
+def test_parse_extracts_object_amid_prose():
+    out = dt.parse_llm_json('설명... {"confidence": 0.5} 끝')
+    assert out == {"confidence": 0.5}
+
+
+# ── 기계검증 ──
+def _mc(relation_type, basis, llm_out, target="MU", target_name="Micron Technology"):
+    return dt.machine_check(
+        symbol_a="NVDA", symbol_b=target, center="NVDA",
+        relation_type=relation_type, basis=basis,
+        target_name=target_name, llm_out=llm_out,
+    )
+
+
+def test_target_in_basis_by_symbol_and_name():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase from Micron and MU.", {"confidence": 0.9, "type_match": {"match": True}})
+    assert mc["target_in_basis"] is True
+
+
+def test_target_absent_fails():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: unrelated text about revenue.", {"confidence": 0.9, "type_match": {"match": True}})
+    assert mc["target_in_basis"] is False
+
+
+def test_compete_vocab_in_noncompete_type_fails_signature():
+    # DEPENDS_ON인데 문장은 경쟁 어휘 → 시그니처 불일치
+    mc = _mc("DEPENDS_ON", "SEC 10-K: our competitors include Micron.", {"confidence": 0.9, "type_match": {"match": True}})
+    assert mc["type_signature_ok"] is False
+
+
+def test_compete_vocab_in_compete_type_ok():
+    mc = _mc("COMPETES_WITH", "SEC 10-K: we compete directly with Micron.", {"confidence": 0.9, "type_match": {"match": True}})
+    assert mc["type_signature_ok"] is True
+
+
+@override_settings(DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_confidence_threshold():
+    hi = _mc("SUPPLIES_TO", "SEC 10-K: purchase from Micron MU.", {"confidence": 0.8, "type_match": {"match": True}})
+    lo = _mc("SUPPLIES_TO", "SEC 10-K: purchase from Micron MU.", {"confidence": 0.6, "type_match": {"match": True}})
+    assert hi["confidence_ok"] is True
+    assert lo["confidence_ok"] is False
+
+
+# ── 게이트 + 하드룰 ──
+@override_settings(DOMAIN_AUTO_APPROVE=True, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_hard_rule_type_change_never_auto_even_with_high_conf():
+    """★하드룰: LLM이 타입 변경 제안하면 confidence·검증 무관 pending(auto 금지)."""
+    mc = _mc("DEPENDS_ON", "SEC 10-K: purchase memory from Micron MU.",
+             {"confidence": 0.99, "type_match": {"match": False, "suggested_type": "SUPPLIES_TO"}})
+    gate_class, status = dt.decide_gate(mc)
+    assert gate_class == "pending"
+    assert status == "pending"  # AUTO_APPROVE=True여도 타입변경은 절대 auto 아님
+
+
+@override_settings(DOMAIN_AUTO_APPROVE=True, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_auto_candidate_becomes_auto_when_switch_on():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": True}})
+    gate_class, status = dt.decide_gate(mc)
+    assert gate_class == "auto_candidate"
+    assert status == "auto"
+
+
+@override_settings(DOMAIN_AUTO_APPROVE=False, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_auto_candidate_stays_pending_when_switch_off():
+    """캘리브레이션 전(DOMAIN_AUTO_APPROVE=False): auto 후보도 status=pending(반영 보류)."""
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": True}})
+    gate_class, status = dt.decide_gate(mc)
+    assert gate_class == "auto_candidate"
+    assert status == "pending"
+
+
+# ── tag_one 통합(코어, mock LLM) ──
+def test_tag_one_json_fail_marks_not_ok():
+    out = dt.tag_one(
+        symbol_a="NVDA", symbol_b="MU", center="NVDA", relation_type="SUPPLIES_TO",
+        basis="SEC 10-K: purchase memory from Micron MU.", target_name="Micron",
+        llm_call=lambda s, c: "not json at all",
+    )
+    assert out["ok"] is False
+    assert out["review_status"] == "pending"
+    assert out["draft"] is None
+
+
+@override_settings(DOMAIN_AUTO_APPROVE=False)
+def test_tag_one_draft_no_approved_write():
+    """코어는 draft만 산출 — 승인본은 반환 구조에 없음(relation_domain 미기록 보장)."""
+    out = dt.tag_one(
+        symbol_a="NVDA", symbol_b="MU", center="NVDA", relation_type="SUPPLIES_TO",
+        basis="SEC 10-K: We purchase memory from Micron MU.", target_name="Micron",
+        llm_call=lambda s, c: '{"domain_tags": ["메모리·HBM"], "type_match": {"match": true}, "confidence": 0.9}',
+    )
+    assert out["ok"] is True
+    assert out["draft"] == "메모리·HBM"
+    assert out["review_status"] == "pending"  # 스위치 off
+    assert "relation_domain" not in out  # 승인본 키 자체가 없음
+
+
+# ── S2-C-1: 자가모순 필터(match=False인데 동일 타입 재제안=LLM 노이즈) ──
+def test_self_contradiction_flagged():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": False, "suggested_type": "SUPPLIES_TO"}})
+    assert mc["self_contradiction"] is True
+
+
+def test_self_contradiction_case_insensitive():
+    """제안·현재 타입 대소문자 차이만 있어도 자가모순(정규화 비교)."""
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": False, "suggested_type": "supplies_to"}})
+    assert mc["self_contradiction"] is True
+
+
+def test_genuine_type_change_not_self_contradiction():
+    mc = _mc("DEPENDS_ON", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": False, "suggested_type": "SUPPLIES_TO"}})
+    assert mc["self_contradiction"] is False
+
+
+def test_match_true_not_self_contradiction():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.9, "type_match": {"match": True}})
+    assert mc["self_contradiction"] is False
+
+
+@override_settings(DOMAIN_AUTO_APPROVE=True, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_gate_self_contradiction_bucket_never_auto():
+    """자가모순은 노이즈 버킷 → 검증 전부 통과·AUTO_APPROVE여도 auto 아님(보수적)."""
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase memory from Micron MU.",
+             {"confidence": 0.99, "type_match": {"match": False, "suggested_type": "SUPPLIES_TO"}})
+    assert mc["self_contradiction"] is True
+    gate_class, status = dt.decide_gate(mc)
+    assert gate_class == "noise_self_contradiction"
+    assert status == "pending"
+
+
+# ── S2-C-2: 나열형 target 인식 + 심볼 오탐 차단 ──
+def test_symbol_bounded_match_ok():
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We purchase from Micron and MU.",
+             {"confidence": 0.9, "type_match": {"match": True}}, target="MU", target_name="Micron")
+    assert mc["target_in_basis"] is True
+
+
+def test_short_symbol_substring_not_promoted():
+    """★오탐 방지(지시서 필수): 심볼 'V'가 단어 속 우연 매칭(over, value)돼도 target 인정 안 함."""
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We derive value from diverse overseas vendors.",
+             {"confidence": 0.99, "type_match": {"match": True}}, target="V", target_name="Visa")
+    assert mc["target_in_basis"] is False
+
+
+@override_settings(DOMAIN_AUTO_APPROVE=True, DOMAIN_CONFIDENCE_THRESHOLD=0.75)
+def test_incidental_symbol_match_not_auto():
+    """★오탐 방지: 나열 아닌 문장의 우연 심볼 매칭은 auto로 승격되지 않는다."""
+    mc = _mc("SUPPLIES_TO", "SEC 10-K: We derive value from diverse overseas vendors.",
+             {"confidence": 0.99, "type_match": {"match": True}}, target="V", target_name="Visa")
+    gate_class, status = dt.decide_gate(mc)
+    assert gate_class == "pending"  # target_in_basis False → auto_candidate 아님
+
+
+def test_name_match_recovers_when_symbol_bounded_absent():
+    """심볼(HAL)은 단어경계 부재('Halliburton' 속)여도 사명 토큰으로 복구."""
+    mc = _mc("COMPETES_WITH", "SEC 10-K: OFSE competitors include SLB, Halliburton, NOV, Weatherford.",
+             {"confidence": 0.9, "type_match": {"match": True}}, target="HAL", target_name="Halliburton Company")
+    assert mc["target_in_basis"] is True
+
+
+def test_is_enumeration_detects_list():
+    assert dt._is_enumeration("Acer Inc., Apple Inc., ASUSTeK Computer Inc., Dell Inc.") is True
+    assert dt._is_enumeration("We sell our products through wholesale channels.") is False
+
+
+def test_machine_check_exposes_enumeration_flag():
+    mc = _mc("COMPETES_WITH", "SEC 10-K: competitors include SLB, Halliburton, NOV, Weatherford.",
+             {"confidence": 0.9, "type_match": {"match": True}}, target="HAL", target_name="Halliburton")
+    assert mc["is_enumeration"] is True
+
+
+# ── S2-C-3: 태그 정규화(데이터 파일 매핑) ──
+def test_normalize_tag_cluster():
+    assert dt.normalize_tag("엔터프라이즈 클라우드") == "클라우드·엔터프라이즈SW"
+    assert dt.normalize_tag("신용카드 결제") == "금융·결제·거래소"
+
+
+def test_normalize_tag_misc_fold():
+    assert dt.normalize_tag("유통") == "기타"
+
+
+def test_normalize_tag_identity_preserved():
+    """구체 태그는 원문 유지(옵션B 보존 정책)."""
+    assert dt.normalize_tag("수술용 로봇") == "수술용 로봇"
+
+
+def test_normalize_tag_unregistered_is_identity():
+    assert dt.normalize_tag("전혀 새로운 태그 zzz") == "전혀 새로운 태그 zzz"
+
+
+def test_normalize_tag_none_and_blank():
+    assert dt.normalize_tag(None) is None
+    assert dt.normalize_tag("") == ""

@@ -27,13 +27,13 @@ describe('GraphStatePanel (⑳-E)', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
   });
 
-  it('sector-unavailable: 섹터 관계망 불가 명시 + 재시도', () => {
+  it('sector-unavailable: ⑳-3 S2-B 섹터-b — 다시 시도 제거·실동선 안내(영구 실패 아님)', () => {
     const onRetry = vi.fn();
     render(<GraphStatePanel variant="sector-unavailable" onRetry={onRetry} />);
     expect(screen.getByTestId('graph-state-sector-unavailable')).toBeInTheDocument();
-    expect(screen.getByText(/섹터 관계망은 현재 이용할 수 없어요/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: '다시 시도' }));
-    expect(onRetry).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/종목을 선택하면 관계망을 볼 수 있어요/)).toBeInTheDocument();
+    // "다시 시도" 버튼 제거(retry=false) — onRetry 넘겨도 미렌더
+    expect(screen.queryByRole('button', { name: '다시 시도' })).not.toBeInTheDocument();
   });
 
   it('세 상태는 서로 다른 testId 로 구분된다 (조용한 수렴 금지)', () => {
