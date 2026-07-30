@@ -61,7 +61,7 @@
 
 | ID | Task | Agent | Depends On | Status | 근거/비고 |
 |----|------|-------|------------|--------|-----------|
-| Q20-DISCOVERY-REMEASURE | 2026-07-30경 discovery 신규 RC 카운트 재측정(read-only). 재개=종결 / 여전히 0이면 유니버스 확장 결정 사이클 개시 | @backend | 지시서⑦(match_score 정규화) | **예약(07-30경)** | D-DISCOVERY-WATCH. broad 입력 재개(07-08) 후 자연 재개 관찰. 확장 전제=⑦ 완료 |
+| Q20-DISCOVERY-REMEASURE | 2026-07-30경 discovery 신규 RC 카운트 재측정(read-only). 재개=종결 / 여전히 0이면 유니버스 확장 결정 사이클 개시 | @backend | 지시서⑦(match_score 정규화) | **✅ 재측정 완료(2026-07-30, ⑳-3 S2-C Part P)** | 결과=**신규 여전히 ≈0**: RC 13,699 무증가·07-16 이후 신규 2건(뉴스 유래 0)·마지막 discovery 07-16. 입력(CoMentionEdge)은 활발(07-16후 4,902 신규·07-29 유입) → **입력 단절 아닌 유니버스 포화 확정**(분류 b). 리포트 `docs/chain_sight/discovery_remeasure_2026-07-30/REPORT.md`. 확장 착수=전제 ⑦ 선행 미완 → 확장 결정 사이클은 ⑦ 뒤. D-DISCOVERY-WATCH |
 | Q20-2-BACKBONE-GRAPH | ⑳-2 백본 그래프: 중심성 top-N + RelationConfidence 상위 엣지 필터 뷰 | @frontend | ⑳-1 배포 + ego 5관점 메모 접수 | **대기(착수 조건)** | D-CENTRALITY-UI-TRACK(A⊂C). ⑳-1 데이터/색/ego 계약 재사용. ⑳-E로 ego 화면 복구됨→5관점 메모 수집 가능해짐 |
 | SECTOR-MODE-DISPOSITION | 섹터 모드 거취: (b) 숨김/비활성 확정 | @frontend | — | **✅종결(⑳-3 S2-B 섹터-b, 07-29)**: 섹터 지도 진입 숨김(MarketGraphCanvas `SECTOR_MAP_ENABLED=false`·인기섹터 버튼 접힘·빈상태 정직화·GraphStatePanel 다시시도 제거). Neo4j 동결·실노출0. **부활 조건 = 백본 트랙(Q20-3-BACKBONE-SECTOR) 재설계** |
 | MINDMAP-EGO-VIEW | ⑳-3 S3: ego 관계 마인드맵 뷰(맵-3 접힘 카테고리+클릭 펼침, 도메인 기반). D-MINDMAP | @frontend | **착수조건=S2-B 도메인 반영**(relation_domain 승인본) | **대기(S2-B 후)** | 지도-B/섹터-b로 접은 지도의 근본 대안. 라벨 겹침·초기 뭉침 구조적 회피. 데이터(도메인 태그) 선행 |
