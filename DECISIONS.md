@@ -5314,3 +5314,14 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **Why**: 2026-07-29 착지 경합 니어미스 — 같은 트랙(sv-cn-repair·sv-mp-unify-s0) 착지를 **두 세션이 동시에 시도**했다(한 세션이 게이트를 확인하는 사이 다른 세션이 no-ff 머지로 선착지). 결과는 무사(멱등·ff 거부로 손실 0)했으나, 승인 1건이 여러 세션에 전달되면 base 꼬임·중복 머지·번호 선점 경합의 구조적 위험이 상존한다. 착지 권한을 세션 단위로 단일화해 경합 자체를 제거한다.
 
 **운용**: 착지 승인 시 "이 세션 전용" 명시(사용자) → 해당 세션만 push. 다른 세션이 같은 승인을 받으면 **HALT 후 상신**(이미 다른 세션에 위임됐는지 확인). 관련=[[lesson_branch_assignment_explicit_isolation]]·[[lesson_origin_main_advance_union_rebase]].
+---
+
+## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
+
+beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice를 beat 서두에서 온디맨드 보충(기존 stock_sync_service 재사용, 신규 모델·태스크 0). A안(추적 레지스트리) 승격 조건: 추적 종목 30개 초과 또는 monitor 외 두 번째 소비 앱 등장.
+
+**근거**: D-EOD-RECON 판정 — IONQ·TLN 45일 stale 원인 = S&P500 비편입으로 일일 자동수집 유니버스(`sp500_eod_service` = `SP500Constituent.filter(is_active=True)`) 밖 + 06-15 이후 온디맨드 트리거 부재. 가중 평가 B=0.843 채택(A 레지스트리 0.748·C 수동 0.620 기각).
+
+**구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
+
+**Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).
