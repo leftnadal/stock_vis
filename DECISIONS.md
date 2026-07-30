@@ -5039,6 +5039,12 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 
 **검증**: 신규 pytest 9(status 머신)·기존 backfill 11(멱등 3건 포함)·래퍼 dry-run(batch1→20창 매핑·카운터 불변)·완료 경로(next=11→DONE)·경계 GREEN(stdlib만). **활성화·라이브 2회 IDENTICAL·kickstart는 게이트(prod)**.
 
+**D-CN-REPAIR-AUTO-ADOPT (검토 관문 6종 통과 → 수동 게이트 공식 대체, CN-AUTO-REVIEW 2026-07-29)**: 9fca374d를 정식 검토 관문(G1 쿼터캡·G2 무소음실패금지·G3 범위한정·G4 멱등순번·G5 경계보안·G6 테스트)에 회부해 **전 항목 PASS 판정**. 이로써 C-N-REPAIR 재수집의 원 게이트 "**일 배치 병진 수동 실행**"(prod 쓰기+AV 쿼터 이중 사유)을 **"관문 통과한 무인 자동화"로 공식 대체**한다. 단 **활성화(launchctl load·kickstart)만은 여전히 디렉터 명시 승인 게이트**로 남는다(무인화된 것은 "매일의 트리거"이지 "최초 활성화"가 아님).
+- **관문 근거**: G1=`--max-requests 20` 하드캡 + 커맨드 `pending[:max_requests]` 슬라이스(≤20 req/실행) + plist StartCalendarInterval 1회/일·KeepAlive=false·RunAtLoad=false(스케줄 자체가 야간 1회 초과 불가). G5=`AlphaVantageNewsProvider`(shared) 경유·신규 직접호출 0·plist 자격증명 0. G3=next_batch>10 감지 시 DONE+자동 unload(상시 수집기 변질 차단)·대상일=계획서 `--dates`만.
+- **G2 보강(미달→PASS)**: 원안은 실행-후-실패(exit≠0·0건·밴드밖)만 ALERT로 표면화 → **"launchd가 아예 안 돌았음"(sleep/미발화)은 무감지**(OPS-NEWS-FRESHNESS 2.5개월 재발 구조). 보강 = `cn_repair_status.py check` 리포터(마지막 실행 경과일 → OK/STALE/NEVER/DONE, exit 1=주의) + 런북 "아침 확인 루틴" + 단위테스트 5건(check 3·소진종료 1·기존). status 테스트 9→14.
+- **범위 한정 재확인**: repair 계획서 10배치(192일)로 한정, 소진 후 자동 비활성. 일반 상시 broad 수집기로 변질 금지. 압축(한 밤 다배치)은 미채택(별도 승인 옵션).
+- **랜딩·활성화 분리**: 본 검토 세션은 **랜딩·push·plist 활성화를 하지 않는다**. 랜딩=별도 승인, 활성화=랜딩 후 worker_sync로 sv-worker-runtime 착지 → 런북 절차 병진 수동.
+
 ## [2026-07-13] D-EVENTGROUP-WINDOW — EventGroup co-mention 집계에 날짜 윈도우 실적용 (기본 21d·config)
 
 **맥락**: `event_group_pipeline._build_base(half_life)`가 `half_life` 파라미터를 **선언만 하고 본문에서 미사용** — `ChainNewsEvent(is_duplicate=False)` **전량**을 날짜 무관하게 co/doc 카운팅해 왔다. `EventGroup.window_days` 필드는 `half_life`(=21) 값을 저장하나 실제 윈도우링은 없었다(라벨과 행위 불일치). 결과: 데이터 누적 시 오래된 co-mention이 현재 그룹 내러티브를 **희석**(TASKQUEUE `EVENTGROUP-WINDOW`).

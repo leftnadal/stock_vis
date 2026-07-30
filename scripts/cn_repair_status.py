@@ -19,6 +19,8 @@ C-N-REPAIR 야간 재수집 래퍼(cn_repair_nightly.sh)의 순번 카운터·�
     python cn_repair_status.py record --status-file F --batch N \\
         --target T --saved S --updated U --exit E \\
         --status ok|ok_review|zero|fail --advance 0|1 --ts ISO
+    python cn_repair_status.py check --status-file F [--now ISO] [--stale-days N]
+        # 아침 확인: 마지막 실행 경과일 → OK/STALE/NEVER/DONE (exit 1=주의)
 """
 from __future__ import annotations
 
@@ -27,11 +29,13 @@ import json
 import os
 import statistics
 import sys
+from datetime import datetime, timezone
 
 DEFAULT_TOTAL = 10
 BAND_LOW = 0.3
 BAND_HIGH = 3.0
 MIN_SAMPLES = 3
+STALE_DAYS = 2  # 하루 1배치 → 2일 넘게 무실행이면 "안 돌고 있음"(sleep/launchd 미발화) 의심
 
 
 def _load(path: str) -> dict:
@@ -95,6 +99,50 @@ def cmd_record(args) -> int:
     return 0
 
 
+def cmd_check(args) -> int:
+    """아침 확인 루틴 — '안 돌았음'을 표면화한다 (G2: OPS-NEWS-FRESHNESS 재발 방지).
+
+    래퍼는 실행-후-실패만 ALERT를 남긴다. launchd가 (sleep 등으로) 아예 발화하지
+    않으면 로그도 ALERT도 없어 '조용히 정상'으로 오인된다. 이 명령이 마지막 실행
+    stamp를 읽어 경과일을 판정 → STALE(무실행)/NEVER/DONE/OK를 사람이 보게 한다.
+    exit 1 = 주의 필요(STALE/NEVER) → 후속 health_check(OPS-NEWS-FRESHNESS) 연동 가능.
+    """
+    path = args.status_file
+    if not os.path.exists(path):
+        print("ATTENTION: status.json 없음 — 배치 미착수 또는 로그 유실. next=1 (아직 한 번도 안 돎)")
+        return 1
+
+    data = _load(path)
+    total = data.get("total_batches", DEFAULT_TOTAL)
+    nxt = data.get("next_batch", 1)
+    last_ts = data.get("last_run_ts")
+    last_status = data.get("last_status")
+
+    now = datetime.fromisoformat(args.now) if args.now else datetime.now(timezone.utc)
+    days = None
+    if last_ts:
+        try:
+            dt = datetime.fromisoformat(last_ts)
+            days = (now - dt).total_seconds() / 86400.0
+        except ValueError:
+            days = None
+
+    if nxt > total:
+        verdict, code = "DONE (10/10 완료 — 자동화 비활성 기대)", 0
+    elif last_ts is None:
+        verdict, code = "NEVER (기록 없음)", 1
+    elif days is not None and days >= args.stale_days:
+        verdict, code = (f"STALE ({days:.1f}일 무실행 ≥ {args.stale_days} — "
+                         "launchd 미발화/sleep 확인 필요"), 1
+    else:
+        d = f"{days:.1f}일 전" if days is not None else "?"
+        verdict, code = f"OK ({d} 실행, status={last_status})", 0
+
+    print(f"last_run_ts={last_ts} · last_status={last_status} · "
+          f"next_batch={nxt}/{total} · verdict={verdict}")
+    return code
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="C-N-REPAIR 배치 상태 머신")
     sub = p.add_subparsers(dest="cmd", required=True)
@@ -117,6 +165,12 @@ def main(argv=None) -> int:
     pr.add_argument("--advance", type=int, choices=[0, 1], required=True)
     pr.add_argument("--ts", required=True)
     pr.set_defaults(func=cmd_record)
+
+    pc = sub.add_parser("check")
+    pc.add_argument("--status-file", required=True)
+    pc.add_argument("--now", default=None, help="ISO 기준시각(테스트용, 기본=현재 UTC)")
+    pc.add_argument("--stale-days", type=float, default=STALE_DAYS)
+    pc.set_defaults(func=cmd_check)
 
     args = p.parse_args(argv)
     return args.func(args)

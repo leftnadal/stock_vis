@@ -8,7 +8,7 @@
 | `scripts/cn_repair_nightly.sh` | 래퍼 — 순번 판정·1배치 실행·이상치 판정·알림·완료 자동 unload |
 | `scripts/cn_repair_status.py` | 상태 머신(체크포인트 카운터·이상치 밴드, stdlib) |
 | `docs/operations/com.stockvis.cn_repair.nightly.plist` | launchd plist (22:10 KST, RunAtLoad=false) |
-| `tests/unit/ops/test_cn_repair_status.py` | 상태 머신 단위 테스트 9건 |
+| `tests/unit/ops/test_cn_repair_status.py` | 상태 머신 단위 테스트 14건 (순번·밴드·소진종료·아침확인) |
 
 ## 동작 요약
 - **순번**: `status.json.next_batch`(기본 1). **성공 시에만 전진** → batch1 누락 방지(캘린더 산술 기각, D-CN-REPAIR-AUTO-CHECKPOINT).
@@ -68,6 +68,21 @@ launchctl bootout gui/$(id -u)/com.stockvis.cn_repair.nightly
 rm ~/Library/LaunchAgents/com.stockvis.cn_repair.nightly.plist
 # 재수집 데이터는 멱등 upsert(추가/갱신)만 — 롤백해도 파괴 없음.
 ```
+
+## 아침 확인 루틴 (G2 — "안 돌았음" 감지)
+
+래퍼는 **실행-후-실패**만 ALERT를 남긴다. launchd가 (기계 sleep 등으로) **아예 발화하지 않으면** 로그도 ALERT도 없어 "조용히 정상"으로 오인된다(OPS-NEWS-FRESHNESS 2.5개월 무감지 재발 구조). 이를 막으려면 매일 아침 아래 한 줄로 **마지막 실행 경과일**을 확인한다:
+
+```bash
+VENV=~/Library/Caches/pypoetry/virtualenvs/stock_javis_system-_jE0wOmK-py3.12/bin/python
+$VENV ~/worktrees/sv-worker-runtime/scripts/cn_repair_status.py check \
+  --status-file ~/Library/Logs/stockvis/cn_repair/status.json
+# verdict=OK(N일 전 실행) → 정상 / STALE(무실행) → launchd·sleep 확인 / NEVER → 미착수 / DONE → 10/10 완료
+# exit 1 = 주의 필요(STALE·NEVER) — 향후 OPS-NEWS-FRESHNESS health_check에 연동 가능
+```
+
+- **STALE**(기본 임계 2일 무실행): `launchctl print gui/$(id -u)/com.stockvis.cn_repair.nightly`로 잡 상태·마지막 발화 확인. sleep이 원인이면 다음 기상 시 자동 실행(catch-up).
+- **정상 판별**: verdict=OK(경과 <2일) + 당일 `ALERT_*.txt` 부재 = 조용한 정상.
 
 ## 남은 결정(디렉터)
 - **압축 실행**: rate-limit 이유라 기본 1배치/밤. 한 밤 다배치(sleep 간격)로 10일→단축 원하면 승인 필요.

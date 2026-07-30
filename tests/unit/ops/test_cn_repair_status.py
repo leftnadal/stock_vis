@@ -110,3 +110,51 @@ def test_ok_review_counts_as_sample_and_advances(status_file, capsys):
     cn.main(["band", "--status-file", status_file])
     _, _, _, n = capsys.readouterr().out.split()
     assert n == "1"  # ok_review 도 밴드 표본
+
+
+# ── G3: 10배치 소진 → 범위 종료 신호(next>total) ──
+def test_next_exceeds_total_after_10_batches(status_file, capsys):
+    for b in range(1, 11):
+        _record(status_file, b, 100, 0, "ok", 1)
+    capsys.readouterr()
+    cn.main(["next", "--status-file", status_file])
+    # next=11 > total(10) → 래퍼가 완료 감지·자동 unload (상시 수집기 변질 방지)
+    assert int(capsys.readouterr().out.strip()) == 11
+
+
+# ── G2: '안 돌았음' 감지 (check 리포터) ──
+def test_check_never_run_when_no_file(status_file, capsys):
+    rc = cn.main(["check", "--status-file", status_file])
+    out = capsys.readouterr().out
+    assert rc == 1 and "ATTENTION" in out  # 미착수 = 주의
+
+
+def test_check_ok_when_recent(status_file, capsys):
+    _record(status_file, 1, 100, 0, "ok", 1)
+    capsys.readouterr()
+    # 마지막 실행(22:10) 6시간 뒤 아침 확인 → OK
+    rc = cn.main(["check", "--status-file", status_file,
+                  "--now", "2026-07-30T04:10:00+09:00"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "verdict=OK" in out
+
+
+def test_check_stale_when_gap_exceeds_threshold(status_file, capsys):
+    _record(status_file, 1, 100, 0, "ok", 1)
+    capsys.readouterr()
+    # 마지막 실행 3일 뒤 = STALE(무실행) → 주의(launchd 미발화 의심)
+    rc = cn.main(["check", "--status-file", status_file,
+                  "--now", "2026-08-01T22:10:00+09:00"])
+    out = capsys.readouterr().out
+    assert rc == 1 and "STALE" in out
+
+
+def test_check_done_not_stale_after_completion(status_file, capsys):
+    for b in range(1, 11):
+        _record(status_file, b, 100, 0, "ok", 1)
+    capsys.readouterr()
+    # 완료(next=11>total) → 아무리 오래돼도 STALE 아님(DONE)
+    rc = cn.main(["check", "--status-file", status_file,
+                  "--now", "2026-09-01T00:00:00+09:00"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "DONE" in out
