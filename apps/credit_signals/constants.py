@@ -6,6 +6,7 @@ credit_signals Phase 1 상수 (PR credit_signals Phase 1 §2).
 불변 규칙 "6종 고정"은 P2-0에서 8종으로 명시 해제(재비준 = DECISIONS E). 추가는
 동일 재비준 절차 없이 금지.
 """
+from datetime import time
 
 # FRED 수집 대상 시리즈 (8종 = 6 raw Phase1 + BB·A P2-0 재비준, DECISIONS E)
 FRED_SERIES = {
@@ -61,6 +62,14 @@ ETF_SYMBOLS = ("HYG", "LQD")
 # resolve 규칙: 정본 거래일 = quote timestamp의 ET 거래일. nav updatedAt이 정본
 # 거래일과 이 일수를 초과해 괴리하면 해당 관측을 skip + 로그(자가 보정 금지).
 ETF_NAV_MAX_LAG_DAYS = 1
+
+# C′ 마감시각 게이트 (P2a-1b): NAV strike는 장마감 후 산출되므로, nav updatedAt이
+# 정본 거래일 이 시각(ET) '이전'이면 그 관측은 당일 strike가 아니라 직전 거래일
+# strike의 재기록 → skip-and-log. 날짜 lag 검사(ETF_NAV_MAX_LAG_DAYS)와 병존한다.
+# known-edge: 미국 조기마감일(13:00 ET, 연 ~3일)엔 정당한 당일 nav도 16:00 기준
+# 오탐 skip될 수 있으나, 후속 touch(마감 후 재갱신)로 자연 회수된다(연기≠유실).
+# 코드 대응 불요. DST는 America/New_York로 EDT/EST 자동 처리.
+ETF_MARKET_CLOSE_ET = time(16, 0)
 
 Z_WINDOW_DAYS = 756          # 3년 거래일 근사 (3년 롤링 z-score)
 MAD_FLOOR = 1e-6             # Robust Z(MAD) 분모 과폭발 방지 floor (Thesis Control 규약과 동형)
