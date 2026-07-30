@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<!--
+  domain_review.html — ⑳-3 관계 도메인 태깅 검수 도구 (REVIEW-TOOL-1)
+  사용법(3줄):
+    1) 이 파일을 브라우저에서 직접 연다(더블클릭 또는 file:// — 서버·네트워크 불필요).
+    2) [CSV 불러오기]로 outputs/domain_tagging/review_batch_v3.csv 선택(요약 포함·v2도 가능) → A'/B'/C' 탭에서 요약·플래그 보고 검수(키보드 1=OK 2=CHANGE 3=DROP 4=HOLD).
+    3) [내보내기]로 review_batch_v3_labeled.csv 저장(원본 전 컬럼 + human_verdict). 라벨은 자동 저장되어 새로고침해도 복원된다.
+  ※ 외부 CDN·API·DB 무의존(순수 파일 in/out, 요약은 CSV에 이미 존재 — HTML은 네트워크 요청 0). 원본 CSV는 읽기만 하며 절대 수정하지 않는다.
+-->
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도메인 태깅 검수 — ⑳-3 REVIEW-TOOL-1</title>
+<style>
+  :root {
+    --bg:#0f1115; --panel:#181b22; --panel2:#20242e; --border:#2c313c;
+    --fg:#e6e9ef; --muted:#9aa4b2; --accent:#4f8cff; --ok:#3fb96b; --change:#e0a83b;
+    --drop:#e05a5a; --hold:#b06bff; --badge:#ff6b6b;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+  header { position:sticky; top:0; z-index:20; background:var(--panel);
+    border-bottom:1px solid var(--border); padding:10px 16px; }
+  .htop { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  h1 { font-size:16px; margin:0; font-weight:700; }
+  .usage { color:var(--muted); font-size:12px; margin:6px 0 0; }
+  button { font:inherit; cursor:pointer; border:1px solid var(--border);
+    background:var(--panel2); color:var(--fg); border-radius:6px; padding:6px 12px; }
+  button:hover { border-color:var(--accent); }
+  button:disabled { opacity:.4; cursor:not-allowed; }
+  .spacer { flex:1; }
+  .stat { font-size:12px; color:var(--muted); }
+  .stat b { color:var(--fg); }
+  .tabs { display:flex; gap:6px; margin-top:10px; }
+  .tab { padding:6px 14px; border-radius:6px 6px 0 0; border:1px solid var(--border);
+    border-bottom:none; background:var(--panel2); color:var(--muted); }
+  .tab.active { background:var(--bg); color:var(--fg); font-weight:700; }
+  .tab .pct { font-size:11px; color:var(--accent); margin-left:6px; }
+  #banner { display:none; background:#3a1d1d; border:1px solid var(--drop);
+    color:#ffd7d7; padding:8px 16px; font-weight:600; }
+  #banner.show { display:block; }
+  main { padding:16px; max-width:1000px; margin:0 auto; }
+  .empty { color:var(--muted); text-align:center; padding:60px 20px; }
+  .empty pre { text-align:left; display:inline-block; background:var(--panel);
+    border:1px solid var(--border); border-radius:8px; padding:14px 18px; color:var(--muted); }
+  .bulkbar { margin-bottom:12px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:10px;
+    padding:14px 16px; margin-bottom:12px; }
+  .card.current { border-color:var(--accent); box-shadow:0 0 0 1px var(--accent); }
+  .card.fp { border-color:var(--badge); }
+  .card.labeled { opacity:.72; }
+  .row1 { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px; }
+  .pair { font-size:16px; font-weight:700; }
+  .chip { font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--border);
+    background:var(--panel2); color:var(--muted); }
+  .chip.type { color:var(--fg); }
+  .chip.sug { color:var(--change); border-color:var(--change); }
+  .chip.conf { color:var(--accent); }
+  .chip.tag { color:#8fd0a0; border-color:#2e5c3d; }
+  .chip.fpbadge { color:#fff; background:var(--badge); border-color:var(--badge); font-weight:700; }
+  .reason { font-size:12px; color:var(--muted); margin:4px 0; }
+  .sdnote { font-size:12px; color:#ffd9a0; background:#33280f; border:1px solid #5c4a1e;
+    border-radius:6px; padding:6px 10px; margin:6px 0; }
+  .evidence { background:var(--panel2); border:1px solid var(--border); border-radius:6px;
+    padding:8px 10px; margin:8px 0; font-size:13px; white-space:pre-wrap; word-break:break-word; }
+  .summary { font-size:14px; line-height:1.55; margin:8px 0 6px; padding:8px 10px;
+    background:#152033; border:1px solid #23324a; border-radius:6px; color:#dfe8f5; }
+  .summary.fail { background:#33201d; border-color:var(--drop); color:#ffd7d0; }
+  .fbadges { display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 4px; }
+  .fbadge { font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--border); color:#fff; }
+  .f-trunc { background:#5a4a1e; border-color:#7a6528; }
+  .f-list { background:#1e3a5a; border-color:#2c5580; }
+  .f-absent { background:#5a2020; border-color:#8a3030; }
+  .f-ma { background:#432a5a; border-color:#6a448a; }
+  .f-indirect { background:#1e4a48; border-color:#2c6c68; }
+  details.evwrap { margin:6px 0; }
+  details.evwrap .evsum { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
+  details.evwrap[open] .evsum { color:var(--fg); }
+  .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
+  .actions button { min-width:70px; }
+  .b-ok.sel { background:var(--ok); border-color:var(--ok); color:#04150a; font-weight:700; }
+  .b-change.sel { background:var(--change); border-color:var(--change); color:#1a1204; font-weight:700; }
+  .b-drop.sel { background:var(--drop); border-color:var(--drop); color:#fff; font-weight:700; }
+  .b-hold.sel { background:var(--hold); border-color:var(--hold); color:#fff; font-weight:700; }
+  select { font:inherit; background:var(--panel2); color:var(--fg);
+    border:1px solid var(--border); border-radius:6px; padding:5px 8px; }
+  .verdict { font-size:12px; color:var(--muted); margin-left:6px; }
+  .khint { color:var(--muted); font-size:11px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="htop">
+    <h1>도메인 태깅 검수</h1>
+    <button id="loadBtn">CSV 불러오기</button>
+    <input type="file" id="file" accept=".csv" style="display:none">
+    <button id="exportBtn" disabled>내보내기 (labeled CSV)</button>
+    <div class="spacer"></div>
+    <div class="stat">저장됨 <b id="savedCount">0</b> / <span id="totalCount">0</span></div>
+    <div class="stat">HOLD <b id="holdCount">0</b></div>
+    <div class="stat"><span class="khint">키: 1 OK · 2 CHANGE · 3 DROP · 4 HOLD</span></div>
+  </div>
+  <div class="usage">파일 열기 → 탭에서 검수(1/2/3/4, 라벨 후 자동 다음 행) → 내보내기. 라벨은 자동 저장·새로고침 복원. 외부 요청 0.</div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<div id="banner"></div>
+<main>
+  <div class="empty" id="empty">
+    <p>검수할 CSV를 불러오세요.</p>
+    <pre>사용법
+1) [CSV 불러오기]로 review_batch_v3.csv 선택 (요약 포함 · v2도 하위호환)
+2) A'(자가모순)·B'(개별)·C'(auto) 탭에서 검수 — 요약·플래그 확인, 필요 시 원문 펼침. 키보드 1=OK 2=CHANGE 3=DROP 4=HOLD
+3) [내보내기]로 review_batch_v3_labeled.csv 저장 (원본 전 컬럼 + human_verdict)</pre>
+  </div>
+  <div id="bulk" class="bulkbar" style="display:none"></div>
+  <div id="list"></div>
+</main>
+
+<script>
+"use strict";
+// ── 관계 타입(스키마 정의, CHANGE 드롭다운) ─────────────────────
+const REL_TYPES = ["SUPPLIES_TO","COMPETES_WITH","DEPENDS_ON","PARTNER_WITH"];
+const TABS = [
+  {key:"A", label:"A' 자가모순", gate:"noise_self_contradiction"},
+  {key:"B", label:"B' 개별", gate:"pending"},
+  {key:"C", label:"C' auto", gate:"auto_candidate"},
+];
+const HOLD_WARN = 10;
+const LS_PREFIX = "domreview:";
+const FAIL_TEXT = "(생성 실패 — 원문 검수)";
+// R10: 플래그 라벨·색 (summary_flags 파이프 구분)
+const FLAG_META = {
+  truncated:     {label:"절단",       cls:"f-trunc"},
+  list:          {label:"나열형",     cls:"f-list"},
+  target_absent: {label:"상대심볼부재", cls:"f-absent"},
+  "m&a":         {label:"인수합병",   cls:"f-ma"},
+  indirect:      {label:"간접언급",   cls:"f-indirect"},
+};
+
+let ROWS = [];        // {…원본 컬럼, _idx, _tab, _fp, _sd, _reason}
+let HEADER = [];      // 원본 컬럼 순서
+let verdicts = {};    // rowKey -> verdict string
+let activeTab = "A";
+let current = {A:0, B:0, C:0}; // 탭별 현재 인덱스(탭 내 필터된 리스트 기준)
+let HAS_SUMMARY = false;       // R11: summary_ko 컬럼 존재 여부
+
+// ── RFC4180 CSV 파서(따옴표·쉼표·개행·"" 이스케이프 처리) ──────────
+function parseCSV(text){
+  const rows=[]; let row=[]; let field=""; let i=0; let inQ=false;
+  text = text.replace(/^\uFEFF/,""); // BOM 제거
+  while(i<text.length){
+    const c=text[i];
+    if(inQ){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field+='"'; i+=2; continue; }
+        inQ=false; i++; continue;
+      }
+      field+=c; i++; continue;
+    }
+    if(c === '"'){ inQ=true; i++; continue; }
+    if(c === ','){ row.push(field); field=""; i++; continue; }
+    if(c === '\r'){ i++; continue; }
+    if(c === '\n'){ row.push(field); rows.push(row); row=[]; field=""; i++; continue; }
+    field+=c; i++;
+  }
+  if(field.length>0 || row.length>0){ row.push(field); rows.push(row); }
+  return rows;
+}
+function toObjects(matrix){
+  const header=matrix[0];
+  const out=[];
+  for(let r=1;r<matrix.length;r++){
+    if(matrix[r].length===1 && matrix[r][0]==="") continue; // 빈 줄
+    const o={};
+    header.forEach((h,ci)=>{ o[h]= matrix[r][ci] !== undefined ? matrix[r][ci] : ""; });
+    out.push(o);
+  }
+  return {header, out};
+}
+// CSV 필드 직렬화(쉼표·따옴표·개행 있으면 감싸고 " → "")
+function csvField(v){
+  v = (v===undefined||v===null) ? "" : String(v);
+  if(/[",\r\n]/.test(v)){ return '"'+v.replace(/"/g,'""')+'"'; }
+  return v;
+}
+
+// ── 파생 계산(휴리스틱: SD플립·오탐후보·pending 사유) ─────────────
+function truthy(v){ return String(v).trim().toLowerCase()==="true" || String(v).trim()==="1"; }
+function otherSymbol(pair){
+  const p=String(pair).split("↔"); return p.length===2 ? p[1] : "";
+}
+function isFalsePositive(r){
+  // reclassify boundary_fp 조건 재현(전용 필드 없음): auto ∧ target ∧ 짧은심볼 ∧ substring hit ∧ 단어경계 실패
+  if(r.gate_class_v2!=="auto_candidate") return false;
+  if(!truthy(r.target_in_basis)) return false;
+  const o=otherSymbol(r.symbol_pair);
+  if(!o || o.length>3) return false;
+  const basis=String(r.basis||"");
+  const hit = basis.toLowerCase().includes(o.toLowerCase());
+  if(!hit) return false;
+  const boundary = new RegExp("\\b"+o.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+"\\b").test(basis);
+  return !boundary;
+}
+function isSDflip(r){
+  // 휴리스틱(전용 필드 없음): relation∈{S,D} ∧ suggested가 상대
+  const rt=r.relation_type, sg=r.suggested_type;
+  return (rt==="SUPPLIES_TO"&&sg==="DEPENDS_ON") || (rt==="DEPENDS_ON"&&sg==="SUPPLIES_TO");
+}
+function pendingReason(r){
+  if(truthy(r.self_contradiction)) return "자가모순(타입 확정=LLM 노이즈)";
+  const typeChange = !truthy(r.type_match) || (r.suggested_type && r.suggested_type.trim());
+  if(typeChange) return "타입 변경 제안: "+(r.suggested_type||"(미지정)");
+  if(!truthy(r.target_in_basis)) return "타깃 근거 부재(evidence에 상대 미존재)";
+  if(!truthy(r.type_signature_ok)) return "타입 시그니처 불일치(경쟁 어휘)";
+  const conf=parseFloat(r.confidence||"0");
+  if(conf<0.75) return "낮은 confidence ("+r.confidence+")";
+  return "검증 통과(auto 후보)";
+}
+
+// ── rowKey(localStorage 복원용, CSV 재로드 견고) ────────────────
+function rowKey(r){
+  return [r.symbol_pair, r.relation_type, String(r.basis).slice(0,48)].join("¦");
+}
+// R12: localStorage는 rowKey 기준(CSV 버전 무관). v2→v3 전환 시 라벨 보존.
+const STABLE_KEY = LS_PREFIX + "verdicts";
+function saveLS(){
+  try { localStorage.setItem(STABLE_KEY, JSON.stringify(verdicts)); } catch(e){}
+}
+function loadLS(){
+  // 과거 버전 키(domreview:<지문>)까지 스캔·병합 → 현재 데이터셋 rowKey만 채택(이행).
+  const pool={};
+  try {
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || k.indexOf(LS_PREFIX)!==0 || k===STABLE_KEY) continue;
+      try { const o=JSON.parse(localStorage.getItem(k)); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
+    }
+    try { const o=JSON.parse(localStorage.getItem(STABLE_KEY)||"{}"); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
+  } catch(e){}
+  const valid=new Set(ROWS.map(rowKey));
+  verdicts={};
+  for(const k in pool){ if(valid.has(k)) verdicts[k]=pool[k]; }
+  // CSV에 human_verdict 값이 있으면 seed(내보낸 파일로 재개). localStorage 우선.
+  ROWS.forEach(r=>{ const hv=String(r.human_verdict||"").trim(); const rk=rowKey(r); if(hv && !verdicts[rk]) verdicts[rk]=hv; });
+  saveLS();
+}
+
+// ── 로드 ────────────────────────────────────────────────────
+document.getElementById("loadBtn").onclick=()=>document.getElementById("file").click();
+document.getElementById("file").onchange=(e)=>{
+  const f=e.target.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const text=String(reader.result);
+    const {header,out}=toObjects(parseCSV(text));
+    HEADER=header; ROWS=out;
+    HAS_SUMMARY = header.includes("summary_ko"); // R11: v2(요약없음) 하위호환
+    ROWS.forEach((r,i)=>{
+      r._idx=i;
+      r._tab = (TABS.find(t=>t.gate===r.gate_class_v2)||{key:"B"}).key;
+      r._fp = isFalsePositive(r);
+      r._sd = isSDflip(r);
+      r._reason = pendingReason(r);
+    });
+    loadLS();
+    document.getElementById("totalCount").textContent=ROWS.length;
+    document.getElementById("empty").style.display="none";
+    document.getElementById("exportBtn").disabled=false;
+    activeTab="A"; current={A:0,B:0,C:0};
+    renderTabs(); render();
+  };
+  reader.readAsText(f,"utf-8");
+};
+
+// ── 탭별 행 리스트(오탐 후보는 C' 상단 고정) ─────────────────────
+function tabRows(tabKey){
+  let list=ROWS.filter(r=>r._tab===tabKey);
+  if(tabKey==="C"){ list=[...list].sort((a,b)=> (b._fp?1:0)-(a._fp?1:0)); } // FP 상단
+  return list;
+}
+function renderTabs(){
+  const el=document.getElementById("tabs"); el.innerHTML="";
+  TABS.forEach(t=>{
+    const rows=tabRows(t.key);
+    const done=rows.filter(r=>verdicts[rowKey(r)]).length;
+    const pct=rows.length? Math.round(done/rows.length*100):0;
+    const d=document.createElement("div");
+    d.className="tab"+(activeTab===t.key?" active":"");
+    d.innerHTML=`${t.label} (${rows.length})<span class="pct">${done}/${rows.length} ${pct}%</span>`;
+    d.onclick=()=>{ activeTab=t.key; render(); };
+    el.appendChild(d);
+  });
+}
+function updateStats(){
+  const saved=Object.keys(verdicts).filter(k=>verdicts[k]).length;
+  const holds=Object.values(verdicts).filter(v=>v==="HOLD").length;
+  document.getElementById("savedCount").textContent=saved;
+  document.getElementById("holdCount").textContent=holds;
+  const b=document.getElementById("banner");
+  if(holds>=HOLD_WARN){ b.className="show"; b.textContent=`⚠ HOLD ${holds}건 — 중단하고 디렉터와 판정 기준 정렬 권장`; }
+  else { b.className=""; }
+}
+
+// ── 렌더 ────────────────────────────────────────────────────
+function render(){
+  renderTabs(); updateStats();
+  const list=document.getElementById("list"); list.innerHTML="";
+  const bulk=document.getElementById("bulk");
+  const rows=tabRows(activeTab);
+  // A' 탭: 전체 OK 일괄
+  if(activeTab==="A"){
+    bulk.style.display="block";
+    bulk.innerHTML=`<button id="bulkOk">전체 OK 일괄 (자가모순=타입 확정 도장)</button>
+      <span class="khint">일괄 후에도 개별 뒤집기 가능</span>`;
+    document.getElementById("bulkOk").onclick=()=>{
+      rows.forEach(r=>{ if(!verdicts[rowKey(r)]) verdicts[rowKey(r)]="OK"; });
+      saveLS(); render();
+    };
+  } else { bulk.style.display="none"; }
+
+  if(current[activeTab]>=rows.length) current[activeTab]=Math.max(0,rows.length-1);
+  rows.forEach((r,i)=>{
+    list.appendChild(renderCard(r,i));
+  });
+  const cur=list.querySelector(".card.current");
+  if(cur) cur.scrollIntoView({block:"nearest"});
+}
+function renderCard(r,i){
+  const key=rowKey(r); const v=verdicts[key]||"";
+  const card=document.createElement("div");
+  card.className="card"+(i===current[activeTab]?" current":"")+(r._fp?" fp":"")+(v?" labeled":"");
+  card.dataset.i=i;
+  const conf=r.confidence;
+  const tag = (r.normalized_tag&&r.normalized_tag.trim()) ? r.normalized_tag : "(태그 없음)";
+  let html=`<div class="row1">
+    <span class="pair">${esc(r.symbol_pair)}</span>
+    <span class="chip type">현재: ${esc(r.relation_type)}</span>
+    ${r.suggested_type? `<span class="chip sug">LLM 제안: ${esc(r.suggested_type)}</span>`:""}
+    <span class="chip conf">conf ${esc(conf)}</span>
+    <span class="chip tag">${esc(tag)}</span>
+    ${truthy(r.is_enumeration)? `<span class="chip">나열형</span>`:""}
+    ${r._fp? `<span class="chip fpbadge">⚠ 오탐 후보(단어경계)</span>`:""}
+  </div>
+  <div class="reason">사유: ${esc(r._reason)}</div>`;
+  if(r._sd){
+    html+=`<div class="sdnote">↔ SD 방향 플립(휴리스틱): 재화·부품 흐름 방향 = <b>SUPPLIES_TO 정본</b>, DEPENDS_ON = 매출 의존 한정</div>`;
+  }
+  if(HAS_SUMMARY){
+    const flags=(r.summary_flags||"").split("|").filter(Boolean);
+    const fbadges=flags.map(f=>{ const m=FLAG_META[f]||{label:f,cls:""}; return `<span class="fbadge ${m.cls}">${esc(m.label)}</span>`; }).join("");
+    const summ=r.summary_ko||"";
+    const isFail = (summ===FAIL_TEXT || !summ.trim());
+    html+=`<div class="summary${isFail?" fail":""}">${esc(summ||FAIL_TEXT)}</div>
+    ${fbadges? `<div class="fbadges">${fbadges}</div>`:""}
+    <details class="evwrap"${isFail?" open":""}><summary class="evsum">원문 evidence 보기</summary>
+      <div class="evidence">${esc(r.basis)}</div></details>`;
+  } else {
+    html+=`<div class="evidence">${esc(r.basis)}</div>`;
+  }
+  html+=`<div class="actions">
+    <button class="b-ok ${v==="OK"?"sel":""}" data-act="OK">OK <span class="khint">1</span></button>
+    <button class="b-change ${v.startsWith("CHANGE")?"sel":""}" data-act="CHANGE">CHANGE <span class="khint">2</span></button>
+    <select class="chgSel">${REL_TYPES.map(t=>`<option value="${t}" ${v==="CHANGE:"+t?"selected":""}>${t}</option>`).join("")}</select>
+    <button class="b-drop ${v==="DROP"?"sel":""}" data-act="DROP">DROP <span class="khint">3</span></button>
+    <button class="b-hold ${v==="HOLD"?"sel":""}" data-act="HOLD">HOLD <span class="khint">4</span></button>
+    <span class="verdict">${v? "판정: "+esc(v) : "미검수"}</span>
+  </div>`;
+  card.innerHTML=html;
+  card.querySelector(".b-ok").onclick=()=>label(r,"OK");
+  card.querySelector(".b-change").onclick=()=>{
+    const t=card.querySelector(".chgSel").value; label(r,"CHANGE:"+t);
+  };
+  card.querySelector(".chgSel").onchange=(e)=>{
+    if((verdicts[key]||"").startsWith("CHANGE")) label(r,"CHANGE:"+e.target.value,true);
+  };
+  card.querySelector(".b-drop").onclick=()=>label(r,"DROP");
+  card.querySelector(".b-hold").onclick=()=>label(r,"HOLD");
+  card.onclick=(e)=>{ if(e.target.tagName!=="BUTTON"&&e.target.tagName!=="SELECT"&&e.target.tagName!=="OPTION"){ current[activeTab]=i; render(); } };
+  return card;
+}
+function esc(s){ return String(s===undefined?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ── 라벨 + 자동 다음 행 ───────────────────────────────────────
+function label(r,verdict,stay){
+  verdicts[rowKey(r)]=verdict; saveLS();
+  if(!stay) advance();
+  render();
+}
+function advance(){
+  const rows=tabRows(activeTab);
+  // 현재 이후의 첫 미검수 행으로 이동, 없으면 그대로
+  let i=current[activeTab];
+  for(let k=i+1;k<rows.length;k++){ if(!verdicts[rowKey(rows[k])]){ current[activeTab]=k; return; } }
+  for(let k=0;k<rows.length;k++){ if(!verdicts[rowKey(rows[k])]){ current[activeTab]=k; return; } }
+  current[activeTab]=Math.min(i+1,rows.length-1); // 전부 검수됨 → 다음 칸
+}
+// 키보드
+document.addEventListener("keydown",(e)=>{
+  if(!ROWS.length) return;
+  if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT") return;
+  const rows=tabRows(activeTab); const r=rows[current[activeTab]]; if(!r) return;
+  if(e.key==="1"){ label(r,"OK"); e.preventDefault(); }
+  else if(e.key==="2"){
+    const card=document.querySelector(".card.current"); const t=card?card.querySelector(".chgSel").value:REL_TYPES[0];
+    label(r,"CHANGE:"+t); e.preventDefault();
+  }
+  else if(e.key==="3"){ label(r,"DROP"); e.preventDefault(); }
+  else if(e.key==="4"){ label(r,"HOLD"); e.preventDefault(); }
+  else if(e.key==="ArrowDown"||e.key==="j"){ current[activeTab]=Math.min(current[activeTab]+1,rows.length-1); render(); e.preventDefault(); }
+  else if(e.key==="ArrowUp"||e.key==="k"){ current[activeTab]=Math.max(current[activeTab]-1,0); render(); e.preventDefault(); }
+});
+
+// ── 내보내기(원본 전 컬럼 보존 + human_verdict) ──────────────────
+document.getElementById("exportBtn").onclick=()=>{
+  if(!ROWS.length) return;
+  const cols = HEADER.includes("human_verdict") ? HEADER.slice() : [...HEADER,"human_verdict"];
+  const lines=[ cols.map(csvField).join(",") ];
+  ROWS.forEach(r=>{
+    const v=verdicts[rowKey(r)]||"";
+    const rec=cols.map(c=> c==="human_verdict" ? v : (r[c]!==undefined?r[c]:""));
+    lines.push(rec.map(csvField).join(","));
+  });
+  const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download= HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+</script>
+</body>
+</html>
