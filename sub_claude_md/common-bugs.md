@@ -1115,3 +1115,27 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: health_check를 **옛 worktree(`sess-hold-p1`, HEAD `b8d767a`, 07-21 stamp)**에서 실행. 이 트리는 07-28 원장 리프레시(MGMT-BATCH-15 등) 이전 상태를 담고 있어, health의 "PROGRESS staleness"가 **그 트리 로컬 조건**을 잰 것. origin/main(`f7f3f63d`↑)에서 재실행하면 `❌0`. health 출력에 측정 트리가 안 적히면 "옛 트리 로컬 결함"이 "canonical(origin/main) 결함"으로 승격 오인된다.
 
 **해결**: **health_check 결과를 보고·판단에 쓸 때 측정 트리(worktree 경로 + 브랜치 + HEAD hash)를 반드시 병기**한다. staleness·정합 계열 ❌/WARN은 origin/main 추적 트리(또는 origin/main 기준 worktree)에서 재확인 후 판정. mgmt 배치 범위를 ❌ 근거로 잡기 전 "그 ❌가 canonical 트리에도 있나?"를 먼저 검증. cf. `scripts/health_check.py` 항목 `실행 트리 정합`(HEAD≠origin/main WARN)이 이미 신호이나, 보고 습관으로 못박음.
+
+## 짧은 심볼 substring 매칭이 단어 속 우연 문자에 오탐 → 무근거 auto 승격 (#75, ⑳-3 S2-C 2026-07-30) [chainsight] [validation]
+
+**증상**: 관계 도메인 태깅 `machine_check`의 타깃 실존 판정 `other.lower() in basis`가 짧은 심볼(V=Visa, A=Agilent, MA, CO 등)을 단어 속 우연 문자에 매칭(V∈"over/value", A∈"and")해 `target_in_basis=True` → conf만 높으면 auto_candidate로 승격. CSV 재분류상 이런 오탐 auto 5건 실측(CPAY↔V 등).
+
+**원인**: 심볼 substring 매칭에 길이·경계 가드 부재. 사명 토큰만 `len≥4` 가드가 있고 심볼은 무가드 → 1~3자 심볼이 거의 모든 basis에 우연 매칭. 근거(grounding) 검증의 취지(타깃이 evidence에 실존)가 무력화.
+
+**해결**: 심볼은 단어경계(`\bSYM\b`)로만 매칭, 사명은 유의어 토큰(≥4자)을 나열 구분자(`;,:()"'&/`)까지 분해해 매칭. 이러면 "Halliburton"→HAL은 **사명 경로로 복구**(단어경계 심볼은 실패해도), "over"의 v는 배제. 오탐 방지 테스트 필수(나열 아닌 문장의 우연 매칭이 auto 승격 안 되는지). cf. `apps/chain_sight/services/domain_tagging.py` machine_check(S2-C-2), D-REL-DIRECTION-CONVENTION.
+
+## 저장 CSV 재분류는 이름 의존 룰을 재현 못 함 — dry-run 효과 0을 "룰 무효"로 오해 금지 (#76, ⑳-3 S2-C 2026-07-30) [chainsight] [process]
+
+**증상**: 캘리브레이션 CSV(review_batch.csv)로 gate v2 재분류 dry-run 시, target 재판정 룰(S2-C-2)의 효과가 0으로 나옴 → "룰이 무의미"로 오판할 뻔.
+
+**원인**: CSV는 basis 원문은 전량 담아도(≤110자, 캡 내) **stock_name 컬럼이 없음**. machine_check의 타깃 실존은 심볼+사명 둘 다 쓰는데, CSV엔 사명이 없어 이름 경로를 재현 불가 → 이름 의존 룰의 dry-run 델타가 구조적으로 0. 이름 독립 룰(자가모순 필터)만 CSV로 측정 가능.
+
+**해결**: 재분류 dry-run에서 룰을 **이름 독립/의존으로 분류**하고, 이름 의존 룰은 "CSV 재현 불가, 코어 단위테스트로 검증·차기 라이브 배치에서 실효 확인"으로 명시. 효과 0을 룰 무효로 결론짓지 말 것. 필요하면 CSV 산출 시 target_name 컬럼을 추가(향후). cf. `reclassify_domain_batch` 커맨드 docstring, reclassify_v2_analysis.md.
+
+## 동결된 임계가 지배 블로커면 게이트 룰 튜닝이 검수 volume을 못 줄인다 (#77, ⑳-3 S2-C 2026-07-30) [chainsight] [process]
+
+**증상**: 자가모순 필터·나열 인식 등 gate 룰 튜닝을 넣었는데 B'(개별 검수) 감축 미달(162>120 목표). 룰은 review "성격"만 정정(타입변경 오인 119→진짜 66)하고 검수량은 거의 그대로.
+
+**원인**: pending의 지배 블로커가 confidence 임계(0.75, 이번 스코프에서 동결)와 evidence 절단(100자 캡)이었음. 자가모순 53건 중 나머지 3검증 통과는 1건뿐, 52건은 conf<0.75로 재차 막힘. 룰 튜닝은 임계·evidence를 못 건드리니 volume 레버가 아님.
+
+**해결**: "룰 개선 = 분류 정확도↑"와 "volume 감축"을 분리 판단. 감축 목표가 있으면 먼저 **지배 블로커를 실측**(블로커별 분해)하고, 그게 동결 임계·evidence면 룰 튜닝 대신 임계 재튜닝(분포 확보 후) 또는 evidence 재추출(EVIDENCE-CAP-REEXTRACT)을 레버로 지정. cf. reclassify_v2_analysis.md §3, TASKQUEUE EVIDENCE-CAP-REEXTRACT.
