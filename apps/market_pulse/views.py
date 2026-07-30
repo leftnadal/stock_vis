@@ -2,8 +2,10 @@
 거시경제 데이터 API Views — macro v1 호환 엔드포인트.
 
 소속: apps/market_pulse (app 레이어 root).
-역할: 옛 macro v1 화면을 위한 view 집합(GlobalMarketsView·FearGreedIndexView·
-  EconomicCalendarView·DataSyncView 등). PR8b-1에서 macro 흡수, 라우팅은 urls.py.
+역할: 옛 macro v1 화면을 위한 view 집합. MP-UNIFY-1(2026-07-29)에서
+  무소비 개별 엔드포인트(fear-greed/interest-rates/inflation/global-markets/
+  calendar/vix/sectors)를 제거하고, 실소비 3종(pulse·sync·sync/status)만 존치.
+  개별 섹션 로직은 MacroEconomicService에 보존되어 pulse 집계 경유로 유지된다.
 주의: v2 화면은 `api/views/*`가 진입점. v1·v2는 응답 구조 자체가 다르므로 혼동 금지.
 """
 import logging
@@ -15,14 +17,7 @@ from rest_framework.permissions import AllowAny, IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import (
-    EconomicCalendarResponseSerializer,
-    FearGreedResponseSerializer,
-    GlobalMarketsResponseSerializer,
-    InflationResponseSerializer,
-    InterestRatesResponseSerializer,
-    MarketPulseResponseSerializer,
-)
+from .serializers import MarketPulseResponseSerializer
 from apps.market_pulse.services.macro_service import MacroEconomicService
 
 logger = logging.getLogger(__name__)
@@ -49,224 +44,6 @@ class MarketPulseView(APIView):
             logger.error(f"MarketPulseView error: {e}")
             return Response(
                 {'error': 'Failed to fetch market pulse data'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class FearGreedIndexView(APIView):
-    """
-    공포/탐욕 지수
-
-    GET /api/v1/macro/fear-greed/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """공포/탐욕 지수 반환"""
-        try:
-            service = MacroEconomicService()
-            data = service.get_fear_greed_index()
-
-            serializer = FearGreedResponseSerializer(data)
-            return Response(serializer.data)
-
-        except Exception as e:
-            logger.error(f"FearGreedIndexView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch fear/greed index'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class InterestRatesView(APIView):
-    """
-    금리 & 수익률 곡선 대시보드
-
-    GET /api/v1/macro/interest-rates/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """금리 대시보드 데이터 반환"""
-        try:
-            service = MacroEconomicService()
-            data = service.get_interest_rates_dashboard()
-
-            if 'error' in data:
-                return Response(
-                    {'error': data['error']},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            serializer = InterestRatesResponseSerializer(data)
-            return Response(serializer.data)
-
-        except Exception as e:
-            logger.error(f"InterestRatesView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch interest rates'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class InflationDashboardView(APIView):
-    """
-    인플레이션 & 고용 대시보드
-
-    GET /api/v1/macro/inflation/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """인플레이션/고용 대시보드 데이터 반환"""
-        try:
-            service = MacroEconomicService()
-            data = service.get_inflation_dashboard()
-
-            if 'error' in data:
-                return Response(
-                    {'error': data['error']},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            serializer = InflationResponseSerializer(data)
-            return Response(serializer.data)
-
-        except Exception as e:
-            logger.error(f"InflationDashboardView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch inflation data'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class GlobalMarketsView(APIView):
-    """
-    글로벌 시장 대시보드
-
-    GET /api/v1/macro/global-markets/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """글로벌 시장 데이터 반환"""
-        try:
-            service = MacroEconomicService()
-            data = service.get_global_markets_dashboard()
-
-            if 'error' in data:
-                return Response(
-                    {'error': data['error']},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            serializer = GlobalMarketsResponseSerializer(data)
-            return Response(serializer.data)
-
-        except Exception as e:
-            logger.error(f"GlobalMarketsView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch global markets data'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class EconomicCalendarView(APIView):
-    """
-    경제 캘린더
-
-    GET /api/v1/macro/calendar/
-    GET /api/v1/macro/calendar/?days=14&importance=high
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """경제 캘린더 데이터 반환"""
-        try:
-            days = int(request.query_params.get('days', 7))
-            importance = request.query_params.get('importance')
-
-            # 유효성 검사
-            days = min(max(days, 1), 30)  # 1-30일 범위
-
-            service = MacroEconomicService()
-            data = service.get_economic_calendar(
-                days_ahead=days,
-                importance_filter=importance
-            )
-
-            if 'error' in data and 'events_by_date' not in data:
-                return Response(
-                    {'error': data['error']},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-
-            serializer = EconomicCalendarResponseSerializer(data)
-            return Response(serializer.data)
-
-        except ValueError:
-            return Response(
-                {'error': 'Invalid days parameter'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            logger.error(f"EconomicCalendarView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch economic calendar'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class VIXView(APIView):
-    """
-    VIX 지수
-
-    GET /api/v1/macro/vix/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """VIX 지수 반환"""
-        try:
-            service = MacroEconomicService()
-            vix_data = service.fred.get_vix()
-
-            if vix_data:
-                return Response(vix_data)
-
-            return Response(
-                {'error': 'VIX data not available'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        except Exception as e:
-            logger.error(f"VIXView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch VIX'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class SectorPerformanceView(APIView):
-    """
-    섹터 성과
-
-    GET /api/v1/macro/sectors/
-    """
-    permission_classes = [AllowAny]
-
-    def get(self, request):
-        """섹터 성과 데이터 반환"""
-        try:
-            service = MacroEconomicService()
-            data = service.fmp.get_sector_performance()
-
-            return Response(data)
-
-        except Exception as e:
-            logger.error(f"SectorPerformanceView error: {e}")
-            return Response(
-                {'error': 'Failed to fetch sector performance'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
