@@ -1,0 +1,271 @@
+symbol_pair,relation_type,basis,draft_domain,type_match,suggested_type,gate_class,review_status,target_in_basis,type_signature_ok,confidence,json_ok,review_section
+ABBV↔COO,COMPETES_WITH,"SEC 10-K: With Paragard, we compete with manufacturers of hormonal IUDs including Bayer and AbbVie, Long Actin",호르몬 IUD,True,,pending,pending,False,True,0.9,True,A_pattern_batch
+CAT↔WAB,COMPETES_WITH,"SEC 10-K: Our primary competition for locomotives is Progress Rail, owned by a subsidiary of Caterpillar.",기관차,True,,pending,pending,False,True,1.0,True,A_pattern_batch
+DAY↔WDAY,COMPETES_WITH,"SEC 10-K: These vendors include, without limitation, Anaplan, Inc.; ADP; Coupa Software Inc.; Dayforce, Inc.; ",,False,SUPPLIES_TO,pending,pending,False,True,0.1,True,A_pattern_batch
+DOV↔IR,COMPETES_WITH,"SEC 10-K: Our primary competitors include Dover, Graco, IDEX Corporation, KNF Neuberger, Netzsch, NOV, Sartori",,True,,pending,pending,False,True,1.0,True,A_pattern_batch
+GOOGL↔SYF,COMPETES_WITH,"SEC 10-K: In addition, some larger technology focused companies, e.g., Apple and Google, and larger retailers ",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,A_pattern_batch
+T↔TMUS,COMPETES_WITH,"SEC 10-K: In the market for broadband services, traditional cable providers, AT&T, Verizon, and other players ",광대역 서비스,True,,pending,pending,False,True,0.9,True,A_pattern_batch
+APP↔META,DEPENDS_ON,SEC 10-K: The mobile app ecosystem depends in part on a relatively small number of third-party distribution pl,모바일 앱 생태계,True,,pending,pending,False,True,0.2,True,A_pattern_batch
+HWM↔AEE,DEPENDS_ON,SEC 10-K: Arconic Architectural Products SAS (“AAP SAS”) (now a subsidiary of Arconic Corporation) supplied Re,건축 제품,False,SUPPLIES_TO,pending,pending,True,True,0.0,True,A_pattern_batch
+SYF↔FISV,DEPENDS_ON,"SEC 10-K: For example, our principal technology and related services (including credit card transaction proces",신용카드 거래 처리,False,SUPPLIES_TO,pending,pending,False,True,0.1,True,A_pattern_batch
+WDC↔SNDK,DEPENDS_ON,"SEC 10-K: On February 21, 2025 (the “Separation Date”), we completed the separation of our HDD and Flash busin",하드 디스크 드라이브,False,SUPPLIES_TO,pending,pending,False,True,0.7,True,A_pattern_batch
+ABBV↔ABT,PARTNER_WITH,"SEC 10-K: On January 1, 2013, AbbVie became an independent, publicly-traded company as a result of the distrib",,False,COMPETES_WITH,pending,pending,False,True,0.7,True,A_pattern_batch
+ALGN↔AVGO,SUPPLIES_TO,"SEC 10-K: We use third-party CMs for a significant majority of our assembly and test operations, including TSM",,False,DEPENDS_ON,pending,pending,False,True,0.0,True,A_pattern_batch
+COR↔ABBV,SUPPLIES_TO,"SEC 10-K: In 2025, three wholesale distributors (McKesson Corporation, Cardinal Health, Inc. and Cencora, Inc.",,False,DEPENDS_ON,pending,pending,False,True,0.0,True,A_pattern_batch
+DD↔Q,SUPPLIES_TO,"SEC 10-K: On May 22, 2024, DuPont de Nemours, Inc. (""DuPont"" or ""Parent"") announced its plan to separate Qnity",,False,DEPENDS_ON,pending,pending,True,True,0.9,True,A_pattern_batch
+GM↔APTV,SUPPLIES_TO,"SEC 10-K: For example, in 2025, General Motors (“GM”) restructured their operations in China given challenges ",,False,DEPENDS_ON,pending,pending,False,True,0.0,True,A_pattern_batch
+HCA↔RVTY,SUPPLIES_TO,SEC 10-K: and held a number of global management operational positions with GE Healthcare.,,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,A_pattern_batch
+MCK↔ABBV,SUPPLIES_TO,"SEC 10-K: In 2025, three wholesale distributors (McKesson Corporation, Cardinal Health, Inc. and Cencora, Inc.",의약품 도매 유통,True,,pending,pending,False,True,0.6,True,A_pattern_batch
+ON↔LRCX,SUPPLIES_TO,"SEC 10-K: Our customer base includes leading semiconductor memory, foundry, and integrated device manufacturer",반도체 메모리,False,,pending,pending,False,True,0.1,True,A_pattern_batch
+TSM↔NVDA,SUPPLIES_TO,"SEC 10-K: We utilize foundries, such as Taiwan Semiconductor Manufacturing Company Limited, or TSMC, and Samsu",반도체 파운드리,True,,pending,pending,False,True,1.0,True,A_pattern_batch
+V↔SYF,SUPPLIES_TO,SEC 10-K: We also face risks related to cyber-attacks and other security breaches in connection with credit ca,신용카드 결제,False,DEPENDS_ON,pending,pending,False,True,0.3,True,A_pattern_batch
+AAPL↔HPQ,COMPETES_WITH,"SEC 10-K: Our primary competitors are Acer Inc., Apple Inc., ASUSTeK Computer Inc., Dell Inc., Huawei Technolo",개인용 컴퓨터,True,,pending,pending,False,True,1.0,True,B_individual
+AAPL↔SYF,COMPETES_WITH,"SEC 10-K: In addition, some larger technology focused companies, e.g., Apple and Google, and larger retailers ",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+ABNB↔EXPE,COMPETES_WITH,"SEC 10-K: Businesses such as Airbnb, Vrbo and Booking.com have emerged as the leaders, bringing incremental al",온라인 여행 예약,True,,pending,pending,False,True,0.9,True,B_individual
+ABT↔DXCM,COMPETES_WITH,"SEC 10-K: In selling our current CGM systems, we compete directly with the Diabetes Care division of Abbott La",연속혈당측정기 시스템,True,,pending,pending,False,True,1.0,True,B_individual
+ALGN↔IDXX,COMPETES_WITH,SEC 10-K: The Invisalign System competes primarily against traditional wires and brackets and increasingly wit,,False,,pending,pending,False,True,0.0,True,B_individual
+AMAT↔KLAC,COMPETES_WITH,"SEC 10-K: In each of our product markets, we have many competitors, including companies such as Applied Materi",,True,,pending,pending,False,True,1.0,True,B_individual
+AMT↔SBAC,COMPETES_WITH,"SEC 10-K: In the U.S., our primary competitors for our site leasing activities are (1) large independent tower",통신 타워 임대,True,,pending,pending,False,True,1.0,True,B_individual
+AMZN↔COST,COMPETES_WITH,"SEC 10-K: Walmart, Target, Kroger, and Amazon are among our significant general merchandise retail competitors",일반 상품 소매,True,,pending,pending,False,True,1.0,True,B_individual
+AMZN↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.9,True,B_individual
+AMZN↔TTD,COMPETES_WITH,"SEC 10-K: We compete with other demand-side platform providers, some of which are smaller, privately held comp",수요측 플랫폼,True,,pending,pending,False,True,0.8,True,B_individual
+ANET↔AVGO,COMPETES_WITH,"SEC 10-K: For example, Broadcom has acquired VMware, Hewlett Packard Enterprise has acquired Juniper Networks ",,False,COMPETES_WITH,pending,pending,True,True,0.0,True,B_individual
+ANET↔HPE,COMPETES_WITH,"SEC 10-K: competition also coming from other large network equipment and system vendors, including Dell/EMC, E",네트워크 장비 및 시스템,True,,pending,pending,False,True,0.7,True,B_individual
+ANET↔NVDA,COMPETES_WITH,"SEC 10-K: competition also coming from other large network equipment and system vendors, including Dell/EMC, E",네트워크 장비,True,,pending,pending,False,True,0.4,True,B_individual
+AVY↔INTC,COMPETES_WITH,"SEC 10-K: Fedrigoni Self-Adhesives; Lintec Corporation; Flexcon Corporation, Inc.; and an array of smaller reg",,False,COMPETES_WITH,pending,pending,True,True,0.0,True,B_individual
+AVY↔PPL,COMPETES_WITH,"SEC 10-K: Our larger competitors in label materials include UPM Adhesive Materials, a subsidiary of UPM Corpor",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+AXP↔MA,COMPETES_WITH,"SEC 10-K: We compete worldwide with payments networks such as Visa, American Express, JCB, China UnionPay and ",결제 네트워크,True,,pending,pending,False,True,1.0,True,B_individual
+BAX↔COO,COMPETES_WITH,"SEC 10-K: Larger companies such as Johnson & Johnson, Baxter International, Medtronic and Hologic have offerin",,False,,pending,pending,True,True,0.0,True,B_individual
+BKNG↔EXPE,COMPETES_WITH,"SEC 10-K: Competitive entrants such as “metasearch” companies, including Kayak.com (owned by Booking Holdings)",메타 검색,True,,pending,pending,False,True,0.8,True,B_individual
+BKR↔CAT,COMPETES_WITH,"SEC 10-K: An additional set of competitors, including Aggreko plc, Generac Holdings Inc., Discovery Energy, LL",,False,,pending,pending,False,True,0.0,True,B_individual
+BLK↔MSCI,COMPETES_WITH,"SEC 10-K: Certain of our clients are also significant shareholders, competitors or distributors of our content",,True,,pending,pending,False,True,0.2,True,B_individual
+CAH↔COR,COMPETES_WITH,"SEC 10-K: In the Pharma segment, we compete with wholesale distributors with national reach, including McKesso",제약 도매 유통,True,,pending,pending,False,True,0.5,True,B_individual
+CAH↔MCK,COMPETES_WITH,"SEC 10-K: Certain competitors also offer combinations of distribution, GPO, and provider services capabilities",의료 유통,True,,pending,pending,False,True,0.9,True,B_individual
+CARR↔JCI,COMPETES_WITH,"SEC 10-K: Larger competitors include Honeywell International, Inc.; Siemens Smart Infrastructure, an operating",,False,COMPETES_WITH,pending,pending,True,True,0.1,True,B_individual
+CBOE↔CME,COMPETES_WITH,"SEC 10-K: Our competitors include, among other entities, exchanges such as Intercontinental Exchange, Inc. (IC",금융 거래소,True,,pending,pending,False,True,0.9,True,B_individual
+CCL↔NCLH,COMPETES_WITH,"SEC 10-K: Based on 2025 Cruise Industry News statistics, as of December 31, 2025, we, along with our principal",크루즈 산업,True,,pending,pending,True,True,0.3,True,B_individual
+CCL↔RCL,COMPETES_WITH,"SEC 10-K: Based on 2025 Cruise Industry News statistics, as of December 31, 2025, we, along with our principal",크루즈 산업,True,,pending,pending,False,True,0.4,True,B_individual
+CDNS↔CTVA,COMPETES_WITH,"SEC 10-K: U.S.-based competitors include Keysight Technologies, Inc., Schrödinger, Inc., and CEVA, Inc., while",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+CHTR↔TMUS,COMPETES_WITH,"SEC 10-K: In addition, our wireless communications services competitors include numerous smaller and regional ",무선 통신 서비스,True,,pending,pending,False,True,0.8,True,B_individual
+CI↔GEHC,COMPETES_WITH,"SEC 10-K: However, we continue to monitor developments in the China market, including increased competition fr",,True,,pending,pending,False,True,0.3,True,B_individual
+CMCSA↔TMUS,COMPETES_WITH,"SEC 10-K: In addition, our wireless communications services competitors include numerous smaller and regional ",무선 통신 서비스,True,,pending,pending,False,True,0.2,True,B_individual
+CME↔MSCI,COMPETES_WITH,SEC 10-K: Among our Index competitors are S&P Dow Jones Indices LLC (a joint venture of S&P Global Inc. and CM,인덱스 서비스,True,,pending,pending,False,True,0.95,True,B_individual
+COO↔HOLX,COMPETES_WITH,"SEC 10-K: Larger companies such as Johnson & Johnson, Baxter International, Medtronic and Hologic have offerin",,False,COMPETES_WITH,pending,pending,True,True,0.05,True,B_individual
+COO↔MDT,COMPETES_WITH,"SEC 10-K: Larger companies such as Johnson & Johnson, Baxter International, Medtronic and Hologic have offerin",,False,,pending,pending,True,True,0.0,True,B_individual
+COR↔MCK,COMPETES_WITH,"SEC 10-K: Certain competitors also offer combinations of distribution, GPO, and provider services capabilities",유통,True,,pending,pending,False,True,0.85,True,B_individual
+CRM↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",기업 클라우드,True,,pending,pending,False,True,0.6,True,B_individual
+CSCO↔DDOG,COMPETES_WITH,"SEC 10-K: With respect to APM, we compete with companies including Cisco Systems, Inc., New Relic, Inc. and Dy",애플리케이션 성능 모니터링,True,,pending,pending,False,True,1.0,True,B_individual
+CSCO↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.8,True,B_individual
+CVNA↔TSLA,COMPETES_WITH,"SEC 10-K: For example, rapid changes in technology, including rideshare services and the development of autono",자율주행 기술,False,COMPETES_WITH,pending,pending,False,True,0.1,True,B_individual
+DDOG↔MSFT,COMPETES_WITH,"SEC 10-K: With respect to on-premise infrastructure monitoring, we compete with diversified technology compani",온프레미스 인프라 모니터링,True,,pending,pending,False,True,0.8,True,B_individual
+DDOG↔SNDK,COMPETES_WITH,"SEC 10-K: With respect to on-premise infrastructure monitoring, we compete with diversified technology compani",,False,,pending,pending,False,True,0.0,True,B_individual
+DIS↔FOXA,COMPETES_WITH,"SEC 10-K: direct-to-consumer streaming services such as ESPN+, YouTube, Peacock, Amazon Prime Video, Netflix, ",스트리밍 서비스,True,,pending,pending,False,True,0.7,True,B_individual
+DXCM↔MDT,COMPETES_WITH,SEC 10-K: Medtronic plc’s Diabetes Group (which implemented a spinoff of its diabetes business into a separate,당뇨병 관리,False,COMPETES_WITH,pending,pending,True,True,0.1,True,B_individual
+EBAY↔GOOG,COMPETES_WITH,"SEC 10-K: From time to time, Alphabet has made changes to their algorithms and methodologies that have reduced",,False,DEPENDS_ON,pending,pending,True,True,0.0,True,B_individual
+EFX↔FICO,COMPETES_WITH,"SEC 10-K: For example, Experian, TransUnion and Equifax have developed a credit scoring product to compete dir",신용 점수 산정 제품,True,,pending,pending,False,True,0.9,True,B_individual
+EXPE↔GOOGL,COMPETES_WITH,"SEC 10-K: In addition to the growth of online travel agencies, we have seen continued interest in the online t",온라인 여행사,False,COMPETES_WITH,pending,pending,False,True,0.2,True,B_individual
+FAST↔GPC,COMPETES_WITH,"SEC 10-K: In industrial distribution, our main competitor is Applied Industrial Technologies, Inc., but we als",산업 유통,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+FISV↔GPN,COMPETES_WITH,"SEC 10-K: Our competitors in this business include, but are not limited to, Fiserv, FIS, Marqeta, Nexi, Worldl",,True,,pending,pending,False,True,1.0,True,B_individual
+FISV↔JKHY,COMPETES_WITH,SEC 10-K: Our core solutions compete with large vendors that provide information and transaction processing so,정보 및 거래 처리,True,,pending,pending,False,True,1.0,True,B_individual
+FIS↔JKHY,COMPETES_WITH,SEC 10-K: Our core solutions compete with large vendors that provide information and transaction processing so,정보·거래 처리 솔루션,True,,pending,pending,False,True,0.5,True,B_individual
+FOXA↔GOOGL,COMPETES_WITH,"SEC 10-K: direct-to-consumer streaming services such as ESPN+, YouTube, Peacock, Amazon Prime Video, Netflix, ",다이렉트 투 컨슈머 스트리밍 서비스,True,,pending,pending,False,True,0.9,True,B_individual
+GOOGL↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, software and hardware offerings compete directly with certain offerings from s",클라우드 서비스,True,,pending,pending,False,True,0.9,True,B_individual
+GOOGL↔TTD,COMPETES_WITH,"SEC 10-K: We compete with other demand-side platform providers, some of which are smaller, privately held comp",수요측 플랫폼,True,,pending,pending,False,True,0.95,True,B_individual
+GOOG↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.6,True,B_individual
+GPC↔GWW,COMPETES_WITH,"SEC 10-K: In industrial distribution, our main competitor is Applied Industrial Technologies, Inc., but we als",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+GPC↔LKQ,COMPETES_WITH,"SEC 10-K: Key competitors in North America include AutoZone, Inc., O'Reilly Auto Parts, Inc., Advance Auto Par",자동차 부품 유통,False,COMPETES_WITH,pending,pending,False,True,0.2,True,B_individual
+GPN↔TPR,COMPETES_WITH,"SEC 10-K: In the United States, we compete with a large number of providers, including but not limited to Fise",,False,,pending,pending,False,True,0.0,True,B_individual
+GPN↔XYZ,COMPETES_WITH,"SEC 10-K: In the United States, we compete with a large number of providers, including but not limited to Fise",,False,,pending,pending,False,True,0.0,True,B_individual
+HPE↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.8,True,B_individual
+HPQ↔MSFT,COMPETES_WITH,"SEC 10-K: Our primary competitors are Acer Inc., Apple Inc., ASUSTeK Computer Inc., Dell Inc., Huawei Technolo",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+IBM↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.9,True,B_individual
+IEX↔IR,COMPETES_WITH,"SEC 10-K: Our primary competitors include Dover, Graco, IDEX Corporation, KNF Neuberger, Netzsch, NOV, Sartori",,True,,pending,pending,False,True,1.0,True,B_individual
+INCY↔ORCL,COMPETES_WITH,"SEC 10-K: For example, following our acquisition of Cerner Corporation, we also face competition from large he",,False,,pending,pending,True,True,0.0,True,B_individual
+INTC↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.9,True,B_individual
+IR↔TMO,COMPETES_WITH,"SEC 10-K: Our primary competitors include Dover, Graco, IDEX Corporation, KNF Neuberger, Netzsch, NOV, Sartori",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+ISRG↔JNJ,COMPETES_WITH,"SEC 10-K: Companies that have introduced products in the field of robotic-assisted medical procedures, or have",수술용 로봇,True,,pending,pending,False,True,0.9,True,B_individual
+ISRG↔MDT,COMPETES_WITH,"SEC 10-K: Companies that have introduced products in the field of robotic-assisted medical procedures, or have",로봇 보조 수술,True,,pending,pending,False,True,0.7,True,B_individual
+JCI↔TT,COMPETES_WITH,"SEC 10-K: Larger competitors include Honeywell International, Inc.; Siemens Smart Infrastructure, an operating",,False,,pending,pending,False,True,0.0,True,B_individual
+JCI↔VRT,COMPETES_WITH,"SEC 10-K: Larger competitors include Honeywell International, Inc.; Siemens Smart Infrastructure, an operating",,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+JPM↔SYF,COMPETES_WITH,"SEC 10-K: Our primary competitors for partners include major financial institutions, such as American Express,",금융 서비스,True,,pending,pending,True,True,0.3,True,B_individual
+KO↔PEP,COMPETES_WITH,"SEC 10-K: In many countries in which our products are sold, including the United States, The Coca-Cola Company",음료 시장,True,,pending,pending,False,True,0.9,True,B_individual
+MSFT↔ORCL,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,1.0,True,B_individual
+MSFT↔WDAY,COMPETES_WITH,"SEC 10-K: These vendors include, without limitation, Anaplan, Inc.; ADP; Coupa Software Inc.; Dayforce, Inc.; ",,False,,pending,pending,False,True,0.0,True,B_individual
+MTB↔SYF,COMPETES_WITH,"SEC 10-K: Our primary competitors for partners include major financial institutions, such as American Express,",금융 서비스,True,,pending,pending,True,True,0.3,True,B_individual
+MU↔SNDK,COMPETES_WITH,SEC 10-K: We face intense competition in the semiconductor memory and storage markets from a number of compani,반도체 메모리,True,,pending,pending,False,True,1.0,True,B_individual
+NOW↔WDAY,COMPETES_WITH,"SEC 10-K: These vendors include, without limitation, Anaplan, Inc.; ADP; Coupa Software Inc.; Dayforce, Inc.; ",,False,,pending,pending,False,True,0.0,True,B_individual
+ORCL↔WDAY,COMPETES_WITH,"SEC 10-K: Our enterprise cloud, license and hardware offerings compete directly with certain offerings from so",엔터프라이즈 클라우드,True,,pending,pending,False,True,0.5,True,B_individual
+SATS↔TMUS,COMPETES_WITH,"SEC 10-K: In addition, our wireless communications services competitors include numerous smaller and regional ",무선 통신 서비스,True,,pending,pending,False,True,0.1,True,B_individual
+SO↔SO,COMPETES_WITH,SEC 10-K: Southern Company Gas' natural gas distribution utilities do not compete with other distributors of n,천연가스 유통,False,COMPETES_WITH,pending,pending,True,True,0.9,True,B_individual
+STZ↔TAP,COMPETES_WITH,"SEC 10-K: In the U.S. and Canada, we compete most directly with Anheuser-Busch InBev SA/NV (""ABI"") and Constel",맥주 시장,True,,pending,pending,False,True,0.95,True,B_individual
+SYF↔WFC,COMPETES_WITH,"SEC 10-K: Our primary competitors for partners include major financial institutions, such as American Express,",금융 파트너십,True,,pending,pending,False,True,0.6,True,B_individual
+TMUS↔VZ,COMPETES_WITH,"SEC 10-K: Our wireless communications services competitors include other carriers, such as AT&T Inc. (“AT&T”) ",무선 통신 서비스,True,,pending,pending,True,True,0.6,True,B_individual
+ADI↔TSM,DEPENDS_ON,"SEC 10-K: Additionally, more than half of the Company’s purchases of external wafer and foundry services are f",반도체 파운드리 서비스,True,,pending,pending,True,True,0.5,True,B_individual
+AMGN↔HCA,DEPENDS_ON,"SEC 10-K: In 2024, Change Healthcare, a large U.S. insurance claim and co-pay card processing clearinghouse, e",,False,DEPENDS_ON,pending,pending,True,True,0.0,True,B_individual
+CCI↔EQT,DEPENDS_ON,SEC 10-K: The restrictions and requirements imposed on our business and operations pursuant to certain covenan,,False,,pending,pending,False,True,0.0,True,B_individual
+CI↔HCA,DEPENDS_ON,"SEC 10-K: For example, Change Healthcare, a health technology company owned by UnitedHealth Group and a servic",,False,DEPENDS_ON,pending,pending,True,True,0.0,True,B_individual
+CSGP↔GOOGL,DEPENDS_ON,"SEC 10-K: For example, starting on July 1, 2024, Universal Analytics (UA), Google’s legacy analytics platform ",웹 분석 플랫폼,False,,pending,pending,True,True,0.0,True,B_individual
+DLR↔DLR,DEPENDS_ON,"SEC 10-K: As the sole general partner of our Operating Partnership, our Parent has the full, exclusive and com",,True,,pending,pending,False,True,0.9,True,B_individual
+FTNT↔AMD,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",CPU,True,,pending,pending,False,True,0.8,True,B_individual
+FTNT↔AVGO,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",중앙처리장치(CPU),True,,pending,pending,False,True,0.7,True,B_individual
+FTNT↔DIS,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",,False,,pending,pending,False,True,0.0,True,B_individual
+FTNT↔INTC,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",CPU,True,,pending,pending,False,True,0.9,True,B_individual
+FTNT↔MU,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",,False,DEPENDS_ON,pending,pending,False,True,0.0,True,B_individual
+FTNT↔QCOM,DEPENDS_ON,"SEC 10-K: Some of the components important to our business, including certain Central Processing Units (“CPUs”",중앙처리장치,True,,pending,pending,False,True,0.6,True,B_individual
+GDDY↔META,DEPENDS_ON,SEC 10-K: Our customers and their businesses rely heavily on tools and solutions that help them manage and gro,,False,COMPETES_WITH,pending,pending,False,True,0.1,True,B_individual
+GDDY↔MSFT,DEPENDS_ON,"SEC 10-K: We rely on certain relationships with partners to offer and support key products and services, some ",,True,,pending,pending,False,True,0.3,True,B_individual
+GPN↔USB,DEPENDS_ON,"SEC 10-K: Elavon, Inc., a subsidiary of U.S. Bancorp",금융 서비스,False,COMPETES_WITH,pending,pending,True,True,0.3,True,B_individual
+GS↔GS,DEPENDS_ON,SEC 10-K: Goldman Sachs Asset Management BV is subject to similar requirements as a management company license,자산 관리,False,,pending,pending,True,True,0.7,True,B_individual
+ORCL↔CVX,DEPENDS_ON,"SEC 10-K: For example, following our acquisition of Cerner Corporation, we also face competition from large he",,False,COMPETES_WITH,pending,pending,True,False,0.0,True,B_individual
+PCAR↔LII,DEPENDS_ON,"SEC 10-K: A loss of supply from Cummins, Eaton, ZF or Magna, and the resulting interruption in the production ",,False,DEPENDS_ON,pending,pending,False,True,0.0,True,B_individual
+SMCI↔ALGN,DEPENDS_ON,SEC 10-K: Ablecom also coordinates the manufacturing of chassis for us.,,False,,pending,pending,False,True,0.0,True,B_individual
+WAT↔CI,DEPENDS_ON,SEC 10-K: including tariffs and export restrictions on certain manufacturing components imposed by China,,False,DEPENDS_ON,pending,pending,False,True,0.0,True,B_individual
+AKAM↔APTV,PARTNER_WITH,SEC 10-K: We market and sell our solutions globally through our field sales and services organization and thro,,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+AKAM↔MSFT,PARTNER_WITH,SEC 10-K: We market and sell our solutions globally through our field sales and services organization and thro,,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+ANET↔AVGO,PARTNER_WITH,"SEC 10-K: Our product development efforts also depend upon continued collaboration with our key suppliers, suc",,False,DEPENDS_ON,pending,pending,False,True,0.3,True,B_individual
+BKR↔NXT,PARTNER_WITH,"SEC 10-K: Over the past several years, we have made progress in strategic investments and acquisitions in emer",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+BKR↔VLO,PARTNER_WITH,"SEC 10-K: Over the past several years, we have made progress in strategic investments and acquisitions in emer",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+BLK↔HPQ,PARTNER_WITH,"SEC 10-K: BlackRock recorded approximately $3.0 billion of indefinite-lived management contracts, $2.7 billion",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+CAH↔IONQ,PARTNER_WITH,SEC 10-K: The performance of our MSO platforms positively impacted the year-over-year comparison of Pharma seg,,False,COMPETES_WITH,pending,pending,False,True,0.0,True,B_individual
+CRWD↔AMZN,PARTNER_WITH,"SEC 10-K: To further meet the compliance demands of the government, customers can elect to deploy the Falcon p",,False,,pending,pending,False,True,0.0,True,B_individual
+DAL↔AXP,PARTNER_WITH,"SEC 10-K: This is primarily composed of revenues related to lounge access, including access provided to certai",공항 라운지 서비스,True,,pending,pending,False,True,0.8,True,B_individual
+DLR↔DLR,PARTNER_WITH,"SEC 10-K: Digital Realty Trust, Inc. (the Parent), through its controlling interest in Digital Realty Trust, L",,False,DEPENDS_ON,pending,pending,True,True,0.9,True,B_individual
+EA↔MSFT,PARTNER_WITH,"SEC 10-K: Addendum to Xbox Console Publisher License Agreement, effective as of July 1, 2024, between Microsof",비디오 게임,True,,pending,pending,False,True,0.9,True,B_individual
+EQT↔XEL,PARTNER_WITH,"SEC 10-K: Prior to that he served as Senior Director, Technical Accounting and Financial Reporting at Rice Ene",,False,,pending,pending,False,True,0.0,True,B_individual
+FTNT↔AMZN,PARTNER_WITH,"SEC 10-K: Depending on the solution or form factor purchased, customers may also access our products via the c",,False,PARTNER_WITH,pending,pending,False,True,0.1,True,B_individual
+GDDY↔AMZN,PARTNER_WITH,"SEC 10-K: We also work to make certain of our products interoperable with services such as Yelp, Google, Amazo",서비스 연동,True,,pending,pending,False,True,0.9,True,B_individual
+GDDY↔META,PARTNER_WITH,"SEC 10-K: We also work to make certain of our products interoperable with services such as Yelp, Google, Amazo",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+GDDY↔XYZ,PARTNER_WITH,"SEC 10-K: we provide various payment options for customers, including through our partnerships and technical i",결제 서비스,True,,pending,pending,False,True,0.3,True,B_individual
+HCA↔HCA,PARTNER_WITH,"SEC 10-K: The terms “HCA,” “Company,” “we,” “our,” or “us,” as used herein, refer to HCA Healthcare, Inc. and ",,False,PARTNER_WITH,pending,pending,True,True,0.0,True,B_individual
+INCY↔REGN,PARTNER_WITH,"SEC 10-K: in 2022 and 2023, we decided to terminate our collaborations with Calithera Biosciences, Inc. and Sy",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+KDP↔KO,PARTNER_WITH,"SEC 10-K: These bottlers may be affiliated with Coca-Cola or with PepsiCo, or they may be independent.",,False,COMPETES_WITH,pending,pending,True,True,0.0,True,B_individual
+KDP↔PEP,PARTNER_WITH,"SEC 10-K: These bottlers may be affiliated with Coca-Cola or with PepsiCo, or they may be independent.",,False,COMPETES_WITH,pending,pending,True,True,0.0,True,B_individual
+LEN↔INVH,PARTNER_WITH,"SEC 10-K: In April 2024, Upward America entered into a joint venture agreement and property management agreeme",단독 주택 임대,True,,pending,pending,False,True,0.9,True,B_individual
+MCK↔APO,PARTNER_WITH,"SEC 10-K: on April 20, 2026, we announced a definitive agreement under which funds managed by affiliates of Ap",,True,,pending,pending,False,True,0.8,True,B_individual
+MCK↔WMT,PARTNER_WITH,SEC 10-K: We also source generic pharmaceutical drugs through our ClarusONE Sourcing Services LLP joint ventur,제네릭 의약품,True,,pending,pending,False,True,0.9,True,B_individual
+MMM↔SOLV,PARTNER_WITH,"SEC 10-K: On April 1, 2024, the Company completed the planned spin-off of its Health Care business as an indep",헬스케어 사업,False,DEPENDS_ON,pending,pending,False,True,0.9,True,B_individual
+MNST↔PEP,PARTNER_WITH,"SEC 10-K: For example, PepsiCo entered into a long-term strategic distribution arrangement with Celsius Holdin",,False,PARTNER_WITH,pending,pending,True,True,0.0,True,B_individual
+MSCI↔BLK,PARTNER_WITH,"SEC 10-K: Certain of our clients are also significant shareholders, competitors or distributors of our content",,True,,pending,pending,False,False,0.5,True,B_individual
+MTB↔MTB,PARTNER_WITH,"SEC 10-K: At December 31, 2025, M&T had two wholly-owned bank subsidiaries: M&T Bank and Wilmington Trust, N.A",은행 서비스,False,DEPENDS_ON,pending,pending,True,True,1.0,True,B_individual
+ORCL↔CVX,PARTNER_WITH,"SEC 10-K: For example, following our acquisition of Cerner Corporation, we also face competition from large he",,False,,pending,pending,True,False,0.0,True,B_individual
+PANW↔IBM,PARTNER_WITH,"SEC 10-K: In June 2025, we amended the terms of our contingent consideration arrangement with International Bu",,False,SUPPLIES_TO,pending,pending,True,True,0.7,True,B_individual
+PEP↔SBUX,PARTNER_WITH,"SEC 10-K: PBNA also, either independently or in conjunction with third parties, makes, markets, distributes an",음료 유통,True,,pending,pending,False,True,0.8,True,B_individual
+ROP↔HPQ,PARTNER_WITH,"SEC 10-K: —ConstructConnect, DAT, Foundry, iPipeline, iTradeNetwork, MHA, SHP, SoftWriters, and Subsplash;",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+SATS↔SATS,PARTNER_WITH,"SEC 10-K: governing the purchase, sale and other disposition by directors, officers and employees of securitie",,False,,pending,pending,False,True,0.0,True,B_individual
+SMCI↔ALGN,PARTNER_WITH,"SEC 10-K: We also collaborate on design and development activities with Ablecom and Compuware, where we substa",,False,,pending,pending,False,True,0.0,True,B_individual
+TECH↔TMO,PARTNER_WITH,"SEC 10-K: We sell our products directly to customers who are primarily located in North America, Europe and Ch",,False,,pending,pending,False,True,0.0,True,B_individual
+TGT↔AAPL,PARTNER_WITH,"SEC 10-K: In addition, we have consumer-facing relationships with a variety of other companies, including Appl",소비자 전자제품 유통,True,,pending,pending,False,True,0.9,True,B_individual
+TGT↔SBUX,PARTNER_WITH,"SEC 10-K: In addition, we have consumer-facing relationships with a variety of other companies, including Appl",,False,,pending,pending,False,True,0.0,True,B_individual
+TGT↔ULTA,PARTNER_WITH,"SEC 10-K: In addition, we have consumer-facing relationships with a variety of other companies, including Appl",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+TPL↔ACN,PARTNER_WITH,"SEC 10-K: From 2004 to 2013, Ms. Duganier was a Managing Director at Accenture, a multinational professional s",,False,,pending,pending,True,True,0.0,True,B_individual
+TPL↔CNP,PARTNER_WITH,"SEC 10-K: Ms. Duganier currently serves on the board of directors of CenterPoint Energy (NYSE: CNP), an electr",,False,PARTNER_WITH,pending,pending,True,True,0.5,True,B_individual
+TPL↔SPGI,PARTNER_WITH,"SEC 10-K: and of MRC Global Inc. (NYSE: MRC) (2015-2024), an industrial distributor of pipes, valves and other",,False,PARTNER_WITH,pending,pending,True,True,0.0,True,B_individual
+WAB↔NSC,PARTNER_WITH,"SEC 10-K: In both 2025 and 2024, Canadian National Railway Company, Norfolk Southern and Union Pacific Railroa",,False,PARTNER_WITH,pending,pending,True,True,0.0,True,B_individual
+WDAY↔GOOGL,PARTNER_WITH,"SEC 10-K: Strategic partnerships with public cloud providers, including Amazon Web Services, Inc. (“AWS”) and ",클라우드 컴퓨팅,True,,pending,pending,False,True,0.7,True,B_individual
+WDAY↔MU,PARTNER_WITH,"SEC 10-K: Our global partnerships with payroll providers, including Automatic Data Processing, Inc. (“ADP”), R",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+WST↔ROP,PARTNER_WITH,"SEC 10-K: He has also served as an Independent Director at OraSure Technologies, Inc. since 2023.",,False,SUPPLIES_TO,pending,pending,True,True,0.0,True,B_individual
+XYZ↔V,PARTNER_WITH,SEC 10-K: Cash App Card offers customers the ability to store funds in Cash App and subsequently use these fun,직불 카드,True,,pending,pending,False,True,0.3,True,B_individual
+ALGN↔FTNT,SUPPLIES_TO,"SEC 10-K: Our current manufacturing partners include Accton Technology (“Accton”), IBASE Technology, Inc. (“IB",,False,,pending,pending,False,True,0.0,True,B_individual
+ALGN↔IDXX,SUPPLIES_TO,SEC 10-K: We also sell our products to dental laboratories who use our products to manufacture or customize th,치과 기공,False,SUPPLIES_TO,pending,pending,True,True,0.1,True,B_individual
+ALGN↔SMCI,SUPPLIES_TO,"SEC 10-K: We work with Ablecom, one of our key contract manufacturers and a related party, for our chassis and",,False,,pending,pending,False,True,0.0,True,B_individual
+AMZN↔ADSK,SUPPLIES_TO,"SEC 10-K: We rely on third parties, such as Amazon Web Services, to provide us with operational and technical ",클라우드 컴퓨팅,True,,pending,pending,False,True,1.0,True,B_individual
+AOS↔AMZN,SUPPLIES_TO,SEC 10-K: We sell our A. O. Smith branded water treatment products primarily through our water quality dealer ,,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+A↔WST,SUPPLIES_TO,"SEC 10-K: Prior to joining West, he served as the Chief Financial Officer of Agilent Technologies Inc, a provi",,False,,pending,pending,True,True,0.0,True,B_individual
+CAH↔ABBV,SUPPLIES_TO,"SEC 10-K: In 2025, three wholesale distributors (McKesson Corporation, Cardinal Health, Inc. and Cencora, Inc.",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+CAH↔BAX,SUPPLIES_TO,"SEC 10-K: In the United States, third parties, such as Cardinal Health, Inc. and Medline Inc., warehouse and s",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+CAH↔GILD,SUPPLIES_TO,"SEC 10-K: Historically, approximately 90% of our gross product sales in the U.S. have been to three large whol",의약품 유통,True,,pending,pending,False,True,0.7,True,B_individual
+CAT↔FIX,SUPPLIES_TO,"SEC 10-K: The primary manufacturers of the major components in a commercial MEP system are: Trane, Carrier, Yo",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+CMI↔FIX,SUPPLIES_TO,"SEC 10-K: The primary manufacturers of the major components in a commercial MEP system are: Trane, Carrier, Yo",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+CMI↔PCAR,SUPPLIES_TO,SEC 10-K: Engines not manufactured by the Company are purchased from Cummins Inc. (Cummins).,엔진,True,,pending,pending,False,True,1.0,True,B_individual
+COR↔GILD,SUPPLIES_TO,"SEC 10-K: Historically, approximately 90% of our gross product sales in the U.S. have been to three large whol",,False,SUPPLIES_TO,pending,pending,False,True,0.1,True,B_individual
+CRWD↔HLT,SUPPLIES_TO,"SEC 10-K: For example, in July 2024 a software update by CrowdStrike Holdings, Inc., a cybersecurity technolog",,False,,pending,pending,True,True,0.0,True,B_individual
+DLTR↔CPB,SUPPLIES_TO,"SEC 10-K: Our products are generally resold to consumers through retail food chains, mass discounters, mass me",식품 유통,True,,pending,pending,False,True,0.8,True,B_individual
+DTE↔GM,SUPPLIES_TO,"SEC 10-K: Energy Trading's customer base is predominantly utilities, local natural gas distribution companies,",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+ETN↔FTNT,SUPPLIES_TO,"SEC 10-K: Our current manufacturing partners include Accton Technology (“Accton”), IBASE Technology, Inc. (“IB",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+ETN↔PCAR,SUPPLIES_TO,SEC 10-K: The Company purchased a significant portion of its transmissions from Eaton Corporation Plc. (Eaton),변속기,True,,pending,pending,False,True,1.0,True,B_individual
+FISV↔SYF,SUPPLIES_TO,SEC 10-K: We also face risks related to cyber-attacks and other security breaches in connection with credit ca,신용카드,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+FN↔NVDA,SUPPLIES_TO,SEC 10-K: We engage with independent subcontractors and contract manufacturers such as Hon Hai Precision Indus,,False,SUPPLIES_TO,pending,pending,False,True,0.1,True,B_individual
+FTNT↔EA,SUPPLIES_TO,"SEC 10-K: We work with many technology distributors, including Arrow Electronics, Inc., Exclusive, Ingram Micr",,False,,pending,pending,True,True,0.0,True,B_individual
+GIS↔DRI,SUPPLIES_TO,"SEC 10-K: We were acquired by General Mills, Inc. in 1970 and became a separate publicly held company in 1995 ",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+HOLX↔WST,SUPPLIES_TO,"SEC 10-K: From 2014 to 2018, Mr. McMahon served as Chief Financial Officer at Hologic, Inc, a developer, manuf",,False,,pending,pending,False,True,0.0,True,B_individual
+JBL↔ANET,SUPPLIES_TO,"SEC 10-K: Our primary manufacturing partners are Jabil Inc., Sanmina Corporation and Foxconn Hon Hai.",전자제품 위탁생산,True,,pending,pending,False,True,1.0,True,B_individual
+JNJ↔WST,SUPPLIES_TO,"SEC 10-K: Prior to Hologic, Mr. McMahon spent 20 years with Johnson & Johnson, a biotechnology, medical techno",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+KDP↔PEP,SUPPLIES_TO,"SEC 10-K: Further, PBNA manufactures and distributes certain brands licensed from Keurig Dr Pepper Inc., inclu",음료 브랜드 라이선싱,False,PARTNER_WITH,pending,pending,True,True,1.0,True,B_individual
+LII↔PCAR,SUPPLIES_TO,SEC 10-K: The Company also purchased a significant portion of North America stampings used for cabs from Magna,,False,,pending,pending,False,True,0.0,True,B_individual
+MCHP↔EA,SUPPLIES_TO,"SEC 10-K: With the exception of Arrow Electronics, our largest distributor, which accounted for 10% and 12% of",,False,SUPPLIES_TO,pending,pending,True,True,0.0,True,B_individual
+MCK↔GILD,SUPPLIES_TO,"SEC 10-K: Historically, approximately 90% of our gross product sales in the U.S. have been to three large whol",의약품 유통,True,,pending,pending,False,True,0.8,True,B_individual
+MET↔BAX,SUPPLIES_TO,"SEC 10-K: In the United States, third parties, such as Cardinal Health, Inc. and Medline Inc., warehouse and s",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+MGM↔O,SUPPLIES_TO,SEC 10-K: MGM Resorts International continues to operate the properties.,부동산 임대,True,,pending,pending,True,True,0.6,True,B_individual
+MMM↔SOLV,SUPPLIES_TO,"SEC 10-K: Transition Contract Manufacturing Agreement, dated as of March 31, 2024, by and between 3M Company a",,True,,pending,pending,False,True,0.6,True,B_individual
+MPC↔SRE,SUPPLIES_TO,"SEC 10-K: Our customer contracts for our refined products storage business are structured as long-term, U.S. d",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+MSCI↔BLK,SUPPLIES_TO,"SEC 10-K: Certain of our clients are also significant shareholders, competitors or distributors of our content",,True,,pending,pending,False,False,0.2,True,B_individual
+MU↔FTNT,SUPPLIES_TO,"SEC 10-K: Our current manufacturing partners include Accton Technology (“Accton”), IBASE Technology, Inc. (“IB",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+MU↔NVDA,SUPPLIES_TO,"SEC 10-K: We purchase memory from SK Hynix Inc., Micron Technology, Inc., and Samsung.",메모리,True,,pending,pending,False,True,1.0,True,B_individual
+ON↔ON,SUPPLIES_TO,"SEC 10-K: On October 27, 2025, we completed the acquisition of rights to Vcore power technologies, including a",Vcore 전력 기술,False,PARTNER_WITH,pending,pending,True,True,0.8,True,B_individual
+PWR↔PWR,SUPPLIES_TO,SEC 10-K: Quanta’s Underground and Infrastructure segment provides comprehensive infrastructure solutions to c,인프라 솔루션,True,,pending,pending,True,True,0.6,True,B_individual
+SATS↔AMT,SUPPLIES_TO,"SEC 10-K: For example, during the second half of 2025, Echostar Corporation, parent company to DISH, announced",,False,,pending,pending,True,True,0.0,True,B_individual
+SNDK↔ANET,SUPPLIES_TO,"SEC 10-K: Our primary manufacturing partners are Jabil Inc., Sanmina Corporation and Foxconn Hon Hai.",,False,PARTNER_WITH,pending,pending,False,True,0.0,True,B_individual
+SRE↔NUE,SUPPLIES_TO,"SEC 10-K: Oncor also provides distribution services, consisting of retail delivery services to retail electric",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+TSM↔AVGO,SUPPLIES_TO,"SEC 10-K: The majority of our front-end wafer manufacturing operations is outsourced to external foundries, in",반도체 파운드리,True,,pending,pending,False,True,0.9,True,B_individual
+TSM↔FTNT,SUPPLIES_TO,SEC 10-K: These contract manufacturers use foundries in Taiwan and Japan operated by either Taiwan Semiconduct,,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+VLO↔SRE,SUPPLIES_TO,"SEC 10-K: Our customer contracts for our refined products storage business are structured as long-term, U.S. d",,False,SUPPLIES_TO,pending,pending,False,True,0.0,True,B_individual
+V↔V,SUPPLIES_TO,"SEC 10-K: Built on a cloud-based architecture, our Acceptance Platform solutions such as Cybersource and Autho",클라우드 기반 결제 솔루션,True,,pending,pending,False,True,0.9,True,B_individual
+WMT↔CAG,SUPPLIES_TO,"SEC 10-K: Our largest customer, Walmart, Inc. and its affiliates, accounted for approximately 29% of consolida",식품 소매,True,,pending,pending,False,True,1.0,True,B_individual
+WMT↔CL,SUPPLIES_TO,"SEC 10-K: Our sales to Walmart, Inc. and its affiliates represented approximately 11% of our Net sales in 2025",,True,,pending,pending,False,True,1.0,True,B_individual
+WMT↔KMB,SUPPLIES_TO,"SEC 10-K: Our largest customer, Walmart Inc., represented approximatel",생활용품,True,,pending,pending,False,True,0.9,True,B_individual
+WMT↔PG,SUPPLIES_TO,SEC 10-K: Sales to Walmart Inc. and its affiliates represent approximately 16% of our total sales in 2025 and ,,True,,pending,pending,False,True,1.0,True,B_individual
+AOS↔PNR,COMPETES_WITH,"SEC 10-K: Our principal water treatment competitors in the U.S. are Culligan, Kinetico, Pentair, Franklin Elec",수처리,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+APTV↔GRMN,COMPETES_WITH,"SEC 10-K: Garmin believes that its principal competitors for auto OEM products are Alpine Electronics, Aptiv, ",자동차 OEM 제품,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+AVY↔MMM,COMPETES_WITH,"SEC 10-K: For graphics and reflective products, our largest competitors are 3M Company (“3M”) and the Orafol G",그래픽·반사 제품,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+AXP↔SYF,COMPETES_WITH,"SEC 10-K: Our primary competitors for partners include major financial institutions, such as American Express,",금융 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+AZO↔GPC,COMPETES_WITH,"SEC 10-K: Key competitors in North America include AutoZone, Inc., O'Reilly Auto Parts, Inc., Advance Auto Par",자동차 부품 유통,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+BKNG↔GOOGL,COMPETES_WITH,"SEC 10-K: For example, Google links travel search to its dominant search engine and has integrated travel prod",여행 검색,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+BKR↔HAL,COMPETES_WITH,"SEC 10-K: OFSE competitors include SLB, Halliburton, NOV, Weatherford, and TechnipFMC.",유전 서비스·장비,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+BKR↔SLB,COMPETES_WITH,"SEC 10-K: OFSE competitors include SLB, Halliburton, NOV, Weatherford, and TechnipFMC.",유전 서비스·장비,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CAT↔CMI,COMPETES_WITH,"SEC 10-K: Principal global competitors include Cummins Inc., Deutz AG, Rolls-Royce Power Systems AG and Siemen",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CAT↔GEV,COMPETES_WITH,"SEC 10-K: Other competitors, such as Volvo Penta AB, FPT Industrial SpA (Iveco Group), INNIO Group, GE Vernova",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CAT↔GNRC,COMPETES_WITH,"SEC 10-K: An additional set of competitors, including Aggreko plc, Generac Holdings Inc., Discovery Energy, LL",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CDNS↔KEYS,COMPETES_WITH,"SEC 10-K: U.S.-based competitors include Keysight Technologies, Inc., Schrödinger, Inc., and CEVA, Inc., while",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CDNS↔SNPS,COMPETES_WITH,"SEC 10-K: Key competitors include Synopsys, Inc., Ansys, Inc. (acquired by Synopsys), Siemens EDA, and a varie",전자 설계 자동화 (EDA),True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CHTR↔T,COMPETES_WITH,"SEC 10-K: Our mobile service faces competition from national mobile network operators (“MNOs”) including AT&T,",모바일 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CME↔ICE,COMPETES_WITH,"SEC 10-K: Our competitors include, among other entities, exchanges such as Intercontinental Exchange, Inc. (IC",금융 거래소,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+COO↔JNJ,COMPETES_WITH,"SEC 10-K: Larger companies such as Johnson & Johnson, Baxter International, Medtronic and Hologic have offerin",,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+COO↔RVTY,COMPETES_WITH,"SEC 10-K: In the stem cell storage field, we compete primarily with ViaCord, a division of Revvity, in the Uni",줄기세포 보관,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+COST↔TGT,COMPETES_WITH,"SEC 10-K: Walmart, Target, Kroger, and Amazon are among our significant general merchandise retail competitors",종합 상품 소매,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+COST↔WMT,COMPETES_WITH,"SEC 10-K: Walmart, Target, Kroger, and Amazon are among our significant general merchandise retail competitors",종합 소매,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CSX↔NSC,COMPETES_WITH,"SEC 10-K: CSXT’s primary rail competitor is Norfolk Southern Railway, which operates throughout much of the Co",철도,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+DG↔DLTR,COMPETES_WITH,"SEC 10-K: Our primary direct competitors are Walmart, Family Dollar and Dollar Tree.",소매업,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+DG↔WMT,COMPETES_WITH,"SEC 10-K: Our primary direct competitors are Walmart, Family Dollar and Dollar Tree.",할인 소매,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+FOXA↔NFLX,COMPETES_WITH,"SEC 10-K: direct-to-consumer streaming services such as ESPN+, YouTube, Peacock, Amazon Prime Video, Netflix, ",스트리밍 서비스,True,,auto_candidate,pending,True,True,0.8,True,C_auto_spotcheck
+HON↔JCI,COMPETES_WITH,"SEC 10-K: Larger competitors include Honeywell International, Inc.; Siemens Smart Infrastructure, an operating",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+MA↔V,COMPETES_WITH,"SEC 10-K: We compete worldwide with payments networks such as Visa, American Express, JCB, China UnionPay and ",결제 네트워크,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+MSCI↔NDAQ,COMPETES_WITH,SEC 10-K: Among our Index competitors are ... Nasdaq Inc,인덱스 서비스,True,,auto_candidate,pending,True,True,0.95,True,C_auto_spotcheck
+MSCI↔SPGI,COMPETES_WITH,SEC 10-K: Among our Index competitors are S&P Dow Jones Indices LLC (a joint venture of S&P Global Inc. and CM,지수 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+ANET↔AVGO,DEPENDS_ON,"SEC 10-K: In particular, we are primarily reliant upon our predominant merchant silicon vendor, Broadcom, for ",상업용 실리콘,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+BKNG↔AAPL,DEPENDS_ON,"SEC 10-K: restrictions on the use of the identifier for advertisers (such as the Apple ""IDFA"") by mobile devic",모바일 광고,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+BR↔UPS,DEPENDS_ON,"SEC 10-K: We rely upon the USPS and third-party carriers, including the United Parcel Service, for timely deli",물류·운송,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+CME↔NDAQ,DEPENDS_ON,SEC 10-K: We also have exclusive license agreements for certain Nasdaq indices through 2039 and for certain Ru,금융 지수,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+CPAY↔V,DEPENDS_ON,"SEC 10-K: Third-party networks are operated by independent parties, such as MasterCard and VISA, and tend to b",결제 네트워크,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+EBAY↔GOOGL,DEPENDS_ON,"SEC 10-K: In addition, we rely on Google search to direct a significant amount of traffic to our platforms.",온라인 검색,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+EXR↔EXR,DEPENDS_ON,"SEC 10-K: The Company was formed to continue the business of Extra Space Storage LLC and its subsidiaries, whi",셀프 스토리지,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+FICO↔EFX,DEPENDS_ON,"SEC 10-K: Our Scores segment relies on, among others, Experian, TransUnion and Equifax.",신용정보 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+NVR↔NVR,DEPENDS_ON,"SEC 10-K: Because NVRM originates mortgage loans exclusively for our homebuilding customers, NVRM is dependent",모기지 대출,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+NWSA↔AMZN,DEPENDS_ON,"SEC 10-K: For example, the Company relies on Amazon Web Services to supply cloud-based services used in many o",클라우드 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+NWSA↔GOOGL,DEPENDS_ON,SEC 10-K: and Google to provide workspace and other enterprise services.,기업용 솔루션,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+PCAR↔CMI,DEPENDS_ON,"SEC 10-K: A loss of supply from Cummins, Eaton, ZF or Magna, and the resulting interruption in the production ",엔진,True,,auto_candidate,pending,True,True,0.95,True,C_auto_spotcheck
+PCAR↔ETN,DEPENDS_ON,"SEC 10-K: A loss of supply from Cummins, Eaton, ZF or Magna, and the resulting interruption in the production ",트럭 부품 공급,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+PSA↔GOOGL,DEPENDS_ON,"SEC 10-K: Marketing initiatives, including our increasing dependence on Google to source customers, may fail t",디지털 마케팅,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+SNDK↔WDC,DEPENDS_ON,"SEC 10-K: Prior to February 21, 2025, we were wholly owned by WDC.",,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+TTWO↔MSFT,DEPENDS_ON,"SEC 10-K: Accordingly, console manufacturers like Sony or Microsoft could cause unanticipated delays in the re",게임 콘솔,True,,auto_candidate,pending,True,True,0.8,True,C_auto_spotcheck
+VTRS↔PFE,DEPENDS_ON,SEC 10-K: certain reimbursements related to the Company’s obligation to reimburse Pfizer for certain financing,재무 상환 의무,True,,auto_candidate,pending,True,True,0.8,True,C_auto_spotcheck
+AXP↔AMZN,PARTNER_WITH,"SEC 10-K: For example, our two largest redemption partners are Amazon and Delta.",리워드 프로그램,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+CB↔BLK,PARTNER_WITH,"SEC 10-K: In addition, Chubb has an arrangement with BlackRock, Inc. under which both Chubb and BlackRock, Inc",,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+EXR↔EXR,PARTNER_WITH,"SEC 10-K: The Company’s interest in its stores is held through its operating partnership, Extra Space Storage ",스토리지 운영,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+GDDY↔GOOGL,PARTNER_WITH,"SEC 10-K: We also work to make certain of our products interoperable with services such as Yelp, Google, Amazo",웹 서비스 연동,True,,auto_candidate,pending,True,True,0.9,True,C_auto_spotcheck
+KDP↔SBUX,PARTNER_WITH,"SEC 10-K: Our partner brands include Starbucks, Dunkin', Folgers, and Peet's, among others.",커피 제품,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+WDAY↔ADP,PARTNER_WITH,"SEC 10-K: Our global partnerships with payroll providers, including Automatic Data Processing, Inc. (“ADP”), R",급여 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+WDAY↔AMZN,PARTNER_WITH,"SEC 10-K: Strategic partnerships with public cloud providers, including Amazon Web Services, Inc. (“AWS”) and ",클라우드 서비스,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+WDAY↔MSFT,PARTNER_WITH,"SEC 10-K: For example, our partnership with Microsoft Corporation (“Microsoft”), announced in fiscal 2026, wil",,True,,auto_candidate,pending,True,True,0.95,True,C_auto_spotcheck
+COP↔ATO,SUPPLIES_TO,"SEC 10-K: Major suppliers during fiscal 2025 were ARM Energy Management LLC, Cima Energy, LP, ConocoPhillips C",천연가스 공급,True,,auto_candidate,pending,True,True,1.0,True,C_auto_spotcheck
+INVH↔LEN,SUPPLIES_TO,"SEC 10-K: In addition, Lennar engaged Invitation Homes to provide certain asset management services for the Up",자산 관리 서비스,True,,auto_candidate,pending,True,True,0.95,True,C_auto_spotcheck
+PNR↔POOL,SUPPLIES_TO,"SEC 10-K: Our largest suppliers are Pentair plc, Zodiac Pool Systems, Inc. and Hayward Holdings, Inc., which a",수영장 용품,True,,auto_candidate,pending,True,True,0.95,True,C_auto_spotcheck
