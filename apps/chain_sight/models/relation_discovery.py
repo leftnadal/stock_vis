@@ -172,6 +172,31 @@ class RelationConfidence(models.Model):
     neo4j_synced_at = models.DateTimeField(null=True, blank=True)
     score_version = models.CharField(max_length=10, default="2.1")
 
+    # ⑳-3 S2-B: 관계 도메인 태깅(자동-C 파이프라인). 전부 additive nullable.
+    # 승인본(relation_domain)은 검수 승인만이 쓴다(Phase 2). 초안·검증만 파이프라인이 기록.
+    DOMAIN_REVIEW_CHOICES = [
+        ("pending", "Pending"),      # 검수 대기(게이트 미통과 or 타입 변경 제안)
+        ("approved", "Approved"),    # 사람 검수 승인
+        ("auto", "Auto"),            # 임계 자동승인(DOMAIN_AUTO_APPROVE=True일 때만)
+        ("rejected", "Rejected"),    # 검수 반려
+    ]
+    relation_domain = models.CharField(
+        max_length=80, null=True, blank=True,
+        help_text="승인된 도메인 태그(제품/시장). 검수 승인만 기록(Phase 2).",
+    )
+    relation_domain_draft = models.CharField(
+        max_length=80, null=True, blank=True,
+        help_text="LLM 초안 도메인 태그. 파이프라인이 기록, 승인 전.",
+    )
+    domain_review_status = models.CharField(
+        max_length=10, choices=DOMAIN_REVIEW_CHOICES, null=True, blank=True,
+        help_text="도메인 초안 검수 상태. 게이트 판정 결과.",
+    )
+    domain_machine_check = models.JSONField(
+        null=True, blank=True,
+        help_text="기계검증 결과(항목별 pass/fail + type_match + LLM confidence).",
+    )
+
     class Meta:
         db_table = "chainsight_relation_confidence"
         unique_together = ["symbol_a", "symbol_b", "relation_type"]
