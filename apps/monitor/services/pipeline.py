@@ -5,6 +5,7 @@ evaluate_monitor: 지표 스코어 → 집계 → 스냅샷 upsert → 상태 �
 실행 트리거는 수동(관리 커맨드 / API action) — beat 주기 등록은 별도 스텝(EOD 창 경합 설계 필요).
 """
 import logging
+from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -148,15 +149,88 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
     return result
 
 
+def _expected_last_trading_day(today):
+    """직전 미국 거래일 근사 (주말 제외·공휴일 미고려 — 보수적으로 stale 판정).
+
+    공휴일을 모르므로 관대하게(더 자주 stale) 판정한다 — sync는 멱등이라 초과 시도는
+    무해하나, stale 누락은 데이터 공백을 남겨 위험하기 때문. as_of 당일은 장 마감 전일
+    수 있어 직전 거래일을 기대 최신치로 본다(D-EOD-FRESH).
+    """
+    d = today - timedelta(days=1)
+    while d.weekday() >= 5:  # 5=Sat, 6=Sun
+        d -= timedelta(days=1)
+    return d
+
+
+def ensure_price_freshness(symbols, as_of_date=None):
+    """활성 모니터 심볼의 DailyPrice 신선도 보장 (D-EOD-FRESH, B안).
+
+    beat가 자기 입력의 신선도를 스스로 보장한다 — S&P500 일일 자동수집 유니버스 밖
+    (비편입) 보유 종목이 stale이면 온디맨드 stock_sync_service로 당일 보충한다.
+    최신 종목은 스킵(멱등 — S&P500 종목은 22:00 자동수집분으로 이미 최신 → no-op).
+    shared 코드는 무변경(호출만). 심볼별 실패는 격리 — beat 본체는 절대 죽지 않는다(#65).
+
+    Returns: {'checked': int, 'synced': [str], 'skipped_fresh': [str], 'failed': [str]}
+    """
+    from packages.shared.stocks.models import DailyPrice
+    from packages.shared.stocks.services.stock_sync_service import StockSyncService
+
+    as_of = as_of_date or timezone.localdate()
+    expected = _expected_last_trading_day(as_of)
+    svc = StockSyncService()
+    summary = {'checked': 0, 'synced': [], 'skipped_fresh': [], 'failed': []}
+    started = timezone.now()
+
+    for sym in sorted({s for s in symbols if s}):
+        summary['checked'] += 1
+        latest = (
+            DailyPrice.objects.filter(stock__symbol=sym)
+            .order_by('-date')
+            .values_list('date', flat=True)
+            .first()
+        )
+        if latest is not None and latest >= expected:
+            summary['skipped_fresh'].append(sym)
+            continue
+        try:
+            res = svc.sync_prices(sym, days=90, force=True)
+            if res.success:
+                summary['synced'].append(sym)
+            else:
+                summary['failed'].append(sym)
+                logger.warning(
+                    "freshness sync 실패(비치명): symbol=%s err=%s", sym, res.error
+                )
+        except Exception:  # noqa: BLE001 — 심볼별 격리, beat 본체 보호(#65)
+            summary['failed'].append(sym)
+            logger.exception("freshness sync 예외(비치명): symbol=%s", sym)
+
+    elapsed = (timezone.now() - started).total_seconds()
+    logger.info(
+        "freshness gate: checked=%d synced=%d skipped=%d failed=%d elapsed=%.2fs 대상=%s",
+        summary['checked'], len(summary['synced']), len(summary['skipped_fresh']),
+        len(summary['failed']), elapsed, summary['synced'],
+    )
+    return summary
+
+
 def refresh_monitors(queryset=None, backfill_days=BACKFILL_DAYS, as_of_date=None):
     """stock scope Monitor 전체(또는 주어진 queryset) refresh. 개별 실패는 격리.
 
     queryset 미지정 시 stock scope 전체가 대상(ingest 매핑이 stock scope 카탈로그 전제).
+    서두에 신선도 게이트(D-EOD-FRESH) — 지표 산출 전 입력 DailyPrice 신선도를 보장한다.
     """
     if queryset is None:
         queryset = Monitor.objects.filter(scope=Monitor.Scope.STOCK)
+    monitors = list(queryset)  # 신선도 게이트 + refresh 두 번 순회 → 고정
+
+    # 신선도 게이트: 활성 모니터 심볼 전수 신선도 보장 (지표 산출 전, B안)
+    ensure_price_freshness(
+        [m.target_ref for m in monitors], as_of_date=as_of_date
+    )
+
     results = []
-    for monitor in queryset:
+    for monitor in monitors:
         try:
             results.append(
                 refresh_monitor(monitor, backfill_days=backfill_days, as_of_date=as_of_date)

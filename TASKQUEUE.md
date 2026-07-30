@@ -257,6 +257,7 @@
 | MON-P5 | 테마 바스켓(편집 UI + EODSignal 내부 집계) | @backend+@frontend | MON-P4 | todo | - |
 | MON-P6 | 펀드 scope (ETF만, 공모펀드 보류) | @backend | MON-P5 | todo | - |
 | MON-CLOSE-UX | 마감 UX — 카드 삭제 버튼·마감(종단) 모니터 숨김/접힘 | @frontend+@backend | 🕒 트리거: 첫 실마감 발생 시 (목업 선행 결정 사이클) | - |
+| EOD-FRESH | beat 자가 신선도 게이트(B안) — 비편입 보유 종목 DailyPrice 온디맨드 보충 + IONQ/TLN 백필 | @backend | EOD-RECON | ✅ 완료 2026-07-30 (`sess-eod-fresh`, `ensure_price_freshness` @ pipeline 서두, 신규 모델·태스크 0, monitor pytest 226). Phase0 백필 IONQ/TLN 236→266·손익 정정. DECISIONS `D-EOD-FRESH`. A안 승격=추적>30 or 2번째 소비앱 | D-EOD-FRESH |
 | ~~TC-3~6~~ | ~~대화형빌더·지표설정·관제실·알림마감~~ | - | - | ❌ 무효 (폐기 앱) → MON-P3 승계 | - |
 | MON-P3-ALERT | 전이 알림·다이제스트·상태밴드 스파크라인 (AlertEvent + 인앱 벨 + 이메일 + FE 스파크라인) | @backend+@frontend+@infra | MON-P2-BEAT land | ✅ 완료 2026-07-09 (land `8433fe1`). **배포 완료 2026-07-13**(FIRSTFIRE Case A green → sv sync + migrate 0005 + env `MONITOR_ALERT_RECIPIENT` + 재기동, ALERTFIRE 첫 알림코드 무인 발화 alerts=0 정상). DECISIONS `D-MONITOR-ALERTCLOSE` | ADR §결정1~4 |
 | MON-CLOSE | Monitor 검증 단계 4 DoD 종결 + 부수 정리 5건 + 결정 봉인 | @infra+@frontend | MON-P3-ALERT 배포 | ✅ 완료 2026-07-13 (`monorepo/mon-close`). 4 DoD 완결(authed 픽셀=goid545 세션 스파크라인 렌더)·63fa58cb 삭제·라벨 Thesis→Monitor·T-1 정정 각주·common-bugs #51·빌더 스모크 항목화. OWNERFIX 폐기. DECISIONS `MON-CLOSE` | - |
