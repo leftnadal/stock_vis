@@ -1108,7 +1108,7 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 캘린더 산술은 "매일 빠짐없이 돌았다"를 전제로 순번을 파생 → 실제 실행 이력과 결합되지 않음. 하루라도 건너뛰거나 시작이 지연되면 그만큼 앞 배치가 스킵된다.
 
 **해결**: **체크포인트 카운터** — `status.json.next_batch`를 **성공 시에만 전진**시키고 실행 이력(saved/updated/exit/status)을 함께 기록. 실패·이상(0건)은 전진 보류 → 다음 실행이 같은 배치 재시도(누락 0). `max(next_batch, batch+1)`로 재실행 역행 방지. 멱등 수집(url upsert + skip-covered)이면 재실행도 무해. cf. D-CN-REPAIR-AUTO-CHECKPOINT (2026-07-29), `scripts/cn_repair_status.py`.
-## health_check 결과 보고 시 측정 트리(브랜치·HEAD) 병기 필수 — 옛 worktree 결과를 origin/main 상태로 오인 (#73, 2026-07-29 MP-UNIFY 착지) [harness] [process]
+## health_check 결과 보고 시 측정 트리(브랜치·HEAD) 병기 필수 — 옛 worktree 결과를 origin/main 상태로 오인 (#74, 2026-07-29 MP-UNIFY 착지) [harness] [process]
 
 **증상**: MP-UNIFY-1 착지 검증에서 health_check가 `❌ PROGRESS.md 180.9h stale`를 보고 → "origin/main에 방치 ❌ 있음, mgmt 배치 필요"로 오판. 실제 origin/main은 처음부터 `❌0`이었음(오보).
 
