@@ -1,17 +1,21 @@
-# TRACKS.md — Theme Heat 수동 운용표 (결정38, 2026-07-18~)
+# TRACKS.md — Theme Heat 운용표 (자동 복귀, 결정38 해제 2026-07-29~)
 
-> TH beat 3종 `enabled=False`(순수 수동 체제, 임시 — TH-DEPLOY 완료 시 재활성화).
-> 실행 위치 = `~/worktrees/sv-theme-heat` + venv `…/stock_javis_system-_jE0wOmK-py3.12` +
+> 🎯 **2026-07-29 TH-DEPLOY 봉인 — 수동 운용 종료, beat 자율 발화 복귀(결정38 해제).**
+> TH beat 3종 `enabled=True`(origin/main `f7f3f63d`, worker_sync 3트리, theme_heat 3종 registered).
+> 아래 "상비 절차"는 **배포 이전 수동 운용 이력**(참조·비상 fallback용) — 정상 운용은 beat 자율.
+> 실행 위치(비상/수동 시) = `~/worktrees/sv-theme-heat` + venv `…/stock_javis_system-_jE0wOmK-py3.12` +
 > `OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES PGGSSENCMODE=disable DJANGO_SETTINGS_MODULE=config.settings`.
-> 원장 = 로컬 단일 `stock_vis`(dev 단독). 원장 쓰기는 건별 승인.
+> 원장 = 로컬 단일 `stock_vis`(dev=프로덕션 단일 머신). 워커=sv-worker-runtime(origin/main 추적).
 
-## 비활성 beat (결정38)
+## 활성 beat (결정38 해제, 자율 발화)
 
-| beat | 원래 스케줄 | 상태 | 수동 대체 |
+| beat | 스케줄 | 상태 | 봉인 증거(2026-07-29 09:57 KST catch-up) |
 |------|-----------|------|----------|
-| chainsight-snapshot-analyst-estimates | 금 16:30 ET | **disabled** | 상비 절차 ① |
-| chainsight-collect-theme-filings | (주간) | **disabled** | 필요 시 수동 |
-| chainsight-theme-heat-daily | 매일 18:00 ET | **disabled** | 상비 절차 ② |
+| chainsight-snapshot-analyst-estimates | 금 16:30 ET | **enabled** | 금요일 cron(07-31 첫 자동 발화 대기, 미도래=정상) |
+| chainsight-collect-theme-filings | 매일 17:30 ET | **enabled** | succeeded {b5:119, ipo:9} → ThemeFilingCount 07-29 3행 |
+| chainsight-theme-heat-daily | 매일 18:00 ET | **enabled** | succeeded {as_of:07-29, stored:6} → ThemeHeatScore 07-29 6행 |
+
+## 상비 절차 (배포 이전 수동 운용 이력 — 비상 fallback 참조)
 
 ## 상비 절차
 

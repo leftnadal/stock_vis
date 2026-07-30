@@ -4339,6 +4339,15 @@ chainsight-collect-theme-filings·chainsight-theme-heat-daily) `enabled=False`. 
 상태에서 beat가 발화해도 no-op이므로, 발화 자체를 중단하고 **sv-theme-heat worktree 수동 운용**으로
 일원화(운용표 = TRACKS.md). **단 임시 조치** — TH-DEPLOY 완료 시 재활성화.
 
+**[결정38 해제 — 2026-07-29] 수동 → 자동 복귀 (TH-DEPLOY 봉인)**: 결정38의 임시 조치 **해제**. TH-DEPLOY
+집행 완료(origin/main `f7f3f63d`, 마이그 renumber 0019~0027, worker_sync 3트리 재기동, theme_heat 3종
+registered 게이트 통과) → beat 3종 `enabled=True` 재활성(+`PeriodicTasks.update_changed()`로 DatabaseScheduler
+reload). **봉인 증거(false-green 아님, 산출물 행 실측)**: 2026-07-29 09:57 KST beat reload catch-up 발화 —
+워커 로그 `collect-theme-filings succeeded {b5_created:119, ipo_created:9}` → ThemeFilingCount 07-29 3행,
+`theme-heat-daily succeeded {as_of:2026-07-29, sectors:11, stored:6}` → ThemeHeatScore 07-29 6행(created_at
+00:57:31~00:58:06 UTC 순차). estimates는 금요일 cron(07-31 첫 자동 발화 대기, 미도래=정상). **운용 복귀**:
+수동 운용(TRACKS.md) 종료, beat 자율 발화 체제. C8 EstimateSnapshot 자동 축적 재개(07-17·07-24 수동분 + 07-31~ 자동).
+
 **[방침 기록] "배포"의 정의**: TH-DEPLOY = worktree→main 병합 + 워커 재시동(`worker_sync.sh` + kickstart).
 **같은 머신 내부 재시동일 뿐, 외부 공개(external)가 아님.** 사용자 배포 승인은 **상시 가능**(2026-07-18 확인) —
 결정34의 유보는 *승인 문제가 아니라 순서 문제*(override 적재 완결 선행). TH-DEPLOY = override 적재 완결
@@ -5033,6 +5042,29 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 **검증**: backfill 테스트 6→11(신규 5: window-1 독립·멱등 skip·null 재수집·--dates 표적·--dates 멱등)·경계 GREEN·health ❌0. 커맨드 로직 무변경(--dates 가산만).
 
 **baseline at decision**: base origin/main `ca062581`. 실행(재수집 --commit)은 병진 수동 유보.
+
+## [2026-07-29] C-N-REPAIR-AUTOMATION — 무인 야간 배치(launchd) (D-CN-REPAIR-AUTO-*)
+
+> 트랙: C-N-REPAIR 재수집을 사람 트리거 없이 돌리는 무인 자동화. 지시서 소비. base = sess-CN-repair(origin/main `68aeea28` 랜딩분 위). 산출 = `scripts/cn_repair_nightly.sh`·`scripts/cn_repair_status.py`·`docs/operations/com.stockvis.cn_repair.nightly.plist`·런북. **활성화(launchctl load·kickstart)는 prod 쓰기+AV 소비 = 디렉터 명시 승인 게이트**([[feedback_deploy_approval_explicit_quote]]).
+
+**D-CN-REPAIR-AUTO-CHECKPOINT (순번 = 캘린더 산술 아닌 체크포인트 카운터)**: 지시서 STEP 2-1 문자 그대로의 "경과일+1"을 **기각**. 실측(2026-07-29): 시작일 07-28 기준 오늘 경과일=1 → "경과일+1"=batch2인데 **batch1(07-28)은 미실행** → 캘린더 산술은 batch1을 영구 스킵. 대신 `status.json.next_batch`를 **성공 시에만 전진**(zero/fail=보류→다음 밤 재시도). max()로 재실행 역행 방지. 멱등(url upsert+skip-covered)이라 재실행도 무해.
+
+**D-CN-REPAIR-AUTO-HOLD1 (실행당 1배치 보존)**: 10배치로 나눈 이유 = AV 레이트리밋(20 req/실행, 192÷20≈10일, STEP 0-2). 자동화는 "사람 트리거"만 없애고 **간격은 보존**(하루 1배치). 압축(한 밤 다배치+sleep)은 디렉터 승인 후 옵션(기본 미채택).
+
+**D-CN-REPAIR-AUTO-TREE (실행 트리 = sv-worker-runtime, self-locate)**: 계획서 원라이너의 `cd Desktop/stock_vis`는 그 트리가 세션 브랜치(현 sess-hold-p1, --dates 없음) 표류 → 부적합. 스케줄러는 **origin/main 추적 트리 `~/worktrees/sv-worker-runtime`**(f7f3f63d=origin/main, --dates·계획서 착지, .env 심링크)에서 실행. 래퍼는 BASH_SOURCE self-locate로 REPO_DIR=자기 트리 → plist는 worker-runtime의 래퍼 호출. **전제**: 래퍼·헬퍼가 origin/main 랜딩 후 worker_sync로 그 트리에 동기화돼야 함(활성화 전 게이트).
+
+**D-CN-REPAIR-AUTO-ANOMALY (이상치 = 0건 or 중앙값 밴드 [0.3×,3.0×])**: 정상=무알림, 이상 시에만 알림(ALERT 파일 + osascript). exit≠0=fail(전진 보류)·net 0건=zero(대상일 null인데 무수집=fetch실패/전량skip 의심, 전진 보류)·밴드밖(표본≥3, net>0)=ok_review(데이터는 수집됨→전진, 검토만 권장). 로그/상태는 **`~/Library/Logs/stockvis/cn_repair`**(지시서 `logs/cn_repair`는 Desktop TCC 위험 → pg-backup 관례로 이전).
+
+**D-CN-REPAIR-AUTO-DONE (10/10 자동 마무리)**: 래퍼가 next_batch>10 감지 시 DONE 마커 + launchd 자동 unload(bootout) + 다음 단계 안내(일 단위 존재 검증→SELECT-V2/REGEN-V2). Cowork 리마인더 삭제/용도변경은 **수동 유보(후보만)**.
+
+**검증**: 신규 pytest 9(status 머신)·기존 backfill 11(멱등 3건 포함)·래퍼 dry-run(batch1→20창 매핑·카운터 불변)·완료 경로(next=11→DONE)·경계 GREEN(stdlib만). **활성화·라이브 2회 IDENTICAL·kickstart는 게이트(prod)**.
+
+**D-CN-REPAIR-AUTO-ADOPT (검토 관문 6종 통과 → 수동 게이트 공식 대체, CN-AUTO-REVIEW 2026-07-29)**: 9fca374d를 정식 검토 관문(G1 쿼터캡·G2 무소음실패금지·G3 범위한정·G4 멱등순번·G5 경계보안·G6 테스트)에 회부해 **전 항목 PASS 판정**. 이로써 C-N-REPAIR 재수집의 원 게이트 "**일 배치 병진 수동 실행**"(prod 쓰기+AV 쿼터 이중 사유)을 **"관문 통과한 무인 자동화"로 공식 대체**한다. 단 **활성화(launchctl load·kickstart)만은 여전히 디렉터 명시 승인 게이트**로 남는다(무인화된 것은 "매일의 트리거"이지 "최초 활성화"가 아님).
+- **관문 근거**: G1=`--max-requests 20` 하드캡 + 커맨드 `pending[:max_requests]` 슬라이스(≤20 req/실행) + plist StartCalendarInterval 1회/일·KeepAlive=false·RunAtLoad=false(스케줄 자체가 야간 1회 초과 불가). G5=`AlphaVantageNewsProvider`(shared) 경유·신규 직접호출 0·plist 자격증명 0. G3=next_batch>10 감지 시 DONE+자동 unload(상시 수집기 변질 차단)·대상일=계획서 `--dates`만.
+- **G2 보강(미달→PASS)**: 원안은 실행-후-실패(exit≠0·0건·밴드밖)만 ALERT로 표면화 → **"launchd가 아예 안 돌았음"(sleep/미발화)은 무감지**(OPS-NEWS-FRESHNESS 2.5개월 재발 구조). 보강 = `cn_repair_status.py check` 리포터(마지막 실행 경과일 → OK/STALE/NEVER/DONE, exit 1=주의) + 런북 "아침 확인 루틴" + 단위테스트 5건(check 3·소진종료 1·기존). status 테스트 9→14.
+- **범위 한정 재확인**: repair 계획서 10배치(192일)로 한정, 소진 후 자동 비활성. 일반 상시 broad 수집기로 변질 금지. 압축(한 밤 다배치)은 미채택(별도 승인 옵션).
+- **랜딩·활성화 분리**: 본 검토 세션은 **랜딩·push·plist 활성화를 하지 않는다**. 랜딩=별도 승인, 활성화=랜딩 후 worker_sync로 sv-worker-runtime 착지 → 런북 절차 병진 수동.
+
 ## [2026-07-13] D-EVENTGROUP-WINDOW — EventGroup co-mention 집계에 날짜 윈도우 실적용 (기본 21d·config)
 
 **맥락**: `event_group_pipeline._build_base(half_life)`가 `half_life` 파라미터를 **선언만 하고 본문에서 미사용** — `ChainNewsEvent(is_duplicate=False)` **전량**을 날짜 무관하게 co/doc 카운팅해 왔다. `EventGroup.window_days` 필드는 `half_life`(=21) 값을 저장하나 실제 윈도우링은 없었다(라벨과 행위 불일치). 결과: 데이터 누적 시 오래된 co-mention이 현재 그룹 내러티브를 **희석**(TASKQUEUE `EVENTGROUP-WINDOW`).
@@ -5311,3 +5343,21 @@ type_match 자가모순·검수 노이즈의 구조적 원인. 흐름 방향을 
 "매출의 상당 비중이 특정 고객에 집중"처럼 **의존(수요 집중)** 의미에 한정. ⑶ SD 상호 플립
 후보는 검수 시 SUPPLIES_TO로 수렴. ⑷ 이 컨벤션은 검수(Phase 2)·차기 프롬프트 개정의 기준이며,
 S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재작성 아님** — 검수·재추출에서 적용.
+### D-LANDING-ONE-SESSION-PER-APPROVAL — origin/main 착지·push = 승인 1건당 전담 세션 1개 (규약, 2026-07-29)
+
+**결정(규약)**: **origin/main 착지·push 작업은 하나의 승인당 전담 세션 1개**에만 위임한다. **동일 착지 승인을 복수 세션에 중복 전달 금지.** 착지 세션은 자기 트랙에 대해서만 rebase/ff-push를 수행하고, 다른 세션의 착지분과 경합하지 않는다.
+
+**Why**: 2026-07-29 착지 경합 니어미스 — 같은 트랙(sv-cn-repair·sv-mp-unify-s0) 착지를 **두 세션이 동시에 시도**했다(한 세션이 게이트를 확인하는 사이 다른 세션이 no-ff 머지로 선착지). 결과는 무사(멱등·ff 거부로 손실 0)했으나, 승인 1건이 여러 세션에 전달되면 base 꼬임·중복 머지·번호 선점 경합의 구조적 위험이 상존한다. 착지 권한을 세션 단위로 단일화해 경합 자체를 제거한다.
+
+**운용**: 착지 승인 시 "이 세션 전용" 명시(사용자) → 해당 세션만 push. 다른 세션이 같은 승인을 받으면 **HALT 후 상신**(이미 다른 세션에 위임됐는지 확인). 관련=[[lesson_branch_assignment_explicit_isolation]]·[[lesson_origin_main_advance_union_rebase]].
+---
+
+## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
+
+beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice를 beat 서두에서 온디맨드 보충(기존 stock_sync_service 재사용, 신규 모델·태스크 0). A안(추적 레지스트리) 승격 조건: 추적 종목 30개 초과 또는 monitor 외 두 번째 소비 앱 등장.
+
+**근거**: D-EOD-RECON 판정 — IONQ·TLN 45일 stale 원인 = S&P500 비편입으로 일일 자동수집 유니버스(`sp500_eod_service` = `SP500Constituent.filter(is_active=True)`) 밖 + 06-15 이후 온디맨드 트리거 부재. 가중 평가 B=0.843 채택(A 레지스트리 0.748·C 수동 0.620 기각).
+
+**구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
+
+**Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).

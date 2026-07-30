@@ -29,6 +29,34 @@ class TestFlagOff:
         result = tasks.check_credit_ingest_succeeded.apply().result
         assert result == {"enabled": False}
 
+    def test_etf_nav_noop_when_flag_off(self, settings):
+        settings.CREDIT_SIGNALS_ENABLED = False
+        with mock.patch(
+            "packages.shared.api_request.providers.fmp.client.FMPClient"
+        ) as m:
+            result = tasks.ingest_etf_nav_task.apply().result
+        assert result == {"enabled": False}
+        m.assert_not_called()  # 네트워크 진입 전 return
+
+
+@pytest.mark.django_db
+class TestEtfNavTaskChainsCompute:
+    def test_etf_nav_triggers_compute(self, settings):
+        """etf nav 수집 성공 → compute 체이닝(.delay), 재시도 없음(shared_task)."""
+        settings.CREDIT_SIGNALS_ENABLED = True
+        with mock.patch(
+            "apps.credit_signals.services.etf_nav_service.collect_etf_nav",
+            return_value={"HYG": {"result": "created"}, "LQD": {"result": "created"}},
+        ) as mock_collect, mock.patch(
+            "packages.shared.api_request.providers.fmp.client.FMPClient"
+        ), mock.patch.object(
+            tasks.compute_credit_signals_task, "delay"
+        ) as mock_delay:
+            result = tasks.ingest_etf_nav_task.apply().result
+        assert result["enabled"] is True
+        mock_collect.assert_called_once()
+        mock_delay.assert_called_once()
+
 
 @pytest.mark.django_db
 class TestVerify:

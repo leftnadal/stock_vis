@@ -11,6 +11,7 @@ DatabaseScheduler는 config dict를 무시하므로(bug #28) PeriodicTask를 DB�
 스케줄 (Asia/Seoul):
   - ingest_fred_daily_task        매일 07:30 (미 동부 마감 + FRED 반영 이후)
   - check_credit_ingest_succeeded 매일 09:00
+  - ingest_etf_nav_task           매일 11:30 (미 마감 후 FMP 확정 strike 게시 ~20:33~21:29 ET 실측 이후)
 
 사용:
     python manage.py register_credit_beats           # 충돌 검사 + 등록/갱신
@@ -34,6 +35,17 @@ BEATS = [
         "hour": "9",
         "timezone": "Asia/Seoul",
         "day_of_week": None,  # 매일 (주말은 태스크 내부에서 통과)
+    },
+    {
+        # P2a-BEAT: ETF nav(HYG/LQD) 수집. FMP는 미 마감 후 ~20:33~21:29 ET에 확정
+        # strike 게시(실측) → 11:30 KST(전일 마감 strike 안착 후)에 폴링. 주말·휴장은
+        # same-trade-date resolve가 skipped 멱등 처리(별도 예외 0). C′ skip=로그만.
+        "name": "credit-signals-ingest-etf-nav-daily",
+        "task": "apps.credit_signals.tasks.ingest_etf_nav_task",
+        "minute": "30",
+        "hour": "11",
+        "timezone": "Asia/Seoul",
+        "day_of_week": None,  # 매일 (주말·휴장은 resolve skip 멱등)
     },
 ]
 

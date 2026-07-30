@@ -1100,3 +1100,18 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 고볼륨 7일 창에서 EARLIEST 정렬이 앞날부터 1000행 cap을 소진 → 창 뒷날(주 후반)이 AV 응답에 안 담김. "다음 창이 보정한다"는 논리는 **비중첩 연속 창에서 성립하지 않음**(각 7일 창 독립 — 다음 창은 다음 7일이라 이번 창 뒷날을 채우지 않음). + "표본 2창 확인"을 683 전체로 일반화한 오류(→ D-CN-COMPLETE 판정 폐기).
 
 **해결**: 표적 재수집 = **누락일만 명시하는 1일 독립 창**(`backfill_broad_news --dates D1,D2,… --window-days 1`, --dates는 가산 옵션) — 창당 1일이라 cap이 삼킬 뒷날 자체가 없음. 주말·공휴일 낭비 0(거래일만 명시). 완료 판정은 "창 완료"가 아니라 **일 단위 존재 검증**(각 날 `published_at__date` >0). cf. D-CN-COMPLETE 폐기·D-CN-REPAIR-* (2026-07-28).
+
+## [드리프트] 무인 배치 순번을 "경과일 산술"로 계산 → 시작일≠실행일이면 첫 배치 영구 스킵 — 체크포인트 카운터로 회피 (#73, C-N-REPAIR 자동화 2026-07-29)
+
+**증상**: 다일 배치(N일에 걸쳐 하루 1개)를 무인 스케줄러로 돌릴 때, 순번을 `batch_no = (오늘 − 시작일) + 1`로 계산하면 **시작일에 실제로 batch1을 안 돌렸는데 다음 날부터 자동화를 켜는 순간 batch1이 영구 누락**됨. 실측: 시작일 07-28, 활성화 07-29 → 경과일1 → "경과일+1"=batch2로 점프, batch1(07-28분) 미수집 방치.
+
+**원인**: 캘린더 산술은 "매일 빠짐없이 돌았다"를 전제로 순번을 파생 → 실제 실행 이력과 결합되지 않음. 하루라도 건너뛰거나 시작이 지연되면 그만큼 앞 배치가 스킵된다.
+
+**해결**: **체크포인트 카운터** — `status.json.next_batch`를 **성공 시에만 전진**시키고 실행 이력(saved/updated/exit/status)을 함께 기록. 실패·이상(0건)은 전진 보류 → 다음 실행이 같은 배치 재시도(누락 0). `max(next_batch, batch+1)`로 재실행 역행 방지. 멱등 수집(url upsert + skip-covered)이면 재실행도 무해. cf. D-CN-REPAIR-AUTO-CHECKPOINT (2026-07-29), `scripts/cn_repair_status.py`.
+## health_check 결과 보고 시 측정 트리(브랜치·HEAD) 병기 필수 — 옛 worktree 결과를 origin/main 상태로 오인 (#74, 2026-07-29 MP-UNIFY 착지) [harness] [process]
+
+**증상**: MP-UNIFY-1 착지 검증에서 health_check가 `❌ PROGRESS.md 180.9h stale`를 보고 → "origin/main에 방치 ❌ 있음, mgmt 배치 필요"로 오판. 실제 origin/main은 처음부터 `❌0`이었음(오보).
+
+**원인**: health_check를 **옛 worktree(`sess-hold-p1`, HEAD `b8d767a`, 07-21 stamp)**에서 실행. 이 트리는 07-28 원장 리프레시(MGMT-BATCH-15 등) 이전 상태를 담고 있어, health의 "PROGRESS staleness"가 **그 트리 로컬 조건**을 잰 것. origin/main(`f7f3f63d`↑)에서 재실행하면 `❌0`. health 출력에 측정 트리가 안 적히면 "옛 트리 로컬 결함"이 "canonical(origin/main) 결함"으로 승격 오인된다.
+
+**해결**: **health_check 결과를 보고·판단에 쓸 때 측정 트리(worktree 경로 + 브랜치 + HEAD hash)를 반드시 병기**한다. staleness·정합 계열 ❌/WARN은 origin/main 추적 트리(또는 origin/main 기준 worktree)에서 재확인 후 판정. mgmt 배치 범위를 ❌ 근거로 잡기 전 "그 ❌가 canonical 트리에도 있나?"를 먼저 검증. cf. `scripts/health_check.py` 항목 `실행 트리 정합`(HEAD≠origin/main WARN)이 이미 신호이나, 보고 습관으로 못박음.

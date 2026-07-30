@@ -81,6 +81,10 @@ class EtfNavHistory(models.Model):
     ingested_at = models.DateTimeField(auto_now_add=True)
     # nav/price가 갱신(revise)된 시각 (최초 적재 시 null).
     revised_at = models.DateTimeField(null=True, blank=True)
+    # FMP etf/info updatedAt = nav strike 산출 시각 (감사용, P2a-1b).
+    # revised_at(레코드 개정 시각)과 분리 보존 — "값 동일 시 진짜 갱신인지" 판별.
+    # 기존 행은 null(소급 불가). 마감시각 게이트(C′)가 이 값으로 구형 strike 차단.
+    nav_updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "etf_nav_history"
