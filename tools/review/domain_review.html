@@ -75,6 +75,10 @@
   .f-absent { background:#5a2020; border-color:#8a3030; }
   .f-ma { background:#432a5a; border-color:#6a448a; }
   .f-indirect { background:#1e4a48; border-color:#2c6c68; }
+  .srcline { font-size:12px; color:var(--muted); margin:4px 0 2px; }
+  .roles { font-size:12.5px; color:#c8d4e2; margin:2px 0; padding-left:2px; }
+  .hint { font-size:12.5px; color:#ffe0a0; background:#332a12; border:1px solid #5c4a1e;
+    border-radius:6px; padding:6px 10px; margin:6px 0; }
   details.evwrap { margin:6px 0; }
   details.evwrap .evsum { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
   details.evwrap[open] .evsum { color:var(--fg); }
@@ -110,9 +114,9 @@
   <div class="empty" id="empty">
     <p>검수할 CSV를 불러오세요.</p>
     <pre>사용법
-1) [CSV 불러오기]로 review_batch_v3.csv 선택 (요약 포함 · v2도 하위호환)
-2) A'(자가모순)·B'(개별)·C'(auto) 탭에서 검수 — 요약·플래그 확인, 필요 시 원문 펼침. 키보드 1=OK 2=CHANGE 3=DROP 4=HOLD
-3) [내보내기]로 review_batch_v3_labeled.csv 저장 (원본 전 컬럼 + human_verdict)</pre>
+1) [CSV 불러오기]로 review_batch_v4.csv 선택 (출처·전문·요약·역할·힌트 포함 · v2/v3도 하위호환)
+2) A'(자가모순)·B'(개별)·C'(auto) 탭에서 검수 — 출처·요약·역할·힌트 확인, 필요 시 원문 전체 문장 펼침. 키보드 1=OK 2=CHANGE 3=DROP 4=HOLD
+3) [내보내기]로 review_batch_v4_labeled.csv 저장 (원본 전 컬럼 + human_verdict)</pre>
   </div>
   <div id="bulk" class="bulkbar" style="display:none"></div>
   <div id="list"></div>
@@ -352,10 +356,17 @@ function renderCard(r,i){
     const fbadges=flags.map(f=>{ const m=FLAG_META[f]||{label:f,cls:""}; return `<span class="fbadge ${m.cls}">${esc(m.label)}</span>`; }).join("");
     const summ=r.summary_ko||"";
     const isFail = (summ===FAIL_TEXT || !summ.trim());
-    html+=`<div class="summary${isFail?" fail":""}">${esc(summ||FAIL_TEXT)}</div>
-    ${fbadges? `<div class="fbadges">${fbadges}</div>`:""}
-    <details class="evwrap"${isFail?" open":""}><summary class="evsum">원문 evidence 보기</summary>
-      <div class="evidence">${esc(r.basis)}</div></details>`;
+    const src=String(r.source_line||"").trim();        // v4: 출처(결정론)
+    const roles=String(r.roles_ko||"").trim();          // v4: 역할
+    const hint=String(r.decision_hint||"").trim();      // v4: 결정 힌트(결정론)
+    const full=String(r.full_evidence||"").trim()||r.basis; // v4: 전체 문장(폴백 절단본)
+    html+= src? `<div class="srcline">📄 ${esc(src)}</div>`:"";
+    html+= `<div class="summary${isFail?" fail":""}">${esc(summ||FAIL_TEXT)}</div>`;
+    html+= roles? `<div class="roles">역할: ${esc(roles)}</div>`:"";
+    html+= fbadges? `<div class="fbadges">${fbadges}</div>`:"";
+    html+= hint? `<div class="hint">💡 ${esc(hint)}</div>`:"";
+    html+= `<details class="evwrap"${isFail?" open":""}><summary class="evsum">원문 전체 문장 보기</summary>
+      <div class="evidence">${esc(full)}</div></details>`;
   } else {
     html+=`<div class="evidence">${esc(r.basis)}</div>`;
   }
@@ -425,7 +436,8 @@ document.getElementById("exportBtn").onclick=()=>{
   const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  a.href=url; a.download= HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv";
+  a.href=url; a.download= HEADER.includes("full_evidence") ? "review_batch_v4_labeled.csv"
+    : (HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv");
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
