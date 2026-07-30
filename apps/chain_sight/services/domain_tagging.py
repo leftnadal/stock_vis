@@ -24,6 +24,18 @@ SEC_RELATION_TYPES = ("SUPPLIES_TO", "COMPETES_WITH", "DEPENDS_ON", "PARTNER_WIT
 # 검증 규칙 ②: 경쟁 어휘가 비경쟁 타입에 있으면 시그니처 불일치(fail).
 _COMPETE_VOCAB = re.compile(r"\bcompet(e|es|ing|itor|itors|ition|itive)\b", re.I)
 
+
+def _norm_type(x) -> str:
+    """관계 타입 정규화(대소문자·공백 무시 비교용)."""
+    return (x or "").strip().upper()
+
+
+def _is_enumeration(text: str) -> bool:
+    """나열문 판정(S2-C-2): 쉼표/세미콜론 3+ 구분 & 대문자 회사토큰 3+."""
+    parts = re.split(r"[;,]", text or "")
+    caps = sum(1 for p in parts if re.search(r"\b[A-Z][A-Za-z]{2,}", p))
+    return len(parts) >= 3 and caps >= 3
+
 # 설정(초기 보수적). 캘리브레이션(첫 배치 검수) 후 확정.
 def _threshold() -> float:
     return float(getattr(settings, "DOMAIN_CONFIDENCE_THRESHOLD", 0.75))
@@ -88,14 +100,18 @@ def machine_check(
     other = symbol_b if symbol_a == center else symbol_a
     basis_l = (basis or "").lower()
 
-    # ① 타깃 심볼/사명 실존 (심볼 토큰 또는 사명 단어)
-    target_in_basis = bool(other) and (
-        other.lower() in basis_l
-        or any(
-            len(tok) >= 4 and tok.lower() in basis_l
-            for tok in re.split(r"[\s,.]+", target_name or "")
-        )
-    )
+    # ① 타깃 실존(S2-C-2 나열 인식·오탐 차단):
+    #   - 심볼은 단어경계로만 매칭(짧은 심볼 substring 오탐 차단: V∈"over", A∈"and").
+    #   - 사명은 유의어 토큰(≥4자)을 나열 구분자(;,:()"'&/)까지 분해해 매칭 → 나열 항목 정합.
+    is_enumeration = _is_enumeration(basis or "")
+    symbol_hit = bool(other) and re.search(
+        rf"\b{re.escape(other)}\b", basis or ""
+    ) is not None
+    name_tokens = [
+        t for t in re.split(r"[\s,.;:()\"'&/]+", target_name or "") if len(t) >= 4
+    ]
+    name_hit = any(t.lower() in basis_l for t in name_tokens)
+    target_in_basis = bool(other) and (symbol_hit or name_hit)
 
     # ② 타입-문장 시그니처: 경쟁 어휘가 비경쟁 타입에 있으면 불일치
     has_compete_vocab = bool(_COMPETE_VOCAB.search(basis or ""))
@@ -113,6 +129,13 @@ def machine_check(
     type_match_ok = bool(tm.get("match", False))
     suggested_type = tm.get("suggested_type")
 
+    # 자가모순(S2-C-1): match=False인데 동일 타입 재제안 = LLM 노이즈(타입변경 아님).
+    self_contradiction = (
+        (not type_match_ok)
+        and bool(suggested_type)
+        and _norm_type(suggested_type) == _norm_type(relation_type)
+    )
+
     return {
         "target_in_basis": target_in_basis,
         "type_signature_ok": type_signature_ok,
@@ -121,6 +144,8 @@ def machine_check(
         "type_match_ok": type_match_ok,
         "suggested_type": suggested_type,
         "has_compete_vocab": has_compete_vocab,
+        "is_enumeration": is_enumeration,
+        "self_contradiction": self_contradiction,
     }
 
 
@@ -128,8 +153,12 @@ def decide_gate(mc: dict) -> tuple[str, str]:
     """(gate_class, review_status) 반환.
 
     하드 룰: LLM이 타입 변경 제안(type_match_ok=False 또는 suggested_type 존재) → 항상 pending.
+    S2-C-1: 자가모순(match=False인데 동일 타입 재제안)은 LLM 노이즈 → 'noise_self_contradiction'
+            버킷으로 분리(타입변경 아님). 보수적으로 auto 미승격(항상 pending) — 자기모순 자체가 품질 신호.
     auto 후보 = 3검증 pass ∧ type_match_ok. 단 DOMAIN_AUTO_APPROVE 꺼져 있으면 status=pending.
     """
+    if mc.get("self_contradiction"):
+        return "noise_self_contradiction", "pending"
     type_change_proposed = (not mc["type_match_ok"]) or bool(mc.get("suggested_type"))
     all_checks = (
         mc["target_in_basis"] and mc["type_signature_ok"] and mc["confidence_ok"]

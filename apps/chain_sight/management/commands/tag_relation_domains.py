@@ -163,6 +163,8 @@ class Command(BaseCommand):
                 mc = out["machine_check"]
                 if not mc.get("json_parse"):
                     pending_reasons["json_parse_fail"] += 1
+                elif mc.get("self_contradiction"):
+                    pending_reasons["noise_self_contradiction"] += 1  # S2-C-1
                 elif (not mc.get("type_match_ok")) or mc.get("suggested_type"):
                     pending_reasons["type_change_proposed"] += 1
                 elif not mc.get("target_in_basis"):
