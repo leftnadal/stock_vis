@@ -192,3 +192,27 @@ def test_machine_check_exposes_enumeration_flag():
     mc = _mc("COMPETES_WITH", "SEC 10-K: competitors include SLB, Halliburton, NOV, Weatherford.",
              {"confidence": 0.9, "type_match": {"match": True}}, target="HAL", target_name="Halliburton")
     assert mc["is_enumeration"] is True
+
+
+# ── S2-C-3: 태그 정규화(데이터 파일 매핑) ──
+def test_normalize_tag_cluster():
+    assert dt.normalize_tag("엔터프라이즈 클라우드") == "클라우드·엔터프라이즈SW"
+    assert dt.normalize_tag("신용카드 결제") == "금융·결제·거래소"
+
+
+def test_normalize_tag_misc_fold():
+    assert dt.normalize_tag("유통") == "기타"
+
+
+def test_normalize_tag_identity_preserved():
+    """구체 태그는 원문 유지(옵션B 보존 정책)."""
+    assert dt.normalize_tag("수술용 로봇") == "수술용 로봇"
+
+
+def test_normalize_tag_unregistered_is_identity():
+    assert dt.normalize_tag("전혀 새로운 태그 zzz") == "전혀 새로운 태그 zzz"
+
+
+def test_normalize_tag_none_and_blank():
+    assert dt.normalize_tag(None) is None
+    assert dt.normalize_tag("") == ""

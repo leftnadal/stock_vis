@@ -14,7 +14,9 @@ LLM 최소 전송: basis 원문 + 양끝 심볼만(그 외 데이터 금지).
 from __future__ import annotations
 
 import json
+import os
 import re
+from functools import lru_cache
 
 from django.conf import settings
 
@@ -35,6 +37,29 @@ def _is_enumeration(text: str) -> bool:
     parts = re.split(r"[;,]", text or "")
     caps = sum(1 for p in parts if re.search(r"\b[A-Z][A-Za-z]{2,}", p))
     return len(parts) >= 3 and caps >= 3
+
+
+# ── 태그 정규화(S2-C-3) : 매핑 테이블=데이터 파일(버전관리), 적용=코드 ──
+_TAG_MAP_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "data", "domain_tag_normalization.json"
+)
+
+
+@lru_cache(maxsize=1)
+def _load_tag_map() -> dict:
+    try:
+        with open(_TAG_MAP_PATH, encoding="utf-8") as f:
+            return json.load(f).get("map", {})
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def normalize_tag(tag):
+    """원 draft_domain → canonical(정규화). 미등록 신규 태그는 원문 유지(identity)."""
+    if not tag:
+        return tag
+    t = str(tag).strip()
+    return _load_tag_map().get(t, t) or t
 
 # 설정(초기 보수적). 캘리브레이션(첫 배치 검수) 후 확정.
 def _threshold() -> float:
