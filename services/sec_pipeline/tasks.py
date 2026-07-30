@@ -402,6 +402,16 @@ def seed_relations_to_chainsight():
         else:
             updated += 1
 
+        # ⑳-3 S2-B Slice 4: 신규 SEC 관계 → 도메인 태깅 훅(이벤트 구동, beat 미사용).
+        # 코어=domain_tagging(커맨드와 동일). 훅 실패가 seed를 막지 않는다(격벽).
+        # 기존 관계의 미태깅/basis변경 재태깅은 `tag_relation_domains --new-only`가 담당.
+        if is_new:
+            try:
+                from apps.chain_sight.tasks.domain_tasks import tag_relation_domain_task
+                tag_relation_domain_task.delay(obj.id)
+            except Exception:  # noqa: BLE001 — 훅은 best-effort
+                logger.debug("domain 태깅 훅 큐잉 실패(비치명적) rc_id=%s", obj.id)
+
     result = {"created": created, "updated": updated}
     logger.info(f"seed_relations_to_chainsight: {result}")
     return result
