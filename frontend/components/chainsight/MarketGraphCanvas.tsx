@@ -18,6 +18,10 @@ import { CHANGE_TEXT } from '@/components/common/colorSemantics';
 
 const ForceGraph2D = dynamic(() => import('react-force-graph-2d'), { ssr: false });
 
+// ⑳-3 S2-B 섹터-b: 섹터 지도 진입 숨김(플래그, 코드 보존). 섹터 그래프는 Neo4j 동결로
+// 실서빙 불가 + ego 지도-B 접힘과 정합. 부활 조건 = 백본 트랙(Q20-3-BACKBONE-SECTOR).
+const SECTOR_MAP_ENABLED = false;
+
 // ── 시드 색상 ──
 const SEED_COLORS: Record<string, { bg: string; border: string }> = {
   price:    { bg: '#FCEBEB', border: '#E24B4A' },
@@ -699,12 +703,13 @@ export default function MarketGraphCanvas() {
             오늘 시장에서 연결된 종목들을 탐색하세요
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            섹터를 선택하면 관계 지도가 펼쳐집니다
+            {/* ⑳-3 S2-B 섹터-b: 섹터 지도 진입 접힘 → 실동선(종목) 안내 */}
+            종목을 선택하면 관계망을 볼 수 있어요
           </p>
         </div>
 
-        {/* § 4-3 인기 섹터 빠른 접근 버튼 — |pct_change| 상위 3개 */}
-        {popularSectors.length > 0 && (
+        {/* § 4-3 인기 섹터 빠른 접근 버튼 — 섹터-b로 접힘(SECTOR_MAP_ENABLED=false) */}
+        {SECTOR_MAP_ENABLED && popularSectors.length > 0 && (
           <div className="flex flex-wrap justify-center gap-3">
             {popularSectors.map((s) => (
               <button
