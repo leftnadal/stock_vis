@@ -3,9 +3,9 @@
   domain_review.html — ⑳-3 관계 도메인 태깅 검수 도구 (REVIEW-TOOL-1)
   사용법(3줄):
     1) 이 파일을 브라우저에서 직접 연다(더블클릭 또는 file:// — 서버·네트워크 불필요).
-    2) [CSV 불러오기]로 outputs/domain_tagging/review_batch_v2.csv 선택 → A'/B'/C' 탭에서 검수(키보드 1=OK 2=CHANGE 3=DROP 4=HOLD).
-    3) [내보내기]로 review_batch_v2_labeled.csv 저장(원본 전 컬럼 + human_verdict). 라벨은 자동 저장되어 새로고침해도 복원된다.
-  ※ 외부 CDN·API·DB 무의존(순수 파일 in/out). 원본 CSV는 읽기만 하며 절대 수정하지 않는다.
+    2) [CSV 불러오기]로 outputs/domain_tagging/review_batch_v3.csv 선택(요약 포함·v2도 가능) → A'/B'/C' 탭에서 요약·플래그 보고 검수(키보드 1=OK 2=CHANGE 3=DROP 4=HOLD).
+    3) [내보내기]로 review_batch_v3_labeled.csv 저장(원본 전 컬럼 + human_verdict). 라벨은 자동 저장되어 새로고침해도 복원된다.
+  ※ 외부 CDN·API·DB 무의존(순수 파일 in/out, 요약은 CSV에 이미 존재 — HTML은 네트워크 요청 0). 원본 CSV는 읽기만 하며 절대 수정하지 않는다.
 -->
 <html lang="ko">
 <head>
@@ -65,6 +65,19 @@
     border-radius:6px; padding:6px 10px; margin:6px 0; }
   .evidence { background:var(--panel2); border:1px solid var(--border); border-radius:6px;
     padding:8px 10px; margin:8px 0; font-size:13px; white-space:pre-wrap; word-break:break-word; }
+  .summary { font-size:14px; line-height:1.55; margin:8px 0 6px; padding:8px 10px;
+    background:#152033; border:1px solid #23324a; border-radius:6px; color:#dfe8f5; }
+  .summary.fail { background:#33201d; border-color:var(--drop); color:#ffd7d0; }
+  .fbadges { display:flex; gap:6px; flex-wrap:wrap; margin:2px 0 4px; }
+  .fbadge { font-size:11px; padding:2px 8px; border-radius:20px; border:1px solid var(--border); color:#fff; }
+  .f-trunc { background:#5a4a1e; border-color:#7a6528; }
+  .f-list { background:#1e3a5a; border-color:#2c5580; }
+  .f-absent { background:#5a2020; border-color:#8a3030; }
+  .f-ma { background:#432a5a; border-color:#6a448a; }
+  .f-indirect { background:#1e4a48; border-color:#2c6c68; }
+  details.evwrap { margin:6px 0; }
+  details.evwrap .evsum { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
+  details.evwrap[open] .evsum { color:var(--fg); }
   .actions { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:8px; }
   .actions button { min-width:70px; }
   .b-ok.sel { background:var(--ok); border-color:var(--ok); color:#04150a; font-weight:700; }
@@ -97,9 +110,9 @@
   <div class="empty" id="empty">
     <p>검수할 CSV를 불러오세요.</p>
     <pre>사용법
-1) [CSV 불러오기]로 review_batch_v2.csv 선택
-2) A'(자가모순)·B'(개별)·C'(auto) 탭에서 검수 — 키보드 1=OK 2=CHANGE 3=DROP 4=HOLD
-3) [내보내기]로 review_batch_v2_labeled.csv 저장 (원본 전 컬럼 + human_verdict)</pre>
+1) [CSV 불러오기]로 review_batch_v3.csv 선택 (요약 포함 · v2도 하위호환)
+2) A'(자가모순)·B'(개별)·C'(auto) 탭에서 검수 — 요약·플래그 확인, 필요 시 원문 펼침. 키보드 1=OK 2=CHANGE 3=DROP 4=HOLD
+3) [내보내기]로 review_batch_v3_labeled.csv 저장 (원본 전 컬럼 + human_verdict)</pre>
   </div>
   <div id="bulk" class="bulkbar" style="display:none"></div>
   <div id="list"></div>
@@ -116,13 +129,22 @@ const TABS = [
 ];
 const HOLD_WARN = 10;
 const LS_PREFIX = "domreview:";
+const FAIL_TEXT = "(생성 실패 — 원문 검수)";
+// R10: 플래그 라벨·색 (summary_flags 파이프 구분)
+const FLAG_META = {
+  truncated:     {label:"절단",       cls:"f-trunc"},
+  list:          {label:"나열형",     cls:"f-list"},
+  target_absent: {label:"상대심볼부재", cls:"f-absent"},
+  "m&a":         {label:"인수합병",   cls:"f-ma"},
+  indirect:      {label:"간접언급",   cls:"f-indirect"},
+};
 
 let ROWS = [];        // {…원본 컬럼, _idx, _tab, _fp, _sd, _reason}
 let HEADER = [];      // 원본 컬럼 순서
 let verdicts = {};    // rowKey -> verdict string
 let activeTab = "A";
 let current = {A:0, B:0, C:0}; // 탭별 현재 인덱스(탭 내 필터된 리스트 기준)
-let fileFingerprint = "";
+let HAS_SUMMARY = false;       // R11: summary_ko 컬럼 존재 여부
 
 // ── RFC4180 CSV 파서(따옴표·쉼표·개행·"" 이스케이프 처리) ──────────
 function parseCSV(text){
@@ -201,20 +223,28 @@ function pendingReason(r){
 function rowKey(r){
   return [r.symbol_pair, r.relation_type, String(r.basis).slice(0,48)].join("¦");
 }
-function lsKey(){ return LS_PREFIX + fileFingerprint; }
+// R12: localStorage는 rowKey 기준(CSV 버전 무관). v2→v3 전환 시 라벨 보존.
+const STABLE_KEY = LS_PREFIX + "verdicts";
 function saveLS(){
-  try { localStorage.setItem(lsKey(), JSON.stringify(verdicts)); } catch(e){}
+  try { localStorage.setItem(STABLE_KEY, JSON.stringify(verdicts)); } catch(e){}
 }
 function loadLS(){
+  // 과거 버전 키(domreview:<지문>)까지 스캔·병합 → 현재 데이터셋 rowKey만 채택(이행).
+  const pool={};
   try {
-    const raw=localStorage.getItem(lsKey());
-    verdicts = raw ? JSON.parse(raw) : {};
-  } catch(e){ verdicts={}; }
-}
-function fingerprint(text){
-  // 경량 해시(파일 동일성 식별용, 보안 무관)
-  let h=0; for(let i=0;i<text.length;i++){ h=(h*31 + text.charCodeAt(i))|0; }
-  return "n"+ (text.length) + "_" + (h>>>0).toString(16);
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(!k || k.indexOf(LS_PREFIX)!==0 || k===STABLE_KEY) continue;
+      try { const o=JSON.parse(localStorage.getItem(k)); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
+    }
+    try { const o=JSON.parse(localStorage.getItem(STABLE_KEY)||"{}"); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
+  } catch(e){}
+  const valid=new Set(ROWS.map(rowKey));
+  verdicts={};
+  for(const k in pool){ if(valid.has(k)) verdicts[k]=pool[k]; }
+  // CSV에 human_verdict 값이 있으면 seed(내보낸 파일로 재개). localStorage 우선.
+  ROWS.forEach(r=>{ const hv=String(r.human_verdict||"").trim(); const rk=rowKey(r); if(hv && !verdicts[rk]) verdicts[rk]=hv; });
+  saveLS();
 }
 
 // ── 로드 ────────────────────────────────────────────────────
@@ -224,9 +254,9 @@ document.getElementById("file").onchange=(e)=>{
   const reader=new FileReader();
   reader.onload=()=>{
     const text=String(reader.result);
-    fileFingerprint=fingerprint(text);
     const {header,out}=toObjects(parseCSV(text));
     HEADER=header; ROWS=out;
+    HAS_SUMMARY = header.includes("summary_ko"); // R11: v2(요약없음) 하위호환
     ROWS.forEach((r,i)=>{
       r._idx=i;
       r._tab = (TABS.find(t=>t.gate===r.gate_class_v2)||{key:"B"}).key;
@@ -317,8 +347,19 @@ function renderCard(r,i){
   if(r._sd){
     html+=`<div class="sdnote">↔ SD 방향 플립(휴리스틱): 재화·부품 흐름 방향 = <b>SUPPLIES_TO 정본</b>, DEPENDS_ON = 매출 의존 한정</div>`;
   }
-  html+=`<div class="evidence">${esc(r.basis)}</div>
-  <div class="actions">
+  if(HAS_SUMMARY){
+    const flags=(r.summary_flags||"").split("|").filter(Boolean);
+    const fbadges=flags.map(f=>{ const m=FLAG_META[f]||{label:f,cls:""}; return `<span class="fbadge ${m.cls}">${esc(m.label)}</span>`; }).join("");
+    const summ=r.summary_ko||"";
+    const isFail = (summ===FAIL_TEXT || !summ.trim());
+    html+=`<div class="summary${isFail?" fail":""}">${esc(summ||FAIL_TEXT)}</div>
+    ${fbadges? `<div class="fbadges">${fbadges}</div>`:""}
+    <details class="evwrap"${isFail?" open":""}><summary class="evsum">원문 evidence 보기</summary>
+      <div class="evidence">${esc(r.basis)}</div></details>`;
+  } else {
+    html+=`<div class="evidence">${esc(r.basis)}</div>`;
+  }
+  html+=`<div class="actions">
     <button class="b-ok ${v==="OK"?"sel":""}" data-act="OK">OK <span class="khint">1</span></button>
     <button class="b-change ${v.startsWith("CHANGE")?"sel":""}" data-act="CHANGE">CHANGE <span class="khint">2</span></button>
     <select class="chgSel">${REL_TYPES.map(t=>`<option value="${t}" ${v==="CHANGE:"+t?"selected":""}>${t}</option>`).join("")}</select>
@@ -384,7 +425,7 @@ document.getElementById("exportBtn").onclick=()=>{
   const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  a.href=url; a.download="review_batch_v2_labeled.csv";
+  a.href=url; a.download= HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv";
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
