@@ -5294,3 +5294,20 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **Why**: S0 실측상 1단은 소비자 0·마이그 0·서빙 절차 무변경이라 표면 결정과 **독립적으로 완주 가능**. 표면(2단)은 정식 메뉴 노출 실서빙이라 제품 결정이 선행돼야 함 → 1단을 먼저 닫아 이후 표면 통합의 잔여 접촉면(v1 API)을 3종으로 최소화. 큰 결정을 기다리며 명백한 정리를 미루지 않는다.
 
 **1단 집행 결과(MP-UNIFY-1, 2026-07-29)**: v1 API 10→3. 라우트·뷰 7종 + 개별 serializer 5종 제거, 서비스/클라이언트 메서드는 pulse 집계 경유 공유로 전량 보존. pulse/sync/sync-status IDENTICAL(진입점·서비스·serializer 바이트 불변, 회귀 테스트로 라우트 resolve·pulse 필드계약 못박음). v2·프론트·intraday 무접촉·마이그 0.
+
+## [2026-07-30] D-REL-DIRECTION-CONVENTION — 관계 방향 컨벤션(SUPPLIES_TO 정본) [chainsight]
+
+> 트랙: ⑳-3 S2-C. 브랜치 `monorepo/sess-20-3-s2c`.
+
+**결정**: 관계 방향의 정본 = **재화·부품 흐름 방향 기준 `SUPPLIES_TO`**. `DEPENDS_ON`은
+**매출 의존(고객 집중)** 의미일 때만 사용한다. `SUPPLIES_TO ↔ DEPENDS_ON` 상호 플립(같은
+사실을 양방향으로 라벨)은 **정본(SUPPLIES_TO)으로 정규화**한다.
+
+**Why**: 캘리브레이션(S2-B/S2-C) 실측상 SD 상호 플립 8건이 방향 컨벤션 충돌로 확인됨. 공급자
+관점(SUPPLIES_TO)과 수요자 관점(DEPENDS_ON)이 같은 부품 흐름을 서로 반대로 태깅 → LLM
+type_match 자가모순·검수 노이즈의 구조적 원인. 흐름 방향을 정본으로 못박아 양방향 중복을 제거한다.
+
+**How to apply**: ⑴ 부품·재화가 A→B로 흐르면 `A SUPPLIES_TO B`(정본). ⑵ `DEPENDS_ON`은
+"매출의 상당 비중이 특정 고객에 집중"처럼 **의존(수요 집중)** 의미에 한정. ⑶ SD 상호 플립
+후보는 검수 시 SUPPLIES_TO로 수렴. ⑷ 이 컨벤션은 검수(Phase 2)·차기 프롬프트 개정의 기준이며,
+S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재작성 아님** — 검수·재추출에서 적용.
