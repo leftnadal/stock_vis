@@ -23,6 +23,7 @@
 |----|------|------|-----------|--------|
 | HEALTH-72H-SEVERITY-SPLIT | `scripts/health_check.py`의 **72h PROGRESS 위생 검사 severity를 세션 종류별 분리** 검토 — merge 세션=WARN(구획 밖이라 자체 해소 불가) / mgmt 세션=FAIL(갱신 권한 보유). 근거=#69(2026-07-27 C1-FE-LAND가 72h FAIL로 교착). ⚠ **착수 전 결정 사이클 필요**(세션 종류 판별 방법·오분류 리스크). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 낮음, 구현 아님) |
 | HEALTH-LAUNCHD-LOOP-CHECK | `scripts/health_check.py`에 **launchd 서빙 잡 crash loop 검출** 추가 검토 — `launchctl print`의 `runs` 폭증(직전 대비 급증) + 실서빙 PID cwd/ppid 정합(job 밖 orphan이 포트 선점 판별) 검사. 근거=#72(07-24~27 web-frontend가 orphan 선점으로 4일 34,664회 loop, 무검출). ⚠ **착수 전 결정 사이클 필요**(runs 델타 임계·다중 잡 일반화). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 중 — 4일 무검출 실증) |
+| OPS-NEWS-FRESHNESS | **뉴스 최신 수집일 갭 감지** 경량 체크 (health_check 항목 후보) — 라이브 broad 뉴스의 최신 수집일(`NewsArticle.published_at`/수집 타임스탬프 최대값)이 오늘로부터 **N일 이상 벌어지면 WARN/FAIL**. 근거=C-N-REPAIR STEP 0 발견: 라이브 broad 수집이 **2025-12-05~2026-02-20 약 2.5개월 공백**이었으나 어떤 위생 검사에도 안 걸림(발행 로그 신선도 체크는 EOD 발행 대상이라 broad 수집 갭과 별개). ⚠ **착수 전 결정 사이클 필요**(N 임계·"broad 수집" 소스 식별·주말/휴장 정상 갭 구분·수집일 vs 기사 published_at 중 무엇을 기준할지). | @backend/ops (`scripts/health_check.py`) | 결정 사이클 선행 | 💤 등재만(우선순위 중 — 2.5개월 무감지 실증) |
 
 ---
 

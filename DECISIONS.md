@@ -5306,3 +5306,11 @@ HOLD-P0 RECON 보고(`docs/monitor_hold_mode_recon_p0.md`, 검증 통과) 근거
 **Why**: S0 실측상 1단은 소비자 0·마이그 0·서빙 절차 무변경이라 표면 결정과 **독립적으로 완주 가능**. 표면(2단)은 정식 메뉴 노출 실서빙이라 제품 결정이 선행돼야 함 → 1단을 먼저 닫아 이후 표면 통합의 잔여 접촉면(v1 API)을 3종으로 최소화. 큰 결정을 기다리며 명백한 정리를 미루지 않는다.
 
 **1단 집행 결과(MP-UNIFY-1, 2026-07-29)**: v1 API 10→3. 라우트·뷰 7종 + 개별 serializer 5종 제거, 서비스/클라이언트 메서드는 pulse 집계 경유 공유로 전량 보존. pulse/sync/sync-status IDENTICAL(진입점·서비스·serializer 바이트 불변, 회귀 테스트로 라우트 resolve·pulse 필드계약 못박음). v2·프론트·intraday 무접촉·마이그 0.
+
+### D-LANDING-ONE-SESSION-PER-APPROVAL — origin/main 착지·push = 승인 1건당 전담 세션 1개 (규약, 2026-07-29)
+
+**결정(규약)**: **origin/main 착지·push 작업은 하나의 승인당 전담 세션 1개**에만 위임한다. **동일 착지 승인을 복수 세션에 중복 전달 금지.** 착지 세션은 자기 트랙에 대해서만 rebase/ff-push를 수행하고, 다른 세션의 착지분과 경합하지 않는다.
+
+**Why**: 2026-07-29 착지 경합 니어미스 — 같은 트랙(sv-cn-repair·sv-mp-unify-s0) 착지를 **두 세션이 동시에 시도**했다(한 세션이 게이트를 확인하는 사이 다른 세션이 no-ff 머지로 선착지). 결과는 무사(멱등·ff 거부로 손실 0)했으나, 승인 1건이 여러 세션에 전달되면 base 꼬임·중복 머지·번호 선점 경합의 구조적 위험이 상존한다. 착지 권한을 세션 단위로 단일화해 경합 자체를 제거한다.
+
+**운용**: 착지 승인 시 "이 세션 전용" 명시(사용자) → 해당 세션만 push. 다른 세션이 같은 승인을 받으면 **HALT 후 상신**(이미 다른 세션에 위임됐는지 확인). 관련=[[lesson_branch_assignment_explicit_isolation]]·[[lesson_origin_main_advance_union_rebase]].
