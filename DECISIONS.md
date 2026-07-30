@@ -8,6 +8,26 @@
 
 ---
 
+## [2026-07-29] D-DOMAIN-AUTOMATION — 관계 도메인 태깅 자동-C 파이프라인 [chainsight]
+
+> 트랙: ⑳-3 S2-B. 브랜치 `monorepo/sess-20-3-s2b`.
+
+**결정**: 자동-C 채택 — 파이프라인 훅 + 기계검증 + 임계 자동승인, 검수는 예외 중심. **안전핀 2**: ①타입 변경은 영구 비자동(검수 승인만이 타입 변경) ②첫 배치=게이트 캘리브레이션(`DOMAIN_AUTO_APPROVE` 스위치는 검수 후 활성).
+
+**Why**: SEC 270건 basis 실존이나 품질 편차(오라벨·타깃 비집중, S2-B STEP0). 전건 수동 검수는 비확장, 전건 자동은 위험. 자동-C = 기계검증 통과 + 고confidence만 auto 후보, 나머지 pending 예외 검수 → 확장성과 안전 양립.
+
+**How to apply**: 코어 `apps/chain_sight/services/domain_tagging.py`(커맨드·훅 공유, 복제0). LLM=`generate_with_circuit`(gemini-2.5-flash, JSON 프롬프트+파싱). 기계검증 ①타깃 실존 ②타입 시그니처(경쟁어휘 비경쟁타입=fail) ③confidence≥임계. 게이트: 전항 pass ∧ type_match → auto 후보(단 `DOMAIN_AUTO_APPROVE`=False면 pending). **draft·machine_check만 기록, relation_domain(승인본)은 검수 승인=Phase 2**. 마이그 0028 additive(미적용, 배포 게이트). 첫 배치 CSV=`outputs/domain_tagging/`. TASKQUEUE DOMAIN-AUTO-SWITCH(캘리브레이션 후 THRESHOLD 확정+스위치).
+
+## [2026-07-29] D-MINDMAP — ego 관계 마인드맵 뷰 맵-3(접힘 카테고리+클릭 펼침) [chainsight] [frontend]
+
+> 트랙: ⑳-3 S3(후속). 이번 S2-B는 데이터(도메인 태그)만.
+
+**결정**: 맵-3 채택 — 접힘 카테고리 + 클릭 펼침. 타이브레이커 = 라벨 겹침 재발 방지(방사형 뭉침 회귀 회피).
+
+**Why**: 지도-B로 접은 관계 지도를 도메인 기반 마인드맵으로 대체 후보. 접힘+펼침이 초기 뭉침·라벨 겹침 문제를 구조적으로 회피(⑳-G S3 오버레이 임시처치의 근본 대안). 구현=S3 트랙, 착수조건=S2-B 도메인 반영(relation_domain 승인본).
+
+**How to apply**: 데이터 선행(S2-B: relation_domain 필드+태깅)→S3 UI(MINDMAP-EGO-VIEW). 섹터-b(D-20-3-MAP-FOLD 연장)로 섹터 지도 진입도 숨김(마진 2.00, 섹터 그래프 Neo4j 동결·실노출0).
+
 ## [2026-07-09] 유니버스 소스 복구 (TH-6) — 결정9 = B 폴백(Wikipedia) 확정
 
 ### 결정9: 유니버스 소스 = Wikipedia (FMP Starter 미포함 → 사전승인 B 폴백)
