@@ -8,6 +8,18 @@
 
 ---
 
+## [2026-07-31] D-C2-DETAIL-PULL — COVERAGE-DETAIL-SURFACE를 C-2 게이트에서 분리해 선행 실행 (B 채택) [dashboard] [platform]
+
+**결정**: `COVERAGE-DETAIL-SURFACE`(shared `ImpressionLog.SURFACE_CHOICES`에 `coverage_detail` 추가)를 **C-2 숙성 게이트(8월 초)에서 분리해 선행 실행**(B 채택). 가중합 **B 4.30 vs A(게이트 유지) 3.50, 마진 0.80 → 디렉터 확인 완료**.
+
+**Why**: ⑴ `coverage_detail` surface를 미리 등재해야 상세 페이지(`/dashboard/coverage`) impression 추적을 연결할 수 있고, 그래야 **상세 노출 데이터를 8/6 C-2 설계 전 ~1주 확보**한다(선행 실행의 시간 가치). ⑵ `#43` 경계 검증 강도(choices 추가 = DB 스키마 무영향, `makemigrations --dry-run` 무마이그)는 **시점 무관** — C-2 게이트를 기다릴 이유가 계약 안전성엔 없다. ⑶ C1-FE 관문 판정 = 경로 B(ingest 화이트리스트가 coverage_detail 거부 → 상세 추적 미연결)의 선결 조건이 바로 이 surface 등재다.
+
+**관계**: C-2 퍼널 분석(P2-COVERAGE-C2) 자체는 여전히 8월 초 숙성 게이트 유지 — 본 결정은 **surface 등재분만** 앞당긴다(데이터 수집 착수 ≠ 분석 착수). STRIP-REHOME(D-DASH-SURFACE-UNIFY)으로 스트립이 실 표면 `/`에 자리했으므로, 지금 등재하면 이후 축적분이 통일구간 데이터로 깨끗하게 쌓인다.
+
+**How to apply**: TASKQUEUE `COVERAGE-DETAIL-SURFACE`를 게이트 보류 → **build 대기(등재됨)**로 전환. 구현은 shared 구획 위임, `makemigrations --dry-run` 무마이그 확인 의무(마이그 발생 시 HALT). 본 결정은 등재만(prod 쓰기 0).
+
+---
+
 ## [2026-07-29] D-DOMAIN-AUTOMATION — 관계 도메인 태깅 자동-C 파이프라인 [chainsight]
 
 > 트랙: ⑳-3 S2-B. 브랜치 `monorepo/sess-20-3-s2b`.
@@ -5352,6 +5364,11 @@ S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재�
 **Why**: 2026-07-29 착지 경합 니어미스 — 같은 트랙(sv-cn-repair·sv-mp-unify-s0) 착지를 **두 세션이 동시에 시도**했다(한 세션이 게이트를 확인하는 사이 다른 세션이 no-ff 머지로 선착지). 결과는 무사(멱등·ff 거부로 손실 0)했으나, 승인 1건이 여러 세션에 전달되면 base 꼬임·중복 머지·번호 선점 경합의 구조적 위험이 상존한다. 착지 권한을 세션 단위로 단일화해 경합 자체를 제거한다.
 
 **운용**: 착지 승인 시 "이 세션 전용" 명시(사용자) → 해당 세션만 push. 다른 세션이 같은 승인을 받으면 **HALT 후 상신**(이미 다른 세션에 위임됐는지 확인). 관련=[[lesson_branch_assignment_explicit_isolation]]·[[lesson_origin_main_advance_union_rebase]].
+
+**보강 — pre-merge WARN 허용 조합 상수 (2026-07-31, MGMT-BATCH-16)**: LAND 세션의 pre-merge `health_check` 게이트에서 **아래 2종 WARN은 허용**(머지 진행) — 그 외 WARN·모든 FAIL은 HALT 후 보고.
+  - ① **`stale pending 백-어노테이션` = TH blocked**(`dep=TH-RUNTIME-DEPLOY`, 실존 ID → 설계대로 승격 제외).
+  - ② **`실행 트리 정합` = #47 transient**(미머지 브랜치에서 health 실행 시 worktree HEAD ≠ origin/main으로 뜨는 구조적 신호 — no-ff 머지 후 post-merge에서 자동 해소. read-only/미머지 세션의 정상 동작).
+  근거: 07-29 STRIP-REHOME-LAND에서 지시서가 "1 WARN(TH)"만 기대해 #47을 누락 → 문언상 "TH 외 WARN → HALT"에 걸려 사용자 판단을 재차 물음(불필요한 왕복). #47은 매 미머지 LAND의 표준 transient이므로 **상수로 못박아** 재발 방지. cf. DECISIONS 326 백-어노테이션(승격 후 첫 실측에서 동일 2종 WARN 확인). post-merge 기대값 = **14 OK / 1 WARN(TH) / 0 FAIL**(#47은 머지로 해소).
 ---
 
 ## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
