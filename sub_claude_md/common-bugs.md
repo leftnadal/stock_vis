@@ -1054,14 +1054,16 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: **build 사이클이 72h를 넘길 전망이면 mgmt 장부 배치를 LAND보다 선행 배치**한다(PROGRESS 갱신으로 72h 리셋 후 LAND). 실측: 2026-07-27 C1-FE-LAND HALT → MGMT-BATCH-14 선행(이 배치) → PROGRESS 갱신으로 FAIL 소멸 → LAND 재개. 후속 검토(등재만): `HEALTH-72H-SEVERITY-SPLIT`(TASKQUEUE) — 72h severity를 세션 종류별 분리(merge=WARN/mgmt=FAIL)할지. cf. #47(실행트리 정합=transient WARN)과 달리 72h는 시간 경과라 머지로 안 풀림.
 
-## 표면별 서빙 경로 분기 — ego 복구가 한 표면만 전환, 나머지 이월 누락 (#70, 2026-07-28 ⑳-3 S1) [frontend] [chainsight]
+## 표면별 서빙 경로 분기 — ego 복구가 한 표면만 전환, 나머지 이월 누락 (#70a, 2026-07-28 ⑳-3 S1) [frontend] [chainsight]
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#70' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 92994048 15:30)*
 
 **증상**: ⑳-E가 ego 동선(market-graph 표면)을 PG로 복구했으나, 같은 "종목 관계 그래프"를 그리는 **다른 표면**(`/chainsight/[symbol]` 전용 워크스페이스 · `stocks/[symbol]` GraphMiniView)은 여전히 레거시 Neo4j `/graph/`·`/suggestions/`를 호출 → Neo4j 동결로 전 심볼 500 → "데이터가 없습니다"·"카테고리 없음". 데이터(RelationConfidence)는 PG에 실재(HAL 39엣지)하는데도 표면이 죽어 보임.
 
 **원인**: 같은 도메인 데이터를 **복수 표면이 서로 다른 서빙 경로**(PG ego vs 레거시 Neo4j)로 소비. 한 표면만 전환하면 나머지는 조용히 구경로에 남아 이월 누락. FE는 500/에러를 무데이터로 뭉뚱그려 표시(에러≠무데이터 정직성 부재).
 
 **해결**: ⑴ 도메인 데이터의 **표면 인벤토리**를 만들고(소비 훅·엔드포인트 grep), 경로 전환 시 **전 소비자 일괄** 전환(STEP 0-B의 소비자 전수 검색이 GraphMiniView 제2소비자를 발견 = 누락 방지). ⑵ 어댑터를 **단일 순수함수로 공유**(`egoToGraphResponse` — 표면별 복제 금지). ⑶ FE는 로딩/오류(준비 중)/데이터 **3상태 분리**. cf. #64(서빙 경로 실측), DECISIONS D-GRAPH-EGO-BACKEND(ego=PG)·D-20-3-LEGACY-CONSUMER-MIGRATION.
-## pytest default maxfail 조기정지는 부분 실패 수를 전체로 오인시킨다 — 실패 수 인용 전 전수 실행으로 확정 (#70, 2026-07-28 SEC β 킥오프) [testing] [process]
+## pytest default maxfail 조기정지는 부분 실패 수를 전체로 오인시킨다 — 실패 수 인용 전 전수 실행으로 확정 (#70b, 2026-07-28 SEC β 킥오프) [testing] [process]
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#70' 단독 인용은 문맥상 해당 내용 쪽. b=후착지 9b0d89cd 16:08)*
 
 **증상**: SEC β 킥오프 STEP 0에서 전스위트를 `pytest -q`로 돌리자 "**5 failed, 29 passed**"로 종료 — 이를 "실패 5건"으로 인용하려던 순간, 다른 실행에서는 "**13 failed, 4050 passed**"가 나와 모순 발생. 부분 census를 전체로 오인할 뻔함.
 
@@ -1071,7 +1073,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 > ⚠ **채번 충돌 관측(MGMT-BATCH-15, 2026-07-28)**: 위 두 항목(⑳-3 S1 · SEC β 킥오프)이 병렬 세션에서 **둘 다 `#70`을 부여**함(채번 실측+1 규율 #44 미준수 선례 — 각 세션이 상대의 등재를 못 보고 동시 채번). 소급 재번호는 참조 깨짐 위험이라 **보류**(둘 다 `#70`으로 존치), 신규 채번은 **#71부터** 이어간다. 재발 방지 = 채번 직전 `grep -oE '\(#[0-9]+' | sort -n | tail`로 최댓값 실측(헤딩·본문 구분).
 
-## 표면 배선(스트립·위젯·훅) 지시서는 소유권 글롭이 아니라 라우트 실주소(파일+URL)를 명시 — 글롭만 믿으면 레거시에 착지 (#71, 2026-07-28 DASH-SURFACE-SPLIT-SURVEY) [frontend] [process]
+## 표면 배선(스트립·위젯·훅) 지시서는 소유권 글롭이 아니라 라우트 실주소(파일+URL)를 명시 — 글롭만 믿으면 레거시에 착지 (#71b, 2026-07-28 DASH-SURFACE-SPLIT-SURVEY) [frontend] [process]
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#71' 단독 인용은 문맥상 해당 내용 쪽. b=후착지 04f943f3 17:05 MGMT-BATCH-15)*
 
 **증상**: P2-COVERAGE-C1-FE가 `CoverageStrip`을 `app/dashboard/page.tsx`(2025-11 방치 레거시, 네비 도달 경로 0·impression 계측 0)에 배선. 정작 실 대시보드는 루트 `/`(`app/page.tsx`, impression 실데이터 44행 전량 발생지)라, 스트립이 **사용자가 도달하지 않는 표면**에 놓여 사실상 비노출(07-28 SURVEY로 발견).
 
@@ -1079,21 +1082,24 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: **표면 배선(스트립·위젯·훅 부착) 지시서는 라우트 실주소를 명시**한다 — "`app/page.tsx`(URL `/`) L1.5 위치" 처럼 파일+URL+삽입 지점. 글롭 `app/dashboard/**`는 소유권(누가 고치나)이지 배선처(어디에 렌더되나)가 아니다. 지시서 작성 시 **표면 관련 기존 결정 교차 확인 필수**(D-OWN-HOME·소유권 지도 AMEND 등). cf. 동명 파일 함정 — `app/page.tsx`(실 랜딩) vs `app/dashboard/page.tsx`(레거시)가 둘 다 "대시보드"라 불려 혼동. 교정 = D-DASH-SURFACE-UNIFY(스트립 `/`로 이동 + `/dashboard`→`/` redirect).
 
-## launchd 검증 PASS는 스냅샷 — orphan이 포트 선점하면 조용히 crash loop("재빌드 미반영" 증상) (#72, 2026-07-24~27 web-frontend) [ops] [deploy]
+## launchd 검증 PASS는 스냅샷 — orphan이 포트 선점하면 조용히 crash loop("재빌드 미반영" 증상) (#72b, 2026-07-24~27 web-frontend) [ops] [deploy]
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#72' 단독 인용은 문맥상 해당 내용 쪽. b=후착지 04f943f3 17:05 MGMT-BATCH-15)*
 
 **증상**: `/dashboard/coverage` 신규 라우트를 재빌드했는데 라이브가 404. `com.stockvis.web-frontend` launchd job은 07-24 load 때 "검증 3종 PASS"였으나, 07-27 재빌드가 라이브에 반영 안 됨. 실제로는 job이 **`runs=34,664`회 EADDRINUSE crash loop**(약 4일), 실서빙은 job 밖 orphan(PID 36207 npm, 07-24 11:32~ + 자식 next-server, **구 빌드 ca062581** 고착)이 수행 중이었다.
 
 **원인**: launchd 승격 "검증 PASS"는 그 순간의 스냅샷일 뿐. 07-24 load 직후 별도 프로세스(orphan)가 :3000을 선점하자, launchd job은 새 프로세스 기동마다 `EADDRINUSE`로 exit 1 → ThrottleInterval(10s) 재시도를 4일간 반복(좀비 loop). 포트는 orphan이 물고 있어 서빙은 계속되지만 코드는 07-24 시점 빌드에 고착. `kickstart -k`도 orphan 앞에선 무효(EADDRINUSE 지속).
 
 **해결**: 검출 = `launchctl print gui/$(id -u)/<label>`의 **`runs` 폭증 + `last exit code=1`** + 실서빙 PID의 **cwd·ppid 대조**(`lsof -a -p <pid> -d cwd`, `ps -o ppid`)로 job 밖 orphan 판별. 해소 = **#61 orphan 정리**(`kill -TERM <npm 부모 pid>` → 자식 전파) → KeepAlive가 즉시 :3000 탈환(새 빌드 로드). 재발 방지 = 배포 후 `runs` 카운터 불변 + `/신규라우트` 200 확인. launchd 승격 직후엔 orphan 잔존 여부를 반드시 `lsof :3000` PID의 ppid로 확정(launchd 직속 아니면 orphan). cf. [[reference_web_runtime_prod_build]] · TASKQUEUE `HEALTH-LAUNCHD-LOOP-CHECK`(자동 검출 검토).
-## 레거시 에러(500)를 "없음"으로 오번역 — 3상태 정직화가 소진 순서 (#71, 2026-07-28 ⑳-3 S2) [frontend] [chainsight]
+## 레거시 에러(500)를 "없음"으로 오번역 — 3상태 정직화가 소진 순서 (#71a, 2026-07-28 ⑳-3 S2) [frontend] [chainsight]
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#71' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 b53e78f2 16:55)*
 
 **증상**: 죽은 레거시 Neo4j 엔드포인트의 500을 FE가 "데이터 없음"류로 오번역. 실측 2사례: ⑴ AIGuidePanel suggestions 500 → "탐색 가능한 카테고리가 없습니다"(S1) ⑵ Chain Trace 500 → "경로 없음"(NVDA→MPWR가 실제 직접 이웃인데 "경로 없음"으로 표시). 기능 미비/서버 오류인데 사용자에겐 "빈 결과·관계 없음"으로 읽혀 오해.
 
 **원인**: FE가 **error와 empty를 한 갈래로 렌더**. 레거시 표면이 통째로 죽어있으면(Neo4j 동결) 모든 조회가 조용히 "없음"처럼 보인다. 데이터(RC)가 PG에 실재해도 화면은 "관계 없음".
 
 **해결**: **로딩 / 오류(준비 중) / 데이터 3상태 분리** + 죽은 레거시는 아예 미호출. trace는 traceTarget 미설정 → `useTrace(enabled:!!from&&!!to)` 자연 비발화(0 호출). "준비 중"으로 정직 표시(에러≠무데이터). 순서: 소비자 전환(#70) → 잔여 레거시 표면 3상태화 → 레거시 제거. cf. #70(표면별 서빙경로 분기), D-REL-QUALIFICATION.
-## [드리프트] 백필 창 보정 논리가 창 뒷날을 삼킴 — EARLIEST + limit cap → 표적 1일 창으로 회피 (#72, C-N-REPAIR 2026-07-28)
+## [드리프트] 백필 창 보정 논리가 창 뒷날을 삼킴 — EARLIEST + limit cap → 표적 1일 창으로 회피 (#72a, C-N-REPAIR 2026-07-28)
+*(채번 충돌로 구분자 부가, D-NUMBERING-DUP 참조. 기존 '#72' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 d5614c68 10:40)*
 
 **증상**: broad 뉴스 백필(7일 창·EARLIEST 정렬·1000행 cap)이 "122/122 창 완료" 후에도 커버 구간 내 **154일 0건**. 요일 편중(금 65·목 47·수 30·화 12) = 고볼륨 창의 뒷날들이 통째로 누락. 하류 C-L3 생성이 그 154일 null(빈약 맥락).
 
