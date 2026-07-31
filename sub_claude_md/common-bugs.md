@@ -1139,3 +1139,11 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: pending의 지배 블로커가 confidence 임계(0.75, 이번 스코프에서 동결)와 evidence 절단(100자 캡)이었음. 자가모순 53건 중 나머지 3검증 통과는 1건뿐, 52건은 conf<0.75로 재차 막힘. 룰 튜닝은 임계·evidence를 못 건드리니 volume 레버가 아님.
 
 **해결**: "룰 개선 = 분류 정확도↑"와 "volume 감축"을 분리 판단. 감축 목표가 있으면 먼저 **지배 블로커를 실측**(블로커별 분해)하고, 그게 동결 임계·evidence면 룰 튜닝 대신 임계 재튜닝(분포 확보 후) 또는 evidence 재추출(EVIDENCE-CAP-REEXTRACT)을 레버로 지정. cf. reclassify_v2_analysis.md §3, TASKQUEUE EVIDENCE-CAP-REEXTRACT.
+
+## heat/celery beat 로그는 stocks.log가 아니라 launchd StandardErrorPath에만 기록됨 — "로그 없음"을 "미실행"으로 오판 금지 (#78, SEAL-PUSH-1b 2026-07-31) [ops] [chainsight] [process]
+
+**증상**: 07-29 theme-heat-daily 실행 상세(섹터별 not_computed·미저장 사유)를 확인하려 `stocks.log`를 grep했으나 `heat`·`2026-07-29` 라인 **0건**. 미실행으로 오판할 뻔함(실제로는 09:57 정상 발화·저장 6행).
+
+**원인**: chainsight heat 로거(`logger = logging.getLogger(__name__)`)의 출력은 celery worker 프로세스 stdout/stderr로 가고, celery는 launchd로 기동되므로 **`~/Library/Logs/stockvis/celery-worker-error.log`**(plist `StandardErrorPath`)에만 남는다. repo 루트 `stocks.log`는 Django dev-server(runserver) 경로용이라 beat/worker 실행 로그가 없다. 심지어 worker **런타임 트리**(`~/worktrees/sv-worker-runtime/stocks.log`)에도 heat 라인은 없음(FileHandler 미배선).
+
+**해결**: beat/worker 태스크 로그를 찾을 땐 **launchd plist의 `StandardOutPath`/`StandardErrorPath`를 먼저 확인**(`grep -A1 StandardErrorPath ~/Library/LaunchAgents/com.stockvis.celery-*.plist`) → 해당 파일을 grep. heat 계열 = `celery-worker-error.log`. "stocks.log에 없음 = 미실행" 추론 금지. cf. [[reference_worker_runtime_tree]] · plist 목록 `com.stockvis.celery-{worker,worker-neo4j,beat}.plist`.

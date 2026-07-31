@@ -27,6 +27,15 @@
 
 ---
 
+## 세션 확정분 (SEAL-PUSH-1c / 2026-07-31)
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| TH-HEAT-C8-CONVERGENCE | **관찰 프로브**. C8(추정치 리비전) 축적 후 heat 저장 커버리지 수렴 확인 — EstimateSnapshot 3·4회차 축적 뒤 ⑴ z_mode 분포(none=501 감소 여부), ⑵ ThemeHeatScore stored 수(6→11 수렴 여부) 실측. **미수렴 시 조사 트랙으로 승격**(C8 파이프라인 결함 가능성). 근거=SEAL-PUSH-1b 확인1(07-29 6/11 미저장 5 전원 C8 결측). **1차 관찰 = 08-01(토) 아침 프로브에 z_mode 1줄 포함.** | @backend/ops (관찰) | estimates 자동 발화(07-31 금 16:30 ET 첫 발화 이후) | 🆕 등재(관찰 대기) |
+| OPS-SHARED-TREE-RECOVERY | **공유 메인 트리 정상화 + HOLD-P1 통합**. 공유 메인 트리(`/Users/byeongjinjeong/Desktop/stock_vis`)가 ⑴ `monorepo/sess-hold-p1` 체크아웃, ⑵ HOLD-P1 4커밋(`4c920494`~`b8d767aa`)이 이 트리 내 **직접 생성**, ⑶ dirty(스테이지 `D` 1건 `PORTFOLIO_SURVEY_S0_REPORT.md`·untracked 다수) 상태. HOLD-P1 cherry-pick 정합 확인과 통합 처리(브랜치 처분 포함 가능). 근거=SEAL-PUSH-1a 실측(reflog HEAD@{5} sess-hold-p1 전환). **⚠ 브랜치 처분·통합 방식은 사용자 도장 사안**([[feedback_deploy_approval_explicit_quote]]). **OPS-WORKTREE-ISOLATION Phase 2 승격 근거로 본 건 첨부**(공유 트리에서 세션 브랜치 직접 커밋=격리 원칙 위반 실증). | @infra/ops | 사용자 처분 방침 | 🆕 등재(사용자 도장 대기) |
+
+---
+
 ## OPS-WORKTREE-ISOLATION 트랙 (2026-07-20)
 
 > 정리목록 ⓒ. Opt-2 단계형. 지시서 `docs/instructions/ops_worktree_isolation_impl_directive.md`.
