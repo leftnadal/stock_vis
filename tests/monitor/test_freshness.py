@@ -12,7 +12,6 @@ import pytest
 
 from apps.monitor.models import Monitor
 from apps.monitor.services.pipeline import (
-    _expected_last_trading_day,
     ensure_price_freshness,
     refresh_monitors,
 )
@@ -38,25 +37,9 @@ def _make_stock(symbol):
     return Stock.objects.create(symbol=symbol, stock_name=symbol)
 
 
-# ── P1-5 유닛: 거래일 경계 ────────────────────────────────────────────────
-class TestExpectedLastTradingDay:
-    def test_weekday_prev_day(self):
-        # 화요일 2026-07-28 → 직전 거래일 월요일 07-27
-        assert _expected_last_trading_day(datetime.date(2026, 7, 28)) == datetime.date(2026, 7, 27)
-
-    def test_monday_skips_weekend(self):
-        # 월요일 2026-07-27 → 일·토 건너뛰고 금요일 07-24
-        assert _expected_last_trading_day(datetime.date(2026, 7, 27)) == datetime.date(2026, 7, 24)
-
-    def test_sunday_to_friday(self):
-        # 일요일 2026-07-26 → 금요일 07-24
-        assert _expected_last_trading_day(datetime.date(2026, 7, 26)) == datetime.date(2026, 7, 24)
-
-    def test_saturday_to_friday(self):
-        assert _expected_last_trading_day(datetime.date(2026, 7, 25)) == datetime.date(2026, 7, 24)
-
-
-# ── P1-5 유닛: 신선도 판정 + 실패 격리 ────────────────────────────────────
+# ── 유닛: 기대 기준일 = as_of (오프바이원 회귀 방지, EOD-FRESH-FIX-1) ──────
+#  게이트는 as_of 당일(장 마감 후 거래일)을 기대 최신치로 삼는다. latest==as_of만 fresh,
+#  latest<as_of(하루 지연 포함)는 stale. −1일을 되돌리면 VERIFY-0731 F3가 재현된다.
 @pytest.mark.django_db
 class TestEnsurePriceFreshness:
     def test_stale_symbol_synced(self):
@@ -69,9 +52,21 @@ class TestEnsurePriceFreshness:
         assert summary["synced"] == ["STALE"]
         assert summary["skipped_fresh"] == []
 
+    def test_stale_when_latest_is_as_of_minus_one(self):
+        # ★회귀 핵심(F3): latest = as_of − 1일 → 반드시 stale로 판정해 sync.
+        #  −1 로직이면 이 케이스를 fresh로 오판(skip)해 비편입 종목이 1일 지연 고착.
+        stock = _make_stock("LAG1")
+        _make_daily(stock, datetime.date(2026, 7, 29))  # as_of(07-30) − 1일
+        with patch("packages.shared.stocks.services.stock_sync_service.StockSyncService") as MockSvc:
+            MockSvc.return_value.sync_prices.return_value = MagicMock(success=True)
+            summary = ensure_price_freshness(["LAG1"], as_of_date=datetime.date(2026, 7, 30))
+            MockSvc.return_value.sync_prices.assert_called_once_with("LAG1", days=90, force=True)
+        assert summary["synced"] == ["LAG1"]
+
     def test_fresh_symbol_skipped(self):
+        # fresh = latest == as_of (당일 데이터 도착) → sync 안 함(no-op).
         stock = _make_stock("FRESH")
-        _make_daily(stock, datetime.date(2026, 7, 27))  # 월요일(직전 거래일) = fresh vs 화 07-28
+        _make_daily(stock, datetime.date(2026, 7, 28))  # as_of와 동일 = fresh
         with patch("packages.shared.stocks.services.stock_sync_service.StockSyncService") as MockSvc:
             summary = ensure_price_freshness(["FRESH"], as_of_date=datetime.date(2026, 7, 28))
             MockSvc.return_value.sync_prices.assert_not_called()  # no-op
@@ -122,14 +117,15 @@ class TestRefreshMonitorsGate:
 
         u = get_user_model().objects.create_user(username="fresh_u", password="pw12345")
         stock = _make_stock("OFFIDX")
-        _make_daily(stock, datetime.date(2026, 6, 1))
+        # latest = as_of − 1일 (F3 재현 조건) → 통합 경로에서도 stale로 판정해 sync해야 한다
+        _make_daily(stock, datetime.date(2026, 7, 29))
         Monitor.objects.create(
             user=u, scope=Monitor.Scope.STOCK, target_ref="OFFIDX", name="비편입"
         )
         with patch("packages.shared.stocks.services.stock_sync_service.StockSyncService") as MockSvc:
             MockSvc.return_value.sync_prices.return_value = MagicMock(success=True)
             # 실 시그니처 그대로 호출 — 예외 없이 완주해야 한다
-            results = refresh_monitors(as_of_date=datetime.date(2026, 7, 28))
+            results = refresh_monitors(as_of_date=datetime.date(2026, 7, 30))
             MockSvc.return_value.sync_prices.assert_called_once_with("OFFIDX", days=90, force=True)
         assert isinstance(results, list)
 
@@ -138,7 +134,7 @@ class TestRefreshMonitorsGate:
 
         u = get_user_model().objects.create_user(username="fresh_u2", password="pw12345")
         stock = _make_stock("FRESHIDX")
-        _make_daily(stock, datetime.date(2026, 7, 27))  # fresh
+        _make_daily(stock, datetime.date(2026, 7, 28))  # latest == as_of = fresh
         Monitor.objects.create(
             user=u, scope=Monitor.Scope.STOCK, target_ref="FRESHIDX", name="최신"
         )

@@ -5,7 +5,6 @@ evaluate_monitor: 지표 스코어 → 집계 → 스냅샷 upsert → 상태 �
 실행 트리거는 수동(관리 커맨드 / API action) — beat 주기 등록은 별도 스텝(EOD 창 경합 설계 필요).
 """
 import logging
-from datetime import timedelta
 
 from django.db import transaction
 from django.utils import timezone
@@ -149,19 +148,6 @@ def refresh_monitor(monitor, backfill_days=BACKFILL_DAYS, as_of_date=None):
     return result
 
 
-def _expected_last_trading_day(today):
-    """직전 미국 거래일 근사 (주말 제외·공휴일 미고려 — 보수적으로 stale 판정).
-
-    공휴일을 모르므로 관대하게(더 자주 stale) 판정한다 — sync는 멱등이라 초과 시도는
-    무해하나, stale 누락은 데이터 공백을 남겨 위험하기 때문. as_of 당일은 장 마감 전일
-    수 있어 직전 거래일을 기대 최신치로 본다(D-EOD-FRESH).
-    """
-    d = today - timedelta(days=1)
-    while d.weekday() >= 5:  # 5=Sat, 6=Sun
-        d -= timedelta(days=1)
-    return d
-
-
 def ensure_price_freshness(symbols, as_of_date=None):
     """활성 모니터 심볼의 DailyPrice 신선도 보장 (D-EOD-FRESH, B안).
 
@@ -176,7 +162,13 @@ def ensure_price_freshness(symbols, as_of_date=None):
     from packages.shared.stocks.services.stock_sync_service import StockSyncService
 
     as_of = as_of_date or timezone.localdate()
-    expected = _expected_last_trading_day(as_of)
+    # INVARIANT: 이 게이트에 도달하는 시점의 as_of는 항상 "거래가 끝난 거래일"이다.
+    # beat(22:45 UTC)는 미국 장 마감(16:00 ET) 후에 돌고, 비거래일은 상위 is_eod_fresh
+    # 가드가 retry→skip으로 차단한다(PRE-1 실증, EOD-FRESH-FIX-1). 따라서 기대 최신치 =
+    # as_of 그 자체다. 여기에 −1일을 되돌리면 sp500_eod_service(as_of 당일 수집)와 기준일이
+    # 하루 어긋나 비편입 종목이 1일 지연으로 고착된다(VERIFY-0731 F3). 가드 로직을 바꿀
+    # 때는 이 전제를 재확인할 것.
+    expected = as_of
     svc = StockSyncService()
     summary = {'checked': 0, 'synced': [], 'skipped_fresh': [], 'failed': []}
     started = timezone.now()
