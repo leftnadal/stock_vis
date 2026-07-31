@@ -1085,3 +1085,13 @@
 - 상태: **항구 규약 등재**(DECISIONS `D-DEV-PROD-SHARED-DB`). 조치 트랙 아님 — 모든 세션 준수 대상.
 - 규약: dev migrate·shell 쓰기 = prod-write(자율 금지·병진 수동) / 캡처 데모는 생성 세션이 삭제·증명 / "정리 완료" = 검증 쿼리 동반.
 - 근거: 2026-07-24 코치 런북 준비 중 dev 작업이 prod DB 반영 확인 + s20b_demo(goal 보유) 잔존 사례.
+
+## GOAL-CREATE-UI — 사용자 목표 생성 UI (본 슬라이스로 종결, 2026-07-31) [portfolio][coach]
+- 상태: **종결(20b-f2)**. 20b-f1에서 발견한 제품 갭(목표 생성 화면 부재 — knobs PATCH는 기존 UserGoal 요구, admin/shell만 생성) 해소. B안(전용 폼) = DECISIONS D-f2-0/1/2.
+- 산출: POST `advisory/knobs/`(생성, 409 중복) + GoalForm 단일 컴포넌트 2모드(create/edit) + /advisory 목표 부재 온보딩 카드.
+
+## RUN-TOTAL-PERSIST — run별 total_krw 미보존 (백로그, SIGNAL-FORWARD-INFRA 합류 후보, 2026-07-31) [portfolio][coach]
+- 상태: **백로그 등재만**. F1 원장 판정(07-31)에서 발견.
+- 관찰: 나이틀리 전/후 total_krw 시계열 비교 불가 — (1) PortfolioSnapshot이 동일 ET-date `update_or_create`라 이전 값 덮어씀(1 row/date), (2) AdvisoryRun.output에 total_krw 저장 필드 없음(`{}`).
+- 함의: run 시점별 자산 추이·권유 근거 스냅을 사후 재구성 못 함. 판정은 count/run_at으로 우회했으나 값 비교엔 축 부재.
+- 후속 후보: run별 total/gap 스냅 저장(AdvisoryRun 확장 또는 별도 원장). SIGNAL-FORWARD-INFRA 설계 사이클에 합류 검토(전방 신호 인프라와 원장 스키마 공통 설계).
