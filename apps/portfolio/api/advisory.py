@@ -68,6 +68,26 @@ class KnobsUpdateSerializer(serializers.Serializer):
     exploration_ratio = serializers.IntegerField(required=False)
 
 
+class GoalCreateSerializer(serializers.Serializer):
+    """목표 생성 요청(SLICE20BF2, POST). target·horizon 필수, risk·손잡이 선택.
+
+    범위 강제는 모델 계층(UserGoal.full_clean → validators + KNOB_RANGES)이 진실 소스 —
+    여기 선언은 스키마 앵커·형변환. 생성 단일 경로(D-f2-1), 중복 시 409(뷰).
+    """
+
+    target_return_pct = serializers.DecimalField(max_digits=6, decimal_places=2)
+    horizon_months = serializers.IntegerField(min_value=1)
+    risk_tolerance = serializers.ChoiceField(
+        choices=[c[0] for c in UserGoal.RISK_CHOICES], required=False, default="moderate"
+    )
+    # 손잡이 5종 = 선택(미전달 시 모델 기본값). 온보딩 폼이 함께 보낼 수 있음.
+    aggressiveness_offset = serializers.IntegerField(required=False)
+    growth_boost = serializers.IntegerField(required=False)
+    diversification_weight = serializers.DecimalField(max_digits=3, decimal_places=2, required=False)
+    concentration_limit = serializers.IntegerField(required=False)
+    exploration_ratio = serializers.IntegerField(required=False)
+
+
 # ── 헬퍼 ──
 
 # 손잡이 PATCH 대상 필드 (모델 검증기가 범위 강제 — 여기선 형변환만)
@@ -151,23 +171,49 @@ def advisory_summary(request: Request) -> Response:
 
 @extend_schema(methods=["GET"], responses={200: KnobsReadSerializer}, tags=["portfolio-advisory"])
 @extend_schema(
+    methods=["POST"],
+    request=GoalCreateSerializer,
+    responses={201: KnobsReadSerializer},
+    tags=["portfolio-advisory"],
+)
+@extend_schema(
     methods=["PATCH"],
     request=KnobsUpdateSerializer,
     responses={200: KnobsReadSerializer},
     tags=["portfolio-advisory"],
 )
-@api_view(["GET", "PATCH"])
+@api_view(["GET", "POST", "PATCH"])
 @permission_classes([IsAuthenticated])
 def advisory_knobs(request: Request) -> Response:
     """손잡이 5종 + 목표 수익률.
 
     GET   현재값(읽기).
+    POST  목표 생성(SLICE20BF2) — target·horizon 필수, risk·손잡이 선택. 이미 존재 시 409.
+          생성 단일 경로(D-f2-1), PATCH는 수정 전용(upsert 아님).
     PATCH 부분 수정(SLICE20B) — 목표 수익률 + 손잡이 5종. **서버측 검증기 강제**:
           UserGoal.full_clean()이 필드 validators + KNOB_RANGES(clean)를 실행,
           범위 밖은 400(프론트 검증만으로 대체 금지). 저장은 사용자 명시 요청만 —
           엔진/시스템 자동 조정 경로 아님. **저장 ≠ 진단 실행**(D2, [지금 진단] 별도).
     """
     goal = UserGoal.objects.for_user(request.user).first()
+
+    if request.method == "POST":
+        # 생성 단일 경로(D-f2-1): 이미 있으면 409(수정은 PATCH). upsert 금지.
+        if goal is not None:
+            return Response(
+                {"detail": "이미 투자 목표가 있습니다. 수정은 PATCH를 사용하세요."},
+                status=409,
+            )
+        ser = GoalCreateSerializer(data=request.data)
+        if not ser.is_valid():
+            return Response({"errors": ser.errors}, status=400)
+        new_goal = UserGoal(user=request.user, **ser.validated_data)
+        try:
+            new_goal.full_clean()  # 필드 validators + KNOB_RANGES(clean) 강제
+        except DjangoValidationError as exc:
+            return Response({"errors": exc.message_dict}, status=400)
+        new_goal.save()
+        return Response(_knobs_payload(new_goal), status=201)
 
     if request.method == "PATCH":
         if goal is None:
