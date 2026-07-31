@@ -8,6 +8,38 @@
 
 ---
 
+## [2026-07-31] D-NUMBERING-DUP — common-bugs 채번 충돌 = 중복 존치 + 구분자 부가 (A) [harness]
+
+**결정**: 병렬 세션 동시 착지로 발생한 common-bugs 헤딩 중복(#70·#71·#72 각 2건)을 **재채번(소급 renumber)하지 않고 존치**하되, **구분자(a/b) 부가**로 구분한다(A 채택). 가중합 **A 4.20 vs 재채번 B 2.90, 마진 1.30 → 자동 결정**.
+- **Why**: 기존 번호 참조(#71=배선 실주소·#72=launchd 등)가 지시서·인계·장부·커밋 메시지에 이미 다수 인용됨. 소급 재채번은 그 인용을 전부 깨뜨림(참조 무결성 손실 > 중복 불편). 구분자 부가는 **인용 보존 + 구분 확보**를 동시 달성.
+- **a/b 배정 규칙**: **착지 시간순(git blame/log 실측 선착지 = a)**. 실측(2026-07-31):
+  - #70: a=⑳-3 S1 표면별 서빙(`92994048` 15:30) / b=SEC β pytest maxfail(`9b0d89cd` 16:08)
+  - #71: a=⑳-3 S2 레거시 에러 오번역(`b53e78f2` 16:55) / b=MGMT-BATCH-15 표면 배선(`04f943f3` 17:05)
+  - #72: a=C-N-REPAIR 백필 창(`d5614c68` 10:40) / b=MGMT-BATCH-15 launchd(`04f943f3` 17:05)
+- **인용 해석 규약**: 기존 `#7N` 단독 인용은 **문맥상 해당 내용 쪽**을 가리킨다(구분자 부가 전 인용이라 모호 시 내용으로 판별).
+
+**How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
+
+## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
+
+**결정(규약)**: **common-bugs 번호 부여는 mgmt 세션 전용**. build/측정 세션은 버그 패턴 발견 시 **"채번 후보"로만 보고**하고 번호를 쓰지 않는다. mgmt가 **push 직전 재grep 후 일괄 채번**(#40 재fetch와 동일 시점).
+- **Why**: 채번 직전 재grep 규율(D-NUMBERING-DUP 재발 방지 1차안)은 **병렬 세션 동시 진행의 착지 순서 충돌을 구조적으로 못 막는다** — 두 세션이 같은 순간 재grep하면 둘 다 같은 최댓값+1을 봄. #70 충돌 후 재grep 규율을 넣었으나 **#71·#72가 재발**(2026-07-28)로 실증. 채번 주체를 mgmt 단일 세션류로 좁혀 동시성 자체를 제거.
+- **운용**: build/측정 세션 보고에 "채번 후보: <내용>" 명시 → 차기 mgmt 배치가 실측+1로 부여. 관련=[[lesson_origin_main_advance_union_rebase]].
+
+## [2026-07-31] D-C2-DETAIL-MIG — coverage_detail surface 등재 = no-op 마이그 조건부 수용 (경로 A) + IssuanceLog/ImpressionLog 경계 정본화 [platform] [shared]
+
+**HALT 경위**: COVERAGE-DETAIL-SURFACE build(2026-07-31)가 `SURFACE_CHOICES`에 `coverage_detail` 1항 추가 시 `makemigrations --dry-run`에서 **`0011_alter_impressionlog_surface`(AlterField) 생성 예고**로 HALT. 원인 = Django 5.2가 `choices`를 migration state로 추적 — **DB 스키마 실변경 0의 no-op 마이그**(CharField max_length 불변, PostgreSQL 컬럼에 CHECK 제약 없어 실 DDL 0). ※ 부기: 이 개정 설계 시 지시서가 "#43 원문 = IssuanceLog/ImpressionLog 스키마 무변경 원칙"으로 오상정했으나, STEP 0 실측에서 common-bugs #43(527)은 "결정 정합 자기점검"(별개 주제)이고 무변경 문언은 DECISIONS 4855·4973 파생임을 확인 → 정본 위치를 본 결정으로 교정.
+
+**결정**: **경로 A 채택** — no-op 마이그를 **입증 조건부 수용**하고 경계 문언을 본 결정으로 정본화. 가중합 **A 4.50 / C 3.55 / B 3.35, 마진 0.95 → 디렉터 확인 완료(2026-07-31)**.
+- **Why(경로 비교)**: **B**(모델 choices 3항 유지 + 실데이터 4종 수용)는 모델-실데이터 **이중 진실** 생성 + platform 방어 코드(`views.py:185 COVERAGE_DETAIL_SURFACE` 상수·tests.py:280)의 등재 전제와 모순. **C**(8/6 게이트로 이송)는 동일 no-op 마이그 문제를 미룰 뿐 + D-C2-DETAIL-PULL의 조기 데이터 가치를 무효화. **A**는 no-op임을 실측 입증(실 DDL 0)하고 경계를 정밀화해 재발을 규칙으로 흡수.
+- **입증 조건(3종 동시)**: coverage_detail surface build 시 ⓐ `makemigrations --dry-run` 원문 + ⓑ **`sqlmigrate` 출력의 실행 DDL 공집합**(no-op 입증) + ⓒ 본 결정 참조를 커밋에 명기. migrate **적용은 Gate 4**(사용자 수동, 승인 인용) — 생성·검증(build)과 적용(deploy) 분리.
+
+**★경계 조항 (IssuanceLog/ImpressionLog — 단일 정본)**: `IssuanceLog`·`ImpressionLog`는 **DB 스키마(컬럼·타입·인덱스·제약) 무변경**. **필드 추가·변경·삭제 절대 금지.** `choices` 등 **애플리케이션 레벨 메타 변경**으로 발생하는 **no-op 마이그**에 한해 — ⓐ `makemigrations --dry-run` 원문 · ⓑ `sqlmigrate` 실행 DDL 공집합 · ⓒ 해당 결정의 DECISIONS 등재 — **3조건 동시 충족 시에만 허용**. **본 조항이 이 경계의 단일 정본**이며, 기존 분산 문언(DECISIONS 4855·4973 등)은 여기를 참조한다. (common-bugs #43(527)="결정 정합 자기점검"은 별개 주제 — 무관.)
+
+**How to apply**: COVERAGE-DETAIL-SURFACE build 재개 = SURFACE_CHOICES에 coverage_detail 1항 추가 + 입증 3조건 + 0011 마이그 동반(no-op). 본 결정은 등재만(prod 쓰기 0).
+
+---
+
 ## [2026-07-31] D-C2-DETAIL-PULL — COVERAGE-DETAIL-SURFACE를 C-2 게이트에서 분리해 선행 실행 (B 채택) [dashboard] [platform]
 
 **결정**: `COVERAGE-DETAIL-SURFACE`(shared `ImpressionLog.SURFACE_CHOICES`에 `coverage_detail` 추가)를 **C-2 숙성 게이트(8월 초)에서 분리해 선행 실행**(B 채택). 가중합 **B 4.30 vs A(게이트 유지) 3.50, 마진 0.80 → 디렉터 확인 완료**.
@@ -4852,7 +4884,7 @@ override로 해소.
 - **(C) 상호작용 기준** — 무클릭 열람 표면(홈 스트립)에서 **미탐 과다**.
 - **가중합 B=4.65 vs C=3.75 vs A=2.80, 마진 0.90**, 사용자 확인으로 확정(2026-07-13).
 
-**경계 조건(common-bugs #43 준수 — 로그/모델 스키마 write 시점 정합)**: 사용자 문맥 필드는 **serve-time 신설 로그(ImpressionLog)에만 존재**한다. **bake-time 스키마(IssuanceLog)는 무변경 — 한 필드도 추가하지 않는다.** (발행 로그 = 정의상 전부 baked·per-user 문맥 없음 / impression = serve-time·per-user — 두 축 직교, D-SCHEMA 테이블 분리·D-P1-GRAIN 승계.)
+**경계 조건(common-bugs #43 준수 — 로그/모델 스키마 write 시점 정합)**: 사용자 문맥 필드는 **serve-time 신설 로그(ImpressionLog)에만 존재**한다. **bake-time 스키마(IssuanceLog)는 무변경 — 한 필드도 추가하지 않는다.** (발행 로그 = 정의상 전부 baked·per-user 문맥 없음 / impression = serve-time·per-user — 두 축 직교, D-SCHEMA 테이블 분리·D-P1-GRAIN 승계.) *(경계 정본·no-op 마이그 조건은 D-C2-DETAIL-MIG 경계 조항 참조 — 2026-07-31.)*
 
 **부속 설계 (추천안 채택)**:
 - **전송**: 프론트 버퍼 **5초 간격 flush** + 페이지 이탈 시 `visibilitychange` + `sendBeacon` 일괄 전송.
@@ -4970,7 +5002,7 @@ D2 T-5 회부 4건(PROGRESS 2a0aba0 "4건 대기" 블록)은 **T-3b(`3a3e921`)�
 **부속 결정**:
 - 수신 인증 = **IsAuthenticated 전용으로 시작**. `ImpressionLog.user_id` nullable은 Phase 2 익명 수신 대비 **예약(현 단계 미사용)**.
 - 배치 계약 = **신규 설계**: sendBeacon 배열 payload + 5초 flush(기존 클라 배열 수신 선례 0 — S2-RECON B-3 실측).
-**경계 재확인(lesson #43)**: `ImpressionLog` = **serve-time 신설**, `IssuanceLog`(bake-time)는 **무변경 — 조회·필드추가·import 0**. platform ingest는 shared의 ImpressionLog에 write만 한다.
+**경계 재확인(lesson #43)**: `ImpressionLog` = **serve-time 신설**, `IssuanceLog`(bake-time)는 **무변경 — 조회·필드추가·import 0**. platform ingest는 shared의 ImpressionLog에 write만 한다. *(경계 정본·no-op 마이그 조건은 D-C2-DETAIL-MIG 경계 조항 참조 — 2026-07-31.)*
 **baseline at decision**: origin/main = `7b7927e`. prod 쓰기 0(배정 결정 등재, 메타-only). 실행 = P2-IMPRESSION-BUILD S2(별도 build 지시서).
 
 **[백-어노테이션 2026-07-16 — 실현 확인 (P2-IMPRESSION-BUILD S3+FIX-1, MGMT-P2-IMPR-CLOSE)]**:
