@@ -1085,3 +1085,7 @@
 - 상태: **항구 규약 등재**(DECISIONS `D-DEV-PROD-SHARED-DB`). 조치 트랙 아님 — 모든 세션 준수 대상.
 - 규약: dev migrate·shell 쓰기 = prod-write(자율 금지·병진 수동) / 캡처 데모는 생성 세션이 삭제·증명 / "정리 완료" = 검증 쿼리 동반.
 - 근거: 2026-07-24 코치 런북 준비 중 dev 작업이 prod DB 반영 확인 + s20b_demo(goal 보유) 잔존 사례.
+
+## SECB-REGRESSION-WATCH — 13건(attention6+leadership7) 재발 감시 (2026-07-31, F5) [testing][sec-beta]
+- 트리거: `tests/chainsight/test_attention.py`·`test_leadership_api.py` 29건 중 **재실패 발생 시 즉시 HALT + full traceback 캡처**(직전 시대 결손 증거 = `--reuse-db` 오염 재현 자료). **라벨만 기록 금지**(D-SECB-MISLABEL 재발 방지).
+- 근거: R1 결과 D — 재사용 테스트 DB 오염이 원인(D-SECB-MISLABEL). 재발 시 fresh DB(`--create-db`)로 격리 확인. cf. common-bugs #79.

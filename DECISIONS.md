@@ -5380,3 +5380,11 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
 
 **Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).
+
+## [2026-07-31] SEC β G1.6 R1 — 캐노니컬 베이스라인 확정 + "Neo4j-env" 오라벨 정정 (D-SECB-BASELINE, D-SECB-MISLABEL)
+
+> SEC β G1.6 회수 세션(`monorepo/sess-secb-g16`, Gate 0 `1c41a7e5`). R1 결과 D — 감독 판정 B(HEAD-앵커 비준 + 저비용 법의학 F1/F2)로 재개. dry-run 전용·DB 쓰기 0·LLM 0.
+
+**D-SECB-BASELINE (F3 — 캐노니컬 베이스라인)**: **4463 GREEN / 0 사전존재 / 53 skipped @ origin/main `9750b8bc`** (2026-07-31 실측, `--maxfail=200`). health_check 13 OK / 2 WARN(양성) / 0 FAIL. ★**규칙**: 베이스라인은 **세션마다 재실측하고 HEAD 해시를 병기**한다. **해시 없는 정적 수치의 세션 간 이월 금지**(구 "4084" stale 추정·"4050" 무앵커 이월이 전례 — cf. D-SECB-MISLABEL).
+
+**D-SECB-MISLABEL (F4 — 오라벨 정정, 과거 라인 편집 없음·append만)**: 다세션 verbatim 이월된 "13건 사전존재 = Neo4j-env" 라벨은 **검증 없이 이월된 오라벨**. 실측 반증: 13건(attention 6 + leadership_api 7) 전 코드경로(테스트 → `attention_service`·`leadership_eventgroup`·`event_group_reader`·`leadership_service`·`leadership_compute`·conftest) **neo4j 참조 0**, 격리 재실행 **29 passed**(neo4j fixture 없이). **F1**(main 이동분 규명): `4d0ed3b5..9750b8bc` 전 병합·커밋 병진 승인 트랙 귀속(MGMT15/16·CN-repair·TH-DEPLOY·⑳-3·credit p2a·EOD-fresh·MP-unify·strip-rehome), 신규 테스트 25파일=성장 출처, **유령 커밋 0**. **F2**(제4가설): `test_stock_vis` 마이그 179건 전부 **2026-07-31 11:37 적용 = DB fresh 재생성**(13 실패 시대 ≤07-28 이후) → 실 원인 = **결과 D: `--reuse-db` 데이터 오염, DB 재생성으로 해소(양성)**. 오라벨 이월 라인 예: DECISIONS 553·3761·3783·3810·3843·3877·3909. 정정 근거 = 본 세션 `1c41a7e5` 이후 F1/F2 실측. cf. common-bugs #79, TASKQUEUE SECB-REGRESSION-WATCH.

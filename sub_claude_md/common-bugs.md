@@ -1139,3 +1139,25 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: pending의 지배 블로커가 confidence 임계(0.75, 이번 스코프에서 동결)와 evidence 절단(100자 캡)이었음. 자가모순 53건 중 나머지 3검증 통과는 1건뿐, 52건은 conf<0.75로 재차 막힘. 룰 튜닝은 임계·evidence를 못 건드리니 volume 레버가 아님.
 
 **해결**: "룰 개선 = 분류 정확도↑"와 "volume 감축"을 분리 판단. 감축 목표가 있으면 먼저 **지배 블로커를 실측**(블로커별 분해)하고, 그게 동결 임계·evidence면 룰 튜닝 대신 임계 재튜닝(분포 확보 후) 또는 evidence 재추출(EVIDENCE-CAP-REEXTRACT)을 레버로 지정. cf. reclassify_v2_analysis.md §3, TASKQUEUE EVIDENCE-CAP-REEXTRACT.
+
+## [게이트] 2-dot diff(A..B)로 브랜치 병합/손실 판정 시 오탐 — 3-dot(A...B)·merge-base 명시 비교로 회피 (#78, 2026-07-31 SEC β R2) [git][process]
+
+**증상**: "이 브랜치가 main에 병합됐나 / 지우면 손실 있나" 게이트에서 `git diff main..branch`(2-dot)가 실제와 어긋난 결과(무관 차이 혼입 = 오탐, 또는 병합 판정 오음)를 냄. 특히 main이 그새 전진하면 2-dot이 오도한다.
+
+**원인**: 2-dot `A..B`(diff) = 두 tip의 **직접 트리 차이**(양쪽 고유분 혼재) → merge-base 이후 B가 더한 것만 보려는 병합/포함 판정에는 부적합. 원하는 것은 merge-base 기준 = **3-dot `A...B`**(diff) 또는 `git merge-base --is-ancestor`. ※ `git log A..B`는 diff의 A..B와 의미가 달라(=B에만 있는 커밋) 혼동 주의.
+
+**올바른 패턴**: 병합 여부 = `git merge-base --is-ancestor B A`(B⊂A?) · 손실 여부(브랜치 고유 변경) = `git diff A...B`(3-dot) · 고유 커밋 목록 = `git log A..B`.
+
+**재발 점검 순서**: ⑴ 판정 목적 명확화(병합? 손실? 고유커밋?) ⑵ diff는 3-dot/merge-base·log는 목적에 맞게 ⑶ main 전진 여부 재확인 후 판정.
+
+**기록 상태**: 구체 발생 사건의 traceback은 **기록 불충분** — 본 항목은 규칙 골격만 등재(감독 R2 지시 준용, 사실 창작 없음).
+
+## [프로세스] 검증 안 된 라벨·수치의 세션 간 이월(carry-forward) — 실측+HEAD 해시 앵커 필수 (#79, 2026-07-31 SEC β R2) [process][testing]
+
+**증상**: "13건 사전존재 = Neo4j-env"가 **7+세션 DECISIONS에 verbatim 이월**(라인 553·3761·3783·3810·3843·3877·3909…), 코드 실측 시 neo4j 참조 0·격리 29 통과로 반증됨(오라벨). 별건: 캐노니컬 스위트 기대 "4084"가 실측 4463과 불일치(stale 추정치 이월).
+
+**원인**: 한 세션의 미검증 관찰(라벨·수치)이 근거 재확인 없이 다음 세션 보고·원장에 복사됨 → drift가 사실처럼 굳는다. 특히 "사전존재 N건" 같은 실패 census는 원인 tracebacks 없이 라벨만 이월돼 오진이 영속.
+
+**규칙**: ⑴ 베이스라인 수치 = **세션마다 재실측 + HEAD 해시 병기**(해시 없는 정적 수치 이월 금지, D-SECB-BASELINE) ⑵ 실패 census = **원인 tracebacks 동반**(라벨만 기록 금지, TASKQUEUE SECB-REGRESSION-WATCH) ⑶ 이월 오류 발견 시 실측 재검·정정 append(과거 라인 편집 금지).
+
+**재발 점검 순서**: 수치·라벨 인용 전 → 근거 커밋/실측 있나? → 없으면 재측정 → HEAD 해시 병기 후 인용.
