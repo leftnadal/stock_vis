@@ -124,6 +124,7 @@ class SupplyChainEvidence(models.Model):
         choices=[
             (grounding.STATUS_VERIFIED, "Verified"),
             (grounding.STATUS_NORMALIZED_MATCH, "Normalized match"),
+            (grounding.STATUS_PARTIAL_MATCH, "Partial match"),
             (grounding.STATUS_NOT_FOUND, "Not found"),
             (grounding.STATUS_MISSING_SOURCE, "Missing source"),
         ],
