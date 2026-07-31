@@ -43,6 +43,20 @@ export function useRunAdvisory() {
   })
 }
 
+// 목표 생성(SLICE20BF2, POST). 목표는 knobs·summary(갭·모드)·latest(권유 가능성) 전부에
+// 영향 → 3키 모두 재검증(부재 화면 → 권유 화면 전환). updateKnobs(knobs만)와 다름.
+export function useCreateGoal() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: advisoryService.createGoal,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: advisoryKeys.knobs() })
+      qc.invalidateQueries({ queryKey: advisoryKeys.latest() })
+      qc.invalidateQueries({ queryKey: advisoryKeys.summary() })
+    },
+  })
+}
+
 // 손잡이/목표 저장(SLICE20B). **저장 ≠ 진단 실행(D2)** — knobs만 재검증하고
 // latest/summary는 건드리지 않는다(진단은 [지금 진단] 수동 경유).
 export function useUpdateKnobs() {
