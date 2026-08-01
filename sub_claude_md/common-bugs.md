@@ -1181,3 +1181,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: ⑴ 베이스라인 수치 = **세션마다 재실측 + HEAD 해시 병기**(해시 없는 정적 수치 이월 금지, D-SECB-BASELINE) ⑵ 실패 census = **원인 tracebacks 동반**(라벨만 기록 금지, TASKQUEUE SECB-REGRESSION-WATCH) ⑶ 이월 오류 발견 시 실측 재검·정정 append(과거 라인 편집 금지).
 
 **재발 점검 순서**: 수치·라벨 인용 전 → 근거 커밋/실측 있나? → 없으면 재측정 → HEAD 해시 병기 후 인용.
+
+## [LLM] 관계 도메인/타입 LLM 재호출이 이전 판정과 모순 — 검수 verdict가 최종 권위 (#80, 2026-08-01 REVIEW-P2) [chainsight][llm]
+
+**증상**: 동일 관계를 LLM에 재호출하면 도메인 태그·타입 시그니처 판정이 이전 호출과 달라짐(예: CAH↔IONQ 계열에서 한 번은 유지, 다른 번은 타입 변경 제안). D-DOMAIN-AUTOMATION 첫 배치 270건에서 **type_change 제안 44%** = SEC 원본 타입과 LLM 이견(다수가 오라벨). 재호출로 라벨이 흔들려 "무엇이 맞는가"가 비결정적.
+
+**원인**: gemini-2.5-flash 분류가 비결정적(temperature·프롬프트 민감). 관계 타입/도메인은 정오답이 명확하지 않은 경계 케이스가 많아 재호출마다 다른 답 → LLM 자기일관성을 신뢰 소스로 쓰면 drift. cf. [[lesson_insight_quality_structure]].
+
+**해결**: ⑴ **타입 변경은 영구 비자동**(D-DOMAIN-AUTOMATION 안전핀) — LLM 제안은 pending 예외로만, 승인 권위는 인간 검수(verdict CHANGE/CHANGE_REV). ⑵ 검수 verdict(`domain_review_status`)가 **최종 권위**로 머신값을 덮어씀(D-REVIEW-VERDICT-VOCAB). ⑶ LLM 재호출 결과를 "정정"으로 자동 반영 금지 — 사람 재정 없이는 이전 승인본 불변. **기록 상태**: CAH↔IONQ 구체 재호출 로그는 review-tool 세션 산출(본 세션 미재현) — 규칙 골격 등재, 사실 창작 없음.
+
+## [tool] 검수 도구 localStorage 캐시가 새 CSV보다 우선 — stale verdict 표시 함정 (#81, 2026-08-01 REVIEW-P2) [tool][process]
+
+**증상**: 검수 도구(`tools/review/domain_review.html`)에서 새 배치 CSV를 로드해도 이전 세션의 verdict가 그대로 보임 — 브라우저 localStorage에 캐시된 검수 상태가 방금 로드한 CSV의 값보다 우선 적용돼, 갱신된 라벨/후보가 반영 안 됨.
+
+**원인**: 도구가 진행 상태(입력한 verdict)를 localStorage에 영속하고, CSV 로드 시 "이미 저장된 verdict 우선" 병합 로직 → 새 CSV의 값이 캐시에 덮여 가려짐. 사용자는 "새 데이터를 본다"고 착각하나 실제는 stale 캐시.
+
+**해결**: ⑴ **CSV가 진실의 소스** — 도구는 새 CSV 로드 시 캐시 무효화(또는 "캐시 vs CSV 충돌" 명시 프롬프트) 필요. ⑵ 검수 결과 반영은 **도구 UI가 아니라 동결 CSV → 로더(apply_review_verdicts)** 경로로 DB 반영(도구는 라벨링만). ⑶ 배치 교체 시 localStorage 수동 클리어를 절차에 포함. **기록 상태**: 도구 개선은 TASKQUEUE REVIEW-TOOL-V6-IMPROVE. cf. [[lesson_dev_prod_shared_db]](진실 소스=DB, 도구는 입력 보조).

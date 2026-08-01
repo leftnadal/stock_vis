@@ -5,6 +5,16 @@
 
 ---
 
+## ⑳-3 REVIEW-P2 후속 (2026-08-01)
+
+> 근거 DECISIONS `[2026-08-01] D-REVIEW-VERDICT-VOCAB`. 브랜치 `monorepo/sess-review-p2`. 본 세션 IN 스코프 밖(등록만).
+
+| ID | Task | 분류 | Depends On | Status |
+|----|------|------|-----------|--------|
+| REVIEW-TOOL-V6-IMPROVE | 검수 도구 v6 개선 묶음 — ⑴ localStorage CSV-우선 함정 해소(새 CSV 로드 시 캐시 무효화, common-bugs #81), ⑵ verdict 입력 UI 정식화(결정 E: **수요 반복 확인 후** 착수), ⑶ CHANGE/CHANGE_REV 방향·타입 입력 보조. `tools/review/domain_review.html`·`classify_verdicts.py`. | @frontend/tool | 검수 수요 반복 확인 | 🆕 등재(수요 게이트) |
+| RC-SELFLOOP-CONSTRAINT | RelationConfidence **a≠b DB CheckConstraint 승격** — 현재 앱 레벨 save() 가드(Part Q, SelfLoopError). **⚠ 마이그레이션 동반**(AddConstraint) → 배포 게이트. 선행: 기존 self-loop 13건(RelationConfidence)·330건(RelationPairSnapshot) 처분 방침 확정(soft-drop 준용 or 정리). | @backend | self-loop 레거시 처분 결정 + 배포 게이트 | 🆕 등재(마이그 동반, 승인 필요) |
+| REVIEW-UNANCHORED-40 | 언앵커 40건 배치 설계·실행 — 검수 대상 중 anchor 부재(basis에 타깃 미실존 등) 40건 처리. **목적=conf 임계 0.75 기준점 확보**(현재 동결 임계의 캘리브레이션 재료). 배치 규모·LLM 재추출 여부·게이트 설계 필요. | @backend/rag | D-REVIEW-VERDICT-VOCAB 반영 완료 | 🆕 등재(설계 선행) |
+
 ## P2 커버리지 표면 (P2-COVERAGE / 2026-07-22)
 
 > 근거 DECISIONS `[2026-07-22] MGMT-BATCH-13` (D-P2-COVERAGE-SURFACE=선택지 C 하이브리드 · D-P2-COVERAGE-API=read-time @ apps/platform). 재료 = STEP0-P2-DESIGN-PREP 실측(발급 110 / 노출 8 / 율 7.3%). 구획 분리로 C-1을 API/FE 순차 발급.

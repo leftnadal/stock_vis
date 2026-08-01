@@ -8,6 +8,23 @@
 
 ---
 
+## [2026-08-01] D-REVIEW-VERDICT-VOCAB — 검수 verdict 어휘 5종 + CHANGE_REV 방향 스왑 의미론 [chainsight]
+
+> 트랙: ⑳-3 REVIEW-P2. 브랜치 `monorepo/sess-review-p2`. 입력=동결 `docs/etc/review_batch_v6_labeled.csv`(270행). 선행 [D-DOMAIN-AUTOMATION](#).
+
+**결정**: 인간 검수 verdict 어휘를 **5종**으로 확정하고 `RelationConfidence.domain_review_status`(기존 mig 0028 필드, choices pending/approved/auto/rejected)에 반영한다.
+- `OK` → `approved` (검수 승인)
+- `DROP` → `rejected` (**soft-drop**: serving 제외 + 레코드·궤적 보존, 삭제 아님)
+- `HOLD` → `pending` (재분류 대기)
+- `CHANGE:<TYPE>` → `relation_type`=<TYPE> + `approved` (같은 방향, 타입만 교체)
+- `CHANGE_REV:<TYPE>` → **방향 스왑**(symbol_a↔symbol_b) + `relation_type`=<TYPE> + `canonical_direction`='a→b' + `approved`
+
+**결정 E(도구 UI)**: 검수 도구의 verdict 입력 UI 정식화는 **수요 반복 확인 후**로 유보(현재 1회성 배치 = CSV+로더로 충분). 반복 검수 수요가 확인되면 TASKQUEUE REVIEW-TOOL-V6-IMPROVE에서 승격.
+
+**Why**: 도메인 태깅 머신 게이트(D-DOMAIN-AUTOMATION)가 pending/auto로 남긴 예외를 **인간이 최종 해소**하는 어휘가 필요. verdict는 그 머신값의 인간 재정(裁定)이므로 같은 필드(`domain_review_status`)에 덮어쓰는 것이 의미 정합(별도 필드=중복 상태원). soft-drop은 오판정 복구·감사추적 위해 삭제 대신 상태 전환. CHANGE_REV는 "경쟁으로 오분류된 공급관계를 방향까지 바로잡음"(예: ANET↔AVGO COMPETES_WITH → AVGO SUPPLIES_TO ANET)을 표현.
+
+**How to apply**: 로더 `apps/chain_sight/management/commands/apply_review_verdicts.py`. verdict 접두사 파싱(`CHANGE_REV:` 우선). 매칭 키=(symbol_a,symbol_b,relation_type), CSV `symbol_pair`를 '↔' split한 순서가 DB 방향 보존 → **forward-exact 유일 매칭**(0/2+건 → HALT H-C). `--dry-run` 기본·트랜잭션 원자·idempotent. CHANGE_REV는 별도 플래그 `--apply-change-rev`(게이트 G1 스왑결과 엣지 기존재/G3 unique 위반 판정, 실패 시 해당 1건 HOLD). serving 제외=ego API `.exclude(domain_review_status='rejected')`. **STEP 0 실측(2026-08-01, origin/main `d484b9cb`)**: CSV 270행 forward-exact 270/270·mig 0028 DB 적용(`[X]`)·CHANGE_REV 대상 G1/G2/G3 전부 PASS. `basis_summary`는 스왑 시 원문 보존(재생성은 review-tool 위임). **실 DB 반영(--apply)은 dev=prod 공유DB prod-write → 병진 명시 승인 게이트**([[lesson_dev_prod_shared_db]]).
+
 ## [2026-07-31] D-NUMBERING-DUP — common-bugs 채번 충돌 = 중복 존치 + 구분자 부가 (A) [harness]
 
 **결정**: 병렬 세션 동시 착지로 발생한 common-bugs 헤딩 중복(#70·#71·#72 각 2건)을 **재채번(소급 renumber)하지 않고 존치**하되, **구분자(a/b) 부가**로 구분한다(A 채택). 가중합 **A 4.20 vs 재채번 B 2.90, 마진 1.30 → 자동 결정**.
