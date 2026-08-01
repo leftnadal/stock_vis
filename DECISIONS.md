@@ -5442,3 +5442,10 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **결정**: 목표 입력 화면 = **GoalForm 단일 컴포넌트, mode='create'|'edit'**. KnobsPanel 폼 코어(target_return_pct + 손잡이 5종)를 GoalForm으로 추출(행위보존, edit 모드=기존 PATCH). create 모드는 horizon_months·risk_tolerance 필드 추가 + POST. **입력 표면 1벌**(중복 폼 금지). edit 모드는 horizon/risk 변경 불가(PATCH 미지원 = 스코프 내 생성 전용).
 
 **Why**: 폼 중복은 drift 원천. 단일 컴포넌트 2모드 = 검증·레이아웃 단일 소스. STEP 0 실측: KnobsPanel 입력/제출 JSX 분리·순수 useState → 추출 행위보존 가능(HALT 2 불성립).
+## [2026-07-31] SEC β G1.6 R1 — 캐노니컬 베이스라인 확정 + "Neo4j-env" 오라벨 정정 (D-SECB-BASELINE, D-SECB-MISLABEL)
+
+> SEC β G1.6 회수 세션(`monorepo/sess-secb-g16`, Gate 0 `1c41a7e5`). R1 결과 D — 감독 판정 B(HEAD-앵커 비준 + 저비용 법의학 F1/F2)로 재개. dry-run 전용·DB 쓰기 0·LLM 0.
+
+**D-SECB-BASELINE (F3 — 캐노니컬 베이스라인)**: **4463 GREEN / 0 사전존재 / 53 skipped @ origin/main `9750b8bc`** (2026-07-31 실측, `--maxfail=200`). health_check 13 OK / 2 WARN(양성) / 0 FAIL. ★**규칙**: 베이스라인은 **세션마다 재실측하고 HEAD 해시를 병기**한다. **해시 없는 정적 수치의 세션 간 이월 금지**(구 "4084" stale 추정·"4050" 무앵커 이월이 전례 — cf. D-SECB-MISLABEL).
+
+**D-SECB-MISLABEL (F4 — 오라벨 정정, 과거 라인 편집 없음·append만)**: 다세션 verbatim 이월된 "13건 사전존재 = Neo4j-env" 라벨은 **검증 없이 이월된 오라벨**. 실측 반증: 13건(attention 6 + leadership_api 7) 전 코드경로(테스트 → `attention_service`·`leadership_eventgroup`·`event_group_reader`·`leadership_service`·`leadership_compute`·conftest) **neo4j 참조 0**, 격리 재실행 **29 passed**(neo4j fixture 없이). **F1**(main 이동분 규명): `4d0ed3b5..9750b8bc` 전 병합·커밋 병진 승인 트랙 귀속(MGMT15/16·CN-repair·TH-DEPLOY·⑳-3·credit p2a·EOD-fresh·MP-unify·strip-rehome), 신규 테스트 25파일=성장 출처, **유령 커밋 0**. **F2**(제4가설): `test_stock_vis` 마이그 179건 전부 **2026-07-31 11:37 적용 = DB fresh 재생성**(13 실패 시대 ≤07-28 이후) → 실 원인 = **결과 D: `--reuse-db` 데이터 오염, DB 재생성으로 해소(양성)**. 오라벨 이월 라인 예: DECISIONS 553·3761·3783·3810·3843·3877·3909. 정정 근거 = 본 세션 `1c41a7e5` 이후 F1/F2 실측. cf. common-bugs #79, TASKQUEUE SECB-REGRESSION-WATCH.

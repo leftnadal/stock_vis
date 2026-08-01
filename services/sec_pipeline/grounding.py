@@ -16,6 +16,7 @@ from dataclasses import dataclass
 
 STATUS_VERIFIED = "verified"
 STATUS_NORMALIZED_MATCH = "normalized_match"
+STATUS_PARTIAL_MATCH = "partial_match"  # G1.6: 접두 ≥70% 절단/tail 발산 (접지 성공에 합산 금지)
 STATUS_NOT_FOUND = "not_found"
 STATUS_MISSING_SOURCE = "missing_source"
 
