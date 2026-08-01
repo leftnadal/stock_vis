@@ -1263,10 +1263,12 @@ class ImpressionLog(models.Model):
     SURFACE_DASHBOARD_EOD = "dashboard_eod"
     SURFACE_CHAIN_SIGHT = "chain_sight"
     SURFACE_NEWS_CHIP = "news_chip"
+    SURFACE_COVERAGE_DETAIL = "coverage_detail"
     SURFACE_CHOICES = (
         (SURFACE_DASHBOARD_EOD, "Dashboard EOD 추천 카드"),
         (SURFACE_CHAIN_SIGHT, "Chain Sight 표면"),
         (SURFACE_NEWS_CHIP, "뉴스 스트립 칩"),
+        (SURFACE_COVERAGE_DETAIL, "커버리지 상세 페이지"),
     )
 
     # 이벤트 타입 (choices 상수 분리)
