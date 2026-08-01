@@ -92,11 +92,15 @@ def capture_symbol(client, symbol: str, mirror: bool = True) -> dict:
 
 
 def capture_symbols(client, symbols: Iterable[str]) -> dict:
-    """유니버스 배치 수집 — 심볼별 격리(1종목 실패가 전체 중단 안 함).
+    """유니버스 배치 수집 — 심볼별 격리(1종목 데이터 실패가 전체 중단 안 함).
 
-    반환 = {captured, failed, skipped, errors:{symbol:msg}}.
+    카운터 소진(FMPRateLimitError)은 **터미널** → 즉시 중단(더 두드리지 않음), halted 플래그.
+    반환 = {captured, failed, skipped, halted_rate_limit, errors:{symbol:msg}}.
     """
+    from packages.shared.api_request.providers.fmp.client import FMPRateLimitError
+
     captured = failed = skipped = 0
+    halted = False
     errors: dict[str, str] = {}
     for raw in symbols:
         symbol = (raw or "").upper()
@@ -108,8 +112,20 @@ def capture_symbols(client, symbols: Iterable[str]) -> dict:
                 captured += 1
             else:
                 skipped += 1
+        except FMPRateLimitError as e:
+            # 일일/분 한도 소진 = 터미널. 남은 심볼 중단(재시도 무의미).
+            halted = True
+            errors[symbol] = f"rate-limit halt: {e}"
+            logger.warning("AnalystSignal 카운터 소진 — %s에서 중단", symbol)
+            break
         except Exception as e:  # noqa: BLE001 — 심볼별 격리(전체 중단 금지)
             failed += 1
             errors[symbol] = str(e)
             logger.warning("AnalystSignal 수집 실패 %s: %s", symbol, e)
-    return {"captured": captured, "failed": failed, "skipped": skipped, "errors": errors}
+    return {
+        "captured": captured,
+        "failed": failed,
+        "skipped": skipped,
+        "halted_rate_limit": halted,
+        "errors": errors,
+    }

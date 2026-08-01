@@ -11,7 +11,24 @@ import logging
 
 from celery import shared_task
 
+from packages.shared.api_request.providers.fmp.client import FMPClient
+from packages.shared.stocks.services.analyst_signal_writer import capture_symbols
+
 logger = logging.getLogger(__name__)
+
+
+def _coach_universe() -> list[str]:
+    """수집 대상 유니버스 = WalletHolding ∪ WatchlistItem 실심볼 (SFI-I1 Part 3)."""
+    from apps.portfolio.models import WalletHolding
+    from packages.shared.users.models import WatchlistItem
+
+    wh = WalletHolding.objects.select_related("stock").values_list(
+        "stock__symbol", flat=True
+    )
+    wl = WatchlistItem.objects.select_related("stock").values_list(
+        "stock__symbol", flat=True
+    )
+    return sorted({s.upper() for s in list(wh) + list(wl) if s})
 
 
 @shared_task(bind=True, max_retries=3, name="apps.portfolio.tasks.snapshot_all_users")
@@ -69,3 +86,34 @@ def advisory_all_users(self):
             fail += 1
     logger.info("advisory_all_users: ok=%d fail=%d", ok, fail)
     return {"ok": ok, "fail": fail}
+
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    name="apps.portfolio.tasks.ingest_analyst_signals",
+)
+def ingest_analyst_signals(self):
+    """coach 유니버스 forward 신호 nightly 수집 (SFI-I1 Part 3).
+
+    유니버스(보유∪관심) 순회 → AnalystSignalSnapshot append + Stock.analyst_* 미러.
+    심볼별 격리(1종목 실패 계속) + 카운터 소진 시 중단(capture_symbols). self-throttle는
+    FMPClient._make_request가 담당(단일 client 인스턴스 재사용). estimates 무접촉(D-I1-4).
+
+    ★ append 전용(D-I1-2)이라 재실행 = 신규 행 — 멱등 아님(의도된 시계열). beat 미등록(병진).
+    """
+    from django.conf import settings
+    from django.db import connections
+
+    connections.close_all()  # fork 후 DB 연결 정리 (macOS SIGSEGV, 버그 #25)
+
+    symbols = _coach_universe()
+    if not symbols:
+        logger.info("ingest_analyst_signals: 유니버스 비어있음 — skip")
+        return {"captured": 0, "failed": 0, "skipped": 0, "universe": 0}
+
+    client = FMPClient(api_key=settings.FMP_API_KEY)
+    summary = capture_symbols(client, symbols)
+    summary["universe"] = len(symbols)
+    logger.info("ingest_analyst_signals: %s", summary)
+    return summary
