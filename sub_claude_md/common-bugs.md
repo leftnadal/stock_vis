@@ -1212,3 +1212,13 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 이 환경의 셸 PATH가 서브셸·파이프·for 루프에서 간헐 유실되고, pyenv shim이 poetry venv를 가림. 상대 명령은 해석 결과가 비결정적.
 
 **해결**: **실행 환경 참조(명령·인터프리터)는 절대경로 고정** — `git`→`/usr/bin/git`, python→poetry venv 절대경로, 또는 명령 블록 서두에 `export PATH=/usr/bin:/bin:…`. for 루프·파이프 회피(개별 명령 나열). cf. #80(Gate 4 명령서 실측), [[feedback_secret_masking_policy]] 계열의 "환경 가정 금지".
+
+## [프로세스] 문서-코드 선행 괴리 — 지시서·요청서의 실행 단계가 미존재 인프라를 전제 (#82, 2026-08-01 SEC β G-d) [process][ops]
+
+> ※ 채번: 감독 지시 "#80"이나 #80·#81 각 2건 병렬 선점(REVIEW-P2·COVERAGE-DETAIL) → #82로 등록(소급 재번호 금지 관례).
+
+**증상**: SEC β Gate 2 사인오프 요청서의 실행 단계 **G-d(flag-on 1 filing → read-path 노출 스모크)**가, 착수 시점에 전제 인프라(`SEC_GROUNDING_ENABLED` flag·grounding_status 노출 read-path)가 **코드에 전무**함이 실측(grep)으로 드러남. 요청서·증빙 4건이 "존재하지 않는 노출 경로"를 전제 → flag flip이 아닌 신규 구축 필요로 판명.
+
+**원인**: 요청서 작성 시 실행 단계의 **전제 코드 경로를 실측 확증하지 않고** 문서(설계 의도)로 선행 기술. grounding 필드는 additive·미노출(설계상 read-path 무관)이었으나 요청서는 노출이 존재하는 듯 기술. 문서 선행이 코드 선행을 대체하지 못함(#79 변종).
+
+**해결·점검**: 지시서·요청서의 **각 실행 단계는 착수 前 전제 코드 경로를 grep/실측 확증** 후 비준. 부재 시 → 그 단계는 "구축 필요"로 재분류·별도 트랙 이관(사변 구축 금지). SEC β 사례 = D-SECB-GATE2-AMEND-1(G-d 제거→SECB-EXPOSURE 이관). cf. #79.

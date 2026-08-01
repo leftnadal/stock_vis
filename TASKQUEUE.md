@@ -1127,3 +1127,9 @@
 ## SECB-PROMPT-V2 — tail 발산 방지 프롬프트 (2026-07-31, G1.6 §5) [sec-beta]
 - 범위: **Gate 2 존치**(이 세션 밖). 표적 = tail 발산 방지 문구(G1.5 부수② 초안, "verbatim exact sentence·리스트 절단 금지"). partial_match 410건이 verbatim tail 규율 대상.
 - 근거: G1.6 §3 샘플 = 경쟁사 리스트 접두 verbatim + tail 회사명 발산(원문 실재, 조작 아님) → prompt v2로 verbatim 강제.
+
+## SECB-EXPOSURE — grounding_status 노출 설계 결정 사이클 (2026-08-01, Gate2 개정 B-2) [sec-beta][ux]
+- **성격**: 디렉터 세션·**목업 필수** 결정 사이클(소비자 UX 결정). **소비자 결정 전 구축 금지**(γ 사변 구축 금지, D-SECB-GATE2-AMEND-1).
+- **미결 3**: ⑴ attach 지점(후보 `FilingDataView`/`filing/<symbol>/`·IsAdminUser, per-symbol=1-filing 자연 정합) ⑵ 스코핑(글로벌 `SEC_GROUNDING_ENABLED` flag + 1 filing 스모크 vs per-filing allowlist) ⑶ flag 정의 위치(settings) 포함.
+- **입력 확보**: grounding 데이터 prod 기록 완료(G-c, 1751·4분포 1273/41/410/27·marker deterministic_v1). partial_match 121 filings/410 rows = 노출 시 신설 등급 표시 대상.
+- 근거: G-d(flag-on 1 filing)가 노출 경로 부재로 Gate2 배치서 제거·이관. cf. common-bugs #82.
