@@ -1,9 +1,21 @@
-// CoverageDetailView 렌더 검증 (P2-COVERAGE-C1-FE, T2)
+// CoverageDetailView 렌더 검증 (P2-COVERAGE-C1-FE, T2 + COVERAGE-DETAIL-FE)
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+// impression 훅 mock — 행 단위 호출(surface·object_ref) 검증용
+const useImpressionTracker = vi.fn((_surface: string, _objectRef: string) => ({
+  ref: { current: null },
+  onClick: vi.fn(),
+}))
+vi.mock('@/hooks/useImpressionTracker', () => ({
+  useImpressionTracker: (surface: string, objectRef: string) =>
+    useImpressionTracker(surface, objectRef),
+}))
 
 import { CoverageDetailView } from '@/components/dashboard/CoverageDetailView'
 import type { CoverageResponse } from '@/types/coverage'
+
+beforeEach(() => useImpressionTracker.mockClear())
 
 const base: CoverageResponse = {
   window: { days: 7, from: '2026-07-20', to: '2026-07-27' },
@@ -75,5 +87,22 @@ describe('CoverageDetailView', () => {
     expect(screen.getByTestId('coverage-detail')).toHaveTextContent(
       '미노출 발급이 없습니다.'
     )
+  })
+
+  it('각 미노출 행이 surface=coverage_detail·object_ref로 impression 추적 연결 (COVERAGE-DETAIL-FE)', () => {
+    render(<CoverageDetailView data={base} />)
+    // 행 단위: unexposed 2건 각각 훅 호출
+    expect(useImpressionTracker).toHaveBeenCalledTimes(2)
+    expect(useImpressionTracker).toHaveBeenCalledWith('coverage_detail', 'ACGL:2026-07-24:P5')
+    expect(useImpressionTracker).toHaveBeenCalledWith('coverage_detail', 'AAPL:2026-07-24:PV1')
+  })
+
+  it('미노출 0건이면 impression 훅 호출 없음(발신 0)', () => {
+    render(
+      <CoverageDetailView
+        data={{ ...base, summary: { ...base.summary, unexposed_count: 0 }, unexposed: [] }}
+      />
+    )
+    expect(useImpressionTracker).not.toHaveBeenCalled()
   })
 })
