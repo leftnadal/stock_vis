@@ -272,6 +272,9 @@ def update_relation_confidence(self):
     #    - price_corr → PRICE_CORRELATED (market)
     created, updated = 0, 0
     for sym_a, sym_b in all_pairs:
+        # ⑳-3 REVIEW-P2 Part Q: a≠b 가드 — 자기루프 쌍 스킵(모델 save() 가드 선제 회피).
+        if sym_a == sym_b:
+            continue
         has_peer = (sym_a, sym_b) in peer_set
         has_industry = (sym_a, sym_b) in industry_set
         has_news = (sym_a, sym_b) in co_mention_map

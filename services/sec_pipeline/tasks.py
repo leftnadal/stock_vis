@@ -367,6 +367,10 @@ def seed_relations_to_chainsight():
         else:
             continue
 
+        # ⑳-3 REVIEW-P2 Part Q: a≠b 가드 — 자기루프(source==target) 스킵.
+        if sym_a == sym_b:
+            continue
+
         score_map = {"high": 85, "medium": 60, "low": 35}
         score = score_map.get(ev.confidence_grade, 60)
 

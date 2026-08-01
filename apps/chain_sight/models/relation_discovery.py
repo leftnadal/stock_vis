@@ -9,6 +9,14 @@ RelationConfidence v2.1: 관계 신뢰도 종합 (CS-2-4에서 판정)
 from django.db import models
 
 
+class SelfLoopError(ValueError):
+    """자기루프(symbol_a == symbol_b) 관계 생성 시도 — a≠b 앱 가드 위반.
+
+    ⑳-3 REVIEW-P2 Part Q: 자기 자신에 대한 관계는 무의미하다. DB CheckConstraint
+    승격은 마이그레이션을 동반하므로 보류(TASKQUEUE), 그 전까지 앱 레벨 가드로 신규 생성을 차단한다.
+    """
+
+
 class CoMentionEdge(models.Model):
     """뉴스 동시출현 쌍."""
 
@@ -207,6 +215,13 @@ class RelationConfidence(models.Model):
         ]
 
     def save(self, *args, **kwargs):
+        # ⑳-3 REVIEW-P2 Part Q: a≠b 앱 레벨 가드. 신규 생성만 차단(기존 self-loop
+        # 레코드 갱신·soft-drop은 통과 — 소급 삭제 아님). DB constraint 승격은 TASKQUEUE.
+        if self._state.adding and self.symbol_a == self.symbol_b:
+            raise SelfLoopError(
+                f"자기루프 관계 생성 차단: {self.symbol_a}=={self.symbol_b} "
+                f"[{self.relation_type}]. symbol_a≠symbol_b 필수."
+            )
         # 상태 전이 추적: DB에서 기존 상태 읽어서 previous_status에 보존
         if self.pk:
             try:
