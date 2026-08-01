@@ -41,6 +41,7 @@
 - **인용 해석 규약**: 기존 `#7N` 단독 인용은 **문맥상 해당 내용 쪽**을 가리킨다(구분자 부가 전 인용이라 모호 시 내용으로 판별).
 
 **How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
+- **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
