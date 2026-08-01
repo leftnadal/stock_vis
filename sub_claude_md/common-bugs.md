@@ -1181,3 +1181,19 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **규칙**: ⑴ 베이스라인 수치 = **세션마다 재실측 + HEAD 해시 병기**(해시 없는 정적 수치 이월 금지, D-SECB-BASELINE) ⑵ 실패 census = **원인 tracebacks 동반**(라벨만 기록 금지, TASKQUEUE SECB-REGRESSION-WATCH) ⑶ 이월 오류 발견 시 실측 재검·정정 append(과거 라인 편집 금지).
 
 **재발 점검 순서**: 수치·라벨 인용 전 → 근거 커밋/실측 있나? → 없으면 재측정 → HEAD 해시 병기 후 인용.
+
+## Gate 4 사용자 명령서는 실행 환경(detached HEAD·python 경로) 실측 후 발급 (#80, 2026-08-01 COVERAGE-DETAIL migrate) [process] [ops]
+
+**증상**: migrate 적용(Gate 4 사용자 실행)을 위해 발급한 명령 `git pull` + `python manage.py migrate`가 서빙 트리에서 **2중 실패** — ⑴ `git pull` → "You are not currently on a branch"(런타임 트리는 **detached HEAD 관례**, worker_sync가 re-detach하므로 브랜치 없음) ⑵ `python` → pyenv가 3.11만 잡고 프로젝트 poetry venv(3.12) 미발견.
+
+**원인**: 디렉터/발급자가 명령서를 **기억·일반 관례**(git pull, python)로 작성. 서빙 트리의 실제 상태(detached HEAD, poetry venv python 경로)를 실측하지 않음. 런타임 트리는 detached HEAD가 표준이고 python은 시스템/pyenv가 아닌 poetry venv 절대경로여야 한다.
+
+**해결**: **Gate 4 사용자 명령서는 실행 환경을 실측한 뒤 발급**한다 — ⑴ 트리 최신화는 detached면 `git fetch origin && git reset --hard origin/main`(git pull 아님) ⑵ python은 poetry venv **절대경로**(`~/Library/Caches/pypoetry/virtualenvs/…/bin/python`). 발급 전 `git -C <tree> status --branch`(detached 확인)·`ls <venv>/bin/python`(경로 확인) 1패스. cf. #81(실행 환경 참조 절대경로 고정).
+
+## 실행 환경 참조는 절대경로 고정 — 셸 PATH 간헐 유실 + pyenv/venv 불일치 (#81, 2026-07~08 다수 실증) [process] [ops]
+
+**증상**: ⑴ 서브셸/파이프에서 `git`·`tail` 등이 `command not found`(BRANCH-CLEANUP-FORCE 07-30: for 루프 내 git 유실) ⑵ `python`이 pyenv 3.11로 해석돼 poetry venv(3.12) 미발견(#80). 상대 명령(`git`, `python`, `tail`)이 세션·서브셸마다 다른 바이너리로 해석되거나 미발견.
+
+**원인**: 이 환경의 셸 PATH가 서브셸·파이프·for 루프에서 간헐 유실되고, pyenv shim이 poetry venv를 가림. 상대 명령은 해석 결과가 비결정적.
+
+**해결**: **실행 환경 참조(명령·인터프리터)는 절대경로 고정** — `git`→`/usr/bin/git`, python→poetry venv 절대경로, 또는 명령 블록 서두에 `export PATH=/usr/bin:/bin:…`. for 루프·파이프 회피(개별 명령 나열). cf. #80(Gate 4 명령서 실측), [[feedback_secret_masking_policy]] 계열의 "환경 가정 금지".
