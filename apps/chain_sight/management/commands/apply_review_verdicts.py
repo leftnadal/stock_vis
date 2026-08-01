@@ -71,6 +71,7 @@ def build_plan(rows):
         verdict_counts: {kind: n}
     """
     plan, unrecognized, unmatched = [], [], []
+    already_swapped = []  # CHANGE_REV 재실행 감지(idempotent)
     verdict_counts = {k: 0 for k in EXPECTED}
 
     for r in rows:
@@ -95,6 +96,12 @@ def build_plan(rows):
         )
         n = qs.count()
         if n != 1:
+            # CHANGE_REV 재실행: 원 키가 사라졌으나 스왑 결과(y→x, new_type)가 승인됐으면 멱등 no-op
+            if kind == "CHANGE_REV" and n == 0 and RelationConfidence.objects.filter(
+                symbol_a=y, symbol_b=x, relation_type=arg, domain_review_status="approved"
+            ).exists():
+                already_swapped.append((pair, arg))
+                continue
             unmatched.append((pair, rtype, n))
             continue
         obj = qs.first()
@@ -104,6 +111,7 @@ def build_plan(rows):
         "plan": plan,
         "unrecognized": unrecognized,
         "unmatched": unmatched,
+        "already_swapped": already_swapped,
         "verdict_counts": verdict_counts,
     }
 
@@ -154,6 +162,70 @@ def apply_plan(plan):
     }
 
 
+class ChangeRevGateFailure(Exception):
+    """CHANGE_REV 게이트 실패(G1/G3). 해당 1건 HOLD 전환 사유."""
+
+
+def change_rev_gates(rc_id, new_type):
+    """CHANGE_REV 스왑 전 게이트 판정(read-only). 반환: (ok, failures[]).
+
+    G1: 스왑 결과 (source,target,type)와 동일 엣지 기존재 → 실패
+    G2: RelationPairSnapshot는 canonical 무방향 저장(정렬쌍) → 방향 무의존, 구조적 PASS
+    G3: unique_together=(symbol_a,symbol_b,relation_type) 위반 → 실패
+        (스왑 후 키가 자기 자신 외 다른 행과 충돌하면 위반)
+    """
+    obj = RelationConfidence.objects.get(id=rc_id)
+    new_a, new_b = obj.symbol_b, obj.symbol_a  # 방향 스왑
+    failures = []
+    # G1: 스왑 결과와 동일한 (new_a,new_b,new_type) 엣지가 자기 외 존재?
+    clash = (
+        RelationConfidence.objects.filter(
+            symbol_a=new_a, symbol_b=new_b, relation_type=new_type
+        )
+        .exclude(id=rc_id)
+        .exists()
+    )
+    if clash:
+        failures.append("G1: 스왑 결과 엣지 기존재")
+        failures.append("G3: unique_together 위반")  # G1 clash == G3 위반
+    return (not failures), failures
+
+
+def apply_change_rev(plan):
+    """CHANGE_REV rows 스왑 반영(트랜잭션·idempotent). 게이트 실패 시 해당 행 HOLD 전환.
+
+    스왑: symbol_a↔symbol_b + relation_type=<TYPE> + canonical_direction='a→b'
+          + domain_review_status='approved' + neo4j_dirty=True.
+    relation_basis_summary: 원문 보존(증거 provenance·감사추적, 재생성은 review-tool v4 위임).
+    반환: {"swapped": [...], "held": [(pair, [failures])]}
+    """
+    swapped, held = [], []
+    rev_rows = [p for p in plan if p[0] == "CHANGE_REV"]
+    with transaction.atomic():
+        for kind, arg, rc_id, old_type, pair, rtype in rev_rows:
+            ok, failures = change_rev_gates(rc_id, arg)
+            if not ok:
+                # 게이트 실패 → HOLD(pending) 전환, 스왑 미실행
+                RelationConfidence.objects.filter(id=rc_id).update(
+                    domain_review_status="pending"
+                )
+                held.append((pair, failures))
+                continue
+            obj = RelationConfidence.objects.get(id=rc_id)
+            obj.symbol_a, obj.symbol_b = obj.symbol_b, obj.symbol_a
+            obj.relation_type = arg
+            obj.canonical_direction = "a→b"
+            obj.domain_review_status = "approved"
+            obj.neo4j_dirty = True
+            # relation_basis_summary 원문 보존(미수정)
+            obj.save(update_fields=[
+                "symbol_a", "symbol_b", "relation_type", "canonical_direction",
+                "domain_review_status", "neo4j_dirty",
+            ])
+            swapped.append(f"{pair}: {rtype}→{arg} 방향스왑(→{obj.symbol_a}→{obj.symbol_b})")
+    return {"swapped": swapped, "held": held}
+
+
 class Command(BaseCommand):
     help = "검수 verdict(human_verdict) → RelationConfidence.domain_review_status 반영"
 
@@ -162,6 +234,10 @@ class Command(BaseCommand):
         parser.add_argument(
             "--apply", action="store_true",
             help="실 DB 반영. 미지정 시 dry-run(DB 무기록).",
+        )
+        parser.add_argument(
+            "--apply-change-rev", action="store_true",
+            help="S2: CHANGE_REV 방향 스왑만 실반영(게이트 판정 포함).",
         )
         parser.add_argument(
             "--dry-run", action="store_true",
@@ -219,6 +295,19 @@ class Command(BaseCommand):
         if halted:
             self.stderr.write("반영 중단 — HALT 조건 발동. DB 무변경.")
             return
+
+        # ── S2: CHANGE_REV 스왑 (별도 플래그) ──
+        if opts["apply_change_rev"]:
+            rev = apply_change_rev(plan)
+            for line in rev["swapped"]:
+                self.stdout.write(f"✅ CHANGE_REV 스왑: {line}")
+            for pair, failures in rev["held"]:
+                self.stderr.write(f"⚠️ CHANGE_REV HOLD 전환({pair}): {'; '.join(failures)}")
+            self.stdout.write(
+                f"S2 완료: 스왑 {len(rev['swapped'])}건 · HOLD 전환 {len(rev['held'])}건."
+            )
+            return
+
         if dry_run:
             self.stdout.write("dry-run: DB 무기록. (--apply 로 실반영)")
             return
@@ -227,5 +316,5 @@ class Command(BaseCommand):
         self.stdout.write(
             f"✅ 반영 완료: approved={res['approved']} rejected={res['rejected']} "
             f"pending={res['pending']} CHANGE={res['change']}. "
-            f"CHANGE_REV {len(change_rev_rows)}건은 S2 처리."
+            f"CHANGE_REV {len(change_rev_rows)}건은 S2(--apply-change-rev) 처리."
         )
