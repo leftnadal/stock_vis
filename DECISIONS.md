@@ -24,6 +24,11 @@
 **Why**: 도메인 태깅 머신 게이트(D-DOMAIN-AUTOMATION)가 pending/auto로 남긴 예외를 **인간이 최종 해소**하는 어휘가 필요. verdict는 그 머신값의 인간 재정(裁定)이므로 같은 필드(`domain_review_status`)에 덮어쓰는 것이 의미 정합(별도 필드=중복 상태원). soft-drop은 오판정 복구·감사추적 위해 삭제 대신 상태 전환. CHANGE_REV는 "경쟁으로 오분류된 공급관계를 방향까지 바로잡음"(예: ANET↔AVGO COMPETES_WITH → AVGO SUPPLIES_TO ANET)을 표현.
 
 **How to apply**: 로더 `apps/chain_sight/management/commands/apply_review_verdicts.py`. verdict 접두사 파싱(`CHANGE_REV:` 우선). 매칭 키=(symbol_a,symbol_b,relation_type), CSV `symbol_pair`를 '↔' split한 순서가 DB 방향 보존 → **forward-exact 유일 매칭**(0/2+건 → HALT H-C). `--dry-run` 기본·트랜잭션 원자·idempotent. CHANGE_REV는 별도 플래그 `--apply-change-rev`(게이트 G1 스왑결과 엣지 기존재/G3 unique 위반 판정, 실패 시 해당 1건 HOLD). serving 제외=ego API `.exclude(domain_review_status='rejected')`. **STEP 0 실측(2026-08-01, origin/main `d484b9cb`)**: CSV 270행 forward-exact 270/270·mig 0028 DB 적용(`[X]`)·CHANGE_REV 대상 G1/G2/G3 전부 PASS. `basis_summary`는 스왑 시 원문 보존(재생성은 review-tool 위임). **실 DB 반영(--apply)은 dev=prod 공유DB prod-write → 병진 명시 승인 게이트**([[lesson_dev_prod_shared_db]]).
+## [2026-08-01] 관찰 — 구체 규칙 > 일반 Gate 틀 (web 재빌드 위임 사절) [harness] [process]
+
+**관찰(결정 아님)**: 08-01 COVERAGE-DETAIL-FE LAND 세션이 web 재빌드 집행을 "이어서 하겠다"고 **위임 제안**했으나, `#62`(FE 배포=재빌드, **웹 리빌드는 사용자 수동**) 문언을 우선해 **사절**하고 사용자 승인 대기로 전환. 가중합 사절 **4.60 vs 위임 3.05**.
+- **해석 관례 명문화**: 일반 게이트 틀(예: "LAND 후 배포까지 한 세션")과 구체 규칙(#62 웹 리빌드 사용자 수동)이 충돌하면 **구체 규칙이 우선**한다. 세션이 효율을 이유로 구체 규칙을 흡수·생략하지 않는다. (이후 사용자가 명시 승인 → 재빌드 집행은 정상 — 사절은 "승인 없이 자동 진행"에 대한 것.)
+- cf. [[feedback_deploy_approval_explicit_quote]](배포=명시 승인)·#62(FE 재빌드 사용자 수동).
 
 ## [2026-07-31] D-NUMBERING-DUP — common-bugs 채번 충돌 = 중복 존치 + 구분자 부가 (A) [harness]
 
@@ -5488,3 +5493,4 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **REGEN-V2 인터페이스**: `select_grounding_v2(date, *, n=6, source_cap=3, min_score=1.2) → [{id,url,title,source,sentiment_score,entity_count,published_at,score,hits,rank,select_version}]`. v1 호환키(id/url/title = context_generator provenance 조립용) 보존. context_generator가 `select_grounding`→`select_grounding_v2` 전환 시 반환 스키마 상위호환. **REGEN-V2 진입조건 = 재수집 DONE(~8/8) + 본 모듈 랜딩**.
 
 **Why**: C-L3 1차(491건) 품질 한계(D-CL3-QUALITY-LIMIT)의 근본 = v1이 abs(sentiment)+entity로 "고감정 개별기업"을 선별. 선별 품질 = REGEN-V2 품질의 상한. 스팟 12일 실증(v1 vs v2): macro-rich일 v2 압도("PCE Inflation Cools, GDP Growth Strong"·"Treasury sell-off after Fed holds rates"·"ECB rate decision" vs v1의 "Q2 Results"·"Class Action"), 저볼륨일 v2 빈결과(정직) vs v1 개별주 억지. broad 거시 절대량 부족일은 부분개선(D-CL3-QUALITY-LIMIT 근본한계 유효 — 선별이 없는 신호를 만들진 못함). N·min_score는 초안(정밀 캘리브레이션=샘플 게이트).
+**D-SECB-BASELINE-CANON 갱신 (2026-08-01, A-3 실측 — 해시앵커 규칙 적용)**: 구 정본 `4463/0/53 @ 9750b8bc`는 **stale 앵커로 폐기**. 유효 정본 = **4460 GREEN / 0 사전존재 / 53 skip @ `4696790e`**. 시프트 −3 = `test_freshness.py` 11→8 통합(**EOD-FRESH-FIX-1 `68318fc3`**, P6 승인 병렬 트랙, off-by-one 수리). SEC β G1.6 A-1(`bbc93a84`)은 테스트 제거 0(단언 +1줄만)·grounding 13 pass = **내 작업발 회귀 0**. 감독 비준(2026-08-01). 이 폐기·갱신은 #79(미검증 수치 이월 금지)의 실적용 — 베이스라인은 항상 세션 재실측+HEAD 해시 병기.
