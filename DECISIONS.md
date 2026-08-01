@@ -5457,3 +5457,17 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **D-SECB-BASELINE-CANON (P5 — 단일 정본, append 정정·과거 라인 편집 없음)**: 정본 베이스라인이 두 곳에 등재됨 — ⑴ `D-SECB-BASELINE`(DECISIONS, `663b17e5`) ⑵ SEAL-PUSH-1c(PROGRESS, `9540993a`). **양자 수치·앵커 동일**: **4463 GREEN / 0 사전존재 / 53 skipped @ `9750b8bc`**(모순 0 → P5 AUTO-HALT 미발동). 상호 보완: 663b17e5=`13 Neo4j-env` 오라벨 정정 / 9540993a=`119 pre-existing` 오라벨 정정 — **둘 다 0 사전존재로 수렴**. 정본 = 본 항목으로 단일화(수치 동일, 두 등재는 상호 참조). 향후 갱신은 세션 재실측+HEAD 해시 병기(D-SECB-BASELINE 규칙).
 
 **배달 사고 #7 (게이트 정의 미전달, 규율이 랜딩 前 적발)**: P4·P5 공식 정의(AUTO-HALT 기준)가 승인 메시지에 미전달 → 실행 세션이 임의 발명 대신 HALT·회부 → 감독 재전달로 해소. 사고 계열 통산 #7(#6=base 지시서 누락에 이어). 교훈 = 참조된 게이트의 정의 부재 시 임기응변 금지·회부(cf. Gate 0 규율).
+
+### D-SELECT-V2-RULE — L3 그라운딩 선별 v2 = (나) 어휘·규칙 점수 (결정론, 2026-08-01)
+
+**결정**: C-L3 그라운딩 선별 v2의 랭킹 규칙 = **(나) 어휘·규칙 점수** — 텍스트(title+summary) 기반 계층 macro 어휘 점수를 주축으로. sentiment_score/entity_count는 v1의 편향 원천이므로 **랭킹 축에서 제외**하고 동일 macro-score 내 결정론 tie-break으로만 사용. 신설 모듈 `apps/market_pulse/regime/grounding_v2.py`(v1 grounding.py 무접촉·additive).
+
+**가중합(합=1.00: 선별품질 .35·결정론 .20·683균일적용 .15·단순성 .15·메타강건 .15)**: (가) 메타우선 **4.15** / (나) 어휘 **8.55** / (다) 하이브리드 **7.78**. 마진 (나)−(다)=**0.77**(0.40~1.00 → 타이브레이커). **타이브레이커 → (나)**: (다)의 메타 보너스는 ⑴ 방금 피한 non-uniformity를 tie-break에 재도입, ⑵ v1이 쓴 sentiment/entity 재의존=company-sentiment 편향 재수입, ⑶ 1인 유지 단순성 열위.
+
+**(가) 실격 근거(STEP0 실측)**: AV `topics`/article-`relevance`는 provider가 **저장조차 안 함**(drop, `alphavantage.py`). `category`는 재수집분(batch1·2 10,503건) **전부 'company'**(분별 불가), 기존분은 혼재 → 불균일. `sentiment_score` 채움률 재수집 100% vs 기존 51.2% → 균일성 실격. **유일 균일·상시 신호 = title+summary 텍스트**(양 구간 ~100%).
+
+**모듈 계약(불변 요건)**: ①결정론(동일 입력→동일 출력, 입력 순서 무관) ②품질 하한(`min_score` 미달=제외, macro 없는 날 **빈 리스트=why=null**, 억지 채움 금지) ③provenance(score·hits·rank 동반) ④버전 태그 `select_v2.0`. 계층 어휘=STRONG(명백 거시구문 3.0/1.2)·MID(광의시장 1.5/0.6), 티커/ETF 보일러플레이트 매치 시 ×0.3 페널티(개별종목 index-name 오매치 중화), 소스가중(PR/신디케이션 ×0.7·품질와이어 ×1.15), near-dup 제목 접기.
+
+**REGEN-V2 인터페이스**: `select_grounding_v2(date, *, n=6, source_cap=3, min_score=1.2) → [{id,url,title,source,sentiment_score,entity_count,published_at,score,hits,rank,select_version}]`. v1 호환키(id/url/title = context_generator provenance 조립용) 보존. context_generator가 `select_grounding`→`select_grounding_v2` 전환 시 반환 스키마 상위호환. **REGEN-V2 진입조건 = 재수집 DONE(~8/8) + 본 모듈 랜딩**.
+
+**Why**: C-L3 1차(491건) 품질 한계(D-CL3-QUALITY-LIMIT)의 근본 = v1이 abs(sentiment)+entity로 "고감정 개별기업"을 선별. 선별 품질 = REGEN-V2 품질의 상한. 스팟 12일 실증(v1 vs v2): macro-rich일 v2 압도("PCE Inflation Cools, GDP Growth Strong"·"Treasury sell-off after Fed holds rates"·"ECB rate decision" vs v1의 "Q2 Results"·"Class Action"), 저볼륨일 v2 빈결과(정직) vs v1 개별주 억지. broad 거시 절대량 부족일은 부분개선(D-CL3-QUALITY-LIMIT 근본한계 유효 — 선별이 없는 신호를 만들진 못함). N·min_score는 초안(정밀 캘리브레이션=샘플 게이트).
