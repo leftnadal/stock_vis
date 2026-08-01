@@ -1242,3 +1242,15 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 - `period=quarter` → **402 Premium 차단**.
 
 **규칙**: 래퍼 `get_analyst_estimates`는 `period="annual"` **고정**(quarter는 402이므로 파라미터로 열지 않음). audit의 `analyst-estimates http-400` 항목은 "period 누락 오진"으로 정정 인식.
+
+## recon/측정 세션이 stale base 위에서 "부재" 오판(false-missing) — fresh origin/main 강제 (#82, RECON-STALE-BASE, SFI-I1 2026-08-01) [process][harness][git]
+
+**증상**: SIGNAL-FORWARD-INFRA 프리플라이트 recon이 실측 대상 2건을 "repo 부재"로 오판:
+- `RUN-TOTAL-PERSIST` 백로그 = "TASKQUEUE 무매치"(실제 origin/main TASKQUEUE:1103 등재됨).
+- `EstimateSnapshot` 모델·수집 파이프라인 = "이 트리 부재"(실제 chain_sight에 배포·가동 중, beat 등록).
+
+**원인**: recon 브랜치가 origin/main(`d484b9cb`)이 아닌 **분기된 HOLD-P1 라인(`b8d767aa`, 208 커밋 뒤처짐)** 위에 기반. 그 base엔 f2 랜딩(RUN-TOTAL)·theme_heat 모델(EstimateSnapshot)이 아직 없어 "부재"로 보임(false-missing). 측정 자체는 정확했으나 **잘못된 base가 사실을 가림**. cf. #79(미검증 라벨 이월)·common-bugs #59(worktree 최신성 STEP 0 강제).
+
+**규칙**: ⑴ recon·측정·설계 세션은 **fresh `origin/main`에서 시작**(신규 트랙 base = origin/main, 분기 라인 위 기반 금지). ⑵ 보고 **첫 줄에 base HEAD 해시 명기**(#79 해시 앵커 규율의 base 판). ⑶ "부재/무매치" 판정 전 `git show origin/main:<path>`로 origin/main 대조 필수(로컬 브랜치 grep만으로 부재 단정 금지). ⑷ stale 발견 시 `git rebase --onto origin/main <old-base>`로 즉시 교정 후 재측정.
+
+**재발 점검 순서**: "X 부재" 인용 전 → 내 base = origin/main인가?(`git rev-list --count HEAD..origin/main`=0?) → 아니면 `git show origin/main:path` 대조 → 그래도 부재면 확정.

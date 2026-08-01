@@ -5542,3 +5542,18 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **D-I1-2 — EstimateSnapshot은 append 전용(시계열 정본).** 동일 심볼 재수집 = 신규 행 추가(덮어쓰기 금지). captured_at으로 시점 구분. Stock.analyst_* 필드는 **최신 스냅숏 미러**(빠른 조회용 파생)일 뿐, 정본 시계열은 EstimateSnapshot. 근거: RUN-TOTAL-PERSIST가 노출한 "동일 date update_or_create가 이전 값 소거" 문제([[상기 D-I1-RUNTOTAL]])를 forward 신호에서 반복하지 않기 위해 append로 설계.
 
 **D-I1-3 — SFI-I1은 "수집까지만"(collect-only).** 범위 = 래퍼 메서드 + 모델 + writer + nightly 태스크 정의. **화면·advisory 기대수익 로직·migrate·beat 등록은 무접촉**. advisory_engine.py:10의 "analyst_target_price를 기대수익 프록시로 쓰지 말라" 금지벽은 유지 — 신호를 수집·저장하되 기대수익 산출로 직결하는 소비는 별도 결정 사이클. migrate=prod-write·beat 등록=DB row 둘 다 병진 수동(공유 DB 절대 규칙).
+
+---
+
+## D-I1-4 (2026-08-01, SFI-I1 B2 확정 — forward 신호 역할 경계 명문화)
+
+병진 판정으로 모델 전략 **B2** 확정. forward 신호를 두 원장으로 역할 분리한다:
+
+- **가격·의견 계열 = `packages.shared.stocks.AnalystSignalSnapshot`(신규).** 4신호: price target(high/low/consensus/median) · grades 분포(strong_buy~strong_sell + consensus 라벨) · grades-historical(월별 추세) · ratings-snapshot(등급). 유니버스 = coach(WalletHolding ∪ WatchlistItem), 케이던스 = nightly.
+- **실적 추정(estimates) = `apps.chain_sight.EstimateSnapshot`(기존 정본, 무접촉).** eps/revenue, 유니버스 = SP500, 케이던스 = 주간(금). SFI는 **estimates를 수집·저장하지 않는다** — `client.get_analyst_estimates` 신규 호출 금지(존재 확인만).
+
+**동일 FMP 엔드포인트 이중 수집 금지.** `analyst-estimates`는 chain_sight가 단일 소유. `AnalystSignalSnapshot`는 estimates 페이로드를 담지 않는다.
+
+**Why**: EstimateSnapshot이 이미 배포·가동 중(theme_heat TH-3, beat 등록 금 16:30 ET)인데 SFI가 동명·동엔드포인트 모델을 만들면 이중 수집·의미 중복. 두 원장은 유니버스(SP500 vs coach 14종, 겹침 6·갭 8)·케이던스·목적(C8 리비전 z vs coach 화면 신호)이 모두 달라 통합보다 역할 분리가 정합. 통합 단일 원장은 별도 사이클(cf. MP-UNIFY) 소관.
+
+**부수 결정 — 모델 키 = `symbol` CharField(FK 아님).** 기존 EstimateSnapshot 형제 관례 준수 + coach 갭 8종(비SP500)이 Stock 행 부재 가능 → FK 강제 회피. 유령필드 미러는 별도로 Stock을 symbol 조회해 존재 시에만 갱신.

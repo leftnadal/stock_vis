@@ -1138,3 +1138,8 @@
 - 내용: f2 온보딩 카드가 :3000 라이브에서 의도대로 렌더되는지 브라우저 육안 1회 확인(스크린샷 증적). UI 슬라이스 마감 = 라이브 렌더 스크린샷 필수 규율([[feedback_ui_slice_live_screenshot]]) 소급 이행.
 - 주의: :3000 web-runtime = prod 빌드 → f2 온보딩 카드 변경분이 라이브 반영됐는지 먼저 확인(미반영 시 rebuild 선행). 판정 = 육안 통과/미통과만, 수정은 별도 슬라이스.
 - 출처: SIGNAL-FORWARD-INFRA 프리플라이트 지시서 Part A-3.
+
+## FORWARD-PE-DEFER — forward_pe 유령필드 미러 I-1 제외 (2026-08-01, SFI-I1 Part A-7) [portfolio][coach]
+- 상태: **defer(I-2/I-3로 이월)**. I-1 범위 제외 확정.
+- 근거: `Stock.forward_pe` 미러 = price ÷ **forward EPS** 의존. forward EPS = analyst-estimates 소관인데 B2 확정으로 SFI는 estimates 무접촉(chain_sight.EstimateSnapshot 단일 정본, D-I1-4). → I-1의 유령필드 미러는 `analyst_target_price + analyst_rating_*×5`만, forward_pe 제외.
+- 후속: I-2/I-3에서 chain_sight estimates 정본(eps_avg)을 재사용해 forward_pe 산출·미러(이중 수집 없이). 소비 사이클 소관.
