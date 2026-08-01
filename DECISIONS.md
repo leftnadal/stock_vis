@@ -5499,3 +5499,28 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 ## [2026-08-01] SEC β Gate 2 배치 개정 — G-d 제거·노출 트랙 이관 (D-SECB-GATE2-AMEND-1)
 
 **D-SECB-GATE2-AMEND-1 (G-d flag-on 1 filing 배치 제거)**: Gate 2 사인오프 요청서 §비준 시점에 `SEC_GROUNDING_ENABLED` flag·grounding_status **노출 read-path가 코드에 부재**했음(2026-08-01 실측 grep: flag 정의 0·serializer/view grounding 참조 0·sec 엔드포인트=dashboard+FilingDataView 둘 다 미참조). G-d는 flag flip이 아니라 신규 구축(flag+게이트 노출+1-filing 스코핑)이며, **노출 설계 = 소비자(UX) 결정 미존재 상태의 사변 구축 금지(γ)** → 배치에서 **제거**, `SECB-EXPOSURE` 트랙 이관(디렉터 세션·목업 기반 결정). Gate 2 실집행분 = G-a(백업)·G-b(migrate 0003)·G-c(백필 1751, 4분포 1273/41/410/27 실현)로 종료. G-e(prompt v2)는 정의서 승인 후 별도. **교훈**: 요청서의 실행 단계는 **존재하는 코드 경로를 실측 확증 후 비준**할 것(#79 변종 — 설계 의도의 문서 선행이 코드 선행을 대체 못 함). cf. common-bugs #82, TASKQUEUE SECB-EXPOSURE. 감독 결정 B안(2026-08-01).
+## D-LAND-ATOMIC (2026-08-01, 반복 랜딩 경합 시 원자 집행 표준)
+
+병렬 세션이 같은 origin/main을 겨냥할 때 순진한 `push`는 non-fast-forward로 반복 reject된다(과거 P2a-1 병렬 랜딩 5회 reject 실증). 표준 집행 절차를 **fetch → reset → merge → push 원자 스크립트**로 고정한다.
+
+1. `git fetch origin` — 최신 origin/main 확보.
+2. 작업 브랜치를 origin/main 위로 `reset --hard`(또는 rebase) 후 슬라이스 커밋을 **cherry-pick/merge**로 재적재 — 계보를 origin/main 선형 위로 정렬.
+3. 자가검증(계보 N줄·pytest·pathspec) 통과 시 단일 `push`.
+4. **push는 병진(사용자) 수동** — 공유 main 접촉은 명시 승인 인용 필수([[feedback_deploy_approval_explicit_quote]]). Claude는 원자 스크립트를 **준비**하고 게이트를 **판정**하되 집행하지 않는다.
+
+**Why**: 경합 재시도를 임기응변(반복 pull/merge)으로 처리하면 계보 오염·중복 커밋·타 트랙 혼입 위험(HOLD-P1 `e37b2c7` 혼입 실증, [[lesson_branch_assignment_explicit_isolation]]). 절차를 원자 스크립트로 고정하면 재현·검증 가능.
+
+---
+
+## D-PROBE-PRODWRITE-EXCEPTION (2026-08-01, 일회용 probe prod-write 예외 원칙 + f2 Part 3 기록)
+
+**원칙 재확인**: dev=prod 물리 DB 공유([[lesson_dev_prod_shared_db]]) 하에서 shell/probe에 의한 prod-write는 **자율 금지**가 기본이다. 예외는 아래 3조건을 **모두** 충족할 때만 1회 허용한다:
+1. **일회용 probe 한정** — 반복·스케줄·상시 파이프라인이 아닌 단발 측정.
+2. **세션 내 병진 승인** — 해당 세션에서 사용자의 명시 승인 인용([[feedback_deploy_approval_explicit_quote]]).
+3. **실계정 무접촉 증명 의무** — 사용자 실계정·개인정보 무접촉을 산출물로 증명(어떤 테이블/키에 접촉했는지 명시).
+
+**기록 — f2 Part 3 prod-write 예외 1회**: 상위 지시서 f2 Part 3의 prod-write는 위 3조건을 충족한 세션 내 병진 승인 예외로 집행됨을 거버넌스 원장에 등재한다(증적은 해당 세션 산출물 소관).
+
+**Why**: prod-write 예외를 무기록으로 남기면 다음 세션이 관행으로 오인해 자율 prod-write가 번진다. 예외는 반드시 "1회·조건부"로 원장에 못박아 재사용 불가로 만든다.
+
+**본 세션(SIGNAL-FORWARD-INFRA 프리플라이트) 준수 증명**: STEP 1 FMP 프로브는 **read-only 외부 호출**(FMP 시장데이터)로 prod-write 아님. 접촉 = FMP `/stable/*` 조회 27콜 + 로컬 SELECT(AdvisoryRun·WalletHolding count). **사용자 실계정·DB write 무접촉**. FMP API 키는 마스킹 처리(`len=32,head=qA1W***`)로 원장·커밋에 원문 미기재([[feedback_secret_masking_policy]]).

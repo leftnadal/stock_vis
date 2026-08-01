@@ -1133,3 +1133,8 @@
 - **미결 3**: ⑴ attach 지점(후보 `FilingDataView`/`filing/<symbol>/`·IsAdminUser, per-symbol=1-filing 자연 정합) ⑵ 스코핑(글로벌 `SEC_GROUNDING_ENABLED` flag + 1 filing 스모크 vs per-filing allowlist) ⑶ flag 정의 위치(settings) 포함.
 - **입력 확보**: grounding 데이터 prod 기록 완료(G-c, 1751·4분포 1273/41/410/27·marker deterministic_v1). partial_match 121 filings/410 rows = 노출 시 신설 등급 표시 대상.
 - 근거: G-d(flag-on 1 filing)가 노출 경로 부재로 Gate2 배치서 제거·이관. cf. common-bugs #82.
+## F2-VISUAL-CHECK — 온보딩 카드 브라우저 육안 검증 1회 (등재, 2026-08-01)
+- 상태: **등재·대기**(트리거 = 다음 라이브 기회에). read-only 육안 확인, 코드 변경 없음.
+- 내용: f2 온보딩 카드가 :3000 라이브에서 의도대로 렌더되는지 브라우저 육안 1회 확인(스크린샷 증적). UI 슬라이스 마감 = 라이브 렌더 스크린샷 필수 규율([[feedback_ui_slice_live_screenshot]]) 소급 이행.
+- 주의: :3000 web-runtime = prod 빌드 → f2 온보딩 카드 변경분이 라이브 반영됐는지 먼저 확인(미반영 시 rebuild 선행). 판정 = 육안 통과/미통과만, 수정은 별도 슬라이스.
+- 출처: SIGNAL-FORWARD-INFRA 프리플라이트 지시서 Part A-3.
