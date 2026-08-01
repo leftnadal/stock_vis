@@ -1153,3 +1153,10 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: chainsight heat 로거(`logger = logging.getLogger(__name__)`)의 출력은 celery worker 프로세스 stdout/stderr로 가고, celery는 launchd로 기동되므로 **`~/Library/Logs/stockvis/celery-worker-error.log`**(plist `StandardErrorPath`)에만 남는다. repo 루트 `stocks.log`는 Django dev-server(runserver) 경로용이라 beat/worker 실행 로그가 없다. 심지어 worker **런타임 트리**(`~/worktrees/sv-worker-runtime/stocks.log`)에도 heat 라인은 없음(FileHandler 미배선).
 
 **해결**: beat/worker 태스크 로그를 찾을 땐 **launchd plist의 `StandardOutPath`/`StandardErrorPath`를 먼저 확인**(`grep -A1 StandardErrorPath ~/Library/LaunchAgents/com.stockvis.celery-*.plist`) → 해당 파일을 grep. heat 계열 = `celery-worker-error.log`. "stocks.log에 없음 = 미실행" 추론 금지. cf. [[reference_worker_runtime_tree]] · plist 목록 `com.stockvis.celery-{worker,worker-neo4j,beat}.plist`.
+## 화면 ✓ ≠ DB 영속 — 상태 생성 UI 체크는 확인 쿼리 동반 필수 (#78, 20b-f2 GOAL-CREATE-UI 2026-07-31) [portfolio][coach][process]
+
+**증상**: 20b-f1 온보딩 라이브 검증에서 "목표 입력 ✓"로 체크했으나, 실제 DB에는 goid545 UserGoal 0건 — beat 대상(`portfolio_goal__isnull=False`) 0명이 되어 nightly가 아무것도 안 만들 뻔함. 화면상 "입력했다"는 인상과 DB 영속이 불일치.
+
+**원인**: (1) 그 상태를 **생성하는 UI 경로가 실제로 없었음**(knobs PATCH는 기존 UserGoal 요구, 목표 생성은 admin/shell만) → 사용자가 화면에서 뭔가 눌렀어도 목표가 안 만들어짐. (2) 라이브 체크리스트가 "화면에서 봤다"만 확인하고 DB 영속을 안 봄.
+
+**해결**: **상태를 새로 생성하는 검증(온보딩·목표 설정·최초 등록 등)은 화면 ✓만으로 PASS 금지 — 반드시 확인 쿼리(`.objects.filter(...).count()`/존재)로 DB 영속을 동반 증명**한다. cf. G-S4 `goal 보유자: []`가 이 갭을 잡아냄. [[lesson_dev_prod_shared_db]](캡처 데모 청소도 검증 쿼리 동반 규약과 동형).

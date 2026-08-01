@@ -5412,3 +5412,33 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
 
 **Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).
+
+## [2026-07-31] SLICE-20B-F2 랜딩 관례 + GOAL-CREATE-UI 결정 [portfolio][coach][ops]
+
+### D-LAND-GATE-CARRYOVER — 게이트 캐리오버 (전진분 disjoint 증명 시)
+
+**결정**: 랜딩 병합 중 origin/main이 세션 게이트 실행 후 전진했을 때, **전진분이 내 변경 surface와 disjoint임을 diff로 증명하면**(내 파일·테스트 대상 무접촉) 방금 통과한 전체 게이트(pytest/tsc/vitest/--check)를 **재실행 없이 유지**하고, **착지 후 origin/main에서 사후 3축 1회**로 확증한다. 매 재병합마다 4~5분 full pytest를 반복하지 않는다.
+
+**Why**: 20b-f1 랜딩 시 origin/main이 5회 전진(docs/SEC/mgmt/chainsight — 전부 portfolio·wallet surface 무접촉). 매회 full 재실행은 동일 테스트 코드에 대한 낭비. disjoint 증명(`git diff <prev> origin/main --name-only`로 내 surface 겹침 0 확인)이 게이트 유효성을 보존. 단 disjoint가 아니면(내 파일 접촉) 재실행 필수.
+
+### D-LAND-PUSH-TEMP-PERM — push 임시 권한 (상시 금지·경합 한정·즉시 회수)
+
+**결정**: `git push origin main`은 **상시 금지**(세션 classifier 하드 게이트 = 기본값 유지). 예외 = **고빈도 경합 랜딩**(main이 push 준비~실행 창보다 빠르게 전진해 non-ff 반복)에서만, 사용자가 **명시적으로 임시 push 권한을 부여**해 Claude가 `fetch→reset→merge→push`를 원자적으로 수 초 내 실행하도록 허용하고, **착지 확인 즉시 권한 회수**한다. 무권한 시 병진 수동 `!`-push가 기본.
+
+**Why**: 20b-f1 랜딩에서 push 2회 non-ff(재병합 왕복)로 왕복 지연. 원자 실행이 경합 창을 최소화. 그러나 상시 허용은 공유 main 자율발사 위험([[feedback_deploy_approval_explicit_quote]]) → 경합 한정·즉시 회수로 제한.
+
+### D-f2-0 — GOAL-CREATE-UI = B안(전용 폼) 확정 (병진, 2026-07-31)
+
+**결정**: 사용자 목표 생성 UI 부재(20b-f1에서 발견 — knobs PATCH는 기존 UserGoal 요구, 생성은 admin/shell만) 해소 = **B안(전용 목표 생성 폼)**. /advisory 목표 부재 시 온보딩 카드 + GoalForm(create)로 사용자가 직접 목표 생성. 기각안: A(admin 유지)·C(지갑 폼에 목표 끼워넣기).
+
+### D-f2-1 — 생성 = POST 단일 경로, PATCH 엄격 유지 (upsert 금지)
+
+**결정**: UserGoal 생성 = **POST `advisory/knobs/` 단일 경로**(이미 존재 시 409). 기존 **PATCH는 엄격 유지** — 목표 부재 시 400("먼저 설정") 그대로, upsert로 완화하지 않는다. 생성/수정 경로 분리 = 의미 명확·회귀 표면 최소. UserGoal.user=OneToOne이라 409가 자연스러운 제약 표현.
+
+**Why**: PATCH를 upsert로 바꾸면 "수정"과 "생성"이 뒤섞여 의미 모호 + 기존 PATCH 400 테스트 회귀. POST 단일 경로가 D0 가산(기존 PATCH·필드 무변경).
+
+### D-f2-2 — GoalForm 단일 컴포넌트 2모드 (create/edit), 입력 표면 1벌
+
+**결정**: 목표 입력 화면 = **GoalForm 단일 컴포넌트, mode='create'|'edit'**. KnobsPanel 폼 코어(target_return_pct + 손잡이 5종)를 GoalForm으로 추출(행위보존, edit 모드=기존 PATCH). create 모드는 horizon_months·risk_tolerance 필드 추가 + POST. **입력 표면 1벌**(중복 폼 금지). edit 모드는 horizon/risk 변경 불가(PATCH 미지원 = 스코프 내 생성 전용).
+
+**Why**: 폼 중복은 drift 원천. 단일 컴포넌트 2모드 = 검증·레이아웃 단일 소스. STEP 0 실측: KnobsPanel 입력/제출 JSX 분리·순수 useState → 추출 행위보존 가능(HALT 2 불성립).

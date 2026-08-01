@@ -134,3 +134,16 @@ export interface KnobsUpdateInput {
   concentration_limit?: string
   exploration_ratio?: string
 }
+
+// POST /advisory/knobs/ 요청(SLICE20BF2, 목표 생성) — target·horizon·risk 필수,
+// 손잡이 5종 선택(미전달 시 서버 기본값). 값은 string 전송(Decimal 정밀도).
+export interface GoalCreateInput {
+  target_return_pct: string
+  horizon_months: string
+  risk_tolerance: string
+  aggressiveness_offset?: string
+  growth_boost?: string
+  diversification_weight?: string
+  concentration_limit?: string
+  exploration_ratio?: string
+}

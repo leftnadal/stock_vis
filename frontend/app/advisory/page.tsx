@@ -13,6 +13,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard'
 import { AdvisorySummaryStrip } from '@/components/advisory/AdvisorySummaryStrip'
 import { DeepDiveSection } from '@/components/advisory/DeepDiveSection'
 import { ExpectedReturnSlot } from '@/components/advisory/ExpectedReturnSlot'
+import { GoalOnboardingCard } from '@/components/advisory/GoalOnboardingCard'
 import { KnobsPanel } from '@/components/advisory/KnobsPanel'
 import { RecommendationCard } from '@/components/advisory/RecommendationCard'
 import {
@@ -55,6 +56,8 @@ function AdvisoryPageContent() {
   const isLoading = latestQuery.isLoading || summaryQuery.isLoading || knobsQuery.isLoading
   const isError = latestQuery.isError || summaryQuery.isError || knobsQuery.isError
   const isEmpty = !isLoading && !isError && latestQuery.data?.available === false
+  // 목표 부재(knobs available:false) = 온보딩 필요. 목표 생성 후 화면 전환(3키 invalidate).
+  const needsGoal = !isLoading && !isError && knobsQuery.data?.available === false
   const output = latestQuery.data?.output ?? null
 
   return (
@@ -68,6 +71,13 @@ function AdvisoryPageContent() {
         </div>
         <RunButton />
       </div>
+
+      {/* 목표 부재 온보딩 (20b-f2) — empty/success 어느 상태든 목표 없으면 최상단 노출 */}
+      {needsGoal && (
+        <div className="mb-5">
+          <GoalOnboardingCard />
+        </div>
+      )}
 
       {isLoading && (
         <div
