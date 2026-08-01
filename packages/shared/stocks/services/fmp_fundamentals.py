@@ -247,8 +247,8 @@ class FMPFundamentalsService:
 
         try:
             with httpx.Client(timeout=10.0) as client:
-                # #80: /stable/rating은 404 오경로 → /stable/ratings-snapshot 정본.
-                # 정본 래퍼 = FMPClient.get_ratings_snapshot. 이 레거시 경로도 동일 교정.
+                # common-bugs 채번 후보(SFI-I1): /stable/rating은 404 오경로 →
+                # /stable/ratings-snapshot 정본. 정본 래퍼 = FMPClient.get_ratings_snapshot.
                 response = client.get(
                     f"{self.BASE_URL}/stable/ratings-snapshot",
                     params={"symbol": symbol, "apikey": self.api_key},

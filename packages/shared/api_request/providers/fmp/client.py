@@ -620,7 +620,7 @@ class FMPClient:
         """종합 퀀트 등급 스냅샷 (A~F + 항목별 점수).
 
         API: GET /stable/ratings-snapshot?symbol={}
-        (`/stable/rating`은 404 오경로 — common-bugs #80). 응답 list[1] → 첫 행.
+        (`/stable/rating`은 404 오경로 — common-bugs 채번 후보 SFI-I1). 응답 list[1] → 첫 행.
         필드: rating/overallScore/discountedCashFlowScore/returnOnEquityScore 등.
         """
         data = self._make_request(
