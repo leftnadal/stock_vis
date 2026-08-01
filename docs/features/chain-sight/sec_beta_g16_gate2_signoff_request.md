@@ -39,3 +39,30 @@
 - V-B: 현 미발동(잔여 ≤15%), `SECB-V-B-STANDBY` 대기 유지 확인.
 
 **실행 세션은 여기서 정지.** Gate 2 어떤 항목도 착수하지 않음(DB 쓰기 0·flag 불변·prompt 불변 유지).
+
+---
+
+## 부록 (2026-08-01 CC 회신 대응 — 감독 심사 포인트 P1⑶·P3 + 사실 정정)
+
+### 부록 C — 마이그 상태 정정 (§1 갱신)
+- **실측(2026-08-01, read-only)**: stock_vis `django_migrations` sec_pipeline = `0001`·**`0002` 적용 완료**(G1 이후 어느 세션이 적용). 즉 grounding 3필드는 **prod에 이미 존재**.
+- 따라서 §1 "0002 미적용분"은 **정정**: 잔여 = **`0003`만**(grounding_status choice에 partial_match 추가, AlterField·**스키마 중립** = 컬럼 불변, Django 상태 전용). 0003은 `sess-secb-g16` 전용(미착지).
+- 함의: 백필(item 2)은 이미 존재하는 grounding_status 컬럼에 기록. 0003 미적용이어도 choices는 DB 미강제라 partial_match 저장 가능하나, **정합상 0003 랜딩 후 적용 권장**.
+
+### 부록 A — 실패 시 부분 상태 정의 (P1⑶)
+| 게이트 | 부분 실패 상태 | 복구/재개 |
+|--------|----------------|-----------|
+| G-b 마이그(0003) | migrate는 트랜잭션·0003=스키마중립 → 부분상태 없음(전/후 이분). 실패=적용 전(자동 롤백) | 재시도 안전 |
+| G-c 백필 | `select_for_update`+`bulk_update` 배치 원자 + **skip-already-grounded** → 중단 시 `grounding_status IS NOT NULL` 행 수 = 진행률(N/1751), 부분 기록 유효 | 재실행이 **미기록분만 이어감(멱등 재개)**. 완전 롤백=아래 |
+| G-d flag-on 1 filing | 1 filing scope, 부분 실패=노출 0 유지 | `SEC_GROUNDING_ENABLED=False` 즉시 |
+| G-e prompt v2 | 1 배치 재추출 부분 실패=v1/v2 혼재 | `prompt_version` 태그로 v2분 식별·격리 재처리 |
+- **부분 상태 판정 쿼리**: `SELECT count(*) FILTER (WHERE grounding_status IS NOT NULL), count(*) FROM sec_supply_chain_evidence;`
+
+### 부록 A′ — 백필 롤백 삭제 기준 정밀화 (P1⑴)
+- 전역 `SET NULL`이 아닌 **표적 삭제**: 이번 배치 기록분만 = `UPDATE sec_supply_chain_evidence SET grounding_status=NULL, grounding_method=NULL WHERE grounding_method='deterministic_v1'`(백필이 부여하는 method 마커 기준). read-path 무의존이라 즉시 무해화. 대안=G-a 덤프 복원(전량).
+
+### 부록 B — 랜딩 순서 (P3, 제안 — 랜딩 자체 착수 금지)
+- **원 요청서에 랜딩 시점 명문 부재** → 본 부록으로 명문화.
+- **랜딩은 Gate 2 실행의 前(전) 전제**(일부 아님): Gate 2의 migrate 0003·백필 로직·`STATUS_PARTIAL_MATCH`/models choice가 `sess-secb-g16`에 있음 → runtime 트리에 코드가 있어야 `migrate`/backfill 가능.
+- **제안 순서**: ① `sess-secb-g16`(4커밋) → origin/main **no-ff 랜딩**(감독 승인) → ② `worker_sync`(sv-worker-runtime 동기화) → ③ Gate 2 G-a~G-e.
+- dry-run 산출물(스크립트·리포트·요청서·원장)은 이미 커밋/푸시 — 랜딩 목적 = **Gate 2 실행 코드를 runtime에 올림**. 랜딩 실행은 **감독 비준 후 별도**(본 세션 착수 금지).
