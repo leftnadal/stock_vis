@@ -71,7 +71,8 @@ def build_plan(rows):
         verdict_counts: {kind: n}
     """
     plan, unrecognized, unmatched = [], [], []
-    already_swapped = []  # CHANGE_REV 재실행 감지(idempotent)
+    already_swapped = []   # CHANGE_REV 재실행 감지(idempotent)
+    already_applied = []   # CHANGE 재실행 감지(idempotent — 타입 교체 후)
     verdict_counts = {k: 0 for k in EXPECTED}
 
     for r in rows:
@@ -96,11 +97,17 @@ def build_plan(rows):
         )
         n = qs.count()
         if n != 1:
-            # CHANGE_REV 재실행: 원 키가 사라졌으나 스왑 결과(y→x, new_type)가 승인됐으면 멱등 no-op
+            # 재실행 멱등: CHANGE/CHANGE_REV는 반영 후 원 키(relation_type/방향)가 사라진다.
+            # 결과 키로 승인 상태를 확인해 unmatched(H-C 오발) 대신 already_* 로 흡수.
+            if kind == "CHANGE" and n == 0 and RelationConfidence.objects.filter(
+                symbol_a=x, symbol_b=y, relation_type=arg, domain_review_status="approved"
+            ).exists():
+                already_applied.append((pair, arg))  # 같은 방향, 타입만 교체된 상태
+                continue
             if kind == "CHANGE_REV" and n == 0 and RelationConfidence.objects.filter(
                 symbol_a=y, symbol_b=x, relation_type=arg, domain_review_status="approved"
             ).exists():
-                already_swapped.append((pair, arg))
+                already_swapped.append((pair, arg))  # 방향 스왑된 상태
                 continue
             unmatched.append((pair, rtype, n))
             continue
@@ -112,6 +119,7 @@ def build_plan(rows):
         "unrecognized": unrecognized,
         "unmatched": unmatched,
         "already_swapped": already_swapped,
+        "already_applied": already_applied,
         "verdict_counts": verdict_counts,
     }
 
@@ -291,6 +299,10 @@ class Command(BaseCommand):
             self.stdout.write(f"    CHANGE: {pair} relation_type {old_type} → {arg} + approved")
         for kind, arg, rc_id, old_type, pair, rtype in change_rev_rows:
             self.stdout.write(f"    CHANGE_REV(S2 위임): {pair} {old_type} → 방향스왑+{arg}")
+        if p["already_applied"]:
+            self.stdout.write(f"    ↺ CHANGE 이미 반영(멱등 skip): {p['already_applied']}")
+        if p["already_swapped"]:
+            self.stdout.write(f"    ↺ CHANGE_REV 이미 스왑(멱등 skip): {p['already_swapped']}")
 
         if halted:
             self.stderr.write("반영 중단 — HALT 조건 발동. DB 무변경.")

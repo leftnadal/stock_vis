@@ -122,6 +122,16 @@ class TestReflection:
         second = RelationConfidence.objects.get(symbol_a="AAA").domain_review_status
         assert first == second == "approved"
 
+    def test_change_rerun_detects_already_applied(self):
+        # CHANGE 반영 후 원 키(PARTNER_WITH)가 사라짐 → 재실행 시 unmatched(H-C) 대신 already_applied
+        _rc("INCY", "REGN", "PARTNER_WITH")
+        rows = [_row("INCY↔REGN", "PARTNER_WITH", "CHANGE:COMPETES_WITH")]
+        apply_plan(build_plan(rows)["plan"])  # 1차: 타입 교체
+        p2 = build_plan(rows)                  # 2차: 원 키 소멸
+        assert p2["unmatched"] == []
+        assert p2["already_applied"] == [("INCY↔REGN", "COMPETES_WITH")]
+        assert not any(x[0] == "CHANGE" for x in p2["plan"])
+
     def test_verdict_counts_tallied(self):
         _rc("AAA", "BBB", "PEER_OF")
         _rc("CCC", "DDD", "PEER_OF")
