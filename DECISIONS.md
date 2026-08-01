@@ -5524,3 +5524,21 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **Why**: prod-write 예외를 무기록으로 남기면 다음 세션이 관행으로 오인해 자율 prod-write가 번진다. 예외는 반드시 "1회·조건부"로 원장에 못박아 재사용 불가로 만든다.
 
 **본 세션(SIGNAL-FORWARD-INFRA 프리플라이트) 준수 증명**: STEP 1 FMP 프로브는 **read-only 외부 호출**(FMP 시장데이터)로 prod-write 아님. 접촉 = FMP `/stable/*` 조회 27콜 + 로컬 SELECT(AdvisoryRun·WalletHolding count). **사용자 실계정·DB write 무접촉**. FMP API 키는 마스킹 처리(`len=32,head=qA1W***`)로 원장·커밋에 원문 미기재([[feedback_secret_masking_policy]]).
+
+---
+
+## D-I1-RUNTOTAL-DETERMINATION (2026-08-01, SFI-I1 Part A.2 — RUN-TOTAL-PERSIST 판별 종결)
+
+**판별 = ① 등재 확인 → 종결.** `RUN-TOTAL-PERSIST`는 origin/main(`d484b9cb`) `TASKQUEUE.md`에 **이미 등재**됨(f2 track `3ba4cf00` SLICE-20B-F2 Part A, 2026-07-31). 심지어 "SIGNAL-FORWARD-INFRA 합류 후보 — 전방 신호 인프라와 원장 스키마 공통 설계"로 명시. 재등재·common-bugs 불일치 등재 불요.
+
+**부수 정정(보고-착지 불일치 근인)**: SFI 프리플라이트 recon 보고가 "RUN-TOTAL-PERSIST = repo 무매치"로 판정한 것은 **recon 브랜치가 origin/main이 아닌 분기된 HOLD-P1 라인(`b8d767aa`) 위에 기반**해 f2 랜딩(07-31) 이전 상태를 조회했기 때문(false-missing). SFI-I1에서 `git rebase --onto origin/main`으로 base를 origin/main으로 교정 → RUN-TOTAL-PERSIST 가시화, common-bugs 번호도 #62(stale)→#79(정본) 정합. **교훈**: recon/설계 세션 STEP 0의 "worktree 최신성 확인"(common-bugs #59)을 신규 트랙 base 선정에도 적용 — 분기 라인 위 기반 금지([[lesson_branch_assignment_explicit_isolation]]).
+
+---
+
+## D-I1-1 · D-I1-2 · D-I1-3 (2026-08-01, SFI-I1 아키텍처 결정 3건)
+
+**D-I1-1 — forward 신호 저장은 shared(`packages/shared/stocks`)에 둔다.** EstimateSnapshot 모델·FMP 래퍼 신호 메서드·writer 서비스 전부 shared 패키지. 근거: 신호는 앱 횡단 자산(advisory·chain_sight·dashboard 잠재 소비) → shared가 단일 출처. 경계 규율: shared는 `apps.*` import 금지(경계 가드 자동 검증). advisory 엔진·화면은 이 슬라이스에서 무접촉(소비는 별도 사이클).
+
+**D-I1-2 — EstimateSnapshot은 append 전용(시계열 정본).** 동일 심볼 재수집 = 신규 행 추가(덮어쓰기 금지). captured_at으로 시점 구분. Stock.analyst_* 필드는 **최신 스냅숏 미러**(빠른 조회용 파생)일 뿐, 정본 시계열은 EstimateSnapshot. 근거: RUN-TOTAL-PERSIST가 노출한 "동일 date update_or_create가 이전 값 소거" 문제([[상기 D-I1-RUNTOTAL]])를 forward 신호에서 반복하지 않기 위해 append로 설계.
+
+**D-I1-3 — SFI-I1은 "수집까지만"(collect-only).** 범위 = 래퍼 메서드 + 모델 + writer + nightly 태스크 정의. **화면·advisory 기대수익 로직·migrate·beat 등록은 무접촉**. advisory_engine.py:10의 "analyst_target_price를 기대수익 프록시로 쓰지 말라" 금지벽은 유지 — 신호를 수집·저장하되 기대수익 산출로 직결하는 소비는 별도 결정 사이클. migrate=prod-write·beat 등록=DB row 둘 다 병진 수동(공유 DB 절대 규칙).
