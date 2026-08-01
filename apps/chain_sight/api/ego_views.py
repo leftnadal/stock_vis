@@ -135,9 +135,11 @@ class EgoGraphView(APIView):
             )
 
         # 1-hop 엣지 (양방향) — truth_score 내림차순 상위 N 절단
+        # ⑳-3 REVIEW-P2 S3: 검수 soft-drop(domain_review_status='rejected') 제외.
+        # DROP verdict만 숨김 — approved/pending/auto/null(미태깅)은 노출 유지.
         edge_qs = RelationConfidence.objects.filter(
             Q(symbol_a=symbol) | Q(symbol_b=symbol)
-        )
+        ).exclude(domain_review_status="rejected")
         if min_score > 0:
             edge_qs = edge_qs.filter(truth_score__gte=min_score)
         if types:
@@ -183,7 +185,9 @@ class EgoGraphView(APIView):
                 e
                 for e in RelationConfidence.objects.filter(
                     symbol_a__in=neighbors, symbol_b__in=neighbors
-                ).values("symbol_a", "symbol_b", "relation_type", "truth_score")
+                )
+                .exclude(domain_review_status="rejected")  # ⑳-3 S3: soft-drop 제외
+                .values("symbol_a", "symbol_b", "relation_type", "truth_score")
                 if e["symbol_a"] != e["symbol_b"]
             ]
             for e in cross_edge_rows:

@@ -267,6 +267,54 @@ class TestEgoRouteContract:
             resolve(self.OLD_BROKEN_PATH)
 
 
+class TestEgoSoftDropFilter:
+    """⑳-3 REVIEW-P2 S3 — domain_review_status='rejected'(DROP soft-drop) serving 제외.
+
+    DROP verdict 관계만 ego API에서 숨긴다. approved/pending/auto/null(미태깅)은 노출 유지.
+    레코드는 DB에 보존(soft-drop) — 필터만 적용.
+    """
+
+    @pytest.fixture
+    def drop_data(self, db):
+        for s in ["HUB", "KEEP", "APRV", "HELD", "DROPPED"]:
+            _stock(s)
+        _rc("HUB", "KEEP", "PEER_OF", 90.0)      # 미태깅(null) → 노출
+        a = _rc("HUB", "APRV", "PEER_OF", 80.0)
+        a.domain_review_status = "approved"
+        a.save(update_fields=["domain_review_status"])
+        h = _rc("HUB", "HELD", "PEER_OF", 70.0)
+        h.domain_review_status = "pending"        # HOLD → 노출
+        h.save(update_fields=["domain_review_status"])
+        d = _rc("HUB", "DROPPED", "PEER_OF", 60.0)
+        d.domain_review_status = "rejected"       # DROP → 숨김
+        d.save(update_fields=["domain_review_status"])
+        return None
+
+    def test_rejected_excluded_from_edges(self, drop_data, auth_client):
+        d = auth_client.get("/api/v1/chainsight/ego/HUB/").json()
+        targets = {e["target"] for e in d["edges"]}
+        assert "DROPPED" not in targets              # soft-drop 제외
+        assert targets == {"KEEP", "APRV", "HELD"}   # 나머지 노출
+        assert d["meta"]["total_edges"] == 3         # rejected 제외 후 카운트
+
+    def test_rejected_record_still_in_db(self, drop_data):
+        # soft-drop: 레코드·궤적 보존, 상태만 변경
+        obj = RelationConfidence.objects.get(symbol_a="HUB", symbol_b="DROPPED")
+        assert obj.domain_review_status == "rejected"
+
+    def test_rejected_excluded_from_cross_edges(self, db, auth_client):
+        for s in ["C", "N1", "N2"]:
+            _stock(s)
+        _rc("C", "N1", "PEER_OF", 80.0)
+        _rc("C", "N2", "PEER_OF", 70.0)
+        x = _rc("N1", "N2", "PEER_OF", 90.0)   # 이웃끼리 cross 엣지
+        x.domain_review_status = "rejected"     # → cross_edges에서도 제외
+        x.save(update_fields=["domain_review_status"])
+        d = auth_client.get("/api/v1/chainsight/ego/C/?include_cross_edges=true").json()
+        assert d["cross_edges"] == []
+        assert d["meta"]["cross_edges_count"] == 0
+
+
 class TestEgoCardFields:
     """⑳-2 카드 필드 additive — evidence_count·last_mentioned (기존 필드 불변)."""
 
