@@ -83,6 +83,11 @@
   .roles { font-size:12.5px; color:#c8d4e2; margin:2px 0; padding-left:2px; }
   .hint { font-size:12.5px; color:#ffe0a0; background:#332a12; border:1px solid #5c4a1e;
     border-radius:6px; padding:6px 10px; margin:6px 0; }
+  .sugbox { font-size:12.5px; border-radius:6px; padding:6px 10px; margin:6px 0; border:1px solid; }
+  .sugbox b { font-size:13px; }
+  .sug-OK { background:#12291a; border-color:#2e6b45; color:#bff0cf; }
+  .sug-HOLD { background:#2a2140; border-color:#5a4a8a; color:#ddd0ff; }
+  .sug-DROP { background:#331a1a; border-color:#8a3a3a; color:#ffd0d0; }
   details.evwrap { margin:6px 0; }
   details.evwrap .evsum { cursor:pointer; color:var(--muted); font-size:12px; user-select:none; }
   details.evwrap[open] .evsum { color:var(--fg); }
@@ -154,6 +159,7 @@ let activeTab = "A";
 let current = {A:0, B:0, C:0}; // 탭별 현재 인덱스(탭 내 필터된 리스트 기준)
 let HAS_SUMMARY = false;       // R11: summary_ko 컬럼 존재 여부
 let HAS_V5 = false;            // v5: intro_a(기업 소개) 컬럼 존재 여부
+let HAS_SUGGEST = false;       // v6: suggested_verdict(1차 분류 제안) 컬럼 존재
 
 // ── RFC4180 CSV 파서(따옴표·쉼표·개행·"" 이스케이프 처리) ──────────
 function parseCSV(text){
@@ -267,6 +273,7 @@ document.getElementById("file").onchange=(e)=>{
     HEADER=header; ROWS=out;
     HAS_SUMMARY = header.includes("summary_ko"); // R11: v2(요약없음) 하위호환
     HAS_V5 = header.includes("intro_a");         // v5: 기업 소개 존재
+    HAS_SUGGEST = header.includes("suggested_verdict"); // v6: 분류 제안 존재
     ROWS.forEach((r,i)=>{
       r._idx=i;
       r._tab = (TABS.find(t=>t.gate===r.gate_class_v2)||{key:"B"}).key;
@@ -319,13 +326,22 @@ function render(){
   const list=document.getElementById("list"); list.innerHTML="";
   const bulk=document.getElementById("bulk");
   const rows=tabRows(activeTab);
-  // A' 탭: 전체 OK 일괄
+  // A' 탭: 전체 OK 일괄 / B'·C' 탭: 제안 일괄 적용(v6)
   if(activeTab==="A"){
     bulk.style.display="block";
     bulk.innerHTML=`<button id="bulkOk">전체 OK 일괄 (자가모순=타입 확정 도장)</button>
       <span class="khint">일괄 후에도 개별 뒤집기 가능</span>`;
     document.getElementById("bulkOk").onclick=()=>{
       rows.forEach(r=>{ if(!verdicts[rowKey(r)]) verdicts[rowKey(r)]="OK"; });
+      saveLS(); render();
+    };
+  } else if(HAS_SUGGEST){
+    const pend=rows.filter(r=>!verdicts[rowKey(r)] && String(r.suggested_verdict||"").trim());
+    bulk.style.display="block";
+    bulk.innerHTML=`<button id="applySug">제안 일괄 적용 (미검수 ${pend.length}건)</button>
+      <span class="khint">🤖 제안대로 채운 뒤 개별 오버라이드 가능</span>`;
+    document.getElementById("applySug").onclick=()=>{
+      pend.forEach(r=>{ verdicts[rowKey(r)]=String(r.suggested_verdict).trim(); });
       saveLS(); render();
     };
   } else { bulk.style.display="none"; }
@@ -381,6 +397,12 @@ function renderCard(r,i){
       <div class="evidence">${esc(para)}</div></details>`;
   } else {
     html+=`<div class="evidence">${esc(r.basis)}</div>`;
+  }
+  // v6: 1차 분류 제안(미검수 행에만 표시)
+  const sug=String(r.suggested_verdict||"").trim();
+  const sugR=String(r.suggest_reason||"").trim();
+  if(sug && !v){
+    html+=`<div class="sugbox sug-${esc(sug)}">🤖 제안: <b>${esc(sug)}</b>${sugR?` — ${esc(sugR)}`:""}</div>`;
   }
   html+=`<div class="actions">
     <button class="b-ok ${v==="OK"?"sel":""}" data-act="OK">OK <span class="khint">1</span></button>
@@ -448,9 +470,10 @@ document.getElementById("exportBtn").onclick=()=>{
   const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  a.href=url; a.download= HEADER.includes("intro_a") ? "review_batch_v5_labeled.csv"
+  a.href=url; a.download= HEADER.includes("suggested_verdict") ? "review_batch_v6_labeled.csv"
+    : (HEADER.includes("intro_a") ? "review_batch_v5_labeled.csv"
     : (HEADER.includes("full_evidence") ? "review_batch_v4_labeled.csv"
-    : (HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv"));
+    : (HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv")));
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
