@@ -5449,3 +5449,11 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **D-SECB-BASELINE (F3 — 캐노니컬 베이스라인)**: **4463 GREEN / 0 사전존재 / 53 skipped @ origin/main `9750b8bc`** (2026-07-31 실측, `--maxfail=200`). health_check 13 OK / 2 WARN(양성) / 0 FAIL. ★**규칙**: 베이스라인은 **세션마다 재실측하고 HEAD 해시를 병기**한다. **해시 없는 정적 수치의 세션 간 이월 금지**(구 "4084" stale 추정·"4050" 무앵커 이월이 전례 — cf. D-SECB-MISLABEL).
 
 **D-SECB-MISLABEL (F4 — 오라벨 정정, 과거 라인 편집 없음·append만)**: 다세션 verbatim 이월된 "13건 사전존재 = Neo4j-env" 라벨은 **검증 없이 이월된 오라벨**. 실측 반증: 13건(attention 6 + leadership_api 7) 전 코드경로(테스트 → `attention_service`·`leadership_eventgroup`·`event_group_reader`·`leadership_service`·`leadership_compute`·conftest) **neo4j 참조 0**, 격리 재실행 **29 passed**(neo4j fixture 없이). **F1**(main 이동분 규명): `4d0ed3b5..9750b8bc` 전 병합·커밋 병진 승인 트랙 귀속(MGMT15/16·CN-repair·TH-DEPLOY·⑳-3·credit p2a·EOD-fresh·MP-unify·strip-rehome), 신규 테스트 25파일=성장 출처, **유령 커밋 0**. **F2**(제4가설): `test_stock_vis` 마이그 179건 전부 **2026-07-31 11:37 적용 = DB fresh 재생성**(13 실패 시대 ≤07-28 이후) → 실 원인 = **결과 D: `--reuse-db` 데이터 오염, DB 재생성으로 해소(양성)**. 오라벨 이월 라인 예: DECISIONS 553·3761·3783·3810·3843·3877·3909. 정정 근거 = 본 세션 `1c41a7e5` 이후 F1/F2 실측. cf. common-bugs #79, TASKQUEUE SECB-REGRESSION-WATCH.
+
+## [2026-08-01] SEC β G1.6 랜딩 정합 — 정본 베이스라인 단일화 + 배달 사고 #7 (D-SECB-BASELINE-CANON)
+
+> 랜딩 커밋 `893d3cb6`(sess-secb-g16 → main no-ff). 랜딩 前 P4/P5/P6 게이트 전부 CLEAN.
+
+**D-SECB-BASELINE-CANON (P5 — 단일 정본, append 정정·과거 라인 편집 없음)**: 정본 베이스라인이 두 곳에 등재됨 — ⑴ `D-SECB-BASELINE`(DECISIONS, `663b17e5`) ⑵ SEAL-PUSH-1c(PROGRESS, `9540993a`). **양자 수치·앵커 동일**: **4463 GREEN / 0 사전존재 / 53 skipped @ `9750b8bc`**(모순 0 → P5 AUTO-HALT 미발동). 상호 보완: 663b17e5=`13 Neo4j-env` 오라벨 정정 / 9540993a=`119 pre-existing` 오라벨 정정 — **둘 다 0 사전존재로 수렴**. 정본 = 본 항목으로 단일화(수치 동일, 두 등재는 상호 참조). 향후 갱신은 세션 재실측+HEAD 해시 병기(D-SECB-BASELINE 규칙).
+
+**배달 사고 #7 (게이트 정의 미전달, 규율이 랜딩 前 적발)**: P4·P5 공식 정의(AUTO-HALT 기준)가 승인 메시지에 미전달 → 실행 세션이 임의 발명 대신 HALT·회부 → 감독 재전달로 해소. 사고 계열 통산 #7(#6=base 지시서 누락에 이어). 교훈 = 참조된 게이트의 정의 부재 시 임기응변 금지·회부(cf. Gate 0 규율).
