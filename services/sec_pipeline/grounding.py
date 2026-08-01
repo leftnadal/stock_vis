@@ -12,7 +12,7 @@ self-reported LLM 인용(temperature 0.1 "exact sentence")이 10-K 원문에 ver
 임계·상수는 모듈 상수(정책표 md는 근거 문서지 런타임 소스 아님 — 하향 :406·상향 UPWARD=60 규율 동형).
 """
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 STATUS_VERIFIED = "verified"
 STATUS_NORMALIZED_MATCH = "normalized_match"
@@ -21,6 +21,7 @@ STATUS_NOT_FOUND = "not_found"
 STATUS_MISSING_SOURCE = "missing_source"
 
 GROUNDING_METHOD = "deterministic_v1"
+PARTIAL_MIN_RATIO = 0.70  # G1.6 §1: not_found 접두 연속매치 ≥ 인용길이 70% → partial_match
 
 # 스마트 따옴표/대시 → ASCII (NFKC가 처리 못 하는 문자만 명시 치환).
 # NFKC는 말줄임(…→...)·전각 등은 처리하나 대시·곡선따옴표는 유지하므로 별도 매핑.
@@ -66,3 +67,47 @@ def ground_evidence(evidence_text: str, source_text: str) -> GroundingResult:
     if normalize(evidence_text) in normalize(source_text):
         return GroundingResult(STATUS_NORMALIZED_MATCH)
     return GroundingResult(STATUS_NOT_FOUND)
+
+
+def _max_prefix_len(nquote: str, nsource: str) -> int:
+    """정규화 인용의 최장 연속 접두 길이 k (nquote[:k] 가 nsource 부분문자열). 이진 탐색(단조).
+
+    접두 단조성: nquote[:k] ⊂ nsource ⇒ nquote[:k-1] ⊂ nsource. 결정론.
+    """
+    if not nquote or not nsource:
+        return 0
+    if nquote in nsource:
+        return len(nquote)
+    lo, hi = 0, len(nquote)
+    while lo < hi:
+        mid = (lo + hi + 1) // 2
+        if nquote[:mid] in nsource:
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo
+
+
+def partial_prefix_ratio(evidence_text: str, source_text: str) -> float:
+    """정규화 인용 대비 원문 최장 연속 접두 비율 (0~1). 결정론·LLM 0."""
+    nq = normalize(evidence_text)
+    ns = normalize(source_text)
+    if not nq or not ns:
+        return 0.0
+    return _max_prefix_len(nq, ns) / len(nq)
+
+
+def ground_evidence_g16(evidence_text: str, source_text: str) -> GroundingResult:
+    """G1.6 판정: V-A 매처(ground_evidence) + not_found 를 접두비율 ≥ PARTIAL_MIN_RATIO 이면
+    partial_match 로 승격(절단/tail 발산). verified/normalized/missing_source 는 불변. 결정론·LLM 0.
+
+    **단일 출처** — dry-run 리포트(grounding_g16_partial_reclassify.py)와 백필(grounding_backfill.py)
+    양쪽이 이 함수를 import 해 동일 판정을 보장(로직 복제 금지, DECISIONS 규약 10장).
+    """
+    result = ground_evidence(evidence_text, source_text)
+    if (
+        result.status == STATUS_NOT_FOUND
+        and partial_prefix_ratio(evidence_text, source_text) >= PARTIAL_MIN_RATIO
+    ):
+        return replace(result, status=STATUS_PARTIAL_MATCH)
+    return result
