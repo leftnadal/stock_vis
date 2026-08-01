@@ -612,6 +612,78 @@ class FMPClient:
         return data if isinstance(data, list) else []
 
     # ============================================================
+    # Forward 신호 — 가격·의견 계열 (SFI-I1, recon 2026-08-01 실측)
+    # estimates(실적 추정)는 위 get_analyst_estimates + chain_sight 정본 소관 (D-I1-4).
+    # ============================================================
+
+    def get_ratings_snapshot(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """종합 퀀트 등급 스냅샷 (A~F + 항목별 점수).
+
+        API: GET /stable/ratings-snapshot?symbol={}
+        (`/stable/rating`은 404 오경로 — common-bugs #80). 응답 list[1] → 첫 행.
+        필드: rating/overallScore/discountedCashFlowScore/returnOnEquityScore 등.
+        """
+        data = self._make_request(
+            "/stable/ratings-snapshot", {"symbol": symbol.upper()}
+        )
+        if isinstance(data, list):
+            return data[0] if data else None
+        return data if isinstance(data, dict) else None
+
+    def get_price_target_summary(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """애널리스트 목표주가 요약 (기간별 평균·건수).
+
+        API: GET /stable/price-target-summary?symbol={}. 응답 list[1] → 첫 행.
+        필드: lastMonth/lastQuarter/lastYear/allTime AvgPriceTarget + Count + publishers.
+        """
+        data = self._make_request(
+            "/stable/price-target-summary", {"symbol": symbol.upper()}
+        )
+        if isinstance(data, list):
+            return data[0] if data else None
+        return data if isinstance(data, dict) else None
+
+    def get_price_target_consensus(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """목표주가 컨센서스 (고/저/평균/중앙).
+
+        API: GET /stable/price-target-consensus?symbol={}. 응답 list[1] → 첫 행.
+        필드: targetHigh/targetLow/targetConsensus/targetMedian.
+        """
+        data = self._make_request(
+            "/stable/price-target-consensus", {"symbol": symbol.upper()}
+        )
+        if isinstance(data, list):
+            return data[0] if data else None
+        return data if isinstance(data, dict) else None
+
+    def get_grades_consensus(self, symbol: str) -> Optional[Dict[str, Any]]:
+        """투자의견 분포 컨센서스 (strongBuy~strongSell + 합의 라벨).
+
+        API: GET /stable/grades-consensus?symbol={}. 응답 list[1] → 첫 행.
+        필드: strongBuy/buy/hold/sell/strongSell/consensus.
+        """
+        data = self._make_request(
+            "/stable/grades-consensus", {"symbol": symbol.upper()}
+        )
+        if isinstance(data, list):
+            return data[0] if data else None
+        return data if isinstance(data, dict) else None
+
+    def get_grades_historical(
+        self, symbol: str, limit: int = 12
+    ) -> List[Dict[str, Any]]:
+        """투자의견 월별 추세 (시계열).
+
+        API: GET /stable/grades-historical?symbol={}&limit={}. 응답 list → 그대로.
+        필드: date/analystRatingsStrongBuy/analystRatingsBuy/.../analystRatingsStrongSell.
+        """
+        data = self._make_request(
+            "/stable/grades-historical",
+            {"symbol": symbol.upper(), "limit": limit},
+        )
+        return data if isinstance(data, list) else []
+
+    # ============================================================
     # Utility Methods
     # ============================================================
 
