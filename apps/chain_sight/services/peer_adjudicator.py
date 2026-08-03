@@ -140,3 +140,23 @@ def overconfident(claim_type, grounded_ratio, gr_q1):
     if grounded_ratio is None or gr_q1 is None:
         return False
     return str(claim_type).strip().lower() == "known_fact" and grounded_ratio <= gr_q1
+
+
+# ── 거부권(veto) — L2-ADOPT 프로덕션 판정 (D-L2-SOURCE 결정 2) ──
+# 실험의 overconfident 플래그(동적 gr_q1≈0.667·저정밀, ~10%만 진짜)를 프로덕션에서
+# **고정 임계 거부권**으로 대체한다. grounded_ratio ≤ VETO_GROUNDING 이면 LLM 태그를
+# 자동 기각 → 업종 버킷 폴백. 판정기가 LLM 태그에 거부권을 행사하는 유일한 하드 룰.
+VETO_GROUNDING = 0.2
+
+
+def veto(grounded_ratio):
+    """거부권 판정: LLM 태그를 기각해야 하는가.
+
+    - grounded_ratio ≤ VETO_GROUNDING(0.2) → True(기각·버킷 폴백).
+    - grounded_ratio is None(claim 없음·파싱 실패 → 접지 불가) → True(보수적 기각).
+      버킷은 항상 존재하므로 접지 불가 시 폴백이 안전. 이 경로는 별도 카운트로 보고.
+    - grounded_ratio > 0.2 → False(LLM 태그 채택).
+    """
+    if grounded_ratio is None:
+        return True
+    return grounded_ratio <= VETO_GROUNDING

@@ -1,0 +1,160 @@
+{
+  "by_cell": {
+    "상·동일": {
+      "n": 40,
+      "avg_grounded": 0.792,
+      "low_grounding_rate": 0.0,
+      "market_mismatch_rate": 0.0,
+      "overconfident_rate": 0.25,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    },
+    "상·상이": {
+      "n": 40,
+      "avg_grounded": 0.815,
+      "low_grounding_rate": 0.025,
+      "market_mismatch_rate": 0.075,
+      "overconfident_rate": 0.25,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    },
+    "중·동일": {
+      "n": 40,
+      "avg_grounded": 0.821,
+      "low_grounding_rate": 0.075,
+      "market_mismatch_rate": 0.025,
+      "overconfident_rate": 0.175,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    },
+    "중·상이": {
+      "n": 40,
+      "avg_grounded": 0.836,
+      "low_grounding_rate": 0.0,
+      "market_mismatch_rate": 0.125,
+      "overconfident_rate": 0.15,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    },
+    "하·동일": {
+      "n": 40,
+      "avg_grounded": 0.791,
+      "low_grounding_rate": 0.075,
+      "market_mismatch_rate": 0.025,
+      "overconfident_rate": 0.225,
+      "veto_rate": 0.025,
+      "veto_count": 1
+    },
+    "하·상이": {
+      "n": 40,
+      "avg_grounded": 0.718,
+      "low_grounding_rate": 0.05,
+      "market_mismatch_rate": 0.075,
+      "overconfident_rate": 0.4,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    }
+  },
+  "by_variant": {
+    "A": {
+      "n": 120,
+      "avg_grounded": 0.79,
+      "low_grounding_rate": 0.042,
+      "market_mismatch_rate": 0.075,
+      "overconfident_rate": 0.233,
+      "veto_rate": 0.0,
+      "veto_count": 0
+    },
+    "B": {
+      "n": 120,
+      "avg_grounded": 0.801,
+      "low_grounding_rate": 0.033,
+      "market_mismatch_rate": 0.033,
+      "overconfident_rate": 0.25,
+      "veto_rate": 0.008,
+      "veto_count": 1
+    }
+  },
+  "dict_gap_top": [
+    [
+      "필요한",
+      10
+    ],
+    [
+      "이들",
+      10
+    ],
+    [
+      "기업입니다",
+      10
+    ],
+    [
+      "서로",
+      10
+    ],
+    [
+      "포함한",
+      9
+    ],
+    [
+      "소비자",
+      9
+    ],
+    [
+      "하는",
+      9
+    ],
+    [
+      "있습니다",
+      9
+    ],
+    [
+      "상호",
+      9
+    ],
+    [
+      "개인",
+      9
+    ],
+    [
+      "완전히",
+      9
+    ],
+    [
+      "부문",
+      9
+    ],
+    [
+      "보안",
+      9
+    ],
+    [
+      "탐사",
+      9
+    ],
+    [
+      "지원",
+      9
+    ],
+    [
+      "기업용",
+      8
+    ],
+    [
+      "반면",
+      8
+    ],
+    [
+      "연구",
+      8
+    ],
+    [
+      "동일한",
+      8
+    ],
+    [
+      "영위",
+      8
+    ]
+  ]
+}
