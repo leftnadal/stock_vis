@@ -148,8 +148,12 @@ let HAS_SUMMARY = false;       // R11: summary_ko 컬럼 존재 여부
 // ⑳-3 L2-X 실험 모드(패치): 로드 CSV 헤더에 prompt_variant 존재 → 실험 검수 UI.
 // 기존 관계 검수 모드는 무변경(분기 추가만, 행위보존).
 let EXPERIMENT = false;
+let AUDIT = false;  // ⑳-3 자동판정: grounded_ratio 헤더 → 감사 모드([동의/이견])
 let expFilter = { ind: "all", mcap: "all" };  // industry_same / mcap_tercile 필터
 const EXP_VERDICTS = ["BETTER", "SAME", "WRONG"];
+const AUDIT_VERDICTS = ["AGREE", "DISAGREE"];
+function modeVerdicts(){ return AUDIT ? AUDIT_VERDICTS : EXP_VERDICTS; }
+function isExpLike(){ return EXPERIMENT || AUDIT; }
 
 // ── RFC4180 CSV 파서(따옴표·쉼표·개행·"" 이스케이프 처리) ──────────
 function parseCSV(text){
@@ -233,26 +237,27 @@ function pendingReason(r){
 
 // ── rowKey(localStorage 복원용, CSV 재로드 견고) ────────────────
 function rowKey(r){
-  // 실험 모드: 관계 검수 CSV와 컬럼이 다름(symbol_a/b + prompt_variant).
-  if(EXPERIMENT) return [r.symbol_a, r.symbol_b, r.prompt_variant].join("¦");
+  // 실험/감사 모드: 관계 검수 CSV와 컬럼이 다름(symbol_a/b + prompt_variant).
+  if(isExpLike()) return [r.symbol_a, r.symbol_b, r.prompt_variant].join("¦");
   return [r.symbol_pair, r.relation_type, String(r.basis).slice(0,48)].join("¦");
 }
 // R12: localStorage는 rowKey 기준(CSV 버전 무관). v2→v3 전환 시 라벨 보존.
-// 실험 모드는 별도 네임스페이스(270 검수 저장분과 충돌 방지, common-bugs #81).
-function stableKey(){ return LS_PREFIX + (EXPERIMENT ? "verdicts_exp" : "verdicts"); }
+// 실험/감사 모드는 별도 네임스페이스(270 검수 저장분과 충돌 방지, common-bugs #81).
+function stableKey(){ return LS_PREFIX + (AUDIT ? "verdicts_audit" : EXPERIMENT ? "verdicts_exp" : "verdicts"); }
 function saveLS(){
   try { localStorage.setItem(stableKey(), JSON.stringify(verdicts)); } catch(e){}
 }
 function loadLS(){
   const SK = stableKey();
-  if(EXPERIMENT){
-    // 실험 모드: 오직 실험 키만 읽음(관계 검수 키 병합 안 함). verdict 컬럼으로 seed.
+  if(isExpLike()){
+    // 실험/감사 모드: 오직 자기 키만 읽음(관계 검수 키 병합 안 함). verdict 컬럼으로 seed.
     let pool={};
     try { const o=JSON.parse(localStorage.getItem(SK)||"{}"); if(o&&typeof o==="object") pool=o; } catch(e){}
     const valid=new Set(ROWS.map(rowKey));
     verdicts={};
     for(const k in pool){ if(valid.has(k)) verdicts[k]=pool[k]; }
-    ROWS.forEach(r=>{ const v=String(r.verdict||"").trim().toUpperCase(); const rk=rowKey(r); if(EXP_VERDICTS.includes(v) && !verdicts[rk]) verdicts[rk]=v; });
+    const VOCAB=modeVerdicts();
+    ROWS.forEach(r=>{ const v=String(r.verdict||"").trim().toUpperCase(); const rk=rowKey(r); if(VOCAB.includes(v) && !verdicts[rk]) verdicts[rk]=v; });
     saveLS();
     return;
   }
@@ -261,7 +266,7 @@ function loadLS(){
   try {
     for(let i=0;i<localStorage.length;i++){
       const k=localStorage.key(i);
-      if(!k || k.indexOf(LS_PREFIX)!==0 || k===SK || k===LS_PREFIX+"verdicts_exp") continue;
+      if(!k || k.indexOf(LS_PREFIX)!==0 || k===SK || k===LS_PREFIX+"verdicts_exp" || k===LS_PREFIX+"verdicts_audit") continue;
       try { const o=JSON.parse(localStorage.getItem(k)); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
     }
     try { const o=JSON.parse(localStorage.getItem(SK)||"{}"); if(o&&typeof o==="object") Object.assign(pool,o); } catch(e){}
@@ -283,11 +288,12 @@ document.getElementById("file").onchange=(e)=>{
     const text=String(reader.result);
     const {header,out}=toObjects(parseCSV(text));
     HEADER=header; ROWS=out;
-    EXPERIMENT = header.includes("prompt_variant"); // L2-X 실험 CSV 감지
-    HAS_SUMMARY = !EXPERIMENT && header.includes("summary_ko"); // R11: v2 하위호환
+    AUDIT = header.includes("grounded_ratio");         // 판정 병합 CSV → 감사 모드
+    EXPERIMENT = !AUDIT && header.includes("prompt_variant"); // L2-X 실험 CSV
+    HAS_SUMMARY = !isExpLike() && header.includes("summary_ko"); // R11: v2 하위호환
     ROWS.forEach((r,i)=>{
       r._idx=i;
-      if(EXPERIMENT){ r._tab="A"; return; }  // 실험 모드: 게이트 탭·파생 미사용
+      if(isExpLike()){ r._tab="A"; return; }  // 실험/감사: 게이트 탭·파생 미사용
       r._tab = (TABS.find(t=>t.gate===r.gate_class_v2)||{key:"B"}).key;
       r._fp = isFalsePositive(r);
       r._sd = isSDflip(r);
@@ -305,8 +311,8 @@ document.getElementById("file").onchange=(e)=>{
 
 // ── 탭별 행 리스트(오탐 후보는 C' 상단 고정) ─────────────────────
 function tabRows(tabKey){
-  if(EXPERIMENT){
-    // 실험 모드: 게이트 탭 대신 industry_same/mcap_tercile 필터. 동일 우선 검수 전략 지원.
+  if(isExpLike()){
+    // 실험/감사 모드: 게이트 탭 대신 industry_same/mcap_tercile 필터. 동일 우선 검수 전략 지원.
     return ROWS.filter(r=>
       (expFilter.ind==="all"  || String(r.industry_same)===expFilter.ind) &&
       (expFilter.mcap==="all" || String(r.mcap_tercile)===expFilter.mcap)
@@ -318,7 +324,7 @@ function tabRows(tabKey){
 }
 function renderTabs(){
   const el=document.getElementById("tabs"); el.innerHTML="";
-  if(EXPERIMENT){
+  if(isExpLike()){
     const done=tabRows("A").filter(r=>verdicts[rowKey(r)]).length;
     const tot=tabRows("A").length;
     const mkBtn=(label,dim,val)=>{
@@ -363,8 +369,8 @@ function render(){
   const list=document.getElementById("list"); list.innerHTML="";
   const bulk=document.getElementById("bulk");
   const rows=tabRows(activeTab);
-  // A' 탭: 전체 OK 일괄 (실험 모드는 미표시)
-  if(!EXPERIMENT && activeTab==="A"){
+  // A' 탭: 전체 OK 일괄 (실험/감사 모드는 미표시)
+  if(!isExpLike() && activeTab==="A"){
     bulk.style.display="block";
     bulk.innerHTML=`<button id="bulkOk">전체 OK 일괄 (자가모순=타입 확정 도장)</button>
       <span class="khint">일괄 후에도 개별 뒤집기 가능</span>`;
@@ -386,6 +392,35 @@ function renderCard(r,i){
   const card=document.createElement("div");
   card.className="card"+(i===current[activeTab]?" current":"")+(r._fp?" fp":"")+(v?" labeled":"");
   card.dataset.i=i;
+
+  // ── 감사 모드 카드 (결정론 판정기 산출 표시 → [동의/이견]) ──
+  if(AUDIT){
+    const rat=rationaleOf(r);
+    const gr=r.grounded_ratio;
+    const flagOC = String(r.overconfident).toLowerCase()==="true";
+    const flagMM = String(r.market_mismatch).toLowerCase()==="true";
+    let h=`<div class="row1">
+      <span class="pair">${esc(r.symbol_a)} ↔ ${esc(r.symbol_b)}</span>
+      <span class="chip">시총 ${esc(r.mcap_tercile)}</span>
+      <span class="chip">${esc(r.industry_same)}</span>
+      <span class="chip conf">grounded ${esc(gr)}</span>
+      ${flagOC? `<span class="chip fpbadge">⚠ 과신</span>`:""}
+      ${flagMM? `<span class="chip fpbadge">⚠ 상관불일치</span>`:""}
+    </div>
+    <div class="reason">업종 버킷: <b>${esc(r.normalized_bucket||"(없음)")}</b> vs LLM 태그: <b>${esc(r.llm_tag||"(없음)")}</b> (conf ${esc(r.llm_conf)}) · 상관 ${esc(r.correlation)}</div>`;
+    if(rat&&rat.claim) h+=`<div class="reason">🔎 LLM 주장(${esc(r.claim_type)}): ${esc(rat.claim)}</div>`;
+    h+=`<div class="reason">접지 en ${esc(r.grounded_en)} · syn ${esc(r.grounded_syn)}${r.ungrounded_terms? ` · <b>미접지</b>: ${esc(r.ungrounded_terms)}`:""}</div>
+    <div class="actions">
+      <button class="b-ok ${v==="AGREE"?"sel":""}" data-act="AGREE">판정기 동의 <span class="khint">1</span></button>
+      <button class="b-drop ${v==="DISAGREE"?"sel":""}" data-act="DISAGREE">이견 <span class="khint">2</span></button>
+      <span class="verdict">${v? "감사: "+esc(v) : "미감사"}</span>
+    </div>`;
+    card.innerHTML=h;
+    card.querySelector('[data-act="AGREE"]').onclick=()=>label(r,"AGREE");
+    card.querySelector('[data-act="DISAGREE"]').onclick=()=>label(r,"DISAGREE");
+    card.onclick=(e)=>{ if(e.target.tagName!=="BUTTON"){ current[activeTab]=i; render(); } };
+    return card;
+  }
 
   // ── 실험 모드 카드 (L2-X PEER 추측 판정) ──
   if(EXPERIMENT){
@@ -496,6 +531,13 @@ document.addEventListener("keydown",(e)=>{
   if(!ROWS.length) return;
   if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT") return;
   const rows=tabRows(activeTab); const r=rows[current[activeTab]]; if(!r) return;
+  if(AUDIT){
+    if(e.key==="1"){ label(r,"AGREE"); e.preventDefault(); }
+    else if(e.key==="2"){ label(r,"DISAGREE"); e.preventDefault(); }
+    else if(e.key==="ArrowDown"||e.key==="j"){ current[activeTab]=Math.min(current[activeTab]+1,rows.length-1); render(); e.preventDefault(); }
+    else if(e.key==="ArrowUp"||e.key==="k"){ current[activeTab]=Math.max(current[activeTab]-1,0); render(); e.preventDefault(); }
+    return;
+  }
   if(EXPERIMENT){
     if(e.key==="1"){ label(r,"BETTER"); e.preventDefault(); }
     else if(e.key==="2"){ label(r,"SAME"); e.preventDefault(); }
@@ -518,8 +560,8 @@ document.addEventListener("keydown",(e)=>{
 // ── 내보내기(원본 전 컬럼 보존 + human_verdict) ──────────────────
 document.getElementById("exportBtn").onclick=()=>{
   if(!ROWS.length) return;
-  // 실험 모드: verdict 컬럼(신어휘 BETTER/SAME/WRONG)에 기록. 관계 검수: human_verdict.
-  const verdictCol = EXPERIMENT ? "verdict" : "human_verdict";
+  // 감사: audit_verdict(동의/이견) 별도 컬럼. 실험: verdict(BETTER/SAME/WRONG). 관계검수: human_verdict.
+  const verdictCol = AUDIT ? "audit_verdict" : EXPERIMENT ? "verdict" : "human_verdict";
   const cols = HEADER.includes(verdictCol) ? HEADER.slice() : [...HEADER, verdictCol];
   const lines=[ cols.map(csvField).join(",") ];
   ROWS.forEach(r=>{
@@ -530,7 +572,8 @@ document.getElementById("exportBtn").onclick=()=>{
   const blob=new Blob([lines.join("\r\n")+"\r\n"],{type:"text/csv;charset=utf-8"});
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
-  a.href=url; a.download= EXPERIMENT ? "peer_experiment_result_labeled.csv"
+  a.href=url; a.download= AUDIT ? "peer_experiment_audit_labeled.csv"
+    : EXPERIMENT ? "peer_experiment_result_labeled.csv"
     : (HAS_SUMMARY ? "review_batch_v3_labeled.csv" : "review_batch_v2_labeled.csv");
   document.body.appendChild(a); a.click(); a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);

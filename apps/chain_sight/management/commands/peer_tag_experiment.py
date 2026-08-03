@@ -251,8 +251,11 @@ def audit_sample(rows, n_worst=10, n_best=8):
                        -(int(_true(r.get("overconfident"))) + int(_true(r.get("market_mismatch"))))),
     )[:n_worst]
     best = sorted(scored, key=lambda r: -_fnum(r.get("grounded_ratio")))[:n_best]
+    # 기존 라벨 보존: 이미 verdict/audit_verdict 값이 있는 행은 항상 표본 포함(대조용).
+    labeled = [r for r in rows
+               if (r.get("verdict") or "").strip() or (r.get("audit_verdict") or "").strip()]
     seen, out = set(), []
-    for r in worst + best:
+    for r in labeled + worst + best:
         k = (r["symbol_a"], r["symbol_b"], r["prompt_variant"])
         if k not in seen:
             seen.add(k)

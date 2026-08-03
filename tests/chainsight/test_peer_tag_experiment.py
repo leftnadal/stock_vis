@@ -130,7 +130,15 @@ class TestJudgeAggregate:
         s = audit_sample(rows, n_worst=3, n_best=2)
         grs = [float(r["grounded_ratio"]) for r in s]
         assert min(grs) == 0.0 and max(grs) == 1.0     # 최악·최상 포함
-        assert len(s) == 5
+
+    def test_audit_sample_preserves_labeled(self):
+        from apps.chain_sight.management.commands.peer_tag_experiment import audit_sample
+        # 중간 grounded지만 기존 라벨(verdict) 보유 → 항상 표본 포함(대조)
+        rows = [{"symbol_a":f"A{i}","symbol_b":f"B{i}","prompt_variant":"A",
+                 "grounded_ratio":"0.6","overconfident":"False","market_mismatch":"False",
+                 "verdict":("WRONG" if i==5 else "")} for i in range(11)]
+        s = audit_sample(rows, n_worst=2, n_best=2)
+        assert any(r["symbol_a"]=="A5" for r in s)  # 라벨 보유 행 보존
 
 
 class TestRationalePrompt:
