@@ -99,6 +99,40 @@ class TestAggregate:
         assert agg["counter_signal_wrong_rate"]["absent"] == 0.5      # 1/2
 
 
+class TestJudgeAggregate:
+    def _jrows(self):
+        # 판정 병합된 행 모사(grounded_ratio·flags)
+        return [
+            {"mcap_tercile":"상","industry_same":"동일","prompt_variant":"A","claim_type":"known_fact",
+             "grounded_ratio":"0.9","market_mismatch":"False","overconfident":"False","dict_gap_terms":"foo | bar",
+             "symbol_a":"AA","symbol_b":"BB"},
+            {"mcap_tercile":"상","industry_same":"동일","prompt_variant":"B","claim_type":"known_fact",
+             "grounded_ratio":"0.2","market_mismatch":"True","overconfident":"True","dict_gap_terms":"foo",
+             "symbol_a":"CC","symbol_b":"DD"},
+        ]
+
+    def test_aggregate_v2_metrics(self):
+        from apps.chain_sight.management.commands.peer_tag_experiment import aggregate_v2
+        agg = aggregate_v2(self._jrows())
+        cell = agg["by_cell"]["상·동일"]
+        assert cell["n"] == 2
+        assert cell["avg_grounded"] == 0.55            # (0.9+0.2)/2
+        assert cell["low_grounding_rate"] == 0.5       # 0.2<0.5
+        assert cell["market_mismatch_rate"] == 0.5
+        assert cell["overconfident_rate"] == 0.5
+        assert ("foo", 2) in agg["dict_gap_top"]       # 사전 갭 빈출
+
+    def test_audit_sample_worst_and_best(self):
+        from apps.chain_sight.management.commands.peer_tag_experiment import audit_sample
+        rows = [{"symbol_a":f"A{i}","symbol_b":f"B{i}","prompt_variant":"A",
+                 "grounded_ratio":str(i/10),"overconfident":"False","market_mismatch":"False"}
+                for i in range(11)]
+        s = audit_sample(rows, n_worst=3, n_best=2)
+        grs = [float(r["grounded_ratio"]) for r in s]
+        assert min(grs) == 0.0 and max(grs) == 1.0     # 최악·최상 포함
+        assert len(s) == 5
+
+
 class TestRationalePrompt:
     def test_system_prompt_requests_rationale(self):
         from apps.chain_sight.management.commands.peer_tag_experiment import _SYSTEM

@@ -26,6 +26,8 @@ from packages.shared.stocks.models import Stock
 OUTPUT_DIR = "outputs/peer_experiment"
 SAMPLE_CSV = os.path.join(OUTPUT_DIR, "peer_sample_240.csv")
 RESULT_CSV = os.path.join(OUTPUT_DIR, "peer_experiment_result.csv")
+JUDGED_CSV = os.path.join(OUTPUT_DIR, "peer_experiment_judged.csv")
+AUDIT_CSV = os.path.join(OUTPUT_DIR, "peer_experiment_audit.csv")
 SEED = 20260803  # 재현성 고정 시드
 PER_CELL = 40
 CELLS = 6           # 3 mcap × 2 industry
@@ -176,13 +178,96 @@ def aggregate(rows):
     }
 
 
+LOW_GROUNDING = 0.5  # 저접지 플래그 임계(해석용)
+
+
+def _fnum(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
+
+
+def aggregate_v2(rows):
+    """판정 병합 rows → 구간별 결정론 지표(채점 LLM 0). 순수 함수.
+
+    구간(6구획: mcap_tercile × industry_same)별:
+      avg_grounded · low_grounding_rate · market_mismatch_rate · overconfident_rate · n
+    + by_variant 접지 격차(㉮ vs ㉯) + dict_gap 빈출(사전 보강 감사).
+    """
+    import collections
+
+    def _true(v):
+        return str(v).strip().lower() == "true"
+
+    by_cell = collections.defaultdict(list)
+    by_variant = collections.defaultdict(list)
+    gap_freq = collections.Counter()
+    for r in rows:
+        gr = _fnum(r.get("grounded_ratio"))
+        cell = (r.get("mcap_tercile", ""), r.get("industry_same", ""))
+        rec = {
+            "gr": gr,
+            "low": (gr is not None and gr < LOW_GROUNDING),
+            "mm": _true(r.get("market_mismatch")),
+            "oc": _true(r.get("overconfident")),
+        }
+        by_cell[cell].append(rec)
+        by_variant[r.get("prompt_variant", "")].append(rec)
+        for t in (r.get("dict_gap_terms", "") or "").split(" | "):
+            if t.strip():
+                gap_freq[t.strip()] += 1
+
+    def _summ(recs):
+        grs = [x["gr"] for x in recs if x["gr"] is not None]
+        n = len(recs)
+        return {
+            "n": n,
+            "avg_grounded": round(sum(grs) / len(grs), 3) if grs else None,
+            "low_grounding_rate": round(sum(x["low"] for x in recs) / n, 3) if n else None,
+            "market_mismatch_rate": round(sum(x["mm"] for x in recs) / n, 3) if n else None,
+            "overconfident_rate": round(sum(x["oc"] for x in recs) / n, 3) if n else None,
+        }
+
+    return {
+        "by_cell": {f"{k[0]}·{k[1]}": _summ(v) for k, v in by_cell.items()},
+        "by_variant": {k: _summ(v) for k, v in by_variant.items()},
+        "dict_gap_top": gap_freq.most_common(20),
+    }
+
+
+def audit_sample(rows, n_worst=10, n_best=8):
+    """사람 감사용 표본: 최악(저접지·과신·불일치 우선) n_worst + 최상 접지 n_best.
+
+    최악은 grounded_ratio 오름차순(동률 시 overconfident·market_mismatch 우선).
+    """
+    def _true(v):
+        return str(v).strip().lower() == "true"
+
+    scored = [r for r in rows if _fnum(r.get("grounded_ratio")) is not None]
+    worst = sorted(
+        scored,
+        key=lambda r: (_fnum(r.get("grounded_ratio")),
+                       -(int(_true(r.get("overconfident"))) + int(_true(r.get("market_mismatch"))))),
+    )[:n_worst]
+    best = sorted(scored, key=lambda r: -_fnum(r.get("grounded_ratio")))[:n_best]
+    seen, out = set(), []
+    for r in worst + best:
+        k = (r["symbol_a"], r["symbol_b"], r["prompt_variant"])
+        if k not in seen:
+            seen.add(k)
+            out.append(r)
+    return out
+
+
 class Command(BaseCommand):
     help = "PEER 추측 태깅 표본 실험(LLM 240 한정, DB 무기록)"
 
     def add_arguments(self, parser):
         parser.add_argument("--sample", action="store_true", help="층화 표본 CSV 생성(LLM 무호출)")
         parser.add_argument("--run", action="store_true", help="LLM sweep(240 한정) — 게이트")
-        parser.add_argument("--aggregate", action="store_true", help="verdict 채운 뒤 집계")
+        parser.add_argument("--judge", action="store_true", help="결정론 판정 컬럼 병합(LLM 0)")
+        parser.add_argument("--aggregate", action="store_true", help="판정 집계 v2 + 감사 표본")
 
     def handle(self, *args, **opts):
         os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -190,10 +275,77 @@ class Command(BaseCommand):
             self._sample()
         elif opts["run"]:
             self._run()
+        elif opts["judge"]:
+            self._judge()
         elif opts["aggregate"]:
             self._aggregate()
         else:
-            self.stdout.write("옵션 필요: --sample | --run | --aggregate")
+            self.stdout.write("옵션 필요: --sample | --run | --judge | --aggregate")
+
+    # ── S1/S2: 결정론 판정 병합(채점 LLM 0) ──
+    def _judge(self):
+        import json
+        from apps.chain_sight.models.relation_discovery import PriceCoMovement
+        from apps.chain_sight.services.peer_adjudicator import (
+            ground_claim, load_dict, market_flag, overconfident, quartiles,
+        )
+        src = JUDGED_CSV if False else RESULT_CSV
+        if not os.path.exists(src):
+            self.stderr.write("결과 CSV 없음 — 먼저 --run.")
+            return
+        with open(src, newline="", encoding="utf-8") as f:
+            rows = list(csv.DictReader(f))
+        dct = load_dict()
+        syms = {r["symbol_a"] for r in rows} | {r["symbol_b"] for r in rows}
+        desc = dict(Stock.objects.filter(symbol__in=syms).values_list("symbol", "description"))
+
+        def corr_of(a, b):
+            pcm = PriceCoMovement.objects.filter(
+                symbol_a__in=[a, b], symbol_b__in=[a, b]
+            ).order_by("period").values_list("correlation", flat=True).first()
+            return float(pcm) if pcm is not None else None
+
+        # ── Pass 1: grounding + correlation + conf ──
+        for r in rows:
+            raw = (r.get("rationale_A") or "").strip() or (r.get("rationale_B") or "").strip()
+            claim = ""
+            if raw:
+                try:
+                    claim = json.loads(raw).get("claim", "")
+                except Exception:  # noqa: BLE001
+                    claim = ""
+            g = ground_claim(claim, r["symbol_a"], r["symbol_b"],
+                             desc.get(r["symbol_a"], ""), desc.get(r["symbol_b"], ""), dct)
+            r["grounded_ratio"] = g["grounded_ratio"] if g["grounded_ratio"] is not None else ""
+            r["grounded_en"] = f"{g['grounded_en']}/{g['en_total']}"
+            r["grounded_syn"] = f"{g['grounded_syn']}/{g['syn_total']}"
+            r["ungrounded_terms"] = " | ".join(g["ungrounded_terms"])
+            r["dict_gap_terms"] = " | ".join(g["dict_gap_terms"])
+            r["correlation"] = corr_of(r["symbol_a"], r["symbol_b"])
+            r["_conf"] = float(r["llm_conf"]) if r.get("llm_conf") else None
+            r["_gr"] = g["grounded_ratio"]
+
+        # ── 사분위 ──
+        corr_q1, _ = quartiles([r["correlation"] for r in rows])
+        _, conf_q3 = quartiles([r["_conf"] for r in rows])
+        gr_q1, _ = quartiles([r["_gr"] for r in rows])
+
+        # ── Pass 2: market_mismatch + overconfident ──
+        for r in rows:
+            r["market_mismatch"] = market_flag(r["correlation"], r["_conf"], corr_q1, conf_q3)
+            r["overconfident"] = overconfident(r.get("claim_type"), r["_gr"], gr_q1)
+            r["correlation"] = "" if r["correlation"] is None else round(r["correlation"], 4)
+            del r["_conf"], r["_gr"]
+
+        cols = list(rows[0].keys())
+        with open(JUDGED_CSV, "w", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, fieldnames=cols)
+            w.writeheader()
+            w.writerows(rows)
+        self.stdout.write(
+            f"✅ 판정 병합 {len(rows)}행 → {JUDGED_CSV} (LLM 0). "
+            f"사분위: corr_q1={corr_q1} conf_q3={conf_q3} gr_q1={gr_q1}"
+        )
 
     def _sample(self):
         peers = list(
@@ -276,11 +428,41 @@ class Command(BaseCommand):
         )
 
     def _aggregate(self):
-        if not os.path.exists(RESULT_CSV):
-            self.stderr.write("결과 CSV 없음.")
+        import json
+        src = JUDGED_CSV if os.path.exists(JUDGED_CSV) else RESULT_CSV
+        if not os.path.exists(src):
+            self.stderr.write("CSV 없음 — 먼저 --judge.")
             return
-        with open(RESULT_CSV, newline="", encoding="utf-8") as f:
+        with open(src, newline="", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
+
+        if src == JUDGED_CSV:
+            agg = aggregate_v2(rows)
+            self.stdout.write("── 구간별 결정론 판정(채점 LLM 0) ──")
+            for cell, s in sorted(agg["by_cell"].items()):
+                self.stdout.write(
+                    f"  {cell:8} n={s['n']:3} avg_grounded={s['avg_grounded']} "
+                    f"low={s['low_grounding_rate']} mismatch={s['market_mismatch_rate']} "
+                    f"overconf={s['overconfident_rate']}"
+                )
+            va = agg["by_variant"]
+            self.stdout.write(
+                f"── ㉮㉯ 접지 격차: A avg={va.get('A',{}).get('avg_grounded')} "
+                f"B avg={va.get('B',{}).get('avg_grounded')} ──"
+            )
+            self.stdout.write(f"── dict_gap 빈출(사전 보강 감사): {agg['dict_gap_top'][:12]} ──")
+            # 감사 표본 추출 → 검수 도구 로드 호환(grounded_ratio 헤더=감사 모드)
+            sample = audit_sample(rows)
+            with open(AUDIT_CSV, "w", newline="", encoding="utf-8") as f:
+                w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+                w.writeheader()
+                w.writerows(sample)
+            self.stdout.write(f"✅ 감사 표본 {len(sample)}건 → {AUDIT_CSV}")
+            with open(os.path.join(OUTPUT_DIR, "aggregate_v2.json"), "w", encoding="utf-8") as f:
+                json.dump(agg, f, ensure_ascii=False, indent=2)
+            return
+
+        # 판정 전(구 verdict 집계) 폴백
         agg = aggregate(rows)
         self.stdout.write(f"구간별: {agg['by_cell']}")
         self.stdout.write(f"㉮㉯: {agg['by_variant']}")
