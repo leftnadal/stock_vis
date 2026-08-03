@@ -9,7 +9,10 @@ PEER_OF는 SEC 근거가 없어 L1(domain_tagging) 대상이 아니다. L2는 LL
 
 ★안전핀(하드 룰):
   - relation_domain(승인본)은 이 코어가 절대 쓰지 않는다(L1과 동일 규약, 검수=Phase 2).
-    L2 태그는 relation_domain_draft + domain_review_status('auto'/'rejected') + domain_machine_check에만 기록.
+    L2 태그는 relation_domain_draft + domain_review_status('auto'/'pending') + domain_machine_check에만 기록.
+  - 거부권 발동 = status **'pending'**(미채택→서빙 버킷 폴백). **'rejected' 금지** — ego 서빙이
+    'rejected'를 soft-drop(엣지 숨김)하므로, 거부권으로 PEER 관계 자체가 사라지면 안 된다
+    (거부권은 "태그 기각·버킷 폴백"이지 "관계 은닉"이 아니다).
   - claim은 **영어**로 출력(L2X-SWEEP-EN-CLAIM) → 영어 FMP desc와 동일언어 접지(교차언어 매칭 제거).
     단 판정기는 언어 무관(ground_claim이 한국어 claim도 처리 → A3 파일럿의 기존 실험 CSV 재사용 가능).
   - 하·상이 구획(저시총·타산업)은 "추정" 라벨(is_estimate) 기록 — 실험상 최저 접지·최고 과신.
@@ -119,7 +122,7 @@ def tag_peer_one(
         )
         return {
             "ok": False, "draft": None, "adopted_tag": None,
-            "review_status": "rejected", "machine_check": mc,
+            "review_status": "pending", "machine_check": mc,  # 미채택→버킷 폴백('rejected' 금지)
             "is_estimate": est, "veto": True, "raw": raw,
         }
 
@@ -147,7 +150,7 @@ def tag_peer_one(
         "ok": True,
         "draft": tag,                                  # 원 LLM 태그(항상 기록)
         "adopted_tag": None if vetoed else tag,        # 거부권 통과분만 채택
-        "review_status": "rejected" if vetoed else "auto",
+        "review_status": "pending" if vetoed else "auto",  # 거부권→pending(버킷 폴백, soft-drop 아님)
         "machine_check": mc,
         "is_estimate": est,
         "veto": vetoed,

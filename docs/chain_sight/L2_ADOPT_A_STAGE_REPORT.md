@@ -67,8 +67,9 @@
 | PEER_OF 중 relation_domain 有 | 0 | 백지 |
 | SEC verdict(review有·mc無) 270 재확인 | **270** | PEER_OF와 타입 분리 → **무접촉 보장** |
 
-> 결론: `relation_domain`(승인본)·`relation_domain_draft`(초안)·`domain_machine_check`(JSON: 거부권·추정 flag 수납)·
-> `domain_review_status`(auto/rejected choices) 전부 재사용 → **신규 마이그레이션 없음, HALT 없음.**
+> 결론: `relation_domain`(승인본, 미접촉)·`relation_domain_draft`(초안)·`domain_machine_check`(JSON: 거부권·추정 flag 수납)·
+> `domain_review_status`(채택=auto / 거부권=pending — A3에서 'rejected' soft-drop 회피 교정) 전부 재사용
+> → **신규 마이그레이션 없음, HALT 없음.**
 
 ---
 
@@ -112,3 +113,40 @@
 - 표본 기각률 0.4% → 태깅 가능 9,161쌍 기준 **예상 거부권 발동 ~37쌍** (버킷 폴백).
 - 추가로 커버리지 결측 204쌍도 버킷 폴백 → **총 폴백 예상 ~241쌍 (2.6%)**.
 - 나머지 ~8,920쌍(95%+)은 LLM 태그 채택. 그중 하·상이 2,498쌍은 "추정" 라벨.
+
+---
+
+## A3 — 파일럿 dry-run (신규 LLM 호출 0) + 마인드맵 노출 경로
+
+### ⑴ 파이프라인 dry-run (실험 ㉯ 120쌍 재사용)
+
+`tag_peer_domains --pilot-csv peer_experiment_judged.csv` — 기존 실험 ㉯(variant B) 120쌍을
+A2 파이프라인 판정(ground_claim→veto→추정라벨)에 태움. **신규 LLM 호출 0**.
+
+| 지표 | 값 |
+|------|----|
+| ㉯ 대상 | 120쌍 |
+| **채택(adopt)** | **119 (99.2%)** |
+| **거부권(veto)** | **1 (0.8%)** — CRM↔MTCH(하·동일) |
+| **추정 라벨(하·상이)** | **20** |
+| claim 없음 | 0 |
+
+→ 전 경로(채택·거부권 폴백·추정 라벨) 실측 검증. 결과 `outputs/peer_domain_tagging/pilot_120.csv`.
+
+### ⑵ ego API·마인드맵 노출 경로 (S3-MINDMAP 개정 — additive)
+
+**ego API** (`ego_views.py`): PEER 엣지에 `peer_domain`(채택 태그)·`peer_domain_estimate`(추정) additive 노출.
+- 노출 조건: `domain_machine_check.source == 'L2-ADOPT'` ∧ `domain_review_status == 'auto'` → `relation_domain_draft`.
+- 거부권(status='pending')·미태깅 → `peer_domain=null`.
+
+**★soft-drop 교정**: 거부권 status를 **'rejected' 아닌 'pending'**으로 기록.
+ego 메인 쿼리가 `domain_review_status='rejected'`를 soft-drop(엣지 은닉)하므로, 거부권으로 PEER 관계
+자체가 사라지면 안 됨(거부권 = "태그 기각·버킷 폴백"이지 "관계 은닉" 아님).
+
+**FE** (`egoMindmap.ts`): L2 하위그룹 키를 **`peer_domain`(llm_tag) 우선 → `industry_bucket` 폴백 → 미분류**로 개정.
+계약(`shared-types.ts` EgoEdge)에 `peer_domain`·`peer_domain_estimate` optional additive.
+
+### 검증
+- backend ego API pytest **38 passed**
+- FE 마인드맵 회귀 vitest **12 passed** (기존 9 + L2-ADOPT 3: llm_tag 우선·버킷 폴백·추정 라벨)
+- tsc `--noEmit` **0 errors**
