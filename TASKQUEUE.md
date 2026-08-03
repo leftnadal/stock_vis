@@ -1146,3 +1146,21 @@
 - **미결 3**: ⑴ attach 지점(후보 `FilingDataView`/`filing/<symbol>/`·IsAdminUser, per-symbol=1-filing 자연 정합) ⑵ 스코핑(글로벌 `SEC_GROUNDING_ENABLED` flag + 1 filing 스모크 vs per-filing allowlist) ⑶ flag 정의 위치(settings) 포함.
 - **입력 확보**: grounding 데이터 prod 기록 완료(G-c, 1751·4분포 1273/41/410/27·marker deterministic_v1). partial_match 121 filings/410 rows = 노출 시 신설 등급 표시 대상.
 - 근거: G-d(flag-on 1 filing)가 노출 경로 부재로 Gate2 배치서 제거·이관. cf. common-bugs #82.
+## F2-VISUAL-CHECK — 온보딩 카드 브라우저 육안 검증 1회 (등재, 2026-08-01)
+- 상태: **등재·대기**(트리거 = 다음 라이브 기회에). read-only 육안 확인, 코드 변경 없음.
+- 내용: f2 온보딩 카드가 :3000 라이브에서 의도대로 렌더되는지 브라우저 육안 1회 확인(스크린샷 증적). UI 슬라이스 마감 = 라이브 렌더 스크린샷 필수 규율([[feedback_ui_slice_live_screenshot]]) 소급 이행.
+- 주의: :3000 web-runtime = prod 빌드 → f2 온보딩 카드 변경분이 라이브 반영됐는지 먼저 확인(미반영 시 rebuild 선행). 판정 = 육안 통과/미통과만, 수정은 별도 슬라이스.
+- 출처: SIGNAL-FORWARD-INFRA 프리플라이트 지시서 Part A-3.
+
+## FORWARD-PE-DEFER — forward_pe 유령필드 미러 I-1 제외 (2026-08-01, SFI-I1 Part A-7) [portfolio][coach]
+- 상태: **defer(I-2/I-3로 이월)**. I-1 범위 제외 확정.
+- 근거: `Stock.forward_pe` 미러 = price ÷ **forward EPS** 의존. forward EPS = analyst-estimates 소관인데 B2 확정으로 SFI는 estimates 무접촉(chain_sight.EstimateSnapshot 단일 정본, D-I1-4). → I-1의 유령필드 미러는 `analyst_target_price + analyst_rating_*×5`만, forward_pe 제외.
+- 후속: I-2/I-3에서 chain_sight estimates 정본(eps_avg)을 재사용해 forward_pe 산출·미러(이중 수집 없이). 소비 사이클 소관.
+
+## SFI-I1-BUGNUM — common-bugs 채번 후보 3건 (✅ done, BATCH-20 부여 2026-08-01) [harness]
+- 규칙: D-NUMBERING-MGMT-ONLY(채번=mgmt 전용, build 세션은 채번 후보만). SFI-I1이 자가채번 #80/#81/#82 → origin/main 선점(MGMT-BATCH-18 `fa3e20de`)과 충돌 발견 → **채번 회수**(headings "채번 후보"로 정정).
+- ✅ **BATCH-20 부여 완료**(push-직전 재grep, 실측+1 from #82):
+  ⓐ get_rating `/stable/rating` 404 오경로 → ratings-snapshot = **#83** (backend/stocks)
+  ⓑ analyst-estimates `period` 필수(누락=400, 6월 audit http-400 오진) = **#84** (backend/stocks)
+  ⓒ RECON-STALE-BASE — 측정 세션 stale base false-missing → fresh origin/main + base HEAD 명기 = **#85** (process/harness/git)
+- 부수: SFI-I1 채번 회수의 botched orphan(`get_rating (#80,...)` 본문 없는 중복 헤딩)도 BATCH-20이 제거(bare #80=0 복원).

@@ -86,6 +86,7 @@
 
 **How to apply**: common-bugs 3쌍 헤딩을 `#70a/#70b`·`#71a/#71b`·`#72a/#72b`로 개정 + 각 하단 한 줄 주석. 본문 무수정. 재발 방지 = D-NUMBERING-MGMT-ONLY(아래).
 - **적용 이력**: #78 3중복(규칙 시행 전 발생분)에 a/b/c 확장 적용 (BATCH-19) — a=20b-f2 GOAL-CREATE-UI(`3ba4cf00` 11:04)·b=SEAL-PUSH-1b heat 로그(`9540993a` 11:38)·c=SEC β R2 2-dot diff(`663b17e5` 12:54), 착지 시간순.
+- **적용 이력**: #80·#81 각 2중복에 a/b 확장 적용 (BATCH-20) — #80: a=COVERAGE-DETAIL migrate(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 LLM 모순(`6d610d67` 13:40) / #81: a=실행환경 절대경로(`fa3e20de` 13:39, BATCH-18 mgmt 채번)·b=REVIEW-P2 localStorage 캐시(`6d610d67` 13:40), 착지 시간순. ⚠b(REVIEW-P2)는 규칙 시행(07-31) 후 비mgmt 세션 채번 = 규칙 위반 경위(ⓑ 조사, 처방 디렉터 회부).
 
 ## [2026-07-31] D-NUMBERING-MGMT-ONLY — common-bugs 채번은 mgmt 세션 전용 (재발 방지) [harness]
 
@@ -5468,6 +5469,8 @@ S2-C gate는 타입 자동변경을 하지 않으므로(하드룰) **자동 재�
   - ① **`stale pending 백-어노테이션` = TH blocked**(`dep=TH-RUNTIME-DEPLOY`, 실존 ID → 설계대로 승격 제외).
   - ② **`실행 트리 정합` = #47 transient**(미머지 브랜치에서 health 실행 시 worktree HEAD ≠ origin/main으로 뜨는 구조적 신호 — no-ff 머지 후 post-merge에서 자동 해소. read-only/미머지 세션의 정상 동작).
   근거: 07-29 STRIP-REHOME-LAND에서 지시서가 "1 WARN(TH)"만 기대해 #47을 누락 → 문언상 "TH 외 WARN → HALT"에 걸려 사용자 판단을 재차 물음(불필요한 왕복). #47은 매 미머지 LAND의 표준 transient이므로 **상수로 못박아** 재발 방지. cf. DECISIONS 326 백-어노테이션(승격 후 첫 실측에서 동일 2종 WARN 확인). post-merge 기대값 = **14 OK / 1 WARN(TH) / 0 FAIL**(#47은 머지로 해소).
+
+**보강 — mgmt 배치 자가 머지 허용 (2026-08-01, MGMT-BATCH-20)**: **mgmt 배치의 origin/main 착지는 자가 머지 허용** — 조건: 메타 4종 한정 diff 전수 확인 + D-LANDING 허용 조합(위 2종 WARN) + push 직전 재fetch(#40). **Gate 4(파괴적 작업 승인)는 삭제·마이그 적용·배포에 적용되며 메타 문서 머지에는 불요.** 근거: BATCH-19 착지 시 자가 머지 가부를 승인 턴으로 회부했으나, 메타 4종 한정 diff는 파괴적 작업이 아니므로 매 배치 승인 왕복이 불필요 — 해석을 규약으로 못박아 재발 방지.
 ---
 
 ## [2026-07-30] D-EOD-FRESH — beat 자가 신선도 보장(B안)
@@ -5479,6 +5482,44 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 **구현(P1)**: `apps/monitor/services/pipeline.py::refresh_monitors` 서두에 `ensure_price_freshness` 게이트 — 활성 모니터 심볼 전수 중 `DailyPrice 최신 date < _expected_last_trading_day`인 심볼만 `StockSyncService.sync_prices(force=True)` 호출. 심볼별 try/except 격리(sync 실패해도 beat 본체 불사 — #65 교훈). 최신 심볼 스킵(S&P500은 22:00 자동수집분으로 no-op). shared 코드 무변경(호출만), 신규 모델·PeriodicTask·스케줄 0, 기존 22:45 발화 내 실행. 거래일 판정은 공휴일 미고려·주말 제외 관대 근사(초과 sync는 멱등 무해, stale 누락이 위험하므로 보수적). 테스트 monitor 226(신규 freshness 11: 거래일 경계·stale/fresh 판정·실패 격리·통합 실 시그니처·행위보존 no-op).
 
 **Phase 0 백필(2026-07-30)**: IONQ·TLN 각 30행 충전(236→266, 최신 06-15→07-29). 수동 refresh 후 coverage 0.44→0.6667 회복. ★화면 손익 정정: IONQ pnl +23.5%(stale 06-15 61.18 기준 허구)→**-35.44%**(실 07-29 31.99), TLN→-20.95%. 4종목 DailyPrice 멱등 무접촉(Δ0).
+
+## 추기 — EOD-FRESH-FIX-1 (게이트 기준일 오프바이원 · 2026-08-03 종결)
+
+### 경위
+- **발견 (2026-07-31, VERIFY-0731 F3)**: 게이트 첫 자동 실전에서 비편입 3종
+  (IONQ·TLN·IREN)이 1일 지연 고착. 원인 = `_expected_last_trading_day(as_of)`가
+  as_of−1일을 기대치로 삼는 오프바이원 — beat(22:45 UTC)는 미국 장 마감 후라
+  as_of 자체가 직전 거래일인데 하루를 더 뺐고, sp500_eod_service(as_of 당일 수집)와
+  기준일이 하루 어긋남.
+- **결정 (2026-07-31)**: A안(−1 제거, expected = as_of) 채택.
+  가중 스코어 A=0.895 / B(동적 기준)=0.743 / C(거래일 캘린더)=0.745.
+  중단 조건 = "게이트 도달 시 as_of는 거래일" 불변식이 거짓이면 폐기 → PRE-1 실측으로
+  성립 확인(is_eod_fresh 가드 선행 + 4개 주말 로그 게이트 무발화)하여 착수.
+- **수리 (2026-08-01 배포)**: pipeline.py 1지점 — 함수 제거 + expected=as_of +
+  불변식 주석. 머지 9c3d59d7. **monitor pytest 기준선 226 → 223**
+  (제거 함수 전용 테스트 4 삭제 + F3 회귀 테스트 1 신규).
+- **검증**:
+  - 창A (08-01, PASS): 게이트 synced=3(수리 전 0)·failed=0, 비편입 3종
+    latest=07-31(편입과 동일 좌표), 07-30 갭 캐치업 실증(sync는 days=90 캐치업형 —
+    PRE-2), beat 완주 monitors=6.
+  - 창B (08-02·03, 성립): 비거래일 게이트 무발화 이틀 — 단 차단 주체는 beat 스케줄
+    (하기 정정).
+
+### 실측 정정 — 비거래일 방어는 이중 구조
+FIX-1 코드의 불변식 주석은 "is_eod_fresh 가드가 비거래일을 차단"이라 서술했으나,
+실측(창B)상 **1차 차단 = beat 스케줄(요일 cron, 주말 Sending 0)**이고, is_eod_fresh
+가드는 **2차(주중 휴장일·EOD 지연 대비)**다. expected=as_of의 전제는 어느 층이 막든
+성립하므로 수리 유효성 불변. **주석 정정은 다음 monitor 코드 터치에 피기백**
+(전용 배포 없음 — 이 원장이 진실).
+
+### 잔여 관찰 (트랙 아님 · 수동)
+- 2차 가드 단독 방어(주중 휴장일)는 실전 미실증 — 다음 도래 09-07(Labor Day).
+  해당일 로그 1회 관찰이면 충분(게이트 무발화 기대). 실패 시에만 RECON.
+
+### 부수 확정 사실
+- 게이트 검사 유니버스 = 활성 모니터 전수(비편입 필터 없음, checked=6) — 편입은
+  fresh-skip이라 무해한 의도적 단순화(PRE-3). 현행 유지.
+- FMP 402 상시(BF.B/BRK.B, #23)는 본 트랙 전 과정에서 무관 별건 유지.
 
 ## [2026-07-31] SLICE-20B-F2 랜딩 관례 + GOAL-CREATE-UI 결정 [portfolio][coach][ops]
 
@@ -5543,3 +5584,61 @@ beat 자가 신선도 보장(B안) 채택. 비편입 보유 종목의 DailyPrice
 ## [2026-08-01] SEC β Gate 2 배치 개정 — G-d 제거·노출 트랙 이관 (D-SECB-GATE2-AMEND-1)
 
 **D-SECB-GATE2-AMEND-1 (G-d flag-on 1 filing 배치 제거)**: Gate 2 사인오프 요청서 §비준 시점에 `SEC_GROUNDING_ENABLED` flag·grounding_status **노출 read-path가 코드에 부재**했음(2026-08-01 실측 grep: flag 정의 0·serializer/view grounding 참조 0·sec 엔드포인트=dashboard+FilingDataView 둘 다 미참조). G-d는 flag flip이 아니라 신규 구축(flag+게이트 노출+1-filing 스코핑)이며, **노출 설계 = 소비자(UX) 결정 미존재 상태의 사변 구축 금지(γ)** → 배치에서 **제거**, `SECB-EXPOSURE` 트랙 이관(디렉터 세션·목업 기반 결정). Gate 2 실집행분 = G-a(백업)·G-b(migrate 0003)·G-c(백필 1751, 4분포 1273/41/410/27 실현)로 종료. G-e(prompt v2)는 정의서 승인 후 별도. **교훈**: 요청서의 실행 단계는 **존재하는 코드 경로를 실측 확증 후 비준**할 것(#79 변종 — 설계 의도의 문서 선행이 코드 선행을 대체 못 함). cf. common-bugs #82, TASKQUEUE SECB-EXPOSURE. 감독 결정 B안(2026-08-01).
+## D-LAND-ATOMIC (2026-08-01, 반복 랜딩 경합 시 원자 집행 표준)
+
+병렬 세션이 같은 origin/main을 겨냥할 때 순진한 `push`는 non-fast-forward로 반복 reject된다(과거 P2a-1 병렬 랜딩 5회 reject 실증). 표준 집행 절차를 **fetch → reset → merge → push 원자 스크립트**로 고정한다.
+
+1. `git fetch origin` — 최신 origin/main 확보.
+2. 작업 브랜치를 origin/main 위로 `reset --hard`(또는 rebase) 후 슬라이스 커밋을 **cherry-pick/merge**로 재적재 — 계보를 origin/main 선형 위로 정렬.
+3. 자가검증(계보 N줄·pytest·pathspec) 통과 시 단일 `push`.
+4. **push는 병진(사용자) 수동** — 공유 main 접촉은 명시 승인 인용 필수([[feedback_deploy_approval_explicit_quote]]). Claude는 원자 스크립트를 **준비**하고 게이트를 **판정**하되 집행하지 않는다.
+
+**Why**: 경합 재시도를 임기응변(반복 pull/merge)으로 처리하면 계보 오염·중복 커밋·타 트랙 혼입 위험(HOLD-P1 `e37b2c7` 혼입 실증, [[lesson_branch_assignment_explicit_isolation]]). 절차를 원자 스크립트로 고정하면 재현·검증 가능.
+
+---
+
+## D-PROBE-PRODWRITE-EXCEPTION (2026-08-01, 일회용 probe prod-write 예외 원칙 + f2 Part 3 기록)
+
+**원칙 재확인**: dev=prod 물리 DB 공유([[lesson_dev_prod_shared_db]]) 하에서 shell/probe에 의한 prod-write는 **자율 금지**가 기본이다. 예외는 아래 3조건을 **모두** 충족할 때만 1회 허용한다:
+1. **일회용 probe 한정** — 반복·스케줄·상시 파이프라인이 아닌 단발 측정.
+2. **세션 내 병진 승인** — 해당 세션에서 사용자의 명시 승인 인용([[feedback_deploy_approval_explicit_quote]]).
+3. **실계정 무접촉 증명 의무** — 사용자 실계정·개인정보 무접촉을 산출물로 증명(어떤 테이블/키에 접촉했는지 명시).
+
+**기록 — f2 Part 3 prod-write 예외 1회**: 상위 지시서 f2 Part 3의 prod-write는 위 3조건을 충족한 세션 내 병진 승인 예외로 집행됨을 거버넌스 원장에 등재한다(증적은 해당 세션 산출물 소관).
+
+**Why**: prod-write 예외를 무기록으로 남기면 다음 세션이 관행으로 오인해 자율 prod-write가 번진다. 예외는 반드시 "1회·조건부"로 원장에 못박아 재사용 불가로 만든다.
+
+**본 세션(SIGNAL-FORWARD-INFRA 프리플라이트) 준수 증명**: STEP 1 FMP 프로브는 **read-only 외부 호출**(FMP 시장데이터)로 prod-write 아님. 접촉 = FMP `/stable/*` 조회 27콜 + 로컬 SELECT(AdvisoryRun·WalletHolding count). **사용자 실계정·DB write 무접촉**. FMP API 키는 마스킹 처리(`len=32,head=qA1W***`)로 원장·커밋에 원문 미기재([[feedback_secret_masking_policy]]).
+
+---
+
+## D-I1-RUNTOTAL-DETERMINATION (2026-08-01, SFI-I1 Part A.2 — RUN-TOTAL-PERSIST 판별 종결)
+
+**판별 = ① 등재 확인 → 종결.** `RUN-TOTAL-PERSIST`는 origin/main(`d484b9cb`) `TASKQUEUE.md`에 **이미 등재**됨(f2 track `3ba4cf00` SLICE-20B-F2 Part A, 2026-07-31). 심지어 "SIGNAL-FORWARD-INFRA 합류 후보 — 전방 신호 인프라와 원장 스키마 공통 설계"로 명시. 재등재·common-bugs 불일치 등재 불요.
+
+**부수 정정(보고-착지 불일치 근인)**: SFI 프리플라이트 recon 보고가 "RUN-TOTAL-PERSIST = repo 무매치"로 판정한 것은 **recon 브랜치가 origin/main이 아닌 분기된 HOLD-P1 라인(`b8d767aa`) 위에 기반**해 f2 랜딩(07-31) 이전 상태를 조회했기 때문(false-missing). SFI-I1에서 `git rebase --onto origin/main`으로 base를 origin/main으로 교정 → RUN-TOTAL-PERSIST 가시화, common-bugs 번호도 #62(stale)→#79(정본) 정합. **교훈**: recon/설계 세션 STEP 0의 "worktree 최신성 확인"(common-bugs #59)을 신규 트랙 base 선정에도 적용 — 분기 라인 위 기반 금지([[lesson_branch_assignment_explicit_isolation]]).
+
+---
+
+## D-I1-1 · D-I1-2 · D-I1-3 (2026-08-01, SFI-I1 아키텍처 결정 3건)
+
+**D-I1-1 — forward 신호 저장은 shared(`packages/shared/stocks`)에 둔다.** EstimateSnapshot 모델·FMP 래퍼 신호 메서드·writer 서비스 전부 shared 패키지. 근거: 신호는 앱 횡단 자산(advisory·chain_sight·dashboard 잠재 소비) → shared가 단일 출처. 경계 규율: shared는 `apps.*` import 금지(경계 가드 자동 검증). advisory 엔진·화면은 이 슬라이스에서 무접촉(소비는 별도 사이클).
+
+**D-I1-2 — EstimateSnapshot은 append 전용(시계열 정본).** 동일 심볼 재수집 = 신규 행 추가(덮어쓰기 금지). captured_at으로 시점 구분. Stock.analyst_* 필드는 **최신 스냅숏 미러**(빠른 조회용 파생)일 뿐, 정본 시계열은 EstimateSnapshot. 근거: RUN-TOTAL-PERSIST가 노출한 "동일 date update_or_create가 이전 값 소거" 문제([[상기 D-I1-RUNTOTAL]])를 forward 신호에서 반복하지 않기 위해 append로 설계.
+
+**D-I1-3 — SFI-I1은 "수집까지만"(collect-only).** 범위 = 래퍼 메서드 + 모델 + writer + nightly 태스크 정의. **화면·advisory 기대수익 로직·migrate·beat 등록은 무접촉**. advisory_engine.py:10의 "analyst_target_price를 기대수익 프록시로 쓰지 말라" 금지벽은 유지 — 신호를 수집·저장하되 기대수익 산출로 직결하는 소비는 별도 결정 사이클. migrate=prod-write·beat 등록=DB row 둘 다 병진 수동(공유 DB 절대 규칙).
+
+---
+
+## D-I1-4 (2026-08-01, SFI-I1 B2 확정 — forward 신호 역할 경계 명문화)
+
+병진 판정으로 모델 전략 **B2** 확정. forward 신호를 두 원장으로 역할 분리한다:
+
+- **가격·의견 계열 = `packages.shared.stocks.AnalystSignalSnapshot`(신규).** 4신호: price target(high/low/consensus/median) · grades 분포(strong_buy~strong_sell + consensus 라벨) · grades-historical(월별 추세) · ratings-snapshot(등급). 유니버스 = coach(WalletHolding ∪ WatchlistItem), 케이던스 = nightly.
+- **실적 추정(estimates) = `apps.chain_sight.EstimateSnapshot`(기존 정본, 무접촉).** eps/revenue, 유니버스 = SP500, 케이던스 = 주간(금). SFI는 **estimates를 수집·저장하지 않는다** — `client.get_analyst_estimates` 신규 호출 금지(존재 확인만).
+
+**동일 FMP 엔드포인트 이중 수집 금지.** `analyst-estimates`는 chain_sight가 단일 소유. `AnalystSignalSnapshot`는 estimates 페이로드를 담지 않는다.
+
+**Why**: EstimateSnapshot이 이미 배포·가동 중(theme_heat TH-3, beat 등록 금 16:30 ET)인데 SFI가 동명·동엔드포인트 모델을 만들면 이중 수집·의미 중복. 두 원장은 유니버스(SP500 vs coach 14종, 겹침 6·갭 8)·케이던스·목적(C8 리비전 z vs coach 화면 신호)이 모두 달라 통합보다 역할 분리가 정합. 통합 단일 원장은 별도 사이클(cf. MP-UNIFY) 소관.
+
+**부수 결정 — 모델 키 = `symbol` CharField(FK 아님).** 기존 EstimateSnapshot 형제 관례 준수 + coach 갭 8종(비SP500)이 Stock 행 부재 가능 → FK 강제 회피. 유령필드 미러는 별도로 Stock을 symbol 조회해 존재 시에만 갱신.

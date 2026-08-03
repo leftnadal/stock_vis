@@ -1185,7 +1185,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **재발 점검 순서**: 수치·라벨 인용 전 → 근거 커밋/실측 있나? → 없으면 재측정 → HEAD 해시 병기 후 인용.
 
-## [LLM] 관계 도메인/타입 LLM 재호출이 이전 판정과 모순 — 검수 verdict가 최종 권위 (#80, 2026-08-01 REVIEW-P2) [chainsight][llm]
+## [LLM] 관계 도메인/타입 LLM 재호출이 이전 판정과 모순 — 검수 verdict가 최종 권위 (#80b, 2026-08-01 REVIEW-P2) [chainsight][llm]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 6d610d67 2026-08-01 13:40, REVIEW-P2 세션 — 채번 경위 ⓑ)*
 
 **증상**: 동일 관계를 LLM에 재호출하면 도메인 태그·타입 시그니처 판정이 이전 호출과 달라짐(예: CAH↔IONQ 계열에서 한 번은 유지, 다른 번은 타입 변경 제안). D-DOMAIN-AUTOMATION 첫 배치 270건에서 **type_change 제안 44%** = SEC 원본 타입과 LLM 이견(다수가 오라벨). 재호출로 라벨이 흔들려 "무엇이 맞는가"가 비결정적.
 
@@ -1193,14 +1194,16 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: ⑴ **타입 변경은 영구 비자동**(D-DOMAIN-AUTOMATION 안전핀) — LLM 제안은 pending 예외로만, 승인 권위는 인간 검수(verdict CHANGE/CHANGE_REV). ⑵ 검수 verdict(`domain_review_status`)가 **최종 권위**로 머신값을 덮어씀(D-REVIEW-VERDICT-VOCAB). ⑶ LLM 재호출 결과를 "정정"으로 자동 반영 금지 — 사람 재정 없이는 이전 승인본 불변. **기록 상태**: CAH↔IONQ 구체 재호출 로그는 review-tool 세션 산출(본 세션 미재현) — 규칙 골격 등재, 사실 창작 없음.
 
-## [tool] 검수 도구 localStorage 캐시가 새 CSV보다 우선 — stale verdict 표시 함정 (#81, 2026-08-01 REVIEW-P2) [tool][process]
+## [tool] 검수 도구 localStorage 캐시가 새 CSV보다 우선 — stale verdict 표시 함정 (#81b, 2026-08-01 REVIEW-P2) [tool][process]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. b=후착지 6d610d67 2026-08-01 13:40, REVIEW-P2 세션 — 채번 경위 ⓑ)*
 
 **증상**: 검수 도구(`tools/review/domain_review.html`)에서 새 배치 CSV를 로드해도 이전 세션의 verdict가 그대로 보임 — 브라우저 localStorage에 캐시된 검수 상태가 방금 로드한 CSV의 값보다 우선 적용돼, 갱신된 라벨/후보가 반영 안 됨.
 
 **원인**: 도구가 진행 상태(입력한 verdict)를 localStorage에 영속하고, CSV 로드 시 "이미 저장된 verdict 우선" 병합 로직 → 새 CSV의 값이 캐시에 덮여 가려짐. 사용자는 "새 데이터를 본다"고 착각하나 실제는 stale 캐시.
 
 **해결**: ⑴ **CSV가 진실의 소스** — 도구는 새 CSV 로드 시 캐시 무효화(또는 "캐시 vs CSV 충돌" 명시 프롬프트) 필요. ⑵ 검수 결과 반영은 **도구 UI가 아니라 동결 CSV → 로더(apply_review_verdicts)** 경로로 DB 반영(도구는 라벨링만). ⑶ 배치 교체 시 localStorage 수동 클리어를 절차에 포함. **기록 상태**: 도구 개선은 TASKQUEUE REVIEW-TOOL-V6-IMPROVE. cf. [[lesson_dev_prod_shared_db]](진실 소스=DB, 도구는 입력 보조).
-## Gate 4 사용자 명령서는 실행 환경(detached HEAD·python 경로) 실측 후 발급 (#80, 2026-08-01 COVERAGE-DETAIL migrate) [process] [ops]
+## Gate 4 사용자 명령서는 실행 환경(detached HEAD·python 경로) 실측 후 발급 (#80a, 2026-08-01 COVERAGE-DETAIL migrate) [process] [ops]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#80' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 fa3e20de 2026-08-01 13:39, BATCH-18 mgmt 채번)*
 
 **증상**: migrate 적용(Gate 4 사용자 실행)을 위해 발급한 명령 `git pull` + `python manage.py migrate`가 서빙 트리에서 **2중 실패** — ⑴ `git pull` → "You are not currently on a branch"(런타임 트리는 **detached HEAD 관례**, worker_sync가 re-detach하므로 브랜치 없음) ⑵ `python` → pyenv가 3.11만 잡고 프로젝트 poetry venv(3.12) 미발견.
 
@@ -1208,7 +1211,8 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 
 **해결**: **Gate 4 사용자 명령서는 실행 환경을 실측한 뒤 발급**한다 — ⑴ 트리 최신화는 detached면 `git fetch origin && git reset --hard origin/main`(git pull 아님) ⑵ python은 poetry venv **절대경로**(`~/Library/Caches/pypoetry/virtualenvs/…/bin/python`). 발급 전 `git -C <tree> status --branch`(detached 확인)·`ls <venv>/bin/python`(경로 확인) 1패스. cf. #81(실행 환경 참조 절대경로 고정).
 
-## 실행 환경 참조는 절대경로 고정 — 셸 PATH 간헐 유실 + pyenv/venv 불일치 (#81, 2026-07~08 다수 실증) [process] [ops]
+## 실행 환경 참조는 절대경로 고정 — 셸 PATH 간헐 유실 + pyenv/venv 불일치 (#81a, 2026-07~08 다수 실증) [process] [ops]
+*(채번 충돌 구분자, D-NUMBERING-DUP 참조. 기존 '#81' 단독 인용은 문맥상 해당 내용 쪽. a=선착지 fa3e20de 2026-08-01 13:39, BATCH-18 mgmt 채번)*
 
 **증상**: ⑴ 서브셸/파이프에서 `git`·`tail` 등이 `command not found`(BRANCH-CLEANUP-FORCE 07-30: for 루프 내 git 유실) ⑵ `python`이 pyenv 3.11로 해석돼 poetry venv(3.12) 미발견(#80). 상대 명령(`git`, `python`, `tail`)이 세션·서브셸마다 다른 바이너리로 해석되거나 미발견.
 
@@ -1241,3 +1245,34 @@ ego API 자체는 **PG 네이티브(`EgoGraphView`)·Neo4j 무의존**으로 건
 **원인**: 매칭 키(symbol_a,symbol_b,relation_type)가 **반영으로 변형되는데**(CHANGE=type 교체, CHANGE_REV=방향 스왑), 2단계 커맨드가 매 단계 build_plan을 전량 재실행 → 이미 반영된 행이 원 키로 안 잡혀 unmatched=H-C. CHANGE_REV엔 already_swapped 멱등 감지가 있었으나 CHANGE엔 누락(비대칭).
 
 **해결·점검**: 키가 변형되는 반영은 **결과 키로 '이미 반영됨'을 감지**(already_applied: 결과 키+approved 확인)해 unmatched 대신 흡수 → 전체 재실행 idempotent. CHANGE·CHANGE_REV 대칭 처리. 교훈: 다단계 apply에서 매칭 키가 변형되면 각 단계의 재매칭이 앞 단계 결과를 삼킬 수 있음 — 멱등 감지를 모든 변형 유형에 대칭 적용.
+<!-- 아래 3건 = SFI-I1(build 세션) 발견·채번 회수분(자가채번 #80~82 → origin/main 선점 충돌로 회수). BATCH-20 push-직전 재grep으로 #83~#85 부여(실측+1, SFI-I1-BUGNUM 완료). -->
+
+## FMPFundamentals.get_rating이 `/stable/rating`(404 오경로) 호출 — 올바른 경로 `/stable/ratings-snapshot` (#83, SFI-I1 Part A 2026-08-01) [backend][stocks]
+
+**증상**: `FMPFundamentals.get_rating(symbol)`이 항상 None 반환(로그 `FMP API HTTP 오류 (rating/X): 404`). 종합 투자등급이 화면·엔진 어디에도 채워지지 않음.
+
+**원인**: `/stable/rating`은 현 FMP 플랜에서 404(폐기/미제공). 실제 종합등급(A~F + 항목별 점수 DCF/ROE/ROA/D-E/PE/PB) 경로는 `/stable/ratings-snapshot`. recon 프리플라이트 + 6월 `fmp_api_audit/report.md`(라인 28) 모두 404 실측.
+
+**규칙**: SFI-I1에서 `get_rating`을 `/stable/ratings-snapshot`로 교정. **항상 None이었으므로 회귀 없음 — 행위 변화는 "None→값"뿐**(테스트로 명시). 신규 래퍼 메서드 `get_ratings_snapshot`가 정본 경로, `get_rating`은 이를 위임.
+
+## `/stable/analyst-estimates`는 `period` 파라미터 필수 — 누락 시 HTTP 400, 6월 audit "http-400"은 오진 (#84, SFI-I1 Part A 2026-08-01) [backend][stocks]
+
+**증상**: `/stable/analyst-estimates?symbol=X` → 400 `Query Error: Invalid or missing query parameter - period`. 6월 `fmp_api_audit/report.md`(라인 157)가 이를 `http-400`으로 기록 → "이 엔드포인트는 못 씀(플랜 차단)"으로 오해될 소지.
+
+**원인**: 엔드포인트가 `period`(annual/quarter) **필수**. 누락 시 400(플랜 차단 아님). 실측(recon):
+- `period=annual` → **200 OK, Starter 가용** (미래 fiscal 연도별 revenue/EBITDA/EBIT/netIncome/EPS Low·High·Avg + numAnalysts). AAPL·TLN(소형)까지 가용.
+- `period=quarter` → **402 Premium 차단**.
+
+**규칙**: 래퍼 `get_analyst_estimates`는 `period="annual"` **고정**(quarter는 402이므로 파라미터로 열지 않음). audit의 `analyst-estimates http-400` 항목은 "period 누락 오진"으로 정정 인식.
+
+## recon/측정 세션이 stale base 위에서 "부재" 오판(false-missing) — fresh origin/main 강제 (#85, RECON-STALE-BASE, SFI-I1 2026-08-01) [process][harness][git]
+
+**증상**: SIGNAL-FORWARD-INFRA 프리플라이트 recon이 실측 대상 2건을 "repo 부재"로 오판:
+- `RUN-TOTAL-PERSIST` 백로그 = "TASKQUEUE 무매치"(실제 origin/main TASKQUEUE:1103 등재됨).
+- `EstimateSnapshot` 모델·수집 파이프라인 = "이 트리 부재"(실제 chain_sight에 배포·가동 중, beat 등록).
+
+**원인**: recon 브랜치가 origin/main(`d484b9cb`)이 아닌 **분기된 HOLD-P1 라인(`b8d767aa`, 208 커밋 뒤처짐)** 위에 기반. 그 base엔 f2 랜딩(RUN-TOTAL)·theme_heat 모델(EstimateSnapshot)이 아직 없어 "부재"로 보임(false-missing). 측정 자체는 정확했으나 **잘못된 base가 사실을 가림**. cf. #79(미검증 라벨 이월)·common-bugs #59(worktree 최신성 STEP 0 강제).
+
+**규칙**: ⑴ recon·측정·설계 세션은 **fresh `origin/main`에서 시작**(신규 트랙 base = origin/main, 분기 라인 위 기반 금지). ⑵ 보고 **첫 줄에 base HEAD 해시 명기**(#79 해시 앵커 규율의 base 판). ⑶ "부재/무매치" 판정 전 `git show origin/main:<path>`로 origin/main 대조 필수(로컬 브랜치 grep만으로 부재 단정 금지). ⑷ stale 발견 시 `git rebase --onto origin/main <old-base>`로 즉시 교정 후 재측정.
+
+**재발 점검 순서**: "X 부재" 인용 전 → 내 base = origin/main인가?(`git rev-list --count HEAD..origin/main`=0?) → 아니면 `git show origin/main:path` 대조 → 그래도 부재면 확정.
