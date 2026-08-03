@@ -100,11 +100,15 @@ _SYSTEM = (
     '{"domain_tags": ["명사구1", "명사구2"], '
     '"type_match": {"match": true, "suggested_type": null}, '
     '"refined_basis": "타깃 중심 1문장(선택, 없으면 빈 문자열)", '
-    '"confidence": 0.0}\n'
+    '"confidence": 0.0, '
+    '"rationale": {"claim": "판단 근거 1문장", "claim_type": "known_fact", '
+    '"basis_hint": "근거 출처 힌트", "counter_signal": "반대 신호(없으면 빈 문자열)"}}\n'
     "- domain_tags: 1~2개, 예 \"메모리·HBM\", \"GPU·데이터센터\". 문장에 근거 없으면 빈 배열.\n"
     "- type_match.match: 현재 관계 타입이 문장과 맞으면 true. 틀리면 false + suggested_type에 "
     "SUPPLIES_TO/COMPETES_WITH/DEPENDS_ON/PARTNER_WITH 중 하나.\n"
-    "- confidence: 0~1. 문장이 타깃을 명시하지 않으면 낮게."
+    "- confidence: 0~1. 문장이 타깃을 명시하지 않으면 낮게.\n"
+    "- rationale.claim_type: known_fact(문장에 명시)|inference(추론)|uncertain(불확실) 중 하나.\n"
+    "- rationale: 감사용 자기보고. basis_hint=근거 위치, counter_signal=판단을 뒤집을 신호."
 )
 
 
@@ -226,6 +230,31 @@ def first_domain_tag(llm_out: dict) -> str | None:
     return None
 
 
+_CLAIM_TYPES = {"known_fact", "inference", "uncertain"}
+
+
+def extract_rationale(llm_out: dict) -> dict | None:
+    """LLM 자기보고 근거(rationale) 방어적 추출 — 감사용.
+
+    ⑳-3 S3-MINDMAP 패치2: {claim, claim_type, basis_hint, counter_signal}.
+    부속(근거)이 본체(태깅)를 블록하지 않는다 — 누락·형식오류면 None 반환(태깅은 계속).
+    자기보고 한계: LLM이 사후 합리화할 수 있으므로 '판정'이 아닌 '자기 진술'로만 취급.
+    """
+    r = llm_out.get("rationale")
+    if not isinstance(r, dict):
+        return None
+    claim = str(r.get("claim", "")).strip()[:300]
+    if not claim:
+        return None
+    ct = str(r.get("claim_type", "")).strip().lower()
+    return {
+        "claim": claim,
+        "claim_type": ct if ct in _CLAIM_TYPES else "uncertain",
+        "basis_hint": str(r.get("basis_hint", "")).strip()[:200],
+        "counter_signal": str(r.get("counter_signal", "")).strip()[:200],
+    }
+
+
 def tag_one(*, symbol_a, symbol_b, center, relation_type, basis, target_name, llm_call):
     """단건 태깅 코어(커맨드·훅 공유). llm_call=(system, contents)->raw_text 콜러블.
 
@@ -247,6 +276,9 @@ def tag_one(*, symbol_a, symbol_b, center, relation_type, basis, target_name, ll
         target_name=target_name, llm_out=llm_out,
     )
     mc["json_parse"] = True
+    # 패치2: 근거(rationale) 감사 기록 — machine_check에 실어 domain_machine_check에 저장.
+    # 부속이 본체를 블록하지 않음: 형식 실패면 null이지만 태깅(gate/draft)은 그대로 진행.
+    mc["llm_rationale"] = extract_rationale(llm_out)
     gate_class, review_status = decide_gate(mc)
     return {
         "ok": True,
